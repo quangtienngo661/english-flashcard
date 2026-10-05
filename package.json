@@ -1,0 +1,7 @@
+{
+  "name": "english-learning",
+  "private": true,
+  "scripts": {
+    "test:e2e": "pnpm --filter api test:e2e"
+  }
+}
