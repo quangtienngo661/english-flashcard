@@ -3,7 +3,7 @@ import { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, inject, it } from 'vitest';
-import { DrizzleModule } from '../src/common/db/drizzle.module.js';
+import { PrismaModule } from '../src/common/db/prisma.module.js';
 import { operationIdMiddleware } from '../src/common/logging/operation-id.middleware.js';
 import { ProblemDetailsFilter } from '../src/common/problem-details/problem-details.filter.js';
 // TEST-ONLY seam (B0E6): wired directly on this standalone test app, never on the real AppModule.
@@ -15,7 +15,7 @@ describe('Sample endpoint (e2e)', () => {
 
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({
-      imports: [DrizzleModule.forRoot({ connectionString: inject('databaseUrl') }), SampleModule],
+      imports: [PrismaModule.forRoot({ connectionString: inject('databaseUrl') }), SampleModule],
     }).compile();
     app = moduleRef.createNestApplication();
     app.use(operationIdMiddleware, fakeRequestUserMiddleware);
