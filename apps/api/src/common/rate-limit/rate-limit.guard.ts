@@ -29,11 +29,13 @@ export class RateLimitGuard implements CanActivate {
     const windowMs = options.windowSeconds * 1000;
     const windowStart = new Date(Math.floor(Date.now() / windowMs) * windowMs);
 
-    // B0E2 requires one atomic round trip. Verify Prisma's Postgres query log shows a
-    // single INSERT ... ON CONFLICT ... DO UPDATE for this upsert before accepting the port.
-    // If it emits multiple statements, use $queryRawTyped with explicit
-    // ON CONFLICT (user_id, window_start) DO UPDATE
-    // SET count = rate_limit_counters.count + 1 RETURNING count; never read then write.
+    // B0E2 requires one atomic round trip. Verified via Prisma's query log (06/10/2026, gpt-6-astra
+    // review + Claude follow-up): both the create path and the conflict/update path emit exactly one
+    // "INSERT ... ON CONFLICT (user_id, window_start) DO UPDATE SET count = count + $n ... RETURNING"
+    // statement each — confirmed with Prisma's event-based query logging against a real Postgres, not
+    // inferred from the concurrency test alone. If this ever changes (Prisma version bump), re-verify
+    // the same way before trusting it again; the documented fallback is $queryRawTyped with an explicit
+    // ON CONFLICT (user_id, window_start) DO UPDATE SET count = count + 1 RETURNING count.
     const updated = await this.prisma.rateLimitCounter.upsert({
       where: { userId_windowStart: { userId, windowStart } },
       create: { userId, windowStart, count: 1 },
