@@ -1,6 +1,5 @@
-import { and, eq, sql, type SQL } from 'drizzle-orm';
-import type { NodePgDatabase } from 'drizzle-orm/node-postgres';
-import { idempotencyKeys } from './idempotency.schema.js';
+import { Prisma, type PrismaClient } from '../../generated/prisma/client.js';
+import { tryAdvisoryLock } from '../../generated/prisma/sql.js';
 
 export type RunIdempotentResult<T> =
   | { kind: 'proceed'; status: number; body: T }
@@ -8,53 +7,36 @@ export type RunIdempotentResult<T> =
   | { kind: 'conflict'; retryAfterSeconds: number }
   | { kind: 'reject' };
 
-export function lockKeyFor(key: string, userId: string, endpoint: string): SQL<bigint> {
-  return sql<bigint>`hashtext(${key} || ':' || ${userId} || ':' || ${endpoint})::bigint`;
-}
-
 export async function runIdempotent<T>(
-  db: NodePgDatabase,
+  prisma: PrismaClient,
   params: { key: string; userId: string; endpoint: string; payloadHash: string },
   handler: () => Promise<{ status: number; body: T }>,
   options?: { timeoutSeconds?: number },
 ): Promise<RunIdempotentResult<T>> {
   const { key, userId, endpoint, payloadHash } = params;
   const timeoutSeconds = options?.timeoutSeconds ?? 30;
-  const lockKey = lockKeyFor(key, userId, endpoint);
-  const scope = and(
-    eq(idempotencyKeys.key, key),
-    eq(idempotencyKeys.userId, userId),
-    eq(idempotencyKeys.endpoint, endpoint),
-  );
+  const scope = { key, userId, endpoint };
+  const where = { key_userId_endpoint: scope };
 
-  // Application-level bound, not a Postgres-side one: SET LOCAL transaction_timeout /
-  // idle_in_transaction_session_timeout would bound the handler's idle time too (e.g. while
-  // awaiting an external AI provider call, which statement_timeout alone does not cover), but
-  // Postgres enforces both by terminating the whole connection, and that termination was observed
-  // in testing to surface as an unhandled process-level exception through this exact drizzle +
-  // node-postgres pooling setup — a crash risk strictly worse than the slow-handler problem this is
-  // meant to solve. A client-side race is used instead: it never touches the connection, so it can
-  // never crash the process, at the cost of not truly cancelling the abandoned transaction — if the
-  // handler eventually finishes after we've already reported a timeout, it still commits normally.
+  // Keep the client-side bound: Postgres transaction/session timeouts terminate the connection,
+  // which previously surfaced as an unhandled process-level exception through the pg pool.
+  // The race does not cancel the handler; Prisma also gets the same explicit transaction bound
+  // below so its own 5s default cannot cut a handler short before our configured timeout.
   const timeout = new Promise<RunIdempotentResult<T>>((_, reject) => {
     setTimeout(() => reject(new Error(`runIdempotent timed out after ${timeoutSeconds}s`)), timeoutSeconds * 1000);
   });
 
-  const transaction = db.transaction(async (tx): Promise<RunIdempotentResult<T>> => {
-    const result = await tx.execute<{ locked: boolean }>(
-      sql`SELECT pg_try_advisory_xact_lock(${lockKey}) AS locked`,
-    );
-    if (!result.rows[0].locked) {
+  const transaction = prisma.$transaction(async (tx): Promise<RunIdempotentResult<T>> => {
+    const [{ locked }] = await tx.$queryRawTyped(tryAdvisoryLock(key, userId, endpoint));
+    if (!locked) {
       return { kind: 'conflict', retryAfterSeconds: 2 };
     }
 
-    let row: typeof idempotencyKeys.$inferSelect | undefined = (
-      await tx.select().from(idempotencyKeys).where(scope)
-    )[0];
+    let row = await tx.idempotencyKey.findFirst({ where: scope });
 
     if (row?.createdAt && row.createdAt.getTime() < Date.now() - 24 * 3600 * 1000) {
-      await tx.delete(idempotencyKeys).where(scope);
-      row = undefined;
+      await tx.idempotencyKey.delete({ where });
+      row = null;
     }
 
     if (row?.status === 'succeeded' || row?.status === 'failed_permanent') {
@@ -65,29 +47,34 @@ export async function runIdempotent<T>(
     }
 
     if (!row) {
-      await tx.insert(idempotencyKeys).values({
-        key,
-        userId,
-        endpoint,
-        status: 'in_progress',
-        payloadHash,
+      await tx.idempotencyKey.create({
+        data: {
+          key,
+          userId,
+          endpoint,
+          status: 'in_progress',
+          payloadHash,
+        },
       });
     } else if (row.status === 'in_progress') {
-      await tx.update(idempotencyKeys).set({ payloadHash, updatedAt: new Date() }).where(scope);
+      await tx.idempotencyKey.update({ where, data: { payloadHash, updatedAt: new Date() } });
     } else {
       throw new Error(`Unexpected idempotency status: ${row.status}`);
     }
 
     const response = await handler();
-    await tx.update(idempotencyKeys).set({
-      status: 'succeeded',
-      responseStatus: response.status,
-      responseBody: response.body,
-      updatedAt: new Date(),
-    }).where(scope);
+    await tx.idempotencyKey.update({
+      where,
+      data: {
+        status: 'succeeded',
+        responseStatus: response.status,
+        responseBody: response.body === null ? Prisma.JsonNull : (response.body as Prisma.InputJsonValue),
+        updatedAt: new Date(),
+      },
+    });
 
     return { kind: 'proceed', status: response.status, body: response.body };
-  });
+  }, { timeout: timeoutSeconds * 1000, maxWait: 10_000 });
 
   return Promise.race([transaction, timeout]);
 }
