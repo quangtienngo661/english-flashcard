@@ -7,8 +7,7 @@ Ngày: 07/10/2026 (brainstorm 06–07/10; soát lại lần 2 ngày 07/10 đối
 (Prisma 7.10.0, `@nestjs/common` 12.1.2, Vitest + Testcontainers, seam `RequestUser`).
 
 **Nhãn:** **Chốt** = chủ dự án chọn trong phiên brainstorm. **Đề xuất** = trợ lý đề xuất, chủ dự án đã đồng ý phần
-chứa nó (hoặc thêm ở lần soát 2, chờ duyệt cùng doc). **CHỜ CHỐT P#** = quyết định còn mở ở mục 13; doc đang viết
-theo phương án đề xuất của câu đó. **ASSUMPTION** = chưa kiểm chứng bằng chạy thật hoặc nguồn.
+chứa nó (hoặc thêm ở lần soát 2, chờ duyệt cùng doc). **ASSUMPTION** = chưa kiểm chứng bằng chạy thật hoặc nguồn.
 Criteria/edge cases dùng số hiệu `B1#`/`B1E#` (theo `docs/specs/SPEC_WRITING_CONVENTIONS.md`), trích ngược về
 `I#`/`IE#`/`IR#` của spec Identity và `S#`/`SR#` của system-spec.
 
@@ -34,7 +33,7 @@ trong Mailpit → xác minh → gia hạn → đổi mật khẩu → logout.
 | D9 | **Commit local bình thường** trên `feat/buoc-1-identity-core` (tách từ `feat/migrate-drizzle-to-prisma`). Chưa có remote; push và `main` để sau | — |
 
 Thư viện (đã kiểm `npm view` ngày 06–07/10/2026): `jose` 6.2.12, `argon2` 0.45.1, `nodemailer` 10.0.15,
-`cookie-parser` 1.4.7, `zod` 4.6.5 (nếu P1 chốt zod). `jose` có option `currentDate` cho `jwtVerify` (docs `panva/jose`,
+`cookie-parser` 1.4.7, `zod` 4.6.5 (D10). `jose` có option `currentDate` cho `jwtVerify` (docs `panva/jose`,
 đọc qua context7 ngày 07/10) — dùng để đồng hồ giả của test áp được lên kiểm `exp`. Node 24.11 có sẵn `crypto.argon2`
 (đo được ~44 ms/lần với m=19456, t=2, p=1) nhưng **không dùng**: trả hash thô, phải tự viết lớp mã hóa chuỗi PHC và so
 sánh — tự viết code mật mã là rủi ro không đáng. Gói `argon2` trả chuỗi PHC có tham số + salt, có `verify` và
@@ -106,8 +105,8 @@ Bảng (Identity sở hữu, theo "Bản đồ ghi dữ liệu" của system-spe
 3. **`RequestWithUser`/`RequestUser`:** chuyển type ra `request-user.ts` (hiện nằm trong file seam giả) và thêm
    `sessionChainId`.
 4. **`HealthController`** và `GET /v1/sample` thành `@Public()`; `POST /v1/sample` cần đăng nhập thật.
-5. **`configureApp(app)`:** gom `setGlobalPrefix('v1')`, `ProblemDetailsFilter`, pipe validation (P1),
-   `cookie-parser`, `trust proxy`, CORS (P4) vào một hàm dùng chung cho `main.ts` và mọi e2e test dựng `AppModule`.
+5. **`configureApp(app)`:** gom `setGlobalPrefix('v1')`, `ProblemDetailsFilter`, `StandardSchemaValidationPipe` (D10),
+   `cookie-parser`, `trust proxy`, CORS (D13) vào một hàm dùng chung cho `main.ts` và mọi e2e test dựng `AppModule`.
    Hiện `main.ts` tự làm và test không gọi, nên test không chạy cùng cấu hình với server thật.
 6. **`prisma.config.ts`:** `schema: 'prisma/schema.prisma'` → `schema: 'prisma'` (thư mục). Docs Prisma cảnh báo: trỏ
    vào file thì `prisma generate` vẫn chạy nhưng **lặng lẽ bỏ** model ở file khác — plan phải có bước kiểm client sinh
@@ -120,7 +119,7 @@ Bảng (Identity sở hữu, theo "Bản đồ ghi dữ liệu" của system-spe
   ký, mọi khóa trong danh sách đều kiểm (IE10). `jwtVerify` với `algorithms: ["HS256"]`, `issuer`, `audience` và
   `currentDate = Clock.now()`; không cho lệch giờ (server tự ký tự kiểm).
 - **Guard toàn cục** (`APP_GUARD`, chạy trước guard gắn ở route như `RateLimitGuard`): mọi route cần đăng nhập trừ
-  route ghi `@Public()`. Route `@Public` của Identity: `register`, `login`, `refresh`, `logout` (P3), `otp` (nhánh
+  route ghi `@Public()`. Route `@Public` của Identity: `register`, `login`, `refresh`, `logout` (D12), `otp` (nhánh
   `reset_password`), `password/reset`; ngoài Identity: `GET /v1/health`, `GET /v1/sample`. Guard **không** đọc DB, gắn
   `RequestUser { userId, sessionChainId }`. Trên route `@Public`, guard vẫn gắn `RequestUser` nếu có Bearer token hợp
   lệ, còn token thiếu/sai thì coi như ẩn danh (không 401) — cần cho `POST /v1/auth/otp`, nơi nhánh `verify_email` cần
@@ -143,12 +142,12 @@ Bảng (Identity sở hữu, theo "Bản đồ ghi dữ liệu" của system-spe
 - **Tối đa 10 chain hoạt động/tài khoản:** tạo chain thứ 11 thì thu hồi chain hoạt động có `last_used_at` nhỏ nhất,
   trong cùng transaction.
 - **Web/mobile:** body đăng nhập/đăng ký có `client: "web" | "mobile"`, lưu vào `client_type`. Web: cookie
-  `refresh_token=...; HttpOnly; Secure; SameSite=Strict; Path=/v1/auth` (P3: path phủ cả `refresh` và `logout`;
-  P4: `Strict` đòi web và API cùng site), `Max-Age` = thời gian còn lại tới mốc hết hạn gần nhất (90 ngày trượt hoặc
+  `refresh_token=...; HttpOnly; Secure; SameSite=Strict; Path=/v1/auth` (D12: path phủ cả `refresh` và `logout`;
+  D13: `Strict` chạy được vì web và API cùng site), `Max-Age` = thời gian còn lại tới mốc hết hạn gần nhất (90 ngày trượt hoặc
   365 ngày tuyệt đối), đặt lại mỗi lần xoay. Body **không** chứa refresh token. Mọi request web dùng cookie (gia hạn,
   logout) **bắt buộc** header `X-CSRF-Protection: 1`. Mobile: refresh token trong body. Có `refresh_token` trong body →
   đường mobile; không có → đường cookie. `client_type` của chain phải khớp đường đi.
-- **Logout** `POST /v1/auth/logout` (**CHỜ CHỐT P3**, đề xuất): `@Public`, xác định chain bằng **refresh token** (body
+- **Logout** `POST /v1/auth/logout` (D12): `@Public`, xác định chain bằng **refresh token** (body
   cho mobile, cookie + header CSRF cho web), không cần access token — để logout vẫn chạy khi access token đã hết hạn
   (app mở lại sau một ngày). Thu hồi chain đó; web thì xóa cookie. Token đã xoay/không tìm thấy/chain đã thu hồi → vẫn
   204 (idempotent, không lộ gì).
@@ -162,7 +161,7 @@ Bảng (Identity sở hữu, theo "Bản đồ ghi dữ liệu" của system-spe
 - **OTP** `POST /v1/auth/otp`: `{ purpose: "verify_email" }` cần đăng nhập (route `@Public`; nhánh này không có
   `RequestUser` thì trả 401 `invalid-token`), gửi tới email tài khoản; `{ purpose: "reset_password", email }` không cần đăng nhập, trả 202 giống
   hệt nhau dù email có hay không. Mã 6 chữ số `crypto.randomInt(0, 1_000_000)` đệm số 0 đầu, hiệu lực 10 phút, mã mới
-  vô hiệu mã cũ cùng mục đích. Giới hạn theo email (60 giây, 5 lần/giờ — P2) do `OtpService` gọi `RateLimiter` sau
+  vô hiệu mã cũ cùng mục đích. Giới hạn theo email (60 giây, 5 lần/giờ — khung cố định, D11) do `OtpService` gọi `RateLimiter` sau
   khi xác định email, vì nhánh `verify_email` không có email trong body.
 - **Xác minh** `POST /v1/auth/verify-email` `{ code }` (cần đăng nhập).
 - **Đếm lần sai OTP:** chỉ tính khi có mã còn sống để so (mã chưa dùng, chưa vô hiệu, chưa hết hạn). Gửi mã khi không
@@ -191,7 +190,9 @@ Bảng (Identity sở hữu, theo "Bản đồ ghi dữ liệu" của system-spe
 
 - **Rate limit:** `@RateLimit` nhận nhiều luật `{ name, by: "user" | "ip" | "email", max, windowSeconds }` (cửa sổ dài
   nhất 24 giờ). IP và email băm HMAC (`RATE_LIMIT_HMAC_KEY`) trước khi lưu. **Cửa sổ cố định theo mốc giờ** như Bước 0
-  (**CHỜ CHỐT P2**). Số mặc định (`ASSUMPTION`, cấu hình được), đối chiếu IR20 ("theo IP và theo email hoặc tài khoản"):
+  (D11): "1 lần/60 giây" nghĩa là 1 lần mỗi khung 60 giây, nên hai request sát ranh giới khung có thể cách nhau
+  vài giây; "5/giờ" có thể thành tối đa 10 trong vài phút quanh mốc giờ — chấp nhận, vì ngân sách thư và giới hạn IP
+  vẫn chặn. Số mặc định (`ASSUMPTION`, cấu hình được), đối chiếu IR20 ("theo IP và theo email hoặc tài khoản"):
 
   | Endpoint | Theo IP | Theo email / tài khoản |
   |---|---|---|
@@ -249,7 +250,7 @@ HMAC (IR21).
 giới hạn ở mục 6. Đổi `OTP_HMAC_KEY` làm mọi mã đang sống mất hiệu lực; đổi `RATE_LIMIT_HMAC_KEY` xóa trắng bộ đếm;
 đổi `REFRESH_GRACE_KEY` chỉ ảnh hưởng 10 giây ân hạn — đều chấp nhận được.
 
-**CORS (P4):** `CORS_ORIGINS` liệt kê origin web; `credentials: true`; cho phép header `Authorization`,
+**CORS (D13):** `CORS_ORIGINS` liệt kê origin web; `credentials: true`; cho phép header `Authorization`,
 `Content-Type`, `X-CSRF-Protection`.
 
 **Dọn dẹp mỗi giờ** (trong tiến trình API, tắt được bằng cấu hình — tắt trong test): xóa bộ đếm rate limit có
@@ -279,7 +280,7 @@ khi hết hạn; xóa `session_chains` (và token của chúng) đã thu hồi h
 | B1#3 | When a password (after NFC normalization) fails any of: ≥ 8 code points, ≤ 128 code points, an uppercase letter (`\p{Lu}`), a lowercase letter (`\p{Ll}`), a digit (`\p{Nd}`), a character that is neither letter nor digit, then registration, change or reset returns 400 whose `violations` lists every failed rule, and nothing is stored | I3, IR3 |
 | B1#4 | When `POST /v1/auth/otp` with `verify_email` is called by an authenticated unverified user, then earlier unconsumed `verify_email` codes of that user are invalidated, a new 6-digit code valid for 10 minutes is stored as an HMAC, the response is 202, and the code is mailed after the response | IR4, D7 |
 | B1#5 | When `POST /v1/auth/otp` with `reset_password` names an email, then the response is 202 with the same body whether or not an account exists, and a code is created and mailed only when it exists | I8, IR7 |
-| B1#6 | When an OTP request for an email exceeds 1 per 60-second window or 5 per one-hour window (P2), then the response is 429 `rate-limited` with `Retry-After`, counted per normalized email across both purposes and whether or not an account exists | I6, IR4 |
+| B1#6 | When an OTP request for an email exceeds 1 per 60-second window or 5 per one-hour window (fixed windows, D11), then the response is 429 `rate-limited` with `Retry-After`, counted per normalized email across both purposes and whether or not an account exists | I6, IR4 |
 | B1#7 | When the correct `verify_email` code is submitted within 10 minutes and before 5 attempts, then `email_verified_at` is set, the code is consumed, and submitting it again returns 400 `invalid-otp` | I4, IR5 |
 | B1#8 | When a wrong code is submitted while a live code exists, then `attempts` is incremented by one conditional `UPDATE ... WHERE attempts < 5 AND consumed_at IS NULL AND invalidated_at IS NULL AND expires_at > $now`, and once 5 attempts are used even the correct code is refused until a new code is requested | I5, IR4 |
 | B1#9 | When a `reset_password` code is submitted to verify the email, or a `verify_email` code to reset the password, then it is refused, because codes are looked up by (user, purpose) | I7, IR4 |
@@ -293,7 +294,7 @@ khi hết hạn; xóa `session_chains` (và token của chúng) đã thu hồi h
 | B1#17 | When a rotated refresh token is presented and any condition of B1#16 fails, then the whole chain is revoked with reason `reuse_detected`, the response is 401, and a warn-level `refresh_reuse_detected` event is logged without the token | I17, IE2 |
 | B1#18 | When a refresh token's chain has not been refreshed for more than 90 days or is older than 365 days, then refresh returns 401 and the chain is revoked with reason `expired` | I18, IR12 |
 | B1#19 | When a login, registration or password change would create an 11th active chain, then the active chain with the oldest `last_used_at` is revoked in the same transaction | IE3, IR15 (`ASSUMPTION`: "oldest" read as least recently used) |
-| B1#20 | When `POST /v1/auth/logout` presents a refresh token (body for mobile, cookie with `X-CSRF-Protection: 1` for web) (P3), then only that token's chain is revoked, other chains keep working, a web response also clears the cookie, and a repeated or unknown-token call still returns 204 | I19, IR13 |
+| B1#20 | When `POST /v1/auth/logout` presents a refresh token (body for mobile, cookie with `X-CSRF-Protection: 1` for web) (D12), then only that token's chain is revoked, other chains keep working, a web response also clears the cookie, and a repeated or unknown-token call still returns 204 | I19, IR13 |
 | B1#21 | When `client` is `web` at login or registration, then the refresh token is only in a `Set-Cookie` with `HttpOnly; Secure; SameSite=Strict; Path=/v1/auth` and a `Max-Age` equal to the nearer expiry, and not in the body; a cookie refresh or logout without `X-CSRF-Protection: 1` returns 403 `csrf-header-required` and changes nothing | IR10, Defense Analysis (CSRF) |
 | B1#22 | When `POST /v1/auth/password/change` has the correct current password and a valid new one, then the hash is replaced, every chain of the user is revoked, a new chain of the same client type and label is returned for the caller (cookie for web), and a notification mail is dispatched | I20, I26, IR14 |
 | B1#23 | When `POST /v1/auth/password/reset` has an email, its live `reset_password` code and a valid new password, then the hash is replaced, every chain is revoked, `email_verified_at` is set if empty, the login lock and counter are cleared, the code is consumed, and a notification mail is dispatched | I9, I26, IR7, IR14 |
@@ -340,7 +341,7 @@ khi hết hạn; xóa `session_chains` (và token của chúng) đã thu hồi h
 | B1E26 | Stored Argon2 parameters are weaker than the current configuration | After a successful login, `argon2.needsRehash` triggers a rehash with the current parameters | R17 |
 | B1E27 | `admin:grant` runs on a database with no users | Exits non-zero with "register this email first" | D6 |
 | B1E28 | Known and unknown emails take different DB work on failed login (counter `UPDATE`) and on reset requests (OTP insert) | Argon2 (~44 ms) dominates and runs in both branches; the remaining difference is a few ms of DB writes. Accepted as residual; not padded artificially | I8, I10 (`ASSUMPTION`: residual accepted) |
-| B1E29 | A mobile app reopens after a day and the user taps logout with an expired access token | Logout works because it uses the refresh token, not the access token (P3) | IR13 |
+| B1E29 | A mobile app reopens after a day and the user taps logout with an expired access token | Logout works because it uses the refresh token, not the access token (D12) | IR13 |
 | B1E30 | A refresh token whose chain was cleaned up after 30 days dead is replayed | 401 `invalid-token`; nothing to revoke | Mục 7 |
 | B1E31 | Prisma config still points at `schema.prisma` after models move to `prisma/models/` | `prisma generate` succeeds but the client silently lacks the models; the plan verifies the generated client exports `User` | Prisma docs (multi-file schema pitfalls) |
 
@@ -349,7 +350,8 @@ khi hết hạn; xóa `session_chains` (và token của chúng) đã thu hồi h
 1. `module-spec-identity-access.md`: IR17 (vai trò `admin`/`editor` + bảng quyền + endpoint cấp/thu); bỏ "màn quản
    lý admin" khỏi "Ngoài phạm vi"; IR11 (chỉ giữ refresh token kế tiếp; lưu vật lý ≤ 1 giờ, B1E8); IR19 và Defense
    Analysis "Timeout và retry" (gửi thư sau khi trả lời); IR15 ("cũ nhất" = dùng lâu nhất chưa dùng lại); OTP một
-   endpoint chung (D7); I6 nếu P2 chốt cửa sổ cố định; IR13/I19 nếu P3 chốt logout bằng refresh token.
+   endpoint chung (D7); I6 ("1 lần mỗi khung 60 giây", D11); IR13/I19 (logout bằng refresh token, D12); IR10 hoặc ràng buộc deploy
+   (web và API cùng tên miền gốc, D13).
 2. `system-spec.md` SR1, SR9 và `DECISIONS` K1/N1: từ "một owner" thành vai trò nhân sự có quyền. SR8: Identity không
    nhận `Idempotency-Key` (lý do ở mục 7).
 3. `module-spec-content-pipeline.md` (ràng buộc "chỉ admin", PR18, P17, ngoài phạm vi "nhiều admin và phân vai"),
@@ -363,14 +365,16 @@ Google login, liên kết Google (IR8, IR9, I12–I15); xóa tài khoản và tr
 8, khi đó guard phải đọc trạng thái user mỗi request (mục 4). CAPTCHA, kiểm mật khẩu đã lộ (câu mở của spec). Giao diện
 cấp vai trò (Bước 3). Kênh cảnh báo ngoài log (Slack, email cho owner) — Bước 1 chỉ ghi log warn. Tài liệu OpenAPI.
 
-## 13. Quyết định còn mở (hỏi từng câu, trước khi viết plan)
+## 13. Quyết định chốt ở lần soát 2 (07/10/2026)
 
-| # | Câu hỏi | Đề xuất (doc đang viết theo) |
+Bốn câu hỏi lộ ra khi soát lại doc với code Bước 0, chủ dự án đã chốt cả bốn theo đề xuất:
+
+| # | Quyết định | Lý do |
 |---|---|---|
-| P1 | Thư viện kiểm dữ liệu đầu vào — Bước 0 chưa có | `zod` + `StandardSchemaValidationPipe` (có sẵn trong `@nestjs/common` 12.1.2 đã cài, kiểm ngày 07/10) |
-| P2 | Rate limit theo cửa sổ cố định (như Bước 0) hay đếm chính xác "60 giây kể từ lần trước" | Cửa sổ cố định cho mọi luật |
-| P3 | Logout xác định phiên bằng refresh token hay access token | Refresh token |
-| P4 | Web và API có chung site (cùng tên miền gốc) khi deploy không | Có — bắt buộc cho `SameSite=Strict` |
+| D10 | **Kiểm dữ liệu đầu vào bằng `zod`** + `StandardSchemaValidationPipe` (có sẵn trong `@nestjs/common` 12.1.2 đã cài, kiểm bằng `import` ngày 07/10), áp dụng cho mọi module | Một schema vừa kiểm lúc chạy vừa sinh type; không cần `class-transformer` và metadata decorator; hợp ESM. Lỗi của pipe phải ra dạng Problem Details `validation-failed` |
+| D11 | **Rate limit dùng khung cố định cho mọi luật** (cơ chế Bước 0) | Đã test và kiểm atomic ở Bước 0; vượt nhẹ ở ranh giới khung được ngân sách thư và giới hạn IP chặn |
+| D12 | **Logout xác định phiên bằng refresh token** (body cho mobile, cookie + header CSRF cho web) | Logout chạy được cả khi access token đã hết hạn; cookie dùng `Path=/v1/auth` |
+| D13 | **Web và API cùng tên miền gốc khi deploy** (vd `app.<miền>` và `api.<miền>`) | Điều kiện để cookie `SameSite=Strict` được gửi; là yêu cầu deploy, ghi vào runbook của Bước 3 |
 
 ## 14. Rủi ro và việc còn mở
 
