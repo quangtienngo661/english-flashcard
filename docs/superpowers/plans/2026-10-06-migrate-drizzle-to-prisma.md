@@ -254,10 +254,19 @@ Per task, in order:
 
 **Interfaces:**
 - Consumes: `PRISMA_CLIENT` (Task 1).
-- Produces: identical external shape — `lockKeyFor(key, userId, endpoint)`,
-  `runIdempotent<T>(prisma, params, handler, options?): Promise<RunIdempotentResult<T>>`, same
-  `RunIdempotentResult<T>` union. Callers (the interceptor, Task 3) do not change their call sites, only
-  the type of the client they pass in.
+- Produces: `runIdempotent<T>(prisma, params, handler, options?): Promise<RunIdempotentResult<T>>`, same
+  `RunIdempotentResult<T>` union as the Drizzle version. Callers (the interceptor, Task 3) do not change
+  their call sites, only the type of the client they pass in.
+- **`lockKeyFor` does not carry over.** The Drizzle version returned a Drizzle-specific `SQL<bigint>`
+  fragment object (not a plain value) meant to be spliced into another Drizzle query — there is no Prisma
+  equivalent of that fragment type, and re-implementing Postgres's `hashtext()` in JavaScript just to get
+  a plain numeric value would risk a silent, hard-to-notice mismatch if the port isn't bit-for-bit
+  identical. Instead: the real lock key is computed **only inside `tryAdvisoryLock.sql`** (Step 1), from
+  the raw `key`/`userId`/`endpoint` strings; nothing outside that file ever needs the numeric value. The
+  test's "simulate an external holder" setup (Step 2) gets the identical key by running the **same**
+  `hashtext($1 || ':' || $2 || ':' || $3)::bigint` expression inline, with the same three string inputs —
+  since Postgres computes both sides, they are guaranteed to produce the same key without either side
+  needing to know the numeric result.
 
 - [ ] **Step 1: Write `tryAdvisoryLock.sql`** using Postgres **positional** parameters — TypedSQL does not
   use JS template-literal interpolation:
@@ -289,7 +298,10 @@ Per task, in order:
     let released!: () => void;
     const holding = new Promise<void>((resolve) => { released = resolve; });
     const holderDone = prisma.$transaction(async (tx) => {
-      await tx.$executeRawUnsafe(`SELECT pg_advisory_xact_lock($1)`, lockKeyFor(key, userId, '/v1/sample'));
+      await tx.$executeRawUnsafe(
+        `SELECT pg_advisory_xact_lock(hashtext($1 || ':' || $2 || ':' || $3)::bigint)`,
+        key, userId, '/v1/sample',
+      );
       lockAcquired();
       await holding;
     });
