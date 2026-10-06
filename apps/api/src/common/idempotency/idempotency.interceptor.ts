@@ -9,9 +9,9 @@ import {
 import { Reflector } from '@nestjs/core';
 import { from, Observable } from 'rxjs';
 import { firstValueFrom } from 'rxjs';
-import type { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import type { Response } from 'express';
-import { DRIZZLE_DB } from '../db/drizzle.module.js';
+import type { PrismaClient } from '../../generated/prisma/client.js';
+import { PRISMA_CLIENT } from '../db/prisma.module.js';
 import { ProblemDetailsException } from '../problem-details/problem-details.exception.js';
 import type { RequestWithUser } from '../request-user/fake-request-user.middleware.js';
 import { IDEMPOTENT_KEY, type IdempotentOptions } from './idempotent.decorator.js';
@@ -20,7 +20,7 @@ import { runIdempotent } from './idempotency.service.js';
 @Injectable()
 export class IdempotencyInterceptor implements NestInterceptor {
   constructor(
-    @Inject(DRIZZLE_DB) private readonly db: NodePgDatabase,
+    @Inject(PRISMA_CLIENT) private readonly prisma: PrismaClient,
     private readonly reflector: Reflector,
   ) {}
 
@@ -48,7 +48,7 @@ export class IdempotencyInterceptor implements NestInterceptor {
 
     return from(
       runIdempotent(
-        this.db,
+        this.prisma,
         { key: idempotencyKey, userId, endpoint: request.path, payloadHash },
         async () => {
           const body = await firstValueFrom(next.handle());
