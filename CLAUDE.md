@@ -124,7 +124,26 @@ Implemented and tested: Problem Details (RFC 9457), opaque `page_token` paginati
 `runIdempotent()` (advisory-lock based, see `apps/api/src/common/idempotency/idempotency.service.ts`),
 `operation_id` + redacting logger, per-user atomic rate limiting, a sample endpoint exercising all of the
 above end-to-end. Current state: 5 unit + 24 e2e tests passing on `feat/migrate-drizzle-to-prisma`.
-**Neither branch is merged or pushed yet.**
+
+### Open decisions for the next session (read before doing anything else)
+
+1. **Branches not merged, not pushed.** `feat/buoc-0-backend-foundation` (Drizzle, historical) and
+   `feat/migrate-drizzle-to-prisma` (Prisma, current — branched from the former, has its own extra commit
+   `8741a4d` adding the preparation/spec docs that neither branch had before). Ask the project owner
+   whether to merge the Prisma branch into `master`/`main` and what to do with the Drizzle one (keep as
+   history, or delete) — do not merge or push without being asked explicitly.
+2. **Module-boundary convention (Drizzle-era, carries over conceptually to Prisma)** — "each module gets
+   its own schema/query file, never import another module's" — was proposed while discussing the ORM
+   choice but never put to the owner as its own question. Still just a convention in docs, not enforced
+   by tooling. Revisit when Step 1 (Identity) adds a second real module.
+3. **B0E1 (orphaned `Idempotency-Key` after a crash, treated as a transient failure and retried)** is
+   `ASSUMPTION` — not covered by system-spec's own SE2 — needs the owner's explicit confirmation.
+4. **This plan's own choices, not yet put to the owner:** `Idempotency-Key` header is mandatory when
+   `@Idempotent()` is used (400 if missing); default timeout `30s`, enforced client-side via
+   `Promise.race` (deliberately not a Postgres-side timeout — see the design doc's B0E8 note on why that
+   crashed the process).
+5. **Prisma pinned to `7.10.0`** (exact, no `^`) because the npm `latest` tag currently points at a `8.0.0-rc`
+   prerelease — re-check when Prisma 8 reaches a real stable release.
 
 ## Machine state (verified 2026-10-05–06)
 
