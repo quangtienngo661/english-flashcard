@@ -8,6 +8,13 @@
       "when": 1791247837164,
       "tag": "0000_rate_limit_counters",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1791247938620,
+      "tag": "0001_idempotency_keys",
+      "breakpoints": true
     }
   ]
 }
