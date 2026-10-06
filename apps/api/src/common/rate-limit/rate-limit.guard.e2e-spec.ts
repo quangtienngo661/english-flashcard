@@ -3,7 +3,7 @@ import { Controller, Get, INestApplication, Module, UseGuards } from '@nestjs/co
 import { Test } from '@nestjs/testing';
 import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, inject, it } from 'vitest';
-import { DrizzleModule } from '../db/drizzle.module.js';
+import { PrismaModule } from '../db/prisma.module.js';
 import { operationIdMiddleware } from '../logging/operation-id.middleware.js';
 import { ProblemDetailsFilter } from '../problem-details/problem-details.filter.js';
 import { fakeRequestUserMiddleware } from '../request-user/fake-request-user.middleware.js';
@@ -21,7 +21,7 @@ class TestRateLimitedController {
 }
 
 @Module({
-  imports: [DrizzleModule.forRoot({ connectionString: inject('databaseUrl') })],
+  imports: [PrismaModule.forRoot({ connectionString: inject('databaseUrl') })],
   controllers: [TestRateLimitedController],
   providers: [RateLimitGuard],
 })

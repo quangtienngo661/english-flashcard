@@ -1,9 +1,8 @@
 import { CanActivate, ExecutionContext, Inject, Injectable } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { sql } from 'drizzle-orm';
-import type { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import type { Response } from 'express';
-import { DRIZZLE_DB } from '../db/drizzle.module.js';
+import type { PrismaClient } from '../../generated/prisma/client.js';
+import { PRISMA_CLIENT } from '../db/prisma.module.js';
 import { ProblemDetailsException } from '../problem-details/problem-details.exception.js';
 import type { RequestWithUser } from '../request-user/fake-request-user.middleware.js';
 import { RATE_LIMIT_KEY, RateLimitOptions } from './rate-limit.decorator.js';
@@ -11,7 +10,7 @@ import { RATE_LIMIT_KEY, RateLimitOptions } from './rate-limit.decorator.js';
 @Injectable()
 export class RateLimitGuard implements CanActivate {
   constructor(
-    @Inject(DRIZZLE_DB) private readonly db: NodePgDatabase,
+    @Inject(PRISMA_CLIENT) private readonly prisma: PrismaClient,
     private readonly reflector: Reflector,
   ) {}
 
@@ -30,18 +29,18 @@ export class RateLimitGuard implements CanActivate {
     const windowMs = options.windowSeconds * 1000;
     const windowStart = new Date(Math.floor(Date.now() / windowMs) * windowMs);
 
-    // Single atomic statement (B0E2): two concurrent requests cannot both read "under limit"
-    // before either writes, because the increment and the read of the new count happen in one
-    // round trip to Postgres.
-    const result = await this.db.execute<{ count: number }>(sql`
-      INSERT INTO rate_limit_counters (user_id, window_start, count)
-      VALUES (${userId}, ${windowStart}, 1)
-      ON CONFLICT (user_id, window_start)
-      DO UPDATE SET count = rate_limit_counters.count + 1
-      RETURNING count
-    `);
+    // B0E2 requires one atomic round trip. Verify Prisma's Postgres query log shows a
+    // single INSERT ... ON CONFLICT ... DO UPDATE for this upsert before accepting the port.
+    // If it emits multiple statements, use $queryRawTyped with explicit
+    // ON CONFLICT (user_id, window_start) DO UPDATE
+    // SET count = rate_limit_counters.count + 1 RETURNING count; never read then write.
+    const updated = await this.prisma.rateLimitCounter.upsert({
+      where: { userId_windowStart: { userId, windowStart } },
+      create: { userId, windowStart, count: 1 },
+      update: { count: { increment: 1 } },
+    });
 
-    const count = result.rows[0].count;
+    const count = updated.count;
     if (count > options.max) {
       const retryAfterSeconds = Math.ceil(
         (windowStart.getTime() + windowMs - Date.now()) / 1000,
