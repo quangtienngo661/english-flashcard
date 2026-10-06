@@ -153,6 +153,9 @@ it.
 
 ---
 
+> **Superseded 06/10/2026:** this task's Drizzle-specific code was replaced by Prisma — see
+> `docs/superpowers/plans/2026-10-06-migrate-drizzle-to-prisma.md` Task 1. Left as-is below for history.
+
 ### Task 3: Drizzle connection + migration runner
 
 **Files:**
@@ -322,6 +325,9 @@ it.
   ```
 
 ---
+
+> **Superseded 06/10/2026:** this task's Drizzle-specific code was replaced by Prisma — see
+> `docs/superpowers/plans/2026-10-06-migrate-drizzle-to-prisma.md` Task 2. Left as-is below for history.
 
 ### Task 7: Idempotency schema + claim service
 
@@ -529,6 +535,9 @@ it.
 
 ---
 
+> **Superseded 06/10/2026:** this task's Drizzle-specific code was replaced by Prisma — see
+> `docs/superpowers/plans/2026-10-06-migrate-drizzle-to-prisma.md` Task 4. Left as-is below for history.
+
 ### Task 9: Rate limit guard
 
 **Files:**
@@ -579,6 +588,9 @@ it.
   ```
 
 ---
+
+> **Superseded 06/10/2026:** this task's Drizzle-specific wiring was replaced by Prisma — see
+> `docs/superpowers/plans/2026-10-06-migrate-drizzle-to-prisma.md` Task 5. Left as-is below for history.
 
 ### Task 10: Sample endpoint — ties every convention together
 

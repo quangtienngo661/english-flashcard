@@ -28,7 +28,15 @@ mẫu chạy đủ các quy ước dưới đây, và test chạy được trên
 - **`git init` đã chạy** ở gốc `english-learning/` trong phiên này (xác nhận: `.git/` tồn tại, chưa có
   commit nào).
 
-### 2.2 ORM / DB access — Chốt: Drizzle ORM, pin `0.45.x`
+### 2.2 ORM / DB access — Chốt lúc đầu: Drizzle ORM, pin `0.45.x`
+
+> **Thay đổi 06/10/2026: đã chuyển sang Prisma ORM** (pin `7.10.0`), sau khi user tự research lại thấy
+> Prisma type-safe mạnh hơn tưởng, và lý do loại Prisma ban đầu (không lock được) hóa ra chỉ áp dụng cho
+> thiết kế lock cũ (`FOR UPDATE SKIP LOCKED`) — thiết kế lock hiện tại (mục 5, `pg_try_advisory_xact_lock`)
+> không bị gap đó, và Prisma TypedSQL đủ type-safe cho đúng 1 dòng raw SQL cần. Toàn bộ lý do/so sánh dưới
+> đây giữ nguyên làm lịch sử quyết định (tại sao Drizzle được chọn lúc đó), không còn phản ánh code hiện
+> tại. Xem `docs/superpowers/plans/2026-10-06-migrate-drizzle-to-prisma.md` cho lý do chuyển và toàn bộ
+> quá trình migrate (6 task, review hai vòng bởi Codex gpt-6-astra).
 
 - Cần cho SR8 (idempotency), ER5 (sổ lượt AI usage): row locking `FOR UPDATE SKIP LOCKED`. Xác nhận bằng
   cách đọc trực tiếp source `drizzle-orm` tag `0.45.3` (không chỉ docs tóm tắt) —
