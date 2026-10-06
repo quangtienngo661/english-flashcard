@@ -1,7 +1,5 @@
 import { PostgreSqlContainer, type StartedPostgreSqlContainer } from '@testcontainers/postgresql';
-import { drizzle } from 'drizzle-orm/node-postgres';
-import { migrate } from 'drizzle-orm/node-postgres/migrator';
-import { Pool } from 'pg';
+import { execSync } from 'node:child_process';
 import type { TestProject } from 'vitest/node';
 
 let container: StartedPostgreSqlContainer;
@@ -13,14 +11,12 @@ export async function setup(project: TestProject) {
 
   const connectionString = container.getConnectionUri();
 
-  // Apply every committed migration to this fresh, empty database before any test runs (B0E5) —
-  // the same migration files this repo would apply to a long-lived dev database.
-  const migrationPool = new Pool({ connectionString });
-  try {
-    await migrate(drizzle(migrationPool), { migrationsFolder: './drizzle' });
-  } finally {
-    await migrationPool.end();
-  }
+  // Apply every committed Prisma migration to this fresh, empty database (B0E5).
+  // Existing databases require the documented baseline in prisma.config.ts first.
+  execSync('pnpm exec prisma migrate deploy', {
+    env: { ...process.env, DATABASE_URL: connectionString },
+    stdio: 'inherit',
+  });
 
   project.provide('databaseUrl', connectionString);
 }
