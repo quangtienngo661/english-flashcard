@@ -318,90 +318,134 @@ it.
 - Create: `apps/api/src/common/idempotency/idempotency.service.ts`
 - Test: `apps/api/src/common/idempotency/idempotency.service.e2e-spec.ts`
 
+> **Corrected 06/10/2026** (Codex caught this implementing the original version — see design doc §5
+> correction note): `INSERT ... ON CONFLICT DO NOTHING` is not non-blocking in Postgres (a racing insert
+> waits on an uncommitted conflicting row instead of failing fast), and because that `INSERT` auto-commits
+> immediately, no lock survives past `claim()` returning — a second request can reach the same
+> "orphaned" branch and also proceed. Fixed by using `pg_try_advisory_xact_lock` (genuinely non-blocking,
+> transaction-scoped) and merging `claim`+handler-run+`complete` into one function over one open
+> transaction, replacing the two-call `claim()`/`complete()` shape below.
+
 **Interfaces:**
 - Consumes: `DRIZZLE_DB` (Task 3).
-- Produces: Drizzle table `idempotencyKeys`. `IdempotencyService.claim(params: { key: string; userId:
-  string; endpoint: string; payloadHash: string }): Promise<ClaimResult>` where
-  `type ClaimResult = { kind: 'proceed' } | { kind: 'replay'; status: number; body: unknown } | { kind:
-  'conflict'; retryAfterSeconds: number } | { kind: 'reject' }`.
-  `IdempotencyService.complete(key, userId, endpoint, status: number, body: unknown): Promise<void>` —
-  called by Task 8 after the handler runs, writes `status='succeeded'`.
+- Produces: Drizzle table `idempotencyKeys`.
+  `runIdempotent<T>(db: NodePgDatabase, params: { key: string; userId: string; endpoint: string;
+  payloadHash: string }, handler: () => Promise<{ status: number; body: T }>): Promise<RunIdempotentResult<T>>`
+  where
+  `type RunIdempotentResult<T> = { kind: 'proceed'; status: number; body: T } | { kind: 'replay'; status:
+  number; body: unknown } | { kind: 'conflict'; retryAfterSeconds: number } | { kind: 'reject' }`.
+  `handler` runs only for `'proceed'`; `runIdempotent` opens the transaction, acquires the advisory lock,
+  decides the branch, and — only when proceeding — awaits `handler()` and writes `status='succeeded'`
+  before committing, all inside that one transaction.
 
 - [ ] **Step 1: Define the schema** — `idempotency.schema.ts`: `pgTable('idempotency_keys', { key: text,
   userId: uuid('user_id'), endpoint: text, status: text, payloadHash: text('payload_hash'), responseStatus:
   integer('response_status'), responseBody: jsonb('response_body'), createdAt: timestamp('created_at',
   { withTimezone: true }).defaultNow(), updatedAt: timestamp('updated_at', { withTimezone: true
-  }).defaultNow() }, (t) => ({ uniq: unique().on(t.key, t.userId, t.endpoint) }))`. Generate the migration
-  (`drizzle-kit generate`) and commit the generated SQL file alongside this task.
+  }).defaultNow() }, (t) => [unique().on(t.key, t.userId, t.endpoint)])` — **note the extra-config callback
+  returns an array**, not an object with named keys (verified against the installed `drizzle-orm@0.45.3`
+  type signature in Task 9; an object-shaped return is the older, wrong API for this pinned version).
+  Generate the migration (`drizzle-kit generate`) and commit the generated SQL file alongside this task.
+  The schema glob in `drizzle.config.ts` is `./src/**/*.schema.ts` (already fixed in Task 9) — file must be
+  named `idempotency.schema.ts`, not `schema.ts`.
 - [ ] **Step 2: Write the failing tests** — `idempotency.service.e2e-spec.ts` (each `it` uses its own
-  random `key`/`userId` per the Global Constraints rule):
+  random `key`/`userId` per the Global Constraints rule; a trivial `handler` like
+  `async () => ({ status: 200, body: { ok: true } })` stands in for real business logic):
   ```ts
-  it('B0#1: a never-seen key proceeds', async () => {
-    const r = await service.claim({ key, userId, endpoint: '/v1/sample', payloadHash: 'h1' });
-    expect(r.kind).toBe('proceed');
+  it('B0#2: a never-seen key proceeds and runs the handler', async () => {
+    const r = await runIdempotent(db, { key, userId, endpoint: '/v1/sample', payloadHash: 'h1' },
+      async () => ({ status: 200, body: { ok: true } }));
+    expect(r).toMatchObject({ kind: 'proceed', status: 200, body: { ok: true } });
   });
 
-  it('B0#2: a key already in_progress (held by a live transaction) returns conflict', async () => {
-    await db.transaction(async (tx) => {
-      await tx.insert(idempotencyKeys).values({ key, userId, endpoint: '/v1/sample', status: 'in_progress', payloadHash: 'h1' });
-      const r = await service.claim({ key, userId, endpoint: '/v1/sample', payloadHash: 'h1' }); // outside tx, real second connection
-      expect(r.kind).toBe('conflict');
+  it('B0#1: a key whose advisory lock is held by a live, open transaction returns conflict immediately', async () => {
+    let released: () => void;
+    const holding = new Promise<void>((resolve) => { released = resolve; });
+    const holderDone = db.transaction(async (tx) => {
+      await tx.execute(sql`SELECT pg_advisory_xact_lock(${lockKeyFor(key, userId, '/v1/sample')})`);
+      await holding; // keep the transaction (and the lock) open until the test releases it
     });
+    const started = Date.now();
+    const r = await runIdempotent(db, { key, userId, endpoint: '/v1/sample', payloadHash: 'h1' },
+      async () => ({ status: 200, body: {} }));
+    expect(Date.now() - started).toBeLessThan(1000); // non-blocking: must not wait on the holder
+    expect(r.kind).toBe('conflict');
+    released!();
+    await holderDone;
   });
 
-  it('B0#3: a succeeded key with the same payload hash replays', async () => {
+  it('B0#3: a succeeded key with the same payload hash replays without running the handler', async () => {
     await db.insert(idempotencyKeys).values({ key, userId, endpoint: '/v1/sample', status: 'succeeded', payloadHash: 'h1', responseStatus: 200, responseBody: { ok: true } });
-    const r = await service.claim({ key, userId, endpoint: '/v1/sample', payloadHash: 'h1' });
+    let handlerRan = false;
+    const r = await runIdempotent(db, { key, userId, endpoint: '/v1/sample', payloadHash: 'h1' },
+      async () => { handlerRan = true; return { status: 200, body: {} }; });
     expect(r).toEqual({ kind: 'replay', status: 200, body: { ok: true } });
+    expect(handlerRan).toBe(false);
   });
 
-  it('B0#4: a key with a different payload hash is rejected', async () => {
+  it('B0#4: a key with a different payload hash is rejected without running the handler', async () => {
     await db.insert(idempotencyKeys).values({ key, userId, endpoint: '/v1/sample', status: 'succeeded', payloadHash: 'h1', responseStatus: 200, responseBody: {} });
-    const r = await service.claim({ key, userId, endpoint: '/v1/sample', payloadHash: 'h2' });
+    let handlerRan = false;
+    const r = await runIdempotent(db, { key, userId, endpoint: '/v1/sample', payloadHash: 'h2' },
+      async () => { handlerRan = true; return { status: 200, body: {} }; });
     expect(r.kind).toBe('reject');
+    expect(handlerRan).toBe(false);
   });
 
   it('B0E1: an orphaned in_progress row (no live holder) is claimed as a new attempt', async () => {
-    await db.insert(idempotencyKeys).values({ key, userId, endpoint: '/v1/sample', status: 'in_progress', payloadHash: 'h1' }); // no open transaction holds it
-    const r = await service.claim({ key, userId, endpoint: '/v1/sample', payloadHash: 'h1' });
-    expect(r.kind).toBe('proceed');
+    await db.insert(idempotencyKeys).values({ key, userId, endpoint: '/v1/sample', status: 'in_progress', payloadHash: 'h1' }); // nobody holds the advisory lock on this key
+    const r = await runIdempotent(db, { key, userId, endpoint: '/v1/sample', payloadHash: 'h1' },
+      async () => ({ status: 200, body: { recovered: true } }));
+    expect(r).toMatchObject({ kind: 'proceed', status: 200, body: { recovered: true } });
   });
 
   it('B0E7: a row past the 24h retention window is claimed as a new request', async () => {
     await db.insert(idempotencyKeys).values({ key, userId, endpoint: '/v1/sample', status: 'succeeded', payloadHash: 'h1', responseStatus: 200, responseBody: {}, createdAt: new Date(Date.now() - 25 * 3600 * 1000) });
-    const r = await service.claim({ key, userId, endpoint: '/v1/sample', payloadHash: 'h1' });
-    expect(r.kind).toBe('proceed');
+    const r = await runIdempotent(db, { key, userId, endpoint: '/v1/sample', payloadHash: 'h1' },
+      async () => ({ status: 200, body: { fresh: true } }));
+    expect(r).toMatchObject({ kind: 'proceed', status: 200, body: { fresh: true } });
   });
 
-  it('Review Focus #1: two genuinely concurrent claims for the same key resolve to exactly one proceed and one conflict', async () => {
+  it('Review Focus #1: two genuinely concurrent runs for the same key resolve to exactly one proceed and one conflict', async () => {
     const [a, b] = await Promise.all([
-      service.claim({ key, userId, endpoint: '/v1/sample', payloadHash: 'h1' }),
-      service.claim({ key, userId, endpoint: '/v1/sample', payloadHash: 'h1' }),
+      runIdempotent(db, { key, userId, endpoint: '/v1/sample', payloadHash: 'h1' }, async () => ({ status: 200, body: {} })),
+      runIdempotent(db, { key, userId, endpoint: '/v1/sample', payloadHash: 'h1' }, async () => ({ status: 200, body: {} })),
     ]);
     const kinds = [a.kind, b.kind].sort();
     expect(kinds).toEqual(['conflict', 'proceed']);
   });
   ```
+  (`lockKeyFor` is the same hashing helper `runIdempotent` itself uses — export it from
+  `idempotency.service.ts` so the test can reuse it to simulate an externally held lock.)
 - [ ] **Step 3: Run tests to verify they fail** — expected: FAIL (service doesn't exist).
-- [ ] **Step 4: Implement `IdempotencyService.claim()`** per the spec's two-step pattern (B0#1/B0#2):
-  1. `INSERT INTO idempotency_keys (...) VALUES (...) ON CONFLICT (key, user_id, endpoint) DO NOTHING
-     RETURNING *` — a returned row → `{ kind: 'proceed' }`.
-  2. No row returned → within a transaction with `SET LOCAL statement_timeout = '30s'` (B0E8), run
-     `SELECT * FROM idempotency_keys WHERE key=... AND user_id=... AND endpoint=... FOR UPDATE SKIP
-     LOCKED`.
-     - No row back → `{ kind: 'conflict', retryAfterSeconds: <pick a fixed small value, e.g. 2> }`.
-     - Row back, `createdAt` older than 24h (B0E7) → `DELETE` it, retry step 1 once.
-     - Row back, `status in ('succeeded','failed_permanent')`, same `payloadHash` → `{ kind: 'replay',
-       status: row.responseStatus, body: row.responseBody }` (B0#3).
-     - Row back, same statuses, different `payloadHash` → `{ kind: 'reject' }` (B0#4).
-     - Row back, `status = 'in_progress'` (B0E1, orphaned — a live holder would have been skipped) →
-       `UPDATE` the row's `payloadHash`/`updatedAt` in place, commit, → `{ kind: 'proceed' }`.
-  Implement `complete()` as a plain `UPDATE ... SET status='succeeded', response_status=$1, response_body=$2`.
+- [ ] **Step 4: Implement `runIdempotent()`** per the corrected algorithm:
+  1. Compute `lockKey = lockKeyFor(key, userId, endpoint)` — a deterministic bigint, e.g. via Postgres
+     `hashtext(key || ':' || userId || ':' || endpoint)` cast to `bigint`, computed in SQL so it matches
+     exactly between calls.
+  2. Open `db.transaction(async (tx) => { ... })`. First statement inside: `SET LOCAL statement_timeout =
+     '30s'` (B0E8). Then `SELECT pg_try_advisory_xact_lock(${lockKey}) AS locked`.
+  3. If `locked` is `false` → return `{ kind: 'conflict', retryAfterSeconds: 2 }` (the transaction can
+     simply end here; nothing was read or written, so commit/rollback doesn't matter).
+  4. If `locked` is `true`, `SELECT * FROM idempotency_keys WHERE key=... AND user_id=... AND endpoint=...`
+     (a plain read — always safe once we hold the lock, no one else can be mid-write for this key).
+     - No row → `INSERT` with `status='in_progress'`, run `handler()`, then `UPDATE` to
+       `status='succeeded', response_status, response_body`, commit → `{ kind: 'proceed', status, body }`.
+     - Row exists, `createdAt` older than 24h (B0E7) → `DELETE` it, then do the same as "no row" above.
+     - Row exists, `status` succeeded/failed_permanent, same `payloadHash` → `{ kind: 'replay', ... }`
+       (B0#3), handler not called.
+     - Row exists, same statuses, different `payloadHash` → `{ kind: 'reject' }` (B0#4), handler not
+       called.
+     - Row exists, `status = 'in_progress'` (B0E1 — orphaned, since a live holder would have made step 2
+       return `false`) → `UPDATE` the row's `payloadHash` in place, run `handler()`, then `UPDATE` to
+       `succeeded`, commit → `proceed`.
+  5. If `handler()` throws, let the transaction roll back (status stays whatever it was before the throw —
+     for a fresh row that means it stays `in_progress`, correctly becoming B0E1's orphan case for the next
+     attempt) and rethrow.
 - [ ] **Step 5: Run tests to verify they pass** — expected: PASS.
 - [ ] **Step 6: Commit**
   ```bash
   git add apps/api/src/common/idempotency apps/api/drizzle
-  git commit -m "feat(api): add idempotency_keys schema and claim service (B0#1-4, B0E1, B0E7, B0E8)"
+  git commit -m "feat(api): add idempotency_keys schema and runIdempotent via advisory lock (B0#1-4, B0E1, B0E7, B0E8)"
   ```
 
 ---
@@ -414,9 +458,12 @@ it.
 - Test: `apps/api/src/common/idempotency/idempotency.interceptor.e2e-spec.ts`
 
 **Interfaces:**
-- Consumes: `IdempotencyService.claim()`/`.complete()` (Task 7), `@CurrentUser()` (Task 6),
-  `ProblemDetailsException` (Task 5).
-- Produces: `@Idempotent()` method decorator any controller handler can apply.
+- Consumes: `runIdempotent()` (Task 7, corrected shape — wraps the handler call, not a separate
+  `claim`/`complete` pair), `@CurrentUser()` (Task 6), `ProblemDetailsException` (Task 5).
+- Produces: `@Idempotent()` method decorator any controller handler can apply. The interceptor must call
+  `next.handle()` **from inside** the callback passed to `runIdempotent()` (via `firstValueFrom` to bridge
+  the Observable to the `Promise` `runIdempotent` expects, then `from()` to bridge the result back) so the
+  advisory lock stays held for the real handler's entire execution, not just around the lock check.
 
 - [ ] **Step 1: Write the failing tests** — `idempotency.interceptor.e2e-spec.ts`, against a throwaway
   test controller with one `@Idempotent()` `POST` handler:
@@ -445,12 +492,14 @@ it.
 - [ ] **Step 3: Implement.** `@Idempotent()` sets reflected metadata the interceptor checks. The
   interceptor: reads `Idempotency-Key` header (missing → throw `ProblemDetailsException({status: 400,
   title: 'Idempotency-Key required'})`), reads `userId` from `@CurrentUser()`, computes
-  `payloadHash = sha256(JSON.stringify(req.body))`, calls `claim()`; on `conflict` throws
-  `ProblemDetailsException({status: 409, title: 'Request already in progress', detail: retryAfterSeconds})`
-  and sets a `Retry-After` header; on `reject` throws `ProblemDetailsException({status: 400, title:
-  'Idempotency-Key reused with a different payload'})`; on `replay` short-circuits with the stored
-  `status`/`body`; on `proceed` calls the handler, then calls `complete()` with its result before returning
-  it.
+  `payloadHash = sha256(JSON.stringify(req.body))`, then calls
+  `runIdempotent(db, { key, userId, endpoint: req.route.path, payloadHash }, async () => { const body =
+  await firstValueFrom(next.handle()); return { status: response.statusCode, body }; })`. Branch on the
+  result: `conflict` → throw `ProblemDetailsException({status: 409, title: 'Request already in progress',
+  detail: retryAfterSeconds})` and set a `Retry-After` header; `reject` → throw
+  `ProblemDetailsException({status: 400, title: 'Idempotency-Key reused with a different payload'})`;
+  `replay`/`proceed` → return `from(Promise.resolve(result.body))` so the Observable the interceptor
+  produces carries the right body either way.
 - [ ] **Step 4: Run tests to verify they pass** — expected: PASS.
 - [ ] **Step 5: Commit**
   ```bash
