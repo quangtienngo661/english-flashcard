@@ -85,12 +85,21 @@ describe('runIdempotent (e2e)', () => {
     expect(r).toMatchObject({ kind: 'proceed', status: 200, body: { fresh: true } });
   });
 
-  it('Review Focus #1: two genuinely concurrent runs for the same key resolve to exactly one proceed and one conflict', async () => {
-    const [a, b] = await Promise.all([
-      runIdempotent(db, { key, userId, endpoint: '/v1/sample', payloadHash: 'h1' }, async () => ({ status: 200, body: {} })),
-      runIdempotent(db, { key, userId, endpoint: '/v1/sample', payloadHash: 'h1' }, async () => ({ status: 200, body: {} })),
-    ]);
-    const kinds = [a.kind, b.kind].sort();
-    expect(kinds).toEqual(['conflict', 'proceed']);
+  it('Review Focus #1: two genuinely concurrent runs for the same key run the handler exactly once', async () => {
+    // Exact timing (conflict-vs-proceed, or proceed-vs-replay if the first finishes before the
+    // second's lock attempt) is non-deterministic and both are correct outcomes. The invariant
+    // that must always hold regardless of timing is: the side-effecting handler never runs twice,
+    // and neither attempt is ever rejected (same key, same payload).
+    let handlerRunCount = 0;
+    const runOnce = () =>
+      runIdempotent(db, { key, userId, endpoint: '/v1/sample', payloadHash: 'h1' }, async () => {
+        handlerRunCount += 1;
+        return { status: 200, body: { marker: 'x' } };
+      });
+    const [a, b] = await Promise.all([runOnce(), runOnce()]);
+    expect(handlerRunCount).toBe(1);
+    expect(a.kind).not.toBe('reject');
+    expect(b.kind).not.toBe('reject');
+    expect([a.kind, b.kind]).toContain('proceed');
   });
 });

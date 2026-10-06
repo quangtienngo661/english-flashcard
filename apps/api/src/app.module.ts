@@ -1,9 +1,11 @@
 import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
+import { DrizzleModule } from './common/db/drizzle.module.js';
 import { operationIdMiddleware } from './common/logging/operation-id.middleware.js';
 import { HealthController } from './health/health.controller.js';
+import { SampleModule } from './sample/sample.module.js';
 
 @Module({
-  imports: [],
+  imports: [DrizzleModule.forRoot({ connectionString: process.env.DATABASE_URL ?? '' }), SampleModule],
   controllers: [HealthController],
   providers: [],
 })

@@ -53,9 +53,15 @@ it.
 
 ## Review Focus
 
-1. Two genuinely concurrent requests with the same `Idempotency-Key` and the same payload must resolve to
-   exactly one success and one `409` — not two successes (double execution) and not two `409`s (nobody
-   proceeds). Covered by Task 7 (service-level) and Task 10 (real parallel HTTP calls).
+1. Two genuinely concurrent requests with the same `Idempotency-Key` and the same payload must never run
+   the side-effecting handler twice and must never both be hard-rejected. **Corrected 06/10/2026** (found
+   as a real flaky-test failure while implementing, not a hypothetical): do NOT assert the exact
+   `['conflict', 'proceed']` pairing — `Promise.all` does not guarantee the two attempts overlap long
+   enough to collide, so the first can legitimately finish (commit) before the second's lock attempt even
+   runs, in which case the second correctly `replay`s instead of conflicting. Both `{conflict, proceed}`
+   and `{proceed, replay}` are correct. Assert the actual invariant instead: the handler runs exactly once,
+   neither result is `reject`, and at least one is `proceed`. Covered by Task 7 (service-level) and
+   Task 10 (real parallel HTTP calls).
 2. A malformed or tampered `page_token` must return `400` Problem Details, never a `500`. Covered by
    Task 5.
 3. Log output must never contain a raw secret-like value (password/OTP/token/answer/context sentence) even
@@ -406,13 +412,19 @@ it.
     expect(r).toMatchObject({ kind: 'proceed', status: 200, body: { fresh: true } });
   });
 
-  it('Review Focus #1: two genuinely concurrent runs for the same key resolve to exactly one proceed and one conflict', async () => {
-    const [a, b] = await Promise.all([
-      runIdempotent(db, { key, userId, endpoint: '/v1/sample', payloadHash: 'h1' }, async () => ({ status: 200, body: {} })),
-      runIdempotent(db, { key, userId, endpoint: '/v1/sample', payloadHash: 'h1' }, async () => ({ status: 200, body: {} })),
-    ]);
-    const kinds = [a.kind, b.kind].sort();
-    expect(kinds).toEqual(['conflict', 'proceed']);
+  it('Review Focus #1: two genuinely concurrent runs for the same key run the handler exactly once', async () => {
+    // See Review Focus #1's note above: exact conflict/proceed/replay ordering is non-deterministic.
+    let handlerRunCount = 0;
+    const runOnce = () =>
+      runIdempotent(db, { key, userId, endpoint: '/v1/sample', payloadHash: 'h1' }, async () => {
+        handlerRunCount += 1;
+        return { status: 200, body: { marker: 'x' } };
+      });
+    const [a, b] = await Promise.all([runOnce(), runOnce()]);
+    expect(handlerRunCount).toBe(1);
+    expect(a.kind).not.toBe('reject');
+    expect(b.kind).not.toBe('reject');
+    expect([a.kind, b.kind]).toContain('proceed');
   });
   ```
   (`lockKeyFor` is the same hashing helper `runIdempotent` itself uses — export it from
@@ -562,11 +574,19 @@ it.
 
 ### Task 10: Sample endpoint — ties every convention together
 
+> **Corrected 06/10/2026:** do NOT import the fake `RequestUser` middleware into `app.module.ts`, even
+> scoped to just `SampleController` — `AppModule` is the module `main.ts` actually boots, so wiring the
+> fake auth there means it is genuinely reachable on a real deployment, which is exactly what B0E6 exists
+> to prevent. `AppModule` only imports `DrizzleModule.forRoot()` and `SampleModule` (no fake middleware).
+> `sample.e2e-spec.ts` builds its own throwaway test module (`DrizzleModule.forRoot(...)` +
+> `SampleModule`) and calls `app.use(operationIdMiddleware, fakeRequestUserMiddleware)` directly on that
+> standalone test app instance — the same pattern Tasks 8 and 9 already use — never on `AppModule`.
+
 **Files:**
 - Create: `apps/api/src/sample/sample.module.ts`, `apps/api/src/sample/sample.controller.ts`
-- Modify: `apps/api/src/app.module.ts` (import `SampleModule`, and for this module only, the fake
-  `RequestUser` middleware)
-- Test: `apps/api/test/sample.e2e-spec.ts`
+- Modify: `apps/api/src/app.module.ts` (import `DrizzleModule.forRoot({ connectionString:
+  process.env.DATABASE_URL ?? '' })` and `SampleModule` — **not** the fake `RequestUser` middleware)
+- Test: `apps/api/test/sample.e2e-spec.ts` (its own test module, see correction note above)
 
 **Interfaces:**
 - Produces: `POST /v1/sample` — `@Idempotent()`, `@RateLimit({ max: 10, windowSeconds: 60 })`, reads
@@ -583,15 +603,18 @@ it.
     expect(res.body.operation_id).toBeDefined();
   });
 
-  it('Review Focus #1 end-to-end: two real concurrent POSTs with the same key resolve to one 2xx and one 409', async () => {
+  it('Review Focus #1 end-to-end: two real concurrent POSTs with the same key never double-execute', async () => {
+    // See Review Focus #1's note: exact status pairing is non-deterministic; assert the invariant.
     const key = randomUUID();
     const [a, b] = await Promise.all([
       request(app.getHttpServer()).post('/v1/sample').set('Idempotency-Key', key).set('X-Test-User-Id', userId).send({ a: 1 }),
       request(app.getHttpServer()).post('/v1/sample').set('Idempotency-Key', key).set('X-Test-User-Id', userId).send({ a: 1 }),
     ]);
-    const statuses = [a.status, b.status].sort();
-    expect(statuses[1]).toBe(409);
-    expect(statuses[0]).toBeLessThan(300);
+    expect([a.status, b.status].some((s) => s < 300)).toBe(true);
+    expect([a.status, b.status]).not.toContain(400);
+    if (a.status < 300 && b.status < 300) {
+      expect(a.body).toEqual(b.body);
+    }
   });
 
   it('GET /v1/sample with a malformed page_token returns 400 Problem Details', async () => {
