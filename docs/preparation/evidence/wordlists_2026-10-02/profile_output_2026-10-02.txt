@@ -1,0 +1,40 @@
+== CEFR-J 1.5: 7799 dòng; cột: ['headword', 'pos', 'CEFR', 'CoreInventory 1', 'CoreInventory 2', 'Threshold']
+   level: {'A1': 1164, 'A2': 1411, 'B1': 2446, 'B2': 2778}
+== Octanove C1/C2 1.0: 2136 dòng; cột: ['headword', 'pos', 'CEFR', 'notes']
+   level: {'C1': 1111, 'C2': 1025}
+   CEFR-J cột CoreInventory 1: 1698/7799 có topic; top: [('Work and Jobs', 216), ('Education', 203), ('Objects and rooms', 201), ('News, lifestyles and current affairs', 165), ('Things in the town, shops and shopping', 137), ('Food and drink', 116)]
+   CEFR-J cột Threshold: 1740/7799 có topic; top: [('Personal identification', 356), ('Free time, entertainment', 254), ('House and home, environment', 200), ('Shopping', 197), ('Food and drink', 167), ('Travel', 120)]
+   CEFR-J topic chứa 'Techn': 9
+   Octanove POS lỗi: [('batter', ''), ('remonstrate', 'vern')]
+Trùng CEFR-J & Octanove: 163
+Tổng headword duy nhất CEFR-J + Octanove: 8812
+Oxford 5000 (mirror) dòng: 4950 ; không có trong CEFR-J/Octanove: 565
+  deploy        Oxford5000(phần ngoài 3000)
+  software      CEFR-J A2 noun; Oxford5000(trong 3000)
+  algorithm     không có trong list nào
+  database      CEFR-J B2 noun; Oxford5000(phần ngoài 3000)
+  bandwidth     không có trong list nào
+  debug         không có trong list nào
+  encrypt       không có trong list nào
+  revenue       CEFR-J B2 noun; Oxford5000(phần ngoài 3000)
+  stakeholder   không có trong list nào
+  leverage      không có trong list nào
+  marketing     CEFR-J B2 noun; Oxford5000(trong 3000)
+  brand         CEFR-J A2 noun; Oxford5000(trong 3000)
+  campaign      CEFR-J B2 noun; Octanove C1 verb; Oxford5000(trong 3000)
+  entrepreneur  CEFR-J B2 noun; Oxford5000(phần ngoài 3000)
+  negotiate     CEFR-J B1 verb; Oxford5000(phần ngoài 3000)
+  invoice       Octanove C1 noun
+  recipe        CEFR-J B2 noun; Oxford5000(trong 3000)
+  cuisine       không có trong list nào
+  ingredient    CEFR-J B1 noun; Oxford5000(trong 3000)
+  ubiquitous    không có trong list nào
+  meticulous    Octanove C2 adjective
+  resilience    Octanove C1 noun
+  mitigate      không có trong list nào
+  scrutiny      Octanove C1 noun; Oxford5000(phần ngoài 3000)
+  bank          CEFR-J A1 noun; CEFR-J A2 verb; Oxford5000(trong 3000)
+  commute       CEFR-J B2 verb
+  deadline      CEFR-J B1 noun; Oxford5000(phần ngoài 3000)
+  feedback      CEFR-J B2 noun; Oxford5000(trong 3000)
+  api           không có trong list nào

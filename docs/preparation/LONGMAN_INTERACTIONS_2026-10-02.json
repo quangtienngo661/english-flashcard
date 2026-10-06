@@ -1,0 +1,171 @@
+{
+  "consentButtons": [
+    "partners",
+    "MORE OPTIONS",
+    "AGREE"
+  ],
+  "consentAction": "REJECT ALL",
+  "audioError": null,
+  "finalUrl": "https://www.ldoceonline.com/dictionary/marketing",
+  "title": "marketing | meaning of marketing in Longman Dictionary of Contemporary English | LDOCE",
+  "rows": [
+    {
+      "phase": "audio",
+      "url": "https://www.ldoceonline.com/media/english/breProns/technology0205.mp3?version=1.2.93",
+      "type": "media",
+      "status": 206,
+      "contentType": "audio/mpeg",
+      "cacheControl": "max-age=2592000"
+    },
+    {
+      "phase": "audio",
+      "url": "https://www.ldoceonline.com/external/images/favicon.ico?version=1.2.93",
+      "type": "other",
+      "status": 200,
+      "contentType": "image/x-icon",
+      "cacheControl": "max-age=2592000"
+    },
+    {
+      "phase": "typing",
+      "url": "https://www.ldoceonline.com/autocomplete/english/?q=marketing&contentType=application%2Fjson%3B%20charset%3Dutf-8",
+      "type": "xhr",
+      "status": 200,
+      "contentType": "text/javascript;charset=UTF-8",
+      "cacheControl": null
+    },
+    {
+      "phase": "search",
+      "url": "https://www.ldoceonline.com/search/english/direct/?q=marketing",
+      "type": "document",
+      "status": 302,
+      "cacheControl": null
+    },
+    {
+      "phase": "search",
+      "url": "https://www.ldoceonline.com/dictionary/english/marketing",
+      "type": "document",
+      "status": 301,
+      "cacheControl": null
+    },
+    {
+      "phase": "search",
+      "url": "https://www.ldoceonline.com/dictionary/marketing",
+      "type": "document",
+      "status": 200,
+      "contentType": "text/html;charset=UTF-8",
+      "cacheControl": null
+    },
+    {
+      "phase": "search",
+      "url": "https://www.ldoceonline.com/aos.js?version=1.2.93",
+      "type": "script",
+      "status": 200,
+      "contentType": "application/x-javascript;charset=UTF-8",
+      "cacheControl": "max-age=2592000"
+    },
+    {
+      "phase": "search",
+      "url": "https://www.ldoceonline.com/common.css?version=1.2.93",
+      "type": "stylesheet",
+      "status": 200,
+      "contentType": "text/css;charset=UTF-8",
+      "cacheControl": "max-age=2592000"
+    },
+    {
+      "phase": "search",
+      "url": "https://www.ldoceonline.com/external/fonts/font-awesome/5.12.0/css/font-awesome.min.css?version=1.2.93",
+      "type": "stylesheet",
+      "status": 200,
+      "contentType": "text/css",
+      "cacheControl": "max-age=2592000"
+    },
+    {
+      "phase": "search",
+      "url": "https://www.ldoceonline.com/external/js/jquery-3.5.0.min.js?version=1.2.93",
+      "type": "script",
+      "status": 200,
+      "contentType": "application/x-javascript",
+      "cacheControl": "max-age=2592000"
+    },
+    {
+      "phase": "search",
+      "url": "https://www.ldoceonline.com/common.js?version=1.2.93",
+      "type": "script",
+      "status": 200,
+      "contentType": "application/x-javascript;charset=UTF-8",
+      "cacheControl": "max-age=2592000"
+    },
+    {
+      "phase": "search",
+      "url": "https://www.ldoceonline.com/external/images/logo.svg?version=1.2.93",
+      "type": "image",
+      "status": 200,
+      "contentType": "image/svg+xml",
+      "cacheControl": "max-age=2592000"
+    },
+    {
+      "phase": "search",
+      "url": "https://www.ldoceonline.com/external/images/logo_smartphone.svg?version=1.2.93",
+      "type": "image",
+      "status": 200,
+      "contentType": "image/svg+xml",
+      "cacheControl": "max-age=2592000"
+    },
+    {
+      "phase": "search",
+      "url": "https://www.ldoceonline.com/media/english/illustration/dishwasher.jpg?version=1.2.93",
+      "type": "image",
+      "status": 200,
+      "contentType": "image/jpeg",
+      "cacheControl": "max-age=2592000"
+    },
+    {
+      "phase": "search",
+      "url": "https://www.ldoceonline.com/media/english/illustration/mixer.jpg?version=1.2.93",
+      "type": "image",
+      "status": 200,
+      "contentType": "image/jpeg",
+      "cacheControl": "max-age=2592000"
+    },
+    {
+      "phase": "search",
+      "url": "https://www.ldoceonline.com/external/images/logo-full-white.svg?version=1.2.93",
+      "type": "image",
+      "status": 200,
+      "contentType": "image/svg+xml",
+      "cacheControl": "max-age=2592000"
+    },
+    {
+      "phase": "search",
+      "url": "https://www.ldoceonline.com/external/fonts/longmaneltdict.ttf?version=1.2.93",
+      "type": "font",
+      "status": 200,
+      "contentType": "application/octet-stream",
+      "cacheControl": "max-age=2592000"
+    },
+    {
+      "phase": "search",
+      "url": "https://www.ldoceonline.com/external/fonts/font-awesome/5.12.0/webfonts/fa-brands-400.woff2",
+      "type": "font",
+      "status": 200,
+      "contentType": "application/octet-stream",
+      "cacheControl": "max-age=2592000"
+    },
+    {
+      "phase": "search",
+      "url": "https://www.ldoceonline.com/external/fonts/font-awesome/5.12.0/webfonts/fa-solid-900.woff2",
+      "type": "font",
+      "status": 200,
+      "contentType": "application/octet-stream",
+      "cacheControl": "max-age=2592000"
+    },
+    {
+      "phase": "search",
+      "url": "https://www.ldoceonline.com/external/images/favicon.ico?version=1.2.93",
+      "type": "other",
+      "status": 200,
+      "contentType": "image/x-icon",
+      "cacheControl": "max-age=2592000"
+    }
+  ]
+}
