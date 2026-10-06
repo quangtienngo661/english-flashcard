@@ -16,8 +16,10 @@ export async function runIdempotent<T>(
   db: NodePgDatabase,
   params: { key: string; userId: string; endpoint: string; payloadHash: string },
   handler: () => Promise<{ status: number; body: T }>,
+  options?: { timeoutSeconds?: number },
 ): Promise<RunIdempotentResult<T>> {
   const { key, userId, endpoint, payloadHash } = params;
+  const timeoutSeconds = options?.timeoutSeconds ?? 30;
   const lockKey = lockKeyFor(key, userId, endpoint);
   const scope = and(
     eq(idempotencyKeys.key, key),
@@ -25,8 +27,20 @@ export async function runIdempotent<T>(
     eq(idempotencyKeys.endpoint, endpoint),
   );
 
-  return db.transaction(async (tx): Promise<RunIdempotentResult<T>> => {
-    await tx.execute(sql`SET LOCAL statement_timeout = '30s'`);
+  // Application-level bound, not a Postgres-side one: SET LOCAL transaction_timeout /
+  // idle_in_transaction_session_timeout would bound the handler's idle time too (e.g. while
+  // awaiting an external AI provider call, which statement_timeout alone does not cover), but
+  // Postgres enforces both by terminating the whole connection, and that termination was observed
+  // in testing to surface as an unhandled process-level exception through this exact drizzle +
+  // node-postgres pooling setup — a crash risk strictly worse than the slow-handler problem this is
+  // meant to solve. A client-side race is used instead: it never touches the connection, so it can
+  // never crash the process, at the cost of not truly cancelling the abandoned transaction — if the
+  // handler eventually finishes after we've already reported a timeout, it still commits normally.
+  const timeout = new Promise<RunIdempotentResult<T>>((_, reject) => {
+    setTimeout(() => reject(new Error(`runIdempotent timed out after ${timeoutSeconds}s`)), timeoutSeconds * 1000);
+  });
+
+  const transaction = db.transaction(async (tx): Promise<RunIdempotentResult<T>> => {
     const result = await tx.execute<{ locked: boolean }>(
       sql`SELECT pg_try_advisory_xact_lock(${lockKey}) AS locked`,
     );
@@ -74,4 +88,6 @@ export async function runIdempotent<T>(
 
     return { kind: 'proceed', status: response.status, body: response.body };
   });
+
+  return Promise.race([transaction, timeout]);
 }

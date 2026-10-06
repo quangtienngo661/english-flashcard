@@ -85,6 +85,25 @@ describe('runIdempotent (e2e)', () => {
     expect(r).toMatchObject({ kind: 'proceed', status: 200, body: { fresh: true } });
   });
 
+  it('B0E8: a handler slower than the configured timeout aborts instead of holding the lock forever', async () => {
+    await expect(
+      runIdempotent(
+        db,
+        { key, userId, endpoint: '/v1/sample', payloadHash: 'h1' },
+        async () => {
+          await new Promise((resolve) => setTimeout(resolve, 600));
+          return { status: 200, body: {} };
+        },
+        { timeoutSeconds: 0.3 },
+      ),
+    ).rejects.toThrow();
+
+    // The connection the aborted transaction used must not poison the pool for later work.
+    const r = await runIdempotent(db, { key: randomUUID(), userId, endpoint: '/v1/sample', payloadHash: 'h1' },
+      async () => ({ status: 200, body: { ok: true } }));
+    expect(r.kind).toBe('proceed');
+  });
+
   it('Review Focus #1: two genuinely concurrent runs for the same key run the handler exactly once', async () => {
     // Exact timing (conflict-vs-proceed, or proceed-vs-replay if the first finishes before the
     // second's lock attempt) is non-deterministic and both are correct outcomes. The invariant

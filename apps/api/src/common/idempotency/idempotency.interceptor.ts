@@ -6,6 +6,7 @@ import {
   Injectable,
   NestInterceptor,
 } from '@nestjs/common';
+import { Reflector } from '@nestjs/core';
 import { from, Observable } from 'rxjs';
 import { firstValueFrom } from 'rxjs';
 import type { NodePgDatabase } from 'drizzle-orm/node-postgres';
@@ -13,16 +14,25 @@ import type { Response } from 'express';
 import { DRIZZLE_DB } from '../db/drizzle.module.js';
 import { ProblemDetailsException } from '../problem-details/problem-details.exception.js';
 import type { RequestWithUser } from '../request-user/fake-request-user.middleware.js';
+import { IDEMPOTENT_KEY, type IdempotentOptions } from './idempotent.decorator.js';
 import { runIdempotent } from './idempotency.service.js';
 
 @Injectable()
 export class IdempotencyInterceptor implements NestInterceptor {
-  constructor(@Inject(DRIZZLE_DB) private readonly db: NodePgDatabase) {}
+  constructor(
+    @Inject(DRIZZLE_DB) private readonly db: NodePgDatabase,
+    private readonly reflector: Reflector,
+  ) {}
 
   intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
     const httpContext = context.switchToHttp();
     const request = httpContext.getRequest<RequestWithUser>();
     const response = httpContext.getResponse<Response>();
+
+    const { timeoutSeconds } = this.reflector.get<Required<IdempotentOptions>>(
+      IDEMPOTENT_KEY,
+      context.getHandler(),
+    ) ?? { timeoutSeconds: 30 };
 
     const idempotencyKey = request.headers['idempotency-key'];
     if (typeof idempotencyKey !== 'string' || idempotencyKey.length === 0) {
@@ -44,6 +54,7 @@ export class IdempotencyInterceptor implements NestInterceptor {
           const body = await firstValueFrom(next.handle());
           return { status: response.statusCode, body };
         },
+        { timeoutSeconds },
       ).then((result) => {
         if (result.kind === 'conflict') {
           response.setHeader('Retry-After', String(result.retryAfterSeconds));

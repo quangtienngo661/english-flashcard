@@ -19,6 +19,11 @@ export class DrizzleModule {
           provide: DRIZZLE_DB,
           useFactory: (): NodePgDatabase => {
             const pool = new Pool({ connectionString: options.connectionString });
+            // node-postgres requires an 'error' listener on the pool — without one, an error on a
+            // connection the server terminates on its own (e.g. transaction_timeout firing) crashes
+            // the process instead of just rejecting the in-flight query, which already happens
+            // correctly on its own.
+            pool.on('error', () => {});
             return drizzle(pool);
           },
         },

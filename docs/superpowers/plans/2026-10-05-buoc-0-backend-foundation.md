@@ -44,9 +44,15 @@ it.
 - `Idempotency-Key` scoped to `(key, user_id, endpoint)`; retention ≥ 24h, then treated as a new request
   (SR8, SE2). **Decision for this plan (not yet put to the project owner — flag on review):** the header is
   **required** on any endpoint that opts in via `@Idempotent()`; missing header → `400` Problem Details.
-  Claiming transaction has a `statement_timeout` of `30s` (B0E8, value is this plan's choice, adjustable
-  per endpoint later). Cleanup of expired rows (B0E7) is folded into the claim query itself (see Task 7) —
-  no separate scheduled job in Bước 0.
+  Each `@Idempotent({ timeoutSeconds })` call bounds how long its handler may run, default `30s` —
+  **implemented 06/10/2026 as a client-side `Promise.race`** around `db.transaction(...)`, not a Postgres
+  `transaction_timeout`/`idle_in_transaction_session_timeout`: both correctly bound a handler's idle time
+  (an external API call, not running any SQL), but Postgres enforces them by terminating the whole
+  connection, which surfaced as an unhandled process-level exception in this exact drizzle + node-postgres
+  pooling setup during testing — worse than the slow-handler problem itself. The client-side race never
+  touches the connection, so it can't crash the process, but an abandoned transaction still commits later
+  if the handler eventually finishes. Cleanup of expired rows (B0E7) is folded into the claim query itself
+  (see Task 7) — no separate scheduled job in Bước 0.
 - Rate limiting: per-user, atomic single-statement counter increment (B0E2), `429` + `Retry-After` header
   (SR14). The sample endpoint in Task 10 uses an illustrative limit (10 requests / 60s fixed window) —
   **not** a product decision, just enough to prove the mechanism.
@@ -434,8 +440,10 @@ it.
   1. Compute `lockKey = lockKeyFor(key, userId, endpoint)` — a deterministic bigint, e.g. via Postgres
      `hashtext(key || ':' || userId || ':' || endpoint)` cast to `bigint`, computed in SQL so it matches
      exactly between calls.
-  2. Open `db.transaction(async (tx) => { ... })`. First statement inside: `SET LOCAL statement_timeout =
-     '30s'` (B0E8). Then `SELECT pg_try_advisory_xact_lock(${lockKey}) AS locked`.
+  2. Race `db.transaction(async (tx) => { ... })` against a plain `setTimeout`-based rejection at
+     `timeoutSeconds` (default `30`, from `options?.timeoutSeconds` — B0E8; a client-side
+     `Promise.race`, not a Postgres GUC — see Global Constraints for why). Inside the transaction:
+     `SELECT pg_try_advisory_xact_lock(${lockKey}) AS locked`.
   3. If `locked` is `false` → return `{ kind: 'conflict', retryAfterSeconds: 2 }` (the transaction can
      simply end here; nothing was read or written, so commit/rollback doesn't matter).
   4. If `locked` is `true`, `SELECT * FROM idempotency_keys WHERE key=... AND user_id=... AND endpoint=...`

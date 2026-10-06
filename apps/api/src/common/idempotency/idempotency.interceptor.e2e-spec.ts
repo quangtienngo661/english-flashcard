@@ -28,6 +28,14 @@ class TestIdempotentController {
     handlerCallCount += 1;
     return { received: body, handlerCallCount };
   }
+
+  @Post('slow')
+  @Idempotent({ timeoutSeconds: 0.3 })
+  @UseInterceptors(IdempotencyInterceptor)
+  async slow() {
+    await new Promise((resolve) => setTimeout(resolve, 600));
+    return { ok: true };
+  }
 }
 
 @Module({
@@ -96,5 +104,17 @@ describe('IdempotencyInterceptor (e2e)', () => {
       .set('X-Test-User-Id', userId)
       .send({ a: 2 });
     expect(res.status).toBe(400); // S5: Problem Details rejection, not 409 — 409 is reserved for in-flight
+  });
+
+  it('a custom @Idempotent({ timeoutSeconds }) is honored — a slower handler gets a Problem Details error instead of hanging', async () => {
+    const started = Date.now();
+    const res = await request(app.getHttpServer())
+      .post('/v1/test-idempotent/slow')
+      .set('Idempotency-Key', randomUUID())
+      .set('X-Test-User-Id', randomUUID())
+      .send({});
+    expect(Date.now() - started).toBeLessThan(500); // bounded by the 0.3s timeout, not the 0.6s handler
+    expect(res.status).toBe(500);
+    expect(res.headers['content-type']).toContain('application/problem+json');
   });
 });
