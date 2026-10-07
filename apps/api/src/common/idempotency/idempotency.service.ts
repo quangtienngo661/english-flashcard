@@ -5,7 +5,8 @@ export type RunIdempotentResult<T> =
   | { kind: 'proceed'; status: number; body: T }
   | { kind: 'replay'; status: number; body: unknown }
   | { kind: 'conflict'; retryAfterSeconds: number }
-  | { kind: 'reject' };
+  | { kind: 'reject' }
+  | { kind: 'abandoned' };
 
 export async function runIdempotent<T>(
   prisma: PrismaClient,
@@ -57,7 +58,9 @@ export async function runIdempotent<T>(
         },
       });
     } else if (row.status === 'in_progress') {
-      await tx.idempotencyKey.update({ where, data: { payloadHash, updatedAt: new Date() } });
+      // B0E1, owner decision 07/10/2026: an in_progress row with nobody holding its lock means an earlier
+      // attempt was interrupted. Do not re-run it; the client must start over with a new key.
+      return { kind: 'abandoned' };
     } else {
       throw new Error(`Unexpected idempotency status: ${row.status}`);
     }

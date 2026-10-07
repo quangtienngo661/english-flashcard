@@ -164,12 +164,11 @@ Bước 0, the Bước 1 design and decision record are on `main` (PR #1–#3); 
 on `feat/buoc-1-identity-impl`, awaiting the owner's go-ahead to push and open a PR. The module-boundary convention is chốt as D3
 (see Architecture & Key Decisions above).
 
-1. **B0E1 (orphaned `Idempotency-Key` after a crash, treated as a transient failure and retried)** is
-   `ASSUMPTION` — not covered by system-spec's own SE2 — needs the owner's explicit confirmation.
-2. **This plan's own choices, not yet put to the owner:** `Idempotency-Key` header is mandatory when
-   `@Idempotent()` is used (400 if missing); default timeout `30s`, enforced client-side via
-   `Promise.race` (deliberately not a Postgres-side timeout — see the design doc's B0E8 note on why that
-   crashed the process).
+1. **Chốt by the owner (07/10/2026):** B0E1 — an orphaned `in_progress` idempotency row returns 409
+   `idempotency-key-abandoned` and the client starts over with a new key (it is not re-run). Note: a real
+   crash rolls the row back with the handler's transaction, so a retry after a crash simply runs fresh.
+   `Idempotency-Key` stays mandatory on `@Idempotent()` endpoints (400 if missing) with the 30 s default timeout.
+2. *(resolved, see 1)*
 3. **Prisma pinned to `7.10.0`** (exact, no `^`) because the npm `latest` tag currently points at a `8.0.0-rc`
    prerelease — re-check when Prisma 8 reaches a real stable release.
 

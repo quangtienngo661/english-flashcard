@@ -64,6 +64,14 @@ export class IdempotencyInterceptor implements NestInterceptor {
             detail: `Retry after ${result.retryAfterSeconds} seconds`,
           });
         }
+        if (result.kind === 'abandoned') {
+          throw new ProblemDetailsException({
+            status: 409,
+            type: 'idempotency-key-abandoned',
+            title: 'Previous attempt was interrupted',
+            detail: 'Start over with a new Idempotency-Key',
+          });
+        }
         if (result.kind === 'reject') {
           throw new ProblemDetailsException({
             status: 400,

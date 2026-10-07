@@ -75,11 +75,13 @@ describe('runIdempotent (e2e)', () => {
     expect(handlerRan).toBe(false);
   });
 
-  it('B0E1: an orphaned in_progress row (no live holder) is claimed as a new attempt', async () => {
+  it('B0E1 (owner, 07/10): an orphaned in_progress row is reported as abandoned and the handler does not run', async () => {
     await prisma.idempotencyKey.create({ data: { key, userId, endpoint: '/v1/sample', status: 'in_progress', payloadHash: 'h1' } }); // nobody holds the advisory lock on this key
+    let ran = false;
     const r = await runIdempotent(prisma, { key, userId, endpoint: '/v1/sample', payloadHash: 'h1' },
-      async () => ({ status: 200, body: { recovered: true } }));
-    expect(r).toMatchObject({ kind: 'proceed', status: 200, body: { recovered: true } });
+      async () => { ran = true; return { status: 200, body: {} }; });
+    expect(r).toEqual({ kind: 'abandoned' });
+    expect(ran).toBe(false);
   });
 
   it('B0E7: a row past the 24h retention window is claimed as a new request', async () => {
