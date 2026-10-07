@@ -5,3 +5,7 @@ coverage/
 .env.local
 *.log
 .pnpm-store/
+.env.*
+!.env.example
+*.pem
+*.key
