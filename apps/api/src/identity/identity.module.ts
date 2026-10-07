@@ -7,10 +7,11 @@ import { Mailer } from './mailer/mailer.js';
 import { SmtpMailer } from './mailer/smtp-mailer.js';
 import { AccessTokenService } from './sessions/access-token.service.js';
 import { AuthGuard } from './sessions/auth.guard.js';
+import { SessionService } from './sessions/session.service.js';
 
 @Module({
   providers: [
-    PasswordHasher, AccessTokenService, { provide: APP_GUARD, useClass: AuthGuard },
+    PasswordHasher, AccessTokenService, SessionService, { provide: APP_GUARD, useClass: AuthGuard },
     { provide: Mailer, useClass: SmtpMailer }, MailBudget, MailDispatcher,
   ],
 })
