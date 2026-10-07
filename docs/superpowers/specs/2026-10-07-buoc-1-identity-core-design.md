@@ -1,7 +1,8 @@
 # Design — Bước 1: Identity core
 
 Ngày: 07/10/2026 (brainstorm 06–07/10; soát lại lần 2 ngày 07/10 đối chiếu code Bước 0 thật; sửa lần 3 ngày 07/10 theo
-review của Codex `gpt-6-astra`, `../reviews/2026-10-07-buoc-1-plan-review-astra.md`). Phạm vi: Bước 1 trong
+review của Codex `gpt-6-astra`, `../reviews/2026-10-07-buoc-1-plan-review-astra.md`; sửa lần 4 theo review vòng 2
+`../reviews/2026-10-07-buoc-1-plan-review-astra-r2.md`, có phản biện, tự soát lại thay cho vòng review 3). Phạm vi: Bước 1 trong
 `../../HANDOFF_2026-10-05_BUOC_0.md` §2, theo spec
 [`module-spec-identity-access.md`](../../specs/module-spec-identity-access.md). Brainstorm qua
 `superpowers:brainstorming`, hỏi từng câu trong chat. Nền: Bước 0 trên nhánh `feat/migrate-drizzle-to-prisma`
@@ -37,8 +38,8 @@ Thư viện (đã kiểm `npm view` ngày 06–07/10/2026): `jose` 6.2.12, `argo
 `cookie-parser` 1.4.7, `zod` 4.6.5 (D10). `jose` có option `currentDate` cho `jwtVerify` (docs `panva/jose`,
 đọc qua context7 ngày 07/10) — dùng để đồng hồ giả của test áp được lên kiểm `exp`. Node 24.11 có sẵn `crypto.argon2`
 (đo được ~44 ms/lần với m=19456, t=2, p=1) nhưng **không dùng**: trả hash thô, phải tự viết lớp mã hóa chuỗi PHC và so
-sánh — tự viết code mật mã là rủi ro không đáng. Gói `argon2` trả chuỗi PHC có tham số + salt, có `verify` và
-`needsRehash`.
+sánh — tự viết code mật mã là rủi ro không đáng. Gói `argon2` trả chuỗi PHC có tham số + salt, có `verify` (và
+`needsRehash`, không dùng — D16).
 
 ### Bảng quyền (D6)
 
@@ -166,15 +167,22 @@ Bảng (Identity sở hữu, theo "Bản đồ ghi dữ liệu" của system-spe
 - **Khóa theo user:** mọi thao tác ghi trạng thái bảo mật của một user — tạo chain, gia hạn, logout, thu hồi phiên,
   kết quả đăng nhập (đúng hay sai), đổi/đặt lại mật khẩu, cấp/kiểm/tiêu OTP — chạy trong một transaction bắt đầu bằng
   `SELECT pg_advisory_xact_lock(hashtextextended('identity.user:' || <user_id>, 0))` (qua `$executeRaw`), rồi **đọc lại**
-  mọi thứ cần kiểm sau khi có khóa. Một khóa duy nhất mỗi user nên không có thứ tự khóa và không deadlock; tranh chấp
-  chỉ xảy ra giữa các request của cùng một user. Đổi vai trò dùng khóa riêng `identity.staff_role` (B1#28); không thao
+  mọi thứ cần kiểm sau khi có khóa. Một khóa advisory duy nhất mỗi user nên không có vòng chờ giữa các khóa advisory;
+  mỗi transaction chỉ ghi dòng của đúng một user nên khóa dòng ngầm của Postgres cũng không tạo vòng chờ giữa hai user.
+  Tranh chấp chỉ xảy ra giữa các request của cùng một user. **Không làm việc chậm trong khóa:** băm mật khẩu (đăng ký,
+  đổi, đặt lại) và gửi thư đều làm trước hoặc sau transaction. Mọi transaction loại này đặt rõ
+  `{ timeout: 10_000, maxWait: 5_000 }`; việc tranh chấp khóa của cùng một user dồn tới cạn pool kết nối là rủi ro còn lại,
+  chấp nhận ở quy mô pilot (`ASSUMPTION`). Đổi vai trò dùng khóa riêng `identity.staff_role` (B1#28); không thao
   tác nào giữ cả hai khóa.
-- **Ghi trạng thái bảo mật rồi mới báo lỗi:** transaction **không ném lỗi** sau khi đã ghi lần sai OTP, bộ đếm/khóa đăng
-  nhập hay thu hồi chain (ném lỗi trong transaction tương tác của Prisma làm hoàn tác mọi thứ đã ghi). Transaction trả về
-  kết quả dạng union (vd `{ kind: 'wrong_code' }`), commit, rồi service mới đổi kết quả thành lỗi HTTP.
+- **Ghi trạng thái bảo mật rồi mới báo lỗi:** với các **từ chối nghiệp vụ dự kiến** (sai mã, sai mật khẩu, dùng lại
+  token, hết hạn), transaction **không ném lỗi** sau khi đã ghi lần sai OTP, bộ đếm/khóa đăng nhập hay thu hồi chain (ném lỗi trong transaction tương tác của Prisma làm hoàn tác mọi thứ đã ghi). Transaction trả về
+  kết quả dạng union (vd `{ kind: 'wrong_code' }`), commit, rồi service mới đổi kết quả thành lỗi HTTP. Lỗi **không dự
+  kiến** (DB, lỗi lập trình) vẫn ném ra để transaction hoàn tác như bình thường.
 - **Thư chỉ gửi sau commit và sau khi trả lời:** transaction trả kèm danh sách thư cần gửi; service giao cho
-  `MailDispatcher.afterResponse(res, jobs)`, chạy khi response phát sự kiện `finish` (không chạy nếu transaction hoàn
-  tác). Job mang theo `operation_id`. Ngoài HTTP (CLI, dọn dẹp) thì chạy ngay.
+  `MailDispatcher.afterResponse(res, jobs)`, chạy khi response phát sự kiện `close` (luôn phát, kể cả khi client ngắt
+  giữa chừng — dữ liệu đã commit thì thư vẫn gửi; không chạy nếu transaction hoàn tác). Job mang theo `operation_id`.
+  Ngoài HTTP (CLI, dọn dẹp) thì chạy ngay. Hàm ghi dữ liệu trả về **thư đã soạn sẵn** (`MailMessage | null`), không trả
+  hàm lồng hàm.
 - **Quên mật khẩu bằng nhau theo cấu trúc (I8):** `POST /v1/auth/otp` nhánh `reset_password` chỉ làm phần giống hệt
   nhau trước khi trả 202 (kiểm dữ liệu, rate limit theo IP và theo email, kiểm ngân sách); tìm tài khoản, tạo mã và gửi
   thư đều nằm trong job sau response. Hai nhánh email có/không có tài khoản vì thế làm đúng cùng một việc trước khi trả
@@ -183,9 +191,11 @@ Bảng (Identity sở hữu, theo "Bản đồ ghi dữ liệu" của system-spe
   `updateMany` có điều kiện đủ mọi vế (chưa dùng, chưa vô hiệu, chưa hết hạn, `attempts < 5`, mục đích chưa khóa) và chỉ
   thành công khi `count = 1`; lần sai chỉ tăng trần cộng dồn khi việc tăng `attempts` thực sự xảy ra (`count = 1`).
 - **Đăng nhập:** đọc user + hash, chạy Argon2 **ngoài** khóa (chậm ~44 ms), rồi vào transaction có khóa user để quyết:
-  đang khóa → không đổi gì; sai → tăng bộ đếm, đủ 10 thì khóa 15 phút và đưa bộ đếm về 0; đúng → **chỉ thành công nếu hash
-  vẫn y như hash vừa kiểm** (đặt lại mật khẩu xảy ra giữa chừng thì từ chối), đặt bộ đếm về 0, tạo chain, rehash nếu
-  cần (ghi có điều kiện hash chưa đổi). Đổi mật khẩu dùng cùng hàm quyết định này.
+  đang khóa → không đổi gì; hash đã đổi so với hash vừa kiểm (đổi/đặt lại mật khẩu xảy ra giữa chừng) → 401, **không**
+  tính là lần sai; sai → tăng bộ đếm, đủ 10 thì khóa 15 phút và đưa bộ đếm về 0; đúng → đặt bộ đếm về 0, tạo chain.
+  Không tự băm lại mật khẩu (D16). Đổi mật khẩu dùng cùng hàm quyết định này.
+- **OTP lần sai thứ 21:** kết quả là `locked` kèm thư báo khóa; service lên lịch gửi thư **trước**, rồi mới đổi kết quả
+  thành lỗi: `verify_email` trả 429, `reset_password` vẫn trả 400 `invalid-otp` chung chung.
 - **Body quá lớn (D15):** giữ giới hạn 100 KB mặc định; body lớn hơn → 413 `payload-too-large` trước khi đọc email.
   Mật khẩu 129 ký tự tới 100 KB vẫn trả 401 chung chung mà không băm.
 
@@ -209,8 +219,8 @@ Bảng (Identity sở hữu, theo "Bản đồ ghi dữ liệu" của system-spe
   `failed_login_count` bằng một câu `UPDATE ... RETURNING` (Prisma `update` + `increment`); giá trị trả về ≥ 10 thì
   đặt `login_locked_until` và đưa bộ đếm về 0. `PasswordHasher` giới hạn tối đa 4 lần băm song song (semaphore,
   `ASSUMPTION`; mỗi lần ~19 MiB; `argon2` chạy trên threadpool của libuv, mặc định 4 luồng, dùng chung với DNS/fs —
-  nên cân nhắc đặt semaphore < 4 hoặc tăng `UV_THREADPOOL_SIZE`, chốt bằng đo ở plan). `needsRehash` luôn được gọi
-  với đúng bộ tham số hiện hành (mặc định của thư viện khác tham số của mình).
+  nên cân nhắc đặt semaphore < 4 hoặc tăng `UV_THREADPOOL_SIZE`, chốt bằng đo ở plan). Không tự băm lại khi tham số
+  Argon2 đổi (D16): V1 cố định tham số; khi nào đổi thì thêm cơ chế nâng cấp lúc đó.
 - **Đổi mật khẩu** `POST /v1/auth/password/change` (cần đăng nhập) `{ current_password, new_password }`. Sai mật khẩu
   hiện tại → **400** loại `invalid-current-password` (không dùng 401: client hiểu 401 là phiên hết hạn và sẽ gia
   hạn/đăng xuất). Đang bị khóa đăng nhập → 429 kèm `Retry-After`.
@@ -403,9 +413,9 @@ khi hết hạn; xóa `session_chains` (và token của chúng) đã thu hồi h
 | B1E24 | Every e2e request comes from 127.0.0.1 and test files run in parallel | IP limits and the global mail budget would leak between tests: the test config raises IP limits and gives each app instance its own budget key; the IP-limit test varies the IP through `X-Forwarded-For` with `TRUST_PROXY` on; each test uses unique emails | B0E3 |
 | B1E25 | The API runs behind a reverse proxy without `TRUST_PROXY` | Every user shares the proxy's IP and IP limits hit everyone; documented as a deploy requirement | `ASSUMPTION` |
 | B1E32 | A client connecting directly (not through a trusted proxy) sends a forged `X-Forwarded-For` | Ignored: `TRUST_PROXY` lists only trusted proxy addresses, never `true` | Mục 6 |
-| B1E33 | A login verifies the old password while a password reset commits in between | The login decision re-reads the hash under the user lock, sees it changed and returns 401; no chain is created | Mục 4b |
+| B1E33 | A login verifies the old password while a password reset commits in between | The login decision re-reads the hash under the user lock, sees it changed and returns 401 without counting a failure; no chain is created | Mục 4b |
 | B1E34 | An SMTP server answers slowly but keeps the connection alive past 10 s | Not cut off: the 10 s limits are per phase, not a total deadline. Accepted; the work runs after the response and only delays that mail | Mục 5 (`ASSUMPTION`: accepted) |
-| B1E26 | Stored Argon2 parameters are weaker than the current configuration | After a successful login, `argon2.needsRehash` triggers a rehash with the current parameters | R17 |
+| B1E26 | ~~Stored Argon2 parameters are weaker than the current configuration~~ | **Removed (D16):** V1 never changes Argon2 parameters, so there is no transparent rehash; a parameter upgrade will add its own migration path | D16 |
 | B1E27 | `admin:grant` runs on a database with no users | Exits non-zero with "register this email first" | D6 |
 | B1E28 | Known and unknown emails take different DB work on failed login (counter `UPDATE` under the user lock) | Argon2 (~44 ms) runs in both branches; the remaining difference is a few ms of DB writes. Accepted as residual. Reset requests have no such difference because all account work runs after the response (B1#38) | I10 (`ASSUMPTION`: residual accepted) |
 | B1E29 | A mobile app reopens after a day and the user taps logout with an expired access token | Logout works because it uses the refresh token, not the access token (D12) | IR13 |
@@ -435,7 +445,7 @@ cấp vai trò (Bước 3). Kênh cảnh báo ngoài log (Slack, email cho owner
 
 ## 13. Quyết định chốt ở lần soát 2 và 3 (07/10/2026)
 
-D10–D13 lộ ra khi soát lại doc với code Bước 0; D14–D15 lộ ra từ review của Astra. Chủ dự án chốt cả sáu:
+D10–D13 lộ ra khi soát lại doc với code Bước 0; D14–D16 lộ ra từ hai vòng review của Astra. Chủ dự án chốt cả bảy:
 
 | # | Quyết định | Lý do |
 |---|---|---|
@@ -445,11 +455,14 @@ D10–D13 lộ ra khi soát lại doc với code Bước 0; D14–D15 lộ ra t�
 | D13 | **Web và API cùng tên miền gốc khi deploy** (vd `app.<miền>` và `api.<miền>`) | Điều kiện để cookie `SameSite=Strict` được gửi; là yêu cầu deploy, ghi vào runbook của Bước 3 |
 | D14 | **`verify-email` khi email đã xác minh trả 409 `email-already-verified`**, không kiểm mã (chốt sau review Astra) | Trạng thái "đã xác minh" là sự thật rõ ràng nhất; app nhận ra và coi là thành công; gỡ mâu thuẫn B1#7 ↔ B1E22 |
 | D15 | **Giữ giới hạn body 100 KB; lớn hơn trả 413** (chốt sau review Astra) | Chặn trước khi đọc email nên không lộ gì; server ít tốn tài nguyên; B1E2 sửa theo |
+| D16 | **Bỏ tự băm lại mật khẩu (B1E26)** (chốt sau review Astra vòng 2) | B1E26 do design tự thêm, spec không đòi; V1 cố định tham số Argon2 nên tính năng không bao giờ chạy, mà lại gây lỗi đăng nhập đúng bị tính là sai khi chạy song song |
 
 ## 14. Rủi ro và việc còn mở
 
 - Mọi con số rate limit, khóa, ngân sách, timeout SMTP, semaphore Argon2, giữ dữ liệu 30 ngày là `ASSUMPTION`, cấu
   hình được.
+- Nhiều request của **cùng một user** chờ khóa có thể chiếm kết nối DB; không có giới hạn thời gian chờ khóa riêng, chỉ có
+  timeout transaction 10 s (mục 4b). Chấp nhận ở pilot; xem lại nếu đo thấy pool cạn.
 - Mailpit + Testcontainers chưa chạy thử (`ASSUMPTION`) — task đầu của plan.
 - Giới hạn gửi của Gmail cá nhân vẫn chưa có nguồn Google (R29).
 - Câu mở cũ của Bước 0 (B0E1, `Idempotency-Key` bắt buộc + timeout 30 s) không chặn Bước 1 vì Identity không dùng

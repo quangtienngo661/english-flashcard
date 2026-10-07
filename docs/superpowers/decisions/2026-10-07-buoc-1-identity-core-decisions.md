@@ -28,6 +28,7 @@ nhắc, trade-off của từng phương án, phương án được chọn và l�
 | D13 | Deploy web và API | Cùng tên miền gốc | Chủ dự án |
 | D14 | `verify-email` khi email đã xác minh | 409 `email-already-verified` | Chủ dự án |
 | D15 | Body request quá lớn | Giữ 100 KB, trả 413 | Chủ dự án |
+| D16 | Tự băm lại mật khẩu khi tham số Argon2 đổi | Bỏ (xóa B1E26) | Chủ dự án |
 
 ## D1 — Phạm vi Bước 1
 
@@ -183,6 +184,16 @@ Bối cảnh: B1E2 đòi mật khẩu 1 MB ở đăng nhập trả 401, nhưng E
 |---|---|
 | ✅ Giữ 100 KB, body lớn hơn trả 413 `payload-too-large` | Chặn trước khi đọc email nên không lộ gì; server ít tốn tài nguyên. B1E2 sửa câu chữ; mật khẩu 129 ký tự tới 100 KB vẫn trả 401 |
 | Nâng giới hạn lên ~2 MB | Giữ đúng câu chữ B1E2. Mọi endpoint nhận body to gấp 20 lần, kẻ xấu làm server tốn tài nguyên mà không được lợi gì |
+
+## D16 — Tự băm lại mật khẩu (B1E26)
+
+Bối cảnh: review vòng 2 của Astra chỉ ra hai lần đăng nhập đúng tới cùng lúc: lần đầu băm lại hash, lần sau thấy hash
+đổi và bị tính là sai, có thể dẫn tới khóa tài khoản. B1E26 do design tự thêm (R17), spec không đòi; V1 cố định tham số.
+
+| Phương án | Trade-off |
+|---|---|
+| Thêm "phiên bản mật khẩu" (đề xuất của Astra) | Giữ được tự băm lại. Thêm cột, thêm logic, cho một tính năng V1 không bao giờ chạy |
+| ✅ Bỏ tự băm lại | Hết lỗi tận gốc, code ít hơn (YAGNI). Khi đổi tham số Argon2 sau này phải tự thêm cơ chế nâng cấp |
 
 ## Đề xuất kỹ thuật duyệt cùng design (không hỏi riêng)
 
