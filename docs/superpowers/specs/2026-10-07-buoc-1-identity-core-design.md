@@ -1,5 +1,8 @@
 # Design — Bước 1: Identity core
 
+> **Trạng thái 07/10/2026:** đã triển khai và merge vào `main` (PR #4, #5). Mục 11 (chỗ lệch spec) đã áp vào
+> `docs/specs/`. Review tổng kết: `../reviews/2026-10-07-buoc-1-final-review.md`.
+
 Ngày: 07/10/2026 (brainstorm 06–07/10; soát lại lần 2 ngày 07/10 đối chiếu code Bước 0 thật; sửa lần 3 ngày 07/10 theo
 review của Codex `gpt-6-astra`, `../reviews/2026-10-07-buoc-1-plan-review-astra.md`; sửa lần 4 theo review vòng 2
 `../reviews/2026-10-07-buoc-1-plan-review-astra-r2.md`, có phản biện, tự soát lại thay cho vòng review 3). Phạm vi: Bước 1 trong

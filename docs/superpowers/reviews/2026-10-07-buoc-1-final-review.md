@@ -62,6 +62,6 @@ kiện log `otp_sent` (Task 14, phát hiện khi chạy tay).
 - Nhiều request của cùng một user dồn lại có thể chiếm hết 10 kết nối DB (đã thấy thật trong test Task 7) —
   design chấp nhận ở quy mô pilot.
 - Giới hạn gửi thư của Gmail cá nhân vẫn chưa có nguồn chính thức.
-- Các chỗ cần sửa spec gốc (design mục 11) **chưa** áp vào `docs/specs/`.
-- Câu mở cũ của Bước 0 (B0E1, `Idempotency-Key` bắt buộc + timeout 30 s) vẫn chờ chủ dự án xác nhận.
-- Nhánh chưa push, chưa mở PR.
+- Các chỗ cần sửa spec gốc (design mục 11) đã áp vào `docs/specs/` ngày 07/10 (nhãn "Sửa 07/10/2026 theo Bước 1").
+- Câu mở cũ của Bước 0 đã chốt 07/10 (PR #5): dòng mồ côi trả 409, `Idempotency-Key` bắt buộc + 30 s.
+- Đã merge vào `main` sau khi CI xanh (PR #4).
