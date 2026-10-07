@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { PasswordHasher } from './auth/password-hasher.service.js';
+import { OtpController } from './auth/otp.controller.js';
+import { OtpService } from './auth/otp.service.js';
 import { MailBudget } from './mailer/mail-budget.service.js';
 import { MailDispatcher } from './mailer/mail-dispatcher.service.js';
 import { Mailer } from './mailer/mailer.js';
@@ -11,9 +13,9 @@ import { SessionService } from './sessions/session.service.js';
 import { SessionsController } from './sessions/sessions.controller.js';
 
 @Module({
-  controllers: [SessionsController],
+  controllers: [SessionsController, OtpController],
   providers: [
-    PasswordHasher, AccessTokenService, SessionService, { provide: APP_GUARD, useClass: AuthGuard },
+    PasswordHasher, OtpService, AccessTokenService, SessionService, { provide: APP_GUARD, useClass: AuthGuard },
     { provide: Mailer, useClass: SmtpMailer }, MailBudget, MailDispatcher,
   ],
 })
