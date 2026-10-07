@@ -7,6 +7,7 @@ import { ProblemDetailsException } from '../common/problem-details/problem-detai
 import { RateLimit } from '../common/rate-limit/rate-limit.decorator.js';
 import { CurrentUser } from '../common/request-user/current-user.decorator.js';
 import type { RequestUser } from '../common/request-user/request-user.js';
+import { Public } from '../identity/sessions/public.decorator.js';
 
 @Controller('sample')
 export class SampleController {
@@ -22,6 +23,7 @@ export class SampleController {
   }
 
   @Get()
+  @Public()
   list(@Query('page_token') pageToken?: string) {
     if (pageToken !== undefined) {
       const cursor = decodePageToken(pageToken);

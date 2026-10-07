@@ -1,9 +1,8 @@
 import { CanActivate, ExecutionContext, Inject, Injectable } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import type { Request } from 'express';
 import { APP_CONFIG, type AppConfig, type RateLimitRuleName } from '../config/app-config.js';
 import { normalizeEmail } from '../email/normalize-email.js';
-import type { RequestUser } from '../request-user/request-user.js';
+import type { RequestWithUser } from '../request-user/request-user.js';
 import { RATE_LIMIT_KEY } from './rate-limit.decorator.js';
 import { RateLimiter } from './rate-limiter.service.js';
 
@@ -19,7 +18,7 @@ export class RateLimitGuard implements CanActivate {
     const rules = this.reflector.get<RateLimitRuleName[] | undefined>(RATE_LIMIT_KEY, context.getHandler());
     if (!rules) return true;
 
-    const request = context.switchToHttp().getRequest<Request & { user?: RequestUser }>();
+    const request = context.switchToHttp().getRequest<RequestWithUser>();
     for (const rule of rules) {
       let subject: string | null | undefined;
       switch (this.config.limits[rule].by) {

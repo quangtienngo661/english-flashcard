@@ -8,7 +8,9 @@ describe('SampleController', () => {
     const logs: LogEntry[] = [];
     const logger = new AppLogger({ write: (entry) => { logs.push(entry); } });
     const controller = new SampleController(logger);
-    const result = runWithOperationId('sample-op', () => controller.create({ userId: 'user-1' }));
+    const result = runWithOperationId('sample-op', () => controller.create({
+      userId: 'user-1', sessionChainId: 'fake-session',
+    }));
     expect(result.receivedAt).toEqual(expect.any(String));
     expect(logs).toEqual([{
       level: 'info', event: 'sample.create', user_id: 'user-1', operation_id: 'sample-op',
