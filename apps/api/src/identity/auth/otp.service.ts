@@ -53,9 +53,13 @@ export class OtpService {
       userId, purpose, codeHmac: this.hmac(code).toString('hex'),
       expiresAt: new Date(now.getTime() + 600_000), createdAt: now,
     } });
-    // Design §7 event; never carries the code or the address.
-    this.logger.info('otp_sent', { user_id: userId, purpose });
     return otpMail(user.email, purpose, code);
+  }
+
+  /** Design §7 event, logged only after the issuing transaction committed; never carries code or address. */
+  noteIssued(userId: string, purpose: OtpPurpose, message: MailMessage | null): MailMessage | null {
+    if (message) this.logger.info('otp_sent', { user_id: userId, purpose });
+    return message;
   }
 
   async requestVerifyEmail(user: RequestUser, res: Response): Promise<void> {
@@ -77,7 +81,7 @@ export class OtpService {
       return { kind: 'issued' as const, message: await this.issueInTx(tx, user.userId, 'verify_email') };
     }, transactionOptions);
     if (outcome.kind === 'locked') throw this.locked(outcome.lockedUntil);
-    this.dispatcher.afterResponse(res, [sendPrepared(outcome.message)]);
+    this.dispatcher.afterResponse(res, [sendPrepared(this.noteIssued(user.userId, 'verify_email', outcome.message))]);
   }
 
   async requestPasswordReset(rawEmail: string, res: Response): Promise<void> {
@@ -91,10 +95,11 @@ export class OtpService {
     const job: MailJob = async () => {
       const account = await this.prisma.user.findUnique({ where: { email } });
       if (!account) return null;
-      return this.prisma.$transaction(async (tx) => {
+      const message = await this.prisma.$transaction(async (tx) => {
         await withUserLock(tx, account.id);
         return this.issueInTx(tx, account.id, 'reset_password');
       }, transactionOptions);
+      return this.noteIssued(account.id, 'reset_password', message);
     };
     this.dispatcher.afterResponse(res, [job]);
   }

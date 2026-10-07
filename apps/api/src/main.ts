@@ -12,6 +12,9 @@ async function bootstrap() {
   const config = loadConfig(process.env);
   const app = await NestFactory.create<NestExpressApplication>(AppModule.forRoot(config), { bodyParser: false });
   configureApp(app, config);
+  // SIGTERM/SIGINT run Nest shutdown hooks: pending post-response mail is drained (MailDispatcher)
+  // and the maintenance timer is cleared before the process exits.
+  app.enableShutdownHooks();
   await app.listen(process.env.PORT ?? 3000);
 }
 await bootstrap();

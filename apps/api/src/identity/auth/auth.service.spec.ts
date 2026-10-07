@@ -23,7 +23,7 @@ describe('registration and login (unit, isolated persistence)', () => {
   const budget = { assertAvailable: vi.fn(), tryConsume: vi.fn() };
   const dispatcher = new MailDispatcher(mailer, budget as unknown as MailBudget, logger);
   const hasher = { hash: vi.fn(), verify: vi.fn(), verifyDummy: vi.fn() };
-  const otp = { issueInTx: vi.fn() };
+  const otp = { issueInTx: vi.fn(), noteIssued: vi.fn((_u: string, _p: string, m: unknown) => m) };
   const sessions = { startChain: vi.fn() };
   const tx = { $executeRaw: vi.fn(), user: { create: vi.fn(), findUnique: vi.fn(), update: vi.fn() },
     passwordCredential: { create: vi.fn() } };

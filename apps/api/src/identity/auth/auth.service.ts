@@ -60,10 +60,10 @@ export class AuthService {
       }
       throw error;
     }
-    const job: MailJob = () => this.prisma.$transaction(async (tx) => {
+    const job: MailJob = async () => this.otp.noteIssued(userId, 'verify_email', await this.prisma.$transaction(async (tx) => {
       await withUserLock(tx, userId);
       return this.otp.issueInTx(tx, userId, 'verify_email');
-    }, transactionOptions);
+    }, transactionOptions));
     this.dispatcher.afterResponse(res, [job]);
     return session;
   }

@@ -41,7 +41,7 @@ describe('Maintenance cleanup (e2e, isolated database)', () => {
     expect(keys).toEqual(['test:inside']);
   });
 
-  it('clears successor ciphertext only after grace_until has passed', async () => {
+  it('B1E8: clears successor ciphertext only after grace_until has passed', async () => {
     const chain = await chainAt({ createdAt: now, lastUsedAt: now });
     await ctx.prisma.refreshToken.createMany({ data: [
       { chainId: chain.id, tokenHash: `past-${chain.id}`, successorCiphertext: 'x', graceUntil: ago(second) },

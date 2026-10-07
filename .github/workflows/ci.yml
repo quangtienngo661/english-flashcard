@@ -1,0 +1,67 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  api:
+    name: api (lint, typecheck, build, unit, e2e)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: apps/api
+    services:
+      # Live database for `prisma generate --sql` (TypedSQL needs a migrated DB to infer types).
+      # The e2e suite starts its own Postgres and Mailpit containers through Testcontainers.
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: english_learning
+          POSTGRES_USER: dev
+          POSTGRES_PASSWORD: dev
+        ports:
+          - 5434:5432
+        options: >-
+          --health-cmd "pg_isready -U dev -d english_learning"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_URL: postgresql://dev:dev@localhost:5434/english_learning
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.6.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24.11.0
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Migrate and generate Prisma client + TypedSQL
+        run: pnpm db:setup
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Typecheck
+        run: pnpm exec tsc --noEmit -p tsconfig.json
+
+      - name: Build
+        run: pnpm build
+
+      - name: Unit tests
+        run: pnpm test
+
+      - name: E2E tests (Testcontainers Postgres + Mailpit)
+        run: pnpm test:e2e

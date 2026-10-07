@@ -41,6 +41,13 @@ này **không có reviewer độc lập**. Mọi kết quả dưới đây đề
 | R4 | Nhỏ | Test dọn bản mã hóa sau ân hạn chưa ghi mã `B1E8` | Đổi tên test |
 | R5 | Quy trình | Task 13 (vai trò) do Codex viết nhưng chỉ có Claude review; Task 14 do Claude tự viết và tự review — chưa có reviewer độc lập | Cho Astra review hai task này khi Codex có lại hạn mức |
 
+## 3b. Xử lý sau review (07/10/2026)
+
+R1 đã sửa (`app.enableShutdownHooks()` + `MailDispatcher.onApplicationShutdown` chờ `drain()`, có unit test).
+R2 đã sửa (`otp_sent` ghi qua `OtpService.noteIssued` sau khi commit). R4 đã sửa (test mang mã `B1E8`).
+R3 để lại (nhỏ, không có trong design). R5: chủ dự án quyết định không cần review thêm. Thêm CI GitHub
+Actions (`.github/workflows/ci.yml`): lint, typecheck, build, unit, e2e; PR chỉ merge khi CI xanh.
+
 ## 4. Những điểm đã sửa trong quá trình làm (đã có test)
 
 Lỗi body hỏng/nén lạ trả 500 (Task 2); test khóa user dựa vào thời gian (Task 4); header `Bearer` nhiều dấu

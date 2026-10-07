@@ -49,6 +49,20 @@ describe('MailDispatcher', () => {
     expect(mailer.sent).toHaveLength(1);
   });
 
+  it('R1: application shutdown waits until a started batch has been sent', async () => {
+    const { dispatcher, res, mailer } = setup();
+    const gate = deferred();
+    dispatcher.afterResponse(res, [async () => { await gate.promise; return message; }]);
+    res.emit('close');
+    const shutdown = vi.fn();
+    const done = dispatcher.onApplicationShutdown().then(shutdown);
+    await Promise.resolve();
+    expect(shutdown).not.toHaveBeenCalled();
+    gate.resolve();
+    await done;
+    expect(mailer.sent).toEqual([message]);
+  });
+
   it('B1E16: a client abort (close without finish) still runs the batch', async () => {
     const { dispatcher, res, mailer } = setup();
     dispatcher.afterResponse(res, [sendPrepared(message)]);

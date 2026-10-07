@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, type OnApplicationShutdown } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
 import type { Response } from 'express';
 import { AppLogger } from '../../common/logging/app-logger.js';
@@ -13,7 +13,7 @@ export function sendPrepared(msg: MailMessage | null): MailJob {
 }
 
 @Injectable()
-export class MailDispatcher {
+export class MailDispatcher implements OnApplicationShutdown {
   private readonly batches = new Set<Promise<void>>();
 
   constructor(
@@ -33,6 +33,11 @@ export class MailDispatcher {
 
   runNow(jobs: MailJob[]): void {
     if (jobs.length > 0) this.register(jobs)();
+  }
+
+  /** Runs after Nest closed the HTTP server (enableShutdownHooks), so pending batches have started. */
+  async onApplicationShutdown(): Promise<void> {
+    await this.drain();
   }
 
   async drain(): Promise<void> {
