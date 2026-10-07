@@ -13,7 +13,7 @@ import type { Response } from 'express';
 import type { PrismaClient } from '../../generated/prisma/client.js';
 import { PRISMA_CLIENT } from '../db/prisma.module.js';
 import { ProblemDetailsException } from '../problem-details/problem-details.exception.js';
-import type { RequestWithUser } from '../request-user/fake-request-user.middleware.js';
+import type { RequestWithUser } from '../request-user/request-user.js';
 import { IDEMPOTENT_KEY, type IdempotentOptions } from './idempotent.decorator.js';
 import { runIdempotent } from './idempotency.service.js';
 

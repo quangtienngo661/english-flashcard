@@ -1,29 +1,29 @@
-import { Controller, Get, Post, Query, UseGuards, UseInterceptors } from '@nestjs/common';
+import { Controller, Get, Inject, Post, Query, UseInterceptors } from '@nestjs/common';
 import { Idempotent } from '../common/idempotency/idempotent.decorator.js';
 import { IdempotencyInterceptor } from '../common/idempotency/idempotency.interceptor.js';
-import { RedactingLoggerService } from '../common/logging/redacting-logger.service.js';
+import { AppLogger } from '../common/logging/app-logger.js';
 import { decodePageToken } from '../common/pagination/page-token.util.js';
 import { ProblemDetailsException } from '../common/problem-details/problem-details.exception.js';
 import { RateLimit } from '../common/rate-limit/rate-limit.decorator.js';
-import { RateLimitGuard } from '../common/rate-limit/rate-limit.guard.js';
 import { CurrentUser } from '../common/request-user/current-user.decorator.js';
 import type { RequestUser } from '../common/request-user/request-user.js';
+import { Public } from '../identity/sessions/public.decorator.js';
 
 @Controller('sample')
 export class SampleController {
-  private readonly logger = new RedactingLoggerService();
+  constructor(@Inject(AppLogger) private readonly logger: AppLogger) {}
 
   @Post()
   @Idempotent()
-  @RateLimit({ max: 10, windowSeconds: 60 })
-  @UseGuards(RateLimitGuard)
+  @RateLimit('sample.create')
   @UseInterceptors(IdempotencyInterceptor)
   create(@CurrentUser() user: RequestUser | undefined) {
-    this.logger.log({ event: 'sample.create', userId: user?.userId }, 'SampleController');
+    this.logger.info('sample.create', { user_id: user?.userId });
     return { receivedAt: new Date().toISOString() };
   }
 
   @Get()
+  @Public()
   list(@Query('page_token') pageToken?: string) {
     if (pageToken !== undefined) {
       const cursor = decodePageToken(pageToken);

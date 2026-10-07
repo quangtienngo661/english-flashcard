@@ -1,0 +1,23 @@
+model IdempotencyKey {
+  key            String
+  userId         String   @map("user_id") @db.Uuid
+  endpoint       String
+  status         String
+  payloadHash    String   @map("payload_hash")
+  responseStatus Int?     @map("response_status")
+  responseBody   Json?    @map("response_body")
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt      DateTime @default(now()) @map("updated_at") @db.Timestamptz
+
+  @@unique([key, userId, endpoint])
+  @@map("idempotency_keys")
+}
+
+model RateLimitCounter {
+  key         String
+  windowStart DateTime @map("window_start") @db.Timestamptz
+  count       Int      @default(0)
+
+  @@unique([key, windowStart])
+  @@map("rate_limit_counters")
+}

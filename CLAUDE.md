@@ -13,8 +13,8 @@ private words; quick-add of words encountered elsewhere; word groups, flashcards
 schedule; non-AI definition quizzes; AI-generated fill-in-the-blank practice graded by rule; tier-based
 entitlements and quotas.
 
-**Current phase: Bước 0 (backend foundation) implemented.** Repo is now a git repo with real code under
-`apps/api`. Two branches exist, both complete and passing, neither merged yet:
+**Current phase: Bước 0 and Bước 1 (Identity core) implemented.** Real code
+is under `apps/api`. Historical implementation branches:
 - `feat/buoc-0-backend-foundation` — Bước 0 built on **Drizzle ORM** (10 tasks, 5 unit + 23 e2e tests).
 - `feat/migrate-drizzle-to-prisma` (branched from the above) — the same Bước 0 re-implemented on
   **Prisma ORM** (6-task migration, 5 unit + 24 e2e tests). This is the current/preferred ORM — the
@@ -22,7 +22,8 @@ entitlements and quotas.
   locking mechanism itself changed to `pg_try_advisory_xact_lock`, which Prisma handles fine via TypedSQL.
   See `docs/superpowers/plans/2026-10-06-migrate-drizzle-to-prisma.md` for the full migration and why.
 
-Neither branch is merged into `master`/`main`; no push has happened. All 8 V1 specs (docs/specs/) are
+Bước 0, the Bước 1 design and decision record are on `main` (PR #1–#3); Bước 1 implementation is complete
+on `feat/buoc-1-identity-impl` (not yet merged/pushed). All 8 V1 specs (docs/specs/) are
 written and independently verified; the project owner has said "keep this order, start step 0" (accepting
 the plan). Read `docs/HANDOFF_2026-10-05_BUOC_0.md` for the original Bước 0 kickoff context, and
 `docs/superpowers/specs/2026-10-05-buoc-0-design.md` (now annotated with the Prisma switch) for the
@@ -77,6 +78,11 @@ decided-but-not-scaffolded:
   Practice. Cross-module write ownership is mapped in system-spec's "Bản đồ ghi dữ liệu" table.
   Billing Integration is interface-only in V1.
   Clients: Next.js (web) and Flutter (mobile) share the same API.
+- **Module boundaries (D3):** each module owns `apps/api/prisma/models/<module>.prisma`; only its code
+  queries its tables. Other modules call its exported service. No Prisma `@relation` crosses module
+  boundaries; cross-module references are plain UUID columns. Only `src/identity/**` touches Identity
+  tables; other modules call `IdentityService`. `src/common/**` never imports from `src/identity/**`.
+  This is a review convention, not enforced by tooling.
 - Build order is fixed (owner-confirmed, HANDOFF §2): **Step 0** foundation (scaffold, Docker + Postgres,
   Problem Details, pagination, `Idempotency-Key`, IDs, logging, test harness) → 1 Identity core → 2
   Content + Pipeline → 3 Learning (earliest pilot milestone) → 4 Practice non-AI → 5 Entitlements → 6 AI
@@ -125,25 +131,71 @@ Implemented and tested: Problem Details (RFC 9457), opaque `page_token` paginati
 `operation_id` + redacting logger, per-user atomic rate limiting, a sample endpoint exercising all of the
 above end-to-end. Current state: 5 unit + 24 e2e tests passing on `feat/migrate-drizzle-to-prisma`.
 
+## Bước 1 — as-built (07/10/2026)
+
+Design `docs/superpowers/specs/2026-10-07-buoc-1-identity-core-design.md` (D1–D16, criteria `B1#1–B1#38`,
+edge cases `B1E1–B1E34`), decisions `docs/superpowers/decisions/2026-10-07-buoc-1-identity-core-decisions.md`,
+plan `docs/superpowers/plans/2026-10-07-buoc-1-identity-core.md` (14 tasks), reviews in
+`docs/superpowers/reviews/`. Implemented on `feat/buoc-1-identity-impl`:
+
+- `src/common/`: `CommonModule` (global) with `AppConfig`/`loadConfig` (zod, fail-fast), `Clock`/`FakeClock`,
+  `AppLogger` (levels, redaction, `operation_id` via AsyncLocalStorage), named-rule `RateLimiter` (fixes the
+  Bước 0 shared-counter bug), Problem Details for body-parser errors (400/413/415), `MaintenanceScheduler`
+  (hourly cleanup jobs). `configureApp()` is shared by `main.ts` and every e2e test.
+- `src/identity/`: register/login with lockout, OTP (verify email, reset password, 24 h lock after 20
+  failures), rotating refresh-token session chains (10 s grace, reuse detection, 90/365 d expiry, 10 active
+  devices), web cookie + CSRF header, password change/reset, profile + `IdentityService` (the only export),
+  staff roles `admin`/`editor` with `@RequirePermission`, `pnpm admin:grant <email>` (needs `pnpm build`).
+  Every security write runs under a per-user advisory lock and commits before the HTTP error (design §4b);
+  mail is sent after commit and after the response closes.
+- Tests: 338 unit + 182 e2e (real Postgres + Mailpit via Testcontainers); suites that depend on global state
+  use `createIsolatedDatabase()`. A manual run against the built API (register → OTP from Mailpit → verify
+  → refresh → password change → logout → admin:grant → admin endpoint) passed on 07/10.
+- Execution: Codex `gpt-6.1-sol` implemented, `gpt-6-astra` (medium effort) reviewed each task; Tasks 13–14
+  were self-reviewed by Claude while Codex was over its usage limit (no independent review for those two).
+
+Bước 1 open items: all rate-limit/lockout/budget numbers are `ASSUMPTION` (configurable); same-user lock
+contention can exhaust the 10-connection pool (accepted at pilot scale); Gmail-personal SMTP limits still
+unsourced; spec updates listed in the design's §11 are not yet applied to `docs/specs/`.
+
 ### Open decisions for the next session (read before doing anything else)
 
-1. **Branches not merged, not pushed.** `feat/buoc-0-backend-foundation` (Drizzle, historical) and
-   `feat/migrate-drizzle-to-prisma` (Prisma, current — branched from the former, has its own extra commit
-   `8741a4d` adding the preparation/spec docs that neither branch had before). Ask the project owner
-   whether to merge the Prisma branch into `master`/`main` and what to do with the Drizzle one (keep as
-   history, or delete) — do not merge or push without being asked explicitly.
-2. **Module-boundary convention (Drizzle-era, carries over conceptually to Prisma)** — "each module gets
-   its own schema/query file, never import another module's" — was proposed while discussing the ORM
-   choice but never put to the owner as its own question. Still just a convention in docs, not enforced
-   by tooling. Revisit when Step 1 (Identity) adds a second real module.
-3. **B0E1 (orphaned `Idempotency-Key` after a crash, treated as a transient failure and retried)** is
+Bước 0, the Bước 1 design and decision record are on `main` (PR #1–#3); Bước 1 implementation is complete
+on `feat/buoc-1-identity-impl`, awaiting the owner's go-ahead to push and open a PR. The module-boundary convention is chốt as D3
+(see Architecture & Key Decisions above).
+
+1. **B0E1 (orphaned `Idempotency-Key` after a crash, treated as a transient failure and retried)** is
    `ASSUMPTION` — not covered by system-spec's own SE2 — needs the owner's explicit confirmation.
-4. **This plan's own choices, not yet put to the owner:** `Idempotency-Key` header is mandatory when
+2. **This plan's own choices, not yet put to the owner:** `Idempotency-Key` header is mandatory when
    `@Idempotent()` is used (400 if missing); default timeout `30s`, enforced client-side via
    `Promise.race` (deliberately not a Postgres-side timeout — see the design doc's B0E8 note on why that
    crashed the process).
-5. **Prisma pinned to `7.10.0`** (exact, no `^`) because the npm `latest` tag currently points at a `8.0.0-rc`
+3. **Prisma pinned to `7.10.0`** (exact, no `^`) because the npm `latest` tag currently points at a `8.0.0-rc`
    prerelease — re-check when Prisma 8 reaches a real stable release.
+
+## Local setup (PowerShell)
+
+From the repo root, start the local Postgres and Mailpit services, then prepare the API environment:
+
+```powershell
+docker compose up -d
+Set-Location apps/api
+Copy-Item .env.example .env
+node scripts/gen-secret.mjs
+```
+
+Replace each secret placeholder in `.env` with a separate output from `node scripts/gen-secret.mjs`.
+Keep `k1:` before the JWT secret. Mailpit needs no SMTP credentials; its UI is at
+`http://localhost:8025`. Postgres listens on host port **5434** (5432/5433 are used by other local
+projects on this machine). Then, from `apps/api`:
+
+```powershell
+pnpm db:setup
+```
+
+`prisma.config.ts` loads `.env` when it exists. `db:setup` deploys migrations, then runs `prisma generate --sql`, which
+emits both the Prisma client and TypedSQL (a second plain `prisma generate` wipes TypedSQL on Linux — seen in CI). The e2e global setup runs the same sequence against
+its fresh Testcontainers Postgres database.
 
 ## Machine state (verified 2026-10-05–06)
 

@@ -1,25 +1,19 @@
-import { INestApplication } from '@nestjs/common';
-import { Test } from '@nestjs/testing';
-import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { AppModule } from '../src/app.module.js';
+import { createTestApp, type TestApp } from './support/create-test-app.js';
 
 describe('RequestUser seam is not wired by default', () => {
-  let app: INestApplication;
+  let testApp: TestApp;
 
   beforeAll(async () => {
-    const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
-    app = moduleRef.createNestApplication();
-    app.setGlobalPrefix('v1');
-    await app.init();
+    testApp = await createTestApp();
   });
 
   afterAll(async () => {
-    await app.close();
+    await testApp?.close();
   });
 
   it('the X-Test-User-Id header alone does nothing without the fake middleware explicitly imported', async () => {
-    const res = await request(app.getHttpServer()).get('/v1/health').set('X-Test-User-Id', 'user-123');
+    const res = await testApp.http().get('/v1/health').set('X-Test-User-Id', 'user-123');
     expect(res.status).toBe(200);
   });
 });
