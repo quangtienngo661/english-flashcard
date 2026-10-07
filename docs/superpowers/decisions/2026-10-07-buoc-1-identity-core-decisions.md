@@ -26,6 +26,8 @@ nhắc, trade-off của từng phương án, phương án được chọn và l�
 | D11 | Cách đếm rate limit | Khung cố định cho mọi luật | Chủ dự án |
 | D12 | Logout xác định phiên bằng | Refresh token | Chủ dự án |
 | D13 | Deploy web và API | Cùng tên miền gốc | Chủ dự án |
+| D14 | `verify-email` khi email đã xác minh | 409 `email-already-verified` | Chủ dự án |
+| D15 | Body request quá lớn | Giữ 100 KB, trả 413 | Chủ dự án |
 
 ## D1 — Phạm vi Bước 1
 
@@ -160,6 +162,27 @@ Bối cảnh: cookie `SameSite=Strict` chỉ được gửi khi web và API cùn
 | ✅ Cùng tên miền gốc (`app.<miền>`, `api.<miền>`) | Giữ `SameSite=Strict`, an toàn nhất. Phải mua tên miền; là điều kiện bắt buộc khi deploy |
 | Chưa biết, để sau | Không cam kết sớm. Rủi ro đến Bước 3 mới phát hiện web không gia hạn được phiên |
 | Next.js chuyển tiếp request sang API | Chạy với tên miền miễn phí của hosting. Thêm một chặng trung gian, phải cấu hình ở Bước 3 |
+
+## D14 — `verify-email` khi email đã xác minh
+
+Bối cảnh: review của Codex `gpt-6-astra` (07/10) chỉ ra B1#7 (gửi lại mã đã dùng → 400) và B1E22 (đã xác minh → 200)
+mâu thuẫn: sau lần xác minh đầu, lần gọi thứ hai rơi vào cả hai luật. Spec gốc ghi "nhập đúng OTP hai lần: lần hai báo
+mã đã dùng"; vế "200" do design tự thêm. Lần gọi thứ hai xảy ra thật khi mất phản hồi và app tự gửi lại.
+
+| Phương án | Trade-off |
+|---|---|
+| A. Trả 200 `{ email_verified: true }`, không kiểm mã | Gửi lại an toàn, client đơn giản nhất. Lệch câu "báo mã đã dùng" của spec |
+| B. Luôn kiểm mã, mã đã dùng → 400 `invalid-otp` | Đúng câu chữ spec. Mất phản hồi lần đầu thì app báo "mã sai" dù đã xác minh; lần sai vô nghĩa vẫn bị tính vào trần 20 lần |
+| ✅ C. Trả 409 `email-already-verified`, không kiểm mã | Nói rõ sự thật "email đã xác minh"; đúng tinh thần "báo lại" của spec; app nhận ra và coi là thành công. App phải xử lý riêng mã 409 này |
+
+## D15 — Body request quá lớn
+
+Bối cảnh: B1E2 đòi mật khẩu 1 MB ở đăng nhập trả 401, nhưng Express mặc định chặn body > 100 KB trước khi tới code.
+
+| Phương án | Trade-off |
+|---|---|
+| ✅ Giữ 100 KB, body lớn hơn trả 413 `payload-too-large` | Chặn trước khi đọc email nên không lộ gì; server ít tốn tài nguyên. B1E2 sửa câu chữ; mật khẩu 129 ký tự tới 100 KB vẫn trả 401 |
+| Nâng giới hạn lên ~2 MB | Giữ đúng câu chữ B1E2. Mọi endpoint nhận body to gấp 20 lần, kẻ xấu làm server tốn tài nguyên mà không được lợi gì |
 
 ## Đề xuất kỹ thuật duyệt cùng design (không hỏi riêng)
 
