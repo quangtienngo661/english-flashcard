@@ -53,6 +53,8 @@ export class OtpService {
       userId, purpose, codeHmac: this.hmac(code).toString('hex'),
       expiresAt: new Date(now.getTime() + 600_000), createdAt: now,
     } });
+    // Design §7 event; never carries the code or the address.
+    this.logger.info('otp_sent', { user_id: userId, purpose });
     return otpMail(user.email, purpose, code);
   }
 

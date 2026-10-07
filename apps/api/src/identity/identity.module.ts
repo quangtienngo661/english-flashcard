@@ -7,6 +7,7 @@ import { PasswordService } from './auth/password.service.js';
 import { PasswordHasher } from './auth/password-hasher.service.js';
 import { OtpController } from './auth/otp.controller.js';
 import { OtpService } from './auth/otp.service.js';
+import { IdentityCleanupService } from './maintenance/identity-cleanup.service.js';
 import { MailBudget } from './mailer/mail-budget.service.js';
 import { MailDispatcher } from './mailer/mail-dispatcher.service.js';
 import { Mailer } from './mailer/mailer.js';
@@ -25,7 +26,7 @@ import { StaffService } from './staff/staff.service.js';
   controllers: [SessionsController, OtpController, AuthController, PasswordController, ProfileController, StaffController],
   providers: [
     PasswordHasher, OtpService, AuthService, PasswordService, IdentityService, AccessTokenService, SessionService, StaffService, PermissionGuard, { provide: APP_GUARD, useClass: AuthGuard },
-    { provide: Mailer, useClass: SmtpMailer }, MailBudget, MailDispatcher,
+    { provide: Mailer, useClass: SmtpMailer }, MailBudget, MailDispatcher, IdentityCleanupService,
   ],
   exports: [IdentityService],
 })

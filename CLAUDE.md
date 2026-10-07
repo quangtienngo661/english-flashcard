@@ -13,7 +13,7 @@ private words; quick-add of words encountered elsewhere; word groups, flashcards
 schedule; non-AI definition quizzes; AI-generated fill-in-the-blank practice graded by rule; tier-based
 entitlements and quotas.
 
-**Current phase: Bước 0 (backend foundation) implemented; Bước 1 implementation in progress.** Real code
+**Current phase: Bước 0 and Bước 1 (Identity core) implemented.** Real code
 is under `apps/api`. Historical implementation branches:
 - `feat/buoc-0-backend-foundation` — Bước 0 built on **Drizzle ORM** (10 tasks, 5 unit + 23 e2e tests).
 - `feat/migrate-drizzle-to-prisma` (branched from the above) — the same Bước 0 re-implemented on
@@ -22,8 +22,8 @@ is under `apps/api`. Historical implementation branches:
   locking mechanism itself changed to `pg_try_advisory_xact_lock`, which Prisma handles fine via TypedSQL.
   See `docs/superpowers/plans/2026-10-06-migrate-drizzle-to-prisma.md` for the full migration and why.
 
-Bước 0, the Bước 1 design and decision record are on `main` (PR #1–#3); Bước 1 implementation is on
-`feat/buoc-1-identity-impl`. All 8 V1 specs (docs/specs/) are
+Bước 0, the Bước 1 design and decision record are on `main` (PR #1–#3); Bước 1 implementation is complete
+on `feat/buoc-1-identity-impl` (not yet merged/pushed). All 8 V1 specs (docs/specs/) are
 written and independently verified; the project owner has said "keep this order, start step 0" (accepting
 the plan). Read `docs/HANDOFF_2026-10-05_BUOC_0.md` for the original Bước 0 kickoff context, and
 `docs/superpowers/specs/2026-10-05-buoc-0-design.md` (now annotated with the Prisma switch) for the
@@ -131,10 +131,37 @@ Implemented and tested: Problem Details (RFC 9457), opaque `page_token` paginati
 `operation_id` + redacting logger, per-user atomic rate limiting, a sample endpoint exercising all of the
 above end-to-end. Current state: 5 unit + 24 e2e tests passing on `feat/migrate-drizzle-to-prisma`.
 
+## Bước 1 — as-built (07/10/2026)
+
+Design `docs/superpowers/specs/2026-10-07-buoc-1-identity-core-design.md` (D1–D16, criteria `B1#1–B1#38`,
+edge cases `B1E1–B1E34`), decisions `docs/superpowers/decisions/2026-10-07-buoc-1-identity-core-decisions.md`,
+plan `docs/superpowers/plans/2026-10-07-buoc-1-identity-core.md` (14 tasks), reviews in
+`docs/superpowers/reviews/`. Implemented on `feat/buoc-1-identity-impl`:
+
+- `src/common/`: `CommonModule` (global) with `AppConfig`/`loadConfig` (zod, fail-fast), `Clock`/`FakeClock`,
+  `AppLogger` (levels, redaction, `operation_id` via AsyncLocalStorage), named-rule `RateLimiter` (fixes the
+  Bước 0 shared-counter bug), Problem Details for body-parser errors (400/413/415), `MaintenanceScheduler`
+  (hourly cleanup jobs). `configureApp()` is shared by `main.ts` and every e2e test.
+- `src/identity/`: register/login with lockout, OTP (verify email, reset password, 24 h lock after 20
+  failures), rotating refresh-token session chains (10 s grace, reuse detection, 90/365 d expiry, 10 active
+  devices), web cookie + CSRF header, password change/reset, profile + `IdentityService` (the only export),
+  staff roles `admin`/`editor` with `@RequirePermission`, `pnpm admin:grant <email>` (needs `pnpm build`).
+  Every security write runs under a per-user advisory lock and commits before the HTTP error (design §4b);
+  mail is sent after commit and after the response closes.
+- Tests: 338 unit + 182 e2e (real Postgres + Mailpit via Testcontainers); suites that depend on global state
+  use `createIsolatedDatabase()`. A manual run against the built API (register → OTP from Mailpit → verify
+  → refresh → password change → logout → admin:grant → admin endpoint) passed on 07/10.
+- Execution: Codex `gpt-6.1-sol` implemented, `gpt-6-astra` (medium effort) reviewed each task; Tasks 13–14
+  were self-reviewed by Claude while Codex was over its usage limit (no independent review for those two).
+
+Bước 1 open items: all rate-limit/lockout/budget numbers are `ASSUMPTION` (configurable); same-user lock
+contention can exhaust the 10-connection pool (accepted at pilot scale); Gmail-personal SMTP limits still
+unsourced; spec updates listed in the design's §11 are not yet applied to `docs/specs/`.
+
 ### Open decisions for the next session (read before doing anything else)
 
-Branch status is resolved: Bước 0, the Bước 1 design and decision record are on `main` (PR #1–#3);
-Bước 1 implementation on `feat/buoc-1-identity-impl`. The module-boundary convention is chốt as D3
+Bước 0, the Bước 1 design and decision record are on `main` (PR #1–#3); Bước 1 implementation is complete
+on `feat/buoc-1-identity-impl`, awaiting the owner's go-ahead to push and open a PR. The module-boundary convention is chốt as D3
 (see Architecture & Key Decisions above).
 
 1. **B0E1 (orphaned `Idempotency-Key` after a crash, treated as a transient failure and retried)** is
@@ -159,7 +186,8 @@ node scripts/gen-secret.mjs
 
 Replace each secret placeholder in `.env` with a separate output from `node scripts/gen-secret.mjs`.
 Keep `k1:` before the JWT secret. Mailpit needs no SMTP credentials; its UI is at
-`http://localhost:8025`. Then, from `apps/api`:
+`http://localhost:8025`. Postgres listens on host port **5434** (5432/5433 are used by other local
+projects on this machine). Then, from `apps/api`:
 
 ```powershell
 pnpm db:setup
