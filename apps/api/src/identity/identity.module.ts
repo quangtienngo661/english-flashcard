@@ -17,11 +17,14 @@ import { AccessTokenService } from './sessions/access-token.service.js';
 import { AuthGuard } from './sessions/auth.guard.js';
 import { SessionService } from './sessions/session.service.js';
 import { SessionsController } from './sessions/sessions.controller.js';
+import { PermissionGuard } from './staff/permission.guard.js';
+import { StaffController } from './staff/staff.controller.js';
+import { StaffService } from './staff/staff.service.js';
 
 @Module({
-  controllers: [SessionsController, OtpController, AuthController, PasswordController, ProfileController],
+  controllers: [SessionsController, OtpController, AuthController, PasswordController, ProfileController, StaffController],
   providers: [
-    PasswordHasher, OtpService, AuthService, PasswordService, IdentityService, AccessTokenService, SessionService, { provide: APP_GUARD, useClass: AuthGuard },
+    PasswordHasher, OtpService, AuthService, PasswordService, IdentityService, AccessTokenService, SessionService, StaffService, PermissionGuard, { provide: APP_GUARD, useClass: AuthGuard },
     { provide: Mailer, useClass: SmtpMailer }, MailBudget, MailDispatcher,
   ],
   exports: [IdentityService],

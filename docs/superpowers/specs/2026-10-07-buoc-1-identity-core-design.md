@@ -281,6 +281,7 @@ Bảng (Identity sở hữu, theo "Bản đồ ghi dữ liệu" của system-spe
 | 401 | `invalid-token` | Access token thiếu/sai/hết hạn; refresh token không dùng được |
 | 403 | `forbidden` | Thiếu quyền |
 | 403 | `csrf-header-required` | Đường cookie thiếu `X-CSRF-Protection: 1` |
+| 404 | `not-found` | `endpoint` vai trò: không có user với id/email đó (thêm khi làm Task 13) |
 | 409 | `email-taken` | Email đã có tài khoản |
 | 409 | `email-already-verified` | Gọi `verify-email` khi email đã xác minh (D14) |
 | 413 | `payload-too-large` | Body > 100 KB (D15) |
