@@ -11,16 +11,19 @@ import { MailBudget } from './mailer/mail-budget.service.js';
 import { MailDispatcher } from './mailer/mail-dispatcher.service.js';
 import { Mailer } from './mailer/mailer.js';
 import { SmtpMailer } from './mailer/smtp-mailer.js';
+import { IdentityService } from './profile/identity.service.js';
+import { ProfileController } from './profile/profile.controller.js';
 import { AccessTokenService } from './sessions/access-token.service.js';
 import { AuthGuard } from './sessions/auth.guard.js';
 import { SessionService } from './sessions/session.service.js';
 import { SessionsController } from './sessions/sessions.controller.js';
 
 @Module({
-  controllers: [SessionsController, OtpController, AuthController, PasswordController],
+  controllers: [SessionsController, OtpController, AuthController, PasswordController, ProfileController],
   providers: [
-    PasswordHasher, OtpService, AuthService, PasswordService, AccessTokenService, SessionService, { provide: APP_GUARD, useClass: AuthGuard },
+    PasswordHasher, OtpService, AuthService, PasswordService, IdentityService, AccessTokenService, SessionService, { provide: APP_GUARD, useClass: AuthGuard },
     { provide: Mailer, useClass: SmtpMailer }, MailBudget, MailDispatcher,
   ],
+  exports: [IdentityService],
 })
 export class IdentityModule {}
