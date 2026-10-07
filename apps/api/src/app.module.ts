@@ -1,16 +1,20 @@
-import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
+import { DynamicModule, Module } from '@nestjs/common';
+import { CommonModule } from './common/common.module.js';
+import type { AppConfig } from './common/config/app-config.js';
 import { PrismaModule } from './common/db/prisma.module.js';
-import { operationIdMiddleware } from './common/logging/operation-id.middleware.js';
 import { HealthController } from './health/health.controller.js';
 import { SampleModule } from './sample/sample.module.js';
 
 @Module({
-  imports: [PrismaModule.forRoot({ connectionString: process.env.DATABASE_URL ?? '' }), SampleModule],
+  imports: [SampleModule],
   controllers: [HealthController],
   providers: [],
 })
-export class AppModule implements NestModule {
-  configure(consumer: MiddlewareConsumer) {
-    consumer.apply(operationIdMiddleware).forRoutes('*');
+export class AppModule {
+  static forRoot(config: AppConfig): DynamicModule {
+    return {
+      module: AppModule,
+      imports: [CommonModule.forRoot(config), PrismaModule.forRoot({ connectionString: config.databaseUrl })],
+    };
   }
 }

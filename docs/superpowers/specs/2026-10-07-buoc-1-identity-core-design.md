@@ -284,6 +284,7 @@ Bảng (Identity sở hữu, theo "Bản đồ ghi dữ liệu" của system-spe
 | 409 | `email-taken` | Email đã có tài khoản |
 | 409 | `email-already-verified` | Gọi `verify-email` khi email đã xác minh (D14) |
 | 413 | `payload-too-large` | Body > 100 KB (D15) |
+| 415 | `unsupported-media-type` | Body có charset hoặc `Content-Encoding` không hỗ trợ (thêm khi làm Task 2, sau review Astra: trước đó trả 500) |
 | 409 | `staff-role-rule` | Hạ admin cuối cùng; cấp vai trò cho email chưa xác minh |
 | 429 | `rate-limited` | Vượt giới hạn, khóa OTP `verify_email`, khóa đăng nhập khi đổi mật khẩu — kèm `Retry-After` |
 | 503 | `mail-unavailable` | Hết ngân sách thư |
