@@ -1,31 +1,53 @@
 import { randomUUID } from 'node:crypto';
-import { INestApplication } from '@nestjs/common';
+import type { NestExpressApplication } from '@nestjs/platform-express';
 import { Test } from '@nestjs/testing';
 import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, inject, it } from 'vitest';
+import { configureApp } from '../src/app.setup.js';
+import { CommonModule } from '../src/common/common.module.js';
 import { PrismaModule } from '../src/common/db/prisma.module.js';
-import { operationIdMiddleware } from '../src/common/logging/operation-id.middleware.js';
-import { ProblemDetailsFilter } from '../src/common/problem-details/problem-details.filter.js';
+import { LOG_SINK, type LogEntry, type LogSink } from '../src/common/logging/app-logger.js';
 // TEST-ONLY seam (B0E6): wired directly on this standalone test app, never on the real AppModule.
 import { fakeRequestUserMiddleware } from '../src/common/request-user/fake-request-user.middleware.js';
 import { SampleModule } from '../src/sample/sample.module.js';
+import { testConfig } from './support/test-config.js';
 
 describe('Sample endpoint (e2e)', () => {
-  let app: INestApplication;
+  let app: NestExpressApplication;
+  const config = testConfig();
+  const logs: LogEntry[] = [];
+  const sink: LogSink = { write: (entry) => { logs.push(entry); } };
 
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({
-      imports: [PrismaModule.forRoot({ connectionString: inject('databaseUrl') }), SampleModule],
-    }).compile();
-    app = moduleRef.createNestApplication();
-    app.use(operationIdMiddleware, fakeRequestUserMiddleware);
-    app.setGlobalPrefix('v1');
-    app.useGlobalFilters(new ProblemDetailsFilter());
+      imports: [
+        CommonModule.forRoot(config),
+        PrismaModule.forRoot({ connectionString: inject('databaseUrl') }),
+        SampleModule,
+      ],
+    }).overrideProvider(LOG_SINK).useValue(sink).compile();
+    app = moduleRef.createNestApplication<NestExpressApplication>({ bodyParser: false });
+    configureApp(app, config);
+    app.use(fakeRequestUserMiddleware);
     await app.init();
   });
 
   afterAll(async () => {
     await app.close();
+  });
+
+  it('POST /v1/sample with Idempotency-Key writes a log entry carrying operation_id', async () => {
+    const userId = randomUUID();
+    const res = await request(app.getHttpServer())
+      .post('/v1/sample')
+      .set('Idempotency-Key', randomUUID())
+      .set('X-Test-User-Id', userId)
+      .send({});
+    expect(res.status).toBe(201);
+    expect(logs.filter((entry) => entry.user_id === userId)).toEqual([{
+      level: 'info', event: 'sample.create', user_id: userId,
+      operation_id: expect.stringMatching(/^[0-9a-f-]{36}$/),
+    }]);
   });
 
   it('POST /v1/sample with a bad Idempotency-Key payload mismatch returns Problem Details', async () => {
