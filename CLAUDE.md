@@ -193,8 +193,8 @@ projects on this machine). Then, from `apps/api`:
 pnpm db:setup
 ```
 
-`prisma.config.ts` loads `.env` when it exists. `db:setup` deploys migrations, generates TypedSQL against
-the live database, then generates the Prisma client. The e2e global setup runs the same sequence against
+`prisma.config.ts` loads `.env` when it exists. `db:setup` deploys migrations, then runs `prisma generate --sql`, which
+emits both the Prisma client and TypedSQL (a second plain `prisma generate` wipes TypedSQL on Linux — seen in CI). The e2e global setup runs the same sequence against
 its fresh Testcontainers Postgres database.
 
 ## Machine state (verified 2026-10-05–06)

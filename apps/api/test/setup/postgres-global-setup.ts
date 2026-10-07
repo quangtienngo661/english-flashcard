@@ -23,10 +23,6 @@ export async function setup(project: TestProject) {
     env: { ...process.env, DATABASE_URL: connectionString },
     stdio: 'inherit',
   });
-  execSync('pnpm exec prisma generate', {
-    env: { ...process.env, DATABASE_URL: connectionString },
-    stdio: 'inherit',
-  });
 
   project.provide('databaseUrl', connectionString);
 }

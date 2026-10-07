@@ -1,4 +1,4 @@
-// Start Postgres → prisma migrate deploy → prisma generate --sql → prisma generate → run tests; --sql needs a live, migrated DB to infer result types.
+// Start Postgres → prisma migrate deploy → prisma generate --sql (also emits the client) → run tests; --sql needs a live, migrated DB to infer result types.
 import { existsSync } from 'node:fs';
 import { defineConfig, env } from 'prisma/config';
 
