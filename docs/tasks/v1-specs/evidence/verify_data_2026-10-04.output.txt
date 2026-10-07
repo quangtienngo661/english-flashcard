@@ -1,0 +1,13 @@
+R1 rows: cefrj 7799 octanove 2136 | cols: ['headword', 'pos', 'CEFR', 'CoreInventory 1', 'CoreInventory 2', 'Threshold'] ['headword', 'pos', 'CEFR', 'notes']
+R2 raw lowercased (headword,pos) pairs in both sources: 95 | with different level: 95
+R2b cross-source pairs under first-slash-form key: 97 | different level: 97
+R3 cefrj duplicate lowercased keys: [('march', 'noun')] | rows: [('March', 'noun', 'A1'), ('march', 'noun', 'B1'), ('march', 'verb', 'B1')]
+R4 multiword headwords: cefrj 144 octanove (after trim) 10 | octanove with stray spaces: ['turn to ', 'laud ']
+R5 cefrj headwords with uppercase: 58
+R6 slash headwords: cefrj 167 octanove 46
+R7 function-word rows: cefrj 274 octanove 6 | cefrj by pos: {'be-verb': 10, 'conjunction': 37, 'determiner': 46, 'do-verb': 5, 'have-verb': 3, 'infinitive-to': 1, 'modal auxiliary': 13, 'preposition': 76, 'pronoun': 83} | number 30 interjection 9
+R8 octanove rows with invalid pos: [('batter', ''), ('remonstrate', 'vern')]
+R46 octanove duplicate (headword,pos) keys: 58 | extra rows: 60 | same level: 37 | different level: 21
+R46b octanove rows with a non-empty notes column: 45
+R46c examples of conflicting duplicates: [(('exhibitionist', 'noun'), [('C1', ''), ('C2', '')]), (('resin', 'noun'), [('C1', ''), ('C2', '')]), (('relinquish', 'verb'), [('C1', ''), ('C2', '')])]
+R47 CEFR-J row analyze/analyse: [('analyze/analyse', 'verb', 'B1')]
