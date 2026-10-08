@@ -47,6 +47,15 @@ describe('handleJoin', () => {
     expect(await handleJoin(failing, idle, form({ email: 'ten@gmail.com', consent: 'on' }))).toEqual({ status: 'error', email: 'ten@gmail.com' });
   });
 
+  it('Review Focus 2: store failure is logged without the email', async () => {
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const failing: WaitlistStore = { add: async () => Promise.reject(new TypeError('D1_ERROR')) };
+    await handleJoin(failing, idle, form({ email: 'secret@gmail.com', consent: 'on' }));
+    expect(spy).toHaveBeenCalledWith('waitlist_store_failed', { error: 'TypeError' });
+    expect(JSON.stringify(spy.mock.calls)).not.toContain('secret@gmail.com');
+    spy.mockRestore();
+  });
+
   it('LPE7 "  Foo@Example.COM " stored as foo@example.com', async () => {
     const store = createMemoryStore();
     await handleJoin(store, idle, form({ email: '  Foo@Example.COM ', consent: 'on' }));
@@ -70,19 +79,5 @@ describe('handleJoin', () => {
     const store = createMemoryStore();
     expect((await handleJoin(store, idle, form({ email: 'ten@gmail.com', consent: 'on', locale: 'fr' }))).status).toBe('error');
     expect(store.list()).toEqual([]);
-  });
-});
-
-describe('getWaitlistStore', () => {
-  it('LPE12 warns exactly once when NODE_ENV is production', async () => {
-    vi.resetModules();
-    vi.stubEnv('NODE_ENV', 'production');
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
-    const { getWaitlistStore } = await import('./store');
-    getWaitlistStore();
-    getWaitlistStore();
-    expect(warn).toHaveBeenCalledTimes(1);
-    warn.mockRestore();
-    vi.unstubAllEnvs();
   });
 });

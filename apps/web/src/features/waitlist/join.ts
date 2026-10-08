@@ -16,7 +16,8 @@ export async function handleJoin(store: WaitlistStore, _prev: WaitlistState, for
   try {
     await store.add(email.data, locale.data);
     return { status: 'success' };
-  } catch {
+  } catch (error) {
+    console.error('waitlist_store_failed', { error: error instanceof Error ? error.name : 'unknown' });
     return { status: 'error', email: rawEmail };
   }
 }
