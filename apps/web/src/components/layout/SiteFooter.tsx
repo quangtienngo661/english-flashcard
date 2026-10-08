@@ -16,9 +16,9 @@ export async function SiteFooter() {
       <Container className="flex flex-col gap-4 py-6 md:flex-row-reverse md:items-center md:justify-between md:py-9">
         <ul className="grid grid-cols-2 gap-x-3 md:flex md:gap-6">
           <li>
-            <span role="link" aria-disabled="true" className={item}>
+            <Link href="/privacy" className={link}>
               {t('privacy')}
-            </span>
+            </Link>
           </li>
           <li>
             <Link href="/terms" className={link}>

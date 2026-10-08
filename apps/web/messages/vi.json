@@ -200,7 +200,21 @@
   "Legal": {
     "privacyTitle": "Chính sách bảo mật",
     "termsTitle": "Điều khoản sử dụng",
-    "draftNotice": "Đây là bản nháp. Nội dung chính thức đang được soạn và sẽ có trước khi Wordmet ra mắt."
+    "draftNotice": "Đây là bản nháp. Nội dung chính thức đang được soạn và sẽ có trước khi Wordmet ra mắt.",
+    "privacy": {
+      "effective": "Có hiệu lực từ ngày {date}.",
+      "intro": "Trang này nói rõ Wordmet làm gì với email bạn để lại khi đăng ký nhận thông báo.",
+      "collectTitle": "Wordmet lưu gì",
+      "collectBody": "Địa chỉ email của bạn, ngôn ngữ của trang lúc bạn đăng ký (tiếng Việt hoặc tiếng Anh) và thời điểm đăng ký. Trang chỉ dùng một cookie để nhớ ngôn ngữ bạn chọn; không có cookie quảng cáo hay công cụ theo dõi.",
+      "useTitle": "Dùng để làm gì",
+      "useBody": "Chỉ để gửi thư báo khi Wordmet mở cho người dùng. Wordmet không bán và không chia sẻ email của bạn với bên nào khác.",
+      "storeTitle": "Lưu ở đâu",
+      "storeBody": "Trong cơ sở dữ liệu Cloudflare D1 thuộc tài khoản của Wordmet. Cloudflare cung cấp hạ tầng và chỉ xử lý dữ liệu thay mặt Wordmet.",
+      "deleteTitle": "Xoá email của bạn",
+      "deleteBody": "Gửi thư tới <link>{email}</link> từ địa chỉ đã đăng ký. Wordmet xoá email khỏi danh sách trong vòng 30 ngày và báo lại cho bạn.",
+      "changesTitle": "Khi chính sách thay đổi",
+      "changesBody": "Khi Wordmet có tài khoản người dùng, chính sách này sẽ được viết lại, và Wordmet sẽ báo cho những người đã đăng ký trước khi áp dụng."
+    }
   },
   "NotFound": {
     "title": "Không tìm thấy trang",

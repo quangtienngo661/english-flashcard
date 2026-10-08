@@ -200,7 +200,21 @@
   "Legal": {
     "privacyTitle": "Privacy Policy",
     "termsTitle": "Terms of Use",
-    "draftNotice": "This is a draft. The official text is being written and will be ready before Wordmet launches."
+    "draftNotice": "This is a draft. The official text is being written and will be ready before Wordmet launches.",
+    "privacy": {
+      "effective": "Effective {date}.",
+      "intro": "This page explains what Wordmet does with the email address you leave when you sign up for launch updates.",
+      "collectTitle": "What Wordmet stores",
+      "collectBody": "Your email address, the language of the page when you signed up (Vietnamese or English) and the time you signed up. The site uses one cookie to remember your language choice; there are no advertising cookies or trackers.",
+      "useTitle": "How it is used",
+      "useBody": "Only to email you when Wordmet opens to users. Wordmet does not sell or share your email address with anyone.",
+      "storeTitle": "Where it is stored",
+      "storeBody": "In a Cloudflare D1 database in Wordmet's account. Cloudflare provides the infrastructure and processes the data only on Wordmet's behalf.",
+      "deleteTitle": "Removing your email",
+      "deleteBody": "Write to <link>{email}</link> from the address you signed up with. Wordmet removes it from the list within 30 days and lets you know.",
+      "changesTitle": "Changes to this policy",
+      "changesBody": "When Wordmet adds user accounts, this policy will be rewritten, and Wordmet will tell everyone on the list before it applies."
+    }
   },
   "NotFound": {
     "title": "Page not found",
