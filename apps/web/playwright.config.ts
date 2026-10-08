@@ -1,3 +1,4 @@
+import { fileURLToPath } from 'node:url';
 import { defineConfig, devices } from '@playwright/test';
 
 const port = 3100;
@@ -15,10 +16,13 @@ export default defineConfig({
     { name: 'mobile', use: { ...devices['Desktop Chrome'], viewport: { width: 390, height: 844 }, hasTouch: true } },
   ],
   webServer: {
-    command: `pnpm build && pnpm start -p ${port}`,
+    command: 'pnpm cf:build && pnpm db:migrate:local && node scripts/e2e-cf.mjs && pnpm cf:dev',
     url: `${baseURL}/vi`,
     reuseExistingServer: !process.env.CI,
     timeout: 300_000,
-    env: { NEXT_PUBLIC_SITE_URL: baseURL },
+    env: {
+      NEXT_PUBLIC_SITE_URL: baseURL,
+      CLOUDFLARE_CF_FETCH_PATH: fileURLToPath(new URL('./.wrangler/e2e-cf.json', import.meta.url)),
+    },
   },
 });

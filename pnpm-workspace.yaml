@@ -8,6 +8,13 @@ allowBuilds:
   prisma: true
   argon2: true
   esbuild: true
+  # apps/web on Cloudflare: wrangler's local runtime binary, the native SWC binding next-intl's plugin loads,
+  # and the native resolver used by eslint-config-next.
+  workerd: true
+  '@swc/core': true
+  unrs-resolver: true
+  # Optional native file watcher; not needed for builds or tests.
+  '@parcel/watcher': false
   # Optional native helpers pulled in by testcontainers (docker-modem ssh); not needed.
   cpu-features: false
   ssh2: false

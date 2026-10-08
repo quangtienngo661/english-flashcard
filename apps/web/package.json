@@ -12,11 +12,20 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
-    "assert:static": "node scripts/assert-static.mjs"
+    "assert:static": "node scripts/assert-static.mjs",
+    "gen:og-fonts": "node scripts/gen-og-fonts.mjs",
+    "cf:build": "opennextjs-cloudflare build",
+    "cf:dev": "wrangler dev --port 3100",
+    "db:migrate:local": "wrangler d1 migrations apply wordmet-waitlist --local",
+    "db:migrate:remote": "wrangler d1 migrations apply wordmet-waitlist --remote",
+    "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
+    "cf-typegen": "wrangler types --env-interface CloudflareEnv ./cloudflare-env.d.ts",
+    "cf:docker": "node scripts/cf-docker.mjs"
   },
   "dependencies": {
+    "@opennextjs/cloudflare": "1.20.7",
     "clsx": "2.1.1",
-    "next": "16.4.0",
+    "next": "16.3.8",
     "next-intl": "4.14.9",
     "react": "19.3.0",
     "react-dom": "19.3.0",
@@ -36,11 +45,12 @@
     "@types/react-dom": "19.3.0",
     "@vitejs/plugin-react": "6.1.2",
     "eslint": "9.39.5",
-    "eslint-config-next": "16.4.0",
+    "eslint-config-next": "16.3.8",
     "jsdom": "30.1.2",
     "playwright-core": "1.63.0",
     "tailwindcss": "4.3.3",
     "typescript": "6.0.3",
-    "vitest": "4.1.11"
+    "vitest": "4.1.11",
+    "wrangler": "4.145.0"
   }
 }

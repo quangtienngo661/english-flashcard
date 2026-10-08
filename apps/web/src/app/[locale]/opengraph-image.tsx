@@ -1,9 +1,12 @@
-import { readFile } from 'node:fs/promises';
-import { join } from 'node:path';
 import { hasLocale } from 'next-intl';
 import { getTranslations } from 'next-intl/server';
 import { ImageResponse } from 'next/og';
 import { routing, type AppLocale } from '@/i18n/routing';
+import { beVietnamProRegular, beVietnamProExtraBold } from './og-fonts.generated';
+
+function fontData(base64: string): ArrayBuffer {
+  return Uint8Array.from(atob(base64), (c) => c.charCodeAt(0)).buffer;
+}
 
 export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';
@@ -22,11 +25,8 @@ export default async function Image({ params }: Params) {
   const { locale: raw } = await params;
   const locale: AppLocale = hasLocale(routing.locales, raw) ? raw : routing.defaultLocale;
   const hero = await getTranslations({ locale, namespace: 'Hero' });
-  const fontDir = join(process.cwd(), 'assets/fonts');
-  const [regular, extraBold] = await Promise.all([
-    readFile(join(fontDir, 'BeVietnamPro-Regular.ttf')),
-    readFile(join(fontDir, 'BeVietnamPro-ExtraBold.ttf')),
-  ]);
+  const regular = fontData(beVietnamProRegular);
+  const extraBold = fontData(beVietnamProExtraBold);
   const titleLines = String(hero.raw('title')).split('<br></br>');
 
   return new ImageResponse(

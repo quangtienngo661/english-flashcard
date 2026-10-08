@@ -40,6 +40,24 @@ Playwright 1.63.0, pnpm 11.6.0, Node 24.11.0.
 
 Ngoài tầm test tự động (kiểm tay ở Task 7): luật rate limiting trả 429 (DE6), chuyển hướng `www`, Email Routing.
 
+## Sửa 08/10/2026: chạy kiểm tra Worker trong Docker trên Windows
+
+Lần chạy Task 1 Step 4 đầu tiên: `opennextjs-cloudflare build` không chạy được trên Windows thuần (lần 1 `EPERM symlink`;
+sau khi bật Developer Mode, lần 2 `Cannot read directory … Access is denied` khi esbuild đọc qua symlink). Chủ dự án chốt:
+
+- **Bây giờ (A):** trên máy Windows, mọi bước cần runtime Worker (`cf:build`, e2e, `assert:static`) chạy bằng
+  `pnpm cf:docker [tham số playwright]` (`apps/web/scripts/cf-docker.mjs`): container `node:24.11.0-bookworm` chép repo (bỏ
+  `node_modules`, output build), cài phụ thuộc Linux, cài Chromium, chạy `CI=1 pnpm test:e2e` rồi `pnpm assert:static`; báo
+  cáo Playwright chép ra `apps/web/.docker-out/`. Mọi lệnh "Run: `pnpm test:e2e …`" trong các task dưới hiểu là chạy qua
+  `pnpm cf:docker …` trên máy này. `pnpm dev`, `pnpm test`, `pnpm lint`, `pnpm typecheck` vẫn chạy trên Windows. CI
+  (Linux) và Workers Builds không đổi.
+- **Next `16.3.8` (chốt 08/10):** trên Worker, Next `16.4.0` trả 500 mọi trang (`Unexpected loadManifest(
+  /.next/server/preview-props.json) call!`) vì `@opennextjs/cloudflare` 1.20.7–1.20.9 chưa hỗ trợ file manifest mới của
+  16.4. Đã thử vá OpenNext bằng `pnpm patch` rồi bỏ; chủ dự án chốt giữ `next` và `eslint-config-next` ở `16.3.8` (mức
+  tối thiểu OpenNext ghi rõ). Nâng lại 16.4 khi changelog OpenNext ghi hỗ trợ.
+- ESLint bỏ qua `.open-next/**`, `.wrangler/**`, `.docker-out/**`, `cloudflare-env.d.ts` (output sinh ra, không phải code).
+- **Sau (B):** cài Ubuntu trong WSL làm môi trường làm việc lâu dài cho phần Worker — xem "Việc sau" ở cuối plan.
+
 ## Trước khi bắt đầu
 
 Công việc landing trước đó còn **chưa commit** trên `feat/landing-page`. Commit nó trước (theo đề xuất 4 commit đã nêu và được chủ
@@ -426,3 +444,20 @@ action Block 10 giây.
   T6; §8 → T1–T6; §9 rủi ro → T1 Step 4 và T7 Step 4 lối lùi.
 - Kiểu xuyên task: `createD1Store`, `storeFromEnv`, `getWaitlistStore` (async), `openTestD1`, `queryLocalD1`, `CloudflareEnv.DB`
   dùng nhất quán.
+
+## Việc sau (không thuộc lần triển khai này)
+
+### B. Môi trường WSL Ubuntu cho phần Worker (chốt 08/10/2026, làm sau)
+
+Mục tiêu: chạy `cf:build`, `cf:dev`, e2e và `wrangler` trực tiếp trong Linux, không phải dựng container mỗi lần.
+
+1. Chủ dự án cài Ubuntu (`wsl --install -d Ubuntu`, cần quyền admin, có thể phải khởi động lại).
+2. Trong Ubuntu: cài Node `24.11.0` (theo `.node-version`) và pnpm `11.6.0` (corepack).
+3. Clone repo vào ổ của Linux (`~/code/english-learning`), không làm việc trên `/mnt/e/…` vì đọc file qua ổ Windows chậm.
+4. `pnpm install`, `pnpm exec playwright install --with-deps chromium`, chạy `pnpm test:e2e` trong `apps/web`: kết quả phải
+   giống `pnpm cf:docker`.
+5. `wrangler login` trong Ubuntu nếu dùng lệnh `--remote` từ đây.
+6. Ghi vào README `apps/web` và `CLAUDE.md`; giữ `cf:docker` cho máy không có WSL.
+
+Rủi ro cần xem khi làm: hai bản clone (Windows và WSL) lệch nhau; Docker Desktop đã có bản WSL `docker-desktop`, cài Ubuntu
+không ảnh hưởng nó (`CHƯA KIỂM`).
