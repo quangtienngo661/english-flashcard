@@ -26,3 +26,9 @@ test('footer contact is a mailto link', async ({ page }) => {
   await page.goto('/en');
   await expect(page.getByRole('contentinfo').getByRole('link', { name: 'Contact' })).toHaveAttribute('href', /^mailto:/);
 });
+
+test('footer language link keeps the current page', async ({ page }) => {
+  await page.goto('/vi/privacy');
+  await page.getByRole('contentinfo').getByRole('link', { name: 'English' }).click();
+  await expect(page).toHaveURL(/\/en\/privacy$/);
+});

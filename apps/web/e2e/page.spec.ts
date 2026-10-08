@@ -43,6 +43,19 @@ async function scrollThrough(page: Page) {
 }
 
 test.describe('cloze carousel', () => {
+  test('Review#1 each › click centres the newly active card', async ({ page }) => {
+    await page.goto('/en');
+    for (const expected of [1, 2]) {
+      await page.getByRole('button', { name: 'Next sentence' }).click();
+      await expect.poll(() => page.evaluate((i) => {
+        const track = document.querySelector('.carousel-track') as HTMLElement;
+        const slide = track.children[i] as HTMLElement;
+        const t = track.getBoundingClientRect(), s = slide.getBoundingClientRect();
+        return (Math.min(s.right, t.right) - Math.max(s.left, t.left)) / s.width;
+      }, expected)).toBeGreaterThan(0.95);
+    }
+  });
+
   test('dragging from an answer button does not pick the answer', async ({ page }) => {
     await page.goto('/en');
     const carousel = page.locator('[aria-roledescription="carousel"]');

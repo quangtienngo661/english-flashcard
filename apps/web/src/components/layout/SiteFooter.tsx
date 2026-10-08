@@ -1,6 +1,7 @@
 import { getLocale, getTranslations } from 'next-intl/server';
 import { routing, type AppLocale } from '@/i18n/routing';
 import { Container } from '@/components/ui/Container';
+import { FooterLanguageLink } from '@/components/layout/FooterLanguageLink';
 import { Link } from '@/i18n/navigation';
 import { site } from '@/lib/site';
 
@@ -31,9 +32,7 @@ export async function SiteFooter() {
             </a>
           </li>
           <li>
-            <a href={`/${other}`} hrefLang={other} lang={other} className={link}>
-              {t('switchLanguage')}
-            </a>
+            <FooterLanguageLink locale={other} label={t('switchLanguage')} className={link} />
           </li>
         </ul>
         <p className="text-small text-muted">{t('copyright', { year: new Date().getFullYear() })}</p>
