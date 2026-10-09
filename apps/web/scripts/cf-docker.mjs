@@ -1,15 +1,17 @@
 // Runs the Worker-runtime checks (OpenNext build + Playwright e2e) inside a Linux container.
 // OpenNext cannot build on plain Windows (symlink errors), so Windows hosts use this instead (plan 2026-10-08-landing-deploy, Task 1).
 // Usage from apps/web: pnpm cf:docker [extra playwright args]
+//                      pnpm cf:docker --build  (production build only; copies .open-next back to apps/web for wrangler deploy)
 import { spawnSync } from 'node:child_process';
-import { mkdirSync } from 'node:fs';
+import { cpSync, mkdirSync, rmSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
 const repo = fileURLToPath(new URL('../../../', import.meta.url)).replace(/[\\/]+$/, '');
 const out = fileURLToPath(new URL('../.docker-out/', import.meta.url)).replace(/[\\/]+$/, '');
 mkdirSync(out, { recursive: true });
 
-const playwrightArgs = process.argv.slice(2).map((a) => `'${a.replaceAll("'", "'\\''")}'`).join(' ');
+const buildOnly = process.argv[2] === '--build';
+const playwrightArgs = process.argv.slice(buildOnly ? 3 : 2).map((a) => `'${a.replaceAll("'", "'\\''")}'`).join(' ');
 
 // Copy the repo without host build output or Windows node_modules, then install Linux dependencies.
 const script = `
@@ -23,6 +25,11 @@ corepack prepare pnpm@11.6.0 --activate >/dev/null
 pnpm config set store-dir /pnpm-store >/dev/null
 CI=1 pnpm install --frozen-lockfile
 cd apps/web
+if [ "\${BUILD_ONLY:-}" = 1 ]; then
+  pnpm cf:build
+  rm -rf /out/.open-next && cp -rL .open-next /out/.open-next
+  exit 0
+fi
 pnpm exec playwright install --with-deps chromium
 status=0
 CI=1 pnpm test:e2e ${playwrightArgs} || status=$?
@@ -41,9 +48,16 @@ const result = spawnSync(
     '-v', 'wordmet-pnpm-store:/pnpm-store',
     '-v', 'wordmet-ms-playwright:/ms-playwright',
     '-e', 'PLAYWRIGHT_BROWSERS_PATH=/ms-playwright',
+    '-e', `BUILD_ONLY=${buildOnly ? 1 : 0}`,
+    // Build-time NEXT_PUBLIC_* values are passed through from the host.
+    ...['NEXT_PUBLIC_SITE_URL', 'NEXT_PUBLIC_INDEXABLE', 'NEXT_PUBLIC_CONTACT_EMAIL'].flatMap((k) => (process.env[k] ? ['-e', `${k}=${process.env[k]}`] : [])),
     'node:24.11.0-bookworm',
     'bash', '-c', script,
   ],
   { stdio: 'inherit' },
 );
+if (buildOnly && result.status === 0) {
+  rmSync(new URL('../.open-next/', import.meta.url), { recursive: true, force: true });
+  cpSync(new URL('../.docker-out/.open-next/', import.meta.url), new URL('../.open-next/', import.meta.url), { recursive: true });
+}
 process.exit(result.status ?? 1);

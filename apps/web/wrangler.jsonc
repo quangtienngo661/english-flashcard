@@ -2,6 +2,7 @@
   "name": "wordmet-web",
   "main": ".open-next/worker.js",
   "compatibility_date": "2026-09-30",
+  "observability": { "enabled": true },
   "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
   "assets": {
     "directory": ".open-next/assets",
