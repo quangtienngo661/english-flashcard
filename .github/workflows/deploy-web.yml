@@ -1,7 +1,7 @@
 name: Deploy web
 
 # Deploys apps/web to Cloudflare Workers after CI passes on main (or by hand from the Actions tab).
-# Needs repository secrets CLOUDFLARE_API_TOKEN (Workers Scripts: Edit, D1: Edit) and CLOUDFLARE_ACCOUNT_ID.
+# Needs secrets CLOUDFLARE_API_TOKEN (Workers Scripts: Edit, D1: Edit) and CLOUDFLARE_ACCOUNT_ID in environment deploy-env.
 # D1 migrations are NOT applied here: run `pnpm db:migrate:remote` before merging a new migration
 # (plan 2026-10-08-landing-deploy, spec §5).
 on:
@@ -20,6 +20,8 @@ jobs:
     name: deploy apps/web to Cloudflare
     if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
+    # CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID are secrets of this GitHub environment.
+    environment: deploy-env
     timeout-minutes: 20
     defaults:
       run:
