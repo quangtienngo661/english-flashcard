@@ -18,7 +18,7 @@
     {
       "binding": "DB",
       "database_name": "wordmet-waitlist",
-      "database_id": "00000000-0000-0000-0000-000000000000",
+      "database_id": "a7f12f90-13e4-4e2f-81d0-cf20800c3ec7",
       "migrations_dir": "migrations"
     }
   ]

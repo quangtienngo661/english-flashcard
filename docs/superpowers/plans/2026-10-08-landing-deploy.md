@@ -56,6 +56,13 @@ sau khi bật Developer Mode, lần 2 `Cannot read directory … Access is denie
   16.4. Đã thử vá OpenNext bằng `pnpm patch` rồi bỏ; chủ dự án chốt giữ `next` và `eslint-config-next` ở `16.3.8` (mức
   tối thiểu OpenNext ghi rõ). Nâng lại 16.4 khi changelog OpenNext ghi hỗ trợ.
 - ESLint bỏ qua `.open-next/**`, `.wrangler/**`, `.docker-out/**`, `cloudflare-env.d.ts` (output sinh ra, không phải code).
+- **CD bằng GitHub Actions (chốt 09/10, thay DP3 Workers Builds):** `.github/workflows/deploy-web.yml` chạy sau khi
+  workflow `CI` xanh trên `main` (hoặc bấm tay từ tab Actions): `pnpm cf:build` rồi `wrangler deploy`, dùng secret
+  `CLOUDFLARE_API_TOKEN` và `CLOUDFLARE_ACCOUNT_ID`. Không chạy migration (vẫn `pnpm db:migrate:remote` bằng tay). Chưa có
+  domain nên `NEXT_PUBLIC_SITE_URL` đang comment và `NEXT_PUBLIC_INDEXABLE='false'`; chủ dự án tự sửa khi mua domain.
+  Task 7 Step 4 (Workers Builds) không còn cần.
+- D1 production đã tạo 09/10 (`a7f12f90-13e4-4e2f-81d0-cf20800c3ec7`, APAC), migration `0001` đã áp dụng.
+- Deploy tay từ Windows: `pnpm cf:docker --deploy` (build và deploy trong cùng container, vì output chứa đường dẫn tuyệt đối).
 - **Sau (B):** cài Ubuntu trong WSL làm môi trường làm việc lâu dài cho phần Worker — xem "Việc sau" ở cuối plan.
 
 ## Trước khi bắt đầu
