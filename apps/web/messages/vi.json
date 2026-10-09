@@ -1,7 +1,7 @@
 {
   "Metadata": {
     "title": "Wordmet · Học những từ bạn thật sự gặp",
-    "description": "Lưu từ mới cùng câu bạn vừa đọc. Wordmet giúp bạn luyện dùng từ trong câu và ôn lại những từ thường nhầm.",
+    "description": "Lưu từ mới cùng câu bạn vừa đọc. Wordmet giúp bạn luyện dùng từ trong câu và ưu tiên những từ bạn cần ôn thêm.",
     "ogAlt": "Wordmet: học từ vựng tiếng Anh từ những câu bạn đã đọc"
   },
   "Nav": {
@@ -14,7 +14,7 @@
   "Hero": {
     "chip": "Luyện từ vựng từ những câu bạn đã đọc",
     "title": "Học những từ<br></br>bạn thật sự gặp",
-    "description": "Lưu từ mới cùng câu bạn vừa đọc. Wordmet giúp bạn luyện dùng từ trong câu và ôn lại những từ thường nhầm.",
+    "description": "Lưu từ mới cùng câu bạn vừa đọc. Wordmet giúp bạn luyện dùng từ trong câu và ưu tiên những từ bạn cần ôn thêm.",
     "note": "Miễn phí · Chỉ thông báo khi ra mắt"
   },
   "Cloze": {
@@ -101,7 +101,7 @@
     },
     "step3": {
       "title": "Ôn đúng lúc",
-      "body": "Wordmet tự lên lịch ôn, ưu tiên những từ bạn thường nhầm.",
+      "body": "Wordmet tự lên lịch ôn, ưu tiên những từ bạn cần ôn thêm.",
       "rows": {
         "r1": { "word": "deploy", "status": "Sai 2 lần · Ôn hôm nay" },
         "r2": { "word": "assume", "status": "Ôn lại sau 3 ngày" },
@@ -140,7 +140,7 @@
         "i1": "Lưu từ cùng câu bạn đã gặp",
         "i2": "Thẻ ghi nhớ và lịch ôn tự động",
         "i3": "Bài tập không cần AI",
-        "i4": "Danh sách từ bạn thường nhầm"
+        "i4": "Danh sách từ cần ôn thêm"
       }
     },
     "trial": {
@@ -160,7 +160,7 @@
     "items": {
       "q1": {
         "question": "Wordmet giúp tôi học từ vựng như thế nào?",
-        "answer": "Wordmet giúp bạn lưu từ cùng câu đã đọc, luyện dùng từ trong câu và ôn lại theo lịch. Với những từ bạn hay nhầm, Wordmet sẽ lên lịch ôn sớm hơn."
+        "answer": "Wordmet giúp bạn lưu từ cùng câu đã đọc, luyện dùng từ trong câu và ôn lại theo lịch. Những từ cần ôn thêm sẽ được ưu tiên để bạn luyện lại sớm hơn."
       },
       "q2": {
         "question": "Wordmet có miễn phí không?",
@@ -168,7 +168,7 @@
       },
       "q3": {
         "question": "Wordmet khác gì các ứng dụng học tiếng Anh khác?",
-        "answer": "Wordmet tự tạo bài tập điền từ dựa trên câu bạn đã lưu, nên bạn không phải tự làm từng thẻ. Những từ bạn hay nhầm sẽ được ôn lại sớm hơn."
+        "answer": "Wordmet tự tạo bài tập điền từ dựa trên câu bạn đã lưu, nên bạn không phải tự làm từng thẻ. Những từ cần ôn thêm sẽ được ưu tiên để bạn luyện lại sớm hơn."
       },
       "q4": {
         "question": "Câu tôi lưu có bị chia sẻ với người khác không?",

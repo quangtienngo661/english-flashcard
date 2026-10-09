@@ -1,7 +1,7 @@
 {
   "Metadata": {
     "title": "Wordmet · Learn the words you actually meet",
-    "description": "Save a word with the sentence you just read. Wordmet turns it into fill-in-the-blank practice, and words you miss come back sooner.",
+    "description": "Save a word with the sentence you just read. Wordmet turns it into fill-in-the-blank exercises and brings back words that need more practice sooner.",
     "ogAlt": "Wordmet: learn English vocabulary from the sentences you read"
   },
   "Nav": {
@@ -14,7 +14,7 @@
   "Hero": {
     "chip": "Turn sentences you meet into vocabulary practice",
     "title": "Learn the words<br></br>you actually meet",
-    "description": "Save a word with the sentence you just read. Wordmet turns it into fill-in-the-blank practice, and words you miss come back sooner.",
+    "description": "Save a word with the sentence you just read. Wordmet turns it into fill-in-the-blank exercises and brings back words that need more practice sooner.",
     "note": "Free · Launch news only"
   },
   "Cloze": {
@@ -101,7 +101,7 @@
     },
     "step3": {
       "title": "Review at the right time",
-      "body": "Reviews are scheduled for you. Words you miss come back sooner.",
+      "body": "Reviews are scheduled for you. Words that need more practice come back sooner.",
       "rows": {
         "r1": { "word": "deploy", "status": "Missed 2× · review today" },
         "r2": { "word": "assume", "status": "Review in 3 days" },
@@ -140,7 +140,7 @@
         "i1": "Save words with the sentences you met",
         "i2": "Flashcards and automatic reviews",
         "i3": "Practice without AI",
-        "i4": "Your “often missed” list"
+        "i4": "A list of words that need more practice"
       }
     },
     "trial": {
@@ -160,7 +160,7 @@
     "items": {
       "q1": {
         "question": "How does Wordmet help me learn vocabulary?",
-        "answer": "Wordmet helps you save words with the sentences you read, practice using them in context, and review them on a schedule. Words you often get wrong come back sooner."
+        "answer": "Wordmet helps you save words with the sentences you read, practice using them in context, and review them on a schedule. Words that need more practice come back sooner."
       },
       "q2": {
         "question": "Is Wordmet free?",
@@ -168,7 +168,7 @@
       },
       "q3": {
         "question": "How is Wordmet different from other English learning apps?",
-        "answer": "Wordmet turns your saved sentences into fill-in-the-blank exercises, so you don't have to create each card yourself. Words you often get wrong come back sooner."
+        "answer": "Wordmet turns your saved sentences into fill-in-the-blank exercises, so you don't have to create each card yourself. Words that need more practice come back sooner."
       },
       "q4": {
         "question": "Are my saved sentences shared with others?",
