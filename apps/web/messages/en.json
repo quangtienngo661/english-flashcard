@@ -1,0 +1,224 @@
+{
+  "Metadata": {
+    "title": "Wordmet · Learn the words you actually meet",
+    "description": "Save a word with the sentence you just read. Wordmet turns it into fill-in-the-blank exercises and brings back words that need more practice sooner.",
+    "ogAlt": "Wordmet: learn English vocabulary from the sentences you read"
+  },
+  "Nav": {
+    "howItWorks": "How it works",
+    "faq": "FAQ",
+    "cta": "Get notified at launch",
+    "skipToContent": "Skip to main content",
+    "languageLabel": "Language"
+  },
+  "Hero": {
+    "chip": "Turn sentences you meet into vocabulary practice",
+    "title": "Learn the words<br></br>you actually meet",
+    "description": "Save a word with the sentence you just read. Wordmet turns it into fill-in-the-blank exercises and brings back words that need more practice sooner.",
+    "note": "Free · Launch news only"
+  },
+  "Cloze": {
+    "header": "Try it · sentence {current}/{total}",
+    "sourceChip": "Your saved sentence · tech blog",
+    "instruction": "Tap to choose the correct answer",
+    "prev": "Previous sentence",
+    "next": "Next sentence",
+    "correctTitle": "✓ Correct!",
+    "wrongTitle": "✗ Not quite",
+    "nextSentence": "Next sentence →",
+    "doneTitle": "You finished the 3 sample sentences.",
+    "doneBody": "When Wordmet launches, you will practice with the words you save.",
+    "doneCta": "Get notified at launch",
+    "replay": "Practice again",
+    "region": "Practice sample",
+    "items": {
+      "deploy": {
+        "before": "We plan to",
+        "answer": "deploy",
+        "after": "the new version on Friday.",
+        "options": { "o1": "deploy", "o2": "delay", "o3": "deliver", "o4": "decide" },
+        "hint": "Hint: getting the new version to users.",
+        "explanation": "deploy = to release software for use.",
+        "translation": "VI: “Chúng tôi dự định triển khai phiên bản mới vào thứ Sáu.”"
+      },
+      "assume": {
+        "before": "Don't",
+        "answer": "assume",
+        "after": "that everyone has read the email.",
+        "options": { "o1": "assume", "o2": "resume", "o3": "consume", "o4": "assure" },
+        "hint": "Hint: believing something without checking it.",
+        "explanation": "assume = to believe something is true without checking.",
+        "translation": "VI: “Đừng mặc định rằng ai cũng đã đọc email.”"
+      },
+      "borrow": {
+        "before": "Can I",
+        "answer": "borrow",
+        "after": "your charger for a minute?",
+        "options": { "o1": "borrow", "o2": "lend", "o3": "rent", "o4": "owe" },
+        "hint": "Hint: you're the one taking it, not giving it.",
+        "explanation": "borrow = to take something and give it back later; lend = to give it.",
+        "translation": "VI: “Mình mượn sạc của bạn một lát được không?”"
+      }
+    }
+  },
+  "Problem": {
+    "eyebrow": "THE PROBLEM",
+    "title": "Saving words is easy<br></br>Using them is hard",
+    "description": "Flashcards help you remember meanings, <brMd></brMd>not how to use a word in a sentence.",
+    "before": {
+      "label": "Saving word + meaning only",
+      "word": "deploy",
+      "hint": "Tap to flip",
+      "meaning": "to release (software)",
+      "caption": "Three weeks later: you know the meaning, not the usage."
+    },
+    "after": {
+      "label": "With Wordmet",
+      "caption": "Practice in the very sentences you met.",
+      "s1": { "before": "We plan to", "word": "deploy", "after": "the new version on Friday." },
+      "s2": { "before": "Don't", "word": "assume", "after": "that everyone has read the email." },
+      "s3": { "before": "Can I", "word": "_____", "after": "your charger for a minute?" }
+    }
+  },
+  "Steps": {
+    "eyebrow": "HOW IT WORKS",
+    "title": "Three steps to remember words <brMd></brMd>and use them",
+    "step1": {
+      "title": "Save word",
+      "body": "Save a word with the sentence you met, or pick from the A1–C2 library by topic.",
+      "wordLabel": "Word",
+      "wordValue": "deploy",
+      "sentenceLabel": "Sentence with the word (optional)",
+      "sentenceValue": "We plan to deploy the new version on Friday.",
+      "save": "Save word"
+    },
+    "step2": {
+      "title": "Practice in context",
+      "body": "Fill in your saved sentences, multiple choice, or type from meaning.",
+      "sentenceBefore": "We plan to",
+      "sentenceAfter": "the new version on Friday.",
+      "chips": { "c1": "Fill in", "c2": "Multiple choice", "c3": "Type from meaning" }
+    },
+    "step3": {
+      "title": "Review at the right time",
+      "body": "Reviews are scheduled for you. Words that need more practice come back sooner.",
+      "rows": {
+        "r1": { "word": "deploy", "status": "Missed 2× · review today" },
+        "r2": { "word": "assume", "status": "Review in 3 days" },
+        "r3": { "word": "borrow", "status": "Review in 7 days" }
+      }
+    }
+  },
+  "Ai": {
+    "eyebrow": "PRACTICE MORE WITH AI",
+    "title": "Familiar words, <brMd></brMd>fresh sentences",
+    "description": "Practice with new AI-written sentences, each with an explanation and a translation.",
+    "benefits": {
+      "b1": "Why the answer is right",
+      "b2": "Vietnamese translation",
+      "b3": "Checking answers uses no AI credits"
+    },
+    "chip": "14-day trial · Included in Pro",
+    "card": {
+      "label": "AI-written sentence · word: assume",
+      "before": "Before the meeting, I",
+      "word": "assumed",
+      "after": "the report was complete.",
+      "explanation": "assume = to believe something without checking.",
+      "translation": "VI: “Trước cuộc họp, tôi cho rằng báo cáo đã hoàn thành.”",
+      "report": "Report this sentence"
+    }
+  },
+  "Plans": {
+    "eyebrow": "PLANS",
+    "title": "Start for free",
+    "description": "No card needed. Turn on the AI trial when you want it.",
+    "free": {
+      "name": "Free",
+      "chip": "No time limit",
+      "items": {
+        "i1": "Save words with the sentences you met",
+        "i2": "Flashcards and automatic reviews",
+        "i3": "Practice without AI",
+        "i4": "A list of words that need more practice"
+      }
+    },
+    "trial": {
+      "name": "AI trial",
+      "chip": "14 days",
+      "items": {
+        "i1": "Start it when you're ready",
+        "i2": "New AI-written sentences",
+        "i3": "Explanation and translation for each",
+        "i4": "Everything in Free"
+      }
+    }
+  },
+  "Faq": {
+    "eyebrow": "FAQ",
+    "title": "Frequently asked questions",
+    "items": {
+      "q1": {
+        "question": "How does Wordmet help me learn vocabulary?",
+        "answer": "Wordmet helps you save words with the sentences you read, practice using them in context, and review them on a schedule. Words that need more practice come back sooner."
+      },
+      "q2": {
+        "question": "Is Wordmet free?",
+        "answer": "Yes. Saving words, flashcards, automatic reviews, and basic exercises are free, with no time limit. You can try AI exercises for 14 days or choose the Pro plan."
+      },
+      "q3": {
+        "question": "How is Wordmet different from other English learning apps?",
+        "answer": "Wordmet turns your saved sentences into fill-in-the-blank exercises, so you don't have to create each card yourself. Words that need more practice come back sooner."
+      },
+      "q4": {
+        "question": "Are my saved sentences shared with others?",
+        "answer": "No. Wordmet doesn't share your saved sentences with other people or add them to the shared sentence bank."
+      }
+    }
+  },
+  "FinalCta": {
+    "title": "Start with the words you meet today"
+  },
+  "Waitlist": {
+    "emailLabel": "Email address",
+    "emailPlaceholder": "Your email address",
+    "submit": "Get notified at launch",
+    "submitting": "Sending…",
+    "consent": "I agree to the <link>Privacy Policy</link>.",
+    "invalidEmail": "Enter a valid email, for example name@gmail.com.",
+    "missingConsent": "Please agree to the Privacy Policy to sign up.",
+    "error": "We couldn't send your sign-up. Check your connection and try again.",
+    "success": "You're on the list! We'll email you when Wordmet launches."
+  },
+  "Footer": {
+    "privacy": "Privacy Policy",
+    "terms": "Terms of Use",
+    "contact": "Contact",
+    "switchLanguage": "Tiếng Việt",
+    "copyright": "© {year} Wordmet"
+  },
+  "Legal": {
+    "privacyTitle": "Privacy Policy",
+    "termsTitle": "Terms of Use",
+    "draftNotice": "This is a draft. The official text is being written and will be ready before Wordmet launches.",
+    "privacy": {
+      "effective": "Effective {date}.",
+      "intro": "This page explains what Wordmet does with the email address you leave when you sign up for launch updates.",
+      "collectTitle": "What Wordmet stores",
+      "collectBody": "Your email address, the language of the page when you signed up (Vietnamese or English) and the time you signed up. The site uses one cookie to remember your language choice; there are no advertising cookies or trackers.",
+      "useTitle": "How it is used",
+      "useBody": "Only to email you when Wordmet opens to users. Wordmet does not sell or share your email address with anyone.",
+      "storeTitle": "Where it is stored",
+      "storeBody": "In a Cloudflare D1 database in Wordmet's account. Cloudflare provides the infrastructure and processes the data only on Wordmet's behalf.",
+      "deleteTitle": "Removing your email",
+      "deleteBody": "Write to <link>{email}</link> from the address you signed up with. Wordmet removes it from the list within 30 days and lets you know.",
+      "changesTitle": "Changes to this policy",
+      "changesBody": "When Wordmet adds user accounts, this policy will be rewritten, and Wordmet will tell everyone on the list before it applies."
+    }
+  },
+  "NotFound": {
+    "title": "Page not found",
+    "body": "The page you're looking for doesn't exist or has moved.",
+    "home": "Back to home"
+  }
+}

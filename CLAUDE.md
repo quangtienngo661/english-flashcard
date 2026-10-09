@@ -172,6 +172,18 @@ on `feat/buoc-1-identity-impl`, awaiting the owner's go-ahead to push and open a
 3. **Prisma pinned to `7.10.0`** (exact, no `^`) because the npm `latest` tag currently points at a `8.0.0-rc`
    prerelease — re-check when Prisma 8 reaches a real stable release.
 
+## Landing (apps/web) - as-built (08-09/10/2026)
+
+- Stack: Next `16.3.8` (App Router), next-intl `4.14.9`, `@opennextjs/cloudflare` `1.20.7`, wrangler `4.145.0`.
+- Cloudflare Workers (`wordmet-web`) + D1 waitlist (`wordmet-waitlist`, binding `DB`); local data in `.wrangler/state`.
+- Windows Worker build/e2e/static checks: `pnpm cf:docker` in a `node:24.11.0-bookworm` Linux container; WSL planned later.
+- Keep Next and `eslint-config-next` pinned to `16.3.8` until OpenNext supports Next `16.4`.
+- Tooling: Node `24.11.0`, pnpm `11.6.0`, Vitest `4.1.11`, Playwright `1.63.0`.
+- Design: `docs/superpowers/specs/2026-10-08-landing-deploy-design.md`.
+- Plan: `docs/superpowers/plans/2026-10-08-landing-deploy.md`.
+- Decisions: `docs/superpowers/decisions/2026-10-08-landing-deploy-decisions.md`.
+- Status: Tasks 1-3 done; 4-7 in progress.
+
 ## Local setup (PowerShell)
 
 From the repo root, start the local Postgres and Mailpit services, then prepare the API environment:

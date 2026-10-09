@@ -1,0 +1,173 @@
+@import 'tailwindcss';
+
+@theme {
+  /* Colors: Figma variable collection "Landing tokens"; *-strong added for WCAG AA (spec §6.2). */
+  --color-bg: #faf8f5;
+  --color-surface: #ffffff;
+  --color-ink: #1c1b22;
+  --color-muted: #5e5b6b;
+  --color-border: #e7e3dc;
+  --color-border-strong: #8a8697;
+  --color-primary: #2f5bea;
+  --color-primary-soft: #e8eeff;
+  --color-on-primary: #ffffff;
+  --color-marker: #ffe08a;
+  --color-success: #1f9d55;
+  --color-success-soft: #e5f6ec;
+  --color-success-strong: #147a3a;
+  --color-danger: #d64545;
+  --color-danger-strong: #b42318;
+
+  /* Type: rem; display/cta/h2 scale fluidly between 390px and 1440px (spec §6.1). */
+  --text-display: clamp(2.25rem, 1.6929rem + 2.2857vw, 3.75rem);
+  --text-display--line-height: 1.1;
+  --text-display--letter-spacing: -0.02em;
+  --text-cta: clamp(1.75rem, 1.3786rem + 1.5238vw, 2.75rem);
+  --text-cta--line-height: 1.15;
+  --text-cta--letter-spacing: -0.015em;
+  --text-h2: clamp(1.75rem, 1.4714rem + 1.1429vw, 2.5rem);
+  --text-h2--line-height: 1.18;
+  --text-h2--letter-spacing: -0.015em;
+  --text-title-lg: 1.5rem;
+  --text-title-lg--line-height: 1.25;
+  --text-h3: 1.375rem;
+  --text-h3--line-height: 1.3;
+  --text-title: 1.25rem;
+  --text-title--line-height: 1.3;
+  --text-lead: 1.1875rem;
+  --text-lead--line-height: 1.5;
+  --text-subtitle: 1.125rem;
+  --text-subtitle--line-height: 1.5;
+  --text-body-lg: 1.0625rem;
+  --text-body-lg--line-height: 1.5;
+  --text-body: 1rem;
+  --text-body--line-height: 1.5;
+  --text-label: 0.9375rem;
+  --text-label--line-height: 1.5;
+  --text-small: 0.875rem;
+  --text-small--line-height: 1.4;
+  --text-caption: 0.8125rem;
+  --text-caption--line-height: 1.3;
+
+  /* Radii (rem). */
+  --radius-sm: 0.5rem;
+  --radius-control: 0.75rem;
+  --radius-inner: 0.875rem;
+  --radius-panel: 1rem;
+  --radius-card: 1.25rem;
+  --radius-feature: 1.5rem;
+
+  /* Shadows (rem). */
+  --shadow-card: 0 1rem 2.5rem rgb(28 27 34 / 0.08);
+  --shadow-control: 0 0.25rem 0.75rem rgb(28 27 34 / 0.12);
+
+  /* Max widths (rem); Figma fixed widths become maxima (spec §6.4). */
+  --container-content: 70rem;
+  --container-cta: 62.5rem;
+  --container-faq: 50rem;
+  --container-heading: 47.5rem;
+  --container-prose: 40rem;
+  --container-carousel: 35rem;
+  --container-copy: 31.25rem;
+  --container-aside: 30rem;
+
+  /* Motion. */
+  --duration-fast: 150ms;
+  --duration-base: 250ms;
+  --transition-duration-carousel: 800ms;
+  --transition-duration-carousel-drag: 150ms;
+  --transition-duration-reveal: 800ms;
+  --transition-duration-flip: 800ms;
+  --transition-duration-faq: 350ms;
+  --ease-out: cubic-bezier(0.2, 0, 0, 1);
+}
+
+/* Horizontal snap track: inline padding lets the first/last 80%-wide card sit centred; no visible scrollbar. */
+@utility carousel-track {
+  padding-inline: 10%;
+  scroll-padding-inline: 10%;
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@utility no-scrollbar {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* Animate the native disclosure in both directions; older browsers keep the normal details behavior. */
+@supports (interpolate-size: allow-keywords) and selector(::details-content) {
+  .faq-item {
+    interpolate-size: allow-keywords;
+  }
+
+  .faq-item::details-content {
+    block-size: 0;
+    overflow: hidden;
+    opacity: 0;
+    transition:
+      block-size var(--transition-duration-faq) var(--ease-out),
+      opacity var(--transition-duration-faq) var(--ease-out),
+      content-visibility var(--transition-duration-faq) allow-discrete;
+  }
+
+  .faq-item[open]::details-content {
+    block-size: auto;
+    opacity: 1;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .faq-item::details-content {
+      transition: none;
+    }
+  }
+}
+
+@theme inline {
+  --font-sans: var(--font-be-vietnam-pro), ui-sans-serif, system-ui, sans-serif;
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background-color: var(--color-bg);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  summary::-webkit-details-marker {
+    display: none;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+  }
+
+  /* On the primary-coloured band (Final CTA) a primary ring would be invisible. */
+  .bg-primary :focus-visible {
+    outline-color: var(--color-on-primary);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
