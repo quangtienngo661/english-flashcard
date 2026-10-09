@@ -1,8 +1,7 @@
 import { getTranslations } from 'next-intl/server';
 import type { WaitlistLabels } from '@/components/interactive/WaitlistForm';
-import { Link } from '@/i18n/navigation';
 
-// Link the consent text to the published, localized privacy policy.
+// The policy name stays plain text while legal links are hidden until launch (owner, 09/10/2026).
 export async function getWaitlistLabels(): Promise<WaitlistLabels> {
   const t = await getTranslations('Waitlist');
   return {
@@ -16,9 +15,9 @@ export async function getWaitlistLabels(): Promise<WaitlistLabels> {
     success: t('success'),
     consent: t.rich('consent', {
       link: (chunks) => (
-        <Link href="/privacy" className="font-semibold underline underline-offset-2">
+        <span className="font-semibold">
           {chunks}
-        </Link>
+        </span>
       ),
     }),
   };

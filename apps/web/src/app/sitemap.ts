@@ -10,12 +10,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
     priority: 1,
     alternates: { languages },
   }));
-  const privacyLanguages = Object.fromEntries(routing.locales.map((l) => [l, new URL(`/${l}/privacy`, site.url).toString()]));
-  const privacyPages: MetadataRoute.Sitemap = routing.locales.map((locale) => ({
-    url: new URL(`/${locale}/privacy`, site.url).toString(),
-    changeFrequency: 'yearly',
-    priority: 0.3,
-    alternates: { languages: privacyLanguages },
-  }));
-  return [...pages, ...privacyPages];
+  // Privacy page left out while legal links are hidden until launch (09/10/2026).
+  return pages;
 }

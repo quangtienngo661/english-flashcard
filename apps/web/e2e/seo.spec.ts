@@ -33,7 +33,8 @@ test('sitemap lists /vi and /en with alternates', async ({ request }) => {
   const xml = await (await request.get('/sitemap.xml')).text();
   expect(xml).toMatch(/<loc>[^<]+\/vi<\/loc>/);
   expect(xml).toMatch(/<loc>[^<]+\/en<\/loc>/);
-  expect(xml).toMatch(/<loc>[^<]+\/vi\/privacy<\/loc>/);
+  // Legal pages are hidden until launch (09/10/2026); add them back with the links.
+  expect(xml).not.toContain('/privacy');
   expect(xml).toMatch(/hreflang="en"/);
 });
 
