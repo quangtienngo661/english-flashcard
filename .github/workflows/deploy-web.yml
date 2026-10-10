@@ -27,10 +27,9 @@ jobs:
       run:
         working-directory: apps/web
     env:
-      # Baked into the build (README "Environment"). Uncomment once wordmet.com points at the Worker,
-      # and switch NEXT_PUBLIC_INDEXABLE to 'true' at the same time.
-      # NEXT_PUBLIC_SITE_URL: https://wordmet.com
-      NEXT_PUBLIC_INDEXABLE: 'false'
+      # Baked into the build (README "Environment"). wordmet.com is attached by `routes` in apps/web/wrangler.jsonc.
+      NEXT_PUBLIC_SITE_URL: https://wordmet.com
+      NEXT_PUBLIC_INDEXABLE: 'true'
       NEXT_PUBLIC_CONTACT_EMAIL: hello@wordmet.com
     steps:
       - uses: actions/checkout@v4

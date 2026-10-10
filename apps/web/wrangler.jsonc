@@ -4,6 +4,10 @@
   "compatibility_date": "2026-09-30",
   "observability": { "enabled": true },
   "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "routes": [
+    { "pattern": "wordmet.com", "custom_domain": true },
+    { "pattern": "www.wordmet.com", "custom_domain": true }
+  ],
   "assets": {
     "directory": ".open-next/assets",
     "binding": "ASSETS"
