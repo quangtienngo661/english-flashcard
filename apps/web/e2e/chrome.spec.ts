@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { copy } from './copy';
 
 test('Review#1 H1 renders in Be Vietnam Pro with Vietnamese glyphs', async ({ page }) => {
   await page.goto('/vi');
@@ -16,7 +17,7 @@ test('Review#1 H1 renders in Be Vietnam Pro with Vietnamese glyphs', async ({ pa
 test('skip link moves focus to main', async ({ page }) => {
   await page.goto('/vi');
   await page.keyboard.press('Tab');
-  const skip = page.getByRole('link', { name: 'Bỏ qua tới nội dung chính' });
+  const skip = page.getByRole('link', { name: copy.vi.Nav.skipToContent });
   await expect(skip).toBeFocused();
   await page.keyboard.press('Enter');
   await expect(page.locator('main#main')).toBeFocused();

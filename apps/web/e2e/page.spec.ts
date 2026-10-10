@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { copy, fill, firstLine } from './copy';
 
 const activeSlide = (page: Page) => page.locator('[aria-roledescription="slide"][data-active="true"]');
 
@@ -187,21 +188,21 @@ test.describe('cloze carousel', () => {
   test('LP20/LP21 wrong then right by mouse, sentences by keyboard', async ({ page }) => {
     await page.goto('/en');
     await activeSlide(page).getByRole('button', { name: 'delay' }).click();
-    await expect(page.getByTestId('cloze-live')).toContainText('Not quite');
+    await expect(page.getByTestId('cloze-live')).toContainText(copy.en.Cloze.wrongTitle);
     await activeSlide(page).getByRole('button', { name: 'deploy', exact: true }).click();
-    await expect(page.getByTestId('cloze-live')).toContainText('Correct!');
-    const region = page.getByRole('region', { name: 'Practice sample' });
+    await expect(page.getByTestId('cloze-live')).toContainText(copy.en.Cloze.correctTitle);
+    const region = page.getByRole('region', { name: copy.en.Cloze.region });
     await region.focus();
     await page.keyboard.press('ArrowRight');
-    await expect(activeSlide(page)).toHaveAttribute('aria-label', 'Try it · sentence 2/3');
+    await expect(activeSlide(page)).toHaveAttribute('aria-label', fill(copy.en.Cloze.header, { current: 2, total: 3 }));
   });
 
   test('LP28 correct state grows the carousel; no descendant is clipped', async ({ page }) => {
     await page.goto('/vi');
-    const region = page.getByRole('region', { name: 'Bài luyện thử' });
+    const region = page.getByRole('region', { name: copy.vi.Cloze.region });
     const before = (await region.boundingBox())!.height;
     await activeSlide(page).getByRole('button', { name: 'deploy', exact: true }).click();
-    await expect(activeSlide(page).getByText('deploy = triển khai (phần mềm).')).toBeVisible();
+    await expect(activeSlide(page).getByText(copy.vi.Cloze.items.deploy.explanation)).toBeVisible();
     const after = (await region.boundingBox())!.height;
     expect(after).toBeGreaterThan(before);
     const cardBottom = (await activeSlide(page).boundingBox())!;
@@ -212,7 +213,7 @@ test.describe('cloze carousel', () => {
 
 test('LP22 flashcard flips on click', async ({ page }) => {
   await page.goto('/vi');
-  const card = page.locator('button[aria-pressed]').filter({ hasText: 'Chạm để lật' });
+  const card = page.locator('button[aria-pressed]').filter({ hasText: copy.vi.Problem.before.hint });
   await card.scrollIntoViewIfNeeded();
   await expect(card).toHaveAttribute('aria-pressed', 'false');
   await card.click();
@@ -242,17 +243,17 @@ test('LP30 FAQ has 4 items with the first open; both forms show the consent chec
 test('LP14–LP16 form flow in the browser', async ({ page }) => {
   await page.goto('/en');
   const form = page.locator('#waitlist-hero');
-  const email = form.getByRole('textbox', { name: 'Email address' });
+  const email = form.getByRole('textbox', { name: copy.en.Waitlist.emailLabel });
   await email.fill('name@gmail');
-  await form.getByRole('button', { name: 'Get notified at launch' }).click();
-  await expect(form.getByText('Enter a valid email, for example name@gmail.com.')).toBeVisible();
+  await form.getByRole('button', { name: copy.en.Waitlist.submit }).click();
+  await expect(form.getByText(copy.en.Waitlist.invalidEmail)).toBeVisible();
   await expect(email).toHaveAttribute('aria-invalid', 'true');
   await email.fill(`e2e-${Date.now()}@example.com`);
-  await form.getByRole('button', { name: 'Get notified at launch' }).click();
-  await expect(form.getByText('Please agree to the Privacy Policy to sign up.')).toBeVisible();
+  await form.getByRole('button', { name: copy.en.Waitlist.submit }).click();
+  await expect(form.getByText(copy.en.Waitlist.missingConsent)).toBeVisible();
   await form.getByRole('checkbox').check();
-  await form.getByRole('button', { name: 'Get notified at launch' }).click();
-  await expect(page.getByRole('status')).toContainText("You're on the list!");
+  await form.getByRole('button', { name: copy.en.Waitlist.submit }).click();
+  await expect(page.getByRole('status')).toContainText(copy.en.Waitlist.success);
 });
 
 test.describe('layout', () => {
@@ -352,7 +353,7 @@ test.describe('without JavaScript', () => {
   test.use({ javaScriptEnabled: false, reducedMotion: 'reduce' });
   test('LP27 copy is present, FAQ toggles, form submits', async ({ page }) => {
     await page.goto('/vi');
-    await expect(page.getByRole('heading', { level: 1 })).toContainText('Học những từ');
+    await expect(page.getByRole('heading', { level: 1 })).toContainText(firstLine(copy.vi.Hero.title));
     const second = page.locator('#faq details').nth(1);
     await second.locator('summary').click();
     await expect(second).toHaveAttribute('open', '');
@@ -360,7 +361,7 @@ test.describe('without JavaScript', () => {
     await form.getByRole('textbox').fill(`nojs-${Date.now()}@example.com`);
     await form.getByRole('checkbox').check();
     await form.getByRole('button').click();
-    await expect(page.getByText('Đăng ký thành công! Bạn sẽ nhận thông báo khi Wordmet ra mắt.')).toBeVisible();
+    await expect(page.getByText(copy.vi.Waitlist.success)).toBeVisible();
   });
 });
 

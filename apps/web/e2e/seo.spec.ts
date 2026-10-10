@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { copy } from './copy';
 
 const attr = (html: string, pattern: RegExp) => html.match(pattern)?.[1] ?? null;
 
@@ -46,5 +47,5 @@ test('opengraph-image returns image/png 1200x630', async ({ request }) => {
   expect(res.headers()['content-type']).toBe('image/png');
   const png = await res.body();
   expect([png.readUInt32BE(16), png.readUInt32BE(20)]).toEqual([1200, 630]);
-  expect(attr(html, /<meta property="og:image:alt" content="([^"]+)"/)).toBe('Wordmet: học từ vựng tiếng Anh từ những câu bạn đã đọc');
+  expect(attr(html, /<meta property="og:image:alt" content="([^"]+)"/)).toBe(copy.vi.Metadata.ogAlt);
 });

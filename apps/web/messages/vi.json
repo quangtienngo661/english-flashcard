@@ -1,34 +1,34 @@
 {
   "Metadata": {
-    "title": "Wordmet · Học những từ bạn thật sự gặp",
-    "description": "Lưu từ mới cùng câu bạn vừa đọc. Wordmet giúp bạn luyện dùng từ trong câu và ưu tiên những từ bạn cần ôn thêm.",
-    "ogAlt": "Wordmet: học từ vựng tiếng Anh từ những câu bạn đã đọc"
+    "title": "Wordmet · Làm chủ từ vựng qua ngữ cảnh thực tế",
+    "description": "Lưu từ mới cùng câu văn bạn từng đọc. Wordmet giúp bạn luyện cách dùng từ tự nhiên và tự động ưu tiên những từ cần ôn thêm.",
+    "ogAlt": "Wordmet: Học và ghi nhớ từ vựng tiếng Anh qua ngữ cảnh thực tế"
   },
   "Nav": {
     "howItWorks": "Cách hoạt động",
     "faq": "Hỏi đáp",
-    "cta": "Nhận thông báo ra mắt",
-    "skipToContent": "Bỏ qua tới nội dung chính",
+    "cta": "Đăng ký nhận tin ra mắt",
+    "skipToContent": "Chuyển đến nội dung chính",
     "languageLabel": "Ngôn ngữ"
   },
   "Hero": {
-    "chip": "Luyện từ vựng từ những câu bạn đã đọc",
-    "title": "Học những từ<br></br>bạn thật sự gặp",
-    "description": "Lưu từ mới cùng câu bạn vừa đọc. Wordmet giúp bạn luyện dùng từ trong câu và ưu tiên những từ bạn cần ôn thêm.",
-    "note": "Miễn phí · Chỉ thông báo khi ra mắt"
+    "chip": "Ghi nhớ từ vựng qua những câu bạn thực sự đọc",
+    "title": "Làm chủ từ vựng<br></br>từ ngữ cảnh thực tế",
+    "description": "Lưu từ mới kèm câu văn thực tế. Wordmet giúp bạn luyện cách dùng từ chuẩn xác và tự động nhắc ôn lại đúng thời điểm.",
+    "note": "Hoàn toàn miễn phí · Nhận thông báo ngay khi ra mắt"
   },
   "Cloze": {
-    "header": "Luyện thử · câu {current}/{total}",
-    "sourceChip": "Câu bạn đã lưu · blog công nghệ",
-    "instruction": "Chọn đáp án đúng",
+    "header": "Câu {current}/{total}",
+    "sourceChip": "Nguồn · Blog công nghệ",
+    "instruction": "Chọn đáp án đúng để hoàn thành câu",
     "prev": "Câu trước",
     "next": "Câu sau",
-    "correctTitle": "✓ Đúng rồi!",
-    "wrongTitle": "✗ Chưa đúng",
+    "correctTitle": "✓ Chính xác!",
+    "wrongTitle": "✗ Chưa chính xác",
     "nextSentence": "Câu tiếp theo →",
-    "doneTitle": "Bạn đã luyện xong 3 câu mẫu.",
-    "doneBody": "Khi Wordmet ra mắt, bạn có thể luyện tập với những từ mình đã lưu.",
-    "doneCta": "Nhận thông báo ra mắt",
+    "doneTitle": "Bạn đã hoàn thành 3 câu luyện thử!",
+    "doneBody": "Khi Wordmet ra mắt, bạn có thể biến chính những câu mình từng đọc thành bài tập luyện hàng ngày.",
+    "doneCta": "Đăng ký nhận tin ra mắt",
     "replay": "Luyện lại",
     "region": "Bài luyện thử",
     "items": {
@@ -37,17 +37,17 @@
         "answer": "deploy",
         "after": "the new version on Friday.",
         "options": { "o1": "deploy", "o2": "delay", "o3": "deliver", "o4": "decide" },
-        "hint": "Gợi ý: đưa phiên bản mới đến người dùng.",
-        "explanation": "deploy = triển khai (phần mềm).",
-        "translation": "“Chúng tôi dự định triển khai phiên bản mới vào thứ Sáu.”"
+        "hint": "Gợi ý: Đưa tính năng hoặc phiên bản phần mềm đến người dùng.",
+        "explanation": "deploy = triển khai, phát hành (phần mềm/hệ thống).",
+        "translation": "“Chúng tôi dự kiến triển khai phiên bản mới vào thứ Sáu.”"
       },
       "assume": {
         "before": "Don't",
         "answer": "assume",
         "after": "that everyone has read the email.",
         "options": { "o1": "assume", "o2": "resume", "o3": "consume", "o4": "assure" },
-        "hint": "Gợi ý: nghĩ là đúng dù chưa kiểm tra.",
-        "explanation": "assume = cho rằng, mặc định là đúng (khi chưa kiểm chứng).",
+        "hint": "Gợi ý: Cho là đúng khi chưa kiểm chứng.",
+        "explanation": "assume = cho rằng, mặc định là đúng (khi chưa xác minh).",
         "translation": "“Đừng mặc định rằng ai cũng đã đọc email.”"
       },
       "borrow": {
@@ -55,26 +55,26 @@
         "answer": "borrow",
         "after": "your charger for a minute?",
         "options": { "o1": "borrow", "o2": "lend", "o3": "rent", "o4": "owe" },
-        "hint": "Gợi ý: bạn là người nhận đồ, không phải người đưa.",
-        "explanation": "borrow = mượn (lấy rồi trả lại). Còn lend = cho mượn.",
-        "translation": "“Mình mượn sạc của bạn một lát được không?”"
+        "hint": "Gợi ý: Hỏi xin dùng tạm đồ của người khác.",
+        "explanation": "borrow = mượn (dùng rồi trả). Phân biệt với 'lend' = cho mượn.",
+        "translation": "“Cho mình mượn cục sạc một chút được không?”"
       }
     }
   },
   "Problem": {
     "eyebrow": "VẤN ĐỀ",
-    "title": "Lưu từ thì dễ<br></br>Dùng được mới khó",
-    "description": "Nhớ nghĩa của từ chưa đủ. Bạn còn cần biết dùng từ đó trong câu.",
+    "title": "Lưu từ thì dễ,<br></br>dùng được mới khó",
+    "description": "Chỉ thuộc nghĩa từ thôi là chưa đủ. Bạn cần biết cách đưa từ đó vào đúng ngữ cảnh.",
     "before": {
-      "label": "Chỉ lưu từ và nghĩa",
+      "label": "Cách học truyền thống",
       "word": "deploy",
-      "hint": "Chạm để lật",
+      "hint": "Chạm để xem nghĩa",
       "meaning": "triển khai",
-      "caption": "Nhớ nghĩa rồi, vẫn lúng túng khi dùng."
+      "caption": "Nhớ nghĩa rời rạc nhưng vẫn lúng túng khi viết hoặc nói."
     },
     "after": {
-      "label": "Với Wordmet",
-      "caption": "Luyện dùng từ trong chính câu bạn đã đọc.",
+      "label": "Học cùng Wordmet",
+      "caption": "Luyện phản xạ dùng từ ngay trong chính câu bạn từng đọc.",
       "s1": { "before": "We plan to", "word": "deploy", "after": "the new version on Friday." },
       "s2": { "before": "Don't", "word": "assume", "after": "that everyone has read the email." },
       "s3": { "before": "Can I", "word": "_____", "after": "your charger for a minute?" }
@@ -82,45 +82,45 @@
   },
   "Steps": {
     "eyebrow": "CÁCH HOẠT ĐỘNG",
-    "title": "Ba bước để nhớ từ <brMd></brMd>và biết cách dùng",
+    "title": "3 bước đơn giản để <brMd></brMd>nằm lòng từ vựng",
     "step1": {
-      "title": "Lưu từ",
-      "body": "Lưu từ cùng câu bạn đã đọc, hoặc chọn từ vựng theo chủ đề ở trình độ A1–C2.",
-      "wordLabel": "Từ",
+      "title": "1. Lưu từ cùng ngữ cảnh",
+      "body": "Lưu lại từ mới kèm câu bạn vừa đọc, hoặc chọn bộ từ vựng sẵn có theo trình độ từ A1 đến C2.",
+      "wordLabel": "Từ mới",
       "wordValue": "deploy",
       "sentenceLabel": "Câu chứa từ (không bắt buộc)",
       "sentenceValue": "We plan to deploy the new version on Friday.",
       "save": "Lưu từ"
     },
     "step2": {
-      "title": "Luyện từ trong câu",
-      "body": "Luyện điền từ, chọn đáp án hoặc gõ từ dựa trên nghĩa.",
+      "title": "2. Luyện dùng từ trong câu",
+      "body": "Đa dạng hình thức ôn tập: điền từ, trắc nghiệm hoặc gõ từ theo gợi ý nghĩa.",
       "sentenceBefore": "We plan to",
       "sentenceAfter": "the new version on Friday.",
       "chips": { "c1": "Điền từ", "c2": "Trắc nghiệm", "c3": "Gõ từ theo nghĩa" }
     },
     "step3": {
-      "title": "Ôn đúng lúc",
-      "body": "Wordmet tự lên lịch ôn, ưu tiên những từ bạn cần ôn thêm.",
+      "title": "3. Ôn tập đúng thời điểm",
+      "body": "Thuật toán thông minh tự động xếp lịch ôn, ưu tiên những từ bạn hay làm sai.",
       "rows": {
-        "r1": { "word": "deploy", "status": "Sai 2 lần · Ôn hôm nay" },
+        "r1": { "word": "deploy", "status": "Sai 2 lần · Cần ôn hôm nay" },
         "r2": { "word": "assume", "status": "Ôn lại sau 3 ngày" },
         "r3": { "word": "borrow", "status": "Ôn lại sau 7 ngày" }
       }
     }
   },
   "Ai": {
-    "eyebrow": "LUYỆN THÊM VỚI AI",
-    "title": "Luyện từ đã học <brMd></brMd>qua những câu mới",
-    "description": "AI tạo thêm câu luyện tập, kèm giải thích đáp án và bản dịch tiếng Việt.",
+    "eyebrow": "TÍNH NĂNG AI",
+    "title": "Mở rộng vốn từ <brMd></brMd>qua nhiều ngữ cảnh mới",
+    "description": "AI tự động tạo thêm câu luyện tập mới, kèm giải thích chi tiết và dịch nghĩa tiếng Việt chuẩn xác.",
     "benefits": {
-      "b1": "Giải thích vì sao đáp án đúng",
-      "b2": "Bản dịch tiếng Việt",
-      "b3": "Kiểm tra đáp án không tốn lượt AI"
+      "b1": "Giải thích chi tiết lý do chọn đáp án",
+      "b2": "Dịch nghĩa tiếng Việt sát ngữ cảnh",
+      "b3": "Kiểm tra đáp án tức thì, không tốn credit AI"
     },
-    "chip": "Dùng thử 14 ngày · Thuộc gói Pro",
+    "chip": "Dùng thử 14 ngày miễn phí · Gói Pro",
     "card": {
-      "label": "Câu do AI tạo · từ: assume",
+      "label": "Câu do AI tạo · Từ: assume",
       "before": "Before the meeting, I",
       "word": "assumed",
       "after": "the report was complete.",
@@ -130,27 +130,27 @@
     }
   },
   "Plans": {
-    "eyebrow": "GÓI HỌC",
-    "title": "Bắt đầu miễn phí",
-    "description": "Luyện cùng AI trong 14 ngày dùng thử. <brSm></brSm>Không cần thẻ thanh toán.",
+    "eyebrow": "GÓI DỊCH VỤ",
+    "title": "Bắt đầu hoàn toàn miễn phí",
+    "description": "Trải nghiệm toàn bộ tính năng AI trong 14 ngày dùng thử. <brSm></brSm>Không cần nhập thẻ thanh toán.",
     "free": {
       "name": "Miễn phí",
-      "chip": "Không giới hạn thời gian",
+      "chip": "Sử dụng vĩnh viễn",
       "items": {
-        "i1": "Lưu từ cùng câu bạn đã gặp",
-        "i2": "Thẻ ghi nhớ và lịch ôn tự động",
-        "i3": "Bài tập không cần AI",
-        "i4": "Danh sách từ cần ôn thêm"
+        "i1": "Lưu từ vựng kèm câu bạn từng đọc",
+        "i2": "Flashcard & lịch ôn tập tự động",
+        "i3": "Các dạng bài tập cơ bản",
+        "i4": "Tự động ưu tiên những từ hay quên"
       }
     },
     "trial": {
       "name": "Trải nghiệm AI",
-      "chip": "14 ngày",
+      "chip": "14 ngày trải nghiệm",
       "items": {
-        "i1": "Dùng thử khi bạn sẵn sàng",
-        "i2": "Luyện với câu mới do AI tạo",
-        "i3": "Giải thích đáp án và bản dịch",
-        "i4": "Mọi tính năng của gói miễn phí"
+        "i1": "Kích hoạt bất cứ khi nào bạn sẵn sàng",
+        "i2": "Luyện tập với câu mới do AI tạo",
+        "i3": "Giải thích chi tiết & bản dịch ngữ cảnh",
+        "i4": "Bao gồm toàn bộ tính năng gói Miễn phí"
       }
     }
   },
@@ -159,36 +159,36 @@
     "title": "Câu hỏi thường gặp",
     "items": {
       "q1": {
-        "question": "Wordmet giúp tôi học từ vựng như thế nào?",
-        "answer": "Wordmet giúp bạn lưu từ cùng câu đã đọc, luyện dùng từ trong câu và ôn lại theo lịch. Những từ cần ôn thêm sẽ được ưu tiên để bạn luyện lại sớm hơn."
+        "question": "Wordmet giúp tôi học từ vựng hiệu quả hơn bằng cách nào?",
+        "answer": "Wordmet giúp bạn gắn liền từ mới với ngữ cảnh thực tế mà bạn từng gặp. Hệ thống áp dụng phương pháp lặp lại ngắt quãng (Spaced Repetition) để tự động lên lịch ôn tập, giúp bạn chuyển từ vựng từ 'nhận biết' sang 'biết cách sử dụng'."
       },
       "q2": {
-        "question": "Wordmet có miễn phí không?",
-        "answer": "Có. Lưu từ, thẻ ghi nhớ, lịch ôn tự động và bài tập cơ bản đều miễn phí, không giới hạn thời gian. Bạn có thể dùng thử các bài tập có AI trong 14 ngày hoặc chọn gói Pro."
+        "question": "Wordmet có hoàn toàn miễn phí không?",
+        "answer": "Có. Các tính năng cốt lõi như lưu từ, flashcard, lịch ôn tự động và bài tập cơ bản đều miễn phí vĩnh viễn. Ngoài ra, bạn được tặng 14 ngày dùng thử tính năng AI tạo câu luyện tập thông minh."
       },
       "q3": {
-        "question": "Wordmet khác gì các ứng dụng học tiếng Anh khác?",
-        "answer": "Wordmet tự tạo bài tập điền từ dựa trên câu bạn đã lưu, nên bạn không phải tự làm từng thẻ. Những từ cần ôn thêm sẽ được ưu tiên để bạn luyện lại sớm hơn."
+        "question": "Wordmet khác gì so với các ứng dụng học từ vựng khác?",
+        "answer": "Thay vì bắt bạn tự tạo thẻ ghi nhớ thủ công hoặc học danh sách từ cố định, Wordmet tự động chuyển chính những câu bạn lưu thành bài tập tương tác. Thuật toán cũng sẽ ưu tiên các từ bạn hay làm sai để tối ưu thời gian ôn tập."
       },
       "q4": {
-        "question": "Câu tôi lưu có bị chia sẻ với người khác không?",
-        "answer": "Không. Wordmet không chia sẻ những câu bạn đã lưu với người khác hay đưa vào kho câu chung."
+        "question": "Những câu tôi lưu có bị chia sẻ công khai không?",
+        "answer": "Hoàn toàn không. Dữ liệu từ vựng và câu văn bạn lưu là riêng tư 100%, không bị chia sẻ công khai hay đưa vào kho câu dùng chung."
       }
     }
   },
   "FinalCta": {
-    "title": "Bắt đầu với những từ bạn gặp hôm nay"
+    "title": "Bắt đầu ghi nhớ những từ bạn gặp hôm nay"
   },
   "Waitlist": {
-    "emailLabel": "Địa chỉ email",
-    "emailPlaceholder": "Địa chỉ email của bạn",
-    "submit": "Nhận thông báo ra mắt",
-    "submitting": "Đang gửi…",
+    "emailLabel": "Địa chỉ Email",
+    "emailPlaceholder": "Nhập email của bạn...",
+    "submit": "Đăng ký nhận tin ra mắt",
+    "submitting": "Đang gửi đăng ký…",
     "consent": "Tôi đồng ý với <link>Chính sách bảo mật</link>.",
-    "invalidEmail": "Vui lòng nhập email hợp lệ, ví dụ: ten@gmail.com.",
-    "missingConsent": "Bạn cần đồng ý với Chính sách bảo mật để đăng ký.",
-    "error": "Chưa thể gửi đăng ký. Bạn kiểm tra kết nối và thử lại nhé.",
-    "success": "Đăng ký thành công! Bạn sẽ nhận thông báo khi Wordmet ra mắt."
+    "invalidEmail": "Vui lòng nhập địa chỉ email hợp lệ (ví dụ: ten@gmail.com).",
+    "missingConsent": "Bạn cần đồng ý với Chính sách bảo mật để tiếp tục.",
+    "error": "Chưa thể gửi đăng ký. Vui lòng kiểm tra kết nối mạng và thử lại.",
+    "success": "Đăng ký thành công! Wordmet sẽ gửi thông báo cho bạn ngay khi ra mắt."
   },
   "Footer": {
     "privacy": "Chính sách bảo mật",
@@ -200,25 +200,25 @@
   "Legal": {
     "privacyTitle": "Chính sách bảo mật",
     "termsTitle": "Điều khoản sử dụng",
-    "draftNotice": "Đây là bản nháp. Nội dung chính thức đang được soạn và sẽ có trước khi Wordmet ra mắt.",
+    "draftNotice": "Đây là bản nháp. Nội dung chính thức sẽ được cập nhật trước khi Wordmet chính thức ra mắt.",
     "privacy": {
       "effective": "Có hiệu lực từ ngày {date}.",
-      "intro": "Trang này nói rõ Wordmet làm gì với email bạn để lại khi đăng ký nhận thông báo.",
-      "collectTitle": "Wordmet lưu gì",
-      "collectBody": "Địa chỉ email của bạn, ngôn ngữ của trang lúc bạn đăng ký (tiếng Việt hoặc tiếng Anh) và thời điểm đăng ký. Trang chỉ dùng một cookie để nhớ ngôn ngữ bạn chọn; không có cookie quảng cáo hay công cụ theo dõi.",
-      "useTitle": "Dùng để làm gì",
-      "useBody": "Chỉ để gửi thư báo khi Wordmet mở cho người dùng. Wordmet không bán và không chia sẻ email của bạn với bên nào khác.",
-      "storeTitle": "Lưu ở đâu",
-      "storeBody": "Trong cơ sở dữ liệu Cloudflare D1 thuộc tài khoản của Wordmet. Cloudflare cung cấp hạ tầng và chỉ xử lý dữ liệu thay mặt Wordmet.",
-      "deleteTitle": "Xoá email của bạn",
-      "deleteBody": "Gửi thư tới <link>{email}</link> từ địa chỉ đã đăng ký. Wordmet xoá email khỏi danh sách trong vòng 30 ngày và báo lại cho bạn.",
-      "changesTitle": "Khi chính sách thay đổi",
-      "changesBody": "Khi Wordmet có tài khoản người dùng, chính sách này sẽ được viết lại, và Wordmet sẽ báo cho những người đã đăng ký trước khi áp dụng."
+      "intro": "Trang này giải thích cách Wordmet xử lý địa chỉ email khi bạn đăng ký nhận thông báo ra mắt.",
+      "collectTitle": "Dữ liệu Wordmet thu thập",
+      "collectBody": "Địa chỉ email, ngôn ngữ bạn chọn trên trang (tiếng Việt hoặc tiếng Anh) và thời điểm đăng ký. Trang web chỉ sử dụng 1 cookie để ghi nhớ ngôn ngữ hiển thị; không sử dụng cookie quảng cáo hay công cụ theo dõi hành vi.",
+      "useTitle": "Mục đích sử dụng",
+      "useBody": "Chỉ dùng để gửi email thông báo khi Wordmet chính thức ra mắt. Wordmet cam kết không bán hoặc chia sẻ email của bạn cho bất kỳ bên thứ ba nào.",
+      "storeTitle": "Nơi lưu trữ dữ liệu",
+      "storeBody": "Dữ liệu được lưu trữ an toàn trong cơ sở dữ liệu Cloudflare D1 thuộc tài khoản Wordmet. Cloudflare đóng vai trò cung cấp hạ tầng kỹ thuật và xử lý dữ liệu theo ủy quyền của Wordmet.",
+      "deleteTitle": "Quyền yêu cầu xóa dữ liệu",
+      "deleteBody": "Bạn có thể gửi email đến <link>{email}</link> từ chính địa chỉ đã đăng ký. Wordmet sẽ xóa email của bạn khỏi danh sách trong vòng 30 ngày và gửi xác nhận.",
+      "changesTitle": "Cập nhật chính sách",
+      "changesBody": "Khi Wordmet mở tính năng tài khoản người dùng, chính sách này sẽ được cập nhật chi tiết hơn và thông báo trước cho tất cả người dùng đã đăng ký."
     }
   },
   "NotFound": {
     "title": "Không tìm thấy trang",
-    "body": "Trang bạn tìm không tồn tại hoặc đã được chuyển đi.",
+    "body": "Trang bạn đang tìm kiếm không tồn tại hoặc đã được di chuyển.",
     "home": "Về trang chủ"
   }
 }
