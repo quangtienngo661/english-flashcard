@@ -52,7 +52,8 @@ they say otherwise:
   for the piece of work in question. Reading and writing docs is fine.
 - Use the **superpowers** skill chain (`brainstorming` → `writing-plans` → `test-driven-development`, …)
   for this project's workflow, **not** the harness's own workflows (`build-feature`, `write-spec`,
-  `fix-request`, …).
+  `fix-request`, …). For cloud sessions without the plugin, the superpowers skills are vendored as project
+  skills in `.claude/skills/` (`superpowers:brainstorming` → `brainstorming`); see `.claude/skills/SUPERPOWERS.md`.
 - **Git:** commit locally on a `feat/*`/`fix/*`/`docs/*` branch as normal; **push, PR and merge only when the owner
   asks**. Work reaches `main` through a PR that is merged only after the GitHub Actions CI
   (`.github/workflows/ci.yml`: lint, typecheck, build, unit, e2e) is green. Scan for secrets before every push.
