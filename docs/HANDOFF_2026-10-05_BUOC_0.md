@@ -19,17 +19,19 @@ thì ghi `ASSUMPTION`.
 
 ## 2. Thứ tự thực hiện (chủ dự án đã chốt "giữ thứ tự này")
 
+> Trạng thái 07/10/2026: Bước 0 và Bước 1 đã xong và đã merge vào `main` (PR #1, #4, #5). Bước tiếp theo: Bước 2.
+
 | Bước | Làm gì | Spec |
 |---|---|---|
 | 0 | Nền: scaffold, Docker + Postgres, Problem Details, phân trang, `Idempotency-Key`, ID, log, khung test | System |
-| 1 | Đăng ký, đăng nhập email + mật khẩu, OTP xác minh, phiên (access + refresh), hồ sơ, vai trò admin | Identity (lõi) |
+| 1 | Đăng ký, đăng nhập email + mật khẩu, OTP xác minh, phiên (access + refresh), hồ sơ, vai trò `admin`/`editor`, **đổi và quên mật khẩu** (chuyển từ Bước 8, D1) | Identity (lõi) |
 | 2 | Catalog, import CEFR-J + Octanove, CSV soạn nội dung, publish, tìm kiếm, từ riêng tư | Content + Pipeline |
 | 3 | Nhóm, trạng thái, lịch ôn, "hôm nay", flashcard, thêm nhanh (catalog + nhập tay). **Mốc pilot sớm nhất** (cần web) | Learning |
 | 4 | Trắc nghiệm, đúng/sai, gõ từ, bài từ câu người học, "từ hay sai" | Practice (không AI) |
 | 5 | Quyền, trial, giữ chỗ hạn mức | Entitlements |
 | 6 | Cổng `AiProvider` (bản giả trước), nhật ký chi phí | AI Integration |
 | 7 | Bài điền từ AI, ngân hàng câu, bước AI trong chuỗi tra nghĩa | Practice (AI) + Content |
-| 8 | Google login, quên mật khẩu, xóa tài khoản | Identity (còn lại) |
+| 8 | Google login, xóa tài khoản | Identity (còn lại) |
 
 K18 (cấu trúc hạn mức AI) chỉ chặn từ bước 5; provider từ điển ngoài (K20) không chặn bước 0–7 nếu chuỗi tra nghĩa
 chỉ gồm catalog + nhập tay.

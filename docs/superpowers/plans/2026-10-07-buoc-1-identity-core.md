@@ -1,5 +1,7 @@
 # Bước 1 — Identity Core Implementation Plan
 
+> **Status 07/10/2026: completed** — all 14 tasks done and merged (PR #4); see `../reviews/2026-10-07-buoc-1-final-review.md`.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Revision 3 (07/10/2026):** fixes from the second Astra review [`../reviews/2026-10-07-buoc-1-plan-review-astra-r2.md`](../reviews/2026-10-07-buoc-1-plan-review-astra-r2.md) with pushback (no transparent rehash — D16; mail runs on `close`; hashing outside transactions; explicit OTP lock outcome; prepared mail messages), self-reviewed instead of a third review round.

@@ -174,3 +174,15 @@ Khi viết đợt 2 và 3, mình gặp những chỗ phải chọn mà quyết �
 | F19 | Nhãn của N# và F# | Các spec ghi rõ N7–N11 là `ASSUMPTION`, N12 Mở, N13 Đề xuất; lịch ôn và mức yếu là `ASSUMPTION` theo chính ghi nhận của bạn | — | Chân trang mọi spec |
 
 **Đã chốt ngày 05/10/2026 ("chốt hết theo đề xuất"):** nhóm A giữ nguyên như spec (từ chức năng thêm tay được học; đăng ký lộ email đã tồn tại; ân hạn 10 giây khi gia hạn token; K8 gắn Google và xóa mật khẩu; trắc nghiệm và đúng/sai đúng không đẩy lịch lên). Nhóm B giữ mặc định (mọi sửa sense đã publish qua revision và có "publish nhanh"; nút "không phải nghĩa này"; xác nhận xóa tài khoản không dùng OTP; thứ tự hiển thị khi thiếu bản dịch). Trần thời gian tạo câu AI **hạ từ 60 xuống 45 giây** (Practice PRC5 và Q34, AI Integration AR3 truyền deadline còn lại), vì nginx và Application Load Balancer có timeout mặc định 60 giây (R48).
+
+## 10. Thay đổi quyết định khi làm Bước 1 (07/10/2026)
+
+Chủ dự án chốt trong lúc brainstorm và review Bước 1. Chi tiết và trade-off:
+`../superpowers/decisions/2026-10-07-buoc-1-identity-core-decisions.md`.
+
+| Quyết định cũ | Thay đổi | Nguồn |
+|---|---|---|
+| K1, N1 (một owner/admin, không màn quản lý admin) | Vai trò nhân sự `admin` + `editor`, mỗi vai trò là danh sách quyền; admin cấp/thu vai trò qua endpoint | D6 |
+| Thứ tự HANDOFF §2 (quên/đổi mật khẩu ở Bước 8) | Đổi và quên mật khẩu làm ở Bước 1 | D1 |
+| SR8 (mọi thao tác có tác dụng phụ nhận `Idempotency-Key`) | Identity không dùng `Idempotency-Key` | Design Bước 1 mục 7 |
+| B0E1 (dòng `in_progress` mồ côi được chạy lại) | Trả 409 `idempotency-key-abandoned`, client làm lại với key mới; `Idempotency-Key` bắt buộc + timeout 30 s | Chủ dự án, 07/10 |

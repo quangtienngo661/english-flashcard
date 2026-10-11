@@ -27,7 +27,7 @@ dữ liệu từ vựng, vòng đời và điều kiện publish do Content sở
 spec chỉ mô tả hành vi.
 
 **Ngoài phạm vi V1:** AI soạn nháp và nguồn từ điển ngoài (K1b, K20: chừa chỗ cắm, giá trị `ai` và `external` của nguồn
-bản nháp được dành sẵn nhưng chưa dùng); biên soạn phrasal verb, collocation, idiom; nhiều admin và phân vai trong admin; lịch
+bản nháp được dành sẵn nhưng chưa dùng); biên soạn phrasal verb, collocation, idiom; nhiều admin và phân vai trong admin (đã đổi: Bước 1 có vai trò `admin`/`editor`, D6); lịch
 nhập định kỳ.
 
 ## Constraints
@@ -38,7 +38,7 @@ nhập định kỳ.
 | Khóa job gồm (nguồn, ID mục nguồn, revision nội dung) lưu trong DB với ràng buộc duy nhất | Chủ dự án (K2, F23) | Chọn vì job có thể chạy nhiều hơn một lần (R35) |
 | Mỗi nguồn nhập phải có bản ghi nguồn gồm tên, phiên bản, URL, giấy phép, ghi nhận tác giả | Giấy phép CEFR-J, Octanove (R13, R14) | Điều kiện sử dụng dữ liệu |
 | Dòng nguồn không bị sửa; level biên tập là bản ghi riêng | Giấy phép Octanove, CC BY-SA (R14) | Điều kiện sử dụng dữ liệu |
-| Chỉ admin được dùng mọi thao tác của module | Chủ dự án (K1) | Quyết định sản phẩm |
+| Chỉ admin được dùng mọi thao tác của module | Chủ dự án (K1) **[Sửa 07/10/2026 theo Bước 1]** Nghĩa là cần quyền `content.import` / `content.edit` / `content.publish` (vai trò `admin` hoặc `editor`, D6). | Quyết định sản phẩm |
 
 ## Business rules
 
@@ -61,7 +61,7 @@ nhập định kỳ.
 | PR15 | **Xuất để soạn.** Xuất bản nháp được chọn ra CSV kèm `sense_id` và `revision`; nhập lại dòng có `revision` cũ hơn bản hiện tại bị loại là xung đột, và `revision` là bắt buộc khi có `sense_id`. Ô bắt đầu bằng `=`, `+`, `-`, `@` được vô hiệu khi xuất để bảng tính không chạy thành công thức; khi nhập lại, tiền tố vô hiệu được gỡ trước khi so sánh nên xuất rồi nhập lại không đổi nội dung | K1; chống chèn công thức và việc gỡ tiền tố `ASSUMPTION` (không có nguồn) |
 | PR16 | **Hoàn tác theo lô.** Hoàn tác một lô xóa **những bản ghi lô đó đã tạo** và chưa từng publish (sense bản nháp, bản ghi level, và entry chỉ khi không còn bản ghi nào của lô khác tham chiếu), **cùng với khóa dòng của lô**, nên nhập lại cùng file sẽ tạo lại chúng. Phần đã publish và entry đang được lô khác dùng không bị đụng; hoàn tác báo những gì đã bỏ qua | ASSUMPTION |
 | PR17 | **Nguồn bản nháp.** Mỗi revision bản nháp ghi `draft_source` là `csv` hoặc `ui`; `external` và `ai` dành sẵn cho sau V1 và chưa có đường nào tạo ra chúng | K1b, K20 |
-| PR18 | **Quyền và log.** Chỉ admin; log mỗi job mang `operation_id`, số liệu và thời gian; job này không chứa dữ liệu của người học | K1, SR9, F4 |
+| PR18 | **Quyền và log.** Chỉ admin; log mỗi job mang `operation_id`, số liệu và thời gian; job này không chứa dữ liệu của người học **[Sửa 07/10/2026 theo Bước 1]** "Chỉ admin" = cần quyền `content.import` (vai trò `admin` hoặc `editor`). | K1, SR9, F4 |
 
 ## Acceptance criteria — «When … then …»
 
@@ -83,7 +83,7 @@ nhập định kỳ.
 | P14 | When an exported row is edited and imported with a `revision` older than the current one, then the row is rejected as a conflict | PR15 (`ASSUMPTION`) |
 | P15 | When the owner pastes five lines of word and part of speech, then for each line an entry and an empty draft sense are created as needed, and a word that already has a sense is reported instead of duplicated | K1 |
 | P16 | When the owner publishes ten selected senses and three lack a required item, then seven are published and three are refused with their reasons | F22 |
-| P17 | When a non-admin calls any Pipeline operation, then it is refused | K1 |
+| P17 | When a non-admin calls any Pipeline operation, then it is refused **[Sửa 07/10/2026 theo Bước 1]** Đọc là: người không có quyền tương ứng (D6). | K1 |
 | P18 | When a batch is reverted, then the unpublished records the batch created are deleted together with its row keys, entries still used by another batch are kept, and published records are untouched | PR16 (`ASSUMPTION`) |
 | P19 | When the owner opens a finished job, then its status, counts and the downloadable error report are shown | F23 |
 | P20 | When an authoring file has more than 5,000 rows or 5 MB, or a source file more than 20,000 rows or 10 MB, then it is refused before processing | PR14 (`ASSUMPTION`) |

@@ -7,8 +7,8 @@ Always also check the global CLAUDE.md at `~/.claude/CLAUDE.md` — it defines b
 
 ## Overview
 
-English vocabulary learning app (level- and topic-based) for web (Next.js) and mobile (Flutter), with a
-single owner/admin authoring and approving content. V1 adds: accounts; a curated catalog plus learners'
+English vocabulary learning app (level- and topic-based) for web (Next.js) and mobile (Flutter), with staff
+roles (`admin`, `editor`) authoring and approving content (originally a single owner; changed in Bước 1, D6). V1 adds: accounts; a curated catalog plus learners'
 private words; quick-add of words encountered elsewhere; word groups, flashcards, and an automatic review
 schedule; non-AI definition quizzes; AI-generated fill-in-the-blank practice graded by rule; tier-based
 entitlements and quotas.
@@ -22,8 +22,8 @@ is under `apps/api`. Historical implementation branches:
   locking mechanism itself changed to `pg_try_advisory_xact_lock`, which Prisma handles fine via TypedSQL.
   See `docs/superpowers/plans/2026-10-06-migrate-drizzle-to-prisma.md` for the full migration and why.
 
-Bước 0, the Bước 1 design and decision record are on `main` (PR #1–#3); Bước 1 implementation is complete
-on `feat/buoc-1-identity-impl` (not yet merged/pushed). All 8 V1 specs (docs/specs/) are
+Bước 0 and Bước 1 are on `main` (PR #1–#5; GitHub remote `english-flashcard`, CI required before merge).
+**Next: Bước 2 (Content + Pipeline)**, starting with `superpowers:brainstorming`. All 8 V1 specs (docs/specs/) are
 written and independently verified; the project owner has said "keep this order, start step 0" (accepting
 the plan). Read `docs/HANDOFF_2026-10-05_BUOC_0.md` for the original Bước 0 kickoff context, and
 `docs/superpowers/specs/2026-10-05-buoc-0-design.md` (now annotated with the Prisma switch) for the
@@ -53,9 +53,11 @@ they say otherwise:
 - Use the **superpowers** skill chain (`brainstorming` → `writing-plans` → `test-driven-development`, …)
   for this project's workflow, **not** the harness's own workflows (`build-feature`, `write-spec`,
   `fix-request`, …).
-- **No `git init`, no commit, no push** without being explicitly asked — the directory is not yet a git
-  repo; `git init` itself is a decision for the owner to make (see the open repo-layout question in
-  HANDOFF §5.1).
+- **Git:** commit locally on a `feat/*`/`fix/*`/`docs/*` branch as normal; **push, PR and merge only when the owner
+  asks**. Work reaches `main` through a PR that is merged only after the GitHub Actions CI
+  (`.github/workflows/ci.yml`: lint, typecheck, build, unit, e2e) is green. Scan for secrets before every push.
+- **After brainstorming a design doc**, write a decision record in `docs/superpowers/decisions/` (rule
+  `~/.claude/rules/decision-records.md`).
 - Ask open decisions **one question at a time**, each with a concrete proposal and a label: owner-decided
   (chốt) / proposed (đề xuất) / `ASSUMPTION`.
 - Reports: short, decision-sufficient, in Vietnamese with English technical terms kept as-is (`endpoint`,
@@ -70,7 +72,7 @@ they say otherwise:
 
 ## Architecture & Key Decisions (accepted, `docs/specs/system-spec.md`)
 
-Bước 0 (below) is now scaffolded and implemented (see "Bước 0 — as-built" section). Steps 1–8 are still
+Bước 0 and Bước 1 are implemented (see the as-built sections below). Steps 2–8 are still
 decided-but-not-scaffolded:
 
 - Backend: **NestJS modular monolith + PostgreSQL**. 7 V1 modules, each owning its own write path:
@@ -148,21 +150,23 @@ plan `docs/superpowers/plans/2026-10-07-buoc-1-identity-core.md` (14 tasks), rev
   staff roles `admin`/`editor` with `@RequirePermission`, `pnpm admin:grant <email>` (needs `pnpm build`).
   Every security write runs under a per-user advisory lock and commits before the HTTP error (design §4b);
   mail is sent after commit and after the response closes.
-- Tests: 338 unit + 182 e2e (real Postgres + Mailpit via Testcontainers); suites that depend on global state
+- Tests: 339 unit + 182 e2e (real Postgres + Mailpit via Testcontainers); suites that depend on global state
   use `createIsolatedDatabase()`. A manual run against the built API (register → OTP from Mailpit → verify
   → refresh → password change → logout → admin:grant → admin endpoint) passed on 07/10.
 - Execution: Codex `gpt-6.1-sol` implemented, `gpt-6-astra` (medium effort) reviewed each task; Tasks 13–14
   were self-reviewed by Claude while Codex was over its usage limit (no independent review for those two).
 
+Graceful shutdown (`enableShutdownHooks`) drains pending mail. Merged via PR #4 after CI.
+
 Bước 1 open items: all rate-limit/lockout/budget numbers are `ASSUMPTION` (configurable); same-user lock
 contention can exhaust the 10-connection pool (accepted at pilot scale); Gmail-personal SMTP limits still
-unsourced; spec updates listed in the design's §11 are not yet applied to `docs/specs/`.
+unsourced; `otp_failure_windows` and `mail_budget_buckets` are never cleaned (grow slowly).
 
 ### Open decisions for the next session (read before doing anything else)
 
-Bước 0, the Bước 1 design and decision record are on `main` (PR #1–#3); Bước 1 implementation is complete
-on `feat/buoc-1-identity-impl`, awaiting the owner's go-ahead to push and open a PR. The module-boundary convention is chốt as D3
-(see Architecture & Key Decisions above).
+Bước 0 and Bước 1 are merged (PR #1–#5). The module-boundary convention is chốt as D3 (see Architecture & Key
+Decisions above). The Bước 1 spec deviations (design §11) were applied to `docs/specs/` on 07/10 — look for
+"Sửa 07/10/2026 theo Bước 1".
 
 1. **Chốt by the owner (07/10/2026):** B0E1 — an orphaned `in_progress` idempotency row returns 409
    `idempotency-key-abandoned` and the client starts over with a new key (it is not re-run). Note: a real
@@ -208,9 +212,11 @@ pnpm db:setup
 emits both the Prisma client and TypedSQL (a second plain `prisma generate` wipes TypedSQL on Linux — seen in CI). The e2e global setup runs the same sequence against
 its fresh Testcontainers Postgres database.
 
-## Machine state (verified 2026-10-05–06)
+## Machine state (verified 2026-10-05–07)
 
-Node 24.11.0, pnpm 11.6.0, Docker client 28.5.1 available. **No `psql`.** Docker daemon confirmed running
+Node 24.11.0, pnpm 11.6.0, Docker client 28.5.1 available. **No `psql`.** Docker Desktop must be running
+(it does not auto-start after a reboot); host ports 5432/5433 are taken by other local projects, so this repo's
+Postgres uses **5434**. Docker daemon confirmed running
 (used directly by the Testcontainers-based e2e suite throughout Bước 0's implementation).
 
 ## Execution note: Codex review workflow

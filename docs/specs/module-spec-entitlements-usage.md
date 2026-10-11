@@ -54,7 +54,7 @@ của trial và Pro (chủ dự án quyết sau); cấu trúc hạn mức cuối
 | ER7 | **Hết hạn mức thì chặn cứng.** Không có vượt mức; từ chối bằng lỗi Problem Details nêu loại "hết hạn mức" và thời điểm được dùng lại hoặc hết hạn. Các tính năng không AI không bị ảnh hưởng | K18 (cứng chặn thuộc phương án đề xuất), F33 |
 | ER8 | **Hiển thị.** Người học xem được quyền hiện có, số lượt còn lại và thời điểm hạn mức làm mới hoặc quyền hết hạn | R39 (cộng đồng phàn nàn việc không thấy mức dùng); `ASSUMPTION` |
 | ER9 | **Đổi chính sách.** Thay đổi con số hạn mức chỉ áp dụng cho lần kiểm sau; lượt đã xác nhận không tính lại; nếu giới hạn mới thấp hơn lượng đã dùng thì số còn lại là 0, không âm | ASSUMPTION |
-| ER10 | **Cấp tay.** Admin cấp một quyền hoặc thêm lượt cho một người dùng với lý do và thời hạn; mọi lần cấp ghi sổ, xem được và thu hồi được. Trong pilot, Pro chỉ có được qua cấp tay | F31, K1 |
+| ER10 | **Cấp tay.** Admin cấp một quyền hoặc thêm lượt cho một người dùng với lý do và thời hạn; mọi lần cấp ghi sổ, xem được và thu hồi được. Trong pilot, Pro chỉ có được qua cấp tay **[Sửa 07/10/2026 theo Bước 1]** "Admin" = người có quyền `entitlements.grant` (vai trò `admin` hoặc `editor`, D6). | F31, K1 |
 | ER11 | **Giao diện Billing.** Có một cổng nhận sự kiện đăng ký (bắt đầu, gia hạn, hủy, hết hạn) để tạo hoặc kết thúc quyền nguồn `subscription`; mỗi sự kiện có ID ngoài nên xử lý trùng lặp và sai thứ tự không tạo quyền thừa. V1 không có nhà cung cấp nối vào | F35, SR8; xử lý sai thứ tự `ASSUMPTION` |
 | ER12 | **Sổ lượt dùng.** Append-only: người dùng, feature, `operation_id`, số đơn vị, trạng thái (`reserved`, `confirmed`, `released`, `expired`), thời điểm. Xóa cùng tài khoản; chỉ số liệu tổng hợp không định danh được giữ | K2, SR11 |
 | ER13 | **Cửa sổ thời gian.** Nếu hạn mức tính theo ngày hoặc tháng thì ranh giới theo múi giờ của người dùng; nếu tính theo tổng trong thời hạn cấp thì theo thời điểm bắt đầu và hết hạn của quyền | SR13, K18 (cấu trúc hoãn) |
@@ -82,7 +82,7 @@ của trial và Pro (chủ dự án quyết sau); cấu trúc hạn mức cuối
 | E11 | When the remaining uses are 0, then an AI request is refused with a hard stop that states when the feature can be used again or when the entitlement ends | ER7 |
 | E12 | When a question was created while the trial was active and the answer is submitted after the trial ended, then it is graded normally | F32 |
 | E13 | When an admin grants an entitlement with a reason and an expiry, then the user can use the AI feature until the expiry, the grant is visible in the ledger, and revoking it ends the access | F31 |
-| E14 | When a non-admin tries to grant an entitlement, then the request is refused | K1 |
+| E14 | When a non-admin tries to grant an entitlement, then the request is refused **[Sửa 07/10/2026 theo Bước 1]** Đọc là: người không có quyền `entitlements.grant`. | K1 |
 | E15 | When the configured limit is lowered below the units already used, then the remaining uses are 0, not negative | ER9 (`ASSUMPTION`) |
 | E16 | When the system-wide daily AI budget is reached, then AI features answer "temporarily unavailable" without consuming the user's units, and non-AI features keep working | ER14 (`ASSUMPTION`) |
 | E17 | When a subscription event with an already processed external ID arrives, then no second entitlement is created | F35 |

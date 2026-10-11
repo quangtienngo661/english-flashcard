@@ -18,6 +18,8 @@ decision, checkpoint) ở [`../tasks/v1-specs/`](../tasks/v1-specs/).
 | 06 | [AI Integration](module-spec-ai-integration.md) | 3 | Đã viết 04/10/2026, đã kiểm chứng độc lập (Opus), đã sửa theo kết quả, chờ bạn duyệt |
 | 07 | [Practice](module-spec-practice.md) | 3 | Đã viết 04/10/2026, đã kiểm chứng độc lập (Opus), đã sửa theo kết quả, chờ bạn duyệt |
 
+**[Sửa 07/10/2026 theo Bước 1]** System, Identity, Content, Pipeline, Practice, Entitlements và DECISIONS (mục 10) đã ghi chú các chỗ chủ dự án đổi khi làm Bước 1; tìm nhãn "Sửa 07/10/2026 theo Bước 1".
+
 Kết quả kiểm chứng: [verification-opus.md](../tasks/v1-specs/verification-opus.md); cách xử lý từng phát hiện: [verification-response.md](../tasks/v1-specs/verification-response.md); bảng trích dẫn: [citation-sweep.md](../tasks/v1-specs/citation-sweep.md).
 
 Tài liệu liên quan: [lịch sử thảo luận và mặc định F1–F44](SPEC_PLAN_AND_DECISIONS_2026-10-04.md),
