@@ -57,6 +57,10 @@ they say otherwise:
 - **Git:** commit locally on a `feat/*`/`fix/*`/`docs/*` branch as normal; **push, PR and merge only when the owner
   asks**. Work reaches `main` through a PR that is merged only after the GitHub Actions CI
   (`.github/workflows/ci.yml`: lint, typecheck, build, unit, e2e) is green. Scan for secrets before every push.
+- **The design doc is the official build document; `docs/specs/` is only the initial skeleton** (owner, 12/10/2026).
+  Design docs may diverge from the specs as decisions change during analysis. Review a design doc on its own merits
+  (consistency, buildability, fit with the owner's workflow), **not** against the specs; spec IDs (CR#, PR#, …) in a
+  design doc are provenance only, and a divergence does not require editing the spec.
 - **After brainstorming a design doc**, write a decision record in `docs/superpowers/decisions/` (rule
   `~/.claude/rules/decision-records.md`).
 - Ask open decisions **one question at a time**, each with a concrete proposal and a label: owner-decided

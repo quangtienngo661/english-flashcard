@@ -11,7 +11,9 @@ Quyết định và trade-off: [`../decisions/2026-10-12-buoc-2-content-pipeline
 
 **Nhãn:** **Chốt** = chủ dự án chọn trong phiên brainstorm. **Đề xuất** = trợ lý đề xuất; nếu chủ dự án đã nghe và không
 phản đối thì ghi rõ, còn lại chờ duyệt cùng doc. **ASSUMPTION** = chưa kiểm chứng bằng chạy thật hoặc nguồn. **Chờ bạn** =
-cần chủ dự án xác nhận (mục 17). Criteria và edge cases dùng số hiệu `B2#`/`B2E#` (theo
+cần chủ dự án xác nhận (mục 17). **Design doc này là tài liệu chính thức để build** (chủ dự án chốt 12/10/2026): spec trong `docs/specs/` chỉ là khung
+ban đầu; các mã `CR#`, `PR#`, `C#`, `P#`… trong doc chỉ là **tham chiếu nguồn gốc**, không phải ràng buộc, và chỗ doc khác spec
+không cần sửa spec. Criteria và edge cases dùng số hiệu `B2#`/`B2E#` (theo
 `docs/specs/SPEC_WRITING_CONVENTIONS.md`), trích ngược về `C#`/`CE#`/`CR#` (Content), `P#`/`PE#`/`PR#` (Pipeline),
 `I#`, `S#`/`SR#`.
 
@@ -30,20 +32,20 @@ publish. Giao diện (đăng nhập web và trang admin) làm ngay sau Bước 2
 
 ## 2. Quyết định đã chốt (11–12/10/2026)
 
-| # | Quyết định | Nhãn | Lệch spec? |
-|---|---|---|---|
-| D1 | **Phạm vi:** quản trị (nhập nguồn, soạn, rà, publish, hoàn tác, xuất) **cộng** tìm kiếm, duyệt, xem sense chỉ-đọc cho người học. **Để Bước 3:** từ riêng tư, câu ngữ cảnh, chuỗi tra nghĩa, xóa lan sang Learning/Practice | Chốt | Lệch HANDOFF §2 (từ riêng tư rời Bước 2) |
-| D2 | **Upload gộp:** một file có cột `headword,pos,CEFR` của nguồn **cộng** cột nội dung; một lần upload tạo entry, level và (nếu dòng có nội dung) sense nháp. Dòng không có nội dung chỉ tạo entry và level. Không có bước "xuất file mẫu" | Chốt | **Lệch** PR2 ("nhập nguồn không tạo sense") |
-| D3 | **Pilot một nghĩa chính** mỗi (từ, loại từ); mô hình vẫn cho nhiều nghĩa (nhãn ngữ cảnh) | Chốt | Không (CR6, K10) |
-| D4 | **Hai danh sách lỗi tách riêng:** (a) *dòng bị loại* (chưa vào DB): tải CSV có `_row`, `_error`, sửa rồi upload lại chính file đó; (b) *sense nháp chưa publish được* (đã vào DB): tải CSV có `sense_id`, `revision`, `_missing`, điền rồi upload lại | Chốt | Làm rõ PR10, PR15 |
-| D5 | **Tự chuẩn hóa lỗi vô hại** (khoảng trắng, hoa/thường của loại từ và level); chỉ loại dòng khi giá trị thật sự sai. **Không** loại dòng vì thiếu ví dụ hay chủ đề (vào thành sense nháp, chặn lúc publish) | Chốt | Không (P11) |
-| D6 | **Job nền: BullMQ + Redis** (không chuyển sang bảng job trong Postgres). Chờ bạn: BullMQ 6.3.12 có backend Postgres, xem mục 17 | Chốt (Redis); câu mở ở mục 17 | Không (giữ Constraint Pipeline) |
-| D7 | **Tìm kiếm:** không phân biệt hoa thường, khớp đầu từ và chứa trên lemma và biến thể, thứ tự khớp đúng → đầu từ → chứa. **Revision:** sửa sense đã publish tạo revision nháp, nội dung chỉ đổi khi publish revision | Chốt | Không (CR11, CR17) |
-| D8 | **Xuất để sửa gồm cả sense đã publish** (không chỉ bản nháp) | Chốt | **Lệch** PR15 ("xuất bản nháp được chọn") |
-| D9 | **Bước 2 là API**; giao diện (đăng nhập web + trang admin) làm ngay sau Bước 2, trước Bước 3 | Chốt | Thêm một bước vào bảng 9 bước của HANDOFF §2 |
-| D10 | **Một design, một plan, ba mốc** M1–M3 (mục 12), không tách thành hai bước độc lập | Đề xuất (chủ dự án nghiêng về không chia, chưa phản đối) | Không |
-| D11 | **Phiên bản CEFR-J và nơi phát hành Octanove:** mặc định dùng bản trong repo (CEFR-J 1.5, Octanove 1.0) cho tới khi chủ dự án xác nhận có bản mới hơn hay không. Phiên bản nằm trong bản ghi nguồn nên đổi bản sau không phải sửa code | Chờ bạn (mục 17) | Không (PR1) |
-| D12 | **Bảng quyền cho Bước 2:** `content.edit`, `content.publish`, `content.import`, `taxonomy.manage` gán cho cả `admin` và `editor` (bảng D6 của Bước 1); ánh xạ từng endpoint ở mục 10 | Chốt (bảng D6); ánh xạ endpoint: Đề xuất | Không |
+| # | Quyết định | Nhãn |
+|---|---|---|
+| D1 | **Phạm vi:** quản trị (nhập nguồn, soạn, rà, publish, hoàn tác, xuất) **cộng** tìm kiếm, duyệt, xem sense chỉ-đọc cho người học. **Để Bước 3:** từ riêng tư, câu ngữ cảnh, chuỗi tra nghĩa, xóa lan sang Learning/Practice | Chốt |
+| D2 | **Upload gộp:** một file có cột `headword,pos,CEFR` của nguồn **cộng** cột nội dung; một lần upload tạo entry, level và (nếu dòng có nội dung) sense nháp. Dòng không có nội dung chỉ tạo entry và level. Không có bước "xuất file mẫu" | Chốt |
+| D3 | **Pilot một nghĩa chính** mỗi (từ, loại từ); mô hình vẫn cho nhiều nghĩa (nhãn ngữ cảnh) | Chốt |
+| D4 | **Hai danh sách lỗi tách riêng:** (a) *dòng bị loại* (chưa vào DB): tải CSV có `_row`, `_error`, sửa rồi upload lại chính file đó; (b) *sense nháp chưa publish được* (đã vào DB): tải CSV có `sense_id`, `revision`, `_missing`, điền rồi upload lại | Chốt |
+| D5 | **Tự chuẩn hóa lỗi vô hại** (khoảng trắng, hoa/thường của loại từ và level); chỉ loại dòng khi giá trị thật sự sai. **Không** loại dòng vì thiếu ví dụ hay chủ đề (vào thành sense nháp, chặn lúc publish) | Chốt |
+| D6 | **Job nền: BullMQ + Redis.** Chủ dự án giữ Redis (12/10/2026) sau khi biết BullMQ 6.3.12 có backend Postgres; không đổi giữa chừng | Chốt |
+| D7 | **Tìm kiếm:** không phân biệt hoa thường, khớp đầu từ và chứa trên lemma và biến thể, thứ tự khớp đúng → đầu từ → chứa. **Revision:** sửa sense đã publish tạo revision nháp, nội dung chỉ đổi khi publish revision | Chốt |
+| D8 | **Xuất để sửa gồm cả sense đã publish** (không chỉ bản nháp) | Chốt |
+| D9 | **Bước 2 là API**; giao diện (đăng nhập web + trang admin) làm ngay sau Bước 2, trước Bước 3 | Chốt |
+| D10 | **Một design, một plan, ba mốc** M1–M3 (mục 12), không tách thành hai bước độc lập | Đề xuất (chủ dự án nghiêng về không chia, chưa phản đối) |
+| D11 | **Phiên bản CEFR-J và nơi phát hành Octanove:** mặc định dùng bản trong repo (CEFR-J 1.5, Octanove 1.0) cho tới khi chủ dự án xác nhận có bản mới hơn hay không. Phiên bản nằm trong bản ghi nguồn nên đổi bản sau không phải sửa code | Chờ bạn (mục 17) |
+| D12 | **Bảng quyền cho Bước 2:** `content.edit`, `content.publish`, `content.import`, `taxonomy.manage` gán cho cả `admin` và `editor` (bảng D6 của Bước 1); ánh xạ từng endpoint ở mục 10 | Chốt (bảng D6); ánh xạ endpoint: Đề xuất |
 
 Thư viện (đã kiểm `npm view` ngày 12/10/2026): `bullmq` 6.3.12, `@nestjs/bullmq` 12.0.0 (peer `bullmq ^6`, `@nestjs/core ^12`),
 `ioredis` 6.0.0 (Node ≥ 20), `@testcontainers/redis` 12.2.0, `csv-parse` 7.0.3 (ESM), `@types/multer` 2.3.0. Việc chọn
@@ -158,7 +160,7 @@ Google Sheets; không hỗ trợ bảng mã Windows hay `.xlsx`, đề xuất); 
 dòng tiêu đề; thiếu cột `pos` hoặc cả `headword` lẫn `lemma`; tiêu đề trùng sau khi chuẩn hóa; 0 dòng dữ liệu; có cột level mà thiếu
 `level_source_id`; nguồn bên thứ ba thiếu phiên bản hoặc giấy phép (PR1). BOM UTF-8 và CRLF được chấp nhận (PE1). Ngưỡng
 20.000/10 MB áp cho **mọi** file (PR14 tách 5.000 cho file soạn, nhưng file gộp có thể là cả file CEFR-J 7.799 dòng kèm
-nội dung, nên dùng một ngưỡng; lệch PR14).
+nội dung, nên dùng một ngưỡng).
 
 **Dấu phân cách.** Phát hiện từ dòng tiêu đề trong {`,`, `;`, tab}; nhập nhằng thì từ chối với thông báo rõ. Lý do: Excel ghi
 CSV bằng dấu phân cách của hệ thống, và với thiết lập tiếng Việt thường là `;` (ASSUMPTION, chưa kiểm trên máy chủ dự án); Google
@@ -194,6 +196,11 @@ CEFR-J 1.5 (`noun`, `verb`, `adjective`, `adverb`, `pronoun`, `preposition`, `de
 | `open-draft-conflict` | Dòng không có `sense_id`, sense khớp có revision mở do sửa tay qua API (PE6; Chờ bạn) |
 | `gloss-changed` | Khớp sense **đã từng publish**, `gloss_vi` đổi, không có `sense_id` và không `replace_meaning` (P25; Chờ bạn) |
 | `duplicate-key-in-file` | Khóa nội dung trùng với một dòng trước trong cùng file (PE2) |
+
+**Lọc trước hàng loạt (chốt 12/10/2026).** Trước khi xử lý từng dòng, worker so khóa dòng và băm nội dung của **cả file** với
+`import_row_keys` (và với revision mới nhất của các sense liên quan) bằng truy vấn hàng loạt; dòng không đổi được ghi `unchanged`
+luôn, **không** mở giao dịch riêng. Chỉ dòng có thay đổi đi qua các bước dưới. Mục đích: vòng "sửa vài dòng trong Excel → upload lại
+cả file 7.799 dòng" không phải chạy 7.799 giao dịch. Thời gian thật đo ở B2#71.
 
 **Xử lý một dòng hợp lệ** (trong một giao dịch, dưới khóa advisory theo `(lemma, pos)` để UI và import không ghi chồng nhau):
 
@@ -276,8 +283,7 @@ CEFR-J 1.5 (`noun`, `verb`, `adjective`, `adverb`, `pronoun`, `preposition`, `de
 
 ## 8. Xuất, sửa, hai danh sách
 
-- **Xuất (D8):** `GET /v1/admin/content/senses/export` phát CSV **trực tiếp (stream)**, không qua job (đề xuất; lệch PR10 "xuất
-  chạy như job"): tối đa 5.000 dòng, vượt thì 400 `export-too-large` kèm hướng dẫn thu hẹp bộ lọc. Bộ lọc: `sense_id` (nhiều),
+- **Xuất (D8):** `GET /v1/admin/content/senses/export` phát CSV **trực tiếp (stream)**, không qua job (đề xuất): tối đa 5.000 dòng, vượt thì 400 `export-too-large` kèm hướng dẫn thu hẹp bộ lọc. Bộ lọc: `sense_id` (nhiều),
   `status` (`unpublishable`, `open_draft`, `published`), `level`, `pos`, `topic`. Mỗi dòng là một sense với nội dung của
   **revision mới nhất**: các cột của mục 5 **trừ cột level** (level của file xuất nằm ở `_level`, chỉ để xem, upload bỏ qua; nên upload
   lại file xuất không cần khai báo nguồn level và không gắn nhầm nguồn), cộng `sense_id`, `revision`, `_status`; bộ lọc `unpublishable`
@@ -483,16 +489,11 @@ trước khi có số đo.
 | B2E34 | A file goes through Excel and headwords start with an apostrophe (`'m`, `'re`, `'s`) | Excel may drop the leading apostrophe; a changed headword is a different key and creates a new entry. Must be tried once on the owner's machine | `ASSUMPTION` |
 | B2E35 | A sense was edited through the API (open revision from `ui`) and the owner uploads an Excel file without `sense_id` touching it | The row is rejected with `open-draft-conflict`, so the manual edit is never overwritten | PE6 |
 
-## 15. Chỗ lệch spec — sửa spec sau khi duyệt design này
+## 15. Tài liệu cần cập nhật sau khi duyệt
 
-1. `module-spec-content-pipeline.md`: **PR2** (file nguồn có thể tạo sense nháp khi dòng có nội dung); **PR14** (một ngưỡng 20.000 dòng/10 MB
-   cho mọi file upload); **PR10** (xuất chạy đồng bộ, tối đa 5.000 dòng); **PR15** (xuất cả sense đã publish; hậu quả của tiền tố
-   `'`); **PR5** (cột `headword` thay `lemma`, cột nội dung ghép với cột nguồn; ô trống giữ nguyên giá trị); **PR12** (chi tiết lease, `lease_epoch`, reconciler);
-   **PR13** (hàng đợi concurrency 1); thêm cột `_row`, `_error`, `_missing`.
-2. `module-spec-vocabulary-content.md`: **CR13, CR14, CR15, CR21, CR23** chuyển sang Bước 3 (ghi chú, không sửa nội dung); **CR8** (cách chọn level hiển thị và
-   `display_priority`); **CR17** (revision là bản chụp bất biến, `unpublished` là trạng thái của sense).
-3. `HANDOFF_2026-10-05_BUOC_0.md` §2: Bước 2 chỉ còn phía quản trị và tìm kiếm chỉ-đọc; từ riêng tư về Bước 3; thêm **bước giao diện** (đăng nhập web, trang
-   admin, cấp vai trò) giữa Bước 2 và Bước 3 (D9). `CLAUDE.md`: cập nhật mục Bước 2 as-built khi xong.
+`HANDOFF_2026-10-05_BUOC_0.md` §2: Bước 2 chỉ còn phía quản trị và tìm kiếm chỉ-đọc; từ riêng tư về Bước 3; thêm **bước giao diện**
+(đăng nhập web, trang admin, cấp vai trò) giữa Bước 2 và Bước 3 (D9). `CLAUDE.md`: mục Bước 2 as-built khi xong. Spec trong
+`docs/specs/` **không** sửa theo doc này (nguyên tắc ở đầu doc).
 
 ## 16. Ngoài phạm vi Bước 2
 
@@ -507,13 +508,9 @@ kênh cảnh báo ngoài log; CSV có số phiên bản; nhiều ngôn ngữ gi�
    `cefr-j.org/data/CEFRJ_wordlist_ver1.6.zip`), nhưng môi trường này không truy cập được `cefr-j.org` nên **chưa xác nhận được** và chưa thấy file.
    Cần bạn mở `cefr-j.org/download.html`. Nếu có 1.6: đưa file vào repo; các con số ở B2#70 (7.799 dòng, 117 entry xung đột…) sẽ phải đo lại. Octanove: chỉ thấy
    bản 1.0 trong repo `olp-en-cefrj`, chưa thấy trang phát hành riêng của Octanove Labs.
-2. **BullMQ có backend Postgres.** Đọc code `bullmq` 6.3.12: thư mục `postgres/` có `createPostgresBackend` (kèm `setDefaultBackendFactory`), Postgres tối thiểu 13; README
-   không nhắc, và bản 6.3.12 (09/10/2026) có một bản vá cho phần này, nên có thể còn mới; mình chưa chạy thử. Nếu dùng, Bước 2 **không cần Redis**
-   (bỏ dịch vụ Redis, `@testcontainers/redis`, `REDIS_URL`), phần còn lại của design giữ nguyên vì chỉ dùng API `Queue`/`Worker`, và DB vẫn là nguồn sự thật. Bạn đã chốt Redis (D6);
-   đây là thông tin mới để bạn xác nhận giữ Redis hay đổi. Plan M2 chỉ an toàn nếu không đổi giữa chừng.
+2. ~~BullMQ có backend Postgres~~ **Đã đóng 12/10/2026:** chủ dự án giữ Redis (D6).
 3. **Luật xung đột khi upload lại trong lúc soạn** (mục 5, B2#19, B2#24): đề xuất CSV được ghi đè revision mở do CSV tạo (chỉ chặn bản sửa
-   tay qua API), và `gloss-changed` chỉ áp cho sense đã từng publish. Lệch PE6 và P25 của spec, vì hai luật đó đúng chữ thì chặn vòng sửa
-   trong Excel trước khi publish.
+   tay qua API), và `gloss-changed` chỉ áp cho sense đã từng publish. Lý do: luật chặn chặt hơn sẽ chặn vòng sửa trong Excel trước khi publish.
 
 **Rủi ro mình thấy:**
 - Redis là dịch vụ mới phải vận hành (cấu hình `noeviction`, lưu bền); lý do dùng BullMQ yếu đi từ K1b (Pipeline Defense Analysis); điều kiện xét lại ghi ở spec.

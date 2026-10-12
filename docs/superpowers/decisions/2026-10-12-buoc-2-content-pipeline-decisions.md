@@ -17,13 +17,20 @@ trade-off, phương án được chọn và lý do. Design doc mô tả *cách l
 | D3 | Số nghĩa ở pilot | Một nghĩa chính mỗi (từ, loại từ) | Chủ dự án (ok) |
 | D4 | Xử lý lỗi | Hai danh sách tách riêng; file lỗi sửa xong upload lại được | Chủ dự án |
 | D5 | Chuẩn hóa và thiếu nội dung | Tự chuẩn hóa lỗi vô hại; không loại dòng vì thiếu ví dụ/chủ đề | Chủ dự án (ok) |
-| D6 | Job nền | BullMQ + Redis | Chủ dự án (câu mở về backend Postgres) |
+| D6 | Job nền | BullMQ + Redis (giữ sau khi biết có backend Postgres) | Chủ dự án |
 | D7 | Tìm kiếm và revision | Khớp đúng → đầu từ → chứa; sửa qua revision nháp | Chủ dự án (ok) |
 | D8 | Xuất để sửa | Gồm cả sense đã publish | Chủ dự án (ok) |
 | D9 | Giao diện | Bước 2 là API; giao diện làm ngay sau | Chủ dự án |
 | D10 | Chia bước | Một design, ba mốc M1–M3 | Đề xuất (chủ dự án nghiêng về không chia) |
 | D11 | Phiên bản CEFR-J | Mặc định 1.5 trong repo, chờ xác nhận | Chờ bạn |
 | D12 | Bảng quyền | 4 quyền content cho `admin` và `editor`; ánh xạ endpoint | Chủ dự án (bảng D6); ánh xạ: Đề xuất |
+
+## Nguyên tắc: design doc so với spec (chốt 12/10/2026)
+
+Design doc là tài liệu chính thức để build; spec chỉ là khung ban đầu. Doc khác spec khi quyết định thay đổi trong lúc phân tích, và
+không cần sửa spec theo. Review design doc theo chính nó, không đối chiếu spec. Vì vậy design Bước 2 bỏ cột "Lệch spec?" và mục sửa spec.
+
+| D13 | Lọc trước dòng không đổi | Truy vấn hàng loạt trước khi xử lý từng dòng | Chủ dự án (ok) |
 
 ## D1 — Phạm vi Bước 2
 
@@ -89,9 +96,9 @@ Bối cảnh: Pipeline Defense Analysis ghi điều kiện xét lại BullMQ (ch
 | ✅ BullMQ + Redis | Đã chọn 02/10 và giữ; retry, hàng đợi, hợp đồng thuê sẵn cho nguồn ngoài và AI sau này. Thêm Redis (docker-compose, Testcontainers, vận hành) và một tiến trình worker |
 | Bảng job trong Postgres có lease (tự viết) | Không thêm Redis; phải tự viết hàng đợi, retry, nhịp tim |
 | Nhập trong request kèm tiến độ | Không thêm dịch vụ; request dài; mất retry và chạy lại |
-| **Mới 12/10:** BullMQ 6.3.12 với backend Postgres | Giữ API BullMQ mà không cần Redis. Chưa có trong README, có bản vá 09/10; mình chưa chạy thử; **chờ bạn xác nhận** |
+| **Mới 12/10:** BullMQ 6.3.12 với backend Postgres | Giữ API BullMQ mà không cần Redis. Chưa có trong README, có bản vá 09/10; chưa chạy thử. **Chủ dự án không chọn (12/10): giữ Redis** |
 
-Kết luận phần đã chốt: Redis. DB vẫn là nguồn sự thật dù chọn backend nào (PR12). Doc ghi rõ cái gì thay đổi nếu đổi backend (bỏ Redis khỏi compose, Testcontainers, cấu hình).
+Kết luận: Redis (chủ dự án xác nhận lại 12/10/2026). DB vẫn là nguồn sự thật dù chọn backend nào (PR12). Doc ghi rõ cái gì thay đổi nếu đổi backend (bỏ Redis khỏi compose, Testcontainers, cấu hình).
 
 ## D7 — Tìm kiếm và revision
 
