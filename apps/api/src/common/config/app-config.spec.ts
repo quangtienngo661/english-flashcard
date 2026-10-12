@@ -20,6 +20,15 @@ function validEnv(): NodeJS.ProcessEnv {
 }
 
 describe('loadConfig', () => {
+  it('B2#45a (config): publishMaxItems defaults to 500 and accepts an explicit positive integer', () => {
+    expect(loadConfig(validEnv()).content.publishMaxItems).toBe(500);
+    expect(loadConfig({ ...validEnv(), PUBLISH_MAX_ITEMS: '25' }).content.publishMaxItems).toBe(25);
+  });
+
+  it.each(['abc', '0', '-1', '1.5', '9007199254740992'])('B2#45a (config): PUBLISH_MAX_ITEMS=%s fails fast and names the variable', (value) => {
+    expect(() => loadConfig({ ...validEnv(), PUBLISH_MAX_ITEMS: value })).toThrow(/PUBLISH_MAX_ITEMS/);
+  });
+
   it('rejects a missing JWT_KEYS and names it', () => {
     const env = validEnv();
     delete env.JWT_KEYS;

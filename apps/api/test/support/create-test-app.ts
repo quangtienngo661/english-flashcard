@@ -1,4 +1,5 @@
 import type { Type } from '@nestjs/common';
+import { DiscoveryModule } from '@nestjs/core';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import { Test } from '@nestjs/testing';
 import type { Server } from 'node:http';
@@ -11,9 +12,12 @@ import type { AppConfig } from '../../src/common/config/app-config.js';
 import { PRISMA_CLIENT } from '../../src/common/db/prisma.module.js';
 import { LOG_SINK, type LogEntry, type LogSink } from '../../src/common/logging/app-logger.js';
 import type { PrismaClient } from '../../src/generated/prisma/client.js';
+import { IdentityModule } from '../../src/identity/identity.module.js';
+import { ROLE_PERMISSIONS, type Permission, type StaffRole } from '../../src/identity/identity.types.js';
 import { FakeMailer } from '../../src/identity/mailer/fake-mailer.js';
 import { MailDispatcher } from '../../src/identity/mailer/mail-dispatcher.service.js';
 import { Mailer } from '../../src/identity/mailer/mailer.js';
+import { ROLE_PERMISSIONS_TOKEN } from '../../src/identity/staff/role-permissions.token.js';
 import { InFlightInterceptor } from './in-flight.interceptor.js';
 import { testConfig } from './test-config.js';
 
@@ -22,6 +26,7 @@ export type TestApp = {
   http(): ReturnType<typeof request>;
   clock: FakeClock;
   prisma: PrismaClient;
+  rolePermissions: Record<StaffRole, readonly Permission[]>;
   logs: LogEntry[];
   mailer: FakeMailer;
   drainMail(): Promise<void>;
@@ -33,6 +38,7 @@ export async function createTestApp(opts?: {
   config?: Partial<AppConfig>;
   databaseUrl?: string;
   controllers?: Type<unknown>[];
+  rolePermissions?: Record<StaffRole, readonly Permission[]>;
 }): Promise<TestApp> {
   const config = testConfig({
     ...opts?.config,
@@ -42,12 +48,14 @@ export async function createTestApp(opts?: {
   const logs: LogEntry[] = [];
   const sink: LogSink = { write: (entry) => { logs.push(entry); } };
   const mailer = new FakeMailer();
+  const rolePermissions = structuredClone(opts?.rolePermissions ?? ROLE_PERMISSIONS);
   const moduleRef = await Test.createTestingModule({
-    imports: [AppModule.forRoot(config)], controllers: opts?.controllers ?? [],
+    imports: [AppModule.forRoot(config), IdentityModule, DiscoveryModule], controllers: opts?.controllers ?? [],
   })
     .overrideProvider(Clock).useValue(clock)
     .overrideProvider(LOG_SINK).useValue(sink)
     .overrideProvider(Mailer).useValue(mailer)
+    .overrideProvider(ROLE_PERMISSIONS_TOKEN).useValue(rolePermissions)
     .compile();
   const app = moduleRef.createNestApplication<NestExpressApplication>({ bodyParser: false });
   const prisma = moduleRef.get<PrismaClient>(PRISMA_CLIENT);
@@ -62,6 +70,7 @@ export async function createTestApp(opts?: {
     http: () => request(app.getHttpServer()),
     clock,
     prisma,
+    rolePermissions,
     logs,
     mailer,
     drainMail: () => dispatcher.drain(),

@@ -48,6 +48,9 @@ export interface AppConfig {
   corsOrigins: string[];
   problemTypeBase: string;
   maintenanceEnabled: boolean;
+  content: {
+    publishMaxItems: number;
+  };
   limits: Record<RateLimitRuleName, RateLimitRuleConfig>;
 }
 
@@ -127,6 +130,7 @@ const envSchema = z.object({
   PROBLEM_TYPE_BASE: z.url(),
   MAINTENANCE_ENABLED: booleanString.default(true),
   ACCESS_TOKEN_TTL_SECONDS: positiveInteger.default(900),
+  PUBLISH_MAX_ITEMS: positiveInteger.default(500),
 });
 
 export function loadConfig(env: NodeJS.ProcessEnv): AppConfig {
@@ -161,6 +165,7 @@ export function loadConfig(env: NodeJS.ProcessEnv): AppConfig {
     corsOrigins: values.CORS_ORIGINS,
     problemTypeBase: values.PROBLEM_TYPE_BASE,
     maintenanceEnabled: values.MAINTENANCE_ENABLED,
+    content: { publishMaxItems: values.PUBLISH_MAX_ITEMS },
     limits: structuredClone(DEFAULT_LIMITS),
   };
 }
