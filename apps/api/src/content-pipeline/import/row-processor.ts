@@ -34,6 +34,7 @@ export async function recordRejected(
     await tx.importRowOutcome.createMany({ data: [{
       batchId, rowNumber: row.rowNumber, outcome: 'rejected',
       errorCodes: errors.map((error) => error.code), raw: row.raw,
+      errorMessages: errors.map((error) => error.message),
     }], skipDuplicates: true });
   });
 }

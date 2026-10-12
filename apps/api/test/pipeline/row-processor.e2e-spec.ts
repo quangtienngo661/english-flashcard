@@ -99,7 +99,7 @@ describe('import row processor, entry and level part (e2e, isolated database)', 
       kind: 'level', sourceId: cefr.id, rowKey: key.key, contentHash: key.hash, batchId: upload.id,
     }]);
     expect(await ctx.prisma.importRowOutcome.findMany()).toEqual([{
-      batchId: upload.id, rowNumber: 2, outcome: 'created', errorCodes: [], raw: null,
+      batchId: upload.id, rowNumber: 2, outcome: 'created', errorCodes: [], errorMessages: [], raw: null,
     }]);
   });
 
@@ -162,7 +162,8 @@ describe('import row processor, entry and level part (e2e, isolated database)', 
     await recordRejected(job, second.id, { rowNumber: 2, raw }, rejected.errors);
     const recorded = await ctx.prisma.importRowOutcome.findMany({ where: { batchId: second.id } });
     expect(recorded).toEqual([{
-      batchId: second.id, rowNumber: 2, outcome: 'rejected', errorCodes: ['level-differs-from-source'], raw,
+      batchId: second.id, rowNumber: 2, outcome: 'rejected', errorCodes: ['level-differs-from-source'],
+      errorMessages: [rejected.errors[0].message], raw,
     }]);
     await recordRejected(job, second.id, { rowNumber: 2, raw }, rejected.errors);
     expect(await ctx.prisma.importRowOutcome.findMany({ where: { batchId: second.id } })).toEqual(recorded);

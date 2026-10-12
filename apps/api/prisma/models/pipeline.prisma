@@ -59,6 +59,8 @@ model ImportRowOutcome {
   rowNumber  Int      @map("row_number")
   outcome    String
   errorCodes String[] @default([]) @map("error_codes")
+  // Rejections keep full messages in the same order as errorCodes; other outcomes use empty arrays.
+  errorMessages String[] @default([]) @map("error_messages")
   // Only rejected rows store raw cells: an ordered array aligned with ImportBatch.rawHeaders.
   raw        Json?
 

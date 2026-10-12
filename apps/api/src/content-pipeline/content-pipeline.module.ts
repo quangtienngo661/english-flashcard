@@ -14,6 +14,7 @@ import { JobReconcilerService } from './jobs/job-reconciler.service.js';
 import { JobRunnerService } from './jobs/job-runner.service.js';
 import { MulterExceptionFilter } from './upload/multer-exception.filter.js';
 import { UploadsController } from './upload/uploads.controller.js';
+import { UploadsReadController } from './upload/uploads-read.controller.js';
 import { UploadsService } from './upload/uploads.service.js';
 
 @Module({
@@ -28,7 +29,7 @@ import { UploadsService } from './upload/uploads.service.js';
       }),
     }),
   ],
-  controllers: [UploadsController],
+  controllers: [UploadsController, UploadsReadController],
   providers: [
     BackgroundJobsService, JobQueueService, JobHandlerRegistry, JobRunnerService, JobReconcilerService,
     UploadsService, MulterExceptionFilter, IdempotencyInterceptor,
