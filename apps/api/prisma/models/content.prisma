@@ -1,0 +1,135 @@
+model Topic {
+  code       String    @id
+  archivedAt DateTime? @map("archived_at") @db.Timestamptz
+
+  names TopicName[]
+
+  @@map("topics")
+}
+
+model TopicName {
+  topicCode String @map("topic_code")
+  language  String
+  name      String
+
+  topic Topic @relation(fields: [topicCode], references: [code], onDelete: Cascade)
+
+  @@id([topicCode, language])
+  @@map("topic_names")
+}
+
+model DataSource {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  kind            String
+  name            String
+  version         String   @default("")
+  url             String?
+  license         String   @default("")
+  attribution     String   @default("")
+  displayPriority Int      @map("display_priority")
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  levels EntryLevel[]
+
+  @@unique([name, version])
+  @@map("data_sources")
+}
+
+model Entry {
+  id                   String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  language             String   @default("en")
+  lemma                String   @db.VarChar(100)
+  pos                  String
+  entryType            String   @default("word") @map("entry_type")
+  functionWordDerived  Boolean  @default(false) @map("function_word_derived")
+  functionWordOverride Boolean? @map("function_word_override")
+  createdAt            DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt            DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  variants EntryVariant[]
+  levels   EntryLevel[]
+  senses   Sense[]
+
+  @@unique([language, lemma, pos])
+  @@map("entries")
+}
+
+model EntryVariant {
+  id               String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  entryId          String  @map("entry_id") @db.Uuid
+  text             String
+  kind             String
+  acceptedAsAnswer Boolean @default(true) @map("accepted_as_answer")
+
+  entry Entry @relation(fields: [entryId], references: [id], onDelete: Cascade)
+
+  @@unique([entryId, text])
+  @@map("entry_variants")
+}
+
+model EntryLevel {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  entryId     String   @map("entry_id") @db.Uuid
+  level       String
+  sourceId    String   @map("source_id") @db.Uuid
+  basis       String
+  sourceExtra Json?    @map("source_extra")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  entry  Entry      @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  source DataSource @relation(fields: [sourceId], references: [id], onDelete: Restrict)
+
+  @@unique([entryId, sourceId, level])
+  @@map("entry_levels")
+}
+
+model Sense {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  entryId         String   @map("entry_id") @db.Uuid
+  contextLabel    String?  @map("context_label")
+  state           String   @default("open")
+  liveRevisionId  String?  @map("live_revision_id") @db.Uuid
+  replacesSenseId String?  @map("replaces_sense_id") @db.Uuid
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  entry         Entry           @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  replacesSense Sense?          @relation("SenseReplacement", fields: [replacesSenseId], references: [id], onDelete: Restrict)
+  replacements  Sense[]         @relation("SenseReplacement")
+  revisions     SenseRevision[]
+
+  @@map("senses")
+}
+
+model SenseRevision {
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  senseId       String    @map("sense_id") @db.Uuid
+  revisionNo    Int       @map("revision_no")
+  status        String    @default("draft")
+  draftSource   String    @map("draft_source")
+  contentHash   String    @map("content_hash")
+  createdBy     String    @map("created_by") @db.Uuid
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  publishedAt   DateTime? @map("published_at") @db.Timestamptz
+  examples      String[]  @default([])
+  topicCodes    String[]  @default([]) @map("topic_codes")
+  acceptedForms String[]  @default([]) @map("accepted_forms")
+
+  sense Sense               @relation(fields: [senseId], references: [id], onDelete: Cascade)
+  texts SenseRevisionText[]
+
+  @@unique([senseId, revisionNo])
+  @@index([topicCodes], type: Gin)
+  @@map("sense_revisions")
+}
+
+model SenseRevisionText {
+  revisionId String @map("revision_id") @db.Uuid
+  language   String
+  kind       String
+  text       String
+
+  revision SenseRevision @relation(fields: [revisionId], references: [id], onDelete: Cascade)
+
+  @@id([revisionId, language, kind])
+  @@map("sense_revision_texts")
+}
