@@ -238,10 +238,18 @@ cả file 7.799 dòng" không phải chạy 7.799 giao dịch. Thời gian thậ
 - **Điều kiện publish (CR5):** `gloss_vi` không rỗng, ít nhất một ví dụ tiếng Anh, entry có ít nhất một level, revision có ít nhất
   một chủ đề (mã còn hoạt động). Thiếu thì từ chối và trả **danh sách mục thiếu** (`violations`); sense giữ nguyên.
 - **Publish theo lô (PR7, P16):** yêu cầu là danh sách `{sense_id, revision}`, **tối đa 500 mục mỗi lần** (cấu hình `PUBLISH_MAX_ITEMS`,
-  ASSUMPTION; lý do ở mục 17); **từng mục độc lập**, kết quả trả theo từng mục
+  ASSUMPTION; lý do ở mục 17). Muốn publish nhiều hơn thì dùng **job publish theo bộ lọc** bên dưới. **từng mục độc lập**, kết quả trả theo từng mục
   (`published`/`already_published`/lý do từ chối). `revision` khác **revision mới nhất** của sense → từ chối mục đó (hai người sửa chồng
   nhau). Publish lại một mục đã publish đúng revision đó là thành công, không đổi gì (idempotent tự nhiên, không cần
   `Idempotency-Key`).
+- **Job publish theo bộ lọc (chốt 12/10/2026, M3).** `POST /v1/admin/content/senses/publish-jobs` (`content.publish`, `Idempotency-Key`
+  bắt buộc) nhận bộ lọc (`batch_id`, `level`, `topic`, `pos`; bỏ trống = mọi sense sẵn sàng) và chạy bằng khung job dùng chung, **không giới hạn
+  số lượng**. Lúc tạo job, hệ thống **chụp** danh sách `{sense_id, revision}` của các sense **đã đủ điều kiện publish** theo bộ lọc (sense chưa đủ
+  điều kiện không vào danh sách, chỉ được đếm là `chưa sẵn sàng`); không chụp được mục nào thì 400 `nothing-to-publish`. Worker publish từng
+  mục trong giao dịch riêng, kiểm lại điều kiện và `revision` ngay lúc xử lý (revision đã đổi từ lúc chụp → mục đó bị từ chối `stale-revision`),
+  mục lỗi không dừng job; kết quả từng mục (`published`/`already_published`/lý do) lưu như báo cáo dòng của upload, tải được dạng CSV. Trạng
+  thái cuối `succeeded` (mọi mục xong) hoặc `partial` (có mục bị từ chối). Job chết giữa chừng chạy lại thì bỏ qua mục đã publish. Chưa có bản
+  tương tự cho bỏ publish/retire (để sau).
 - **Publish nhanh (CR17):** lưu nội dung mới và publish trong một lời gọi, cần **cả** `content.edit` và `content.publish`, nguyên
   tử, vẫn kiểm đủ điều kiện publish.
 - **Thay nghĩa:** tạo sense mới (`replaces_sense_id` trỏ sense cũ). Khi sense mới được publish, sense cũ chuyển `retired`
@@ -258,7 +266,7 @@ cả file 7.799 dòng" không phải chạy 7.799 giao dịch. Thời gian thậ
   được viết thành **một khung job nền dùng chung** (bảng trạng thái job chung hoặc giao diện chung, plan chọn), không gắn cứng vào
   việc nhập nội dung. Thêm loại job sau này (AI soạn nháp hàng loạt, làm giàu nghĩa từ từ điển ngoài, nhập định kỳ, sinh lại ngân
   hàng câu) chỉ là thêm một hàng đợi và một hàm xử lý; chạy nhiều worker song song chỉ là tăng số tiến trình hoặc `concurrency`,
-  vì lease và `lease_epoch` đã bảo đảm một job chỉ một worker ghi. Bước 2 chỉ có một loại job (`content-import`) và một worker.
+  vì lease và `lease_epoch` đã bảo đảm một job chỉ một worker ghi. Bước 2 có hai loại job (`content-import` ở M2, `content-publish` ở M3, chốt 12/10/2026) và một worker.
 - **Hàng đợi** `content-import`, job `{ batchId }`, **`jobId` = `batchId`**. Tiến trình API chỉ là **producer**; tiến trình
   `worker` là consumer (concurrency 1: một lần một job, PR13). Redis dùng kết nối ioredis; Worker bắt buộc
   `maxRetriesPerRequest: null`.
@@ -342,7 +350,8 @@ quyền nào; endpoint của người học dùng xác thực và quyền sở h
 | `GET /v1/admin/content/entries` (lọc `conflict=true`, `has_sense=false`, `level`, `batch_id`, `q`), `GET .../senses`, `GET .../senses/{id}`, `GET .../senses/export` | `content.edit` |
 | `POST .../entries/batch` (dán `lemma,pos`, PR6), `POST .../senses` (thêm nghĩa), `PUT .../senses/{id}/draft` (tạo revision), `PUT .../entries/{id}/variants`, `PUT .../entries/{id}/levels/editorial` | `content.edit` |
 | `POST .../senses/review` (đánh dấu `reviewed`/`rejected`) | `content.edit` |
-| `POST .../senses/publish`, `/unpublish`, `/retire` | `content.publish` |
+| `POST .../senses/publish`, `/unpublish`, `/retire` (tối đa 500 mục) | `content.publish` |
+| `POST .../senses/publish-jobs`, `GET .../senses/publish-jobs/{id}` (+ `/report.csv`) | `content.publish` |
 | `PUT .../senses/{id}/draft?publish=true` (publish nhanh) | `content.edit` **và** `content.publish` |
 | `POST/PATCH /v1/admin/taxonomy/topics`, `PUT .../entries/{id}/function-word` | `taxonomy.manage` |
 | `GET /v1/senses/search`, `GET /v1/senses`, `GET /v1/senses/{id}`, `GET /v1/topics` | Đăng nhập + đã chọn tiếng mẹ đẻ |
@@ -374,7 +383,7 @@ cho mọi route ghi (30 lần/phút/người); **không** có luật riêng cho 
 |---|---|---|
 | **M1 Content lõi** | Bảng Content, nguồn, chủ đề, entry/level/biến thể, sense/revision, vòng đời + publish, API quản trị từng thao tác, tìm kiếm/duyệt/xem chỉ-đọc, 4 quyền + test phân quyền | Soạn và publish được bằng API từng thao tác; người học thấy kết quả |
 | **M2 Pipeline** | Redis + BullMQ + worker, bảng Pipeline, upload gộp, row processor, báo cáo, danh sách (a), lease + reconciler | Nhập được file thật |
-| **M3 Hoàn thiện** | Hoàn tác lô, xuất (cả sense đã publish), danh sách (b), đo thời gian nhập, chạy tay trọn luồng | Xong Bước 2 |
+| **M3 Hoàn thiện** | Hoàn tác lô, xuất (cả sense đã publish), danh sách (b), **job publish theo bộ lọc** (loại job thứ hai trên khung dùng chung), đo thời gian nhập, chạy tay trọn luồng | Xong Bước 2 |
 
 **Kiểm thử.** Giữ nguyên nguyên tắc Bước 0–1: Postgres thật bằng Testcontainers, không mock; thêm **Redis thật** (`@testcontainers/redis`). Worker
 chạy **trong tiến trình test** (cùng module) để có điều khiển; một test e2e chạy bằng tiến trình `worker` riêng để kiểm điểm vào. Suite phụ thuộc
@@ -449,6 +458,8 @@ trước khi có số đo.
 | B2#53 | When selected senses, including published ones, are exported and the file is uploaded unchanged, then no level source is needed and every row is `unchanged` | PR15, D8 |
 | B2#54 | When an exported cell starts with `=`, `+`, `-` or `@`, then it is prefixed so a spreadsheet does not run it, and on upload the prefix is removed before comparison so the round trip changes no content | P22, PR15 |
 | B2#55 | When a row of the export carries a `revision` older than the sense's latest when uploaded again, then it is rejected as a conflict; when an export would exceed 5,000 rows, then it is refused with 400 `export-too-large` | P14, PR15 |
+| B2#45b | When a publish job is created with a filter, then the senses matching it that are publishable at that moment are snapshotted as `{sense_id, revision}` pairs, each is published in its own transaction, a refused item (such as a `revision` that changed after the snapshot) does not stop the job, the report lists every item with its outcome, and the final status is `succeeded` or `partial` | chốt 12/10/2026 |
+| B2#45c | When a publish job finds nothing publishable for its filter, then it is refused with 400 `nothing-to-publish`; when the same `Idempotency-Key` is sent again, then the first job is returned; when the worker dies mid-job and it runs again, then items already published are skipped and none is processed twice | chốt 12/10/2026 |
 | B2#56a | When senses are listed or exported with `batch_id`, then exactly the senses that upload created or gave a new revision are returned, each with its latest `revision`, so they can be published in one request | D4, PR7 |
 | B2#56 | When senses that cannot yet be published are exported with `status=unpublishable`, then each row has `_missing` naming the missing items together with `sense_id` and `revision`, and uploading the filled file creates draft revisions | D4 |
 | B2#57 | When a learner searches `analyse`, then the entry whose headword is `analyze/analyse` is found; search is case-insensitive on lemma and variants, and `%`, `_` and `\` in the query match only themselves | C20, CR11 |
@@ -530,8 +541,8 @@ kênh cảnh báo ngoài log; CSV có số phiên bản; nhiều ngôn ngữ gi�
 3. ~~Luật xung đột khi upload lại trong lúc soạn~~ **Đã đóng 12/10/2026:** CSV ghi đè được revision mở do CSV tạo; `gloss-changed` chỉ áp cho sense đã từng publish.
 
 **Rủi ro mình thấy:**
-- Trần 500 mục mỗi lệnh publish là ASSUMPTION: mỗi mục là một giao dịch chạy ngay trong request, và request phải xong trước timeout
-  của proxy (thường 60 giây). Đo thời gian publish 500 mục ở M1 rồi chỉnh.
+- Trần 500 mục cho lệnh publish chạy ngay trong request là ASSUMPTION: request phải xong trước timeout của proxy (thường 60 giây). Đo
+  thời gian publish 500 mục ở M1 rồi chỉnh; số lượng lớn đi qua job publish theo bộ lọc nên không phụ thuộc trần này.
 - Redis là dịch vụ mới phải vận hành (cấu hình `noeviction`, lưu bền); lý do dùng BullMQ yếu đi từ K1b (Pipeline Defense Analysis); điều kiện xét lại ghi ở spec.
 - Chưa đo thời gian nhập 7.799 dòng với mỗi dòng một giao dịch (B2#71); số lease, nhịp tim, reconciler là ASSUMPTION.
 - Hành vi của Excel là ASSUMPTION: dấu phân cách `;` với thiết lập tiếng Việt, bảng mã khi lưu "CSV" thường, và việc mất dấu `'` ở đầu ô (`'m`, `'re`, `'s`). Excel là công cụ chính của chủ dự án nên cần thử một lần trên máy thật trước M2.

@@ -31,6 +31,7 @@ trade-off, phương án được chọn và lý do. Design doc mô tả *cách l
 | D17 | Level lệch nguồn | Loại dòng có level khác bản ghi đã có của cùng nguồn bên thứ ba; từ tự thêm để trống level | Chủ dự án (ok) |
 | D18 | Luật xung đột khi upload lại | CSV ghi đè revision mở do CSV tạo; `gloss-changed` chỉ áp cho sense đã publish | Chủ dự án (ok) |
 | D19 | Lọc danh sách entry | `conflict`, `has_sense`, `level`, `batch_id` | Chủ dự án (ok) |
+| D20 | Publish số lượng lớn | Giữ trần 500 cho lệnh đồng bộ; thêm job publish theo bộ lọc (không giới hạn số lượng) | Chủ dự án |
 
 ## Nguyên tắc: design doc so với spec (chốt 12/10/2026)
 
@@ -189,3 +190,14 @@ Bối cảnh: pilot chỉ có một worker và một loại job, nên lease vớ
   Bỏ: tin hết ô level (sai nguồn gốc của dữ liệu có giấy phép).
 - **D18:** luật chặt (mọi revision mở đều chặn, mọi đổi `gloss_vi` đều chặn) làm hỏng vòng sửa trong Excel trước khi publish. Chọn: chỉ
   bảo vệ revision do sửa tay qua API tạo, và chỉ chặn đổi nghĩa với sense đã publish. Ghi đè revision CSV đã `reviewed` thì báo cảnh báo.
+
+## D20 — Publish số lượng lớn
+
+Bối cảnh: lệnh publish chạy trong request và phải xong trước timeout của proxy (thường 60 giây); chủ dự án hỏi nếu muốn publish cả ~8.000 từ CEFR-J một lần.
+
+| Phương án | Trade-off |
+|---|---|
+| A: giữ trần 500, gửi nhiều lệnh (giao diện tự chia lô) | Không thêm việc ở Bước 2; thủ công và không có tiến độ chung đến khi có giao diện |
+| ✅ B: thêm job publish theo bộ lọc chạy bằng job nền | Publish bao nhiêu cũng được bằng một thao tác, có báo cáo từng mục; thêm khoảng một mốc nhỏ ở M3, đồng thời kiểm chứng khung job dùng chung bằng loại job thứ hai |
+
+Ghi chú: danh sách sense được chụp lúc tạo job (cặp `sense_id` + `revision`) nên thứ được publish là đúng thứ đã sẵn sàng lúc bạn yêu cầu; sửa chen ngang thì mục đó bị từ chối chứ không publish nhầm bản mới.
