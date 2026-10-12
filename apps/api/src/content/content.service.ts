@@ -5,6 +5,7 @@ import { LevelsService, type EntryLevelView, type ImportedLevelInput } from './c
 import type { Level } from './content.constants.js';
 import { SourcesService, isSourceComplete, type SourceView } from './sources/sources.service.js';
 import { SensesService, type CreateSenseInput, type SaveDraftInput, type SaveDraftResult, type MarkRevisionItem, type MarkRevisionResult } from './senses/senses.service.js';
+import { PublishService, type PublishItem, type PublishItemResult, type QuickPublishResult, type SenseStateResult } from './senses/publish.service.js';
 
 @Injectable()
 export class ContentService {
@@ -13,6 +14,7 @@ export class ContentService {
     @Inject(EntriesService) private readonly entries: EntriesService,
     @Inject(LevelsService) private readonly levels: LevelsService,
     @Inject(SensesService) private readonly senses: SensesService,
+    @Inject(PublishService) private readonly publish: PublishService,
   ) {}
 
   getSource(id: string): Promise<SourceView | null> {
@@ -65,5 +67,21 @@ export class ContentService {
 
   markRevisions(tx: Prisma.TransactionClient, items: MarkRevisionItem[]): Promise<MarkRevisionResult[]> {
     return this.senses.markRevisions(tx, items);
+  }
+
+  publishItem(item: PublishItem, actorId: string): Promise<PublishItemResult> {
+    return this.publish.publishItem(item, actorId);
+  }
+
+  unpublish(senseIds: string[]): Promise<SenseStateResult[]> {
+    return this.publish.unpublish(senseIds);
+  }
+
+  retire(senseIds: string[]): Promise<SenseStateResult[]> {
+    return this.publish.retire(senseIds);
+  }
+
+  quickPublish(input: Omit<SaveDraftInput, 'source'>): Promise<QuickPublishResult> {
+    return this.publish.quickPublish(input.senseId, (tx) => this.saveDraft(tx, { ...input, source: 'ui' }));
   }
 }

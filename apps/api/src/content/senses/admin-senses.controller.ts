@@ -8,16 +8,11 @@ import type { RequestUser } from '../../common/request-user/request-user.js';
 import type { Prisma, PrismaClient } from '../../generated/prisma/client.js';
 import { RequirePermission } from '../../identity/staff/require-permission.decorator.js';
 import { normalizeLemma, normalizeText } from '../catalog/normalize.js';
-import { MAX_EXAMPLES, VALID_POS } from '../content.constants.js';
+import { VALID_POS } from '../content.constants.js';
 import { ContentService } from '../content.service.js';
-import { ContentRuleError, type RevisionContent } from './revision-content.js';
+import { cell, contentSchema, toContent } from './content-body.js';
+import { ContentRuleError } from './revision-content.js';
 
-const cell = z.string().transform(normalizeText).refine((value) => !value.includes('\0') && [...value].length <= 2_000);
-const contentSchema = z.strictObject({
-  gloss_vi: cell.nullable().optional(), definition_en: cell.nullable().optional(),
-  examples_en: z.array(cell).max(MAX_EXAMPLES).optional(), topics: z.array(cell).optional(),
-  accepted_forms: z.array(cell).optional(),
-});
 const createSchema = z.strictObject({
   entry_id: z.uuid(), context_label: cell.nullable().optional(), content: contentSchema.optional(), replaces_sense_id: z.uuid().optional(),
 });
@@ -28,18 +23,7 @@ const reviewSchema = z.strictObject({ items: z.array(z.strictObject({
 })).max(500) });
 const batchSchema = z.strictObject({ lines: z.array(z.string()).max(500) });
 const transactionOptions = { timeout: 10_000, maxWait: 5_000 };
-type ContentBody = z.infer<typeof contentSchema>;
 type BatchResult = { line: number; status: 'created' | 'exists' | 'invalid'; entry_id?: string; sense_id?: string; warnings: string[] };
-
-function toContent(body: ContentBody): Partial<RevisionContent> {
-  return {
-    ...(body.gloss_vi !== undefined ? { glossVi: body.gloss_vi } : {}),
-    ...(body.definition_en !== undefined ? { definitionEn: body.definition_en } : {}),
-    ...(body.examples_en !== undefined ? { examplesEn: body.examples_en } : {}),
-    ...(body.topics !== undefined ? { topicCodes: body.topics } : {}),
-    ...(body.accepted_forms !== undefined ? { acceptedForms: body.accepted_forms } : {}),
-  };
-}
 
 async function problemDetails<T>(write: () => Promise<T>): Promise<T> {
   try { return await write(); } catch (error) {
