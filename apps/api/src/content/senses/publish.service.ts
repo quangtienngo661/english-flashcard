@@ -21,6 +21,21 @@ export class PublishIncompleteError extends ContentRuleError {
 }
 const transactionOptions = { timeout: 10_000, maxWait: 5_000 };
 
+/** Shared by publishing and staff's unpublishable list; callers resolve catalog facts. */
+export function publishViolations(
+  revision: { texts: readonly { language: string; kind: string; text: string }[]; examples: readonly string[] },
+  hasLevel: boolean, hasActiveTopic: boolean,
+): PublishViolation[] {
+  const violations: PublishViolation[] = [];
+  if (!revision.texts.some(({ language, kind, text }) => language === 'vi' && kind === 'gloss' && text.trim())) {
+    violations.push('gloss-missing');
+  }
+  if (!revision.examples.some((example) => example.trim())) violations.push('example-missing');
+  if (!hasLevel) violations.push('level-missing');
+  if (!hasActiveTopic) violations.push('topic-missing');
+  return violations;
+}
+
 @Injectable()
 export class PublishService {
   constructor(
@@ -82,15 +97,9 @@ export class PublishService {
     if (!revision || revision.revisionNo !== item.revision) return { outcome: 'refused', reason: 'stale-revision' };
     if (sense.state === 'open' && sense.liveRevisionId === revision.id) return { outcome: 'already_published' };
 
-    const violations: PublishViolation[] = [];
-    if (!revision.texts.some(({ language, kind, text }) => language === 'vi' && kind === 'gloss' && text.trim())) {
-      violations.push('gloss-missing');
-    }
-    if (!revision.examples.some((example) => example.trim())) violations.push('example-missing');
-    if (!await tx.entryLevel.findFirst({ where: { entryId: sense.entryId }, select: { id: true } })) violations.push('level-missing');
-    if (!await tx.topic.findFirst({ where: { code: { in: revision.topicCodes }, archivedAt: null }, select: { code: true } })) {
-      violations.push('topic-missing');
-    }
+    const hasLevel = await tx.entryLevel.findFirst({ where: { entryId: sense.entryId }, select: { id: true } });
+    const hasActiveTopic = await tx.topic.findFirst({ where: { code: { in: revision.topicCodes }, archivedAt: null }, select: { code: true } });
+    const violations = publishViolations(revision, hasLevel !== null, hasActiveTopic !== null);
     if (violations.length) return { outcome: 'refused', reason: 'publish-incomplete', violations };
 
     // This must precede the replacement's live pointer: senses_entry_label_live_key is not deferred.

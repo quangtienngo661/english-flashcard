@@ -1,5 +1,7 @@
 import { Module } from '@nestjs/common';
 import { IdentityModule } from '../identity/identity.module.js';
+import { AdminCatalogController } from './catalog/admin-catalog.controller.js';
+import { AdminCatalogQueries } from './catalog/admin-catalog.queries.js';
 import { AdminEntriesController, EntryFunctionWordController } from './catalog/admin-entries.controller.js';
 import { EntriesService } from './catalog/entries.service.js';
 import { LevelsService } from './catalog/levels.service.js';
@@ -19,9 +21,9 @@ import { TopicsService } from './taxonomy/topics.service.js';
   controllers: [
     SourcesController, PublicSourcesController, TopicsController, LearnerTopicsController,
     AdminEntriesController, EntryFunctionWordController, AdminSensesController, BatchEntriesController,
-    AdminPublishController,
+    AdminPublishController, AdminCatalogController,
   ],
-  providers: [ContentService, SourcesService, TopicsService, LearnerContentGuard, EntriesService, LevelsService, SensesService, PublishService],
+  providers: [ContentService, SourcesService, TopicsService, LearnerContentGuard, EntriesService, LevelsService, SensesService, PublishService, AdminCatalogQueries],
   exports: [ContentService],
 })
 export class ContentModule {}

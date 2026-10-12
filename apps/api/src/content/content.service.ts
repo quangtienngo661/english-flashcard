@@ -1,5 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import type { Prisma } from '../generated/prisma/client.js';
+import { AdminCatalogQueries, type LatestRevision } from './catalog/admin-catalog.queries.js';
 import { EntriesService, type EnsureEntryInput, type EnsureEntryResult, type VariantInput } from './catalog/entries.service.js';
 import { LevelsService, type EntryLevelView, type ImportedLevelInput } from './catalog/levels.service.js';
 import type { Level } from './content.constants.js';
@@ -15,6 +16,7 @@ export class ContentService {
     @Inject(LevelsService) private readonly levels: LevelsService,
     @Inject(SensesService) private readonly senses: SensesService,
     @Inject(PublishService) private readonly publish: PublishService,
+    @Inject(AdminCatalogQueries) private readonly queries: AdminCatalogQueries,
   ) {}
 
   getSource(id: string): Promise<SourceView | null> {
@@ -83,5 +85,9 @@ export class ContentService {
 
   quickPublish(input: Omit<SaveDraftInput, 'source'>): Promise<QuickPublishResult> {
     return this.publish.quickPublish(input.senseId, (tx) => this.saveDraft(tx, { ...input, source: 'ui' }));
+  }
+
+  latestRevisions(senseIds: string[]): Promise<Map<string, LatestRevision>> {
+    return this.queries.latestRevisions(senseIds);
   }
 }
