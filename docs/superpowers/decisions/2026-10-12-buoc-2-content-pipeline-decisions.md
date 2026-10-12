@@ -28,6 +28,9 @@ trade-off, phương án được chọn và lý do. Design doc mô tả *cách l
 | D14 | Khung job nền | Giữ đủ lease/`lease_epoch`/đối soát, viết thành khung dùng chung cho mọi loại job | Chủ dự án |
 | D15 | Giới hạn upload | Không có luật riêng, chỉ luật chung `user.write` | Chủ dự án (ok) |
 | D16 | Tìm sense theo lần upload | Bộ lọc `batch_id` cho danh sách và lệnh xuất | Chủ dự án (ok) |
+| D17 | Level lệch nguồn | Loại dòng có level khác bản ghi đã có của cùng nguồn bên thứ ba; từ tự thêm để trống level | Chủ dự án (ok) |
+| D18 | Luật xung đột khi upload lại | CSV ghi đè revision mở do CSV tạo; `gloss-changed` chỉ áp cho sense đã publish | Chủ dự án (ok) |
+| D19 | Lọc danh sách entry | `conflict`, `has_sense`, `level`, `batch_id` | Chủ dự án (ok) |
 
 ## Nguyên tắc: design doc so với spec (chốt 12/10/2026)
 
@@ -178,3 +181,11 @@ Bối cảnh: pilot chỉ có một worker và một loại job, nên lease vớ
 
 - **D15:** bỏ luật `content.upload` (10 lần/giờ). Chỉ nhân sự mới upload được và luật chung `user.write` (30 lần/phút) đã có; luật riêng chỉ làm chậm vòng sửa trong Excel.
 - **D16:** danh sách sense và lệnh xuất nhận `batch_id`, trả các sense mà lần upload tạo hoặc tạo revision kèm `revision` mới nhất, để publish cả lô bằng một lệnh.
+
+## D17, D18 — Nguồn level và luật xung đột khi upload lại
+
+- **D17:** file làm việc là bản sao của file CEFR-J, nên sửa ô level hay thêm từ của mình kèm level sẽ ghi dữ liệu mang tên CEFR-J.
+  Chọn: với nguồn bên thứ ba, level khác bản ghi đã có của chính nguồn đó (từ lần upload trước) thì loại dòng và chỉ sang level biên tập.
+  Bỏ: tin hết ô level (sai nguồn gốc của dữ liệu có giấy phép).
+- **D18:** luật chặt (mọi revision mở đều chặn, mọi đổi `gloss_vi` đều chặn) làm hỏng vòng sửa trong Excel trước khi publish. Chọn: chỉ
+  bảo vệ revision do sửa tay qua API tạo, và chỉ chặn đổi nghĩa với sense đã publish. Ghi đè revision CSV đã `reviewed` thì báo cảnh báo.
