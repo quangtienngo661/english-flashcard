@@ -6,6 +6,7 @@ import { LevelsService, type EntryLevelView, type ImportedLevelInput } from './c
 import type { Level } from './content.constants.js';
 import { SourcesService, isSourceComplete, type SourceView } from './sources/sources.service.js';
 import { SensesService, type CreateSenseInput, type SaveDraftInput, type SaveDraftResult, type MarkRevisionItem, type MarkRevisionResult } from './senses/senses.service.js';
+import { importContent, type ImportContentInput, type ImportContentResult } from './senses/import-content.js';
 import { PublishService, type PublishItem, type PublishItemResult, type QuickPublishResult, type SenseStateResult } from './senses/publish.service.js';
 
 @Injectable()
@@ -65,6 +66,10 @@ export class ContentService {
 
   saveDraft(tx: Prisma.TransactionClient, input: SaveDraftInput): Promise<SaveDraftResult> {
     return this.senses.saveDraft(tx, input, (codes) => this.getTopics(tx, codes));
+  }
+
+  importContent(tx: Prisma.TransactionClient, input: ImportContentInput): Promise<ImportContentResult> {
+    return importContent(tx, input, this.senses, (codes) => this.getTopics(tx, codes));
   }
 
   markRevisions(tx: Prisma.TransactionClient, items: MarkRevisionItem[]): Promise<MarkRevisionResult[]> {
