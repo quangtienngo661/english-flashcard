@@ -1,6 +1,6 @@
 # Design — Bước 2: Content + Pipeline (phía quản trị)
 
-> **Trạng thái 12/10/2026:** bản nháp chờ chủ dự án duyệt. Chưa có code. Sau khi duyệt: `superpowers:writing-plans`.
+> **Trạng thái 12/10/2026:** chủ dự án đã duyệt (sau phiên review 12/10/2026, xem phần "Sửa design sau phiên review" trong decisions). Chưa có code. Bước tiếp theo: `superpowers:writing-plans`.
 
 Ngày: 12/10/2026 (brainstorm 11–12/10/2026). Phạm vi: Bước 2 trong `../../HANDOFF_2026-10-05_BUOC_0.md` §2, theo spec
 [`module-spec-vocabulary-content.md`](../../specs/module-spec-vocabulary-content.md) (CR1–CR23) và
@@ -46,6 +46,14 @@ publish. Giao diện (đăng nhập web và trang admin) làm ngay sau Bước 2
 | D10 | **Một design, một plan, ba mốc** M1–M3 (mục 12), không tách thành hai bước độc lập | Đề xuất (chủ dự án nghiêng về không chia, chưa phản đối) |
 | D11 | **Phiên bản CEFR-J và nơi phát hành Octanove:** mặc định dùng bản trong repo (CEFR-J 1.5, Octanove 1.0) cho tới khi chủ dự án xác nhận có bản mới hơn hay không. Phiên bản nằm trong bản ghi nguồn nên đổi bản sau không phải sửa code | Chờ bạn (mục 17) |
 | D12 | **Bảng quyền cho Bước 2:** `content.edit`, `content.publish`, `content.import`, `taxonomy.manage` gán cho cả `admin` và `editor` (bảng D6 của Bước 1); ánh xạ từng endpoint ở mục 10 | Chốt (bảng D6); ánh xạ endpoint: Đề xuất |
+| D13 | **Lọc trước dòng không đổi:** truy vấn hàng loạt trên cả file trước khi xử lý từng dòng (mục 5) | Chốt |
+| D14 | **Khung job nền dùng chung:** lease, `lease_epoch`, nhịp tim, đối soát, thử lại viết một lần; bảng `background_jobs` chung, mỗi loại job có bảng chi tiết riêng (mục 4, 7) | Chốt (khung, 12/10); mô hình bảng chung: Chốt (12/10, sau review) |
+| D15 | **Giới hạn upload:** không có luật tần suất riêng, chỉ luật chung `user.write` (mục 10) | Chốt |
+| D16 | **Tìm sense theo lần upload:** bộ lọc `batch_id` cho danh sách sense và lệnh xuất (mục 8) | Chốt |
+| D17 | **Level lệch nguồn:** nguồn bên thứ ba đã có level khác cho entry thì loại dòng `level-differs-from-source`; từ tự thêm để trống ô level (mục 5) | Chốt |
+| D18 | **Luật xung đột khi upload lại:** CSV ghi đè revision mở do CSV tạo; `gloss-changed` chỉ áp cho sense đã từng publish (mục 5) | Chốt |
+| D19 | **Lọc danh sách entry:** `conflict`, `has_sense`, `level`, `batch_id` (mục 10) | Chốt |
+| D20 | **Publish số lượng lớn:** giữ trần 500 cho lệnh đồng bộ, thêm job publish theo bộ lọc không giới hạn số lượng (mục 6) | Chốt |
 
 Thư viện (đã kiểm `npm view` ngày 12/10/2026): `bullmq` 6.3.12, `@nestjs/bullmq` 12.0.0 (peer `bullmq ^6`, `@nestjs/core ^12`),
 `ioredis` 6.0.0 (Node ≥ 20), `@testcontainers/redis` 12.2.0, `csv-parse` 7.0.3 (ESM), `@types/multer` 2.3.0. Việc chọn
@@ -101,9 +109,13 @@ dòng" vào **một** giao dịch cho mỗi dòng (PR10). Content sở hữu lu�
 - **`senses`**: `id` (uuid, **không bao giờ tái dùng**, SR2), `entry_id`, `context_label` (null = nghĩa chính; chuỗi rỗng/chỉ
   khoảng trắng chuẩn hóa thành null), `state` (`open`/`unpublished`/`retired`; `open` = chưa bị
   bỏ publish hay retire, **không** có nghĩa là đã publish), `live_revision_id` (null nếu chưa từng publish), `replaces_sense_id`
-  (khi là sense thay nghĩa chưa publish), `created_at`. Người học chỉ thấy sense `open` **và** có `live_revision_id`. Bất biến:
+  (sense cũ mà sense này thay; **giữ nguyên sau khi publish** để còn lịch sử), `created_at`. Người học chỉ thấy sense `open` **và** có
+  `live_revision_id`. **Sense chờ thay thế** = `replaces_sense_id` khác null **và** `live_revision_id` null (định nghĩa này phải dựa
+  vào `live_revision_id`, không chỉ vào `replaces_sense_id`: nếu không, sense thay nghĩa đã publish vẫn bị coi là "chờ" và chỉ mục
+  bên dưới cho phép tạo thêm một sense trùng (entry, nhãn)). Bất biến:
   **tối đa một sense chưa retire và không chờ thay thế cho mỗi (entry, nhãn)**, và **tối đa một sense chờ thay thế cho mỗi sense**;
-  plan chọn cách cài (chỉ mục duy nhất từng phần) và có test cho hai bất biến này. Sense chờ thay thế mà revision bị `rejected`
+  plan chọn cách cài (chỉ mục duy nhất từng phần, điều kiện có thể dùng cả hai cột trên) và có test cho hai bất biến này,
+  gồm ca "thay nghĩa → publish → tạo thêm sense cùng (entry, nhãn) bị từ chối". Sense chờ thay thế mà revision bị `rejected`
   thì chuyển `retired` (chưa từng publish), trả lại chỗ cho lần thay sau.
 - **`sense_revisions`**: bản chụp bất biến của nội dung: `sense_id`, `revision_no` (tăng dần theo sense, bắt đầu từ 1),
   `status` (`draft`/`reviewed`/`published`/`superseded`/`rejected`), `draft_source` (`csv`/`ui`, PR17), `content_hash`,
@@ -117,10 +129,21 @@ Mỗi lần lưu sửa tạo **revision mới**; revision mở cũ chuyển `sup
 
 ### Bảng của Pipeline
 
-- **`import_batches`**: `id`, `status` (`queued`/`running`/`succeeded`/`partial`/`failed`/`reverted`), `level_source_id` (null nếu file
+- **`background_jobs`** (khung job dùng chung, D14; chủ dự án chọn 12/10/2026): `id`, `queue` (`content-import`, `content-publish`, sau này
+  thêm hàng đợi là thêm giá trị), `status` (`queued`/`running`/`succeeded`/`partial`/`failed`), `attempts`, `lease_owner`, `lease_epoch`,
+  `lease_expires_at`, `created_by` (uuid trơn), `operation_id`, `created_at`, `started_at`, `finished_at`, tóm tắt lỗi. **Chỉ chứa phần
+  chung cho mọi loại job**; mọi logic lease, nhịp tim, đối soát, thử lại (mục 7) đọc và ghi bảng này, không biết gì về nội dung job.
+  Mỗi loại job có bảng chi tiết riêng với khóa chính cũng là `job_id` (quan hệ một-một, cùng module nên được dùng quan hệ Prisma). Mã
+  khung nằm trong module Pipeline (`src/content-pipeline/jobs/`); tách sang `common/` là việc của lúc có module khác cần dùng (đề xuất).
+- **`import_batches`** (chi tiết của job `content-import`): `id` (= `background_jobs.id` = `jobId` BullMQ), `level_source_id` (null nếu file
   không có cột level), `file_name`, `file_sha256`, `file_size`, `row_count`, bộ đếm (đã xử lý, entry tạo mới, level tạo mới,
-  sense tạo mới, revision tạo mới, không đổi, bị loại), `attempts`, `lease_owner`, `lease_epoch`, `lease_expires_at`, `created_by`,
-  `created_at`, `started_at`, `finished_at`, `operation_id`, tóm tắt lỗi.
+  sense tạo mới, revision tạo mới, không đổi, bị loại), `reverted_at`. Trạng thái hiển thị của batch = `reverted` nếu `reverted_at` có
+  giá trị, còn không thì `background_jobs.status`.
+- **`publish_jobs`** (chi tiết của job `content-publish`, M3): `id` (= `background_jobs.id`), `filter` (jsonb: `batch_id`, `level`, `topic`,
+  `pos`), bộ đếm (đã chụp, chưa sẵn sàng lúc chụp, đã publish, đã publish từ trước, bị từ chối).
+- **`publish_job_items`**: `(job_id, sense_id)` duy nhất, `revision_no` (đã chụp), `outcome` (`pending`/`published`/`already_published`/
+  `refused`), `reason` (mã từ chối). Ghi lúc tạo job; worker cập nhật từng mục; đây là nguồn của báo cáo CSV tải được và của việc bỏ qua
+  mục đã xong khi chạy lại.
 - **`import_batch_files`**: `batch_id` PK, nội dung file (bytea). Worker đọc file từ đây (không nhét file vào job Redis).
   Xóa sau 30 ngày bằng `MaintenanceScheduler` (đề xuất); báo cáo và file dòng bị loại vẫn tải được vì lưu ở bảng kết quả dòng.
 - **`import_row_outcomes`**: `batch_id`, `row_number`, `outcome` (`created`/`updated`/`unchanged`/`rejected`), `error_codes`,
@@ -133,7 +156,10 @@ Mỗi lần lưu sửa tạo **revision mới**; revision mở cũ chuyển `sup
 ### Chỗ sửa code Bước 0–1 (liệt kê đủ để plan không bỏ sót)
 
 1. **`RequirePermission`** nhận nhiều quyền (phải có tất cả); `Permission` thêm 4 quyền content; `ROLE_PERMISSIONS` cho
-   `admin` và `editor` có đủ 4 quyền; `GET /v1/me` tự trả `permissions` mới.
+   `admin` và `editor` có đủ 4 quyền; `GET /v1/me` tự trả `permissions` mới. **Điểm cắm cho test (B2#65):** hiện `ROLE_PERMISSIONS`
+   là hằng số và `PermissionGuard` đọc thẳng từ nó (đã kiểm trong code), còn sau Bước 2 `admin` và `editor` có y hệt 4 quyền content, nên
+   không thể tạo "nhân sự thiếu đúng một quyền" bằng vai trò thật. Guard phải đọc bảng quyền qua một provider có thể thay trong test
+   (ví dụ `ROLE_PERMISSIONS_TOKEN`), và `createTestApp` cho phép truyền bảng quyền riêng; code chạy thật vẫn dùng bảng hằng số.
 2. **`IdempotencyInterceptor`** băm `JSON.stringify(request.body)`; với multipart, file không nằm trong `body`, nên hai file khác
    nhau cùng `Idempotency-Key` sẽ bị coi là một payload (phát lại kết quả cũ). Interceptor phải nhận băm payload do endpoint
    cung cấp (băm file + tham số). Có test B2#5.
@@ -182,6 +208,10 @@ chữ thường; level về chữ hoa; `topics` về chữ thường; bỏ trùn
 `accepted_forms` (PE9); ô đầu bằng tiền tố vô hiệu công thức thì gỡ tiền tố (mục 8). Tập loại từ hợp lệ là 15 giá trị của
 CEFR-J 1.5 (`noun`, `verb`, `adjective`, `adverb`, `pronoun`, `preposition`, `determiner`, `conjunction`, `number`, `modal auxiliary`,
 `be-verb`, `do-verb`, `have-verb`, `infinitive-to`, `interjection`; đã đếm trên file ngày 12/10/2026). Thêm loại từ = sửa hằng số.
+**Từ chức năng (cờ `function_word_derived`):** `true` khi loại từ thuộc 9 giá trị {`pronoun`, `preposition`, `determiner`, `conjunction`,
+`modal auxiliary`, `be-verb`, `do-verb`, `have-verb`, `infinitive-to`}; `false` với 6 giá trị còn lại (`noun`, `verb`, `adjective`,
+`adverb`, `number`, `interjection`). Hằng số này là của design (nguồn gốc: CR10), đủ để build mà không mở spec; chạy lại trên hai file
+CSV ngày 12/10/2026 ra đúng 279 entry (B2#70).
 
 **Mã lỗi của dòng** (mỗi dòng ghi **tất cả** lỗi của nó, kèm giá trị hợp lệ; một dòng có lỗi thì **cả dòng** bị loại, không nhận một nửa):
 
@@ -205,7 +235,9 @@ cả file 7.799 dòng" không phải chạy 7.799 giao dịch. Thời gian thậ
 
 **Xử lý một dòng hợp lệ** (trong một giao dịch, dưới khóa advisory theo `(lemma, pos)` để UI và import không ghi chồng nhau):
 
-1. **Entry:** tạo nếu chưa có (cờ từ chức năng suy từ loại từ, CR10); thêm biến thể mới; không bao giờ xóa biến thể.
+1. **Entry:** tạo nếu chưa có (cờ từ chức năng suy từ loại từ, CR10); thêm biến thể mới; không bao giờ xóa biến thể. Đoạn của `headword`
+   **trùng hệt lemma (từng ký tự) hoặc trùng một đoạn đứng trước thì bỏ**, không tạo biến thể và không báo lỗi (file thật có
+   `emphasize/emphasize`); đoạn chỉ khác lemma ở hoa/thường (`A.M.` so với `a.m.`) vẫn là biến thể riêng (B2E4).
 2. **Level** (nếu có cột level và ô không trống): thêm bản ghi `(entry, nguồn, level)` nếu chưa có; không sửa bản ghi cũ. Cùng khóa
    nguồn mà khác level **trong cùng một file** (Octanove có 21 khóa như vậy) → giữ cả hai (PR3). Với **nguồn bên thứ ba**, nếu entry
    **đã có** bản ghi của chính nguồn đó từ một lần upload **trước** với level khác → loại dòng `level-differs-from-source` (chốt
@@ -263,8 +295,8 @@ cả file 7.799 dòng" không phải chạy 7.799 giao dịch. Thời gian thậ
 ## 7. Job nền: BullMQ, hợp đồng thuê, hoàn tác
 
 - **Khung job dùng chung (chốt 12/10/2026, để scale mà không refactor).** Lease, `lease_epoch`, nhịp tim, bộ đối soát và thử lại
-  được viết thành **một khung job nền dùng chung** (bảng trạng thái job chung hoặc giao diện chung, plan chọn), không gắn cứng vào
-  việc nhập nội dung. Thêm loại job sau này (AI soạn nháp hàng loạt, làm giàu nghĩa từ từ điển ngoài, nhập định kỳ, sinh lại ngân
+  được viết thành **một khung job nền dùng chung** trên bảng `background_jobs` (mục 4; chủ dự án chọn bảng chung, 12/10/2026), không gắn
+  cứng vào việc nhập nội dung. Thêm loại job sau này (AI soạn nháp hàng loạt, làm giàu nghĩa từ từ điển ngoài, nhập định kỳ, sinh lại ngân
   hàng câu) chỉ là thêm một hàng đợi và một hàm xử lý; chạy nhiều worker song song chỉ là tăng số tiến trình hoặc `concurrency`,
   vì lease và `lease_epoch` đã bảo đảm một job chỉ một worker ghi. Bước 2 có hai loại job (`content-import` ở M2, `content-publish` ở M3, chốt 12/10/2026) và một worker.
 - **Hàng đợi** `content-import`, job `{ batchId }`, **`jobId` = `batchId`**. Tiến trình API chỉ là **producer**; tiến trình
@@ -272,15 +304,17 @@ cả file 7.799 dòng" không phải chạy 7.799 giao dịch. Thời gian thậ
   `maxRetriesPerRequest: null`.
 - **DB là chuẩn (PR12):** trạng thái batch, khóa dòng, kết quả dòng nằm ở Postgres. Redis chỉ là cơ chế chạy. Upload lưu batch
   `queued` **trước**, rồi mới thêm job; thêm job lỗi (Redis tạm sập) thì vẫn trả 202 và để bộ đối soát (reconciler) thêm lại.
-- **Hợp đồng thuê (lease):** worker nhận batch bằng một câu `UPDATE ... WHERE (status='queued' OR (status='running' AND
-  lease_expires_at < now))` tăng `lease_epoch`, đặt `lease_owner` và `lease_expires_at`; một bộ hẹn giờ gia hạn lease (nhịp tim).
+- **Hợp đồng thuê (lease):** worker nhận job bằng một câu `UPDATE background_jobs ... WHERE (status='queued' OR (status='running' AND
+  lease_expires_at < now))` tăng `lease_epoch`, đặt `lease_owner` và `lease_expires_at`; một bộ hẹn giờ gia hạn lease (nhịp tim). Phần
+  này thuộc khung chung: mỗi loại job chỉ đăng ký hàng đợi và một hàm xử lý nhận `jobId` cùng một hàm bao giao dịch có kiểm
+  `lease_epoch` (đoạn dưới); khung không biết gì về dòng CSV hay sense.
   **Mỗi giao dịch dòng bắt đầu bằng kiểm `lease_epoch` còn khớp** (nếu không, hủy giao dịch): worker cũ vì thế **mất quyền ghi**
   ngay khi lease bị lấy (P28). Giờ lấy từ `Clock` để test tua đồng hồ.
-- **Reconciler** trong tiến trình worker, chạy khi khởi động và mỗi 30 giây (ASSUMPTION): (a) batch `queued` quá vài giây mà
-  Redis không có job tương ứng → thêm lại `jobId` = batch id; (b) batch `running` lease hết hạn → đặt `queued` (nếu `attempts` chưa tới 3,
-  còn không thì `failed`) và thêm lại. Job được **xóa khỏi Redis khi xong hoặc lỗi** (`removeOnComplete`, `removeOnFail`), vì BullMQ bỏ
+- **Reconciler** trong tiến trình worker, chạy khi khởi động và mỗi 30 giây (ASSUMPTION), duyệt mọi hàng đợi đã đăng ký: (a) job `queued`
+  quá vài giây mà Redis không có job tương ứng → thêm lại `jobId` = id của `background_jobs` (với upload, cũng là batch id); (b) job
+  `running` lease hết hạn → đặt `queued` (nếu `attempts` chưa tới 3, còn không thì `failed`) và thêm lại. Job được **xóa khỏi Redis khi xong hoặc lỗi** (`removeOnComplete`, `removeOnFail`), vì BullMQ bỏ
   qua lệnh thêm job trùng `jobId` khi job cũ còn lưu (hành vi cần plan kiểm); nếu job cũ còn ở trạng thái khác thì bộ đối soát xóa hoặc
-  thử lại nó theo trạng thái thay vì chỉ thêm. Dù có chạy hai lần, khóa dòng ở DB chặn trùng (P9). **`import_batches.attempts` là bộ
+  thử lại nó theo trạng thái thay vì chỉ thêm. Dù có chạy hai lần, khóa dòng ở DB chặn trùng (P9). **`background_jobs.attempts` là bộ
   đếm chuẩn** (tăng mỗi lần nhận lease); `attempts` của BullMQ chỉ là cơ chế thử lại, và lượt cuối thất bại thì worker ghi `failed` vào DB.
 - **Thử lại (PR11):** lỗi tạm của một dòng (mất kết nối, deadlock, serialization failure) thử lại **tối đa 3 lần** trong tiến trình
   với backoff mũ có jitter; hết lần thì lượt xử lý của job thất bại. Job thử lại **tối đa 3 lượt** (`attempts: 3`, backoff mũ có
@@ -295,6 +329,8 @@ cả file 7.799 dòng" không phải chạy 7.799 giao dịch. Thời gian thậ
     **trả lại** trạng thái cũ (`draft`/`reviewed`). Revision đã bị sửa tiếp sau đó hoặc đã publish thì giữ, báo lý do.
   - **Sense lô tạo**: xóa khi sense chưa từng publish và mọi revision của nó đã bị xóa ở bước trên; ngược lại giữ, báo "sửa sau khi nhập".
   - **Level lô tạo**: xóa, **trừ** khi entry có sense đã publish và level đó là level duy nhất của entry (giữ để không vi phạm CR5).
+    Một lô sau nhập lại đúng level đó (dòng `unchanged`) **không** tính là "lô khác dùng": level vẫn bị xóa, và upload lại file của lô sau sẽ
+    tạo lại (chủ dự án chốt 12/10/2026, phiên review plan).
   - **Biến thể lô thêm**: xóa. **Entry lô tạo**: xóa khi không còn sense, level hay biến thể nào.
   Xóa luôn khóa dòng của lô để upload lại tạo lại được (P26). Trả báo cáo bản ghi bị bỏ qua và lý do. Batch chuyển `reverted`.
 - **Quan sát (PR18):** log mỗi batch mang `operation_id`, số liệu, thời gian; cảnh báo (log `warn`) khi batch `failed`, `partial`, hoặc
@@ -382,8 +418,8 @@ cho mọi route ghi (30 lần/phút/người); **không** có luật riêng cho 
 | Mốc | Gồm | Merge được vì |
 |---|---|---|
 | **M1 Content lõi** | Bảng Content, nguồn, chủ đề, entry/level/biến thể, sense/revision, vòng đời + publish, API quản trị từng thao tác, tìm kiếm/duyệt/xem chỉ-đọc, 4 quyền + test phân quyền | Soạn và publish được bằng API từng thao tác; người học thấy kết quả |
-| **M2 Pipeline** | Redis + BullMQ + worker, bảng Pipeline, upload gộp, row processor, báo cáo, danh sách (a), lease + reconciler | Nhập được file thật |
-| **M3 Hoàn thiện** | Hoàn tác lô, xuất (cả sense đã publish), danh sách (b), **job publish theo bộ lọc** (loại job thứ hai trên khung dùng chung), đo thời gian nhập, chạy tay trọn luồng | Xong Bước 2 |
+| **M2 Pipeline** | Redis + BullMQ + worker, **khung job dùng chung (`background_jobs`, lease, đối soát)**, bảng `import_*`, upload gộp, row processor, báo cáo, danh sách (a) | Nhập được file thật |
+| **M3 Hoàn thiện** | Hoàn tác lô, xuất (cả sense đã publish), danh sách (b), **job publish theo bộ lọc** (`publish_jobs`, `publish_job_items`: loại job thứ hai trên khung dùng chung), đo thời gian nhập, chạy tay trọn luồng | Xong Bước 2 |
 
 **Kiểm thử.** Giữ nguyên nguyên tắc Bước 0–1: Postgres thật bằng Testcontainers, không mock; thêm **Redis thật** (`@testcontainers/redis`). Worker
 chạy **trong tiến trình test** (cùng module) để có điều khiển; một test e2e chạy bằng tiến trình `worker` riêng để kiểm điểm vào. Suite phụ thuộc
@@ -411,6 +447,7 @@ trước khi có số đo.
 | B2#11 | When a row has an empty or unknown part of speech (such as `batter` with none, or `remonstrate` with `vern`) or a level outside A1–C2, then only that row is rejected, its report line gives the row number and every error with the valid values, and the other rows are processed | P5, CE4, PR3 |
 | B2#12 | When a cell differs from a valid value only by surrounding or repeated whitespace, letter case of the part of speech or level (`Noun`, `b1`), or Unicode normalization form, then it is normalized and the row is accepted | D5 |
 | B2#13 | When a headword has a trailing space, has several words, or contains apostrophes (`turn to `, `according to`, `o'clock`, `'re`), then it is accepted as a `word` entry with whitespace trimmed and no phrasal-verb behaviour | PE8, CE3, CE7 |
+| B2#13a | When a headword has a slash segment identical to the lemma (`emphasize/emphasize`) or to an earlier segment, then that segment is dropped and creates no variant and no error; when a segment differs from the lemma only by letter case (`a.m./A.M.`), then it is stored as a variant | R4, PR3, B2E4 (chốt 12/10/2026 sau review) |
 | B2#14 | When the same (headword, pos) appears twice in one source file with the same level, then one level record exists; with levels C1 and C2, then both level records exist and the entry is reported as conflicting | P27, PR3 |
 | B2#14a | When a later upload declares the same third-party source and gives an entry a level different from the one that source already recorded, then the row is rejected with `level-differs-from-source` and its message points to editorial levels; duplicates with different levels inside one file are still both kept | chốt 12/10/2026 |
 | B2#15 | When the same (lemma, pos) comes from CEFR-J and Octanove with different levels, then both level records are kept, the displayed level is the CEFR-J one, and the entry is reported as conflicting until an editorial level is added | P6, C18, PR4 |
@@ -475,7 +512,7 @@ trước khi có số đo.
 | B2#67 | When `admin` or `editor` calls `GET /v1/me`, then `permissions` contains `content.edit`, `content.publish`, `content.import` and `taxonomy.manage` | Bước 1 mục 6 |
 | B2#68 | When any batch runs, then its log lines carry `operation_id`, the counts and the duration, and never a cell value | PR18, S13 |
 | B2#69 | When a staff endpoint lists or reads entries and senses, then only catalog data is returned | CR3, S6 |
-| B2#70 | When the real CEFR-J 1.5 file and then the Octanove 1.0 file are imported, then there are 9,776 entries, 9,894 level records (7,799 CEFR-J and 2,095 Octanove), 279 function-word entries, 117 entries with more than one distinct level, 207 entries carrying 215 spelling variants, and exactly 2 rejected rows (Octanove file lines 606 `batter`, 2129 `remonstrate`) | P2–P7, R1–R8 (counts measured 12/10/2026 with a script over the repository files) |
+| B2#70 | When the real CEFR-J 1.5 file and then the Octanove 1.0 file are imported, then there are 9,776 entries, 9,894 level records (7,799 CEFR-J and 2,095 Octanove), 279 function-word entries, 117 entries with more than one distinct level, 207 entries carrying 215 spelling variants (a segment identical to the lemma, as in `emphasize/emphasize`, is not a variant, B2#13a), and exactly 2 rejected rows (Octanove file lines 606 `batter`, 2129 `remonstrate`) | P2–P7, R1–R8 (counts measured 12/10/2026 with a script over the repository files; 9,776, 9,894, 279, 117 and the 2 rejected rows re-measured the same way in the review session of 12/10/2026) |
 | B2#71 | When the 7,799-row CEFR-J file is imported on a development machine, then its duration, transaction count and peak memory are recorded in this document | Pipeline Defense Analysis (planned measurement) |
 
 ## 14. Edge cases
