@@ -4,6 +4,7 @@ import { EntriesService, type EnsureEntryInput, type EnsureEntryResult, type Var
 import { LevelsService, type EntryLevelView, type ImportedLevelInput } from './catalog/levels.service.js';
 import type { Level } from './content.constants.js';
 import { SourcesService, isSourceComplete, type SourceView } from './sources/sources.service.js';
+import { SensesService, type CreateSenseInput, type SaveDraftInput, type SaveDraftResult, type MarkRevisionItem, type MarkRevisionResult } from './senses/senses.service.js';
 
 @Injectable()
 export class ContentService {
@@ -11,6 +12,7 @@ export class ContentService {
     @Inject(SourcesService) private readonly sources: SourcesService,
     @Inject(EntriesService) private readonly entries: EntriesService,
     @Inject(LevelsService) private readonly levels: LevelsService,
+    @Inject(SensesService) private readonly senses: SensesService,
   ) {}
 
   getSource(id: string): Promise<SourceView | null> {
@@ -47,5 +49,21 @@ export class ContentService {
 
   setFunctionWordOverride(tx: Prisma.TransactionClient, entryId: string, value: boolean | null): Promise<void> {
     return this.entries.setFunctionWordOverride(tx, entryId, value);
+  }
+
+  getTopics(tx: Prisma.TransactionClient, codes: string[]): Promise<Array<{ code: string; archivedAt: Date | null }>> {
+    return tx.topic.findMany({ where: { code: { in: codes } }, select: { code: true, archivedAt: true } });
+  }
+
+  createSense(tx: Prisma.TransactionClient, input: CreateSenseInput): Promise<{ senseId: string; revisionId: string }> {
+    return this.senses.createSense(tx, input, (codes) => this.getTopics(tx, codes));
+  }
+
+  saveDraft(tx: Prisma.TransactionClient, input: SaveDraftInput): Promise<SaveDraftResult> {
+    return this.senses.saveDraft(tx, input, (codes) => this.getTopics(tx, codes));
+  }
+
+  markRevisions(tx: Prisma.TransactionClient, items: MarkRevisionItem[]): Promise<MarkRevisionResult[]> {
+    return this.senses.markRevisions(tx, items);
   }
 }
