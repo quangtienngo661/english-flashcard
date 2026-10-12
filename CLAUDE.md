@@ -54,9 +54,30 @@ they say otherwise:
   for this project's workflow, **not** the harness's own workflows (`build-feature`, `write-spec`,
   `fix-request`, …). For cloud sessions without the plugin, the superpowers skills are vendored as project
   skills in `.claude/skills/` (`superpowers:brainstorming` → `brainstorming`); see `.claude/skills/SUPERPOWERS.md`.
-- **Git:** commit locally on a `feat/*`/`fix/*`/`docs/*` branch as normal; **push, PR and merge only when the owner
-  asks**. Work reaches `main` through a PR that is merged only after the GitHub Actions CI
-  (`.github/workflows/ci.yml`: lint, typecheck, build, unit, e2e) is green. Scan for secrets before every push.
+- **Git:** commit locally on a topic branch (`feat/*`, `fix/*`, `docs/*`, or the session's `claude/*` branch) as normal;
+  **push, PR and merge only when the owner asks**. Never PR or push straight to `main`: follow the branching model
+  below. Scan for secrets before every push.
+
+### Branching model (owner, 12/10/2026)
+
+Goal: experimental versions never reach `main`; `main` only receives work that passed QA/QC.
+
+| Branch | Holds | Topic branches PR into it | Reaches `main` when |
+|---|---|---|---|
+| `main` | Stable, accepted state. Only `main` deploys the landing (`deploy-web.yml`) | — | — |
+| `dev` | Integration branch for **code** (`apps/**`, migrations, CI) and where QA/QC runs | `feat/*`, `fix/*`, code-bearing `claude/*` | QA/QC passes: CI green (`ci.yml`) **and** the design's "Xong khi" manual run, then the owner asks for a `dev` → `main` PR |
+| `documents` | Integration branch for **documents** (`docs/**`, `CLAUDE.md`): specs, designs, decisions, plans, reviews | `docs/*`, docs-only `claude/*` | The owner approves the documents, then asks for a `documents` → `main` PR |
+
+- The documents branch is `documents`, **not** `docs`, because `docs/*` topic branches already exist and Git cannot hold
+  both `docs` and `docs/...`.
+- Both long-lived branches were created from `main` at `635631c` on 12/10/2026.
+- Keep them in sync: after any merge into `main`, merge `main` back into `dev` and `documents`. Code that implements a
+  design needs that design and plan on `dev`: merge the approved `documents` state into `dev` (never cherry-pick).
+- A session's `claude/*` branch stays the working branch for that session; ask the owner which integration branch its PR
+  targets (docs-only work → `documents`, code → `dev`).
+- Not done yet (owner action in GitHub settings): branch protection (require PR and green CI on `main` and `dev`, no
+  direct pushes to `main`). `ci.yml` runs on every PR but on `push` only for `main`; consider adding `dev` to its
+  `push` branches.
 - **The design doc is the official build document; `docs/specs/` is only the initial skeleton** (owner, 12/10/2026).
   Design docs may diverge from the specs as decisions change during analysis. Review a design doc on its own merits
   (consistency, buildability, fit with the owner's workflow), **not** against the specs; spec IDs (CR#, PR#, …) in a
