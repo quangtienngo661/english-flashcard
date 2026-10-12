@@ -1,0 +1,179 @@
+import { createHash } from 'node:crypto';
+import { z } from 'zod';
+import {
+  ContentRuleError, LEVELS, MAX_EXAMPLES, normalizeContent, normalizeText,
+  OWNER_SOURCE_ID, splitHeadword, VALID_POS, type Level, type RevisionContent,
+} from '../../content/index.js';
+import type { RowError } from './row-errors.js';
+
+export type NormalizedRow = {
+  rowNumber: number;
+  lemma: string;
+  variants: string[];
+  pos: string;
+  level: Level | null;
+  levelExtra: Record<string, string> | null;
+  content: Partial<RevisionContent> | null;
+  senseId: string | null;
+  revision: number | null;
+  contextLabel: string | null;
+  replaceMeaning: boolean;
+};
+
+const contentColumns = [
+  'gloss_vi', 'definition_en', 'example_en_1', 'example_en_2', 'example_en_3',
+  'topics', 'accepted_forms',
+] as const;
+const exampleColumns = ['example_en_1', 'example_en_2', 'example_en_3'] as const;
+const extraColumns = ['coreinventory 1', 'coreinventory 2', 'threshold', 'notes'] as const;
+const uuidSchema = z.uuid();
+const maxLemmaLength = 100;
+const maxCellLength = 2_000;
+
+function splitList(value: string): string[] {
+  return value.split(';').map((piece) => piece.trim()).filter(Boolean);
+}
+
+export function normalizeRow(
+  rowNumber: number,
+  cells: Record<string, string>,
+  layout: { hasLevelColumn: boolean },
+): { ok: true; row: NormalizedRow } | { ok: false; errors: RowError[] } {
+  const errors: RowError[] = [];
+  const rawHeadword = cells.headword ?? cells.lemma ?? '';
+  const { lemma, variants } = splitHeadword(rawHeadword);
+  const lemmaLength = [...lemma].length;
+  if (!lemma) {
+    errors.push({ code: 'lemma-required',
+      message: `Headword ${JSON.stringify(rawHeadword)} thiếu lemma. Điền lemma không để trống.` });
+  }
+  if (lemmaLength > maxLemmaLength) {
+    errors.push({ code: 'lemma-too-long',
+      message: `Lemma ${JSON.stringify(lemma)} có ${lemmaLength} ký tự; tối đa ${maxLemmaLength} ký tự.` });
+  }
+
+  const rawPos = cells.pos ?? '';
+  const pos = normalizeText(rawPos).toLowerCase();
+  if (!VALID_POS.some((value) => value === pos)) {
+    errors.push({ code: 'invalid-pos',
+      message: `Loại từ ${JSON.stringify(rawPos)} không hợp lệ. Giá trị hợp lệ: ${VALID_POS.join(', ')}.` });
+  }
+
+  let level: Level | null = null;
+  let levelExtra: Record<string, string> | null = null;
+  if (layout.hasLevelColumn) {
+    const rawLevel = cells.cefr ?? cells.level ?? '';
+    const normalizedLevel = normalizeText(rawLevel).toUpperCase();
+    if (normalizedLevel) {
+      level = LEVELS.find((value) => value === normalizedLevel) ?? null;
+      if (level === null) {
+        errors.push({ code: 'invalid-level',
+          message: `Level ${JSON.stringify(rawLevel)} không hợp lệ. Giá trị hợp lệ: ${LEVELS.join(', ')}.` });
+      }
+    }
+    const extra: Record<string, string> = {};
+    for (const column of extraColumns) {
+      if (Object.hasOwn(cells, column) && cells[column].trim()) extra[column] = cells[column];
+    }
+    if (Object.keys(extra).length > 0) levelExtra = extra;
+  }
+
+  const contentCells: Record<string, string> = {};
+  for (const column of contentColumns) {
+    if (Object.hasOwn(cells, column)) {
+      // Exactly one anchored pass, before normalization, length checks or hashing (§8).
+      contentCells[column] = cells[column].replace(/^'[=+\-@]/u, (prefix) => prefix.slice(1));
+    }
+  }
+  const lengthCheckedCells = { ...contentCells };
+  if (Object.hasOwn(cells, 'context_label')) lengthCheckedCells.context_label = cells.context_label;
+  for (const [column, value] of Object.entries(lengthCheckedCells)) {
+    const length = [...value].length;
+    if (length > maxCellLength) {
+      errors.push({ code: 'cell-too-long',
+        message: `Ô ${JSON.stringify(column)} có ${length} ký tự; tối đa ${maxCellLength} ký tự.` });
+    }
+  }
+
+  let content: Partial<RevisionContent> | null = null;
+  if (Object.values(contentCells).some((value) => value.trim())) {
+    const partial: Partial<RevisionContent> = {};
+    if (Object.hasOwn(contentCells, 'gloss_vi')) partial.glossVi = contentCells.gloss_vi.trim() ? contentCells.gloss_vi : null;
+    if (Object.hasOwn(contentCells, 'definition_en')) partial.definitionEn = contentCells.definition_en.trim() ? contentCells.definition_en : null;
+    if (exampleColumns.some((column) => Object.hasOwn(contentCells, column))) {
+      partial.examplesEn = exampleColumns.map((column) => contentCells[column] ?? '').filter((value) => value.trim());
+    }
+    if (Object.hasOwn(contentCells, 'topics')) partial.topicCodes = splitList(contentCells.topics);
+    if (Object.hasOwn(contentCells, 'accepted_forms')) partial.acceptedForms = splitList(contentCells.accepted_forms);
+    try {
+      content = normalizeContent(partial, lemma);
+    } catch (error) {
+      if (error instanceof ContentRuleError && error.code === 'too-many-examples') {
+        errors.push({ code: 'too-many-examples',
+          message: `Các ví dụ ${JSON.stringify(partial.examplesEn)} vượt giới hạn ${MAX_EXAMPLES} câu không trống.` });
+      } else {
+        // normalizeContent also rejects NUL with validation-failed. The shared row-code
+        // contract has only cell-too-long for cell validation; preserve the actual cause
+        // in the message. Oversized cells have already been reported individually above.
+        for (const [column, value] of Object.entries(contentCells)) {
+          if (value.includes('\0')) {
+            errors.push({ code: 'cell-too-long',
+              message: `Ô ${JSON.stringify(column)} có giá trị ${JSON.stringify(value)} chứa ký tự NUL, không hợp lệ cho nội dung (${[...value].length} ký tự; giới hạn ${maxCellLength}).` });
+          }
+        }
+      }
+    }
+  }
+
+  const contextLabel = normalizeText(cells.context_label ?? '') || null;
+  const rawSenseId = cells.sense_id ?? '';
+  const normalizedSenseId = normalizeText(rawSenseId);
+  let senseId: string | null = null;
+  if (normalizedSenseId) {
+    const parsed = uuidSchema.safeParse(normalizedSenseId);
+    if (parsed.success) senseId = parsed.data;
+    else errors.push({ code: 'sense-not-found',
+      message: `Sense_id ${JSON.stringify(rawSenseId)} không phải định danh UUID hợp lệ.` });
+  }
+
+  let revision: number | null = null;
+  if (senseId !== null) {
+    const rawRevision = cells.revision ?? '';
+    const normalizedRevision = normalizeText(rawRevision);
+    const candidate = Number(normalizedRevision);
+    if (/^[1-9]\d*$/u.test(normalizedRevision) && Number.isSafeInteger(candidate)) revision = candidate;
+    else errors.push({ code: 'revision-required',
+      message: `Sense_id ${JSON.stringify(senseId)} cần revision là số nguyên dương không có số 0 ở đầu; giá trị nhận được: ${JSON.stringify(rawRevision)}.` });
+  }
+  const replaceMeaning = normalizeText(cells.replace_meaning ?? '').toLowerCase() === 'true';
+
+  if (errors.length > 0) return { ok: false, errors };
+  return { ok: true, row: {
+    rowNumber, lemma, variants, pos, level, levelExtra, content,
+    senseId, revision, contextLabel, replaceMeaning,
+  } };
+}
+
+function tupleKey(tuple: Array<string | null>): { key: string; hash: string } {
+  const key = JSON.stringify(tuple);
+  return { key, hash: createHash('sha256').update(key, 'utf8').digest('hex') };
+}
+
+/** Debuggable JSON [sourceId, lemma, pos]; SHA-256 hex of that exact UTF-8 JSON.
+ * Inputs are already normalized by normalizeRow; case-sensitive lemmas stay distinct.
+ */
+export function levelKey(
+  row: Pick<NormalizedRow, 'lemma' | 'pos'>,
+  sourceId: string,
+): { key: string; hash: string } {
+  return tupleKey([sourceId, row.lemma, row.pos]);
+}
+
+/** JSON [OWNER_SOURCE_ID, lemma, pos, senseId ?? contextLabel ?? null], hashed as above.
+ * This hashes identity only; revision content is hashed separately by contentHash.
+ */
+export function contentKey(
+  row: Pick<NormalizedRow, 'lemma' | 'pos' | 'contextLabel' | 'senseId'>,
+): { key: string; hash: string } {
+  return tupleKey([OWNER_SOURCE_ID, row.lemma, row.pos, row.senseId ?? row.contextLabel ?? null]);
+}
