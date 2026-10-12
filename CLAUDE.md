@@ -177,6 +177,25 @@ Decisions above). The Bước 1 spec deviations (design §11) were applied to `d
 3. **Prisma pinned to `7.10.0`** (exact, no `^`) because the npm `latest` tag currently points at a `8.0.0-rc`
    prerelease — re-check when Prisma 8 reaches a real stable release.
 
+## Việc phải phân tích khi tới bước tương ứng (ghi 12/10/2026, từ brainstorm Bước 2)
+
+Các điểm dưới đây phát sinh khi rà quyền của `admin`/`editor` (bảng D6) với các spec Bước 3–8. Chưa chốt, **không chặn Bước 2**;
+đọc lại khi brainstorm bước ghi bên cạnh.
+
+- **Bước 4/7 — danh sách dạng bất quy tắc (PRC7, QE5, Defense Analysis của Practice).** Kiểm rule câu AI sinh dạng chia bằng
+  quy tắc cố định (`-s`, `-ed`, `-ing`…); dạng bất quy tắc (`go` → `went`, `gone`) không sinh được, nên câu AI đúng bị loại,
+  sinh lại một lần và tốn thêm một lần gọi AI. Spec ghi "owner duy trì danh sách" nhưng **chưa gán quyền**. Đề xuất (chưa
+  chốt): `questions.moderate`, vì dữ liệu thuộc Practice và người xử lý câu xấu là người thấy các câu bị loại nhầm.
+  `content.edit` chỉ hợp cho dạng được chấp nhận theo từng sense (CR22, thuộc Content). Cần phân tích khi tới bước: danh sách
+  lưu ở đâu (Practice sở hữu), thêm theo lemma hay theo sense, có nạp sẵn danh sách ban đầu không.
+- **Bước 5–6 — xem chi phí AI và báo cáo đối soát** (AI Integration AR6, Entitlements): **chủ dự án chốt 12/10/2026** thuộc
+  `ai.settings` (chỉ `admin`). Chưa gán: quyền đổi con số hạn mức và tham số trial/Pro (ER9, K18); đề xuất cùng `ai.settings`.
+- **Bước 5 — `entitlements.grant` so với D6 ("editor không đụng chi phí AI").** `editor` có `entitlements.grant` nên cấp được
+  lượt AI, tức tiêu tiền thật. Trần chi hằng ngày (ER14) giới hạn rủi ro. Cân nhắc: chuyển `admin` only, hoặc giới hạn số lượt
+  mỗi lần cấp.
+- **Giao diện cấp vai trò:** design Bước 1 (mục 6, 12) và D6 ghi "Bước 3", nhưng bảng 9 bước của HANDOFF §2 không có dòng
+  nào cho giao diện web (đăng nhập, cấp vai trò, trang admin). Chủ dự án muốn làm giao diện ngay sau API của Bước 2.
+
 ## Landing (apps/web) - as-built (08-09/10/2026)
 
 - Stack: Next `16.3.8` (App Router), next-intl `4.14.9`, `@opennextjs/cloudflare` `1.20.7`, wrangler `4.145.0`.
