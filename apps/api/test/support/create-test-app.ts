@@ -12,6 +12,10 @@ import { Clock, FakeClock } from '../../src/common/clock/clock.js';
 import type { AppConfig } from '../../src/common/config/app-config.js';
 import { PRISMA_CLIENT } from '../../src/common/db/prisma.module.js';
 import { LOG_SINK, type LogEntry, type LogSink } from '../../src/common/logging/app-logger.js';
+import { JobHandlerRegistry } from '../../src/content-pipeline/jobs/job-handler.registry.js';
+import { JobReconcilerService } from '../../src/content-pipeline/jobs/job-reconciler.service.js';
+import { JobRunnerService } from '../../src/content-pipeline/jobs/job-runner.service.js';
+import type { JobHandler } from '../../src/content-pipeline/jobs/job-types.js';
 import type { PrismaClient } from '../../src/generated/prisma/client.js';
 import { IdentityModule } from '../../src/identity/identity.module.js';
 import { ROLE_PERMISSIONS, type Permission, type StaffRole } from '../../src/identity/identity.types.js';
@@ -40,6 +44,7 @@ export async function createTestApp(opts?: {
   databaseUrl?: string;
   redisUrl?: string;
   pipeline?: Partial<AppConfig['pipeline']>;
+  jobHandlers?: JobHandler[];
   controllers?: Type<unknown>[];
   rolePermissions?: Record<StaffRole, readonly Permission[]>;
 }): Promise<TestApp> {
@@ -75,8 +80,14 @@ export async function createTestApp(opts?: {
   configureApp(app, config);
   const inFlight = new InFlightInterceptor();
   app.useGlobalInterceptors(inFlight);
+  // Like production onModuleInit registrations, install test handlers before worker bootstrap.
+  for (const handler of opts?.jobHandlers ?? []) moduleRef.get(JobHandlerRegistry).register(handler);
   await app.init();
-  const hooks: Array<() => Promise<void>> = [() => dispatcher.drain()];
+  const hooks: Array<() => Promise<void>> = [
+    () => moduleRef.get(JobReconcilerService).onModuleDestroy(),
+    () => moduleRef.get(JobRunnerService).onModuleDestroy(),
+    () => dispatcher.drain(),
+  ];
   return {
     app,
     http: () => request(app.getHttpServer()),
