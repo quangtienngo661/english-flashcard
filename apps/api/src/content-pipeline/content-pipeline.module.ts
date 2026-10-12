@@ -4,6 +4,9 @@ import { APP_CONFIG, type AppConfig } from '../common/config/app-config.js';
 import { IdempotencyInterceptor } from '../common/idempotency/idempotency.interceptor.js';
 import { ContentModule } from '../content/content.module.js';
 import { IdentityModule } from '../identity/identity.module.js';
+import { ImportBatchHandler } from './import/import-batch.handler.js';
+import { ImportFileCleanupService } from './import/import-file-cleanup.service.js';
+import { ImportRowProcessor } from './import/row-processor.js';
 import { BackgroundJobsService } from './jobs/background-jobs.service.js';
 import { JobHandlerRegistry } from './jobs/job-handler.registry.js';
 import { JobQueueService } from './jobs/job-queue.service.js';
@@ -29,6 +32,7 @@ import { UploadsService } from './upload/uploads.service.js';
   providers: [
     BackgroundJobsService, JobQueueService, JobHandlerRegistry, JobRunnerService, JobReconcilerService,
     UploadsService, MulterExceptionFilter, IdempotencyInterceptor,
+    ImportRowProcessor, ImportBatchHandler, ImportFileCleanupService,
   ],
   exports: [BackgroundJobsService, JobQueueService, JobHandlerRegistry, JobRunnerService, JobReconcilerService],
 })

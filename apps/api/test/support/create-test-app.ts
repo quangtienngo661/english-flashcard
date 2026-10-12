@@ -66,8 +66,17 @@ export async function createTestApp(opts?: {
   const sink: LogSink = { write: (entry) => { logs.push(entry); } };
   const mailer = new FakeMailer();
   const rolePermissions = structuredClone(opts?.rolePermissions ?? ROLE_PERMISSIONS);
+  let handlerRegistry: JobHandlerRegistry;
   const moduleRef = await Test.createTestingModule({
     imports: [AppModule.forRoot(config), IdentityModule, DiscoveryModule], controllers: opts?.controllers ?? [],
+    providers: [{
+      provide: 'TEST_JOB_HANDLERS',
+      useValue: {
+        // The root module initializes after imported production modules, before worker bootstrap.
+        // Keep explicit test overrides from being replaced by real handlers' onModuleInit hooks.
+        onModuleInit() { for (const handler of opts?.jobHandlers ?? []) handlerRegistry.register(handler); },
+      },
+    }],
   })
     .overrideProvider(Clock).useValue(clock)
     .overrideProvider(LOG_SINK).useValue(sink)
@@ -76,12 +85,11 @@ export async function createTestApp(opts?: {
     .compile();
   const app = moduleRef.createNestApplication<NestExpressApplication>({ bodyParser: false });
   const prisma = moduleRef.get<PrismaClient>(PRISMA_CLIENT);
+  handlerRegistry = moduleRef.get(JobHandlerRegistry);
   const dispatcher = moduleRef.get(MailDispatcher);
   configureApp(app, config);
   const inFlight = new InFlightInterceptor();
   app.useGlobalInterceptors(inFlight);
-  // Like production onModuleInit registrations, install test handlers before worker bootstrap.
-  for (const handler of opts?.jobHandlers ?? []) moduleRef.get(JobHandlerRegistry).register(handler);
   await app.init();
   const hooks: Array<() => Promise<void>> = [
     () => moduleRef.get(JobReconcilerService).onModuleDestroy(),
