@@ -65,16 +65,12 @@ Goal: experimental versions never reach `main`; `main` only receives work that p
 | Branch | Holds | Topic branches PR into it | Reaches `main` when |
 |---|---|---|---|
 | `main` | Stable, accepted state. Only `main` deploys the landing (`deploy-web.yml`) | — | — |
-| `dev` | Integration branch for **code** (`apps/**`, migrations, CI) and where QA/QC runs | `feat/*`, `fix/*`, code-bearing `claude/*` | QA/QC passes: CI green (`ci.yml`) **and** the design's "Xong khi" manual run, then the owner asks for a `dev` → `main` PR |
-| `documents` | Integration branch for **documents** (`docs/**`, `CLAUDE.md`): specs, designs, decisions, plans, reviews | `docs/*`, docs-only `claude/*` | The owner approves the documents, then asks for a `documents` → `main` PR |
+| `dev` | Integration branch for **everything**: code (`apps/**`, migrations, CI) **and** documents (`docs/**`, `CLAUDE.md`); where QA/QC runs | `feat/*`, `fix/*`, `docs/*`, `claude/*` | QA/QC passes: CI green (`ci.yml`) **and**, for code, the design's "Xong khi" manual run; then the owner asks for a `dev` → `main` PR |
 
-- The documents branch is `documents`, **not** `docs`, because `docs/*` topic branches already exist and Git cannot hold
-  both `docs` and `docs/...`.
-- Both long-lived branches were created from `main` at `635631c` on 12/10/2026.
-- Keep them in sync: after any merge into `main`, merge `main` back into `dev` and `documents`. Code that implements a
-  design needs that design and plan on `dev`: merge the approved `documents` state into `dev` (never cherry-pick).
-- A session's `claude/*` branch stays the working branch for that session; ask the owner which integration branch its PR
-  targets (docs-only work → `documents`, code → `dev`).
+- A separate `documents` branch existed briefly (12/10/2026) and was dropped by the owner the same day: documents now go
+  through `dev` like code. It was fully merged into `dev` (PR #12) before it was dropped.
+- After any merge into `main`, merge `main` back into `dev`.
+- A session's `claude/*` branch stays the working branch for that session and its PR targets `dev`.
 - **CI/CD (owner, 12/10/2026):** `ci.yml` (lint, typecheck, build, unit, e2e) runs on **pull requests only** and does not
   re-run when a PR is merged. `deploy-web.yml` runs on push to `main` and only builds and deploys (no tests, not gated on CI).
   So a change is tested exactly once, on its PR, and a green CI on the PR is the only gate before `main`.
