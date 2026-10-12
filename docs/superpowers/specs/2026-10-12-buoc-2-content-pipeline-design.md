@@ -139,7 +139,7 @@ Mỗi lần lưu sửa tạo **revision mới**; revision mở cũ chuyển `sup
    cung cấp (băm file + tham số). Có test B2#5.
 3. **`page-token.util`**: con trỏ hiện chỉ có `{ id }`; tìm kiếm có xếp hạng cần con trỏ gồm (hạng, lemma, pos, id) và gắn với
    chữ ký của truy vấn; sai định dạng hoặc dùng cho truy vấn khác vẫn trả 400 (S3).
-4. **Cấu hình:** thêm `REDIS_URL`, các giới hạn upload/job (mục 11), `RateLimitRuleName` thêm `content.upload`. `loadConfig` vẫn
+4. **Cấu hình:** thêm `REDIS_URL`, các giới hạn upload/job (mục 11). `loadConfig` vẫn
    fail-fast theo zod.
 5. **Hạ tầng:** thêm dịch vụ `redis` vào `docker-compose.yml` (Redis ≥ 6.2, `maxmemory-policy noeviction`); test e2e dùng
    `@testcontainers/redis` trong global setup (như Postgres), nên CI không cần thêm service.
@@ -248,6 +248,11 @@ cả file 7.799 dòng" không phải chạy 7.799 giao dịch. Thời gian thậ
 
 ## 7. Job nền: BullMQ, hợp đồng thuê, hoàn tác
 
+- **Khung job dùng chung (chốt 12/10/2026, để scale mà không refactor).** Lease, `lease_epoch`, nhịp tim, bộ đối soát và thử lại
+  được viết thành **một khung job nền dùng chung** (bảng trạng thái job chung hoặc giao diện chung, plan chọn), không gắn cứng vào
+  việc nhập nội dung. Thêm loại job sau này (AI soạn nháp hàng loạt, làm giàu nghĩa từ từ điển ngoài, nhập định kỳ, sinh lại ngân
+  hàng câu) chỉ là thêm một hàng đợi và một hàm xử lý; chạy nhiều worker song song chỉ là tăng số tiến trình hoặc `concurrency`,
+  vì lease và `lease_epoch` đã bảo đảm một job chỉ một worker ghi. Bước 2 chỉ có một loại job (`content-import`) và một worker.
 - **Hàng đợi** `content-import`, job `{ batchId }`, **`jobId` = `batchId`**. Tiến trình API chỉ là **producer**; tiến trình
   `worker` là consumer (concurrency 1: một lần một job, PR13). Redis dùng kết nối ioredis; Worker bắt buộc
   `maxRetriesPerRequest: null`.
@@ -284,7 +289,9 @@ cả file 7.799 dòng" không phải chạy 7.799 giao dịch. Thời gian thậ
 ## 8. Xuất, sửa, hai danh sách
 
 - **Xuất (D8):** `GET /v1/admin/content/senses/export` phát CSV **trực tiếp (stream)**, không qua job (đề xuất): tối đa 5.000 dòng, vượt thì 400 `export-too-large` kèm hướng dẫn thu hẹp bộ lọc. Bộ lọc: `sense_id` (nhiều),
-  `status` (`unpublishable`, `open_draft`, `published`), `level`, `pos`, `topic`. Mỗi dòng là một sense với nội dung của
+  `batch_id` (các sense mà lần upload đó tạo hoặc tạo revision, chốt 12/10/2026), `status` (`unpublishable`, `open_draft`,
+  `published`), `level`, `pos`, `topic`. Danh sách sense của admin (`GET .../senses`) nhận cùng bộ lọc, trả kèm `revision` mới nhất,
+  nên "publish các từ của lần upload này" là: lọc theo `batch_id` rồi gửi danh sách `{sense_id, revision}` cho lệnh publish. Mỗi dòng là một sense với nội dung của
   **revision mới nhất**: các cột của mục 5 **trừ cột level** (level của file xuất nằm ở `_level`, chỉ để xem, upload bỏ qua; nên upload
   lại file xuất không cần khai báo nguồn level và không gắn nhầm nguồn), cộng `sense_id`, `revision`, `_status`; bộ lọc `unpublishable`
   thêm `_missing`. Đặt level biên tập dùng API từng entry hoặc một file riêng khai báo nguồn `owner`.
@@ -336,8 +343,8 @@ quyền nào; endpoint của người học dùng xác thực và quyền sở h
 | `GET /v1/sources` | Công khai |
 
 `Idempotency-Key` **bắt buộc** (cơ chế Bước 0) cho `POST .../uploads` và `POST .../uploads/{id}/revert`; các thao tác còn lại
-idempotent tự nhiên (trạng thái hoặc kiểm `revision`). Giới hạn tần suất: `user.write` có sẵn cho mọi route ghi; thêm luật
-`content.upload` (đề xuất 10 lần/giờ/người dùng, ASSUMPTION).
+idempotent tự nhiên (trạng thái hoặc kiểm `revision`). Giới hạn tần suất: chỉ dùng luật chung `user.write` có sẵn
+cho mọi route ghi (30 lần/phút/người); **không** có luật riêng cho upload, để vòng sửa trong Excel không bị chặn (chốt 12/10/2026).
 
 **Bất biến cho các bước sau:** mọi truy vấn của endpoint quản trị phải **giới hạn ở catalog**. Khi Bước 3 thêm từ riêng tư vào
 `entries`, nhân sự **không** được thấy hay sửa chúng bằng quyền content (CR3, S6).
@@ -432,6 +439,7 @@ trước khi có số đo.
 | B2#53 | When selected senses, including published ones, are exported and the file is uploaded unchanged, then no level source is needed and every row is `unchanged` | PR15, D8 |
 | B2#54 | When an exported cell starts with `=`, `+`, `-` or `@`, then it is prefixed so a spreadsheet does not run it, and on upload the prefix is removed before comparison so the round trip changes no content | P22, PR15 |
 | B2#55 | When a row of the export carries a `revision` older than the sense's latest when uploaded again, then it is rejected as a conflict; when an export would exceed 5,000 rows, then it is refused with 400 `export-too-large` | P14, PR15 |
+| B2#56a | When senses are listed or exported with `batch_id`, then exactly the senses that upload created or gave a new revision are returned, each with its latest `revision`, so they can be published in one request | D4, PR7 |
 | B2#56 | When senses that cannot yet be published are exported with `status=unpublishable`, then each row has `_missing` naming the missing items together with `sense_id` and `revision`, and uploading the filled file creates draft revisions | D4 |
 | B2#57 | When a learner searches `analyse`, then the entry whose headword is `analyze/analyse` is found; search is case-insensitive on lemma and variants, and `%`, `_` and `\` in the query match only themselves | C20, CR11 |
 | B2#58 | When a learner searches, then exact matches come first, then prefix matches, then contains matches, each group ordered by lemma, part of speech and id | D7 |

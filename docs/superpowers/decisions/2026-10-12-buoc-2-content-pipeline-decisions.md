@@ -25,6 +25,9 @@ trade-off, phương án được chọn và lý do. Design doc mô tả *cách l
 | D11 | Phiên bản CEFR-J | Mặc định 1.5 trong repo, chờ xác nhận | Chờ bạn |
 | D12 | Bảng quyền | 4 quyền content cho `admin` và `editor`; ánh xạ endpoint | Chủ dự án (bảng D6); ánh xạ: Đề xuất |
 | D13 | Lọc trước dòng không đổi | Truy vấn hàng loạt trước khi xử lý từng dòng | Chủ dự án (ok) |
+| D14 | Khung job nền | Giữ đủ lease/`lease_epoch`/đối soát, viết thành khung dùng chung cho mọi loại job | Chủ dự án |
+| D15 | Giới hạn upload | Không có luật riêng, chỉ luật chung `user.write` | Chủ dự án (ok) |
+| D16 | Tìm sense theo lần upload | Bộ lọc `batch_id` cho danh sách và lệnh xuất | Chủ dự án (ok) |
 
 ## Nguyên tắc: design doc so với spec (chốt 12/10/2026)
 
@@ -161,3 +164,17 @@ upload file gộp cần **cả** `content.import` và `content.edit`; publish nh
 | Dấu phân cách CSV | Tự phát hiện `,` `;` tab từ dòng tiêu đề | Chỉ `,` | Excel tiếng Việt có thể ghi `;` (ASSUMPTION) |
 | Dạng chống công thức | Thêm `'` khi xuất, gỡ khi nhập | Từ chối ô đầu bằng ký tự đó | Xuất rồi nhập lại không đổi nội dung (P22) |
 | Chọn sense theo khóa | Loại sense `retired` khỏi khớp theo khóa | Cho khớp cả sense retired | Dòng theo khóa không được vô tình sửa sense đã đóng (PE7 chỉ nói về `sense_id`) |
+
+## D14 — Khung job nền
+
+Bối cảnh: pilot chỉ có một worker và một loại job, nên lease với `lease_epoch` và bộ đối soát nhiều hơn mức cần lúc này.
+
+| Phương án | Trade-off |
+|---|---|
+| Bản gọn: khóa dòng + phát hiện job treo của BullMQ + đối soát khi Redis mất dữ liệu | Plan ngắn hơn; khi thêm worker thứ hai hoặc loại job thứ hai thì phải thêm lease và sửa lại phần chạy job |
+| ✅ Giữ đủ, viết thành khung dùng chung | Tốn thêm việc ở Bước 2; đổi lại thêm loại job (AI soạn nháp, từ điển ngoài, nhập định kỳ, sinh lại ngân hàng câu) hoặc thêm worker không phải refactor. Chủ dự án chọn vì muốn scale sau này không phải viết lại |
+
+## D15, D16 — Giới hạn upload và lọc theo lần upload
+
+- **D15:** bỏ luật `content.upload` (10 lần/giờ). Chỉ nhân sự mới upload được và luật chung `user.write` (30 lần/phút) đã có; luật riêng chỉ làm chậm vòng sửa trong Excel.
+- **D16:** danh sách sense và lệnh xuất nhận `batch_id`, trả các sense mà lần upload tạo hoặc tạo revision kèm `revision` mới nhất, để publish cả lô bằng một lệnh.
