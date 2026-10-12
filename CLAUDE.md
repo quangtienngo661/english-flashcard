@@ -52,10 +52,39 @@ they say otherwise:
   for the piece of work in question. Reading and writing docs is fine.
 - Use the **superpowers** skill chain (`brainstorming` → `writing-plans` → `test-driven-development`, …)
   for this project's workflow, **not** the harness's own workflows (`build-feature`, `write-spec`,
-  `fix-request`, …).
-- **Git:** commit locally on a `feat/*`/`fix/*`/`docs/*` branch as normal; **push, PR and merge only when the owner
-  asks**. Work reaches `main` through a PR that is merged only after the GitHub Actions CI
-  (`.github/workflows/ci.yml`: lint, typecheck, build, unit, e2e) is green. Scan for secrets before every push.
+  `fix-request`, …). For cloud sessions without the plugin, the superpowers skills are vendored as project
+  skills in `.claude/skills/` (`superpowers:brainstorming` → `brainstorming`); see `.claude/skills/SUPERPOWERS.md`.
+- **Git:** commit locally on a topic branch (`feat/*`, `fix/*`, `docs/*`, or the session's `claude/*` branch) as normal;
+  **push, PR and merge only when the owner asks**. Never PR or push straight to `main`: follow the branching model
+  below. Scan for secrets before every push.
+
+### Branching model (owner, 12/10/2026)
+
+Goal: experimental versions never reach `main`; `main` only receives work that passed QA/QC.
+
+| Branch | Holds | Topic branches PR into it | Reaches `main` when |
+|---|---|---|---|
+| `main` | Stable, accepted state. Only `main` deploys the landing (`deploy-web.yml`) | — | — |
+| `dev` | Integration branch for **code** (`apps/**`, migrations, CI) and where QA/QC runs | `feat/*`, `fix/*`, code-bearing `claude/*` | QA/QC passes: CI green (`ci.yml`) **and** the design's "Xong khi" manual run, then the owner asks for a `dev` → `main` PR |
+| `documents` | Integration branch for **documents** (`docs/**`, `CLAUDE.md`): specs, designs, decisions, plans, reviews | `docs/*`, docs-only `claude/*` | The owner approves the documents, then asks for a `documents` → `main` PR |
+
+- The documents branch is `documents`, **not** `docs`, because `docs/*` topic branches already exist and Git cannot hold
+  both `docs` and `docs/...`.
+- Both long-lived branches were created from `main` at `635631c` on 12/10/2026.
+- Keep them in sync: after any merge into `main`, merge `main` back into `dev` and `documents`. Code that implements a
+  design needs that design and plan on `dev`: merge the approved `documents` state into `dev` (never cherry-pick).
+- A session's `claude/*` branch stays the working branch for that session; ask the owner which integration branch its PR
+  targets (docs-only work → `documents`, code → `dev`).
+- **CI/CD (owner, 12/10/2026):** `ci.yml` (lint, typecheck, build, unit, e2e) runs on **pull requests only** and does not
+  re-run when a PR is merged. `deploy-web.yml` runs on push to `main` and only builds and deploys (no tests, not gated on CI).
+  So a change is tested exactly once, on its PR, and a green CI on the PR is the only gate before `main`.
+- Not done yet (owner action in GitHub settings): branch protection on `main` and `dev` — require a PR, require the `CI`
+  check green, forbid direct pushes (a direct push to `main` would deploy untested code), and ideally "require branches to
+  be up to date before merging" so the PR run tested the exact merge result.
+- **The design doc is the official build document; `docs/specs/` is only the initial skeleton** (owner, 12/10/2026).
+  Design docs may diverge from the specs as decisions change during analysis. Review a design doc on its own merits
+  (consistency, buildability, fit with the owner's workflow), **not** against the specs; spec IDs (CR#, PR#, …) in a
+  design doc are provenance only, and a divergence does not require editing the spec.
 - **After brainstorming a design doc**, write a decision record in `docs/superpowers/decisions/` (rule
   `~/.claude/rules/decision-records.md`).
 - Ask open decisions **one question at a time**, each with a concrete proposal and a label: owner-decided
@@ -175,6 +204,25 @@ Decisions above). The Bước 1 spec deviations (design §11) were applied to `d
 2. *(resolved, see 1)*
 3. **Prisma pinned to `7.10.0`** (exact, no `^`) because the npm `latest` tag currently points at a `8.0.0-rc`
    prerelease — re-check when Prisma 8 reaches a real stable release.
+
+## Việc phải phân tích khi tới bước tương ứng (ghi 12/10/2026, từ brainstorm Bước 2)
+
+Các điểm dưới đây phát sinh khi rà quyền của `admin`/`editor` (bảng D6) với các spec Bước 3–8. Chưa chốt, **không chặn Bước 2**;
+đọc lại khi brainstorm bước ghi bên cạnh.
+
+- **Bước 4/7 — danh sách dạng bất quy tắc (PRC7, QE5, Defense Analysis của Practice).** Kiểm rule câu AI sinh dạng chia bằng
+  quy tắc cố định (`-s`, `-ed`, `-ing`…); dạng bất quy tắc (`go` → `went`, `gone`) không sinh được, nên câu AI đúng bị loại,
+  sinh lại một lần và tốn thêm một lần gọi AI. Spec ghi "owner duy trì danh sách" nhưng **chưa gán quyền**. Đề xuất (chưa
+  chốt): `questions.moderate`, vì dữ liệu thuộc Practice và người xử lý câu xấu là người thấy các câu bị loại nhầm.
+  `content.edit` chỉ hợp cho dạng được chấp nhận theo từng sense (CR22, thuộc Content). Cần phân tích khi tới bước: danh sách
+  lưu ở đâu (Practice sở hữu), thêm theo lemma hay theo sense, có nạp sẵn danh sách ban đầu không.
+- **Bước 5–6 — xem chi phí AI và báo cáo đối soát** (AI Integration AR6, Entitlements): **chủ dự án chốt 12/10/2026** thuộc
+  `ai.settings` (chỉ `admin`). Chưa gán: quyền đổi con số hạn mức và tham số trial/Pro (ER9, K18); đề xuất cùng `ai.settings`.
+- **Bước 5 — `entitlements.grant` so với D6 ("editor không đụng chi phí AI").** `editor` có `entitlements.grant` nên cấp được
+  lượt AI, tức tiêu tiền thật. Trần chi hằng ngày (ER14) giới hạn rủi ro. Cân nhắc: chuyển `admin` only, hoặc giới hạn số lượt
+  mỗi lần cấp.
+- **Giao diện cấp vai trò:** design Bước 1 (mục 6, 12) và D6 ghi "Bước 3", nhưng bảng 9 bước của HANDOFF §2 không có dòng
+  nào cho giao diện web (đăng nhập, cấp vai trò, trang admin). Chủ dự án muốn làm giao diện ngay sau API của Bước 2.
 
 ## Landing (apps/web) - as-built (08-09/10/2026)
 
