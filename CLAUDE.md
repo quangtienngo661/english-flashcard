@@ -75,9 +75,12 @@ Goal: experimental versions never reach `main`; `main` only receives work that p
   design needs that design and plan on `dev`: merge the approved `documents` state into `dev` (never cherry-pick).
 - A session's `claude/*` branch stays the working branch for that session; ask the owner which integration branch its PR
   targets (docs-only work → `documents`, code → `dev`).
-- Not done yet (owner action in GitHub settings): branch protection (require PR and green CI on `main` and `dev`, no
-  direct pushes to `main`). `ci.yml` runs on every PR but on `push` only for `main`; consider adding `dev` to its
-  `push` branches.
+- **CI/CD (owner, 12/10/2026):** `ci.yml` (lint, typecheck, build, unit, e2e) runs on **pull requests only** and does not
+  re-run when a PR is merged. `deploy-web.yml` runs on push to `main` and only builds and deploys (no tests, not gated on CI).
+  So a change is tested exactly once, on its PR, and a green CI on the PR is the only gate before `main`.
+- Not done yet (owner action in GitHub settings): branch protection on `main` and `dev` — require a PR, require the `CI`
+  check green, forbid direct pushes (a direct push to `main` would deploy untested code), and ideally "require branches to
+  be up to date before merging" so the PR run tested the exact merge result.
 - **The design doc is the official build document; `docs/specs/` is only the initial skeleton** (owner, 12/10/2026).
   Design docs may diverge from the specs as decisions change during analysis. Review a design doc on its own merits
   (consistency, buildability, fit with the owner's workflow), **not** against the specs; spec IDs (CR#, PR#, …) in a
