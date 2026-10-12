@@ -2,6 +2,7 @@ import type { Type } from '@nestjs/common';
 import { DiscoveryModule } from '@nestjs/core';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import { Test } from '@nestjs/testing';
+import { randomUUID } from 'node:crypto';
 import type { Server } from 'node:http';
 import request from 'supertest';
 import { inject } from 'vitest';
@@ -37,13 +38,24 @@ export type TestApp = {
 export async function createTestApp(opts?: {
   config?: Partial<AppConfig>;
   databaseUrl?: string;
+  redisUrl?: string;
+  pipeline?: Partial<AppConfig['pipeline']>;
   controllers?: Type<unknown>[];
   rolePermissions?: Record<StaffRole, readonly Permission[]>;
 }): Promise<TestApp> {
-  const config = testConfig({
+  const defaults = testConfig();
+  const config: AppConfig = {
+    ...defaults,
     ...opts?.config,
     databaseUrl: opts?.databaseUrl ?? opts?.config?.databaseUrl ?? inject('databaseUrl'),
-  });
+    redisUrl: opts?.redisUrl ?? opts?.config?.redisUrl ?? defaults.redisUrl,
+    pipeline: {
+      ...defaults.pipeline,
+      queuePrefix: `wordmet-test-${randomUUID()}`,
+      ...opts?.config?.pipeline,
+      ...opts?.pipeline,
+    },
+  };
   const clock = new FakeClock();
   const logs: LogEntry[] = [];
   const sink: LogSink = { write: (entry) => { logs.push(entry); } };

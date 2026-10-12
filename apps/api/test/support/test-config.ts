@@ -8,6 +8,7 @@ export function testConfig(overrides?: Partial<AppConfig>): AppConfig {
   }
   return {
     databaseUrl: 'postgresql://dev:dev@localhost:5432/test',
+    redisUrl: 'redis://localhost:6379',
     jwt: {
       keys: [{ kid: 'test', secret: randomBytes(32) }],
       issuer: 'test-issuer', audience: 'test-audience', accessTtlSeconds: 900,
@@ -23,6 +24,21 @@ export function testConfig(overrides?: Partial<AppConfig>): AppConfig {
     problemTypeBase: 'https://api.example.com/problems/',
     maintenanceEnabled: false,
     content: { publishMaxItems: 500 },
+    pipeline: {
+      importMaxRows: 100,
+      importMaxBytes: 10_240,
+      exportMaxRows: 50,
+      leaseSeconds: 6,
+      heartbeatSeconds: 2,
+      reconcileSeconds: 1,
+      rowRetries: 3,
+      jobAttempts: 3,
+      fileRetentionDays: 1,
+      queuePrefix: 'wordmet-test',
+      runWorkers: false,
+      jobBackoffMs: 10,
+      rowRetryBaseMs: 10,
+    },
     limits,
     ...overrides,
   };

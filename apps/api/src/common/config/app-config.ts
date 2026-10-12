@@ -25,6 +25,7 @@ export interface RateLimitRuleConfig {
 
 export interface AppConfig {
   databaseUrl: string;
+  redisUrl: string;
   jwt: {
     keys: Array<{ kid: string; secret: Uint8Array }>;
     issuer: string;
@@ -50,6 +51,21 @@ export interface AppConfig {
   maintenanceEnabled: boolean;
   content: {
     publishMaxItems: number;
+  };
+  pipeline: {
+    importMaxRows: number;
+    importMaxBytes: number;
+    exportMaxRows: number;
+    leaseSeconds: number;
+    heartbeatSeconds: number;
+    reconcileSeconds: number;
+    rowRetries: number;
+    jobAttempts: number;
+    fileRetentionDays: number;
+    queuePrefix: string;
+    runWorkers: boolean;
+    jobBackoffMs: number;
+    rowRetryBaseMs: number;
   };
   limits: Record<RateLimitRuleName, RateLimitRuleConfig>;
 }
@@ -107,6 +123,9 @@ const envSchema = z.object({
   DATABASE_URL: z.url().transform((value) => new URL(value))
     .refine((value) => ['postgres:', 'postgresql:'].includes(value.protocol))
     .transform((value) => value.toString()),
+  REDIS_URL: z.url().transform((value) => new URL(value))
+    .refine((value) => ['redis:', 'rediss:'].includes(value.protocol))
+    .transform((value) => value.toString()),
   JWT_KEYS: jwtKeySchema,
   JWT_ISSUER: nonEmpty,
   JWT_AUDIENCE: nonEmpty,
@@ -131,6 +150,18 @@ const envSchema = z.object({
   MAINTENANCE_ENABLED: booleanString.default(true),
   ACCESS_TOKEN_TTL_SECONDS: positiveInteger.default(900),
   PUBLISH_MAX_ITEMS: positiveInteger.default(500),
+  IMPORT_MAX_ROWS: positiveInteger.default(20_000),
+  IMPORT_MAX_BYTES: positiveInteger.default(10_485_760),
+  EXPORT_MAX_ROWS: positiveInteger.default(5_000),
+  IMPORT_LEASE_SECONDS: positiveInteger.default(60),
+  IMPORT_HEARTBEAT_SECONDS: positiveInteger.default(20),
+  IMPORT_RECONCILE_SECONDS: positiveInteger.default(30),
+  IMPORT_ROW_RETRIES: positiveInteger.default(3),
+  IMPORT_JOB_ATTEMPTS: positiveInteger.default(3),
+  IMPORT_FILE_RETENTION_DAYS: positiveInteger.default(30),
+  JOB_QUEUE_PREFIX: nonEmpty.default('wordmet'),
+  IMPORT_JOB_BACKOFF_MS: positiveInteger.default(5_000),
+  IMPORT_ROW_RETRY_BASE_MS: positiveInteger.default(200),
 });
 
 export function loadConfig(env: NodeJS.ProcessEnv): AppConfig {
@@ -142,6 +173,7 @@ export function loadConfig(env: NodeJS.ProcessEnv): AppConfig {
   const values = result.data;
   return {
     databaseUrl: values.DATABASE_URL,
+    redisUrl: values.REDIS_URL,
     jwt: {
       keys: values.JWT_KEYS,
       issuer: values.JWT_ISSUER,
@@ -166,6 +198,21 @@ export function loadConfig(env: NodeJS.ProcessEnv): AppConfig {
     problemTypeBase: values.PROBLEM_TYPE_BASE,
     maintenanceEnabled: values.MAINTENANCE_ENABLED,
     content: { publishMaxItems: values.PUBLISH_MAX_ITEMS },
+    pipeline: {
+      importMaxRows: values.IMPORT_MAX_ROWS,
+      importMaxBytes: values.IMPORT_MAX_BYTES,
+      exportMaxRows: values.EXPORT_MAX_ROWS,
+      leaseSeconds: values.IMPORT_LEASE_SECONDS,
+      heartbeatSeconds: values.IMPORT_HEARTBEAT_SECONDS,
+      reconcileSeconds: values.IMPORT_RECONCILE_SECONDS,
+      rowRetries: values.IMPORT_ROW_RETRIES,
+      jobAttempts: values.IMPORT_JOB_ATTEMPTS,
+      fileRetentionDays: values.IMPORT_FILE_RETENTION_DAYS,
+      queuePrefix: values.JOB_QUEUE_PREFIX,
+      runWorkers: false,
+      jobBackoffMs: values.IMPORT_JOB_BACKOFF_MS,
+      rowRetryBaseMs: values.IMPORT_ROW_RETRY_BASE_MS,
+    },
     limits: structuredClone(DEFAULT_LIMITS),
   };
 }
