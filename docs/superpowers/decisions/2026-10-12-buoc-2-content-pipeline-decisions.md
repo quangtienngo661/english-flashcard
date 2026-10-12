@@ -24,13 +24,12 @@ trade-off, phương án được chọn và lý do. Design doc mô tả *cách l
 | D10 | Chia bước | Một design, ba mốc M1–M3 | Đề xuất (chủ dự án nghiêng về không chia) |
 | D11 | Phiên bản CEFR-J | Mặc định 1.5 trong repo, chờ xác nhận | Chờ bạn |
 | D12 | Bảng quyền | 4 quyền content cho `admin` và `editor`; ánh xạ endpoint | Chủ dự án (bảng D6); ánh xạ: Đề xuất |
+| D13 | Lọc trước dòng không đổi | Truy vấn hàng loạt trước khi xử lý từng dòng | Chủ dự án (ok) |
 
 ## Nguyên tắc: design doc so với spec (chốt 12/10/2026)
 
 Design doc là tài liệu chính thức để build; spec chỉ là khung ban đầu. Doc khác spec khi quyết định thay đổi trong lúc phân tích, và
 không cần sửa spec theo. Review design doc theo chính nó, không đối chiếu spec. Vì vậy design Bước 2 bỏ cột "Lệch spec?" và mục sửa spec.
-
-| D13 | Lọc trước dòng không đổi | Truy vấn hàng loạt trước khi xử lý từng dòng | Chủ dự án (ok) |
 
 ## D1 — Phạm vi Bước 2
 
