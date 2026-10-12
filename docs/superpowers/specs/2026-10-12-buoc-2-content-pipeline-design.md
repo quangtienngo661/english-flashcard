@@ -97,10 +97,12 @@ dòng" vào **một** giao dịch cho mỗi dòng (PR10). Content sở hữu lu�
   `imported` không bao giờ bị sửa** (CR8, P23); `basis` = `editorial` khi nguồn là `owner`. Không có cờ "cần rà": entry **có xung
   đột** khi các bản ghi level của nó có hơn một level khác nhau và chưa có bản ghi `editorial`.
 - **`senses`**: `id` (uuid, **không bao giờ tái dùng**, SR2), `entry_id`, `context_label` (null = nghĩa chính; chuỗi rỗng/chỉ
-  khoảng trắng chuẩn hóa thành null), `state` (`active`/`unpublished`/`retired`), `live_revision_id` (null nếu chưa từng
-  publish), `replaces_sense_id` (khi là sense thay nghĩa chưa publish), `created_at`. Bất biến: **tối đa một sense chưa retire
-  cho mỗi (entry, nhãn)**, ngoại trừ sense đang chờ thay thế (`replaces_sense_id` khác null) cùng nhãn với sense nó thay; plan
-  chọn cách cài (chỉ mục duy nhất từng phần) và có test cho bất biến này.
+  khoảng trắng chuẩn hóa thành null), `state` (`open`/`unpublished`/`retired`; `open` = chưa bị
+  bỏ publish hay retire, **không** có nghĩa là đã publish), `live_revision_id` (null nếu chưa từng publish), `replaces_sense_id`
+  (khi là sense thay nghĩa chưa publish), `created_at`. Người học chỉ thấy sense `open` **và** có `live_revision_id`. Bất biến:
+  **tối đa một sense chưa retire và không chờ thay thế cho mỗi (entry, nhãn)**, và **tối đa một sense chờ thay thế cho mỗi sense**;
+  plan chọn cách cài (chỉ mục duy nhất từng phần) và có test cho hai bất biến này. Sense chờ thay thế mà revision bị `rejected`
+  thì chuyển `retired` (chưa từng publish), trả lại chỗ cho lần thay sau.
 - **`sense_revisions`**: bản chụp bất biến của nội dung: `sense_id`, `revision_no` (tăng dần theo sense, bắt đầu từ 1),
   `status` (`draft`/`reviewed`/`published`/`superseded`/`rejected`), `draft_source` (`csv`/`ui`, PR17), `content_hash`,
   `created_by` (uuid trơn), `created_at`, `published_at`; nội dung gồm **text theo (ngôn ngữ, loại gloss/definition)** (V1: `vi`
@@ -151,7 +153,8 @@ Mỗi lần lưu sửa tạo **revision mới**; revision mở cũ chuyển `sup
 **Request.** `POST /v1/admin/content/uploads` (multipart): `file` và `level_source_id` (bắt buộc khi file có cột level). Header
 `Idempotency-Key` bắt buộc. Trả 202 với `batch_id`; việc xử lý chạy ở worker.
 
-**Kiểm cả file trước khi xử lý (từ chối cả file, không tạo batch):** quá 20.000 dòng hoặc 10 MB; không phải UTF-8 hợp lệ; thiếu
+**Kiểm cả file trước khi xử lý (từ chối cả file, không tạo batch):** quá 20.000 dòng hoặc 10 MB; không phải UTF-8 hợp lệ (thông báo lỗi nói rõ: lưu lại bằng "CSV UTF-8" trong Excel, hoặc tải CSV từ
+Google Sheets; không hỗ trợ bảng mã Windows hay `.xlsx`, đề xuất); thiếu
 dòng tiêu đề; thiếu cột `pos` hoặc cả `headword` lẫn `lemma`; tiêu đề trùng sau khi chuẩn hóa; 0 dòng dữ liệu; có cột level mà thiếu
 `level_source_id`; nguồn bên thứ ba thiếu phiên bản hoặc giấy phép (PR1). BOM UTF-8 và CRLF được chấp nhận (PE1). Ngưỡng
 20.000/10 MB áp cho **mọi** file (PR14 tách 5.000 cho file soạn, nhưng file gộp có thể là cả file CEFR-J 7.799 dòng kèm
@@ -166,7 +169,7 @@ Sheets luôn dùng `,`. Ô theo chuẩn RFC 4180 (PE3).
 | Cột | Ghi chú |
 |---|---|
 | `headword` (hoặc `lemma`), `pos` | Bắt buộc. `headword` dạng `a/b/c`: `a` là lemma, các đoạn còn lại là biến thể chính tả (PR3) |
-| `CEFR` (hoặc `level`) | Tùy chọn. Có cột này thì bắt buộc khai báo nguồn level. Nguồn `owner` → bản ghi `editorial` |
+| `CEFR` (hoặc `level`) | Tùy chọn. Có cột này thì bắt buộc khai báo nguồn level. Nguồn `owner` → bản ghi `editorial`. **Ô trống = dòng không có level** (không phải lỗi), để chủ dự án thêm từ của mình vào file CEFR-J; sense của entry chưa có level vẫn vào nháp và bị chặn lúc publish |
 | `gloss_vi`, `definition_en`, `example_en_1`…`example_en_3`, `topics`, `accepted_forms` | Nội dung của sense. `topics`, `accepted_forms` ngăn bởi `;` |
 | `context_label`, `sense_id`, `revision`, `replace_meaning` | Chọn sense đích (PR5) |
 | `CoreInventory 1`, `CoreInventory 2`, `Threshold`, `notes` | Bốn cột phụ của hai file nguồn: **giữ nguyên** vào `source_extra` của bản ghi level, không suy ra gì (PR3). Mọi cột lạ khác bị bỏ qua và cảnh báo |
@@ -188,8 +191,8 @@ CEFR-J 1.5 (`noun`, `verb`, `adjective`, `adverb`, `pronoun`, `preposition`, `de
 | `unknown-topic`, `topic-archived` | Mã chủ đề không tồn tại hoặc đã ẩn (P13) |
 | `cell-too-long` | Ô quá 2.000 ký tự (PE10) |
 | `revision-required`, `stale-revision`, `sense-not-found`, `sense-retired`, `sense-entry-mismatch` | Dòng có `sense_id` (PR5, PR15, PE7) |
-| `open-draft-conflict` | Dòng không có `sense_id` nhưng sense khớp đang có revision mở (PE6) |
-| `gloss-changed` | Khớp sense, `gloss_vi` đổi, không có `sense_id` và không `replace_meaning` (P25) |
+| `open-draft-conflict` | Dòng không có `sense_id`, sense khớp có revision mở do sửa tay qua API (PE6; Chờ bạn) |
+| `gloss-changed` | Khớp sense **đã từng publish**, `gloss_vi` đổi, không có `sense_id` và không `replace_meaning` (P25; Chờ bạn) |
 | `duplicate-key-in-file` | Khóa nội dung trùng với một dòng trước trong cùng file (PE2) |
 
 **Xử lý một dòng hợp lệ** (trong một giao dịch, dưới khóa advisory theo `(lemma, pos)` để UI và import không ghi chồng nhau):
@@ -197,27 +200,33 @@ CEFR-J 1.5 (`noun`, `verb`, `adjective`, `adverb`, `pronoun`, `preposition`, `de
 1. **Entry:** tạo nếu chưa có (cờ từ chức năng suy từ loại từ, CR10); thêm biến thể mới; không bao giờ xóa biến thể.
 2. **Level** (nếu có cột level): thêm bản ghi `(entry, nguồn, level)` nếu chưa có; không sửa bản ghi cũ. Cùng khóa nguồn mà khác
    level (Octanove có 21 khóa như vậy) → giữ cả hai (PR3).
-3. **Nội dung** (nếu có ít nhất một ô trong `gloss_vi`, `definition_en`, `example_en_*`, `topics`, `accepted_forms`):
+3. **Nội dung** (nếu có ít nhất một ô trong `gloss_vi`, `definition_en`, `example_en_*`, `topics`, `accepted_forms`). Thứ tự kiểm
+   **cố định**: chọn sense đích → **nội dung sau khi ghép giống revision mới nhất thì `unchanged` và dừng** → luật xung đột → ghi.
+   Vì "không đổi" được kiểm trước luật xung đột, upload lại cùng file không bao giờ bị loại vì xung đột (B2#10).
    - Có `sense_id` → sense đó; `revision` phải bằng revision mới nhất (nhỏ hơn: `stale-revision`); nội dung đổi → revision mới.
-   - Không có `sense_id` → tìm sense chưa retire theo (entry, `context_label`). **Không có** → tạo sense mới (nháp, revision 1).
-     **Có**: nếu có revision mở → `open-draft-conflict`; nếu `replace_meaning=true` → tạo sense thay nghĩa; nếu `gloss_vi` đổi → `gloss-changed`;
-     ngược lại tạo revision nháp mới trên sense đó (sense đang publish **không đổi** cho tới khi publish, PR8).
+   - Không có `sense_id` → sense **chưa retire và không chờ thay thế** theo (entry, `context_label`); riêng dòng có `replace_meaning=true`
+     nhắm vào **sense chờ thay thế** của sense đó nếu đã có (sửa tiếp, không tạo thay thế thứ hai). **Không có** → tạo sense mới (nháp,
+     revision 1; với `replace_meaning=true` là sense thay nghĩa).
+   - **Luật xung đột** khi khớp theo khóa (Chờ bạn, mục 17): có revision mở do **sửa tay qua API** (`draft_source=ui`) → `open-draft-conflict`;
+     revision mở do **CSV** tạo thì dòng ghi đè bằng revision mới (vòng sửa trong Excel trước khi publish). `gloss_vi` đổi mà sense **đã
+     từng publish** (có `live_revision_id`) và không `replace_meaning` → `gloss-changed`; sense chưa từng publish thì sửa `gloss_vi` tự do.
+   - Còn lại: tạo revision nháp mới (sense đang publish **không đổi** cho tới khi publish, PR8).
    - **Ô trống nghĩa là giữ nguyên** giá trị hiện có; ô danh sách (`topics`, `accepted_forms`, hoặc nhóm `example_en_*`) có giá trị
-     thì **thay cả danh sách**. Muốn xóa giá trị thì sửa qua API từng sense. (Đề xuất, chưa kiểm với chủ dự án.)
-4. **Khóa dòng (PR9)** ghi vào `import_row_keys`. Cùng khóa và cùng băm → bỏ qua, ghi `unchanged`. Nội dung đã giống revision mới nhất
-   cũng là `unchanged` (không tạo revision rỗng).
+     thì **thay cả danh sách**. Muốn xóa giá trị thì sửa qua API từng sense. Mã chủ đề đã ẩn **không** được kế thừa sang revision mới
+     (bỏ kèm cảnh báo), để sửa một sense cũ không bị kẹt ở điều kiện publish. (Đề xuất.)
+4. **Khóa dòng (PR9)** ghi vào `import_row_keys`; khóa và băm đã có (worker chạy lại sau khi chết) → bỏ qua, ghi `unchanged`.
 5. Ghi `import_row_outcomes` và, với bản ghi mới tạo, `batch_records`.
 
 ## 6. Vòng đời, revision, publish
 
 - **Trạng thái:** revision `draft` → (tùy chọn) `reviewed` → `published`; `rejected` cho revision chủ động bỏ; `superseded` khi bị
-  thay. Sense `active` khi có `live_revision_id`; `unpublished` (ẩn khỏi tìm kiếm và duyệt, giữ nội dung, publish lại được);
-  `retired` (kết thúc, CR17). Chỉ sense `active` có `live_revision_id` hiện với người học (CR4). Đánh dấu `reviewed` **không bắt
+  thay. Sense `open` (mặc định); `unpublished` (ẩn khỏi tìm kiếm và duyệt, giữ nội dung, publish lại được);
+  `retired` (kết thúc, CR17). Chỉ sense `open` **và** có `live_revision_id` hiện với người học (CR4). Đánh dấu `reviewed` **không bắt
   buộc** trước khi publish (spec không nói bắt buộc; đề xuất).
 - **Điều kiện publish (CR5):** `gloss_vi` không rỗng, ít nhất một ví dụ tiếng Anh, entry có ít nhất một level, revision có ít nhất
   một chủ đề (mã còn hoạt động). Thiếu thì từ chối và trả **danh sách mục thiếu** (`violations`); sense giữ nguyên.
 - **Publish theo lô (PR7, P16):** yêu cầu là danh sách `{sense_id, revision}`; **từng mục độc lập**, kết quả trả theo từng mục
-  (`published`/`already_published`/lý do từ chối). `revision` khác revision mở mới nhất → từ chối mục đó (hai người sửa chồng
+  (`published`/`already_published`/lý do từ chối). `revision` khác **revision mới nhất** của sense → từ chối mục đó (hai người sửa chồng
   nhau). Publish lại một mục đã publish đúng revision đó là thành công, không đổi gì (idempotent tự nhiên, không cần
   `Idempotency-Key`).
 - **Publish nhanh (CR17):** lưu nội dung mới và publish trong một lời gọi, cần **cả** `content.edit` và `content.publish`, nguyên
@@ -243,8 +252,10 @@ CEFR-J 1.5 (`noun`, `verb`, `adjective`, `adverb`, `pronoun`, `preposition`, `de
   ngay khi lease bị lấy (P28). Giờ lấy từ `Clock` để test tua đồng hồ.
 - **Reconciler** trong tiến trình worker, chạy khi khởi động và mỗi 30 giây (ASSUMPTION): (a) batch `queued` quá vài giây mà
   Redis không có job tương ứng → thêm lại `jobId` = batch id; (b) batch `running` lease hết hạn → đặt `queued` (nếu `attempts` chưa tới 3,
-  còn không thì `failed`) và thêm lại. Dùng `jobId` cố định nên thêm hai lần không sinh hai job; dù có chạy hai lần, khóa dòng ở DB chặn
-  trùng (P9).
+  còn không thì `failed`) và thêm lại. Job được **xóa khỏi Redis khi xong hoặc lỗi** (`removeOnComplete`, `removeOnFail`), vì BullMQ bỏ
+  qua lệnh thêm job trùng `jobId` khi job cũ còn lưu (hành vi cần plan kiểm); nếu job cũ còn ở trạng thái khác thì bộ đối soát xóa hoặc
+  thử lại nó theo trạng thái thay vì chỉ thêm. Dù có chạy hai lần, khóa dòng ở DB chặn trùng (P9). **`import_batches.attempts` là bộ
+  đếm chuẩn** (tăng mỗi lần nhận lease); `attempts` của BullMQ chỉ là cơ chế thử lại, và lượt cuối thất bại thì worker ghi `failed` vào DB.
 - **Thử lại (PR11):** lỗi tạm của một dòng (mất kết nối, deadlock, serialization failure) thử lại **tối đa 3 lần** trong tiến trình
   với backoff mũ có jitter; hết lần thì lượt xử lý của job thất bại. Job thử lại **tối đa 3 lượt** (`attempts: 3`, backoff mũ có
   `jitter` của BullMQ) và **bỏ qua các dòng đã xong** nhờ khóa dòng. Hết lượt thì batch `failed` kèm báo cáo (số dòng đã xong); upload lại **cùng
@@ -252,10 +263,14 @@ CEFR-J 1.5 (`noun`, `verb`, `adjective`, `adverb`, `pronoun`, `preposition`, `de
 - **Trạng thái cuối:** mọi dòng xử lý xong và không dòng nào bị loại → `succeeded`; có dòng bị loại → `partial`; không xử lý hết sau
   các lượt thử → `failed`. `đã xử lý = tạo mới + không đổi + bị loại` (cộng `cập nhật` nếu có).
 - **Hoàn tác lô (PR16):** `POST .../uploads/{id}/revert`, `Idempotency-Key` bắt buộc; chỉ khi batch không đang `queued`/`running`
-  và chưa `reverted`. Pipeline đưa danh sách bản ghi lô đã tạo cho `ContentService`; Content chỉ xóa bản ghi **chưa từng publish**
-  và không còn bản ghi nào khác tham chiếu: level; revision (và sense) mà **mọi** revision đều do lô tạo (sense đã bị sửa tay sau đó
-  thì giữ, báo "sửa sau khi nhập"); entry chỉ khi hết sense và hết level. Xóa luôn khóa dòng của lô để upload lại tạo lại được
-  (P26). Trả báo cáo bản ghi bị bỏ qua và lý do. Batch chuyển `reverted`.
+  và chưa `reverted`. `batch_records` ghi mọi bản ghi lô **tạo** (entry, biến thể, level, sense, revision) và với mỗi revision lô tạo thì ghi luôn revision
+  mở mà nó đã thay (`superseded`). Pipeline đưa danh sách cho `ContentService`; Content áp dụng:
+  - **Revision lô tạo**: xóa nếu chưa từng publish **và** vẫn là revision mới nhất của sense; khi đó revision mở bị nó thay (nếu có) được
+    **trả lại** trạng thái cũ (`draft`/`reviewed`). Revision đã bị sửa tiếp sau đó hoặc đã publish thì giữ, báo lý do.
+  - **Sense lô tạo**: xóa khi sense chưa từng publish và mọi revision của nó đã bị xóa ở bước trên; ngược lại giữ, báo "sửa sau khi nhập".
+  - **Level lô tạo**: xóa, **trừ** khi entry có sense đã publish và level đó là level duy nhất của entry (giữ để không vi phạm CR5).
+  - **Biến thể lô thêm**: xóa. **Entry lô tạo**: xóa khi không còn sense, level hay biến thể nào.
+  Xóa luôn khóa dòng của lô để upload lại tạo lại được (P26). Trả báo cáo bản ghi bị bỏ qua và lý do. Batch chuyển `reverted`.
 - **Quan sát (PR18):** log mỗi batch mang `operation_id`, số liệu, thời gian; cảnh báo (log `warn`) khi batch `failed`, `partial`, hoặc
   `running` quá hạn thuê. Kênh cảnh báo ngoài log là của Bước sau.
 
@@ -264,20 +279,22 @@ CEFR-J 1.5 (`noun`, `verb`, `adjective`, `adverb`, `pronoun`, `preposition`, `de
 - **Xuất (D8):** `GET /v1/admin/content/senses/export` phát CSV **trực tiếp (stream)**, không qua job (đề xuất; lệch PR10 "xuất
   chạy như job"): tối đa 5.000 dòng, vượt thì 400 `export-too-large` kèm hướng dẫn thu hẹp bộ lọc. Bộ lọc: `sense_id` (nhiều),
   `status` (`unpublishable`, `open_draft`, `published`), `level`, `pos`, `topic`. Mỗi dòng là một sense với nội dung của
-  **revision mới nhất** và các cột của mục 5 cộng `sense_id`, `revision`, `_status`; bộ lọc `unpublishable` thêm `_missing`.
+  **revision mới nhất**: các cột của mục 5 **trừ cột level** (level của file xuất nằm ở `_level`, chỉ để xem, upload bỏ qua; nên upload
+  lại file xuất không cần khai báo nguồn level và không gắn nhầm nguồn), cộng `sense_id`, `revision`, `_status`; bộ lọc `unpublishable`
+  thêm `_missing`. Đặt level biên tập dùng API từng entry hoặc một file riêng khai báo nguồn `owner`.
 - **Chống chèn công thức (PR15, P22):** ô bắt đầu bằng `=`, `+`, `-`, `@` được thêm tiền tố `'` khi xuất; khi nhập, nếu ô bắt đầu
   bằng `'` rồi đến một trong bốn ký tự đó thì gỡ `'` **trước khi băm và so sánh**, nên xuất rồi nhập lại không đổi nội dung. Hệ
   quả chấp nhận: một nội dung thật sự bắt đầu bằng `'=` sẽ mất dấu `'` khi qua vòng xuất-nhập (ASSUMPTION).
 - **Danh sách (a) dòng bị loại:** `GET .../uploads/{id}/rejected.csv` = các cột của **file gốc** theo đúng thứ tự cộng `_row`
-  (số dòng trong file gốc) và `_error` (mọi mã và thông báo tiếng Việt, kèm giá trị hợp lệ). Sửa ô sai, **upload lại chính file đó**;
-  dòng đã xong trong lần trước hiện là `unchanged`.
+  (số dòng trong file gốc) và `_error` (mọi mã và thông báo tiếng Việt, kèm giá trị hợp lệ). Sửa ô sai rồi **upload lại file đó** (chỉ
+  gồm các dòng bị loại). Upload lại cả file gốc đã sửa cũng được: các dòng đã xong lần trước hiện `unchanged`.
 - **Danh sách (b) sense chưa publish được:** xuất với `status=unpublishable`; điền xong upload lại, hệ thống tạo revision nháp mới
   (cần `sense_id` và `revision` có sẵn trong file).
 
 ## 9. Tìm kiếm, duyệt, hiển thị (người học)
 
 Mọi endpoint ở mục này cần đăng nhập (người học, kể cả email chưa xác minh, K7) và **đã chọn `native_language`** (qua
-`IdentityService.getProfile`); chưa chọn thì 403 `profile-incomplete` (I22). Chỉ sense `active` có `live_revision_id` được trả.
+`IdentityService.getProfile`); chưa chọn thì 403 `profile-incomplete` (I22). Chỉ sense `open` có `live_revision_id` được trả.
 
 - **Tìm kiếm** `GET /v1/senses/search?q=`: `q` đã cắt khoảng trắng, NFC, chữ thường, 1–100 ký tự (rỗng hoặc dài hơn: 400). Khớp **đầu từ**
   hoặc **chứa** trên lemma **và** mọi biến thể, không stemming hay fuzzy (CR11). `%`, `_`, `\` trong `q` là ký tự thường (phải thoát).
@@ -286,7 +303,7 @@ Mọi endpoint ở mục này cần đăng nhập (người học, kể cả ema
   tuần tự vẫn nhỏ; plan đo trước khi thêm chỉ mục; ASSUMPTION).
 - **Duyệt** `GET /v1/senses`: lọc theo `level` (level hiển thị), `topic`, `pos`; mặc định **gồm** từ chức năng kèm cờ; `exclude_function_words=true`
   loại chúng (CR12); thứ tự lemma rồi loại từ.
-- **Xem một sense** `GET /v1/senses/{id}`; sense không `active` hoặc không tồn tại → 404.
+- **Xem một sense** `GET /v1/senses/{id}`; sense không hiện với người học hoặc không tồn tại → 404.
 - **Chủ đề** `GET /v1/topics` (mã và tên theo ngôn ngữ người học). **Nguồn và giấy phép** `GET /v1/sources` **công khai** (`@Public()`):
   tên, phiên bản, URL, giấy phép, ghi nhận (CR18, SR15).
 - **Mỗi kết quả:** `sense_id`, `entry_id`, lemma, loại từ, level hiển thị, cờ từ chức năng, nhãn ngữ cảnh, nghĩa **theo CR7**
@@ -329,6 +346,8 @@ idempotent tự nhiên (trạng thái hoặc kiểm `revision`). Giới hạn t�
 - Cấu hình mới (ASSUMPTION, đều cấu hình được): `REDIS_URL`; `IMPORT_MAX_ROWS` 20.000; `IMPORT_MAX_BYTES` 10 MB; `EXPORT_MAX_ROWS`
   5.000; `IMPORT_LEASE_SECONDS` 60, nhịp tim 20 giây; `IMPORT_RECONCILE_SECONDS` 30; thử lại dòng 3 lần, job 3 lượt; giữ file
   upload 30 ngày.
+- Tiến trình worker dùng chung `loadConfig` nên cần đủ biến môi trường như API (kể cả `JWT_KEYS`, SMTP); tách cấu hình riêng cho
+  worker là việc có thể làm sau, không cần ở Bước 2.
 
 ## 12. Ba mốc và kiểm thử
 
@@ -360,21 +379,21 @@ trước khi có số đo.
 | B2#7 | When the CEFR-J row `analyze/analyse,verb,B1` is imported with source CEFR-J 1.5, then one entry (lemma `analyze`, pos `verb`) with the accepted spelling variant `analyse`, one `imported` level record B1 naming that source and version, and a derived function-word flag of false exist, no sense exists, and a learner search for `analyze` returns nothing | P2, C20, R6 |
 | B2#8 | When the file contains `March,noun,A1` and `march,noun,B1`, then two distinct entries are created and neither overwrites the other | P4, CE1 |
 | B2#9 | When a row's part of speech is `preposition`, then its entry is flagged as a function word; when it is `noun`, it is not; `in` as preposition and `in` as adverb are two entries flagged independently | P7, CE2, CR10 |
-| B2#10 | When the same file is uploaded again, then no entry, level, sense or revision is created and the report shows every row as `unchanged` | P3, PR9 |
+| B2#10 | When the same file is uploaded again, including after its first upload left open draft revisions, then no entry, level, sense or revision is created and the report shows every row as `unchanged`, never as a conflict | P3, PR9 |
 | B2#11 | When a row has an empty or unknown part of speech (such as `batter` with none, or `remonstrate` with `vern`) or a level outside A1–C2, then only that row is rejected, its report line gives the row number and every error with the valid values, and the other rows are processed | P5, CE4, PR3 |
 | B2#12 | When a cell differs from a valid value only by surrounding or repeated whitespace, letter case of the part of speech or level (`Noun`, `b1`), or Unicode normalization form, then it is normalized and the row is accepted | D5 |
 | B2#13 | When a headword has a trailing space, has several words, or contains apostrophes (`turn to `, `according to`, `o'clock`, `'re`), then it is accepted as a `word` entry with whitespace trimmed and no phrasal-verb behaviour | PE8, CE3, CE7 |
 | B2#14 | When the same (headword, pos) appears twice in one source file with the same level, then one level record exists; with levels C1 and C2, then both level records exist and the entry is reported as conflicting | P27, PR3 |
 | B2#15 | When the same (lemma, pos) comes from CEFR-J and Octanove with different levels, then both level records are kept, the displayed level is the CEFR-J one, and the entry is reported as conflicting until an editorial level is added | P6, C18, PR4 |
-| B2#16 | When a row has a level but no content cell, then the entry and level record are created and no sense exists | D2 |
+| B2#16 | When a row has a level but no content cell, then the entry and level record are created and no sense exists; when a file with a level column has a row whose level cell is empty, then that row creates no level record and is not rejected | D2 |
 | B2#17 | When a row has content cells and names a lemma and part of speech that have no sense (new entry, or an entry from an earlier import), then one sense with a draft revision 1 holding the given fields is created even if it cannot yet be published | P11, K1 |
 | B2#18 | When a row matches a published sense by (entry, context label) without `sense_id` and without changing `gloss_vi`, then a draft revision is created, the live content is unchanged, and it changes only when that revision is published | P12, PR8, CR17 |
-| B2#19 | When a row matches a published sense by key without `sense_id` and changes `gloss_vi` without `replace_meaning`, then the row is rejected with `gloss-changed` and nothing is written | P25, PR5 |
+| B2#19 | When a row matches a sense that has been published by key without `sense_id` and changes `gloss_vi` without `replace_meaning`, then the row is rejected with `gloss-changed` and nothing is written; for a sense never published, the gloss change creates a draft revision | P25, PR5 (Chờ bạn) |
 | B2#20 | When a row for `bank`, noun carries a context label that no sense has and no `sense_id`, then a second sense is created for the same entry and the published sense is untouched | P24, CR6 |
-| B2#21 | When a row has `replace_meaning=true`, then a new draft sense is created with a link to the matched sense, and when the new sense is published the old sense becomes `retired` in the same transaction | CR17, C11 |
+| B2#21 | When a row has `replace_meaning=true`, then a new draft sense is created with a link to the matched sense, a later such row edits that waiting sense instead of creating a second one, and when the new sense is published the old sense becomes `retired` in the same transaction | CR17, C11 |
 | B2#22 | When a row names a topic code that does not exist or is archived, then that row is rejected with `unknown-topic` or `topic-archived` | P13, CR9 |
 | B2#23 | When a row has `sense_id` but no `revision`, or a `revision` older than the sense's latest, or names a retired sense, or a sense of a different lemma or part of speech, then it is rejected with `revision-required`, `stale-revision`, `sense-retired` or `sense-entry-mismatch` | P14, PR15, PE7 |
-| B2#24 | When a row has no `sense_id` and the matching sense has an open draft or reviewed revision, then the row is rejected with `open-draft-conflict` and the open revision is unchanged | PE6, PR5 |
+| B2#24 | When a row has no `sense_id` and the matching sense has an open revision created through the API, then the row is rejected with `open-draft-conflict` and that revision is unchanged; when the open revision was created by a CSV upload, then the row creates a newer draft revision | PE6, PR5 (Chờ bạn) |
 | B2#25 | When two rows of one file share a content key, then the first is applied and the later one is rejected with `duplicate-key-in-file` | PE2 |
 | B2#26 | When a content cell is blank on a row that updates an existing sense, then the existing value is kept; when a list cell (`topics`, `accepted_forms`, or any `example_en_*`) has a value, then the whole list is replaced by the given values | PR5 (`ASSUMPTION`) |
 | B2#27 | When a cell is longer than 2,000 characters, then the row is rejected with `cell-too-long` | PE10 |
@@ -390,20 +409,21 @@ trước khi có số đo.
 | B2#37 | When a worker stops sending its heartbeat, then another worker takes the batch only after the lease expires, and the first worker's next row transaction is cancelled because its `lease_epoch` no longer matches | P28, PE5, PR12 |
 | B2#38 | When Redis loses its data while a batch is `queued` or `running`, then the reconciler adds the job again from the database and the batch finishes without duplicates | PE4, PR12 |
 | B2#39 | When a second upload for the same level source is accepted while a batch for that source is running, then it waits and starts after the first | P21, PR13 |
-| B2#40 | When a batch is reverted, then the unpublished records it created are deleted together with its row keys, entries or levels still used by another batch are kept, published records are untouched, and the report lists what was skipped and why | P18, PR16 |
+| B2#40 | When a batch is reverted, then the unpublished records it created are deleted together with its row keys, entries or levels still used by another batch are kept, published records are untouched, a level that is the only level of an entry with a published sense is kept, and the report lists what was skipped and why | P18, PR16, CR5 |
+| B2#40a | When a reverted batch had replaced an open draft revision with its own revision, and that batch revision is still the latest and unpublished, then the batch revision is deleted and the replaced revision returns to its earlier status | PR16 (`ASSUMPTION`) |
 | B2#41 | When a reverted file is uploaded again, then its entries and level records are created again | P26 |
 | B2#42 | When a revert is requested for a batch that is `queued`, `running` or already `reverted`, then it is refused with 409 `batch-not-revertable` | PR16 |
 | B2#43 | When a sense whose entry has a level, and whose revision has a Vietnamese gloss, at least one English example and a topic, is published, then it is visible in learner search and browse | C1, CR5 |
 | B2#44 | When a publish request names a sense that lacks any of those four items, then it is refused with the list of missing items and the sense stays unpublished | C2, CR5 |
 | B2#45 | When ten selected senses are published and three lack a required item, then seven are published and three are refused with their reasons, each item independently | P16, PR7 |
-| B2#46 | When a publish item names a `revision` that is not the sense's latest open revision, then that item alone is refused as stale | PR15, Content Defense Analysis |
+| B2#46 | When a publish item names a `revision` that is not the sense's latest revision, then that item alone is refused as stale; an unpublished sense with no open revision is published again by naming its latest revision | PR15, Content Defense Analysis |
 | B2#47 | When a revision is published directly from `draft` without being marked `reviewed`, then it is accepted | CR4 (`ASSUMPTION`) |
 | B2#48 | When a published sense is edited through the API, then a draft revision with the next number and the same sense id is created, the live content does not change, and the previous open revision becomes `superseded`; when a quick publish is requested, then edit and publish happen atomically and both `content.edit` and `content.publish` are required | C11, CR17 |
 | B2#49 | When a sense is unpublished or retired, then it no longer appears in learner search, browse or detail, and an unpublished sense can be published again | C3, CR17 |
 | B2#50 | When the owner adds an editorial level to an entry, then the imported level rows are unchanged, the editorial record names the owner source and basis, and the displayed level becomes the editorial one | C19, P23 |
 | B2#51 | When the function-word override of an entry is set, then browse with `exclude_function_words=true` follows the new value and default browse still returns the entry with its flag | C4, C6, CR12 |
 | B2#52 | When the owner pastes five lines of lemma and part of speech, then for each line an entry and an empty draft sense are created as needed, a word that already has a sense is reported with its link and not duplicated, and a lemma that differs from an existing one only by letter case gets a warning | P15, PR6 |
-| B2#53 | When selected senses, including published ones, are exported and the file is uploaded unchanged, then every row is `unchanged` | PR15, D8 |
+| B2#53 | When selected senses, including published ones, are exported and the file is uploaded unchanged, then no level source is needed and every row is `unchanged` | PR15, D8 |
 | B2#54 | When an exported cell starts with `=`, `+`, `-` or `@`, then it is prefixed so a spreadsheet does not run it, and on upload the prefix is removed before comparison so the round trip changes no content | P22, PR15 |
 | B2#55 | When a row of the export carries a `revision` older than the sense's latest when uploaded again, then it is rejected as a conflict; when an export would exceed 5,000 rows, then it is refused with 400 `export-too-large` | P14, PR15 |
 | B2#56 | When senses that cannot yet be published are exported with `status=unpublishable`, then each row has `_missing` naming the missing items together with `sense_id` and `revision`, and uploading the filled file creates draft revisions | D4 |
@@ -443,10 +463,10 @@ trước khi có số đo.
 | B2E14 | Redis is down when the owner uploads | The batch is stored `queued` and 202 is returned; the reconciler adds the job when Redis is back | PR12 |
 | B2E15 | Redis has an eviction policy other than `noeviction` | BullMQ logs a warning at connection; the system keeps running and the reconciler repairs lost jobs | BullMQ source (verified 12/10) |
 | B2E16 | The stored upload file is purged after 30 days | The batch, counts and rejected-rows CSV remain; re-running the batch is not possible and the owner uploads the file again | D4 (`ASSUMPTION`) |
-| B2E17 | The owner edited a batch-created sense through the API, then reverts the batch | The sense and its revisions are kept and reported as "edited after import"; the batch's level records and row keys are still removed when safe | PR16 (`ASSUMPTION`) |
-| B2E18 | The owner reverts a batch whose sense was published | The published sense and its entry are kept and reported; only unpublished records are removed | P18 |
+| B2E17 | The owner edited a batch-created sense through the API, then reverts the batch | The sense and its later revisions are kept and reported as "edited after import"; the batch's other records and its row keys are still removed when safe | PR16 (`ASSUMPTION`) |
+| B2E18 | The owner reverts a batch whose sense was published | The published sense, its entry and the entry's only level are kept and reported; only unpublished records are removed | P18, CR5 |
 | B2E19 | The last published sense of an entry is retired | The entry stays; search returns nothing for it until another sense is published | CR17 |
-| B2E20 | A topic is archived while published senses use it | Those senses keep and show it; new revisions cannot name it (`topic-archived`) | CR9 (`ASSUMPTION`) |
+| B2E20 | A topic is archived while published senses use it | Those senses keep and show it; a row cannot name it (`topic-archived`); a new revision that inherits topics drops it with a warning | CR9 (`ASSUMPTION`) |
 | B2E21 | A search query is `%`, `_`, `\`, only spaces, or 101 characters | Wildcards match literally; empty or over-long queries return 400; a query matching only unpublished senses returns an empty list, not 404 | CR11 |
 | B2E22 | A learner reuses a `page_token` after changing `q` | 400, because the token is bound to its query | S3 (`ASSUMPTION`) |
 | B2E23 | An entry has two parts of speech, both published | Search returns both senses as separate results | CR1 |
@@ -458,7 +478,10 @@ trước khi có số đo.
 | B2E29 | Browse is requested while a batch writes new drafts | Only published senses are visible; READ COMMITTED gives no cross-request snapshot guarantee | PR8 |
 | B2E30 | A context label is whitespace only | Normalized to null (the main sense) | CR6 |
 | B2E31 | The idempotency row of an upload request is left `in_progress` (orphaned) | 409 `idempotency-key-abandoned`; the client uploads again with a new key | Bước 0 (chốt 07/10) |
-| B2E32 | A sense has `replaces_sense_id` and the new sense is rejected | The old sense is unchanged and stays published | CR17 |
+| B2E32 | The revision of a waiting replacement sense is rejected | The replacement sense becomes `retired` without ever being published, the old sense is unchanged and stays published, and a later replacement can be created | CR17 (`ASSUMPTION`) |
+| B2E33 | The owner saves the file in Excel as plain "CSV" (Windows code page) instead of "CSV UTF-8" | Refused as invalid UTF-8 with a message telling how to save as CSV UTF-8 | PE1 (`ASSUMPTION` about Excel) |
+| B2E34 | A file goes through Excel and headwords start with an apostrophe (`'m`, `'re`, `'s`) | Excel may drop the leading apostrophe; a changed headword is a different key and creates a new entry. Must be tried once on the owner's machine | `ASSUMPTION` |
+| B2E35 | A sense was edited through the API (open revision from `ui`) and the owner uploads an Excel file without `sense_id` touching it | The row is rejected with `open-draft-conflict`, so the manual edit is never overwritten | PE6 |
 
 ## 15. Chỗ lệch spec — sửa spec sau khi duyệt design này
 
@@ -487,12 +510,15 @@ kênh cảnh báo ngoài log; CSV có số phiên bản; nhiều ngôn ngữ gi�
 2. **BullMQ có backend Postgres.** Đọc code `bullmq` 6.3.12: thư mục `postgres/` có `createPostgresBackend` (kèm `setDefaultBackendFactory`), Postgres tối thiểu 13; README
    không nhắc, và bản 6.3.12 (09/10/2026) có một bản vá cho phần này, nên có thể còn mới; mình chưa chạy thử. Nếu dùng, Bước 2 **không cần Redis**
    (bỏ dịch vụ Redis, `@testcontainers/redis`, `REDIS_URL`), phần còn lại của design giữ nguyên vì chỉ dùng API `Queue`/`Worker`, và DB vẫn là nguồn sự thật. Bạn đã chốt Redis (D6);
-   đây là thông tin mới để bạn xác nhận giữ Redis hay đổi.
+   đây là thông tin mới để bạn xác nhận giữ Redis hay đổi. Plan M2 chỉ an toàn nếu không đổi giữa chừng.
+3. **Luật xung đột khi upload lại trong lúc soạn** (mục 5, B2#19, B2#24): đề xuất CSV được ghi đè revision mở do CSV tạo (chỉ chặn bản sửa
+   tay qua API), và `gloss-changed` chỉ áp cho sense đã từng publish. Lệch PE6 và P25 của spec, vì hai luật đó đúng chữ thì chặn vòng sửa
+   trong Excel trước khi publish.
 
 **Rủi ro mình thấy:**
 - Redis là dịch vụ mới phải vận hành (cấu hình `noeviction`, lưu bền); lý do dùng BullMQ yếu đi từ K1b (Pipeline Defense Analysis); điều kiện xét lại ghi ở spec.
 - Chưa đo thời gian nhập 7.799 dòng với mỗi dòng một giao dịch (B2#71); số lease, nhịp tim, reconciler là ASSUMPTION.
-- Dấu phân cách `;` của Excel tiếng Việt là ASSUMPTION; Excel là công cụ chính của chủ dự án nên cần thử một lần trên máy thật.
+- Hành vi của Excel là ASSUMPTION: dấu phân cách `;` với thiết lập tiếng Việt, bảng mã khi lưu "CSV" thường, và việc mất dấu `'` ở đầu ô (`'m`, `'re`, `'s`). Excel là công cụ chính của chủ dự án nên cần thử một lần trên máy thật trước M2.
 - `csv-parse`, `ioredis`, `@nestjs/bullmq`, multer chưa được thử chạy cùng Nest 12 và Node 24 trong repo; plan kiểm trước khi viết code.
 - Hàng đợi concurrency 1 nghĩa là một file lớn làm các upload khác chờ; chấp nhận ở pilot (một đến vài nhân sự).
 - Cách cài tìm kiếm (chỉ mục) chưa đo; ~9.800 entry nên quét tuần tự vẫn nhỏ (ASSUMPTION).
