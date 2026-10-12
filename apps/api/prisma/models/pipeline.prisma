@@ -1,0 +1,95 @@
+model BackgroundJob {
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  queue          String
+  status         String    @default("queued")
+  exclusiveKey   String?   @map("exclusive_key")
+  attempts       Int       @default(0)
+  leaseOwner     String?   @map("lease_owner")
+  leaseEpoch     Int       @default(0) @map("lease_epoch")
+  leaseExpiresAt DateTime? @map("lease_expires_at") @db.Timestamptz
+  createdBy      String    @map("created_by") @db.Uuid
+  operationId    String    @map("operation_id") @db.Uuid
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  startedAt      DateTime? @map("started_at") @db.Timestamptz
+  finishedAt     DateTime? @map("finished_at") @db.Timestamptz
+  errorSummary   String?   @map("error_summary")
+
+  importBatch ImportBatch?
+
+  // The exclusive_key uniqueness is partial (WHERE status = 'running') so it stays hand-written in
+  // the migration; this index is a plain (non-partial) one, so Prisma can own and diff it normally.
+  @@index([queue, status, leaseExpiresAt])
+  @@map("background_jobs")
+}
+
+model ImportBatch {
+  // The batch uses its background job's primary key; it has no independently generated id.
+  id            String    @id @db.Uuid
+  levelSourceId String?   @map("level_source_id") @db.Uuid
+  fileName      String    @map("file_name")
+  fileSha256    String    @map("file_sha256")
+  fileSize      Int       @map("file_size")
+  rowCount      Int       @map("row_count")
+  rawHeaders    Json      @map("raw_headers")
+  warnings      Json
+  counters      Json
+  revertedAt    DateTime? @map("reverted_at") @db.Timestamptz
+  revertReport  Json?     @map("revert_report")
+
+  job      BackgroundJob      @relation(fields: [id], references: [id], onDelete: Cascade)
+  file     ImportBatchFile?
+  outcomes ImportRowOutcome[]
+  keys     ImportRowKey[]
+  records  BatchRecord[]
+
+  @@map("import_batches")
+}
+
+model ImportBatchFile {
+  batchId String @id @map("batch_id") @db.Uuid
+  content Bytes
+
+  batch ImportBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+
+  @@map("import_batch_files")
+}
+
+model ImportRowOutcome {
+  batchId    String   @map("batch_id") @db.Uuid
+  rowNumber  Int      @map("row_number")
+  outcome    String
+  errorCodes String[] @default([]) @map("error_codes")
+  // Only rejected rows store raw cells: an ordered array aligned with ImportBatch.rawHeaders.
+  raw        Json?
+
+  batch ImportBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+
+  @@id([batchId, rowNumber])
+  @@map("import_row_outcomes")
+}
+
+model ImportRowKey {
+  kind        String
+  sourceId    String @map("source_id") @db.Uuid
+  rowKey      String @map("row_key")
+  contentHash String @map("content_hash")
+  batchId     String @map("batch_id") @db.Uuid
+
+  batch ImportBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+
+  @@unique([kind, sourceId, rowKey, contentHash])
+  @@map("import_row_keys")
+}
+
+model BatchRecord {
+  batchId    String @map("batch_id") @db.Uuid
+  recordType String @map("record_type")
+  recordId   String @map("record_id") @db.Uuid
+  // Revision records may hold the superseded revision's id as replacedRevisionId.
+  meta       Json?
+
+  batch ImportBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+
+  @@unique([batchId, recordType, recordId])
+  @@map("batch_records")
+}
