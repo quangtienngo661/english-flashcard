@@ -98,7 +98,7 @@ Goal: experimental versions never reach `main`; `main` only receives work that p
 
 ## Architecture & Key Decisions (accepted, `docs/specs/system-spec.md`)
 
-Bước 0 and Bước 1 are implemented (see the as-built sections below). Steps 2–8 are still
+Bước 0, 1 and 2 are implemented (see `docs/deliveries/`). Steps 3–8 are still
 decided-but-not-scaffolded:
 
 - Backend: **NestJS modular monolith + PostgreSQL**. 7 V1 modules, each owning its own write path:
@@ -136,133 +136,19 @@ Still open and explicitly **not** blocking Step 0 (HANDOFF §6): AI quota struct
 step 5); external dictionary provider (K20); inflected-form/lemma data source (CR16, PRC7); personal-Gmail
 SMTP viability; all capacity/cost numbers are estimates.
 
-## Bước 0 — as-built (resolved 05–06/10/2026)
+## Bước 0 — as-built
 
-All 4 open questions from `docs/HANDOFF_2026-10-05_BUOC_0.md` §5 are chốt and implemented:
+Moved to `docs/deliveries/buoc-0.md` (resolved 05–06/10/2026; 5 unit + 24 e2e tests).
 
-1. **Repo layout:** single repo, pnpm workspace (`apps/api` only so far; `apps/web` and `apps/mobile` not
-   yet created). No Nx/Turborepo. `git init` done.
-2. **ORM / DB access:** **Prisma ORM, pinned `7.10.0`** (`apps/api/prisma/schema.prisma`,
-   `apps/api/prisma.config.ts`, `@prisma/adapter-pg`). Originally built on Drizzle (pinned `0.45.3`,
-   still intact on `feat/buoc-0-backend-foundation`), migrated to Prisma on `feat/migrate-drizzle-to-prisma`
-   once the row-locking mechanism changed to `pg_try_advisory_xact_lock` (a plain function call Prisma's
-   TypedSQL handles fine — see the design doc's §2.2 correction note and
-   `docs/superpowers/plans/2026-10-06-migrate-drizzle-to-prisma.md`).
-3. **Test strategy:** Vitest + ESM (current NestJS CLI default, not Jest), real Postgres via
-   `@testcontainers/postgresql` — no mocks.
-4. **Step 0 / Step 1 boundary:** `RequestUser` seam implemented
-   (`apps/api/src/common/request-user/fake-request-user.middleware.ts`) — test-only, never wired into the
-   real `AppModule` (verified repeatedly; this is the B0E6 isolation guarantee).
+## Bước 1 — as-built
 
-Implemented and tested: Problem Details (RFC 9457), opaque `page_token` pagination, `Idempotency-Key` via
-`runIdempotent()` (advisory-lock based, see `apps/api/src/common/idempotency/idempotency.service.ts`),
-`operation_id` + redacting logger, per-user atomic rate limiting, a sample endpoint exercising all of the
-above end-to-end. Current state: 5 unit + 24 e2e tests passing on `feat/migrate-drizzle-to-prisma`.
+Moved to `docs/deliveries/buoc-1.md` (07/10/2026; 339 unit + 182 e2e tests; includes the "Open decisions"
+notes from that session).
 
-## Bước 1 — as-built (07/10/2026)
+## Bước 2 — plan & as-built
 
-Design `docs/superpowers/specs/2026-10-07-buoc-1-identity-core-design.md` (D1–D16, criteria `B1#1–B1#38`,
-edge cases `B1E1–B1E34`), decisions `docs/superpowers/decisions/2026-10-07-buoc-1-identity-core-decisions.md`,
-plan `docs/superpowers/plans/2026-10-07-buoc-1-identity-core.md` (14 tasks), reviews in
-`docs/superpowers/reviews/`. Implemented on `feat/buoc-1-identity-impl`:
-
-- `src/common/`: `CommonModule` (global) with `AppConfig`/`loadConfig` (zod, fail-fast), `Clock`/`FakeClock`,
-  `AppLogger` (levels, redaction, `operation_id` via AsyncLocalStorage), named-rule `RateLimiter` (fixes the
-  Bước 0 shared-counter bug), Problem Details for body-parser errors (400/413/415), `MaintenanceScheduler`
-  (hourly cleanup jobs). `configureApp()` is shared by `main.ts` and every e2e test.
-- `src/identity/`: register/login with lockout, OTP (verify email, reset password, 24 h lock after 20
-  failures), rotating refresh-token session chains (10 s grace, reuse detection, 90/365 d expiry, 10 active
-  devices), web cookie + CSRF header, password change/reset, profile + `IdentityService` (the only export),
-  staff roles `admin`/`editor` with `@RequirePermission`, `pnpm admin:grant <email>` (needs `pnpm build`).
-  Every security write runs under a per-user advisory lock and commits before the HTTP error (design §4b);
-  mail is sent after commit and after the response closes.
-- Tests: 339 unit + 182 e2e (real Postgres + Mailpit via Testcontainers); suites that depend on global state
-  use `createIsolatedDatabase()`. A manual run against the built API (register → OTP from Mailpit → verify
-  → refresh → password change → logout → admin:grant → admin endpoint) passed on 07/10.
-- Execution: Codex `gpt-6.1-sol` implemented, `gpt-6-astra` (medium effort) reviewed each task; Tasks 13–14
-  were self-reviewed by Claude while Codex was over its usage limit (no independent review for those two).
-
-Graceful shutdown (`enableShutdownHooks`) drains pending mail. Merged via PR #4 after CI.
-
-Bước 1 open items: all rate-limit/lockout/budget numbers are `ASSUMPTION` (configurable); same-user lock
-contention can exhaust the 10-connection pool (accepted at pilot scale); Gmail-personal SMTP limits still
-unsourced; `otp_failure_windows` and `mail_budget_buckets` are never cleaned (grow slowly).
-
-### Open decisions for the next session (read before doing anything else)
-
-Bước 0 and Bước 1 are merged (PR #1–#5). The module-boundary convention is chốt as D3 (see Architecture & Key
-Decisions above). The Bước 1 spec deviations (design §11) were applied to `docs/specs/` on 07/10 — look for
-"Sửa 07/10/2026 theo Bước 1".
-
-1. **Chốt by the owner (07/10/2026):** B0E1 — an orphaned `in_progress` idempotency row returns 409
-   `idempotency-key-abandoned` and the client starts over with a new key (it is not re-run). Note: a real
-   crash rolls the row back with the handler's transaction, so a retry after a crash simply runs fresh.
-   `Idempotency-Key` stays mandatory on `@Idempotent()` endpoints (400 if missing) with the 30 s default timeout.
-2. *(resolved, see 1)*
-3. **Prisma pinned to `7.10.0`** (exact, no `^`) because the npm `latest` tag currently points at a `8.0.0-rc`
-   prerelease — re-check when Prisma 8 reaches a real stable release.
-
-## Bước 2 — as-built (12–13/10/2026)
-
-Design `docs/superpowers/specs/2026-10-12-buoc-2-content-pipeline-design.md` (D1–D20, criteria `B2#1–B2#71`,
-edge cases `B2E1–B2E18`), decisions `docs/superpowers/decisions/2026-10-12-buoc-2-content-pipeline-decisions.md`,
-plan `docs/superpowers/plans/2026-10-12-buoc-2-content-pipeline.md` (24 tasks across M1/M2/M3). Implemented on
-`feat/buoc-2-m2-pipeline` (M1+M2, tasks 1–20) and `feat/buoc-2-m3-finish` (M3, tasks 21–24, cut from M2's tip
-since `dev` did not yet have M2 merged — see "Open items" below).
-
-- `src/content/`: catalog (`Entry`/`EntryVariant`/`EntryLevel`/`Sense`/`SenseRevision`), entry/variant/level
-  write path, sense authoring and publish/unpublish/retire/quick-publish, staff reads with keyset pagination,
-  learner search/browse/detail, CSV export (`GET .../senses/export`, RFC 4180 + formula-guard round trip),
-  batch revert (`POST .../uploads/:id/revert`). Only `src/content/**` touches these tables (D3); other modules
-  call `ContentService`, the module's one export.
-- `src/content-pipeline/`: one shared background-job framework (`background_jobs` + `lease_epoch` + reconciler,
-  D14) under two real handlers — `ImportBatchHandler` (`content-import`, CSV upload → entries/levels/senses,
-  with a prefilter so an unchanged re-upload opens no row transactions) and `PublishJobHandler`
-  (`content-publish`, bulk publish by filter, `POST .../senses/publish-jobs`). `BatchScopeModule` (`@Global()`,
-  own module so `ContentModule` can inject `BATCH_SCOPE` without importing Pipeline) resolves a batch's own
-  entries/senses from `batch_records` for the `batch_id` filter on every list/export/publish-job endpoint.
-- Tests: 575 unit + 457 e2e (real Postgres + Redis + Mailpit via Testcontainers; up from Bước 1's 339 unit +
-  182 e2e). `test/pipeline/real-files.e2e-spec.ts` imports the real CEFR-J 1.5 and Octanove 1.0 word lists to
-  the exact predicted counts (B2#70); manually verified against the real built API + a separate worker
-  process end to end: register a source → upload the real CEFR-J file → kill the worker mid-batch → restart
-  it → batch finishes correctly with no duplicates; a second walkthrough covered the rest of the surface —
-  small CSV with a deliberately invalid row → report → download `rejected.csv` → fix → re-upload → export the
-  unpublishable list → fill the gaps → re-upload → publish one item by explicit list, another by publish-job
-  filter → search as a learner with `native_language` set, meaning and topic names rendered in Vietnamese.
-- **B2#71 measured 13/10/2026** (isolated run): importing the real 7,799-row CEFR-J file takes 130,757 ms,
-  17,508 `pg_stat_database.xact_commit` transactions, 493.4 MB peak RSS; the unchanged re-import (prefilter
-  working) takes 1,044 ms, 103 transactions, 541.5 MB peak RSS. The same import under full e2e-suite
-  contention (40+ concurrent Testcontainers files) takes roughly double — this is host contention, not a
-  regression, and is why several e2e tests carry generous (not tight) timeout budgets with the reasoning
-  recorded in their own comments.
-- **Real production bug found and fixed (13/10/2026, during Task 23):** `JobRunnerService` gave every BullMQ
-  `Worker` the same `ioredis` connection; a BullMQ Worker needs its own dedicated connection for its blocking
-  reads, so sharing one silently starves every worker after the first (no error, no log — it just never
-  receives a job). This was present since the job framework was first written but never exercised with two
-  real handlers contending for it until Task 23 added the second one (`content-publish`). Fixed by giving
-  each Worker its own connection.
-- Execution: Codex `gpt-6.1-sol` implemented each task from a detailed per-task prompt; Claude self-reviewed
-  every diff and verified for real against Docker Postgres/Redis before committing (no second Codex reviewer
-  this round — see `feedback_codex_review_workflow` in Claude's own memory). Caught and fixed, beyond what
-  Codex's own sandbox could verify (no Docker access): the shared-Redis-connection bug above, a route-ordering
-  conflict between `GET senses/export` and `GET senses/:id` across modules (fixed by constraining `:id`'s own
-  path pattern to a literal UUID hyphen shape, since the installed Express adapter rejects inline param
-  regexes), and several pre-existing tests whose exact-shape assertions needed updating once new fields
-  (`errorMessages`, `replacedRevisionPreviousStatus`) were added to already-existing JSON columns.
-
-Bước 2 open items: all lease/heartbeat/reconciler-interval numbers (60 s/20 s/30 s) stay `ASSUMPTION`; Excel's
-own CSV behaviour (`;` separator under a Vietnamese locale, encoding, a lost leading `'`) is untested on a
-real Excel install; CEFR-J 1.6 was never checked for (still only 1.5 in the repo); search has no index yet
-(sequential scan accepted at ~9,800 entries); `entitlements.grant` vs. "editor không đụng chi phí AI" (D6) is
-unresolved, deferred to Bước 5.
-
-### Open items for the next session
-
-PR #15 (`feat/buoc-2-m2-pipeline` → `dev`, carrying M1+M2 since M1 was never separately merged) is open with
-CI green, awaiting the owner's merge. `feat/buoc-2-m3-finish` was cut from M2's own tip rather than from `dev`
-(which does not have M2 yet) — once PR #15 merges, confirm `dev`'s new tip is identical to M2's and open M3's
-own PR from `feat/buoc-2-m3-finish` into `dev` the normal way. **Next: Bước 3 (Learning)** per the fixed build
-order (HANDOFF §2) — the earliest pilot milestone.
+Moved to `docs/deliveries/buoc-2.md` (plan tóm tắt 12/10/2026; as-built 12–13/10/2026; 575 unit + 457 e2e
+tests; PR #15 open → `dev`, M3 awaiting that merge).
 
 ## Việc phải phân tích khi tới bước tương ứng (ghi 12/10/2026, từ brainstorm Bước 2)
 
@@ -349,6 +235,8 @@ for a concrete example of the loop catching real bugs each round.
 
 ## Other Notes
 
+- As-built delivery records per Bước: `docs/deliveries/buoc-0.md`, `docs/deliveries/buoc-1.md`,
+  `docs/deliveries/buoc-2.md` (includes its plan tóm tắt too).
 - Spec index and status: `docs/specs/README.md`.
 - Spec/design-doc writing convention (edge cases must be derived per-doc, not just cited): `docs/specs/SPEC_WRITING_CONVENTIONS.md`.
 - Full project context, product decisions, and evidence log: `docs/preparation/PROJECT_CONTEXT.md`.
