@@ -72,7 +72,8 @@ export class ImportRowProcessor {
             // Include revision 1 too: revert removes revisions before deleting an empty sense.
             await recordBatchRecord(tx, { batchId: batch.id, recordType: 'revision', recordId: result.revisionId,
               ...(result.kind === 'new_revision' && result.supersededRevisionId !== null
-                ? { meta: { replacedRevisionId: result.supersededRevisionId } } : {}),
+                ? { meta: { replacedRevisionId: result.supersededRevisionId,
+                  replacedRevisionPreviousStatus: result.droppedReviewedMark ? 'reviewed' : 'draft' } } : {}),
             });
           }
         }

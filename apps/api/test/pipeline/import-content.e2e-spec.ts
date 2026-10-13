@@ -296,7 +296,8 @@ describe('CSV content import (e2e, isolated database)', () => {
     expect(after.revisions.map(({ status }) => status)).toEqual(['superseded', 'superseded', 'draft']);
     expect(await ctx.prisma.senseRevision.count({ where: { senseId: sense.id, status: { in: ['draft', 'reviewed'] } } })).toBe(1);
     expect(await ctx.prisma.batchRecord.findMany({ where: { batchId: upload.id } })).toEqual([
-      { batchId: upload.id, recordType: 'revision', recordId: after.revisions[2].id, meta: { replacedRevisionId: second.id } },
+      { batchId: upload.id, recordType: 'revision', recordId: after.revisions[2].id,
+        meta: { replacedRevisionId: second.id, replacedRevisionPreviousStatus: reviewed ? 'reviewed' : 'draft' } },
     ]);
   });
 

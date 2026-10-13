@@ -1,8 +1,10 @@
 import { Inject, Injectable } from '@nestjs/common';
-import type { Prisma } from '../generated/prisma/client.js';
+import { PRISMA_CLIENT } from '../common/db/prisma.module.js';
+import type { Prisma, PrismaClient } from '../generated/prisma/client.js';
 import { AdminCatalogQueries, type LatestRevision } from './catalog/admin-catalog.queries.js';
 import { EntriesService, type EnsureEntryInput, type EnsureEntryResult, type VariantInput } from './catalog/entries.service.js';
 import { LevelsService, type EntryLevelView, type ImportedLevelInput } from './catalog/levels.service.js';
+import { revertRecords, type RevertRecord, type RevertReport } from './catalog/revert.service.js';
 import type { Level } from './content.constants.js';
 import { SourcesService, isSourceComplete, type SourceView } from './sources/sources.service.js';
 import { SensesService, type CreateSenseInput, type SaveDraftInput, type SaveDraftResult, type MarkRevisionItem, type MarkRevisionResult } from './senses/senses.service.js';
@@ -12,6 +14,7 @@ import { PublishService, type PublishItem, type PublishItemResult, type QuickPub
 @Injectable()
 export class ContentService {
   constructor(
+    @Inject(PRISMA_CLIENT) private readonly prisma: PrismaClient,
     @Inject(SourcesService) private readonly sources: SourcesService,
     @Inject(EntriesService) private readonly entries: EntriesService,
     @Inject(LevelsService) private readonly levels: LevelsService,
@@ -70,6 +73,11 @@ export class ContentService {
 
   importContent(tx: Prisma.TransactionClient, input: ImportContentInput): Promise<ImportContentResult> {
     return importContent(tx, input, this.senses, (codes) => this.getTopics(tx, codes));
+  }
+
+  // Unlike other writes, revert owns one entry-key-locked transaction per entry, so it takes no tx.
+  revertRecords(records: RevertRecord[]): Promise<RevertReport> {
+    return revertRecords(this.prisma, this.entries, records);
   }
 
   markRevisions(tx: Prisma.TransactionClient, items: MarkRevisionItem[]): Promise<MarkRevisionResult[]> {

@@ -101,8 +101,10 @@ describe('real files, M2 gate (e2e, real worker and isolated database)', () => {
     // e2e-suite contention a slow first import must not starve a later import's own poll. 5 min
     // is measured, not guessed: a full-suite run on 13/10/2026 logged durationMs=259701 (~260s)
     // for the CEFR-J import alone (see rowTransactionsStarted/peakRssMb alongside it, printed
-    // below), so 150s was not enough margin.
-    const importTimeoutMs = 300_000;
+    // below), so 150s was not enough margin. Bumped again the same day once revert.e2e-spec.ts
+    // (Task 21) added its own real CEFR-J import+revert scenario, which now runs concurrently
+    // with this test in the full e2e suite and measurably timed out the Octanove import at 300s.
+    const importTimeoutMs = 480_000;
     const cefrSource = await ctx.prisma.dataSource.create({ data: {
       kind: 'third_party', name: 'CEFR-J', version: '1.5', displayPriority: 10, license: 'test license',
     } });
@@ -147,11 +149,11 @@ describe('real files, M2 gate (e2e, real worker and isolated database)', () => {
       entries_created: 0, variants_created: 0, levels_created: 0, senses_created: 0, revisions_created: 0,
     });
     expect(await ctx.prisma.batchRecord.count({ where: { batchId: reimportBatch.id } })).toBe(0);
-    // 20 min, not the plan's 5: two full-suite runs on 13/10/2026 showed the shared 290s budget
+    // 30 min, not the plan's 5: full-suite runs on 13/10/2026 showed the shared 290s budget
     // starving the Octanove import after a slow CEFR-J import under full e2e-suite contention
-    // (42 files' worth of Testcontainers Postgres plus other local projects' own Docker stacks
-    // competing for the same host); a measured durationMs=259701 for CEFR-J alone under that
-    // contention is why importTimeoutMs is 5 min per import, so the outer ceiling needs headroom
-    // for three sequential imports at that size plus setup/assertions.
-  }, 1_200_000);
+    // (43 files' worth of Testcontainers Postgres plus other local projects' own Docker stacks
+    // competing for the same host, now including revert.e2e-spec.ts's own concurrent real CEFR-J
+    // import+revert); importTimeoutMs is 8 min per import for that reason, so the outer ceiling
+    // needs headroom for three sequential imports at that size plus setup/assertions.
+  }, 1_800_000);
 });
