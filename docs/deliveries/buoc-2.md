@@ -60,6 +60,8 @@ since `dev` did not yet have M2 merged — see "Open items" below).
   regexes), and several pre-existing tests whose exact-shape assertions needed updating once new fields
   (`errorMessages`, `replacedRevisionPreviousStatus`) were added to already-existing JSON columns.
 
+Test flow (automated gate, smoke test script, manual steps still worth eyeballing): `docs/deliveries/buoc-2-test-flow.md`.
+
 Bước 2 open items: all lease/heartbeat/reconciler-interval numbers (60 s/20 s/30 s) stay `ASSUMPTION`; Excel's
 own CSV behaviour (`;` separator under a Vietnamese locale, encoding, a lost leading `'`) is untested on a
 real Excel install; CEFR-J 1.6 was never checked for (still only 1.5 in the repo); search has no index yet

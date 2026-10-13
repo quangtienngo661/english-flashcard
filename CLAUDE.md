@@ -237,6 +237,7 @@ for a concrete example of the loop catching real bugs each round.
 
 - As-built delivery records per Bước: `docs/deliveries/buoc-0.md`, `docs/deliveries/buoc-1.md`,
   `docs/deliveries/buoc-2.md` (includes its plan tóm tắt too).
+- Bước 2 test flow (automated gate, `pnpm smoke:buoc-2`, manual steps): `docs/deliveries/buoc-2-test-flow.md`.
 - Spec index and status: `docs/specs/README.md`.
 - Spec/design-doc writing convention (edge cases must be derived per-doc, not just cited): `docs/specs/SPEC_WRITING_CONVENTIONS.md`.
 - Full project context, product decisions, and evidence log: `docs/preparation/PROJECT_CONTEXT.md`.
