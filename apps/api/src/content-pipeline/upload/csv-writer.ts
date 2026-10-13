@@ -5,5 +5,10 @@ export function csvCell(value: string): string {
 }
 
 export function toCsv(headers: string[], rows: string[][]): string {
-  return `\uFEFF${[headers, ...rows].map((cells) => cells.map(csvCell).join(',')).join('\r\n')}\r\n`;
+  return `\uFEFF${[headers, ...rows].map(csvRow).join('')}`;
+}
+
+/** One complete CRLF-terminated row, with no BOM; safe to join across stream chunks. */
+export function csvRow(cells: string[]): string {
+  return `${cells.map(csvCell).join(',')}\r\n`;
 }

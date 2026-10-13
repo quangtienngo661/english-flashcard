@@ -4,6 +4,8 @@ import { APP_CONFIG, type AppConfig } from '../common/config/app-config.js';
 import { IdempotencyInterceptor } from '../common/idempotency/idempotency.interceptor.js';
 import { ContentModule } from '../content/content.module.js';
 import { IdentityModule } from '../identity/identity.module.js';
+import { ExportService } from './export/export.service.js';
+import { SensesExportController } from './export/senses-export.controller.js';
 import { ImportBatchHandler } from './import/import-batch.handler.js';
 import { ImportFileCleanupService } from './import/import-file-cleanup.service.js';
 import { ImportRowProcessor } from './import/row-processor.js';
@@ -29,11 +31,12 @@ import { UploadsService } from './upload/uploads.service.js';
       }),
     }),
   ],
-  controllers: [UploadsController, UploadsReadController],
+  controllers: [UploadsController, UploadsReadController, SensesExportController],
   providers: [
     BackgroundJobsService, JobQueueService, JobHandlerRegistry, JobRunnerService, JobReconcilerService,
     UploadsService, MulterExceptionFilter, IdempotencyInterceptor,
     ImportRowProcessor, ImportBatchHandler, ImportFileCleanupService,
+    ExportService,
   ],
   exports: [BackgroundJobsService, JobQueueService, JobHandlerRegistry, JobRunnerService, JobReconcilerService],
 })

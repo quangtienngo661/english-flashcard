@@ -9,14 +9,19 @@ import { BATCH_SCOPE, type BatchScope } from '../batch-scope.port.js';
 import { LEVELS, VALID_POS, type Level } from '../content.constants.js';
 import { publishViolations } from '../senses/publish.service.js';
 import type { RevisionContent } from '../senses/revision-content.js';
+import type { SenseFilter } from './sense-filters.js';
 
 type PageQuery = { page_size: number; page_token?: string };
 export type EntryListQuery = PageQuery & { conflict?: boolean; has_sense?: boolean; level?: Level; q?: string; batch_id?: string };
-export type SenseListQuery = PageQuery & {
-  sense_id?: string[]; status?: 'unpublishable' | 'open_draft' | 'published';
-  level?: Level; pos?: string; topic?: string; batch_id?: string;
-};
+export type SenseListQuery = PageQuery & SenseFilter;
 export type LatestRevision = { revisionNo: number; status: string; content: RevisionContent };
+export type ExportRow = {
+  headword: string; pos: string; gloss_vi: string | null; definition_en: string | null;
+  example_en_1: string; example_en_2: string; example_en_3: string;
+  topics: string; accepted_forms: string; context_label: string | null;
+  sense_id: string; revision: number; _status: string; _level: Level | null; _missing?: string;
+};
+export type ScopeRecord = { type: 'entry' | 'variant' | 'level' | 'sense' | 'revision'; id: string };
 type Page<T> = { items: T[]; next_page_token: string | null };
 const cursorSchema = z.strictObject({
   lemma: z.string().refine((value) => !value.includes('\0') && [...value].length >= 1 && [...value].length <= 100),
@@ -35,7 +40,9 @@ const entryInclude = {
   variants: { orderBy: [{ text: 'asc' }, { id: 'asc' }] }, levels: levelsQuery,
   senses: { orderBy: { id: 'asc' }, include: { revisions: revisionsQuery } },
 } satisfies Prisma.EntryInclude;
-const senseInclude = { entry: { include: { levels: levelsQuery } }, revisions: revisionsQuery } satisfies Prisma.SenseInclude;
+const senseInclude = {
+  entry: { include: { levels: levelsQuery, variants: entryInclude.variants } }, revisions: revisionsQuery,
+} satisfies Prisma.SenseInclude;
 type EntryRow = Prisma.EntryGetPayload<{ include: typeof entryInclude }>;
 type SenseRow = Prisma.SenseGetPayload<{ include: typeof senseInclude }>;
 type RevisionRow = Prisma.SenseRevisionGetPayload<{ include: { texts: true } }>;
@@ -119,6 +126,21 @@ function senseView(sense: SenseRow) {
   };
 }
 
+function selectedSense(row: SenseRow, query: SenseFilter, activeTopics: Set<string>) {
+  const revision = row.revisions[0];
+  const view = senseView(row);
+  if (query.level !== undefined && view.displayed_level !== query.level) return null;
+  if (query.topic !== undefined && !revision?.topicCodes.includes(query.topic)) return null;
+  if (query.status === 'open_draft' || query.status === 'unpublishable') {
+    if (!revision || !['draft', 'reviewed'].includes(revision.status)) return null;
+    if (query.status === 'unpublishable') {
+      const missing = publishViolations(revision, row.entry.levels.length > 0, revision.topicCodes.some((code) => activeTopics.has(code)));
+      return missing.length ? { ...view, missing } : null;
+    }
+  }
+  return { ...view, missing: [] };
+}
+
 /** Scan keyset chunks so computed filters are applied before the limit and lookahead. */
 async function page<Row, View>(
   query: PageQuery, queryBinding: string,
@@ -188,11 +210,25 @@ export class AdminCatalogQueries {
   }
 
   async listSenses(query: SenseListQuery) {
-    const ids = await this.batchIds('senses', query.batch_id);
+    const { where, activeTopics } = await this.senseSelection(query);
     const queryBinding = binding('senses', {
       sense_id: query.sense_id ?? null, status: query.status ?? null, level: query.level ?? null,
       pos: query.pos ?? null, topic: query.topic ?? null, batch_id: query.batch_id ?? null,
     });
+    return page(query, queryBinding, (after, take) => this.prisma.sense.findMany({
+      where: { AND: [where, afterSense(after)] }, include: senseInclude,
+      orderBy: [{ entry: { lemma: 'asc' } }, { entry: { pos: 'asc' } }, { id: 'asc' }], take,
+    }), (row) => ({ lemma: row.entry.lemma, pos: row.entry.pos as Cursor['pos'], id: row.id }), (row) => {
+      const selected = selectedSense(row, query, activeTopics);
+      if (!selected) return null;
+      // Preserve the existing list interface: missing is present only for unpublishable.
+      const { missing, ...view } = selected;
+      return query.status === 'unpublishable' ? { ...view, missing } : view;
+    });
+  }
+
+  private async senseSelection(query: SenseFilter) {
+    const ids = await this.batchIds('senses', query.batch_id);
     const activeTopics = query.status === 'unpublishable'
       ? new Set((await this.prisma.topic.findMany({ where: { archivedAt: null }, select: { code: true } })).map(({ code }) => code))
       : new Set<string>();
@@ -210,23 +246,67 @@ export class AdminCatalogQueries {
         state: { not: 'retired' }, revisions: { some: { status: { in: ['draft', 'reviewed'] } } },
       } : {}),
     };
-    return page(query, queryBinding, (after, take) => this.prisma.sense.findMany({
-      where: { AND: [where, afterSense(after)] }, include: senseInclude,
-      orderBy: [{ entry: { lemma: 'asc' } }, { entry: { pos: 'asc' } }, { id: 'asc' }], take,
-    }), (row) => ({ lemma: row.entry.lemma, pos: row.entry.pos as Cursor['pos'], id: row.id }), (row) => {
-      const revision = row.revisions[0];
-      const view = senseView(row);
-      if (query.level !== undefined && view.displayed_level !== query.level) return null;
-      if (query.topic !== undefined && !revision?.topicCodes.includes(query.topic)) return null;
-      if (query.status === 'open_draft' || query.status === 'unpublishable') {
-        if (!revision || !['draft', 'reviewed'].includes(revision.status)) return null;
-        if (query.status === 'unpublishable') {
-          const missing = publishViolations(revision, row.entry.levels.length > 0, revision.topicCodes.some((code) => activeTopics.has(code)));
-          return missing.length ? { ...view, missing } : null;
+    return { where, activeTopics };
+  }
+
+  /** Count the actual filtered rows, including computed level/readiness, before any CSV bytes.
+   * Only limit rows are retained, with keyset reads of 500 and an early limit+1 exit.
+   */
+  async exportSenses(filter: SenseFilter, limit: number): Promise<{ rows: ExportRow[] } | { tooMany: true }> {
+    const { where, activeTopics } = await this.senseSelection(filter);
+    const rows: ExportRow[] = [];
+    let after: Cursor | undefined;
+    while (true) {
+      const chunk = await this.prisma.sense.findMany({
+        where: { AND: [where, afterSense(after)] }, include: senseInclude,
+        orderBy: [{ entry: { lemma: 'asc' } }, { entry: { pos: 'asc' } }, { id: 'asc' }], take: 500,
+      });
+      for (const sense of chunk) {
+        const selected = selectedSense(sense, filter, activeTopics);
+        const revision = sense.revisions[0];
+        if (!selected || !revision) continue;
+        if (rows.length === limit) return { tooMany: true };
+        const content = readContent(revision);
+        rows.push({
+          headword: [sense.entry.lemma, ...sense.entry.variants.map(({ text }) => text)].join('/'),
+          pos: sense.entry.pos, gloss_vi: content.glossVi, definition_en: content.definitionEn,
+          example_en_1: content.examplesEn[0] ?? '', example_en_2: content.examplesEn[1] ?? '', example_en_3: content.examplesEn[2] ?? '',
+          topics: content.topicCodes.join(';'), accepted_forms: content.acceptedForms.join(';'),
+          context_label: sense.contextLabel, sense_id: sense.id, revision: revision.revisionNo,
+          _status: revision.status, _level: selected.displayed_level,
+          ...(filter.status === 'unpublishable' ? { _missing: selected.missing.join(';') } : {}),
+        });
+      }
+      if (chunk.length < 500) return { rows };
+      const last = chunk[chunk.length - 1];
+      after = { lemma: last.entry.lemma, pos: last.entry.pos as Cursor['pos'], id: last.id };
+    }
+  }
+
+  /** Pipeline passes record ids through the public facade; content-table FKs stay here.
+   * Mirror revert's bounded ownership resolution, skipping records already removed by revert.
+   */
+  async resolveBatchRecordOwners(records: ScopeRecord[]): Promise<{ entryIds: string[]; senseIds: string[] }> {
+    const entryIds = new Set<string>();
+    const senseIds = new Set<string>();
+    for (const type of ['entry', 'variant', 'level', 'sense', 'revision'] as const) {
+      const ids = [...new Set(records.filter((record) => record.type === type).map((record) => record.id))];
+      for (let offset = 0; offset < ids.length; offset += 1_000) {
+        const where = { id: { in: ids.slice(offset, offset + 1_000) } };
+        if (type === 'entry') {
+          for (const row of await this.prisma.entry.findMany({ where, select: { id: true } })) entryIds.add(row.id);
+        } else if (type === 'variant') {
+          for (const row of await this.prisma.entryVariant.findMany({ where, select: { entryId: true } })) entryIds.add(row.entryId);
+        } else if (type === 'level') {
+          for (const row of await this.prisma.entryLevel.findMany({ where, select: { entryId: true } })) entryIds.add(row.entryId);
+        } else if (type === 'sense') {
+          for (const row of await this.prisma.sense.findMany({ where, select: { id: true } })) senseIds.add(row.id);
+        } else {
+          for (const row of await this.prisma.senseRevision.findMany({ where, select: { senseId: true } })) senseIds.add(row.senseId);
         }
       }
-      return view;
-    });
+    }
+    return { entryIds: [...entryIds].sort(), senseIds: [...senseIds].sort() };
   }
 
   async getSense(id: string) {

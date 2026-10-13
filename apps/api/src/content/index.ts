@@ -4,6 +4,8 @@ export {
 } from './content.constants.js';
 export { ContentService } from './content.service.js';
 export { BATCH_SCOPE, type BatchScope } from './batch-scope.port.js';
+export { sensesExportQuery, type SenseFilter } from './catalog/sense-filters.js';
+export type { ExportRow, ScopeRecord } from './catalog/admin-catalog.queries.js';
 export { normalizeText, normalizeLemma, splitHeadword } from './catalog/normalize.js';
 export type { SourceView } from './sources/sources.service.js';
 export { ContentRuleError, contentHash, mergeContent, normalizeContent, type RevisionContent } from './senses/revision-content.js';

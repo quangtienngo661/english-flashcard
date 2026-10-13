@@ -340,7 +340,7 @@ describe('admin catalog reads (e2e, isolated database)', () => {
       ['entries', { q: ' ' }], ['entries', { q: 'x'.repeat(101) }], ['entries', { q: 'bad\0query' }],
       ['entries', { conflict: 'yes' }], ['entries', { has_sense: '0' }], ['entries', { level: 'D1' }],
       ['entries', { unknown: 'value' }], ['senses', { sense_id: 'bad-id' }], ['senses', { status: 'draft' }],
-      ['senses', { pos: 'vern' }], ['senses', { topic: 'bad\0topic' }], ['senses/bad-id', {}],
+      ['senses', { pos: 'vern' }], ['senses', { topic: 'bad\0topic' }],
       ['senses', { sense_id: selectionIds[0], page_token: selected.body.next_page_token }],
     ] as const) {
       const res = await get(path, query);
@@ -348,6 +348,9 @@ describe('admin catalog reads (e2e, isolated database)', () => {
       expect(res.body.type).toBe(problem('validation-failed'));
       expect(await catalog()).toEqual(before);
     }
+    // The UUID-shaped detail path excludes malformed ids at routing time.
+    expect((await get('senses/bad-id')).status).toBe(404);
+    expect(await catalog()).toEqual(before);
   });
 
   it('B2#62 (admin Unicode): valid 100-character lemmas paginate without counting surrogate pairs as extra characters', async () => {
@@ -366,13 +369,14 @@ describe('admin catalog reads (e2e, isolated database)', () => {
     }
   });
 
-  it('batch_id without a BatchScope provider returns 400 batch-filter-unavailable on both lists and persists nothing', async () => {
+  it('batch_id with the global BatchScope provider returns empty lists for an unknown batch and persists nothing', async () => {
     await sense('batch-bank');
     const before = await catalog();
     for (const path of ['entries', 'senses']) {
       const res = await get(path, { batch_id: randomUUID() });
-      expect(res.status).toBe(400);
-      expect(res.body.type).toBe(problem('batch-filter-unavailable'));
+      expect(res.status).toBe(200);
+      expect(res.body.items).toEqual([]);
+      expect(res.body.next_page_token).toBeNull();
       expect(await catalog()).toEqual(before);
     }
   });
