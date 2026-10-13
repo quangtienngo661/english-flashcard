@@ -105,6 +105,11 @@ export class ContentService {
     return this.queries.latestRevisions(senseIds);
   }
 
+  snapshotPublishable(filter: { senseIds?: string[]; level?: Level; topic?: string; pos?: string }):
+    Promise<{ items: Array<{ senseId: string; revisionNo: number }>; notReady: number }> {
+    return this.queries.snapshotPublishable(filter);
+  }
+
   listExportRows(filter: SenseFilter, limit: number): Promise<{ rows: ExportRow[] } | { tooMany: true }> {
     return this.queries.exportSenses(filter, limit);
   }

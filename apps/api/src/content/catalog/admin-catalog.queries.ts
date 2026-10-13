@@ -126,7 +126,7 @@ function senseView(sense: SenseRow) {
   };
 }
 
-function selectedSense(row: SenseRow, query: SenseFilter, activeTopics: Set<string>) {
+function selectedSense(row: SenseRow, query: Pick<SenseFilter, 'level' | 'topic' | 'status'>, activeTopics: Set<string>) {
   const revision = row.revisions[0];
   const view = senseView(row);
   if (query.level !== undefined && view.displayed_level !== query.level) return null;
@@ -227,10 +227,10 @@ export class AdminCatalogQueries {
     });
   }
 
-  private async senseSelection(query: SenseFilter) {
+  private async senseSelection(query: Omit<SenseFilter, 'pos'> & { pos?: string }, db: Prisma.TransactionClient = this.prisma) {
     const ids = await this.batchIds('senses', query.batch_id);
     const activeTopics = query.status === 'unpublishable'
-      ? new Set((await this.prisma.topic.findMany({ where: { archivedAt: null }, select: { code: true } })).map(({ code }) => code))
+      ? new Set((await db.topic.findMany({ where: { archivedAt: null }, select: { code: true } })).map(({ code }) => code))
       : new Set<string>();
     const where: Prisma.SenseWhereInput = {
       entry: { ...catalogWhere, ...(query.pos !== undefined ? { pos: query.pos } : {}),
@@ -247,6 +247,34 @@ export class AdminCatalogQueries {
       } : {}),
     };
     return { where, activeTopics };
+  }
+
+  /** The inverse of unpublishable over the same latest open-revision/filter selection.
+   * This unpaged snapshot has no synchronous-publish or export row limit.
+   */
+  async snapshotPublishable(filter: { senseIds?: string[]; level?: Level; topic?: string; pos?: string }):
+    Promise<{ items: Array<{ senseId: string; revisionNo: number }>; notReady: number }> {
+    const query = { sense_id: filter.senseIds, level: filter.level, topic: filter.topic, pos: filter.pos,
+      status: 'unpublishable' as const };
+    // Keep active topics, latest revisions and levels in one database snapshot even when
+    // staff edit the catalog concurrently. Subsequent changes become per-item refusals.
+    return this.prisma.$transaction(async (tx) => {
+      const { where, activeTopics } = await this.senseSelection(query, tx);
+      const candidates = await tx.sense.findMany({ where, include: senseInclude, orderBy: { id: 'asc' } });
+      const items: Array<{ senseId: string; revisionNo: number }> = [];
+      let notReady = 0;
+      for (const sense of candidates) {
+        // open_draft applies latest revision, displayed level and latest topic checks without
+        // excluding ready senses. Readiness itself uses the exact unpublishable violation helper.
+        if (!selectedSense(sense, { ...query, status: 'open_draft' }, activeTopics)) continue;
+        const revision = sense.revisions[0];
+        const violations = publishViolations(revision, sense.entry.levels.length > 0,
+          revision.topicCodes.some((code) => activeTopics.has(code)));
+        if (violations.length) notReady++;
+        else items.push({ senseId: sense.id, revisionNo: revision.revisionNo });
+      }
+      return { items, notReady };
+    }, { isolationLevel: 'RepeatableRead', timeout: 30_000, maxWait: 5_000 });
   }
 
   /** Count the actual filtered rows, including computed level/readiness, before any CSV bytes.

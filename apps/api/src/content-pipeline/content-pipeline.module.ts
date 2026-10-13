@@ -14,6 +14,8 @@ import { JobHandlerRegistry } from './jobs/job-handler.registry.js';
 import { JobQueueService } from './jobs/job-queue.service.js';
 import { JobReconcilerService } from './jobs/job-reconciler.service.js';
 import { JobRunnerService } from './jobs/job-runner.service.js';
+import { PublishJobHandler } from './publish/publish-job.handler.js';
+import { PublishJobsController } from './publish/publish-jobs.controller.js';
 import { MulterExceptionFilter } from './upload/multer-exception.filter.js';
 import { UploadsController } from './upload/uploads.controller.js';
 import { UploadsReadController } from './upload/uploads-read.controller.js';
@@ -31,12 +33,12 @@ import { UploadsService } from './upload/uploads.service.js';
       }),
     }),
   ],
-  controllers: [UploadsController, UploadsReadController, SensesExportController],
+  controllers: [PublishJobsController, UploadsController, UploadsReadController, SensesExportController],
   providers: [
     BackgroundJobsService, JobQueueService, JobHandlerRegistry, JobRunnerService, JobReconcilerService,
     UploadsService, MulterExceptionFilter, IdempotencyInterceptor,
     ImportRowProcessor, ImportBatchHandler, ImportFileCleanupService,
-    ExportService,
+    ExportService, PublishJobHandler,
   ],
   exports: [BackgroundJobsService, JobQueueService, JobHandlerRegistry, JobRunnerService, JobReconcilerService],
 })

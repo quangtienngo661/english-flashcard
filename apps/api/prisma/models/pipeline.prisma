@@ -15,6 +15,7 @@ model BackgroundJob {
   errorSummary   String?   @map("error_summary")
 
   importBatch ImportBatch?
+  publishJob  PublishJob?
 
   // The exclusive_key uniqueness is partial (WHERE status = 'running') so it stays hand-written in
   // the migration; this index is a plain (non-partial) one, so Prisma can own and diff it normally.
@@ -94,4 +95,33 @@ model BatchRecord {
 
   @@unique([batchId, recordType, recordId])
   @@map("batch_records")
+}
+
+model PublishJob {
+  // The publish job shares its background job's primary key, like ImportBatch.
+  id            String @id @db.Uuid
+  filter        Json
+  snapshotCount Int    @map("snapshot_count")
+  notReadyCount Int    @map("not_ready_count")
+  // Derived from items: processed, pending, published, already_published, refused.
+  counters      Json
+
+  job   BackgroundJob    @relation(fields: [id], references: [id], onDelete: Cascade)
+  items PublishJobItem[]
+
+  @@map("publish_jobs")
+}
+
+model PublishJobItem {
+  jobId      String  @map("job_id") @db.Uuid
+  // Content-owned reference, deliberately without a cross-module relation/FK (D3).
+  senseId    String  @map("sense_id") @db.Uuid
+  revisionNo Int     @map("revision_no")
+  outcome    String  @default("pending")
+  reason     String?
+
+  job PublishJob @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@id([jobId, senseId])
+  @@map("publish_job_items")
 }

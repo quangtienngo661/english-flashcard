@@ -21,7 +21,7 @@ export class JobRunnerService implements OnApplicationBootstrap, OnModuleDestroy
   // One UUID per service/process instance, shared by all its workers and heartbeats.
   private readonly owner = randomUUID();
   private readonly workers: Worker[] = [];
-  private connection: Redis | undefined;
+  private readonly connections: Redis[] = [];
   private closing: Promise<void> | undefined;
 
   constructor(
@@ -36,12 +36,16 @@ export class JobRunnerService implements OnApplicationBootstrap, OnModuleDestroy
     if (!this.config.pipeline.runWorkers) return;
     const queues = this.registry.queues();
     if (!queues.length) return;
-    this.connection = new Redis(this.config.redisUrl, { maxRetriesPerRequest: null });
-    this.connection.on('error', (error) => { this.logger.warn('job_worker_connection_failed', { error }); });
     for (const queue of queues) {
       const handler = this.registry.get(queue)!;
+      // Each Worker needs its own connection: BullMQ Workers hold a blocking read on their
+      // connection while waiting for jobs, so sharing one connection across multiple Workers
+      // starves every Worker after the first (only one blocking reader can ever be served).
+      const connection = new Redis(this.config.redisUrl, { maxRetriesPerRequest: null });
+      connection.on('error', (error) => { this.logger.warn('job_worker_connection_failed', { queue, error }); });
+      this.connections.push(connection);
       const worker = new Worker(queue, (job) => this.process(job, handler), {
-        connection: this.connection, prefix: this.config.pipeline.queuePrefix, concurrency: 1,
+        connection, prefix: this.config.pipeline.queuePrefix, concurrency: 1,
       });
       worker.on('error', (error) => { this.logger.warn('job_worker_error', { queue, error }); });
       this.workers.push(worker);
@@ -94,15 +98,16 @@ export class JobRunnerService implements OnApplicationBootstrap, OnModuleDestroy
   }
 
   private async close(): Promise<void> {
-    try {
-      const results = await Promise.allSettled(this.workers.map((worker) => worker.close()));
-      const failures = results.filter((result) => result.status === 'rejected').map((result) => result.reason);
-      if (failures.length) throw new AggregateError(failures, 'Job workers failed to close');
-    } finally {
-      this.workers.length = 0;
+    const workerResults = await Promise.allSettled(this.workers.map((worker) => worker.close()));
+    this.workers.length = 0;
+    const connectionResults = await Promise.allSettled(this.connections.map(async (connection) => {
       try {
-        if (this.connection?.status === 'ready') await this.connection.quit();
-      } finally { this.connection?.disconnect(); }
-    }
+        if (connection.status === 'ready') await connection.quit();
+      } finally { connection.disconnect(); }
+    }));
+    this.connections.length = 0;
+    const failures = [...workerResults, ...connectionResults]
+      .filter((result) => result.status === 'rejected').map((result) => result.reason);
+    if (failures.length) throw new AggregateError(failures, 'Job workers or connections failed to close');
   }
 }
