@@ -513,7 +513,7 @@ trước khi có số đo.
 | B2#68 | When any batch runs, then its log lines carry `operation_id`, the counts and the duration, and never a cell value | PR18, S13 |
 | B2#69 | When a staff endpoint lists or reads entries and senses, then only catalog data is returned | CR3, S6 |
 | B2#70 | When the real CEFR-J 1.5 file and then the Octanove 1.0 file are imported, then there are 9,776 entries, 9,894 level records (7,799 CEFR-J and 2,095 Octanove), 279 function-word entries, 117 entries with more than one distinct level, 207 entries carrying 215 spelling variants (a segment identical to the lemma, as in `emphasize/emphasize`, is not a variant, B2#13a), and exactly 2 rejected rows (Octanove file lines 606 `batter`, 2129 `remonstrate`) | P2–P7, R1–R8 (counts measured 12/10/2026 with a script over the repository files; 9,776, 9,894, 279, 117 and the 2 rejected rows re-measured the same way in the review session of 12/10/2026) |
-| B2#71 | When the 7,799-row CEFR-J file is imported on a development machine, then its duration, transaction count and peak memory are recorded in this document | Pipeline Defense Analysis (planned measurement) |
+| B2#71 | When the 7,799-row CEFR-J file is imported on a development machine, then its duration, transaction count and peak memory are recorded in this document | Pipeline Defense Analysis (measured 13/10/2026, isolated run, real worker, `test/pipeline/real-files.e2e-spec.ts`: first import 130,757 ms, 17,508 `pg_stat_database.xact_commit` transactions, 493.4 MB peak RSS; unchanged re-import 1,044 ms, 103 transactions, 541.5 MB peak RSS — same measurement under full e2e-suite contention (42+ concurrent Testcontainers files) roughly doubled the first import's duration to ~260 s, which is why Tasks 20/21's own tests needed generous, not tight, timeout budgets) |
 
 ## 14. Edge cases
 
@@ -581,7 +581,13 @@ kênh cảnh báo ngoài log; CSV có số phiên bản; nhiều ngôn ngữ gi�
 - Trần 500 mục cho lệnh publish chạy ngay trong request là ASSUMPTION: request phải xong trước timeout của proxy (thường 60 giây). Đo
   thời gian publish 500 mục ở M1 rồi chỉnh; số lượng lớn đi qua job publish theo bộ lọc nên không phụ thuộc trần này.
 - Redis là dịch vụ mới phải vận hành (cấu hình `noeviction`, lưu bền); lý do dùng BullMQ yếu đi từ K1b (Pipeline Defense Analysis); điều kiện xét lại ghi ở spec.
-- Chưa đo thời gian nhập 7.799 dòng với mỗi dòng một giao dịch (B2#71); số lease, nhịp tim, reconciler là ASSUMPTION.
+- ~~Chưa đo thời gian nhập 7.799 dòng...~~ **Đã đóng 13/10/2026:** đo ở B2#71 (mục 13), 130.757 ms / 17.508 giao dịch khi chạy riêng,
+  ~260 s khi chạy cùng toàn bộ e2e suite (tranh chấp Postgres/CPU thật, không phải lỗi). Số lease (60 s), nhịp tim (20 s), reconciler
+  (30 s) vẫn là ASSUMPTION, chưa có số đo riêng cho từng tham số.
+- **Phát hiện 13/10/2026 (Task 23):** `JobRunnerService` dùng **một** kết nối ioredis chung cho mọi `Worker` BullMQ; BullMQ cần mỗi
+  Worker một kết nối riêng cho lệnh đọc blocking của nó, nên dùng chung làm các Worker sau worker đầu tiên bị "đói" job (không log lỗi,
+  chỉ không bao giờ nhận job). Lỗi có từ khi `JobRunnerService` viết (M2) nhưng không lộ ra vì chỉ có một hàng đợi có handler thật
+  (`content-import`) tới khi Task 23 thêm handler thứ hai (`content-publish`). Đã sửa: mỗi Worker tự tạo kết nối riêng.
 - Hành vi của Excel là ASSUMPTION: dấu phân cách `;` với thiết lập tiếng Việt, bảng mã khi lưu "CSV" thường, và việc mất dấu `'` ở đầu ô (`'m`, `'re`, `'s`). Excel là công cụ chính của chủ dự án nên cần thử một lần trên máy thật trước M2.
 - `csv-parse`, `ioredis`, `@nestjs/bullmq`, multer chưa được thử chạy cùng Nest 12 và Node 24 trong repo; plan kiểm trước khi viết code.
 - Hàng đợi concurrency 1 nghĩa là một file lớn làm các upload khác chờ; chấp nhận ở pilot (một đến vài nhân sự).

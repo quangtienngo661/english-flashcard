@@ -13,7 +13,7 @@ private words; quick-add of words encountered elsewhere; word groups, flashcards
 schedule; non-AI definition quizzes; AI-generated fill-in-the-blank practice graded by rule; tier-based
 entitlements and quotas.
 
-**Current phase: Bước 0 and Bước 1 (Identity core) implemented.** Real code
+**Current phase: Bước 0, Bước 1 (Identity core) and Bước 2 (Content + Pipeline) implemented.** Real code
 is under `apps/api`. Historical implementation branches:
 - `feat/buoc-0-backend-foundation` — Bước 0 built on **Drizzle ORM** (10 tasks, 5 unit + 23 e2e tests).
 - `feat/migrate-drizzle-to-prisma` (branched from the above) — the same Bước 0 re-implemented on
@@ -23,9 +23,10 @@ is under `apps/api`. Historical implementation branches:
   See `docs/superpowers/plans/2026-10-06-migrate-drizzle-to-prisma.md` for the full migration and why.
 
 Bước 0 and Bước 1 are on `main` (PR #1–#5; GitHub remote `english-flashcard`, CI required before merge).
-**Next: Bước 2 (Content + Pipeline)**, starting with `superpowers:brainstorming`. All 8 V1 specs (docs/specs/) are
-written and independently verified; the project owner has said "keep this order, start step 0" (accepting
-the plan). Read `docs/HANDOFF_2026-10-05_BUOC_0.md` for the original Bước 0 kickoff context, and
+Bước 2 is implemented on `feat/buoc-2-m2-pipeline`/`feat/buoc-2-m3-finish` (PR #15 M1+M2 → `dev`, open at
+time of writing; M3 awaits that merge). **Next: Bước 3 (Learning)**, the earliest pilot milestone, starting
+with `superpowers:brainstorming`. All 8 V1 specs (docs/specs/) are written and independently verified. Read
+`docs/HANDOFF_2026-10-05_BUOC_0.md` for the original Bước 0 kickoff context, and
 `docs/superpowers/specs/2026-10-05-buoc-0-design.md` (now annotated with the Prisma switch) for the
 as-built design.
 
@@ -201,6 +202,68 @@ Decisions above). The Bước 1 spec deviations (design §11) were applied to `d
 3. **Prisma pinned to `7.10.0`** (exact, no `^`) because the npm `latest` tag currently points at a `8.0.0-rc`
    prerelease — re-check when Prisma 8 reaches a real stable release.
 
+## Bước 2 — as-built (12–13/10/2026)
+
+Design `docs/superpowers/specs/2026-10-12-buoc-2-content-pipeline-design.md` (D1–D20, criteria `B2#1–B2#71`,
+edge cases `B2E1–B2E18`), decisions `docs/superpowers/decisions/2026-10-12-buoc-2-content-pipeline-decisions.md`,
+plan `docs/superpowers/plans/2026-10-12-buoc-2-content-pipeline.md` (24 tasks across M1/M2/M3). Implemented on
+`feat/buoc-2-m2-pipeline` (M1+M2, tasks 1–20) and `feat/buoc-2-m3-finish` (M3, tasks 21–24, cut from M2's tip
+since `dev` did not yet have M2 merged — see "Open items" below).
+
+- `src/content/`: catalog (`Entry`/`EntryVariant`/`EntryLevel`/`Sense`/`SenseRevision`), entry/variant/level
+  write path, sense authoring and publish/unpublish/retire/quick-publish, staff reads with keyset pagination,
+  learner search/browse/detail, CSV export (`GET .../senses/export`, RFC 4180 + formula-guard round trip),
+  batch revert (`POST .../uploads/:id/revert`). Only `src/content/**` touches these tables (D3); other modules
+  call `ContentService`, the module's one export.
+- `src/content-pipeline/`: one shared background-job framework (`background_jobs` + `lease_epoch` + reconciler,
+  D14) under two real handlers — `ImportBatchHandler` (`content-import`, CSV upload → entries/levels/senses,
+  with a prefilter so an unchanged re-upload opens no row transactions) and `PublishJobHandler`
+  (`content-publish`, bulk publish by filter, `POST .../senses/publish-jobs`). `BatchScopeModule` (`@Global()`,
+  own module so `ContentModule` can inject `BATCH_SCOPE` without importing Pipeline) resolves a batch's own
+  entries/senses from `batch_records` for the `batch_id` filter on every list/export/publish-job endpoint.
+- Tests: 575 unit + 457 e2e (real Postgres + Redis + Mailpit via Testcontainers; up from Bước 1's 339 unit +
+  182 e2e). `test/pipeline/real-files.e2e-spec.ts` imports the real CEFR-J 1.5 and Octanove 1.0 word lists to
+  the exact predicted counts (B2#70); manually verified against the real built API + a separate worker
+  process end to end: register a source → upload the real CEFR-J file → kill the worker mid-batch → restart
+  it → batch finishes correctly with no duplicates; a second walkthrough covered the rest of the surface —
+  small CSV with a deliberately invalid row → report → download `rejected.csv` → fix → re-upload → export the
+  unpublishable list → fill the gaps → re-upload → publish one item by explicit list, another by publish-job
+  filter → search as a learner with `native_language` set, meaning and topic names rendered in Vietnamese.
+- **B2#71 measured 13/10/2026** (isolated run): importing the real 7,799-row CEFR-J file takes 130,757 ms,
+  17,508 `pg_stat_database.xact_commit` transactions, 493.4 MB peak RSS; the unchanged re-import (prefilter
+  working) takes 1,044 ms, 103 transactions, 541.5 MB peak RSS. The same import under full e2e-suite
+  contention (40+ concurrent Testcontainers files) takes roughly double — this is host contention, not a
+  regression, and is why several e2e tests carry generous (not tight) timeout budgets with the reasoning
+  recorded in their own comments.
+- **Real production bug found and fixed (13/10/2026, during Task 23):** `JobRunnerService` gave every BullMQ
+  `Worker` the same `ioredis` connection; a BullMQ Worker needs its own dedicated connection for its blocking
+  reads, so sharing one silently starves every worker after the first (no error, no log — it just never
+  receives a job). This was present since the job framework was first written but never exercised with two
+  real handlers contending for it until Task 23 added the second one (`content-publish`). Fixed by giving
+  each Worker its own connection.
+- Execution: Codex `gpt-6.1-sol` implemented each task from a detailed per-task prompt; Claude self-reviewed
+  every diff and verified for real against Docker Postgres/Redis before committing (no second Codex reviewer
+  this round — see `feedback_codex_review_workflow` in Claude's own memory). Caught and fixed, beyond what
+  Codex's own sandbox could verify (no Docker access): the shared-Redis-connection bug above, a route-ordering
+  conflict between `GET senses/export` and `GET senses/:id` across modules (fixed by constraining `:id`'s own
+  path pattern to a literal UUID hyphen shape, since the installed Express adapter rejects inline param
+  regexes), and several pre-existing tests whose exact-shape assertions needed updating once new fields
+  (`errorMessages`, `replacedRevisionPreviousStatus`) were added to already-existing JSON columns.
+
+Bước 2 open items: all lease/heartbeat/reconciler-interval numbers (60 s/20 s/30 s) stay `ASSUMPTION`; Excel's
+own CSV behaviour (`;` separator under a Vietnamese locale, encoding, a lost leading `'`) is untested on a
+real Excel install; CEFR-J 1.6 was never checked for (still only 1.5 in the repo); search has no index yet
+(sequential scan accepted at ~9,800 entries); `entitlements.grant` vs. "editor không đụng chi phí AI" (D6) is
+unresolved, deferred to Bước 5.
+
+### Open items for the next session
+
+PR #15 (`feat/buoc-2-m2-pipeline` → `dev`, carrying M1+M2 since M1 was never separately merged) is open with
+CI green, awaiting the owner's merge. `feat/buoc-2-m3-finish` was cut from M2's own tip rather than from `dev`
+(which does not have M2 yet) — once PR #15 merges, confirm `dev`'s new tip is identical to M2's and open M3's
+own PR from `feat/buoc-2-m3-finish` into `dev` the normal way. **Next: Bước 3 (Learning)** per the fixed build
+order (HANDOFF §2) — the earliest pilot milestone.
+
 ## Việc phải phân tích khi tới bước tương ứng (ghi 12/10/2026, từ brainstorm Bước 2)
 
 Các điểm dưới đây phát sinh khi rà quyền của `admin`/`editor` (bảng D6) với các spec Bước 3–8. Chưa chốt, **không chặn Bước 2**;
@@ -234,7 +297,7 @@ Các điểm dưới đây phát sinh khi rà quyền của `admin`/`editor` (b�
 
 ## Local setup (PowerShell)
 
-From the repo root, start the local Postgres and Mailpit services, then prepare the API environment:
+From the repo root, start the local Postgres, Redis and Mailpit services, then prepare the API environment:
 
 ```powershell
 docker compose up -d
@@ -244,9 +307,10 @@ node scripts/gen-secret.mjs
 ```
 
 Replace each secret placeholder in `.env` with a separate output from `node scripts/gen-secret.mjs`.
-Keep `k1:` before the JWT secret. Mailpit needs no SMTP credentials; its UI is at
-`http://localhost:8025`. Postgres listens on host port **5434** (5432/5433 are used by other local
-projects on this machine). Then, from `apps/api`:
+Keep `k1:` before the JWT secret. `.env.example` already has `REDIS_URL=redis://localhost:6380` (Bước 2);
+Mailpit needs no SMTP credentials; its UI is at `http://localhost:8025`. Postgres listens on host port
+**5434**, Redis on **6380** (5432/5433 and 6379 are used by other local projects on this machine). Then,
+from `apps/api`:
 
 ```powershell
 pnpm db:setup
@@ -255,6 +319,15 @@ pnpm db:setup
 `prisma.config.ts` loads `.env` when it exists. `db:setup` deploys migrations, then runs `prisma generate --sql`, which
 emits both the Prisma client and TypedSQL (a second plain `prisma generate` wipes TypedSQL on Linux — seen in CI). The e2e global setup runs the same sequence against
 its fresh Testcontainers Postgres database.
+
+Running the API alone (`pnpm start`) does not process background jobs (CSV import, bulk publish) — it only
+produces them. Run a separate worker process alongside it (after `pnpm build`, since it runs the compiled
+`dist/worker.js`, not a `ts-node`-style watch mode):
+
+```powershell
+pnpm build
+pnpm start:worker
+```
 
 ## Machine state (verified 2026-10-05–07)
 

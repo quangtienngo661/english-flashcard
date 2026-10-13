@@ -20,6 +20,9 @@ thì ghi `ASSUMPTION`.
 ## 2. Thứ tự thực hiện (chủ dự án đã chốt "giữ thứ tự này")
 
 > Trạng thái 07/10/2026: Bước 0 và Bước 1 đã xong và đã merge vào `main` (PR #1, #4, #5). Bước tiếp theo: Bước 2.
+> Cập nhật 13/10/2026: Bước 2 đã xong trên `feat/buoc-2-m2-pipeline`/`feat/buoc-2-m3-finish` (chi tiết ở
+> `CLAUDE.md` mục "Bước 2 — as-built"); PR #15 (M1+M2 → `dev`) đang mở, CI xanh, chờ chủ dự án duyệt merge.
+> Bước tiếp theo: Bước 3 (Learning, mốc pilot sớm nhất).
 
 | Bước | Làm gì | Spec |
 |---|---|---|
