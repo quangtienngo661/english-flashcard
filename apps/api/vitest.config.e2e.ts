@@ -7,9 +7,11 @@ export default defineConfig({
     globals: true,
     root: './',
     include: ['**/*.e2e-spec.ts'],
-    globalSetup: ['./test/setup/postgres-global-setup.ts'],
+    globalSetup: ['./test/setup/postgres-global-setup.ts', './test/setup/redis-global-setup.ts'],
     // Container-backed e2e tests: module import alone took 27-75 s across the suite on 07/10 under
     // load from other local containers, so the 5 s default made a single-query test flaky.
     testTimeout: 30_000,
+    // Isolated-database suites run `prisma migrate deploy` synchronously in beforeAll; four in parallel exceeded 10 s on 12/10/2026.
+    hookTimeout: 60_000,
   },
 });

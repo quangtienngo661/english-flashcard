@@ -25,7 +25,7 @@ trade-off, phương án được chọn và lý do. Design doc mô tả *cách l
 | D11 | Phiên bản CEFR-J | Mặc định 1.5 trong repo, chờ xác nhận | Chờ bạn |
 | D12 | Bảng quyền | 4 quyền content cho `admin` và `editor`; ánh xạ endpoint | Chủ dự án (bảng D6); ánh xạ: Đề xuất |
 | D13 | Lọc trước dòng không đổi | Truy vấn hàng loạt trước khi xử lý từng dòng | Chủ dự án (ok) |
-| D14 | Khung job nền | Giữ đủ lease/`lease_epoch`/đối soát, viết thành khung dùng chung cho mọi loại job | Chủ dự án |
+| D14 | Khung job nền | Giữ đủ lease/`lease_epoch`/đối soát, viết thành khung dùng chung cho mọi loại job; **mô hình dữ liệu: bảng `background_jobs` chung + bảng chi tiết theo loại job** (chốt ở phiên review) | Chủ dự án |
 | D15 | Giới hạn upload | Không có luật riêng, chỉ luật chung `user.write` | Chủ dự án (ok) |
 | D16 | Tìm sense theo lần upload | Bộ lọc `batch_id` cho danh sách và lệnh xuất | Chủ dự án (ok) |
 | D17 | Level lệch nguồn | Loại dòng có level khác bản ghi đã có của cùng nguồn bên thứ ba; từ tự thêm để trống level | Chủ dự án (ok) |
@@ -169,6 +169,31 @@ upload file gộp cần **cả** `content.import` và `content.edit`; publish nh
 | Dạng chống công thức | Thêm `'` khi xuất, gỡ khi nhập | Từ chối ô đầu bằng ký tự đó | Xuất rồi nhập lại không đổi nội dung (P22) |
 | Chọn sense theo khóa | Loại sense `retired` khỏi khớp theo khóa | Cho khớp cả sense retired | Dòng theo khóa không được vô tình sửa sense đã đóng (PE7 chỉ nói về `sense_id`) |
 
+## Sửa design sau phiên review (12/10/2026)
+
+Phiên review (đọc design đối chiếu code Bước 0–1 và hai file CSV thật) tìm ra sáu điểm, gộp thành 5 nhóm sửa (điểm 4 và 5 là một nhóm); chủ dự án chọn "áp cả 5" vào design (phương án khác: chỉ áp ba nhóm đầu và để
+plan xử lý nhóm điểm 4–5; hoặc không sửa, duyệt nguyên bản). Chi tiết sửa nằm ở design, các mục nêu trong ngoặc:
+
+1. Mô hình dữ liệu khung job: `background_jobs` chung và bảng cho job publish (mục 4, 7, 12; xem D14 vòng 2).
+2. Tập 9 loại từ chức năng chỉ có trong spec CR10: chép vào design (mục 5); chạy lại cho ra đúng 279 entry (B2#70).
+3. `emphasize/emphasize` có biến thể trùng hệt lemma, design chưa có luật: đoạn trùng hệt lemma hoặc trùng đoạn trước thì bỏ (mục 5, B2#13a). Sau luật này
+   số 207 entry/215 biến thể của B2#70 khớp khi chạy lại; nếu không bỏ thì ra 208/216.
+4. Test phân quyền B2#65: `admin` và `editor` có y hệt 4 quyền content nên cần điểm cắm để thay bảng quyền trong test (mục 4, chỗ sửa code số 1).
+5. Bất biến sense: "sense chờ thay thế" định nghĩa theo `replaces_sense_id` khác null **và** `live_revision_id` null, để sense thay nghĩa đã publish không bị coi là chờ (mục 4).
+6. Bảng mục 2 của design thêm D13–D20 (trước chỉ có D1–D12).
+
+## Câu hỏi từ phiên review plan (12/10/2026)
+
+**B2#40, "level vẫn được lô khác dùng thì giữ".** `batch_records` chỉ ghi lô **tạo** bản ghi. Lô sau nhập lại đúng level đó thì dòng là
+`unchanged` và không để lại dấu vết.
+
+| Phương án | Trade-off |
+|---|---|
+| ✅ (a) Chỉ tính lô tạo: hoàn tác lô 1 xóa level; upload lại file lô 2 tạo lại | Không tốn thêm dữ liệu; hoàn tác kém chính xác hơn trong ca hiếm |
+| (b) Ghi cả việc "chạm" (dòng `unchanged`) vào `batch_records` | Hoàn tác chính xác; mỗi lần upload lại 7.799 dòng sinh thêm ~7.800 bản ghi, và lọc trước (D13) phải ghi thêm |
+
+Ai chốt: Chủ dự án (chọn phương án đề xuất).
+
 ## D14 — Khung job nền
 
 Bối cảnh: pilot chỉ có một worker và một loại job, nên lease với `lease_epoch` và bộ đối soát nhiều hơn mức cần lúc này.
@@ -177,6 +202,15 @@ Bối cảnh: pilot chỉ có một worker và một loại job, nên lease vớ
 |---|---|
 | Bản gọn: khóa dòng + phát hiện job treo của BullMQ + đối soát khi Redis mất dữ liệu | Plan ngắn hơn; khi thêm worker thứ hai hoặc loại job thứ hai thì phải thêm lease và sửa lại phần chạy job |
 | ✅ Giữ đủ, viết thành khung dùng chung | Tốn thêm việc ở Bước 2; đổi lại thêm loại job (AI soạn nháp, từ điển ngoài, nhập định kỳ, sinh lại ngân hàng câu) hoặc thêm worker không phải refactor. Chủ dự án chọn vì muốn scale sau này không phải viết lại |
+
+**Vòng 2 — mô hình dữ liệu của khung (phiên review design, 12/10/2026).** Khi review, thấy mục 4 của design chỉ có bảng `import_*` mang sẵn cột lease,
+còn job publish theo bộ lọc (D20, M3) cần bảng lưu danh sách đã chụp và kết quả từng mục mà doc chưa liệt kê. Trợ lý đưa ba phương án:
+
+| Phương án | Trade-off |
+|---|---|
+| ✅ Bảng `background_jobs` chung | Một bảng chung giữ trạng thái, lease, `lease_epoch`, `attempts`; mỗi loại job có bảng chi tiết riêng (`import_batches` + file, `publish_jobs` + `publish_job_items`). Thêm loại job sau này chỉ thêm bảng chi tiết. Đúng ý D14. Tốn thêm một bảng và một lớp tham chiếu ở M2. Chủ dự án chọn |
+| Giữ lease trong `import_batches` | M2 làm nhanh hơn; ở M3 job publish sao chép phần lease và đối soát sang bảng riêng, tách khung chung sau. Trái ý D14 "không phải refactor": loại job thứ hai sẽ là lần refactor đầu tiên |
+| Để plan quyết | Doc giữ "bảng chung hoặc giao diện chung, plan chọn", chỉ bổ sung bảng cho publish job. Rủi ro: plan chọn lệch ý chủ dự án mà chỉ thấy lúc duyệt plan |
 
 ## D15, D16 — Giới hạn upload và lọc theo lần upload
 

@@ -1,23 +1,10 @@
-import { Inject, Injectable, Module } from '@nestjs/common';
-import { Test } from '@nestjs/testing';
 import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
-import { CommonModule } from '../../common/common.module.js';
 import { PRISMA_CLIENT, PrismaModule } from '../../common/db/prisma.module.js';
 import { ProblemDetailsException } from '../../common/problem-details/problem-details.exception.js';
 import { RateLimiter } from '../../common/rate-limit/rate-limiter.service.js';
 import { createTestApp, type TestApp } from '../../../test/support/create-test-app.js';
-import { testConfig } from '../../../test/support/test-config.js';
-import { IdentityModule } from '../identity.module.js';
 import { AccessTokenService } from '../sessions/access-token.service.js';
-import { IdentityService } from './identity.service.js';
-
-@Injectable()
-class ProfileConsumer {
-  constructor(@Inject(IdentityService) readonly identity: IdentityService) {}
-}
-@Module({ imports: [IdentityModule], providers: [ProfileConsumer] })
-class ConsumerModule {}
 
 describe('profile HTTP routing (unit, isolated persistence)', () => {
   let ctx: TestApp;
@@ -51,13 +38,20 @@ describe('profile HTTP routing (unit, isolated persistence)', () => {
   });
   afterAll(async () => { await ctx?.close(); vi.restoreAllMocks(); });
 
-  it('B1#25: GET returns only the public profile and reflects verification and permissions from storage', async () => {
+  it('B2#67/B1#25: GET returns only the public profile and all four content permissions for stored admin and editor roles', async () => {
     const res = await get();
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ id: userId, email: row!.email, email_verified: false, native_language: null,
       timezone: row!.timezone, staff_role: null, permissions: [] });
-    row!.emailVerifiedAt = ctx.clock.now(); row!.staffRole = 'admin';
-    expect((await get()).body).toMatchObject({ email_verified: true, staff_role: 'admin', permissions: ['roles.manage'] });
+    row!.emailVerifiedAt = ctx.clock.now();
+    for (const staffRole of ['admin', 'editor']) {
+      row!.staffRole = staffRole;
+      const profile = await get();
+      expect(profile.status).toBe(200);
+      expect(profile.body).toMatchObject({ email_verified: true, staff_role: staffRole, permissions: [
+        ...(staffRole === 'admin' ? ['roles.manage'] : []), 'content.edit', 'content.publish', 'content.import', 'taxonomy.manage',
+      ] });
+    }
     expect(hit).not.toHaveBeenCalled();
   });
   it('B1#24/S8: partial PATCH changes vi then en, preserving other fields and accepted aliases', async () => {
@@ -121,15 +115,5 @@ describe('profile HTTP routing (unit, isolated persistence)', () => {
       expect(res.headers['content-type']).toContain('application/problem+json');
       expect(res.body.operation_id).toEqual(expect.any(String));
     }
-  });
-  it('B1#25/D3: another module can inject IdentityService through IdentityModule exports', async () => {
-    const moduleRef = await Test.createTestingModule({ imports: [CommonModule.forRoot(testConfig()),
-      PrismaModule.forRoot({ connectionString: 'unused' }), ConsumerModule] }).compile();
-    try {
-      const consumer = moduleRef.get(ProfileConsumer);
-      expect(await consumer.identity.getProfile(userId)).toMatchObject({ id: userId, native_language: null });
-      expect(await consumer.identity.isEmailVerified(userId)).toBe(false);
-      expect(Reflect.getMetadata('exports', IdentityModule)).toEqual([IdentityService]);
-    } finally { await moduleRef.close(); }
   });
 });

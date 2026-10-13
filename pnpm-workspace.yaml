@@ -19,3 +19,6 @@ allowBuilds:
   cpu-features: false
   ssh2: false
   protobufjs: false
+  # Optional native speed-up for bullmq's msgpackr serialization; msgpackr's pure-JS
+  # fallback is functionally identical, just slower, so the native build isn't needed.
+  msgpackr-extract: false

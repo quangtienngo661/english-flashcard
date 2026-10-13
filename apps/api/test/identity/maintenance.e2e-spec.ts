@@ -94,9 +94,10 @@ describe('Maintenance cleanup (e2e, isolated database)', () => {
       .rejects.toMatchObject({ status: 401, problemType: 'invalid-token' });
   });
 
-  it('the scheduler registers both jobs and starts no timer when maintenanceEnabled is false', () => {
+  it('the scheduler registers every module\'s job and starts no timer when maintenanceEnabled is false', () => {
     const scheduler = ctx.app.get(MaintenanceScheduler);
-    expect(scheduler.jobNames().sort()).toEqual(['identity-cleanup', 'rate-limit-counters']);
+    // Bước 2 (Task 18) added import-file-cleanup; every AppModule instance registers it too.
+    expect(scheduler.jobNames().sort()).toEqual(['identity-cleanup', 'import-file-cleanup', 'rate-limit-counters']);
     expect(scheduler.isRunning()).toBe(false);
   });
 

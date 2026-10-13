@@ -1,6 +1,8 @@
 import type { Type } from '@nestjs/common';
+import { DiscoveryModule } from '@nestjs/core';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import { Test } from '@nestjs/testing';
+import { randomUUID } from 'node:crypto';
 import type { Server } from 'node:http';
 import request from 'supertest';
 import { inject } from 'vitest';
@@ -10,10 +12,17 @@ import { Clock, FakeClock } from '../../src/common/clock/clock.js';
 import type { AppConfig } from '../../src/common/config/app-config.js';
 import { PRISMA_CLIENT } from '../../src/common/db/prisma.module.js';
 import { LOG_SINK, type LogEntry, type LogSink } from '../../src/common/logging/app-logger.js';
+import { JobHandlerRegistry } from '../../src/content-pipeline/jobs/job-handler.registry.js';
+import { JobReconcilerService } from '../../src/content-pipeline/jobs/job-reconciler.service.js';
+import { JobRunnerService } from '../../src/content-pipeline/jobs/job-runner.service.js';
+import type { JobHandler } from '../../src/content-pipeline/jobs/job-types.js';
 import type { PrismaClient } from '../../src/generated/prisma/client.js';
+import { IdentityModule } from '../../src/identity/identity.module.js';
+import { ROLE_PERMISSIONS, type Permission, type StaffRole } from '../../src/identity/identity.types.js';
 import { FakeMailer } from '../../src/identity/mailer/fake-mailer.js';
 import { MailDispatcher } from '../../src/identity/mailer/mail-dispatcher.service.js';
 import { Mailer } from '../../src/identity/mailer/mailer.js';
+import { ROLE_PERMISSIONS_TOKEN } from '../../src/identity/staff/role-permissions.token.js';
 import { InFlightInterceptor } from './in-flight.interceptor.js';
 import { testConfig } from './test-config.js';
 
@@ -22,6 +31,7 @@ export type TestApp = {
   http(): ReturnType<typeof request>;
   clock: FakeClock;
   prisma: PrismaClient;
+  rolePermissions: Record<StaffRole, readonly Permission[]>;
   logs: LogEntry[];
   mailer: FakeMailer;
   drainMail(): Promise<void>;
@@ -32,36 +42,66 @@ export type TestApp = {
 export async function createTestApp(opts?: {
   config?: Partial<AppConfig>;
   databaseUrl?: string;
+  redisUrl?: string;
+  pipeline?: Partial<AppConfig['pipeline']>;
+  jobHandlers?: JobHandler[];
   controllers?: Type<unknown>[];
+  rolePermissions?: Record<StaffRole, readonly Permission[]>;
 }): Promise<TestApp> {
-  const config = testConfig({
+  const defaults = testConfig();
+  const config: AppConfig = {
+    ...defaults,
     ...opts?.config,
     databaseUrl: opts?.databaseUrl ?? opts?.config?.databaseUrl ?? inject('databaseUrl'),
-  });
+    redisUrl: opts?.redisUrl ?? opts?.config?.redisUrl ?? defaults.redisUrl,
+    pipeline: {
+      ...defaults.pipeline,
+      queuePrefix: `wordmet-test-${randomUUID()}`,
+      ...opts?.config?.pipeline,
+      ...opts?.pipeline,
+    },
+  };
   const clock = new FakeClock();
   const logs: LogEntry[] = [];
   const sink: LogSink = { write: (entry) => { logs.push(entry); } };
   const mailer = new FakeMailer();
+  const rolePermissions = structuredClone(opts?.rolePermissions ?? ROLE_PERMISSIONS);
+  let handlerRegistry: JobHandlerRegistry;
   const moduleRef = await Test.createTestingModule({
-    imports: [AppModule.forRoot(config)], controllers: opts?.controllers ?? [],
+    imports: [AppModule.forRoot(config), IdentityModule, DiscoveryModule], controllers: opts?.controllers ?? [],
+    providers: [{
+      provide: 'TEST_JOB_HANDLERS',
+      useValue: {
+        // The root module initializes after imported production modules, before worker bootstrap.
+        // Keep explicit test overrides from being replaced by real handlers' onModuleInit hooks.
+        onModuleInit() { for (const handler of opts?.jobHandlers ?? []) handlerRegistry.register(handler); },
+      },
+    }],
   })
     .overrideProvider(Clock).useValue(clock)
     .overrideProvider(LOG_SINK).useValue(sink)
     .overrideProvider(Mailer).useValue(mailer)
+    .overrideProvider(ROLE_PERMISSIONS_TOKEN).useValue(rolePermissions)
     .compile();
   const app = moduleRef.createNestApplication<NestExpressApplication>({ bodyParser: false });
   const prisma = moduleRef.get<PrismaClient>(PRISMA_CLIENT);
+  handlerRegistry = moduleRef.get(JobHandlerRegistry);
   const dispatcher = moduleRef.get(MailDispatcher);
   configureApp(app, config);
   const inFlight = new InFlightInterceptor();
   app.useGlobalInterceptors(inFlight);
   await app.init();
-  const hooks: Array<() => Promise<void>> = [() => dispatcher.drain()];
+  const hooks: Array<() => Promise<void>> = [
+    () => moduleRef.get(JobReconcilerService).onModuleDestroy(),
+    () => moduleRef.get(JobRunnerService).onModuleDestroy(),
+    () => dispatcher.drain(),
+  ];
   return {
     app,
     http: () => request(app.getHttpServer()),
     clock,
     prisma,
+    rolePermissions,
     logs,
     mailer,
     drainMail: () => dispatcher.drain(),

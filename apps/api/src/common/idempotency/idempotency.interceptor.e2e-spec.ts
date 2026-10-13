@@ -1,4 +1,4 @@
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import {
   Body,
   Controller,
@@ -10,7 +10,11 @@ import {
 import { Test } from '@nestjs/testing';
 import request from 'supertest';
 import { afterAll, beforeAll, beforeEach, describe, expect, inject, it } from 'vitest';
-import { PrismaModule } from '../db/prisma.module.js';
+import { SampleModule } from '../../sample/sample.module.js';
+import { testConfig } from '../../../test/support/test-config.js';
+import type { PrismaClient } from '../../generated/prisma/client.js';
+import { CommonModule } from '../common.module.js';
+import { PRISMA_CLIENT, PrismaModule } from '../db/prisma.module.js';
 import { operationIdMiddleware } from '../logging/operation-id.middleware.js';
 import { ProblemDetailsFilter } from '../problem-details/problem-details.filter.js';
 import { fakeRequestUserMiddleware } from '../request-user/fake-request-user.middleware.js';
@@ -39,7 +43,11 @@ class TestIdempotentController {
 }
 
 @Module({
-  imports: [PrismaModule.forRoot({ connectionString: inject('databaseUrl') })],
+  imports: [
+    CommonModule.forRoot(testConfig()),
+    PrismaModule.forRoot({ connectionString: inject('databaseUrl') }),
+    SampleModule,
+  ],
   controllers: [TestIdempotentController],
   providers: [IdempotencyInterceptor],
 })
@@ -104,6 +112,27 @@ describe('IdempotencyInterceptor (e2e)', () => {
       .set('X-Test-User-Id', userId)
       .send({ a: 2 });
     expect(res.status).toBe(400); // S5: Problem Details rejection, not 409 — 409 is reserved for in-flight
+  });
+
+  it('JSON requests without a file through the existing sample route replay the exact pre-multipart payload hash', async () => {
+    const key = randomUUID();
+    const userId = randomUUID();
+    const body = { a: 1, nested: { items: ['one', 'two'] }, empty: null };
+    const payloadHash = createHash('sha256').update(JSON.stringify(body)).digest('hex');
+    const responseBody = { receivedAt: '2026-10-12T12:00:00.000Z' };
+    const prisma = app.get<PrismaClient>(PRISMA_CLIENT);
+    // A row produced by the old formula must still replay after the interceptor gains file support.
+    await prisma.idempotencyKey.create({ data: {
+      key, userId, endpoint: '/v1/sample', status: 'succeeded', payloadHash,
+      responseStatus: 201, responseBody,
+    } });
+    const res = await request(app.getHttpServer()).post('/v1/sample')
+      .set('Idempotency-Key', key).set('X-Test-User-Id', userId).send(body);
+    expect(res.status).toBe(201);
+    expect(res.body).toEqual(responseBody);
+    expect(await prisma.idempotencyKey.findUniqueOrThrow({
+      where: { key_userId_endpoint: { key, userId, endpoint: '/v1/sample' } },
+    })).toMatchObject({ status: 'succeeded', payloadHash, responseBody });
   });
 
   it('a custom @Idempotent({ timeoutSeconds }) is honored — a slower handler gets a Problem Details error instead of hanging', async () => {

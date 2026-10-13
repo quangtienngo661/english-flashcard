@@ -13,7 +13,7 @@ private words; quick-add of words encountered elsewhere; word groups, flashcards
 schedule; non-AI definition quizzes; AI-generated fill-in-the-blank practice graded by rule; tier-based
 entitlements and quotas.
 
-**Current phase: Bước 0 and Bước 1 (Identity core) implemented.** Real code
+**Current phase: Bước 0, Bước 1 (Identity core) and Bước 2 (Content + Pipeline) implemented.** Real code
 is under `apps/api`. Historical implementation branches:
 - `feat/buoc-0-backend-foundation` — Bước 0 built on **Drizzle ORM** (10 tasks, 5 unit + 23 e2e tests).
 - `feat/migrate-drizzle-to-prisma` (branched from the above) — the same Bước 0 re-implemented on
@@ -23,9 +23,10 @@ is under `apps/api`. Historical implementation branches:
   See `docs/superpowers/plans/2026-10-06-migrate-drizzle-to-prisma.md` for the full migration and why.
 
 Bước 0 and Bước 1 are on `main` (PR #1–#5; GitHub remote `english-flashcard`, CI required before merge).
-**Next: Bước 2 (Content + Pipeline)**, starting with `superpowers:brainstorming`. All 8 V1 specs (docs/specs/) are
-written and independently verified; the project owner has said "keep this order, start step 0" (accepting
-the plan). Read `docs/HANDOFF_2026-10-05_BUOC_0.md` for the original Bước 0 kickoff context, and
+Bước 2 is implemented on `feat/buoc-2-m2-pipeline`/`feat/buoc-2-m3-finish` (PR #15 M1+M2 → `dev`, open at
+time of writing; M3 awaits that merge). **Next: Bước 3 (Learning)**, the earliest pilot milestone, starting
+with `superpowers:brainstorming`. All 8 V1 specs (docs/specs/) are written and independently verified. Read
+`docs/HANDOFF_2026-10-05_BUOC_0.md` for the original Bước 0 kickoff context, and
 `docs/superpowers/specs/2026-10-05-buoc-0-design.md` (now annotated with the Prisma switch) for the
 as-built design.
 
@@ -97,7 +98,7 @@ Goal: experimental versions never reach `main`; `main` only receives work that p
 
 ## Architecture & Key Decisions (accepted, `docs/specs/system-spec.md`)
 
-Bước 0 and Bước 1 are implemented (see the as-built sections below). Steps 2–8 are still
+Bước 0, 1 and 2 are implemented (see `docs/deliveries/`). Steps 3–8 are still
 decided-but-not-scaffolded:
 
 - Backend: **NestJS modular monolith + PostgreSQL**. 7 V1 modules, each owning its own write path:
@@ -135,71 +136,19 @@ Still open and explicitly **not** blocking Step 0 (HANDOFF §6): AI quota struct
 step 5); external dictionary provider (K20); inflected-form/lemma data source (CR16, PRC7); personal-Gmail
 SMTP viability; all capacity/cost numbers are estimates.
 
-## Bước 0 — as-built (resolved 05–06/10/2026)
+## Bước 0 — as-built
 
-All 4 open questions from `docs/HANDOFF_2026-10-05_BUOC_0.md` §5 are chốt and implemented:
+Moved to `docs/deliveries/buoc-0.md` (resolved 05–06/10/2026; 5 unit + 24 e2e tests).
 
-1. **Repo layout:** single repo, pnpm workspace (`apps/api` only so far; `apps/web` and `apps/mobile` not
-   yet created). No Nx/Turborepo. `git init` done.
-2. **ORM / DB access:** **Prisma ORM, pinned `7.10.0`** (`apps/api/prisma/schema.prisma`,
-   `apps/api/prisma.config.ts`, `@prisma/adapter-pg`). Originally built on Drizzle (pinned `0.45.3`,
-   still intact on `feat/buoc-0-backend-foundation`), migrated to Prisma on `feat/migrate-drizzle-to-prisma`
-   once the row-locking mechanism changed to `pg_try_advisory_xact_lock` (a plain function call Prisma's
-   TypedSQL handles fine — see the design doc's §2.2 correction note and
-   `docs/superpowers/plans/2026-10-06-migrate-drizzle-to-prisma.md`).
-3. **Test strategy:** Vitest + ESM (current NestJS CLI default, not Jest), real Postgres via
-   `@testcontainers/postgresql` — no mocks.
-4. **Step 0 / Step 1 boundary:** `RequestUser` seam implemented
-   (`apps/api/src/common/request-user/fake-request-user.middleware.ts`) — test-only, never wired into the
-   real `AppModule` (verified repeatedly; this is the B0E6 isolation guarantee).
+## Bước 1 — as-built
 
-Implemented and tested: Problem Details (RFC 9457), opaque `page_token` pagination, `Idempotency-Key` via
-`runIdempotent()` (advisory-lock based, see `apps/api/src/common/idempotency/idempotency.service.ts`),
-`operation_id` + redacting logger, per-user atomic rate limiting, a sample endpoint exercising all of the
-above end-to-end. Current state: 5 unit + 24 e2e tests passing on `feat/migrate-drizzle-to-prisma`.
+Moved to `docs/deliveries/buoc-1.md` (07/10/2026; 339 unit + 182 e2e tests; includes the "Open decisions"
+notes from that session).
 
-## Bước 1 — as-built (07/10/2026)
+## Bước 2 — plan & as-built
 
-Design `docs/superpowers/specs/2026-10-07-buoc-1-identity-core-design.md` (D1–D16, criteria `B1#1–B1#38`,
-edge cases `B1E1–B1E34`), decisions `docs/superpowers/decisions/2026-10-07-buoc-1-identity-core-decisions.md`,
-plan `docs/superpowers/plans/2026-10-07-buoc-1-identity-core.md` (14 tasks), reviews in
-`docs/superpowers/reviews/`. Implemented on `feat/buoc-1-identity-impl`:
-
-- `src/common/`: `CommonModule` (global) with `AppConfig`/`loadConfig` (zod, fail-fast), `Clock`/`FakeClock`,
-  `AppLogger` (levels, redaction, `operation_id` via AsyncLocalStorage), named-rule `RateLimiter` (fixes the
-  Bước 0 shared-counter bug), Problem Details for body-parser errors (400/413/415), `MaintenanceScheduler`
-  (hourly cleanup jobs). `configureApp()` is shared by `main.ts` and every e2e test.
-- `src/identity/`: register/login with lockout, OTP (verify email, reset password, 24 h lock after 20
-  failures), rotating refresh-token session chains (10 s grace, reuse detection, 90/365 d expiry, 10 active
-  devices), web cookie + CSRF header, password change/reset, profile + `IdentityService` (the only export),
-  staff roles `admin`/`editor` with `@RequirePermission`, `pnpm admin:grant <email>` (needs `pnpm build`).
-  Every security write runs under a per-user advisory lock and commits before the HTTP error (design §4b);
-  mail is sent after commit and after the response closes.
-- Tests: 339 unit + 182 e2e (real Postgres + Mailpit via Testcontainers); suites that depend on global state
-  use `createIsolatedDatabase()`. A manual run against the built API (register → OTP from Mailpit → verify
-  → refresh → password change → logout → admin:grant → admin endpoint) passed on 07/10.
-- Execution: Codex `gpt-6.1-sol` implemented, `gpt-6-astra` (medium effort) reviewed each task; Tasks 13–14
-  were self-reviewed by Claude while Codex was over its usage limit (no independent review for those two).
-
-Graceful shutdown (`enableShutdownHooks`) drains pending mail. Merged via PR #4 after CI.
-
-Bước 1 open items: all rate-limit/lockout/budget numbers are `ASSUMPTION` (configurable); same-user lock
-contention can exhaust the 10-connection pool (accepted at pilot scale); Gmail-personal SMTP limits still
-unsourced; `otp_failure_windows` and `mail_budget_buckets` are never cleaned (grow slowly).
-
-### Open decisions for the next session (read before doing anything else)
-
-Bước 0 and Bước 1 are merged (PR #1–#5). The module-boundary convention is chốt as D3 (see Architecture & Key
-Decisions above). The Bước 1 spec deviations (design §11) were applied to `docs/specs/` on 07/10 — look for
-"Sửa 07/10/2026 theo Bước 1".
-
-1. **Chốt by the owner (07/10/2026):** B0E1 — an orphaned `in_progress` idempotency row returns 409
-   `idempotency-key-abandoned` and the client starts over with a new key (it is not re-run). Note: a real
-   crash rolls the row back with the handler's transaction, so a retry after a crash simply runs fresh.
-   `Idempotency-Key` stays mandatory on `@Idempotent()` endpoints (400 if missing) with the 30 s default timeout.
-2. *(resolved, see 1)*
-3. **Prisma pinned to `7.10.0`** (exact, no `^`) because the npm `latest` tag currently points at a `8.0.0-rc`
-   prerelease — re-check when Prisma 8 reaches a real stable release.
+Moved to `docs/deliveries/buoc-2.md` (plan tóm tắt 12/10/2026; as-built 12–13/10/2026; 575 unit + 457 e2e
+tests; PR #15 open → `dev`, M3 awaiting that merge).
 
 ## Việc phải phân tích khi tới bước tương ứng (ghi 12/10/2026, từ brainstorm Bước 2)
 
@@ -234,7 +183,7 @@ Các điểm dưới đây phát sinh khi rà quyền của `admin`/`editor` (b�
 
 ## Local setup (PowerShell)
 
-From the repo root, start the local Postgres and Mailpit services, then prepare the API environment:
+From the repo root, start the local Postgres, Redis and Mailpit services, then prepare the API environment:
 
 ```powershell
 docker compose up -d
@@ -244,9 +193,10 @@ node scripts/gen-secret.mjs
 ```
 
 Replace each secret placeholder in `.env` with a separate output from `node scripts/gen-secret.mjs`.
-Keep `k1:` before the JWT secret. Mailpit needs no SMTP credentials; its UI is at
-`http://localhost:8025`. Postgres listens on host port **5434** (5432/5433 are used by other local
-projects on this machine). Then, from `apps/api`:
+Keep `k1:` before the JWT secret. `.env.example` already has `REDIS_URL=redis://localhost:6380` (Bước 2);
+Mailpit needs no SMTP credentials; its UI is at `http://localhost:8025`. Postgres listens on host port
+**5434**, Redis on **6380** (5432/5433 and 6379 are used by other local projects on this machine). Then,
+from `apps/api`:
 
 ```powershell
 pnpm db:setup
@@ -255,6 +205,15 @@ pnpm db:setup
 `prisma.config.ts` loads `.env` when it exists. `db:setup` deploys migrations, then runs `prisma generate --sql`, which
 emits both the Prisma client and TypedSQL (a second plain `prisma generate` wipes TypedSQL on Linux — seen in CI). The e2e global setup runs the same sequence against
 its fresh Testcontainers Postgres database.
+
+Running the API alone (`pnpm start`) does not process background jobs (CSV import, bulk publish) — it only
+produces them. Run a separate worker process alongside it (after `pnpm build`, since it runs the compiled
+`dist/worker.js`, not a `ts-node`-style watch mode):
+
+```powershell
+pnpm build
+pnpm start:worker
+```
 
 ## Machine state (verified 2026-10-05–07)
 
@@ -276,6 +235,9 @@ for a concrete example of the loop catching real bugs each round.
 
 ## Other Notes
 
+- As-built delivery records per Bước: `docs/deliveries/buoc-0.md`, `docs/deliveries/buoc-1.md`,
+  `docs/deliveries/buoc-2.md` (includes its plan tóm tắt too).
+- Bước 2 test flow (automated gate, `pnpm smoke:buoc-2`, manual steps): `docs/deliveries/buoc-2-test-flow.md`.
 - Spec index and status: `docs/specs/README.md`.
 - Spec/design-doc writing convention (edge cases must be derived per-doc, not just cited): `docs/specs/SPEC_WRITING_CONVENTIONS.md`.
 - Full project context, product decisions, and evidence log: `docs/preparation/PROJECT_CONTEXT.md`.
