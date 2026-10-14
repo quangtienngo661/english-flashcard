@@ -21,7 +21,7 @@ import type { ChangeBody, ResetBody } from './password.schemas.js';
 const transactionOptions = { timeout: 10_000, maxWait: 5_000 };
 type ChangeOutcome =
   | { kind: 'ok'; session: IssuedSession; message: MailMessage }
-  | { kind: 'wrong' | 'stale' | 'invalid_session' }
+  | { kind: 'wrong' | 'stale' | 'invalid_session' | 'same_as_current' }
   | { kind: 'locked'; lockedUntil: Date; newlyLocked: boolean };
 type ResetOutcome = Exclude<OtpCheckOutcome, { kind: 'ok' }> | { kind: 'ok'; message: MailMessage };
 
@@ -65,7 +65,10 @@ export class PasswordService {
           newlyLocked: locked.loginLockedUntil.getTime() !== current.loginLockedUntil?.getTime() };
       }
       if (kind !== 'ok') return { kind };
+      // Only reachable with the right current password, so it reveals nothing to a caller who lacks it.
+      if (body.new_password === body.current_password) return { kind: 'same_as_current' };
       await tx.passwordCredential.update({ where: { userId: user.userId }, data: { hash, updatedAt: this.clock.now() } });
+      await tx.user.update({ where: { id: user.userId }, data: { mustChangePassword: false } });
       await this.sessions.revokeAllForUser(tx, user.userId, 'password_changed');
       const session = await this.sessions.startChain(tx, {
         userId: user.userId, client: chain.clientType, deviceLabel: chain.deviceLabel ?? undefined,
@@ -82,6 +85,8 @@ export class PasswordService {
       throw new ProblemDetailsException({ status: 429, title: 'Too many requests', type: 'rate-limited',
         retryAfterSeconds: Math.max(1, Math.ceil((outcome.lockedUntil.getTime() - this.clock.now().getTime()) / 1000)) });
     }
+    if (outcome.kind === 'same_as_current') throw new ProblemDetailsException({ status: 400, title: 'Validation failed',
+      type: 'validation-failed', extensions: { violations: ['same_as_current'] } });
     if (outcome.kind !== 'ok') throw this.invalidCurrentPassword();
     this.dispatcher.afterResponse(res, [sendPrepared(outcome.message)]);
     return outcome.session;
@@ -106,6 +111,7 @@ export class PasswordService {
       await this.sessions.revokeAllForUser(tx, account.id, 'password_reset');
       await tx.user.update({ where: { id: account.id }, data: {
         emailVerifiedAt: current.emailVerifiedAt ?? now, failedLoginCount: 0, loginLockedUntil: null,
+        mustChangePassword: false,
       } });
       return { kind: 'ok', message: passwordResetMail(current.email) };
     }, transactionOptions);
