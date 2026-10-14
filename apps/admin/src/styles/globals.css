@@ -2,7 +2,7 @@
 
 /* Tokens from the Figma "Admin tokens" collection (Task 1); sizes in rem, 16px root. */
 @theme {
-  --color-bg: #faf8f5;
+  --color-bg: #f5f6fa;
   --color-surface: #ffffff;
   --color-ink: #1c1b22;
   --color-muted: #5e5b6b;
@@ -14,6 +14,7 @@
   --color-success: #1f9d55;
   --color-success-soft: #e5f6ec;
   --color-danger: #d64545;
+  --color-danger-soft: #fdecec;
   --color-danger-strong: #b42318;
 
   --font-sans: 'Be Vietnam Pro', system-ui, sans-serif;
@@ -27,8 +28,11 @@
   --spacing-auth-card-max: 25rem;
   --spacing-page-pad-min: 1rem;
   --spacing-page-pad-max: 2rem;
-  --radius-control: 0.5rem;
-  --radius-panel: 0.75rem;
+  --radius-control: 0.375rem;
+  --radius-panel: 0.375rem;
+  /* Effect styles shadow/card and shadow/nav (Figma Foundations, Task 12a). */
+  --shadow-card: 0 0.1875rem 0.5rem rgb(28 27 34 / 0.1);
+  --shadow-nav: 0 0.125rem 0.375rem rgb(28 27 34 / 0.08);
   --breakpoint-shell: 64rem;
   /* Lists switch from cards to a table at this width of their own container (`@list:`), owner 14/10/2026. */
   --container-list: 40rem;

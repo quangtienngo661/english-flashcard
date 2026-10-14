@@ -3,17 +3,18 @@ import { useSession } from '../auth/session-context';
 import { ChangePasswordPage } from '../features/account/ChangePasswordPage';
 import { ForgotPasswordPage } from '../features/account/ForgotPasswordPage';
 import { LoginPage } from '../features/account/LoginPage';
+import { ComingSoonPage } from '../features/coming-soon/ComingSoonPage';
 import { StaffPage } from '../features/staff/StaffPage';
-import { firstVisiblePath } from './nav';
+import { homePath, NAV } from './nav';
 import { PlaceholderPage } from './PlaceholderPage';
 import { RequireSession } from './RequireSession';
 import { Shell } from './Shell';
 
-/** `/` → the first page the signed-in user may open. */
+/** `/` → Lô nhập; a user who may not open it goes to the first page they may. */
 function Home() {
   const { state } = useSession();
   if (state.status !== 'signed-in') return null;
-  return <Navigate to={firstVisiblePath(state.me.permissions) ?? '/uploads'} replace />;
+  return <Navigate to={homePath(state.me.permissions)} replace />;
 }
 
 export function AppRoutes() {
@@ -32,6 +33,9 @@ export function AppRoutes() {
           <Route path="export" element={<PlaceholderPage />} />
           <Route path="sources" element={<PlaceholderPage />} />
           <Route path="staff" element={<StaffPage />} />
+          {NAV.filter((entry) => !entry.available).map((entry) => (
+            <Route key={entry.path} path={entry.path.slice(1)} element={<ComingSoonPage item={entry} />} />
+          ))}
         </Route>
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />

@@ -25,7 +25,7 @@ type Props<T> = {
  * viewport: the content area is what narrows when the sidebar is open). Empty/loading/error go to `ListState`.
  */
 export function DataList<T>({ rows, rowKey, columns, state, emptyText, onRetry }: Props<T>) {
-  const shell = 'overflow-hidden rounded-panel border border-border bg-surface';
+  const shell = 'overflow-hidden rounded-panel bg-surface shadow-card';
   if (state !== 'ready') {
     return (
       <div className={shell}>
@@ -42,9 +42,9 @@ export function DataList<T>({ rows, rowKey, columns, state, emptyText, onRetry }
   }
   return (
     <div className="@container">
-      <div className={shell}>
-        <table className="hidden w-full table-fixed text-ui @list:table">
-          <thead className="bg-bg text-left text-xs text-muted">
+      <div className={`hidden @list:block ${shell}`}>
+        <table className="w-full table-fixed text-ui">
+          <thead className="bg-bg text-left text-xs uppercase tracking-wider text-muted">
             <tr>
               {columns.map((c) => (
                 <th key={c.key} scope="col" className={`px-4 py-2.5 font-normal ${c.className ?? ''}`}>
@@ -65,24 +65,24 @@ export function DataList<T>({ rows, rowKey, columns, state, emptyText, onRetry }
             ))}
           </tbody>
         </table>
-        <ul className="@list:hidden">
-          {rows.map((row) => (
-            <li key={rowKey(row)} data-testid="card" className="flex flex-col gap-1.5 border-t border-border px-4 py-3 first:border-t-0">
-              {columns.map((c, i) => {
-                const role = c.card ?? (i === 0 ? 'title' : 'field');
-                if (role === 'title') return <div key={c.key} className="min-w-0 break-all font-medium text-ink">{c.cell(row)}</div>;
-                if (role === 'action') return <div key={c.key} className="flex">{c.cell(row)}</div>;
-                return (
-                  <div key={c.key} className="flex min-w-0 flex-wrap items-center gap-x-2 text-xs text-muted">
-                    <span>{c.header}:</span>
-                    <span className="min-w-0 break-all text-ui text-ink">{c.cell(row)}</span>
-                  </div>
-                );
-              })}
-            </li>
-          ))}
-        </ul>
       </div>
+      <ul className="flex flex-col gap-3 @list:hidden">
+        {rows.map((row) => (
+          <li key={rowKey(row)} data-testid="card" className="flex flex-col gap-1.5 rounded-panel bg-surface px-4 py-3 shadow-card">
+            {columns.map((c, i) => {
+              const role = c.card ?? (i === 0 ? 'title' : 'field');
+              if (role === 'title') return <div key={c.key} className="min-w-0 break-all font-medium text-ink">{c.cell(row)}</div>;
+              if (role === 'action') return <div key={c.key} className="flex">{c.cell(row)}</div>;
+              return (
+                <div key={c.key} className="flex min-w-0 flex-wrap items-center gap-x-2 text-xs text-muted">
+                  <span>{c.header}:</span>
+                  <span className="min-w-0 break-all text-ui text-ink">{c.cell(row)}</span>
+                </div>
+              );
+            })}
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

@@ -12,7 +12,7 @@ export function AuthCard({ title, subtitle, children }: { title: string; subtitl
         </span>
         <span className="text-xl font-semibold text-ink">{t('shell.brand')}</span>
       </div>
-      <section className="flex w-full max-w-auth-card-max flex-col gap-4 rounded-panel border border-border bg-surface p-7">
+      <section className="flex w-full max-w-auth-card-max flex-col gap-4 rounded-panel bg-surface p-7 shadow-card">
         <h1 className="text-2xl font-bold text-ink">{title}</h1>
         {subtitle && <p className="break-words text-ui text-muted">{subtitle}</p>}
         {children}

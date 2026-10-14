@@ -30,6 +30,45 @@ test.describe('shell (vi)', () => {
     await expect(admin.getByRole('navigation', { name: vi.shell.mainNav }).getByRole('link', { name: vi.nav.staff })).toBeVisible();
   });
 
+  test('Task 12a: group titles TỔNG QUAN … HỆ THỐNG are visible at 1440; at 390 the drawer lists all 16 items and scrolls inside the viewport', async ({ page }, info) => {
+    await signedInAs(page, 'admin', { 'GET /v1/admin/content/uploads': () => emptyUploads });
+    await page.goto('/uploads');
+    await openNavIfCollapsed(page);
+    const nav = page.getByRole('navigation', { name: vi.shell.mainNav });
+    for (const title of Object.values(vi.navGroups)) {
+      await expect(nav.getByRole('group', { name: title, exact: true })).toBeAttached();
+    }
+    await expect(nav.getByRole('link')).toHaveCount(16);
+    if (info.project.name === 'mobile') {
+      const last = nav.getByRole('link', { name: vi.nav.staff });
+      await last.scrollIntoViewIfNeeded();
+      await expect(last).toBeInViewport();
+      const box = await page.getByRole('dialog').boundingBox();
+      expect(box!.height).toBeLessThanOrEqual(page.viewportSize()!.height);
+    } else {
+      await expect(nav.getByText(vi.navGroups.overview, { exact: true })).toBeVisible();
+      await expect(nav.getByText(vi.navGroups.system, { exact: true })).toBeVisible();
+    }
+  });
+
+  test('Task 12a: an unavailable menu item opens "Tính năng chưa có" with its purpose and planned step; axe is clean', async ({ page }) => {
+    await signedInAs(page, 'admin', {});
+    await page.goto('/ai/costs');
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText(vi.nav.aiCosts);
+    await expect(page.getByText(vi.comingSoon.title)).toBeVisible();
+    await expect(page.getByText(vi.comingSoon.purpose.aiCosts)).toBeVisible();
+    await expect(page.getByText('Dự kiến: Bước 6')).toBeVisible();
+    const results = await new AxeBuilder({ page }).analyze();
+    const bad = results.violations.filter((v) => v.impact === 'serious' || v.impact === 'critical');
+    expect(bad.map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(' ')).join(' | ')}`)).toEqual([]);
+  });
+
+  test('Task 12a: after login the home is /uploads', async ({ page }) => {
+    await signedInAs(page, 'admin', { 'GET /v1/admin/content/uploads': () => emptyUploads });
+    await page.goto('/');
+    await expect(page).toHaveURL(/\/uploads$/);
+  });
+
   test('an editor opening /staff is sent to the first visible page', async ({ page }) => {
     await signedInAs(page, 'editor', { 'GET /v1/admin/content/uploads': () => emptyUploads });
     await page.goto('/staff');

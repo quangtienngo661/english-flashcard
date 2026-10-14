@@ -13,7 +13,7 @@ import { CreateAccountDialog } from './CreateAccountDialog';
 import { RoleDialog } from './RoleDialog';
 import { findUser, listStaff, type StaffRole, type StaffUser } from './staff-api';
 
-const panel = 'flex flex-col gap-3 rounded-panel border border-border bg-surface p-4';
+const panel = 'flex flex-col gap-3 rounded-panel bg-surface p-4 shadow-card';
 
 function UserCard({ user, onChoose }: { user: StaffUser; onChoose: (role: StaffRole | null) => void }) {
   const t = useTranslations();
@@ -111,7 +111,7 @@ export function StaffPage() {
     {
       key: 'actions',
       header: '',
-      className: 'w-32',
+      className: 'w-44',
       card: 'action',
       cell: (u) => (
         <Button variant="ghost" onPress={() => { setTarget(u); setNotFound(false); }}>

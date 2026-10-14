@@ -22,7 +22,7 @@ export function Select({ label, items, value, onChange, isDisabled }: Props) {
         <SelectValue className="min-w-0 truncate" />
         <ChevronDown aria-hidden className="size-4 shrink-0" />
       </Button>
-      <Popover className="w-(--trigger-width) rounded-control border border-border bg-surface p-1 shadow-lg">
+      <Popover className="w-(--trigger-width) rounded-control bg-surface p-1 shadow-card">
         <ListBox className="outline-none">
           {items.map((item) => (
             <ListBoxItem

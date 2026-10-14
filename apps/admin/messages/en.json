@@ -54,11 +54,22 @@
     "loadingSession": "Checking your session…"
   },
   "nav": {
-    "uploads": "Batches",
+    "dashboard": "Dashboard",
+    "uploads": "Imports",
     "publishJobs": "Publish jobs",
     "export": "Export CSV",
     "sources": "Sources",
-    "staff": "Roles"
+    "words": "Words",
+    "senses": "Senses",
+    "topics": "Topics",
+    "reported": "Reported questions",
+    "irregular": "Irregular forms",
+    "users": "Users",
+    "entitlements": "Entitlements & AI uses",
+    "aiSettings": "AI settings",
+    "aiCosts": "Costs & reconciliation",
+    "evalSets": "Example sets",
+    "staff": "Roles & staff"
   },
   "offline": {
     "message": "Cannot reach the server"
@@ -175,5 +186,33 @@
       "emailTaken": "This email already has an account. Use \"Find by email\" above and grant a role.",
       "mailUnavailable": "The email cannot be sent right now, so no account was created. Please try again in a few minutes."
     }
+  },
+  "navGroups": {
+    "overview": "OVERVIEW",
+    "content": "CONTENT",
+    "practice": "PRACTICE",
+    "learners": "LEARNERS",
+    "ai": "AI",
+    "system": "SYSTEM"
+  },
+  "comingSoon": {
+    "title": "Feature not available yet",
+    "eta": "Planned: Step {step}",
+    "etaNone": "Planned: not scheduled yet",
+    "etaNoneApiReady": "Planned: not scheduled yet (API exists since Step 2)",
+    "purpose": {
+      "dashboard": "Overview of words, senses, recent imports, running jobs and today's AI cost.",
+      "words": "Word list with spelling variants, editorial level and function-word flag.",
+      "senses": "Draft senses, mark them reviewed, publish and see the revision history.",
+      "topics": "Add, rename in Vietnamese and English, and archive topics.",
+      "reported": "Queue of questions reported by learners; hide, remove or restore a question.",
+      "irregular": "List of irregular forms (go → went, gone) used to check AI-generated questions.",
+      "users": "User list, account status, lock or unlock.",
+      "entitlements": "Grant and revoke access and AI uses for learners, with a reason and an expiry.",
+      "aiSettings": "Turn AI on or off for the whole system and set the daily cost cap.",
+      "aiCosts": "Log of every AI call, totals per day and per model, invoice reconciliation.",
+      "evalSets": "Approved example sets and their run results before AI is enabled for the pilot."
+    },
+    "etaUnconfirmed": "Planned: Step {step} (not confirmed)"
   }
 }

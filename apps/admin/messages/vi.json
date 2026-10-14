@@ -54,11 +54,22 @@
     "loadingSession": "Đang kiểm tra phiên đăng nhập…"
   },
   "nav": {
+    "dashboard": "Dashboard",
     "uploads": "Lô nhập",
     "publishJobs": "Publish job",
     "export": "Xuất CSV",
     "sources": "Nguồn",
-    "staff": "Vai trò"
+    "words": "Từ",
+    "senses": "Nghĩa",
+    "topics": "Chủ đề",
+    "reported": "Câu bị báo lỗi",
+    "irregular": "Dạng bất quy tắc",
+    "users": "Người dùng",
+    "entitlements": "Quyền lợi & lượt AI",
+    "aiSettings": "Cài đặt AI",
+    "aiCosts": "Chi phí & đối soát",
+    "evalSets": "Bộ ví dụ",
+    "staff": "Vai trò & staff"
   },
   "offline": {
     "message": "Không kết nối được máy chủ"
@@ -175,5 +186,33 @@
       "emailTaken": "Email này đã có tài khoản. Dùng \"Tìm theo email\" ở trên rồi cấp vai trò.",
       "mailUnavailable": "Hiện chưa gửi được email nên chưa tạo tài khoản. Vui lòng thử lại sau ít phút."
     }
+  },
+  "navGroups": {
+    "overview": "TỔNG QUAN",
+    "content": "NỘI DUNG",
+    "practice": "LUYỆN TẬP",
+    "learners": "NGƯỜI HỌC",
+    "ai": "AI",
+    "system": "HỆ THỐNG"
+  },
+  "comingSoon": {
+    "title": "Tính năng chưa có",
+    "eta": "Dự kiến: Bước {step}",
+    "etaNone": "Dự kiến: chưa xếp bước",
+    "etaNoneApiReady": "Dự kiến: chưa xếp bước (API đã có từ Bước 2)",
+    "purpose": {
+      "dashboard": "Tổng quan số từ, nghĩa, lô nhập gần đây, job đang chạy và chi phí AI hôm nay.",
+      "words": "Danh sách từ kèm biến thể chính tả, level biên tập và cờ từ chức năng.",
+      "senses": "Soạn nháp nghĩa, đánh dấu đã rà, publish và xem lịch sử revision.",
+      "topics": "Thêm, đổi tên tiếng Việt và tiếng Anh, lưu trữ chủ đề.",
+      "reported": "Hàng chờ câu bị người học báo lỗi; ẩn, gỡ hoặc khôi phục câu.",
+      "irregular": "Danh sách dạng bất quy tắc (go → went, gone) để kiểm câu do AI sinh.",
+      "users": "Danh sách người dùng, trạng thái tài khoản, khóa hoặc mở khóa.",
+      "entitlements": "Cấp, thu hồi quyền và lượt AI cho người học, kèm lý do và hạn.",
+      "aiSettings": "Bật hoặc tắt AI toàn hệ thống và đặt trần chi phí mỗi ngày.",
+      "aiCosts": "Nhật ký từng lời gọi AI, tổng theo ngày và theo model, đối soát hóa đơn.",
+      "evalSets": "Bộ ví dụ đã duyệt và kết quả chạy trước khi bật AI cho pilot."
+    },
+    "etaUnconfirmed": "Dự kiến: Bước {step} (chưa chốt)"
   }
 }

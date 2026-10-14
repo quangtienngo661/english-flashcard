@@ -1,3 +1,4 @@
+import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
 import vi from '../messages/vi.json' with { type: 'json' };
 import { requestCount, requests, signedInAs } from './support/mock-api';
@@ -57,4 +58,24 @@ test('Review Focus 2: a 320-character email in a staff row/card does not widen t
     clientWidth: document.scrollingElement!.clientWidth,
   }));
   expect(scrollWidth).toBeLessThanOrEqual(clientWidth);
+});
+
+test('Task 12a: axe has no serious/critical violations on the staff page, with the list and with the grant dialog open', async ({ page }) => {
+  await signedInAs(page, 'admin', {
+    'GET /v1/admin/staff': list([row('me', 'admin@wordmet.com', 'admin'), row('e1', 'editor@wordmet.com')]),
+    'GET /v1/admin/users': () => ({ json: row('u9', 'new@wordmet.com', null) }),
+  });
+  await page.goto('/staff');
+  await expect(page.getByText('editor@wordmet.com').first()).toBeAttached();
+  const scan = async () => {
+    const results = await new AxeBuilder({ page }).analyze();
+    return results.violations.filter((v) => v.impact === 'serious' || v.impact === 'critical').map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(' ')).join(' | ')}`);
+  };
+  expect(await scan()).toEqual([]);
+
+  await page.getByLabel(t.search.label).fill('new@wordmet.com');
+  await page.getByRole('button', { name: t.search.submit }).click();
+  await page.getByRole('button', { name: t.card.grantEditor }).click();
+  await expect(page.getByRole('dialog')).toBeVisible();
+  expect(await scan()).toEqual([]);
 });
