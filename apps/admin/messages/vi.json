@@ -35,5 +35,37 @@
   },
   "notice": {
     "expired": "Phiên đăng nhập đã hết hạn"
+  },
+  "common": {
+    "retry": "Thử lại",
+    "cancel": "Hủy",
+    "confirm": "Xác nhận",
+    "loadMore": "Tải thêm",
+    "loading": "Đang tải…"
+  },
+  "shell": {
+    "brand": "Wordmet Admin",
+    "openMenu": "Mở menu",
+    "closeMenu": "Đóng menu",
+    "mainNav": "Menu chính",
+    "language": "Ngôn ngữ",
+    "account": "Tài khoản",
+    "logout": "Đăng xuất",
+    "loadingSession": "Đang kiểm tra phiên đăng nhập…"
+  },
+  "nav": {
+    "uploads": "Lô nhập",
+    "publishJobs": "Publish job",
+    "export": "Xuất CSV",
+    "sources": "Nguồn",
+    "staff": "Vai trò"
+  },
+  "offline": {
+    "message": "Không kết nối được máy chủ"
+  },
+  "list": {
+    "loading": "Đang tải…",
+    "error": "Không tải được danh sách",
+    "empty": "Chưa có mục nào"
   }
 }

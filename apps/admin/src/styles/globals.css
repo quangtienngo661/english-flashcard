@@ -30,6 +30,8 @@
   --radius-control: 0.5rem;
   --radius-panel: 0.75rem;
   --breakpoint-shell: 64rem;
+  /* Lists switch from cards to a table at this width of their own container (`@list:`), owner 14/10/2026. */
+  --container-list: 40rem;
 }
 
 body {

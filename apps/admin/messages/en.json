@@ -35,5 +35,37 @@
   },
   "notice": {
     "expired": "Your session has expired"
+  },
+  "common": {
+    "retry": "Retry",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "loadMore": "Load more",
+    "loading": "Loading…"
+  },
+  "shell": {
+    "brand": "Wordmet Admin",
+    "openMenu": "Open menu",
+    "closeMenu": "Close menu",
+    "mainNav": "Main menu",
+    "language": "Language",
+    "account": "Account",
+    "logout": "Log out",
+    "loadingSession": "Checking your session…"
+  },
+  "nav": {
+    "uploads": "Batches",
+    "publishJobs": "Publish jobs",
+    "export": "Export CSV",
+    "sources": "Sources",
+    "staff": "Roles"
+  },
+  "offline": {
+    "message": "Cannot reach the server"
+  },
+  "list": {
+    "loading": "Loading…",
+    "error": "Could not load the list",
+    "empty": "Nothing here yet"
   }
 }
