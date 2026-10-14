@@ -1,0 +1,7 @@
+.env
+.env.local
+dist/
+playwright-report/
+test-results/
+.wrangler/
+e2e-real/.state.json

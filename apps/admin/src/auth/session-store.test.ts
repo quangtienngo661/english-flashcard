@@ -1,0 +1,355 @@
+import { describe, expect, it } from 'vitest';
+import { createApiClient } from '../api/client';
+import { ApiError } from '../api/problem';
+import { SessionStore } from './session-store';
+import { BASE, channelHub, makeFetch, makeMe, problem, tokenResponse, type Route } from './test-support';
+
+const ok = (body: unknown): Route => () => Response.json(body);
+const noContent: Route = () => new Response(null, { status: 204 });
+
+function newStore(routes: Record<string, Route>, channel: ReturnType<ReturnType<typeof channelHub>['create']> | null = null) {
+  const f = makeFetch(routes);
+  const store = new SessionStore({ baseUrl: BASE, fetch: f.fetch, channel });
+  return { store, ...f };
+}
+
+describe('SessionStore', () => {
+  it('B25#2: login of a verified user without role calls logout with X-CSRF-Protection: 1, keeps no token, state signed-out notice no-access', async () => {
+    const { store, calls, count } = newStore({
+      'POST /v1/auth/login': () => tokenResponse('tok-1'),
+      'GET /v1/me': ok(makeMe({ staff_role: null, email_verified: true, permissions: [] })),
+      'POST /v1/auth/logout': noContent,
+    });
+
+    await store.login('learner@example.com', 'pw');
+
+    expect(store.state).toEqual({ status: 'signed-out', notice: 'no-access' });
+    expect(count('POST', '/v1/auth/logout')).toBe(1);
+    const logout = calls.find((c) => c.path === '/v1/auth/logout')!;
+    expect(logout.headers['X-CSRF-Protection']).toBe('1');
+    expect(logout.body).toEqual({});
+    expect(store.hasAccessToken).toBe(false);
+    const login = calls.find((c) => c.path === '/v1/auth/login')!;
+    expect(login.body).toEqual({ email: 'learner@example.com', password: 'pw', client: 'web', device_label: 'Wordmet Admin' });
+  });
+
+  it('B25#3: no role and unverified → signed-out notice no-access, logout called (no verify-email state)', async () => {
+    const { store, count } = newStore({
+      'POST /v1/auth/login': () => tokenResponse('tok-1'),
+      'GET /v1/me': ok(makeMe({ staff_role: null, email_verified: false, permissions: [] })),
+      'POST /v1/auth/logout': noContent,
+    });
+
+    await store.login('new@example.com', 'pw');
+
+    expect(store.state).toEqual({ status: 'signed-out', notice: 'no-access' });
+    expect(count('POST', '/v1/auth/logout')).toBe(1);
+    expect(store.hasAccessToken).toBe(false);
+  });
+
+  it('B25#27 (store): role + must_change_password → change-password; changePassword(ok) stores the new token, /me now false → signed-in', async () => {
+    let meCalls = 0;
+    const { store, calls } = newStore({
+      'POST /v1/auth/login': () => tokenResponse('tok-1'),
+      'POST /v1/auth/password/change': () => tokenResponse('tok-2'),
+      'GET /v1/me': () => Response.json(makeMe({ must_change_password: meCalls++ === 0 })),
+    });
+
+    await store.login('editor@example.com', 'generated');
+    expect(store.state).toMatchObject({ status: 'change-password', me: { must_change_password: true } });
+    expect(store.hasAccessToken).toBe(true);
+
+    await store.changePassword('generated', 'My-new-pass-123');
+
+    const change = calls.find((c) => c.path === '/v1/auth/password/change')!;
+    expect(change.method).toBe('POST');
+    expect(change.headers.Authorization).toBe('Bearer tok-1');
+    expect(change.body).toEqual({ current_password: 'generated', new_password: 'My-new-pass-123' });
+    const lastMe = calls.filter((c) => c.path === '/v1/me').at(-1)!;
+    expect(lastMe.headers.Authorization).toBe('Bearer tok-2');
+    expect(store.state).toMatchObject({ status: 'signed-in', me: { must_change_password: false } });
+  });
+
+  it('changePassword with 400 same_as_current → ApiError with violations, state stays change-password', async () => {
+    const { store } = newStore({
+      'POST /v1/auth/login': () => tokenResponse('tok-1'),
+      'POST /v1/auth/password/change': () => problem(400, 'validation-failed', { violations: ['same_as_current'] }),
+      'GET /v1/me': ok(makeMe({ must_change_password: true })),
+    });
+    await store.login('editor@example.com', 'generated');
+
+    await expect(store.changePassword('generated', 'generated')).rejects.toMatchObject({
+      problem: { slug: 'validation-failed', violations: ['same_as_current'] },
+    });
+    expect(store.state.status).toBe('change-password');
+    expect(store.hasAccessToken).toBe(true);
+  });
+
+  it('403 password-change-required → recheck → change-password, no refresh call', async () => {
+    let meCalls = 0;
+    const { store, count } = newStore({
+      'POST /v1/auth/login': () => tokenResponse('tok-1'),
+      'GET /v1/me': () => Response.json(makeMe({ must_change_password: meCalls++ > 0 })),
+      'GET /v1/admin/x': () => problem(403, 'password-change-required'),
+    });
+    await store.login('editor@example.com', 'pw');
+    expect(store.state.status).toBe('signed-in');
+
+    await expect(createApiClient({ send: store.send }).get('/v1/admin/x')).rejects.toMatchObject({
+      problem: { slug: 'password-change-required' },
+    });
+
+    expect(count('POST', '/v1/auth/refresh')).toBe(0);
+    expect(store.state).toMatchObject({ status: 'change-password' });
+  });
+
+  it('a failed login throws the ApiError and stays signed-out', async () => {
+    const { store } = newStore({ 'POST /v1/auth/login': () => problem(401, 'invalid-credentials') });
+    await expect(store.login('a@b.co', 'bad')).rejects.toBeInstanceOf(ApiError);
+    expect(store.state.status).not.toBe('signed-in');
+  });
+
+  it('B25#4: bootstrap with a working refresh → signed-in; with refresh 401 → signed-out notice null', async () => {
+    const good = newStore({
+      'POST /v1/auth/refresh': () => tokenResponse('tok-1'),
+      'GET /v1/me': ok(makeMe()),
+    });
+    expect(good.store.state.status).toBe('loading');
+    await good.store.bootstrap();
+    expect(good.store.state).toMatchObject({ status: 'signed-in', me: { staff_role: 'editor' } });
+    const refresh = good.calls[0];
+    expect(refresh.headers['X-CSRF-Protection']).toBe('1');
+    expect(refresh.body).toEqual({});
+
+    const bad = newStore({ 'POST /v1/auth/refresh': () => problem(401, 'invalid-token') });
+    await bad.store.bootstrap();
+    expect(bad.store.state).toEqual({ status: 'signed-out', notice: null });
+    expect(bad.count('GET', '/v1/me')).toBe(0);
+  });
+
+  it('B25#5: three requests get 401 at once → exactly one POST /v1/auth/refresh, each request retried once', async () => {
+    let issued = 0;
+    const seen: string[] = [];
+    const { store, count } = newStore({
+      'POST /v1/auth/refresh': async () => {
+        await new Promise((r) => setTimeout(r, 5));
+        issued += 1;
+        return tokenResponse(`tok-${issued}`);
+      },
+      'GET /v1/a': (c) => {
+        seen.push(`a:${c.headers.Authorization}`);
+        return c.headers.Authorization === 'Bearer tok-1' ? Response.json({ id: 'a' }) : problem(401, 'invalid-token');
+      },
+      'GET /v1/b': (c) => {
+        seen.push(`b:${c.headers.Authorization}`);
+        return c.headers.Authorization === 'Bearer tok-1' ? Response.json({ id: 'b' }) : problem(401, 'invalid-token');
+      },
+      'GET /v1/c': (c) => {
+        seen.push(`c:${c.headers.Authorization}`);
+        return c.headers.Authorization === 'Bearer tok-1' ? Response.json({ id: 'c' }) : problem(401, 'invalid-token');
+      },
+    });
+    const api = createApiClient({ send: store.send });
+
+    const results = await Promise.all([api.get('/v1/a'), api.get('/v1/b'), api.get('/v1/c')]);
+
+    expect(results).toEqual([{ id: 'a' }, { id: 'b' }, { id: 'c' }]);
+    expect(count('POST', '/v1/auth/refresh')).toBe(1);
+    for (const p of ['a', 'b', 'c']) expect(seen.filter((s) => s.startsWith(`${p}:`))).toHaveLength(2);
+  });
+
+  it('a 401 that arrives after another request already refreshed retries with the new token without a second refresh', async () => {
+    let issued = 0;
+    const { store, count } = newStore({
+      'POST /v1/auth/refresh': () => {
+        issued += 1;
+        return tokenResponse(`tok-${issued}`);
+      },
+      'GET /v1/slow': async (c) => {
+        await new Promise((r) => setTimeout(r, 20));
+        return c.headers.Authorization === 'Bearer tok-1' ? Response.json({ id: 'slow' }) : problem(401, 'invalid-token');
+      },
+      'GET /v1/fast': (c) => (c.headers.Authorization === 'Bearer tok-1' ? Response.json({ id: 'fast' }) : problem(401, 'invalid-token')),
+    });
+    const api = createApiClient({ send: store.send });
+    // first call has no token yet: both 401, the slow one answers after the fast one already refreshed
+    const [slow, fast] = await Promise.all([api.get('/v1/slow'), api.get('/v1/fast')]);
+    expect([slow, fast]).toEqual([{ id: 'slow' }, { id: 'fast' }]);
+    expect(count('POST', '/v1/auth/refresh')).toBe(1);
+  });
+
+  it('B25#6: 403 forbidden → refresh then /me; me.staff_role null → signed-out no-access', async () => {
+    const { store, calls } = newStore({
+      'POST /v1/auth/login': () => tokenResponse('tok-1'),
+      'POST /v1/auth/refresh': () => tokenResponse('tok-2'),
+      'GET /v1/me': (() => {
+        let n = 0;
+        return () => Response.json(n++ === 0 ? makeMe() : makeMe({ staff_role: null, permissions: [] }));
+      })(),
+      'GET /v1/admin/x': () => problem(403, 'forbidden'),
+      'POST /v1/auth/logout': noContent,
+    });
+    await store.login('s@example.com', 'pw');
+    expect(store.state.status).toBe('signed-in');
+
+    await expect(createApiClient({ send: store.send }).get('/v1/admin/x')).rejects.toMatchObject({ problem: { slug: 'forbidden' } });
+
+    expect(calls.map((c) => `${c.method} ${c.path}`)).toEqual([
+      'POST /v1/auth/login',
+      'GET /v1/me',
+      'GET /v1/admin/x',
+      'POST /v1/auth/refresh',
+      'GET /v1/me',
+      'POST /v1/auth/logout',
+    ]);
+    expect(store.state).toEqual({ status: 'signed-out', notice: 'no-access' });
+  });
+
+  it('B25#6: 403 forbidden and the role is kept → state me updated with the new permissions and the ApiError is rethrown', async () => {
+    const reduced = makeMe({ staff_role: 'editor', permissions: ['content.edit'] });
+    const { store } = newStore({
+      'POST /v1/auth/login': () => tokenResponse('tok-1'),
+      'POST /v1/auth/refresh': () => tokenResponse('tok-2'),
+      'GET /v1/me': (() => {
+        let n = 0;
+        return () => Response.json(n++ === 0 ? makeMe() : reduced);
+      })(),
+      'GET /v1/admin/x': () => problem(403, 'forbidden'),
+    });
+    await store.login('s@example.com', 'pw');
+
+    await expect(createApiClient({ send: store.send }).get('/v1/admin/x')).rejects.toBeInstanceOf(ApiError);
+
+    expect(store.state).toEqual({ status: 'signed-in', me: reduced });
+  });
+
+  it.each(['profile-incomplete', 'csrf-header-required', 'staff-role-rule'])(
+    'B25#6: 403 %s is rethrown without refresh or /me',
+    async (slug) => {
+      const { store, count } = newStore({
+        'POST /v1/auth/login': () => tokenResponse('tok-1'),
+        'GET /v1/me': ok(makeMe()),
+        'GET /v1/admin/x': () => problem(403, slug),
+      });
+      await store.login('s@example.com', 'pw');
+      await expect(createApiClient({ send: store.send }).get('/v1/admin/x')).rejects.toMatchObject({ problem: { slug } });
+      expect(count('POST', '/v1/auth/refresh')).toBe(0);
+      expect(count('GET', '/v1/me')).toBe(1); // only the one from login
+      expect(store.state.status).toBe('signed-in');
+    },
+  );
+
+  it('B25#6a: 403 forbidden and refresh 401 → signed-out notice expired, /me never called again', async () => {
+    const { store, count } = newStore({
+      'POST /v1/auth/login': () => tokenResponse('tok-1'),
+      'POST /v1/auth/refresh': () => problem(401, 'invalid-token'),
+      'GET /v1/me': ok(makeMe()),
+      'GET /v1/admin/x': () => problem(403, 'forbidden'),
+      'POST /v1/auth/logout': noContent,
+    });
+    await store.login('s@example.com', 'pw');
+
+    await expect(createApiClient({ send: store.send }).get('/v1/admin/x')).rejects.toMatchObject({ problem: { slug: 'forbidden' } });
+
+    expect(store.state).toEqual({ status: 'signed-out', notice: 'expired' });
+    expect(count('GET', '/v1/me')).toBe(1); // only the one from login
+    expect(store.hasAccessToken).toBe(false);
+  });
+
+  it('a 401 whose refresh fails ends signed-out with notice expired', async () => {
+    const { store } = newStore({
+      'POST /v1/auth/login': () => tokenResponse('tok-1'),
+      'GET /v1/me': ok(makeMe()),
+      'GET /v1/x': () => problem(401, 'invalid-token'),
+      'POST /v1/auth/refresh': () => problem(401, 'invalid-token'),
+      'POST /v1/auth/logout': noContent,
+    });
+    await store.login('s@example.com', 'pw');
+    await expect(createApiClient({ send: store.send }).get('/v1/x')).rejects.toBeInstanceOf(ApiError);
+    expect(store.state).toEqual({ status: 'signed-out', notice: 'expired' });
+  });
+
+  it('B25#8: logout in store A posts {type:"logout"}; store B (same channel pair) becomes signed-out without any fetch', async () => {
+    const hub = channelHub();
+    const routes = {
+      'POST /v1/auth/refresh': () => tokenResponse('tok-1'),
+      'GET /v1/me': ok(makeMe()),
+      'POST /v1/auth/logout': noContent,
+    };
+    const a = newStore(routes, hub.create());
+    const b = newStore(routes, hub.create());
+    await a.store.bootstrap();
+    await b.store.bootstrap();
+    expect(b.store.state.status).toBe('signed-in');
+    const before = b.calls.length;
+
+    await a.store.logout();
+
+    expect(a.store.state).toEqual({ status: 'signed-out', notice: null });
+    expect(b.store.state).toEqual({ status: 'signed-out', notice: null });
+    expect(b.store.hasAccessToken).toBe(false);
+    expect(b.calls.length).toBe(before);
+  });
+
+  it('a login in tab A makes a signed-out tab B bootstrap again', async () => {
+    const hub = channelHub();
+    let refreshOk = false;
+    const routes = {
+      'POST /v1/auth/refresh': () => (refreshOk ? tokenResponse('tok-1') : problem(401, 'invalid-token')),
+      'POST /v1/auth/login': () => tokenResponse('tok-1'),
+      'GET /v1/me': ok(makeMe()),
+    };
+    const a = newStore(routes, hub.create());
+    const b = newStore(routes, hub.create());
+    await b.store.bootstrap();
+    expect(b.store.state.status).toBe('signed-out');
+
+    refreshOk = true;
+    await a.store.login('s@example.com', 'pw');
+    await new Promise((r) => setTimeout(r, 0));
+    await b.store.bootstrap(); // joins the in-flight/finished bootstrap started by the message
+
+    expect(b.store.state.status).toBe('signed-in');
+  });
+
+  it('B25E13: channel null → logout still works', async () => {
+    const { store } = newStore({
+      'POST /v1/auth/refresh': () => tokenResponse('tok-1'),
+      'GET /v1/me': ok(makeMe()),
+      'POST /v1/auth/logout': noContent,
+    });
+    await store.bootstrap();
+    await store.logout();
+    expect(store.state).toEqual({ status: 'signed-out', notice: null });
+  });
+
+  it('logout clears the session even when the logout request fails', async () => {
+    const { store } = newStore({
+      'POST /v1/auth/refresh': () => tokenResponse('tok-1'),
+      'GET /v1/me': ok(makeMe()),
+      'POST /v1/auth/logout': () => {
+        throw new TypeError('Failed to fetch');
+      },
+    });
+    await store.bootstrap();
+    await store.logout('expired');
+    expect(store.state).toEqual({ status: 'signed-out', notice: 'expired' });
+    expect(store.hasAccessToken).toBe(false);
+  });
+
+  it('subscribe notifies on every state change and stops after unsubscribe', async () => {
+    const { store } = newStore({
+      'POST /v1/auth/refresh': () => tokenResponse('tok-1'),
+      'GET /v1/me': ok(makeMe()),
+    });
+    let n = 0;
+    const off = store.subscribe(() => (n += 1));
+    await store.bootstrap();
+    expect(n).toBeGreaterThan(0);
+    const seen = n;
+    off();
+    store.subscribe(() => {})();
+    await store.recheck();
+    expect(n).toBe(seen);
+  });
+});

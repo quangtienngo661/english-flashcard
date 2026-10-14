@@ -1,0 +1,218 @@
+{
+  "errors": {
+    "generic": "Something went wrong",
+    "inProgress": "The previous request is still running",
+    "noAccess": "You do not have access to this site",
+    "batch-filter-unavailable": "This batch filter is not available",
+    "batch-not-revertable": "This batch cannot be reverted",
+    "csrf-header-required": "The request is missing the CSRF protection header (programming error)",
+    "email-already-verified": "This email is already verified",
+    "email-taken": "This email is already in use",
+    "export-too-large": "Too many rows to export, narrow the filters",
+    "file-invalid": "The file is not valid",
+    "file-too-large": "The file is too large (10 MB maximum)",
+    "forbidden": "You no longer have permission to do this",
+    "idempotency-key-abandoned": "The previous request was abandoned, please submit again",
+    "invalid-credentials": "Wrong email or password",
+    "invalid-current-password": "The current password is wrong",
+    "invalid-otp": "The code is wrong or has expired",
+    "invalid-token": "The session or link is not valid",
+    "level-source-required": "The file has a level column, choose a level source",
+    "mail-unavailable": "The email cannot be sent right now, so no account was created. Please try again in a few minutes.",
+    "not-found": "Not found",
+    "nothing-to-publish": "Nothing is eligible to publish",
+    "password-change-required": "You must change your password before continuing",
+    "payload-too-large": "The request is too large",
+    "profile-incomplete": "The profile is incomplete",
+    "rate-limited": "Too many attempts, wait a moment",
+    "same_as_current": "The new password must differ from the current one",
+    "source-exists": "This data source already exists",
+    "source-incomplete": "A level source needs a version and a license",
+    "staff-role-rule": "This role cannot be changed (the user has not verified their email, or this is the last admin)",
+    "topic-exists": "This topic already exists",
+    "unsupported-media-type": "The data format is not supported",
+    "validation-failed": "The data is not valid"
+  },
+  "notice": {
+    "expired": "Your session has expired"
+  },
+  "common": {
+    "retry": "Retry",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "loadMore": "Load more",
+    "loading": "Loading…"
+  },
+  "shell": {
+    "brand": "Wordmet Admin",
+    "openMenu": "Open menu",
+    "closeMenu": "Close menu",
+    "mainNav": "Main menu",
+    "language": "Language",
+    "account": "Account",
+    "logout": "Log out",
+    "loadingSession": "Checking your session…"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "uploads": "Imports",
+    "publishJobs": "Publish jobs",
+    "export": "Export CSV",
+    "sources": "Sources",
+    "words": "Words",
+    "senses": "Senses",
+    "topics": "Topics",
+    "reported": "Reported questions",
+    "irregular": "Irregular forms",
+    "users": "Users",
+    "entitlements": "Entitlements & AI uses",
+    "aiSettings": "AI settings",
+    "aiCosts": "Costs & reconciliation",
+    "evalSets": "Example sets",
+    "staff": "Roles & staff"
+  },
+  "offline": {
+    "message": "Cannot reach the server"
+  },
+  "list": {
+    "loading": "Loading…",
+    "error": "Could not load the list",
+    "empty": "Nothing here yet"
+  },
+  "account": {
+    "login": {
+      "title": "Log in",
+      "subtitle": "Use your Wordmet admin account",
+      "email": "Email",
+      "emailPlaceholder": "name@wordmet.com",
+      "password": "Password",
+      "forgot": "Forgot password?",
+      "submit": "Log in"
+    },
+    "forgot": {
+      "title": "Forgot password",
+      "subtitle": "Enter your email and we will send you a reset code",
+      "email": "Email",
+      "send": "Send code",
+      "back": "Back to log in",
+      "resetTitle": "Set a new password",
+      "resetSubtitle": "Enter the 6-digit code sent to {email}",
+      "code": "Verification code",
+      "newPassword": "New password",
+      "submit": "Reset password",
+      "resend": "Resend code",
+      "resendWait": "Resend code ({seconds})",
+      "resent": "Code sent again",
+      "requestNew": "Request a new code",
+      "wait": "{label} ({seconds})"
+    },
+    "changePassword": {
+      "title": "Change password",
+      "subtitle": "An administrator requires you to set a new password before you continue.",
+      "current": "Current password",
+      "new": "New password",
+      "confirm": "Confirm new password",
+      "submit": "Change password",
+      "logout": "Log out",
+      "mismatch": "The confirmation does not match"
+    },
+    "passwordRules": {
+      "notMet": "The password does not meet the requirements",
+      "min_length": "At least 8 characters",
+      "max_length": "At most 128 characters",
+      "uppercase": "An uppercase letter",
+      "lowercase": "A lowercase letter",
+      "digit": "A digit",
+      "special": "A special character"
+    }
+  },
+  "staff": {
+    "createAccount": "Create account",
+    "search": {
+      "label": "Find by email",
+      "placeholder": "type.email@example.com",
+      "submit": "Find",
+      "notFound": "No user found with this email"
+    },
+    "card": {
+      "verified": "Verified",
+      "unverified": "Email not verified",
+      "noRole": "No role",
+      "grantEditor": "Make editor",
+      "grantAdmin": "Make admin",
+      "remove": "Remove role",
+      "unverifiedHint": "This user has not verified their email, so a role cannot be granted yet"
+    },
+    "list": {
+      "email": "Email",
+      "role": "Role",
+      "verified": "Verified",
+      "isVerified": "Verified",
+      "notVerified": "Not verified",
+      "change": "Change role",
+      "shown": "{count} items shown",
+      "empty": "No staff accounts yet"
+    },
+    "dialog": {
+      "grantTitle": "Grant the {role} role?",
+      "grantEditorBody": "Grant the editor role to {email}? They will be able to enter and edit content, but not manage roles.",
+      "grantAdminBody": "Grant the admin role to {email}? They will be able to manage roles and all content.",
+      "removeTitle": "Remove the role of {email}?",
+      "removeBody": "They will lose access to the admin site immediately.",
+      "selfTitle": "Remove your own admin role?",
+      "selfBody": "You will lose the right to manage roles and be moved off this page right after confirming. Only another admin can grant it back to you.",
+      "selfConfirm": "Remove my role",
+      "lastAdmin": "The last admin cannot be removed"
+    },
+    "create": {
+      "title": "Create account",
+      "email": "Email",
+      "emailInvalid": "Enter a valid email",
+      "role": "Role",
+      "generate": "Generate a random password",
+      "generateHint": "The password is emailed to the user and is never shown on screen.",
+      "password": "Password",
+      "confirmPassword": "Confirm password",
+      "mustChange": "Require a password change at first login",
+      "continue": "Continue",
+      "confirmTitle": "Confirm account creation",
+      "confirmBody": "Create a {role} account for {email}? The password will be sent to exactly this address.",
+      "confirmMustChange": "The user must change the password at first login.",
+      "back": "Back",
+      "submit": "Create account",
+      "doneTitle": "Account created",
+      "doneBody": "The account was created and the password sent to {email}. If the editor does not get the mail, they can use \"Forgot password\" on the login page.",
+      "close": "Close",
+      "emailTaken": "This email already has an account. Use \"Find by email\" above and grant a role.",
+      "mailUnavailable": "The email cannot be sent right now, so no account was created. Please try again in a few minutes."
+    }
+  },
+  "navGroups": {
+    "overview": "OVERVIEW",
+    "content": "CONTENT",
+    "practice": "PRACTICE",
+    "learners": "LEARNERS",
+    "ai": "AI",
+    "system": "SYSTEM"
+  },
+  "comingSoon": {
+    "title": "Feature not available yet",
+    "eta": "Planned: Step {step}",
+    "etaNone": "Planned: not scheduled yet",
+    "etaNoneApiReady": "Planned: not scheduled yet (API exists since Step 2)",
+    "purpose": {
+      "dashboard": "Overview of words, senses, recent imports, running jobs and today's AI cost.",
+      "words": "Word list with spelling variants, editorial level and function-word flag.",
+      "senses": "Draft senses, mark them reviewed, publish and see the revision history.",
+      "topics": "Add, rename in Vietnamese and English, and archive topics.",
+      "reported": "Queue of questions reported by learners; hide, remove or restore a question.",
+      "irregular": "List of irregular forms (go → went, gone) used to check AI-generated questions.",
+      "users": "User list, account status, lock or unlock.",
+      "entitlements": "Grant and revoke access and AI uses for learners, with a reason and an expiry.",
+      "aiSettings": "Turn AI on or off for the whole system and set the daily cost cap.",
+      "aiCosts": "Log of every AI call, totals per day and per model, invoice reconciliation.",
+      "evalSets": "Approved example sets and their run results before AI is enabled for the pilot."
+    },
+    "etaUnconfirmed": "Planned: Step {step} (not confirmed)"
+  }
+}
