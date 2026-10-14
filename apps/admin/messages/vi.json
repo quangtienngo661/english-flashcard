@@ -305,5 +305,20 @@
     "revertDone": "Đã gỡ {removed} mục do lô tạo.",
     "revertSkipped": "{skipped} mục không gỡ được.",
     "wait": "Đợi {seconds} giây"
+  },
+  "export": {
+    "status": "Trạng thái",
+    "level": "Level",
+    "pos": "Từ loại",
+    "topic": "Topic",
+    "batch": "Lô nhập",
+    "all": "Tất cả",
+    "download": "Tải CSV",
+    "archived": "đã lưu trữ",
+    "statuses": {
+      "unpublishable": "Chưa publish được",
+      "open_draft": "Đang soạn",
+      "published": "Đã publish"
+    }
   }
 }

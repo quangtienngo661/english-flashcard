@@ -7,6 +7,7 @@ import { BatchPage } from '../features/uploads/BatchPage';
 import { UploadForm } from '../features/uploads/UploadForm';
 import { UploadsPage } from '../features/uploads/UploadsPage';
 import { ComingSoonPage } from '../features/coming-soon/ComingSoonPage';
+import { ExportPage } from '../features/export/ExportPage';
 import { SourceForm, SourcesPage } from '../features/sources/SourcesPage';
 import { StaffPage } from '../features/staff/StaffPage';
 import { homePath, NAV } from './nav';
@@ -35,7 +36,7 @@ export function AppRoutes() {
           <Route path="uploads/:id" element={<BatchPage />} />
           <Route path="publish-jobs" element={<PlaceholderPage />} />
           <Route path="publish-jobs/:id" element={<PlaceholderPage />} />
-          <Route path="export" element={<PlaceholderPage />} />
+          <Route path="export" element={<ExportPage />} />
           <Route path="sources" element={<SourcesPage />} />
           <Route path="sources/new" element={<SourceForm />} />
           <Route path="staff" element={<StaffPage />} />

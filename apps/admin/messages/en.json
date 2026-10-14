@@ -305,5 +305,20 @@
     "revertDone": "Removed {removed} items created by the batch.",
     "revertSkipped": "{skipped} items could not be removed.",
     "wait": "Wait {seconds} s"
+  },
+  "export": {
+    "status": "Status",
+    "level": "Level",
+    "pos": "Part of speech",
+    "topic": "Topic",
+    "batch": "Import batch",
+    "all": "All",
+    "download": "Download CSV",
+    "archived": "archived",
+    "statuses": {
+      "unpublishable": "Not publishable yet",
+      "open_draft": "Open draft",
+      "published": "Published"
+    }
   }
 }
