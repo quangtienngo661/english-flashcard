@@ -48,6 +48,7 @@ export const KNOWN_ERROR_SLUGS = [
   'mail-unavailable',
   'not-found',
   'nothing-to-publish',
+  'password-change-required',
   'payload-too-large',
   'profile-incomplete',
   'rate-limited',

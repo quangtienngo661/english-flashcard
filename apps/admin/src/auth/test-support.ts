@@ -6,6 +6,7 @@ export const makeMe = (over: Partial<Me> = {}): Me => ({
   id: 'u1',
   email: 'staff@example.com',
   email_verified: true,
+  must_change_password: false,
   native_language: null,
   timezone: 'Asia/Ho_Chi_Minh',
   staff_role: 'editor',

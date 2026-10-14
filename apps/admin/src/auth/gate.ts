@@ -1,7 +1,7 @@
 import type { Me } from './session-store';
 
-/** Spec §5 gate rule: a staff role enters the app; no role + unverified verifies the email; no role + verified is turned away. */
-export function gate(me: Me): 'app' | 'verify-email' | 'no-access' {
-  if (me.staff_role !== null) return 'app';
-  return me.email_verified ? 'no-access' : 'verify-email';
+/** Spec §5 gate rule: a staff role enters the app (after a forced password change); no role is turned away. */
+export function gate(me: Me): 'app' | 'change-password' | 'no-access' {
+  if (me.staff_role === null) return 'no-access';
+  return me.must_change_password ? 'change-password' : 'app';
 }

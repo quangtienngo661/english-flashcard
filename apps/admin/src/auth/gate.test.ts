@@ -6,6 +6,7 @@ const me = (over: Partial<Me>): Me => ({
   id: 'u1',
   email: 'a@b.co',
   email_verified: true,
+  must_change_password: false,
   native_language: null,
   timezone: 'Asia/Ho_Chi_Minh',
   staff_role: null,
@@ -14,10 +15,12 @@ const me = (over: Partial<Me>): Me => ({
 });
 
 describe('gate', () => {
-  it('role → app; null+unverified → verify-email; null+verified → no-access', () => {
-    expect(gate(me({ staff_role: 'editor', email_verified: false }))).toBe('app');
-    expect(gate(me({ staff_role: 'admin' }))).toBe('app');
-    expect(gate(me({ staff_role: null, email_verified: false }))).toBe('verify-email');
+  it('role+flag → change-password; role → app; null (verified or not) → no-access', () => {
+    expect(gate(me({ staff_role: 'editor', must_change_password: true }))).toBe('change-password');
+    expect(gate(me({ staff_role: 'admin', must_change_password: true }))).toBe('change-password');
+    expect(gate(me({ staff_role: 'editor' }))).toBe('app');
+    expect(gate(me({ staff_role: 'admin', email_verified: false }))).toBe('app');
+    expect(gate(me({ staff_role: null, email_verified: false }))).toBe('no-access');
     expect(gate(me({ staff_role: null, email_verified: true }))).toBe('no-access');
   });
 });

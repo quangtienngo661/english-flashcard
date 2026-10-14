@@ -21,9 +21,11 @@
     "mail-unavailable": "The email could not be sent, try again later",
     "not-found": "Not found",
     "nothing-to-publish": "Nothing is eligible to publish",
+    "password-change-required": "You must change your password before continuing",
     "payload-too-large": "The request is too large",
     "profile-incomplete": "The profile is incomplete",
     "rate-limited": "Too many attempts, wait a moment",
+    "same_as_current": "The new password must differ from the current one",
     "source-exists": "This data source already exists",
     "source-incomplete": "A level source needs a version and a license",
     "staff-role-rule": "This role cannot be changed (the user has not verified their email, or this is the last admin)",
@@ -32,7 +34,6 @@
     "validation-failed": "The data is not valid"
   },
   "notice": {
-    "verified": "Email verified. Ask an admin to grant you access.",
     "expired": "Your session has expired"
   }
 }

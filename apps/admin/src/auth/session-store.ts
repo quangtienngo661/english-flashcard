@@ -8,18 +8,19 @@ export type Me = {
   id: string;
   email: string;
   email_verified: boolean;
+  must_change_password: boolean;
   native_language: 'vi' | 'en' | null;
   timezone: string;
   staff_role: 'admin' | 'editor' | null;
   permissions: Permission[];
 };
 
-export type Notice = 'no-access' | 'expired' | 'verified';
+export type Notice = 'no-access' | 'expired';
 
 export type SessionState =
   | { status: 'loading' }
   | { status: 'signed-out'; notice: Notice | null }
-  | { status: 'verify-email'; me: Me }
+  | { status: 'change-password'; me: Me }
   | { status: 'signed-in'; me: Me };
 
 export type ChannelLike = {
@@ -73,17 +74,22 @@ export class SessionStore {
   }
 
   async login(email: string, password: string): Promise<void> {
-    await this.startSession('/v1/auth/login', { email, password, ...DEVICE });
-  }
-
-  async register(email: string, password: string, timezone: string): Promise<void> {
-    await this.startSession('/v1/auth/register', { email, password, timezone, ...DEVICE });
-  }
-
-  async verifyEmail(code: string): Promise<void> {
-    const res = await this.authed('/v1/auth/verify-email', json('POST', { code }));
+    const res = await this.raw('/v1/auth/login', json('POST', { email, password, ...DEVICE }), null);
     if (!res.ok) throw await toApiError(res);
-    await this.logout('verified');
+    this.token = ((await res.json()) as TokenBody).access_token;
+    await this.recheck();
+    if (this.state.status === 'signed-in' || this.state.status === 'change-password') this.broadcast({ type: 'login' });
+  }
+
+  /** Forced password change (spec §5): the API revokes older sessions and returns a new one. */
+  async changePassword(current: string, next: string): Promise<void> {
+    const res = await this.authed(
+      '/v1/auth/password/change',
+      json('POST', { current_password: current, new_password: next }),
+    );
+    if (!res.ok) throw await toApiError(res);
+    this.token = ((await res.json()) as TokenBody).access_token;
+    await this.recheck();
   }
 
   async logout(notice: Notice | null = null): Promise<void> {
@@ -104,16 +110,21 @@ export class SessionStore {
     const me = (await res.json()) as Me;
     const next = gate(me);
     if (next === 'app') this.set({ status: 'signed-in', me });
-    else if (next === 'verify-email') this.set({ status: 'verify-email', me });
+    else if (next === 'change-password') this.set({ status: 'change-password', me });
     else await this.logout('no-access');
   }
 
   /** Session-aware transport for the API client: bearer token, shared 401 refresh, 403 `forbidden` gate. */
   send: Transport = async (path, init) => {
     const res = await this.authed(path, init);
-    if (res.status === 403 && (await slugOf(res)) === 'forbidden') {
-      if (await this.refresh()) await this.recheck();
-      else await this.logout('expired');
+    if (res.status === 403) {
+      const slug = await slugOf(res);
+      if (slug === 'forbidden') {
+        if (await this.refresh()) await this.recheck();
+        else await this.logout('expired');
+      } else if (slug === 'password-change-required') {
+        await this.recheck();
+      }
     }
     return res;
   };
@@ -128,14 +139,6 @@ export class SessionStore {
     } catch {
       this.set({ status: 'signed-out', notice: null });
     }
-  }
-
-  private async startSession(path: string, body: unknown): Promise<void> {
-    const res = await this.raw(path, json('POST', body), null);
-    if (!res.ok) throw await toApiError(res);
-    this.token = ((await res.json()) as TokenBody).access_token;
-    await this.recheck();
-    if (this.state.status === 'signed-in' || this.state.status === 'verify-email') this.broadcast({ type: 'login' });
   }
 
   /** One refresh at a time: concurrent callers share the in-flight promise. */

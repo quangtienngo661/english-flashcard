@@ -21,9 +21,11 @@
     "mail-unavailable": "Không gửi được email, thử lại sau",
     "not-found": "Không tìm thấy",
     "nothing-to-publish": "Không có mục nào đủ điều kiện publish",
+    "password-change-required": "Bạn phải đổi mật khẩu trước khi tiếp tục",
     "payload-too-large": "Dữ liệu gửi lên quá lớn",
     "profile-incomplete": "Hồ sơ chưa đầy đủ",
     "rate-limited": "Thao tác quá nhanh, hãy đợi một lát",
+    "same_as_current": "Mật khẩu mới phải khác mật khẩu hiện tại",
     "source-exists": "Nguồn dữ liệu này đã tồn tại",
     "source-incomplete": "Nguồn level cần có phiên bản và license",
     "staff-role-rule": "Không thể đổi vai trò này (người dùng chưa xác minh email, hoặc đây là admin cuối cùng)",
@@ -32,7 +34,6 @@
     "validation-failed": "Dữ liệu không hợp lệ"
   },
   "notice": {
-    "verified": "Email đã xác minh. Liên hệ admin để được cấp quyền.",
     "expired": "Phiên đăng nhập đã hết hạn"
   }
 }

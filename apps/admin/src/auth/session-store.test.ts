@@ -33,52 +33,74 @@ describe('SessionStore', () => {
     expect(login.body).toEqual({ email: 'learner@example.com', password: 'pw', client: 'web', device_label: 'Wordmet Admin' });
   });
 
-  it('B25#3: login of an unverified user without role → verify-email; verifyEmail(correct) → logout → signed-out notice verified', async () => {
-    const { store, calls } = newStore({
+  it('B25#3: no role and unverified → signed-out notice no-access, logout called (no verify-email state)', async () => {
+    const { store, count } = newStore({
       'POST /v1/auth/login': () => tokenResponse('tok-1'),
       'GET /v1/me': ok(makeMe({ staff_role: null, email_verified: false, permissions: [] })),
-      'POST /v1/auth/verify-email': ok({}),
       'POST /v1/auth/logout': noContent,
     });
 
     await store.login('new@example.com', 'pw');
-    expect(store.state.status).toBe('verify-email');
-    expect(store.hasAccessToken).toBe(true);
 
-    await store.verifyEmail('123456');
-    const verify = calls.find((c) => c.path === '/v1/auth/verify-email')!;
-    expect(verify.body).toEqual({ code: '123456' });
-    expect(verify.headers.Authorization).toBe('Bearer tok-1');
-    expect(store.state).toEqual({ status: 'signed-out', notice: 'verified' });
+    expect(store.state).toEqual({ status: 'signed-out', notice: 'no-access' });
+    expect(count('POST', '/v1/auth/logout')).toBe(1);
     expect(store.hasAccessToken).toBe(false);
   });
 
-  it('a wrong code keeps the session and throws the ApiError', async () => {
-    const { store } = newStore({
+  it('B25#27 (store): role + must_change_password → change-password; changePassword(ok) stores the new token, /me now false → signed-in', async () => {
+    let meCalls = 0;
+    const { store, calls } = newStore({
       'POST /v1/auth/login': () => tokenResponse('tok-1'),
-      'GET /v1/me': ok(makeMe({ staff_role: null, email_verified: false, permissions: [] })),
-      'POST /v1/auth/verify-email': () => problem(400, 'invalid-otp'),
+      'POST /v1/auth/password/change': () => tokenResponse('tok-2'),
+      'GET /v1/me': () => Response.json(makeMe({ must_change_password: meCalls++ === 0 })),
     });
-    await store.login('new@example.com', 'pw');
-    await expect(store.verifyEmail('000000')).rejects.toMatchObject({ problem: { slug: 'invalid-otp' } });
-    expect(store.state.status).toBe('verify-email');
+
+    await store.login('editor@example.com', 'generated');
+    expect(store.state).toMatchObject({ status: 'change-password', me: { must_change_password: true } });
+    expect(store.hasAccessToken).toBe(true);
+
+    await store.changePassword('generated', 'My-new-pass-123');
+
+    const change = calls.find((c) => c.path === '/v1/auth/password/change')!;
+    expect(change.method).toBe('POST');
+    expect(change.headers.Authorization).toBe('Bearer tok-1');
+    expect(change.body).toEqual({ current_password: 'generated', new_password: 'My-new-pass-123' });
+    const lastMe = calls.filter((c) => c.path === '/v1/me').at(-1)!;
+    expect(lastMe.headers.Authorization).toBe('Bearer tok-2');
+    expect(store.state).toMatchObject({ status: 'signed-in', me: { must_change_password: false } });
   });
 
-  it('register keeps the returned token, then lands on verify-email', async () => {
-    const { store, calls } = newStore({
-      'POST /v1/auth/register': () => tokenResponse('tok-9'),
-      'GET /v1/me': ok(makeMe({ staff_role: null, email_verified: false, permissions: [] })),
+  it('changePassword with 400 same_as_current → ApiError with violations, state stays change-password', async () => {
+    const { store } = newStore({
+      'POST /v1/auth/login': () => tokenResponse('tok-1'),
+      'POST /v1/auth/password/change': () => problem(400, 'validation-failed', { violations: ['same_as_current'] }),
+      'GET /v1/me': ok(makeMe({ must_change_password: true })),
     });
-    await store.register('new@example.com', 'pw', 'Asia/Ho_Chi_Minh');
-    expect(calls[0].body).toEqual({
-      email: 'new@example.com',
-      password: 'pw',
-      timezone: 'Asia/Ho_Chi_Minh',
-      client: 'web',
-      device_label: 'Wordmet Admin',
+    await store.login('editor@example.com', 'generated');
+
+    await expect(store.changePassword('generated', 'generated')).rejects.toMatchObject({
+      problem: { slug: 'validation-failed', violations: ['same_as_current'] },
     });
-    expect(store.state.status).toBe('verify-email');
-    expect(calls[1].headers.Authorization).toBe('Bearer tok-9');
+    expect(store.state.status).toBe('change-password');
+    expect(store.hasAccessToken).toBe(true);
+  });
+
+  it('403 password-change-required → recheck → change-password, no refresh call', async () => {
+    let meCalls = 0;
+    const { store, count } = newStore({
+      'POST /v1/auth/login': () => tokenResponse('tok-1'),
+      'GET /v1/me': () => Response.json(makeMe({ must_change_password: meCalls++ > 0 })),
+      'GET /v1/admin/x': () => problem(403, 'password-change-required'),
+    });
+    await store.login('editor@example.com', 'pw');
+    expect(store.state.status).toBe('signed-in');
+
+    await expect(createApiClient({ send: store.send }).get('/v1/admin/x')).rejects.toMatchObject({
+      problem: { slug: 'password-change-required' },
+    });
+
+    expect(count('POST', '/v1/auth/refresh')).toBe(0);
+    expect(store.state).toMatchObject({ status: 'change-password' });
   });
 
   it('a failed login throws the ApiError and stays signed-out', async () => {
