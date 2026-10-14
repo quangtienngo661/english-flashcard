@@ -318,4 +318,30 @@ describe('sources and topics (e2e, isolated database)', () => {
       expect(await catalog()).toEqual(before);
     }
   });
+
+  it('B25#17a: an editor without native_language lists every topic, archived ones with archived_at, ordered by code; a learner gets 403 forbidden', async () => {
+    const archivedAt = new Date('2026-10-01T00:00:00Z');
+    // Migration-seeded topics stay in every suite, so the list is checked as seeded + these three.
+    await ctx.prisma.topic.create({ data: { code: 'b25-food', names: { create: [{ language: 'vi', name: 'Đồ ăn' }, { language: 'en', name: 'Food' }] } } });
+    await ctx.prisma.topic.create({ data: { code: 'b25-business', archivedAt, names: { create: [{ language: 'en', name: 'Business' }] } } });
+    await ctx.prisma.topic.create({ data: { code: 'b25-animals', names: { create: [{ language: 'vi', name: 'Động vật' }] } } });
+    const stored = await topics();
+    const editor = await staff();
+    const res = await ctx.http().get('/v1/admin/taxonomy/topics').set('Authorization', `Bearer ${editor.accessToken}`);
+    expect(res.status).toBe(200);
+    const codes = res.body.items.map((item: { code: string }) => item.code);
+    expect(codes).toEqual(stored.map((topic) => topic.code));
+    expect(codes.length).toBeGreaterThan(3);
+    expect(codes.indexOf('b25-animals')).toBeLessThan(codes.indexOf('b25-business'));
+    expect(codes.indexOf('b25-business')).toBeLessThan(codes.indexOf('b25-food'));
+    expect(res.body.items.filter((item: { code: string }) => item.code.startsWith('b25-'))).toEqual([
+      { code: 'b25-animals', names: { vi: 'Động vật' }, archived_at: null },
+      { code: 'b25-business', names: { en: 'Business' }, archived_at: archivedAt.toISOString() },
+      { code: 'b25-food', names: { vi: 'Đồ ăn', en: 'Food' }, archived_at: null },
+    ]);
+    const denied = await ctx.http().get('/v1/admin/taxonomy/topics')
+      .set('Authorization', `Bearer ${(await learner('vi')).accessToken}`);
+    expect(denied.status).toBe(403);
+    expect(denied.body.type).toBe(problem('forbidden'));
+  });
 });

@@ -444,7 +444,10 @@ describe('publish jobs (e2e, isolated database, direct lease contexts)', () => {
       const [only] = await createJobs(1);
       const uploadsBinding = createHash('sha256').update(JSON.stringify({ route: 'uploads', filters: {} })).digest('hex');
       const fromUploads = encodeBoundToken({ created_at: ctx.clock.now().toISOString(), id: only }, uploadsBinding);
-      for (const query of [{ page_token: fromUploads }, { page_token: 'not base64url!' }, { page_size: 0 }, { page_size: 101 }]) {
+      const invalidQueries: Array<Record<string, string | number>> = [
+        { page_token: fromUploads }, { page_token: 'not base64url!' }, { page_size: 0 }, { page_size: 101 },
+      ];
+      for (const query of invalidQueries) {
         const invalid = await list(query);
         expect(invalid.status).toBe(400);
         expect(invalid.body.type).toBe(problem('validation-failed'));
