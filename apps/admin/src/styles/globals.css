@@ -1,0 +1,41 @@
+@import 'tailwindcss';
+
+/* Tokens from the Figma "Admin tokens" collection (Task 1); sizes in rem, 16px root. */
+@theme {
+  --color-bg: #faf8f5;
+  --color-surface: #ffffff;
+  --color-ink: #1c1b22;
+  --color-muted: #5e5b6b;
+  --color-border: #e7e3dc;
+  --color-border-strong: #8a8697;
+  --color-primary: #2f5bea;
+  --color-primary-soft: #e8eeff;
+  --color-on-primary: #ffffff;
+  --color-success: #1f9d55;
+  --color-success-soft: #e5f6ec;
+  --color-danger: #d64545;
+  --color-danger-strong: #b42318;
+
+  --font-sans: 'Be Vietnam Pro', system-ui, sans-serif;
+
+  --text-ui: 0.875rem;
+  --spacing-control: 2rem;
+  --spacing-control-touch: 2.75rem;
+  --spacing-topbar-min: 3.5rem;
+  --spacing-sidebar-min: 14rem;
+  --spacing-sidebar-max: 16rem;
+  --spacing-auth-card-max: 25rem;
+  --spacing-page-pad-min: 1rem;
+  --spacing-page-pad-max: 2rem;
+  --radius-control: 0.5rem;
+  --radius-panel: 0.75rem;
+  --breakpoint-shell: 64rem;
+}
+
+body {
+  margin: 0;
+  background: var(--color-bg);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  font-size: var(--text-ui);
+}
