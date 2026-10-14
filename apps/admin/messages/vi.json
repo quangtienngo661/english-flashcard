@@ -67,5 +67,52 @@
     "loading": "Đang tải…",
     "error": "Không tải được danh sách",
     "empty": "Chưa có mục nào"
+  },
+  "account": {
+    "login": {
+      "title": "Đăng nhập",
+      "subtitle": "Dùng tài khoản quản trị Wordmet",
+      "email": "Email",
+      "emailPlaceholder": "ten@wordmet.com",
+      "password": "Mật khẩu",
+      "forgot": "Quên mật khẩu?",
+      "submit": "Đăng nhập"
+    },
+    "forgot": {
+      "title": "Quên mật khẩu",
+      "subtitle": "Nhập email, chúng tôi sẽ gửi mã đặt lại mật khẩu",
+      "email": "Email",
+      "send": "Gửi mã",
+      "back": "Quay lại đăng nhập",
+      "resetTitle": "Đặt mật khẩu mới",
+      "resetSubtitle": "Nhập mã 6 chữ số đã gửi tới {email}",
+      "code": "Mã xác minh",
+      "newPassword": "Mật khẩu mới",
+      "submit": "Đặt lại mật khẩu",
+      "resend": "Gửi lại mã",
+      "resendWait": "Gửi lại mã ({seconds})",
+      "resent": "Đã gửi lại mã",
+      "requestNew": "Yêu cầu mã mới",
+      "wait": "{label} ({seconds})"
+    },
+    "changePassword": {
+      "title": "Đổi mật khẩu",
+      "subtitle": "Quản trị viên yêu cầu bạn đặt mật khẩu mới trước khi tiếp tục.",
+      "current": "Mật khẩu hiện tại",
+      "new": "Mật khẩu mới",
+      "confirm": "Xác nhận mật khẩu mới",
+      "submit": "Đổi mật khẩu",
+      "logout": "Đăng xuất",
+      "mismatch": "Mật khẩu xác nhận không khớp"
+    },
+    "passwordRules": {
+      "notMet": "Mật khẩu chưa đạt yêu cầu",
+      "min_length": "Ít nhất 8 ký tự",
+      "max_length": "Tối đa 128 ký tự",
+      "uppercase": "Có chữ hoa",
+      "lowercase": "Có chữ thường",
+      "digit": "Có chữ số",
+      "special": "Có ký tự đặc biệt"
+    }
   }
 }

@@ -1,5 +1,8 @@
 import { Navigate, Route, Routes } from 'react-router';
 import { useSession } from '../auth/session-context';
+import { ChangePasswordPage } from '../features/account/ChangePasswordPage';
+import { ForgotPasswordPage } from '../features/account/ForgotPasswordPage';
+import { LoginPage } from '../features/account/LoginPage';
 import { firstVisiblePath } from './nav';
 import { PlaceholderPage } from './PlaceholderPage';
 import { RequireSession } from './RequireSession';
@@ -15,6 +18,9 @@ function Home() {
 export function AppRoutes() {
   return (
     <Routes>
+      <Route path="login" element={<LoginPage />} />
+      <Route path="forgot-password" element={<ForgotPasswordPage />} />
+      <Route path="change-password" element={<ChangePasswordPage />} />
       <Route element={<RequireSession />}>
         <Route element={<Shell />}>
           <Route index element={<Home />} />

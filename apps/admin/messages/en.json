@@ -67,5 +67,52 @@
     "loading": "Loading…",
     "error": "Could not load the list",
     "empty": "Nothing here yet"
+  },
+  "account": {
+    "login": {
+      "title": "Log in",
+      "subtitle": "Use your Wordmet admin account",
+      "email": "Email",
+      "emailPlaceholder": "name@wordmet.com",
+      "password": "Password",
+      "forgot": "Forgot password?",
+      "submit": "Log in"
+    },
+    "forgot": {
+      "title": "Forgot password",
+      "subtitle": "Enter your email and we will send you a reset code",
+      "email": "Email",
+      "send": "Send code",
+      "back": "Back to log in",
+      "resetTitle": "Set a new password",
+      "resetSubtitle": "Enter the 6-digit code sent to {email}",
+      "code": "Verification code",
+      "newPassword": "New password",
+      "submit": "Reset password",
+      "resend": "Resend code",
+      "resendWait": "Resend code ({seconds})",
+      "resent": "Code sent again",
+      "requestNew": "Request a new code",
+      "wait": "{label} ({seconds})"
+    },
+    "changePassword": {
+      "title": "Change password",
+      "subtitle": "An administrator requires you to set a new password before you continue.",
+      "current": "Current password",
+      "new": "New password",
+      "confirm": "Confirm new password",
+      "submit": "Change password",
+      "logout": "Log out",
+      "mismatch": "The confirmation does not match"
+    },
+    "passwordRules": {
+      "notMet": "The password does not meet the requirements",
+      "min_length": "At least 8 characters",
+      "max_length": "At most 128 characters",
+      "uppercase": "An uppercase letter",
+      "lowercase": "A lowercase letter",
+      "digit": "A digit",
+      "special": "A special character"
+    }
   }
 }

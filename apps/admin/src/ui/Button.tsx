@@ -17,13 +17,20 @@ type Props = Omit<AriaButtonProps, 'className'> & {
   className?: string;
 };
 
-/** While `isPending` a press does nothing, so a double-click sends one request (Review Focus 3). */
-export function Button({ variant = 'primary', size = 'md', className = '', children, isPending, ...rest }: Props) {
+/**
+ * While `isPending` a press does nothing and a submit button stops submitting, so a double-click sends one
+ * request (Review Focus 3). React Aria's own `isPending` is not used: it injects an empty `role="img"` live
+ * region that axe reports as a serious `role-img-alt` violation.
+ */
+export function Button({ variant = 'primary', size = 'md', className = '', children, isPending, onPress, type, ...rest }: Props) {
   const height = size === 'touch' ? 'min-h-control-touch' : 'min-h-control';
   return (
     <AriaButton
       {...rest}
-      isPending={isPending}
+      type={isPending ? 'button' : type}
+      onPress={isPending ? undefined : onPress}
+      aria-busy={isPending || undefined}
+      data-pending={isPending || undefined}
       className={`inline-flex items-center justify-center gap-2 rounded-control px-4 py-1.5 text-ui font-medium outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 data-pending:cursor-progress ${height} ${VARIANT[variant]} ${className}`}
     >
       {(values) => (

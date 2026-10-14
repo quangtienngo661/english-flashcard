@@ -26,6 +26,12 @@ export const problem = (status: number, slug: string, extra: Record<string, unkn
     { status, headers: { 'content-type': 'application/problem+json' } },
   );
 
+export const rateLimited = (seconds: number, slug = 'rate-limited') =>
+  new Response(JSON.stringify({ type: `${BASE}/problems/${slug}`, status: 429, title: slug }), {
+    status: 429,
+    headers: { 'content-type': 'application/problem+json', 'retry-after': String(seconds) },
+  });
+
 /** A scripted `fetch`: routes are keyed `"METHOD /path"`; an unscripted request fails the test loudly. */
 export function makeFetch(routes: Record<string, Route>) {
   const calls: Call[] = [];
