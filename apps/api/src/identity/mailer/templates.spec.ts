@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { FakeMailer } from './fake-mailer.js';
-import { otpMail, otpLockedMail, passwordChangedMail, passwordResetMail } from './templates.js';
+import { otpMail, otpLockedMail, passwordChangedMail, passwordResetMail, staffAccountMail } from './templates.js';
 
 describe('Mail templates and FakeMailer', () => {
   it.each(['verify_email', 'reset_password'] as const)('B1#4/B1#5: %s OTP mail is bilingual and preserves leading zeroes', async (purpose) => {
@@ -34,6 +34,17 @@ describe('Mail templates and FakeMailer', () => {
     }
     expect(otpLockedMail('a@example.com', 'verify_email').text)
       .not.toBe(otpLockedMail('a@example.com', 'reset_password').text);
+  });
+
+  it('B25#23: staffAccountMail is bilingual, carries email, password and admin URL, and mentions the forced change only when asked', () => {
+    const forced = staffAccountMail('a@example.com', 'Pw-Secret-1234!', 'http://localhost:5173', true);
+    expect(forced.to).toBe('a@example.com');
+    for (const part of ['a@example.com', 'Pw-Secret-1234!', 'http://localhost:5173']) expect(forced.text).toContain(part);
+    expect(forced.text).toMatch(/đổi mật khẩu/);
+    expect(forced.text).toMatch(/change your password/i);
+    const free = staffAccountMail('a@example.com', 'Pw-Secret-1234!', 'http://localhost:5173', false);
+    expect(free.text).not.toMatch(/đổi mật khẩu/);
+    expect(free.text).not.toMatch(/change your password/i);
   });
 
   it('B1E16/IE6: failNext affects only the next send and failed messages are not recorded', async () => {

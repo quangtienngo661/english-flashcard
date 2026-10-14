@@ -8,7 +8,7 @@ const mocks = vi.hoisted(() => {
 vi.mock('node:fs', () => ({ existsSync: mocks.exists }));
 vi.mock('@nestjs/core', () => ({ NestFactory: { createApplicationContext: mocks.create } }));
 vi.mock('../app.module.js', () => ({ AppModule: { forRoot: mocks.forRoot } }));
-vi.mock('../common/config/app-config.js', () => ({ loadConfig: mocks.config }));
+vi.mock('../common/config/app-config.js', () => ({ loadConfig: mocks.config, APP_CONFIG: Symbol('APP_CONFIG') }));
 
 describe('admin:grant CLI', () => {
   let argv: string[]; let exitCode: typeof process.exitCode;

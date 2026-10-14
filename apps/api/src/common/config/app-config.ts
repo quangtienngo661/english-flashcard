@@ -48,6 +48,7 @@ export interface AppConfig {
   trustProxy: string | false;
   corsOrigins: string[];
   problemTypeBase: string;
+  adminAppUrl: string;
   maintenanceEnabled: boolean;
   content: {
     publishMaxItems: number;
@@ -147,6 +148,7 @@ const envSchema = z.object({
       .refine(({ value, url }) => ['http:', 'https:'].includes(url.protocol) && url.origin === value)
       .transform(({ value }) => value)).min(1)),
   PROBLEM_TYPE_BASE: z.url(),
+  ADMIN_APP_URL: z.url(),
   MAINTENANCE_ENABLED: booleanString.default(true),
   ACCESS_TOKEN_TTL_SECONDS: positiveInteger.default(900),
   PUBLISH_MAX_ITEMS: positiveInteger.default(500),
@@ -196,6 +198,7 @@ export function loadConfig(env: NodeJS.ProcessEnv): AppConfig {
     trustProxy: values.TRUST_PROXY,
     corsOrigins: values.CORS_ORIGINS,
     problemTypeBase: values.PROBLEM_TYPE_BASE,
+    adminAppUrl: values.ADMIN_APP_URL,
     maintenanceEnabled: values.MAINTENANCE_ENABLED,
     content: { publishMaxItems: values.PUBLISH_MAX_ITEMS },
     pipeline: {

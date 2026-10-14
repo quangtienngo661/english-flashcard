@@ -8,7 +8,15 @@ export const listStaffQuerySchema = z.strictObject({
 export const idParam = z.uuid();
 export const staffUserParamsSchema = z.strictObject({ id: idParam });
 export const setStaffRoleSchema = z.strictObject({ staff_role: z.enum(['admin', 'editor']).nullable() });
+export const createAccountSchema = z.strictObject({
+  email: z.string().max(320),
+  staff_role: z.enum(['admin', 'editor']),
+  password: z.string().optional(),
+  must_change_password: z.boolean(),
+  timezone: z.string().max(64),
+});
 
+export type CreateAccountBody = z.infer<typeof createAccountSchema>;
 export type FindUserQuery = z.infer<typeof findUserQuerySchema>;
 export type ListStaffQuery = z.infer<typeof listStaffQuerySchema>;
 export type StaffUserParams = z.infer<typeof staffUserParamsSchema>;

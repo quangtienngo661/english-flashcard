@@ -36,6 +36,7 @@ describe('listRoutes (unit, isolated persistence)', () => {
     expect(routes.filter(({ permissions }) => permissions?.includes('roles.manage'))).toEqual([
       { method: 'GET', path: '/v1/admin/staff', permissions: ['roles.manage'] },
       { method: 'GET', path: '/v1/admin/users', permissions: ['roles.manage'] },
+      { method: 'POST', path: '/v1/admin/users', permissions: ['roles.manage'] },
       { method: 'PUT', path: '/v1/admin/users/:id/staff-role', permissions: ['roles.manage'] },
     ]);
     expect(routes.filter(({ path }) => path.startsWith('/v1/admin/__'))).toEqual([

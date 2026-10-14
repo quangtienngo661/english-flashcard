@@ -1,12 +1,24 @@
 import { Inject, Injectable } from '@nestjs/common';
+import { randomUUID } from 'node:crypto';
+import type { Response } from 'express';
+import { Clock } from '../../common/clock/clock.js';
+import { APP_CONFIG, type AppConfig } from '../../common/config/app-config.js';
 import { PRISMA_CLIENT } from '../../common/db/prisma.module.js';
 import { normalizeEmail } from '../../common/email/normalize-email.js';
 import { AppLogger } from '../../common/logging/app-logger.js';
 import { decodePageToken, encodePageToken } from '../../common/pagination/page-token.util.js';
 import { ProblemDetailsException } from '../../common/problem-details/problem-details.exception.js';
 import type { Prisma, PrismaClient } from '../../generated/prisma/client.js';
+import { PasswordHasher } from '../auth/password-hasher.service.js';
+import { checkPasswordPolicy } from '../auth/password-policy.js';
 import type { StaffRole } from '../identity.types.js';
-import { idParam } from './staff.schemas.js';
+import { MailBudget } from '../mailer/mail-budget.service.js';
+import { MailDispatcher, sendPrepared } from '../mailer/mail-dispatcher.service.js';
+import { staffAccountMail } from '../mailer/templates.js';
+import { isValidTimeZone } from '../profile/timezone.js';
+import { withUserLock } from '../user-lock.js';
+import { generatePassword } from './password-generator.js';
+import { idParam, type CreateAccountBody } from './staff.schemas.js';
 
 export type StaffUserView = { id: string; email: string; email_verified: boolean; staff_role: StaffRole | null };
 const staffSelect = { id: true, email: true, emailVerifiedAt: true, staffRole: true } satisfies Prisma.UserSelect;
@@ -31,7 +43,50 @@ export class StaffService {
   constructor(
     @Inject(PRISMA_CLIENT) private readonly prisma: PrismaClient,
     @Inject(AppLogger) private readonly logger: AppLogger,
+    @Inject(Clock) private readonly clock: Clock,
+    @Inject(APP_CONFIG) private readonly config: AppConfig,
+    @Inject(PasswordHasher) private readonly hasher: PasswordHasher,
+    @Inject(MailBudget) private readonly budget: MailBudget,
+    @Inject(MailDispatcher) private readonly dispatcher: MailDispatcher,
   ) {}
+
+  /** The password only ever leaves through the mail: never in the response or a log line. */
+  async createAccount(actorId: string, body: CreateAccountBody, res: Response): Promise<StaffUserView> {
+    const email = normalizeEmail(body.email);
+    if (!email || !isValidTimeZone(body.timezone)) throw invalidInput();
+    if (body.password !== undefined) {
+      const violations = checkPasswordPolicy(body.password);
+      if (violations.length > 0) throw new ProblemDetailsException({ status: 400, title: 'Validation failed',
+        type: 'validation-failed', extensions: { violations } });
+    }
+    await this.budget.assertAvailable();
+    const password = body.password ?? generatePassword();
+    const hash = await this.hasher.hash(password);
+    const userId = randomUUID();
+    let row: StaffRow;
+    try {
+      row = await this.prisma.$transaction(async (tx) => {
+        await withUserLock(tx, userId);
+        const now = this.clock.now();
+        const created = await tx.user.create({ data: {
+          id: userId, email, timezone: body.timezone, emailVerifiedAt: now, staffRole: body.staff_role,
+          mustChangePassword: body.must_change_password, createdAt: now, updatedAt: now,
+        }, select: staffSelect });
+        await tx.passwordCredential.create({ data: { userId, hash, updatedAt: now } });
+        return created;
+      }, transactionOptions);
+    } catch (error) {
+      if (error !== null && typeof error === 'object' && 'code' in error && error.code === 'P2002') {
+        throw new ProblemDetailsException({ status: 409, title: 'Email taken', type: 'email-taken' });
+      }
+      throw error;
+    }
+    this.dispatcher.afterResponse(res, [sendPrepared(
+      staffAccountMail(email, password, this.config.adminAppUrl, body.must_change_password))]);
+    this.logger.info('staff_account_created', { actor_id: actorId, target_id: userId,
+      staff_role: body.staff_role, must_change: body.must_change_password });
+    return toView(row);
+  }
 
   async findByEmail(email: string): Promise<StaffUserView | null> {
     const normalized = normalizeEmail(email);

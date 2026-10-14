@@ -20,7 +20,9 @@ describe('StaffService (unit, isolated persistence)', () => {
     tx.user.update.mockImplementation(async ({ data }) => ({ ...target, ...data }));
     prisma.user.findUnique.mockResolvedValue({ ...target }); prisma.user.findMany.mockResolvedValue([]);
     prisma.$transaction.mockImplementation(async (fn) => { const result = await fn(tx); committed = true; return result; });
-    staff = new StaffService(prisma as unknown as PrismaClient, new AppLogger({ write }));
+    // createAccount is covered end to end in test/identity/staff.e2e-spec.ts; these unit cases never reach those deps.
+    staff = new StaffService(prisma as unknown as PrismaClient, new AppLogger({ write }),
+      undefined as never, undefined as never, undefined as never, undefined as never, undefined as never);
   });
   const expectStaffLock = () => {
     expect(tx.$executeRaw).toHaveBeenCalledOnce();
