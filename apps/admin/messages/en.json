@@ -348,6 +348,9 @@
     },
     "wait": "Try again in {seconds} s",
     "queued": "Waiting for a worker to pick it up ({seconds} s). The page refreshes every 2 seconds.",
-    "queuedLong": "The job has waited {seconds} s. Is the worker running? Check the worker process, then reload the page."
+    "queuedLong": "The job has waited {seconds} s. Is the worker running? Check the worker process, then reload the page.",
+    "confirmAllTitle": "Publish the whole catalog?",
+    "confirmAllBody": "You have not chosen any filter, so this job will publish every eligible sense in the whole catalog. Continue only if that is what you want.",
+    "confirmAllSubmit": "Publish everything"
   }
 }

@@ -5,6 +5,7 @@ import { useTranslations } from 'use-intl';
 import { useApi } from '../../auth/session-context';
 import { Banner } from '../../ui/Banner';
 import { Button } from '../../ui/Button';
+import { Dialog } from '../../ui/Dialog';
 import { createPublishJob } from '../content/content-api';
 import { FilterFields, NO_FILTER, toFilter, type FilterValues } from '../content/FilterFields';
 import { useSubmitAction } from '../content/useSubmitAction';
@@ -27,13 +28,17 @@ export function PublishJobForm() {
     },
   );
   const locked = action.waitSeconds > 0;
+  const [confirmingAll, setConfirmingAll] = useState(false);
+  // D25 / B25E29: no filter at all means the whole catalog, so ask first.
+  const noFilter = Object.values(filter).every((value) => value === undefined);
 
   return (
     <form
       noValidate
       onSubmit={(event) => {
         event.preventDefault();
-        void action.submit();
+        if (noFilter) setConfirmingAll(true);
+        else void action.submit();
       }}
       className="flex flex-col gap-4 rounded-panel bg-surface p-4 shadow-card"
     >
@@ -60,6 +65,32 @@ export function PublishJobForm() {
           {locked ? t('publishJobs.wait', { seconds: action.waitSeconds }) : t('publishJobs.create')}
         </Button>
       </div>
+      {confirmingAll && (
+        <Dialog
+          isOpen
+          onOpenChange={(open) => !open && setConfirmingAll(false)}
+          title={t('publishJobs.confirmAllTitle')}
+          actions={
+            <>
+              <Button variant="secondary" onPress={() => setConfirmingAll(false)}>
+                {t('common.cancel')}
+              </Button>
+              <Button
+                variant="danger"
+                isPending={action.pending}
+                onPress={() => {
+                  setConfirmingAll(false);
+                  void action.submit();
+                }}
+              >
+                {t('publishJobs.confirmAllSubmit')}
+              </Button>
+            </>
+          }
+        >
+          <p className="break-words text-ui text-muted">{t('publishJobs.confirmAllBody')}</p>
+        </Dialog>
+      )}
     </form>
   );
 }

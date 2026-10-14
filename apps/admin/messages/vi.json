@@ -348,6 +348,9 @@
     },
     "wait": "Thử lại sau {seconds} giây",
     "queued": "Đang chờ worker nhận việc ({seconds} giây). Trang tự cập nhật mỗi 2 giây.",
-    "queuedLong": "Job đã chờ {seconds} giây. Worker có đang chạy không? Kiểm tra tiến trình worker rồi tải lại trang."
+    "queuedLong": "Job đã chờ {seconds} giây. Worker có đang chạy không? Kiểm tra tiến trình worker rồi tải lại trang.",
+    "confirmAllTitle": "Publish toàn bộ catalog?",
+    "confirmAllBody": "Bạn chưa chọn bộ lọc nào, nên job này sẽ publish mọi sense đủ điều kiện trong toàn bộ catalog. Chỉ tiếp tục nếu đó là điều bạn muốn.",
+    "confirmAllSubmit": "Publish tất cả"
   }
 }
