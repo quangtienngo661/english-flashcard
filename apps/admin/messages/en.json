@@ -320,5 +320,32 @@
       "open_draft": "Open draft",
       "published": "Published"
     }
+  },
+  "publishJobs": {
+    "create": "Create publish job",
+    "formTitle": "Create publish job",
+    "empty": "No publish jobs yet",
+    "list": {
+      "job": "Job",
+      "filter": "Filter",
+      "status": "Status",
+      "count": "Senses",
+      "time": "Time"
+    },
+    "batchFilter": "batch #{id}",
+    "filterNone": "All",
+    "jobTitle": "Publish job #{id}",
+    "back": "Publish jobs",
+    "report": "Download report.csv",
+    "createdAt": "Created {time}",
+    "running": "Publishing: {done} / {total} senses",
+    "refused": "{count} senses were refused because they are not ready. Download report.csv to see why for each row.",
+    "stats": {
+      "snapshot": "In snapshot",
+      "published": "Published",
+      "already": "Already published",
+      "refused": "Refused"
+    },
+    "wait": "Try again in {seconds} s"
   }
 }

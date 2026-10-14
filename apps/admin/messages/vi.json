@@ -320,5 +320,32 @@
       "open_draft": "Đang soạn",
       "published": "Đã publish"
     }
+  },
+  "publishJobs": {
+    "create": "Tạo publish job",
+    "formTitle": "Tạo publish job",
+    "empty": "Chưa có publish job nào",
+    "list": {
+      "job": "Job",
+      "filter": "Bộ lọc",
+      "status": "Trạng thái",
+      "count": "Số sense",
+      "time": "Thời điểm"
+    },
+    "batchFilter": "lô #{id}",
+    "filterNone": "Tất cả",
+    "jobTitle": "Publish job #{id}",
+    "back": "Publish job",
+    "report": "Tải report.csv",
+    "createdAt": "Tạo {time}",
+    "running": "Đang publish: {done} / {total} sense",
+    "refused": "{count} sense bị từ chối vì chưa đủ điều kiện. Tải report.csv để xem lý do từng dòng.",
+    "stats": {
+      "snapshot": "Trong snapshot",
+      "published": "Đã publish",
+      "already": "Đã publish từ trước",
+      "refused": "Bị từ chối"
+    },
+    "wait": "Thử lại sau {seconds} giây"
   }
 }

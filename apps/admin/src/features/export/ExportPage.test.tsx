@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi as vitest } from 'vites
 import vi from '../../../messages/vi.json';
 import { problem } from '../../auth/test-support';
 import { renderApp } from '../staff/test-utils';
-import { topicLabel } from './ExportPage';
+import { topicLabel } from '../content/FilterFields';
 
 const saveBlob = vitest.hoisted(() => vitest.fn());
 vitest.mock('../../api/download', () => ({ saveBlob }));

@@ -64,6 +64,7 @@ export function canAccess(pathname: string, permissions: Permission[]): boolean 
 const FORM_TITLES: Record<string, string> = {
   '/sources/new': 'sources.formTitle',
   '/uploads/new': 'uploads.formTitle',
+  '/publish-jobs/new': 'publishJobs.formTitle',
 };
 
 export function navLabelKey(pathname: string): string | undefined {
