@@ -138,6 +138,17 @@ describe('publish job detail', () => {
     expect(await screen.findByText('Đang publish: 480 / 1.250 sense')).toBeInTheDocument();
   });
 
+  it('B25E8: a job queued for more than 30 s shows the worker hint; a fresh one only says it is waiting', async () => {
+    const old = new Date(Date.now() - 45_000).toISOString();
+    const { unmount } = renderApp(`/publish-jobs/${ID}`, { [GET]: () => json(job({ status: 'queued', counters: {}, created_at: old, started_at: null })) });
+    expect(await screen.findByText(/Worker có đang chạy không/)).toBeInTheDocument();
+    unmount();
+
+    renderApp(`/publish-jobs/${ID}`, { [GET]: () => json(job({ status: 'queued', counters: {}, created_at: new Date().toISOString(), started_at: null })) });
+    expect(await screen.findByText(/Đang chờ worker nhận việc/)).toBeInTheDocument();
+    expect(screen.queryByText(/Worker có đang chạy không/)).toBeNull();
+  });
+
   it('detail: polls until terminal, then shows counters published/already_published/refused', async () => {
     let n = 0;
     const r = renderApp(`/publish-jobs/${ID}`, {
