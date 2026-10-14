@@ -77,7 +77,8 @@
   "list": {
     "loading": "Loading…",
     "error": "Could not load the list",
-    "empty": "Nothing here yet"
+    "empty": "Nothing here yet",
+    "shown": "{count} items shown"
   },
   "account": {
     "login": {
@@ -214,5 +215,65 @@
       "evalSets": "Approved example sets and their run results before AI is enabled for the pilot."
     },
     "etaUnconfirmed": "Planned: Step {step} (not confirmed)"
+  },
+  "status": {
+    "queued": "Queued",
+    "running": "Running",
+    "succeeded": "Done",
+    "partial": "Partial",
+    "failed": "Failed",
+    "reverted": "Reverted"
+  },
+  "sources": {
+    "register": "Register a source",
+    "formTitle": "Register a source",
+    "empty": "No sources yet",
+    "emptyHint": "Register the first source to import CSV files with a level column",
+    "list": {
+      "name": "Source name",
+      "version": "Version",
+      "license": "License",
+      "priority": "Priority"
+    },
+    "form": {
+      "name": "Source name",
+      "version": "Version",
+      "url": "URL",
+      "license": "License",
+      "attribution": "Attribution",
+      "priority": "Priority",
+      "priorityHint": "A smaller number comes first",
+      "asLevelSource": "Use as a level source (version and license required)",
+      "save": "Save source",
+      "required": "Required",
+      "urlInvalid": "The URL must start with http:// or https://",
+      "priorityInvalid": "Enter a whole number"
+    }
+  },
+  "uploads": {
+    "upload": "Upload CSV",
+    "formTitle": "Upload CSV",
+    "submit": "Upload",
+    "wait": "Wait {seconds} s",
+    "empty": "No imports yet",
+    "emptyHint": "Press \"Upload CSV\" to import the first file",
+    "list": {
+      "file": "File name",
+      "rows": "Rows",
+      "status": "Status",
+      "time": "Time"
+    },
+    "dropPrompt": "Drop a .csv file here",
+    "chooseHint": "or click to choose a file",
+    "chooseFile": "Choose file",
+    "changeFile": "Change file",
+    "tooLargeHint": "{name} · {size} MB. Choose a smaller file or split it into several.",
+    "invalidHint": "{name}. Only .csv files are accepted.",
+    "levelSource": "Level source",
+    "levelSourceHint": "The file has a level (CEFR) column, so a level source is required.",
+    "levelSourceRequired": "Choose a level source for a file with a level column",
+    "levelSourcePlaceholder": "Choose a source",
+    "fileSize": "{size} MB",
+    "open": "Details"
   }
 }

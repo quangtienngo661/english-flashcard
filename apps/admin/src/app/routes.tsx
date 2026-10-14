@@ -3,7 +3,10 @@ import { useSession } from '../auth/session-context';
 import { ChangePasswordPage } from '../features/account/ChangePasswordPage';
 import { ForgotPasswordPage } from '../features/account/ForgotPasswordPage';
 import { LoginPage } from '../features/account/LoginPage';
+import { UploadForm } from '../features/uploads/UploadForm';
+import { UploadsPage } from '../features/uploads/UploadsPage';
 import { ComingSoonPage } from '../features/coming-soon/ComingSoonPage';
+import { SourceForm, SourcesPage } from '../features/sources/SourcesPage';
 import { StaffPage } from '../features/staff/StaffPage';
 import { homePath, NAV } from './nav';
 import { PlaceholderPage } from './PlaceholderPage';
@@ -26,12 +29,14 @@ export function AppRoutes() {
       <Route element={<RequireSession />}>
         <Route element={<Shell />}>
           <Route index element={<Home />} />
-          <Route path="uploads" element={<PlaceholderPage endpoint="/v1/admin/content/uploads?page_size=20" />} />
+          <Route path="uploads" element={<UploadsPage />} />
+          <Route path="uploads/new" element={<UploadForm />} />
           <Route path="uploads/:id" element={<PlaceholderPage />} />
           <Route path="publish-jobs" element={<PlaceholderPage />} />
           <Route path="publish-jobs/:id" element={<PlaceholderPage />} />
           <Route path="export" element={<PlaceholderPage />} />
-          <Route path="sources" element={<PlaceholderPage />} />
+          <Route path="sources" element={<SourcesPage />} />
+          <Route path="sources/new" element={<SourceForm />} />
           <Route path="staff" element={<StaffPage />} />
           {NAV.filter((entry) => !entry.available).map((entry) => (
             <Route key={entry.path} path={entry.path.slice(1)} element={<ComingSoonPage item={entry} />} />

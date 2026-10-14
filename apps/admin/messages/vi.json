@@ -77,7 +77,8 @@
   "list": {
     "loading": "Đang tải…",
     "error": "Không tải được danh sách",
-    "empty": "Chưa có mục nào"
+    "empty": "Chưa có mục nào",
+    "shown": "{count} mục đã hiển thị"
   },
   "account": {
     "login": {
@@ -214,5 +215,65 @@
       "evalSets": "Bộ ví dụ đã duyệt và kết quả chạy trước khi bật AI cho pilot."
     },
     "etaUnconfirmed": "Dự kiến: Bước {step} (chưa chốt)"
+  },
+  "status": {
+    "queued": "Đang chờ",
+    "running": "Đang chạy",
+    "succeeded": "Hoàn tất",
+    "partial": "Một phần",
+    "failed": "Thất bại",
+    "reverted": "Đã hoàn tác"
+  },
+  "sources": {
+    "register": "Đăng ký nguồn",
+    "formTitle": "Đăng ký nguồn",
+    "empty": "Chưa có nguồn nào",
+    "emptyHint": "Đăng ký nguồn đầu tiên để nhập file CSV có cột level",
+    "list": {
+      "name": "Tên nguồn",
+      "version": "Phiên bản",
+      "license": "License",
+      "priority": "Ưu tiên"
+    },
+    "form": {
+      "name": "Tên nguồn",
+      "version": "Phiên bản",
+      "url": "URL",
+      "license": "License",
+      "attribution": "Attribution",
+      "priority": "Độ ưu tiên",
+      "priorityHint": "Số nhỏ hơn được ưu tiên trước",
+      "asLevelSource": "Dùng làm nguồn level (bắt buộc có phiên bản và license)",
+      "save": "Lưu nguồn",
+      "required": "Bắt buộc nhập",
+      "urlInvalid": "URL phải bắt đầu bằng http:// hoặc https://",
+      "priorityInvalid": "Nhập một số nguyên"
+    }
+  },
+  "uploads": {
+    "upload": "Upload CSV",
+    "formTitle": "Upload CSV",
+    "submit": "Upload",
+    "wait": "Đợi {seconds} giây",
+    "empty": "Chưa có lô nhập nào",
+    "emptyHint": "Bấm \"Upload CSV\" để nhập file đầu tiên",
+    "list": {
+      "file": "Tên file",
+      "rows": "Số dòng",
+      "status": "Trạng thái",
+      "time": "Thời điểm"
+    },
+    "dropPrompt": "Kéo file .csv vào đây",
+    "chooseHint": "hoặc bấm để chọn file",
+    "chooseFile": "Chọn file",
+    "changeFile": "Đổi file",
+    "tooLargeHint": "{name} · {size} MB. Chọn file nhỏ hơn hoặc chia thành nhiều file.",
+    "invalidHint": "{name}. Chỉ nhận file .csv.",
+    "levelSource": "Nguồn level",
+    "levelSourceHint": "File có cột level (CEFR) nên cần chọn nguồn level.",
+    "levelSourceRequired": "Hãy chọn nguồn level cho file có cột level",
+    "levelSourcePlaceholder": "Chọn nguồn",
+    "fileSize": "{size} MB",
+    "open": "Chi tiết"
   }
 }

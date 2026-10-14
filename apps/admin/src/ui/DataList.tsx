@@ -17,6 +17,7 @@ type Props<T> = {
   columns: Column<T>[];
   state: 'loading' | 'error' | 'ready';
   emptyText?: string;
+  emptyHint?: string;
   onRetry?: () => void;
 };
 
@@ -24,7 +25,7 @@ type Props<T> = {
  * A table when the list's own container is at least 40rem wide, stacked cards below (container query, not
  * viewport: the content area is what narrows when the sidebar is open). Empty/loading/error go to `ListState`.
  */
-export function DataList<T>({ rows, rowKey, columns, state, emptyText, onRetry }: Props<T>) {
+export function DataList<T>({ rows, rowKey, columns, state, emptyText, emptyHint, onRetry }: Props<T>) {
   const shell = 'overflow-hidden rounded-panel bg-surface shadow-card';
   if (state !== 'ready') {
     return (
@@ -36,7 +37,7 @@ export function DataList<T>({ rows, rowKey, columns, state, emptyText, onRetry }
   if (rows.length === 0) {
     return (
       <div className={shell}>
-        <ListState state="empty" emptyText={emptyText} />
+        <ListState state="empty" emptyText={emptyText} emptyHint={emptyHint} />
       </div>
     );
   }
