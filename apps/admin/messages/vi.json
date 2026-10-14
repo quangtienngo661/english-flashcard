@@ -346,6 +346,8 @@
       "already": "Đã publish từ trước",
       "refused": "Bị từ chối"
     },
-    "wait": "Thử lại sau {seconds} giây"
+    "wait": "Thử lại sau {seconds} giây",
+    "queued": "Đang chờ worker nhận việc ({seconds} giây). Trang tự cập nhật mỗi 2 giây.",
+    "queuedLong": "Job đã chờ {seconds} giây. Worker có đang chạy không? Kiểm tra tiến trình worker rồi tải lại trang."
   }
 }

@@ -346,6 +346,8 @@
       "already": "Already published",
       "refused": "Refused"
     },
-    "wait": "Try again in {seconds} s"
+    "wait": "Try again in {seconds} s",
+    "queued": "Waiting for a worker to pick it up ({seconds} s). The page refreshes every 2 seconds.",
+    "queuedLong": "The job has waited {seconds} s. Is the worker running? Check the worker process, then reload the page."
   }
 }

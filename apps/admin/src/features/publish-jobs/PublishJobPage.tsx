@@ -12,7 +12,8 @@ import { ListState } from '../../ui/ListState';
 import { Stat } from '../../ui/Stat';
 import { downloadPublishReport, getPublishJob, type PublishJobView } from '../content/content-api';
 import { StatusBadge } from '../jobs/StatusBadge';
-import { usePollingStatus } from '../jobs/usePollingStatus';
+import { useNow } from '../jobs/useNow';
+import { usePollingStatus, useQueuedTooLong } from '../jobs/usePollingStatus';
 import { shortId } from './PublishJobsPage';
 
 /** Spec §6.3 "Publish job" detail: refreshes by itself until the job ends; counters and `report.csv`. */
@@ -28,6 +29,8 @@ export function PublishJobPage() {
   const [error, setError] = useState<string | null>(null);
 
   const job = query.data;
+  const now = useNow(1000, job?.status === 'queued');
+  const tooLong = useQueuedTooLong(job?.status ?? 'running', job?.created_at ?? '', now);
   if (!job) {
     return (
       <div className="overflow-hidden rounded-panel bg-surface shadow-card">
@@ -74,6 +77,11 @@ export function PublishJobPage() {
       </div>
 
       {error && <Banner variant="error">{error}</Banner>}
+      {job.status === 'queued' && (
+        <Banner variant="info">
+          {t(tooLong ? 'publishJobs.queuedLong' : 'publishJobs.queued', { seconds: Math.max(0, Math.floor((now - Date.parse(job.created_at)) / 1000)) })}
+        </Banner>
+      )}
       {job.status === 'running' && (
         <Banner variant="info">
           {t('publishJobs.running', { done: format.number(counters.processed ?? 0), total: format.number(job.snapshot_count) })}
