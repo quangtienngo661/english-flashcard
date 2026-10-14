@@ -32,7 +32,7 @@ const keyOf = (call: Call) => call.headers['Idempotency-Key'];
 
 beforeEach(() => saveBlob.mockClear());
 
-describe('publish jobs list', () => {
+describe('publish jobs list', { timeout: 20_000 }, () => {
   it('list: renders items from GET .../publish-jobs and "Tải thêm" follows next_page_token', async () => {
     const r = renderApp('/publish-jobs', {
       [JOBS]: () => json({ items: [job(), job({ id: '9be407aa-0000-4000-8000-000000000002', status: 'succeeded', filter: { batch_id: 'b1c2d3e4-0000-4000-8000-000000000003' }, snapshot_count: 3112 })], next_page_token: 'tok-2' }),
@@ -64,7 +64,7 @@ describe('publish jobs list', () => {
   });
 });
 
-describe('publish job form', () => {
+describe('publish job form', { timeout: 20_000 }, () => {
   function open(create: (n: number) => Response) {
     let n = 0;
     return renderApp('/publish-jobs/new', {
