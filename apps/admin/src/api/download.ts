@@ -7,5 +7,6 @@ export function saveBlob(blob: Blob, fileName: string): void {
   document.body.appendChild(link);
   link.click();
   link.remove();
-  URL.revokeObjectURL(url);
+  // Revoke on the next tick: some browsers (Firefox) cancel the download if the URL dies right after the click.
+  setTimeout(() => URL.revokeObjectURL(url), 0);
 }

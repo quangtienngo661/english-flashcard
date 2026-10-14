@@ -1,10 +1,14 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { saveBlob } from './download';
 
-afterEach(() => vi.restoreAllMocks());
+afterEach(() => {
+  vi.useRealTimers();
+  vi.restoreAllMocks();
+});
 
 describe('saveBlob', () => {
-  it('clicks a temporary <a download> with the given name, then revokes the object URL and removes the link', () => {
+  it('clicks a temporary <a download> with the given name, removes the link, and revokes the object URL on the next tick', () => {
+    vi.useFakeTimers();
     const create = vi.fn(() => 'blob:mock-1');
     const revoke = vi.fn();
     Object.assign(URL, { createObjectURL: create, revokeObjectURL: revoke });
@@ -18,7 +22,9 @@ describe('saveBlob', () => {
 
     expect(create).toHaveBeenCalledWith(blob);
     expect(clicked).toEqual([{ href: 'blob:mock-1', download: 'rejected-abc.csv', inDom: true }]);
-    expect(revoke).toHaveBeenCalledWith('blob:mock-1');
     expect(document.querySelector('a[download]')).toBeNull();
+    expect(revoke).not.toHaveBeenCalled(); // Firefox can cancel a download whose URL is revoked right after click
+    vi.runAllTimers();
+    expect(revoke).toHaveBeenCalledWith('blob:mock-1');
   });
 });
