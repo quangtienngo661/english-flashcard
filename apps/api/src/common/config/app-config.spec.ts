@@ -17,10 +17,19 @@ function validEnv(): NodeJS.ProcessEnv {
     SMTP_FROM: 'no-reply@localhost',
     CORS_ORIGINS: 'https://app.example.com,https://admin.example.com',
     PROBLEM_TYPE_BASE: 'https://api.example.com/problems/',
+    ADMIN_APP_URL: 'https://admin.example.com',
   };
 }
 
 describe('loadConfig', () => {
+  it('B25#23 (config): ADMIN_APP_URL is required, must be a URL, and is exposed as adminAppUrl', () => {
+    expect(loadConfig(validEnv()).adminAppUrl).toBe('https://admin.example.com');
+    const missing = validEnv();
+    delete missing.ADMIN_APP_URL;
+    expect(() => loadConfig(missing)).toThrow(/ADMIN_APP_URL/);
+    expect(() => loadConfig({ ...validEnv(), ADMIN_APP_URL: 'not a url' })).toThrow(/ADMIN_APP_URL/);
+  });
+
   it('B2#4 (config): missing REDIS_URL fails fast and names the variable', () => {
     const env = validEnv();
     delete env.REDIS_URL;

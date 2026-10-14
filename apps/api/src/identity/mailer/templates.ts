@@ -29,6 +29,16 @@ export function passwordResetMail(to: string): MailMessage {
   };
 }
 
+export function staffAccountMail(to: string, password: string, adminAppUrl: string, mustChange: boolean): MailMessage {
+  const viNote = mustChange ? '\nBạn sẽ được yêu cầu đổi mật khẩu ở lần đăng nhập đầu tiên.' : '';
+  const enNote = mustChange ? '\nYou will be asked to change your password the first time you sign in.' : '';
+  return {
+    to,
+    subject: 'Tài khoản quản trị Wordmet / Your Wordmet admin account',
+    text: `Một tài khoản đã được tạo cho bạn.\nTrang đăng nhập: ${adminAppUrl}\nEmail: ${to}\nMật khẩu / Password: ${password}${viNote}\n\nAn account has been created for you.\nSign in at: ${adminAppUrl}\nEmail: ${to}\nPassword: ${password}${enNote}`,
+  };
+}
+
 export function otpLockedMail(to: string, purpose: OtpPurpose): MailMessage {
   const vi = purpose === 'verify_email' ? 'Xác minh email' : 'Đặt lại mật khẩu';
   const en = purpose === 'verify_email' ? 'Email verification' : 'Password reset';

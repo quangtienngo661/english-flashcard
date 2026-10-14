@@ -8,6 +8,7 @@ model User {
   status           String    @default("active")
   failedLoginCount Int       @default(0) @map("failed_login_count")
   loginLockedUntil DateTime? @map("login_locked_until") @db.Timestamptz
+  mustChangePassword Boolean @default(false) @map("must_change_password")
   createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz
   updatedAt        DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
 

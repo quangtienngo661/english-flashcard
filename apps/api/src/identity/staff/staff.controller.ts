@@ -1,9 +1,10 @@
-import { Body, Controller, Get, Inject, Param, Put, Query, Req } from '@nestjs/common';
+import { Body, Controller, Get, Inject, Param, Post, Put, Query, Req, Res } from '@nestjs/common';
+import type { Response } from 'express';
 import { RateLimit } from '../../common/rate-limit/rate-limit.decorator.js';
 import type { RequestWithUser } from '../../common/request-user/request-user.js';
 import { RequirePermission } from './require-permission.decorator.js';
-import { findUserQuerySchema, listStaffQuerySchema, setStaffRoleSchema, staffUserParamsSchema,
-  type FindUserQuery, type ListStaffQuery, type SetStaffRoleBody, type StaffUserParams } from './staff.schemas.js';
+import { createAccountSchema, findUserQuerySchema, listStaffQuerySchema, setStaffRoleSchema, staffUserParamsSchema,
+  type CreateAccountBody, type FindUserQuery, type ListStaffQuery, type SetStaffRoleBody, type StaffUserParams } from './staff.schemas.js';
 import { StaffService, staffUserNotFound, type StaffUserView } from './staff.service.js';
 
 @Controller('admin')
@@ -21,6 +22,16 @@ export class StaffController {
   @Get('staff')
   listStaff(@Query({ schema: listStaffQuerySchema }) query: ListStaffQuery) {
     return this.staff.listStaff(query.page_size, query.page_token);
+  }
+
+  @Post('users')
+  @RateLimit('user.write')
+  createAccount(
+    @Body({ schema: createAccountSchema }) body: CreateAccountBody,
+    @Req() req: RequestWithUser,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<StaffUserView> {
+    return this.staff.createAccount(req.user!.userId, body, res);
   }
 
   @Put('users/:id/staff-role')

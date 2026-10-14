@@ -14,10 +14,12 @@ export interface Profile {
   timezone: string;
   staff_role: StaffRole | null;
   permissions: Permission[];
+  must_change_password: boolean;
 }
 
 const profileSelect = {
   id: true, email: true, emailVerifiedAt: true, nativeLanguage: true, timezone: true, staffRole: true,
+  mustChangePassword: true,
 } satisfies Prisma.UserSelect;
 type ProfileRow = Prisma.UserGetPayload<{ select: typeof profileSelect }>;
 
@@ -31,6 +33,7 @@ function toProfile(row: ProfileRow): Profile {
     timezone: row.timezone,
     staff_role: staffRole,
     permissions: permissionsFor(staffRole),
+    must_change_password: row.mustChangePassword,
   };
 }
 

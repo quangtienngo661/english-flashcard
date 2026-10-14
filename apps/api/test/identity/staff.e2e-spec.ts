@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { checkPasswordPolicy } from '../../src/identity/auth/password-policy.js';
 import { StaffService } from '../../src/identity/staff/staff.service.js';
 import { seedUser, startSession } from '../support/auth-helpers.js';
 import { createTestApp, type TestApp } from '../support/create-test-app.js';
@@ -192,5 +193,102 @@ describe('staff roles (e2e, isolated database)', () => {
       expect(res.body.operation_id).toEqual(expect.any(String));
       expect(await ctx.prisma.user.findMany({ orderBy: { email: 'asc' } })).toEqual(before);
     }
+  });
+
+  describe('POST /v1/admin/users (admin creates an account)', () => {
+    const create = (body: object = {}, access = token) => ctx.http().post('/v1/admin/users').set(auth(access))
+      .send({ email: 'New.Editor@Example.com', staff_role: 'editor', must_change_password: true,
+        timezone: 'Asia/Ho_Chi_Minh', ...body });
+    const mailsTo = (email: string) => ctx.mailer.sent.filter((message) => message.to === email);
+    const passwordIn = (text: string) => /Mật khẩu \/ Password: (\S+)/.exec(text)?.[1];
+    beforeEach(() => { ctx.mailer.sent.length = 0; });
+
+    it('B25#23: generated + must_change → 201 body has exactly id,email,email_verified,staff_role; Mailpit has one mail to that address whose password passes the policy and logs in (then /me must_change_password true, email_verified true, staff_role as chosen); captured logs contain neither the password nor the email', async () => {
+      const res = await create();
+      expect(res.status).toBe(201);
+      expect(Object.keys(res.body).sort()).toEqual(['email', 'email_verified', 'id', 'staff_role']);
+      expect(res.body).toMatchObject({ email: 'new.editor@example.com', email_verified: true, staff_role: 'editor' });
+      await ctx.drainMail();
+      const mails = mailsTo('new.editor@example.com');
+      expect(mails).toHaveLength(1);
+      const password = passwordIn(mails[0].text);
+      expect(password).toBeDefined();
+      expect(checkPasswordPolicy(password!)).toEqual([]);
+      expect(mails[0].text).toContain('http://localhost:5173');
+      const login = await ctx.http().post('/v1/auth/login').send({ email: 'new.editor@example.com', password, client: 'web' });
+      expect(login.status).toBe(200);
+      const me = await ctx.http().get('/v1/me').set(auth(login.body.access_token));
+      expect(me.body).toMatchObject({ must_change_password: true, email_verified: true, staff_role: 'editor' });
+      const dump = JSON.stringify(ctx.logs);
+      expect(dump).not.toContain(password!);
+      expect(dump).not.toContain('new.editor@example.com');
+      expect(JSON.stringify(res.body)).not.toContain(password!);
+      expect(ctx.logs.find((entry) => entry.event === 'staff_account_created')).toMatchObject({
+        actor_id: adminId, target_id: res.body.id, staff_role: 'editor', must_change: true,
+      });
+    });
+
+    it('B25#24: typed password failing the policy → 400 violations, no user, no mail; a valid typed password is stored (login works) and appears in the mail', async () => {
+      const users = await ctx.prisma.user.count();
+      const bad = await create({ password: 'abc' });
+      expect(bad.status).toBe(400);
+      expect(bad.body.type).toBe(problem('validation-failed'));
+      expect(bad.body.violations).toEqual(['min_length', 'uppercase', 'digit', 'special']);
+      await ctx.drainMail();
+      expect(await ctx.prisma.user.count()).toBe(users);
+      expect(mailsTo('new.editor@example.com')).toEqual([]);
+      const ok = await create({ password: 'Typed-By-Admin9', must_change_password: false });
+      expect(ok.status).toBe(201);
+      await ctx.drainMail();
+      expect(passwordIn(mailsTo('new.editor@example.com')[0].text)).toBe('Typed-By-Admin9');
+      const login = await ctx.http().post('/v1/auth/login')
+        .send({ email: 'new.editor@example.com', password: 'Typed-By-Admin9', client: 'web' });
+      expect(login.status).toBe(200);
+      expect((await ctx.http().get('/v1/me').set(auth(login.body.access_token))).body.must_change_password).toBe(false);
+    });
+
+    it('B25#25: existing email → 409 email-taken, user unchanged, no mail', async () => {
+      const existing = await seedUser(ctx.prisma, { verified: true });
+      const before = await row(existing.userId);
+      const res = await create({ email: existing.email.toUpperCase(), staff_role: 'admin' });
+      expect(res.status).toBe(409);
+      expect(res.body.type).toBe(problem('email-taken'));
+      await ctx.drainMail();
+      expect(await row(existing.userId)).toEqual(before);
+      expect(ctx.mailer.sent).toEqual([]);
+    });
+
+    it('B25#28: exhausted mail budget → 503 mail-unavailable, no user', async () => {
+      const limited = await createTestApp({ databaseUrl: await createIsolatedDatabase(), config: { mailDailyBudget: 0 } });
+      try {
+        const admin = await seedUser(limited.prisma, { verified: true, staffRole: 'admin' });
+        const access = (await startSession(limited, admin.userId)).accessToken;
+        const res = await limited.http().post('/v1/admin/users').set(auth(access)).send({
+          email: 'budget@example.com', staff_role: 'editor', must_change_password: true, timezone: 'Asia/Ho_Chi_Minh' });
+        expect(res.status).toBe(503);
+        expect(res.body.type).toBe(problem('mail-unavailable'));
+        expect(await limited.prisma.user.findUnique({ where: { email: 'budget@example.com' } })).toBeNull();
+      } finally { await limited.close(); }
+    });
+
+    it('validation: an invalid timezone, unknown staff_role, extra field or missing must_change_password → 400 and nothing created', async () => {
+      const users = await ctx.prisma.user.count();
+      for (const body of [{ timezone: 'Mars/Base' }, { staff_role: 'owner' }, { extra: 1 }, { must_change_password: undefined }]) {
+        const res = await create(body);
+        expect(res.status).toBe(400);
+        expect(res.body.type).toBe(problem('validation-failed'));
+      }
+      expect(await ctx.prisma.user.count()).toBe(users);
+    });
+
+    it('an editor (no roles.manage) → 403 forbidden and nothing created', async () => {
+      const editor = await seedUser(ctx.prisma, { verified: true, staffRole: 'editor' });
+      const access = (await startSession(ctx, editor.userId)).accessToken;
+      const users = await ctx.prisma.user.count();
+      const res = await create({}, access);
+      expect(res.status).toBe(403);
+      expect(res.body.type).toBe(problem('forbidden'));
+      expect(await ctx.prisma.user.count()).toBe(users);
+    });
   });
 });

@@ -12,6 +12,7 @@ const transactionOptions = { timeout: 10_000, maxWait: 5_000 };
 
 export async function seedUser(prisma: PrismaClient, opts?: {
   email?: string; password?: string; verified?: boolean; staffRole?: StaffRole; nativeLanguage?: SupportedLanguage;
+  mustChangePassword?: boolean;
 }): Promise<{ userId: string; email: string; password: string }> {
   const userId = randomUUID();
   const email = normalizeEmail(opts?.email ?? `${randomUUID()}@example.com`);
@@ -26,6 +27,7 @@ export async function seedUser(prisma: PrismaClient, opts?: {
         id: userId, email, timezone: 'Asia/Ho_Chi_Minh',
         emailVerifiedAt: opts?.verified ? new Date('2026-10-07T00:00:00Z') : null,
         staffRole: opts?.staffRole, nativeLanguage: opts?.nativeLanguage,
+        ...(opts?.mustChangePassword ? { mustChangePassword: true } : {}),
         passwordCredential: { create: { hash } },
       },
     });

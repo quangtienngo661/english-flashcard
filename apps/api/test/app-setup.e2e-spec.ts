@@ -71,6 +71,19 @@ describe('Shared app setup', () => {
     expect(unlisted.headers['access-control-allow-origin']).toBeUndefined();
   });
 
+  it('B25#17: preflight allows Idempotency-Key, refuses an unlisted header, and responses expose Retry-After', async () => {
+    const allowed = await testApp.http().options('/v1/sample').set('Origin', origin)
+      .set('Access-Control-Request-Method', 'POST')
+      .set('Access-Control-Request-Headers', 'idempotency-key');
+    expect(allowed.headers['access-control-allow-headers'].toLowerCase()).toContain('idempotency-key');
+    const refused = await testApp.http().options('/v1/sample').set('Origin', origin)
+      .set('Access-Control-Request-Method', 'POST')
+      .set('Access-Control-Request-Headers', 'x-unlisted');
+    expect((refused.headers['access-control-allow-headers'] ?? '').toLowerCase()).not.toContain('x-unlisted');
+    const health = await testApp.http().get('/v1/health').set('Origin', origin);
+    expect(health.headers['access-control-expose-headers']).toBe('Retry-After');
+  });
+
   it('createIsolatedDatabase returns a migrated empty database', async () => {
     const databaseUrl = await createIsolatedDatabase();
     const isolated = await createTestApp({ databaseUrl });

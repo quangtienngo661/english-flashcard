@@ -1,7 +1,8 @@
 import { parse } from 'csv-parse/sync';
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, inject, it, vi } from 'vitest';
 import { APP_CONFIG, type AppConfig } from '../../src/common/config/app-config.js';
+import { encodeBoundToken } from '../../src/common/pagination/page-token.util.js';
 import { ContentService, type Level, type RevisionContent } from '../../src/content/index.js';
 import { BackgroundJobsService, makeJobContext } from '../../src/content-pipeline/jobs/background-jobs.service.js';
 import { JobHandlerRegistry } from '../../src/content-pipeline/jobs/job-handler.registry.js';
@@ -379,6 +380,89 @@ describe('publish jobs (e2e, isolated database, direct lease contexts)', () => {
     expect(await items(id)).toMatchObject([{ outcome: 'already_published', reason: null }]);
     expect(await ctx.prisma.senseRevision.findUniqueOrThrow({ where: { id: sense.revisionId } })).toEqual(publishedBefore);
     expect((await read(id)).body.counters).toEqual({ processed: 1, pending: 0, published: 0, already_published: 1, refused: 0 });
+  });
+
+  describe('list', () => {
+    const list = (query: Record<string, string | number> = {}, auth = token) => ctx.http().get(endpoint)
+      .set('Authorization', `Bearer ${auth}`).query(query);
+    const ids = (body: { items: Array<{ id: string }> }) => body.items.map((item) => item.id);
+    // One sense per job so every snapshot is non-empty; jobs are created one minute apart.
+    const createJobs = async (count: number) => {
+      const created: string[] = [];
+      for (let index = 0; index < count; index++) {
+        const sense = await ready(ctx, actorId);
+        const filter = { senseIds: [sense.senseId] };
+        const accepted = await create(filter);
+        expect(accepted.status).toBe(202);
+        created.push(accepted.body.job_id as string);
+        ctx.clock.advance(60_000);
+      }
+      return created;
+    };
+
+    it('B25#15: three jobs, page_size=2 → newest two + token, then the oldest + null, no repeats', async () => {
+      const [oldest, middle, newest] = await createJobs(3);
+      const first = await list({ page_size: 2 });
+      expect(first.status).toBe(200);
+      expect(ids(first.body)).toEqual([newest, middle]);
+      expect(first.body.next_page_token).toEqual(expect.any(String));
+      const second = await list({ page_size: 2, page_token: first.body.next_page_token });
+      expect(second.status).toBe(200);
+      expect(ids(second.body)).toEqual([oldest]);
+      expect(second.body.next_page_token).toBeNull();
+      const detail = (await read(newest)).body;
+      expect(first.body.items[0]).toEqual({
+        ...detail, filter: (await ctx.prisma.publishJob.findUniqueOrThrow({ where: { id: newest } })).filter,
+      });
+      expect(Object.keys(first.body.items[0]).sort()).toEqual(['counters', 'created_at', 'filter', 'finished_at',
+        'id', 'not_ready_count', 'snapshot_count', 'started_at', 'status']);
+    });
+
+    it('B25E17: two jobs with the same created_at are ordered by id and split across pages without repeats', async () => {
+      const [first, second] = await createJobs(2);
+      const tied = ctx.clock.now();
+      await ctx.prisma.backgroundJob.updateMany({ where: { id: { in: [first, second] } }, data: { createdAt: tied } });
+      const expected = [first, second].sort();
+      const page1 = await list({ page_size: 1 });
+      expect(ids(page1.body)).toEqual([expected[0]]);
+      const page2 = await list({ page_size: 1, page_token: page1.body.next_page_token });
+      expect(ids(page2.body)).toEqual([expected[1]]);
+      expect(page2.body.next_page_token).toBeNull();
+    });
+
+    it('B25E18: a job created between page 1 and page 2 appears on neither page 2 nor twice', async () => {
+      const [oldest, middle, newest] = await createJobs(3);
+      const page1 = await list({ page_size: 2 });
+      expect(ids(page1.body)).toEqual([newest, middle]);
+      const [late] = await createJobs(1);
+      const page2 = await list({ page_size: 2, page_token: page1.body.next_page_token });
+      expect(ids(page2.body)).toEqual([oldest]);
+      expect(ids(page2.body)).not.toContain(late);
+    });
+
+    it('B25#16: a token minted by GET /v1/admin/content/uploads, a non-base64url string, page_size=0 and 101 → 400 validation-failed', async () => {
+      const [only] = await createJobs(1);
+      const uploadsBinding = createHash('sha256').update(JSON.stringify({ route: 'uploads', filters: {} })).digest('hex');
+      const fromUploads = encodeBoundToken({ created_at: ctx.clock.now().toISOString(), id: only }, uploadsBinding);
+      const invalidQueries: Array<Record<string, string | number>> = [
+        { page_token: fromUploads }, { page_token: 'not base64url!' }, { page_size: 0 }, { page_size: 101 },
+      ];
+      for (const query of invalidQueries) {
+        const invalid = await list(query);
+        expect(invalid.status).toBe(400);
+        expect(invalid.body.type).toBe(problem('validation-failed'));
+      }
+    });
+
+    it('route: GET .../publish-jobs returns the list (200 with items), not the senses/:id handler, and a learner gets 403 forbidden', async () => {
+      const response = await list();
+      expect(response.status).toBe(200);
+      expect(response.body).toEqual({ items: [], next_page_token: null });
+      const learner = await seedUser(ctx.prisma, { verified: true });
+      const denied = await list({}, (await startSession(ctx, learner.userId)).accessToken);
+      expect(denied.status).toBe(403);
+      expect(denied.body.type).toBe(problem('forbidden'));
+    });
   });
 });
 

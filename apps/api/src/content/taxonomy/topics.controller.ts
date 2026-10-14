@@ -14,6 +14,11 @@ import { TopicsService, type TopicView } from './topics.service.js';
 export class TopicsController {
   constructor(@Inject(TopicsService) private readonly topics: TopicsService) {}
 
+  @Get()
+  list(): Promise<{ items: TopicView[] }> {
+    return this.topics.listAll();
+  }
+
   @Post()
   @RateLimit('user.write')
   create(@Body({ schema: createTopicSchema }) body: CreateTopicBody): Promise<TopicView> {

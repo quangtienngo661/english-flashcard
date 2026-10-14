@@ -43,7 +43,7 @@ describe('profile and IdentityService (e2e)', () => {
     const res = await patch({ native_language: 'en' });
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ id: userId, email, email_verified: false, native_language: 'en',
-      timezone: 'Asia/Ho_Chi_Minh', staff_role: null, permissions: [] });
+      timezone: 'Asia/Ho_Chi_Minh', staff_role: null, permissions: [], must_change_password: false });
     expect((await account()).nativeLanguage).toBe('en');
     expect((await get()).body).toEqual(res.body);
   });
@@ -60,7 +60,7 @@ describe('profile and IdentityService (e2e)', () => {
   });
   it('B2#67/B1#25: getProfile and GET /me return all four content permissions for admin and editor, with learner defaults intact', async () => {
     const profile = { id: userId, email, email_verified: false, native_language: null,
-      timezone: 'Asia/Ho_Chi_Minh', staff_role: null, permissions: [] };
+      timezone: 'Asia/Ho_Chi_Minh', staff_role: null, permissions: [], must_change_password: false };
     expect(await identity.getProfile(userId)).toEqual(profile);
     expect((await get()).body).toEqual(profile);
     for (const staffRole of ['admin', 'editor'] as const) {
