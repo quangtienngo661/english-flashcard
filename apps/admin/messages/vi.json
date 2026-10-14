@@ -1,0 +1,38 @@
+{
+  "errors": {
+    "generic": "Có lỗi xảy ra",
+    "inProgress": "Yêu cầu trước vẫn đang chạy",
+    "noAccess": "Bạn không có quyền truy cập trang web này",
+    "batch-filter-unavailable": "Bộ lọc theo lô này không dùng được",
+    "batch-not-revertable": "Lô này không hoàn tác được",
+    "csrf-header-required": "Yêu cầu thiếu header bảo vệ CSRF (lỗi lập trình)",
+    "email-already-verified": "Email này đã được xác minh",
+    "email-taken": "Email đã được dùng",
+    "export-too-large": "Quá nhiều dòng để xuất, hãy thu hẹp bộ lọc",
+    "file-invalid": "File không hợp lệ",
+    "file-too-large": "File quá lớn (tối đa 10 MB)",
+    "forbidden": "Bạn không còn quyền làm thao tác này",
+    "idempotency-key-abandoned": "Yêu cầu trước đã bị bỏ dở, hãy bấm gửi lại",
+    "invalid-credentials": "Email hoặc mật khẩu không đúng",
+    "invalid-current-password": "Mật khẩu hiện tại không đúng",
+    "invalid-otp": "Mã xác minh không đúng hoặc đã hết hạn",
+    "invalid-token": "Phiên hoặc liên kết không hợp lệ",
+    "level-source-required": "File có cột level, hãy chọn nguồn level",
+    "mail-unavailable": "Không gửi được email, thử lại sau",
+    "not-found": "Không tìm thấy",
+    "nothing-to-publish": "Không có mục nào đủ điều kiện publish",
+    "payload-too-large": "Dữ liệu gửi lên quá lớn",
+    "profile-incomplete": "Hồ sơ chưa đầy đủ",
+    "rate-limited": "Thao tác quá nhanh, hãy đợi một lát",
+    "source-exists": "Nguồn dữ liệu này đã tồn tại",
+    "source-incomplete": "Nguồn level cần có phiên bản và license",
+    "staff-role-rule": "Không thể đổi vai trò này (người dùng chưa xác minh email, hoặc đây là admin cuối cùng)",
+    "topic-exists": "Topic này đã tồn tại",
+    "unsupported-media-type": "Định dạng dữ liệu không được hỗ trợ",
+    "validation-failed": "Dữ liệu không hợp lệ"
+  },
+  "notice": {
+    "verified": "Email đã xác minh. Liên hệ admin để được cấp quyền.",
+    "expired": "Phiên đăng nhập đã hết hạn"
+  }
+}
