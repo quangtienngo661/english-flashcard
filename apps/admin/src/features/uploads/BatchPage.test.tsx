@@ -57,13 +57,33 @@ describe('batch page', () => {
     expect(await screen.findByText(t.failed)).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: t.publish })).toBeNull();
     expect(screen.queryByRole('button', { name: t.revert })).toBeNull();
-    expect(screen.getByRole('button', { name: t.rejected })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: t.rejected })).toBeNull(); // nothing was rejected
   });
 
   it('B25E11: reverted: true hides "Hoàn tác lô" and says the batch was reverted', async () => {
     renderApp('/uploads/b1', { [BATCH]: () => json(batch({ reverted: true })) });
     expect(await screen.findByText(t.revertedNotice)).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: t.revert })).toBeNull();
+  });
+
+  it.each([
+    ['queued', {}, false],
+    ['running', {}, false],
+    ['failed', {}, false],
+    ['succeeded', {}, true],
+    ['partial', {}, true],
+    ['succeeded', { reverted: true }, false],
+  ])('B25E28: "Publish lô này" for status %s %j is %s', async (status, over, shown) => {
+    renderApp('/uploads/b1', { [BATCH]: () => json(batch({ status, ...over })) });
+    await screen.findByRole('heading', { level: 2, name: 'cefr-j-1.5.csv' });
+    if (shown) expect(screen.getByRole('button', { name: t.publish })).toBeInTheDocument();
+    else expect(screen.queryByRole('button', { name: t.publish })).toBeNull();
+  });
+
+  it('"Tải rejected.csv" is offered only when the batch has rejected rows', async () => {
+    renderApp('/uploads/b1', { [BATCH]: () => json(batch({ counters: { processed: 5, created: 5, rejected: 0 } })) });
+    await screen.findByRole('heading', { level: 2, name: 'cefr-j-1.5.csv' });
+    expect(screen.queryByRole('button', { name: t.rejected })).toBeNull();
   });
 
   it('B25#14 (unit): "Tải rejected.csv" saves the API response as rejected-<id>.csv', async () => {
