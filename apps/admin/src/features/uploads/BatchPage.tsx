@@ -70,7 +70,9 @@ export function BatchPage() {
       : (batch.status === 'partial' || batch.status === 'failed') && finished
         ? t('batch.endedAt', { time: finished })
         : t('batch.createdAt', { time: dateTime(batch.created_at) });
-  const canRevertNow = canRevert && !batch.reverted && (batch.status === 'succeeded' || batch.status === 'partial');
+  // Only a finished, not reverted batch is published or reverted: the publish API snapshots whatever the batch holds right now (B25E28).
+  const finishedAndLive = !batch.reverted && (batch.status === 'succeeded' || batch.status === 'partial');
+  const canRevertNow = canRevert && finishedAndLive;
 
   async function downloadRejectedCsv() {
     setDownloading(true);
@@ -107,10 +109,12 @@ export function BatchPage() {
           <p className="text-ui text-muted">{subtitle}</p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button variant="secondary" isPending={downloading} onPress={() => void downloadRejectedCsv()}>
-            {t('batch.rejected')}
-          </Button>
-          {canPublish && batch.status !== 'failed' && (
+          {rejected > 0 && (
+            <Button variant="secondary" isPending={downloading} onPress={() => void downloadRejectedCsv()}>
+              {t('batch.rejected')}
+            </Button>
+          )}
+          {canPublish && finishedAndLive && (
             <Button isPending={publish.pending} isDisabled={publish.waitSeconds > 0} onPress={() => void publish.submit()}>
               {publish.waitSeconds > 0 ? t('batch.wait', { seconds: publish.waitSeconds }) : t('batch.publish')}
             </Button>
