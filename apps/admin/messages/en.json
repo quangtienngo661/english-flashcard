@@ -18,7 +18,7 @@
     "invalid-otp": "The code is wrong or has expired",
     "invalid-token": "The session or link is not valid",
     "level-source-required": "The file has a level column, choose a level source",
-    "mail-unavailable": "The email could not be sent, try again later",
+    "mail-unavailable": "The email cannot be sent right now, so no account was created. Please try again in a few minutes.",
     "not-found": "Not found",
     "nothing-to-publish": "Nothing is eligible to publish",
     "password-change-required": "You must change your password before continuing",
@@ -113,6 +113,67 @@
       "lowercase": "A lowercase letter",
       "digit": "A digit",
       "special": "A special character"
+    }
+  },
+  "staff": {
+    "createAccount": "Create account",
+    "search": {
+      "label": "Find by email",
+      "placeholder": "type.email@example.com",
+      "submit": "Find",
+      "notFound": "No user found with this email"
+    },
+    "card": {
+      "verified": "Verified",
+      "unverified": "Email not verified",
+      "noRole": "No role",
+      "grantEditor": "Make editor",
+      "grantAdmin": "Make admin",
+      "remove": "Remove role",
+      "unverifiedHint": "This user has not verified their email, so a role cannot be granted yet"
+    },
+    "list": {
+      "email": "Email",
+      "role": "Role",
+      "verified": "Verified",
+      "isVerified": "Verified",
+      "notVerified": "Not verified",
+      "change": "Change role",
+      "shown": "{count} items shown",
+      "empty": "No staff accounts yet"
+    },
+    "dialog": {
+      "grantTitle": "Grant the {role} role?",
+      "grantEditorBody": "Grant the editor role to {email}? They will be able to enter and edit content, but not manage roles.",
+      "grantAdminBody": "Grant the admin role to {email}? They will be able to manage roles and all content.",
+      "removeTitle": "Remove the role of {email}?",
+      "removeBody": "They will lose access to the admin site immediately.",
+      "selfTitle": "Remove your own admin role?",
+      "selfBody": "You will lose the right to manage roles and be moved off this page right after confirming. Only another admin can grant it back to you.",
+      "selfConfirm": "Remove my role",
+      "lastAdmin": "The last admin cannot be removed"
+    },
+    "create": {
+      "title": "Create account",
+      "email": "Email",
+      "emailInvalid": "Enter a valid email",
+      "role": "Role",
+      "generate": "Generate a random password",
+      "generateHint": "The password is emailed to the user and is never shown on screen.",
+      "password": "Password",
+      "confirmPassword": "Confirm password",
+      "mustChange": "Require a password change at first login",
+      "continue": "Continue",
+      "confirmTitle": "Confirm account creation",
+      "confirmBody": "Create a {role} account for {email}? The password will be sent to exactly this address.",
+      "confirmMustChange": "The user must change the password at first login.",
+      "back": "Back",
+      "submit": "Create account",
+      "doneTitle": "Account created",
+      "doneBody": "The account was created and the password sent to {email}. If the editor does not get the mail, they can use \"Forgot password\" on the login page.",
+      "close": "Close",
+      "emailTaken": "This email already has an account. Use \"Find by email\" above and grant a role.",
+      "mailUnavailable": "The email cannot be sent right now, so no account was created. Please try again in a few minutes."
     }
   }
 }

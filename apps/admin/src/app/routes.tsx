@@ -3,6 +3,7 @@ import { useSession } from '../auth/session-context';
 import { ChangePasswordPage } from '../features/account/ChangePasswordPage';
 import { ForgotPasswordPage } from '../features/account/ForgotPasswordPage';
 import { LoginPage } from '../features/account/LoginPage';
+import { StaffPage } from '../features/staff/StaffPage';
 import { firstVisiblePath } from './nav';
 import { PlaceholderPage } from './PlaceholderPage';
 import { RequireSession } from './RequireSession';
@@ -30,7 +31,7 @@ export function AppRoutes() {
           <Route path="publish-jobs/:id" element={<PlaceholderPage />} />
           <Route path="export" element={<PlaceholderPage />} />
           <Route path="sources" element={<PlaceholderPage />} />
-          <Route path="staff" element={<PlaceholderPage />} />
+          <Route path="staff" element={<StaffPage />} />
         </Route>
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
