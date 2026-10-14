@@ -152,7 +152,7 @@ describe('password change and reset (unit, isolated persistence)', () => {
     expect(tx.passwordCredential.upsert).toHaveBeenCalledWith({ where: { userId: subject.userId },
       create: { userId: subject.userId, hash: 'new-hash', updatedAt: clock.now() }, update: { hash: 'new-hash', updatedAt: clock.now() } });
     expect(tx.user.update).toHaveBeenCalledWith({ where: { id: subject.userId }, data: {
-      emailVerifiedAt: clock.now(), failedLoginCount: 0, loginLockedUntil: null } });
+      emailVerifiedAt: clock.now(), failedLoginCount: 0, loginLockedUntil: null, mustChangePassword: false } });
     expect(sessions.revokeAllForUser).toHaveBeenCalledExactlyOnceWith(tx, subject.userId, 'password_reset');
     expect(sessions.startChain).not.toHaveBeenCalled(); expect(committed).toBe(true); expect(mailer.sent).toEqual([]);
     expect(prisma.$transaction).toHaveBeenCalledWith(expect.any(Function), { timeout: 10_000, maxWait: 5_000 });
@@ -163,7 +163,7 @@ describe('password change and reset (unit, isolated persistence)', () => {
     tx.user.findUnique.mockResolvedValue({ ...account, emailVerifiedAt: verifiedAt });
     await service.reset(reset, res);
     expect(tx.user.update).toHaveBeenCalledWith({ where: { id: subject.userId }, data: {
-      emailVerifiedAt: verifiedAt, failedLoginCount: 0, loginLockedUntil: null } });
+      emailVerifiedAt: verifiedAt, failedLoginCount: 0, loginLockedUntil: null, mustChangePassword: false } });
     await close();
   });
   it.each(['invalid email', 'unknown email', 'deleted', 'wrong', 'no_live_code', 'locked'])('B1#23/B1#34/B1E17: %s reset remains generic and does not replace credentials', async (reason) => {

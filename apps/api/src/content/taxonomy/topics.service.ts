@@ -71,6 +71,11 @@ export class TopicsService {
     }, transactionOptions);
   }
 
+  async listAll(): Promise<{ items: TopicView[] }> {
+    const rows = await this.prisma.topic.findMany({ orderBy: { code: 'asc' }, select: topicSelect });
+    return { items: rows.map(toView) };
+  }
+
   async list(nativeLanguage: 'vi' | 'en'): Promise<{ items: LearnerTopicView[] }> {
     const rows = await this.prisma.topic.findMany({
       where: { archivedAt: null }, orderBy: { code: 'asc' }, select: topicSelect,

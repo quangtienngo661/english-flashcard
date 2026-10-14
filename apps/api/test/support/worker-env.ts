@@ -18,6 +18,7 @@ export function workerEnv(databaseUrl: string, redisUrl: string, queuePrefix: st
     SMTP_SECURE: 'false',
     CORS_ORIGINS: 'http://localhost:3000',
     PROBLEM_TYPE_BASE: 'https://api.example.com/problems/',
+    ADMIN_APP_URL: 'http://localhost:5173',
     MAIL_DAILY_BUDGET: '1500',
     MAIL_BUDGET_KEY: randomUUID(),
     TRUST_PROXY: 'false',

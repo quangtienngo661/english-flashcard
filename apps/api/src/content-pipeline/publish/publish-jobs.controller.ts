@@ -1,7 +1,9 @@
-import { Body, Controller, Get, HttpCode, Inject, Param, Post, Req, Res, UseInterceptors } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Inject, Param, Post, Query, Req, Res, UseInterceptors } from '@nestjs/common';
 import type { Response } from 'express';
+import { createHash } from 'node:crypto';
 import { z } from 'zod';
 import { PRISMA_CLIENT } from '../../common/db/prisma.module.js';
+import { decodeBoundToken, encodeBoundToken } from '../../common/pagination/page-token.util.js';
 import { Idempotent } from '../../common/idempotency/idempotent.decorator.js';
 import { IdempotencyInterceptor } from '../../common/idempotency/idempotency.interceptor.js';
 import type { RequestWithOperationId } from '../../common/logging/operation-id.middleware.js';
@@ -22,6 +24,12 @@ const filterSchema = sensesExportQuery.pick({ level: true, topic: true, pos: tru
   senseIds: z.array(uuid).transform((ids) => [...new Set(ids)].sort()).optional(),
 });
 const createSchema = z.strictObject({ filter: filterSchema });
+const listQuery = z.strictObject({
+  page_size: z.coerce.number().int().min(1).max(100).default(20),
+  page_token: z.string().optional(),
+});
+const cursorSchema = z.strictObject({ created_at: z.iso.datetime(), id: uuid });
+const queryBinding = createHash('sha256').update(JSON.stringify({ route: 'publish-jobs', filters: {} })).digest('hex');
 
 @Controller('admin/content/senses/publish-jobs')
 @RequirePermission('content.publish')
@@ -70,6 +78,37 @@ export class PublishJobsController {
     // As with uploads, Postgres is authoritative and the shared reconciler repairs enqueue failure.
     await this.queue.enqueue('content-publish', jobId);
     return { job_id: jobId };
+  }
+
+  // Declared before ':id' so the bare collection route is never treated as an id.
+  @Get()
+  async list(@Query({ schema: listQuery }) query: z.infer<typeof listQuery>) {
+    let cursor: z.infer<typeof cursorSchema> | undefined;
+    if (query.page_token !== undefined) {
+      const parsed = cursorSchema.safeParse(decodeBoundToken(query.page_token, queryBinding));
+      if (!parsed.success) throw new ProblemDetailsException({ status: 400, title: 'Validation failed', type: 'validation-failed' });
+      cursor = parsed.data;
+    }
+    const createdAt = cursor ? new Date(cursor.created_at) : undefined;
+    const rows = await this.prisma.publishJob.findMany({
+      where: cursor ? { OR: [
+        { job: { createdAt: { lt: createdAt } } },
+        { job: { createdAt }, id: { gt: cursor.id } },
+      ] } : {},
+      orderBy: [{ job: { createdAt: 'desc' } }, { id: 'asc' }], take: query.page_size + 1,
+      select: { id: true, filter: true, snapshotCount: true, notReadyCount: true, counters: true,
+        job: { select: { status: true, createdAt: true, startedAt: true, finishedAt: true } } },
+    });
+    const items = rows.slice(0, query.page_size);
+    const last = items.at(-1);
+    return {
+      items: items.map((job) => ({ id: job.id, status: job.job.status, filter: job.filter,
+        snapshot_count: job.snapshotCount, not_ready_count: job.notReadyCount, counters: job.counters,
+        created_at: job.job.createdAt.toISOString(), started_at: job.job.startedAt?.toISOString() ?? null,
+        finished_at: job.job.finishedAt?.toISOString() ?? null })),
+      next_page_token: rows.length > query.page_size && last
+        ? encodeBoundToken({ created_at: last.job.createdAt.toISOString(), id: last.id }, queryBinding) : null,
+    };
   }
 
   @Get(':id/report.csv')
