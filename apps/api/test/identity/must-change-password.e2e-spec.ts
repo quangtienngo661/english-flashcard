@@ -72,4 +72,17 @@ describe('must_change_password gate (e2e)', () => {
     expect((await get('/v1/me')).status).toBe(200);
     expect(await ctx.prisma.sessionChain.count({ where: { userId, revokedAt: null } })).toBe(1);
   });
+
+  it('B25#27 (API): a new password that differs only in Unicode form (current NFC, new NFD) is still same_as_current', async () => {
+    const nfc = 'Pässword1!';
+    const nfd = nfc.normalize('NFD');
+    expect(nfd).not.toBe(nfc);
+    const user = await seedUser(ctx.prisma, { verified: true, staffRole: 'admin', mustChangePassword: true, password: nfc });
+    const access = (await startSession(ctx, user.userId, 'web')).accessToken;
+    const before = await ctx.prisma.passwordCredential.findUniqueOrThrow({ where: { userId: user.userId } });
+    const res = await change({ current_password: nfc, new_password: nfd }, access);
+    expect(res.status).toBe(400);
+    expect(res.body.violations).toEqual(['same_as_current']);
+    expect((await ctx.prisma.passwordCredential.findUniqueOrThrow({ where: { userId: user.userId } })).hash).toBe(before.hash);
+  });
 });

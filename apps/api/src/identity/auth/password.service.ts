@@ -15,7 +15,7 @@ import { withUserLock } from '../user-lock.js';
 import { decideCredential } from './credential-decision.js';
 import { OtpService, type OtpCheckOutcome } from './otp.service.js';
 import { PasswordHasher } from './password-hasher.service.js';
-import { checkPasswordPolicy } from './password-policy.js';
+import { checkPasswordPolicy, normalizePassword } from './password-policy.js';
 import type { ChangeBody, ResetBody } from './password.schemas.js';
 
 const transactionOptions = { timeout: 10_000, maxWait: 5_000 };
@@ -66,7 +66,7 @@ export class PasswordService {
       }
       if (kind !== 'ok') return { kind };
       // Only reachable with the right current password, so it reveals nothing to a caller who lacks it.
-      if (body.new_password === body.current_password) return { kind: 'same_as_current' };
+      if (normalizePassword(body.new_password) === normalizePassword(body.current_password)) return { kind: 'same_as_current' };
       await tx.passwordCredential.update({ where: { userId: user.userId }, data: { hash, updatedAt: this.clock.now() } });
       await tx.user.update({ where: { id: user.userId }, data: { mustChangePassword: false } });
       await this.sessions.revokeAllForUser(tx, user.userId, 'password_changed');
