@@ -1,5 +1,5 @@
 import { useInfiniteQuery } from '@tanstack/react-query';
-import { useNavigate } from 'react-router';
+import { Link, useNavigate } from 'react-router';
 import { useTranslations, useFormatter } from 'use-intl';
 import { useApi } from '../../auth/session-context';
 import { useCan } from '../../auth/use-can';
@@ -36,9 +36,12 @@ export function UploadsPage() {
       className: 'w-28',
       card: 'action',
       cell: (b) => (
-        <Button variant="ghost" onPress={() => void navigate(`/uploads/${b.id}`)}>
+        <Link
+          to={`/uploads/${b.id}`}
+          className="inline-flex min-h-control items-center rounded-control px-4 text-ui font-medium text-primary outline-none hover:bg-primary-soft focus-visible:ring-2 focus-visible:ring-primary"
+        >
           {t('uploads.open')}
-        </Button>
+        </Link>
       ),
     },
   ];

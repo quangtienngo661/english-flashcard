@@ -62,9 +62,11 @@ export function UploadForm() {
       setRejected({ name: picked.name, size: picked.size, reason: 'file-too-large' });
       return;
     }
+    // Read the header first, so `needsLevel` never pairs the new file with the previous file's columns.
+    const pickedHeaders = await readCsvHeader(picked);
     setRejected(null);
+    setHeaders(pickedHeaders);
     setFile(picked);
-    setHeaders(await readCsvHeader(picked));
   }
 
   async function submit() {

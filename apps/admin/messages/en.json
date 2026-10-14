@@ -275,5 +275,35 @@
     "levelSourcePlaceholder": "Choose a source",
     "fileSize": "{size} MB",
     "open": "Details"
+  },
+  "batch": {
+    "back": "Imports",
+    "rejected": "Download rejected.csv",
+    "publish": "Publish this batch",
+    "revert": "Revert batch",
+    "statusLabel": "Status:",
+    "stats": {
+      "total": "Total rows",
+      "created": "Created",
+      "updated": "Updated",
+      "unchanged": "Unchanged",
+      "rejected": "Rejected"
+    },
+    "createdAt": "Created {time}",
+    "doneAt": "Finished {time}",
+    "endedAt": "Ended {time}",
+    "queued": "Waiting for a worker to pick it up ({seconds} s). The page refreshes every 2 seconds.",
+    "queuedLong": "The batch has waited {seconds} s. Is the worker running? Check the worker process, then reload the page.",
+    "running": "Processing: {done} / {total} rows",
+    "partial": "The batch finished only in part. Download rejected.csv to see the rejected rows and fix them.",
+    "failed": "The import failed. Check the file (required columns, UTF-8 encoding) and upload it again.",
+    "revertedNotice": "This batch was reverted. The senses it created are no longer in the data.",
+    "rejectedSummary": "{count} rows were rejected — download rejected.csv to see why (column _error) and fix them in Excel.",
+    "warnings": "Warnings ({count})",
+    "revertTitle": "Revert batch {file}?",
+    "revertBody": "The senses this batch created will be removed from the data. This cannot be undone.",
+    "revertDone": "Removed {removed} items created by the batch.",
+    "revertSkipped": "{skipped} items could not be removed.",
+    "wait": "Wait {seconds} s"
   }
 }

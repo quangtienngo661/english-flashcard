@@ -275,5 +275,35 @@
     "levelSourcePlaceholder": "Chọn nguồn",
     "fileSize": "{size} MB",
     "open": "Chi tiết"
+  },
+  "batch": {
+    "back": "Lô nhập",
+    "rejected": "Tải rejected.csv",
+    "publish": "Publish lô này",
+    "revert": "Hoàn tác lô",
+    "statusLabel": "Trạng thái:",
+    "stats": {
+      "total": "Tổng số dòng",
+      "created": "Tạo mới",
+      "updated": "Cập nhật",
+      "unchanged": "Không đổi",
+      "rejected": "Bị loại"
+    },
+    "createdAt": "Đã tạo {time}",
+    "doneAt": "Hoàn tất {time}",
+    "endedAt": "Kết thúc {time}",
+    "queued": "Đang chờ worker nhận việc ({seconds} giây). Trang tự cập nhật mỗi 2 giây.",
+    "queuedLong": "Lô đã chờ {seconds} giây. Worker có đang chạy không? Kiểm tra tiến trình worker rồi tải lại trang.",
+    "running": "Đang xử lý: {done} / {total} dòng",
+    "partial": "Lô chỉ hoàn tất một phần. Tải rejected.csv để xem các dòng bị loại và sửa.",
+    "failed": "Lô nhập thất bại. Kiểm tra file (cột bắt buộc, mã hóa UTF-8) rồi upload lại.",
+    "revertedNotice": "Lô này đã được hoàn tác. Các sense do lô tạo không còn trong dữ liệu.",
+    "rejectedSummary": "{count} dòng bị loại — tải rejected.csv để xem lý do (cột _error) và sửa trong Excel.",
+    "warnings": "Cảnh báo ({count})",
+    "revertTitle": "Hoàn tác lô {file}?",
+    "revertBody": "Các sense do lô này tạo sẽ bị gỡ khỏi dữ liệu. Thao tác này không thể khôi phục.",
+    "revertDone": "Đã gỡ {removed} mục do lô tạo.",
+    "revertSkipped": "{skipped} mục không gỡ được.",
+    "wait": "Đợi {seconds} giây"
   }
 }

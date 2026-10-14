@@ -3,6 +3,7 @@ import { useSession } from '../auth/session-context';
 import { ChangePasswordPage } from '../features/account/ChangePasswordPage';
 import { ForgotPasswordPage } from '../features/account/ForgotPasswordPage';
 import { LoginPage } from '../features/account/LoginPage';
+import { BatchPage } from '../features/uploads/BatchPage';
 import { UploadForm } from '../features/uploads/UploadForm';
 import { UploadsPage } from '../features/uploads/UploadsPage';
 import { ComingSoonPage } from '../features/coming-soon/ComingSoonPage';
@@ -31,7 +32,7 @@ export function AppRoutes() {
           <Route index element={<Home />} />
           <Route path="uploads" element={<UploadsPage />} />
           <Route path="uploads/new" element={<UploadForm />} />
-          <Route path="uploads/:id" element={<PlaceholderPage />} />
+          <Route path="uploads/:id" element={<BatchPage />} />
           <Route path="publish-jobs" element={<PlaceholderPage />} />
           <Route path="publish-jobs/:id" element={<PlaceholderPage />} />
           <Route path="export" element={<PlaceholderPage />} />
