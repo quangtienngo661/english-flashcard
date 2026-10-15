@@ -331,6 +331,10 @@ vi/en; `type` không có trong bảng → "Có lỗi xảy ra" kèm **mã lỗi*
 
 ## 9. Giao diện: hướng thiết kế và Figma (M0)
 
+> **Cập nhật 15/10/2026:** chủ dự án chọn lại hướng giao diện (hướng B, sidebar của mockup A). Lớp nhìn mô tả ở mục này và
+> Figma `coVHzJwTFgMbooUrty7sOq` đã lỗi thời; xem [`2026-10-15-ui-refresh-b-design.md`](2026-10-15-ui-refresh-b-design.md) §6.
+> Hành vi (phiên, API client, edge case B25E1–E29) giữ nguyên.
+
 **Hướng (D15)**, rút từ số đo shadcn/ui, GitHub, Atlassian, Stripe (`ADMIN_UI_REFERENCES_2026-10-14.md`):
 - Bố cục: sidebar trái + thanh trên (tiêu đề trang, đổi VI/EN, menu tài khoản). Dưới `64rem` sidebar thành ngăn kéo mở bằng ☰.
 - Mật độ: chữ nền nhỏ hơn landing, nút/ô nhập thấp hơn; tăng cỡ khi thiết bị cảm ứng.

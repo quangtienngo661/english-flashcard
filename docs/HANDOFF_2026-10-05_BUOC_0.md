@@ -39,6 +39,7 @@ thì ghi `ASSUMPTION`.
 | 1 | Đăng ký, đăng nhập email + mật khẩu, OTP xác minh, phiên (access + refresh), hồ sơ, vai trò `admin`/`editor`, **đổi và quên mật khẩu** (chuyển từ Bước 8, D1) | Identity (lõi) |
 | 2 | Catalog (quản trị: nhập CSV, soạn, rà, publish, hoàn tác, xuất), tìm kiếm/duyệt chỉ-đọc cho learner | Content + Pipeline |
 | 2.5 *(mới, D9)* | Giao diện web `apps/admin`: đăng nhập, trang admin, cấp vai trò, luồng CSV. **Code xong local, chờ PR M3 + CI** (design `docs/superpowers/specs/2026-10-14-buoc-2-5-admin-web-design.md`, as-built `docs/deliveries/buoc-2-5.md`) | — |
+| Giao diện B *(mới, 15/10)* | Làm mới landing và admin theo hướng B (chủ dự án chọn 15/10/2026): token chung `packages/design-tokens`, Lexend, bài luyện một thẻ. **Landing xong, PR #22**; PR #19 đã merge nên plan admin là việc tiếp theo (design `docs/superpowers/specs/2026-10-15-ui-refresh-b-design.md`, delivery `docs/deliveries/ui-refresh-b.md`) | — |
 | Deploy *(mới, chưa xếp chỗ)* | Deploy API + `admin-api.` + `admin.`: chọn hosting backend, Postgres/Redis bền, SMTP thật, secret, backup (design 2.5 §14). Phải xong trước pilot Bước 3 | — |
 | 3 | Nhóm, trạng thái, lịch ôn, "hôm nay", flashcard, thêm nhanh (catalog + nhập tay); **cộng phần Content dời từ Bước 2:** từ riêng tư, câu ngữ cảnh, chuỗi tra nghĩa (catalog + tự nhập). **Mốc pilot sớm nhất** (cần web) | Learning + Vocabulary Content (phần còn lại) |
 | 4 | Trắc nghiệm, đúng/sai, gõ từ, bài từ câu người học, "từ hay sai" | Practice (không AI) |
