@@ -142,7 +142,7 @@ test('B25#12 + B25#14 + flow 3: the editor registers a source, uploads small.csv
   await editorPage.getByRole('button', { name: vi.batch.publish }).click();
   await expect(editorPage).toHaveURL(/\/publish-jobs\/[0-9a-f-]{36}$/);
   const jobId = editorPage.url().split('/').pop()!;
-  await expect(editorPage.getByText(vi.status.succeeded, { exact: true })).toBeVisible({ timeout: 30_000 });
+  await expect(editorPage.getByTestId('detail-panel').getByText(vi.status.succeeded, { exact: true })).toBeVisible({ timeout: 30_000 });
   await editorPage.goto('/publish-jobs');
   await expect(editorPage.getByText(`#${jobId.slice(0, 6)}`).first()).toBeVisible();
 

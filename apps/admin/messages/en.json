@@ -336,7 +336,6 @@
     "batchFilter": "batch #{id}",
     "filterNone": "All",
     "jobTitle": "Publish job #{id}",
-    "back": "Publish jobs",
     "report": "Download report.csv",
     "createdAt": "Created {time}",
     "running": "Publishing: {done} / {total} senses",

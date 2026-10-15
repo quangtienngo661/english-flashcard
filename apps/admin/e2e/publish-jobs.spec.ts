@@ -83,3 +83,48 @@ test('axe and overflow: publish job list, form and detail have no serious or cri
     expect(scrollWidth, path).toBeLessThanOrEqual(clientWidth);
   }
 });
+
+test('UBE27 the job row turns "Hoàn tất" when the panel sees it finish', async ({ page }) => {
+  test.skip(test.info().project.name !== 'desktop', 'one layout is enough');
+  let lists = 0;
+  let polls = 0;
+  await signedInAs(page, 'editor', {
+    ...base,
+    [`GET ${JOBS}`]: () => {
+      lists += 1;
+      return { json: { items: [job({ status: lists < 2 ? 'running' : 'succeeded' })], next_page_token: null } };
+    },
+    [`GET ${JOBS}/${ID}`]: () => {
+      polls += 1;
+      return { json: polls < 2 ? job({ status: 'running', finished_at: null, counters: { processed: 10 } }) : job() };
+    },
+  });
+  await page.goto(`/publish-jobs/${ID}`);
+  const row = page.getByRole('table').getByRole('row', { name: /#a3f2c1/ });
+  await expect(row.getByText(vi.status.running, { exact: true })).toBeVisible();
+  await expect(row.getByText(vi.status.succeeded, { exact: true })).toBeVisible({ timeout: 8000 });
+});
+
+test('Review Focus 5: Back after "Publish lô này" in the batch panel reopens that batch and polls it again', async ({ page }) => {
+  test.skip(test.info().project.name !== 'desktop', 'one layout is enough');
+  const at = '2026-10-14T09:30:00.000Z';
+  await signedInAs(page, 'editor', {
+    ...base,
+    'GET /v1/admin/content/uploads': () => ({ json: { items: [{ id: 'b1', status: 'succeeded', file_name: 'one.csv', row_count: 3, created_at: at }], next_page_token: null } }),
+    'GET /v1/admin/content/uploads/b1': () => ({
+      json: { id: 'b1', status: 'succeeded', file_name: 'one.csv', row_count: 3, counters: { processed: 3, created: 3, rejected: 0 }, warnings: [], created_at: at, started_at: at, finished_at: at, reverted: false },
+    }),
+    [`POST ${JOBS}`]: () => ({ status: 202, json: { job_id: ID } }),
+    [`GET ${JOBS}`]: () => ({ json: { items: [job()], next_page_token: null } }),
+    [`GET ${JOBS}/${ID}`]: () => ({ json: job() }),
+  });
+  await page.goto('/uploads/b1');
+  await page.getByTestId('detail-panel').getByRole('button', { name: vi.batch.publish }).click();
+  await expect(page).toHaveURL(new RegExp(`/publish-jobs/${ID}$`));
+  await expect(page.getByRole('heading', { level: 2, name: t.jobTitle.replace('{id}', 'a3f2c1') })).toBeVisible();
+  const before = requestCount(page, 'GET', '/v1/admin/content/uploads/b1');
+  await page.goBack();
+  await expect(page).toHaveURL(/\/uploads\/b1$/);
+  await expect(page.getByRole('heading', { level: 2, name: 'one.csv' })).toBeVisible();
+  await expect.poll(() => requestCount(page, 'GET', '/v1/admin/content/uploads/b1')).toBeGreaterThan(before);
+});

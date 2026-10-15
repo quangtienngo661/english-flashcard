@@ -159,21 +159,33 @@ describe('publish job form', { timeout: 20_000 }, () => {
   });
 });
 
-describe('publish job detail', () => {
+describe('publish job panel', () => {
   const GET = `GET /v1/admin/content/senses/publish-jobs/${ID}`;
+  // The job opens over its list now (UB8): every render also answers the list (this job and another one).
+  const OTHER = 'b7c9d0aa-0000-4000-8000-000000000002';
+  const list = () => json({ items: [job({ status: 'queued', counters: {} }), job({ id: OTHER, status: 'succeeded', snapshot_count: 9, filter: { level: 'A1' } })], next_page_token: null });
+
+  it('UBC12 /publish-jobs/<id> shows the list and the panel, and the job row is selected', async () => {
+    renderApp(`/publish-jobs/${ID}`, { [JOBS]: list, [GET]: () => json(job()) });
+    expect(await screen.findByRole('heading', { level: 2, name: t.jobTitle.replace('{id}', 'a3f2c1') })).toBeInTheDocument();
+    const table = screen.getByRole('table');
+    expect(within(table).getByRole('link', { name: '#a3f2c1' }).closest('tr')).toHaveAttribute('data-selected');
+    expect(within(table).getByRole('link', { name: '#b7c9d0' }).closest('tr')).not.toHaveAttribute('data-selected');
+    expect(screen.getByTestId('detail-panel')).toBeInTheDocument();
+  });
 
   it('shows the running sentence while it runs', async () => {
-    renderApp(`/publish-jobs/${ID}`, { [GET]: () => json(job()) });
+    renderApp(`/publish-jobs/${ID}`, { [JOBS]: list, [GET]: () => json(job()) });
     expect(await screen.findByText('Đang publish: 480 / 1.250 sense')).toBeInTheDocument();
   });
 
   it('B25E8: a job queued for more than 30 s shows the worker hint; a fresh one only says it is waiting', async () => {
     const old = new Date(Date.now() - 45_000).toISOString();
-    const { unmount } = renderApp(`/publish-jobs/${ID}`, { [GET]: () => json(job({ status: 'queued', counters: {}, created_at: old, started_at: null })) });
+    const { unmount } = renderApp(`/publish-jobs/${ID}`, { [JOBS]: list, [GET]: () => json(job({ status: 'queued', counters: {}, created_at: old, started_at: null })) });
     expect(await screen.findByText(/Worker có đang chạy không/)).toBeInTheDocument();
     unmount();
 
-    renderApp(`/publish-jobs/${ID}`, { [GET]: () => json(job({ status: 'queued', counters: {}, created_at: new Date().toISOString(), started_at: null })) });
+    renderApp(`/publish-jobs/${ID}`, { [JOBS]: list, [GET]: () => json(job({ status: 'queued', counters: {}, created_at: new Date().toISOString(), started_at: null })) });
     expect(await screen.findByText(/Đang chờ worker nhận việc/)).toBeInTheDocument();
     expect(screen.queryByText(/Worker có đang chạy không/)).toBeNull();
   });
@@ -181,6 +193,7 @@ describe('publish job detail', () => {
   it('detail: polls until terminal, then shows counters published/already_published/refused', async () => {
     let n = 0;
     const r = renderApp(`/publish-jobs/${ID}`, {
+      [JOBS]: list,
       [GET]: () => json(n++ === 0 ? job() : job({ status: 'succeeded', finished_at: '2026-10-14T10:16:00.000Z', counters: { processed: 1250, pending: 0, published: 1201, already_published: 37, refused: 12 } })),
     });
     expect(await screen.findByText(/Đang publish/)).toBeInTheDocument();
@@ -194,6 +207,7 @@ describe('publish job detail', () => {
 
   it('"Tải report.csv" saves publish-<id>.csv with the API content', async () => {
     renderApp(`/publish-jobs/${ID}`, {
+      [JOBS]: list,
       [GET]: () => json(job({ status: 'succeeded', counters: { published: 1 } })),
       [`GET /v1/admin/content/senses/publish-jobs/${ID}/report.csv`]: () => new Response('sense_id,outcome\n1,published\n', { headers: { 'content-type': 'text/csv' } }),
     });

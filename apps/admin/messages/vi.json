@@ -336,7 +336,6 @@
     "batchFilter": "lô #{id}",
     "filterNone": "Tất cả",
     "jobTitle": "Publish job #{id}",
-    "back": "Publish job",
     "report": "Tải report.csv",
     "createdAt": "Tạo {time}",
     "running": "Đang publish: {done} / {total} sense",

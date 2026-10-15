@@ -1,5 +1,5 @@
 import { useInfiniteQuery } from '@tanstack/react-query';
-import { Link, useNavigate } from 'react-router';
+import { Link, useMatch, useNavigate } from 'react-router';
 import { useFormatter, useTranslations } from 'use-intl';
 import { useApi } from '../../auth/session-context';
 import { useCan } from '../../auth/use-can';
@@ -7,8 +7,12 @@ import { useDateTime } from '../../i18n/use-date-time';
 import { PageActions } from '../../app/shell-slots';
 import { Button } from '../../ui/Button';
 import { DataList, type Column } from '../../ui/DataList';
+import { DetailPanel } from '../../ui/DetailPanel';
+import { focusRowLink } from '../../ui/focus-row-link';
+import { useRetained } from '../../ui/use-retained';
 import { listPublishJobs, type PublishJobListItem, type SenseFilter } from '../content/content-api';
 import { StatusBadge } from '../jobs/StatusBadge';
+import { PublishJobPanel } from './PublishJobPanel';
 
 /** `#a3f2c1`: the first six characters of the job id, as in Figma. */
 export const shortId = (id: string) => id.slice(0, 6);
@@ -30,6 +34,9 @@ export function PublishJobsPage() {
   const format = useFormatter();
   const dateTime = useDateTime();
   const canPublish = useCan('content.publish');
+  // `/publish-jobs/:id` keeps the list and opens the job in a panel beside it (UB8); the closing panel keeps its job.
+  const panelId = useMatch('/publish-jobs/:id')?.params.id;
+  const shownId = useRetained(panelId);
 
   const list = useInfiniteQuery({
     queryKey: ['publish-jobs'],
@@ -69,6 +76,8 @@ export function PublishJobsPage() {
         rows={rows}
         rowKey={(j) => j.id}
         columns={columns}
+        rowHref={(j) => `/publish-jobs/${j.id}`}
+        selectedKey={panelId}
         state={list.isPending ? 'loading' : list.isError && rows.length === 0 ? 'error' : 'ready'}
         emptyText={t('publishJobs.empty')}
         onRetry={() => void list.refetch()}
@@ -82,6 +91,16 @@ export function PublishJobsPage() {
           )}
           <p className="text-xs text-muted">{t('list.shown', { count: rows.length })}</p>
         </div>
+      )}
+      {shownId && (
+        <DetailPanel
+          isOpen={panelId !== undefined}
+          onClose={() => void navigate('/publish-jobs')}
+          onExited={() => focusRowLink(`/publish-jobs/${shownId}`)}
+          focusKey={shownId}
+        >
+          <PublishJobPanel id={shownId} />
+        </DetailPanel>
       )}
     </div>
   );

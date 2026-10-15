@@ -8,7 +8,6 @@ import { UploadsPage } from '../features/uploads/UploadsPage';
 import { ComingSoonPage } from '../features/coming-soon/ComingSoonPage';
 import { ExportPage } from '../features/export/ExportPage';
 import { PublishJobForm } from '../features/publish-jobs/PublishJobForm';
-import { PublishJobPage } from '../features/publish-jobs/PublishJobPage';
 import { PublishJobsPage } from '../features/publish-jobs/PublishJobsPage';
 import { SourceForm, SourcesPage } from '../features/sources/SourcesPage';
 import { StaffPage } from '../features/staff/StaffPage';
@@ -36,9 +35,10 @@ export function AppRoutes() {
             <Route path=":id" element={null} />
           </Route>
           <Route path="uploads/new" element={<UploadForm />} />
-          <Route path="publish-jobs" element={<PublishJobsPage />} />
+          <Route path="publish-jobs" element={<PublishJobsPage />}>
+            <Route path=":id" element={null} />
+          </Route>
           <Route path="publish-jobs/new" element={<PublishJobForm />} />
-          <Route path="publish-jobs/:id" element={<PublishJobPage />} />
           <Route path="export" element={<ExportPage />} />
           <Route path="sources" element={<SourcesPage />} />
           <Route path="sources/new" element={<SourceForm />} />
