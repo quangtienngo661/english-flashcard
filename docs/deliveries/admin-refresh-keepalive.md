@@ -68,7 +68,7 @@ giới hạn số request `keepalive` của Chromium, bug Firefox 1935088, `toHa
 tên script trong plan, file bằng chứng, việc tắt server của worktree khác, app Flutter): giữ nguyên, lý do ở báo cáo review và
 ledger; không cái nào làm hành vi tệ hơn trước bản sửa.
 
-## Còn mở
+## RKC3 chập chờn trên CI (16/10/2026)
 
 - **CI trên `41be5ba` (16/10/2026): `admin-e2e-real` đỏ ở RKC3** (bản context riêng). Lúc quay lại sau 12 s trang không vào
   được app, và log API có đúng 1 `refresh_reuse_detected`, tức lần đó cookie không nhận token mới. Ba job còn lại xanh. Ở máy
@@ -92,8 +92,24 @@ ledger; không cái nào làm hành vi tệ hơn trước bản sửa.
     290/290 (`--maxWorkers=3`), lint 0, typecheck 0; bộ thật ở máy 8/8, không có `refresh_reuse_detected`. Quét lại trên
     Chromium Linux với bản build của `e20f62f`, độ trễ 0/15/20/25/50 ms × 5: **0/25** lần mất phiên, cả 25 token trong cookie
     chỉ bị xoay khi quay lại (`fixed-e20f62f.out`).
+- **Đổi đích và merge (16/10/2026):** sau khi #23 vào `dev` (`e843abc`), PR #24 đổi đích sang `dev` và `origin/dev` được merge vào
+  nhánh (`9519deb`, không rebase, không force-push). Xung đột duy nhất ở `CLAUDE.md`: giữ câu của `dev` (Deploy trước pilot,
+  **3 Learning**) và thêm lại dòng trỏ sang delivery record này (nay ghi "PR #24"). Sau merge: unit 290/290, lint 0, typecheck 0.
+- **Chạy lặp sau bản sửa:**
+  - Bộ thật ở máy (Windows, DB mới mỗi lần, `CI=1`): 3 lần trên `ddc13bb` và 1 lần trên `9519deb`, đều 8/8, không có
+    `refresh_reuse_detected`.
+  - Chromium 153 Linux, kịch bản RKC3 với độ trễ rời trang: 0/25 trên `e20f62f` (0/15/20/25/50 ms × 5) và 0/32 trên `9519deb`
+    (15/20/25/30 ms × 8), không lần nào xoay token hai lần (`fixed-e20f62f.out`, `fixed-9519deb.out`). Trước bản sửa: 6/40.
+  - CI trên `9519deb`: 4/4 job xanh (`admin`, `admin-e2e-real`, `api`, `web`).
+  - Không dùng `--repeat-each`: bộ thật là một câu chuyện chạy theo thứ tự, lặp từng test sẽ tạo trùng tài khoản; thay vào đó
+    chạy lại cả bộ trên DB mới.
+
+## Còn mở
+
 - Chỉ kiểm trên Chromium (RK5). Firefox và Safari: nếu bỏ qua hoặc từ chối `keepalive` thì nay chạy như trước bản sửa (RKC6),
-  nhưng chưa ai chạy thử thật.
+  nhưng chưa ai chạy thử thật; thứ tự `pagehide` so với lúc `fetch` bị từ chối (RKC7) cũng mới đo trên Chromium.
+- Container `keepalive-linux-probe` (đã dừng, chứa Chromium Linux ~658 MB) giữ lại để chạy lại phép quét; xóa được bằng
+  `docker rm keepalive-linux-probe`.
 - Mất mạng hoặc trình duyệt bị tắt giữa lúc refresh vẫn làm mất phiên (RKE4, phương án B).
 - Hai minor của review (M1, M2) để lại, chờ chủ dự án quyết.
 - Hai server đã tắt lúc làm (API `run:dev` ở cổng 3000, Vite dev của `gifted-booth-9229f5` ở cổng 5173): khởi động lại nếu còn cần.
