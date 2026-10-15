@@ -264,7 +264,9 @@ có thanh kéo bề rộng. Giả định (`ASSUMPTION`) đội dùng laptop 13�
 | ✅ B. Đè khi hẹp | Dưới khoảng 1320px panel trượt đè từ phải, có nền mờ; bảng giữ nguyên là bảng. Đổi lại: ở 1280 không bấm được bảng khi panel đang mở |
 | A. Chia đôi luôn (design lúc đó) | Từ 1024px panel luôn nằm cạnh; ở 1024–1315px bảng thành thẻ xếp dọc khi mở panel, thành bảng lại khi đóng |
 
-Triển khai: ngưỡng đặt `84rem` (1344px) thay 1320px, để chừa thanh cuộn dọc của Windows (khoảng 17px) mà bảng vẫn đủ `40rem`.
+Triển khai: ngưỡng ban đầu `84rem` (1344px) thay 1320px, để chừa thanh cuộn dọc của Windows (khoảng 17px). Review cuối nhánh admin
+chỉ ra phép tính thiếu phần lề hai bên của tờ trắng (2 × 1,75rem): ở 1344–1391px bảng vẫn thành thẻ khi panel mở. Sửa thành `87rem`
+(1392px) để giữ đúng ý đã chọn ("chỉ chia đôi khi bảng vẫn đủ rộng"); có test e2e ở 1350 và 1392.
 
 ## UB23 — Hiệu ứng lúc đóng ở admin (lúc viết plan admin, 15/10/2026)
 

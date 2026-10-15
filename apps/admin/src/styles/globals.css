@@ -14,9 +14,10 @@
   --spacing-page-pad-min: 1rem;
   --spacing-page-pad-max: 1.75rem;
   --breakpoint-shell: 64rem;
-  /* The detail panel sits beside the table only from here (UB22): 15.5 sidebar + 0.75 margin + 26 panel + 40 table,
-     plus room for a Windows scrollbar. Keep equal to PANEL_SPLIT_QUERY in src/ui/DetailPanel.tsx. */
-  --breakpoint-panel: 84rem;
+  /* The detail panel sits beside the table only while the table stays a table (UB22): 15.5 sidebar + 0.75 margin + 26 panel
+     + 3.5 sheet padding + 40 table = 85.75rem, plus a 17px Windows scrollbar (the media query counts it, the layout does
+     not). Keep equal to PANEL_SPLIT_QUERY in src/ui/DetailPanel.tsx. */
+  --breakpoint-panel: 87rem;
   /* Lists switch from cards to a table at this width of their own container (`@list:`), owner 14/10/2026. */
   --container-list: 40rem;
 

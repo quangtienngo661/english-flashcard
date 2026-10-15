@@ -81,7 +81,7 @@ for (const lang of ['vi', 'en'] as const) {
     await page.getByTestId('detail-panel').getByRole('heading', { level: 2 }).waitFor();
     await shot(page, '09-batch-panel', lang);
     await page.getByRole('button', { name: lang === 'vi' ? vi.batch.revert : /Revert/ }).first().click();
-    await page.getByRole('dialog').last().waitFor(); // below 84rem the panel is a dialog too
+    await page.getByRole('dialog').last().waitFor(); // below 87rem the panel is a dialog too
     await shot(page, '06-revert-dialog', lang);
     await page.keyboard.press('Escape');
 

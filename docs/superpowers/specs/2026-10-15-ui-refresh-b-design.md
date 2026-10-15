@@ -57,7 +57,7 @@ giảm chuyển động, tắt JavaScript) và chạy lại luồng "Xong khi" c
 | UB17 | Nút ở header và hai thẻ Gói học dùng lại chuỗi `Nav.cta` có sẵn ("Đăng ký nhận tin ra mắt" / "Get notified at launch"; đang có trong cả hai file messages nhưng chưa dùng). Landing không thêm chuỗi chữ mới | Đề xuất (duyệt phần 2) |
 | UB18 | Mọi chuyển động trên landing ≤ 400ms: lật flashcard, hiện dần khi cuộn đang 800ms → 400ms; trễ giữa các khối ≤ 60ms; thẻ bài luyện "rơi vào" lúc tải trang 400ms (mockup để 600ms) | Đề xuất (duyệt phần 2) |
 | UB19 | Một design doc, **hai plan**: plan landing viết ngay sau khi duyệt; plan admin viết sau khi PR #19 merge | Đề xuất (duyệt phần 5) |
-| UB22 | Panel chi tiết chỉ nằm cạnh bảng khi màn đủ rộng để bảng vẫn là bảng (từ `84rem`, 1344px); hẹp hơn thì panel trượt đè từ phải, có nền mờ (như điện thoại) | Chốt (lúc viết plan admin) |
+| UB22 | Panel chi tiết chỉ nằm cạnh bảng khi màn đủ rộng để bảng vẫn là bảng (từ `87rem`, 1392px; sửa từ 84rem sau review cuối vì phép tính thiếu phần lề của tờ trắng); hẹp hơn thì panel trượt đè từ phải, có nền mờ (như điện thoại) | Chốt (lúc viết plan admin) |
 | UB23 | Hiệu ứng lúc đóng (150ms) có ở menu, ngăn kéo, panel và 3 form dialog; **toast và 4 hộp xác nhận đóng ngay** | Chốt (lúc viết plan admin) |
 
 Ngoại lệ của UB1 tóm lại: UB8 và UB9 đổi cách route hiển thị (URL không đổi), UB10 sửa một lỗi hành vi đã ghi sẵn, UB12
@@ -290,9 +290,9 @@ Hai `tone` đổi tên theo nền (`onPrimary`, `onAccent`) trong plan. LP12 th�
 
 - Route lồng trong `app/routes.tsx`: trang danh sách là route cha có `<Outlet />` cho panel. Nội dung panel lấy từ
   `BatchPage`/`PublishJobPage` hiện có (polling, nút Publish/Hoàn tác/Tải file, quy tắc B25E28), bỏ link "← quay lại".
-- Từ `84rem` (UB22): tờ trắng chia hai cột, panel rộng `26rem`, viền trái 2px `line`, dính khi cuộn. Panel không chặn trang
+- Từ `87rem` (UB22): tờ trắng chia hai cột, panel rộng `26rem`, viền trái 2px `line`, dính khi cuộn. Panel không chặn trang
   (không modal): bảng vẫn bấm được. Mở lần đầu: trượt 1,5rem từ phải + mờ, 250ms `--ease-enter`; đóng 150ms `--ease-exit`.
-- Dưới `84rem` (UB22; trước đây ghi "dưới `64rem`"): panel là dialog modal rộng `min(26rem, 100%)` trượt đè từ phải, nền mờ
+- Dưới `87rem` (UB22; trước đây ghi "dưới `64rem`"): panel là dialog modal rộng `min(26rem, 100%)` trượt đè từ phải, nền mờ
   phía sau, giữ focus bên trong, có nút ✕; trên điện thoại nó phủ cả màn hình. Lý do: ở 1280 nếu chia đôi thì bảng còn dưới
   `40rem` và tự đổi thành thẻ.
 - Đóng: nút ✕, phím Esc khi focus trong panel, hoặc Back của trình duyệt → về `/uploads`.
@@ -390,7 +390,7 @@ giải, nút, URL, lệnh gọi API, việc làm mới truy vấn đều xảy r
 | UBE26 | Đóng panel bằng ✕, Esc hoặc Back | Về `/uploads`; hiệu ứng ra 150ms; focus về link của dòng vừa mở nếu dòng còn trên trang, không thì về tiêu đề trang |
 | UBE27 | Polling của panel thấy lô sang `succeeded`/`partial`/`failed` | Làm mới truy vấn danh sách để nhãn của dòng khớp panel. Publish job tương tự |
 | UBE28 | Bị gỡ quyền khi panel đang mở (B25E6) | Như cũ: lần polling kế nhận 403 → luật cổng → đá ra |
-| UBE29 | Bề rộng dưới `84rem` (UB22) | Panel là dialog modal trượt đè từ phải (cả màn hình trên điện thoại), focus giữ trong panel; Back đóng panel |
+| UBE29 | Bề rộng dưới `87rem` (UB22) | Panel là dialog modal trượt đè từ phải (cả màn hình trên điện thoại), focus giữ trong panel; Back đóng panel |
 | UBE30 | Đang gửi form trong dialog, người dùng bấm Back | URL về danh sách, dialog đóng, request vẫn chạy; xong thì điều hướng như hiện nay (`/uploads/:id` → panel mở). Giống hành vi của trang form hiện tại khi rời trang giữa chừng |
 | UBE31 | Upload xong | Dialog đóng (150ms) và panel mở (250ms) gần như cùng lúc; chấp nhận hai hiệu ứng chồng nhau |
 | UBE32 | Mở thẳng `/uploads/new` khi thiếu `content.edit` | Giữ đúng hành vi hiện có của route (không đổi luật quyền trong lần làm mới này); API vẫn chặn khi gửi |

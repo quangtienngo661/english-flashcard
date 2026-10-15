@@ -59,7 +59,7 @@ afterEach(() => {
 });
 
 describe('DetailPanel', () => {
-  it("UB22 from 84rem the panel is a non-modal aside in the sheet's panel slot", async () => {
+  it("UB22 from 87rem the panel is a non-modal aside in the sheet's panel slot", async () => {
     stubMedia(true);
     render(<Harness isOpen onClose={() => {}} />);
     const panel = await screen.findByTestId('detail-panel');
@@ -69,7 +69,7 @@ describe('DetailPanel', () => {
     expect(screen.getByRole('button', { name: 'outside' })).toBeVisible();
   });
 
-  it('UB22 below 84rem the panel is a modal dialog', async () => {
+  it('UB22 below 87rem the panel is a modal dialog', async () => {
     stubMedia(false);
     render(<Harness isOpen onClose={() => {}} />);
     const dialog = await screen.findByRole('dialog');
@@ -141,7 +141,7 @@ describe('DetailPanel', () => {
 describe('panel hooks', () => {
   it('useMediaQuery follows change events', () => {
     const media = stubMedia(false);
-    const { result } = renderHook(() => useMediaQuery('(min-width: 84rem)', true));
+    const { result } = renderHook(() => useMediaQuery('(min-width: 87rem)', true));
     expect(result.current).toBe(false);
     act(() => media.set(true));
     expect(result.current).toBe(true);
@@ -149,7 +149,7 @@ describe('panel hooks', () => {
 
   it('useMediaQuery falls back when matchMedia is missing', () => {
     vitest.stubGlobal('matchMedia', undefined);
-    const { result } = renderHook(() => useMediaQuery('(min-width: 84rem)', true));
+    const { result } = renderHook(() => useMediaQuery('(min-width: 87rem)', true));
     expect(result.current).toBe(true);
   });
 

@@ -114,7 +114,7 @@ function SidebarFoot({ email, onLogout }: { email: string; onLogout: () => void 
 
 /**
  * Direction B shell (design §6.1): the sidebar of admin A sits straight on the canvas; every page lives on one white
- * sheet whose head holds the page title and the page's primary action (`PageActions`). From `panel` (84rem) the sheet
+ * sheet whose head holds the page title and the page's primary action (`PageActions`). From `panel` (87rem) the sheet
  * gains a second column for the detail panel (`usePanelSlot`). Below `shell` (64rem): a blue top bar and a drawer.
  */
 export function Shell() {

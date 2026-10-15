@@ -8,7 +8,7 @@ import { useMediaQuery } from './use-media-query';
 import { usePresence } from './use-presence';
 
 /** The panel sits beside the table only from here (UB22); keep equal to `--breakpoint-panel` in globals.css. */
-export const PANEL_SPLIT_QUERY = '(min-width: 84rem)';
+export const PANEL_SPLIT_QUERY = '(min-width: 87rem)';
 
 type Props = {
   isOpen: boolean;
@@ -24,7 +24,7 @@ type Props = {
 const PanelContext = createContext<{ titleId: string; onClose: () => void }>({ titleId: '', onClose: () => {} });
 
 /**
- * Detail beside a list, its URL kept (design §6.3, UB8): from 84rem a non-modal column of the white sheet (the table stays
+ * Detail beside a list, its URL kept (design §6.3, UB8): from 87rem a non-modal column of the white sheet (the table stays
  * usable); narrower, a modal sheet that slides in from the right over a scrim, full screen on a phone (UB22, UBE29).
  */
 export function DetailPanel(props: Props) {
