@@ -12,6 +12,12 @@ code and no dependencies.
 Each app adds its own tokens (type scale, density, containers) after the import. Colours are declared **only** here;
 `apps/web/src/styles/tokens.test.ts` checks contrast (LP12) and that the app declares none of its own (UBC1).
 
+## Font
+
+`--font-sans: var(--font-lexend, 'Lexend'), ui-sans-serif, system-ui, sans-serif`. Lexend is a variable font with
+Latin and Vietnamese subsets. `apps/web` loads it with `next/font/google` (`variable: '--font-lexend'`); an app without
+that variable loads the `Lexend` family itself (for example a Google Fonts `<link>`), which the fallback picks up.
+
 ## Colours
 
 | Token | Value | Used for |

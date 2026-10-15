@@ -96,9 +96,6 @@
   }
 }
 
-@theme inline {
-  --font-sans: var(--font-be-vietnam-pro), ui-sans-serif, system-ui, sans-serif;
-}
 
 @layer base {
   html {

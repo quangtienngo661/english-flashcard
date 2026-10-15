@@ -1,6 +1,10 @@
 /* Shared Wordmet tokens, direction B (design 2026-10-15-ui-refresh-b, §4). Imported by apps/web and apps/admin
    right after `@import 'tailwindcss';`. Colours live only here (UBC1). Sizes in rem. */
 @theme {
+  /* Lexend (§4.3). apps/web sets --font-lexend through next/font; apps/admin has no such variable and loads the
+     'Lexend' family from Google Fonts, so the fallback inside var() is required. */
+  --font-sans: var(--font-lexend, 'Lexend'), ui-sans-serif, system-ui, sans-serif;
+
   /* Colour roles (§4.1). border-strong and placeholder are the two contrast fixes of UB15. */
   --color-primary: #2445d6;
   --color-primary-deep: #1a32a6;
