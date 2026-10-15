@@ -68,6 +68,14 @@ describe('upload dialog', () => {
 });
 
 describe('upload form', () => {
+  it('I3 a successful upload refreshes the uploads list, so the new batch shows up in it', async () => {
+    const r = open(() => Response.json({ batch_id: 'b9', status: 'queued' }, { status: 202 }));
+    await pick(plainCsv());
+    await waitFor(() => expect(r.count('GET', '/v1/admin/content/uploads?page_size=20')).toBe(1));
+    await userEvent.click(await upload());
+    await waitFor(() => expect(r.count('GET', '/v1/admin/content/uploads?page_size=20')).toBe(2));
+  });
+
   it('B25#11: a fresh Idempotency-Key per submit; a network error then "Thử lại" resends the same key; another file makes a new key', async () => {
     const r = open((n) => {
       if (n <= 2) throw new TypeError('Failed to fetch');

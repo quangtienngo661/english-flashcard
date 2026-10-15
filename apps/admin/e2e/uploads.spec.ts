@@ -98,10 +98,16 @@ const batchView = (id: string, file_name: string) => ({
   reverted: false,
 });
 
-test('UBC13 a successful upload closes the dialog and opens the batch panel', async ({ page }) => {
+test('UBC13 a successful upload closes the dialog and opens the batch panel; the new batch is in the list, selected', async ({ page }) => {
+  let uploaded = false;
   await signedInAs(page, 'editor', {
-    [`GET ${UPLOADS}`]: list([]),
-    [`POST ${UPLOADS}`]: () => ({ status: 202, json: { batch_id: 'batch-1', status: 'queued' } }),
+    [`GET ${UPLOADS}`]: () => ({
+      json: { items: uploaded ? [{ id: 'batch-1', status: 'queued', file_name: 'one.csv', row_count: 0, created_at: '2026-10-14T09:30:00.000Z' }] : [], next_page_token: null },
+    }),
+    [`POST ${UPLOADS}`]: () => {
+      uploaded = true;
+      return { status: 202, json: { batch_id: 'batch-1', status: 'queued' } };
+    },
     [`GET ${UPLOADS}/batch-1`]: () => ({ json: batchView('batch-1', 'one.csv') }),
   });
   await page.goto('/uploads/new');
@@ -111,6 +117,7 @@ test('UBC13 a successful upload closes the dialog and opens the batch panel', as
   await expect(page).toHaveURL(/\/uploads\/batch-1$/);
   await expect(dialog).toHaveCount(0);
   await expect(page.getByTestId('detail-panel').getByRole('heading', { level: 2, name: 'one.csv' })).toBeVisible();
+  await expect(page.locator('[data-selected]').filter({ hasText: 'one.csv' }).first()).toBeAttached();
 });
 
 test('UBE30 Back during a pending upload closes the dialog; the panel opens when the POST returns', async ({ page }) => {
