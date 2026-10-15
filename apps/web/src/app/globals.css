@@ -47,9 +47,7 @@
   --spacing-header: 4.5rem;
 
   /* Landing-only motion; shared durations and easings come from @wordmet/design-tokens. */
-  --transition-duration-reveal: 800ms;
-  --transition-duration-flip: 800ms;
-  --transition-duration-faq: 350ms;
+  --transition-duration-faq: 250ms;
 
   /* Practice card (design §5.2). Used only through motion-safe:, so reduced motion never declares them. */
   --animate-card-in: card-in var(--transition-duration-slow) var(--ease-spring) both;

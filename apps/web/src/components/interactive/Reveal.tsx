@@ -6,7 +6,8 @@ import { useReducedMotion } from '@/lib/use-reduced-motion';
 
 type RevealProps = { children: ReactNode; step?: 0 | 1 | 2; as?: 'div' | 'li'; className?: string };
 
-const delays = { 0: 'delay-0', 1: 'delay-80', 2: 'delay-160' } as const;
+// UB18: 400ms with at most 60ms between cards (was 800ms with 80/160ms).
+const delays = { 0: 'delay-0', 1: 'delay-40', 2: 'delay-60' } as const;
 
 // SSR renders content visible; after hydration, content still below the fold fades in once (spec §5).
 export function Reveal({ children, step = 0, as: Tag = 'div', className }: RevealProps) {
@@ -37,7 +38,7 @@ export function Reveal({ children, step = 0, as: Tag = 'div', className }: Revea
     <Tag
       ref={ref as never}
       className={cn(
-        phase !== 'static' && !reduced && cn('transition duration-reveal ease-standard', delays[step]),
+        phase !== 'static' && !reduced && cn('transition duration-slow ease-enter', delays[step]),
         hidden ? 'translate-y-4 opacity-0' : 'translate-y-0 opacity-100',
         className,
       )}

@@ -43,6 +43,14 @@ describe('Reveal', () => {
     expect(el).not.toHaveClass('opacity-0');
   });
 
+  it('UB18 step 2 uses a 60ms delay and the slow (400ms) duration', () => {
+    mockReducedMotion(false);
+    render(<Reveal step={2}>Third card</Reveal>);
+    const el = screen.getByText('Third card');
+    act(() => observerCallback?.([{ isIntersecting: false } as IntersectionObserverEntry], {} as IntersectionObserver));
+    expect(el).toHaveClass('delay-60', 'duration-slow', 'ease-enter');
+  });
+
   it('LP26 with reduced motion Reveal never hides content', () => {
     mockReducedMotion(true);
     render(<Reveal>Still here</Reveal>);

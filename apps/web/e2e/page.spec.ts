@@ -225,6 +225,30 @@ test.describe('plans (UB7)', () => {
   });
 });
 
+test('UBC8 no transition or animation on the landing lasts longer than 400ms', async ({ page }) => {
+  // Longest duration among CSS transitions/animations declared on every element, plus the Web Animations
+  // running right after a right pick (the sticker flight). Lists are comma-separated, in s or ms.
+  const longestDeclared = () =>
+    page.evaluate(() => {
+      const ms = (v: string) => Math.max(0, ...v.split(',').map((d) => (d.trim().endsWith('ms') ? parseFloat(d) : parseFloat(d) * 1000)));
+      return Math.max(...[...document.querySelectorAll('*')].map((el) => {
+        const s = getComputedStyle(el);
+        return Math.max(ms(s.transitionDuration), ms(s.animationDuration));
+      }));
+    });
+  for (const locale of ['vi', 'en'] as const) {
+    await page.goto(`/${locale}`);
+    await scrollThrough(page);
+    await page.locator('#faq details').nth(1).locator('summary').click();
+    await page.locator('button[aria-pressed]').filter({ hasText: copy[locale].Problem.before.hint }).click();
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await page.getByTestId('cloze-card').getByRole('button', { name: copy[locale].Cloze.items.deploy.answer, exact: true }).click();
+    const running = await page.evaluate(() => Math.max(0, ...document.getAnimations().map((a) => Number(a.effect?.getTiming().duration) || 0)));
+    expect(running, `${locale} running`).toBeLessThanOrEqual(400);
+    expect(await longestDeclared(), `${locale} declared`).toBeLessThanOrEqual(400);
+  }
+});
+
 test('S5.1 section backgrounds follow the B rhythm', async ({ page }) => {
   await page.goto('/vi');
   const backgrounds = await page.locator('main > section').evaluateAll((sections) =>
