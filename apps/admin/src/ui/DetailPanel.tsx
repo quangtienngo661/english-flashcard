@@ -13,7 +13,8 @@ export const PANEL_SPLIT_QUERY = '(min-width: 87rem)';
 type Props = {
   isOpen: boolean;
   onClose: () => void;
-  /** Side panel only: called once its exit animation is over (the overlay restores focus by itself). */
+  /** Called once the panel has gone, and only when focus went with it (it was in the panel, or is on body), so the caller
+   * can put it back on the row without pulling it away from where the user moved it (UBE26, review M1/M2). */
   onExited?: () => void;
   /** The panel title takes focus on open and whenever this changes (another row opened, UBE24). */
   focusKey: string;
@@ -29,7 +30,17 @@ const PanelContext = createContext<{ titleId: string; onClose: () => void }>({ t
  */
 export function DetailPanel(props: Props) {
   const split = useMediaQuery(PANEL_SPLIT_QUERY, true);
-  return split ? <SidePanel {...props} /> : <OverlayPanel {...props} />;
+  // A closing panel ignores a second ✕ or Escape: each would push another list entry (review M3).
+  const onClose = () => {
+    if (props.isOpen) props.onClose();
+  };
+  return split ? <SidePanel {...props} onClose={onClose} /> : <OverlayPanel {...props} onClose={onClose} />;
+}
+
+/** Focus went with the panel: nothing has it (body), or it is still inside the panel that is about to go. */
+function focusLeftWith(panel: Element | null): boolean {
+  const active = document.activeElement;
+  return active === null || active === document.body || (panel?.contains(active) ?? false);
 }
 
 const motion = 'motion-safe:data-entering:animate-panel-in motion-safe:data-exiting:animate-panel-out';
@@ -38,7 +49,9 @@ function SidePanel({ isOpen, onClose, onExited, focusKey, children }: Props) {
   const slot = usePanelSlot();
   const ref = useRef<HTMLElement>(null);
   const titleId = useId();
-  const { isMounted, state } = usePresence(isOpen, ref, onExited);
+  const { isMounted, state } = usePresence(isOpen, ref, () => {
+    if (focusLeftWith(ref.current)) onExited?.();
+  });
   useFocusTitle(titleId, isOpen && slot !== null, focusKey);
 
   if (!isMounted || !slot) return null;
@@ -67,7 +80,7 @@ function SidePanel({ isOpen, onClose, onExited, focusKey, children }: Props) {
   );
 }
 
-function OverlayPanel({ isOpen, onClose, focusKey, children }: Props) {
+function OverlayPanel({ isOpen, onClose, onExited, focusKey, children }: Props) {
   const titleId = useId();
   useFocusTitle(titleId, isOpen, focusKey);
   return (
@@ -80,10 +93,34 @@ function OverlayPanel({ isOpen, onClose, focusKey, children }: Props) {
       <Modal className={`fixed inset-y-0 right-0 flex w-full max-w-panel flex-col bg-surface shadow-overlay-panel outline-none ${motion}`}>
         <Dialog data-testid="detail-panel" aria-labelledby={titleId} className="flex h-full min-h-0 flex-col outline-none">
           <PanelContext.Provider value={{ titleId, onClose }}>{children}</PanelContext.Provider>
+          <OverlayExited onExited={onExited} />
         </Dialog>
       </Modal>
     </ModalOverlay>
   );
+}
+
+/**
+ * Unmounts with the overlay, once its exit animation is over. React Aria then puts focus back on what opened the overlay,
+ * in the next frame; when nothing focusable did (a mouse click on a row, a direct URL) focus stays on body, and a frame
+ * later `onExited` places it (UBE26, review M2). A StrictMode remount is not a real exit.
+ */
+function OverlayExited({ onExited }: { onExited?: () => void }) {
+  const latest = useRef(onExited);
+  const gone = useRef(false);
+  useEffect(() => {
+    latest.current = onExited;
+  });
+  useEffect(() => {
+    gone.current = false;
+    return () => {
+      gone.current = true;
+      requestAnimationFrame(() => {
+        if (gone.current && focusLeftWith(null)) latest.current?.();
+      });
+    };
+  }, []);
+  return null;
 }
 
 function useFocusTitle(titleId: string, active: boolean, focusKey: string) {

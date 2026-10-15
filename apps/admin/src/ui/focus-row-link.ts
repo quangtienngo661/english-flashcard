@@ -4,7 +4,8 @@
  * nothing has a layout (jsdom) the first match is used.
  */
 export function focusRowLink(href: string): void {
-  const links = [...document.querySelectorAll<HTMLAnchorElement>(`main a[href="${href}"]`)];
+  // Compared as a string, never put into a selector: the id comes from the URL (review M4).
+  const links = [...document.querySelectorAll<HTMLAnchorElement>('main a[href]')].filter((a) => a.getAttribute('href') === href);
   const visible = links.find((a) => a.getClientRects().length > 0);
   (visible ?? links[0] ?? document.getElementById('page-title'))?.focus();
 }
