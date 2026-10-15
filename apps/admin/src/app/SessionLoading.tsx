@@ -8,8 +8,8 @@ export function SessionLoading() {
   const { state } = useSession();
   const retryAt = state.status === 'loading' ? state.retryAt : undefined;
   return (
-    <div role="status" className="flex flex-col gap-1 p-8 text-ui text-muted">
-      <p>{t('shell.loadingSession')}</p>
+    <div className="flex flex-col gap-1 p-8 text-ui text-muted">
+      <p role="status">{t('shell.loadingSession')}</p>
       {/* Keyed by the deadline, so each wait starts its clock when it is announced, not when the screen first showed. */}
       {retryAt !== undefined && <Countdown key={retryAt} retryAt={retryAt} />}
     </div>
@@ -19,5 +19,6 @@ export function SessionLoading() {
 function Countdown({ retryAt }: { retryAt: number }) {
   const t = useTranslations();
   const now = useNow(1000, true);
-  return <p>{t('shell.sessionRetry', { seconds: Math.max(0, Math.ceil((retryAt - now) / 1000)) })}</p>;
+  // A timer, outside the live status line: a screen reader does not announce each tick (review M7).
+  return <p role="timer">{t('shell.sessionRetry', { seconds: Math.max(0, Math.ceil((retryAt - now) / 1000)) })}</p>;
 }
