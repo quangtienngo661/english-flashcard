@@ -73,9 +73,21 @@ ledger; không cái nào làm hành vi tệ hơn trước bản sửa.
 - **CI trên `41be5ba` (16/10/2026): `admin-e2e-real` đỏ ở RKC3** (bản context riêng). Lúc quay lại sau 12 s trang không vào
   được app, và log API có đúng 1 `refresh_reuse_detected`, tức lần đó cookie không nhận token mới. Ba job còn lại xanh. Ở máy
   local (Windows), cùng kịch bản qua 8/8 trong một vòng lặp có đo (request lúc rời trang có `keepalive`, không bị từ chối,
-  cookie mới được lưu) và cả bộ thật qua. CI trên `b79522c` (RKC3 bản cũ) cũng xanh. Chưa rõ vì Linux hay vì thời điểm:
-  trace của Playwright ghi request lúc rời trang giống hệt nhau dù có hay không có `keepalive` (đã thử ở máy local), nên không
-  dùng trace để phân biệt được.
+  cookie mới được lưu) và cả bộ thật qua. CI trên `b79522c` (RKC3 bản cũ) cũng xanh, và CI trên `cece2fc` (cùng code với
+  `41be5ba`) cũng xanh.
+- **Nguyên nhân (đã chứng minh 16/10/2026, Chromium 153 Linux trong container `node:24.11.0-bookworm`, bằng chứng ở
+  `docs/tasks/2026-10-15-refresh-fast-reload/evidence/linux/`): chính đường dự phòng của I1 (`8713147`).** Khi trang bị bỏ lúc
+  refresh keepalive đang chạy, lời hứa `fetch` phía trang bị từ chối bằng `TypeError`, dù request vẫn chạy xong ở trình duyệt
+  và cookie mới đã được lưu. Code coi đó là "trình duyệt từ chối keepalive" nên gửi thêm một refresh không keepalive. Refresh
+  này xoay token lần nữa, rồi câu trả lời của nó bị rơi khi trang bị bỏ.
+  - Không có độ trễ: 0/20 lần mất phiên. Quét độ trễ 10–80 ms giữa lúc request rời trình duyệt và lúc rời trang (giống CI,
+    nơi API trả lời trong ~13 ms): bản HEAD (có dự phòng) mất phiên 6/40 lần (`sweep.out`, `ab-fb.out`), bản không có dự phòng
+    (`64aea54`) 0/16 (`ab-nofb.out`).
+  - Chữ ký phía server: ở mọi lần mất phiên, token trong cookie bị xoay lần hai chỉ 21–34 ms sau khi được cấp; ở mọi lần giữ
+    được phiên, token đó chỉ bị xoay ~12,1 s sau, khi quay lại.
+  - Bản thử (không commit) chặn đường dự phòng khi trang đã phát sự kiện `pagehide`: 0/20 lần mất phiên, không lần nào xoay hai
+    lần (`ab-guard.out`).
+  - Đang chờ chủ dự án chọn cách sửa.
 - Chỉ kiểm trên Chromium (RK5). Firefox và Safari: nếu bỏ qua hoặc từ chối `keepalive` thì nay chạy như trước bản sửa (RKC6),
   nhưng chưa ai chạy thử thật.
 - Mất mạng hoặc trình duyệt bị tắt giữa lúc refresh vẫn làm mất phiên (RKE4, phương án B).
