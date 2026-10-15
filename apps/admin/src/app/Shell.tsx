@@ -36,7 +36,7 @@ function SidebarNav({ permissions, onNavigate }: { permissions: Parameters<typeo
                 to={entry.path}
                 onClick={onNavigate}
                 className={({ isActive }) =>
-                  `flex min-w-0 items-center gap-2.5 rounded-sm px-2.5 py-1.5 text-ui text-ink outline-none transition-colors duration-instant ease-standard hover:bg-primary/7 focus-visible:ring-2 focus-visible:ring-primary ${isActive ? 'font-semibold' : ''}`
+                  `flex min-w-0 items-center gap-2.5 rounded-sm px-2.5 py-1.5 text-ui pointer-coarse:min-h-control-touch text-ink outline-none transition-colors duration-instant ease-standard hover:bg-primary/7 focus-visible:ring-2 focus-visible:ring-primary ${isActive ? 'font-semibold' : ''}`
                 }
               >
                 {({ isActive }) => (
@@ -65,7 +65,7 @@ function LanguageSwitch() {
           key={l}
           aria-pressed={locale === l}
           onPress={() => setLocale(l)}
-          className={`min-h-8 rounded-sm px-2.5 text-xs font-semibold outline-none transition-colors duration-instant ease-standard focus-visible:ring-2 focus-visible:ring-primary ${
+          className={`min-h-8 rounded-sm px-2.5 text-xs pointer-coarse:min-h-control-touch font-semibold outline-none transition-colors duration-instant ease-standard focus-visible:ring-2 focus-visible:ring-primary ${
             locale === l ? 'bg-ink text-on-primary' : 'text-muted hover:bg-primary/7'
           }`}
         >
@@ -162,7 +162,7 @@ export function Shell() {
           <AriaButton
             aria-label={t('shell.openMenu')}
             onPress={() => setDrawerOpen(true)}
-            className="flex min-h-control min-w-control items-center justify-center rounded-control outline-none hover:bg-on-primary/15 focus-visible:ring-2 focus-visible:ring-accent"
+            className="flex min-h-control min-w-control items-center justify-center rounded-control outline-none pointer-coarse:min-h-control-touch pointer-coarse:min-w-control-touch hover:bg-on-primary/15 focus-visible:ring-2 focus-visible:ring-accent"
           >
             <MenuIcon aria-hidden className="size-5" />
           </AriaButton>
@@ -209,7 +209,7 @@ export function Shell() {
               <AriaButton
                 aria-label={t('shell.closeMenu')}
                 onPress={() => setDrawerOpen(false)}
-                className="flex min-h-control min-w-control items-center justify-center rounded-control outline-none hover:bg-primary/7 focus-visible:ring-2 focus-visible:ring-primary"
+                className="flex min-h-control min-w-control items-center justify-center rounded-control outline-none pointer-coarse:min-h-control-touch pointer-coarse:min-w-control-touch hover:bg-primary/7 focus-visible:ring-2 focus-visible:ring-primary"
               >
                 <X aria-hidden className="size-5" />
               </AriaButton>

@@ -138,7 +138,8 @@ body {
   grid-template-columns: minmax(0, 1fr) auto;
 }
 
-/* The side panel fills the screen height while it sticks beside the table (sheet margin 0.75rem top + 1rem bottom). */
+/* The side panel fills the screen height while it sticks beside the table: 0.75rem above it (top-3, the sheet's top margin)
+   and 1rem below, the same whether the page is scrolled or not (review M6). */
 @utility h-panel-sticky {
   height: calc(100dvh - 1.75rem);
 }

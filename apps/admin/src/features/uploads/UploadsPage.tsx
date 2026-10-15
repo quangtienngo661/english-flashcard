@@ -54,7 +54,7 @@ export function UploadsPage() {
       cell: (b) => (
         <Link
           to={`/uploads/${b.id}`}
-          className="inline-flex min-h-control items-center whitespace-nowrap rounded-control px-4 text-ui font-medium text-primary outline-none hover:bg-primary-soft focus-visible:ring-2 focus-visible:ring-primary"
+          className="inline-flex min-h-control items-center whitespace-nowrap pointer-coarse:min-h-control-touch rounded-control px-4 text-ui font-medium text-primary outline-none hover:bg-primary-soft focus-visible:ring-2 focus-visible:ring-primary"
         >
           {t('uploads.open')}
         </Link>

@@ -72,7 +72,7 @@ function SidePanel({ isOpen, onClose, onExited, focusKey, children }: Props) {
       data-entering={state === 'entering' || undefined}
       data-exiting={state === 'exiting' || undefined}
       onKeyDown={onKeyDown}
-      className={`sticky top-0 flex h-panel-sticky w-panel flex-col border-l-2 border-border bg-surface outline-none ${motion}`}
+      className={`sticky top-3 flex h-panel-sticky w-panel flex-col border-l-2 border-border bg-surface outline-none ${motion}`}
     >
       <PanelContext.Provider value={{ titleId, onClose }}>{children}</PanelContext.Provider>
     </aside>,
@@ -144,7 +144,7 @@ export function PanelHead({ title, status }: { title: ReactNode; status?: ReactN
       <AriaButton
         aria-label={t('common.close')}
         onPress={onClose}
-        className="flex size-10 shrink-0 items-center justify-center rounded-control text-ink outline-none transition-colors duration-instant ease-standard hover:bg-primary-soft focus-visible:ring-2 focus-visible:ring-primary"
+        className="flex size-10 shrink-0 items-center pointer-coarse:size-control-touch justify-center rounded-control text-ink outline-none transition-colors duration-instant ease-standard hover:bg-primary-soft focus-visible:ring-2 focus-visible:ring-primary"
       >
         <X aria-hidden className="size-5" />
       </AriaButton>
