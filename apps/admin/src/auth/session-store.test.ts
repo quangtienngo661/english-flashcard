@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { createApiClient } from '../api/client';
 import { ApiError } from '../api/problem';
 import { SessionStore } from './session-store';
-import { BASE, channelHub, makeFetch, makeMe, problem, rateLimited, tokenResponse, type Route } from './test-support';
+import { BASE, channelHub, makeFetch, makeMe, problem, rateLimited, tokenResponse, type Call, type Route } from './test-support';
 
 const ok = (body: unknown): Route => () => Response.json(body);
 const noContent: Route = () => new Response(null, { status: 204 });
@@ -441,5 +441,84 @@ describe('SessionStore', () => {
     });
     await store.bootstrap();
     expect(seen).toEqual([{ status: 'loading', retryAt: 3_000 }]);
+  });
+
+  // RKC1/RKC2 (keepalive design): a reload or page leave mid-refresh must not drop the rotated refresh cookie.
+  const refreshTries = (calls: Call[]) =>
+    calls.filter((c) => c.method === 'POST' && c.path === '/v1/auth/refresh').map((c) => c.keepalive);
+
+  it('RKC1: the page-start refresh is sent with keepalive', async () => {
+    const { store, calls } = newStore({ 'POST /v1/auth/refresh': () => tokenResponse('tok-1'), 'GET /v1/me': ok(makeMe()) });
+    await store.bootstrap();
+    expect(refreshTries(calls)).toEqual([true]);
+  });
+
+  it('RKC1: the refresh after a 401 is sent with keepalive', async () => {
+    let reads = 0;
+    const { store, calls } = newStore({
+      'POST /v1/auth/login': () => tokenResponse('tok-1'),
+      'GET /v1/me': ok(makeMe()),
+      'GET /v1/x': () => (++reads === 1 ? problem(401, 'invalid-token') : Response.json({ ok: true })),
+      'POST /v1/auth/refresh': () => tokenResponse('tok-2'),
+    });
+    await store.login('s@example.com', 'pw');
+    await store.send('/v1/x', { method: 'GET', headers: {} });
+    expect(refreshTries(calls)).toEqual([true]);
+  });
+
+  it('RKC1: the refresh after a 403 forbidden is sent with keepalive', async () => {
+    const { store, calls } = newStore({
+      'POST /v1/auth/login': () => tokenResponse('tok-1'),
+      'POST /v1/auth/refresh': () => tokenResponse('tok-2'),
+      'GET /v1/me': ok(makeMe()),
+      'GET /v1/admin/x': () => problem(403, 'forbidden'),
+    });
+    await store.login('s@example.com', 'pw');
+    await expect(createApiClient({ send: store.send }).get('/v1/admin/x')).rejects.toBeInstanceOf(ApiError);
+    expect(refreshTries(calls)).toEqual([true]);
+  });
+
+  it('RKC1: every try after a 429 is sent with keepalive, at page start and mid-session', async () => {
+    let startTries = 0;
+    const atStart = makeFetch({
+      'POST /v1/auth/refresh': () => (++startTries === 1 ? rateLimited(2) : tokenResponse('tok-1')),
+      'GET /v1/me': () => Response.json(makeMe()),
+    });
+    await new SessionStore({ baseUrl: BASE, fetch: atStart.fetch, channel: null, wait: async () => {} }).bootstrap();
+    expect(refreshTries(atStart.calls)).toEqual([true, true]);
+
+    let midTries = 0;
+    let reads = 0;
+    const midSession = makeFetch({
+      'POST /v1/auth/login': () => tokenResponse('tok-1'),
+      'GET /v1/me': () => Response.json(makeMe()),
+      'POST /v1/auth/refresh': () => (++midTries === 1 ? rateLimited(3) : tokenResponse('tok-2')),
+      'GET /v1/thing': () => (++reads === 1 ? problem(401, 'invalid-token') : Response.json({ ok: true })),
+    });
+    const store = new SessionStore({ baseUrl: BASE, fetch: midSession.fetch, channel: null, wait: async () => {} });
+    await store.login('editor@example.com', 'pw');
+    await store.send('/v1/thing', { method: 'GET', headers: {} });
+    expect(refreshTries(midSession.calls)).toEqual([true, true]);
+  });
+
+  it('RKC2: login, /me, password change, other API calls and logout are sent without keepalive', async () => {
+    let meCalls = 0;
+    const { store, calls } = newStore({
+      'POST /v1/auth/login': () => tokenResponse('tok-1'),
+      'GET /v1/me': () => Response.json(makeMe({ must_change_password: meCalls++ === 0 })),
+      'POST /v1/auth/password/change': () => tokenResponse('tok-2'),
+      'GET /v1/x': () => Response.json({ ok: true }),
+      'POST /v1/auth/logout': noContent,
+    });
+    await store.login('editor@example.com', 'generated');
+    await store.changePassword('generated', 'My-new-pass-123');
+    await store.send('/v1/x', { method: 'GET', headers: {} });
+    await store.logout();
+
+    const others = calls.filter((c) => c.path !== '/v1/auth/refresh');
+    expect(new Set(others.map((c) => c.path))).toEqual(
+      new Set(['/v1/auth/login', '/v1/me', '/v1/auth/password/change', '/v1/x', '/v1/auth/logout']),
+    );
+    expect(others.every((c) => c.keepalive === undefined)).toBe(true);
   });
 });

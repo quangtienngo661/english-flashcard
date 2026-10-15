@@ -14,7 +14,7 @@ export const makeMe = (over: Partial<Me> = {}): Me => ({
   ...over,
 });
 
-export type Call = { method: string; path: string; headers: Record<string, string>; body: unknown };
+export type Call = { method: string; path: string; headers: Record<string, string>; body: unknown; keepalive: boolean | undefined };
 export type Route = (call: Call) => Response | Promise<Response>;
 
 export const tokenResponse = (token: string) =>
@@ -47,7 +47,7 @@ export function makeFetch(routes: Record<string, Route>) {
         // keep the raw string
       }
     }
-    const call: Call = { method, path, headers: { ...(init.headers as Record<string, string>) }, body };
+    const call: Call = { method, path, headers: { ...(init.headers as Record<string, string>) }, body, keepalive: init.keepalive };
     calls.push(call);
     const route = routes[`${method} ${path}`];
     if (!route) throw new Error(`unscripted request: ${method} ${path}`);

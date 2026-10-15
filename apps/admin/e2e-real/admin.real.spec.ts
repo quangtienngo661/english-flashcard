@@ -159,6 +159,19 @@ test('B25#4: reloading keeps the editor signed in (the Secure refresh cookie wor
   await expect(editorPage.getByRole('heading', { level: 1, name: vi.nav.uploads })).toBeVisible();
 });
 
+test('RKC3: leaving the page while its refresh is in flight keeps the session when the editor comes back 12 s later', async () => {
+  await editorPage.goto('/uploads');
+  await expect(editorPage.getByRole('heading', { level: 1, name: vi.nav.uploads })).toBeVisible();
+  const refresh = editorPage.waitForRequest((r) => r.method() === 'POST' && r.url().endsWith('/v1/auth/refresh'));
+  await editorPage.reload({ waitUntil: 'commit' });
+  await refresh;
+  await editorPage.goto('about:blank'); // RK7: the page unloads while its refresh is on the wire
+  await editorPage.waitForTimeout(12_000); // longer than the 10 s refresh grace (Bước 1, B1#16)
+  await editorPage.goto('/uploads');
+  await expect(editorPage).toHaveURL(/\/uploads$/);
+  await expect(editorPage.getByRole('heading', { level: 1, name: vi.nav.uploads })).toBeVisible();
+});
+
 test('B25#6: the admin removes the editor role while the editor page is open; the editor\'s next action ends at /login with "no access"', async () => {
   await adminPage.goto('/staff');
   await findStaff(adminPage, editorEmail);
