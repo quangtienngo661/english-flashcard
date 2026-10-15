@@ -34,6 +34,8 @@ const tones = {
     error: errorPill,
     success: 'bg-surface text-ink',
     successIcon: 'text-success',
+    // Red on the blue field is 1.24:1, so the flagged box turns yellow (5.24:1); the error pill says why.
+    invalidBox: 'border-accent',
     button: 'accent',
   },
   onAccent: {
@@ -44,6 +46,7 @@ const tones = {
     error: errorPill,
     success: 'bg-surface text-ink',
     successIcon: 'text-success',
+    invalidBox: 'border-danger',
     button: 'ink',
   },
 } as const;
@@ -116,7 +119,7 @@ export function WaitlistForm({ idPrefix, tone, layout, locale, labels }: Waitlis
                 onChange={(e) => setConsent(e.target.checked)}
                 aria-invalid={consentInvalid || undefined}
                 aria-describedby={consentInvalid ? ids.consentError : undefined}
-                className={cn('peer size-5 cursor-pointer appearance-none rounded border-2', t.box, consentInvalid && 'border-danger')}
+                className={cn('peer size-5 cursor-pointer appearance-none rounded border-2', t.box, consentInvalid && t.invalidBox)}
               />
               <Icon name="check" className={cn('pointer-events-none absolute size-3.5 opacity-0 peer-checked:opacity-100', t.tick)} />
             </span>

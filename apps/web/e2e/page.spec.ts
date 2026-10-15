@@ -40,12 +40,13 @@ test.describe('cloze practice', () => {
     await page.goto('/en');
     const ring = (target: ReturnType<typeof sticker>) => target.evaluate((el) => getComputedStyle(el).outlineColor);
     const answer = sticker(page, copy.en.Cloze.items.deploy.answer);
+    // Tailwind's `transition` includes outline-color (150ms), so poll until the ring settles.
     await answer.focus();
-    expect(await ring(answer)).toBe('rgb(36, 69, 214)');
+    await expect.poll(() => ring(answer)).toBe('rgb(36, 69, 214)');
     await page.keyboard.press('Enter');
     const next = card(page).getByRole('button', { name: copy.en.Cloze.nextSentence });
     await expect(next).toBeFocused();
-    expect(await ring(next)).toBe('rgb(36, 69, 214)');
+    await expect.poll(() => ring(next)).toBe('rgb(36, 69, 214)');
   });
 
   test('RF5 stickers keep a visible border in forced-colors mode', async ({ page }) => {

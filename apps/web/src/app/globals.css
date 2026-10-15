@@ -159,6 +159,11 @@
     outline-color: var(--color-primary);
   }
 
+  /* White cards on the blue field (the practice card) go back to the blue ring: yellow on white is 1.38:1. */
+  .bg-primary .bg-surface :focus-visible {
+    outline-color: var(--color-primary);
+  }
+
   @media (prefers-reduced-motion: reduce) {
     html {
       scroll-behavior: auto;

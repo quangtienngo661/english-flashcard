@@ -41,6 +41,8 @@ describe('design tokens', () => {
     const controls: Array<[string, string]> = [
       ['border-strong', 'surface'], ['border-strong', 'canvas'], ['on-primary', 'primary'], ['ink', 'accent'],
       ['accent', 'primary'], ['primary', 'accent'], ['primary', 'surface'],
+      // Flagged consent boxes: yellow on the blue field, red on the yellow band (A11Y-5).
+      ['danger', 'accent'],
     ];
     const failures = [
       ...text.filter(([f, b]) => contrast(f, b) < 4.5).map(([f, b]) => `${f}/${b}=${contrast(f, b).toFixed(2)} < 4.5`),
