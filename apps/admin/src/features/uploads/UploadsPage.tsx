@@ -1,4 +1,5 @@
 import { useInfiniteQuery } from '@tanstack/react-query';
+import { useState } from 'react';
 import { Link, useMatch, useNavigate } from 'react-router';
 import { useTranslations, useFormatter } from 'use-intl';
 import { useApi } from '../../auth/session-context';
@@ -8,11 +9,13 @@ import { PageActions } from '../../app/shell-slots';
 import { Button } from '../../ui/Button';
 import { DataList, type Column } from '../../ui/DataList';
 import { DetailPanel } from '../../ui/DetailPanel';
+import { Dialog } from '../../ui/Dialog';
 import { focusRowLink } from '../../ui/focus-row-link';
 import { useRetained } from '../../ui/use-retained';
 import { listUploads, type UploadListItem } from '../content/content-api';
 import { StatusBadge } from '../jobs/StatusBadge';
 import { BatchPanel } from './BatchPanel';
+import { UploadForm } from './UploadForm';
 
 export function UploadsPage() {
   const t = useTranslations();
@@ -21,8 +24,12 @@ export function UploadsPage() {
   const format = useFormatter();
   const dateTime = useDateTime();
   const canUpload = useCan('content.edit');
-  // `/uploads/:id` keeps the list and opens the batch in a panel beside it (UB8); the closing panel keeps its batch.
-  const panelId = useMatch('/uploads/:id')?.params.id;
+  // `/uploads/new` opens the form over the list (UB9) and `/uploads/:id` the batch beside it (UB8); `:id` also matches
+  // `new`, so `new` is checked first. The closing panel keeps its batch until it has animated out.
+  const isNew = useMatch('/uploads/new') !== null;
+  const idMatch = useMatch('/uploads/:id');
+  const panelId = isNew ? undefined : idMatch?.params.id;
+  const [formPending, setFormPending] = useState(false);
   const shownId = useRetained(panelId);
 
   const list = useInfiniteQuery({
@@ -89,6 +96,16 @@ export function UploadsPage() {
           <BatchPanel id={shownId} />
         </DetailPanel>
       )}
+      {/* Always rendered so the dialog can animate out; React Aria unmounts the form after, so each opening is fresh. */}
+      <Dialog
+        isOpen={isNew}
+        onOpenChange={(open) => !open && !formPending && void navigate('/uploads')}
+        isDismissable={!formPending}
+        title={t('uploads.formTitle')}
+        size="md"
+      >
+        <UploadForm onPendingChange={setFormPending} />
+      </Dialog>
     </div>
   );
 }

@@ -6,7 +6,10 @@ import { seriousViolations } from './support/axe';
 test.use({ locale: 'vi-VN' });
 
 const t = vi.publishJobs;
-const confirmAll = (page: Page) => page.getByRole('dialog').getByRole('button', { name: t.confirmAllSubmit }).click();
+// The form is a dialog too (UB9): name the confirmation that opens over it.
+// The form's own submit sits inside its dialog; the page head has a "Tạo publish job" button too.
+const formButton = (page: Page) => page.getByRole('dialog', { name: t.formTitle }).getByRole('button', { name: t.create });
+const confirmAll = (page: Page) => page.getByRole('dialog', { name: t.confirmAllTitle }).getByRole('button', { name: t.confirmAllSubmit }).click();
 const JOBS = '/v1/admin/content/senses/publish-jobs';
 const ID = 'a3f2c1aa-0000-4000-8000-000000000001';
 const job = (over: Record<string, unknown> = {}) => ({
@@ -39,14 +42,14 @@ test('B25#18: a 429 with Retry-After 5 on create disables the button with a 5 s 
     [`GET ${JOBS}/${ID}`]: () => ({ json: job() }),
   });
   await page.goto('/publish-jobs/new');
-  await page.getByRole('button', { name: t.create }).click();
+  await formButton(page).click();
   await confirmAll(page);
   const locked = page.getByRole('button', { name: /Thử lại sau [1-5] giây/ });
   await expect(locked).toBeDisabled();
-  await expect(page.getByRole('button', { name: t.create })).toBeEnabled({ timeout: 9000 });
+  await expect(formButton(page)).toBeEnabled({ timeout: 9000 });
 
   limited = false;
-  await page.getByRole('button', { name: t.create }).click();
+  await formButton(page).click();
   await confirmAll(page);
   await expect(page).toHaveURL(new RegExp(`/publish-jobs/${ID}$`));
   expect(requestCount(page, 'POST', JOBS)).toBe(2);
@@ -62,8 +65,8 @@ test('Review Focus 3: double-clicking "Tạo publish job" sends exactly one POST
     [`GET ${JOBS}/${ID}`]: () => ({ json: job() }),
   });
   await page.goto('/publish-jobs/new');
-  await page.getByRole('button', { name: t.create }).click();
-  await page.getByRole('dialog').getByRole('button', { name: t.confirmAllSubmit }).dblclick();
+  await formButton(page).click();
+  await page.getByRole('dialog', { name: t.confirmAllTitle }).getByRole('button', { name: t.confirmAllSubmit }).dblclick();
   await expect(page).toHaveURL(new RegExp(`/publish-jobs/${ID}$`));
   expect(requestCount(page, 'POST', JOBS)).toBe(1);
 });

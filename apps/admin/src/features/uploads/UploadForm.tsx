@@ -20,8 +20,11 @@ const IN_PROGRESS_DEFAULT_WAIT_S = 2;
 
 type Rejected = { name: string; size: number; reason: 'file-too-large' | 'file-invalid' };
 
-/** Spec §6.3 "Lô nhập": upload a `.csv` (≤ 10 MB); a level source is required when the file has a level column. */
-export function UploadForm() {
+/**
+ * Spec §6.3 "Lô nhập": upload a `.csv` (≤ 10 MB); a level source is required when the file has a level column. Shown in
+ * a dialog over the uploads list (UB9); `onPendingChange` lets the dialog refuse Esc and outside clicks while it sends.
+ */
+export function UploadForm({ onPendingChange }: { onPendingChange?: (pending: boolean) => void }) {
   const t = useTranslations();
   const format = useFormatter();
   const api = useApi();
@@ -46,6 +49,7 @@ export function UploadForm() {
   const idempotency = useIdempotencyKey(fingerprint);
 
   useEffect(() => () => clearTimeout(waitTimer.current), []);
+  useEffect(() => onPendingChange?.(pending), [pending, onPendingChange]);
 
   async function choose(picked: File) {
     clearTimeout(waitTimer.current);
@@ -120,7 +124,7 @@ export function UploadForm() {
         event.preventDefault();
         void submit();
       }}
-      className="flex flex-col gap-4 rounded-panel border-2 border-border p-4"
+      className="flex flex-col gap-4"
     >
       {banner && (
         <Banner

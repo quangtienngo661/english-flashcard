@@ -60,7 +60,17 @@ describe('publish jobs list', { timeout: 20_000 }, () => {
       'GET /v1/admin/content/uploads?page_size=20': () => json(UPLOADS),
     });
     await userEvent.click(await screen.findByRole('button', { name: t.create }));
-    expect(await screen.findByRole('heading', { level: 1, name: t.formTitle })).toBeInTheDocument();
+    expect(await screen.findByRole('dialog', { name: t.formTitle })).toBeInTheDocument();
+  });
+
+  it('UBC13 /publish-jobs/new is a dialog over the list', async () => {
+    renderApp('/publish-jobs/new', {
+      [JOBS]: () => json({ items: [job({ status: 'succeeded' })], next_page_token: null }),
+      'GET /v1/admin/taxonomy/topics': () => json(TOPICS),
+      'GET /v1/admin/content/uploads?page_size=20': () => json(UPLOADS),
+    });
+    expect(await screen.findByRole('dialog', { name: t.formTitle })).toBeInTheDocument();
+    await waitFor(() => expect(document.querySelector('table')).not.toBeNull());
   });
 });
 
@@ -68,6 +78,7 @@ describe('publish job form', { timeout: 20_000 }, () => {
   function open(create: (n: number) => Response) {
     let n = 0;
     return renderApp('/publish-jobs/new', {
+      [JOBS]: () => json({ items: [], next_page_token: null }),
       'GET /v1/admin/taxonomy/topics': () => json(TOPICS),
       'GET /v1/admin/content/uploads?page_size=20': () => json(UPLOADS),
       [CREATE]: () => create(++n),
@@ -79,18 +90,19 @@ describe('publish job form', { timeout: 20_000 }, () => {
     await userEvent.click(within(await screen.findByRole('listbox')).getByRole('option', { name: option }));
   };
   const submit = () => screen.findByRole('button', { name: t.create });
-  const confirmAll = async () => userEvent.click(within(await screen.findByRole('dialog')).getByRole('button', { name: t.confirmAllSubmit }));
+  const confirmation = () => screen.findByRole('dialog', { name: t.confirmAllTitle });
+  const confirmAll = async () => userEvent.click(within(await confirmation()).getByRole('button', { name: t.confirmAllSubmit }));
 
   it('B25E29: with no filter at all a dialog says it publishes the whole catalog; nothing is sent until it is confirmed', async () => {
     const r = open(() => json({ job_id: ID }, 202));
     await userEvent.click(await submit());
-    const dialog = await screen.findByRole('dialog');
+    const dialog = await confirmation();
     expect(within(dialog).getByText(t.confirmAllTitle)).toBeInTheDocument();
     expect(within(dialog).getByText(t.confirmAllBody)).toBeInTheDocument();
     expect(posts(r.calls)).toHaveLength(0);
 
     await userEvent.click(within(dialog).getByRole('button', { name: vi.common.cancel }));
-    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: t.confirmAllTitle })).toBeNull());
     expect(posts(r.calls)).toHaveLength(0);
 
     await userEvent.click(await submit());
@@ -104,7 +116,7 @@ describe('publish job form', { timeout: 20_000 }, () => {
     await choose(vi.export.level, 'B1');
     await userEvent.click(await submit());
     await waitFor(() => expect(posts(r.calls)).toHaveLength(1));
-    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(screen.queryByRole('dialog', { name: t.confirmAllTitle })).toBeNull();
   });
 
   it('create: filter level/topic/pos/batch_id is posted as { filter } with a key, and the job opens', async () => {

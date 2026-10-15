@@ -1,4 +1,5 @@
 import { useInfiniteQuery } from '@tanstack/react-query';
+import { useState } from 'react';
 import { Link, useMatch, useNavigate } from 'react-router';
 import { useFormatter, useTranslations } from 'use-intl';
 import { useApi } from '../../auth/session-context';
@@ -8,10 +9,12 @@ import { PageActions } from '../../app/shell-slots';
 import { Button } from '../../ui/Button';
 import { DataList, type Column } from '../../ui/DataList';
 import { DetailPanel } from '../../ui/DetailPanel';
+import { Dialog } from '../../ui/Dialog';
 import { focusRowLink } from '../../ui/focus-row-link';
 import { useRetained } from '../../ui/use-retained';
 import { listPublishJobs, type PublishJobListItem, type SenseFilter } from '../content/content-api';
 import { StatusBadge } from '../jobs/StatusBadge';
+import { PublishJobForm } from './PublishJobForm';
 import { PublishJobPanel } from './PublishJobPanel';
 
 /** `#a3f2c1`: the first six characters of the job id, as in Figma. */
@@ -34,8 +37,12 @@ export function PublishJobsPage() {
   const format = useFormatter();
   const dateTime = useDateTime();
   const canPublish = useCan('content.publish');
-  // `/publish-jobs/:id` keeps the list and opens the job in a panel beside it (UB8); the closing panel keeps its job.
-  const panelId = useMatch('/publish-jobs/:id')?.params.id;
+  // `/publish-jobs/new` opens the form over the list (UB9) and `/publish-jobs/:id` the job beside it (UB8); `:id` also
+  // matches `new`, so `new` is checked first. The closing panel keeps its job until it has animated out.
+  const isNew = useMatch('/publish-jobs/new') !== null;
+  const idMatch = useMatch('/publish-jobs/:id');
+  const panelId = isNew ? undefined : idMatch?.params.id;
+  const [formPending, setFormPending] = useState(false);
   const shownId = useRetained(panelId);
 
   const list = useInfiniteQuery({
@@ -102,6 +109,15 @@ export function PublishJobsPage() {
           <PublishJobPanel id={shownId} />
         </DetailPanel>
       )}
+      <Dialog
+        isOpen={isNew}
+        onOpenChange={(open) => !open && !formPending && void navigate('/publish-jobs')}
+        isDismissable={!formPending}
+        title={t('publishJobs.formTitle')}
+        size="md"
+      >
+        <PublishJobForm onPendingChange={setFormPending} />
+      </Dialog>
     </div>
   );
 }

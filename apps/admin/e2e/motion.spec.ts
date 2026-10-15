@@ -76,6 +76,31 @@ test.describe('desktop', () => {
     expect(await page.getByRole('menu').count()).toBe(0);
   });
 
+  test('UBE22 opening and closing the upload dialog ten times fast leaves no overlay', async ({ page }) => {
+    await signedInAs(page, 'editor', mocks);
+    await page.goto('/uploads');
+    for (let i = 0; i < 10; i += 1) {
+      await page.getByRole('button', { name: vi.uploads.upload }).click();
+      await expect(page.getByRole('dialog', { name: vi.uploads.formTitle })).toBeVisible();
+      await page.keyboard.press('Escape');
+    }
+    await page.waitForTimeout(400);
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+    await expect(page.locator('[data-exiting]')).toHaveCount(0);
+    await expect(page).toHaveURL(/\/uploads$/);
+  });
+
+  test('UB23 the upload dialog fades out in 150ms', async ({ page }) => {
+    await signedInAs(page, 'editor', mocks);
+    await page.goto('/uploads/new');
+    await expect(page.getByRole('dialog', { name: vi.uploads.formTitle })).toBeVisible();
+    await recordAnimations(page);
+    await page.keyboard.press('Escape');
+    await expect.poll(() => recorded(page)).toEqual(expect.arrayContaining([{ name: 'dialog-out', duration: '0.15s' }]));
+    await page.waitForTimeout(400);
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+  });
+
   test('the revert dialog enters in 250ms and the account menu in 200ms', async ({ page }) => {
     await signedInAs(page, 'editor', mocks);
     await page.goto('/uploads/b1');

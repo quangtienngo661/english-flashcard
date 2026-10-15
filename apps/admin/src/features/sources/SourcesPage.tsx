@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useRef, useState } from 'react';
-import { useNavigate } from 'react-router';
+import { useEffect, useRef, useState } from 'react';
+import { useMatch, useNavigate } from 'react-router';
 import { useTranslations } from 'use-intl';
 import { useErrorMessage } from '../../api/use-error-message';
 import { useApi } from '../../auth/session-context';
@@ -9,10 +9,9 @@ import { Banner } from '../../ui/Banner';
 import { Button } from '../../ui/Button';
 import { Checkbox } from '../../ui/Checkbox';
 import { DataList, type Column } from '../../ui/DataList';
+import { Dialog } from '../../ui/Dialog';
 import { TextField } from '../../ui/TextField';
 import { createSource, listSources, type SourceView } from '../content/content-api';
-
-const panel = 'flex flex-col gap-4 rounded-panel border-2 border-border p-4';
 
 export function SourcesPage() {
   const t = useTranslations();
@@ -20,6 +19,9 @@ export function SourcesPage() {
   const navigate = useNavigate();
   const list = useQuery({ queryKey: ['sources'], queryFn: () => listSources(api) });
   const rows = list.data ?? [];
+  // `/sources/new` keeps the list and opens the form over it (UB9).
+  const isNew = useMatch('/sources/new') !== null;
+  const [formPending, setFormPending] = useState(false);
 
   const columns: Column<SourceView>[] = [
     // Shares, not fixed widths, so a wide screen spreads the columns out instead of piling them on the right (owner, Checkpoint A).
@@ -43,14 +45,23 @@ export function SourcesPage() {
         emptyHint={t('sources.emptyHint')}
         onRetry={() => void list.refetch()}
       />
+      <Dialog
+        isOpen={isNew}
+        onOpenChange={(open) => !open && !formPending && void navigate('/sources')}
+        isDismissable={!formPending}
+        title={t('sources.formTitle')}
+        size="lg"
+      >
+        <SourceForm onPendingChange={setFormPending} />
+      </Dialog>
     </div>
   );
 }
 
 const IS_INT = /^-?\d+$/;
 
-/** Spec §6.3 "Nguồn dữ liệu": register a source. Version and license are required only for a level source. */
-export function SourceForm() {
+/** Spec §6.3 "Nguồn dữ liệu": register a source. Version and license are required only for a level source. Shown in a dialog (UB9). */
+export function SourceForm({ onPendingChange }: { onPendingChange?: (pending: boolean) => void }) {
   const t = useTranslations();
   const api = useApi();
   const errorMessage = useErrorMessage();
@@ -77,6 +88,8 @@ export function SourceForm() {
         display_priority: Number(priority),
       }),
   });
+
+  useEffect(() => onPendingChange?.(mutation.isPending), [mutation.isPending, onPendingChange]);
 
   const star = (label: string, required: boolean) => (required ? `${label} *` : label);
 
@@ -110,7 +123,7 @@ export function SourceForm() {
         event.preventDefault();
         void submit();
       }}
-      className={panel}
+      className="flex flex-col gap-4"
     >
       {banner && <Banner variant="error">{banner}</Banner>}
       <div className="grid gap-4 shell:grid-cols-2">
