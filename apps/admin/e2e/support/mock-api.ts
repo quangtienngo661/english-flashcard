@@ -12,7 +12,7 @@ export type MockResponse = {
 export type MockHandler = (req: MockRequest) => MockResponse | Promise<MockResponse>;
 
 export const API = 'http://localhost:3000';
-const ORIGIN = 'http://localhost:5173';
+const ORIGIN = `http://localhost:${process.env.ADMIN_E2E_PORT ?? 5173}`;
 const CORS = {
   'access-control-allow-origin': ORIGIN,
   'access-control-allow-credentials': 'true',
