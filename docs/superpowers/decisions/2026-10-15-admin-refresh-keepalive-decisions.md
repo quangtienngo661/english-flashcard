@@ -22,7 +22,7 @@ chủ dự án duyệt khi đọc design doc (đã duyệt 15/10/2026: "Duyệt 
 | RK5 | Trình duyệt được kiểm | Chỉ Chromium | Chủ dự án (Q2) |
 | RK6 | Nhánh và PR | Nhánh `fix/admin-refresh-keepalive` từ `feat/ui-b-admin`, PR riêng xếp trên #23 | Chủ dự án (Q3) |
 | RK7 | Cách rời trang trong e2e | `about:blank` ngay khi request refresh rời trình duyệt, chờ 12 s | Duyệt cùng design |
-| RK8 | Trình duyệt không hỗ trợ hoặc từ chối `keepalive` | Vòng 1: không feature-detect, không đường dự phòng. **Vòng 2 (16/10):** từ chối (`TypeError`) thì gửi lại một lần không `keepalive` | Vòng 1: duyệt cùng design; vòng 2: chủ dự án (sau review) |
+| RK8 | Trình duyệt không hỗ trợ hoặc từ chối `keepalive` | Vòng 1: không feature-detect, không đường dự phòng. **Vòng 2 (16/10):** từ chối (`TypeError`) thì gửi lại một lần không `keepalive`. **Vòng 3 (16/10):** không gửi lại khi trang đã phát `pagehide` | Vòng 1: duyệt cùng design; vòng 2 và 3: chủ dự án |
 
 ## RK1, RK3 — Cách sửa
 
@@ -89,6 +89,18 @@ khi request cần preflight CORS (bản Chromium đầu tiên từng như vậy;
 | Thêm đường dự phòng: `TypeError` thì gửi lại ngay một lần không `keepalive` | ~5 dòng + test unit; an toàn với server (lần đầu đã tới server thì lần hai trong 10 s nhận đúng token qua ân hạn); trình duyệt từ chối `keepalive` chạy như trước | ✅ |
 | Giữ vòng 1, ghi lại rủi ro, kiểm tay Firefox và WebKit trước deploy | Không sửa code; phải tải hai trình duyệt của Playwright (vài trăm MB) | |
 | Giữ vòng 1, chỉ ghi rủi ro | Không sửa, không kiểm; dựa vào việc nhân viên dùng Chrome/Edge | |
+
+## RK8 vòng 3 — Đường dự phòng chạy cả khi trang bị bỏ (16/10/2026, sau lỗi CI của RKC3)
+
+Bối cảnh: job `admin-e2e-real` trên `41be5ba` đỏ ở RKC3. Tái hiện trên Chromium Linux trong container (chủ dự án cho phép tải
+trình duyệt): khi trang bị bỏ lúc refresh keepalive đang chạy, lời hứa `fetch` phía trang bị từ chối bằng `TypeError` dù
+request vẫn chạy xong ở trình duyệt; đường dự phòng của vòng 2 gửi thêm một refresh, xoay token lần nữa và mất câu trả lời
+(6/40 lần mất phiên; bản không dự phòng 0/16; bản thử chặn ở `pagehide` 0/20). Câu hỏi trong chat có hai lựa chọn:
+
+| Phương án | Trade-off | |
+|---|---|---|
+| Giữ đường dự phòng, nhưng không thử lại khi trang đã phát `pagehide` (bật lại khi `pageshow`) | Giữ phần bảo vệ cho trình duyệt từ chối keepalive khi có preflight; thứ tự `pagehide` so với lúc `fetch` bị từ chối mới đo trên Chromium | ✅ |
+| Bỏ đường dự phòng (quay về vòng 1: chỉ keepalive) | Đơn giản nhất; mất phần bảo vệ cho trình duyệt từ chối keepalive khi có preflight (rủi ro I1 quay lại) | |
 
 ## Đề xuất kỹ thuật duyệt cùng design
 

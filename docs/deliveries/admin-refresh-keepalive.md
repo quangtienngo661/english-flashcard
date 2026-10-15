@@ -87,7 +87,11 @@ ledger; không cái nào làm hành vi tệ hơn trước bản sửa.
     được phiên, token đó chỉ bị xoay ~12,1 s sau, khi quay lại.
   - Bản thử (không commit) chặn đường dự phòng khi trang đã phát sự kiện `pagehide`: 0/20 lần mất phiên, không lần nào xoay hai
     lần (`ab-guard.out`).
-  - Đang chờ chủ dự án chọn cách sửa.
+  - **Đã sửa (RK8 vòng 3, chủ dự án chọn):** không thử lại khi trang đã phát `pagehide` (bật lại khi `pageshow`). Test đỏ
+    trước (`68d23ac`: `expected [ true, undefined ] to deeply equal [ true ]`), sửa ở `e20f62f`. File 35/35, cả bộ unit
+    290/290 (`--maxWorkers=3`), lint 0, typecheck 0; bộ thật ở máy 8/8, không có `refresh_reuse_detected`. Quét lại trên
+    Chromium Linux với bản build của `e20f62f`, độ trễ 0/15/20/25/50 ms × 5: **0/25** lần mất phiên, cả 25 token trong cookie
+    chỉ bị xoay khi quay lại (`fixed-e20f62f.out`).
 - Chỉ kiểm trên Chromium (RK5). Firefox và Safari: nếu bỏ qua hoặc từ chối `keepalive` thì nay chạy như trước bản sửa (RKC6),
   nhưng chưa ai chạy thử thật.
 - Mất mạng hoặc trình duyệt bị tắt giữa lúc refresh vẫn làm mất phiên (RKE4, phương án B).

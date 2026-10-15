@@ -4,7 +4,8 @@
 > [`../plans/2026-10-15-admin-refresh-keepalive.md`](../plans/2026-10-15-admin-refresh-keepalive.md). **Đã làm**, PR
 > [#24](https://github.com/quangtienngo661/english-flashcard/pull/24); as-built ở
 > [`../../deliveries/admin-refresh-keepalive.md`](../../deliveries/admin-refresh-keepalive.md). Sau review cả nhánh
-> (16/10/2026) chủ dự án sửa RK8 (thêm đường dự phòng, RKC6); RKE5 và RKE9 cập nhật theo.
+> (16/10/2026) chủ dự án sửa RK8 (thêm đường dự phòng, RKC6); RKE5 và RKE9 cập nhật theo. Sau lỗi CI của RKC3 cùng ngày,
+> RK8 vòng 3: không thử lại khi trang đã phát `pagehide` (RKC7, RKE11).
 
 Ngày: 15/10/2026. Brainstorm qua `superpowers:brainstorming` cùng ngày: chủ dự án chọn phương án A trong báo cáo điều tra,
 rồi trả lời 3 câu hỏi (Q1–Q3). Quyết định và mọi phương án đã đưa ra:
@@ -48,7 +49,7 @@ commit: test trước, sửa sau); CI xanh trên PR (job `admin`, `admin-e2e-rea
 | RK5 | Chỉ kiểm trên Chromium (bộ e2e thật chạy Desktop Chrome). Firefox và Safari ghi `ASSUMPTION` | Chốt (Q2) |
 | RK6 | Nhánh `fix/admin-refresh-keepalive` cắt từ `feat/ui-b-admin`, gồm báo cáo, design, decision record, plan và code. PR đặt base `feat/ui-b-admin` (xếp trên PR #23), đổi base sang `dev` khi #23 merge | Chốt (Q3) |
 | RK7 | Test e2e rời trang bằng `page.goto('about:blank')` ngay khi request refresh của trang rời trình duyệt (`page.waitForRequest`), chờ 12 giây (lớn hơn 10 giây ân hạn) rồi mở lại app | Đề xuất |
-| RK8 | ~~Không thêm feature-detect hay đường dự phòng~~ **Sửa 16/10/2026 sau review (I1):** không feature-detect; nếu request refresh có `keepalive` bị trình duyệt từ chối (`TypeError`, ví dụ engine không cho `keepalive` đi kèm preflight CORS) thì gửi lại **một lần** không `keepalive`. Trình duyệt như vậy chạy như trước bản sửa | Chốt (16/10, vòng 2) |
+| RK8 | ~~Không thêm feature-detect hay đường dự phòng~~ **Sửa 16/10/2026 sau review (I1):** không feature-detect; nếu request refresh có `keepalive` bị trình duyệt từ chối (`TypeError`, ví dụ engine không cho `keepalive` đi kèm preflight CORS) thì gửi lại **một lần** không `keepalive`. Trình duyệt như vậy chạy như trước bản sửa. **Vòng 3 (16/10, sau lỗi CI):** không thử lại khi trang đã phát `pagehide` (bật lại khi `pageshow`): `TypeError` lúc đó do trang bị bỏ, không phải bị từ chối (RKE11) | Chốt (16/10, vòng 2 và 3) |
 
 ## 3. Cách làm
 
@@ -62,7 +63,7 @@ const res = await this.raw('/v1/auth/refresh', { ...json('POST', {}, this.csrf()
 ```
 
 **Sửa 16/10/2026 (RK8 vòng 2):** lời gọi trên nằm trong một hàm riêng `postRefresh()`: thử với `keepalive`, gặp `TypeError`
-thì gửi lại một lần không `keepalive` (RKC6). `raw()` đã truyền nguyên `init` vào `fetch` và thêm `credentials: 'include'`, nên không cần sửa chỗ khác. Mọi lần refresh đều
+thì gửi lại một lần không `keepalive` (RKC6). **Vòng 3:** trừ khi trang đã phát `pagehide` mà chưa `pageshow` (cờ `leaving`, RKC7). `raw()` đã truyền nguyên `init` vào `fetch` và thêm `credentials: 'include'`, nên không cần sửa chỗ khác. Mọi lần refresh đều
 đi qua `runRefresh()` (khởi động, 401, 403 `forbidden`, vòng thử lại 429), nên một chỗ sửa phủ hết RK2. Phần còn lại giữ
 nguyên: refresh dùng chung một lượt, chờ `Retry-After` của B25E30, xử lý 401/403, `BroadcastChannel`.
 
@@ -104,6 +105,7 @@ của Playwright bọc `window.fetch` để thêm `keepalive: true` cho đúng r
 | RKC4 | When fast reloads drive the refresh into 429 and the last page retries after `Retry-After`, then the user stays signed in | B25E30, UBE34; one manual run of `browser-repro.mjs inflight 0 14 all` against the fixed admin (not in CI, RK4) |
 | RKC5 | When the existing tests run, then B25#4, B25#5, B25#6, B25E1 and every B25E30 test still pass unchanged | unit + e2e real |
 | RKC6 | When the browser rejects the keepalive refresh with a `TypeError`, then the same refresh is sent once more without `keepalive`; if that also fails, the refresh fails as before (added 16/10/2026, review I1) | RK8; unit |
+| RKC7 | When the keepalive refresh rejects with a `TypeError` after the page fired `pagehide` and before any `pageshow`, then no second refresh is sent; after `pageshow` RKC6 applies again (added 16/10/2026, round 3) | RK8; unit + Linux probe |
 
 ## 6. Trường hợp biên
 
@@ -113,12 +115,13 @@ của Playwright bọc `window.fetch` để thêm `keepalive: true` cho đúng r
 | RKE2 | A keepalive refresh from a page that is gone answers 401 or 429 | Nobody reads the answer; the cookie is unchanged (a refresh error never clears it); the next page decides as today | RK8 |
 | RKE3 | Logout in another tab commits while a keepalive refresh is in flight | Logout first: the refresh sees a revoked chain, answers 401, sets no cookie. Refresh first: its `Set-Cookie` may arrive after logout's clear, leaving a cookie of a revoked chain; the next page start gets 401 and opens `/login`. Same outcome as today | B1E7, B25#8 |
 | RKE4 | The browser quits, the process is killed or the network drops mid-refresh | Not fixed: no process is left to finish the request, or no answer arrives. The stale cookie still ends the session on the next refresh after 10 s, as today. Out of scope (option B of the report) | RK1, RK3 |
-| RKE5 | A browser that does not support `keepalive`, or supports it but rejects it on a preflighted request (Firefox and Safari untested; early Chromium rejected keepalive with a preflight) | Unknown option: ignored, behaviour as before. Rejected: `fetch` throws a `TypeError` before anything is sent, and the refresh is retried once without `keepalive` (RKC6), so behaviour as before. If the first try did reach the server, the retry arrives inside the 10 s grace and gets the same successor | RK5, RK8 |
+| RKE5 | A browser that does not support `keepalive`, or supports it but rejects it on a preflighted request (Firefox and Safari untested; early Chromium rejected keepalive with a preflight) | Unknown option: ignored, behaviour as before. Rejected: `fetch` throws a `TypeError` before anything is sent, and the refresh is retried once without `keepalive` (RKC6), so behaviour as before. ~~If the first try did reach the server, the retry arrives inside the 10 s grace and gets the same successor~~ (wrong when the page is leaving, see RKE11) | RK5, RK8 |
 | RKE6 | The 64 KiB keepalive body limit | The body is `{}` and refresh is single-flight per page, so the limit is never approached | MDN |
 | RKE7 | The reloaded pages' keepalive refreshes still count toward `auth.refresh.chain` | They do (14 of 14 hit the limiter in the simulation), so 429 still happens on a reload storm; the cookie is current, so the B25E30 retry succeeds | RKC4, UBE34 |
 | RKE8 | The new e2e test can pass without the fix if the API answers before the page unloads | In the saved local runs, leaving as soon as the request left the browser lost the answer every time (11 of 11); with a 2 ms delay the answer still arrived on 3 of 14 pages. The unit test (RKC1) is the deterministic guard; the e2e guards the real browser + CORS + cookie path. The plan runs the e2e 3 times on the unfixed code and records how often it fails | RK4 |
 | RKE9 | The e2e test leaves the page and waits 12 s | It does not log out or change any account. **Sửa 16/10/2026 (review I2):** it runs in its own browser context and session chain, because every page load is a refresh (grace answers included) and a chain allows 10 a minute; on the story's editor chain it pushed B25#6 to 10–11 hits | RK4 |
 | RKE10 | The refresh is cross-origin with JSON and `X-CSRF-Protection`, so it needs a CORS preflight | Keepalive with a preflight works in Chromium 153 (the probe and the simulation were both cross-origin, like `admin.` → `admin-api.`) | RK5 |
+| RKE11 | The page is left while the keepalive refresh is in flight (added 16/10/2026 after the CI failure of RKC3) | The page-side `fetch` rejects with a `TypeError` even though the browser finishes the keepalive request and stores the new cookie. Retrying here would send that new token and rotate it again, and the answer would be lost with the page (measured on Linux Chromium 153: 6 sessions lost in 40, each with a second rotation 21–34 ms after the first). So no retry after `pagehide` (RKC7); measured 0 lost in 25 | RK8, RKC7 |
 
 ## 7. Test
 
