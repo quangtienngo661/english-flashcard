@@ -46,7 +46,7 @@ export async function Hero() {
         <div className="lg:col-start-1">
           <Chip>{t('chip')}</Chip>
         </div>
-        <h1 id="hero-title" className="text-display font-extrabold text-on-primary lg:col-start-1">
+        <h1 id="hero-title" className="text-display font-extrabold text-pretty text-on-primary lg:col-start-1">
           {t.rich('title', richBreaks)}
         </h1>
         <p className="max-w-copy text-body-lg text-on-primary-muted md:text-lead lg:col-start-1">{t('description')}</p>
