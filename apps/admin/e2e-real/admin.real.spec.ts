@@ -159,6 +159,26 @@ test('B25#4: reloading keeps the editor signed in (the Secure refresh cookie wor
   await expect(editorPage.getByRole('heading', { level: 1, name: vi.nav.uploads })).toBeVisible();
 });
 
+test('RKC3: leaving the page while its refresh is in flight keeps the session when the editor comes back 12 s later', async ({ browser }) => {
+  // Its own context, so its own session chain: every page load is a refresh (grace answers included), a chain allows 10 a
+  // minute (auth.refresh.chain), and the story's editor chain needs its budget for B25#6.
+  const context = await browser.newContext();
+  const page = await context.newPage();
+  await signIn(page, editorEmail, editorPassword);
+  await expect(page.getByRole('navigation')).toBeVisible();
+  await page.goto('/uploads');
+  await expect(page.getByRole('heading', { level: 1, name: vi.nav.uploads })).toBeVisible();
+  const refresh = page.waitForRequest((r) => r.method() === 'POST' && r.url().endsWith('/v1/auth/refresh'));
+  await page.reload({ waitUntil: 'commit' });
+  await refresh;
+  await page.goto('about:blank'); // RK7: the page unloads while its refresh is on the wire
+  await page.waitForTimeout(12_000); // longer than the 10 s refresh grace (Bước 1, B1#16)
+  await page.goto('/uploads');
+  await expect(page).toHaveURL(/\/uploads$/);
+  await expect(page.getByRole('heading', { level: 1, name: vi.nav.uploads })).toBeVisible();
+  await context.close();
+});
+
 test('B25#6: the admin removes the editor role while the editor page is open; the editor\'s next action ends at /login with "no access"', async () => {
   await adminPage.goto('/staff');
   await findStaff(adminPage, editorEmail);

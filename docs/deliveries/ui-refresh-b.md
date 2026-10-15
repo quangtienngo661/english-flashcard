@@ -157,8 +157,8 @@ một reviewer mới (opus) kiểm cả nhánh ở cuối. Báo cáo review: `do
 
 ## Còn mở
 
-- **Cần chủ dự án quyết hoặc biết:** dữ liệu thử đã ghi vào `english_learning_b25manual`; B25E30 vẫn có thể mất phiên khi tải lại
-  thật nhanh do xoay token (ở trên); UBE21 (đóng dialog rồi chuyển tab ngay) chưa thử tay vì Playwright không làm tab ẩn được.
+- **Cần chủ dự án quyết hoặc biết:** dữ liệu thử đã ghi vào `english_learning_b25manual`; mất phiên khi tải lại thật nhanh (ở
+  trên) đã sửa ở PR #24, xem `docs/deliveries/admin-refresh-keepalive.md`; UBE21 (đóng dialog rồi chuyển tab ngay) chưa thử tay vì Playwright không làm tab ẩn được.
 - Minor của review: chủ dự án chọn sửa M1–M4, M6, M7, M12 và 4 điểm rà soát thiết kế (15/10/2026, xem bảng). **M12 là báo nhầm**
   (đo thật): axe 4.13 đã đánh dấu luật `landmark-complementary-is-top-level` là `deprecated`, tắt mặc định, và hàm kiểm tra của nó
   miễn trừ `complementary` nằm trong `main`; bật riêng luật đó trên `/uploads/b1` ở 1440 thì panel nằm trong `passes`. Không sửa gì.

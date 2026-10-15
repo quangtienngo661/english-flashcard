@@ -50,6 +50,8 @@ export class SessionStore {
   private readonly listeners = new Set<() => void>();
   private refreshing: Promise<RefreshResult> | null = null;
   private bootstrapping: Promise<void> | null = null;
+  /** Between pagehide and pageshow: a refresh rejected now was cut off by the page leaving, not refused (RK8). */
+  private leaving = false;
 
   constructor(
     private readonly opts: {
@@ -61,6 +63,12 @@ export class SessionStore {
       now?: () => number;
     },
   ) {
+    window.addEventListener('pagehide', () => {
+      this.leaving = true;
+    });
+    window.addEventListener('pageshow', () => {
+      this.leaving = false;
+    });
     opts.channel?.addEventListener('message', (event) => {
       const type = (event.data as { type?: unknown } | null)?.type;
       if (type === 'logout') {
@@ -179,7 +187,7 @@ export class SessionStore {
    */
   private async runRefresh(): Promise<RefreshResult> {
     for (let attempt = 1; ; attempt += 1) {
-      const res = await this.raw('/v1/auth/refresh', json('POST', {}, this.csrf()), null);
+      const res = await this.postRefresh();
       if (res.ok) {
         this.token = ((await res.json()) as TokenBody).access_token;
         return 'ok';
@@ -190,6 +198,22 @@ export class SessionStore {
       const seconds = retryAfterSeconds(res) ?? REFRESH_RETRY_DEFAULT_S;
       if (this.state.status === 'loading') this.set({ status: 'loading', retryAt: (this.opts.now ?? Date.now)() + seconds * 1000 });
       await (this.opts.wait ?? sleep)(seconds * 1000);
+    }
+  }
+
+  /**
+   * keepalive: a reload or page leave mid-refresh must not drop the rotated cookie (2026-10-15-admin-refresh-keepalive-design.md).
+   * An engine that rejects keepalive on a preflighted request throws a TypeError before sending: try once more without it (RK8).
+   * Not while the page is leaving: that TypeError comes from the unload, the browser still finishes the keepalive refresh, and a
+   * second refresh would rotate the token again and lose its answer.
+   */
+  private async postRefresh(): Promise<Response> {
+    const init = json('POST', {}, this.csrf());
+    try {
+      return await this.raw('/v1/auth/refresh', { ...init, keepalive: true }, null);
+    } catch (error) {
+      if (!(error instanceof TypeError) || this.leaving) throw error;
+      return this.raw('/v1/auth/refresh', init, null);
     }
   }
 

@@ -400,7 +400,7 @@ giải, nút, URL, lệnh gọi API, việc làm mới truy vấn đều xảy r
 | # | When | Then |
 |---|---|---|
 | UBE33 | Đổi hoặc gỡ vai trò xong | Toast hiện 5 giây, có nút Đóng, trình đọc màn hình đọc được (vùng toast của React Aria); nhiều toast liên tiếp xếp chồng; giảm chuyển động thì không nảy. Lỗi vẫn hiện bằng `Banner` trong dialog như hiện nay |
-| UBE34 | `POST /v1/auth/refresh` trả 429 (B25E30) | Theo 6.5: không mất phiên, chờ `Retry-After` rồi thử lại; 3 lần 429 liên tiếp mới về `/login` kèm thông báo |
+| UBE34 | `POST /v1/auth/refresh` trả 429 (B25E30) | Theo 6.5: không mất phiên, chờ `Retry-After` rồi thử lại; 3 lần 429 liên tiếp mới về `/login` kèm thông báo. Tải lại hoặc rời trang khi refresh đang chạy: refresh gửi với `keepalive` (`2026-10-15-admin-refresh-keepalive-design.md`) |
 | UBE35 | Chữ dài hơn vì Lexend (tên file dài, email dài) | Không cột nào làm link hành động xuống dòng; tên file và email cắt bằng `…` hoặc xuống dòng theo từ, không theo ký tự |
 
 ## 8. Test
