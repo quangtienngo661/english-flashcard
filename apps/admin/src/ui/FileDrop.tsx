@@ -29,7 +29,7 @@ export function FileDrop({ fileName, detail, error, prompt, hint, chooseLabel, c
     if (file) onSelect(file);
   }
 
-  const tone = error ? 'border-danger bg-danger-soft' : dragging ? 'border-primary bg-primary-soft' : 'border-border-strong bg-surface';
+  const tone = error ? 'border-danger bg-danger-soft' : dragging ? 'border-primary bg-primary/10' : 'border-border-strong bg-primary-soft';
   return (
     <div
       onDragOver={(event) => {
@@ -38,14 +38,14 @@ export function FileDrop({ fileName, detail, error, prompt, hint, chooseLabel, c
       }}
       onDragLeave={() => setDragging(false)}
       onDrop={drop}
-      className={`flex flex-col items-center gap-2 rounded-control border border-dashed px-4 py-8 text-center ${tone}`}
+      className={`flex flex-col items-center gap-2 rounded-panel border-2 border-dashed px-4 py-8 text-center ${tone}`}
     >
       <FileUp aria-hidden className="size-5 text-muted" />
       {error && <p className="break-words text-ui font-medium text-danger">{error}</p>}
       {hasFile ? (
-        <p className="max-w-full wrap-anywhere text-ui font-medium text-ink">{fileName}</p>
+        <p className="max-w-full wrap-anywhere text-ui font-semibold text-ink">{fileName}</p>
       ) : (
-        !error && <p className="text-ui font-medium text-ink">{prompt}</p>
+        !error && <p className="text-ui font-semibold text-ink">{prompt}</p>
       )}
       {detail && <p className="max-w-full break-words text-xs text-muted">{detail}</p>}
       <FileTrigger acceptedFileTypes={['.csv', 'text/csv']} onSelect={(files) => files?.[0] && onSelect(files[0])}>

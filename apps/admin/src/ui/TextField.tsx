@@ -26,7 +26,7 @@ export function TextField({ label, value, onChange, error, description, placehol
         placeholder={placeholder}
         spellCheck={spellCheck}
         inputMode={inputMode}
-        className="min-h-control w-full min-w-0 rounded-control border border-border-strong bg-surface px-3 py-1.5 text-ui text-ink outline-none placeholder:text-muted focus-visible:ring-2 focus-visible:ring-primary disabled:opacity-60 data-invalid:border-danger"
+        className="min-h-control w-full min-w-0 rounded-control bg-canvas px-3 py-1.5 text-ui text-ink outline-none ring-2 ring-inset ring-border-strong placeholder:text-placeholder focus-visible:bg-surface focus-visible:ring-primary disabled:opacity-60 data-invalid:ring-danger"
       />
       {description && (
         <Text slot="description" className="text-xs text-muted">

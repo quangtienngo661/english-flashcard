@@ -38,3 +38,8 @@ body {
   font-family: var(--font-sans);
   font-size: var(--text-ui);
 }
+
+/* A pressed button sinks onto its ledge (design §6.2); applied only under motion-safe. */
+@utility pressed {
+  translate: 0 0.18rem;
+}
