@@ -7,6 +7,7 @@ import vi from '../../messages/vi.json';
 import { ShellSlotsContext } from '../app/shell-slots';
 import { DetailPanel, PanelBody, PanelFooter, PanelHead } from './DetailPanel';
 import { Dialog } from './Dialog';
+import { focusRowLink } from './focus-row-link';
 import { useMediaQuery } from './use-media-query';
 import { useRetained } from './use-retained';
 
@@ -126,6 +127,31 @@ describe('DetailPanel', () => {
     expect(onExited).toHaveBeenCalledTimes(1);
   });
 
+  it('a second ✕ or Escape while the side panel is closing does not close it again (review M3)', async () => {
+    stubMedia(true);
+    const onClose = vitest.fn();
+    function Closing() {
+      const [open, setOpen] = useState(true);
+      return (
+        <Harness
+          isOpen={open}
+          onClose={() => {
+            onClose();
+            setOpen(false);
+          }}
+        />
+      );
+    }
+    render(<Closing />);
+    const close = await screen.findByRole('button', { name: vi.common.close });
+    stubAnimations([{ finished: new Promise(() => {}) }]);
+    await userEvent.click(close);
+    expect(screen.getByTestId('detail-panel')).toHaveAttribute('data-exiting');
+    await userEvent.click(close);
+    await userEvent.keyboard('{Escape}');
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
   it('removes the side panel even when its exit animation is cancelled (UBE22)', async () => {
     stubMedia(true);
     const { rerender } = render(<Harness isOpen onClose={() => {}} />);
@@ -135,6 +161,21 @@ describe('DetailPanel', () => {
     stubAnimations([{ finished: cancelled }]);
     rerender(<Harness isOpen={false} onClose={() => {}} />);
     await waitFor(() => expect(screen.queryByTestId('detail-panel')).toBeNull());
+  });
+});
+
+describe('focusRowLink', () => {
+  it('an id with selector characters does not throw and still finds its link (review M4)', () => {
+    render(
+      <main>
+        <h1 id="page-title" tabIndex={-1}>
+          Lô nhập
+        </h1>
+        <a href={'/uploads/x"]'}>Chi tiết</a>
+      </main>,
+    );
+    expect(() => focusRowLink('/uploads/x"]')).not.toThrow();
+    expect(screen.getByRole('link', { name: 'Chi tiết' })).toHaveFocus();
   });
 });
 

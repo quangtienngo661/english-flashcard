@@ -1,6 +1,6 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { beforeEach, describe, expect, it, vi as vitest } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi as vitest } from 'vitest';
 import vi from '../../../messages/vi.json';
 import { makeMe, problem, type Call } from '../../auth/test-support';
 import { ME_ADMIN, renderApp } from '../staff/test-utils';
@@ -33,6 +33,7 @@ const list = () => json({ items: [listed('b1', 'b1-in-list.csv'), listed('b2', '
 const posts = (calls: Call[], path: string) => calls.filter((c) => c.method === 'POST' && c.path === path);
 
 beforeEach(() => saveBlob.mockClear());
+afterEach(() => vitest.unstubAllGlobals());
 
 describe('batch panel', () => {
   it('a finished batch: name, status, the five counters, rejected sentence and warnings', async () => {
@@ -170,6 +171,28 @@ describe('batch panel', () => {
     await waitFor(() => expect(screen.queryByTestId('detail-panel')).toBeNull());
     expect(document.activeElement).toBe(within(screen.getByRole('table')).getAllByRole('link', { name: vi.uploads.open })[0]);
     expect(document.activeElement).toHaveAttribute('href', '/uploads/b1');
+  });
+
+  it('UBE26 a panel closed by opening "Upload CSV" never moves focus to its row behind the form (review M1)', async () => {
+    renderApp('/uploads/b1', { [LIST]: list, [BATCH]: () => json(batch()) });
+    await screen.findByRole('heading', { level: 2, name: 'cefr-j-1.5.csv' });
+    const rowFocused = vitest.fn();
+    document.querySelectorAll('main a[href="/uploads/b1"]').forEach((a) => a.addEventListener('focus', rowFocused));
+    await userEvent.click(screen.getByRole('button', { name: vi.uploads.upload }));
+    const form = await screen.findByRole('dialog', { name: vi.uploads.formTitle });
+    await waitFor(() => expect(screen.queryByTestId('detail-panel')).toBeNull());
+    await new Promise((resolve) => requestAnimationFrame(resolve));
+    expect(rowFocused).not.toHaveBeenCalled();
+    expect(form).toContainElement(document.activeElement as HTMLElement);
+  });
+
+  it('UBE26 below 87rem, closing a panel opened by its URL focuses the row link, not the page body (review M2)', async () => {
+    vitest.stubGlobal('matchMedia', () => ({ matches: false, media: '', addEventListener() {}, removeEventListener() {} }));
+    renderApp('/uploads/b1', { [LIST]: list, [BATCH]: () => json(batch()) });
+    const panel = await screen.findByRole('dialog', { name: 'cefr-j-1.5.csv' });
+    await userEvent.click(within(panel).getByRole('button', { name: vi.common.close }));
+    await waitFor(() => expect(screen.queryByTestId('detail-panel')).toBeNull());
+    await waitFor(() => expect(document.activeElement).toHaveAttribute('href', '/uploads/b1'));
   });
 
   it('UBE24 opening /uploads/b1 directly focuses the panel title', async () => {
