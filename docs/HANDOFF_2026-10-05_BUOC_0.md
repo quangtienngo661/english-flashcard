@@ -21,15 +21,26 @@ thì ghi `ASSUMPTION`.
 
 > Trạng thái 07/10/2026: Bước 0 và Bước 1 đã xong và đã merge vào `main` (PR #1, #4, #5). Bước tiếp theo: Bước 2.
 > Cập nhật 13/10/2026: Bước 2 đã xong trên `feat/buoc-2-m2-pipeline`/`feat/buoc-2-m3-finish` (chi tiết ở
-> `CLAUDE.md` mục "Bước 2 — as-built"); PR #15 (M1+M2 → `dev`) đang mở, CI xanh, chờ chủ dự án duyệt merge.
-> Bước tiếp theo: Bước 3 (Learning, mốc pilot sớm nhất).
+> `docs/deliveries/buoc-2.md`); PR #16 (M1+M2+M3, gộp thay PR #15) đang mở, CI xanh, chờ chủ dự án duyệt merge.
+> **Sửa 13/10/2026 theo design Bước 2 (D1, D9, mục 15):** phạm vi Bước 2 thực tế hẹp hơn dòng cũ của bảng dưới —
+> chỉ phía quản trị (nhập CSV, soạn, publish, hoàn tác, xuất) và tìm kiếm/duyệt **chỉ-đọc** cho learner; **từ
+> riêng tư, câu ngữ cảnh, chuỗi tra nghĩa dời hết sang Bước 3** (đã chốt từ lúc duyệt design Bước 2, 12/10/2026,
+> nhưng bảng dưới và `CLAUDE.md` chưa được sửa theo tới hôm nay). Chủ dự án cũng đã chốt (D9) chèn thêm
+> **Bước 2.5 — giao diện web (đăng nhập, trang admin, cấp vai trò) ngay sau Bước 2, trước Bước 3**.
+> **Cập nhật 15/10/2026:** PR #16 (Bước 2) đã merge vào `dev`. Bước 2.5 đang làm — design/plan 14/10/2026; M1 backend
+> và M2 khung admin đã merge vào `dev` (PR #17, #18); M3 (luồng CSV, Task 13–18) xong trên máy local, chạy tay "Xong khi"
+> đạt (15/10/2026), còn chờ push + CI xanh trên PR vào `dev`; chi tiết ở `docs/deliveries/buoc-2-5.md`. Trước pilot Bước 3
+> cần thêm một bước "Deploy API + admin" (chưa xếp chỗ).
+> Chủ dự án dự kiến refactor lại toàn bộ giao diện admin sau. Bước tiếp theo sau 2.5: Bước 3 (Learning, mốc pilot sớm nhất).
 
 | Bước | Làm gì | Spec |
 |---|---|---|
 | 0 | Nền: scaffold, Docker + Postgres, Problem Details, phân trang, `Idempotency-Key`, ID, log, khung test | System |
 | 1 | Đăng ký, đăng nhập email + mật khẩu, OTP xác minh, phiên (access + refresh), hồ sơ, vai trò `admin`/`editor`, **đổi và quên mật khẩu** (chuyển từ Bước 8, D1) | Identity (lõi) |
-| 2 | Catalog, import CEFR-J + Octanove, CSV soạn nội dung, publish, tìm kiếm, từ riêng tư | Content + Pipeline |
-| 3 | Nhóm, trạng thái, lịch ôn, "hôm nay", flashcard, thêm nhanh (catalog + nhập tay). **Mốc pilot sớm nhất** (cần web) | Learning |
+| 2 | Catalog (quản trị: nhập CSV, soạn, rà, publish, hoàn tác, xuất), tìm kiếm/duyệt chỉ-đọc cho learner | Content + Pipeline |
+| 2.5 *(mới, D9)* | Giao diện web `apps/admin`: đăng nhập, trang admin, cấp vai trò, luồng CSV. **Code xong local, chờ PR M3 + CI** (design `docs/superpowers/specs/2026-10-14-buoc-2-5-admin-web-design.md`, as-built `docs/deliveries/buoc-2-5.md`) | — |
+| Deploy *(mới, chưa xếp chỗ)* | Deploy API + `admin-api.` + `admin.`: chọn hosting backend, Postgres/Redis bền, SMTP thật, secret, backup (design 2.5 §14). Phải xong trước pilot Bước 3 | — |
+| 3 | Nhóm, trạng thái, lịch ôn, "hôm nay", flashcard, thêm nhanh (catalog + nhập tay); **cộng phần Content dời từ Bước 2:** từ riêng tư, câu ngữ cảnh, chuỗi tra nghĩa (catalog + tự nhập). **Mốc pilot sớm nhất** (cần web) | Learning + Vocabulary Content (phần còn lại) |
 | 4 | Trắc nghiệm, đúng/sai, gõ từ, bài từ câu người học, "từ hay sai" | Practice (không AI) |
 | 5 | Quyền, trial, giữ chỗ hạn mức | Entitlements |
 | 6 | Cổng `AiProvider` (bản giả trước), nhật ký chi phí | AI Integration |
@@ -98,4 +109,28 @@ theo mục 4–5 của handoff. Chưa viết code, chưa scaffold, chưa cài de
 Hỏi từng câu một, mỗi câu kèm đề xuất và nhãn (chủ dự án chốt / đề xuất / ASSUMPTION), bắt đầu từ
 câu 1 (repo layout + git init). Câu 2 và 3 thì đọc docs hiện hành (context7) trước khi đề xuất.
 Báo cáo ngắn, tiếng Việt, giữ thuật ngữ tiếng Anh.
+```
+
+## 8. Prompt cho Bước 2.5 (giao diện web — dán vào phiên mới, 13/10/2026) — đã dùng 14/10/2026, giữ làm lịch sử
+
+```
+Đọc CLAUDE.md (mục "Current phase"/"Next" và "Architecture & Key Decisions" — dòng Bước 2.5), rồi
+docs/HANDOFF_2026-10-05_BUOC_0.md §2, docs/superpowers/decisions/2026-10-12-buoc-2-content-pipeline-decisions.md
+(mục D9), và docs/deliveries/buoc-2.md (mục "Open items"). Dùng skill superpowers:brainstorming (không dùng
+skill của harness) để thiết kế Bước 2.5 — giao diện web: đăng nhập, trang admin, cấp vai trò. Bước này đã
+được chủ dự án chốt (D9) nằm giữa Bước 2 và Bước 3; chưa có design/plan nào cho nó. Chưa viết code, chưa
+scaffold, chưa cài dependency; chưa commit.
+
+Bối cảnh đã xác nhận trong phiên trước (đọc lại source thật trước khi dựa vào, đừng tin lại câu này):
+- Backend đã có sẵn API cấp vai trò, không cần code backend mới cho việc này — chỉ cần giao diện gọi API có
+  sẵn: apps/api/src/identity/staff/staff.controller.ts (GET admin/users tìm theo email, GET admin/staff danh
+  sách, PUT admin/users/:id/staff-role), gác bởi @RequirePermission('roles.manage').
+- apps/web hiện tại CHỈ là trang landing tiếp thị (Next.js 16.3.8 App Router, next-intl, Cloudflare Workers +
+  D1 cho waitlist) — chưa có app shell đăng nhập nào. Đây là câu hỏi kiến trúc cần đặt ra đầu tiên: mở rộng
+  app landing này (thêm route có đăng nhập) hay tách một app web riêng.
+- Web client dùng cookie httpOnly `refresh_token` + header bắt buộc `X-CSRF-Protection: 1` khi gọi refresh
+  (403 csrf-header-required nếu thiếu) — xem apps/api/src/identity/sessions/session-transport.ts.
+
+Hỏi từng câu một, mỗi câu kèm đề xuất và nhãn (chủ dự án chốt / đề xuất / ASSUMPTION), bắt đầu từ câu kiến
+trúc apps/web (mở rộng landing app hay tách app riêng). Báo cáo ngắn, tiếng Việt, giữ thuật ngữ tiếng Anh.
 ```
