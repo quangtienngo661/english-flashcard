@@ -114,13 +114,17 @@
   }
 
   :focus-visible {
-    outline: 2px solid var(--color-primary);
-    outline-offset: 2px;
+    outline: 3px solid var(--color-primary);
+    outline-offset: 3px;
   }
 
-  /* On the primary-coloured band (Final CTA) a primary ring would be invisible. */
+  /* A primary ring would vanish on the blue field and a yellow one on the yellow band (contrast 5.24 both ways). */
   .bg-primary :focus-visible {
-    outline-color: var(--color-on-primary);
+    outline-color: var(--color-accent);
+  }
+
+  .bg-accent :focus-visible {
+    outline-color: var(--color-primary);
   }
 
   @media (prefers-reduced-motion: reduce) {

@@ -31,7 +31,7 @@ export async function HowItWorks() {
   const rows = ['r1', 'r2', 'r3'] as const;
 
   return (
-    <Section id="how-it-works" labelledBy="steps-title" tone="bg">
+    <Section id="how-it-works" labelledBy="steps-title" tone="surface">
       <Reveal>
         <SectionHeading id="steps-title" eyebrow={t('eyebrow')} title={t.rich('title', richBreaks)} align="center" />
       </Reveal>

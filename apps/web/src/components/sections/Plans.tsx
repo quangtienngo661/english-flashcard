@@ -13,7 +13,7 @@ export async function Plans() {
   const t = await getTranslations('Plans');
 
   return (
-    <Section labelledBy="plans-title" tone="bg">
+    <Section labelledBy="plans-title" tone="surface">
       <Reveal>
         <SectionHeading
           id="plans-title"

@@ -20,7 +20,9 @@ describe('LanguageSwitch', () => {
     const en = screen.getByRole('link', { name: 'EN' });
     expect(group).toContainElement(vi);
     expect(vi).toHaveAttribute('aria-current', 'true');
+    expect(vi).toHaveClass('bg-ink');
     expect(en).not.toHaveAttribute('aria-current');
+    expect(en).toHaveClass('text-on-primary-muted');
     expect(en).toHaveAttribute('href', '/en/privacy');
     expect(vi).toHaveAttribute('lang', 'vi');
     expect(en).toHaveAttribute('lang', 'en');
