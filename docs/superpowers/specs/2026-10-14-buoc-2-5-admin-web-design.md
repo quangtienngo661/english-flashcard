@@ -488,7 +488,7 @@ khẩu hộ, xem/đăng xuất thiết bị, cấp lượt — Bước 5). Bư�
 - ~~**CORS chặn `Idempotency-Key`**~~ **Đã kiểm 15/10/2026:** B25#12 chạy trên Chromium với API thật, preflight qua và upload trả
   202.
 - **Responsive đầy đủ** làm công Figma và test e2e tăng khoảng gấp đôi (ước tính).
-- **Job CI thật** làm mỗi PR chạy lâu hơn (ước tính 5–8 phút, chưa đo; đo được khi PR M3 chạy CI lần đầu).
+- **Job CI thật** làm mỗi PR chạy lâu hơn (ước tính 5–8 phút; **đo 15/10/2026** trên PR #19: job `admin-e2e-real` 1m53s, chạy song song với `api` 4m41s nên PR không chờ lâu hơn).
 - ~~**Plugin Tailwind cho Vite**~~ **Đã kiểm:** `@tailwindcss/vite` `4.3.3` (cùng `tailwindcss` `4.3.3`), build xanh 15/10/2026.
 - **Xuất CSV chỉ duyệt sense** (thêm 15/10/2026): không xuất được các từ chưa có nghĩa (vd. sau file CEFR-J), nên editor phải tự soạn
   CSV theo `headword` + `pos`. Backlog, ngoài Bước 2.5 (chủ dự án chốt).
