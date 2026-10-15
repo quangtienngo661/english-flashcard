@@ -26,7 +26,7 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
   }, [locale]);
   return (
     <LocaleContext.Provider value={value}>
-      <IntlProvider locale={locale} messages={MESSAGES[locale]}>
+      <IntlProvider locale={locale} messages={MESSAGES[locale]} timeZone={Intl.DateTimeFormat().resolvedOptions().timeZone}>
         {children}
       </IntlProvider>
     </LocaleContext.Provider>

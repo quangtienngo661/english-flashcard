@@ -19,7 +19,7 @@ function UserCard({ user, onChoose }: { user: StaffUser; onChoose: (role: StaffR
   const t = useTranslations();
   return (
     <section aria-label={user.email} className={panel}>
-      <h2 className="break-all text-ui font-semibold text-ink">{user.email}</h2>
+      <h2 className="wrap-anywhere text-ui font-semibold text-ink">{user.email}</h2>
       <p className="text-xs text-muted">
         {user.email_verified ? t('staff.card.verified') : t('staff.card.unverified')} · {user.staff_role ?? t('staff.card.noRole')}
       </p>
@@ -131,7 +131,7 @@ export function StaffPage() {
 
       <form onSubmit={search} className={`${panel} gap-3 shell:flex-row shell:items-end`} noValidate>
         <div className="min-w-0 flex-1 shell:max-w-md">
-          <TextField label={t('staff.search.label')} type="email" placeholder={t('staff.search.placeholder')} value={email} onChange={setEmail} />
+          <TextField label={t('staff.search.label')} type="email" autoComplete="off" spellCheck={false} placeholder={t('staff.search.placeholder')} value={email} onChange={setEmail} />
         </div>
         <Button type="submit" isPending={searching}>
           {t('staff.search.submit')}

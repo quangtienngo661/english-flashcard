@@ -51,7 +51,8 @@
     "language": "Ngôn ngữ",
     "account": "Tài khoản",
     "logout": "Đăng xuất",
-    "loadingSession": "Đang kiểm tra phiên đăng nhập…"
+    "loadingSession": "Đang kiểm tra phiên đăng nhập…",
+    "skipToContent": "Bỏ qua tới nội dung chính"
   },
   "nav": {
     "dashboard": "Dashboard",
@@ -77,7 +78,8 @@
   "list": {
     "loading": "Đang tải…",
     "error": "Không tải được danh sách",
-    "empty": "Chưa có mục nào"
+    "empty": "Chưa có mục nào",
+    "shown": "{count} mục đã hiển thị"
   },
   "account": {
     "login": {
@@ -181,9 +183,9 @@
       "back": "Quay lại",
       "submit": "Tạo tài khoản",
       "doneTitle": "Đã tạo tài khoản",
-      "doneBody": "Đã tạo tài khoản và gửi mật khẩu tới {email}. Nếu editor không nhận được thư, họ dùng \"Quên mật khẩu\" ở trang đăng nhập.",
+      "doneBody": "Đã tạo tài khoản và gửi mật khẩu tới {email}. Nếu editor không nhận được thư, họ dùng “Quên mật khẩu” ở trang đăng nhập.",
       "close": "Đóng",
-      "emailTaken": "Email này đã có tài khoản. Dùng \"Tìm theo email\" ở trên rồi cấp vai trò.",
+      "emailTaken": "Email này đã có tài khoản. Dùng “Tìm theo email” ở trên rồi cấp vai trò.",
       "mailUnavailable": "Hiện chưa gửi được email nên chưa tạo tài khoản. Vui lòng thử lại sau ít phút."
     }
   },
@@ -214,5 +216,142 @@
       "evalSets": "Bộ ví dụ đã duyệt và kết quả chạy trước khi bật AI cho pilot."
     },
     "etaUnconfirmed": "Dự kiến: Bước {step} (chưa chốt)"
+  },
+  "status": {
+    "queued": "Đang chờ",
+    "running": "Đang chạy",
+    "succeeded": "Hoàn tất",
+    "partial": "Một phần",
+    "failed": "Thất bại",
+    "reverted": "Đã hoàn tác"
+  },
+  "sources": {
+    "register": "Đăng ký nguồn",
+    "formTitle": "Đăng ký nguồn",
+    "empty": "Chưa có nguồn nào",
+    "emptyHint": "Đăng ký nguồn đầu tiên để nhập file CSV có cột level",
+    "list": {
+      "name": "Tên nguồn",
+      "version": "Phiên bản",
+      "license": "License",
+      "priority": "Ưu tiên"
+    },
+    "form": {
+      "name": "Tên nguồn",
+      "version": "Phiên bản",
+      "url": "URL",
+      "license": "License",
+      "attribution": "Attribution",
+      "priority": "Độ ưu tiên",
+      "priorityHint": "Số nhỏ hơn được ưu tiên trước",
+      "asLevelSource": "Dùng làm nguồn level (bắt buộc có phiên bản và license)",
+      "save": "Lưu nguồn",
+      "required": "Bắt buộc nhập",
+      "urlInvalid": "URL phải bắt đầu bằng http:// hoặc https://",
+      "priorityInvalid": "Nhập một số nguyên"
+    }
+  },
+  "uploads": {
+    "upload": "Upload CSV",
+    "formTitle": "Upload CSV",
+    "submit": "Upload",
+    "wait": "Đợi {seconds} giây",
+    "empty": "Chưa có lô nhập nào",
+    "emptyHint": "Bấm “Upload CSV” để nhập file đầu tiên",
+    "list": {
+      "file": "Tên file",
+      "rows": "Số dòng",
+      "status": "Trạng thái",
+      "time": "Thời điểm"
+    },
+    "dropPrompt": "Kéo file .csv vào đây",
+    "chooseHint": "hoặc bấm để chọn file",
+    "chooseFile": "Chọn file",
+    "changeFile": "Đổi file",
+    "tooLargeHint": "{name} · {size} MB. Chọn file nhỏ hơn hoặc chia thành nhiều file.",
+    "invalidHint": "{name}. Chỉ nhận file .csv.",
+    "levelSource": "Nguồn level",
+    "levelSourceHint": "File có cột level (CEFR) nên cần chọn nguồn level.",
+    "levelSourceRequired": "Hãy chọn nguồn level cho file có cột level",
+    "levelSourcePlaceholder": "Chọn nguồn",
+    "fileSize": "{size} MB",
+    "open": "Chi tiết"
+  },
+  "batch": {
+    "back": "Lô nhập",
+    "rejected": "Tải rejected.csv",
+    "publish": "Publish lô này",
+    "revert": "Hoàn tác lô",
+    "statusLabel": "Trạng thái:",
+    "stats": {
+      "total": "Tổng số dòng",
+      "created": "Tạo mới",
+      "updated": "Cập nhật",
+      "unchanged": "Không đổi",
+      "rejected": "Bị loại"
+    },
+    "createdAt": "Đã tạo {time}",
+    "doneAt": "Hoàn tất {time}",
+    "endedAt": "Kết thúc {time}",
+    "queued": "Đang chờ worker nhận việc ({seconds} giây). Trang tự cập nhật mỗi 2 giây.",
+    "queuedLong": "Lô đã chờ {seconds} giây. Worker có đang chạy không? Kiểm tra tiến trình worker rồi tải lại trang.",
+    "running": "Đang xử lý: {done} / {total} dòng",
+    "partial": "Lô chỉ hoàn tất một phần. Tải rejected.csv để xem các dòng bị loại và sửa.",
+    "failed": "Lô nhập thất bại. Kiểm tra file (cột bắt buộc, mã hóa UTF-8) rồi upload lại.",
+    "revertedNotice": "Lô này đã được hoàn tác. Các sense do lô tạo không còn trong dữ liệu.",
+    "rejectedSummary": "{count} dòng bị loại — tải rejected.csv để xem lý do (cột _error) và sửa trong Excel.",
+    "warnings": "Cảnh báo ({count})",
+    "revertTitle": "Hoàn tác lô {file}?",
+    "revertBody": "Các sense do lô này tạo sẽ bị gỡ khỏi dữ liệu. Thao tác này không thể khôi phục.",
+    "revertDone": "Đã gỡ {removed} mục do lô tạo.",
+    "revertSkipped": "{skipped} mục không gỡ được.",
+    "wait": "Đợi {seconds} giây"
+  },
+  "export": {
+    "status": "Trạng thái",
+    "level": "Level",
+    "pos": "Từ loại",
+    "topic": "Topic",
+    "batch": "Lô nhập",
+    "all": "Tất cả",
+    "download": "Tải CSV",
+    "archived": "đã lưu trữ",
+    "statuses": {
+      "unpublishable": "Chưa publish được",
+      "open_draft": "Đang soạn",
+      "published": "Đã publish"
+    }
+  },
+  "publishJobs": {
+    "create": "Tạo publish job",
+    "formTitle": "Tạo publish job",
+    "empty": "Chưa có publish job nào",
+    "list": {
+      "job": "Job",
+      "filter": "Bộ lọc",
+      "status": "Trạng thái",
+      "count": "Số sense",
+      "time": "Thời điểm"
+    },
+    "batchFilter": "lô #{id}",
+    "filterNone": "Tất cả",
+    "jobTitle": "Publish job #{id}",
+    "back": "Publish job",
+    "report": "Tải report.csv",
+    "createdAt": "Tạo {time}",
+    "running": "Đang publish: {done} / {total} sense",
+    "refused": "{count} sense bị từ chối vì chưa đủ điều kiện. Tải report.csv để xem lý do từng dòng.",
+    "stats": {
+      "snapshot": "Trong snapshot",
+      "published": "Đã publish",
+      "already": "Đã publish từ trước",
+      "refused": "Bị từ chối"
+    },
+    "wait": "Thử lại sau {seconds} giây",
+    "queued": "Đang chờ worker nhận việc ({seconds} giây). Trang tự cập nhật mỗi 2 giây.",
+    "queuedLong": "Job đã chờ {seconds} giây. Worker có đang chạy không? Kiểm tra tiến trình worker rồi tải lại trang.",
+    "confirmAllTitle": "Publish toàn bộ catalog?",
+    "confirmAllBody": "Bạn chưa chọn bộ lọc nào, nên job này sẽ publish mọi sense đủ điều kiện trong toàn bộ catalog. Chỉ tiếp tục nếu đó là điều bạn muốn.",
+    "confirmAllSubmit": "Publish tất cả"
   }
 }

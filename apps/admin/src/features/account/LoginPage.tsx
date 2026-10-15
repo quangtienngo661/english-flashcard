@@ -59,6 +59,7 @@ export function LoginPage() {
           type="email"
           name="email"
           autoComplete="username"
+          spellCheck={false}
           placeholder={t('account.login.emailPlaceholder')}
           value={email}
           onChange={setEmail}
