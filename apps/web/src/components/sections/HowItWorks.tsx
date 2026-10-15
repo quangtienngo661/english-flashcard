@@ -7,19 +7,22 @@ import { SectionHeading } from '@/components/ui/SectionHeading';
 import { cn } from '@/lib/cn';
 import { richBreaks } from '@/lib/rich-breaks';
 
+// Direction B: one tinted card per step, read as number and title, then text, then the picture (design §5.1).
+const cardTones = { 0: 'bg-primary-soft', 1: 'bg-accent-soft', 2: 'bg-success-soft' } as const;
+
 function StepCard({ number, title, body, visual, step }: { number: number; title: string; body: string; visual: ReactNode; step: 0 | 1 | 2 }) {
   return (
     <Reveal
       as="li"
       step={step}
-      className="flex w-4/5 shrink-0 snap-start flex-col gap-5 rounded-card border border-border bg-surface p-7 lg:row-span-4 lg:grid lg:w-auto lg:grid-rows-subgrid"
+      className={cn('flex w-4/5 shrink-0 snap-start flex-col gap-5 rounded-card p-7 lg:row-span-4 lg:grid lg:w-auto lg:grid-rows-subgrid', cardTones[step])}
     >
-      <div aria-hidden="true" className="flex flex-1 flex-col gap-2.5 rounded-panel bg-bg p-4">
-        {visual}
-      </div>
       <span className="inline-flex self-start justify-self-start rounded-full bg-ink px-2.5 py-1 text-caption font-bold text-on-primary">{number}</span>
       <h3 className="text-h3 font-bold text-ink">{title}</h3>
       <p className="text-body text-muted">{body}</p>
+      <div aria-hidden="true" className="flex flex-1 flex-col gap-2.5 rounded-panel bg-surface p-4">
+        {visual}
+      </div>
     </Reveal>
   );
 }
@@ -31,7 +34,7 @@ export async function HowItWorks() {
   const rows = ['r1', 'r2', 'r3'] as const;
 
   return (
-    <Section id="how-it-works" labelledBy="steps-title" tone="bg">
+    <Section id="how-it-works" labelledBy="steps-title" tone="surface">
       <Reveal>
         <SectionHeading id="steps-title" eyebrow={t('eyebrow')} title={t.rich('title', richBreaks)} align="center" />
       </Reveal>
@@ -67,7 +70,7 @@ export async function HowItWorks() {
             <>
               <p lang="en" className="flex flex-wrap items-center gap-1.5 text-label font-medium text-ink">
                 <span>{t('step2.sentenceBefore')}</span>
-                <span className="rounded-sm bg-marker px-3 py-0.5 font-bold">_____</span>
+                <span className="rounded-sm bg-accent px-3 py-0.5 font-bold">_____</span>
                 <span>{t('step2.sentenceAfter')}</span>
               </p>
               <div className="flex flex-wrap gap-1.5">
@@ -84,9 +87,9 @@ export async function HowItWorks() {
           title={t('step3.title')}
           body={t('step3.body')}
           visual={rows.map((row, i) => (
-            <div key={row} className="flex flex-col gap-0.5 rounded-control bg-surface px-3 py-2.5 xl:flex-row xl:items-center xl:justify-between">
+            <div key={row} className="flex flex-col gap-0.5 rounded-control bg-canvas px-3 py-2.5 xl:flex-row xl:items-center xl:justify-between">
               <span lang="en" className="text-label font-semibold text-ink">{t(`step3.rows.${row}.word`)}</span>
-              <span className={cn('text-caption font-medium', i === 0 ? 'text-danger-strong' : 'text-muted')}>{t(`step3.rows.${row}.status`)}</span>
+              <span className={cn('text-caption font-medium', i === 0 ? 'text-danger' : 'text-muted')}>{t(`step3.rows.${row}.status`)}</span>
             </div>
           ))}
         />

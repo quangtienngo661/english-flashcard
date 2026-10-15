@@ -22,7 +22,7 @@ export function Flashcard({ word, meaning, hint }: FlashcardProps) {
         data-testid="flashcard-inner"
         className={cn(
           'relative block min-h-45 w-full transform-3d',
-          !reduced && 'transition-transform duration-flip ease-out',
+          !reduced && 'transition-transform duration-slow ease-standard',
           flipped && 'rotate-y-180',
         )}
       >

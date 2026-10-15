@@ -8,7 +8,7 @@ import { cn } from '@/lib/cn';
 export function LanguageSwitch({ current, label }: { current: AppLocale; label: string }) {
   const pathname = usePathname();
   return (
-    <div role="group" aria-label={label} className="flex items-center gap-1 rounded-full border border-border bg-surface p-1">
+    <div role="group" aria-label={label} className="flex items-center gap-1 rounded-full bg-on-primary/15 p-1">
       {routing.locales.map((locale) => {
         const active = locale === current;
         return (
@@ -20,7 +20,7 @@ export function LanguageSwitch({ current, label }: { current: AppLocale; label: 
             aria-current={active ? 'true' : undefined}
             className={cn(
               'inline-flex min-h-8 min-w-11 items-center justify-center rounded-full px-2.5 text-caption font-bold uppercase transition-colors duration-fast',
-              active ? 'bg-ink text-on-primary' : 'text-muted hover:text-ink',
+              active ? 'bg-ink text-on-primary' : 'text-on-primary hover:bg-on-primary/15',
             )}
           >
             {locale.toUpperCase()}

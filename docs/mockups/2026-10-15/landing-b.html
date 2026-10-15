@@ -1,0 +1,282 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Wordmet mockup B: Năng lượng</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600;800&display=swap" rel="stylesheet">
+<style>
+/* Mockup B, "Năng lượng": brand blue field, sticker chips, springier motion for a learning-app feel. */
+:root {
+  --field: #2445d6;
+  --field-deep: #1a32a6;
+  --sun: #ffd84a;
+  --paper: #ffffff;
+  --ink: #0f1a3d;
+  --muted: #4d5577;
+  --lilac: #eceffe;
+  --line: #d9def0;
+  --right: #1b7a46;
+  --right-soft: #e3f4ea;
+  --wrong: #b8352a;
+  --font: 'Lexend', system-ui, sans-serif;
+
+  --d-instant: 100ms;
+  --d-fast: 150ms;
+  --d-base: 250ms;
+  --d-slow: 400ms;
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ease-enter: cubic-bezier(0.05, 0.7, 0.1, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  --wrap: 72rem;
+  --gutter: clamp(1rem, 0.5rem + 2.5vw, 2.5rem);
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--paper); color: var(--ink); font: 400 1.0625rem/1.6 var(--font); -webkit-font-smoothing: antialiased; }
+a { color: inherit; }
+:focus-visible { outline: 3px solid var(--sun); outline-offset: 3px; border-radius: 6px; }
+.light :focus-visible { outline-color: var(--field); }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.wrap { width: min(100% - 2 * var(--gutter), var(--wrap)); margin-inline: auto; }
+
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; min-height: 3.25rem; padding: 0 1.4rem;
+  border: 0; border-radius: 0.875rem; font: 600 1.0625rem/1 var(--font); cursor: pointer; text-decoration: none;
+  box-shadow: 0 0.25rem 0 rgb(15 26 61 / 0.35);
+  transition: transform var(--d-instant) var(--ease-standard), box-shadow var(--d-instant) var(--ease-standard), background-color var(--d-instant) var(--ease-standard);
+}
+.btn:active { transform: translateY(0.25rem); box-shadow: 0 0 0 rgb(15 26 61 / 0.35); }
+.btn-sun { background: var(--sun); color: var(--ink); }
+.btn-sun:hover { background: #ffe27a; }
+.btn-ink { background: var(--ink); color: #fff; }
+.btn-ink:hover { background: #1c2a5c; }
+
+/* Header and hero share the blue field */
+.field { background: var(--field); color: #fff; overflow: hidden; }
+.header-row { display: flex; align-items: center; gap: 2rem; min-height: 4.5rem; }
+.logo { display: inline-flex; align-items: center; gap: 0.6rem; text-decoration: none; font-weight: 800; font-size: 1.25rem; }
+.logo-mark { background: var(--sun); color: var(--ink); padding: 0.1rem 0.45rem; border-radius: 0.35rem; font-size: 0.95rem; letter-spacing: 0.08em; }
+.nav { display: flex; gap: 1.75rem; margin-left: auto; }
+.nav a { text-decoration: none; font-weight: 500; font-size: 0.9375rem; opacity: 0.92; }
+.nav a:hover { opacity: 1; text-decoration: underline; text-underline-offset: 0.3em; }
+.lang { display: flex; gap: 0.25rem; }
+.lang button { border: 0; background: transparent; color: #fff; font: 600 0.8125rem/1 var(--font); padding: 0.5rem 0.55rem; border-radius: 0.45rem; cursor: pointer; opacity: 0.8; }
+.lang button[aria-pressed="true"] { background: rgb(255 255 255 / 0.16); opacity: 1; }
+
+.hero { display: grid; grid-template-columns: 6fr 6fr; gap: clamp(2rem, 1rem + 4vw, 5rem); align-items: center; padding: clamp(2.5rem, 1rem + 5vw, 5rem) 0 clamp(4rem, 2rem + 6vw, 7rem); }
+.hero h1 { margin: 0; font-size: clamp(2.25rem, 1.4rem + 3.4vw, 4.25rem); line-height: 1.05; font-weight: 800; letter-spacing: -0.03em; }
+.hero-sub { margin: 1.25rem 0 0; max-width: 34ch; font-size: 1.1875rem; color: #dfe5ff; }
+.waitlist { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 0.625rem; margin-top: 2rem; max-width: 30rem; }
+.waitlist input { min-height: 3.25rem; padding: 0 1rem; border: 0; border-radius: 0.875rem; font: 400 1rem/1 var(--font); color: var(--ink); }
+.waitlist input::placeholder { color: #6a7192; }
+.consent { grid-column: 1 / -1; margin: 0.25rem 0 0; font-size: 0.875rem; color: #c9d2ff; }
+.consent a { color: #fff; }
+
+/* The practice card */
+.card {
+  position: relative; padding: 1.5rem 1.5rem 1.75rem; background: var(--paper); color: var(--ink);
+  border-radius: 1.5rem; box-shadow: 0 1.5rem 0 var(--field-deep);
+  transform: rotate(-1.5deg);
+}
+.card.is-landing { animation: card-in 600ms var(--ease-spring) both; }
+@keyframes card-in { from { opacity: 0; transform: translateY(2rem) rotate(3deg); } }
+.card-top { display: flex; justify-content: space-between; align-items: center; color: var(--muted); font-size: 0.875rem; }
+.dots { display: flex; gap: 0.35rem; }
+.dots span { width: 1.75rem; height: 0.4rem; border-radius: 1rem; background: var(--lilac); transition: background-color var(--d-base) var(--ease-standard); }
+.dots span.done { background: var(--right); }
+.sentence { margin: 1.25rem 0 0; font-size: clamp(1.5rem, 1.1rem + 1.4vw, 2.125rem); line-height: 1.3; font-weight: 500; letter-spacing: -0.01em; }
+.slot { display: inline-block; min-width: 5.2ch; padding: 0 0.3em; border-bottom: 0.18em solid var(--field); text-align: center; color: var(--field); font-weight: 600; }
+.slot.filled { border-bottom-color: var(--right); color: var(--right); }
+.slot.pop { animation: pop 320ms var(--ease-spring); }
+@keyframes pop { 40% { transform: scale(1.12); } }
+.chips { display: flex; flex-wrap: wrap; gap: 0.6rem; margin-top: 1.5rem; }
+.chip {
+  min-height: 3rem; padding: 0 1.1rem; border: 0; border-radius: 0.875rem; cursor: pointer;
+  background: var(--sun); color: var(--ink); font: 600 1.125rem/1 var(--font);
+  box-shadow: 0 0.25rem 0 #c9a21a;
+  transition: transform var(--d-instant) var(--ease-standard), opacity var(--d-fast) var(--ease-standard);
+}
+.chip:hover:not(:disabled) { transform: translateY(-2px); }
+.chip:disabled { cursor: default; }
+.chip.gone { opacity: 0; }
+.chip.dim { opacity: 0.35; }
+.chip.wiggle { animation: wiggle 300ms var(--ease-standard); background: #ffd3cd; box-shadow: 0 0.25rem 0 #d99b92; }
+@keyframes wiggle { 25% { transform: rotate(-6deg); } 50% { transform: rotate(5deg); } 75% { transform: rotate(-2deg); } }
+.flyer { position: fixed; z-index: 50; margin: 0; pointer-events: none; }
+.result { margin: 1.1rem 0 0; min-height: 3.2rem; font-size: 0.9375rem; color: var(--muted); }
+.result b { color: var(--ink); }
+.result .ok { color: var(--right); }
+.result .no { color: var(--wrong); }
+.next { margin-top: 0.5rem; }
+.next[hidden] { display: none; }
+
+/* Steps on white */
+.light { padding: clamp(4rem, 2rem + 6vw, 7rem) 0; }
+.light h2 { margin: 0; max-width: 20ch; font-size: clamp(1.875rem, 1.3rem + 2vw, 3rem); line-height: 1.1; font-weight: 800; letter-spacing: -0.025em; }
+.steps { list-style: none; margin: 3rem 0 0; padding: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.25rem; counter-reset: s; }
+.steps li { padding: 1.75rem; border-radius: 1.5rem; background: var(--lilac); counter-increment: s; }
+.steps li:nth-child(2) { background: #fff4c7; }
+.steps li:nth-child(3) { background: var(--right-soft); }
+.steps .big { display: block; font-size: clamp(2.5rem, 1.8rem + 2.5vw, 4rem); line-height: 1; font-weight: 800; letter-spacing: -0.03em; }
+.steps .big::before { content: counter(s); display: inline-block; margin-right: 0.6rem; font-size: 1rem; vertical-align: top; font-weight: 600; color: var(--muted); }
+.steps p { margin: 1rem 0 0; color: var(--muted); max-width: 30ch; }
+
+.cta { background: var(--sun); padding: clamp(3.5rem, 2rem + 5vw, 6rem) 0; }
+.cta h2 { margin: 0; max-width: 18ch; font-size: clamp(1.875rem, 1.3rem + 2vw, 3rem); line-height: 1.1; font-weight: 800; letter-spacing: -0.025em; }
+.cta .waitlist input { box-shadow: inset 0 0 0 2px var(--ink); }
+.cta .consent { color: var(--muted); }
+.cta .consent a { color: var(--ink); }
+.cta :focus-visible { outline-color: var(--field); }
+
+footer { padding: 2rem 0 2.5rem; font-size: 0.875rem; color: var(--muted); }
+.footer-row { display: flex; flex-wrap: wrap; gap: 1rem 1.75rem; align-items: center; }
+.footer-row .copy { margin-left: auto; }
+
+.mockup-tag { position: fixed; right: 0.75rem; bottom: 0.75rem; z-index: 20; padding: 0.45rem 0.75rem; background: var(--ink); color: #fff; border-radius: 0.5rem; font-size: 0.8125rem; text-decoration: none; }
+
+@media (max-width: 52rem) {
+  .nav { display: none; }
+  .lang { margin-left: auto; }
+  .hero { grid-template-columns: 1fr; }
+  .steps { grid-template-columns: 1fr; }
+}
+@media (max-width: 34rem) {
+  .waitlist { grid-template-columns: 1fr; }
+  .card { transform: none; }
+}
+@media (max-width: 34rem) { .mockup-tag { display: none; } }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+}
+</style>
+</head>
+<body>
+<div class="field">
+  <header class="wrap header-row">
+    <a class="logo" href="#"><span class="logo-mark" aria-hidden="true">_ _</span><span>Wordmet</span></a>
+    <nav class="nav" aria-label="Menu chính"><a href="#buoc">Cách hoạt động</a><a href="#">Gói học</a><a href="#">Hỏi đáp</a></nav>
+    <div class="lang" role="group" aria-label="Ngôn ngữ"><button aria-pressed="true">VI</button><button aria-pressed="false">EN</button></div>
+  </header>
+
+  <main>
+    <section class="wrap hero">
+      <div>
+        <h1>Học từ mới ngay trong câu bạn đọc.</h1>
+        <p class="hero-sub">Lưu từ cùng câu chứa nó. Wordmet biến câu đó thành bài luyện và nhắc bạn ôn đúng lúc.</p>
+        <form class="waitlist" onsubmit="event.preventDefault()">
+          <label class="sr-only" for="email">Email</label>
+          <input id="email" type="email" placeholder="Email của bạn" autocomplete="email" required>
+          <button class="btn btn-sun" type="submit">Nhận tin ra mắt</button>
+          <p class="consent">Khi đăng ký, bạn đồng ý với <a href="#">Chính sách bảo mật</a>.</p>
+        </form>
+      </div>
+
+      <div class="card is-landing" aria-label="Bài luyện thử">
+        <div class="card-top"><span id="where">Từ một blog công nghệ</span><span class="dots" aria-hidden="true"><span></span><span></span><span></span></span></div>
+        <p class="sentence" id="sentence" lang="en"></p>
+        <div class="chips" id="chips" role="group" aria-label="Chọn từ cho chỗ trống"></div>
+        <p class="result" id="result" role="status" aria-live="polite">Chọn từ hợp với chỗ trống.</p>
+        <button class="btn btn-ink next" id="next" type="button" hidden>Câu tiếp</button>
+      </div>
+    </section>
+  </main>
+</div>
+
+<section class="light" id="buoc" aria-labelledby="buoc-title">
+  <div class="wrap">
+    <h2 id="buoc-title">Ba bước, mỗi ngày vài phút</h2>
+    <ol class="steps">
+      <li><span class="big">Lưu</span><p>Lưu từ mới kèm câu bạn vừa đọc, hoặc chọn bộ từ theo trình độ A1 đến C2.</p></li>
+      <li><span class="big">Luyện</span><p>Điền từ, chọn đáp án, gõ từ theo nghĩa, ngay trong câu bạn đã lưu.</p></li>
+      <li><span class="big">Ôn</span><p>Lịch ôn tự xếp. Từ bạn hay sai được đưa lên ôn trước.</p></li>
+    </ol>
+  </div>
+</section>
+
+<section class="cta" aria-labelledby="cta-title">
+  <div class="wrap light-cta">
+    <h2 id="cta-title">Bắt đầu ghi nhớ những từ bạn gặp hôm nay.</h2>
+    <form class="waitlist" onsubmit="event.preventDefault()">
+      <label class="sr-only" for="email2">Email</label>
+      <input id="email2" type="email" placeholder="Email của bạn" autocomplete="email" required>
+      <button class="btn btn-ink" type="submit">Nhận tin ra mắt</button>
+      <p class="consent">Khi đăng ký, bạn đồng ý với <a href="#">Chính sách bảo mật</a>.</p>
+    </form>
+  </div>
+</section>
+
+<footer><div class="wrap footer-row"><a class="logo" href="#" style="color:var(--ink)"><span class="logo-mark" aria-hidden="true">_ _</span><span>Wordmet</span></a><a href="#">Chính sách bảo mật</a><a href="#">Điều khoản sử dụng</a><a href="#">Liên hệ</a><span class="copy">© 2026 Wordmet</span></div></footer>
+
+<a class="mockup-tag" href="index.html">Mockup B. Xem các mockup khác</a>
+
+<script>
+const items = [
+  { before: 'We plan to', answer: 'deploy', after: 'the new version on Friday.', options: ['deploy', 'delay', 'deliver', 'decide'], where: 'Từ một blog công nghệ', meaning: 'triển khai, phát hành phần mềm', hint: 'đưa một phiên bản phần mềm tới người dùng.' },
+  { before: "Don't", answer: 'assume', after: 'that everyone has read the email.', options: ['resume', 'assume', 'assure', 'consume'], where: 'Từ một email công việc', meaning: 'cho rằng, khi chưa kiểm chứng', hint: 'cho là đúng khi chưa kiểm chứng.' },
+  { before: 'Can I', answer: 'borrow', after: 'your charger for a minute?', options: ['lend', 'rent', 'borrow', 'owe'], where: 'Từ một đoạn chat', meaning: 'mượn (dùng rồi trả)', hint: 'xin dùng tạm đồ của người khác.' },
+];
+const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const $ = (id) => document.getElementById(id);
+const dots = document.querySelectorAll('.dots span');
+let i = 0;
+
+function render() {
+  const it = items[i];
+  document.querySelectorAll('.flyer').forEach((f) => f.remove());
+  $('where').textContent = it.where;
+  $('sentence').innerHTML = `${it.before} <span class="slot" id="slot">?</span> ${it.after}`;
+  $('chips').innerHTML = it.options.map((o) => `<button type="button" class="chip" lang="en">${o}</button>`).join('');
+  $('result').textContent = 'Chọn từ hợp với chỗ trống.';
+  $('next').hidden = true;
+}
+
+// Expressive answer motion: the chosen sticker flies into the slot (FLIP with the Web Animations API).
+function flyInto(chip, slot, word) {
+  const from = chip.getBoundingClientRect();
+  const to = slot.getBoundingClientRect();
+  const flyer = chip.cloneNode(true);
+  flyer.classList.add('flyer');
+  Object.assign(flyer.style, { left: `${from.left}px`, top: `${from.top}px`, width: `${from.width}px`, height: `${from.height}px` });
+  document.body.append(flyer);
+  chip.classList.add('gone');
+  const dx = to.left + to.width / 2 - (from.left + from.width / 2);
+  const dy = to.top + to.height / 2 - (from.top + from.height / 2);
+  let finished = false;
+  const done = () => { if (finished) return; finished = true; flyer.remove(); slot.textContent = word; slot.classList.add('filled', 'pop'); };
+  if (reduced) { done(); return; }
+  flyer.animate([{ transform: 'translate(0,0) scale(1)' }, { transform: `translate(${dx}px, ${dy}px) scale(1.05)` }],
+    { duration: 420, easing: 'cubic-bezier(0.34, 1.56, 0.64, 1)' }).finished.then(done);
+  // Never leave the answer unfilled if the animation does not run (background tab).
+  setTimeout(done, 500);
+}
+
+$('chips').addEventListener('click', (e) => {
+  const chip = e.target.closest('.chip');
+  if (!chip || chip.disabled) return;
+  const it = items[i];
+  if (chip.textContent === it.answer) {
+    for (const c of $('chips').children) { c.disabled = true; if (c !== chip) c.classList.add('dim'); }
+    flyInto(chip, $('slot'), it.answer);
+    dots[i].classList.add('done');
+    $('result').innerHTML = `<b class="ok">Đúng rồi!</b> <b lang="en">${it.answer}</b>: ${it.meaning}.`;
+    $('next').hidden = false;
+    $('next').textContent = i < items.length - 1 ? 'Câu tiếp' : 'Luyện lại';
+  } else {
+    chip.disabled = true;
+    chip.classList.remove('wiggle'); void chip.offsetWidth; chip.classList.add('wiggle');
+    $('result').innerHTML = `<b class="no">Chưa đúng.</b> Gợi ý: ${it.hint}`;
+  }
+});
+
+$('next').addEventListener('click', () => {
+  if (i === items.length - 1) { i = 0; dots.forEach((d) => d.classList.remove('done')); } else { i += 1; }
+  render();
+});
+
+render();
+</script>
+</body>
+</html>

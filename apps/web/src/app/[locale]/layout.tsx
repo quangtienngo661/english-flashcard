@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import type { ReactNode } from 'react';
 import { hasLocale, NextIntlClientProvider } from 'next-intl';
 import { getTranslations } from 'next-intl/server';
-import { Be_Vietnam_Pro } from 'next/font/google';
+import { Lexend } from 'next/font/google';
 import { notFound } from 'next/navigation';
 import { SiteFooter } from '@/components/layout/SiteFooter';
 import { SiteHeader } from '@/components/layout/SiteHeader';
@@ -12,11 +12,11 @@ import { routing, type AppLocale } from '@/i18n/routing';
 import { buildMetadata } from '@/lib/metadata';
 import '../globals.css';
 
-const beVietnamPro = Be_Vietnam_Pro({
-  weight: ['400', '500', '600', '700', '800'],
+// Variable font (wght 100–900), so no weight list; --font-lexend feeds the shared --font-sans token.
+const lexend = Lexend({
   subsets: ['latin', 'vietnamese'],
   display: 'swap',
-  variable: '--font-be-vietnam-pro',
+  variable: '--font-lexend',
 });
 
 export function generateStaticParams() {
@@ -32,8 +32,8 @@ export async function generateMetadata({ params }: LocaleParams): Promise<Metada
   return buildMetadata(locale, { title: t('title'), description: t('description') });
 }
 
-// Matches the `bg` colour token.
-export const viewport: Viewport = { themeColor: '#faf8f5' };
+// Matches the `primary` colour token (the header field).
+export const viewport: Viewport = { themeColor: '#2445d6' };
 
 export default async function LocaleLayout({ children, params }: LocaleParams & { children: ReactNode }) {
   const { locale } = await params;
@@ -42,7 +42,7 @@ export default async function LocaleLayout({ children, params }: LocaleParams & 
   const meta = await getTranslations({ locale, namespace: 'Metadata' });
 
   return (
-    <html lang={locale} className={beVietnamPro.variable}>
+    <html lang={locale} className={lexend.variable}>
       <body className="min-h-dvh font-sans">
         <JsonLd locale={locale as AppLocale} description={meta('description')} />
         {/* Locale only: client islands get their copy as props, so no messages are sent to the client. */}

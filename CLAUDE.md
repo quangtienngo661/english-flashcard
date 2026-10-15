@@ -129,6 +129,8 @@ decided-but-not-scaffolded:
   Problem Details, pagination, `Idempotency-Key`, IDs, logging, test harness) → 1 Identity core → 2
   Content + Pipeline (admin side + read-only search only) → 2.5 web UI (login, admin page, role
   granting, CSV flow — done, design `docs/superpowers/specs/2026-10-14-buoc-2-5-admin-web-design.md`)
+  → **UI refresh B** (landing + admin in direction B, owner 15/10/2026; landing done in PR #22, admin plan next;
+  design `docs/superpowers/specs/2026-10-15-ui-refresh-b-design.md`, delivery `docs/deliveries/ui-refresh-b.md`)
   → Deploy API + admin (separate step; must precede the pilot, exact position not chosen yet) → **3 Learning**, plus the Content pieces deferred from
   Bước 2 (private words, context sentences, lookup chain) (earliest pilot milestone) → 4 Practice non-AI
   → 5 Entitlements → 6 AI Integration gateway → 7 Practice AI + Content AI → 8 Identity remainder (Google login, forgot password,
@@ -265,7 +267,8 @@ for a concrete example of the loop catching real bugs each round.
 ## Other Notes
 
 - As-built delivery records per Bước: `docs/deliveries/buoc-0.md`, `docs/deliveries/buoc-1.md`,
-  `docs/deliveries/buoc-2.md` (includes its plan tóm tắt too), `docs/deliveries/buoc-2-5.md` (plan tóm tắt + as-built), `docs/deliveries/buoc-2-5-test-flow.md` (Bước 2.5 gate + manual run).
+  `docs/deliveries/buoc-2.md` (includes its plan tóm tắt too), `docs/deliveries/buoc-2-5.md` (plan tóm tắt + as-built), `docs/deliveries/buoc-2-5-test-flow.md` (Bước 2.5 gate + manual run),
+  `docs/deliveries/ui-refresh-b.md` (UI refresh B: plan tóm tắt + landing as-built).
 - Bước 2 test flow (automated gate, `pnpm smoke:buoc-2`, manual steps): `docs/deliveries/buoc-2-test-flow.md`.
 - Spec index and status: `docs/specs/README.md`.
 - Spec/design-doc writing convention (edge cases must be derived per-doc, not just cited): `docs/specs/SPEC_WRITING_CONVENTIONS.md`.
