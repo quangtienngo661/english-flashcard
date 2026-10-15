@@ -20,7 +20,7 @@ export function LanguageSwitch({ current, label }: { current: AppLocale; label: 
             aria-current={active ? 'true' : undefined}
             className={cn(
               'inline-flex min-h-8 min-w-11 items-center justify-center rounded-full px-2.5 text-caption font-bold uppercase transition-colors duration-fast',
-              active ? 'bg-ink text-on-primary' : 'text-on-primary-muted hover:text-on-primary',
+              active ? 'bg-ink text-on-primary' : 'text-on-primary hover:bg-on-primary/15',
             )}
           >
             {locale.toUpperCase()}

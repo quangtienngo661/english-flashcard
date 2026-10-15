@@ -39,7 +39,7 @@
   --container-faq: 50rem;
   --container-heading: 47.5rem;
   --container-prose: 40rem;
-  --container-carousel: 35rem;
+  --container-practice: 35rem;
   --container-copy: 31.25rem;
   --container-aside: 30rem;
 
@@ -47,21 +47,44 @@
   --spacing-header: 4.5rem;
 
   /* Landing-only motion; shared durations and easings come from @wordmet/design-tokens. */
-  --transition-duration-carousel: 800ms;
-  --transition-duration-carousel-drag: 150ms;
   --transition-duration-reveal: 800ms;
   --transition-duration-flip: 800ms;
   --transition-duration-faq: 350ms;
+
+  /* Practice card (design §5.2). Used only through motion-safe:, so reduced motion never declares them. */
+  --animate-card-in: card-in var(--transition-duration-slow) var(--ease-spring) both;
+  --animate-wiggle: wiggle var(--motion-wiggle) var(--ease-standard);
+  --animate-pop: pop var(--motion-pop) var(--ease-spring);
+
+  @keyframes card-in {
+    from {
+      opacity: 0;
+      transform: translateY(2rem) rotate(3deg);
+    }
+  }
+
+  @keyframes wiggle {
+    25% {
+      transform: rotate(-6deg);
+    }
+    50% {
+      transform: rotate(5deg);
+    }
+    75% {
+      transform: rotate(-2deg);
+    }
+  }
+
+  @keyframes pop {
+    40% {
+      transform: scale(1.12);
+    }
+  }
 }
 
-/* Horizontal snap track: inline padding lets the first/last 80%-wide card sit centred; no visible scrollbar. */
-@utility carousel-track {
-  padding-inline: 10%;
-  scroll-padding-inline: 10%;
-  scrollbar-width: none;
-  &::-webkit-scrollbar {
-    display: none;
-  }
+/* The practice card leans slightly on wide screens and stands upright on phones (design §5.1). */
+@utility tilt-card {
+  rotate: -1.5deg;
 }
 
 @utility no-scrollbar {

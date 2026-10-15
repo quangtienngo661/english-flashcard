@@ -1,41 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import { copy, fill, firstLine } from './copy';
 
-const activeSlide = (page: Page) => page.locator('[aria-roledescription="slide"][data-active="true"]');
-
-async function expectCenteredSlide(page: Page, index: number) {
-  const slide = page.locator('[aria-roledescription="slide"]').nth(index);
-  await expect(slide).toHaveAttribute('data-active', 'true');
-  await expect.poll(() => slide.evaluate((el) => {
-    const card = el.getBoundingClientRect();
-    const track = el.parentElement!.getBoundingClientRect();
-    return Math.abs(card.left + card.width / 2 - track.left - track.width / 2);
-  })).toBeLessThan(2);
-}
-
-async function dragActiveCard(page: Page, direction: 'left' | 'right', expectedIndex: number, distance?: number) {
-  const slide = activeSlide(page);
-  await slide.hover();
-  // Coordinate-based gestures need a stationary viewport after hover scrolls the card into view.
-  await page.evaluate(() => window.scrollTo({ top: window.scrollY, left: window.scrollX, behavior: 'instant' }));
-  const box = (await slide.boundingBox())!;
-  const x = box.x + box.width * (direction === 'left' ? 0.8 : 0.2);
-  const y = box.y + 80;
-  const delta = (distance ?? box.width * 0.75) * (direction === 'left' ? -1 : 1);
-  const track = page.locator('.carousel-track');
-  const before = await track.evaluate((el) => el.scrollLeft);
-  await page.mouse.move(x, y);
-  await page.mouse.down();
-  await page.mouse.move(x + delta, y, { steps: 12 });
-  // The card under the pointer becomes full-size before the gesture is released.
-  await page.waitForTimeout(200);
-  expect(Math.abs(await track.evaluate((el) => el.scrollLeft) - (before - delta))).toBeLessThan(2);
-  const highlighted = page.locator('[aria-roledescription="slide"]').nth(expectedIndex);
-  expect(await highlighted.getAttribute('data-active')).toBe('true');
-  expect(await highlighted.evaluate((el) => parseFloat(getComputedStyle(el).scale))).toBeGreaterThan(0.99);
-  await page.mouse.up();
-}
-
 async function scrollThrough(page: Page) {
   for (let y = 0; y < 9000; y += 500) {
     await page.mouse.wheel(0, 500);
@@ -43,171 +8,52 @@ async function scrollThrough(page: Page) {
   }
 }
 
-test.describe('cloze carousel', () => {
-  test('Review#1 each › click centres the newly active card', async ({ page }) => {
+test.describe('cloze practice', () => {
+  const card = (page: Page) => page.getByTestId('cloze-card');
+  const sticker = (page: Page, name: string) => card(page).getByRole('button', { name, exact: true });
+
+  test('LP20/UBC4 wrong then right, then next to Done and Again', async ({ page }) => {
     await page.goto('/en');
-    for (const expected of [1, 2]) {
-      await page.getByRole('button', { name: 'Next sentence' }).click();
-      await expect.poll(() => page.evaluate((i) => {
-        const track = document.querySelector('.carousel-track') as HTMLElement;
-        const slide = track.children[i] as HTMLElement;
-        const t = track.getBoundingClientRect(), s = slide.getBoundingClientRect();
-        return (Math.min(s.right, t.right) - Math.max(s.left, t.left)) / s.width;
-      }, expected)).toBeGreaterThan(0.95);
+    const live = page.getByTestId('cloze-live');
+    await sticker(page, 'delay').click();
+    await expect(live).toContainText(copy.en.Cloze.wrongTitle);
+    await expect(sticker(page, 'delay')).toHaveAttribute('aria-disabled', 'true');
+    await sticker(page, copy.en.Cloze.items.deploy.answer).click();
+    await expect(live).toContainText(copy.en.Cloze.correctTitle);
+    await expect(page.getByTestId('cloze-gap')).toHaveText(copy.en.Cloze.items.deploy.answer);
+    await expect(page.locator('[data-flyer]')).toHaveCount(0);
+    const next = card(page).getByRole('button', { name: copy.en.Cloze.nextSentence });
+    await expect(next).toBeFocused();
+    for (const [current, answer] of [[2, copy.en.Cloze.items.assume.answer], [3, copy.en.Cloze.items.borrow.answer]] as const) {
+      await next.click();
+      await expect(card(page)).toContainText(fill(copy.en.Cloze.header, { current, total: 3 }));
+      await sticker(page, answer).click();
     }
+    await next.click();
+    await expect(card(page)).toContainText(copy.en.Cloze.doneTitle);
+    await expect(card(page).getByRole('link', { name: copy.en.Cloze.doneCta })).toHaveAttribute('href', '#waitlist-hero');
+    await card(page).getByRole('button', { name: copy.en.Cloze.replay }).click();
+    await expect(card(page)).toContainText(fill(copy.en.Cloze.header, { current: 1, total: 3 }));
   });
 
-  test('dragging from an answer button does not pick the answer', async ({ page }) => {
-    await page.goto('/en');
-    const carousel = page.locator('[aria-roledescription="carousel"]');
-    await carousel.getByRole('button', { name: 'Next sentence', exact: true }).click();
-    await expectCenteredSlide(page, 1);
-    await carousel.getByRole('button', { name: 'Previous sentence', exact: true }).click();
-    await expectCenteredSlide(page, 0);
-    const answer = activeSlide(page).getByRole('button', { name: 'deploy', exact: true });
-    await answer.hover();
-    await page.evaluate(() => window.scrollTo({ top: window.scrollY, left: window.scrollX, behavior: 'instant' }));
-    const box = (await answer.boundingBox())!;
-    const width = (await activeSlide(page).boundingBox())!.width;
-    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
-    await page.mouse.down();
-    await page.mouse.move(box.x + box.width / 2 - width * 0.75, box.y + box.height / 2, { steps: 12 });
-    await page.mouse.up();
-    await expectCenteredSlide(page, 1);
-    await carousel.getByRole('button', { name: 'Previous sentence', exact: true }).click();
-    await expectCenteredSlide(page, 0);
-    await expect(answer).toBeEnabled();
-    await expect(answer).toHaveAttribute('aria-pressed', 'false');
-    await expect(page.getByTestId('cloze-live')).toBeEmpty();
-  });
-
-  test('native touch swipes change cards and vertical gestures still scroll the page', async ({ page, hasTouch }) => {
-    test.skip(!hasTouch, 'Requires a touch-enabled browser');
-    await page.goto('/en');
-    const carousel = page.locator('[aria-roledescription="carousel"]');
-    const track = carousel.locator('.carousel-track');
-    await carousel.getByRole('button', { name: 'Next sentence', exact: true }).click();
-    await expectCenteredSlide(page, 1);
-    await track.scrollIntoViewIfNeeded();
-    await page.evaluate(() => window.scrollTo({ top: window.scrollY, left: window.scrollX, behavior: 'instant' }));
-    const session = await page.context().newCDPSession(page);
-
-    async function swipe(dx: number, dy: number, expectedIndex?: number) {
-      const box = (await track.boundingBox())!;
-      const x = Math.round(box.x + box.width * (dx < 0 ? 0.8 : 0.2));
-      const y = Math.round(box.y + 120);
-      await session.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y }] });
-      for (let step = 1; step <= 12; step++) {
-        await session.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: x + dx * step / 12, y: y + dy * step / 12 }] });
-        await page.waitForTimeout(20);
-      }
-      await page.waitForTimeout(120);
-      if (expectedIndex !== undefined) {
-        const highlighted = page.locator('[aria-roledescription="slide"]').nth(expectedIndex);
-        expect(await highlighted.getAttribute('data-active')).toBe('true');
-        expect(await highlighted.evaluate((el) => parseFloat(getComputedStyle(el).scale))).toBeGreaterThan(0.99);
-      }
-      await session.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
-    }
-
-    const width = (await track.boundingBox())!.width;
-    await swipe(-width * 0.65, 0, 2);
-    await expectCenteredSlide(page, 2);
-    await swipe(width * 0.65, 0, 1);
-    await expectCenteredSlide(page, 1);
-    const scrollY = await page.evaluate(() => window.scrollY);
-    await swipe(0, -100);
-    await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(scrollY + 30);
-    await session.detach();
-  });
-
-  test('mouse dragging changes cards in both directions while short drags and answer clicks remain safe', async ({ page }) => {
-    for (const locale of ['vi', 'en']) {
-      await page.goto(`/${locale}`);
-      const carousel = page.locator('[aria-roledescription="carousel"]');
-      await carousel.getByRole('button', { name: locale === 'vi' ? 'Câu sau' : 'Next sentence', exact: true }).click();
-      await expectCenteredSlide(page, 1);
-
-      await dragActiveCard(page, 'left', 2);
-      await expectCenteredSlide(page, 2);
-      await dragActiveCard(page, 'right', 1);
-      await expectCenteredSlide(page, 1);
-      await dragActiveCard(page, 'right', 0);
-      await expectCenteredSlide(page, 0);
-      await dragActiveCard(page, 'left', 0, 20);
-      await expectCenteredSlide(page, 0);
-      await activeSlide(page).getByRole('button', { name: 'deploy', exact: true }).click();
-      await expect(activeSlide(page).getByRole('button', { name: 'deploy', exact: true })).toBeDisabled();
-      expect(await page.evaluate(() => window.getSelection()?.toString())).toBe('');
-    }
-  });
-
-  test('arrows advance one card at a time in both directions and center the active card', async ({ page }) => {
-    for (const locale of ['vi', 'en']) {
-      await page.goto(`/${locale}`);
-      const carousel = page.locator('[aria-roledescription="carousel"]');
-      const next = carousel.getByRole('button', { name: locale === 'vi' ? 'Câu sau' : 'Next sentence', exact: true });
-      const prev = carousel.getByRole('button', { name: locale === 'vi' ? 'Câu trước' : 'Previous sentence', exact: true });
-
-      for (const { index, direction } of [
-        { index: 1, direction: 'next' }, { index: 2, direction: 'next' },
-        { index: 1, direction: 'prev' }, { index: 0, direction: 'prev' },
-      ]) {
-        await (direction === 'next' ? next : prev).click();
-        await expectCenteredSlide(page, index);
-      }
-    }
-  });
-
-  test('scrolling stays synchronized with keyboard navigation and viewport resizing', async ({ page }) => {
-    for (const locale of ['vi', 'en']) {
-      await page.goto(`/${locale}`);
-      const carousel = page.locator('[aria-roledescription="carousel"]');
-      // Establish an interactive carousel before simulating a scroll through the DOM.
-      await carousel.getByRole('button', { name: locale === 'vi' ? 'Câu sau' : 'Next sentence', exact: true }).click();
-      await expectCenteredSlide(page, 1);
-      await carousel.locator('.carousel-track').evaluate((track) => {
-        const last = track.lastElementChild as HTMLElement;
-        track.scrollTo({ left: last.offsetLeft - (track.clientWidth - last.clientWidth) / 2, behavior: 'instant' });
-      });
-      await expectCenteredSlide(page, 2);
-
-      await carousel.focus();
-      await page.keyboard.press('ArrowLeft');
-      await expectCenteredSlide(page, 1);
-      await page.keyboard.press('ArrowRight');
-      await expectCenteredSlide(page, 2);
-
-      const viewport = page.viewportSize()!;
-      await page.setViewportSize({ ...viewport, width: viewport.width < 768 ? 320 : 768 });
-      await expectCenteredSlide(page, 2);
-      await page.setViewportSize(viewport);
-    }
-  });
-
-  test('LP20/LP21 wrong then right by mouse, sentences by keyboard', async ({ page }) => {
-    await page.goto('/en');
-    await activeSlide(page).getByRole('button', { name: 'delay' }).click();
-    await expect(page.getByTestId('cloze-live')).toContainText(copy.en.Cloze.wrongTitle);
-    await activeSlide(page).getByRole('button', { name: 'deploy', exact: true }).click();
-    await expect(page.getByTestId('cloze-live')).toContainText(copy.en.Cloze.correctTitle);
-    const region = page.getByRole('region', { name: copy.en.Cloze.region });
-    await region.focus();
-    await page.keyboard.press('ArrowRight');
-    await expect(activeSlide(page)).toHaveAttribute('aria-label', fill(copy.en.Cloze.header, { current: 2, total: 3 }));
-  });
-
-  test('LP28 correct state grows the carousel; no descendant is clipped', async ({ page }) => {
+  test('RF5 stickers keep a visible border in forced-colors mode', async ({ page }) => {
+    await page.emulateMedia({ forcedColors: 'active' });
     await page.goto('/vi');
-    const region = page.getByRole('region', { name: copy.vi.Cloze.region });
-    const before = (await region.boundingBox())!.height;
-    await activeSlide(page).getByRole('button', { name: 'deploy', exact: true }).click();
-    await expect(activeSlide(page).getByText(copy.vi.Cloze.items.deploy.explanation)).toBeVisible();
-    const after = (await region.boundingBox())!.height;
-    expect(after).toBeGreaterThan(before);
-    const cardBottom = (await activeSlide(page).boundingBox())!;
-    const box = (await region.boundingBox())!;
-    expect(cardBottom.y + cardBottom.height).toBeLessThanOrEqual(box.y + box.height + 1);
+    const border = await sticker(page, copy.vi.Cloze.items.deploy.answer).evaluate((el) => {
+      const s = getComputedStyle(el);
+      return { style: s.borderTopStyle, width: parseFloat(s.borderTopWidth) };
+    });
+    expect(border.style).not.toBe('none');
+    expect(border.width).toBeGreaterThanOrEqual(2);
+  });
+
+  test.describe('without JavaScript, motion allowed', () => {
+    test.use({ javaScriptEnabled: false });
+    test('UBE11 the card drops in with CSS only and does not stay transparent', async ({ page }) => {
+      await page.goto('/vi');
+      await page.waitForTimeout(800);
+      expect(await card(page).evaluate((el) => getComputedStyle(el).opacity)).toBe('1');
+    });
   });
 });
 
@@ -396,7 +242,7 @@ test.describe('layout', () => {
     await page.goto('/en');
     await scrollThrough(page);
     const clipped = await page.evaluate(() =>
-      [...document.querySelectorAll('[aria-roledescription="slide"] *, #how-it-works li *, h1, h2, h3, p')]
+      [...document.querySelectorAll('[data-testid="cloze-card"] *, #how-it-works li *, h1, h2, h3, p')]
         .filter((el) => !el.classList.contains('sr-only') && el.scrollWidth > el.clientWidth + 1 && getComputedStyle(el).overflowX !== 'visible')
         .map((el) => el.textContent?.slice(0, 40)),
     );
@@ -437,6 +283,17 @@ test.describe('reduced motion', () => {
       await page.waitForTimeout(400);
       expect(await page.evaluate(() => document.getAnimations().length)).toBe(0);
     });
+
+    test('UBE1/UBE2 with reduce a wrong then right pick runs no animation', async ({ page }) => {
+      await page.goto('/vi');
+      const card = page.getByTestId('cloze-card');
+      for (const word of ['delay', copy.vi.Cloze.items.deploy.answer]) {
+        await card.getByRole('button', { name: word, exact: true }).click();
+        await page.waitForTimeout(100);
+        expect(await page.evaluate(() => document.getAnimations().length), word).toBe(0);
+      }
+      await expect(page.getByTestId('cloze-gap')).toHaveText(copy.vi.Cloze.items.deploy.answer);
+    });
   });
 });
 
@@ -449,6 +306,14 @@ test.describe('without JavaScript', () => {
     await page.getByRole('banner').getByRole('link', { name: copy.vi.Nav.cta }).click();
     await expect(page).toHaveURL(/#waitlist-hero$/);
     await expect(page.locator('#waitlist-hero')).toBeInViewport();
+  });
+
+  test('UBE11 without JavaScript the card shows sentence 1 with ? and four stickers', async ({ page }) => {
+    await page.goto('/vi');
+    const card = page.getByTestId('cloze-card');
+    await expect(card).toBeVisible();
+    await expect(page.getByTestId('cloze-gap')).toContainText('?');
+    await expect(card.getByRole('button')).toHaveCount(4);
   });
 
   test('LP27 copy is present, FAQ toggles, form submits', async ({ page }) => {
@@ -480,5 +345,5 @@ test('Review#3 keyboard path has visible focus', async ({ page, isMobile }) => {
     expect(info.outline, `focus on ${info.label}`).not.toBe('none');
     seen.push(info.label);
   }
-  expect(seen).toEqual(expect.arrayContaining(['Previous sentence', 'Next sentence', 'delay', copy.en.Nav.cta]));
+  expect(seen).toEqual(expect.arrayContaining(['delay', copy.en.Nav.cta]));
 });

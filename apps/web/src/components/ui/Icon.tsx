@@ -1,10 +1,8 @@
 import { cn } from '@/lib/cn';
 
-export type IconName = 'chevron-left' | 'chevron-right' | 'check' | 'flag';
+export type IconName = 'check' | 'flag';
 
 const paths = {
-  'chevron-left': 'm14 6-6 6 6 6',
-  'chevron-right': 'm10 6 6 6-6 6',
   check: 'M5 12.5 10 17 19 7',
   flag: 'M5 21V4m0 0h11l-2 4 2 4H5',
 } satisfies Record<IconName, string>;

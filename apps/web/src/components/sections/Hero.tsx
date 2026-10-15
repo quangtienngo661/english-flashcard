@@ -1,5 +1,5 @@
 import { getLocale, getTranslations } from 'next-intl/server';
-import { ClozeCarousel, type ClozeItem } from '@/components/interactive/cloze/ClozeCarousel';
+import { ClozePractice, type ClozeItem } from '@/components/interactive/cloze/ClozePractice';
 import { WaitlistForm } from '@/components/interactive/WaitlistForm';
 import { Chip } from '@/components/ui/Chip';
 import { Container } from '@/components/ui/Container';
@@ -29,8 +29,6 @@ export async function Hero() {
     headers: ITEM_IDS.map((_, i) => c('header', { current: i + 1, total: ITEM_IDS.length })),
     sourceChip: c('sourceChip'),
     instruction: c('instruction'),
-    prev: c('prev'),
-    next: c('next'),
     correctTitle: c('correctTitle'),
     wrongTitle: c('wrongTitle'),
     nextSentence: c('nextSentence'),
@@ -57,7 +55,7 @@ export async function Hero() {
         </div>
         <p className="text-small text-on-primary-muted lg:col-start-1">{t('note')}</p>
         <div className="flex justify-center lg:col-start-2 lg:row-span-5 lg:row-start-1 lg:justify-end">
-          <ClozeCarousel items={items} labels={labels} ctaHref="#waitlist-hero" />
+          <ClozePractice items={items} labels={labels} ctaHref="#waitlist-hero" />
         </div>
       </Container>
     </section>

@@ -22,7 +22,9 @@ describe('LanguageSwitch', () => {
     expect(vi).toHaveAttribute('aria-current', 'true');
     expect(vi).toHaveClass('bg-ink');
     expect(en).not.toHaveAttribute('aria-current');
-    expect(en).toHaveClass('text-on-primary-muted');
+    // White, not on-primary-muted: on the 15% white wash over blue the muted tone measured 4.1:1 (axe, LP25).
+    expect(en).toHaveClass('text-on-primary');
+    expect(en).not.toHaveClass('text-on-primary-muted');
     expect(en).toHaveAttribute('href', '/en/privacy');
     expect(vi).toHaveAttribute('lang', 'vi');
     expect(en).toHaveAttribute('lang', 'en');

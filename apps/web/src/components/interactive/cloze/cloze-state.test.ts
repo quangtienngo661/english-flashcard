@@ -5,9 +5,14 @@ const start = () => createClozeState(['deploy', 'assume', 'borrow']);
 describe('clozeReducer', () => {
   it('LP20 wrong pick sets wrong with picked word, then the right pick sets correct', () => {
     let s = clozeReducer(start(), { type: 'pick', word: 'delay' });
-    expect(s.results[0]).toEqual({ status: 'wrong', picked: 'delay' });
+    expect(s.results[0]).toEqual({ status: 'wrong', picked: 'delay', tried: ['delay'] });
     s = clozeReducer(s, { type: 'pick', word: 'deploy' });
-    expect(s.results[0]).toEqual({ status: 'correct', picked: 'deploy' });
+    expect(s.results[0]).toEqual({ status: 'correct', picked: 'deploy', tried: ['delay'] });
+  });
+
+  it('UBE14 re-picking a tried wrong word returns the same state', () => {
+    const wrong = clozeReducer(start(), { type: 'pick', word: 'delay' });
+    expect(clozeReducer(wrong, { type: 'pick', word: 'delay' })).toBe(wrong);
   });
 
   it('picking after correct does nothing', () => {
@@ -26,11 +31,5 @@ describe('clozeReducer', () => {
     expect(s.done).toBe(true);
     s = clozeReducer(s, { type: 'restart' });
     expect(s).toEqual(start());
-  });
-
-  it('prev at 0 stays at 0; goTo clamps into range', () => {
-    expect(clozeReducer(start(), { type: 'prev' }).index).toBe(0);
-    expect(clozeReducer(start(), { type: 'goTo', index: 2 }).index).toBe(2);
-    expect(clozeReducer(start(), { type: 'goTo', index: 9 }).index).toBe(2);
   });
 });
