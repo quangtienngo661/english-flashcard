@@ -88,6 +88,25 @@ describe('WaitlistForm', () => {
     expect(document.querySelector('form#waitlist-hero, form#waitlist-cta')).toBeNull();
   });
 
+  it('A11Y-5 an invalid consent box stays visible on both fields', async () => {
+    join.mockResolvedValue({ status: 'missing_consent', email: 'ten@gmail.com' });
+    const user = userEvent.setup();
+    const { container } = render(
+      <>
+        <WaitlistForm idPrefix="hero" tone="onPrimary" layout="inline" locale="en" labels={labels} />
+        <WaitlistForm idPrefix="cta" tone="onAccent" layout="inline" locale="en" labels={labels} />
+      </>,
+    );
+    for (const id of ['hero', 'cta']) {
+      await user.click(container.querySelector(`#waitlist-${id} button[type=submit]`)!);
+    }
+    await screen.findAllByText('Please agree');
+    // Red on the blue field is 1.24:1, so the hero box turns yellow (5.24:1); red stays on the yellow band (4.24:1).
+    expect(container.querySelector('#hero-consent')).toHaveClass('border-accent');
+    expect(container.querySelector('#hero-consent')).not.toHaveClass('border-danger');
+    expect(container.querySelector('#cta-consent')).toHaveClass('border-danger');
+  });
+
   it('RF2 after success the waitlist-<prefix> wrapper still exists and holds the status message', async () => {
     join.mockResolvedValue({ status: 'success' });
     const user = userEvent.setup();

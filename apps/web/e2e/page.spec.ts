@@ -36,6 +36,18 @@ test.describe('cloze practice', () => {
     await expect(card(page)).toContainText(fill(copy.en.Cloze.header, { current: 1, total: 3 }));
   });
 
+  test('A11Y-4 focus rings inside the white practice card are blue, not the yellow of the field', async ({ page }) => {
+    await page.goto('/en');
+    const ring = (target: ReturnType<typeof sticker>) => target.evaluate((el) => getComputedStyle(el).outlineColor);
+    const answer = sticker(page, copy.en.Cloze.items.deploy.answer);
+    await answer.focus();
+    expect(await ring(answer)).toBe('rgb(36, 69, 214)');
+    await page.keyboard.press('Enter');
+    const next = card(page).getByRole('button', { name: copy.en.Cloze.nextSentence });
+    await expect(next).toBeFocused();
+    expect(await ring(next)).toBe('rgb(36, 69, 214)');
+  });
+
   test('RF5 stickers keep a visible border in forced-colors mode', async ({ page }) => {
     await page.emulateMedia({ forcedColors: 'active' });
     await page.goto('/vi');
