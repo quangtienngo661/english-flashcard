@@ -1,7 +1,9 @@
 # Design — Admin gửi refresh với `keepalive` để tải lại trang không làm mất phiên
 
 > **Trạng thái 15/10/2026:** chủ dự án đã duyệt (gồm các đề xuất RK2, RK7, RK8). Plan:
-> [`../plans/2026-10-15-admin-refresh-keepalive.md`](../plans/2026-10-15-admin-refresh-keepalive.md) (chờ duyệt). Chưa sửa code.
+> [`../plans/2026-10-15-admin-refresh-keepalive.md`](../plans/2026-10-15-admin-refresh-keepalive.md). **Đã làm**, PR
+> [#24](https://github.com/quangtienngo661/english-flashcard/pull/24); as-built ở
+> [`../../deliveries/admin-refresh-keepalive.md`](../../deliveries/admin-refresh-keepalive.md).
 
 Ngày: 15/10/2026. Brainstorm qua `superpowers:brainstorming` cùng ngày: chủ dự án chọn phương án A trong báo cáo điều tra,
 rồi trả lời 3 câu hỏi (Q1–Q3). Quyết định và mọi phương án đã đưa ra:

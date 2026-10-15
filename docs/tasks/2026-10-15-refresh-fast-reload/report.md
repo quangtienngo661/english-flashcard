@@ -4,8 +4,9 @@ Nhánh `fix/admin-refresh-keepalive` (lúc viết tên là `docs/refresh-fast-re
 Bằng chứng nằm trong `evidence/`, cách chạy lại ở cuối file.
 
 > **Trạng thái 15/10/2026:** chủ dự án chọn phương án A. Design:
-> [`../../superpowers/specs/2026-10-15-admin-refresh-keepalive-design.md`](../../superpowers/specs/2026-10-15-admin-refresh-keepalive-design.md)
-> (chờ duyệt). Chưa sửa code.
+> [`../../superpowers/specs/2026-10-15-admin-refresh-keepalive-design.md`](../../superpowers/specs/2026-10-15-admin-refresh-keepalive-design.md).
+> **Đã làm**, PR [#24](https://github.com/quangtienngo661/english-flashcard/pull/24); as-built ở
+> [`../../deliveries/admin-refresh-keepalive.md`](../../deliveries/admin-refresh-keepalive.md).
 
 ## Kết luận
 
