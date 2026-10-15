@@ -1,7 +1,8 @@
 # Làm mới giao diện B — plan tóm tắt (15/10/2026)
 
-Design: `docs/superpowers/specs/2026-10-15-ui-refresh-b-design.md`. Plan chi tiết (landing):
-`docs/superpowers/plans/2026-10-15-ui-refresh-b-landing.md`. Plan admin viết sau khi PR #19 merge (UB19).
+Design: `docs/superpowers/specs/2026-10-15-ui-refresh-b-design.md`. Plan chi tiết: landing
+`docs/superpowers/plans/2026-10-15-ui-refresh-b-landing.md`; admin `docs/superpowers/plans/2026-10-15-ui-refresh-b-admin.md`
+(viết sau khi PR #19 merge, UB19).
 
 ## Landing (`apps/web`) và bộ token chung
 
@@ -17,6 +18,26 @@ Design: `docs/superpowers/specs/2026-10-15-ui-refresh-b-design.md`. Plan chi ti�
 10. Thêm nút đăng ký vào hai thẻ Gói học.
 11. Rút mọi chuyển động của landing xuống tối đa 400ms và kiểm cả trang.
 12. Chạy toàn bộ test, rà soát accessibility và thiết kế, chạy tay, cập nhật tài liệu, mở PR vào `dev` (không merge).
+
+## Admin (`apps/admin`), plan tóm tắt (15/10/2026)
+
+Lúc viết plan, chủ dự án chốt thêm UB22 (màn hẹp hơn 1344px thì panel trượt đè lên bảng) và UB23 (toast và 4 hộp xác nhận
+đóng ngay, không mờ dần). Ba điểm mở của landing được giải ở việc 1.
+
+1. Admin dùng bộ token chung và font Lexend; thêm hai màu gờ vào bộ token; lần đầu kiểm màu thật trên trình duyệt.
+2. Vẽ lại nút (dày, có gờ, lún khi bấm), ô nhập, ô chọn, ô tick, vùng thả file.
+3. Vẽ lại nhãn trạng thái, ô số liệu, thông báo và bảng (tiêu đề cột dính, bấm cả dòng, dòng đang mở tô vàng).
+4. Dựng khung mới: sidebar nằm trên nền, đổi ngôn ngữ và tài khoản ở chân sidebar, tiêu đề và nút chính trên tờ trắng, thanh xanh và ngăn kéo trên điện thoại.
+5. Thêm hiệu ứng mở/đóng cho dialog, menu, ngăn kéo (không chạy khi máy bật giảm chuyển động).
+6. **Điểm dừng:** gửi ảnh khung admin (1440 và 390), chờ bạn duyệt rồi mới làm tiếp.
+7. Làm khung panel chi tiết: nằm cạnh bảng từ 1344px, trượt đè từ phải khi hẹp hơn.
+8. Mở chi tiết lô nhập trong panel cạnh bảng, URL giữ nguyên.
+9. Mở chi tiết publish job trong panel cạnh bảng, URL giữ nguyên.
+10. Mở ba form (Upload CSV, Tạo publish job, Đăng ký nguồn) thành dialog đè lên bảng, URL giữ nguyên.
+11. Thêm toast xác nhận khi đổi hoặc gỡ vai trò.
+12. Sửa B25E30: refresh bị 429 thì chờ rồi thử lại, không đá về trang đăng nhập (test lỗi trước, sửa sau).
+13. Kiểm toàn app: thời lượng chuyển động, accessibility (VI/EN, 1440/390), tên dài, chạy lại e2e với API thật.
+14. Kiểm cuối, rà soát, chạy tay luồng Bước 2.5, gửi ảnh để bạn duyệt, cập nhật tài liệu, mở PR (không merge).
 
 # Làm mới giao diện B — landing as-built (15/10/2026)
 

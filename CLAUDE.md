@@ -125,7 +125,8 @@ decided-but-not-scaffolded:
   Problem Details, pagination, `Idempotency-Key`, IDs, logging, test harness) → 1 Identity core → 2
   Content + Pipeline (admin side + read-only search only) → **2.5 web UI (login, admin page, role
   granting — code done locally, awaiting the M3 PR + CI, design `docs/superpowers/specs/2026-10-14-buoc-2-5-admin-web-design.md`)**
-  → **UI refresh B** (landing + admin in direction B, owner 15/10/2026; landing done in PR #22, admin plan next;
+  → **UI refresh B** (landing + admin in direction B, owner 15/10/2026; landing done in PR #22, admin plan written 15/10 and awaiting approval:
+  `docs/superpowers/plans/2026-10-15-ui-refresh-b-admin.md`;
   design `docs/superpowers/specs/2026-10-15-ui-refresh-b-design.md`, delivery `docs/deliveries/ui-refresh-b.md`)
   → Deploy API + admin (separate step, not yet scheduled) → 3 Learning, plus the Content pieces deferred from
   Bước 2 (private words, context sentences, lookup chain) (earliest pilot milestone) → 4 Practice non-AI

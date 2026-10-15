@@ -38,6 +38,8 @@ trong lúc trình bày một phần design, chủ dự án duyệt cả phần �
 | UB19 | Số plan | Một design doc, hai plan; plan admin sau PR #19 | Duyệt cùng design (phần 5) |
 | UB20 | H1 bản VI dòng cuối một chữ ("…thực / tế") | Sửa: `text-wrap` cho tiêu đề (chủ dự án chọn `balance`, triển khai bằng `pretty`) | Chủ dự án (sau review) |
 | UB21 | Nơi commit tài liệu | Đi cùng PR #22 (commit docs riêng) | Chủ dự án (sau review) |
+| UB22 | Panel chi tiết ở màn hẹp hơn khoảng 1320px | Trượt đè lên bảng; chỉ chia đôi khi bảng vẫn đủ rộng | Chủ dự án (lúc viết plan admin) |
+| UB23 | Hiệu ứng lúc đóng ở admin | Có ở menu, ngăn kéo, panel, 3 form; toast và 4 hộp xác nhận đóng ngay | Chủ dự án (lúc viết plan admin) |
 
 ## UB1 — Phạm vi "làm mới giao diện" (Q1)
 
@@ -250,6 +252,32 @@ mục chính; PR #20 (tài liệu Bước 2.5) đã merge.
 | ✅ Thêm vào PR #22 | Một commit docs riêng; PR tự đủ, link trong design không gãy khi vào `dev`; cập nhật luôn CLAUDE.md và HANDOFF. PR to hơn |
 | PR tài liệu riêng | Nhánh `docs/*` riêng vào `dev` như D28 của Bước 2.5; PR code gọn, nhưng design chưa có trong `dev` cho tới khi PR docs merge |
 | Để sau | Giữ chưa commit |
+
+## UB22 — Panel chi tiết ở màn laptop (lúc viết plan admin, 15/10/2026)
+
+Bối cảnh: design §6.3 đặt panel `26rem` cạnh bảng từ `64rem`. Tính theo mockup (sidebar `15.5rem`, lề `0.75rem`): ở 1280 bảng
+còn khoảng 600px, dưới ngưỡng `40rem` (chủ dự án chốt 14/10) nên bảng tự đổi thành thẻ ngay khi mở panel. Trình bày bằng mô phỏng
+có thanh kéo bề rộng. Giả định (`ASSUMPTION`) đội dùng laptop 13–14 inch ở 1280 hoặc 1366.
+
+| Phương án | Trade-off |
+|---|---|
+| ✅ B. Đè khi hẹp | Dưới khoảng 1320px panel trượt đè từ phải, có nền mờ; bảng giữ nguyên là bảng. Đổi lại: ở 1280 không bấm được bảng khi panel đang mở |
+| A. Chia đôi luôn (design lúc đó) | Từ 1024px panel luôn nằm cạnh; ở 1024–1315px bảng thành thẻ xếp dọc khi mở panel, thành bảng lại khi đóng |
+
+Triển khai: ngưỡng đặt `84rem` (1344px) thay 1320px, để chừa thanh cuộn dọc của Windows (khoảng 17px) mà bảng vẫn đủ `40rem`.
+
+## UB23 — Hiệu ứng lúc đóng ở admin (lúc viết plan admin, 15/10/2026)
+
+Bối cảnh: design §6.2/§6.6 cho mọi thứ mờ dần 150ms khi đóng. Đọc code và thư viện thấy hai chỗ khó: Toast của React Aria 1.22.1
+không có trạng thái `entering`/`exiting` (chỉ hỗ trợ View Transitions, cách này chặn bấm chuột trên cả trang khoảng 150ms mỗi
+lần toast tắt); 4 hộp xác nhận (hoàn tác lô, đổi vai trò, tạo tài khoản, publish toàn bộ) được tạo mới mỗi lần mở để mỗi lần
+bấm là một yêu cầu riêng, muốn mờ dần phải viết lại phần đã có test bấm đúp. Trình bày bằng mô phỏng bấm được.
+
+| Phương án | Trade-off |
+|---|---|
+| ✅ B. Mờ dần trừ toast và 4 hộp xác nhận | Form, panel, menu, ngăn kéo mờ dần 150ms; toast và 4 hộp xác nhận biến mất ngay. Không đụng code hành vi; khác design ở 2 chỗ đó |
+| C. Đóng ngay mọi nơi | Chỉ có hiệu ứng lúc mở. Ít code nhất, đồng nhất; mất cảm giác mượt lúc đóng |
+| A. Mờ dần mọi nơi | Đúng design. Phải viết lại 4 hộp xác nhận và dùng View Transitions cho toast |
 
 ## Phần 1 — trình bày lại bằng mô phỏng
 
