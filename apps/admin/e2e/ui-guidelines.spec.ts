@@ -124,3 +124,66 @@ test('Checkpoint A: on a 1920 screen the Sources columns share the width instead
   expect(shares[0]).toBeLessThanOrEqual(0.41);
   for (const share of shares.slice(1)) expect(share).toBeGreaterThanOrEqual(0.19);
 });
+
+const at = '2026-10-14T09:30:00.000Z';
+const wideLists = {
+  '/uploads': {
+    mocks: { 'GET /v1/admin/content/uploads': () => ({ json: { items: [{ id: 'b1', status: 'running', file_name: 'cefrj-vocabulary-profile-1.5.csv', row_count: 7799, created_at: at }], next_page_token: null } }) },
+    shares: [0.4, 0.15, 0.15, 0.2, 0.1],
+  },
+  '/publish-jobs': {
+    mocks: {
+      'GET /v1/admin/content/senses/publish-jobs': () => ({
+        json: {
+          items: [{ id: 'a3f2c1aa-0000-4000-8000-000000000001', status: 'succeeded', filter: { level: 'B1', topic: 'food' }, snapshot_count: 1250, not_ready_count: 0, counters: {}, created_at: at, started_at: at, finished_at: at }],
+          next_page_token: null,
+        },
+      }),
+    },
+    shares: [0.15, 0.4, 0.15, 0.15, 0.15],
+  },
+  '/staff': {
+    mocks: { 'GET /v1/admin/staff': () => ({ json: { items: [{ id: 'admin-1', email: 'admin@wordmet.com', email_verified: true, staff_role: 'admin' }, { id: 'e1', email: 'lan.editor@wordmet.com', email_verified: false, staff_role: 'editor' }], next_page_token: null } }) },
+    shares: [0.4, 0.2, 0.2, 0.2],
+  },
+} as const;
+
+for (const [path, { mocks, shares }] of Object.entries(wideLists)) {
+  test(`Checkpoint A: at 1920 the ${path} columns take their planned shares instead of piling up on the right`, async ({ page }) => {
+    await page.setViewportSize({ width: 1920, height: 900 });
+    await signedInAs(page, 'admin', mocks);
+    await page.goto(path);
+    const table = page.getByRole('table');
+    await expect(table.locator('tbody tr').first()).toBeVisible();
+    const width = (await table.boundingBox())!.width;
+    const actual = await table.locator('thead th').evaluateAll((ths, total) => ths.map((th) => th.getBoundingClientRect().width / (total as number)), width);
+    expect(actual.map((share, i) => Math.abs(share - shares[i]) <= 0.03)).toEqual(shares.map(() => true));
+  });
+
+  test(`Checkpoint A: at 1024 the ${path} table fits its sheet and its short cells stay on one line`, async ({ page }) => {
+    await page.setViewportSize({ width: 1024, height: 800 });
+    await signedInAs(page, 'admin', mocks);
+    await page.goto(path);
+    const table = page.getByRole('table');
+    await expect(table.locator('tbody tr').first()).toBeVisible();
+    const fits = await table.evaluate((el) => el.getBoundingClientRect().width <= el.parentElement!.getBoundingClientRect().width + 1);
+    expect(fits).toBe(true);
+    // Every cell but the first two (names and filters wrap on purpose) renders on a single line.
+    const multiLine = await table.locator('tbody td').evaluateAll((tds) =>
+      tds
+        .filter((td) => (td as HTMLTableCellElement).cellIndex >= 2 || td.textContent!.startsWith('#'))
+        .filter((td) => {
+          // A text node that wraps returns one rect per line; padded pills and buttons around it do not count.
+          const walker = document.createTreeWalker(td, NodeFilter.SHOW_TEXT);
+          for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+            const range = document.createRange();
+            range.selectNodeContents(node);
+            if (new Set([...range.getClientRects()].map((r) => Math.round(r.top))).size > 1) return true;
+          }
+          return false;
+        })
+        .map((td) => td.textContent),
+    );
+    expect(multiLine).toEqual([]);
+  });
+}

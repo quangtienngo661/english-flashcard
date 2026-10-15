@@ -88,17 +88,18 @@ export function StaffPage() {
   const refreshList = () => queryClient.invalidateQueries({ queryKey: ['staff'] });
 
   const columns: Column<StaffUser>[] = [
-    { key: 'email', header: t('staff.list.email'), cell: (u) => u.email },
+    // Shares, not fixed widths, so a wide screen spreads the columns out (owner, Checkpoint A); short cells never wrap.
+    { key: 'email', header: t('staff.list.email'), className: 'w-2/5', cell: (u) => u.email },
     {
       key: 'role',
       header: t('staff.list.role'),
-      className: 'w-24',
+      className: 'w-1/5',
       cell: (u) => (u.staff_role ? <Badge tone={u.staff_role === 'admin' ? 'primary' : 'neutral'}>{u.staff_role}</Badge> : '—'),
     },
     {
       key: 'verified',
       header: t('staff.list.verified'),
-      className: 'w-36',
+      className: 'w-1/5 whitespace-nowrap',
       cell: (u) =>
         u.email_verified ? (
           <span className="inline-flex items-center gap-1.5">
@@ -112,7 +113,7 @@ export function StaffPage() {
     {
       key: 'actions',
       header: '',
-      className: 'w-44',
+      className: 'w-1/5',
       card: 'action',
       cell: (u) => (
         <Button variant="ghost" onPress={() => { setTarget(u); setNotFound(false); }}>

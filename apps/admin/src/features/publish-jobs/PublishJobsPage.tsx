@@ -43,7 +43,8 @@ export function PublishJobsPage() {
     {
       key: 'job',
       header: t('publishJobs.list.job'),
-      className: 'w-32',
+      // Shares, not fixed widths, so a wide screen spreads the columns out (owner, Checkpoint A); short cells never wrap.
+      className: 'w-3/20 whitespace-nowrap',
       cell: (j) => (
         <Link to={`/publish-jobs/${j.id}`} className="rounded-control text-primary outline-none hover:underline focus-visible:ring-2 focus-visible:ring-primary">
           #{shortId(j.id)}
@@ -53,11 +54,12 @@ export function PublishJobsPage() {
     {
       key: 'filter',
       header: t('publishJobs.list.filter'),
+      className: 'w-2/5',
       cell: (j) => filterSummary(j.filter, (id) => t('publishJobs.batchFilter', { id })) || t('publishJobs.filterNone'),
     },
-    { key: 'status', header: t('publishJobs.list.status'), className: 'w-36', cell: (j) => <StatusBadge status={j.status} /> },
-    { key: 'count', header: t('publishJobs.list.count'), className: 'w-28 tabular-nums', cell: (j) => format.number(j.snapshot_count) },
-    { key: 'time', header: t('publishJobs.list.time'), className: 'w-48', cell: (j) => dateTime(j.created_at) },
+    { key: 'status', header: t('publishJobs.list.status'), className: 'w-3/20', cell: (j) => <StatusBadge status={j.status} /> },
+    { key: 'count', header: t('publishJobs.list.count'), className: 'w-3/20 whitespace-nowrap tabular-nums', cell: (j) => format.number(j.snapshot_count) },
+    { key: 'time', header: t('publishJobs.list.time'), className: 'w-3/20 whitespace-nowrap', cell: (j) => dateTime(j.created_at) },
   ];
 
   return (

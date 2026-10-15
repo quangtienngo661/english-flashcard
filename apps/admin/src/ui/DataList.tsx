@@ -51,7 +51,8 @@ export function DataList<T>({ rows, rowKey, columns, state, emptyText, emptyHint
   return (
     <div className="@container">
       <div className="-mx-page-pad-min hidden overflow-clip @list:block shell:-mx-page-pad-max">
-        <table className="w-full table-fixed text-ui">
+        {/* Automatic layout: columns take their className share, but never shrink below what a no-wrap cell needs. */}
+        <table className="w-full table-auto text-ui">
           <thead className="text-left">
             <tr>
               {columns.map((c) => (
