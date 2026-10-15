@@ -138,6 +138,17 @@ body {
   grid-template-columns: minmax(0, 1fr) auto;
 }
 
+/* A menu list that scrolls shades the end that still hides items (owner, 15/10/2026), CSS only: two canvas covers scroll
+   with the items (local) and sit over two shadows fixed to the box (scroll), so a shadow shows only where items are cut
+   off. The list sits on the canvas (sidebar and drawer alike). */
+@utility scroll-fade {
+  background:
+    linear-gradient(var(--color-canvas) 30%, transparent) top / 100% 2.5rem no-repeat local,
+    linear-gradient(transparent, var(--color-canvas) 70%) bottom / 100% 2.5rem no-repeat local,
+    radial-gradient(farthest-side at 50% 0, color-mix(in srgb, var(--color-ink) 18%, transparent), transparent) top / 100% 0.875rem no-repeat scroll,
+    radial-gradient(farthest-side at 50% 100%, color-mix(in srgb, var(--color-ink) 18%, transparent), transparent) bottom / 100% 0.875rem no-repeat scroll;
+}
+
 /* The side panel fills the screen height while it sticks beside the table: 0.75rem above it (top-3, the sheet's top margin)
    and 1rem below, the same whether the page is scrolled or not (review M6). */
 @utility h-panel-sticky {

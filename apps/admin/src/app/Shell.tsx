@@ -151,7 +151,7 @@ export function Shell() {
         <div className="shrink-0 px-2.5 pb-3">
           <Logo />
         </div>
-        <div className="min-h-0 flex-1 overflow-y-auto">
+        <div className="scroll-fade min-h-0 flex-1 overflow-y-auto">
           <SidebarNav permissions={me.permissions} />
         </div>
         <SidebarFoot email={me.email} onLogout={logout} />
@@ -214,7 +214,7 @@ export function Shell() {
                 <X aria-hidden className="size-5" />
               </AriaButton>
             </div>
-            <div className="min-h-0 flex-1 overflow-y-auto">
+            <div className="scroll-fade min-h-0 flex-1 overflow-y-auto">
               <SidebarNav permissions={me.permissions} onNavigate={() => setDrawerOpen(false)} />
             </div>
             <SidebarFoot email={me.email} onLogout={logout} />

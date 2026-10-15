@@ -1,4 +1,5 @@
 import { useQueryClient } from '@tanstack/react-query';
+import { Download } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { useFormatter, useTranslations } from 'use-intl';
@@ -145,7 +146,16 @@ export function BatchPanel({ id }: { id: string }) {
         </div>
         <StatTotal label={t('batch.stats.total')} value={live && batch.row_count === 0 ? '—' : count(batch.row_count)} />
 
-        {rejected > 0 && <p className="text-ui text-ink">{t('batch.rejectedSummary', { count: format.number(rejected) })}</p>}
+        {rejected > 0 && (
+          // The download sits with the sentence that explains it, so the footer keeps its actions on one row (owner, 15/10/2026).
+          <div className="flex flex-col items-start gap-1">
+            <p className="text-ui text-ink">{t('batch.rejectedSummary', { count: format.number(rejected) })}</p>
+            <Button variant="ghost" isPending={downloading} onPress={() => void downloadRejectedCsv()} className="-ml-4">
+              {!downloading && <Download aria-hidden className="size-4" />}
+              {t('batch.rejected')}
+            </Button>
+          </div>
+        )}
 
         {batch.warnings.length > 0 && (
           <section className="flex flex-col gap-1.5 rounded-panel border-2 border-border p-4">
@@ -161,16 +171,11 @@ export function BatchPanel({ id }: { id: string }) {
         )}
       </PanelBody>
 
-      {(canPublishNow || rejected > 0 || canRevertNow) && (
+      {(canPublishNow || canRevertNow) && (
         <PanelFooter>
           {canPublishNow && (
             <Button isPending={publish.pending} isDisabled={publish.waitSeconds > 0} onPress={() => void publish.submit()}>
               {publish.waitSeconds > 0 ? t('batch.wait', { seconds: publish.waitSeconds }) : t('batch.publish')}
-            </Button>
-          )}
-          {rejected > 0 && (
-            <Button variant="secondary" isPending={downloading} onPress={() => void downloadRejectedCsv()}>
-              {t('batch.rejected')}
             </Button>
           )}
           {canRevertNow && (
