@@ -41,7 +41,8 @@
     "cancel": "Cancel",
     "confirm": "Confirm",
     "loadMore": "Load more",
-    "loading": "Loading…"
+    "loading": "Loading…",
+    "close": "Close"
   },
   "shell": {
     "brand": "Wordmet Admin",

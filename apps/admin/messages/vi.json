@@ -41,7 +41,8 @@
     "cancel": "Hủy",
     "confirm": "Xác nhận",
     "loadMore": "Tải thêm",
-    "loading": "Đang tải…"
+    "loading": "Đang tải…",
+    "close": "Đóng"
   },
   "shell": {
     "brand": "Wordmet Admin",

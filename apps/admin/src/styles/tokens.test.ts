@@ -2,6 +2,7 @@
 import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
+import { PANEL_SPLIT_QUERY } from '../ui/DetailPanel';
 
 // Shared tokens come from the workspace package (design UB3); resolving it here also proves apps/admin can import it.
 const themePath = createRequire(import.meta.url).resolve('@wordmet/design-tokens/theme.css');
@@ -52,6 +53,11 @@ describe('admin design tokens', () => {
       ['primary', 'surface'], ['primary', 'canvas'], ['accent', 'primary'],
     ];
     expect(below(controls, 3)).toEqual([]);
+  });
+
+  it('PANEL_SPLIT_QUERY matches --breakpoint-panel in globals.css (UB22)', () => {
+    const breakpoint = globals.match(/--breakpoint-panel:\s*([\d.]+rem);/)?.[1];
+    expect(PANEL_SPLIT_QUERY).toBe(`(min-width: ${breakpoint})`);
   });
 
   it('the package declares danger-deep and canvas-deep', () => {

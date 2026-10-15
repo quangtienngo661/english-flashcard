@@ -136,3 +136,8 @@ body {
 @utility grid-sheet {
   grid-template-columns: minmax(0, 1fr) auto;
 }
+
+/* The side panel fills the screen height while it sticks beside the table (sheet margin 0.75rem top + 1rem bottom). */
+@utility h-panel-sticky {
+  height: calc(100dvh - 1.75rem);
+}
