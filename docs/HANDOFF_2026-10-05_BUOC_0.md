@@ -27,18 +27,19 @@ thì ghi `ASSUMPTION`.
 > riêng tư, câu ngữ cảnh, chuỗi tra nghĩa dời hết sang Bước 3** (đã chốt từ lúc duyệt design Bước 2, 12/10/2026,
 > nhưng bảng dưới và `CLAUDE.md` chưa được sửa theo tới hôm nay). Chủ dự án cũng đã chốt (D9) chèn thêm
 > **Bước 2.5 — giao diện web (đăng nhập, trang admin, cấp vai trò) ngay sau Bước 2, trước Bước 3**.
-> **Cập nhật 15/10/2026:** PR #16 (Bước 2) đã merge vào `dev`. Bước 2.5 đang làm — design/plan 14/10/2026; M1 backend
-> và M2 khung admin đã merge vào `dev` (PR #17, #18); M3 (luồng CSV, Task 13–18) xong trên máy local, chạy tay "Xong khi"
-> đạt (15/10/2026), còn chờ push + CI xanh trên PR vào `dev`; chi tiết ở `docs/deliveries/buoc-2-5.md`. Trước pilot Bước 3
-> cần thêm một bước "Deploy API + admin" (chưa xếp chỗ).
-> Chủ dự án dự kiến refactor lại toàn bộ giao diện admin sau. Bước tiếp theo sau 2.5: Bước 3 (Learning, mốc pilot sớm nhất).
+> **Cập nhật 15/10/2026:** Bước 2 (PR #16) và **Bước 2.5 đã xong, nằm trên `dev`** — M1 backend #17, M2 khung admin #18,
+> M3 luồng CSV + e2e API thật + sửa giao diện #19, docs #20; đủ 3 tiêu chí "Xong khi" (CI xanh gồm `admin-e2e-real`, chạy
+> tay trên DB mới với file CEFR-J thật). As-built: `docs/deliveries/buoc-2-5.md`. Chưa lên `main` (PR `dev` → `main` chỉ mở
+> khi chủ dự án yêu cầu). Chủ dự án dự kiến refactor lại toàn bộ giao diện admin sau.
+> **Tiếp theo: Bước 3** (Learning, mốc pilot sớm nhất), bắt đầu bằng `superpowers:brainstorming`. Trước pilot Bước 3 cần
+> bước "Deploy API + admin"; **chưa chốt** làm trước hay sau Bước 3 — hỏi chủ dự án.
 
 | Bước | Làm gì | Spec |
 |---|---|---|
 | 0 | Nền: scaffold, Docker + Postgres, Problem Details, phân trang, `Idempotency-Key`, ID, log, khung test | System |
 | 1 | Đăng ký, đăng nhập email + mật khẩu, OTP xác minh, phiên (access + refresh), hồ sơ, vai trò `admin`/`editor`, **đổi và quên mật khẩu** (chuyển từ Bước 8, D1) | Identity (lõi) |
 | 2 | Catalog (quản trị: nhập CSV, soạn, rà, publish, hoàn tác, xuất), tìm kiếm/duyệt chỉ-đọc cho learner | Content + Pipeline |
-| 2.5 *(mới, D9)* | Giao diện web `apps/admin`: đăng nhập, trang admin, cấp vai trò, luồng CSV. **Code xong local, chờ PR M3 + CI** (design `docs/superpowers/specs/2026-10-14-buoc-2-5-admin-web-design.md`, as-built `docs/deliveries/buoc-2-5.md`) | — |
+| 2.5 *(mới, D9)* | Giao diện web `apps/admin`: đăng nhập, trang admin, cấp vai trò, luồng CSV. **Xong 15/10/2026, trên `dev` (PR #17–#20)** (design `docs/superpowers/specs/2026-10-14-buoc-2-5-admin-web-design.md`, as-built `docs/deliveries/buoc-2-5.md`) | — |
 | Deploy *(mới, chưa xếp chỗ)* | Deploy API + `admin-api.` + `admin.`: chọn hosting backend, Postgres/Redis bền, SMTP thật, secret, backup (design 2.5 §14). Phải xong trước pilot Bước 3 | — |
 | 3 | Nhóm, trạng thái, lịch ôn, "hôm nay", flashcard, thêm nhanh (catalog + nhập tay); **cộng phần Content dời từ Bước 2:** từ riêng tư, câu ngữ cảnh, chuỗi tra nghĩa (catalog + tự nhập). **Mốc pilot sớm nhất** (cần web) | Learning + Vocabulary Content (phần còn lại) |
 | 4 | Trắc nghiệm, đúng/sai, gõ từ, bài từ câu người học, "từ hay sai" | Practice (không AI) |
