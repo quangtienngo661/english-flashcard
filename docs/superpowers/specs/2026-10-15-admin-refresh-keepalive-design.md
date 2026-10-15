@@ -3,7 +3,8 @@
 > **Trạng thái 15/10/2026:** chủ dự án đã duyệt (gồm các đề xuất RK2, RK7, RK8). Plan:
 > [`../plans/2026-10-15-admin-refresh-keepalive.md`](../plans/2026-10-15-admin-refresh-keepalive.md). **Đã làm**, PR
 > [#24](https://github.com/quangtienngo661/english-flashcard/pull/24); as-built ở
-> [`../../deliveries/admin-refresh-keepalive.md`](../../deliveries/admin-refresh-keepalive.md).
+> [`../../deliveries/admin-refresh-keepalive.md`](../../deliveries/admin-refresh-keepalive.md). Sau review cả nhánh
+> (16/10/2026) chủ dự án sửa RK8 (thêm đường dự phòng, RKC6); RKE5 và RKE9 cập nhật theo.
 
 Ngày: 15/10/2026. Brainstorm qua `superpowers:brainstorming` cùng ngày: chủ dự án chọn phương án A trong báo cáo điều tra,
 rồi trả lời 3 câu hỏi (Q1–Q3). Quyết định và mọi phương án đã đưa ra:
@@ -47,7 +48,7 @@ commit: test trước, sửa sau); CI xanh trên PR (job `admin`, `admin-e2e-rea
 | RK5 | Chỉ kiểm trên Chromium (bộ e2e thật chạy Desktop Chrome). Firefox và Safari ghi `ASSUMPTION` | Chốt (Q2) |
 | RK6 | Nhánh `fix/admin-refresh-keepalive` cắt từ `feat/ui-b-admin`, gồm báo cáo, design, decision record, plan và code. PR đặt base `feat/ui-b-admin` (xếp trên PR #23), đổi base sang `dev` khi #23 merge | Chốt (Q3) |
 | RK7 | Test e2e rời trang bằng `page.goto('about:blank')` ngay khi request refresh của trang rời trình duyệt (`page.waitForRequest`), chờ 12 giây (lớn hơn 10 giây ân hạn) rồi mở lại app | Đề xuất |
-| RK8 | Không thêm feature-detect hay đường dự phòng: trình duyệt không hỗ trợ `keepalive` thì bỏ qua tùy chọn và chạy như hôm nay | Đề xuất (`ASSUMPTION` cho Firefox/Safari) |
+| RK8 | ~~Không thêm feature-detect hay đường dự phòng~~ **Sửa 16/10/2026 sau review (I1):** không feature-detect; nếu request refresh có `keepalive` bị trình duyệt từ chối (`TypeError`, ví dụ engine không cho `keepalive` đi kèm preflight CORS) thì gửi lại **một lần** không `keepalive`. Trình duyệt như vậy chạy như trước bản sửa | Chốt (16/10, vòng 2) |
 
 ## 3. Cách làm
 
@@ -60,7 +61,8 @@ const res = await this.raw('/v1/auth/refresh', json('POST', {}, this.csrf()), nu
 const res = await this.raw('/v1/auth/refresh', { ...json('POST', {}, this.csrf()), keepalive: true }, null);
 ```
 
-`raw()` đã truyền nguyên `init` vào `fetch` và thêm `credentials: 'include'`, nên không cần sửa chỗ khác. Mọi lần refresh đều
+**Sửa 16/10/2026 (RK8 vòng 2):** lời gọi trên nằm trong một hàm riêng `postRefresh()`: thử với `keepalive`, gặp `TypeError`
+thì gửi lại một lần không `keepalive` (RKC6). `raw()` đã truyền nguyên `init` vào `fetch` và thêm `credentials: 'include'`, nên không cần sửa chỗ khác. Mọi lần refresh đều
 đi qua `runRefresh()` (khởi động, 401, 403 `forbidden`, vòng thử lại 429), nên một chỗ sửa phủ hết RK2. Phần còn lại giữ
 nguyên: refresh dùng chung một lượt, chờ `Retry-After` của B25E30, xử lý 401/403, `BroadcastChannel`.
 
@@ -101,6 +103,7 @@ của Playwright bọc `window.fetch` để thêm `keepalive: true` cho đúng r
 | RKC3 | When a signed-in admin page is left for `about:blank` while its start-up refresh is in flight, and the admin is opened again 12 seconds later, then the user is still signed in on the same page they open (not `/login`) | RK4, RK7; e2e real |
 | RKC4 | When fast reloads drive the refresh into 429 and the last page retries after `Retry-After`, then the user stays signed in | B25E30, UBE34; one manual run of `browser-repro.mjs inflight 0 14 all` against the fixed admin (not in CI, RK4) |
 | RKC5 | When the existing tests run, then B25#4, B25#5, B25#6, B25E1 and every B25E30 test still pass unchanged | unit + e2e real |
+| RKC6 | When the browser rejects the keepalive refresh with a `TypeError`, then the same refresh is sent once more without `keepalive`; if that also fails, the refresh fails as before (added 16/10/2026, review I1) | RK8; unit |
 
 ## 6. Trường hợp biên
 
@@ -110,17 +113,18 @@ của Playwright bọc `window.fetch` để thêm `keepalive: true` cho đúng r
 | RKE2 | A keepalive refresh from a page that is gone answers 401 or 429 | Nobody reads the answer; the cookie is unchanged (a refresh error never clears it); the next page decides as today | RK8 |
 | RKE3 | Logout in another tab commits while a keepalive refresh is in flight | Logout first: the refresh sees a revoked chain, answers 401, sets no cookie. Refresh first: its `Set-Cookie` may arrive after logout's clear, leaving a cookie of a revoked chain; the next page start gets 401 and opens `/login`. Same outcome as today | B1E7, B25#8 |
 | RKE4 | The browser quits, the process is killed or the network drops mid-refresh | Not fixed: no process is left to finish the request, or no answer arrives. The stale cookie still ends the session on the next refresh after 10 s, as today. Out of scope (option B of the report) | RK1, RK3 |
-| RKE5 | A browser that does not support `keepalive` (Firefox and Safari untested) | The option is ignored; behaviour as today; no error (`ASSUMPTION`) | RK5, RK8 |
+| RKE5 | A browser that does not support `keepalive`, or supports it but rejects it on a preflighted request (Firefox and Safari untested; early Chromium rejected keepalive with a preflight) | Unknown option: ignored, behaviour as before. Rejected: `fetch` throws a `TypeError` before anything is sent, and the refresh is retried once without `keepalive` (RKC6), so behaviour as before. If the first try did reach the server, the retry arrives inside the 10 s grace and gets the same successor | RK5, RK8 |
 | RKE6 | The 64 KiB keepalive body limit | The body is `{}` and refresh is single-flight per page, so the limit is never approached | MDN |
 | RKE7 | The reloaded pages' keepalive refreshes still count toward `auth.refresh.chain` | They do (14 of 14 hit the limiter in the simulation), so 429 still happens on a reload storm; the cookie is current, so the B25E30 retry succeeds | RKC4, UBE34 |
 | RKE8 | The new e2e test can pass without the fix if the API answers before the page unloads | In the saved local runs, leaving as soon as the request left the browser lost the answer every time (11 of 11); with a 2 ms delay the answer still arrived on 3 of 14 pages. The unit test (RKC1) is the deterministic guard; the e2e guards the real browser + CORS + cookie path. The plan runs the e2e 3 times on the unfixed code and records how often it fails | RK4 |
-| RKE9 | The e2e test leaves the page and waits 12 s | It does not log out or change any account, so later tests of the story keep their session; if it fails, the failure is reported at this test, before later tests depend on that session | RK4 |
+| RKE9 | The e2e test leaves the page and waits 12 s | It does not log out or change any account. **Sửa 16/10/2026 (review I2):** it runs in its own browser context and session chain, because every page load is a refresh (grace answers included) and a chain allows 10 a minute; on the story's editor chain it pushed B25#6 to 10–11 hits | RK4 |
 | RKE10 | The refresh is cross-origin with JSON and `X-CSRF-Protection`, so it needs a CORS preflight | Keepalive with a preflight works in Chromium 153 (the probe and the simulation were both cross-origin, like `admin.` → `admin-api.`) | RK5 |
 
 ## 7. Test
 
 - **Unit** (`apps/admin/src/auth/session-store.test.ts`): RKC1 cho từng đường gọi refresh (khởi động, 401, 403 `forbidden`,
-  vòng thử lại 429); RKC2 cho login, `/me`, logout, đổi mật khẩu. Commit 1 có test đỏ, commit 2 sửa.
+  vòng thử lại 429); RKC2 cho login, `/me`, logout, đổi mật khẩu; RKC6 (thêm 16/10) cho đường dự phòng. Commit 1 có test đỏ,
+  commit 2 sửa.
 - **E2E API thật** (`apps/admin/e2e-real/admin.real.spec.ts`): một test RKC3 trong câu chuyện có sẵn, dùng một trang đã đăng
   nhập (plan chọn vị trí và tài khoản), thêm khoảng 15 giây vào job `admin-e2e-real`. Trước khi sửa, chạy 3 lần trên code cũ
   và ghi kết quả (RKE8).

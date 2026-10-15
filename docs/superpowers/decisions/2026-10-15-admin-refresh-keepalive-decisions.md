@@ -22,7 +22,7 @@ chủ dự án duyệt khi đọc design doc (đã duyệt 15/10/2026: "Duyệt 
 | RK5 | Trình duyệt được kiểm | Chỉ Chromium | Chủ dự án (Q2) |
 | RK6 | Nhánh và PR | Nhánh `fix/admin-refresh-keepalive` từ `feat/ui-b-admin`, PR riêng xếp trên #23 | Chủ dự án (Q3) |
 | RK7 | Cách rời trang trong e2e | `about:blank` ngay khi request refresh rời trình duyệt, chờ 12 s | Duyệt cùng design |
-| RK8 | Trình duyệt không hỗ trợ `keepalive` | Không feature-detect, không đường dự phòng | Duyệt cùng design |
+| RK8 | Trình duyệt không hỗ trợ hoặc từ chối `keepalive` | Vòng 1: không feature-detect, không đường dự phòng. **Vòng 2 (16/10):** từ chối (`TypeError`) thì gửi lại một lần không `keepalive` | Vòng 1: duyệt cùng design; vòng 2: chủ dự án (sau review) |
 
 ## RK1, RK3 — Cách sửa
 
@@ -77,6 +77,19 @@ không phản đối, duyệt chính thức cùng design).
 Thực hiện ngay: nhánh `docs/refresh-fast-reload` (chưa push, đã có commit báo cáo) được đổi tên thành
 `fix/admin-refresh-keepalive`.
 
+## RK8 vòng 2 — Trình duyệt từ chối `keepalive` (16/10/2026, sau review cả nhánh)
+
+Bối cảnh: review cả nhánh (finding I1, `../reviews/2026-10-15-admin-refresh-keepalive-branch-review.md`) chỉ ra tiền đề của
+vòng 1 ("không hỗ trợ thì bỏ qua") chỉ đúng với engine hoàn toàn không có `keepalive`. Engine có `keepalive` nhưng từ chối nó
+khi request cần preflight CORS (bản Chromium đầu tiên từng như vậy; Firefox/Safari hiện nay chưa kiểm) làm `fetch` ném
+`TypeError`, nên admin bị đăng xuất mỗi lần tải trang, tệ hơn trước bản sửa. Câu hỏi trong chat có ba lựa chọn:
+
+| Phương án | Trade-off | |
+|---|---|---|
+| Thêm đường dự phòng: `TypeError` thì gửi lại ngay một lần không `keepalive` | ~5 dòng + test unit; an toàn với server (lần đầu đã tới server thì lần hai trong 10 s nhận đúng token qua ân hạn); trình duyệt từ chối `keepalive` chạy như trước | ✅ |
+| Giữ vòng 1, ghi lại rủi ro, kiểm tay Firefox và WebKit trước deploy | Không sửa code; phải tải hai trình duyệt của Playwright (vài trăm MB) | |
+| Giữ vòng 1, chỉ ghi rủi ro | Không sửa, không kiểm; dựa vào việc nhân viên dùng Chrome/Edge | |
+
 ## Đề xuất kỹ thuật duyệt cùng design
 
 **Chỉ có trong design doc, chưa trình bày riêng trong chat** (chủ dự án duyệt khi đọc doc):
@@ -84,6 +97,6 @@ Thực hiện ngay: nhánh `docs/refresh-fast-reload` (chưa push, đã có comm
 | Đề xuất | Chọn | Bỏ | Vì sao |
 |---|---|---|---|
 | RK7 Cách rời trang trong e2e | `page.goto('about:blank')` ngay khi `page.waitForRequest` thấy request refresh, chờ 12 s | Mở một URL khác của admin (Vite preview trả `index.html` cho đường dẫn của app, bộ e2e thật vẫn `goto('/uploads')` được, nên app lại chạy; bản build chỉ có `index.html` và file có tên băm trong `assets/`) | Đã thử: rời sang `about:blank` làm mất phiên 3/3 trên code hôm nay, còn phiên 3/3 khi có `keepalive` giả lập |
-| RK8 Không feature-detect | Gửi thẳng `keepalive: true` | Kiểm hỗ trợ rồi chọn đường khác | Trình duyệt không hỗ trợ thì bỏ qua tùy chọn, hành vi như hôm nay (`ASSUMPTION`) |
+| RK8 Không feature-detect | Gửi thẳng `keepalive: true` | Kiểm hỗ trợ rồi chọn đường khác | Trình duyệt không hỗ trợ thì bỏ qua tùy chọn, hành vi như hôm nay (`ASSUMPTION`; tiền đề sai một nửa, xem RK8 vòng 2) |
 | Bằng chứng trước khi làm | Giả lập `keepalive` bằng init script của Playwright bọc `window.fetch` | Sửa code admin để thử | Thử được phương án trên admin thật mà không sửa code trước khi design được duyệt |
 | RKC4 (đường 429) | Chạy tay một lần bằng script điều tra, ghi vào delivery record | Đưa vào CI | Theo RK4; vẫn kiểm đúng sự cố gốc trên code thật |
