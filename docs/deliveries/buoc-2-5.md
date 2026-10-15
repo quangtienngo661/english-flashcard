@@ -61,8 +61,7 @@ song song nhiều bộ test — chạy e2e từng file.
 
 Kết quả kiểm chi tiết (gate, chạy tay "Xong khi", phát hiện): `docs/deliveries/buoc-2-5-test-flow.md`.
 
-**Trạng thái:** M1, M2 đã merge `dev` (PR #17, #18). M3 (Task 13–18) xong trên máy local, **chưa push**; tiêu chí "Xong khi" mục 2
-(CI xanh trên PR vào `dev`, gồm job `admin` và `admin-e2e-real`) **chưa đạt** vì job `admin-e2e-real` chưa từng chạy trên CI.
+**Trạng thái:** **Xong** — M1, M2, M3 và docs đều trên `dev` (PR #17, #18, #19, #20); xem "Đóng Bước 2.5" ở cuối mục này.
 
 **M3 có gì** (12 commit trên `feat/buoc-2-5-m3-csv-flow`, sau lần merge `dev` có M1+M2):
 - Nguồn dữ liệu và upload CSV (chọn nguồn level khi file có cột level, `Idempotency-Key` theo file + nguồn).
@@ -96,11 +95,12 @@ chủ dự án chốt (D26–D28 trong decision record):
 **Giới hạn đã chấp nhận** (giữ nguyên từ mục tiến độ): danh sách lô không hiện "Đã hoàn tác"; bộ lọc "Lô nhập" chỉ có 20 lô mới
 nhất; chi tiết publish job không hiện bộ lọc; trang lô thất bại dùng câu chung.
 
-**Chưa kiểm:** CI của hai job admin (thời gian thêm mỗi PR chưa đo); ngưỡng 30 giây gợi ý worker với worker thật bị tắt; trình
-duyệt ngoài Chromium.
+**CI (PR #19, 15/10/2026):** xanh cả 4 job — `admin` 2m36s, `admin-e2e-real` 1m53s (7 passed, lần đầu chạy trên CI), `api`
+4m41s, `web` 3m11s. Các job chạy song song nên job thật không làm PR chờ lâu hơn (job dài nhất vẫn là `api`); ước tính 5–8
+phút trong design là thừa.
 
-**Còn lại:**
-1. Commit docs trên `docs/buoc-2-5-design`, PR vào `dev` — khi chủ dự án yêu cầu.
-2. Push code (M3 + bản sửa giao diện), PR vào `dev`, CI xanh (gồm `admin-e2e-real`) — khi chủ dự án yêu cầu. Đạt thì Bước 2.5
-   xong.
-3. Bước tiếp theo: "Deploy API + admin" (bước riêng, chưa xếp chỗ, phải trước pilot Bước 3), rồi Bước 3.
+**Chưa kiểm:** ngưỡng 30 giây gợi ý worker với worker thật bị tắt; trình duyệt ngoài Chromium.
+
+**Đóng Bước 2.5 (15/10/2026):** PR #19 (code M3 + sửa giao diện, merge `7158071`) và #20 (docs, merge `62b9dc5`) vào `dev`;
+đủ 3 tiêu chí "Xong khi". Chưa lên `main`. **Tiếp theo:** Bước 3; bước "Deploy API + admin" phải xong trước pilot Bước 3,
+chưa chốt làm trước hay sau Bước 3.
