@@ -103,8 +103,7 @@ Auto-fix bật). Chạy theo cách Native (chủ dự án chọn): một phiên 
 
 Nhánh `feat/ui-b-admin`, cắt từ `claude/gifted-booth-9229f5` (= `feat/ui-b-landing` + commit plan `d45743a`), vì PR #22 (landing,
 có `packages/design-tokens`) chưa merge vào `dev`. Chạy theo cách Native (chủ dự án chọn): một phiên tự làm 13 task theo TDD,
-một reviewer mới (opus) kiểm cả nhánh ở cuối. Sổ theo dõi và báo cáo review: `.superpowers/sdd/2026-10-15-ui-refresh-b-admin/`
-(không commit).
+một reviewer mới (opus) kiểm cả nhánh ở cuối. Báo cáo review: `docs/superpowers/reviews/2026-10-15-ui-refresh-b-admin-branch-review.md`.
 
 ## Đã làm
 
@@ -153,7 +152,7 @@ một reviewer mới (opus) kiểm cả nhánh ở cuối. Sổ theo dõi và b�
 
 - **Cần chủ dự án quyết hoặc biết:** dữ liệu thử đã ghi vào `english_learning_b25manual`; B25E30 vẫn có thể mất phiên khi tải lại
   thật nhanh do xoay token (ở trên); UBE21 (đóng dialog rồi chuyển tab ngay) chưa thử tay vì Playwright không làm tab ẩn được.
-- 12 minor của review (`final-review.md` trong sổ theo dõi), tóm tắt: focus về dòng chưa đúng ở dạng panel trượt đè (UBE26) và đôi khi
+- 12 minor của review (chi tiết trong báo cáo review ở trên), tóm tắt: focus về dòng chưa đúng ở dạng panel trượt đè (UBE26) và đôi khi
   thừa một lần; bấm ✕ hai lần nhanh tạo 2 mục lịch sử; selector từ URL chưa escape; panel dính `top-0` để hở 1,75rem ở đáy khi cuộn;
   câu đếm lùi nằm trong vùng `role=status`; import vòng `shortId`; kéo cửa sổ qua ngưỡng làm mất dialog hoàn tác đang mở; `aside`
   nằm trong `main` (axe mức moderate); thêm 401 trong lúc chờ 429 giữa phiên.
