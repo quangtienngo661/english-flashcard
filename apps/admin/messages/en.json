@@ -53,6 +53,7 @@
     "account": "Account",
     "logout": "Log out",
     "loadingSession": "Checking your session…",
+    "sessionRetry": "The server is busy. Trying again in {seconds} s…",
     "skipToContent": "Skip to main content"
   },
   "nav": {

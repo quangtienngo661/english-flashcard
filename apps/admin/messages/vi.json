@@ -53,6 +53,7 @@
     "account": "Tài khoản",
     "logout": "Đăng xuất",
     "loadingSession": "Đang kiểm tra phiên đăng nhập…",
+    "sessionRetry": "Máy chủ đang bận. Thử lại sau {seconds} giây…",
     "skipToContent": "Bỏ qua tới nội dung chính"
   },
   "nav": {
