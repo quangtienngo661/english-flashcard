@@ -78,16 +78,16 @@ describe('ClozePractice', () => {
     mockReducedMotion(true);
     const user = userEvent.setup();
     renderPractice();
-    expect(screen.getByText('Try it 1/2')).toBeInTheDocument();
+    expect(screen.getByText(/Try it 1\/2/)).toBeInTheDocument();
     await user.click(sticker('deploy'));
     await user.click(screen.getByRole('button', { name: 'Continue' }));
-    expect(screen.getByText('Try it 2/2')).toBeInTheDocument();
+    expect(screen.getByText(/Try it 2\/2/)).toBeInTheDocument();
     await user.click(sticker('assume'));
     await user.click(screen.getByRole('button', { name: 'Continue' }));
     expect(screen.getByText('Done')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Notify me' })).toHaveAttribute('href', '#waitlist-hero');
     await user.click(screen.getByRole('button', { name: 'Again' }));
-    expect(screen.getByText('Try it 1/2')).toBeInTheDocument();
+    expect(screen.getByText(/Try it 1\/2/)).toBeInTheDocument();
     expect(gap()).not.toHaveTextContent('deploy');
   });
 
@@ -118,7 +118,7 @@ describe('ClozePractice', () => {
     expect(flyers()).toHaveLength(1);
     await user.click(screen.getByRole('button', { name: 'Continue' }));
     expect(flyers()).toHaveLength(0);
-    expect(screen.getByText('Try it 2/2')).toBeInTheDocument();
+    expect(screen.getByText(/Try it 2\/2/)).toBeInTheDocument();
   });
 
   it('RF3 unmounting during the flight leaves no [data-flyer] in document.body', async () => {
@@ -128,6 +128,31 @@ describe('ClozePractice', () => {
     expect(flyers()).toHaveLength(1);
     unmount();
     expect(flyers()).toHaveLength(0);
+  });
+
+  it('A11Y-1 after Continue focus moves to the new sentence, then to the Done title, then back after Again', async () => {
+    mockReducedMotion(true);
+    const user = userEvent.setup();
+    renderPractice();
+    await user.click(sticker('deploy'));
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+    expect(screen.getByTestId('cloze-focus')).toHaveFocus();
+    expect(screen.getByTestId('cloze-focus')).toHaveTextContent("Don't");
+    await user.click(sticker('assume'));
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+    expect(screen.getByText('Done')).toHaveFocus();
+    await user.click(screen.getByRole('button', { name: 'Again' }));
+    expect(screen.getByTestId('cloze-focus')).toHaveFocus();
+  });
+
+  it('A11Y-1 the card takes no focus on first render', () => {
+    renderPractice();
+    expect(document.body).toHaveFocus();
+  });
+
+  it('A11Y-2 the source line reads the sentence counter as its own phrase', () => {
+    renderPractice();
+    expect(screen.getByTestId('cloze-card').querySelector('p')!.textContent).toBe('Saved, Try it 1/2');
   });
 
   it('UBE14 a double click on the right sticker animates once', async () => {

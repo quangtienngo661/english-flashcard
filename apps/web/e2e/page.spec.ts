@@ -140,11 +140,27 @@ test.describe('header (UB16)', () => {
     await expect.poll(async () => (await header(page).boundingBox())!.y).toBeLessThan(0);
   });
 
+  test('A11Y-3 (WCAG 2.4.11) a focused element is not hidden under the sticky header', async ({ page }) => {
+    desktopOnly();
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto('/vi');
+    const target = page.locator('section[aria-labelledby="plans-title"] a').first();
+    // Park the button 20px from the top, under the 72px header, then focus it as Tab would.
+    await target.evaluate((el) => {
+      document.scrollingElement!.scrollTop += el.getBoundingClientRect().top - 20;
+    });
+    await target.focus();
+    const h = (await header(page).boundingBox())!;
+    const b = (await target.boundingBox())!;
+    expect(b.y).toBeGreaterThanOrEqual(h.y + h.height - 1);
+  });
+
   test('RF1 header CTA from a legal page lands on the home form', async ({ page }) => {
     desktopOnly();
     await page.goto('/vi/privacy');
     await cta(page, 'vi').click();
-    await expect(page).toHaveURL(/\/vi#waitlist-hero$/);
+    // Client navigation fetches /vi first; on a loaded runner it once took longer than the 5s default.
+    await expect(page).toHaveURL(/\/vi#waitlist-hero$/, { timeout: 15_000 });
     await expectFormClearsHeader(page);
   });
 
