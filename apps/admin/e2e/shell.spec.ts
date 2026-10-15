@@ -127,8 +127,10 @@ test.describe('shell (vi)', () => {
     await expect(active).toHaveAttribute('aria-current', 'page');
     expect(await active.getByText(vi.nav.uploads).evaluate((el) => getComputedStyle(el).backgroundImage)).toContain('linear-gradient');
     for (const link of await aside.getByRole('link').all()) await expect(link.locator('svg')).toHaveCount(1);
-    await expect(aside.getByRole('group', { name: vi.shell.language })).toBeVisible();
+    // The foot stays on screen at 1440×900 even with all 16 items: only the menu list scrolls.
+    await expect(aside.getByRole('group', { name: vi.shell.language })).toBeInViewport({ ratio: 1 });
     const account = aside.getByRole('button', { name: new RegExp(`^${vi.shell.account}:`) });
+    await expect(account).toBeInViewport({ ratio: 1 });
     await account.click();
     const menu = page.getByRole('menu');
     await expect(menu).toBeVisible();
@@ -147,8 +149,8 @@ test.describe('shell (vi)', () => {
     const drawer = page.getByRole('dialog');
     await expect(drawer).toBeVisible();
     await expect.poll(async () => (await drawer.boundingBox())!.x).toBe(0);
-    await expect(drawer.getByRole('group', { name: vi.shell.language })).toBeVisible();
-    await expect(drawer.getByRole('button', { name: new RegExp(`^${vi.shell.account}:`) })).toBeVisible();
+    await expect(drawer.getByRole('group', { name: vi.shell.language })).toBeInViewport({ ratio: 1 });
+    await expect(drawer.getByRole('button', { name: new RegExp(`^${vi.shell.account}:`) })).toBeInViewport({ ratio: 1 });
   });
 
   test('offline (spec §8): a request that aborts shows the offline banner, keeps the data, and "Thử lại" refetches', async ({ page }) => {

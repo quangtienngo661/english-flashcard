@@ -103,7 +103,7 @@ function AccountMenu({ email, onLogout }: { email: string; onLogout: () => void 
 
 function SidebarFoot({ email, onLogout }: { email: string; onLogout: () => void }) {
   return (
-    <div className="mt-auto flex flex-col gap-2 pt-4">
+    <div className="flex shrink-0 flex-col gap-2 pt-3">
       <div className="px-2.5">
         <LanguageSwitch />
       </div>
@@ -146,11 +146,14 @@ export function Shell() {
       >
         {t('shell.skipToContent')}
       </a>
-      <aside className="sticky top-0 hidden h-dvh w-sidebar shrink-0 flex-col overflow-y-auto px-3 pb-4 pt-5 shell:flex">
-        <div className="px-2.5 pb-3">
+      {/* Only the menu list scrolls, so VI/EN and the account stay at the foot on short screens. */}
+      <aside className="sticky top-0 hidden h-dvh w-sidebar shrink-0 flex-col px-3 pb-4 pt-5 shell:flex">
+        <div className="shrink-0 px-2.5 pb-3">
           <Logo />
         </div>
-        <SidebarNav permissions={me.permissions} />
+        <div className="min-h-0 flex-1 overflow-y-auto">
+          <SidebarNav permissions={me.permissions} />
+        </div>
         <SidebarFoot email={me.email} onLogout={logout} />
       </aside>
 
@@ -200,8 +203,8 @@ export function Shell() {
 
       <ModalOverlay isOpen={drawerOpen} onOpenChange={setDrawerOpen} isDismissable className="fixed inset-0 z-40 overscroll-contain bg-ink/45 shell:hidden motion-safe:data-entering:animate-overlay-in motion-safe:data-exiting:animate-overlay-out">
         <Modal className="fixed inset-y-0 left-0 w-drawer max-w-full bg-canvas outline-none motion-safe:data-entering:animate-drawer-in motion-safe:data-exiting:animate-drawer-out">
-          <Dialog aria-label={t('shell.mainNav')} className="flex h-full flex-col overflow-y-auto px-3 pb-4 pt-5 outline-none">
-            <div className="flex items-center justify-between pb-3 pl-2.5">
+          <Dialog aria-label={t('shell.mainNav')} className="flex h-full flex-col px-3 pb-4 pt-5 outline-none">
+            <div className="flex shrink-0 items-center justify-between pb-3 pl-2.5">
               <Logo />
               <AriaButton
                 aria-label={t('shell.closeMenu')}
@@ -211,7 +214,9 @@ export function Shell() {
                 <X aria-hidden className="size-5" />
               </AriaButton>
             </div>
-            <SidebarNav permissions={me.permissions} onNavigate={() => setDrawerOpen(false)} />
+            <div className="min-h-0 flex-1 overflow-y-auto">
+              <SidebarNav permissions={me.permissions} onNavigate={() => setDrawerOpen(false)} />
+            </div>
             <SidebarFoot email={me.email} onLogout={logout} />
           </Dialog>
         </Modal>
