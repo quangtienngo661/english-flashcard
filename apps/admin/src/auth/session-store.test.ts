@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { createApiClient } from '../api/client';
 import { ApiError } from '../api/problem';
 import { SessionStore } from './session-store';
-import { BASE, channelHub, makeFetch, makeMe, problem, tokenResponse, type Route } from './test-support';
+import { BASE, channelHub, makeFetch, makeMe, problem, rateLimited, tokenResponse, type Route } from './test-support';
 
 const ok = (body: unknown): Route => () => Response.json(body);
 const noContent: Route = () => new Response(null, { status: 204 });
@@ -351,5 +351,28 @@ describe('SessionStore', () => {
     store.subscribe(() => {})();
     await store.recheck();
     expect(n).toBe(seen);
+  });
+
+  it('B25E30 a 429 from the bootstrap refresh keeps the session: wait Retry-After, refresh again, signed in', async () => {
+    let refreshes = 0;
+    const waits: number[] = [];
+    const f = makeFetch({
+      'POST /v1/auth/refresh': () => (++refreshes === 1 ? rateLimited(2) : tokenResponse('tok-1')),
+      'GET /v1/me': () => Response.json(makeMe()),
+    });
+    const store = new SessionStore({
+      baseUrl: BASE,
+      fetch: f.fetch,
+      channel: null,
+      wait: async (ms: number) => {
+        waits.push(ms);
+      },
+    });
+
+    await store.bootstrap();
+
+    expect(waits).toEqual([2000]);
+    expect(f.count('POST', '/v1/auth/refresh')).toBe(2);
+    expect(store.state).toMatchObject({ status: 'signed-in' });
   });
 });
