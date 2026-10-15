@@ -187,3 +187,32 @@ for (const [path, { mocks, shares }] of Object.entries(wideLists)) {
     expect(multiLine).toEqual([]);
   });
 }
+
+for (const width of [1440, 1280]) {
+  test(`UBE35 at ${width} a 60-character file name wraps inside the panel title, "Chi tiết" stays on one line and nothing scrolls sideways`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 900 });
+    const long = `cefrj-vocabulary-profile-${'x'.repeat(31)}.csv`;
+    expect(long).toHaveLength(60);
+    await signedInAs(page, 'editor', {
+      'GET /v1/admin/content/uploads': () => ({ json: { items: [{ id: 'b1', status: 'partial', file_name: long, row_count: 12, created_at: at }], next_page_token: null } }),
+      'GET /v1/admin/content/uploads/b1': () => ({
+        json: { id: 'b1', status: 'partial', file_name: long, row_count: 12, counters: { processed: 12, created: 10, rejected: 2 }, warnings: [], created_at: at, started_at: at, finished_at: at, reverted: false },
+      }),
+    });
+    await page.goto('/uploads/b1');
+    const panel = page.getByTestId('detail-panel');
+    const title = panel.getByRole('heading', { level: 2, name: long });
+    await expect(title).toBeVisible();
+    const [titleBox, panelBox] = [(await title.boundingBox())!, (await panel.boundingBox())!];
+    expect(titleBox.x + titleBox.width).toBeLessThanOrEqual(panelBox.x + panelBox.width);
+    const open = page.locator('table').getByRole('link', { name: vi.uploads.open, includeHidden: true });
+    const lines = await open.evaluate((el) => {
+      const range = document.createRange();
+      range.selectNodeContents(el);
+      return new Set([...range.getClientRects()].map((r) => Math.round(r.top))).size;
+    });
+    expect(lines).toBe(1);
+    const { scrollWidth, clientWidth } = await page.evaluate(() => ({ scrollWidth: document.scrollingElement!.scrollWidth, clientWidth: document.scrollingElement!.clientWidth }));
+    expect(scrollWidth).toBeLessThanOrEqual(clientWidth);
+  });
+}

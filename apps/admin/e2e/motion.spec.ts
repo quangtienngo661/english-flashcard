@@ -154,3 +154,87 @@ test.describe('mobile', () => {
     await expect.poll(() => recorded(page)).toEqual(expect.arrayContaining([{ name: 'drawer-in', duration: '0.25s' }]));
   });
 });
+
+/** The longest finite transition or animation on the page, and the longest that is not the toast's entrance (ms). */
+function longest(page: Page) {
+  return page.evaluate(() => {
+    const ms = (list: string) => Math.max(0, ...list.split(',').map((v) => (v.trim().endsWith('ms') ? parseFloat(v) : parseFloat(v) * 1000)));
+    let all = 0;
+    let nonToast = 0;
+    for (const el of document.querySelectorAll('*')) {
+      const style = getComputedStyle(el);
+      if (style.animationIterationCount.split(',').some((c) => c.trim() === 'infinite')) continue; // loading spinners
+      const transition = ms(style.transitionDuration);
+      const animation = style.animationName === 'none' ? 0 : ms(style.animationDuration);
+      all = Math.max(all, transition, animation);
+      if (!style.animationName.includes('toast-in')) nonToast = Math.max(nonToast, transition, animation);
+    }
+    for (const a of document.getAnimations()) {
+      const timing = a.effect?.getTiming();
+      if (!timing || timing.iterations === Infinity) continue;
+      const duration = Number(timing.duration) || 0;
+      all = Math.max(all, duration);
+      if ((a as CSSAnimation).animationName !== 'toast-in') nonToast = Math.max(nonToast, duration);
+    }
+    return { all, nonToast };
+  });
+}
+
+test('UBC15 nothing in the admin moves longer than 300ms (250ms but the toast), and page changes run no animation', async ({ page }) => {
+  const mobile = test.info().project.name === 'mobile';
+  const staffRow = { id: 'u9', email: 'new@wordmet.com', email_verified: true, staff_role: null };
+  await signedInAs(page, 'admin', {
+    ...mocks,
+    'GET /v1/admin/staff': () => ({ json: { items: [], next_page_token: null } }),
+    'GET /v1/admin/users': () => ({ json: staffRow }),
+    'PUT /v1/admin/users/u9/staff-role': () => ({ json: { ...staffRow, staff_role: 'editor' } }),
+  });
+  const check = async (step: string) => {
+    const { all, nonToast } = await longest(page);
+    expect(all, step).toBeLessThanOrEqual(300);
+    expect(nonToast, step).toBeLessThanOrEqual(250);
+  };
+
+  await page.goto('/uploads');
+  await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+  await check('list');
+  if (mobile) {
+    await page.getByRole('button', { name: vi.shell.openMenu }).click();
+    await check('drawer open');
+    await page.keyboard.press('Escape');
+  } else {
+    await accountButton(page).click();
+    await check('account menu open');
+    await page.keyboard.press('Escape');
+  }
+  await page.getByRole('button', { name: vi.uploads.upload }).click();
+  await check('upload dialog open');
+  await page.keyboard.press('Escape');
+  await check('upload dialog closing');
+  await page.goto('/uploads/b1');
+  await expect(page.getByTestId('detail-panel')).toBeVisible();
+  await check('batch panel open');
+
+  await page.goto('/staff');
+  await page.getByLabel(vi.staff.search.label).fill(staffRow.email);
+  await page.getByRole('button', { name: vi.staff.search.submit }).click();
+  await page.getByRole('button', { name: vi.staff.card.grantEditor }).click();
+  await page.getByRole('dialog').getByRole('button', { name: vi.common.confirm }).click();
+  await expect(page.getByText(vi.staff.toast.granted.replace('{role}', 'editor').replace('{email}', staffRow.email))).toBeVisible();
+  await check('toast');
+
+  if (!mobile) {
+    // A page change: once the toast has settled, moving to another page starts no keyframe animation (hover colour
+    // transitions are not motion).
+    const running = () =>
+      page.evaluate(() =>
+        document
+          .getAnimations()
+          .filter((a) => a instanceof CSSAnimation && a.playState === 'running' && a.effect?.getTiming().iterations !== Infinity)
+          .map((a) => (a as CSSAnimation).animationName),
+      );
+    await expect.poll(running).toEqual([]);
+    await page.getByRole('navigation').getByRole('link', { name: vi.nav.uploads }).click();
+    expect(await running()).toEqual([]);
+  }
+});
