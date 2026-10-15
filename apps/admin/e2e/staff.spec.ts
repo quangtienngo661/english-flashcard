@@ -1,7 +1,7 @@
-import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
 import vi from '../messages/vi.json' with { type: 'json' };
 import { requestCount, requests, signedInAs } from './support/mock-api';
+import { seriousViolations } from './support/axe';
 
 test.use({ locale: 'vi-VN' });
 
@@ -67,10 +67,7 @@ test('Task 12a: axe has no serious/critical violations on the staff page, with t
   });
   await page.goto('/staff');
   await expect(page.getByText('editor@wordmet.com').first()).toBeAttached();
-  const scan = async () => {
-    const results = await new AxeBuilder({ page }).analyze();
-    return results.violations.filter((v) => v.impact === 'serious' || v.impact === 'critical').map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(' ')).join(' | ')}`);
-  };
+  const scan = () => seriousViolations(page);
   expect(await scan()).toEqual([]);
 
   await page.getByLabel(t.search.label).fill('new@wordmet.com');

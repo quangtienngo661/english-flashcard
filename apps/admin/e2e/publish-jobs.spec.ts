@@ -1,7 +1,7 @@
-import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
 import vi from '../messages/vi.json' with { type: 'json' };
 import { requestCount, signedInAs } from './support/mock-api';
+import { seriousViolations } from './support/axe';
 
 test.use({ locale: 'vi-VN' });
 
@@ -26,10 +26,7 @@ const base = {
   'GET /v1/admin/content/uploads': () => ({ json: { items: [], next_page_token: null } }),
 };
 
-async function scan(page: Page) {
-  const results = await new AxeBuilder({ page }).analyze();
-  return results.violations.filter((v) => v.impact === 'serious' || v.impact === 'critical').map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(' ')).join(' | ')}`);
-}
+const scan = (page: Page) => seriousViolations(page);
 
 test('B25#18: a 429 with Retry-After 5 on create disables the button with a 5 s countdown, then frees it', async ({ page }) => {
   let limited = true;

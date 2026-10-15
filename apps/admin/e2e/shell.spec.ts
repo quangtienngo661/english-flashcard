@@ -1,8 +1,8 @@
-import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
 import en from '../messages/en.json' with { type: 'json' };
 import vi from '../messages/vi.json' with { type: 'json' };
 import { requestCount, signedInAs } from './support/mock-api';
+import { seriousViolations } from './support/axe';
 
 const emptyUploads = {
   json: { items: [{ id: 'b1', status: 'succeeded', file_name: 'one.csv', row_count: 3, created_at: '2026-10-14T09:30:00.000Z' }], next_page_token: null },
@@ -61,9 +61,7 @@ test.describe('shell (vi)', () => {
     await expect(page.getByText(vi.comingSoon.title)).toBeVisible();
     await expect(page.getByText(vi.comingSoon.purpose.aiCosts)).toBeVisible();
     await expect(page.getByText('Dự kiến: Bước 6')).toBeVisible();
-    const results = await new AxeBuilder({ page }).analyze();
-    const bad = results.violations.filter((v) => v.impact === 'serious' || v.impact === 'critical');
-    expect(bad.map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(' ')).join(' | ')}`)).toEqual([]);
+    expect(await seriousViolations(page)).toEqual([]);
   });
 
   test('Task 12a: after login the home is /uploads', async ({ page }) => {
@@ -98,9 +96,7 @@ test.describe('shell (vi)', () => {
     }
 
     await expect(oneBatch(page)).toBeVisible();
-    const results = await new AxeBuilder({ page }).analyze();
-    const bad = results.violations.filter((v) => v.impact === 'serious' || v.impact === 'critical');
-    expect(bad.map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(' ')).join(' | ')}`)).toEqual([]);
+    expect(await seriousViolations(page)).toEqual([]);
   });
 
   test('Review Focus 2: at 390 a 320-character email in the account menu does not make the page scroll sideways', async ({ page }) => {

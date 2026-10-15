@@ -1,7 +1,7 @@
-import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
 import vi from '../messages/vi.json' with { type: 'json' };
 import { meBody, mockApi, problem, tokenBody } from './support/mock-api';
+import { seriousViolations } from './support/axe';
 
 test.use({ locale: 'vi-VN' });
 
@@ -83,10 +83,7 @@ test('B25#21: the account screens have no serious or critical axe violations (39
     'POST /v1/auth/otp': () => ({ status: 204 }),
     'GET /v1/me': () => ({ json: meBody('editor', { must_change_password: true }) }),
   });
-  const serious = async () =>
-    (await new AxeBuilder({ page }).analyze()).violations
-      .filter((v) => v.impact === 'serious' || v.impact === 'critical')
-      .map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(" ")).join(" | ")}`);
+  const serious = () => seriousViolations(page);
 
   await page.goto('/login');
   await expect(page.getByLabel(login.email)).toBeVisible();

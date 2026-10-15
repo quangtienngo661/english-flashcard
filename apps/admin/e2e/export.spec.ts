@@ -1,7 +1,7 @@
-import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
 import vi from '../messages/vi.json' with { type: 'json' };
 import { problem, requests, signedInAs } from './support/mock-api';
+import { seriousViolations } from './support/axe';
 
 test.use({ locale: 'vi-VN' });
 
@@ -44,10 +44,7 @@ test('axe: the export page has no serious or critical violations, also with a li
   });
   await page.goto('/export');
   await expect(page.getByRole('button', { name: t.download })).toBeVisible();
-  const scan = async () => {
-    const results = await new AxeBuilder({ page }).analyze();
-    return results.violations.filter((v) => v.impact === 'serious' || v.impact === 'critical').map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(' ')).join(' | ')}`);
-  };
+  const scan = () => seriousViolations(page);
   expect(await scan()).toEqual([]);
   await page.getByRole('button', { name: new RegExp(t.topic) }).click();
   await expect(page.getByRole('listbox')).toBeVisible();

@@ -1,7 +1,7 @@
-import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
 import vi from '../messages/vi.json' with { type: 'json' };
 import { requestCount, requests, signedInAs } from './support/mock-api';
+import { seriousViolations } from './support/axe';
 
 test.use({ locale: 'vi-VN' });
 
@@ -11,10 +11,7 @@ const csv = (name: string) => ({ name, mimeType: 'text/csv', buffer: Buffer.from
 const list = (items: unknown[]) => () => ({ json: { items, next_page_token: null } });
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-async function scan(page: Page) {
-  const results = await new AxeBuilder({ page }).analyze();
-  return results.violations.filter((v) => v.impact === 'serious' || v.impact === 'critical').map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(' ')).join(' | ')}`);
-}
+const scan = (page: Page) => seriousViolations(page);
 
 test('Review Focus 3: double-clicking "Upload" sends exactly one POST', async ({ page }) => {
   await signedInAs(page, 'editor', {
