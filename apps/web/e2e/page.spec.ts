@@ -206,6 +206,18 @@ test.describe('hero and forms (§5.1, §5.3)', () => {
   });
 });
 
+test('S5.1 section backgrounds follow the B rhythm', async ({ page }) => {
+  await page.goto('/vi');
+  const backgrounds = await page.locator('main > section').evaluateAll((sections) =>
+    sections.map((s) => getComputedStyle(s).backgroundColor),
+  );
+  const [blue, white, lilac, yellow] = ['rgb(36, 69, 214)', 'rgb(255, 255, 255)', 'rgb(236, 239, 254)', 'rgb(255, 216, 74)'];
+  // Hero, Problem, How it works, AI practice, Plans, FAQ, final CTA (design §5.1).
+  expect(backgrounds).toEqual([blue, white, white, lilac, white, white, yellow]);
+  await page.goto('/vi/privacy');
+  expect(await page.evaluate(() => getComputedStyle(document.body).backgroundColor)).toBe(white);
+});
+
 test.describe('layout', () => {
   test('LP24 no horizontal scroll at 390 / Review#2 at 320', async ({ page }) => {
     for (const width of [390, 320]) {
