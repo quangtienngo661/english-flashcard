@@ -526,6 +526,34 @@ describe('SessionStore', () => {
     expect(store.state).toEqual({ status: 'signed-out', notice: null });
   });
 
+  it('RK8: once the page has fired pagehide, a rejected keepalive refresh is not sent again (the browser finishes the keepalive one)', async () => {
+    const { store, calls } = newStore({
+      'POST /v1/auth/refresh': () => {
+        throw new TypeError('Failed to fetch');
+      },
+    });
+    window.dispatchEvent(new Event('pagehide'));
+    await store.bootstrap();
+    expect(refreshTries(calls)).toEqual([true]);
+    window.dispatchEvent(new Event('pageshow'));
+  });
+
+  it('RK8: after pageshow (back from the back/forward cache) the fallback works again', async () => {
+    let tries = 0;
+    const { store, calls } = newStore({
+      'POST /v1/auth/refresh': () => {
+        if (++tries === 1) throw new TypeError('Preflight request for request with keepalive specified is currently not supported');
+        return tokenResponse('tok-1');
+      },
+      'GET /v1/me': ok(makeMe()),
+    });
+    window.dispatchEvent(new Event('pagehide'));
+    window.dispatchEvent(new Event('pageshow'));
+    await store.bootstrap();
+    expect(refreshTries(calls)).toEqual([true, undefined]);
+    expect(store.state).toMatchObject({ status: 'signed-in' });
+  });
+
   it('RKC2: login, /me, password change, other API calls and logout are sent without keepalive', async () => {
     let meCalls = 0;
     const { store, calls } = newStore({
