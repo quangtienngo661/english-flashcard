@@ -179,8 +179,7 @@ export class SessionStore {
    */
   private async runRefresh(): Promise<RefreshResult> {
     for (let attempt = 1; ; attempt += 1) {
-      // keepalive: a reload or page leave mid-refresh must not drop the rotated cookie (2026-10-15-admin-refresh-keepalive-design.md).
-      const res = await this.raw('/v1/auth/refresh', { ...json('POST', {}, this.csrf()), keepalive: true }, null);
+      const res = await this.postRefresh();
       if (res.ok) {
         this.token = ((await res.json()) as TokenBody).access_token;
         return 'ok';
@@ -191,6 +190,20 @@ export class SessionStore {
       const seconds = retryAfterSeconds(res) ?? REFRESH_RETRY_DEFAULT_S;
       if (this.state.status === 'loading') this.set({ status: 'loading', retryAt: (this.opts.now ?? Date.now)() + seconds * 1000 });
       await (this.opts.wait ?? sleep)(seconds * 1000);
+    }
+  }
+
+  /**
+   * keepalive: a reload or page leave mid-refresh must not drop the rotated cookie (2026-10-15-admin-refresh-keepalive-design.md).
+   * An engine that rejects keepalive on a preflighted request throws a TypeError before sending: try once more without it (RK8).
+   */
+  private async postRefresh(): Promise<Response> {
+    const init = json('POST', {}, this.csrf());
+    try {
+      return await this.raw('/v1/auth/refresh', { ...init, keepalive: true }, null);
+    } catch (error) {
+      if (!(error instanceof TypeError)) throw error;
+      return this.raw('/v1/auth/refresh', init, null);
     }
   }
 
