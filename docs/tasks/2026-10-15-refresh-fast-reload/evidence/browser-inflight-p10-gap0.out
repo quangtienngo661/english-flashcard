@@ -1,0 +1,41 @@
++1.047s signed in, chain d4ed435f-bd25-452f-9d67-d265e7b95318 mode inflight gap 0 reloads 14
++3.524s done reloading; watching page 14
++4.293s first 429 on last page; browser cookie row (id | rotated_at | grace_until): db36a383 | 2026-10-15 14:59:18.666+00 | 2026-10-15 14:59:28.666+00
++44.715s outcome: LOGIN PAGE (session lost)
+
+--- browser view of POST /v1/auth/refresh (CDP) ---
+page  0 sent +0.546s status 401 finished
+page  1 sent +1.185s status 200 finished
+page  2 sent +1.372s status 200 finished
+page  3 sent +1.584s status 200 finished
+page  4 sent +1.811s status 200 finished
+page  5 sent +1.960s status 200 finished
+page  6 sent +2.172s status 200 finished
+page  7 sent +2.395s status 200 finished
+page  8 sent +2.611s status 200 finished
+page  9 sent +2.828s status 200 finished
+page 10 sent +3.060s status - pending
+page 11 sent +3.160s status 429 pending
+page 12 sent +3.246s status 429 pending
+page 13 sent +3.375s status 429 pending
+page 14 sent +3.514s status 429 finished
+page 14 sent +44.526s status 401 pending
+sent 16; 200 seen 9; 429 seen 4; 401 seen 2; canceled before any response 0; canceled after headers 0
+
+--- server view ---
+chain (revoked_at | reason): 2026-10-15 15:00:00.22+00 | reuse_detected
+tokens (id | created | rotated | grace_until):
+f8d7e143 | 2026-10-15 14:59:16.262+00 | 2026-10-15 14:59:16.777+00 | 2026-10-15 14:59:26.777+00
+6ddb50ae | 2026-10-15 14:59:16.777+00 | 2026-10-15 14:59:16.965+00 | 2026-10-15 14:59:26.965+00
+a3e4787a | 2026-10-15 14:59:16.965+00 | 2026-10-15 14:59:17.185+00 | 2026-10-15 14:59:27.185+00
+abd95f47 | 2026-10-15 14:59:17.185+00 | 2026-10-15 14:59:17.38+00 | 2026-10-15 14:59:27.38+00
+415e3369 | 2026-10-15 14:59:17.38+00 | 2026-10-15 14:59:17.529+00 | 2026-10-15 14:59:27.529+00
+ac432899 | 2026-10-15 14:59:17.529+00 | 2026-10-15 14:59:17.769+00 | 2026-10-15 14:59:27.769+00
+0b4d0dbe | 2026-10-15 14:59:17.769+00 | 2026-10-15 14:59:17.994+00 | 2026-10-15 14:59:27.994+00
+81d03dad | 2026-10-15 14:59:17.994+00 | 2026-10-15 14:59:18.212+00 | 2026-10-15 14:59:28.212+00
+23b741eb | 2026-10-15 14:59:18.212+00 | 2026-10-15 14:59:18.429+00 | 2026-10-15 14:59:28.429+00
+db36a383 | 2026-10-15 14:59:18.429+00 | 2026-10-15 14:59:18.666+00 | 2026-10-15 14:59:28.666+00
+87f46ee2 | 2026-10-15 14:59:18.666+00 |  |
+chain rate counter: 2026-10-15 14:59:00+00 | 14
+2026-10-15 15:00:00+00 | 1
+api.log: refresh_grace_used 0, refresh_reuse_detected 1

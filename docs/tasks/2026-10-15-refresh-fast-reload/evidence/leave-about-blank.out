@@ -1,0 +1,25 @@
+# leave-repro2.mjs, LEAVE_URL=about:blank, 12 s, three runs each (verbatim output, 15/10/2026)
+## Without keepalive (current admin)
+after leaving: browser cookie row (id | rotated_at): 34f11b8c | 2026-10-15 15:30:42.709+00
+back after 12s: LOGIN PAGE (session lost)
+chain (revoked_at | reason): 2026-10-15 15:30:56.234+00 | reuse_detected
+after leaving: browser cookie row (id | rotated_at): 03b34542 | 2026-10-15 15:30:58.956+00
+back after 12s: LOGIN PAGE (session lost)
+chain (revoked_at | reason): 2026-10-15 15:31:11.843+00 | reuse_detected
+after leaving: browser cookie row (id | rotated_at): 1687bb2a | 2026-10-15 15:31:13.99+00
+back after 12s: LOGIN PAGE (session lost)
+chain (revoked_at | reason): 2026-10-15 15:31:26.958+00 | reuse_detected
+## With KEEPALIVE=1 (init script adds keepalive to the admin's refresh fetch; app code unchanged)
+after leaving: browser cookie row (id | rotated_at): e5f612c4 |
+back after 12s: SIGNED IN
+chain (revoked_at | reason): |
+after leaving: browser cookie row (id | rotated_at): 70a71782 |
+back after 12s: SIGNED IN
+chain (revoked_at | reason): |
+after leaving: browser cookie row (id | rotated_at): fd0d1f5e |
+back after 12s: SIGNED IN
+chain (revoked_at | reason): |
+## Instrument check: each cookie token above was minted by the leave-time refresh (its predecessor rotated at the same instant)
+e5f612c4 | 3 | 2026-10-15 15:31:45.189+00 | 1c51d2a4 rotated 2026-10-15 15:31:45.189+00
+70a71782 | 3 | 2026-10-15 15:32:00.424+00 | 11410f89 rotated 2026-10-15 15:32:00.424+00
+fd0d1f5e | 3 | 2026-10-15 15:32:15.736+00 | 3b9e1c25 rotated 2026-10-15 15:32:15.736+00
