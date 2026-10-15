@@ -214,6 +214,36 @@ test.describe('hero and forms (§5.1, §5.3)', () => {
     }
   });
 
+  test('CPB the hero title never ends on a stub line', async ({ page }) => {
+    test.skip(test.info().project.name !== 'desktop', 'sizes set in the test');
+    for (const width of [1440, 390]) {
+      await page.setViewportSize({ width, height: 900 });
+      for (const locale of ['vi', 'en'] as const) {
+        await page.goto(`/${locale}`);
+        await page.evaluate(() => document.fonts.ready);
+        // Lay each word of the H1 out by line; the last line must be at least 40% of the longest one.
+        const ratio = await page.locator('#hero-title').evaluate((h1) => {
+          const lines = new Map<number, { left: number; right: number }>();
+          const walker = document.createTreeWalker(h1, NodeFilter.SHOW_TEXT);
+          for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+            for (const m of (n.textContent ?? '').matchAll(/\S+/g)) {
+              const range = document.createRange();
+              range.setStart(n, m.index!);
+              range.setEnd(n, m.index! + m[0].length);
+              const r = range.getBoundingClientRect();
+              const top = [...lines.keys()].find((t) => Math.abs(t - r.top) < 4) ?? Math.round(r.top);
+              const line = lines.get(top) ?? { left: r.left, right: r.right };
+              lines.set(top, { left: Math.min(line.left, r.left), right: Math.max(line.right, r.right) });
+            }
+          }
+          const widths = [...lines.entries()].sort(([a], [b]) => a - b).map(([, l]) => l.right - l.left);
+          return widths[widths.length - 1] / Math.max(...widths);
+        });
+        expect(ratio, `${locale} at ${width}`).toBeGreaterThanOrEqual(0.4);
+      }
+    }
+  });
+
   test('S5.1 at 390 the hero form is inside the first screen', async ({ page }) => {
     test.skip(test.info().project.name !== 'mobile', 'phone layout');
     await page.goto('/vi');
