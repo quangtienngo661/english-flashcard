@@ -130,6 +130,10 @@
     }
   },
   "staff": {
+    "toast": {
+      "granted": "Đã cấp vai trò {role} cho {email}.",
+      "removed": "Đã gỡ vai trò của {email}."
+    },
     "createAccount": "Tạo tài khoản",
     "search": {
       "label": "Tìm theo email",

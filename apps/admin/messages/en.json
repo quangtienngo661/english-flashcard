@@ -130,6 +130,10 @@
     }
   },
   "staff": {
+    "toast": {
+      "granted": "Granted the {role} role to {email}.",
+      "removed": "Removed the role from {email}."
+    },
     "createAccount": "Create account",
     "search": {
       "label": "Find by email",

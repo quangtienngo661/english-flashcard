@@ -76,3 +76,42 @@ test('Task 12a: axe has no serious/critical violations on the staff page, with t
   await expect(page.getByRole('dialog')).toBeVisible();
   expect(await scan()).toEqual([]);
 });
+
+async function grantEditor(page: import('@playwright/test').Page, email: string) {
+  await signedInAs(page, 'admin', {
+    'GET /v1/admin/staff': list([row('me', 'admin@wordmet.com', 'admin')]),
+    'GET /v1/admin/users': () => ({ json: row('u9', email, null) }),
+    'PUT /v1/admin/users/u9/staff-role': () => ({ json: row('u9', email, 'editor') }),
+  });
+  await page.goto('/staff');
+  await page.getByLabel(t.search.label).fill(email);
+  await page.getByRole('button', { name: t.search.submit }).click();
+  await page.getByRole('button', { name: t.card.grantEditor }).click();
+  await page.getByRole('dialog').getByRole('button', { name: vi.common.confirm }).click();
+  return t.toast.granted.replace('{role}', 'editor').replace('{email}', email);
+}
+
+test('UBE33 the role toast sits in a labelled region, and axe has no serious or critical violations', async ({ page }) => {
+  const text = await grantEditor(page, 'new@wordmet.com');
+  const region = page.getByRole('region').filter({ hasText: text });
+  await expect(region).toBeVisible();
+  await expect(region).toHaveAccessibleName(/.+/);
+  expect(await seriousViolations(page)).toEqual([]);
+});
+
+test('with reduced motion the toast appears with no animation', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  const text = await grantEditor(page, 'new@wordmet.com');
+  const region = page.getByRole('region').filter({ hasText: text });
+  await expect(region).toBeVisible();
+  // Only the toast is measured: a button fading to its disabled colour (100ms) is a colour change, not motion.
+  expect(await region.evaluate((el) => el.getAnimations({ subtree: true }).length)).toBe(0);
+});
+
+test('a 320-character email in the toast does not widen the page at 390', async ({ page }) => {
+  test.skip(test.info().project.name !== 'mobile', 'phone width');
+  const text = await grantEditor(page, LONG_EMAIL);
+  await expect(page.getByText(text)).toBeVisible();
+  const { scrollWidth, clientWidth } = await page.evaluate(() => ({ scrollWidth: document.scrollingElement!.scrollWidth, clientWidth: document.scrollingElement!.clientWidth }));
+  expect(scrollWidth).toBeLessThanOrEqual(clientWidth);
+});

@@ -10,6 +10,7 @@ import { Banner } from '../../ui/Banner';
 import { Button } from '../../ui/Button';
 import { DataList, type Column } from '../../ui/DataList';
 import { TextField } from '../../ui/TextField';
+import { showToast } from '../../ui/Toast';
 import { CreateAccountDialog } from './CreateAccountDialog';
 import { RoleDialog } from './RoleDialog';
 import { findUser, listStaff, type StaffRole, type StaffUser } from './staff-api';
@@ -173,6 +174,12 @@ export function StaffPage() {
           isSelf={target.id === meId}
           onClose={() => setChange(null)}
           onDone={(updated) => {
+            // UB12: a role change ends with no other sign of success, so confirm it.
+            showToast(
+              updated.staff_role
+                ? t('staff.toast.granted', { role: updated.staff_role, email: updated.email })
+                : t('staff.toast.removed', { email: updated.email }),
+            );
             setChange(null);
             setTarget(updated);
             void refreshList();
