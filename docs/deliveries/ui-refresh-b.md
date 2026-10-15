@@ -123,6 +123,10 @@ một reviewer mới (opus) kiểm cả nhánh ở cuối. Báo cáo review: `do
 | 11 | `4e2c230`, `e7e6e8d` | B25E30: test tái hiện, rồi sửa: 429 khi làm mới phiên thì chờ `Retry-After` (10 giây nếu thiếu), thử tối đa 3 lần, màn tải đếm lùi; 3 lần 429 thì về đăng nhập kèm thông báo, không gọi logout |
 | 12 | `7e2309b` | Đo chuyển động toàn app (UBC15), axe 11 màn × VI/EN × 1440/390, tên file dài trong panel |
 | Review | `7452a19`→`b14efb5`, `7ccd263`→`0e0ae9f`, `a4ee3d0`→`60c9a18` | I1 panel giữ state của dòng trước (nút "Thử lại" có thể publish nhầm lô, B25E28); I3 danh sách không làm mới sau upload; I2 ngưỡng panel 84rem → 87rem. Mỗi lỗi: test đỏ trước, sửa sau |
+| Minor (chủ dự án chọn) | `02b11bf`→`040ff85` | M1–M4: đóng panel xong chỉ trả focus về dòng khi focus bị mất theo panel (không kéo ra sau form Upload); dạng trượt đè dưới 87rem cũng trả về dòng; bấm ✕/Esc lần hai lúc đang đóng không đóng lại lần nữa; `focusRowLink` so `href` dạng chuỗi |
+| | `0260e39`→`dd548f7`, `d15e81b` | M7: câu đếm lùi thành `role="timer"` ngoài vùng `role="status"`, trình đọc màn hình không đọc lại mỗi giây; e2e UBC17 đọc câu đếm từ `timer` |
+| | `7e49084`→`4549bf2` | M6: panel dính `top-3`; vùng chạm 44px trên màn cảm ứng (`pointer-coarse`) cho mục menu, VI/EN, ☰, ✕ ngăn kéo, ✕ panel, "Chi tiết" |
+| | `70902aa`→`b45804b` | "Tải rejected.csv" thành nút dạng link dưới câu "N dòng bị loại", chân panel còn Publish + Hoàn tác một hàng ở 1440 (VI, EN); nhãn trạng thái trên dòng đang chọn có viền trong cùng màu chữ; danh sách menu (sidebar, ngăn kéo) có bóng ở mép còn mục bị che (chỉ CSS) |
 
 ## Kiểm chứng
 
@@ -130,6 +134,9 @@ một reviewer mới (opus) kiểm cả nhánh ở cuối. Báo cáo review: `do
   1 giây hết giờ ngẫu nhiên; chạy lại là qua), e2e API giả `pnpm test:e2e` 132 qua / 48 bỏ qua (test dành riêng một bề rộng),
   e2e API thật `pnpm test:e2e:real` 7/7 (trước đợt sửa sau review; CI `admin-e2e-real` sẽ chạy lại trên DB sạch).
 - Review cả nhánh (reviewer mới, opus): "sẵn sàng sau khi sửa"; 0 critical, 3 important (đã sửa, xem bảng), 12 minor để lại.
+- Sau đợt sửa minor (15/10/2026): `pnpm lint` 0, `pnpm typecheck` 0, unit `pnpm test --maxWorkers=3` 281/281, e2e API giả
+  `ADMIN_E2E_PORT=5183 pnpm test:e2e` 139 qua / 53 bỏ qua; ảnh thật panel lô ở 1440 và ngăn kéo ở 390 đã xem. e2e API thật chưa chạy lại
+  (CI `admin-e2e-real`).
 - Ảnh 1440/1280/390 (VI, thêm EN ở 1440) gồm panel, dialog, toast: `VISUAL=1 pnpm test:e2e e2e/visual.spec.ts` → `test-results/visual/`.
 - B25E30 chạy thật (script tạm, tài khoản e2e, 14 lần tải lại nhanh): API trả 429 `Retry-After: 35`, màn tải đếm lùi 34 → 4 giây rồi
   thử lại; lần thử lại nhận **401 `invalid-token`** và về `/login` không kèm thông báo. Giả thuyết (khớp số đếm, chưa chứng minh):
@@ -152,11 +159,11 @@ một reviewer mới (opus) kiểm cả nhánh ở cuối. Báo cáo review: `do
 
 - **Cần chủ dự án quyết hoặc biết:** dữ liệu thử đã ghi vào `english_learning_b25manual`; B25E30 vẫn có thể mất phiên khi tải lại
   thật nhanh do xoay token (ở trên); UBE21 (đóng dialog rồi chuyển tab ngay) chưa thử tay vì Playwright không làm tab ẩn được.
-- 12 minor của review (chi tiết trong báo cáo review ở trên), tóm tắt: focus về dòng chưa đúng ở dạng panel trượt đè (UBE26) và đôi khi
-  thừa một lần; bấm ✕ hai lần nhanh tạo 2 mục lịch sử; selector từ URL chưa escape; panel dính `top-0` để hở 1,75rem ở đáy khi cuộn;
-  câu đếm lùi nằm trong vùng `role=status`; import vòng `shortId`; kéo cửa sổ qua ngưỡng làm mất dialog hoàn tác đang mở; `aside`
-  nằm trong `main` (axe mức moderate); thêm 401 trong lúc chờ 429 giữa phiên.
-- Rà soát thiết kế (của phiên): trên điện thoại mục menu trong ngăn kéo cao 33px (bản cũ ~40px), VI/EN 32px, ☰/✕/"Chi tiết" 40px
-  (đạt mức 24px của WCAG 2.2 AA, dưới 44px dự án dùng cho nút gửi); chân panel ở 1440 xuống 2 hàng; viên "Một phần" gần mất viền
-  trên dòng đang chọn (cùng nền vàng nhạt); danh sách menu cuộn được mà không có dấu hiệu.
+- Minor của review: chủ dự án chọn sửa M1–M4, M6, M7, M12 và 4 điểm rà soát thiết kế (15/10/2026, xem bảng). **M12 là báo nhầm**
+  (đo thật): axe 4.13 đã đánh dấu luật `landmark-complementary-is-top-level` là `deprecated`, tắt mặc định, và hàm kiểm tra của nó
+  miễn trừ `complementary` nằm trong `main`; bật riêng luật đó trên `/uploads/b1` ở 1440 thì panel nằm trong `passes`. Không sửa gì.
+- Để lại theo lựa chọn của chủ dự án: M5 (panel mở thẳng từ URL bị cắt hiệu ứng vào; chưa có test hook cho mở lại lúc đang đóng),
+  M8 (import vòng `shortId`, chỉ ảnh hưởng HMR), M9 (kéo cửa sổ qua 87rem làm mất dialog hoàn tác đang mở), M11 (thêm 401 trong lúc
+  chờ 429 giữa phiên); menu mở lại bằng chuột trong 150ms đang đóng không nhận focus (React Aria). Ô nhập và Select vẫn cao 40px trên
+  màn cảm ứng (ngoài các mục đã chọn).
 - PR #22 chưa merge: PR admin đặt base `feat/ui-b-landing`, đổi base sang `dev` khi #22 merge.
