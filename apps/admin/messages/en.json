@@ -51,7 +51,8 @@
     "language": "Language",
     "account": "Account",
     "logout": "Log out",
-    "loadingSession": "Checking your session…"
+    "loadingSession": "Checking your session…",
+    "skipToContent": "Skip to main content"
   },
   "nav": {
     "dashboard": "Dashboard",
@@ -182,9 +183,9 @@
       "back": "Back",
       "submit": "Create account",
       "doneTitle": "Account created",
-      "doneBody": "The account was created and the password sent to {email}. If the editor does not get the mail, they can use \"Forgot password\" on the login page.",
+      "doneBody": "The account was created and the password sent to {email}. If the editor does not get the mail, they can use “Forgot password” on the login page.",
       "close": "Close",
-      "emailTaken": "This email already has an account. Use \"Find by email\" above and grant a role.",
+      "emailTaken": "This email already has an account. Use “Find by email” above and grant a role.",
       "mailUnavailable": "The email cannot be sent right now, so no account was created. Please try again in a few minutes."
     }
   },
@@ -256,7 +257,7 @@
     "submit": "Upload",
     "wait": "Wait {seconds} s",
     "empty": "No imports yet",
-    "emptyHint": "Press \"Upload CSV\" to import the first file",
+    "emptyHint": "Press “Upload CSV” to import the first file",
     "list": {
       "file": "File name",
       "rows": "Rows",

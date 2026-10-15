@@ -132,6 +132,7 @@ export function CreateAccountDialog({ onClose, onCreated }: Props) {
         label={t('staff.create.email')}
         type="email"
         autoComplete="off"
+        spellCheck={false}
         value={email}
         onChange={(v) => {
           setEmail(v);

@@ -112,6 +112,7 @@ export function ForgotPasswordPage() {
             type="email"
             name="email"
             autoComplete="username"
+            spellCheck={false}
             placeholder={t('account.login.emailPlaceholder')}
             value={email}
             onChange={setEmail}
@@ -137,6 +138,8 @@ export function ForgotPasswordPage() {
             label={t('account.forgot.code')}
             name="code"
             autoComplete="one-time-code"
+            inputMode="numeric"
+            spellCheck={false}
             value={code}
             onChange={setCode}
             error={codeError ?? undefined}

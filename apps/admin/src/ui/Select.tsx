@@ -22,12 +22,13 @@ export function Select({ label, items, value, onChange, isDisabled, placeholder,
       className="group flex w-full flex-col gap-1.5"
     >
       <Label className="text-ui font-medium text-ink">{label}</Label>
-      <Button className="flex min-h-control w-full items-center justify-between gap-2 rounded-control border border-border-strong bg-surface px-3 py-1.5 text-left text-ui text-ink outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:opacity-60 group-data-invalid:border-danger">
+      <Button className="flex min-h-control w-full items-center justify-between gap-2 rounded-control border border-border-strong bg-surface px-3 py-1.5 text-left text-ui text-ink outline-none hover:bg-bg focus-visible:ring-2 focus-visible:ring-primary disabled:opacity-60 group-data-invalid:border-danger">
         <SelectValue className="min-w-0 truncate" />
         <ChevronDown aria-hidden className="size-4 shrink-0" />
       </Button>
       {error && <Text slot="errorMessage" className="text-xs text-danger-strong">{error}</Text>}
-      <Popover className="w-(--trigger-width) rounded-control bg-surface p-1 shadow-card">
+      {/* React Aria caps the popover's height to the space left on screen; the list scrolls inside it. */}
+      <Popover className="w-(--trigger-width) overflow-y-auto overscroll-contain rounded-control bg-surface p-1 shadow-card">
         <ListBox className="outline-none">
           {items.map((item) => (
             <ListBoxItem

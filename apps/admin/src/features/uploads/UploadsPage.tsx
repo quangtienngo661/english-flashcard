@@ -27,18 +27,18 @@ export function UploadsPage() {
 
   const columns: Column<UploadListItem>[] = [
     { key: 'file', header: t('uploads.list.file'), cell: (b) => b.file_name },
-    { key: 'rows', header: t('uploads.list.rows'), className: 'w-28', cell: (b) => format.number(b.row_count) },
+    { key: 'rows', header: t('uploads.list.rows'), className: 'w-28 tabular-nums', cell: (b) => format.number(b.row_count) },
     { key: 'status', header: t('uploads.list.status'), className: 'w-36', cell: (b) => <StatusBadge status={b.status} /> },
     { key: 'time', header: t('uploads.list.time'), className: 'w-48', cell: (b) => dateTime(b.created_at) },
     {
       key: 'open',
       header: '',
-      className: 'w-28',
+      className: 'w-32',
       card: 'action',
       cell: (b) => (
         <Link
           to={`/uploads/${b.id}`}
-          className="inline-flex min-h-control items-center rounded-control px-4 text-ui font-medium text-primary outline-none hover:bg-primary-soft focus-visible:ring-2 focus-visible:ring-primary"
+          className="inline-flex min-h-control items-center whitespace-nowrap rounded-control px-4 text-ui font-medium text-primary outline-none hover:bg-primary-soft focus-visible:ring-2 focus-visible:ring-primary"
         >
           {t('uploads.open')}
         </Link>

@@ -63,7 +63,7 @@ export function PublishJobPage() {
 
       <div className="flex flex-col gap-3 shell:flex-row shell:items-start shell:justify-between">
         <div className="min-w-0">
-          <h2 className="break-all text-xl font-semibold text-ink">{t('publishJobs.jobTitle', { id: shortId(job.id) })}</h2>
+          <h2 className="wrap-anywhere text-xl font-semibold text-ink">{t('publishJobs.jobTitle', { id: shortId(job.id) })}</h2>
           <p className="text-ui text-muted">{t('publishJobs.createdAt', { time: dateTime(job.created_at) })}</p>
         </div>
         <Button variant="secondary" isPending={downloading} onPress={() => void downloadReport()}>

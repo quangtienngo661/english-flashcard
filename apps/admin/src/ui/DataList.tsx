@@ -58,7 +58,7 @@ export function DataList<T>({ rows, rowKey, columns, state, emptyText, emptyHint
             {rows.map((row) => (
               <tr key={rowKey(row)} className="border-t border-border">
                 {columns.map((c) => (
-                  <td key={c.key} className={`min-w-0 break-all px-4 py-3 align-middle ${c.className ?? ''}`}>
+                  <td key={c.key} className={`min-w-0 wrap-anywhere px-4 py-3 align-middle ${c.className ?? ''}`}>
                     {c.cell(row)}
                   </td>
                 ))}
@@ -72,12 +72,12 @@ export function DataList<T>({ rows, rowKey, columns, state, emptyText, emptyHint
           <li key={rowKey(row)} data-testid="card" className="flex flex-col gap-1.5 rounded-panel bg-surface px-4 py-3 shadow-card">
             {columns.map((c, i) => {
               const role = c.card ?? (i === 0 ? 'title' : 'field');
-              if (role === 'title') return <div key={c.key} className="min-w-0 break-all font-medium text-ink">{c.cell(row)}</div>;
+              if (role === 'title') return <div key={c.key} className="min-w-0 wrap-anywhere font-medium text-ink">{c.cell(row)}</div>;
               if (role === 'action') return <div key={c.key} className="flex">{c.cell(row)}</div>;
               return (
                 <div key={c.key} className="flex min-w-0 flex-wrap items-center gap-x-2 text-xs text-muted">
                   <span>{c.header}:</span>
-                  <span className="min-w-0 break-all text-ui text-ink">{c.cell(row)}</span>
+                  <span className="min-w-0 wrap-anywhere text-ui text-ink">{c.cell(row)}</span>
                 </div>
               );
             })}

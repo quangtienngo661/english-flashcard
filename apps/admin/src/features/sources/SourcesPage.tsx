@@ -24,7 +24,7 @@ export function SourcesPage() {
     { key: 'name', header: t('sources.list.name'), cell: (s) => s.name },
     { key: 'version', header: t('sources.list.version'), className: 'w-32', cell: (s) => s.version || '—' },
     { key: 'license', header: t('sources.list.license'), className: 'w-40', cell: (s) => s.license || '—' },
-    { key: 'priority', header: t('sources.list.priority'), className: 'w-24', cell: (s) => s.display_priority },
+    { key: 'priority', header: t('sources.list.priority'), className: 'w-24 tabular-nums', cell: (s) => s.display_priority },
   ];
 
   return (
@@ -114,13 +114,15 @@ export function SourceForm() {
     >
       {banner && <Banner variant="error">{banner}</Banner>}
       <div className="grid gap-4 shell:grid-cols-2">
-        <TextField label={star(t('sources.form.name'), true)} value={name} onChange={setName} error={errors.name} />
-        <TextField label={star(t('sources.form.version'), asLevelSource)} value={version} onChange={setVersion} error={errors.version} />
-        <TextField label={t('sources.form.url')} value={url} onChange={setUrl} error={errors.url} />
-        <TextField label={star(t('sources.form.license'), asLevelSource)} value={license} onChange={setLicense} error={errors.license} />
-        <TextField label={t('sources.form.attribution')} value={attribution} onChange={setAttribution} />
+        <TextField label={star(t('sources.form.name'), true)} autoComplete="off" value={name} onChange={setName} error={errors.name} />
+        <TextField label={star(t('sources.form.version'), asLevelSource)} autoComplete="off" value={version} onChange={setVersion} error={errors.version} />
+        <TextField label={t('sources.form.url')} type="url" autoComplete="off" spellCheck={false} value={url} onChange={setUrl} error={errors.url} />
+        <TextField label={star(t('sources.form.license'), asLevelSource)} autoComplete="off" value={license} onChange={setLicense} error={errors.license} />
+        <TextField label={t('sources.form.attribution')} autoComplete="off" value={attribution} onChange={setAttribution} />
         <TextField
           label={t('sources.form.priority')}
+          autoComplete="off"
+          inputMode="numeric"
           value={priority}
           onChange={setPriority}
           description={t('sources.form.priorityHint')}

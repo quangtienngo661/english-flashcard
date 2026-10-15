@@ -18,7 +18,9 @@ function Brand() {
       <span aria-hidden className="flex size-7 items-center justify-center rounded-control bg-primary text-ui font-semibold text-on-primary">
         W
       </span>
-      <span className="text-ui font-semibold text-ink">{t('shell.brand')}</span>
+      <span translate="no" className="text-ui font-semibold text-ink">
+        {t('shell.brand')}
+      </span>
     </div>
   );
 }
@@ -73,7 +75,7 @@ function LanguageSwitch() {
           aria-pressed={locale === l}
           onPress={() => setLocale(l)}
           className={`min-h-control px-2.5 text-ui font-medium outline-none focus-visible:ring-2 focus-visible:ring-primary ${
-            locale === l ? 'bg-primary-soft text-primary' : 'bg-surface text-ink'
+            locale === l ? 'bg-primary-soft text-primary' : 'bg-surface text-ink hover:bg-bg'
           }`}
         >
           {l.toUpperCase()}
@@ -98,6 +100,16 @@ export function Shell() {
 
   return (
     <div className="flex min-h-dvh bg-bg text-ink">
+      <a
+        href="#main"
+        onClick={(event) => {
+          event.preventDefault();
+          document.getElementById('main')?.focus();
+        }}
+        className="sr-only rounded-control bg-surface px-3 py-2 text-ui font-medium text-primary shadow-card outline-none focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus-visible:ring-2 focus-visible:ring-primary"
+      >
+        {t('shell.skipToContent')}
+      </a>
       <aside className="sticky top-0 hidden h-dvh w-60 min-w-sidebar-min max-w-sidebar-max shrink-0 flex-col overflow-y-auto bg-surface px-3 py-4 shadow-nav shell:flex">
         <Brand />
         <SidebarNav permissions={me.permissions} />
@@ -108,7 +120,7 @@ export function Shell() {
           <AriaButton
             aria-label={t('shell.openMenu')}
             onPress={() => setDrawerOpen(true)}
-            className="flex min-h-control min-w-control items-center justify-center rounded-control outline-none focus-visible:ring-2 focus-visible:ring-primary shell:hidden"
+            className="flex min-h-control min-w-control items-center justify-center rounded-control outline-none hover:bg-bg focus-visible:ring-2 focus-visible:ring-primary shell:hidden"
           >
             <MenuIcon aria-hidden className="size-5" />
           </AriaButton>
@@ -117,7 +129,7 @@ export function Shell() {
           <MenuTrigger>
             <AriaButton
               aria-label={`${t('shell.account')}: ${me.email}`}
-              className="flex min-h-control min-w-0 items-center gap-1 rounded-control px-2 text-ui font-medium text-ink outline-none focus-visible:ring-2 focus-visible:ring-primary"
+              className="flex min-h-control min-w-0 items-center gap-1 rounded-control px-2 text-ui font-medium text-ink outline-none hover:bg-bg focus-visible:ring-2 focus-visible:ring-primary"
             >
               <span aria-hidden className="shell:hidden">
                 {me.email.slice(0, 2).toUpperCase()}
@@ -135,7 +147,7 @@ export function Shell() {
           </MenuTrigger>
         </header>
 
-        <main className="flex min-w-0 flex-1 flex-col gap-4 pb-10 pt-6">
+        <main id="main" tabIndex={-1} className="flex min-w-0 flex-1 flex-col gap-4 pb-10 pt-6 outline-none">
           {offline && (
             <Banner
               variant="offline"
@@ -156,7 +168,7 @@ export function Shell() {
         isOpen={drawerOpen}
         onOpenChange={setDrawerOpen}
         isDismissable
-        className="fixed inset-0 z-40 bg-ink/40 shell:hidden"
+        className="fixed inset-0 z-40 overscroll-contain bg-ink/40 shell:hidden"
       >
         <Modal className="fixed inset-y-0 left-0 w-60 max-w-full bg-surface shadow-nav outline-none">
           <Dialog aria-label={t('shell.mainNav')} className="flex h-full flex-col gap-1 overflow-y-auto px-3 py-4 outline-none">
@@ -165,7 +177,7 @@ export function Shell() {
               <AriaButton
                 aria-label={t('shell.closeMenu')}
                 onPress={() => setDrawerOpen(false)}
-                className="flex min-h-control min-w-control items-center justify-center rounded-control outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                className="flex min-h-control min-w-control items-center justify-center rounded-control outline-none hover:bg-bg focus-visible:ring-2 focus-visible:ring-primary"
               >
                 <X aria-hidden className="size-5" />
               </AriaButton>

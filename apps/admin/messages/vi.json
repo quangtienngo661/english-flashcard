@@ -51,7 +51,8 @@
     "language": "Ngôn ngữ",
     "account": "Tài khoản",
     "logout": "Đăng xuất",
-    "loadingSession": "Đang kiểm tra phiên đăng nhập…"
+    "loadingSession": "Đang kiểm tra phiên đăng nhập…",
+    "skipToContent": "Bỏ qua tới nội dung chính"
   },
   "nav": {
     "dashboard": "Dashboard",
@@ -182,9 +183,9 @@
       "back": "Quay lại",
       "submit": "Tạo tài khoản",
       "doneTitle": "Đã tạo tài khoản",
-      "doneBody": "Đã tạo tài khoản và gửi mật khẩu tới {email}. Nếu editor không nhận được thư, họ dùng \"Quên mật khẩu\" ở trang đăng nhập.",
+      "doneBody": "Đã tạo tài khoản và gửi mật khẩu tới {email}. Nếu editor không nhận được thư, họ dùng “Quên mật khẩu” ở trang đăng nhập.",
       "close": "Đóng",
-      "emailTaken": "Email này đã có tài khoản. Dùng \"Tìm theo email\" ở trên rồi cấp vai trò.",
+      "emailTaken": "Email này đã có tài khoản. Dùng “Tìm theo email” ở trên rồi cấp vai trò.",
       "mailUnavailable": "Hiện chưa gửi được email nên chưa tạo tài khoản. Vui lòng thử lại sau ít phút."
     }
   },
@@ -256,7 +257,7 @@
     "submit": "Upload",
     "wait": "Đợi {seconds} giây",
     "empty": "Chưa có lô nhập nào",
-    "emptyHint": "Bấm \"Upload CSV\" để nhập file đầu tiên",
+    "emptyHint": "Bấm “Upload CSV” để nhập file đầu tiên",
     "list": {
       "file": "Tên file",
       "rows": "Số dòng",

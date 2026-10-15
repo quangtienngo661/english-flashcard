@@ -55,7 +55,7 @@ export function PublishJobsPage() {
       cell: (j) => filterSummary(j.filter, (id) => t('publishJobs.batchFilter', { id })) || t('publishJobs.filterNone'),
     },
     { key: 'status', header: t('publishJobs.list.status'), className: 'w-36', cell: (j) => <StatusBadge status={j.status} /> },
-    { key: 'count', header: t('publishJobs.list.count'), className: 'w-28', cell: (j) => format.number(j.snapshot_count) },
+    { key: 'count', header: t('publishJobs.list.count'), className: 'w-28 tabular-nums', cell: (j) => format.number(j.snapshot_count) },
     { key: 'time', header: t('publishJobs.list.time'), className: 'w-48', cell: (j) => dateTime(j.created_at) },
   ];
 

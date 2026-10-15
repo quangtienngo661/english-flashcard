@@ -105,7 +105,7 @@ export function BatchPage() {
 
       <div className="flex flex-col gap-3 shell:flex-row shell:items-start shell:justify-between">
         <div className="min-w-0">
-          <h2 className="break-all text-xl font-semibold text-ink">{batch.file_name}</h2>
+          <h2 className="wrap-anywhere text-xl font-semibold text-ink">{batch.file_name}</h2>
           <p className="text-ui text-muted">{subtitle}</p>
         </div>
         <div className="flex flex-wrap gap-2">

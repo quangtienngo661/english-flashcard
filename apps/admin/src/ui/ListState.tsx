@@ -11,7 +11,7 @@ export function ListState({ state, emptyText, emptyHint, onRetry }: Props) {
   if (state === 'loading') {
     return (
       <div role="status" className={box}>
-        <Loader aria-hidden className="size-5 animate-spin" />
+        <Loader aria-hidden className="size-5 motion-safe:animate-spin" />
         <p>{t('list.loading')}</p>
       </div>
     );

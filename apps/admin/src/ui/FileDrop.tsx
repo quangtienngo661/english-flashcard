@@ -43,7 +43,7 @@ export function FileDrop({ fileName, detail, error, prompt, hint, chooseLabel, c
       <FileUp aria-hidden className="size-5 text-muted" />
       {error && <p className="break-words text-ui font-medium text-danger-strong">{error}</p>}
       {hasFile ? (
-        <p className="max-w-full break-all text-ui font-medium text-ink">{fileName}</p>
+        <p className="max-w-full wrap-anywhere text-ui font-medium text-ink">{fileName}</p>
       ) : (
         !error && <p className="text-ui font-medium text-ink">{prompt}</p>
       )}
