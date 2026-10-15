@@ -173,6 +173,18 @@ test.describe('header (UB16)', () => {
 });
 
 test.describe('hero and forms (§5.1, §5.3)', () => {
+  test('CPA owner review: from md the hero starts 48px below the header', async ({ page }) => {
+    test.skip(test.info().project.name !== 'desktop', 'wide layout');
+    for (const width of [1440, 2000]) {
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto('/en');
+      const header = (await page.getByRole('banner').boundingBox())!;
+      const hero = page.locator('section[aria-labelledby="hero-title"]');
+      const first = (await hero.locator(':scope > div > *').first().boundingBox())!;
+      expect(Math.round(first.y - (header.y + header.height)), `at ${width}`).toBe(48);
+    }
+  });
+
   test('S5.1 at 390 the hero form is inside the first screen', async ({ page }) => {
     test.skip(test.info().project.name !== 'mobile', 'phone layout');
     await page.goto('/vi');

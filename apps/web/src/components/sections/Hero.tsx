@@ -40,7 +40,7 @@ export async function Hero() {
   };
 
   return (
-    <section aria-labelledby="hero-title" className="bg-primary pt-10 pb-14 text-on-primary md:pt-20 md:pb-24">
+    <section aria-labelledby="hero-title" className="bg-primary pt-10 pb-14 text-on-primary md:pt-12 md:pb-24">
       {/* DOM order puts the form before the practice card so phones see it in the first screen (design §5.1). */}
       <Container className="grid grid-cols-1 items-center gap-7 lg:grid-cols-2 lg:gap-x-12 lg:gap-y-6">
         <div className="lg:col-start-1">
