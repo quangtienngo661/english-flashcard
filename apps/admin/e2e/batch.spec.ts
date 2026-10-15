@@ -193,3 +193,17 @@ test('Review Focus 3: resizing 1280 → 1440 → 1280 with the panel open keeps 
   await expect(page.getByRole('dialog', { name: 'cefr-j-1.5.csv' })).toBeVisible();
   await expect(page.locator('[data-testid="detail-panel"]')).toHaveCount(1);
 });
+
+// Final review I2: the panel may only sit beside the table while the table stays a table (UB22).
+for (const [width, beside] of [[1350, false], [1392, true]] as const) {
+  test(`UB22 at ${width} with the panel open the list is still a table (${beside ? 'panel beside it' : 'panel over it'})`, async ({ page }) => {
+    desktopOnly();
+    await page.setViewportSize({ width, height: 800 });
+    await signedInAs(page, 'editor', { [LIST]: list, [BATCH]: () => ({ json: batch() }) });
+    await page.goto('/uploads/b1');
+    await expect(panel(page)).toBeVisible();
+    expect(await panel(page).evaluate((el) => el.tagName)).toBe(beside ? 'ASIDE' : 'SECTION');
+    await expect(page.locator('table')).toBeVisible();
+    await expect(page.locator('[data-testid="card"]').first()).toBeHidden();
+  });
+}
