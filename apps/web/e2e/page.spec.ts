@@ -173,7 +173,7 @@ test.describe('header (UB16)', () => {
 });
 
 test.describe('hero and forms (§5.1, §5.3)', () => {
-  test('CPA owner review: from md the hero starts 48px below the header', async ({ page }) => {
+  test('CPA owner review: from md the hero starts 32px below the header', async ({ page }) => {
     test.skip(test.info().project.name !== 'desktop', 'wide layout');
     for (const width of [1440, 2000]) {
       await page.setViewportSize({ width, height: 900 });
@@ -181,7 +181,7 @@ test.describe('hero and forms (§5.1, §5.3)', () => {
       const header = (await page.getByRole('banner').boundingBox())!;
       const hero = page.locator('section[aria-labelledby="hero-title"]');
       const first = (await hero.locator(':scope > div > *').first().boundingBox())!;
-      expect(Math.round(first.y - (header.y + header.height)), `at ${width}`).toBe(48);
+      expect(Math.round(first.y - (header.y + header.height)), `at ${width}`).toBe(32);
     }
   });
 
