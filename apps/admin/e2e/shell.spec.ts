@@ -176,6 +176,23 @@ test.describe('shell (vi)', () => {
     expect(Object.entries(heights).filter(([, height]) => height < 44)).toEqual([]);
   });
 
+  test('owner 15/10/2026: a menu list that scrolls shades its edge where items are hidden (sidebar at 1440×640, drawer at 390)', async ({ page }, info) => {
+    if (info.project.name === 'desktop') await page.setViewportSize({ width: 1440, height: 640 });
+    await signedInAs(page, 'admin', { 'GET /v1/admin/content/uploads': () => emptyUploads });
+    await page.goto('/uploads');
+    await openNavIfCollapsed(page);
+    const list = page.getByRole('navigation', { name: vi.shell.mainNav }).locator('xpath=..');
+    // Control: the list really is cut off here, which is when the hint matters.
+    expect(await list.evaluate((el) => el.scrollHeight > el.clientHeight)).toBe(true);
+    const paint = await list.evaluate((el) => {
+      const style = getComputedStyle(el);
+      return { attachment: style.backgroundAttachment, gradients: style.backgroundImage.match(/gradient\(/g)?.length ?? 0 };
+    });
+    // Two canvas covers that scroll with the items (local) over two shadows fixed to the box (scroll): a shadow shows only
+    // at an end that still hides items.
+    expect(paint).toEqual({ attachment: 'local, local, scroll, scroll', gradients: 4 });
+  });
+
   test('offline (spec §8): a request that aborts shows the offline banner, keeps the data, and "Thử lại" refetches', async ({ page }) => {
     let dead = false;
     await signedInAs(page, 'editor', {

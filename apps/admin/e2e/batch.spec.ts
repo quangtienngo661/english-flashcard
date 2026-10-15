@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import en from '../messages/en.json' with { type: 'json' };
 import vi from '../messages/vi.json' with { type: 'json' };
 import { requestCount, signedInAs, type MockHandler } from './support/mock-api';
 import { seriousViolations } from './support/axe';
@@ -30,6 +31,39 @@ const list: MockHandler = () => ({ json: { items: [row('b1', 'one.csv'), row('b2
 const b2: MockHandler = () => ({ json: batch({ id: 'b2', file_name: 'second.csv', status: 'succeeded', counters: { processed: 5, created: 5, rejected: 0 } }) });
 const panel = (page: Page) => page.getByTestId('detail-panel');
 const desktopOnly = () => test.skip(test.info().project.name !== 'desktop', 'sets its own viewport');
+
+for (const [lang, copy] of [['vi', vi], ['en', en]] as const) {
+  test(`owner 15/10/2026 (${lang}): at 1440 Publish and Revert share one footer row; rejected.csv sits under the rejected sentence`, async ({ page }) => {
+    desktopOnly();
+    await page.addInitScript((l) => localStorage.setItem('wordmet-admin.locale', l), lang);
+    await signedInAs(page, 'editor', { [LIST]: list, [BATCH]: () => ({ json: batch() }) });
+    await page.goto('/uploads/b1');
+    const publish = panel(page).getByRole('button', { name: copy.batch.publish });
+    await expect(publish).toBeVisible();
+    // batch() has 1050 rejected rows, written the locale's way.
+    const sentence = panel(page).getByText(copy.batch.rejectedSummary.replace('{count}', lang === 'vi' ? '1.050' : '1,050'), { exact: true });
+    const [p, revert, download, said] = await Promise.all(
+      [publish, panel(page).getByRole('button', { name: copy.batch.revert }), panel(page).getByRole('button', { name: copy.batch.rejected }), sentence].map(async (l) => (await l.boundingBox())!),
+    );
+    expect(Math.round(revert.y)).toBe(Math.round(p.y));
+    expect(download.y + download.height).toBeLessThanOrEqual(p.y);
+    expect(download.y - (said.y + said.height)).toBeGreaterThanOrEqual(0);
+    expect(download.y - (said.y + said.height)).toBeLessThan(16);
+  });
+}
+
+test('owner 15/10/2026: on the selected row the status pill gets an outline in its own colour; other rows keep none', async ({ page }) => {
+  desktopOnly();
+  await signedInAs(page, 'editor', { [LIST]: list, [BATCH]: () => ({ json: batch() }) });
+  await page.goto('/uploads/b1');
+  const table = page.getByRole('table');
+  const selected = table.locator('tr[data-selected]').getByText(vi.status.partial, { exact: true });
+  const other = table.locator('tr:not([data-selected])').getByText(vi.status.succeeded, { exact: true });
+  await expect(selected).toBeVisible();
+  const boxShadow = (l: typeof selected) => l.evaluate((el) => getComputedStyle(el).boxShadow);
+  expect(await boxShadow(selected)).toContain('rgb(122, 82, 0)'); // --color-warning, the pill's text colour
+  expect(await boxShadow(other)).toBe('none');
+});
 
 test('review M6: scrolled, the side panel keeps 0.75rem above it and 1rem below, where it sat before the scroll', async ({ page }) => {
   desktopOnly();
