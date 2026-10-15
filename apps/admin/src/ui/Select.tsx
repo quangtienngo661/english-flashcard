@@ -28,7 +28,7 @@ export function Select({ label, items, value, onChange, isDisabled, placeholder,
       </Button>
       {error && <Text slot="errorMessage" className="text-xs text-danger">{error}</Text>}
       {/* React Aria caps the popover's height to the space left on screen; the list scrolls inside it. */}
-      <Popover className="w-(--trigger-width) overflow-y-auto overscroll-contain rounded-inner bg-surface p-1 shadow-menu">
+      <Popover offset={4} className="w-(--trigger-width) overflow-y-auto overscroll-contain rounded-inner bg-surface p-1 shadow-menu motion-safe:data-entering:animate-menu-in motion-safe:placement-top:data-entering:animate-menu-in-up motion-safe:data-exiting:animate-menu-out">
         <ListBox className="outline-none">
           {items.map((item) => (
             <ListBoxItem

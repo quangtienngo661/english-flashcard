@@ -90,7 +90,7 @@ function AccountMenu({ email, onLogout }: { email: string; onLogout: () => void 
         <span className="min-w-0 truncate text-ui text-ink">{email}</span>
       </AriaButton>
       {/* The account sits at the foot of the sidebar, so its menu opens upwards. */}
-      <Popover placement="top start" offset={4} className="min-w-48 rounded-inner bg-surface p-1.5 shadow-menu">
+      <Popover placement="top start" offset={4} className="min-w-48 rounded-inner bg-surface p-1.5 shadow-menu motion-safe:data-entering:animate-menu-in motion-safe:placement-top:data-entering:animate-menu-in-up motion-safe:data-exiting:animate-menu-out">
         <Menu aria-label={t('shell.account')} onAction={onLogout} className="outline-none">
           <MenuItem id="logout" className="cursor-pointer rounded-sm px-3 py-2 text-ui text-ink outline-none data-focused:bg-primary-soft">
             {t('shell.logout')}
@@ -198,8 +198,8 @@ export function Shell() {
         </ShellSlotsContext.Provider>
       </div>
 
-      <ModalOverlay isOpen={drawerOpen} onOpenChange={setDrawerOpen} isDismissable className="fixed inset-0 z-40 overscroll-contain bg-ink/45 shell:hidden">
-        <Modal className="fixed inset-y-0 left-0 w-drawer max-w-full bg-canvas outline-none">
+      <ModalOverlay isOpen={drawerOpen} onOpenChange={setDrawerOpen} isDismissable className="fixed inset-0 z-40 overscroll-contain bg-ink/45 shell:hidden motion-safe:data-entering:animate-overlay-in motion-safe:data-exiting:animate-overlay-out">
+        <Modal className="fixed inset-y-0 left-0 w-drawer max-w-full bg-canvas outline-none motion-safe:data-entering:animate-drawer-in motion-safe:data-exiting:animate-drawer-out">
           <Dialog aria-label={t('shell.mainNav')} className="flex h-full flex-col overflow-y-auto px-3 pb-4 pt-5 outline-none">
             <div className="flex items-center justify-between pb-3 pl-2.5">
               <Logo />
