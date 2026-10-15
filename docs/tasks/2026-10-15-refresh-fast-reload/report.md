@@ -1,7 +1,11 @@
 # Tải lại admin thật nhanh vẫn mất phiên sau bản sửa B25E30: điều tra (15/10/2026)
 
-Nhánh `docs/refresh-fast-reload` (cắt từ `feat/ui-b-admin`, `da8976c`). Mới điều tra, **chưa sửa code**. Bằng chứng nằm
-trong `evidence/`, cách chạy lại ở cuối file.
+Nhánh `fix/admin-refresh-keepalive` (lúc viết tên là `docs/refresh-fast-reload`; cắt từ `feat/ui-b-admin`, `da8976c`).
+Bằng chứng nằm trong `evidence/`, cách chạy lại ở cuối file.
+
+> **Trạng thái 15/10/2026:** chủ dự án chọn phương án A. Design:
+> [`../../superpowers/specs/2026-10-15-admin-refresh-keepalive-design.md`](../../superpowers/specs/2026-10-15-admin-refresh-keepalive-design.md)
+> (chờ duyệt). Chưa sửa code.
 
 ## Kết luận
 
@@ -70,7 +74,9 @@ plan, rồi TDD.
 
 - **A mới thử bằng một request do script gửi** (thí nghiệm 7), chưa chạy hết luồng "admin dùng keepalive + 429 + thử lại"
   vì như vậy phải sửa code admin. Suy luận: kết hợp thí nghiệm 7 (cookie luôn mới) với thí nghiệm 3 (cookie mới thì thử
-  lại thành công). Cần chạy thật khi làm.
+  lại thành công). Cần chạy thật khi làm. *Bổ sung cùng ngày, lúc viết design:* đã chạy cả hai luồng trên admin thật với
+  `keepalive` giả lập bằng init script (code app không đổi): rời trang rồi quay lại sau 12 s còn đăng nhập 3/3, đường 429
+  còn đăng nhập (`leave-about-blank.out`, `browser-inflight-all-keepalive.out`). Vẫn cần chạy lại trên code thật.
 - `keepalive` chỉ mới thử trên Chromium 153 (bản đi kèm Playwright 1.63). Firefox và Safari: **chưa thử**.
 - Ở production, API ở xa nên request refresh chạy lâu hơn nhiều so với ~20 ms ở máy local, nên khả năng F5 rơi đúng lúc
   refresh đang chạy cao hơn (`ASSUMPTION`, chưa đo).
@@ -89,4 +95,6 @@ Cần `docker compose up -d` (Postgres 5434, Redis 6380, Mailpit 8025), `pnpm in
 còn trên Postgres local, có thể xóa). `evidence/stack.mjs` chạy API (cổng 3300) và admin (cổng 5273). Secret được sinh
 trong bộ nhớ và truyền qua biến môi trường, không có file `.env`. Script cũng tạo một tài khoản admin thử. Sau đó chạy
 `http-repro.mjs`, `browser-repro.mjs <fast|slow|inflight> [gapMs] [reloads] [abortPages]`, `leave-repro.mjs [giây]`,
-`keepalive-probe.mjs [số lần]`. Các script có đường dẫn worktree viết cứng, cần sửa nếu chạy ở chỗ khác.
+`keepalive-probe.mjs [số lần]`. Bản `leave-repro2.mjs` và `browser-repro2.mjs` nhận thêm biến môi trường `LEAVE_URL` (trang
+để rời tới, ví dụ `about:blank`) và `KEEPALIVE=1` (init script thêm `keepalive` cho refresh của admin). Các script có đường
+dẫn worktree viết cứng, cần sửa nếu chạy ở chỗ khác.
