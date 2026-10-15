@@ -279,7 +279,6 @@
     "open": "Details"
   },
   "batch": {
-    "back": "Imports",
     "rejected": "Download rejected.csv",
     "publish": "Publish this batch",
     "revert": "Revert batch",

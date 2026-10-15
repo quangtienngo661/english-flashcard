@@ -1,5 +1,5 @@
 import { useInfiniteQuery } from '@tanstack/react-query';
-import { Link, useNavigate } from 'react-router';
+import { Link, useMatch, useNavigate } from 'react-router';
 import { useTranslations, useFormatter } from 'use-intl';
 import { useApi } from '../../auth/session-context';
 import { useCan } from '../../auth/use-can';
@@ -7,8 +7,12 @@ import { useDateTime } from '../../i18n/use-date-time';
 import { PageActions } from '../../app/shell-slots';
 import { Button } from '../../ui/Button';
 import { DataList, type Column } from '../../ui/DataList';
+import { DetailPanel } from '../../ui/DetailPanel';
+import { focusRowLink } from '../../ui/focus-row-link';
+import { useRetained } from '../../ui/use-retained';
 import { listUploads, type UploadListItem } from '../content/content-api';
 import { StatusBadge } from '../jobs/StatusBadge';
+import { BatchPanel } from './BatchPanel';
 
 export function UploadsPage() {
   const t = useTranslations();
@@ -17,6 +21,9 @@ export function UploadsPage() {
   const format = useFormatter();
   const dateTime = useDateTime();
   const canUpload = useCan('content.edit');
+  // `/uploads/:id` keeps the list and opens the batch in a panel beside it (UB8); the closing panel keeps its batch.
+  const panelId = useMatch('/uploads/:id')?.params.id;
+  const shownId = useRetained(panelId);
 
   const list = useInfiniteQuery({
     queryKey: ['uploads'],
@@ -55,6 +62,8 @@ export function UploadsPage() {
         rows={rows}
         rowKey={(b) => b.id}
         columns={columns}
+        rowHref={(b) => `/uploads/${b.id}`}
+        selectedKey={panelId}
         state={list.isPending ? 'loading' : list.isError && rows.length === 0 ? 'error' : 'ready'}
         emptyText={t('uploads.empty')}
         emptyHint={canUpload ? t('uploads.emptyHint') : undefined}
@@ -69,6 +78,16 @@ export function UploadsPage() {
           )}
           <p className="text-xs text-muted">{t('list.shown', { count: rows.length })}</p>
         </div>
+      )}
+      {shownId && (
+        <DetailPanel
+          isOpen={panelId !== undefined}
+          onClose={() => void navigate('/uploads')}
+          onExited={() => focusRowLink(`/uploads/${shownId}`)}
+          focusKey={shownId}
+        >
+          <BatchPanel id={shownId} />
+        </DetailPanel>
       )}
     </div>
   );

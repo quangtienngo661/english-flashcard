@@ -26,13 +26,17 @@ const batch = (over: Record<string, unknown> = {}) => ({
   ...over,
 });
 const json = (body: unknown, status = 200) => Response.json(body, { status });
+// The batch opens over its list now (UB8): every render also answers the list, whose row for b1 has its own name.
+const LIST = 'GET /v1/admin/content/uploads?page_size=20';
+const listed = (id: string, file_name: string) => ({ id, status: 'queued', file_name, row_count: 1, created_at: '2026-10-14T09:30:00.000Z' });
+const list = () => json({ items: [listed('b1', 'b1-in-list.csv'), listed('b2', 'b2-in-list.csv')], next_page_token: null });
 const posts = (calls: Call[], path: string) => calls.filter((c) => c.method === 'POST' && c.path === path);
 
 beforeEach(() => saveBlob.mockClear());
 
-describe('batch page', () => {
+describe('batch panel', () => {
   it('a finished batch: name, status, the five counters, rejected sentence and warnings', async () => {
-    renderApp('/uploads/b1', { [BATCH]: () => json(batch()) });
+    renderApp('/uploads/b1', { [LIST]: list, [BATCH]: () => json(batch()) });
     expect(await screen.findByRole('heading', { level: 2, name: 'cefr-j-1.5.csv' })).toBeInTheDocument();
     expect(screen.getByText(vi.status.succeeded)).toBeInTheDocument();
     for (const n of ['3.200', '2.400', '500', '212', '88']) expect(screen.getAllByText(n).length).toBeGreaterThan(0);
@@ -42,18 +46,18 @@ describe('batch page', () => {
   });
 
   it('while queued the counters read "—" and the page says it refreshes by itself', async () => {
-    renderApp('/uploads/b1', { [BATCH]: () => json(batch({ status: 'queued', counters: {}, row_count: 0, finished_at: null, started_at: null, created_at: new Date().toISOString() })) });
+    renderApp('/uploads/b1', { [LIST]: list, [BATCH]: () => json(batch({ status: 'queued', counters: {}, row_count: 0, finished_at: null, started_at: null, created_at: new Date().toISOString() })) });
     expect(await screen.findByText(/Đang chờ worker nhận việc/)).toBeInTheDocument();
     expect(screen.getAllByText('—').length).toBeGreaterThanOrEqual(4);
   });
 
   it('running shows the progress sentence', async () => {
-    renderApp('/uploads/b1', { [BATCH]: () => json(batch({ status: 'running', counters: { processed: 1200, created: 700 }, finished_at: null })) });
+    renderApp('/uploads/b1', { [LIST]: list, [BATCH]: () => json(batch({ status: 'running', counters: { processed: 1200, created: 700 }, finished_at: null })) });
     expect(await screen.findByText('Đang xử lý: 1.200 / 3.200 dòng')).toBeInTheDocument();
   });
 
   it('failed: a failure message and no publish or revert button', async () => {
-    renderApp('/uploads/b1', { [BATCH]: () => json(batch({ status: 'failed', counters: {} })) });
+    renderApp('/uploads/b1', { [LIST]: list, [BATCH]: () => json(batch({ status: 'failed', counters: {} })) });
     expect(await screen.findByText(t.failed)).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: t.publish })).toBeNull();
     expect(screen.queryByRole('button', { name: t.revert })).toBeNull();
@@ -61,7 +65,7 @@ describe('batch page', () => {
   });
 
   it('B25E11: reverted: true hides "Hoàn tác lô" and says the batch was reverted', async () => {
-    renderApp('/uploads/b1', { [BATCH]: () => json(batch({ reverted: true })) });
+    renderApp('/uploads/b1', { [LIST]: list, [BATCH]: () => json(batch({ reverted: true })) });
     expect(await screen.findByText(t.revertedNotice)).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: t.revert })).toBeNull();
   });
@@ -74,20 +78,20 @@ describe('batch page', () => {
     ['partial', {}, true],
     ['succeeded', { reverted: true }, false],
   ])('B25E28: "Publish lô này" for status %s %j is %s', async (status, over, shown) => {
-    renderApp('/uploads/b1', { [BATCH]: () => json(batch({ status, ...over })) });
+    renderApp('/uploads/b1', { [LIST]: list, [BATCH]: () => json(batch({ status, ...over })) });
     await screen.findByRole('heading', { level: 2, name: 'cefr-j-1.5.csv' });
     if (shown) expect(screen.getByRole('button', { name: t.publish })).toBeInTheDocument();
     else expect(screen.queryByRole('button', { name: t.publish })).toBeNull();
   });
 
   it('"Tải rejected.csv" is offered only when the batch has rejected rows', async () => {
-    renderApp('/uploads/b1', { [BATCH]: () => json(batch({ counters: { processed: 5, created: 5, rejected: 0 } })) });
+    renderApp('/uploads/b1', { [LIST]: list, [BATCH]: () => json(batch({ counters: { processed: 5, created: 5, rejected: 0 } })) });
     await screen.findByRole('heading', { level: 2, name: 'cefr-j-1.5.csv' });
     expect(screen.queryByRole('button', { name: t.rejected })).toBeNull();
   });
 
   it('B25#14 (unit): "Tải rejected.csv" saves the API response as rejected-<id>.csv', async () => {
-    renderApp('/uploads/b1', {
+    renderApp('/uploads/b1', { [LIST]: list,
       [BATCH]: () => json(batch()),
       'GET /v1/admin/content/uploads/b1/rejected.csv': () => new Response('a,_row,_error\nx,3,bad\n', { headers: { 'content-type': 'text/csv' } }),
     });
@@ -99,7 +103,7 @@ describe('batch page', () => {
   });
 
   it('publish this batch posts { filter: { batch_id } } with an Idempotency-Key and opens the job', async () => {
-    const r = renderApp('/uploads/b1', { [BATCH]: () => json(batch()), [PUBLISH]: () => json({ job_id: 'j1' }, 202) });
+    const r = renderApp('/uploads/b1', { [LIST]: list, [BATCH]: () => json(batch()), [PUBLISH]: () => json({ job_id: 'j1' }, 202) });
     await userEvent.click(await screen.findByRole('button', { name: t.publish }));
     await waitFor(() => expect(posts(r.calls, '/v1/admin/content/senses/publish-jobs')).toHaveLength(1));
     const [call] = posts(r.calls, '/v1/admin/content/senses/publish-jobs');
@@ -109,7 +113,7 @@ describe('batch page', () => {
   });
 
   it('B25E10: nothing-to-publish → its message, and we stay on the batch', async () => {
-    renderApp('/uploads/b1', { [BATCH]: () => json(batch()), [PUBLISH]: () => problem(400, 'nothing-to-publish') });
+    renderApp('/uploads/b1', { [LIST]: list, [BATCH]: () => json(batch()), [PUBLISH]: () => problem(400, 'nothing-to-publish') });
     await userEvent.click(await screen.findByRole('button', { name: t.publish }));
     expect(await screen.findByText(vi.errors['nothing-to-publish'])).toBeInTheDocument();
     expect(screen.getByRole('heading', { level: 2, name: 'cefr-j-1.5.csv' })).toBeInTheDocument();
@@ -117,7 +121,7 @@ describe('batch page', () => {
 
   it('revert: the dialog names the file; confirming posts once with a key, then the batch reads reverted', async () => {
     let reverted = false;
-    const r = renderApp('/uploads/b1', {
+    const r = renderApp('/uploads/b1', { [LIST]: list,
       [BATCH]: () => json(batch({ reverted })),
       [REVERT]: () => {
         reverted = true;
@@ -135,7 +139,7 @@ describe('batch page', () => {
   });
 
   it('B25E11: batch-not-revertable shows its reason inside the dialog', async () => {
-    renderApp('/uploads/b1', { [BATCH]: () => json(batch()), [REVERT]: () => problem(409, 'batch-not-revertable') });
+    renderApp('/uploads/b1', { [LIST]: list, [BATCH]: () => json(batch()), [REVERT]: () => problem(409, 'batch-not-revertable') });
     await userEvent.click(await screen.findByRole('button', { name: t.revert }));
     const dialog = await screen.findByRole('dialog');
     await userEvent.click(within(dialog).getByRole('button', { name: t.revert }));
@@ -143,16 +147,47 @@ describe('batch page', () => {
   });
 
   it('without content.publish / content.edit the two buttons are not offered', async () => {
-    renderApp('/uploads/b1', { [BATCH]: () => json(batch()) }, makeMe({ ...ME_ADMIN, staff_role: 'editor', permissions: ['content.import'] }));
+    renderApp('/uploads/b1', { [LIST]: list, [BATCH]: () => json(batch()) }, makeMe({ ...ME_ADMIN, staff_role: 'editor', permissions: ['content.import'] }));
     await screen.findByRole('heading', { level: 2, name: 'cefr-j-1.5.csv' });
     expect(screen.queryByRole('button', { name: t.publish })).toBeNull();
     expect(screen.queryByRole('button', { name: t.revert })).toBeNull();
     expect(screen.getByRole('button', { name: t.rejected })).toBeInTheDocument();
   });
 
+  it('UBC12 /uploads/b1 shows the list and the panel, and the b1 row is selected', async () => {
+    renderApp('/uploads/b1', { [LIST]: list, [BATCH]: () => json(batch()) });
+    expect(await screen.findByRole('heading', { level: 2, name: 'cefr-j-1.5.csv' })).toBeInTheDocument();
+    const table = screen.getByRole('table');
+    expect(within(table).getByText('b1-in-list.csv').closest('tr')).toHaveAttribute('data-selected');
+    expect(within(table).getByText('b2-in-list.csv').closest('tr')).not.toHaveAttribute('data-selected');
+    expect(screen.getByTestId('detail-panel')).toBeInTheDocument();
+  });
+
+  it("UBE26 ✕ returns to /uploads and focuses the row's link", async () => {
+    renderApp('/uploads/b1', { [LIST]: list, [BATCH]: () => json(batch()) });
+    await screen.findByRole('heading', { level: 2, name: 'cefr-j-1.5.csv' });
+    await userEvent.click(screen.getByRole('button', { name: vi.common.close }));
+    await waitFor(() => expect(screen.queryByTestId('detail-panel')).toBeNull());
+    expect(document.activeElement).toBe(within(screen.getByRole('table')).getAllByRole('link', { name: vi.uploads.open })[0]);
+    expect(document.activeElement).toHaveAttribute('href', '/uploads/b1');
+  });
+
+  it('UBE24 opening /uploads/b1 directly focuses the panel title', async () => {
+    renderApp('/uploads/b1', { [LIST]: list, [BATCH]: () => json(batch()) });
+    const title = await screen.findByRole('heading', { level: 2, name: 'cefr-j-1.5.csv' });
+    await waitFor(() => expect(title).toHaveFocus());
+  });
+
+  it('UBE24 an unknown id shows the error state in the panel and the list still works', async () => {
+    renderApp('/uploads/b9', { [LIST]: list, 'GET /v1/admin/content/uploads/b9': () => problem(404, 'not-found') });
+    const panel = await screen.findByTestId('detail-panel');
+    expect(await within(panel).findByText(vi.list.error)).toBeInTheDocument();
+    expect(within(screen.getByRole('table')).getByText('b2-in-list.csv')).toBeInTheDocument();
+  });
+
   it('B25E6: a 403 forbidden while loading goes through the session gate (refresh, /me with no role → signed out)', async () => {
     let meCalls = 0;
-    const r = renderApp('/uploads/b1', {
+    const r = renderApp('/uploads/b1', { [LIST]: list,
       [BATCH]: () => problem(403, 'forbidden'),
       'GET /v1/me': () => (++meCalls === 1 ? json(ME_ADMIN) : json(makeMe({ staff_role: null, permissions: [] }))),
       'POST /v1/auth/logout': () => new Response(null, { status: 204 }),

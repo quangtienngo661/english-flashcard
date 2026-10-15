@@ -279,7 +279,6 @@
     "open": "Chi tiết"
   },
   "batch": {
-    "back": "Lô nhập",
     "rejected": "Tải rejected.csv",
     "publish": "Publish lô này",
     "revert": "Hoàn tác lô",
