@@ -196,4 +196,48 @@ describe('batch panel', () => {
     expect(r.count('POST', '/v1/auth/refresh')).toBeGreaterThanOrEqual(2);
     expect(r.count('POST', '/v1/auth/logout')).toBe(1);
   });
+
+  // Final review I1: switching rows must not carry the previous batch's state into the next one.
+  const B2 = 'GET /v1/admin/content/uploads/b2';
+  const second = () => json(batch({ id: 'b2', file_name: 'second.csv' }));
+  const openB2 = async () => {
+    await userEvent.click(within(screen.getByRole('table')).getByText('b2-in-list.csv'));
+    expect(await screen.findByRole('heading', { level: 2, name: 'second.csv' })).toBeInTheDocument();
+    return screen.getByTestId('detail-panel');
+  };
+
+  it("I1 b1's revert report is not shown once b2 opens", async () => {
+    let reverted = false;
+    renderApp('/uploads/b1', {
+      [LIST]: list,
+      [BATCH]: () => json(batch({ reverted })),
+      [REVERT]: () => {
+        reverted = true;
+        return json({ report: { removed: { entry: 1, variant: 0, level: 0, sense: 2, revision: 2 }, skipped: [] } });
+      },
+      [B2]: second,
+    });
+    await userEvent.click(await screen.findByRole('button', { name: t.revert }));
+    await userEvent.click(within(await screen.findByRole('dialog')).getByRole('button', { name: t.revert }));
+    const done = t.revertDone.replace('{removed}', '5');
+    expect(await within(screen.getByTestId('detail-panel')).findByText(done)).toBeInTheDocument();
+    const panel = await openB2();
+    expect(within(panel).queryByText(done)).toBeNull();
+  });
+
+  it("I1 after b1's publish fails on the network, b2's panel offers no retry that would publish b2 (B25E28)", async () => {
+    renderApp('/uploads/b1', {
+      [LIST]: list,
+      [BATCH]: () => json(batch()),
+      [PUBLISH]: () => {
+        throw new TypeError('Failed to fetch');
+      },
+      [B2]: () => json(batch({ id: 'b2', file_name: 'second.csv', status: 'running', counters: { processed: 1 }, finished_at: null })),
+    });
+    await userEvent.click(await screen.findByRole('button', { name: t.publish }));
+    expect(await within(screen.getByTestId('detail-panel')).findByRole('button', { name: vi.common.retry })).toBeInTheDocument();
+    const panel = await openB2();
+    expect(within(panel).queryByRole('button', { name: vi.common.retry })).toBeNull();
+  });
 });
+

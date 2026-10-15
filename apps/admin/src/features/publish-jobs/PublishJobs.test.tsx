@@ -217,6 +217,20 @@ describe('publish job panel', () => {
     expect(r.count('GET', `/v1/admin/content/senses/publish-jobs/${ID}`)).toBe(calls); // stopped
   }, 15_000);
 
+  it("I1 job A's report.csv error is not shown once job B opens", async () => {
+    renderApp(`/publish-jobs/${ID}`, {
+      [JOBS]: list,
+      [GET]: () => json(job({ status: 'succeeded', counters: { published: 1 } })),
+      [`GET /v1/admin/content/senses/publish-jobs/${ID}/report.csv`]: () => problem(500, ''),
+      [`GET /v1/admin/content/senses/publish-jobs/${OTHER}`]: () => json(job({ id: OTHER, status: 'succeeded', snapshot_count: 9 })),
+    });
+    await userEvent.click(await screen.findByRole('button', { name: t.report }));
+    expect(await within(screen.getByTestId('detail-panel')).findByRole('alert')).toBeInTheDocument();
+    await userEvent.click(within(screen.getByRole('table')).getByRole('link', { name: '#b7c9d0' }));
+    expect(await screen.findByRole('heading', { level: 2, name: t.jobTitle.replace('{id}', 'b7c9d0') })).toBeInTheDocument();
+    expect(within(screen.getByTestId('detail-panel')).queryByRole('alert')).toBeNull();
+  });
+
   it('"Tải report.csv" saves publish-<id>.csv with the API content', async () => {
     renderApp(`/publish-jobs/${ID}`, {
       [JOBS]: list,
