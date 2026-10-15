@@ -29,6 +29,15 @@ describe('session loading (B25E30)', () => {
     expect(screen.getByRole('status')).toHaveTextContent(vi.shell.loadingSession);
   });
 
+  it('the countdown is a timer outside the live status region, so a screen reader does not read it every second (review M7)', async () => {
+    const f = makeFetch({ 'POST /v1/auth/refresh': () => rateLimited(2) });
+    const store = new SessionStore({ baseUrl: BASE, fetch: f.fetch, channel: null, wait: () => new Promise(() => {}) });
+    renderWith(store, '/uploads');
+    const countdown = await screen.findByText(vi.shell.sessionRetry.replace('{seconds}', '2'));
+    expect(screen.getByRole('status')).not.toContainElement(countdown);
+    expect(screen.getByRole('timer')).toBe(countdown);
+  });
+
   it('after three 429s the login page says the server is busy', async () => {
     const f = makeFetch({ 'POST /v1/auth/refresh': () => rateLimited(1) });
     const store = new SessionStore({ baseUrl: BASE, fetch: f.fetch, channel: null, wait: async () => {} });
