@@ -19,7 +19,7 @@ export function Dialog({ isOpen, onOpenChange, title, children, actions, size = 
       isOpen={isOpen}
       onOpenChange={onOpenChange}
       isDismissable={isDismissable}
-      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-ink/40 p-page-pad-min shell:items-center"
+      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto overscroll-contain bg-ink/40 p-page-pad-min shell:items-center"
     >
       <Modal className={`my-auto w-full rounded-panel bg-surface p-6 shadow-card outline-none ${size === 'md' ? 'max-w-md' : 'max-w-sm'}`}>
         <AriaDialog className="flex flex-col gap-4 outline-none">

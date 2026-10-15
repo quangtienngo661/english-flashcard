@@ -34,7 +34,7 @@ export function renderApp(path: string, routes: Record<string, Route>, me = ME_A
   const store = new SessionStore({ baseUrl: BASE, fetch: f.fetch, channel: null });
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   const utils = render(
-    <IntlProvider locale="vi" messages={vi}>
+    <IntlProvider locale="vi" messages={vi} timeZone="Asia/Ho_Chi_Minh">
       <QueryClientProvider client={client}>
         <SessionProvider store={store}>
           <MemoryRouter initialEntries={[path]}>

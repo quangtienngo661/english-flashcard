@@ -51,7 +51,8 @@
     "language": "Language",
     "account": "Account",
     "logout": "Log out",
-    "loadingSession": "Checking your session…"
+    "loadingSession": "Checking your session…",
+    "skipToContent": "Skip to main content"
   },
   "nav": {
     "dashboard": "Dashboard",
@@ -77,7 +78,8 @@
   "list": {
     "loading": "Loading…",
     "error": "Could not load the list",
-    "empty": "Nothing here yet"
+    "empty": "Nothing here yet",
+    "shown": "{count} items shown"
   },
   "account": {
     "login": {
@@ -181,9 +183,9 @@
       "back": "Back",
       "submit": "Create account",
       "doneTitle": "Account created",
-      "doneBody": "The account was created and the password sent to {email}. If the editor does not get the mail, they can use \"Forgot password\" on the login page.",
+      "doneBody": "The account was created and the password sent to {email}. If the editor does not get the mail, they can use “Forgot password” on the login page.",
       "close": "Close",
-      "emailTaken": "This email already has an account. Use \"Find by email\" above and grant a role.",
+      "emailTaken": "This email already has an account. Use “Find by email” above and grant a role.",
       "mailUnavailable": "The email cannot be sent right now, so no account was created. Please try again in a few minutes."
     }
   },
@@ -214,5 +216,142 @@
       "evalSets": "Approved example sets and their run results before AI is enabled for the pilot."
     },
     "etaUnconfirmed": "Planned: Step {step} (not confirmed)"
+  },
+  "status": {
+    "queued": "Queued",
+    "running": "Running",
+    "succeeded": "Done",
+    "partial": "Partial",
+    "failed": "Failed",
+    "reverted": "Reverted"
+  },
+  "sources": {
+    "register": "Register a source",
+    "formTitle": "Register a source",
+    "empty": "No sources yet",
+    "emptyHint": "Register the first source to import CSV files with a level column",
+    "list": {
+      "name": "Source name",
+      "version": "Version",
+      "license": "License",
+      "priority": "Priority"
+    },
+    "form": {
+      "name": "Source name",
+      "version": "Version",
+      "url": "URL",
+      "license": "License",
+      "attribution": "Attribution",
+      "priority": "Priority",
+      "priorityHint": "A smaller number comes first",
+      "asLevelSource": "Use as a level source (version and license required)",
+      "save": "Save source",
+      "required": "Required",
+      "urlInvalid": "The URL must start with http:// or https://",
+      "priorityInvalid": "Enter a whole number"
+    }
+  },
+  "uploads": {
+    "upload": "Upload CSV",
+    "formTitle": "Upload CSV",
+    "submit": "Upload",
+    "wait": "Wait {seconds} s",
+    "empty": "No imports yet",
+    "emptyHint": "Press “Upload CSV” to import the first file",
+    "list": {
+      "file": "File name",
+      "rows": "Rows",
+      "status": "Status",
+      "time": "Time"
+    },
+    "dropPrompt": "Drop a .csv file here",
+    "chooseHint": "or click to choose a file",
+    "chooseFile": "Choose file",
+    "changeFile": "Change file",
+    "tooLargeHint": "{name} · {size} MB. Choose a smaller file or split it into several.",
+    "invalidHint": "{name}. Only .csv files are accepted.",
+    "levelSource": "Level source",
+    "levelSourceHint": "The file has a level (CEFR) column, so a level source is required.",
+    "levelSourceRequired": "Choose a level source for a file with a level column",
+    "levelSourcePlaceholder": "Choose a source",
+    "fileSize": "{size} MB",
+    "open": "Details"
+  },
+  "batch": {
+    "back": "Imports",
+    "rejected": "Download rejected.csv",
+    "publish": "Publish this batch",
+    "revert": "Revert batch",
+    "statusLabel": "Status:",
+    "stats": {
+      "total": "Total rows",
+      "created": "Created",
+      "updated": "Updated",
+      "unchanged": "Unchanged",
+      "rejected": "Rejected"
+    },
+    "createdAt": "Created {time}",
+    "doneAt": "Finished {time}",
+    "endedAt": "Ended {time}",
+    "queued": "Waiting for a worker to pick it up ({seconds} s). The page refreshes every 2 seconds.",
+    "queuedLong": "The batch has waited {seconds} s. Is the worker running? Check the worker process, then reload the page.",
+    "running": "Processing: {done} / {total} rows",
+    "partial": "The batch finished only in part. Download rejected.csv to see the rejected rows and fix them.",
+    "failed": "The import failed. Check the file (required columns, UTF-8 encoding) and upload it again.",
+    "revertedNotice": "This batch was reverted. The senses it created are no longer in the data.",
+    "rejectedSummary": "{count} rows were rejected — download rejected.csv to see why (column _error) and fix them in Excel.",
+    "warnings": "Warnings ({count})",
+    "revertTitle": "Revert batch {file}?",
+    "revertBody": "The senses this batch created will be removed from the data. This cannot be undone.",
+    "revertDone": "Removed {removed} items created by the batch.",
+    "revertSkipped": "{skipped} items could not be removed.",
+    "wait": "Wait {seconds} s"
+  },
+  "export": {
+    "status": "Status",
+    "level": "Level",
+    "pos": "Part of speech",
+    "topic": "Topic",
+    "batch": "Import batch",
+    "all": "All",
+    "download": "Download CSV",
+    "archived": "archived",
+    "statuses": {
+      "unpublishable": "Not publishable yet",
+      "open_draft": "Open draft",
+      "published": "Published"
+    }
+  },
+  "publishJobs": {
+    "create": "Create publish job",
+    "formTitle": "Create publish job",
+    "empty": "No publish jobs yet",
+    "list": {
+      "job": "Job",
+      "filter": "Filter",
+      "status": "Status",
+      "count": "Senses",
+      "time": "Time"
+    },
+    "batchFilter": "batch #{id}",
+    "filterNone": "All",
+    "jobTitle": "Publish job #{id}",
+    "back": "Publish jobs",
+    "report": "Download report.csv",
+    "createdAt": "Created {time}",
+    "running": "Publishing: {done} / {total} senses",
+    "refused": "{count} senses were refused because they are not ready. Download report.csv to see why for each row.",
+    "stats": {
+      "snapshot": "In snapshot",
+      "published": "Published",
+      "already": "Already published",
+      "refused": "Refused"
+    },
+    "wait": "Try again in {seconds} s",
+    "queued": "Waiting for a worker to pick it up ({seconds} s). The page refreshes every 2 seconds.",
+    "queuedLong": "The job has waited {seconds} s. Is the worker running? Check the worker process, then reload the page.",
+    "confirmAllTitle": "Publish the whole catalog?",
+    "confirmAllBody": "You have not chosen any filter, so this job will publish every eligible sense in the whole catalog. Continue only if that is what you want.",
+    "confirmAllSubmit": "Publish everything"
   }
 }

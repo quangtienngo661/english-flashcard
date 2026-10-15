@@ -23,7 +23,8 @@ async function openDialog(post: () => Response = () => Response.json(CREATED, { 
 const created = (calls: { method: string; path: string; body: unknown }[]) =>
   calls.filter((c) => c.method === 'POST' && c.path === '/v1/admin/users');
 
-describe('create account dialog', () => {
+// Every test types through userEvent; the default 5 s is too tight on a loaded machine.
+describe('create account dialog', { timeout: 20_000 }, () => {
   it('defaults: both boxes ticked, role editor; the request has must_change_password true, a timezone and no password; success names the email and shows no password', async () => {
     const { dialog, calls } = await openDialog();
     expect(within(dialog).getByRole('checkbox', { name: t.generate })).toBeChecked();

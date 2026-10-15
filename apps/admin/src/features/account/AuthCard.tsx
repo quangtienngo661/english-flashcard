@@ -10,7 +10,9 @@ export function AuthCard({ title, subtitle, children }: { title: string; subtitl
         <span aria-hidden className="flex size-8 items-center justify-center rounded-control bg-primary text-ui font-semibold text-on-primary">
           W
         </span>
-        <span className="text-xl font-semibold text-ink">{t('shell.brand')}</span>
+        <span translate="no" className="text-xl font-semibold text-ink">
+          {t('shell.brand')}
+        </span>
       </div>
       <section className="flex w-full max-w-auth-card-max flex-col gap-4 rounded-panel bg-surface p-7 shadow-card">
         <h1 className="text-2xl font-bold text-ink">{title}</h1>

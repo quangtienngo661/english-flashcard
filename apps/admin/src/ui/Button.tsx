@@ -35,7 +35,7 @@ export function Button({ variant = 'primary', size = 'md', className = '', child
     >
       {(values) => (
         <>
-          {isPending && <Loader aria-hidden className="size-4 animate-spin" />}
+          {isPending && <Loader aria-hidden className="size-4 motion-safe:animate-spin" />}
           {typeof children === 'function' ? children(values) : children}
         </>
       )}

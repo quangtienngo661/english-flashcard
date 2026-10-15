@@ -13,8 +13,8 @@ private words; quick-add of words encountered elsewhere; word groups, flashcards
 schedule; non-AI definition quizzes; AI-generated fill-in-the-blank practice graded by rule; tier-based
 entitlements and quotas.
 
-**Current phase: Bước 0, Bước 1 (Identity core) and Bước 2 (Content + Pipeline) implemented.** Real code
-is under `apps/api`. Historical implementation branches:
+**Current phase: Bước 0, 1 (Identity core) and 2 (Content + Pipeline) implemented; Bước 2.5 (admin web,
+`apps/admin`) in progress.** Real code is under `apps/api` and `apps/admin`. Historical implementation branches:
 - `feat/buoc-0-backend-foundation` — Bước 0 built on **Drizzle ORM** (10 tasks, 5 unit + 23 e2e tests).
 - `feat/migrate-drizzle-to-prisma` (branched from the above) — the same Bước 0 re-implemented on
   **Prisma ORM** (6-task migration, 5 unit + 24 e2e tests). This is the current/preferred ORM — the
@@ -23,12 +23,21 @@ is under `apps/api`. Historical implementation branches:
   See `docs/superpowers/plans/2026-10-06-migrate-drizzle-to-prisma.md` for the full migration and why.
 
 Bước 0 and Bước 1 are on `main` (PR #1–#5; GitHub remote `english-flashcard`, CI required before merge).
-Bước 2 is implemented on `feat/buoc-2-m2-pipeline`/`feat/buoc-2-m3-finish` (PR #15 M1+M2 → `dev`, open at
-time of writing; M3 awaits that merge). **Next: Bước 3 (Learning)**, the earliest pilot milestone, starting
-with `superpowers:brainstorming`. All 8 V1 specs (docs/specs/) are written and independently verified. Read
-`docs/HANDOFF_2026-10-05_BUOC_0.md` for the original Bước 0 kickoff context, and
-`docs/superpowers/specs/2026-10-05-buoc-0-design.md` (now annotated with the Prisma switch) for the
-as-built design.
+Bước 2 is on `dev` (PR #16, merged). **Bước 2.5 (admin web: login, admin page, role granting)** is in
+progress — status, as-built so far and what is left: `docs/deliveries/buoc-2-5.md`. In short (15/10/2026):
+M1 backend + M2 admin shell merged into `dev` (PR #17, #18); M3 (CSV flow, Tasks 13–18) on
+`feat/buoc-2-5-m3-csv-flow`, Tasks 13–18 done locally and the manual "Xong khi" run passed (15/10/2026); left:
+push + green CI (incl. `admin-e2e-real`) on a PR into `dev`. The design/decisions/plan/delivery docs sit on
+`docs/buoc-2-5-design`, **not yet committed** (D28: they go to `dev` in their own PR). A separate "Deploy API +
+admin" step (not yet scheduled) must come before the Bước 3 pilot. **Owner note (15/10/2026): the admin UI will probably be
+refactored as a whole later** — treat the current visual layer (Sneat-style, Figma approved 14/10) as
+provisional; keep the session/API logic and the design's edge cases. **Then: Bước 3** (Learning + the Content
+pieces deferred from Bước 2: private words, context sentences, the lookup chain), starting with
+`superpowers:brainstorming`; build-order table in `docs/HANDOFF_2026-10-05_BUOC_0.md` §2. All 8 V1 specs (docs/specs/) are written and independently verified; treat
+them as an initial skeleton only, not a source of truth to keep in sync (owner, 12/10/2026) — the design doc
+for the step in question is authoritative. Read `docs/HANDOFF_2026-10-05_BUOC_0.md` for the original Bước 0
+kickoff context, and `docs/superpowers/specs/2026-10-05-buoc-0-design.md` (now annotated with the Prisma
+switch) for the as-built design.
 
 ## Directory Structure
 
@@ -56,8 +65,9 @@ they say otherwise:
   `fix-request`, …). For cloud sessions without the plugin, the superpowers skills are vendored as project
   skills in `.claude/skills/` (`superpowers:brainstorming` → `brainstorming`); see `.claude/skills/SUPERPOWERS.md`.
 - **Git:** commit locally on a topic branch (`feat/*`, `fix/*`, `docs/*`, or the session's `claude/*` branch) as normal;
-  **push, PR and merge only when the owner asks**. Never PR or push straight to `main`: follow the branching model
-  below. Scan for secrets before every push.
+  **push and opening a PR into `dev` need no approval; merge only when the owner asks** (owner, 15/10/2026). A
+  `dev` → `main` PR is the QA gate and opens only when the owner asks. Never PR or push straight to `main` from a
+  topic branch: follow the branching model below. Scan for secrets before every push.
 
 ### Branching model (owner, 12/10/2026)
 
@@ -113,8 +123,11 @@ decided-but-not-scaffolded:
   This is a review convention, not enforced by tooling.
 - Build order is fixed (owner-confirmed, HANDOFF §2): **Step 0** foundation (scaffold, Docker + Postgres,
   Problem Details, pagination, `Idempotency-Key`, IDs, logging, test harness) → 1 Identity core → 2
-  Content + Pipeline → 3 Learning (earliest pilot milestone) → 4 Practice non-AI → 5 Entitlements → 6 AI
-  Integration gateway → 7 Practice AI + Content AI → 8 Identity remainder (Google login, forgot password,
+  Content + Pipeline (admin side + read-only search only) → **2.5 web UI (login, admin page, role
+  granting — code done locally, awaiting the M3 PR + CI, design `docs/superpowers/specs/2026-10-14-buoc-2-5-admin-web-design.md`)**
+  → Deploy API + admin (separate step, not yet scheduled) → 3 Learning, plus the Content pieces deferred from
+  Bước 2 (private words, context sentences, lookup chain) (earliest pilot milestone) → 4 Practice non-AI
+  → 5 Entitlements → 6 AI Integration gateway → 7 Practice AI + Content AI → 8 Identity remainder (Google login, forgot password,
   account deletion).
 - Cross-cutting API conventions (system-spec SR7–SR14): `/v1` prefix, additive-only within v1; errors as
   `application/problem+json` (RFC 9457) with `type, status, title, detail, instance, operation_id`;
@@ -148,7 +161,13 @@ notes from that session).
 ## Bước 2 — plan & as-built
 
 Moved to `docs/deliveries/buoc-2.md` (plan tóm tắt 12/10/2026; as-built 12–13/10/2026; 575 unit + 457 e2e
-tests; PR #15 open → `dev`, M3 awaiting that merge).
+tests; PR #16 merged into `dev`).
+
+## Bước 2.5 — plan & progress
+
+`docs/deliveries/buoc-2-5.md` (plan tóm tắt 14/10/2026; tiến độ + as-built 15/10/2026). Test flow (gate, manual
+"Xong khi" run, findings): `docs/deliveries/buoc-2-5-test-flow.md`. Design, decisions (D1–D28) and plan:
+`docs/superpowers/{specs,decisions,plans}/2026-10-14-buoc-2-5-admin-web*.md`. Figma file `coVHzJwTFgMbooUrty7sOq`.
 
 ## Việc phải phân tích khi tới bước tương ứng (ghi 12/10/2026, từ brainstorm Bước 2)
 
@@ -166,8 +185,9 @@ Các điểm dưới đây phát sinh khi rà quyền của `admin`/`editor` (b�
 - **Bước 5 — `entitlements.grant` so với D6 ("editor không đụng chi phí AI").** `editor` có `entitlements.grant` nên cấp được
   lượt AI, tức tiêu tiền thật. Trần chi hằng ngày (ER14) giới hạn rủi ro. Cân nhắc: chuyển `admin` only, hoặc giới hạn số lượt
   mỗi lần cấp.
-- **Giao diện cấp vai trò:** design Bước 1 (mục 6, 12) và D6 ghi "Bước 3", nhưng bảng 9 bước của HANDOFF §2 không có dòng
-  nào cho giao diện web (đăng nhập, cấp vai trò, trang admin). Chủ dự án muốn làm giao diện ngay sau API của Bước 2.
+- ~~**Giao diện cấp vai trò:**~~ **Đã rõ 13/10/2026:** chốt thành Bước 2.5 (D9, design Bước 2 mục 15) — giao diện
+  web (đăng nhập, trang admin, cấp vai trò) ngay sau Bước 2, trước Bước 3. Xem bảng ở HANDOFF §2. Đang làm
+  (design/plan 14/10/2026, tiến độ ở `docs/deliveries/buoc-2-5.md`).
 
 ## Landing (apps/web) - as-built (08-09/10/2026)
 
@@ -215,6 +235,11 @@ pnpm build
 pnpm start:worker
 ```
 
+`pnpm run:dev` (after `pnpm build`) runs the built API and worker together. The admin web (`apps/admin`, Bước 2.5)
+runs with `pnpm dev` in `apps/admin` on **5173**, with `VITE_API_BASE_URL=http://localhost:3000`; the API's `.env`
+needs `http://localhost:5173` in `CORS_ORIGINS` and `ADMIN_APP_URL=http://localhost:5173` (both in `.env.example`).
+First admin: register through the API, verify with the OTP from Mailpit, then `pnpm admin:grant <email>` in `apps/api`.
+
 ## Machine state (verified 2026-10-05–07)
 
 Node 24.11.0, pnpm 11.6.0, Docker client 28.5.1 available. **No `psql`.** Docker Desktop must be running
@@ -236,7 +261,7 @@ for a concrete example of the loop catching real bugs each round.
 ## Other Notes
 
 - As-built delivery records per Bước: `docs/deliveries/buoc-0.md`, `docs/deliveries/buoc-1.md`,
-  `docs/deliveries/buoc-2.md` (includes its plan tóm tắt too).
+  `docs/deliveries/buoc-2.md` (includes its plan tóm tắt too), `docs/deliveries/buoc-2-5.md` (plan tóm tắt + tiến độ).
 - Bước 2 test flow (automated gate, `pnpm smoke:buoc-2`, manual steps): `docs/deliveries/buoc-2-test-flow.md`.
 - Spec index and status: `docs/specs/README.md`.
 - Spec/design-doc writing convention (edge cases must be derived per-doc, not just cited): `docs/specs/SPEC_WRITING_CONVENTIONS.md`.

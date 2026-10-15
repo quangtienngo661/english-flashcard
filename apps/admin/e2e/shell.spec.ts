@@ -4,7 +4,10 @@ import en from '../messages/en.json' with { type: 'json' };
 import vi from '../messages/vi.json' with { type: 'json' };
 import { requestCount, signedInAs } from './support/mock-api';
 
-const emptyUploads = { json: { items: [{ id: 'b1', file_name: 'one.csv' }], next_page_token: null } };
+const emptyUploads = {
+  json: { items: [{ id: 'b1', status: 'succeeded', file_name: 'one.csv', row_count: 3, created_at: '2026-10-14T09:30:00.000Z' }], next_page_token: null },
+};
+const oneBatch = (page: Page) => page.getByText('one.csv').filter({ visible: true }).first();
 
 /** Below 64rem the nav sits behind ☰; open it so both layouts can be asserted the same way. */
 async function openNavIfCollapsed(page: Page) {
@@ -94,7 +97,7 @@ test.describe('shell (vi)', () => {
       await expect(nav).toBeVisible();
     }
 
-    await expect(page.getByTestId('placeholder-count')).toBeVisible();
+    await expect(oneBatch(page)).toBeVisible();
     const results = await new AxeBuilder({ page }).analyze();
     const bad = results.violations.filter((v) => v.impact === 'serious' || v.impact === 'critical');
     expect(bad.map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(' ')).join(' | ')}`)).toEqual([]);
@@ -105,7 +108,7 @@ test.describe('shell (vi)', () => {
     expect(longEmail).toHaveLength(320);
     await signedInAs(page, 'admin', { 'GET /v1/admin/content/uploads': () => emptyUploads }, { email: longEmail });
     await page.goto('/uploads');
-    await expect(page.getByTestId('placeholder-count')).toBeVisible();
+    await expect(oneBatch(page)).toBeVisible();
     const overflow = await page.evaluate(() => {
       const el = document.scrollingElement!;
       return { scrollWidth: el.scrollWidth, clientWidth: el.clientWidth };
@@ -119,7 +122,7 @@ test.describe('shell (vi)', () => {
       'GET /v1/admin/content/uploads': () => (dead ? { abort: true } : emptyUploads),
     });
     await page.goto('/uploads');
-    await expect(page.getByTestId('placeholder-count')).toHaveText('1');
+    await expect(oneBatch(page)).toBeVisible();
     await expect(page.getByRole('alert')).toHaveCount(0);
 
     dead = true;
@@ -127,7 +130,7 @@ test.describe('shell (vi)', () => {
     await page.evaluate(() => window.dispatchEvent(new Event('visibilitychange')));
     const banner = page.getByRole('alert');
     await expect(banner).toContainText(vi.offline.message);
-    await expect(page.getByTestId('placeholder-count')).toHaveText('1');
+    await expect(oneBatch(page)).toBeVisible();
 
     dead = false;
     await banner.getByRole('button', { name: vi.common.retry }).click();
