@@ -10,7 +10,7 @@ chứng minh rằng tải lại hoặc rời trang admin giữa lúc refresh ch�
 hạn thì server thu hồi cả chuỗi phiên. Đường 429 của B25E30 luôn rơi vào trường hợp này.
 
 **Nhãn:** ✅ = phương án được chọn. **Ai chốt:** "Chủ dự án" = chọn trực tiếp trong chat; "Duyệt cùng design" = trợ lý đề xuất,
-chủ dự án duyệt khi đọc design doc (**chưa duyệt** tại thời điểm viết file này).
+chủ dự án duyệt khi đọc design doc (đã duyệt 15/10/2026: "Duyệt design keepalive (gồm các đề xuất RK2, RK7, RK8)").
 
 ## Tóm tắt
 

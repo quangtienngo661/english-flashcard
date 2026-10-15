@@ -127,7 +127,8 @@ decided-but-not-scaffolded:
   granting — code done locally, awaiting the M3 PR + CI, design `docs/superpowers/specs/2026-10-14-buoc-2-5-admin-web-design.md`)**
   → **UI refresh B** (landing + admin in direction B, owner 15/10/2026; landing done in PR #22, admin done on `feat/ui-b-admin` (PR stacked on #22),
   plan `docs/superpowers/plans/2026-10-15-ui-refresh-b-admin.md`;
-  design `docs/superpowers/specs/2026-10-15-ui-refresh-b-design.md`, delivery `docs/deliveries/ui-refresh-b.md`)
+  design `docs/superpowers/specs/2026-10-15-ui-refresh-b-design.md`, delivery `docs/deliveries/ui-refresh-b.md`;
+  fast-reload session fix (refresh with `keepalive`, PR stacked on #23): delivery `docs/deliveries/admin-refresh-keepalive.md`)
   → Deploy API + admin (separate step, not yet scheduled) → 3 Learning, plus the Content pieces deferred from
   Bước 2 (private words, context sentences, lookup chain) (earliest pilot milestone) → 4 Practice non-AI
   → 5 Entitlements → 6 AI Integration gateway → 7 Practice AI + Content AI → 8 Identity remainder (Google login, forgot password,
