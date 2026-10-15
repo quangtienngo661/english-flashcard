@@ -18,6 +18,8 @@ type ClozeCardProps = {
   ctaHref: string;
   slotRef: Ref<HTMLSpanElement>;
   nextRef: Ref<HTMLButtonElement>;
+  /** Where focus lands after next/replay: the new sentence or the Done title (the button pressed is gone). */
+  focusRef: Ref<HTMLParagraphElement>;
   onPick: (word: string, sticker: HTMLElement) => void;
   onNext: () => void;
   onReplay: () => void;
@@ -25,7 +27,7 @@ type ClozeCardProps = {
 
 // Presentation only; state and motion live in ClozePractice. Stickers use aria-disabled, never disabled,
 // so a wrong pick keeps keyboard focus (UBE15); border-transparent shows up in forced-colors mode (RF5).
-export function ClozeCard({ item, header, labels, result, done, landed, progress, ctaHref, slotRef, nextRef, onPick, onNext, onReplay }: ClozeCardProps) {
+export function ClozeCard({ item, header, labels, result, done, landed, progress, ctaHref, slotRef, nextRef, focusRef, onPick, onNext, onReplay }: ClozeCardProps) {
   const correct = result.status === 'correct';
   const filled = correct && landed;
 
@@ -37,7 +39,7 @@ export function ClozeCard({ item, header, labels, result, done, landed, progress
       <div className="flex items-center justify-between gap-3">
         <p className="text-caption font-semibold text-muted">
           {labels.sourceChip}
-          <VisuallyHidden>{header}</VisuallyHidden>
+          <VisuallyHidden>{`, ${header}`}</VisuallyHidden>
         </p>
         <span aria-hidden="true" className="flex gap-1.5">
           {progress.map((isDone, i) => (
@@ -48,7 +50,9 @@ export function ClozeCard({ item, header, labels, result, done, landed, progress
 
       {done ? (
         <div className="flex flex-col items-start gap-3">
-          <p className="text-title font-extrabold md:text-title-lg">{labels.doneTitle}</p>
+          <p ref={focusRef} tabIndex={-1} data-testid="cloze-focus" className="text-title font-extrabold md:text-title-lg">
+            {labels.doneTitle}
+          </p>
           <p className="text-body text-muted">{labels.doneBody}</p>
           <div className="flex flex-wrap gap-3">
             <ButtonLink href={ctaHref}>{labels.doneCta}</ButtonLink>
@@ -59,7 +63,7 @@ export function ClozeCard({ item, header, labels, result, done, landed, progress
         </div>
       ) : (
         <>
-          <p lang="en" className="text-subtitle font-semibold md:text-h3">
+          <p ref={focusRef} tabIndex={-1} data-testid="cloze-focus" lang="en" className="text-subtitle font-semibold md:text-h3">
             {item.before}{' '}
             <span
               ref={slotRef}

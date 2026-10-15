@@ -21,7 +21,7 @@ const tones = {
 // Figma section rhythm: 56px top/bottom on mobile, 96px from md.
 export function Section({ id, labelledBy, tone, children, className }: SectionProps) {
   return (
-    <section id={id} aria-labelledby={labelledBy} className={cn('scroll-mt-4 py-14 md:scroll-mt-header md:py-24', tones[tone])}>
+    <section id={id} aria-labelledby={labelledBy} className={cn('scroll-mt-4 py-14 md:py-24', tones[tone])}>
       <Container className={cn('flex flex-col gap-8 md:gap-12', className)}>{children}</Container>
     </section>
   );

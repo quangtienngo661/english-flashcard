@@ -61,7 +61,7 @@ export function WaitlistForm({ idPrefix, tone, layout, locale, labels }: Waitlis
 
   // The id lives on a wrapper that survives the success state, so links to #waitlist-* keep a target (RF2).
   return (
-    <div id={`waitlist-${idPrefix}`} className="w-full scroll-mt-4 md:scroll-mt-header">
+    <div id={`waitlist-${idPrefix}`} className="w-full scroll-mt-4">
       {state.status === 'success' ? (
         <p role="status" className={cn('flex items-start gap-3 rounded-control p-4 text-label font-medium', t.success)}>
           <Icon name="check" className={t.successIcon} />

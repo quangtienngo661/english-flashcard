@@ -46,8 +46,11 @@ export function ClozePractice({ items, labels, ctaHref }: ClozePracticeProps) {
   const [state, dispatch] = useReducer(clozeReducer, items, (list) => createClozeState(list.map((i) => i.answer)));
   const reduced = useReducedMotion();
   const [landed, setLanded] = useState(false);
+  // Counts next/replay presses; focus follows a move, never the first render.
+  const [moves, setMoves] = useState(0);
   const slotRef = useRef<HTMLSpanElement>(null);
   const nextRef = useRef<HTMLButtonElement>(null);
+  const focusRef = useRef<HTMLParagraphElement>(null);
   const cancelFlight = useRef<(() => void) | null>(null);
 
   const item = items[state.index];
@@ -59,6 +62,11 @@ export function ClozePractice({ items, labels, ctaHref }: ClozePracticeProps) {
   useEffect(() => {
     if (result.status === 'correct') nextRef.current?.focus();
   }, [result.status, state.index]);
+
+  // The pressed button unmounts on next/replay; move focus to the new sentence or the Done title (2.4.3).
+  useEffect(() => {
+    if (moves > 0) focusRef.current?.focus();
+  }, [moves]);
 
   function pick(word: string, sticker: HTMLElement) {
     if (state.done || result.status === 'correct' || result.tried.includes(word)) return;
@@ -84,6 +92,7 @@ export function ClozePractice({ items, labels, ctaHref }: ClozePracticeProps) {
     cancelFlight.current = null;
     setLanded(false);
     dispatch({ type });
+    setMoves((n) => n + 1);
   }
 
   const announcement =
@@ -109,6 +118,7 @@ export function ClozePractice({ items, labels, ctaHref }: ClozePracticeProps) {
         ctaHref={ctaHref}
         slotRef={slotRef}
         nextRef={nextRef}
+        focusRef={focusRef}
         onPick={pick}
         onNext={() => move('next')}
         onReplay={() => move('restart')}

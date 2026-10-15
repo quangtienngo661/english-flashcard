@@ -43,7 +43,7 @@
   --container-copy: 31.25rem;
   --container-aside: 30rem;
 
-  /* Sticky header (from md): its min height doubles as the scroll margin of anchor targets (UB16). */
+  /* Sticky header (from md): its min height doubles as the page's scroll padding (UB16, WCAG 2.4.11). */
   --spacing-header: 4.5rem;
 
   /* Landing-only motion; shared durations and easings come from @wordmet/design-tokens. */
@@ -124,6 +124,14 @@
 @layer base {
   html {
     scroll-behavior: smooth;
+  }
+
+  /* From md the header is sticky: neither a Tab-focused element nor an anchor target may land under it
+     (WCAG 2.2 SC 2.4.11). Targets keep only their own small scroll-mt-4 on top of this. */
+  @media (width >= 48rem) {
+    html {
+      scroll-padding-top: var(--spacing-header);
+    }
   }
 
   body {
