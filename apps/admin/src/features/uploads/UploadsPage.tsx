@@ -93,7 +93,8 @@ export function UploadsPage() {
           onExited={() => focusRowLink(`/uploads/${shownId}`)}
           focusKey={shownId}
         >
-          <BatchPanel id={shownId} />
+          {/* Keyed by batch: switching rows must not carry a revert report, an error or a retry over (review I1, B25E28). */}
+          <BatchPanel key={shownId} id={shownId} />
         </DetailPanel>
       )}
       {/* Always rendered so the dialog can animate out; React Aria unmounts the form after, so each opening is fresh. */}

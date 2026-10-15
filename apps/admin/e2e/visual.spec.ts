@@ -39,6 +39,9 @@ const mocks: Record<string, MockHandler> = {
   'GET /v1/admin/content/uploads/b3': () => ({ json: batch }),
   'GET /v1/admin/staff': () => ({ json: { items: staff, next_page_token: null } }),
   'GET /v1/admin/taxonomy/topics': () => ({ json: { items: [{ code: 'food', names: { vi: 'Ăn uống' }, archived_at: null }] } }),
+  'GET /v1/admin/users': () => ({ json: { id: 'u9', email: 'new.editor@wordmet.com', email_verified: true, staff_role: null } }),
+  'PUT /v1/admin/users/u9/staff-role': () => ({ json: { id: 'u9', email: 'new.editor@wordmet.com', email_verified: true, staff_role: 'editor' } }),
+  'GET /v1/admin/content/sources': () => ({ json: { items: [] } }),
 };
 
 async function shot(page: Page, name: string, lang: string) {
@@ -75,11 +78,24 @@ for (const lang of ['vi', 'en'] as const) {
     await shot(page, '05-coming-soon', lang);
 
     await page.goto('/uploads/b3');
-    await page.getByRole('heading', { level: 2 }).first().waitFor();
+    await page.getByTestId('detail-panel').getByRole('heading', { level: 2 }).waitFor();
+    await shot(page, '09-batch-panel', lang);
     await page.getByRole('button', { name: lang === 'vi' ? vi.batch.revert : /Revert/ }).first().click();
-    await page.getByRole('dialog').waitFor();
+    await page.getByRole('dialog').last().waitFor(); // below 84rem the panel is a dialog too
     await shot(page, '06-revert-dialog', lang);
     await page.keyboard.press('Escape');
+
+    await page.goto('/uploads/new');
+    await page.getByRole('dialog').waitFor();
+    await shot(page, '10-upload-dialog', lang);
+
+    await page.goto('/staff');
+    await page.getByRole('textbox').first().fill('new.editor@wordmet.com');
+    await page.getByRole('button', { name: lang === 'vi' ? vi.staff.search.submit : /Find|Search/ }).click();
+    await page.getByRole('button', { name: lang === 'vi' ? vi.staff.card.grantEditor : /editor/i }).first().click();
+    await page.getByRole('dialog').getByRole('button').last().click();
+    await page.getByText('new.editor@wordmet.com').last().waitFor();
+    await shot(page, '11-toast', lang);
 
     await page.goto('/uploads');
     if (test.info().project.name === 'mobile') {
@@ -94,3 +110,12 @@ for (const lang of ['vi', 'en'] as const) {
     await shot(page, '08-account-menu', lang);
   });
 }
+
+test('batch panel over the table at 1280 (UB22)', async ({ page }) => {
+  test.skip(test.info().project.name !== 'desktop', 'desktop only');
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await signedInAs(page, 'admin', mocks);
+  await page.goto('/uploads/b3');
+  await page.getByRole('dialog').waitFor();
+  await shot(page, '12-batch-panel-1280', 'vi');
+});

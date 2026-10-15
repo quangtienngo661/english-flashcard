@@ -106,7 +106,8 @@ export function PublishJobsPage() {
           onExited={() => focusRowLink(`/publish-jobs/${shownId}`)}
           focusKey={shownId}
         >
-          <PublishJobPanel id={shownId} />
+          {/* Keyed by job: switching rows must not carry a download error over (review I1). */}
+          <PublishJobPanel key={shownId} id={shownId} />
         </DetailPanel>
       )}
       <Dialog
