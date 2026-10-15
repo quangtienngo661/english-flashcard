@@ -95,3 +95,15 @@ test('the brand name is marked translate="no"', async ({ page }) => {
   await page.goto('/uploads');
   await expect(page.getByText(en.shell.brand).first()).toHaveAttribute('translate', 'no');
 });
+
+test('the table header stays at the top while a 40-row list scrolls', async ({ page }) => {
+  const items = Array.from({ length: 40 }, (_, i) => ({ id: `b${i}`, status: 'succeeded', file_name: `file-${i}.csv`, row_count: i, created_at: '2026-10-14T09:30:00.000Z' }));
+  await signedInAs(page, 'editor', { 'GET /v1/admin/content/uploads': () => ({ json: { items, next_page_token: null } }) });
+  await page.goto('/uploads');
+  await expect(page.getByRole('table').getByText('file-39.csv')).toBeAttached();
+  await page.mouse.wheel(0, 800);
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(400);
+  const head = await page.getByRole('table').locator('thead th').first().boundingBox();
+  expect(head!.y).toBeGreaterThanOrEqual(0);
+  expect(head!.y).toBeLessThanOrEqual(2);
+});
