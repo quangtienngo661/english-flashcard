@@ -22,10 +22,11 @@ export function SourcesPage() {
   const rows = list.data ?? [];
 
   const columns: Column<SourceView>[] = [
-    { key: 'name', header: t('sources.list.name'), cell: (s) => s.name },
-    { key: 'version', header: t('sources.list.version'), className: 'w-32', cell: (s) => s.version || '—' },
-    { key: 'license', header: t('sources.list.license'), className: 'w-40', cell: (s) => s.license || '—' },
-    { key: 'priority', header: t('sources.list.priority'), className: 'w-24 tabular-nums', cell: (s) => s.display_priority },
+    // Shares, not fixed widths, so a wide screen spreads the columns out instead of piling them on the right (owner, Checkpoint A).
+    { key: 'name', header: t('sources.list.name'), className: 'w-2/5', cell: (s) => s.name },
+    { key: 'version', header: t('sources.list.version'), className: 'w-1/5', cell: (s) => s.version || '—' },
+    { key: 'license', header: t('sources.list.license'), className: 'w-1/5', cell: (s) => s.license || '—' },
+    { key: 'priority', header: t('sources.list.priority'), className: 'w-1/5 tabular-nums', cell: (s) => s.display_priority },
   ];
 
   return (
