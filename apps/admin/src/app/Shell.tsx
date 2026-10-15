@@ -49,7 +49,7 @@ function SidebarNav({ permissions, onNavigate }: { permissions: Parameters<typeo
                 onClick={onNavigate}
                 className={({ isActive }) =>
                   `flex min-w-0 items-center gap-2.5 rounded-control px-3 py-2.5 text-ui font-medium outline-none focus-visible:ring-2 focus-visible:ring-primary ${
-                    isActive ? 'bg-primary-soft text-primary' : 'text-ink hover:bg-bg'
+                    isActive ? 'bg-primary-soft text-primary' : 'text-ink hover:bg-canvas'
                   }`
                 }
               >
@@ -75,7 +75,7 @@ function LanguageSwitch() {
           aria-pressed={locale === l}
           onPress={() => setLocale(l)}
           className={`min-h-control px-2.5 text-ui font-medium outline-none focus-visible:ring-2 focus-visible:ring-primary ${
-            locale === l ? 'bg-primary-soft text-primary' : 'bg-surface text-ink hover:bg-bg'
+            locale === l ? 'bg-primary-soft text-primary' : 'bg-surface text-ink hover:bg-canvas'
           }`}
         >
           {l.toUpperCase()}
@@ -99,28 +99,28 @@ export function Shell() {
   const labelKey = navLabelKey(pathname);
 
   return (
-    <div className="flex min-h-dvh bg-bg text-ink">
+    <div className="flex min-h-dvh bg-canvas text-ink">
       <a
         href="#main"
         onClick={(event) => {
           event.preventDefault();
           document.getElementById('main')?.focus();
         }}
-        className="sr-only rounded-control bg-surface px-3 py-2 text-ui font-medium text-primary shadow-card outline-none focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus-visible:ring-2 focus-visible:ring-primary"
+        className="sr-only rounded-control bg-surface px-3 py-2 text-ui font-medium text-primary shadow-sheet outline-none focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus-visible:ring-2 focus-visible:ring-primary"
       >
         {t('shell.skipToContent')}
       </a>
-      <aside className="sticky top-0 hidden h-dvh w-60 min-w-sidebar-min max-w-sidebar-max shrink-0 flex-col overflow-y-auto bg-surface px-3 py-4 shadow-nav shell:flex">
+      <aside className="sticky top-0 hidden h-dvh w-sidebar shrink-0 flex-col overflow-y-auto bg-surface px-3 py-4 shadow-sheet shell:flex">
         <Brand />
         <SidebarNav permissions={me.permissions} />
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col px-page-pad-min pt-4">
-        <header className="flex min-h-topbar-min items-center gap-3 rounded-panel bg-surface px-4 py-2 shadow-nav">
+        <header className="flex min-h-control-touch items-center gap-3 rounded-panel bg-surface px-4 py-2 shadow-sheet">
           <AriaButton
             aria-label={t('shell.openMenu')}
             onPress={() => setDrawerOpen(true)}
-            className="flex min-h-control min-w-control items-center justify-center rounded-control outline-none hover:bg-bg focus-visible:ring-2 focus-visible:ring-primary shell:hidden"
+            className="flex min-h-control min-w-control items-center justify-center rounded-control outline-none hover:bg-canvas focus-visible:ring-2 focus-visible:ring-primary shell:hidden"
           >
             <MenuIcon aria-hidden className="size-5" />
           </AriaButton>
@@ -129,7 +129,7 @@ export function Shell() {
           <MenuTrigger>
             <AriaButton
               aria-label={`${t('shell.account')}: ${me.email}`}
-              className="flex min-h-control min-w-0 items-center gap-1 rounded-control px-2 text-ui font-medium text-ink outline-none hover:bg-bg focus-visible:ring-2 focus-visible:ring-primary"
+              className="flex min-h-control min-w-0 items-center gap-1 rounded-control px-2 text-ui font-medium text-ink outline-none hover:bg-canvas focus-visible:ring-2 focus-visible:ring-primary"
             >
               <span aria-hidden className="shell:hidden">
                 {me.email.slice(0, 2).toUpperCase()}
@@ -137,7 +137,7 @@ export function Shell() {
               <span className="hidden max-w-64 truncate shell:inline">{me.email}</span>
               <ChevronDown aria-hidden className="size-4 shrink-0" />
             </AriaButton>
-            <Popover className="min-w-40 rounded-control bg-surface p-1 shadow-card">
+            <Popover className="min-w-40 rounded-control bg-surface p-1 shadow-sheet">
               <Menu aria-label={t('shell.account')} onAction={() => void store.logout()} className="outline-none">
                 <MenuItem id="logout" className="cursor-pointer rounded-control px-3 py-2 text-ui text-ink outline-none data-focused:bg-primary-soft">
                   {t('shell.logout')}
@@ -170,14 +170,14 @@ export function Shell() {
         isDismissable
         className="fixed inset-0 z-40 overscroll-contain bg-ink/40 shell:hidden"
       >
-        <Modal className="fixed inset-y-0 left-0 w-60 max-w-full bg-surface shadow-nav outline-none">
+        <Modal className="fixed inset-y-0 left-0 w-60 max-w-full bg-surface shadow-sheet outline-none">
           <Dialog aria-label={t('shell.mainNav')} className="flex h-full flex-col gap-1 overflow-y-auto px-3 py-4 outline-none">
             <div className="flex items-start justify-between">
               <Brand />
               <AriaButton
                 aria-label={t('shell.closeMenu')}
                 onPress={() => setDrawerOpen(false)}
-                className="flex min-h-control min-w-control items-center justify-center rounded-control outline-none hover:bg-bg focus-visible:ring-2 focus-visible:ring-primary"
+                className="flex min-h-control min-w-control items-center justify-center rounded-control outline-none hover:bg-canvas focus-visible:ring-2 focus-visible:ring-primary"
               >
                 <X aria-hidden className="size-5" />
               </AriaButton>

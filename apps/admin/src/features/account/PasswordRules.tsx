@@ -20,7 +20,7 @@ export function PasswordRules({ violations }: { violations: string[] }) {
           <li
             key={rule}
             data-violated={bad}
-            className={`flex items-center gap-1.5 text-xs ${bad ? 'text-danger-strong' : 'text-muted'}`}
+            className={`flex items-center gap-1.5 text-xs ${bad ? 'text-danger' : 'text-muted'}`}
           >
             <Icon aria-hidden className="size-4 shrink-0" />
             {rule === 'same_as_current' ? t('errors.same_as_current') : t(`account.passwordRules.${rule}`)}

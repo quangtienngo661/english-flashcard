@@ -11,7 +11,7 @@ export function ComingSoonPage({ item }: { item: NavEntry }) {
     ? t(item.etaNote === 'unconfirmed' ? 'comingSoon.etaUnconfirmed' : 'comingSoon.eta', { step: item.plannedStep })
     : t(item.etaNote === 'apiReady' ? 'comingSoon.etaNoneApiReady' : 'comingSoon.etaNone');
   return (
-    <section className="flex flex-col items-center gap-3 rounded-panel bg-surface px-6 py-12 text-center shadow-card">
+    <section className="flex flex-col items-center gap-3 rounded-panel bg-surface px-6 py-12 text-center shadow-sheet">
       <span aria-hidden className="flex items-center justify-center rounded-control bg-primary-soft p-3 text-primary">
         {Icon && <Icon className="size-5" />}
       </span>

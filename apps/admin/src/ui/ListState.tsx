@@ -20,7 +20,7 @@ export function ListState({ state, emptyText, emptyHint, onRetry }: Props) {
     return (
       <div role="alert" className={box}>
         <TriangleAlert aria-hidden className="size-5 text-danger" />
-        <p className="text-danger-strong">{t('list.error')}</p>
+        <p className="text-danger">{t('list.error')}</p>
         {onRetry && (
           <Button variant="secondary" onPress={onRetry}>
             {t('common.retry')}

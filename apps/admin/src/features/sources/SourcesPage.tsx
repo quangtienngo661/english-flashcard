@@ -11,7 +11,7 @@ import { DataList, type Column } from '../../ui/DataList';
 import { TextField } from '../../ui/TextField';
 import { createSource, listSources, type SourceView } from '../content/content-api';
 
-const panel = 'flex flex-col gap-4 rounded-panel bg-surface p-4 shadow-card';
+const panel = 'flex flex-col gap-4 rounded-panel bg-surface p-4 shadow-sheet';
 
 export function SourcesPage() {
   const t = useTranslations();

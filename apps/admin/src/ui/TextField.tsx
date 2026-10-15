@@ -33,7 +33,7 @@ export function TextField({ label, value, onChange, error, description, placehol
           {description}
         </Text>
       )}
-      <FieldError className="text-xs text-danger-strong">{error}</FieldError>
+      <FieldError className="text-xs text-danger">{error}</FieldError>
     </AriaTextField>
   );
 }

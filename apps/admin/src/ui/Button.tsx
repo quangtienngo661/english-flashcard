@@ -5,8 +5,8 @@ export type ButtonVariant = 'primary' | 'secondary' | 'danger' | 'ghost';
 
 const VARIANT: Record<ButtonVariant, string> = {
   primary: 'bg-primary text-on-primary hover:bg-primary/90',
-  secondary: 'bg-surface text-ink border border-border-strong hover:bg-bg',
-  danger: 'bg-danger-strong text-on-primary hover:bg-danger-strong/90',
+  secondary: 'bg-surface text-ink border border-border-strong hover:bg-canvas',
+  danger: 'bg-danger text-on-primary hover:bg-danger/90',
   ghost: 'bg-transparent text-primary hover:bg-primary-soft',
 };
 

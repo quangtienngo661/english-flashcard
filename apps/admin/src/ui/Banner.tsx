@@ -5,7 +5,7 @@ type Variant = 'info' | 'error' | 'offline';
 
 const STYLE: Record<Variant, string> = {
   info: 'bg-primary-soft border-primary text-ink',
-  error: 'bg-danger-soft border-danger text-danger-strong',
+  error: 'bg-danger-soft border-danger text-danger',
   offline: 'bg-surface border-border-strong text-ink',
 };
 

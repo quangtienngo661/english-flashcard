@@ -45,14 +45,14 @@ export function BatchPage() {
 
   if (query.isPending) {
     return (
-      <div className="overflow-hidden rounded-panel bg-surface shadow-card">
+      <div className="overflow-hidden rounded-panel bg-surface shadow-sheet">
         <ListState state="loading" />
       </div>
     );
   }
   if (!batch) {
     return (
-      <div className="overflow-hidden rounded-panel bg-surface shadow-card">
+      <div className="overflow-hidden rounded-panel bg-surface shadow-sheet">
         <ListState state="error" onRetry={() => void query.refetch()} />
       </div>
     );
@@ -165,7 +165,7 @@ export function BatchPage() {
       {rejected > 0 && <p className="text-ui text-ink">{t('batch.rejectedSummary', { count: format.number(rejected) })}</p>}
 
       {batch.warnings.length > 0 && (
-        <section className="flex flex-col gap-1.5 rounded-panel bg-surface p-4 shadow-card">
+        <section className="flex flex-col gap-1.5 rounded-panel bg-surface p-4 shadow-sheet">
           <h3 className="text-ui font-semibold text-ink">{t('batch.warnings', { count: batch.warnings.length })}</h3>
           <ul className="flex flex-col gap-1 text-xs text-muted">
             {batch.warnings.map((warning, i) => (

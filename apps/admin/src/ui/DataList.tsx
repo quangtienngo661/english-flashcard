@@ -26,7 +26,7 @@ type Props<T> = {
  * viewport: the content area is what narrows when the sidebar is open). Empty/loading/error go to `ListState`.
  */
 export function DataList<T>({ rows, rowKey, columns, state, emptyText, emptyHint, onRetry }: Props<T>) {
-  const shell = 'overflow-hidden rounded-panel bg-surface shadow-card';
+  const shell = 'overflow-hidden rounded-panel bg-surface shadow-sheet';
   if (state !== 'ready') {
     return (
       <div className={shell}>
@@ -45,7 +45,7 @@ export function DataList<T>({ rows, rowKey, columns, state, emptyText, emptyHint
     <div className="@container">
       <div className={`hidden @list:block ${shell}`}>
         <table className="w-full table-fixed text-ui">
-          <thead className="bg-bg text-left text-xs uppercase tracking-wider text-muted">
+          <thead className="bg-canvas text-left text-xs uppercase tracking-wider text-muted">
             <tr>
               {columns.map((c) => (
                 <th key={c.key} scope="col" className={`px-4 py-2.5 font-normal ${c.className ?? ''}`}>
@@ -69,7 +69,7 @@ export function DataList<T>({ rows, rowKey, columns, state, emptyText, emptyHint
       </div>
       <ul className="flex flex-col gap-3 @list:hidden">
         {rows.map((row) => (
-          <li key={rowKey(row)} data-testid="card" className="flex flex-col gap-1.5 rounded-panel bg-surface px-4 py-3 shadow-card">
+          <li key={rowKey(row)} data-testid="card" className="flex flex-col gap-1.5 rounded-panel bg-surface px-4 py-3 shadow-sheet">
             {columns.map((c, i) => {
               const role = c.card ?? (i === 0 ? 'title' : 'field');
               if (role === 'title') return <div key={c.key} className="min-w-0 wrap-anywhere font-medium text-ink">{c.cell(row)}</div>;

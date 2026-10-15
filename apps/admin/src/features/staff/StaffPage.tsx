@@ -13,7 +13,7 @@ import { CreateAccountDialog } from './CreateAccountDialog';
 import { RoleDialog } from './RoleDialog';
 import { findUser, listStaff, type StaffRole, type StaffUser } from './staff-api';
 
-const panel = 'flex flex-col gap-3 rounded-panel bg-surface p-4 shadow-card';
+const panel = 'flex flex-col gap-3 rounded-panel bg-surface p-4 shadow-sheet';
 
 function UserCard({ user, onChoose }: { user: StaffUser; onChoose: (role: StaffRole | null) => void }) {
   const t = useTranslations();

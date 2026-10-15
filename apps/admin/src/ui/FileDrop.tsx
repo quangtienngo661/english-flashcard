@@ -41,7 +41,7 @@ export function FileDrop({ fileName, detail, error, prompt, hint, chooseLabel, c
       className={`flex flex-col items-center gap-2 rounded-control border border-dashed px-4 py-8 text-center ${tone}`}
     >
       <FileUp aria-hidden className="size-5 text-muted" />
-      {error && <p className="break-words text-ui font-medium text-danger-strong">{error}</p>}
+      {error && <p className="break-words text-ui font-medium text-danger">{error}</p>}
       {hasFile ? (
         <p className="max-w-full wrap-anywhere text-ui font-medium text-ink">{fileName}</p>
       ) : (
