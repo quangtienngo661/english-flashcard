@@ -119,7 +119,8 @@ test('UBC17 a 429 on the first refresh shows the retry countdown, then the app o
     'GET /v1/admin/content/uploads': () => ({ json: { items: [], next_page_token: null } }),
   });
   await page.goto('/uploads');
-  await expect(page.getByRole('status').getByText(/Thử lại sau [12] giây/)).toBeVisible();
+  // The countdown is a timer beside the live status line, not inside it (review M7).
+  await expect(page.getByRole('timer')).toHaveText(/Thử lại sau [12] giây/);
   await expect(page.getByRole('heading', { level: 1, name: vi.nav.uploads })).toBeVisible({ timeout: 6000 });
   await expect(page).toHaveURL(/\/uploads$/);
   expect(refreshes).toBe(2);
