@@ -206,6 +206,25 @@ test.describe('hero and forms (§5.1, §5.3)', () => {
   });
 });
 
+test.describe('plans (UB7)', () => {
+  test.use({ reducedMotion: 'reduce' });
+  test('UBC6 each plan button scrolls to the hero form', async ({ page }) => {
+    test.skip(test.info().project.name !== 'desktop', 'run once, sizes set in the test');
+    for (const width of [1440, 390]) {
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto('/vi');
+      const plans = page.locator('section[aria-labelledby="plans-title"]');
+      const buttons = plans.getByRole('link', { name: copy.vi.Nav.cta });
+      await expect(buttons).toHaveCount(2);
+      for (let i = 0; i < 2; i++) {
+        await buttons.nth(i).scrollIntoViewIfNeeded();
+        await buttons.nth(i).click();
+        await expect(page.locator('#waitlist-hero'), `button ${i} at ${width}`).toBeInViewport();
+      }
+    }
+  });
+});
+
 test('S5.1 section backgrounds follow the B rhythm', async ({ page }) => {
   await page.goto('/vi');
   const backgrounds = await page.locator('main > section').evaluateAll((sections) =>

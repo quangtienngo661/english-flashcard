@@ -1,5 +1,6 @@
 import { getTranslations } from 'next-intl/server';
 import { Reveal } from '@/components/interactive/Reveal';
+import { ButtonLink } from '@/components/ui/ButtonLink';
 import { Chip } from '@/components/ui/Chip';
 import { Icon } from '@/components/ui/Icon';
 import { Section } from '@/components/ui/Section';
@@ -11,6 +12,8 @@ const ITEMS = ['i1', 'i2', 'i3', 'i4'] as const;
 
 export async function Plans() {
   const t = await getTranslations('Plans');
+  // Both plans lead to the same waitlist, so both buttons reuse the existing Nav.cta copy (UB7, UB17).
+  const nav = await getTranslations('Nav');
 
   return (
     <Section labelledBy="plans-title" tone="surface">
@@ -30,7 +33,7 @@ export async function Plans() {
             step={i === 0 ? 0 : 1}
             className={cn(
               'flex flex-col gap-4 rounded-card bg-surface p-7',
-              plan === 'trial' ? 'border-2 border-primary' : 'border border-border',
+              plan === 'trial' ? 'border-2 border-primary shadow-ledge-soft' : 'border border-border',
             )}
           >
             <div className="flex flex-wrap items-center justify-between gap-2">
@@ -45,6 +48,9 @@ export async function Plans() {
                 </li>
               ))}
             </ul>
+            <ButtonLink href="#waitlist-hero" variant={plan === 'trial' ? 'primary' : 'secondary'} className="mt-auto self-start">
+              {nav('cta')}
+            </ButtonLink>
           </Reveal>
         ))}
       </div>
