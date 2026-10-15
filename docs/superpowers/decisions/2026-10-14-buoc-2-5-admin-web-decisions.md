@@ -29,6 +29,17 @@ dự án trả lời "ok"; "Chủ dự án (yêu cầu)" = chủ dự án tự �
 | D15 | Hướng giao diện | Sidebar + thanh trên, mật độ cao, giữ thương hiệu landing | Chủ dự án (ok) |
 | D16 | Đơn vị kích thước | Động (rem, `clamp()`, `minmax()`, container query) | Chủ dự án (yêu cầu) |
 | D17 | Nguồn danh sách topic cho bộ lọc | Thêm `GET /v1/admin/taxonomy/topics` | Chủ dự án (phát sinh ở phiên review) |
+| D18 | Cách có tài khoản editor (đảo D5) | Admin nhập email + vai trò; API tạo tài khoản, gửi mật khẩu qua email | Chủ dự án (yêu cầu, khi duyệt Figma) |
+| D19 | Mật khẩu ban đầu | Ô "Sinh mật khẩu ngẫu nhiên" (mặc định tick); bỏ tick thì admin tự gõ | Chủ dự án (yêu cầu) |
+| D20 | Email gửi editor khi admin tự đặt mật khẩu | Gửi cả mật khẩu như khi sinh ngẫu nhiên | Chủ dự án (khác đề xuất) |
+| D21 | Chặn "bắt đổi mật khẩu" ở đâu | Cả API (403 `password-change-required`) và giao diện | Chủ dự án |
+| D23 | Menu và các mục ngoài phạm vi | Chủ dự án yêu cầu: giữ nguyên sidebar 6 nhóm / 16 mục (F5, menu đề xuất); mục ngoài phạm vi 2.5 mở trang "Tính năng chưa có" (kèm dự kiến bước), không hiện nội dung mock; trang chủ sau đăng nhập = Lô nhập (trợ lý suy ra vì Dashboard ngoài phạm vi). Trang Mock trên Figma giữ làm tham khảo | Chủ dự án (yêu cầu, 14/10/2026) |
+| D22 | Dashboard và quản lý user đầy đủ | Để ngoài 2.5, ghi rõ ở §14 spec (đề xuất) / thêm dashboard / thêm quản lý user / thêm cả hai → ✅ để ngoài; Figma M0 duyệt cùng lúc (14/10/2026) | Chủ dự án |
+| D24 | Khi nào hiện "Publish lô này" (B25E28) | Chỉ khi lô `succeeded`/`partial` và chưa hoàn tác | Trợ lý chốt khi review Task 14, đã báo chủ dự án (không phản đối) |
+| D25 | Publish job với bộ lọc rỗng (B25E29) | Thêm hộp xác nhận | Chủ dự án (theo đề xuất, review Task 16) |
+| D26 | Xuất `unpublishable` rỗng sau file CEFR-J | Ghi nhận, sửa kịch bản "Xong khi"; "xuất từ chưa có nghĩa" vào backlog | Chủ dự án (theo đề xuất, Task 18) |
+| D27 | Refresh bị 429 → về `/login` không báo (B25E30) | Ghi nhận, sửa khi refactor giao diện admin | Chủ dự án (theo đề xuất, Task 18) |
+| D28 | Nhánh chứa docs của Task 18 | `docs/buoc-2-5-design`; PR M3 chỉ chứa code | Chủ dự án (theo đề xuất, Task 18) |
 
 **Kế thừa, không hỏi lại** (`2026-10-08-landing-page-decisions.md`): **L8** bố cục subdomain `<domain>` / `app.` / `admin.` /
 `api.` (chủ dự án); **L5** `admin.` gọi host riêng `admin-api.<domain>` trỏ vào cùng API để cookie phiên không ghi đè nhau
@@ -255,6 +266,97 @@ Chủ dự án nhờ review lại spec; trợ lý đối chiếu với code và 
 - **Thiếu trạng thái job `partial`**: thêm vào polling và danh sách khung Figma.
 - Thêm B25E19–E23 (mất phiên cũ khi đủ 10 phiên, header có cột level, nguồn thiếu phiên bản/license, OTP bị khóa); rủi ro rate
   limit đăng ký 5/giờ/IP với test e2e thật; chi phí Worker thứ hai (0 đồng, theo docs); ngôn ngữ lưu `localStorage`.
+
+## Quyết định khi review Figma M0 (14/10/2026)
+
+| # | Quyết định | Phương án đưa ra | Chọn | Ai chốt |
+|---|---|---|---|---|
+| F1 | Ngưỡng bảng → thẻ | `40rem` bề rộng vùng nội dung (đề xuất của luồng A sau khi đo: 1024 vẫn là bảng, 768 thành thẻ) / `48rem` | ✅ `40rem` | Chủ dự án |
+| F2 | Icon | Tự vẽ ~8 icon SVG, không thêm thư viện (đề xuất) / `lucide-react` (thêm một runtime dependency) | ✅ `lucide-react` (ISC); ghim `1.55.0` — bản `1.57.0` ra cùng ngày nên pnpm 11 chặn theo tuổi phát hành tối thiểu | Chủ dự án (khác đề xuất) |
+| F3 | Trạng thái rỗng/đang tải/lỗi | Dùng lại mẫu, không vẽ thêm (đề xuất) / vẽ đủ cho mọi màn | Chủ dự án hỏi "có component dùng chung không" → chưa có; trợ lý cho tạo `ListState` (empty/loading/error) dùng chung trong Figma và code | Chủ dự án (hỏi) + trợ lý (làm) |
+| F5 | Làm lại giao diện theo template Sneat (chủ dự án chưa ưng Figma đã duyệt, gửi https://demos.themeselection.com/sneat-bootstrap-html-admin-template-free/html/) — phạm vi | Figma đủ menu + màn mẫu bằng mock data, code chỉ màn 2.5 (đề xuất) / cả Figma và code các màn mock / chỉ đổi phong cách màn 2.5 | ✅ Figma đủ menu + mock, code chỉ màn 2.5 | Chủ dự án |
+| F6 | Màu và font khi theo Sneat | Bố cục Sneat, giữ xanh `#2f5bea` + Be Vietnam Pro (đề xuất) / theo hẳn Sneat (tím `#696cff` + Public Sans) / màu Sneat + font Wordmet | ✅ Bố cục Sneat, giữ màu + font Wordmet | Chủ dự án |
+| F4 | Tiêu đề + mô tả trang trong vùng nội dung | — | Bỏ trên mọi màn trong khung app (thanh trên đã có tên trang); màn tài khoản giữ tiêu đề thẻ (trợ lý hiểu như vậy, chờ chủ dự án xác nhận) | Chủ dự án (yêu cầu) |
+
+## D18–D21 — Admin tạo tài khoản editor (đảo D5 và D12, 14/10/2026)
+
+Bối cảnh: khi duyệt Figma, chủ dự án viết "admin thì không cần mục 'chưa có tài khoản? Đăng ký' … admin có thể tạo tài khoản editor
+chứ không cho đăng ký mới như learner" và nhận đây là lỗi của D5. Hệ quả: bỏ màn Đăng ký, màn OTP xác minh, và ngoại lệ "chưa xác
+minh → OTP" của D12. API chưa có lệnh tạo tài khoản hộ; trợ lý đọc `password.service.ts` thấy `reset` upsert mật khẩu và tự đánh
+dấu email đã xác minh.
+
+**D18 — cách tạo tài khoản:**
+
+| Phương án | Trade-off |
+|---|---|
+| Admin nhập email, editor tự đặt mật khẩu qua luồng "Quên mật khẩu" (đề xuất) | 1 endpoint; admin không biết mật khẩu; editor thêm 1 bước, mã sống 10 phút |
+| Admin đặt mật khẩu tạm | Đơn giản cho editor; admin biết mật khẩu; cần cơ chế bắt đổi mật khẩu |
+| Gửi lời mời qua email (hạn dài) | Trải nghiệm đẹp nhất; nhiều việc nhất (bảng lời mời, mẫu thư, endpoint nhận) |
+| ✅ **Chủ dự án tự đưa ra:** admin nhập email; sinh mật khẩu ngẫu nhiên theo quy ước và gửi mail cho editor; checkbox "yêu cầu đổi mật khẩu"; có yêu cầu thì editor bị chuyển sang trang mật khẩu cũ / mới / xác nhận | Gần phương án 2 + mật khẩu qua email; dùng lại `POST /auth/password/change` có sẵn; mật khẩu nằm trong hộp thư |
+
+**D21 — chặn ở đâu:** ✅ cả API (403 `password-change-required` ở `PermissionGuard`; không ai lách bằng curl; sửa guard + test) /
+chỉ giao diện (ít việc, curl vẫn lách được).
+
+**D19 — vòng sửa khi duyệt thiết kế:** chủ dự án thêm ô "Sinh mật khẩu ngẫu nhiên"; bỏ tick thì admin tự gõ mật khẩu.
+
+**D20 — email khi admin tự gõ mật khẩu:**
+
+| Phương án | Trade-off |
+|---|---|
+| Chỉ báo tài khoản đã tạo, không kèm mật khẩu (đề xuất) | Mật khẩu không nằm trong hộp thư; thêm 1 mẫu thư |
+| ✅ Gửi cả mật khẩu như khi sinh ngẫu nhiên | Editor có đủ thông tin trong thư; một mẫu thư; mật khẩu nằm trong hộp thư |
+| Không gửi email nào | Dùng được khi SMTP chưa chạy; admin tự báo cả địa chỉ lẫn mật khẩu |
+
+**Đề xuất duyệt cùng (chủ dự án duyệt thiết kế, chỉ sửa ở D19):** ô "Bắt đổi mật khẩu" mặc định tick; mật khẩu sinh 16 ký tự bỏ ký tự
+dễ nhầm, đủ 4 nhóm ký tự; email coi như đã xác minh lúc tạo; mật khẩu mới phải khác mật khẩu hiện tại (`same_as_current`); kiểm
+hạn mức mail trước khi tạo; email trùng → 409 `email-taken` và gợi ý cấp vai trò; config `ADMIN_APP_URL` cho link trong thư;
+response và log không bao giờ chứa mật khẩu. Thanh trên của màn form hiện tên form (giữ như luồng A vẽ; chủ dự án không phản đối).
+
+## D24–D25 — Phát sinh khi review code M3 (14/10/2026)
+
+**D24 — "Publish lô này" (B25E28).** Design chỉ ghi nút cần `content.publish`. Khi review Task 14 thấy `POST .../publish-jobs`
+không kiểm trạng thái lô (chụp `senseIdsOf(batch_id)` lúc gọi), nên bấm lúc lô đang nhập chỉ publish phần đã nhập; lô đã hoàn tác
+có thể còn mục bị bỏ qua khi hoàn tác. Trợ lý chốt rồi báo chủ dự án, kèm lời ngỏ giữ cách cũ nếu muốn.
+
+| Phương án | Trade-off |
+|---|---|
+| ✅ Chỉ hiện khi lô `succeeded`/`partial` và chưa hoàn tác | Không publish lô dở hay lô đã hoàn tác; cùng điều kiện với "Hoàn tác lô" |
+| Hiện mọi lúc trừ `failed` (bản đầu của Task 14, theo Figma) | Bấm sớm thì publish thiếu mà không báo |
+
+**D25 — Publish job bộ lọc rỗng (B25E29).** Không chọn bộ lọc nào = publish mọi nghĩa đủ điều kiện trong cả kho; design chưa nói.
+
+| Phương án | Trade-off |
+|---|---|
+| ✅ Thêm hộp xác nhận khi bộ lọc rỗng (đề xuất) | Tránh bấm nhầm publish cả kho; sửa nhỏ trong form. Lỡ publish chỉ gỡ được qua API unpublish |
+| Giữ như hiện tại | Ít bước hơn, giống API; dễ bấm nhầm |
+
+## D26–D28 — Phát sinh khi chạy tay "Xong khi" (Task 18, 15/10/2026)
+
+Bằng chứng: `docs/deliveries/buoc-2-5-test-flow.md` mục 3.
+
+**D26 — Xuất `unpublishable` rỗng.** File CEFR-J chỉ tạo entry + level; xuất CSV chỉ duyệt sense, nên bước "xuất `unpublishable` →
+điền → upload lại" của §1 ra file 0 dòng.
+
+| Phương án | Trade-off |
+|---|---|
+| ✅ Ghi nhận, sửa design: bước điền nghĩa dùng CSV tự soạn theo `headword` + `pos`; "xuất các từ chưa có nghĩa" vào backlog (đề xuất) | Không đụng code; editor phải tự soạn danh sách từ |
+| Thêm kiểu xuất "từ chưa có nghĩa" ngay trong Bước 2.5 | Đúng luồng mong muốn; đụng backend, cần design và plan bổ sung |
+
+**D27 — Refresh phiên bị 429 (B25E30).** Tải lại trang hơn khoảng 10 lần/phút thì `POST /v1/auth/refresh` trả 429; app mở
+`/login` không thông báo, dù cookie còn hợp lệ.
+
+| Phương án | Trade-off |
+|---|---|
+| ✅ Ghi nhận thành edge case, sửa khi refactor giao diện admin (đề xuất) | Không thêm việc vào M3; người dùng hiếm gặp, gặp thì khó hiểu |
+| Sửa ngay trong M3 (TDD) | Hết lỗi trước khi merge; thêm việc vào lớp giao diện sắp làm lại |
+
+**D28 — Nhánh chứa docs của Task 18.** Nhánh M3 không có docs Bước 2.5 (design/plan/delivery chưa commit, nằm ở
+`docs/buoc-2-5-design`).
+
+| Phương án | Trade-off |
+|---|---|
+| ✅ Ghi vào `docs/buoc-2-5-design`; PR M3 chỉ chứa code, docs vào `dev` bằng PR riêng (đề xuất) | Giữ nguyên chỗ docs đang nằm; hai PR |
+| Chuyển docs sang nhánh M3, commit chung với code | Một PR; trộn docs với code, lệch cách đã chia nhánh |
 
 ## Đề xuất kỹ thuật duyệt cùng design (không hỏi riêng)
 

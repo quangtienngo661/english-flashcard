@@ -17,8 +17,8 @@ không sửa theo doc này. Criteria và edge cases dùng số hiệu `B25#`/`B2
 ## 1. Mục tiêu và tiêu chí xong
 
 Cho `admin` và `editor` làm việc bằng trình duyệt thay cho curl/Postman: đăng nhập; `admin` cấp và gỡ vai trò; staff chạy trọn
-luồng nội dung bằng CSV (đăng ký nguồn, upload, xem báo cáo, tải dòng lỗi, xuất, publish theo bộ lọc, hoàn tác lô). Người
-sắp làm `editor` tự đăng ký và xác minh email ngay trên trang admin. Chạy **local**; chưa deploy.
+luồng nội dung bằng CSV (đăng ký nguồn, upload, xem báo cáo, tải dòng lỗi, xuất, publish theo bộ lọc, hoàn tác lô). Trang admin
+**không có tự đăng ký**: `admin` tạo tài khoản cho editor (D18–D21, sửa 14/10/2026). Chạy **local**; chưa deploy.
 
 **Xong khi:**
 1. Mọi tiêu chí `B25#` ở mục 11 có test tự động (unit, e2e với API giả, hoặc e2e với API thật theo cột "Test" của bảng); test cũ
@@ -26,10 +26,14 @@ sắp làm `editor` tự đăng ký và xác minh email ngay trên trang admin. 
 2. CI xanh trên PR vào `dev`, gồm hai job mới `admin` và `admin-e2e-real` (mục 10).
 3. Chạy tay trên máy local và ghi lại trong `docs/deliveries/buoc-2-5.md`:
    - DB mới → `pnpm admin:grant` cho chủ dự án → đăng nhập `http://localhost:5173`.
-   - Trình duyệt thứ hai: đăng ký editor → nhập OTP từ Mailpit → chủ dự án cấp `editor` → editor đăng ký nguồn CEFR-J 1.5 →
-     upload **file CEFR-J 1.5 thật** (chỉ tạo entry + level, chưa có sense — B2#7 của Bước 2) → xem báo cáo → xuất danh sách
-     `unpublishable` → điền nghĩa/ví dụ cho vài dòng → upload lại → publish lô vừa upload → theo dõi job → gọi API tìm kiếm bằng
-     tài khoản learner và thấy các từ đó.
+   - Chủ dự án tạo tài khoản editor (sinh mật khẩu, bắt đổi mật khẩu) → trình duyệt thứ hai: editor đọc mật khẩu trong mail
+     ở Mailpit → đăng nhập → bị chuyển sang trang đổi mật khẩu → đổi xong vào app → editor đăng ký nguồn CEFR-J 1.5 →
+     upload **file CEFR-J 1.5 thật** (chỉ tạo entry + level, chưa có sense — B2#7 của Bước 2) → xem báo cáo → soạn CSV
+     `headword,pos,gloss_vi,definition_en,example_en_1,topics` cho vài từ đã có trong CEFR-J → upload → publish lô vừa upload →
+     theo dõi job → gọi API tìm kiếm bằng tài khoản learner (đã đặt `native_language`) và thấy các từ đó.
+     **Sửa 15/10/2026 (chủ dự án chốt):** bản đầu ghi "xuất danh sách `unpublishable` → điền → upload lại", nhưng xuất CSV chỉ
+     duyệt sense, nên sau file CEFR-J danh sách này rỗng (`docs/deliveries/buoc-2-5-test-flow.md`, phát hiện 1). "Xuất các từ
+     chưa có nghĩa" đưa vào backlog, không thuộc Bước 2.5.
    - Learner bị chặn ngay ở đăng nhập. Gỡ quyền editor khi editor đang mở trang → editor bị đá về `/login`.
    - Thử ở bề rộng 390, 768, 1024, 1440.
 
@@ -43,19 +47,24 @@ Chi tiết phương án và trade-off ở file decisions. Tóm tắt:
 | D2 | Phạm vi màn hình | Đăng nhập + cấp vai trò + luồng CSV | Chốt |
 | D3 | Stack | Vite + React SPA, chỉ file tĩnh | Chốt |
 | D4 | Deploy | Chạy local; deploy API + admin là bước riêng | Chốt |
-| D5 | Màn hình tài khoản | Đăng nhập/xuất, đăng ký, OTP, quên mật khẩu | Chốt |
+| D5 | Màn hình tài khoản | Đăng nhập/xuất, quên mật khẩu, đổi mật khẩu bắt buộc; **không** đăng ký, **không** màn OTP xác minh (sửa 14/10/2026) | Chốt |
 | D6 | Ngôn ngữ | vi + en | Chốt |
 | D7 | Cách thiết kế giao diện | Figma trước, rồi code | Chốt |
 | D8 | Trình tự Figma | Design doc → Claude dựng Figma → chủ dự án duyệt → code | Chốt |
 | D9 | Thiết bị | Responsive đầy đủ | Chốt |
 | D10 | Test e2e | Đa số API giả, 4 luồng chính với API thật | Chốt |
 | D11 | Sửa backend | CORS + `endpoint` liệt kê publish job (cộng D17) | Chốt |
-| D12 | Người không có vai trò đăng nhập | Chặn ngay ở đăng nhập; ngoại lệ: chưa xác minh email thì chuyển sang màn OTP | Chốt |
+| D12 | Người không có vai trò đăng nhập | Chặn ngay ở đăng nhập (ngoại lệ "chưa xác minh → OTP" đã bỏ cùng D5, 14/10/2026) | Chốt |
 | D13 | Learner còn phiên vào trang admin | Đá về `/login` kèm thông báo | Chốt |
 | D14 | Đồng bộ đăng xuất giữa các tab | `BroadcastChannel` | Chốt |
 | D15 | Hướng giao diện | Sidebar trái + thanh trên; mật độ cao; giữ màu/font landing | Chốt (ok) |
 | D16 | Đơn vị kích thước | Động (rem, %, `clamp()`, `minmax()`, container query), không px cố định | Chốt |
 | D17 | Nguồn danh sách topic cho bộ lọc | Thêm `GET /v1/admin/taxonomy/topics` | Chốt |
+| D18 | Cách có tài khoản editor | `admin` nhập email + vai trò → API tạo tài khoản và gửi mật khẩu qua email | Chốt |
+| D19 | Mật khẩu ban đầu | Ô "Sinh mật khẩu ngẫu nhiên" (mặc định tick); bỏ tick thì admin tự gõ (phải đạt chính sách) | Chốt |
+| D20 | Email gửi editor | Gửi mật khẩu trong **cả hai** trường hợp, một mẫu thư | Chốt |
+| D23 | Menu | Sidebar đủ 6 nhóm / 16 mục; 11 mục ngoài phạm vi mở trang "Tính năng chưa có" (dự kiến bước); trang chủ sau đăng nhập = Lô nhập | Chốt |
+| D21 | Bắt đổi mật khẩu | Ô "Bắt đổi mật khẩu" (mặc định tick); chặn ở **cả API** (403 `password-change-required`) và giao diện | Chốt |
 
 Kế thừa (đã chốt trước, không hỏi lại): **L8** bố cục subdomain `<domain>` / `app.` / `admin.` / `api.`; **L5** `admin.` gọi
 host riêng `admin-api.<domain>` trỏ vào cùng API để cookie phiên của `app.` và `admin.` không ghi đè nhau
@@ -65,13 +74,14 @@ host riêng `admin-api.<domain>` trỏ vào cùng API để cookie phiên của 
 
 **Làm:**
 - `apps/admin` (mới): khung app, phiên đăng nhập, các màn hình ở mục 6, vi/en, responsive.
-- `apps/api`: sửa CORS, thêm `GET /v1/admin/content/senses/publish-jobs` và `GET /v1/admin/taxonomy/topics` (mục 7). Không đổi
-  schema DB, không migration.
+- `apps/api`: sửa CORS, thêm `GET /v1/admin/content/senses/publish-jobs` và `GET /v1/admin/taxonomy/topics`, thêm
+  `POST /v1/admin/users` (tạo tài khoản) và cờ `must_change_password` (một migration của Identity) (mục 7).
 - Figma cho mọi màn hình ở mục 6 (M0).
 - CI: hai job mới.
 - `apps/admin/wrangler.jsonc` viết sẵn (không deploy).
 
-**Để sau** (mục 14): deploy; soạn từng sense; quản lý entry/variant/level/topic; đổi mật khẩu khi đang đăng nhập; dark mode; email
+**Để sau** (mục 14): deploy; soạn từng sense; quản lý entry/variant/level/topic; đổi mật khẩu **chủ động** từ menu (chỉ có trang đổi
+mật khẩu bắt buộc); dark mode; email
 người tạo publish job; theo dõi lỗi giao diện kiểu Sentry.
 
 ## 4. Kiến trúc
@@ -131,16 +141,17 @@ httpOnly do API đặt; JS không đọc được.
 
 **Khởi động trang (mở mới hoặc F5):**
 1. `POST /v1/auth/refresh` với `credentials: 'include'` và header `X-CSRF-Protection: 1`, body `{}`.
-2. Thành công → `GET /v1/me` → có `staff_role`, `permissions`, `email_verified`.
+2. Thành công → `GET /v1/me` → có `staff_role`, `permissions`, `must_change_password` (mới, mục 7.5).
 3. Áp **luật cổng** (dưới). Refresh thất bại → màn `/login`.
 
-**Luật cổng** (áp sau đăng nhập, sau khởi động, sau 403 `forbidden` — xem dưới, khi tab được focus lại):
+**Luật cổng** (áp sau đăng nhập, sau khởi động, sau 403 `forbidden` hoặc `password-change-required` — xem dưới, khi tab được
+focus lại; sửa 14/10/2026 theo D5/D21):
 
-| `staff_role` | `email_verified` | Hành động |
+| `staff_role` | `must_change_password` | Hành động |
 |---|---|---|
-| `admin`/`editor` | — | Vào app; menu và nút theo `permissions` |
-| `null` | `false` | Chuyển sang màn nhập OTP xác minh email (D12, ngoại lệ). Xác minh xong → đăng xuất → `/login` với "Email đã xác minh. Liên hệ admin để được cấp quyền." |
-| `null` | `true` | `POST /v1/auth/logout` (kèm `X-CSRF-Protection: 1`) → xóa token trong bộ nhớ → `/login` với "Bạn không có quyền truy cập trang web này" (D12, D13) |
+| `admin`/`editor` | `true` | Chỉ vào được trang `/change-password` (và đăng xuất); mọi đường dẫn khác chuyển về đó |
+| `admin`/`editor` | `false` | Vào app; menu và nút theo `permissions` |
+| `null` | — | `POST /v1/auth/logout` (kèm `X-CSRF-Protection: 1`) → xóa token trong bộ nhớ → `/login` với "Bạn không có quyền truy cập trang web này" (D12, D13) |
 
 Server vẫn là lớp kiểm quyền thật: `PermissionGuard` đọc vai trò từ DB ở **mỗi** request (`permission.guard.ts:29-33`), nên gỡ
 quyền có hiệu lực ngay ở server. Ẩn menu ở giao diện chỉ để gọn.
@@ -155,21 +166,23 @@ request gốc một lần. Refresh thất bại → `/login` với "Phiên đăn
   (`permission.guard.ts:29-37`). `/me` không có `@RequirePermission` nên vẫn trả 200 với phiên đã thu hồi. Vì vậy giao diện
   **refresh trước** (dùng chung lượt refresh): thất bại → `/login` "Phiên đăng nhập đã hết hạn"; thành công → `/me` → luật cổng; còn
   vai trò nhưng request vẫn 403 → "Bạn không còn quyền làm thao tác này", vẽ lại menu.
+- `password-change-required` (mục 7.5): đọc lại `/me` → luật cổng → `/change-password`.
 - `profile-incomplete` (chỉ các route learner, `learner-content.guard.ts`) và `csrf-header-required` (lỗi lập trình): hiện câu
   tương ứng, **không** áp luật cổng.
 
 **Đăng nhập:** `POST /v1/auth/login` `{ email, password, client: 'web', device_label: 'Wordmet Admin' }` → áp luật cổng.
 
-**Đăng ký:** `POST /v1/auth/register` `{ email, password, timezone, client: 'web', device_label }`; `timezone` lấy từ
-`Intl.DateTimeFormat().resolvedOptions().timeZone`. API cấp phiên và tự gửi mã OTP xác minh (`auth.service.ts:63-65`) → màn OTP.
+**Không có đăng ký, không có màn OTP xác minh email** trên trang admin (D5 sửa 14/10/2026). Tài khoản staff do `admin` tạo
+(mục 6.2, 7.4).
 
-**OTP xác minh:** `POST /v1/auth/verify-email` `{ code }` (cần access token). Gửi lại mã: `POST /v1/auth/otp`
-`{ purpose: 'verify_email' }`.
+**Đổi mật khẩu bắt buộc:** trang `/change-password` gồm mật khẩu hiện tại, mật khẩu mới, xác nhận mật khẩu mới (so khớp ở giao
+diện) → `POST /v1/auth/password/change` `{ current_password, new_password }` (có sẵn từ Bước 1; đổi xong API thu hồi mọi phiên
+cũ và trả phiên mới — `password.service.ts`, `change`) → giữ access token mới → `/me` → luật cổng → vào app.
 
 **Quên mật khẩu:** `POST /v1/auth/otp` `{ purpose: 'reset_password', email }` → nhập mã và mật khẩu mới → `POST
 /v1/auth/password/reset` `{ email, code, new_password }` (`password.schemas.ts`). Mật khẩu không đạt chính sách → 400
-`validation-failed` kèm `violations` (`auth.service.ts`, `checkPasswordPolicy`); form đăng ký và đặt lại mật khẩu hiện danh sách đó
-dưới ô mật khẩu.
+`validation-failed` kèm `violations` (`auth.service.ts`, `checkPasswordPolicy`); form đổi và đặt lại mật khẩu hiện danh sách đó
+dưới ô mật khẩu. Đặt lại thành công cũng tắt cờ `must_change_password` (mục 7.5).
 
 **Đăng xuất:** `POST /v1/auth/logout` (kèm `X-CSRF-Protection: 1`) → xóa token → phát `{ type: 'logout' }` qua
 `BroadcastChannel('wordmet-admin-auth')` → các tab khác nghe được thì xóa token và về `/login` (D14). Đăng nhập ở một tab cũng
@@ -184,16 +197,20 @@ chỉ `admin` có `roles.manage`).
 
 | Màn | Nội dung | API |
 |---|---|---|
-| Đăng nhập | Email, mật khẩu, link "Quên mật khẩu", link "Đăng ký"; vùng báo lỗi (gồm "không có quyền") | `auth/login`, `me`, `auth/logout` |
-| Đăng ký | Email, mật khẩu | `auth/register` |
-| Nhập OTP | Ô mã, "Gửi lại mã" (khóa đếm ngược khi 429) | `auth/verify-email`, `auth/otp` |
-| Quên mật khẩu (2 bước) | Email → mã + mật khẩu mới | `auth/otp`, `auth/password/reset` |
+| Đăng nhập | Email, mật khẩu, link "Quên mật khẩu"; vùng báo lỗi (gồm "không có quyền", "phiên hết hạn") | `auth/login`, `me`, `auth/logout` |
+| Quên mật khẩu (2 bước) | Email → mã + mật khẩu mới ("Gửi lại mã" khóa đếm ngược khi 429) | `auth/otp`, `auth/password/reset` |
+| Đổi mật khẩu bắt buộc | Mật khẩu hiện tại, mới, xác nhận; danh sách lỗi chính sách; nút đăng xuất (chỉ khi đã đăng nhập và cờ bật) | `auth/password/change` |
 
 ### 6.2 Vai trò (`roles.manage`)
 
 - Danh sách staff: email, vai trò, trạng thái xác minh; phân trang (`GET admin/staff`, `page_size`/`page_token`).
 - Tìm theo email (`GET admin/users?email=`) → thẻ người dùng → chọn `editor` / `admin` / gỡ vai trò → hộp xác nhận →
   `PUT admin/users/:id/staff-role` `{ staff_role }`.
+- **Tạo tài khoản** (D18–D21): dialog gồm email, vai trò (`editor` mặc định / `admin`), ☑ "Sinh mật khẩu ngẫu nhiên" (mặc định
+  tick; bỏ tick thì hiện ô mật khẩu + xác nhận, kiểm chính sách ngay ở form), ☑ "Bắt đổi mật khẩu khi đăng nhập lần đầu" (mặc
+  định tick) → hộp xác nhận nhắc lại email → `POST /v1/admin/users` (mục 7.4). Thành công: "Đã tạo tài khoản và gửi mật khẩu tới
+  <email>. Nếu editor không nhận được thư, họ dùng "Quên mật khẩu" ở trang đăng nhập." Giao diện **không bao giờ** hiện mật khẩu
+  sinh ra. `email-taken` → gợi ý dùng "Tìm theo email" rồi cấp vai trò.
 - Tự gỡ quyền admin của chính mình: hộp xác nhận cảnh báo riêng; thành công → đọc lại `/me` → luật cổng.
 
 ### 6.3 Nội dung — luồng CSV
@@ -257,6 +274,39 @@ Lý do: bộ lọc topic cần danh sách. `GET /v1/topics` gắn `@LearnerConte
 - Không phân trang, theo tiền lệ `GET /v1/topics` (số topic nhỏ, do staff tự tạo). Nếu sau này cần phân trang thì khi không gửi
   `page_size` vẫn phải trả đủ danh sách như cũ, để không làm hỏng giao diện admin đang dùng.
 
+### 7.4 `POST /v1/admin/users` — admin tạo tài khoản (D18–D20, thêm 14/10/2026)
+
+Trong `src/identity/staff/` (chỉ `src/identity/**` chạm bảng Identity — D3), quyền `roles.manage` (kế thừa `StaffController`),
+`@RateLimit('user.write')`.
+
+- Body `z.strictObject({ email: string ≤ 320, staff_role: 'admin' | 'editor', password: string | undefined,
+  must_change_password: boolean, timezone: string ≤ 64 })`. `password` vắng → API sinh; có → phải qua `checkPasswordPolicy`
+  (400 `validation-failed` + `violations`). `timezone` giao diện gửi múi giờ trình duyệt của admin (editor đổi sau qua
+  `PATCH /v1/me`); sai → 400 như đăng ký.
+- Mật khẩu sinh (đề xuất): 16 ký tự từ `crypto.randomInt`, bảng ký tự bỏ `0 O o 1 l I`, bảo đảm có ít nhất một chữ hoa, chữ
+  thường, chữ số và ký tự đặc biệt trong `-_.!@#%+=`, xáo trộn vị trí; luôn qua `checkPasswordPolicy`.
+- Trước khi tạo: `budget.assertAvailable()` (như đăng ký; hết hạn mức → 503 `mail-unavailable`, không tạo gì).
+- Một transaction (khóa theo user mới như đăng ký): tạo `users` (email chuẩn hóa, `email_verified_at = now` — mật khẩu chỉ được gửi
+  tới chính hộp thư đó, `staff_role`, `must_change_password`), `password_credentials` (hash argon2 như hiện có). Email trùng →
+  409 `email-taken`, không gửi thư.
+- Sau khi trả response: gửi thư `staffAccountMail(to, password, adminAppUrl)` (mẫu mới, hai thứ tiếng như `otpMail`: email đăng
+  nhập, mật khẩu, link trang admin, và câu "bạn sẽ được yêu cầu đổi mật khẩu" nếu cờ bật). Thư gửi trong cả hai trường hợp sinh
+  hay tự đặt (D20).
+- Response 201 `StaffUserView` (`id, email, email_verified, staff_role`) — **không bao giờ** chứa mật khẩu. Log
+  `staff_account_created { actor_id, target_id, staff_role, must_change }` — không email, không mật khẩu (tên field không
+chứa "password" vì `AppLogger` che mọi key chứa chữ đó — phát hiện khi làm Task 6b).
+- Config mới `ADMIN_APP_URL` (vd `http://localhost:5173`), bắt buộc, dùng trong thư.
+
+### 7.5 Cờ `must_change_password` (D21)
+
+- Migration Identity: `users.must_change_password boolean not null default false`; Prisma `mustChangePassword`.
+- `GET /v1/me` (`Profile`) thêm `must_change_password: boolean`.
+- `PermissionGuard` (đã đọc user qua `session_chains` ở mỗi request) đọc thêm cờ; cờ bật → 403 `password-change-required`
+  cho **mọi** route có `@RequirePermission`. Các route không có `@RequirePermission` (`/me`, `auth/refresh`, `auth/logout`,
+  `auth/password/change`, `auth/password/reset`) không bị chặn.
+- `POST /v1/auth/password/change` thành công → tắt cờ (cùng transaction); thêm luật mật khẩu mới khác mật khẩu hiện tại → 400
+  `validation-failed` với `violations: ['same_as_current']` (đề xuất). `POST /v1/auth/password/reset` thành công → tắt cờ.
+
 ## 8. Xử lý lỗi ở giao diện
 
 Mọi lỗi API là Problem Details (`type, status, title, detail, operation_id`, đôi khi `violations`). Giao diện tra `type` ra câu
@@ -265,7 +315,7 @@ vi/en; `type` không có trong bảng → "Có lỗi xảy ra" kèm **mã lỗi*
 `email-already-verified`, `staff-role-rule`, `not-found`, `validation-failed`, `rate-limited`, `file-invalid`, `file-too-large`,
 `payload-too-large`, `level-source-required`, `source-incomplete`, `source-exists`, `nothing-to-publish`, `batch-not-revertable`,
 `batch-filter-unavailable`, `export-too-large`, `idempotency-key-abandoned`, `csrf-header-required`, `mail-unavailable`,
-`invalid-token`, `forbidden`.
+`invalid-token`, `forbidden`, và `password-change-required` (mới, mục 7.5).
 
 | Khi | Giao diện làm gì |
 |---|---|
@@ -286,7 +336,7 @@ vi/en; `type` không có trong bảng → "Có lỗi xảy ra" kèm **mã lỗi*
 - Mật độ: chữ nền nhỏ hơn landing, nút/ô nhập thấp hơn; tăng cỡ khi thiết bị cảm ứng.
 - Thương hiệu: token màu và font Be Vietnam Pro của landing (`apps/web/src/app/globals.css`); đỏ `--color-danger` cho thao tác phá
   hủy (hoàn tác lô, gỡ vai trò); bo góc nhỏ hơn landing.
-- Đăng nhập/đăng ký/OTP: thẻ giữa trang, logo ở trên.
+- Đăng nhập / quên mật khẩu / đổi mật khẩu bắt buộc: thẻ giữa trang, logo ở trên.
 
 **Kích thước động (D16).** Không dùng px cố định trong code; quy tắc W15 của landing áp nguyên:
 
@@ -302,8 +352,8 @@ vi/en; `type` không có trong bảng → "Có lỗi xảy ra" kèm **mã lỗi*
 | Sidebar → ngăn kéo | dưới `64rem` |
 | Chiều cao | không đặt chiều cao cố định |
 
-**M0 — Figma.** File: https://www.figma.com/design/coVHzJwTFgMbooUrty7sOq (Drafts của chủ dự án; đã tạo 4 trang rỗng
-`Cover`, `Tài khoản`, `Vai trò`, `Nội dung — CSV`). Đã kiểm 14/10/2026: MCP Figma ghi được vào tài khoản (gói student, ghế Full),
+**M0 — Figma.** File: https://www.figma.com/design/coVHzJwTFgMbooUrty7sOq (Drafts của chủ dự án). **Chủ dự án duyệt lần 2 ngày 14/10/2026** bản làm lại theo bố cục Sneat (F5, F6), menu 6 nhóm / 16 mục, trang "Tính năng chưa có" cho 11 mục ngoài phạm vi (D23); trang Mock chỉ để tham khảo. Lần duyệt đầu (cũng 14/10/2026) sau 5 vòng sửa (màn chi tiết lô theo API, bỏ tiêu đề trang, icon Lucide, `ListState`, bỏ đăng ký/OTP, padding hộp
+thông báo, dialog tạo tài khoản + trang đổi mật khẩu, tương phản chữ). Đã kiểm 14/10/2026: MCP Figma ghi được vào tài khoản (gói student, ghế Full),
 font Be Vietnam Pro có sẵn.
 - Token khai báo bằng biến Figma, ghi giá trị rem tương ứng với gốc 16px. Mọi khung dùng auto layout (Fill/Hug) với min/max
   width, không khung kích thước cố định.
@@ -327,7 +377,7 @@ M3 apps/admin: luồng CSV, CI job `admin-e2e-real`, "Xong khi" chạy tay
 |---|---|---|
 | Unit/component | Vitest + Testing Library + `msw` | Luật cổng, refresh dùng chung, bảng câu lỗi, quy tắc `Idempotency-Key`, polling dừng, `BroadcastChannel`, kiểm `VITE_API_BASE_URL` |
 | E2E API giả | Playwright (`page.route`) + axe | Mọi màn ở 1440 và 390; 429; lô kẹt; mất mạng |
-| E2E API thật | Playwright với API + worker + Postgres + Redis + Mailpit thật | 4 luồng: (1) đăng ký → OTP từ Mailpit → xác minh; (2) admin cấp `editor` → editor vào được, learner bị chặn; (3) upload CSV có 1 dòng lỗi → báo cáo → `rejected.csv` → publish lô → job xong, có trong danh sách → hoàn tác; (4) hai tab refresh cùng lúc, đăng xuất tab A → tab B về `/login` |
+| E2E API thật | Playwright với API + worker + Postgres + Redis + Mailpit thật | 4 luồng: (1) admin tạo tài khoản editor (sinh mật khẩu, bắt đổi) → đọc mật khẩu từ thư trong Mailpit → editor đăng nhập → trang đổi mật khẩu → vào app; (2) admin gỡ rồi cấp lại vai trò, learner bị chặn; (3) upload CSV có 1 dòng lỗi → báo cáo → `rejected.csv` → publish lô → job xong, có trong danh sách → hoàn tác; (4) hai tab refresh cùng lúc, đăng xuất tab A → tab B về `/login` |
 | Backend (M1) | Vitest + e2e Testcontainers hiện có | Mở rộng test CORS D13 trong `test/app-setup.e2e-spec.ts`; e2e cho hai `endpoint` mới (mục 7.2, 7.3) |
 
 **CI (`.github/workflows/ci.yml`, chạy trên pull request như hiện nay):**
@@ -342,7 +392,7 @@ M3 apps/admin: luồng CSV, CI job `admin-e2e-real`, "Xong khi" chạy tay
 |---|---|---|
 | B25#1 | When a user with a staff role logs in, then the app shell shows only the menu entries their `permissions` allow (`editor` sees no "Vai trò") | e2e giả |
 | B25#2 | When a user whose `staff_role` is null and `email_verified` is true logs in, then `POST /auth/logout` is called, no access token remains in memory, and `/login` shows "Bạn không có quyền truy cập trang web này" (en: "You do not have access to this site") | unit + e2e thật |
-| B25#3 | When a user whose `staff_role` is null and `email_verified` is false logs in, then the OTP screen opens; after a correct code the session is logged out and `/login` shows the "đã xác minh, liên hệ admin" message | e2e thật |
+| B25#3 | When a user whose `staff_role` is null logs in, whatever `email_verified` is, then the result is the same as B25#2 (no OTP screen exists; D5/D12 sửa 14/10/2026) | unit |
 | B25#4 | When a page loads and the refresh cookie is valid, then the user lands in the app without typing a password; when it is missing or invalid, then `/login` opens | e2e thật |
 | B25#5 | When several requests receive 401 at once, then exactly one refresh request is sent and each original request is retried once | unit |
 | B25#6 | When an API call returns 403 `forbidden`, then the app refreshes first: if the refresh fails, `/login` shows the session-expired message; if it succeeds and `/me` shows `staff_role` null, the user is logged out and sent to `/login` with the no-access message; if `/me` still shows a role, the menu is redrawn from the new `permissions`. When a 403 has another `type` (`profile-incomplete`, `csrf-header-required`), the gate rule is not applied | unit + e2e thật |
@@ -350,6 +400,12 @@ M3 apps/admin: luồng CSV, CI job `admin-e2e-real`, "Xong khi" chạy tay
 | B25#7 | When the tab regains focus, then `/me` is fetched again and the gate rule is applied | unit |
 | B25#8 | When the user logs out in tab A, then tab B clears its token and shows `/login` without any user action | unit + e2e thật |
 | B25#9 | When an `admin` grants `editor` to a verified user found by email, then the staff list shows that user as `editor` and that user can log in to the app | e2e thật |
+| B25#23 | When an `admin` creates an account with a generated password and "bắt đổi" ticked, then the API returns 201 without any password field, exactly one mail reaches that address containing a password that passes `checkPasswordPolicy`, the user is `email_verified`, has the chosen role and `must_change_password: true`, and no log line contains the password | e2e API + e2e thật |
+| B25#24 | When the admin unticks "Sinh mật khẩu ngẫu nhiên" and types a password, then a password failing the policy is refused (400 `violations`, nothing created, no mail) and a valid one is stored and mailed as typed | e2e API |
+| B25#25 | When the email already exists, then 409 `email-taken`, nothing changes and no mail is sent; the dialog suggests "Tìm theo email" | e2e API + e2e giả |
+| B25#26 | When `must_change_password` is true, then every `@RequirePermission` route returns 403 `password-change-required` while `/me`, refresh, logout, password change and reset still work; after a successful change or reset the flag is false and those routes work again | e2e API |
+| B25#27 | When a flagged user logs in to the admin app, then only `/change-password` is reachable (any other path redirects there); a mismatched confirmation is caught in the form; a new password equal to the current one is refused with `same_as_current`; a valid change lands in the app with the new session | unit + e2e thật |
+| B25#28 | When the mail budget is exhausted, then account creation answers 503 `mail-unavailable` and creates nothing | e2e API |
 | B25#10 | When granting a role fails with `staff-role-rule` (unverified target, or removing the last admin), then a specific message is shown and the list is unchanged | e2e giả |
 | B25#11 | When an upload is submitted, then the request carries a fresh `Idempotency-Key`; when it is retried after a network error, then the same key is sent; when the file or level source changes, then a new key is generated | unit |
 | B25#12 | When the admin app at `http://localhost:5173` uploads a CSV to the real API, then the CORS preflight succeeds and the batch is created (202) | e2e thật |
@@ -369,8 +425,8 @@ M3 apps/admin: luồng CSV, CI job `admin-e2e-real`, "Xong khi" chạy tay
 
 | # | When | Then |
 |---|---|---|
-| B25E1 | Hai tab refresh cùng lúc khi access token hết hạn | Cả hai còn phiên nhờ cơ chế grace của Bước 1 (`REFRESH_GRACE_KEY`). **ASSUMPTION**, kiểm ở luồng thật (4) |
-| B25E2 | Chạy `http://localhost` (không HTTPS) | Cookie `Secure; SameSite=Strict` vẫn được đặt và gửi, vì trình duyệt coi localhost là secure context và khác cổng vẫn cùng site. **ASSUMPTION**, kiểm ở luồng thật (1) |
+| B25E1 | Hai tab refresh cùng lúc khi access token hết hạn | Cả hai còn phiên nhờ cơ chế grace của Bước 1 (`REFRESH_GRACE_KEY`). **Đã kiểm 15/10/2026** ở luồng thật (4), Chromium |
+| B25E2 | Chạy `http://localhost` (không HTTPS) | Cookie `Secure; SameSite=Strict` vẫn được đặt và gửi, vì trình duyệt coi localhost là secure context và khác cổng vẫn cùng site. **Đã kiểm 15/10/2026** ở luồng thật (1) và B25#4, Chromium; Safari/Firefox chưa thử |
 | B25E3 | Learner đã đăng nhập ở `app.` (sau này) mở `admin.` | Không có phiên ở `admin.` (cookie host-only trên `api.` không gửi sang `admin-api.`, L5) → màn đăng nhập |
 | B25E4 | Người dùng là admin cuối cùng tự gỡ vai trò | API từ chối `staff-role-rule`; giao diện báo "Không thể gỡ admin cuối cùng" |
 | B25E5 | Admin tự hạ mình xuống `editor` (còn admin khác) | Thành công → đọc lại `/me` → menu bỏ mục "Vai trò", đang ở trang Vai trò thì chuyển về trang đầu |
@@ -382,16 +438,23 @@ M3 apps/admin: luồng CSV, CI job `admin-e2e-real`, "Xong khi" chạy tay
 | B25E11 | Hoàn tác lô đã hoàn tác hoặc không hoàn tác được | `batch-not-revertable` → hiện lý do; nút ẩn khi `reverted: true` |
 | B25E12 | Xuất CSV vượt 5.000 dòng (`EXPORT_MAX_ROWS`) | `export-too-large` → gợi ý thu hẹp bộ lọc |
 | B25E13 | Trình duyệt chặn `BroadcastChannel` (hiếm) | Bỏ qua lặng lẽ; tab kia vẫn bị đá ở lần gọi API tiếp theo (401 → refresh thất bại) |
-| B25E14 | Đăng ký với email đã có | `email-taken` → câu "Email đã được dùng"; link sang đăng nhập |
-| B25E15 | Gửi lại OTP quá nhanh | 429 → nút "Gửi lại mã" đếm ngược theo `Retry-After` |
-| B25E16 | `mail-unavailable` khi đăng ký hoặc gửi lại OTP | Báo "Không gửi được email, thử lại sau". Lúc đăng ký, API kiểm hạn mức mail **trước** khi tạo tài khoản (`auth.service.ts`, `budget.assertAvailable()`), nên chưa có tài khoản nào được tạo; người dùng đăng ký lại sau. Mail OTP gửi sau khi trả response (`afterResponse`), nên nếu gửi thất bại lúc đó thì tài khoản đã có, màn OTP cho "Gửi lại mã" |
+| B25E14 | Admin gõ sai email khi tạo tài khoản | Thư kèm mật khẩu tới nhầm người. Hộp xác nhận nhắc lại email để giảm rủi ro; nếu đã lỡ, admin gỡ vai trò ngay (mất quyền tức thì vì guard đọc DB mỗi request). Xóa tài khoản để Bước 8 |
+| B25E15 | Gửi lại mã đặt lại mật khẩu quá nhanh | 429 → nút "Gửi lại mã" đếm ngược theo `Retry-After` |
+| B25E16 | `mail-unavailable` khi tạo tài khoản | API kiểm hạn mức mail **trước** khi tạo (mục 7.4), nên chưa có gì được tạo; báo "Không gửi được email, thử lại sau". Thư gửi sau khi trả response (`afterResponse`), nên nếu gửi thất bại lúc đó thì tài khoản đã có mà editor không nhận được mật khẩu → editor dùng "Quên mật khẩu" (thông báo thành công đã nói điều này) |
 | B25E17 | Hai job publish tạo cùng `created_at` | Thứ tự theo `id`, không trùng giữa hai trang (B25#15) |
 | B25E18 | Đang lật trang danh sách publish job thì job mới được tạo | Trang sau không lặp và không mất; job mới chỉ hiện khi tải lại trang đầu |
 | B25E19 | Learner đã có đủ 10 phiên (trần Bước 1) cố đăng nhập `admin.` | API mở phiên mới và **thu hồi phiên cũ nhất** của họ (`session.service.ts`, `startChain`), rồi giao diện đăng xuất phiên mới → learner mất một thiết bị cũ. Chấp nhận: hiếm, và chặn trước khi tạo phiên đòi đổi API |
 | B25E20 | Staff đăng nhập cả `app.` (sau này) và `admin.` | Hai chuỗi phiên, tính 2 trong trần 10 thiết bị (trường hợp biên của L5) |
 | B25E21 | File có cột level mà không chọn nguồn level | Giao diện đọc dòng header của file ngay trên trình duyệt; có cột `level` thì bắt chọn nguồn. Vẫn lọt tới API → `level-source-required` |
 | B25E22 | Chọn nguồn level thiếu phiên bản hoặc license | API trả `source-incomplete`; form đăng ký nguồn ghi rõ hai ô này bắt buộc nếu nguồn dùng làm nguồn level |
-| B25E23 | OTP sai quá số lần cho phép | API trả 429 `rate-limited` kèm `Retry-After` (`otp.service.ts`, `locked`) → ô mã và nút bị khóa có đếm ngược |
+| B25E23 | Mã đặt lại mật khẩu sai quá số lần cho phép | API khóa và trả lỗi (`password.service.ts`, `reset` → `invalid-otp`; khóa theo `otp.service.ts`) → báo mã sai, gợi ý xin mã mới |
+| B25E24 | Admin tự tạo tài khoản cho chính email của mình | 409 `email-taken` (email đã tồn tại) |
+| B25E25 | Editor bị bắt đổi mật khẩu đóng tab rồi mở lại | Khởi động → `/me` có `must_change_password: true` → lại `/change-password`; API vẫn chặn mọi route quản trị |
+| B25E26 | Editor đổi mật khẩu bắt buộc trong khi đang mở hai tab | Đổi xong API thu hồi mọi phiên cũ; tab kia ở lần gọi kế tiếp nhận 403/401 → refresh bằng cookie mới (dùng chung trình duyệt) hoặc về `/login` |
+| B25E27 | Mật khẩu sinh ra chứa ký tự đặc biệt khi chép từ thư | Bảng ký tự đặc biệt chỉ gồm `-_.!@#%+=` (không dấu cách, không ký tự dễ bị trình mail đổi) |
+| B25E28 | Lô còn `queued`/`running`, đã `failed`, hoặc đã hoàn tác (thêm khi review Task 14, 14/10/2026) | Ẩn "Publish lô này"; chỉ hiện khi lô `succeeded`/`partial` và chưa hoàn tác. Lý do: `POST .../publish-jobs` không kiểm trạng thái lô (`publish-jobs.controller.ts` chụp `senseIdsOf(batch_id)` lúc gọi), nên publish lúc đang nhập chỉ lấy phần đã nhập; lô đã hoàn tác có thể còn mục bị bỏ qua khi hoàn tác (`report.skipped`) |
+| B25E29 | Tạo publish job mà không chọn bộ lọc nào (D25, 14/10/2026) | Bộ lọc rỗng = publish mọi nghĩa đủ điều kiện trong cả kho → hộp xác nhận nói rõ điều đó trước khi gửi; có ít nhất một bộ lọc thì gửi thẳng như cũ. Mỗi lần xác nhận vẫn một `Idempotency-Key` theo bộ lọc |
+| B25E30 | Tải lại trang quá nhanh: `POST /v1/auth/refresh` trả 429 (khoảng 10 lần/phút; thêm 15/10/2026 khi chạy tay) | **Hiện tại:** app coi như mất phiên và mở `/login` không thông báo, dù cookie refresh vẫn hợp lệ. **Chủ dự án chốt 15/10/2026:** chấp nhận tạm, sửa khi refactor giao diện admin (đề xuất, chưa chốt: hiện thông báo kèm số giây chờ theo `Retry-After`, không bỏ phiên) |
 
 ## 13. Tài liệu cần cập nhật sau khi duyệt
 
@@ -407,24 +470,31 @@ Deploy API, `admin-api.`, `admin.` (bước riêng; cần chọn hosting backend
 duyệt từng sense; quản lý entry/variant/level/topic; publish theo danh sách chọn tay; đổi mật khẩu khi đang đăng nhập; quản lý
 thiết bị/phiên; dark mode; email người tạo publish job; theo dõi lỗi giao diện bên ngoài (Sentry…); app learner `app.` (Bước 3).
 
+**Ghi rõ theo chủ dự án (14/10/2026, D22):** **dashboard / trang tổng quan** (số từ, số đã publish, lô gần đây, số learner…) —
+chưa thuộc bước nào, cần API thống kê; **quản lý user đầy đủ** (danh sách mọi user gồm learner, khóa/mở, xóa — Bước 8, đặt lại mật
+khẩu hộ, xem/đăng xuất thiết bị, cấp lượt — Bước 5). Bước 2.5 chỉ quản lý **staff** (mục 6.2). Khi tới sẽ brainstorm riêng.
+
 ## 15. Rủi ro và việc còn mở
 
 ~~**Chờ bạn:** nguồn danh sách topic cho bộ lọc~~ **Đã chốt 14/10/2026 (D17):** thêm `GET /v1/admin/taxonomy/topics` (mục 7.3).
 
-- **Ba `ASSUMPTION` chỉ kiểm được ở M2/M3:** cookie trên `http://localhost` (B25E2), refresh song song (B25E1), ngưỡng 30 giây
-  cho lô kẹt (mục 8).
-- **CORS chặn `Idempotency-Key`** mới khẳng định bằng đọc code `cors@2.8.6` và chuẩn Fetch, chưa chạy trên trình duyệt; B25#12 là
-  chỗ kiểm.
+- **Ba `ASSUMPTION` chỉ kiểm được ở M2/M3:** cookie trên `http://localhost` (B25E2) và refresh song song (B25E1) **đã kiểm
+  15/10/2026** bằng e2e API thật (Chromium; `docs/deliveries/buoc-2-5-test-flow.md`). Còn mở: ngưỡng 30 giây cho lô kẹt (mục 8)
+  mới có e2e API giả, chưa thử bằng cách tắt worker thật.
+- ~~**CORS chặn `Idempotency-Key`**~~ **Đã kiểm 15/10/2026:** B25#12 chạy trên Chromium với API thật, preflight qua và upload trả
+  202.
 - **Responsive đầy đủ** làm công Figma và test e2e tăng khoảng gấp đôi (ước tính).
-- **Job CI thật** làm mỗi PR chạy lâu hơn (ước tính 5–8 phút, chưa đo).
-- **Plugin Tailwind cho Vite** (`@tailwindcss/vite`) chưa kiểm phiên bản; plan kiểm.
+- **Job CI thật** làm mỗi PR chạy lâu hơn (ước tính 5–8 phút, chưa đo; đo được khi PR M3 chạy CI lần đầu).
+- ~~**Plugin Tailwind cho Vite**~~ **Đã kiểm:** `@tailwindcss/vite` `4.3.3` (cùng `tailwindcss` `4.3.3`), build xanh 15/10/2026.
+- **Xuất CSV chỉ duyệt sense** (thêm 15/10/2026): không xuất được các từ chưa có nghĩa (vd. sau file CEFR-J), nên editor phải tự soạn
+  CSV theo `headword` + `pos`. Backlog, ngoài Bước 2.5 (chủ dự án chốt).
 - **Hai app web dùng chung token** bằng cách chép (`apps/web` → `apps/admin`), có thể lệch về sau. Tách package dùng chung để sau
   nếu lệch thật.
 - **Deploy chưa có chỗ trong thứ tự bước**; Bước 3 (pilot) cần deploy, nên phải xếp trước pilot.
-- **Rate limit chặn test e2e thật:** đăng ký giới hạn 5 lần/giờ/IP, mail 20/ngày/IP (`DEFAULT_LIMITS` trong `app-config.ts`,
-  không đổi được bằng biến môi trường). Bốn luồng thật phải đăng ký **tổng cộng ≤ 5 tài khoản mỗi lần chạy**, không retry đăng ký;
-  tài khoản phụ (learner bị chặn, admin) tạo bằng script seed hoặc CLI, không qua `auth/register`. Thử tay nhiều lần trong một giờ
-  cũng sẽ chạm trần này.
+- **Mật khẩu nằm nguyên văn trong email** (D18–D20): ai đọc được hộp thư thì vào được tài khoản tới khi đổi mật khẩu; "Bắt đổi
+  mật khẩu" mặc định tick và chặn ở API để giảm cửa sổ này. Gõ sai email → người lạ nhận tài khoản có vai trò (B25E14).
+- **Rate limit với test e2e thật:** đăng ký giới hạn 5 lần/giờ/IP (`DEFAULT_LIMITS`, không đổi được bằng biến môi trường).
+  Trang admin không còn đăng ký, nên bộ test thật chỉ đăng ký qua API 2 tài khoản nền (admin, learner); editor do admin tạo.
 - **Chi phí Cloudflare cho Worker thứ hai: 0 đồng** (docs Workers limits/pricing qua context7, 14/10/2026): gói Free cho 100
   Worker/tài khoản; request vào file tĩnh "free and unlimited" và không tính vào 100.000 request/ngày. Dùng chung với landing:
   3.000 phút Workers Builds/tháng và **1 build chạy cùng lúc** (build landing và admin xếp hàng). Tài khoản đang ở gói Free là
