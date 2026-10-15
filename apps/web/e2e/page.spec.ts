@@ -326,6 +326,28 @@ test.describe('header (UB16)', () => {
   });
 });
 
+test.describe('hero and forms (§5.1, §5.3)', () => {
+  test('S5.1 at 390 the hero form is inside the first screen', async ({ page }) => {
+    test.skip(test.info().project.name !== 'mobile', 'phone layout');
+    await page.goto('/vi');
+    const box = (await page.locator('#waitlist-hero').boundingBox())!;
+    expect(box.y + box.height).toBeLessThanOrEqual(844);
+  });
+
+  test('RF5 the consent checkbox keeps a visible border in forced-colors mode', async ({ page }) => {
+    await page.emulateMedia({ forcedColors: 'active' });
+    await page.goto('/vi');
+    for (const id of ['#waitlist-hero', '#waitlist-cta']) {
+      const border = await page.locator(`${id} input[type=checkbox]`).evaluate((el) => {
+        const s = getComputedStyle(el);
+        return { style: s.borderTopStyle, width: parseFloat(s.borderTopWidth) };
+      });
+      expect(border.style, id).not.toBe('none');
+      expect(border.width, id).toBeGreaterThanOrEqual(2);
+    }
+  });
+});
+
 test.describe('layout', () => {
   test('LP24 no horizontal scroll at 390 / Review#2 at 320', async ({ page }) => {
     for (const width of [390, 320]) {

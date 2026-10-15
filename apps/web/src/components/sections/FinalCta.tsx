@@ -10,14 +10,14 @@ export async function FinalCta() {
   const t = await getTranslations('FinalCta');
 
   return (
-    <section aria-labelledby="final-cta-title" className="bg-primary py-14 md:py-22">
+    <section aria-labelledby="final-cta-title" className="bg-accent py-14 md:py-22">
       <Container>
         <Reveal className="mx-auto flex max-w-cta flex-col items-center gap-7 text-center">
-          <h2 id="final-cta-title" className="text-cta font-extrabold text-on-primary">
+          <h2 id="final-cta-title" className="text-cta font-extrabold text-ink">
             {t('title')}
           </h2>
           <div className="w-full max-w-prose text-left">
-            <WaitlistForm idPrefix="cta" tone="inverse" layout="inline" locale={locale} labels={await getWaitlistLabels()} />
+            <WaitlistForm idPrefix="cta" tone="onAccent" layout="inline" locale={locale} labels={await getWaitlistLabels()} />
           </div>
         </Reveal>
       </Container>
