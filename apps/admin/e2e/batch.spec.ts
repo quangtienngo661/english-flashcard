@@ -31,6 +31,18 @@ const b2: MockHandler = () => ({ json: batch({ id: 'b2', file_name: 'second.csv'
 const panel = (page: Page) => page.getByTestId('detail-panel');
 const desktopOnly = () => test.skip(test.info().project.name !== 'desktop', 'sets its own viewport');
 
+test('review M6: scrolled, the side panel keeps 0.75rem above it and 1rem below, where it sat before the scroll', async ({ page }) => {
+  desktopOnly();
+  const rows = Array.from({ length: 40 }, (_, i) => row(`b${i + 1}`, `file-${i + 1}.csv`));
+  await signedInAs(page, 'editor', { [LIST]: () => ({ json: { items: rows, next_page_token: null } }), [BATCH]: () => ({ json: batch() }) });
+  await page.goto('/uploads/b1');
+  await expect(panel(page).getByRole('heading', { level: 2, name: 'cefr-j-1.5.csv' })).toBeVisible();
+  await page.evaluate(() => window.scrollTo(0, 600));
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(600);
+  const box = (await panel(page).boundingBox())!;
+  expect({ above: Math.round(box.y), below: Math.round(900 - box.y - box.height) }).toEqual({ above: 12, below: 16 });
+});
+
 test('Review Focus 3: double-clicking the revert dialog\'s confirm sends exactly one POST', async ({ page }) => {
   let reverted = false;
   await signedInAs(page, 'editor', {

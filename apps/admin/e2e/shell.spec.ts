@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Locator, type Page } from '@playwright/test';
 import en from '../messages/en.json' with { type: 'json' };
 import vi from '../messages/vi.json' with { type: 'json' };
 import { requestCount, signedInAs } from './support/mock-api';
@@ -147,6 +147,33 @@ test.describe('shell (vi)', () => {
     await expect.poll(async () => (await drawer.boundingBox())!.x).toBe(0);
     await expect(drawer.getByRole('group', { name: vi.shell.language })).toBeInViewport({ ratio: 1 });
     await expect(drawer.getByRole('button', { name: new RegExp(`^${vi.shell.account}:`) })).toBeInViewport({ ratio: 1 });
+  });
+
+  test('touch screens: ☰, the drawer items, its ✕, VI/EN, "Chi tiết" and the panel ✕ are at least 44px tall (owner, 15/10/2026)', async ({ page }, info) => {
+    test.skip(info.project.name !== 'mobile', 'phone layout');
+    // Control: this project emulates a touch screen, which is what the larger sizes depend on.
+    expect(await page.evaluate(() => matchMedia('(pointer: coarse)').matches)).toBe(true);
+    const at = '2026-10-14T09:30:00.000Z';
+    const batch = { id: 'b1', status: 'succeeded', file_name: 'one.csv', row_count: 3, counters: { processed: 3, created: 3 }, warnings: [], created_at: at, started_at: at, finished_at: at, reverted: false };
+    await signedInAs(page, 'admin', { 'GET /v1/admin/content/uploads': () => emptyUploads, 'GET /v1/admin/content/uploads/b1': () => ({ json: batch }) });
+    const heights: Record<string, number> = {};
+    const measure = async (name: string, target: Locator) => {
+      heights[name] = Math.round((await target.boundingBox())!.height);
+    };
+    await page.goto('/uploads');
+    await measure('Chi tiết', page.getByRole('link', { name: vi.uploads.open }).filter({ visible: true }).first());
+    const burger = page.getByRole('button', { name: vi.shell.openMenu });
+    await measure('☰', burger);
+    await burger.click();
+    const drawer = page.getByRole('dialog');
+    await expect.poll(async () => (await drawer.boundingBox())!.x).toBe(0);
+    await measure('drawer item', drawer.getByRole('link', { name: vi.nav.uploads }));
+    await measure('drawer ✕', drawer.getByRole('button', { name: vi.shell.closeMenu }));
+    await measure('VI', drawer.getByRole('button', { name: 'VI', exact: true }));
+    await measure('EN', drawer.getByRole('button', { name: 'EN', exact: true }));
+    await page.goto('/uploads/b1');
+    await measure('panel ✕', page.getByTestId('detail-panel').getByRole('button', { name: vi.common.close }));
+    expect(Object.entries(heights).filter(([, height]) => height < 44)).toEqual([]);
   });
 
   test('offline (spec §8): a request that aborts shows the offline banner, keeps the data, and "Thử lại" refetches', async ({ page }) => {
