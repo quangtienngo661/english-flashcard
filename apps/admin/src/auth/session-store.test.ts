@@ -501,6 +501,31 @@ describe('SessionStore', () => {
     expect(refreshTries(midSession.calls)).toEqual([true, true]);
   });
 
+  it('RK8: a keepalive refresh the browser rejects (TypeError) is sent once more without keepalive and the session starts', async () => {
+    let tries = 0;
+    const { store, calls } = newStore({
+      'POST /v1/auth/refresh': () => {
+        if (++tries === 1) throw new TypeError('Preflight request for request with keepalive specified is currently not supported');
+        return tokenResponse('tok-1');
+      },
+      'GET /v1/me': ok(makeMe()),
+    });
+    await store.bootstrap();
+    expect(refreshTries(calls)).toEqual([true, undefined]);
+    expect(store.state).toMatchObject({ status: 'signed-in' });
+  });
+
+  it('RK8: when the retry without keepalive also fails (offline), the refresh fails as before after exactly two tries', async () => {
+    const { store, calls } = newStore({
+      'POST /v1/auth/refresh': () => {
+        throw new TypeError('Failed to fetch');
+      },
+    });
+    await store.bootstrap();
+    expect(refreshTries(calls)).toEqual([true, undefined]);
+    expect(store.state).toEqual({ status: 'signed-out', notice: null });
+  });
+
   it('RKC2: login, /me, password change, other API calls and logout are sent without keepalive', async () => {
     let meCalls = 0;
     const { store, calls } = newStore({
