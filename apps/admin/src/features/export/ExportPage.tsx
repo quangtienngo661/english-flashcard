@@ -46,7 +46,7 @@ export function ExportPage() {
         event.preventDefault();
         void download();
       }}
-      className="flex flex-col gap-4 rounded-panel bg-surface p-4 shadow-sheet"
+      className="flex flex-col gap-4 rounded-panel border-2 border-border p-4"
     >
       {error && <Banner variant="error">{error}</Banner>}
       <FilterFields values={values} onChange={setValues} withStatus />

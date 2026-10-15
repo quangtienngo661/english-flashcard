@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router';
 import { useTranslations } from 'use-intl';
 import { useErrorMessage } from '../../api/use-error-message';
 import { useApi } from '../../auth/session-context';
+import { PageActions } from '../../app/shell-slots';
 import { Banner } from '../../ui/Banner';
 import { Button } from '../../ui/Button';
 import { Checkbox } from '../../ui/Checkbox';
@@ -11,7 +12,7 @@ import { DataList, type Column } from '../../ui/DataList';
 import { TextField } from '../../ui/TextField';
 import { createSource, listSources, type SourceView } from '../content/content-api';
 
-const panel = 'flex flex-col gap-4 rounded-panel bg-surface p-4 shadow-sheet';
+const panel = 'flex flex-col gap-4 rounded-panel border-2 border-border p-4';
 
 export function SourcesPage() {
   const t = useTranslations();
@@ -29,11 +30,9 @@ export function SourcesPage() {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex shell:justify-end">
-        <Button className="w-full shell:w-auto" onPress={() => void navigate('/sources/new')}>
-          {t('sources.register')}
-        </Button>
-      </div>
+      <PageActions>
+        <Button onPress={() => void navigate('/sources/new')}>{t('sources.register')}</Button>
+      </PageActions>
       <DataList
         rows={rows}
         rowKey={(s) => s.id}

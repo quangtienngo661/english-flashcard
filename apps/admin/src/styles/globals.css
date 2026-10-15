@@ -43,3 +43,13 @@ body {
 @utility pressed {
   translate: 0 0.18rem;
 }
+
+/* The open menu item: a highlighter stroke across the lower half of its name (design §6.1, mockup admin-b). */
+@utility highlighter {
+  background: linear-gradient(transparent 50%, var(--color-accent) 50%, var(--color-accent) 92%, transparent 92%);
+}
+
+/* From `panel` the white sheet is two columns: the page, then the detail panel (empty column = zero width). */
+@utility grid-sheet {
+  grid-template-columns: minmax(0, 1fr) auto;
+}

@@ -116,6 +116,41 @@ test.describe('shell (vi)', () => {
     expect(overflow.scrollWidth).toBeLessThanOrEqual(overflow.clientWidth);
   });
 
+  test('UBC10 at 1440 the sidebar sits on the canvas, the active item is highlighted, and VI/EN and the account sit at its foot', async ({ page }, info) => {
+    test.skip(info.project.name !== 'desktop', 'desktop layout');
+    await signedInAs(page, 'admin', { 'GET /v1/admin/content/uploads': () => emptyUploads });
+    await page.goto('/uploads');
+    const aside = page.locator('aside').filter({ has: page.getByRole('navigation', { name: vi.shell.mainNav }) });
+    await expect(aside).toHaveCSS('box-shadow', 'none');
+    await expect(aside).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
+    const active = aside.getByRole('link', { name: vi.nav.uploads });
+    await expect(active).toHaveAttribute('aria-current', 'page');
+    expect(await active.getByText(vi.nav.uploads).evaluate((el) => getComputedStyle(el).backgroundImage)).toContain('linear-gradient');
+    for (const link of await aside.getByRole('link').all()) await expect(link.locator('svg')).toHaveCount(1);
+    await expect(aside.getByRole('group', { name: vi.shell.language })).toBeVisible();
+    const account = aside.getByRole('button', { name: new RegExp(`^${vi.shell.account}:`) });
+    await account.click();
+    const menu = page.getByRole('menu');
+    await expect(menu).toBeVisible();
+    expect((await menu.boundingBox())!.y).toBeLessThan((await account.boundingBox())!.y);
+  });
+
+  test('UBC11 at 390 the top bar is primary, ☰ opens the drawer from the left with VI/EN and the account; nothing scrolls sideways', async ({ page }, info) => {
+    test.skip(info.project.name !== 'mobile', 'phone layout');
+    await signedInAs(page, 'admin', { 'GET /v1/admin/content/uploads': () => emptyUploads });
+    await page.goto('/uploads');
+    const burger = page.getByRole('button', { name: vi.shell.openMenu });
+    await expect(burger.locator('xpath=..')).toHaveCSS('background-color', 'rgb(36, 69, 214)');
+    const { scrollWidth, clientWidth } = await page.evaluate(() => ({ scrollWidth: document.scrollingElement!.scrollWidth, clientWidth: document.scrollingElement!.clientWidth }));
+    expect(scrollWidth).toBeLessThanOrEqual(clientWidth);
+    await burger.click();
+    const drawer = page.getByRole('dialog');
+    await expect(drawer).toBeVisible();
+    await expect.poll(async () => (await drawer.boundingBox())!.x).toBe(0);
+    await expect(drawer.getByRole('group', { name: vi.shell.language })).toBeVisible();
+    await expect(drawer.getByRole('button', { name: new RegExp(`^${vi.shell.account}:`) })).toBeVisible();
+  });
+
   test('offline (spec §8): a request that aborts shows the offline banner, keeps the data, and "Thử lại" refetches', async ({ page }) => {
     let dead = false;
     await signedInAs(page, 'editor', {
@@ -148,8 +183,10 @@ test.describe('language', () => {
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(vi.nav.uploads);
     await expect(page.locator('html')).toHaveAttribute('lang', 'vi');
 
+    await openNavIfCollapsed(page); // below 64rem VI/EN sits at the foot of the drawer
     await page.getByRole('button', { name: 'EN', exact: true }).click();
     await expect(page.locator('html')).toHaveAttribute('lang', 'en');
+    if ((page.viewportSize()?.width ?? 0) < 1024) await page.keyboard.press('Escape');
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(en.nav.uploads);
     expect(await page.evaluate(() => localStorage.getItem('wordmet-admin.locale'))).toBe('en');
 

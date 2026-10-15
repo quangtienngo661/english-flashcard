@@ -40,7 +40,7 @@ export function PublishJobForm() {
         if (noFilter) setConfirmingAll(true);
         else void action.submit();
       }}
-      className="flex flex-col gap-4 rounded-panel bg-surface p-4 shadow-sheet"
+      className="flex flex-col gap-4 rounded-panel border-2 border-border p-4"
     >
       {action.error && (
         <Banner

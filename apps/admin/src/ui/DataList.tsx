@@ -29,8 +29,9 @@ type Props<T> = {
 /**
  * A table when the list's own container is at least 40rem wide, stacked cards below (container query, not
  * viewport: the content area is what narrows when the sidebar is open). Empty/loading/error go to `ListState`.
- * The table sits straight on the white sheet (design §6.2) and its header row sticks to the top while the page
- * scrolls (`overflow-clip`, unlike `overflow-hidden`, keeps sticky working).
+ * The table sits straight on the white sheet (design §6.2): it bleeds to the sheet's edges (the sheet pads its
+ * content by page-pad) and its header row sticks to the top while the page scrolls (`overflow-clip`, unlike
+ * `overflow-hidden`, keeps sticky working).
  */
 export function DataList<T>({ rows, rowKey, columns, state, emptyText, emptyHint, onRetry, rowHref, selectedKey }: Props<T>) {
   const navigate = useNavigate();
@@ -46,14 +47,15 @@ export function DataList<T>({ rows, rowKey, columns, state, emptyText, emptyHint
     void navigate(href, { replace: href === pathname });
   }
 
+  const edge = 'first:pl-page-pad-min last:pr-page-pad-min shell:first:pl-page-pad-max shell:last:pr-page-pad-max';
   return (
     <div className="@container">
-      <div className="hidden overflow-clip @list:block">
+      <div className="-mx-page-pad-min hidden overflow-clip @list:block shell:-mx-page-pad-max">
         <table className="w-full table-fixed text-ui">
           <thead className="text-left">
             <tr>
               {columns.map((c) => (
-                <th key={c.key} scope="col" className={`sticky top-0 z-10 border-b-2 border-border bg-surface px-4 py-2.5 font-medium text-muted ${c.className ?? ''}`}>
+                <th key={c.key} scope="col" className={`sticky top-0 z-10 border-b-2 border-border bg-surface px-4 py-2.5 font-medium text-muted ${edge} ${c.className ?? ''}`}>
                   {c.header}
                 </th>
               ))}
@@ -71,7 +73,7 @@ export function DataList<T>({ rows, rowKey, columns, state, emptyText, emptyHint
                   className={`border-b border-border transition-colors duration-instant ease-standard data-selected:bg-accent-soft ${href ? 'cursor-pointer hover:bg-primary/4' : ''}`}
                 >
                   {columns.map((c) => (
-                    <td key={c.key} className={`min-w-0 wrap-anywhere px-4 py-3.5 align-middle ${c.className ?? ''}`}>
+                    <td key={c.key} className={`min-w-0 wrap-anywhere px-4 py-3.5 align-middle ${edge} ${c.className ?? ''}`}>
                       {c.cell(row)}
                     </td>
                   ))}

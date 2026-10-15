@@ -4,6 +4,7 @@ import { useTranslations, useFormatter } from 'use-intl';
 import { useApi } from '../../auth/session-context';
 import { useCan } from '../../auth/use-can';
 import { useDateTime } from '../../i18n/use-date-time';
+import { PageActions } from '../../app/shell-slots';
 import { Button } from '../../ui/Button';
 import { DataList, type Column } from '../../ui/DataList';
 import { listUploads, type UploadListItem } from '../content/content-api';
@@ -48,13 +49,7 @@ export function UploadsPage() {
 
   return (
     <div className="flex flex-col gap-4">
-      {canUpload && (
-        <div className="flex shell:justify-end">
-          <Button className="w-full shell:w-auto" onPress={() => void navigate('/uploads/new')}>
-            {t('uploads.upload')}
-          </Button>
-        </div>
-      )}
+      <PageActions>{canUpload && <Button onPress={() => void navigate('/uploads/new')}>{t('uploads.upload')}</Button>}</PageActions>
       <DataList
         rows={rows}
         rowKey={(b) => b.id}

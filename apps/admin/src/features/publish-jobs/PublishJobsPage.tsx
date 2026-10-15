@@ -4,6 +4,7 @@ import { useFormatter, useTranslations } from 'use-intl';
 import { useApi } from '../../auth/session-context';
 import { useCan } from '../../auth/use-can';
 import { useDateTime } from '../../i18n/use-date-time';
+import { PageActions } from '../../app/shell-slots';
 import { Button } from '../../ui/Button';
 import { DataList, type Column } from '../../ui/DataList';
 import { listPublishJobs, type PublishJobListItem, type SenseFilter } from '../content/content-api';
@@ -61,13 +62,7 @@ export function PublishJobsPage() {
 
   return (
     <div className="flex flex-col gap-4">
-      {canPublish && (
-        <div className="flex shell:justify-end">
-          <Button className="w-full shell:w-auto" onPress={() => void navigate('/publish-jobs/new')}>
-            {t('publishJobs.create')}
-          </Button>
-        </div>
-      )}
+      <PageActions>{canPublish && <Button onPress={() => void navigate('/publish-jobs/new')}>{t('publishJobs.create')}</Button>}</PageActions>
       <DataList
         rows={rows}
         rowKey={(j) => j.id}

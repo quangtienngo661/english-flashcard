@@ -120,7 +120,7 @@ export function UploadForm() {
         event.preventDefault();
         void submit();
       }}
-      className="flex flex-col gap-4 rounded-panel bg-surface p-4 shadow-sheet"
+      className="flex flex-col gap-4 rounded-panel border-2 border-border p-4"
     >
       {banner && (
         <Banner

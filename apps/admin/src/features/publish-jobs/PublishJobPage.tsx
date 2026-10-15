@@ -33,7 +33,7 @@ export function PublishJobPage() {
   const tooLong = useQueuedTooLong(job?.status ?? 'running', job?.created_at ?? '', now);
   if (!job) {
     return (
-      <div className="overflow-hidden rounded-panel bg-surface shadow-sheet">
+      <div>
         <ListState state={query.isPending ? 'loading' : 'error'} onRetry={() => void query.refetch()} />
       </div>
     );

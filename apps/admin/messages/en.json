@@ -190,12 +190,12 @@
     }
   },
   "navGroups": {
-    "overview": "OVERVIEW",
-    "content": "CONTENT",
-    "practice": "PRACTICE",
-    "learners": "LEARNERS",
+    "overview": "Overview",
+    "content": "Content",
+    "practice": "Practice",
+    "learners": "Learners",
     "ai": "AI",
-    "system": "SYSTEM"
+    "system": "System"
   },
   "comingSoon": {
     "title": "Feature not available yet",

@@ -190,12 +190,12 @@
     }
   },
   "navGroups": {
-    "overview": "TỔNG QUAN",
-    "content": "NỘI DUNG",
-    "practice": "LUYỆN TẬP",
-    "learners": "NGƯỜI HỌC",
+    "overview": "Tổng quan",
+    "content": "Nội dung",
+    "practice": "Luyện tập",
+    "learners": "Người học",
     "ai": "AI",
-    "system": "HỆ THỐNG"
+    "system": "Hệ thống"
   },
   "comingSoon": {
     "title": "Tính năng chưa có",

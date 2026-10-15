@@ -4,6 +4,7 @@ import { useRef, useState, type FormEvent } from 'react';
 import { useTranslations } from 'use-intl';
 import { useErrorMessage } from '../../api/use-error-message';
 import { useApi, useSession } from '../../auth/session-context';
+import { PageActions } from '../../app/shell-slots';
 import { Badge } from '../../ui/Badge';
 import { Banner } from '../../ui/Banner';
 import { Button } from '../../ui/Button';
@@ -13,7 +14,7 @@ import { CreateAccountDialog } from './CreateAccountDialog';
 import { RoleDialog } from './RoleDialog';
 import { findUser, listStaff, type StaffRole, type StaffUser } from './staff-api';
 
-const panel = 'flex flex-col gap-3 rounded-panel bg-surface p-4 shadow-sheet';
+const panel = 'flex flex-col gap-3 rounded-panel border-2 border-border p-4';
 
 function UserCard({ user, onChoose }: { user: StaffUser; onChoose: (role: StaffRole | null) => void }) {
   const t = useTranslations();
@@ -123,11 +124,9 @@ export function StaffPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex shell:justify-end">
-        <Button className="w-full shell:w-auto" onPress={() => setCreating(true)}>
-          {t('staff.createAccount')}
-        </Button>
-      </div>
+      <PageActions>
+        <Button onPress={() => setCreating(true)}>{t('staff.createAccount')}</Button>
+      </PageActions>
 
       <form onSubmit={search} className={`${panel} gap-3 shell:flex-row shell:items-end`} noValidate>
         <div className="min-w-0 flex-1 shell:max-w-md">
