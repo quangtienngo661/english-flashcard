@@ -32,9 +32,7 @@ thì ghi `ASSUMPTION`.
 > tay trên DB mới với file CEFR-J thật). As-built: `docs/deliveries/buoc-2-5.md`. Chưa lên `main` (PR `dev` → `main` chỉ mở
 > khi chủ dự án yêu cầu). Chủ dự án dự kiến refactor lại toàn bộ giao diện admin sau.
 > **Tiếp theo: Bước 3** (Learning, mốc pilot sớm nhất), bắt đầu bằng `superpowers:brainstorming`. Trước pilot Bước 3 cần
-> bước "Deploy API + admin"; **chưa chốt** làm trước hay sau Bước 3 — hỏi chủ dự án. Hỏi trước cả bốn câu Q-A–Q-D cuối
-> `docs/preparation/PROJECT_ASSESSMENT_2026-10-15.md` (thứ tự và phạm vi, ai soạn nội dung pilot, nhắc học, ngưỡng thành
-> công), theo luật "chủ dự án nghĩ trước" trong CLAUDE.md.
+> bước "Deploy API + admin"; **chưa chốt** làm trước hay sau Bước 3 — hỏi chủ dự án.
 
 | Bước | Làm gì | Spec |
 |---|---|---|

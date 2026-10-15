@@ -70,17 +70,8 @@ unresolved, deferred to Bước 5.
 
 ## Open items for the next session
 
-PR #15 (`feat/buoc-2-m2-pipeline` → `dev`, M1+M2 only) was superseded on 13/10/2026 by **PR #16**
-(`feat/buoc-2-m3-finish` → `dev`, carries M1+M2+M3 together, since waiting for #15 to merge before cutting
-M3's own branch was no longer worth it with #15 still unreviewed) and closed. PR #16 was merged into `dev`
-(520b996, 14/10/2026).
-
-**Corrected 13/10/2026** (design doc §15/D1/D9, never actually applied until now): Bước 2's real scope is
-narrower than the original HANDOFF table said — admin side (CSV import, authoring, publish, revert, export)
-plus read-only search/browse for learners only. Private words, context sentences and the lookup chain were
-deferred to Bước 3 from the start (D1, 12/10/2026); this delivery record's own "as-built" section above
-already only describes that narrower scope. The owner also chốt (D9) a **Bước 2.5 — web UI (login, admin
-page, role granting)** step between Bước 2 and Bước 3, with no design/plan yet. See
-`docs/HANDOFF_2026-10-05_BUOC_0.md` §2 for the corrected build-order table. **Next: Bước 2.5, then Bước 3**
-(Learning, plus the Content pieces moved to it) — the earliest pilot milestone. Bước 2.5 was done on 15/10/2026
-(`docs/deliveries/buoc-2-5.md`).
+PR #15 (`feat/buoc-2-m2-pipeline` → `dev`, carrying M1+M2 since M1 was never separately merged) is open with
+CI green, awaiting the owner's merge. `feat/buoc-2-m3-finish` was cut from M2's own tip rather than from `dev`
+(which does not have M2 yet) — once PR #15 merges, confirm `dev`'s new tip is identical to M2's and open M3's
+own PR from `feat/buoc-2-m3-finish` into `dev` the normal way. **Next: Bước 3 (Learning)** per the fixed build
+order (HANDOFF §2) — the earliest pilot milestone.
