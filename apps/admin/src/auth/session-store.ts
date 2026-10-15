@@ -179,7 +179,8 @@ export class SessionStore {
    */
   private async runRefresh(): Promise<RefreshResult> {
     for (let attempt = 1; ; attempt += 1) {
-      const res = await this.raw('/v1/auth/refresh', json('POST', {}, this.csrf()), null);
+      // keepalive: a reload or page leave mid-refresh must not drop the rotated cookie (2026-10-15-admin-refresh-keepalive-design.md).
+      const res = await this.raw('/v1/auth/refresh', { ...json('POST', {}, this.csrf()), keepalive: true }, null);
       if (res.ok) {
         this.token = ((await res.json()) as TokenBody).access_token;
         return 'ok';
