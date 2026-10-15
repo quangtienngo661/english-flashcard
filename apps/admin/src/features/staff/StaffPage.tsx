@@ -4,16 +4,18 @@ import { useRef, useState, type FormEvent } from 'react';
 import { useTranslations } from 'use-intl';
 import { useErrorMessage } from '../../api/use-error-message';
 import { useApi, useSession } from '../../auth/session-context';
+import { PageActions } from '../../app/shell-slots';
 import { Badge } from '../../ui/Badge';
 import { Banner } from '../../ui/Banner';
 import { Button } from '../../ui/Button';
 import { DataList, type Column } from '../../ui/DataList';
 import { TextField } from '../../ui/TextField';
+import { showToast } from '../../ui/Toast';
 import { CreateAccountDialog } from './CreateAccountDialog';
 import { RoleDialog } from './RoleDialog';
 import { findUser, listStaff, type StaffRole, type StaffUser } from './staff-api';
 
-const panel = 'flex flex-col gap-3 rounded-panel bg-surface p-4 shadow-card';
+const panel = 'flex flex-col gap-3 rounded-panel border-2 border-border p-4';
 
 function UserCard({ user, onChoose }: { user: StaffUser; onChoose: (role: StaffRole | null) => void }) {
   const t = useTranslations();
@@ -87,17 +89,18 @@ export function StaffPage() {
   const refreshList = () => queryClient.invalidateQueries({ queryKey: ['staff'] });
 
   const columns: Column<StaffUser>[] = [
-    { key: 'email', header: t('staff.list.email'), cell: (u) => u.email },
+    // Shares, not fixed widths, so a wide screen spreads the columns out (owner, Checkpoint A); short cells never wrap.
+    { key: 'email', header: t('staff.list.email'), className: 'w-2/5', cell: (u) => u.email },
     {
       key: 'role',
       header: t('staff.list.role'),
-      className: 'w-24',
+      className: 'w-1/5',
       cell: (u) => (u.staff_role ? <Badge tone={u.staff_role === 'admin' ? 'primary' : 'neutral'}>{u.staff_role}</Badge> : '—'),
     },
     {
       key: 'verified',
       header: t('staff.list.verified'),
-      className: 'w-36',
+      className: 'w-1/5 whitespace-nowrap',
       cell: (u) =>
         u.email_verified ? (
           <span className="inline-flex items-center gap-1.5">
@@ -111,7 +114,7 @@ export function StaffPage() {
     {
       key: 'actions',
       header: '',
-      className: 'w-44',
+      className: 'w-1/5',
       card: 'action',
       cell: (u) => (
         <Button variant="ghost" onPress={() => { setTarget(u); setNotFound(false); }}>
@@ -123,11 +126,9 @@ export function StaffPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex shell:justify-end">
-        <Button className="w-full shell:w-auto" onPress={() => setCreating(true)}>
-          {t('staff.createAccount')}
-        </Button>
-      </div>
+      <PageActions>
+        <Button onPress={() => setCreating(true)}>{t('staff.createAccount')}</Button>
+      </PageActions>
 
       <form onSubmit={search} className={`${panel} gap-3 shell:flex-row shell:items-end`} noValidate>
         <div className="min-w-0 flex-1 shell:max-w-md">
@@ -173,6 +174,12 @@ export function StaffPage() {
           isSelf={target.id === meId}
           onClose={() => setChange(null)}
           onDone={(updated) => {
+            // UB12: a role change ends with no other sign of success, so confirm it.
+            showToast(
+              updated.staff_role
+                ? t('staff.toast.granted', { role: updated.staff_role, email: updated.email })
+                : t('staff.toast.removed', { email: updated.email }),
+            );
             setChange(null);
             setTarget(updated);
             void refreshList();

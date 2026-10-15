@@ -1,12 +1,15 @@
-import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
 import vi from '../messages/vi.json' with { type: 'json' };
 import { requestCount, signedInAs } from './support/mock-api';
+import { seriousViolations } from './support/axe';
 
 test.use({ locale: 'vi-VN' });
 
 const t = vi.publishJobs;
-const confirmAll = (page: Page) => page.getByRole('dialog').getByRole('button', { name: t.confirmAllSubmit }).click();
+// The form is a dialog too (UB9): name the confirmation that opens over it.
+// The form's own submit sits inside its dialog; the page head has a "Tạo publish job" button too.
+const formButton = (page: Page) => page.getByRole('dialog', { name: t.formTitle }).getByRole('button', { name: t.create });
+const confirmAll = (page: Page) => page.getByRole('dialog', { name: t.confirmAllTitle }).getByRole('button', { name: t.confirmAllSubmit }).click();
 const JOBS = '/v1/admin/content/senses/publish-jobs';
 const ID = 'a3f2c1aa-0000-4000-8000-000000000001';
 const job = (over: Record<string, unknown> = {}) => ({
@@ -26,10 +29,7 @@ const base = {
   'GET /v1/admin/content/uploads': () => ({ json: { items: [], next_page_token: null } }),
 };
 
-async function scan(page: Page) {
-  const results = await new AxeBuilder({ page }).analyze();
-  return results.violations.filter((v) => v.impact === 'serious' || v.impact === 'critical').map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(' ')).join(' | ')}`);
-}
+const scan = (page: Page) => seriousViolations(page);
 
 test('B25#18: a 429 with Retry-After 5 on create disables the button with a 5 s countdown, then frees it', async ({ page }) => {
   let limited = true;
@@ -42,14 +42,14 @@ test('B25#18: a 429 with Retry-After 5 on create disables the button with a 5 s 
     [`GET ${JOBS}/${ID}`]: () => ({ json: job() }),
   });
   await page.goto('/publish-jobs/new');
-  await page.getByRole('button', { name: t.create }).click();
+  await formButton(page).click();
   await confirmAll(page);
   const locked = page.getByRole('button', { name: /Thử lại sau [1-5] giây/ });
   await expect(locked).toBeDisabled();
-  await expect(page.getByRole('button', { name: t.create })).toBeEnabled({ timeout: 9000 });
+  await expect(formButton(page)).toBeEnabled({ timeout: 9000 });
 
   limited = false;
-  await page.getByRole('button', { name: t.create }).click();
+  await formButton(page).click();
   await confirmAll(page);
   await expect(page).toHaveURL(new RegExp(`/publish-jobs/${ID}$`));
   expect(requestCount(page, 'POST', JOBS)).toBe(2);
@@ -65,8 +65,8 @@ test('Review Focus 3: double-clicking "Tạo publish job" sends exactly one POST
     [`GET ${JOBS}/${ID}`]: () => ({ json: job() }),
   });
   await page.goto('/publish-jobs/new');
-  await page.getByRole('button', { name: t.create }).click();
-  await page.getByRole('dialog').getByRole('button', { name: t.confirmAllSubmit }).dblclick();
+  await formButton(page).click();
+  await page.getByRole('dialog', { name: t.confirmAllTitle }).getByRole('button', { name: t.confirmAllSubmit }).dblclick();
   await expect(page).toHaveURL(new RegExp(`/publish-jobs/${ID}$`));
   expect(requestCount(page, 'POST', JOBS)).toBe(1);
 });
@@ -85,4 +85,49 @@ test('axe and overflow: publish job list, form and detail have no serious or cri
     const { scrollWidth, clientWidth } = await page.evaluate(() => ({ scrollWidth: document.scrollingElement!.scrollWidth, clientWidth: document.scrollingElement!.clientWidth }));
     expect(scrollWidth, path).toBeLessThanOrEqual(clientWidth);
   }
+});
+
+test('UBE27 the job row turns "Hoàn tất" when the panel sees it finish', async ({ page }) => {
+  test.skip(test.info().project.name !== 'desktop', 'one layout is enough');
+  let lists = 0;
+  let polls = 0;
+  await signedInAs(page, 'editor', {
+    ...base,
+    [`GET ${JOBS}`]: () => {
+      lists += 1;
+      return { json: { items: [job({ status: lists < 2 ? 'running' : 'succeeded' })], next_page_token: null } };
+    },
+    [`GET ${JOBS}/${ID}`]: () => {
+      polls += 1;
+      return { json: polls < 2 ? job({ status: 'running', finished_at: null, counters: { processed: 10 } }) : job() };
+    },
+  });
+  await page.goto(`/publish-jobs/${ID}`);
+  const row = page.getByRole('table').getByRole('row', { name: /#a3f2c1/ });
+  await expect(row.getByText(vi.status.running, { exact: true })).toBeVisible();
+  await expect(row.getByText(vi.status.succeeded, { exact: true })).toBeVisible({ timeout: 8000 });
+});
+
+test('Review Focus 5: Back after "Publish lô này" in the batch panel reopens that batch and polls it again', async ({ page }) => {
+  test.skip(test.info().project.name !== 'desktop', 'one layout is enough');
+  const at = '2026-10-14T09:30:00.000Z';
+  await signedInAs(page, 'editor', {
+    ...base,
+    'GET /v1/admin/content/uploads': () => ({ json: { items: [{ id: 'b1', status: 'succeeded', file_name: 'one.csv', row_count: 3, created_at: at }], next_page_token: null } }),
+    'GET /v1/admin/content/uploads/b1': () => ({
+      json: { id: 'b1', status: 'succeeded', file_name: 'one.csv', row_count: 3, counters: { processed: 3, created: 3, rejected: 0 }, warnings: [], created_at: at, started_at: at, finished_at: at, reverted: false },
+    }),
+    [`POST ${JOBS}`]: () => ({ status: 202, json: { job_id: ID } }),
+    [`GET ${JOBS}`]: () => ({ json: { items: [job()], next_page_token: null } }),
+    [`GET ${JOBS}/${ID}`]: () => ({ json: job() }),
+  });
+  await page.goto('/uploads/b1');
+  await page.getByTestId('detail-panel').getByRole('button', { name: vi.batch.publish }).click();
+  await expect(page).toHaveURL(new RegExp(`/publish-jobs/${ID}$`));
+  await expect(page.getByRole('heading', { level: 2, name: t.jobTitle.replace('{id}', 'a3f2c1') })).toBeVisible();
+  const before = requestCount(page, 'GET', '/v1/admin/content/uploads/b1');
+  await page.goBack();
+  await expect(page).toHaveURL(/\/uploads\/b1$/);
+  await expect(page.getByRole('heading', { level: 2, name: 'one.csv' })).toBeVisible();
+  await expect.poll(() => requestCount(page, 'GET', '/v1/admin/content/uploads/b1')).toBeGreaterThan(before);
 });

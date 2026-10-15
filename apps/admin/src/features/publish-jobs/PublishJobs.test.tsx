@@ -60,7 +60,17 @@ describe('publish jobs list', { timeout: 20_000 }, () => {
       'GET /v1/admin/content/uploads?page_size=20': () => json(UPLOADS),
     });
     await userEvent.click(await screen.findByRole('button', { name: t.create }));
-    expect(await screen.findByRole('heading', { level: 1, name: t.formTitle })).toBeInTheDocument();
+    expect(await screen.findByRole('dialog', { name: t.formTitle })).toBeInTheDocument();
+  });
+
+  it('UBC13 /publish-jobs/new is a dialog over the list', async () => {
+    renderApp('/publish-jobs/new', {
+      [JOBS]: () => json({ items: [job({ status: 'succeeded' })], next_page_token: null }),
+      'GET /v1/admin/taxonomy/topics': () => json(TOPICS),
+      'GET /v1/admin/content/uploads?page_size=20': () => json(UPLOADS),
+    });
+    expect(await screen.findByRole('dialog', { name: t.formTitle })).toBeInTheDocument();
+    await waitFor(() => expect(document.querySelector('table')).not.toBeNull());
   });
 });
 
@@ -68,6 +78,7 @@ describe('publish job form', { timeout: 20_000 }, () => {
   function open(create: (n: number) => Response) {
     let n = 0;
     return renderApp('/publish-jobs/new', {
+      [JOBS]: () => json({ items: [], next_page_token: null }),
       'GET /v1/admin/taxonomy/topics': () => json(TOPICS),
       'GET /v1/admin/content/uploads?page_size=20': () => json(UPLOADS),
       [CREATE]: () => create(++n),
@@ -79,18 +90,19 @@ describe('publish job form', { timeout: 20_000 }, () => {
     await userEvent.click(within(await screen.findByRole('listbox')).getByRole('option', { name: option }));
   };
   const submit = () => screen.findByRole('button', { name: t.create });
-  const confirmAll = async () => userEvent.click(within(await screen.findByRole('dialog')).getByRole('button', { name: t.confirmAllSubmit }));
+  const confirmation = () => screen.findByRole('dialog', { name: t.confirmAllTitle });
+  const confirmAll = async () => userEvent.click(within(await confirmation()).getByRole('button', { name: t.confirmAllSubmit }));
 
   it('B25E29: with no filter at all a dialog says it publishes the whole catalog; nothing is sent until it is confirmed', async () => {
     const r = open(() => json({ job_id: ID }, 202));
     await userEvent.click(await submit());
-    const dialog = await screen.findByRole('dialog');
+    const dialog = await confirmation();
     expect(within(dialog).getByText(t.confirmAllTitle)).toBeInTheDocument();
     expect(within(dialog).getByText(t.confirmAllBody)).toBeInTheDocument();
     expect(posts(r.calls)).toHaveLength(0);
 
     await userEvent.click(within(dialog).getByRole('button', { name: vi.common.cancel }));
-    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: t.confirmAllTitle })).toBeNull());
     expect(posts(r.calls)).toHaveLength(0);
 
     await userEvent.click(await submit());
@@ -104,7 +116,7 @@ describe('publish job form', { timeout: 20_000 }, () => {
     await choose(vi.export.level, 'B1');
     await userEvent.click(await submit());
     await waitFor(() => expect(posts(r.calls)).toHaveLength(1));
-    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(screen.queryByRole('dialog', { name: t.confirmAllTitle })).toBeNull();
   });
 
   it('create: filter level/topic/pos/batch_id is posted as { filter } with a key, and the job opens', async () => {
@@ -159,21 +171,33 @@ describe('publish job form', { timeout: 20_000 }, () => {
   });
 });
 
-describe('publish job detail', () => {
+describe('publish job panel', () => {
   const GET = `GET /v1/admin/content/senses/publish-jobs/${ID}`;
+  // The job opens over its list now (UB8): every render also answers the list (this job and another one).
+  const OTHER = 'b7c9d0aa-0000-4000-8000-000000000002';
+  const list = () => json({ items: [job({ status: 'queued', counters: {} }), job({ id: OTHER, status: 'succeeded', snapshot_count: 9, filter: { level: 'A1' } })], next_page_token: null });
+
+  it('UBC12 /publish-jobs/<id> shows the list and the panel, and the job row is selected', async () => {
+    renderApp(`/publish-jobs/${ID}`, { [JOBS]: list, [GET]: () => json(job()) });
+    expect(await screen.findByRole('heading', { level: 2, name: t.jobTitle.replace('{id}', 'a3f2c1') })).toBeInTheDocument();
+    const table = screen.getByRole('table');
+    expect(within(table).getByRole('link', { name: '#a3f2c1' }).closest('tr')).toHaveAttribute('data-selected');
+    expect(within(table).getByRole('link', { name: '#b7c9d0' }).closest('tr')).not.toHaveAttribute('data-selected');
+    expect(screen.getByTestId('detail-panel')).toBeInTheDocument();
+  });
 
   it('shows the running sentence while it runs', async () => {
-    renderApp(`/publish-jobs/${ID}`, { [GET]: () => json(job()) });
+    renderApp(`/publish-jobs/${ID}`, { [JOBS]: list, [GET]: () => json(job()) });
     expect(await screen.findByText('Đang publish: 480 / 1.250 sense')).toBeInTheDocument();
   });
 
   it('B25E8: a job queued for more than 30 s shows the worker hint; a fresh one only says it is waiting', async () => {
     const old = new Date(Date.now() - 45_000).toISOString();
-    const { unmount } = renderApp(`/publish-jobs/${ID}`, { [GET]: () => json(job({ status: 'queued', counters: {}, created_at: old, started_at: null })) });
+    const { unmount } = renderApp(`/publish-jobs/${ID}`, { [JOBS]: list, [GET]: () => json(job({ status: 'queued', counters: {}, created_at: old, started_at: null })) });
     expect(await screen.findByText(/Worker có đang chạy không/)).toBeInTheDocument();
     unmount();
 
-    renderApp(`/publish-jobs/${ID}`, { [GET]: () => json(job({ status: 'queued', counters: {}, created_at: new Date().toISOString(), started_at: null })) });
+    renderApp(`/publish-jobs/${ID}`, { [JOBS]: list, [GET]: () => json(job({ status: 'queued', counters: {}, created_at: new Date().toISOString(), started_at: null })) });
     expect(await screen.findByText(/Đang chờ worker nhận việc/)).toBeInTheDocument();
     expect(screen.queryByText(/Worker có đang chạy không/)).toBeNull();
   });
@@ -181,6 +205,7 @@ describe('publish job detail', () => {
   it('detail: polls until terminal, then shows counters published/already_published/refused', async () => {
     let n = 0;
     const r = renderApp(`/publish-jobs/${ID}`, {
+      [JOBS]: list,
       [GET]: () => json(n++ === 0 ? job() : job({ status: 'succeeded', finished_at: '2026-10-14T10:16:00.000Z', counters: { processed: 1250, pending: 0, published: 1201, already_published: 37, refused: 12 } })),
     });
     expect(await screen.findByText(/Đang publish/)).toBeInTheDocument();
@@ -192,8 +217,23 @@ describe('publish job detail', () => {
     expect(r.count('GET', `/v1/admin/content/senses/publish-jobs/${ID}`)).toBe(calls); // stopped
   }, 15_000);
 
+  it("I1 job A's report.csv error is not shown once job B opens", async () => {
+    renderApp(`/publish-jobs/${ID}`, {
+      [JOBS]: list,
+      [GET]: () => json(job({ status: 'succeeded', counters: { published: 1 } })),
+      [`GET /v1/admin/content/senses/publish-jobs/${ID}/report.csv`]: () => problem(500, ''),
+      [`GET /v1/admin/content/senses/publish-jobs/${OTHER}`]: () => json(job({ id: OTHER, status: 'succeeded', snapshot_count: 9 })),
+    });
+    await userEvent.click(await screen.findByRole('button', { name: t.report }));
+    expect(await within(screen.getByTestId('detail-panel')).findByRole('alert')).toBeInTheDocument();
+    await userEvent.click(within(screen.getByRole('table')).getByRole('link', { name: '#b7c9d0' }));
+    expect(await screen.findByRole('heading', { level: 2, name: t.jobTitle.replace('{id}', 'b7c9d0') })).toBeInTheDocument();
+    expect(within(screen.getByTestId('detail-panel')).queryByRole('alert')).toBeNull();
+  });
+
   it('"Tải report.csv" saves publish-<id>.csv with the API content', async () => {
     renderApp(`/publish-jobs/${ID}`, {
+      [JOBS]: list,
       [GET]: () => json(job({ status: 'succeeded', counters: { published: 1 } })),
       [`GET /v1/admin/content/senses/publish-jobs/${ID}/report.csv`]: () => new Response('sense_id,outcome\n1,published\n', { headers: { 'content-type': 'text/csv' } }),
     });

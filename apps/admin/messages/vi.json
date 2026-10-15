@@ -41,7 +41,8 @@
     "cancel": "Hủy",
     "confirm": "Xác nhận",
     "loadMore": "Tải thêm",
-    "loading": "Đang tải…"
+    "loading": "Đang tải…",
+    "close": "Đóng"
   },
   "shell": {
     "brand": "Wordmet Admin",
@@ -52,6 +53,7 @@
     "account": "Tài khoản",
     "logout": "Đăng xuất",
     "loadingSession": "Đang kiểm tra phiên đăng nhập…",
+    "sessionRetry": "Máy chủ đang bận. Thử lại sau {seconds} giây…",
     "skipToContent": "Bỏ qua tới nội dung chính"
   },
   "nav": {
@@ -129,6 +131,10 @@
     }
   },
   "staff": {
+    "toast": {
+      "granted": "Đã cấp vai trò {role} cho {email}.",
+      "removed": "Đã gỡ vai trò của {email}."
+    },
     "createAccount": "Tạo tài khoản",
     "search": {
       "label": "Tìm theo email",
@@ -190,12 +196,12 @@
     }
   },
   "navGroups": {
-    "overview": "TỔNG QUAN",
-    "content": "NỘI DUNG",
-    "practice": "LUYỆN TẬP",
-    "learners": "NGƯỜI HỌC",
+    "overview": "Tổng quan",
+    "content": "Nội dung",
+    "practice": "Luyện tập",
+    "learners": "Người học",
     "ai": "AI",
-    "system": "HỆ THỐNG"
+    "system": "Hệ thống"
   },
   "comingSoon": {
     "title": "Tính năng chưa có",
@@ -278,7 +284,6 @@
     "open": "Chi tiết"
   },
   "batch": {
-    "back": "Lô nhập",
     "rejected": "Tải rejected.csv",
     "publish": "Publish lô này",
     "revert": "Hoàn tác lô",
@@ -336,7 +341,6 @@
     "batchFilter": "lô #{id}",
     "filterNone": "Tất cả",
     "jobTitle": "Publish job #{id}",
-    "back": "Publish job",
     "report": "Tải report.csv",
     "createdAt": "Tạo {time}",
     "running": "Đang publish: {done} / {total} sense",

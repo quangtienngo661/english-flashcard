@@ -77,6 +77,24 @@ describe('source form', () => {
     await userEvent.click(screen.getByRole('checkbox', { name: t.form.asLevelSource }));
     await userEvent.click(screen.getByRole('button', { name: t.form.save }));
     expect(await screen.findByText(vi.errors['source-exists'])).toBeInTheDocument();
-    expect(within(screen.getByRole('main')).getByLabelText(t.form.name + ' *')).toHaveValue('CEFR-J');
+    expect(within(screen.getByRole('dialog', { name: t.formTitle })).getByLabelText(t.form.name + ' *')).toHaveValue('CEFR-J');
   });
+
+  it('UBC13 the form is a dialog over the list; a saved source closes it and the list shows it', async () => {
+    let saved = false;
+    renderApp('/sources', {
+      [LIST]: () => Response.json({ items: saved ? [SRC] : [] }),
+      [CREATE]: () => {
+        saved = true;
+        return Response.json(SRC, { status: 201 });
+      },
+    });
+    await userEvent.click((await screen.findAllByRole('button', { name: t.register }))[0]);
+    const dialog = await screen.findByRole('dialog', { name: t.formTitle });
+    await userEvent.type(within(dialog).getByLabelText(`${t.form.name} *`), 'CEFR-J Vocabulary Profile');
+    await userEvent.click(within(dialog).getByRole('checkbox', { name: t.form.asLevelSource }));
+    await userEvent.click(within(dialog).getByRole('button', { name: t.form.save }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    expect((await screen.findAllByText('CEFR-J Vocabulary Profile')).length).toBeGreaterThan(0);
+  }, 20_000);
 });

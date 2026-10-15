@@ -1,47 +1,156 @@
 @import 'tailwindcss';
+@import '@wordmet/design-tokens/theme.css';
 
-/* Tokens from the Figma "Admin tokens" collection (Task 1); sizes in rem, 16px root. */
+/* Admin density and layout (design 2026-10-15-ui-refresh-b §3, §6). Colours, font, radii and motion come from the
+   shared package; this file declares no colour of its own (UBC1) and only refers to the package's. Sizes in rem. */
 @theme {
-  --color-bg: #f5f6fa;
-  --color-surface: #ffffff;
-  --color-ink: #1c1b22;
-  --color-muted: #5e5b6b;
-  --color-border: #e7e3dc;
-  --color-border-strong: #8a8697;
-  --color-primary: #2f5bea;
-  --color-primary-soft: #e8eeff;
-  --color-on-primary: #ffffff;
-  --color-success: #1f9d55;
-  --color-success-soft: #e5f6ec;
-  --color-danger: #d64545;
-  --color-danger-soft: #fdecec;
-  --color-danger-strong: #b42318;
-
-  --font-sans: 'Be Vietnam Pro', system-ui, sans-serif;
-
   --text-ui: 0.875rem;
-  --spacing-control: 2rem;
+  --spacing-control: 2.5rem;
   --spacing-control-touch: 2.75rem;
-  --spacing-topbar-min: 3.5rem;
-  --spacing-sidebar-min: 14rem;
-  --spacing-sidebar-max: 16rem;
+  --spacing-sidebar: 15.5rem;
+  --spacing-drawer: 17rem;
+  --spacing-panel: 26rem;
   --spacing-auth-card-max: 25rem;
   --spacing-page-pad-min: 1rem;
-  --spacing-page-pad-max: 2rem;
-  --radius-control: 0.375rem;
-  --radius-panel: 0.375rem;
-  /* Effect styles shadow/card and shadow/nav (Figma Foundations, Task 12a). */
-  --shadow-card: 0 0.1875rem 0.5rem rgb(28 27 34 / 0.1);
-  --shadow-nav: 0 0.125rem 0.375rem rgb(28 27 34 / 0.08);
+  --spacing-page-pad-max: 1.75rem;
   --breakpoint-shell: 64rem;
+  /* The detail panel sits beside the table only while the table stays a table (UB22): 15.5 sidebar + 0.75 margin + 26 panel
+     + 3.5 sheet padding + 40 table = 85.75rem, plus a 17px Windows scrollbar (the media query counts it, the layout does
+     not). Keep equal to PANEL_SPLIT_QUERY in src/ui/DetailPanel.tsx. */
+  --breakpoint-panel: 87rem;
   /* Lists switch from cards to a table at this width of their own container (`@list:`), owner 14/10/2026. */
   --container-list: 40rem;
+
+  /* B's flat ledges (design §4.5, mockup admin-b). */
+  --shadow-sheet: 0 0.3rem 0 var(--color-canvas-deep);
+  --shadow-button: 0 0.18rem 0 var(--color-primary-deep);
+  --shadow-button-secondary: 0 0.18rem 0 var(--color-border-strong);
+  --shadow-button-danger: 0 0.18rem 0 var(--color-danger-deep);
+  --shadow-dialog: 0 0.5rem 0 color-mix(in srgb, var(--color-ink) 18%, transparent);
+  --shadow-menu: 0 0 0 1px var(--color-border), 0 0.35rem 0 color-mix(in srgb, var(--color-ink) 12%, transparent);
+  --shadow-toast: 0 0.3rem 0 color-mix(in srgb, var(--color-ink) 25%, transparent);
+  --shadow-overlay-panel: -0.4rem 0 0 color-mix(in srgb, var(--color-ink) 12%, transparent);
+
+  /* Productive motion (design §6.6): only in answer to an action, in 100–250ms, bounce only on the toast. Every
+     animation is attached through React Aria's data-entering/data-exiting (or usePresence) under motion-safe:, never
+     by adding or removing a class on an element that is exiting (UBE22). */
+  --motion-overlay: 200ms;
+  --animate-overlay-in: fade-in var(--motion-overlay) var(--ease-standard) both;
+  --animate-overlay-out: fade-out var(--transition-duration-fast) var(--ease-exit) both;
+  --animate-dialog-in: dialog-in var(--transition-duration-base) var(--ease-enter) both;
+  --animate-dialog-out: dialog-out var(--transition-duration-fast) var(--ease-exit) both;
+  --animate-menu-in: menu-in var(--motion-overlay) var(--ease-enter) both;
+  --animate-menu-in-up: menu-in-up var(--motion-overlay) var(--ease-enter) both;
+  --animate-menu-out: fade-out var(--transition-duration-fast) var(--ease-exit) both;
+  --animate-drawer-in: drawer-in var(--transition-duration-base) var(--ease-enter) both;
+  --animate-drawer-out: drawer-out var(--transition-duration-fast) var(--ease-exit) both;
+  --animate-panel-in: panel-in var(--transition-duration-base) var(--ease-enter) both;
+  --animate-panel-out: panel-out var(--transition-duration-fast) var(--ease-exit) both;
+  --animate-toast-in: toast-in var(--motion-toast) var(--ease-spring) both;
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+  }
+  @keyframes fade-out {
+    to {
+      opacity: 0;
+    }
+  }
+  @keyframes dialog-in {
+    from {
+      opacity: 0;
+      transform: translateY(0.5rem) scale(0.97);
+    }
+  }
+  @keyframes dialog-out {
+    to {
+      opacity: 0;
+      transform: scale(0.98);
+    }
+  }
+  @keyframes menu-in {
+    from {
+      opacity: 0;
+      transform: translateY(-0.25rem);
+    }
+  }
+  @keyframes menu-in-up {
+    from {
+      opacity: 0;
+      transform: translateY(0.25rem);
+    }
+  }
+  @keyframes drawer-in {
+    from {
+      transform: translateX(-100%);
+    }
+  }
+  @keyframes drawer-out {
+    to {
+      transform: translateX(-100%);
+    }
+  }
+  @keyframes panel-in {
+    from {
+      opacity: 0;
+      transform: translateX(1.5rem);
+    }
+  }
+  @keyframes panel-out {
+    to {
+      opacity: 0;
+      transform: translateX(1.5rem);
+    }
+  }
+  @keyframes toast-in {
+    from {
+      opacity: 0;
+      transform: translateY(0.9rem) scale(0.96);
+    }
+  }
 }
+
+/* A popover opened above its trigger slides up instead of down. */
+@custom-variant placement-top (&[data-placement='top']);
 
 body {
   margin: 0;
-  background: var(--color-bg);
+  background: var(--color-canvas);
   color: var(--color-ink);
   font-family: var(--font-sans);
   font-size: var(--text-ui);
+}
+
+/* A pressed button sinks onto its ledge (design §6.2); applied only under motion-safe. */
+@utility pressed {
+  translate: 0 0.18rem;
+}
+
+/* The open menu item: a highlighter stroke across the lower half of its name (design §6.1, mockup admin-b). */
+@utility highlighter {
+  background: linear-gradient(transparent 50%, var(--color-accent) 50%, var(--color-accent) 92%, transparent 92%);
+}
+
+/* From `panel` the white sheet is two columns: the page, then the detail panel (empty column = zero width). */
+@utility grid-sheet {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+/* A menu list that scrolls shades the end that still hides items (owner, 15/10/2026), CSS only: two canvas covers scroll
+   with the items (local) and sit over two shadows fixed to the box (scroll), so a shadow shows only where items are cut
+   off. The list sits on the canvas (sidebar and drawer alike). */
+@utility scroll-fade {
+  background:
+    linear-gradient(var(--color-canvas) 30%, transparent) top / 100% 2.5rem no-repeat local,
+    linear-gradient(transparent, var(--color-canvas) 70%) bottom / 100% 2.5rem no-repeat local,
+    radial-gradient(farthest-side at 50% 0, color-mix(in srgb, var(--color-ink) 18%, transparent), transparent) top / 100% 0.875rem no-repeat scroll,
+    radial-gradient(farthest-side at 50% 100%, color-mix(in srgb, var(--color-ink) 18%, transparent), transparent) bottom / 100% 0.875rem no-repeat scroll;
+}
+
+/* The side panel fills the screen height while it sticks beside the table: 0.75rem above it (top-3, the sheet's top margin)
+   and 1rem below, the same whether the page is scrolled or not (review M6). */
+@utility h-panel-sticky {
+  height: calc(100dvh - 1.75rem);
 }

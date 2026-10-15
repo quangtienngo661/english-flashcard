@@ -3,6 +3,7 @@ import { useMemo, useState } from 'react';
 import { BrowserRouter } from 'react-router';
 import { SessionProvider } from '../auth/session-context';
 import { LocaleProvider } from '../i18n/locale-context';
+import { ToastRegion } from '../ui/Toast';
 import { createQueryClient, OfflineContext } from './offline';
 import { AppRoutes } from './routes';
 
@@ -28,6 +29,8 @@ export function App() {
             <BrowserRouter>
               <AppRoutes />
             </BrowserRouter>
+            {/* Outside the routes, so a toast survives the page that raised it moving away (Review Focus 4). */}
+            <ToastRegion />
           </SessionProvider>
         </OfflineContext.Provider>
       </QueryClientProvider>

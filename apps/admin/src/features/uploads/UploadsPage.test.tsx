@@ -36,13 +36,13 @@ describe('uploads list', () => {
     expect(await screen.findByText(t.empty)).toBeInTheDocument();
   });
 
-  it('"Upload CSV" opens the form with its own page title', async () => {
+  it('"Upload CSV" opens the form in a dialog with its own title (UB9)', async () => {
     renderApp('/uploads', {
       [LIST]: () => Response.json({ items: [], next_page_token: null }),
       'GET /v1/admin/content/sources': () => Response.json({ items: [] }),
     });
     await userEvent.click(await screen.findByRole('button', { name: t.upload }));
-    expect(await screen.findByRole('heading', { level: 1, name: t.formTitle })).toBeInTheDocument();
+    expect(await screen.findByRole('dialog', { name: t.formTitle })).toBeInTheDocument();
   });
 
   it('an import-only user (no content.edit) sees the list but no "Upload CSV"', async () => {

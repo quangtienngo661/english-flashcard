@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { createApiClient } from '../api/client';
 import { ApiError } from '../api/problem';
 import { SessionStore } from './session-store';
-import { BASE, channelHub, makeFetch, makeMe, problem, tokenResponse, type Route } from './test-support';
+import { BASE, channelHub, makeFetch, makeMe, problem, rateLimited, tokenResponse, type Route } from './test-support';
 
 const ok = (body: unknown): Route => () => Response.json(body);
 const noContent: Route = () => new Response(null, { status: 204 });
@@ -351,5 +351,95 @@ describe('SessionStore', () => {
     store.subscribe(() => {})();
     await store.recheck();
     expect(n).toBe(seen);
+  });
+
+  it('B25E30 a 429 from the bootstrap refresh keeps the session: wait Retry-After, refresh again, signed in', async () => {
+    let refreshes = 0;
+    const waits: number[] = [];
+    const f = makeFetch({
+      'POST /v1/auth/refresh': () => (++refreshes === 1 ? rateLimited(2) : tokenResponse('tok-1')),
+      'GET /v1/me': () => Response.json(makeMe()),
+    });
+    const store = new SessionStore({
+      baseUrl: BASE,
+      fetch: f.fetch,
+      channel: null,
+      wait: async (ms: number) => {
+        waits.push(ms);
+      },
+    });
+
+    await store.bootstrap();
+
+    expect(waits).toEqual([2000]);
+    expect(f.count('POST', '/v1/auth/refresh')).toBe(2);
+    expect(store.state).toMatchObject({ status: 'signed-in' });
+  });
+
+  it('B25E30 without Retry-After the store waits 10 s', async () => {
+    let refreshes = 0;
+    const waits: number[] = [];
+    const f = makeFetch({
+      'POST /v1/auth/refresh': () => (++refreshes === 1 ? problem(429, 'rate-limited') : tokenResponse('tok-1')),
+      'GET /v1/me': () => Response.json(makeMe()),
+    });
+    const store = new SessionStore({ baseUrl: BASE, fetch: f.fetch, channel: null, wait: async (ms: number) => void waits.push(ms) });
+    await store.bootstrap();
+    expect(waits).toEqual([10_000]);
+    expect(store.state).toMatchObject({ status: 'signed-in' });
+  });
+
+  it('B25E30 three 429s in a row end signed-out with notice rate-limited, no POST /v1/auth/logout and no broadcast', async () => {
+    const hub = channelHub();
+    const heard: unknown[] = [];
+    hub.create().addEventListener('message', (e) => heard.push(e.data));
+    const waits: number[] = [];
+    const f = makeFetch({ 'POST /v1/auth/refresh': () => rateLimited(1) });
+    const store = new SessionStore({ baseUrl: BASE, fetch: f.fetch, channel: hub.create(), wait: async (ms: number) => void waits.push(ms) });
+    await store.bootstrap();
+    expect(f.count('POST', '/v1/auth/refresh')).toBe(3);
+    expect(waits).toEqual([1000, 1000]);
+    expect(store.state).toEqual({ status: 'signed-out', notice: 'rate-limited' });
+    expect(f.count('POST', '/v1/auth/logout')).toBe(0);
+    expect(heard).toEqual([]);
+  });
+
+  it('B25E30 mid-session a 401 whose refresh gets 429 waits, refreshes and retries the request once', async () => {
+    let refreshes = 0;
+    let reads = 0;
+    const waits: number[] = [];
+    const f = makeFetch({
+      'POST /v1/auth/login': () => tokenResponse('tok-1'),
+      'GET /v1/me': () => Response.json(makeMe()),
+      'POST /v1/auth/refresh': () => (++refreshes === 1 ? rateLimited(3) : tokenResponse('tok-2')),
+      'GET /v1/thing': () => (++reads === 1 ? problem(401, 'invalid-token') : Response.json({ ok: true })),
+    });
+    const store = new SessionStore({ baseUrl: BASE, fetch: f.fetch, channel: null, wait: async (ms: number) => void waits.push(ms) });
+    await store.login('editor@example.com', 'pw');
+
+    const res = await store.send('/v1/thing', { method: 'GET', headers: {} });
+
+    expect(res.status).toBe(200);
+    expect(waits).toEqual([3000]);
+    expect(f.count('GET', '/v1/thing')).toBe(2);
+    expect(store.state).toMatchObject({ status: 'signed-in' });
+  });
+
+  it('B25E30 while the store waits at start, the loading state carries retryAt', async () => {
+    let refreshes = 0;
+    const seen: unknown[] = [];
+    const f = makeFetch({
+      'POST /v1/auth/refresh': () => (++refreshes === 1 ? rateLimited(2) : tokenResponse('tok-1')),
+      'GET /v1/me': () => Response.json(makeMe()),
+    });
+    const store: SessionStore = new SessionStore({
+      baseUrl: BASE,
+      fetch: f.fetch,
+      channel: null,
+      now: () => 1_000,
+      wait: async () => void seen.push(store.state),
+    });
+    await store.bootstrap();
+    expect(seen).toEqual([{ status: 'loading', retryAt: 3_000 }]);
   });
 });

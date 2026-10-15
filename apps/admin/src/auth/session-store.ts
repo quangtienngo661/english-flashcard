@@ -15,10 +15,11 @@ export type Me = {
   permissions: Permission[];
 };
 
-export type Notice = 'no-access' | 'expired';
+export type Notice = 'no-access' | 'expired' | 'rate-limited';
 
 export type SessionState =
-  | { status: 'loading' }
+  /** `retryAt`: when the start-up refresh tries again after a 429 (ms since epoch, B25E30). */
+  | { status: 'loading'; retryAt?: number }
   | { status: 'signed-out'; notice: Notice | null }
   | { status: 'change-password'; me: Me }
   | { status: 'signed-in'; me: Me };
@@ -33,17 +34,32 @@ export const CHANNEL_NAME = 'wordmet-admin-auth';
 const DEVICE = { client: 'web', device_label: 'Wordmet Admin' } as const;
 
 type TokenBody = { access_token: string };
+type RefreshResult = 'ok' | 'failed' | 'rate-limited';
+
+/** B25E30: a refresh answered 429 is tried this many times in all before the session gives up. */
+export const REFRESH_TRIES = 3;
+/** Wait when a 429 carries no usable `Retry-After`. */
+export const REFRESH_RETRY_DEFAULT_S = 10;
+
+const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
 export class SessionStore {
   state: SessionState = { status: 'loading' };
 
   private token: string | null = null;
   private readonly listeners = new Set<() => void>();
-  private refreshing: Promise<boolean> | null = null;
+  private refreshing: Promise<RefreshResult> | null = null;
   private bootstrapping: Promise<void> | null = null;
 
   constructor(
-    private readonly opts: { baseUrl: string; fetch: typeof fetch; channel: ChannelLike | null },
+    private readonly opts: {
+      baseUrl: string;
+      fetch: typeof fetch;
+      channel: ChannelLike | null;
+      /** How a 429 waits before the next refresh (tests pass an instant one). */
+      wait?: (ms: number) => Promise<void>;
+      now?: () => number;
+    },
   ) {
     opts.channel?.addEventListener('message', (event) => {
       const type = (event.data as { type?: unknown } | null)?.type;
@@ -120,7 +136,9 @@ export class SessionStore {
     if (res.status === 403) {
       const slug = await slugOf(res);
       if (slug === 'forbidden') {
-        if (await this.refresh()) await this.recheck();
+        const refreshed = await this.refresh();
+        if (refreshed === 'ok') await this.recheck();
+        else if (refreshed === 'rate-limited') this.giveUpRateLimited();
         else await this.logout('expired');
       } else if (slug === 'password-change-required') {
         await this.recheck();
@@ -131,7 +149,12 @@ export class SessionStore {
 
   private async runBootstrap(): Promise<void> {
     try {
-      if (!(await this.refresh())) {
+      const refreshed = await this.refresh();
+      if (refreshed === 'rate-limited') {
+        this.giveUpRateLimited();
+        return;
+      }
+      if (refreshed === 'failed') {
         this.set({ status: 'signed-out', notice: null });
         return;
       }
@@ -141,22 +164,39 @@ export class SessionStore {
     }
   }
 
-  /** One refresh at a time: concurrent callers share the in-flight promise. */
-  private refresh(): Promise<boolean> {
+  /** One refresh at a time: concurrent callers share the in-flight promise, and so wait out a 429 together. */
+  private refresh(): Promise<RefreshResult> {
     this.refreshing ??= this.runRefresh().finally(() => {
       this.refreshing = null;
     });
     return this.refreshing;
   }
 
-  private async runRefresh(): Promise<boolean> {
-    const res = await this.raw('/v1/auth/refresh', json('POST', {}, this.csrf()), null);
-    if (!res.ok) {
+  /**
+   * B25E30: a 429 does not end the session (the refresh cookie is still good). Wait `Retry-After` seconds (10 without
+   * one) and try again; only the third 429 in a row gives up. While the app is still starting, the loading state carries
+   * when the next try happens, so the screen can count down.
+   */
+  private async runRefresh(): Promise<RefreshResult> {
+    for (let attempt = 1; ; attempt += 1) {
+      const res = await this.raw('/v1/auth/refresh', json('POST', {}, this.csrf()), null);
+      if (res.ok) {
+        this.token = ((await res.json()) as TokenBody).access_token;
+        return 'ok';
+      }
       this.token = null;
-      return false;
+      if (res.status !== 429) return 'failed';
+      if (attempt >= REFRESH_TRIES) return 'rate-limited';
+      const seconds = retryAfterSeconds(res) ?? REFRESH_RETRY_DEFAULT_S;
+      if (this.state.status === 'loading') this.set({ status: 'loading', retryAt: (this.opts.now ?? Date.now)() + seconds * 1000 });
+      await (this.opts.wait ?? sleep)(seconds * 1000);
     }
-    this.token = ((await res.json()) as TokenBody).access_token;
-    return true;
+  }
+
+  /** Rate limited three times: sign out here only. No server logout (it would revoke the still-valid refresh cookie) and no broadcast (other tabs keep their session). */
+  private giveUpRateLimited(): void {
+    this.token = null;
+    this.set({ status: 'signed-out', notice: 'rate-limited' });
   }
 
   /** Authorized request; a 401 triggers the shared refresh and one retry. */
@@ -165,8 +205,12 @@ export class SessionStore {
     const res = await this.raw(path, init, used);
     if (res.status !== 401) return res;
     // Another request may already have refreshed while this one was in flight: then just retry.
-    const refreshed = this.token !== null && this.token !== used ? true : await this.refresh();
-    if (!refreshed) {
+    const refreshed: RefreshResult = this.token !== null && this.token !== used ? 'ok' : await this.refresh();
+    if (refreshed === 'rate-limited') {
+      this.giveUpRateLimited();
+      return res;
+    }
+    if (refreshed === 'failed') {
       await this.logout('expired');
       return res;
     }
@@ -199,6 +243,11 @@ export class SessionStore {
 
 function json(method: string, body: unknown, extra: Record<string, string> = {}): RequestInit {
   return { method, headers: { 'Content-Type': 'application/json', ...extra }, body: JSON.stringify(body) };
+}
+
+function retryAfterSeconds(res: Response): number | null {
+  const seconds = Number(res.headers.get('retry-after'));
+  return Number.isFinite(seconds) && seconds > 0 ? seconds : null;
 }
 
 async function slugOf(res: Response): Promise<string> {

@@ -129,7 +129,8 @@ test('B25#12 + B25#14 + flow 3: the editor registers a source, uploads small.csv
   await expect(editorPage).toHaveURL(/\/uploads\/[0-9a-f-]{36}$/);
   const batchId = editorPage.url().split('/').pop()!;
 
-  await expect(editorPage.getByText(vi.status.partial, { exact: true })).toBeVisible({ timeout: 30_000 });
+  // The batch opens in the panel beside its list (UB8); the list row carries the same status pill.
+  await expect(editorPage.getByTestId('detail-panel').getByText(vi.status.partial, { exact: true })).toBeVisible({ timeout: 30_000 });
   const download = editorPage.waitForEvent('download');
   await editorPage.getByRole('button', { name: vi.batch.rejected }).click();
   const file = await download;
@@ -141,7 +142,7 @@ test('B25#12 + B25#14 + flow 3: the editor registers a source, uploads small.csv
   await editorPage.getByRole('button', { name: vi.batch.publish }).click();
   await expect(editorPage).toHaveURL(/\/publish-jobs\/[0-9a-f-]{36}$/);
   const jobId = editorPage.url().split('/').pop()!;
-  await expect(editorPage.getByText(vi.status.succeeded, { exact: true })).toBeVisible({ timeout: 30_000 });
+  await expect(editorPage.getByTestId('detail-panel').getByText(vi.status.succeeded, { exact: true })).toBeVisible({ timeout: 30_000 });
   await editorPage.goto('/publish-jobs');
   await expect(editorPage.getByText(`#${jobId.slice(0, 6)}`).first()).toBeVisible();
 

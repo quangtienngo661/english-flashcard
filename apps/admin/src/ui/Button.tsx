@@ -3,10 +3,11 @@ import { Button as AriaButton, type ButtonProps as AriaButtonProps } from 'react
 
 export type ButtonVariant = 'primary' | 'secondary' | 'danger' | 'ghost';
 
+/** Direction B (design §6.2): chunky buttons on a flat ledge; ghost has none. */
 const VARIANT: Record<ButtonVariant, string> = {
-  primary: 'bg-primary text-on-primary hover:bg-primary/90',
-  secondary: 'bg-surface text-ink border border-border-strong hover:bg-bg',
-  danger: 'bg-danger-strong text-on-primary hover:bg-danger-strong/90',
+  primary: 'bg-primary text-on-primary shadow-button hover:bg-primary/90',
+  secondary: 'bg-surface text-ink ring-2 ring-inset ring-border-strong shadow-button-secondary hover:bg-primary/4',
+  danger: 'bg-danger text-on-primary shadow-button-danger hover:bg-danger/90',
   ghost: 'bg-transparent text-primary hover:bg-primary-soft',
 };
 
@@ -31,7 +32,8 @@ export function Button({ variant = 'primary', size = 'md', className = '', child
       onPress={isPending ? undefined : onPress}
       aria-busy={isPending || undefined}
       data-pending={isPending || undefined}
-      className={`inline-flex items-center justify-center gap-2 rounded-control px-4 py-1.5 text-ui font-medium outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 data-pending:cursor-progress ${height} ${VARIANT[variant]} ${className}`}
+      // The press sinks the button onto its ledge, only when motion is allowed (UBE20); coarse pointers get 44 px.
+      className={`inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-control px-4 py-1.5 text-ui font-semibold outline-none transition duration-instant ease-standard focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 data-pending:cursor-progress pointer-coarse:min-h-control-touch motion-safe:data-pressed:pressed motion-safe:data-pressed:shadow-none ${height} ${VARIANT[variant]} ${className}`}
     >
       {(values) => (
         <>

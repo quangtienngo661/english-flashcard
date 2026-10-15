@@ -35,11 +35,13 @@ that variable loads the `Lexend` family itself (for example a Google Fonts `<lin
 | `placeholder` | `#5f6688` | input placeholder text |
 | `surface` | `#ffffff` | cards, admin sheet, landing background |
 | `canvas` | `#f1f3fd` | admin background, admin input fill |
+| `canvas-deep` | `#dde1f5` | ledge under the admin white sheet |
 | `border` | `#e3e6f4` | table rules, panel edges |
 | `border-strong` | `#7d84a8` | input, checkbox and secondary-button borders |
 | `success` / `success-soft` | `#1b7a46` / `#e3f4ea` | correct, done |
 | `warning` | `#7a5200` | text on `accent-soft` |
 | `danger` / `danger-soft` | `#b8352a` / `#fde8e5` | wrong, failed, destructive actions |
+| `danger-deep` | `#8a2219` | ledge under the admin danger button |
 | `neutral-soft` | `#eef0f5` | "queued", "reverted", "unchanged" |
 | `wrong-chip` / `wrong-chip-deep` | `#ffd3cd` / `#d99b92` | a sticker picked wrongly, and its ledge |
 

@@ -2,7 +2,7 @@ import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import vi from '../../../messages/vi.json';
-import { problem } from '../../auth/test-support';
+import { makeMe, problem } from '../../auth/test-support';
 import { renderApp } from '../staff/test-utils';
 
 const t = vi.uploads;
@@ -13,6 +13,9 @@ const SOURCES = {
   ],
 };
 const UPLOADS = 'POST /v1/admin/content/uploads';
+// The form opens as a dialog over its list (UB9): every render also answers the list.
+const LIST = 'GET /v1/admin/content/uploads?page_size=20';
+const list = () => Response.json({ items: [{ id: 'b1', status: 'succeeded', file_name: 'listed.csv', row_count: 3, created_at: '2026-10-14T09:30:00.000Z' }], next_page_token: null });
 const plainCsv = (name = 'plain.csv', type = 'text/csv') => new File(['pos,headword\nnoun,cat\n'], name, { type });
 const levelCsv = (name = 'level.csv') => new File(['pos,headword,CEFR\nnoun,cat,A1\n'], name, { type: 'text/csv' });
 
@@ -25,6 +28,7 @@ const retryAfter = (seconds: number, slug: string) =>
 function open(post: (n: number) => Response) {
   let n = 0;
   const r = renderApp('/uploads/new', {
+    [LIST]: list,
     'GET /v1/admin/content/sources': () => Response.json(SOURCES),
     [UPLOADS]: () => post(++n),
   });
@@ -44,7 +48,34 @@ async function pick(file: File) {
 
 const upload = () => screen.findByRole('button', { name: t.submit });
 
+describe('upload dialog', () => {
+  it('UBC13 "Upload CSV" opens a dialog over the list at /uploads/new; "Hủy" returns to /uploads', async () => {
+    renderApp('/uploads', { [LIST]: list, 'GET /v1/admin/content/sources': () => Response.json(SOURCES) });
+    await userEvent.click(await screen.findByRole('button', { name: t.upload }));
+    const dialog = await screen.findByRole('dialog', { name: t.formTitle });
+    expect(document.querySelector('table')).not.toBeNull(); // the list stays under the dialog
+    expect(screen.getByRole('heading', { level: 1, hidden: true })).toHaveTextContent(vi.nav.uploads);
+    await userEvent.click(within(dialog).getByRole('button', { name: vi.common.cancel }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    expect(screen.getByRole('button', { name: t.upload })).toBeInTheDocument();
+  });
+
+  it('UBE32 a user with content.import but not content.edit opening /uploads/new sees the dialog as today, and no "Upload CSV" button', async () => {
+    renderApp('/uploads/new', { [LIST]: list, 'GET /v1/admin/content/sources': () => Response.json(SOURCES) }, makeMe({ permissions: ['content.import'] }));
+    expect(await screen.findByRole('dialog', { name: t.formTitle })).toBeInTheDocument();
+    expect(within(document.querySelector<HTMLElement>('main header')!).queryByText(t.upload)).toBeNull();
+  });
+});
+
 describe('upload form', () => {
+  it('I3 a successful upload refreshes the uploads list, so the new batch shows up in it', async () => {
+    const r = open(() => Response.json({ batch_id: 'b9', status: 'queued' }, { status: 202 }));
+    await pick(plainCsv());
+    await waitFor(() => expect(r.count('GET', '/v1/admin/content/uploads?page_size=20')).toBe(1));
+    await userEvent.click(await upload());
+    await waitFor(() => expect(r.count('GET', '/v1/admin/content/uploads?page_size=20')).toBe(2));
+  });
+
   it('B25#11: a fresh Idempotency-Key per submit; a network error then "Thử lại" resends the same key; another file makes a new key', async () => {
     const r = open((n) => {
       if (n <= 2) throw new TypeError('Failed to fetch');
