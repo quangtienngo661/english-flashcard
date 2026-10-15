@@ -10,7 +10,7 @@ type SectionProps = {
   className?: string;
 };
 
-const tones = { bg: 'bg-bg', surface: 'bg-surface', primary: 'bg-primary' } satisfies Record<SectionProps['tone'], string>;
+const tones = { bg: 'bg-canvas', surface: 'bg-surface', primary: 'bg-primary' } satisfies Record<SectionProps['tone'], string>;
 
 // Figma section rhythm: 56px top/bottom on mobile, 96px from md.
 export function Section({ id, labelledBy, tone, children, className }: SectionProps) {

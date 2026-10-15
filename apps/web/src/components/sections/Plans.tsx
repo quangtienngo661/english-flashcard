@@ -40,7 +40,7 @@ export async function Plans() {
             <ul className="flex flex-col gap-2.5">
               {ITEMS.map((item) => (
                 <li key={item} className="flex items-start gap-2.5 text-body text-ink">
-                  <Icon name="check" className="mt-0.5 text-success-strong" />
+                  <Icon name="check" className="mt-0.5 text-success" />
                   {t(`${plan}.items.${item}`)}
                 </li>
               ))}

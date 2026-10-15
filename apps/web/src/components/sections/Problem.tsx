@@ -27,7 +27,7 @@ export async function Problem() {
         />
       </Reveal>
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <Reveal className="flex flex-col gap-4 rounded-card border border-border bg-bg p-7">
+        <Reveal className="flex flex-col gap-4 rounded-card border border-border bg-canvas p-7">
           <p className="text-small font-bold text-muted">{t('before.label')}</p>
           <Flashcard word={t('before.word')} meaning={t('before.meaning')} hint={t('before.hint')} />
           <p className="text-label text-muted">{t('before.caption')}</p>
@@ -40,7 +40,7 @@ export async function Problem() {
               <span
                 className={cn(
                   'rounded-sm px-3 py-0.5 font-bold',
-                  filled ? 'border-2 border-success bg-success-soft text-success-strong' : 'bg-marker text-ink',
+                  filled ? 'border-2 border-success bg-success-soft text-success' : 'bg-accent text-ink',
                 )}
               >
                 {t(`after.${key}.word`)}

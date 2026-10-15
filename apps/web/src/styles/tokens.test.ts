@@ -1,15 +1,19 @@
 import { readFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 
-const css = readFileSync(fileURLToPath(new URL('../app/globals.css', import.meta.url)), 'utf8');
+// Shared tokens come from the workspace package (spec UB3); resolving it here also proves apps/web can import it.
+const themePath = createRequire(import.meta.url).resolve('@wordmet/design-tokens/theme.css');
+const theme = readFileSync(themePath, 'utf8');
+const globals = readFileSync(fileURLToPath(new URL('../app/globals.css', import.meta.url)), 'utf8');
 
-function tokens(prefix: string): Map<string, string> {
+function tokens(css: string, prefix: string): Map<string, string> {
   const out = new Map<string, string>();
   for (const m of css.matchAll(new RegExp(`--${prefix}-([a-z0-9-]+):\\s*([^;]+);`, 'g'))) out.set(m[1], m[2].trim());
   return out;
 }
 
-const colors = tokens('color');
+const colors = tokens(theme, 'color');
 
 function luminance(hex: string): number {
   const [r, g, b] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255);
@@ -28,11 +32,16 @@ function contrast(fg: string, bg: string): number {
 describe('design tokens', () => {
   it('LP12 text and control colors meet WCAG contrast', () => {
     const text: Array<[string, string]> = [
-      ['ink', 'bg'], ['muted', 'bg'], ['muted', 'surface'], ['primary', 'surface'], ['on-primary', 'primary'],
-      ['primary', 'primary-soft'], ['success-strong', 'success-soft'], ['success-strong', 'bg'],
-      ['danger-strong', 'bg'], ['danger-strong', 'surface'], ['ink', 'marker'],
+      ['ink', 'surface'], ['ink', 'canvas'], ['ink', 'accent'], ['ink', 'accent-soft'], ['ink', 'wrong-chip'],
+      ['muted', 'surface'], ['muted', 'canvas'], ['muted', 'primary-soft'], ['muted', 'accent'],
+      ['primary', 'surface'], ['primary', 'primary-soft'], ['on-primary', 'primary'], ['on-primary-muted', 'primary'],
+      ['success', 'surface'], ['success', 'success-soft'], ['danger', 'surface'], ['danger', 'danger-soft'],
+      ['warning', 'accent-soft'], ['placeholder', 'surface'], ['placeholder', 'canvas'],
     ];
-    const controls: Array<[string, string]> = [['border-strong', 'surface'], ['on-primary', 'primary']];
+    const controls: Array<[string, string]> = [
+      ['border-strong', 'surface'], ['border-strong', 'canvas'], ['on-primary', 'primary'], ['ink', 'accent'],
+      ['accent', 'primary'], ['primary', 'accent'], ['primary', 'surface'],
+    ];
     const failures = [
       ...text.filter(([f, b]) => contrast(f, b) < 4.5).map(([f, b]) => `${f}/${b}=${contrast(f, b).toFixed(2)} < 4.5`),
       ...controls.filter(([f, b]) => contrast(f, b) < 3).map(([f, b]) => `${f}/${b}=${contrast(f, b).toFixed(2)} < 3`),
@@ -41,7 +50,10 @@ describe('design tokens', () => {
   });
 
   it('LP31 size tokens use rem and the clamp tokens hit the Figma sizes', () => {
-    const sized = ['text', 'radius', 'shadow', 'container'].flatMap((p) => [...tokens(p)].map(([k, v]) => [`${p}-${k}`, v]));
+    const sized = [
+      ...['text', 'container'].flatMap((p) => [...tokens(globals, p)].map(([k, v]) => [`${p}-${k}`, v])),
+      ...['radius', 'shadow'].flatMap((p) => [...tokens(theme, p)].map(([k, v]) => [`${p}-${k}`, v])),
+    ];
     expect(sized.length).toBeGreaterThan(20);
     expect(sized.filter(([, v]) => /\dpx/.test(v)).map(([k]) => k)).toEqual([]);
 
@@ -51,11 +63,16 @@ describe('design tokens', () => {
       const [min, base, vw, max] = m.slice(1).map(Number);
       return Math.min(Math.max(base * 16 + (vw / 100) * width, min * 16), max * 16);
     };
-    const text = tokens('text');
+    const text = tokens(globals, 'text');
     const expected: Record<string, [number, number]> = { display: [36, 60], cta: [28, 44], h2: [28, 40] };
     for (const [name, [at390, at1440]] of Object.entries(expected)) {
       expect(evalClamp(text.get(name) ?? '', 390)).toBeCloseTo(at390, 0);
       expect(evalClamp(text.get(name) ?? '', 1440)).toBeCloseTo(at1440, 0);
     }
+  });
+
+  it('UBC1 apps/web declares no color tokens', () => {
+    // Declarations only: using a shared colour through var(--color-…) is expected.
+    expect(globals).not.toMatch(/--color-[a-z0-9-]+\s*:/);
   });
 });

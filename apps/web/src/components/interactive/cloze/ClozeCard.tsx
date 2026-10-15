@@ -19,15 +19,15 @@ type ClozeCardProps = {
 };
 
 const gapStyles = {
-  unanswered: 'bg-marker text-ink',
-  wrong: 'border-2 border-danger-strong bg-surface text-danger-strong',
-  correct: 'border-2 border-success bg-success-soft text-success-strong',
+  unanswered: 'bg-accent text-ink',
+  wrong: 'border-2 border-danger bg-surface text-danger',
+  correct: 'border-2 border-success bg-success-soft text-success',
 } satisfies Record<ClozeStatus, string>;
 
 export function ClozeCard({ item, header, labels, result, done, ctaHref, onPick, onNext, onReplay }: ClozeCardProps) {
   const { status, picked } = result;
   return (
-    <div className="flex flex-col gap-4 rounded-feature border border-border bg-surface p-5 shadow-card md:p-7">
+    <div className="flex flex-col gap-4 rounded-feature border border-border bg-surface p-5 shadow-ledge-soft md:p-7">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-caption font-semibold text-muted">{header}</p>
         <Chip>{labels.sourceChip}</Chip>
@@ -77,7 +77,7 @@ export function ClozeCard({ item, header, labels, result, done, ctaHref, onPick,
                   onClick={() => onPick(option)}
                   className={cn(
                     'min-h-11 rounded-full border bg-surface px-4.5 text-body font-medium text-ink transition-colors duration-fast enabled:hover:border-ink disabled:cursor-default',
-                    isPicked && status === 'wrong' && 'border-2 border-danger-strong',
+                    isPicked && status === 'wrong' && 'border-2 border-danger',
                     isPicked && status === 'correct' && 'border-2 border-success bg-success-soft',
                     !isPicked && 'border-border',
                   )}
@@ -89,8 +89,8 @@ export function ClozeCard({ item, header, labels, result, done, ctaHref, onPick,
           </div>
 
           {status !== 'unanswered' ? (
-            <div className="flex flex-col gap-2 rounded-inner bg-bg p-4">
-              <p className={cn('text-label font-bold', status === 'wrong' ? 'text-danger-strong' : 'text-success-strong')}>
+            <div className="flex flex-col gap-2 rounded-inner bg-canvas p-4">
+              <p className={cn('text-label font-bold', status === 'wrong' ? 'text-danger' : 'text-success')}>
                 {status === 'wrong' ? labels.wrongTitle : labels.correctTitle}
               </p>
               {status === 'wrong' ? (

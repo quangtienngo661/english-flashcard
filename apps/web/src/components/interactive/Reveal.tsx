@@ -37,7 +37,7 @@ export function Reveal({ children, step = 0, as: Tag = 'div', className }: Revea
     <Tag
       ref={ref as never}
       className={cn(
-        phase !== 'static' && !reduced && cn('transition duration-reveal ease-out', delays[step]),
+        phase !== 'static' && !reduced && cn('transition duration-reveal ease-standard', delays[step]),
         hidden ? 'translate-y-4 opacity-0' : 'translate-y-0 opacity-100',
         className,
       )}

@@ -11,7 +11,7 @@ export async function SiteHeader() {
   const navLink = 'inline-flex min-h-11 items-center text-small font-medium text-muted transition-colors duration-fast hover:text-ink';
 
   return (
-    <header className="border-b border-border bg-bg">
+    <header className="border-b border-border bg-canvas">
       <Container className="flex items-center justify-between gap-4 py-2 md:py-5">
         <div className="flex flex-1">
           <Logo />

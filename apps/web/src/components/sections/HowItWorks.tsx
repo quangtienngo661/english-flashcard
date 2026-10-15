@@ -14,7 +14,7 @@ function StepCard({ number, title, body, visual, step }: { number: number; title
       step={step}
       className="flex w-4/5 shrink-0 snap-start flex-col gap-5 rounded-card border border-border bg-surface p-7 lg:row-span-4 lg:grid lg:w-auto lg:grid-rows-subgrid"
     >
-      <div aria-hidden="true" className="flex flex-1 flex-col gap-2.5 rounded-panel bg-bg p-4">
+      <div aria-hidden="true" className="flex flex-1 flex-col gap-2.5 rounded-panel bg-canvas p-4">
         {visual}
       </div>
       <span className="inline-flex self-start justify-self-start rounded-full bg-ink px-2.5 py-1 text-caption font-bold text-on-primary">{number}</span>
@@ -67,7 +67,7 @@ export async function HowItWorks() {
             <>
               <p lang="en" className="flex flex-wrap items-center gap-1.5 text-label font-medium text-ink">
                 <span>{t('step2.sentenceBefore')}</span>
-                <span className="rounded-sm bg-marker px-3 py-0.5 font-bold">_____</span>
+                <span className="rounded-sm bg-accent px-3 py-0.5 font-bold">_____</span>
                 <span>{t('step2.sentenceAfter')}</span>
               </p>
               <div className="flex flex-wrap gap-1.5">
@@ -86,7 +86,7 @@ export async function HowItWorks() {
           visual={rows.map((row, i) => (
             <div key={row} className="flex flex-col gap-0.5 rounded-control bg-surface px-3 py-2.5 xl:flex-row xl:items-center xl:justify-between">
               <span lang="en" className="text-label font-semibold text-ink">{t(`step3.rows.${row}.word`)}</span>
-              <span className={cn('text-caption font-medium', i === 0 ? 'text-danger-strong' : 'text-muted')}>{t(`step3.rows.${row}.status`)}</span>
+              <span className={cn('text-caption font-medium', i === 0 ? 'text-danger' : 'text-muted')}>{t(`step3.rows.${row}.status`)}</span>
             </div>
           ))}
         />

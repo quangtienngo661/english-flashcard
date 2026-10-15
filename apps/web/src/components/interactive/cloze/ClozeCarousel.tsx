@@ -212,7 +212,7 @@ export function ClozeCarousel({ items, labels, ctaHref }: ClozeCarouselProps) {
   }
 
   const arrow =
-    'absolute top-1/2 z-10 inline-flex size-11 -translate-y-1/2 items-center justify-center rounded-full border border-border bg-surface text-ink shadow-control transition-colors duration-fast hover:bg-bg';
+    'absolute top-1/2 z-10 inline-flex size-11 -translate-y-1/2 items-center justify-center rounded-full border border-border bg-surface text-ink shadow-ledge-soft transition-colors duration-fast hover:bg-canvas';
 
   return (
     <section
@@ -263,7 +263,7 @@ export function ClozeCarousel({ items, labels, ctaHref }: ClozeCarouselProps) {
               inert={!active}
               className={cn(
                 'w-full shrink-0 snap-center',
-                !reduced && cn('transition ease-out', gestureMotion ? 'duration-carousel-drag' : 'duration-carousel'),
+                !reduced && cn('transition ease-standard', gestureMotion ? 'duration-carousel-drag' : 'duration-carousel'),
                 active ? 'scale-100 opacity-100' : 'scale-86 opacity-50',
               )}
             >

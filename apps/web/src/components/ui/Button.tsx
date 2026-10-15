@@ -5,7 +5,7 @@ export type ButtonVariant = 'primary' | 'secondary' | 'inverse';
 
 export const buttonVariants = {
   primary: 'bg-primary text-on-primary hover:bg-primary/90',
-  secondary: 'bg-surface text-ink border border-border hover:bg-bg',
+  secondary: 'bg-surface text-ink border border-border hover:bg-canvas',
   inverse: 'bg-on-primary text-primary hover:bg-on-primary/90',
 } satisfies Record<ButtonVariant, string>;
 

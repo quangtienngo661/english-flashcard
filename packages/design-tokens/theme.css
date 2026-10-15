@@ -1,0 +1,56 @@
+/* Shared Wordmet tokens, direction B (design 2026-10-15-ui-refresh-b, §4). Imported by apps/web and apps/admin
+   right after `@import 'tailwindcss';`. Colours live only here (UBC1). Sizes in rem. */
+@theme {
+  /* Colour roles (§4.1). border-strong and placeholder are the two contrast fixes of UB15. */
+  --color-primary: #2445d6;
+  --color-primary-deep: #1a32a6;
+  --color-primary-soft: #eceffe;
+  --color-on-primary: #ffffff;
+  --color-on-primary-muted: #dfe5ff;
+  --color-accent: #ffd84a;
+  --color-accent-deep: #c9a21a;
+  --color-accent-soft: #fff4c7;
+  --color-ink: #0f1a3d;
+  --color-muted: #4d5577;
+  --color-placeholder: #5f6688;
+  --color-surface: #ffffff;
+  --color-canvas: #f1f3fd;
+  --color-border: #e3e6f4;
+  --color-border-strong: #7d84a8;
+  --color-success: #1b7a46;
+  --color-success-soft: #e3f4ea;
+  --color-warning: #7a5200;
+  --color-danger: #b8352a;
+  --color-danger-soft: #fde8e5;
+  --color-neutral-soft: #eef0f5;
+  --color-wrong-chip: #ffd3cd;
+  --color-wrong-chip-deep: #d99b92;
+
+  /* Radii (§4.5). */
+  --radius-sm: 0.5rem;
+  --radius-control: 0.75rem;
+  --radius-inner: 0.875rem;
+  --radius-panel: 1rem;
+  --radius-card: 1.25rem;
+  --radius-feature: 1.5rem;
+
+  /* B's flat "ledge" under an object instead of a soft shadow (§4.5). */
+  --shadow-ledge: 0 0.25rem 0 rgb(15 26 61 / 0.35);
+  --shadow-ledge-accent: 0 0.25rem 0 var(--color-accent-deep);
+  --shadow-ledge-wrong: 0 0.25rem 0 var(--color-wrong-chip-deep);
+  --shadow-ledge-card: 0 1.5rem 0 var(--color-primary-deep);
+  --shadow-ledge-soft: 0 0.3rem 0 var(--color-border);
+
+  /* Motion (§4.4). Tailwind v4's `duration-*` reads only `--transition-duration-*`. */
+  --transition-duration-instant: 100ms;
+  --transition-duration-fast: 150ms;
+  --transition-duration-base: 250ms;
+  --transition-duration-slow: 400ms;
+  --motion-wiggle: 300ms;
+  --motion-pop: 320ms;
+  --motion-toast: 300ms;
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ease-enter: cubic-bezier(0.05, 0.7, 0.1, 1);
+  --ease-exit: cubic-bezier(0.3, 0, 0.8, 0.15);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+}

@@ -27,9 +27,9 @@ const tones = {
     box: 'border-border-strong checked:border-primary checked:bg-primary',
     tick: 'text-on-primary',
     label: 'text-ink',
-    error: 'text-danger-strong',
+    error: 'text-danger',
     success: 'bg-success-soft text-ink',
-    successIcon: 'text-success-strong',
+    successIcon: 'text-success',
     button: 'primary',
   },
   inverse: {
@@ -37,9 +37,9 @@ const tones = {
     box: 'border-on-primary checked:bg-on-primary',
     tick: 'text-primary',
     label: 'text-on-primary',
-    error: 'self-start rounded-sm bg-surface px-2.5 py-1.5 text-danger-strong',
+    error: 'self-start rounded-sm bg-surface px-2.5 py-1.5 text-danger',
     success: 'bg-surface text-ink',
-    successIcon: 'text-success-strong',
+    successIcon: 'text-success',
     button: 'secondary',
   },
 } as const;
@@ -91,7 +91,7 @@ export function WaitlistForm({ idPrefix, tone, layout, locale, labels }: Waitlis
           className={cn(
             'min-h-12 w-full min-w-0 flex-1 rounded-control border px-4.5 text-body transition-colors duration-fast',
             t.input,
-            emailInvalid && 'border-danger-strong',
+            emailInvalid && 'border-danger',
           )}
         />
         <Button type="submit" variant={t.button} disabled={pending} className="shrink-0">
@@ -114,7 +114,7 @@ export function WaitlistForm({ idPrefix, tone, layout, locale, labels }: Waitlis
             onChange={(e) => setConsent(e.target.checked)}
             aria-invalid={consentInvalid || undefined}
             aria-describedby={consentInvalid ? ids.consentError : undefined}
-            className={cn('peer size-4 cursor-pointer appearance-none rounded border-2', t.box, consentInvalid && 'border-danger-strong')}
+            className={cn('peer size-4 cursor-pointer appearance-none rounded border-2', t.box, consentInvalid && 'border-danger')}
           />
           <Icon name="check" className={cn('pointer-events-none absolute size-3 opacity-0 peer-checked:opacity-100', t.tick)} />
         </span>
