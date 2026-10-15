@@ -32,8 +32,8 @@ export async function generateMetadata({ params }: LocaleParams): Promise<Metada
   return buildMetadata(locale, { title: t('title'), description: t('description') });
 }
 
-// Matches the `bg` colour token.
-export const viewport: Viewport = { themeColor: '#faf8f5' };
+// Matches the `primary` colour token (the header field).
+export const viewport: Viewport = { themeColor: '#2445d6' };
 
 export default async function LocaleLayout({ children, params }: LocaleParams & { children: ReactNode }) {
   const { locale } = await params;

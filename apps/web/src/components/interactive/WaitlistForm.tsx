@@ -66,7 +66,7 @@ export function WaitlistForm({ idPrefix, tone, layout, locale, labels }: Waitlis
   const consentInvalid = state.status === 'missing_consent';
 
   return (
-    <form id={`waitlist-${idPrefix}`} action={action} noValidate className="flex w-full flex-col gap-3">
+    <form id={`waitlist-${idPrefix}`} action={action} noValidate className="flex w-full scroll-mt-4 flex-col gap-3 md:scroll-mt-header">
       <input type="hidden" name="locale" value={locale} />
       <div aria-hidden="true" className="sr-only">
         <input type="text" name="company" tabIndex={-1} autoComplete="off" defaultValue="" />

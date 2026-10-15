@@ -12,7 +12,7 @@ export async function SiteFooter() {
   const link = `${item} transition-colors duration-fast hover:text-ink`;
 
   return (
-    <footer className="border-t border-border bg-canvas">
+    <footer className="border-t border-border bg-surface">
       <Container className="flex flex-col gap-4 py-6 md:flex-row-reverse md:items-center md:justify-between md:py-9">
         <ul className="grid grid-cols-2 gap-x-3 md:flex md:gap-6">
           {/* Privacy and Terms links hidden until launch (owner, 09/10/2026); the pages still exist. */}

@@ -256,6 +256,76 @@ test('LP14–LP16 form flow in the browser', async ({ page }) => {
   await expect(page.getByRole('status')).toContainText(copy.en.Waitlist.success);
 });
 
+test.describe('header (UB16)', () => {
+  // Reduced motion turns off smooth scrolling, so positions are read after the jump, not mid-scroll.
+  test.use({ reducedMotion: 'reduce' });
+  const desktopOnly = () => test.skip(test.info().project.name !== 'desktop', 'run once, sizes set in the test');
+  const header = (page: Page) => page.getByRole('banner');
+  const cta = (page: Page, locale: 'vi' | 'en') => header(page).getByRole('link', { name: copy[locale].Nav.cta });
+
+  async function expectFormClearsHeader(page: Page) {
+    const form = page.locator('#waitlist-hero');
+    await expect(form).toBeInViewport();
+    const h = (await header(page).boundingBox())!;
+    const f = (await form.boundingBox())!;
+    expect(f.y).toBeGreaterThanOrEqual(h.y + h.height - 1);
+  }
+
+  test('UBC5 at 1440 and 768 the header stays on top and its CTA scrolls to the hero form', async ({ page }) => {
+    desktopOnly();
+    for (const width of [1440, 768]) {
+      await page.setViewportSize({ width, height: 900 });
+      for (const locale of ['vi', 'en'] as const) {
+        await page.goto(`/${locale}`);
+        await page.locator('#faq').scrollIntoViewIfNeeded();
+        expect((await header(page).boundingBox())!.y, `${locale} at ${width}`).toBe(0);
+        await cta(page, locale).click();
+        await expectFormClearsHeader(page);
+      }
+    }
+  });
+
+  test('UB16 below md the header has no CTA and scrolls away', async ({ page }) => {
+    desktopOnly();
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto('/vi');
+    await expect(cta(page, 'vi')).toBeHidden();
+    await page.evaluate(() => window.scrollTo(0, 600));
+    await expect.poll(async () => (await header(page).boundingBox())!.y).toBeLessThan(0);
+  });
+
+  test('RF1 header CTA from a legal page lands on the home form', async ({ page }) => {
+    desktopOnly();
+    await page.goto('/vi/privacy');
+    await cta(page, 'vi').click();
+    await expect(page).toHaveURL(/\/vi#waitlist-hero$/);
+    await expectFormClearsHeader(page);
+  });
+
+  test('RF4 at 768 with 125% root text the header stays on one row and anchors clear it', async ({ page }) => {
+    desktopOnly();
+    await page.setViewportSize({ width: 768, height: 1024 });
+    for (const locale of ['vi', 'en'] as const) {
+      await page.goto(`/${locale}`);
+      await page.addStyleTag({ content: 'html { font-size: 125% !important; }' });
+      const row = await header(page).locator(':scope > div').evaluate((el) => ({
+        // Children are vertically centred in one row: their centres line up unless the row wrapped.
+        // Hidden children (the nav below lg) have an empty box and are skipped.
+        centres: [...el.children]
+          .map((c) => c.getBoundingClientRect())
+          .filter((r) => r.width > 0)
+          .map((r) => Math.round(r.top + r.height / 2)),
+        overflow: el.scrollWidth - el.clientWidth,
+      }));
+      expect(Math.max(...row.centres) - Math.min(...row.centres), locale).toBeLessThanOrEqual(2);
+      expect(row.overflow, locale).toBeLessThanOrEqual(1);
+      expect(await page.evaluate(() => document.scrollingElement!.scrollWidth - window.innerWidth), locale).toBeLessThanOrEqual(0);
+      await cta(page, locale).click();
+      await expectFormClearsHeader(page);
+    }
+  });
+});
+
 test.describe('layout', () => {
   test('LP24 no horizontal scroll at 390 / Review#2 at 320', async ({ page }) => {
     for (const width of [390, 320]) {
@@ -351,6 +421,14 @@ test.describe('reduced motion', () => {
 test.describe('without JavaScript', () => {
   // Reduced motion also turns off smooth scrolling, which otherwise keeps elements 'unstable' for Playwright.
   test.use({ javaScriptEnabled: false, reducedMotion: 'reduce' });
+  test('UBE12 without JavaScript the header CTA still jumps to the form', async ({ page }) => {
+    test.skip(test.info().project.name !== 'desktop', 'the header CTA shows from md');
+    await page.goto('/vi');
+    await page.getByRole('banner').getByRole('link', { name: copy.vi.Nav.cta }).click();
+    await expect(page).toHaveURL(/#waitlist-hero$/);
+    await expect(page.locator('#waitlist-hero')).toBeInViewport();
+  });
+
   test('LP27 copy is present, FAQ toggles, form submits', async ({ page }) => {
     await page.goto('/vi');
     await expect(page.getByRole('heading', { level: 1 })).toContainText(firstLine(copy.vi.Hero.title));
@@ -380,5 +458,5 @@ test('Review#3 keyboard path has visible focus', async ({ page, isMobile }) => {
     expect(info.outline, `focus on ${info.label}`).not.toBe('none');
     seen.push(info.label);
   }
-  expect(seen).toEqual(expect.arrayContaining(['Previous sentence', 'Next sentence', 'delay']));
+  expect(seen).toEqual(expect.arrayContaining(['Previous sentence', 'Next sentence', 'delay', copy.en.Nav.cta]));
 });

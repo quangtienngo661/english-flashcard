@@ -43,6 +43,9 @@
   --container-copy: 31.25rem;
   --container-aside: 30rem;
 
+  /* Sticky header (from md): its min height doubles as the scroll margin of anchor targets (UB16). */
+  --spacing-header: 4.5rem;
+
   /* Landing-only motion; shared durations and easings come from @wordmet/design-tokens. */
   --transition-duration-carousel: 800ms;
   --transition-duration-carousel-drag: 150ms;
