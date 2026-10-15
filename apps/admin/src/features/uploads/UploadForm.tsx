@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { useFormatter, useTranslations } from 'use-intl';
@@ -30,6 +30,7 @@ export function UploadForm({ onPendingChange }: { onPendingChange?: (pending: bo
   const api = useApi();
   const navigate = useNavigate();
   const errorMessage = useErrorMessage();
+  const queryClient = useQueryClient();
   const sources = useQuery({ queryKey: ['sources'], queryFn: () => listSources(api) });
 
   const [file, setFile] = useState<File | null>(null);
@@ -86,6 +87,8 @@ export function UploadForm({ onPendingChange }: { onPendingChange?: (pending: bo
     setLevelError(null);
     try {
       const created = await createUpload(api, file, needsLevel ? levelSourceId : null, idempotency.key);
+      // The list stays mounted under the dialog (UB9): refresh it so the new batch is there, selected (review I3).
+      void queryClient.invalidateQueries({ queryKey: ['uploads'] });
       void navigate(`/uploads/${created.batch_id}`);
     } catch (e) {
       setBanner(errorMessage(e));
