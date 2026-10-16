@@ -37,7 +37,19 @@ chain), the earliest pilot milestone, starting with `superpowers:brainstorming`;
 `docs/HANDOFF_2026-10-05_BUOC_0.md` §2. A separate **"Deploy API + admin"** step (hosting, durable Postgres/Redis,
 real SMTP, secrets, backup; design 2.5 §14) must be done before the pilot; the owner has **not yet chosen** whether
 it comes before or after Bước 3 — ask. Content backlog from Bước 2.5 (D26): export the entries that have no sense yet
-(CSV export only lists senses), worth weighing in Bước 3's Content part. All 8 V1 specs (docs/specs/) are written and independently verified; treat
+(CSV export only lists senses), worth weighing in Bước 3's Content part.
+
+**Before Bước 3's scope is set (16/10/2026):** `docs/preparation/PROJECT_ASSESSMENT_2026-10-15.md` (workflow and
+feasibility review written for the owner) ends with four owner decisions that shape Bước 3, none recorded as decided
+yet: **Q-A** order and scope (full Bước 3 → Deploy → pilot; a thin slice + Deploy + ~300 words → pilot of 5–10 people;
+or a no-code trial first), **Q-B** who authors the pilot content (300–500 words with senses; the catalog has 7.799
+entries but only 4 senses), **Q-C** reminders during the pilot (K25: none in V1), **Q-D** pilot success thresholds
+(metrics exist in `docs/specs/DECISIONS_2026-10-04.md` §8, thresholds do not). Put them to the owner first in Bước 3
+brainstorming, owner-first (Working Rules below). **UI refresh B** (owner 15/10/2026) is merged into `dev`
+(16/10/2026): landing PR #22, admin PR #23, session-on-reload fix PR #24. Learner-facing web screens in Bước 3 should
+reuse its shared tokens (`packages/design-tokens`).
+
+All 8 V1 specs (docs/specs/) are written and independently verified; treat
 them as an initial skeleton only, not a source of truth to keep in sync (owner, 12/10/2026) — the design doc
 for the step in question is authoritative. Read `docs/HANDOFF_2026-10-05_BUOC_0.md` for the original Bước 0
 kickoff context, and `docs/superpowers/specs/2026-10-05-buoc-0-design.md` (now annotated with the Prisma
@@ -99,7 +111,19 @@ Goal: experimental versions never reach `main`; `main` only receives work that p
 - **After brainstorming a design doc**, write a decision record in `docs/superpowers/decisions/` (rule
   `~/.claude/rules/decision-records.md`).
 - Ask open decisions **one question at a time**, each with a concrete proposal and a label: owner-decided
-  (chốt) / proposed (đề xuất) / `ASSUMPTION`.
+  (chốt) / proposed (đề xuất) / `ASSUMPTION`. **In Bước 3 the proposal comes after the owner's own answer** (next bullet).
+- **Bước 3 — the owner thinks first (owner, 15/10/2026; decide after Bước 3 whether to keep it).** Goal: the owner keeps
+  understanding the system and the code, not only approving them.
+  - *Owner answers first, Claude proposes after* — for every open decision put to the owner. Claude asks with the context
+    and constraints only: no proposal, no option marked "(Recommended)"; if options must be listed, none is favoured. After
+    the owner answers, Claude gives its own proposal, says where it agrees or differs and why, and the owner decides
+    (keeping their own answer is fine). Owner says "bỏ qua" / "không biết" for a question → Claude proposes as before, and
+    the decision record says so. Factual questions (a library's version, how existing code works) are not decisions:
+    answer them, verified.
+  - *One core piece per Bước is owner-written* — the plan marks one task as owner-written (Bước 3 candidate: the review
+    schedule algorithm; chosen during brainstorming). Claude does not write that code: it reviews it, and when the owner is
+    stuck it explains the concept or points the direction, with no finished code unless the owner asks for it explicitly.
+    Who writes that task's tests is decided in the plan.
 - Reports: short, decision-sufficient, in Vietnamese with English technical terms kept as-is (`endpoint`,
   `deploy`, `rollback`).
 - Before asserting a fact about a library or its version, check current docs (context7) or verify by
@@ -129,7 +153,7 @@ decided-but-not-scaffolded:
   Problem Details, pagination, `Idempotency-Key`, IDs, logging, test harness) → 1 Identity core → 2
   Content + Pipeline (admin side + read-only search only) → 2.5 web UI (login, admin page, role
   granting, CSV flow — done, design `docs/superpowers/specs/2026-10-14-buoc-2-5-admin-web-design.md`)
-  → **UI refresh B** (landing + admin in direction B, owner 15/10/2026; landing done in PR #22, admin done on `feat/ui-b-admin` (PR stacked on #22),
+  → **UI refresh B** (landing + admin in direction B, owner 15/10/2026; landing in PR #22, admin in PR #23 (merged into `dev` 16/10/2026),
   plan `docs/superpowers/plans/2026-10-15-ui-refresh-b-admin.md`;
   design `docs/superpowers/specs/2026-10-15-ui-refresh-b-design.md`, delivery `docs/deliveries/ui-refresh-b.md`;
   fast-reload session fix (refresh with `keepalive`, PR #24): delivery `docs/deliveries/admin-refresh-keepalive.md`)
@@ -193,6 +217,14 @@ Các điểm dưới đây phát sinh khi rà quyền của `admin`/`editor` (b�
 - **Bước 5 — `entitlements.grant` so với D6 ("editor không đụng chi phí AI").** `editor` có `entitlements.grant` nên cấp được
   lượt AI, tức tiêu tiền thật. Trần chi hằng ngày (ER14) giới hạn rủi ro. Cân nhắc: chuyển `admin` only, hoặc giới hạn số lượt
   mỗi lần cấp.
+- **Bước 3/4 — ôn sai: "quên" khác "nhầm" (hướng phát triển, chủ dự án 15/10/2026; chưa phải quyết định chính).** Thay cho
+  N8 (`ASSUMPTION`: mọi lần sai về mức 1). Quên → về mức 1, nhớ thì lên dần lại (khớp hộp ôn Leitner gốc và mặc định Anki).
+  Nhầm → hạ nhẹ. Vì app không tự biết nhầm hay quên, **để người học chọn**, chỉ cho câu gõ từ (Bước 4): gõ sai lần 1 **chưa
+  hiện đáp án** → [Thử lại] (một lần; đúng = "nhầm", sai = "quên") hoặc [Tôi quên rồi] (= "quên"); sau khi hiện đáp án có nút
+  tự đánh dấu "cần ôn tập" (K13 vẫn giữ: chỉ người học đặt trạng thái); bỏ ngang thì chưa tính, từ vẫn đến hạn. Trắc nghiệm,
+  đúng/sai không áp dụng (thử lại thành đoán). Đụng tới: đổi F40 (không thử lại), thêm kết quả thứ ba "nhầm" từ Practice sang
+  Learning (LR6, PRC16), F38 giữ. Bước 3 chỉ cần lịch ôn chừa chỗ cho kết quả này. Còn mở: "nhầm" giữ mức hay hạ một mức
+  (Claude đề xuất hạ một); "nhầm" có tính vào "từ hay sai" (PRC19) không.
 - ~~**Giao diện cấp vai trò:**~~ **Đã rõ 13/10/2026:** chốt thành Bước 2.5 (D9, design Bước 2 mục 15) — giao diện
   web (đăng nhập, trang admin, cấp vai trò) ngay sau Bước 2, trước Bước 3. Xem bảng ở HANDOFF §2. Đã xong 15/10/2026
   (as-built ở `docs/deliveries/buoc-2-5.md`).
@@ -270,7 +302,7 @@ for a concrete example of the loop catching real bugs each round.
 
 - As-built delivery records per Bước: `docs/deliveries/buoc-0.md`, `docs/deliveries/buoc-1.md`,
   `docs/deliveries/buoc-2.md` (includes its plan tóm tắt too), `docs/deliveries/buoc-2-5.md` (plan tóm tắt + as-built), `docs/deliveries/buoc-2-5-test-flow.md` (Bước 2.5 gate + manual run),
-  `docs/deliveries/ui-refresh-b.md` (UI refresh B: plan tóm tắt + landing as-built).
+  `docs/deliveries/ui-refresh-b.md` (UI refresh B: plan tóm tắt + landing and admin as-built).
 - Bước 2 test flow (automated gate, `pnpm smoke:buoc-2`, manual steps): `docs/deliveries/buoc-2-test-flow.md`.
 - Spec index and status: `docs/specs/README.md`.
 - Spec/design-doc writing convention (edge cases must be derived per-doc, not just cited): `docs/specs/SPEC_WRITING_CONVENTIONS.md`.
