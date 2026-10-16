@@ -1,0 +1,473 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Wordmet: mockup app người học v3 (Bước 3)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600;800&display=swap" rel="stylesheet">
+<style>
+/* v3 (16/10/2026). Direction B tokens (packages/design-tokens/theme.css). Memorable element: the Leitner box
+   (six compartments = the six review levels). Yellow = the one main action per screen. Blue field = focus. */
+:root {
+  --field: #2445d6; --field-deep: #1a32a6; --field-soft: #eceffe; --on-field-muted: #dfe5ff;
+  --sticker: #ffd84a; --sticker-deep: #c9a21a; --sticker-soft: #fff4c7;
+  --ink: #0f1a3d; --muted: #4d5577; --placeholder: #5f6688;
+  --paper: #ffffff; --canvas: #f1f3fd; --line: #e3e6f4; --line-strong: #7d84a8;
+  --ok: #1b7a46; --ok-soft: #e3f4ea; --late: #b8352a; --late-soft: #fde8e5; --warn: #7a5200;
+  --t-xs: 0.8125rem; --t-s: 1rem; --t-m: 1.25rem; --t-l: 1.5625rem; --t-xl: 1.9375rem; --t-xxl: 2.4375rem; --t-word: 3rem;
+  --tap: 2.75rem; --ease: cubic-bezier(0.2, 0, 0, 1); --enter: cubic-bezier(0.05, 0.7, 0.1, 1); --spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --font: 'Lexend', system-ui, sans-serif;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: #d9deef; color: var(--ink); font: 400 var(--t-s)/1.5 var(--font); -webkit-font-smoothing: antialiased; }
+button, input, select { font: inherit; color: inherit; }
+:focus-visible { outline: 3px solid var(--field); outline-offset: 2px; border-radius: 8px; }
+.on-field :focus-visible { outline-color: var(--sticker); }
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+
+.toolbar { position: sticky; top: 0; z-index: 30; display: flex; flex-wrap: wrap; gap: 0.5rem 1rem; align-items: center; padding: 0.7rem 1rem; background: var(--ink); color: #fff; font-size: 0.875rem; }
+.toolbar .grp { display: flex; flex-wrap: wrap; gap: 0.35rem; align-items: center; }
+.toolbar button { border: 1px solid #3a4677; background: transparent; color: #fff; border-radius: 0.5rem; padding: 0.35rem 0.6rem; cursor: pointer; }
+.toolbar button[aria-pressed="true"] { background: var(--sticker); color: var(--ink); border-color: var(--sticker); }
+.toolbar .lbl { opacity: 0.7; }
+.stage { display: flex; justify-content: center; padding: 1.5rem 1rem 3rem; }
+.frame { width: 390px; height: 820px; border: 10px solid var(--ink); border-radius: 2.6rem; overflow: hidden; background: var(--canvas); container-type: inline-size; position: relative; display: flex; }
+.frame.wide { width: min(1120px, 100%); height: 740px; border-width: 6px; border-radius: 1rem; }
+.note { margin: 0 auto; max-width: 62rem; padding: 0 1rem 2rem; color: #33405f; font-size: 0.875rem; }
+
+.shell { flex: 1; display: flex; flex-direction: column; min-width: 0; position: relative; }
+.screen { flex: 1; display: flex; flex-direction: column; min-height: 0; min-width: 0; position: relative; }
+.scroll { flex: 1; overflow-y: auto; padding: 0 1.25rem 7rem; }
+
+/* Navigation: 3 destinations at the bottom (rail on wide screens). */
+.nav { order: 2; display: flex; background: var(--paper); border-top: 1px solid var(--line); padding: 0.3rem 0.5rem 0.8rem; }
+.nav button { flex: 1; min-height: 3.25rem; border: 0; background: none; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.15rem; font-size: var(--t-xs); color: var(--muted); }
+.nav .ic { width: 3.5rem; height: 1.9rem; border-radius: 1rem; display: grid; place-items: center; font-size: 1.1rem; }
+.nav [aria-current="page"] { color: var(--ink); font-weight: 600; }
+.nav [aria-current="page"] .ic { background: var(--sticker); }
+.nav .brand { display: none; }
+
+/* Add-word button: one per screen, bottom right, above the nav. */
+.add { position: absolute; right: 1rem; bottom: 1rem; z-index: 6; min-height: 3.5rem; padding: 0 1.15rem 0 0.95rem; border: 0; border-radius: 1.1rem; cursor: pointer;
+  background: var(--ink); color: #fff; font-weight: 600; display: inline-flex; align-items: center; gap: 0.5rem; box-shadow: 0 0.25rem 0 rgb(15 26 61 / 0.35); }
+.add .plus { width: 1.6rem; height: 1.6rem; border-radius: 0.5rem; background: var(--sticker); color: var(--ink); display: grid; place-items: center; font-size: 1.1rem; line-height: 1; }
+.add:active { transform: translateY(0.2rem); box-shadow: none; }
+
+.bar-top { display: flex; align-items: center; gap: 0.25rem; min-height: 3.5rem; padding: 0.25rem 0.5rem; }
+.bar-top .title { flex: 1; min-width: 0; font-weight: 600; font-size: var(--t-s); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.icon { width: var(--tap); height: var(--tap); border: 0; border-radius: 0.8rem; background: none; cursor: pointer; font-size: 1.25rem; display: grid; place-items: center; color: inherit; }
+.icon:hover { background: rgb(127 127 127 / 0.12); }
+.logo { font-weight: 800; letter-spacing: -0.01em; padding-left: 0.75rem; flex: 1; }
+.blank { display: inline-block; margin-left: 0.25rem; padding: 0 0.3rem; background: var(--sticker); border-radius: 0.3rem; font-size: 0.8em; letter-spacing: 0.08em; }
+
+.h1 { margin: 0.25rem 0 0; font-size: var(--t-xl); font-weight: 800; letter-spacing: -0.025em; line-height: 1.1; }
+.lede { margin: 0.35rem 0 0; color: var(--muted); }
+.h2 { margin: 1.75rem 0 0.25rem; font-size: var(--t-m); font-weight: 600; letter-spacing: -0.01em; }
+.small { font-size: var(--t-xs); color: var(--muted); }
+
+/* Buttons. */
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 0.45rem; min-height: var(--tap); padding: 0 1.15rem; border: 0; border-radius: 0.9rem; font-weight: 600; cursor: pointer; transition: transform 100ms var(--ease); }
+.btn:active { transform: translateY(0.22rem); box-shadow: none !important; }
+.sticker { background: var(--sticker); color: var(--ink); box-shadow: 0 0.25rem 0 var(--sticker-deep); min-height: 3.5rem; font-size: 1.0625rem; }
+.quiet { background: var(--paper); color: var(--ink); box-shadow: inset 0 0 0 1.5px var(--line-strong); }
+.on-field .quiet { background: transparent; color: #fff; box-shadow: inset 0 0 0 2px rgb(255 255 255 / 0.55); }
+.danger { background: var(--late); color: #fff; box-shadow: 0 0.25rem 0 #7f2219; min-height: 3.5rem; }
+.link { background: none; border: 0; padding: 0; color: var(--field); font-weight: 600; text-decoration: underline; text-underline-offset: 0.2em; cursor: pointer; min-height: var(--tap); display: inline-flex; align-items: center; }
+.full { width: 100%; }
+
+/* Home: the next deck is a physical stack on the blue field. */
+.deck { position: relative; margin: 1.25rem 0 0.5rem; padding: 0 0.35rem; }
+.deck .edge { position: absolute; left: 0.35rem; right: 0.35rem; height: 100%; border-radius: 1.4rem; background: var(--field-deep); }
+.deck .edge.e1 { transform: translateY(0.55rem) rotate(1.4deg); opacity: 0.55; }
+.deck .edge.e2 { transform: translateY(1.05rem) rotate(-1deg); opacity: 0.3; }
+.deck .face { position: relative; border-radius: 1.4rem; background: var(--field); color: #fff; padding: 1.15rem 1.2rem 1.2rem; box-shadow: 0 0.35rem 0 var(--field-deep); }
+.deck .name { font-size: var(--t-l); font-weight: 800; letter-spacing: -0.02em; line-height: 1.15; }
+.deck .waiting { margin-top: 0.15rem; color: var(--on-field-muted); }
+.deck .waiting b { color: #fff; font-weight: 800; font-size: var(--t-m); }
+.mix { list-style: none; margin: 0.85rem 0 1rem; padding: 0; display: flex; flex-wrap: wrap; gap: 0.3rem 1rem; font-size: var(--t-xs); color: var(--on-field-muted); }
+.mix li { display: inline-flex; align-items: center; gap: 0.4rem; }
+.sw { width: 0.65rem; height: 0.65rem; border-radius: 0.2rem; }
+.sw.pri { background: var(--sticker); } .sw.due { background: #fff; } .sw.new { background: transparent; box-shadow: inset 0 0 0 1.5px #fff; }
+
+/* Other groups: plain rows with a mini Leitner strip. */
+.rows { list-style: none; margin: 0; padding: 0; }
+.rows > li { border-bottom: 1px solid var(--line); }
+.grow { width: 100%; display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 0.2rem 0.75rem; min-height: 4.25rem; padding: 0.7rem 0.1rem; border: 0; background: none; text-align: left; cursor: pointer; }
+.grow .gname { font-weight: 600; font-size: 1.0625rem; }
+.grow .gnum { font-weight: 800; font-size: var(--t-m); text-align: right; }
+.grow .gnum small { display: block; font-weight: 400; font-size: var(--t-xs); color: var(--muted); }
+.grow .lateline { grid-column: 1 / -1; font-size: var(--t-xs); color: var(--late); }
+.grow .done { color: var(--ok); font-size: var(--t-xs); font-weight: 600; text-align: right; }
+.mini { display: flex; gap: 2px; height: 0.4rem; margin-top: 0.4rem; width: 9rem; border-radius: 0.2rem; overflow: hidden; }
+.mini span { background: var(--line); }
+.mini span.f { background: var(--field); }
+
+/* Group page: the Leitner box, six compartments, height = number of words. */
+.box { margin-top: 1rem; background: var(--paper); border-radius: 1.25rem; padding: 0.9rem 0.75rem 0.75rem; box-shadow: 0 0.3rem 0 var(--line); }
+.box-row { display: grid; grid-template-columns: repeat(6, 1fr); gap: 0.4rem; align-items: end; height: 7.5rem; }
+.cell { height: 100%; display: flex; flex-direction: column; justify-content: flex-end; align-items: stretch; gap: 0.3rem; border: 0; background: none; padding: 0; cursor: pointer; border-radius: 0.6rem; }
+.cell .num { font-weight: 800; font-size: var(--t-s); text-align: center; }
+.cell .fill { border-radius: 0.5rem 0.5rem 0.3rem 0.3rem; background: var(--field-soft); position: relative; overflow: hidden; min-height: 0.4rem; }
+.cell .fill .due { position: absolute; left: 0; right: 0; bottom: 0; background: var(--field); }
+.cell[aria-pressed="true"] .fill { box-shadow: 0 0 0 2px var(--ink); }
+.box-lab { display: grid; grid-template-columns: repeat(6, 1fr); gap: 0.4rem; margin-top: 0.4rem; font-size: 0.75rem; color: var(--muted); text-align: center; }
+.box-key { display: flex; flex-wrap: wrap; gap: 0.25rem 1rem; margin-top: 0.6rem; font-size: var(--t-xs); color: var(--muted); }
+.box-key i { display: inline-block; width: 0.65rem; height: 0.65rem; border-radius: 0.2rem; margin-right: 0.35rem; vertical-align: -0.05rem; }
+
+.words { list-style: none; margin: 0; padding: 0; }
+.words li { display: grid; grid-template-columns: 1fr auto; gap: 0.1rem 0.75rem; align-items: center; min-height: 3.5rem; padding: 0.55rem 0; border-bottom: 1px solid var(--line); }
+.words .w { font-weight: 600; }
+.words .m { color: var(--muted); font-size: 0.9375rem; }
+.words .when { font-size: var(--t-xs); color: var(--muted); text-align: right; }
+.words .when.pri { color: var(--warn); font-weight: 600; }
+.sec { margin: 1.4rem 0 0.1rem; font-size: var(--t-s); font-weight: 600; display: flex; justify-content: space-between; }
+.sec span { color: var(--muted); font-weight: 400; }
+
+/* Bottom action area. */
+.dock { position: absolute; left: 0; right: 0; bottom: 0; z-index: 5; padding: 1rem 1.25rem 1rem; background: linear-gradient(to top, var(--canvas) 72%, rgb(241 243 253 / 0)); display: grid; gap: 0.4rem; }
+
+/* Study: full screen blue field; the deck thins as you go. */
+.study { position: absolute; inset: 0; z-index: 8; display: flex; flex-direction: column; background: var(--field); color: #fff; animation: rise 250ms var(--enter); }
+@keyframes rise { from { transform: translateY(1.5rem); opacity: 0; } }
+.study .bar-top .title { color: var(--on-field-muted); font-weight: 500; }
+.left { font-weight: 600; padding-right: 0.75rem; }
+.stage-card { flex: 1; display: flex; align-items: center; justify-content: center; padding: 0.5rem 1.6rem 1.25rem; min-height: 0; }
+.stack { position: relative; width: 100%; max-width: 24rem; }
+.stack .layer { position: absolute; inset: 0; border-radius: 1.6rem; background: var(--field-deep); }
+.stack .l1 { transform: translate(0.35rem, 0.6rem) rotate(2deg); }
+.stack .l2 { transform: translate(-0.3rem, 1.1rem) rotate(-2deg); opacity: 0.6; }
+.card { position: relative; min-height: 22rem; border-radius: 1.6rem; background: var(--paper); color: var(--ink); padding: 1.2rem 1.25rem 1.3rem; transform: rotate(-1.2deg); cursor: pointer; display: flex; flex-direction: column; box-shadow: 0 0.35rem 0 rgb(15 26 61 / 0.25); }
+.card .tag { align-self: flex-start; font-size: var(--t-xs); font-weight: 600; padding: 0.2rem 0.6rem; border-radius: 0.4rem; background: var(--field-soft); color: var(--field); }
+.card .tag.pri { background: var(--sticker); color: var(--ink); }
+.card .front { flex: 1; display: flex; flex-direction: column; justify-content: center; }
+.card .word { font-size: var(--t-word); font-weight: 800; letter-spacing: -0.03em; line-height: 1; }
+.card .pos { margin-top: 0.4rem; color: var(--muted); }
+.card .hint { font-size: var(--t-xs); color: var(--placeholder); }
+.card .back { animation: rise 300ms var(--enter); }
+.card .w2 { font-size: var(--t-xl); font-weight: 800; letter-spacing: -0.02em; margin-top: 0.6rem; }
+.card .mean { font-size: var(--t-l); font-weight: 600; margin-top: 0.6rem; line-height: 1.2; }
+.card .forms { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.6rem; }
+.token { font-size: var(--t-xs); padding: 0.25rem 0.55rem; border-radius: 0.45rem; box-shadow: inset 0 0 0 1.5px var(--line); color: var(--muted); }
+.card .ex { margin-top: 0.85rem; font-size: 0.9375rem; }
+.card .ex b, .card .met b { color: var(--field); }
+.card .met { margin-top: 0.6rem; padding: 0.65rem 0.8rem; border-radius: 0.8rem; background: var(--sticker-soft); font-size: 0.9375rem; }
+.card .met .small { color: var(--warn); }
+.answers { padding: 0.75rem 1.25rem 1.1rem; display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; }
+.answers .btn { min-height: 3.75rem; line-height: 1.2; padding: 0.35rem 0.5rem; text-align: center; }
+.answers.one { grid-template-columns: 1fr; }
+.end { flex: 1; display: flex; flex-direction: column; justify-content: center; padding: 0 1.5rem; }
+.end .big { font-size: var(--t-xxl); font-weight: 800; letter-spacing: -0.03em; line-height: 1.05; }
+.tally { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; margin-top: 1.5rem; }
+.tally div { border-radius: 1rem; padding: 0.9rem 1rem; background: rgb(255 255 255 / 0.12); }
+.tally b { display: block; font-size: var(--t-xl); font-weight: 800; }
+
+/* Word page: a dictionary entry. */
+.entry { margin-top: 0.5rem; }
+.entry .hw { font-size: var(--t-word); font-weight: 800; letter-spacing: -0.03em; line-height: 1; margin: 0.25rem 0 0; }
+.formrow { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.8rem; }
+.formrow .token { min-height: 2.25rem; display: inline-flex; align-items: center; font-size: 0.875rem; background: var(--paper); }
+.formrow button.token { border: 0; cursor: pointer; color: var(--field); font-weight: 600; box-shadow: inset 0 0 0 1.5px var(--field); }
+.posblock { display: grid; grid-template-columns: 5.5rem 1fr; gap: 0 0.75rem; margin-top: 1.4rem; }
+.posblock .p { font-weight: 600; padding-top: 0.75rem; }
+.posblock .p small { display: block; font-weight: 400; color: var(--muted); font-size: var(--t-xs); }
+.senses { list-style: none; margin: 0; padding: 0; counter-reset: s; }
+.senses li { counter-increment: s; display: grid; grid-template-columns: 1.4rem 1fr auto; gap: 0.5rem; align-items: start; padding: 0.7rem 0; border-bottom: 1px solid var(--line); }
+.senses li::before { content: counter(s); font-weight: 600; color: var(--muted); padding-top: 0.1rem; }
+.senses .mean { font-weight: 500; }
+.senses .ex { font-size: 0.875rem; color: var(--muted); margin-top: 0.1rem; }
+.senses .learning { margin-top: 0.35rem; font-size: var(--t-xs); color: var(--ok); }
+.plusbtn { width: var(--tap); height: var(--tap); border-radius: 0.8rem; border: 0; cursor: pointer; background: var(--field-soft); color: var(--field); font-size: 1.35rem; font-weight: 600; }
+.plusbtn:hover { background: #dfe4fd; }
+.senses:not(.multi) li { grid-template-columns: 1fr auto; }
+.senses:not(.multi) li::before { content: none; }
+.ref { color: var(--field); font-weight: 600; text-decoration: underline; text-underline-offset: 0.2em; cursor: pointer; background: none; border: 0; padding: 0; }
+
+/* Search. */
+.searchbox { display: flex; align-items: center; gap: 0.5rem; margin-top: 0.75rem; background: var(--paper); border-radius: 1rem; padding: 0.35rem 0.35rem 0.35rem 1rem; box-shadow: inset 0 0 0 1.5px var(--line-strong); }
+.searchbox input { flex: 1; border: 0; outline: none; background: none; font-size: 1.0625rem; min-height: var(--tap); }
+.filters { display: flex; gap: 0.45rem; overflow-x: auto; margin: 0.8rem -1.25rem 0; padding: 0 1.25rem 0.2rem; scrollbar-width: none; }
+.filter { flex: none; min-height: var(--tap); padding: 0 0.95rem; border-radius: 0.8rem; border: 0; background: var(--paper); box-shadow: inset 0 0 0 1.5px var(--line-strong); cursor: pointer; font-size: 0.9375rem; }
+.filter[aria-pressed="true"] { background: var(--ink); color: #fff; box-shadow: none; }
+.results { list-style: none; margin: 0.5rem 0 0; padding: 0; }
+.results button { width: 100%; display: grid; grid-template-columns: 1fr auto; gap: 0 0.75rem; align-items: center; min-height: 3.75rem; padding: 0.55rem 0.1rem; border: 0; border-bottom: 1px solid var(--line); background: none; text-align: left; cursor: pointer; }
+.results .w { font-weight: 600; font-size: 1.0625rem; }
+.results .m { color: var(--muted); font-size: 0.9375rem; }
+.lvl { font-size: 0.75rem; font-weight: 800; padding: 0.2rem 0.4rem; border-radius: 0.35rem; background: var(--field-soft); color: var(--field); }
+
+/* Sheets and menus. */
+.scrim { position: absolute; inset: 0; z-index: 10; background: rgb(15 26 61 / 0.45); display: flex; align-items: flex-end; animation: fade 200ms var(--ease); }
+@keyframes fade { from { opacity: 0; } }
+.sheet { width: 100%; max-height: 92%; overflow-y: auto; background: var(--paper); border-radius: 1.6rem 1.6rem 0 0; padding: 0.5rem 1.25rem 1.3rem; animation: rise 250ms var(--enter); }
+.grab { width: 2.6rem; height: 0.3rem; border-radius: 1rem; background: var(--line-strong); opacity: 0.55; margin: 0.25rem auto 0.8rem; }
+.sheet h2 { margin: 0; font-size: var(--t-m); font-weight: 800; letter-spacing: -0.01em; }
+.label { display: block; margin-top: 0.9rem; font-size: var(--t-xs); color: var(--muted); }
+.input { width: 100%; min-height: 3.1rem; margin-top: 0.3rem; padding: 0 0.95rem; border-radius: 0.9rem; border: 1.5px solid var(--line-strong); background: var(--paper); font-size: 1.0625rem; }
+.input.big { min-height: 3.6rem; font-size: var(--t-m); font-weight: 600; }
+.sentence { margin-top: 0.3rem; padding: 0.8rem 0.95rem; border-radius: 0.9rem; border: 1.5px solid var(--line-strong); font-size: 1.0625rem; line-height: 1.45; }
+.sentence u { text-decoration: none; border-bottom: 0.18em solid var(--field); color: var(--field); font-weight: 600; }
+.found { margin-top: 1rem; padding: 0.9rem 1rem; border-radius: 1rem; background: var(--field-soft); }
+.found .w { font-weight: 800; font-size: var(--t-m); }
+.actions { display: grid; gap: 0.5rem; margin-top: 1.1rem; }
+.menu { position: absolute; top: 3.4rem; right: 0.6rem; z-index: 9; min-width: 12.5rem; background: var(--paper); border-radius: 1rem; padding: 0.35rem; box-shadow: 0 0.75rem 2rem rgb(15 26 61 / 0.2); animation: fade 150ms var(--ease); }
+.menu button { display: block; width: 100%; min-height: var(--tap); padding: 0 0.85rem; border: 0; background: none; text-align: left; border-radius: 0.7rem; cursor: pointer; }
+.menu button:hover { background: var(--canvas); }
+.toast { position: absolute; left: 50%; bottom: 6.5rem; transform: translateX(-50%); z-index: 20; background: var(--ink); color: #fff; padding: 0.7rem 1rem; border-radius: 0.9rem; font-size: 0.875rem; white-space: nowrap; animation: rise 300ms var(--spring); }
+.setting { display: flex; justify-content: space-between; align-items: center; gap: 1rem; min-height: 4.25rem; border-bottom: 1px solid var(--line); }
+.switch { position: relative; width: 3.25rem; height: 2rem; border-radius: 1rem; border: 0; background: var(--line-strong); cursor: pointer; flex: none; }
+.switch::after { content: ''; position: absolute; top: 0.25rem; left: 0.25rem; width: 1.5rem; height: 1.5rem; border-radius: 50%; background: #fff; transition: transform 150ms var(--ease); }
+.switch[aria-checked="true"] { background: var(--ok); }
+.switch[aria-checked="true"]::after { transform: translateX(1.25rem); }
+.seg { display: inline-flex; background: var(--paper); border-radius: 0.9rem; padding: 0.2rem; box-shadow: inset 0 0 0 1.5px var(--line); }
+.seg button { min-height: 2.5rem; padding: 0 0.85rem; border: 0; background: none; border-radius: 0.7rem; cursor: pointer; }
+.seg [aria-pressed="true"] { background: var(--ink); color: #fff; font-weight: 600; }
+.pick { display: grid; grid-template-columns: var(--tap) 1fr; align-items: center; min-height: 3.5rem; border-bottom: 1px solid var(--line); }
+.pick input { width: 1.35rem; height: 1.35rem; accent-color: var(--field); justify-self: center; }
+
+/* Wide screens: rail on the left, content in two columns where it helps. */
+@container (min-width: 760px) {
+  .frame .shell { flex-direction: row; }
+  .nav { order: -1; flex-direction: column; justify-content: flex-start; width: 14rem; border-top: 0; border-right: 1px solid var(--line); padding: 1rem 0.75rem; gap: 0.25rem; }
+  .nav button { flex: none; flex-direction: row; justify-content: flex-start; gap: 0.6rem; min-height: var(--tap); padding: 0 0.5rem; font-size: 0.9375rem; }
+  .nav .ic { width: 2.6rem; }
+  .nav .brand { display: block; font-weight: 800; padding: 0.25rem 0.6rem 1rem; }
+  .scroll { padding: 0 2.25rem 7rem; }
+  .home-grid { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 2.5rem; align-items: start; }
+  .home-grid .h2 { margin-top: 1.25rem; }
+  .add { right: 2rem; bottom: 2rem; }
+  .dock { left: auto; right: 2rem; width: 24rem; background: none; }
+  .scrim { align-items: center; justify-content: center; }
+  .sheet { width: 30rem; border-radius: 1.6rem; }
+  .grab { display: none; }
+}
+</style>
+</head>
+<body>
+<div class="toolbar" role="toolbar" aria-label="Điều khiển mockup">
+  <div class="grp"><span class="lbl">Khung:</span>
+    <button data-frame="phone" aria-pressed="true">Điện thoại 390</button>
+    <button data-frame="wide" aria-pressed="false">Màn rộng</button>
+  </div>
+  <div class="grp"><span class="lbl">Màn:</span>
+    <button data-jump="onboard">Chọn ngôn ngữ</button>
+    <button data-jump="home">Hôm nay</button>
+    <button data-jump="group">Nhóm</button>
+    <button data-jump="study">Phiên ôn</button>
+    <button data-jump="backlog">Lâu chưa ôn</button>
+    <button data-jump="search">Tra từ</button>
+    <button data-jump="word">Trang từ</button>
+    <button data-jump="quick">Thêm từ</button>
+    <button data-jump="settings">Cài đặt</button>
+  </div>
+</div>
+<div class="stage"><div id="frame" class="frame"></div></div>
+<p class="note">Mockup v3 (tĩnh, dữ liệu ví dụ). Hộp sáu ngăn ở trang nhóm là lịch ôn thật: Mới, rồi 1, 3, 7, 14, 30 ngày; ngăn cao theo số từ, phần xanh đậm là từ đến hạn hôm nay. Mọi nút trong khung đều bấm được.</p>
+<script>
+const LEVELS = ['Mới', '1 ngày', '3 ngày', '7 ngày', '14 ngày', '30 ngày'];
+const GROUPS = [
+  { id: 'cn', name: 'Công nghệ', pri: 2, due: 5, neu: 3, total: 10, box: [3, 4, 5, 3, 2, 1], dueBox: [3, 3, 2, 2, 0, 0] },
+  { id: 'ielts', name: 'IELTS', pri: 0, due: 12, neu: 0, total: 12, old: 40, box: [0, 6, 9, 14, 20, 31], dueBox: [0, 4, 5, 3, 0, 0] },
+  { id: 'new', name: 'Mới thêm', pri: 0, due: 0, neu: 3, total: 3, box: [3, 0, 0, 0, 0, 0], dueBox: [3, 0, 0, 0, 0, 0] },
+  { id: 'food', name: 'Ẩm thực A2', total: 0, box: [0, 0, 12, 18, 6, 2], dueBox: [0, 0, 0, 0, 0, 0] },
+];
+const WORDS_IN_GROUP = [
+  { sec: 'Ưu tiên', items: [{ w: 'deploy', m: 'triển khai', when: 'cần ôn lại', pri: true }, { w: 'leaves', m: 'số nhiều của leaf', when: 'cần ôn lại', pri: true }] },
+  { sec: 'Đến hạn hôm nay', items: [{ w: 'negotiate', m: 'đàm phán', when: 'ngăn 3 ngày' }, { w: 'bandwidth', m: 'băng thông', when: 'trễ 2 ngày' }, { w: 'went', m: 'quá khứ của go', when: 'ngăn 1 ngày' }] },
+  { sec: 'Mới', items: [{ w: 'revenue', m: 'doanh thu', when: 'chưa ôn lần nào' }, { w: 'latency', m: 'độ trễ', when: 'chưa ôn lần nào' }] },
+  { sec: 'Chưa tới hạn', items: [{ w: 'budget', m: 'ngân sách', when: 'hẹn 22/11' }, { w: 'server', m: 'máy chủ', when: 'hẹn 28/11' }] },
+];
+const CARDS = [
+  { w: 'deploy', pos: 'verb', tag: 'Ưu tiên', pri: true, m: 'triển khai', forms: ['deploys', 'deploying', 'deployed'], ex: 'They <b>deploy</b> updates every week.', met: 'We <b>deploy</b> the app every Friday.' },
+  { w: 'negotiate', pos: 'verb', tag: 'Đến hạn', m: 'đàm phán, thương lượng', forms: ['negotiates', 'negotiating', 'negotiated'], ex: 'We need to <b>negotiate</b> a better price.' },
+  { w: 'went', pos: 'verb', tag: 'Đến hạn', m: 'quá khứ của go', ex: 'She <b>went</b> home early.', met: 'I <b>went</b> to the bank yesterday.' },
+  { w: 'revenue', pos: 'noun', tag: 'Mới', m: 'doanh thu', forms: ['revenues'], ex: 'Our <b>revenue</b> grew by 20%.' },
+];
+const DICT = {
+  left: { forms: null, blocks: [
+    { pos: 'adjective', lv: 'A1', senses: [{ m: 'bên trái', ex: 'Raise your left hand.' }] },
+    { pos: 'adverb', lv: 'A2', senses: [{ m: 'về phía bên trái', ex: 'Turn left at the corner.', learning: 'Đang học trong IELTS, ngăn 3 ngày' }] },
+    { pos: 'noun', lv: 'A2', senses: [{ m: 'phía bên trái', ex: 'Keep to the left.' }] },
+    { pos: 'verb', lv: 'A1, theo leave', senses: [{ m: 'quá khứ và phân từ của ', ref: 'leave', ex: 'She left an hour ago.' }] } ] },
+  leave: { forms: ['leaves', 'leaving', 'left'], blocks: [
+    { pos: 'verb', lv: 'A1', senses: [{ m: 'rời đi', ex: 'I leave work at six.' }, { m: 'để lại', ex: 'Leave your bag here.' }] },
+    { pos: 'noun', lv: 'B1', senses: [{ m: 'kỳ nghỉ phép', ex: 'She is on maternity leave.' }] } ] },
+  go: { forms: ['goes', 'going', 'went', 'gone'], blocks: [
+    { pos: 'verb', lv: 'A1', senses: [{ m: 'đi', ex: 'Let’s go home.', learning: 'Đang học trong Mới thêm, chưa ôn lần nào' }, { m: 'trở nên', ex: 'The milk went sour.' }] } ] },
+  went: { forms: null, blocks: [{ pos: 'verb', lv: 'A1, theo go', senses: [{ m: 'quá khứ của ', ref: 'go', ex: 'She went home early.' }] }] },
+  deploy: { forms: ['deploys', 'deploying', 'deployed'], blocks: [{ pos: 'verb', lv: 'B2', senses: [{ m: 'triển khai (phần mềm, lực lượng)', ex: 'We deploy the app every Friday.' }] }] },
+};
+const RESULTS = [['bread', 'noun', 'bánh mì', 'A1'], ['cook', 'verb', 'nấu ăn', 'A1'], ['delicious', 'adjective', 'ngon', 'A2'], ['menu', 'noun', 'thực đơn', 'A2'], ['recipe', 'noun', 'công thức nấu ăn', 'A2']];
+const BACKLOG = [['b1', 'abolish', 'bãi bỏ', 74], ['b2', 'curriculum', 'chương trình học', 67], ['b3', 'scholarship', 'học bổng', 65], ['b4', 'thesis', 'luận văn', 63]];
+
+const st = { view: 'home', group: 'cn', studying: false, card: 0, flipped: false, tally: { known: 0, review: 0 }, sheet: null, menu: false, toast: '',
+  entry: 'left', cellSel: null, filters: ['A2', 'Ẩm thực'], picked: new Set(['b1', 'b2']), remind: true, lang: 'vi' };
+const frameEl = document.getElementById('frame');
+
+function navBar(active) {
+  const items = [['home', '▦', 'Hôm nay'], ['search', '⌕', 'Tra từ'], ['settings', '⚙', 'Cài đặt']];
+  return `<nav class="nav" aria-label="Điều hướng chính"><span class="brand">Wordmet <span class="blank">_ _</span></span>${items.map(([id, ic, label]) =>
+    `<button data-go="${id}" ${active === id ? 'aria-current="page"' : ''}><span class="ic" aria-hidden="true">${ic}</span>${label}</button>`).join('')}</nav>`;
+}
+const addBtn = '<button class="add" data-sheet="quick"><span class="plus" aria-hidden="true">+</span>Thêm từ</button>';
+function backBar(title, to, menu) { return `<div class="bar-top"><button class="icon" data-go="${to}" aria-label="Quay lại">←</button><span class="title">${title}</span>${menu ? '<button class="icon" data-menu="1" aria-label="Thao tác khác">⋯</button>' : ''}</div>`; }
+function wrap(active, inner) { return `<div class="shell">${navBar(active)}<div class="screen">${inner}</div></div>`; }
+function miniStrip(g) { const total = g.box.reduce((a, b) => a + b, 0) || 1; return `<span class="mini" aria-hidden="true">${g.box.map((n, i) => `<span class="${g.dueBox[i] ? 'f' : ''}" style="flex:${Math.max(n, 0.4) / total}"></span>`).join('')}</span>`; }
+
+const VIEWS = {
+  onboard() {
+    return `<div class="screen"><div class="bar-top"><span class="logo">Wordmet <span class="blank">_ _</span></span></div><div class="scroll">
+      <h1 class="h1" style="margin-top:2.5rem">Bạn đọc nghĩa của từ bằng ngôn ngữ nào?</h1>
+      <p class="lede">Giao diện cũng dùng ngôn ngữ này. Đổi lại được trong Cài đặt.</p></div>
+      <div class="dock"><button class="btn sticker" data-go="home">Tiếng Việt</button><button class="btn quiet" style="min-height:3.5rem" data-go="home">English</button></div></div>`;
+  },
+  home() {
+    const g = GROUPS[0];
+    const others = GROUPS.slice(1).map((x) => `<li><button class="grow" data-group="${x.id}"><span><span class="gname">${x.name}</span>${miniStrip(x)}</span>
+      ${x.total ? `<span class="gnum">${x.total}<small>thẻ chờ</small></span>` : '<span class="done">Xong hôm nay</span>'}${x.old ? `<span class="lateline">${x.old} từ lâu chưa ôn, cần bạn xem lại</span>` : ''}</button></li>`).join('');
+    return wrap('home', `<div class="bar-top"><span class="logo">Wordmet <span class="blank">_ _</span></span></div><div class="scroll"><div class="home-grid"><div>
+      <h1 class="h1">Hôm nay</h1><p class="lede">25 thẻ đang chờ trong 3 nhóm.</p>
+      <div class="deck"><div class="edge e2"></div><div class="edge e1"></div><div class="face on-field">
+        <div class="name">${g.name}</div><div class="waiting"><b>${g.total}</b> thẻ chờ ôn</div>
+        <ul class="mix"><li><span class="sw pri"></span>${g.pri} ưu tiên</li><li><span class="sw due"></span>${g.due} đến hạn</li><li><span class="sw new"></span>${g.neu} mới</li></ul>
+        <button class="btn sticker full" data-study="1">Ôn ${g.name}</button></div></div>
+      <button class="link" data-group="cn">Xem cả nhóm</button></div>
+      <div><h2 class="h2">Nhóm khác</h2><ul class="rows">${others}</ul><button class="link" data-toast="Tạo nhóm (mockup)">Tạo nhóm mới</button></div></div></div>${addBtn}`);
+  },
+  group() {
+    const g = GROUPS[0];
+    const max = Math.max(...g.box);
+    const cells = g.box.map((n, i) => `<button class="cell" data-cell="${i}" aria-pressed="${st.cellSel === i}" aria-label="${LEVELS[i]}: ${n} từ, ${g.dueBox[i]} đến hạn"><span class="num">${n}</span>
+      <span class="fill" style="height:${Math.round((n / max) * 78) + 6}%"><span class="due" style="height:${n ? Math.round((g.dueBox[i] / n) * 100) : 0}%"></span></span></button>`).join('');
+    const menu = st.menu ? `<div class="menu" role="menu"><button role="menuitem" data-toast="Đổi tên (mockup)">Đổi tên nhóm</button><button role="menuitem" data-study="all">Học tất cả 18 từ</button><button role="menuitem" style="color:var(--late)" data-sheet="remove">Xóa nhóm</button></div>` : '';
+    const list = WORDS_IN_GROUP.map((s) => `<div class="sec">${s.sec}<span>${s.items.length}</span></div><ul class="words">${s.items.map((x) => `<li><div><div class="w">${x.w}</div><div class="m">${x.m}</div></div><div class="when ${x.pri ? 'pri' : ''}">${x.when}</div></li>`).join('')}</ul>`).join('');
+    return wrap('home', `${backBar(g.name, 'home', true)}${menu}<div class="scroll"><h1 class="h1">${g.name}</h1><p class="lede">18 từ. Hôm nay ôn tối đa 20 từ mới và 100 từ đến hạn.</p>
+      <div class="box"><div class="box-row">${cells}</div><div class="box-lab">${['Mới', '1', '3', '7', '14', '30'].map((l) => `<span>${l}</span>`).join('')}</div>
+      <div class="small" style="text-align:center;margin-top:0.15rem">số ngày giữa hai lần ôn</div>
+      <div class="box-key"><span><i style="background:var(--field)"></i>đến hạn hôm nay</span><span><i style="background:var(--field-soft)"></i>chưa tới hạn</span></div></div>
+      ${list}</div><div class="dock"><button class="btn sticker" data-study="1">Ôn 10 thẻ</button></div>`);
+  },
+  backlog() {
+    const rows = BACKLOG.map(([id, w, m, d]) => `<label class="pick"><input type="checkbox" data-pick="${id}" ${st.picked.has(id) ? 'checked' : ''}><span><b>${w}</b><br><span class="small">${m}, trễ ${d} ngày</span></span></label>`).join('');
+    return wrap('home', `${backBar('IELTS', 'home')}<div class="scroll"><h1 class="h1">40 từ lâu chưa ôn</h1>
+      <p class="lede">Các từ trễ hơn 60 ngày tạm rời khỏi phần cần ôn. Học lại thì từ quay về ngăn Mới, mỗi ngày vào tối đa 20 từ. Không chọn gì thì chúng cứ nằm đây.</p>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:0.75rem"><span class="small">Đã chọn ${st.picked.size}</span><button class="link" data-pickall="1">Chọn tất cả</button></div>${rows}</div>
+      <div class="dock" style="grid-template-columns:1fr 1fr"><button class="btn sticker" data-toast="Đã đưa ${st.picked.size} từ về ngăn Mới">Học lại</button><button class="btn quiet" style="min-height:3.5rem;color:var(--late)" data-toast="Đã bỏ ${st.picked.size} từ khỏi việc ôn">Bỏ</button></div>`);
+  },
+  search() {
+    const fl = ['A1', 'A2', 'B1', 'B2', 'Ẩm thực', 'Công nghệ', 'Danh từ', 'Động từ', 'Từ của tôi'];
+    return wrap('search', `<div class="bar-top"><span class="logo">Tra từ</span></div><div class="scroll">
+      <div class="searchbox"><span aria-hidden="true">⌕</span><input placeholder="Gõ một từ, ví dụ left" aria-label="Tìm từ"><button class="btn quiet" data-entry="left">Tìm</button></div>
+      <div class="filters" role="group" aria-label="Lọc">${fl.map((f) => `<button class="filter" data-filter="${f}" aria-pressed="${st.filters.includes(f)}">${f}</button>`).join('')}</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:0.6rem"><span class="small">40 từ, đã bỏ qua 3 từ chức năng</span><button class="link" data-sheet="bulk">Thêm cả 40 từ</button></div>
+      <ul class="results">${RESULTS.map(([w, p, m, l]) => `<li><button data-entry="left"><span><span class="w">${w}</span> <span class="small">${p}</span><br><span class="m">${m}</span></span><span class="lvl">${l}</span></button></li>`).join('')}</ul><p class="small">Còn 35 từ.</p></div>${addBtn}`);
+  },
+  word() {
+    const d = DICT[st.entry];
+    const forms = d.forms ? `<div class="formrow">${d.forms.map((f) => DICT[f] ? `<button class="token" data-entry="${f}">${f}</button>` : `<span class="token">${f}</span>`).join('')}</div>` : '';
+    const blocks = d.blocks.map((b) => `<div class="posblock"><div class="p">${b.pos}<small>${b.lv}</small></div><ol class="senses${b.senses.length > 1 ? ' multi' : ''}">${b.senses.map((s) => `<li><div><div class="mean">${s.m}${s.ref ? `<button class="ref" data-entry="${s.ref}">${s.ref}</button>` : ''}</div><div class="ex">${s.ex}</div>${s.learning ? `<div class="learning">${s.learning}. <button class="ref" style="font-size:inherit" data-sheet="met">Thêm câu đã gặp</button></div>` : ''}</div>
+      ${s.learning ? '<span></span>' : '<button class="plusbtn" data-sheet="addto" aria-label="Thêm nghĩa này vào nhóm">+</button>'}</li>`).join('')}</ol></div>`).join('');
+    return wrap('search', `${backBar('', 'search')}<div class="scroll"><div class="entry"><h1 class="hw">${st.entry}</h1>${forms}${blocks}</div></div>`);
+  },
+  settings() {
+    return wrap('settings', `<div class="bar-top"><span class="logo">Cài đặt</span></div><div class="scroll">
+      <div class="setting"><div><b>Ngôn ngữ</b><div class="small">Nghĩa của từ và giao diện</div></div><div class="seg"><button aria-pressed="${st.lang === 'vi'}" data-lang="vi">Việt</button><button aria-pressed="${st.lang === 'en'}" data-lang="en">English</button></div></div>
+      <div class="setting"><div><b>Nhắc học qua email</b><div class="small">Lúc 20:00 giờ của bạn, chỉ khi có thẻ chờ ôn</div></div><button class="switch" role="switch" aria-checked="${st.remind}" data-remind="1" aria-label="Nhắc học qua email"></button></div>
+      <div class="setting"><div><b>Múi giờ</b><div class="small">Asia/Ho_Chi_Minh, tự theo thiết bị</div></div></div>
+      <div class="setting"><div><b>lan@example.com</b></div><button class="btn quiet">Đăng xuất</button></div></div>`);
+  },
+};
+
+function studyView() {
+  if (st.card >= CARDS.length) {
+    return `<div class="study on-field" role="dialog" aria-label="Kết thúc phiên ôn"><div class="bar-top"><button class="icon" data-endstudy="1" aria-label="Đóng">✕</button><span class="title">Công nghệ</span></div>
+      <div class="end"><div class="big">Xong ${CARDS.length} thẻ.</div><p style="color:var(--on-field-muted)">Thẻ cần ôn lại quay về ngăn 1 ngày và nằm đầu nhóm. Ngày mai nhóm này có 4 thẻ đến hạn.</p>
+      <div class="tally"><div><b>${st.tally.known}</b>Đã biết</div><div><b>${st.tally.review}</b>Cần ôn lại</div></div></div>
+      <div class="answers one"><button class="btn sticker" data-endstudy="1">Về trang chủ</button></div></div>`;
+  }
+  const c = CARDS[st.card];
+  const left = CARDS.length - st.card;
+  const layers = (left > 2 ? '<div class="layer l2"></div>' : '') + (left > 1 ? '<div class="layer l1"></div>' : '');
+  const face = st.flipped
+    ? `<span class="tag ${c.pri ? 'pri' : ''}">${c.pos}</span><div class="w2">${c.w}</div><div class="back"><div class="mean">${c.m}</div>${c.forms ? `<div class="forms">${c.forms.map((f) => `<span class="token">${f}</span>`).join('')}</div>` : ''}<div class="ex">${c.ex}</div>${c.met ? `<div class="met"><span class="small">Câu bạn đã gặp</span><br>${c.met}</div>` : ''}</div>`
+    : `<span class="tag ${c.pri ? 'pri' : ''}">${c.tag}</span><div class="front"><div class="word">${c.w}</div><div class="pos">${c.pos}</div></div><div class="hint">Nhớ nghĩa trước, rồi lật thẻ.</div>`;
+  return `<div class="study on-field" role="dialog" aria-label="Phiên ôn"><div class="bar-top"><button class="icon" data-endstudy="1" aria-label="Thoát phiên ôn">✕</button><span class="title">Công nghệ</span><span class="left">còn ${left}</span></div>
+    <div class="stage-card"><div class="stack">${layers}<div class="card" data-flip="1" role="button" tabindex="0" aria-label="${st.flipped ? 'Mặt sau của thẻ' : 'Lật thẻ'}">${face}</div></div></div>
+    ${st.flipped ? '<div class="answers"><button class="btn quiet" data-answer="review">Cần ôn lại</button><button class="btn sticker" data-answer="known">Đã biết</button></div>'
+      : '<div class="answers one"><button class="btn sticker" data-flip="1">Lật thẻ</button></div>'}</div>`;
+}
+
+const SHEETS = {
+  quick: () => `<h2>Bạn vừa gặp từ nào?</h2>
+    <label class="label">Từ<input class="input big" value="went"></label>
+    <span class="label">Câu bạn gặp (không bắt buộc)</span><div class="sentence" contenteditable="true">I <u>went</u> to the bank yesterday.</div>
+    <div class="found"><span class="w">went</span> <span class="small">verb</span><div>quá khứ của <button class="ref" data-entry="go">go</button></div></div>
+    <div class="actions"><button class="btn sticker" data-sheet="addto">Lưu “went” vào nhóm</button><button class="btn quiet" data-entry="go">Xem “go” trước</button><button class="link" data-sheet="own">Nghĩa khác? Tự nhập</button></div>`,
+  own: () => `<h2>Tự nhập nghĩa</h2><p class="small">Chỉ bạn thấy từ này.</p>
+    <label class="label">Từ<input class="input big" value="deployed"></label><p class="small" style="margin:0.4rem 0 0">App nhận ra đây là quá khứ của <button class="ref" data-entry="deploy">deploy</button> và đã gắn sẵn.</p>
+    <label class="label">Nghĩa<input class="input" placeholder="đã triển khai"></label>
+    <label class="label">Nhóm<select class="input"><option>Mới thêm</option><option>Công nghệ</option><option>IELTS</option></select></label>
+    <div class="actions"><button class="btn sticker" data-toast="Đã lưu deployed vào Mới thêm">Lưu từ</button></div>`,
+  addto: () => `<h2>Lưu vào nhóm</h2><p class="small">Từ vào ngăn Mới.</p>
+    <label class="label">Nhóm<select class="input"><option>Mới thêm</option><option>Công nghệ</option><option>IELTS</option><option>Tạo nhóm mới…</option></select></label>
+    <div class="actions"><button class="btn sticker" data-toast="Đã lưu vào Mới thêm">Lưu</button></div>`,
+  met: () => `<h2>Thêm câu đã gặp</h2><p class="small">Mỗi nghĩa giữ được 5 câu, nghĩa này đang có 1.</p>
+    <label class="label">Câu<input class="input" placeholder="Turn left after the bridge."></label>
+    <div class="actions"><button class="btn sticker" data-toast="Đã lưu câu">Lưu câu</button></div>`,
+  bulk: () => `<h2>Thêm cả 40 từ</h2><p class="small">A2, Ẩm thực. Bỏ qua 3 từ chức năng; 2 từ bạn đã có thì giữ nguyên.</p>
+    <label class="label">Vào nhóm<select class="input"><option>Nhóm mới: Ẩm thực A2</option><option>Mới thêm</option></select></label>
+    <p class="small">Cả 38 từ vào ngăn Mới; nhóm đưa ra tối đa 20 từ mới mỗi ngày.</p>
+    <div class="actions"><button class="btn sticker" data-toast="Đã thêm 38 từ vào Ẩm thực A2">Thêm 38 từ</button></div>`,
+  remove: () => `<h2>Xóa nhóm Công nghệ?</h2>
+    <p style="margin:0.75rem 0 0"><b>12 từ chỉ có trong nhóm này</b> sẽ rời khỏi việc ôn và mất tiến độ.</p><p class="small" style="margin:0.35rem 0 0">6 từ còn nằm ở nhóm khác thì giữ nguyên.</p>
+    <div class="actions"><button class="btn danger" data-toast="Đã xóa nhóm và 12 từ" data-go="home">Xóa nhóm và 12 từ</button><button class="btn quiet" data-closesheet="1">Giữ nhóm</button></div>`,
+};
+
+function paint() {
+  let html = (VIEWS[st.view] || VIEWS.home)();
+  if (st.studying) html += studyView();
+  if (st.sheet) html += `<div class="scrim"><div class="sheet" role="dialog" aria-modal="true"><div class="grab" aria-hidden="true"></div>${SHEETS[st.sheet]()}</div></div>`;
+  if (st.toast) html += `<div class="toast" role="status">${st.toast}</div>`;
+  frameEl.innerHTML = html;
+}
+function goTo(v) { st.view = v; st.sheet = null; st.menu = false; st.studying = false; paint(); }
+function startStudy() { st.studying = true; st.card = 0; st.flipped = false; st.tally = { known: 0, review: 0 }; st.sheet = null; st.menu = false; paint(); }
+function say(t) { st.toast = t; paint(); setTimeout(() => { st.toast = ''; paint(); }, 1800); }
+
+frameEl.addEventListener('click', (e) => {
+  if (e.target.classList.contains('scrim')) { st.sheet = null; paint(); return; }
+  const t = e.target.closest('[data-go],[data-group],[data-study],[data-flip],[data-answer],[data-entry],[data-sheet],[data-closesheet],[data-toast],[data-filter],[data-remind],[data-lang],[data-pick],[data-pickall],[data-menu],[data-endstudy],[data-cell]');
+  if (!t) { if (st.menu) { st.menu = false; paint(); } return; }
+  const d = t.dataset;
+  if (d.pick) { st.picked.has(d.pick) ? st.picked.delete(d.pick) : st.picked.add(d.pick); paint(); return; }
+  if (d.pickall) { BACKLOG.forEach(([id]) => st.picked.add(id)); paint(); return; }
+  if (d.menu) { st.menu = !st.menu; paint(); return; }
+  if (d.toast) { st.sheet = null; st.menu = false; if (d.go) st.view = d.go; say(d.toast); return; }
+  if (d.closesheet) { st.sheet = null; paint(); return; }
+  if (d.endstudy) { st.studying = false; if (st.card >= CARDS.length) st.view = 'home'; paint(); return; }
+  if (d.group) { goTo(d.group === 'ielts' ? 'backlog' : 'group'); return; }
+  if (d.study) { startStudy(); return; }
+  if (d.flip) { if (!st.flipped) { st.flipped = true; paint(); } return; }
+  if (d.answer) { st.tally[d.answer]++; st.card++; st.flipped = false; paint(); return; }
+  if (d.entry) { st.entry = DICT[d.entry] ? d.entry : 'left'; goTo('word'); return; }
+  if (d.sheet) { st.sheet = d.sheet; st.menu = false; paint(); return; }
+  if (d.cell) { const i = Number(d.cell); st.cellSel = st.cellSel === i ? null : i; paint(); return; }
+  if (d.filter) { st.filters = st.filters.includes(d.filter) ? st.filters.filter((x) => x !== d.filter) : [...st.filters, d.filter]; paint(); return; }
+  if (d.remind) { st.remind = !st.remind; paint(); return; }
+  if (d.lang) { st.lang = d.lang; paint(); return; }
+  if (d.go) goTo(d.go);
+});
+frameEl.addEventListener('keydown', (e) => { if (e.key === 'Enter' && e.target.dataset && e.target.dataset.flip && !st.flipped) { st.flipped = true; paint(); } });
+document.querySelector('.toolbar').addEventListener('click', (e) => {
+  const b = e.target.closest('button'); if (!b) return;
+  if (b.dataset.frame) { frameEl.classList.toggle('wide', b.dataset.frame === 'wide'); document.querySelectorAll('[data-frame]').forEach((x) => x.setAttribute('aria-pressed', x === b)); }
+  const j = b.dataset.jump; if (!j) return;
+  if (j === 'study') { goTo('group'); startStudy(); }
+  else if (j === 'quick') { goTo('home'); st.sheet = 'quick'; paint(); }
+  else if (j === 'word') { st.entry = 'left'; goTo('word'); }
+  else goTo(j);
+});
+paint();
+</script>
+</body>
+</html>
