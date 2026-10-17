@@ -1,6 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import {
-  ContentService, INFLECTION_KINDS, MAX_EXAMPLES, normalizeContent, OWNER_SOURCE_ID, type FormOf, type InflectionKind,
+  ContentService, generateInflections, INFLECTION_KINDS, MAX_EXAMPLES, normalizeContent, OWNER_SOURCE_ID, type FormOf,
+  type InflectionKind,
 } from '../../content/index.js';
 import type { Prisma } from '../../generated/prisma/client.js';
 import type { JobContext } from '../jobs/job-types.js';
@@ -92,6 +93,10 @@ export class ImportRowProcessor {
           }
         }
 
+        if (changes.entryCreated && row.inflections === null) {
+          // D29: a new entry gets the library set in the same transaction; a reviewed cell replaces it below.
+          await this.content.replaceInflections(tx, changes.entryId, 'library', generateInflections(row.lemma, row.pos));
+        }
         if (row.inflections !== null) {
           const current = (await tx.entryInflection.findMany({ where: { entryId: changes.entryId },
             select: { form: true, kind: true, source: true }, orderBy: { position: 'asc' } }))

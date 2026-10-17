@@ -4,6 +4,7 @@ export {
   type InflectionKind, type Level,
 } from './content.constants.js';
 export type { EntryByForm, InflectionInput, InflectionSource } from './inflections/inflections.service.js';
+export { generateInflections } from './inflections/inflect.js';
 export {
   PrivateWordLimitError, type CreatePrivateSenseInput, type CreatePrivateSenseResult, type Meaning, type PrivateWordPatch,
 } from './private/private-words.service.js';
