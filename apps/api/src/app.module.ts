@@ -7,11 +7,12 @@ import { ContentPipelineModule } from './content-pipeline/content-pipeline.modul
 import { BatchScopeModule } from './content-pipeline/import/batch-scope.provider.js';
 import { HealthController } from './health/health.controller.js';
 import { IdentityModule } from './identity/identity.module.js';
+import { LearningModule } from './learning/learning.module.js';
 import { SampleModule } from './sample/sample.module.js';
 import { SettingsModule } from './settings/settings.module.js';
 
 @Module({
-  imports: [SampleModule, IdentityModule, BatchScopeModule, ContentModule, ContentPipelineModule, SettingsModule],
+  imports: [SampleModule, IdentityModule, BatchScopeModule, ContentModule, ContentPipelineModule, SettingsModule, LearningModule],
   controllers: [HealthController],
   providers: [],
 })
