@@ -8,9 +8,9 @@ import type { LogEntry } from '../../common/logging/app-logger.js';
 import type { PrismaClient, Prisma } from '../../generated/prisma/client.js';
 import type { RateLimiter } from '../../common/rate-limit/rate-limiter.service.js';
 import { testConfig } from '../../../test/support/test-config.js';
-import { FakeMailer } from '../mailer/fake-mailer.js';
-import type { MailBudget } from '../mailer/mail-budget.service.js';
-import { MailDispatcher } from '../mailer/mail-dispatcher.service.js';
+import { FakeMailer } from '../../common/mail/fake-mailer.js';
+import type { MailBudget } from '../../common/mail/mail-budget.service.js';
+import { MailDispatcher } from '../../common/mail/mail-dispatcher.service.js';
 import { OtpService } from './otp.service.js';
 
 // Only the DB boundary is replaced; live-DB regeneration and SQL semantics are

@@ -5,9 +5,9 @@ import type { Server } from 'node:http';
 import type { Response } from 'express';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { PRISMA_CLIENT, PrismaModule } from '../../src/common/db/prisma.module.js';
-import { FakeMailer } from '../../src/identity/mailer/fake-mailer.js';
-import { MailDispatcher, sendPrepared } from '../../src/identity/mailer/mail-dispatcher.service.js';
-import { Mailer } from '../../src/identity/mailer/mailer.js';
+import { FakeMailer } from '../../src/common/mail/fake-mailer.js';
+import { MailDispatcher, sendPrepared } from '../../src/common/mail/mail-dispatcher.service.js';
+import { Mailer } from '../../src/common/mail/mailer.js';
 import { Public } from '../../src/identity/sessions/public.decorator.js';
 import { createTestApp, type TestApp } from './create-test-app.js';
 
