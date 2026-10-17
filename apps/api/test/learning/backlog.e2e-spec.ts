@@ -113,4 +113,31 @@ describe('backlog and relearn (e2e, isolated database)', () => {
       expect((await relearn(me.token, body)).status).toBe(400);
     }
   });
+  it('L4: relearn waits for a review in progress on the same item and sees its result — the review is not overwritten', async () => {
+    const me = await learner();
+    const [item] = await seed(me.userId, me.groupId, [{ level: 3, overdue: 70 }]);
+    let locked!: () => void;
+    let release!: () => void;
+    const lockTaken = new Promise<void>((resolve) => { locked = resolve; });
+    const gate = new Promise<void>((resolve) => { release = resolve; });
+    // Another device answers the card: it holds the item row, moves it out of the backlog, and commits later.
+    const review = ctx.prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT id FROM learning_items WHERE id = ${item}::uuid FOR UPDATE`;
+      await tx.learningItem.update({ where: { id: item }, data: { level: 4, dueDate: date(addDays(today, 14)) } });
+      locked();
+      await gate;
+    }, { timeout: 30_000, maxWait: 5_000 });
+    await lockTaken;
+    let settled = false;
+    const pending = relearn(me.token, [item]).then((response) => { settled = true; return response; });
+    await new Promise((resolve) => setTimeout(resolve, 500));
+    expect(settled).toBe(false);
+    release();
+    await review;
+    const response = await pending;
+    expect(response.body).toEqual({ relearned: 0 });
+    expect(await ctx.prisma.learningItem.findUnique({ where: { id: item } }))
+      .toMatchObject({ level: 4, dueDate: date(addDays(today, 14)) });
+    expect(await ctx.prisma.learningLogEntry.count({ where: { itemId: item } })).toBe(0);
+  });
 });

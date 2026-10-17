@@ -290,4 +290,103 @@ describe('group counts and the review queue (e2e, isolated database)', () => {
     expect(await learning.cardsLeftToday([{ userId: done.userId, today: addDays(today, 1) }])).toEqual(new Set([done.userId]));
     expect(await learning.cardsLeftToday([])).toEqual(new Set());
   });
+  it('M2 (review probe P1): a level-0 item added in UTC+14 is still new after the learner moves to UTC−12; "known" lifts it to level 1 once and it leaves the queue', async () => {
+    ctx.clock.set(new Date('2026-11-01T10:30:00Z')); // 2026-11-02 in Pacific/Kiritimati, 2026-10-31 in Etc/GMT+12
+    const me = await learner();
+    await ctx.prisma.user.update({ where: { id: me.userId }, data: { timezone: 'Pacific/Kiritimati' } });
+    const g = await group(me.userId, 'G');
+    const [senseId] = await senses(1);
+    const added = await ctx.http().post(`/v1/groups/${g}/items`).set('Authorization', `Bearer ${await me.token()}`)
+      .set('Idempotency-Key', randomUUID()).send({ sense_id: senseId });
+    expect(added.body).toMatchObject({ level: 0, due_date: '2026-11-02' });
+    await ctx.prisma.user.update({ where: { id: me.userId }, data: { timezone: 'Etc/GMT+12' } });
+    const token = await me.token();
+    expect((await queue(token, g)).map((c) => [c.section, c.level])).toEqual([['new', 0]]);
+    expect(await answer(token, added.body.item_id, g)).toEqual({
+      item_id: added.body.item_id, level: 1, due_date: '2026-11-01', priority: false, section: 'new',
+    });
+    expect(await queue(token, g)).toEqual([]);
+    expect(await ctx.prisma.learningLogEntry.findMany({ where: { userId: me.userId, kind: 'review' } })).toEqual([
+      expect.objectContaining({ section: 'new', wasDue: true, levelBefore: 0, levelAfter: 1, localDate: date('2026-10-31') }),
+    ]);
+    expect((await counts(token, g)).today).toEqual({ priority: 0, due: 0, new: 0 });
+  });
+
+  it('L2 (review probe P4): answering backlog words in mode=all is logged as backlog and never uses the review cap; their levels change as usual', async () => {
+    await setCaps({ reviews_per_group_per_day: 10 });
+    const me = await learner();
+    const g = await group(me.userId, 'G');
+    const ids = await senses(11);
+    const backlog = await seed(me.userId, [g], ids.slice(0, 10), () => ({ level: 3, dueDate: '2026-08-30' }));
+    const [due] = await seed(me.userId, [g], ids.slice(10), () => ({ level: 2, dueDate: today }));
+    const token = await me.token();
+    expect(await counts(token, g)).toMatchObject({ today: { due: 1 }, backlog: 10 });
+    const all = await queue(token, g, 'all');
+    expect(all.filter((c) => c.section === 'backlog').map((c) => c.item_id).sort()).toEqual([...backlog].sort());
+    for (const id of backlog) expect((await answer(token, id, g)).section).toBe('backlog');
+    expect(await ctx.prisma.learningItem.findMany({ where: { id: { in: backlog } } }))
+      .toEqual(backlog.map(() => expect.objectContaining({ level: 4, dueDate: date(addDays(today, 14)) })));
+    expect((await ctx.prisma.learningLogEntry.findMany({ where: { userId: me.userId } })).map((row) => row.section))
+      .toEqual(Array(10).fill('backlog'));
+    expect(await counts(token, g)).toMatchObject({ today: { due: 1 }, backlog: 0 });
+    expect((await queue(token, g)).map((c) => c.item_id)).toEqual([due]);
+  });
+
+  it('T-C1: answering a new card lowers today.new by one; answering early uses no cap', async () => {
+    await setCaps({ reviews_per_group_per_day: 10, new_per_group_per_day: 3 });
+    const me = await learner();
+    const g = await group(me.userId, 'G');
+    const ids = await senses(6);
+    const fresh = await seed(me.userId, [g], ids.slice(0, 5), () => ({ level: 0, dueDate: today }));
+    const [early] = await seed(me.userId, [g], ids.slice(5), () => ({ level: 3, dueDate: addDays(today, 5) }));
+    const token = await me.token();
+    expect((await counts(token, g)).today).toEqual({ priority: 0, due: 0, new: 3 });
+    expect((await answer(token, fresh[0], g)).section).toBe('new');
+    expect((await counts(token, g)).today).toEqual({ priority: 0, due: 0, new: 2 });
+    expect(await answer(token, early, g)).toMatchObject({ section: 'early', level: 3 });
+    expect((await counts(token, g)).today).toEqual({ priority: 0, due: 0, new: 2 });
+    expect((await queue(token, g)).filter((c) => c.section === 'new')).toHaveLength(2);
+  });
+
+  it('T-C4: the queue and backlog of another learner\'s group → 404', async () => {
+    const owner = await learner();
+    const g = await group(owner.userId, 'Mine');
+    await seed(owner.userId, [g], await senses(1), () => ({ level: 2, dueDate: today }));
+    const stranger = await learner();
+    const token = await stranger.token();
+    for (const path of [`/v1/groups/${g}/queue`, `/v1/groups/${g}/queue?mode=all`, `/v1/groups/${g}/backlog`, `/v1/groups/${randomUUID()}/queue`]) {
+      const response = await ctx.http().get(path).set('Authorization', `Bearer ${token}`);
+      expect(response.status).toBe(404);
+      expect(response.body.type).toBe('https://api.example.com/problems/not-found');
+    }
+  });
+  it('L1 / D48 (review probe P2): a priority word overdue by more than 60 days leaves the priority section for the backlog; relearn clears the flag', async () => {
+    const me = await learner();
+    const g = await group(me.userId, 'G');
+    const ids = await senses(2);
+    const [stale] = await seed(me.userId, [g], ids.slice(0, 1), () => ({ level: 1, dueDate: '2026-09-01', priority: true }));
+    const [fresh] = await seed(me.userId, [g], ids.slice(1), () => ({ level: 1, dueDate: addDays(today, -60), priority: true }));
+    const token = await me.token();
+    expect(await counts(token, g)).toMatchObject({ today: { priority: 1, due: 0, new: 0 }, backlog: 1 });
+    expect((await queue(token, g)).map((c) => [c.item_id, c.section])).toEqual([[fresh, 'priority']]);
+    const backlog = await ctx.http().get(`/v1/groups/${g}/backlog`).set('Authorization', `Bearer ${token}`);
+    expect(backlog.body.items.map((item: { item_id: string }) => item.item_id)).toEqual([stale]);
+    expect((await queue(token, g, 'all')).find((c) => c.item_id === stale)).toMatchObject({ section: 'backlog' });
+    // The fresh priority word still counts as a card left today.
+    expect(await ctx.app.get(LearningService).cardsLeftToday([{ userId: me.userId, today }])).toEqual(new Set([me.userId]));
+    const relearned = await ctx.http().post('/v1/items/relearn').set('Authorization', `Bearer ${token}`)
+      .set('Idempotency-Key', randomUUID()).send({ item_ids: [stale] });
+    expect(relearned.body).toEqual({ relearned: 1 });
+    expect(await ctx.prisma.learningItem.findUnique({ where: { id: stale } }))
+      .toMatchObject({ level: 0, dueDate: date(today), priority: false });
+    expect(await counts(token, g)).toMatchObject({ today: { priority: 1, due: 0, new: 1 }, backlog: 0 });
+  });
+
+  it('L1 / D48: a learner whose only card is a stale priority word has no card left today', async () => {
+    const me = await learner();
+    const g = await group(me.userId, 'G');
+    await seed(me.userId, [g], await senses(1), () => ({ level: 1, dueDate: '2026-09-01', priority: true }));
+    expect(await ctx.app.get(LearningService).cardsLeftToday([{ userId: me.userId, today }])).toEqual(new Set());
+    expect((await counts(await me.token(), g)).today).toEqual({ priority: 0, due: 0, new: 0 });
+  });
 });

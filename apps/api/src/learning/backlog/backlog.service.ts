@@ -9,7 +9,7 @@ import { Prisma, type PrismaClient } from '../../generated/prisma/client.js';
 import { IdentityService } from '../../identity/profile/identity.service.js';
 import { SettingsService } from '../../settings/index.js';
 import { GroupsService } from '../groups/groups.service.js';
-import { withLearnerLock } from '../learning-lock.js';
+import { lockItems, withLearnerLock } from '../learning-lock.js';
 import { relearn } from '../schedule/schedule.js';
 
 const transactionOptions = { timeout: 30_000, maxWait: 5_000 };
@@ -74,6 +74,8 @@ export class BacklogService {
     const [timeZone, { learning }] = await Promise.all([this.timeZone(userId), this.settings.get()]);
     return this.prisma.$transaction(async (tx) => {
       await withLearnerLock(tx, userId);
+      // A review in progress on another device holds its item row: wait for it, then read the result (L4).
+      await lockItems(tx, userId, itemIds);
       const at = this.clock.now();
       const today = localDate(timeZone, at);
       const items = (await tx.learningItem.findMany({ where: { id: { in: itemIds }, userId, level: { gte: 1 } } }))

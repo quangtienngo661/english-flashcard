@@ -116,11 +116,13 @@ describe('quick add and private word deletion (e2e, isolated database)', () => {
       userId: me.userId, senseId: randomUUID(), level: 0, dueDate: date('2026-11-08'), createdAt: now,
     })) });
     await ctx.prisma.groupItem.createMany({ data: fillers.map((item) => ({ groupId: full, itemId: item.id, addedAt: now })) });
-    const beforeFull = await privateEntries(me.userId);
-    const fullRefused = await quickAdd(me.token, { group_id: full, new_word: { lemma: 'skrrt', meaning: 'phanh gấp' } });
+    // T-C7: read back everything a quick add could write, not just the private words.
+    const beforeFull = await stored(me.userId);
+    const fullRefused = await quickAdd(me.token, { group_id: full, new_word: { lemma: 'skrrt', meaning: 'phanh gấp' }, sentence: 'Skrrt!' });
     expect(fullRefused.status).toBe(409);
     expect(fullRefused.body.type).toBe(problem('group-full'));
-    expect(await privateEntries(me.userId)).toEqual(beforeFull);
+    expect(await stored(me.userId)).toEqual(beforeFull);
+    expect(await ctx.prisma.sense.count({ where: { entry: { ownerUserId: me.userId, lemma: 'skrrt' } } })).toBe(0);
   });
 
   it('already learning → no new item, the sentence is saved', async () => {

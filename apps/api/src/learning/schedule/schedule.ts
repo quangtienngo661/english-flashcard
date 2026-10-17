@@ -5,7 +5,8 @@ import { LEVEL_INTERVALS, MAX_LEVEL } from '../learning.constants.js';
 // "relearn" and removal change a schedule — never the passing of time (B3#5).
 
 export type ItemState = { level: number; dueDate: string; priority: boolean };
-export type Section = 'priority' | 'due' | 'new' | 'early';
+// 'backlog': answered from the backlog (an "all" session); like 'early', it never counts against a cap (design 6.1).
+export type Section = 'priority' | 'due' | 'new' | 'backlog' | 'early';
 export type Answer = 'known' | 'review';
 export type AnswerResult = { next: ItemState; section: Section; wasDue: boolean; rating: 'Good' | 'Again'; changed: boolean };
 
@@ -18,15 +19,18 @@ export function relearn(today: string): ItemState {
   return newItem(today);
 }
 
-export function sectionOf(state: ItemState, today: string): Section {
+export function sectionOf(state: ItemState, today: string, backlogDays: number): Section {
+  // The backlog wins over the priority flag (D48): a flagged word left alone for too long stops being "priority".
+  if (isBacklog(state, today, backlogDays)) return 'backlog';
   if (state.priority) return 'priority';
   if (state.level === 0) return 'new';
   return state.dueDate <= today ? 'due' : 'early';
 }
 
-export function applyAnswer(state: ItemState, answer: Answer, today: string): AnswerResult {
-  const section = sectionOf(state, today);
-  const wasDue = state.priority || state.dueDate <= today;
+export function applyAnswer(state: ItemState, answer: Answer, today: string, backlogDays: number): AnswerResult {
+  const section = sectionOf(state, today, backlogDays);
+  // A level-0 word is always due, even when its date is "tomorrow" after the zone moved west (M2, design 6.2).
+  const wasDue = state.priority || state.level === 0 || state.dueDate <= today;
   let next: ItemState;
   if (answer === 'review') {
     next = { level: 1, dueDate: today, priority: true };
