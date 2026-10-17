@@ -306,6 +306,22 @@ describe('inflections and form-of links in the CSV flow (e2e, isolated database)
     expect(exported.rows.map((row) => row.headword)).toContain('quiet');
   });
 
+  it('M4: form_of "-" without sense_id clears the link of the sense the row matches, through a new draft', async () => {
+    const go = await catalogWord('go', 'verb', { level: 'A1' });
+    await importFile(csv(['headword', 'pos', 'gloss_vi', 'example_en_1', 'form_of'], [['went', 'verb', 'đã đi', 'He went.', 'go/verb:past']]));
+    const went = await ctx.prisma.entry.findFirstOrThrow({ where: { lemma: 'went', pos: 'verb', scope: 'catalog' }, include: { senses: true } });
+    const latest = () => ctx.prisma.senseRevision.findFirstOrThrow({ where: { senseId: went.senses[0].id }, orderBy: { revisionNo: 'desc' },
+      select: { revisionNo: true, formOfEntryId: true, formKind: true } });
+    expect(await latest()).toEqual({ revisionNo: 1, formOfEntryId: go.entryId, formKind: 'past' });
+    const clear = csv(['headword', 'pos', 'form_of'], [['went', 'verb', '-']]);
+    expect((await importFile(clear)).outcomes).toEqual([expect.objectContaining({ outcome: 'updated', errorCodes: [] })]);
+    expect(await latest()).toEqual({ revisionNo: 2, formOfEntryId: null, formKind: null });
+    expect(await ctx.prisma.sense.count({ where: { entryId: went.id } })).toBe(1);
+    // Nothing left to clear: the same row again changes nothing.
+    expect((await importFile(clear)).outcomes).toEqual([expect.objectContaining({ outcome: 'unchanged', errorCodes: [] })]);
+    expect(await latest()).toEqual({ revisionNo: 2, formOfEntryId: null, formKind: null });
+  });
+
   it('L8: reverting a batch whose file had an inflections column says that inflections are not reverted, and leaves them', async () => {
     const go = await catalogWord('go', 'verb');
     const { id } = await importFile(csv(['headword', 'pos', 'inflections'], [['go', 'verb', 'past:went']]));
