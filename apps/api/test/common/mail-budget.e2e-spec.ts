@@ -52,6 +52,18 @@ describe('mail budget ceiling (e2e, real Postgres)', () => {
     expect(await budget.sentToday()).toBe(8);
   });
 
+  it('L14: mail_budget_80 fires once when a ceiling consumer reaches 80% of the budget', async () => {
+    const budget = await budgetFor(10);
+    const warnings = () => ctx!.logs.filter((entry) => entry.event === 'mail_budget_80');
+    await consume(budget, 7, { ceiling: REMINDER_MAIL_SHARE });
+    expect(warnings()).toEqual([]);
+    await consume(budget, 2, { ceiling: REMINDER_MAIL_SHARE });
+    expect(warnings()).toEqual([expect.objectContaining({ level: 'warn', sent: 8, budget: 10 })]);
+    // Later plain sends (OTP) pass 8 without warning again.
+    await consume(budget, 2);
+    expect(warnings()).toHaveLength(1);
+  });
+
   it('sentToday reads the bucket of the current UTC day', async () => {
     const budget = await budgetFor(10);
     await consume(budget, 2);
