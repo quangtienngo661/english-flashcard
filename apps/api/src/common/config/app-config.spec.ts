@@ -35,11 +35,17 @@ describe('loadConfig', () => {
   });
 
   it('Task 21 (config): REMINDER_TICK_SECONDS defaults to 900 (15 minutes) and must be a positive integer', () => {
-    expect(loadConfig(validEnv()).reminders).toEqual({ tickSeconds: 900, runScheduler: true });
+    expect(loadConfig(validEnv()).reminders).toEqual({ tickSeconds: 900, runScheduler: true, retryBackoffMs: 60_000 });
     expect(loadConfig({ ...validEnv(), REMINDER_TICK_SECONDS: '60' }).reminders.tickSeconds).toBe(60);
     for (const bad of ['0', '-5', '1.5', 'often']) {
       expect(() => loadConfig({ ...validEnv(), REMINDER_TICK_SECONDS: bad }), bad).toThrow(/REMINDER_TICK_SECONDS/);
     }
+  });
+
+  it('L15 (config): REMINDER_RETRY_BACKOFF_MS defaults to 60000, separate from the import backoff', () => {
+    expect(loadConfig({ ...validEnv(), IMPORT_JOB_BACKOFF_MS: '7' }).reminders.retryBackoffMs).toBe(60_000);
+    expect(loadConfig({ ...validEnv(), REMINDER_RETRY_BACKOFF_MS: '120000' }).reminders.retryBackoffMs).toBe(120_000);
+    expect(() => loadConfig({ ...validEnv(), REMINDER_RETRY_BACKOFF_MS: '0' })).toThrow(/REMINDER_RETRY_BACKOFF_MS/);
   });
 
   it('B25#23 (config): ADMIN_APP_URL is required, must be a URL, and is exposed as adminAppUrl', () => {
