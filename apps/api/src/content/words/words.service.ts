@@ -110,14 +110,16 @@ export class WordsService {
     const senses = await this.senses(viewerId, nativeLanguage, Prisma.sql`e.lemma = ${lemma}`);
     if (senses.length === 0) throw new ProblemDetailsException({ status: 404, title: 'Not found', type: 'not-found' });
     const entryIds = [...new Set(senses.map(({ entry_id }) => entry_id))];
-    const forms = await this.prisma.$queryRaw<Array<{ kind: InflectionKind; form: string; has_page: boolean }>>`
-      SELECT DISTINCT i.kind, i.form, EXISTS (
+    const forms = await this.prisma.$queryRaw<Array<{ kind: InflectionKind; form: string; position: number; has_page: boolean }>>`
+      SELECT i.kind, i.form, MIN(i.position)::int AS position, EXISTS (
         SELECT 1 FROM senses s JOIN entries e ON e.id = s.entry_id
         WHERE e.lemma = i.form AND s.live_revision_id IS NOT NULL AND ${visible(viewerId)}
       ) AS has_page
-      FROM entry_inflections i WHERE i.entry_id = ANY(${entryIds}::uuid[])`;
+      FROM entry_inflections i WHERE i.entry_id = ANY(${entryIds}::uuid[])
+      GROUP BY i.kind, i.form`;
+    // Every form of a kind, in the stored order (AGID order for library forms); the UI plan decides what to show.
     forms.sort((a, b) => INFLECTION_KINDS.indexOf(a.kind) - INFLECTION_KINDS.indexOf(b.kind)
-      || (a.form < b.form ? -1 : a.form > b.form ? 1 : 0));
+      || a.position - b.position || (a.form < b.form ? -1 : a.form > b.form ? 1 : 0));
     // senses() already orders by part of speech, so each section's senses arrive together.
     const sections: Array<{ pos: string; senses: WordSense[] }> = [];
     for (const sense of senses) {

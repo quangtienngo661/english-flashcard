@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { ContentService, type InflectionKind, type Level, type RevisionContent } from '../../src/content/index.js';
+import { generateInflections } from '../../src/content/inflections/inflect.js';
 import type { Prisma } from '../../src/generated/prisma/client.js';
 import { seedUser, startSession } from '../support/auth-helpers.js';
 import { createTestApp, type TestApp } from '../support/create-test-app.js';
@@ -136,6 +137,16 @@ describe('word pages, headword search and lookup (e2e, isolated database)', () =
     expect(res.body.inflections).toEqual([
       { kind: 'third_person', form: 'goes', has_page: false }, { kind: 'present_participle', form: 'going', has_page: false },
       { kind: 'past', form: 'went', has_page: true }, { kind: 'past_participle', form: 'gone', has_page: false }]);
+  });
+
+  it('D46: the word page returns every library form of a kind in AGID order (ring: past ringed, rang)', async () => {
+    const ring = await catalog('ring', 'verb');
+    await inflect(ring.entryId, generateInflections('ring', 'verb'), 'library');
+    const res = await get('/v1/words/ring');
+    expect(res.body.inflections.filter(({ kind }: { kind: string }) => kind === 'past').map(({ form }: { form: string }) => form))
+      .toEqual(['ringed', 'rang']);
+    expect(res.body.inflections.map(({ kind }: { kind: string }) => kind))
+      .toEqual(['third_person', 'present_participle', 'past', 'past', 'past_participle']);
   });
 
   it('D42: March (noun) and march (verb) are two rows in GET /v1/words?q=march, two pages, and lookup "march" returns both', async () => {

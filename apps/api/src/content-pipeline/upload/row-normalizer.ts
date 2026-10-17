@@ -27,7 +27,7 @@ export type NormalizedRow = {
 const kindList = INFLECTION_KINDS.join(', ');
 const isKind = (value: string): value is InflectionKind => INFLECTION_KINDS.some((kind) => kind === value);
 
-/** `kind:form; kind:form`, normalized and ordered by kind then form so equal sets compare equal. */
+/** `kind:form; kind:form`, normalized and grouped by kind; within a kind the cell's order is kept (it is stored). */
 export function parseInflections(cell: string): Array<{ form: string; kind: InflectionKind }> | RowError {
   const forms = new Map<string, { form: string; kind: InflectionKind }>();
   for (const piece of splitList(cell)) {
@@ -40,8 +40,7 @@ export function parseInflections(cell: string): Array<{ form: string; kind: Infl
     }
     forms.set(`${kind}\0${form}`, { form, kind });
   }
-  return [...forms.values()].sort((a, b) =>
-    INFLECTION_KINDS.indexOf(a.kind) - INFLECTION_KINDS.indexOf(b.kind) || (a.form < b.form ? -1 : a.form > b.form ? 1 : 0));
+  return [...forms.values()].sort((a, b) => INFLECTION_KINDS.indexOf(a.kind) - INFLECTION_KINDS.indexOf(b.kind));
 }
 
 export function formatInflections(forms: ReadonlyArray<{ form: string; kind: string }>): string {

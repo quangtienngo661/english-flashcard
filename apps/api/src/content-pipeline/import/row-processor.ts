@@ -1,5 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { ContentService, MAX_EXAMPLES, normalizeContent, OWNER_SOURCE_ID, type FormOf } from '../../content/index.js';
+import {
+  ContentService, INFLECTION_KINDS, MAX_EXAMPLES, normalizeContent, OWNER_SOURCE_ID, type FormOf, type InflectionKind,
+} from '../../content/index.js';
 import type { Prisma } from '../../generated/prisma/client.js';
 import type { JobContext } from '../jobs/job-types.js';
 import type { RowError } from '../upload/row-errors.js';
@@ -39,8 +41,9 @@ export async function recordRejected(
   });
 }
 
+/** Same forms in the same stored order (current arrives grouped by kind, then by position). */
 function sameForms(current: Array<{ form: string; kind: string }>, next: Array<{ form: string; kind: string }>): boolean {
-  const key = (rows: Array<{ form: string; kind: string }>) => rows.map(({ kind, form }) => `${kind}\0${form}`).sort().join('\n');
+  const key = (rows: Array<{ form: string; kind: string }>) => rows.map(({ kind, form }) => `${kind}\0${form}`).join('\n');
   return current.length === next.length && key(current) === key(next);
 }
 
@@ -90,7 +93,9 @@ export class ImportRowProcessor {
         }
 
         if (row.inflections !== null) {
-          const current = await tx.entryInflection.findMany({ where: { entryId: changes.entryId }, select: { form: true, kind: true, source: true } });
+          const current = (await tx.entryInflection.findMany({ where: { entryId: changes.entryId },
+            select: { form: true, kind: true, source: true }, orderBy: { position: 'asc' } }))
+            .sort((a, b) => INFLECTION_KINDS.indexOf(a.kind as InflectionKind) - INFLECTION_KINDS.indexOf(b.kind as InflectionKind));
           // Unchanged when the entry already holds exactly this reviewed set.
           const same = current.every(({ source }) => source === 'reviewed') && sameForms(current, row.inflections);
           if (!same) {

@@ -1,4 +1,4 @@
-import { OWNER_SOURCE_ID } from '../../src/content/index.js';
+import { AGID_SOURCE_ID, OWNER_SOURCE_ID } from '../../src/content/index.js';
 import type { PrismaClient } from '../../src/generated/prisma/client.js';
 
 export async function resetCatalog(prisma: PrismaClient): Promise<void> {
@@ -13,7 +13,7 @@ export async function resetCatalog(prisma: PrismaClient): Promise<void> {
     await tx.entryLevel.deleteMany();
     await tx.entryVariant.deleteMany();
     await tx.entry.deleteMany();
-    await tx.dataSource.deleteMany({ where: { kind: { not: 'owner' }, id: { not: OWNER_SOURCE_ID } } });
-    // The seeded owner source, topics and topic names remain available to every suite.
+    await tx.dataSource.deleteMany({ where: { kind: { not: 'owner' }, id: { notIn: [OWNER_SOURCE_ID, AGID_SOURCE_ID] } } });
+    // The seeded owner and AGID sources, topics and topic names remain available to every suite.
   });
 }

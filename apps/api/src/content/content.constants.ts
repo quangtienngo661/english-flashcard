@@ -17,6 +17,8 @@ export function isFunctionWordPos(pos: string): boolean {
 }
 
 export const OWNER_SOURCE_ID = '00000000-0000-4000-8000-000000000001';
+/** AGID 2016.01.19, seeded by migration agid_source (D46): the library source of inflected forms. */
+export const AGID_SOURCE_ID = '00000000-0000-4000-8000-000000000002';
 export const MAX_EXAMPLES = 3;
 
 export const INFLECTION_KINDS = [
