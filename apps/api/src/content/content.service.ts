@@ -11,6 +11,7 @@ import {
   PrivateWordsService, type CreatePrivateSenseInput, type CreatePrivateSenseResult, type PrivateWordPatch,
 } from './private/private-words.service.js';
 import { SentencesService, type Sentence } from './sentences/sentences.service.js';
+import { WordsService, type WordSense } from './words/words.service.js';
 import { InflectionsService, type EntryByForm, type InflectionInput, type InflectionSource } from './inflections/inflections.service.js';
 import { SourcesService, isSourceComplete, type SourceView } from './sources/sources.service.js';
 import { SensesService, type CreateSenseInput, type SaveDraftInput, type SaveDraftResult, type MarkRevisionItem, type MarkRevisionResult } from './senses/senses.service.js';
@@ -30,6 +31,7 @@ export class ContentService {
     @Inject(InflectionsService) private readonly inflections: InflectionsService,
     @Inject(PrivateWordsService) private readonly privateWords: PrivateWordsService,
     @Inject(SentencesService) private readonly sentences: SentencesService,
+    @Inject(WordsService) private readonly words: WordsService,
   ) {}
 
   getSource(id: string): Promise<SourceView | null> {
@@ -164,6 +166,11 @@ export class ContentService {
 
   deleteSentence(userId: string, id: string): Promise<boolean> {
     return this.sentences.deleteSentence(userId, id);
+  }
+
+  /** Learner cards: visible senses only (catalog published or the viewer's own), in the viewer's language. */
+  cardContent(viewerId: string, senseIds: string[], nativeLanguage: 'vi' | 'en'): Promise<Map<string, WordSense>> {
+    return this.words.cardContent(viewerId, senseIds, nativeLanguage);
   }
 
   visibleSenseIds(viewerId: string, senseIds: string[]): Promise<Set<string>> {
