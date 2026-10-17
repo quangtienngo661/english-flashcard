@@ -28,5 +28,7 @@ export type InflectionKind = (typeof INFLECTION_KINDS)[number];
 export const PRIVATE_WORDS_MAX = 1_000;
 export const MEANING_MAX = 300;
 export const LEMMA_MAX = 100;
+export const SENTENCE_MAX = 300;
+export const SENTENCES_PER_SENSE_MAX = 5;
 /** Stored as pos when a learner gives none; never valid for catalog rows. */
 export const PRIVATE_POS_UNSET = 'unspecified';

@@ -9,6 +9,8 @@ import { ContentService } from './content.service.js';
 import { InflectionsService } from './inflections/inflections.service.js';
 import { MyWordsController } from './private/my-words.controller.js';
 import { PrivateWordsService } from './private/private-words.service.js';
+import { SentencesController } from './sentences/sentences.controller.js';
+import { SentencesService } from './sentences/sentences.service.js';
 import { IdempotencyInterceptor } from '../common/idempotency/idempotency.interceptor.js';
 import { LearnerContentController } from './learner/learner-content.controller.js';
 import { LearnerContentGuard } from './learner/learner-content.guard.js';
@@ -27,10 +29,10 @@ import { TopicsService } from './taxonomy/topics.service.js';
   controllers: [
     SourcesController, PublicSourcesController, TopicsController, LearnerTopicsController,
     AdminEntriesController, EntryFunctionWordController, AdminSensesController, BatchEntriesController,
-    AdminPublishController, AdminCatalogController, LearnerContentController, MyWordsController,
+    AdminPublishController, AdminCatalogController, LearnerContentController, MyWordsController, SentencesController,
   ],
   providers: [ContentService, SourcesService, TopicsService, LearnerContentGuard, LearnerContentService, EntriesService, LevelsService, SensesService, PublishService, AdminCatalogQueries, InflectionsService,
-    PrivateWordsService, IdempotencyInterceptor],
+    PrivateWordsService, SentencesService, IdempotencyInterceptor],
   exports: [ContentService],
 })
 export class ContentModule {}

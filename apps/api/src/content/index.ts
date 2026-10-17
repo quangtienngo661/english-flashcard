@@ -1,12 +1,13 @@
 export {
   FUNCTION_WORD_POS, INFLECTION_KINDS, LEMMA_MAX, LEVELS, MAX_EXAMPLES, MEANING_MAX, OWNER_SOURCE_ID, PRIVATE_POS_UNSET,
-  PRIVATE_WORDS_MAX, VALID_POS, isFunctionWordPos,
+  PRIVATE_WORDS_MAX, SENTENCE_MAX, SENTENCES_PER_SENSE_MAX, VALID_POS, isFunctionWordPos,
   type InflectionKind, type Level,
 } from './content.constants.js';
 export type { EntryByForm, InflectionInput, InflectionSource } from './inflections/inflections.service.js';
 export {
   PrivateWordLimitError, type CreatePrivateSenseInput, type CreatePrivateSenseResult, type Meaning, type PrivateWordPatch,
 } from './private/private-words.service.js';
+export { NotVisibleError, SentenceLimitError, type Sentence } from './sentences/sentences.service.js';
 export { ContentService } from './content.service.js';
 export { BATCH_SCOPE, type BatchScope } from './batch-scope.port.js';
 export { entriesExportQuery, sensesExportQuery, type EntriesExportFilter, type SenseFilter } from './catalog/sense-filters.js';
