@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { IdentityCleanupService } from '../../src/identity/maintenance/identity-cleanup.service.js';
 import { IdentityService } from '../../src/identity/profile/identity.service.js';
 import { seedUser, startSession } from '../support/auth-helpers.js';
 import { createTestApp, type TestApp } from '../support/create-test-app.js';
@@ -58,11 +59,28 @@ describe('identity reads for reminders (e2e, isolated database)', () => {
     expect(await lastSeen()).toEqual(new Date('2026-10-18T07:15:00Z'));
   });
 
-  it('verifiedEmails omits unverified and unknown ids', async () => {
+  it('M6: lastSeenAt survives the cleanup job deleting a chain revoked more than 30 days ago', async () => {
+    const user = await seedUser(ctx.prisma, { verified: true });
+    const lastSeen = async () => (await identity.listReminderCandidates({ afterUserId: null, limit: 10 }))[0].lastSeenAt;
+    const session = await startSession(ctx, user.userId);
+    ctx.clock.set(new Date('2026-10-17T10:00:00Z'));
+    const res = await ctx.http().post('/v1/auth/refresh').send({ refresh_token: session.refreshToken });
+    expect(res.status).toBe(200);
+    await ctx.prisma.sessionChain.update({ where: { id: session.sessionChainId }, data: { revokedAt: new Date('2026-10-17T10:05:00Z') } });
+
+    const result = await ctx.app.get(IdentityCleanupService).runOnce(new Date('2026-11-17T12:00:00Z'));
+    expect(result.chains).toBe(1);
+    expect(await ctx.prisma.sessionChain.count({ where: { userId: user.userId } })).toBe(0);
+    expect(await lastSeen()).toEqual(new Date('2026-10-17T10:00:00Z'));
+  });
+
+  it('verifiedEmails omits unverified, inactive and unknown ids', async () => {
     const a = await seedUser(ctx.prisma, { verified: true });
     const b = await seedUser(ctx.prisma, { verified: true });
     const unverified = await seedUser(ctx.prisma, { verified: false });
-    const emails = await identity.verifiedEmails([a.userId, b.userId, unverified.userId, randomUUID(), a.userId]);
+    const inactive = await seedUser(ctx.prisma, { verified: true });
+    await ctx.prisma.user.update({ where: { id: inactive.userId }, data: { status: 'disabled' } });
+    const emails = await identity.verifiedEmails([a.userId, b.userId, unverified.userId, inactive.userId, randomUUID(), a.userId]);
     expect(emails).toEqual(new Map([[a.userId, a.email], [b.userId, b.email]]));
     expect(await identity.verifiedEmails([])).toEqual(new Map());
   });

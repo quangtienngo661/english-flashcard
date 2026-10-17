@@ -42,9 +42,7 @@ export class MailBudget {
       create: { bucket, sent: 1 },
       update: { sent: { increment: 1 } },
     });
-    if (updated.sent === Math.ceil(0.8 * this.config.mailDailyBudget)) {
-      this.logger.warn('mail_budget_80', { bucket, sent: updated.sent, budget: this.config.mailDailyBudget });
-    }
+    this.warnAt80(bucket, updated.sent);
     return updated.sent <= this.config.mailDailyBudget;
   }
 
@@ -61,7 +59,16 @@ export class MailBudget {
       ON CONFLICT (bucket) DO UPDATE SET sent = mail_budget_buckets.sent + 1
       WHERE mail_budget_buckets.sent < ${limit}
       RETURNING sent`;
-    return rows.length === 1;
+    if (rows.length === 0) return false;
+    this.warnAt80(bucket, rows[0].sent);
+    return true;
+  }
+
+  /** Every consumer adds one, so exactly one call per day lands on the 80% count, whichever path it took. */
+  private warnAt80(bucket: string, sent: number): void {
+    if (sent === Math.ceil(0.8 * this.config.mailDailyBudget)) {
+      this.logger.warn('mail_budget_80', { bucket, sent, budget: this.config.mailDailyBudget });
+    }
   }
 
   private bucket(): string {
