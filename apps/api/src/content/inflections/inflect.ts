@@ -1,5 +1,6 @@
 import nlp from 'compromise';
 import { readFileSync } from 'node:fs';
+import pluralize from 'pluralize';
 import type { InflectionKind } from '../content.constants.js';
 
 type Agid = { V: Record<string, [string[], string[], string[], string[]]>; N: Record<string, string[]> };
@@ -28,8 +29,9 @@ function fromCompromise(lemma: string, pos: 'verb' | 'noun'): Array<{ form: stri
   ];
 }
 
-/** Library inflections (D29, D46): every level-0 AGID form in AGID order; compromise only for a verb or noun that AGID
- * lacks; adjectives get none (AGID comparatives were too often wrong) and only reviewed CSV forms apply to them.
+/** Library inflections (D29, D46, D47): every level-0 AGID form in AGID order; compromise only for a verb or noun that
+ * AGID lacks; adjectives get none (AGID comparatives were too often wrong) and only reviewed CSV forms apply to them;
+ * nouns pluralize treats as uncountable get no plural.
  * Multi-word lemmas and other parts of speech get none; a form equal to the lemma is dropped. */
 export function generateInflections(lemma: string, pos: string): Array<{ form: string; kind: InflectionKind }> {
   if (/\s/.test(lemma) || (pos !== 'verb' && pos !== 'noun')) return [];
@@ -39,6 +41,8 @@ export function generateInflections(lemma: string, pos: string): Array<{ form: s
     const slots = data.V[lemma] ?? data.V[lemma.toLowerCase()];
     forms = slots ? slots.flatMap((list, index) => list.map((form) => ({ form, kind: VERB_KINDS[index] }))) : fromCompromise(lemma, pos);
   } else {
+    // D47: an uncountable noun (pluralize returns the lemma unchanged: music, software, advice) gets no library plural.
+    if (pluralize.plural(lemma) === lemma) return [];
     const plurals = data.N[lemma] ?? data.N[lemma.toLowerCase()];
     forms = plurals ? plurals.map((form) => ({ form, kind: 'plural' as const })) : fromCompromise(lemma, pos);
   }

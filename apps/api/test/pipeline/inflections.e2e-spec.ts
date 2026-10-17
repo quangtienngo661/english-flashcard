@@ -156,6 +156,16 @@ describe('inflections and form-of links in the CSV flow (e2e, isolated database)
     expect(await forms(existing.entryId)).toEqual([]);
   });
 
+  it('D47: a new uncountable noun gets no library plural, but a reviewed plural for it from CSV is kept', async () => {
+    await importFile(csv(['headword', 'pos', 'inflections'], [['software', 'noun', ''], ['information', 'noun', 'plural:informations']]));
+    const software = await ctx.prisma.entry.findFirstOrThrow({ where: { lemma: 'software' } });
+    expect(await forms(software.id)).toEqual([]);
+    await importFile(csv(['headword', 'pos', 'inflections'], [['software', 'noun', 'plural:softwares']]));
+    expect(await forms(software.id)).toEqual([{ form: 'softwares', kind: 'plural', source: 'reviewed' }]);
+    const information = await ctx.prisma.entry.findFirstOrThrow({ where: { lemma: 'information' } });
+    expect(await forms(information.id)).toEqual([{ form: 'informations', kind: 'plural', source: 'reviewed' }]);
+  });
+
   it('an unknown kind → invalid-inflection listing the kinds', async () => {
     await catalogWord('go', 'verb');
     const { outcomes } = await importFile(csv(['headword', 'pos', 'inflections'], [['go', 'verb', 'past:went; future:will go']]));

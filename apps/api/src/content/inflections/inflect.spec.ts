@@ -54,6 +54,13 @@ describe('generateInflections (D29, D46: AGID first)', () => {
     expect(generateInflections('blorp', 'noun')).toEqual([{ form: 'blorps', kind: 'plural' }]);
   });
 
+  it('D47: an uncountable noun (pluralize gives the lemma back) gets no library plural; countable irregulars keep theirs', () => {
+    for (const lemma of ['music', 'software', 'information', 'advice']) expect(generateInflections(lemma, 'noun')).toEqual([]);
+    expect(generateInflections('mouse', 'noun')).toEqual([{ form: 'mice', kind: 'plural' }]);
+    expect(generateInflections('child', 'noun')).toEqual([{ form: 'children', kind: 'plural' }]);
+    expect(generateInflections('leaf', 'noun')).toEqual([{ form: 'leaves', kind: 'plural' }]);
+  });
+
   it('a capitalised lemma uses its own AGID line or the lower-case one', () => {
     expect(generateInflections('August', 'noun')).toEqual([{ form: 'Augusts', kind: 'plural' }]);
   });
