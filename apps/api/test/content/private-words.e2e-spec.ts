@@ -200,6 +200,40 @@ describe('private words (e2e, isolated database)', () => {
     await expect(create(viId, { lemma: 'x', meaning: { text: '  ', language: 'vi' } })).rejects.toMatchObject({ code: 'validation-failed' });
   });
 
+  it('T-A7: a 100-code-point lemma with an emoji is accepted (101 refused); a meaning over 300 code points in NFD but 300 after NFC is accepted', async () => {
+    const word = await create(viId, { lemma: 'yeet' });
+    const lemma100 = `${'a'.repeat(99)}😀`;
+    expect([...lemma100]).toHaveLength(100);
+    expect((await patch(word.entryId, { lemma: lemma100 })).status).toBe(204);
+    expect((await readEntry(word.entryId)).lemma).toBe(lemma100);
+    expect((await patch(word.entryId, { lemma: `${lemma100}b` })).status).toBe(400);
+    const nfd = 'é'.repeat(150); // 300 code points in NFD, 150 é after NFC
+    expect([...nfd]).toHaveLength(300);
+    const longNfd = `${nfd}${'a'.repeat(150)}`; // 450 code points in NFD, 300 after NFC
+    expect((await patch(word.entryId, { senses: [{ sense_id: word.senseId, meaning: longNfd }] })).status).toBe(204);
+    const text = (await readEntry(word.entryId)).senses[0].revisions.at(-1)!.texts[0].text;
+    expect([...text]).toHaveLength(300);
+    expect(text).toBe(longNfd.normalize('NFC'));
+  });
+
+  it('L7: deleting the base entry clears both form_of_entry_id and form_kind of the revisions that pointed to it', async () => {
+    const base = await create(viId, { lemma: 'yeet' });
+    const form = await create(viId, { lemma: 'yote', formOf: { entryId: base.entryId, kind: 'past' } });
+    await tx((t) => content.deletePrivateEntryContent(t, viId, base.entryId));
+    expect(await ctx.prisma.senseRevision.findMany({ where: { senseId: form.senseId }, select: { formOfEntryId: true, formKind: true } }))
+      .toEqual([{ formOfEntryId: null, formKind: null }]);
+  });
+
+  it('T-A5: PATCH naming another learner\'s sense_id is 404 and changes nothing on either side', async () => {
+    const mineWord = await create(viId, { lemma: 'yeet' });
+    const theirs = await create(otherId, { lemma: 'yote' });
+    const before = await Promise.all([readEntry(mineWord.entryId), readEntry(theirs.entryId)]);
+    const res = await patch(mineWord.entryId, { senses: [{ sense_id: theirs.senseId, meaning: 'cướp' }] });
+    expect(res.status).toBe(404);
+    expect(res.body.type).toBe(problem('not-found'));
+    expect(await Promise.all([readEntry(mineWord.entryId), readEntry(theirs.entryId)])).toEqual(before);
+  });
+
   it('a private word with form_of and no level gets a derived level equal to the base entry\'s', async () => {
     const go = await catalog('go', 'verb', 'A1');
     const went = await create(viId, { lemma: 'wented', formOf: { entryId: go.entryId, kind: 'past' } });

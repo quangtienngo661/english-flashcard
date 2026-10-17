@@ -6,6 +6,7 @@ import { seedUser, startSession } from '../support/auth-helpers.js';
 import { createTestApp, type TestApp } from '../support/create-test-app.js';
 import { createIsolatedDatabase } from '../support/isolated-database.js';
 import { resetCatalog } from '../support/reset-catalog.js';
+import { seedVisibleSenses } from '../support/seed-senses.js';
 import { testConfig } from '../support/test-config.js';
 
 const transactionOptions = { timeout: 30_000, maxWait: 5_000 };
@@ -138,6 +139,8 @@ describe('learning items (e2e, isolated database)', () => {
     const [a, b] = [await me.group('A'), await me.group('B')];
     const { body: added } = await add(me.token, a, senseId);
     await add(me.token, b, senseId);
+    // Log rows are read in time order: give each step its own instant.
+    ctx.clock.advance(1000);
 
     const fromOne = await unlink(me.token, a, added.item_id);
     expect(fromOne.status).toBe(200);
@@ -147,7 +150,15 @@ describe('learning items (e2e, isolated database)', () => {
     const fromLast = await unlink(me.token, b, added.item_id);
     expect(fromLast.body).toEqual({ removed_from_learning: true });
     expect(await itemsOf(me.userId)).toEqual([]);
-    expect((await logOf(me.userId)).map(({ kind, groupId }) => [kind, groupId])).toEqual([['item_added', a], ['item_removed', b]]);
+    // T-C8: every column of both log rows.
+    const empty = { answer: null, rating: null, wasDue: null, daysSinceLast: null, reviewId: null, section: null };
+    expect(await logOf(me.userId)).toEqual([
+      { id: expect.any(String), userId: me.userId, itemId: added.item_id, senseId, groupId: a, kind: 'item_added', ...empty,
+        levelBefore: null, levelAfter: 0, dueBefore: null, dueAfter: date('2026-11-02'), localDate: date('2026-11-02'), at: now },
+      { id: expect.any(String), userId: me.userId, itemId: added.item_id, senseId, groupId: b, kind: 'item_removed', ...empty,
+        levelBefore: 0, levelAfter: null, dueBefore: date('2026-11-02'), dueAfter: null, localDate: date('2026-11-02'),
+        at: new Date(now.getTime() + 1000) },
+    ]);
     // The item is gone: removing it again is 404.
     expect((await unlink(me.token, b, added.item_id)).status).toBe(404);
   });
@@ -179,10 +190,20 @@ describe('learning items (e2e, isolated database)', () => {
     const a = await me.group('A');
     const { body: first } = await add(me.token, a, senseId);
     await ctx.prisma.learningItem.update({ where: { id: first.item_id }, data: { level: 3, dueDate: date('2026-11-09') } });
+    // Log rows are read in time order: give each step its own instant.
+    ctx.clock.advance(1000);
     await forget(me.token, first.item_id);
+    ctx.clock.advance(1000);
     const again = await add(me.token, a, senseId);
     expect(again.body).toEqual({ item_id: expect.any(String), level: 0, due_date: '2026-11-02', created: true });
     expect(again.body.item_id).not.toBe(first.item_id);
+    // T-C8: the removal keeps the old item's level and date; the re-add is a fresh item_added.
+    expect((await logOf(me.userId)).map(({ kind, itemId, levelBefore, levelAfter, dueBefore, dueAfter, groupId }) =>
+      ({ kind, itemId, levelBefore, levelAfter, dueBefore, dueAfter, groupId }))).toEqual([
+      { kind: 'item_added', itemId: first.item_id, levelBefore: null, levelAfter: 0, dueBefore: null, dueAfter: date('2026-11-02'), groupId: a },
+      { kind: 'item_removed', itemId: first.item_id, levelBefore: 3, levelAfter: null, dueBefore: date('2026-11-09'), dueAfter: null, groupId: null },
+      { kind: 'item_added', itemId: again.body.item_id, levelBefore: null, levelAfter: 0, dueBefore: null, dueAfter: date('2026-11-02'), groupId: a },
+    ]);
   });
 
   it('B3E22: bulk add of A2 + food skips function words and existing items and returns the counts', async () => {
@@ -322,5 +343,26 @@ describe('learning items (e2e, isolated database)', () => {
     expect(items).toHaveLength(2);
     expect(items.find((item) => item.senseId === bread)!.groups).toHaveLength(2);
     expect((await logOf(me.userId)).filter(({ kind }) => kind === 'item_added')).toHaveLength(2);
+  });
+  it('L3 (review probe P3): bulk add of 2,005 matching nouns into an empty group adds 2,000 and reports 5 skipped_group_full', async () => {
+    await seedVisibleSenses(ctx.prisma, 2005, 'bulk');
+    const me = await learner();
+    const group = await me.group('Nouns');
+    const response = await bulk(me.token, group, { pos: 'noun' });
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({ added: 2000, already_in_group: 0, skipped_function_words: 0, skipped_group_full: 5 });
+    expect(await ctx.prisma.groupItem.count({ where: { groupId: group } })).toBe(2000);
+  }, 120_000);
+
+  it('T-C5: two adds into a group with one free slot sent at the same moment → one 201, one 409 group-full, 2,000 stored', async () => {
+    const [apple, bread] = [await catalog('apple'), await catalog('bread')];
+    const me = await learner();
+    const group = await me.group('Almost full');
+    await fill(me.userId, group, 1999);
+    const results = await Promise.all([add(me.token, group, apple), add(me.token, group, bread)]);
+    expect(results.map((r) => r.status).sort()).toEqual([201, 409]);
+    expect(results.find((r) => r.status === 409)!.body.type).toBe(problem('group-full'));
+    expect(await ctx.prisma.groupItem.count({ where: { groupId: group } })).toBe(2000);
+    expect(await ctx.prisma.learningItem.count({ where: { userId: me.userId, senseId: { in: [apple, bread] } } })).toBe(1);
   });
 });

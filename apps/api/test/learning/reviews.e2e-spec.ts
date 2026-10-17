@@ -3,6 +3,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { seedUser, startSession } from '../support/auth-helpers.js';
 import { createTestApp, type TestApp } from '../support/create-test-app.js';
 import { createIsolatedDatabase } from '../support/isolated-database.js';
+import { seedVisibleSenses } from '../support/seed-senses.js';
 
 const problem = (slug: string) => `https://api.example.com/problems/${slug}`;
 const date = (value: string) => new Date(`${value}T00:00:00Z`);
@@ -234,16 +235,51 @@ describe('reviews (e2e, isolated database)', () => {
     expect(await ctx.prisma.learningLogEntry.count()).toBe(0);
   });
 
-  it('B3#5: 90 FakeClock days without answers change neither level nor due date', async () => {
+  it('B3#5 / T-C3: 90 FakeClock days without answers change neither level nor due date; queue, backlog and counts read it, never move it', async () => {
     const { userId, groupId } = await learner();
-    const item = await seedItem(userId, [groupId], { level: 3, dueDate: '2026-11-10' });
+    const [senseId] = await seedVisibleSenses(ctx.prisma, 1, 'idle');
+    const item = await ctx.prisma.learningItem.create({ data: {
+      userId, senseId, level: 3, dueDate: date('2026-11-10'), createdAt: now,
+    } });
+    await ctx.prisma.groupItem.create({ data: { groupId, itemId: item.id, addedAt: now } });
     const before = await itemRow(item.id);
+    const read = async (path: string) => {
+      const { accessToken } = await startSession(ctx, userId);
+      const response = await ctx.http().get(path).set('Authorization', `Bearer ${accessToken}`);
+      expect(response.status).toBe(200);
+      return response.body;
+    };
     for (let day = 0; day < 90; day += 10) {
       ctx.clock.advance(10 * 86_400_000);
-      const { accessToken } = await startSession(ctx, userId);
-      expect((await ctx.http().get(`/v1/groups/${groupId}`).set('Authorization', `Bearer ${accessToken}`)).status).toBe(200);
+      await read(`/v1/groups/${groupId}`);
+      await read(`/v1/groups/${groupId}/queue`);
+      await read(`/v1/groups/${groupId}/backlog`);
+      await read('/v1/groups');
     }
+    // 2026-11-08 + 90 days = 2027-02-06: 88 days overdue, so the word sits in the backlog and out of the queue.
+    expect((await read(`/v1/groups/${groupId}/queue`)).cards).toEqual([]);
+    expect((await read(`/v1/groups/${groupId}/backlog`)).items).toEqual([expect.objectContaining({
+      item_id: item.id, level: 3, due_date: '2026-11-10', days_overdue: 88,
+    })]);
+    expect((await read('/v1/groups')).items[0]).toMatchObject({ backlog: 1, today: { priority: 0, due: 0, new: 0 } });
     expect(await itemRow(item.id)).toEqual(before);
     expect(await ctx.prisma.learningLogEntry.count()).toBe(0);
   });
+
+  it('T-C2: one review_id sent at the same moment for two different items → one 200, one 400, one log row', async () => {
+    const { userId, groupId } = await learner();
+    const first = await seedItem(userId, [groupId], { level: 1, dueDate: '2026-11-08' });
+    const second = await seedItem(userId, [groupId], { level: 1, dueDate: '2026-11-08' });
+    const reviewId = randomUUID();
+    const results = await Promise.all([first, second].map((item) =>
+      answer(userId, { item_id: item.id, group_id: groupId, answer: 'known', review_id: reviewId })));
+    expect(results.map((r) => r.status).sort()).toEqual([200, 400]);
+    const rows = await ctx.prisma.learningLogEntry.findMany({ where: { reviewId } });
+    expect(rows).toHaveLength(1);
+    const winner = results.find((r) => r.status === 200)!.body.item_id;
+    expect(rows[0].itemId).toBe(winner);
+    const loser = winner === first.id ? second : first;
+    expect(await itemRow(loser.id)).toMatchObject({ level: 1, dueDate: date('2026-11-08') });
+  });
+
 });

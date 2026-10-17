@@ -63,11 +63,14 @@ describe('context sentences (e2e, isolated database)', () => {
   });
   afterAll(async () => { await ctx?.close(); });
 
-  it('adds a sentence (201) and lists it for its owner only', async () => {
+  it('adds a sentence (201) and lists it for its owner only; M1: the response carries no text, so idempotency_keys never stores it', async () => {
     const bank = await catalogSense('bank');
     const res = await add(bank, '  I saw the bank   by the river.  ');
     expect(res.status).toBe(201);
-    expect(res.body).toEqual({ id: expect.any(String), text: 'I saw the bank by the river.', created_at: ctx.clock.now().toISOString() });
+    expect(res.body).toEqual({ id: expect.any(String), created_at: ctx.clock.now().toISOString() });
+    const copies = await ctx.prisma.$queryRaw<Array<{ n: number }>>`
+      SELECT count(*)::int AS n FROM idempotency_keys WHERE response_body::text LIKE ${'%by the river%'}`;
+    expect(copies[0].n).toBe(0);
     expect((await content.listSentences(aId, [bank])).get(bank)).toEqual([
       { id: res.body.id, text: 'I saw the bank by the river.', createdAt: ctx.clock.now() }]);
     expect((await content.listSentences(bId, [bank])).get(bank) ?? []).toEqual([]);
@@ -137,9 +140,32 @@ describe('context sentences (e2e, isolated database)', () => {
     expect(tooLong.body.type).toBe(problem('validation-failed'));
     expect((await add(bank, ' \n ')).status).toBe(400);
     const nfd = await add(bank, 'café');
-    expect(nfd.body.text).toBe('café');
+    expect((await ctx.prisma.contextSentence.findUniqueOrThrow({ where: { id: nfd.body.id } })).text).toBe('café');
     const noKey = await ctx.http().post(`/v1/senses/${bank}/sentences`).set('Authorization', `Bearer ${aToken}`).send({ text: 'x' });
     expect(noKey.status).toBe(400);
+  });
+
+  it('L5: the owner cannot add a sentence to their own retired private sense (the shared visibility rule)', async () => {
+    const mine = await privateSense(aId, 'skrrt');
+    await ctx.prisma.sense.update({ where: { id: mine }, data: { state: 'retired' } });
+    expect((await content.visibleSenseIds(aId, [mine])).has(mine)).toBe(false);
+    const res = await add(mine, 'Stray.');
+    expect(res.status).toBe(404);
+    expect(await ctx.prisma.contextSentence.count()).toBe(0);
+  });
+
+  it('T-A6 (SR10): a sentinel sentence in refused adds (limit reached, not visible, too long) never reaches a log entry', async () => {
+    const bank = await catalogSense('bank');
+    for (let n = 1; n <= 5; n++) await add(bank, `Filler ${n}.`);
+    const sentinel = `SENTINEL-${randomUUID()}`;
+    ctx.logs.length = 0;
+    expect((await add(bank, `Over the limit ${sentinel}.`)).status).toBe(409);
+    expect((await add(randomUUID(), `Not visible ${sentinel}.`)).status).toBe(404);
+    expect((await add(bank, `${sentinel}${'x'.repeat(300)}`)).status).toBe(400);
+    // Control: a successful add on another sense in the same window is logged, so logging was on.
+    expect((await add(await catalogSense('river'), 'A plain sentence.')).status).toBe(201);
+    expect(ctx.logs.map(({ event }) => event)).toContain('context_sentence_added');
+    expect(JSON.stringify(ctx.logs)).not.toContain(sentinel);
   });
 
   it('deletePrivateEntryContent removes that entry\'s sentences', async () => {

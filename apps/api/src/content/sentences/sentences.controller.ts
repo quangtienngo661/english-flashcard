@@ -38,7 +38,8 @@ export class SentencesController {
     try {
       const sentence = await this.prisma.$transaction((tx) => this.sentences.addSentence(tx,
         { userId: learner.userId, senseId: params.id, text: body.text }), transactionOptions);
-      return { id: sentence.id, text: sentence.text, created_at: sentence.createdAt.toISOString() };
+      // No text in the response: the idempotency store keeps response bodies (M1, design 7.4).
+      return { id: sentence.id, created_at: sentence.createdAt.toISOString() };
     } catch (error) {
       if (!(error instanceof ContentRuleError)) throw error;
       if (error.code === 'not-found') throw notFound();

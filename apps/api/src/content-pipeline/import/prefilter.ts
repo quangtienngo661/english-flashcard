@@ -1,7 +1,7 @@
 import { contentHash, mergeContent, OWNER_SOURCE_ID } from '../../content/index.js';
 import type { Prisma } from '../../generated/prisma/client.js';
 import type { RowError } from '../upload/row-errors.js';
-import { contentKey, formatInflections, inflectionKey, levelKey, type NormalizedRow } from '../upload/row-normalizer.js';
+import { contentKey, formatInflections, levelKey, type NormalizedRow } from '../upload/row-normalizer.js';
 
 export type ImportFileRow = { normalized: NormalizedRow; raw: string[] };
 type KeyTuple = { kind: string; sourceId: string; rowKey: string; contentHash: string };
@@ -55,10 +55,6 @@ export async function prefilterRows(
       const { key, hash } = levelKey(normalized, batch.levelSourceId);
       keys.push({ kind: 'level', sourceId: batch.levelSourceId, rowKey: key, contentHash: hash });
     }
-    if (normalized.inflections !== null) {
-      const { key, hash } = inflectionKey(normalized);
-      keys.push({ kind: 'inflection', sourceId: OWNER_SOURCE_ID, rowKey: key, contentHash: hash });
-    }
     if (normalized.content !== null) {
       keys.push({ kind: 'content', sourceId: OWNER_SOURCE_ID, rowKey: contentKey(normalized).key,
         contentHash: contentHash(mergeContent({ glossVi: null, definitionEn: null, examplesEn: [], topicCodes: [], acceptedForms: [] },
@@ -74,7 +70,7 @@ export async function prefilterRows(
   // at importMaxRows. No query (and no per-row transaction) for duplicate rows rejected above.
   const existing = await db.importRowKey.findMany({ where: {
     rowKey: { in: rowKeys },
-    OR: [{ kind: { in: ['content', 'inflection'] }, sourceId: OWNER_SOURCE_ID },
+    OR: [{ kind: 'content', sourceId: OWNER_SOURCE_ID },
       ...(batch.levelSourceId !== null ? [{ kind: 'level', sourceId: batch.levelSourceId }] : [])],
     batch: { revertedAt: null },
   }, select: { kind: true, sourceId: true, rowKey: true, contentHash: true, batchId: true,
@@ -99,7 +95,10 @@ export async function prefilterRows(
   const unchangedRows: ImportFileRow[] = [];
   for (const { row, keys } of surviving) {
     const firstMatch = keys.length > 0 ? matches.get(signature(keys[0])) : undefined;
-    const unchanged = row.normalized.senseId === null && firstMatch !== undefined && [...firstMatch].some((id) =>
+    // H1: an inflections cell replaces the entry's whole set, and a later batch may have replaced what this same file
+    // once set; so a row carrying one is always processed again (sameForms in the processor keeps that cheap).
+    const unchanged = row.normalized.senseId === null && row.normalized.inflections === null
+      && firstMatch !== undefined && [...firstMatch].some((id) =>
       appliedRows.has(JSON.stringify([id, row.normalized.rowNumber]))
       && keys.every((key) => matches.get(signature(key))?.has(id)));
     (unchanged ? unchangedRows : toProcess).push(row);

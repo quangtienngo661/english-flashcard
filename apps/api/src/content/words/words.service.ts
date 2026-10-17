@@ -136,7 +136,7 @@ export class WordsService {
     const viaInflection = bases.map((base) => ({
       kind: base.kind, base: { entry_id: base.entryId, lemma: base.lemma, pos: base.pos },
       senses: baseSenses.filter(({ entry_id }) => entry_id === base.entryId),
-    })).filter(({ senses: found }) => found.length > 0);
+    }));
     return { senses, via_inflection: viaInflection };
   }
 
