@@ -17,7 +17,7 @@ function row(input: Partial<NormalizedRow> = {}): NormalizedRow {
   return {
     rowNumber: 2, lemma: 'analyze', variants: ['analyse'], pos: 'verb', level: 'B1',
     levelExtra: null, content: null, senseId: null, revision: null, contextLabel: null,
-    replaceMeaning: false, ...input,
+    replaceMeaning: false, inflections: null, formOf: null, ...input,
   };
 }
 

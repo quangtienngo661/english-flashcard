@@ -9,6 +9,26 @@ const base: RevisionContent = {
 };
 
 describe('revision content', () => {
+  it('hash stability: contentHash of a revision without formOf equals the value the Bước 2 function gives', () => {
+    const go: RevisionContent = { glossVi: 'đi', definitionEn: 'To move.', examplesEn: ['We go home.'],
+      topicCodes: ['daily-life', 'business'], acceptedForms: ['goes', 'going'] };
+    // Fixed hex computed with the Bước 2 contentHash before formOf existed.
+    const bước2 = '75c1824d5dac12bec43da99ae749d5745d7980ca76b2093c863eea7dba1c24e2';
+    expect(contentHash(go)).toBe(bước2);
+    expect(contentHash({ ...go, formOf: null })).toBe(bước2);
+    const linked = contentHash({ ...go, formOf: { entryId: '00000000-0000-4000-8000-0000000000aa', kind: 'past' } });
+    expect(linked).not.toBe(bước2);
+    expect(contentHash({ ...go, formOf: { entryId: '00000000-0000-4000-8000-0000000000aa', kind: 'past_participle' } })).not.toBe(linked);
+  });
+
+  it('D29: mergeContent keeps the base formOf unless the patch sets or clears it', () => {
+    const formOf = { entryId: '00000000-0000-4000-8000-0000000000aa', kind: 'past' as const };
+    const linked: RevisionContent = { ...base, formOf };
+    expect(mergeContent(linked, { glossVi: 'mới' }).formOf).toEqual(formOf);
+    expect(mergeContent(linked, { formOf: null }).formOf).toBeNull();
+    expect(mergeContent(base, { formOf }).formOf).toEqual(formOf);
+  });
+
   it('B2#29: accepted forms drop duplicates and the lemma itself after normalization', () => {
     expect(normalizeContent({ acceptedForms: [' BANK ', 'Banks', ' banks ', 'BANKING', '  '],
       topicCodes: [' BUSINESS ', 'business', 'Food'], glossVi: ' Cafe\u0301\t meaning ',

@@ -103,6 +103,7 @@ model Sense {
   replacesSense Sense?          @relation("SenseReplacement", fields: [replacesSenseId], references: [id], onDelete: Restrict)
   replacements  Sense[]         @relation("SenseReplacement")
   revisions     SenseRevision[]
+  sentences     ContextSentence[]
 
   @@map("senses")
 }
@@ -159,4 +160,19 @@ model EntryInflection {
   @@unique([entryId, form, kind])
   @@index([formKey])
   @@map("entry_inflections")
+}
+
+/// A sentence where a learner met a word (design 7.4); only its owner sees it.
+model ContextSentence {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  // Identity user id; no cross-module FK.
+  userId    String   @map("user_id") @db.Uuid
+  senseId   String   @map("sense_id") @db.Uuid
+  text      String
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  sense Sense @relation(fields: [senseId], references: [id], onDelete: Cascade)
+
+  @@index([userId, senseId])
+  @@map("context_sentences")
 }

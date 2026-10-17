@@ -10,6 +10,8 @@ import type { Level } from './content.constants.js';
 import {
   PrivateWordsService, type CreatePrivateSenseInput, type CreatePrivateSenseResult, type PrivateWordPatch,
 } from './private/private-words.service.js';
+import { SentencesService, type Sentence } from './sentences/sentences.service.js';
+import { WordsService, type WordSense } from './words/words.service.js';
 import { InflectionsService, type EntryByForm, type InflectionInput, type InflectionSource } from './inflections/inflections.service.js';
 import { SourcesService, isSourceComplete, type SourceView } from './sources/sources.service.js';
 import { SensesService, type CreateSenseInput, type SaveDraftInput, type SaveDraftResult, type MarkRevisionItem, type MarkRevisionResult } from './senses/senses.service.js';
@@ -28,6 +30,8 @@ export class ContentService {
     @Inject(AdminCatalogQueries) private readonly queries: AdminCatalogQueries,
     @Inject(InflectionsService) private readonly inflections: InflectionsService,
     @Inject(PrivateWordsService) private readonly privateWords: PrivateWordsService,
+    @Inject(SentencesService) private readonly sentences: SentencesService,
+    @Inject(WordsService) private readonly words: WordsService,
   ) {}
 
   getSource(id: string): Promise<SourceView | null> {
@@ -52,6 +56,10 @@ export class ContentService {
 
   addImportedLevel(tx: Prisma.TransactionClient, input: ImportedLevelInput): Promise<{ created: boolean; id: string }> {
     return this.levels.addImportedLevel(tx, input);
+  }
+
+  addDerivedLevel(tx: Prisma.TransactionClient, entryId: string, baseEntryId: string): Promise<{ id: string } | null> {
+    return this.levels.addDerivedLevel(tx, entryId, baseEntryId);
   }
 
   setEditorialLevel(tx: Prisma.TransactionClient, entryId: string, level: Level): Promise<void> {
@@ -146,6 +154,23 @@ export class ContentService {
 
   deletePrivateEntryContent(tx: Prisma.TransactionClient, ownerId: string, entryId: string): Promise<{ senseIds: string[] }> {
     return this.privateWords.deletePrivateEntryContent(tx, ownerId, entryId);
+  }
+
+  addSentence(tx: Prisma.TransactionClient, input: { userId: string; senseId: string; text: string }): Promise<Sentence> {
+    return this.sentences.addSentence(tx, input);
+  }
+
+  listSentences(userId: string, senseIds: string[]): Promise<Map<string, Sentence[]>> {
+    return this.sentences.listSentences(userId, senseIds);
+  }
+
+  deleteSentence(userId: string, id: string): Promise<boolean> {
+    return this.sentences.deleteSentence(userId, id);
+  }
+
+  /** Learner cards: visible senses only (catalog published or the viewer's own), in the viewer's language. */
+  cardContent(viewerId: string, senseIds: string[], nativeLanguage: 'vi' | 'en'): Promise<Map<string, WordSense>> {
+    return this.words.cardContent(viewerId, senseIds, nativeLanguage);
   }
 
   visibleSenseIds(viewerId: string, senseIds: string[]): Promise<Set<string>> {

@@ -67,7 +67,7 @@ describe('normalizeRow', () => {
     expect(row).toEqual({
       rowNumber: 17, lemma: 'Café March', variants: [], pos: 'noun', level: 'B1', levelExtra: null,
       content: { glossVi: 'ngân hàng', definitionEn: 'A financial institution.' },
-      senseId: null, revision: null, contextLabel: 'finance office', replaceMeaning: false,
+      senseId: null, revision: null, contextLabel: 'finance office', replaceMeaning: false, inflections: null, formOf: null,
     });
     expect(accepted({ ...baseCells, pos: ' Modal\t  Auxiliary ' }).pos).toBe('modal auxiliary');
   });
