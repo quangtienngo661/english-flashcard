@@ -43,7 +43,7 @@ export function testConfig(overrides?: Partial<AppConfig>): AppConfig {
     },
     // Off so other suites with workers on are not slowed by reminder ticks; reminder suites turn it on,
     // with a low tick so they see several ticks in a few seconds.
-    reminders: { tickSeconds: 1, runScheduler: false },
+    reminders: { tickSeconds: 1, runScheduler: false, retryBackoffMs: 10 },
     limits,
     ...overrides,
   };

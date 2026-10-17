@@ -11,8 +11,13 @@ export type EligibilityInput = {
   createdAt: Date;
   lastSeenAt: Date | null;
   settings: AppSettings['reminders'];
-  /** Local dates (`YYYY-MM-DD`) of this learner's sent reminders in the last 7 local days. */
+  /**
+   * Local dates (`YYYY-MM-DD`, last 7 local days) of reminders that went out or may have: `sent`, and `sending` left from an
+   * earlier day (D37). They count toward `minGapDays` and the inactive cap.
+   */
   sentDates: string[];
+  /** Local dates of days marked `failed` (M7): they count toward the inactive cap only, so a regular email is retried. */
+  failedDates: string[];
 };
 
 export type Eligibility =
@@ -24,15 +29,17 @@ export type Eligibility =
  * (D44). Card counts, preferences and today's delivery row are checked by the caller.
  */
 export function eligibility(input: EligibilityInput): Eligibility {
-  const { now, timezone, settings, sentDates } = input;
+  const { now, timezone, settings, sentDates, failedDates } = input;
   const today = localDate(timezone, now);
   if (localTime(timezone, now) < settings.sendTime) return { skip: 'before-time' };
   const absent = daysBetween(localDate(timezone, input.lastSeenAt ?? input.createdAt), today);
   if (absent > settings.stopAfterDays) return { skip: 'stopped' };
-  const lastSent = sentDates.toSorted().at(-1);
-  const sinceLast = lastSent === undefined ? Infinity : daysBetween(lastSent, today);
+  const since = (dates: string[]) => {
+    const last = dates.toSorted().at(-1);
+    return last === undefined ? Infinity : daysBetween(last, today);
+  };
   if (absent >= settings.inactiveAfterDays) {
-    return sinceLast < INACTIVE_EVERY_DAYS ? { skip: 'inactive-cap' } : { kind: 'inactive', today };
+    return since([...sentDates, ...failedDates]) < INACTIVE_EVERY_DAYS ? { skip: 'inactive-cap' } : { kind: 'inactive', today };
   }
-  return sinceLast < settings.minGapDays ? { skip: 'gap' } : { kind: 'regular', today };
+  return since(sentDates) < settings.minGapDays ? { skip: 'gap' } : { kind: 'regular', today };
 }
