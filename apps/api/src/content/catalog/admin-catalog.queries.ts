@@ -21,6 +21,7 @@ export type ExportRow = {
   topics: string; accepted_forms: string; context_label: string | null;
   sense_id: string; revision: number; _status: string; _level: Level | null; _missing?: string;
 };
+export type EntryExportRow = { headword: string; pos: string; _level: Level | null };
 export type ScopeRecord = { type: 'entry' | 'variant' | 'level' | 'sense' | 'revision'; id: string };
 type Page<T> = { items: T[]; next_page_token: string | null };
 const cursorSchema = z.strictObject({
@@ -271,6 +272,32 @@ export class AdminCatalogQueries {
       }
       return { items, notReady };
     }, { isolationLevel: 'RepeatableRead', timeout: 30_000, maxWait: 5_000 });
+  }
+
+  /** Catalog entries with no non-retired sense, counted against limit before any CSV bytes (D34). */
+  async exportEntriesWithoutSense(filter: { level?: Level }, limit: number):
+    Promise<{ rows: EntryExportRow[] } | { tooMany: true }> {
+    const where: Prisma.EntryWhereInput = {
+      ...catalogWhere, senses: { none: { state: { not: 'retired' } } },
+      ...(filter.level !== undefined ? { levels: { some: { level: filter.level } } } : {}),
+    };
+    const rows: EntryExportRow[] = [];
+    let after: Cursor | undefined;
+    while (true) {
+      const chunk = await this.prisma.entry.findMany({
+        where: { AND: [where, afterEntry(after)] }, include: { levels: levelsQuery, variants: entryInclude.variants },
+        orderBy: [{ lemma: 'asc' }, { pos: 'asc' }, { id: 'asc' }], take: 500,
+      });
+      for (const entry of chunk) {
+        const level = levelState(entry.levels).displayed_level;
+        if (filter.level !== undefined && level !== filter.level) continue;
+        if (rows.length === limit) return { tooMany: true };
+        rows.push({ headword: [entry.lemma, ...entry.variants.map(({ text }) => text)].join('/'), pos: entry.pos, _level: level });
+      }
+      if (chunk.length < 500) return { rows };
+      const last = chunk[chunk.length - 1];
+      after = { lemma: last.lemma, pos: last.pos as Cursor['pos'], id: last.id };
+    }
   }
 
   /** Count the actual filtered rows, including computed level/readiness, before any CSV bytes.

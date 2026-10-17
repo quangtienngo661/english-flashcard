@@ -1,7 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { PRISMA_CLIENT } from '../common/db/prisma.module.js';
 import type { Prisma, PrismaClient } from '../generated/prisma/client.js';
-import { AdminCatalogQueries, type ExportRow, type LatestRevision, type ScopeRecord } from './catalog/admin-catalog.queries.js';
+import { AdminCatalogQueries, type EntryExportRow, type ExportRow, type LatestRevision, type ScopeRecord } from './catalog/admin-catalog.queries.js';
 import type { SenseFilter } from './catalog/sense-filters.js';
 import { EntriesService, type EnsureEntryInput, type EnsureEntryResult, type VariantInput } from './catalog/entries.service.js';
 import { LevelsService, type EntryLevelView, type ImportedLevelInput } from './catalog/levels.service.js';
@@ -112,6 +112,10 @@ export class ContentService {
 
   listExportRows(filter: SenseFilter, limit: number): Promise<{ rows: ExportRow[] } | { tooMany: true }> {
     return this.queries.exportSenses(filter, limit);
+  }
+
+  listEntriesWithoutSense(filter: { level?: Level }, limit: number): Promise<{ rows: EntryExportRow[] } | { tooMany: true }> {
+    return this.queries.exportEntriesWithoutSense(filter, limit);
   }
 
   resolveBatchRecordOwners(records: ScopeRecord[]): Promise<{ entryIds: string[]; senseIds: string[] }> {
