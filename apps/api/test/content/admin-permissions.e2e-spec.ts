@@ -133,13 +133,17 @@ describe('admin permissions (e2e, isolated database)', () => {
       }
       await refused(revokedSession.accessToken, 403, 'forbidden');
       await refused(revokedClaims, 403, 'forbidden');
-      for (const token of [adminSession.accessToken, editorSession.accessToken]) {
-        const res = await send(token);
-        expect([401, 403, 429], label).not.toContain(res.status);
-        if (route.path === '/v1/admin/__permissions-control') {
-          expect(res.status, label).toBe(201); expect(res.body, label).toEqual({ ok: true });
+      // An admin-only permission (settings.manage) is granted to the editor's table here, so the editor holds all of them.
+      ctx.rolePermissions.editor = [...new Set([...ROLE_PERMISSIONS.editor, ...route.permissions!])];
+      try {
+        for (const token of [adminSession.accessToken, editorSession.accessToken]) {
+          const res = await send(token);
+          expect([401, 403, 429], label).not.toContain(res.status);
+          if (route.path === '/v1/admin/__permissions-control') {
+            expect(res.status, label).toBe(201); expect(res.body, label).toEqual({ ok: true });
+          }
         }
-      }
+      } finally { ctx.rolePermissions.editor = [...ROLE_PERMISSIONS.editor]; }
     }
     expect((await ctx.prisma.user.findUniqueOrThrow({ where: { id: learner.userId } })).staffRole).toBeNull();
     expect((await ctx.prisma.user.findUniqueOrThrow({ where: { id: editor.userId } })).staffRole).toBe('editor');
@@ -147,14 +151,15 @@ describe('admin permissions (e2e, isolated database)', () => {
     expect((await ctx.prisma.sessionChain.findUniqueOrThrow({ where: { id: revokedSession.sessionChainId } })).revokedAt).toEqual(ctx.clock.now());
   });
 
-  it('B2#67: GET /v1/me lists content.edit, content.publish, content.import and taxonomy.manage for admin and for editor', async () => {
+  it('B2#67: GET /v1/me lists content.edit, content.publish, content.import and taxonomy.manage for admin and for editor, and settings.manage for admin only', async () => {
     for (const staffRole of ['admin', 'editor'] as const) {
       const user = await seedUser(ctx.prisma, { verified: true, staffRole });
       const token = (await startSession(ctx, user.userId)).accessToken;
       const res = await ctx.http().get('/v1/me').set('Authorization', `Bearer ${token}`);
       expect(res.status).toBe(200);
       expect(res.body.staff_role).toBe(staffRole);
-      expect(res.body.permissions).toEqual([...(staffRole === 'admin' ? ['roles.manage'] : []), ...contentPermissions]);
+      expect(res.body.permissions).toEqual(staffRole === 'admin'
+        ? ['roles.manage', ...contentPermissions, 'settings.manage'] : contentPermissions);
     }
   });
 });

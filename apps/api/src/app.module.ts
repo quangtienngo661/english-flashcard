@@ -8,9 +8,10 @@ import { BatchScopeModule } from './content-pipeline/import/batch-scope.provider
 import { HealthController } from './health/health.controller.js';
 import { IdentityModule } from './identity/identity.module.js';
 import { SampleModule } from './sample/sample.module.js';
+import { SettingsModule } from './settings/settings.module.js';
 
 @Module({
-  imports: [SampleModule, IdentityModule, BatchScopeModule, ContentModule, ContentPipelineModule],
+  imports: [SampleModule, IdentityModule, BatchScopeModule, ContentModule, ContentPipelineModule, SettingsModule],
   controllers: [HealthController],
   providers: [],
 })
