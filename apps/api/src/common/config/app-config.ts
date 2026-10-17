@@ -15,7 +15,8 @@ export type RateLimitRuleName =
   | 'auth.logout.ip'
   | 'auth.reset.ip'
   | 'mail.ip.daily'
-  | 'user.write';
+  | 'user.write'
+  | 'learning.review';
 
 export interface RateLimitRuleConfig {
   by: 'user' | 'ip' | 'email' | 'chain';
@@ -86,6 +87,8 @@ export const DEFAULT_LIMITS: Record<RateLimitRuleName, RateLimitRuleConfig> = {
   'auth.reset.ip': { by: 'ip', max: 20, windowSeconds: 3600 },
   'mail.ip.daily': { by: 'ip', max: 20, windowSeconds: 86400 },
   'user.write': { by: 'user', max: 30, windowSeconds: 60 },
+  // Flashcard answers: a fast session goes well past 30 a minute.
+  'learning.review': { by: 'user', max: 120, windowSeconds: 60 },
 };
 
 const nonEmpty = z.string().trim().min(1);

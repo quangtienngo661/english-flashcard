@@ -9,6 +9,7 @@ import {
 } from '../content.constants.js';
 import { ContentRuleError, contentHash, revisionFormOf, type RevisionContent } from '../senses/revision-content.js';
 import { LevelsService } from '../catalog/levels.service.js';
+import { visibleSenseCondition } from '../learner/visible-senses.js';
 
 export type Meaning = { text: string; language: 'vi' | 'en' };
 export type CreatePrivateSenseInput = {
@@ -197,10 +198,9 @@ export class PrivateWordsService {
   /** Catalog senses that are published and open, plus the viewer's own private senses. */
   async visibleSenseIds(viewerId: string, senseIds: string[]): Promise<Set<string>> {
     if (senseIds.length === 0) return new Set();
-    const rows = await this.prisma.sense.findMany({ where: { id: { in: senseIds }, OR: [
-      { state: 'open', liveRevisionId: { not: null }, entry: { scope: 'catalog' } },
-      { entry: { scope: 'private', ownerUserId: viewerId } },
-    ] }, select: { id: true } });
+    const rows = await this.prisma.$queryRaw<Array<{ id: string }>>`
+      SELECT t.id::text AS id FROM unnest(${senseIds}::uuid[]) AS t(id)
+      WHERE ${visibleSenseCondition(Prisma.sql`t.id`, viewerId)}`;
     return new Set(rows.map(({ id }) => id));
   }
 

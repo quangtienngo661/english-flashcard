@@ -161,6 +161,7 @@ describe('loadConfig', () => {
       'auth.reset.ip': { by: 'ip', max: 20, windowSeconds: 3600 },
       'mail.ip.daily': { by: 'ip', max: 20, windowSeconds: 86400 },
       'user.write': { by: 'user', max: 30, windowSeconds: 60 },
+      'learning.review': { by: 'user', max: 120, windowSeconds: 60 },
     });
   });
 
