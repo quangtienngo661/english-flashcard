@@ -4,13 +4,22 @@ import { IdempotencyInterceptor } from '../../common/idempotency/idempotency.int
 import { Idempotent } from '../../common/idempotency/idempotent.decorator.js';
 import { RateLimit } from '../../common/rate-limit/rate-limit.decorator.js';
 import { CurrentLearner, LearnerContent, type Learner } from '../../content/index.js';
+import { QueueService } from '../queue/queue.service.js';
 import { createGroupBody, groupParams, renameGroupBody } from './groups.schemas.js';
 import { GroupsService } from './groups.service.js';
 
 @Controller('groups')
 @LearnerContent()
 export class GroupsController {
-  constructor(@Inject(GroupsService) private readonly groups: GroupsService) {}
+  constructor(
+    @Inject(GroupsService) private readonly groups: GroupsService,
+    @Inject(QueueService) private readonly queue: QueueService,
+  ) {}
+
+  @Get()
+  list(@CurrentLearner() learner: Learner) {
+    return this.queue.list(learner.userId);
+  }
 
   @Post()
   @Idempotent()
