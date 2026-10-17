@@ -30,8 +30,8 @@ const cursorSchema = z.strictObject({
 });
 type Cursor = z.infer<typeof cursorSchema>;
 
-// Bước 2 contains only catalog words. Keep staff read scope centralized for future private entries.
-const catalogWhere = { language: 'en', entryType: 'word' } satisfies Prisma.EntryWhereInput;
+// Staff read scope: catalog words only; learners' private entries never reach staff reads (S6).
+const catalogWhere = { language: 'en', entryType: 'word', scope: 'catalog' } satisfies Prisma.EntryWhereInput;
 const levelInclude = { source: true } satisfies Prisma.EntryLevelInclude;
 const levelsQuery = { include: levelInclude, orderBy: [{ createdAt: 'desc' }, { id: 'asc' }] } satisfies Prisma.Entry$levelsArgs;
 const revisionsQuery = {

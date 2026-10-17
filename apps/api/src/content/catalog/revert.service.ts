@@ -49,7 +49,7 @@ async function groupRecords(prisma: PrismaClient, records: RevertRecord[]) {
   const entryIds = [...grouped.keys()].sort();
   const entries: Array<{ id: string; lemma: string; pos: string }> = [];
   for (let offset = 0; offset < entryIds.length; offset += 1_000) {
-    entries.push(...await prisma.entry.findMany({ where: { id: { in: entryIds.slice(offset, offset + 1_000) } },
+    entries.push(...await prisma.entry.findMany({ where: { id: { in: entryIds.slice(offset, offset + 1_000) }, scope: 'catalog' },
       select: { id: true, lemma: true, pos: true }, orderBy: { id: 'asc' },
     }));
   }

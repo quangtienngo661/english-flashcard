@@ -43,6 +43,9 @@ model Entry {
   entryType            String   @default("word") @map("entry_type")
   functionWordDerived  Boolean  @default(false) @map("function_word_derived")
   functionWordOverride Boolean? @map("function_word_override")
+  // catalog | private; a private entry belongs to one learner (Identity user id, no cross-module FK).
+  scope                String   @default("catalog")
+  ownerUserId          String?  @map("owner_user_id") @db.Uuid
   createdAt            DateTime @default(now()) @map("created_at") @db.Timestamptz
   updatedAt            DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
 
@@ -50,7 +53,9 @@ model Entry {
   levels   EntryLevel[]
   senses   Sense[]
 
-  @@unique([language, lemma, pos])
+  // Uniqueness is two hand-written partial indexes (migration private_entries): entries_catalog_key on
+  // (language, lemma, pos) WHERE scope = 'catalog' and entries_private_key on (owner_user_id, language, lemma, pos)
+  // WHERE scope = 'private'. Every ON CONFLICT on entries must name the predicate.
   @@map("entries")
 }
 

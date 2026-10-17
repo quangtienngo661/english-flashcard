@@ -76,7 +76,7 @@ export class PublishService {
 
   private async writeSense<T>(senseId: string, write: (tx: Prisma.TransactionClient) => Promise<T>): Promise<T | null> {
     // Read only the immutable entry key outside the transaction; re-read mutable state after locking.
-    const sense = await this.prisma.sense.findUnique({ where: { id: senseId }, select: {
+    const sense = await this.prisma.sense.findFirst({ where: { id: senseId, entry: { scope: 'catalog' } }, select: {
       entry: { select: { lemma: true, pos: true } },
     } });
     if (!sense) return null;
