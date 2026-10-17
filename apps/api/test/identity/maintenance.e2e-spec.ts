@@ -41,6 +41,19 @@ describe('Maintenance cleanup (e2e, isolated database)', () => {
     expect(keys).toEqual(['test:inside']);
   });
 
+  it('M1: deletes idempotency keys created more than 24 h ago, with their stored responses', async () => {
+    const otherUser = (await seedUser(ctx.prisma)).userId;
+    await ctx.prisma.idempotencyKey.createMany({ data: [
+      { key: 'recent', userId: otherUser, endpoint: 'POST /test', status: 'succeeded', payloadHash: 'h',
+        responseStatus: 201, responseBody: { text: 'kept' }, createdAt: ago(hour) },
+      { key: 'old', userId: otherUser, endpoint: 'POST /test', status: 'succeeded', payloadHash: 'h',
+        responseStatus: 201, responseBody: { text: 'gone' }, createdAt: ago(25 * hour) },
+    ] });
+    await ctx.app.get(MaintenanceScheduler).runAll();
+    const keys = (await ctx.prisma.idempotencyKey.findMany({ where: { userId: otherUser } })).map((r) => r.key);
+    expect(keys).toEqual(['recent']);
+  });
+
   it('B1E8: clears successor ciphertext only after grace_until has passed', async () => {
     const chain = await chainAt({ createdAt: now, lastUsedAt: now });
     await ctx.prisma.refreshToken.createMany({ data: [
@@ -97,7 +110,7 @@ describe('Maintenance cleanup (e2e, isolated database)', () => {
   it('the scheduler registers every module\'s job and starts no timer when maintenanceEnabled is false', () => {
     const scheduler = ctx.app.get(MaintenanceScheduler);
     // Bước 2 (Task 18) added import-file-cleanup; every AppModule instance registers it too.
-    expect(scheduler.jobNames().sort()).toEqual(['identity-cleanup', 'import-file-cleanup', 'rate-limit-counters']);
+    expect(scheduler.jobNames().sort()).toEqual(['idempotency-keys', 'identity-cleanup','import-file-cleanup', 'rate-limit-counters']);
     expect(scheduler.isRunning()).toBe(false);
   });
 
