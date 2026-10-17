@@ -4,8 +4,8 @@
 design: [`../superpowers/specs/2026-10-16-buoc-3-learning-design.md`](../superpowers/specs/2026-10-16-buoc-3-learning-design.md).
 Plan này **chỉ có phần hệ thống** (API, worker, database). Giao diện (app người học, trang admin) có plan riêng, làm ở phiên khác.
 
-**Còn chờ chủ dự án:** G6 nguồn dạng chia tự sinh (chặn task 4b và phần thư viện của task 5, 7). "Xong khi": chủ dự án tự báo khi
-Bước 3 xong (D45).
+**Không còn câu chờ chủ dự án.** "Xong khi": chủ dự án tự báo khi Bước 3 xong (D45). Nguồn dạng chia: AGID, `compromise` dự phòng cho
+động từ và danh từ, đo trước (D46).
 Đã chốt 17/10: G2 → hai email nhắc cách nhau ít nhất N ngày, admin chỉnh 1–7, mặc định 2 (D44).
 
 **Luồng làm song song:** A Content (1–8) · B Nền tảng (9, 17–20) · C Learning (10–16) · D Nhắc học (21–22). A, B và phần đầu của C

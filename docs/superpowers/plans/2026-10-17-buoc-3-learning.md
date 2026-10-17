@@ -4,7 +4,7 @@
 > "chưa duyệt". **This plan covers the system only (API, worker, database).** The learner web app in
 > `apps/web` and the admin screens (settings page, "entries without a meaning" export option) are a **separate UI plan**,
 > written and implemented in another session after this plan is settled (owner, 17/10/2026). Implementation started 17/10 in
-> sessions step-3-impl-A…D. Open gate: G6 (G5: the owner declares Bước 3 done, D45).
+> sessions step-3-impl-A…D. No open gate (G5: the owner declares Bước 3 done, D45; G6: AGID, D46).
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or
 > superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking. The owner
@@ -23,8 +23,9 @@ extensions (inflection columns, form-of links, a backfill job, export of entries
 UI plan on top of the routes of design §10.
 
 **Tech Stack:** API unchanged (NestJS `12.1.2`, Prisma `7.10.0`, Postgres 17, BullMQ `6.3.12`, ioredis `6.0.0`, Vitest 4 +
-Testcontainers) plus **`compromise@14.18.0`** (MIT; `npm view` 17/10/2026) only if Task 4's measurement passes. No other new
-dependency without asking the owner.
+Testcontainers) plus **`compromise@14.18.0`** (MIT; fallback for verbs and nouns, D46) and **`pluralize@8.0.0`** (MIT;
+uncountable nouns, D47), both approved by the owner 17/10. Inflection data: AGID 2016.01.19 (D46). No other new dependency
+without asking the owner.
 
 **Spec:** [`docs/superpowers/specs/2026-10-16-buoc-3-learning-design.md`](../specs/2026-10-16-buoc-3-learning-design.md) — read the
 section named in each task. Decisions: [`../decisions/2026-10-16-buoc-3-learning-decisions.md`](../decisions/2026-10-16-buoc-3-learning-decisions.md).
@@ -42,7 +43,7 @@ is green. A track that needs another track's task merges `dev` into its branch a
 | G1 | **Answered 17/10:** the learner app lives under the landing's language prefix, `/vi/app/...` and `/en/app/...` (D39). | Task 20 | The reminder email links to `<LEARNER_APP_URL>/<native_language>/app/settings` (`vi` when the profile has none). Claude's added proposal, awaiting the owner: the prefix always follows the profile's `native_language` (the UI plan redirects a mismatch). |
 | G2 | **Answered 17/10 (D44):** two regular reminders to one learner are at least N local days apart; admin sets N from 1 to 7, default 2. Replaces "at most N emails a week". | Task 21 | Task 9 (merged) has `reminders.weeklyMax` (0–7, default 3); Task 21 renames it to `reminders.minGapDays` (1–7, default 2). No real data yet, so nothing to migrate. The inactive email stays at most once in 7 days (D26). |
 | G3 | **Answered 17/10:** light/dark follows the learner's system (D40). | — | Stored on the device by the UI plan; no API change. |
-| G6 | Task 4 measured 17/10 (track A): `compromise@14.18.0` **failed** the bar — 47/50 fixture cases (past participle of run, come, become wrong) and about 81/100 random CEFR-J rows (long adjectives given -er/-est such as "transitiver", "thoughtlesser"; redo → "redid"; no plural for self). Which source for library forms: compromise for verbs and nouns only plus a hand-written irregular list, AGID (licence unchecked), Wiktionary data (CC BY-SA), no library set (reviewed CSV forms only), or a lower bar? | Task 4b, the library parts of Tasks 5 and 7 | Coordinator split 17/10: Task 4a (table, columns, `InflectionKind`, `replaceInflections`, `entriesByForm`) and Task 5 without library forms go in PR A1; Task 4b (generator + measurement) and Task 7's library parts (forms on import, backfill job) wait for G6 and go in PR A3. Final behaviour unchanged once G6 is answered. |
+| G6 | **Answered 17/10 (D46):** AGID 2016.01.19 is the main source (level-0 forms, questionable entries skipped); `compromise` is a fallback for verbs and nouns missing from AGID only; adjectives missing from AGID get no comparative/superlative; measured first against the same bar (50/50, ≥ 95/100), else stop and measure `en-inflectors`. AGID is registered as a `data_sources` row and credited in a third-party notice file. Before: Task 4 measured 17/10 (track A): `compromise@14.18.0` **failed** the bar — 47/50 fixture cases (past participle of run, come, become wrong) and about 81/100 random CEFR-J rows (long adjectives given -er/-est such as "transitiver", "thoughtlesser"; redo → "redid"; no plural for self). Which source for library forms: compromise for verbs and nouns only plus a hand-written irregular list, AGID (licence unchecked), Wiktionary data (CC BY-SA), no library set (reviewed CSV forms only), or a lower bar? | Task 4b, the library parts of Tasks 5 and 7 | Coordinator split 17/10: Task 4a (table, columns, `InflectionKind`, `replaceInflections`, `entriesByForm`) and Task 5 without library forms go in PR A1; Task 4b (generator + measurement) and Task 7's library parts (forms on import, backfill job) wait for G6 and go in PR A3. Final behaviour unchanged once G6 is answered. |
 | G5 | **Answered 17/10 (D45):** the owner declares when Bước 3 is done ("mình sẽ báo cho bạn đến khi bước 3 xong"); no fixed checklist is set in advance. | Task 22 | Task 22 still runs its gate, the manual system walkthrough and the as-built report, and hands them to the owner; it does not call Bước 3 done. The UI plan adds its own checks. |
 
 The group picker for up to 100 groups (former G4) belongs to the UI plan: `POST /v1/quick-add` and `POST /v1/groups/{id}/items`
@@ -237,7 +238,16 @@ admin settings page after B's PR (Task 9), the learner screens after C's PR.
 - Produces: `type InflectionKind = 'third_person' | 'present_participle' | 'past' | 'past_participle' | 'plural' |
   'comparative' | 'superlative'`; `generateInflections(lemma: string, pos: string): Array<{ form: string; kind:
   InflectionKind }>` (verb → the four verb kinds, noun → plural, adjective → comparative and superlative, anything else or a
-  multi-word lemma → `[]`; a form equal to the lemma is dropped). Model `EntryInflection` (`entry_inflections`: `entryId` FK
+  multi-word lemma → `[]`; a form equal to the lemma is dropped). **Source (D46, Task 4b):** a compact data file generated
+  from AGID 2016.01.19 (level-0 forms only, entries marked `?` `~` `<` `!` skipped, several level-0 forms all kept, the first
+  one shown); a lemma missing from AGID falls back to `compromise` for verbs and nouns, and gets nothing for adjectives.
+  **Adjectives (D46 round 2, after the 419-row audit found ~23% wrong AGID comparatives):** AGID forms are kept only for
+  one-syllable adjectives, two-syllable ones ending in -y, -ly, -le, -er, -ow, and a small irregular set (good, bad, well, ill,
+  far, little, old); measured on the 419 audited rows, ≥ 95% of the forms still shown must be right, otherwise adjectives get no
+  library forms at all. **Measured 17/10: 92.1% (24 wrong forms got through) → adjectives have no library forms**; only reviewed
+  CSV forms. The 50-case fixture becomes 40 verb/noun cases + 10 adjective cases expected empty. **Uncountable nouns (D47):**
+  `pluralize@8.0.0` (MIT) is added; a noun whose `pluralize.plural(lemma)` equals the lemma gets no library plural (music,
+  software, information…); reviewed CSV forms are never filtered. All level-0 forms of a kind are stored and returned in AGID order (ring: ringed, rang). Model `EntryInflection` (`entry_inflections`: `entryId` FK
   cascade, `form`, `formKey` lower-case NFC, `kind`, `source` `library | reviewed`; unique `(entry_id, form, kind)`; index
   `form_key`). Revision columns `formOfEntryId` (`form_of_entry_id`, uuid, same module FK) and `formKind`.
   `ContentService.replaceInflections(tx, entryId: string, source: 'library' | 'reviewed', forms: Array<{ form; kind }>):
