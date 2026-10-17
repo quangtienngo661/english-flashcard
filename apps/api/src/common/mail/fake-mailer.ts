@@ -3,15 +3,18 @@ import { Mailer, type MailMessage } from './mailer.js';
 export class FakeMailer extends Mailer {
   readonly sent: MailMessage[] = [];
   private nextError?: Error;
+  private failuresLeft = 0;
 
-  failNext(err = new Error('Simulated mail failure')): void {
+  /** The next `times` sends throw `err`. */
+  failNext(err = new Error('Simulated mail failure'), times = 1): void {
     this.nextError = err;
+    this.failuresLeft = times;
   }
 
   async send(msg: MailMessage): Promise<void> {
-    if (this.nextError !== undefined) {
+    if (this.nextError !== undefined && this.failuresLeft > 0) {
       const error = this.nextError;
-      this.nextError = undefined;
+      if (--this.failuresLeft === 0) this.nextError = undefined;
       throw error;
     }
     this.sent.push({ ...msg });

@@ -9,9 +9,9 @@ const issues = (input: unknown) => {
 };
 
 describe('settings definitions', () => {
-  it('design §9: defaults are true, 20:00, 3, 7, 60, 20, 100, 60', () => {
+  it('design §9: defaults are true, 20:00, 2, 7, 60, 20, 100, 60', () => {
     expect(toApiValues(SETTINGS_DEFAULTS)).toEqual({
-      reminders: { enabled: true, send_time: '20:00', weekly_max: 3, inactive_after_days: 7, stop_after_days: 60 },
+      reminders: { enabled: true, send_time: '20:00', min_gap_days: 2, inactive_after_days: 7, stop_after_days: 60 },
       learning: { new_per_group_per_day: 20, reviews_per_group_per_day: 100, backlog_after_days: 60 },
     });
   });
@@ -19,7 +19,7 @@ describe('settings definitions', () => {
   it('B3E30: each bound accepts its edges and refuses one step outside, naming the key', () => {
     const edges: Array<[string, string, unknown, unknown, unknown]> = [
       ['reminders', 'send_time', '06:00', '22:00', '05:45'], ['reminders', 'send_time', '06:00', '22:00', '22:15'],
-      ['reminders', 'weekly_max', 0, 7, 8], ['reminders', 'weekly_max', 0, 7, -1],
+      ['reminders', 'min_gap_days', 1, 7, 8], ['reminders', 'min_gap_days', 1, 7, 0],
       ['reminders', 'inactive_after_days', 3, 30, 2], ['reminders', 'inactive_after_days', 3, 30, 31],
       ['reminders', 'stop_after_days', 30, 180, 29], ['reminders', 'stop_after_days', 30, 180, 181],
       ['learning', 'new_per_group_per_day', 1, 100, 0], ['learning', 'new_per_group_per_day', 1, 100, 101],
@@ -38,7 +38,7 @@ describe('settings definitions', () => {
       expect(issues({ reminders: { send_time: bad } }), String(bad)).toEqual(['reminders.send_time']);
     }
     expect(issues({ reminders: { send_time: '07:45' } })).toEqual([]);
-    expect(issues({ reminders: { weekly_max: 2.5 } })).toEqual(['reminders.weekly_max']);
+    expect(issues({ reminders: { min_gap_days: 2.5 } })).toEqual(['reminders.min_gap_days']);
     expect(issues({ reminders: { enabled: 'yes' } })).toEqual(['reminders.enabled']);
     expect(issues({ reminders: { tick: 1 } })).toEqual(['reminders']);
     expect(issues({ other: {} })).toEqual(['']);
@@ -52,7 +52,7 @@ describe('settings definitions', () => {
   });
 
   it('a patch changes only the named keys and the diff lists exactly those that changed', () => {
-    const next = applyPatch(SETTINGS_DEFAULTS, { reminders: { send_time: '21:00', weekly_max: 3 }, learning: { backlog_after_days: 90 } });
+    const next = applyPatch(SETTINGS_DEFAULTS, { reminders: { send_time: '21:00', min_gap_days: 2 }, learning: { backlog_after_days: 90 } });
     expect(next).toEqual({ ...SETTINGS_DEFAULTS,
       reminders: { ...SETTINGS_DEFAULTS.reminders, sendTime: '21:00' },
       learning: { ...SETTINGS_DEFAULTS.learning, backlogAfterDays: 90 } });
@@ -65,6 +65,13 @@ describe('settings definitions', () => {
 
   it('stored values missing a key fall back to its default', () => {
     expect(withDefaults(null)).toEqual(SETTINGS_DEFAULTS);
-    expect(withDefaults({ reminders: { weeklyMax: 5 } }).reminders).toEqual({ ...SETTINGS_DEFAULTS.reminders, weeklyMax: 5 });
+    expect(withDefaults({ reminders: { minGapDays: 5 } }).reminders).toEqual({ ...SETTINGS_DEFAULTS.reminders, minGapDays: 5 });
+  });
+
+  it('D44: a value stored under the retired weeklyMax key is dropped and min_gap_days takes its default', () => {
+    const values = withDefaults({ reminders: { weeklyMax: 5, sendTime: '21:00' } });
+    expect(values.reminders).toEqual({ ...SETTINGS_DEFAULTS.reminders, sendTime: '21:00' });
+    expect(values.reminders.minGapDays).toBe(2);
+    expect(toApiValues(values).reminders).not.toHaveProperty('weekly_max');
   });
 });
