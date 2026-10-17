@@ -53,7 +53,7 @@ describe('reminder scheduler and send jobs (e2e, isolated database)', () => {
     } });
     if (opts.cards ?? true) await addCard(ctx, user.userId);
     // The session used to add the card would count as a visit: put the visit back at `daysAway`.
-    await ctx.prisma.sessionChain.updateMany({ where: { userId: user.userId }, data: { lastUsedAt: away } });
+    await ctx.prisma.user.update({ where: { id: user.userId }, data: { lastSeenAt: away } });
     if (opts.verified === false) await ctx.prisma.user.update({ where: { id: user.userId }, data: { emailVerifiedAt: null } });
     return user;
   };
@@ -220,7 +220,7 @@ describe('reminder scheduler and send jobs (e2e, isolated database)', () => {
       const review = await ctx.http().post('/v1/reviews').set('Authorization', `Bearer ${accessToken}`)
         .send({ item_id: item.id, group_id: group.id, answer: 'known', review_id: randomUUID() });
       expect(review.status).toBe(200);
-      await ctx.prisma.sessionChain.updateMany({ where: { userId: done.userId }, data: { lastUsedAt: new Date(NOW.getTime() - DAY) } });
+      await ctx.prisma.user.update({ where: { id: done.userId }, data: { lastSeenAt: new Date(NOW.getTime() - DAY) } });
       const left = await learner(ctx);
       await tick.tick();
       expect(jobs()).toEqual([{ userId: left.userId, localDate: '2026-10-17', kind: 'regular', language: 'vi' }]);
