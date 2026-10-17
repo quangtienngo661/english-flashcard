@@ -18,10 +18,22 @@ function validEnv(): NodeJS.ProcessEnv {
     CORS_ORIGINS: 'https://app.example.com,https://admin.example.com',
     PROBLEM_TYPE_BASE: 'https://api.example.com/problems/',
     ADMIN_APP_URL: 'https://admin.example.com',
+    LEARNER_APP_URL: 'https://wordmet.example.com',
   };
 }
 
 describe('loadConfig', () => {
+  it('Task 20 (config): a missing LEARNER_APP_URL fails fast naming it; it must be an http(s) origin and is exposed as learnerAppUrl', () => {
+    expect(loadConfig(validEnv()).learnerAppUrl).toBe('https://wordmet.example.com');
+    expect(loadConfig({ ...validEnv(), LEARNER_APP_URL: 'http://localhost:3001' }).learnerAppUrl).toBe('http://localhost:3001');
+    const missing = validEnv();
+    delete missing.LEARNER_APP_URL;
+    expect(() => loadConfig(missing)).toThrow(/LEARNER_APP_URL/);
+    for (const bad of ['not a url', 'https://wordmet.example.com/', 'https://wordmet.example.com/vi/app', 'ftp://wordmet.example.com']) {
+      expect(() => loadConfig({ ...validEnv(), LEARNER_APP_URL: bad }), bad).toThrow(/LEARNER_APP_URL/);
+    }
+  });
+
   it('B25#23 (config): ADMIN_APP_URL is required, must be a URL, and is exposed as adminAppUrl', () => {
     expect(loadConfig(validEnv()).adminAppUrl).toBe('https://admin.example.com');
     const missing = validEnv();
