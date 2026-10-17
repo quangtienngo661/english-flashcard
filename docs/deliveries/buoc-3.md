@@ -4,7 +4,9 @@
 design: [`../superpowers/specs/2026-10-16-buoc-3-learning-design.md`](../superpowers/specs/2026-10-16-buoc-3-learning-design.md).
 Plan này **chỉ có phần hệ thống** (API, worker, database). Giao diện (app người học, trang admin) có plan riêng, làm ở phiên khác.
 
-**Còn chờ chủ dự án:** G2 cách đếm "mỗi tuần" của email nhắc (chặn task 21); G5 "Xong khi" (chặn task 22).
+**Còn chờ chủ dự án:** G6 nguồn dạng chia tự sinh (chặn task 4b và phần thư viện của task 5, 7). "Xong khi": chủ dự án tự báo khi
+Bước 3 xong (D45).
+Đã chốt 17/10: G2 → hai email nhắc cách nhau ít nhất N ngày, admin chỉnh 1–7, mặc định 2 (D44).
 
 **Luồng làm song song:** A Content (1–8) · B Nền tảng (9, 17–20) · C Learning (10–16) · D Nhắc học (21–22). A, B và phần đầu của C
 chạy cùng lúc từ ngày đầu; C chờ A ở task 12 và 14; D chạy sau cùng. Mỗi luồng mở PR ngay ở chỗ luồng khác cần (B sau task 9, C sau

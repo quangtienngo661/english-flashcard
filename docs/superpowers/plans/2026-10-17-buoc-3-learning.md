@@ -1,9 +1,10 @@
 # Bước 3 — Learning Implementation Plan (system part)
 
 > **Status 17/10/2026:** written on the owner's request ("viết implementation plan đi") while the design doc is still marked
-> "chưa duyệt". **No code yet.** **This plan covers the system only (API, worker, database).** The learner web app in
+> "chưa duyệt". **This plan covers the system only (API, worker, database).** The learner web app in
 > `apps/web` and the admin screens (settings page, "entries without a meaning" export option) are a **separate UI plan**,
-> written and implemented in another session after this plan is settled (owner, 17/10/2026). Open gates: G2 and G5.
+> written and implemented in another session after this plan is settled (owner, 17/10/2026). Implementation started 17/10 in
+> sessions step-3-impl-A…D. Open gate: G6 (G5: the owner declares Bước 3 done, D45).
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or
 > superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking. The owner
@@ -39,9 +40,10 @@ is green. A track that needs another track's task merges `dev` into its branch a
 | Gate | Question for the owner | Needed before | Context (no option is favoured) |
 |---|---|---|---|
 | G1 | **Answered 17/10:** the learner app lives under the landing's language prefix, `/vi/app/...` and `/en/app/...` (D39). | Task 20 | The reminder email links to `<LEARNER_APP_URL>/<native_language>/app/settings` (`vi` when the profile has none). Claude's added proposal, awaiting the owner: the prefix always follows the profile's `native_language` (the UI plan redirects a mismatch). |
-| G2 | How "at most N reminder emails a week" is counted: calendar week (Monday–Sunday), the last 7 local days, or a minimum gap between two emails? | Task 21 | Not answered yet. Emails go only on days the learner has not finished today's cards (design 8.2), so a daily learner gets few or none. Calendar week can give 5 emails in 5 days around a Monday; the last-7-days rule and a gap rule cannot. |
+| G2 | **Answered 17/10 (D44):** two regular reminders to one learner are at least N local days apart; admin sets N from 1 to 7, default 2. Replaces "at most N emails a week". | Task 21 | Task 9 (merged) has `reminders.weeklyMax` (0–7, default 3); Task 21 renames it to `reminders.minGapDays` (1–7, default 2). No real data yet, so nothing to migrate. The inactive email stays at most once in 7 days (D26). |
 | G3 | **Answered 17/10:** light/dark follows the learner's system (D40). | — | Stored on the device by the UI plan; no API change. |
-| G5 | What must be true to call Bước 3 done ("Xong khi")? | Task 22 | Earlier steps used: CI green including a real-stack e2e job, plus a manual run on a fresh database with the real CEFR-J file. The owner is the only test user until the app is complete (D12, D13). The UI plan adds its own checks. |
+| G6 | Task 4 measured 17/10 (track A): `compromise@14.18.0` **failed** the bar — 47/50 fixture cases (past participle of run, come, become wrong) and about 81/100 random CEFR-J rows (long adjectives given -er/-est such as "transitiver", "thoughtlesser"; redo → "redid"; no plural for self). Which source for library forms: compromise for verbs and nouns only plus a hand-written irregular list, AGID (licence unchecked), Wiktionary data (CC BY-SA), no library set (reviewed CSV forms only), or a lower bar? | Task 4b, the library parts of Tasks 5 and 7 | Coordinator split 17/10: Task 4a (table, columns, `InflectionKind`, `replaceInflections`, `entriesByForm`) and Task 5 without library forms go in PR A1; Task 4b (generator + measurement) and Task 7's library parts (forms on import, backfill job) wait for G6 and go in PR A3. Final behaviour unchanged once G6 is answered. |
+| G5 | **Answered 17/10 (D45):** the owner declares when Bước 3 is done ("mình sẽ báo cho bạn đến khi bước 3 xong"); no fixed checklist is set in advance. | Task 22 | Task 22 still runs its gate, the manual system walkthrough and the as-built report, and hands them to the owner; it does not call Bước 3 done. The UI plan adds its own checks. |
 
 The group picker for up to 100 groups (former G4) belongs to the UI plan: `POST /v1/quick-add` and `POST /v1/groups/{id}/items`
 take any `group_id`, so no API task waits for it. Design cases left to the UI plan: B3E32 (the learner app blocked in
@@ -51,7 +53,7 @@ production) and B3E34 (the reminder link opened while signed out); every other `
 
 | Track | Tasks, in order | Starts | Waits for |
 |---|---|---|---|
-| A — Content | 1 → 2 → 3 → 4 → 5, **PR A1**; 6 → 7 → 8, **PR A2** | day one | nothing |
+| A — Content | 1 → 2 → 3 → 4a → 5, **PR A1**; 6 → 7 (no library parts) → 8, **PR A2**; 4b → 7 library parts, **PR A3** (after G6) | day one | PR A3: G6 |
 | B — Platform | 9, **PR B1**; 17 → 18 → 19 → 20, **PR B2** | day one | nothing (edits no Content or Learning file) |
 | C — Learning | 10 → 11; 12 → 13; 14, **PR C1**; 15 → 16, **PR C2** | day one (10, 11) | 12–13: PR A1 (Tasks 3, 5). 14: PR A2 (Tasks 6, 8) and PR B1 (Task 9). 16: PR A1, A2 |
 | D — Reminders | 21 → 22 | after PR B2 and PR C1 | 21: Tasks 14 and 20. 22: every PR merged |
@@ -113,7 +115,11 @@ admin settings page after B's PR (Task 9), the learner screens after C's PR.
 - **Writes (design §10: every write carries `Idempotency-Key`):** every new `POST`/`PATCH`/`PUT`/`DELETE` route — learner and
   admin — has `@Idempotent()` (the interceptor then requires the header: 400 without it, `idempotency.interceptor.ts:38-40`;
   the key is scoped to the real path, so one key on two ids never replays the wrong result) and learner routes also
-  `@RateLimit('user.write')`. The one exception is `POST /v1/reviews`, made idempotent by its `review_id` instead.
+  `@RateLimit('user.write')`. The one exception is `POST /v1/reviews`: idempotent by its `review_id` instead of the header
+  (same `review_id` + same body → the stored result; same `review_id` + a different `item_id`/`group_id`/`answer` → 400, like a
+  reused `Idempotency-Key` with another payload), and limited by its own rule `learning.review` (per user, 120 per 60 s) instead
+  of `user.write` (30 per 60 s would stop a learner flipping a card every 2 s mid-session) — coordinator decision 17/10 on
+  track C's question; the rule goes into `DEFAULT_LIMITS` in `src/common/config/app-config.ts`.
 - **Logs:** `AppLogger` only; never a context sentence, a private meaning, an email address or a token. Reminder logs carry
   `user_id`, `local_date`, `kind`, outcome.
 - **Tests:** real Postgres, Redis, Mailpit through Testcontainers; `FakeClock` for dates; suites with global counts use
@@ -561,7 +567,14 @@ admin settings page after B's PR (Task 9), the learner screens after C's PR.
 - Modify: `src/learning/groups/groups.controller.ts`, `src/learning/index.ts`
 
 **Interfaces:**
-- Consumes: `SettingsService.get()` (caps, backlog days), `ContentService.cardContent`, `ContentService.listSentences`.
+- Consumes: `SettingsService.get()` (caps, backlog days), `ContentService.cardContent`, `ContentService.listSentences`, and
+  `visibleSenseCondition(senseIdColumn: Prisma.Sql, viewerId: string): Prisma.Sql` — a Content-owned SQL fragment ("catalog
+  open and published, or the viewer's own private sense") that Learning embeds in the single counting statement, because
+  `visibleSenseIds` cannot take 200,000 ids (Postgres parameter limit 65,535). Added in this task by track C as a coordinator-
+  approved exception (17/10) in `src/content/learner/visible-senses.ts`; `ContentService.visibleSenseIds` is rewritten on the
+  same fragment so one definition of "visible" exists; Content tests prove both give the same set. A private sense is visible
+  only to its owner **and** while open with a live revision (private words are never retired; deleting removes them).
+  `words.service.ts`'s own `visible()` moves onto the same fragment in PR A3.
 - Produces: `GET /v1/groups` → `{ items: [{ id, name, version, total, today: { priority, due, new }, cells: Array<{
   level: 0..5; total; due }>, backlog }] }` ordered by `today.priority > 0` first, then `priority + due + new` descending, then
   name; `due = min(due available, reviewCap − due reviews logged today in this group)`, `new = min(level-0 items, newCap − new
@@ -650,13 +663,16 @@ admin settings page after B's PR (Task 9), the learner screens after C's PR.
   `src/identity/identity.module.ts`, every importer (`grep -rn "mailer/" src test`), `test/support/create-test-app.ts`
 
 **Interfaces:**
-- Produces: `MailBudget.tryConsume(opts?: { ceiling?: number }): Promise<boolean>` — with `ceiling` (0–1) one statement
-  increments only while `sent < floor(ceiling × MAIL_DAILY_BUDGET)` and returns false otherwise; without it, behaviour is
-  exactly today's. `MailBudget.sentToday(): Promise<number>`. `MailModule` provides `Mailer` (`SmtpMailer`), `MailBudget`,
+- Produces: `REMINDER_MAIL_SHARE = 0.8` and `mailLimit(budget: number, share: number): number` (`Math.floor(share × budget)`),
+  exported from `src/common/mail/mail-budget.service.ts` — the **only** place the 80% line is computed (Task 21's tick uses the
+  same function, so tick and provider stop at the same count; the existing `mail_budget_80` warning log keeps its own
+  rounding, it decides nothing). `MailBudget.tryConsume(opts?: { ceiling?: number }): Promise<boolean>` — with `ceiling` (0–1)
+  one statement increments only while `sent < mailLimit(MAIL_DAILY_BUDGET, ceiling)` and returns false otherwise; without it,
+  behaviour is exactly today's. `MailBudget.sentToday(): Promise<number>`. `MailModule` provides `Mailer` (`SmtpMailer`), `MailBudget`,
   `MailDispatcher`, exported to Identity and Notifications.
 
 - [ ] **Step 1: Failing tests.** `B3#18 (budget): with budget 10, tryConsume({ ceiling: 0.8 }) succeeds 8 times then fails while
-  plain tryConsume still reaches 10`; `two concurrent ceiling consumers never pass the ceiling`; `migrate diff after the model
+  plain tryConsume still reaches 10`; `mailLimit(7, 0.8) is 5 and with budget 7 the ceiling consumer stops after 5`; `two concurrent ceiling consumers never pass the ceiling`; `migrate diff after the model
   move is empty`. Existing identity mail suites keep passing with only import paths changed.
 - [ ] **Step 2:** Run → FAIL.
 - [ ] **Step 3: Implement** the move and the ceiling statement (`INSERT … ON CONFLICT DO UPDATE SET sent = sent + 1 WHERE
@@ -735,26 +751,33 @@ admin settings page after B's PR (Task 9), the learner screens after C's PR.
 - [ ] **Step 4:** Run → PASS.
 - [ ] **Step 5: Commit** `feat(notifications): add the notification provider port and email reminders`.
 
-### Task 21: Reminder scheduler and send jobs (needs G2)
+### Task 21: Reminder scheduler and send jobs
 
 **Files:**
 - Create: `src/notifications/scheduler/eligibility.ts` (+ spec), `src/notifications/scheduler/reminder-queue.service.ts`,
   `src/notifications/scheduler/reminder-tick.service.ts`, `src/notifications/scheduler/reminder-send.service.ts`,
   `test/notifications/reminders.e2e-spec.ts`
-- Modify: `src/common/config/app-config.ts` (+ spec), `test/support/create-test-app.ts` (close hook for the reminder queue)
+- Modify: `src/common/config/app-config.ts` (+ spec), `test/support/test-config.ts` (`reminders.tickSeconds` low for tests),
+  `test/support/create-test-app.ts` (close hook for the reminder queue), `src/common/mail/fake-mailer.ts`
+  (`failNext(err?: Error, times = 1)`: the next `times` sends throw), `src/settings/settings.definitions.ts` (+ spec) and
+  `test/settings/settings.e2e-spec.ts` (D44: `reminders.weeklyMax` → `reminders.minGapDays`, bounds 1–7, default 2; JSON key
+  `min_gap_days`; a stored value under the old key is ignored and the default applies)
 
 **Interfaces:**
-- Consumes: Tasks 9, 11, 14 (`cardsLeftToday`), 17, 18, 19, 20.
+- Consumes: Tasks 9, 11, 14 (`cardsLeftToday`), 17 (`mailLimit`, `REMINDER_MAIL_SHARE`, `sentToday`), 18, 19, 20.
 - Produces: `AppConfig.reminders: { tickSeconds: number }` (env `REMINDER_TICK_SECONDS`, default 900; tests and the real-stack
   suite lower it). `ReminderQueueService` owns BullMQ queue `reminders` (own `Queue`/`Worker` on `redisUrl`, prefix
   `pipeline.queuePrefix`, Worker connection `maxRetriesPerRequest: null`); **only when `pipeline.runWorkers`** it calls
   `upsertJobScheduler('reminder-tick', { every: tickSeconds * 1000 }, { name: 'tick' })` and starts the Worker.
   `eligibility(input: { now: Date; timezone: string; createdAt: Date; lastSeenAt: Date | null; settings: AppSettings['reminders'];
   sentDates: string[] /* local dates of sent rows, last 7 days */ }): { kind: ReminderKind; today: string } | { skip: 'before-time'
-  | 'stopped' | 'weekly-cap' | 'inactive-cap' }` — absence `d = days since (lastSeenAt ?? createdAt)`: `d < inactiveAfterDays` →
+  | 'stopped' | 'gap' | 'inactive-cap' }` — absence `d = daysBetween(localDate(timezone, lastSeenAt ?? createdAt),
+  localDate(timezone, now))` (difference of **local dates**, like `due_date` in Task 11, never hours ÷ 24): `d < inactiveAfterDays` →
   `regular`, `inactiveAfterDays ≤ d ≤ stopAfterDays` → `inactive` (only when no email of any kind was sent in the last 7 local
   days, else `inactive-cap`), `d > stopAfterDays` → `stopped`;
-  `weekly-cap` rule = **G2**. Tick: skip entirely when `MailBudget.sentToday() ≥ 0.8 × budget`; page candidates 500 at a time;
+  `regular` also needs `daysBetween(latest of sentDates, today) ≥ settings.minGapDays` (no sent date → allowed), else `gap`
+  (D44). Tick: skip entirely when `MailBudget.sentToday() ≥ mailLimit(MAIL_DAILY_BUDGET,
+  REMINDER_MAIL_SHARE)` (the same line the provider's `tryConsume({ ceiling })` stops at); page candidates 500 at a time;
   drop learners with prefs off or a delivery row for their local date; `eligibility`; `cardsLeftToday`; add `send` jobs with
   `jobId reminder-<userId>-<localDate>`, `attempts 3`, exponential backoff, `removeOnComplete`, `removeOnFail`. Send (design 8.3):
   delivery `sent`/`sending`/`failed` → done; none → re-check chooser and cards → insert `sending` (unique conflict → done) →
@@ -763,22 +786,28 @@ admin settings page after B's PR (Task 9), the learner screens after C's PR.
 
 - [ ] **Step 1: Failing tests.** `eligibility.spec.ts`: `tiers: 6 days regular, 7 and 60 inactive, 61 stopped`; `before
   send_time skip`; `Review Focus 1: local date and time in Pacific/Kiritimati, Etc/GMT+12 and America/New_York on 2026-11-01`;
-  `weekly rule per G2`. `reminders.e2e-spec.ts` (workers on, FakeClock, FakeMailer, low tickSeconds): `B3#16: an eligible learner
+  `D44: with minGapDays 2 an absent learner is eligible on every second local date (T5, T7, T2, …); with 1 on every date;
+  with 7 once a week`; `absence counts local dates: last seen 23:50 local and now 00:10 the next local day is d = 1; across the
+  America/New_York DST day, 7 local dates later is d = 7`. `reminders.e2e-spec.ts` (workers on, FakeClock, FakeMailer, low tickSeconds): `B3#16: an eligible learner
   gets exactly one email in that local day across many ticks`; `B3#17 / B3E24: off (learner or system) or unverified → no email;
   turning off while the job waits → no email`; `B3#18 / B3E23: at 80% of the budget nothing is enqueued or sent and an OTP still
-  goes out`; `B3E25: a job that finds sending sends nothing`; `B3E26: a re-run after sent sends nothing`; `B3E27: two ticks for one
+  goes out`; `with budget 7 the tick stops enqueueing at exactly the count where the provider starts refusing (5), so no job
+  is enqueued only to be refused`; `B3E25: a job that finds sending sends nothing`; `B3E26: a re-run after sent sends nothing`; `B3E27: two ticks for one
   learner and day leave one job`; `D27: a learner with no card left today gets no email`; `a transient SMTP error is retried
-  into one email; three errors leave failed and no further try that day`; `inactive: 10 days absent → the inactive email at most
+  into one email; three errors (FakeMailer.failNext(err, 3)) leave failed and no further try that day; each attempt used one
+  budget slot`; `inactive: 10 days absent → the inactive email at most
   once in 7 days; 61 days → none`; `B3E29: a zone change during the day sends at most one email per local date`; `the API process
   (runWorkers false) creates no scheduler and no worker`; `Review Focus 4: two test apps with runWorkers on, sharing one database
-  and one queue prefix, tick at the same moment and the learner still receives exactly one email that local day`.
+  and one queue prefix; because both upsert the same `reminder-tick` scheduler only one tick would fire, so the test calls
+  both apps' `ReminderTickService.tick()` at once (`Promise.all`) with both Workers running, and the emails summed over **both**
+  apps' FakeMailers are exactly one for that learner and local day`.
 - [ ] **Step 2:** Run → FAIL.
 - [ ] **Step 3: Implement** per the interfaces; logs `reminder_sent`, `reminder_skipped` with `user_id`, `local_date`, `kind`,
   reason — no email address.
 - [ ] **Step 4:** `pnpm build`; run → PASS; `worker-process.e2e-spec.ts` still passes.
 - [ ] **Step 5: Commit** `feat(notifications): schedule reminder emails per local day`.
 
-### Task 22: System gate and docs (needs G5)
+### Task 22: System gate and docs (the owner declares Bước 3 done, D45)
 
 **Files:**
 - Modify: `docs/superpowers/specs/2026-10-16-buoc-3-learning-design.md` (§17 as-built for the system part, any `ASSUMPTION`
@@ -789,7 +818,7 @@ admin settings page after B's PR (Task 9), the learner screens after C's PR.
   (API), plus the admin suites `pnpm test; pnpm build:e2e; pnpm test:e2e; pnpm test:e2e:real` in `apps/admin` to show the API
   changes broke nothing there. All green; counts compared with the end of Bước 2.5 (API 578 unit + 475 e2e; admin 219 unit + 67
   mocked e2e + 7 real-stack e2e — `docs/deliveries/buoc-2-5.md`, 15/10/2026).
-- [ ] **Step 2: Manual run** (the part of G5 that concerns the system), on a fresh database with the real CEFR-J file: import
+- [ ] **Step 2: Manual run** of the system part, handed to the owner who declares Bước 3 done (D45), on a fresh database with the real CEFR-J file: import
   → inflection backfill → export entries without senses → upload filled rows → publish without topics → as a learner: quick add,
   queue, review, backlog, private word create/delete → API + worker with `REMINDER_TICK_SECONDS=60`, `send_time` set through
   `PUT /v1/admin/settings` to the next quarter hour → exactly one reminder in Mailpit for a verified learner with a card left,

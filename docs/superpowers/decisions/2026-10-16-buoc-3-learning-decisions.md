@@ -5,7 +5,7 @@ File này gom mọi quyết định trong lúc brainstorm Bước 3, mỗi quy�
 trade-off và lựa chọn. Design doc mô tả *cách làm*; file này trả lời *tại sao chọn vậy và đã bỏ gì*.
 
 > **Trạng thái 17/10/2026: bản nháp.** Phần giao diện (D38, các câu hỏi trong `../../mockups/2026-10-16/UI-CONTEXT.md` §7) có plan
-> riêng (D41). Còn mở trong plan hệ thống: G2 (cách đếm "mỗi tuần"), G5 ("Xong khi"); D39–D40 có phần đề xuất của Claude chờ duyệt.
+> riêng (D41). Còn mở trong plan hệ thống: G6 (nguồn dạng chia tự sinh); D39–D40 có phần đề xuất của Claude chờ duyệt.
 
 **Nhãn:** ✅ = phương án được chọn. **Ai chốt:** "Chủ dự án" = chọn trong chat; "Đề xuất của Claude" = chủ dự án không chọn hoặc
 nói không có ý khác, Claude đề xuất và chủ dự án đồng ý hoặc không phản đối; "Duyệt cùng design" = Claude đề xuất khi trình bày
@@ -61,6 +61,8 @@ một phần design, chủ dự án duyệt cả phần.
 | D41 | Plan và người implement | Plan chỉ phần hệ thống; giao diện có plan riêng ở phiên khác; implement ở một phiên khác, không dùng Codex | Chủ dự án |
 | D42 | Trang từ có gộp chữ hoa và chữ thường không | Tách: `March` và `march` là hai dòng, hai trang; tìm và tra không phân biệt hoa thường | Chủ dự án (cách tìm và tra: Claude) |
 | D43 | Có nhóm mặc định "Mới thêm" không | Bỏ: thêm từ phải chọn hoặc tạo nhóm; nhóm nào cũng đổi tên, xóa được (đổi D28) | Chủ dự án |
+| D45 | "Xong khi" của Bước 3 (G5 của plan) | Không đặt danh sách cố định trước; chủ dự án tự báo khi Bước 3 xong | Chủ dự án |
+| D44 | Giới hạn số email nhắc (G2 của plan) | Hai email nhắc cách nhau ít nhất N ngày; admin chỉnh N từ 1 tới 7, mặc định 2 (thay "tối đa N email mỗi tuần") | Chủ dự án (chỉnh khoảng cách thay vì công tắc chọn cách đếm: đề xuất của Claude) |
 
 ## D1 — Thứ tự và phạm vi (Q-A)
 
@@ -475,6 +477,31 @@ tiên, đỡ một bước khi có nhiều nhóm) và các hướng, không nghi
 Chủ dự án: bỏ, "khi thêm từ thì user sẽ tự thêm nhóm tại vì dù gì cũng học theo nhóm, không học đơn lẻ". Claude đồng ý, không thêm gì:
 người chưa có nhóm tạo nhóm (`POST /v1/groups`) rồi mới lưu từ; một nhóm rỗng còn lại nếu bước sau lỗi là vô hại. Việc giao diện có
 chọn sẵn nhóm dùng gần nhất hay không thuộc plan giao diện.
+
+## D44 — Giới hạn số email nhắc
+
+Bối cảnh (G2 của plan, phát hiện khi tự rà 17/10): admin đặt "mỗi người tối đa N email nhắc mỗi tuần" nhưng chưa nói "tuần" tính
+thế nào. Email chỉ gửi vào tối người học chưa ôn xong, nên cách tính chỉ ảnh hưởng người đang bỏ học. Claude giải thích bằng lịch ví
+dụ (Lan bỏ học từ thứ Năm), không nghiêng bên nào:
+
+| Phương án | Trade-off (như đã trình bày) |
+|---|---|
+| Tuần lịch, thứ Hai đếm lại | Quanh thứ Hai có thể 6 email trong 6 ngày liền |
+| Không quá N email trong 7 ngày gần nhất | Không bao giờ quá N trong 7 ngày bất kỳ; email dồn vào mấy ngày liền rồi im |
+| ✅ Hai email cách nhau ít nhất N ngày | Rải đều; admin chỉnh "cách mấy ngày" thay cho "mấy email mỗi tuần" |
+
+Chủ dự án: "cách 3 đi, hoặc cái này có thể tùy biến trong admin page". Claude đồng ý cách 3 và đề xuất phần "tùy biến" là cho admin
+chỉnh **khoảng cách** (1–7 ngày, mặc định 2), không làm công tắc chọn giữa ba cách đếm (phải viết và test cả ba, mà một con số đã đủ
+chỉnh thưa hay dày); email "lâu rồi" giữ một lần mỗi 7 ngày (D26). ✅ Chủ dự án chốt: "admin chỉnh khoảng cách tối thiểu 1–7 ngày, mặc
+định 2". Hệ quả: khóa `reminders.weeklyMax` (0–7, mặc định 3) của Task 9 đã merge đổi thành `reminders.minGapDays` (1–7, mặc định 2)
+trong Task 21; chưa có dữ liệu thật nên không phải chuyển dữ liệu.
+
+## D45 — "Xong khi" của Bước 3
+
+Bối cảnh (G5 của plan): các bước trước dùng "CI xanh kể cả test trên hệ thống thật + một lần chạy tay trên database mới với file CEFR-J
+thật". Claude liệt kê, không nghiêng bên nào: CI xanh trên mọi PR; chạy tay phần hệ thống (kịch bản Task 22); test app người học trên hệ
+thống thật (plan giao diện); chủ dự án tự dùng app một số ngày. Chủ dự án: "mình sẽ báo cho bạn đến khi bước 3 xong" — không chốt danh
+sách trước; chủ dự án tự quyết lúc nào là xong. Task 22 vẫn chạy gate, chạy tay và viết as-built để chủ dự án dựa vào đó.
 
 ## Những chỗ Claude đã đề xuất trước khi chủ dự án trả lời (luật owner-first)
 

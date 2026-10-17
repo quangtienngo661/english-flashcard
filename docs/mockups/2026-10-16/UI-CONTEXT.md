@@ -62,7 +62,7 @@ Luật hỏi vẫn là "chủ dự án trả lời trước, Claude đề xuất
 - Nhắc học qua **email** (Bước 3), tắt **trong app** (Cài đặt); cuối email có link mở thẳng trang Cài đặt. Nội dung chung chung
   ("Tới giờ học từ vựng"), chỉ gửi khi có từ cần ôn. Vắng 7–60 ngày gửi "Đã lâu rồi bạn chưa vào học" mỗi tuần; trên 60 ngày dừng.
   Giờ gửi và các con số do admin chỉnh. Mẫu email cho từng loại thông báo **bàn sau**.
-- Trang admin "Thông báo & giới hạn": bật/tắt nhắc toàn hệ thống, giờ gửi mặc định, số email nhắc tối đa mỗi người mỗi tuần, hai
+- Trang admin "Thông báo & giới hạn": bật/tắt nhắc toàn hệ thống, giờ gửi mặc định, khoảng cách tối thiểu giữa hai email nhắc của một người (1–7 ngày, mặc định 2; D44), hai
   ngưỡng vắng mặt, trần từ mới và từ ôn, số ngày vào danh sách cân nhắc; mỗi số có khoảng cho phép, mỗi lần đổi được ghi lại.
   **Nội dung email chưa sửa được ở Bước 3** (một mẫu viết sẵn trong code; mẫu theo từng loại thông báo bàn sau, design mục 8.4).
 

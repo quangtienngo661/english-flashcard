@@ -2,7 +2,7 @@
 
 > **Trạng thái 17/10/2026: chưa duyệt toàn bộ.** Phần hệ thống (mục 1–15) đã trình bày từng phần và chủ dự án duyệt trong chat;
 > đã rà lại một lượt (`../reviews/2026-10-17-buoc-3-design-plan-review.md`). **Phần giao diện (mục 16) làm ở phiên riêng** và có
-> plan riêng. Mục 17 trỏ sang plan hệ thống (D41). Còn mở: G2 (cách đếm "mỗi tuần"), G5 ("Xong khi"). Chưa có code.
+> plan riêng. Mục 17 trỏ sang plan hệ thống (D41). Còn mở: G6 (nguồn dạng chia tự sinh). "Xong khi": chủ dự án tự báo khi Bước 3 xong (D45). Đang implement theo plan hệ thống.
 
 Ngày: 16–17/10/2026. Brainstorm qua `superpowers:brainstorming` trên nhánh `docs/buoc-3-design` (cắt từ `origin/dev` @ `e1ba729`),
 theo luật "chủ dự án trả lời trước, Claude đề xuất sau" (CLAUDE.md, Working Rules). Quyết định, mọi phương án đã đưa ra và
@@ -280,7 +280,7 @@ kênh ở Bước 3 chỉ kiểm cờ bật/tắt rồi chuyển cho email; lu�
 | Email **đã xác minh**. Người chưa xác minh không nhận email; app hiện dòng "Xác minh email để nhận nhắc học qua email" | D36 |
 | Còn ít nhất một thẻ cho hôm nay ở một nhóm nào đó: ưu tiên, đến hạn hoặc mới, **sau khi áp trần** (cùng số trang chủ hiện, mục 6.3). Đã ôn hết phần hôm nay thì không nhắc | D27 |
 | Giờ địa phương đã qua giờ gửi (cài đặt admin, mặc định 20:00 `ASSUMPTION`) và hôm nay (ngày địa phương) chưa có `reminder_deliveries` | D24 |
-| Vắng < 7 ngày: nhắc thường, không quá số lần mỗi tuần (cài đặt admin). Vắng 7–60 ngày: "Đã lâu rồi bạn chưa vào học", tối đa một lần mỗi tuần. Vắng > 60 ngày: dừng | D26 |
+| Vắng < 7 ngày: nhắc thường, hai email cách nhau ít nhất N ngày (cài đặt admin, 1–7, mặc định 2; Chốt 17/10, D44). Vắng 7–60 ngày: "Đã lâu rồi bạn chưa vào học", tối đa một lần mỗi tuần. Vắng > 60 ngày: dừng | D26 |
 | Tổng email cả hệ thống hôm nay < 80% `MAIL_DAILY_BUDGET` (phần còn lại dành cho OTP) | D24 |
 
 ### 8.3 Gửi một email (Chốt, D37)
@@ -290,7 +290,8 @@ Job có `jobId` = `reminder-<userId>-<ngày địa phương>` (không dùng `:` 
    email thay vì gửi trùng, đề xuất của Claude, D37); không có → bước 2.
 2. Kiểm lại cờ bật/tắt và điều kiện (người học có thể vừa tắt); ghi `sending` (unique theo ngày).
 3. Lấy một suất hạn mức email (`MailBudget.tryConsume`); hết 80% thì hủy job, xóa bản ghi `sending`.
-4. Gửi email; thành công → ghi `sent`. Lỗi SMTP tạm thời → xóa `sending`, BullMQ thử lại (hữu hạn, có backoff).
+4. Gửi email; thành công → ghi `sent`. Lỗi SMTP tạm thời → xóa `sending`, BullMQ thử lại (hữu hạn, có backoff). Mỗi lần thử
+   dùng một suất hạn mức email, kể cả lần lỗi (giống cách OTP đang gửi); 3 lần thử hỏng tốn 3 suất, hết lượt thử thì ghi `failed`.
 
 Job mất khóa (worker chết) được BullMQ đưa lại hàng chờ ("stalled", docs BullMQ 6); bước 1 đảm bảo không gửi trùng khi đã ghi `sent`.
 
@@ -310,7 +311,7 @@ không đụng chi phí" của D6 Bước 1). `PUT` mang `version`; hai admin c�
 |---|---|---|
 | Nhắc học bật toàn hệ thống | bật | bật / tắt |
 | Giờ gửi mặc định (giờ địa phương người học) | 20:00 | 06:00–22:00 |
-| Số email nhắc tối đa mỗi người mỗi tuần | 3 | 0–7 |
+| Hai email nhắc của một người cách nhau ít nhất (ngày) | 2 | 1–7 (Chốt 17/10, D44) |
 | Ngưỡng vắng: chuyển sang "lâu rồi" / dừng hẳn | 7 / 60 ngày | 3–30 / 30–180 |
 | Trần từ mới mỗi nhóm mỗi ngày | 20 | 1–100 |
 | Trần từ ôn mỗi nhóm mỗi ngày | 100 | 10–500 |
@@ -454,7 +455,8 @@ Ban đầu làm sau mục 16 (chủ dự án, 16/10/2026). Ngày 17/10 chủ d�
 - **Plan giao diện** (app người học trong `apps/web`, trang admin "Thông báo & giới hạn", lựa chọn xuất "từ chưa có nghĩa" trong admin):
   viết và làm ở phiên khác, sau khi chốt plan hệ thống.
 
-**"Xong khi" chưa chốt** (G5 của plan hệ thống).
+**"Xong khi":** không đặt danh sách cố định trước; chủ dự án tự báo khi Bước 3 xong (Chốt 17/10, D45). Task 22 của plan hệ thống vẫn
+chạy gate, chạy tay và viết as-built để chủ dự án dựa vào đó.
 
 ## 18. Tài liệu cần cập nhật sau khi duyệt
 
@@ -472,5 +474,5 @@ ngay sau Bước 3). `docs/specs/` không sửa.
 - **Không nhắc khi người học bỏ qua gợi ý ở Bước 4:** một từ sai có thể 14–30 ngày sau mới quay lại; nhật ký ghi số lần gợi ý được bấm
   để xem lại.
 - **Các con số mặc định và khoảng cho phép ở mục 9 là `ASSUMPTION`.**
-- **Mở:** giao diện (mục 16, plan giao diện riêng), mẫu email theo loại thông báo, "tối đa N email mỗi tuần" đếm thế nào (G2 của
-  plan), "Xong khi" (G5 của plan).
+- **Mở:** giao diện (mục 16, plan giao diện riêng), mẫu email theo loại thông báo, nguồn dạng chia tự sinh
+  (G6 của plan: `compromise` không đạt ngưỡng khi đo 17/10).
