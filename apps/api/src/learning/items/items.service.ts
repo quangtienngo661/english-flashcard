@@ -71,9 +71,8 @@ export class ItemsService {
   async bulkAdd(userId: string, groupId: string, filter: BulkFilter): Promise<BulkResult> {
     const today = await this.today(userId);
     await this.groups.assertOwned(this.prisma, userId, groupId);
-    // Ask for enough candidates to fill the free slots even when the group already holds many of them.
-    const size = await this.prisma.groupItem.count({ where: { groupId } });
-    const { senseIds, skippedFunctionWords } = await this.content.bulkCandidates(filter, GROUP_ITEMS_MAX + size);
+    // Every matching sense, not just enough to fill the group: what does not fit is reported as skipped_group_full (L3).
+    const { senseIds, skippedFunctionWords } = await this.content.bulkCandidates(filter, Number.POSITIVE_INFINITY);
     return this.prisma.$transaction(async (tx) => {
       await withLearnerLock(tx, userId);
       await this.groups.assertOwned(tx, userId, groupId);

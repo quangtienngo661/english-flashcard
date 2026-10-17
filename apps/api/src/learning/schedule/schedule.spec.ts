@@ -27,55 +27,55 @@ describe('schedule rules (design 6.1)', () => {
       if (action === 'add') next = newItem(today);
       else if (action === 'relearn') next = relearn(today);
       else if (action === 'wait') next = before!;
-      else next = applyAnswer(before!, action, today).next;
+      else next = applyAnswer(before!, action, today, 60).next;
       expect(next, `row ${row}`).toEqual(after);
       if (backlog !== undefined) expect(isBacklog(next, today, 60), `row ${row} backlog`).toBe(backlog);
     }
     // Row 10's result counts as a new word.
-    expect(sectionOf(relearn('2026-11-02'), '2026-11-02')).toBe('new');
+    expect(sectionOf(relearn('2026-11-02'), '2026-11-02', 60)).toBe('new');
   });
 
   it('applyAnswer reports section, wasDue, rating and whether anything changed', () => {
-    expect(applyAnswer(state(0, '2026-11-01'), 'known', '2026-11-01')).toEqual({
+    expect(applyAnswer(state(0, '2026-11-01'), 'known', '2026-11-01', 60)).toEqual({
       next: state(1, '2026-11-02'), section: 'new', wasDue: true, rating: 'Good', changed: true });
-    expect(applyAnswer(state(2, '2026-11-05'), 'known', '2026-11-07')).toEqual({
+    expect(applyAnswer(state(2, '2026-11-05'), 'known', '2026-11-07', 60)).toEqual({
       next: state(3, '2026-11-14'), section: 'due', wasDue: true, rating: 'Good', changed: true });
-    expect(applyAnswer(state(3, '2026-11-12'), 'known', '2026-11-08')).toEqual({
+    expect(applyAnswer(state(3, '2026-11-12'), 'known', '2026-11-08', 60)).toEqual({
       next: state(3, '2026-11-12'), section: 'early', wasDue: false, rating: 'Good', changed: false });
-    expect(applyAnswer(state(3, '2026-11-12'), 'review', '2026-11-08')).toEqual({
+    expect(applyAnswer(state(3, '2026-11-12'), 'review', '2026-11-08', 60)).toEqual({
       next: state(1, '2026-11-08', true), section: 'early', wasDue: false, rating: 'Again', changed: true });
-    expect(applyAnswer(state(1, '2026-11-08', true), 'known', '2026-11-08')).toEqual({
+    expect(applyAnswer(state(1, '2026-11-08', true), 'known', '2026-11-08', 60)).toEqual({
       next: state(2, '2026-11-11'), section: 'priority', wasDue: true, rating: 'Good', changed: true });
     // "Review" on a card already at level 1, due today and priority changes nothing but is still an Again.
-    expect(applyAnswer(state(1, '2026-11-08', true), 'review', '2026-11-08')).toEqual({
+    expect(applyAnswer(state(1, '2026-11-08', true), 'review', '2026-11-08', 60)).toEqual({
       next: state(1, '2026-11-08', true), section: 'priority', wasDue: true, rating: 'Again', changed: false });
   });
 
   it('sectionOf: priority first, then level 0 as new, then due, else early', () => {
-    expect(sectionOf(state(0, '2026-11-01', true), '2026-11-01')).toBe('priority');
-    expect(sectionOf(state(0, '2026-08-01'), '2026-11-01')).toBe('new');
-    expect(sectionOf(state(2, '2026-11-01'), '2026-11-01')).toBe('due');
-    expect(sectionOf(state(2, '2026-10-01'), '2026-11-01')).toBe('due');
-    expect(sectionOf(state(2, '2026-11-02'), '2026-11-01')).toBe('early');
+    expect(sectionOf(state(0, '2026-11-01', true), '2026-11-01', 60)).toBe('priority');
+    expect(sectionOf(state(0, '2026-08-01'), '2026-11-01', 60)).toBe('new');
+    expect(sectionOf(state(2, '2026-11-01'), '2026-11-01', 60)).toBe('due');
+    expect(sectionOf(state(2, '2026-10-01'), '2026-11-01', 60)).toBe('due');
+    expect(sectionOf(state(2, '2026-11-02'), '2026-11-01', 60)).toBe('early');
   });
 
   it('B3E2: known at 23:59 then again at 00:01 → the second is early and changes nothing', () => {
     const zone = 'Asia/Ho_Chi_Minh';
-    const first = applyAnswer(state(2, '2026-11-05'), 'known', localDate(zone, new Date('2026-11-05T16:59:00Z')));
+    const first = applyAnswer(state(2, '2026-11-05'), 'known', localDate(zone, new Date('2026-11-05T16:59:00Z')), 60);
     expect(first.next).toEqual(state(3, '2026-11-12'));
-    const second = applyAnswer(first.next, 'known', localDate(zone, new Date('2026-11-05T17:01:00Z')));
+    const second = applyAnswer(first.next, 'known', localDate(zone, new Date('2026-11-05T17:01:00Z')), 60);
     expect(second).toMatchObject({ next: state(3, '2026-11-12'), section: 'early', wasDue: false, changed: false });
   });
 
   it('B3E3: level 5 known → stays 5, due +30', () => {
-    expect(applyAnswer(state(5, '2026-12-01'), 'known', '2026-12-03').next).toEqual(state(5, '2027-01-02'));
+    expect(applyAnswer(state(5, '2026-12-01'), 'known', '2026-12-03', 60).next).toEqual(state(5, '2027-01-02'));
   });
 
   it('B3E1: a stored due date does not move when the zone changes, only "today" does', () => {
     const stored = state(2, '2026-11-02');
     const at = new Date('2026-11-01T10:30:00Z');
-    expect(sectionOf(stored, localDate('Pacific/Kiritimati', at))).toBe('due');
-    expect(sectionOf(stored, localDate('Etc/GMT+12', at))).toBe('early');
+    expect(sectionOf(stored, localDate('Pacific/Kiritimati', at), 60)).toBe('due');
+    expect(sectionOf(stored, localDate('Etc/GMT+12', at), 60)).toBe('early');
     expect(stored).toEqual(state(2, '2026-11-02'));
   });
 
@@ -85,5 +85,24 @@ describe('schedule rules (design 6.1)', () => {
     expect(isBacklog(state(4, '2026-09-03'), '2026-11-02', 60)).toBe(false); // 60 days
     expect(isBacklog(state(1, '2026-09-02'), '2026-11-02', 60)).toBe(true);
     expect(isBacklog(state(4, '2026-09-02'), '2026-11-02', 90)).toBe(false);
+  });
+  it('M2: a level-0 item is due whatever its due date — "known" lifts it to level 1 even when the zone moved west after adding', () => {
+    expect(applyAnswer(state(0, '2026-11-02'), 'known', '2026-11-01', 60)).toEqual({
+      next: state(1, '2026-11-02'), section: 'new', wasDue: true, rating: 'Good', changed: true });
+  });
+
+  it('L2: a level ≥ 1 item overdue by more than the backlog days is in section backlog; the answer still applies', () => {
+    expect(sectionOf(state(3, '2026-08-30'), '2026-11-08', 60)).toBe('backlog');
+    expect(sectionOf(state(3, '2026-09-09'), '2026-11-08', 60)).toBe('due'); // 60 days: not yet backlog
+    expect(sectionOf(state(0, '2026-01-01'), '2026-11-08', 60)).toBe('new');
+    expect(applyAnswer(state(3, '2026-08-30'), 'known', '2026-11-08', 60)).toEqual({
+      next: state(4, '2026-11-22'), section: 'backlog', wasDue: true, rating: 'Good', changed: true });
+    expect(applyAnswer(state(3, '2026-08-30'), 'known', '2026-11-08', 90).section).toBe('due');
+  });
+  it('L1 / D48: a priority word overdue by more than the backlog days is in the backlog, not the priority section', () => {
+    expect(sectionOf(state(1, '2026-09-01', true), '2026-11-08', 60)).toBe('backlog');
+    expect(sectionOf(state(1, '2026-09-09', true), '2026-11-08', 60)).toBe('priority'); // 60 days: still priority
+    expect(applyAnswer(state(1, '2026-09-01', true), 'known', '2026-11-08', 60)).toMatchObject({
+      next: state(2, '2026-11-11'), section: 'backlog', wasDue: true });
   });
 });

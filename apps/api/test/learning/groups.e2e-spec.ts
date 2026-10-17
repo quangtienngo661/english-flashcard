@@ -179,4 +179,41 @@ describe('learning groups (e2e, isolated database)', () => {
     expect(noKey.status).toBe(400);
     expect(await ctx.prisma.learningGroup.count()).toBe(0);
   });
+  it('T-C5: two creates sent at the same moment when the learner has 99 groups → one 201, one 409 group-limit-reached, 100 stored', async () => {
+    const learner = await signIn();
+    await ctx.prisma.learningGroup.createMany({ data: Array.from({ length: 99 }, (_, i) => ({
+      userId: learner.userId, name: `g${i}`, nameKey: `g${i}`, createdAt: now, updatedAt: now,
+    })) });
+    const results = await Promise.all([create(learner.token, 'One'), create(learner.token, 'Two')]);
+    expect(results.map((r) => r.status).sort()).toEqual([201, 409]);
+    expect(results.find((r) => r.status === 409)!.body.type).toBe(problem('group-limit-reached'));
+    expect(await ctx.prisma.learningGroup.count({ where: { userId: learner.userId } })).toBe(100);
+  });
+
+  it('L4: deleting a group waits for a review in progress on one of its items and logs the reviewed level', async () => {
+    const learner = await signIn();
+    const { body: group } = await create(learner.token, 'Only');
+    const item = await seedItem(learner.userId, [group.id]);
+    let locked!: () => void;
+    let release!: () => void;
+    const lockTaken = new Promise<void>((resolve) => { locked = resolve; });
+    const gate = new Promise<void>((resolve) => { release = resolve; });
+    const review = ctx.prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT id FROM learning_items WHERE id = ${item.id}::uuid FOR UPDATE`;
+      await tx.learningItem.update({ where: { id: item.id }, data: { level: 1, dueDate: new Date('2026-11-02') } });
+      locked();
+      await gate;
+    }, { timeout: 30_000, maxWait: 5_000 });
+    await lockTaken;
+    let settled = false;
+    const pending = remove(learner.token, group.id).then((response) => { settled = true; return response; });
+    await new Promise((resolve) => setTimeout(resolve, 500));
+    expect(settled).toBe(false);
+    release();
+    await review;
+    expect((await pending).status).toBe(204);
+    expect(await ctx.prisma.learningLogEntry.findMany({ where: { itemId: item.id } })).toEqual([
+      expect.objectContaining({ kind: 'item_removed', levelBefore: 1, dueBefore: new Date('2026-11-02') }),
+    ]);
+  });
 });

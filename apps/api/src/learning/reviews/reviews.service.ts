@@ -5,6 +5,7 @@ import { ProblemDetailsException } from '../../common/problem-details/problem-de
 import { dateString, dateValue, daysBetween, localDate } from '../../common/time/local-date.js';
 import type { Prisma, PrismaClient } from '../../generated/prisma/client.js';
 import { IdentityService } from '../../identity/profile/identity.service.js';
+import { SettingsService } from '../../settings/index.js';
 import { applyAnswer, type Answer, type Section } from '../schedule/schedule.js';
 
 const transactionOptions = { timeout: 10_000, maxWait: 5_000 };
@@ -24,11 +25,12 @@ export class ReviewsService {
     @Inject(PRISMA_CLIENT) private readonly prisma: PrismaClient,
     @Inject(Clock) private readonly clock: Clock,
     @Inject(IdentityService) private readonly identity: IdentityService,
+    @Inject(SettingsService) private readonly settings: SettingsService,
   ) {}
 
   /** Idempotent by `review_id` (B3E4); answers on one item run one at a time under its row lock (B3E5). */
   async answer(userId: string, input: ReviewInput): Promise<ReviewResult> {
-    const profile = await this.identity.getProfile(userId);
+    const [profile, { learning }] = await Promise.all([this.identity.getProfile(userId), this.settings.get()]);
     if (!profile) throw notFound();
     try {
       return await this.prisma.$transaction(async (tx) => {
@@ -49,7 +51,7 @@ export class ReviewsService {
         const at = this.clock.now();
         const today = localDate(profile.timezone, at);
         const before = { level: item.level, dueDate: dateString(item.dueDate), priority: item.priority };
-        const result = applyAnswer(before, input.answer, today);
+        const result = applyAnswer(before, input.answer, today, learning.backlogAfterDays);
         await tx.learningItem.update({
           where: { id: item.id },
           data: {

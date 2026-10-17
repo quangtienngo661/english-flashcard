@@ -6,7 +6,7 @@ import { dateValue, localDate } from '../../common/time/local-date.js';
 import type { Prisma, PrismaClient } from '../../generated/prisma/client.js';
 import { IdentityService } from '../../identity/profile/identity.service.js';
 import { GROUPS_MAX } from '../learning.constants.js';
-import { withLearnerLock } from '../learning-lock.js';
+import { lockItems, withLearnerLock } from '../learning-lock.js';
 
 const transactionOptions = { timeout: 10_000, maxWait: 5_000 };
 
@@ -99,6 +99,9 @@ export class GroupsService {
     await this.prisma.$transaction(async (tx) => {
       await withLearnerLock(tx, userId);
       await this.assertOwned(tx, userId, id);
+      // Wait for any review in progress on the group's items, so the log keeps the level it left behind (L4).
+      const linked = await tx.groupItem.findMany({ where: { groupId: id }, select: { itemId: true } });
+      await lockItems(tx, userId, linked.map(({ itemId }) => itemId));
       const removable = await tx.learningItem.findMany({
         where: removableWhere(id), select: { id: true, senseId: true, level: true, dueDate: true },
       });
