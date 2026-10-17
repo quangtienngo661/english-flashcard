@@ -296,7 +296,7 @@ describe('inflections and form-of links in the CSV flow (e2e, isolated database)
     expect(bad.outcomes[0].errorMessages[0]).toContain('"-"');
   });
 
-  it('M4: a row whose only cell is form_of "-" is not a content row: no sense is created and the entry stays in the has_sense=false export', async () => {
+  it('M4: a row whose only cell is form_of "-" and that matches no sense creates nothing: the entry stays in the has_sense=false export', async () => {
     await catalogWord('quiet', 'adjective', { level: 'A1' });
     const { outcomes } = await importFile(csv(['headword', 'pos', 'gloss_vi', 'form_of'], [['quiet', 'adjective', '', '-']]));
     expect(outcomes.map(({ outcome }) => outcome)).toEqual(['unchanged']);

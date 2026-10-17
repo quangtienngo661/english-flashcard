@@ -214,9 +214,9 @@ export function normalizeRow(
   const link = formOf as NormalizedRow['formOf'];
   return { ok: true, row: {
     rowNumber, lemma, variants, pos, level, levelExtra,
-    // A form_of cell naming a base is a content change on its own; "-" alone only clears a named sense's link, so a
-    // row with nothing else never creates an empty draft sense (M4). The processor resolves the base to an entry id.
-    content: content ?? ((link !== null && link !== 'clear') || (link === 'clear' && senseId !== null) ? {} : null),
+    // A form_of cell alone is a content change: a base links the sense the row names or matches, "-" clears that sense's
+    // link (importContent creates nothing when no sense matches, M4). The processor resolves the base to an entry id.
+    content: content ?? (link !== null ? {} : null),
     senseId, revision, contextLabel, replaceMeaning,
     inflections: inflections as NormalizedRow['inflections'], formOf: link,
   } };
