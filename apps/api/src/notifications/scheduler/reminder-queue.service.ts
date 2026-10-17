@@ -26,7 +26,7 @@ export function reminderJobId(userId: string, localDate: string): string {
 /**
  * The `reminders` BullMQ queue (design 8.1, 8.3): a Job Scheduler adds a `tick` job every `reminders.tickSeconds`;
  * a tick adds one `send` job per learner per local day. Only the worker process (`pipeline.runWorkers`) creates the
- * scheduler and the Worker; the API process touches nothing here.
+ * scheduler and the Worker (unless `reminders.runScheduler` is off, as in tests); the API process touches nothing here.
  */
 @Injectable()
 export class ReminderQueueService implements OnApplicationBootstrap, OnModuleDestroy {
@@ -51,7 +51,7 @@ export class ReminderQueueService implements OnApplicationBootstrap, OnModuleDes
   }
 
   async onApplicationBootstrap(): Promise<void> {
-    if (!this.config.pipeline.runWorkers) return;
+    if (!this.config.pipeline.runWorkers || !this.config.reminders.runScheduler) return;
     const prefix = this.config.pipeline.queuePrefix;
     this.queue = new Queue(REMINDER_QUEUE, { connection: this.connection('reminder_queue_connection_failed'), prefix });
     this.queue.on('error', (error) => { this.logger.warn('reminder_queue_error', { error }); });

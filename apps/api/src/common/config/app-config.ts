@@ -73,6 +73,8 @@ export interface AppConfig {
   reminders: {
     /** How often the worker's reminder tick runs (design 8.1: every 15 minutes). */
     tickSeconds: number;
+    /** The worker process starts the reminder scheduler. Tests turn it off unless they test reminders. */
+    runScheduler: boolean;
   };
   limits: Record<RateLimitRuleName, RateLimitRuleConfig>;
 }
@@ -229,7 +231,7 @@ export function loadConfig(env: NodeJS.ProcessEnv): AppConfig {
       jobBackoffMs: values.IMPORT_JOB_BACKOFF_MS,
       rowRetryBaseMs: values.IMPORT_ROW_RETRY_BASE_MS,
     },
-    reminders: { tickSeconds: values.REMINDER_TICK_SECONDS },
+    reminders: { tickSeconds: values.REMINDER_TICK_SECONDS, runScheduler: true },
     limits: structuredClone(DEFAULT_LIMITS),
   };
 }

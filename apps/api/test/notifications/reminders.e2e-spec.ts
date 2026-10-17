@@ -30,7 +30,7 @@ describe('reminder scheduler and send jobs (e2e, isolated database)', () => {
   const start = async (opts: { runWorkers: boolean; queuePrefix?: string }) => {
     const ctx = await createTestApp({
       databaseUrl, redisUrl: inject('redisUrl'),
-      config: { mailDailyBudget: BUDGET, mailBudgetKey: budgetKey },
+      config: { mailDailyBudget: BUDGET, mailBudgetKey: budgetKey, reminders: { tickSeconds: 1, runScheduler: true } },
       pipeline: { runWorkers: opts.runWorkers, jobBackoffMs: 10, ...(opts.queuePrefix ? { queuePrefix: opts.queuePrefix } : {}) },
     });
     ctx.clock.set(NOW);
