@@ -2,7 +2,7 @@
 
 > **Trạng thái 17/10/2026: chưa duyệt toàn bộ.** Phần hệ thống (mục 1–15) đã trình bày từng phần và chủ dự án duyệt trong chat;
 > đã rà lại một lượt (`../reviews/2026-10-17-buoc-3-design-plan-review.md`). **Phần giao diện (mục 16) làm ở phiên riêng** và có
-> plan riêng. Mục 17 trỏ sang plan hệ thống (D41). Còn mở: G6 (nguồn dạng chia tự sinh). "Xong khi": chủ dự án tự báo khi Bước 3 xong (D45). Đang implement theo plan hệ thống.
+> plan riêng. Mục 17 trỏ sang plan hệ thống (D41). "Xong khi": chủ dự án tự báo khi Bước 3 xong (D45). Nguồn dạng chia: AGID (D46). Đang implement theo plan hệ thống.
 
 Ngày: 16–17/10/2026. Brainstorm qua `superpowers:brainstorming` trên nhánh `docs/buoc-3-design` (cắt từ `origin/dev` @ `e1ba729`),
 theo luật "chủ dự án trả lời trước, Claude đề xuất sau" (CLAUDE.md, Working Rules). Quyết định, mọi phương án đã đưa ra và
@@ -246,8 +246,11 @@ nhóm, nhật ký của mục đó (Learning; CR23).
   nghĩa tính từ riêng). Chỉ nghĩa "là dạng chia" mới trỏ về từ gốc (`form_of_entry_id` ở revision). Level mặc định lấy theo từ gốc.
 - **Nguồn**: thư viện sinh sẵn khi import và một lần cho các entry đang có; AI hoặc chủ dự án sửa chỗ sai qua cột CSV lúc duyệt;
   bản đã duyệt thắng bản thư viện. Ba loại: động từ, số nhiều danh từ, so sánh tính từ. Từ riêng tư chỉ có bản thư viện.
-- **Chọn thư viện trong plan bằng cách đo**: chạy trên danh sách CEFR-J, so với một danh sách bất quy tắc đã biết. Ứng viên
-  `compromise` `14.18.0` (MIT; README có chia động từ, số nhiều; so sánh tính từ `ASSUMPTION`, chưa kiểm).
+- **Nguồn (Chốt 17/10, D46)**: đo trước rồi mới chọn. `compromise` 14.18.0 đo không đạt (47/50 ca bất quy tắc, ~81/100 mẫu
+  CEFR-J; sai ở V3 bất quy tắc và tính từ dài). Chọn **AGID** 2016.01.19 làm nguồn chính (bảng tra theo từ, chỉ lấy dạng mức 0, bỏ
+  mục đáng ngờ); từ không có trong AGID: động từ, danh từ dùng `compromise`; tính từ không tự sinh (thiếu còn hơn sai vì người học
+  nhìn thấy). AGID vẫn phải qua cùng ngưỡng đo. AGID được ghi nguồn qua `GET /v1/sources` và tệp ghi nguồn bên thứ ba. Nghiên cứu:
+  `docs/preparation/2026-10-17-inflection-sources-research.md`.
 
 ### 7.4 Câu ngữ cảnh
 
@@ -474,5 +477,6 @@ ngay sau Bước 3). `docs/specs/` không sửa.
 - **Không nhắc khi người học bỏ qua gợi ý ở Bước 4:** một từ sai có thể 14–30 ngày sau mới quay lại; nhật ký ghi số lần gợi ý được bấm
   để xem lại.
 - **Các con số mặc định và khoảng cho phép ở mục 9 là `ASSUMPTION`.**
-- **Mở:** giao diện (mục 16, plan giao diện riêng), mẫu email theo loại thông báo, nguồn dạng chia tự sinh
-  (G6 của plan: `compromise` không đạt ngưỡng khi đo 17/10).
+- **Mở:** giao diện (mục 16, plan giao diện riêng), mẫu email theo loại thông báo.
+- **AGID chưa đo** (D46): nếu không đạt ngưỡng, Task 4b dừng và đo `en-inflectors`; AGID ngừng cập nhật từ 2016 nên từ mới chỉ có dạng
+  chia của `compromise` (động từ, danh từ).
