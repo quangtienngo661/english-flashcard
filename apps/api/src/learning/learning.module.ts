@@ -3,6 +3,8 @@ import { IdempotencyInterceptor } from '../common/idempotency/idempotency.interc
 import { ContentModule } from '../content/content.module.js';
 import { IdentityModule } from '../identity/identity.module.js';
 import { SettingsModule } from '../settings/index.js';
+import { BacklogController } from './backlog/backlog.controller.js';
+import { BacklogService } from './backlog/backlog.service.js';
 import { GroupsController } from './groups/groups.controller.js';
 import { GroupsService } from './groups/groups.service.js';
 import { ItemsController } from './items/items.controller.js';
@@ -16,8 +18,8 @@ import { ReviewsService } from './reviews/reviews.service.js';
 @Module({
   // IdentityModule: the learner guard needs IdentityService in the module that hosts the controller.
   imports: [IdentityModule, ContentModule, SettingsModule],
-  controllers: [GroupsController, ItemsController, QueueController, ReviewsController],
-  providers: [GroupsService, ItemsService, QueueService, ReviewsService, LearningService, IdempotencyInterceptor],
+  controllers: [BacklogController, GroupsController, ItemsController, QueueController, ReviewsController],
+  providers: [BacklogService, GroupsService, ItemsService, QueueService, ReviewsService, LearningService, IdempotencyInterceptor],
   exports: [LearningService],
 })
 export class LearningModule {}
