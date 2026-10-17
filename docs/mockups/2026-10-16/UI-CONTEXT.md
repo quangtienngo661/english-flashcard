@@ -36,16 +36,16 @@ Luật hỏi vẫn là "chủ dự án trả lời trước, Claude đề xuất
 - Ôn sớm (bấm "Đã biết" khi chưa tới hạn, trong phiên "học tất cả"): không đổi gì.
 - Trần mỗi nhóm mỗi ngày: **20 từ mới, 100 từ ôn**; từ ưu tiên **không** tính vào trần. Phiên "học tất cả" không bị trần.
 - Thứ tự trong nhóm: ưu tiên → đến hạn (quá hạn lâu nhất trước) → mới (thêm sớm nhất trước).
-- **Danh sách cân nhắc**: từ quá hạn hơn **60 ngày** rời khỏi phần cần ôn; người học chọn "Học lại" (về mức 0, tính như từ mới),
+- **Danh sách cân nhắc**: từ **mức ≥ 1** quá hạn hơn **60 ngày** rời khỏi phần cần ôn (từ mức 0 không bao giờ vào, Chốt 17/10); người học chọn "Học lại" (về mức 0, tính như từ mới),
   "Bỏ khỏi việc học", hoặc để đó. Không bao giờ tự xóa.
 - **Xóa nhóm**: hộp xác nhận ghi rõ số từ **chỉ có trong nhóm này** sẽ bị bỏ khỏi việc ôn; từ còn ở nhóm khác giữ nguyên. Bỏ từ khỏi
-  **nhóm cuối cùng** chứa nó cũng cảnh báo. "Mới thêm" không xóa được.
+  **nhóm cuối cùng** chứa nó cũng cảnh báo. **Không có nhóm mặc định "Mới thêm"** (Chốt 17/10, D43): nhóm nào cũng đổi tên, xóa được.
 - Bước 4 (xem trước): gõ sai thì chỉ **gợi ý** nút "Cần ôn tập, đưa vào ưu tiên"; kết quả bài không tự đổi lịch (đổi K22).
 
 **Thêm từ và tra từ**
 - **Hai chỗ riêng**: trang "Tra từ" (xem, duyệt, lọc level/chủ đề/loại từ, "Từ của tôi") và nút **"Thêm nhanh"** (ô từ + ô câu đã gặp).
   Thêm từ qua "Tra từ" không có ô câu; sau đó gắn câu bằng nút "Thêm câu đã gặp".
-- Thêm nhanh: chọn nhóm lúc thêm, mặc định "Mới thêm". Tra catalog và từ riêng; không đúng nghĩa thì **tự nhập** (chỉ bắt buộc
+- Thêm nhanh: **bắt buộc chọn hoặc tạo nhóm** lúc thêm (không có nhóm mặc định, D43); người chưa có nhóm nào được mời tạo nhóm đầu tiên. Tra catalog và từ riêng; không đúng nghĩa thì **tự nhập** (chỉ bắt buộc
   nghĩa). Từ đã đang học thì không tạo trùng, chỉ lưu thêm câu.
 - **Dạng chia**: hệ thống tự nhận ra (`went` → quá khứ của `go`) bằng bảng tra (thư viện sinh + duyệt). Dạng chia là **từ độc lập**
   có nghĩa riêng, nối về từ gốc **ở từng nghĩa** (ví dụ `left`: chỉ nghĩa "quá khứ của leave" trỏ về `leave`). Trang từ gốc có một
@@ -57,12 +57,14 @@ Luật hỏi vẫn là "chủ dự án trả lời trước, Claude đề xuất
 
 **Tài khoản và nhắc học**
 - Lần đầu chỉ hỏi **ngôn ngữ**; múi giờ tự lấy theo thiết bị (không xin quyền vị trí), tự cập nhật khi thiết bị đổi.
+  **Múi giờ không hiện ở đâu trên giao diện** (kể cả Cài đặt), vì người học không chỉnh được (Chốt 16/10/2026). Các mockup
+  v1–v3.1 và web còn dòng "Múi giờ" trong Cài đặt: bỏ khi làm tiếp.
 - Nhắc học qua **email** (Bước 3), tắt **trong app** (Cài đặt); cuối email có link mở thẳng trang Cài đặt. Nội dung chung chung
   ("Tới giờ học từ vựng"), chỉ gửi khi có từ cần ôn. Vắng 7–60 ngày gửi "Đã lâu rồi bạn chưa vào học" mỗi tuần; trên 60 ngày dừng.
   Giờ gửi và các con số do admin chỉnh. Mẫu email cho từng loại thông báo **bàn sau**.
-- Trang admin "Thông báo & giới hạn": bật/tắt nhắc toàn hệ thống, giờ gửi mặc định, số email nhắc tối đa mỗi người mỗi tuần, tiêu đề
-  và nội dung (vi/en, chữ thường), trần từ mới và từ ôn, số ngày vào danh sách cân nhắc; mỗi số có khoảng cho phép, mỗi lần đổi
-  được ghi lại.
+- Trang admin "Thông báo & giới hạn": bật/tắt nhắc toàn hệ thống, giờ gửi mặc định, số email nhắc tối đa mỗi người mỗi tuần, hai
+  ngưỡng vắng mặt, trần từ mới và từ ôn, số ngày vào danh sách cân nhắc; mỗi số có khoảng cho phép, mỗi lần đổi được ghi lại.
+  **Nội dung email chưa sửa được ở Bước 3** (một mẫu viết sẵn trong code; mẫu theo từng loại thông báo bàn sau, design mục 8.4).
 
 ## 4. Nguyên tắc giao diện đã đọc (nguồn đọc trong phiên 16/10/2026)
 
