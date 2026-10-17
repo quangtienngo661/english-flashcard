@@ -16,7 +16,8 @@ import { testConfig } from '../support/test-config.js';
 const endpoint = '/v1/admin/content/senses/export';
 const headers = [
   'headword', 'pos', 'gloss_vi', 'definition_en', 'example_en_1', 'example_en_2', 'example_en_3',
-  'topics', 'accepted_forms', 'context_label', 'sense_id', 'revision', '_status', '_level',
+  'topics', 'accepted_forms', 'context_label', 'form_of', 'inflections', 'sense_id', 'revision', '_status', '_level',
+  '_inflections',
 ];
 const full: RevisionContent = {
   glossVi: 'phân tích', definitionEn: 'Study something in detail.',

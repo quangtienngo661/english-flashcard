@@ -41,6 +41,29 @@ export class LevelsService {
     return { created: result.count === 1, id: row.id };
   }
 
+  /** The level shown for an entry: newest editorial/user choice first, then by source priority. */
+  async displayedLevel(tx: Prisma.TransactionClient, entryId: string): Promise<Level | null> {
+    const [row] = await tx.$queryRaw<Array<{ level: Level }>>`
+      SELECT el.level FROM entry_levels el JOIN data_sources ds ON ds.id = el.source_id
+      WHERE el.entry_id = ${entryId}::uuid
+      ORDER BY (el.basis IN ('editorial', 'user')) DESC,
+        CASE WHEN el.basis IN ('editorial', 'user') THEN el.created_at END DESC,
+        CASE WHEN el.basis IN ('editorial', 'user') THEN el.id END ASC,
+        ds.display_priority ASC, ds.id ASC,
+        array_position(ARRAY['A1', 'A2', 'B1', 'B2', 'C1', 'C2']::text[], el.level) ASC
+      LIMIT 1`;
+    return row?.level ?? null;
+  }
+
+  /** D29: an entry with no level takes its form-of base's displayed level (basis derived, owner source). */
+  async addDerivedLevel(tx: Prisma.TransactionClient, entryId: string, baseEntryId: string): Promise<{ id: string } | null> {
+    if (await tx.entryLevel.findFirst({ where: { entryId }, select: { id: true } })) return null;
+    const level = await this.displayedLevel(tx, baseEntryId);
+    if (level === null) return null;
+    return tx.entryLevel.create({ data: { entryId, level, sourceId: OWNER_SOURCE_ID, basis: 'derived', createdAt: this.clock.now() },
+      select: { id: true } });
+  }
+
   async setEditorialLevel(tx: Prisma.TransactionClient, entryId: string, level: Level): Promise<void> {
     validateLevel(level);
     if (!await tx.entry.findUnique({ where: { id: entryId }, select: { id: true } })) {

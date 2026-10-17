@@ -56,6 +56,10 @@ export class ContentService {
     return this.levels.addImportedLevel(tx, input);
   }
 
+  addDerivedLevel(tx: Prisma.TransactionClient, entryId: string, baseEntryId: string): Promise<{ id: string } | null> {
+    return this.levels.addDerivedLevel(tx, entryId, baseEntryId);
+  }
+
   setEditorialLevel(tx: Prisma.TransactionClient, entryId: string, level: Level): Promise<void> {
     return this.levels.setEditorialLevel(tx, entryId, level);
   }

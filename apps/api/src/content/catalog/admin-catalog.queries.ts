@@ -6,9 +6,9 @@ import { decodeBoundToken, encodeBoundToken } from '../../common/pagination/page
 import { ProblemDetailsException } from '../../common/problem-details/problem-details.exception.js';
 import type { Prisma, PrismaClient } from '../../generated/prisma/client.js';
 import { BATCH_SCOPE, type BatchScope } from '../batch-scope.port.js';
-import { LEVELS, VALID_POS, type Level } from '../content.constants.js';
+import { INFLECTION_KINDS, LEVELS, VALID_POS, type InflectionKind, type Level } from '../content.constants.js';
 import { publishViolations } from '../senses/publish.service.js';
-import type { RevisionContent } from '../senses/revision-content.js';
+import { revisionFormOf, type RevisionContent } from '../senses/revision-content.js';
 import type { SenseFilter } from './sense-filters.js';
 
 type PageQuery = { page_size: number; page_token?: string };
@@ -18,10 +18,10 @@ export type LatestRevision = { revisionNo: number; status: string; content: Revi
 export type ExportRow = {
   headword: string; pos: string; gloss_vi: string | null; definition_en: string | null;
   example_en_1: string; example_en_2: string; example_en_3: string;
-  topics: string; accepted_forms: string; context_label: string | null;
-  sense_id: string; revision: number; _status: string; _level: Level | null; _missing?: string;
+  topics: string; accepted_forms: string; context_label: string | null; form_of: string; inflections: string;
+  sense_id: string; revision: number; _status: string; _level: Level | null; _inflections: string; _missing?: string;
 };
-export type EntryExportRow = { headword: string; pos: string; _level: Level | null };
+export type EntryExportRow = { headword: string; pos: string; inflections: string; _level: Level | null; _inflections: string };
 export type ScopeRecord = { type: 'entry' | 'variant' | 'level' | 'sense' | 'revision'; id: string };
 type Page<T> = { items: T[]; next_page_token: string | null };
 const cursorSchema = z.strictObject({
@@ -43,6 +43,12 @@ const entryInclude = {
 } satisfies Prisma.EntryInclude;
 const senseInclude = {
   entry: { include: { levels: levelsQuery, variants: entryInclude.variants } }, revisions: revisionsQuery,
+} satisfies Prisma.SenseInclude;
+// Exports also carry the entry's inflections and each revision's form-of base (D29).
+const inflectionsQuery = { select: { form: true, kind: true, source: true } } satisfies Prisma.Entry$inflectionsArgs;
+const exportSenseInclude = {
+  entry: { include: { levels: levelsQuery, variants: entryInclude.variants, inflections: inflectionsQuery } },
+  revisions: { ...revisionsQuery, include: { texts: true, formOf: { select: { lemma: true, pos: true } } } },
 } satisfies Prisma.SenseInclude;
 type EntryRow = Prisma.EntryGetPayload<{ include: typeof entryInclude }>;
 type SenseRow = Prisma.SenseGetPayload<{ include: typeof senseInclude }>;
@@ -87,11 +93,21 @@ function levelState(levels: LevelRow[]): { displayed_level: Level | null; confli
     conflict: !editorial && new Set(levels.map(({ level }) => level)).size > 1,
   };
 }
+/** `inflections` holds the reviewed set only (uploading an export never promotes library forms);
+ * `_inflections` shows the library set for the reviewer. Ordered by kind, then form. */
+function inflectionCells(rows: ReadonlyArray<{ form: string; kind: string; source: string }>) {
+  const format = (source: string) => rows.filter((row) => row.source === source)
+    .sort((a, b) => INFLECTION_KINDS.indexOf(a.kind as InflectionKind) - INFLECTION_KINDS.indexOf(b.kind as InflectionKind)
+      || (a.form < b.form ? -1 : a.form > b.form ? 1 : 0))
+    .map(({ kind, form }) => `${kind}:${form}`).join('; ');
+  return { inflections: format('reviewed'), _inflections: format('library') };
+}
 function readContent(revision: RevisionRow): RevisionContent {
   return {
     glossVi: revision.texts.find(({ language, kind }) => language === 'vi' && kind === 'gloss')?.text ?? null,
     definitionEn: revision.texts.find(({ language, kind }) => language === 'en' && kind === 'definition')?.text ?? null,
     examplesEn: revision.examples, topicCodes: revision.topicCodes, acceptedForms: revision.acceptedForms,
+    ...revisionFormOf(revision),
   };
 }
 function senseSummary(sense: EntryRow['senses'][number] | SenseRow) {
@@ -285,14 +301,16 @@ export class AdminCatalogQueries {
     let after: Cursor | undefined;
     while (true) {
       const chunk = await this.prisma.entry.findMany({
-        where: { AND: [where, afterEntry(after)] }, include: { levels: levelsQuery, variants: entryInclude.variants },
+        where: { AND: [where, afterEntry(after)] },
+        include: { levels: levelsQuery, variants: entryInclude.variants, inflections: inflectionsQuery },
         orderBy: [{ lemma: 'asc' }, { pos: 'asc' }, { id: 'asc' }], take: 500,
       });
       for (const entry of chunk) {
         const level = levelState(entry.levels).displayed_level;
         if (filter.level !== undefined && level !== filter.level) continue;
         if (rows.length === limit) return { tooMany: true };
-        rows.push({ headword: [entry.lemma, ...entry.variants.map(({ text }) => text)].join('/'), pos: entry.pos, _level: level });
+        rows.push({ headword: [entry.lemma, ...entry.variants.map(({ text }) => text)].join('/'), pos: entry.pos, _level: level,
+          ...inflectionCells(entry.inflections) });
       }
       if (chunk.length < 500) return { rows };
       const last = chunk[chunk.length - 1];
@@ -309,7 +327,7 @@ export class AdminCatalogQueries {
     let after: Cursor | undefined;
     while (true) {
       const chunk = await this.prisma.sense.findMany({
-        where: { AND: [where, afterSense(after)] }, include: senseInclude,
+        where: { AND: [where, afterSense(after)] }, include: exportSenseInclude,
         orderBy: [{ entry: { lemma: 'asc' } }, { entry: { pos: 'asc' } }, { id: 'asc' }], take: 500,
       });
       for (const sense of chunk) {
@@ -324,6 +342,8 @@ export class AdminCatalogQueries {
           example_en_1: content.examplesEn[0] ?? '', example_en_2: content.examplesEn[1] ?? '', example_en_3: content.examplesEn[2] ?? '',
           topics: content.topicCodes.join(';'), accepted_forms: content.acceptedForms.join(';'),
           context_label: sense.contextLabel, sense_id: sense.id, revision: revision.revisionNo,
+          form_of: revision.formOf && revision.formKind ? `${revision.formOf.lemma}/${revision.formOf.pos}:${revision.formKind}` : '',
+          ...inflectionCells(sense.entry.inflections),
           _status: revision.status, _level: selected.displayed_level,
           ...(filter.status === 'unpublishable' ? { _missing: selected.missing.join(';') } : {}),
         });

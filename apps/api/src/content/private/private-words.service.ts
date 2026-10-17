@@ -7,7 +7,8 @@ import {
   LEMMA_MAX, LEVELS, MEANING_MAX, OWNER_SOURCE_ID, PRIVATE_POS_UNSET, PRIVATE_WORDS_MAX, VALID_POS,
   type InflectionKind, type Level,
 } from '../content.constants.js';
-import { ContentRuleError, contentHash, type RevisionContent } from '../senses/revision-content.js';
+import { ContentRuleError, contentHash, revisionFormOf, type RevisionContent } from '../senses/revision-content.js';
+import { LevelsService } from '../catalog/levels.service.js';
 
 export type Meaning = { text: string; language: 'vi' | 'en' };
 export type CreatePrivateSenseInput = {
@@ -56,6 +57,7 @@ function readContent(revision: RevisionRow): RevisionContent {
     glossVi: revision.texts.find(({ language, kind }) => language === 'vi' && kind === 'gloss')?.text ?? null,
     definitionEn: revision.texts.find(({ language, kind }) => language === 'en' && kind === 'definition')?.text ?? null,
     examplesEn: revision.examples, topicCodes: revision.topicCodes, acceptedForms: revision.acceptedForms,
+    ...revisionFormOf(revision),
   };
 }
 
@@ -65,6 +67,7 @@ export class PrivateWordsService {
   constructor(
     @Inject(PRISMA_CLIENT) private readonly prisma: PrismaClient,
     @Inject(Clock) private readonly clock: Clock,
+    @Inject(LevelsService) private readonly levels: LevelsService,
   ) {}
 
   /** One lock per owner serializes the limit count and the (owner, lemma, pos) uniqueness check. */
@@ -80,20 +83,6 @@ export class PrivateWordsService {
     return normalized;
   }
 
-  /** The level shown for an entry: newest editorial/user choice first, then imported by source priority. */
-  private async displayedLevel(tx: Tx, entryId: string): Promise<Level | null> {
-    const [row] = await tx.$queryRaw<Array<{ level: Level }>>`
-      SELECT el.level FROM entry_levels el JOIN data_sources ds ON ds.id = el.source_id
-      WHERE el.entry_id = ${entryId}::uuid
-      ORDER BY (el.basis IN ('editorial', 'user')) DESC,
-        CASE WHEN el.basis IN ('editorial', 'user') THEN el.created_at END DESC,
-        CASE WHEN el.basis IN ('editorial', 'user') THEN el.id END ASC,
-        ds.display_priority ASC, ds.id ASC,
-        array_position(ARRAY['A1', 'A2', 'B1', 'B2', 'C1', 'C2']::text[], el.level) ASC
-      LIMIT 1`;
-    return row?.level ?? null;
-  }
-
   private async setLevel(tx: Tx, entryId: string, level: Level | null, basis: 'user' | 'derived'): Promise<void> {
     await tx.entryLevel.deleteMany({ where: { entryId } });
     if (level !== null) {
@@ -102,8 +91,7 @@ export class PrivateWordsService {
     }
   }
 
-  private async publishRevision(tx: Tx, senseId: string, revisionNo: number, content: RevisionContent, ownerId: string,
-    formOf: { entryId: string; kind: InflectionKind } | null): Promise<void> {
+  private async publishRevision(tx: Tx, senseId: string, revisionNo: number, content: RevisionContent, ownerId: string): Promise<void> {
     const texts = [
       ...(content.glossVi ? [{ language: 'vi', kind: 'gloss', text: content.glossVi }] : []),
       ...(content.definitionEn ? [{ language: 'en', kind: 'definition', text: content.definitionEn }] : []),
@@ -112,7 +100,7 @@ export class PrivateWordsService {
     const revision = await tx.senseRevision.create({ data: {
       senseId, revisionNo, status: 'published', draftSource: 'user', createdBy: ownerId, publishedAt: this.clock.now(),
       contentHash: contentHash(content), examples: content.examplesEn, topicCodes: content.topicCodes,
-      acceptedForms: content.acceptedForms, formOfEntryId: formOf?.entryId ?? null, formKind: formOf?.kind ?? null,
+      acceptedForms: content.acceptedForms, formOfEntryId: content.formOf?.entryId ?? null, formKind: content.formOf?.kind ?? null,
       texts: { create: texts },
     }, select: { id: true } });
     await tx.sense.update({ where: { id: senseId }, data: { state: 'open', liveRevisionId: revision.id } });
@@ -152,12 +140,13 @@ export class PrivateWordsService {
     let contextLabel: string | null = null;
     for (let n = 2; labels.has(contextLabel); n++) contextLabel = `p${n}`;
     const sense = await tx.sense.create({ data: { entryId: entry.id, contextLabel, state: 'unpublished' }, select: { id: true } });
-    await this.publishRevision(tx, sense.id, 1, { ...meaning, examplesEn: [], topicCodes, acceptedForms: [] }, input.ownerId, input.formOf);
+    await this.publishRevision(tx, sense.id, 1, { ...meaning, examplesEn: [], topicCodes, acceptedForms: [], formOf: input.formOf },
+      input.ownerId);
 
     if (input.level !== null) {
       await this.setLevel(tx, entry.id, input.level, 'user');
     } else if (input.formOf && !await tx.entryLevel.findFirst({ where: { entryId: entry.id }, select: { id: true } })) {
-      const base = await this.displayedLevel(tx, input.formOf.entryId);
+      const base = await this.levels.displayedLevel(tx, input.formOf.entryId);
       if (base !== null) await this.setLevel(tx, entry.id, base, 'derived');
     }
 
@@ -191,9 +180,7 @@ export class PrivateWordsService {
       const base = readContent(latest);
       const content: RevisionContent = { ...base, ...meaning, topicCodes: topicCodes ?? base.topicCodes };
       if (contentHash(content) === latest.contentHash) continue;
-      const formOf = latest.formOfEntryId && latest.formKind
-        ? { entryId: latest.formOfEntryId, kind: latest.formKind as InflectionKind } : null;
-      await this.publishRevision(tx, sense.id, latest.revisionNo + 1, content, ownerId, formOf);
+      await this.publishRevision(tx, sense.id, latest.revisionNo + 1, content, ownerId);
     }
     if (patch.level !== undefined) await this.setLevel(tx, entry.id, patch.level, 'user');
   }
