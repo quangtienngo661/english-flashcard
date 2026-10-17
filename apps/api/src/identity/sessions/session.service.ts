@@ -51,6 +51,7 @@ export class SessionService {
         createdAt: now, lastUsedAt: now,
       },
     });
+    await tx.user.update({ where: { id: input.userId }, data: { lastSeenAt: now } });
     const fresh = newRefreshToken();
     await tx.refreshToken.create({ data: { chainId: chain.id, tokenHash: fresh.hash, createdAt: now } });
 
@@ -182,6 +183,7 @@ export class SessionService {
         data: { id: successorId, chainId: chain.id, tokenHash: fresh.hash, createdAt: now },
       });
       await tx.sessionChain.update({ where: { id: chain.id }, data: { lastUsedAt: now } });
+      await tx.user.update({ where: { id: chain.userId }, data: { lastSeenAt: now } });
       return { kind: 'rotated', session: this.material(chain, fresh.token, path, now) };
     }
     throw new Error('Refresh rotation compare-and-set failed under user lock');
