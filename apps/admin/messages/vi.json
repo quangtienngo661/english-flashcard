@@ -1,0 +1,361 @@
+{
+  "errors": {
+    "generic": "Có lỗi xảy ra",
+    "inProgress": "Yêu cầu trước vẫn đang chạy",
+    "noAccess": "Bạn không có quyền truy cập trang web này",
+    "batch-filter-unavailable": "Bộ lọc theo lô này không dùng được",
+    "batch-not-revertable": "Lô này không hoàn tác được",
+    "csrf-header-required": "Yêu cầu thiếu header bảo vệ CSRF (lỗi lập trình)",
+    "email-already-verified": "Email này đã được xác minh",
+    "email-taken": "Email đã được dùng",
+    "export-too-large": "Quá nhiều dòng để xuất, hãy thu hẹp bộ lọc",
+    "file-invalid": "File không hợp lệ",
+    "file-too-large": "File quá lớn (tối đa 10 MB)",
+    "forbidden": "Bạn không còn quyền làm thao tác này",
+    "idempotency-key-abandoned": "Yêu cầu trước đã bị bỏ dở, hãy bấm gửi lại",
+    "invalid-credentials": "Email hoặc mật khẩu không đúng",
+    "invalid-current-password": "Mật khẩu hiện tại không đúng",
+    "invalid-otp": "Mã xác minh không đúng hoặc đã hết hạn",
+    "invalid-token": "Phiên hoặc liên kết không hợp lệ",
+    "level-source-required": "File có cột level, hãy chọn nguồn level",
+    "mail-unavailable": "Hiện chưa gửi được email nên chưa tạo tài khoản. Vui lòng thử lại sau ít phút.",
+    "not-found": "Không tìm thấy",
+    "nothing-to-publish": "Không có mục nào đủ điều kiện publish",
+    "password-change-required": "Bạn phải đổi mật khẩu trước khi tiếp tục",
+    "payload-too-large": "Dữ liệu gửi lên quá lớn",
+    "profile-incomplete": "Hồ sơ chưa đầy đủ",
+    "rate-limited": "Thao tác quá nhanh, hãy đợi một lát",
+    "same_as_current": "Mật khẩu mới phải khác mật khẩu hiện tại",
+    "source-exists": "Nguồn dữ liệu này đã tồn tại",
+    "source-incomplete": "Nguồn level cần có phiên bản và license",
+    "staff-role-rule": "Không thể đổi vai trò này (người dùng chưa xác minh email, hoặc đây là admin cuối cùng)",
+    "topic-exists": "Topic này đã tồn tại",
+    "unsupported-media-type": "Định dạng dữ liệu không được hỗ trợ",
+    "validation-failed": "Dữ liệu không hợp lệ"
+  },
+  "notice": {
+    "expired": "Phiên đăng nhập đã hết hạn"
+  },
+  "common": {
+    "retry": "Thử lại",
+    "cancel": "Hủy",
+    "confirm": "Xác nhận",
+    "loadMore": "Tải thêm",
+    "loading": "Đang tải…",
+    "close": "Đóng"
+  },
+  "shell": {
+    "brand": "Wordmet Admin",
+    "openMenu": "Mở menu",
+    "closeMenu": "Đóng menu",
+    "mainNav": "Menu chính",
+    "language": "Ngôn ngữ",
+    "account": "Tài khoản",
+    "logout": "Đăng xuất",
+    "loadingSession": "Đang kiểm tra phiên đăng nhập…",
+    "sessionRetry": "Máy chủ đang bận. Thử lại sau {seconds} giây…",
+    "skipToContent": "Bỏ qua tới nội dung chính"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "uploads": "Lô nhập",
+    "publishJobs": "Publish job",
+    "export": "Xuất CSV",
+    "sources": "Nguồn",
+    "words": "Từ",
+    "senses": "Nghĩa",
+    "topics": "Chủ đề",
+    "reported": "Câu bị báo lỗi",
+    "irregular": "Dạng bất quy tắc",
+    "users": "Người dùng",
+    "entitlements": "Quyền lợi & lượt AI",
+    "aiSettings": "Cài đặt AI",
+    "aiCosts": "Chi phí & đối soát",
+    "evalSets": "Bộ ví dụ",
+    "staff": "Vai trò & staff"
+  },
+  "offline": {
+    "message": "Không kết nối được máy chủ"
+  },
+  "list": {
+    "loading": "Đang tải…",
+    "error": "Không tải được danh sách",
+    "empty": "Chưa có mục nào",
+    "shown": "{count} mục đã hiển thị"
+  },
+  "account": {
+    "login": {
+      "title": "Đăng nhập",
+      "subtitle": "Dùng tài khoản quản trị Wordmet",
+      "email": "Email",
+      "emailPlaceholder": "ten@wordmet.com",
+      "password": "Mật khẩu",
+      "forgot": "Quên mật khẩu?",
+      "submit": "Đăng nhập"
+    },
+    "forgot": {
+      "title": "Quên mật khẩu",
+      "subtitle": "Nhập email, chúng tôi sẽ gửi mã đặt lại mật khẩu",
+      "email": "Email",
+      "send": "Gửi mã",
+      "back": "Quay lại đăng nhập",
+      "resetTitle": "Đặt mật khẩu mới",
+      "resetSubtitle": "Nhập mã 6 chữ số đã gửi tới {email}",
+      "code": "Mã xác minh",
+      "newPassword": "Mật khẩu mới",
+      "submit": "Đặt lại mật khẩu",
+      "resend": "Gửi lại mã",
+      "resendWait": "Gửi lại mã ({seconds})",
+      "resent": "Đã gửi lại mã",
+      "requestNew": "Yêu cầu mã mới",
+      "wait": "{label} ({seconds})"
+    },
+    "changePassword": {
+      "title": "Đổi mật khẩu",
+      "subtitle": "Quản trị viên yêu cầu bạn đặt mật khẩu mới trước khi tiếp tục.",
+      "current": "Mật khẩu hiện tại",
+      "new": "Mật khẩu mới",
+      "confirm": "Xác nhận mật khẩu mới",
+      "submit": "Đổi mật khẩu",
+      "logout": "Đăng xuất",
+      "mismatch": "Mật khẩu xác nhận không khớp"
+    },
+    "passwordRules": {
+      "notMet": "Mật khẩu chưa đạt yêu cầu",
+      "min_length": "Ít nhất 8 ký tự",
+      "max_length": "Tối đa 128 ký tự",
+      "uppercase": "Có chữ hoa",
+      "lowercase": "Có chữ thường",
+      "digit": "Có chữ số",
+      "special": "Có ký tự đặc biệt"
+    }
+  },
+  "staff": {
+    "toast": {
+      "granted": "Đã cấp vai trò {role} cho {email}.",
+      "removed": "Đã gỡ vai trò của {email}."
+    },
+    "createAccount": "Tạo tài khoản",
+    "search": {
+      "label": "Tìm theo email",
+      "placeholder": "nhap.email@vidu.com",
+      "submit": "Tìm",
+      "notFound": "Không tìm thấy người dùng với email này"
+    },
+    "card": {
+      "verified": "Đã xác minh",
+      "unverified": "Chưa xác minh email",
+      "noRole": "Chưa có vai trò",
+      "grantEditor": "Cấp editor",
+      "grantAdmin": "Cấp admin",
+      "remove": "Gỡ vai trò",
+      "unverifiedHint": "Người dùng chưa xác minh email nên chưa thể cấp vai trò"
+    },
+    "list": {
+      "email": "Email",
+      "role": "Vai trò",
+      "verified": "Xác minh",
+      "isVerified": "Đã xác minh",
+      "notVerified": "Chưa xác minh",
+      "change": "Đổi vai trò",
+      "shown": "{count} mục đã hiển thị",
+      "empty": "Chưa có tài khoản staff nào"
+    },
+    "dialog": {
+      "grantTitle": "Cấp vai trò {role}?",
+      "grantEditorBody": "Cấp vai trò editor cho {email}? Họ sẽ nhập và sửa được nội dung, nhưng không quản lý được vai trò.",
+      "grantAdminBody": "Cấp vai trò admin cho {email}? Họ sẽ quản lý được vai trò và toàn bộ nội dung.",
+      "removeTitle": "Gỡ vai trò của {email}?",
+      "removeBody": "Họ sẽ mất quyền truy cập trang quản trị ngay lập tức.",
+      "selfTitle": "Gỡ quyền admin của chính bạn?",
+      "selfBody": "Bạn sẽ mất quyền quản lý vai trò và bị chuyển khỏi trang này ngay sau khi xác nhận. Chỉ một admin khác mới cấp lại được cho bạn.",
+      "selfConfirm": "Gỡ quyền của tôi",
+      "lastAdmin": "Không thể gỡ admin cuối cùng"
+    },
+    "create": {
+      "title": "Tạo tài khoản",
+      "email": "Email",
+      "emailInvalid": "Nhập email hợp lệ",
+      "role": "Vai trò",
+      "generate": "Sinh mật khẩu ngẫu nhiên",
+      "generateHint": "Mật khẩu được gửi qua email tới người dùng và không bao giờ hiện trên màn hình.",
+      "password": "Mật khẩu",
+      "confirmPassword": "Xác nhận mật khẩu",
+      "mustChange": "Bắt đổi mật khẩu khi đăng nhập lần đầu",
+      "continue": "Tiếp tục",
+      "confirmTitle": "Xác nhận tạo tài khoản",
+      "confirmBody": "Tạo tài khoản {role} cho {email}? Mật khẩu sẽ được gửi tới đúng địa chỉ email này.",
+      "confirmMustChange": "Người dùng phải đổi mật khẩu khi đăng nhập lần đầu.",
+      "back": "Quay lại",
+      "submit": "Tạo tài khoản",
+      "doneTitle": "Đã tạo tài khoản",
+      "doneBody": "Đã tạo tài khoản và gửi mật khẩu tới {email}. Nếu editor không nhận được thư, họ dùng “Quên mật khẩu” ở trang đăng nhập.",
+      "close": "Đóng",
+      "emailTaken": "Email này đã có tài khoản. Dùng “Tìm theo email” ở trên rồi cấp vai trò.",
+      "mailUnavailable": "Hiện chưa gửi được email nên chưa tạo tài khoản. Vui lòng thử lại sau ít phút."
+    }
+  },
+  "navGroups": {
+    "overview": "Tổng quan",
+    "content": "Nội dung",
+    "practice": "Luyện tập",
+    "learners": "Người học",
+    "ai": "AI",
+    "system": "Hệ thống"
+  },
+  "comingSoon": {
+    "title": "Tính năng chưa có",
+    "eta": "Dự kiến: Bước {step}",
+    "etaNone": "Dự kiến: chưa xếp bước",
+    "etaNoneApiReady": "Dự kiến: chưa xếp bước (API đã có từ Bước 2)",
+    "purpose": {
+      "dashboard": "Tổng quan số từ, nghĩa, lô nhập gần đây, job đang chạy và chi phí AI hôm nay.",
+      "words": "Danh sách từ kèm biến thể chính tả, level biên tập và cờ từ chức năng.",
+      "senses": "Soạn nháp nghĩa, đánh dấu đã rà, publish và xem lịch sử revision.",
+      "topics": "Thêm, đổi tên tiếng Việt và tiếng Anh, lưu trữ chủ đề.",
+      "reported": "Hàng chờ câu bị người học báo lỗi; ẩn, gỡ hoặc khôi phục câu.",
+      "irregular": "Danh sách dạng bất quy tắc (go → went, gone) để kiểm câu do AI sinh.",
+      "users": "Danh sách người dùng, trạng thái tài khoản, khóa hoặc mở khóa.",
+      "entitlements": "Cấp, thu hồi quyền và lượt AI cho người học, kèm lý do và hạn.",
+      "aiSettings": "Bật hoặc tắt AI toàn hệ thống và đặt trần chi phí mỗi ngày.",
+      "aiCosts": "Nhật ký từng lời gọi AI, tổng theo ngày và theo model, đối soát hóa đơn.",
+      "evalSets": "Bộ ví dụ đã duyệt và kết quả chạy trước khi bật AI cho pilot."
+    },
+    "etaUnconfirmed": "Dự kiến: Bước {step} (chưa chốt)"
+  },
+  "status": {
+    "queued": "Đang chờ",
+    "running": "Đang chạy",
+    "succeeded": "Hoàn tất",
+    "partial": "Một phần",
+    "failed": "Thất bại",
+    "reverted": "Đã hoàn tác"
+  },
+  "sources": {
+    "register": "Đăng ký nguồn",
+    "formTitle": "Đăng ký nguồn",
+    "empty": "Chưa có nguồn nào",
+    "emptyHint": "Đăng ký nguồn đầu tiên để nhập file CSV có cột level",
+    "list": {
+      "name": "Tên nguồn",
+      "version": "Phiên bản",
+      "license": "License",
+      "priority": "Ưu tiên"
+    },
+    "form": {
+      "name": "Tên nguồn",
+      "version": "Phiên bản",
+      "url": "URL",
+      "license": "License",
+      "attribution": "Attribution",
+      "priority": "Độ ưu tiên",
+      "priorityHint": "Số nhỏ hơn được ưu tiên trước",
+      "asLevelSource": "Dùng làm nguồn level (bắt buộc có phiên bản và license)",
+      "save": "Lưu nguồn",
+      "required": "Bắt buộc nhập",
+      "urlInvalid": "URL phải bắt đầu bằng http:// hoặc https://",
+      "priorityInvalid": "Nhập một số nguyên"
+    }
+  },
+  "uploads": {
+    "upload": "Upload CSV",
+    "formTitle": "Upload CSV",
+    "submit": "Upload",
+    "wait": "Đợi {seconds} giây",
+    "empty": "Chưa có lô nhập nào",
+    "emptyHint": "Bấm “Upload CSV” để nhập file đầu tiên",
+    "list": {
+      "file": "Tên file",
+      "rows": "Số dòng",
+      "status": "Trạng thái",
+      "time": "Thời điểm"
+    },
+    "dropPrompt": "Kéo file .csv vào đây",
+    "chooseHint": "hoặc bấm để chọn file",
+    "chooseFile": "Chọn file",
+    "changeFile": "Đổi file",
+    "tooLargeHint": "{name} · {size} MB. Chọn file nhỏ hơn hoặc chia thành nhiều file.",
+    "invalidHint": "{name}. Chỉ nhận file .csv.",
+    "levelSource": "Nguồn level",
+    "levelSourceHint": "File có cột level (CEFR) nên cần chọn nguồn level.",
+    "levelSourceRequired": "Hãy chọn nguồn level cho file có cột level",
+    "levelSourcePlaceholder": "Chọn nguồn",
+    "fileSize": "{size} MB",
+    "open": "Chi tiết"
+  },
+  "batch": {
+    "rejected": "Tải rejected.csv",
+    "publish": "Publish lô này",
+    "revert": "Hoàn tác lô",
+    "statusLabel": "Trạng thái:",
+    "stats": {
+      "total": "Tổng số dòng",
+      "created": "Tạo mới",
+      "updated": "Cập nhật",
+      "unchanged": "Không đổi",
+      "rejected": "Bị loại"
+    },
+    "createdAt": "Đã tạo {time}",
+    "doneAt": "Hoàn tất {time}",
+    "endedAt": "Kết thúc {time}",
+    "queued": "Đang chờ worker nhận việc ({seconds} giây). Trang tự cập nhật mỗi 2 giây.",
+    "queuedLong": "Lô đã chờ {seconds} giây. Worker có đang chạy không? Kiểm tra tiến trình worker rồi tải lại trang.",
+    "running": "Đang xử lý: {done} / {total} dòng",
+    "partial": "Lô chỉ hoàn tất một phần. Tải rejected.csv để xem các dòng bị loại và sửa.",
+    "failed": "Lô nhập thất bại. Kiểm tra file (cột bắt buộc, mã hóa UTF-8) rồi upload lại.",
+    "revertedNotice": "Lô này đã được hoàn tác. Các sense do lô tạo không còn trong dữ liệu.",
+    "rejectedSummary": "{count} dòng bị loại — tải rejected.csv để xem lý do (cột _error) và sửa trong Excel.",
+    "warnings": "Cảnh báo ({count})",
+    "revertTitle": "Hoàn tác lô {file}?",
+    "revertBody": "Các sense do lô này tạo sẽ bị gỡ khỏi dữ liệu. Thao tác này không thể khôi phục.",
+    "revertDone": "Đã gỡ {removed} mục do lô tạo.",
+    "revertSkipped": "{skipped} mục không gỡ được.",
+    "wait": "Đợi {seconds} giây"
+  },
+  "export": {
+    "status": "Trạng thái",
+    "level": "Level",
+    "pos": "Từ loại",
+    "topic": "Topic",
+    "batch": "Lô nhập",
+    "all": "Tất cả",
+    "download": "Tải CSV",
+    "archived": "đã lưu trữ",
+    "statuses": {
+      "unpublishable": "Chưa publish được",
+      "open_draft": "Đang soạn",
+      "published": "Đã publish"
+    }
+  },
+  "publishJobs": {
+    "create": "Tạo publish job",
+    "formTitle": "Tạo publish job",
+    "empty": "Chưa có publish job nào",
+    "list": {
+      "job": "Job",
+      "filter": "Bộ lọc",
+      "status": "Trạng thái",
+      "count": "Số sense",
+      "time": "Thời điểm"
+    },
+    "batchFilter": "lô #{id}",
+    "filterNone": "Tất cả",
+    "jobTitle": "Publish job #{id}",
+    "report": "Tải report.csv",
+    "createdAt": "Tạo {time}",
+    "running": "Đang publish: {done} / {total} sense",
+    "refused": "{count} sense bị từ chối vì chưa đủ điều kiện. Tải report.csv để xem lý do từng dòng.",
+    "stats": {
+      "snapshot": "Trong snapshot",
+      "published": "Đã publish",
+      "already": "Đã publish từ trước",
+      "refused": "Bị từ chối"
+    },
+    "wait": "Thử lại sau {seconds} giây",
+    "queued": "Đang chờ worker nhận việc ({seconds} giây). Trang tự cập nhật mỗi 2 giây.",
+    "queuedLong": "Job đã chờ {seconds} giây. Worker có đang chạy không? Kiểm tra tiến trình worker rồi tải lại trang.",
+    "confirmAllTitle": "Publish toàn bộ catalog?",
+    "confirmAllBody": "Bạn chưa chọn bộ lọc nào, nên job này sẽ publish mọi sense đủ điều kiện trong toàn bộ catalog. Chỉ tiếp tục nếu đó là điều bạn muốn.",
+    "confirmAllSubmit": "Publish tất cả"
+  }
+}

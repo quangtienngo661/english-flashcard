@@ -1,0 +1,16 @@
+=== Case A: response lost ===
+14:54:08.934 login, T0 row: ddfa7efc | ae74ac48-8d39-4265-a4bd-a4abfaba26ef |  |  |
+14:54:09.208 aborted refresh(T0): { answeredBeforeClose: false }
+14:54:10.771 T0 row after abort: ddfa7efc | ae74ac48-8d39-4265-a4bd-a4abfaba26ef | 2026-10-15 14:54:09.23+00 | 2026-10-15 14:54:19.23+00 | da51e00b
+14:54:11.038 chain after abort: ae74ac48 |  |  | 2
+14:54:12.245 +3s refresh(T0): 200 cookie row: da51e00b | ae74ac48-8d39-4265-a4bd-a4abfaba26ef |  |  |
+14:54:21.234 +12s refresh(T0): 401 http://localhost:3300/problems/invalid-token
+14:54:21.234 chain after late retry: ae74ac48 | 2026-10-15 14:54:21.23+00 | reuse_detected | 2
+=== Case B (control): response received ===
+14:54:21.805 refresh(U0): 200 U1 row: d4f2847c | 9b674d8d-bbd7-4cf5-bbd0-5ec545d5984c |  |  |
+14:54:34.109 +12s refresh(U1): 200 
+14:54:34.109 chain B: 9b674d8d |  |  | 3
+chains {
+  chainA: 'ae74ac48-8d39-4265-a4bd-a4abfaba26ef',
+  chainB: '9b674d8d-bbd7-4cf5-bbd0-5ec545d5984c'
+}

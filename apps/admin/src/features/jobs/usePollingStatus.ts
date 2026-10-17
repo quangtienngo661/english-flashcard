@@ -1,0 +1,29 @@
+import { useQuery, type UseQueryResult } from '@tanstack/react-query';
+import type { JobStatus } from '../content/content-api';
+
+export type { JobStatus };
+
+/** Spec §6.3: batch and publish-job pages refresh every 2 s until the job ends. */
+export const POLL_INTERVAL_MS = 2000;
+/** After this long in `queued` the page asks whether the worker is running (spec §8, B25E8). `ASSUMPTION`: 30 s. */
+export const QUEUED_HINT_AFTER_S = 30;
+
+export const isTerminal = (status: JobStatus | undefined): boolean => status === 'succeeded' || status === 'partial' || status === 'failed';
+
+/**
+ * `refetchInterval` as a function ends polling by returning `false`. A hidden tab is not polled (TanStack's default
+ * `refetchIntervalInBackground: false`); showing it again refetches at once because the data is stale.
+ */
+export function usePollingStatus<T extends { status: JobStatus }>(key: unknown[], fetcher: () => Promise<T>): UseQueryResult<T> {
+  return useQuery({
+    queryKey: key,
+    queryFn: fetcher,
+    refetchInterval: (query) => (isTerminal(query.state.data?.status) ? false : POLL_INTERVAL_MS),
+    refetchOnWindowFocus: true,
+  });
+}
+
+/** Pure: the caller supplies `now` (ms) so it can tick once a second while the page is open. */
+export function useQueuedTooLong(status: JobStatus, createdAt: string, now: number): boolean {
+  return status === 'queued' && now - Date.parse(createdAt) > QUEUED_HINT_AFTER_S * 1000;
+}

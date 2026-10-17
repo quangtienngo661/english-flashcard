@@ -47,10 +47,12 @@ function setup() {
   });
   const chainUpdate = vi.fn(async () => { events.push('chain-write'); return chain; });
   const chainUpdateMany = vi.fn(async () => { events.push('chain-write'); return { count: 1 }; });
+  const userUpdate = vi.fn(async () => { events.push('user-write'); return {}; });
   const tx = {
     $executeRaw: lock,
     refreshToken: { findUnique, updateMany, create },
     sessionChain: { update: chainUpdate, updateMany: chainUpdateMany },
+    user: { update: userUpdate },
   } as unknown as Prisma.TransactionClient;
   let committed = false;
   let rolledBack = false;
@@ -79,7 +81,7 @@ function setup() {
     { hit } as unknown as RateLimiter, new AppLogger({ write: (entry) => { logs.push(entry); } }));
   return {
     service, original, config, clock, chain, row, logs, events, lock, locked, tx,
-    findUnique, updateMany, create, chainUpdate, chainUpdateMany, lookup, transaction, hit, sign,
+    findUnique, updateMany, create, chainUpdate, chainUpdateMany, userUpdate, lookup, transaction, hit, sign,
     committed: () => committed, rolledBack: () => rolledBack,
   };
 }
@@ -101,7 +103,7 @@ describe('SessionService transaction invariants', () => {
     const s = setup();
     s.clock.advance(1000);
     const session = await s.service.refresh(s.original.token, 'mobile');
-    expect(s.events).toEqual(['rate-limit', 'lock', 'read', 'cas', 'create', 'chain-write', 'commit', 'sign']);
+    expect(s.events).toEqual(['rate-limit', 'lock', 'read', 'cas', 'create', 'chain-write', 'user-write', 'commit', 'sign']);
     expect(s.transaction.mock.calls[0][1]).toEqual(options);
     expect(s.updateMany).toHaveBeenCalledWith({
       where: { id: s.row.id, rotatedAt: null },
@@ -111,6 +113,7 @@ describe('SessionService transaction invariants', () => {
       },
     });
     expect(s.chainUpdate).toHaveBeenCalledWith({ where: { id: s.chain.id }, data: { lastUsedAt: s.clock.now() } });
+    expect(s.userUpdate).toHaveBeenCalledWith({ where: { id: s.chain.userId }, data: { lastSeenAt: s.clock.now() } });
     expect(session.refreshToken).not.toBe(s.original.token);
     expect(session.refreshExpiresAt).toEqual(new Date(s.clock.now().getTime() + 90 * day));
     expect(decodeJwt(session.accessToken)).toMatchObject({ sub: s.chain.userId, sid: s.chain.id });
@@ -301,6 +304,7 @@ describe('SessionService transaction invariants', () => {
     expect(createChain).toHaveBeenCalledWith({ data: {
       userId: s.chain.userId, clientType: 'mobile', deviceLabel: 'Phone', createdAt: s.clock.now(), lastUsedAt: s.clock.now(),
     } });
+    expect(s.userUpdate).toHaveBeenCalledWith({ where: { id: s.chain.userId }, data: { lastSeenAt: s.clock.now() } });
     expect(findMany).toHaveBeenCalledWith({
       where: {
         userId: s.chain.userId, revokedAt: null, id: { not: s.chain.id },

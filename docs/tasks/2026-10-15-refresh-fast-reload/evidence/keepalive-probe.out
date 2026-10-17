@@ -1,0 +1,2 @@
+keepalive=false: 5 tries, requests seen leaving the browser 11, cookie left on an already-rotated token 5 times, fetch errors 0; server: rotations 5, grace answers 5, chain 9b35721f revoked=no
+keepalive=true: 5 tries, requests seen leaving the browser 6, cookie left on an already-rotated token 0 times, fetch errors 0; server: rotations 5, grace answers 0, chain 71fb8356 revoked=no

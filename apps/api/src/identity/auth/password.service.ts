@@ -7,21 +7,21 @@ import { AppLogger } from '../../common/logging/app-logger.js';
 import { ProblemDetailsException } from '../../common/problem-details/problem-details.exception.js';
 import type { RequestUser } from '../../common/request-user/request-user.js';
 import type { PrismaClient } from '../../generated/prisma/client.js';
-import { MailDispatcher, sendPrepared } from '../mailer/mail-dispatcher.service.js';
-import type { MailMessage } from '../mailer/mailer.js';
+import { MailDispatcher, sendPrepared } from '../../common/mail/mail-dispatcher.service.js';
+import type { MailMessage } from '../../common/mail/mailer.js';
 import { passwordChangedMail, passwordResetMail } from '../mailer/templates.js';
 import { SessionService, type IssuedSession } from '../sessions/session.service.js';
 import { withUserLock } from '../user-lock.js';
 import { decideCredential } from './credential-decision.js';
 import { OtpService, type OtpCheckOutcome } from './otp.service.js';
 import { PasswordHasher } from './password-hasher.service.js';
-import { checkPasswordPolicy } from './password-policy.js';
+import { checkPasswordPolicy, normalizePassword } from './password-policy.js';
 import type { ChangeBody, ResetBody } from './password.schemas.js';
 
 const transactionOptions = { timeout: 10_000, maxWait: 5_000 };
 type ChangeOutcome =
   | { kind: 'ok'; session: IssuedSession; message: MailMessage }
-  | { kind: 'wrong' | 'stale' | 'invalid_session' }
+  | { kind: 'wrong' | 'stale' | 'invalid_session' | 'same_as_current' }
   | { kind: 'locked'; lockedUntil: Date; newlyLocked: boolean };
 type ResetOutcome = Exclude<OtpCheckOutcome, { kind: 'ok' }> | { kind: 'ok'; message: MailMessage };
 
@@ -65,7 +65,10 @@ export class PasswordService {
           newlyLocked: locked.loginLockedUntil.getTime() !== current.loginLockedUntil?.getTime() };
       }
       if (kind !== 'ok') return { kind };
+      // Only reachable with the right current password, so it reveals nothing to a caller who lacks it.
+      if (normalizePassword(body.new_password) === normalizePassword(body.current_password)) return { kind: 'same_as_current' };
       await tx.passwordCredential.update({ where: { userId: user.userId }, data: { hash, updatedAt: this.clock.now() } });
+      await tx.user.update({ where: { id: user.userId }, data: { mustChangePassword: false } });
       await this.sessions.revokeAllForUser(tx, user.userId, 'password_changed');
       const session = await this.sessions.startChain(tx, {
         userId: user.userId, client: chain.clientType, deviceLabel: chain.deviceLabel ?? undefined,
@@ -82,6 +85,8 @@ export class PasswordService {
       throw new ProblemDetailsException({ status: 429, title: 'Too many requests', type: 'rate-limited',
         retryAfterSeconds: Math.max(1, Math.ceil((outcome.lockedUntil.getTime() - this.clock.now().getTime()) / 1000)) });
     }
+    if (outcome.kind === 'same_as_current') throw new ProblemDetailsException({ status: 400, title: 'Validation failed',
+      type: 'validation-failed', extensions: { violations: ['same_as_current'] } });
     if (outcome.kind !== 'ok') throw this.invalidCurrentPassword();
     this.dispatcher.afterResponse(res, [sendPrepared(outcome.message)]);
     return outcome.session;
@@ -106,6 +111,7 @@ export class PasswordService {
       await this.sessions.revokeAllForUser(tx, account.id, 'password_reset');
       await tx.user.update({ where: { id: account.id }, data: {
         emailVerifiedAt: current.emailVerifiedAt ?? now, failedLoginCount: 0, loginLockedUntil: null,
+        mustChangePassword: false,
       } });
       return { kind: 'ok', message: passwordResetMail(current.email) };
     }, transactionOptions);

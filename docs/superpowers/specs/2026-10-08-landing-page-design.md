@@ -238,6 +238,10 @@ scale của carousel), chỉ đổi trạng thái tức thì. Nội dung luôn c
 
 ## 6. Design token và quy tắc Tailwind
 
+> **Cập nhật 15/10/2026:** màu, bo góc, bóng, thời lượng, easing và font đã chuyển sang package dùng chung
+> `packages/design-tokens/theme.css` theo hướng B; giá trị dưới đây là lịch sử. Xem
+> [`2026-10-15-ui-refresh-b-design.md`](2026-10-15-ui-refresh-b-design.md) §4.
+
 ### 6.1 Token (`@theme` trong `globals.css`)
 
 Lấy từ biến `Landing tokens` trong Figma, đặt tên theo vai trò:

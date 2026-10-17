@@ -15,7 +15,8 @@ export type RateLimitRuleName =
   | 'auth.logout.ip'
   | 'auth.reset.ip'
   | 'mail.ip.daily'
-  | 'user.write';
+  | 'user.write'
+  | 'learning.review';
 
 export interface RateLimitRuleConfig {
   by: 'user' | 'ip' | 'email' | 'chain';
@@ -25,6 +26,7 @@ export interface RateLimitRuleConfig {
 
 export interface AppConfig {
   databaseUrl: string;
+  redisUrl: string;
   jwt: {
     keys: Array<{ kid: string; secret: Uint8Array }>;
     issuer: string;
@@ -47,7 +49,36 @@ export interface AppConfig {
   trustProxy: string | false;
   corsOrigins: string[];
   problemTypeBase: string;
+  adminAppUrl: string;
+  /** Origin of the learner app (apps/web); reminder emails link to `<learnerAppUrl>/<language>/app/settings`. */
+  learnerAppUrl: string;
   maintenanceEnabled: boolean;
+  content: {
+    publishMaxItems: number;
+  };
+  pipeline: {
+    importMaxRows: number;
+    importMaxBytes: number;
+    exportMaxRows: number;
+    leaseSeconds: number;
+    heartbeatSeconds: number;
+    reconcileSeconds: number;
+    rowRetries: number;
+    jobAttempts: number;
+    fileRetentionDays: number;
+    queuePrefix: string;
+    runWorkers: boolean;
+    jobBackoffMs: number;
+    rowRetryBaseMs: number;
+  };
+  reminders: {
+    /** How often the worker's reminder tick runs (design 8.1: every 15 minutes). */
+    tickSeconds: number;
+    /** The worker process starts the reminder scheduler. Tests turn it off unless they test reminders. */
+    runScheduler: boolean;
+    /** First retry delay of a reminder send after a transient SMTP error; doubles per attempt (L15). */
+    retryBackoffMs: number;
+  };
   limits: Record<RateLimitRuleName, RateLimitRuleConfig>;
 }
 
@@ -64,6 +95,8 @@ export const DEFAULT_LIMITS: Record<RateLimitRuleName, RateLimitRuleConfig> = {
   'auth.reset.ip': { by: 'ip', max: 20, windowSeconds: 3600 },
   'mail.ip.daily': { by: 'ip', max: 20, windowSeconds: 86400 },
   'user.write': { by: 'user', max: 30, windowSeconds: 60 },
+  // Flashcard answers: a fast session goes well past 30 a minute.
+  'learning.review': { by: 'user', max: 120, windowSeconds: 60 },
 };
 
 const nonEmpty = z.string().trim().min(1);
@@ -104,6 +137,9 @@ const envSchema = z.object({
   DATABASE_URL: z.url().transform((value) => new URL(value))
     .refine((value) => ['postgres:', 'postgresql:'].includes(value.protocol))
     .transform((value) => value.toString()),
+  REDIS_URL: z.url().transform((value) => new URL(value))
+    .refine((value) => ['redis:', 'rediss:'].includes(value.protocol))
+    .transform((value) => value.toString()),
   JWT_KEYS: jwtKeySchema,
   JWT_ISSUER: nonEmpty,
   JWT_AUDIENCE: nonEmpty,
@@ -125,8 +161,29 @@ const envSchema = z.object({
       .refine(({ value, url }) => ['http:', 'https:'].includes(url.protocol) && url.origin === value)
       .transform(({ value }) => value)).min(1)),
   PROBLEM_TYPE_BASE: z.url(),
+  ADMIN_APP_URL: z.url(),
+  LEARNER_APP_URL: z.url().refine((value) => {
+    if (!URL.canParse(value)) return false;
+    const url = new URL(value);
+    return ['http:', 'https:'].includes(url.protocol) && url.origin === value;
+  }),
   MAINTENANCE_ENABLED: booleanString.default(true),
   ACCESS_TOKEN_TTL_SECONDS: positiveInteger.default(900),
+  PUBLISH_MAX_ITEMS: positiveInteger.default(500),
+  IMPORT_MAX_ROWS: positiveInteger.default(20_000),
+  IMPORT_MAX_BYTES: positiveInteger.default(10_485_760),
+  EXPORT_MAX_ROWS: positiveInteger.default(5_000),
+  IMPORT_LEASE_SECONDS: positiveInteger.default(60),
+  IMPORT_HEARTBEAT_SECONDS: positiveInteger.default(20),
+  IMPORT_RECONCILE_SECONDS: positiveInteger.default(30),
+  IMPORT_ROW_RETRIES: positiveInteger.default(3),
+  IMPORT_JOB_ATTEMPTS: positiveInteger.default(3),
+  IMPORT_FILE_RETENTION_DAYS: positiveInteger.default(30),
+  JOB_QUEUE_PREFIX: nonEmpty.default('wordmet'),
+  IMPORT_JOB_BACKOFF_MS: positiveInteger.default(5_000),
+  IMPORT_ROW_RETRY_BASE_MS: positiveInteger.default(200),
+  REMINDER_TICK_SECONDS: positiveInteger.default(900),
+  REMINDER_RETRY_BACKOFF_MS: positiveInteger.default(60_000),
 });
 
 export function loadConfig(env: NodeJS.ProcessEnv): AppConfig {
@@ -138,6 +195,7 @@ export function loadConfig(env: NodeJS.ProcessEnv): AppConfig {
   const values = result.data;
   return {
     databaseUrl: values.DATABASE_URL,
+    redisUrl: values.REDIS_URL,
     jwt: {
       keys: values.JWT_KEYS,
       issuer: values.JWT_ISSUER,
@@ -160,7 +218,26 @@ export function loadConfig(env: NodeJS.ProcessEnv): AppConfig {
     trustProxy: values.TRUST_PROXY,
     corsOrigins: values.CORS_ORIGINS,
     problemTypeBase: values.PROBLEM_TYPE_BASE,
+    adminAppUrl: values.ADMIN_APP_URL,
+    learnerAppUrl: values.LEARNER_APP_URL,
     maintenanceEnabled: values.MAINTENANCE_ENABLED,
+    content: { publishMaxItems: values.PUBLISH_MAX_ITEMS },
+    pipeline: {
+      importMaxRows: values.IMPORT_MAX_ROWS,
+      importMaxBytes: values.IMPORT_MAX_BYTES,
+      exportMaxRows: values.EXPORT_MAX_ROWS,
+      leaseSeconds: values.IMPORT_LEASE_SECONDS,
+      heartbeatSeconds: values.IMPORT_HEARTBEAT_SECONDS,
+      reconcileSeconds: values.IMPORT_RECONCILE_SECONDS,
+      rowRetries: values.IMPORT_ROW_RETRIES,
+      jobAttempts: values.IMPORT_JOB_ATTEMPTS,
+      fileRetentionDays: values.IMPORT_FILE_RETENTION_DAYS,
+      queuePrefix: values.JOB_QUEUE_PREFIX,
+      runWorkers: false,
+      jobBackoffMs: values.IMPORT_JOB_BACKOFF_MS,
+      rowRetryBaseMs: values.IMPORT_ROW_RETRY_BASE_MS,
+    },
+    reminders: { tickSeconds: values.REMINDER_TICK_SECONDS, runScheduler: true, retryBackoffMs: values.REMINDER_RETRY_BACKOFF_MS },
     limits: structuredClone(DEFAULT_LIMITS),
   };
 }

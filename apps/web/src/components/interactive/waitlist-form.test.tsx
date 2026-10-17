@@ -14,7 +14,7 @@ const labels: WaitlistLabels = {
 };
 
 const renderForm = (idPrefix: 'hero' | 'cta' = 'hero') =>
-  render(<WaitlistForm idPrefix={idPrefix} tone="default" layout="inline" locale="en" labels={labels} />);
+  render(<WaitlistForm idPrefix={idPrefix} tone="onPrimary" layout="inline" locale="en" labels={labels} />);
 
 beforeEach(() => {
   join.mockReset();
@@ -77,11 +77,46 @@ describe('WaitlistForm', () => {
   it('LPE8 two forms on one page have distinct input ids', () => {
     render(
       <>
-        <WaitlistForm idPrefix="hero" tone="default" layout="inline" locale="en" labels={labels} />
-        <WaitlistForm idPrefix="cta" tone="inverse" layout="inline" locale="en" labels={labels} />
+        <WaitlistForm idPrefix="hero" tone="onPrimary" layout="inline" locale="en" labels={labels} />
+        <WaitlistForm idPrefix="cta" tone="onAccent" layout="inline" locale="en" labels={labels} />
       </>,
     );
     const ids = [...document.querySelectorAll('input[id]')].map((el) => el.id);
     expect(new Set(ids).size).toBe(ids.length);
+    // The scroll targets live on persistent wrappers, one per form, not on the <form> itself.
+    expect(document.querySelectorAll('#waitlist-hero, #waitlist-cta')).toHaveLength(2);
+    expect(document.querySelector('form#waitlist-hero, form#waitlist-cta')).toBeNull();
+  });
+
+  it('A11Y-5 an invalid consent box stays visible on both fields', async () => {
+    join.mockResolvedValue({ status: 'missing_consent', email: 'ten@gmail.com' });
+    const user = userEvent.setup();
+    const { container } = render(
+      <>
+        <WaitlistForm idPrefix="hero" tone="onPrimary" layout="inline" locale="en" labels={labels} />
+        <WaitlistForm idPrefix="cta" tone="onAccent" layout="inline" locale="en" labels={labels} />
+      </>,
+    );
+    for (const id of ['hero', 'cta']) {
+      await user.click(container.querySelector(`#waitlist-${id} button[type=submit]`)!);
+    }
+    await screen.findAllByText('Please agree');
+    // Red on the blue field is 1.24:1, so the hero box turns yellow (5.24:1); red stays on the yellow band (4.24:1).
+    expect(container.querySelector('#hero-consent')).toHaveClass('border-accent');
+    expect(container.querySelector('#hero-consent')).not.toHaveClass('border-danger');
+    expect(container.querySelector('#cta-consent')).toHaveClass('border-danger');
+  });
+
+  it('RF2 after success the waitlist-<prefix> wrapper still exists and holds the status message', async () => {
+    join.mockResolvedValue({ status: 'success' });
+    const user = userEvent.setup();
+    const { container } = renderForm('hero');
+    await user.type(screen.getByRole('textbox', { name: 'Email address' }), 'ten@gmail.com');
+    await user.click(screen.getByRole('checkbox'));
+    await user.click(screen.getByRole('button', { name: 'Get notified' }));
+    const status = await screen.findByRole('status');
+    const wrapper = container.querySelector('#waitlist-hero');
+    expect(wrapper).not.toBeNull();
+    expect(wrapper).toContainElement(status);
   });
 });

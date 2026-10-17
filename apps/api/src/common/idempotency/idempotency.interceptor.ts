@@ -10,6 +10,7 @@ import { Reflector } from '@nestjs/core';
 import { from, Observable } from 'rxjs';
 import { firstValueFrom } from 'rxjs';
 import type { Response } from 'express';
+import type {} from 'multer';
 import type { PrismaClient } from '../../generated/prisma/client.js';
 import { PRISMA_CLIENT } from '../db/prisma.module.js';
 import { ProblemDetailsException } from '../problem-details/problem-details.exception.js';
@@ -44,7 +45,14 @@ export class IdempotencyInterceptor implements NestInterceptor {
       throw new ProblemDetailsException({ status: 400, title: 'No RequestUser for idempotent request' });
     }
 
-    const payloadHash = createHash('sha256').update(JSON.stringify(request.body ?? null)).digest('hex');
+    const payload = createHash('sha256').update(JSON.stringify(request.body ?? null));
+    if (request.file) {
+      const fileHash = createHash('sha256').update(request.file.buffer).digest('hex');
+      // Append JSON-framed file metadata after the body: sha256(bytes) plus the multipart field name.
+      payload.update(JSON.stringify([fileHash, request.file.fieldname]));
+    }
+    // Keep the no-file digest byte-for-byte compatible so existing JSON idempotency rows replay.
+    const payloadHash = payload.digest('hex');
 
     return from(
       runIdempotent(

@@ -1,5 +1,5 @@
 import type { OtpPurpose } from '../identity.types.js';
-import type { MailMessage } from './mailer.js';
+import type { MailMessage } from '../../common/mail/mailer.js';
 
 export function otpMail(to: string, purpose: OtpPurpose, code: string): MailMessage {
   return {
@@ -26,6 +26,16 @@ export function passwordResetMail(to: string): MailMessage {
     to,
     subject: 'Mật khẩu đã được đặt lại / Password reset',
     text: 'Mật khẩu của bạn đã được đặt lại. Nếu bạn không thực hiện thao tác này, hãy đặt lại mật khẩu ngay.\n\nYour password was reset. If you did not make this change, reset your password immediately.',
+  };
+}
+
+export function staffAccountMail(to: string, password: string, adminAppUrl: string, mustChange: boolean): MailMessage {
+  const viNote = mustChange ? '\nBạn sẽ được yêu cầu đổi mật khẩu ở lần đăng nhập đầu tiên.' : '';
+  const enNote = mustChange ? '\nYou will be asked to change your password the first time you sign in.' : '';
+  return {
+    to,
+    subject: 'Tài khoản quản trị Wordmet / Your Wordmet admin account',
+    text: `Một tài khoản đã được tạo cho bạn.\nTrang đăng nhập: ${adminAppUrl}\nEmail: ${to}\nMật khẩu / Password: ${password}${viNote}\n\nAn account has been created for you.\nSign in at: ${adminAppUrl}\nEmail: ${to}\nPassword: ${password}${enNote}`,
   };
 }
 

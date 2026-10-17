@@ -1,5 +1,5 @@
 import { getLocale, getTranslations } from 'next-intl/server';
-import { ClozeCarousel, type ClozeItem } from '@/components/interactive/cloze/ClozeCarousel';
+import { ClozePractice, type ClozeItem } from '@/components/interactive/cloze/ClozePractice';
 import { WaitlistForm } from '@/components/interactive/WaitlistForm';
 import { Chip } from '@/components/ui/Chip';
 import { Container } from '@/components/ui/Container';
@@ -29,8 +29,6 @@ export async function Hero() {
     headers: ITEM_IDS.map((_, i) => c('header', { current: i + 1, total: ITEM_IDS.length })),
     sourceChip: c('sourceChip'),
     instruction: c('instruction'),
-    prev: c('prev'),
-    next: c('next'),
     correctTitle: c('correctTitle'),
     wrongTitle: c('wrongTitle'),
     nextSentence: c('nextSentence'),
@@ -42,22 +40,23 @@ export async function Hero() {
   };
 
   return (
-    <section aria-labelledby="hero-title" className="bg-bg pt-10 pb-14 md:pt-20 md:pb-24">
+    <section aria-labelledby="hero-title" className="bg-primary pt-10 pb-14 text-on-primary md:pt-8 md:pb-24">
+      {/* DOM order puts the form before the practice card so phones see it in the first screen (design §5.1). */}
       <Container className="grid grid-cols-1 items-center gap-7 lg:grid-cols-2 lg:gap-x-12 lg:gap-y-6">
         <div className="lg:col-start-1">
           <Chip>{t('chip')}</Chip>
         </div>
-        <h1 id="hero-title" className="text-display font-extrabold text-ink lg:col-start-1">
+        <h1 id="hero-title" className="text-display font-extrabold text-pretty text-on-primary lg:col-start-1">
           {t.rich('title', richBreaks)}
         </h1>
-        <div className="flex justify-center lg:col-start-2 lg:row-span-5 lg:row-start-1 lg:justify-end">
-          <ClozeCarousel items={items} labels={labels} ctaHref="#waitlist-hero" />
-        </div>
-        <p className="max-w-copy text-body-lg text-muted md:text-lead lg:col-start-1">{t('description')}</p>
+        <p className="max-w-copy text-body-lg text-on-primary-muted md:text-lead lg:col-start-1">{t('description')}</p>
         <div className="max-w-copy lg:col-start-1">
-          <WaitlistForm idPrefix="hero" tone="default" layout="inline" locale={locale} labels={await getWaitlistLabels()} />
+          <WaitlistForm idPrefix="hero" tone="onPrimary" layout="inline" locale={locale} labels={await getWaitlistLabels()} />
         </div>
-        <p className="text-small text-muted lg:col-start-1">{t('note')}</p>
+        <p className="text-small text-on-primary-muted lg:col-start-1">{t('note')}</p>
+        <div className="flex justify-center lg:col-start-2 lg:row-span-5 lg:row-start-1 lg:justify-end">
+          <ClozePractice items={items} labels={labels} ctaHref="#waitlist-hero" />
+        </div>
       </Container>
     </section>
   );
