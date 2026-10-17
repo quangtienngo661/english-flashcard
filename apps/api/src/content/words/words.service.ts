@@ -7,6 +7,7 @@ import { ProblemDetailsException } from '../../common/problem-details/problem-de
 import { Prisma, type PrismaClient } from '../../generated/prisma/client.js';
 import { INFLECTION_KINDS, LEVELS, PRIVATE_POS_UNSET, VALID_POS, type InflectionKind, type Level } from '../content.constants.js';
 import { InflectionsService } from '../inflections/inflections.service.js';
+import { visibleSenseCondition } from '../learner/visible-senses.js';
 
 type NativeLanguage = 'vi' | 'en';
 export type WordSense = {
@@ -42,12 +43,8 @@ const displayedLevel = Prisma.sql`
     array_position(ARRAY['A1', 'A2', 'B1', 'B2', 'C1', 'C2']::text[], el.level) ASC
   LIMIT 1`;
 
-/** Catalog senses that are published and open, plus the viewer's own private senses (S6, B3#12). */
-function visible(viewerId: string): Prisma.Sql {
-  return Prisma.sql`e.language = 'en' AND e.entry_type = 'word' AND (
-    (e.scope = 'catalog' AND s.state = 'open')
-    OR (e.scope = 'private' AND e.owner_user_id = ${viewerId}::uuid AND s.state <> 'retired'))`;
-}
+/** The shared visibility rule (S6, B3#12): catalog or the viewer's own private sense, open with a live revision. */
+const visible = (viewerId: string) => visibleSenseCondition(Prisma.sql`s.id`, viewerId);
 
 function view(row: SenseRow, nativeLanguage: NativeLanguage): WordSense {
   // Bước 2 meaning rule: the native gloss, else the English definition, else the gloss marked untranslated.
