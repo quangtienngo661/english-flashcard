@@ -18,6 +18,7 @@ import { JobRunnerService } from '../../src/content-pipeline/jobs/job-runner.ser
 import type { JobHandler } from '../../src/content-pipeline/jobs/job-types.js';
 import type { PrismaClient } from '../../src/generated/prisma/client.js';
 import { IdentityModule } from '../../src/identity/identity.module.js';
+import { ReminderQueueService } from '../../src/notifications/scheduler/reminder-queue.service.js';
 import { ROLE_PERMISSIONS, type Permission, type StaffRole } from '../../src/identity/identity.types.js';
 import { FakeMailer } from '../../src/common/mail/fake-mailer.js';
 import { MailDispatcher } from '../../src/common/mail/mail-dispatcher.service.js';
@@ -94,6 +95,7 @@ export async function createTestApp(opts?: {
   const hooks: Array<() => Promise<void>> = [
     () => moduleRef.get(JobReconcilerService).onModuleDestroy(),
     () => moduleRef.get(JobRunnerService).onModuleDestroy(),
+    () => moduleRef.get(ReminderQueueService).onModuleDestroy(),
     () => dispatcher.drain(),
   ];
   return {

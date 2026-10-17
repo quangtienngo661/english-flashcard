@@ -7,10 +7,16 @@ import { ReminderPrefsService } from './prefs/reminder-prefs.service.js';
 import { RemindersController } from './prefs/reminders.controller.js';
 import { ChannelChooser } from './provider/channel-chooser.js';
 import { EmailProvider } from './provider/email.provider.js';
+import { ReminderQueueService } from './scheduler/reminder-queue.service.js';
+import { ReminderSendService } from './scheduler/reminder-send.service.js';
+import { ReminderTickService } from './scheduler/reminder-tick.service.js';
 
 @Module({
   imports: [IdentityModule, MailModule, SettingsModule],
   controllers: [RemindersController],
-  providers: [ReminderPrefsService, EmailProvider, ChannelChooser, IdempotencyInterceptor],
+  providers: [
+    ReminderPrefsService, EmailProvider, ChannelChooser, IdempotencyInterceptor,
+    ReminderQueueService, ReminderTickService, ReminderSendService,
+  ],
 })
 export class NotificationsModule {}
