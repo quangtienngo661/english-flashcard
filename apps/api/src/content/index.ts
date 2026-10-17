@@ -19,3 +19,4 @@ export { ContentRuleError, contentHash, mergeContent, normalizeContent, type For
 export type { PublishItem, PublishItemResult, PublishViolation, QuickPublishResult, SenseStateResult } from './senses/publish.service.js';
 export { CurrentLearner, LearnerContent } from './learner/learner.decorator.js';
 export type { Learner } from './learner/learner-content.guard.js';
+export { visibleSenseCondition } from './learner/visible-senses.js';
