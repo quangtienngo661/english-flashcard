@@ -52,7 +52,10 @@ describe('visible senses: one definition for Content and Learning (e2e, isolated
     const replacement = await sense('eggs', true, replaced);
     const mine = await privateSense(viewer, 'yeet');
     const theirs = await privateSense(other, 'yote');
-    const ids = [published, draft, unpublished, retired, replaced, replacement, mine, theirs, randomUUID()];
+    // Private words have no retire action, so a retired private sense is stray data: never shown, even to its owner.
+    const mineRetired = await privateSense(viewer, 'skrrt');
+    await ctx.prisma.sense.update({ where: { id: mineRetired }, data: { state: 'retired' } });
+    const ids = [published, draft, unpublished, retired, replaced, replacement, mine, theirs, mineRetired, randomUUID()];
 
     const expected = [published, replacement, mine].sort();
     expect([...await content.visibleSenseIds(viewer, ids)].sort()).toEqual(expected);
