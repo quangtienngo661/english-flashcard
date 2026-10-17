@@ -126,7 +126,7 @@ function senseView(sense: SenseRow) {
   };
 }
 
-function selectedSense(row: SenseRow, query: Pick<SenseFilter, 'level' | 'topic' | 'status'>, activeTopics: Set<string>) {
+function selectedSense(row: SenseRow, query: Pick<SenseFilter, 'level' | 'topic' | 'status'>) {
   const revision = row.revisions[0];
   const view = senseView(row);
   if (query.level !== undefined && view.displayed_level !== query.level) return null;
@@ -134,7 +134,7 @@ function selectedSense(row: SenseRow, query: Pick<SenseFilter, 'level' | 'topic'
   if (query.status === 'open_draft' || query.status === 'unpublishable') {
     if (!revision || !['draft', 'reviewed'].includes(revision.status)) return null;
     if (query.status === 'unpublishable') {
-      const missing = publishViolations(revision, row.entry.levels.length > 0, revision.topicCodes.some((code) => activeTopics.has(code)));
+      const missing = publishViolations(revision, row.entry.levels.length > 0);
       return missing.length ? { ...view, missing } : null;
     }
   }
@@ -210,7 +210,7 @@ export class AdminCatalogQueries {
   }
 
   async listSenses(query: SenseListQuery) {
-    const { where, activeTopics } = await this.senseSelection(query);
+    const { where } = await this.senseSelection(query);
     const queryBinding = binding('senses', {
       sense_id: query.sense_id ?? null, status: query.status ?? null, level: query.level ?? null,
       pos: query.pos ?? null, topic: query.topic ?? null, batch_id: query.batch_id ?? null,
@@ -219,7 +219,7 @@ export class AdminCatalogQueries {
       where: { AND: [where, afterSense(after)] }, include: senseInclude,
       orderBy: [{ entry: { lemma: 'asc' } }, { entry: { pos: 'asc' } }, { id: 'asc' }], take,
     }), (row) => ({ lemma: row.entry.lemma, pos: row.entry.pos as Cursor['pos'], id: row.id }), (row) => {
-      const selected = selectedSense(row, query, activeTopics);
+      const selected = selectedSense(row, query);
       if (!selected) return null;
       // Preserve the existing list interface: missing is present only for unpublishable.
       const { missing, ...view } = selected;
@@ -227,11 +227,8 @@ export class AdminCatalogQueries {
     });
   }
 
-  private async senseSelection(query: Omit<SenseFilter, 'pos'> & { pos?: string }, db: Prisma.TransactionClient = this.prisma) {
+  private async senseSelection(query: Omit<SenseFilter, 'pos'> & { pos?: string }) {
     const ids = await this.batchIds('senses', query.batch_id);
-    const activeTopics = query.status === 'unpublishable'
-      ? new Set((await db.topic.findMany({ where: { archivedAt: null }, select: { code: true } })).map(({ code }) => code))
-      : new Set<string>();
     const where: Prisma.SenseWhereInput = {
       entry: { ...catalogWhere, ...(query.pos !== undefined ? { pos: query.pos } : {}),
         ...(query.level !== undefined ? { levels: { some: { level: query.level } } } : {}),
@@ -246,7 +243,7 @@ export class AdminCatalogQueries {
         state: { not: 'retired' }, revisions: { some: { status: { in: ['draft', 'reviewed'] } } },
       } : {}),
     };
-    return { where, activeTopics };
+    return { where };
   }
 
   /** The inverse of unpublishable over the same latest open-revision/filter selection.
@@ -256,20 +253,19 @@ export class AdminCatalogQueries {
     Promise<{ items: Array<{ senseId: string; revisionNo: number }>; notReady: number }> {
     const query = { sense_id: filter.senseIds, level: filter.level, topic: filter.topic, pos: filter.pos,
       status: 'unpublishable' as const };
-    // Keep active topics, latest revisions and levels in one database snapshot even when
+    // Keep latest revisions and levels in one database snapshot even when
     // staff edit the catalog concurrently. Subsequent changes become per-item refusals.
     return this.prisma.$transaction(async (tx) => {
-      const { where, activeTopics } = await this.senseSelection(query, tx);
+      const { where } = await this.senseSelection(query);
       const candidates = await tx.sense.findMany({ where, include: senseInclude, orderBy: { id: 'asc' } });
       const items: Array<{ senseId: string; revisionNo: number }> = [];
       let notReady = 0;
       for (const sense of candidates) {
         // open_draft applies latest revision, displayed level and latest topic checks without
         // excluding ready senses. Readiness itself uses the exact unpublishable violation helper.
-        if (!selectedSense(sense, { ...query, status: 'open_draft' }, activeTopics)) continue;
+        if (!selectedSense(sense, { ...query, status: 'open_draft' })) continue;
         const revision = sense.revisions[0];
-        const violations = publishViolations(revision, sense.entry.levels.length > 0,
-          revision.topicCodes.some((code) => activeTopics.has(code)));
+        const violations = publishViolations(revision, sense.entry.levels.length > 0);
         if (violations.length) notReady++;
         else items.push({ senseId: sense.id, revisionNo: revision.revisionNo });
       }
@@ -281,7 +277,7 @@ export class AdminCatalogQueries {
    * Only limit rows are retained, with keyset reads of 500 and an early limit+1 exit.
    */
   async exportSenses(filter: SenseFilter, limit: number): Promise<{ rows: ExportRow[] } | { tooMany: true }> {
-    const { where, activeTopics } = await this.senseSelection(filter);
+    const { where } = await this.senseSelection(filter);
     const rows: ExportRow[] = [];
     let after: Cursor | undefined;
     while (true) {
@@ -290,7 +286,7 @@ export class AdminCatalogQueries {
         orderBy: [{ entry: { lemma: 'asc' } }, { entry: { pos: 'asc' } }, { id: 'asc' }], take: 500,
       });
       for (const sense of chunk) {
-        const selected = selectedSense(sense, filter, activeTopics);
+        const selected = selectedSense(sense, filter);
         const revision = sense.revisions[0];
         if (!selected || !revision) continue;
         if (rows.length === limit) return { tooMany: true };
