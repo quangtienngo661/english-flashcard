@@ -72,7 +72,7 @@ export class ReminderQueueService implements OnApplicationBootstrap, OnModuleDes
     if (!this.queue) throw new Error('Reminder queue is not running in this process');
     await this.queue.add('send', data, {
       jobId: reminderJobId(data.userId, data.localDate), attempts: REMINDER_SEND_ATTEMPTS,
-      backoff: { type: 'exponential', delay: this.config.pipeline.jobBackoffMs },
+      backoff: { type: 'exponential', delay: this.config.reminders.retryBackoffMs },
       removeOnComplete: true, removeOnFail: true,
     });
   }

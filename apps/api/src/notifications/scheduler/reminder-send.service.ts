@@ -1,11 +1,14 @@
 import { Inject, Injectable, type OnModuleInit } from '@nestjs/common';
+import { UnrecoverableError } from 'bullmq';
 import { Clock } from '../../common/clock/clock.js';
 import { PRISMA_CLIENT } from '../../common/db/prisma.module.js';
 import { AppLogger } from '../../common/logging/app-logger.js';
-import { dateValue } from '../../common/time/local-date.js';
+import { dateValue, localDate as localDateIn } from '../../common/time/local-date.js';
 import type { PrismaClient } from '../../generated/prisma/client.js';
+import { IdentityService } from '../../identity/profile/identity.service.js';
 import { LearningService } from '../../learning/index.js';
 import { ChannelChooser } from '../provider/channel-chooser.js';
+import { classifyMailError } from './mail-error.js';
 import {
   ReminderQueueService, type ReminderSendAttempt, type ReminderSendData,
 } from './reminder-queue.service.js';
@@ -15,7 +18,8 @@ const isUniqueViolation = (error: unknown) =>
 
 /**
  * One reminder for one learner and local day (design 8.3, D37). The `reminder_deliveries` row, not Redis, keeps a
- * learner at one email a day: a job that finds `sending`, `sent` or `failed` sends nothing.
+ * learner at one email a day: a job that finds `sending`, `sent` or `failed` sends nothing. A send error is handled by
+ * what it says about delivery (`classifyMailError`): retry only when the message certainly did not go out.
  */
 @Injectable()
 export class ReminderSendService implements OnModuleInit {
@@ -24,6 +28,7 @@ export class ReminderSendService implements OnModuleInit {
     @Inject(Clock) private readonly clock: Clock,
     @Inject(ChannelChooser) private readonly chooser: ChannelChooser,
     @Inject(LearningService) private readonly learning: LearningService,
+    @Inject(IdentityService) private readonly identity: IdentityService,
     @Inject(ReminderQueueService) private readonly queue: ReminderQueueService,
     @Inject(AppLogger) private readonly logger: AppLogger,
   ) {}
@@ -39,6 +44,9 @@ export class ReminderSendService implements OnModuleInit {
 
     const existing = await this.prisma.reminderDelivery.findUnique({ where: key, select: { state: true } });
     if (existing) return skipped(`delivery-${existing.state}`);
+    // A job delayed past its local day (worker down overnight) must not send yesterday's email today (L13).
+    const profile = await this.identity.getProfile(userId);
+    if (!profile || localDateIn(profile.timezone, this.clock.now()) !== localDate) return skipped('stale-day');
     // The learner or an admin may have turned reminders off since the tick (B3E24).
     const [provider] = await this.chooser.choose(userId);
     if (!provider) return skipped('reminders-off');
@@ -56,13 +64,21 @@ export class ReminderSendService implements OnModuleInit {
     try {
       outcome = await provider.send(userId, { kind, language });
     } catch (error) {
-      // A transient error: free the day for the retry, or close it after the last attempt so ticks stop trying.
-      if (attempt.lastAttempt) {
-        await this.prisma.reminderDelivery.update({ where: key, data: { state: 'failed' } });
-        this.logger.warn('reminder_failed', { user_id: userId, local_date: localDate, kind, error });
-      } else {
-        await this.prisma.reminderDelivery.delete({ where: key });
+      const errorKind = classifyMailError(error);
+      if (errorKind === 'unknown') {
+        // The server may already have the message: keep `sending` so nothing retries it (D37, M9).
+        this.logger.warn('reminder_outcome_unknown', { user_id: userId, local_date: localDate, kind, error });
+        return;
       }
+      if (errorKind === 'permanent' || attempt.lastAttempt) {
+        // Close the day so later ticks and retries stop (M7); a permanent error costs one attempt only.
+        await this.prisma.reminderDelivery.update({ where: key, data: { state: 'failed' } });
+        this.logger.warn('reminder_failed', { user_id: userId, local_date: localDate, kind, reason: errorKind, error });
+        if (errorKind === 'permanent') throw new UnrecoverableError('Permanent SMTP error');
+        throw error;
+      }
+      // Certainly not delivered: free the day for BullMQ's retry.
+      await this.prisma.reminderDelivery.delete({ where: key });
       throw error;
     }
     if (outcome === 'sent') {

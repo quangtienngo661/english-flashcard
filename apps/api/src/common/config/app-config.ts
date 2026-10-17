@@ -76,6 +76,8 @@ export interface AppConfig {
     tickSeconds: number;
     /** The worker process starts the reminder scheduler. Tests turn it off unless they test reminders. */
     runScheduler: boolean;
+    /** First retry delay of a reminder send after a transient SMTP error; doubles per attempt (L15). */
+    retryBackoffMs: number;
   };
   limits: Record<RateLimitRuleName, RateLimitRuleConfig>;
 }
@@ -181,6 +183,7 @@ const envSchema = z.object({
   IMPORT_JOB_BACKOFF_MS: positiveInteger.default(5_000),
   IMPORT_ROW_RETRY_BASE_MS: positiveInteger.default(200),
   REMINDER_TICK_SECONDS: positiveInteger.default(900),
+  REMINDER_RETRY_BACKOFF_MS: positiveInteger.default(60_000),
 });
 
 export function loadConfig(env: NodeJS.ProcessEnv): AppConfig {
@@ -234,7 +237,7 @@ export function loadConfig(env: NodeJS.ProcessEnv): AppConfig {
       jobBackoffMs: values.IMPORT_JOB_BACKOFF_MS,
       rowRetryBaseMs: values.IMPORT_ROW_RETRY_BASE_MS,
     },
-    reminders: { tickSeconds: values.REMINDER_TICK_SECONDS, runScheduler: true },
+    reminders: { tickSeconds: values.REMINDER_TICK_SECONDS, runScheduler: true, retryBackoffMs: values.REMINDER_RETRY_BACKOFF_MS },
     limits: structuredClone(DEFAULT_LIMITS),
   };
 }
