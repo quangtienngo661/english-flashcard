@@ -41,6 +41,8 @@ export function testConfig(overrides?: Partial<AppConfig>): AppConfig {
       jobBackoffMs: 10,
       rowRetryBaseMs: 10,
     },
+    // Low so e2e suites with workers on see several ticks in a few seconds.
+    reminders: { tickSeconds: 1 },
     limits,
     ...overrides,
   };
