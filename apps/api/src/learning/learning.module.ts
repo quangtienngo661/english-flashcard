@@ -10,6 +10,9 @@ import { GroupsService } from './groups/groups.service.js';
 import { ItemsController } from './items/items.controller.js';
 import { ItemsService } from './items/items.service.js';
 import { LearningService } from './learning.service.js';
+import { MyWordsDeleteController } from './my-words/my-words-delete.controller.js';
+import { QuickAddController } from './quick-add/quick-add.controller.js';
+import { QuickAddService } from './quick-add/quick-add.service.js';
 import { QueueController } from './queue/queue.controller.js';
 import { QueueService } from './queue/queue.service.js';
 import { ReviewsController } from './reviews/reviews.controller.js';
@@ -18,8 +21,11 @@ import { ReviewsService } from './reviews/reviews.service.js';
 @Module({
   // IdentityModule: the learner guard needs IdentityService in the module that hosts the controller.
   imports: [IdentityModule, ContentModule, SettingsModule],
-  controllers: [BacklogController, GroupsController, ItemsController, QueueController, ReviewsController],
-  providers: [BacklogService, GroupsService, ItemsService, QueueService, ReviewsService, LearningService, IdempotencyInterceptor],
+  controllers: [
+    BacklogController, GroupsController, ItemsController, MyWordsDeleteController, QueueController, QuickAddController,
+    ReviewsController,
+  ],
+  providers: [BacklogService, GroupsService, ItemsService, QueueService, QuickAddService, ReviewsService, LearningService, IdempotencyInterceptor],
   exports: [LearningService],
 })
 export class LearningModule {}
