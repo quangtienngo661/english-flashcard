@@ -7,6 +7,7 @@ import { EntriesService, type EnsureEntryInput, type EnsureEntryResult, type Var
 import { LevelsService, type EntryLevelView, type ImportedLevelInput } from './catalog/levels.service.js';
 import { revertRecords, type RevertRecord, type RevertReport } from './catalog/revert.service.js';
 import type { Level } from './content.constants.js';
+import { InflectionsService, type EntryByForm, type InflectionInput, type InflectionSource } from './inflections/inflections.service.js';
 import { SourcesService, isSourceComplete, type SourceView } from './sources/sources.service.js';
 import { SensesService, type CreateSenseInput, type SaveDraftInput, type SaveDraftResult, type MarkRevisionItem, type MarkRevisionResult } from './senses/senses.service.js';
 import { importContent, type ImportContentInput, type ImportContentResult } from './senses/import-content.js';
@@ -22,6 +23,7 @@ export class ContentService {
     @Inject(SensesService) private readonly senses: SensesService,
     @Inject(PublishService) private readonly publish: PublishService,
     @Inject(AdminCatalogQueries) private readonly queries: AdminCatalogQueries,
+    @Inject(InflectionsService) private readonly inflections: InflectionsService,
   ) {}
 
   getSource(id: string): Promise<SourceView | null> {
@@ -120,5 +122,13 @@ export class ContentService {
 
   resolveBatchRecordOwners(records: ScopeRecord[]): Promise<{ entryIds: string[]; senseIds: string[] }> {
     return this.queries.resolveBatchRecordOwners(records);
+  }
+
+  replaceInflections(tx: Prisma.TransactionClient, entryId: string, source: InflectionSource, forms: InflectionInput[]): Promise<void> {
+    return this.inflections.replaceInflections(tx, entryId, source, forms);
+  }
+
+  entriesByForm(formKey: string, viewerId: string): Promise<EntryByForm[]> {
+    return this.inflections.entriesByForm(formKey, viewerId);
   }
 }

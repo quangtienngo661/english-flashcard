@@ -18,3 +18,8 @@ export function isFunctionWordPos(pos: string): boolean {
 
 export const OWNER_SOURCE_ID = '00000000-0000-4000-8000-000000000001';
 export const MAX_EXAMPLES = 3;
+
+export const INFLECTION_KINDS = [
+  'third_person', 'present_participle', 'past', 'past_participle', 'plural', 'comparative', 'superlative',
+] as const;
+export type InflectionKind = (typeof INFLECTION_KINDS)[number];

@@ -1,7 +1,8 @@
 export {
-  FUNCTION_WORD_POS, LEVELS, MAX_EXAMPLES, OWNER_SOURCE_ID, VALID_POS, isFunctionWordPos,
-  type Level,
+  FUNCTION_WORD_POS, INFLECTION_KINDS, LEVELS, MAX_EXAMPLES, OWNER_SOURCE_ID, VALID_POS, isFunctionWordPos,
+  type InflectionKind, type Level,
 } from './content.constants.js';
+export type { EntryByForm, InflectionInput, InflectionSource } from './inflections/inflections.service.js';
 export { ContentService } from './content.service.js';
 export { BATCH_SCOPE, type BatchScope } from './batch-scope.port.js';
 export { entriesExportQuery, sensesExportQuery, type EntriesExportFilter, type SenseFilter } from './catalog/sense-filters.js';

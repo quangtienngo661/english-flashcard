@@ -6,6 +6,7 @@ import { AdminEntriesController, EntryFunctionWordController } from './catalog/a
 import { EntriesService } from './catalog/entries.service.js';
 import { LevelsService } from './catalog/levels.service.js';
 import { ContentService } from './content.service.js';
+import { InflectionsService } from './inflections/inflections.service.js';
 import { LearnerContentController } from './learner/learner-content.controller.js';
 import { LearnerContentGuard } from './learner/learner-content.guard.js';
 import { LearnerContentService } from './learner/learner-content.service.js';
@@ -25,7 +26,7 @@ import { TopicsService } from './taxonomy/topics.service.js';
     AdminEntriesController, EntryFunctionWordController, AdminSensesController, BatchEntriesController,
     AdminPublishController, AdminCatalogController, LearnerContentController,
   ],
-  providers: [ContentService, SourcesService, TopicsService, LearnerContentGuard, LearnerContentService, EntriesService, LevelsService, SensesService, PublishService, AdminCatalogQueries],
+  providers: [ContentService, SourcesService, TopicsService, LearnerContentGuard, LearnerContentService, EntriesService, LevelsService, SensesService, PublishService, AdminCatalogQueries, InflectionsService],
   exports: [ContentService],
 })
 export class ContentModule {}
