@@ -85,7 +85,10 @@ export class ReminderTickService implements OnModuleInit {
       if (own.some((row) => dateString(row.localDate) === todayDate)) continue;
       const result = eligibility({
         now, timezone: candidate.timezone, createdAt: candidate.createdAt, lastSeenAt: candidate.lastSeenAt,
-        settings: reminders, sentDates: own.filter((row) => row.state === 'sent').map((row) => dateString(row.localDate)),
+        settings: reminders,
+        // A `sending` row of an earlier day may have gone out (D37, L13); a `failed` day counts for the inactive cap only (M7).
+        sentDates: own.filter((row) => row.state !== 'failed').map((row) => dateString(row.localDate)),
+        failedDates: own.filter((row) => row.state === 'failed').map((row) => dateString(row.localDate)),
       });
       if ('skip' in result) continue;
       jobs.push({
