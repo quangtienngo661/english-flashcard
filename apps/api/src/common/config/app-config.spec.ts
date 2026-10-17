@@ -34,6 +34,14 @@ describe('loadConfig', () => {
     }
   });
 
+  it('Task 21 (config): REMINDER_TICK_SECONDS defaults to 900 (15 minutes) and must be a positive integer', () => {
+    expect(loadConfig(validEnv()).reminders).toEqual({ tickSeconds: 900, runScheduler: true });
+    expect(loadConfig({ ...validEnv(), REMINDER_TICK_SECONDS: '60' }).reminders.tickSeconds).toBe(60);
+    for (const bad of ['0', '-5', '1.5', 'often']) {
+      expect(() => loadConfig({ ...validEnv(), REMINDER_TICK_SECONDS: bad }), bad).toThrow(/REMINDER_TICK_SECONDS/);
+    }
+  });
+
   it('B25#23 (config): ADMIN_APP_URL is required, must be a URL, and is exposed as adminAppUrl', () => {
     expect(loadConfig(validEnv()).adminAppUrl).toBe('https://admin.example.com');
     const missing = validEnv();

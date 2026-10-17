@@ -5,7 +5,7 @@ File này gom mọi quyết định trong lúc brainstorm Bước 3, mỗi quy�
 trade-off và lựa chọn. Design doc mô tả *cách làm*; file này trả lời *tại sao chọn vậy và đã bỏ gì*.
 
 > **Trạng thái 17/10/2026: bản nháp.** Phần giao diện (D38, các câu hỏi trong `../../mockups/2026-10-16/UI-CONTEXT.md` §7) có plan
-> riêng (D41). Còn mở trong plan hệ thống: G6 (nguồn dạng chia tự sinh); D39–D40 có phần đề xuất của Claude chờ duyệt.
+> riêng (D41). Plan hệ thống không còn câu mở (G6 chốt ở D46); D39–D40 có phần đề xuất của Claude chờ duyệt.
 
 **Nhãn:** ✅ = phương án được chọn. **Ai chốt:** "Chủ dự án" = chọn trong chat; "Đề xuất của Claude" = chủ dự án không chọn hoặc
 nói không có ý khác, Claude đề xuất và chủ dự án đồng ý hoặc không phản đối; "Duyệt cùng design" = Claude đề xuất khi trình bày
@@ -61,6 +61,8 @@ một phần design, chủ dự án duyệt cả phần.
 | D41 | Plan và người implement | Plan chỉ phần hệ thống; giao diện có plan riêng ở phiên khác; implement ở một phiên khác, không dùng Codex | Chủ dự án |
 | D42 | Trang từ có gộp chữ hoa và chữ thường không | Tách: `March` và `march` là hai dòng, hai trang; tìm và tra không phân biệt hoa thường | Chủ dự án (cách tìm và tra: Claude) |
 | D43 | Có nhóm mặc định "Mới thêm" không | Bỏ: thêm từ phải chọn hoặc tạo nhóm; nhóm nào cũng đổi tên, xóa được (đổi D28) | Chủ dự án |
+| D46 | Nguồn dạng chia tự sinh (G6 của plan) | AGID làm nguồn chính; `compromise` dự phòng chỉ cho động từ, danh từ; tính từ ngoài AGID không tự sinh; đo trước theo ngưỡng cũ | Chủ dự án (đề xuất của Claude, theo yêu cầu của chủ dự án) |
+| D47 | Số nhiều của danh từ không đếm được (bộ library) | Thêm `pluralize` 8.0.0 (MIT) để không sinh số nhiều cho danh từ không đếm được có trong danh sách của nó | Chủ dự án (đề xuất của Claude) |
 | D45 | "Xong khi" của Bước 3 (G5 của plan) | Không đặt danh sách cố định trước; chủ dự án tự báo khi Bước 3 xong | Chủ dự án |
 | D44 | Giới hạn số email nhắc (G2 của plan) | Hai email nhắc cách nhau ít nhất N ngày; admin chỉnh N từ 1 tới 7, mặc định 2 (thay "tối đa N email mỗi tuần") | Chủ dự án (chỉnh khoảng cách thay vì công tắc chọn cách đếm: đề xuất của Claude) |
 
@@ -502,6 +504,52 @@ Bối cảnh (G5 của plan): các bước trước dùng "CI xanh kể cả tes
 thật". Claude liệt kê, không nghiêng bên nào: CI xanh trên mọi PR; chạy tay phần hệ thống (kịch bản Task 22); test app người học trên hệ
 thống thật (plan giao diện); chủ dự án tự dùng app một số ngày. Chủ dự án: "mình sẽ báo cho bạn đến khi bước 3 xong" — không chốt danh
 sách trước; chủ dự án tự quyết lúc nào là xong. Task 22 vẫn chạy gate, chạy tay và viết as-built để chủ dự án dựa vào đó.
+
+## D46 — Nguồn dạng chia tự sinh
+
+Bối cảnh (G6 của plan): Task 4 đo `compromise@14.18.0` không đạt ngưỡng (47/50 ca bất quy tắc, ~81/100 mẫu CEFR-J). Luồng A dừng và
+liệt kê hướng; Claude chuyển cho chủ dự án, không nghiêng bên nào. Chủ dự án yêu cầu nghiên cứu thêm (kết quả:
+`../../preparation/2026-10-17-inflection-sources-research.md`, gồm cả cách các app khác ghi nguồn), rồi yêu cầu Claude đề xuất vì việc
+này "không đụng gì tới logic".
+
+| Phương án | Trade-off (như đã trình bày) |
+|---|---|
+| `compromise` chỉ cho động từ, danh từ + danh sách bất quy tắc viết tay (hoặc RosaeNLG, WordNet) | Bỏ được lỗi tính từ; danh sách phải có người giữ; RosaeNLG không có tính từ |
+| ✅ AGID làm nguồn chính, `compromise` dự phòng cho động từ, danh từ | Bảng tra có cả tính từ, chỉ ghi -er/-est khi từ thật sự có; giấy phép thoáng (chỉ giữ thông báo, như Firefox dùng SCOWL); ngừng cập nhật từ 2016; phải viết bộ đọc và đóng gói |
+| `en-inflectors` (MIT) | Tính từ theo số âm tiết; cập nhật cuối 2022; chưa đo |
+| Wiktionary, UniMorph (CC BY-SA) | Phủ rộng; phải chia sẻ lại phần sửa cùng giấy phép; dữ liệu lớn |
+| Không tự sinh (chỉ bản đã duyệt qua CSV) | Không có lỗi; mọi từ phải soạn dạng chia; từ riêng không có dạng chia |
+| Hạ ngưỡng, giữ `compromise` | Không tốn công; người học thấy dạng sai |
+
+Claude đề xuất AGID + `compromise` dự phòng, tính từ ngoài AGID không tự sinh (thiếu còn hơn sai vì người học nhìn thấy), đo trước theo
+ngưỡng cũ, không đạt thì đo `en-inflectors`. ✅ Chủ dự án: "Đồng ý G6: AGID làm nguồn chính, compromise dự phòng chỉ cho động từ và
+danh từ, đo trước theo ngưỡng cũ."
+
+Vòng 2 (17/10, luồng A đo): AGID đạt ngưỡng (50/50; 99/100 theo cách chấm hiện tại, ~92/100 nếu tính số nhiều của danh từ không đếm
+được như "musics", "softwares" là sai). Nhưng khi chấm tay toàn bộ 419 tính từ CEFR-J có dạng so sánh trong AGID, khoảng 95 (~23%) sai
+rõ ("beautifuler", "carefuller", "possibler"); mẫu 100 dòng chỉ trúng ~8 tính từ nên không lộ. Luồng A liệt kê ba hướng: (1) tính từ
+không có bộ library; (2) chỉ giữ dạng AGID cho tính từ ngắn theo luật hình thái + danh sách bất quy tắc nhỏ; (3) giữ nguyên. Chủ dự án đã
+giao phần chọn nguồn cho Claude; Claude chọn **(2) có đo trên 419 dòng đã chấm (≥ 95% dạng còn hiện là đúng), không đạt thì (1)**,
+theo nguyên tắc "thiếu còn hơn sai" của chính D46. Số nhiều của danh từ không đếm được: hỏi chủ dự án có thêm `pluralize` (MIT) để lọc
+không (thêm dependency phải hỏi).
+
+Kết quả đo luật (2) trên 419 dòng (đáp án do luồng A chấm, 112 dòng sai, chưa ai soát lại): còn 302 tính từ có dạng so sánh, 24 sai lọt
+qua (đúng 92,1% < 95%; phần lớn là tính từ một âm tiết không so sánh được như "main", "real", "wrong", và lỗi đếm âm tiết với -ed như
+"tired"), đồng thời bỏ mất 29 dạng đúng. **Không đạt → áp dụng (1): tính từ không có bộ library**, chỉ dạng đã duyệt qua cột CSV
+`inflections`. Bộ 50 ca đổi thành 40 ca động từ, danh từ đúng + 10 ca tính từ ra rỗng.
+
+## D47 — Số nhiều của danh từ không đếm được
+
+Bối cảnh: khi đo AGID (D46), bộ library có cả số nhiều của danh từ không đếm được ("musics", "softwares", "porks", "carelessnesses");
+người học thấy chúng trên trang từ cho tới khi bản duyệt CSV sửa. Thêm thư viện mới phải hỏi chủ dự án (plan, Global Constraints).
+
+| Phương án | Trade-off (như đã trình bày) |
+|---|---|
+| ✅ Thêm `pluralize` 8.0.0 (MIT), dùng danh sách danh từ không đếm được của nó | Ít công; bỏ được music, software, information, advice…; không đầy đủ (pork, catering, carelessness vẫn lọt) |
+| Không thêm | Dạng sai còn hiện cho tới khi bản duyệt CSV sửa từng từ |
+
+Chủ dự án hỏi lại cho rõ, Claude giải thích bằng ví dụ và đề xuất thêm; chủ dự án: "ok thêm". Chỉ lọc bộ library; bộ đã duyệt qua CSV
+không bị lọc.
 
 ## Những chỗ Claude đã đề xuất trước khi chủ dự án trả lời (luật owner-first)
 

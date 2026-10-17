@@ -2,12 +2,12 @@ import { z } from 'zod';
 
 /** Admin-tunable values (design §9). Stored camelCase in `app_settings.value`; the API speaks snake_case. */
 export type AppSettings = {
-  reminders: { enabled: boolean; sendTime: string; weeklyMax: number; inactiveAfterDays: number; stopAfterDays: number };
+  reminders: { enabled: boolean; sendTime: string; minGapDays: number; inactiveAfterDays: number; stopAfterDays: number };
   learning: { newPerGroupPerDay: number; reviewsPerGroupPerDay: number; backlogAfterDays: number };
 };
 
 export const SETTINGS_DEFAULTS: AppSettings = {
-  reminders: { enabled: true, sendTime: '20:00', weeklyMax: 3, inactiveAfterDays: 7, stopAfterDays: 60 },
+  reminders: { enabled: true, sendTime: '20:00', minGapDays: 2, inactiveAfterDays: 7, stopAfterDays: 60 },
   learning: { newPerGroupPerDay: 20, reviewsPerGroupPerDay: 100, backlogAfterDays: 60 },
 };
 
@@ -15,7 +15,7 @@ export const SETTINGS_DEFAULTS: AppSettings = {
 export const SETTINGS_BOUNDS = {
   reminders: {
     send_time: { min: '06:00', max: '22:00', step_minutes: 15 },
-    weekly_max: { min: 0, max: 7 },
+    min_gap_days: { min: 1, max: 7 },
     inactive_after_days: { min: 3, max: 30 },
     stop_after_days: { min: 30, max: 180, greater_than: 'inactive_after_days' },
   },
@@ -38,7 +38,7 @@ export const settingsValuesPatchSchema = z.strictObject({
   reminders: z.strictObject({
     enabled: z.boolean().optional(),
     send_time: sendTime.optional(),
-    weekly_max: intIn(b.reminders.weekly_max).optional(),
+    min_gap_days: intIn(b.reminders.min_gap_days).optional(),
     inactive_after_days: intIn(b.reminders.inactive_after_days).optional(),
     stop_after_days: intIn(b.reminders.stop_after_days).optional(),
   }).optional(),
@@ -54,7 +54,7 @@ export type SettingsValuesPatch = z.infer<typeof settingsValuesPatchSchema>;
 const FIELDS = [
   ['reminders', 'enabled', 'enabled'],
   ['reminders', 'send_time', 'sendTime'],
-  ['reminders', 'weekly_max', 'weeklyMax'],
+  ['reminders', 'min_gap_days', 'minGapDays'],
   ['reminders', 'inactive_after_days', 'inactiveAfterDays'],
   ['reminders', 'stop_after_days', 'stopAfterDays'],
   ['learning', 'new_per_group_per_day', 'newPerGroupPerDay'],
@@ -96,11 +96,16 @@ export function changedFields(before: AppSettings, after: AppSettings): Array<{ 
   });
 }
 
-/** Stored JSON may predate a newly added key: fill it from the defaults. */
+/**
+ * Stored JSON may predate a newly added key: fill it from the defaults. Keys no longer defined (e.g. `weeklyMax`,
+ * replaced by `minGapDays` in D44) are dropped.
+ */
 export function withDefaults(stored: unknown): AppSettings {
-  const value = (stored ?? {}) as Partial<Record<Section, Record<string, AnyValue>>>;
-  return {
-    reminders: { ...SETTINGS_DEFAULTS.reminders, ...value.reminders } as AppSettings['reminders'],
-    learning: { ...SETTINGS_DEFAULTS.learning, ...value.learning } as AppSettings['learning'],
-  };
+  const value = (stored ?? {}) as Partial<Record<Section, Record<string, AnyValue | undefined>>>;
+  const out = structuredClone(SETTINGS_DEFAULTS);
+  for (const [section, , field] of FIELDS) {
+    const storedValue = value[section]?.[field];
+    if (storedValue !== undefined) (out[section] as Record<string, AnyValue>)[field] = storedValue;
+  }
+  return out;
 }
