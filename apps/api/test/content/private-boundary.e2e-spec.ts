@@ -191,6 +191,16 @@ describe('private entries stay outside catalog reads (e2e, isolated database)', 
     expect(await ctx.prisma.sense.findMany({ where: { entryId: { in: [mine.entryId, theirs.entryId] } }, orderBy: { id: 'asc' } })).toEqual(before);
   });
 
+  it('B2#69 (replaces_sense_id): naming a private sense answers exactly like an unknown id, and nothing is stored (review L6)', async () => {
+    const post = (replaces: string) => ctx.http().post('/v1/admin/content/senses').set('Authorization', `Bearer ${staffToken}`)
+      .send({ entry_id: catalog.entryId, context_label: 'x', replaces_sense_id: replaces });
+    const before = await ctx.prisma.sense.count();
+    const [priv, unknown] = [await post(mine.senseId), await post(randomUUID())];
+    expect(unknown.status).toBe(404);
+    expect([priv.status, priv.body.type]).toEqual([unknown.status, unknown.body.type]);
+    expect(await ctx.prisma.sense.count()).toBe(before);
+  });
+
   it('B2E9 (after the index change): ten concurrent ensureEntry calls for one new catalog key still leave exactly one entry and none fails', async () => {
     await privateSense(ownerId, 'race', 'noun');
     const results = await Promise.all(Array.from({ length: 10 }, () =>

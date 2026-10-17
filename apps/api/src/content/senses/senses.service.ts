@@ -57,7 +57,8 @@ export class SensesService {
     const contextLabel = input.contextLabel === null ? null : normalizeText(input.contextLabel) || null;
     if (contextLabel && (contextLabel.includes('\0') || [...contextLabel].length > 2_000)) throw new ContentRuleError('validation-failed');
     if (input.replacesSenseId) {
-      const target = await tx.sense.findUnique({ where: { id: input.replacesSenseId } });
+      // Catalog only: a private sense id answers like an unknown one (B2#69).
+      const target = await tx.sense.findFirst({ where: { id: input.replacesSenseId, entry: { scope: 'catalog' } } });
       if (!target) throw new ContentRuleError('not-found');
       if (target.entryId !== entry.id) throw new ContentRuleError('sense-entry-mismatch');
       if (target.state === 'retired') throw new ContentRuleError('sense-retired');
