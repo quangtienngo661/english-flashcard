@@ -8,7 +8,7 @@ import { listRoutes } from '../support/list-routes.js';
 
 const problem = (slug: string) => `https://api.example.com/problems/${slug}`;
 const defaults = {
-  reminders: { enabled: true, send_time: '20:00', weekly_max: 3, inactive_after_days: 7, stop_after_days: 60 },
+  reminders: { enabled: true, send_time: '20:00', min_gap_days: 2, inactive_after_days: 7, stop_after_days: 60 },
   learning: { new_per_group_per_day: 20, reviews_per_group_per_day: 100, backlog_after_days: 60 },
 };
 
@@ -44,12 +44,12 @@ describe('admin settings (e2e, isolated database)', () => {
     expect(fresh.status).toBe(200);
     expect(fresh.body).toEqual({ version: 0, values: defaults, bounds: SETTINGS_BOUNDS });
     expect(await ctx.app.get(SettingsService).get()).toEqual({
-      reminders: { enabled: true, sendTime: '20:00', weeklyMax: 3, inactiveAfterDays: 7, stopAfterDays: 60 },
+      reminders: { enabled: true, sendTime: '20:00', minGapDays: 2, inactiveAfterDays: 7, stopAfterDays: 60 },
       learning: { newPerGroupPerDay: 20, reviewsPerGroupPerDay: 100, backlogAfterDays: 60 },
     });
 
-    // weekly_max is sent unchanged: it must not appear in the history.
-    const first = await put(admin.token, { version: 0, values: { reminders: { send_time: '21:00', weekly_max: 3 } } });
+    // min_gap_days is sent unchanged: it must not appear in the history.
+    const first = await put(admin.token, { version: 0, values: { reminders: { send_time: '21:00', min_gap_days: 2 } } });
     expect(first.status).toBe(200);
     const afterFirst = { ...defaults, reminders: { ...defaults.reminders, send_time: '21:00' } };
     expect(first.body).toEqual({ version: 1, values: afterFirst });
@@ -95,13 +95,13 @@ describe('admin settings (e2e, isolated database)', () => {
     expect((await get(admin.token, '/v1/admin/settings/history?page_token=nope')).status).toBe(400);
   });
 
-  it('B3E30: send_time 23:00, weekly_max 8, stop_after ≤ inactive_after → 400 validation-failed naming the key, nothing stored', async () => {
+  it('B3E30: send_time 23:00, min_gap_days 8, stop_after ≤ inactive_after → 400 validation-failed naming the key, nothing stored', async () => {
     const admin = await signIn('admin');
-    await put(admin.token, { version: 0, values: { reminders: { weekly_max: 4 } } });
+    await put(admin.token, { version: 0, values: { reminders: { min_gap_days: 4 } } });
     const before = await stored();
     const cases: Array<[unknown, string]> = [
       [{ reminders: { send_time: '23:00' } }, 'values.reminders.send_time'],
-      [{ reminders: { weekly_max: 8 } }, 'values.reminders.weekly_max'],
+      [{ reminders: { min_gap_days: 8 } }, 'values.reminders.min_gap_days'],
       [{ reminders: { stop_after_days: 30, inactive_after_days: 30 } }, 'values.reminders.stop_after_days'],
       [{ learning: { reviews_per_group_per_day: 501 } }, 'values.learning.reviews_per_group_per_day'],
     ];
@@ -145,11 +145,11 @@ describe('admin settings (e2e, isolated database)', () => {
   it('PUT requires an Idempotency-Key and replays the stored result for the same key', async () => {
     const admin = await signIn('admin');
     const missing = await ctx.http().put('/v1/admin/settings').set('Authorization', `Bearer ${admin.token}`)
-      .send({ version: 0, values: { reminders: { weekly_max: 5 } } });
+      .send({ version: 0, values: { reminders: { min_gap_days: 5 } } });
     expect(missing.status).toBe(400);
     expect(await stored()).toEqual([[], []]);
     const key = randomUUID();
-    const body = { version: 0, values: { reminders: { weekly_max: 5 } } };
+    const body = { version: 0, values: { reminders: { min_gap_days: 5 } } };
     const first = await put(admin.token, body, key);
     const replay = await put(admin.token, body, key);
     expect(first.status).toBe(200);
