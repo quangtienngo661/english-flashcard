@@ -32,13 +32,13 @@ export class ReviewsService {
     if (!profile) throw notFound();
     try {
       return await this.prisma.$transaction(async (tx) => {
-        const stored = await this.storedResult(tx, userId, input.reviewId);
+        const stored = await this.storedResult(tx, userId, input);
         if (stored) return stored;
         const locked = await tx.$queryRaw<Array<{ id: string }>>`
           SELECT id FROM learning_items WHERE id = ${input.itemId}::uuid AND user_id = ${userId}::uuid FOR UPDATE`;
         if (locked.length === 0) throw notFound();
         // A duplicate sent at the same moment waited on the lock and now finds the first one's row.
-        const replay = await this.storedResult(tx, userId, input.reviewId);
+        const replay = await this.storedResult(tx, userId, input);
         if (replay) return replay;
         const link = await tx.groupItem.findFirst({
           where: { itemId: input.itemId, groupId: input.groupId, group: { userId } },
@@ -70,20 +70,24 @@ export class ReviewsService {
         };
       }, transactionOptions);
     } catch (error) {
-      // The same review_id raced on another item: the first one's result stands.
+      // The same review_id raced on another item: the first one's row decides (stored result or 400).
       if (isUniqueViolation(error)) {
-        const stored = await this.storedResult(this.prisma, userId, input.reviewId);
+        const stored = await this.storedResult(this.prisma, userId, input);
         if (stored) return stored;
       }
       throw error;
     }
   }
 
+  /** The result stored for this review_id; 400 when the id was used for a different answer (like Idempotency-Key). */
   private async storedResult(
-    db: Prisma.TransactionClient | PrismaClient, userId: string, reviewId: string,
+    db: Prisma.TransactionClient | PrismaClient, userId: string, input: ReviewInput,
   ): Promise<ReviewResult | null> {
-    const row = await db.learningLogEntry.findFirst({ where: { userId, reviewId } });
+    const row = await db.learningLogEntry.findFirst({ where: { userId, reviewId: input.reviewId } });
     if (!row) return null;
+    if (row.itemId !== input.itemId || row.groupId !== input.groupId || row.answer !== input.answer) {
+      throw new ProblemDetailsException({ status: 400, title: 'review_id reused with a different payload' });
+    }
     return {
       item_id: row.itemId, level: row.levelAfter!, due_date: dateString(row.dueAfter!),
       // "known" always leaves the item without priority; "review" always sets it.

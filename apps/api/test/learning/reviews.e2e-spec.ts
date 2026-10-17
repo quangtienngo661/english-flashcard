@@ -124,6 +124,42 @@ describe('reviews (e2e, isolated database)', () => {
     expect(await logOf(item.id)).toHaveLength(2);
   });
 
+  it('B3E4: one review_id reused with a different item, group or answer → 400 and nothing changes', async () => {
+    const { userId, groupId } = await learner();
+    const other = await ctx.prisma.learningGroup.create({
+      data: { userId, name: 'Other', nameKey: 'other', createdAt: now, updatedAt: now },
+    });
+    const item = await seedItem(userId, [groupId, other.id], { level: 1, dueDate: '2026-11-08' });
+    const second = await seedItem(userId, [groupId], { level: 1, dueDate: '2026-11-08' });
+    const body = { item_id: item.id, group_id: groupId, answer: 'known', review_id: randomUUID() };
+    expect((await answer(userId, body)).status).toBe(200);
+    for (const changed of [{ item_id: second.id }, { group_id: other.id }, { answer: 'review' }]) {
+      const response = await answer(userId, { ...body, ...changed });
+      expect(response.status).toBe(400);
+      expect(response.body.title).toBe('review_id reused with a different payload');
+    }
+    expect(await ctx.prisma.learningLogEntry.count()).toBe(1);
+    expect(await itemRow(item.id)).toMatchObject({ level: 2, dueDate: date('2026-11-11'), priority: false });
+    expect(await itemRow(second.id)).toMatchObject({ level: 1, dueDate: date('2026-11-08') });
+  });
+
+  it('learning.review rate limit: 120 answers in one minute pass, the 121st → 429 rate-limited with retry-after', async () => {
+    const { userId, groupId } = await learner();
+    const item = await seedItem(userId, [groupId], { level: 3, dueDate: '2026-11-20' });
+    const { accessToken } = await startSession(ctx, userId);
+    const send = () => ctx.http().post('/v1/reviews').set('Authorization', `Bearer ${accessToken}`)
+      .send({ item_id: item.id, group_id: groupId, answer: 'known', review_id: randomUUID() });
+    for (let i = 0; i < 120; i += 1) expect((await send()).status).toBe(200);
+    const refused = await send();
+    expect(refused.status).toBe(429);
+    expect(refused.body.type).toBe(problem('rate-limited'));
+    expect(Number(refused.headers['retry-after'])).toBeGreaterThan(0);
+    expect(await ctx.prisma.learningLogEntry.count()).toBe(120);
+    // The answers did not use the general write budget.
+    expect((await ctx.http().post('/v1/groups').set('Authorization', `Bearer ${accessToken}`)
+      .set('Idempotency-Key', randomUUID()).send({ name: 'Still allowed' })).status).toBe(201);
+  });
+
   it('B3E5: two concurrent answers on one item serialize — known+known: the second is early and changes nothing; known+review: review applies', async () => {
     const { userId, groupId } = await learner();
     const twice = await seedItem(userId, [groupId], { level: 2, dueDate: '2026-11-08' });
