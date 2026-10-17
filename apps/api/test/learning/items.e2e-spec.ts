@@ -139,6 +139,8 @@ describe('learning items (e2e, isolated database)', () => {
     const [a, b] = [await me.group('A'), await me.group('B')];
     const { body: added } = await add(me.token, a, senseId);
     await add(me.token, b, senseId);
+    // Log rows are read in time order: give each step its own instant.
+    ctx.clock.advance(1000);
 
     const fromOne = await unlink(me.token, a, added.item_id);
     expect(fromOne.status).toBe(200);
@@ -154,7 +156,8 @@ describe('learning items (e2e, isolated database)', () => {
       { id: expect.any(String), userId: me.userId, itemId: added.item_id, senseId, groupId: a, kind: 'item_added', ...empty,
         levelBefore: null, levelAfter: 0, dueBefore: null, dueAfter: date('2026-11-02'), localDate: date('2026-11-02'), at: now },
       { id: expect.any(String), userId: me.userId, itemId: added.item_id, senseId, groupId: b, kind: 'item_removed', ...empty,
-        levelBefore: 0, levelAfter: null, dueBefore: date('2026-11-02'), dueAfter: null, localDate: date('2026-11-02'), at: now },
+        levelBefore: 0, levelAfter: null, dueBefore: date('2026-11-02'), dueAfter: null, localDate: date('2026-11-02'),
+        at: new Date(now.getTime() + 1000) },
     ]);
     // The item is gone: removing it again is 404.
     expect((await unlink(me.token, b, added.item_id)).status).toBe(404);
@@ -187,7 +190,10 @@ describe('learning items (e2e, isolated database)', () => {
     const a = await me.group('A');
     const { body: first } = await add(me.token, a, senseId);
     await ctx.prisma.learningItem.update({ where: { id: first.item_id }, data: { level: 3, dueDate: date('2026-11-09') } });
+    // Log rows are read in time order: give each step its own instant.
+    ctx.clock.advance(1000);
     await forget(me.token, first.item_id);
+    ctx.clock.advance(1000);
     const again = await add(me.token, a, senseId);
     expect(again.body).toEqual({ item_id: expect.any(String), level: 0, due_date: '2026-11-02', created: true });
     expect(again.body.item_id).not.toBe(first.item_id);
