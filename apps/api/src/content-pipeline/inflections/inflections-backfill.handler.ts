@@ -39,7 +39,9 @@ export class InflectionsBackfillHandler implements JobHandler, OnModuleInit {
       let after: string | undefined;
       for (;;) {
         const chunk = await this.prisma.entry.findMany({
-          where: { scope: 'catalog', inflections: { none: {} }, pos: { in: ['verb', 'noun'] }, ...(after ? { id: { gt: after } } : {}) },
+          // Entries with a reviewed decision, the empty one included, are never refilled (M3).
+          where: { scope: 'catalog', inflectionsReviewedAt: null, inflections: { none: {} }, pos: { in: ['verb', 'noun'] },
+            ...(after ? { id: { gt: after } } : {}) },
           orderBy: { id: 'asc' }, take: BACKFILL_CHUNK, select: { id: true, lemma: true, pos: true },
         });
         if (chunk.length === 0) break;

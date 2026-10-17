@@ -29,6 +29,8 @@ const isKind = (value: string): value is InflectionKind => INFLECTION_KINDS.some
 
 /** `kind:form; kind:form`, normalized and grouped by kind; within a kind the cell's order is kept (it is stored). */
 export function parseInflections(cell: string): Array<{ form: string; kind: InflectionKind }> | RowError {
+  // "-" records a reviewed decision that the entry has no inflected forms (M3).
+  if (normalizeText(cell) === '-') return [];
   const forms = new Map<string, { form: string; kind: InflectionKind }>();
   for (const piece of splitList(cell)) {
     const colon = piece.indexOf(':');
@@ -36,7 +38,7 @@ export function parseInflections(cell: string): Array<{ form: string; kind: Infl
     const form = normalizeText(piece.slice(colon + 1));
     if (colon < 0 || !isKind(kind) || !form || form.includes('\0') || [...form].length > maxLemmaLength) {
       return { code: 'invalid-inflection',
-        message: `Dạng chia ${JSON.stringify(piece)} không hợp lệ. Viết kind:form, cách nhau bằng dấu chấm phẩy; kind là một trong: ${kindList}.` };
+        message: `Dạng chia ${JSON.stringify(piece)} không hợp lệ. Viết kind:form, cách nhau bằng dấu chấm phẩy; kind là một trong: ${kindList}. Ghi "-" nếu từ này không có dạng chia.` };
     }
     forms.set(`${kind}\0${form}`, { form, kind });
   }
@@ -46,6 +48,13 @@ export function parseInflections(cell: string): Array<{ form: string; kind: Infl
 export function formatInflections(forms: ReadonlyArray<{ form: string; kind: string }>): string {
   return forms.map(({ kind, form }) => `${kind}:${form}`).join('; ');
 }
+
+// The parts of speech each kind can come from (L9): a verb form of a noun is not a link.
+const KIND_POS: Record<InflectionKind, readonly string[]> = {
+  third_person: ['verb', 'be-verb', 'do-verb', 'have-verb'], present_participle: ['verb', 'be-verb', 'do-verb', 'have-verb'],
+  past: ['verb', 'be-verb', 'do-verb', 'have-verb'], past_participle: ['verb', 'be-verb', 'do-verb', 'have-verb'],
+  plural: ['noun'], comparative: ['adjective', 'adverb'], superlative: ['adjective', 'adverb'],
+};
 
 /** `lemma/pos:kind`, e.g. go/verb:past_participle; `-` clears. */
 function parseFormOf(cell: string): NormalizedRow['formOf'] | RowError {
@@ -57,9 +66,10 @@ function parseFormOf(cell: string): NormalizedRow['formOf'] | RowError {
   const lemma = value.slice(0, Math.max(slash, 0));
   const pos = value.slice(slash + 1, colon).toLowerCase();
   const kind = value.slice(colon + 1).toLowerCase();
-  if (colon < 0 || slash <= 0 || !VALID_POS.some((valid) => valid === pos) || !isKind(kind)) {
+  if (colon < 0 || slash <= 0 || value.includes('\0') || [...lemma].length > maxLemmaLength
+    || !VALID_POS.some((valid) => valid === pos) || !isKind(kind) || !KIND_POS[kind].includes(pos)) {
     return { code: 'invalid-form-of',
-      message: `Form_of ${JSON.stringify(cell)} không hợp lệ. Viết lemma/pos:kind (ví dụ go/verb:past_participle), "-" để bỏ liên kết; kind là một trong: ${kindList}.` };
+      message: `Form_of ${JSON.stringify(cell)} không hợp lệ. Viết lemma/pos:kind (ví dụ go/verb:past_participle), "-" để bỏ liên kết; kind là một trong: ${kindList}, và phải hợp loại từ của từ gốc (động từ: dạng động từ; danh từ: plural; tính từ, trạng từ: comparative, superlative).` };
   }
   return { lemma, pos, kind };
 }
@@ -133,6 +143,9 @@ export function normalizeRow(
   if (inflections !== null && !Array.isArray(inflections)) errors.push(inflections);
   const formOf = parseFormOf(contentCells.form_of ?? '');
   if (formOf !== null && typeof formOf === 'object' && 'code' in formOf) errors.push(formOf);
+  else if (formOf !== null && formOf !== 'clear' && formOf.lemma === lemma && formOf.pos === pos) {
+    errors.push({ code: 'invalid-form-of', message: `Form_of ${JSON.stringify(contentCells.form_of)} trỏ tới chính từ của dòng này; một dạng chia phải trỏ tới từ gốc khác.` });
+  }
   delete contentCells.form_of;
   delete contentCells.inflections;
   const lengthCheckedCells = { ...contentCells };
@@ -201,8 +214,9 @@ export function normalizeRow(
   const link = formOf as NormalizedRow['formOf'];
   return { ok: true, row: {
     rowNumber, lemma, variants, pos, level, levelExtra,
-    // A form_of cell alone is a content change; the processor resolves it to an entry id.
-    content: content ?? (link !== null ? {} : null),
+    // A form_of cell naming a base is a content change on its own; "-" alone only clears a named sense's link, so a
+    // row with nothing else never creates an empty draft sense (M4). The processor resolves the base to an entry id.
+    content: content ?? ((link !== null && link !== 'clear') || (link === 'clear' && senseId !== null) ? {} : null),
     senseId, revision, contextLabel, replaceMeaning,
     inflections: inflections as NormalizedRow['inflections'], formOf: link,
   } };
@@ -221,13 +235,6 @@ export function levelKey(
   sourceId: string,
 ): { key: string; hash: string } {
   return tupleKey([sourceId, row.lemma, row.pos]);
-}
-
-/** JSON [OWNER_SOURCE_ID, lemma, pos]; the hash covers the normalized reviewed set, so an unchanged
- * cell on a re-upload matches the key written by the earlier batch. */
-export function inflectionKey(row: Pick<NormalizedRow, 'lemma' | 'pos' | 'inflections'>): { key: string; hash: string } {
-  const key = JSON.stringify([OWNER_SOURCE_ID, row.lemma, row.pos]);
-  return { key, hash: createHash('sha256').update(formatInflections(row.inflections ?? []), 'utf8').digest('hex') };
 }
 
 /** JSON [OWNER_SOURCE_ID, lemma, pos, senseId ?? contextLabel ?? null], hashed as above.
