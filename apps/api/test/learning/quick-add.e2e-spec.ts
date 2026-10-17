@@ -140,6 +140,44 @@ describe('quick add and private word deletion (e2e, isolated database)', () => {
     expect(after.sentences.map(({ text }) => text)).toEqual(['Seen again.']);
   });
 
+  it('T-A3 (B3E12 over HTTP): at 1,000 private words a new word is 409 private-word-limit-reached with nothing stored, a catalog sense still adds; two requests at 999 leave exactly 1,000', async () => {
+    const me = await learner();
+    const group = await me.group();
+    await ctx.prisma.$executeRaw`
+      INSERT INTO entries (language, lemma, pos, scope, owner_user_id)
+      SELECT 'en', 'seeded-' || n, 'noun', 'private', ${me.userId}::uuid FROM generate_series(1, 1000) AS n`;
+    const before = await stored(me.userId);
+    const refused = await quickAdd(me.token, { group_id: group, new_word: { lemma: 'one-more', meaning: 'thêm một' } });
+    expect(refused.status).toBe(409);
+    expect(refused.body.type).toBe(problem('private-word-limit-reached'));
+    expect(await stored(me.userId)).toEqual(before);
+    expect((await quickAdd(me.token, { group_id: group, sense_id: await catalogSense() })).status).toBe(201);
+
+    const racer = await learner();
+    const racerGroup = await racer.group();
+    await ctx.prisma.$executeRaw`
+      INSERT INTO entries (language, lemma, pos, scope, owner_user_id)
+      SELECT 'en', 'seeded-' || n, 'noun', 'private', ${racer.userId}::uuid FROM generate_series(1, 999) AS n`;
+    const results = await Promise.all(['first', 'second'].map((lemma) =>
+      quickAdd(racer.token, { group_id: racerGroup, new_word: { lemma, meaning: `nghĩa ${lemma}` } })));
+    expect(results.map(({ status }) => status).sort()).toEqual([201, 409]);
+    expect(await ctx.prisma.entry.count({ where: { scope: 'private', ownerUserId: racer.userId } })).toBe(1_000);
+  });
+
+  it('T-A4: new_word with form_of naming another learner\'s private entry → 404 and nothing stored', async () => {
+    const other = await learner();
+    const theirs = await tx((t) => content.createPrivateSense(t, { ownerId: other.userId, lemma: 'yeet', pos: 'verb',
+      meaning: { text: 'riêng', language: 'vi' }, level: null, topicCodes: [], formOf: null }));
+    const me = await learner();
+    const group = await me.group();
+    const before = await stored(me.userId);
+    const response = await quickAdd(me.token, { group_id: group, new_word: {
+      lemma: 'yeeted', pos: 'verb', meaning: 'đã ném', form_of: { entry_id: theirs.entryId, kind: 'past' } } });
+    expect(response.status).toBe(404);
+    expect(response.body.type).toBe(problem('not-found'));
+    expect(await stored(me.userId)).toEqual(before);
+  });
+
   it('B3E14: new_word with form_of deploy/past stores the link', async () => {
     const actorId = (await seedUser(ctx.prisma, { verified: true, staffRole: 'editor' })).userId;
     const deploy = await tx(async (t) => {

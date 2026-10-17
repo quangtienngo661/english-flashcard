@@ -104,6 +104,20 @@ describe('word pages, headword search and lookup (e2e, isolated database)', () =
       .toEqual([['past', [deploy.senseId]], ['past_participle', [deploy.senseId]]]);
   });
 
+  it('M8 (B3E14): a catalog base without a visible sense is still offered with no senses; another learner\'s private base never is', async () => {
+    const deploy = await catalog('deploy', 'verb', { publish: false });
+    await inflect(deploy.entryId, [{ form: 'deployed', kind: 'past' }, { form: 'deployed', kind: 'past_participle' }], 'library');
+    const res = await get('/v1/lookup', { q: 'deployed' });
+    expect(res.body).toEqual({ senses: [], via_inflection: [
+      { kind: 'past', base: { entry_id: deploy.entryId, lemma: 'deploy', pos: 'verb' }, senses: [] },
+      { kind: 'past_participle', base: { entry_id: deploy.entryId, lemma: 'deploy', pos: 'verb' }, senses: [] }] });
+    const theirs = await mine(bId, 'yeet');
+    await inflect(theirs.entryId, [{ form: 'yeeted', kind: 'past' }], 'library');
+    expect((await get('/v1/lookup', { q: 'yeeted' })).body).toEqual({ senses: [], via_inflection: [] });
+    expect((await get('/v1/lookup', { q: 'yeeted' }, bToken)).body.via_inflection).toEqual([
+      expect.objectContaining({ kind: 'past', base: { entry_id: theirs.entryId, lemma: 'yeet', pos: 'verb' } })]);
+  });
+
   it('B3E15: an unknown form → empty arrays; a bad q → 400', async () => {
     await catalog('deploy', 'verb');
     expect((await get('/v1/lookup', { q: 'zzzz' })).body).toEqual({ senses: [], via_inflection: [] });
@@ -147,6 +161,14 @@ describe('word pages, headword search and lookup (e2e, isolated database)', () =
       .toEqual(['ringed', 'rang']);
     expect(res.body.inflections.map(({ kind }: { kind: string }) => kind))
       .toEqual(['third_person', 'present_participle', 'past', 'past', 'past_participle']);
+  });
+
+  it('T-A4: has_page counts only senses the viewer can see: another learner\'s private "went" does not make it true', async () => {
+    const go = await catalog('go', 'verb');
+    await inflect(go.entryId, [{ form: 'went', kind: 'past' }]);
+    await mine(bId, 'went');
+    expect((await get('/v1/words/go')).body.inflections).toEqual([{ kind: 'past', form: 'went', has_page: false }]);
+    expect((await get('/v1/words/go', {}, bToken)).body.inflections).toEqual([{ kind: 'past', form: 'went', has_page: true }]);
   });
 
   it('D42: March (noun) and march (verb) are two rows in GET /v1/words?q=march, two pages, and lookup "march" returns both', async () => {
