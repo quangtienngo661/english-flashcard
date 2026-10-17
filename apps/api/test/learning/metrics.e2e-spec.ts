@@ -4,8 +4,8 @@ import { seedUser, startSession } from '../support/auth-helpers.js';
 import { createTestApp, type TestApp } from '../support/create-test-app.js';
 import { createIsolatedDatabase } from '../support/isolated-database.js';
 import { learningMetrics } from '../support/learning-metrics.js';
+import { seedVisibleSenses } from '../support/seed-senses.js';
 
-const date = (value: string) => new Date(`${value}T00:00:00Z`);
 // 10:00 in Asia/Ho_Chi_Minh (the seeded learner's zone) on a local date.
 const morning = (value: string) => new Date(`${value}T03:00:00Z`);
 
@@ -17,24 +17,23 @@ describe('learning metrics from the log (e2e, isolated database)', () => {
   });
   afterAll(async () => { await ctx?.close(); });
 
-  it('B3#20: from a seeded month of answers learningMetrics returns the expected weekly adds, 48-hour share and active days', async () => {
+  let added = 0;
+
+  it('B3#20 / T-C6: from a month of real adds and answers learningMetrics returns the expected weekly adds, 48-hour share and active days', async () => {
     const { userId } = await seedUser(ctx.prisma, { verified: true, nativeLanguage: 'vi' });
     const group = await ctx.prisma.learningGroup.create({
       data: { userId, name: 'Month', nameKey: 'month', createdAt: morning('2026-11-02'), updatedAt: morning('2026-11-02') },
     });
-    // Task 12's add route does not exist yet: the add and its log row are inserted directly.
+    // Adds and answers go through the real routes, so the log rows are the ones production writes.
     const add = async (day: string) => {
-      const item = await ctx.prisma.learningItem.create({
-        data: { userId, senseId: randomUUID(), level: 0, dueDate: date(day), createdAt: morning(day) },
-      });
-      await ctx.prisma.groupItem.create({ data: { groupId: group.id, itemId: item.id, addedAt: morning(day) } });
-      await ctx.prisma.learningLogEntry.create({ data: {
-        userId, itemId: item.id, senseId: item.senseId, groupId: group.id, kind: 'item_added', levelAfter: 0,
-        dueAfter: date(day), localDate: date(day), at: morning(day),
-      } });
-      return item.id;
+      ctx.clock.set(morning(day));
+      const [senseId] = await seedVisibleSenses(ctx.prisma, 1, `m${day}-${(added += 1)}`);
+      const { accessToken } = await startSession(ctx, userId);
+      const response = await ctx.http().post(`/v1/groups/${group.id}/items`).set('Authorization', `Bearer ${accessToken}`)
+        .set('Idempotency-Key', randomUUID()).send({ sense_id: senseId });
+      expect(response.status).toBe(201);
+      return response.body.item_id as string;
     };
-    // Answers go through the real route, so the log rows are the ones production writes.
     const known = async (itemId: string, day: string) => {
       ctx.clock.set(morning(day));
       const { accessToken } = await startSession(ctx, userId);
