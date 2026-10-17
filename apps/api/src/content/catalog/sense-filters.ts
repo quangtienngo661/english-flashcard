@@ -13,3 +13,10 @@ export const sensesExportQuery = z.strictObject({
   batch_id: uuid.optional(),
 });
 export type SenseFilter = z.infer<typeof sensesExportQuery>;
+
+/** Entries-without-sense export (D34): only has_sense=false is meaningful; level is the displayed level. */
+export const entriesExportQuery = z.strictObject({
+  has_sense: z.literal('false').transform(() => false as const),
+  level: z.enum(LEVELS).optional(),
+});
+export type EntriesExportFilter = z.infer<typeof entriesExportQuery>;

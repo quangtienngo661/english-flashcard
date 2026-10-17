@@ -38,7 +38,7 @@ async function problemDetails<T>(write: () => Promise<T>): Promise<T> {
 async function writeEntry<T>(
   prisma: PrismaClient, content: ContentService, entryId: string, write: (tx: Prisma.TransactionClient) => Promise<T>,
 ): Promise<T> {
-  const entry = await prisma.entry.findUnique({ where: { id: entryId }, select: { lemma: true, pos: true } });
+  const entry = await prisma.entry.findFirst({ where: { id: entryId, scope: 'catalog' }, select: { lemma: true, pos: true } });
   if (!entry) throw new ContentRuleError('not-found');
   return prisma.$transaction(async (tx) => {
     await content.lockEntryKey(tx, entry.lemma, entry.pos);
@@ -134,7 +134,7 @@ export class BatchEntriesController {
       const result = await this.prisma.$transaction(async (tx): Promise<BatchResult> => {
         await this.content.lockEntryKey(tx, lemma, pos);
         const { entry } = await this.content.ensureEntry(tx, { lemma, pos, variants: [] });
-        const caseMatches = await tx.entry.findMany({ where: { language: 'en', lemma: { equals: lemma, mode: 'insensitive' } },
+        const caseMatches = await tx.entry.findMany({ where: { language: 'en', scope: 'catalog', lemma: { equals: lemma, mode: 'insensitive' } },
           select: { lemma: true }, orderBy: [{ lemma: 'asc' }, { id: 'asc' }] });
         // Insensitive equality uses ILIKE; filter its wildcard candidates to actual case-only matches.
         const warnings = [...new Set(caseMatches.map(({ lemma: other }) => other)

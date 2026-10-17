@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { FakeMailer } from './fake-mailer.js';
+import { FakeMailer } from '../../common/mail/fake-mailer.js';
 import { otpMail, otpLockedMail, passwordChangedMail, passwordResetMail, staffAccountMail } from './templates.js';
 
 describe('Mail templates and FakeMailer', () => {

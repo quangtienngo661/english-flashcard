@@ -1,8 +1,8 @@
 import { Inject, Injectable, type OnApplicationShutdown } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
 import type { Response } from 'express';
-import { AppLogger } from '../../common/logging/app-logger.js';
-import { getOperationId, runWithOperationId } from '../../common/logging/request-context.js';
+import { AppLogger } from '../logging/app-logger.js';
+import { getOperationId, runWithOperationId } from '../logging/request-context.js';
 import { MailBudget } from './mail-budget.service.js';
 import { Mailer, type MailMessage } from './mailer.js';
 

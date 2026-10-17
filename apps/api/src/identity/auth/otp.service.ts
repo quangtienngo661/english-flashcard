@@ -12,9 +12,9 @@ import type { RequestUser } from '../../common/request-user/request-user.js';
 import type { Prisma, PrismaClient } from '../../generated/prisma/client.js';
 import { recordOtpFailure } from '../../generated/prisma/sql.js';
 import type { OtpPurpose } from '../identity.types.js';
-import { MailBudget } from '../mailer/mail-budget.service.js';
-import { MailDispatcher, sendPrepared, type MailJob } from '../mailer/mail-dispatcher.service.js';
-import type { MailMessage } from '../mailer/mailer.js';
+import { MailBudget } from '../../common/mail/mail-budget.service.js';
+import { MailDispatcher, sendPrepared, type MailJob } from '../../common/mail/mail-dispatcher.service.js';
+import type { MailMessage } from '../../common/mail/mailer.js';
 import { otpMail, otpLockedMail } from '../mailer/templates.js';
 import { withUserLock } from '../user-lock.js';
 

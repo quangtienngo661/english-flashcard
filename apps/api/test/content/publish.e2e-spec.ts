@@ -57,6 +57,9 @@ describe('publish lifecycle (e2e, isolated database)', () => {
   const quick = (id: string, revision: number, patch: object) =>
     ctx.http().post(`/v1/admin/content/senses/${id}/quick-publish`)
       .set('Authorization', `Bearer ${token}`).send({ revision, content: patch });
+  let learnerToken: string;
+  const learnerGet = (path: string, query: object) =>
+    ctx.http().get(path).set('Authorization', `Bearer ${learnerToken}`).query(query);
   const item = (senseId: string, revision = 1) => ({ sense_id: senseId, revision });
   const published = async () => {
     const first = await ready();
@@ -81,6 +84,7 @@ describe('publish lifecycle (e2e, isolated database)', () => {
     ctx.clock.set(new Date('2026-10-12T12:00:00Z'));
     actorId = (await seedUser(ctx.prisma, { verified: true, staffRole: 'editor' })).userId;
     token = (await startSession(ctx, actorId)).accessToken;
+    learnerToken = (await startSession(ctx, (await seedUser(ctx.prisma, { nativeLanguage: 'vi' })).userId)).accessToken;
   });
   afterAll(async () => { await ctx?.close(); });
 
@@ -95,16 +99,16 @@ describe('publish lifecycle (e2e, isolated database)', () => {
   });
 
   it('B2#44: every non-empty combination of missing requirements returns exactly its violations and persists no changes', async () => {
-    // All 15 combinations catch both individual missing checks and incomplete violation lists.
-    for (let missing = 1; missing < 16; missing++) {
+    // All 7 combinations catch both individual missing checks and incomplete violation lists; no topic is required (D7).
+    for (let missing = 1; missing < 8; missing++) {
       const violations = [
         ...(missing & 1 ? ['gloss-missing'] : []), ...(missing & 2 ? ['example-missing'] : []),
-        ...(missing & 4 ? ['level-missing'] : []), ...(missing & 8 ? ['topic-missing'] : []),
+        ...(missing & 4 ? ['level-missing'] : []),
       ];
       const first = await ready({ level: !(missing & 4), content: {
         glossVi: missing & 1 ? ' \t ' : complete.glossVi,
         examplesEn: missing & 2 ? [' \n '] : complete.examplesEn,
-        topicCodes: missing & 8 ? [] : complete.topicCodes,
+        topicCodes: [],
       } });
       const before = await catalog();
       const res = await publish([item(first.senseId)]);
@@ -253,14 +257,14 @@ describe('publish lifecycle (e2e, isolated database)', () => {
     expect(res.status).toBe(422);
     expect(res.headers['content-type']).toContain('application/problem+json');
     expect(res.body.type).toBe(problem('publish-incomplete'));
-    expect(res.body.violations).toEqual(['example-missing', 'topic-missing']);
+    expect(res.body.violations).toEqual(['example-missing']);
     expect(await catalog()).toEqual(before);
     const empty = await ready({ content: { glossVi: null, examplesEn: [], topicCodes: [] }, level: false });
     const emptyBefore = await catalog();
     const incomplete = await quick(empty.senseId, 1, { definition_en: 'Still incomplete.' });
     expect(incomplete.status).toBe(422);
     expect(incomplete.body.type).toBe(problem('publish-incomplete'));
-    expect(incomplete.body.violations).toEqual(['gloss-missing', 'example-missing', 'level-missing', 'topic-missing']);
+    expect(incomplete.body.violations).toEqual(['gloss-missing', 'example-missing', 'level-missing']);
     expect(await catalog()).toEqual(emptyBefore);
   });
 
@@ -356,19 +360,38 @@ describe('publish lifecycle (e2e, isolated database)', () => {
     expect(await ctx.prisma.sense.count({ where: { entryId: entry.id, state: 'open', liveRevisionId: { not: null } } })).toBe(0);
   });
 
-  it('B2#44 (archived topic): a topic archived after drafting is refused as topic-missing with no writes; another active topic suffices', async () => {
+  it('B3#14: a sense with gloss, example and level but no topic publishes and appears in search', async () => {
+    const first = await ready({ content: { topicCodes: [] } });
+    const res = await publish([item(first.senseId)]);
+    expect(res.status).toBe(200);
+    expect(res.body.results).toEqual([{ sense_id: first.senseId, outcome: 'published' }]);
+    expect(await readSense(first.senseId)).toMatchObject({ state: 'open', liveRevisionId: first.revisionId,
+      revisions: [expect.objectContaining({ status: 'published', publishedAt: ctx.clock.now(), topicCodes: [] })] });
+    const search = await learnerGet('/v1/senses/search', { q: first.entry.lemma });
+    expect(search.status).toBe(200);
+    expect(search.body.items.map((row: { sense_id: string }) => row.sense_id)).toEqual([first.senseId]);
+    expect(search.body.items[0].topics).toEqual([]);
+  });
+
+  it('B3E33: a sense published without a topic is absent from GET /v1/senses?topic=…', async () => {
+    const without = await ready({ content: { topicCodes: [] } });
+    const withTopic = await ready();
+    expect((await publish([item(without.senseId), item(withTopic.senseId)])).body.results).toEqual([
+      { sense_id: without.senseId, outcome: 'published' }, { sense_id: withTopic.senseId, outcome: 'published' }]);
+    const res = await learnerGet('/v1/senses', { topic: 'business' });
+    expect(res.status).toBe(200);
+    expect(res.body.items.map((row: { sense_id: string }) => row.sense_id)).toEqual([withTopic.senseId]);
+  });
+
+  it('B2#44 (archived topic, D7): a topic archived after drafting no longer blocks publishing', async () => {
     const code = `publish-archived-${randomUUID()}`;
     await ctx.prisma.topic.create({ data: { code } });
     const first = await ready({ content: { topicCodes: [code] } });
-    const other = await ready({ content: { topicCodes: [code, 'business'] } });
     await ctx.prisma.topic.update({ where: { code }, data: { archivedAt: ctx.clock.now() } });
-    const before = await catalog();
     const res = await publish([item(first.senseId)]);
     expect(res.status).toBe(200);
-    expect(res.body.results).toEqual([{ sense_id: first.senseId, outcome: 'refused', reason: 'publish-incomplete', violations: ['topic-missing'] }]);
-    expect(await catalog()).toEqual(before);
-    expect((await publish([item(other.senseId)])).body.results).toEqual([{ sense_id: other.senseId, outcome: 'published' }]);
-    expect((await readSense(other.senseId)).liveRevisionId).toBe(other.revisionId);
+    expect(res.body.results).toEqual([{ sense_id: first.senseId, outcome: 'published' }]);
+    expect((await readSense(first.senseId)).liveRevisionId).toBe(first.revisionId);
   });
 
   it('B2#45 (missing sense): missing ids are refused independently for all batch operations', async () => {

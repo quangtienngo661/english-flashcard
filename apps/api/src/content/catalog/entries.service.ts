@@ -46,9 +46,9 @@ export class EntriesService {
     const inserted = await tx.$executeRaw`
       INSERT INTO entries (language, lemma, pos, function_word_derived)
       VALUES ('en', ${lemma}, ${pos}, ${isFunctionWordPos(pos)})
-      ON CONFLICT (language, lemma, pos) DO NOTHING`;
-    const entry = await tx.entry.findUniqueOrThrow({
-      where: { language_lemma_pos: { language: 'en', lemma, pos } }, select: entrySelect,
+      ON CONFLICT (language, lemma, pos) WHERE scope = 'catalog' DO NOTHING`;
+    const entry = await tx.entry.findFirstOrThrow({
+      where: { language: 'en', lemma, pos, scope: 'catalog' }, select: entrySelect,
     });
     const addedVariantIds: string[] = [];
     for (const text of variants) {

@@ -47,7 +47,7 @@ export async function importContent(
   try {
     const contextLabel = input.contextLabel === null ? null : normalizeText(input.contextLabel) || null;
     let sense = input.senseId !== null
-      ? await tx.sense.findUnique({ where: { id: input.senseId }, include: senseInclude })
+      ? await tx.sense.findFirst({ where: { id: input.senseId, entry: { scope: 'catalog' } }, include: senseInclude })
       : await tx.sense.findFirst({ where: {
         entryId: input.entryId, contextLabel, state: { not: 'retired' },
         OR: [{ replacesSenseId: null }, { liveRevisionId: { not: null } }],

@@ -236,7 +236,7 @@ describe('sense export and batch scope (e2e, isolated database)', () => {
     expect(atLimit.toString('utf8').split(headers.join(','))).toHaveLength(2);
   });
 
-  it('B2#56: status=unpublishable rows carry _missing naming the missing items with sense_id and revision, and uploading the filled file creates draft revisions', async () => {
+  it('B2#56 (D7: unpublishable export rows no longer name topic in _missing): status=unpublishable rows carry _missing naming the missing items with sense_id and revision, and uploading the filled file creates draft revisions', async () => {
     const missing = await create('missing', {});
     const ready = await create('ready', full, { level: 'A1' });
     const partial = await create('partial', { glossVi: 'chưa đủ' }, { level: 'A1' });
@@ -245,9 +245,9 @@ describe('sense export and batch scope (e2e, isolated database)', () => {
     expect(parsed.headers).toEqual([...headers, '_missing']);
     expect(rows.map((row) => row.sense_id).sort()).toEqual([missing.senseId, partial.senseId].sort());
     expect(rows.find((row) => row.sense_id === missing.senseId)).toMatchObject({ revision: '1', _level: '',
-      _missing: 'gloss-missing;example-missing;level-missing;topic-missing' });
+      _missing: 'gloss-missing;example-missing;level-missing' });
     expect(rows.find((row) => row.sense_id === partial.senseId)).toMatchObject({ revision: '1',
-      _missing: 'example-missing;topic-missing' });
+      _missing: 'example-missing' });
     // Informational _level cannot fix a real missing level. Use the established editorial API/service.
     await write(missing.entry.lemma, missing.entry.pos, (tx) => content.setEditorialLevel(tx, missing.entry.id, 'A1'));
     const filled = Buffer.from(toCsv(parsed.headers, parsed.rows.map(({ cells }) => {

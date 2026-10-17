@@ -90,9 +90,3 @@ model OtpFailureWindow {
   @@map("otp_failure_windows")
 }
 
-model MailBudgetBucket {
-  bucket String @id
-  sent   Int    @default(0)
-
-  @@map("mail_budget_buckets")
-}

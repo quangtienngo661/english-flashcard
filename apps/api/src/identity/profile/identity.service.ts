@@ -37,6 +37,14 @@ function toProfile(row: ProfileRow): Profile {
   };
 }
 
+export interface ReminderCandidate {
+  userId: string;
+  timezone: string;
+  nativeLanguage: SupportedLanguage | null;
+  createdAt: Date;
+  lastSeenAt: Date | null;
+}
+
 @Injectable()
 export class IdentityService {
   constructor(@Inject(PRISMA_CLIENT) private readonly prisma: PrismaClient) {}
@@ -49,6 +57,34 @@ export class IdentityService {
   async isEmailVerified(userId: string): Promise<boolean> {
     const row = await this.prisma.user.findUnique({ where: { id: userId }, select: { emailVerifiedAt: true } });
     return row !== null && row.emailVerifiedAt !== null;
+  }
+
+  /** Verified, active users ordered by id, a page at a time; `lastSeenAt` is the latest use of any session chain. */
+  async listReminderCandidates(input: { afterUserId: string | null; limit: number }): Promise<ReminderCandidate[]> {
+    const rows = await this.prisma.user.findMany({
+      where: {
+        emailVerifiedAt: { not: null }, status: 'active',
+        ...(input.afterUserId !== null ? { id: { gt: input.afterUserId } } : {}),
+      },
+      orderBy: { id: 'asc' }, take: input.limit,
+      select: {
+        id: true, timezone: true, nativeLanguage: true, createdAt: true,
+        sessionChains: { select: { lastUsedAt: true }, orderBy: { lastUsedAt: 'desc' }, take: 1 },
+      },
+    });
+    return rows.map((row) => ({
+      userId: row.id, timezone: row.timezone, nativeLanguage: row.nativeLanguage as SupportedLanguage | null,
+      createdAt: row.createdAt, lastSeenAt: row.sessionChains[0]?.lastUsedAt ?? null,
+    }));
+  }
+
+  /** Addresses of the given users that are verified; unverified and unknown ids are left out. */
+  async verifiedEmails(userIds: string[]): Promise<Map<string, string>> {
+    if (userIds.length === 0) return new Map();
+    const rows = await this.prisma.user.findMany({
+      where: { id: { in: [...new Set(userIds)] }, emailVerifiedAt: { not: null } }, select: { id: true, email: true },
+    });
+    return new Map(rows.map((row) => [row.id, row.email]));
   }
 
   async updateProfile(userId: string, body: UpdateProfileBody): Promise<Profile | null> {

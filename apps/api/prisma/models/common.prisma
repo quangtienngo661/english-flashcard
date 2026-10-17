@@ -21,3 +21,11 @@ model RateLimitCounter {
   @@unique([key, windowStart])
   @@map("rate_limit_counters")
 }
+
+// One row per UTC day: the daily mail budget shared by OTP and reminder emails.
+model MailBudgetBucket {
+  bucket String @id
+  sent   Int    @default(0)
+
+  @@map("mail_budget_buckets")
+}

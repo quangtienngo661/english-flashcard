@@ -1,0 +1,23 @@
+// A learner's own switch for reminder emails; no row means on (D25).
+model ReminderPref {
+  userId    String   @id @map("user_id") @db.Uuid
+  enabled   Boolean  @default(true)
+  updatedAt DateTime @map("updated_at") @db.Timestamptz
+
+  @@map("reminder_prefs")
+}
+
+// At most one reminder per learner per local date (design 8.3). kind: regular | inactive;
+// state: sending | sent | failed (failed = attempts exhausted that day; checks in the migration).
+model ReminderDelivery {
+  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  localDate DateTime  @map("local_date") @db.Date
+  kind      String
+  state     String
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  sentAt    DateTime? @map("sent_at") @db.Timestamptz
+
+  @@unique([userId, localDate])
+  @@map("reminder_deliveries")
+}
