@@ -67,7 +67,8 @@ describe('profile and IdentityService (e2e)', () => {
       const staff = await seedUser(ctx.prisma, { verified: true, staffRole });
       const expected = { ...profile, id: staff.userId, email: staff.email, email_verified: true, staff_role: staffRole,
         permissions: [...(staffRole === 'admin' ? ['roles.manage'] : []),
-          'content.edit', 'content.publish', 'content.import', 'taxonomy.manage'] };
+          'content.edit', 'content.publish', 'content.import', 'taxonomy.manage',
+          ...(staffRole === 'admin' ? ['settings.manage'] : [])] };
       expect(await identity.getProfile(staff.userId)).toEqual(expected);
       const access = (await startSession(ctx, staff.userId)).accessToken;
       const res = await ctx.http().get('/v1/me').set('Authorization', `Bearer ${access}`);

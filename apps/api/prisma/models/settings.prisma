@@ -1,0 +1,23 @@
+// One row `key = 'global'` holds every admin-tunable value, so the admin page saves under one version.
+model AppSetting {
+  key       String   @id
+  value     Json
+  version   Int
+  updatedBy String   @map("updated_by") @db.Uuid
+  updatedAt DateTime @map("updated_at") @db.Timestamptz
+
+  @@map("app_settings")
+}
+
+// Append-only: one row per changed value per save.
+model AppSettingChange {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  key       String
+  oldValue  Json     @map("old_value")
+  newValue  Json     @map("new_value")
+  changedBy String   @map("changed_by") @db.Uuid
+  changedAt DateTime @map("changed_at") @db.Timestamptz
+
+  @@index([changedAt(sort: Desc), id(sort: Desc)])
+  @@map("app_setting_changes")
+}
