@@ -168,14 +168,14 @@ describe('admin catalog reads (e2e, isolated database)', () => {
 
   it('B2#56a (read): unpublishable uses each latest open revision and returns exactly the shared publish violations', async () => {
     const missing = [];
-    for (let mask = 1; mask < 16; mask++) {
+    for (let mask = 1; mask < 8; mask++) {
       const row = await sense(`missing-${mask.toString().padStart(2, '0')}`, { level: !(mask & 4), content: {
         glossVi: mask & 1 ? null : complete.glossVi, examplesEn: mask & 2 ? [] : complete.examplesEn,
-        topicCodes: mask & 8 ? [] : complete.topicCodes,
+        topicCodes: [],
       } });
       const violations = [
         ...(mask & 1 ? ['gloss-missing'] : []), ...(mask & 2 ? ['example-missing'] : []),
-        ...(mask & 4 ? ['level-missing'] : []), ...(mask & 8 ? ['topic-missing'] : []),
+        ...(mask & 4 ? ['level-missing'] : []),
       ];
       missing.push({ row, violations });
     }
@@ -201,16 +201,16 @@ describe('admin catalog reads (e2e, isolated database)', () => {
     expect(await catalog()).toEqual(before);
   });
 
-  it('B2#56a (read archived topic): archived-only topics are missing, while any active topic suffices', async () => {
+  it('B2#56a (read archived topic, D7): a sense with only archived topics or none is not unpublishable', async () => {
     const code = `archived-${randomUUID()}`;
     await ctx.prisma.topic.create({ data: { code } });
-    const archivedOnly = await sense('archived-only', { content: { topicCodes: [code] } });
-    await sense('also-active', { content: { topicCodes: [code, 'business'] } });
+    await sense('archived-only', { content: { topicCodes: [code] } });
+    await sense('no-topic', { content: { topicCodes: [] } });
     await ctx.prisma.topic.update({ where: { code }, data: { archivedAt: ctx.clock.now() } });
     const before = await catalog();
     const res = await get('senses', { status: 'unpublishable' });
     expect(res.status).toBe(200);
-    expect(res.body.items).toEqual([expect.objectContaining({ sense_id: archivedOnly.senseId, missing: ['topic-missing'] })]);
+    expect(res.body.items).toEqual([]);
     expect(await catalog()).toEqual(before);
   });
 

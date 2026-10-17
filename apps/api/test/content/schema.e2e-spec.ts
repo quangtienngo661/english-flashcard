@@ -46,6 +46,23 @@ describe('content schema (e2e, isolated database)', () => {
     expect(await ctx.prisma.entry.count()).toBe(3);
   });
 
+  it('schema: catalog (language, lemma, pos) stays unique among catalog rows; two learners may each own deploy/verb next to the catalog deploy/verb; a private row without owner or a catalog row with an owner is refused', async () => {
+    const [first, second] = [randomUUID(), randomUUID()];
+    const insert = (scope: string, owner: string | null) => ctx.prisma.$executeRaw`
+      INSERT INTO entries (language, lemma, pos, scope, owner_user_id) VALUES ('en', 'deploy', 'verb', ${scope}, ${owner}::uuid)`;
+    await insert('catalog', null);
+    await insert('private', first);
+    await insert('private', second);
+    expect(await ctx.prisma.entry.count({ where: { lemma: 'deploy', pos: 'verb' } })).toBe(3);
+    const before = await ctx.prisma.entry.findMany({ orderBy: { id: 'asc' } });
+    await expect(insert('catalog', null)).rejects.toThrow(/entries_catalog_key/);
+    await expect(insert('private', first)).rejects.toThrow(/entries_private_key/);
+    await expect(insert('private', null)).rejects.toThrow(/entries_scope_owner_check/);
+    await expect(insert('catalog', first)).rejects.toThrow(/entries_scope_owner_check/);
+    await expect(insert('shared', first)).rejects.toThrow(/entries_scope_check/);
+    expect(await ctx.prisma.entry.findMany({ orderBy: { id: 'asc' } })).toEqual(before);
+  });
+
   it('B2#20 (schema): a second non-retired sense with the same (entry, label) is refused, a different label is allowed, and NULL label counts as one label', async () => {
     const { id: entryId } = await entry();
     const main = await ctx.prisma.sense.create({ data: { entryId, contextLabel: null, state: 'open' } });

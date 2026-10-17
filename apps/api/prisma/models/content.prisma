@@ -43,14 +43,21 @@ model Entry {
   entryType            String   @default("word") @map("entry_type")
   functionWordDerived  Boolean  @default(false) @map("function_word_derived")
   functionWordOverride Boolean? @map("function_word_override")
+  // catalog | private; a private entry belongs to one learner (Identity user id, no cross-module FK).
+  scope                String   @default("catalog")
+  ownerUserId          String?  @map("owner_user_id") @db.Uuid
   createdAt            DateTime @default(now()) @map("created_at") @db.Timestamptz
   updatedAt            DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
 
-  variants EntryVariant[]
-  levels   EntryLevel[]
-  senses   Sense[]
+  variants    EntryVariant[]
+  levels      EntryLevel[]
+  senses      Sense[]
+  inflections EntryInflection[]
+  formsOf     SenseRevision[]   @relation("FormOf")
 
-  @@unique([language, lemma, pos])
+  // Uniqueness is two hand-written partial indexes (migration private_entries): entries_catalog_key on
+  // (language, lemma, pos) WHERE scope = 'catalog' and entries_private_key on (owner_user_id, language, lemma, pos)
+  // WHERE scope = 'private'. Every ON CONFLICT on entries must name the predicate.
   @@map("entries")
 }
 
@@ -113,9 +120,13 @@ model SenseRevision {
   examples      String[]  @default([])
   topicCodes    String[]  @default([]) @map("topic_codes")
   acceptedForms String[]  @default([]) @map("accepted_forms")
+  // "This sense is a form of <entry>" (D29); the link is to the entry, not a sense, so it survives sense replacement.
+  formOfEntryId String?   @map("form_of_entry_id") @db.Uuid
+  formKind      String?   @map("form_kind")
 
-  sense Sense               @relation(fields: [senseId], references: [id], onDelete: Cascade)
-  texts SenseRevisionText[]
+  sense  Sense               @relation(fields: [senseId], references: [id], onDelete: Cascade)
+  formOf Entry?              @relation("FormOf", fields: [formOfEntryId], references: [id], onDelete: SetNull)
+  texts  SenseRevisionText[]
 
   @@unique([senseId, revisionNo])
   @@index([topicCodes], type: Gin)
@@ -132,4 +143,20 @@ model SenseRevisionText {
 
   @@id([revisionId, language, kind])
   @@map("sense_revision_texts")
+}
+
+model EntryInflection {
+  id      String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  entryId String @map("entry_id") @db.Uuid
+  form    String
+  // Lower-case NFC of form, for lookups.
+  formKey String @map("form_key")
+  kind    String
+  source  String
+
+  entry Entry @relation(fields: [entryId], references: [id], onDelete: Cascade)
+
+  @@unique([entryId, form, kind])
+  @@index([formKey])
+  @@map("entry_inflections")
 }

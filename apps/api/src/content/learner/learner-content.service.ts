@@ -103,7 +103,7 @@ export class LearnerContentService {
       WHERE head.text ILIKE ${'%' + escaped + '%'} ESCAPE ${'\\'}`;
     const filters = [
       Prisma.sql`s.state = 'open' AND s.live_revision_id IS NOT NULL`,
-      Prisma.sql`e.language = 'en' AND e.entry_type = 'word'`,
+      Prisma.sql`e.language = 'en' AND e.entry_type = 'word' AND e.scope = 'catalog'`,
       ...(senseId === undefined ? [] : [Prisma.sql`s.id = ${senseId}::uuid`]),
       ...(query.level === undefined ? [] : [Prisma.sql`displayed.level = ${query.level}`]),
       ...(query.topic === undefined ? [] : [Prisma.sql`${query.topic} = ANY(r.topic_codes)`]),

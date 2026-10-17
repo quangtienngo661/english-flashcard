@@ -64,8 +64,8 @@ describe('batch revert (e2e, isolated database)', () => {
   };
   const revert = (id: string, key = randomUUID()) => ctx.http().post(`${endpoint}/${id}/revert`)
     .set('Authorization', `Bearer ${token}`).set('Idempotency-Key', key).send({});
-  const entry = (lemma = 'bank') => ctx.prisma.entry.findUniqueOrThrow({
-    where: { language_lemma_pos: { language: 'en', lemma, pos: 'noun' } },
+  const entry = (lemma = 'bank') => ctx.prisma.entry.findFirstOrThrow({
+    where: { language: 'en', lemma, pos: 'noun', scope: 'catalog' },
     include: { senses: { include: { revisions: { orderBy: { revisionNo: 'asc' } } } }, levels: true, variants: true },
   });
   const records = async (id: string): Promise<Parameters<ContentService['revertRecords']>[0]> => {
