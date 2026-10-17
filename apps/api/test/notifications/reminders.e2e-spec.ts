@@ -12,9 +12,10 @@ import {
 import { ReminderSendService } from '../../src/notifications/scheduler/reminder-send.service.js';
 import { ReminderTickService } from '../../src/notifications/scheduler/reminder-tick.service.js';
 import { SettingsService } from '../../src/settings/index.js';
-import { seedUser } from '../support/auth-helpers.js';
+import { seedUser, startSession } from '../support/auth-helpers.js';
 import { createTestApp, type TestApp } from '../support/create-test-app.js';
 import { createIsolatedDatabase } from '../support/isolated-database.js';
+import { seedVisibleSenses } from '../support/seed-senses.js';
 
 // 20:30 in Ho Chi Minh on Saturday 2026-10-17: past the default 20:00 send time.
 const NOW = new Date('2026-10-17T13:30:00Z');
@@ -41,12 +42,29 @@ describe('reminder scheduler and send jobs (e2e, isolated database)', () => {
     apps.splice(apps.indexOf(ctx), 1);
     await ctx.close();
   };
-  const learner = async (ctx: TestApp, opts: { daysAway?: number; timezone?: string; nativeLanguage?: SupportedLanguage; verified?: boolean } = {}) => {
-    const user = await seedUser(ctx.prisma, { verified: opts.verified ?? true, nativeLanguage: opts.nativeLanguage });
+  /** A learner with one new card today (added through the Learning API) unless `cards: false`. */
+  const learner = async (ctx: TestApp, opts: {
+    daysAway?: number; timezone?: string; nativeLanguage?: SupportedLanguage; verified?: boolean; cards?: boolean;
+  } = {}) => {
+    const user = await seedUser(ctx.prisma, { verified: true, nativeLanguage: opts.nativeLanguage ?? 'vi' });
+    const away = new Date(NOW.getTime() - (opts.daysAway ?? 1) * DAY);
     await ctx.prisma.user.update({ where: { id: user.userId }, data: {
-      createdAt: new Date(NOW.getTime() - (opts.daysAway ?? 1) * DAY), timezone: opts.timezone ?? 'Asia/Ho_Chi_Minh',
+      createdAt: away, timezone: opts.timezone ?? 'Asia/Ho_Chi_Minh',
     } });
+    if (opts.cards ?? true) await addCard(ctx, user.userId);
+    // The session used to add the card would count as a visit: put the visit back at `daysAway`.
+    await ctx.prisma.sessionChain.updateMany({ where: { userId: user.userId }, data: { lastUsedAt: away } });
+    if (opts.verified === false) await ctx.prisma.user.update({ where: { id: user.userId }, data: { emailVerifiedAt: null } });
     return user;
+  };
+  const addCard = async (ctx: TestApp, userId: string) => {
+    const [senseId] = await seedVisibleSenses(ctx.prisma, 1, `r${randomUUID().slice(0, 8)}`);
+    const { accessToken } = await startSession(ctx, userId);
+    const write = (path: string, body: object) => ctx.http().post(path).set('Authorization', `Bearer ${accessToken}`)
+      .set('Idempotency-Key', randomUUID()).send(body);
+    const group = await write('/v1/groups', { name: 'Reminders' });
+    expect(group.status).toBe(201);
+    expect((await write(`/v1/groups/${group.body.id}/items`, { sense_id: senseId })).status).toBe(201);
   };
   const deliveries = (ctx: TestApp) => ctx.prisma.reminderDelivery.findMany({ orderBy: { createdAt: 'asc' } });
   const fillBudget = (ctx: TestApp, sent: number) => ctx.prisma.mailBudgetBucket.upsert({
@@ -65,7 +83,11 @@ describe('reminder scheduler and send jobs (e2e, isolated database)', () => {
   const reset = async (ctx: TestApp) => {
     await ctx.prisma.reminderDelivery.deleteMany();
     await ctx.prisma.reminderPref.deleteMany();
+    await ctx.prisma.learningLogEntry.deleteMany();
+    await ctx.prisma.learningItem.deleteMany();
+    await ctx.prisma.learningGroup.deleteMany();
     await ctx.prisma.mailBudgetBucket.deleteMany();
+    await ctx.prisma.rateLimitCounter.deleteMany();
     await ctx.prisma.appSettingChange.deleteMany();
     await ctx.prisma.appSetting.deleteMany();
     await ctx.prisma.user.deleteMany();
@@ -114,6 +136,14 @@ describe('reminder scheduler and send jobs (e2e, isolated database)', () => {
       await send.send(sendData(user.userId), { lastAttempt: false });
       expect(ctx.mailer.sent).toEqual([]);
       expect(await deliveries(ctx)).toEqual([]);
+    });
+
+    it('D27: a learner with no card left today gets no email and no row, even with a job already queued', async () => {
+      const user = await learner(ctx, { cards: false });
+      await send.send(sendData(user.userId), { lastAttempt: false });
+      expect(ctx.mailer.sent).toEqual([]);
+      expect(await deliveries(ctx)).toEqual([]);
+      expect(ctx.logs).toContainEqual(expect.objectContaining({ event: 'reminder_skipped', reason: 'no-cards-left' }));
     });
 
     it('B3#17 / B3E28: an unverified learner gets no email and no row', async () => {
@@ -179,6 +209,21 @@ describe('reminder scheduler and send jobs (e2e, isolated database)', () => {
         { userId: vi1.userId, localDate: '2026-10-17', kind: 'regular', language: 'vi' },
         { userId: en.userId, localDate: '2026-10-17', kind: 'regular', language: 'en' },
       ].toSorted((a, b) => a.userId.localeCompare(b.userId)));
+    });
+
+    it('D27: no job for a learner with no items, or whose card for today is already answered', async () => {
+      await learner(ctx, { cards: false });
+      const done = await learner(ctx);
+      const [item] = await ctx.prisma.learningItem.findMany({ where: { userId: done.userId } });
+      const [group] = await ctx.prisma.learningGroup.findMany({ where: { userId: done.userId } });
+      const { accessToken } = await startSession(ctx, done.userId);
+      const review = await ctx.http().post('/v1/reviews').set('Authorization', `Bearer ${accessToken}`)
+        .send({ item_id: item.id, group_id: group.id, answer: 'known', review_id: randomUUID() });
+      expect(review.status).toBe(200);
+      await ctx.prisma.sessionChain.updateMany({ where: { userId: done.userId }, data: { lastUsedAt: new Date(NOW.getTime() - DAY) } });
+      const left = await learner(ctx);
+      await tick.tick();
+      expect(jobs()).toEqual([{ userId: left.userId, localDate: '2026-10-17', kind: 'regular', language: 'vi' }]);
     });
 
     it('D44: a regular reminder sent yesterday blocks today with min_gap_days 2; the day after is allowed', async () => {

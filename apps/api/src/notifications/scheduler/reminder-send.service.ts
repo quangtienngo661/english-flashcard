@@ -4,6 +4,7 @@ import { PRISMA_CLIENT } from '../../common/db/prisma.module.js';
 import { AppLogger } from '../../common/logging/app-logger.js';
 import { dateValue } from '../../common/time/local-date.js';
 import type { PrismaClient } from '../../generated/prisma/client.js';
+import { LearningService } from '../../learning/index.js';
 import { ChannelChooser } from '../provider/channel-chooser.js';
 import {
   ReminderQueueService, type ReminderSendAttempt, type ReminderSendData,
@@ -22,6 +23,7 @@ export class ReminderSendService implements OnModuleInit {
     @Inject(PRISMA_CLIENT) private readonly prisma: PrismaClient,
     @Inject(Clock) private readonly clock: Clock,
     @Inject(ChannelChooser) private readonly chooser: ChannelChooser,
+    @Inject(LearningService) private readonly learning: LearningService,
     @Inject(ReminderQueueService) private readonly queue: ReminderQueueService,
     @Inject(AppLogger) private readonly logger: AppLogger,
   ) {}
@@ -40,6 +42,8 @@ export class ReminderSendService implements OnModuleInit {
     // The learner or an admin may have turned reminders off since the tick (B3E24).
     const [provider] = await this.chooser.choose(userId);
     if (!provider) return skipped('reminders-off');
+    // The learner may have finished today's cards since the tick (D27).
+    if (!(await this.learning.cardsLeftToday([{ userId, today: localDate }])).has(userId)) return skipped('no-cards-left');
 
     try {
       await this.prisma.reminderDelivery.create({ data: { userId, localDate: dateValue(localDate), kind, state: 'sending' } });

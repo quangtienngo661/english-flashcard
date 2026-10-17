@@ -7,6 +7,7 @@ import { MailBudget, mailLimit, REMINDER_MAIL_SHARE } from '../../common/mail/ma
 import { addDays, dateString, dateValue, localDate } from '../../common/time/local-date.js';
 import type { PrismaClient } from '../../generated/prisma/client.js';
 import { IdentityService } from '../../identity/profile/identity.service.js';
+import { LearningService } from '../../learning/index.js';
 import { SettingsService } from '../../settings/index.js';
 import { reminderLanguage } from '../provider/reminder-message.js';
 import { eligibility } from './eligibility.js';
@@ -27,6 +28,7 @@ export class ReminderTickService implements OnModuleInit {
     @Inject(APP_CONFIG) private readonly config: AppConfig,
     @Inject(Clock) private readonly clock: Clock,
     @Inject(IdentityService) private readonly identity: IdentityService,
+    @Inject(LearningService) private readonly learning: LearningService,
     @Inject(SettingsService) private readonly settings: SettingsService,
     @Inject(MailBudget) private readonly budget: MailBudget,
     @Inject(ReminderQueueService) private readonly queue: ReminderQueueService,
@@ -90,6 +92,8 @@ export class ReminderTickService implements OnModuleInit {
         userId: candidate.userId, localDate: result.today, kind: result.kind, language: reminderLanguage(candidate.nativeLanguage),
       });
     }
-    return jobs;
+    // Only learners with a card left today, after the caps: the same count the home page shows (D27).
+    const withCards = await this.learning.cardsLeftToday(jobs.map((job) => ({ userId: job.userId, today: job.localDate })));
+    return jobs.filter((job) => withCards.has(job.userId));
   }
 }
