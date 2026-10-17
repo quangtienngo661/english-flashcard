@@ -1,8 +1,8 @@
 import { createHash } from 'node:crypto';
 import { z } from 'zod';
 import {
-  ContentRuleError, LEVELS, MAX_EXAMPLES, normalizeContent, normalizeText,
-  OWNER_SOURCE_ID, splitHeadword, VALID_POS, type Level, type RevisionContent,
+  ContentRuleError, INFLECTION_KINDS, LEVELS, MAX_EXAMPLES, normalizeContent, normalizeText,
+  OWNER_SOURCE_ID, splitHeadword, VALID_POS, type InflectionKind, type Level, type RevisionContent,
 } from '../../content/index.js';
 import type { RowError } from './row-errors.js';
 
@@ -18,7 +18,52 @@ export type NormalizedRow = {
   revision: number | null;
   contextLabel: string | null;
   replaceMeaning: boolean;
+  /** Reviewed forms for the entry; null keeps what the entry has (empty cell or no column). */
+  inflections: Array<{ form: string; kind: InflectionKind }> | null;
+  /** The base this sense is a form of; 'clear' removes the link; null keeps it. */
+  formOf: { lemma: string; pos: string; kind: InflectionKind } | 'clear' | null;
 };
+
+const kindList = INFLECTION_KINDS.join(', ');
+const isKind = (value: string): value is InflectionKind => INFLECTION_KINDS.some((kind) => kind === value);
+
+/** `kind:form; kind:form`, normalized and ordered by kind then form so equal sets compare equal. */
+export function parseInflections(cell: string): Array<{ form: string; kind: InflectionKind }> | RowError {
+  const forms = new Map<string, { form: string; kind: InflectionKind }>();
+  for (const piece of splitList(cell)) {
+    const colon = piece.indexOf(':');
+    const kind = normalizeText(piece.slice(0, Math.max(colon, 0))).toLowerCase();
+    const form = normalizeText(piece.slice(colon + 1));
+    if (colon < 0 || !isKind(kind) || !form || form.includes('\0') || [...form].length > maxLemmaLength) {
+      return { code: 'invalid-inflection',
+        message: `Dạng chia ${JSON.stringify(piece)} không hợp lệ. Viết kind:form, cách nhau bằng dấu chấm phẩy; kind là một trong: ${kindList}.` };
+    }
+    forms.set(`${kind}\0${form}`, { form, kind });
+  }
+  return [...forms.values()].sort((a, b) =>
+    INFLECTION_KINDS.indexOf(a.kind) - INFLECTION_KINDS.indexOf(b.kind) || (a.form < b.form ? -1 : a.form > b.form ? 1 : 0));
+}
+
+export function formatInflections(forms: ReadonlyArray<{ form: string; kind: string }>): string {
+  return forms.map(({ kind, form }) => `${kind}:${form}`).join('; ');
+}
+
+/** `lemma/pos:kind`, e.g. go/verb:past_participle; `-` clears. */
+function parseFormOf(cell: string): NormalizedRow['formOf'] | RowError {
+  const value = normalizeText(cell);
+  if (!value) return null;
+  if (value === '-') return 'clear';
+  const colon = value.lastIndexOf(':');
+  const slash = value.lastIndexOf('/', colon);
+  const lemma = value.slice(0, Math.max(slash, 0));
+  const pos = value.slice(slash + 1, colon).toLowerCase();
+  const kind = value.slice(colon + 1).toLowerCase();
+  if (colon < 0 || slash <= 0 || !VALID_POS.some((valid) => valid === pos) || !isKind(kind)) {
+    return { code: 'invalid-form-of',
+      message: `Form_of ${JSON.stringify(cell)} không hợp lệ. Viết lemma/pos:kind (ví dụ go/verb:past_participle), "-" để bỏ liên kết; kind là một trong: ${kindList}.` };
+  }
+  return { lemma, pos, kind };
+}
 
 const contentColumns = [
   'gloss_vi', 'definition_en', 'example_en_1', 'example_en_2', 'example_en_3',
@@ -79,12 +124,18 @@ export function normalizeRow(
   }
 
   const contentCells: Record<string, string> = {};
-  for (const column of contentColumns) {
+  for (const column of [...contentColumns, 'form_of', 'inflections'] as const) {
     if (Object.hasOwn(cells, column)) {
       // Exactly one anchored pass, before normalization, length checks or hashing (§8).
       contentCells[column] = cells[column].replace(/^'[=+\-@]/u, (prefix) => prefix.slice(1));
     }
   }
+  const inflections = contentCells.inflections?.trim() ? parseInflections(contentCells.inflections) : null;
+  if (inflections !== null && !Array.isArray(inflections)) errors.push(inflections);
+  const formOf = parseFormOf(contentCells.form_of ?? '');
+  if (formOf !== null && typeof formOf === 'object' && 'code' in formOf) errors.push(formOf);
+  delete contentCells.form_of;
+  delete contentCells.inflections;
   const lengthCheckedCells = { ...contentCells };
   if (Object.hasOwn(cells, 'context_label')) lengthCheckedCells.context_label = cells.context_label;
   for (const [column, value] of Object.entries(lengthCheckedCells)) {
@@ -148,9 +199,13 @@ export function normalizeRow(
   const replaceMeaning = normalizeText(cells.replace_meaning ?? '').toLowerCase() === 'true';
 
   if (errors.length > 0) return { ok: false, errors };
+  const link = formOf as NormalizedRow['formOf'];
   return { ok: true, row: {
-    rowNumber, lemma, variants, pos, level, levelExtra, content,
+    rowNumber, lemma, variants, pos, level, levelExtra,
+    // A form_of cell alone is a content change; the processor resolves it to an entry id.
+    content: content ?? (link !== null ? {} : null),
     senseId, revision, contextLabel, replaceMeaning,
+    inflections: inflections as NormalizedRow['inflections'], formOf: link,
   } };
 }
 
@@ -167,6 +222,13 @@ export function levelKey(
   sourceId: string,
 ): { key: string; hash: string } {
   return tupleKey([sourceId, row.lemma, row.pos]);
+}
+
+/** JSON [OWNER_SOURCE_ID, lemma, pos]; the hash covers the normalized reviewed set, so an unchanged
+ * cell on a re-upload matches the key written by the earlier batch. */
+export function inflectionKey(row: Pick<NormalizedRow, 'lemma' | 'pos' | 'inflections'>): { key: string; hash: string } {
+  const key = JSON.stringify([OWNER_SOURCE_ID, row.lemma, row.pos]);
+  return { key, hash: createHash('sha256').update(formatInflections(row.inflections ?? []), 'utf8').digest('hex') };
 }
 
 /** JSON [OWNER_SOURCE_ID, lemma, pos, senseId ?? contextLabel ?? null], hashed as above.

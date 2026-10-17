@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import type { Prisma } from '../../generated/prisma/client.js';
 import { normalizeText } from '../catalog/normalize.js';
-import { ContentRuleError, contentHash, mergeContent, normalizeContent, type RevisionContent } from './revision-content.js';
+import { ContentRuleError, contentHash, mergeContent, normalizeContent, revisionFormOf, type RevisionContent } from './revision-content.js';
 
 export type CreateSenseInput = {
   entryId: string; contextLabel: string | null; content?: Partial<RevisionContent>;
@@ -23,6 +23,7 @@ function readContent(revision: RevisionRow): RevisionContent {
     glossVi: revision.texts.find(({ language, kind }) => language === 'vi' && kind === 'gloss')?.text ?? null,
     definitionEn: revision.texts.find(({ language, kind }) => language === 'en' && kind === 'definition')?.text ?? null,
     examplesEn: revision.examples, topicCodes: revision.topicCodes, acceptedForms: revision.acceptedForms,
+    ...revisionFormOf(revision),
   };
 }
 
@@ -42,6 +43,7 @@ function revisionData(content: RevisionContent, source: 'ui' | 'csv', actorId: s
   return {
     draftSource: source, createdBy: actorId, status: 'draft', contentHash: contentHash(content),
     examples: content.examplesEn, topicCodes: content.topicCodes, acceptedForms: content.acceptedForms,
+    formOfEntryId: content.formOf?.entryId ?? null, formKind: content.formOf?.kind ?? null,
     texts: { create: texts },
   };
 }

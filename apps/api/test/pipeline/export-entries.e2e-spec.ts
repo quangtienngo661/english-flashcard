@@ -15,7 +15,7 @@ import { testConfig } from '../support/test-config.js';
 const endpoint = '/v1/admin/content/entries/export';
 const headers = [
   'headword', 'pos', 'gloss_vi', 'definition_en', 'example_en_1', 'example_en_2', 'example_en_3',
-  'topics', 'accepted_forms', 'context_label', '_level',
+  'topics', 'accepted_forms', 'context_label', 'form_of', 'inflections', '_level', '_inflections',
 ];
 const full: RevisionContent = {
   glossVi: 'ngân hàng', definitionEn: null, examplesEn: ['I visited the bank.'], topicCodes: [], acceptedForms: [],
@@ -113,11 +113,11 @@ describe('export of entries without a sense (e2e, isolated database)', () => {
     expect(parsed.headers).toEqual(headers);
     expect(rows).toEqual([
       { headword: 'deploy', pos: 'verb', gloss_vi: '', definition_en: '', example_en_1: '', example_en_2: '', example_en_3: '',
-        topics: '', accepted_forms: '', context_label: '', _level: 'B1' },
+        topics: '', accepted_forms: '', context_label: '', form_of: '', inflections: '', _inflections: '', _level: 'B1' },
       { headword: 'happy', pos: 'adjective', gloss_vi: '', definition_en: '', example_en_1: '', example_en_2: '', example_en_3: '',
-        topics: '', accepted_forms: '', context_label: '', _level: 'A1' },
+        topics: '', accepted_forms: '', context_label: '', form_of: '', inflections: '', _inflections: '', _level: 'A1' },
       { headword: 'retired', pos: 'adjective', gloss_vi: '', definition_en: '', example_en_1: '', example_en_2: '', example_en_3: '',
-        topics: '', accepted_forms: '', context_label: '', _level: 'B2' },
+        topics: '', accepted_forms: '', context_label: '', form_of: '', inflections: '', _inflections: '', _level: 'B2' },
     ]);
   });
 

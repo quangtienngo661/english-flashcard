@@ -15,7 +15,7 @@ const id = '12345678-abcd-4abc-8abc-123456789abc';
 const row: ExportRow = {
   headword: 'analyze/analyse', pos: 'verb', gloss_vi: '=HYPERLINK("x")', definition_en: 'Analyze.',
   example_en_1: 'Analyze this.', example_en_2: '', example_en_3: '', topics: 'business', accepted_forms: '',
-  context_label: null, sense_id: id, revision: 2, _status: 'draft', _level: 'B1',
+  context_label: null, form_of: '', inflections: '', sense_id: id, revision: 2, _status: 'draft', _level: 'B1', _inflections: '',
 };
 
 // Controller/adapter unit test only: replace service boundaries, never instantiate a DB or queue.

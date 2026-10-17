@@ -7,12 +7,13 @@ import { csvRow, toCsv } from '../upload/csv-writer.js';
 
 const columns: Array<keyof ExportRow> = [
   'headword', 'pos', 'gloss_vi', 'definition_en', 'example_en_1', 'example_en_2', 'example_en_3',
-  'topics', 'accepted_forms', 'context_label', 'sense_id', 'revision', '_status', '_level',
+  'topics', 'accepted_forms', 'context_label', 'form_of', 'inflections', 'sense_id', 'revision', '_status', '_level',
+  '_inflections',
 ];
 // Same content columns as the sense export, left empty for staff to fill; no sense_id, so uploads create senses.
 const entryColumns = [
   'headword', 'pos', 'gloss_vi', 'definition_en', 'example_en_1', 'example_en_2', 'example_en_3',
-  'topics', 'accepted_forms', 'context_label', '_level',
+  'topics', 'accepted_forms', 'context_label', 'form_of', 'inflections', '_level', '_inflections',
 ] as const;
 
 /** Respect writable backpressure and stop if the client disconnects while waiting. */

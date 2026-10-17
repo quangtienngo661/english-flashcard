@@ -6,6 +6,8 @@ const identityAndSelectorColumns = new Set([
   'sense_id',
   'revision',
   'replace_meaning',
+  // Entry level (D29): every row of one entry carries the same value or leaves it empty.
+  'inflections',
 ]);
 const levelColumns = new Set(['cefr', 'level']);
 const contentColumns = new Set([
@@ -16,6 +18,7 @@ const contentColumns = new Set([
   'example_en_3',
   'topics',
   'accepted_forms',
+  'form_of',
 ]);
 const extraColumns = new Set([
   'coreinventory 1',

@@ -1,9 +1,9 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { ContentService, MAX_EXAMPLES, normalizeContent } from '../../content/index.js';
+import { ContentService, MAX_EXAMPLES, normalizeContent, OWNER_SOURCE_ID, type FormOf } from '../../content/index.js';
 import type { Prisma } from '../../generated/prisma/client.js';
 import type { JobContext } from '../jobs/job-types.js';
 import type { RowError } from '../upload/row-errors.js';
-import { levelKey, type NormalizedRow } from '../upload/row-normalizer.js';
+import { inflectionKey, levelKey, type NormalizedRow } from '../upload/row-normalizer.js';
 import { recordBatchRecord } from './batch-records.js';
 
 export class RowRejected extends Error {
@@ -39,6 +39,11 @@ export async function recordRejected(
   });
 }
 
+function sameForms(current: Array<{ form: string; kind: string }>, next: Array<{ form: string; kind: string }>): boolean {
+  const key = (rows: Array<{ form: string; kind: string }>) => rows.map(({ kind, form }) => `${kind}\0${form}`).sort().join('\n');
+  return current.length === next.length && key(current) === key(next);
+}
+
 @Injectable()
 export class ImportRowProcessor {
   constructor(@Inject(ContentService) private readonly content: ContentService) {}
@@ -50,11 +55,13 @@ export class ImportRowProcessor {
         let outcome: 'created' | 'updated' | 'unchanged' = changes.entryCreated ? 'created'
           : changes.variantsAdded || changes.levelAdded ? 'updated' : 'unchanged';
         const warnings: string[] = [];
+        const formOf = await this.resolveFormOf(tx, row);
         if (row.content !== null) {
           // JobContext carries lease metadata only. The batch id is its owning job's id.
           const actor = await tx.backgroundJob.findUniqueOrThrow({ where: { id: batch.id }, select: { createdBy: true } });
           const result = await this.content.importContent(tx, {
-            entryId: changes.entryId, lemma: row.lemma, content: row.content, senseId: row.senseId,
+            entryId: changes.entryId, lemma: row.lemma,
+            content: formOf === undefined ? row.content : { ...row.content, formOf }, senseId: row.senseId,
             revision: row.revision, contextLabel: row.contextLabel, replaceMeaning: row.replaceMeaning, actorId: actor.createdBy,
           });
           if (result.kind === 'rejected') throw new RowRejected(await this.contentErrors(tx, row, result.codes));
@@ -69,6 +76,10 @@ export class ImportRowProcessor {
                 warnings.push(`Dòng ${row.rowNumber}: bỏ chủ đề đã ẩn ${JSON.stringify(topic)} được kế thừa từ revision trước.`);
               }
             }
+            if (formOf) {
+              const derived = await this.content.addDerivedLevel(tx, changes.entryId, formOf.entryId);
+              if (derived) await recordBatchRecord(tx, { batchId: batch.id, recordType: 'level', recordId: derived.id });
+            }
             // Include revision 1 too: revert removes revisions before deleting an empty sense.
             await recordBatchRecord(tx, { batchId: batch.id, recordType: 'revision', recordId: result.revisionId,
               ...(result.kind === 'new_revision' && result.supersededRevisionId !== null
@@ -78,6 +89,19 @@ export class ImportRowProcessor {
           }
         }
 
+        if (row.inflections !== null) {
+          const current = await tx.entryInflection.findMany({ where: { entryId: changes.entryId }, select: { form: true, kind: true, source: true } });
+          // Unchanged when the entry already holds exactly this reviewed set.
+          const same = current.every(({ source }) => source === 'reviewed') && sameForms(current, row.inflections);
+          if (!same) {
+            await this.content.replaceInflections(tx, changes.entryId, 'reviewed', row.inflections);
+            if (outcome !== 'created') outcome = 'updated';
+          }
+          const { key, hash } = inflectionKey(row);
+          await tx.importRowKey.createMany({ data: [{
+            kind: 'inflection', sourceId: OWNER_SOURCE_ID, rowKey: key, contentHash: hash, batchId: batch.id,
+          }], skipDuplicates: true });
+        }
         if (row.level !== null && batch.levelSourceId !== null) {
           const { key, hash } = levelKey(row, batch.levelSourceId);
           await tx.importRowKey.createMany({ data: [{
@@ -95,6 +119,17 @@ export class ImportRowProcessor {
       // In particular, LeaseLostError must reach the existing job runner unchanged.
       throw error;
     }
+  }
+
+  /** undefined keeps the sense's link, null clears it; a named base must be a catalog entry. */
+  private async resolveFormOf(tx: Prisma.TransactionClient, row: NormalizedRow): Promise<FormOf | null | undefined> {
+    if (row.formOf === null) return undefined;
+    if (row.formOf === 'clear') return null;
+    const { lemma, pos, kind } = row.formOf;
+    const base = await tx.entry.findFirst({ where: { scope: 'catalog', language: 'en', lemma, pos }, select: { id: true } });
+    if (!base) throw new RowRejected([{ code: 'form-of-not-found',
+      message: `Form_of trỏ tới ${JSON.stringify(lemma)} (${pos}), nhưng catalog chưa có entry này. Nhập từ gốc trước hoặc sửa ô form_of.` }]);
+    return { entryId: base.id, kind };
   }
 
   private async contentErrors(tx: Prisma.TransactionClient, row: NormalizedRow, codes: ContentRejectionCode[]): Promise<RowError[]> {

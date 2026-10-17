@@ -15,6 +15,10 @@ export type RowErrorCode =
   | 'open-draft-conflict'
   | 'gloss-changed'
   | 'duplicate-key-in-file'
-  | 'too-many-examples';
+  | 'too-many-examples'
+  | 'invalid-inflection'
+  | 'invalid-form-of'
+  | 'form-of-not-found'
+  | 'inflections-differ-in-file';
 
 export type RowError = { code: RowErrorCode; message: string };
