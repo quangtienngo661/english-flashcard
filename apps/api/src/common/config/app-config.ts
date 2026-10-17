@@ -15,7 +15,8 @@ export type RateLimitRuleName =
   | 'auth.logout.ip'
   | 'auth.reset.ip'
   | 'mail.ip.daily'
-  | 'user.write';
+  | 'user.write'
+  | 'learning.review';
 
 export interface RateLimitRuleConfig {
   by: 'user' | 'ip' | 'email' | 'chain';
@@ -70,6 +71,12 @@ export interface AppConfig {
     jobBackoffMs: number;
     rowRetryBaseMs: number;
   };
+  reminders: {
+    /** How often the worker's reminder tick runs (design 8.1: every 15 minutes). */
+    tickSeconds: number;
+    /** The worker process starts the reminder scheduler. Tests turn it off unless they test reminders. */
+    runScheduler: boolean;
+  };
   limits: Record<RateLimitRuleName, RateLimitRuleConfig>;
 }
 
@@ -86,6 +93,8 @@ export const DEFAULT_LIMITS: Record<RateLimitRuleName, RateLimitRuleConfig> = {
   'auth.reset.ip': { by: 'ip', max: 20, windowSeconds: 3600 },
   'mail.ip.daily': { by: 'ip', max: 20, windowSeconds: 86400 },
   'user.write': { by: 'user', max: 30, windowSeconds: 60 },
+  // Flashcard answers: a fast session goes well past 30 a minute.
+  'learning.review': { by: 'user', max: 120, windowSeconds: 60 },
 };
 
 const nonEmpty = z.string().trim().min(1);
@@ -171,6 +180,7 @@ const envSchema = z.object({
   JOB_QUEUE_PREFIX: nonEmpty.default('wordmet'),
   IMPORT_JOB_BACKOFF_MS: positiveInteger.default(5_000),
   IMPORT_ROW_RETRY_BASE_MS: positiveInteger.default(200),
+  REMINDER_TICK_SECONDS: positiveInteger.default(900),
 });
 
 export function loadConfig(env: NodeJS.ProcessEnv): AppConfig {
@@ -224,6 +234,7 @@ export function loadConfig(env: NodeJS.ProcessEnv): AppConfig {
       jobBackoffMs: values.IMPORT_JOB_BACKOFF_MS,
       rowRetryBaseMs: values.IMPORT_ROW_RETRY_BASE_MS,
     },
+    reminders: { tickSeconds: values.REMINDER_TICK_SECONDS, runScheduler: true },
     limits: structuredClone(DEFAULT_LIMITS),
   };
 }

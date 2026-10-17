@@ -1,0 +1,76 @@
+// Learning (Bước 3, design 5.1). user_id and sense_id are plain UUIDs: no relation crosses a module boundary.
+// There is no default group (D43): a learner starts with none.
+model LearningGroup {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  name      String   @db.VarChar(60)
+  // Lower case of the NFC-trimmed name: "Food" and "food" are one name.
+  nameKey   String   @map("name_key")
+  version   Int      @default(0)
+  createdAt DateTime @map("created_at") @db.Timestamptz
+  updatedAt DateTime @map("updated_at") @db.Timestamptz
+
+  items GroupItem[]
+
+  @@unique([userId, nameKey])
+  @@map("learning_groups")
+}
+
+// One schedule per (learner, sense), however many groups hold it.
+model LearningItem {
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId         String    @map("user_id") @db.Uuid
+  senseId        String    @map("sense_id") @db.Uuid
+  level          Int
+  // A calendar date in the learner's time zone; it does not move when the zone changes (B3E1).
+  dueDate        DateTime  @map("due_date") @db.Date
+  priority       Boolean   @default(false)
+  lastReviewedAt DateTime? @map("last_reviewed_at") @db.Timestamptz
+  createdAt      DateTime  @map("created_at") @db.Timestamptz
+
+  groups GroupItem[]
+
+  @@unique([userId, senseId])
+  @@map("learning_items")
+}
+
+model GroupItem {
+  groupId String   @map("group_id") @db.Uuid
+  itemId  String   @map("item_id") @db.Uuid
+  addedAt DateTime @map("added_at") @db.Timestamptz
+
+  group LearningGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  item  LearningItem  @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  @@id([groupId, itemId])
+  @@index([itemId])
+  @@map("group_items")
+}
+
+// Append-only (K14). item_id is not a foreign key: removing an item keeps its log (D33).
+// The partial unique index on (user_id, review_id) lives in the migration.
+model LearningLogEntry {
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId        String    @map("user_id") @db.Uuid
+  itemId        String    @map("item_id") @db.Uuid
+  senseId       String    @map("sense_id") @db.Uuid
+  groupId       String?   @map("group_id") @db.Uuid
+  kind          String
+  answer        String?
+  rating        String?
+  levelBefore   Int?      @map("level_before")
+  levelAfter    Int?      @map("level_after")
+  dueBefore     DateTime? @map("due_before") @db.Date
+  dueAfter      DateTime? @map("due_after") @db.Date
+  wasDue        Boolean?  @map("was_due")
+  daysSinceLast Int?      @map("days_since_last")
+  reviewId      String?   @map("review_id") @db.Uuid
+  // The section of the queue the card was in when answered, so caps can skip priority cards.
+  section       String?
+  localDate     DateTime  @map("local_date") @db.Date
+  at            DateTime  @db.Timestamptz
+
+  @@index([userId, groupId, localDate])
+  @@index([userId, itemId])
+  @@map("learning_log")
+}

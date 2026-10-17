@@ -17,3 +17,6 @@ export { normalizeText, normalizeLemma, splitHeadword } from './catalog/normaliz
 export type { SourceView } from './sources/sources.service.js';
 export { ContentRuleError, contentHash, mergeContent, normalizeContent, type FormOf, type RevisionContent } from './senses/revision-content.js';
 export type { PublishItem, PublishItemResult, PublishViolation, QuickPublishResult, SenseStateResult } from './senses/publish.service.js';
+export { CurrentLearner, LearnerContent } from './learner/learner.decorator.js';
+export type { Learner } from './learner/learner-content.guard.js';
+export { visibleSenseCondition } from './learner/visible-senses.js';
