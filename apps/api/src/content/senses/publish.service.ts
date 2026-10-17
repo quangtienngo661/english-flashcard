@@ -6,7 +6,7 @@ import { EntriesService } from '../catalog/entries.service.js';
 import { ContentRuleError } from './revision-content.js';
 import type { SaveDraftResult } from './senses.service.js';
 
-export type PublishViolation = 'gloss-missing' | 'example-missing' | 'level-missing' | 'topic-missing';
+export type PublishViolation = 'gloss-missing' | 'example-missing' | 'level-missing';
 export type PublishItemResult = { outcome: 'published' | 'already_published' } | {
   outcome: 'refused'; reason: 'stale-revision' | 'publish-incomplete' | 'sense-not-found' | 'sense-retired';
   violations?: PublishViolation[];
@@ -24,7 +24,7 @@ const transactionOptions = { timeout: 10_000, maxWait: 5_000 };
 /** Shared by publishing and staff's unpublishable list; callers resolve catalog facts. */
 export function publishViolations(
   revision: { texts: readonly { language: string; kind: string; text: string }[]; examples: readonly string[] },
-  hasLevel: boolean, hasActiveTopic: boolean,
+  hasLevel: boolean,
 ): PublishViolation[] {
   const violations: PublishViolation[] = [];
   if (!revision.texts.some(({ language, kind, text }) => language === 'vi' && kind === 'gloss' && text.trim())) {
@@ -32,7 +32,6 @@ export function publishViolations(
   }
   if (!revision.examples.some((example) => example.trim())) violations.push('example-missing');
   if (!hasLevel) violations.push('level-missing');
-  if (!hasActiveTopic) violations.push('topic-missing');
   return violations;
 }
 
@@ -77,7 +76,7 @@ export class PublishService {
 
   private async writeSense<T>(senseId: string, write: (tx: Prisma.TransactionClient) => Promise<T>): Promise<T | null> {
     // Read only the immutable entry key outside the transaction; re-read mutable state after locking.
-    const sense = await this.prisma.sense.findUnique({ where: { id: senseId }, select: {
+    const sense = await this.prisma.sense.findFirst({ where: { id: senseId, entry: { scope: 'catalog' } }, select: {
       entry: { select: { lemma: true, pos: true } },
     } });
     if (!sense) return null;
@@ -98,8 +97,7 @@ export class PublishService {
     if (sense.state === 'open' && sense.liveRevisionId === revision.id) return { outcome: 'already_published' };
 
     const hasLevel = await tx.entryLevel.findFirst({ where: { entryId: sense.entryId }, select: { id: true } });
-    const hasActiveTopic = await tx.topic.findFirst({ where: { code: { in: revision.topicCodes }, archivedAt: null }, select: { code: true } });
-    const violations = publishViolations(revision, hasLevel !== null, hasActiveTopic !== null);
+    const violations = publishViolations(revision, hasLevel !== null);
     if (violations.length) return { outcome: 'refused', reason: 'publish-incomplete', violations };
 
     // This must precede the replacement's live pointer: senses_entry_label_live_key is not deferred.

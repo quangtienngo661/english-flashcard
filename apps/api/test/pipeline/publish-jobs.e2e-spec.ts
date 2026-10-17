@@ -219,14 +219,14 @@ describe('publish jobs (e2e, isolated database, direct lease contexts)', () => {
     expect(await ctx.prisma.senseRevision.count({ where: { status: 'published' } })).toBe(1_201);
   }, 300_000);
 
-  it('senses not ready at snapshot time are counted notReady and never published', async () => {
+  it('senses not ready at snapshot time are counted notReady and never published (no topic or an archived one is ready, D7)', async () => {
     const good = await ready(ctx, actorId);
+    const noTopic = await ready(ctx, actorId, { content: { topicCodes: [] } });
+    const archivedTopic = await ready(ctx, actorId, { content: { topicCodes: ['technology'] } });
     const missing = [
       await ready(ctx, actorId, { content: { glossVi: null } }),
       await ready(ctx, actorId, { content: { examplesEn: [] } }),
       await ready(ctx, actorId, { level: false }),
-      await ready(ctx, actorId, { content: { topicCodes: [] } }),
-      await ready(ctx, actorId, { content: { topicCodes: ['technology'] } }),
     ];
     await ctx.prisma.topic.update({ where: { code: 'technology' }, data: { archivedAt: ctx.clock.now() } });
     const published = await ready(ctx, actorId);
@@ -236,13 +236,13 @@ describe('publish jobs (e2e, isolated database, direct lease contexts)', () => {
     const accepted = await create();
     expect(accepted.status).toBe(202);
     const id = accepted.body.job_id as string;
-    expect((await read(id)).body).toMatchObject({ snapshot_count: 1, not_ready_count: 5 });
-    expect((await items(id)).map(({ senseId }) => senseId)).toEqual([good.senseId]);
+    expect((await read(id)).body).toMatchObject({ snapshot_count: 3, not_ready_count: 3 });
+    expect((await items(id)).map(({ senseId }) => senseId).sort()).toEqual([good.senseId, noTopic.senseId, archivedTopic.senseId].sort());
     // Becoming ready later does not add an item to the immutable snapshot.
     await edit(missing[0], { glossVi: 'Filled after snapshot.' });
     expect(await finish(id)).toBe('succeeded');
     for (const sense of missing) expect(await ctx.prisma.sense.findUniqueOrThrow({ where: { id: sense.senseId } })).toMatchObject({ liveRevisionId: null });
-    expect((await read(id)).body).toMatchObject({ not_ready_count: 5, counters: { refused: 0, published: 1 } });
+    expect((await read(id)).body).toMatchObject({ not_ready_count: 3, counters: { refused: 0, published: 3 } });
   });
 
   it('route order: GET senses/publish-jobs/:id is not captured by senses/:id', async () => {

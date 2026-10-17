@@ -1,6 +1,6 @@
 import type { Prisma } from '../../generated/prisma/client.js';
 import { normalizeText } from '../catalog/normalize.js';
-import { ContentRuleError, contentHash, mergeContent, normalizeContent, type RevisionContent } from './revision-content.js';
+import { ContentRuleError, contentHash, mergeContent, normalizeContent, revisionFormOf, type RevisionContent } from './revision-content.js';
 import type { SensesService, TopicLookup } from './senses.service.js';
 
 export type ImportContentResult =
@@ -29,6 +29,7 @@ function readContent(revision: RevisionRow): RevisionContent {
     glossVi: revision.texts.find(({ language, kind }) => language === 'vi' && kind === 'gloss')?.text ?? null,
     definitionEn: revision.texts.find(({ language, kind }) => language === 'en' && kind === 'definition')?.text ?? null,
     examplesEn: revision.examples, topicCodes: revision.topicCodes, acceptedForms: revision.acceptedForms,
+    ...revisionFormOf(revision),
   };
 }
 
@@ -47,7 +48,7 @@ export async function importContent(
   try {
     const contextLabel = input.contextLabel === null ? null : normalizeText(input.contextLabel) || null;
     let sense = input.senseId !== null
-      ? await tx.sense.findUnique({ where: { id: input.senseId }, include: senseInclude })
+      ? await tx.sense.findFirst({ where: { id: input.senseId, entry: { scope: 'catalog' } }, include: senseInclude })
       : await tx.sense.findFirst({ where: {
         entryId: input.entryId, contextLabel, state: { not: 'retired' },
         OR: [{ replacesSenseId: null }, { liveRevisionId: { not: null } }],

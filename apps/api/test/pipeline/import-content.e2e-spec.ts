@@ -17,7 +17,8 @@ const full: RevisionContent = {
 };
 function row(input: Partial<NormalizedRow> = {}): NormalizedRow {
   return { rowNumber: 2, lemma: 'bank', pos: 'noun', variants: [], level: null, levelExtra: null,
-    content: { ...full }, senseId: null, revision: null, contextLabel: null, replaceMeaning: false, ...input };
+    content: { ...full }, senseId: null, revision: null, contextLabel: null, replaceMeaning: false,
+    inflections: null, formOf: null, ...input };
 }
 type EntryKey = { id: string; lemma: string; pos: string };
 type ImportInput = Parameters<ContentService['importContent']>[1];

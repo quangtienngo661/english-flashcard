@@ -18,3 +18,17 @@ export function isFunctionWordPos(pos: string): boolean {
 
 export const OWNER_SOURCE_ID = '00000000-0000-4000-8000-000000000001';
 export const MAX_EXAMPLES = 3;
+
+export const INFLECTION_KINDS = [
+  'third_person', 'present_participle', 'past', 'past_participle', 'plural', 'comparative', 'superlative',
+] as const;
+export type InflectionKind = (typeof INFLECTION_KINDS)[number];
+
+// Learner limits; Bước 5 turns these into tier quotas.
+export const PRIVATE_WORDS_MAX = 1_000;
+export const MEANING_MAX = 300;
+export const LEMMA_MAX = 100;
+export const SENTENCE_MAX = 300;
+export const SENTENCES_PER_SENSE_MAX = 5;
+/** Stored as pos when a learner gives none; never valid for catalog rows. */
+export const PRIVATE_POS_UNSET = 'unspecified';

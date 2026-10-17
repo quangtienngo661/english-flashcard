@@ -149,7 +149,7 @@ describe('admin permissions (e2e, isolated database)', () => {
     expect((await ctx.prisma.user.findUniqueOrThrow({ where: { id: editor.userId } })).staffRole).toBe('editor');
     expect((await ctx.prisma.user.findUniqueOrThrow({ where: { id: admin.userId } })).staffRole).toBe('admin');
     expect((await ctx.prisma.sessionChain.findUniqueOrThrow({ where: { id: revokedSession.sessionChainId } })).revokedAt).toEqual(ctx.clock.now());
-  });
+  }, 90_000); // Walks every admin route × role; each new admin route adds requests, so 90 s instead of the default 30 s.
 
   it('B2#67: GET /v1/me lists content.edit, content.publish, content.import and taxonomy.manage for admin and for editor, and settings.manage for admin only', async () => {
     for (const staffRole of ['admin', 'editor'] as const) {

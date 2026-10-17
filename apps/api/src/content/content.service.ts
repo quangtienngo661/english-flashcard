@@ -1,12 +1,18 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { PRISMA_CLIENT } from '../common/db/prisma.module.js';
 import type { Prisma, PrismaClient } from '../generated/prisma/client.js';
-import { AdminCatalogQueries, type ExportRow, type LatestRevision, type ScopeRecord } from './catalog/admin-catalog.queries.js';
+import { AdminCatalogQueries, type EntryExportRow, type ExportRow, type LatestRevision, type ScopeRecord } from './catalog/admin-catalog.queries.js';
 import type { SenseFilter } from './catalog/sense-filters.js';
 import { EntriesService, type EnsureEntryInput, type EnsureEntryResult, type VariantInput } from './catalog/entries.service.js';
 import { LevelsService, type EntryLevelView, type ImportedLevelInput } from './catalog/levels.service.js';
 import { revertRecords, type RevertRecord, type RevertReport } from './catalog/revert.service.js';
 import type { Level } from './content.constants.js';
+import {
+  PrivateWordsService, type CreatePrivateSenseInput, type CreatePrivateSenseResult, type PrivateWordPatch,
+} from './private/private-words.service.js';
+import { SentencesService, type Sentence } from './sentences/sentences.service.js';
+import { WordsService, type WordSense } from './words/words.service.js';
+import { InflectionsService, type EntryByForm, type InflectionInput, type InflectionSource } from './inflections/inflections.service.js';
 import { SourcesService, isSourceComplete, type SourceView } from './sources/sources.service.js';
 import { SensesService, type CreateSenseInput, type SaveDraftInput, type SaveDraftResult, type MarkRevisionItem, type MarkRevisionResult } from './senses/senses.service.js';
 import { importContent, type ImportContentInput, type ImportContentResult } from './senses/import-content.js';
@@ -22,6 +28,10 @@ export class ContentService {
     @Inject(SensesService) private readonly senses: SensesService,
     @Inject(PublishService) private readonly publish: PublishService,
     @Inject(AdminCatalogQueries) private readonly queries: AdminCatalogQueries,
+    @Inject(InflectionsService) private readonly inflections: InflectionsService,
+    @Inject(PrivateWordsService) private readonly privateWords: PrivateWordsService,
+    @Inject(SentencesService) private readonly sentences: SentencesService,
+    @Inject(WordsService) private readonly words: WordsService,
   ) {}
 
   getSource(id: string): Promise<SourceView | null> {
@@ -46,6 +56,10 @@ export class ContentService {
 
   addImportedLevel(tx: Prisma.TransactionClient, input: ImportedLevelInput): Promise<{ created: boolean; id: string }> {
     return this.levels.addImportedLevel(tx, input);
+  }
+
+  addDerivedLevel(tx: Prisma.TransactionClient, entryId: string, baseEntryId: string): Promise<{ id: string } | null> {
+    return this.levels.addDerivedLevel(tx, entryId, baseEntryId);
   }
 
   setEditorialLevel(tx: Prisma.TransactionClient, entryId: string, level: Level): Promise<void> {
@@ -114,7 +128,57 @@ export class ContentService {
     return this.queries.exportSenses(filter, limit);
   }
 
+  listEntriesWithoutSense(filter: { level?: Level }, limit: number): Promise<{ rows: EntryExportRow[] } | { tooMany: true }> {
+    return this.queries.exportEntriesWithoutSense(filter, limit);
+  }
+
   resolveBatchRecordOwners(records: ScopeRecord[]): Promise<{ entryIds: string[]; senseIds: string[] }> {
     return this.queries.resolveBatchRecordOwners(records);
+  }
+
+  replaceInflections(tx: Prisma.TransactionClient, entryId: string, source: InflectionSource, forms: InflectionInput[]): Promise<void> {
+    return this.inflections.replaceInflections(tx, entryId, source, forms);
+  }
+
+  entriesByForm(formKey: string, viewerId: string): Promise<EntryByForm[]> {
+    return this.inflections.entriesByForm(formKey, viewerId);
+  }
+
+  createPrivateSense(tx: Prisma.TransactionClient, input: CreatePrivateSenseInput): Promise<CreatePrivateSenseResult> {
+    return this.privateWords.createPrivateSense(tx, input);
+  }
+
+  updatePrivateWord(tx: Prisma.TransactionClient, ownerId: string, entryId: string, patch: PrivateWordPatch): Promise<void> {
+    return this.privateWords.updatePrivateWord(tx, ownerId, entryId, patch);
+  }
+
+  deletePrivateEntryContent(tx: Prisma.TransactionClient, ownerId: string, entryId: string): Promise<{ senseIds: string[] }> {
+    return this.privateWords.deletePrivateEntryContent(tx, ownerId, entryId);
+  }
+
+  addSentence(tx: Prisma.TransactionClient, input: { userId: string; senseId: string; text: string }): Promise<Sentence> {
+    return this.sentences.addSentence(tx, input);
+  }
+
+  listSentences(userId: string, senseIds: string[]): Promise<Map<string, Sentence[]>> {
+    return this.sentences.listSentences(userId, senseIds);
+  }
+
+  deleteSentence(userId: string, id: string): Promise<boolean> {
+    return this.sentences.deleteSentence(userId, id);
+  }
+
+  /** Learner cards: visible senses only (catalog published or the viewer's own), in the viewer's language. */
+  cardContent(viewerId: string, senseIds: string[], nativeLanguage: 'vi' | 'en'): Promise<Map<string, WordSense>> {
+    return this.words.cardContent(viewerId, senseIds, nativeLanguage);
+  }
+
+  visibleSenseIds(viewerId: string, senseIds: string[]): Promise<Set<string>> {
+    return this.privateWords.visibleSenseIds(viewerId, senseIds);
+  }
+
+  bulkCandidates(filter: { level?: Level; topic?: string; pos?: string }, limit: number):
+    Promise<{ senseIds: string[]; skippedFunctionWords: number }> {
+    return this.privateWords.bulkCandidates(filter, limit);
   }
 }

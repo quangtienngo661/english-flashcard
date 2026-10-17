@@ -29,7 +29,7 @@ async function writeEntry(
 ): Promise<void> {
   // Resolve the immutable key before opening the transaction, so its first operation is the lock.
   // Each write method checks that the entry still exists after acquiring that lock.
-  const entry = await prisma.entry.findUnique({ where: { id: entryId }, select: { lemma: true, pos: true } });
+  const entry = await prisma.entry.findFirst({ where: { id: entryId, scope: 'catalog' }, select: { lemma: true, pos: true } });
   if (!entry) throw new ProblemDetailsException({ status: 404, title: 'Not found', type: 'not-found' });
   await prisma.$transaction(async (tx) => {
     await content.lockEntryKey(tx, entry.lemma, entry.pos);

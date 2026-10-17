@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import { normalizeText } from '../catalog/normalize.js';
-import { MAX_EXAMPLES } from '../content.constants.js';
+import { MAX_EXAMPLES, type InflectionKind } from '../content.constants.js';
 
 export class ContentRuleError extends Error {
   constructor(readonly code: string) {
@@ -9,13 +9,22 @@ export class ContentRuleError extends Error {
   }
 }
 
+export type FormOf = { entryId: string; kind: InflectionKind };
 export type RevisionContent = {
   glossVi: string | null;
   definitionEn: string | null;
   examplesEn: string[];
   topicCodes: string[];
   acceptedForms: string[];
+  /** "This sense is a form of <entry>" (D29). Absent and null both mean no link. */
+  formOf?: FormOf | null;
 };
+
+/** Reads a revision row's form-of columns into RevisionContent shape (spread it into readContent results). */
+export function revisionFormOf(revision: { formOfEntryId: string | null; formKind: string | null }): Pick<RevisionContent, 'formOf'> {
+  return revision.formOfEntryId && revision.formKind
+    ? { formOf: { entryId: revision.formOfEntryId, kind: revision.formKind as InflectionKind } } : {};
+}
 
 function text(value: string): string {
   const normalized = normalizeText(value);
@@ -48,6 +57,7 @@ export function normalizeContent(partial: Partial<RevisionContent>, lemma: strin
       return true;
     });
   }
+  if (partial.formOf !== undefined) result.formOf = partial.formOf;
   return result;
 }
 
@@ -58,6 +68,7 @@ export function mergeContent(base: RevisionContent, patch: Partial<RevisionConte
     examplesEn: [...(patch.examplesEn ?? base.examplesEn)],
     topicCodes: [...(patch.topicCodes ?? base.topicCodes)],
     acceptedForms: [...(patch.acceptedForms ?? base.acceptedForms)],
+    ...(patch.formOf !== undefined ? { formOf: patch.formOf } : base.formOf !== undefined ? { formOf: base.formOf } : {}),
   };
 }
 
@@ -65,5 +76,7 @@ export function contentHash(content: RevisionContent): string {
   return createHash('sha256').update(JSON.stringify({
     glossVi: content.glossVi, definitionEn: content.definitionEn, examplesEn: content.examplesEn,
     topicCodes: [...new Set(content.topicCodes)].sort(), acceptedForms: [...new Set(content.acceptedForms)].sort(),
+    // Only a set link joins the hash, so every revision stored before D29 keeps its hash.
+    ...(content.formOf ? { formOf: { entryId: content.formOf.entryId, kind: content.formOf.kind } } : {}),
   })).digest('hex');
 }

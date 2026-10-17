@@ -5,7 +5,7 @@ import { IdempotencyInterceptor } from '../common/idempotency/idempotency.interc
 import { ContentModule } from '../content/content.module.js';
 import { IdentityModule } from '../identity/identity.module.js';
 import { ExportService } from './export/export.service.js';
-import { SensesExportController } from './export/senses-export.controller.js';
+import { EntriesExportController, SensesExportController } from './export/senses-export.controller.js';
 import { ImportBatchHandler } from './import/import-batch.handler.js';
 import { ImportFileCleanupService } from './import/import-file-cleanup.service.js';
 import { ImportRowProcessor } from './import/row-processor.js';
@@ -33,7 +33,7 @@ import { UploadsService } from './upload/uploads.service.js';
       }),
     }),
   ],
-  controllers: [PublishJobsController, UploadsController, UploadsReadController, SensesExportController],
+  controllers: [PublishJobsController, UploadsController, UploadsReadController, SensesExportController, EntriesExportController],
   providers: [
     BackgroundJobsService, JobQueueService, JobHandlerRegistry, JobRunnerService, JobReconcilerService,
     UploadsService, MulterExceptionFilter, IdempotencyInterceptor,

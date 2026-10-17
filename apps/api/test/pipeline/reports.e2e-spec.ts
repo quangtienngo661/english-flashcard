@@ -167,7 +167,7 @@ describe('batch reports (e2e, real workers and isolated database)', () => {
     // batter noun C1 already exists at record 605; remonstrate verb C2 is new.
     expect(await ctx.prisma.importRowOutcome.findMany({ where: { batchId: fixedId }, orderBy: { rowNumber: 'asc' } }))
       .toMatchObject([{ rowNumber: 2, outcome: 'unchanged' }, { rowNumber: 3, outcome: 'created' }]);
-    expect(await ctx.prisma.entry.findUniqueOrThrow({ where: { language_lemma_pos: { language: 'en', lemma: 'remonstrate', pos: 'verb' } },
+    expect(await ctx.prisma.entry.findFirstOrThrow({ where: { language: 'en', lemma: 'remonstrate', pos: 'verb', scope: 'catalog' },
       include: { levels: true } })).toMatchObject({ levels: [expect.objectContaining({ sourceId, level: 'C2' })] });
     expect(parse(await download(fixedId), { bom: true })).toEqual([[...downloaded.rawHeaders, '_row', '_error']]);
   }, 240_000);

@@ -6,6 +6,14 @@ import { AdminEntriesController, EntryFunctionWordController } from './catalog/a
 import { EntriesService } from './catalog/entries.service.js';
 import { LevelsService } from './catalog/levels.service.js';
 import { ContentService } from './content.service.js';
+import { InflectionsService } from './inflections/inflections.service.js';
+import { MyWordsController } from './private/my-words.controller.js';
+import { PrivateWordsService } from './private/private-words.service.js';
+import { SentencesController } from './sentences/sentences.controller.js';
+import { SentencesService } from './sentences/sentences.service.js';
+import { WordsController } from './words/words.controller.js';
+import { WordsService } from './words/words.service.js';
+import { IdempotencyInterceptor } from '../common/idempotency/idempotency.interceptor.js';
 import { LearnerContentController } from './learner/learner-content.controller.js';
 import { LearnerContentGuard } from './learner/learner-content.guard.js';
 import { LearnerContentService } from './learner/learner-content.service.js';
@@ -23,9 +31,10 @@ import { TopicsService } from './taxonomy/topics.service.js';
   controllers: [
     SourcesController, PublicSourcesController, TopicsController, LearnerTopicsController,
     AdminEntriesController, EntryFunctionWordController, AdminSensesController, BatchEntriesController,
-    AdminPublishController, AdminCatalogController, LearnerContentController,
+    AdminPublishController, AdminCatalogController, LearnerContentController, MyWordsController, SentencesController, WordsController,
   ],
-  providers: [ContentService, SourcesService, TopicsService, LearnerContentGuard, LearnerContentService, EntriesService, LevelsService, SensesService, PublishService, AdminCatalogQueries],
+  providers: [ContentService, SourcesService, TopicsService, LearnerContentGuard, LearnerContentService, EntriesService, LevelsService, SensesService, PublishService, AdminCatalogQueries, InflectionsService,
+    PrivateWordsService, SentencesService, WordsService, IdempotencyInterceptor],
   exports: [ContentService],
 })
 export class ContentModule {}

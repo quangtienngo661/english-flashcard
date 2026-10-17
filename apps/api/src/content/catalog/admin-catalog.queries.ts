@@ -6,9 +6,9 @@ import { decodeBoundToken, encodeBoundToken } from '../../common/pagination/page
 import { ProblemDetailsException } from '../../common/problem-details/problem-details.exception.js';
 import type { Prisma, PrismaClient } from '../../generated/prisma/client.js';
 import { BATCH_SCOPE, type BatchScope } from '../batch-scope.port.js';
-import { LEVELS, VALID_POS, type Level } from '../content.constants.js';
+import { INFLECTION_KINDS, LEVELS, VALID_POS, type InflectionKind, type Level } from '../content.constants.js';
 import { publishViolations } from '../senses/publish.service.js';
-import type { RevisionContent } from '../senses/revision-content.js';
+import { revisionFormOf, type RevisionContent } from '../senses/revision-content.js';
 import type { SenseFilter } from './sense-filters.js';
 
 type PageQuery = { page_size: number; page_token?: string };
@@ -18,9 +18,10 @@ export type LatestRevision = { revisionNo: number; status: string; content: Revi
 export type ExportRow = {
   headword: string; pos: string; gloss_vi: string | null; definition_en: string | null;
   example_en_1: string; example_en_2: string; example_en_3: string;
-  topics: string; accepted_forms: string; context_label: string | null;
-  sense_id: string; revision: number; _status: string; _level: Level | null; _missing?: string;
+  topics: string; accepted_forms: string; context_label: string | null; form_of: string; inflections: string;
+  sense_id: string; revision: number; _status: string; _level: Level | null; _inflections: string; _missing?: string;
 };
+export type EntryExportRow = { headword: string; pos: string; inflections: string; _level: Level | null; _inflections: string };
 export type ScopeRecord = { type: 'entry' | 'variant' | 'level' | 'sense' | 'revision'; id: string };
 type Page<T> = { items: T[]; next_page_token: string | null };
 const cursorSchema = z.strictObject({
@@ -29,8 +30,8 @@ const cursorSchema = z.strictObject({
 });
 type Cursor = z.infer<typeof cursorSchema>;
 
-// Bước 2 contains only catalog words. Keep staff read scope centralized for future private entries.
-const catalogWhere = { language: 'en', entryType: 'word' } satisfies Prisma.EntryWhereInput;
+// Staff read scope: catalog words only; learners' private entries never reach staff reads (S6).
+const catalogWhere = { language: 'en', entryType: 'word', scope: 'catalog' } satisfies Prisma.EntryWhereInput;
 const levelInclude = { source: true } satisfies Prisma.EntryLevelInclude;
 const levelsQuery = { include: levelInclude, orderBy: [{ createdAt: 'desc' }, { id: 'asc' }] } satisfies Prisma.Entry$levelsArgs;
 const revisionsQuery = {
@@ -42,6 +43,12 @@ const entryInclude = {
 } satisfies Prisma.EntryInclude;
 const senseInclude = {
   entry: { include: { levels: levelsQuery, variants: entryInclude.variants } }, revisions: revisionsQuery,
+} satisfies Prisma.SenseInclude;
+// Exports also carry the entry's inflections and each revision's form-of base (D29).
+const inflectionsQuery = { select: { form: true, kind: true, source: true } } satisfies Prisma.Entry$inflectionsArgs;
+const exportSenseInclude = {
+  entry: { include: { levels: levelsQuery, variants: entryInclude.variants, inflections: inflectionsQuery } },
+  revisions: { ...revisionsQuery, include: { texts: true, formOf: { select: { lemma: true, pos: true } } } },
 } satisfies Prisma.SenseInclude;
 type EntryRow = Prisma.EntryGetPayload<{ include: typeof entryInclude }>;
 type SenseRow = Prisma.SenseGetPayload<{ include: typeof senseInclude }>;
@@ -86,11 +93,21 @@ function levelState(levels: LevelRow[]): { displayed_level: Level | null; confli
     conflict: !editorial && new Set(levels.map(({ level }) => level)).size > 1,
   };
 }
+/** `inflections` holds the reviewed set only (uploading an export never promotes library forms);
+ * `_inflections` shows the library set for the reviewer. Ordered by kind, then form. */
+function inflectionCells(rows: ReadonlyArray<{ form: string; kind: string; source: string }>) {
+  const format = (source: string) => rows.filter((row) => row.source === source)
+    .sort((a, b) => INFLECTION_KINDS.indexOf(a.kind as InflectionKind) - INFLECTION_KINDS.indexOf(b.kind as InflectionKind)
+      || (a.form < b.form ? -1 : a.form > b.form ? 1 : 0))
+    .map(({ kind, form }) => `${kind}:${form}`).join('; ');
+  return { inflections: format('reviewed'), _inflections: format('library') };
+}
 function readContent(revision: RevisionRow): RevisionContent {
   return {
     glossVi: revision.texts.find(({ language, kind }) => language === 'vi' && kind === 'gloss')?.text ?? null,
     definitionEn: revision.texts.find(({ language, kind }) => language === 'en' && kind === 'definition')?.text ?? null,
     examplesEn: revision.examples, topicCodes: revision.topicCodes, acceptedForms: revision.acceptedForms,
+    ...revisionFormOf(revision),
   };
 }
 function senseSummary(sense: EntryRow['senses'][number] | SenseRow) {
@@ -126,7 +143,7 @@ function senseView(sense: SenseRow) {
   };
 }
 
-function selectedSense(row: SenseRow, query: Pick<SenseFilter, 'level' | 'topic' | 'status'>, activeTopics: Set<string>) {
+function selectedSense(row: SenseRow, query: Pick<SenseFilter, 'level' | 'topic' | 'status'>) {
   const revision = row.revisions[0];
   const view = senseView(row);
   if (query.level !== undefined && view.displayed_level !== query.level) return null;
@@ -134,7 +151,7 @@ function selectedSense(row: SenseRow, query: Pick<SenseFilter, 'level' | 'topic'
   if (query.status === 'open_draft' || query.status === 'unpublishable') {
     if (!revision || !['draft', 'reviewed'].includes(revision.status)) return null;
     if (query.status === 'unpublishable') {
-      const missing = publishViolations(revision, row.entry.levels.length > 0, revision.topicCodes.some((code) => activeTopics.has(code)));
+      const missing = publishViolations(revision, row.entry.levels.length > 0);
       return missing.length ? { ...view, missing } : null;
     }
   }
@@ -210,7 +227,7 @@ export class AdminCatalogQueries {
   }
 
   async listSenses(query: SenseListQuery) {
-    const { where, activeTopics } = await this.senseSelection(query);
+    const { where } = await this.senseSelection(query);
     const queryBinding = binding('senses', {
       sense_id: query.sense_id ?? null, status: query.status ?? null, level: query.level ?? null,
       pos: query.pos ?? null, topic: query.topic ?? null, batch_id: query.batch_id ?? null,
@@ -219,7 +236,7 @@ export class AdminCatalogQueries {
       where: { AND: [where, afterSense(after)] }, include: senseInclude,
       orderBy: [{ entry: { lemma: 'asc' } }, { entry: { pos: 'asc' } }, { id: 'asc' }], take,
     }), (row) => ({ lemma: row.entry.lemma, pos: row.entry.pos as Cursor['pos'], id: row.id }), (row) => {
-      const selected = selectedSense(row, query, activeTopics);
+      const selected = selectedSense(row, query);
       if (!selected) return null;
       // Preserve the existing list interface: missing is present only for unpublishable.
       const { missing, ...view } = selected;
@@ -227,11 +244,8 @@ export class AdminCatalogQueries {
     });
   }
 
-  private async senseSelection(query: Omit<SenseFilter, 'pos'> & { pos?: string }, db: Prisma.TransactionClient = this.prisma) {
+  private async senseSelection(query: Omit<SenseFilter, 'pos'> & { pos?: string }) {
     const ids = await this.batchIds('senses', query.batch_id);
-    const activeTopics = query.status === 'unpublishable'
-      ? new Set((await db.topic.findMany({ where: { archivedAt: null }, select: { code: true } })).map(({ code }) => code))
-      : new Set<string>();
     const where: Prisma.SenseWhereInput = {
       entry: { ...catalogWhere, ...(query.pos !== undefined ? { pos: query.pos } : {}),
         ...(query.level !== undefined ? { levels: { some: { level: query.level } } } : {}),
@@ -246,7 +260,7 @@ export class AdminCatalogQueries {
         state: { not: 'retired' }, revisions: { some: { status: { in: ['draft', 'reviewed'] } } },
       } : {}),
     };
-    return { where, activeTopics };
+    return { where };
   }
 
   /** The inverse of unpublishable over the same latest open-revision/filter selection.
@@ -256,20 +270,19 @@ export class AdminCatalogQueries {
     Promise<{ items: Array<{ senseId: string; revisionNo: number }>; notReady: number }> {
     const query = { sense_id: filter.senseIds, level: filter.level, topic: filter.topic, pos: filter.pos,
       status: 'unpublishable' as const };
-    // Keep active topics, latest revisions and levels in one database snapshot even when
+    // Keep latest revisions and levels in one database snapshot even when
     // staff edit the catalog concurrently. Subsequent changes become per-item refusals.
     return this.prisma.$transaction(async (tx) => {
-      const { where, activeTopics } = await this.senseSelection(query, tx);
+      const { where } = await this.senseSelection(query);
       const candidates = await tx.sense.findMany({ where, include: senseInclude, orderBy: { id: 'asc' } });
       const items: Array<{ senseId: string; revisionNo: number }> = [];
       let notReady = 0;
       for (const sense of candidates) {
         // open_draft applies latest revision, displayed level and latest topic checks without
         // excluding ready senses. Readiness itself uses the exact unpublishable violation helper.
-        if (!selectedSense(sense, { ...query, status: 'open_draft' }, activeTopics)) continue;
+        if (!selectedSense(sense, { ...query, status: 'open_draft' })) continue;
         const revision = sense.revisions[0];
-        const violations = publishViolations(revision, sense.entry.levels.length > 0,
-          revision.topicCodes.some((code) => activeTopics.has(code)));
+        const violations = publishViolations(revision, sense.entry.levels.length > 0);
         if (violations.length) notReady++;
         else items.push({ senseId: sense.id, revisionNo: revision.revisionNo });
       }
@@ -277,20 +290,48 @@ export class AdminCatalogQueries {
     }, { isolationLevel: 'RepeatableRead', timeout: 30_000, maxWait: 5_000 });
   }
 
+  /** Catalog entries with no non-retired sense, counted against limit before any CSV bytes (D34). */
+  async exportEntriesWithoutSense(filter: { level?: Level }, limit: number):
+    Promise<{ rows: EntryExportRow[] } | { tooMany: true }> {
+    const where: Prisma.EntryWhereInput = {
+      ...catalogWhere, senses: { none: { state: { not: 'retired' } } },
+      ...(filter.level !== undefined ? { levels: { some: { level: filter.level } } } : {}),
+    };
+    const rows: EntryExportRow[] = [];
+    let after: Cursor | undefined;
+    while (true) {
+      const chunk = await this.prisma.entry.findMany({
+        where: { AND: [where, afterEntry(after)] },
+        include: { levels: levelsQuery, variants: entryInclude.variants, inflections: inflectionsQuery },
+        orderBy: [{ lemma: 'asc' }, { pos: 'asc' }, { id: 'asc' }], take: 500,
+      });
+      for (const entry of chunk) {
+        const level = levelState(entry.levels).displayed_level;
+        if (filter.level !== undefined && level !== filter.level) continue;
+        if (rows.length === limit) return { tooMany: true };
+        rows.push({ headword: [entry.lemma, ...entry.variants.map(({ text }) => text)].join('/'), pos: entry.pos, _level: level,
+          ...inflectionCells(entry.inflections) });
+      }
+      if (chunk.length < 500) return { rows };
+      const last = chunk[chunk.length - 1];
+      after = { lemma: last.lemma, pos: last.pos as Cursor['pos'], id: last.id };
+    }
+  }
+
   /** Count the actual filtered rows, including computed level/readiness, before any CSV bytes.
    * Only limit rows are retained, with keyset reads of 500 and an early limit+1 exit.
    */
   async exportSenses(filter: SenseFilter, limit: number): Promise<{ rows: ExportRow[] } | { tooMany: true }> {
-    const { where, activeTopics } = await this.senseSelection(filter);
+    const { where } = await this.senseSelection(filter);
     const rows: ExportRow[] = [];
     let after: Cursor | undefined;
     while (true) {
       const chunk = await this.prisma.sense.findMany({
-        where: { AND: [where, afterSense(after)] }, include: senseInclude,
+        where: { AND: [where, afterSense(after)] }, include: exportSenseInclude,
         orderBy: [{ entry: { lemma: 'asc' } }, { entry: { pos: 'asc' } }, { id: 'asc' }], take: 500,
       });
       for (const sense of chunk) {
-        const selected = selectedSense(sense, filter, activeTopics);
+        const selected = selectedSense(sense, filter);
         const revision = sense.revisions[0];
         if (!selected || !revision) continue;
         if (rows.length === limit) return { tooMany: true };
@@ -301,6 +342,8 @@ export class AdminCatalogQueries {
           example_en_1: content.examplesEn[0] ?? '', example_en_2: content.examplesEn[1] ?? '', example_en_3: content.examplesEn[2] ?? '',
           topics: content.topicCodes.join(';'), accepted_forms: content.acceptedForms.join(';'),
           context_label: sense.contextLabel, sense_id: sense.id, revision: revision.revisionNo,
+          form_of: revision.formOf && revision.formKind ? `${revision.formOf.lemma}/${revision.formOf.pos}:${revision.formKind}` : '',
+          ...inflectionCells(sense.entry.inflections),
           _status: revision.status, _level: selected.displayed_level,
           ...(filter.status === 'unpublishable' ? { _missing: selected.missing.join(';') } : {}),
         });
