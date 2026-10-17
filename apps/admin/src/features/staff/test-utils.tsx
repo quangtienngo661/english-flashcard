@@ -7,6 +7,7 @@ import { AppRoutes } from '../../app/routes';
 import { SessionProvider } from '../../auth/session-context';
 import { SessionStore } from '../../auth/session-store';
 import { BASE, makeFetch, makeMe, tokenResponse, type Route } from '../../auth/test-support';
+import { ToastRegion } from '../../ui/Toast';
 
 export const ME_ADMIN = makeMe({
   id: 'me-1',
@@ -40,6 +41,7 @@ export function renderApp(path: string, routes: Record<string, Route>, me = ME_A
           <MemoryRouter initialEntries={[path]}>
             <AppRoutes />
           </MemoryRouter>
+          <ToastRegion />
         </SessionProvider>
       </QueryClientProvider>
     </IntlProvider>,

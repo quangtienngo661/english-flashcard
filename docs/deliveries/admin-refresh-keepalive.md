@@ -1,0 +1,116 @@
+# Admin refresh keepalive — plan tóm tắt (15/10/2026)
+
+Design: `docs/superpowers/specs/2026-10-15-admin-refresh-keepalive-design.md`. Plan chi tiết:
+`docs/superpowers/plans/2026-10-15-admin-refresh-keepalive.md`. Điều tra: `docs/tasks/2026-10-15-refresh-fast-reload/report.md`.
+Nhánh `fix/admin-refresh-keepalive`, PR xếp trên PR #23.
+
+1. Viết test trước (unit cho từng đường refresh, một e2e API thật "rời trang giữa lúc refresh, 12 giây sau quay lại"), chạy
+   e2e 3 lần trên code cũ để thấy đỏ, commit; rồi cho refresh của admin gửi với `keepalive`, chạy lại unit, lint, typecheck và
+   bộ e2e thật cho xanh, commit.
+2. Chạy tay một lần đường 429 (F5 14 lần) và đường rời trang trên code đã sửa, ghi as-built và trỏ các design cũ sang bản sửa
+   này, rồi push và mở PR.
+
+# Admin refresh keepalive — as-built (15/10/2026)
+
+Nhánh `fix/admin-refresh-keepalive`, PR [#24](https://github.com/quangtienngo661/english-flashcard/pull/24) (base
+`feat/ui-b-admin`, xếp trên PR #23). Chạy theo cách Native (chủ dự án chọn): phiên này tự làm 2 task theo TDD, một reviewer
+mới kiểm cả nhánh ở cuối.
+
+- `0e8df26` test: `Call.keepalive` trong `test-support.ts`; unit RKC1 (khởi động, sau 401, sau 403 `forbidden`, mọi lần thử
+  lại sau 429 lúc khởi động và giữa phiên) và RKC2; e2e API thật RKC3 ngay sau B25#4.
+- `64aea54` fix: `runRefresh()` gửi `{ ...json('POST', {}, this.csrf()), keepalive: true }`.
+
+## Kiểm chứng
+
+- Unit trước khi sửa: 4 test RKC1 đỏ (`expected [ undefined ] to deeply equal [ true ]`), RKC2 và 26 test cũ của file xanh.
+  Sau khi sửa: file 31/31; cả bộ admin 286/286 với `--maxWorkers=3`; lint 0, typecheck 0.
+- E2E API thật trên code cũ (API build từ worktree này, môi trường như job CI, DB mới mỗi lần, `CI=1`): RKC3 đỏ **3/3** lần,
+  mỗi lần API ghi đúng 1 dòng `refresh_reuse_detected`; trang lúc lỗi là màn "Đăng nhập". Một lần chạy khác hỏng ở bước dựng
+  tài khoản (`ECONNRESET` khi đăng ký, trước mọi test) nên không tính và chạy lại.
+- E2E API thật trên code đã sửa: **8/8** test qua (gồm RKC3, B25#4, B25#6, B25#6a, B25#8 + B25E1), không có
+  `refresh_reuse_detected`. Đối chứng trong DB: token do refresh lúc rời trang tạo ra (16:40:41.1) sống 12,06 s rồi được xoay
+  bình thường khi quay lại.
+- Chạy tay trên code đã sửa, không giả lập (`docs/tasks/2026-10-15-refresh-fast-reload/evidence/fixed-*.out`):
+  - RKC4, F5 14 lần khi refresh đang chạy: `first 429 on last page; browser cookie row (id | rotated_at | grace_until): 601ff931 |  |`,
+    `outcome: SIGNED IN`, `refresh_reuse_detected 0`.
+  - Rời sang `about:blank` khi refresh đang chạy, quay lại sau 12 s: `SIGNED IN` 3/3; mỗi lần token trong cookie đúng là token
+    do lần refresh lúc rời trang tạo ra.
+- CI trên PR #24 ở `b79522c`: 4/4 job xanh. Theo reviewer đọc log: job `admin` unit 286/286, e2e API giả 139 qua / 53 bỏ qua
+  (gồm UBC17 của B25E30 ở desktop và mobile); job `admin-e2e-real` 8/8, RKC3 12,3 s. Bộ e2e API giả **không** chạy ở máy,
+  chỉ CI chạy (phần đó của RKC5).
+
+## Lệch so với plan (ruling)
+
+- Cổng 3000 và 5173 đang do server của worktree khác giữ (API `run:dev` và Vite dev của `gifted-booth-9229f5`); chủ dự án cho
+  phép tắt, đã tắt bằng `taskkill /T`. Nếu còn cần, khởi động lại hai server đó.
+- RKC3 đỏ ở dòng kiểm tiêu đề, không ở `toHaveURL` như plan dự kiến: ngay sau `goto('/uploads')` URL vẫn là `/uploads`, app
+  mới chuyển về `/login` sau đó. Vẫn đỏ đúng lý do; giữ nguyên test.
+- Một lần chạy cả bộ unit với số worker mặc định đỏ 1 test (`BatchPanel.test.tsx`, `findBy` hết giờ); chạy riêng 2/2 xanh, cả
+  bộ với `--maxWorkers=3` 286/286. Đây là lỗi chập chờn do tải đã ghi ở `ui-refresh-b.md`.
+- Log của bộ e2e thật để trong workspace của plan (git-ignored) thay vì `$TEMP`.
+- PR mở trước commit tài liệu này để ghi được link PR.
+
+## Review cả nhánh (16/10/2026)
+
+Reviewer mới (opus), báo cáo nguyên văn: `docs/superpowers/reviews/2026-10-15-admin-refresh-keepalive-branch-review.md`.
+Kết luận "With fixes": 0 critical, 2 important (đã sửa), 3 minor.
+
+| Finding | Xử lý |
+|---|---|
+| I1: trình duyệt có `keepalive` nhưng từ chối nó khi cần preflight CORS → `TypeError` → đăng xuất mỗi lần tải trang | Chủ dự án sửa RK8 (vòng 2): gặp `TypeError` thì gửi lại một lần không `keepalive`. Test RKC6 đỏ trước (`2718843`: `expected [ true ] to deeply equal [ true, undefined ]`), sửa ở `8713147`; file 33/33, cả bộ unit 288/288 (`--maxWorkers=3`), lint 0, typecheck 0 |
+| I2: RKC3 dùng chung chuỗi phiên của editor, đẩy B25#6 tới sát giới hạn 10 lần refresh/phút | Đo trước: chuỗi editor chạm 10/10 trong một phút (lần chạy xanh đầu); bỏ một `goto` như reviewer gợi ý vẫn chưa đủ (lần chạy thử: 8 lần xoay + 3 lần trả qua ân hạn = 11 lần chạm, vì lần trả qua ân hạn cũng bị đếm). Sửa ở `ad2df80`: RKC3 chạy trong context và phiên riêng. RKC3 mới vẫn đỏ trên code chưa sửa (1 `refresh_reuse_detected`); trên HEAD bộ thật 8/8, chuỗi editor của câu chuyện còn 8 lần chạm (tối đa 7 trong một phút), RKC3 có chuỗi riêng 3 lần |
+| M1: RKC3 có thể qua trên code chưa sửa nếu request bị hủy trước khi tới API (CI Linux chưa từng thấy đỏ) | Để lại (minor). Cách sửa reviewer đề xuất: so cookie `refresh_token` trước và sau khi rời trang |
+| M2: `toHaveURL(/\/uploads$/)` ngay sau `goto('/uploads')` không thể đỏ | Để lại (minor). Cách sửa: đặt sau dòng kiểm tiêu đề, hoặc đổi thành `not.toHaveURL(/\/login/)` |
+| M3: delivery record thiếu bằng chứng CI | Đã ghi kết quả CI ở trên (đây là bước 5 của Task 2) |
+
+Những điều reviewer để ngoài (logout không `keepalive`, mất mạng giữa chừng, `Set-Cookie` về lệch thứ tự khi F5 liên tục,
+giới hạn số request `keepalive` của Chromium, bug Firefox 1935088, `toHaveURL` cũ ở B25#4, lỗi chập chờn của BatchPanel,
+tên script trong plan, file bằng chứng, việc tắt server của worktree khác, app Flutter): giữ nguyên, lý do ở báo cáo review và
+ledger; không cái nào làm hành vi tệ hơn trước bản sửa.
+
+## RKC3 chập chờn trên CI (16/10/2026)
+
+- **CI trên `41be5ba` (16/10/2026): `admin-e2e-real` đỏ ở RKC3** (bản context riêng). Lúc quay lại sau 12 s trang không vào
+  được app, và log API có đúng 1 `refresh_reuse_detected`, tức lần đó cookie không nhận token mới. Ba job còn lại xanh. Ở máy
+  local (Windows), cùng kịch bản qua 8/8 trong một vòng lặp có đo (request lúc rời trang có `keepalive`, không bị từ chối,
+  cookie mới được lưu) và cả bộ thật qua. CI trên `b79522c` (RKC3 bản cũ) cũng xanh, và CI trên `cece2fc` (cùng code với
+  `41be5ba`) cũng xanh.
+- **Nguyên nhân (đã chứng minh 16/10/2026, Chromium 153 Linux trong container `node:24.11.0-bookworm`, bằng chứng ở
+  `docs/tasks/2026-10-15-refresh-fast-reload/evidence/linux/`): chính đường dự phòng của I1 (`8713147`).** Khi trang bị bỏ lúc
+  refresh keepalive đang chạy, lời hứa `fetch` phía trang bị từ chối bằng `TypeError`, dù request vẫn chạy xong ở trình duyệt
+  và cookie mới đã được lưu. Code coi đó là "trình duyệt từ chối keepalive" nên gửi thêm một refresh không keepalive. Refresh
+  này xoay token lần nữa, rồi câu trả lời của nó bị rơi khi trang bị bỏ.
+  - Không có độ trễ: 0/20 lần mất phiên. Quét độ trễ 10–80 ms giữa lúc request rời trình duyệt và lúc rời trang (giống CI,
+    nơi API trả lời trong ~13 ms): bản HEAD (có dự phòng) mất phiên 6/40 lần (`sweep.out`, `ab-fb.out`), bản không có dự phòng
+    (`64aea54`) 0/16 (`ab-nofb.out`).
+  - Chữ ký phía server: ở mọi lần mất phiên, token trong cookie bị xoay lần hai chỉ 21–34 ms sau khi được cấp; ở mọi lần giữ
+    được phiên, token đó chỉ bị xoay ~12,1 s sau, khi quay lại.
+  - Bản thử (không commit) chặn đường dự phòng khi trang đã phát sự kiện `pagehide`: 0/20 lần mất phiên, không lần nào xoay hai
+    lần (`ab-guard.out`).
+  - **Đã sửa (RK8 vòng 3, chủ dự án chọn):** không thử lại khi trang đã phát `pagehide` (bật lại khi `pageshow`). Test đỏ
+    trước (`68d23ac`: `expected [ true, undefined ] to deeply equal [ true ]`), sửa ở `e20f62f`. File 35/35, cả bộ unit
+    290/290 (`--maxWorkers=3`), lint 0, typecheck 0; bộ thật ở máy 8/8, không có `refresh_reuse_detected`. Quét lại trên
+    Chromium Linux với bản build của `e20f62f`, độ trễ 0/15/20/25/50 ms × 5: **0/25** lần mất phiên, cả 25 token trong cookie
+    chỉ bị xoay khi quay lại (`fixed-e20f62f.out`).
+- **Đổi đích và merge (16/10/2026):** sau khi #23 vào `dev` (`e843abc`), PR #24 đổi đích sang `dev` và `origin/dev` được merge vào
+  nhánh (`9519deb`, không rebase, không force-push). Xung đột duy nhất ở `CLAUDE.md`: giữ câu của `dev` (Deploy trước pilot,
+  **3 Learning**) và thêm lại dòng trỏ sang delivery record này (nay ghi "PR #24"). Sau merge: unit 290/290, lint 0, typecheck 0.
+- **Chạy lặp sau bản sửa:**
+  - Bộ thật ở máy (Windows, DB mới mỗi lần, `CI=1`): 3 lần trên `ddc13bb` và 1 lần trên `9519deb`, đều 8/8, không có
+    `refresh_reuse_detected`.
+  - Chromium 153 Linux, kịch bản RKC3 với độ trễ rời trang: 0/25 trên `e20f62f` (0/15/20/25/50 ms × 5) và 0/32 trên `9519deb`
+    (15/20/25/30 ms × 8), không lần nào xoay token hai lần (`fixed-e20f62f.out`, `fixed-9519deb.out`). Trước bản sửa: 6/40.
+  - CI trên `9519deb`: 4/4 job xanh (`admin`, `admin-e2e-real`, `api`, `web`).
+  - Không dùng `--repeat-each`: bộ thật là một câu chuyện chạy theo thứ tự, lặp từng test sẽ tạo trùng tài khoản; thay vào đó
+    chạy lại cả bộ trên DB mới.
+
+## Còn mở
+
+- Chỉ kiểm trên Chromium (RK5). Firefox và Safari: nếu bỏ qua hoặc từ chối `keepalive` thì nay chạy như trước bản sửa (RKC6),
+  nhưng chưa ai chạy thử thật; thứ tự `pagehide` so với lúc `fetch` bị từ chối (RKC7) cũng mới đo trên Chromium.
+- Container `keepalive-linux-probe` (đã dừng, chứa Chromium Linux ~658 MB) giữ lại để chạy lại phép quét; xóa được bằng
+  `docker rm keepalive-linux-probe`.
+- Mất mạng hoặc trình duyệt bị tắt giữa lúc refresh vẫn làm mất phiên (RKE4, phương án B).
+- Hai minor của review (M1, M2) để lại, chờ chủ dự án quyết.
+- Hai server đã tắt lúc làm (API `run:dev` ở cổng 3000, Vite dev của `gifted-booth-9229f5` ở cổng 5173): khởi động lại nếu còn cần.
+- DB thử còn lại trên Postgres local: `english_learning_reload_repro` và các DB `keepalive_e2e_*` của lần chạy e2e (xóa được).

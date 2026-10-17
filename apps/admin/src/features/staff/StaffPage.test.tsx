@@ -85,6 +85,25 @@ describe('StaffPage — changing a role', () => {
     await waitFor(() => expect(count('GET', '/v1/admin/staff?page_size=20')).toBe(2));
   });
 
+  it('UBC14 granting editor confirms with a toast naming the role and the email', async () => {
+    await openStaff({
+      'GET /v1/admin/users?email=new%40x.co': () => Response.json(row({ id: 'u9', email: 'new@x.co', staff_role: null })),
+      'PUT /v1/admin/users/u9/staff-role': () => Response.json(row({ id: 'u9', email: 'new@x.co' })),
+    });
+    await search('new@x.co');
+    await userEvent.click(await screen.findByRole('button', { name: t.card.grantEditor }));
+    await userEvent.click(within(await screen.findByRole('dialog')).getByRole('button', { name: vi.common.confirm }));
+    expect(await screen.findByText(t.toast.granted.replace('{role}', 'editor').replace('{email}', 'new@x.co'))).toBeInTheDocument();
+  });
+
+  it('UBC14 removing a role confirms with the removal toast', async () => {
+    await openStaff({ 'PUT /v1/admin/users/u2/staff-role': () => Response.json(row({ id: 'u2', email: MAI.email, staff_role: null })) });
+    await userEvent.click(screen.getAllByRole('button', { name: t.list.change })[1]);
+    await userEvent.click(await screen.findByRole('button', { name: t.card.remove }));
+    await userEvent.click(within(await screen.findByRole('dialog')).getByRole('button', { name: t.card.remove }));
+    expect(await screen.findByText(t.toast.removed.replace('{email}', MAI.email))).toBeInTheDocument();
+  });
+
   it('remove: the dialog names the user; confirm sends PUT {staff_role:null}', async () => {
     const { calls } = await openStaff({ 'PUT /v1/admin/users/u2/staff-role': () => Response.json(row({ id: 'u2', email: MAI.email, staff_role: null })) });
     await userEvent.click(screen.getAllByRole('button', { name: t.list.change })[1]);
@@ -138,6 +157,23 @@ describe('StaffPage — changing a role', () => {
 
     await waitFor(() => expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(vi.nav.uploads));
     expect(screen.queryByRole('link', { name: vi.nav.staff })).toBeNull();
+  });
+
+  it('Review Focus 4: an admin who demotes themself still sees the toast after being moved off /staff', async () => {
+    let meReads = 0;
+    renderApp('/staff', {
+      [LIST_URL]: listOk,
+      'GET /v1/me': () =>
+        Response.json(meReads++ === 0 ? ME_ADMIN : { ...ME_ADMIN, staff_role: 'editor', permissions: ['content.edit', 'content.import', 'content.publish', 'taxonomy.manage'] }),
+      'PUT /v1/admin/users/me-1/staff-role': () => Response.json(row({ id: 'me-1', email: 'admin@wordmet.com', staff_role: 'editor' })),
+      'GET /v1/admin/content/uploads?page_size=20': () => Response.json({ items: [], next_page_token: null }),
+    });
+    await screen.findAllByText(MAI.email);
+    await userEvent.click(screen.getAllByRole('button', { name: t.list.change })[0]);
+    await userEvent.click(await screen.findByRole('button', { name: t.card.grantEditor }));
+    await userEvent.click(within(await screen.findByRole('dialog')).getByRole('button', { name: t.dialog.selfConfirm }));
+    await waitFor(() => expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(vi.nav.uploads));
+    expect(screen.getByText(t.toast.granted.replace('{role}', 'editor').replace('{email}', 'admin@wordmet.com'))).toBeInTheDocument();
   });
 
   it('Review Focus 3 (unit): a double-click on "Xác nhận" sends one PUT', async () => {

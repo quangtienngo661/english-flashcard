@@ -1,7 +1,7 @@
-import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
 import vi from '../messages/vi.json' with { type: 'json' };
-import { meBody, mockApi, problem, tokenBody } from './support/mock-api';
+import { meBody, mockApi, problem, signedInAs, tokenBody } from './support/mock-api';
+import { seriousViolations } from './support/axe';
 
 test.use({ locale: 'vi-VN' });
 
@@ -83,10 +83,7 @@ test('B25#21: the account screens have no serious or critical axe violations (39
     'POST /v1/auth/otp': () => ({ status: 204 }),
     'GET /v1/me': () => ({ json: meBody('editor', { must_change_password: true }) }),
   });
-  const serious = async () =>
-    (await new AxeBuilder({ page }).analyze()).violations
-      .filter((v) => v.impact === 'serious' || v.impact === 'critical')
-      .map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(" ")).join(" | ")}`);
+  const serious = () => seriousViolations(page);
 
   await page.goto('/login');
   await expect(page.getByLabel(login.email)).toBeVisible();
@@ -110,4 +107,21 @@ test('B25#21: the account screens have no serious or critical axe violations (39
   await page.getByRole('button', { name: vi.account.changePassword.submit }).click();
   await expect(page.getByText(vi.account.passwordRules.min_length)).toBeVisible();
   expect(await serious()).toEqual([]);
+});
+
+test('UBC17 a 429 on the first refresh shows the retry countdown, then the app opens /uploads (B25E30)', async ({ page }) => {
+  let refreshes = 0;
+  await signedInAs(page, 'editor', {
+    'POST /v1/auth/refresh': () =>
+      ++refreshes === 1
+        ? { status: 429, headers: { 'content-type': 'application/problem+json', 'retry-after': '2' }, json: { type: 'http://localhost:3000/problems/rate-limited', status: 429, title: 'x' } }
+        : { json: { access_token: 'e2e-token', token_type: 'Bearer', expires_in: 900 } },
+    'GET /v1/admin/content/uploads': () => ({ json: { items: [], next_page_token: null } }),
+  });
+  await page.goto('/uploads');
+  // The countdown is a timer beside the live status line, not inside it (review M7).
+  await expect(page.getByRole('timer')).toHaveText(/Thử lại sau [12] giây/);
+  await expect(page.getByRole('heading', { level: 1, name: vi.nav.uploads })).toBeVisible({ timeout: 6000 });
+  await expect(page).toHaveURL(/\/uploads$/);
+  expect(refreshes).toBe(2);
 });

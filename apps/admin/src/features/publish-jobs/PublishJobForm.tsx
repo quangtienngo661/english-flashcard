@@ -1,5 +1,5 @@
 import { useQueryClient } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { useTranslations } from 'use-intl';
 import { useApi } from '../../auth/session-context';
@@ -10,8 +10,8 @@ import { createPublishJob } from '../content/content-api';
 import { FilterFields, NO_FILTER, toFilter, type FilterValues } from '../content/FilterFields';
 import { useSubmitAction } from '../content/useSubmitAction';
 
-/** Spec §6.3 "Publish job": create a job from a filter (level, topic, part of speech, batch). */
-export function PublishJobForm() {
+/** Spec §6.3 "Publish job": create a job from a filter (level, topic, part of speech, batch). Shown in a dialog (UB9). */
+export function PublishJobForm({ onPendingChange }: { onPendingChange?: (pending: boolean) => void }) {
   const t = useTranslations();
   const api = useApi();
   const navigate = useNavigate();
@@ -28,6 +28,7 @@ export function PublishJobForm() {
     },
   );
   const locked = action.waitSeconds > 0;
+  useEffect(() => onPendingChange?.(action.pending), [action.pending, onPendingChange]);
   const [confirmingAll, setConfirmingAll] = useState(false);
   // D25 / B25E29: no filter at all means the whole catalog, so ask first.
   const noFilter = Object.values(filter).every((value) => value === undefined);
@@ -40,7 +41,7 @@ export function PublishJobForm() {
         if (noFilter) setConfirmingAll(true);
         else void action.submit();
       }}
-      className="flex flex-col gap-4 rounded-panel bg-surface p-4 shadow-card"
+      className="flex flex-col gap-4"
     >
       {action.error && (
         <Banner

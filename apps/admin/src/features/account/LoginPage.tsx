@@ -2,6 +2,7 @@ import { useRef, useState, type FormEvent } from 'react';
 import { Link, Navigate, useLocation } from 'react-router';
 import { useTranslations } from 'use-intl';
 import { useErrorMessage } from '../../api/use-error-message';
+import { SessionLoading } from '../../app/SessionLoading';
 import { useSession } from '../../auth/session-context';
 import { Banner } from '../../ui/Banner';
 import { Button } from '../../ui/Button';
@@ -22,13 +23,7 @@ export function LoginPage() {
 
   if (state.status === 'signed-in') return <Navigate to={from ?? '/'} replace />;
   if (state.status === 'change-password') return <Navigate to="/change-password" replace />;
-  if (state.status === 'loading') {
-    return (
-      <p role="status" className="p-8 text-ui text-muted">
-        {t('shell.loadingSession')}
-      </p>
-    );
-  }
+  if (state.status === 'loading') return <SessionLoading />;
 
   const notice = state.notice;
 
@@ -53,6 +48,7 @@ export function LoginPage() {
       <form onSubmit={submit} className="flex flex-col gap-4" noValidate>
         {notice === 'no-access' && <Banner variant="error">{t('errors.noAccess')}</Banner>}
         {notice === 'expired' && <Banner variant="info">{t('notice.expired')}</Banner>}
+        {notice === 'rate-limited' && <Banner variant="info">{t('errors.rate-limited')}</Banner>}
         {error && <Banner variant="error">{error}</Banner>}
         <TextField
           label={t('account.login.email')}

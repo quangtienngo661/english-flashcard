@@ -19,6 +19,7 @@
   --color-placeholder: #5f6688;
   --color-surface: #ffffff;
   --color-canvas: #f1f3fd;
+  --color-canvas-deep: #dde1f5;
   --color-border: #e3e6f4;
   --color-border-strong: #7d84a8;
   --color-success: #1b7a46;
@@ -26,6 +27,7 @@
   --color-warning: #7a5200;
   --color-danger: #b8352a;
   --color-danger-soft: #fde8e5;
+  --color-danger-deep: #8a2219;
   --color-neutral-soft: #eef0f5;
   --color-wrong-chip: #ffd3cd;
   --color-wrong-chip-deep: #d99b92;

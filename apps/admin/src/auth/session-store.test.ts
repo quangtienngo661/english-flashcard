@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { createApiClient } from '../api/client';
 import { ApiError } from '../api/problem';
 import { SessionStore } from './session-store';
-import { BASE, channelHub, makeFetch, makeMe, problem, tokenResponse, type Route } from './test-support';
+import { BASE, channelHub, makeFetch, makeMe, problem, rateLimited, tokenResponse, type Call, type Route } from './test-support';
 
 const ok = (body: unknown): Route => () => Response.json(body);
 const noContent: Route = () => new Response(null, { status: 204 });
@@ -351,5 +351,227 @@ describe('SessionStore', () => {
     store.subscribe(() => {})();
     await store.recheck();
     expect(n).toBe(seen);
+  });
+
+  it('B25E30 a 429 from the bootstrap refresh keeps the session: wait Retry-After, refresh again, signed in', async () => {
+    let refreshes = 0;
+    const waits: number[] = [];
+    const f = makeFetch({
+      'POST /v1/auth/refresh': () => (++refreshes === 1 ? rateLimited(2) : tokenResponse('tok-1')),
+      'GET /v1/me': () => Response.json(makeMe()),
+    });
+    const store = new SessionStore({
+      baseUrl: BASE,
+      fetch: f.fetch,
+      channel: null,
+      wait: async (ms: number) => {
+        waits.push(ms);
+      },
+    });
+
+    await store.bootstrap();
+
+    expect(waits).toEqual([2000]);
+    expect(f.count('POST', '/v1/auth/refresh')).toBe(2);
+    expect(store.state).toMatchObject({ status: 'signed-in' });
+  });
+
+  it('B25E30 without Retry-After the store waits 10 s', async () => {
+    let refreshes = 0;
+    const waits: number[] = [];
+    const f = makeFetch({
+      'POST /v1/auth/refresh': () => (++refreshes === 1 ? problem(429, 'rate-limited') : tokenResponse('tok-1')),
+      'GET /v1/me': () => Response.json(makeMe()),
+    });
+    const store = new SessionStore({ baseUrl: BASE, fetch: f.fetch, channel: null, wait: async (ms: number) => void waits.push(ms) });
+    await store.bootstrap();
+    expect(waits).toEqual([10_000]);
+    expect(store.state).toMatchObject({ status: 'signed-in' });
+  });
+
+  it('B25E30 three 429s in a row end signed-out with notice rate-limited, no POST /v1/auth/logout and no broadcast', async () => {
+    const hub = channelHub();
+    const heard: unknown[] = [];
+    hub.create().addEventListener('message', (e) => heard.push(e.data));
+    const waits: number[] = [];
+    const f = makeFetch({ 'POST /v1/auth/refresh': () => rateLimited(1) });
+    const store = new SessionStore({ baseUrl: BASE, fetch: f.fetch, channel: hub.create(), wait: async (ms: number) => void waits.push(ms) });
+    await store.bootstrap();
+    expect(f.count('POST', '/v1/auth/refresh')).toBe(3);
+    expect(waits).toEqual([1000, 1000]);
+    expect(store.state).toEqual({ status: 'signed-out', notice: 'rate-limited' });
+    expect(f.count('POST', '/v1/auth/logout')).toBe(0);
+    expect(heard).toEqual([]);
+  });
+
+  it('B25E30 mid-session a 401 whose refresh gets 429 waits, refreshes and retries the request once', async () => {
+    let refreshes = 0;
+    let reads = 0;
+    const waits: number[] = [];
+    const f = makeFetch({
+      'POST /v1/auth/login': () => tokenResponse('tok-1'),
+      'GET /v1/me': () => Response.json(makeMe()),
+      'POST /v1/auth/refresh': () => (++refreshes === 1 ? rateLimited(3) : tokenResponse('tok-2')),
+      'GET /v1/thing': () => (++reads === 1 ? problem(401, 'invalid-token') : Response.json({ ok: true })),
+    });
+    const store = new SessionStore({ baseUrl: BASE, fetch: f.fetch, channel: null, wait: async (ms: number) => void waits.push(ms) });
+    await store.login('editor@example.com', 'pw');
+
+    const res = await store.send('/v1/thing', { method: 'GET', headers: {} });
+
+    expect(res.status).toBe(200);
+    expect(waits).toEqual([3000]);
+    expect(f.count('GET', '/v1/thing')).toBe(2);
+    expect(store.state).toMatchObject({ status: 'signed-in' });
+  });
+
+  it('B25E30 while the store waits at start, the loading state carries retryAt', async () => {
+    let refreshes = 0;
+    const seen: unknown[] = [];
+    const f = makeFetch({
+      'POST /v1/auth/refresh': () => (++refreshes === 1 ? rateLimited(2) : tokenResponse('tok-1')),
+      'GET /v1/me': () => Response.json(makeMe()),
+    });
+    const store: SessionStore = new SessionStore({
+      baseUrl: BASE,
+      fetch: f.fetch,
+      channel: null,
+      now: () => 1_000,
+      wait: async () => void seen.push(store.state),
+    });
+    await store.bootstrap();
+    expect(seen).toEqual([{ status: 'loading', retryAt: 3_000 }]);
+  });
+
+  // RKC1/RKC2 (keepalive design): a reload or page leave mid-refresh must not drop the rotated refresh cookie.
+  const refreshTries = (calls: Call[]) =>
+    calls.filter((c) => c.method === 'POST' && c.path === '/v1/auth/refresh').map((c) => c.keepalive);
+
+  it('RKC1: the page-start refresh is sent with keepalive', async () => {
+    const { store, calls } = newStore({ 'POST /v1/auth/refresh': () => tokenResponse('tok-1'), 'GET /v1/me': ok(makeMe()) });
+    await store.bootstrap();
+    expect(refreshTries(calls)).toEqual([true]);
+  });
+
+  it('RKC1: the refresh after a 401 is sent with keepalive', async () => {
+    let reads = 0;
+    const { store, calls } = newStore({
+      'POST /v1/auth/login': () => tokenResponse('tok-1'),
+      'GET /v1/me': ok(makeMe()),
+      'GET /v1/x': () => (++reads === 1 ? problem(401, 'invalid-token') : Response.json({ ok: true })),
+      'POST /v1/auth/refresh': () => tokenResponse('tok-2'),
+    });
+    await store.login('s@example.com', 'pw');
+    await store.send('/v1/x', { method: 'GET', headers: {} });
+    expect(refreshTries(calls)).toEqual([true]);
+  });
+
+  it('RKC1: the refresh after a 403 forbidden is sent with keepalive', async () => {
+    const { store, calls } = newStore({
+      'POST /v1/auth/login': () => tokenResponse('tok-1'),
+      'POST /v1/auth/refresh': () => tokenResponse('tok-2'),
+      'GET /v1/me': ok(makeMe()),
+      'GET /v1/admin/x': () => problem(403, 'forbidden'),
+    });
+    await store.login('s@example.com', 'pw');
+    await expect(createApiClient({ send: store.send }).get('/v1/admin/x')).rejects.toBeInstanceOf(ApiError);
+    expect(refreshTries(calls)).toEqual([true]);
+  });
+
+  it('RKC1: every try after a 429 is sent with keepalive, at page start and mid-session', async () => {
+    let startTries = 0;
+    const atStart = makeFetch({
+      'POST /v1/auth/refresh': () => (++startTries === 1 ? rateLimited(2) : tokenResponse('tok-1')),
+      'GET /v1/me': () => Response.json(makeMe()),
+    });
+    await new SessionStore({ baseUrl: BASE, fetch: atStart.fetch, channel: null, wait: async () => {} }).bootstrap();
+    expect(refreshTries(atStart.calls)).toEqual([true, true]);
+
+    let midTries = 0;
+    let reads = 0;
+    const midSession = makeFetch({
+      'POST /v1/auth/login': () => tokenResponse('tok-1'),
+      'GET /v1/me': () => Response.json(makeMe()),
+      'POST /v1/auth/refresh': () => (++midTries === 1 ? rateLimited(3) : tokenResponse('tok-2')),
+      'GET /v1/thing': () => (++reads === 1 ? problem(401, 'invalid-token') : Response.json({ ok: true })),
+    });
+    const store = new SessionStore({ baseUrl: BASE, fetch: midSession.fetch, channel: null, wait: async () => {} });
+    await store.login('editor@example.com', 'pw');
+    await store.send('/v1/thing', { method: 'GET', headers: {} });
+    expect(refreshTries(midSession.calls)).toEqual([true, true]);
+  });
+
+  it('RK8: a keepalive refresh the browser rejects (TypeError) is sent once more without keepalive and the session starts', async () => {
+    let tries = 0;
+    const { store, calls } = newStore({
+      'POST /v1/auth/refresh': () => {
+        if (++tries === 1) throw new TypeError('Preflight request for request with keepalive specified is currently not supported');
+        return tokenResponse('tok-1');
+      },
+      'GET /v1/me': ok(makeMe()),
+    });
+    await store.bootstrap();
+    expect(refreshTries(calls)).toEqual([true, undefined]);
+    expect(store.state).toMatchObject({ status: 'signed-in' });
+  });
+
+  it('RK8: when the retry without keepalive also fails (offline), the refresh fails as before after exactly two tries', async () => {
+    const { store, calls } = newStore({
+      'POST /v1/auth/refresh': () => {
+        throw new TypeError('Failed to fetch');
+      },
+    });
+    await store.bootstrap();
+    expect(refreshTries(calls)).toEqual([true, undefined]);
+    expect(store.state).toEqual({ status: 'signed-out', notice: null });
+  });
+
+  it('RK8: once the page has fired pagehide, a rejected keepalive refresh is not sent again (the browser finishes the keepalive one)', async () => {
+    const { store, calls } = newStore({
+      'POST /v1/auth/refresh': () => {
+        throw new TypeError('Failed to fetch');
+      },
+    });
+    window.dispatchEvent(new Event('pagehide'));
+    await store.bootstrap();
+    expect(refreshTries(calls)).toEqual([true]);
+    window.dispatchEvent(new Event('pageshow'));
+  });
+
+  it('RK8: after pageshow (back from the back/forward cache) the fallback works again', async () => {
+    let tries = 0;
+    const { store, calls } = newStore({
+      'POST /v1/auth/refresh': () => {
+        if (++tries === 1) throw new TypeError('Preflight request for request with keepalive specified is currently not supported');
+        return tokenResponse('tok-1');
+      },
+      'GET /v1/me': ok(makeMe()),
+    });
+    window.dispatchEvent(new Event('pagehide'));
+    window.dispatchEvent(new Event('pageshow'));
+    await store.bootstrap();
+    expect(refreshTries(calls)).toEqual([true, undefined]);
+    expect(store.state).toMatchObject({ status: 'signed-in' });
+  });
+
+  it('RKC2: login, /me, password change, other API calls and logout are sent without keepalive', async () => {
+    let meCalls = 0;
+    const { store, calls } = newStore({
+      'POST /v1/auth/login': () => tokenResponse('tok-1'),
+      'GET /v1/me': () => Response.json(makeMe({ must_change_password: meCalls++ === 0 })),
+      'POST /v1/auth/password/change': () => tokenResponse('tok-2'),
+      'GET /v1/x': () => Response.json({ ok: true }),
+      'POST /v1/auth/logout': noContent,
+    });
+    await store.login('editor@example.com', 'generated');
+    await store.changePassword('generated', 'My-new-pass-123');
+    await store.send('/v1/x', { method: 'GET', headers: {} });
+    await store.logout();
+
+    const others = calls.filter((c) => c.path !== '/v1/auth/refresh');
+    expect(new Set(others.map((c) => c.path))).toEqual(
+      new Set(['/v1/auth/login', '/v1/me', '/v1/auth/password/change', '/v1/x', '/v1/auth/logout']),
+    );
+    expect(others.every((c) => c.keepalive === undefined)).toBe(true);
   });
 });

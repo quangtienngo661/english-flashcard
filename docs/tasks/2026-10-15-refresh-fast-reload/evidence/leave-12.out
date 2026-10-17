@@ -1,0 +1,5 @@
+browser 153.0.8010.12
+after leaving: browser cookie row (id | rotated_at): af0a64be | 2026-10-15 15:03:29.208+00
+back after 12s: LOGIN PAGE (session lost)
+chain (revoked_at | reason): 2026-10-15 15:03:42.183+00 | reuse_detected
+chain rate counter: 2026-10-15 15:03:00+00 | 2

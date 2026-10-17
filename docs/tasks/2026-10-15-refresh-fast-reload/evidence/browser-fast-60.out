@@ -1,0 +1,16 @@
++1.262s signed in, chain 8a0d2050-47f9-46a0-b27f-62ecf49e085c mode fast gap 60 reloads 14
++2.476s done reloading; watching page 14
++2.989s outcome: SIGNED IN
+
+--- browser view of POST /v1/auth/refresh (CDP) ---
+page  0 sent +0.647s status 401 finished
+page 14 sent +2.494s status 200 finished
+sent 2; 200 seen 1; 429 seen 0; 401 seen 1; canceled before any response 0; canceled after headers 0
+
+--- server view ---
+chain (revoked_at | reason): |
+tokens (id | created | rotated | grace_until):
+c068f9b8 | 2026-10-15 14:56:18.577+00 | 2026-10-15 14:56:20.224+00 | 2026-10-15 14:56:30.224+00
+e9a6ad02 | 2026-10-15 14:56:20.224+00 |  |
+chain rate counter: 2026-10-15 14:56:00+00 | 1
+api.log: refresh_grace_used 0, refresh_reuse_detected 0

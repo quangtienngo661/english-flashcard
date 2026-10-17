@@ -45,10 +45,9 @@ yet: **Q-A** order and scope (full Bước 3 → Deploy → pilot; a thin slice 
 or a no-code trial first), **Q-B** who authors the pilot content (300–500 words with senses; the catalog has 7.799
 entries but only 4 senses), **Q-C** reminders during the pilot (K25: none in V1), **Q-D** pilot success thresholds
 (metrics exist in `docs/specs/DECISIONS_2026-10-04.md` §8, thresholds do not). Put them to the owner first in Bước 3
-brainstorming, owner-first (Working Rules below). **UI refresh B** (owner 15/10/2026) is in review, not merged:
-landing PR #22 → `dev`, admin PR #23 stacked on #22, session-on-reload fix PR #24 stacked on #23 (CI green on all
-three); merge order #22 → #23 → #24. Learner-facing web screens in Bước 3 should reuse its shared tokens once #22 is on
-`dev`.
+brainstorming, owner-first (Working Rules below). **UI refresh B** (owner 15/10/2026) is merged into `dev`
+(16/10/2026): landing PR #22, admin PR #23, session-on-reload fix PR #24. Learner-facing web screens in Bước 3 should
+reuse its shared tokens (`packages/design-tokens`).
 
 All 8 V1 specs (docs/specs/) are written and independently verified; treat
 them as an initial skeleton only, not a source of truth to keep in sync (owner, 12/10/2026) — the design doc
@@ -154,8 +153,10 @@ decided-but-not-scaffolded:
   Problem Details, pagination, `Idempotency-Key`, IDs, logging, test harness) → 1 Identity core → 2
   Content + Pipeline (admin side + read-only search only) → 2.5 web UI (login, admin page, role
   granting, CSV flow — done, design `docs/superpowers/specs/2026-10-14-buoc-2-5-admin-web-design.md`)
-  → **UI refresh B** (landing + admin in direction B, owner 15/10/2026; landing done in PR #22, admin plan next;
-  design `docs/superpowers/specs/2026-10-15-ui-refresh-b-design.md`, delivery `docs/deliveries/ui-refresh-b.md`)
+  → **UI refresh B** (landing + admin in direction B, owner 15/10/2026; landing in PR #22, admin in PR #23 (merged into `dev` 16/10/2026),
+  plan `docs/superpowers/plans/2026-10-15-ui-refresh-b-admin.md`;
+  design `docs/superpowers/specs/2026-10-15-ui-refresh-b-design.md`, delivery `docs/deliveries/ui-refresh-b.md`;
+  fast-reload session fix (refresh with `keepalive`, PR #24): delivery `docs/deliveries/admin-refresh-keepalive.md`)
   → Deploy API + admin (separate step; must precede the pilot, exact position not chosen yet) → **3 Learning**, plus the Content pieces deferred from
   Bước 2 (private words, context sentences, lookup chain) (earliest pilot milestone) → 4 Practice non-AI
   → 5 Entitlements → 6 AI Integration gateway → 7 Practice AI + Content AI → 8 Identity remainder (Google login, forgot password,
@@ -301,7 +302,7 @@ for a concrete example of the loop catching real bugs each round.
 
 - As-built delivery records per Bước: `docs/deliveries/buoc-0.md`, `docs/deliveries/buoc-1.md`,
   `docs/deliveries/buoc-2.md` (includes its plan tóm tắt too), `docs/deliveries/buoc-2-5.md` (plan tóm tắt + as-built), `docs/deliveries/buoc-2-5-test-flow.md` (Bước 2.5 gate + manual run),
-  `docs/deliveries/ui-refresh-b.md` (UI refresh B: plan tóm tắt + landing as-built).
+  `docs/deliveries/ui-refresh-b.md` (UI refresh B: plan tóm tắt + landing and admin as-built).
 - Bước 2 test flow (automated gate, `pnpm smoke:buoc-2`, manual steps): `docs/deliveries/buoc-2-test-flow.md`.
 - Spec index and status: `docs/specs/README.md`.
 - Spec/design-doc writing convention (edge cases must be derived per-doc, not just cited): `docs/specs/SPEC_WRITING_CONVENTIONS.md`.

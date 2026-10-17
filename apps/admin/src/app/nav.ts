@@ -60,13 +60,7 @@ export function canAccess(pathname: string, permissions: Permission[]): boolean 
   return entry === undefined || entry.needs.every((p) => permissions.includes(p));
 }
 
-/** Form screens keep their own name in the topbar (Figma: "Đăng ký nguồn", "Upload CSV"); every other path shows its menu label. */
-const FORM_TITLES: Record<string, string> = {
-  '/sources/new': 'sources.formTitle',
-  '/uploads/new': 'uploads.formTitle',
-  '/publish-jobs/new': 'publishJobs.formTitle',
-};
-
+/** The page title is the menu label of the entry a path belongs to; forms open as dialogs with their own title (UB9). */
 export function navLabelKey(pathname: string): string | undefined {
-  return FORM_TITLES[pathname] ?? entryFor(pathname)?.labelKey;
+  return entryFor(pathname)?.labelKey;
 }

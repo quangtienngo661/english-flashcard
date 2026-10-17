@@ -1,0 +1,34 @@
+browser 153.0.8010.12
+run 1 delay 15ms: SIGNED IN | cookie before reload 16dea0fef073 | after leave c298f12a1210 | changed
+   events: 285ms call ka=true ; 316ms resolve ka=true 401 ; 658ms call ka=true ; 686ms resolve ka=true 200 ; 763ms call ka=true ; 12866ms call ka=true ; 12886ms resolve ka=true 200
+run 2 delay 15ms: LOST | cookie before reload b56c87ca12a3 | after leave 1a7709590db2 | changed
+   events: 423ms call ka=true ; 473ms resolve ka=true 401 ; 705ms call ka=true ; 738ms resolve ka=true 200 ; 837ms call ka=true ; 12909ms call ka=true ; 12955ms resolve ka=true 401
+run 3 delay 15ms: SIGNED IN | cookie before reload 7ddddbb297b7 | after leave 18e9d5d7044c | changed
+   events: 378ms call ka=true ; 398ms resolve ka=true 401 ; 619ms call ka=true ; 653ms resolve ka=true 200 ; 762ms call ka=true ; 12838ms call ka=true ; 12877ms resolve ka=true 200
+run 4 delay 15ms: SIGNED IN | cookie before reload 3b658d8d1be6 | after leave 1178f0b61adb | changed
+   events: 290ms call ka=true ; 310ms resolve ka=true 401 ; 532ms call ka=true ; 563ms resolve ka=true 200 ; 638ms call ka=true ; 12718ms call ka=true ; 12762ms resolve ka=true 200
+run 5 delay 20ms: SIGNED IN | cookie before reload a81059a1a89d | after leave b1a4b8dc2daf | changed
+   events: 298ms call ka=true ; 319ms resolve ka=true 401 ; 550ms call ka=true ; 584ms resolve ka=true 200 ; 692ms call ka=true ; 12773ms call ka=true ; 12815ms resolve ka=true 200
+run 6 delay 20ms: LOST | cookie before reload 92028aec908f | after leave 38557e7d7145 | changed
+   events: 376ms call ka=true ; 394ms resolve ka=true 401 ; 633ms call ka=true ; 665ms resolve ka=true 200 ; 737ms call ka=true ; 12808ms call ka=true ; 12848ms resolve ka=true 401
+run 7 delay 20ms: SIGNED IN | cookie before reload 8ede05b69a4f | after leave 74976e16ed75 | changed
+   events: 388ms call ka=true ; 410ms resolve ka=true 401 ; 642ms call ka=true ; 675ms resolve ka=true 200 ; 786ms call ka=true ; 12879ms call ka=true ; 12926ms resolve ka=true 200
+run 8 delay 20ms: SIGNED IN | cookie before reload 99a06a8febf1 | after leave 568cd94dee56 | changed
+   events: 427ms call ka=true ; 445ms resolve ka=true 401 ; 679ms call ka=true ; 715ms resolve ka=true 200 ; 835ms call ka=true ; 12917ms call ka=true ; 12962ms resolve ka=true 200
+run 9 delay 25ms: SIGNED IN | cookie before reload 74cb38ee2d95 | after leave 287760a2df0a | changed
+   events: 420ms call ka=true ; 437ms resolve ka=true 401 ; 656ms call ka=true ; 684ms resolve ka=true 200 ; 796ms call ka=true ; 820ms resolve ka=true 200 ; 12878ms call ka=true ; 12919ms resolve ka=true 200
+run 10 delay 25ms: SIGNED IN | cookie before reload b09c41332a17 | after leave b0fcc436b6ca | changed
+   events: 308ms call ka=true ; 327ms resolve ka=true 401 ; 550ms call ka=true ; 578ms resolve ka=true 200 ; 683ms call ka=true ; 706ms resolve ka=true 200 ; 12795ms call ka=true ; 12844ms resolve ka=true 200
+run 11 delay 25ms: LOST | cookie before reload a0614c15da88 | after leave 876b14e82529 | changed
+   events: 342ms call ka=true ; 365ms resolve ka=true 401 ; 749ms call ka=true ; 781ms resolve ka=true 200 ; 889ms call ka=true ; 12976ms call ka=true ; 13016ms resolve ka=true 401
+run 12 delay 25ms: SIGNED IN | cookie before reload d9c5d9f92ffc | after leave da4413a7c59e | changed
+   events: 326ms call ka=true ; 343ms resolve ka=true 401 ; 570ms call ka=true ; 598ms resolve ka=true 200 ; 677ms call ka=true ; 705ms resolve ka=true 200 ; 12772ms call ka=true ; 12821ms resolve ka=true 200
+run 13 delay 50ms: SIGNED IN | cookie before reload 18e264829cb7 | after leave 1a79ae27970f | changed
+   events: 263ms call ka=true ; 282ms resolve ka=true 401 ; 519ms call ka=true ; 551ms resolve ka=true 200 ; 654ms call ka=true ; 683ms resolve ka=true 200 ; 12778ms call ka=true ; 12831ms resolve ka=true 200
+run 14 delay 50ms: SIGNED IN | cookie before reload fc29f0a21322 | after leave dbcab806d2a4 | changed
+   events: 359ms call ka=true ; 378ms resolve ka=true 401 ; 609ms call ka=true ; 631ms resolve ka=true 200 ; 702ms call ka=true ; 728ms resolve ka=true 200 ; 12813ms call ka=true ; 12855ms resolve ka=true 200
+run 15 delay 50ms: SIGNED IN | cookie before reload 49861cdb22e5 | after leave 28f18ee5e6bd | changed
+   events: 272ms call ka=true ; 293ms resolve ka=true 401 ; 523ms call ka=true ; 556ms resolve ka=true 200 ; 664ms call ka=true ; 686ms resolve ka=true 200 ; 12772ms call ka=true ; 12827ms resolve ka=true 200
+run 16 delay 50ms: SIGNED IN | cookie before reload 37d40299f334 | after leave fb52acad5e70 | changed
+   events: 318ms call ka=true ; 339ms resolve ka=true 401 ; 573ms call ka=true ; 601ms resolve ka=true 200 ; 677ms call ka=true ; 700ms resolve ka=true 200 ; 12796ms call ka=true ; 12851ms resolve ka=true 200
+lost 3/16 {"15":{"lost":1,"runs":4},"20":{"lost":1,"runs":4},"25":{"lost":1,"runs":4},"50":{"lost":0,"runs":4}}

@@ -41,7 +41,8 @@
     "cancel": "Cancel",
     "confirm": "Confirm",
     "loadMore": "Load more",
-    "loading": "Loading…"
+    "loading": "Loading…",
+    "close": "Close"
   },
   "shell": {
     "brand": "Wordmet Admin",
@@ -52,6 +53,7 @@
     "account": "Account",
     "logout": "Log out",
     "loadingSession": "Checking your session…",
+    "sessionRetry": "The server is busy. Trying again in {seconds} s…",
     "skipToContent": "Skip to main content"
   },
   "nav": {
@@ -129,6 +131,10 @@
     }
   },
   "staff": {
+    "toast": {
+      "granted": "Granted the {role} role to {email}.",
+      "removed": "Removed the role from {email}."
+    },
     "createAccount": "Create account",
     "search": {
       "label": "Find by email",
@@ -190,12 +196,12 @@
     }
   },
   "navGroups": {
-    "overview": "OVERVIEW",
-    "content": "CONTENT",
-    "practice": "PRACTICE",
-    "learners": "LEARNERS",
+    "overview": "Overview",
+    "content": "Content",
+    "practice": "Practice",
+    "learners": "Learners",
     "ai": "AI",
-    "system": "SYSTEM"
+    "system": "System"
   },
   "comingSoon": {
     "title": "Feature not available yet",
@@ -278,7 +284,6 @@
     "open": "Details"
   },
   "batch": {
-    "back": "Imports",
     "rejected": "Download rejected.csv",
     "publish": "Publish this batch",
     "revert": "Revert batch",
@@ -336,7 +341,6 @@
     "batchFilter": "batch #{id}",
     "filterNone": "All",
     "jobTitle": "Publish job #{id}",
-    "back": "Publish jobs",
     "report": "Download report.csv",
     "createdAt": "Created {time}",
     "running": "Publishing: {done} / {total} senses",

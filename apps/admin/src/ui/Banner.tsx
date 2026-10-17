@@ -4,9 +4,9 @@ import type { ReactNode } from 'react';
 type Variant = 'info' | 'error' | 'offline';
 
 const STYLE: Record<Variant, string> = {
-  info: 'bg-primary-soft border-primary text-ink',
-  error: 'bg-danger-soft border-danger text-danger-strong',
-  offline: 'bg-surface border-border-strong text-ink',
+  info: 'bg-primary-soft text-ink',
+  error: 'bg-danger-soft text-danger',
+  offline: 'bg-accent-soft text-ink',
 };
 
 const ICON = { info: Info, error: TriangleAlert, offline: WifiOff } as const;
@@ -17,7 +17,7 @@ export function Banner({ variant, children, action }: { variant: Variant; childr
   return (
     <div
       role={variant === 'info' ? 'status' : 'alert'}
-      className={`flex flex-wrap items-center gap-3 rounded-control border px-3 py-3 text-ui ${STYLE[variant]}`}
+      className={`flex flex-wrap items-center gap-3 rounded-panel px-4 py-3 text-ui ${STYLE[variant]}`}
     >
       <Icon aria-hidden className="size-4 shrink-0" />
       <div className="min-w-0 flex-1 break-words">{children}</div>

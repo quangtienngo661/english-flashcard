@@ -1,0 +1,40 @@
++3.621s signed in, chain d4a4353d-1703-411f-8594-67cd48e6632e mode inflight gap 0 reloads 14
++7.235s done reloading; watching page 14
++8.113s first 429 on last page; browser cookie row (id | rotated_at | grace_until): 09b44c49 |  |
++52.553s outcome: SIGNED IN
+
+--- browser view of POST /v1/auth/refresh (CDP) ---
+page  0 sent +1.548s status 401 finished
+page  1 sent +4.137s status - pending
+page  2 sent +4.371s status - pending
+page  3 sent +4.556s status - pending
+page  4 sent +4.812s status - pending
+page  5 sent +5.036s status - pending
+page  6 sent +5.308s status - pending
+page  7 sent +5.527s status - pending
+page  8 sent +5.782s status - pending
+page  9 sent +5.995s status - pending
+page 10 sent +6.196s status - pending
+page 11 sent +6.491s status - pending
+page 12 sent +6.797s status - pending
+page 13 sent +7.032s status - pending
+page 14 sent +7.216s status 429 finished
+page 14 sent +52.242s status 200 finished
+sent 16; 200 seen 1; 429 seen 1; 401 seen 1; canceled before any response 0; canceled after headers 0
+
+--- server view ---
+chain (revoked_at | reason): |
+tokens (id | created | rotated | grace_until):
+cc3609c7 | 2026-10-15 15:33:10.21+00 | 2026-10-15 15:33:12.478+00 | 2026-10-15 15:33:22.478+00
+18a5bb5c | 2026-10-15 15:33:12.478+00 | 2026-10-15 15:33:12.684+00 | 2026-10-15 15:33:22.684+00
+f279828f | 2026-10-15 15:33:12.684+00 | 2026-10-15 15:33:13.035+00 | 2026-10-15 15:33:23.035+00
+5c09672d | 2026-10-15 15:33:13.035+00 | 2026-10-15 15:33:13.594+00 | 2026-10-15 15:33:23.594+00
+d1b8db6a | 2026-10-15 15:33:13.594+00 | 2026-10-15 15:33:13.901+00 | 2026-10-15 15:33:23.901+00
+f9bfdce9 | 2026-10-15 15:33:13.901+00 | 2026-10-15 15:33:14.065+00 | 2026-10-15 15:33:24.065+00
+5fc85d86 | 2026-10-15 15:33:14.065+00 | 2026-10-15 15:33:14.269+00 | 2026-10-15 15:33:24.269+00
+4de05ce6 | 2026-10-15 15:33:14.269+00 | 2026-10-15 15:33:14.732+00 | 2026-10-15 15:33:24.732+00
+09b44c49 | 2026-10-15 15:33:14.732+00 | 2026-10-15 15:34:00.548+00 | 2026-10-15 15:34:10.548+00
+a11d2184 | 2026-10-15 15:34:00.548+00 |  |
+chain rate counter: 2026-10-15 15:33:00+00 | 14
+2026-10-15 15:34:00+00 | 1
+api.log: refresh_grace_used 2, refresh_reuse_detected 0

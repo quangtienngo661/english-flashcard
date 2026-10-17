@@ -1,0 +1,35 @@
++1.329s signed in, chain 580860b2-9d27-45b3-a7f3-b1acc2457a93 mode inflight gap 2 reloads 14
++5.279s done reloading; watching page 14
++6.099s first 429 on last page; browser cookie row (id | rotated_at | grace_until): 1507998d | 2026-10-15 14:57:15.951+00 | 2026-10-15 14:57:25.951+00
++49.475s outcome: LOGIN PAGE (session lost)
+
+--- browser view of POST /v1/auth/refresh (CDP) ---
+page  0 sent +0.622s status 401 finished
+page  1 sent +3.600s status - pending
+page  2 sent +3.765s status - pending
+page  3 sent +3.909s status - pending
+page  4 sent +4.056s status 200 finished
+page  5 sent +4.181s status - pending
+page  6 sent +4.300s status - pending
+page  7 sent +4.413s status - pending
+page  8 sent +4.539s status - pending
+page  9 sent +4.647s status 200 finished
+page 10 sent +4.792s status - pending
+page 11 sent +4.888s status - pending
+page 12 sent +5.002s status - pending
+page 13 sent +5.124s status - pending
+page 14 sent +5.264s status 429 finished
+page 14 sent +49.292s status 401 finished
+sent 16; 200 seen 2; 429 seen 1; 401 seen 2; canceled before any response 0; canceled after headers 0
+
+--- server view ---
+chain (revoked_at | reason): 2026-10-15 14:58:00.47+00 | reuse_detected
+tokens (id | created | rotated | grace_until):
+c798a887 | 2026-10-15 14:57:12.02+00 | 2026-10-15 14:57:14.769+00 | 2026-10-15 14:57:24.769+00
+6adaf6e9 | 2026-10-15 14:57:14.769+00 | 2026-10-15 14:57:15.344+00 | 2026-10-15 14:57:25.344+00
+a3b6ef0f | 2026-10-15 14:57:15.344+00 | 2026-10-15 14:57:15.73+00 | 2026-10-15 14:57:25.73+00
+1507998d | 2026-10-15 14:57:15.73+00 | 2026-10-15 14:57:15.951+00 | 2026-10-15 14:57:25.951+00
+e270a97f | 2026-10-15 14:57:15.951+00 |  |
+chain rate counter: 2026-10-15 14:57:00+00 | 14
+2026-10-15 14:58:00+00 | 1
+api.log: refresh_grace_used 6, refresh_reuse_detected 1
