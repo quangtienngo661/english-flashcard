@@ -7,6 +7,9 @@ import { EntriesService, type EnsureEntryInput, type EnsureEntryResult, type Var
 import { LevelsService, type EntryLevelView, type ImportedLevelInput } from './catalog/levels.service.js';
 import { revertRecords, type RevertRecord, type RevertReport } from './catalog/revert.service.js';
 import type { Level } from './content.constants.js';
+import {
+  PrivateWordsService, type CreatePrivateSenseInput, type CreatePrivateSenseResult, type PrivateWordPatch,
+} from './private/private-words.service.js';
 import { InflectionsService, type EntryByForm, type InflectionInput, type InflectionSource } from './inflections/inflections.service.js';
 import { SourcesService, isSourceComplete, type SourceView } from './sources/sources.service.js';
 import { SensesService, type CreateSenseInput, type SaveDraftInput, type SaveDraftResult, type MarkRevisionItem, type MarkRevisionResult } from './senses/senses.service.js';
@@ -24,6 +27,7 @@ export class ContentService {
     @Inject(PublishService) private readonly publish: PublishService,
     @Inject(AdminCatalogQueries) private readonly queries: AdminCatalogQueries,
     @Inject(InflectionsService) private readonly inflections: InflectionsService,
+    @Inject(PrivateWordsService) private readonly privateWords: PrivateWordsService,
   ) {}
 
   getSource(id: string): Promise<SourceView | null> {
@@ -130,5 +134,26 @@ export class ContentService {
 
   entriesByForm(formKey: string, viewerId: string): Promise<EntryByForm[]> {
     return this.inflections.entriesByForm(formKey, viewerId);
+  }
+
+  createPrivateSense(tx: Prisma.TransactionClient, input: CreatePrivateSenseInput): Promise<CreatePrivateSenseResult> {
+    return this.privateWords.createPrivateSense(tx, input);
+  }
+
+  updatePrivateWord(tx: Prisma.TransactionClient, ownerId: string, entryId: string, patch: PrivateWordPatch): Promise<void> {
+    return this.privateWords.updatePrivateWord(tx, ownerId, entryId, patch);
+  }
+
+  deletePrivateEntryContent(tx: Prisma.TransactionClient, ownerId: string, entryId: string): Promise<{ senseIds: string[] }> {
+    return this.privateWords.deletePrivateEntryContent(tx, ownerId, entryId);
+  }
+
+  visibleSenseIds(viewerId: string, senseIds: string[]): Promise<Set<string>> {
+    return this.privateWords.visibleSenseIds(viewerId, senseIds);
+  }
+
+  bulkCandidates(filter: { level?: Level; topic?: string; pos?: string }, limit: number):
+    Promise<{ senseIds: string[]; skippedFunctionWords: number }> {
+    return this.privateWords.bulkCandidates(filter, limit);
   }
 }

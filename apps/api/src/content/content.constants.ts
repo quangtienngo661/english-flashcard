@@ -23,3 +23,10 @@ export const INFLECTION_KINDS = [
   'third_person', 'present_participle', 'past', 'past_participle', 'plural', 'comparative', 'superlative',
 ] as const;
 export type InflectionKind = (typeof INFLECTION_KINDS)[number];
+
+// Learner limits; Bước 5 turns these into tier quotas.
+export const PRIVATE_WORDS_MAX = 1_000;
+export const MEANING_MAX = 300;
+export const LEMMA_MAX = 100;
+/** Stored as pos when a learner gives none; never valid for catalog rows. */
+export const PRIVATE_POS_UNSET = 'unspecified';
