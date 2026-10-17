@@ -1,10 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
 import { testConfig } from '../../../test/support/test-config.js';
-import { FakeClock } from '../../common/clock/clock.js';
-import { AppLogger, type LogEntry } from '../../common/logging/app-logger.js';
-import { ProblemDetailsException } from '../../common/problem-details/problem-details.exception.js';
+import { FakeClock } from '../clock/clock.js';
+import { AppLogger, type LogEntry } from '../logging/app-logger.js';
+import { ProblemDetailsException } from '../problem-details/problem-details.exception.js';
 import type { PrismaClient } from '../../generated/prisma/client.js';
-import { MailBudget } from './mail-budget.service.js';
+import { MailBudget, mailLimit, REMINDER_MAIL_SHARE } from './mail-budget.service.js';
 
 function setup(budget = 2) {
   const config = testConfig({ mailDailyBudget: budget, mailBudgetKey: 'test' });
@@ -96,5 +96,14 @@ describe('MailBudget', () => {
     upsert.mockRejectedValueOnce(error);
     await expect(budget.assertAvailable()).rejects.toBe(error);
     await expect(budget.tryConsume()).rejects.toBe(error);
+  });
+
+  it('B3#18: mailLimit rounds the share of the budget down, and reminders get 80%', () => {
+    expect(REMINDER_MAIL_SHARE).toBe(0.8);
+    expect(mailLimit(7, 0.8)).toBe(5);
+    expect(mailLimit(10, 0.8)).toBe(8);
+    expect(mailLimit(1500, REMINDER_MAIL_SHARE)).toBe(1200);
+    expect(mailLimit(1, 0.8)).toBe(0);
+    expect(mailLimit(10, 1)).toBe(10);
   });
 });

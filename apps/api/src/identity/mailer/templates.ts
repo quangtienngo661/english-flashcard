@@ -1,5 +1,5 @@
 import type { OtpPurpose } from '../identity.types.js';
-import type { MailMessage } from './mailer.js';
+import type { MailMessage } from '../../common/mail/mailer.js';
 
 export function otpMail(to: string, purpose: OtpPurpose, code: string): MailMessage {
   return {

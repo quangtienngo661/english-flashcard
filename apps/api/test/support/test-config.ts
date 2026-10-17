@@ -23,6 +23,7 @@ export function testConfig(overrides?: Partial<AppConfig>): AppConfig {
     corsOrigins: ['http://localhost:3000'],
     problemTypeBase: 'https://api.example.com/problems/',
     adminAppUrl: 'http://localhost:5173',
+    learnerAppUrl: 'http://localhost:3001',
     maintenanceEnabled: false,
     content: { publishMaxItems: 500 },
     pipeline: {

@@ -1,8 +1,8 @@
 import { EventEmitter } from 'node:events';
 import type { Response } from 'express';
 import { describe, expect, it, vi } from 'vitest';
-import { AppLogger, type LogEntry } from '../../common/logging/app-logger.js';
-import { getOperationId, runWithOperationId } from '../../common/logging/request-context.js';
+import { AppLogger, type LogEntry } from '../logging/app-logger.js';
+import { getOperationId, runWithOperationId } from '../logging/request-context.js';
 import { FakeMailer } from './fake-mailer.js';
 import { MailBudget } from './mail-budget.service.js';
 import { MailDispatcher, sendPrepared } from './mail-dispatcher.service.js';

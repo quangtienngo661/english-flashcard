@@ -49,6 +49,8 @@ export interface AppConfig {
   corsOrigins: string[];
   problemTypeBase: string;
   adminAppUrl: string;
+  /** Origin of the learner app (apps/web); reminder emails link to `<learnerAppUrl>/<language>/app/settings`. */
+  learnerAppUrl: string;
   maintenanceEnabled: boolean;
   content: {
     publishMaxItems: number;
@@ -149,6 +151,11 @@ const envSchema = z.object({
       .transform(({ value }) => value)).min(1)),
   PROBLEM_TYPE_BASE: z.url(),
   ADMIN_APP_URL: z.url(),
+  LEARNER_APP_URL: z.url().refine((value) => {
+    if (!URL.canParse(value)) return false;
+    const url = new URL(value);
+    return ['http:', 'https:'].includes(url.protocol) && url.origin === value;
+  }),
   MAINTENANCE_ENABLED: booleanString.default(true),
   ACCESS_TOKEN_TTL_SECONDS: positiveInteger.default(900),
   PUBLISH_MAX_ITEMS: positiveInteger.default(500),
@@ -199,6 +206,7 @@ export function loadConfig(env: NodeJS.ProcessEnv): AppConfig {
     corsOrigins: values.CORS_ORIGINS,
     problemTypeBase: values.PROBLEM_TYPE_BASE,
     adminAppUrl: values.ADMIN_APP_URL,
+    learnerAppUrl: values.LEARNER_APP_URL,
     maintenanceEnabled: values.MAINTENANCE_ENABLED,
     content: { publishMaxItems: values.PUBLISH_MAX_ITEMS },
     pipeline: {
