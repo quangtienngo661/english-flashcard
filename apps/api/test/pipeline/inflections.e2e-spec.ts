@@ -138,6 +138,34 @@ describe('inflections and form-of links in the CSV flow (e2e, isolated database)
     expect(same.outcomes).toEqual([expect.objectContaining({ outcome: 'unchanged' })]);
   });
 
+  it('D29/D46 (import): a newly created entry gets library forms in the same transaction; an inflections cell gives the reviewed set instead; existing entries and adjectives get none', async () => {
+    const existing = await catalogWord('walk', 'verb');
+    const { outcomes } = await importFile(csv(['headword', 'pos', 'inflections'], [
+      ['run', 'verb', ''], ['mouse', 'noun', ''], ['happy', 'adjective', ''], ['go', 'verb', 'past:went'], ['walk', 'verb', '']]));
+    expect(outcomes.map(({ outcome }) => outcome)).toEqual(['created', 'created', 'created', 'created', 'unchanged']);
+    const formsOf = async (lemma: string) => {
+      const entry = await ctx.prisma.entry.findFirstOrThrow({ where: { lemma } });
+      return (await ctx.prisma.entryInflection.findMany({ where: { entryId: entry.id }, orderBy: { position: 'asc' } }))
+        .map(({ kind, form, source }) => `${source} ${kind}:${form}`);
+    };
+    expect(await formsOf('run')).toEqual(['library third_person:runs', 'library present_participle:running',
+      'library past:ran', 'library past_participle:run'].filter((form) => !form.endsWith(':run')));
+    expect(await formsOf('mouse')).toEqual(['library plural:mice']);
+    expect(await formsOf('happy')).toEqual([]);
+    expect(await formsOf('go')).toEqual(['reviewed past:went']);
+    expect(await forms(existing.entryId)).toEqual([]);
+  });
+
+  it('D47: a new uncountable noun gets no library plural, but a reviewed plural for it from CSV is kept', async () => {
+    await importFile(csv(['headword', 'pos', 'inflections'], [['software', 'noun', ''], ['information', 'noun', 'plural:informations']]));
+    const software = await ctx.prisma.entry.findFirstOrThrow({ where: { lemma: 'software' } });
+    expect(await forms(software.id)).toEqual([]);
+    await importFile(csv(['headword', 'pos', 'inflections'], [['software', 'noun', 'plural:softwares']]));
+    expect(await forms(software.id)).toEqual([{ form: 'softwares', kind: 'plural', source: 'reviewed' }]);
+    const information = await ctx.prisma.entry.findFirstOrThrow({ where: { lemma: 'information' } });
+    expect(await forms(information.id)).toEqual([{ form: 'informations', kind: 'plural', source: 'reviewed' }]);
+  });
+
   it('an unknown kind → invalid-inflection listing the kinds', async () => {
     await catalogWord('go', 'verb');
     const { outcomes } = await importFile(csv(['headword', 'pos', 'inflections'], [['go', 'verb', 'past:went; future:will go']]));

@@ -6,6 +6,8 @@ import { ContentModule } from '../content/content.module.js';
 import { IdentityModule } from '../identity/identity.module.js';
 import { ExportService } from './export/export.service.js';
 import { EntriesExportController, SensesExportController } from './export/senses-export.controller.js';
+import { InflectionsBackfillController } from './inflections/inflections-backfill.controller.js';
+import { InflectionsBackfillHandler } from './inflections/inflections-backfill.handler.js';
 import { ImportBatchHandler } from './import/import-batch.handler.js';
 import { ImportFileCleanupService } from './import/import-file-cleanup.service.js';
 import { ImportRowProcessor } from './import/row-processor.js';
@@ -33,12 +35,13 @@ import { UploadsService } from './upload/uploads.service.js';
       }),
     }),
   ],
-  controllers: [PublishJobsController, UploadsController, UploadsReadController, SensesExportController, EntriesExportController],
+  controllers: [PublishJobsController, UploadsController, UploadsReadController, SensesExportController, EntriesExportController,
+    InflectionsBackfillController],
   providers: [
     BackgroundJobsService, JobQueueService, JobHandlerRegistry, JobRunnerService, JobReconcilerService,
     UploadsService, MulterExceptionFilter, IdempotencyInterceptor,
     ImportRowProcessor, ImportBatchHandler, ImportFileCleanupService,
-    ExportService, PublishJobHandler,
+    ExportService, PublishJobHandler, InflectionsBackfillHandler,
   ],
   exports: [BackgroundJobsService, JobQueueService, JobHandlerRegistry, JobRunnerService, JobReconcilerService],
 })

@@ -45,7 +45,7 @@ const senseInclude = {
   entry: { include: { levels: levelsQuery, variants: entryInclude.variants } }, revisions: revisionsQuery,
 } satisfies Prisma.SenseInclude;
 // Exports also carry the entry's inflections and each revision's form-of base (D29).
-const inflectionsQuery = { select: { form: true, kind: true, source: true } } satisfies Prisma.Entry$inflectionsArgs;
+const inflectionsQuery = { select: { form: true, kind: true, source: true }, orderBy: { position: 'asc' } } satisfies Prisma.Entry$inflectionsArgs;
 const exportSenseInclude = {
   entry: { include: { levels: levelsQuery, variants: entryInclude.variants, inflections: inflectionsQuery } },
   revisions: { ...revisionsQuery, include: { texts: true, formOf: { select: { lemma: true, pos: true } } } },
@@ -97,8 +97,8 @@ function levelState(levels: LevelRow[]): { displayed_level: Level | null; confli
  * `_inflections` shows the library set for the reviewer. Ordered by kind, then form. */
 function inflectionCells(rows: ReadonlyArray<{ form: string; kind: string; source: string }>) {
   const format = (source: string) => rows.filter((row) => row.source === source)
-    .sort((a, b) => INFLECTION_KINDS.indexOf(a.kind as InflectionKind) - INFLECTION_KINDS.indexOf(b.kind as InflectionKind)
-      || (a.form < b.form ? -1 : a.form > b.form ? 1 : 0))
+    // Rows arrive in stored order; a stable sort by kind keeps that order within each kind.
+    .sort((a, b) => INFLECTION_KINDS.indexOf(a.kind as InflectionKind) - INFLECTION_KINDS.indexOf(b.kind as InflectionKind))
     .map(({ kind, form }) => `${kind}:${form}`).join('; ');
   return { inflections: format('reviewed'), _inflections: format('library') };
 }

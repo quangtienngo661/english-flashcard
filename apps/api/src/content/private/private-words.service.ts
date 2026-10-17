@@ -9,6 +9,8 @@ import {
 } from '../content.constants.js';
 import { ContentRuleError, contentHash, revisionFormOf, type RevisionContent } from '../senses/revision-content.js';
 import { LevelsService } from '../catalog/levels.service.js';
+import { generateInflections } from '../inflections/inflect.js';
+import { InflectionsService } from '../inflections/inflections.service.js';
 import { visibleSenseCondition } from '../learner/visible-senses.js';
 
 export type Meaning = { text: string; language: 'vi' | 'en' };
@@ -69,6 +71,7 @@ export class PrivateWordsService {
     @Inject(PRISMA_CLIENT) private readonly prisma: PrismaClient,
     @Inject(Clock) private readonly clock: Clock,
     @Inject(LevelsService) private readonly levels: LevelsService,
+    @Inject(InflectionsService) private readonly inflections: InflectionsService,
   ) {}
 
   /** One lock per owner serializes the limit count and the (owner, lemma, pos) uniqueness check. */
@@ -132,7 +135,8 @@ export class PrivateWordsService {
         throw new PrivateWordLimitError();
       }
       entry = await tx.entry.create({ data: { language: 'en', lemma, pos, scope: 'private', ownerUserId: input.ownerId } });
-      // Library inflections for a new private word arrive with Task 4b (inflection source gate G6).
+      // Private words have only the library set (design 7.3).
+      await this.inflections.replaceInflections(tx, entry.id, 'library', generateInflections(lemma, pos));
     }
 
     // Private labels are internal: the live-sense index allows one null label per entry, so later meanings get p2, p3, …
@@ -167,6 +171,9 @@ export class PrivateWordsService {
       if (await tx.entry.findFirst({ where: { scope: 'private', ownerUserId: ownerId, language: 'en', lemma, pos, id: { not: entry.id } },
         select: { id: true } })) throw new ContentRuleError('private-word-exists');
       await tx.entry.update({ where: { id: entry.id }, data: { lemma, pos } });
+      if (lemma !== entry.lemma || pos !== entry.pos) {
+        await this.inflections.replaceInflections(tx, entry.id, 'library', generateInflections(lemma, pos));
+      }
     }
     const topicCodes = patch.topicCodes !== undefined ? await this.validTopics(tx, patch.topicCodes) : undefined;
     const meanings = new Map((patch.senses ?? []).map(({ senseId, meaning }) => [senseId, meaningContent(meaning)]));

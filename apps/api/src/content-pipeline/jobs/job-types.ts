@@ -1,6 +1,6 @@
 import type { Prisma } from '../../generated/prisma/client.js';
 
-export type JobQueueName = 'content-import' | 'content-publish';
+export type JobQueueName = 'content-import' | 'content-publish' | 'content-inflections';
 
 export class LeaseLostError extends Error {
   constructor(jobId: string) {

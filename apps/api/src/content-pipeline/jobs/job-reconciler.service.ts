@@ -7,7 +7,7 @@ import type { PrismaClient } from '../../generated/prisma/client.js';
 import { JobQueueService } from './job-queue.service.js';
 import type { JobQueueName } from './job-types.js';
 
-const QUEUES: JobQueueName[] = ['content-import', 'content-publish'];
+const QUEUES: JobQueueName[] = ['content-import', 'content-publish', 'content-inflections'];
 type ReconcileResult = { requeued: number; failed: number };
 
 @Injectable()

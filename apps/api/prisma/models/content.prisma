@@ -154,6 +154,8 @@ model EntryInflection {
   formKey String @map("form_key")
   kind    String
   source  String
+  // Order within the entry's set as given (AGID order for library forms, the CSV cell's order for reviewed ones).
+  position Int    @default(0)
 
   entry Entry @relation(fields: [entryId], references: [id], onDelete: Cascade)
 

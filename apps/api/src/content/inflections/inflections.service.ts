@@ -24,10 +24,13 @@ export class InflectionsService {
   ): Promise<void> {
     if (source === 'library' && await tx.entryInflection.findFirst({ where: { entryId, source: 'reviewed' }, select: { id: true } })) return;
     await tx.entryInflection.deleteMany({ where: { entryId, ...(source === 'library' ? { source: 'library' } : {}) } });
-    const rows = new Map(forms.map(({ form, kind }) => {
+    // position keeps the given order (AGID order for library forms) so every form of a kind is listed as received.
+    const rows = new Map<string, Prisma.EntryInflectionCreateManyInput>();
+    for (const { form, kind } of forms) {
       const text = normalizeText(form);
-      return [`${kind}\0${text}`, { entryId, form: text, formKey: inflectionFormKey(text), kind, source }];
-    }));
+      const key = `${kind}\0${text}`;
+      if (!rows.has(key)) rows.set(key, { entryId, form: text, formKey: inflectionFormKey(text), kind, source, position: rows.size });
+    }
     if (rows.size) await tx.entryInflection.createMany({ data: [...rows.values()] });
   }
 
