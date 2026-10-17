@@ -95,12 +95,14 @@ function levelState(levels: LevelRow[]): { displayed_level: Level | null; confli
 }
 /** `inflections` holds the reviewed set only (uploading an export never promotes library forms);
  * `_inflections` shows the library set for the reviewer. Ordered by kind, then form. */
-function inflectionCells(rows: ReadonlyArray<{ form: string; kind: string; source: string }>) {
+function inflectionCells(rows: ReadonlyArray<{ form: string; kind: string; source: string }>, reviewedAt: Date | null) {
   const format = (source: string) => rows.filter((row) => row.source === source)
     // Rows arrive in stored order; a stable sort by kind keeps that order within each kind.
     .sort((a, b) => INFLECTION_KINDS.indexOf(a.kind as InflectionKind) - INFLECTION_KINDS.indexOf(b.kind as InflectionKind))
     .map(({ kind, form }) => `${kind}:${form}`).join('; ');
-  return { inflections: format('reviewed'), _inflections: format('library') };
+  // "-" round-trips a reviewed decision that the entry has no forms (M3).
+  const reviewed = format('reviewed');
+  return { inflections: reviewed || (reviewedAt ? '-' : ''), _inflections: format('library') };
 }
 function readContent(revision: RevisionRow): RevisionContent {
   return {
@@ -310,7 +312,7 @@ export class AdminCatalogQueries {
         if (filter.level !== undefined && level !== filter.level) continue;
         if (rows.length === limit) return { tooMany: true };
         rows.push({ headword: [entry.lemma, ...entry.variants.map(({ text }) => text)].join('/'), pos: entry.pos, _level: level,
-          ...inflectionCells(entry.inflections) });
+          ...inflectionCells(entry.inflections, entry.inflectionsReviewedAt) });
       }
       if (chunk.length < 500) return { rows };
       const last = chunk[chunk.length - 1];
@@ -343,7 +345,7 @@ export class AdminCatalogQueries {
           topics: content.topicCodes.join(';'), accepted_forms: content.acceptedForms.join(';'),
           context_label: sense.contextLabel, sense_id: sense.id, revision: revision.revisionNo,
           form_of: revision.formOf && revision.formKind ? `${revision.formOf.lemma}/${revision.formOf.pos}:${revision.formKind}` : '',
-          ...inflectionCells(sense.entry.inflections),
+          ...inflectionCells(sense.entry.inflections, sense.entry.inflectionsReviewedAt),
           _status: revision.status, _level: selected.displayed_level,
           ...(filter.status === 'unpublishable' ? { _missing: selected.missing.join(';') } : {}),
         });

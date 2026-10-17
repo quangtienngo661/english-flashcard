@@ -2,9 +2,10 @@ import { Inject, Injectable } from '@nestjs/common';
 import { Clock } from '../../common/clock/clock.js';
 import { PRISMA_CLIENT } from '../../common/db/prisma.module.js';
 import { AppLogger } from '../../common/logging/app-logger.js';
-import type { Prisma, PrismaClient } from '../../generated/prisma/client.js';
+import { Prisma, type PrismaClient } from '../../generated/prisma/client.js';
 import { normalizeText } from '../catalog/normalize.js';
 import { SENTENCE_MAX, SENTENCES_PER_SENSE_MAX } from '../content.constants.js';
+import { visibleSenseCondition } from '../learner/visible-senses.js';
 import { ContentRuleError } from '../senses/revision-content.js';
 
 export type Sentence = { id: string; text: string; createdAt: Date };
@@ -28,19 +29,25 @@ export class SentencesService {
   async addSentence(tx: Prisma.TransactionClient, input: { userId: string; senseId: string; text: string }): Promise<Sentence> {
     const text = normalizeText(input.text);
     if (!text || text.includes('\0') || [...text].length > SENTENCE_MAX) throw new ContentRuleError('validation-failed');
-    // The sense must be visible: published and open in the catalog, or the learner's own private sense.
-    if (!await tx.sense.findFirst({ where: { id: input.senseId, OR: [
-      { state: 'open', liveRevisionId: { not: null }, entry: { scope: 'catalog' } },
-      { entry: { scope: 'private', ownerUserId: input.userId } },
-    ] }, select: { id: true } })) throw new NotVisibleError();
+    // The shared rule (L5): an open sense with a live revision, in the catalog or the learner's own.
+    const [visible] = await tx.$queryRaw<Array<{ ok: boolean }>>`
+      SELECT ${visibleSenseCondition(Prisma.sql`${input.senseId}::uuid`, input.userId)} AS ok`;
+    if (!visible?.ok) throw new NotVisibleError();
     // Serialize adds per (learner, sense) so concurrent requests cannot pass the limit together.
     await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${`content.sentences:${input.userId}:${input.senseId}`}, 0))`;
     if (await tx.contextSentence.count({ where: { userId: input.userId, senseId: input.senseId } }) >= SENTENCES_PER_SENSE_MAX) {
       throw new SentenceLimitError();
     }
-    const sentence = await tx.contextSentence.create({
-      data: { userId: input.userId, senseId: input.senseId, text, createdAt: this.clock.now() }, select: sentenceSelect,
-    });
+    let sentence: Sentence;
+    try {
+      sentence = await tx.contextSentence.create({
+        data: { userId: input.userId, senseId: input.senseId, text, createdAt: this.clock.now() }, select: sentenceSelect,
+      });
+    } catch (error) {
+      // The owner deleted the private word between the check and the insert (L19): the sense is gone, so 404.
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2003') throw new NotVisibleError();
+      throw error;
+    }
     this.logger.info('context_sentence_added', { user_id: input.userId, sense_id: input.senseId, sentence_id: sentence.id });
     return sentence;
   }

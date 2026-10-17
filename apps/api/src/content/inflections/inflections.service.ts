@@ -1,4 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
+import { Clock } from '../../common/clock/clock.js';
 import { PRISMA_CLIENT } from '../../common/db/prisma.module.js';
 import type { Prisma, PrismaClient } from '../../generated/prisma/client.js';
 import { normalizeText } from '../catalog/normalize.js';
@@ -15,14 +16,22 @@ export function inflectionFormKey(form: string): string {
 /** Inflected forms per entry (D29). Writes use the caller's transaction, which holds the entry lock. */
 @Injectable()
 export class InflectionsService {
-  constructor(@Inject(PRISMA_CLIENT) private readonly prisma: PrismaClient) {}
+  constructor(
+    @Inject(PRISMA_CLIENT) private readonly prisma: PrismaClient,
+    @Inject(Clock) private readonly clock: Clock,
+  ) {}
 
-  /** A reviewed set replaces every row of the entry; a library set replaces only library rows and
-   * is skipped when the entry already has reviewed rows (reviewed wins). */
+  /** A reviewed set replaces every row of the entry and marks the entry reviewed (an empty set records "no forms",
+   * M3); a library set replaces only library rows and is skipped once the entry is reviewed (reviewed wins). */
   async replaceInflections(
     tx: Prisma.TransactionClient, entryId: string, source: InflectionSource, forms: InflectionInput[],
   ): Promise<void> {
-    if (source === 'library' && await tx.entryInflection.findFirst({ where: { entryId, source: 'reviewed' }, select: { id: true } })) return;
+    if (source === 'library') {
+      const entry = await tx.entry.findUnique({ where: { id: entryId }, select: { inflectionsReviewedAt: true } });
+      if (entry?.inflectionsReviewedAt) return;
+    } else {
+      await tx.entry.update({ where: { id: entryId }, data: { inflectionsReviewedAt: this.clock.now() } });
+    }
     await tx.entryInflection.deleteMany({ where: { entryId, ...(source === 'library' ? { source: 'library' } : {}) } });
     // position keeps the given order (AGID order for library forms) so every form of a kind is listed as received.
     const rows = new Map<string, Prisma.EntryInflectionCreateManyInput>();
@@ -34,7 +43,8 @@ export class InflectionsService {
     if (rows.size) await tx.entryInflection.createMany({ data: [...rows.values()] });
   }
 
-  /** Catalog entries plus the viewer's own private entries that list this form. */
+  /** Every catalog entry (with or without a visible sense) plus the viewer's own private entries that list this form;
+   * never another learner's private entry. Lookup offers catalog bases without senses too (B3E14, M8). */
   async entriesByForm(form: string, viewerId: string): Promise<EntryByForm[]> {
     const rows = await this.prisma.entryInflection.findMany({
       where: { formKey: inflectionFormKey(form), entry: { OR: [{ scope: 'catalog' }, { scope: 'private', ownerUserId: viewerId }] } },

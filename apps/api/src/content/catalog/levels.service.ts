@@ -73,7 +73,8 @@ export class LevelsService {
       where: { entryId_sourceId_level: { entryId, sourceId: OWNER_SOURCE_ID, level } },
       create: { entryId, sourceId: OWNER_SOURCE_ID, level, basis: 'editorial', createdAt: this.clock.now() },
       // Refresh only the owner's editorial choice when reselecting a level; imported rows stay immutable.
-      update: { createdAt: this.clock.now() },
+      // A derived level shares the owner source, so confirming its value lands here and must become editorial (M5).
+      update: { createdAt: this.clock.now(), basis: 'editorial' },
     });
   }
 }

@@ -46,6 +46,8 @@ model Entry {
   // catalog | private; a private entry belongs to one learner (Identity user id, no cross-module FK).
   scope                String   @default("catalog")
   ownerUserId          String?  @map("owner_user_id") @db.Uuid
+  // Set whenever a reviewed inflection set is written, the empty set ("-") included (M3); library runs then skip it.
+  inflectionsReviewedAt DateTime? @map("inflections_reviewed_at") @db.Timestamptz
   createdAt            DateTime @default(now()) @map("created_at") @db.Timestamptz
   updatedAt            DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
 
@@ -131,6 +133,8 @@ model SenseRevision {
 
   @@unique([senseId, revisionNo])
   @@index([topicCodes], type: Gin)
+  // Used by the entries_clear_form_kind trigger and by deletes of a base entry (L7).
+  @@index([formOfEntryId])
   @@map("sense_revisions")
 }
 

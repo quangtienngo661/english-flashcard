@@ -1,7 +1,9 @@
 import { createHash, randomUUID } from 'node:crypto';
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ContentService, INFLECTION_KINDS, OWNER_SOURCE_ID, type InflectionKind, type RevisionContent } from '../../src/content/index.js';
 import { ImportBatchHandler } from '../../src/content-pipeline/import/import-batch.handler.js';
+import { ImportRowProcessor } from '../../src/content-pipeline/import/row-processor.js';
+import { InflectionsBackfillHandler } from '../../src/content-pipeline/inflections/inflections-backfill.handler.js';
 import { BackgroundJobsService, makeJobContext } from '../../src/content-pipeline/jobs/background-jobs.service.js';
 import { classifyColumns } from '../../src/content-pipeline/upload/columns.js';
 import { parseUploadFile } from '../../src/content-pipeline/upload/csv-file.js';
@@ -176,6 +178,29 @@ describe('inflections and form-of links in the CSV flow (e2e, isolated database)
     expect(empty.outcomes).toEqual([expect.objectContaining({ errorCodes: ['invalid-inflection'] })]);
   });
 
+  it('L9: form_of to the row\'s own entry, a kind that does not fit the base\'s part of speech, or a NUL character rejects only that row', async () => {
+    await catalogWord('go', 'verb');
+    await catalogWord('book', 'noun');
+    const { status, outcomes } = await importFile(csv(['headword', 'pos', 'gloss_vi', 'form_of'], [
+      ['go', 'verb', 'đi', 'go/verb:past'], ['booked', 'verb', 'đã đặt', 'book/noun:past'], ['went', 'verb', 'đã đi', 'go\u0000/verb:past'],
+      ['went', 'verb', 'đã đi', 'go/verb:past']]));
+    expect(status).toBe('partial');
+    expect(outcomes.map(({ outcome, errorCodes }) => [outcome, errorCodes])).toEqual([
+      ['rejected', ['invalid-form-of']], ['rejected', ['invalid-form-of']], ['rejected', ['invalid-form-of']], ['created', []]]);
+  });
+
+  it('T-A2: form_of naming a private entry is not found; a new entry created by that rejected row is rolled back; a base without a level gives no derived level', async () => {
+    const owner = randomUUID();
+    await ctx.prisma.$executeRaw`INSERT INTO entries (language, lemma, pos, scope, owner_user_id) VALUES ('en', 'yeet', 'verb', 'private', ${owner}::uuid)`;
+    const rejected = await importFile(csv(['headword', 'pos', 'gloss_vi', 'form_of'], [['yeeted', 'verb', 'ném', 'yeet/verb:past']]));
+    expect(rejected.outcomes).toEqual([expect.objectContaining({ outcome: 'rejected', errorCodes: ['form-of-not-found'] })]);
+    expect(await ctx.prisma.entry.count({ where: { lemma: 'yeeted' } })).toBe(0);
+    await catalogWord('blorp', 'verb');
+    await importFile(csv(['headword', 'pos', 'gloss_vi', 'form_of'], [['blorped', 'verb', 'đã blorp', 'blorp/verb:past']]));
+    const blorped = await ctx.prisma.entry.findFirstOrThrow({ where: { lemma: 'blorped' }, include: { levels: true } });
+    expect(blorped.levels).toEqual([]);
+  });
+
   it('form_of naming a missing entry → form-of-not-found; a malformed cell → invalid-form-of', async () => {
     const { outcomes } = await importFile(csv(['headword', 'pos', 'gloss_vi', 'form_of'], [
       ['went', 'verb', 'đã đi', 'gogo/verb:past'], ['gone', 'verb', 'đã đi', 'go-verb-past'], ['goes', 'verb', 'đi', 'go/verb:future']]));
@@ -217,15 +242,92 @@ describe('inflections and form-of links in the CSV flow (e2e, isolated database)
       'topics', 'accepted_forms', 'context_label', 'form_of', 'inflections', '_level', '_inflections']);
   });
 
-  it('re-uploading a level file whose rows carry an unchanged inflections cell is prefiltered as unchanged', async () => {
+  it('T-A1: a level row that carries an inflections cell is always processed again (never skipped by the prefilter) and reports unchanged', async () => {
     const source = await ctx.prisma.dataSource.create({ data: {
       kind: 'third_party', name: `CEFR-J ${randomUUID()}`, version: '1.5', displayPriority: 10, license: 'fixture', attribution: 'fixture',
     } });
     const bytes = csv(['headword', 'pos', 'CEFR', 'inflections'], [['go', 'verb', 'A1', 'past:went; past_participle:gone']]);
     const first = await importFile(bytes, source.id);
     expect(first.outcomes).toEqual([expect.objectContaining({ outcome: 'created' })]);
-    expect(await ctx.prisma.importRowKey.count({ where: { batchId: first.id, kind: 'inflection' } })).toBe(1);
-    const second = await importFile(bytes, source.id);
-    expect(second.outcomes).toEqual([expect.objectContaining({ outcome: 'unchanged' })]);
+    const processed = vi.spyOn(ctx.app.get(ImportRowProcessor), 'process');
+    try {
+      const second = await importFile(bytes, source.id);
+      expect(second.outcomes).toEqual([expect.objectContaining({ outcome: 'unchanged' })]);
+      expect(processed).toHaveBeenCalledTimes(1);
+    } finally {
+      processed.mockRestore();
+    }
+  });
+
+  it('H1: re-uploading an earlier identical file after a later one changed the reviewed forms restores them', async () => {
+    const go = await catalogWord('go', 'verb');
+    const fa = csv(['headword', 'pos', 'inflections'], [['go', 'verb', 'past:went']]);
+    expect((await importFile(fa)).outcomes.map(({ outcome }) => outcome)).toEqual(['updated']);
+    expect((await importFile(csv(['headword', 'pos', 'inflections'], [['go', 'verb', 'past:goed']]))).outcomes
+      .map(({ outcome }) => outcome)).toEqual(['updated']);
+    expect(await forms(go.entryId)).toEqual([{ form: 'goed', kind: 'past', source: 'reviewed' }]);
+    const again = await importFile(fa);
+    expect(again.outcomes.map(({ outcome }) => outcome)).toEqual(['updated']);
+    expect(await forms(go.entryId)).toEqual([{ form: 'went', kind: 'past', source: 'reviewed' }]);
+  });
+
+  it('M3: "-" records a reviewed empty set that the backfill and later imports respect; the error message names "-"', async () => {
+    const pork = await catalogWord('pork', 'noun');
+    await write('pork', 'noun', (tx) => content.replaceInflections(tx, pork.entryId, 'library', [{ form: 'porks', kind: 'plural' }]));
+    const dash = await importFile(csv(['headword', 'pos', 'inflections'], [['pork', 'noun', '-']]));
+    expect(dash.outcomes.map(({ outcome }) => outcome)).toEqual(['updated']);
+    expect(await forms(pork.entryId)).toEqual([]);
+    expect((await ctx.prisma.entry.findUniqueOrThrow({ where: { id: pork.entryId } })).inflectionsReviewedAt).toEqual(ctx.clock.now());
+    // The same "-" again is unchanged; the backfill does not bring porks back.
+    expect((await importFile(csv(['headword', 'pos', 'inflections'], [['pork', 'noun', '-']]))).outcomes
+      .map(({ outcome }) => outcome)).toEqual(['unchanged']);
+    const jobs = ctx.app.get(BackgroundJobsService);
+    const jobId = await ctx.prisma.$transaction((tx) => jobs.create(tx, { queue: 'content-inflections', createdBy: actorId, operationId: randomUUID() }));
+    const lease = await jobs.acquire(jobId, randomUUID());
+    expect(await ctx.app.get(InflectionsBackfillHandler).run(makeJobContext(ctx.prisma, jobId, lease!.attempts, lease!.epoch))).toBe('succeeded');
+    expect(await forms(pork.entryId)).toEqual([]);
+    // Export shows "-" so an export → upload round trip keeps the decision.
+    const exported = await exportFile('/v1/admin/content/entries/export', { has_sense: 'false' });
+    // The formula guard writes "-" as "'-", and the upload strips it again.
+    expect(exported.rows.find((row) => row.headword === 'pork')).toMatchObject({ inflections: "'-", _inflections: '' });
+    expect((await importFile(exported.bytes)).outcomes.map(({ outcome }) => outcome)).toEqual(['unchanged']);
+    expect(await forms(pork.entryId)).toEqual([]);
+    const bad = await importFile(csv(['headword', 'pos', 'inflections'], [['pork', 'noun', 'plural']]));
+    expect(bad.outcomes[0].errorMessages[0]).toContain('"-"');
+  });
+
+  it('M4: a row whose only cell is form_of "-" is not a content row: no sense is created and the entry stays in the has_sense=false export', async () => {
+    await catalogWord('quiet', 'adjective', { level: 'A1' });
+    const { outcomes } = await importFile(csv(['headword', 'pos', 'gloss_vi', 'form_of'], [['quiet', 'adjective', '', '-']]));
+    expect(outcomes.map(({ outcome }) => outcome)).toEqual(['unchanged']);
+    expect(await ctx.prisma.sense.count()).toBe(0);
+    expect(await ctx.prisma.senseRevision.count()).toBe(0);
+    const exported = await exportFile('/v1/admin/content/entries/export', { has_sense: 'false' });
+    expect(exported.rows.map((row) => row.headword)).toContain('quiet');
+  });
+
+  it('L8: reverting a batch whose file had an inflections column says that inflections are not reverted, and leaves them', async () => {
+    const go = await catalogWord('go', 'verb');
+    const { id } = await importFile(csv(['headword', 'pos', 'inflections'], [['go', 'verb', 'past:went']]));
+    const res = await ctx.http().post(`/v1/admin/content/uploads/${id}/revert`).set('Authorization', `Bearer ${token}`)
+      .set('Idempotency-Key', randomUUID()).send({});
+    expect(res.status).toBe(200);
+    expect(res.body.report.not_reverted).toEqual([{ kind: 'inflections', detail: expect.stringContaining('inflections') }]);
+    expect(await forms(go.entryId)).toEqual([{ form: 'went', kind: 'past', source: 'reviewed' }]);
+    const plain = await importFile(csv(['headword', 'pos', 'gloss_vi'], [['run', 'verb', 'chạy']]));
+    const plainRevert = await ctx.http().post(`/v1/admin/content/uploads/${plain.id}/revert`).set('Authorization', `Bearer ${token}`)
+      .set('Idempotency-Key', randomUUID()).send({});
+    expect(plainRevert.body.report.not_reverted).toBeUndefined();
+  });
+
+  it('M5: confirming a derived level as editorial turns it into an editorial level', async () => {
+    await catalogWord('go', 'verb', { level: 'A1' });
+    await importFile(csv(['headword', 'pos', 'gloss_vi', 'example_en_1', 'form_of'], [['went', 'verb', 'đã đi', 'We went home.', 'go/verb:past']]));
+    const went = await ctx.prisma.entry.findFirstOrThrow({ where: { lemma: 'went', scope: 'catalog' } });
+    expect(await ctx.prisma.entryLevel.findMany({ where: { entryId: went.id }, select: { level: true, basis: true } }))
+      .toEqual([{ level: 'A1', basis: 'derived' }]);
+    await write('went', 'verb', (tx) => content.setEditorialLevel(tx, went.id, 'A1'));
+    expect(await ctx.prisma.entryLevel.findMany({ where: { entryId: went.id }, select: { level: true, basis: true } }))
+      .toEqual([{ level: 'A1', basis: 'editorial' }]);
   });
 });

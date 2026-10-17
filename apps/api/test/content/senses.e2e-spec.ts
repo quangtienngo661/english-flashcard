@@ -240,6 +240,20 @@ describe('sense authoring (e2e, isolated database)', () => {
     expect(sense.revisions[0].topicCodes).toEqual(['business']);
   });
 
+  it('L10: an entry newly created by a pasted line gets its library inflections; an existing entry is left alone', async () => {
+    const existing = await ctx.prisma.entry.create({ data: { lemma: 'walk', pos: 'verb' } });
+    const res = await ctx.http().post('/v1/admin/content/entries/batch').set('Authorization', `Bearer ${token}`)
+      .send({ lines: ['run,verb', 'mouse,noun', 'walk,verb'] });
+    expect(res.status).toBe(201);
+    const formsOf = async (lemma: string) => (await ctx.prisma.entryInflection.findMany({
+      where: { entry: { lemma } }, orderBy: { position: 'asc' }, select: { form: true, kind: true, source: true } }));
+    expect(await formsOf('run')).toEqual([
+      { form: 'runs', kind: 'third_person', source: 'library' }, { form: 'running', kind: 'present_participle', source: 'library' },
+      { form: 'ran', kind: 'past', source: 'library' }]);
+    expect(await formsOf('mouse')).toEqual([{ form: 'mice', kind: 'plural', source: 'library' }]);
+    expect(await ctx.prisma.entryInflection.count({ where: { entryId: existing.id } })).toBe(0);
+  });
+
   it('B2#52: five pasted lines create empty ui drafts, existing senses are linked without duplication and case-only lemmas warn', async () => {
     const lines = ['bank,noun', 'apple,noun', 'work,verb', 'in,preposition', 'bright,adjective'];
     const paste = (values: string[]) => ctx.http().post('/v1/admin/content/entries/batch')
