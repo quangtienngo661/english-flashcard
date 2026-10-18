@@ -7,6 +7,8 @@ import { LearningModule } from '../learning/index.js';
 import { SettingsModule } from '../settings/index.js';
 import { AnswersController } from './answers/answers.controller.js';
 import { AnswersService } from './answers/answers.service.js';
+import { PracticeReviewsController } from './reviews/practice-reviews.controller.js';
+import { PracticeReviewsService } from './reviews/practice-reviews.service.js';
 import { QuestionBuilder } from './questions/question-builder.service.js';
 import { SessionsController } from './sessions/sessions.controller.js';
 import { SessionsService } from './sessions/sessions.service.js';
@@ -15,7 +17,7 @@ import { PracticeStats } from './weak/practice-stats.js';
 @Module({
   // IdentityModule: the learner guard needs IdentityService in the module that hosts the controllers.
   imports: [IdentityModule, ContentModule, LearningModule, SettingsModule, EntitlementsModule],
-  controllers: [SessionsController, AnswersController],
-  providers: [IdempotencyInterceptor, QuestionBuilder, PracticeStats, SessionsService, AnswersService],
+  controllers: [SessionsController, AnswersController, PracticeReviewsController],
+  providers: [IdempotencyInterceptor, QuestionBuilder, PracticeStats, SessionsService, AnswersService, PracticeReviewsService],
 })
 export class PracticeModule {}

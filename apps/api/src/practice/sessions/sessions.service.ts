@@ -174,7 +174,12 @@ export class SessionsService {
   async lockOpen(tx: Prisma.TransactionClient, userId: string, sessionId: string): Promise<PracticeSession> {
     const session = await this.lockSession(tx, userId, sessionId);
     if (!OPEN.includes(session.status)) throw sessionClosed();
-    return tx.practiceSession.update({ where: { id: sessionId }, data: { lastActivityAt: this.clock.now() } });
+    return this.touch(tx, session);
+  }
+
+  /** Every session and item route counts as activity (idle rule, design §11). */
+  touch(tx: Prisma.TransactionClient, session: PracticeSession): Promise<PracticeSession> {
+    return tx.practiceSession.update({ where: { id: session.id }, data: { lastActivityAt: this.clock.now() } });
   }
 
   async lockSession(tx: Prisma.TransactionClient, userId: string, sessionId: string): Promise<PracticeSession> {
