@@ -60,7 +60,7 @@ describe('group counts and the review queue (e2e, isolated database)', () => {
     expect(response.status).toBe(200);
     return response.body;
   };
-  const setCaps = async (learning: { reviews_per_group_per_day?: number; new_per_group_per_day?: number }) => {
+  const setCaps = async (learning: { reviews_per_group_per_day?: number | null; new_per_group_per_day?: number }) => {
     const settings = ctx.app.get(SettingsService);
     const { version } = await settings.current();
     await settings.update(randomUUID(), version, { learning });
@@ -346,6 +346,45 @@ describe('group counts and the review queue (e2e, isolated database)', () => {
     expect(await answer(token, early, g)).toMatchObject({ section: 'early', level: 3 });
     expect((await counts(token, g)).today).toEqual({ priority: 0, due: 0, new: 2 });
     expect((await queue(token, g)).filter((c) => c.section === 'new')).toHaveLength(2);
+  });
+
+  it('B4#26: cap null, 150 due → GET /v1/groups reports 150 due and the queue returns 150; cap back to 100 → 100', async () => {
+    await setCaps({ reviews_per_group_per_day: null });
+    const me = await learner();
+    const g = await group(me.userId, 'G');
+    const ids = await senses(150);
+    const due = await seed(me.userId, [g], ids, (i) => ({ level: 1 + (i % 3), dueDate: addDays(today, -Math.floor(i / 3)) }));
+    const token = await me.token();
+
+    expect((await counts(token, g)).today).toEqual({ priority: 0, due: 150, new: 0 });
+    const cards = await queue(token, g);
+    expect(cards.map((c) => c.item_id).sort()).toEqual([...due].sort());
+    expect(cards.every((c) => c.section === 'due')).toBe(true);
+    expect([...await ctx.app.get(LearningService).cardsLeftToday([{ userId: me.userId, today }])]).toEqual([me.userId]);
+
+    await setCaps({ reviews_per_group_per_day: 100 });
+    expect((await counts(token, g)).today).toEqual({ priority: 0, due: 100, new: 0 });
+    expect(await queue(token, g)).toHaveLength(100);
+  });
+
+  it('B4E44: with cap null the new-word cap of 20 still applies and practiceItems(today) holds every due word', async () => {
+    await setCaps({ reviews_per_group_per_day: null });
+    const me = await learner();
+    const g = await group(me.userId, 'G');
+    const ids = await senses(140);
+    const due = await seed(me.userId, [g], ids.slice(0, 110), () => ({ level: 2, dueDate: addDays(today, -1) }));
+    const fresh = await seed(me.userId, [g], ids.slice(110), () => ({ level: 0, dueDate: today }));
+    const token = await me.token();
+    // 100 flashcard reviews today would have used the default cap.
+    await ctx.prisma.learningLogEntry.createMany({ data: Array.from({ length: 100 }, () => ({
+      userId: me.userId, itemId: due[0], senseId: ids[0], groupId: g, kind: 'review', answer: 'known', section: 'due',
+      localDate: date(today), at: now,
+    })) });
+
+    expect((await counts(token, g)).today).toEqual({ priority: 0, due: 110, new: 20 });
+    expect(await queue(token, g)).toHaveLength(130);
+    const today_ = await ctx.app.get(LearningService).practiceItems(me.userId, { kind: 'today' });
+    expect(today_.map(({ item_id }) => item_id).sort()).toEqual([...due, ...fresh.slice(0, 20)].sort());
   });
 
   it('T-C4: the queue and backlog of another learner\'s group → 404', async () => {

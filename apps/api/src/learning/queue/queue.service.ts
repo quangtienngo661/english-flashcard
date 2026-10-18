@@ -22,11 +22,12 @@ export type Card = {
   content: WordSense & { sentences: string[] };
 };
 
-/** Cards left today after the caps (design 6.2): capped sections never go below zero (B3E9). */
+/** Cards left today after the caps (design 6.2): capped sections never go below zero (B3E9); an empty review cap is no limit (D35). */
 function today(row: GroupStatsRow, caps: AppSettings['learning']) {
   return {
     priority: row.priority,
-    due: Math.max(0, Math.min(row.due_available, caps.reviewsPerGroupPerDay - row.due_done)),
+    due: caps.reviewsPerGroupPerDay === null ? row.due_available
+      : Math.max(0, Math.min(row.due_available, caps.reviewsPerGroupPerDay - row.due_done)),
     new: Math.max(0, Math.min(row.new_available, caps.newPerGroupPerDay - row.new_done)),
   };
 }
@@ -79,11 +80,12 @@ export class QueueService {
     } else {
       const [done] = await this.prisma.$queryRaw<Array<{ due_done: number; new_done: number }>>(
         reviewsDoneQuery(userId, groupId, day));
-      const dueLimit = Math.max(0, learning.reviewsPerGroupPerDay - done.due_done);
+      const dueLimit = learning.reviewsPerGroupPerDay === null ? null
+        : Math.max(0, learning.reviewsPerGroupPerDay - done.due_done);
       const newLimit = Math.max(0, learning.newPerGroupPerDay - done.new_done);
       rows = [
         ...await read({ kind: 'priority' }),
-        ...(dueLimit > 0 ? await read({ kind: 'due', limit: dueLimit }) : []),
+        ...(dueLimit === null || dueLimit > 0 ? await read({ kind: 'due', limit: dueLimit }) : []),
         ...(newLimit > 0 ? await read({ kind: 'new', limit: newLimit }) : []),
       ];
     }

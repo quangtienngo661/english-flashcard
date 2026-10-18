@@ -63,7 +63,8 @@ export function groupStatsQuery(entries: LearnerDay[], backlogDays: number): Pri
     LEFT JOIN done d ON d.group_id = g.id`;
 }
 
-type Section = { kind: 'priority' } | { kind: 'due'; limit: number } | { kind: 'new'; limit: number } | { kind: 'all' };
+// A due limit of `null` reads every due card (an empty review cap, D35).
+type Section = { kind: 'priority' } | { kind: 'due'; limit: number | null } | { kind: 'new'; limit: number } | { kind: 'all' };
 
 /** Visible items of one group for one queue section, in the order of design 6.2. */
 export function queueItemsQuery(userId: string, groupId: string, today: string, backlogDays: number, section: Section): Prisma.Sql {
@@ -80,7 +81,7 @@ export function queueItemsQuery(userId: string, groupId: string, today: string, 
     case 'due':
       return Prisma.sql`${base} AND NOT i.priority AND i.level >= 1 AND i.due_date <= ${today}::date
         AND ${today}::date - i.due_date <= ${backlogDays}
-        ORDER BY i.due_date, i.level, gi.added_at, i.id LIMIT ${section.limit}`;
+        ORDER BY i.due_date, i.level, gi.added_at, i.id ${section.limit === null ? Prisma.empty : Prisma.sql`LIMIT ${section.limit}`}`;
     case 'new':
       return Prisma.sql`${base} AND NOT i.priority AND i.level = 0 ORDER BY gi.added_at, i.id LIMIT ${section.limit}`;
     case 'all':
