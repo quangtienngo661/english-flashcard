@@ -46,16 +46,20 @@ const displayedLevel = Prisma.sql`
 /** The shared visibility rule (S6, B3#12): catalog or the viewer's own private sense, open with a live revision. */
 const visible = (viewerId: string) => visibleSenseCondition(Prisma.sql`s.id`, viewerId);
 
+/** Bước 2 meaning rule: the native gloss, else the English definition, else the gloss marked untranslated. */
+export function senseMeaning(glossVi: string | null, definitionEn: string | null, nativeLanguage: NativeLanguage): WordSense['meaning'] {
+  const nativeGloss = nativeLanguage === 'vi' && glossVi !== null;
+  const useEnglish = !nativeGloss && definitionEn !== null;
+  return { text: (useEnglish ? definitionEn : glossVi) ?? '', language: useEnglish ? 'en' : 'vi',
+    translation_missing: !useEnglish && nativeLanguage !== 'vi' };
+}
+
 function view(row: SenseRow, nativeLanguage: NativeLanguage): WordSense {
-  // Bước 2 meaning rule: the native gloss, else the English definition, else the gloss marked untranslated.
-  const nativeGloss = nativeLanguage === 'vi' && row.gloss_vi !== null;
-  const useEnglish = !nativeGloss && row.definition_en !== null;
   return {
     sense_id: row.sense_id, entry_id: row.entry_id, scope: row.scope, lemma: row.lemma, pos: row.pos, level: row.level,
     // Private labels (p2, p3, …) only keep the live-sense index unique; they are never shown.
     context_label: row.scope === 'private' ? null : row.context_label,
-    meaning: { text: (useEnglish ? row.definition_en : row.gloss_vi) ?? '', language: useEnglish ? 'en' : 'vi',
-      translation_missing: !useEnglish && nativeLanguage !== 'vi' },
+    meaning: senseMeaning(row.gloss_vi, row.definition_en, nativeLanguage),
     definition_en: row.definition_en, examples: row.examples, topics: row.topics,
     form_of: row.form_of_entry_id && row.form_kind && row.form_lemma && row.form_pos
       ? { entry_id: row.form_of_entry_id, lemma: row.form_lemma, pos: row.form_pos, kind: row.form_kind } : null,

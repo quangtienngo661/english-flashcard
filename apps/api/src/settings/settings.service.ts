@@ -3,7 +3,7 @@ import { Clock } from '../common/clock/clock.js';
 import { PRISMA_CLIENT } from '../common/db/prisma.module.js';
 import { decodePageToken, encodePageToken } from '../common/pagination/page-token.util.js';
 import { ProblemDetailsException } from '../common/problem-details/problem-details.exception.js';
-import type { PrismaClient } from '../generated/prisma/client.js';
+import { Prisma, type PrismaClient } from '../generated/prisma/client.js';
 import { IdentityService } from '../identity/profile/identity.service.js';
 import {
   applyPatch, changedFields, crossFieldViolations, withDefaults,
@@ -67,7 +67,8 @@ export class SettingsService {
         const changes = changedFields(before, after);
         if (changes.length) {
           await tx.appSettingChange.createMany({ data: changes.map(({ key, oldValue, newValue }) => ({
-            key, oldValue, newValue, changedBy: actorId, changedAt: now,
+            // The columns are required Json: an empty value ("để trống") is stored as JSON null.
+            key, oldValue: oldValue ?? Prisma.JsonNull, newValue: newValue ?? Prisma.JsonNull, changedBy: actorId, changedAt: now,
           })) });
         }
         return { version: version + 1, values: after };
