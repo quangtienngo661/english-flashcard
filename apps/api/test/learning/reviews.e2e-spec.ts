@@ -62,7 +62,7 @@ describe('reviews (e2e, isolated database)', () => {
     expect(await logOf(item.id)).toEqual([{
       id: expect.any(String), userId, itemId: item.id, senseId: item.senseId, groupId, kind: 'review', answer: 'known',
       rating: 'Good', levelBefore: 2, levelAfter: 3, dueBefore: date('2026-11-05'), dueAfter: date('2026-11-15'), wasDue: true,
-      daysSinceLast: 6, reviewId, section: 'due', localDate: date('2026-11-08'), at: now,
+      daysSinceLast: 6, reviewId, section: 'due', origin: null, localDate: date('2026-11-08'), at: now,
     }]);
   });
 
