@@ -10,13 +10,14 @@ import { HealthController } from './health/health.controller.js';
 import { IdentityModule } from './identity/identity.module.js';
 import { LearningModule } from './learning/learning.module.js';
 import { NotificationsModule } from './notifications/notifications.module.js';
+import { PracticeModule } from './practice/practice.module.js';
 import { SampleModule } from './sample/sample.module.js';
 import { SettingsModule } from './settings/settings.module.js';
 
 @Module({
   imports: [
     SampleModule, IdentityModule, BatchScopeModule, ContentModule, ContentPipelineModule, SettingsModule, NotificationsModule,
-    LearningModule, EntitlementsModule,
+    LearningModule, EntitlementsModule, PracticeModule,
   ],
   controllers: [HealthController],
   providers: [],
