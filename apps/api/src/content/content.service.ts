@@ -12,6 +12,7 @@ import {
 } from './private/private-words.service.js';
 import { SentencesService, type Sentence } from './sentences/sentences.service.js';
 import { WordsService, type WordSense } from './words/words.service.js';
+import { practiceCandidates, practiceSenses, type CandidateSense, type PracticeSense } from './practice/practice-senses.js';
 import { InflectionsService, type EntryByForm, type InflectionInput, type InflectionSource } from './inflections/inflections.service.js';
 import { SourcesService, isSourceComplete, type SourceView } from './sources/sources.service.js';
 import { SensesService, type CreateSenseInput, type SaveDraftInput, type SaveDraftResult, type MarkRevisionItem, type MarkRevisionResult } from './senses/senses.service.js';
@@ -171,6 +172,16 @@ export class ContentService {
   /** Learner cards: visible senses only (catalog published or the viewer's own), in the viewer's language. */
   cardContent(viewerId: string, senseIds: string[], nativeLanguage: 'vi' | 'en'): Promise<Map<string, WordSense>> {
     return this.words.cardContent(viewerId, senseIds, nativeLanguage);
+  }
+
+  /** Practice questions: visible senses only, with examples, spellings, accepted answers and inflections. */
+  practiceSenses(viewerId: string, senseIds: string[], nativeLanguage: 'vi' | 'en'): Promise<Map<string, PracticeSense>> {
+    return practiceSenses(this.prisma, viewerId, senseIds, nativeLanguage);
+  }
+
+  /** Distractor and true/false candidates: visible senses only, light enough for thousands of ids. */
+  practiceCandidates(viewerId: string, senseIds: string[], nativeLanguage: 'vi' | 'en'): Promise<Map<string, CandidateSense>> {
+    return practiceCandidates(this.prisma, viewerId, senseIds, nativeLanguage);
   }
 
   visibleSenseIds(viewerId: string, senseIds: string[]): Promise<Set<string>> {
