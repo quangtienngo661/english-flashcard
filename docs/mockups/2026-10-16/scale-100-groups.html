@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>100 nhóm từ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600;800&display=swap" rel="stylesheet">
+<style>
+/* Simulation for the owner: how the Hôm nay screen behaves with 100 groups. Four neutral options, none favoured (Bước 3 owner-first rule). */
+:root { --field: #2445d6; --field-deep: #1a32a6; --field-soft: #eceffe; --sticker: #ffd84a; --sticker-deep: #c9a21a; --sticker-soft: #fff4c7;
+  --ink: #0f1a3d; --muted: #4d5577; --placeholder: #5f6688; --paper: #fff; --canvas: #f1f3fd; --line: #e3e6f4; --line-strong: #7d84a8; --ok: #1b7a46; --late: #b8352a; }
+* { box-sizing: border-box; }
+body { margin: 0; background: #d9deef; color: var(--ink); font: 400 15px/1.45 'Lexend', system-ui, sans-serif; }
+header { background: var(--ink); color: #fff; padding: 14px 20px; } header b { font-size: 17px; } header p { margin: 4px 0 0; opacity: 0.8; font-size: 13px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(330px, 1fr)); gap: 22px; padding: 22px; align-items: start; }
+.opt h2 { margin: 0 0 4px; font-size: 18px; } .opt .sum { margin: 0 0 10px; font-size: 13px; color: #33405f; min-height: 38px; }
+.phone { width: 330px; height: 690px; border: 9px solid #101114; border-radius: 42px; background: var(--canvas); overflow: hidden; position: relative; margin: 0 auto; display: flex; flex-direction: column; }
+.island { position: absolute; top: 9px; left: 50%; transform: translateX(-50%); width: 104px; height: 30px; border-radius: 16px; background: #000; z-index: 5; }
+.sb { height: 46px; flex: none; display: flex; justify-content: space-between; align-items: center; padding: 0 26px; font-size: 12px; font-weight: 600; }
+.scroll { flex: 1; overflow-y: auto; padding: 4px 12px 80px; }
+.tabs { position: absolute; left: 0; right: 0; bottom: 0; height: 64px; background: #fff; border-top: 1px solid var(--line); display: flex; justify-content: space-around; align-items: flex-start; padding-top: 8px; font-size: 10px; color: var(--muted); }
+.tabs span { display: grid; justify-items: center; gap: 2px; } .tabs i { width: 40px; height: 22px; border-radius: 11px; background: #e6e9f5; } .tabs .on { color: var(--ink); font-weight: 600; } .tabs .on i { background: var(--sticker); }
+.search { background: #fff; border-radius: 14px; padding: 10px 12px; color: var(--placeholder); font-size: 13px; box-shadow: 0 3px 0 var(--line); }
+.chips { display: flex; gap: 6px; margin: 10px 0 6px; overflow-x: auto; } .chips span { flex: none; font-size: 11px; padding: 4px 10px; border-radius: 99px; background: #fff; box-shadow: inset 0 0 0 1.5px var(--line-strong); } .chips .on { background: var(--ink); color: #fff; box-shadow: none; }
+.big { background: #fff; border-radius: 16px; padding: 12px; margin: 10px 0; box-shadow: 0 4px 0 var(--line); }
+.big .t { display: flex; justify-content: space-between; align-items: center; } .big b { font-size: 15px; }
+.mini { display: flex; gap: 2px; height: 6px; margin-top: 8px; } .mini i { border-radius: 2px; background: var(--field-soft); } .mini i.f { background: var(--field); }
+.btn { border: 0; border-radius: 10px; background: var(--sticker); box-shadow: 0 3px 0 var(--sticker-deep); padding: 6px 12px; font: 600 12px 'Lexend'; color: var(--ink); }
+.row { display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; align-items: center; padding: 9px 4px; border-bottom: 1px solid var(--line); background: transparent; }
+.row b { font-weight: 600; font-size: 13px; } .row .n { font-weight: 800; font-size: 13px; text-align: right; } .row .n.z { color: var(--ok); font-weight: 600; font-size: 11px; } .row .mini { grid-column: 1 / -1; margin-top: 2px; height: 4px; width: 60%; }
+.sec { font-size: 12px; font-weight: 600; color: var(--muted); margin: 14px 4px 4px; display: flex; justify-content: space-between; }
+.more { display: block; text-align: center; background: #fff; border-radius: 12px; padding: 10px; margin-top: 10px; font-weight: 600; font-size: 13px; color: var(--field); box-shadow: 0 3px 0 var(--line); }
+.pin { color: #7a5200; font-size: 11px; margin-left: 4px; }
+.folder { display: flex; gap: 10px; align-items: center; background: #fff; border-radius: 14px; padding: 10px 12px; margin: 8px 0; box-shadow: 0 3px 0 var(--line); }
+.folder i { width: 34px; height: 28px; border-radius: 6px; background: var(--field-soft); flex: none; } .folder div { flex: 1; } .folder small { display: block; color: var(--muted); font-size: 11px; }
+.counter { position: absolute; right: 16px; top: 52px; background: var(--ink); color: #fff; font-size: 11px; padding: 3px 8px; border-radius: 8px; z-index: 4; opacity: 0.85; }
+.trade { margin: 10px auto 0; width: 330px; font-size: 13px; } .trade b { display: block; margin-top: 6px; } .trade ul { margin: 2px 0 0; padding-left: 18px; }
+.note { padding: 0 22px 30px; font-size: 13px; color: #33405f; max-width: 1100px; }
+</style>
+</head>
+<body>
+<header><b>Màn Hôm nay khi có 100 nhóm</b><p>Dữ liệu mẫu: 100 nhóm, 13 nhóm có thẻ chờ hôm nay. Cuộn trong từng điện thoại để thấy độ dài thật. Năm cách được xếp ngang hàng, không cách nào được chọn sẵn.</p></header>
+<div class="grid" id="grid"></div>
+<p class="note">Đo trong mô phỏng: cách 1 dài khoảng 15 màn, cách 2 khoảng 8 màn, cách 3 khoảng 4 màn (gồm cả phần "Tất cả nhóm"), cách 4 khoảng 8 màn, cách 5 khoảng 1,5 màn. Cùng vấn đề xảy ra ở ba chỗ khác: danh sách nhóm trong thanh nav web, tấm "Lưu vào nhóm" (100 lựa chọn) và hộp "Vào nhóm" khi thêm cả loạt.</p>
+<script>
+const NAMES = ['Công nghệ', 'IELTS Reading', 'IELTS Listening', 'Ẩm thực A2', 'Du lịch', 'Công việc', 'Gia đình', 'Thời tiết', 'Sức khỏe', 'Thể thao', 'Âm nhạc', 'Phim ảnh', 'Kinh tế', 'Môi trường', 'Giáo dục', 'Mua sắm', 'Giao thông', 'Nhà cửa', 'Cảm xúc', 'Trường học'];
+const G = Array.from({ length: 100 }, (_, i) => { const n = i < 20 ? NAMES[i] : `${NAMES[i % 20]} ${Math.floor(i / 20) + 1}`; const due = [0, 3, 7, 12, 25, 31, 44, 58, 63, 70, 81, 90, 97].includes(i) ? (i % 9) + 3 : 0; const box = [i % 4, (i * 3) % 7, (i * 5) % 9, (i * 7) % 6, i % 5, (i * 2) % 4]; return { n, due, total: box.reduce((a, b) => a + b, 0) + 5, box, opened: (i * 37) % 100, pinned: [0, 1, 4].includes(i), folder: ['IELTS', 'Công việc', 'Đời sống', 'Chủ đề tự do'][i % 4] }; });
+const mini = (g) => `<span class="mini">${g.box.map((n, k) => `<i class="${g.due && k < 3 ? 'f' : ''}" style="flex:${Math.max(n, 0.5)}"></i>`).join('')}</span>`;
+const big = (g) => `<div class="big"><div class="t"><b>${g.n}</b><span style="font-size:12px;color:var(--muted)">${g.total} từ</span></div>${mini(g)}<div class="t" style="margin-top:8px"><span style="font-size:12px;color:var(--field)">${g.due ? g.due + ' đến hạn' : ''}</span>${g.due ? `<button class="btn">Ôn ${g.due} thẻ</button>` : '<span style="font-size:11px;color:var(--ok);font-weight:600">Xong hôm nay</span>'}</div></div>`;
+const row = (g, pin) => `<div class="row"><b>${g.n}${pin && g.pinned ? '<span class="pin">ghim</span>' : ''}</b><span class="n ${g.due ? '' : 'z'}">${g.due ? g.due + ' thẻ chờ' : 'xong'}</span>${mini(g)}</div>`;
+const dueSorted = [...G].sort((a, b) => b.due - a.due);
+const OPTS = [
+  { h: 'Cách 1: Thẻ lớn cho mọi nhóm (như hiện tại)', s: 'Giữ nguyên Figma trang 05. Dùng làm mốc so sánh.', body: () => `<div class="search">Tìm nhóm từ...</div>${G.map(big).join('')}`, pro: ['Mỗi nhóm hiện đủ thông tin, bấm ôn ngay.'], con: ['100 nhóm dài khoảng 15 màn cuộn.', 'Nhóm có thẻ chờ bị lẫn giữa nhóm đã xong.'] },
+  { h: 'Cách 2: Danh sách gọn + tìm + sắp xếp', s: 'Mỗi nhóm một dòng. Có ô tìm và chip sắp xếp: nhiều thẻ chờ nhất, mở gần đây, A–Z.', body: () => `<div class="search">Tìm nhóm từ...</div><div class="chips"><span class="on">Nhiều thẻ chờ</span><span>Mở gần đây</span><span>A–Z</span></div>${dueSorted.map((g) => row(g)).join('')}`, pro: ['Một màn thấy được khoảng 12 nhóm.', 'Sắp xếp theo thẻ chờ đưa việc cần làm lên đầu.'], con: ['Không bấm "Ôn" ngay trên dòng; phải mở nhóm hoặc thêm nút nhỏ.', 'Vẫn là 100 dòng nếu không tìm.'] },
+  { h: 'Cách 3: Hôm nay chỉ hiện nhóm có thẻ chờ', s: 'Thẻ lớn chỉ cho các nhóm cần ôn hôm nay. Các nhóm còn lại nằm sau nút "Tất cả nhóm", mở ra danh sách gọn có tìm.', body: () => `<div class="sec">Cần ôn hôm nay <span>13 nhóm</span></div>${dueSorted.filter((g) => g.due).map(big).join('')}<a class="more">Tất cả nhóm (100)</a><div class="sec">Màn "Tất cả nhóm" (khi bấm)</div><div class="search">Tìm nhóm từ...</div>${G.slice(0, 15).map((g) => row(g)).join('')}`, pro: ['Màn Hôm nay đúng nghĩa: chỉ việc cần làm.', 'Ngày không có thẻ chờ thì màn rất ngắn.'], con: ['Muốn mở nhóm đã xong phải thêm một bước.', 'Thêm một màn "Tất cả nhóm".'] },
+  { h: 'Cách 4: Ghim nhóm hay dùng', s: 'Người học ghim vài nhóm; nhóm ghim là thẻ lớn ở đầu. Bên dưới là danh sách gọn tất cả nhóm, có tìm.', body: () => `<div class="sec">Đã ghim <span>3</span></div>${G.filter((g) => g.pinned).map(big).join('')}<div class="sec">Tất cả nhóm <span>100</span></div><div class="search">Tìm nhóm từ...</div>${dueSorted.map((g) => row(g, true)).join('')}`, pro: ['Người học tự chọn nhóm quan trọng.', 'Nhóm ghim dùng lại được cho thanh nav web và tấm "Lưu vào nhóm".'], con: ['Thêm thao tác ghim/bỏ ghim phải học.', 'Nhóm có thẻ chờ nhưng chưa ghim vẫn nằm trong danh sách dài.'] },
+  { h: 'Cách 5: Thư mục chứa nhóm', s: 'Gom nhóm vào thư mục (như "Tạo thư mục" của Memorix). Hôm nay hiện thư mục, bấm vào mới thấy nhóm.', body: () => `<div class="search">Tìm nhóm từ...</div>${['IELTS', 'Công việc', 'Đời sống', 'Chủ đề tự do'].map((f) => { const gs = G.filter((g) => g.folder === f); const d = gs.reduce((a, g) => a + g.due, 0); return `<div class="folder"><i></i><div><b>${f}</b><small>${gs.length} nhóm${d ? `, ${d} thẻ chờ` : ''}</small></div>${d ? '<button class="btn">Mở</button>' : ''}</div>`; }).join('')}<div class="sec">Trong thư mục IELTS</div>${G.filter((g) => g.folder === 'IELTS').slice(0, 10).map((g) => row(g)).join('')}`, pro: ['Màn đầu rất ngắn dù có 100 nhóm.', 'Hợp người học sắp xếp theo mục tiêu.'], con: ['Thêm một tầng: thêm bước để vào ôn.', 'Thêm khái niệm "thư mục" chưa có trong thiết kế (đổi phạm vi).'] },
+];
+document.getElementById('grid').innerHTML = OPTS.map((o, i) => `<section class="opt"><h2>${o.h}</h2><p class="sum">${o.s}</p><div class="phone"><span class="island"></span><div class="sb"><span>9:41</span><span>●●● ▮</span></div><span class="counter" id="c${i}">đang ở đầu</span><div class="scroll" data-i="${i}">${o.body()}</div><div class="tabs"><span class="on"><i></i>Hôm nay</span><span><i></i>Luyện tập</span><span><i></i>Tra từ</span><span><i></i>Cài đặt</span></div></div>
+  <div class="trade"><b>Được</b><ul>${o.pro.map((x) => `<li>${x}</li>`).join('')}</ul><b>Mất</b><ul>${o.con.map((x) => `<li>${x}</li>`).join('')}</ul></div></section>`).join('');
+document.querySelectorAll('.scroll').forEach((el) => { const c = document.getElementById('c' + el.dataset.i); const upd = () => { const total = el.scrollHeight - el.clientHeight; c.textContent = total > 0 ? `${Math.round(el.scrollTop / el.clientHeight * 10) / 10} / ${Math.round(total / el.clientHeight * 10) / 10} màn` : 'vừa một màn'; }; el.addEventListener('scroll', upd); upd(); });
+</script>
+</body>
+</html>

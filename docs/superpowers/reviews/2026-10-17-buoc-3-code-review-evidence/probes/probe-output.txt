@@ -1,0 +1,18 @@
+P1 queue cards [{"level":0,"due_date":"2026-11-02","section":"new"}]
+P1 three known answers [{"status":200,"level":0,"due_date":"2026-11-02","section":"new"},{"status":200,"level":0,"due_date":"2026-11-02","section":"new"},{"status":200,"level":0,"due_date":"2026-11-02","section":"new"}]
+P1 log rows [{"section":"new","wasDue":false},{"section":"new","wasDue":false},{"section":"new","wasDue":false}]
+P1 group today {"priority":0,"due":0,"new":1}
+P2 group {"today":{"priority":1,"due":0,"new":0},"backlog":1}
+P2 queue sections ["priority"]
+P2 backlog items 200 1
+P3 bulk 200 {"added":2000,"already_in_group":0,"skipped_function_words":0,"skipped_group_full":0} stored 2000
+P4 before {"today":{"priority":0,"due":1,"new":0},"backlog":10} after {"today":{"priority":0,"due":0,"new":0},"backlog":0} due cards now 0
+C1 add 201 remove 204 sentences left 0 copies in idempotency_keys 1
+C2 visibleSenseIds has it false add status 201
+C3 lookup 200 {"senses":[],"via_inflection":[]}
+F1 outcomes updated updated unchanged | after B [{"form":"goed","kind":"past","source":"reviewed"}] | after A again [{"form":"goed","kind":"past","source":"reviewed"}]
+F2 library [{"form":"porks","kind":"plural","source":"library"}] | "-" outcome rejected {"batchId":"b06bfb45-472f-4170-aab9-58b0b8fef77b","rowNumber":2,"outcome":"rejected","errorCodes":["invalid-inflection"],"errorMessages":["Dạng chia \"-\" không hợp lệ. Viết kind:form, cách nhau bằng dấu chấm phẩy; kind là một trong: third_person, present_participle, past, past_participle, plural, comparative, superlative."],"raw":["pork","noun","'-"]} | ";" outcome updated forms [] | after backfill [{"form":"porks","kind":"plural","source":"library"}]
+F3 before [{"level":"A1","basis":"derived"}] after editorial A1 [{"level":"A1","basis":"derived"}]
+F4 outcome created senses 1 revisions 1
+R1 emails per round (a+b) [1,1,1,1,1] rows ["sent"]
+R2 jobs after a failed row yesterday [{"who":"regular","kind":"regular"},{"who":"inactive","kind":"inactive"}]

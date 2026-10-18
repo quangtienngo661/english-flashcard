@@ -23,7 +23,7 @@ Các quyết định trước khi chốt phạm vi (Q-A đến Q-D của `docs/p
 | Câu | Chốt |
 |---|---|
 | Q-A thứ tự, phạm vi | **Bước 3 đầy đủ** (không làm bản thu nhỏ). **Chỉ web**, Flutter để sau. Chuỗi tra nghĩa chỉ gồm catalog và tự nhập (không có từ điển ngoài, không AI), theo HANDOFF §2 |
-| Deploy | Bước "Deploy API + admin" làm **ngay sau Bước 3**, để từ đó tới khi app hoàn chỉnh mọi trục trặc deploy kịp lộ ra |
+| Deploy | Bước "Deploy API + admin" làm **khi toàn bộ app hoàn chỉnh, trước ra mắt** (đổi 18/10/2026, D3 vòng 3; trước đó: ngay sau Bước 3). Tới lúc đó chủ dự án dùng thử ở máy local |
 | Q-B nội dung | AI soạn nháp CSV **ngoài app**, chủ dự án duyệt, import bằng luồng CSV có sẵn. Thử trước một lô ~20 từ để đo thời gian duyệt. Đích: đủ ~8.812 từ (CEFR-J + Octanove). Soạn nội dung không phải code của Bước 3 |
 | Q-C nhắc học | **Có** nhắc học tự động (thay K25). Hướng sản phẩm: push trên mobile là chính, email thưa hơn, nội dung chung chung ("Tới giờ học từ vựng"). **Bước 3 chỉ làm email**, thiết kế theo notification provider |
 | Q-D ngưỡng | **Không khảo sát thêm; không đổi thứ tự bước cho tới khi app hoàn chỉnh; chỉ tìm người dùng khi app hoàn chỉnh.** Chủ dự án là người dùng thử. Ngưỡng thành công dời tới trước ngày ra mắt (đề xuất). Rủi ro "xây tới hết V1 mà chưa có bằng chứng hành vi" được chấp nhận và ghi ở mục 19 |
@@ -102,8 +102,9 @@ common: + mail (chuyển Mailer và hạn mức email từ src/identity/mailer)
 - **Nhắc học theo múi giờ từng người:** **một** BullMQ Job Scheduler (`upsertJobScheduler`, có trong BullMQ `6.3.12` đang dùng;
   docs đọc qua context7 16/10), chạy mỗi 15 phút (`every`). Mỗi lần chạy chọn người cần nhắc (mục 8.3) và thêm **một job mỗi người
   mỗi ngày** với `jobId` cố định; docs BullMQ: thêm job trùng id thì "the job is ignored".
-- **"Vắng bao lâu":** lấy `max(SessionChain.lastUsedAt)` của người học; cột này cập nhật mỗi lần làm mới phiên (đã kiểm
-  `apps/api/src/identity/sessions/session.service.ts:184`). Không thêm chỗ ghi mới.
+- **"Vắng bao lâu":** cột `users.last_seen_at`, ghi lúc đăng nhập và mỗi lần làm mới phiên. Bản đầu lấy
+  `max(SessionChain.lastUsedAt)`, nhưng review độc lập (M6, 17/10) chỉ ra giá trị đó mất khi job dọn dẹp xóa phiên cũ, làm người học
+  bị coi là vắng quá lâu, nên thêm cột bền vững (quyết định của điều phối).
 
 ## 5. Dữ liệu
 
@@ -172,7 +173,7 @@ Nét liền: khóa ngoại trong cùng module. Nét đứt: chỉ lưu UUID gi�
 | "Đã biết", từ chưa đến hạn (ôn sớm, trong phiên "học tất cả") | Không đổi gì; nhật ký ghi `was_due = false` |
 | "Cần ôn tập, đưa vào ưu tiên" (bất kể đến hạn hay chưa) | Mức 1, `due_date` = hôm nay, bật cờ ưu tiên |
 | Hệ thống tự đổi mức | **Không bao giờ**. Chỉ hai nút trên (và "Học lại", "Bỏ khỏi việc học") đổi lịch |
-| Từ **mức ≥ 1** quá hạn hơn N ngày (mặc định 60, admin chỉnh) | Vào **danh sách cân nhắc** của nhóm: không vào danh sách cần ôn, không tính trần. Tính lúc đọc, không cần job. Từ mức 0 (chưa học) **không bao giờ** vào danh sách này, chờ bao lâu cũng vậy (Chốt 17/10, D22) |
+| Từ **mức ≥ 1** quá hạn hơn N ngày (mặc định 60, admin chỉnh) | Vào **danh sách cân nhắc** của nhóm: không vào danh sách cần ôn, không tính trần. Tính lúc đọc, không cần job. Từ mức 0 (chưa học) **không bao giờ** vào danh sách này, chờ bao lâu cũng vậy (Chốt 17/10, D22). Từ có cờ ưu tiên cũng theo luật này: quá hạn hơn N ngày thì vào danh sách cân nhắc và rời phần ưu tiên (Chốt 17/10, D48). Trả lời một từ trong danh sách cân nhắc ở "học tất cả" không tính vào trần (nhật ký ghi `section = backlog`) |
 | "Học lại" (từ danh sách cân nhắc) | Mức 0, `due_date` = hôm nay, không ưu tiên; được tính như từ mới |
 | "Bỏ khỏi việc học" | Xóa mục học và mọi `group_items` của nó; nhật ký ghi `item_removed` |
 
@@ -182,7 +183,7 @@ Thang 1, 3, 7, 14, 30 ngày giữ theo K21; FSRS xét khi đã có dữ liệu �
 ### 6.2 Danh sách cần ôn của một nhóm (`mode=due`)
 
 Ngày "hôm nay" tính theo múi giờ hiện tại của người học. Thứ tự:
-1. **Ưu tiên**: mọi mục `priority = true` trong nhóm. **Không** tính vào trần.
+1. **Ưu tiên**: mọi mục `priority = true` trong nhóm, trừ mục đang ở danh sách cân nhắc (D48). **Không** tính vào trần.
 2. **Đến hạn**: `due_date ≤ hôm nay`, mức ≥ 1, không ưu tiên, không thuộc danh sách cân nhắc; quá hạn lâu nhất trước, rồi mức thấp
    trước. Tối đa **100** (admin chỉnh) **trừ** số lượt ôn đến hạn đã có hôm nay **ở nhóm này**.
 3. **Mới**: mức 0 (không bao giờ vào danh sách cân nhắc); thêm vào nhóm sớm nhất trước. Tối đa **20** (admin chỉnh) **trừ** số từ mới đã ôn
@@ -293,8 +294,15 @@ Job có `jobId` = `reminder-<userId>-<ngày địa phương>` (không dùng `:` 
    email thay vì gửi trùng, đề xuất của Claude, D37); không có → bước 2.
 2. Kiểm lại cờ bật/tắt và điều kiện (người học có thể vừa tắt); ghi `sending` (unique theo ngày).
 3. Lấy một suất hạn mức email (`MailBudget.tryConsume`); hết 80% thì hủy job, xóa bản ghi `sending`.
-4. Gửi email; thành công → ghi `sent`. Lỗi SMTP tạm thời → xóa `sending`, BullMQ thử lại (hữu hạn, có backoff). Mỗi lần thử
-   dùng một suất hạn mức email, kể cả lần lỗi (giống cách OTP đang gửi); 3 lần thử hỏng tốn 3 suất, hết lượt thử thì ghi `failed`.
+4. Gửi email; thành công → ghi `sent`. Theo từng loại lỗi (sửa sau review độc lập 17/10, M7 và M9; theo luật D37 "mất một email
+   còn hơn gửi trùng"):
+   - **Chắc chắn chưa giao thư**: xóa `sending`, BullMQ thử lại (hữu hạn, backoff riêng của nhắc học). Nhận biết bằng 4 dấu hiệu:
+     mã 4xx, lỗi DNS (`EDNS`), lỗi lúc mở kết nối (`syscall: 'connect'`), hoặc "Connection timeout"/"Greeting never received".
+     Nodemailer 10.0.15 ghi `command = 'CONN'` cả trước lẫn sau khi kết nối, nên không dựa vào trường đó (luồng D đo 17/10).
+   - **Lỗi vĩnh viễn** (mã 5xx): không thử lại, ghi `failed`.
+   - **Không rõ đã giao chưa** (timeout hoặc reset sau khi đã giao thư cho máy chủ): giữ `sending`, không thử lại.
+   Mỗi lần thử dùng một suất hạn mức email, kể cả lần lỗi. Dòng `failed`, và dòng `sending` của ngày cũ, tính vào trần "email lâu
+   rồi tối đa một lần mỗi 7 ngày", không tính vào khoảng cách `min_gap_days`. Job chạy trễ sang ngày địa phương khác thì không gửi.
 
 Job mất khóa (worker chết) được BullMQ đưa lại hàng chờ ("stalled", docs BullMQ 6); bước 1 đảm bảo không gửi trùng khi đã ghi `sent`.
 
@@ -357,7 +365,9 @@ Ba API `/v1/senses…` của Bước 2 giữ nguyên (thêm bớt chỉ theo ki�
   hoặc thêm cả loạt theo chủ đề.
 - **Xuất "từ chưa có nghĩa"** (D34; việc tồn D26 của Bước 2.5): bộ lọc mới ở API xuất và một lựa chọn ở màn xuất CSV của admin; xếp vào
   milestone đầu để phục vụ soạn nội dung song song.
-- **Cột dạng chia** khi import và xuất (tên cột chốt trong plan), và cột "là dạng chia của" cho nghĩa.
+- **Cột dạng chia** khi import và xuất (tên cột chốt trong plan), và cột "là dạng chia của" cho nghĩa. Ô dạng chia ghi `-` nghĩa là
+  "đã duyệt: từ này không có dạng chia" (ví dụ danh từ không đếm được); dấu này được lưu bền, nên import và job sinh hàng loạt không
+  sinh lại dạng tự động cho từ đó (sửa sau review độc lập 17/10, M3).
 - **Job sinh dạng chia** một lần cho các entry đang có (7.799 từ CEFR-J), chạy trên khung job nền của Bước 2.
 
 ## 12. Edge cases (When → Then)
@@ -465,12 +475,14 @@ chạy gate, chạy tay và viết as-built để chủ dự án dựa vào đó
 
 Một PR docs nhỏ riêng, **sau khi #27 đã merge** (#24 đã merge): `CLAUDE.md` (trạng thái Bước 3, bỏ ý "pilot sau Bước 3", luật
 "phần lõi tự viết" không áp dụng ở Bước 3, dòng UI refresh B đã cũ) và `docs/HANDOFF_2026-10-05_BUOC_0.md` §2 (phạm vi Bước 3, Deploy
-ngay sau Bước 3). `docs/specs/` không sửa.
+khi toàn bộ app hoàn chỉnh, trước ra mắt — D3 vòng 3). `docs/specs/` không sửa.
 
 ## 19. Rủi ro và việc còn mở
 
 - **Xây tới hết V1 trước khi có người dùng thật** (Q-D): giả thuyết "người học quay lại ôn" chỉ được kiểm khi app hoàn chỉnh; chủ
   dự án là người dùng thử duy nhất tới lúc đó (dữ liệu một người, không có giá trị thống kê).
+- **Lỗi chỉ lộ khi deploy dồn về cuối** (D3 vòng 3): mục 14 và các mục tương tự của Bước 4–8 chỉ kiểm được ngay trước ra mắt; tới lúc
+  đó chủ dự án dùng thử ở máy local, email nhắc vào Mailpit, không thử được trên điện thoại ngoài mạng nhà.
 - **Nội dung:** 8.812 từ cần nghĩa, ví dụ, (tùy chọn) chủ đề và dạng chia đã duyệt; thời gian duyệt mỗi từ chưa đo (lô thử 20 từ).
 - **Dạng chia từ thư viện có thể sai** ở từ hiếm; từ riêng tư không ai duyệt. Thư viện chọn bằng phép đo trong plan.
 - **Bỏ qua khi thấy `sending`** có thể làm mất một email nhắc trong ngày (hiếm).
