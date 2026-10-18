@@ -3,7 +3,12 @@ import { z } from 'zod';
 /** Admin-tunable values (design §9). Stored camelCase in `app_settings.value`; the API speaks snake_case. */
 export type AppSettings = {
   reminders: { enabled: boolean; sendTime: string; minGapDays: number; inactiveAfterDays: number; stopAfterDays: number };
-  learning: { newPerGroupPerDay: number; reviewsPerGroupPerDay: number; backlogAfterDays: number };
+  learning: {
+    newPerGroupPerDay: number;
+    /** `null` = no limit on the due part (Bước 4 D35). */
+    reviewsPerGroupPerDay: number | null;
+    backlogAfterDays: number;
+  };
   practice: {
     maxQuestionsPerSession: number; defaultQuestionsPerSession: number; historyMonths: number; trueFalseTruePercent: number;
     idleSessionCloseHours: number; reportsPerHour: number; hintDefinitionMaxChars: number;
@@ -31,7 +36,7 @@ export const SETTINGS_BOUNDS = {
   },
   learning: {
     new_per_group_per_day: { min: 1, max: 100 },
-    reviews_per_group_per_day: { min: 10, max: 500 },
+    reviews_per_group_per_day: { min: 10, max: 500, nullable: true },
     backlog_after_days: { min: 30, max: 365 },
   },
   practice: {
@@ -64,7 +69,7 @@ export const settingsValuesPatchSchema = z.strictObject({
   }).optional(),
   learning: z.strictObject({
     new_per_group_per_day: intIn(b.learning.new_per_group_per_day).optional(),
-    reviews_per_group_per_day: intIn(b.learning.reviews_per_group_per_day).optional(),
+    reviews_per_group_per_day: intIn(b.learning.reviews_per_group_per_day).nullable().optional(),
     backlog_after_days: intIn(b.learning.backlog_after_days).optional(),
   }).optional(),
   practice: z.strictObject({

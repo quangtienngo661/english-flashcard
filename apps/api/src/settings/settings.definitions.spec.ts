@@ -37,6 +37,17 @@ describe('settings definitions', () => {
     expect(issues({ practice: { type_word_max_retries: 2.5 } })).toEqual(['practice.type_word_max_retries']);
   });
 
+  it('D35: reviews_per_group_per_day takes null (no limit); new_per_group_per_day and backlog_after_days do not (B4E46)', () => {
+    expect(issues({ learning: { reviews_per_group_per_day: null } })).toEqual([]);
+    expect(issues({ learning: { new_per_group_per_day: null } })).toEqual(['learning.new_per_group_per_day']);
+    expect(issues({ learning: { backlog_after_days: null } })).toEqual(['learning.backlog_after_days']);
+    const cleared = applyPatch(SETTINGS_DEFAULTS, { learning: { reviews_per_group_per_day: null } });
+    expect(cleared.learning.reviewsPerGroupPerDay).toBeNull();
+    expect(changedFields(SETTINGS_DEFAULTS, cleared))
+      .toEqual([{ key: 'learning.reviews_per_group_per_day', oldValue: 100, newValue: null }]);
+    expect(withDefaults({ learning: { reviewsPerGroupPerDay: null } }).learning.reviewsPerGroupPerDay).toBeNull();
+  });
+
   it('B4E38: default_questions_per_session must not exceed max_questions_per_session on the merged values', () => {
     const equal = applyPatch(SETTINGS_DEFAULTS, { practice: { default_questions_per_session: 20 } });
     expect(crossFieldViolations(equal)).toEqual([]);

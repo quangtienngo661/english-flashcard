@@ -195,6 +195,31 @@ describe('admin settings (e2e, isolated database)', () => {
     expect((await get(admin.token)).body).toMatchObject({ version: 0, values: { practice: defaults.practice } });
   });
 
+  it('reviews_per_group_per_day null saves (D35) and reads back null', async () => {
+    const admin = await signIn('admin');
+    expect((await get(admin.token)).body.bounds.learning.reviews_per_group_per_day)
+      .toEqual({ min: 10, max: 500, nullable: true });
+    const cleared = await put(admin.token, { version: 0, values: { learning: { reviews_per_group_per_day: null } } });
+    expect(cleared.status).toBe(200);
+    expect(cleared.body.values.learning).toEqual({ ...defaults.learning, reviews_per_group_per_day: null });
+    expect((await get(admin.token)).body.values.learning.reviews_per_group_per_day).toBeNull();
+    expect((await ctx.app.get(SettingsService).get()).learning.reviewsPerGroupPerDay).toBeNull();
+    const history = await get(admin.token, '/v1/admin/settings/history');
+    expect(history.body.items.map(({ key, old_value, new_value }: { key: string; old_value: unknown; new_value: unknown }) =>
+      ({ key, old_value, new_value }))).toEqual([{ key: 'learning.reviews_per_group_per_day', old_value: 100, new_value: null }]);
+    const restored = await put(admin.token, { version: 1, values: { learning: { reviews_per_group_per_day: 100 } } });
+    expect(restored.body.values.learning.reviews_per_group_per_day).toBe(100);
+  });
+
+  it('B4E46: new_per_group_per_day null → 400 validation-failed, nothing saved', async () => {
+    const admin = await signIn('admin');
+    const res = await put(admin.token, { version: 0, values: { learning: { new_per_group_per_day: null } } });
+    expect(res.status).toBe(400);
+    expect(res.body.type).toBe(problem('validation-failed'));
+    expect(res.body.violations.join('\n')).toContain('values.learning.new_per_group_per_day');
+    expect(await stored()).toEqual([[], []]);
+  });
+
   it('type_word_max_retries 0 or 11 → 400', async () => {
     const admin = await signIn('admin');
     for (const value of [0, 11]) {
