@@ -9,6 +9,10 @@ import { AnswersController } from './answers/answers.controller.js';
 import { AnswersService } from './answers/answers.service.js';
 import { HistoryController } from './history/history.controller.js';
 import { HistoryService } from './history/history.service.js';
+import { PracticeCleanupService } from './maintenance/practice-cleanup.service.js';
+import { AdminReportsController } from './reports/admin-reports.controller.js';
+import { ReportsController } from './reports/reports.controller.js';
+import { ReportsService } from './reports/reports.service.js';
 import { PracticeReviewsController } from './reviews/practice-reviews.controller.js';
 import { PracticeReviewsService } from './reviews/practice-reviews.service.js';
 import { QuestionBuilder } from './questions/question-builder.service.js';
@@ -19,7 +23,12 @@ import { PracticeStats } from './weak/practice-stats.js';
 @Module({
   // IdentityModule: the learner guard needs IdentityService in the module that hosts the controllers.
   imports: [IdentityModule, ContentModule, LearningModule, SettingsModule, EntitlementsModule],
-  controllers: [SessionsController, AnswersController, PracticeReviewsController, HistoryController],
-  providers: [IdempotencyInterceptor, QuestionBuilder, PracticeStats, SessionsService, AnswersService, PracticeReviewsService, HistoryService],
+  controllers: [
+    SessionsController, AnswersController, PracticeReviewsController, HistoryController, ReportsController, AdminReportsController,
+  ],
+  providers: [
+    IdempotencyInterceptor, QuestionBuilder, PracticeStats, SessionsService, AnswersService, PracticeReviewsService, HistoryService,
+    ReportsService, PracticeCleanupService,
+  ],
 })
 export class PracticeModule {}

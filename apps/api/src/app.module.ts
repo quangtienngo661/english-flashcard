@@ -10,6 +10,7 @@ import { HealthController } from './health/health.controller.js';
 import { IdentityModule } from './identity/identity.module.js';
 import { LearningModule } from './learning/learning.module.js';
 import { NotificationsModule } from './notifications/notifications.module.js';
+import { PracticePortsModule } from './practice/maintenance/private-senses-cleanup.provider.js';
 import { PracticeModule } from './practice/practice.module.js';
 import { SampleModule } from './sample/sample.module.js';
 import { SettingsModule } from './settings/settings.module.js';
@@ -17,7 +18,7 @@ import { SettingsModule } from './settings/settings.module.js';
 @Module({
   imports: [
     SampleModule, IdentityModule, BatchScopeModule, ContentModule, ContentPipelineModule, SettingsModule, NotificationsModule,
-    LearningModule, EntitlementsModule, PracticeModule,
+    LearningModule, EntitlementsModule, PracticeModule, PracticePortsModule,
   ],
   controllers: [HealthController],
   providers: [],
