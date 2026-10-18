@@ -81,7 +81,8 @@ they say otherwise:
   `fix-request`, …). For cloud sessions without the plugin, the superpowers skills are vendored as project
   skills in `.claude/skills/` (`superpowers:brainstorming` → `brainstorming`); see `.claude/skills/SUPERPOWERS.md`.
 - **Git:** commit locally on a topic branch (`feat/*`, `fix/*`, `docs/*`, or the session's `claude/*` branch) as normal;
-  **push and opening a PR into `dev` need no approval; merge only when the owner asks** (owner, 15/10/2026). A
+  **push, opening a PR into `dev`, and merging a PR once its CI is green need no approval** (owner: push/PR
+  15/10/2026, merge 16/10/2026). A
   `dev` → `main` PR is the QA gate and opens only when the owner asks. Never PR or push straight to `main` from a
   topic branch: follow the branching model below. Scan for secrets before every push.
 
@@ -225,6 +226,10 @@ Các điểm dưới đây phát sinh khi rà quyền của `admin`/`editor` (b�
   đúng/sai không áp dụng (thử lại thành đoán). Đụng tới: đổi F40 (không thử lại), thêm kết quả thứ ba "nhầm" từ Practice sang
   Learning (LR6, PRC16), F38 giữ. Bước 3 chỉ cần lịch ôn chừa chỗ cho kết quả này. Còn mở: "nhầm" giữ mức hay hạ một mức
   (Claude đề xuất hạ một); "nhầm" có tính vào "từ hay sai" (PRC19) không.
+- **Sau Bước 3 — rà nghiệp vụ schema DB (chủ dự án 17/10/2026; chưa chốt, chưa sửa code).** DB1 `users` không có họ tên,
+  ngày sinh (chủ động giới hạn theo IR21; chủ dự án muốn thêm); DB2 không lưu ai đã review/publish/gỡ/retire một nghĩa; DB3
+  đăng ký không lưu việc đồng ý điều khoản và tuổi tối thiểu. DB2–DB3 nên xong trước pilot. Chi tiết, bằng chứng và câu còn
+  mở: `docs/superpowers/reviews/2026-10-17-db-schema-business-review.md`.
 - ~~**Giao diện cấp vai trò:**~~ **Đã rõ 13/10/2026:** chốt thành Bước 2.5 (D9, design Bước 2 mục 15) — giao diện
   web (đăng nhập, trang admin, cấp vai trò) ngay sau Bước 2, trước Bước 3. Xem bảng ở HANDOFF §2. Đã xong 15/10/2026
   (as-built ở `docs/deliveries/buoc-2-5.md`).
