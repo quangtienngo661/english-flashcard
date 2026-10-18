@@ -20,7 +20,7 @@ một phần design, chủ dự án duyệt cả phần.
 |---|---|---|---|
 | D1 | Thứ tự và phạm vi (Q-A) | Bước 3 đầy đủ | Chủ dự án |
 | D2 | Nền tảng của Bước 3 | Chỉ web; Flutter sau | Chủ dự án (đồng ý giới hạn Claude nêu) |
-| D3 | Vị trí bước Deploy | Ngay sau Bước 3 | Chủ dự án |
+| D3 | Vị trí bước Deploy | Khi toàn bộ app hoàn chỉnh, trước ra mắt (vòng 3, 18/10; trước đó: ngay sau Bước 3) | Chủ dự án |
 | D4 | Ghi những thứ chỉ kiểm được khi deploy | Một mục trong design Bước 3 | Chủ dự án |
 | D5 | Ai soạn nội dung (Q-B) | AI soạn nháp CSV ngoài app, chủ dự án duyệt, import; thử 20 từ trước; không phải code Bước 3 | Chủ dự án |
 | D6 | Bao nhiêu từ | Đích 8.812 từ | Chủ dự án |
@@ -63,6 +63,7 @@ một phần design, chủ dự án duyệt cả phần.
 | D43 | Có nhóm mặc định "Mới thêm" không | Bỏ: thêm từ phải chọn hoặc tạo nhóm; nhóm nào cũng đổi tên, xóa được (đổi D28) | Chủ dự án |
 | D46 | Nguồn dạng chia tự sinh (G6 của plan) | AGID làm nguồn chính; `compromise` dự phòng chỉ cho động từ, danh từ; tính từ ngoài AGID không tự sinh; đo trước theo ngưỡng cũ | Chủ dự án (đề xuất của Claude, theo yêu cầu của chủ dự án) |
 | D47 | Số nhiều của danh từ không đếm được (bộ library) | Thêm `pluralize` 8.0.0 (MIT) để không sinh số nhiều cho danh từ không đếm được có trong danh sách của nó | Chủ dự án (đề xuất của Claude) |
+| D48 | Từ ưu tiên mà người học bỏ app hơn 60 ngày | Vào danh sách cân nhắc, rời phần ưu tiên | Chủ dự án |
 | D45 | "Xong khi" của Bước 3 (G5 của plan) | Không đặt danh sách cố định trước; chủ dự án tự báo khi Bước 3 xong | Chủ dự án |
 | D44 | Giới hạn số email nhắc (G2 của plan) | Hai email nhắc cách nhau ít nhất N ngày; admin chỉnh N từ 1 tới 7, mặc định 2 (thay "tối đa N email mỗi tuần") | Chủ dự án (chỉnh khoảng cách thay vì công tắc chọn cách đếm: đề xuất của Claude) |
 
@@ -90,7 +91,13 @@ Chủ dự án đồng ý (2). Giới hạn (1) vốn có sẵn trong HANDOFF §
 | Vòng | Phương án | Trade-off | Chọn |
 |---|---|---|---|
 | 1 | Trước / sau / song song với Bước 3 | Trước: tốn tiền sớm, có server thật để thử sớm. Sau: đúng thứ tự, pilot chờ. Song song: hai luồng cùng lúc | ✅ Sau |
-| 2 (khi bỏ pilot, D12) | Giữ ngay sau Bước 3 / dời tới trước ra mắt / làm sớm hơn | Giữ: dùng thử trên điện thoại và email thật từ sớm, lộ lỗi deploy sớm. Dời: chậm chi phí, chỉ thử ở local | ✅ Giữ ngay sau Bước 3, "để từ đây tới lúc hoàn thành kiểm tra nếu có vấn đề gì ở phần deploy" |
+| 2 (khi bỏ pilot, D12) | Giữ ngay sau Bước 3 / dời tới trước ra mắt / làm sớm hơn | Giữ: dùng thử trên điện thoại và email thật từ sớm, lộ lỗi deploy sớm. Dời: chậm chi phí, chỉ thử ở local | Giữ ngay sau Bước 3, "để từ đây tới lúc hoàn thành kiểm tra nếu có vấn đề gì ở phần deploy" (bị thay ở vòng 3) |
+| 3 (18/10, sau khi phần hệ thống Bước 3 xong) | Đổi: Deploy khi toàn bộ app hoàn chỉnh, trước ra mắt / Giữ: ngay sau Bước 3 | Như vòng 2 | ✅ Đổi: "Deploy khi toàn bộ app hoàn chỉnh, trước ra mắt" |
+
+Vòng 3: chủ dự án nhớ là đã chốt "khi hệ thống hoàn thành thì mới deploy". Claude đối chiếu file này với đoạn chat ngày 16/10 (câu trả
+lời vòng 2 là "Giữ nguyên cũng đc…") và hỏi lại; chủ dự án chọn đổi. Hệ quả: chủ dự án dùng thử (D13) ở máy local, email nhắc vào
+Mailpit; mục 14 của design (những thứ chỉ kiểm được khi deploy) chỉ được kiểm ngay trước ra mắt; trang `/app/*` vẫn chặn trên
+production tới bước Deploy.
 
 ## D4 — Những thứ chỉ kiểm được khi deploy
 
@@ -550,6 +557,36 @@ người học thấy chúng trên trang từ cho tới khi bản duyệt CSV s�
 
 Chủ dự án hỏi lại cho rõ, Claude giải thích bằng ví dụ và đề xuất thêm; chủ dự án: "ok thêm". Chỉ lọc bộ library; bộ đã duyệt qua CSV
 không bị lọc.
+
+## D48 — Từ ưu tiên bị bỏ lâu
+
+Bối cảnh (review độc lập 17/10, mục L1): design 6.1 nói từ quá hạn hơn N ngày "không vào danh sách cần ôn", còn 6.2 nói phần ưu tiên
+gồm "mọi mục priority = true". Một từ đã bấm "Cần ôn tập" rồi bị bỏ hơn 60 ngày nên đang hiện ở cả hai chỗ. Claude hỏi, không nghiêng
+bên nào:
+
+| Phương án | Trade-off (như đã trình bày) |
+|---|---|
+| Giữ ở phần ưu tiên, không vào danh sách cân nhắc | Từ người học từng đánh dấu luôn đứng đầu |
+| ✅ Chuyển sang danh sách cân nhắc, rời phần ưu tiên | Giống mọi từ bị bỏ lâu khác: học lại, bỏ, hoặc để đó |
+
+Chủ dự án chọn phương án 2. Claude đồng ý: danh sách cân nhắc dành cho từ bị bỏ lâu, nên cờ ưu tiên cũ không đổi luật đó. "Học lại" bỏ
+cờ ưu tiên; "để đó" giữ nguyên.
+
+## Quyết định của điều phối sau review độc lập (17/10)
+
+Review độc lập (`../reviews/2026-10-17-buoc-3-code-review.md`) có các chỗ cần chọn một trong hai cách sửa. Các chỗ không đổi hành vi
+sản phẩm, hoặc chỉ làm cho code khớp design hay luật đã chốt, do điều phối quyết rồi báo chủ dự án:
+
+| Mục | Chọn | Vì sao |
+|---|---|---|
+| M1 câu ngữ cảnh còn trong `idempotency_keys` | Cả hai: route thêm câu chỉ trả `{ id, created_at }`; thêm job dọn `idempotency_keys` cũ hơn 24 giờ | Design 7.4, CR23: câu bị xóa cùng từ riêng; plan giao diện chưa viết nên đổi response không vỡ gì |
+| M3 ghi "không có dạng chia" | Ô `-`, lưu bền ở entry; import và backfill bỏ qua | Giống ô `form_of`; D47 nói số nhiều sai sẽ được CSV sửa, nên phải ghi được bộ rỗng |
+| M6 "lần cuối thấy" | Thêm cột `users.last_seen_at` | Giá trị cũ mất khi dọn phiên; dòng "không thêm chỗ ghi mới" của design §4 là đề xuất của Claude nên được sửa |
+| M7 lỗi SMTP vĩnh viễn | Không thử lại; dòng `failed` tính vào trần email "lâu rồi", không tính vào `min_gap_days` | Một địa chỉ hỏng không tốn suất mỗi ngày; email thường vẫn được thử lại hôm sau |
+| M8 tra dạng chia khi từ gốc chưa có nghĩa | Trả từ gốc catalog (không nghĩa) | Design B3E14 đã yêu cầu; code lệch design |
+| M9 lỗi SMTP mơ hồ | Coi là "không rõ", giữ `sending`, không thử lại | Luật D37 "mất một email còn hơn gửi trùng"; design 8.3 được sửa cho khớp |
+| L2 trả lời từ cân nhắc ở "học tất cả" | Ghi `section = backlog`, không tính trần | Design 6.1 "cân nhắc không tính trần" |
+| L8 revert batch không hoàn tác dạng chia | Chấp nhận ở Bước 3, báo cáo revert ghi rõ | Sau khi sửa H1, upload lại file cũ đã khôi phục được dạng chia |
 
 ## Những chỗ Claude đã đề xuất trước khi chủ dự án trả lời (luật owner-first)
 

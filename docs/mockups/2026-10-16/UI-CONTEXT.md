@@ -118,3 +118,21 @@ Luật hỏi vẫn là "chủ dự án trả lời trước, Claude đề xuất
 ## 8. Ngoài phạm vi giao diện Bước 3
 
 Flutter và push (làm sau), bài luyện (Bước 4), AI, đăng nhập Google và xóa tài khoản (Bước 8), dashboard thống kê cho admin.
+
+## 9. Ghi chú API cho plan giao diện (cập nhật 17/10/2026, sau khi implement phần hệ thống)
+
+Plan giao diện dựng trên các route ở design §10. Những điểm dưới đây khác hoặc chi tiết hơn design, phát sinh lúc implement và review:
+
+- Đường dẫn app người học: `/vi/app/...`, `/en/app/...` (D39). Email nhắc trỏ tới `<LEARNER_APP_URL>/<native_language>/app/settings`, nên plan
+  giao diện phải có đúng đường dẫn đó; người chưa đăng nhập đi qua trang đăng nhập rồi về Cài đặt (B3E34).
+- Không có nhóm mặc định (D43): mọi lệnh thêm từ cần `group_id`; người chưa có nhóm phải tạo nhóm trước (`POST /v1/groups`).
+- `POST /v1/senses/:id/sentences` chỉ trả `{ id, created_at }`, không trả lại câu (review M1).
+- `GET /v1/lookup`: một phần tử `via_inflection` có thể có `senses: []` khi từ gốc catalog chưa có nghĩa; giao diện vẫn gợi ý từ gốc và
+  gắn sẵn link "dạng chia của …" khi người học tự nhập (B3E14, review M8).
+- Trang từ trả đủ mọi dạng chia của từng loại theo thứ tự (ví dụ quá khứ của `ring`: ringed, rang); tính từ không có dạng so sánh tự
+  sinh (D46).
+- `GET /v1/groups/:id/queue?mode=all`: thẻ có thể mang `section: 'backlog'` (từ trong danh sách cân nhắc); từ ưu tiên bị bỏ hơn 60 ngày
+  nằm ở danh sách cân nhắc, không ở phần ưu tiên (D48).
+- `POST /v1/reviews` có giới hạn riêng 120 lượt/phút mỗi người; dùng lại `review_id` với nội dung khác → 400.
+- Trang admin "Thông báo & giới hạn": khóa `min_gap_days` (1–7, mặc định 2) thay cho số email mỗi tuần (D44).
+- API cần biến môi trường `LEARNER_APP_URL`.
