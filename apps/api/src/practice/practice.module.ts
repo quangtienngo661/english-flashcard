@@ -4,10 +4,11 @@ import { ContentModule } from '../content/content.module.js';
 import { IdentityModule } from '../identity/identity.module.js';
 import { LearningModule } from '../learning/index.js';
 import { SettingsModule } from '../settings/index.js';
+import { QuestionBuilder } from './questions/question-builder.service.js';
 
 @Module({
   // IdentityModule: the learner guard needs IdentityService in the module that hosts the controllers.
   imports: [IdentityModule, ContentModule, LearningModule, SettingsModule],
-  providers: [IdempotencyInterceptor],
+  providers: [IdempotencyInterceptor, QuestionBuilder],
 })
 export class PracticeModule {}
