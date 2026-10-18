@@ -1,0 +1,75 @@
+// Distractor candidates (design 7.4): the words of the learner's groups that hold the asked word, filtered here.
+
+/** A sense as the question builder sees it (mapped from Content's PracticeSense in Task 13). */
+export type QuestionWord = {
+  sense_id: string;
+  entry_id: string;
+  scope: 'catalog' | 'private';
+  lemma: string;
+  gloss_vi: string | null;
+  definition_en: string | null;
+  form_of_entry_id: string | null;
+  function_word: boolean;
+};
+
+/** Sub-meanings of a meaning: split on , and ;, ( … ) parts dropped, NFC, lower case, trimmed, empties dropped. */
+export function subsenses(text: string): string[] {
+  return text
+    .replace(/\([^)]*\)/g, '')
+    .split(/[,;]/)
+    .map((part) => part.normalize('NFC').toLowerCase().trim())
+    .filter((part) => part.length > 0);
+}
+
+function shareSubsense(a: string, b: string): boolean {
+  const left = new Set(subsenses(a));
+  return subsenses(b).some((part) => left.has(part));
+}
+
+/** Compared on gloss_vi when both have one, else on definition_en when both have one, else kept (R13). */
+function sameMeaning(asked: QuestionWord, candidate: QuestionWord): boolean {
+  if (asked.gloss_vi !== null && candidate.gloss_vi !== null) return shareSubsense(asked.gloss_vi, candidate.gloss_vi);
+  if (asked.definition_en !== null && candidate.definition_en !== null) {
+    return shareSubsense(asked.definition_en, candidate.definition_en);
+  }
+  return false;
+}
+
+/**
+ * Drops the asked sense, the same lemma (case-insensitive), form-of links either way and a shared sub-meaning; then keeps
+ * one candidate per lower-cased lemma.
+ */
+export function eligibleCandidates(asked: QuestionWord, candidates: QuestionWord[]): QuestionWord[] {
+  const askedLemma = asked.lemma.toLowerCase();
+  const seen = new Set<string>();
+  const result: QuestionWord[] = [];
+  for (const candidate of candidates) {
+    const lemma = candidate.lemma.toLowerCase();
+    if (candidate.sense_id === asked.sense_id || lemma === askedLemma) continue;
+    if (candidate.form_of_entry_id === asked.entry_id || asked.form_of_entry_id === candidate.entry_id) continue;
+    if (sameMeaning(asked, candidate) || seen.has(lemma)) continue;
+    seen.add(lemma);
+    result.push(candidate);
+  }
+  return result;
+}
+
+export function shuffle<T>(items: T[], random: () => number): T[] {
+  const copy = [...items];
+  for (let i = copy.length - 1; i > 0; i--) {
+    const j = Math.floor(random() * (i + 1));
+    [copy[i], copy[j]] = [copy[j], copy[i]];
+  }
+  return copy;
+}
+
+/** `count` distinct candidates, preferring sense ids not in `avoid` (round ≥ 2); null when fewer than `count` exist. */
+export function pickDistractors(
+  eligible: QuestionWord[], count: number, avoid: string[], random: () => number,
+): QuestionWord[] | null {
+  if (eligible.length < count) return null;
+  const avoided = new Set(avoid);
+  const fresh = shuffle(eligible.filter((w) => !avoided.has(w.sense_id)), random);
+  const used = shuffle(eligible.filter((w) => avoided.has(w.sense_id)), random);
+  return [...fresh, ...used].slice(0, count);
+}
