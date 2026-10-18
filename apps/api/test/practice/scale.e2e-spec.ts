@@ -1,4 +1,9 @@
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
+import { ContentService } from '../../src/content/index.js';
+import { LearningService, type PracticeItem } from '../../src/learning/index.js';
+import { QuestionBuilder } from '../../src/practice/questions/question-builder.service.js';
+import { sortWords } from '../../src/practice/sessions/order.js';
+import { PracticeStats } from '../../src/practice/weak/practice-stats.js';
 import { seedUser } from '../support/auth-helpers.js';
 import { createTestApp, type TestApp } from '../support/create-test-app.js';
 import { createIsolatedDatabase } from '../support/isolated-database.js';
@@ -10,6 +15,23 @@ const GROUPS = 100;
 const PER_GROUP = 2000;
 // ASSUMPTION (plan, Review Focus 2): the threshold is the owner's to confirm; the median is printed for that.
 const THRESHOLD_MS = 1000;
+
+/** Test-only timing: wraps a real method and records each call's duration under a label; production code is unchanged. */
+function timeCalls(target: object, method: string, label: string, calls: Map<string, number[]>, keep?: (result: unknown) => void) {
+  const record = target as Record<string, (...args: unknown[]) => Promise<unknown>>;
+  const original = record[method].bind(target);
+  vi.spyOn(record, method).mockImplementation(async (...args: unknown[]) => {
+    const started = performance.now();
+    try {
+      const result = await original(...args);
+      keep?.(result);
+      return result;
+    } finally {
+      calls.set(label, [...(calls.get(label) ?? []), performance.now() - started]);
+    }
+  });
+}
+const sum = (values: number[] = []) => values.reduce((a, b) => a + b, 0);
 
 describe('practice at scale (e2e, isolated database)', () => {
   let ctx: TestApp;
@@ -41,11 +63,26 @@ describe('practice at scale (e2e, isolated database)', () => {
     ctx.clock.set(now);
     const start = () => practiceRequest(ctx, userId, 'post', '/sessions', { source: 'all', types: ['mcq_definition'] });
     expect((await start()).status).toBe(201); // warm-up: connection, plan cache
+    const calls = new Map<string, number[]>();
+    let items: PracticeItem[] = [];
+    timeCalls(ctx.app.get(LearningService), 'practiceItems', 'practiceItems', calls, (result) => { items = result as PracticeItem[]; });
+    timeCalls(ctx.app.get(PracticeStats), 'statsFor', 'statsFor', calls);
+    timeCalls(ctx.app.get(QuestionBuilder), 'availability', 'availability', calls);
+    timeCalls(ctx.app.get(LearningService), 'practiceGroupMates', 'groupMates', calls);
+    timeCalls(ctx.app.get(ContentService), 'practiceCandidates', 'candidates', calls);
     const timings: number[] = [];
     for (let i = 0; i < 3; i += 1) {
+      calls.clear();
       const started = performance.now();
       const response = await start();
       timings.push(performance.now() - started);
+      // sortWords is a plain function: timed apart, on the same words the request sorted.
+      const sortStarted = performance.now();
+      sortWords(items.map((item) => ({ ...item, last_practiced_at: null, recent_wrong: 0 })), 'least_practiced', Math.random);
+      const sortMs = performance.now() - sortStarted;
+      const known = sum(calls.get('practiceItems')) + sum(calls.get('statsFor')) + sum(calls.get('availability'));
+      const f = (n: number) => n.toFixed(0);
+      console.log(`[Review Focus 2 breakdown, run ${i + 1}] total ${f(timings[i])} ms; practiceItems(all) ${f(sum(calls.get('practiceItems')))} ms (${items.length} rows); statsFor ${f(sum(calls.get('statsFor')))} ms; sortWords ~${f(sortMs)} ms (timed apart); availability ${calls.get('availability')?.length ?? 0} batch(es) ${f(sum(calls.get('availability')))} ms = groupMates ${f(sum(calls.get('groupMates')))} ms + candidates ${f(sum(calls.get('candidates')))} ms + filter; rest (sort, transaction, HTTP) ${f(timings[i] - known)} ms`);
       expect(response.status).toBe(201);
       expect(response.body.session).toMatchObject({ words: 10, sort: 'least_practiced' });
     }
