@@ -4,6 +4,7 @@ import { ContentModule } from '../content/content.module.js';
 import { IdentityModule } from '../identity/identity.module.js';
 import { LearningModule } from '../learning/index.js';
 import { SettingsModule } from '../settings/index.js';
+import { PracticeCleanupService } from './maintenance/practice-cleanup.service.js';
 import { AdminReportsController } from './reports/admin-reports.controller.js';
 import { ReportsController } from './reports/reports.controller.js';
 import { ReportsService } from './reports/reports.service.js';
@@ -12,6 +13,6 @@ import { ReportsService } from './reports/reports.service.js';
   // IdentityModule: the learner guard needs IdentityService in the module that hosts the controllers.
   imports: [IdentityModule, ContentModule, LearningModule, SettingsModule],
   controllers: [ReportsController, AdminReportsController],
-  providers: [IdempotencyInterceptor, ReportsService],
+  providers: [IdempotencyInterceptor, ReportsService, PracticeCleanupService],
 })
 export class PracticeModule {}

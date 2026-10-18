@@ -109,8 +109,9 @@ describe('Maintenance cleanup (e2e, isolated database)', () => {
 
   it('the scheduler registers every module\'s job and starts no timer when maintenanceEnabled is false', () => {
     const scheduler = ctx.app.get(MaintenanceScheduler);
-    // Bước 2 (Task 18) added import-file-cleanup; every AppModule instance registers it too.
-    expect(scheduler.jobNames().sort()).toEqual(['idempotency-keys', 'identity-cleanup','import-file-cleanup', 'rate-limit-counters']);
+    // Bước 2 (Task 18) added import-file-cleanup, Bước 4 (Task 19) practice-cleanup; every AppModule instance registers them.
+    expect(scheduler.jobNames().sort())
+      .toEqual(['idempotency-keys', 'identity-cleanup', 'import-file-cleanup', 'practice-cleanup', 'rate-limit-counters']);
     expect(scheduler.isRunning()).toBe(false);
   });
 
