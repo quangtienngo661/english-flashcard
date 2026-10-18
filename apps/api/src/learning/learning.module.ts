@@ -11,6 +11,8 @@ import { ItemsController } from './items/items.controller.js';
 import { ItemsService } from './items/items.service.js';
 import { LearningService } from './learning.service.js';
 import { MyWordsDeleteController } from './my-words/my-words-delete.controller.js';
+import { PracticeReadsService } from './practice/practice-reads.service.js';
+import { PracticeReviewService } from './practice/practice-review.service.js';
 import { QuickAddController } from './quick-add/quick-add.controller.js';
 import { QuickAddService } from './quick-add/quick-add.service.js';
 import { QueueController } from './queue/queue.controller.js';
@@ -25,7 +27,10 @@ import { ReviewsService } from './reviews/reviews.service.js';
     BacklogController, GroupsController, ItemsController, MyWordsDeleteController, QueueController, QuickAddController,
     ReviewsController,
   ],
-  providers: [BacklogService, GroupsService, ItemsService, QueueService, QuickAddService, ReviewsService, LearningService, IdempotencyInterceptor],
+  providers: [
+    BacklogService, GroupsService, ItemsService, QueueService, QuickAddService, ReviewsService, PracticeReadsService,
+    PracticeReviewService, LearningService, IdempotencyInterceptor,
+  ],
   exports: [LearningService],
 })
 export class LearningModule {}

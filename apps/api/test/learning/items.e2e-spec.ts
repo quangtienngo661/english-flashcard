@@ -151,7 +151,7 @@ describe('learning items (e2e, isolated database)', () => {
     expect(fromLast.body).toEqual({ removed_from_learning: true });
     expect(await itemsOf(me.userId)).toEqual([]);
     // T-C8: every column of both log rows.
-    const empty = { answer: null, rating: null, wasDue: null, daysSinceLast: null, reviewId: null, section: null };
+    const empty = { answer: null, rating: null, wasDue: null, daysSinceLast: null, reviewId: null, section: null, origin: null };
     expect(await logOf(me.userId)).toEqual([
       { id: expect.any(String), userId: me.userId, itemId: added.item_id, senseId, groupId: a, kind: 'item_added', ...empty,
         levelBefore: null, levelAfter: 0, dueBefore: null, dueAfter: date('2026-11-02'), localDate: date('2026-11-02'), at: now },

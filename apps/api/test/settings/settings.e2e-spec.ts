@@ -10,6 +10,10 @@ const problem = (slug: string) => `https://api.example.com/problems/${slug}`;
 const defaults = {
   reminders: { enabled: true, send_time: '20:00', min_gap_days: 2, inactive_after_days: 7, stop_after_days: 60 },
   learning: { new_per_group_per_day: 20, reviews_per_group_per_day: 100, backlog_after_days: 60 },
+  practice: {
+    max_questions_per_session: 20, default_questions_per_session: 10, history_months: 6, true_false_true_percent: 50,
+    idle_session_close_hours: 24, reports_per_hour: 20, hint_definition_max_chars: 200, type_word_max_retries: null,
+  },
 };
 
 describe('admin settings (e2e, isolated database)', () => {
@@ -46,6 +50,10 @@ describe('admin settings (e2e, isolated database)', () => {
     expect(await ctx.app.get(SettingsService).get()).toEqual({
       reminders: { enabled: true, sendTime: '20:00', minGapDays: 2, inactiveAfterDays: 7, stopAfterDays: 60 },
       learning: { newPerGroupPerDay: 20, reviewsPerGroupPerDay: 100, backlogAfterDays: 60 },
+      practice: {
+        maxQuestionsPerSession: 20, defaultQuestionsPerSession: 10, historyMonths: 6, trueFalseTruePercent: 50,
+        idleSessionCloseHours: 24, reportsPerHour: 20, hintDefinitionMaxChars: 200, typeWordMaxRetries: null,
+      },
     });
 
     // min_gap_days is sent unchanged: it must not appear in the history.
@@ -119,6 +127,82 @@ describe('admin settings (e2e, isolated database)', () => {
     expect(raise.body.violations).toEqual(['values.reminders.stop_after_days: Expected greater than inactive_after_days']);
     expect((await put(admin.token, { values: {} })).status).toBe(400);
     expect((await put(admin.token, { version: 2, values: { reminders: { tick: 1 } } })).status).toBe(400);
+  });
+
+  it('GET /v1/admin/settings returns the practice defaults and the new bounds', async () => {
+    const admin = await signIn('admin');
+    const res = await get(admin.token);
+    expect(res.status).toBe(200);
+    expect(res.body.values.practice).toEqual(defaults.practice);
+    expect(res.body.bounds.practice).toEqual({
+      max_questions_per_session: { min: 5, max: 100 },
+      default_questions_per_session: { min: 1, max: 100 },
+      history_months: { min: 3, max: 24 },
+      true_false_true_percent: { min: 20, max: 80 },
+      idle_session_close_hours: { min: 1, max: 168 },
+      reports_per_hour: { min: 5, max: 100 },
+      hint_definition_max_chars: { min: 80, max: 500 },
+      type_word_max_retries: { min: 1, max: 10, nullable: true },
+    });
+  });
+
+  it('PUT practice values within bounds saves and records history rows', async () => {
+    const admin = await signIn('admin');
+    const res = await put(admin.token, { version: 0, values: { practice: {
+      max_questions_per_session: 30, default_questions_per_session: 15, history_months: 12, type_word_max_retries: 3 } } });
+    expect(res.status).toBe(200);
+    const saved = { ...defaults.practice, max_questions_per_session: 30, default_questions_per_session: 15, history_months: 12,
+      type_word_max_retries: 3 };
+    expect(res.body).toEqual({ version: 1, values: { ...defaults, practice: saved } });
+    expect((await get(admin.token)).body.values.practice).toEqual(saved);
+    expect((await ctx.app.get(SettingsService).get()).practice).toMatchObject({
+      maxQuestionsPerSession: 30, defaultQuestionsPerSession: 15, historyMonths: 12, typeWordMaxRetries: 3 });
+    const changes = await ctx.prisma.appSettingChange.findMany();
+    expect(changes.map(({ key, oldValue, newValue }) => ({ key, oldValue, newValue }))).toEqual(expect.arrayContaining([
+      { key: 'practice.max_questions_per_session', oldValue: 20, newValue: 30 },
+      { key: 'practice.default_questions_per_session', oldValue: 10, newValue: 15 },
+      { key: 'practice.history_months', oldValue: 6, newValue: 12 },
+      { key: 'practice.type_word_max_retries', oldValue: null, newValue: 3 },
+    ]));
+    expect(changes).toHaveLength(4);
+  });
+
+  it('type_word_max_retries 3 → null saves and the history row reads back old 3, new null', async () => {
+    const admin = await signIn('admin');
+    expect((await put(admin.token, { version: 0, values: { practice: { type_word_max_retries: 3 } } })).status).toBe(200);
+    ctx.clock.set(new Date('2026-10-17T09:05:00Z'));
+    const cleared = await put(admin.token, { version: 1, values: { practice: { type_word_max_retries: null } } });
+    expect(cleared.status).toBe(200);
+    expect(cleared.body.values.practice.type_word_max_retries).toBeNull();
+    expect((await get(admin.token)).body.values.practice.type_word_max_retries).toBeNull();
+    expect((await ctx.app.get(SettingsService).get()).practice.typeWordMaxRetries).toBeNull();
+    const history = await get(admin.token, '/v1/admin/settings/history');
+    expect(history.body.items.map(({ key, old_value, new_value }: { key: string; old_value: unknown; new_value: unknown }) =>
+      ({ key, old_value, new_value }))).toEqual([
+      { key: 'practice.type_word_max_retries', old_value: 3, new_value: null },
+      { key: 'practice.type_word_max_retries', old_value: null, new_value: 3 },
+    ]);
+  });
+
+  it('B4E38: default 30 with max 20 → 400 validation-failed and nothing saved', async () => {
+    const admin = await signIn('admin');
+    const res = await put(admin.token, { version: 0, values: { practice: { default_questions_per_session: 30 } } });
+    expect(res.status).toBe(400);
+    expect(res.body.type).toBe(problem('validation-failed'));
+    expect(res.body.violations).toEqual([
+      'values.practice.default_questions_per_session: Expected at most max_questions_per_session']);
+    expect(await stored()).toEqual([[], []]);
+    expect((await get(admin.token)).body).toMatchObject({ version: 0, values: { practice: defaults.practice } });
+  });
+
+  it('type_word_max_retries 0 or 11 → 400', async () => {
+    const admin = await signIn('admin');
+    for (const value of [0, 11]) {
+      const res = await put(admin.token, { version: 0, values: { practice: { type_word_max_retries: value } } });
+      expect(res.status, String(value)).toBe(400);
+      expect(res.body.type, String(value)).toBe(problem('validation-failed'));
+    }
+    expect(await stored()).toEqual([[], []]);
   });
 
   it('B3E31: two PUTs with the same version → the second 409 version-conflict and the stored value is the first', async () => {
