@@ -470,6 +470,17 @@ Bốc theo `true_false_true_percent` (mặc định 50, ASSUMPTION): cặp đún
 mục 7.4). Ứng viên đã qua mọi bộ lọc của 7.4; rủi ro còn lại của ⚠2 (đồng nghĩa khác chữ) vẫn áp cho cặp sai (sửa sau review, R13: bản
 trước ghi "cặp sai chắc chắn sai").
 
+**Không hiện nhãn ngữ cảnh (Chốt 18/10, D37, hỏi trong lúc implement Task 13):** đề đúng/sai không có `context_label`, ở cả cặp đúng lẫn
+cặp sai (`Prompt.context_label` luôn null với `kind: 'true_false'`), kể cả khi nghĩa đang hỏi có nhãn. Lý do: dữ liệu ứng viên không có
+nhãn, nên nếu chỉ cặp đúng có nhãn thì nhìn nhãn là đoán được đáp án; ứng viên không bao giờ cùng chữ với từ hỏi nên nhãn không cần để
+phân biệt nghĩa. Trắc nghiệm và gõ từ vẫn hiện nhãn của từ đang hỏi (7.3).
+
+| When | Then |
+|---|---|
+| Đúng/sai cho `deploy` (nhãn "phần mềm"), cặp đúng | Đề `deploy — triển khai`, `context_label` null |
+| Đúng/sai cho `deploy`, cặp sai mượn nghĩa của `deliver` | Đề `deploy — giao hàng`, `context_label` null |
+| Trắc nghiệm hoặc gõ từ kiểu A cho `deploy` | Đề có `context_label` "phần mềm" như cũ |
+
 ### 7.6 Chấm (Chốt)
 
 - Trắc nghiệm: so vị trí đã chọn với `answer_key`. Đúng/sai: so true/false.
