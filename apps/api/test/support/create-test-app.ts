@@ -1,4 +1,4 @@
-import type { Type } from '@nestjs/common';
+import type { DynamicModule, InjectionToken, Type } from '@nestjs/common';
 import { DiscoveryModule } from '@nestjs/core';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import { Test } from '@nestjs/testing';
@@ -27,6 +27,9 @@ import { ROLE_PERMISSIONS_TOKEN } from '../../src/identity/staff/role-permission
 import { InFlightInterceptor } from './in-flight.interceptor.js';
 import { testConfig } from './test-config.js';
 
+/** Holds the `providers` option; global, so a port no production module provides (injected with @Optional()) reaches every module. */
+class TestProvidersModule {}
+
 export type TestApp = {
   app: NestExpressApplication;
   http(): ReturnType<typeof request>;
@@ -48,6 +51,8 @@ export async function createTestApp(opts?: {
   jobHandlers?: JobHandler[];
   controllers?: Type<unknown>[];
   rolePermissions?: Record<StaffRole, readonly Permission[]>;
+  /** A port or a fake service: provided globally and overriding any production provider of the same token. */
+  providers?: Array<{ provide: InjectionToken; useValue: unknown }>;
 }): Promise<TestApp> {
   const defaults = testConfig();
   const config: AppConfig = {
@@ -68,8 +73,12 @@ export async function createTestApp(opts?: {
   const mailer = new FakeMailer();
   const rolePermissions = structuredClone(opts?.rolePermissions ?? ROLE_PERMISSIONS);
   let handlerRegistry: JobHandlerRegistry;
-  const moduleRef = await Test.createTestingModule({
-    imports: [AppModule.forRoot(config), IdentityModule, DiscoveryModule], controllers: opts?.controllers ?? [],
+  const extra = opts?.providers ?? [];
+  const testProviders: DynamicModule = {
+    module: TestProvidersModule, global: true, providers: extra, exports: extra.map(({ provide }) => provide),
+  };
+  let builder = Test.createTestingModule({
+    imports: [AppModule.forRoot(config), IdentityModule, DiscoveryModule, testProviders], controllers: opts?.controllers ?? [],
     providers: [{
       provide: 'TEST_JOB_HANDLERS',
       useValue: {
@@ -82,8 +91,9 @@ export async function createTestApp(opts?: {
     .overrideProvider(Clock).useValue(clock)
     .overrideProvider(LOG_SINK).useValue(sink)
     .overrideProvider(Mailer).useValue(mailer)
-    .overrideProvider(ROLE_PERMISSIONS_TOKEN).useValue(rolePermissions)
-    .compile();
+    .overrideProvider(ROLE_PERMISSIONS_TOKEN).useValue(rolePermissions);
+  for (const { provide, useValue } of extra) builder = builder.overrideProvider(provide).useValue(useValue);
+  const moduleRef = await builder.compile();
   const app = moduleRef.createNestApplication<NestExpressApplication>({ bodyParser: false });
   const prisma = moduleRef.get<PrismaClient>(PRISMA_CLIENT);
   handlerRegistry = moduleRef.get(JobHandlerRegistry);

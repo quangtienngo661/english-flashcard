@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Optional } from '@nestjs/common';
 import { Clock } from '../../common/clock/clock.js';
 import { PRISMA_CLIENT } from '../../common/db/prisma.module.js';
 import { ProblemDetailsException } from '../../common/problem-details/problem-details.exception.js';
@@ -9,6 +9,7 @@ import { IdentityService } from '../../identity/profile/identity.service.js';
 import { GroupsService } from '../groups/groups.service.js';
 import { ItemsService } from '../items/items.service.js';
 import { withLearnerLock } from '../learning-lock.js';
+import { PRIVATE_SENSES_CLEANUP, type PrivateSensesCleanup } from '../private-senses-cleanup.port.js';
 
 const transactionOptions = { timeout: 30_000, maxWait: 5_000 };
 const conflicts = new Set(['private-word-exists', 'private-word-limit-reached', 'sentence-limit-reached']);
@@ -46,6 +47,7 @@ export class QuickAddService {
     @Inject(ContentService) private readonly content: ContentService,
     @Inject(GroupsService) private readonly groups: GroupsService,
     @Inject(ItemsService) private readonly items: ItemsService,
+    @Optional() @Inject(PRIVATE_SENSES_CLEANUP) private readonly privateSensesCleanup?: PrivateSensesCleanup,
   ) {}
 
   /** B3#8, B3#9: private word, sentence, item and group link in one transaction — any refusal stores nothing (B3E11). */
@@ -85,6 +87,8 @@ export class QuickAddService {
     await contentProblems(() => this.prisma.$transaction(async (tx) => {
       await withLearnerLock(tx, userId);
       const { senseIds } = await this.content.deletePrivateEntryContent(tx, userId, entryId);
+      // Practice's rows go before the items: the port locks practice rows, and nothing may hold a Learning item first.
+      await this.privateSensesCleanup?.deleteForSenses(tx, userId, senseIds);
       await tx.learningItem.deleteMany({ where: { userId, senseId: { in: senseIds } } });
       await tx.learningLogEntry.deleteMany({ where: { userId, senseId: { in: senseIds } } });
     }, transactionOptions));
