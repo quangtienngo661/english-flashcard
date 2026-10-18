@@ -203,6 +203,26 @@ describe('question builder (e2e, isolated database)', () => {
     expect(trues).toBeLessThan(130);
   }, 60_000);
 
+  it('D37: true/false of a labelled sense has context_label null on both the true and the false pair', async () => {
+    const userId = await seedPracticeUser(ctx.prisma);
+    const deploy = await sense({ lemma: 'deploy', glossVi: 'triển khai' });
+    await ctx.prisma.sense.update({ where: { id: deploy.senseId }, data: { contextLabel: 'phần mềm' } });
+    await seedPracticeGroup(ctx.prisma, userId, 'IT', [deploy.senseId, ...await fillers(3)]);
+    for (const percent of [100, 0]) {
+      const question = await build(userId, deploy.senseId, {
+        chosenTypes: ['true_false_definition'], settings: { ...settings, trueFalseTruePercent: percent },
+      });
+      if ('skip' in question || question.answerKey.kind !== 'true_false') throw new Error('not tf');
+      expect(question.answerKey.is_true).toBe(percent === 100);
+      expect(question.prompt).toMatchObject({ kind: 'true_false', context_label: null });
+    }
+    // Control: multiple choice and typing keep the asked sense's label.
+    const mcq = await build(userId, deploy.senseId, { chosenTypes: ['mcq_definition'] });
+    const typing = await build(userId, deploy.senseId, { chosenTypes: ['type_word'] });
+    expect(mcq).toMatchObject({ prompt: { kind: 'mcq', context_label: 'phần mềm' } });
+    expect(typing).toMatchObject({ prompt: { kind: 'type_meaning', context_label: 'phần mềm' } });
+  });
+
   it('a retired sense → skip not-visible', async () => {
     const userId = await seedPracticeUser(ctx.prisma);
     const deploy = await sense({ lemma: 'deploy', glossVi: 'triển khai' });

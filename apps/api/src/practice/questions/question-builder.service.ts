@@ -92,7 +92,7 @@ export class QuestionBuilder {
       const paired = isTrue ? sense : pickDistractors(eligible, 1, input.avoidDistractors, random)![0];
       return {
         type, promptStyle: 'meaning',
-        // D37 pending (owner): which context label a false pair shows; null until decided.
+        // D37 (owner): true/false never shows a context label, on the true pair or the false one.
         prompt: {
           kind: 'true_false', lemma: sense.lemma, meaning: paired.meaning.text, meaning_language: paired.meaning.language,
           context_label: null,
