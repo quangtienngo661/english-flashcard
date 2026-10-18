@@ -27,10 +27,14 @@ export function sectionOf(state: ItemState, today: string, backlogDays: number):
   return state.dueDate <= today ? 'due' : 'early';
 }
 
+/** Whether "known" moves the item up today. A level-0 word is always due, even when its date is "tomorrow" after the zone moved west (M2, design 6.2). */
+export function isDueNow(state: ItemState, today: string): boolean {
+  return state.priority || state.level === 0 || state.dueDate <= today;
+}
+
 export function applyAnswer(state: ItemState, answer: Answer, today: string, backlogDays: number): AnswerResult {
   const section = sectionOf(state, today, backlogDays);
-  // A level-0 word is always due, even when its date is "tomorrow" after the zone moved west (M2, design 6.2).
-  const wasDue = state.priority || state.level === 0 || state.dueDate <= today;
+  const wasDue = isDueNow(state, today);
   let next: ItemState;
   if (answer === 'review') {
     next = { level: 1, dueDate: today, priority: true };
