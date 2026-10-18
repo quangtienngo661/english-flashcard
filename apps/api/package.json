@@ -22,6 +22,7 @@
     "test:cov": "vitest run --coverage",
     "test:debug": "vitest --inspect-brk --no-file-parallelism",
     "test:e2e": "vitest run --config ./vitest.config.e2e.ts",
+    "test:e2e:scale": "vitest run --config ./vitest.config.e2e-scale.ts",
     "db:setup": "prisma migrate deploy && prisma generate --sql",
     "run:dev": "node scripts/run-dev.mjs",
     "smoke:buoc-2": "node scripts/smoke-buoc-2.mjs"
@@ -34,12 +35,14 @@
     "@prisma/client": "7.10.0",
     "argon2": "0.45.1",
     "bullmq": "6.3.12",
+    "compromise": "14.18.0",
     "cookie-parser": "1.4.7",
     "csv-parse": "7.0.3",
     "ioredis": "6.0.0",
     "jose": "6.2.12",
     "nodemailer": "10.0.15",
     "pg": "^8.23.1",
+    "pluralize": "8.0.0",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
     "zod": "4.6.5"

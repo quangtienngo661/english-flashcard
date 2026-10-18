@@ -32,7 +32,14 @@ export async function revertBatch(prisma: PrismaClient, content: ContentService,
     }
     return record;
   });
-  const report = await content.revertRecords(records);
+  const reverted = await content.revertRecords(records);
+  // Bước 3 does not record inflection changes per batch (L8): a file with an inflections column leaves them in place.
+  const headers = await prisma.importBatch.findUniqueOrThrow({ where: { id: batchId }, select: { rawHeaders: true } });
+  const rawHeaders = Array.isArray(headers.rawHeaders) ? headers.rawHeaders : [];
+  const report = rawHeaders.some((header) => typeof header === 'string' && header.trim().toLowerCase() === 'inflections')
+    ? { ...reverted, not_reverted: [{ kind: 'inflections', detail:
+      'Dạng chia (inflections) do file này đặt không được hoàn tác; upload một file sửa lại cột inflections nếu cần.' }] }
+    : reverted;
   await prisma.$transaction(async (tx) => {
     // Serialize finalization of different idempotency keys without holding a batch-wide content transaction.
     await tx.$queryRaw`SELECT id FROM import_batches WHERE id = ${batchId}::uuid FOR UPDATE`;

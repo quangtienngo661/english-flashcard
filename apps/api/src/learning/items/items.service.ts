@@ -47,25 +47,32 @@ export class ItemsService {
     return this.prisma.$transaction(async (tx) => {
       await withLearnerLock(tx, userId);
       await this.groups.assertOwned(tx, userId, groupId);
-      const existing = await tx.learningItem.findUnique({
-        where: { userId_senseId: { userId, senseId } }, include: { groups: { where: { groupId } } },
-      });
-      if (existing && existing.groups.length > 0) return addResult(existing, false);
-      if (await tx.groupItem.count({ where: { groupId } }) >= GROUP_ITEMS_MAX) {
-        throw new ProblemDetailsException({ status: 409, title: 'Group full', type: 'group-full' });
-      }
-      const [item] = await this.ensureItems(tx, userId, groupId, [senseId], today);
-      return addResult(item, item.created);
+      return this.linkInTx(tx, userId, groupId, senseId, today);
     }, transactionOptions);
+  }
+
+  /**
+   * Links one sense the caller may see to one of their groups inside the caller's transaction, which already holds the
+   * learner lock and checked the group (quick add reuses it). Already in the group: no change.
+   */
+  async linkInTx(tx: Prisma.TransactionClient, userId: string, groupId: string, senseId: string, today: string): Promise<AddResult> {
+    const existing = await tx.learningItem.findUnique({
+      where: { userId_senseId: { userId, senseId } }, include: { groups: { where: { groupId } } },
+    });
+    if (existing && existing.groups.length > 0) return addResult(existing, false);
+    if (await tx.groupItem.count({ where: { groupId } }) >= GROUP_ITEMS_MAX) {
+      throw new ProblemDetailsException({ status: 409, title: 'Group full', type: 'group-full' });
+    }
+    const [item] = await this.ensureItems(tx, userId, groupId, [senseId], today);
+    return addResult(item, item.created);
   }
 
   /** Adds published catalog senses matching the filter, up to the group's free slots (B3E22). */
   async bulkAdd(userId: string, groupId: string, filter: BulkFilter): Promise<BulkResult> {
     const today = await this.today(userId);
     await this.groups.assertOwned(this.prisma, userId, groupId);
-    // Ask for enough candidates to fill the free slots even when the group already holds many of them.
-    const size = await this.prisma.groupItem.count({ where: { groupId } });
-    const { senseIds, skippedFunctionWords } = await this.content.bulkCandidates(filter, GROUP_ITEMS_MAX + size);
+    // Every matching sense, not just enough to fill the group: what does not fit is reported as skipped_group_full (L3).
+    const { senseIds, skippedFunctionWords } = await this.content.bulkCandidates(filter, Number.POSITIVE_INFINITY);
     return this.prisma.$transaction(async (tx) => {
       await withLearnerLock(tx, userId);
       await this.groups.assertOwned(tx, userId, groupId);

@@ -10,6 +10,7 @@ import { RequirePermission } from '../../identity/staff/require-permission.decor
 import { normalizeLemma, normalizeText } from '../catalog/normalize.js';
 import { VALID_POS } from '../content.constants.js';
 import { ContentService } from '../content.service.js';
+import { generateInflections } from '../inflections/inflect.js';
 import { cell, contentSchema, toContent } from './content-body.js';
 import { ContentRuleError } from './revision-content.js';
 
@@ -133,7 +134,9 @@ export class BatchEntriesController {
       }
       const result = await this.prisma.$transaction(async (tx): Promise<BatchResult> => {
         await this.content.lockEntryKey(tx, lemma, pos);
-        const { entry } = await this.content.ensureEntry(tx, { lemma, pos, variants: [] });
+        const { entry, created } = await this.content.ensureEntry(tx, { lemma, pos, variants: [] });
+        // A new entry gets its library inflections in the same transaction, as an imported one does (L10).
+        if (created) await this.content.replaceInflections(tx, entry.id, 'library', generateInflections(lemma, pos));
         const caseMatches = await tx.entry.findMany({ where: { language: 'en', scope: 'catalog', lemma: { equals: lemma, mode: 'insensitive' } },
           select: { lemma: true }, orderBy: [{ lemma: 'asc' }, { id: 'asc' }] });
         // Insensitive equality uses ILIKE; filter its wildcard candidates to actual case-only matches.

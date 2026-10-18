@@ -200,6 +200,40 @@ describe('private words (e2e, isolated database)', () => {
     await expect(create(viId, { lemma: 'x', meaning: { text: '  ', language: 'vi' } })).rejects.toMatchObject({ code: 'validation-failed' });
   });
 
+  it('T-A7: a 100-code-point lemma with an emoji is accepted (101 refused); a meaning over 300 code points in NFD but 300 after NFC is accepted', async () => {
+    const word = await create(viId, { lemma: 'yeet' });
+    const lemma100 = `${'a'.repeat(99)}😀`;
+    expect([...lemma100]).toHaveLength(100);
+    expect((await patch(word.entryId, { lemma: lemma100 })).status).toBe(204);
+    expect((await readEntry(word.entryId)).lemma).toBe(lemma100);
+    expect((await patch(word.entryId, { lemma: `${lemma100}b` })).status).toBe(400);
+    const nfd = 'é'.repeat(150); // 300 code points in NFD, 150 é after NFC
+    expect([...nfd]).toHaveLength(300);
+    const longNfd = `${nfd}${'a'.repeat(150)}`; // 450 code points in NFD, 300 after NFC
+    expect((await patch(word.entryId, { senses: [{ sense_id: word.senseId, meaning: longNfd }] })).status).toBe(204);
+    const text = (await readEntry(word.entryId)).senses[0].revisions.at(-1)!.texts[0].text;
+    expect([...text]).toHaveLength(300);
+    expect(text).toBe(longNfd.normalize('NFC'));
+  });
+
+  it('L7: deleting the base entry clears both form_of_entry_id and form_kind of the revisions that pointed to it', async () => {
+    const base = await create(viId, { lemma: 'yeet' });
+    const form = await create(viId, { lemma: 'yote', formOf: { entryId: base.entryId, kind: 'past' } });
+    await tx((t) => content.deletePrivateEntryContent(t, viId, base.entryId));
+    expect(await ctx.prisma.senseRevision.findMany({ where: { senseId: form.senseId }, select: { formOfEntryId: true, formKind: true } }))
+      .toEqual([{ formOfEntryId: null, formKind: null }]);
+  });
+
+  it('T-A5: PATCH naming another learner\'s sense_id is 404 and changes nothing on either side', async () => {
+    const mineWord = await create(viId, { lemma: 'yeet' });
+    const theirs = await create(otherId, { lemma: 'yote' });
+    const before = await Promise.all([readEntry(mineWord.entryId), readEntry(theirs.entryId)]);
+    const res = await patch(mineWord.entryId, { senses: [{ sense_id: theirs.senseId, meaning: 'cướp' }] });
+    expect(res.status).toBe(404);
+    expect(res.body.type).toBe(problem('not-found'));
+    expect(await Promise.all([readEntry(mineWord.entryId), readEntry(theirs.entryId)])).toEqual(before);
+  });
+
   it('a private word with form_of and no level gets a derived level equal to the base entry\'s', async () => {
     const go = await catalog('go', 'verb', 'A1');
     const went = await create(viId, { lemma: 'wented', formOf: { entryId: go.entryId, kind: 'past' } });
@@ -214,12 +248,28 @@ describe('private words (e2e, isolated database)', () => {
     await expect(create(viId, { lemma: 'secreted', formOf: { entryId: foreign.entryId, kind: 'past' } })).rejects.toMatchObject({ code: 'not-found' });
   });
 
-  it('a new private verb gets library forms that only its owner finds through entriesByForm (Task 4b: generator pending G6)', async () => {
-    // Task 4b adds the library generator call; until then the owner-only visibility of private forms is proven by seeding.
+  it('a new private verb gets library forms that only its owner finds through entriesByForm', async () => {
     const yeet = await create(viId, { lemma: 'yeet' });
-    await tx((t) => content.replaceInflections(t, yeet.entryId, 'library', [{ form: 'yeeted', kind: 'past' }]));
-    expect(await content.entriesByForm('yeeted', viId)).toEqual([{ entryId: yeet.entryId, lemma: 'yeet', pos: 'verb', kind: 'past' }]);
+    expect(await ctx.prisma.entryInflection.findMany({ where: { entryId: yeet.entryId }, orderBy: { position: 'asc' },
+      select: { form: true, kind: true, source: true } })).toEqual([
+      { form: 'yeets', kind: 'third_person', source: 'library' }, { form: 'yeeting', kind: 'present_participle', source: 'library' },
+      { form: 'yeeted', kind: 'past', source: 'library' }, { form: 'yeeted', kind: 'past_participle', source: 'library' }]);
+    expect(await content.entriesByForm('yeeted', viId)).toEqual([
+      { entryId: yeet.entryId, lemma: 'yeet', pos: 'verb', kind: 'past' }, { entryId: yeet.entryId, lemma: 'yeet', pos: 'verb', kind: 'past_participle' }]);
     expect(await content.entriesByForm('yeeted', otherId)).toEqual([]);
+    // A second meaning reuses the entry and its forms; a private adjective or a word without a pos gets none (D46).
+    await create(viId, { lemma: 'yeet', meaning: { text: 'thứ hai', language: 'vi' } });
+    expect(await ctx.prisma.entryInflection.count({ where: { entryId: yeet.entryId } })).toBe(4);
+    const adjective = await create(viId, { lemma: 'yeety', pos: 'adjective' });
+    const noPos = await create(viId, { lemma: 'yote', pos: null });
+    expect(await ctx.prisma.entryInflection.count({ where: { entryId: { in: [adjective.entryId, noPos.entryId] } } })).toBe(0);
+  });
+
+  it('PATCH with a new lemma or pos regenerates the library forms', async () => {
+    const word = await create(viId, { lemma: 'yeet' });
+    expect((await patch(word.entryId, { lemma: 'blorp', pos: 'noun' })).status).toBe(204);
+    expect(await ctx.prisma.entryInflection.findMany({ where: { entryId: word.entryId }, select: { form: true, kind: true } }))
+      .toEqual([{ form: 'blorps', kind: 'plural' }]);
   });
 
   it('deletePrivateEntryContent removes the entry with its senses, revisions, texts, levels and inflections, and refuses another owner', async () => {

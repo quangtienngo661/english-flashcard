@@ -98,7 +98,7 @@ export class QueueService {
       const state = { level: row.level, dueDate: dateString(row.due_date), priority: row.priority };
       return [{
         item_id: row.item_id, sense_id: row.sense_id, level: row.level, due_date: state.dueDate, priority: row.priority,
-        section: sectionOf(state, day),
+        section: sectionOf(state, day, backlogDays),
         content: { ...content, sentences: (sentences.get(row.sense_id) ?? []).map(({ text }) => text) },
       }];
     }) };

@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
-import { ContentService, OWNER_SOURCE_ID } from '../../src/content/index.js';
+import { AGID_SOURCE_ID, ContentService, OWNER_SOURCE_ID } from '../../src/content/index.js';
 import { seedUser, startSession } from '../support/auth-helpers.js';
 import { createTestApp, type TestApp } from '../support/create-test-app.js';
 import { createIsolatedDatabase } from '../support/isolated-database.js';
@@ -55,7 +55,8 @@ describe('sources and topics (e2e, isolated database)', () => {
     const before = await sources();
     const res = await ctx.http().get('/v1/sources');
     expect(res.status).toBe(200);
-    expect(res.body.items).toHaveLength(3);
+    // Seeded sources: owner and AGID (D46).
+    expect(res.body.items).toHaveLength(4);
     // The public page carries exactly the licence fields: no id, kind or display_priority.
     expect(res.body.items).toEqual(expect.arrayContaining([
       { name: 'owner', version: '', url: null, license: '', attribution: '' },
@@ -73,8 +74,19 @@ describe('sources and topics (e2e, isolated database)', () => {
       { id: incomplete.id, kind: 'third_party', name: 'Awaiting license', version: '', url: null,
         license: '', attribution: '', display_priority: 20 },
     ]));
-    expect(adminList.body.items).toHaveLength(3);
+    expect(adminList.body.items).toHaveLength(4);
     expect(await sources()).toEqual(before);
+  });
+
+  it('D46: AGID 2016.01.19 is a seeded third-party source listed by GET /v1/sources with its licence and attribution, and survives resetCatalog', async () => {
+    const res = await ctx.http().get('/v1/sources');
+    expect(res.status).toBe(200);
+    expect(res.body.items).toEqual(expect.arrayContaining([{
+      name: 'AGID', version: '2016.01.19', url: 'http://wordlist.aspell.net',
+      license: expect.stringContaining('Kevin Atkinson'), attribution: expect.stringContaining('WordNet'),
+    }]));
+    expect(await ctx.prisma.dataSource.findUniqueOrThrow({ where: { id: AGID_SOURCE_ID } }))
+      .toMatchObject({ kind: 'third_party', name: 'AGID', version: '2016.01.19' });
   });
 
   it('source registration: POST stores a third-party source with optional empty version and license, duplicate (name, version) is 409 source-exists, and kind owner cannot be created', async () => {

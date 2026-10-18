@@ -1,9 +1,12 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { ContentService, MAX_EXAMPLES, normalizeContent, OWNER_SOURCE_ID, type FormOf } from '../../content/index.js';
+import {
+  ContentService, generateInflections, INFLECTION_KINDS, MAX_EXAMPLES, normalizeContent, type FormOf,
+  type InflectionKind,
+} from '../../content/index.js';
 import type { Prisma } from '../../generated/prisma/client.js';
 import type { JobContext } from '../jobs/job-types.js';
 import type { RowError } from '../upload/row-errors.js';
-import { inflectionKey, levelKey, type NormalizedRow } from '../upload/row-normalizer.js';
+import { levelKey, type NormalizedRow } from '../upload/row-normalizer.js';
 import { recordBatchRecord } from './batch-records.js';
 
 export class RowRejected extends Error {
@@ -30,17 +33,20 @@ export async function recordRejected(
   row: { rowNumber: number; raw: string[] },
   errors: RowError[],
 ): Promise<void> {
+  // Postgres text and jsonb refuse NUL: store U+FFFD instead, so one bad cell rejects its row, not the batch (L9).
+  const storable = (value: string) => value.replace(/\0/g, '�');
   await ctx.tx(async (tx) => {
     await tx.importRowOutcome.createMany({ data: [{
       batchId, rowNumber: row.rowNumber, outcome: 'rejected',
-      errorCodes: errors.map((error) => error.code), raw: row.raw,
-      errorMessages: errors.map((error) => error.message),
+      errorCodes: errors.map((error) => error.code), raw: row.raw.map(storable),
+      errorMessages: errors.map((error) => storable(error.message)),
     }], skipDuplicates: true });
   });
 }
 
+/** Same forms in the same stored order (current arrives grouped by kind, then by position). */
 function sameForms(current: Array<{ form: string; kind: string }>, next: Array<{ form: string; kind: string }>): boolean {
-  const key = (rows: Array<{ form: string; kind: string }>) => rows.map(({ kind, form }) => `${kind}\0${form}`).sort().join('\n');
+  const key = (rows: Array<{ form: string; kind: string }>) => rows.map(({ kind, form }) => `${kind}\0${form}`).join('\n');
   return current.length === next.length && key(current) === key(next);
 }
 
@@ -89,18 +95,22 @@ export class ImportRowProcessor {
           }
         }
 
+        if (changes.entryCreated && row.inflections === null) {
+          // D29: a new entry gets the library set in the same transaction; a reviewed cell replaces it below.
+          await this.content.replaceInflections(tx, changes.entryId, 'library', generateInflections(row.lemma, row.pos));
+        }
         if (row.inflections !== null) {
-          const current = await tx.entryInflection.findMany({ where: { entryId: changes.entryId }, select: { form: true, kind: true, source: true } });
+          const reviewed = (await tx.entry.findUniqueOrThrow({ where: { id: changes.entryId }, select: { inflectionsReviewedAt: true } }))
+            .inflectionsReviewedAt !== null;
+          const current = (await tx.entryInflection.findMany({ where: { entryId: changes.entryId },
+            select: { form: true, kind: true, source: true }, orderBy: { position: 'asc' } }))
+            .sort((a, b) => INFLECTION_KINDS.indexOf(a.kind as InflectionKind) - INFLECTION_KINDS.indexOf(b.kind as InflectionKind));
           // Unchanged when the entry already holds exactly this reviewed set.
-          const same = current.every(({ source }) => source === 'reviewed') && sameForms(current, row.inflections);
+          const same = reviewed && current.every(({ source }) => source === 'reviewed') && sameForms(current, row.inflections);
           if (!same) {
             await this.content.replaceInflections(tx, changes.entryId, 'reviewed', row.inflections);
             if (outcome !== 'created') outcome = 'updated';
           }
-          const { key, hash } = inflectionKey(row);
-          await tx.importRowKey.createMany({ data: [{
-            kind: 'inflection', sourceId: OWNER_SOURCE_ID, rowKey: key, contentHash: hash, batchId: batch.id,
-          }], skipDuplicates: true });
         }
         if (row.level !== null && batch.levelSourceId !== null) {
           const { key, hash } = levelKey(row, batch.levelSourceId);

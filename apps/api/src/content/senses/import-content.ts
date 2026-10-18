@@ -7,7 +7,7 @@ export type ImportContentResult =
   | { kind: 'created_sense'; senseId: string; revisionId: string }
   | { kind: 'new_revision'; senseId: string; revisionId: string; supersededRevisionId: string | null;
     droppedReviewedMark: boolean; droppedTopics: string[] }
-  | { kind: 'unchanged'; senseId: string }
+  | { kind: 'unchanged'; senseId: string | null }
   | { kind: 'rejected'; codes: Array<'revision-required' | 'stale-revision' | 'sense-not-found' | 'sense-retired'
     | 'sense-entry-mismatch' | 'open-draft-conflict' | 'gloss-changed' | 'unknown-topic' | 'topic-archived' | 'too-many-examples'> };
 
@@ -70,6 +70,10 @@ export async function importContent(
     }
 
     if (!sense) {
+      // A form_of "-" alone clears a link; with no sense there is no link to clear, so nothing is created (M4).
+      if (Object.entries(input.content).every(([key, value]) => key === 'formOf' && value === null)) {
+        return { kind: 'unchanged', senseId: null };
+      }
       return { kind: 'created_sense', ...await senses.createSense(tx, {
         entryId: input.entryId, contextLabel, content: input.content, replacesSenseId,
         source: 'csv', actorId: input.actorId,

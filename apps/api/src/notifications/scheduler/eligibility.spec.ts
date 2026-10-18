@@ -10,7 +10,7 @@ const daysAgo = (days: number, at = evening) => new Date(at.getTime() - days * 8
 function input(overrides: Partial<EligibilityInput> = {}): EligibilityInput {
   return {
     now: evening, timezone: HCM, createdAt: daysAgo(100), lastSeenAt: daysAgo(1),
-    settings: SETTINGS_DEFAULTS.reminders, sentDates: [], ...overrides,
+    settings: SETTINGS_DEFAULTS.reminders, sentDates: [], failedDates: [], ...overrides,
   };
 }
 
@@ -91,5 +91,11 @@ describe('reminder eligibility (design 8.2, D26, D44)', () => {
     // minGapDays does not shorten the inactive cap.
     const daily = { ...SETTINGS_DEFAULTS.reminders, minGapDays: 1 };
     expect(eligibility(input({ settings: daily, lastSeenAt: away, sentDates: ['2026-10-16'] }))).toEqual({ skip: 'inactive-cap' });
+  });
+
+  it('M7: a failed day counts toward the inactive cap but not toward min_gap_days', () => {
+    expect(eligibility(input({ failedDates: ['2026-10-16'] }))).toEqual({ kind: 'regular', today: '2026-10-17' });
+    expect(eligibility(input({ lastSeenAt: daysAgo(10), failedDates: ['2026-10-16'] }))).toEqual({ skip: 'inactive-cap' });
+    expect(eligibility(input({ lastSeenAt: daysAgo(10), failedDates: ['2026-10-10'] }))).toMatchObject({ kind: 'inactive' });
   });
 });

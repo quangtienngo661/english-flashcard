@@ -112,8 +112,10 @@ describe('export of entries without a sense (e2e, isolated database)', () => {
     const { parsed, rows } = rowsOf(await exportFile({ has_sense: 'false' }));
     expect(parsed.headers).toEqual(headers);
     expect(rows).toEqual([
+      // The import gave the new verb its library forms (D29); adjectives get none (D46).
       { headword: 'deploy', pos: 'verb', gloss_vi: '', definition_en: '', example_en_1: '', example_en_2: '', example_en_3: '',
-        topics: '', accepted_forms: '', context_label: '', form_of: '', inflections: '', _inflections: '', _level: 'B1' },
+        topics: '', accepted_forms: '', context_label: '', form_of: '', inflections: '',
+        _inflections: 'third_person:deploys; present_participle:deploying; past:deployed; past_participle:deployed', _level: 'B1' },
       { headword: 'happy', pos: 'adjective', gloss_vi: '', definition_en: '', example_en_1: '', example_en_2: '', example_en_3: '',
         topics: '', accepted_forms: '', context_label: '', form_of: '', inflections: '', _inflections: '', _level: 'A1' },
       { headword: 'retired', pos: 'adjective', gloss_vi: '', definition_en: '', example_en_1: '', example_en_2: '', example_en_3: '',

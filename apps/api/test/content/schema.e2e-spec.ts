@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
-import { OWNER_SOURCE_ID } from '../../src/content/index.js';
+import { AGID_SOURCE_ID, OWNER_SOURCE_ID } from '../../src/content/index.js';
 import { Prisma } from '../../src/generated/prisma/client.js';
 import { createTestApp, type TestApp } from '../support/create-test-app.js';
 import { createIsolatedDatabase } from '../support/isolated-database.js';
@@ -20,7 +20,7 @@ describe('content schema (e2e, isolated database)', () => {
   const senses = (entryId: string) => ctx.prisma.sense.findMany({ where: { entryId }, orderBy: { id: 'asc' } });
   const revisions = (senseId: string) => ctx.prisma.senseRevision.findMany({ where: { senseId }, orderBy: { revisionNo: 'asc' } });
   const seeds = async () => ({
-    sources: await ctx.prisma.dataSource.findMany({ where: { kind: 'owner' }, orderBy: { id: 'asc' } }),
+    sources: await ctx.prisma.dataSource.findMany({ where: { id: { in: [OWNER_SOURCE_ID, AGID_SOURCE_ID] } }, orderBy: { id: 'asc' } }),
     topics: await ctx.prisma.topic.findMany({ orderBy: { code: 'asc' } }),
     names: await ctx.prisma.topicName.findMany({ orderBy: [{ topicCode: 'asc' }, { language: 'asc' }] }),
   });
@@ -230,7 +230,7 @@ describe('content schema (e2e, isolated database)', () => {
     ]);
   });
 
-  it('seed: resetCatalog empties catalog records and non-owner sources while preserving the migration seeds', async () => {
+  it('seed: resetCatalog empties catalog records and registered sources while preserving the migration seeds (owner, AGID)', async () => {
     const before = await seeds();
     const { id: entryId } = await entry();
     const source = await ctx.prisma.dataSource.create({ data: { kind: 'third_party', name: 'test', displayPriority: 10 } });
@@ -251,8 +251,9 @@ describe('content schema (e2e, isolated database)', () => {
     expect(await Promise.all([
       ctx.prisma.entry.count(), ctx.prisma.entryVariant.count(), ctx.prisma.entryLevel.count(),
       ctx.prisma.sense.count(), ctx.prisma.senseRevision.count(), ctx.prisma.senseRevisionText.count(),
-      ctx.prisma.dataSource.count({ where: { kind: 'third_party' } }),
+      ctx.prisma.dataSource.count({ where: { kind: 'third_party', id: { not: AGID_SOURCE_ID } } }),
     ])).toEqual([0, 0, 0, 0, 0, 0, 0]);
+    expect((await seeds()).sources.map(({ name }) => name)).toEqual(['owner', 'AGID']);
     expect(await seeds()).toEqual(before);
   });
 });

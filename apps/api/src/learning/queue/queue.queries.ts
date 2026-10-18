@@ -14,7 +14,7 @@ const levels = Array.from({ length: MAX_LEVEL + 1 }, (_, level) => level);
 
 /**
  * Per-group counts for several (learner, local today) pairs in ONE statement (design 6.3): visible items only (B3E21),
- * backlog = level ≥ 1 and overdue by more than `backlogDays` (D22), and today's capped reviews per group from the log's
+ * backlog = level ≥ 1 and overdue by more than `backlogDays` (D22; a priority word too, D48), and today's capped reviews per group from the log's
  * `section` (D35). The caps themselves are applied by the caller.
  */
 export function groupStatsQuery(entries: LearnerDay[], backlogDays: number): Prisma.Sql {
@@ -36,7 +36,7 @@ export function groupStatsQuery(entries: LearnerDay[], backlogDays: number): Pri
     ), per_group AS (
       SELECT group_id,
         count(*)::int AS total,
-        count(*) FILTER (WHERE priority)::int AS priority,
+        count(*) FILTER (WHERE priority AND ${notBacklog})::int AS priority,
         count(*) FILTER (WHERE NOT priority AND level >= 1 AND due_date <= today AND ${notBacklog})::int AS due_available,
         count(*) FILTER (WHERE NOT priority AND level = 0)::int AS new_available,
         count(*) FILTER (WHERE NOT ${notBacklog})::int AS backlog,
@@ -74,7 +74,9 @@ export function queueItemsQuery(userId: string, groupId: string, today: string, 
       AND ${visibleSenseCondition(Prisma.sql`i.sense_id`, userId)}`;
   switch (section.kind) {
     case 'priority':
-      return Prisma.sql`${base} AND i.priority ORDER BY gi.added_at, i.id`;
+      // A flagged word overdue past the backlog days is in the backlog instead (D48).
+      return Prisma.sql`${base} AND i.priority AND NOT (i.level >= 1 AND ${today}::date - i.due_date > ${backlogDays})
+        ORDER BY gi.added_at, i.id`;
     case 'due':
       return Prisma.sql`${base} AND NOT i.priority AND i.level >= 1 AND i.due_date <= ${today}::date
         AND ${today}::date - i.due_date <= ${backlogDays}
