@@ -186,3 +186,18 @@ Chủ dự án chốt trong lúc brainstorm và review Bước 1. Chi tiết và
 | Thứ tự HANDOFF §2 (quên/đổi mật khẩu ở Bước 8) | Đổi và quên mật khẩu làm ở Bước 1 | D1 |
 | SR8 (mọi thao tác có tác dụng phụ nhận `Idempotency-Key`) | Identity không dùng `Idempotency-Key` | Design Bước 1 mục 7 |
 | B0E1 (dòng `in_progress` mồ côi được chạy lại) | Trả 409 `idempotency-key-abandoned`, client làm lại với key mới; `Idempotency-Key` bắt buộc + timeout 30 s | Chủ dự án, 07/10 |
+
+## 11. Gói Pro theo năm (16/10/2026)
+
+Trước ngày này chưa có quyết định nào về chu kỳ thanh toán: spec chỉ ghi "giá" nằm ngoài V1 (Entitlements, Scope) và
+billing thật để V1.5 (F35, `SPEC_PLAN_AND_DECISIONS` mục 05). K26 là quyết định mới, không thay quyết định cũ nào.
+
+| # | Quyết định | Nguồn | Ghi chú |
+| --- | --- | --- | --- |
+| K26 | **Pro bán theo hai chu kỳ: tháng và năm. Mua theo năm được giảm 10% so với trả theo tháng**: giá năm = 12 × giá tháng × 90% | Bạn chốt (16/10/2026), gồm cả công thức | Chỉ có hiệu lực khi có billing thật (V1.5, F35). V1 không thu tiền; Pro trong pilot vẫn chỉ có qua cấp tay (ER10). Giá tháng chưa chốt |
+
+**Còn mở, ảnh hưởng thiết kế Bước 5 (Entitlements, cổng sự kiện ER11):**
+- Hạn mức AI của người mua gói năm làm mới **mỗi tháng** hay tính **cho cả năm**. Nếu làm mới mỗi tháng thì chu kỳ hạn mức
+  phải tách khỏi chu kỳ thanh toán (gắn với K18, đang hoãn).
+- Hủy gói năm giữa chừng: dùng tiếp tới hết năm đã trả, hay hoàn phần còn lại. Trên iOS/Android, phần này còn tùy chính sách
+  của store (In-App Purchase, R15); chưa tra.

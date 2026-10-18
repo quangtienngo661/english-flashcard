@@ -1,41 +1,58 @@
+import type { Ref } from 'react';
 import { Button } from '@/components/ui/Button';
 import { ButtonLink } from '@/components/ui/ButtonLink';
-import { Chip } from '@/components/ui/Chip';
 import { VisuallyHidden } from '@/components/ui/VisuallyHidden';
 import { cn } from '@/lib/cn';
-import type { ClozeStatus } from './cloze-state';
-import type { ClozeItem, ClozeLabels } from './ClozeCarousel';
+import type { ClozeResult } from './cloze-state';
+import type { ClozeItem, ClozeLabels } from './ClozePractice';
 
 type ClozeCardProps = {
   item: ClozeItem;
   header: string;
   labels: ClozeLabels;
-  result: { status: ClozeStatus; picked?: string };
+  result: ClozeResult;
   done: boolean;
+  /** The right sticker has reached the gap (always true at once with reduced motion). */
+  landed: boolean;
+  progress: boolean[];
   ctaHref: string;
-  onPick: (word: string) => void;
+  slotRef: Ref<HTMLSpanElement>;
+  nextRef: Ref<HTMLButtonElement>;
+  /** Where focus lands after next/replay: the new sentence or the Done title (the button pressed is gone). */
+  focusRef: Ref<HTMLParagraphElement>;
+  onPick: (word: string, sticker: HTMLElement) => void;
   onNext: () => void;
   onReplay: () => void;
 };
 
-const gapStyles = {
-  unanswered: 'bg-marker text-ink',
-  wrong: 'border-2 border-danger-strong bg-surface text-danger-strong',
-  correct: 'border-2 border-success bg-success-soft text-success-strong',
-} satisfies Record<ClozeStatus, string>;
+// Presentation only; state and motion live in ClozePractice. Stickers use aria-disabled, never disabled,
+// so a wrong pick keeps keyboard focus (UBE15); border-transparent shows up in forced-colors mode (RF5).
+export function ClozeCard({ item, header, labels, result, done, landed, progress, ctaHref, slotRef, nextRef, focusRef, onPick, onNext, onReplay }: ClozeCardProps) {
+  const correct = result.status === 'correct';
+  const filled = correct && landed;
 
-export function ClozeCard({ item, header, labels, result, done, ctaHref, onPick, onNext, onReplay }: ClozeCardProps) {
-  const { status, picked } = result;
   return (
-    <div className="flex flex-col gap-4 rounded-feature border border-border bg-surface p-5 shadow-card md:p-7">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="text-caption font-semibold text-muted">{header}</p>
-        <Chip>{labels.sourceChip}</Chip>
+    <div
+      data-testid="cloze-card"
+      className="flex flex-col gap-4 rounded-feature bg-surface p-5 text-ink shadow-ledge-card md:tilt-card md:p-7 motion-safe:animate-card-in"
+    >
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-caption font-semibold text-muted">
+          {labels.sourceChip}
+          <VisuallyHidden>{`, ${header}`}</VisuallyHidden>
+        </p>
+        <span aria-hidden="true" className="flex gap-1.5">
+          {progress.map((isDone, i) => (
+            <span key={i} className={cn('h-1.5 w-7 rounded-full transition-colors duration-base', isDone ? 'bg-success' : 'bg-primary-soft')} />
+          ))}
+        </span>
       </div>
 
       {done ? (
         <div className="flex flex-col items-start gap-3">
-          <p className="text-title font-extrabold text-ink md:text-title-lg">{labels.doneTitle}</p>
+          <p ref={focusRef} tabIndex={-1} data-testid="cloze-focus" className="text-title font-extrabold md:text-title-lg">
+            {labels.doneTitle}
+          </p>
           <p className="text-body text-muted">{labels.doneBody}</p>
           <div className="flex flex-wrap gap-3">
             <ButtonLink href={ctaHref}>{labels.doneCta}</ButtonLink>
@@ -46,40 +63,47 @@ export function ClozeCard({ item, header, labels, result, done, ctaHref, onPick,
         </div>
       ) : (
         <>
-          <p lang="en" className="flex flex-wrap items-center gap-x-2 gap-y-1.5 text-subtitle font-semibold text-ink md:text-h3">
-            <span>{item.before}</span>
-            <span className={cn('inline-flex rounded-sm px-3 py-0.5', gapStyles[status])}>
-              {status === 'unanswered' ? (
+          <p ref={focusRef} tabIndex={-1} data-testid="cloze-focus" lang="en" className="text-subtitle font-semibold md:text-h3">
+            {item.before}{' '}
+            <span
+              ref={slotRef}
+              data-testid="cloze-gap"
+              className={cn(
+                'inline-block min-w-16 border-b-4 px-1 text-center',
+                filled ? 'border-success text-success motion-safe:animate-pop' : 'border-primary text-primary',
+              )}
+            >
+              {filled ? (
+                item.answer
+              ) : (
                 <>
-                  <span aria-hidden="true">_____</span>
+                  <span aria-hidden="true">?</span>
                   <VisuallyHidden>…</VisuallyHidden>
                 </>
-              ) : status === 'wrong' ? (
-                picked
-              ) : (
-                item.answer
               )}
-            </span>
-            <span>{item.after}</span>
+            </span>{' '}
+            {item.after}
           </p>
 
-          {status === 'unanswered' ? <p className="text-small text-muted">{labels.instruction}</p> : null}
+          {result.status === 'unanswered' ? <p className="text-small text-muted">{labels.instruction}</p> : null}
 
           <div className="flex flex-wrap gap-2.5" lang="en">
             {item.options.map((option) => {
-              const isPicked = picked === option;
+              const tried = result.tried.includes(option);
+              const locked = tried || correct;
               return (
                 <button
                   key={option}
                   type="button"
-                  aria-pressed={isPicked}
-                  disabled={status === 'correct'}
-                  onClick={() => onPick(option)}
+                  aria-disabled={locked || undefined}
+                  onClick={(e) => onPick(option, e.currentTarget)}
                   className={cn(
-                    'min-h-11 rounded-full border bg-surface px-4.5 text-body font-medium text-ink transition-colors duration-fast enabled:hover:border-ink disabled:cursor-default',
-                    isPicked && status === 'wrong' && 'border-2 border-danger-strong',
-                    isPicked && status === 'correct' && 'border-2 border-success bg-success-soft',
-                    !isPicked && 'border-border',
+                    'min-h-11 rounded-control border-2 border-transparent px-4.5 text-body font-semibold text-ink transition duration-fast ease-standard',
+                    tried ? 'bg-wrong-chip shadow-ledge-wrong motion-safe:animate-wiggle' : 'bg-accent shadow-ledge-accent',
+                    correct && option !== item.answer && 'opacity-35',
+                    // The chosen sticker becomes the flying copy; the original hides (and leaves the tab order).
+                    correct && option === item.answer && 'invisible',
+                    locked ? 'cursor-default' : 'hover:-translate-y-0.5',
                   )}
                 >
                   {option}
@@ -88,25 +112,25 @@ export function ClozeCard({ item, header, labels, result, done, ctaHref, onPick,
             })}
           </div>
 
-          {status !== 'unanswered' ? (
-            <div className="flex flex-col gap-2 rounded-inner bg-bg p-4">
-              <p className={cn('text-label font-bold', status === 'wrong' ? 'text-danger-strong' : 'text-success-strong')}>
-                {status === 'wrong' ? labels.wrongTitle : labels.correctTitle}
+          {result.status !== 'unanswered' ? (
+            <div className="flex flex-col gap-2 rounded-inner bg-canvas p-4">
+              <p className={cn('text-label font-bold', correct ? 'text-success' : 'text-danger')}>
+                {correct ? labels.correctTitle : labels.wrongTitle}
               </p>
-              {status === 'wrong' ? (
-                <p className="text-label text-ink">{item.hint}</p>
-              ) : (
+              {correct ? (
                 <>
-                  <p className="text-label text-ink">{item.explanation}</p>
+                  <p className="text-label">{item.explanation}</p>
                   <p className="text-label font-medium text-muted">{item.translation}</p>
                 </>
+              ) : (
+                <p className="text-label">{item.hint}</p>
               )}
             </div>
           ) : null}
 
-          {status === 'correct' ? (
+          {correct ? (
             <div className="flex justify-end">
-              <Button variant="secondary" onClick={onNext}>
+              <Button ref={nextRef} variant="ink" onClick={onNext}>
                 {labels.nextSentence}
               </Button>
             </div>

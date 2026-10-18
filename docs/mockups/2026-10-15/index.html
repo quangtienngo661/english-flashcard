@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Wordmet mockup 15/10/2026</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+:root { --ink: #172042; --muted: #535b78; --line: #dce1ec; --action: #2f5bea; --marker: #ffd84a; }
+* { box-sizing: border-box; }
+body { margin: 0; background: #fff; color: var(--ink); font: 400 1rem/1.6 'Be Vietnam Pro', system-ui, sans-serif; }
+main { width: min(100% - 2rem, 46rem); margin: 0 auto; padding: 3rem 0 4rem; }
+h1 { margin: 0; font-size: 1.75rem; line-height: 1.2; font-weight: 800; }
+.intro { margin: 0.75rem 0 0; color: var(--muted); }
+ul { list-style: none; margin: 2rem 0 0; padding: 0; border-top: 2px solid var(--ink); }
+li { padding: 1.25rem 0; border-bottom: 1px solid var(--line); }
+a { color: var(--action); font-weight: 600; font-size: 1.125rem; }
+a:focus-visible { outline: 2px solid var(--action); outline-offset: 3px; }
+li p { margin: 0.35rem 0 0; color: var(--muted); }
+.mark { background: var(--marker); padding: 0 0.3rem; border-radius: 3px; font-weight: 800; }
+.foot { margin-top: 2rem; color: var(--muted); font-size: 0.875rem; }
+</style>
+</head>
+<body>
+<main>
+  <h1><span class="mark">_ _</span> Wordmet: mockup hướng thiết kế</h1>
+  <p class="intro">Mockup tĩnh để chọn hướng, không phải code của app. Bấm thử bài điền từ, panel, dialog và menu để xem chuyển động. Cơ sở: <code>docs/preparation/MOTION_AND_DESIGN_BEST_PRACTICES_2026-10-15.md</code>.</p>
+  <ul>
+    <li><a href="landing-a.html">Landing A: Bút dạ quang</a>
+      <p>Câu tiếng Anh to là phần chính của đầu trang, đặt bằng chữ đọc sách (Literata). Màu vàng dạ quang chỉ xuất hiện ở chỗ một từ được học. Motion yên: bút dạ quang kẻ qua chỗ trống, từ đúng khớp vào.</p></li>
+    <li><a href="landing-b.html">Landing B: Năng lượng</a> (hướng được chọn)
+      <p>Nền xanh thương hiệu, chữ Lexend, đáp án như miếng dán màu vàng. Motion nảy hơn: chọn đúng thì miếng dán bay vào chỗ trống. Gần cảm giác app học như Duolingo, Speak.</p></li>
+    <li><a href="admin-b.html">Admin B: Năng lượng, sidebar từ A</a>
+      <p>Hướng chủ dự án chọn (15/10/2026): admin mặc "áo" B (Lexend, nút dày có gờ, trạng thái dạng nhãn dán, ô số liệu màu) nhưng giữ sidebar của admin A (nằm trên nền, không bóng, mục đang chọn tô vàng dạ quang). Đầu trang để trắng; màu xanh B chỉ ở nút chính và thanh trên cùng bản điện thoại.</p></li>
+    <li><a href="admin.html">Admin A: Bàn biên tập</a>
+      <p>Sidebar nằm trên nền, nội dung trên một tờ giấy trắng, bảng chỉ có đường kẻ mảnh. Thử: bấm một dòng Lô nhập (panel bên phải), Upload CSV (dialog), Vai trò và staff, Đổi vai trò (menu rồi dialog).</p></li>
+  </ul>
+  <p class="foot">Tất cả tôn trọng cài đặt "giảm chuyển động" của hệ điều hành. Thời lượng: hover 100ms, menu 200/150ms, dialog 250/150ms, panel 250/150ms, toast 240/150ms (vào/ra).</p>
+</main>
+</body>
+</html>

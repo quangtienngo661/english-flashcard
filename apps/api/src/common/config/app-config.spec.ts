@@ -5,6 +5,7 @@ import { loadConfig } from './app-config.js';
 function validEnv(): NodeJS.ProcessEnv {
   return {
     DATABASE_URL: 'postgresql://dev:dev@localhost:5432/test',
+    REDIS_URL: 'redis://localhost:6380',
     JWT_KEYS: `k1:${randomBytes(32).toString('base64url')}`,
     JWT_ISSUER: 'test-issuer',
     JWT_AUDIENCE: 'test-audience',
@@ -16,10 +17,120 @@ function validEnv(): NodeJS.ProcessEnv {
     SMTP_FROM: 'no-reply@localhost',
     CORS_ORIGINS: 'https://app.example.com,https://admin.example.com',
     PROBLEM_TYPE_BASE: 'https://api.example.com/problems/',
+    ADMIN_APP_URL: 'https://admin.example.com',
+    LEARNER_APP_URL: 'https://wordmet.example.com',
   };
 }
 
 describe('loadConfig', () => {
+  it('Task 20 (config): a missing LEARNER_APP_URL fails fast naming it; it must be an http(s) origin and is exposed as learnerAppUrl', () => {
+    expect(loadConfig(validEnv()).learnerAppUrl).toBe('https://wordmet.example.com');
+    expect(loadConfig({ ...validEnv(), LEARNER_APP_URL: 'http://localhost:3001' }).learnerAppUrl).toBe('http://localhost:3001');
+    const missing = validEnv();
+    delete missing.LEARNER_APP_URL;
+    expect(() => loadConfig(missing)).toThrow(/LEARNER_APP_URL/);
+    for (const bad of ['not a url', 'https://wordmet.example.com/', 'https://wordmet.example.com/vi/app', 'ftp://wordmet.example.com']) {
+      expect(() => loadConfig({ ...validEnv(), LEARNER_APP_URL: bad }), bad).toThrow(/LEARNER_APP_URL/);
+    }
+  });
+
+  it('Task 21 (config): REMINDER_TICK_SECONDS defaults to 900 (15 minutes) and must be a positive integer', () => {
+    expect(loadConfig(validEnv()).reminders).toEqual({ tickSeconds: 900, runScheduler: true, retryBackoffMs: 60_000 });
+    expect(loadConfig({ ...validEnv(), REMINDER_TICK_SECONDS: '60' }).reminders.tickSeconds).toBe(60);
+    for (const bad of ['0', '-5', '1.5', 'often']) {
+      expect(() => loadConfig({ ...validEnv(), REMINDER_TICK_SECONDS: bad }), bad).toThrow(/REMINDER_TICK_SECONDS/);
+    }
+  });
+
+  it('L15 (config): REMINDER_RETRY_BACKOFF_MS defaults to 60000, separate from the import backoff', () => {
+    expect(loadConfig({ ...validEnv(), IMPORT_JOB_BACKOFF_MS: '7' }).reminders.retryBackoffMs).toBe(60_000);
+    expect(loadConfig({ ...validEnv(), REMINDER_RETRY_BACKOFF_MS: '120000' }).reminders.retryBackoffMs).toBe(120_000);
+    expect(() => loadConfig({ ...validEnv(), REMINDER_RETRY_BACKOFF_MS: '0' })).toThrow(/REMINDER_RETRY_BACKOFF_MS/);
+  });
+
+  it('B25#23 (config): ADMIN_APP_URL is required, must be a URL, and is exposed as adminAppUrl', () => {
+    expect(loadConfig(validEnv()).adminAppUrl).toBe('https://admin.example.com');
+    const missing = validEnv();
+    delete missing.ADMIN_APP_URL;
+    expect(() => loadConfig(missing)).toThrow(/ADMIN_APP_URL/);
+    expect(() => loadConfig({ ...validEnv(), ADMIN_APP_URL: 'not a url' })).toThrow(/ADMIN_APP_URL/);
+  });
+
+  it('B2#4 (config): missing REDIS_URL fails fast and names the variable', () => {
+    const env = validEnv();
+    delete env.REDIS_URL;
+    expect(() => loadConfig(env)).toThrow(/REDIS_URL/);
+  });
+
+  it.each(['0', 'abc'])('B2#4 (config): IMPORT_MAX_ROWS=%s fails fast and names the variable', (value) => {
+    expect(() => loadConfig({ ...validEnv(), IMPORT_MAX_ROWS: value })).toThrow(/IMPORT_MAX_ROWS/);
+  });
+
+  it('B2#4 (config): optional pipeline variables use the documented defaults', () => {
+    const config = loadConfig(validEnv());
+    expect(config.redisUrl).toBe('redis://localhost:6380');
+    expect(config.pipeline).toEqual({
+      importMaxRows: 20_000,
+      importMaxBytes: 10_485_760,
+      exportMaxRows: 5_000,
+      leaseSeconds: 60,
+      heartbeatSeconds: 20,
+      reconcileSeconds: 30,
+      rowRetries: 3,
+      jobAttempts: 3,
+      fileRetentionDays: 30,
+      queuePrefix: 'wordmet',
+      runWorkers: false,
+      jobBackoffMs: 5_000,
+      rowRetryBaseMs: 200,
+    });
+  });
+
+  it('B2#4 (config): JOB_QUEUE_PREFIX defaults to wordmet', () => {
+    expect(loadConfig(validEnv()).pipeline.queuePrefix).toBe('wordmet');
+  });
+
+  it('B2#4 (config): parses explicit pipeline values with workers disabled', () => {
+    expect(loadConfig({
+      ...validEnv(),
+      IMPORT_MAX_ROWS: '100',
+      IMPORT_MAX_BYTES: '1024',
+      EXPORT_MAX_ROWS: '50',
+      IMPORT_LEASE_SECONDS: '6',
+      IMPORT_HEARTBEAT_SECONDS: '2',
+      IMPORT_RECONCILE_SECONDS: '3',
+      IMPORT_ROW_RETRIES: '2',
+      IMPORT_JOB_ATTEMPTS: '2',
+      IMPORT_FILE_RETENTION_DAYS: '7',
+      JOB_QUEUE_PREFIX: 'custom-prefix',
+      IMPORT_JOB_BACKOFF_MS: '10',
+      IMPORT_ROW_RETRY_BASE_MS: '10',
+    }).pipeline).toEqual({
+      importMaxRows: 100,
+      importMaxBytes: 1024,
+      exportMaxRows: 50,
+      leaseSeconds: 6,
+      heartbeatSeconds: 2,
+      reconcileSeconds: 3,
+      rowRetries: 2,
+      jobAttempts: 2,
+      fileRetentionDays: 7,
+      queuePrefix: 'custom-prefix',
+      runWorkers: false,
+      jobBackoffMs: 10,
+      rowRetryBaseMs: 10,
+    });
+  });
+
+  it('B2#45a (config): publishMaxItems defaults to 500 and accepts an explicit positive integer', () => {
+    expect(loadConfig(validEnv()).content.publishMaxItems).toBe(500);
+    expect(loadConfig({ ...validEnv(), PUBLISH_MAX_ITEMS: '25' }).content.publishMaxItems).toBe(25);
+  });
+
+  it.each(['abc', '0', '-1', '1.5', '9007199254740992'])('B2#45a (config): PUBLISH_MAX_ITEMS=%s fails fast and names the variable', (value) => {
+    expect(() => loadConfig({ ...validEnv(), PUBLISH_MAX_ITEMS: value })).toThrow(/PUBLISH_MAX_ITEMS/);
+  });
+
   it('rejects a missing JWT_KEYS and names it', () => {
     const env = validEnv();
     delete env.JWT_KEYS;
@@ -64,6 +175,7 @@ describe('loadConfig', () => {
       'auth.reset.ip': { by: 'ip', max: 20, windowSeconds: 3600 },
       'mail.ip.daily': { by: 'ip', max: 20, windowSeconds: 86400 },
       'user.write': { by: 'user', max: 30, windowSeconds: 60 },
+      'learning.review': { by: 'user', max: 120, windowSeconds: 60 },
     });
   });
 

@@ -5,12 +5,18 @@ import { Container } from './Container';
 type SectionProps = {
   id?: string;
   labelledBy: string;
-  tone: 'bg' | 'surface' | 'primary';
+  tone: 'surface' | 'tint' | 'primary' | 'accent';
   children: ReactNode;
   className?: string;
 };
 
-const tones = { bg: 'bg-bg', surface: 'bg-surface', primary: 'bg-primary' } satisfies Record<SectionProps['tone'], string>;
+// Direction B rhythm (design §5.1): white sections, one lilac band, blue field, yellow band.
+const tones = {
+  surface: 'bg-surface',
+  tint: 'bg-primary-soft',
+  primary: 'bg-primary text-on-primary',
+  accent: 'bg-accent',
+} satisfies Record<SectionProps['tone'], string>;
 
 // Figma section rhythm: 56px top/bottom on mobile, 96px from md.
 export function Section({ id, labelledBy, tone, children, className }: SectionProps) {

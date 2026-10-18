@@ -13,7 +13,8 @@ export function configureApp(app: NestExpressApplication, config: AppConfig): vo
   app.enableCors({
     origin: config.corsOrigins,
     credentials: true,
-    allowedHeaders: ['Authorization', 'Content-Type', 'X-CSRF-Protection'],
+    allowedHeaders: ['Authorization', 'Content-Type', 'X-CSRF-Protection', 'Idempotency-Key'],
+    exposedHeaders: ['Retry-After'],
   });
   app.setGlobalPrefix('v1');
   app.useGlobalFilters(new ProblemDetailsFilter(config.problemTypeBase));

@@ -1,0 +1,490 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Wordmet mockup A: Bút dạ quang</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;800&family=Literata:ital,opsz,wght@0,7..72,400..600;1,7..72,400&display=swap" rel="stylesheet">
+<style>
+/* Mockup A, "Bút dạ quang". Tokens: one place for color, type and motion. */
+:root {
+  --paper: #ffffff;
+  --tint: #f2f4f9;
+  --ink: #172042;
+  --muted: #535b78;
+  --line: #dce1ec;
+  --action: #2f5bea;
+  --action-hover: #2149cc;
+  --marker: #ffd84a;
+  --right: #1b7a46;
+  --right-soft: #e3f4ea;
+  --wrong: #b8352a;
+  --wrong-soft: #fbe9e7;
+  --sans: 'Be Vietnam Pro', system-ui, sans-serif;
+  --serif: 'Literata', Georgia, serif;
+
+  --d-instant: 100ms;
+  --d-fast: 150ms;
+  --d-base: 250ms;
+  --d-slow: 400ms;
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ease-enter: cubic-bezier(0.05, 0.7, 0.1, 1);
+  --ease-exit: cubic-bezier(0.3, 0, 0.8, 0.15);
+
+  --wrap: 72rem;
+  --gutter: clamp(1rem, 0.5rem + 2.5vw, 2.5rem);
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font: 400 1.0625rem/1.6 var(--sans);
+  -webkit-font-smoothing: antialiased;
+}
+a { color: var(--action); }
+a:hover { color: var(--action-hover); }
+:focus-visible { outline: 2px solid var(--action); outline-offset: 3px; border-radius: 4px; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.wrap { width: min(100% - 2 * var(--gutter), var(--wrap)); margin-inline: auto; }
+
+/* Buttons */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-height: 3rem; padding: 0 1.25rem;
+  border: 1.5px solid transparent; border-radius: 0.625rem;
+  font: 600 1rem/1 var(--sans); text-decoration: none; cursor: pointer;
+  transition: background-color var(--d-instant) var(--ease-standard), border-color var(--d-instant) var(--ease-standard), color var(--d-instant) var(--ease-standard);
+}
+.btn-primary { background: var(--action); color: #fff; }
+.btn-primary:hover { background: var(--action-hover); color: #fff; }
+.btn-quiet { background: transparent; border-color: var(--ink); color: var(--ink); }
+.btn-quiet:hover { background: var(--ink); color: #fff; }
+.btn-sm { min-height: 2.5rem; padding: 0 1rem; font-size: 0.9375rem; }
+
+/* Header */
+.site-header { position: sticky; top: 0; z-index: 10; background: rgb(255 255 255 / 0.94); backdrop-filter: blur(8px); border-bottom: 1px solid var(--line); }
+.header-row { display: flex; align-items: center; gap: 2rem; min-height: 4rem; }
+.logo { display: inline-flex; align-items: center; gap: 0.6rem; color: var(--ink); text-decoration: none; font-weight: 800; font-size: 1.1875rem; }
+.logo:hover { color: var(--ink); }
+.logo-mark { background: var(--marker); padding: 0.1rem 0.45rem; border-radius: 3px; font-size: 0.95rem; letter-spacing: 0.08em; transform: skewX(-6deg); }
+.nav { display: flex; gap: 1.75rem; margin-left: auto; }
+.nav a { color: var(--ink); text-decoration: none; font-size: 0.9375rem; font-weight: 500; }
+.nav a:hover { color: var(--action); }
+.header-actions { display: flex; align-items: center; gap: 0.75rem; }
+.lang { display: flex; border: 1px solid var(--line); border-radius: 0.5rem; overflow: hidden; }
+.lang button { border: 0; background: transparent; color: var(--muted); font: 600 0.8125rem/1 var(--sans); padding: 0.55rem 0.6rem; cursor: pointer; }
+.lang button[aria-pressed="true"] { background: var(--ink); color: #fff; }
+
+/* Hero: the sentence is the hero */
+.hero { padding: clamp(2.5rem, 1rem + 5vw, 5.5rem) 0 clamp(3rem, 2rem + 4vw, 5rem); }
+.hero-title { margin: 0; max-width: 24ch; font-size: clamp(1.625rem, 1.2rem + 1.6vw, 2.5rem); line-height: 1.2; font-weight: 800; letter-spacing: -0.015em; }
+.hero-sub { margin: 0.75rem 0 0; color: var(--muted); font-size: 1.0625rem; }
+
+.cloze { margin-top: clamp(2rem, 1rem + 3vw, 3.5rem); padding-top: 1.25rem; border-top: 2px solid var(--ink); }
+.cloze-source { margin: 0; color: var(--muted); font-size: 0.9375rem; }
+.cloze-source strong { color: var(--ink); font-weight: 600; }
+.cloze-stage { min-height: 1lh; }
+.cloze-sentence {
+  margin: 0.9rem 0 0; max-width: 24ch; text-wrap: balance;
+  font: 450 clamp(2.125rem, 1.1rem + 4.1vw, 4.75rem)/1.12 var(--serif);
+  font-optical-sizing: auto; letter-spacing: -0.02em;
+}
+.cloze-sentence.is-leaving { opacity: 0; transition: opacity var(--d-fast) var(--ease-exit); }
+.cloze-sentence.is-entering { animation: sentence-in var(--d-base) var(--ease-enter) both; }
+@keyframes sentence-in { from { opacity: 0; transform: translateY(0.4rem); } }
+
+.blank { position: relative; isolation: isolate; display: inline-block; min-width: 4.6ch; padding: 0 0.12em; text-align: center; white-space: nowrap; }
+.blank-mark {
+  position: absolute; inset: 0.14em -0.06em 0.02em; z-index: -1;
+  background: var(--marker); border-radius: 0.12em 0.3em 0.16em 0.28em;
+  transform-origin: left center; transform: scaleX(0) skewX(-4deg);
+}
+.blank-mark.is-drawn { transform: scaleX(1) skewX(-4deg); transition: transform var(--d-slow) var(--ease-enter); }
+.blank-word { display: inline-block; opacity: 0; }
+.blank-word.is-in { opacity: 1; transform: none; animation: word-in 220ms var(--ease-enter) both; }
+@keyframes word-in { from { opacity: 0; transform: translateY(-0.18em); } }
+.blank.is-shaking { animation: shake 260ms var(--ease-standard); }
+@keyframes shake { 25% { transform: translateX(-5px); } 50% { transform: translateX(4px); } 75% { transform: translateX(-2px); } }
+
+.options { display: flex; flex-wrap: wrap; gap: 0.625rem; margin-top: 1.75rem; }
+.opt {
+  min-height: 3rem; min-width: 7.5rem; padding: 0 1.1rem;
+  background: var(--paper); color: var(--ink);
+  border: 1.5px solid var(--line); border-radius: 0.625rem;
+  font: 450 1.25rem/1 var(--serif); cursor: pointer;
+  transition: border-color var(--d-instant) var(--ease-standard), background-color var(--d-fast) var(--ease-standard), opacity var(--d-fast) var(--ease-standard);
+}
+.opt:hover:not(:disabled) { border-color: var(--ink); }
+.opt:disabled { cursor: default; }
+.opt.is-right { border-color: var(--right); background: var(--right-soft); color: var(--right); }
+.opt.is-wrong { border-color: var(--wrong); background: var(--wrong-soft); color: var(--wrong); }
+.opt.is-dim { opacity: 0.4; }
+
+.cloze-foot { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 1rem 2rem; margin-top: 1.25rem; min-height: 3.25rem; }
+.feedback { margin: 0; max-width: 46ch; }
+.feedback.is-in { animation: feedback-in var(--d-base) var(--ease-enter) both; }
+@keyframes feedback-in { from { opacity: 0; transform: translateY(0.3rem); } }
+.feedback b { font-weight: 600; }
+.feedback .right { color: var(--right); }
+.feedback .wrong { color: var(--wrong); }
+.feedback .translation { display: block; color: var(--muted); }
+.next { visibility: hidden; }
+.next.is-visible { visibility: visible; }
+
+.waitlist { display: grid; grid-template-columns: minmax(0, 22rem) auto; gap: 0.625rem; margin-top: clamp(2.5rem, 1.5rem + 3vw, 4rem); max-width: 40rem; }
+.waitlist input {
+  min-height: 3rem; padding: 0 1rem; border: 1.5px solid var(--border-strong, #8a90a8); border-radius: 0.625rem;
+  font: 400 1rem/1 var(--sans); color: var(--ink); background: #fff;
+}
+.waitlist input::placeholder { color: #6f7690; }
+.consent { grid-column: 1 / -1; margin: 0.25rem 0 0; color: var(--muted); font-size: 0.875rem; }
+
+/* Sections */
+.section { padding: clamp(3.5rem, 2rem + 5vw, 6.5rem) 0; }
+.section-tint { background: var(--tint); }
+.section h2 { margin: 0; max-width: 24ch; font-size: clamp(1.75rem, 1.35rem + 1.5vw, 2.625rem); line-height: 1.18; font-weight: 800; letter-spacing: -0.015em; }
+.lead { margin: 1rem 0 0; max-width: 52ch; color: var(--muted); font-size: 1.1875rem; line-height: 1.55; }
+
+/* Problem: an index card versus sentences */
+.compare { display: grid; grid-template-columns: 5fr 7fr; gap: clamp(2rem, 1rem + 4vw, 5rem); align-items: center; margin-top: 3rem; }
+.compare figure { margin: 0; }
+.compare figcaption { margin-top: 1.25rem; max-width: 36ch; color: var(--muted); font-size: 0.9375rem; }
+.index-card {
+  position: relative; display: grid; place-items: center; align-content: center; gap: 0.4rem;
+  aspect-ratio: 5 / 3; max-width: 22rem; padding: 1.5rem;
+  background: #fff repeating-linear-gradient(to bottom, transparent 0 1.7rem, #c9d6f0 1.7rem calc(1.7rem + 1px)) 0 2.6rem / 100% auto no-repeat;
+  border: 1px solid var(--line); border-radius: 4px; transform: rotate(-2deg);
+}
+.index-card::before { content: ''; position: absolute; left: 0; right: 0; top: 2.5rem; border-top: 1px solid #e8a0a0; }
+.ic-word { font: 500 2.25rem/1 var(--serif); }
+.ic-mean { color: var(--muted); font-size: 1rem; }
+.quotes { list-style: none; margin: 0; padding: 0; display: grid; gap: 1.1rem; }
+.quotes li { font: 400 clamp(1.25rem, 1rem + 0.9vw, 1.75rem)/1.35 var(--serif); }
+mark { background: var(--marker); color: inherit; padding: 0 0.12em; border-radius: 0.1em 0.25em 0.12em 0.2em; }
+
+/* Steps: one word through three steps (a real sequence, so it is numbered) */
+.journey { list-style: none; margin: 3rem 0 0; padding: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 2rem; position: relative; }
+.journey::before { content: ''; position: absolute; left: 0; right: 0; top: 1rem; border-top: 2px solid var(--ink); }
+.journey li { position: relative; }
+.step-n { position: relative; display: grid; place-items: center; width: 2rem; height: 2rem; border-radius: 50%; background: var(--paper); border: 2px solid var(--ink); font-weight: 800; font-size: 0.9375rem; }
+.journey h3 { margin: 1.25rem 0 0.4rem; font-size: 1.3125rem; line-height: 1.3; font-weight: 700; }
+.journey p { margin: 0; color: var(--muted); max-width: 32ch; }
+.specimen { margin-top: 1.5rem; padding: 1.1rem 1.2rem; border: 1px solid var(--line); border-radius: 0.75rem; background: #fff; }
+.specimen-sentence { margin: 0; font: 400 1.1875rem/1.45 var(--serif); }
+.specimen-meta { display: flex; justify-content: space-between; margin-top: 0.75rem; color: var(--muted); font-size: 0.8125rem; }
+.saved { color: var(--right); font-weight: 600; }
+.mini-blank { display: inline-block; width: 4.2ch; height: 0.95em; vertical-align: -0.12em; background: var(--marker); border-radius: 0.1em 0.25em 0.12em 0.2em; }
+.mini-opts { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.75rem; }
+.mini-opts span { padding: 0.2rem 0.6rem; border: 1px solid var(--line); border-radius: 0.4rem; font: 400 0.9375rem/1.4 var(--serif); }
+.schedule { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 0.55rem 1rem; }
+.schedule dt { font: 500 1.0625rem/1.4 var(--serif); }
+.schedule dd { margin: 0; color: var(--muted); font-size: 0.875rem; align-self: center; }
+.schedule .due { color: var(--wrong); font-weight: 600; }
+
+/* AI */
+.split { display: grid; grid-template-columns: 6fr 6fr; gap: clamp(2rem, 1rem + 4vw, 5rem); align-items: start; }
+.ticks { list-style: none; margin: 1.75rem 0 0; padding: 0; display: grid; gap: 0.6rem; }
+.ticks li { display: grid; grid-template-columns: 1.25rem 1fr; gap: 0.6rem; }
+.ticks li::before { content: ''; width: 0.7rem; height: 0.7rem; margin-top: 0.45rem; background: var(--marker); border-radius: 2px; transform: skewX(-6deg); }
+.note { margin: 1.5rem 0 0; color: var(--muted); font-size: 0.9375rem; }
+.ai-sheet { padding: 1.5rem 1.6rem; background: #fff; border: 1px solid var(--line); border-radius: 0.875rem; }
+.ai-sheet .label { margin: 0; color: var(--muted); font-size: 0.875rem; }
+.ai-sheet .label b { color: var(--ink); font: 500 1rem var(--serif); }
+.ai-sheet .sentence { margin: 0.75rem 0 1rem; font: 400 1.625rem/1.35 var(--serif); }
+.ai-sheet .explain { margin: 0; padding-top: 1rem; border-top: 1px solid var(--line); }
+.ai-sheet .explain span { display: block; color: var(--muted); }
+.ai-sheet .report { display: inline-block; margin-top: 1rem; font-size: 0.875rem; color: var(--muted); }
+
+/* Plans: two columns, one rule between */
+.plans { display: grid; grid-template-columns: 1fr 1fr; margin-top: 3rem; border-top: 2px solid var(--ink); }
+.plan { padding: 1.75rem 2rem 0 0; }
+.plan + .plan { padding-left: 2rem; border-left: 1px solid var(--line); }
+.plan h3 { margin: 0; font-size: 1.5rem; font-weight: 800; }
+.plan .when { margin: 0.25rem 0 0; color: var(--muted); }
+.plan ul { margin: 1.25rem 0 1.75rem; padding-left: 1.1rem; display: grid; gap: 0.45rem; }
+
+/* Final CTA */
+.final { background: var(--ink); color: #fff; }
+.final h2 { color: #fff; max-width: 20ch; }
+.final .waitlist input { border-color: transparent; }
+.final .btn-primary { background: #fff; color: var(--ink); }
+.final .btn-primary:hover { background: var(--marker); color: var(--ink); }
+.final .consent { color: #c3c9de; }
+.final .consent a { color: #fff; }
+.final :focus-visible { outline-color: var(--marker); }
+
+.site-footer { padding: 2rem 0 2.5rem; border-top: 1px solid var(--line); color: var(--muted); font-size: 0.875rem; }
+.footer-row { display: flex; flex-wrap: wrap; align-items: center; gap: 1rem 1.75rem; }
+.footer-row a { color: var(--muted); }
+.footer-row .copy { margin-left: auto; }
+
+.mockup-tag { position: fixed; right: 0.75rem; bottom: 0.75rem; z-index: 20; padding: 0.45rem 0.75rem; background: var(--ink); color: #fff; border-radius: 0.5rem; font-size: 0.8125rem; text-decoration: none; }
+.mockup-tag:hover { color: var(--marker); }
+
+@media (max-width: 52rem) {
+  .nav { display: none; }
+  .header-actions { margin-left: auto; }
+  .compare, .split { grid-template-columns: 1fr; }
+  .journey { grid-template-columns: 1fr; gap: 2.5rem; }
+  .journey::before { top: 0; bottom: 0; left: 1rem; right: auto; border-top: 0; border-left: 2px solid var(--ink); }
+  .plans { grid-template-columns: 1fr; }
+  .plan + .plan { padding-left: 0; border-left: 0; border-top: 1px solid var(--line); margin-top: 1.75rem; }
+}
+@media (max-width: 34rem) {
+  .header-actions .btn { display: none; }
+  .waitlist { grid-template-columns: 1fr; }
+  .opt { min-width: 0; flex: 1 1 40%; }
+}
+@media (max-width: 34rem) { .mockup-tag { display: none; } }
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+}
+</style>
+</head>
+<body>
+<header class="site-header">
+  <div class="wrap header-row">
+    <a class="logo" href="#"><span class="logo-mark" aria-hidden="true">_ _</span><span>Wordmet</span></a>
+    <nav class="nav" aria-label="Menu chính">
+      <a href="#cach-hoat-dong">Cách hoạt động</a>
+      <a href="#goi-hoc">Gói học</a>
+      <a href="#">Hỏi đáp</a>
+    </nav>
+    <div class="header-actions">
+      <div class="lang" role="group" aria-label="Ngôn ngữ"><button aria-pressed="true">VI</button><button aria-pressed="false">EN</button></div>
+      <a class="btn btn-primary btn-sm" href="#dang-ky">Nhận tin ra mắt</a>
+    </div>
+  </div>
+</header>
+
+<main>
+  <section class="hero">
+    <div class="wrap">
+      <h1 class="hero-title">Lưu từ mới cùng câu bạn đã đọc. Luyện đến khi tự dùng được.</h1>
+      <p class="hero-sub">Thử ngay: chọn từ hợp với chỗ trống.</p>
+
+      <div class="cloze" aria-label="Bài luyện thử">
+        <p class="cloze-source">Câu <strong id="pos">1</strong> trên 3, gặp trong <span id="src">một blog công nghệ</span></p>
+        <p class="cloze-sentence" id="sentence" lang="en"></p>
+        <div class="options" id="options" role="group" aria-label="Chọn từ cho chỗ trống"></div>
+        <div class="cloze-foot">
+          <p class="feedback" id="feedback" role="status" aria-live="polite"></p>
+          <button class="btn btn-quiet next" id="next" type="button">Câu tiếp</button>
+        </div>
+      </div>
+
+      <form class="waitlist" id="dang-ky" onsubmit="event.preventDefault()">
+        <label class="sr-only" for="email">Email</label>
+        <input id="email" type="email" placeholder="Email của bạn" autocomplete="email" required>
+        <button class="btn btn-primary" type="submit">Nhận tin ra mắt</button>
+        <p class="consent">Wordmet chỉ gửi email khi ra mắt. Khi đăng ký, bạn đồng ý với <a href="#">Chính sách bảo mật</a>.</p>
+      </form>
+    </div>
+  </section>
+
+  <section class="section section-tint" aria-labelledby="van-de">
+    <div class="wrap">
+      <h2 id="van-de">Lưu từ thì dễ. Dùng được mới khó.</h2>
+      <p class="lead">Thuộc nghĩa một từ là chưa đủ. Bạn cần gặp nó trong câu, nhiều lần, để biết đặt nó vào đâu.</p>
+      <div class="compare">
+        <figure>
+          <div class="index-card" aria-label="Thẻ từ: deploy, triển khai"><span class="ic-word" lang="en">deploy</span><span class="ic-mean">triển khai</span></div>
+          <figcaption>Thẻ từ rời: nhớ được nghĩa, nhưng đến lúc viết vẫn không biết dùng thế nào.</figcaption>
+        </figure>
+        <figure>
+          <ul class="quotes" lang="en">
+            <li>We plan to <mark>deploy</mark> the new version on Friday.</li>
+            <li>They <mark>deployed</mark> a fix within an hour.</li>
+            <li>Run the tests before you <mark>deploy</mark>.</li>
+          </ul>
+          <figcaption>Với Wordmet: cùng một từ, trong những câu bạn từng đọc. Bạn nhớ luôn cách dùng.</figcaption>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="cach-hoat-dong" aria-labelledby="buoc">
+    <div class="wrap">
+      <h2 id="buoc">Một từ mới đi qua ba bước</h2>
+      <ol class="journey">
+        <li>
+          <span class="step-n">1</span>
+          <h3>Lưu từ cùng câu</h3>
+          <p>Dán câu bạn vừa đọc rồi chọn từ muốn học. Hoặc chọn bộ từ có sẵn theo trình độ A1 đến C2.</p>
+          <div class="specimen">
+            <p class="specimen-sentence" lang="en">Don't <mark>assume</mark> that everyone has read the email.</p>
+            <div class="specimen-meta"><span>Từ email công việc</span><span class="saved">Đã lưu</span></div>
+          </div>
+        </li>
+        <li>
+          <span class="step-n">2</span>
+          <h3>Luyện trong câu</h3>
+          <p>Điền từ, chọn đáp án hoặc gõ từ theo nghĩa, ngay trong câu bạn đã lưu.</p>
+          <div class="specimen">
+            <p class="specimen-sentence" lang="en">Don't <span class="mini-blank"></span> that everyone has read the email.</p>
+            <div class="mini-opts" lang="en"><span>assume</span><span>assure</span><span>resume</span></div>
+          </div>
+        </li>
+        <li>
+          <span class="step-n">3</span>
+          <h3>Ôn đúng lúc</h3>
+          <p>Lịch ôn tự xếp. Từ bạn hay làm sai được đưa lên ôn trước.</p>
+          <div class="specimen">
+            <dl class="schedule">
+              <dt lang="en">deploy</dt><dd class="due">Hôm nay, đã sai 2 lần</dd>
+              <dt lang="en">assume</dt><dd>3 ngày nữa</dd>
+              <dt lang="en">borrow</dt><dd>7 ngày nữa</dd>
+            </dl>
+          </div>
+        </li>
+      </ol>
+    </div>
+  </section>
+
+  <section class="section section-tint" aria-labelledby="ai">
+    <div class="wrap split">
+      <div>
+        <h2 id="ai">Cần thêm câu? AI viết câu mới cho đúng từ bạn đang học.</h2>
+        <ul class="ticks">
+          <li>Giải thích vì sao đáp án đúng</li>
+          <li>Dịch tiếng Việt theo đúng ngữ cảnh của câu</li>
+          <li>Kiểm tra đáp án ngay, không tốn lượt AI</li>
+        </ul>
+        <p class="note">Có trong gói Pro. Dùng thử 14 ngày miễn phí.</p>
+      </div>
+      <div class="ai-sheet">
+        <p class="label">Câu AI viết cho từ <b lang="en">assume</b></p>
+        <p class="sentence" lang="en">Before the meeting, I <mark>assumed</mark> the report was complete.</p>
+        <p class="explain"><b lang="en">assume</b>: cho rằng, khi chưa kiểm chứng.<span>Trước cuộc họp, tôi cho rằng báo cáo đã xong.</span></p>
+        <a class="report" href="#">Báo câu này sai</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="goi-hoc" aria-labelledby="goi">
+    <div class="wrap">
+      <h2 id="goi">Bắt đầu miễn phí</h2>
+      <p class="lead">Dùng thử toàn bộ tính năng AI trong 14 ngày. Không cần thẻ thanh toán.</p>
+      <div class="plans">
+        <div class="plan">
+          <h3>Miễn phí</h3>
+          <p class="when">Dùng mãi mãi</p>
+          <ul>
+            <li>Lưu từ kèm câu bạn từng đọc</li>
+            <li>Flashcard và lịch ôn tự động</li>
+            <li>Các dạng bài tập cơ bản</li>
+            <li>Ưu tiên ôn những từ hay quên</li>
+          </ul>
+          <a class="btn btn-quiet" href="#dang-ky">Nhận tin ra mắt</a>
+        </div>
+        <div class="plan">
+          <h3>Trải nghiệm AI</h3>
+          <p class="when">14 ngày, bật khi bạn sẵn sàng</p>
+          <ul>
+            <li>Luyện với câu mới do AI viết</li>
+            <li>Giải thích chi tiết và bản dịch theo ngữ cảnh</li>
+            <li>Gồm mọi tính năng của gói Miễn phí</li>
+          </ul>
+          <a class="btn btn-primary" href="#dang-ky">Nhận tin ra mắt</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section final" aria-labelledby="cuoi">
+    <div class="wrap">
+      <h2 id="cuoi">Bắt đầu ghi nhớ những từ bạn gặp hôm nay.</h2>
+      <form class="waitlist" onsubmit="event.preventDefault()">
+        <label class="sr-only" for="email2">Email</label>
+        <input id="email2" type="email" placeholder="Email của bạn" autocomplete="email" required>
+        <button class="btn btn-primary" type="submit">Nhận tin ra mắt</button>
+        <p class="consent">Wordmet chỉ gửi email khi ra mắt. Khi đăng ký, bạn đồng ý với <a href="#">Chính sách bảo mật</a>.</p>
+      </form>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap footer-row">
+    <a class="logo" href="#"><span class="logo-mark" aria-hidden="true">_ _</span><span>Wordmet</span></a>
+    <a href="#">Chính sách bảo mật</a><a href="#">Điều khoản sử dụng</a><a href="#">Liên hệ</a>
+    <span class="copy">© 2026 Wordmet</span>
+  </div>
+</footer>
+
+<a class="mockup-tag" href="index.html">Mockup A. Xem các mockup khác</a>
+
+<script>
+const items = [
+  { before: 'We plan to', answer: 'deploy', after: 'the new version on Friday.', options: ['deploy', 'delay', 'deliver', 'decide'], src: 'một blog công nghệ',
+    meaning: 'triển khai, phát hành phần mềm', translation: 'Chúng tôi dự kiến triển khai phiên bản mới vào thứ Sáu.', hint: 'đưa một phiên bản phần mềm tới người dùng.' },
+  { before: "Don't", answer: 'assume', after: 'that everyone has read the email.', options: ['resume', 'assume', 'assure', 'consume'], src: 'một email công việc',
+    meaning: 'cho rằng, khi chưa kiểm chứng', translation: 'Đừng mặc định rằng ai cũng đã đọc email.', hint: 'cho là đúng khi chưa kiểm chứng.' },
+  { before: 'Can I', answer: 'borrow', after: 'your charger for a minute?', options: ['lend', 'rent', 'borrow', 'owe'], src: 'một đoạn chat',
+    meaning: 'mượn (dùng rồi trả). Khác với lend: cho mượn', translation: 'Cho mình mượn cục sạc một chút được không?', hint: 'xin dùng tạm đồ của người khác.' },
+];
+const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const $ = (id) => document.getElementById(id);
+let i = 0;
+
+function render(first) {
+  const it = items[i];
+  $('pos').textContent = i + 1;
+  $('src').textContent = it.src;
+  const s = $('sentence');
+  s.innerHTML = `${it.before} <span class="blank"><span class="blank-mark"></span><span class="blank-word">${it.answer}</span></span> ${it.after}`;
+  s.classList.remove('is-leaving');
+  if (!first) { s.classList.remove('is-entering'); void s.offsetWidth; s.classList.add('is-entering'); }
+  $('options').innerHTML = it.options.map((o) => `<button type="button" class="opt" lang="en">${o}</button>`).join('');
+  $('feedback').innerHTML = '';
+  $('feedback').classList.remove('is-in');
+  $('next').classList.remove('is-visible');
+  $('next').textContent = i < items.length - 1 ? 'Câu tiếp' : 'Xem kết quả';
+  // The one orchestrated, non-user moment: the highlighter draws across the blank.
+  const mark = s.querySelector('.blank-mark');
+  setTimeout(() => mark.classList.add('is-drawn'), first ? 350 : 120);
+}
+
+$('options').addEventListener('click', (e) => {
+  const btn = e.target.closest('.opt');
+  if (!btn || btn.disabled) return;
+  const it = items[i];
+  const fb = $('feedback');
+  if (btn.textContent === it.answer) {
+    for (const b of $('options').children) { b.disabled = true; b.classList.add(b === btn ? 'is-right' : 'is-dim'); b.classList.remove('is-wrong'); }
+    $('sentence').querySelector('.blank-word').classList.add('is-in');
+    fb.innerHTML = `<b class="right">Đúng.</b> <b lang="en">${it.answer}</b>: ${it.meaning}.<span class="translation">${it.translation}</span>`;
+    $('next').classList.add('is-visible');
+  } else {
+    btn.classList.add('is-wrong');
+    btn.disabled = true;
+    const blank = $('sentence').querySelector('.blank');
+    if (!reduced) { blank.classList.remove('is-shaking'); void blank.offsetWidth; blank.classList.add('is-shaking'); }
+    fb.innerHTML = `<b class="wrong">Chưa đúng.</b> Gợi ý: ${it.hint}`;
+  }
+  fb.classList.remove('is-in'); void fb.offsetWidth; fb.classList.add('is-in');
+});
+
+$('next').addEventListener('click', () => {
+  if (i === items.length - 1) {
+    $('feedback').innerHTML = '<b class="right">Xong 3 câu.</b> Khi Wordmet ra mắt, những câu bạn tự lưu sẽ thành bài luyện như thế này.';
+    $('next').textContent = 'Luyện lại';
+    i = -1;
+    return;
+  }
+  i += 1;
+  const s = $('sentence');
+  s.classList.add('is-leaving');
+  setTimeout(() => render(false), reduced ? 0 : 150);
+});
+
+render(true);
+</script>
+</body>
+</html>

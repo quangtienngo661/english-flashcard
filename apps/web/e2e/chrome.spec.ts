@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { copy } from './copy';
 
-test('Review#1 H1 renders in Be Vietnam Pro with Vietnamese glyphs', async ({ page }) => {
+test('Review#1 H1 renders in Lexend with Vietnamese glyphs', async ({ page }) => {
   await page.goto('/vi');
   const result = await page.evaluate(async () => {
     await document.fonts.ready;
@@ -10,7 +10,7 @@ test('Review#1 H1 renders in Be Vietnam Pro with Vietnamese glyphs', async ({ pa
     const family = getComputedStyle(h1).fontFamily.split(',')[0].trim();
     return { family, loaded: document.fonts.check(`16px ${family}`, h1.textContent ?? '') };
   });
-  expect(result.family).toMatch(/Vietnam/);
+  expect(result.family).toMatch(/Lexend/);
   expect(result.loaded).toBe(true);
 });
 

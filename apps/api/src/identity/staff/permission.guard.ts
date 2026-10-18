@@ -4,7 +4,8 @@ import { PRISMA_CLIENT } from '../../common/db/prisma.module.js';
 import { ProblemDetailsException } from '../../common/problem-details/problem-details.exception.js';
 import type { RequestWithUser } from '../../common/request-user/request-user.js';
 import type { PrismaClient } from '../../generated/prisma/client.js';
-import { ROLE_PERMISSIONS, type Permission } from '../identity.types.js';
+import type { Permission, StaffRole } from '../identity.types.js';
+import { ROLE_PERMISSIONS_TOKEN } from './role-permissions.token.js';
 
 // Kept here so the decorator can import the guard without a circular dependency.
 export const REQUIRED_PERMISSION_KEY = 'identity.required_permission';
@@ -14,23 +15,28 @@ export class PermissionGuard implements CanActivate {
   constructor(
     @Inject(Reflector) private readonly reflector: Reflector,
     @Inject(PRISMA_CLIENT) private readonly prisma: PrismaClient,
+    @Inject(ROLE_PERMISSIONS_TOKEN) private readonly rolePermissions: Record<StaffRole, readonly Permission[]>,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const permission = this.reflector.getAllAndOverride<Permission>(REQUIRED_PERMISSION_KEY, [
+    const permissions = this.reflector.getAllAndOverride<Permission[]>(REQUIRED_PERMISSION_KEY, [
       context.getHandler(), context.getClass(),
     ]);
-    if (permission === undefined) return true;
+    if (permissions === undefined) return true;
     const { user } = context.switchToHttp().getRequest<RequestWithUser>();
     if (user) {
       // A single query binds the chain to its owner and reads the current role.
       const chain = await this.prisma.sessionChain.findUnique({
         where: { id: user.sessionChainId },
-        select: { userId: true, revokedAt: true, user: { select: { staffRole: true } } },
+        select: { userId: true, revokedAt: true, user: { select: { staffRole: true, mustChangePassword: true } } },
       });
       const role = chain?.user.staffRole;
       if (chain && chain.userId === user.userId && chain.revokedAt === null &&
-        (role === 'admin' || role === 'editor') && ROLE_PERMISSIONS[role].includes(permission)) {
+        (role === 'admin' || role === 'editor') && permissions.every((permission) => this.rolePermissions[role].includes(permission))) {
+        // A staff account created with a temporary password must change it before using any staff route.
+        if (chain.user.mustChangePassword) {
+          throw new ProblemDetailsException({ status: 403, title: 'Password change required', type: 'password-change-required' });
+        }
         return true;
       }
     }

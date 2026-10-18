@@ -14,10 +14,12 @@ export interface Profile {
   timezone: string;
   staff_role: StaffRole | null;
   permissions: Permission[];
+  must_change_password: boolean;
 }
 
 const profileSelect = {
   id: true, email: true, emailVerifiedAt: true, nativeLanguage: true, timezone: true, staffRole: true,
+  mustChangePassword: true,
 } satisfies Prisma.UserSelect;
 type ProfileRow = Prisma.UserGetPayload<{ select: typeof profileSelect }>;
 
@@ -31,7 +33,16 @@ function toProfile(row: ProfileRow): Profile {
     timezone: row.timezone,
     staff_role: staffRole,
     permissions: permissionsFor(staffRole),
+    must_change_password: row.mustChangePassword,
   };
+}
+
+export interface ReminderCandidate {
+  userId: string;
+  timezone: string;
+  nativeLanguage: SupportedLanguage | null;
+  createdAt: Date;
+  lastSeenAt: Date | null;
 }
 
 @Injectable()
@@ -46,6 +57,32 @@ export class IdentityService {
   async isEmailVerified(userId: string): Promise<boolean> {
     const row = await this.prisma.user.findUnique({ where: { id: userId }, select: { emailVerifiedAt: true } });
     return row !== null && row.emailVerifiedAt !== null;
+  }
+
+  /** Verified, active users ordered by id, a page at a time; `lastSeenAt` is the last login or session refresh. */
+  async listReminderCandidates(input: { afterUserId: string | null; limit: number }): Promise<ReminderCandidate[]> {
+    const rows = await this.prisma.user.findMany({
+      where: {
+        emailVerifiedAt: { not: null }, status: 'active',
+        ...(input.afterUserId !== null ? { id: { gt: input.afterUserId } } : {}),
+      },
+      orderBy: { id: 'asc' }, take: input.limit,
+      select: { id: true, timezone: true, nativeLanguage: true, createdAt: true, lastSeenAt: true },
+    });
+    return rows.map((row) => ({
+      userId: row.id, timezone: row.timezone, nativeLanguage: row.nativeLanguage as SupportedLanguage | null,
+      createdAt: row.createdAt, lastSeenAt: row.lastSeenAt,
+    }));
+  }
+
+  /** Addresses of the given users that are verified and active; other and unknown ids are left out. */
+  async verifiedEmails(userIds: string[]): Promise<Map<string, string>> {
+    if (userIds.length === 0) return new Map();
+    const rows = await this.prisma.user.findMany({
+      where: { id: { in: [...new Set(userIds)] }, emailVerifiedAt: { not: null }, status: 'active' },
+      select: { id: true, email: true },
+    });
+    return new Map(rows.map((row) => [row.id, row.email]));
   }
 
   async updateProfile(userId: string, body: UpdateProfileBody): Promise<Profile | null> {

@@ -1,0 +1,12 @@
+after leaving: browser cookie row (id | rotated_at): cac81787 |
+back after 12s: SIGNED IN
+chain (revoked_at | reason): |
+after leaving: browser cookie row (id | rotated_at): 83c7030f |
+back after 12s: SIGNED IN
+chain (revoked_at | reason): |
+after leaving: browser cookie row (id | rotated_at): ac10506e |
+back after 12s: SIGNED IN
+chain (revoked_at | reason): |
+cac81787 | 3 | 2026-10-15 16:44:12.62+00 | 0bdae302 rotated 2026-10-15 16:44:12.62+00
+83c7030f | 3 | 2026-10-15 16:44:28.126+00 | f530a7d0 rotated 2026-10-15 16:44:28.126+00
+ac10506e | 3 | 2026-10-15 16:44:43.162+00 | 8471e151 rotated 2026-10-15 16:44:43.162+00

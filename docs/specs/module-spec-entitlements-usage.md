@@ -30,6 +30,8 @@ chấm đáp án bằng rule không cần quyền AI (SR4).
 
 **Ngoài phạm vi V1:** thanh toán thật, giá, hóa đơn, tự động gia hạn (Apple In-App Purchase và Google Play Billing, R15); số lượt cụ thể
 của trial và Pro (chủ dự án quyết sau); cấu trúc hạn mức cuối cùng (K18); trial nhiều lần.
+**[Thêm 16/10/2026, K26]** Khi có billing, Pro bán theo tháng và theo năm; gói năm giảm 10% so với trả theo tháng. Hai câu còn
+mở (hạn mức AI của gói năm làm mới theo tháng hay theo năm; hủy giữa năm) ghi ở `DECISIONS_2026-10-04.md` mục 11.
 
 ## Constraints
 

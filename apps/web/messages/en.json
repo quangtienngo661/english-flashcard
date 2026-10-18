@@ -21,8 +21,6 @@
     "header": "Try it · Sentence {current}/{total}",
     "sourceChip": "Saved sentence · Tech blog",
     "instruction": "Select the correct answer to complete the sentence",
-    "prev": "Previous sentence",
-    "next": "Next sentence",
     "correctTitle": "✓ Correct!",
     "wrongTitle": "✗ Not quite",
     "nextSentence": "Next sentence →",

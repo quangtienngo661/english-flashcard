@@ -13,8 +13,8 @@ private words; quick-add of words encountered elsewhere; word groups, flashcards
 schedule; non-AI definition quizzes; AI-generated fill-in-the-blank practice graded by rule; tier-based
 entitlements and quotas.
 
-**Current phase: Bước 0 and Bước 1 (Identity core) implemented.** Real code
-is under `apps/api`. Historical implementation branches:
+**Current phase: Bước 0, 1 (Identity core), 2 (Content + Pipeline) and 2.5 (admin web, `apps/admin`) implemented;
+next is Bước 3 (Learning).** Real code is under `apps/api` and `apps/admin`. Historical implementation branches:
 - `feat/buoc-0-backend-foundation` — Bước 0 built on **Drizzle ORM** (10 tasks, 5 unit + 23 e2e tests).
 - `feat/migrate-drizzle-to-prisma` (branched from the above) — the same Bước 0 re-implemented on
   **Prisma ORM** (6-task migration, 5 unit + 24 e2e tests). This is the current/preferred ORM — the
@@ -23,11 +23,37 @@ is under `apps/api`. Historical implementation branches:
   See `docs/superpowers/plans/2026-10-06-migrate-drizzle-to-prisma.md` for the full migration and why.
 
 Bước 0 and Bước 1 are on `main` (PR #1–#5; GitHub remote `english-flashcard`, CI required before merge).
-**Next: Bước 2 (Content + Pipeline)**, starting with `superpowers:brainstorming`. All 8 V1 specs (docs/specs/) are
-written and independently verified; the project owner has said "keep this order, start step 0" (accepting
-the plan). Read `docs/HANDOFF_2026-10-05_BUOC_0.md` for the original Bước 0 kickoff context, and
-`docs/superpowers/specs/2026-10-05-buoc-0-design.md` (now annotated with the Prisma switch) for the
-as-built design.
+Bước 2 is on `dev` (PR #16). **Bước 2.5 (admin web: login, admin page, role granting, CSV flow) is done and on
+`dev`** (15/10/2026): M1 backend #17, M2 admin shell #18, M3 CSV flow + real-stack e2e + UI guideline fixes #19,
+docs #20; all three "Xong khi" criteria met (CI incl. `admin-e2e-real` green, manual run on a fresh DB with the real
+CEFR-J file). As-built and findings: `docs/deliveries/buoc-2-5.md`, `docs/deliveries/buoc-2-5-test-flow.md`. Not yet
+on `main` (a `dev` → `main` PR opens only when the owner asks). **Owner note (15/10/2026): the admin UI will probably
+be refactored as a whole later** — treat the current visual layer (Sneat-style, Figma approved 14/10) as
+provisional; keep the session/API logic and the design's edge cases. Known items left for that refactor: B25E30
+(refresh 429 → `/login` without a notice) and the unfixed guideline points listed in `buoc-2-5.md`.
+
+**Next: Bước 3** (Learning + the Content pieces deferred from Bước 2: private words, context sentences, the lookup
+chain), the earliest pilot milestone, starting with `superpowers:brainstorming`; build-order table in
+`docs/HANDOFF_2026-10-05_BUOC_0.md` §2. A separate **"Deploy API + admin"** step (hosting, durable Postgres/Redis,
+real SMTP, secrets, backup; design 2.5 §14) must be done before the pilot; the owner has **not yet chosen** whether
+it comes before or after Bước 3 — ask. Content backlog from Bước 2.5 (D26): export the entries that have no sense yet
+(CSV export only lists senses), worth weighing in Bước 3's Content part.
+
+**Before Bước 3's scope is set (16/10/2026):** `docs/preparation/PROJECT_ASSESSMENT_2026-10-15.md` (workflow and
+feasibility review written for the owner) ends with four owner decisions that shape Bước 3, none recorded as decided
+yet: **Q-A** order and scope (full Bước 3 → Deploy → pilot; a thin slice + Deploy + ~300 words → pilot of 5–10 people;
+or a no-code trial first), **Q-B** who authors the pilot content (300–500 words with senses; the catalog has 7.799
+entries but only 4 senses), **Q-C** reminders during the pilot (K25: none in V1), **Q-D** pilot success thresholds
+(metrics exist in `docs/specs/DECISIONS_2026-10-04.md` §8, thresholds do not). Put them to the owner first in Bước 3
+brainstorming, owner-first (Working Rules below). **UI refresh B** (owner 15/10/2026) is merged into `dev`
+(16/10/2026): landing PR #22, admin PR #23, session-on-reload fix PR #24. Learner-facing web screens in Bước 3 should
+reuse its shared tokens (`packages/design-tokens`).
+
+All 8 V1 specs (docs/specs/) are written and independently verified; treat
+them as an initial skeleton only, not a source of truth to keep in sync (owner, 12/10/2026) — the design doc
+for the step in question is authoritative. Read `docs/HANDOFF_2026-10-05_BUOC_0.md` for the original Bước 0
+kickoff context, and `docs/superpowers/specs/2026-10-05-buoc-0-design.md` (now annotated with the Prisma
+switch) for the as-built design.
 
 ## Directory Structure
 
@@ -52,14 +78,53 @@ they say otherwise:
   for the piece of work in question. Reading and writing docs is fine.
 - Use the **superpowers** skill chain (`brainstorming` → `writing-plans` → `test-driven-development`, …)
   for this project's workflow, **not** the harness's own workflows (`build-feature`, `write-spec`,
-  `fix-request`, …).
-- **Git:** commit locally on a `feat/*`/`fix/*`/`docs/*` branch as normal; **push, PR and merge only when the owner
-  asks**. Work reaches `main` through a PR that is merged only after the GitHub Actions CI
-  (`.github/workflows/ci.yml`: lint, typecheck, build, unit, e2e) is green. Scan for secrets before every push.
+  `fix-request`, …). For cloud sessions without the plugin, the superpowers skills are vendored as project
+  skills in `.claude/skills/` (`superpowers:brainstorming` → `brainstorming`); see `.claude/skills/SUPERPOWERS.md`.
+- **Git:** commit locally on a topic branch (`feat/*`, `fix/*`, `docs/*`, or the session's `claude/*` branch) as normal;
+  **push, opening a PR into `dev`, and merging a PR once its CI is green need no approval** (owner: push/PR
+  15/10/2026, merge 16/10/2026). A
+  `dev` → `main` PR is the QA gate and opens only when the owner asks. Never PR or push straight to `main` from a
+  topic branch: follow the branching model below. Scan for secrets before every push.
+
+### Branching model (owner, 12/10/2026)
+
+Goal: experimental versions never reach `main`; `main` only receives work that passed QA/QC.
+
+| Branch | Holds | Topic branches PR into it | Reaches `main` when |
+|---|---|---|---|
+| `main` | Stable, accepted state. Only `main` deploys the landing (`deploy-web.yml`) | — | — |
+| `dev` | Integration branch for **everything**: code (`apps/**`, migrations, CI) **and** documents (`docs/**`, `CLAUDE.md`); where QA/QC runs | `feat/*`, `fix/*`, `docs/*`, `claude/*` | QA/QC passes: CI green (`ci.yml`) **and**, for code, the design's "Xong khi" manual run; then the owner asks for a `dev` → `main` PR |
+
+- A separate `documents` branch existed briefly (12/10/2026) and was dropped by the owner the same day: documents now go
+  through `dev` like code. It was fully merged into `dev` (PR #12) before it was dropped.
+- After any merge into `main`, merge `main` back into `dev`.
+- A session's `claude/*` branch stays the working branch for that session and its PR targets `dev`.
+- **CI/CD (owner, 12/10/2026):** `ci.yml` (lint, typecheck, build, unit, e2e) runs on **pull requests only** and does not
+  re-run when a PR is merged. `deploy-web.yml` runs on push to `main` and only builds and deploys (no tests, not gated on CI).
+  So a change is tested exactly once, on its PR, and a green CI on the PR is the only gate before `main`.
+- Not done yet (owner action in GitHub settings): branch protection on `main` and `dev` — require a PR, require the `CI`
+  check green, forbid direct pushes (a direct push to `main` would deploy untested code), and ideally "require branches to
+  be up to date before merging" so the PR run tested the exact merge result.
+- **The design doc is the official build document; `docs/specs/` is only the initial skeleton** (owner, 12/10/2026).
+  Design docs may diverge from the specs as decisions change during analysis. Review a design doc on its own merits
+  (consistency, buildability, fit with the owner's workflow), **not** against the specs; spec IDs (CR#, PR#, …) in a
+  design doc are provenance only, and a divergence does not require editing the spec.
 - **After brainstorming a design doc**, write a decision record in `docs/superpowers/decisions/` (rule
   `~/.claude/rules/decision-records.md`).
 - Ask open decisions **one question at a time**, each with a concrete proposal and a label: owner-decided
-  (chốt) / proposed (đề xuất) / `ASSUMPTION`.
+  (chốt) / proposed (đề xuất) / `ASSUMPTION`. **In Bước 3 the proposal comes after the owner's own answer** (next bullet).
+- **Bước 3 — the owner thinks first (owner, 15/10/2026; decide after Bước 3 whether to keep it).** Goal: the owner keeps
+  understanding the system and the code, not only approving them.
+  - *Owner answers first, Claude proposes after* — for every open decision put to the owner. Claude asks with the context
+    and constraints only: no proposal, no option marked "(Recommended)"; if options must be listed, none is favoured. After
+    the owner answers, Claude gives its own proposal, says where it agrees or differs and why, and the owner decides
+    (keeping their own answer is fine). Owner says "bỏ qua" / "không biết" for a question → Claude proposes as before, and
+    the decision record says so. Factual questions (a library's version, how existing code works) are not decisions:
+    answer them, verified.
+  - *One core piece per Bước is owner-written* — the plan marks one task as owner-written (Bước 3 candidate: the review
+    schedule algorithm; chosen during brainstorming). Claude does not write that code: it reviews it, and when the owner is
+    stuck it explains the concept or points the direction, with no finished code unless the owner asks for it explicitly.
+    Who writes that task's tests is decided in the plan.
 - Reports: short, decision-sufficient, in Vietnamese with English technical terms kept as-is (`endpoint`,
   `deploy`, `rollback`).
 - Before asserting a fact about a library or its version, check current docs (context7) or verify by
@@ -72,7 +137,7 @@ they say otherwise:
 
 ## Architecture & Key Decisions (accepted, `docs/specs/system-spec.md`)
 
-Bước 0 and Bước 1 are implemented (see the as-built sections below). Steps 2–8 are still
+Bước 0, 1, 2 and 2.5 are implemented (see `docs/deliveries/`). Steps 3–8 are still
 decided-but-not-scaffolded:
 
 - Backend: **NestJS modular monolith + PostgreSQL**. 7 V1 modules, each owning its own write path:
@@ -87,8 +152,15 @@ decided-but-not-scaffolded:
   This is a review convention, not enforced by tooling.
 - Build order is fixed (owner-confirmed, HANDOFF §2): **Step 0** foundation (scaffold, Docker + Postgres,
   Problem Details, pagination, `Idempotency-Key`, IDs, logging, test harness) → 1 Identity core → 2
-  Content + Pipeline → 3 Learning (earliest pilot milestone) → 4 Practice non-AI → 5 Entitlements → 6 AI
-  Integration gateway → 7 Practice AI + Content AI → 8 Identity remainder (Google login, forgot password,
+  Content + Pipeline (admin side + read-only search only) → 2.5 web UI (login, admin page, role
+  granting, CSV flow — done, design `docs/superpowers/specs/2026-10-14-buoc-2-5-admin-web-design.md`)
+  → **UI refresh B** (landing + admin in direction B, owner 15/10/2026; landing in PR #22, admin in PR #23 (merged into `dev` 16/10/2026),
+  plan `docs/superpowers/plans/2026-10-15-ui-refresh-b-admin.md`;
+  design `docs/superpowers/specs/2026-10-15-ui-refresh-b-design.md`, delivery `docs/deliveries/ui-refresh-b.md`;
+  fast-reload session fix (refresh with `keepalive`, PR #24): delivery `docs/deliveries/admin-refresh-keepalive.md`)
+  → Deploy API + admin (separate step; must precede the pilot, exact position not chosen yet) → **3 Learning**, plus the Content pieces deferred from
+  Bước 2 (private words, context sentences, lookup chain) (earliest pilot milestone) → 4 Practice non-AI
+  → 5 Entitlements → 6 AI Integration gateway → 7 Practice AI + Content AI → 8 Identity remainder (Google login, forgot password,
   account deletion).
 - Cross-cutting API conventions (system-spec SR7–SR14): `/v1` prefix, additive-only within v1; errors as
   `application/problem+json` (RFC 9457) with `type, status, title, detail, instance, operation_id`;
@@ -110,71 +182,57 @@ Still open and explicitly **not** blocking Step 0 (HANDOFF §6): AI quota struct
 step 5); external dictionary provider (K20); inflected-form/lemma data source (CR16, PRC7); personal-Gmail
 SMTP viability; all capacity/cost numbers are estimates.
 
-## Bước 0 — as-built (resolved 05–06/10/2026)
+## Bước 0 — as-built
 
-All 4 open questions from `docs/HANDOFF_2026-10-05_BUOC_0.md` §5 are chốt and implemented:
+Moved to `docs/deliveries/buoc-0.md` (resolved 05–06/10/2026; 5 unit + 24 e2e tests).
 
-1. **Repo layout:** single repo, pnpm workspace (`apps/api` only so far; `apps/web` and `apps/mobile` not
-   yet created). No Nx/Turborepo. `git init` done.
-2. **ORM / DB access:** **Prisma ORM, pinned `7.10.0`** (`apps/api/prisma/schema.prisma`,
-   `apps/api/prisma.config.ts`, `@prisma/adapter-pg`). Originally built on Drizzle (pinned `0.45.3`,
-   still intact on `feat/buoc-0-backend-foundation`), migrated to Prisma on `feat/migrate-drizzle-to-prisma`
-   once the row-locking mechanism changed to `pg_try_advisory_xact_lock` (a plain function call Prisma's
-   TypedSQL handles fine — see the design doc's §2.2 correction note and
-   `docs/superpowers/plans/2026-10-06-migrate-drizzle-to-prisma.md`).
-3. **Test strategy:** Vitest + ESM (current NestJS CLI default, not Jest), real Postgres via
-   `@testcontainers/postgresql` — no mocks.
-4. **Step 0 / Step 1 boundary:** `RequestUser` seam implemented
-   (`apps/api/src/common/request-user/fake-request-user.middleware.ts`) — test-only, never wired into the
-   real `AppModule` (verified repeatedly; this is the B0E6 isolation guarantee).
+## Bước 1 — as-built
 
-Implemented and tested: Problem Details (RFC 9457), opaque `page_token` pagination, `Idempotency-Key` via
-`runIdempotent()` (advisory-lock based, see `apps/api/src/common/idempotency/idempotency.service.ts`),
-`operation_id` + redacting logger, per-user atomic rate limiting, a sample endpoint exercising all of the
-above end-to-end. Current state: 5 unit + 24 e2e tests passing on `feat/migrate-drizzle-to-prisma`.
+Moved to `docs/deliveries/buoc-1.md` (07/10/2026; 339 unit + 182 e2e tests; includes the "Open decisions"
+notes from that session).
 
-## Bước 1 — as-built (07/10/2026)
+## Bước 2 — plan & as-built
 
-Design `docs/superpowers/specs/2026-10-07-buoc-1-identity-core-design.md` (D1–D16, criteria `B1#1–B1#38`,
-edge cases `B1E1–B1E34`), decisions `docs/superpowers/decisions/2026-10-07-buoc-1-identity-core-decisions.md`,
-plan `docs/superpowers/plans/2026-10-07-buoc-1-identity-core.md` (14 tasks), reviews in
-`docs/superpowers/reviews/`. Implemented on `feat/buoc-1-identity-impl`:
+Moved to `docs/deliveries/buoc-2.md` (plan tóm tắt 12/10/2026; as-built 12–13/10/2026; 575 unit + 457 e2e
+tests; PR #16 merged into `dev`).
 
-- `src/common/`: `CommonModule` (global) with `AppConfig`/`loadConfig` (zod, fail-fast), `Clock`/`FakeClock`,
-  `AppLogger` (levels, redaction, `operation_id` via AsyncLocalStorage), named-rule `RateLimiter` (fixes the
-  Bước 0 shared-counter bug), Problem Details for body-parser errors (400/413/415), `MaintenanceScheduler`
-  (hourly cleanup jobs). `configureApp()` is shared by `main.ts` and every e2e test.
-- `src/identity/`: register/login with lockout, OTP (verify email, reset password, 24 h lock after 20
-  failures), rotating refresh-token session chains (10 s grace, reuse detection, 90/365 d expiry, 10 active
-  devices), web cookie + CSRF header, password change/reset, profile + `IdentityService` (the only export),
-  staff roles `admin`/`editor` with `@RequirePermission`, `pnpm admin:grant <email>` (needs `pnpm build`).
-  Every security write runs under a per-user advisory lock and commits before the HTTP error (design §4b);
-  mail is sent after commit and after the response closes.
-- Tests: 339 unit + 182 e2e (real Postgres + Mailpit via Testcontainers); suites that depend on global state
-  use `createIsolatedDatabase()`. A manual run against the built API (register → OTP from Mailpit → verify
-  → refresh → password change → logout → admin:grant → admin endpoint) passed on 07/10.
-- Execution: Codex `gpt-6.1-sol` implemented, `gpt-6-astra` (medium effort) reviewed each task; Tasks 13–14
-  were self-reviewed by Claude while Codex was over its usage limit (no independent review for those two).
+## Bước 2.5 — plan & as-built
 
-Graceful shutdown (`enableShutdownHooks`) drains pending mail. Merged via PR #4 after CI.
+`docs/deliveries/buoc-2-5.md` (plan tóm tắt 14/10/2026; as-built 15/10/2026; PR #17–#20 merged into `dev`; admin 219 unit + 67 mocked e2e + 7 real-stack e2e). Test flow (gate, manual
+"Xong khi" run, findings): `docs/deliveries/buoc-2-5-test-flow.md`. Design, decisions (D1–D28) and plan:
+`docs/superpowers/{specs,decisions,plans}/2026-10-14-buoc-2-5-admin-web*.md`. Figma file `coVHzJwTFgMbooUrty7sOq`.
 
-Bước 1 open items: all rate-limit/lockout/budget numbers are `ASSUMPTION` (configurable); same-user lock
-contention can exhaust the 10-connection pool (accepted at pilot scale); Gmail-personal SMTP limits still
-unsourced; `otp_failure_windows` and `mail_budget_buckets` are never cleaned (grow slowly).
+## Việc phải phân tích khi tới bước tương ứng (ghi 12/10/2026, từ brainstorm Bước 2)
 
-### Open decisions for the next session (read before doing anything else)
+Các điểm dưới đây phát sinh khi rà quyền của `admin`/`editor` (bảng D6) với các spec Bước 3–8. Chưa chốt, **không chặn Bước 2**;
+đọc lại khi brainstorm bước ghi bên cạnh.
 
-Bước 0 and Bước 1 are merged (PR #1–#5). The module-boundary convention is chốt as D3 (see Architecture & Key
-Decisions above). The Bước 1 spec deviations (design §11) were applied to `docs/specs/` on 07/10 — look for
-"Sửa 07/10/2026 theo Bước 1".
-
-1. **Chốt by the owner (07/10/2026):** B0E1 — an orphaned `in_progress` idempotency row returns 409
-   `idempotency-key-abandoned` and the client starts over with a new key (it is not re-run). Note: a real
-   crash rolls the row back with the handler's transaction, so a retry after a crash simply runs fresh.
-   `Idempotency-Key` stays mandatory on `@Idempotent()` endpoints (400 if missing) with the 30 s default timeout.
-2. *(resolved, see 1)*
-3. **Prisma pinned to `7.10.0`** (exact, no `^`) because the npm `latest` tag currently points at a `8.0.0-rc`
-   prerelease — re-check when Prisma 8 reaches a real stable release.
+- **Bước 4/7 — danh sách dạng bất quy tắc (PRC7, QE5, Defense Analysis của Practice).** Kiểm rule câu AI sinh dạng chia bằng
+  quy tắc cố định (`-s`, `-ed`, `-ing`…); dạng bất quy tắc (`go` → `went`, `gone`) không sinh được, nên câu AI đúng bị loại,
+  sinh lại một lần và tốn thêm một lần gọi AI. Spec ghi "owner duy trì danh sách" nhưng **chưa gán quyền**. Đề xuất (chưa
+  chốt): `questions.moderate`, vì dữ liệu thuộc Practice và người xử lý câu xấu là người thấy các câu bị loại nhầm.
+  `content.edit` chỉ hợp cho dạng được chấp nhận theo từng sense (CR22, thuộc Content). Cần phân tích khi tới bước: danh sách
+  lưu ở đâu (Practice sở hữu), thêm theo lemma hay theo sense, có nạp sẵn danh sách ban đầu không.
+- **Bước 5–6 — xem chi phí AI và báo cáo đối soát** (AI Integration AR6, Entitlements): **chủ dự án chốt 12/10/2026** thuộc
+  `ai.settings` (chỉ `admin`). Chưa gán: quyền đổi con số hạn mức và tham số trial/Pro (ER9, K18); đề xuất cùng `ai.settings`.
+- **Bước 5 — `entitlements.grant` so với D6 ("editor không đụng chi phí AI").** `editor` có `entitlements.grant` nên cấp được
+  lượt AI, tức tiêu tiền thật. Trần chi hằng ngày (ER14) giới hạn rủi ro. Cân nhắc: chuyển `admin` only, hoặc giới hạn số lượt
+  mỗi lần cấp.
+- **Bước 3/4 — ôn sai: "quên" khác "nhầm" (hướng phát triển, chủ dự án 15/10/2026; chưa phải quyết định chính).** Thay cho
+  N8 (`ASSUMPTION`: mọi lần sai về mức 1). Quên → về mức 1, nhớ thì lên dần lại (khớp hộp ôn Leitner gốc và mặc định Anki).
+  Nhầm → hạ nhẹ. Vì app không tự biết nhầm hay quên, **để người học chọn**, chỉ cho câu gõ từ (Bước 4): gõ sai lần 1 **chưa
+  hiện đáp án** → [Thử lại] (một lần; đúng = "nhầm", sai = "quên") hoặc [Tôi quên rồi] (= "quên"); sau khi hiện đáp án có nút
+  tự đánh dấu "cần ôn tập" (K13 vẫn giữ: chỉ người học đặt trạng thái); bỏ ngang thì chưa tính, từ vẫn đến hạn. Trắc nghiệm,
+  đúng/sai không áp dụng (thử lại thành đoán). Đụng tới: đổi F40 (không thử lại), thêm kết quả thứ ba "nhầm" từ Practice sang
+  Learning (LR6, PRC16), F38 giữ. Bước 3 chỉ cần lịch ôn chừa chỗ cho kết quả này. Còn mở: "nhầm" giữ mức hay hạ một mức
+  (Claude đề xuất hạ một); "nhầm" có tính vào "từ hay sai" (PRC19) không.
+- **Sau Bước 3 — rà nghiệp vụ schema DB (chủ dự án 17/10/2026; chưa chốt, chưa sửa code).** DB1 `users` không có họ tên,
+  ngày sinh (chủ động giới hạn theo IR21; chủ dự án muốn thêm); DB2 không lưu ai đã review/publish/gỡ/retire một nghĩa; DB3
+  đăng ký không lưu việc đồng ý điều khoản và tuổi tối thiểu. DB2–DB3 nên xong trước pilot. Chi tiết, bằng chứng và câu còn
+  mở: `docs/superpowers/reviews/2026-10-17-db-schema-business-review.md`.
+- ~~**Giao diện cấp vai trò:**~~ **Đã rõ 13/10/2026:** chốt thành Bước 2.5 (D9, design Bước 2 mục 15) — giao diện
+  web (đăng nhập, trang admin, cấp vai trò) ngay sau Bước 2, trước Bước 3. Xem bảng ở HANDOFF §2. Đã xong 15/10/2026
+  (as-built ở `docs/deliveries/buoc-2-5.md`).
 
 ## Landing (apps/web) - as-built (08-09/10/2026)
 
@@ -190,7 +248,7 @@ Decisions above). The Bước 1 spec deviations (design §11) were applied to `d
 
 ## Local setup (PowerShell)
 
-From the repo root, start the local Postgres and Mailpit services, then prepare the API environment:
+From the repo root, start the local Postgres, Redis and Mailpit services, then prepare the API environment:
 
 ```powershell
 docker compose up -d
@@ -200,9 +258,10 @@ node scripts/gen-secret.mjs
 ```
 
 Replace each secret placeholder in `.env` with a separate output from `node scripts/gen-secret.mjs`.
-Keep `k1:` before the JWT secret. Mailpit needs no SMTP credentials; its UI is at
-`http://localhost:8025`. Postgres listens on host port **5434** (5432/5433 are used by other local
-projects on this machine). Then, from `apps/api`:
+Keep `k1:` before the JWT secret. `.env.example` already has `REDIS_URL=redis://localhost:6380` (Bước 2);
+Mailpit needs no SMTP credentials; its UI is at `http://localhost:8025`. Postgres listens on host port
+**5434**, Redis on **6380** (5432/5433 and 6379 are used by other local projects on this machine). Then,
+from `apps/api`:
 
 ```powershell
 pnpm db:setup
@@ -211,6 +270,20 @@ pnpm db:setup
 `prisma.config.ts` loads `.env` when it exists. `db:setup` deploys migrations, then runs `prisma generate --sql`, which
 emits both the Prisma client and TypedSQL (a second plain `prisma generate` wipes TypedSQL on Linux — seen in CI). The e2e global setup runs the same sequence against
 its fresh Testcontainers Postgres database.
+
+Running the API alone (`pnpm start`) does not process background jobs (CSV import, bulk publish) — it only
+produces them. Run a separate worker process alongside it (after `pnpm build`, since it runs the compiled
+`dist/worker.js`, not a `ts-node`-style watch mode):
+
+```powershell
+pnpm build
+pnpm start:worker
+```
+
+`pnpm run:dev` (after `pnpm build`) runs the built API and worker together. The admin web (`apps/admin`, Bước 2.5)
+runs with `pnpm dev` in `apps/admin` on **5173**, with `VITE_API_BASE_URL=http://localhost:3000`; the API's `.env`
+needs `http://localhost:5173` in `CORS_ORIGINS` and `ADMIN_APP_URL=http://localhost:5173` (both in `.env.example`).
+First admin: register through the API, verify with the OTP from Mailpit, then `pnpm admin:grant <email>` in `apps/api`.
 
 ## Machine state (verified 2026-10-05–07)
 
@@ -232,6 +305,10 @@ for a concrete example of the loop catching real bugs each round.
 
 ## Other Notes
 
+- As-built delivery records per Bước: `docs/deliveries/buoc-0.md`, `docs/deliveries/buoc-1.md`,
+  `docs/deliveries/buoc-2.md` (includes its plan tóm tắt too), `docs/deliveries/buoc-2-5.md` (plan tóm tắt + as-built), `docs/deliveries/buoc-2-5-test-flow.md` (Bước 2.5 gate + manual run),
+  `docs/deliveries/ui-refresh-b.md` (UI refresh B: plan tóm tắt + landing and admin as-built).
+- Bước 2 test flow (automated gate, `pnpm smoke:buoc-2`, manual steps): `docs/deliveries/buoc-2-test-flow.md`.
 - Spec index and status: `docs/specs/README.md`.
 - Spec/design-doc writing convention (edge cases must be derived per-doc, not just cited): `docs/specs/SPEC_WRITING_CONVENTIONS.md`.
 - Full project context, product decisions, and evidence log: `docs/preparation/PROJECT_CONTEXT.md`.

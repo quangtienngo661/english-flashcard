@@ -8,6 +8,8 @@ model User {
   status           String    @default("active")
   failedLoginCount Int       @default(0) @map("failed_login_count")
   loginLockedUntil DateTime? @map("login_locked_until") @db.Timestamptz
+  mustChangePassword Boolean @default(false) @map("must_change_password")
+  lastSeenAt       DateTime? @map("last_seen_at") @db.Timestamptz
   createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz
   updatedAt        DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
 
@@ -89,9 +91,3 @@ model OtpFailureWindow {
   @@map("otp_failure_windows")
 }
 
-model MailBudgetBucket {
-  bucket String @id
-  sent   Int    @default(0)
-
-  @@map("mail_budget_buckets")
-}

@@ -21,8 +21,6 @@
     "header": "Câu {current}/{total}",
     "sourceChip": "Nguồn · Blog công nghệ",
     "instruction": "Chọn đáp án đúng để hoàn thành câu",
-    "prev": "Câu trước",
-    "next": "Câu sau",
     "correctTitle": "✓ Chính xác!",
     "wrongTitle": "✗ Chưa chính xác",
     "nextSentence": "Câu tiếp theo →",

@@ -16,11 +16,14 @@ describe('IdentityService (unit, isolated persistence)', () => {
     identity = new IdentityService(prisma as unknown as PrismaClient);
   });
 
-  it.each([null, 'editor', 'admin'] as const)('B1#25: getProfile maps the stored %s role and new-user defaults to the public contract', async (staffRole) => {
+  it.each([null, 'editor', 'admin'] as const)('B2#67/B1#25: getProfile maps the stored %s role, content permissions and new-user defaults to the public contract', async (staffRole) => {
     prisma.user.findUnique.mockResolvedValue({ ...row, staffRole });
     expect(await identity.getProfile(row.id)).toEqual({
       id: row.id, email: row.email, email_verified: false, native_language: null,
-      timezone: row.timezone, staff_role: staffRole, permissions: staffRole === 'admin' ? ['roles.manage'] : [],
+      timezone: row.timezone, staff_role: staffRole, permissions: staffRole === null ? [] : [
+        ...(staffRole === 'admin' ? ['roles.manage'] : []), 'content.edit', 'content.publish', 'content.import', 'taxonomy.manage',
+        ...(staffRole === 'admin' ? ['settings.manage'] : []),
+      ],
     });
     expect(prisma.user.findUnique.mock.calls[0][0].where).toEqual({ id: row.id });
   });

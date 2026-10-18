@@ -1,13 +1,13 @@
 name: Deploy web
 
-# Deploys apps/web to Cloudflare Workers after CI passes on main (or by hand from the Actions tab).
+# Deploys apps/web to Cloudflare Workers on every push to main (or by hand from the Actions tab).
+# CD only builds and deploys; it runs no tests. CI (ci.yml) runs on the pull request before it is merged and does not
+# re-run on merge (branching model in CLAUDE.md), so main must only receive PRs whose CI is green.
 # Needs secrets CLOUDFLARE_API_TOKEN (Workers Scripts: Edit, D1: Edit) and CLOUDFLARE_ACCOUNT_ID in environment deploy-env.
 # D1 migrations are NOT applied here: run `pnpm db:migrate:remote` before merging a new migration
 # (plan 2026-10-08-landing-deploy, spec §5).
 on:
-  workflow_run:
-    workflows: [CI]
-    types: [completed]
+  push:
     branches: [main]
   workflow_dispatch:
 
@@ -18,7 +18,6 @@ concurrency:
 jobs:
   deploy:
     name: deploy apps/web to Cloudflare
-    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     # CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID are secrets of this GitHub environment.
     environment: deploy-env
@@ -33,9 +32,6 @@ jobs:
       NEXT_PUBLIC_CONTACT_EMAIL: hello@wordmet.com
     steps:
       - uses: actions/checkout@v4
-        with:
-          # For workflow_run, deploy exactly the commit CI tested.
-          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
 
       - uses: pnpm/action-setup@v4
         with:

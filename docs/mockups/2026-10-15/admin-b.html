@@ -1,0 +1,648 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Wordmet Admin mockup B: Năng lượng, sidebar từ A</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600;800&display=swap" rel="stylesheet">
+<style>
+/* Admin mockup B: the "Năng lượng" look (Lexend, brand blue, sun-yellow stickers, chunky buttons) with the
+   sidebar idea from mockup A (on the desk, no shadow, highlighter on the active item). Motion stays productive:
+   fast and only in answer to an action; B's bounce is kept to button presses and toasts. */
+:root {
+  --canvas: #f1f3fd;
+  --sheet: #ffffff;
+  --ink: #0f1a3d;
+  --muted: #4d5577;
+  --line: #e3e6f4;
+  --line-strong: #c4c9e2;
+  --hover: #f5f6ff;
+  --field: #2445d6;
+  --field-deep: #1a32a6;
+  --sun: #ffd84a;
+  --sun-soft: #fff4c7;
+  --lilac: #eceffe;
+  --ok: #1b7a46;
+  --ok-soft: #e3f4ea;
+  --warn: #7a5200;
+  --bad: #b8352a;
+  --bad-soft: #fde8e5;
+  --grey-soft: #eef0f5;
+  --font: 'Lexend', system-ui, sans-serif;
+
+  --d-instant: 100ms;
+  --d-fast: 150ms;
+  --d-base: 250ms;
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ease-enter: cubic-bezier(0.05, 0.7, 0.1, 1);
+  --ease-exit: cubic-bezier(0.3, 0, 0.8, 0.15);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --radius: 0.75rem;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body { margin: 0; background: var(--canvas); color: var(--ink); font: 400 0.9375rem/1.5 var(--font); -webkit-font-smoothing: antialiased; }
+button, input, select { font: inherit; color: inherit; }
+:focus-visible { outline: 2.5px solid var(--field); outline-offset: 2px; border-radius: 6px; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+[hidden] { display: none !important; }
+.num { font-variant-numeric: tabular-nums; }
+
+/* Chunky buttons with a ledge, pressed down on click (B) */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem;
+  min-height: 2.5rem; padding: 0 1rem; border: 0; border-radius: var(--radius);
+  font-weight: 600; font-size: 0.875rem; cursor: pointer; white-space: nowrap;
+  transition: transform var(--d-instant) var(--ease-standard), box-shadow var(--d-instant) var(--ease-standard), background-color var(--d-instant) var(--ease-standard);
+}
+.btn:active:not(:disabled) { transform: translateY(0.18rem); }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn-primary { background: var(--field); color: #fff; box-shadow: 0 0.18rem 0 var(--field-deep); }
+.btn-primary:hover { background: #2f52e6; }
+.btn-primary:active:not(:disabled) { box-shadow: 0 0 0 var(--field-deep); }
+.btn-secondary { background: var(--sheet); box-shadow: inset 0 0 0 2px var(--line-strong), 0 0.18rem 0 var(--line-strong); }
+.btn-secondary:hover { background: var(--hover); }
+.btn-secondary:active:not(:disabled) { box-shadow: inset 0 0 0 2px var(--line-strong), 0 0 0 var(--line-strong); }
+.btn-danger { background: var(--bad); color: #fff; box-shadow: 0 0.18rem 0 #8a2219; }
+.btn-danger:active:not(:disabled) { box-shadow: 0 0 0 #8a2219; }
+.btn-ghost { background: transparent; color: var(--field); }
+.btn-ghost:hover { background: var(--lilac); }
+.icon-btn { display: grid; place-items: center; width: 2.5rem; height: 2.5rem; border: 0; border-radius: var(--radius); background: transparent; cursor: pointer; color: inherit; }
+.icon-btn:hover { background: var(--lilac); }
+
+/* Shell. Sidebar = idea from mockup A: it sits on the desk, no panel, no shadow */
+.shell { display: grid; grid-template-columns: 15.5rem minmax(0, 1fr); min-height: 100%; }
+.sidebar { position: sticky; top: 0; height: 100vh; display: flex; flex-direction: column; padding: 1.25rem 0.75rem 1rem; overflow-y: auto; }
+.brand { display: flex; align-items: center; gap: 0.55rem; padding: 0 0.6rem 1rem; font-weight: 800; font-size: 1.0625rem; }
+.brand-mark { background: var(--sun); color: var(--ink); padding: 0 0.4rem; border-radius: 0.35rem; font-size: 0.8rem; letter-spacing: 0.08em; }
+.brand small { color: var(--muted); font-weight: 500; font-size: 0.875rem; }
+.nav-group { margin-top: 0.9rem; }
+.nav-group h2 { margin: 0 0 0.2rem; padding: 0 0.6rem; font-size: 0.8125rem; font-weight: 500; color: var(--muted); }
+.nav-item {
+  display: flex; width: 100%; padding: 0.42rem 0.6rem; border: 0; border-radius: 0.6rem; background: transparent;
+  text-align: left; font-size: 0.9375rem; cursor: pointer; color: var(--ink);
+  transition: background-color var(--d-instant) var(--ease-standard);
+}
+.nav-item:hover { background: rgb(36 69 214 / 0.07); }
+.nav-item[aria-current="page"] { font-weight: 600; }
+.nav-item[aria-current="page"] span { background: linear-gradient(transparent 50%, var(--sun) 50%, var(--sun) 92%, transparent 92%); padding: 0 0.15rem; margin: 0 -0.15rem; }
+.nav-item.soon { color: var(--muted); }
+.side-foot { margin-top: auto; padding-top: 1rem; display: grid; gap: 0.5rem; }
+.mockup-link { margin: 0 0.6rem 0.25rem; padding: 0.35rem 0.6rem; border: 1px dashed var(--line-strong); border-radius: 0.5rem; color: var(--muted); font-size: 0.8125rem; text-decoration: none; }
+.mockup-link:hover { color: var(--ink); }
+.lang { display: flex; gap: 0.25rem; padding: 0 0.6rem; }
+.lang button { border: 0; background: transparent; padding: 0.25rem 0.55rem; border-radius: 0.45rem; font-size: 0.8125rem; font-weight: 600; color: var(--muted); cursor: pointer; }
+.lang button[aria-pressed="true"] { background: var(--ink); color: #fff; }
+.account { position: relative; }
+.account-btn { display: flex; align-items: center; gap: 0.6rem; width: 100%; padding: 0.5rem 0.6rem; border: 0; border-radius: 0.6rem; background: transparent; cursor: pointer; text-align: left; }
+.account-btn:hover { background: rgb(36 69 214 / 0.07); }
+.avatar { display: grid; place-items: center; width: 2rem; height: 2rem; border-radius: 0.6rem; background: var(--field); color: #fff; font-size: 0.75rem; font-weight: 800; flex: none; }
+.account-btn .who { min-width: 0; }
+.account-btn .who b { display: block; font-size: 0.875rem; font-weight: 600; }
+.account-btn .who span { display: block; color: var(--muted); font-size: 0.8125rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* The sheet: rounder, with B's flat ledge instead of a soft shadow */
+.main { padding: 0.75rem 0.75rem 1rem 0; min-width: 0; }
+.sheet { position: relative; min-height: calc(100vh - 1.75rem); background: var(--sheet); border-radius: 1.25rem; box-shadow: 0 0.3rem 0 #dde1f5; overflow: hidden; }
+.page-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 1rem; padding: 1.75rem 1.75rem 1.25rem; }
+.page-head h1 { margin: 0; font-size: 1.875rem; line-height: 1.15; font-weight: 800; letter-spacing: -0.025em; }
+.page-head p { margin: 0.35rem 0 0; color: var(--muted); font-size: 0.875rem; }
+.toolbar { display: flex; flex-wrap: wrap; gap: 0.5rem; padding: 0 1.75rem 1.1rem; }
+.field { display: flex; align-items: center; min-height: 2.5rem; padding: 0 0.85rem; border-radius: var(--radius); background: var(--canvas); min-width: 16rem; box-shadow: inset 0 0 0 1.5px transparent; transition: box-shadow var(--d-instant) var(--ease-standard); }
+.field input { border: 0; outline: 0; padding: 0; width: 100%; background: transparent; font-size: 0.875rem; }
+.field input::placeholder { color: #6a7192; }
+.field:focus-within { box-shadow: inset 0 0 0 2px var(--field); background: #fff; }
+select.filter { min-height: 2.5rem; padding: 0 0.85rem; border: 0; border-radius: var(--radius); background: var(--canvas); font-size: 0.875rem; }
+
+/* Table */
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+th { position: sticky; top: 0; z-index: 1; background: var(--sheet); padding: 0.6rem 1rem; text-align: left; font-weight: 500; color: var(--muted); border-bottom: 2px solid var(--line); white-space: nowrap; }
+td { padding: 0.85rem 1rem; border-bottom: 1px solid var(--line); vertical-align: middle; }
+th:first-child, td:first-child { padding-left: 1.75rem; }
+th:last-child, td:last-child { padding-right: 1.75rem; }
+.right { text-align: right; }
+tbody tr { transition: background-color var(--d-instant) var(--ease-standard); }
+tbody tr.clickable { cursor: pointer; }
+tbody tr.clickable:hover { background: var(--hover); }
+tbody tr.is-selected { background: var(--sun-soft); }
+tbody tr.is-new { animation: new-row 1600ms var(--ease-standard); }
+@keyframes new-row { from { background: var(--sun); } }
+.file { font-weight: 600; }
+.when { color: var(--muted); white-space: nowrap; }
+
+/* Status as stickers (B) */
+.status { display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.2rem 0.6rem; border-radius: 999px; font-size: 0.8125rem; font-weight: 600; white-space: nowrap; }
+.s-ok { background: var(--ok-soft); color: var(--ok); }
+.s-warn { background: var(--sun-soft); color: var(--warn); }
+.s-bad { background: var(--bad-soft); color: var(--bad); }
+.s-run { background: var(--lilac); color: var(--field); }
+.s-muted { background: var(--grey-soft); color: var(--muted); }
+.progress { display: block; width: 7.5rem; height: 0.35rem; margin-top: 0.45rem; border-radius: 1rem; background: var(--lilac); overflow: hidden; }
+.progress i { display: block; height: 100%; border-radius: 1rem; background: var(--field); }
+.link { color: var(--field); font-weight: 600; white-space: nowrap; background: none; border: 0; padding: 0; cursor: pointer; font-size: 0.875rem; }
+.link:hover { text-decoration: underline; text-underline-offset: 0.25em; }
+.table-foot { padding: 0.9rem 1.75rem; color: var(--muted); font-size: 0.8125rem; }
+
+.word { font-weight: 600; font-size: 1rem; }
+.level { display: inline-block; min-width: 2.4rem; padding: 0.1rem 0.45rem; border-radius: 0.45rem; background: var(--sun); text-align: center; font-size: 0.8125rem; font-weight: 800; box-shadow: 0 0.12rem 0 #c9a21a; }
+.example { color: var(--muted); }
+.example mark { background: var(--sun-soft); color: var(--ink); padding: 0 0.15em; border-radius: 0.25em; font-weight: 500; }
+
+/* Side panel beside the table (non-modal) */
+.sheet.has-panel { display: grid; grid-template-columns: minmax(0, 1fr) 26rem; }
+.sheet.has-panel > .view { grid-column: 1; grid-row: 1; min-width: 0; }
+.panel {
+  grid-column: 2; grid-row: 1; position: sticky; top: 0; align-self: start; height: calc(100vh - 1.85rem);
+  background: var(--sheet); border-left: 2px solid var(--line);
+  display: flex; flex-direction: column;
+}
+.panel[data-state="entering"] { animation: panel-in var(--d-base) var(--ease-enter) both; }
+.panel[data-state="exiting"] { animation: panel-out var(--d-fast) var(--ease-exit) both; }
+@keyframes panel-in { from { opacity: 0; transform: translateX(1.5rem); } }
+@keyframes panel-out { to { opacity: 0; transform: translateX(1.5rem); } }
+.panel-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; padding: 1.5rem 1.5rem 1rem; }
+.panel-head h2 { margin: 0 0 0.5rem; font-size: 1.125rem; font-weight: 800; letter-spacing: -0.01em; word-break: break-all; }
+.panel-head p { margin: 0; }
+.panel-body { padding: 0 1.5rem 1.25rem; overflow-y: auto; display: grid; gap: 1rem; align-content: start; }
+.tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; }
+.tile { padding: 0.85rem 1rem; border-radius: 1rem; background: var(--lilac); }
+.tile b { display: block; font-size: 1.75rem; line-height: 1.1; font-weight: 800; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.tile span { color: var(--muted); font-size: 0.8125rem; }
+.tile.t-up { background: var(--sun-soft); }
+.tile.t-same { background: var(--grey-soft); }
+.tile.t-bad { background: var(--bad-soft); }
+.tile.t-bad b { color: var(--bad); }
+.total { display: flex; justify-content: space-between; padding: 0.75rem 0.25rem 0; border-top: 2px solid var(--line); font-weight: 600; }
+.notice { margin: 0; padding: 0.85rem 1rem; border-radius: 1rem; background: var(--sun-soft); font-size: 0.875rem; }
+.panel-actions { display: flex; flex-wrap: wrap; gap: 0.6rem; padding: 1rem 1.5rem 1.25rem; border-top: 2px solid var(--line); margin-top: auto; }
+
+/* Dialogs: overlay 200/150ms, box 250/150ms, no bounce (a dialog is a decision, not a celebration) */
+dialog { padding: 0; border: 0; border-radius: 1.5rem; width: min(30rem, calc(100% - 2rem)); color: var(--ink); box-shadow: 0 0.5rem 0 rgb(15 26 61 / 0.18); }
+dialog::backdrop { background: rgb(15 26 61 / 0.45); }
+dialog[data-state="entering"] { animation: dialog-in var(--d-base) var(--ease-enter) both; }
+dialog[data-state="entering"]::backdrop { animation: fade-in 200ms var(--ease-standard) both; }
+dialog[data-state="exiting"] { animation: dialog-out var(--d-fast) var(--ease-exit) both; }
+dialog[data-state="exiting"]::backdrop { animation: fade-out var(--d-fast) var(--ease-exit) both; }
+@keyframes dialog-in { from { opacity: 0; transform: translateY(0.5rem) scale(0.97); } }
+@keyframes dialog-out { to { opacity: 0; transform: scale(0.98); } }
+@keyframes fade-in { from { opacity: 0; } }
+@keyframes fade-out { to { opacity: 0; } }
+.dialog-body { padding: 1.75rem 1.75rem 1.25rem; display: grid; gap: 1rem; }
+.dialog-body h2 { margin: 0; font-size: 1.375rem; font-weight: 800; letter-spacing: -0.02em; }
+.dialog-body p { margin: 0; color: var(--muted); }
+.dialog-actions { display: flex; justify-content: flex-end; gap: 0.6rem; padding: 0 1.75rem 1.75rem; }
+.drop { display: grid; place-items: center; gap: 0.25rem; padding: 2rem 1rem; border: 2px dashed #9fb0f0; border-radius: 1rem; background: var(--lilac); text-align: center; cursor: pointer; transition: border-color var(--d-instant) var(--ease-standard), background-color var(--d-instant) var(--ease-standard); }
+.drop:hover { border-color: var(--field); background: #e3e8ff; }
+.drop b { font-weight: 600; }
+.drop span { color: var(--muted); font-size: 0.875rem; }
+.picked { display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding: 0.85rem 1rem; border-radius: 1rem; background: var(--canvas); }
+.picked b { display: block; font-weight: 600; word-break: break-all; }
+.picked span { color: var(--muted); font-size: 0.8125rem; }
+label.stack { display: grid; gap: 0.35rem; font-weight: 600; font-size: 0.875rem; }
+label.stack small { font-weight: 400; color: var(--muted); }
+label.stack select { min-height: 2.75rem; padding: 0 0.85rem; border: 0; border-radius: var(--radius); background: var(--canvas); font-weight: 400; }
+
+/* Popover menu: 200/150ms, 4px from its trigger */
+.menu { position: absolute; z-index: 30; min-width: 12rem; padding: 0.4rem; background: var(--sheet); border-radius: 0.875rem; box-shadow: 0 0 0 1px var(--line), 0 0.35rem 0 rgb(15 26 61 / 0.12); }
+.menu[data-state="entering"] { animation: menu-in 200ms var(--ease-enter) both; }
+.menu[data-state="exiting"] { animation: menu-out var(--d-fast) var(--ease-exit) both; }
+.menu.up[data-state="entering"] { animation-name: menu-in-up; }
+@keyframes menu-in { from { opacity: 0; transform: translateY(-0.25rem); } }
+@keyframes menu-in-up { from { opacity: 0; transform: translateY(0.25rem); } }
+@keyframes menu-out { to { opacity: 0; } }
+.menu button { display: block; width: 100%; padding: 0.55rem 0.7rem; border: 0; border-radius: 0.55rem; background: transparent; text-align: left; cursor: pointer; font-size: 0.875rem; }
+.menu button:hover, .menu button:focus-visible { background: var(--lilac); outline: none; }
+.menu button.danger { color: var(--bad); }
+.menu hr { border: 0; border-top: 1px solid var(--line); margin: 0.3rem 0; }
+
+/* Toast: the one place admin keeps B's bounce (rare event, confirms an action) */
+.toasts { position: fixed; left: 50%; bottom: 1.25rem; z-index: 60; transform: translateX(-50%); display: grid; gap: 0.5rem; }
+.toast { display: flex; align-items: center; gap: 1rem; padding: 0.8rem 1.1rem; background: var(--ink); color: #fff; border-radius: 0.875rem; font-size: 0.875rem; box-shadow: 0 0.3rem 0 rgb(15 26 61 / 0.25); }
+.toast[data-state="entering"] { animation: toast-in 300ms var(--ease-spring) both; }
+.toast[data-state="exiting"] { animation: toast-out var(--d-fast) var(--ease-exit) both; }
+@keyframes toast-in { from { opacity: 0; transform: translateY(0.9rem) scale(0.96); } }
+@keyframes toast-out { to { opacity: 0; transform: translateY(0.25rem); } }
+.toast button { border: 0; background: transparent; color: var(--sun); font-weight: 600; cursor: pointer; }
+
+/* Mobile: blue top bar (B's field) + drawer */
+.topbar { display: none; }
+.scrim { position: fixed; inset: 0; z-index: 40; background: rgb(15 26 61 / 0.45); }
+.scrim[data-state="entering"] { animation: fade-in 200ms var(--ease-standard) both; }
+.scrim[data-state="exiting"] { animation: fade-out var(--d-fast) var(--ease-exit) both; }
+
+@media (max-width: 64rem) {
+  .shell { grid-template-columns: 1fr; }
+  .sidebar { position: fixed; z-index: 50; top: 0; left: 0; width: 17rem; background: var(--canvas); transform: translateX(-100%); visibility: hidden; transition: transform var(--d-base) var(--ease-enter), visibility 0s linear var(--d-base); }
+  .sidebar.is-open { transform: none; visibility: visible; transition: transform var(--d-base) var(--ease-enter), visibility 0s; }
+  .topbar { display: flex; align-items: center; gap: 0.6rem; padding: 0.6rem 0.75rem; background: var(--field); color: #fff; font-weight: 800; }
+  .topbar .icon-btn:hover { background: rgb(255 255 255 / 0.14); }
+  .topbar :focus-visible { outline-color: var(--sun); }
+  .main { padding: 0; }
+  .sheet { min-height: calc(100vh - 3.6rem); border-radius: 1.25rem 1.25rem 0 0; margin-top: -0.5rem; box-shadow: none; }
+  .page-head, .toolbar { padding-left: 1rem; padding-right: 1rem; }
+  th:first-child, td:first-child { padding-left: 1rem; }
+  th:last-child, td:last-child { padding-right: 1rem; }
+  .field { min-width: 0; flex: 1; }
+  .hide-sm { display: none; }
+  .sheet.has-panel { display: block; }
+  .panel { position: fixed; z-index: 45; top: 0; right: 0; bottom: 0; height: auto; align-self: stretch; width: min(26rem, 100%); border-left: 0; box-shadow: -0.4rem 0 0 rgb(15 26 61 / 0.12); }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+}
+</style>
+</head>
+<body>
+<div class="shell">
+  <aside class="sidebar" id="sidebar" aria-label="Điều hướng">
+    <div class="brand"><span class="brand-mark" aria-hidden="true">_ _</span>Wordmet <small>Admin</small></div>
+    <nav aria-label="Menu chính">
+      <div class="nav-group"><h2>Tổng quan</h2><button class="nav-item soon" data-view="soon"><span>Dashboard</span></button></div>
+      <div class="nav-group"><h2>Nội dung</h2>
+        <button class="nav-item" data-view="imports" aria-current="page"><span>Lô nhập</span></button>
+        <button class="nav-item soon" data-view="soon"><span>Publish job</span></button>
+        <button class="nav-item soon" data-view="soon"><span>Xuất CSV</span></button>
+        <button class="nav-item soon" data-view="soon"><span>Nguồn</span></button>
+        <button class="nav-item" data-view="words"><span>Từ</span></button>
+        <button class="nav-item soon" data-view="soon"><span>Nghĩa</span></button>
+        <button class="nav-item soon" data-view="soon"><span>Chủ đề</span></button>
+      </div>
+      <div class="nav-group"><h2>Luyện tập</h2>
+        <button class="nav-item soon" data-view="soon"><span>Câu bị báo lỗi</span></button>
+        <button class="nav-item soon" data-view="soon"><span>Dạng bất quy tắc</span></button>
+      </div>
+      <div class="nav-group"><h2>Người học</h2>
+        <button class="nav-item soon" data-view="soon"><span>Người dùng</span></button>
+        <button class="nav-item soon" data-view="soon"><span>Quyền lợi và lượt AI</span></button>
+      </div>
+      <div class="nav-group"><h2>Hệ thống</h2>
+        <button class="nav-item" data-view="staff"><span>Vai trò và staff</span></button>
+      </div>
+    </nav>
+    <div class="side-foot">
+      <a class="mockup-link" href="index.html">Mockup admin B. Xem các mockup khác</a>
+      <div class="lang" role="group" aria-label="Ngôn ngữ"><button aria-pressed="true">VI</button><button aria-pressed="false">EN</button></div>
+      <div class="account">
+        <button class="account-btn" id="account-btn" aria-haspopup="menu" aria-expanded="false">
+          <span class="avatar" aria-hidden="true">OW</span>
+          <span class="who"><b>Chủ dự án</b><span>owner@wordmet.vn</span></span>
+        </button>
+        <div class="menu up" id="account-menu" role="menu" hidden style="left:0.25rem; bottom:3.5rem;">
+          <button role="menuitem">Đổi mật khẩu</button>
+          <hr>
+          <button role="menuitem">Đăng xuất</button>
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="scrim" id="scrim" hidden></div>
+
+  <div class="main">
+    <div class="topbar">
+      <button class="icon-btn" id="open-nav" aria-label="Mở menu" aria-expanded="false">
+        <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M3 5h14M3 10h14M3 15h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
+      <span class="brand-mark" aria-hidden="true">_ _</span><span>Wordmet</span>
+    </div>
+
+    <div class="sheet">
+      <!-- Lô nhập -->
+      <section class="view" id="view-imports" aria-labelledby="h-imports">
+        <div class="page-head">
+          <div><h1 id="h-imports">Lô nhập</h1><p>File CSV đã upload và kết quả xử lý của từng file.</p></div>
+          <button class="btn btn-primary" id="open-upload">Upload CSV</button>
+        </div>
+        <div class="toolbar">
+          <label class="field"><span class="sr-only">Tìm theo tên file</span><input placeholder="Tìm theo tên file"></label>
+          <label><span class="sr-only">Lọc theo trạng thái</span>
+            <select class="filter"><option>Mọi trạng thái</option><option>Đang chạy</option><option>Hoàn tất</option><option>Một phần</option><option>Thất bại</option></select>
+          </label>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Tên file</th><th class="right">Số dòng</th><th>Trạng thái</th><th class="hide-sm">Thời điểm</th><th><span class="sr-only">Thao tác</span></th></tr></thead>
+            <tbody id="import-rows"></tbody>
+          </table>
+        </div>
+        <p class="table-foot" id="import-count"></p>
+      </section>
+
+      <!-- Từ -->
+      <section class="view" id="view-words" aria-labelledby="h-words" hidden>
+        <div class="page-head">
+          <div><h1 id="h-words">Từ</h1><p>Từ trong kho chung, kèm level và câu ví dụ đã publish.</p></div>
+        </div>
+        <div class="toolbar">
+          <label class="field"><span class="sr-only">Tìm từ</span><input placeholder="Tìm từ"></label>
+          <label><span class="sr-only">Lọc theo level</span><select class="filter"><option>Mọi level</option><option>A1</option><option>A2</option><option>B1</option><option>B2</option></select></label>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Từ</th><th>Level</th><th class="hide-sm">Câu ví dụ</th><th class="right">Nghĩa</th><th>Trạng thái</th></tr></thead>
+            <tbody>
+              <tr><td class="word" lang="en">assume</td><td><span class="level">B1</span></td><td class="example hide-sm" lang="en">Don't <mark>assume</mark> that everyone has read the email.</td><td class="right num">3</td><td><span class="status s-ok">Đã publish</span></td></tr>
+              <tr><td class="word" lang="en">borrow</td><td><span class="level">A2</span></td><td class="example hide-sm" lang="en">Can I <mark>borrow</mark> your charger for a minute?</td><td class="right num">2</td><td><span class="status s-ok">Đã publish</span></td></tr>
+              <tr><td class="word" lang="en">deploy</td><td><span class="level">B2</span></td><td class="example hide-sm" lang="en">We plan to <mark>deploy</mark> the new version on Friday.</td><td class="right num">2</td><td><span class="status s-warn">Nháp</span></td></tr>
+              <tr><td class="word" lang="en">deliver</td><td><span class="level">B1</span></td><td class="example hide-sm" lang="en">The team will <mark>deliver</mark> the report by Monday.</td><td class="right num">4</td><td><span class="status s-ok">Đã publish</span></td></tr>
+              <tr><td class="word" lang="en">resume</td><td><span class="level">B2</span></td><td class="example hide-sm" lang="en">We'll <mark>resume</mark> the meeting after lunch.</td><td class="right num">2</td><td><span class="status s-muted">Chưa có câu</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="table-foot">5 mục đã hiển thị</p>
+      </section>
+
+      <!-- Vai trò và staff -->
+      <section class="view" id="view-staff" aria-labelledby="h-staff" hidden>
+        <div class="page-head">
+          <div><h1 id="h-staff">Vai trò và staff</h1><p>Ai được vào trang quản trị và được làm gì.</p></div>
+          <button class="btn btn-secondary">Tạo tài khoản</button>
+        </div>
+        <div class="toolbar">
+          <label class="field"><span class="sr-only">Tìm theo email</span><input placeholder="nhap.email@vidu.com"></label>
+          <button class="btn btn-secondary">Tìm</button>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Email</th><th>Vai trò</th><th class="hide-sm">Xác minh</th><th><span class="sr-only">Thao tác</span></th></tr></thead>
+            <tbody id="staff-rows">
+              <tr><td>owner@wordmet.vn</td><td>admin</td><td class="hide-sm"><span class="status s-ok">Đã xác minh</span></td><td class="right"><span class="when">Bạn</span></td></tr>
+              <tr data-email="lan.editor@wordmet.vn"><td>lan.editor@wordmet.vn</td><td class="role">editor</td><td class="hide-sm"><span class="status s-ok">Đã xác minh</span></td><td class="right"><button class="btn btn-ghost role-btn" aria-haspopup="menu" aria-expanded="false">Đổi vai trò</button></td></tr>
+              <tr data-email="minh.content@wordmet.vn"><td>minh.content@wordmet.vn</td><td class="role">editor</td><td class="hide-sm"><span class="status s-ok">Đã xác minh</span></td><td class="right"><button class="btn btn-ghost role-btn" aria-haspopup="menu" aria-expanded="false">Đổi vai trò</button></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="menu" id="role-menu" role="menu" hidden>
+          <button role="menuitem" data-act="admin">Cấp admin</button>
+          <hr>
+          <button role="menuitem" class="danger" data-act="remove">Gỡ vai trò</button>
+        </div>
+        <p class="table-foot">3 mục đã hiển thị</p>
+      </section>
+
+      <!-- Chưa có -->
+      <section class="view" id="view-soon" aria-labelledby="h-soon" hidden>
+        <div class="page-head"><div><h1 id="h-soon">Chưa có trong mockup</h1><p>Mockup chỉ dựng Lô nhập, Từ, Vai trò và staff.</p></div></div>
+      </section>
+
+      <!-- Panel chi tiết lô -->
+      <aside class="panel" id="panel" hidden aria-labelledby="panel-title">
+        <div class="panel-head">
+          <div><h2 id="panel-title"></h2><p id="panel-status"></p></div>
+          <button class="icon-btn" id="close-panel" aria-label="Đóng chi tiết">
+            <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path d="M4 4l10 10M14 4L4 14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          </button>
+        </div>
+        <div class="panel-body" id="panel-body"></div>
+        <div class="panel-actions" id="panel-actions"></div>
+      </aside>
+    </div>
+  </div>
+</div>
+
+<dialog id="upload" aria-labelledby="upload-title">
+  <form method="dialog" id="upload-form">
+    <div class="dialog-body">
+      <h2 id="upload-title">Upload CSV</h2>
+      <button type="button" class="drop" id="drop"><b>Kéo file .csv vào đây</b><span>hoặc bấm để chọn file</span></button>
+      <div class="picked" id="picked" hidden><div><b>cefrj-vocabulary-profile-1.5.csv</b><span>1,2 MB</span></div><button type="button" class="btn btn-ghost" id="change-file">Đổi file</button></div>
+      <label class="stack" id="level-field" hidden>Nguồn level <small>File có cột level (CEFR) nên cần chọn nguồn level.</small>
+        <select><option>CEFR-J Vocabulary Profile 1.5</option><option>Oxford 3000</option></select>
+      </label>
+    </div>
+    <div class="dialog-actions">
+      <button type="button" class="btn btn-secondary" data-close>Hủy</button>
+      <button type="button" class="btn btn-primary" id="do-upload" disabled>Upload</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="confirm" aria-labelledby="confirm-title">
+  <div class="dialog-body"><h2 id="confirm-title"></h2><p id="confirm-body"></p></div>
+  <div class="dialog-actions">
+    <button type="button" class="btn btn-secondary" data-close>Hủy</button>
+    <button type="button" class="btn" id="confirm-ok"></button>
+  </div>
+</dialog>
+
+<div class="toasts" id="toasts" aria-live="polite"></div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+
+// Enter/exit helper: finish on animationend, or after a timeout so the UI never waits on motion that did not run.
+function afterAnim(el, ms, fn) {
+  let done = false;
+  const finish = (e) => { if (done || (e && e.target !== el)) return; done = true; fn(); };
+  el.addEventListener('animationend', finish);
+  setTimeout(() => { el.removeEventListener('animationend', finish); finish(); }, ms + 80);
+}
+function show(el, ms = 250) {
+  el.hidden = false;
+  el.dataset.state = 'entering';
+  afterAnim(el, ms, () => { if (el.dataset.state === 'entering') el.dataset.state = 'open'; });
+}
+function hide(el, after) {
+  if (el.hidden || el.dataset.state === 'exiting') return;
+  el.dataset.state = 'exiting';
+  afterAnim(el, 150, () => { el.hidden = true; el.dataset.state = ''; after?.(); });
+}
+function openDialog(d) {
+  d.showModal();
+  d.dataset.state = 'entering';
+  afterAnim(d, 250, () => { if (d.dataset.state === 'entering') d.dataset.state = 'open'; });
+}
+function closeDialog(d, after) {
+  if (d.dataset.state === 'exiting') return;
+  d.dataset.state = 'exiting';
+  afterAnim(d, 150, () => { d.close(); d.dataset.state = ''; after?.(); });
+}
+for (const d of document.querySelectorAll('dialog')) {
+  d.addEventListener('cancel', (e) => { e.preventDefault(); closeDialog(d); });
+  d.addEventListener('click', (e) => { if (e.target === d) closeDialog(d); });
+  for (const b of d.querySelectorAll('[data-close]')) b.addEventListener('click', () => closeDialog(d));
+}
+function toast(text) {
+  const t = document.createElement('div');
+  t.className = 'toast';
+  t.innerHTML = `<span>${text}</span><button type="button">Đóng</button>`;
+  $('toasts').append(t);
+  show(t, 300);
+  const bye = () => hide(t, () => t.remove());
+  t.querySelector('button').addEventListener('click', bye);
+  setTimeout(bye, 4500);
+}
+
+// Views: switching pages has no animation (it happens many times a day).
+const navItems = document.querySelectorAll('.nav-item');
+for (const item of navItems) {
+  item.addEventListener('click', () => {
+    for (const n of navItems) n.removeAttribute('aria-current');
+    item.setAttribute('aria-current', 'page');
+    for (const v of document.querySelectorAll('.view')) v.hidden = v.id !== `view-${item.dataset.view}`;
+    $('panel').hidden = true;
+    document.querySelector('.sheet').classList.remove('has-panel');
+    closeNav();
+  });
+}
+
+// Imports
+const imports = [
+  { file: 'oxford-3000-a1.csv', rows: 812, status: 'run', done: 506, when: '15/10/2026 10:02' },
+  { file: 'fill-senses.csv', rows: 4, status: 'ok', when: '15/10/2026 09:11', stats: [4, 0, 4, 0, 0] },
+  { file: 'cefrj-vocabulary-profile-1.5.csv', rows: 7799, status: 'partial', when: '15/10/2026 09:07', stats: [7799, 7512, 240, 40, 7] },
+  { file: 'topics-office.csv', rows: 120, status: 'failed', when: '14/10/2026 16:40' },
+  { file: 'phrasal-verbs-b1.csv', rows: 356, status: 'reverted', when: '14/10/2026 11:15' },
+];
+const STATUS = { queued: ['Đang chờ', 's-muted'], run: ['Đang chạy', 's-run'], ok: ['Hoàn tất', 's-ok'], partial: ['Một phần', 's-warn'], failed: ['Thất bại', 's-bad'], reverted: ['Đã hoàn tác', 's-muted'] };
+const fmt = (n) => n.toLocaleString('vi-VN');
+
+function renderImports(newFile) {
+  $('import-rows').innerHTML = imports.map((r, idx) => {
+    const [label, cls] = STATUS[r.status];
+    const extra = r.status === 'run' ? `<span class="progress" aria-hidden="true"><i style="width:${Math.round(r.done / r.rows * 100)}%"></i></span>` : '';
+    return `<tr class="clickable${r.file === newFile ? ' is-new' : ''}" data-idx="${idx}">
+      <td class="file">${r.file}</td><td class="right num">${fmt(r.rows)}</td>
+      <td><span class="status ${cls}">${label}${r.status === 'run' ? ` <span class="num">${fmt(r.done)} / ${fmt(r.rows)}</span>` : ''}</span>${extra}</td>
+      <td class="when hide-sm">${r.when}</td><td class="right"><button class="link" type="button">Chi tiết</button></td></tr>`;
+  }).join('');
+  $('import-count').textContent = `${imports.length} mục đã hiển thị`;
+}
+renderImports();
+
+$('import-rows').addEventListener('click', (e) => {
+  const tr = e.target.closest('tr');
+  if (!tr) return;
+  for (const r of $('import-rows').children) r.classList.toggle('is-selected', r === tr);
+  openPanel(imports[+tr.dataset.idx]);
+});
+
+function openPanel(r) {
+  const [label, cls] = STATUS[r.status];
+  $('panel-title').textContent = r.file;
+  $('panel-status').innerHTML = `<span class="status ${cls}">${label}</span>`;
+  let body = '';
+  let actions = '';
+  if (r.stats) {
+    const [t, c, u, n, x] = r.stats;
+    body += `<div class="tiles">
+      <div class="tile"><b>${fmt(c)}</b><span>Tạo mới</span></div>
+      <div class="tile t-up"><b>${fmt(u)}</b><span>Cập nhật</span></div>
+      <div class="tile t-same"><b>${fmt(n)}</b><span>Không đổi</span></div>
+      <div class="tile t-bad"><b>${fmt(x)}</b><span>Bị loại</span></div>
+    </div><div class="total"><span>Tổng số dòng</span><span class="num">${fmt(t)}</span></div>`;
+    if (x) body += `<p class="notice">${x} dòng bị loại. Tải rejected.csv để xem lý do ở cột _error rồi sửa trong Excel.</p>`;
+    actions = `<button class="btn btn-primary">Publish lô này</button>${x ? '<button class="btn btn-secondary">Tải rejected.csv</button>' : ''}<button class="btn btn-ghost" style="color:var(--bad)" id="revert">Hoàn tác lô</button>`;
+  } else if (r.status === 'run') {
+    body = `<p>Đang xử lý <b class="num">${fmt(r.done)} / ${fmt(r.rows)}</b> dòng. Trang tự cập nhật mỗi 2 giây.</p>`;
+  } else if (r.status === 'failed') {
+    body = '<p class="notice">Lô nhập thất bại. Kiểm tra file (cột bắt buộc, mã hóa UTF-8) rồi upload lại.</p>';
+  } else if (r.status === 'queued') {
+    body = '<p>Đang chờ worker nhận việc. Trang tự cập nhật mỗi 2 giây.</p>';
+  } else {
+    body = '<p>Lô này đã được hoàn tác. Các nghĩa do lô tạo không còn trong dữ liệu.</p>';
+  }
+  $('panel-body').innerHTML = body;
+  $('panel-actions').innerHTML = actions;
+  $('panel-actions').hidden = !actions;
+  if ($('panel').hidden) { document.querySelector('.sheet').classList.add('has-panel'); show($('panel')); }
+  $('revert')?.addEventListener('click', () => confirmAction(`Hoàn tác lô ${r.file}?`, 'Các nghĩa do lô này tạo sẽ bị gỡ khỏi dữ liệu. Thao tác này không thể khôi phục.', 'Hoàn tác lô', () => toast('Đã hoàn tác lô và gỡ 7.512 mục do lô tạo.')));
+}
+function closePanel() {
+  hide($('panel'), () => document.querySelector('.sheet').classList.remove('has-panel'));
+  for (const r of $('import-rows').children) r.classList.remove('is-selected');
+}
+$('close-panel').addEventListener('click', closePanel);
+
+// Upload dialog
+$('open-upload').addEventListener('click', () => {
+  $('drop').hidden = false; $('picked').hidden = true; $('level-field').hidden = true; $('do-upload').disabled = true;
+  openDialog($('upload'));
+});
+$('drop').addEventListener('click', () => { $('drop').hidden = true; $('picked').hidden = false; $('level-field').hidden = false; $('do-upload').disabled = false; });
+$('change-file').addEventListener('click', () => { $('drop').hidden = false; $('picked').hidden = true; $('level-field').hidden = true; $('do-upload').disabled = true; });
+$('do-upload').addEventListener('click', () => {
+  closeDialog($('upload'), () => {
+    const file = 'cefrj-vocabulary-profile-1.5 (2).csv';
+    imports.unshift({ file, rows: 7799, status: 'queued', when: '15/10/2026 10:14' });
+    renderImports(file);
+    toast('Đã tạo lô nhập. Worker sẽ xử lý trong ít giây.');
+  });
+});
+
+// Confirm dialog
+function confirmAction(title, body, okLabel, onOk, danger = true) {
+  $('confirm-title').textContent = title;
+  $('confirm-body').textContent = body;
+  const ok = $('confirm-ok');
+  ok.textContent = okLabel;
+  ok.className = `btn ${danger ? 'btn-danger' : 'btn-primary'}`;
+  ok.onclick = () => closeDialog($('confirm'), onOk);
+  openDialog($('confirm'));
+}
+
+// Role menu (popover from its trigger)
+let roleRow = null;
+const roleMenu = $('role-menu');
+document.addEventListener('click', (e) => {
+  const trigger = e.target.closest('.role-btn');
+  if (trigger) {
+    e.stopPropagation();
+    roleRow = trigger.closest('tr');
+    const sheet = document.querySelector('.sheet').getBoundingClientRect();
+    const r = trigger.getBoundingClientRect();
+    roleMenu.style.top = `${r.bottom - sheet.top + 4}px`;
+    roleMenu.style.right = `${sheet.right - r.right}px`;
+    trigger.setAttribute('aria-expanded', 'true');
+    show(roleMenu, 200);
+    roleMenu.querySelector('button').focus();
+    return;
+  }
+  if (!roleMenu.hidden && !roleMenu.contains(e.target)) closeRoleMenu();
+  if (!$('account-menu').hidden && !e.target.closest('.account')) hide($('account-menu'));
+});
+function closeRoleMenu() { document.querySelectorAll('.role-btn').forEach((b) => b.setAttribute('aria-expanded', 'false')); hide(roleMenu); }
+roleMenu.addEventListener('click', (e) => {
+  const act = e.target.closest('button')?.dataset.act;
+  if (!act || !roleRow) return;
+  const email = roleRow.dataset.email;
+  const row = roleRow;
+  closeRoleMenu();
+  if (act === 'remove') {
+    confirmAction(`Gỡ vai trò của ${email}?`, 'Họ sẽ mất quyền truy cập trang quản trị ngay lập tức.', 'Gỡ vai trò', () => {
+      row.querySelector('.role').textContent = 'Chưa có vai trò';
+      row.classList.remove('is-new'); void row.offsetWidth; row.classList.add('is-new');
+      toast(`Đã gỡ vai trò của ${email}.`);
+    });
+  } else {
+    confirmAction('Cấp vai trò admin?', `Cấp vai trò admin cho ${email}? Họ sẽ quản lý được vai trò và toàn bộ nội dung.`, 'Cấp admin', () => {
+      row.querySelector('.role').textContent = 'admin';
+      row.classList.remove('is-new'); void row.offsetWidth; row.classList.add('is-new');
+      toast(`Đã cấp admin cho ${email}.`);
+    }, false);
+  }
+});
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { if (!roleMenu.hidden) closeRoleMenu(); if (!$('account-menu').hidden) hide($('account-menu')); } });
+
+// Account menu
+$('account-btn').addEventListener('click', (e) => {
+  e.stopPropagation();
+  const m = $('account-menu');
+  if (m.hidden) { show(m, 200); $('account-btn').setAttribute('aria-expanded', 'true'); } else { hide(m); $('account-btn').setAttribute('aria-expanded', 'false'); }
+});
+
+
+// Mobile drawer
+function closeNav() {
+  if (!$('sidebar').classList.contains('is-open')) return;
+  $('sidebar').classList.remove('is-open');
+  $('open-nav').setAttribute('aria-expanded', 'false');
+  hide($('scrim'));
+}
+$('open-nav').addEventListener('click', () => { $('sidebar').classList.add('is-open'); $('open-nav').setAttribute('aria-expanded', 'true'); show($('scrim'), 200); });
+$('scrim').addEventListener('click', closeNav);
+</script>
+</body>
+</html>

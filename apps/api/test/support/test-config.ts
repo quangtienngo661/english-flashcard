@@ -8,6 +8,7 @@ export function testConfig(overrides?: Partial<AppConfig>): AppConfig {
   }
   return {
     databaseUrl: 'postgresql://dev:dev@localhost:5432/test',
+    redisUrl: 'redis://localhost:6379',
     jwt: {
       keys: [{ kid: 'test', secret: randomBytes(32) }],
       issuer: 'test-issuer', audience: 'test-audience', accessTtlSeconds: 900,
@@ -21,7 +22,28 @@ export function testConfig(overrides?: Partial<AppConfig>): AppConfig {
     trustProxy: false,
     corsOrigins: ['http://localhost:3000'],
     problemTypeBase: 'https://api.example.com/problems/',
+    adminAppUrl: 'http://localhost:5173',
+    learnerAppUrl: 'http://localhost:3001',
     maintenanceEnabled: false,
+    content: { publishMaxItems: 500 },
+    pipeline: {
+      importMaxRows: 100,
+      importMaxBytes: 10_240,
+      exportMaxRows: 50,
+      leaseSeconds: 6,
+      heartbeatSeconds: 2,
+      reconcileSeconds: 1,
+      rowRetries: 3,
+      jobAttempts: 3,
+      fileRetentionDays: 1,
+      queuePrefix: 'wordmet-test',
+      runWorkers: false,
+      jobBackoffMs: 10,
+      rowRetryBaseMs: 10,
+    },
+    // Off so other suites with workers on are not slowed by reminder ticks; reminder suites turn it on,
+    // with a low tick so they see several ticks in a few seconds.
+    reminders: { tickSeconds: 1, runScheduler: false, retryBackoffMs: 10 },
     limits,
     ...overrides,
   };

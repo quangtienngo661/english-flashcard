@@ -1,0 +1,464 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Wordmet: mockup app người học v2 (Bước 3)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600;800&display=swap" rel="stylesheet">
+<style>
+/* Mockup v2 (Bước 3 brainstorm, 16/10/2026). Colours from packages/design-tokens/theme.css (direction B).
+   v2 applies: tab bar = navigation only, 3 destinations (Apple HIG Tab bars; M3 Navigation bar 3-5); add-word action is a
+   FAB above the nav bar (M3 FAB); study session is a full-screen modal covering the nav bar (HIG exception for modals);
+   primary actions pinned at the bottom (M3: bottom "for convenient access"); every target >= 2.75rem (NN/g: >= 1cm). */
+:root {
+  --primary: #2445d6; --primary-deep: #1a32a6; --primary-soft: #eceffe;
+  --accent: #ffd84a; --accent-deep: #c9a21a; --accent-soft: #fff4c7;
+  --ink: #0f1a3d; --muted: #4d5577; --placeholder: #5f6688;
+  --surface: #ffffff; --canvas: #f1f3fd; --border: #e3e6f4; --border-strong: #7d84a8;
+  --success: #1b7a46; --success-soft: #e3f4ea; --warning: #7a5200;
+  --danger: #b8352a; --danger-soft: #fde8e5; --neutral-soft: #eef0f5;
+  --d-instant: 100ms; --d-fast: 150ms; --d-base: 250ms; --d-slow: 400ms;
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1); --ease-enter: cubic-bezier(0.05, 0.7, 0.1, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --font: 'Lexend', system-ui, sans-serif;
+  --tap: 2.75rem;
+}
+.s-energy { --app-bg: var(--canvas); --hdr-bg: var(--primary); --hdr-fg: #fff; --hdr-sub: #dfe5ff;
+  --main-bg: var(--accent); --main-fg: var(--ink); --main-ledge: var(--accent-deep);
+  --fab-bg: var(--accent); --fab-fg: var(--ink); --fab-ledge: var(--accent-deep);
+  --card-ledge: 0 0.8rem 0 var(--primary-deep); --card-rot: -1deg; --panel-ledge: 0 0.25rem 0 var(--border);
+  --h-weight: 800; --tab-active-bg: var(--accent); --tab-active-fg: var(--ink); --study-bg: var(--primary); --study-fg: #fff; }
+.s-calm { --app-bg: #ffffff; --hdr-bg: #ffffff; --hdr-fg: var(--ink); --hdr-sub: var(--muted);
+  --main-bg: var(--primary); --main-fg: #fff; --main-ledge: var(--primary-deep);
+  --fab-bg: var(--primary); --fab-fg: #fff; --fab-ledge: var(--primary-deep);
+  --card-ledge: 0 0.3rem 0 var(--border); --card-rot: 0deg; --panel-ledge: 0 0 0 transparent;
+  --h-weight: 600; --tab-active-bg: var(--primary-soft); --tab-active-fg: var(--primary); --study-bg: var(--canvas); --study-fg: var(--ink); }
+
+* { box-sizing: border-box; }
+body { margin: 0; background: #dfe3f3; color: var(--ink); font: 400 1rem/1.5 var(--font); -webkit-font-smoothing: antialiased; }
+button, input, select { font: inherit; color: inherit; }
+:focus-visible { outline: 3px solid var(--primary); outline-offset: 2px; border-radius: 6px; }
+
+.toolbar { position: sticky; top: 0; z-index: 30; display: flex; flex-wrap: wrap; gap: 0.5rem 1rem; align-items: center; padding: 0.75rem 1rem; background: var(--ink); color: #fff; font-size: 0.875rem; }
+.toolbar .grp { display: flex; flex-wrap: wrap; gap: 0.35rem; align-items: center; }
+.toolbar button { border: 1px solid #3a4677; background: transparent; color: #fff; border-radius: 0.5rem; padding: 0.35rem 0.6rem; cursor: pointer; }
+.toolbar button[aria-pressed="true"] { background: var(--accent); color: var(--ink); border-color: var(--accent); }
+.toolbar .lbl { opacity: 0.7; }
+
+.stage { display: flex; justify-content: center; padding: 1.5rem 1rem 3rem; }
+.frame { width: 390px; height: 800px; border: 10px solid var(--ink); border-radius: 2.5rem; overflow: hidden; background: var(--app-bg); container-type: inline-size; position: relative; display: flex; }
+.frame.wide { width: min(1120px, 100%); height: 720px; border-width: 6px; border-radius: 1rem; }
+.frame-inner { flex: 1; display: flex; flex-direction: column; min-width: 0; position: relative; }
+.app { flex: 1; display: flex; flex-direction: column; min-width: 0; min-height: 0; position: relative; }
+
+/* Compact top app bar; top-level screens get a larger title below it. */
+.appbar { background: var(--hdr-bg); color: var(--hdr-fg); min-height: 3.5rem; padding: 0.25rem 0.5rem; display: flex; align-items: center; gap: 0.25rem; border-bottom: 1px solid var(--border); }
+.s-energy .appbar { border-bottom: 0; }
+.appbar .title { flex: 1; min-width: 0; font-weight: 600; font-size: 1.0625rem; padding-left: 0.4rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.iconbtn { width: var(--tap); height: var(--tap); border: 0; background: transparent; color: inherit; border-radius: 0.75rem; cursor: pointer; font-size: 1.25rem; display: inline-flex; align-items: center; justify-content: center; }
+.iconbtn:hover { background: rgb(127 127 127 / 0.12); }
+.bigtitle { background: var(--hdr-bg); color: var(--hdr-fg); padding: 0.25rem 1.1rem 1rem; }
+.bigtitle h1 { margin: 0; font-size: 1.75rem; font-weight: var(--h-weight); letter-spacing: -0.02em; }
+.bigtitle .sub { font-size: 0.875rem; color: var(--hdr-sub); }
+.logo-mark { background: var(--accent); color: var(--ink); padding: 0.05rem 0.4rem; border-radius: 0.35rem; font-weight: 800; font-size: 0.8rem; letter-spacing: 0.08em; }
+.content { flex: 1; overflow-y: auto; padding: 1rem 1.1rem 6rem; }
+
+.tabbar { order: 2; display: flex; padding: 0.35rem 0.5rem 0.75rem; background: var(--surface); border-top: 1px solid var(--border); }
+.tab { flex: 1; min-height: 3.25rem; border: 0; background: transparent; border-radius: 1rem; font-size: 0.75rem; font-weight: 500; color: var(--muted); cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.1rem; }
+.tab .ic { font-size: 1.2rem; line-height: 1; padding: 0.2rem 1rem; border-radius: 1rem; }
+.tab[aria-current="page"] { color: var(--ink); font-weight: 600; }
+.tab[aria-current="page"] .ic { background: var(--tab-active-bg); color: var(--tab-active-fg); }
+.side-logo { display: none; }
+
+.fab { position: absolute; right: 1rem; bottom: 1rem; z-index: 5; min-height: 3.5rem; padding: 0 1.2rem 0 1rem; border: 0; border-radius: 1.1rem; background: var(--fab-bg); color: var(--fab-fg); box-shadow: 0 0.25rem 0 var(--fab-ledge); font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 0.45rem; }
+.fab .plus { font-size: 1.4rem; line-height: 1; }
+.fab:active { transform: translateY(0.25rem); box-shadow: none; }
+
+/* Bottom action bar: the screen's main action sits in the thumb zone. */
+.actionbar { position: absolute; left: 0; right: 0; bottom: 0; z-index: 4; padding: 0.75rem 1.1rem 0.9rem; background: linear-gradient(to top, var(--app-bg) 70%, transparent); display: grid; gap: 0.5rem; }
+
+@container (min-width: 760px) {
+  .frame .frame-inner { flex-direction: row; }
+  .tabbar { order: -1; flex-direction: column; width: 14rem; padding: 1rem 0.75rem; border-top: 0; border-right: 1px solid var(--border); gap: 0.25rem; }
+  .tab { flex: none; flex-direction: row; justify-content: flex-start; gap: 0.6rem; font-size: 0.9375rem; padding: 0 0.6rem; min-height: var(--tap); }
+  .tab .ic { padding: 0.35rem 0.6rem; }
+  .side-logo { display: flex; align-items: center; gap: 0.5rem; font-weight: 800; padding: 0 0.5rem 1rem; }
+  .content { padding: 1.5rem 2rem 6rem; }
+  .bigtitle { padding: 0.5rem 2rem 1rem; }
+  .cols { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.85rem; }
+  .cols > .group { margin: 0; }
+  .fab { right: 2rem; bottom: 2rem; }
+  .actionbar { left: auto; width: 26rem; right: 1.5rem; background: none; }
+}
+
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem; min-height: var(--tap); padding: 0 1.1rem; border: 0; border-radius: 0.875rem; font-weight: 600; cursor: pointer; transition: transform var(--d-instant) var(--ease-standard); }
+.btn:active { transform: translateY(0.2rem); box-shadow: none !important; }
+.btn-lg { min-height: 3.5rem; font-size: 1.0625rem; }
+.btn-main { background: var(--main-bg); color: var(--main-fg); box-shadow: 0 0.22rem 0 var(--main-ledge); }
+.btn-sec { background: var(--surface); color: var(--ink); box-shadow: inset 0 0 0 1.5px var(--border-strong); }
+.btn-known { background: var(--success); color: #fff; box-shadow: 0 0.22rem 0 #105030; }
+.btn-review { background: var(--accent); color: var(--ink); box-shadow: 0 0.22rem 0 var(--accent-deep); }
+.btn-danger { background: var(--danger); color: #fff; box-shadow: 0 0.22rem 0 #7f2219; }
+.btn-text { background: transparent; color: var(--primary); }
+.btn-block { width: 100%; }
+.row { display: flex; gap: 0.6rem; flex-wrap: wrap; align-items: center; }
+
+.pill { display: inline-flex; align-items: center; gap: 0.25rem; padding: 0.15rem 0.55rem; border-radius: 999px; font-size: 0.75rem; font-weight: 600; white-space: nowrap; }
+.p-pri { background: var(--accent-soft); color: var(--warning); }
+.p-due { background: var(--primary-soft); color: var(--primary); }
+.p-new { background: var(--neutral-soft); color: var(--muted); }
+.p-ok { background: var(--success-soft); color: var(--success); }
+
+.panel { background: var(--surface); border-radius: 1.1rem; padding: 1rem; box-shadow: var(--panel-ledge); border: 1px solid var(--border); }
+.s-energy .panel { border-color: transparent; }
+.group { display: flex; align-items: center; gap: 0.75rem; width: 100%; margin: 0 0 0.75rem; padding: 0.9rem 0.9rem 0.9rem 1rem; }
+.group .body { flex: 1; min-width: 0; text-align: left; border: 0; background: transparent; padding: 0; cursor: pointer; }
+.group h3 { margin: 0 0 0.4rem; font-size: 1.0625rem; font-weight: 600; }
+.group .meta { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+.group .go { flex: none; min-width: 4.5rem; }
+.notice { margin-top: 0.5rem; font-size: 0.8125rem; color: var(--danger); text-decoration: underline; text-underline-offset: 0.2em; }
+.hint { font-size: 0.8125rem; color: var(--muted); }
+.section-title { margin: 1.25rem 0 0.25rem; font-size: 0.8125rem; font-weight: 600; color: var(--muted); }
+
+.list { list-style: none; margin: 0; padding: 0; }
+.list li { display: flex; align-items: center; gap: 0.6rem; min-height: 3.5rem; padding: 0.55rem 0; border-bottom: 1px solid var(--border); }
+.list .w { font-weight: 600; }
+.list .m { color: var(--muted); font-size: 0.875rem; }
+.list .grow { flex: 1; min-width: 0; }
+
+/* Study mode: full screen, covers the tab bar (modal). */
+.study { position: absolute; inset: 0; z-index: 8; display: flex; flex-direction: column; background: var(--study-bg); color: var(--study-fg); animation: up var(--d-base) var(--ease-enter); }
+.study-top { display: flex; align-items: center; gap: 0.5rem; padding: 0.4rem 0.6rem; }
+.bar { flex: 1; height: 0.5rem; border-radius: 1rem; background: rgb(127 127 127 / 0.25); overflow: hidden; }
+.bar span { display: block; height: 100%; background: var(--success); border-radius: 1rem; transition: width var(--d-base) var(--ease-standard); }
+.s-energy .bar span { background: var(--accent); }
+.count { font-size: 0.875rem; font-weight: 600; min-width: 2.75rem; text-align: right; }
+.study-mid { flex: 1; display: flex; align-items: center; justify-content: center; padding: 0.5rem 1.25rem 1rem; min-height: 0; }
+.fc { width: 100%; max-width: 26rem; min-height: 22rem; padding: 1.4rem 1.3rem 1.4rem; background: var(--surface); color: var(--ink); border-radius: 1.5rem; box-shadow: var(--card-ledge); border: 1px solid var(--border); transform: rotate(var(--card-rot)); cursor: pointer; display: flex; flex-direction: column; }
+.s-energy .fc { border: 0; }
+.fc .top { display: flex; justify-content: space-between; align-items: center; font-size: 0.8125rem; color: var(--muted); }
+.fc .front { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.fc .word { font-size: 2.5rem; font-weight: var(--h-weight); letter-spacing: -0.02em; }
+.fc .pos { color: var(--muted); }
+.fc .back { animation: flip-in var(--d-slow) var(--ease-enter); }
+@keyframes flip-in { from { opacity: 0; transform: translateY(0.5rem); } }
+.fc .wsmall { font-size: 1.6rem; font-weight: var(--h-weight); margin-top: 0.5rem; }
+.fc .meaning { margin: 0.6rem 0 0.15rem; font-size: 1.4rem; font-weight: 600; }
+.fc .forms { font-size: 0.875rem; color: var(--muted); }
+.fc .ex { margin-top: 0.8rem; padding: 0.6rem 0.8rem; background: var(--canvas); border-radius: 0.75rem; font-size: 0.9375rem; }
+.fc .ctx { margin-top: 0.5rem; padding: 0.6rem 0.8rem; background: var(--accent-soft); border-radius: 0.75rem; font-size: 0.9375rem; }
+.fc .ex b, .fc .ctx b { color: var(--primary); }
+.study-bottom { padding: 0.75rem 1.1rem 1.1rem; display: grid; gap: 0.6rem; }
+.answer { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; }
+.answer .btn { min-height: 3.75rem; line-height: 1.2; text-align: center; padding: 0.3rem 0.5rem; }
+.study .hint { color: inherit; opacity: 0.8; text-align: center; }
+
+/* Word page */
+.wp-word { margin: 0; font-size: 2.1rem; font-weight: var(--h-weight); letter-spacing: -0.02em; }
+.forms-line { margin-top: 0.15rem; font-size: 0.9375rem; color: var(--muted); }
+.link { color: var(--primary); font-weight: 600; text-decoration: underline; text-underline-offset: 0.2em; cursor: pointer; }
+.forms-line .link { display: inline-block; padding: 0.35rem 0.1rem; }
+.pos-block { margin-top: 1rem; }
+.pos-head { display: flex; gap: 0.5rem; align-items: baseline; font-size: 0.875rem; color: var(--muted); border-bottom: 2px solid var(--primary-soft); padding-bottom: 0.3rem; }
+.pos-head b { color: var(--ink); font-size: 1rem; }
+.sense { display: flex; gap: 0.75rem; align-items: center; padding: 0.6rem 0; border-bottom: 1px solid var(--border); }
+.sense .txt { flex: 1; }
+.sense .ex { font-size: 0.875rem; color: var(--muted); margin-top: 0.15rem; }
+.addbtn { width: var(--tap); height: var(--tap); flex: none; border-radius: 0.875rem; border: 0; background: var(--primary-soft); color: var(--primary); font-size: 1.4rem; cursor: pointer; }
+.learning { margin-top: 0.35rem; font-size: 0.8125rem; color: var(--success); }
+
+.field { display: block; margin-top: 0.8rem; }
+.field span { display: block; font-size: 0.8125rem; color: var(--muted); margin-bottom: 0.3rem; }
+.input { width: 100%; min-height: 3rem; padding: 0 0.9rem; border-radius: 0.8rem; border: 1.5px solid var(--border-strong); background: var(--surface); }
+.input::placeholder { color: var(--placeholder); }
+.search { display: flex; gap: 0.5rem; }
+.chips { display: flex; gap: 0.45rem; margin: 0.75rem -1.1rem 0; padding: 0 1.1rem 0.25rem; overflow-x: auto; scrollbar-width: none; }
+.chip { flex: none; min-height: var(--tap); border: 1.5px solid var(--border-strong); background: var(--surface); border-radius: 999px; padding: 0 0.95rem; font-size: 0.875rem; cursor: pointer; }
+.chip[aria-pressed="true"] { background: var(--ink); color: #fff; border-color: var(--ink); }
+
+.scrim { position: absolute; inset: 0; background: rgb(15 26 61 / 0.45); display: flex; align-items: flex-end; z-index: 10; animation: fade var(--d-base) var(--ease-standard); }
+@keyframes fade { from { opacity: 0; } }
+.sheet { width: 100%; max-height: 92%; overflow-y: auto; background: var(--surface); border-radius: 1.5rem 1.5rem 0 0; padding: 0.5rem 1.1rem 1.25rem; animation: up var(--d-base) var(--ease-enter); }
+.sheet .handle { width: 2.5rem; height: 0.3rem; border-radius: 1rem; background: var(--border-strong); margin: 0.25rem auto 0.75rem; opacity: 0.6; }
+@keyframes up { from { transform: translateY(2rem); opacity: 0; } }
+.sheet h2 { margin: 0; font-size: 1.2rem; font-weight: var(--h-weight); }
+.sheet .sheet-actions { display: grid; gap: 0.6rem; margin-top: 1rem; }
+@container (min-width: 760px) { .scrim { align-items: center; justify-content: center; } .sheet { width: 30rem; border-radius: 1.5rem; } .sheet .handle { display: none; } }
+.menu { position: absolute; top: 3.3rem; right: 0.6rem; z-index: 9; background: var(--surface); color: var(--ink); border-radius: 1rem; padding: 0.35rem; box-shadow: 0 0.6rem 1.5rem rgb(15 26 61 / 0.18); min-width: 12rem; animation: fade var(--d-fast) var(--ease-standard); }
+.menu button { display: block; width: 100%; text-align: left; min-height: var(--tap); padding: 0 0.8rem; border: 0; background: transparent; border-radius: 0.7rem; cursor: pointer; }
+.menu button:hover { background: var(--canvas); }
+.toast { position: absolute; left: 50%; bottom: 6rem; transform: translateX(-50%); background: var(--ink); color: #fff; padding: 0.7rem 1rem; border-radius: 0.8rem; font-size: 0.875rem; z-index: 20; animation: up var(--d-slow) var(--ease-spring); white-space: nowrap; }
+
+.switch { position: relative; width: 3.25rem; height: 2rem; border-radius: 1rem; border: 0; background: var(--border-strong); cursor: pointer; flex: none; }
+.switch::after { content: ''; position: absolute; top: 0.25rem; left: 0.25rem; width: 1.5rem; height: 1.5rem; border-radius: 50%; background: #fff; transition: transform var(--d-fast) var(--ease-standard); }
+.switch[aria-checked="true"] { background: var(--success); }
+.switch[aria-checked="true"]::after { transform: translateX(1.25rem); }
+.seg { display: inline-flex; background: var(--canvas); border-radius: 0.9rem; padding: 0.2rem; }
+.seg button { min-height: 2.5rem; border: 0; background: transparent; padding: 0 0.9rem; border-radius: 0.7rem; cursor: pointer; font-weight: 500; }
+.seg button[aria-pressed="true"] { background: var(--surface); box-shadow: 0 1px 0 var(--border); font-weight: 600; }
+.setrow { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; min-height: 3.5rem; }
+.check { width: 1.4rem; height: 1.4rem; accent-color: var(--primary); }
+.checkwrap { width: var(--tap); height: var(--tap); display: inline-flex; align-items: center; justify-content: center; flex: none; }
+.done-big { font-size: 2rem; font-weight: var(--h-weight); margin: 0.5rem 0 0.25rem; text-align: center; }
+.stats { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; margin-top: 1rem; width: 100%; max-width: 26rem; }
+.stat { border-radius: 1rem; padding: 0.9rem; }
+.stat b { display: block; font-size: 1.6rem; }
+.note-box { margin: 1rem auto 0; max-width: 60rem; padding: 0 1rem; color: #3a4467; font-size: 0.875rem; }
+</style>
+</head>
+<body>
+<div class="toolbar" role="toolbar" aria-label="Điều khiển mockup">
+  <div class="grp"><span class="lbl">Style:</span>
+    <button data-style="s-energy" aria-pressed="true">1. Năng lượng</button>
+    <button data-style="s-calm" aria-pressed="false">2. Tập trung</button>
+  </div>
+  <div class="grp"><span class="lbl">Khung:</span>
+    <button data-frame="phone" aria-pressed="true">Điện thoại 390</button>
+    <button data-frame="wide" aria-pressed="false">Màn rộng</button>
+  </div>
+  <div class="grp"><span class="lbl">Màn:</span>
+    <button data-jump="onboard">Chọn ngôn ngữ</button>
+    <button data-jump="home">Nhóm</button>
+    <button data-jump="group">Trang nhóm</button>
+    <button data-jump="session">Phiên ôn</button>
+    <button data-jump="backlog">Cân nhắc</button>
+    <button data-jump="search">Tra từ</button>
+    <button data-jump="word-left">Trang từ</button>
+    <button data-jump="quick">Thêm từ</button>
+    <button data-jump="settings">Cài đặt</button>
+  </div>
+</div>
+<div class="stage"><div id="frame" class="frame s-energy" aria-live="polite"></div></div>
+<p class="note-box">Mockup v2 (tĩnh, dữ liệu là ví dụ). So với v1: thanh tab chỉ để điều hướng (3 mục), "Thêm từ" thành nút nổi, phiên ôn chiếm cả màn hình, nút chính nằm ở đáy, vùng chạm ≥ 2,75rem.</p>
+<script>
+const S = { screen: 'home', card: 0, flipped: false, results: { known: 0, review: 0 }, sheet: null, menu: false, toast: '', word: 'left',
+  remind: true, lang: 'vi', filters: ['A2', 'Ẩm thực'], picked: new Set(['b1', 'b2']), studyFrom: 'group' };
+const GROUPS = [
+  { id: 'cn', name: 'Công nghệ', pri: 2, due: 5, neu: 3, old: 0, total: 10 },
+  { id: 'ielts', name: 'IELTS', pri: 0, due: 12, neu: 0, old: 40, total: 12 },
+  { id: 'new', name: 'Mới thêm', pri: 0, due: 0, neu: 3, old: 0, total: 3, isDefault: true },
+  { id: 'food', name: 'Ẩm thực A2', pri: 0, due: 0, neu: 0, old: 0, total: 0, doneToday: true },
+];
+const GROUP_WORDS = [
+  { w: 'deploy', m: 'triển khai', lv: 1, tag: 'pri', when: 'hôm nay' },
+  { w: 'negotiate', m: 'đàm phán', lv: 2, tag: 'due', when: 'hôm nay' },
+  { w: 'bandwidth', m: 'băng thông', lv: 3, tag: 'due', when: 'quá hạn 2 ngày' },
+  { w: 'revenue', m: 'doanh thu', lv: 0, tag: 'new', when: 'mới' },
+  { w: 'budget', m: 'ngân sách', lv: 4, tag: 'ok', when: 'hẹn 22/11' },
+  { w: 'leaves', m: 'số nhiều của leaf', lv: 2, tag: 'ok', when: 'hẹn 19/11' },
+];
+const CARDS = [
+  { w: 'deploy', pos: 'verb', lv: 'B2', tag: 'Ưu tiên', m: 'triển khai', forms: 'deploys · deploying · deployed', ex: 'They <b>deploy</b> updates every week.', ctx: 'We <b>deploy</b> the app every Friday.' },
+  { w: 'negotiate', pos: 'verb', lv: 'B1', tag: 'Đến hạn', m: 'đàm phán, thương lượng', forms: 'negotiates · negotiating · negotiated', ex: 'We need to <b>negotiate</b> a better price.' },
+  { w: 'went', pos: 'verb', lv: 'A1 · theo go', tag: 'Đến hạn', m: 'quá khứ của <span class="link" data-word="go">go</span>', ex: 'She <b>went</b> home early.', ctx: 'I <b>went</b> to the bank yesterday.' },
+  { w: 'revenue', pos: 'noun', lv: 'B2', tag: 'Mới', m: 'doanh thu', forms: 'revenues', ex: 'Our <b>revenue</b> grew by 20%.' },
+];
+const BACKLOG = [
+  { id: 'b1', w: 'abolish', m: 'bãi bỏ', last: 'quá hạn 74 ngày' },
+  { id: 'b2', w: 'curriculum', m: 'chương trình học', last: 'quá hạn 67 ngày' },
+  { id: 'b3', w: 'scholarship', m: 'học bổng', last: 'quá hạn 65 ngày' },
+  { id: 'b4', w: 'thesis', m: 'luận văn', last: 'quá hạn 63 ngày' },
+];
+const WORDS = {
+  left: { forms: null, blocks: [
+    { pos: 'adjective', lv: 'A1', senses: [{ m: 'bên trái', ex: 'Raise your left hand.' }] },
+    { pos: 'adverb', lv: 'A2', senses: [{ m: 'về phía bên trái', ex: 'Turn left at the corner.', learning: 'Đang học · IELTS · mức 2 · hẹn 19/11' }] },
+    { pos: 'noun', lv: 'A2', senses: [{ m: 'phía bên trái', ex: 'Keep to the left.' }] },
+    { pos: 'verb', lv: 'A1 · theo leave', senses: [{ m: 'quá khứ và phân từ của ', ref: 'leave', ex: 'She left an hour ago.' }] } ] },
+  leave: { forms: ['leaves', 'leaving', 'left', 'left'], blocks: [
+    { pos: 'verb', lv: 'A1', senses: [{ m: 'rời đi', ex: 'I leave work at six.' }, { m: 'để lại', ex: 'Leave your bag here.' }] },
+    { pos: 'noun', lv: 'B1', senses: [{ m: 'kỳ nghỉ phép', ex: 'She is on maternity leave.' }] } ] },
+  go: { forms: ['goes', 'going', 'went', 'gone'], blocks: [
+    { pos: 'verb', lv: 'A1', senses: [{ m: 'đi', ex: 'Let’s go home.', learning: 'Đang học · Mới thêm · mức 0 (mới)' }, { m: 'trở nên', ex: 'The milk went sour.' }] } ] },
+  deploy: { forms: ['deploys', 'deploying', 'deployed', 'deployed'], blocks: [
+    { pos: 'verb', lv: 'B2', senses: [{ m: 'triển khai (phần mềm, lực lượng)', ex: 'We deploy the app every Friday.' }] } ] },
+  went: { forms: null, blocks: [
+    { pos: 'verb', lv: 'A1 · theo go', senses: [{ m: 'quá khứ của ', ref: 'go', ex: 'She went home early.' }] } ] },
+};
+const RESULTS = [
+  { w: 'bread', pos: 'noun', m: 'bánh mì' }, { w: 'cook', pos: 'verb', m: 'nấu ăn' },
+  { w: 'delicious', pos: 'adjective', m: 'ngon' }, { w: 'menu', pos: 'noun', m: 'thực đơn' }, { w: 'recipe', pos: 'noun', m: 'công thức nấu ăn' },
+];
+const TABS = [['home', '▦', 'Nhóm'], ['search', '⌕', 'Tra từ'], ['settings', '⚙', 'Cài đặt']];
+
+const $frame = document.getElementById('frame');
+function tagPill(t) { return t === 'pri' ? '<span class="pill p-pri">Ưu tiên</span>' : t === 'due' ? '<span class="pill p-due">Đến hạn</span>' : t === 'new' ? '<span class="pill p-new">Mới</span>' : '<span class="pill p-ok">Chưa tới hạn</span>'; }
+function tabbar(active) {
+  return `<nav class="tabbar" aria-label="Điều hướng chính"><div class="side-logo"><span class="logo-mark">_ _</span> Wordmet</div>${TABS.map(([id, ic, label]) =>
+    `<button class="tab" data-go="${id}" ${active === id ? 'aria-current="page"' : ''}><span class="ic" aria-hidden="true">${ic}</span>${label}</button>`).join('')}</nav>`;
+}
+const FAB = '<button class="fab" data-sheet="quick" aria-label="Thêm từ"><span class="plus" aria-hidden="true">＋</span>Thêm từ</button>';
+// Top-level screen: compact bar + large title. Child screen: back arrow + title (+ optional menu).
+function topbar(title, sub) { return `<div class="appbar"><span style="padding-left:0.6rem" class="logo-mark" aria-hidden="true">_ _</span><span class="title"></span></div><div class="bigtitle"><h1>${title}</h1>${sub ? `<div class="sub">${sub}</div>` : ''}</div>`; }
+function child(title, back, menu) { return `<div class="appbar"><button class="iconbtn" data-go="${back}" aria-label="Quay lại">←</button><span class="title">${title}</span>${menu ? '<button class="iconbtn" data-menu="1" aria-label="Thêm thao tác">⋯</button>' : ''}</div>`; }
+function shell(active, head, inner, extra = '') { return `<div class="frame-inner">${tabbar(active)}<div class="app">${head}<main class="content">${inner}</main>${extra}</div></div>`; }
+
+const SCREENS = {
+  onboard() {
+    return `<div class="app"><div class="appbar"><span style="padding-left:0.6rem" class="logo-mark">_ _</span></div><div class="bigtitle"><h1>Chào mừng bạn</h1><div class="sub">Chỉ hỏi một lần</div></div>
+    <main class="content"><p style="margin:0.25rem 0 0;font-size:1.2rem;font-weight:600">Bạn muốn xem nghĩa bằng ngôn ngữ nào?</p>
+    <p class="hint">Cũng là ngôn ngữ giao diện. Đổi được trong Cài đặt. Múi giờ lấy tự động theo thiết bị.</p></main>
+    <div class="actionbar"><button class="btn btn-main btn-lg" data-go="home">Tiếng Việt</button><button class="btn btn-sec btn-lg" data-go="home">English</button></div></div>`;
+  },
+  home() {
+    const cards = GROUPS.map((g) => `<div class="panel group"><button class="body" data-group="${g.id}"><h3>${g.name}${g.isDefault ? ' <span class="hint">· mặc định</span>' : ''}</h3>
+      <div class="meta">${g.pri ? `<span class="pill p-pri">${g.pri} ưu tiên</span>` : ''}${g.due ? `<span class="pill p-due">${g.due} đến hạn</span>` : ''}${g.neu ? `<span class="pill p-new">${g.neu} mới</span>` : ''}${g.doneToday ? '<span class="pill p-ok">Xong hôm nay</span>' : ''}</div>
+      ${g.old ? `<div class="notice">${g.old} từ lâu chưa ôn</div>` : ''}</button>
+      ${g.total ? `<button class="btn btn-main go" data-start="home" aria-label="Ôn ${g.total} từ nhóm ${g.name}">Ôn ${g.total}</button>` : ''}</div>`).join('');
+    return shell('home', topbar('Nhóm của bạn', 'Hôm nay có 25 từ cần ôn trong 3 nhóm'),
+      `<div class="cols">${cards}</div><button class="btn btn-text" style="padding:0" data-toast="Tạo nhóm (mockup)">+ Tạo nhóm mới</button>`, FAB);
+  },
+  group() {
+    const rows = GROUP_WORDS.map((x) => `<li><div class="grow"><div class="w">${x.w}</div><div class="m">${x.m}</div></div>
+      <div style="text-align:right">${tagPill(x.tag)}<div class="hint">mức ${x.lv} · ${x.when}</div></div></li>`).join('');
+    const menu = S.menu ? `<div class="menu" role="menu"><button role="menuitem" data-toast="Đổi tên (mockup)">Đổi tên nhóm</button><button role="menuitem" data-sheet="addto">Thêm từ vào nhóm</button><button role="menuitem" style="color:var(--danger)" data-sheet="delete">Xóa nhóm…</button></div>` : '';
+    return shell('home', child('Công nghệ', 'home', true) + menu,
+      `<div class="meta" style="display:flex;gap:0.35rem;flex-wrap:wrap"><span class="pill p-pri">2 ưu tiên</span><span class="pill p-due">5 đến hạn</span><span class="pill p-new">3 mới</span></div>
+      <p class="hint" style="margin:0.5rem 0 0">Hôm nay còn tối đa 20 từ mới và 100 từ ôn; từ ưu tiên không tính vào trần.</p>
+      <div class="section-title">18 từ trong nhóm</div><ul class="list">${rows}</ul>`,
+      `<div class="actionbar"><button class="btn btn-main btn-lg" data-start="group">Ôn ngay · 10 từ</button><button class="btn btn-text" data-start="group">Học tất cả 18 từ</button></div>`);
+  },
+  backlog() {
+    const rows = BACKLOG.map((x) => `<li><label class="checkwrap"><input type="checkbox" class="check" data-pick="${x.id}" ${S.picked.has(x.id) ? 'checked' : ''} aria-label="Chọn ${x.w}"></label><div class="grow"><div class="w">${x.w}</div><div class="m">${x.m} · ${x.last}</div></div></li>`).join('');
+    return shell('home', child('IELTS · lâu chưa ôn', 'home'),
+      `<p style="margin:0;font-weight:600">40 từ quá hạn hơn 60 ngày</p><p class="hint" style="margin:0.25rem 0 0">Đã tạm rời khỏi danh sách cần ôn. Học lại thì về mức 0 (tối đa 20 từ mới mỗi ngày); hoặc bỏ khỏi việc học; hoặc cứ để đó.</p>
+      <div class="row" style="justify-content:space-between;margin-top:0.5rem"><span class="hint">Đã chọn ${S.picked.size}</span><button class="btn btn-text" data-pickall="1">Chọn tất cả</button></div>
+      <ul class="list">${rows}</ul>`,
+      `<div class="actionbar" style="grid-template-columns:1fr 1fr"><button class="btn btn-main btn-lg" data-toast="Đã đưa ${S.picked.size} từ về mức 0">Học lại</button><button class="btn btn-sec btn-lg" style="color:var(--danger)" data-toast="Đã bỏ ${S.picked.size} từ khỏi việc học">Bỏ</button></div>`);
+  },
+  search() {
+    const f = ['A1', 'A2', 'B1', 'B2', 'Ẩm thực', 'Công nghệ', 'noun', 'verb', 'Từ của tôi'];
+    const rows = RESULTS.map((r) => `<li data-word="left" style="cursor:pointer"><div class="grow"><div class="w">${r.w} <span class="hint">${r.pos}</span></div><div class="m">${r.m}</div></div><span aria-hidden="true" class="hint">›</span></li>`).join('');
+    return shell('search', topbar('Tra từ'),
+      `<div class="search"><input class="input" placeholder="Tìm từ, ví dụ left" aria-label="Tìm từ"><button class="btn btn-main" data-word="left">Tìm</button></div>
+      <div class="chips" role="group" aria-label="Lọc">${f.map((x) => `<button class="chip" data-filter="${x}" aria-pressed="${S.filters.includes(x)}">${x}</button>`).join('')}</div>
+      <div class="row" style="justify-content:space-between;margin-top:0.75rem"><span class="hint">40 từ · bỏ qua 3 từ chức năng</span><button class="btn btn-text" style="padding:0" data-sheet="bulk">Thêm cả 40 từ…</button></div>
+      <ul class="list">${rows}</ul><p class="hint">… 35 từ nữa</p>`, FAB);
+  },
+  word() {
+    const d = WORDS[S.word] || WORDS.left;
+    const forms = d.forms ? `<div class="forms-line">${d.forms.map((f) => WORDS[f] ? `<span class="link" data-word="${f}">${f}</span>` : f).join(' · ')}</div>` : '';
+    const blocks = d.blocks.map((b) => `<div class="pos-block"><div class="pos-head"><b>${b.pos}</b><span>${b.lv}</span></div>${b.senses.map((s) => `<div class="sense"><div class="txt"><div>${s.m}${s.ref ? `<span class="link" data-word="${s.ref}">${s.ref}</span>` : ''}</div><div class="ex">${s.ex}</div>${s.learning ? `<div class="learning">✓ ${s.learning}<br><span class="link" data-sheet="ctx">Thêm câu đã gặp</span></div>` : ''}</div>
+      ${s.learning ? '' : `<button class="addbtn" data-sheet="addto" aria-label="Thêm nghĩa này vào nhóm">＋</button>`}</div>`).join('')}</div>`).join('');
+    return shell('search', child(S.word, 'search'), `<h2 class="wp-word">${S.word}</h2>${forms}${blocks}`);
+  },
+  settings() {
+    return shell('settings', topbar('Cài đặt'), `<div class="panel"><div class="setrow"><div><b>Ngôn ngữ</b><div class="hint">Nghĩa và giao diện</div></div>
+      <div class="seg"><button aria-pressed="${S.lang === 'vi'}" data-lang="vi">Việt</button><button aria-pressed="${S.lang === 'en'}" data-lang="en">English</button></div></div></div>
+      <div class="panel" style="margin-top:0.75rem"><div class="setrow"><div><b>Nhắc học qua email</b><div class="hint">20:00 theo giờ của bạn, chỉ khi có từ cần ôn</div></div>
+      <button class="switch" role="switch" aria-checked="${S.remind}" data-remind="1" aria-label="Nhắc học qua email"></button></div></div>
+      <div class="panel" style="margin-top:0.75rem"><div class="setrow"><div><b>Múi giờ</b><div class="hint">Asia/Ho_Chi_Minh · tự theo thiết bị</div></div></div></div>
+      <div class="panel" style="margin-top:0.75rem"><div class="setrow"><div><b>Tài khoản</b><div class="hint">lan@example.com</div></div><button class="btn btn-sec">Đăng xuất</button></div></div>`);
+  },
+};
+
+function study() {
+  if (S.card >= CARDS.length) {
+    return `<div class="study" role="dialog" aria-label="Kết thúc phiên ôn"><div class="study-top"><button class="iconbtn" data-endstudy="1" aria-label="Đóng">✕</button><div class="bar"><span style="width:100%"></span></div><span class="count">${CARDS.length}/${CARDS.length}</span></div>
+      <div class="study-mid" style="flex-direction:column"><div class="done-big">Xong phiên ôn</div><p class="hint">Nhóm Công nghệ · ${CARDS.length} thẻ</p>
+      <div class="stats"><div class="stat" style="background:var(--success-soft);color:var(--success)"><b>${S.results.known}</b>Đã biết</div><div class="stat" style="background:var(--accent-soft);color:var(--warning)"><b>${S.results.review}</b>Cần ôn tập</div></div>
+      <p class="hint" style="margin-top:1rem;max-width:22rem">Từ "Cần ôn tập" về mức 1, nằm đầu danh sách của nhóm. Ngày mai có 4 từ đến hạn.</p></div>
+      <div class="study-bottom"><button class="btn btn-main btn-lg" data-endstudy="1">Xong</button>${S.results.review ? '<button class="btn btn-text" style="color:inherit" data-start="again">Ôn lại từ ưu tiên ngay</button>' : ''}</div></div>`;
+  }
+  const c = CARDS[S.card];
+  const pct = Math.round((S.card / CARDS.length) * 100);
+  const front = `<div class="top"><span class="pill ${c.tag === 'Ưu tiên' ? 'p-pri' : c.tag === 'Mới' ? 'p-new' : 'p-due'}">${c.tag}</span><span>${c.lv}</span></div><div class="front"><div class="word">${c.w}</div><div class="pos">${c.pos}</div></div>`;
+  const back = `<div class="top"><span class="pill p-due">${c.pos}</span><span>${c.lv}</span></div><div class="wsmall">${c.w}</div><div class="back"><div class="meaning">${c.m}</div>${c.forms ? `<div class="forms">${c.forms}</div>` : ''}<div class="ex">${c.ex}</div>${c.ctx ? `<div class="ctx"><span class="hint" style="color:var(--muted)">Câu bạn đã gặp</span><br>${c.ctx}</div>` : ''}</div>`;
+  return `<div class="study" role="dialog" aria-label="Phiên ôn nhóm Công nghệ"><div class="study-top"><button class="iconbtn" data-endstudy="1" aria-label="Thoát phiên ôn">✕</button><div class="bar" aria-hidden="true"><span style="width:${pct}%"></span></div><span class="count">${S.card + 1}/${CARDS.length}</span></div>
+    <div class="study-mid"><div class="fc" data-flip="1" role="button" tabindex="0" aria-label="${S.flipped ? 'Mặt sau' : 'Lật thẻ'}">${S.flipped ? back : front}</div></div>
+    <div class="study-bottom">${S.flipped ? '<div class="answer"><button class="btn btn-review" data-answer="review">Cần ôn tập,<br>đưa vào ưu tiên</button><button class="btn btn-known" data-answer="known">Đã biết</button></div>'
+      : '<button class="btn btn-main btn-lg" data-flip="1">Lật thẻ</button><p class="hint" style="margin:0">Thử nhớ nghĩa trước rồi mới lật.</p>'}</div></div>`;
+}
+
+const SHEETS = {
+  quick() {
+    return `<h2>Thêm từ</h2><p class="hint" style="margin:0.2rem 0 0">Từ bạn vừa gặp, kèm câu (nếu có)</p>
+      <label class="field"><span>Từ</span><input class="input" value="went" aria-label="Từ"></label>
+      <label class="field"><span>Câu bạn đã gặp (tùy chọn, tối đa 300 ký tự)</span><input class="input" value="I went to the bank yesterday." aria-label="Câu đã gặp"></label>
+      <div class="panel" style="margin-top:0.9rem;background:var(--primary-soft);border:0"><b>went</b> · verb · quá khứ của <span class="link" data-word="go">go</span>
+        <div class="hint" style="margin-top:0.2rem">Catalog có trang riêng cho "went".</div></div>
+      <div class="sheet-actions"><button class="btn btn-main btn-lg" data-sheet="addto">Thêm "went" vào nhóm</button><button class="btn btn-sec" data-word="go">Xem "go" trước</button><button class="btn btn-text" data-sheet="manual">Không đúng nghĩa? Tự nhập</button></div>`;
+  },
+  manual() {
+    return `<h2>Tự nhập từ riêng</h2><p class="hint" style="margin:0.2rem 0 0">Chỉ bạn thấy từ này</p>
+      <label class="field"><span>Từ</span><input class="input" value="deployed"></label>
+      <div class="hint" style="margin-top:0.35rem">App nhận ra: quá khứ của <span class="link" data-word="deploy">deploy</span> (đã gắn sẵn)</div>
+      <label class="field"><span>Nghĩa (bắt buộc)</span><input class="input" placeholder="đã triển khai"></label>
+      <label class="field"><span>Nhóm</span><select class="input"><option>Mới thêm</option><option>Công nghệ</option><option>IELTS</option></select></label>
+      <div class="sheet-actions"><button class="btn btn-main btn-lg" data-toast="Đã lưu từ riêng vào nhóm Mới thêm">Lưu</button></div>`;
+  },
+  addto() {
+    return `<h2>Thêm vào nhóm</h2><p class="hint" style="margin:0.2rem 0 0">Từ vào ở mức 0 (mới)</p>
+      <label class="field"><span>Nhóm</span><select class="input"><option>Mới thêm</option><option>Công nghệ</option><option>IELTS</option><option>+ Tạo nhóm mới…</option></select></label>
+      <div class="sheet-actions"><button class="btn btn-main btn-lg" data-toast="Đã thêm vào nhóm Mới thêm">Thêm</button></div>`;
+  },
+  ctx() {
+    return `<h2>Thêm câu đã gặp</h2><p class="hint" style="margin:0.2rem 0 0">Tối đa 5 câu cho mỗi nghĩa · đang có 1</p>
+      <label class="field"><span>Câu</span><input class="input" placeholder="Turn left after the bridge."></label>
+      <div class="sheet-actions"><button class="btn btn-main btn-lg" data-toast="Đã lưu câu">Lưu câu</button></div>`;
+  },
+  bulk() {
+    return `<h2>Thêm cả loạt</h2><p class="hint" style="margin:0.2rem 0 0">40 từ A2 · Ẩm thực. Bỏ qua 3 từ chức năng; 2 từ đã có thì không tạo trùng.</p>
+      <label class="field"><span>Vào nhóm</span><select class="input"><option>+ Nhóm mới "Ẩm thực A2"</option><option>Mới thêm</option></select></label>
+      <p class="hint">Từ vào ở mức 0; nhóm đưa ra tối đa 20 từ mới mỗi ngày.</p>
+      <div class="sheet-actions"><button class="btn btn-main btn-lg" data-toast="Đã thêm 38 từ vào Ẩm thực A2">Thêm 38 từ</button></div>`;
+  },
+  delete() {
+    return `<h2>Xóa nhóm "Công nghệ"?</h2>
+      <div class="panel" style="margin-top:0.8rem;background:var(--danger-soft);border:0"><b>12 từ chỉ có trong nhóm này</b> sẽ bị <b>bỏ khỏi việc ôn tập</b> (mất mức và ngày hẹn).<br><span class="hint" style="color:var(--ink)">6 từ còn ở nhóm khác vẫn giữ.</span></div>
+      <div class="sheet-actions"><button class="btn btn-danger btn-lg" data-toast="Đã xóa nhóm và 12 từ" data-go="home">Xóa nhóm và 12 từ</button><button class="btn btn-sec" data-close="1">Giữ lại</button></div>`;
+  },
+};
+
+function render() {
+  let html = S.screen === 'word' ? SCREENS.word() : (SCREENS[S.screen] || SCREENS.home)();
+  if (S.studying) html += study();
+  if (S.sheet) html += `<div class="scrim"><div class="sheet" role="dialog" aria-modal="true"><div class="handle" aria-hidden="true"></div>${SHEETS[S.sheet]()}</div></div>`;
+  if (S.toast) html += `<div class="toast" role="status">${S.toast}</div>`;
+  $frame.innerHTML = html;
+}
+function go(screen) { S.sheet = null; S.menu = false; S.studying = false; S.screen = screen; render(); }
+function toast(t) { S.toast = t; render(); setTimeout(() => { S.toast = ''; render(); }, 1800); }
+function startStudy(from) { S.studying = true; S.studyFrom = from; S.card = 0; S.flipped = false; S.results = { known: 0, review: 0 }; S.sheet = null; S.menu = false; render(); }
+
+$frame.addEventListener('click', (e) => {
+  const t = e.target.closest('[data-go],[data-group],[data-start],[data-flip],[data-answer],[data-word],[data-sheet],[data-close],[data-toast],[data-filter],[data-remind],[data-lang],[data-pick],[data-pickall],[data-menu],[data-endstudy]');
+  if (e.target.classList.contains('scrim')) { S.sheet = null; render(); return; }
+  if (!t) { if (S.menu) { S.menu = false; render(); } return; }
+  if (t.dataset.pick) { S.picked.has(t.dataset.pick) ? S.picked.delete(t.dataset.pick) : S.picked.add(t.dataset.pick); render(); return; }
+  if (t.dataset.pickall) { BACKLOG.forEach((x) => S.picked.add(x.id)); render(); return; }
+  if (t.dataset.menu) { S.menu = !S.menu; render(); return; }
+  if (t.dataset.toast) { S.sheet = null; S.menu = false; if (t.dataset.go) S.screen = t.dataset.go; toast(t.dataset.toast); return; }
+  if (t.dataset.close !== undefined && (t.dataset.close || e.target === t)) { S.sheet = null; render(); return; }
+  if (t.dataset.endstudy) { S.studying = false; render(); return; }
+  if (t.dataset.group) { S.screen = t.dataset.group === 'ielts' ? 'backlog' : 'group'; S.menu = false; render(); return; }
+  if (t.dataset.start) { startStudy(t.dataset.start); return; }
+  if (t.dataset.flip) { if (!S.flipped) { S.flipped = true; render(); } return; }
+  if (t.dataset.answer) { S.results[t.dataset.answer]++; S.card++; S.flipped = false; render(); return; }
+  if (t.dataset.word) { S.sheet = null; S.studying = false; S.menu = false; S.word = WORDS[t.dataset.word] ? t.dataset.word : 'left'; S.screen = 'word'; render(); return; }
+  if (t.dataset.sheet) { S.sheet = t.dataset.sheet; S.menu = false; render(); return; }
+  if (t.dataset.filter) { const f = t.dataset.filter; S.filters = S.filters.includes(f) ? S.filters.filter((x) => x !== f) : [...S.filters, f]; render(); return; }
+  if (t.dataset.remind) { S.remind = !S.remind; render(); return; }
+  if (t.dataset.lang) { S.lang = t.dataset.lang; render(); return; }
+  if (t.dataset.go) { go(t.dataset.go); }
+});
+$frame.addEventListener('keydown', (e) => { if (e.key === 'Enter' && e.target.dataset && e.target.dataset.flip && !S.flipped) { S.flipped = true; render(); } });
+
+document.querySelector('.toolbar').addEventListener('click', (e) => {
+  const b = e.target.closest('button'); if (!b) return;
+  if (b.dataset.style) { $frame.classList.remove('s-energy', 's-calm'); $frame.classList.add(b.dataset.style);
+    document.querySelectorAll('[data-style]').forEach((x) => x.setAttribute('aria-pressed', x === b)); }
+  if (b.dataset.frame) { $frame.classList.toggle('wide', b.dataset.frame === 'wide');
+    document.querySelectorAll('[data-frame]').forEach((x) => x.setAttribute('aria-pressed', x === b)); }
+  if (b.dataset.jump) { const j = b.dataset.jump;
+    if (j === 'word-left') { S.word = 'left'; go('word'); }
+    else if (j === 'quick') { go('home'); S.sheet = 'quick'; render(); }
+    else if (j === 'session') { go('group'); startStudy('group'); }
+    else go(j); }
+});
+render();
+</script>
+</body>
+</html>

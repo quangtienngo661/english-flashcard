@@ -43,7 +43,7 @@ describe('profile and IdentityService (e2e)', () => {
     const res = await patch({ native_language: 'en' });
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ id: userId, email, email_verified: false, native_language: 'en',
-      timezone: 'Asia/Ho_Chi_Minh', staff_role: null, permissions: [] });
+      timezone: 'Asia/Ho_Chi_Minh', staff_role: null, permissions: [], must_change_password: false });
     expect((await account()).nativeLanguage).toBe('en');
     expect((await get()).body).toEqual(res.body);
   });
@@ -58,14 +58,22 @@ describe('profile and IdentityService (e2e)', () => {
     expect(await identity.isEmailVerified(userId)).toBe(true);
     expect(await identity.getProfile(userId)).toMatchObject({ email_verified: true });
   });
-  it('B1#25: getProfile has null native_language for a new learner and roles.manage for a stored admin', async () => {
+  it('B2#67/B1#25: getProfile and GET /me return all four content permissions for admin and editor, with learner defaults intact', async () => {
     const profile = { id: userId, email, email_verified: false, native_language: null,
-      timezone: 'Asia/Ho_Chi_Minh', staff_role: null, permissions: [] };
+      timezone: 'Asia/Ho_Chi_Minh', staff_role: null, permissions: [], must_change_password: false };
     expect(await identity.getProfile(userId)).toEqual(profile);
     expect((await get()).body).toEqual(profile);
-    const admin = await seedUser(ctx.prisma, { verified: true, staffRole: 'admin' });
-    expect(await identity.getProfile(admin.userId)).toEqual({ ...profile, id: admin.userId, email: admin.email,
-      email_verified: true, staff_role: 'admin', permissions: ['roles.manage'] });
+    for (const staffRole of ['admin', 'editor'] as const) {
+      const staff = await seedUser(ctx.prisma, { verified: true, staffRole });
+      const expected = { ...profile, id: staff.userId, email: staff.email, email_verified: true, staff_role: staffRole,
+        permissions: [...(staffRole === 'admin' ? ['roles.manage'] : []),
+          'content.edit', 'content.publish', 'content.import', 'taxonomy.manage',
+          ...(staffRole === 'admin' ? ['settings.manage'] : [])] };
+      expect(await identity.getProfile(staff.userId)).toEqual(expected);
+      const access = (await startSession(ctx, staff.userId)).accessToken;
+      const res = await ctx.http().get('/v1/me').set('Authorization', `Bearer ${access}`);
+      expect(res.status).toBe(200); expect(res.body).toEqual(expected);
+    }
   });
   it('B1#25: a valid token whose user is deleted returns 401 instead of 500 (Review Focus #5)', async () => {
     await ctx.prisma.user.delete({ where: { id: userId } });
