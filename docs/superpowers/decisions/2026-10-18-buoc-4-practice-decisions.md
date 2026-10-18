@@ -58,6 +58,7 @@ ghi những chỗ Claude đề xuất trước khi chủ dự án trả lời.
 | D34 | Trắc nghiệm theo câu ví dụ (kiểu B) và D6 (sau review) | Bỏ ở Bước 4, giữ kiểu B cho gõ từ; trắc nghiệm theo câu để Bước 7 (AI kiểm đáp án nhiễu) | Chủ dự án theo đề xuất của Claude (chủ dự án "chưa có idea cụ thể") |
 | D35 | Bấm từ bài luyện và trần mỗi ngày (sau review) | Không tính vào trần; trần từ ôn mỗi nhóm cho phép để trống = không giới hạn (mặc định 100); trần từ mới bắt buộc | Chủ dự án (để trống: ý của chủ dự án; không tính trần và giữ trần từ mới: đề xuất của Claude) |
 | D36 | Báo lỗi câu có từ riêng (sau review) | Câu hỏi chính là từ riêng: không có nút báo lỗi; câu từ catalog có từ riêng: vẫn báo được, bản sao che từ riêng | Đề xuất của Claude (chủ dự án nhờ: "bạn recommend đi") |
+| D37 | Nhãn ngữ cảnh ở bài đúng/sai (trong lúc implement) | Không hiện nhãn ở cả cặp đúng lẫn cặp sai; trắc nghiệm, gõ từ giữ nhãn | Chủ dự án (Claude đồng ý sau khi chủ dự án trả lời) |
 
 ## D1 — Brainstorm Bước 4 khi Bước 3 chưa xong
 
@@ -396,6 +397,23 @@ luật "chỉ chủ thấy" của Bước 3 (design Bước 3 mục 7.2, spec C8
 nghĩ tới người học khác, chưa văn bản nào nói riêng về staff. Chủ dự án: "bạn recommend đi". Claude đề xuất phương án kết hợp, kèm hướng
 khác là "thấy hết + ngoại lệ". ✅ Chủ dự án: "Ok, chốt R5 theo đề xuất". Cách làm: cờ `reportable = false` cho câu hỏi chính là từ riêng;
 bản sao che chữ bằng "[từ riêng của người học]" và che nghĩa bằng "[nghĩa của từ riêng]" lúc tạo báo cáo.
+
+## D37 — Nhãn ngữ cảnh ở bài đúng/sai (trong lúc implement, 18/10)
+
+Phiên implement luồng D hỏi ở Task 13: `Prompt` của đúng/sai có `context_label`; cặp đúng dùng nghĩa của từ đang hỏi, cặp sai mượn nghĩa
+của một ứng viên, mà dữ liệu ứng viên (`CandidateSense`, Task 6) không có nhãn. Nếu cặp đúng có nhãn còn cặp sai không thì nhìn nhãn là
+đoán được đáp án. Plan và design chưa quyết. Phiên điều phối hỏi chủ dự án theo D27 (bối cảnh, không đề xuất trước), kèm ví dụ `deploy`
+(nhãn "phần mềm", nghĩa "triển khai") và cặp sai mượn "giao hàng" của `deliver`.
+
+| Phương án đưa ra trong chat | Trade-off |
+|---|---|
+| (a) Cả hai cặp hiện nhãn của từ đang hỏi | Nhìn nhãn không đoán được; cặp sai ghép nhãn của nghĩa này với nghĩa của từ khác ("giao hàng (phần mềm)"); không sửa Content |
+| (b) Mỗi cặp hiện nhãn của chính nghĩa được ghép | Đúng nhãn từng nghĩa; vẫn lộ khi hai nhãn khác nhau (người học đã thấy "deploy (phần mềm)" ở flashcard); phải thêm nhãn vào `CandidateSense` (file của luồng C) |
+| ✅ (c) Đúng/sai không hiện nhãn | Không lộ, không sửa Content; dạng đúng/sai không bao giờ có nhãn, trắc nghiệm và gõ từ vẫn có |
+
+Chủ dự án xin xem ví dụ hai lần (lần đầu ví dụ nằm ngoài khung câu hỏi nên không thấy), rồi chọn (c). Claude đề xuất cùng (c): đúng/sai
+chỉ hỏi "nghĩa này có phải của từ này không", ứng viên không bao giờ cùng chữ với từ hỏi nên nhãn không giúp phân biệt; (a) ghép sai nhãn,
+(b) vẫn lộ. ✅ Chốt (c). Design mục 7.5.
 
 ## Đề xuất kỹ thuật được duyệt cùng design
 
