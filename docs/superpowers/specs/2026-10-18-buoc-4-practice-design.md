@@ -11,6 +11,11 @@
 >
 > **Cập nhật tối 18/10/2026, trong lúc implement:** D37 (đúng/sai không hiện nhãn ngữ cảnh, mục 7.5); D38–D42 (bỏ e2e backend, "Xong khi"
 > mới, chấp nhận thời gian mở phiên ở mức lớn nhất, kiểm migration trên CI, giữ `admin-e2e-real`, phép đo tải chạy tay; mục 14, 16).
+>
+> **As-built 18/10/2026:** đã implement (PR #49, #51, #50, #48, #52, #55, #54, PR R #57 bỏ e2e, PR F smoke + as-built). Hồ sơ:
+> [`../../deliveries/buoc-4.md`](../../deliveries/buoc-4.md). Chỗ code khác chữ của design: bốn mã lỗi plan thêm (bảng mã lỗi mục 6), gợi ý
+> nấc 1 bằng câu ví dụ dùng luật khớp của 7.4b (mục 7.7), số đo thời gian mở phiên (mục 16). Bước kiểm migration của D40 so database CI vừa
+> migrate với schema (`--from-config-datasource`), không dùng shadow database (hồ sơ as-built ghi lý do).
 
 Ngày: 17–18/10/2026. Brainstorm qua `superpowers:brainstorming` trên nhánh `docs/buoc-4-design` (cắt từ `origin/dev` @ `c1f775d`).
 Nhật ký từng vòng hỏi đáp, kèm phân tích trạng thái trước brainstorm: [`../reviews/2026-10-17-buoc-4-readiness.md`](../reviews/2026-10-17-buoc-4-readiness.md)
@@ -314,6 +319,10 @@ nguyên.
 | `report-exists` | 409 | 13 | Lần hỏi đã được báo; kèm báo cáo cũ (B4E20) |
 | `report-not-available` | 409 | 13 | Từ đang hỏi là từ riêng (D36, B4E47) |
 | `rate-limited` | 429 | API ghi | Có sẵn, kèm `retry-after` |
+| `entitlement-required` | 403 | 1, 3 | **As-built (plan thêm):** `EntitlementsService.check` từ chối `practice.basic`; không xảy ra ở Bước 4 (luôn "được phép"), Bước 5 có thể đổi tên |
+| `report-not-open` | 409 | staff `resolve` | **As-built (plan thêm):** báo cáo đã được xử lý |
+| `item-void` | 409 | 4, 5, 5b, 6 | **As-built (plan thêm):** lần hỏi đã thành `void` ("Không tìm thấy từ này") |
+| `session-not-waiting` | 409 | 7 | **As-built (plan thêm):** `continue` khi phiên không ở `waiting_continue` |
 
 ## 7. Thuật toán
 
@@ -529,6 +538,10 @@ sai → `wrong`, hiện `deploy`. Với mặc định (để trống = không gi
 
 Nội dung gợi ý tính sẵn khi tạo câu (`hints`), chỉ gửi xuống khi người học xin. Từ riêng không có định nghĩa và câu ví dụ, nên chỉ có
 nấc 2.
+
+**As-built (18/10):** nấc 1 bằng câu ví dụ dùng **cùng luật khớp của 7.4b** (`maskExample`: phân biệt hoa thường trừ chữ đầu câu, chỉ
+nhận câu mà mọi chỗ khớp là cùng một chữ), không phải "không phân biệt hoa thường" như bảng trên; câu đầu tiên (theo thứ tự lưu) mà luật đó
+nhận được dùng làm gợi ý.
 
 ### 7.8 Nút sau mỗi câu và trang tổng kết (Chốt 18/10)
 
@@ -773,8 +786,11 @@ Thêm sau review độc lập 18/10 (Đề xuất, đã duyệt 18/10; trừ ch�
 - **Gợi ý nấc 1 bằng câu ví dụ** phụ thuộc bảng dạng chia; dạng chia sai hoặc thiếu thì có thể không che được (khi đó không có nấc 1).
 - **Các con số ASSUMPTION (⚠6).**
 - **Mở phiên "Ôn tất cả" ở mức lớn nhất chậm hơn ngưỡng** (D39): 100 nhóm × 2.000 từ, chỉ trắc nghiệm → trung vị 2.671 ms trên runner CI
-  (ngưỡng `ASSUMPTION` < 1 s, Review Focus 2 của plan). Chấp nhận ở Bước 4; đo lại bằng script đo tải (D42) trước pilot, tối ưu nếu cần
-  (giả thuyết chưa kiểm: phần đọc toàn bộ mục học của Learning).
+  (ngưỡng `ASSUMPTION` < 1 s, Review Focus 2 của plan). **Số đo as-built** (runner CI): run 39139235839 trung vị 2.835 ms
+  (`practiceItems('all')` của Learning ~2,0 s ≈ 75%, kiểm từ nào làm được dạng bài ~0,6 s, `statsFor` ≤ 3 ms, sắp xếp ~60 ms); run
+  39140676061 trung vị 1.892 ms (`practiceItems` 1,4–1,6 s, kiểm dạng bài ~0,4 s). "Từ hay sai" 6 tháng dữ liệu: 29 ms; Learning
+  `GET /v1/groups` (Review Focus 5): 227–352 ms. Chấp nhận ở Bước 4; đo lại bằng script đo tải (D42) trước pilot, tối ưu nếu cần
+  (số đo từng bước ở trên cho thấy phần đọc toàn bộ mục học của Learning chiếm phần lớn thời gian; chưa thử sửa).
 - **Không còn test tự động chạm Postgres/Redis thật cho `apps/api`** (D38): câu SQL, khóa và chạy đua (B4E1, B4E2, B4E28, B4E29), khóa
   chống trùng, rate limit, kiểm quyền mọi route admin, job nền chỉ còn được kiểm bằng smoke script, chạy tay và job `admin-e2e-real`
   (cho các luồng admin). Lỗi kiểu "worker không nhận job" của Bước 2 sẽ chỉ lộ khi chạy thật.

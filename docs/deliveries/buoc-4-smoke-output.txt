@@ -1,0 +1,66 @@
+
+[1] Wait for the API
+    ok — reachable at http://localhost:3000; database english_learning_smoke_b4
+
+[2] Register admin and learner
+    ok — admin smoke4-admin-7b1050af@example.com registered, verified, granted, logged in
+    ok — learner smoke4-learner-7b1050af@example.com registered with native_language=vi, timezone Asia/Ho_Chi_Minh
+
+[3] Import 8 verbs (gloss, short definition, example with the past form, inflections) and publish them
+    ok — batch b1b1ab2a-7a7f-49b7-8820-06fa21d65bf1: 8 created, published by job 7ec66192-639a-40af-9b25-cb27261f81f3; the learner sees all 8 with meaning and example
+
+[4] Build group A (W1–W7 + private words P, P2) and group B (W7, W8)
+    ok — group A 2e4e8fde-d004-4be3-adf7-c6b993868473 has 9 words (2 private), group B a91ee971-b5a1-46bf-97f4-081bfec767db has 2
+
+[5] Each source × each type (count 1, answered right): group A, all, today
+    ok — group × mcq_definition: W1 (mcq) → correct; session finished
+    ok — group × true_false_definition: W1 (true_false) → correct; session finished
+    ok — group × type_word: W1 (type_sentence) → correct after "try_again" on the base form; session finished
+    ok — all × mcq_definition: W2 (mcq) → correct; session finished
+    ok — all × true_false_definition: P (true_false) → correct; session finished
+    ok — all × type_word: W5 (type_sentence) → correct after "try_again" on the base form; session finished
+    ok — today × mcq_definition: W1 (mcq) → correct; session finished
+    ok — today × true_false_definition: W1 (true_false) → correct; session finished
+    ok — today × type_word: W1 (type_sentence) → correct after "try_again" on the base form; session finished
+
+[6] "Đã biết" on a right answer without hint (B4#9) and "Cần ôn tập" on another
+    ok — W1: "Đã biết" → level 1, no priority; again → same; "Cần ôn tập" after it → 409 review-already-set; W1: "Cần ôn tập" → level 1, priority, due 2026-10-19
+
+[7] Group B, typing only, 4 questions for 2 words: wrong + skip, hints, "Ôn lại" (B4#2), report, summary, review-all
+    ok — W7 (round 1): wrong → try_again (no answer shown), current shows try_again, skip → wrong, skipped
+    ok — W8 (round 1): hint 1 = short definition, hint 2 = "z" × 8 → correct, no "Đã biết"
+    ok — report 0102c144-740b-4a40-b63d-1d2b55951c62 on W8's item (stays open); a second report → 409 report-exists
+    ok — after round 1 (2 words) the session waits; "Ôn lại" → active
+    ok — W7 (round 2): wrong → try_again (no answer shown), current shows try_again, skip → wrong, skipped
+    ok — W8 (round 2): hint 1 = short definition, hint 2 = "z" × 8 → correct, no "Đã biết"
+    ok — order W7@r1, W8@r1, W7@r2, W8@r2; no word twice in a row; finished after 4
+    ok — summary: 4 asked, 2 right, 2 wrong; list = W7 (wrong) + W8 (right with hints); W7 pressed, review-all adds 1 (W8)
+
+[8] "Từ hay sai" (B4#12): W7 with 2 wrong; W8 (right only with hints) is not
+    ok — W7: wrong 2 of 2 counted, level 1
+
+[9] Each type from "Từ hay sai" and "Đang ưu tiên" (count 1, answered right)
+    ok — weak × mcq_definition: W7 → correct; finished
+    ok — weak × true_false_definition: W7 → correct; finished
+    ok — weak × type_word: W7 → correct; finished
+    ok — priority × mcq_definition: W1 → correct; finished
+    (429 on POST /v1/practice/sessions; waiting 18s)
+    ok — priority × true_false_definition: W1 → correct; finished
+    ok — priority × type_word: W1 → correct; finished
+    ok — group B, multiple choice only → 1 word (W7; W8 has no multiple choice, B4#19); true/false only → both words
+
+[10] B4#28 / B4E48 and B4#29: a private word as a chosen option is masked for staff; a private question is not reportable
+    ok — report 4abdfe25-9e1c-4fbd-80dd-db0a28b09ef3: staff response (2 rows) never contains P's word or meaning, shows "[từ riêng của người học]"; resolved no_error; second resolve → 409 report-not-open; a learner → 403
+    ok — a question on a private word: reportable=false, report → 409 report-not-available
+
+[11] History by date (B4#15) and by word
+    ok — 27 rows on 2026-10-19 (newest first), 0 on 2000-01-01, 6 for W7
+
+[12] B4E8: delete a private word while its question shows → current says "word-not-found" with the next question
+    ok — P2's question 94e9365d-cdbf-4b35-9788-5999e7fff7d6 showing; DELETE /v1/my-words → 204; current → notice word-not-found + P's question 86eda155-fcd2-41e8-b435-4ced56595854
+    ok — P2's items and questions are gone (read back with psql)
+
+[13] Cleanup: back-date group B session 7 months and leave the last session idle 25 h; run maintenance:run; read back
+    ok — group B items 4 → 0, session gone; report 0102c144-740b-4a40-b63d-1d2b55951c62 = open|null; idle session → abandoned
+
+ALL CHECKS PASSED in 37259ms (run id 7b1050af; 20 sessions, 46 answers)
