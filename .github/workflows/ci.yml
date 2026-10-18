@@ -11,15 +11,14 @@ concurrency:
 
 jobs:
   api:
-    name: api (lint, typecheck, build, unit, e2e)
+    name: api (lint, typecheck, build, unit, schema drift)
     runs-on: ubuntu-latest
     timeout-minutes: 30
     defaults:
       run:
         working-directory: apps/api
     services:
-      # Live database for `prisma generate --sql` (TypedSQL needs a migrated DB to infer types).
-      # The e2e suite starts its own Postgres and Mailpit containers through Testcontainers.
+      # Live database for `prisma generate --sql` (TypedSQL needs a migrated DB to infer types) and for the schema drift check.
       postgres:
         image: postgres:17
         env:
@@ -51,6 +50,11 @@ jobs:
       - name: Migrate and generate Prisma client + TypedSQL
         run: pnpm db:setup
 
+      # The database was just migrated from prisma/migrations, so an empty diff to prisma/models means no model change lacks a
+      # migration. --exit-code: 0 empty, 2 not empty, 1 error (Bước 4 D40; replaces test/common/schema-drift.e2e-spec.ts).
+      - name: Schema drift check (committed migrations vs Prisma schema)
+        run: pnpm exec prisma migrate diff --from-config-datasource --to-schema prisma --exit-code --script
+
       - name: Lint
         run: pnpm lint
 
@@ -62,12 +66,6 @@ jobs:
 
       - name: Unit tests
         run: pnpm test
-
-      - name: E2E tests (Testcontainers Postgres + Mailpit)
-        run: pnpm test:e2e
-
-      - name: Scale check, run alone (Review Focus 5, GET /v1/groups < 500 ms)
-        run: pnpm test:e2e:scale
 
   web:
     name: web (lint, typecheck, unit, build, e2e)

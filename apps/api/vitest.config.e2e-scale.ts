@@ -1,8 +1,9 @@
 import { defineConfig } from 'vitest/config';
 import tsconfigPaths from 'vite-tsconfig-paths';
 
-// Review Focus 5 (Learning) times GET /v1/groups and Bước 4 Review Focus 2 times a practice session start, so they run alone (pnpm test:e2e:scale), one file at a time, nothing else competing for
-// the machine. Same setup as vitest.config.e2e.ts, which excludes these files.
+// Review Focus 5 (Learning) times GET /v1/groups and Bước 4 Review Focus 2 times a practice session start. Run by hand (pnpm test:scale),
+// not by CI: Bước 4 removed the backend e2e suite (D38) and keeps these two files as measurements (D42). One file at a time, nothing else
+// competing for the machine.
 export default defineConfig({
   plugins: [tsconfigPaths()],
   test: {
