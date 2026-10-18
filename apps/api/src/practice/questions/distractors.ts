@@ -37,13 +37,14 @@ function sameMeaning(asked: QuestionWord, candidate: QuestionWord): boolean {
 
 /**
  * Drops the asked sense, the same lemma (case-insensitive), form-of links either way and a shared sub-meaning; then keeps
- * one candidate per lower-cased lemma.
+ * one candidate per lower-cased lemma. Stops once `limit` are found (availability only needs to know "enough").
  */
-export function eligibleCandidates(asked: QuestionWord, candidates: QuestionWord[]): QuestionWord[] {
+export function eligibleCandidates<T extends QuestionWord>(asked: QuestionWord, candidates: T[], limit = Infinity): T[] {
   const askedLemma = asked.lemma.toLowerCase();
   const seen = new Set<string>();
-  const result: QuestionWord[] = [];
+  const result: T[] = [];
   for (const candidate of candidates) {
+    if (result.length >= limit) break;
     const lemma = candidate.lemma.toLowerCase();
     if (candidate.sense_id === asked.sense_id || lemma === askedLemma) continue;
     if (candidate.form_of_entry_id === asked.entry_id || asked.form_of_entry_id === candidate.entry_id) continue;
@@ -64,9 +65,9 @@ export function shuffle<T>(items: T[], random: () => number): T[] {
 }
 
 /** `count` distinct candidates, preferring sense ids not in `avoid` (round ≥ 2); null when fewer than `count` exist. */
-export function pickDistractors(
-  eligible: QuestionWord[], count: number, avoid: string[], random: () => number,
-): QuestionWord[] | null {
+export function pickDistractors<T extends QuestionWord>(
+  eligible: T[], count: number, avoid: string[], random: () => number,
+): T[] | null {
   if (eligible.length < count) return null;
   const avoided = new Set(avoid);
   const fresh = shuffle(eligible.filter((w) => !avoided.has(w.sense_id)), random);

@@ -8,7 +8,7 @@ export default defineConfig({
     root: './',
     include: ['**/*.e2e-spec.ts'],
     // Timed alone by vitest.config.e2e-scale.ts (pnpm test:e2e:scale): beside 68 other files it measured the machine, not the SQL.
-    exclude: ['**/node_modules/**', 'test/learning/scale.e2e-spec.ts'],
+    exclude: ['**/node_modules/**', 'test/learning/scale.e2e-spec.ts', 'test/practice/scale.e2e-spec.ts'],
     globalSetup: ['./test/setup/postgres-global-setup.ts', './test/setup/redis-global-setup.ts'],
     // Container-backed e2e tests: module import alone took 27-75 s across the suite on 07/10 under
     // load from other local containers, so the 5 s default made a single-query test flaky.

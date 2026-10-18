@@ -34,6 +34,11 @@ describe('eligibleCandidates', () => {
     expect(result.map((w) => w.lemma)).toEqual(['delay', 'deliver']);
   });
 
+  it('limit stops the walk once that many eligible candidates are found', () => {
+    const pool = ['a', 'b', 'c', 'd'].map((l) => word(l));
+    expect(eligibleCandidates(deploy, pool, 3).map((w) => w.lemma)).toEqual(['a', 'b', 'c']);
+  });
+
   it('a base word is dropped when the asked word is its form', () => {
     const deployed = word('deployed', { gloss_vi: 'đã triển khai', form_of_entry_id: deploy.entry_id });
     expect(eligibleCandidates(deployed, [deploy])).toEqual([]);
