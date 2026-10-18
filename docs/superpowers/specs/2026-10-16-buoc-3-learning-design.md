@@ -325,7 +325,7 @@ không đụng chi phí" của D6 Bước 1). `PUT` mang `version`; hai admin c�
 | Hai email nhắc của một người cách nhau ít nhất (ngày) | 2 | 1–7 (Chốt 17/10, D44) |
 | Ngưỡng vắng: chuyển sang "lâu rồi" / dừng hẳn | 7 / 60 ngày | 3–30 / 30–180 |
 | Trần từ mới mỗi nhóm mỗi ngày | 20 | 1–100 |
-| Trần từ ôn mỗi nhóm mỗi ngày | 100 | 10–500 |
+| Trần từ ôn mỗi nhóm mỗi ngày | 100 | 10–500; **để trống = không giới hạn** (D35 của Bước 4, design Bước 4 mục 5.3–5.4) |
 | Số ngày quá hạn để vào danh sách cân nhắc | 60 | 30–365 |
 
 Ngưỡng dừng email nhắc (80% hạn mức email, 20% còn lại dành cho OTP) và các giới hạn số nhóm, số từ mỗi nhóm, số từ riêng là **hằng số trong code** ở Bước 3;
