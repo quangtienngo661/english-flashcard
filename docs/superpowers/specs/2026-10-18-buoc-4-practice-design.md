@@ -8,6 +8,9 @@
 > **Cập nhật 18/10/2026, sau review độc lập** ([`../reviews/2026-10-18-buoc-4-design-review.md`](../reviews/2026-10-18-buoc-4-design-review.md)):
 > design đã sửa theo review. R3, R4, R5 đã chốt (D34, D35, D36); các đề xuất kỹ thuật mới (nhãn "Đề xuất, đã duyệt 18/10") chủ dự án
 > duyệt hết cùng ngày ("ok duyệt"). Không còn gì chờ trước khi viết plan. Danh sách ở mục 0, bảng "Sau review độc lập".
+>
+> **Cập nhật tối 18/10/2026, trong lúc implement:** D37 (đúng/sai không hiện nhãn ngữ cảnh, mục 7.5); D38–D42 (bỏ e2e backend, "Xong khi"
+> mới, chấp nhận thời gian mở phiên ở mức lớn nhất, kiểm migration trên CI, giữ `admin-e2e-real`, phép đo tải chạy tay; mục 14, 16).
 
 Ngày: 17–18/10/2026. Brainstorm qua `superpowers:brainstorming` trên nhánh `docs/buoc-4-design` (cắt từ `origin/dev` @ `c1f775d`).
 Nhật ký từng vòng hỏi đáp, kèm phân tích trạng thái trước brainstorm: [`../reviews/2026-10-17-buoc-4-readiness.md`](../reviews/2026-10-17-buoc-4-readiness.md)
@@ -727,12 +730,16 @@ Thêm sau review độc lập 18/10 (Đề xuất, đã duyệt 18/10; trừ ch�
 | B4#28 | Staff mở danh sách báo lỗi có báo cáo của câu `deploy` với lựa chọn từ riêng `standup` (D36) | Dòng đó hiện "[từ riêng của người học]", không có chữ `standup` ở bất kỳ trường nào của response |
 | B4#29 | `next` trả câu hỏi của từ riêng `standup` (D36) | `reportable = false`; gọi API báo lỗi → `409 report-not-available` |
 
-**Test và "Xong khi" (Chốt câu 13):** Bước 4 xong khi mọi task của plan xong và test thành công:
-1. CI xanh trên PR (`ci.yml`: lint, typecheck, build, unit, e2e). Hàm thuần (chấm, chia vòng, chọn dạng bài, tính "từ hay sai", nghĩa con
-   tiếng Việt) có unit test theo bảng ví dụ; e2e qua Testcontainers như các bước trước.
+**Test và "Xong khi" (Chốt câu 13; đổi 18/10 theo D38, bỏ e2e backend):** Bước 4 xong khi mọi task của plan xong và test thành công:
+1. CI xanh trên PR (`ci.yml` job `api`: lint, typecheck, build, unit, kiểm migration khớp schema bằng `prisma migrate diff`, D40; job
+   `admin-e2e-real` giữ nguyên, D41). Hàm thuần (chấm, chia vòng, chọn dạng bài, tính "từ hay sai", nghĩa con tiếng Việt) có unit test
+   theo bảng ví dụ. **Không còn e2e của `apps/api`** (D38): các PR trước PR xóa e2e vẫn chạy e2e trên CI như cũ; sau đó bộ e2e bị xóa.
+   Hai phép đo tải (Learning `GET /v1/groups`, Practice mở phiên) giữ thành script chạy tay, không chạy trên CI (D42).
 2. Script `pnpm smoke:buoc-4` chạy qua API thật trên DB mới (kiểu `pnpm smoke:buoc-2`): mỗi nguồn × mỗi dạng bài; một phiên ít từ có
    "Ôn lại"; gợi ý; "Cần ôn tập", "Đã biết", "đưa tất cả"; báo lỗi và staff xử lý; "từ hay sai"; lịch sử theo ngày; job dọn với đồng hồ
-   giả. Task cuối của plan chạy hai việc này và ghi as-built vào `docs/deliveries/buoc-4.md`.
+   giả; thêm hai ca xuyên luồng trước đây là e2e (báo lỗi câu trắc nghiệm có lựa chọn là từ riêng: staff không thấy chữ đó, B4#28/B4E48;
+   xóa từ riêng khi câu của nó đang hiện: tải lại báo "Không tìm thấy từ này" kèm câu kế, B4E8). Task cuối của plan chạy hai việc này và
+   ghi as-built vào `docs/deliveries/buoc-4.md`.
 
 ## 15. Ảnh hưởng tới các bước sau
 
@@ -765,6 +772,15 @@ Thêm sau review độc lập 18/10 (Đề xuất, đã duyệt 18/10; trừ ch�
 - **Người học bỏ qua gợi ý "Cần ôn tập"** (đã ghi ở design Bước 3 mục 19): đếm được nhờ `origin = practice` trong nhật ký.
 - **Gợi ý nấc 1 bằng câu ví dụ** phụ thuộc bảng dạng chia; dạng chia sai hoặc thiếu thì có thể không che được (khi đó không có nấc 1).
 - **Các con số ASSUMPTION (⚠6).**
+- **Mở phiên "Ôn tất cả" ở mức lớn nhất chậm hơn ngưỡng** (D39): 100 nhóm × 2.000 từ, chỉ trắc nghiệm → trung vị 2.671 ms trên runner CI
+  (ngưỡng `ASSUMPTION` < 1 s, Review Focus 2 của plan). Chấp nhận ở Bước 4; đo lại bằng script đo tải (D42) trước pilot, tối ưu nếu cần
+  (giả thuyết chưa kiểm: phần đọc toàn bộ mục học của Learning).
+- **Không còn test tự động chạm Postgres/Redis thật cho `apps/api`** (D38): câu SQL, khóa và chạy đua (B4E1, B4E2, B4E28, B4E29), khóa
+  chống trùng, rate limit, kiểm quyền mọi route admin, job nền chỉ còn được kiểm bằng smoke script, chạy tay và job `admin-e2e-real`
+  (cho các luồng admin). Lỗi kiểu "worker không nhận job" của Bước 2 sẽ chỉ lộ khi chạy thật.
+- **Test nhắc học của Bước 3 chập chờn** (thấy hai lần ngày 18/10: "two workers … exactly one email" ra 2 email, "M7: a permanent SMTP
+  error is tried once" ra 2 dòng): có thể là lỗi thật xử lý trùng của nhắc học, chưa kiểm. Bộ test này bị xóa theo D38 nên cần một lần
+  kiểm riêng (chạy tay hai worker) trước pilot.
 
 ## 17. Tài liệu cần cập nhật sau khi duyệt
 

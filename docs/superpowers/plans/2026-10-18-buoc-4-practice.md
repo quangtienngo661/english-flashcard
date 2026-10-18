@@ -4,6 +4,9 @@
 > approved the same day, design §0 R1–R15). **API only**: no `apps/web`, no `apps/admin` screen (D24).
 > **Execution (owner 18/10/2026):** parallel sessions, every task implemented by Claude, one coordinator session (D29); no Codex
 > loop. Which tasks run side by side: "Parallel tracks". What the coordinator does: "Brief for the coordinator session".
+> **Changed 18/10/2026 evening (D38–D42):** backend e2e is removed in Bước 4 itself. PRs up to D2 and E1 keep their e2e (they ran on
+> CI); Task 20 is rewritten (PR R removes e2e, then PR F); "Xong khi" = CI (lint, typecheck, build, unit, schema drift) + smoke (D28 as
+> changed by D38). Text about `pnpm test:e2e` in Tasks 1–19 describes how those tasks were built and is historical after PR R.
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or
 > superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
@@ -43,7 +46,7 @@ Implementation: one branch per **track** (`feat/buoc-4-<track>`), each cut from 
 | C — Content | 6 → 7, **PR C1** | day one | nothing |
 | D — Practice flow | 8 → 9 → 10 → 11 → 12, **PR D1**; 13 → 14 → 15 → 16 → 17, **PR D2** | day one | 13: PR A1, PR B1, PR C1 |
 | E — Reports and upkeep | 18 → 19, **PR E1** | after PR D1 and PR A1 | 19: PR B1 |
-| F — Gate | 20 | every PR merged | — |
+| F — Gate | 20 (rewritten, D38): **PR R** (remove backend e2e), then **PR F** (smoke, CLI, docs) | every PR merged | — |
 
 Why (from the Interfaces blocks):
 - **A** touches only Settings (the `practice` group; `learning` untouched), `app-config.ts` and a new `src/entitlements/**`.
@@ -152,7 +155,7 @@ The coordinator implements no task. It:
   `@Idempotent()` + `IdempotencyInterceptor`; the other writes are idempotent by their own state (design §6). Rate limits:
   `practice.answer` (Task 2) on `next`, `hint`, `answer`, `skip`, `review`; `user.write` on `sessions`, `continue`, `finish`,
   `review-all`, `resolve`; `report` limited by `reports_per_hour` (Task 18).
-- **Tests:** real Postgres through Testcontainers; `FakeClock`; suites with global counts use `createIsolatedDatabase()`. Unit
+- **Tests:** (Tasks 1–19, until PR R removes the suite, D38) real Postgres through Testcontainers; `FakeClock`; suites with global counts use `createIsolatedDatabase()`. Unit
   `*.spec.ts` next to the code, e2e `test/practice/*.e2e-spec.ts`. Test zones as Bước 3: `Asia/Ho_Chi_Minh`,
   `Pacific/Kiritimati`, `Etc/GMT+12`.
 - **Migrations on parallel tracks:** before a track's PR merges, its migration folders are renamed to a timestamp later than
@@ -888,46 +891,83 @@ The coordinator implements no task. It:
 
 ---
 
-# Milestone M4 — Gate (coordinator, after every PR is merged)
+# Milestone M4 — Gate (track F, after every PR is merged; rewritten 18/10/2026 for D38–D42)
 
-### Task 20: Smoke script, maintenance CLI, system gate and docs
+### Task 20a: Remove the backend e2e suite (track F, **PR R**)
+
+**Why:** D38 (owner, 18/10): `apps/api` keeps no e2e suite; D40 replaces the schema-drift test with a CI step; D41 keeps the
+`admin-e2e-real` job; D42 keeps the two scale tests as hand-run measurements outside CI. Starts after PR E1 and PR D2 are merged
+(both ran the full e2e suite on CI before this PR deletes it).
 
 **Files:**
-- Create: `scripts/smoke-buoc-4.mjs`, `src/cli/run-maintenance.ts` (+ `run-maintenance.spec.ts`),
-  `test/practice/cross-track.e2e-spec.ts`
+- Delete: every `test/**/*.e2e-spec.ts` **except** `test/learning/scale.e2e-spec.ts` and `test/practice/scale.e2e-spec.ts`;
+  `vitest.config.e2e.ts`; every file under `test/support/`, `test/setup/` and `test/fixtures/` that no remaining file imports
+  (decide by imports, not by name: `create-test-app.ts`, `test-config.ts`, `in-flight.interceptor.ts` and `auth-helpers.ts` are
+  used by unit specs such as `src/identity/**/*.controller.spec.ts`; the scale files also use `isolated-database.ts`,
+  `seed-senses.ts` and the practice helpers).
+- Modify: `apps/api/package.json` (remove `test:e2e`; rename `test:e2e:scale` → `test:scale`; drop a Testcontainers package only
+  if nothing still imports it; keep `supertest`), `pnpm-lock.yaml`, `vitest.config.e2e-scale.ts` (keep; its comment says it is run by
+  hand, not by CI), `.github/workflows/ci.yml` (job `api`: remove the steps "E2E tests" and "Scale check"; add "Schema drift check"
+  after `pnpm db:setup`; rename the job to `api (lint, typecheck, build, unit, schema drift)`; do not touch `web`, `admin`,
+  `admin-e2e-real`). `CLAUDE.md` is **not** edited here (small docs PR of design §17).
+
+**Interfaces:**
+- Schema drift step: `prisma migrate diff` from the committed migrations to the Prisma schema, failing the job when they differ
+  (`--exit-code`). Before writing it, check the exact flags and the shadow-database setting for the installed Prisma (`7.10.0`) in
+  the Prisma docs (context7), and record the command and the doc you used in the PR body. The shadow database is a second
+  database on the CI `postgres` service.
+- `pnpm test:scale` runs the two scale files alone with Testcontainers, as before; the practice one prints the median and the
+  per-step times without a hard threshold (D39).
+
+- [ ] **Step 1: Prove the drift step works before relying on it.** Locally (or in a throwaway commit pushed to the PR and then
+  dropped): add a field to a model without a migration → the step fails with a non-zero exit; on the real tree → it passes. Record
+  both outputs in the PR body.
+- [ ] **Step 2: Delete and edit** per Files. A search for `e2e-spec`, `test:e2e` and `vitest.config.e2e.ts` under `apps/api` and
+  `.github` finds only the two scale files, `vitest.config.e2e-scale.ts` and the comments you chose to keep (list them in the PR body).
+- [ ] **Step 3: Gate.** `pnpm lint; pnpm exec tsc --noEmit -p tsconfig.json; pnpm build; pnpm test` → green, unit count unchanged
+  from `dev`; `pnpm test:scale` is not required (run it only if the machine has the RAM, and record the numbers).
+- [ ] **Step 4: Commit** `chore(api): remove the backend e2e suite and check schema drift in ci`; push; PR R into `dev`.
+
+### Task 20b: Smoke script, maintenance CLI and docs (track F, **PR F**, after PR R is merged)
+
+**Files:**
+- Create: `scripts/smoke-buoc-4.mjs`, `src/cli/run-maintenance.ts` (+ `run-maintenance.spec.ts`)
 - Modify: `docs/deliveries/buoc-4.md` (add `# Bước 4 — as-built (<date>)` after the plan summary), `package.json`
   (`smoke:buoc-4`, `maintenance:run`), `.env.example` (only if a task added an env variable; none is planned),
   `docs/superpowers/specs/2026-10-18-buoc-4-practice-design.md` (§0 as-built note; §6 error table gains the four codes added by
-  this plan; 7.7 notes that level-1 example hints use the 7.4b matching rule; any `ASSUMPTION` measured),
+  this plan; 7.7 notes that level-1 example hints use the 7.4b matching rule; the measured numbers),
   `docs/superpowers/specs/2026-10-16-buoc-3-learning-design.md` §9 (one line: the review cap may be empty, D35 of Bước 4)
 
 **Interfaces:**
 - Produces: `node dist/cli/run-maintenance.js` boots the app context once and calls `MaintenanceScheduler.runAll()`; its exit
   code is 0 even when a job fails (`runAll` only logs job errors, `maintenance.scheduler.ts:39-50`), so callers check the data.
-  `cross-track.e2e-spec.ts` (needs D2 and E1 together): `B4#28 / B4E48 through the real path: a multiple-choice question whose
-  options include the learner's private word, answered with that option over HTTP, reported, read by staff → no field contains
-  the private lemma`; `B4E8 end to end: a private word's question is showing, the learner deletes the word (DELETE
-  /v1/my-words/:id), then current → notice word-not-found and the next item in the same reply`.
   `pnpm smoke:buoc-4` against a running API (like `smoke:buoc-2`, design §14 item 2; safe to re-run, random emails and lemmas
   per run): registers an admin (`admin:grant`) and a learner, imports and publishes a small CSV with glosses, short
   definitions, examples and inflections, builds two groups (one with a private word), then runs each source × each type, a
-  two-word session with "Ôn lại", hints, retries and skip, "Cần ôn tập", "Đã biết", "review-all", a report on a question
-  with a private option resolved by the admin (the staff list must not contain the private lemma), weak words, history by
-  date, and the cleanup: back-date rows with `docker compose -p english-learning exec -T postgres psql -U dev -d <smoke db>`
-  (the `-p` keeps it on the running project whatever folder the script runs from), run `maintenance:run`, then **read back**
-  with `psql` that the old items are gone
-  and an open report remains with `item_id` null. Exit code 0 only when every step matched.
+  two-word session with "Ôn lại", hints, retries and skip, "Cần ôn tập", "Đã biết", "review-all", weak words, history by date,
+  and the cleanup: back-date rows with `docker compose -p english-learning exec -T postgres psql -U dev -d <smoke db>` (the `-p`
+  keeps it on the running project whatever folder the script runs from), run `maintenance:run`, then **read back** with `psql`
+  that the old items are gone and an open report remains with `item_id` null. **The two cross-track cases that used to be
+  `cross-track.e2e-spec.ts` are smoke steps now:** (1) B4#28 / B4E48: a multiple-choice question whose options include the
+  learner's private word, answered with that option, reported, read by staff → no field of the staff response contains the private
+  lemma; (2) B4E8: a private word's question is showing, the learner deletes the word (`DELETE /v1/my-words/:id`), then `current`
+  → `notice: word-not-found` and the next item in the same reply. The script keeps calling `next` until the question it needs
+  appears (types and words are random), with a bounded number of tries, and fails loudly if it never appears. Exit code 0 only
+  when every step matched.
 
-- [ ] **Step 1: Clean shell gate.** `pnpm lint; pnpm exec tsc --noEmit -p tsconfig.json; pnpm build; pnpm test; pnpm test:e2e;
-  pnpm test:e2e:scale` → green; counts compared with the end of Bước 3 (from `docs/deliveries/buoc-3.md`).
+- [ ] **Step 1: Clean shell gate.** `pnpm lint; pnpm exec tsc --noEmit -p tsconfig.json; pnpm build; pnpm test` → green; unit
+  count compared with the end of Bước 3 (from `docs/deliveries/buoc-3.md`); e2e counts reported as "removed by D38", with the last
+  CI numbers before PR R.
 - [ ] **Step 2: Smoke on a fresh database — without touching the owner's local data:** from the main checkout
   (`E:\Working\Working project\english-learning`) `docker compose up -d`; then `docker compose -p english-learning exec postgres
-  createdb -U dev english_learning_smoke_b4` (drop it first with `dropdb` if a previous run left it); in `apps/api` set `DATABASE_URL` to that database for `pnpm db:setup`, `pnpm build`, `pnpm run:dev` and `pnpm
-  smoke:buoc-4` → every step `ok`; output kept for the report. **Never** `docker compose down -v`: it deletes the
-  `postgres_data` and `redis_data` volumes of earlier manual runs; if a full reset is ever wanted, ask the owner first.
-- [ ] **Step 3: Docs.** As-built in `docs/deliveries/buoc-4.md`; design §0 note, §6 codes, 7.7 note and measured numbers
-  (Review Focus 2, Task 17 timing); Bước 3 design §9 line. `CLAUDE.md` and `docs/HANDOFF_2026-10-05_BUOC_0.md` §2 go in the
-  small docs PR of design §17, with the one-line pointer to `docs/deliveries/buoc-4.md`.
-- [ ] **Step 4: Report** to the owner (design D28 "Xong khi"): CI green on every PR, the smoke output, the numbers, open risks
-  (design §16), the PR list, the API contract the UI plan builds on.
+  createdb -U dev english_learning_smoke_b4` (drop it first with `dropdb` if a previous run left it); in `apps/api` set
+  `DATABASE_URL` to that database for `pnpm db:setup`, `pnpm build`, `pnpm run:dev` and `pnpm smoke:buoc-4` → every step `ok`;
+  output kept for the report. **Never** `docker compose down -v`: it deletes the `postgres_data` and `redis_data` volumes of
+  earlier manual runs; if a full reset is ever wanted, ask the owner first.
+- [ ] **Step 3: Docs.** As-built in `docs/deliveries/buoc-4.md`; design §0 note, §6 codes, 7.7 note and measured numbers (Review
+  Focus 2: 2,671 ms on the CI runner, D39; Task 17: 29 ms); Bước 3 design §9 line. `CLAUDE.md` and
+  `docs/HANDOFF_2026-10-05_BUOC_0.md` §2 go in the small docs PR of design §17, with the one-line pointer to
+  `docs/deliveries/buoc-4.md` and the CI/CD line changed by D38.
+- [ ] **Step 4: Report** to the owner (design D28 as changed by D38, "Xong khi"): CI green on every PR, the smoke output, the
+  numbers, open risks (design §16), the PR list, the API contract the UI plan builds on.
 - [ ] **Step 5: Commit** `docs: record the bước 4 as-built`.

@@ -59,6 +59,11 @@ ghi những chỗ Claude đề xuất trước khi chủ dự án trả lời.
 | D35 | Bấm từ bài luyện và trần mỗi ngày (sau review) | Không tính vào trần; trần từ ôn mỗi nhóm cho phép để trống = không giới hạn (mặc định 100); trần từ mới bắt buộc | Chủ dự án (để trống: ý của chủ dự án; không tính trần và giữ trần từ mới: đề xuất của Claude) |
 | D36 | Báo lỗi câu có từ riêng (sau review) | Câu hỏi chính là từ riêng: không có nút báo lỗi; câu từ catalog có từ riêng: vẫn báo được, bản sao che từ riêng | Đề xuất của Claude (chủ dự án nhờ: "bạn recommend đi") |
 | D37 | Nhãn ngữ cảnh ở bài đúng/sai (trong lúc implement) | Không hiện nhãn ở cả cặp đúng lẫn cặp sai; trắc nghiệm, gõ từ giữ nhãn | Chủ dự án (Claude đồng ý sau khi chủ dự án trả lời) |
+| D38 | Bỏ e2e backend và "Xong khi" (trong lúc implement) | Bỏ toàn bộ e2e của `apps/api` ngay trong Bước 4 (sau D2, E1); D28 mới: CI (lint, typecheck, build, unit, kiểm migration) + smoke | Chủ dự án (khác đề xuất của Claude) |
+| D39 | Mở phiên "Ôn tất cả" mức lớn nhất 2,67 s | Chấp nhận ở Bước 4, đo lại trước pilot | Đề xuất của Claude (chủ dự án nhờ) |
+| D40 | Thay test kiểm drift migration | Thêm bước CI `prisma migrate diff` | Đề xuất của Claude (chủ dự án nhờ) |
+| D41 | Job CI `admin-e2e-real` | Giữ | Đề xuất của Claude (chủ dự án nhờ) |
+| D42 | Hai test đo tải | Giữ thành script chạy tay, không chạy trên CI | Đề xuất của Claude (chủ dự án nhờ) |
 
 ## D1 — Brainstorm Bước 4 khi Bước 3 chưa xong
 
@@ -414,6 +419,68 @@ của một ứng viên, mà dữ liệu ứng viên (`CandidateSense`, Task 6) 
 Chủ dự án xin xem ví dụ hai lần (lần đầu ví dụ nằm ngoài khung câu hỏi nên không thấy), rồi chọn (c). Claude đề xuất cùng (c): đúng/sai
 chỉ hỏi "nghĩa này có phải của từ này không", ứng viên không bao giờ cùng chữ với từ hỏi nên nhãn không giúp phân biệt; (a) ghép sai nhãn,
 (b) vẫn lộ. ✅ Chốt (c). Design mục 7.5.
+
+## D38 — Bỏ e2e backend và "Xong khi" mới (trong lúc implement, 18/10)
+
+Bối cảnh: các luồng chạy song song trên một máy (31,6 GB RAM, 12 luồng CPU). Vitest chạy e2e với `maxWorkers` mặc định bằng toàn bộ CPU
+khi không ở watch mode, mỗi tiến trình dựng một app Nest. Ngày 18/10 có 4 trong 6 lần chạy e2e đầy đủ hoặc đo tải trên máy dev hỏng hoặc
+bị hệ thống dừng vì thiếu RAM; chạy một mình thì pass (~320 s). Trên CI, job `api` mất ~8,6 phút, trong đó e2e 351 s và đo tải 68 s. Chủ
+dự án hỏi "phân tích việc bỏ toàn bộ test e2e ở phía backend". Phân tích đầy đủ:
+[`../reviews/2026-10-18-remove-backend-e2e-analysis.md`](../reviews/2026-10-18-remove-backend-e2e-analysis.md) (72 file, ~670 test; 32 file
+`src` chạy SQL thô chỉ e2e chạm tới; hai lỗi thật e2e từng bắt ở Bước 2).
+
+Vòng 1 — hướng:
+
+| Phương án đưa ra trong chat | Trade-off |
+|---|---|
+| ✅ A. Bỏ toàn bộ e2e backend | Hết chuyện RAM và chờ CI; mất mọi test tự động chạm SQL, khóa, chạy đua, quyền, job nền |
+| B. Giữ e2e trên CI, trên máy chỉ chạy file e2e của task, giới hạn số worker (đề xuất của Claude) | Giữ lưới an toàn, hết chuyện RAM trên máy; mỗi PR vẫn chờ CI ~8,6 phút |
+
+Lượt Claude trình hai hướng, phần phân tích không hiện ra chat (chỉ có ô chọn); chủ dự án chọn A rồi nhờ phân tích những gì phải đổi.
+
+Vòng 2 — thời điểm:
+
+| Phương án đưa ra trong chat | Trade-off |
+|---|---|
+| T1. Xong Bước 4 đúng plan (D2, E1, F vẫn có e2e), rồi bỏ e2e trong PR riêng (đề xuất của Claude) | Bước 4 giữ D28 cũ, Practice được kiểm bằng e2e trước khi xóa; tốn thêm vài lần CI |
+| ✅ T2. Bỏ ngay | Đổi D28 giữa Bước; viết lại Task 20 |
+
+✅ Chủ dự án: "Chọn T2: bỏ e2e backend ngay, đổi D28 và viết lại Task 20." Cách làm (thứ tự chủ dự án duyệt cùng D39–D42): E1 merge, D2
+merge (cả hai đã chạy e2e đầy đủ trên CI), rồi một PR xóa e2e, rồi PR F. D28 mới: "test thành công" = CI xanh trên PR (lint, typecheck,
+build, unit, kiểm migration) + `pnpm smoke:buoc-4` qua API thật trên DB mới; hai test xuyên luồng của Task 20 cũ chuyển vào smoke. Luật
+`verification.md` (chạy thật đầu-cuối) giữ nguyên: smoke đáp ứng.
+
+## D39 — Mở phiên "Ôn tất cả" ở mức lớn nhất (trong lúc implement, 18/10)
+
+CI của PR D2 đo Review Focus 2: 100 nhóm × 2.000 từ, nguồn "Ôn tất cả", chỉ trắc nghiệm → 2.814 / 2.671 / 2.607 ms, trung vị 2.671 ms, ngưỡng
+`ASSUMPTION` < 1 s. Bỏ e2e (D38) thì test đo này cũng mất khỏi CI.
+
+| Phương án đưa ra trong chat | Trade-off |
+|---|---|
+| Tối ưu ngay trong Bước 4 | Đúng ngưỡng; phải sửa câu đọc của Learning (file luồng B) khi không còn test đo trên CI |
+| ✅ Chấp nhận ở Bước 4, ghi rủi ro, đo lại trước pilot | Không chặn Bước 4; người học lúc pilot có ít từ hơn nhiều; rủi ro nằm ở người học rất nhiều từ |
+| Cách khác | — |
+
+Chủ dự án: "chỗ này bạn có thể recommend cho mình". Claude đề xuất chấp nhận và đo lại trước pilot; nếu số đo từng bước cho thấy chỗ chậm rõ
+và sửa nhỏ thì sửa trong D2. ✅ "Chốt cả bốn đề xuất Q1–Q4".
+
+## D40 — Kiểm migration khớp schema sau khi bỏ e2e (18/10)
+
+`test/common/schema-drift.e2e-spec.ts` là chỗ duy nhất bắt lỗi "sửa schema mà quên tạo migration". Phương án: thêm một bước CI
+`prisma migrate diff` (không cần Testcontainers, dùng Postgres sẵn có của CI) / không thêm. Chủ dự án nhờ đề xuất; Claude đề xuất thêm (chạy
+vài giây, loại lỗi unit test không thấy; cờ chính xác của Prisma 7.10 kiểm lúc viết). ✅ Chốt cùng D39.
+
+## D41 — Job CI `admin-e2e-real` (18/10)
+
+Job Playwright của admin chạy với API thật (Postgres, Redis, Mailpit), không thuộc bộ e2e của `apps/api`; sau D38 là chỗ duy nhất trên CI
+còn gọi API thật. Phương án: giữ / bỏ. Chủ dự án nhờ đề xuất; Claude đề xuất giữ (~2 phút trên CI, không chạy trên máy dev). ✅ Chốt cùng D39.
+
+## D42 — Hai test đo tải (18/10)
+
+`test/learning/scale.e2e-spec.ts` (`GET /v1/groups` < 500 ms) và `test/practice/scale.e2e-spec.ts` (mở phiên, D39). Phương án: xóa cùng
+e2e / giữ thành script chạy tay, không chạy trên CI. Chủ dự án nhờ đề xuất; Claude đề xuất giữ để đo lại D39 khi cần, chấp nhận giữ một phần
+nhỏ hạ tầng Testcontainers (một config, global setup, dependency) chỉ cho hai file này. ✅ Chốt cùng D39. Test Practice in trung vị thay vì
+chặn ở 1 s (D39).
 
 ## Đề xuất kỹ thuật được duyệt cùng design
 
