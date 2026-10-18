@@ -23,6 +23,16 @@ export type FinalWrite = {
   result: 'correct' | 'wrong'; answerRaw: string; answerNormalized: string; answersTried: string[]; tries: number; skipped: boolean;
 };
 
+/** The right answer as shown after a final result and in history: the main word, the right option, or the word's own meaning. */
+export function correctOf(key: AnswerKey, prompt: Prompt): AnswerResult['correct'] {
+  const text = key.kind === 'type_word' ? key.main
+    : key.kind === 'mcq' && prompt.kind === 'mcq' ? prompt.options[key.correct_index] : key.reveal.meaning;
+  return {
+    lemma: key.reveal.lemma, text, choice_index: key.kind === 'mcq' ? key.correct_index : null,
+    is_true: key.kind === 'true_false' ? key.is_true : null,
+  };
+}
+
 const notFound = () => new ProblemDetailsException({ status: 404, title: 'Not found', type: 'not-found' });
 const validationFailed = () => new ProblemDetailsException({ status: 400, title: 'Validation failed', type: 'validation-failed' });
 const conflict = (type: string, title: string, extensions?: Record<string, unknown>) =>
@@ -116,14 +126,9 @@ export class AnswersService {
     const prompt = item.question.prompt as Prompt;
     const { item: learningItem } = await this.learning.practiceCheck(userId, item.senseId, null);
     const correct = item.result === 'correct';
-    const text = key.kind === 'type_word' ? key.main
-      : key.kind === 'mcq' && prompt.kind === 'mcq' ? prompt.options[key.correct_index] : key.reveal.meaning;
     return {
       result: correct ? 'correct' : 'wrong', skipped: item.skipped, tries: item.tries, hint_level: item.hintLevel,
-      correct: {
-        lemma: key.reveal.lemma, text, choice_index: key.kind === 'mcq' ? key.correct_index : null,
-        is_true: key.kind === 'true_false' ? key.is_true : null,
-      },
+      correct: correctOf(key, prompt),
       meaning: key.reveal.meaning, definition_en: key.reveal.definition_en,
       show_known: learningItem !== null && correct && item.hintLevel === 0 && learningItem.due_now,
       highlight_needs_review: learningItem !== null && !correct,
