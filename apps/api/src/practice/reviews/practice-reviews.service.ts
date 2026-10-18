@@ -111,19 +111,20 @@ export class PracticeReviewsService {
  * by its last final item, "pressed" when any of its items was.
  */
 function listed(items: ItemWithQuestion[]): SummaryWord[] {
-  const words = new Map<string, SummaryWord & { listed: boolean }>();
+  const words = new Map<string, SummaryWord>();
+  const listedSenses = new Set<string>();
   for (const item of items) {
     if (item.result !== 'correct' && item.result !== 'wrong') continue;
     const key = item.question.answerKey as AnswerKey;
     const word = words.get(item.senseId) ?? {
-      sense_id: item.senseId, lemma: key.reveal.lemma, meaning: key.reveal.meaning, item_id: item.id, action: null, listed: false,
+      sense_id: item.senseId, lemma: key.reveal.lemma, meaning: key.reveal.meaning, item_id: item.id, action: null,
     };
     word.item_id = item.id;
     word.lemma = key.reveal.lemma;
     word.meaning = key.reveal.meaning;
     word.action ??= item.reviewAction as ReviewAction | null;
-    word.listed ||= item.result === 'wrong' || item.hintLevel > 0;
+    if (item.result === 'wrong' || item.hintLevel > 0) listedSenses.add(item.senseId);
     words.set(item.senseId, word);
   }
-  return [...words.values()].filter((w) => w.listed).map(({ listed: _, ...word }) => word);
+  return [...words.values()].filter((word) => listedSenses.has(word.sense_id));
 }
