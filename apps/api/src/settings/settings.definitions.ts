@@ -4,14 +4,24 @@ import { z } from 'zod';
 export type AppSettings = {
   reminders: { enabled: boolean; sendTime: string; minGapDays: number; inactiveAfterDays: number; stopAfterDays: number };
   learning: { newPerGroupPerDay: number; reviewsPerGroupPerDay: number; backlogAfterDays: number };
+  practice: {
+    maxQuestionsPerSession: number; defaultQuestionsPerSession: number; historyMonths: number; trueFalseTruePercent: number;
+    idleSessionCloseHours: number; reportsPerHour: number; hintDefinitionMaxChars: number;
+    /** `null` = no limit (Bước 4 design 5.4). */
+    typeWordMaxRetries: number | null;
+  };
 };
 
 export const SETTINGS_DEFAULTS: AppSettings = {
   reminders: { enabled: true, sendTime: '20:00', minGapDays: 2, inactiveAfterDays: 7, stopAfterDays: 60 },
   learning: { newPerGroupPerDay: 20, reviewsPerGroupPerDay: 100, backlogAfterDays: 60 },
+  practice: {
+    maxQuestionsPerSession: 20, defaultQuestionsPerSession: 10, historyMonths: 6, trueFalseTruePercent: 50,
+    idleSessionCloseHours: 24, reportsPerHour: 20, hintDefinitionMaxChars: 200, typeWordMaxRetries: null,
+  },
 };
 
-/** Bounds are `ASSUMPTION` in design §9; the admin page shows them next to each field. */
+/** Bounds are `ASSUMPTION` in design §9 (Bước 4: design 5.4); the admin page shows them next to each field. */
 export const SETTINGS_BOUNDS = {
   reminders: {
     send_time: { min: '06:00', max: '22:00', step_minutes: 15 },
@@ -23,6 +33,16 @@ export const SETTINGS_BOUNDS = {
     new_per_group_per_day: { min: 1, max: 100 },
     reviews_per_group_per_day: { min: 10, max: 500 },
     backlog_after_days: { min: 30, max: 365 },
+  },
+  practice: {
+    max_questions_per_session: { min: 5, max: 100 },
+    default_questions_per_session: { min: 1, max: 100 },
+    history_months: { min: 3, max: 24 },
+    true_false_true_percent: { min: 20, max: 80 },
+    idle_session_close_hours: { min: 1, max: 168 },
+    reports_per_hour: { min: 5, max: 100 },
+    hint_definition_max_chars: { min: 80, max: 500 },
+    type_word_max_retries: { min: 1, max: 10, nullable: true },
   },
 } as const;
 
@@ -47,6 +67,16 @@ export const settingsValuesPatchSchema = z.strictObject({
     reviews_per_group_per_day: intIn(b.learning.reviews_per_group_per_day).optional(),
     backlog_after_days: intIn(b.learning.backlog_after_days).optional(),
   }).optional(),
+  practice: z.strictObject({
+    max_questions_per_session: intIn(b.practice.max_questions_per_session).optional(),
+    default_questions_per_session: intIn(b.practice.default_questions_per_session).optional(),
+    history_months: intIn(b.practice.history_months).optional(),
+    true_false_true_percent: intIn(b.practice.true_false_true_percent).optional(),
+    idle_session_close_hours: intIn(b.practice.idle_session_close_hours).optional(),
+    reports_per_hour: intIn(b.practice.reports_per_hour).optional(),
+    hint_definition_max_chars: intIn(b.practice.hint_definition_max_chars).optional(),
+    type_word_max_retries: intIn(b.practice.type_word_max_retries).nullable().optional(),
+  }).optional(),
 });
 export type SettingsValuesPatch = z.infer<typeof settingsValuesPatchSchema>;
 
@@ -60,15 +90,24 @@ const FIELDS = [
   ['learning', 'new_per_group_per_day', 'newPerGroupPerDay'],
   ['learning', 'reviews_per_group_per_day', 'reviewsPerGroupPerDay'],
   ['learning', 'backlog_after_days', 'backlogAfterDays'],
+  ['practice', 'max_questions_per_session', 'maxQuestionsPerSession'],
+  ['practice', 'default_questions_per_session', 'defaultQuestionsPerSession'],
+  ['practice', 'history_months', 'historyMonths'],
+  ['practice', 'true_false_true_percent', 'trueFalseTruePercent'],
+  ['practice', 'idle_session_close_hours', 'idleSessionCloseHours'],
+  ['practice', 'reports_per_hour', 'reportsPerHour'],
+  ['practice', 'hint_definition_max_chars', 'hintDefinitionMaxChars'],
+  ['practice', 'type_word_max_retries', 'typeWordMaxRetries'],
 ] as const;
 
 type Section = keyof AppSettings;
-type AnyValue = boolean | number | string;
+/** `null` only where a bound says `nullable` ("để trống"). */
+type AnyValue = boolean | number | string | null;
 const read = (values: AppSettings, section: Section, field: string): AnyValue =>
   (values[section] as Record<string, AnyValue>)[field];
 
 export function toApiValues(values: AppSettings): Record<Section, Record<string, AnyValue>> {
-  const out: Record<Section, Record<string, AnyValue>> = { reminders: {}, learning: {} };
+  const out: Record<Section, Record<string, AnyValue>> = { reminders: {}, learning: {}, practice: {} };
   for (const [section, apiKey, field] of FIELDS) out[section][apiKey] = read(values, section, field);
   return out;
 }
@@ -84,8 +123,12 @@ export function applyPatch(current: AppSettings, patch: SettingsValuesPatch): Ap
 
 /** Rules across fields, checked on the merged values; each violation names the API key like the schema does. */
 export function crossFieldViolations(values: AppSettings): string[] {
-  return values.reminders.stopAfterDays > values.reminders.inactiveAfterDays ? []
-    : ['values.reminders.stop_after_days: Expected greater than inactive_after_days'];
+  return [
+    ...(values.reminders.stopAfterDays > values.reminders.inactiveAfterDays ? []
+      : ['values.reminders.stop_after_days: Expected greater than inactive_after_days']),
+    ...(values.practice.defaultQuestionsPerSession <= values.practice.maxQuestionsPerSession ? []
+      : ['values.practice.default_questions_per_session: Expected at most max_questions_per_session']),
+  ];
 }
 
 export function changedFields(before: AppSettings, after: AppSettings): Array<{ key: string; oldValue: AnyValue; newValue: AnyValue }> {

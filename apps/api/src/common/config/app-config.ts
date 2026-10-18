@@ -16,7 +16,8 @@ export type RateLimitRuleName =
   | 'auth.reset.ip'
   | 'mail.ip.daily'
   | 'user.write'
-  | 'learning.review';
+  | 'learning.review'
+  | 'practice.answer';
 
 export interface RateLimitRuleConfig {
   by: 'user' | 'ip' | 'email' | 'chain';
@@ -97,6 +98,8 @@ export const DEFAULT_LIMITS: Record<RateLimitRuleName, RateLimitRuleConfig> = {
   'user.write': { by: 'user', max: 30, windowSeconds: 60 },
   // Flashcard answers: a fast session goes well past 30 a minute.
   'learning.review': { by: 'user', max: 120, windowSeconds: 60 },
+  // Practice next/hint/answer/skip/review: a quick multiple-choice session writes 2–3 times per question (Bước 4 R1).
+  'practice.answer': { by: 'user', max: 120, windowSeconds: 60 },
 };
 
 const nonEmpty = z.string().trim().min(1);
