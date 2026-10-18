@@ -35,6 +35,12 @@ thì ghi `ASSUMPTION`.
 > bước "Deploy API + admin"; **chưa chốt** làm trước hay sau Bước 3 — hỏi chủ dự án. Hỏi trước cả bốn câu Q-A–Q-D cuối
 > `docs/preparation/PROJECT_ASSESSMENT_2026-10-15.md` (thứ tự và phạm vi, ai soạn nội dung pilot, nhắc học, ngưỡng thành
 > công), theo luật "chủ dự án nghĩ trước" trong CLAUDE.md.
+> **Cập nhật 19/10/2026:** Bước 3 xong phần hệ thống (PR #28–#44, chủ dự án báo 18/10; as-built `docs/deliveries/buoc-3.md`) và đã lên
+> `main` cùng Bước 0–2.5 qua PR #45 (`dev` → `main`, 18/10). Q-A–Q-D đã chốt ở Bước 3 (D1, D5, D8, D12 của
+> `docs/superpowers/decisions/2026-10-16-buoc-3-learning-decisions.md`); **Deploy dời về khi toàn bộ app hoàn chỉnh, trước ra mắt**
+> (D3 vòng 3), không còn pilot sau Bước 3. Bước 4 (Practice, chỉ API) xong trên `dev` (PR #47–#58, as-built `docs/deliveries/buoc-4.md`),
+> chưa lên `main` (chủ dự án 19/10: chưa cần). Giao diện người học của Bước 3–4 có plan riêng, chưa làm. Tiếp theo: Bước 5 đang
+> brainstorm ở phiên riêng.
 
 | Bước | Làm gì | Spec |
 |---|---|---|
@@ -43,13 +49,13 @@ thì ghi `ASSUMPTION`.
 | 2 | Catalog (quản trị: nhập CSV, soạn, rà, publish, hoàn tác, xuất), tìm kiếm/duyệt chỉ-đọc cho learner | Content + Pipeline |
 | 2.5 *(mới, D9)* | Giao diện web `apps/admin`: đăng nhập, trang admin, cấp vai trò, luồng CSV. **Xong 15/10/2026, trên `dev` (PR #17–#20)** (design `docs/superpowers/specs/2026-10-14-buoc-2-5-admin-web-design.md`, as-built `docs/deliveries/buoc-2-5.md`) | — |
 | Giao diện B *(mới, 15/10)* | Làm mới landing và admin theo hướng B (chủ dự án chọn 15/10/2026): token chung `packages/design-tokens`, Lexend, bài luyện một thẻ. **Xong 16/10/2026, trên `dev`:** landing PR #22, admin PR #23, sửa mất phiên khi tải lại nhanh PR #24 (design `docs/superpowers/specs/2026-10-15-ui-refresh-b-design.md`, delivery `docs/deliveries/ui-refresh-b.md`) | — |
-| Deploy *(mới, chưa xếp chỗ)* | Deploy API + `admin-api.` + `admin.`: chọn hosting backend, Postgres/Redis bền, SMTP thật, secret, backup (design 2.5 §14). Phải xong trước pilot Bước 3 | — |
-| 3 | Nhóm, trạng thái, lịch ôn, "hôm nay", flashcard, thêm nhanh (catalog + nhập tay); **cộng phần Content dời từ Bước 2:** từ riêng tư, câu ngữ cảnh, chuỗi tra nghĩa (catalog + tự nhập). **Mốc pilot sớm nhất** (cần web) | Learning + Vocabulary Content (phần còn lại) |
-| 4 | Trắc nghiệm, đúng/sai, gõ từ, bài từ câu người học, "từ hay sai" | Practice (không AI) |
+| 3 | Nhóm, trạng thái, lịch ôn, "hôm nay", flashcard, thêm nhanh (catalog + nhập tay); **cộng phần Content dời từ Bước 2:** từ riêng tư, câu ngữ cảnh, chuỗi tra nghĩa (catalog + tự nhập); thêm nhắc học qua email (D8, D9), cài đặt admin chỉnh được, dạng chia (AGID, D46), xuất từ chưa có nghĩa (D34). **Phần hệ thống xong 18/10/2026 (PR #28–#44)**, as-built `docs/deliveries/buoc-3.md`; giao diện người học có plan riêng, chưa làm | Learning + Vocabulary Content (phần còn lại) |
+| 4 | Trắc nghiệm, đúng/sai, gõ từ (theo nghĩa hoặc theo câu ví dụ), "từ hay sai", lịch sử, báo lỗi; **chỉ API**, giao diện làm sau (D24 Bước 4). Bài từ câu người học chuyển sang Bước 7 (D2, D4 Bước 4). **Xong 19/10/2026, trên `dev` (PR #47–#58)** (design `docs/superpowers/specs/2026-10-18-buoc-4-practice-design.md`, as-built `docs/deliveries/buoc-4.md`) | Practice (không AI) |
 | 5 | Quyền, trial, giữ chỗ hạn mức | Entitlements |
 | 6 | Cổng `AiProvider` (bản giả trước), nhật ký chi phí | AI Integration |
-| 7 | Bài điền từ AI, ngân hàng câu, bước AI trong chuỗi tra nghĩa | Practice (AI) + Content |
+| 7 | Bài điền từ AI, gói trả phí, gồm bài điền từ từ câu người học (chuyển từ Bước 4; dùng câu người học đã lưu hay AI tự viết: còn mở, D2, D4 Bước 4); dạng "câu chứa từ rồi chọn" (AI); trắc nghiệm theo câu ví dụ (D34 Bước 4); câu AI lưu theo từng người học, bỏ ngân hàng câu dùng chung (D3 Bước 4); bước AI trong chuỗi tra nghĩa | Practice (AI) + Content |
 | 8 | Google login, xóa tài khoản | Identity (còn lại) |
+| Deploy *(dời về cuối, D3 vòng 3 Bước 3)* | Deploy API + `admin-api.` + `admin.`: chọn hosting backend, Postgres/Redis bền, SMTP thật, secret, backup (design 2.5 §14). Làm khi toàn bộ app hoàn chỉnh, trước ra mắt (chủ dự án 18/10/2026); tới lúc đó chủ dự án dùng thử ở máy local | — |
 
 K18 (cấu trúc hạn mức AI) chỉ chặn từ bước 5; provider từ điển ngoài (K20) không chặn bước 0–7 nếu chuỗi tra nghĩa
 chỉ gồm catalog + nhập tay.
