@@ -11,6 +11,7 @@ export {
 export { NotVisibleError, SentenceLimitError, type Sentence } from './sentences/sentences.service.js';
 export type { WordSense } from './words/words.service.js';
 export type { CandidateSense, PracticeSense } from './practice/practice-senses.js';
+export { maskExample, type MaskedExample, type MaskTarget } from './practice/mask-example.js';
 export { ContentService } from './content.service.js';
 export { BATCH_SCOPE, type BatchScope } from './batch-scope.port.js';
 export { entriesExportQuery, sensesExportQuery, type EntriesExportFilter, type SenseFilter } from './catalog/sense-filters.js';
