@@ -1,0 +1,105 @@
+// Practice (Bước 4, design 5.1). user_id, sense_id and group_id are plain UUIDs: no relation crosses a module boundary.
+// CHECKs on the enum columns and the partial unique index "one open session per learner" live in the migration.
+model PracticeSession {
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId         String    @map("user_id") @db.Uuid
+  source         String
+  groupId        String?   @map("group_id") @db.Uuid
+  groupFilter    String?   @map("group_filter")
+  sort           String
+  types          String[]
+  promptStyle    String    @map("prompt_style")
+  targetCount    Int       @map("target_count")
+  // Round 1, in the order it was sorted.
+  senseIds       String[]  @map("sense_ids") @db.Uuid
+  status         String
+  continued      Boolean?
+  // 'word-not-found' when the private-word port deleted an unanswered item; cleared by the next next/current.
+  pendingNotice  String?   @map("pending_notice")
+  startedAt      DateTime  @map("started_at") @db.Timestamptz
+  lastActivityAt DateTime  @map("last_activity_at") @db.Timestamptz
+  endedAt        DateTime? @map("ended_at") @db.Timestamptz
+
+  items PracticeSessionItem[]
+
+  @@index([status, lastActivityAt])
+  @@map("practice_sessions")
+}
+
+// The content of one question, stored as built; answer_key and hints never reach the app before an answer or a hint.
+model PracticeQuestion {
+  id                 String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId             String   @map("user_id") @db.Uuid
+  senseId            String   @map("sense_id") @db.Uuid
+  type               String
+  promptStyle        String   @map("prompt_style")
+  // Sentence prompts only: the masked text and whether it is the base form (design 7.4b).
+  blank              Json?
+  schemaVersion      Int      @map("schema_version")
+  prompt             Json
+  answerKey          Json     @map("answer_key")
+  hints              Json
+  distractorSenseIds String[] @map("distractor_sense_ids") @db.Uuid
+  createdAt          DateTime @map("created_at") @db.Timestamptz
+
+  items PracticeSessionItem[]
+
+  @@map("practice_questions")
+}
+
+// One asking of a question in a session, with its answer. A final result (correct / wrong) is one attempt; void counts nowhere.
+model PracticeSessionItem {
+  id               String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  sessionId        String    @map("session_id") @db.Uuid
+  userId           String    @map("user_id") @db.Uuid
+  questionId       String    @map("question_id") @db.Uuid
+  senseId          String    @map("sense_id") @db.Uuid
+  round            Int
+  position         Int
+  askedAt          DateTime  @map("asked_at") @db.Timestamptz
+  // Set with the final result only; null while unanswered or waiting for a retry.
+  answeredAt       DateTime? @map("answered_at") @db.Timestamptz
+  answerRaw        String?   @map("answer_raw")
+  answerNormalized String?   @map("answer_normalized")
+  answersTried     String[]  @default([]) @map("answers_tried")
+  tries            Int       @default(0)
+  // Snapshot of the setting when the question was built; null = no limit.
+  maxRetries       Int?      @map("max_retries")
+  skipped          Boolean   @default(false)
+  result           String?
+  hintLevel        Int       @default(0) @map("hint_level")
+  // The learner's date, in their zone at the moment of the final result.
+  localDate        DateTime? @map("local_date") @db.Date
+  reviewAction     String?   @map("review_action")
+
+  session  PracticeSession  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  question PracticeQuestion @relation(fields: [questionId], references: [id], onDelete: Restrict)
+  report   PracticeReport?
+
+  @@unique([sessionId, position])
+  @@index([userId, senseId, answeredAt])
+  @@index([userId, localDate])
+  @@index([askedAt])
+  @@index([questionId])
+  @@map("practice_session_items")
+}
+
+model PracticeReport {
+  id               String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId           String    @map("user_id") @db.Uuid
+  // Null once the item has been cleaned up.
+  itemId           String?   @unique @map("item_id") @db.Uuid
+  senseId          String    @map("sense_id") @db.Uuid
+  questionSnapshot Json      @map("question_snapshot")
+  reason           String
+  note             String?
+  status           String    @default("open")
+  resolvedBy       String?   @map("resolved_by") @db.Uuid
+  resolvedAt       DateTime? @map("resolved_at") @db.Timestamptz
+  createdAt        DateTime  @map("created_at") @db.Timestamptz
+
+  item PracticeSessionItem? @relation(fields: [itemId], references: [id], onDelete: SetNull)
+
+  @@index([status, createdAt])
+  @@map("practice_reports")
+}
