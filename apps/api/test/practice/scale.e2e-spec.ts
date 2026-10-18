@@ -13,8 +13,8 @@ import { seedVisibleSenses } from '../support/seed-senses.js';
 const now = new Date('2026-11-08T03:00:00Z');
 const GROUPS = 100;
 const PER_GROUP = 2000;
-// ASSUMPTION (plan, Review Focus 2): the threshold is the owner's to confirm; the median is printed for that.
-const THRESHOLD_MS = 1000;
+// D39: 2,67 s trên CI được chấp nhận ở Bước 4, đo lại trước pilot. The test prints the median and the per-step times; it
+// asserts no threshold.
 
 /** Test-only timing: wraps a real method and records each call's duration under a label; production code is unchanged. */
 function timeCalls(target: object, method: string, label: string, calls: Map<string, number[]>, keep?: (result: unknown) => void) {
@@ -41,7 +41,7 @@ describe('practice at scale (e2e, isolated database)', () => {
   }, 300_000);
   afterAll(async () => { await ctx?.close(); });
 
-  it('Review Focus 2: 100 groups × 2,000 items, source all, types [mcq_definition] → session start prints its median and is < 1 s', async () => {
+  it('Review Focus 2: 100 groups × 2,000 items, source all, types [mcq_definition] → session start prints its median and per-step times (D39)', async () => {
     const { userId } = await seedUser(ctx.prisma, { verified: true, nativeLanguage: 'vi' });
     const senseIds = await seedVisibleSenses(ctx.prisma, GROUPS * PER_GROUP, 'pscale');
     await ctx.prisma.$executeRaw`
@@ -87,7 +87,6 @@ describe('practice at scale (e2e, isolated database)', () => {
       expect(response.body.session).toMatchObject({ words: 10, sort: 'least_practiced' });
     }
     const median = [...timings].sort((a, b) => a - b)[1];
-    console.log(`[Review Focus 2] POST /v1/practice/sessions, ${GROUPS} groups x ${PER_GROUP} items: ${timings.map((t) => t.toFixed(0)).join(' / ')} ms (median ${median.toFixed(0)} ms, threshold ${THRESHOLD_MS} ms)`);
-    expect(median).toBeLessThan(THRESHOLD_MS);
+    console.log(`[Review Focus 2] POST /v1/practice/sessions, ${GROUPS} groups x ${PER_GROUP} items: ${timings.map((t) => t.toFixed(0)).join(' / ')} ms (median ${median.toFixed(0)} ms; D39: accepted in Bước 4, measure again before the pilot)`);
   }, 300_000);
 });
