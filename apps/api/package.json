@@ -24,7 +24,9 @@
     "test:scale": "vitest run --config ./vitest.config.e2e-scale.ts",
     "db:setup": "prisma migrate deploy && prisma generate --sql",
     "run:dev": "node scripts/run-dev.mjs",
-    "smoke:buoc-2": "node scripts/smoke-buoc-2.mjs"
+    "smoke:buoc-2": "node scripts/smoke-buoc-2.mjs",
+    "smoke:buoc-4": "node scripts/smoke-buoc-4.mjs",
+    "maintenance:run": "node dist/cli/run-maintenance.js"
   },
   "dependencies": {
     "@nestjs/common": "^12.0.1",
