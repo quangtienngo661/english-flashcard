@@ -2,7 +2,10 @@
 
 > **Trạng thái 19/10/2026: đã duyệt** ("Mình duyệt design Bước 5", 19/10). Mọi quyết định sản phẩm đã hỏi từng câu trong chat theo luật "chủ dự án trả lời
 > trước, Claude đề xuất sau" (giữ ở Bước 5, D1). Ba phần trình bày trong chat (kiến trúc; dữ liệu và luật tính; API, thanh toán, mã lỗi, kiểm thử) chủ dự án đã
-> duyệt; khi đọc bản viết, chủ dự án sửa hai chỗ (D29, D30) và duyệt các đề xuất còn lại. Bước tiếp: plan (`superpowers:writing-plans`), đọc lại code trên `dev`. Nhật ký hỏi đáp từng vòng: [`../reviews/2026-10-18-buoc-5-brainstorm-log.md`](../reviews/2026-10-18-buoc-5-brainstorm-log.md). Decision record:
+> duyệt; khi đọc bản viết, chủ dự án sửa hai chỗ (D29, D30) và duyệt các đề xuất còn lại. Bước tiếp: plan (`superpowers:writing-plans`), đọc lại code trên `dev`.
+>
+> **Cập nhật 19/10/2026, sau review độc lập** ([`../reviews/2026-10-19-buoc-5-design-review.md`](../reviews/2026-10-19-buoc-5-design-review.md), 25 phát hiện):
+> bốn câu sản phẩm đã chốt (D31–D34); các sửa kỹ thuật chủ dự án duyệt hết cùng ngày ("ok"). Danh sách ở mục 0, bảng "Sau review độc lập". Nhật ký hỏi đáp từng vòng: [`../reviews/2026-10-18-buoc-5-brainstorm-log.md`](../reviews/2026-10-18-buoc-5-brainstorm-log.md). Decision record:
 > [`../decisions/2026-10-19-buoc-5-entitlements-decisions.md`](../decisions/2026-10-19-buoc-5-entitlements-decisions.md).
 
 Ngày: 18–19/10/2026. Brainstorm qua `superpowers:brainstorming` trên nhánh `docs/buoc-5-design` (cắt từ `origin/dev` @ `dc4cbe0`, fast-forward lên
@@ -37,6 +40,39 @@ spec (ER#, K#, F#…) chỉ để truy nguồn. Tiêu chí `B5#`, edge case `B5E
 | ⚠8 | Quyền staff | D6 Bước 1: `entitlements.grant` (admin, editor), `ai.settings` (admin) | `entitlements.grant` có luật riêng cho `editor`; **bỏ `ai.settings`**, dùng lại `settings.manage` | D6–D8; mục 10 |
 | ⚠9 | Landing | "Dùng thử 14 ngày miễn phí", "Không cần nhập thẻ thanh toán" | Phải sửa khi chốt câu chữ gói (chủ dự án: "sửa được") | D4, D15 |
 | ⚠10 | Quảng cáo | Chưa có | Free có quảng cáo, trial và Pro không; công tắc mặc định **tắt** | D21 |
+
+### Sau review độc lập (19/10/2026)
+
+Mỗi dòng ứng với một phát hiện của file review. **Chốt** = chủ dự án trả lời (D31–D34). **Đề xuất, đã duyệt 19/10** = sửa kỹ thuật Claude đề xuất theo review,
+chủ dự án đọc danh sách một dòng mỗi điểm và trả lời "ok". **Sửa** = chữ cũ hoặc chỗ sai so với code, không đổi quyết định nào.
+
+| # | Điểm | Nhãn | Mục |
+|---|---|---|---|
+| R1 | Thông báo chia hai loại: **trạng thái** (áp theo `occurred_at`) và **cộng thêm** (`renewed`, `payment_succeeded`, `refunded`: luôn áp, chống trùng theo mã giao dịch, không bao giờ `stale`); payload tối thiểu từng loại | Đề xuất, đã duyệt 19/10 | 9.2, 9.3 |
+| R2 | Hết hạn theo thời gian chỉ khi đã đặt hủy cuối kỳ hoặc gói "app tự gia hạn"; `renewed` tới muộn luôn trả về `active`; gói quá kỳ chưa có thông báo theo D31 | Chốt D31 + đề xuất đã duyệt | 9.4 |
+| R3 | Bảng đủ 7 cột trạng thái (gồm "chưa có dòng") × 14 loại thông báo | Đề xuất, đã duyệt 19/10 | 9.4 |
+| R4 | Kiểm hạn mức phiên **sau** khi đóng phiên cũ (đã chờ khóa dòng), bịt kẽ hở tính được phiên thứ 4 | Đề xuất, đã duyệt 19/10 | 4, 7.4 |
+| R5 | Plan có task sửa `smoke:buoc-4` (learner của nó thành Free, 3 phiên/ngày) | Đề xuất, đã duyệt 19/10 | 17 |
+| R6 | Hợp đồng cho bên gọi: không gọi AI khi đang giữ khóa của Entitlements; tối đa một `reserve` mỗi transaction; `reserve` trả trạng thái | Đề xuất, đã duyệt 19/10 | 7.1, 18 |
+| R7 | Bảng luật `confirm` theo trạng thái dòng; lưu lý do nhả | Đề xuất, đã duyệt 19/10 | 6, 7.1 |
+| R8 | Mốc chu kỳ theo **nguồn Pro bắt đầu gần nhất**; cấp Pro là gói mới (D32); bảng ví dụ | Chốt D32 | 5.5, 10 |
+| R9 | Email có trạng thái gửi, cửa sổ gửi, gửi theo cách của email nhắc học; không gửi email trial khi `trial_denied` | Đề xuất, đã duyệt 19/10 | 6, 14 |
+| R10 | Luật dùng `fetchState`; bộ nối giả giữ trạng thái và có cờ tắt `fetchState` | Đề xuất, đã duyệt 19/10 | 9.1, 9.2 |
+| R11 | Gói "app tự gia hạn": một dòng mỗi người mỗi nhà cung cấp (`app:<user_id>`); luật mua lại | Đề xuất, đã duyệt 19/10 | 9.4 |
+| R12 | Khoảng hợp lệ của con số riêng; luật `starts_at`; số phiên = 0 → `plan-required`; API cấp thêm 404; editor không thu hồi lần cấp có lượt AI | Chốt D33 + đề xuất đã duyệt | 10, 12 |
+| R13 | Smoke: tạo dữ liệu lớn bằng SQL, lùi thời gian bằng SQL (liệt kê cột), N request song song | Đề xuất, đã duyệt 19/10 | 17 |
+| R14 | Ghi sổ bằng `INSERT … ON CONFLICT DO NOTHING` (tiền lệ trong repo) để lỗi trùng không làm hỏng transaction ghi đáp án | Đề xuất, đã duyệt 19/10 | 7 |
+| R15 | API xem gói chỉ cần đăng nhập, không `@LearnerContent()` (tài khoản mới, staff gọi được; tránh vòng import Content ↔ Entitlements) | Đề xuất, đã duyệt 19/10 | 12.1 |
+| R16 | Webhook đọc raw body, giới hạn 64 KB riêng cho route, nhận cả GET (VNPay IPN) | Đề xuất, đã duyệt 19/10 | 9.2 |
+| R17 | Thông báo `sandbox` không áp ở production | Đề xuất, đã duyệt 19/10 | 9.2 |
+| R18 | Email thanh toán dùng tối đa 95% hạn mức email ngày, chừa phần cho OTP | Đề xuất, đã duyệt 19/10 | 4, 14 |
+| R19 | Job mới nhận dòng bằng `FOR UPDATE SKIP LOCKED`, kiểm lại trạng thái dưới khóa | Đề xuất, đã duyệt 19/10 | 4, 9.2, 14 |
+| R20 | `getProfile` đã trả `staff_role`; chỉ danh sách email admin là mới; test quyền và fake của Practice phải sửa | Sửa | 4 |
+| R21 | Điều kiện hoàn lượt theo số **đã xác nhận** (không tính dòng đang giữ); thời điểm của dòng `credit` | Đề xuất, đã duyệt 19/10 | 7.2 |
+| R22 | Chữ và nhất quán nhỏ | Sửa | nhiều |
+| R23 | Xóa `raw_payload` sau 90 ngày (`ASSUMPTION`) | Đề xuất, đã duyệt 19/10 | 6, 9.2 |
+| R24 | Hoàn tiền (kể cả một phần) cho kỳ đang dùng → mất Pro ngay; hủy không hoàn → giữ tới hết kỳ; hoàn tiền áp cho kỳ của giao dịch được hoàn | Chốt D34 | 9.4 |
+| R25 | Đường thông báo trial không đòi email đã xác minh (khác `trial_eligible`); hai tài khoản cùng thẻ bắt đầu trial cùng lúc | Đề xuất, đã duyệt 19/10 | 8, 15 |
 
 ## 1. Mục tiêu và bối cảnh
 
@@ -91,6 +127,10 @@ Hiện trạng trên `dev` @ `9deb8d4` (đã đọc 19/10):
 | D28 | Sổ lượt | Cách (A): mỗi lần kiểm đếm các dòng trong sổ, khóa theo (người, kho) |
 | D29 | Email báo trước mỗi kỳ gia hạn | Làm sẵn nhưng **mặc định tắt** (các app thường chỉ báo ở trial); bật nếu luật sư nói bắt buộc |
 | D30 | Trial lần hai | Chỉ một trial; **hệ thống Wordmet quyết**: tài khoản hoặc thẻ đã dùng trial thì không có Pro trong trial đó, kể cả khi nhà cung cấp hoặc store đã bắt đầu trial |
+| D31 | Gói tự gia hạn quá cuối kỳ (hoặc hết trial) mà chưa có thông báo (sau review) | Vẫn Pro thêm `grace_days` (7) rồi khóa như `on_hold` tới khi có thông báo |
+| D32 | Cấp gói khi người nhận đã có nguồn Pro (sau review) | Cấp Pro là **gói mới**: lần cấp cũ tự thu hồi, mốc chu kỳ đặt lại; người đang trả tiền tự gia hạn → tắt tự gia hạn, không hoàn tiền, phần kỳ đã trả còn lại vẫn Pro; staff phải xác nhận; mốc theo nguồn Pro bắt đầu gần nhất. App không tắt được tự gia hạn trên store (Apple, chưa kiểm): **xử lý sau** |
+| D33 | Editor thu hồi lần cấp có con số lượt AI (sau review) | Không; lần cấp có con số lượt AI chỉ admin thu hồi |
+| D34 | Hoàn tiền một phần (sau review) | Có hoàn tiền (kể cả một phần) cho kỳ đang dùng thì mất Pro ngay; hủy không hoàn tiền thì giữ tới hết kỳ; hoàn tiền chủ động **chỉ admin** làm |
 
 ## 3. Phạm vi
 
@@ -140,17 +180,19 @@ giới; tham chiếu chéo là cột UUID. Không module nào import Entitlement
 
 | Module | Bước 5 cần | Mới hay có sẵn |
 |---|---|---|
-| Identity | Múi giờ, ngôn ngữ (`getProfile`); email đã xác minh (`isEmailVerified`); địa chỉ email (`verifiedEmails`); **vai trò staff của người cấp và người nhận**; **danh sách email các `admin`** (cảnh báo trần) | Có sẵn ba hàm đầu; mới: hàm đọc vai trò và hàm danh sách admin. Thêm `entitlements.grant` vào `ROLE_PERMISSIONS` của `admin`, `editor` |
+| Identity | Múi giờ, ngôn ngữ, **vai trò staff** (`getProfile` đã trả `staff_role`); email đã xác minh (`isEmailVerified`); địa chỉ email (`verifiedEmails`); **danh sách email các `admin`** (cảnh báo trần) | Có sẵn trừ danh sách email admin (mới). Thêm `entitlements.grant` vào `ROLE_PERMISSIONS` của `admin`, `editor`; test bảng quyền hiện có và các fake của Identity, Entitlements trong test Practice phải sửa theo (R20) |
 | Settings | Nhóm `entitlements` (mục 13); thêm khóa vào `learning`; nhóm mới `content` | Mới, cùng cơ chế các nhóm có sẵn (khoảng cho phép, `version`, lịch sử, `settings.manage`) |
 | Practice | Gọi kiểm hạn mức phiên khi mở phiên; gọi **ghi nhận phiên** khi câu đầu tiên của phiên có kết quả cuối; trả mã lỗi theo lý do | Sửa nhỏ (⚠4) |
 | Learning | Đọc `groups_per_user`, `items_per_group` từ Settings thay hằng số | Sửa nhỏ |
 | Content | Đọc `private_words_per_user`, `sentences_per_sense` từ Settings thay hằng số | Sửa nhỏ |
-| Mail (common) | Gửi email nhắc trial, báo trước khi trừ tiền/hết hạn, cảnh báo trần **không bị trần 80% của email nhắc học** (đi đường thiết yếu như OTP), vẫn tính vào hạn mức ngày | Có sẵn `MailDispatcher`, `MailBudget` (`REMINDER_MAIL_SHARE = 0.8`); cách gắn cụ thể ở plan |
-| Bảo trì | Job mỗi giờ: thử áp lại sự kiện lỗi, gửi email đến hạn, đánh dấu giữ chỗ quá hạn, chuyển trạng thái theo thời gian (hết chờ → khóa, hết kỳ → hết hạn) | Có sẵn `MaintenanceScheduler` (mỗi giờ, trong tiến trình API) |
+| Mail (common) | Gửi email nhắc trial, báo trước khi trừ tiền/hết hạn, cảnh báo trần **không bị trần 80% của email nhắc học**, nhưng có **trần riêng 95%** hạn mức ngày để chừa phần cho OTP (R18) | Có sẵn `MailBudget.tryConsume({ ceiling })`, `REMINDER_MAIL_SHARE = 0.8`; cách gửi có trạng thái như email nhắc học (mục 14) |
+| Bảo trì | Job mỗi giờ: thử áp lại sự kiện lỗi, gửi email đến hạn, đánh dấu giữ chỗ quá hạn, chuyển trạng thái theo thời gian (mục 9.4), hỏi lại trạng thái (`fetchState`) cho gói quá kỳ chưa có thông báo, xóa `raw_payload` cũ | Có sẵn `MaintenanceScheduler` (mỗi giờ, trong tiến trình API). Scheduler giả định job chạy song song vô hại; job mới **không** vô hại nên mỗi job nhận dòng bằng `FOR UPDATE SKIP LOCKED` và kiểm lại trạng thái dưới khóa (R19) |
 
 **Sửa Practice (⚠4, Đề xuất, đã duyệt 19/10):**
 - `check(userId, 'practice.basic')` từ nay nghĩa là "tài khoản được dùng bài luyện không AI" (mọi gói đều được); Practice giữ cuộc gọi này ở `start` và `next`
   như hiện nay. Kiểm **hạn mức phiên** là một cuộc gọi riêng chỉ ở `start` (`checkQuota(userId, 'practice_sessions')`), để phiên đã mở làm được tới hết.
+  Gọi **sau** lệnh `updateMany` đóng phiên đang mở trong `start` (lệnh này chờ khóa dòng phiên, nên câu đầu đang ghi của phiên cũ đã commit và được đếm; R4).
+  Từ chối thì rollback cả transaction, phiên đang mở giữ nguyên.
 - Khi câu đầu tiên của một phiên có kết quả cuối (`correct` hoặc `wrong`, kể cả Bỏ qua; không tính `void`), Practice gọi `recordPracticeSession` trong
   **cùng transaction** ghi câu trả lời (cách Learning nhận transaction của Practice ở R2 Bước 4).
 - Từ chối do hết phiên: 403 `quota-exhausted` kèm `resets_at`; lý do khác giữ 403 `entitlement-required`.
@@ -189,7 +231,8 @@ giới; tham chiếu chéo là cột UUID. Không module nào import Entitlement
 ### 5.4 Luật tính "người này được gì lúc này" (Chốt D19; chi tiết Đề xuất, đã duyệt 19/10)
 
 1. **Gói hiện tại:** `pro` nếu có ít nhất một nguồn Pro đang hiệu lực (gói đăng ký `active`, `grace`, hoặc đã đặt hủy mà chưa hết kỳ; cấp tay "một gói" còn
-   hạn và chưa thu hồi); `trial` nếu nguồn duy nhất là gói đăng ký đang `trialing`; còn lại `free`. Thời hạn các nguồn **không nối tiếp**.
+   hạn và chưa thu hồi); `trial` nếu nguồn duy nhất là gói đăng ký đang `trialing`; còn lại `free`. Thời hạn các nguồn **không nối tiếp**. Gói đăng ký quá
+   cuối kỳ chưa có thông báo vẫn tính là nguồn Pro trong `grace_days` (D31, mục 9.4). Cấp "một gói" là gói mới, thu hồi lần cấp gói cũ (D32, mục 10).
 2. **Con số của mỗi kho:** lấy số của gói hiện tại (Trial dùng số trial cho hai kho AI, số Pro cho phiên luyện). Nếu có **cấp tay "con số riêng"** còn hạn cho
    kho đó thì dùng con số riêng, cao hay thấp đều được; nhiều lần đặt cho cùng một kho đang hiệu lực thì **lần tạo sau cùng thắng**.
 3. **Quyền AI:** `ai.practice` / `ai.lookup` được phép khi con số của kho tương ứng > 0. Vì vậy staff đặt "lượt bài AI: 500" cho một tài khoản Free (tài khoản
@@ -201,10 +244,21 @@ giới; tham chiếu chéo là cột UUID. Không module nào import Entitlement
 
 - **Kho phiên luyện:** theo **ngày địa phương** của người học (múi giờ hồ sơ, SR13). Một phiên thuộc ngày của lúc câu đầu tiên có kết quả.
 - **Kho AI:** chu kỳ **một tháng** tính từ một **mốc** (thời điểm, UTC):
-  - Mốc của gói đăng ký = lúc bắt đầu gói; **trial chuyển sang trả phí thì mốc đặt lại = lúc trừ tiền lần đầu**; đổi tháng ↔ năm giữ mốc.
-  - Mốc của cấp tay "một gói" = `starts_at` của lần cấp. Mốc của cấp tay "con số riêng" cho tài khoản không có nguồn Pro = `starts_at` của lần cấp đó.
-  - Nhiều nguồn cùng hiệu lực: dùng mốc **sớm nhất** trong các nguồn đang hiệu lực. Khi nguồn đó hết, mốc chuyển sang mốc sớm nhất còn lại; lượt đã dùng
-    trong chu kỳ mới tính theo mốc mới vẫn được đếm (không có chuyện tặng thêm lượt).
+  - Mốc của gói đăng ký = `quota_anchor_at`: lúc bắt đầu gói; **trial chuyển sang trả phí thì đặt lại = lúc trừ tiền lần đầu**; gói kích hoạt lại sau `expired` hoặc
+    `revoked` thì đặt lại = lúc trả; đổi tháng ↔ năm giữ mốc.
+  - Mốc của cấp tay "một gói" = `starts_at` của lần cấp. Mốc của cấp tay "con số riêng" có khóa `ai_*` > 0 cho tài khoản không có nguồn Pro = `starts_at` của lần cấp đó.
+  - **Nhiều nguồn cùng hiệu lực (Chốt D32): dùng mốc của nguồn bắt đầu gần nhất** ("gói mới kích hoạt"). Nguồn tính vào mốc: gói đăng ký `trialing` (không
+    `trial_denied`), `active`, `grace`, đang trong thời gian chờ thông báo (D31), hoặc đã đặt hủy mà chưa hết kỳ; cấp tay "một gói" đã bắt đầu, chưa hết, chưa thu hồi.
+    Khi nguồn đó hết, mốc là mốc của nguồn bắt đầu gần nhất còn lại; lượt đã dùng trong chu kỳ tính theo mốc đó vẫn được đếm.
+  - Ví dụ (R8):
+
+    | Chuyện xảy ra | Mốc | Lượt bài AI |
+    |---|---|---|
+    | Lan trả Pro từ 1/11; ngày 15/11 staff cấp "Pro tới 15/12" (D32: tắt tự gia hạn gói trả tiền) | 15/11 | Chu kỳ [15/11, 15/12) mới: đủ 300 |
+    | Gói trả tiền hết 30/11 (đã tắt tự gia hạn) | Vẫn 15/11 | Không đổi |
+    | 15/12 lần cấp hết, không còn nguồn Pro | — | Free: 0 |
+    | Lan được cấp từ 1/11; ngày 20/11 tự mua Pro | 20/11 | Chu kỳ mới từ 20/11: đủ 300 |
+    | Lan đang trả Pro (mốc 1/11, đã tắt tự gia hạn tới 30/11) được cấp 15/11–20/11 | 15/11, rồi từ 20/11 là 1/11 | Từ 20/11 đếm lại chu kỳ [1/11, 1/12), gồm cả lượt dùng từ 15/11; hiếm, chấp nhận |
   - Chu kỳ thứ k bắt đầu ở cùng ngày, cùng giờ của mốc trong tháng thứ k sau mốc; tháng thiếu ngày thì **lùi về ngày cuối tháng nhưng mốc không trôi**
     (31/01 → 28/02 → 31/03 → 30/04).
 - **Không cộng dồn:** sang chu kỳ mới, lượt chưa dùng mất; số đã dùng của chu kỳ mới bắt đầu từ 0.
@@ -216,15 +270,18 @@ Mọi bảng có `user_id` là UUID thường, không khóa ngoại sang module 
 
 | Bảng | Mỗi dòng | Cột chính | Ràng buộc, index |
 |---|---|---|---|
-| `entitlement_grants` | Một lần cấp tay | `id`, `user_id`, `kind` (`plan` / `limits`), `plan` (`pro`, khi `kind = plan`), `limits` (jsonb: `practice_sessions_per_day`, `ai_practice_per_cycle`, `ai_lookup_per_cycle`, chỉ khóa nào có thì thay), `starts_at`, `ends_at` (bắt buộc), `reason` (bắt buộc, ≤ 300 ký tự), `granted_by`, `granted_by_role`, `revoked_at`, `revoked_by`, `revoke_reason`, `created_at` | `ends_at > starts_at`; index `(user_id, ends_at)`, `(granted_by, created_at)` |
-| `subscriptions` | Một gói đăng ký từ một nhà cung cấp | `id`, `user_id`, `provider`, `environment` (`sandbox` / `production`), `external_subscription_id`, `renewal` (`provider` = nhà cung cấp tự gia hạn / `app` = thanh toán một lần), `interval` (`month` / `year`), `status` (mục 9.4), `trial_ends_at`, `trial_denied` (D30), `current_period_start`, `current_period_end`, `grace_ends_at`, `cancel_at_period_end`, `pending_interval`, `quota_anchor_at`, `last_event_at`, `created_at`, `updated_at` | Unique `(provider, environment, external_subscription_id)`; index `(user_id, status)` |
-| `billing_events` | Một thông báo nhận từ nhà cung cấp (hộp sự kiện) | `id`, `provider`, `environment`, `dedupe_key`, `external_event_id`, `type` (đã chuẩn hóa, mục 9.3), `occurred_at`, `received_at`, `user_id` (null khi không nhận ra), `subscription_id`, `payload` (jsonb đã chuẩn hóa), `raw_payload` (jsonb), `status` (`pending` / `applied` / `stale` / `ignored` / `failed`), `error`, `attempts`, `processed_at` | Unique `dedupe_key`; index `(status, received_at)` |
+| `entitlement_grants` | Một lần cấp tay | `id`, `user_id`, `kind` (`plan` / `limits`), `plan` (`pro`, khi `kind = plan`), `limits` (jsonb: `practice_sessions_per_day`, `ai_practice_per_cycle`, `ai_lookup_per_cycle`, chỉ khóa nào có thì thay), `starts_at`, `ends_at` (bắt buộc), `reason` (bắt buộc, ≤ 300 ký tự), `granted_by`, `granted_by_role`, `revoked_at`, `revoked_by`, `revoke_reason` (gồm `replaced` khi bị lần cấp gói mới thay, D32), `paid_renewal_action` (`turned_off` / `not_supported` / null, D32), `created_at` | `ends_at > starts_at`; index `(user_id, ends_at)`, `(granted_by, created_at)` |
+| `subscriptions` | Một gói đăng ký từ một nhà cung cấp | `id`, `user_id`, `provider`, `environment` (`sandbox` / `production`), `external_subscription_id`, `renewal` (`provider` = nhà cung cấp tự gia hạn / `app` = thanh toán một lần), `interval` (`month` / `year`), `status` (mục 9.4), `trial_ends_at`, `trial_denied` (D30), `payment_fingerprint`, `current_period_start`, `current_period_end`, `grace_ends_at`, `cancel_at_period_end`, `pending_interval`, `quota_anchor_at`, `last_event_at`, `created_at`, `updated_at` | Unique `(provider, environment, external_subscription_id)`; index `(user_id, status)` |
+| `billing_events` | Một thông báo nhận từ nhà cung cấp (hộp sự kiện) | `id`, `provider`, `environment`, `dedupe_key`, `external_event_id`, `type` (đã chuẩn hóa, mục 9.3), `kind` (`state` / `additive`, R1), `transaction_id` (mã giao dịch hoặc mã kỳ, với sự kiện cộng thêm), `occurred_at`, `received_at`, `user_id` (null khi không nhận ra), `subscription_id`, `payload` (jsonb đã chuẩn hóa), `raw_payload` (jsonb; xóa sau 90 ngày, R23), `status` (`pending` / `applied` / `stale` / `ignored` / `failed`), `error`, `attempts`, `processed_at` | Unique `dedupe_key`; index `(status, received_at)` |
 | `trial_history` | Một lần đã dùng trial | `id`, `user_id`, `provider`, `payment_fingerprint` (mã nhận diện thẻ do nhà cung cấp trả, null nếu không có), `started_at` | Unique `user_id`; unique một phần `(provider, payment_fingerprint)` khi fingerprint không null |
-| `usage_records` | Một dòng trong sổ lượt | `id`, `user_id`, `pool` (`practice_sessions` / `ai_practice` / `ai_lookup`), `operation_id`, `kind` (`use` / `credit`), `status` (`reserved` / `confirmed` / `released`), `local_date` (kho phiên luyện), `system_date` (ngày giờ Việt Nam, kho AI), `reserved_at`, `expires_at`, `confirmed_at`, `released_at`, `note` (ví dụ `late-confirm-free`, mã báo cáo khi hoàn lượt), `created_at` | Unique một phần `(user_id, pool, operation_id)` khi `kind = use` và `status` ∈ (`reserved`, `confirmed`); unique `(user_id, pool, operation_id)` khi `kind = credit`; index `(user_id, pool, confirmed_at)`, `(pool, system_date)` |
-| `entitlement_notices` | Một email đã gửi (chống gửi trùng) | `id`, `user_id` (null với cảnh báo trần), `kind` (`trial_started` / `trial_reminder` / `renewal_notice` / `expiry_notice` / `ai_cap_alert`), `subject_id` (gói đăng ký, hoặc ngày với cảnh báo trần), `period_key`, `sent_at` | Unique `(kind, subject_id, period_key)` |
+| `usage_records` | Một dòng trong sổ lượt | `id`, `user_id`, `pool` (`practice_sessions` / `ai_practice` / `ai_lookup`), `operation_id`, `kind` (`use` / `credit`), `status` (`reserved` / `confirmed` / `released`), `release_reason` (`caller` = bên gọi nhả / `expired` = quá 2 phút / `late-confirm-free`, R7), `local_date` (kho phiên luyện), `system_date` (ngày giờ Việt Nam, kho AI), `reserved_at`, `expires_at`, `confirmed_at`, `released_at`, `credited_at` (dòng `credit`), `note` (mã báo cáo khi hoàn lượt), `created_at` | Unique một phần `(user_id, pool, operation_id)` khi `kind = use` và `status` ∈ (`reserved`, `confirmed`); unique `(user_id, pool, operation_id)` khi `kind = credit`; index `(user_id, pool, confirmed_at)`, `(pool, system_date)` |
+| `entitlement_notices` | Một email cần gửi (chống gửi trùng, theo dõi gửi; R9) | `id`, `user_id` (null với cảnh báo trần), `recipient_user_id`, `kind` (`trial_started` / `trial_reminder` / `renewal_notice` / `expiry_notice` / `ai_cap_alert`), `subject_key` (chuỗi: mã gói đăng ký, hoặc ngày với cảnh báo trần), `period_key`, `state` (`pending` / `sending` / `sent` / `failed` / `skipped`), `due_at`, `window_ends_at`, `attempts`, `last_error_at`, `sent_at` | Unique `(kind, subject_key, period_key, recipient_user_id)`; index `(state, due_at)` |
 
 - **Không có bảng "bộ đếm"** (D28): còn lại luôn tính từ các dòng trong sổ.
-- `raw_payload` có thể chứa email của người mua; chỉ dùng để tra lỗi, không đưa vào log (SR10); xử lý khi xóa tài khoản ghi ở mục 18 (Bước 8).
+- `raw_payload` có thể chứa email của người mua; chỉ dùng để tra lỗi, không đưa vào log (SR10); job xóa sau **90 ngày** (`ASSUMPTION`, cố định trong code, R23);
+  xử lý khi xóa tài khoản ghi ở mục 18 (Bước 8).
+- Mọi lệnh ghi có thể trùng ràng buộc unique bên trong một transaction lớn (ghi nhận phiên trong transaction ghi đáp án; dòng `credit`; `trial_history`) dùng
+  `INSERT … ON CONFLICT DO NOTHING` bằng SQL thô như các chỗ đã có trong repo, không để lỗi trùng (Prisma `P2002`) làm hỏng cả transaction Postgres (R14).
 - Không lưu số thẻ; `payment_fingerprint` là mã do nhà cung cấp tính, không đảo ngược ra số thẻ (`ASSUMPTION` theo từng nhà cung cấp, chưa kiểm).
 
 ## 7. Sổ lượt (Chốt D10–D12, D28; chi tiết Đề xuất, đã duyệt 19/10)
@@ -245,7 +302,7 @@ reserve ──► reserved ──confirm──► confirmed        (AI trả k�
   3. Công tắc AI tắt → từ chối `ai-unavailable`.
   4. Quyền (mục 5.4): con số = 0 → lý do `plan-required` (bên gọi trả 403 `entitlement-required`).
   5. Còn lại của người (mục 7.2) = 0 → `quota-exhausted` kèm `resets_at` (đầu chu kỳ sau).
-  6. Trần toàn hệ thống đã chạm (mục 7.3) → `ai-unavailable` kèm `retry_after` (0 giờ ngày sau, giờ Việt Nam).
+  6. Trần toàn hệ thống đã chạm (mục 7.3) → `ai-unavailable` kèm `retry-after` (tới 0 giờ ngày sau, giờ Việt Nam).
   7. Ghi dòng `use`, `reserved`, `expires_at = now + 2 phút`, `system_date` = ngày giờ Việt Nam.
 - **`confirm`**: dòng `reserved` chưa quá hạn → `confirmed`. Dòng đã quá 2 phút (xác nhận muộn): nếu vẫn còn lượt khi không tính dòng này thì `confirmed`; nếu
   không thì `released` với `note = late-confirm-free` và kết quả vẫn giao cho người học (không bao giờ vượt mức, ER5). Gọi lại trên dòng đã `confirmed` → trả kết
@@ -254,14 +311,28 @@ reserve ──► reserved ──confirm──► confirmed        (AI trả k�
 - **Thử lại sau lỗi tạm** là một lần `reserve` mới với cùng `operation_id` (dòng cũ đã `released`).
 - **AI gọi lần 2 vì câu không qua kiểm tra** (D11) nằm trong cùng một lượt: Practice (Bước 7) chỉ `confirm` một lần.
 - **Làm lại câu AI đã lưu** không gọi `reserve` (D10). **Dịch bổ sung** dùng kho `ai_practice` (Đề xuất, đã duyệt 19/10).
+- **`reserve` trả** `{ state: 'reserved' | 'confirmed', expires_at }` (dòng cũ đã `confirmed` thì bên gọi biết lượt đã trừ, không gọi AI lại) hoặc lý do từ chối.
+- **Hợp đồng với bên gọi (R6):** mỗi `reserve` / `confirm` / `release` chạy và **commit trong transaction ngắn của riêng nó**; bên gọi chỉ được truyền transaction
+  của mình nếu transaction đó commit **trước** khi gọi AI. **Không bao giờ gọi AI khi còn giữ khóa của Entitlements** (khóa chung `entitlements.ai_daily` sẽ làm mọi
+  lời gọi AI xếp hàng một). Tối đa **một** `reserve` mỗi transaction (hai `reserve` trong một transaction có thể deadlock với khóa chung).
+- **Luật `confirm` theo trạng thái dòng (R7):**
+
+  | Dòng `use` mới nhất của `(user, pool, operation_id)` | `confirm` làm gì |
+  |---|---|
+  | `reserved`, chưa quá 2 phút | → `confirmed` |
+  | `reserved` quá 2 phút, hoặc `released` với lý do `expired` | Xác nhận muộn: còn lượt (không tính dòng này) và không có dòng khác cùng `operation_id` đang `reserved`/`confirmed` → `confirmed`; ngược lại → `released`, `release_reason = late-confirm-free`, kết quả vẫn giao |
+  | `released` với lý do `caller` (bên gọi đã nhả vì AI lỗi) | Không đổi; trả `released` |
+  | `confirmed` | Trả kết quả cũ, không trừ thêm |
+  | Không có dòng | Trả `not-found` cho bên gọi (lỗi lập trình), log |
 
 ### 7.2 Đếm "đã dùng"
 
 - Kho AI: trong chu kỳ hiện tại (mục 5.5), **đã dùng** = số dòng `use` `confirmed` có `confirmed_at` trong chu kỳ + số dòng `use` `reserved` chưa quá 2 phút −
   số dòng `credit` trong chu kỳ; không nhỏ hơn 0.
 - Kho phiên luyện: số dòng `use` `confirmed` có `local_date` = hôm nay theo giờ hiện tại của người học.
-- **Hoàn lượt** (D10, D19): `refund(userId, pool, operationId, reportId)` ghi một dòng `credit` vào **chu kỳ hiện tại**, idempotent theo `operation_id`. Nếu đã
-  dùng của chu kỳ hiện tại đang là 0 thì không ghi (không hoàn được, không "để dành"). Bước 7 gọi khi staff xác nhận câu AI sai.
+- **Hoàn lượt** (D10, D19): `refund(userId, pool, operationId, reportId)` ghi một dòng `credit` vào **chu kỳ hiện tại** (`credited_at` = lúc hoàn, quyết định nó
+  thuộc chu kỳ nào), idempotent theo `operation_id`. Điều kiện (R21): số dòng `use` **đã xác nhận** trong chu kỳ hiện tại − số `credit` trong chu kỳ > 0; không tính
+  dòng đang giữ. Không thỏa thì không ghi (không hoàn được, không "để dành"). Bước 7 gọi khi staff xác nhận câu AI sai.
 
 ### 7.3 Trần AI toàn hệ thống và công tắc (D2, D18, ER14)
 
@@ -278,7 +349,8 @@ reserve ──► reserved ──confirm──► confirmed        (AI trả k�
 - `checkQuota(userId, 'practice_sessions')` khi mở phiên: đã dùng hôm nay ≥ con số → 403 `quota-exhausted`, `resets_at` = 0 giờ ngày mai theo giờ người học.
 - `recordPracticeSession(tx, userId, sessionId, localDate)`: ghi dòng `use` `confirmed` với `operation_id = session_id`; idempotent. Practice gọi khi câu đầu tiên
   của phiên có kết quả cuối (mục 4). Mở phiên rồi bỏ khi chưa trả lời câu nào không tốn lượt.
-- Một người chỉ có một phiên đang mở (Bước 4), nên không thể vượt quá con số bằng cách mở song song.
+- Một người chỉ có một phiên đang mở (Bước 4). `checkQuota` chạy **sau** lệnh đóng phiên cũ trong `start` (mục 4, R4): lệnh đó chờ khóa dòng phiên, nên nếu câu
+  đầu của phiên cũ đang được ghi thì nó commit trước và được đếm. Nhờ vậy mở phiên đúng lúc câu đầu của phiên cũ đang ghi không tạo được phiên thứ 4.
 
 ## 8. Trial (Chốt D15, D16, D22)
 
@@ -298,8 +370,12 @@ reserve ──► reserved ──confirm──► confirmed        (AI trả k�
 - Trong trial: như Pro, hai kho AI dùng số trial (mặc định = Pro); mốc chu kỳ = lúc bắt đầu trial; trial chuyển sang trả phí → mốc mới, đủ lượt Pro; lượt trial
   không chuyển sang Pro.
 - Trừ tiền lần đầu sau trial bị lỗi: như gia hạn lỗi (mục 9.4, D23).
+- Gói `trial_denied` không nhận email bắt đầu trial và nhắc trial (R9).
+- Đường thông báo (`subscription_started` có trial) **không** đòi email đã xác minh: điều kiện này chỉ ở `trial_eligible` khi tạo trang thanh toán; nếu nhà cung cấp
+  vẫn bắt đầu trial cho tài khoản chưa xác minh thì trial vẫn tính (ghi `trial_history`) (R25).
+- Hai tài khoản cùng một thẻ bắt đầu trial gần như cùng lúc: unique `(provider, payment_fingerprint)` của `trial_history` → tài khoản tới sau bị `trial_denied` (R25).
 
-## 9. Cổng thanh toán (Chốt D3, D23–D25; chi tiết Đề xuất, đã duyệt 19/10)
+## 9. Cổng thanh toán (Chốt D3, D23–D25, D31, D34; chi tiết Đề xuất, đã duyệt 19/10)
 
 ### 9.1 Bộ nối (adapter)
 
@@ -307,69 +383,110 @@ Mỗi nhà cung cấp một bộ nối cùng một giao diện:
 
 | Hàm | Làm gì | Bắt buộc |
 |---|---|---|
-| `verify(request)` | Kiểm chữ ký theo cách của nhà cung cấp; đọc và **chuẩn hóa** thành danh sách sự kiện (mục 9.3) | Có |
+| `verify(request)` | Kiểm chữ ký theo cách của nhà cung cấp trên **raw body**; đọc và **chuẩn hóa** thành danh sách sự kiện (mục 9.3) | Có |
 | `ack(result)` | Trả lời HTTP đúng kiểu nhà cung cấp đòi (ví dụ VNPay JSON mã `00`/`02`, MoMo HTTP 204, Apple 200) | Có |
 | `fetchState(externalSubscriptionId)` | Hỏi lại trạng thái thật (Stripe, Google, Apple có) | Không |
 | `endTrialNow(externalSubscriptionId)` | Kết thúc trial và trừ tiền ngay (mục 8) | Không |
+| `cancelAtPeriodEnd(externalSubscriptionId)` | Tắt tự gia hạn thay người dùng (D32) | Không |
 
-V1 chỉ có bộ nối **giả** (`fake`): chữ ký HMAC bằng `BILLING_FAKE_SECRET`; chỉ bật khi `BILLING_FAKE_ENABLED=true` (không bao giờ ở production); có
-`fetchState` và `endTrialNow` để test hai đường. Lệnh `pnpm billing:fake-event` ký và gửi sự kiện giả tới API đang chạy (đi qua đúng endpoint thật), không mở
-endpoint test nào.
+V1 chỉ có bộ nối **giả** (`fake`): chữ ký HMAC bằng `BILLING_FAKE_SECRET`; chỉ bật khi `BILLING_FAKE_ENABLED=true` (không bao giờ ở production; ghi vào checklist
+bước Deploy, R17). Bộ nối giả **giữ trạng thái** của từng gói giả từ chính các sự kiện đã ký gửi (một bảng riêng của bộ nối giả, không thuộc dữ liệu thật), nên
+`fetchState` trả được "trạng thái thật"; có cờ `BILLING_FAKE_FETCH_STATE=false` để smoke chạy cả đường không có `fetchState` (R10). Có cả `endTrialNow`,
+`cancelAtPeriodEnd`. Lệnh `pnpm billing:fake-event` ký và gửi sự kiện giả tới API đang chạy (đi qua đúng endpoint thật), không mở endpoint test nào.
 
 ### 9.2 Nhận sự kiện
 
-`POST /v1/billing/webhooks/{provider}` (công khai, không đăng nhập):
-1. Bộ nối kiểm chữ ký. Sai → 400, **không lưu**, log `billing_signature_invalid` (không ghi payload).
+`POST /v1/billing/webhooks/{provider}` và `GET` cùng đường (cho nhà cung cấp gọi bằng GET như VNPay IPN), công khai, không đăng nhập (R16):
+1. Đọc **raw body** (Nest `rawBody`), giới hạn **64 KB** riêng cho route này (`ASSUMPTION`). Bộ nối kiểm chữ ký. Sai → 400, **không lưu**, log
+   `billing_signature_invalid` (không ghi payload).
 2. Lưu từng sự kiện vào `billing_events` với `dedupe_key` = `provider:environment:external_event_id` (nhà cung cấp không có mã sự kiện thì ghép mã đơn của app +
    mã giao dịch). Trùng → bỏ qua, coi như đã nhận.
 3. `ack` ngay (kịp các hạn 5–15 giây của nhà cung cấp).
-4. Áp từng sự kiện (mục 9.4) trong transaction riêng, khóa theo người dùng. Lỗi → `failed`, `attempts + 1`; job mỗi giờ thử lại các dòng `failed` và các dòng
-   `pending` quá 5 phút (tiến trình chết sau khi đã trả lời nhà cung cấp); quá 5 lần (`ASSUMPTION`) thì dừng và log `billing_event_stuck` để staff xem.
-- Endpoint không có người dùng nên không dùng rule giới hạn theo người (SR14); chữ ký được kiểm trước mọi việc khác; body tối đa 64 KB (`ASSUMPTION`).
+4. Áp từng sự kiện (mục 9.4) trong transaction riêng, khóa theo người dùng. Lỗi → `failed`, `attempts + 1`; job mỗi giờ nhận các dòng `failed` và các dòng
+   `pending` quá 5 phút (tiến trình chết sau khi đã trả lời nhà cung cấp) bằng `FOR UPDATE SKIP LOCKED` (R19) rồi thử lại; quá 5 lần (`ASSUMPTION`) thì dừng và log
+   `billing_event_stuck` để staff xem.
+- Endpoint không có người dùng nên không dùng rule giới hạn theo người (SR14); chữ ký được kiểm trước mọi việc khác.
+- **Môi trường (R17):** API chạy production chỉ áp sự kiện `environment = production`; sự kiện `sandbox` tới production → lưu, `ignored`, log. Môi trường khác áp cả hai.
 - **Nhận ra người dùng:** sự kiện mang `app_user_id` (UUID của Wordmet, gắn lúc tạo trang thanh toán). Không nhận ra → `ignored`, log.
-- **Sai thứ tự:** sự kiện có `occurred_at` cũ hơn `last_event_at` của gói → `stale`, không áp. Bộ nối có `fetchState` thì áp trạng thái hỏi lại được thay vì tin
-  thứ tự.
+- **Thứ tự (R1):**
+  - Sự kiện **trạng thái** (`kind = state`: `cancel_scheduled`, `cancel_unscheduled`, `plan_change_scheduled`, `plan_change_canceled`, `plan_changed`, `expired`,
+    `revoked`, `grace_ended`, `renewal_failed`, `refund_reversed`, `subscription_started`) áp theo `occurred_at`: cũ hơn `last_event_at` của gói → `stale`, không áp;
+    bằng nhau → áp theo thứ tự nhận.
+  - Sự kiện **cộng thêm** (`kind = additive`: `renewed`, `payment_succeeded`, `refunded`) **luôn áp**, chống trùng theo `transaction_id`; không bao giờ `stale`;
+    `current_period_end = max(cũ, kỳ trong sự kiện)`; `last_event_at = max(cũ, occurred_at)` (để sự kiện trạng thái cũ hơn tới sau vẫn bị `stale`, B5E43).
+- **`fetchState` (R10):** dùng khi (a) sự kiện trạng thái bị `stale`, (b) payload thiếu trường tối thiểu, (c) gói quá cuối kỳ chưa có thông báo (D31, job mỗi giờ).
+  Kết quả ghi đè `status`, `current_period_start/end`, `trial_ends_at`, `cancel_at_period_end`, `interval`; lỗi hoặc bộ nối không có → rơi về luật thứ tự ở trên.
 
-### 9.3 Sự kiện chuẩn hóa
+### 9.3 Sự kiện chuẩn hóa (payload tối thiểu, R1)
 
-| Sự kiện | Ý nghĩa |
-|---|---|
-| `subscription_started` | Gói mới (có thể kèm `trial_ends_at`) |
-| `renewed` | Trừ tiền kỳ mới thành công (gồm lần đầu sau trial, và thu lại được sau khi lỗi) |
-| `renewal_failed` | Trừ tiền lỗi (có thể kèm `grace_ends_at` của store) |
-| `grace_ended` | Hết thời gian chờ, khóa (store báo; còn lại job tự tính) |
-| `cancel_scheduled` / `cancel_unscheduled` | Tắt / bật lại tự gia hạn |
-| `expired` | Hết hẳn |
-| `revoked` | Cắt ngay (ví dụ chargeback, store thu hồi) |
-| `refunded` / `refund_reversed` | Hoàn tiền do store, nhà cung cấp, ngân hàng; rút lại lần hoàn tiền |
-| `plan_changed` | Tháng → năm có hiệu lực ngay |
-| `plan_change_scheduled` / `plan_change_canceled` | Năm → tháng chờ hết năm; hủy lần đổi đang chờ |
-| `payment_succeeded` | Kiểu "app tự gia hạn": thanh toán một lần thành công cho N ngày |
+Mọi sự kiện có: `provider`, `environment`, `external_event_id` (hoặc thay thế), `external_subscription_id`, `app_user_id`, `occurred_at`.
+
+| Sự kiện | Loại | Ý nghĩa | Thêm bắt buộc |
+|---|---|---|---|
+| `subscription_started` | trạng thái | Gói mới (có thể kèm trial) | `interval`, `current_period_start/end`, `trial_ends_at?`, `payment_fingerprint?` |
+| `renewed` | cộng thêm | Trừ tiền kỳ mới thành công (gồm lần đầu sau trial, và thu lại được sau khi lỗi) | `transaction_id`, `current_period_start/end`, `interval` |
+| `renewal_failed` | trạng thái | Trừ tiền lỗi | `grace_ends_at?` (store gửi) |
+| `grace_ended` | trạng thái | Hết thời gian chờ, khóa (store báo) | — |
+| `cancel_scheduled` / `cancel_unscheduled` | trạng thái | Tắt / bật lại tự gia hạn | — |
+| `expired` | trạng thái | Hết hẳn (gồm nhà cung cấp bỏ cuộc thu tiền) | — |
+| `revoked` | trạng thái | Cắt ngay (ví dụ chargeback, store thu hồi) | — |
+| `refunded` | cộng thêm | Hoàn tiền (toàn bộ hoặc một phần) cho một giao dịch | `transaction_id` của giao dịch được hoàn, `amount?` |
+| `refund_reversed` | trạng thái | Rút lại lần hoàn tiền | `transaction_id` |
+| `plan_changed` | trạng thái | Tháng → năm có hiệu lực ngay | `interval`, `current_period_start/end` |
+| `plan_change_scheduled` / `plan_change_canceled` | trạng thái | Năm → tháng chờ hết năm; hủy lần đổi đang chờ | `interval` (với `scheduled`) |
+| `payment_succeeded` | cộng thêm | Kiểu "app tự gia hạn": thanh toán một lần thành công cho N ngày | `transaction_id`, `interval`, `paid_at` |
 
 ### 9.4 Trạng thái gói đăng ký
 
-| Trạng thái | Pro? | Vào khi | Ra khi |
-|---|---|---|---|
-| `trialing` | Có (trial), trừ khi `trial_denied` (D30) | `subscription_started` có trial | `renewed` → `active` (mốc mới); `renewal_failed` → `grace`; `expired` |
-| `active` | Có | `subscription_started`, `renewed`, `refund_reversed` (kỳ chưa hết), `payment_succeeded` | `renewal_failed` → `grace`; hết kỳ không gia hạn → `expired` |
-| `grace` | Có | `renewal_failed` | `renewed` → `active`; `grace_ends_at` qua → `on_hold` |
-| `on_hold` | **Không** (khóa: như Free nhưng gói chưa hủy; dữ liệu giữ nguyên; trả được tiền là có Pro lại) | Hết thời gian chờ | `renewed` → `active`; nhà cung cấp bỏ cuộc → `expired` |
-| `expired` | Không | `expired`; hết kỳ khi `cancel_at_period_end`; kiểu "app tự gia hạn" hết kỳ | Mua lại = gói mới |
-| `revoked` | Không | `revoked`; `refunded` cho kỳ hiện tại | `refund_reversed` → `active` nếu kỳ chưa hết |
+| Trạng thái | Pro? | Ghi chú |
+|---|---|---|
+| `trialing` | Có (trial), trừ khi `trial_denied` (D30) | |
+| `active` | Có | |
+| `grace` | Có | Gia hạn lỗi, đang chờ thu lại (D23) |
+| `on_hold` | **Không** (khóa: như Free nhưng gói chưa hủy; dữ liệu giữ nguyên; trả được tiền là có Pro lại) | |
+| `expired` | Không | **Không phải đường cụt**: `renewed` hoặc `payment_succeeded` tới sau vẫn đưa về `active` (R2) |
+| `revoked` | Không | Do `revoked` hoặc hoàn tiền kỳ đang dùng (D34) |
+
+**Bảng đủ: trạng thái × sự kiện (R3).** "Ghi" = lưu sự kiện, không đổi trạng thái, log. "Mốc mới" = đặt lại `quota_anchor_at`.
+
+| Sự kiện | Chưa có dòng | `trialing` | `active` | `grace` | `on_hold` | `expired` | `revoked` |
+|---|---|---|---|---|---|---|---|
+| `subscription_started` | Tạo `trialing` (có trial; D30 có thể `trial_denied`) hoặc `active`; mốc = lúc bắt đầu | Ghi | Ghi | Ghi | Ghi | Kích hoạt lại: `active` (hoặc `trialing` + kiểm D30), mốc mới | Như `expired` |
+| `renewed` | Tạo `active` (log `started-missing`), mốc = lúc trả | `active`, **mốc mới** (trial → trả phí) | `active`, dời kỳ; có `pending_interval` thì đổi `interval` | `active` | `active` | `active`, mốc mới | `active`, mốc mới |
+| `renewal_failed` | Ghi | `grace` | `grace` | Giữ (cập nhật `grace_ends_at` nếu store gửi muộn hơn) | Giữ | Ghi | Ghi |
+| `grace_ended` | Ghi | `on_hold` | `on_hold` | `on_hold` | Giữ | Ghi | Ghi |
+| `cancel_scheduled` | Ghi | `cancel_at_period_end = true` | Như trái | Như trái | Như trái | Ghi | Ghi |
+| `cancel_unscheduled` | Ghi | `cancel_at_period_end = false` | Như trái | Như trái | Như trái | Ghi | Ghi |
+| `expired` | Ghi | `expired` | `expired` | `expired` | `expired` | Giữ | Giữ `revoked` |
+| `revoked` | Ghi | `revoked` | `revoked` | `revoked` | `revoked` | `revoked` | Giữ |
+| `refunded` | Ghi | Ghi (trial không có giao dịch) | Giao dịch là kỳ đang dùng → `revoked`; kỳ khác → ghi (D34) | Như `active` | Như `active` | Ghi | Ghi |
+| `refund_reversed` | Ghi | Ghi | Ghi | Ghi | Ghi | Ghi | Kỳ của giao dịch chưa hết → `active`; hết → `expired` |
+| `plan_changed` | Ghi | Đổi `interval`, giữ `trialing` | Đổi `interval` và kỳ, **giữ mốc** | Như `active` | Ghi | Ghi | Ghi |
+| `plan_change_scheduled` | Ghi | `pending_interval` | `pending_interval` | `pending_interval` | Ghi | Ghi | Ghi |
+| `plan_change_canceled` | Ghi | Xóa `pending_interval` | Như trái | Như trái | Như trái | Ghi | Ghi |
+| `payment_succeeded` | Tạo dòng `app:<user_id>` `active` tới `paid_at` + 30/365 ngày, mốc = `paid_at` (R11) | Ghi | Nối kỳ từ `current_period_end` (mốc giữ) | Ghi | Ghi | `active` từ `paid_at`, mốc mới | Như `expired` |
+
+**Chuyển theo thời gian** (tính lúc đọc; job mỗi giờ ghi lại, nhận dòng bằng `FOR UPDATE SKIP LOCKED`):
+
+| Khi | Thì |
+|---|---|
+| `trialing` / `active` tự gia hạn qua nhà cung cấp, chưa đặt hủy, quá `trial_ends_at` / `current_period_end`, chưa có thông báo (D31) | Vẫn Pro thêm `grace_days`; job mỗi giờ gọi `fetchState` nếu bộ nối có; quá khoảng → `on_hold` tới khi có thông báo |
+| `grace`, quá `grace_ends_at` | `on_hold` |
+| Đã đặt hủy cuối kỳ (`cancel_at_period_end`), quá cuối kỳ | `expired` |
+| Gói "app tự gia hạn", quá `current_period_end` | `expired` |
+| `on_hold` | Giữ tới khi có thông báo (`renewed`, `expired`, `revoked`) |
 
 - **Gia hạn lỗi (D23):** `grace_ends_at` = (lúc lỗi hoặc cuối kỳ, lấy mốc muộn hơn) + `grace_days` (mặc định 7); store gửi thời hạn riêng thì dùng của store.
-  Trong lúc chờ, chu kỳ lượt mới vẫn mở như đã trả (Đề xuất, đã duyệt 19/10). Trên mobile làm theo sự kiện store (Apple cho chọn 3, 16, 28 ngày).
+  Trong lúc chờ, chu kỳ lượt mới vẫn mở như đã trả. Trên mobile làm theo sự kiện store (Apple cho chọn 3, 16, 28 ngày).
 - **Hủy (D24):** `cancel_scheduled` → vẫn Pro tới `current_period_end`, rồi `expired`. Không hoàn tiền từ phía app.
-- **Hoàn tiền từ bên ngoài:** `refunded` cho kỳ hiện tại → `revoked` ngay; cho kỳ đã qua → ghi lại, không đổi quyền; `refund_reversed` → trả lại trạng thái nếu
-  kỳ chưa hết.
-- **Đổi tháng ↔ năm (D25):** `plan_changed` (tháng → năm) đổi `interval` và kỳ, **giữ mốc chu kỳ**; `plan_change_scheduled` ghi `pending_interval = month`, có
-  hiệu lực ở `renewed` kế tiếp; `plan_change_canceled` xóa `pending_interval`. Trong lúc chờ không đổi gì.
-- **Kiểu "app tự gia hạn"** (cổng Việt Nam thu một lần): `payment_succeeded` cấp `active` tới `paid_at + 30` hoặc `+ 365` ngày; mua thêm khi còn hạn thì nối
-  vào cuối kỳ của **chính gói đó**; hết kỳ không mua → `expired`. Email báo trước khi hết hạn (mục 14).
-- **Chuyển trạng thái theo thời gian** (hết chờ, hết kỳ) được **tính lúc đọc** (gói `grace` mà `grace_ends_at` đã qua được coi là `on_hold`), và job mỗi giờ ghi
-  lại cho đúng.
+- **Hoàn tiền (D34):** có hoàn tiền (kể cả một phần) cho **kỳ của giao dịch đang dùng** → mất Pro ngay (`revoked`); hoàn cho giao dịch khác (ví dụ Apple tự hoàn phần
+  tháng chưa dùng khi người dùng nâng lên năm: kỳ đang dùng là kỳ năm) → chỉ ghi lại. Hoàn tiền chủ động **chỉ admin** làm, bằng tay ở trang quản lý của nhà cung cấp;
+  admin muốn đền bù mà không cắt Pro thì cấp thêm (mục 10) thay vì hoàn tiền.
+- **Đổi tháng ↔ năm (D25):** như bảng: `plan_changed` giữ mốc; `plan_change_scheduled` có hiệu lực ở `renewed` kế tiếp; hủy lần đổi đang chờ thì xóa.
+- **Kiểu "app tự gia hạn" (R11):** mỗi người mỗi nhà cung cấp **một dòng** với `external_subscription_id = app:<user_id>`; còn hạn mà trả thêm → nối kỳ (năm nối 365
+  ngày); đã `expired` → kích hoạt lại chính dòng đó, mốc mới = lúc trả; `interval` theo lần trả gần nhất. Hai lần trả tới ngược thứ tự → kỳ dài bằng tổng hai lần (R1).
 
-## 10. Cấp tay (Chốt D6–D9, D19, D20)
+## 10. Cấp tay (Chốt D6–D9, D19, D20, D32, D33; chi tiết Đề xuất, đã duyệt 19/10)
 
 - **Quyền `entitlements.grant`** (`admin`, `editor`). Luật kiểm ở server:
 
@@ -378,11 +495,25 @@ endpoint test nào.
 | Cấp "một gói" Pro | Ai cũng được, kể cả chính mình | Chỉ tài khoản **không có vai trò staff**, không phải chính mình |
 | Cấp "con số riêng" phiên luyện | Ai cũng được | Như trên |
 | Cấp "con số riêng" lượt AI | Ai cũng được | **Không** |
-| Thu hồi | Mọi lần cấp | Chỉ lần cấp trên tài khoản không có vai trò staff |
+| Thu hồi lần cấp **không** có con số lượt AI | Mọi lần cấp | Chỉ lần cấp trên tài khoản không có vai trò staff |
+| Thu hồi lần cấp **có** con số lượt AI (kể cả "lượt AI: 0") | Có | **Không** (D33) |
 | Xem lịch sử | Có | Có |
 
-- Mọi lần cấp **bắt buộc** `ends_at` (sau `starts_at` và sau lúc cấp) và `reason`; `starts_at` mặc định là lúc cấp. Không có giới hạn độ dài tối đa (D20 chỉ bắt
-  buộc có hạn).
+- **Cấp "một gói" Pro là gói mới (D32):** lần cấp "một gói" khác đang hiệu lực của người đó tự bị thu hồi (`revoke_reason = replaced`, người thu hồi = người cấp mới);
+  mốc chu kỳ lượt AI đặt lại = `starts_at` của lần cấp mới (mục 5.5).
+- **Người nhận đang có gói trả tiền tự gia hạn** (`trialing`, `active`, `grace`, chưa đặt hủy): body phải có `confirm_turn_off_paid_renewal: true`, thiếu → 409
+  `grant-not-allowed` / `target-has-paid-subscription`. Có → ghi lần cấp, rồi gọi `cancelAtPeriodEnd` của bộ nối; thành công → `paid_renewal_action = turned_off`,
+  nhà cung cấp sẽ gửi `cancel_scheduled`. **Không hoàn tiền.** Lần cấp hết trước kỳ đã trả thì phần kỳ đã trả còn lại vẫn là Pro (gói đăng ký vẫn hiệu lực tới cuối
+  kỳ). Bộ nối không tắt được (ví dụ Apple: `ASSUMPTION` chỉ người dùng tự hủy, chưa kiểm) → lần cấp vẫn tạo, `paid_renewal_action = not_supported`, log
+  `paid_renewal_not_cancelled` cho staff — **xử lý sau** (chủ dự án 19/10, mục 19).
+- **Người tự mua Pro trong lúc đang được cấp:** lần cấp giữ; mốc đặt lại theo gói vừa mua (nguồn bắt đầu gần nhất).
+- **Nhập (R12):**
+  - Mọi lần cấp **bắt buộc** `ends_at` và `reason`. `starts_at` mặc định là lúc cấp; được đặt ở tương lai (lần cấp chưa bắt đầu không tính, thu hồi trước khi bắt đầu
+    được); không sớm hơn lúc cấp quá 5 phút (lệch đồng hồ). `ends_at` > max(`starts_at`, lúc cấp). Không có giới hạn độ dài tối đa (D20 chỉ bắt buộc có hạn).
+  - Khoảng hợp lệ của con số riêng = khoảng của cài đặt tương ứng ở mục 13, **cho phép 0**: `practice_sessions_per_day` 0–200, `ai_practice_per_cycle` 0–5.000,
+    `ai_lookup_per_cycle` 0–5.000. `kind = limits` phải có ít nhất một khóa.
+  - Đặt `practice_sessions_per_day = 0` → mở phiên trả lý do `plan-required` (403 `entitlement-required`), không có `resets_at` (ngày mai vẫn 0).
+  - `user_id` không tồn tại → 404 `not-found`.
 - Có hiệu lực ngay ở lần kiểm kế tiếp (không cache, mục 5.4). Thu hồi: `revoked_at`; quyền tính lại ngay; lượt đã dùng không tính lại.
 - Người nhận sau đó thành staff: lần cấp vẫn giữ; `editor` không thu hồi được nữa (`grant-not-allowed`).
 - Staff dùng phía người học như Free (D9); cần test thì `admin` cấp.
@@ -399,7 +530,10 @@ endpoint test nào.
 
 ## 12. API
 
-### 12.1 Người học (`@LearnerContent()` như Learning, Practice)
+### 12.1 Người học (chỉ cần đăng nhập; R15)
+
+API 1 chỉ cần đăng nhập (guard xác thực chung), **không** dùng `@LearnerContent()`: tài khoản mới chưa có hồ sơ và tài khoản staff vẫn gọi được, và Entitlements
+không phải import Content (tránh vòng import khi Content import Entitlements ở Bước 7). `resets_at` của kho phiên luyện tính theo múi giờ hồ sơ; chưa có thì UTC.
 
 | # | API | Làm gì |
 |---|---|---|
@@ -411,7 +545,7 @@ Mua, hủy, đổi gói: không có ở Bước 5 (mục 3).
 
 | # | API | Quyền | Khóa chống trùng | Làm gì |
 |---|---|---|---|---|
-| 2 | `POST /v1/admin/entitlements/grants` | `entitlements.grant` | `Idempotency-Key` | Body: `user_id`, `kind`, `plan` hoặc `limits`, `starts_at?`, `ends_at`, `reason`. Luật mục 10 |
+| 2 | `POST /v1/admin/entitlements/grants` | `entitlements.grant` | `Idempotency-Key` | Body: `user_id`, `kind`, `plan` hoặc `limits`, `starts_at?`, `ends_at`, `reason`, `confirm_turn_off_paid_renewal?`. Luật mục 10 (D32, D33, R12) |
 | 3 | `POST /v1/admin/entitlements/grants/{id}/revoke` | `entitlements.grant` | Tự nhiên (thu hồi lần hai trả kết quả cũ) | Body: `reason` |
 | 4 | `GET /v1/admin/entitlements/grants` | `entitlements.grant` | — | Lọc `user_id`, `granted_by`, `active`, `expiring_within_days`; phân trang `page_size` + `page_token` |
 | 5 | `GET /v1/admin/entitlements/users/{user_id}` | `entitlements.grant` | — | Như API 1 cho một người học, kèm danh sách nguồn và các lần cấp |
@@ -423,7 +557,7 @@ Các con số và công tắc chỉnh qua API cài đặt có sẵn `/v1/admin/s
 
 | # | API | Làm gì |
 |---|---|---|
-| 7 | `POST /v1/billing/webhooks/{provider}` | Mục 9.2. V1 chỉ có `fake` |
+| 7 | `POST` và `GET /v1/billing/webhooks/{provider}` | Mục 9.2. V1 chỉ có `fake` |
 
 ### 12.4 Dịch vụ cho module khác (export từ `entitlements/index.ts`)
 
@@ -432,7 +566,7 @@ Các con số và công tắc chỉnh qua API cài đặt có sẵn `/v1/admin/s
 | `check(userId, feature)` → `{ allowed: true } \| { allowed: false, reason, resets_at? }` | Practice (có), Content (Bước 7) | Giữ chữ ký của Bước 4, thêm lý do |
 | `checkQuota(userId, 'practice_sessions')` | Practice khi mở phiên | Mục 7.4 |
 | `recordPracticeSession(tx, userId, sessionId, localDate)` | Practice | Mục 7.4 |
-| `reserve` / `confirm` / `release(userId, pool, operationId)` | Practice, Content (Bước 7) | Mục 7.1; nhận transaction của bên gọi nếu cần |
+| `reserve` / `confirm` / `release(userId, pool, operationId)` | Practice, Content (Bước 7) | Mục 7.1; mỗi lần một transaction ngắn; không gọi AI khi đang giữ khóa (R6) |
 | `refund(userId, pool, operationId, reportId)` | Practice (Bước 7, xử lý báo lỗi câu AI) | Mục 7.2 |
 
 ### 12.5 Mã lỗi (Problem Details; Đề xuất, đã duyệt 19/10)
@@ -442,10 +576,10 @@ Các con số và công tắc chỉnh qua API cài đặt có sẵn `/v1/admin/s
 | `entitlement-required` | 403 | Practice, Bước 7 | Lý do `plan-required`: tính năng cần Pro hoặc con số = 0 (mã có sẵn từ Bước 4) |
 | `quota-exhausted` | 403 | Practice mở phiên, Bước 7 | Hết phiên hôm nay hoặc hết lượt AI chu kỳ này; kèm `resets_at`. Không dùng 429 để khỏi lẫn với chống spam |
 | `ai-unavailable` | 503 | Bước 7 | Công tắc AI tắt hoặc chạm trần toàn hệ thống; kèm `retry-after` |
-| `grant-not-allowed` | 409 | 2, 3 | Kèm `reason`: `target-is-staff`, `self-grant`, `ai-limits-admin-only`, `target-is-admin` |
+| `grant-not-allowed` | 409 | 2, 3 | Kèm `reason`: `target-is-staff`, `self-grant`, `ai-limits-admin-only` (đặt hoặc thu hồi, D33), `target-is-admin`, `target-has-paid-subscription` (thiếu xác nhận, D32) |
 | `grant-not-active` | 409 | 3 | Lần cấp đã hết hạn (đã thu hồi thì trả kết quả cũ) |
 | `validation-failed` | 400 | 2, 3, 6 | Thiếu `reason` hoặc `ends_at`; `ends_at` đã qua hoặc trước `starts_at`; con số ngoài khoảng; `kind` không khớp nội dung |
-| `not-found` | 404 | 3, 5 | Lần cấp, người dùng không có |
+| `not-found` | 404 | 2, 3, 5 | Lần cấp, người dùng không có |
 | `forbidden` | 403 | 2–6 | Không có quyền staff tương ứng (có sẵn từ Bước 1) |
 | (theo bộ nối) | 400 / 2xx | 7 | Sai chữ ký → 400; còn lại trả lời theo kiểu nhà cung cấp |
 | `rate-limited` | 429 | API ghi | Có sẵn (`user.write` cho API 2, 3) |
@@ -476,7 +610,8 @@ Nhóm `entitlements` (mới):
 Thêm vào nhóm `learning`: `groups_per_user` 100 (10–1.000), `items_per_group` 2.000 (100–10.000). Nhóm `content` (mới): `private_words_per_user` 10.000
 (1.000–100.000), `sentences_per_sense` 20 (5–100). Chốt D17, D18; khoảng là ASSUMPTION.
 
-**Cố định trong code:** thời gian giữ chỗ 2 phút (ER5); giờ Việt Nam cho ngày của trần AI; số lần thử áp lại một sự kiện (5).
+**Cố định trong code:** thời gian giữ chỗ 2 phút (ER5); giờ Việt Nam cho ngày của trần AI; số lần thử áp lại một sự kiện (5); giữ `raw_payload` 90 ngày (R23);
+trần email thanh toán 95% hạn mức email ngày (R18); body webhook 64 KB (R16). Đều là `ASSUMPTION`.
 
 Đổi con số giữa chu kỳ (ER9): áp ở lần kiểm kế tiếp; lượt đã dùng không tính lại; còn lại không âm. Giảm `items_per_group`, `groups_per_user` dưới số đang có:
 dữ liệu cũ giữ nguyên, chỉ chặn thêm mới (như luật hiện nay).
@@ -491,9 +626,13 @@ dữ liệu cũ giữ nguyên, chỉ chặn thêm mới (như luật hiện nay)
 | Báo sắp hết hạn | `current_period_end − expiry_notice_days_before` (mặc định 7) của gói "app tự gia hạn" | Người học |
 | Cảnh báo trần AI | Lượt AI trong ngày chạm `ai_cap_alert_percent` | Mọi `admin` đã xác minh email |
 
-- Gửi bằng hạ tầng email Bước 3 (`MailDispatcher`); **không bị trần 80% của email nhắc học** (đi như OTP) nhưng vẫn tính vào hạn mức ngày (`mailDailyBudget`
-  trong cấu hình; cách gắn cụ thể ở plan).
-- Job mỗi giờ (`MaintenanceScheduler`) tìm email đến hạn; `entitlement_notices` chặn gửi trùng; trễ tối đa khoảng một giờ.
+- **Gửi có trạng thái (R9):** job mỗi giờ (`MaintenanceScheduler`) tạo dòng `entitlement_notices` `pending` cho email đến hạn (unique chặn tạo trùng), nhận dòng
+  bằng `FOR UPDATE SKIP LOCKED`, gửi theo cách của email nhắc học Bước 3 (bảng có trạng thái gửi, không dùng kiểu "bắn rồi quên"), ghi `sent` / `failed` (`attempts`
+  + 1, thử lại giờ sau). Quá `window_ends_at` mà chưa gửi được → `skipped`, log. Cửa sổ: nhắc trial tới `trial_ends_at`; báo trước gia hạn và báo sắp hết hạn tới
+  `current_period_end`; cảnh báo trần tới hết ngày giờ Việt Nam. Trễ tối đa khoảng một giờ.
+- **Hạn mức email (R18):** không bị trần 80% của email nhắc học, nhưng dùng trần riêng **95%** hạn mức ngày (`MailBudget.tryConsume({ ceiling: 0.95 })`), chừa phần
+  còn lại cho OTP.
+- Gói `trial_denied` không nhận email trial (D30). Ngôn ngữ theo tiếng mẹ đẻ (K4).
 - Email báo trước khi trừ tiền kỳ mới (D29): chủ dự án thấy các app thường chỉ báo ở trial, không báo mỗi lần gia hạn → **mặc định tắt**, giữ sẵn để bật nếu
   luật sư nói Điều 42 Luật Bảo vệ quyền lợi người tiêu dùng 2023 (báo việc nộp phí ≥ 7 ngày làm việc trước khi hết hạn dịch vụ liên tục, theo research) áp cho gói
   tự gia hạn.
@@ -544,7 +683,7 @@ Mỗi luật cấp trên được dẫn (SR4, SR8, SR9, SR10, SR11, SR13, SR14, 
 
 | # | When | Then |
 |---|---|---|
-| B5E28 | Lan trả Pro tới 30/11, ngày 15/11 được cấp "Pro tới 15/12" (D19) | Pro tới 15/12; chu kỳ AI giữ mốc cũ tới 30/11, sau đó theo mốc 15/11; lượt đã dùng trong chu kỳ đang chạy vẫn tính |
+| B5E28 | Lan trả Pro tự gia hạn (mốc 1/11), ngày 15/11 được cấp "Pro tới 15/12" có `confirm_turn_off_paid_renewal` (D19, D32) | Bộ nối tắt tự gia hạn (gói trả tiền hết 30/11, không trừ kỳ sau, không hoàn tiền); mốc mới 15/11, chu kỳ [15/11, 15/12) đủ lượt; Pro tới 15/12 |
 | B5E29 | Pro 300 lượt, admin đặt "lượt bài AI: 500 tới 31/12" | Con số 500 tới 31/12, rồi về 300; đã dùng giữ nguyên |
 | B5E30 | Hai lần đặt con số riêng cho cùng kho cùng hiệu lực | Lần tạo sau cùng thắng; thu hồi lần đó thì lần trước có hiệu lực lại |
 | B5E31 | Admin đặt "lượt bài AI: 0" cho một tài khoản Pro | `ai.practice` → `entitlement-required` tới khi hết hạn lần đặt |
@@ -579,19 +718,51 @@ Mỗi luật cấp trên được dẫn (SR4, SR8, SR9, SR10, SR11, SR13, SR14, 
 | B5E55 | Gói báo về là trial cho tài khoản đã có `trial_history`, hoặc thẻ đã dùng trial (D22, D30) | `trial_denied`: không có Pro trong thời gian trial (vẫn Free); bộ nối có `endTrialNow` → gọi, có `renewed` thì Pro như mua thường; log `trial_reuse_detected` |
 | B5E56 | `payment_succeeded` (app tự gia hạn) khi gói đó còn 10 ngày | Kỳ nối thêm 30/365 ngày từ cuối kỳ hiện tại |
 | B5E57 | Gói "app tự gia hạn" hết kỳ, không mua lại | `expired`; email báo sắp hết hạn đã gửi trước `expiry_notice_days_before` ngày (mặc định 7) |
-| B5E58 | Người dùng có cùng lúc gói Apple và gói web (Apple 3.1.3(b)) | Hai nguồn Pro; Pro khi còn ít nhất một; mốc theo nguồn bắt đầu sớm nhất |
+| B5E58 | Người dùng có cùng lúc gói Apple và gói web (Apple 3.1.3(b)) | Hai nguồn Pro; Pro khi còn ít nhất một; mốc theo nguồn bắt đầu gần nhất (D32) |
 | B5E59 | Tài khoản đang "đang xóa" (SR11, khi Bước 8 có trạng thái này) nhận sự kiện thanh toán | Sự kiện lưu, không áp (`ignored`, lý do `user-deleting`); không ghi dữ liệu mới cho người đó |
 
 ### 15.5 Email, dữ liệu, giới hạn
 
 | # | When | Then |
 |---|---|---|
-| B5E60 | Job chạy hai lần cùng giờ (hai tiến trình API) | `entitlement_notices` unique: một email |
-| B5E61 | Hạn mức email ngày đã hết | Email thanh toán không gửi được, log; job thử lại giờ sau; không chặn OTP |
+| B5E60 | Job chạy hai lần cùng giờ (hai tiến trình API) | Unique chặn tạo trùng dòng; `FOR UPDATE SKIP LOCKED` chặn gửi trùng: một email |
+| B5E61 | Đã chạm trần 95% hạn mức email ngày | Email thanh toán chưa gửi, dòng `failed`, thử lại giờ sau (trong cửa sổ); OTP vẫn còn 5% |
 | B5E62 | Log của webhook, cấp tay, sổ lượt (SR10) | Mang `operation_id`; không có số thẻ, email, `raw_payload` |
 | B5E63 | Người học gọi `GET /v1/me/entitlements` liên tục | Chỉ đọc, không ghi gì; Bước 5 không thêm rule giới hạn cho API đọc (SR14 chỉ đòi cho API ghi) |
 | B5E64 | Admin giảm `groups_per_user` dưới số nhóm một người đang có | Nhóm cũ giữ nguyên; tạo nhóm mới bị từ chối như luật hiện nay |
 | B5E65 | Admin đặt `ai_daily_cap = 0` | Mọi `reserve` AI → `ai-unavailable` (như tắt công tắc) |
+
+### 15.6 Thêm sau review độc lập (19/10/2026)
+
+| # | When | Then |
+|---|---|---|
+| B5E66 | Job đã ghi gói `expired`, rồi `renewed` của kỳ mới tới muộn (R2) | `active`, mốc mới; Pro lại ngay |
+| B5E67 | Gói tự gia hạn quá cuối kỳ 3 ngày chưa có thông báo nào (D31) | Vẫn Pro; job gọi `fetchState` nếu có; quá `grace_days` (7) vẫn chưa có → `on_hold` tới khi có thông báo |
+| B5E68 | Trial quá `trial_ends_at` chưa có thông báo (D31) | Như B5E67 |
+| B5E69 | Hai `payment_succeeded` (gói app tự gia hạn) tới ngược thứ tự (R1) | Cả hai áp (không `stale`); kỳ dài bằng tổng hai lần |
+| B5E70 | `renewed` tới sau `cancel_scheduled` có `occurred_at` muộn hơn (R1) | `renewed` vẫn áp, kỳ dời; `cancel_at_period_end` giữ `true` (hết kỳ mới thì `expired`) |
+| B5E71 | Hai sự kiện trạng thái cùng `occurred_at` | Áp theo thứ tự nhận |
+| B5E72 | Sự kiện `sandbox` tới API chạy production (R17) | Lưu, `ignored`, log |
+| B5E73 | Mở phiên mới đúng lúc câu đầu của phiên cũ đang được ghi, Free đã có 2 phiên (R4) | Phiên cũ được tính (3); `checkQuota` chạy sau lệnh đóng phiên cũ nên thấy 3 → mở phiên mới bị 403 `quota-exhausted`; không có phiên thứ 4 |
+| B5E74 | Bên gọi giữ một transaction và gọi `reserve` hai lần (R6) | Không được làm (hợp đồng mục 7.1); plan có test chặn ở Practice/Content (Bước 7) |
+| B5E75 | `confirm` trên dòng bên gọi đã nhả vì AI lỗi (R7) | Không đổi, trả `released` |
+| B5E76 | `confirm` muộn khi đã có một dòng mới cùng `operation_id` đang `reserved` (R7) | Dòng cũ → `released` (`late-confirm-free`); dòng mới không bị ảnh hưởng |
+| B5E77 | Ghi nhận phiên khi dòng của phiên đó đã có (gọi lại) (R14) | `ON CONFLICT DO NOTHING`; transaction ghi đáp án không hỏng |
+| B5E78 | Admin cấp Pro lần hai cho người đang có lần cấp Pro (D32) | Lần cũ `revoked`, `revoke_reason = replaced`; mốc = `starts_at` lần mới; đủ lượt |
+| B5E79 | Cấp Pro cho người đang trả tiền tự gia hạn mà thiếu `confirm_turn_off_paid_renewal` (D32) | 409 `grant-not-allowed` / `target-has-paid-subscription`; không lưu gì |
+| B5E80 | Cấp Pro cho người đang trả tiền qua nhà cung cấp không tắt được tự gia hạn (D32) | Lần cấp tạo; `paid_renewal_action = not_supported`; log cho staff; gói trả tiền vẫn tự gia hạn (xử lý sau) |
+| B5E81 | Lần cấp Pro 15/11–20/11 cho người có gói trả tiền đã tắt tự gia hạn tới 30/11 | 20/11–30/11 vẫn Pro (gói trả tiền); mốc từ 20/11 là mốc của gói trả tiền (bảng ví dụ 5.5) |
+| B5E82 | Editor thu hồi lần cấp "lượt bài AI: 0" do admin đặt (D33) | 409 `grant-not-allowed` / `ai-limits-admin-only` |
+| B5E83 | Cấp với `practice_sessions_per_day = 0` (R12) | Mở phiên → 403 `entitlement-required`, không có `resets_at` |
+| B5E84 | Cấp với `starts_at` ở tương lai, rồi thu hồi trước khi bắt đầu (R12) | Chưa bắt đầu thì không tính; thu hồi được; không đổi gì cho người học |
+| B5E85 | Cấp cho `user_id` không tồn tại (R12) | 404 `not-found` |
+| B5E86 | `refunded` một phần cho giao dịch của kỳ đang dùng (D34) | `revoked`, mất Pro ngay |
+| B5E87 | Apple tự hoàn phần tháng chưa dùng khi người dùng nâng lên gói năm (D34) | Giao dịch được hoàn không phải kỳ đang dùng (kỳ năm) → chỉ ghi; vẫn Pro |
+| B5E88 | Hoàn lượt khi chu kỳ chỉ có lượt đang giữ, chưa có lượt đã xác nhận (R21) | Không ghi `credit` |
+| B5E89 | Hai tài khoản cùng một thẻ bắt đầu trial gần như cùng lúc (R25) | Unique `(provider, payment_fingerprint)`: tài khoản tới sau `trial_denied` |
+| B5E90 | Gói báo trial cho tài khoản chưa xác minh email (R25) | Trial vẫn tính (điều kiện email chỉ ở `trial_eligible`); ghi `trial_history` |
+| B5E91 | Tài khoản mới chưa có hồ sơ, hoặc staff, gọi `GET /v1/me/entitlements` (R15) | 200; `resets_at` của phiên luyện theo UTC nếu chưa có múi giờ |
+| B5E92 | Job dọn `raw_payload` chạy (R23) | Dòng sự kiện cũ hơn 90 ngày: `raw_payload` = null; các cột chuẩn hóa giữ |
 
 ## 16. Acceptance criteria (When → Then)
 
@@ -620,28 +791,46 @@ Mỗi luật cấp trên được dẫn (SR4, SR8, SR9, SR10, SR11, SR13, SR14, 
 | B5#21 | Lọc lịch sử `granted_by = editor`, `expiring_within_days = 7` | Chỉ các lần cấp đúng điều kiện |
 | B5#22 | Hoàn lượt một câu đã trừ trong chu kỳ | Còn lại tăng 1; hoàn lần hai không đổi |
 | B5#23 | Admin đổi `free_practice_sessions_per_day` thành 5 | Free mở được phiên thứ 4, 5 ngay trong ngày |
-| B5#24 | Admin đổi `private_words_per_user` thành 1.000 khi người học có 1.200 từ riêng | Từ cũ giữ; thêm từ riêng mới bị từ chối |
+| B5#24 | Admin đổi `private_words_per_user` về mức thấp hơn số từ riêng người học đang có (dữ liệu tạo sẵn bằng SQL, R13) | Từ cũ giữ; thêm từ riêng mới bị từ chối |
 | B5#25 | Bật `ads_enabled` | Free: `ads.show = true` kèm tần suất; Pro, trial: `false` |
 | B5#26 | Webhook sai chữ ký | 400; không có dòng sự kiện |
 | B5#27 | `GET /v1/admin/entitlements/ai-usage` bằng tài khoản editor | 403 `forbidden` |
-| B5#28 | Fake: `subscription_started` có trial cho tài khoản đã có `trial_history` (D30) | `plan = free` trong thời gian trial; log `trial_reuse_detected`; fake `endTrialNow` được gọi; sau `renewed` thì `plan = pro` |
+| B5#28 | Fake: `subscription_started` có trial cho tài khoản đã có `trial_history` (D30) | `plan = free` trong thời gian trial; log `trial_reuse_detected`; trạng thái bộ nối giả cho thấy `endTrialNow` đã được gọi; sau `renewed` thì `plan = pro` |
+| B5#29 | Fake: gói `active`, lùi `current_period_end` về 3 ngày trước bằng SQL, không gửi sự kiện (D31) | Vẫn Pro; lùi thêm 8 ngày → `on_hold` |
+| B5#30 | Fake: `expired`, rồi `renewed` của kỳ mới (R2) | `plan = pro` lại |
+| B5#31 | Admin cấp Pro cho người đang có gói fake tự gia hạn, có xác nhận (D32) | Lần cấp tạo; bộ nối giả ghi đã tắt tự gia hạn; mốc mới; đủ lượt |
+| B5#32 | Editor thu hồi lần cấp có con số lượt AI (D33) | 409 `grant-not-allowed` / `ai-limits-admin-only` |
+| B5#33 | Fake: `refunded` một phần cho giao dịch của kỳ đang dùng (D34) | Mất Pro ngay |
+| B5#34 | `pnpm smoke:buoc-4` chạy lại sau Bước 5 (R5) | Qua (learner của nó được cấp con số phiên riêng ở đầu script) |
 
 ## 17. Kiểm thử và "Xong khi" (Chốt D26, D27)
 
 1. **CI xanh trên mọi PR** (`ci.yml`: lint, typecheck, build, unit, kiểm migration khớp schema). **Unit** cho các hàm thuần, theo bảng ví dụ: tính gói từ nhiều
-   nguồn (mục 5.4), chu kỳ theo mốc (31/01 → 28/02 → 31/03; mốc đổi khi nguồn sớm nhất hết), ngày địa phương của phiên, đếm đã dùng và hoàn lượt (mục 7.2), máy trạng
-   thái gói (bảng 9.4, mọi cặp trạng thái × sự kiện), luật sai thứ tự, luật cấp tay (bảng mục 10), chuẩn hóa và chữ ký của bộ nối giả.
-2. **`pnpm smoke:buoc-5`** qua API và worker thật trên database mới `english_learning_smoke_b5` (như `smoke:buoc-4`): các bước B5#1–B5#28, dùng
-   `pnpm billing:fake-event` và `pnpm entitlements:fake-ai`; đồng hồ giả hoặc lùi ngày bằng SQL như Bước 4; đọc Mailpit cho email.
-3. **Không có e2e backend** (D38 Bước 4): khóa và chạy đua (B5E1, B5E11) **chỉ** được kiểm bằng smoke (request song song thật trên Postgres). Ghi ở rủi ro.
-4. Task cuối của plan chạy (1) và (2), ghi as-built vào `docs/deliveries/buoc-5.md`. Implement: các phiên khác, một phiên điều phối; plan có mục brief cho phiên điều phối.
+   nguồn (mục 5.4), chu kỳ theo mốc (31/01 → 28/02 → 31/03; bảng ví dụ mốc ở 5.5), ngày địa phương của phiên, đếm đã dùng và hoàn lượt (mục 7.2), luật `confirm`
+   (bảng 7.1), máy trạng thái gói (bảng 9.4 **từng ô**, và bảng chuyển theo thời gian), luật thứ tự hai loại sự kiện (9.2), luật cấp tay (bảng mục 10), chuẩn hóa và
+   chữ ký của bộ nối giả.
+2. **`pnpm smoke:buoc-5`** qua API và worker thật trên database mới `english_learning_smoke_b5` (như `smoke:buoc-4`): các bước B5#1–B5#34, dùng
+   `pnpm billing:fake-event` và `pnpm entitlements:fake-ai`; đọc Mailpit cho email. API thật **không có đồng hồ giả**: "qua thời gian" làm bằng cách lùi mốc thời gian
+   bằng SQL như Bước 4 (R13). Cột cần lùi: `subscriptions.trial_ends_at`, `current_period_start/end`, `grace_ends_at`; `usage_records.reserved_at`, `expires_at`,
+   `confirmed_at`, `local_date`, `system_date`; `entitlement_grants.starts_at`, `ends_at`; `entitlement_notices.due_at`. Dữ liệu lớn (ví dụ hơn 1.000 từ riêng cho B5#24)
+   tạo bằng SQL thay vì gọi API (rate limit `user.write` 30 lần/phút sẽ cần hơn 30 phút). Kiểm chạy đua bằng **N request song song** (ví dụ 10, không phải 2) để giảm
+   may rủi; chạy cả hai đường có và không có `fetchState` (cờ của bộ nối giả).
+3. **Không có e2e backend** (D38 Bước 4): khóa và chạy đua (B5E1, B5E11, B5E73) **chỉ** được kiểm bằng smoke (request song song thật trên Postgres). Ghi ở rủi ro.
+4. **Plan có task sửa `smoke:buoc-4`** (R5): learner của script đó thành Free (3 phiên/ngày) sau Bước 5, nên script cấp cho learner một con số phiên riêng ở đầu
+   (qua API cấp tay bằng tài khoản admin của script); chạy lại `smoke:buoc-4` là một bước của "Xong khi" (B5#34).
+5. Task cuối của plan chạy (1), (2) và `smoke:buoc-4`, ghi as-built vào `docs/deliveries/buoc-5.md`. Implement: các phiên khác, một phiên điều phối; plan có mục
+   brief cho phiên điều phối.
+6. **Gợi ý chia plan** (review mục 5, ước lượng 28–34 task): một plan bốn milestone, hoặc hai plan nối tiếp — **5a phần lõi** (gói, sổ lượt, cấp tay, Settings, sửa
+   Practice/Learning/Content, API người học và staff, smoke phần lõi) và **5b cổng thanh toán và email** (bộ nối giả, hộp sự kiện, máy trạng thái, trial, email). Chọn
+   cách chia khi viết plan.
 
 ## 18. Ảnh hưởng tới các bước sau
 
 - **Bước 6 (AI Integration):** kiểm lại `ai_enabled` trước khi gọi provider (AR10); sổ chi phí từng lần gọi; xét thêm trần bằng tiền và đối chiếu sổ lượt với sổ chi
   phí theo `operation_id`. Chọn model phải tính chi phí mỗi lượt so với giá Pro (Sonnet tầm trung có thể ngang giá gói, theo research).
-- **Bước 7 (Practice AI, Content AI):** gọi `reserve` / `confirm` / `release` cho `ai_practice`, `ai_lookup`; một lượt cho cả lần tạo lại; làm lại câu đã lưu không
-  `reserve`; dịch bổ sung dùng `ai_practice`; báo lỗi câu AI và staff xác nhận sai → `refund`. Content kiểm `ai.lookup` ở bước AI của chuỗi tra nghĩa; Free bỏ qua bước AI.
+- **Bước 7 (Practice AI, Content AI):** gọi `reserve` / `confirm` / `release` cho `ai_practice`, `ai_lookup` theo hợp đồng mục 7.1 (mỗi lần một transaction ngắn;
+  không gọi AI khi đang giữ khóa; một `reserve` mỗi transaction; R6); một lượt cho cả lần tạo lại; làm lại câu đã lưu không `reserve`; dịch bổ sung dùng
+  `ai_practice`; báo lỗi câu AI và staff xác nhận sai → `refund`. Content kiểm `ai.lookup` ở bước AI của chuỗi tra nghĩa; Free bỏ qua bước AI.
 - **Bước 8 (Identity còn lại):** xóa tài khoản xóa lần cấp, sổ lượt, gói đăng ký, thông báo của người đó (ER16); còn mở: giữ `trial_history` (mã thẻ) sau khi xóa để chặn
   trial lại hay không (đụng SR11); giữ hóa đơn cho thuế; trạng thái "đang xóa" cho B5E59.
 - **Đợt giao diện:** trang gói của người học (lượt còn lại, ngày làm mới, nút lên Pro), thông báo hết lượt và mời lên Pro, quảng cáo (SDK, hỏi đồng ý, tuổi tối
@@ -658,7 +847,13 @@ Mỗi luật cấp trên được dẫn (SR4, SR8, SR9, SR10, SR11, SR13, SR14, 
 - **Không có e2e backend:** khóa, chạy đua, transaction chỉ được kiểm bằng smoke; unit dùng mock không bắt được lỗi SQL.
 - **Khóa chung của trần AI** tuần tự hóa mọi lần giữ lượt AI của mọi người; ổn ở quy mô pilot (AR11: 5 lời gọi cùng lúc), phải đo lại nếu người dùng tăng nhiều.
 - **Trần bằng lượt lệch tiền thật:** lần gọi lại (~10%), đổi model; Bước 6 có sổ chi phí thì xét trần bằng tiền.
-- **Mốc chu kỳ khi nhiều nguồn chồng nhau** (mục 5.5) có thể làm người học thấy ngày làm mới đổi khi một nguồn hết (B5E28); hiếm, chấp nhận.
+- **Mốc chu kỳ khi nhiều nguồn chồng nhau** (mục 5.5): mốc theo nguồn bắt đầu gần nhất (D32); khi nguồn đó hết trước nguồn cũ, chu kỳ quay về mốc của nguồn cũ và
+  đếm cả lượt đã dùng (B5E81); hiếm, chấp nhận.
+- **App không tắt được tự gia hạn trên store khi staff cấp Pro** (D32): `ASSUMPTION` Apple chỉ cho người dùng tự hủy, chưa kiểm; Google Play có API hủy cho developer
+  (chưa kiểm). Chủ dự án 19/10/2026: **"cái này sẽ handle sau"** — xử lý khi viết bộ nối Apple/Google; tới lúc đó lần cấp vẫn tạo, `paid_renewal_action =
+  not_supported`, log cho staff, và người dùng có thể vẫn bị store trừ tiền kỳ sau.
+- **Hoàn tiền chủ động chỉ admin làm** (D34), bằng tay ở trang quản lý của nhà cung cấp; app không có nút hoàn tiền. Hoàn tiền (kể cả một phần) cắt Pro của kỳ đó;
+  muốn đền bù mà giữ Pro thì cấp thêm.
 - **Mã nhận diện thẻ** không phải nhà cung cấp nào cũng có (chưa kiểm từng bên); khi không có, "một trial theo thẻ" không chặn được.
 - **Trial lại sau khi xóa tài khoản** (Bước 8, đụng SR11).
 - **Thẻ hết tiền** dùng được tối đa 7 ngày trial + 7 ngày chờ Pro; chặn bởi một trial theo tài khoản và thẻ.
@@ -672,6 +867,6 @@ Mỗi luật cấp trên được dẫn (SR4, SR8, SR9, SR10, SR11, SR13, SR14, 
 ## 20. Tài liệu cần cập nhật sau khi duyệt
 
 Một PR docs nhỏ riêng: `CLAUDE.md` (trỏ tới design Bước 5; mục "Việc phải phân tích khi tới bước tương ứng": các ý Bước 5–6 về `entitlements.grant`, `ai.settings` đã
-được trả lời ở D6–D8 và ⚠8) và `docs/HANDOFF_2026-10-05_BUOC_0.md` §2 (dòng Bước 5: thêm cổng thanh toán giả, quảng cáo, phiên luyện Free). Memory
-`project_limits_by_subscription.md` sửa theo D4, D17 (giới hạn không theo gói). `docs/specs/` không sửa. Decision record viết cùng PR này. Landing sửa khi chốt câu chữ
-gói (⚠9), không thuộc PR này.
+được trả lời ở D6–D8, D33 và ⚠8) và `docs/HANDOFF_2026-10-05_BUOC_0.md` §2 (dòng Bước 5: thêm cổng thanh toán giả, quảng cáo, phiên luyện Free). Memory
+`project_limits_by_subscription.md` đã xóa (19/10, thay bởi D4, D17). `docs/specs/` không sửa. Decision record cập nhật cùng PR review này (D31–D34). Landing sửa
+khi chốt câu chữ gói (⚠9), không thuộc PR này.

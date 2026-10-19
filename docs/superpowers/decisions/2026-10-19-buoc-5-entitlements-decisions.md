@@ -7,6 +7,9 @@ làm*; file này trả lời *tại sao chọn vậy và đã bỏ gì*. Nguồn
 
 > **Trạng thái 19/10/2026: đã chốt toàn bộ.** Ba phần design trình trong chat đã duyệt; khi đọc bản viết, chủ dự án sửa hai chỗ (D29, D30) rồi duyệt design
 > ("Mình duyệt design Bước 5", 19/10).
+>
+> **Sau review độc lập 19/10/2026** ([`../reviews/2026-10-19-buoc-5-design-review.md`](../reviews/2026-10-19-buoc-5-design-review.md), 25 phát hiện): bốn câu
+> sản phẩm chốt thành **D31–D34**; các sửa kỹ thuật chủ dự án duyệt hết ("ok"), ghi ở mục "Chọn thêm sau review độc lập".
 
 **Nhãn:** ✅ = phương án được chọn. **Ai chốt:** "Chủ dự án" = chọn trong chat; "Đề xuất của Claude" = Claude đề xuất sau khi chủ dự án trả lời "chưa rõ",
 không chọn, hoặc nhờ đề xuất, chủ dự án đồng ý; "Duyệt cùng design" = Claude đề xuất khi trình một phần design, chủ dự án duyệt cả phần.
@@ -49,6 +52,10 @@ không chọn. Mục cuối ghi những chỗ Claude đề xuất trước khi c
 | D28 | Cách dựng sổ lượt | (A) Đếm dòng trong sổ mỗi lần kiểm | Chủ dự án theo đề xuất của Claude (sau mô phỏng) |
 | D29 | Email báo trước mỗi kỳ gia hạn | Làm sẵn, mặc định tắt; bật nếu luật sư nói bắt buộc | Chủ dự án ("phải cân nhắc"; mặc định tắt: đề xuất của Claude) |
 | D30 | Trial lần hai | Chỉ một trial, hệ thống Wordmet quyết; tài khoản hoặc thẻ đã dùng trial thì không có Pro trong trial đó | Chủ dự án |
+| D31 | Gói tự gia hạn quá kỳ chưa có thông báo (sau review) | Vẫn Pro thêm `grace_days` rồi khóa tới khi có thông báo | Chủ dự án (dùng chung `grace_days`, hỏi lại trạng thái: đề xuất của Claude) |
+| D32 | Cấp gói khi người nhận đã có nguồn Pro (sau review) | Cấp Pro là gói mới: thu hồi lần cấp cũ, đặt lại mốc; người đang trả tiền → tắt tự gia hạn, không hoàn tiền; staff xác nhận; mốc theo nguồn bắt đầu gần nhất | Chủ dự án (cách làm cụ thể: đề xuất của Claude, chủ dự án "ok") |
+| D33 | Editor thu hồi lần cấp có lượt AI (sau review) | Không; chỉ admin | Chủ dự án |
+| D34 | Hoàn tiền một phần (sau review) | Có hoàn tiền (kể cả một phần) cho kỳ đang dùng → mất Pro ngay; hủy không hoàn → giữ tới hết kỳ; hoàn tiền chủ động chỉ admin | Chủ dự án (áp theo giao dịch được hoàn: đề xuất của Claude) |
 
 ## D1 — Cách làm việc
 
@@ -433,6 +440,68 @@ nhà cung cấp, và store mobile tự cấp offer theo Apple ID / tài khoản 
 trong `trial_history` thì **không có Pro trong thời gian trial đó** (vẫn Free); gọi `endTrialNow` nếu nhà cung cấp hỗ trợ để người dùng trả tiền ngay và có Pro như mua
 thường. Bỏ phương án "vẫn cho trial".
 
+## D31 — Gói tự gia hạn quá cuối kỳ mà chưa có thông báo (sau review, R2)
+
+Bối cảnh: thông báo gia hạn thường tới trễ vài phút tới vài giờ, đôi khi mất; review chỉ ra design để gói hoặc thành Pro mãi (nếu chỉ tin thông báo) hoặc mất Pro
+vĩnh viễn (nếu job ghi `expired` rồi `renewed` tới muộn).
+
+| Phương án | Trade-off |
+|---|---|
+| (a) Vẫn Pro tới khi nhà cung cấp báo | Không làm phiền người trả tiền; thông báo mất thì Pro mãi |
+| ✅ (b) Vẫn Pro thêm một khoảng (ví dụ 7 ngày) rồi khóa tới khi có thông báo | Chịu được thông báo trễ; có điểm dừng |
+| (c) Khóa ngay ở cuối kỳ tới khi có "đã gia hạn" | Chặt; người trả tiền đúng hạn có thể bị khóa vài giờ |
+| (d) Cách khác | — |
+
+Claude đề xuất thêm (chủ dự án không phản đối): dùng chung `grace_days`; trong khoảng chờ job hỏi lại trạng thái (`fetchState`) nếu bộ nối hỗ trợ; trial quá hạn chưa
+có thông báo cũng vậy; `renewed` tới muộn luôn đưa gói về `active`.
+
+## D32 — Cấp gói khi người nhận đã có nguồn Pro (sau review, R8)
+
+Vòng 1 (Q2 của review), ví dụ Lan trả Pro từ 1/11, được cấp "Pro tới 15/12" ngày 15/11, gói trả tiền hết 30/11, đã dùng 300 lượt từ 16/11:
+
+| Phương án | Trade-off |
+|---|---|
+| (a) Như design: theo mốc của nguồn còn lại | Không lưu thêm gì; có lúc cho thêm lượt, có lúc 0 lượt nhiều ngày |
+| (b) Giữ chu kỳ cũ tới khi hết mọi nguồn Pro | Dễ hiểu với người học; phải lưu mốc đang dùng cho từng người |
+| (c) Chu kỳ mới ngay lúc nguồn cũ hết | Đơn giản; người học có thể được thêm một chu kỳ lượt |
+| (d) Cách khác | — |
+
+Chủ dự án: "nếu cấp gói mới thì gói cũ hủy và gói mới được kích hoạt chứ, sao lại giữ nguyên gói cũ". Claude tách hai trường hợp (gói cũ do staff cấp / gói cũ trả
+tiền qua nhà cung cấp) và hỏi trường hợp trả tiền: (a) không cho cấp gói khi đang trả tiền / (b) cho cấp, gói trả tiền vẫn chạy và vẫn trừ tiền / (c) cho cấp và báo nhà
+cung cấp tạm dừng / (d) khác. Chủ dự án (✅ cách khác): "nếu cấp thì reset lại mốc, không hoàn tiền thì đúng hơn… nếu cấp thì hủy gói cũ và dùng gói mới… chỉ trừ khi có
+sự cố trong gói và thu hồi cấp thì mới hoàn tiền".
+
+Claude đề xuất cách làm, chủ dự án "ok": cấp Pro là gói mới (lần cấp cũ tự thu hồi, mốc đặt lại); người đang trả tiền tự gia hạn → hệ thống tắt tự gia hạn, không hoàn
+tiền, phần kỳ đã trả còn lại vẫn Pro; staff phải xác nhận; hoàn tiền khi có sự cố do staff làm bằng tay; mốc theo nguồn Pro bắt đầu gần nhất. Riêng "trên iPhone app có
+thể không tắt được tự gia hạn thay người dùng (chưa kiểm)": chủ dự án "cái này sẽ handle sau, lưu vào context giúp mình" → ghi ở design mục 10, 19.
+
+## D33 — Editor thu hồi lần cấp có con số lượt AI (sau review, R12)
+
+Ví dụ: admin Hà đặt "lượt bài AI: 0 tới 31/12" để chặn Minh spam AI; editor An thu hồi lần cấp đó thì Minh dùng lại AI.
+
+| Phương án | Trade-off |
+|---|---|
+| (a) Được, như luật hiện tại | Editor tự xử lý được; gián tiếp mở lại AI, trái tinh thần D7 |
+| ✅ (b) Lần cấp có con số lượt AI chỉ admin thu hồi | Khớp D7; editor vẫn thu hồi được lần cấp khác |
+| (c) Editor chỉ thu hồi lần cấp do editor tạo | Rõ ràng theo người cấp; chặn cả lần cấp không dính AI của admin |
+| (d) Cách khác | — |
+
+## D34 — Hoàn tiền một phần (sau review, R24)
+
+Chủ dự án hỏi "bối cảnh này bị gì mà hoàn tiền" → Claude nêu ba tình huống (Apple tự hoàn phần tháng chưa dùng khi nâng lên năm; staff hoàn một phần khi có sự cố;
+người dùng khiếu nại store hoặc ngân hàng). Chủ dự án: hoàn tiền chủ động "phải qua admin"; hỏi "store có tự quyết không?" → Claude trả lời theo research và trang Apple
+đọc lại 19/10 (Apple có; Google 48 giờ đầu là Google, sau đó developer; ngân hàng tự quyết chargeback; web chủ yếu do admin).
+
+| Phương án | Trade-off |
+|---|---|
+| ✅ (a) Như hoàn toàn phần: mất Pro ngay | Một luật đơn giản: có hoàn tiền là hết Pro |
+| (b) Giữ Pro, chỉ ghi lại | Không cắt người dùng vì khoản hoàn nhỏ; dễ bị lợi dụng khiếu nại |
+| (c) Cắt ngắn kỳ theo tỉ lệ tiền hoàn | Công bằng theo số tiền; phức tạp, khó giải thích |
+| (d) Cách khác | — |
+
+Chủ dự án: "nếu hoàn tiền thì đồng nghĩa với pro mất, còn nếu trường hợp hủy mà không mất tiền thì giữ cho tới hết kỳ". Claude đề xuất (chủ dự án không phản đối): áp
+cho kỳ của giao dịch được hoàn, để khoản Apple tự hoàn khi nâng tháng → năm không cắt kỳ năm vừa trả; admin muốn đền bù mà giữ Pro thì cấp thêm thay vì hoàn tiền.
+
 ## Đề xuất kỹ thuật được duyệt cùng design
 
 **Chọn** (phần 1, 2, 3 trình trong chat, chủ dự án duyệt từng phần: "ok", "ok", "mình duyệt"):
@@ -467,6 +536,19 @@ mọi tài khoản là Free, admin tự cấp ("ok"); `trial_eligible` cần ema
 - Quảng cáo "xem để nhận thưởng" (D21).
 - Mua, hủy, đổi gói từ phía app ở Bước 5: làm cùng bộ nối thật và giao diện.
 - Quyền `ai.settings` riêng: trùng `settings.manage`.
+
+**Chọn thêm sau review độc lập** (Claude đề xuất khi sửa design theo review; chủ dự án đọc danh sách một dòng mỗi điểm và trả lời "ok", 19/10; chi tiết ở design mục 0,
+bảng "Sau review độc lập"):
+- R1: thông báo chia loại trạng thái (theo `occurred_at`) và cộng thêm (luôn áp, chống trùng theo mã giao dịch); payload tối thiểu từng loại.
+- R2, R3: không có trạng thái cụt; bảng đủ trạng thái × sự kiện; bảng chuyển theo thời gian.
+- R4: kiểm hạn mức phiên sau khi đóng phiên cũ. R5: task sửa `smoke:buoc-4`.
+- R6, R7: hợp đồng giữ lượt cho bên gọi (transaction ngắn, không gọi AI khi giữ khóa, một `reserve` mỗi transaction); bảng luật `confirm`, lý do nhả.
+- R9, R18, R19: email có trạng thái và cửa sổ gửi, trần 95% hạn mức email, job nhận dòng bằng `FOR UPDATE SKIP LOCKED`.
+- R10, R11, R16, R17, R23: luật `fetchState`, bộ nối giả có trạng thái; gói "app tự gia hạn" một dòng mỗi người; webhook raw body, 64 KB, nhận GET; sự kiện `sandbox`
+  không áp ở production; xóa `raw_payload` sau 90 ngày.
+- R12: khoảng hợp lệ của con số riêng, luật `starts_at`, số phiên = 0, API cấp thêm 404.
+- R13: smoke tạo dữ liệu và lùi thời gian bằng SQL, N request song song. R14: `INSERT … ON CONFLICT DO NOTHING`. R15: API xem gói chỉ cần đăng nhập.
+- R20, R22: sửa bảng Identity, sửa chữ. R21: điều kiện hoàn lượt theo số đã xác nhận. R25: đường trial không đòi email xác minh; hai tài khoản cùng thẻ.
 
 ## Chỗ Claude đề xuất trước khi chủ dự án trả lời
 
