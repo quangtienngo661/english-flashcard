@@ -80,6 +80,14 @@ export interface AppConfig {
     /** First retry delay of a reminder send after a transient SMTP error; doubles per attempt (L15). */
     retryBackoffMs: number;
   };
+  /** Billing gateway (design §9.1). The fake provider never runs in production (R17). */
+  billing: {
+    production: boolean;
+    fakeEnabled: boolean;
+    fakeSecret: Buffer | null;
+    /** Off lets the smoke run the path of a provider without `fetchState` (R10). */
+    fakeFetchState: boolean;
+  };
   limits: Record<RateLimitRuleName, RateLimitRuleConfig>;
 }
 
@@ -187,6 +195,19 @@ const envSchema = z.object({
   IMPORT_ROW_RETRY_BASE_MS: positiveInteger.default(200),
   REMINDER_TICK_SECONDS: positiveInteger.default(900),
   REMINDER_RETRY_BACKOFF_MS: positiveInteger.default(60_000),
+  BILLING_PRODUCTION: booleanString.default(false),
+  BILLING_FAKE_ENABLED: booleanString.default(false),
+  BILLING_FAKE_SECRET: secretSchema().optional(),
+  BILLING_FAKE_FETCH_STATE: booleanString.default(true),
+}).superRefine((values, ctx) => {
+  if (values.BILLING_PRODUCTION && values.BILLING_FAKE_ENABLED) {
+    const message = 'The fake billing provider is not allowed in production';
+    ctx.addIssue({ code: 'custom', path: ['BILLING_PRODUCTION'], message });
+    ctx.addIssue({ code: 'custom', path: ['BILLING_FAKE_ENABLED'], message });
+  }
+  if (values.BILLING_FAKE_ENABLED && values.BILLING_FAKE_SECRET === undefined) {
+    ctx.addIssue({ code: 'custom', path: ['BILLING_FAKE_SECRET'], message: 'Required when BILLING_FAKE_ENABLED=true' });
+  }
 });
 
 export function loadConfig(env: NodeJS.ProcessEnv): AppConfig {
@@ -241,6 +262,12 @@ export function loadConfig(env: NodeJS.ProcessEnv): AppConfig {
       rowRetryBaseMs: values.IMPORT_ROW_RETRY_BASE_MS,
     },
     reminders: { tickSeconds: values.REMINDER_TICK_SECONDS, runScheduler: true, retryBackoffMs: values.REMINDER_RETRY_BACKOFF_MS },
+    billing: {
+      production: values.BILLING_PRODUCTION,
+      fakeEnabled: values.BILLING_FAKE_ENABLED,
+      fakeSecret: values.BILLING_FAKE_SECRET ?? null,
+      fakeFetchState: values.BILLING_FAKE_FETCH_STATE,
+    },
     limits: structuredClone(DEFAULT_LIMITS),
   };
 }

@@ -5,6 +5,9 @@ import { SettingsModule } from '../settings/index.js';
 import { AdminEntitlementsController } from './api/admin-entitlements.controller.js';
 import { MeEntitlementsController } from './api/me-entitlements.controller.js';
 import { BillingAdapterRegistry } from './billing/billing-adapter.registry.js';
+import { BILLING_APPLY_PORT, BillingInbox, NOOP_APPLY_PORT } from './billing/billing-inbox.service.js';
+import { FakeBillingAdapter } from './billing/fake/fake-billing.adapter.js';
+import { WebhookController } from './billing/webhook.controller.js';
 import { EntitlementsService } from './entitlements.service.js';
 import { AdminGrantsController } from './grants/admin-grants.controller.js';
 import { GrantsService } from './grants/grants.service.js';
@@ -15,9 +18,18 @@ import { UsageQueries } from './usage/usage.queries.js';
 
 @Module({
   imports: [IdentityModule, SettingsModule],
-  controllers: [AdminGrantsController, AdminEntitlementsController, MeEntitlementsController],
+  controllers: [WebhookController, AdminGrantsController, AdminEntitlementsController, MeEntitlementsController],
   providers: [
-    EntitlementsService, SourcesRepository, UsageQueries, UsageLedgerService, UsageExpireJob, BillingAdapterRegistry, GrantsService,
+    EntitlementsService,
+    SourcesRepository,
+    UsageQueries,
+    UsageLedgerService,
+    UsageExpireJob,
+    BillingAdapterRegistry,
+    FakeBillingAdapter,
+    BillingInbox,
+    { provide: BILLING_APPLY_PORT, useValue: NOOP_APPLY_PORT },
+    GrantsService,
     IdempotencyInterceptor,
   ],
   exports: [EntitlementsService, BillingAdapterRegistry],
