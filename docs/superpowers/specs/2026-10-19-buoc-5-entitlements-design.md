@@ -14,7 +14,8 @@
 > không thu hồi lần cũ. Danh sách chỗ sửa ở mục 0, bảng "Sau review plan". Không còn câu mở của review plan.
 >
 > **Cập nhật 19/10/2026, khi implement** (câu của phiên implement step-5-C, hỏi qua step-5-coordinator): **D39** — hoàn tiền cắt Pro thì hệ thống tự hỏi lại
-> nhà cung cấp ngay sau đó, job mỗi giờ hỏi lại gói bị cắt trong 3 ngày. Danh sách chỗ sửa ở mục 0, bảng "Khi implement".
+> nhà cung cấp ngay sau đó, job mỗi giờ hỏi lại gói bị cắt trong 3 ngày. **D40** — nâng tháng → năm có trả tiền khi gói đang `grace` thì gói về
+> `active`, xóa `grace_ends_at` và đặt mốc mới. Danh sách chỗ sửa ở mục 0, bảng "Khi implement".
 
 Ngày: 18–19/10/2026. Brainstorm qua `superpowers:brainstorming` trên nhánh `docs/buoc-5-design` (cắt từ `origin/dev` @ `dc4cbe0`, fast-forward lên
 `9deb8d4` ngày 19/10). Design liên quan: [Bước 4](2026-10-18-buoc-4-practice-design.md) (mục 12: chỗ kiểm quyền tạm), [Bước 3](2026-10-16-buoc-3-learning-design.md)
@@ -101,6 +102,7 @@ Câu do phiên implement nêu khi viết bộ áp sự kiện (Task 17), chuyể
 | # | Điểm | Nhãn | Mục sửa |
 |---|---|---|---|
 | D39 | **Hoàn tiền tới sai thứ tự** (Review Focus 2 của plan): tin `refunded` của giao dịch cũ tới trước `plan_changed` của kỳ mới, hoặc `refund_reversed` tới trước `refunded`, làm gói bị cắt nhầm. Mỗi lần `refunded` cắt Pro (`revoked`), sau khi transaction commit hệ thống **tự hỏi lại nhà cung cấp** (`fetchState`, nếu bộ nối có) và theo trạng thái thật; hỏi lỗi thì **job mỗi giờ hỏi lại** các gói `revoked` trong **3 ngày** gần nhất (`ASSUMPTION`). Không thêm luật tự sửa trong bảng 9.4 (phương án (i)) | Chốt D39 (hệ thống tự kiểm tra: chủ dự án; cách (ii): đề xuất Claude, chủ dự án chốt) | 2, 9.2, 9.4, 13, 15.7, 19 |
+| D40 | **`plan_changed` khi gói đang `grace`** (câu Q-C1): ô "Như `active`" của bảng 9.4 không nói gói có rời `grace` không. Nâng tháng → năm có trả tiền (mã giao dịch kỳ mới, D37) → `active`, xóa `grace_ends_at`, **mốc mới** = đầu kỳ năm (kỳ tháng lỗi chưa từng được trả, nên kỳ năm là kỳ trả tiền đầu tiên, như "Kích hoạt lại"). Tiền (tính theo tỷ lệ, hoàn phần tháng chưa dùng) do nhà cung cấp làm; Wordmet không tính tiền | Chốt D40 (rời `grace`: chủ dự án; mốc mới: đề xuất Claude, chủ dự án "ok") | 2, 9.4, 15.7 |
 | — | **Kết quả `fetchState` thiếu dữ liệu** (câu Q-C2 của step-5-C): ngày null không ghi đè ngày đang lưu; kỳ đổi → `current_transaction_id` = null; `grace_ends_at` giữ khi `grace` → `grace`, còn lại null; `grace` không có hạn hết ở cuối kỳ + `grace_days` | Phiên điều phối chốt vì design đã quyết (D23, D34, D37; Review Focus 5 của plan "không bao giờ Pro vô hạn"); không đổi hành vi đã chốt | 9.2 |
 
 ### As-built (19/10/2026)
@@ -185,6 +187,7 @@ Hiện trạng trên `dev` @ `9deb8d4` (đã đọc 19/10):
 | D37 | Hoàn tiền khi không biết giao dịch của kỳ đang dùng (sau review plan) | Bộ nối bắt buộc gửi mã giao dịch mỗi khi có trừ tiền (cả khi đổi tháng → năm); vẫn thiếu mã thì hoàn tiền chỉ ghi lại và log, không cắt Pro |
 | D38 | Kéo dài, hẹn trước lần cấp (sau review plan) | Staff sửa ngày của lần cấp đang có (có lịch sử sửa) thay vì tạo lần cấp mới; lần cấp Pro bắt đầu ở tương lai không thu hồi lần cũ |
 | D39 | Hoàn tiền tới sai thứ tự (khi implement) | Hoàn tiền cắt Pro → hệ thống tự hỏi lại nhà cung cấp ngay sau đó; lỗi thì job mỗi giờ hỏi lại gói bị cắt trong 3 ngày; không thêm luật tự sửa |
+| D40 | Nâng tháng → năm khi đang ân hạn (khi implement) | Gói về `active`, xóa ngày hết ân hạn, mốc lượt AI mới tại đầu kỳ năm; tiền do nhà cung cấp tính |
 
 ## 3. Phạm vi
 
@@ -532,7 +535,7 @@ Mọi sự kiện có: `provider`, `environment`, `external_event_id` (hoặc th
 | `revoked` | Ghi | `revoked` | `revoked` | `revoked` | `revoked` | `revoked` | Giữ |
 | `refunded` | Ghi | Ghi (trial không có giao dịch) | Giao dịch là kỳ đang dùng → `revoked`; kỳ khác → ghi (D34); không biết giao dịch của kỳ đang dùng → ghi, log `billing_refund_unmatched` (D37) | Như `active` | Như `active` | Ghi | Ghi |
 | `refund_reversed` | Ghi | Ghi | Ghi | Ghi | Ghi | Ghi | Kỳ của giao dịch chưa hết → `active`; hết → `expired` |
-| `plan_changed` | Ghi | Đổi `interval`, giữ `trialing` | Đổi `interval` và kỳ, **giữ mốc**; giao dịch của kỳ đang dùng = mã trong sự kiện (D37) | Như `active` | Ghi | Ghi | Ghi |
+| `plan_changed` | Ghi | Đổi `interval`, giữ `trialing` | Đổi `interval` và kỳ, **giữ mốc**; giao dịch của kỳ đang dùng = mã trong sự kiện (D37) | `active`, đổi `interval` và kỳ, xóa `grace_ends_at`, giao dịch = mã trong sự kiện, **mốc mới** = đầu kỳ mới (D40) | Ghi | Ghi | Ghi |
 | `plan_change_scheduled` | Ghi | `pending_interval` | `pending_interval` | `pending_interval` | Ghi | Ghi | Ghi |
 | `plan_change_canceled` | Ghi | Xóa `pending_interval` | Như trái | Như trái | Như trái | Ghi | Ghi |
 
@@ -561,6 +564,9 @@ Mọi sự kiện có: `provider`, `environment`, `external_event_id` (hoặc th
   `refund_reversed` chỉ ghi lại, `refunded` tới sau cắt Pro. Vì vậy mỗi lần `refunded` cắt Pro, sau commit hệ thống hỏi lại nhà cung cấp (`fetchState`) và theo trạng
   thái thật (Lan có Pro lại sau vài giây); hỏi lỗi thì job mỗi giờ hỏi lại trong 3 ngày. Bộ nối không có `fetchState` → giữ `revoked` (mục 19).
 - **Đổi tháng ↔ năm (D25):** như bảng: `plan_changed` giữ mốc; `plan_change_scheduled` có hiệu lực ở `renewed` kế tiếp; hủy lần đổi đang chờ thì xóa.
+  Nâng lên năm khi đang `grace` (D40): ví dụ Lan trừ tiền tháng lỗi ngày 1/11 (ân hạn tới 8/11), ngày 5/11 nâng lên năm và trả được → `active` tới 5/11/2027,
+  hết ân hạn, mốc lượt AI mới 5/11 (đủ 300/100 từ 5/11). Phần tiền (tính theo tỷ lệ, hoàn phần tháng chưa dùng, dừng thu kỳ tháng lỗi) do nhà cung cấp làm;
+  tin `refunded` của giao dịch tháng cũ nếu có chỉ được ghi lại (D34, D37).
 - ~~**Kiểu "app tự gia hạn" (R11)**~~ **bỏ theo D35**: không còn gói người dùng tự trả từng kỳ (mục 9.1).
 
 ## 10. Cấp tay (Chốt D6–D9, D19, D20, D32, D33, D38; chi tiết Đề xuất, đã duyệt 19/10)
@@ -866,6 +872,7 @@ Mỗi luật cấp trên được dẫn (SR4, SR8, SR9, SR10, SR11, SR13, SR14, 
 | B5E102 | Lan `active` tháng (giao dịch m1) nâng lên năm (y1); `refunded` m1 tới **trước** `plan_changed` y1 (D39) | `refunded` cắt Pro (`revoked`); sau commit hệ thống gọi `fetchState` → nhà cung cấp trả `active`, kỳ năm → ghi đè, Lan Pro lại; `current_transaction_id` = null (kỳ đổi qua `fetchState`); `plan_changed` y1 tới sau mà không `stale` thì đặt lại mã y1, bị `stale` thì mã vẫn null tới `renewed` kế tiếp (hoàn tiền lúc đó chỉ ghi lại, D37). Bộ nối không có `fetchState` → giữ `revoked` |
 | B5E103 | `refund_reversed` tới **trước** `refunded` của cùng giao dịch (D39) | `refund_reversed` chỉ ghi lại (gói đang `active`); `refunded` cắt Pro; `fetchState` sau commit → nhà cung cấp trả `active` → Pro lại |
 | B5E104 | `fetchState` sau lần cắt vì hoàn tiền bị lỗi hoặc quá `BILLING_ADAPTER_TIMEOUT_MS` (D39) | Giữ `revoked`, log `billing_state_refetch_failed`; job mỗi giờ hỏi lại gói đó tới khi được, tối đa 3 ngày kể từ lúc cắt; nhà cung cấp cũng trả `revoked` → giữ |
+| B5E105 | Lan `grace` (trừ tiền tháng lỗi 1/11, `grace_ends_at` 8/11); 5/11 `plan_changed` năm, mã y1, kỳ 5/11/2026–5/11/2027 (D40) | `active`; `grace_ends_at` null; `interval` year; `current_transaction_id` y1; `quota_anchor_at` 5/11 (mốc mới); sau 8/11 vẫn Pro |
 
 ## 16. Acceptance criteria (When → Then)
 
