@@ -66,26 +66,27 @@ function started(state: SubscriptionState | null, event: Event<'subscription_sta
 }
 
 /**
- * `renewed` always applies (additive). The period, interval and transaction move only when this renewal is not older than
- * the stored period (`current_period_end = max`), so a late renewal never takes the current transaction back (D34).
+ * `renewed` is additive: never stale, `current_period_end = max(old, event)`. A renewal of a period that ends before the
+ * stored one is a late copy of the past, so it is recorded and changes nothing: it must not give Pro back after a refund
+ * of the current period (D34), clear a grace the provider started, or take the current transaction back.
  */
 const renewal =
   (newAnchor: boolean) =>
   (state: SubscriptionState, event: Event<'renewed'>): ApplyResult => {
-    const newer = state.currentPeriodEnd === null || event.currentPeriodEnd >= state.currentPeriodEnd;
+    if (state.currentPeriodEnd !== null && event.currentPeriodEnd < state.currentPeriodEnd) {
+      return recorded(state, 'billing_event_recorded');
+    }
     const next: SubscriptionState = {
       ...state,
       status: 'active',
       graceEndsAt: null,
-      ...(newer && {
-        interval: event.interval,
-        pendingInterval: null,
-        currentPeriodStart: event.currentPeriodStart,
-        currentPeriodEnd: event.currentPeriodEnd,
-        currentTransactionId: event.transactionId,
-      }),
+      interval: event.interval,
+      pendingInterval: null,
+      currentPeriodStart: event.currentPeriodStart,
+      currentPeriodEnd: event.currentPeriodEnd,
+      currentTransactionId: event.transactionId,
+      ...(newAnchor && { quotaAnchorAt: event.currentPeriodStart }),
     };
-    if (newAnchor) next.quotaAnchorAt = next.currentPeriodStart;
     return changed(next, newAnchor);
   };
 
