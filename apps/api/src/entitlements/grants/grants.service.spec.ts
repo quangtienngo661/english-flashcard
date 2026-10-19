@@ -175,7 +175,7 @@ function setup(input: Setup = {}) {
   const service = new GrantsService(
     prisma as never, clock, identity as never, settings as never, sources as never, registry as never, logger,
   );
-  return { service, grants, changes, events, logs, adapter, registry, clock };
+  return { service, grants, changes, events, logs, adapter, registry, clock, tx };
 }
 
 async function problem(promise: Promise<unknown>): Promise<{ status: number; type: string; extensions?: Record<string, unknown> }> {
@@ -482,6 +482,12 @@ describe('GrantsService.update (D38)', () => {
 });
 
 describe('GrantsService.list', () => {
+  it('create sends created_at from the clock (milliseconds), so a page token (ISO, ms) never skips a row of the same millisecond', async () => {
+    const { service, tx } = setup();
+    await service.create(ADMIN, planBody());
+    expect(tx.entitlementGrant.create.mock.calls[0][0].data.createdAt).toEqual(NOW);
+  });
+
   it('B5#21: granted_by and expiring_within_days filter; newest first; pages with a token bound to the filters', async () => {
     const { service } = setup({ grants: [
       { grantedBy: EDITOR, endsAt: new Date(NOW.getTime() + 3 * DAY), createdAt: new Date(NOW.getTime() - 3 * DAY) },
