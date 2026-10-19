@@ -383,21 +383,45 @@ describe('applyEvent — details the matrix leaves to the code', () => {
     expect(result.next).toMatchObject({ status: 'active', cancelAtPeriodEnd: true });
   });
 
-  it('renewed takes the later period end: an older renewal keeps the newer period and its transaction', () => {
-    const newer = applyEvent(ACTIVE, EVENTS.renewed, ctx).next;
-    const older = event('renewed', {
-      transactionId: 'tx-old',
+  // A renewal of a period older than the stored one arrives late: it is recorded and changes nothing (review D1, Important 1).
+  const olderRenewal = event('renewed', {
+    transactionId: 'tx-old',
+    interval: 'month',
+    currentPeriodStart: at('2026-11-01T00:00:00Z'),
+    currentPeriodEnd: at('2026-11-30T00:00:00Z'),
+  });
+
+  it.each(['trialing', 'active', 'grace', 'on_hold', 'expired', 'revoked'] as const)(
+    'renewed for an older period on %s → recorded, nothing changes (no Pro back after a refund, no grace cleared)',
+    (from) => {
+      const state = { ...ROWS[from], currentPeriodEnd: at('2026-12-01T00:00:00Z'), trialDenied: from === 'trialing' };
+      expect(applyEvent(state, olderRenewal, ctx)).toEqual({
+        next: state,
+        outcome: 'recorded',
+        anchorReset: false,
+        log: 'billing_event_recorded',
+      });
+    },
+  );
+
+  it('a renewal ending exactly at the stored period end still applies (the same period renewed again is a replay of the provider truth)', () => {
+    const sameEnd = event('renewed', {
+      transactionId: 'tx-same',
       interval: 'month',
       currentPeriodStart: at('2026-11-01T00:00:00Z'),
       currentPeriodEnd: at('2026-12-01T00:00:00Z'),
     });
-    const result = applyEvent(newer, older, ctx);
-    expect(result.next).toMatchObject({
-      status: 'active',
-      currentPeriodStart: renewed.currentPeriodStart,
-      currentPeriodEnd: renewed.currentPeriodEnd,
-      currentTransactionId: 'tx-new',
+    expect(applyEvent(ROWS.grace, sameEnd, ctx)).toMatchObject({
+      outcome: 'changed',
+      next: { status: 'active', graceEndsAt: null, currentTransactionId: 'tx-same' },
     });
+  });
+
+  it('review D1 sequence: refunded current renewal, then a late older renewal → still revoked', () => {
+    const renewedRow = applyEvent(ACTIVE, EVENTS.renewed, ctx).next;
+    const revoked = applyEvent(renewedRow, event('refunded', { transactionId: 'tx-new', amount: null }), ctx).next;
+    expect(revoked?.status).toBe('revoked');
+    expect(applyEvent(revoked, olderRenewal, ctx).next).toEqual(revoked);
   });
 
   it('B5E86: a partial refund of the current transaction → revoked', () => {
