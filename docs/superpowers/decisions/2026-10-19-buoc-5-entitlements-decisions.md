@@ -17,7 +17,7 @@ làm*; file này trả lời *tại sao chọn vậy và đã bỏ gì*. Nguồn
 > chốt thành **D38** (staff sửa ngày của lần cấp đang có thay vì tạo lần cấp mới; lần cấp bắt đầu ở tương lai không thu hồi lần cũ; bổ sung D32). Không còn câu mở.
 >
 > **Khi implement 19/10/2026** (câu của phiên step-5-C, hỏi qua step-5-coordinator): Q-C3 chốt thành **D39** (hoàn tiền cắt Pro → hệ thống tự hỏi lại nhà cung
-> cấp; bổ sung D34).
+> cấp; bổ sung D34); Q-C1 chốt thành **D40** (nâng tháng → năm khi đang ân hạn → `active`, mốc mới; bổ sung D23, D25).
 
 **Nhãn:** ✅ = phương án được chọn. **Ai chốt:** "Chủ dự án" = chọn trong chat; "Đề xuất của Claude" = Claude đề xuất sau khi chủ dự án trả lời "chưa rõ",
 không chọn, hoặc nhờ đề xuất, chủ dự án đồng ý; "Duyệt cùng design" = Claude đề xuất khi trình một phần design, chủ dự án duyệt cả phần.
@@ -69,6 +69,7 @@ không chọn. Mục cuối ghi những chỗ Claude đề xuất trước khi c
 | D37 | Hoàn tiền khi không biết giao dịch nào thuộc kỳ đang dùng (sau review plan, Q2) | Bộ nối bắt buộc gửi mã giao dịch mỗi khi có trừ tiền; `plan_changed` kèm mã của kỳ mới; vẫn thiếu mã thì chỉ ghi lại và log, không cắt Pro | Đề xuất của Claude sau khi chủ dự án nói "khó xảy ra", chủ dự án chốt |
 | D38 | Kéo dài hoặc hẹn trước lần cấp; lần cấp mới bắt đầu ở tương lai (sau review plan, Q1) | Staff sửa ngày của lần cấp đang có (API mới, có lịch sử sửa) thay vì tạo lần cấp mới; vẫn cho tạo lần cấp bắt đầu ở tương lai, và khi đó không thu hồi lần cấp cũ | Chủ dự án (sửa ngày, không thu hồi); chi tiết: đề xuất của Claude, chủ dự án "ok" |
 | D39 | Hoàn tiền tới sai thứ tự (khi implement, Q-C3) | Hoàn tiền cắt Pro → sau commit hỏi lại nhà cung cấp (`fetchState`) và theo trạng thái thật; lỗi thì job mỗi giờ hỏi lại gói bị cắt trong 3 ngày; chưa thêm luật tự sửa | Chủ dự án (hệ thống tự kiểm tra); cách làm: đề xuất của Claude, chủ dự án chốt |
+| D40 | Nâng tháng → năm khi gói đang ân hạn (khi implement, Q-C1) | Gói về `active`, xóa `grace_ends_at`, mốc lượt AI mới tại đầu kỳ năm; tiền (tính theo tỷ lệ, hoàn phần chưa dùng) do nhà cung cấp làm | Chủ dự án (rời ân hạn; chưa trả thì tính mốc mới); mốc tại đầu kỳ năm: đề xuất của Claude, chủ dự án "ok" |
 
 ## D1 — Cách làm việc
 
@@ -646,6 +647,25 @@ commit" đã có trong bộ áp sự kiện); hỏi lỗi thì job mỗi giờ h
 Google, Apple đều cho hỏi lại (MoMo, ZaloPay chưa kiểm), còn (i) tốn migration và nhiều ca test khi chưa nhà cung cấp nào cần. Điểm khác chủ dự án: không làm luật tự sửa
 (i) cho nhà cung cấp không cho hỏi lại; rủi ro ghi ở design mục 19. Chủ dự án: "Q-C3: chốt (ii) — hỏi lại cửa hàng ngay sau khi cắt Pro vì hoàn tiền, job mỗi giờ hỏi lại
 gói bị cắt trong 3 ngày; chưa làm (i)."
+
+## D40 — Nâng tháng → năm khi gói đang ân hạn (khi implement, Q-C1)
+
+Bối cảnh: phiên step-5-C hỏi khi viết máy trạng thái (Task 7). Ô `plan_changed` × `grace` của bảng 9.4 ghi "Như `active`" (đổi `interval` và kỳ, giữ mốc,
+ghi mã giao dịch), không nói gói có rời `grace` không; code lúc đó giữ `grace`. Ví dụ dùng khi hỏi: ngày 1/11 thẻ của Lan trừ tiền tháng lỗi, Lan ân hạn
+tới 8/11; ngày 5/11 Lan nâng lên năm và trả thành công (mã y1, kỳ 5/11/2026–5/11/2027). Chủ dự án hỏi "context là gì"; Claude giải thích ân hạn (D23),
+nâng gói (D25, D37), hai cách hiểu ô bảng, và rằng chưa kiểm cửa hàng nào cho nâng gói khi đang lỗi trừ tiền.
+
+| Phương án | Trade-off |
+|---|---|
+| (a) Giữ `grace` (code lúc đó) | Không đổi bảng; ngày 8/11 Lan bị khóa Pro dù đã trả tiền năm, tới khi có `renewed` (thường là năm sau) hoặc admin cấp tay |
+| ✅ (b) Chuyển `active`, xóa `grace_ends_at` | Lan có Pro suốt năm đã trả; thêm một luật vào bảng 9.4 |
+
+Chủ dự án (trả lời trước): "không nhé, trường hợp chưa thanh toán thì cứ tính mốc mới như bình thường, còn thanh toán rồi thì prorate lại rồi hoàn tiền thôi",
+kèm một tài liệu billing của dự án khác (X Social trên Stripe) để tham khảo cách tính theo tỷ lệ. Claude đọc tài liệu: tiền do Stripe tính và hoàn (mua giữa kỳ,
+đổi tháng → năm, hủy gói năm), app chỉ đọc hóa đơn đã trả; lượt chia theo phần thời gian đã trả trong chu kỳ, đổi tháng → năm giữ mốc và số đã dùng. So với
+Wordmet: tiền cũng do nhà cung cấp tính và hoàn (D24, D34; tin `refunded` của giao dịch tháng cũ chỉ ghi lại, D37), lượt không chia theo tỷ lệ (D13), đổi tháng
+→ năm giữ mốc (D25). Claude đề xuất (b) cụ thể: `active`, xóa `grace_ends_at`, ghi mã y1, **mốc mới tại đầu kỳ năm** (kỳ tháng lỗi chưa từng được trả, nên kỳ
+năm là kỳ trả tiền đầu tiên, như ô "Kích hoạt lại"); phương án còn lại là giữ mốc cũ như D25 (Lan làm mới lượt vào 1/12 thay vì 5/11). Chủ dự án: "ok".
 
 ## Đề xuất kỹ thuật được duyệt cùng design
 
