@@ -287,17 +287,24 @@ export function startsTrial(state: SubscriptionState | null, event: NormalizedEv
 /**
  * The provider's truth overwrites the six columns of design §9.2 "fetchState". `grace_ends_at` is kept only while the row
  * stays in grace; entering grace by a fetch leaves it null, so `effectiveStatus` applies the D23 default; leaving grace
- * clears an old one (coordinator ruling 19/10/2026).
+ * clears an old one. A null date never overwrites a stored one (never a silent Pro forever), and a fetched period that
+ * differs from the stored one leaves the current transaction unknown, so a refund only records until `renewed` or
+ * `plan_changed` names it (D34, D37). Coordinator rulings Q-C2, 19/10/2026.
  */
 export function applyFetched(state: SubscriptionState, fetched: FetchedState): SubscriptionState {
+  const currentPeriodStart = fetched.currentPeriodStart ?? state.currentPeriodStart;
+  const currentPeriodEnd = fetched.currentPeriodEnd ?? state.currentPeriodEnd;
+  const samePeriod = currentPeriodStart?.getTime() === state.currentPeriodStart?.getTime()
+    && currentPeriodEnd?.getTime() === state.currentPeriodEnd?.getTime();
   return {
     ...state,
     graceEndsAt: state.status === 'grace' && fetched.status === 'grace' ? state.graceEndsAt : null,
+    currentTransactionId: samePeriod ? state.currentTransactionId : null,
     status: fetched.status,
     interval: fetched.interval,
-    currentPeriodStart: fetched.currentPeriodStart,
-    currentPeriodEnd: fetched.currentPeriodEnd,
-    trialEndsAt: fetched.trialEndsAt,
+    currentPeriodStart,
+    currentPeriodEnd,
+    trialEndsAt: fetched.trialEndsAt ?? state.trialEndsAt,
     cancelAtPeriodEnd: fetched.cancelAtPeriodEnd,
   };
 }
