@@ -5,7 +5,7 @@ import { ProblemDetailsException } from '../../common/problem-details/problem-de
 import { dateValue, localDate } from '../../common/time/local-date.js';
 import type { Prisma, PrismaClient } from '../../generated/prisma/client.js';
 import { IdentityService } from '../../identity/profile/identity.service.js';
-import { GROUPS_MAX } from '../learning.constants.js';
+import { SettingsService } from '../../settings/index.js';
 import { lockItems, withLearnerLock } from '../learning-lock.js';
 
 const transactionOptions = { timeout: 10_000, maxWait: 5_000 };
@@ -40,13 +40,16 @@ export class GroupsService {
     @Inject(PRISMA_CLIENT) private readonly prisma: PrismaClient,
     @Inject(Clock) private readonly clock: Clock,
     @Inject(IdentityService) private readonly identity: IdentityService,
+    @Inject(SettingsService) private readonly settings: SettingsService,
   ) {}
 
   async create(userId: string, name: string): Promise<GroupView> {
+    // Read before the lock: existing groups above a lowered limit stay, only new ones are refused (B5E64).
+    const { groupsPerUser } = (await this.settings.get()).learning;
     try {
       return await this.prisma.$transaction(async (tx) => {
         await withLearnerLock(tx, userId);
-        if (await tx.learningGroup.count({ where: { userId } }) >= GROUPS_MAX) {
+        if (await tx.learningGroup.count({ where: { userId } }) >= groupsPerUser) {
           throw new ProblemDetailsException({ status: 409, title: 'Group limit reached', type: 'group-limit-reached' });
         }
         const now = this.clock.now();

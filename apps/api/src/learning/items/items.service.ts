@@ -8,7 +8,7 @@ import { ContentService, type Level } from '../../content/index.js';
 import type { Prisma, PrismaClient } from '../../generated/prisma/client.js';
 import { IdentityService } from '../../identity/profile/identity.service.js';
 import { GroupsService } from '../groups/groups.service.js';
-import { GROUP_ITEMS_MAX } from '../learning.constants.js';
+import { SettingsService } from '../../settings/index.js';
 import { withLearnerLock } from '../learning-lock.js';
 import { newItem } from '../schedule/schedule.js';
 
@@ -35,6 +35,7 @@ export class ItemsService {
     @Inject(IdentityService) private readonly identity: IdentityService,
     @Inject(ContentService) private readonly content: ContentService,
     @Inject(GroupsService) private readonly groups: GroupsService,
+    @Inject(SettingsService) private readonly settings: SettingsService,
   ) {}
 
   /** B3#1: a sense the learner can see joins the group; the first time it also starts its schedule. */
@@ -56,11 +57,13 @@ export class ItemsService {
    * learner lock and checked the group (quick add reuses it). Already in the group: no change.
    */
   async linkInTx(tx: Prisma.TransactionClient, userId: string, groupId: string, senseId: string, today: string): Promise<AddResult> {
+    // Through the caller's tx: it holds the learner lock, so no second connection.
+    const { itemsPerGroup } = (await this.settings.get(tx)).learning;
     const existing = await tx.learningItem.findUnique({
       where: { userId_senseId: { userId, senseId } }, include: { groups: { where: { groupId } } },
     });
     if (existing && existing.groups.length > 0) return addResult(existing, false);
-    if (await tx.groupItem.count({ where: { groupId } }) >= GROUP_ITEMS_MAX) {
+    if (await tx.groupItem.count({ where: { groupId } }) >= itemsPerGroup) {
       throw new ProblemDetailsException({ status: 409, title: 'Group full', type: 'group-full' });
     }
     const [item] = await this.ensureItems(tx, userId, groupId, [senseId], today);
@@ -73,6 +76,7 @@ export class ItemsService {
     await this.groups.assertOwned(this.prisma, userId, groupId);
     // Every matching sense, not just enough to fill the group: what does not fit is reported as skipped_group_full (L3).
     const { senseIds, skippedFunctionWords } = await this.content.bulkCandidates(filter, Number.POSITIVE_INFINITY);
+    const { itemsPerGroup } = (await this.settings.get()).learning;
     return this.prisma.$transaction(async (tx) => {
       await withLearnerLock(tx, userId);
       await this.groups.assertOwned(tx, userId, groupId);
@@ -80,7 +84,7 @@ export class ItemsService {
         where: { userId, senseId: { in: senseIds }, groups: { some: { groupId } } }, select: { senseId: true },
       })).map((item) => item.senseId));
       const fresh = senseIds.filter((id) => !linked.has(id));
-      const free = Math.max(0, GROUP_ITEMS_MAX - await tx.groupItem.count({ where: { groupId } }));
+      const free = Math.max(0, itemsPerGroup - await tx.groupItem.count({ where: { groupId } }));
       const toAdd = fresh.slice(0, free);
       await this.ensureItems(tx, userId, groupId, toAdd, today);
       return {
