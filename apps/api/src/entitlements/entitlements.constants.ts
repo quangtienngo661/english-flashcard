@@ -26,3 +26,6 @@ export const GRANT_REASON_MAX = 300;
 
 /** Every adapter call is bounded by this; a timeout counts as "not supported" / "fetch failed" (R6). */
 export const BILLING_ADAPTER_TIMEOUT_MS = 5_000;
+
+/** D39: a subscription revoked by a refund is asked again (fetchState) by the hourly job for this many days (ASSUMPTION). */
+export const REFUND_REFETCH_DAYS = 3;

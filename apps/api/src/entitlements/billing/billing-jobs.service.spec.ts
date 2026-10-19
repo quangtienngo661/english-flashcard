@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { AppLogger, type LogEntry } from '../../common/logging/app-logger.js';
-import { BILLING_MAX_ATTEMPTS, BILLING_PENDING_RETRY_MS, RAW_PAYLOAD_RETENTION_DAYS } from '../entitlements.constants.js';
+import { BILLING_MAX_ATTEMPTS, BILLING_PENDING_RETRY_MS, RAW_PAYLOAD_RETENTION_DAYS, REFUND_REFETCH_DAYS } from '../entitlements.constants.js';
 import { BillingAdapter } from './billing-adapter.js';
 import { BillingAdapterRegistry } from './billing-adapter.registry.js';
 import { BillingJobs } from './billing-jobs.service.js';
@@ -51,7 +51,9 @@ function setup(opts: { subs?: Sub[]; fetch?: (id: string) => Promise<FetchedStat
   };
   const prisma = {
     billingEvent: { findMany: vi.fn().mockResolvedValue([]) },
-    subscription: { findMany: vi.fn(async () => subs.map((s) => ({ ...s }))) },
+    subscription: { findMany: vi.fn(async ({ where }: { where: { status: unknown; updatedAt?: { gte: Date } } }) => subs
+      .filter((s) => (where.status === 'revoked' ? s.status === 'revoked' && s.updatedAt >= where.updatedAt!.gte : s.status !== 'revoked'))
+      .map((s) => ({ ...s }))) },
     $transaction: async <T>(fn: (t: typeof tx) => Promise<T>) => {
       inTx = true;
       try { return await fn(tx); } finally { inTx = false; }
@@ -191,6 +193,72 @@ describe('BillingJobs.timeTransitions (design §9.4 "Chuyển theo thời gian",
   });
 });
 
+describe('BillingJobs.refetchRevoked (D39)', () => {
+  const ACTIVE_STATE: FetchedState = { status: 'active', interval: 'year', currentPeriodStart: at('2026-11-10T00:00:00.000Z'),
+    currentPeriodEnd: at('2027-11-10T00:00:00.000Z'), trialEndsAt: null, cancelAtPeriodEnd: false };
+  const revoked = (fields: Partial<Sub> = {}) => subRow({ status: 'revoked', updatedAt: at('2026-11-19T12:00:00.000Z'), ...fields });
+
+  it('B5E104: a row revoked within 3 days is asked again before its lock; the provider says active → active', async () => {
+    const { jobs, subs, calls } = setup({ subs: [revoked()], fetch: async () => ACTIVE_STATE });
+    await jobs.refetchRevoked(NOW);
+    expect(calls.indexOf('fetch(inTx=false)')).toBeLessThan(calls.indexOf('lock:sub-1'));
+    expect(subs[0]).toMatchObject({ status: 'active', interval: 'year', currentTransactionId: null, updatedAt: NOW });
+  });
+
+  it('B5E104: revoked more than 3 days ago → not asked', async () => {
+    const asked: string[] = [];
+    const { jobs, subs } = setup({
+      subs: [revoked({ updatedAt: new Date(NOW.getTime() - REFUND_REFETCH_DAYS * DAY - 1) })],
+      fetch: async (id) => { asked.push(id); return ACTIVE_STATE; },
+    });
+    await jobs.refetchRevoked(NOW);
+    expect(REFUND_REFETCH_DAYS).toBe(3);
+    expect(asked).toEqual([]);
+    expect(subs[0].status).toBe('revoked');
+  });
+
+  it('B5E104: the provider also says revoked → kept, updated_at not moved (the 3-day window does not slide)', async () => {
+    const { jobs, subs, calls } = setup({ subs: [revoked()], fetch: async () => ({ ...ACTIVE_STATE, status: 'revoked' }) });
+    await jobs.refetchRevoked(NOW);
+    expect(subs[0]).toMatchObject({ status: 'revoked', updatedAt: at('2026-11-19T12:00:00.000Z') });
+    expect(calls.filter((c) => c.startsWith('update'))).toEqual([]);
+  });
+
+  it('a fetch failure is logged and the row stays revoked; the next hour asks again', async () => {
+    let fail = true;
+    const { jobs, subs, logs } = setup({ subs: [revoked()], fetch: async () => { if (fail) throw new Error('down'); return ACTIVE_STATE; } });
+    await jobs.refetchRevoked(NOW);
+    expect(subs[0].status).toBe('revoked');
+    expect(logs.map((l) => l.event)).toContain('billing_state_refetch_failed');
+    fail = false;
+    await jobs.refetchRevoked(new Date(NOW.getTime() + 3_600_000));
+    expect(subs[0].status).toBe('active');
+  });
+
+  it('the fetched state is dropped when the row changed meanwhile, and a row locked by another run is skipped', async () => {
+    const holder: { subs?: Sub[] } = {};
+    const changed = setup({ subs: [revoked()], fetch: async () => {
+      holder.subs![0].updatedAt = at('2026-11-20T11:00:00.000Z');
+      return ACTIVE_STATE;
+    } });
+    holder.subs = changed.subs;
+    await changed.jobs.refetchRevoked(NOW);
+    expect(changed.subs[0].status).toBe('revoked');
+
+    const locked = setup({ subs: [revoked()], fetch: async () => ACTIVE_STATE });
+    locked.lockedByOther.add('sub-1');
+    await locked.jobs.refetchRevoked(NOW);
+    expect(locked.subs[0].status).toBe('revoked');
+  });
+
+  it('an adapter without fetchState → nothing asked, stays revoked', async () => {
+    const { jobs, subs, calls } = setup({ subs: [revoked()] });
+    await jobs.refetchRevoked(NOW);
+    expect(subs[0].status).toBe('revoked');
+    expect(calls).toEqual([]);
+  });
+});
+
 describe('BillingJobs.cleanupRawPayloads (R23)', () => {
   it('B5E92: clears raw_payload of events received more than 90 days ago', async () => {
     const { jobs, prisma } = setup();
@@ -204,11 +272,11 @@ describe('BillingJobs.cleanupRawPayloads (R23)', () => {
 });
 
 describe('BillingJobs registration', () => {
-  it('registers three maintenance jobs', () => {
+  it('registers four maintenance jobs', () => {
     const { jobs, scheduler } = setup();
     jobs.onModuleInit();
     expect(scheduler.register.mock.calls.map(([name]) => name)).toEqual(
-      ['billing-events-retry', 'subscriptions-time', 'billing-raw-payload-cleanup'],
+      ['billing-events-retry', 'subscriptions-time', 'billing-refund-refetch', 'billing-raw-payload-cleanup'],
     );
   });
 });
