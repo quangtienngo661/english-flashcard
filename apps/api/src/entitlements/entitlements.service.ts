@@ -8,9 +8,13 @@ import { SettingsService, type AppSettings } from '../settings/index.js';
 import type { AiPool, LimitKey, Pool, SubscriptionStatus } from './entitlements.types.js';
 import type { Refusal } from './refusal.js';
 import { aiDay, cycleAt } from './rules/cycle.js';
-import { effectiveStatus, resolve, type PlanNumbers, type Resolved } from './rules/plan-rules.js';
+import { planNumbers } from './plan-numbers.js';
+import { effectiveStatus, resolve, type Resolved } from './rules/plan-rules.js';
 import { SourcesRepository } from './sources/sources.repository.js';
+import { UsageLedgerService, type ReserveResult } from './usage/usage-ledger.service.js';
 import { UsageQueries } from './usage/usage.queries.js';
+
+export { planNumbers } from './plan-numbers.js';
 
 export type Feature = 'practice.basic' | 'ai.practice' | 'ai.lookup';
 
@@ -35,16 +39,6 @@ export type EntitlementsSnapshot = {
 const NO_PROFILE_ZONE = 'UTC';
 const FEATURE_POOL: Record<Exclude<Feature, 'practice.basic'>, AiPool> = { 'ai.practice': 'ai_practice', 'ai.lookup': 'ai_lookup' };
 
-export function planNumbers(settings: AppSettings['entitlements']): PlanNumbers {
-  return {
-    free: { practice_sessions: settings.freePracticeSessionsPerDay, ai_practice: 0, ai_lookup: 0 },
-    pro: {
-      practice_sessions: settings.proPracticeSessionsPerDay, ai_practice: settings.proAiPracticePerCycle,
-      ai_lookup: settings.proAiLookupPerCycle,
-    },
-    trial: { ai_practice: settings.trialAiPracticePerCycle, ai_lookup: settings.trialAiLookupPerCycle },
-  };
-}
 
 /**
  * What a user may use and how much is left (design §5, §7.2, §7.4). Nothing is cached (D28): every call resolves the
@@ -59,7 +53,25 @@ export class EntitlementsService {
     @Inject(IdentityService) private readonly identity: IdentityService,
     @Inject(SourcesRepository) private readonly sources: SourcesRepository,
     @Inject(UsageQueries) private readonly usage: UsageQueries,
+    @Inject(UsageLedgerService) private readonly ledger: UsageLedgerService,
   ) {}
+
+  /** Holds one AI unit for `operationId` (design §7.1). Runs and commits its own short transaction: never call it inside yours (R6). */
+  reserve(userId: string, pool: AiPool, operationId: string): Promise<ReserveResult> {
+    return this.ledger.reserve(userId, pool, operationId);
+  }
+
+  confirm(userId: string, pool: AiPool, operationId: string): Promise<{ state: 'confirmed' | 'released' | 'not-found' }> {
+    return this.ledger.confirm(userId, pool, operationId);
+  }
+
+  release(userId: string, pool: AiPool, operationId: string): Promise<{ state: 'released' | 'confirmed' | 'not-found' }> {
+    return this.ledger.release(userId, pool, operationId);
+  }
+
+  refund(userId: string, pool: AiPool, operationId: string, reportId: string): Promise<{ refunded: boolean }> {
+    return this.ledger.refund(userId, pool, operationId, reportId);
+  }
 
   /** `practice.basic` is open to every plan (D4); an AI feature needs its pool's limit above 0 (design §5.4). */
   async check(userId: string, feature: Feature): Promise<Decision> {

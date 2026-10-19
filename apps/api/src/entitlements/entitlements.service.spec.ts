@@ -59,10 +59,14 @@ function setup(input: Setup = {}) {
     aiUsed: vi.fn(async () => input.aiUsed ?? 0),
     capUsed: vi.fn(async () => input.capUsed ?? { confirmed: 0, reserved: 0 }),
   };
+  const ledger = {
+    reserve: vi.fn(async () => ({ state: 'confirmed' })), confirm: vi.fn(async () => ({ state: 'confirmed' })),
+    release: vi.fn(async () => ({ state: 'released' })), refund: vi.fn(async () => ({ refunded: true })),
+  };
   const service = new EntitlementsService(
-    prisma as never, clock, settings as never, identity as never, sources as never, usage as never,
+    prisma as never, clock, settings as never, identity as never, sources as never, usage as never, ledger as never,
   );
-  return { service, prisma, clock, settings, identity, sources, usage };
+  return { service, prisma, clock, settings, identity, sources, usage, ledger };
 }
 
 describe('EntitlementsService.snapshot', () => {
@@ -255,6 +259,20 @@ describe('EntitlementsService.recordPracticeSession', () => {
     expect(calls[0].sql).toMatch(/'use', 'confirmed'/);
     expect(calls[0].sql).toMatch(/ON CONFLICT DO NOTHING/);
     expect(calls[0].values).toEqual([USER, 'session-1', '2026-11-10', NOW]);
+  });
+});
+
+describe('EntitlementsService ledger calls', () => {
+  it('reserve, confirm, release and refund go to the ledger unchanged', async () => {
+    const { service, ledger } = setup();
+    expect(await service.reserve(USER, 'ai_lookup', 'op-1')).toEqual({ state: 'confirmed' });
+    expect(ledger.reserve).toHaveBeenCalledWith(USER, 'ai_lookup', 'op-1');
+    expect(await service.confirm(USER, 'ai_lookup', 'op-1')).toEqual({ state: 'confirmed' });
+    expect(ledger.confirm).toHaveBeenCalledWith(USER, 'ai_lookup', 'op-1');
+    expect(await service.release(USER, 'ai_lookup', 'op-1')).toEqual({ state: 'released' });
+    expect(ledger.release).toHaveBeenCalledWith(USER, 'ai_lookup', 'op-1');
+    expect(await service.refund(USER, 'ai_lookup', 'op-1', 'report-1')).toEqual({ refunded: true });
+    expect(ledger.refund).toHaveBeenCalledWith(USER, 'ai_lookup', 'op-1', 'report-1');
   });
 });
 

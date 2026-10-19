@@ -3,3 +3,4 @@ export { EntitlementsModule } from './entitlements.module.js';
 export { EntitlementsService, type EntitlementsSnapshot, type Feature } from './entitlements.service.js';
 export type { AiPool, Pool } from './entitlements.types.js';
 export { refusalProblem, type Refusal } from './refusal.js';
+export type { ReserveResult } from './usage/usage-ledger.service.js';
