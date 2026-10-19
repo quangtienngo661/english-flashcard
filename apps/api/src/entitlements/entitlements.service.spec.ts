@@ -224,11 +224,12 @@ describe('EntitlementsService.checkQuota', () => {
     expect(ny.usage.practiceUsed).toHaveBeenCalledWith(ny.prisma, USER, '2026-11-10');
   });
 
-  it('with a transaction, reads settings, sources and usage through it (R4: after Practice closed the old session)', async () => {
-    const { service, settings, sources, usage } = setup({ practiceUsed: 1 });
+  it('with a transaction, reads settings, the profile, sources and usage through it (R4; no second connection under the Practice lock)', async () => {
+    const { service, settings, sources, usage, identity } = setup({ practiceUsed: 1 });
     const tx = { name: 'tx' };
     expect(await service.checkQuota(USER, 'practice_sessions', tx as never)).toEqual({ allowed: true });
     expect(settings.get).toHaveBeenCalledWith(tx);
+    expect(identity.getProfile).toHaveBeenCalledWith(USER, tx);
     expect(sources.load).toHaveBeenCalledWith(tx, USER, NOW);
     expect(usage.practiceUsed).toHaveBeenCalledWith(tx, USER, '2026-11-10');
   });
@@ -259,6 +260,18 @@ describe('EntitlementsService.recordPracticeSession', () => {
     expect(calls[0].sql).toMatch(/'use', 'confirmed'/);
     expect(calls[0].sql).toMatch(/ON CONFLICT DO NOTHING/);
     expect(calls[0].values).toEqual([USER, 'session-1', '2026-11-10', NOW]);
+  });
+});
+
+describe('EntitlementsService.aiUsage', () => {
+  it('defaults to today in Vietnam; used = confirmed + unexpired reserved; carries cap, alert and switch (D36)', async () => {
+    const { service, usage, prisma } = setup({ entitlements: { aiDailyCap: 1000, aiCapAlertPercent: 75 }, capUsed: { confirmed: 700, reserved: 50 } });
+    expect(await service.aiUsage()).toEqual({
+      date: '2026-11-10', used: 750, confirmed: 700, reserved: 50, cap: 1000, alert_percent: 75, alert_reached: true, enabled: true,
+    });
+    expect(usage.capUsed).toHaveBeenCalledWith(prisma, '2026-11-10', NOW);
+    await service.aiUsage('2026-11-09');
+    expect(usage.capUsed).toHaveBeenLastCalledWith(prisma, '2026-11-09', NOW);
   });
 });
 

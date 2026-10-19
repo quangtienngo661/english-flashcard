@@ -5,6 +5,7 @@ import { localDate, nextLocalMidnight } from '../common/time/local-date.js';
 import type { Prisma, PrismaClient } from '../generated/prisma/client.js';
 import { IdentityService } from '../identity/profile/identity.service.js';
 import { SettingsService, type AppSettings } from '../settings/index.js';
+import { alertReached, type AiUsageView } from './api/ai-usage.js';
 import type { AiPool, LimitKey, Pool, SubscriptionStatus } from './entitlements.types.js';
 import type { Refusal } from './refusal.js';
 import { aiDay, cycleAt } from './rules/cycle.js';
@@ -89,7 +90,8 @@ export class EntitlementsService {
   async checkQuota(userId: string, _pool: 'practice_sessions', tx?: Prisma.TransactionClient): Promise<Decision> {
     const db = tx ?? this.prisma;
     const { entitlements } = tx ? await this.settings.get(tx) : await this.settings.get();
-    const zone = (await this.identity.getProfile(userId))?.timezone ?? NO_PROFILE_ZONE;
+    const profile = tx ? await this.identity.getProfile(userId, tx) : await this.identity.getProfile(userId);
+    const zone = profile?.timezone ?? NO_PROFILE_ZONE;
     const now = this.clock.now();
     const limit = (await this.resolve(db, userId, entitlements, now)).limits.practice_sessions;
     if (limit === 0) return { allowed: false, reason: 'plan-required' };
@@ -167,6 +169,19 @@ export class EntitlementsService {
         interstitial_per_day: entitlements.adsInterstitialPerDay, min_interval_minutes: entitlements.adsMinIntervalMinutes,
       },
       trial_eligible: profile.email_verified && !(await this.sources.trialUsed(this.prisma, userId)),
+    };
+  }
+
+  /** The system cap's day `date` (default: today in Vietnam), computed when read (D36). */
+  async aiUsage(date?: string): Promise<AiUsageView> {
+    const { entitlements } = await this.settings.get();
+    const now = this.clock.now();
+    const day = date ?? aiDay(now);
+    const { confirmed, reserved } = await this.usage.capUsed(this.prisma, day, now);
+    const used = confirmed + reserved;
+    return {
+      date: day, used, confirmed, reserved, cap: entitlements.aiDailyCap, alert_percent: entitlements.aiCapAlertPercent,
+      alert_reached: alertReached(used, entitlements.aiDailyCap, entitlements.aiCapAlertPercent), enabled: entitlements.aiEnabled,
     };
   }
 

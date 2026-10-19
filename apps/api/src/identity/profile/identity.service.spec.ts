@@ -27,6 +27,12 @@ describe('IdentityService (unit, isolated persistence)', () => {
     });
     expect(prisma.user.findUnique.mock.calls[0][0].where).toEqual({ id: row.id });
   });
+  it('getProfile with a transaction reads through it, not the shared client (no second connection under the caller lock)', async () => {
+    const tx = { user: { findUnique: vi.fn().mockResolvedValue({ ...row, staffRole: 'editor' }) } };
+    expect(await identity.getProfile(row.id, tx as never)).toMatchObject({ id: row.id, staff_role: 'editor' });
+    expect(tx.user.findUnique).toHaveBeenCalledTimes(1);
+    expect(prisma.user.findUnique).not.toHaveBeenCalled();
+  });
   it('B1#25/I24: verification and profile reads reflect the current stored row on every call', async () => {
     expect(await identity.isEmailVerified(row.id)).toBe(false);
     prisma.user.findUnique.mockResolvedValue({ ...row, emailVerifiedAt: new Date(), nativeLanguage: 'en' });
