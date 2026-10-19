@@ -8,7 +8,7 @@ import type { PrismaClient } from '../../generated/prisma/client.js';
 import { IdentityService } from '../../identity/profile/identity.service.js';
 import { LearningService } from '../../learning/index.js';
 import { ChannelChooser } from '../provider/channel-chooser.js';
-import { classifyMailError } from './mail-error.js';
+import { classifyMailError } from '../../common/mail/mail-error.js';
 import {
   ReminderQueueService, type ReminderSendAttempt, type ReminderSendData,
 } from './reminder-queue.service.js';
