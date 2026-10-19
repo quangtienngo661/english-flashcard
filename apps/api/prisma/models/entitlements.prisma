@@ -1,0 +1,192 @@
+// Entitlements & Usage (Bước 5, design §6). Every user id is a plain UUID: no relation crosses a module boundary.
+// CHECKs on the enum columns and the partial unique indexes live in the migration (as practice.prisma).
+
+// One grant by staff (design §10): a Pro plan, or custom limits that replace the plan's numbers for the keys present.
+model EntitlementGrant {
+  id                String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId            String    @map("user_id") @db.Uuid
+  // plan | limits; plan = 'pro' exactly when kind = 'plan', limits exactly when kind = 'limits' (CHECKs).
+  kind              String
+  plan              String?
+  // Keys practice_sessions_per_day, ai_practice_per_cycle, ai_lookup_per_cycle; only the keys present replace the plan's.
+  limits            Json?
+  startsAt          DateTime  @map("starts_at") @db.Timestamptz
+  endsAt            DateTime  @map("ends_at") @db.Timestamptz
+  reason            String
+  grantedBy         String    @map("granted_by") @db.Uuid
+  grantedByRole     String    @map("granted_by_role")
+  revokedAt         DateTime? @map("revoked_at") @db.Timestamptz
+  revokedBy         String?   @map("revoked_by") @db.Uuid
+  // 'replaced' when a new plan grant took its place (D32).
+  revokeReason      String?   @map("revoke_reason")
+  // What happened to the user's paid renewal when this Pro grant was made (D32): turned_off | not_supported | null.
+  paidRenewalAction String?   @map("paid_renewal_action")
+  createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz
+
+  changes EntitlementGrantChange[]
+
+  @@index([userId, endsAt])
+  @@index([grantedBy, createdAt])
+  @@map("entitlement_grants")
+}
+
+// One change of a grant's dates by staff (D38); append-only.
+model EntitlementGrantChange {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  grantId       String   @map("grant_id") @db.Uuid
+  changedBy     String   @map("changed_by") @db.Uuid
+  changedByRole String   @map("changed_by_role")
+  oldStartsAt   DateTime @map("old_starts_at") @db.Timestamptz
+  newStartsAt   DateTime @map("new_starts_at") @db.Timestamptz
+  oldEndsAt     DateTime @map("old_ends_at") @db.Timestamptz
+  newEndsAt     DateTime @map("new_ends_at") @db.Timestamptz
+  reason        String
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  grant EntitlementGrant @relation(fields: [grantId], references: [id], onDelete: Cascade)
+
+  @@index([grantId, createdAt])
+  @@map("entitlement_grant_changes")
+}
+
+// One subscription at one provider (design §9.4). Every subscription renews automatically (D35): no renewal column.
+model Subscription {
+  id                     String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId                 String    @map("user_id") @db.Uuid
+  provider               String
+  environment            String
+  externalSubscriptionId String    @map("external_subscription_id")
+  interval               String
+  status                 String
+  trialEndsAt            DateTime? @map("trial_ends_at") @db.Timestamptz
+  // D30: the provider started a trial the rules refused; the user is Free until the first charge.
+  trialDenied            Boolean   @default(false) @map("trial_denied")
+  paymentFingerprint     String?   @map("payment_fingerprint")
+  currentPeriodStart     DateTime? @map("current_period_start") @db.Timestamptz
+  currentPeriodEnd       DateTime? @map("current_period_end") @db.Timestamptz
+  graceEndsAt            DateTime? @map("grace_ends_at") @db.Timestamptz
+  cancelAtPeriodEnd      Boolean   @default(false) @map("cancel_at_period_end")
+  pendingInterval        String?   @map("pending_interval")
+  quotaAnchorAt          DateTime? @map("quota_anchor_at") @db.Timestamptz
+  // The transaction that paid the current period (plan choice 3; D34 "refund of the current period", D37).
+  currentTransactionId   String?   @map("current_transaction_id")
+  lastEventAt            DateTime? @map("last_event_at") @db.Timestamptz
+  createdAt              DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt              DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  @@unique([provider, environment, externalSubscriptionId])
+  @@index([userId, status])
+  @@index([status, currentPeriodEnd])
+  @@map("subscriptions")
+}
+
+// One notification received from a provider (the event inbox, design §9.2).
+model BillingEvent {
+  id                     String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  provider               String
+  environment            String
+  dedupeKey              String    @unique @map("dedupe_key")
+  externalEventId        String    @map("external_event_id")
+  externalSubscriptionId String?   @map("external_subscription_id")
+  // Normalized type (design §9.3); kind: state | additive (R1).
+  type                   String
+  kind                   String
+  transactionId          String?   @map("transaction_id")
+  occurredAt             DateTime  @map("occurred_at") @db.Timestamptz
+  receivedAt             DateTime  @default(now()) @map("received_at") @db.Timestamptz
+  // The event's app_user_id when it is a lower-case uuid, else null; user_id is set once the applier recognises the user.
+  appUserId              String?   @map("app_user_id") @db.Uuid
+  userId                 String?   @map("user_id") @db.Uuid
+  subscriptionId         String?   @map("subscription_id") @db.Uuid
+  // Null when a §9.3 field is missing: the applier's signal for "missing fields".
+  payload                Json?
+  // May hold the buyer's email: never logged (SR10); cleared after RAW_PAYLOAD_RETENTION_DAYS (R23).
+  rawPayload             Json?     @map("raw_payload")
+  status                 String
+  error                  String?
+  attempts               Int       @default(0)
+  processedAt            DateTime? @map("processed_at") @db.Timestamptz
+
+  @@index([status, receivedAt])
+  @@index([provider, environment, transactionId])
+  @@map("billing_events")
+}
+
+// One trial already used (design §8): once per user, and once per payment fingerprint at a provider (partial unique, migration).
+model TrialHistory {
+  id                 String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId             String   @unique @map("user_id") @db.Uuid
+  provider           String
+  paymentFingerprint String?  @map("payment_fingerprint")
+  startedAt          DateTime @map("started_at") @db.Timestamptz
+
+  @@map("trial_history")
+}
+
+// One line of the usage ledger (design §7). No counter table (D28): what is left is always counted from these rows.
+// Partial uniques on (user_id, pool, operation_id) per kind live in the migration.
+model UsageRecord {
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId        String    @map("user_id") @db.Uuid
+  pool          String
+  operationId   String    @map("operation_id")
+  // use | credit; a credit row is always confirmed.
+  kind          String
+  status        String
+  // caller | expired | late-confirm-free (R7).
+  releaseReason String?   @map("release_reason")
+  // practice_sessions: the learner's date; AI pools: the date in AI_DAY_ZONE.
+  localDate     DateTime? @map("local_date") @db.Date
+  systemDate    DateTime? @map("system_date") @db.Date
+  reservedAt    DateTime? @map("reserved_at") @db.Timestamptz
+  expiresAt     DateTime? @map("expires_at") @db.Timestamptz
+  confirmedAt   DateTime? @map("confirmed_at") @db.Timestamptz
+  releasedAt    DateTime? @map("released_at") @db.Timestamptz
+  creditedAt    DateTime? @map("credited_at") @db.Timestamptz
+  // The report id behind a refund.
+  note          String?
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz
+
+  @@index([userId, pool, confirmedAt])
+  @@index([pool, systemDate])
+  @@map("usage_records")
+}
+
+// One email to send (design §14): one row per (kind, subject, period, recipient) so a mail is never sent twice (R9).
+model EntitlementNotice {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId          String?   @map("user_id") @db.Uuid
+  recipientUserId String    @map("recipient_user_id") @db.Uuid
+  kind            String
+  // The subscription id.
+  subjectKey      String    @map("subject_key")
+  periodKey       String    @map("period_key")
+  state           String
+  dueAt           DateTime  @map("due_at") @db.Timestamptz
+  windowEndsAt    DateTime  @map("window_ends_at") @db.Timestamptz
+  attempts        Int       @default(0)
+  lastErrorAt     DateTime? @map("last_error_at") @db.Timestamptz
+  sentAt          DateTime? @map("sent_at") @db.Timestamptz
+
+  @@unique([kind, subjectKey, periodKey, recipientUserId])
+  @@index([state, dueAt])
+  @@map("entitlement_notices")
+}
+
+// The fake provider's own state (design 9.1): what a real provider would hold on its side. Never used in production (R17).
+model FakeBillingSubscription {
+  externalSubscriptionId String    @id @map("external_subscription_id")
+  userId                 String    @map("user_id") @db.Uuid
+  status                 String
+  interval               String
+  currentPeriodStart     DateTime? @map("current_period_start") @db.Timestamptz
+  currentPeriodEnd       DateTime? @map("current_period_end") @db.Timestamptz
+  trialEndsAt            DateTime? @map("trial_ends_at") @db.Timestamptz
+  cancelAtPeriodEnd      Boolean   @default(false) @map("cancel_at_period_end")
+  lastOccurredAt         DateTime  @map("last_occurred_at") @db.Timestamptz
+  endTrialCalledAt       DateTime? @map("end_trial_called_at") @db.Timestamptz
+  cancelCalledAt         DateTime? @map("cancel_called_at") @db.Timestamptz
+  updatedAt              DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  @@map("fake_billing_subscriptions")
+}
