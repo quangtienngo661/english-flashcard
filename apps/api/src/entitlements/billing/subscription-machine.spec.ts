@@ -560,7 +560,7 @@ describe('applyFetched', () => {
   it('overwrites the six fetched columns and, leaving grace, clears grace_ends_at; nothing else', () => {
     const state: SubscriptionState = { ...ROWS.grace, cancelAtPeriodEnd: false, pendingInterval: 'year' };
     const result = applyFetched(state, { ...fetched, status: 'on_hold' });
-    expect(result).toEqual({ ...state, ...fetched, status: 'on_hold', graceEndsAt: null });
+    expect(result).toEqual({ ...state, ...fetched, status: 'on_hold', graceEndsAt: null, currentTransactionId: null });
   });
 
   it.each([
@@ -569,7 +569,32 @@ describe('applyFetched', () => {
     ['grace → active: clears the old grace end', 'grace', 'active', null],
   ] as const)('coordinator ruling: %s', (_name, from, to, graceEndsAt) => {
     const state: SubscriptionState = { ...ROWS[from], graceEndsAt: at('2026-12-08T00:00:00Z') };
-    expect(applyFetched(state, { ...fetched, status: to })).toEqual({ ...state, ...fetched, status: to, graceEndsAt });
+    expect(applyFetched(state, { ...fetched, status: to })).toEqual({
+      ...state, ...fetched, status: to, graceEndsAt, currentTransactionId: null,
+    });
+  });
+
+  it('Q-C2 (b): a null date from the provider never overwrites a stored one (never a silent Pro forever)', () => {
+    const state: SubscriptionState = { ...ROWS.trialing };
+    const result = applyFetched(state, {
+      status: 'trialing', interval: 'month', currentPeriodStart: null, currentPeriodEnd: null, trialEndsAt: null, cancelAtPeriodEnd: false,
+    });
+    expect(result).toMatchObject({
+      currentPeriodStart: state.currentPeriodStart, currentPeriodEnd: state.currentPeriodEnd, trialEndsAt: state.trialEndsAt,
+    });
+  });
+
+  it('Q-C2 (c): a fetched period that differs from the stored one clears current_transaction_id; the same period keeps it', () => {
+    const moved = applyFetched(ACTIVE, { ...fetched, status: 'active' });
+    expect(moved.currentTransactionId).toBeNull();
+    const refund = applyEvent(moved, event('refunded', { transactionId: 'tx-current', amount: null }), ctx);
+    expect(refund).toMatchObject({ outcome: 'recorded', log: 'billing_refund_unmatched', next: { status: 'active' } });
+
+    const same = applyFetched(ACTIVE, {
+      status: 'active', interval: 'month', currentPeriodStart: ACTIVE.currentPeriodStart, currentPeriodEnd: ACTIVE.currentPeriodEnd,
+      trialEndsAt: null, cancelAtPeriodEnd: true,
+    });
+    expect(same).toEqual({ ...ACTIVE, cancelAtPeriodEnd: true });
   });
 });
 
