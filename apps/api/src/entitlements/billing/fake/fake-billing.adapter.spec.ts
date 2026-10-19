@@ -22,6 +22,7 @@ type Row = {
   currentPeriodEnd: Date | null;
   trialEndsAt: Date | null;
   cancelAtPeriodEnd: boolean;
+  currentTransactionId: string | null;
   lastOccurredAt: Date;
 };
 
@@ -70,6 +71,7 @@ const ROW: Row = {
   currentPeriodEnd: at('2026-12-15T10:00:00.000Z'),
   trialEndsAt: null,
   cancelAtPeriodEnd: false,
+  currentTransactionId: 'tx-1',
   lastOccurredAt: at('2026-11-18T10:00:00.000Z'),
 };
 
@@ -96,6 +98,7 @@ describe('FakeBillingAdapter.verify (design §9.1)', () => {
         currentPeriodEnd: at('2026-11-22T10:00:00.000Z'),
         trialEndsAt: at('2026-11-22T10:00:00.000Z'),
         cancelAtPeriodEnd: false,
+        currentTransactionId: null,
         lastOccurredAt: at('2026-11-15T10:00:00.000Z'),
       }],
       skipDuplicates: true,
@@ -128,6 +131,7 @@ describe('FakeBillingAdapter.verify (design §9.1)', () => {
         currentPeriodEnd: ROW.currentPeriodEnd,
         trialEndsAt: null,
         cancelAtPeriodEnd: true,
+        currentTransactionId: 'tx-1',
         lastOccurredAt: at('2026-11-19T10:00:00.000Z'),
       },
     });
@@ -144,6 +148,34 @@ describe('FakeBillingAdapter.verify (design §9.1)', () => {
     );
     expect(table.createMany).not.toHaveBeenCalled();
     expect(table.updateMany).not.toHaveBeenCalled();
+  });
+
+  it('B5#33: a refund of the current transaction makes the fake say revoked, so a fetch after the cut keeps it', async () => {
+    const { adapter, table } = setup({ row: ROW });
+    await adapter.verify(signedPost({ ...base, id: 'evt-r', type: 'refunded', transaction_id: 'tx-1', occurred_at: '2026-11-19T10:00:00.000Z' }));
+    expect(table.updateMany.mock.calls[0][0].data).toMatchObject({ status: 'revoked', currentTransactionId: 'tx-1' });
+  });
+
+  it('D34: a refund of another transaction leaves the fake state as it is', async () => {
+    const { adapter, table } = setup({ row: ROW });
+    await adapter.verify(signedPost({ ...base, id: 'evt-o', type: 'refunded', transaction_id: 'tx-old', occurred_at: '2026-11-19T10:00:00.000Z' }));
+    expect(table.updateMany).not.toHaveBeenCalled();
+  });
+
+  it('refund_reversed of the current transaction on a revoked fake row → active inside the period, expired after it', async () => {
+    const inside = setup({ row: { ...ROW, status: 'revoked' } });
+    await inside.adapter.verify(signedPost({ ...base, id: 'evt-v', type: 'refund_reversed', transaction_id: 'tx-1', occurred_at: '2026-11-19T10:00:00.000Z' }));
+    expect(inside.table.updateMany.mock.calls[0][0].data).toMatchObject({ status: 'active' });
+    const after = setup({ row: { ...ROW, status: 'revoked' } });
+    await after.adapter.verify(signedPost({ ...base, id: 'evt-w', type: 'refund_reversed', transaction_id: 'tx-1', occurred_at: '2026-12-20T10:00:00.000Z' }));
+    expect(after.table.updateMany.mock.calls[0][0].data).toMatchObject({ status: 'expired' });
+  });
+
+  it('renewed and plan_changed record their transaction as the current one', async () => {
+    const { adapter, table } = setup({ row: ROW });
+    await adapter.verify(signedPost({ ...base, id: 'evt-n', type: 'renewed', transaction_id: 'tx-2', occurred_at: '2026-11-19T10:00:00.000Z',
+      interval: 'month', current_period_start: '2026-12-15T10:00:00.000Z', current_period_end: '2027-01-15T10:00:00.000Z' }));
+    expect(table.updateMany.mock.calls[0][0].data).toMatchObject({ status: 'active', currentTransactionId: 'tx-2' });
   });
 
   it('ack → 200 with the count received', () => {

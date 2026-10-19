@@ -9,7 +9,8 @@ import { BillingAdapterRegistry } from '../billing-adapter.registry.js';
 import type { FetchedState, NormalizedEvent } from '../billing.types.js';
 import { fakeParse, fakeReadRequest, fakeVerifySignature } from './fake-wire.js';
 
-type FakeRow = FetchedState & { lastOccurredAt: Date };
+type FakeTruth = FetchedState & { currentTransactionId: string | null };
+type FakeRow = FakeTruth & { lastOccurredAt: Date };
 
 /**
  * The fake provider (design §9.1): HMAC with `BILLING_FAKE_SECRET`, registered only when `BILLING_FAKE_ENABLED=true` (never
@@ -67,7 +68,7 @@ export class FakeBillingAdapter extends BillingAdapter implements OnModuleInit {
   private async readState(externalSubscriptionId: string): Promise<FetchedState | null> {
     const row = await this.find(externalSubscriptionId);
     if (row === null) return null;
-    const { lastOccurredAt: _, ...state } = row;
+    const { lastOccurredAt: _, currentTransactionId: __, ...state } = row;
     return state;
   }
 
@@ -81,6 +82,7 @@ export class FakeBillingAdapter extends BillingAdapter implements OnModuleInit {
       currentPeriodEnd: row.currentPeriodEnd,
       trialEndsAt: row.trialEndsAt,
       cancelAtPeriodEnd: row.cancelAtPeriodEnd,
+      currentTransactionId: row.currentTransactionId,
       lastOccurredAt: row.lastOccurredAt,
     };
   }
@@ -107,10 +109,11 @@ export class FakeBillingAdapter extends BillingAdapter implements OnModuleInit {
 }
 
 /**
- * What a simple provider would now say about the subscription; null = nothing to change. Refunds and scheduled interval
- * changes leave it as it is: the fake keeps no transactions and no pending change.
+ * What a simple provider would now say about the subscription; null = nothing to change. It keeps the transaction of the
+ * current period like the core (D34, D37), so after a refund of that transaction fetchState says revoked (B5#33, D39).
+ * Scheduled interval changes leave it as it is.
  */
-function fakeTruth(row: FakeRow | null, event: NormalizedEvent): FetchedState | null {
+function fakeTruth(row: FakeRow | null, event: NormalizedEvent): FakeTruth | null {
   if (event.type === 'subscription_started') {
     return {
       status: event.trialEndsAt === null ? 'active' : 'trialing',
@@ -119,6 +122,7 @@ function fakeTruth(row: FakeRow | null, event: NormalizedEvent): FetchedState | 
       currentPeriodEnd: event.currentPeriodEnd,
       trialEndsAt: event.trialEndsAt,
       cancelAtPeriodEnd: false,
+      currentTransactionId: event.trialEndsAt === null ? event.transactionId : null,
     };
   }
   if (event.type === 'renewed') {
@@ -129,6 +133,7 @@ function fakeTruth(row: FakeRow | null, event: NormalizedEvent): FetchedState | 
       interval: event.interval,
       currentPeriodStart: event.currentPeriodStart,
       currentPeriodEnd: event.currentPeriodEnd,
+      currentTransactionId: event.transactionId,
     };
   }
   if (row === null) return null;
@@ -140,6 +145,7 @@ function fakeTruth(row: FakeRow | null, event: NormalizedEvent): FetchedState | 
         interval: event.interval,
         currentPeriodStart: event.currentPeriodStart,
         currentPeriodEnd: event.currentPeriodEnd,
+        currentTransactionId: event.transactionId,
       };
     case 'renewal_failed':
       return { ...current, status: 'grace' };
@@ -153,6 +159,13 @@ function fakeTruth(row: FakeRow | null, event: NormalizedEvent): FetchedState | 
       return { ...current, status: 'expired' };
     case 'revoked':
       return { ...current, status: 'revoked' };
+    case 'refunded':
+      return event.transactionId === current.currentTransactionId ? { ...current, status: 'revoked' } : null;
+    case 'refund_reversed': {
+      if (current.status !== 'revoked' || event.transactionId !== current.currentTransactionId) return null;
+      const inPeriod = current.currentPeriodEnd !== null && event.occurredAt < current.currentPeriodEnd;
+      return { ...current, status: inPeriod ? 'active' : 'expired' };
+    }
     default:
       return null;
   }

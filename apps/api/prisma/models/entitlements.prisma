@@ -186,6 +186,8 @@ model FakeBillingSubscription {
   lastOccurredAt         DateTime  @map("last_occurred_at") @db.Timestamptz
   endTrialCalledAt       DateTime? @map("end_trial_called_at") @db.Timestamptz
   cancelCalledAt         DateTime? @map("cancel_called_at") @db.Timestamptz
+  // The transaction of the current period, so the fake answers fetchState after a refund like a provider would (D39).
+  currentTransactionId   String?   @map("current_transaction_id")
   updatedAt              DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
 
   @@map("fake_billing_subscriptions")
