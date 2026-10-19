@@ -229,4 +229,33 @@ describe('loadConfig', () => {
       maintenanceEnabled: false, jwt: { accessTtlSeconds: 60 },
     });
   });
+
+  it('R17 (config): billing defaults to not production, the fake provider off, no secret, fetchState on', () => {
+    expect(loadConfig(validEnv()).billing).toEqual({
+      production: false, fakeEnabled: false, fakeSecret: null, fakeFetchState: true,
+    });
+  });
+
+  it('R17 (config): BILLING_PRODUCTION=true with BILLING_FAKE_ENABLED=true fails naming both', () => {
+    const secret = randomBytes(32).toString('base64url');
+    const env = { ...validEnv(), BILLING_PRODUCTION: 'true', BILLING_FAKE_ENABLED: 'true', BILLING_FAKE_SECRET: secret };
+    expect(() => loadConfig(env)).toThrow(/BILLING_PRODUCTION, BILLING_FAKE_ENABLED/);
+    expect(loadConfig({ ...validEnv(), BILLING_PRODUCTION: 'true' }).billing).toMatchObject({ production: true, fakeEnabled: false });
+  });
+
+  it('R10 (config): the fake provider enabled without a secret fails naming BILLING_FAKE_SECRET; with one it is bytes', () => {
+    expect(() => loadConfig({ ...validEnv(), BILLING_FAKE_ENABLED: 'true' })).toThrow(/BILLING_FAKE_SECRET/);
+    expect(() => loadConfig({ ...validEnv(), BILLING_FAKE_ENABLED: 'true', BILLING_FAKE_SECRET: 'short' }))
+      .toThrow(/BILLING_FAKE_SECRET/);
+    const secret = randomBytes(32);
+    const billing = loadConfig({
+      ...validEnv(), BILLING_FAKE_ENABLED: 'true', BILLING_FAKE_SECRET: secret.toString('base64url'),
+      BILLING_FAKE_FETCH_STATE: 'false',
+    }).billing;
+    expect(billing).toEqual({ production: false, fakeEnabled: true, fakeSecret: secret, fakeFetchState: false });
+  });
+
+  it.each(['BILLING_PRODUCTION', 'BILLING_FAKE_ENABLED', 'BILLING_FAKE_FETCH_STATE'])('%s accepts only true or false', (name) => {
+    expect(() => loadConfig({ ...validEnv(), [name]: 'yes' })).toThrow(new RegExp(name));
+  });
 });
