@@ -172,9 +172,14 @@ export class BillingEventApplier implements BillingApplyPort {
         skipDuplicates: true,
       });
     }
+    // D39: a refund that revokes may have arrived before the event that makes it harmless (Apple upgrade, an earlier
+    // refund_reversed): ask the provider after commit and follow its truth.
+    const revokedByRefund = event.type === 'refunded' && state?.status !== 'revoked' && result.next.status === 'revoked';
     return {
       outcome: 'applied',
-      refetch: null,
+      refetch: revokedByRefund && adapter?.fetchState
+        ? { subscriptionId: written.id, externalSubscriptionId: written.externalSubscriptionId, updatedAt: written.updatedAt }
+        : null,
       endTrial: trialStarted && !trialAllowed ? written.externalSubscriptionId : null,
     };
   }
