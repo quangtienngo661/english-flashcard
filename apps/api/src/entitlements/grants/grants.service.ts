@@ -132,6 +132,8 @@ export class GrantsService {
         userId: target.id, kind: body.kind, plan: body.kind === 'plan' ? 'pro' : null,
         ...(body.kind === 'limits' ? { limits: body.limits } : {}), startsAt, endsAt, reason: body.reason,
         grantedBy: actorId, grantedByRole: actorRole,
+        // Milliseconds from the clock, not the column's microsecond default: the list's page token keeps milliseconds.
+        createdAt: now,
       } });
       return { row, paid };
     }, transactionOptions);
