@@ -4,7 +4,8 @@ import { PRISMA_CLIENT } from '../../common/db/prisma.module.js';
 import { AppLogger } from '../../common/logging/app-logger.js';
 import { Prisma, type PrismaClient } from '../../generated/prisma/client.js';
 import { normalizeText } from '../catalog/normalize.js';
-import { SENTENCE_MAX, SENTENCES_PER_SENSE_MAX } from '../content.constants.js';
+import { SettingsService } from '../../settings/index.js';
+import { SENTENCE_MAX } from '../content.constants.js';
 import { visibleSenseCondition } from '../learner/visible-senses.js';
 import { ContentRuleError } from '../senses/revision-content.js';
 
@@ -24,9 +25,12 @@ export class SentencesService {
     @Inject(PRISMA_CLIENT) private readonly prisma: PrismaClient,
     @Inject(Clock) private readonly clock: Clock,
     @Inject(AppLogger) private readonly logger: AppLogger,
+    @Inject(SettingsService) private readonly settings: SettingsService,
   ) {}
 
   async addSentence(tx: Prisma.TransactionClient, input: { userId: string; senseId: string; text: string }): Promise<Sentence> {
+    // Through the caller's tx: quick add calls this holding its locks, so no second connection.
+    const { sentencesPerSense } = (await this.settings.get(tx)).content;
     const text = normalizeText(input.text);
     if (!text || text.includes('\0') || [...text].length > SENTENCE_MAX) throw new ContentRuleError('validation-failed');
     // The shared rule (L5): an open sense with a live revision, in the catalog or the learner's own.
@@ -35,7 +39,7 @@ export class SentencesService {
     if (!visible?.ok) throw new NotVisibleError();
     // Serialize adds per (learner, sense) so concurrent requests cannot pass the limit together.
     await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${`content.sentences:${input.userId}:${input.senseId}`}, 0))`;
-    if (await tx.contextSentence.count({ where: { userId: input.userId, senseId: input.senseId } }) >= SENTENCES_PER_SENSE_MAX) {
+    if (await tx.contextSentence.count({ where: { userId: input.userId, senseId: input.senseId } }) >= sentencesPerSense) {
       throw new SentenceLimitError();
     }
     let sentence: Sentence;

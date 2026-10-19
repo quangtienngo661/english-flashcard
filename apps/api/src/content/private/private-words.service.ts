@@ -4,7 +4,7 @@ import { PRISMA_CLIENT } from '../../common/db/prisma.module.js';
 import { Prisma, type PrismaClient } from '../../generated/prisma/client.js';
 import { normalizeLemma, normalizeText } from '../catalog/normalize.js';
 import {
-  LEMMA_MAX, LEVELS, MEANING_MAX, OWNER_SOURCE_ID, PRIVATE_POS_UNSET, PRIVATE_WORDS_MAX, VALID_POS,
+  LEMMA_MAX, LEVELS, MEANING_MAX, OWNER_SOURCE_ID, PRIVATE_POS_UNSET, VALID_POS,
   type InflectionKind, type Level,
 } from '../content.constants.js';
 import { ContentRuleError, contentHash, revisionFormOf, type RevisionContent } from '../senses/revision-content.js';
@@ -12,6 +12,7 @@ import { LevelsService } from '../catalog/levels.service.js';
 import { generateInflections } from '../inflections/inflect.js';
 import { InflectionsService } from '../inflections/inflections.service.js';
 import { visibleSenseCondition } from '../learner/visible-senses.js';
+import { SettingsService } from '../../settings/index.js';
 
 export type Meaning = { text: string; language: 'vi' | 'en' };
 export type CreatePrivateSenseInput = {
@@ -72,6 +73,7 @@ export class PrivateWordsService {
     @Inject(Clock) private readonly clock: Clock,
     @Inject(LevelsService) private readonly levels: LevelsService,
     @Inject(InflectionsService) private readonly inflections: InflectionsService,
+    @Inject(SettingsService) private readonly settings: SettingsService,
   ) {}
 
   /** One lock per owner serializes the limit count and the (owner, lemma, pos) uniqueness check. */
@@ -117,6 +119,8 @@ export class PrivateWordsService {
   }
 
   async createPrivateSense(tx: Tx, input: CreatePrivateSenseInput): Promise<CreatePrivateSenseResult> {
+    // Through the caller's tx: quick add calls this holding the learner lock, so no second connection.
+    const { privateWordsPerUser } = (await this.settings.get(tx)).content;
     const lemma = privateLemma(input.lemma);
     const pos = privatePos(input.pos);
     const meaning = meaningContent(input.meaning);
@@ -131,7 +135,7 @@ export class PrivateWordsService {
     let entry = await tx.entry.findFirst({ where: { scope: 'private', ownerUserId: input.ownerId, language: 'en', lemma, pos } });
     const createdEntry = entry === null;
     if (!entry) {
-      if (await tx.entry.count({ where: { scope: 'private', ownerUserId: input.ownerId } }) >= PRIVATE_WORDS_MAX) {
+      if (await tx.entry.count({ where: { scope: 'private', ownerUserId: input.ownerId } }) >= privateWordsPerUser) {
         throw new PrivateWordLimitError();
       }
       entry = await tx.entry.create({ data: { language: 'en', lemma, pos, scope: 'private', ownerUserId: input.ownerId } });
