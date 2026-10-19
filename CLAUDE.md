@@ -14,7 +14,8 @@ schedule; non-AI definition quizzes; AI-generated fill-in-the-blank practice gra
 entitlements and quotas.
 
 **Current phase (19/10/2026): Bước 0, 1 (Identity core), 2 (Content + Pipeline), 2.5 (admin web, `apps/admin`), 3 (Learning +
-the Content pieces deferred from Bước 2, system part only) and 4 (Practice, API only) implemented; no learner UI yet.** Real code is
+the Content pieces deferred from Bước 2, system part only), 4 (Practice, API only) and 5 (Entitlements, API only) implemented; no
+learner UI yet.** Real code is
 under `apps/api` and `apps/admin`. Historical implementation branches:
 - `feat/buoc-0-backend-foundation` — Bước 0 built on **Drizzle ORM** (10 tasks, 5 unit + 23 e2e tests).
 - `feat/migrate-drizzle-to-prisma` (branched from the above) — the same Bước 0 re-implemented on
@@ -24,7 +25,7 @@ under `apps/api` and `apps/admin`. Historical implementation branches:
   See `docs/superpowers/plans/2026-10-06-migrate-drizzle-to-prisma.md` for the full migration and why.
 
 `main` holds Bước 0–3 (Bước 0–1 via PR #1–#5, the rest via the `dev` → `main` PR #45 of 18/10/2026; GitHub remote
-`english-flashcard`, CI required before merge). **Bước 4 is on `dev` only** (PR #47–#58, 19/10/2026); no `dev` → `main` PR yet
+`english-flashcard`, CI required before merge). **Bước 4 and 5 are on `dev` only** (PR #47–#58 and #62–#78, 19/10/2026); no `dev` → `main` PR yet
 (owner 19/10/2026: not needed yet; it opens only when the owner asks). As-built per Bước: sections below and `docs/deliveries/`.
 - **Bước 2.5** (admin web: login, admin page, role granting, CSV flow; PR #17–#20, 15/10/2026). **Owner note (15/10/2026): the admin
   UI will probably be refactored as a whole later** — treat the current visual layer (Sneat-style, Figma approved 14/10) as
@@ -34,14 +35,14 @@ under `apps/api` and `apps/admin`. Historical implementation branches:
   (`apps/web` under `/vi/app`, `/en/app`) and the admin "Thông báo & giới hạn" page have their own plan and are **not built yet**;
   UI decisions and mockups: `docs/mockups/2026-10-16/UI-CONTEXT.md`.
 - **Bước 4** (Practice, API only, D24 Bước 4; PR #47–#58). Its UI comes in a later round.
+- **Bước 5** (Entitlements, API only, D2 Bước 5; PR #62–#78): plans Free / Trial / Pro, Free practice 3 sessions a day, the AI unit ledger
+  with a system-wide daily cap and an on/off switch, staff grants, a provider-neutral billing gateway with a **fake** provider only (no real
+  payment provider yet; auto-renewing subscriptions only, D35), trial and renewal emails, ad settings served by the API (no ad SDK). **Since
+  Bước 5 every account is Free** (3 practice sessions a day), the owner's and test accounts included; an `admin` grants Pro or custom
+  numbers when needed (D9). Its UI comes in a later round.
 
-**Next (19/10/2026):** Bước 5 (Entitlements, API only) is being implemented. Design approved (D1–D34, review fixes R1–R25, PR #60–#61);
-plan `docs/superpowers/plans/2026-10-19-buoc-5-entitlements.md` (21 tasks, 4 milestones) reviewed independently
-(`docs/superpowers/reviews/2026-10-19-buoc-5-plan-review.md`, 21 findings fixed) and its four product questions decided as **D35–D38**
-(owner 19/10/2026: only auto-renewing subscriptions — no "app renewal" model; no AI-cap alert email, the admin screen turns yellow;
-adapters must send transaction ids; staff edit a grant's dates instead of creating a follow-on grant). Plan summary:
-`docs/deliveries/buoc-5.md`. Four sessions run it: **step-5-coordinator**, **step-5-A**, **step-5-B**, **step-5-C** (who does what:
-the plan's "Sessions and tracks"). The learner UI for Bước 3–4 is still to be built. **Deploy** (hosting, durable Postgres/Redis, real SMTP, secrets, backup; design 2.5 §14) moved to **when the whole app is
+**Next (19/10/2026):** Bước 6 (AI Integration) is being brainstormed in a separate session. The learner UI for Bước 3–5 is still to be
+built. **Deploy** (hosting, durable Postgres/Redis, real SMTP, secrets, backup; design 2.5 §14) moved to **when the whole app is
 complete, before launch** (D3 round 3 of Bước 3, 18/10/2026): until then the owner tries the app locally (reminder emails land in
 Mailpit), `/app/*` stays blocked on production, and design Bước 3 §14 (things only checkable once deployed) is checked just before
 launch. There is no pilot after Bước 3 any more: real users are sought once the app is complete (D12 Bước 3).
@@ -144,7 +145,7 @@ Goal: experimental versions never reach `main`; `main` only receives work that p
 
 ## Architecture & Key Decisions (accepted, `docs/specs/system-spec.md`)
 
-Bước 0–4 are implemented (Bước 3 system part only, Bước 4 API only; see `docs/deliveries/`). Steps 5–8 are still
+Bước 0–5 are implemented (Bước 3 system part only, Bước 4 and 5 API only; see `docs/deliveries/`). Steps 6–8 are still
 decided-but-not-scaffolded:
 
 - Backend: **NestJS modular monolith + PostgreSQL**. 7 V1 modules, each owning its own write path:
@@ -165,7 +166,7 @@ decided-but-not-scaffolded:
   deliveries `docs/deliveries/ui-refresh-b.md`, `docs/deliveries/admin-refresh-keepalive.md`)
   → **3 Learning**, plus the Content pieces deferred from Bước 2 (private words, context sentences, lookup chain), email
   reminders, admin-editable settings, inflections (system part done, PR #28–#44; UI not built) → **4 Practice non-AI** (API only;
-  done, PR #47–#58) → 5 Entitlements → 6 AI Integration gateway → 7 Practice AI + Content AI (incl. fill-in-the-blank from learners'
+  done, PR #47–#58) → **5 Entitlements** (API only; done, PR #62–#78) → 6 AI Integration gateway → 7 Practice AI + Content AI (incl. fill-in-the-blank from learners'
   sentences and the "sentence with the word, then choose" type, both moved from Bước 4) → 8 Identity remainder (Google login,
   account deletion; forgot password already shipped in Bước 1) → **Deploy API + admin** (when the whole app is complete, before
   launch; D3 round 3 of Bước 3).
@@ -185,8 +186,8 @@ decided-but-not-scaffolded:
 - Entitlements are per-feature (no single `is_pro` flag); entitlement ("allowed at all") is separate from
   quota ("how many uses left"); AI entitlement is checked at content *creation*, not at rule-based grading.
 
-Still open and explicitly **not** blocking Step 0 (HANDOFF §6): AI quota structure (K18, only blocks from
-step 5); external dictionary provider (K20); inflected-form/lemma data source (CR16, PRC7); personal-Gmail
+Still open and explicitly **not** blocking Step 0 (HANDOFF §6): ~~AI quota structure (K18)~~ decided in Bước 5 (D10–D14, D18);
+external dictionary provider (K20); inflected-form/lemma data source (CR16, PRC7); personal-Gmail
 SMTP viability; all capacity/cost numbers are estimates.
 
 ## Bước 0 — as-built
@@ -222,6 +223,16 @@ Design `docs/superpowers/specs/2026-10-16-buoc-3-learning-design.md`, decisions 
 API 772 unit, backend e2e removed (D38); "Xong khi" = CI green on every PR + `pnpm smoke:buoc-4` on a fresh DB). Design, decisions
 (D1–D42) and plan: `docs/superpowers/{specs,decisions,plans}/2026-10-18-buoc-4-practice*.md`.
 
+## Bước 5 — plan & as-built
+
+`docs/deliveries/buoc-5.md` (plan tóm tắt and as-built 19/10/2026; Entitlements, API only; PR #62–#78 merged into `dev`; API 1338 unit;
+"Xong khi" = CI green on every PR + `pnpm smoke:buoc-5` on a fresh DB in both fetchState modes + `pnpm smoke:buoc-4`; outputs in
+`docs/deliveries/buoc-5-smoke-output.txt`). Design, decisions (D1–D40) and plan: `docs/superpowers/{specs,decisions,plans}/2026-10-19-buoc-5-entitlements*.md`;
+D39–D40 were decided while implementing. Run the smoke against a real API and worker started with `BILLING_FAKE_ENABLED=true` and
+`BILLING_FAKE_FETCH_STATE=<true|false>`, then `SMOKE_FETCH_STATE=<same> pnpm smoke:buoc-5` (it stops when its own environment or `.env`
+says another mode, but cannot see the running API's); `smoke:buoc-4` now
+grants its learner 200 sessions a day first, since its learner is Free.
+
 ## Việc phải phân tích khi tới bước tương ứng (ghi 12/10/2026, từ brainstorm Bước 2)
 
 Các điểm dưới đây phát sinh khi rà quyền của `admin`/`editor` (bảng D6) với các spec Bước 3–8. Chưa chốt, **không chặn Bước 2**;
@@ -234,10 +245,12 @@ Các điểm dưới đây phát sinh khi rà quyền của `admin`/`editor` (b�
   `content.edit` chỉ hợp cho dạng được chấp nhận theo từng sense (CR22, thuộc Content). Cần phân tích khi tới bước: danh sách
   lưu ở đâu (Practice sở hữu), thêm theo lemma hay theo sense, có nạp sẵn danh sách ban đầu không.
 - **Bước 5–6 — xem chi phí AI và báo cáo đối soát** (AI Integration AR6, Entitlements): **chủ dự án chốt 12/10/2026** thuộc
-  `ai.settings` (chỉ `admin`). Chưa gán: quyền đổi con số hạn mức và tham số trial/Pro (ER9, K18); đề xuất cùng `ai.settings`.
-- **Bước 5 — `entitlements.grant` so với D6 ("editor không đụng chi phí AI").** `editor` có `entitlements.grant` nên cấp được
-  lượt AI, tức tiêu tiền thật. Trần chi hằng ngày (ER14) giới hạn rủi ro. Cân nhắc: chuyển `admin` only, hoặc giới hạn số lượt
-  mỗi lần cấp.
+  `ai.settings` (chỉ `admin`). **Đã rõ ở Bước 5 (19/10/2026, ⚠8 và D6 của design Bước 5):** bỏ quyền `ai.settings`, mọi con số hạn mức,
+  tham số trial/Pro, công tắc và trần AI dùng lại `settings.manage` (chỉ `admin`). Phần xem chi phí AI và đối soát thuộc Bước 6: xác nhận
+  lại quyền khi brainstorm Bước 6 (theo ⚠8 thì là `settings.manage`).
+- ~~**Bước 5 — `entitlements.grant` so với D6 ("editor không đụng chi phí AI").**~~ **Đã rõ ở Bước 5 (D6–D8, D33):** `editor` cấp gói Pro
+  bình thường (kèm lượt AI cố định của gói) nhưng **không** đặt con số lượt AI tùy ý, chỉ cấp và thu hồi cho người học thường, không thu hồi
+  được lần cấp có con số lượt AI; `admin` xem lịch sử cấp của editor và thu hồi. Trần AI toàn hệ thống mỗi ngày là `ai_daily_cap`.
 - **Sau Bước 3 — rà nghiệp vụ schema DB (chủ dự án 17/10/2026; chưa chốt, chưa sửa code).** DB1 `users` không có họ tên,
   ngày sinh (chủ động giới hạn theo IR21; chủ dự án muốn thêm); DB2 không lưu ai đã review/publish/gỡ/retire một nghĩa; DB3
   đăng ký không lưu việc đồng ý điều khoản và tuổi tối thiểu. DB2–DB3 nên xong trước pilot. Chi tiết, bằng chứng và câu còn
@@ -321,7 +334,8 @@ for a concrete example of the loop catching real bugs each round.
 - As-built delivery records per Bước: `docs/deliveries/buoc-0.md`, `docs/deliveries/buoc-1.md`,
   `docs/deliveries/buoc-2.md` (includes its plan tóm tắt too), `docs/deliveries/buoc-2-5.md` (plan tóm tắt + as-built), `docs/deliveries/buoc-2-5-test-flow.md` (Bước 2.5 gate + manual run),
   `docs/deliveries/ui-refresh-b.md` (UI refresh B: plan tóm tắt + landing and admin as-built), `docs/deliveries/buoc-3.md` +
-  `docs/deliveries/buoc-3-test-flow.md` (Bước 3 system part), `docs/deliveries/buoc-4.md` (Bước 4, Practice API).
+  `docs/deliveries/buoc-3-test-flow.md` (Bước 3 system part), `docs/deliveries/buoc-4.md` (Bước 4, Practice API),
+  `docs/deliveries/buoc-5.md` + `docs/deliveries/buoc-5-smoke-output.txt` (Bước 5, Entitlements API).
 - Bước 2 test flow (automated gate, `pnpm smoke:buoc-2`, manual steps): `docs/deliveries/buoc-2-test-flow.md`.
 - Spec index and status: `docs/specs/README.md`.
 - Spec/design-doc writing convention (edge cases must be derived per-doc, not just cited): `docs/specs/SPEC_WRITING_CONVENTIONS.md`.

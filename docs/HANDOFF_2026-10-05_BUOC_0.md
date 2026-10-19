@@ -41,6 +41,9 @@ thì ghi `ASSUMPTION`.
 > (D3 vòng 3), không còn pilot sau Bước 3. Bước 4 (Practice, chỉ API) xong trên `dev` (PR #47–#58, as-built `docs/deliveries/buoc-4.md`),
 > chưa lên `main` (chủ dự án 19/10: chưa cần). Giao diện người học của Bước 3–4 có plan riêng, chưa làm. Tiếp theo: Bước 5 đang
 > brainstorm ở phiên riêng.
+> **Cập nhật 19/10/2026 (tối):** Bước 5 (Entitlements, chỉ API) xong trên `dev` (PR #62–#78; as-built `docs/deliveries/buoc-5.md`), chưa lên
+> `main`. Từ Bước 5 mọi tài khoản là Free (3 phiên luyện/ngày); `admin` cấp Pro hoặc con số riêng khi cần. Tiếp theo: Bước 6 (AI Integration)
+> đang brainstorm ở phiên riêng; giao diện người học của Bước 3–5 vẫn chưa làm.
 
 | Bước | Làm gì | Spec |
 |---|---|---|
@@ -51,13 +54,13 @@ thì ghi `ASSUMPTION`.
 | Giao diện B *(mới, 15/10)* | Làm mới landing và admin theo hướng B (chủ dự án chọn 15/10/2026): token chung `packages/design-tokens`, Lexend, bài luyện một thẻ. **Xong 16/10/2026, trên `dev`:** landing PR #22, admin PR #23, sửa mất phiên khi tải lại nhanh PR #24 (design `docs/superpowers/specs/2026-10-15-ui-refresh-b-design.md`, delivery `docs/deliveries/ui-refresh-b.md`) | — |
 | 3 | Nhóm, trạng thái, lịch ôn, "hôm nay", flashcard, thêm nhanh (catalog + nhập tay); **cộng phần Content dời từ Bước 2:** từ riêng tư, câu ngữ cảnh, chuỗi tra nghĩa (catalog + tự nhập); thêm nhắc học qua email (D8, D9), cài đặt admin chỉnh được, dạng chia (AGID, D46), xuất từ chưa có nghĩa (D34). **Phần hệ thống xong 18/10/2026 (PR #28–#44)**, as-built `docs/deliveries/buoc-3.md`; giao diện người học có plan riêng, chưa làm | Learning + Vocabulary Content (phần còn lại) |
 | 4 | Trắc nghiệm, đúng/sai, gõ từ (theo nghĩa hoặc theo câu ví dụ), "từ hay sai", lịch sử, báo lỗi; **chỉ API**, giao diện làm sau (D24 Bước 4). Bài từ câu người học chuyển sang Bước 7 (D2, D4 Bước 4). **Xong 19/10/2026, trên `dev` (PR #47–#58)** (design `docs/superpowers/specs/2026-10-18-buoc-4-practice-design.md`, as-built `docs/deliveries/buoc-4.md`) | Practice (không AI) |
-| 5 | Quyền, trial, giữ chỗ hạn mức | Entitlements |
+| 5 | Quyền, trial, giữ chỗ hạn mức: gói Free / Trial / Pro, **phiên luyện Free 3/ngày**, sổ lượt AI (giữ, xác nhận, nhả, hoàn) với trần toàn hệ thống mỗi ngày và công tắc AI, cấp tay của staff, **cổng thanh toán chung + bộ nối giả** (chỉ gói tự gia hạn, D35; chưa có nhà cung cấp thật), email trial và gia hạn, **cấu hình quảng cáo** ở server (chưa có SDK, D21); **chỉ API** (D2 Bước 5). **Xong 19/10/2026, trên `dev` (PR #62–#78)** (design `docs/superpowers/specs/2026-10-19-buoc-5-entitlements-design.md`, as-built `docs/deliveries/buoc-5.md`) | Entitlements |
 | 6 | Cổng `AiProvider` (bản giả trước), nhật ký chi phí | AI Integration |
 | 7 | Bài điền từ AI, gói trả phí, gồm bài điền từ từ câu người học (chuyển từ Bước 4; dùng câu người học đã lưu hay AI tự viết: còn mở, D2, D4 Bước 4); dạng "câu chứa từ rồi chọn" (AI); trắc nghiệm theo câu ví dụ (D34 Bước 4); câu AI lưu theo từng người học, bỏ ngân hàng câu dùng chung (D3 Bước 4); bước AI trong chuỗi tra nghĩa | Practice (AI) + Content |
 | 8 | Google login, xóa tài khoản | Identity (còn lại) |
 | Deploy *(dời về cuối, D3 vòng 3 Bước 3)* | Deploy API + `admin-api.` + `admin.`: chọn hosting backend, Postgres/Redis bền, SMTP thật, secret, backup (design 2.5 §14). Làm khi toàn bộ app hoàn chỉnh, trước ra mắt (chủ dự án 18/10/2026); tới lúc đó chủ dự án dùng thử ở máy local | — |
 
-K18 (cấu trúc hạn mức AI) chỉ chặn từ bước 5; provider từ điển ngoài (K20) không chặn bước 0–7 nếu chuỗi tra nghĩa
+K18 (cấu trúc hạn mức AI) đã chốt ở Bước 5 (D10–D14, D18); provider từ điển ngoài (K20) không chặn bước 0–7 nếu chuỗi tra nghĩa
 chỉ gồm catalog + nhập tay.
 
 ## 3. Cách làm việc chủ dự án muốn
