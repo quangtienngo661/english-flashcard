@@ -3,6 +3,13 @@ import {
   applyPatch, changedFields, crossFieldViolations, SETTINGS_DEFAULTS, settingsValuesPatchSchema, toApiValues, withDefaults,
 } from './settings.definitions.js';
 
+const ENTITLEMENT_DEFAULTS_API = {
+  free_practice_sessions_per_day: 3, pro_practice_sessions_per_day: 30, pro_ai_practice_per_cycle: 300,
+  pro_ai_lookup_per_cycle: 100, trial_ai_practice_per_cycle: 300, trial_ai_lookup_per_cycle: 100, grace_days: 7,
+  trial_reminder_days_before: 2, renewal_notice_days_before: null, ai_enabled: true, ai_daily_cap: 1000,
+  ai_cap_alert_percent: 75, ads_enabled: false, ads_interstitial_per_day: 3, ads_min_interval_minutes: 10,
+};
+
 const issues = (input: unknown) => {
   const result = settingsValuesPatchSchema.safeParse(input);
   return result.success ? [] : result.error.issues.map((issue) => issue.path.join('.'));
@@ -12,12 +19,103 @@ describe('settings definitions', () => {
   it('design §9: defaults are true, 20:00, 2, 7, 60, 20, 100, 60', () => {
     expect(toApiValues(SETTINGS_DEFAULTS)).toEqual({
       reminders: { enabled: true, send_time: '20:00', min_gap_days: 2, inactive_after_days: 7, stop_after_days: 60 },
-      learning: { new_per_group_per_day: 20, reviews_per_group_per_day: 100, backlog_after_days: 60 },
+      learning: {
+        new_per_group_per_day: 20, reviews_per_group_per_day: 100, backlog_after_days: 60, groups_per_user: 100,
+        items_per_group: 2000,
+      },
       practice: {
         max_questions_per_session: 20, default_questions_per_session: 10, history_months: 6, true_false_true_percent: 50,
         idle_session_close_hours: 24, reports_per_hour: 20, hint_definition_max_chars: 200, type_word_max_retries: null,
       },
+      entitlements: ENTITLEMENT_DEFAULTS_API,
+      content: { private_words_per_user: 10000, sentences_per_sense: 20 },
     });
+  });
+
+  it('D18: defaults are 3, 30, 300, 100, 300, 100, 7, 2, null, true, 1000, 75, false, 3, 10; learning 100/2000; content 10000/20', () => {
+    const api = toApiValues(SETTINGS_DEFAULTS);
+    expect(api.entitlements).toEqual(ENTITLEMENT_DEFAULTS_API);
+    expect(Object.values(api.entitlements)).toEqual([3, 30, 300, 100, 300, 100, 7, 2, null, true, 1000, 75, false, 3, 10]);
+    expect([api.learning.groups_per_user, api.learning.items_per_group]).toEqual([100, 2000]);
+    expect(api.content).toEqual({ private_words_per_user: 10000, sentences_per_sense: 20 });
+  });
+
+  it('withDefaults fills the new keys for JSON stored before Bước 5 and keeps a stored null for the two nullable keys', () => {
+    const before5 = {
+      reminders: { minGapDays: 3 }, learning: { newPerGroupPerDay: 30, reviewsPerGroupPerDay: 100, backlogAfterDays: 60 },
+      practice: {},
+    };
+    const values = withDefaults(before5);
+    expect(values.entitlements).toEqual(SETTINGS_DEFAULTS.entitlements);
+    expect(values.content).toEqual(SETTINGS_DEFAULTS.content);
+    expect(values.learning).toEqual({ ...SETTINGS_DEFAULTS.learning, newPerGroupPerDay: 30 });
+    const nulls = withDefaults({ entitlements: { renewalNoticeDaysBefore: null, aiCapAlertPercent: null } }).entitlements;
+    expect(nulls.renewalNoticeDaysBefore).toBeNull();
+    expect(nulls.aiCapAlertPercent).toBeNull();
+    expect(withDefaults({ entitlements: { renewalNoticeDaysBefore: 5 } }).entitlements.renewalNoticeDaysBefore).toBe(5);
+  });
+
+  it('toApiValues names every new key in snake_case', () => {
+    const api = toApiValues(SETTINGS_DEFAULTS);
+    expect(Object.keys(api)).toEqual(['reminders', 'learning', 'practice', 'entitlements', 'content']);
+    expect(Object.keys(api.entitlements)).toEqual(Object.keys(ENTITLEMENT_DEFAULTS_API));
+    for (const section of Object.values(api)) {
+      for (const key of Object.keys(section)) expect(key).toMatch(/^[a-z]+(_[a-z]+)*$/);
+    }
+  });
+
+  it('patch schema rejects min − 1 and max + 1 for every new numeric key and accepts both edges', () => {
+    const edges: Array<[string, string, number, number]> = [
+      ['entitlements', 'free_practice_sessions_per_day', 1, 50], ['entitlements', 'pro_practice_sessions_per_day', 1, 200],
+      ['entitlements', 'pro_ai_practice_per_cycle', 0, 5000], ['entitlements', 'pro_ai_lookup_per_cycle', 0, 5000],
+      ['entitlements', 'trial_ai_practice_per_cycle', 0, 5000], ['entitlements', 'trial_ai_lookup_per_cycle', 0, 5000],
+      ['entitlements', 'grace_days', 0, 16], ['entitlements', 'trial_reminder_days_before', 1, 6],
+      ['entitlements', 'renewal_notice_days_before', 1, 30], ['entitlements', 'ai_daily_cap', 0, 100000],
+      ['entitlements', 'ai_cap_alert_percent', 50, 95], ['entitlements', 'ads_interstitial_per_day', 0, 20],
+      ['entitlements', 'ads_min_interval_minutes', 1, 240],
+      ['learning', 'groups_per_user', 10, 1000], ['learning', 'items_per_group', 100, 10000],
+      ['content', 'private_words_per_user', 1000, 100000], ['content', 'sentences_per_sense', 5, 100],
+    ];
+    for (const [section, key, min, max] of edges) {
+      expect(issues({ [section]: { [key]: min } }), `${key}=${min}`).toEqual([]);
+      expect(issues({ [section]: { [key]: max } }), `${key}=${max}`).toEqual([]);
+      expect(issues({ [section]: { [key]: min - 1 } }), `${key}=${min - 1}`).toEqual([`${section}.${key}`]);
+      expect(issues({ [section]: { [key]: max + 1 } }), `${key}=${max + 1}`).toEqual([`${section}.${key}`]);
+      expect(issues({ [section]: { [key]: min + 0.5 } }), `${key}=${min + 0.5}`).toEqual([`${section}.${key}`]);
+    }
+  });
+
+  it('patch schema accepts null only for renewal_notice_days_before and ai_cap_alert_percent', () => {
+    const nullable = ['renewal_notice_days_before', 'ai_cap_alert_percent'];
+    for (const key of Object.keys(ENTITLEMENT_DEFAULTS_API)) {
+      expect(issues({ entitlements: { [key]: null } }), key).toEqual(nullable.includes(key) ? [] : [`entitlements.${key}`]);
+    }
+    for (const [section, key] of [['learning', 'groups_per_user'], ['learning', 'items_per_group'],
+      ['content', 'private_words_per_user'], ['content', 'sentences_per_sense']]) {
+      expect(issues({ [section]: { [key]: null } }), key).toEqual([`${section}.${key}`]);
+    }
+    expect(issues({ entitlements: { other: 1 } })).toEqual(['entitlements']);
+    expect(issues({ content: { other: 1 } })).toEqual(['content']);
+  });
+
+  it('patch schema rejects a non-boolean ai_enabled (and ads_enabled)', () => {
+    expect(issues({ entitlements: { ai_enabled: 'false' } })).toEqual(['entitlements.ai_enabled']);
+    expect(issues({ entitlements: { ai_enabled: 0 } })).toEqual(['entitlements.ai_enabled']);
+    expect(issues({ entitlements: { ads_enabled: 'yes' } })).toEqual(['entitlements.ads_enabled']);
+    expect(issues({ entitlements: { ai_enabled: false, ads_enabled: true } })).toEqual([]);
+  });
+
+  it('crossFieldViolations: pro 2 with free 3 → the violation; pro 3 with free 3 → none', () => {
+    expect(crossFieldViolations(applyPatch(SETTINGS_DEFAULTS, { entitlements: { pro_practice_sessions_per_day: 2 } })))
+      .toEqual(['values.entitlements.pro_practice_sessions_per_day: Expected at least free_practice_sessions_per_day']);
+    expect(crossFieldViolations(applyPatch(SETTINGS_DEFAULTS, { entitlements: { pro_practice_sessions_per_day: 3 } })))
+      .toEqual([]);
+  });
+
+  it('changedFields reports entitlements.ai_enabled true → false', () => {
+    const off = applyPatch(SETTINGS_DEFAULTS, { entitlements: { ai_enabled: false } });
+    expect(off.entitlements.aiEnabled).toBe(false);
+    expect(changedFields(SETTINGS_DEFAULTS, off)).toEqual([{ key: 'entitlements.ai_enabled', oldValue: true, newValue: false }]);
   });
 
   it('design 5.4: each practice bound accepts its edges and refuses one step outside; type_word_max_retries also takes null', () => {
