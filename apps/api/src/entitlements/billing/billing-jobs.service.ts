@@ -4,7 +4,9 @@ import { AppLogger } from '../../common/logging/app-logger.js';
 import { MaintenanceScheduler } from '../../common/maintenance/maintenance.scheduler.js';
 import type { PrismaClient } from '../../generated/prisma/client.js';
 import { SettingsService } from '../../settings/index.js';
-import { BILLING_MAX_ATTEMPTS, BILLING_PENDING_RETRY_MS, RAW_PAYLOAD_RETENTION_DAYS } from '../entitlements.constants.js';
+import {
+  BILLING_MAX_ATTEMPTS, BILLING_PENDING_RETRY_MS, RAW_PAYLOAD_RETENTION_DAYS, REFUND_REFETCH_DAYS,
+} from '../entitlements.constants.js';
 import { effectiveStatus, type SubscriptionSource } from '../rules/plan-rules.js';
 import { callAdapter } from './adapter-call.js';
 import { BillingAdapterRegistry } from './billing-adapter.registry.js';
@@ -36,6 +38,7 @@ export class BillingJobs implements OnModuleInit {
   onModuleInit(): void {
     this.scheduler.register('billing-events-retry', (now) => this.retryEvents(now));
     this.scheduler.register('subscriptions-time', (now) => this.timeTransitions(now));
+    this.scheduler.register('billing-refund-refetch', (now) => this.refetchRevoked(now));
     this.scheduler.register('billing-raw-payload-cleanup', (now) => this.cleanupRawPayloads(now));
   }
 
@@ -82,6 +85,39 @@ export class BillingJobs implements OnModuleInit {
         const { status } = effectiveStatus(toSource(row, state), now, graceDays);
         if (!useFetched && status === row.status) return;
         await tx.subscription.update({ where: { id: row.id }, data: { ...state, status, updatedAt: now } });
+      });
+    }
+  }
+
+  /**
+   * D39: a row revoked in the last `REFUND_REFETCH_DAYS` (by `updated_at`) is asked again when the applier's own fetch
+   * failed. The provider's answer is written only when it is not `revoked`, so a confirmed revoke never moves `updated_at`
+   * and the window does not slide.
+   */
+  async refetchRevoked(now: Date): Promise<void> {
+    const candidates = await this.prisma.subscription.findMany({
+      where: { status: 'revoked', updatedAt: { gte: new Date(now.getTime() - REFUND_REFETCH_DAYS * DAY_MS) } },
+      orderBy: { updatedAt: 'asc' },
+      take: TIME_BATCH,
+    });
+    for (const candidate of candidates) {
+      const adapter = this.registry.get(candidate.provider);
+      if (!adapter?.fetchState) continue;
+      const result = await callAdapter(() => adapter.fetchState!(candidate.externalSubscriptionId));
+      if (!result.ok || result.value === null) {
+        this.logger.warn('billing_state_refetch_failed', { subscription_id: candidate.id, provider: candidate.provider });
+        continue;
+      }
+      const fetched = result.value;
+      if (fetched.status === 'revoked') continue;
+      await this.prisma.$transaction(async (tx) => {
+        const locked = await tx.$queryRaw<Array<{ id: string }>>`
+          SELECT id FROM subscriptions WHERE id = ${candidate.id}::uuid FOR UPDATE SKIP LOCKED`;
+        if (locked.length === 0) return;
+        const row = await tx.subscription.findUnique({ where: { id: candidate.id } });
+        if (row === null || row.updatedAt.getTime() !== candidate.updatedAt.getTime()) return;
+        await tx.subscription.update({ where: { id: row.id }, data: { ...applyFetched(toState(row), fetched), updatedAt: now } });
+        this.logger.info('billing_state_refetched', { subscription_id: row.id });
       });
     }
   }

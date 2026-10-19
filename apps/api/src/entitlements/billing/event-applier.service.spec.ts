@@ -459,6 +459,79 @@ describe('BillingEventApplier.apply (design §9.2 step 4, §9.4)', () => {
     expect(db.subs[0].cancelAtPeriodEnd).toBe(true);
   });
 
+  describe('D39: a refund that revokes is checked with the provider after commit', () => {
+    const yearly: FetchedState = { status: 'active', interval: 'year', currentPeriodStart: at('2026-11-10T00:00:00.000Z'),
+      currentPeriodEnd: at('2027-11-10T00:00:00.000Z'), trialEndsAt: null, cancelAtPeriodEnd: false };
+
+    it('B5E102: refunded m1 before plan_changed y1 → revoked → fetch says active year → active, transaction null; plan_changed y1 then sets y1', async () => {
+      const { db, applier, adapter } = setup({ fetch: true });
+      const sub = addSub(db, { currentTransactionId: 'm1', lastEventAt: at('2026-11-10T00:00:00.000Z') });
+      adapter.fetched = yearly;
+      expect(await applier.apply(addEvent(db, 'refunded', { occurredAt: '2026-11-10T00:05:00.000Z', transactionId: 'm1', amount: 2 })))
+        .toBe('applied');
+      expect(db.calls.indexOf('fetchState(inTx=false)')).toBeGreaterThan(db.calls.indexOf('tx:commit'));
+      expect(sub).toMatchObject({ status: 'active', interval: 'year', currentPeriodEnd: yearly.currentPeriodEnd, currentTransactionId: null });
+
+      const planChanged = addEvent(db, 'plan_changed', { occurredAt: '2026-11-10T00:06:00.000Z', interval: 'year',
+        currentPeriodStart: '2026-11-10T00:00:00.000Z', currentPeriodEnd: '2027-11-10T00:00:00.000Z', transactionId: 'y1' });
+      expect(await applier.apply(planChanged)).toBe('applied');
+      expect(sub).toMatchObject({ status: 'active', currentTransactionId: 'y1' });
+    });
+
+    it('B5E103: refund_reversed before refunded of the same transaction → recorded, then revoked, then fetch → active', async () => {
+      const { db, applier, adapter } = setup({ fetch: true });
+      const sub = addSub(db, { currentTransactionId: 'tx-0' });
+      adapter.fetched = { ...yearly, interval: 'month', currentPeriodStart: sub.currentPeriodStart as Date, currentPeriodEnd: sub.currentPeriodEnd as Date };
+      await applier.apply(addEvent(db, 'refund_reversed', { occurredAt: '2026-11-15T10:00:00.000Z', transactionId: 'tx-0' }));
+      expect(sub.status).toBe('active');
+      await applier.apply(addEvent(db, 'refunded', { occurredAt: '2026-11-15T10:01:00.000Z', transactionId: 'tx-0', amount: null }));
+      expect(sub).toMatchObject({ status: 'active', currentTransactionId: 'tx-0' });
+      expect(db.calls.filter((c) => c.startsWith('fetchState'))).toHaveLength(1);
+    });
+
+    it.each([
+      ['throws', new Error('down')],
+      ['times out', 'hang' as const],
+    ])('B5E104: fetchState %s → stays revoked, logged', async (_name, fetched) => {
+      vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+      try {
+        const { db, applier, adapter, logs } = setup({ fetch: true });
+        const sub = addSub(db, { currentTransactionId: 'tx-0' });
+        adapter.fetched = fetched;
+        const result = applier.apply(addEvent(db, 'refunded', { transactionId: 'tx-0', amount: null }));
+        await vi.advanceTimersByTimeAsync(BILLING_ADAPTER_TIMEOUT_MS);
+        expect(await result).toBe('applied');
+        expect(sub.status).toBe('revoked');
+        expect(logs.map((l) => l.event)).toContain('billing_state_refetch_failed');
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it('the provider also says revoked → kept revoked', async () => {
+      const { db, applier, adapter } = setup({ fetch: true });
+      const sub = addSub(db, { currentTransactionId: 'tx-0' });
+      adapter.fetched = { ...yearly, status: 'revoked' };
+      await applier.apply(addEvent(db, 'refunded', { transactionId: 'tx-0', amount: null }));
+      expect(sub.status).toBe('revoked');
+    });
+
+    it('an adapter without fetchState → stays revoked, no second transaction', async () => {
+      const { db, applier } = setup();
+      const sub = addSub(db, { currentTransactionId: 'tx-0' });
+      await applier.apply(addEvent(db, 'refunded', { transactionId: 'tx-0', amount: null }));
+      expect(sub.status).toBe('revoked');
+      expect(db.calls.filter((c) => c === 'tx:begin')).toHaveLength(1);
+    });
+
+    it('a refund that only records (another transaction) asks nothing', async () => {
+      const { db, applier } = setup({ fetch: true });
+      addSub(db, { currentTransactionId: 'tx-0' });
+      await applier.apply(addEvent(db, 'refunded', { transactionId: 'tx-other', amount: null }));
+      expect(db.calls.some((c) => c.startsWith('fetchState'))).toBe(false);
+    });
+  });
+
   it('B5E62: no log entry of the applier carries the payload, the fingerprint or an email', async () => {
     const { db, applier, logs } = setup({ fetch: true, endTrial: true });
     db.trials.push({ userId: USER, provider: 'fake', paymentFingerprint: null });
