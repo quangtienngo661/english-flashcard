@@ -233,14 +233,22 @@ const MATRIX: { [T in EventType]: Row<Event<T>> } = {
         currentPeriodEnd: event.currentPeriodEnd,
         currentTransactionId: event.transactionId,
       }),
+    // D40: an upgrade paid while in grace leaves grace; the failed month was never paid, so the yearly period is the first
+    // paid one and starts a new anchor (as a reactivation does).
     grace: (state, event) =>
-      changed({
-        ...state,
-        interval: event.interval,
-        currentPeriodStart: event.currentPeriodStart,
-        currentPeriodEnd: event.currentPeriodEnd,
-        currentTransactionId: event.transactionId,
-      }),
+      changed(
+        {
+          ...state,
+          status: 'active',
+          graceEndsAt: null,
+          interval: event.interval,
+          currentPeriodStart: event.currentPeriodStart,
+          currentPeriodEnd: event.currentPeriodEnd,
+          currentTransactionId: event.transactionId,
+          quotaAnchorAt: event.currentPeriodStart,
+        },
+        true,
+      ),
     on_hold: RECORD,
     expired: RECORD,
     revoked: RECORD,

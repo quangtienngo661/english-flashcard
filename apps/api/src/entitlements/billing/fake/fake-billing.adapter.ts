@@ -149,6 +149,8 @@ function fakeTruth(row: FakeTruth | null, event: NormalizedEvent): FakeTruth | n
     case 'plan_changed':
       return {
         ...current,
+        // D40: an upgrade in grace means the provider charged the new period.
+        status: current.status === 'grace' ? 'active' : current.status,
         interval: event.interval,
         currentPeriodStart: event.currentPeriodStart,
         currentPeriodEnd: event.currentPeriodEnd,

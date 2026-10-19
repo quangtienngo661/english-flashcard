@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { SubscriptionStatus } from '../entitlements.types.js';
 import { EVENT_TYPES, eventKind, type EventType, type NormalizedEvent, type SubscriptionState } from './billing.types.js';
+import { effectiveStatus } from '../rules/plan-rules.js';
 import { applyEvent, applyFetched, startsTrial } from './subscription-machine.js';
 
 const at = (iso: string) => new Date(iso);
@@ -266,7 +267,8 @@ const MATRIX: Record<EventType, Record<From, Cell>> = {
     none: RECORD,
     trialing: to({ interval: 'year' }),
     active: to(PLAN_CHANGED),
-    grace: to(PLAN_CHANGED),
+    // D40: an upgrade paid while in grace leaves grace; the yearly period is the first paid one, so a new anchor.
+    grace: to({ ...PLAN_CHANGED, status: 'active', graceEndsAt: null, quotaAnchorAt: planChanged.currentPeriodStart }, true),
     on_hold: RECORD,
     expired: RECORD,
     revoked: RECORD,
@@ -368,6 +370,42 @@ describe('applyEvent — details the matrix leaves to the code', () => {
       quotaAnchorAt: at('2026-01-10T00:00:00Z'),
     });
     expect(result.anchorReset).toBe(false);
+  });
+
+  it('B5E105 (D40): grace since 1/11 (end 8/11), plan_changed year y1 on 5/11 → active, no grace end, yearly, y1, anchor 5/11; still Pro after 8/11', () => {
+    const grace: SubscriptionState = {
+      ...ACTIVE,
+      status: 'grace',
+      currentPeriodStart: at('2026-10-01T00:00:00Z'),
+      currentPeriodEnd: at('2026-11-01T00:00:00Z'),
+      graceEndsAt: at('2026-11-08T00:00:00Z'),
+      quotaAnchorAt: at('2026-10-01T00:00:00Z'),
+    };
+    const upgrade = event('plan_changed', {
+      occurredAt: at('2026-11-05T00:00:00Z'),
+      interval: 'year',
+      currentPeriodStart: at('2026-11-05T00:00:00Z'),
+      currentPeriodEnd: at('2027-11-05T00:00:00Z'),
+      transactionId: 'y1',
+    });
+    const result = applyEvent(grace, upgrade, { ...ctx, now: at('2026-11-05T00:00:00Z') });
+    expect(result).toEqual({
+      outcome: 'changed',
+      anchorReset: true,
+      log: null,
+      next: {
+        ...grace,
+        status: 'active',
+        graceEndsAt: null,
+        interval: 'year',
+        currentPeriodStart: at('2026-11-05T00:00:00Z'),
+        currentPeriodEnd: at('2027-11-05T00:00:00Z'),
+        currentTransactionId: 'y1',
+        quotaAnchorAt: at('2026-11-05T00:00:00Z'),
+      },
+    });
+    const source = { ...result.next!, id: 's', provider: 'fake', externalSubscriptionId: 'x' };
+    expect(effectiveStatus(source, at('2026-11-09T00:00:00Z'), 7)).toEqual({ status: 'active', overdue: false });
   });
 
   it('B5E54: plan_changed keeps the anchor', () => {

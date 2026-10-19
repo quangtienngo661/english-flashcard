@@ -158,6 +158,13 @@ describe('fake provider truth for refunds (D34, D37, D39)', () => {
     expect(row).toMatchObject({ currentTransactionId: 'y-1', interval: 'year' });
   });
 
+  it('D40: plan_changed while the fake is in grace → active (the provider charged the new period)', async () => {
+    const { state } = await stateAfter(monthly('m-1'), ev('renewal_failed', '2026-12-15T10:00:00.000Z'), ev('plan_changed', '2026-12-18T10:00:00.000Z', {
+      transaction_id: 'y-1', interval: 'year', current_period_start: '2026-12-18T10:00:00.000Z', current_period_end: '2027-12-18T10:00:00.000Z',
+    }));
+    expect(state).toMatchObject({ status: 'active', interval: 'year' });
+  });
+
   it('B5E102: refunded m1 received before plan_changed y1 (which happened first) → the fake ends active yearly, like Apple', async () => {
     const planChanged = ev('plan_changed', '2026-11-19T10:00:00.000Z', {
       transaction_id: 'y-1', interval: 'year', current_period_start: '2026-11-19T10:00:00.000Z', current_period_end: '2027-11-19T10:00:00.000Z',
