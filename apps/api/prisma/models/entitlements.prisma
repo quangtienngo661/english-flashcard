@@ -188,6 +188,8 @@ model FakeBillingSubscription {
   cancelCalledAt         DateTime? @map("cancel_called_at") @db.Timestamptz
   // The transaction of the current period, so the fake answers fetchState after a refund like a provider would (D39).
   currentTransactionId   String?   @map("current_transaction_id")
+  // Every event the fake was sent; its truth is these folded in occurred_at order, like a provider that saw them happen.
+  history                Json      @default("[]")
   updatedAt              DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
 
   @@map("fake_billing_subscriptions")

@@ -2,11 +2,11 @@ import { Inject, Injectable, type OnModuleInit } from '@nestjs/common';
 import { Clock } from '../../../common/clock/clock.js';
 import { APP_CONFIG, type AppConfig } from '../../../common/config/app-config.js';
 import { PRISMA_CLIENT } from '../../../common/db/prisma.module.js';
-import type { PrismaClient } from '../../../generated/prisma/client.js';
+import type { Prisma, PrismaClient } from '../../../generated/prisma/client.js';
 import type { Interval, SubscriptionStatus } from '../../entitlements.types.js';
 import { BillingAdapter, type BillingRequest, type ParsedEvent } from '../billing-adapter.js';
 import { BillingAdapterRegistry } from '../billing-adapter.registry.js';
-import type { FetchedState, NormalizedEvent } from '../billing.types.js';
+import { eventFromJson, type FetchedState, type NormalizedEvent } from '../billing.types.js';
 import { fakeParse, fakeReadRequest, fakeVerifySignature } from './fake-wire.js';
 
 type FakeTruth = FetchedState & { currentTransactionId: string | null };
@@ -87,23 +87,30 @@ export class FakeBillingAdapter extends BillingAdapter implements OnModuleInit {
     };
   }
 
-  /** Applies an event to the fake truth only when it is not older than the last one applied (the provider's latest view). */
+  /**
+   * Adds an event to the subscription's history and recomputes the truth from the whole history in occurred_at order: the
+   * fake answers like a provider that saw every event happen, whatever order Wordmet receives them in (B5#10, B5E102).
+   */
   private async track(userId: string, event: NormalizedEvent): Promise<void> {
-    const { externalSubscriptionId, occurredAt } = event;
-    const row = await this.find(externalSubscriptionId);
-    if (row !== null && occurredAt < row.lastOccurredAt) return;
-    const next = fakeTruth(row, event);
-    if (next === null) return;
-    if (row === null) {
-      await this.prisma.fakeBillingSubscription.createMany({
-        data: [{ externalSubscriptionId, userId, ...next, lastOccurredAt: occurredAt }],
-        skipDuplicates: true,
-      });
+    const { externalSubscriptionId } = event;
+    const stored = await this.prisma.fakeBillingSubscription.findUnique({ where: { externalSubscriptionId } });
+    const history = stored === null ? [] : (stored.history as unknown[]).map(eventFromJson);
+    if (history.some((seen) => seen.externalEventId === event.externalEventId)) return;
+    history.push(event);
+    history.sort((x, y) => x.occurredAt.getTime() - y.occurredAt.getTime());
+    let truth: FakeTruth | null = null;
+    for (const seen of history) truth = fakeTruth(truth, seen) ?? truth;
+    // Nothing a provider would know yet (no start or renewal): keep nothing.
+    if (truth === null) return;
+    const data = {
+      ...truth,
+      lastOccurredAt: history[history.length - 1].occurredAt,
+      history: JSON.parse(JSON.stringify(history)) as Prisma.InputJsonArray,
+    };
+    if (stored === null) {
+      await this.prisma.fakeBillingSubscription.createMany({ data: [{ externalSubscriptionId, userId, ...data }], skipDuplicates: true });
     } else {
-      await this.prisma.fakeBillingSubscription.updateMany({
-        where: { externalSubscriptionId, lastOccurredAt: { lte: occurredAt } },
-        data: { ...next, lastOccurredAt: occurredAt },
-      });
+      await this.prisma.fakeBillingSubscription.updateMany({ where: { externalSubscriptionId }, data });
     }
   }
 }
@@ -113,7 +120,7 @@ export class FakeBillingAdapter extends BillingAdapter implements OnModuleInit {
  * current period like the core (D34, D37), so after a refund of that transaction fetchState says revoked (B5#33, D39).
  * Scheduled interval changes leave it as it is.
  */
-function fakeTruth(row: FakeRow | null, event: NormalizedEvent): FakeTruth | null {
+function fakeTruth(row: FakeTruth | null, event: NormalizedEvent): FakeTruth | null {
   if (event.type === 'subscription_started') {
     return {
       status: event.trialEndsAt === null ? 'active' : 'trialing',
@@ -137,7 +144,7 @@ function fakeTruth(row: FakeRow | null, event: NormalizedEvent): FakeTruth | nul
     };
   }
   if (row === null) return null;
-  const { lastOccurredAt: _, ...current } = row;
+  const current = row;
   switch (event.type) {
     case 'plan_changed':
       return {
