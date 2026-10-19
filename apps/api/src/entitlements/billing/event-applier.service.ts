@@ -230,7 +230,7 @@ function toEvent(payload: Prisma.JsonValue): NormalizedEvent {
   return event as NormalizedEvent;
 }
 
-function toState(row: SubscriptionRow): SubscriptionState {
+export function toState(row: SubscriptionRow): SubscriptionState {
   return {
     status: row.status as SubscriptionStatus,
     interval: row.interval as Interval,
