@@ -3,6 +3,7 @@ import { Clock } from '../../common/clock/clock.js';
 import { PRISMA_CLIENT } from '../../common/db/prisma.module.js';
 import { ProblemDetailsException } from '../../common/problem-details/problem-details.exception.js';
 import { dateValue, localDate } from '../../common/time/local-date.js';
+import { EntitlementsService } from '../../entitlements/index.js';
 import type { Prisma, PrismaClient } from '../../generated/prisma/client.js';
 import { IdentityService } from '../../identity/profile/identity.service.js';
 import { LearningService } from '../../learning/index.js';
@@ -47,6 +48,7 @@ export class AnswersService {
     @Inject(IdentityService) private readonly identity: IdentityService,
     @Inject(LearningService) private readonly learning: LearningService,
     @Inject(SessionsService) private readonly sessions: SessionsService,
+    @Inject(EntitlementsService) private readonly entitlements: EntitlementsService,
   ) {}
 
   answer(userId: string, itemId: string, body: AnswerBody): Promise<AnswerResult | { result: 'try_again'; tries: number }> {
@@ -113,11 +115,15 @@ export class AnswersService {
     const profile = await this.identity.getProfile(item.userId);
     if (!profile) throw notFound();
     const now = this.clock.now();
-    return tx.practiceSessionItem.update({
+    const date = localDate(profile.timezone, now);
+    const written = await tx.practiceSessionItem.update({
       where: { id: item.id },
-      data: { ...final, answeredAt: now, localDate: dateValue(localDate(profile.timezone, now)) },
+      data: { ...final, answeredAt: now, localDate: dateValue(date) },
       include: { question: true },
     });
+    // The session's first final result spends one session of the day (design §7.4); later calls are ignored by the insert.
+    await this.entitlements.recordPracticeSession(tx, item.userId, item.sessionId, date);
+    return written;
   }
 
   /** The stored result as the app sees it; the buttons are worked out now (design 7.8). */

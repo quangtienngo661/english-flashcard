@@ -3,7 +3,7 @@ import { Clock } from '../../common/clock/clock.js';
 import { PRISMA_CLIENT } from '../../common/db/prisma.module.js';
 import { ProblemDetailsException } from '../../common/problem-details/problem-details.exception.js';
 import type { Learner } from '../../content/index.js';
-import { EntitlementsService } from '../../entitlements/index.js';
+import { EntitlementsService, refusalProblem } from '../../entitlements/index.js';
 import type { PracticeSession, Prisma, PrismaClient } from '../../generated/prisma/client.js';
 import { LearningService, type PracticeItem, type PracticeScope } from '../../learning/index.js';
 import { SettingsService } from '../../settings/index.js';
@@ -39,8 +39,6 @@ type Advance =
 
 const notFound = () => new ProblemDetailsException({ status: 404, title: 'Not found', type: 'not-found' });
 const sessionClosed = () => new ProblemDetailsException({ status: 409, title: 'Session closed', type: 'session-closed' });
-const entitlementRequired = () =>
-  new ProblemDetailsException({ status: 403, title: 'Entitlement required', type: 'entitlement-required' });
 const noWords = (reason: 'group-empty' | 'no-word-fits-types' | 'source-empty') => new ProblemDetailsException({
   status: 409, title: 'No words to practise', type: 'practice-no-words', extensions: { reason },
 });
@@ -64,6 +62,10 @@ export class SessionsService {
       throw new ProblemDetailsException({ status: 400, title: 'Validation failed', type: 'validation-failed' });
     }
     const sort = input.sort ?? defaultSort(input.source);
+    // Early answer for a learner with no session left, before the availability walk (plan review #15); the check that
+    // counts runs again inside the transaction, after the open session is closed.
+    const early = await this.entitlements.checkQuota(learner.userId, 'practice_sessions');
+    if (!early.allowed) throw refusalProblem(early);
     return this.prisma.$transaction(async (tx) => {
       await withPracticeLock(tx, learner.userId);
       await this.assertEntitled(learner.userId);
@@ -95,6 +97,10 @@ export class SessionsService {
       await tx.practiceSession.updateMany({
         where: { userId: learner.userId, status: { in: OPEN } }, data: { status: 'abandoned', endedAt: now },
       });
+      // After the close (R4, B5E73): it waits for the old session's row, so a first answer being written there commits
+      // first and is counted. A refusal rolls back, so the open session stays.
+      const quota = await this.entitlements.checkQuota(learner.userId, 'practice_sessions', tx);
+      if (!quota.allowed) throw refusalProblem(quota);
       const session = await tx.practiceSession.create({ data: {
         userId: learner.userId, source: input.source, groupId: input.group_id ?? null,
         groupFilter: input.source === 'group' ? input.group_filter ?? 'all' : null, sort, types: input.types,
@@ -196,7 +202,8 @@ export class SessionsService {
   }
 
   private async assertEntitled(userId: string): Promise<void> {
-    if (!(await this.entitlements.check(userId, 'practice.basic')).allowed) throw entitlementRequired();
+    const result = await this.entitlements.check(userId, 'practice.basic');
+    if (!result.allowed) throw refusalProblem(result);
   }
 
   private async sourceItems(userId: string, input: StartInput): Promise<PracticeItem[]> {
