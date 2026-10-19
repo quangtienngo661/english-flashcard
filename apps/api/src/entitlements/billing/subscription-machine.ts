@@ -284,10 +284,15 @@ export function startsTrial(state: SubscriptionState | null, event: NormalizedEv
   return state === null || state.status === 'expired' || state.status === 'revoked';
 }
 
-/** The provider's truth overwrites exactly these six columns (design §9.2 "fetchState"). */
+/**
+ * The provider's truth overwrites the six columns of design §9.2 "fetchState". `grace_ends_at` is kept only while the row
+ * stays in grace; entering grace by a fetch leaves it null, so `effectiveStatus` applies the D23 default; leaving grace
+ * clears an old one (coordinator ruling 19/10/2026).
+ */
 export function applyFetched(state: SubscriptionState, fetched: FetchedState): SubscriptionState {
   return {
     ...state,
+    graceEndsAt: state.status === 'grace' && fetched.status === 'grace' ? state.graceEndsAt : null,
     status: fetched.status,
     interval: fetched.interval,
     currentPeriodStart: fetched.currentPeriodStart,

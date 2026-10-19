@@ -549,17 +549,27 @@ describe('startsTrial', () => {
 });
 
 describe('applyFetched', () => {
-  it('overwrites the six fetched columns and nothing else', () => {
+  const fetched = {
+    interval: 'year' as const,
+    currentPeriodStart: at('2026-12-01T00:00:00Z'),
+    currentPeriodEnd: at('2027-12-01T00:00:00Z'),
+    trialEndsAt: at('2026-11-08T00:00:00Z'),
+    cancelAtPeriodEnd: true,
+  };
+
+  it('overwrites the six fetched columns and, leaving grace, clears grace_ends_at; nothing else', () => {
     const state: SubscriptionState = { ...ROWS.grace, cancelAtPeriodEnd: false, pendingInterval: 'year' };
-    const fetched = {
-      status: 'on_hold' as const,
-      interval: 'year' as const,
-      currentPeriodStart: at('2026-12-01T00:00:00Z'),
-      currentPeriodEnd: at('2027-12-01T00:00:00Z'),
-      trialEndsAt: at('2026-11-08T00:00:00Z'),
-      cancelAtPeriodEnd: true,
-    };
-    expect(applyFetched(state, fetched)).toEqual({ ...state, ...fetched });
+    const result = applyFetched(state, { ...fetched, status: 'on_hold' });
+    expect(result).toEqual({ ...state, ...fetched, status: 'on_hold', graceEndsAt: null });
+  });
+
+  it.each([
+    ['active → grace: no grace end yet (effectiveStatus applies the D23 default)', 'active', 'grace', null],
+    ['grace → grace: keeps the stored grace end', 'grace', 'grace', at('2026-12-08T00:00:00Z')],
+    ['grace → active: clears the old grace end', 'grace', 'active', null],
+  ] as const)('coordinator ruling: %s', (_name, from, to, graceEndsAt) => {
+    const state: SubscriptionState = { ...ROWS[from], graceEndsAt: at('2026-12-08T00:00:00Z') };
+    expect(applyFetched(state, { ...fetched, status: to })).toEqual({ ...state, ...fetched, status: to, graceEndsAt });
   });
 });
 
