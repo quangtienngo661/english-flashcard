@@ -32,13 +32,16 @@ export class SettingsService {
     @Inject(IdentityService) private readonly identity: IdentityService,
   ) {}
 
-  /** Current values; the defaults until an admin first saves. */
-  async get(): Promise<AppSettings> {
-    return (await this.current()).values;
+  /**
+   * Current values; the defaults until an admin first saves. A caller inside a transaction that holds a lock passes its
+   * `tx`, so the read needs no second connection.
+   */
+  async get(db: Prisma.TransactionClient = this.prisma): Promise<AppSettings> {
+    return (await this.current(db)).values;
   }
 
-  async current(): Promise<{ version: number; values: AppSettings }> {
-    const row = await this.prisma.appSetting.findUnique({ where: { key: GLOBAL_KEY } });
+  async current(db: Prisma.TransactionClient = this.prisma): Promise<{ version: number; values: AppSettings }> {
+    const row = await db.appSetting.findUnique({ where: { key: GLOBAL_KEY } });
     return { version: row?.version ?? 0, values: withDefaults(row?.value) };
   }
 

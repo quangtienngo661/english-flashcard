@@ -1,6 +1,6 @@
 export {
   AGID_SOURCE_ID, FUNCTION_WORD_POS, INFLECTION_KINDS, LEMMA_MAX, LEVELS, MAX_EXAMPLES, MEANING_MAX, OWNER_SOURCE_ID, PRIVATE_POS_UNSET,
-  PRIVATE_WORDS_MAX, SENTENCE_MAX, SENTENCES_PER_SENSE_MAX, VALID_POS, isFunctionWordPos,
+  SENTENCE_MAX, VALID_POS, isFunctionWordPos,
   type InflectionKind, type Level,
 } from './content.constants.js';
 export type { EntryByForm, InflectionInput, InflectionSource } from './inflections/inflections.service.js';
