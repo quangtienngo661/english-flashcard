@@ -35,8 +35,13 @@ under `apps/api` and `apps/admin`. Historical implementation branches:
   UI decisions and mockups: `docs/mockups/2026-10-16/UI-CONTEXT.md`.
 - **Bước 4** (Practice, API only, D24 Bước 4; PR #47–#58). Its UI comes in a later round.
 
-**Next (19/10/2026):** Bước 5 (Entitlements) is being brainstormed in a separate session. The learner UI for Bước 3–4 is still to
-be built. **Deploy** (hosting, durable Postgres/Redis, real SMTP, secrets, backup; design 2.5 §14) moved to **when the whole app is
+**Next (19/10/2026):** Bước 5 (Entitlements, API only) is being implemented. Design approved (D1–D34, review fixes R1–R25, PR #60–#61);
+plan `docs/superpowers/plans/2026-10-19-buoc-5-entitlements.md` (21 tasks, 4 milestones) reviewed independently
+(`docs/superpowers/reviews/2026-10-19-buoc-5-plan-review.md`, 21 findings fixed) and its four product questions decided as **D35–D38**
+(owner 19/10/2026: only auto-renewing subscriptions — no "app renewal" model; no AI-cap alert email, the admin screen turns yellow;
+adapters must send transaction ids; staff edit a grant's dates instead of creating a follow-on grant). Plan summary:
+`docs/deliveries/buoc-5.md`. Four sessions run it: **step-5-coordinator**, **step-5-A**, **step-5-B**, **step-5-C** (who does what:
+the plan's "Sessions and tracks"). The learner UI for Bước 3–4 is still to be built. **Deploy** (hosting, durable Postgres/Redis, real SMTP, secrets, backup; design 2.5 §14) moved to **when the whole app is
 complete, before launch** (D3 round 3 of Bước 3, 18/10/2026): until then the owner tries the app locally (reminder emails land in
 Mailpit), `/app/*` stays blocked on production, and design Bước 3 §14 (things only checkable once deployed) is checked just before
 launch. There is no pilot after Bước 3 any more: real users are sought once the app is complete (D12 Bước 3).
