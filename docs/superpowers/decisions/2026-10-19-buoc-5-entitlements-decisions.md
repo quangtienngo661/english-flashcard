@@ -15,6 +15,9 @@ làm*; file này trả lời *tại sao chọn vậy và đã bỏ gì*. Nguồn
 > **D35** (chỉ gia hạn tự động; bỏ kiểu "app tự gia hạn", thay một phần D3 và R11); Q4 chốt thành **D36** (bỏ email cảnh báo trần AI, chỉ báo trên màn
 > admin; thay một phần D18); Q2 chốt thành **D37** (bộ nối bắt buộc gửi mã giao dịch; không biết giao dịch của kỳ đang dùng thì chỉ ghi lại; bổ sung D34); Q1
 > chốt thành **D38** (staff sửa ngày của lần cấp đang có thay vì tạo lần cấp mới; lần cấp bắt đầu ở tương lai không thu hồi lần cũ; bổ sung D32). Không còn câu mở.
+>
+> **Khi implement 19/10/2026** (câu của phiên step-5-C, hỏi qua step-5-coordinator): Q-C3 chốt thành **D39** (hoàn tiền cắt Pro → hệ thống tự hỏi lại nhà cung
+> cấp; bổ sung D34).
 
 **Nhãn:** ✅ = phương án được chọn. **Ai chốt:** "Chủ dự án" = chọn trong chat; "Đề xuất của Claude" = Claude đề xuất sau khi chủ dự án trả lời "chưa rõ",
 không chọn, hoặc nhờ đề xuất, chủ dự án đồng ý; "Duyệt cùng design" = Claude đề xuất khi trình một phần design, chủ dự án duyệt cả phần.
@@ -65,6 +68,7 @@ không chọn. Mục cuối ghi những chỗ Claude đề xuất trước khi c
 | D36 | Cảnh báo trần AI khi chạm ngưỡng trong giờ cuối của ngày (sau review plan, Q4) | Bỏ email cảnh báo; API lượt AI trả cờ "đã chạm ngưỡng" để màn admin tô vàng (đợt giao diện); giữ cài đặt ngưỡng | Chủ dự án; chi tiết: đề xuất của Claude, chủ dự án chốt |
 | D37 | Hoàn tiền khi không biết giao dịch nào thuộc kỳ đang dùng (sau review plan, Q2) | Bộ nối bắt buộc gửi mã giao dịch mỗi khi có trừ tiền; `plan_changed` kèm mã của kỳ mới; vẫn thiếu mã thì chỉ ghi lại và log, không cắt Pro | Đề xuất của Claude sau khi chủ dự án nói "khó xảy ra", chủ dự án chốt |
 | D38 | Kéo dài hoặc hẹn trước lần cấp; lần cấp mới bắt đầu ở tương lai (sau review plan, Q1) | Staff sửa ngày của lần cấp đang có (API mới, có lịch sử sửa) thay vì tạo lần cấp mới; vẫn cho tạo lần cấp bắt đầu ở tương lai, và khi đó không thu hồi lần cấp cũ | Chủ dự án (sửa ngày, không thu hồi); chi tiết: đề xuất của Claude, chủ dự án "ok" |
+| D39 | Hoàn tiền tới sai thứ tự (khi implement, Q-C3) | Hoàn tiền cắt Pro → sau commit hỏi lại nhà cung cấp (`fetchState`) và theo trạng thái thật; lỗi thì job mỗi giờ hỏi lại gói bị cắt trong 3 ngày; chưa thêm luật tự sửa | Chủ dự án (hệ thống tự kiểm tra); cách làm: đề xuất của Claude, chủ dự án chốt |
 
 ## D1 — Cách làm việc
 
@@ -623,6 +627,25 @@ Chủ dự án: "thay vì vậy thì đều chỉnh ngày hiệu lực của gó
 (editor chỉ lần cấp của người học thường; lần cấp có con số lượt AI chỉ admin, D33; lần cấp đã thu hồi hoặc hết hạn → 409 `grant-not-active`; bắt buộc lý do;
 `user.write`); (3) bảng lịch sử sửa (ai sửa, ngày cũ → mới, lý do), như lịch sử cài đặt — cách đơn giản hơn là chỉ lưu lần sửa cuối, mất các lần trước; (4) vẫn cho tạo
 lần cấp bắt đầu ở tương lai (R12) và khi đó không thu hồi lần cũ (câu trả lời vòng 1). Chủ dự án: "ok".
+
+## D39 — Hoàn tiền tới sai thứ tự (khi implement, Q-C3)
+
+Bối cảnh: phiên step-5-C hỏi khi viết bộ áp sự kiện (Task 17); bảng 9.4 chỉ có luật cho tin tới đúng thứ tự. Ví dụ dùng khi hỏi: (1) Lan trả gói tháng (giao dịch
+m1), ngày 10/11 nâng lên năm và trả y1; Apple tự hoàn m1; tin "hoàn m1" tới trước tin "đổi sang năm, trả y1" → Wordmet vẫn coi m1 là kỳ đang dùng nên cắt Pro (D34), tin
+đổi gói tới sau bị coi là cũ hoặc rơi vào gói đã cắt → Lan trả cả năm mà mất Pro. (2) Tin "rút lại hoàn tiền" tới trước tin "hoàn tiền" → tin rút lại không làm gì, tin hoàn
+tiền tới sau cắt Pro. Đã có sẵn: hỏi lại trạng thái thật (`fetchState`) khi một tin bị coi là cũ; log cho admin.
+
+| Phương án | Trade-off |
+|---|---|
+| (i) Tự sửa bằng luật: nhớ giao dịch bị hoàn; tin trả tiền với giao dịch khác trả lại Pro; đã nhận "rút lại hoàn tiền" cùng giao dịch thì bỏ qua "hoàn tiền" tới sau | Chạy cả với nhà cung cấp không cho hỏi lại; thêm một cột (migration), thêm luật vào bảng 91 ô và test |
+| ✅ (ii) Mỗi lần cắt vì hoàn tiền, hỏi lại nhà cung cấp (`fetchState`) ngay sau đó và theo câu trả lời | Ít luật mới; chỉ có tác dụng với nhà cung cấp cho hỏi lại; Lan mất Pro một lúc ngắn |
+| (iii) Giữ như hiện tại, admin xem log và sửa tay (cấp Pro bằng grant) | Không tốn việc; Lan mất Pro tới khi admin phát hiện |
+
+Chủ dự án (trả lời trước, trích phương án (iii)): "cái này hệ thống tự kiểm tra rồi thực hiện". Claude đề xuất (ii), thêm: hỏi lại sau commit (dùng lại bước "hỏi lại sau
+commit" đã có trong bộ áp sự kiện); hỏi lỗi thì job mỗi giờ hỏi lại các gói bị cắt trong 3 ngày (`ASSUMPTION`); chưa làm (i) vì V1 chỉ có bộ nối giả và bộ nối giả, Stripe,
+Google, Apple đều cho hỏi lại (MoMo, ZaloPay chưa kiểm), còn (i) tốn migration và nhiều ca test khi chưa nhà cung cấp nào cần. Điểm khác chủ dự án: không làm luật tự sửa
+(i) cho nhà cung cấp không cho hỏi lại; rủi ro ghi ở design mục 19. Chủ dự án: "Q-C3: chốt (ii) — hỏi lại cửa hàng ngay sau khi cắt Pro vì hoàn tiền, job mỗi giờ hỏi lại
+gói bị cắt trong 3 ngày; chưa làm (i)."
 
 ## Đề xuất kỹ thuật được duyệt cùng design
 
