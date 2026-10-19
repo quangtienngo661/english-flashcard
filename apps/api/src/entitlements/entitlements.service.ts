@@ -90,7 +90,8 @@ export class EntitlementsService {
   async checkQuota(userId: string, _pool: 'practice_sessions', tx?: Prisma.TransactionClient): Promise<Decision> {
     const db = tx ?? this.prisma;
     const { entitlements } = tx ? await this.settings.get(tx) : await this.settings.get();
-    const zone = (await this.identity.getProfile(userId))?.timezone ?? NO_PROFILE_ZONE;
+    const profile = tx ? await this.identity.getProfile(userId, tx) : await this.identity.getProfile(userId);
+    const zone = profile?.timezone ?? NO_PROFILE_ZONE;
     const now = this.clock.now();
     const limit = (await this.resolve(db, userId, entitlements, now)).limits.practice_sessions;
     if (limit === 0) return { allowed: false, reason: 'plan-required' };

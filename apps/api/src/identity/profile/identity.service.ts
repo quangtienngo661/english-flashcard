@@ -49,8 +49,9 @@ export interface ReminderCandidate {
 export class IdentityService {
   constructor(@Inject(PRISMA_CLIENT) private readonly prisma: PrismaClient) {}
 
-  async getProfile(userId: string): Promise<Profile | null> {
-    const row = await this.prisma.user.findUnique({ where: { id: userId }, select: profileSelect });
+  /** A caller inside a transaction that holds a lock passes its `tx`, so the read needs no second connection. */
+  async getProfile(userId: string, db: Prisma.TransactionClient = this.prisma): Promise<Profile | null> {
+    const row = await db.user.findUnique({ where: { id: userId }, select: profileSelect });
     return row ? toProfile(row) : null;
   }
 
