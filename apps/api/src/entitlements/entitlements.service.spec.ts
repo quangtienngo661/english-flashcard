@@ -224,11 +224,12 @@ describe('EntitlementsService.checkQuota', () => {
     expect(ny.usage.practiceUsed).toHaveBeenCalledWith(ny.prisma, USER, '2026-11-10');
   });
 
-  it('with a transaction, reads settings, sources and usage through it (R4: after Practice closed the old session)', async () => {
-    const { service, settings, sources, usage } = setup({ practiceUsed: 1 });
+  it('with a transaction, reads settings, the profile, sources and usage through it (R4; no second connection under the Practice lock)', async () => {
+    const { service, settings, sources, usage, identity } = setup({ practiceUsed: 1 });
     const tx = { name: 'tx' };
     expect(await service.checkQuota(USER, 'practice_sessions', tx as never)).toEqual({ allowed: true });
     expect(settings.get).toHaveBeenCalledWith(tx);
+    expect(identity.getProfile).toHaveBeenCalledWith(USER, tx);
     expect(sources.load).toHaveBeenCalledWith(tx, USER, NOW);
     expect(usage.practiceUsed).toHaveBeenCalledWith(tx, USER, '2026-11-10');
   });
