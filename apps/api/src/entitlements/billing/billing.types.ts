@@ -83,3 +83,14 @@ export type FetchedState = {
   trialEndsAt: Date | null;
   cancelAtPeriodEnd: boolean;
 };
+
+const DATE_FIELDS = ['occurredAt', 'currentPeriodStart', 'currentPeriodEnd', 'trialEndsAt', 'graceEndsAt'] as const;
+
+/** A normalized event stored as JSON (`billing_events.payload`, the fake's history) comes back with its dates revived. */
+export function eventFromJson(json: unknown): NormalizedEvent {
+  const event = { ...(json as Record<string, unknown>) };
+  for (const field of DATE_FIELDS) {
+    if (typeof event[field] === 'string') event[field] = new Date(event[field]);
+  }
+  return event as NormalizedEvent;
+}

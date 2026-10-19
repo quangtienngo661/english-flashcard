@@ -7,6 +7,8 @@ import { BillingAdapter } from './billing-adapter.js';
 import { BillingAdapterRegistry } from './billing-adapter.registry.js';
 import type { FetchedState } from './billing.types.js';
 import { BillingEventApplier } from './event-applier.service.js';
+import { FakeBillingAdapter } from './fake/fake-billing.adapter.js';
+import { fakeSign } from './fake/fake-wire.js';
 
 const NOW = new Date('2026-11-15T12:00:00.000Z');
 const USER = '6f1c2a4e-0b7d-4c1e-9a55-3d2f8e7b6a10';
@@ -514,6 +516,64 @@ describe('BillingEventApplier.apply (design §9.2 step 4, §9.4)', () => {
       adapter.fetched = { ...yearly, status: 'revoked' };
       await applier.apply(addEvent(db, 'refunded', { transactionId: 'tx-0', amount: null }));
       expect(sub.status).toBe('revoked');
+    });
+
+    it('B5E102 end to end with the real fake provider: one webhook carries refunded m1 before plan_changed y1 → Pro back, yearly', async () => {
+      const db = new FakeDb();
+      const fakeRows = new Map<string, Record<string, unknown>>();
+      const fakePrisma = { fakeBillingSubscription: {
+        findUnique: async ({ where }: { where: { externalSubscriptionId: string } }) => structuredClone(fakeRows.get(where.externalSubscriptionId) ?? null),
+        createMany: async ({ data }: { data: Array<Record<string, unknown> & { externalSubscriptionId: string }> }) => {
+          for (const row of data) fakeRows.set(row.externalSubscriptionId, structuredClone(row));
+          return { count: data.length };
+        },
+        updateMany: async ({ where, data }: { where: { externalSubscriptionId: string }; data: Record<string, unknown> }) => {
+          Object.assign(fakeRows.get(where.externalSubscriptionId)!, structuredClone(data));
+          return { count: 1 };
+        },
+      } };
+      const secret = Buffer.alloc(32, 7);
+      const config = testConfig({ billing: { production: false, fakeEnabled: true, fakeSecret: secret, fakeFetchState: true } });
+      const registry = new BillingAdapterRegistry();
+      const fake = new FakeBillingAdapter(config, fakePrisma as never, new FakeClock(NOW), registry);
+      fake.onModuleInit();
+      const applier = new BillingEventApplier(db.client as never, new FakeClock(NOW), config, registry,
+        { getProfile: async (id: string) => ({ id }) } as never, { get: async () => ({ entitlements: { graceDays: 7 } }) } as never,
+        new AppLogger({ write: () => {} }));
+
+      // What the provider sends, and what the inbox stores for the applier (same ids, same order).
+      const wire = (id: string, type: string, occurredAt: string, fields: Record<string, unknown>) => ({
+        id, type, environment: 'sandbox', subscription_id: 'sub-ext', app_user_id: USER, occurred_at: occurredAt, ...fields,
+      });
+      async function deliver(...entries: Array<ReturnType<typeof wire>>) {
+        const rawBody = Buffer.from(JSON.stringify({ events: entries }));
+        const verified = await fake.verify({ method: 'POST', headers: { 'x-fake-signature': fakeSign(secret, rawBody) }, query: {}, rawBody });
+        if (!verified.ok) throw new Error('signature');
+        for (const parsed of verified.events) {
+          const { type, event } = parsed;
+          db.events.set(parsed.externalEventId, {
+            id: parsed.externalEventId, provider: 'fake', environment: 'sandbox', type, kind: type === 'refunded' || type === 'renewed' ? 'additive' : 'state',
+            transactionId: parsed.transactionId, occurredAt: parsed.occurredAt, appUserId: USER, externalSubscriptionId: 'sub-ext',
+            payload: JSON.parse(JSON.stringify(event)), status: 'pending', attempts: 0, error: null, userId: null, subscriptionId: null, processedAt: null,
+          });
+        }
+        await applier.applyMany(verified.events.map((e) => e.externalEventId));
+      }
+
+      await deliver(wire('e-start', 'subscription_started', '2026-11-01T00:00:00.000Z', { interval: 'month',
+        current_period_start: '2026-11-01T00:00:00.000Z', current_period_end: '2026-12-01T00:00:00.000Z', transaction_id: 'm1' }));
+      await deliver(
+        wire('e-refund', 'refunded', '2026-11-10T00:05:00.000Z', { transaction_id: 'm1', amount: 2 }),
+        wire('e-plan', 'plan_changed', '2026-11-10T00:00:00.000Z', { interval: 'year', current_period_start: '2026-11-10T00:00:00.000Z',
+          current_period_end: '2027-11-10T00:00:00.000Z', transaction_id: 'y1' }),
+      );
+
+      expect(db.events.get('e-refund')!.status).toBe('applied');
+      expect(db.events.get('e-plan')!.status).toBe('stale');
+      expect(db.subs[0]).toMatchObject({ status: 'active', interval: 'year', currentPeriodEnd: at('2027-11-10T00:00:00.000Z'), currentTransactionId: null });
+      // D37: until a renewal names the yearly transaction, a refund of it only records.
+      await deliver(wire('e-refund-y', 'refunded', '2026-11-11T00:00:00.000Z', { transaction_id: 'y1', amount: null }));
+      expect(db.subs[0].status).toBe('active');
     });
 
     it('an adapter without fetchState → stays revoked, no second transaction', async () => {
