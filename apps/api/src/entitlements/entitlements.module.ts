@@ -8,12 +8,20 @@ import { BillingEventApplier } from './billing/event-applier.service.js';
 import { FakeBillingAdapter } from './billing/fake/fake-billing.adapter.js';
 import { WebhookController } from './billing/webhook.controller.js';
 import { EntitlementsService } from './entitlements.service.js';
+import { SourcesRepository } from './sources/sources.repository.js';
+import { UsageExpireJob } from './usage/usage-expire.job.js';
+import { UsageLedgerService } from './usage/usage-ledger.service.js';
+import { UsageQueries } from './usage/usage.queries.js';
 
 @Module({
   imports: [IdentityModule, SettingsModule],
   controllers: [WebhookController],
   providers: [
     EntitlementsService,
+    SourcesRepository,
+    UsageQueries,
+    UsageLedgerService,
+    UsageExpireJob,
     BillingAdapterRegistry,
     FakeBillingAdapter,
     BillingInbox,
