@@ -196,6 +196,15 @@ async function main() {
   const admin = await registerAdmin();
   const learner = await registerLearner();
 
+  // Since Bước 5 a Free learner opens 3 sessions a day and this script opens far more (Bước 5 design §17 item 4, B5#34).
+  step('Grant the learner 200 sessions a day for one day');
+  const learnerId = (await want(api('GET', '/v1/me', { token: learner }), 200, 'learner profile')).id;
+  const grant = await want(api('POST', '/v1/admin/entitlements/grants', {
+    token: admin, idem: true, body: {
+      user_id: learnerId, kind: 'limits', limits: { practice_sessions_per_day: 200 },
+      ends_at: new Date(Date.now() + 24 * 3_600_000).toISOString(), reason: 'smoke:buoc-4' } }), 201, 'grant sessions');
+  ok(`grant ${grant.id}: practice_sessions_per_day 200 until ${grant.ends_at}`);
+
   step('Import 8 verbs (gloss, short definition, example with the past form, inflections) and publish them');
   const source = await want(api('POST', '/v1/admin/content/sources', {
     token: admin, body: { name: `Smoke4-${run}`, version: '1.0', license: 'test license', display_priority: 90 } }), 201, 'source');

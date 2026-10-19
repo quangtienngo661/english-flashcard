@@ -12,6 +12,9 @@
 > gia hạn, bỏ kiểu "app tự gia hạn" khỏi lõi; **D36** — bỏ email cảnh báo trần AI, chỉ báo trên màn admin; **D37** — bộ nối bắt buộc gửi mã giao dịch, không
 > biết giao dịch của kỳ đang dùng thì hoàn tiền chỉ ghi lại; **D38** — staff sửa ngày của lần cấp đang có (API mới, có lịch sử), lần cấp Pro bắt đầu ở tương lai
 > không thu hồi lần cũ. Danh sách chỗ sửa ở mục 0, bảng "Sau review plan". Không còn câu mở của review plan.
+>
+> **Cập nhật 19/10/2026, khi implement** (câu của phiên implement step-5-C, hỏi qua step-5-coordinator): **D39** — hoàn tiền cắt Pro thì hệ thống tự hỏi lại
+> nhà cung cấp ngay sau đó, job mỗi giờ hỏi lại gói bị cắt trong 3 ngày. Danh sách chỗ sửa ở mục 0, bảng "Khi implement".
 
 Ngày: 18–19/10/2026. Brainstorm qua `superpowers:brainstorming` trên nhánh `docs/buoc-5-design` (cắt từ `origin/dev` @ `dc4cbe0`, fast-forward lên
 `9deb8d4` ngày 19/10). Design liên quan: [Bước 4](2026-10-18-buoc-4-practice-design.md) (mục 12: chỗ kiểm quyền tạm), [Bước 3](2026-10-16-buoc-3-learning-design.md)
@@ -91,6 +94,35 @@ Research cho Q3: [`EARLY_MANUAL_RENEWAL_RESEARCH_2026-10-19.md`](../../preparati
 | D37 | **Bộ nối bắt buộc gửi mã giao dịch** mỗi khi có trừ tiền: `subscription_started` không có trial, `plan_changed` có trả tiền ngay (mã của kỳ mới), `renewed`; tin đầu thiếu mã thì bộ nối tự hỏi thêm nhà cung cấp. Hai sự kiện đó cập nhật "giao dịch của kỳ đang dùng", nên B5E87 chạy đúng. Vẫn nhận `refunded` khi không biết giao dịch của kỳ đang dùng → **chỉ ghi lại và log** `billing_refund_unmatched`, không cắt Pro (ca mới B5E93) | Chốt D37 (đề xuất Claude sau khi chủ dự án nói "khó xảy ra", chủ dự án chốt) | 2, 9.1, 9.3, 9.4, 15.7 |
 | D38 | **Sửa ngày lần cấp** thay vì tạo lần cấp mới: API `PATCH /v1/admin/entitlements/grants/{id}` đổi `ends_at` (dời ra hay rút ngắn, vẫn ở tương lai) và `starts_at` (chỉ khi chưa bắt đầu); luật quyền như thu hồi; bảng lịch sử sửa `entitlement_grant_changes`. Vẫn cho tạo lần cấp bắt đầu ở tương lai (R12); lần cấp Pro mới bắt đầu ở tương lai **không thu hồi** lần cũ (D32 chỉ áp cho lần cấp bắt đầu ngay); chồng ngày thì cả hai cùng tính | Chốt D38 (sửa ngày, không thu hồi: chủ dự án; chi tiết: đề xuất Claude, chủ dự án "ok") | 2, 6, 10, 12.2, 12.5, 15.7, 16 |
 
+### Khi implement (19/10/2026)
+
+Câu do phiên implement nêu khi viết bộ áp sự kiện (Task 17), chuyển cho chủ dự án qua phiên điều phối; luật "chủ dự án trả lời trước, Claude đề xuất sau" (D1).
+
+| # | Điểm | Nhãn | Mục sửa |
+|---|---|---|---|
+| D39 | **Hoàn tiền tới sai thứ tự** (Review Focus 2 của plan): tin `refunded` của giao dịch cũ tới trước `plan_changed` của kỳ mới, hoặc `refund_reversed` tới trước `refunded`, làm gói bị cắt nhầm. Mỗi lần `refunded` cắt Pro (`revoked`), sau khi transaction commit hệ thống **tự hỏi lại nhà cung cấp** (`fetchState`, nếu bộ nối có) và theo trạng thái thật; hỏi lỗi thì **job mỗi giờ hỏi lại** các gói `revoked` trong **3 ngày** gần nhất (`ASSUMPTION`). Không thêm luật tự sửa trong bảng 9.4 (phương án (i)) | Chốt D39 (hệ thống tự kiểm tra: chủ dự án; cách (ii): đề xuất Claude, chủ dự án chốt) | 2, 9.2, 9.4, 13, 15.7, 19 |
+| — | **Kết quả `fetchState` thiếu dữ liệu** (câu Q-C2 của step-5-C): ngày null không ghi đè ngày đang lưu; kỳ đổi → `current_transaction_id` = null; `grace_ends_at` giữ khi `grace` → `grace`, còn lại null; `grace` không có hạn hết ở cuối kỳ + `grace_days` | Phiên điều phối chốt vì design đã quyết (D23, D34, D37; Review Focus 5 của plan "không bao giờ Pro vô hạn"); không đổi hành vi đã chốt | 9.2 |
+
+### As-built (19/10/2026)
+
+Chi tiết, PR và số liệu: [`docs/deliveries/buoc-5.md`](../../deliveries/buoc-5.md) mục "as-built". Lựa chọn kỹ thuật của plan (design không ghi), như đã làm:
+1. `BILLING_PRODUCTION=true|false` (mặc định `false`) báo API là production (R17); `true` cùng `BILLING_FAKE_ENABLED=true` là lỗi cấu hình.
+2. Practice gọi `recordPracticeSession` ở **mọi** lần ghi kết quả cuối; `ON CONFLICT DO NOTHING` giữ lần đầu, tức "câu đầu có kết quả" (mục 4).
+3. Thêm cột ngoài mục 6: `subscriptions.current_transaction_id` (D34, D37), `billing_events.external_subscription_id`, `billing_events.app_user_id`; bảng
+   riêng của bộ nối giả `fake_billing_subscriptions`, sau thêm `current_transaction_id` và `history` (D39, B5E102).
+4. Webhook đọc raw body bằng bộ đọc riêng cho đường đó, đặt trước bộ đọc JSON chung.
+5. `pnpm entitlements:fake-ai` là lệnh chạy trên máy (dựng app context, gọi `EntitlementsService` trên database thật); không có endpoint test.
+6. `classifyMailError` chuyển từ `src/notifications/scheduler/` sang `src/common/mail/`.
+7. Không có email cảnh báo trần AI (D36); `alert_reached` tính lúc đọc.
+
+Chỗ khác design khi làm:
+- **B5E76 không đạt:** `confirm` theo dòng `use` mới nhất (bảng R7 mục 7.1); API chỉ có `operation_id`. Cả hai cách đều trừ tối đa 1 lượt mỗi thao tác;
+  Bước 7 xem lại khóa theo lần thử.
+- `grace` đã đặt hủy cuối kỳ → `expired` khi hết `grace_ends_at`. `trialing` không có `trial_ends_at` → dùng `current_period_end`.
+- Không có CHECK cho `billing_events.type` và `revoke_reason`.
+- Đọc Settings và hồ sơ người dùng qua `tx` khi đang giữ khóa: `SettingsService.get(tx?)`, `IdentityService.getProfile(userId, tx?)`.
+- Không thêm mã lỗi nào ngoài mục 12.5.
+
 ## 1. Mục tiêu và bối cảnh
 
 Bước 5 dựng module `entitlements`: mỗi người dùng **được dùng tính năng nào** (quyền) và **dùng được bao nhiêu** (hạn mức), theo gói **Free / Trial / Pro**,
@@ -152,6 +184,7 @@ Hiện trạng trên `dev` @ `9deb8d4` (đã đọc 19/10):
 | D36 | Cảnh báo trần AI (sau review plan) | Không gửi email; chạm ngưỡng (mặc định 75%) thì màn admin tô vàng (đợt giao diện) |
 | D37 | Hoàn tiền khi không biết giao dịch của kỳ đang dùng (sau review plan) | Bộ nối bắt buộc gửi mã giao dịch mỗi khi có trừ tiền (cả khi đổi tháng → năm); vẫn thiếu mã thì hoàn tiền chỉ ghi lại và log, không cắt Pro |
 | D38 | Kéo dài, hẹn trước lần cấp (sau review plan) | Staff sửa ngày của lần cấp đang có (có lịch sử sửa) thay vì tạo lần cấp mới; lần cấp Pro bắt đầu ở tương lai không thu hồi lần cũ |
+| D39 | Hoàn tiền tới sai thứ tự (khi implement) | Hoàn tiền cắt Pro → hệ thống tự hỏi lại nhà cung cấp ngay sau đó; lỗi thì job mỗi giờ hỏi lại gói bị cắt trong 3 ngày; không thêm luật tự sửa |
 
 ## 3. Phạm vi
 
@@ -447,8 +480,12 @@ tin giao dịch; Paddle có `transaction_id` ở tin tạo gói — tài liệu 
     bằng nhau → áp theo thứ tự nhận.
   - Sự kiện **cộng thêm** (`kind = additive`: `renewed`, `refunded`) **luôn áp**, chống trùng theo `transaction_id`; không bao giờ `stale`;
     `current_period_end = max(cũ, kỳ trong sự kiện)`; `last_event_at = max(cũ, occurred_at)` (để sự kiện trạng thái cũ hơn tới sau vẫn bị `stale`, B5E43).
-- **`fetchState` (R10):** dùng khi (a) sự kiện trạng thái bị `stale`, (b) payload thiếu trường tối thiểu, (c) gói quá cuối kỳ chưa có thông báo (D31, job mỗi giờ).
+- **`fetchState` (R10):** dùng khi (a) sự kiện trạng thái bị `stale`, (b) payload thiếu trường tối thiểu, (c) gói quá cuối kỳ chưa có thông báo (D31, job mỗi giờ),
+  (d) ngay sau khi một `refunded` cắt Pro (`revoked`), sau commit; hỏi lỗi thì job mỗi giờ hỏi lại các gói `revoked` trong 3 ngày gần nhất (D39).
   Kết quả ghi đè `status`, `current_period_start/end`, `trial_ends_at`, `cancel_at_period_end`, `interval`; lỗi hoặc bộ nối không có → rơi về luật thứ tự ở trên.
+  Khi implement (phiên điều phối chốt theo design, 19/10): một ngày null trong kết quả không ghi đè ngày đang lưu (không bao giờ thành Pro vô hạn); kỳ đổi qua
+  `fetchState` → `current_transaction_id` = null, hoàn tiền lúc đó chỉ ghi lại (D34, D37); `grace_ends_at` giữ khi gói đang `grace` và vẫn `grace`, còn lại null, và
+  `grace` không có `grace_ends_at` hết ở `current_period_end + grace_days` (D23).
 
 ### 9.3 Sự kiện chuẩn hóa (payload tối thiểu, R1)
 
@@ -510,6 +547,7 @@ Mọi sự kiện có: `provider`, `environment`, `external_event_id` (hoặc th
 | `grace`, quá `grace_ends_at` | `on_hold` |
 | Đã đặt hủy cuối kỳ (`cancel_at_period_end`), quá cuối kỳ | `expired` |
 | `on_hold` | Giữ tới khi có thông báo (`renewed`, `expired`, `revoked`) |
+| `revoked`, trong 3 ngày kể từ lúc cắt (D39) | Job mỗi giờ gọi `fetchState` nếu bộ nối có, theo trạng thái thật; quá 3 ngày → giữ |
 
 - **Gia hạn lỗi (D23):** `grace_ends_at` = (lúc lỗi hoặc cuối kỳ, lấy mốc muộn hơn) + `grace_days` (mặc định 7); store gửi thời hạn riêng thì dùng của store.
   Trong lúc chờ, chu kỳ lượt mới vẫn mở như đã trả. Trên mobile làm theo sự kiện store (Apple cho chọn 3, 16, 28 ngày).
@@ -518,6 +556,10 @@ Mọi sự kiện có: `provider`, `environment`, `external_event_id` (hoặc th
   tháng chưa dùng khi người dùng nâng lên năm: kỳ đang dùng là kỳ năm, mã của nó tới cùng `plan_changed`, D37) → chỉ ghi lại. Không biết giao dịch của kỳ đang dùng (bộ
   nối thiếu mã, D37) → chỉ ghi lại, log `billing_refund_unmatched` để admin xem. Hoàn tiền chủ động **chỉ admin** làm, bằng tay ở trang quản lý của nhà cung cấp;
   admin muốn đền bù mà không cắt Pro thì cấp thêm (mục 10) thay vì hoàn tiền.
+  **Tin tới sai thứ tự (D39):** ví dụ Lan nâng tháng → năm, Apple hoàn phần tháng (m1); tin "hoàn m1" tới trước tin `plan_changed` mang mã năm (y1) → Wordmet vẫn coi
+  m1 là giao dịch của kỳ đang dùng nên cắt Pro, và `plan_changed` tới sau bị `stale` hoặc rơi vào ô "Ghi" của `revoked`. Hay `refund_reversed` tới trước `refunded` →
+  `refund_reversed` chỉ ghi lại, `refunded` tới sau cắt Pro. Vì vậy mỗi lần `refunded` cắt Pro, sau commit hệ thống hỏi lại nhà cung cấp (`fetchState`) và theo trạng
+  thái thật (Lan có Pro lại sau vài giây); hỏi lỗi thì job mỗi giờ hỏi lại trong 3 ngày. Bộ nối không có `fetchState` → giữ `revoked` (mục 19).
 - **Đổi tháng ↔ năm (D25):** như bảng: `plan_changed` giữ mốc; `plan_change_scheduled` có hiệu lực ở `renewed` kế tiếp; hủy lần đổi đang chờ thì xóa.
 - ~~**Kiểu "app tự gia hạn" (R11)**~~ **bỏ theo D35**: không còn gói người dùng tự trả từng kỳ (mục 9.1).
 
@@ -655,7 +697,7 @@ Thêm vào nhóm `learning`: `groups_per_user` 100 (10–1.000), `items_per_grou
 (1.000–100.000), `sentences_per_sense` 20 (5–100). Chốt D17, D18; khoảng là ASSUMPTION.
 
 **Cố định trong code:** thời gian giữ chỗ 2 phút (ER5); giờ Việt Nam cho ngày của trần AI; số lần thử áp lại một sự kiện (5); giữ `raw_payload` 90 ngày (R23);
-trần email thanh toán 95% hạn mức email ngày (R18); body webhook 64 KB (R16). Đều là `ASSUMPTION`.
+trần email thanh toán 95% hạn mức email ngày (R18); body webhook 64 KB (R16); hỏi lại gói bị cắt trong 3 ngày (D39). Đều là `ASSUMPTION`.
 
 Đổi con số giữa chu kỳ (ER9): áp ở lần kiểm kế tiếp; lượt đã dùng không tính lại; còn lại không âm. Giảm `items_per_group`, `groups_per_user` dưới số đang có:
 dữ liệu cũ giữ nguyên, chỉ chặn thêm mới (như luật hiện nay).
@@ -821,6 +863,9 @@ Mỗi luật cấp trên được dẫn (SR4, SR8, SR9, SR10, SR11, SR13, SR14, 
 | B5E99 | Lan được cấp Pro tới 30/11; ngày 10/11 editor tạo lần cấp Pro 1/12–31/12 (D38) | Lần cũ **không** bị thu hồi; Lan Pro liên tục tới 31/12; từ 1/12 mốc lượt AI = 1/12 |
 | B5E100 | Gửi lại `PATCH` với đúng ngày đang có (D38) | 200, lần cấp như cũ; không ghi thêm dòng lịch sử |
 | B5E101 | Rút ngắn `ends_at` về một ngày đã qua (D38) | 400 `validation-failed` (muốn dừng ngay thì thu hồi) |
+| B5E102 | Lan `active` tháng (giao dịch m1) nâng lên năm (y1); `refunded` m1 tới **trước** `plan_changed` y1 (D39) | `refunded` cắt Pro (`revoked`); sau commit hệ thống gọi `fetchState` → nhà cung cấp trả `active`, kỳ năm → ghi đè, Lan Pro lại; `current_transaction_id` = null (kỳ đổi qua `fetchState`); `plan_changed` y1 tới sau mà không `stale` thì đặt lại mã y1, bị `stale` thì mã vẫn null tới `renewed` kế tiếp (hoàn tiền lúc đó chỉ ghi lại, D37). Bộ nối không có `fetchState` → giữ `revoked` |
+| B5E103 | `refund_reversed` tới **trước** `refunded` của cùng giao dịch (D39) | `refund_reversed` chỉ ghi lại (gói đang `active`); `refunded` cắt Pro; `fetchState` sau commit → nhà cung cấp trả `active` → Pro lại |
+| B5E104 | `fetchState` sau lần cắt vì hoàn tiền bị lỗi hoặc quá `BILLING_ADAPTER_TIMEOUT_MS` (D39) | Giữ `revoked`, log `billing_state_refetch_failed`; job mỗi giờ hỏi lại gói đó tới khi được, tối đa 3 ngày kể từ lúc cắt; nhà cung cấp cũng trả `revoked` → giữ |
 
 ## 16. Acceptance criteria (When → Then)
 
@@ -915,6 +960,9 @@ Mỗi luật cấp trên được dẫn (SR4, SR8, SR9, SR10, SR11, SR13, SR14, 
   not_supported`, log cho staff, và người dùng có thể vẫn bị store trừ tiền kỳ sau.
 - **Hoàn tiền chủ động chỉ admin làm** (D34), bằng tay ở trang quản lý của nhà cung cấp; app không có nút hoàn tiền. Hoàn tiền (kể cả một phần) cắt Pro của kỳ đó;
   muốn đền bù mà giữ Pro thì cấp thêm.
+- **Tin hoàn tiền tới sai thứ tự chỉ tự sửa khi bộ nối có `fetchState`** (D39). Bộ nối giả, Stripe, Google, Apple có (mục 9.1); MoMo, ZaloPay chưa kiểm. Bộ nối
+  không có `fetchState` thì người dùng có thể mất Pro nhầm (B5E102, B5E103) tới khi bộ nối đó tự có luật (phương án (i) của D39) hoặc admin cấp tay. Lúc hỏi lại,
+  người dùng mất Pro vài giây (tới 1 giờ nếu lần hỏi đầu lỗi).
 - **Mã nhận diện thẻ** không phải nhà cung cấp nào cũng có (chưa kiểm từng bên); khi không có, "một trial theo thẻ" không chặn được.
 - **Chỉ gói tự gia hạn (D35)** thu hẹp lựa chọn ở Việt Nam: VNPay, payOS không dùng được cho gói. MoMo subscription mở cho loại hình kinh doanh nào, hạn mức bao nhiêu
   **chưa xác minh** (research 18/10); ZaloPay Auto Debit có lúc đòi người dùng xác minh. Nếu cả hai không dùng được, người dùng Việt Nam chỉ trả bằng thẻ qua
