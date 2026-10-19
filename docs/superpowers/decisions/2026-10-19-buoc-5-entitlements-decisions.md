@@ -10,6 +10,11 @@ làm*; file này trả lời *tại sao chọn vậy và đã bỏ gì*. Nguồn
 >
 > **Sau review độc lập 19/10/2026** ([`../reviews/2026-10-19-buoc-5-design-review.md`](../reviews/2026-10-19-buoc-5-design-review.md), 25 phát hiện): bốn câu
 > sản phẩm chốt thành **D31–D34**; các sửa kỹ thuật chủ dự án duyệt hết ("ok"), ghi ở mục "Chọn thêm sau review độc lập".
+>
+> **Sau review plan 19/10/2026** ([`../reviews/2026-10-19-buoc-5-plan-review.md`](../reviews/2026-10-19-buoc-5-plan-review.md), 4 câu Q1–Q4): Q3 chốt thành
+> **D35** (chỉ gia hạn tự động; bỏ kiểu "app tự gia hạn", thay một phần D3 và R11); Q4 chốt thành **D36** (bỏ email cảnh báo trần AI, chỉ báo trên màn
+> admin; thay một phần D18); Q2 chốt thành **D37** (bộ nối bắt buộc gửi mã giao dịch; không biết giao dịch của kỳ đang dùng thì chỉ ghi lại; bổ sung D34); Q1
+> chốt thành **D38** (staff sửa ngày của lần cấp đang có thay vì tạo lần cấp mới; lần cấp bắt đầu ở tương lai không thu hồi lần cũ; bổ sung D32). Không còn câu mở.
 
 **Nhãn:** ✅ = phương án được chọn. **Ai chốt:** "Chủ dự án" = chọn trong chat; "Đề xuất của Claude" = Claude đề xuất sau khi chủ dự án trả lời "chưa rõ",
 không chọn, hoặc nhờ đề xuất, chủ dự án đồng ý; "Duyệt cùng design" = Claude đề xuất khi trình một phần design, chủ dự án duyệt cả phần.
@@ -56,6 +61,10 @@ không chọn. Mục cuối ghi những chỗ Claude đề xuất trước khi c
 | D32 | Cấp gói khi người nhận đã có nguồn Pro (sau review) | Cấp Pro là gói mới: thu hồi lần cấp cũ, đặt lại mốc; người đang trả tiền → tắt tự gia hạn, không hoàn tiền; staff xác nhận; mốc theo nguồn bắt đầu gần nhất | Chủ dự án (cách làm cụ thể: đề xuất của Claude, chủ dự án "ok") |
 | D33 | Editor thu hồi lần cấp có lượt AI (sau review) | Không; chỉ admin | Chủ dự án |
 | D34 | Hoàn tiền một phần (sau review) | Có hoàn tiền (kể cả một phần) cho kỳ đang dùng → mất Pro ngay; hủy không hoàn → giữ tới hết kỳ; hoàn tiền chủ động chỉ admin | Chủ dự án (áp theo giao dịch được hoàn: đề xuất của Claude) |
+| D35 | Gói phải tự gia hạn; người dùng trả trước khi hết kỳ (sau review plan, Q3) | Chỉ nhận gói tự gia hạn (store, Paddle/Stripe, MoMo subscription, ZaloPay Auto Debit); bỏ kiểu "app tự gia hạn" (trả tay từng kỳ) khỏi lõi Bước 5 | Chủ dự án (cách (e)); bỏ khỏi lõi: đề xuất của Claude, chủ dự án chốt |
+| D36 | Cảnh báo trần AI khi chạm ngưỡng trong giờ cuối của ngày (sau review plan, Q4) | Bỏ email cảnh báo; API lượt AI trả cờ "đã chạm ngưỡng" để màn admin tô vàng (đợt giao diện); giữ cài đặt ngưỡng | Chủ dự án; chi tiết: đề xuất của Claude, chủ dự án chốt |
+| D37 | Hoàn tiền khi không biết giao dịch nào thuộc kỳ đang dùng (sau review plan, Q2) | Bộ nối bắt buộc gửi mã giao dịch mỗi khi có trừ tiền; `plan_changed` kèm mã của kỳ mới; vẫn thiếu mã thì chỉ ghi lại và log, không cắt Pro | Đề xuất của Claude sau khi chủ dự án nói "khó xảy ra", chủ dự án chốt |
+| D38 | Kéo dài hoặc hẹn trước lần cấp; lần cấp mới bắt đầu ở tương lai (sau review plan, Q1) | Staff sửa ngày của lần cấp đang có (API mới, có lịch sử sửa) thay vì tạo lần cấp mới; vẫn cho tạo lần cấp bắt đầu ở tương lai, và khi đó không thu hồi lần cấp cũ | Chủ dự án (sửa ngày, không thu hồi); chi tiết: đề xuất của Claude, chủ dự án "ok" |
 
 ## D1 — Cách làm việc
 
@@ -103,6 +112,9 @@ gói năm mở lượt theo tháng; webhook là tín hiệu để đối soát l
 Chủ dự án (trả lời dưới phương án (a)): "trước mắt là thiết kế provider trước đi, sau cần thì chỉ cần thêm payment service cần thiết vào thôi". Claude hiểu là (b),
 ghi lại và mời sửa nếu khác; chủ dự án không sửa. Về tài liệu tham khảo, Claude cho rằng cấp lượt theo tỷ lệ, đổi tháng ↔ năm giữa kỳ, giữ "sức chứa" có lẽ chưa cần;
 chủ dự án: "thiết kế thêm càng tốt, tăng độ chỉn chu" → design ghi đủ các case ở mức hành vi; phần code của từng case quyết theo D3 (b).
+
+**Sửa theo D35 (19/10, sau review plan):** "hai kiểu gia hạn" trong (b) là phần Claude thêm khi hiểu câu trả lời, chủ dự án không chọn trực tiếp. D35 bỏ kiểu "app tự gia
+hạn"; phần còn lại của D3 (b) giữ nguyên.
 
 ## D4 — Mỗi gói gồm gì
 
@@ -303,7 +315,7 @@ chủ dự án nhờ research ([`AI_QUOTA_BENCHMARK_RESEARCH_2026-10-19.md`](../
 | Phiên luyện không AI mỗi ngày | Free 3; Pro, trial 30 |
 | Lượt bài AI / tra nghĩa mỗi chu kỳ | 300 / 100 (tạm) |
 | Trần AI toàn hệ thống | **Đếm bằng lượt**, 1.000 lượt/ngày (tính cả lượt đang giữ) |
-| Cảnh báo | 75%, email cho mọi admin, tối đa một lần mỗi ngày |
+| Cảnh báo | 75%, email cho mọi admin, tối đa một lần mỗi ngày — **đổi theo D36** (19/10, sau review plan): bỏ email, chỉ báo trên màn admin khi chạm 75% |
 | Từ riêng | 10.000 (thay 1.000, vì chủ dự án muốn "không giới hạn" ở D4) |
 | Câu ngữ cảnh mỗi nghĩa | 20 (thay 5, cùng lý do) |
 | Nhóm, từ mỗi nhóm, câu mỗi phiên | Giữ 100, 2.000, 20 |
@@ -428,7 +440,7 @@ Chủ dự án: "mô phỏng mình xem" → Claude dựng mô phỏng bấm đư
 | Bật mặc định 9 ngày (bản viết đầu) | An toàn với cách đọc Điều 42; gói tháng nhận email mỗi tháng |
 | ✅ Làm sẵn, **mặc định tắt**; bật nếu luật sư nói bắt buộc | Giống thói quen của các app; nếu luật bắt buộc thì phải nhớ bật trước khi bán |
 
-Email báo sắp hết hạn của gói "app tự gia hạn" (không tự trừ tiền) giữ, thành cài đặt `expiry_notice_days_before` mặc định 7.
+Email báo sắp hết hạn của gói "app tự gia hạn" (không tự trừ tiền) giữ, thành cài đặt `expiry_notice_days_before` mặc định 7. **Bỏ theo D35** (19/10, sau review plan: không còn gói "app tự gia hạn").
 
 ## D30 — Trial lần hai (khi đọc design, 19/10)
 
@@ -502,6 +514,116 @@ người dùng khiếu nại store hoặc ngân hàng). Chủ dự án: hoàn ti
 Chủ dự án: "nếu hoàn tiền thì đồng nghĩa với pro mất, còn nếu trường hợp hủy mà không mất tiền thì giữ cho tới hết kỳ". Claude đề xuất (chủ dự án không phản đối): áp
 cho kỳ của giao dịch được hoàn, để khoản Apple tự hoàn khi nâng tháng → năm không cắt kỳ năm vừa trả; admin muốn đền bù mà giữ Pro thì cấp thêm thay vì hoàn tiền.
 
+## D35 — Chỉ gia hạn tự động; bỏ kiểu "app tự gia hạn" (sau review plan, Q3)
+
+Bối cảnh: review plan (Q3) hỏi hoàn tiền một lần trả trước của gói "app tự gia hạn" (VNPay, payOS: mỗi kỳ người dùng tự bấm trả; R11 cho trả lúc còn hạn và nối kỳ).
+Chủ dự án: "làm sao lại có trả trước, tháng nào trả tháng đó thôi". Claude giải thích vì sao có trả trước và đưa ba cách (a)–(c); chủ dự án nhờ "research kĩ chỗ này
+lại" → [`EARLY_MANUAL_RENEWAL_RESEARCH_2026-10-19.md`](../../preparation/EARLY_MANUAL_RENEWAL_RESEARCH_2026-10-19.md) (Google Play prepaid plan cộng dồn khi mua sớm và
+cho tắt việc mua sớm; Spotify, YouTube cộng dồn có trần; MoMo subscription cho app tự gọi trừ tiền tới ngày; Galaxy Play gia hạn qua liên kết MoMo; không tìm thấy chính
+sách công khai của app Việt Nam). Ví dụ dùng khi hỏi: tháng của Lan hết 30/11, ngày 25/11 Lan bấm trả.
+
+Vòng 1 — tính lần trả trước khi hết kỳ thế nào:
+
+| Phương án | Trade-off |
+|---|---|
+| (a) Không cho trả trước | Không có kỳ trả trước; Lan quên trả thì mất Pro một lúc; vẫn cần luật cho lần trả trùng |
+| (b) Cho trả, tính từ ngày trả | Đơn giản; Lan mất 5 ngày đã trả; rủi ro khiếu nại, luật chưa kiểm |
+| (c) Cho trả, nối từ cuối kỳ (R11 lúc đó) | Không mất ngày; có kỳ "đã trả nhưng chưa tới" và câu hoàn tiền cho kỳ đó |
+| (d) Chỉ cho trả trong N ngày cuối, nối từ cuối kỳ | Kỳ trả trước tối đa một kỳ; trang thanh toán phải mở nút theo ngày |
+| ✅ (e) Tự trừ tiền mỗi kỳ (MoMo subscription, ZaloPay Auto Debit) | Người dùng không phải nhớ ngày, không có trả trước; chỉ dùng được với cổng có tự trừ; VNPay, payOS phải chọn (a)–(d) |
+
+Chủ dự án: "dùng cách e thôi, mình không design app theo hướng user phải nhớ đến ngày và chủ động trả, mà phải tự gia hạn nếu cần, nếu người dùng phải lo việc trả trước
+sẽ rất phiền cho đôi bên, hệ thống cũng phải tự xử lý phức tạp hơn".
+
+Vòng 2 — lõi Bước 5 giữ kiểu "app tự gia hạn" không:
+
+| Phương án | Trade-off |
+|---|---|
+| ✅ (i) Bỏ khỏi lõi: lõi chỉ có gói tự gia hạn; với MoMo/ZaloPay, việc Wordmet gọi lệnh trừ tiền mỗi kỳ nằm trong bộ nối (viết khi có tài khoản thật) và bộ nối báo về `renewed` / `renewal_failed` như mọi nhà cung cấp | Lõi ít luật hơn, ít thứ phải test khi chưa có cổng thật; phần trừ tiền và thử lại dồn vào bộ nối MoMo/ZaloPay sau này |
+| (ii) Giữ `renewal = app` trong lõi, thêm job của lõi tự gọi trừ tiền | Lõi lo lịch trừ tiền cho mọi cổng kiểu này; thêm việc ở Bước 5 mà chưa có cổng thật để thử |
+
+Claude đề xuất (i). Chủ dự án hỏi "mình có chốt 2 kiểu gia hạn hả?"; Claude kiểm lại: không chọn trực tiếp — "hai kiểu" do Claude thêm khi hiểu câu trả lời D3 là (b),
+rồi đi theo các phần đề xuất chủ dự án duyệt chung (phần 3: "email báo trước 7 ngày khi gói 'app tự gia hạn' sắp hết"; R11 trong danh sách "ok" sau review). Chủ dự án:
+"Chốt đề xuất Q3: bỏ kiểu app tự gia hạn khỏi lõi, ghi D35, sửa design, decision record và plan."
+
+Hệ quả (design mục 0 "Sau review plan"): bỏ sự kiện `payment_succeeded` (13 loại sự kiện, bảng 9.4 còn 91 ô), cột `subscriptions.renewal`, dòng `app:<user_id>` và
+luật R11, 30/365 ngày, email "báo sắp hết hạn" và cài đặt `expiry_notice_days_before`, ca B5E56, B5E57, B5E69; câu Q3 về hoàn tiền kỳ trả trước không còn. VNPay, payOS
+không dùng cho gói tháng/năm. Rủi ro còn mở: MoMo subscription có mở cho loại hình kinh doanh của Wordmet không (chưa xác minh, research 18/10); nếu không, người dùng Việt
+Nam chỉ trả bằng thẻ qua Paddle/Stripe hoặc qua store.
+
+## D36 — Cảnh báo trần AI: bỏ email, chỉ báo trên màn admin (sau review plan, Q4)
+
+Bối cảnh: D18 chốt cảnh báo khi lượt AI cả hệ thống trong ngày chạm 75% trần, email cho mọi admin, tối đa một lần mỗi ngày. Plan tạo cảnh báo bằng job mỗi giờ
+(chạy theo giờ khởi động server, không theo giờ cố định), nên chạm ngưỡng trong giờ cuối của ngày có thể không có email. Ví dụ dùng khi hỏi: trần 1.000; job chạy
+23:15 (đã dùng 700) và 00:15; lúc 23:40 lên 760 → ngày đó không có email. Chủ dự án hỏi "cron job?"; Claude trả lời job hiện không chạy theo giờ cố định và chưa có
+thư viện cron, rồi hỏi lại.
+
+| Phương án | Trade-off |
+|---|---|
+| (1) Chấp nhận lọt | Không thêm việc; có ngày không có email dù đã vượt ngưỡng |
+| (2) Chạy theo giờ cố định (đúng :00, thêm 23:55) | Khoảng lọt còn vài phút cuối ngày; thêm cách hẹn giờ |
+| (3) Lần chạy đầu sau nửa đêm xét lại ngày hôm qua | Không mất email; email tới sau nửa đêm |
+| (4) Tạo cảnh báo ngay lúc giữ lượt AI | Nhanh nhất; mỗi lần giữ lượt chậm thêm ở khóa chung mọi người dùng AI xếp hàng |
+| ✅ (5) Bỏ email, chỉ làm nổi bật trên giao diện | Không job, không email, không lọt; admin chỉ thấy khi mở màn admin |
+
+Chủ dự án: "mình nghĩ bỏ luôn phần này cũng được, chỉ cần làm nổi bật trên giao diện là đạt 75%, ví dụ nổi vàng lên". Claude đồng ý và đề xuất chi tiết: giữ cài đặt
+`ai_cap_alert_percent` (mặc định 75) làm ngưỡng tô vàng; `GET /v1/admin/entitlements/ai-usage` trả thêm cờ `alert_reached`; màn admin tô vàng ở đợt giao diện; bỏ email,
+loại thông báo `ai_cap_alert`, hàm lấy email admin, ca B5E15, B5E16, phần email của B5#16, lựa chọn 7 của plan. Đánh đổi: không ai được báo nếu không mở màn admin; trần
+vẫn chặn AI đúng lúc. Chủ dự án: "CÓ NHÉ".
+
+## D37 — Hoàn tiền khi không biết giao dịch nào thuộc kỳ đang dùng (sau review plan, Q2)
+
+Bối cảnh: D34 cắt Pro khi hoàn tiền cho giao dịch của kỳ đang dùng, chỉ ghi lại khi hoàn cho giao dịch khác. Wordmet biết giao dịch của kỳ đang dùng nhờ lưu mã ở mỗi
+lần trừ tiền. Plan lúc đó: `current_transaction_id` null (tin "gói bắt đầu" không bắt buộc kèm mã) thì mọi lần hoàn tiền đều cắt Pro. Ví dụ dùng khi hỏi: ngày 1/11 Lan
+mua gói tháng (tin báo không có mã); ngày 10/11 nâng lên gói năm; Apple tự hoàn phần tiền tháng 11 chưa dùng → Wordmet không biết đó là tiền tháng hay tiền năm. Chủ dự án
+hỏi "là sao", rồi "nguyên nhân". Claude giải thích: tin "gói bắt đầu" không bắt buộc mã (trial chưa trừ tiền; có nhà cung cấp tách tin "bắt đầu" và tin "đã thu tiền");
+và phát hiện thêm design thiếu mã ở `plan_changed`, nên B5E87 (hoàn phần tháng khi nâng lên năm → vẫn Pro) không chạy đúng kể cả khi có mã.
+
+| Phương án | Trade-off |
+|---|---|
+| ✅ (a) Bộ nối bắt buộc gửi mã mỗi khi có trừ tiền (gói bắt đầu không có trial, đổi gói có trả tiền ngay, gia hạn); tin đầu thiếu mã thì bộ nối tự hỏi thêm nhà cung cấp | Trường hợp "không biết mã" gần như hết (chỉ còn lúc trial, khi chưa có gì để hoàn); bộ nối thật phải làm thêm việc lấy mã |
+| (b) Giữ mã không bắt buộc, chọn một trong: cắt Pro / giữ Pro / hỏi lại nhà cung cấp | Bộ nối đơn giản hơn; phải chịu một trong ba cách sai khi thiếu mã |
+
+Chủ dự án hỏi "tình trạng không có mã có xảy ra không, như mình thấy là khó xảy ra". Claude kiểm tài liệu 19/10: Apple — mọi tin báo về gói kèm thông tin giao dịch đã ký
+(https://developer.apple.com/documentation/appstoreservernotifications/data); Google — tin báo chỉ có mã mua hàng, Google bắt buộc server gọi lại API để lấy đủ thông tin
+(https://developer.android.com/google/play/billing/rtdn-reference); Paddle — tin `subscription.created` có `transaction_id` (đoạn trích tìm kiếm của
+https://developer.paddle.com/webhooks/subscriptions/subscription-created); MoMo, ZaloPay — Wordmet tự gọi lệnh trừ tiền (câu trả lời có kèm mã: chưa kiểm). Kết luận: thiếu mã
+chỉ xảy ra khi bộ nối viết thiếu. Claude đề xuất (a), thêm: `plan_changed` kèm mã của lần trả cho kỳ mới; ca còn lại (vẫn nhận hoàn tiền khi `current_transaction_id` null)
+→ chỉ ghi lại và log để admin xem, không tự cắt Pro. Chủ dự án: "Chốt Q2 theo đề xuất: bộ nối bắt buộc gửi mã giao dịch, plan_changed kèm mã kỳ mới, thiếu mã thì chỉ ghi
+lại và log."
+
+## D38 — Kéo dài, hẹn trước lần cấp; lần cấp Pro bắt đầu ở tương lai (sau review plan, Q1)
+
+Bối cảnh: D32 nói cấp Pro là gói mới, lần cấp cũ tự thu hồi; R12 cho đặt `starts_at` ở tương lai. Plan thu hồi ngay lúc tạo. Ví dụ dùng khi hỏi: Lan được cấp Pro tới
+30/11; ngày 10/11 editor cấp thêm Pro 1/12–31/12 → thu hồi ngay thì Lan là Free từ 10/11 tới 1/12.
+
+Vòng 1:
+
+| Phương án | Trade-off |
+|---|---|
+| (i) Thu hồi ngay (plan lúc đó) | Đúng chữ D32; Lan mất Pro giữa hai lần cấp |
+| (ii) Thu hồi lần cũ đúng vào `starts_at` của lần mới | Không mất ngày; không có job "bật" lần cấp đúng giờ (quyền tính lúc đọc) |
+| ✅ (iii) Không thu hồi khi hai khoảng không chồng nhau | Không mất ngày; cần luật cho khi chồng nhau |
+
+Chủ dự án: "không thu hồi". Claude đề xuất: lần cấp mới bắt đầu ở tương lai không thu hồi gì, chồng ngày thì cả hai cùng tính (Pro tới ngày muộn hơn, từ ngày bắt đầu
+của lần mới lượt AI đếm lại từ đầu); lần cấp bắt đầu ngay thì vẫn như D32. Chủ dự án hỏi: "cho mình cái lý do mà user đang dùng giữa tháng mà lại cấp một gói vào tháng sau,
+nó có ý nghĩa gì không". Claude nêu hai lý do: kéo dài cho người đang được cấp (chưa có thao tác kéo dài, và cấp mới bắt đầu ngay thì lượt AI đếm lại giữa tháng); hẹn trước
+(phần thưởng "Pro tháng 12", lớp học bắt đầu 1/12).
+
+Vòng 2:
+
+| Phương án | Trade-off |
+|---|---|
+| (a) Giữ như đề xuất vòng 1 (cho đặt ngày bắt đầu ở tương lai, không thu hồi) | Không thêm API; kéo dài phải tạo lần cấp mới nối tiếp |
+| (b) Bỏ ngày bắt đầu ở tương lai; muốn nối thì cấp mới từ hôm nay | Bỏ được câu Q1; không hẹn trước được; lượt AI đếm lại; đổi R12 |
+| ✅ (c) Thêm thao tác sửa ngày của lần cấp đang có | Kéo dài không đổi chu kỳ lượt AI; thêm một API; vẫn phải chọn (a)/(b) cho hẹn trước |
+
+Chủ dự án: "thay vì vậy thì đều chỉnh ngày hiệu lực của gói đó sang một ngày khác trong tương lai, hơn là cấp 1 gói mới". Claude đề xuất bốn điểm: (1) API
+`PATCH /v1/admin/entitlements/grants/{id}` đổi `ends_at` (dời ra hay rút ngắn, miễn vẫn ở tương lai) và `starts_at` (chỉ khi chưa bắt đầu); (2) luật quyền như thu hồi
+(editor chỉ lần cấp của người học thường; lần cấp có con số lượt AI chỉ admin, D33; lần cấp đã thu hồi hoặc hết hạn → 409 `grant-not-active`; bắt buộc lý do;
+`user.write`); (3) bảng lịch sử sửa (ai sửa, ngày cũ → mới, lý do), như lịch sử cài đặt — cách đơn giản hơn là chỉ lưu lần sửa cuối, mất các lần trước; (4) vẫn cho tạo
+lần cấp bắt đầu ở tương lai (R12) và khi đó không thu hồi lần cũ (câu trả lời vòng 1). Chủ dự án: "ok".
+
 ## Đề xuất kỹ thuật được duyệt cùng design
 
 **Chọn** (phần 1, 2, 3 trình trong chat, chủ dự án duyệt từng phần: "ok", "ok", "mình duyệt"):
@@ -511,14 +633,14 @@ cho kỳ của giao dịch được hoàn, để khoản Apple tự hoàn khi n�
 - Nhiều lần đặt con số riêng cho cùng kho: lần mới nhất thắng; con số AI > 0 cho tài khoản Free thì dùng được AI.
 - Chu kỳ AI theo nguồn Pro bắt đầu sớm nhất còn hiệu lực; trial lên Pro thì mốc đặt lại ở lần trừ tiền đầu.
 - Hoàn lượt trừ vào số đã dùng của chu kỳ hiện tại, không xuống dưới 0.
-- Trần AI theo ngày giờ Việt Nam, khóa chung cho mọi lần giữ lượt AI; cảnh báo một lần mỗi ngày.
+- Trần AI theo ngày giờ Việt Nam, khóa chung cho mọi lần giữ lượt AI; cảnh báo một lần mỗi ngày (email bỏ theo D36).
 - Dùng lại `settings.manage` cho mọi con số, công tắc, trần; bỏ `ai.settings` của D6 Bước 1; thêm `entitlements.grant`.
-- Email trial, email sắp hết hạn, email cảnh báo trần không bị trần 80% của email nhắc học.
+- Email trial, email sắp hết hạn (bỏ theo D35), email cảnh báo trần (bỏ theo D36) không bị trần 80% của email nhắc học.
 - API người học `GET /v1/me/entitlements`; API staff cấp, thu hồi, lịch sử (lọc người cấp, sắp hết hạn), xem một người, lượt AI hôm nay.
 - Webhook: kiểm chữ ký → lưu hộp (bỏ trùng) → trả lời theo kiểu nhà cung cấp → áp; lỗi thì job mỗi giờ thử lại; sự kiện cũ hơn trạng thái thì bỏ; hỏi lại trạng thái khi bộ
   nối hỗ trợ.
 - Bộ nối giả và lệnh `pnpm billing:fake-event` (không mở endpoint test); lệnh `pnpm entitlements:fake-ai` cho smoke kiểm chạy đua.
-- Kiểu "app tự gia hạn": thanh toán một lần → 30/365 ngày; email báo trước 7 ngày khi sắp hết hạn.
+- ~~Kiểu "app tự gia hạn": thanh toán một lần → 30/365 ngày; email báo trước 7 ngày khi sắp hết hạn.~~ Bỏ theo D35 (19/10, sau review plan).
 - Mã lỗi: 403 `quota-exhausted` (không dùng 429), 503 `ai-unavailable`, 409 `grant-not-allowed`.
 
 **Thêm khi viết design**, chủ dự án đọc từng điểm (đã viết lại bằng ví dụ khi chủ dự án nhờ "rõ ràng hơn") ngày 19/10: email báo trước mỗi kỳ gia hạn → sửa thành D29;
@@ -544,7 +666,7 @@ bảng "Sau review độc lập"):
 - R4: kiểm hạn mức phiên sau khi đóng phiên cũ. R5: task sửa `smoke:buoc-4`.
 - R6, R7: hợp đồng giữ lượt cho bên gọi (transaction ngắn, không gọi AI khi giữ khóa, một `reserve` mỗi transaction); bảng luật `confirm`, lý do nhả.
 - R9, R18, R19: email có trạng thái và cửa sổ gửi, trần 95% hạn mức email, job nhận dòng bằng `FOR UPDATE SKIP LOCKED`.
-- R10, R11, R16, R17, R23: luật `fetchState`, bộ nối giả có trạng thái; gói "app tự gia hạn" một dòng mỗi người; webhook raw body, 64 KB, nhận GET; sự kiện `sandbox`
+- R10, R11, R16, R17, R23: luật `fetchState`, bộ nối giả có trạng thái; gói "app tự gia hạn" một dòng mỗi người (R11 **bỏ theo D35**); webhook raw body, 64 KB, nhận GET; sự kiện `sandbox`
   không áp ở production; xóa `raw_payload` sau 90 ngày.
 - R12: khoảng hợp lệ của con số riêng, luật `starts_at`, số phiên = 0, API cấp thêm 404.
 - R13: smoke tạo dữ liệu và lùi thời gian bằng SQL, N request song song. R14: `INSERT … ON CONFLICT DO NOTHING`. R15: API xem gói chỉ cần đăng nhập.
