@@ -103,6 +103,26 @@ Câu do phiên implement nêu khi viết bộ áp sự kiện (Task 17), chuyể
 | D39 | **Hoàn tiền tới sai thứ tự** (Review Focus 2 của plan): tin `refunded` của giao dịch cũ tới trước `plan_changed` của kỳ mới, hoặc `refund_reversed` tới trước `refunded`, làm gói bị cắt nhầm. Mỗi lần `refunded` cắt Pro (`revoked`), sau khi transaction commit hệ thống **tự hỏi lại nhà cung cấp** (`fetchState`, nếu bộ nối có) và theo trạng thái thật; hỏi lỗi thì **job mỗi giờ hỏi lại** các gói `revoked` trong **3 ngày** gần nhất (`ASSUMPTION`). Không thêm luật tự sửa trong bảng 9.4 (phương án (i)) | Chốt D39 (hệ thống tự kiểm tra: chủ dự án; cách (ii): đề xuất Claude, chủ dự án chốt) | 2, 9.2, 9.4, 13, 15.7, 19 |
 | — | **Kết quả `fetchState` thiếu dữ liệu** (câu Q-C2 của step-5-C): ngày null không ghi đè ngày đang lưu; kỳ đổi → `current_transaction_id` = null; `grace_ends_at` giữ khi `grace` → `grace`, còn lại null; `grace` không có hạn hết ở cuối kỳ + `grace_days` | Phiên điều phối chốt vì design đã quyết (D23, D34, D37; Review Focus 5 của plan "không bao giờ Pro vô hạn"); không đổi hành vi đã chốt | 9.2 |
 
+### As-built (19/10/2026)
+
+Chi tiết, PR và số liệu: [`docs/deliveries/buoc-5.md`](../../deliveries/buoc-5.md) mục "as-built". Lựa chọn kỹ thuật của plan (design không ghi), như đã làm:
+1. `BILLING_PRODUCTION=true|false` (mặc định `false`) báo API là production (R17); `true` cùng `BILLING_FAKE_ENABLED=true` là lỗi cấu hình.
+2. Practice gọi `recordPracticeSession` ở **mọi** lần ghi kết quả cuối; `ON CONFLICT DO NOTHING` giữ lần đầu, tức "câu đầu có kết quả" (mục 4).
+3. Thêm cột ngoài mục 6: `subscriptions.current_transaction_id` (D34, D37), `billing_events.external_subscription_id`, `billing_events.app_user_id`; bảng
+   riêng của bộ nối giả `fake_billing_subscriptions`, sau thêm `current_transaction_id` và `history` (D39, B5E102).
+4. Webhook đọc raw body bằng bộ đọc riêng cho đường đó, đặt trước bộ đọc JSON chung.
+5. `pnpm entitlements:fake-ai` là lệnh chạy trên máy (dựng app context, gọi `EntitlementsService` trên database thật); không có endpoint test.
+6. `classifyMailError` chuyển từ `src/notifications/scheduler/` sang `src/common/mail/`.
+7. Không có email cảnh báo trần AI (D36); `alert_reached` tính lúc đọc.
+
+Chỗ khác design khi làm:
+- **B5E76 không đạt:** `confirm` theo dòng `use` mới nhất (bảng R7 mục 7.1); API chỉ có `operation_id`. Cả hai cách đều trừ tối đa 1 lượt mỗi thao tác;
+  Bước 7 xem lại khóa theo lần thử.
+- `grace` đã đặt hủy cuối kỳ → `expired` khi hết `grace_ends_at`. `trialing` không có `trial_ends_at` → dùng `current_period_end`.
+- Không có CHECK cho `billing_events.type` và `revoke_reason`.
+- Đọc Settings và hồ sơ người dùng qua `tx` khi đang giữ khóa: `SettingsService.get(tx?)`, `IdentityService.getProfile(userId, tx?)`.
+- Không thêm mã lỗi nào ngoài mục 12.5.
+
 ## 1. Mục tiêu và bối cảnh
 
 Bước 5 dựng module `entitlements`: mỗi người dùng **được dùng tính năng nào** (quyền) và **dùng được bao nhiêu** (hạn mức), theo gói **Free / Trial / Pro**,
