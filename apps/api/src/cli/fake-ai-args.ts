@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import type { EntitlementsService } from '../entitlements/index.js';
 
 // Arguments of `pnpm entitlements:fake-ai` (plan Task 14). Kept apart from the entry file, which runs on import.
 
@@ -47,4 +48,23 @@ export function parseFakeAiArgs(argv: string[]): FakeAiArgs {
     ? [{ user: users[0].toLowerCase(), op }]
     : Array.from({ length: parallel }, (_, i) => ({ user: users[i % users.length].toLowerCase(), op: `${op}:${i + 1}` }));
   return { ok: true, action: action as (typeof ACTIONS)[number], pool: pool as (typeof POOLS)[number], reportId, calls };
+}
+
+type Ledger = Pick<EntitlementsService, 'reserve' | 'confirm' | 'release' | 'refund'>;
+
+/** Starts every call at once in this process and prints one JSON line per call as it settles; a throw prints its error name. */
+export async function runFakeAiCalls(
+  entitlements: Ledger, args: Extract<FakeAiArgs, { ok: true }>, print: (line: string) => void,
+): Promise<void> {
+  await Promise.all(args.calls.map(async ({ user, op }) => {
+    let result: unknown;
+    try {
+      result = args.action === 'refund'
+        ? await entitlements.refund(user, args.pool, op, args.reportId!)
+        : await entitlements[args.action](user, args.pool, op);
+    } catch (error) {
+      result = { error: error instanceof Error ? error.name : 'UnknownError' };
+    }
+    print(JSON.stringify({ user, op, result }));
+  }));
 }
