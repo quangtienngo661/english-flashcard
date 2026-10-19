@@ -13,7 +13,7 @@ import { callAdapter } from './adapter-call.js';
 import type { BillingAdapter } from './billing-adapter.js';
 import { BillingAdapterRegistry } from './billing-adapter.registry.js';
 import type { BillingApplyPort } from './billing-inbox.service.js';
-import type { NormalizedEvent, SubscriptionState } from './billing.types.js';
+import { eventFromJson, type SubscriptionState } from './billing.types.js';
 import { nextLastEventAt, orderDecision } from './event-order.js';
 import { applyEvent, applyFetched, startsTrial } from './subscription-machine.js';
 
@@ -30,8 +30,6 @@ type FirstPass = {
   /** D30: a trial the rules refused; ask the provider to end it now. */
   endTrial: string | null;
 };
-
-const DATE_FIELDS = ['occurredAt', 'currentPeriodStart', 'currentPeriodEnd', 'trialEndsAt', 'graceEndsAt'] as const;
 
 /**
  * Applies stored billing events (design §9.2 step 4, §9.4). Three phases per event so no adapter call ever runs under a lock
@@ -114,7 +112,7 @@ export class BillingEventApplier implements BillingApplyPort {
       this.logger.warn('billing_event_incomplete', { event_id: row.id, type: row.type });
       return { outcome: 'ignored', refetch, endTrial: null };
     }
-    const event = toEvent(row.payload);
+    const event = eventFromJson(row.payload);
 
     if (row.kind === 'additive') {
       const duplicate = await tx.billingEvent.findFirst({
@@ -224,15 +222,6 @@ export class BillingEventApplier implements BillingApplyPort {
     this.logger.error('billing_event_failed', err, { event_id: row.id, attempts: updated.attempts });
     if (updated.attempts >= BILLING_MAX_ATTEMPTS) this.logger.error('billing_event_stuck', err, { event_id: row.id });
   }
-}
-
-/** `billing_events.payload` stores the normalized event as JSON; dates come back as ISO strings. */
-function toEvent(payload: Prisma.JsonValue): NormalizedEvent {
-  const event = { ...(payload as Record<string, unknown>) };
-  for (const field of DATE_FIELDS) {
-    if (typeof event[field] === 'string') event[field] = new Date(event[field]);
-  }
-  return event as NormalizedEvent;
 }
 
 export function toState(row: SubscriptionRow): SubscriptionState {
