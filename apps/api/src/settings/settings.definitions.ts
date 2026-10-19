@@ -8,6 +8,9 @@ export type AppSettings = {
     /** `null` = no limit on the due part (Bước 4 D35). */
     reviewsPerGroupPerDay: number | null;
     backlogAfterDays: number;
+    /** Bước 5 (design §13): were `GROUPS_MAX` / `GROUP_ITEMS_MAX`. */
+    groupsPerUser: number;
+    itemsPerGroup: number;
   };
   practice: {
     maxQuestionsPerSession: number; defaultQuestionsPerSession: number; historyMonths: number; trueFalseTruePercent: number;
@@ -15,15 +18,36 @@ export type AppSettings = {
     /** `null` = no limit (Bước 4 design 5.4). */
     typeWordMaxRetries: number | null;
   };
+  /** Bước 5 (design §13, D18). */
+  entitlements: {
+    freePracticeSessionsPerDay: number; proPracticeSessionsPerDay: number;
+    proAiPracticePerCycle: number; proAiLookupPerCycle: number; trialAiPracticePerCycle: number; trialAiLookupPerCycle: number;
+    graceDays: number; trialReminderDaysBefore: number;
+    /** `null` = no renewal notice email. */
+    renewalNoticeDaysBefore: number | null;
+    aiEnabled: boolean; aiDailyCap: number;
+    /** `null` = no alert (D36). */
+    aiCapAlertPercent: number | null;
+    adsEnabled: boolean; adsInterstitialPerDay: number; adsMinIntervalMinutes: number;
+  };
+  /** Bước 5 (design §13): were `PRIVATE_WORDS_MAX` / `SENTENCES_PER_SENSE_MAX`. */
+  content: { privateWordsPerUser: number; sentencesPerSense: number };
 };
 
 export const SETTINGS_DEFAULTS: AppSettings = {
   reminders: { enabled: true, sendTime: '20:00', minGapDays: 2, inactiveAfterDays: 7, stopAfterDays: 60 },
-  learning: { newPerGroupPerDay: 20, reviewsPerGroupPerDay: 100, backlogAfterDays: 60 },
+  learning: { newPerGroupPerDay: 20, reviewsPerGroupPerDay: 100, backlogAfterDays: 60, groupsPerUser: 100, itemsPerGroup: 2000 },
   practice: {
     maxQuestionsPerSession: 20, defaultQuestionsPerSession: 10, historyMonths: 6, trueFalseTruePercent: 50,
     idleSessionCloseHours: 24, reportsPerHour: 20, hintDefinitionMaxChars: 200, typeWordMaxRetries: null,
   },
+  entitlements: {
+    freePracticeSessionsPerDay: 3, proPracticeSessionsPerDay: 30, proAiPracticePerCycle: 300, proAiLookupPerCycle: 100,
+    trialAiPracticePerCycle: 300, trialAiLookupPerCycle: 100, graceDays: 7, trialReminderDaysBefore: 2,
+    renewalNoticeDaysBefore: null, aiEnabled: true, aiDailyCap: 1000, aiCapAlertPercent: 75, adsEnabled: false,
+    adsInterstitialPerDay: 3, adsMinIntervalMinutes: 10,
+  },
+  content: { privateWordsPerUser: 10000, sentencesPerSense: 20 },
 };
 
 /** Bounds are `ASSUMPTION` in design §9 (Bước 4: design 5.4); the admin page shows them next to each field. */
@@ -38,6 +62,8 @@ export const SETTINGS_BOUNDS = {
     new_per_group_per_day: { min: 1, max: 100 },
     reviews_per_group_per_day: { min: 10, max: 500, nullable: true },
     backlog_after_days: { min: 30, max: 365 },
+    groups_per_user: { min: 10, max: 1000 },
+    items_per_group: { min: 100, max: 10000 },
   },
   practice: {
     max_questions_per_session: { min: 5, max: 100 },
@@ -48,6 +74,25 @@ export const SETTINGS_BOUNDS = {
     reports_per_hour: { min: 5, max: 100 },
     hint_definition_max_chars: { min: 80, max: 500 },
     type_word_max_retries: { min: 1, max: 10, nullable: true },
+  },
+  entitlements: {
+    free_practice_sessions_per_day: { min: 1, max: 50 },
+    pro_practice_sessions_per_day: { min: 1, max: 200, at_least: 'free_practice_sessions_per_day' },
+    pro_ai_practice_per_cycle: { min: 0, max: 5000 },
+    pro_ai_lookup_per_cycle: { min: 0, max: 5000 },
+    trial_ai_practice_per_cycle: { min: 0, max: 5000 },
+    trial_ai_lookup_per_cycle: { min: 0, max: 5000 },
+    grace_days: { min: 0, max: 16 },
+    trial_reminder_days_before: { min: 1, max: 6 },
+    renewal_notice_days_before: { min: 1, max: 30, nullable: true },
+    ai_daily_cap: { min: 0, max: 100000 },
+    ai_cap_alert_percent: { min: 50, max: 95, nullable: true },
+    ads_interstitial_per_day: { min: 0, max: 20 },
+    ads_min_interval_minutes: { min: 1, max: 240 },
+  },
+  content: {
+    private_words_per_user: { min: 1000, max: 100000 },
+    sentences_per_sense: { min: 5, max: 100 },
   },
 } as const;
 
@@ -71,6 +116,8 @@ export const settingsValuesPatchSchema = z.strictObject({
     new_per_group_per_day: intIn(b.learning.new_per_group_per_day).optional(),
     reviews_per_group_per_day: intIn(b.learning.reviews_per_group_per_day).nullable().optional(),
     backlog_after_days: intIn(b.learning.backlog_after_days).optional(),
+    groups_per_user: intIn(b.learning.groups_per_user).optional(),
+    items_per_group: intIn(b.learning.items_per_group).optional(),
   }).optional(),
   practice: z.strictObject({
     max_questions_per_session: intIn(b.practice.max_questions_per_session).optional(),
@@ -81,6 +128,27 @@ export const settingsValuesPatchSchema = z.strictObject({
     reports_per_hour: intIn(b.practice.reports_per_hour).optional(),
     hint_definition_max_chars: intIn(b.practice.hint_definition_max_chars).optional(),
     type_word_max_retries: intIn(b.practice.type_word_max_retries).nullable().optional(),
+  }).optional(),
+  entitlements: z.strictObject({
+    free_practice_sessions_per_day: intIn(b.entitlements.free_practice_sessions_per_day).optional(),
+    pro_practice_sessions_per_day: intIn(b.entitlements.pro_practice_sessions_per_day).optional(),
+    pro_ai_practice_per_cycle: intIn(b.entitlements.pro_ai_practice_per_cycle).optional(),
+    pro_ai_lookup_per_cycle: intIn(b.entitlements.pro_ai_lookup_per_cycle).optional(),
+    trial_ai_practice_per_cycle: intIn(b.entitlements.trial_ai_practice_per_cycle).optional(),
+    trial_ai_lookup_per_cycle: intIn(b.entitlements.trial_ai_lookup_per_cycle).optional(),
+    grace_days: intIn(b.entitlements.grace_days).optional(),
+    trial_reminder_days_before: intIn(b.entitlements.trial_reminder_days_before).optional(),
+    renewal_notice_days_before: intIn(b.entitlements.renewal_notice_days_before).nullable().optional(),
+    ai_enabled: z.boolean().optional(),
+    ai_daily_cap: intIn(b.entitlements.ai_daily_cap).optional(),
+    ai_cap_alert_percent: intIn(b.entitlements.ai_cap_alert_percent).nullable().optional(),
+    ads_enabled: z.boolean().optional(),
+    ads_interstitial_per_day: intIn(b.entitlements.ads_interstitial_per_day).optional(),
+    ads_min_interval_minutes: intIn(b.entitlements.ads_min_interval_minutes).optional(),
+  }).optional(),
+  content: z.strictObject({
+    private_words_per_user: intIn(b.content.private_words_per_user).optional(),
+    sentences_per_sense: intIn(b.content.sentences_per_sense).optional(),
   }).optional(),
 });
 export type SettingsValuesPatch = z.infer<typeof settingsValuesPatchSchema>;
@@ -95,6 +163,8 @@ const FIELDS = [
   ['learning', 'new_per_group_per_day', 'newPerGroupPerDay'],
   ['learning', 'reviews_per_group_per_day', 'reviewsPerGroupPerDay'],
   ['learning', 'backlog_after_days', 'backlogAfterDays'],
+  ['learning', 'groups_per_user', 'groupsPerUser'],
+  ['learning', 'items_per_group', 'itemsPerGroup'],
   ['practice', 'max_questions_per_session', 'maxQuestionsPerSession'],
   ['practice', 'default_questions_per_session', 'defaultQuestionsPerSession'],
   ['practice', 'history_months', 'historyMonths'],
@@ -103,6 +173,23 @@ const FIELDS = [
   ['practice', 'reports_per_hour', 'reportsPerHour'],
   ['practice', 'hint_definition_max_chars', 'hintDefinitionMaxChars'],
   ['practice', 'type_word_max_retries', 'typeWordMaxRetries'],
+  ['entitlements', 'free_practice_sessions_per_day', 'freePracticeSessionsPerDay'],
+  ['entitlements', 'pro_practice_sessions_per_day', 'proPracticeSessionsPerDay'],
+  ['entitlements', 'pro_ai_practice_per_cycle', 'proAiPracticePerCycle'],
+  ['entitlements', 'pro_ai_lookup_per_cycle', 'proAiLookupPerCycle'],
+  ['entitlements', 'trial_ai_practice_per_cycle', 'trialAiPracticePerCycle'],
+  ['entitlements', 'trial_ai_lookup_per_cycle', 'trialAiLookupPerCycle'],
+  ['entitlements', 'grace_days', 'graceDays'],
+  ['entitlements', 'trial_reminder_days_before', 'trialReminderDaysBefore'],
+  ['entitlements', 'renewal_notice_days_before', 'renewalNoticeDaysBefore'],
+  ['entitlements', 'ai_enabled', 'aiEnabled'],
+  ['entitlements', 'ai_daily_cap', 'aiDailyCap'],
+  ['entitlements', 'ai_cap_alert_percent', 'aiCapAlertPercent'],
+  ['entitlements', 'ads_enabled', 'adsEnabled'],
+  ['entitlements', 'ads_interstitial_per_day', 'adsInterstitialPerDay'],
+  ['entitlements', 'ads_min_interval_minutes', 'adsMinIntervalMinutes'],
+  ['content', 'private_words_per_user', 'privateWordsPerUser'],
+  ['content', 'sentences_per_sense', 'sentencesPerSense'],
 ] as const;
 
 type Section = keyof AppSettings;
@@ -112,7 +199,9 @@ const read = (values: AppSettings, section: Section, field: string): AnyValue =>
   (values[section] as Record<string, AnyValue>)[field];
 
 export function toApiValues(values: AppSettings): Record<Section, Record<string, AnyValue>> {
-  const out: Record<Section, Record<string, AnyValue>> = { reminders: {}, learning: {}, practice: {} };
+  const out: Record<Section, Record<string, AnyValue>> = {
+    reminders: {}, learning: {}, practice: {}, entitlements: {}, content: {},
+  };
   for (const [section, apiKey, field] of FIELDS) out[section][apiKey] = read(values, section, field);
   return out;
 }
@@ -133,6 +222,8 @@ export function crossFieldViolations(values: AppSettings): string[] {
       : ['values.reminders.stop_after_days: Expected greater than inactive_after_days']),
     ...(values.practice.defaultQuestionsPerSession <= values.practice.maxQuestionsPerSession ? []
       : ['values.practice.default_questions_per_session: Expected at most max_questions_per_session']),
+    ...(values.entitlements.proPracticeSessionsPerDay >= values.entitlements.freePracticeSessionsPerDay ? []
+      : ['values.entitlements.pro_practice_sessions_per_day: Expected at least free_practice_sessions_per_day']),
   ];
 }
 
