@@ -111,10 +111,21 @@ describe('effectiveStatus (design §9.4 "Chuyển theo thời gian")', () => {
     expect(effectiveStatus(sub({ status: 'revoked' }), at('2027-06-01T00:00:00Z'), GRACE_DAYS)).toEqual({ status: 'revoked', overdue: false });
   });
 
-  it('a subscription without the end date it would be measured against never changes by time', () => {
+  it('a subscription with no end date at all never changes by time', () => {
     expect(effectiveStatus(sub({ currentPeriodEnd: null }), at('2027-06-01T00:00:00Z'), GRACE_DAYS)).toEqual({ status: 'active', overdue: false });
-    expect(effectiveStatus(sub({ status: 'grace', graceEndsAt: null }), at('2027-06-01T00:00:00Z'), GRACE_DAYS))
+    expect(effectiveStatus(sub({ status: 'grace', graceEndsAt: null, currentPeriodEnd: null }), at('2027-06-01T00:00:00Z'), GRACE_DAYS))
       .toEqual({ status: 'grace', overdue: false });
+  });
+
+  it('grace without grace_ends_at (e.g. copied from fetchState) ends at current_period_end + grace_days, never Pro forever', () => {
+    const grace = sub({ status: 'grace', graceEndsAt: null });
+    expect(effectiveStatus(grace, new Date(end.getTime() + GRACE_DAYS * DAY - 1), GRACE_DAYS)).toEqual({ status: 'grace', overdue: false });
+    expect(effectiveStatus(grace, new Date(end.getTime() + GRACE_DAYS * DAY), GRACE_DAYS)).toEqual({ status: 'on_hold', overdue: false });
+  });
+
+  it('trialing without trial_ends_at is measured against current_period_end', () => {
+    const trial = sub({ status: 'trialing', trialEndsAt: null });
+    expect(effectiveStatus(trial, new Date(end.getTime() + 3 * DAY), GRACE_DAYS)).toEqual({ status: 'trialing', overdue: true });
   });
 });
 

@@ -49,14 +49,17 @@ export function effectiveStatus(
   sub: SubscriptionSource, now: Date, graceDays: number,
 ): { status: SubscriptionStatus; overdue: boolean } {
   if (sub.status === 'trialing' || sub.status === 'active') {
-    const end = sub.status === 'trialing' ? sub.trialEndsAt : sub.currentPeriodEnd;
+    const end = sub.status === 'trialing' ? sub.trialEndsAt ?? sub.currentPeriodEnd : sub.currentPeriodEnd;
     if (!end || now < end) return { status: sub.status, overdue: false };
     if (sub.cancelAtPeriodEnd) return { status: 'expired', overdue: false };
     if (now.getTime() < end.getTime() + graceDays * DAY_MS) return { status: sub.status, overdue: true };
     return { status: 'on_hold', overdue: false };
   }
-  if (sub.status === 'grace' && sub.graceEndsAt && now >= sub.graceEndsAt) {
-    return { status: sub.cancelAtPeriodEnd ? 'expired' : 'on_hold', overdue: false };
+  if (sub.status === 'grace') {
+    // A grace row without grace_ends_at (a fetched state copies only the status) still ends, so it is never Pro forever.
+    const graceEnd = sub.graceEndsAt
+      ?? (sub.currentPeriodEnd ? new Date(sub.currentPeriodEnd.getTime() + graceDays * DAY_MS) : null);
+    if (graceEnd && now >= graceEnd) return { status: sub.cancelAtPeriodEnd ? 'expired' : 'on_hold', overdue: false };
   }
   return { status: sub.status, overdue: false };
 }
