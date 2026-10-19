@@ -715,3 +715,66 @@ Design doc, decision record và file tham khảo app khác viết xong. Claude n
 3. 64 KB: chấp nhận được (5 lần thử lại không phản đối).
 4. `grant-not-active`: ok. 5. Khoảng cho phép: ok, chỉnh sau được. 6. Mọi tài khoản thành Free sau Bước 5: ok.
 Design và decision record sửa theo; thêm B5#28.
+
+## Review độc lập design (19/10/2026)
+
+Chủ dự án: "cho một agent review lại design doc trước khi viết plan". Agent chạy trên nhánh `docs/buoc-5-design-review` (cắt từ `origin/dev` @ `7ede16d`), viết
+`docs/superpowers/reviews/2026-10-19-buoc-5-design-review.md`: 25 phát hiện (2 Cao, 13 Trung bình, 10 Thấp), 4 câu cho chủ dự án (Q1–Q4). Claude kiểm lại các điểm
+chính: R2 và R1 đúng theo chữ của design mục 9.2, 9.4; R5 đúng (`smoke:buoc-4` mở 20 phiên với một learner, as-built Bước 4); R15 đúng (`learner-content.guard.ts`
+trả 403 `profile-incomplete`); khóa `practice.user` có ở `practice-lock.ts`, đường ghi đáp án khóa dòng lần hỏi `FOR UPDATE` (`answers.service.ts`).
+
+**Q1 (R2) — gói tự gia hạn qua cuối kỳ mà chưa có thông báo.** Phương án: (a) vẫn Pro tới khi có thông báo / (b) vẫn Pro thêm một khoảng (ví dụ 7 ngày) rồi khóa
+tới khi có thông báo / (c) khóa ngay lúc hết kỳ tới khi có "đã gia hạn" / (d) khác. **Chủ dự án: (b).** Claude sau đó (đề xuất): dùng chung `grace_days` (7) cho khoảng
+này; trong khoảng đó job mỗi giờ hỏi lại trạng thái (`fetchState`) nếu bộ nối hỗ trợ; quá khoảng → khóa như `on_hold`; trial quá `trial_ends_at` chưa có thông báo
+cũng vậy; `renewed` tới trễ luôn đưa gói về `active` (bỏ chuyện `expired` là đường cụt, R2).
+
+**Q2 (R8) — nhiều nguồn Pro, nguồn bắt đầu sớm hơn hết trước.** Phương án đưa ra: (a) theo mốc của nguồn còn lại (như design) / (b) giữ chu kỳ cũ tới khi hết
+mọi nguồn Pro / (c) chu kỳ mới ngay lúc nguồn cũ hết / (d) khác; ví dụ Lan (trả Pro từ 1/11, được cấp "Pro tới 15/12" ngày 15/11, gói trả tiền hết 30/11, đã dùng 300
+lượt từ 16/11).
+
+**Chủ dự án:** "nếu cấp gói mới thì gói cũ hủy và gói mới được kích hoạt chứ, sao lại giữ nguyên gói cũ". Claude tách hai trường hợp: (1) gói cũ cũng do staff cấp
+→ lần cấp cũ tự thu hồi, lần cấp mới có hiệu lực, chu kỳ bắt đầu lại từ lúc cấp (ghi theo ý chủ dự án); (2) Lan đang trả tiền qua nhà cung cấp → hỏi: (a) không cho
+cấp gói khi đang trả tiền, chỉ đặt con số riêng / (b) cho cấp, Wordmet tính theo lần cấp, gói trả tiền vẫn chạy và vẫn trừ tiền / (c) cho cấp và báo nhà cung cấp tạm
+dừng gói trả tiền / (d) khác.
+
+**Chủ dự án (trường hợp 2):** "nếu cấp thì reset lại mốc, không hoàn tiền thì đúng hơn, như mình nói là nếu cấp thì hủy gói cũ và dùng gói mới, bản chất là nếu cấp thì
+Lan vẫn có thể sử dụng được gói pro, nên hoàn tiền ở đây thì không hợp lý, chỉ trừ khi có sự cố trong gói và thu hồi cấp thì mới hoàn tiền".
+
+**Claude sau đó (đề xuất, chờ chủ dự án):**
+- Cấp "một gói" Pro luôn là **gói mới**: lần cấp gói cũ (nếu có) tự thu hồi; **mốc chu kỳ đặt lại = lúc lần cấp có hiệu lực**, số đã dùng của chu kỳ mới bắt đầu từ 0.
+- Người nhận đang có gói **trả tiền tự gia hạn**: hệ thống báo nhà cung cấp **tắt tự gia hạn** (hủy cuối kỳ) để không trừ tiền kỳ sau; **không hoàn tiền**. Nếu lần cấp
+  hết trước kỳ đã trả thì phần kỳ đã trả còn lại vẫn là Pro (không mất ngày đã trả).
+- Staff phải xác nhận rõ khi cấp cho người đang trả tiền (API trả 409 `grant-not-allowed` / `target-has-paid-subscription` nếu thiếu cờ xác nhận).
+- Hoàn tiền chỉ khi có sự cố và thu hồi lần cấp: staff làm bằng tay ở trang của nhà cung cấp; app nhận sự kiện `refunded` như mục 9.4.
+- Store mobile: chưa kiểm Apple/Google có cho app tắt tự gia hạn thay người dùng không (`ASSUMPTION`: Apple chỉ người dùng tự hủy) → khi không tắt được thì báo staff.
+- Luật mốc chung (thay mục 5.5): mốc = lúc bắt đầu của **nguồn Pro bắt đầu muộn nhất** còn hiệu lực ("gói mới kích hoạt"); mua Pro trong lúc đang được cấp cũng đặt lại mốc.
+
+**Chủ dự án (19/10/2026):** "ok" với cả đề xuất trên (cấp Pro = gói mới, thu hồi lần cấp cũ, đặt lại mốc; người đang trả tiền tự gia hạn → tắt tự gia hạn, không
+hoàn tiền, phần kỳ đã trả còn lại vẫn Pro; staff phải xác nhận; hoàn tiền khi có sự cố do staff làm bằng tay ở nhà cung cấp; mốc theo nguồn Pro bắt đầu gần nhất).
+Riêng chỗ "trên iPhone app có thể không tắt được tự gia hạn thay người dùng (chưa kiểm)": **"cái này sẽ handle sau, lưu vào context giúp mình"** → ghi vào mục
+việc còn mở của design (mục 19) và nhật ký này; xử lý khi làm bộ nối Apple/Google.
+
+**Q3 (R12) — editor thu hồi lần cấp có con số lượt AI do admin đặt** (ví dụ admin đặt "lượt bài AI: 0" để chặn một tài khoản lạm dụng). Phương án: (a) được,
+như luật hiện tại (mọi lần cấp trên người học) / (b) không, lần cấp có con số lượt AI chỉ admin thu hồi / (c) editor chỉ thu hồi lần cấp do editor tạo / (d) khác.
+
+Chủ dự án "chưa rõ lắm" → Claude viết lại bằng ví dụ (Minh spam AI, admin Hà đặt "lượt bài AI: 0 tới 31/12", editor An bấm thu hồi). **Chủ dự án: (b)** — lần cấp
+có con số lượt AI chỉ admin thu hồi (dù 0 hay 500); editor vẫn thu hồi được lần cấp khác. Claude đồng ý: khớp D7 (editor không đụng lượt AI); dùng lại 409
+`grant-not-allowed` / `ai-limits-admin-only` cho thu hồi.
+
+**Q4 (R24) — hoàn tiền một phần cho kỳ hiện tại** (store, nhà cung cấp hoặc ngân hàng). Phương án: (a) như hoàn toàn phần: mất Pro ngay / (b) giữ Pro, chỉ ghi lại /
+(c) cắt ngắn kỳ theo tỉ lệ tiền hoàn / (d) khác.
+
+Chủ dự án hỏi "bối cảnh này bị gì mà hoàn tiền" → Claude nêu ba tình huống: Apple tự hoàn phần tháng chưa dùng khi nâng tháng → năm; staff chủ động hoàn một phần khi có
+sự cố; người dùng khiếu nại store hoặc ngân hàng. **Chủ dự án:** "chỗ này phải qua admin nha bạn" → hoàn tiền chủ động **chỉ admin** làm. Hỏi "store có tự quyết
+không?" → Claude trả lời từ research và trang Apple đọc lại 19/10 (`handling-refund-notifications`: khách xin qua Apple Customer Support, reportaproblem.apple.com,
+hoặc ngân hàng; App Store xử lý rồi gửi `REFUND`): Apple có; Google trong 48 giờ đầu là Google, sau đó người dùng liên hệ developer; ngân hàng tự quyết chargeback;
+web qua Paddle hoặc cổng Việt Nam chủ yếu do admin.
+
+**Chủ dự án (Q4): (a)** — "nếu hoàn tiền thì đồng nghĩa với pro mất, còn nếu trường hợp hủy mà không mất tiền thì giữ cho tới hết kỳ".
+
+**Claude sau đó:** đồng ý; một điểm kỹ thuật: hoàn tiền áp cho **kỳ của giao dịch được hoàn**, không phải cả gói. Khi Apple hoàn phần tháng chưa dùng lúc nâng lên năm,
+kỳ hiện tại là kỳ năm vừa trả (giao dịch khác) nên Lan vẫn Pro; hoàn cho kỳ đang dùng thì mất Pro ngay. Admin muốn đền bù mà không cắt Pro thì cấp thêm (ví dụ con số
+riêng) thay vì hoàn tiền.
+
+**Danh sách sửa kỹ thuật theo review** (R1–R25 trừ các câu sản phẩm; một dòng mỗi điểm): **chủ dự án "ok" (19/10/2026).** Design cập nhật (mục 0 bảng "Sau review
+độc lập"; mục 4, 5.4, 5.5, 6, 7, 8, 9, 10, 12, 13, 14, 15.6, 16, 17, 18, 19, 20); decision record thêm D31–D34.
