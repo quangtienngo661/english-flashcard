@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { IdempotencyInterceptor } from '../common/idempotency/idempotency.interceptor.js';
+import { MailModule } from '../common/mail/mail.module.js';
 import { IdentityModule } from '../identity/identity.module.js';
 import { SettingsModule } from '../settings/index.js';
 import { AdminEntitlementsController } from './api/admin-entitlements.controller.js';
@@ -13,13 +14,15 @@ import { WebhookController } from './billing/webhook.controller.js';
 import { EntitlementsService } from './entitlements.service.js';
 import { AdminGrantsController } from './grants/admin-grants.controller.js';
 import { GrantsService } from './grants/grants.service.js';
+import { NoticePlanner } from './notices/notice-planner.service.js';
+import { NoticeSender } from './notices/notice-sender.service.js';
 import { SourcesRepository } from './sources/sources.repository.js';
 import { UsageExpireJob } from './usage/usage-expire.job.js';
 import { UsageLedgerService } from './usage/usage-ledger.service.js';
 import { UsageQueries } from './usage/usage.queries.js';
 
 @Module({
-  imports: [IdentityModule, SettingsModule],
+  imports: [IdentityModule, SettingsModule, MailModule],
   controllers: [WebhookController, AdminGrantsController, AdminEntitlementsController, MeEntitlementsController],
   providers: [
     EntitlementsService,
@@ -32,6 +35,8 @@ import { UsageQueries } from './usage/usage.queries.js';
     BillingInbox,
     BillingEventApplier,
     BillingJobs,
+    NoticePlanner,
+    NoticeSender,
     { provide: BILLING_APPLY_PORT, useExisting: BillingEventApplier },
     GrantsService,
     IdempotencyInterceptor,
