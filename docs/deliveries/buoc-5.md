@@ -71,7 +71,7 @@ sửa), không tạo lần cấp mới; lần cấp Pro mới bắt đầu ở t
 # Bước 5 — as-built (19/10/2026)
 
 Design: [`2026-10-19-buoc-5-entitlements-design.md`](../superpowers/specs/2026-10-19-buoc-5-entitlements-design.md) (mục 0 có bảng "Khi implement" và
-ghi chú as-built ở cuối mục 0); decisions D1–D39: [`2026-10-19-buoc-5-entitlements-decisions.md`](../superpowers/decisions/2026-10-19-buoc-5-entitlements-decisions.md);
+ghi chú as-built ở cuối mục 0); decisions D1–D40: [`2026-10-19-buoc-5-entitlements-decisions.md`](../superpowers/decisions/2026-10-19-buoc-5-entitlements-decisions.md);
 plan: [`2026-10-19-buoc-5-entitlements.md`](../superpowers/plans/2026-10-19-buoc-5-entitlements.md). **Chỉ API** (D2); giao diện làm ở đợt sau.
 
 **Trạng thái:** 21 task đã vào `dev`; mỗi PR CI xanh (4/4 job) trước khi merge. Chưa lên `main`. Làm bằng ba phiên Claude song song
@@ -94,19 +94,21 @@ ngay, không chờ PR C1 merge: hai phiên cắt nhánh từ nhánh của C1 và
 | #72 E2 | B | Task 12–14: cấp tay (tạo, thu hồi, sửa ngày, lịch sử), API đọc, `pnpm entitlements:fake-ai`; sửa `getProfile(userId, tx?)` |
 | #74 G3 | C | **Ngoài plan, D39:** hỏi lại nhà cung cấp sau khi hoàn tiền cắt Pro; job hỏi lại 3 ngày; bộ nối giả nhớ giao dịch kỳ đang dùng (migration `20261019111147_fake_billing_transaction`) |
 | #75 G4 | C | **Ngoài plan:** bộ nối giả tính lại trạng thái từ mọi sự kiện theo `occurred_at` (B5E102; migration `20261019112136_fake_billing_history`) |
-| Z1 | điều phối | Task 20–21: `smoke:buoc-4` có bước cấp lượt, `pnpm smoke:buoc-5`, D39 vào design và decision record, as-built này |
+| #76 Z1 | điều phối | Task 20–21: `smoke:buoc-4` có bước cấp lượt, `pnpm smoke:buoc-5`, D39 vào design và decision record, as-built này |
+| #77 G5 | C | **Ngoài plan, D40:** `plan_changed` khi gói đang `grace` → `active`, xóa `grace_ends_at`, mốc mới; bộ nối giả cũng về `active` |
+| PR docs | điều phối | D40 vào design và decision record; cập nhật as-built này |
 
-Thứ tự merge thật: C1, A1, B1, C2, D1, E1, G1, F1, G2, H1, E2, G3, G4. G2 và H1 merge trước E2, vì E2 phải merge `dev` lại do xung đột một dòng ở
+Thứ tự merge thật: C1, A1, B1, C2, D1, E1, G1, F1, G2, H1, E2, G3, G4, Z1, G5. G2 và H1 merge trước E2, vì E2 phải merge `dev` lại do xung đột một dòng ở
 `entitlements.module.ts`. Phiên điều phối tự gỡ xung đột E1–G1 cho G1: gộp hai danh sách provider, rồi chạy lint, tsc, build, 1137 test trước khi push.
 
 **Số test:**
-- Unit API: **1336** (97 file) trên `dev` @ `4357411` và nhánh Z1; cuối Bước 4 là 772. Theo PR (trên nhánh hoặc trên bản gộp với `dev` lúc mở PR): C1 775,
-  B1 773, A1 790, C2 828, D1 973, E1 1100, F1 1110, G1 1137, G2 1176, H1 1212, E2 1316, G3 1333, G4 1336.
+- Unit API: **1338** (97 file) sau G5 #77 (1336 trên `dev` @ `4357411` và nhánh Z1); cuối Bước 4 là 772. Theo PR (trên nhánh hoặc trên bản gộp với `dev`
+  lúc mở PR): C1 775, B1 773, A1 790, C2 828, D1 973, E1 1100, F1 1110, G1 1137, G2 1176, H1 1212, E2 1316, G3 1333, G4 1336, G5 1338.
 - Không có e2e backend (D38 Bước 4). Lần cuối trên Z1: lint 0 lỗi (1 cảnh báo cũ ở `mail-dispatcher.service.ts`), `tsc --noEmit` 0, build qua,
   `prisma migrate diff --exit-code` 0.
 
 **"Xong khi" (D26):**
-1. CI xanh trên mọi PR (#62–#75, và Z1).
+1. CI xanh trên mọi PR (#62–#77).
 2. `pnpm smoke:buoc-5` qua API và worker thật, mỗi lần trên database mới `english_learning_smoke_b5`:
    - fetchState **bật**: **ALL CHECKS PASSED**, 39 bước, 206 giây (run id `dcbc35d7`);
    - fetchState **tắt**: **ALL CHECKS PASSED**, 39 bước, 207 giây (run id `6fd0071b`).
@@ -160,4 +162,5 @@ Script được sửa nhiều lần trước khi qua; mọi lần đều là l�
   - Bước cập nhật `paid_renewal_action` sau commit mà lỗi thì lần thử lại có thể tạo lần cấp thứ hai.
   - Log của thu hồi và sửa ngày ghi trước commit.
 - Smoke chạy đua chỉ kiểm trên một máy, với Postgres và Redis local.
-- **Q-C1 chưa chốt** (gói đang `grace` mà nâng tháng → năm có trả tiền: giữ `grace` hay chuyển `active`). Code đang theo design hiện viết: giữ `grace`.
+- **Hai lần smoke chạy trước G5 #77.** G5 chỉ đổi ô `plan_changed` × `grace` của máy trạng thái và bộ nối giả; không bước smoke nào đi qua ô này. G5 được
+  kiểm bằng unit test (bảng 91 ô, B5E105) và một lần chạy thật trên API của step-5-C. Smoke không thêm bước cho D40.
