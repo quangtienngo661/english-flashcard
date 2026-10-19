@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { IdentityModule } from '../identity/identity.module.js';
+import { SettingsModule } from '../settings/index.js';
 import { AdminCatalogController } from './catalog/admin-catalog.controller.js';
 import { AdminCatalogQueries } from './catalog/admin-catalog.queries.js';
 import { AdminEntriesController, EntryFunctionWordController } from './catalog/admin-entries.controller.js';
@@ -27,7 +28,7 @@ import { LearnerTopicsController, TopicsController } from './taxonomy/topics.con
 import { TopicsService } from './taxonomy/topics.service.js';
 
 @Module({
-  imports: [IdentityModule],
+  imports: [IdentityModule, SettingsModule],
   controllers: [
     SourcesController, PublicSourcesController, TopicsController, LearnerTopicsController,
     AdminEntriesController, EntryFunctionWordController, AdminSensesController, BatchEntriesController,
