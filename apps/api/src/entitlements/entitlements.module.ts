@@ -2,6 +2,8 @@ import { Module } from '@nestjs/common';
 import { IdempotencyInterceptor } from '../common/idempotency/idempotency.interceptor.js';
 import { IdentityModule } from '../identity/identity.module.js';
 import { SettingsModule } from '../settings/index.js';
+import { AdminEntitlementsController } from './api/admin-entitlements.controller.js';
+import { MeEntitlementsController } from './api/me-entitlements.controller.js';
 import { BillingAdapterRegistry } from './billing/billing-adapter.registry.js';
 import { EntitlementsService } from './entitlements.service.js';
 import { AdminGrantsController } from './grants/admin-grants.controller.js';
@@ -13,7 +15,7 @@ import { UsageQueries } from './usage/usage.queries.js';
 
 @Module({
   imports: [IdentityModule, SettingsModule],
-  controllers: [AdminGrantsController],
+  controllers: [AdminGrantsController, AdminEntitlementsController, MeEntitlementsController],
   providers: [
     EntitlementsService, SourcesRepository, UsageQueries, UsageLedgerService, UsageExpireJob, BillingAdapterRegistry, GrantsService,
     IdempotencyInterceptor,

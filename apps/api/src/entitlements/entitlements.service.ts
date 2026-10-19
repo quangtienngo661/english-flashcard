@@ -5,6 +5,7 @@ import { localDate, nextLocalMidnight } from '../common/time/local-date.js';
 import type { Prisma, PrismaClient } from '../generated/prisma/client.js';
 import { IdentityService } from '../identity/profile/identity.service.js';
 import { SettingsService, type AppSettings } from '../settings/index.js';
+import { alertReached, type AiUsageView } from './api/ai-usage.js';
 import type { AiPool, LimitKey, Pool, SubscriptionStatus } from './entitlements.types.js';
 import type { Refusal } from './refusal.js';
 import { aiDay, cycleAt } from './rules/cycle.js';
@@ -167,6 +168,19 @@ export class EntitlementsService {
         interstitial_per_day: entitlements.adsInterstitialPerDay, min_interval_minutes: entitlements.adsMinIntervalMinutes,
       },
       trial_eligible: profile.email_verified && !(await this.sources.trialUsed(this.prisma, userId)),
+    };
+  }
+
+  /** The system cap's day `date` (default: today in Vietnam), computed when read (D36). */
+  async aiUsage(date?: string): Promise<AiUsageView> {
+    const { entitlements } = await this.settings.get();
+    const now = this.clock.now();
+    const day = date ?? aiDay(now);
+    const { confirmed, reserved } = await this.usage.capUsed(this.prisma, day, now);
+    const used = confirmed + reserved;
+    return {
+      date: day, used, confirmed, reserved, cap: entitlements.aiDailyCap, alert_percent: entitlements.aiCapAlertPercent,
+      alert_reached: alertReached(used, entitlements.aiDailyCap, entitlements.aiCapAlertPercent), enabled: entitlements.aiEnabled,
     };
   }
 

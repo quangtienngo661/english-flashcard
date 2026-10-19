@@ -262,6 +262,18 @@ describe('EntitlementsService.recordPracticeSession', () => {
   });
 });
 
+describe('EntitlementsService.aiUsage', () => {
+  it('defaults to today in Vietnam; used = confirmed + unexpired reserved; carries cap, alert and switch (D36)', async () => {
+    const { service, usage, prisma } = setup({ entitlements: { aiDailyCap: 1000, aiCapAlertPercent: 75 }, capUsed: { confirmed: 700, reserved: 50 } });
+    expect(await service.aiUsage()).toEqual({
+      date: '2026-11-10', used: 750, confirmed: 700, reserved: 50, cap: 1000, alert_percent: 75, alert_reached: true, enabled: true,
+    });
+    expect(usage.capUsed).toHaveBeenCalledWith(prisma, '2026-11-10', NOW);
+    await service.aiUsage('2026-11-09');
+    expect(usage.capUsed).toHaveBeenLastCalledWith(prisma, '2026-11-09', NOW);
+  });
+});
+
 describe('EntitlementsService ledger calls', () => {
   it('reserve, confirm, release and refund go to the ledger unchanged', async () => {
     const { service, ledger } = setup();

@@ -236,6 +236,15 @@ export class GrantsService {
     };
   }
 
+  /** Every grant of one user, newest first (at most 100), each with its date changes (D38). */
+  async forUser(userId: string): Promise<GrantView[]> {
+    const rows = await this.prisma.entitlementGrant.findMany({
+      where: { userId }, orderBy: [{ createdAt: 'desc' }, { id: 'desc' }], take: 100,
+      include: { changes: { orderBy: [{ createdAt: 'desc' }, { id: 'desc' }] } },
+    });
+    return rows.map(({ changes, ...row }) => grantView(row, changes));
+  }
+
   private async roleOf(actorId: string): Promise<StaffRole> {
     const role = (await this.identity.getProfile(actorId))?.staff_role;
     if (role !== 'admin' && role !== 'editor') throw forbidden();
