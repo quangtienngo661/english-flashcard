@@ -97,6 +97,22 @@ describe('SessionStore sign-out failure (T9, FE38)', () => {
     expect(store.state).toEqual({ status: 'signed-out', notice: 'logout-failed' });
   });
 
+  it('a failed sign-out in tab A leaves tab B signed-out with logout-failed and the flag; a fresh store there does not refresh', async () => {
+    const hub = channelHub();
+    const a = newStore(signedInRoutes(() => problem(503, 'unavailable')), hub.create());
+    const b = newStore({ 'POST /v1/auth/refresh': () => tokenResponse('tok-9'), 'GET /v1/me': ok(makeMe()) }, hub.create());
+    await a.store.login('a@example.com', 'pw');
+    sessionStorage.clear();
+
+    await a.store.logout();
+
+    expect(b.store.state).toEqual({ status: 'signed-out', notice: 'logout-failed' });
+    expect(sessionStorage.getItem(PENDING_KEY)).toBe('1');
+    const fresh = newStore({ 'POST /v1/auth/refresh': () => tokenResponse('tok-9') });
+    await fresh.store.bootstrap();
+    expect(fresh.count('POST', '/v1/auth/refresh')).toBe(0);
+  });
+
   it('a sign-in after a failed sign-out clears the flag; a fresh store bootstraps normally', async () => {
     let logoutStatus = 503;
     const routes = {
