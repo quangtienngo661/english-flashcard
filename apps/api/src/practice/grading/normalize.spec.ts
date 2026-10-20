@@ -35,6 +35,13 @@ describe('normalizeAnswer / matchesAnswer', () => {
     expect(matchesAnswer('look\t\tup', ['look up'])).toBe(true);
   });
 
+  it('CT6: typed "a.m" matches the blank "a.m."', () => {
+    expect(normalizeAnswer('a.m.')).toBe('a.m');
+    expect(matchesAnswer('a.m', [normalizeAnswer('a.m.')])).toBe(true);
+    expect(matchesAnswer('a.m.', [normalizeAnswer('a.m.')])).toBe(true);
+    expect(normalizeAnswer('  Hello!? ')).toBe('hello');
+  });
+
   it('only spaces normalize to an empty string', () => {
     expect(normalizeAnswer(' \t  ')).toBe('');
   });
