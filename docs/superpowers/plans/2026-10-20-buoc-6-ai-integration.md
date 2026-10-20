@@ -92,7 +92,7 @@ The coordinator implements no task. It:
 1. After the owner approves the plan: commits any change the approval asked for on `docs/buoc-6-plan` (this plan, the plan review,
    `docs/deliveries/buoc-6.md`, the design and decision record D26–D28, `CLAUDE.md` pointer; design §20 is already on `dev`, PR #81),
    turns PR #82 from draft to ready, merges it into `dev` once CI is green (owner rule 16/10/2026), so
-   every session reads this plan and the design from `dev`. **The owner created step-6-A, step-6-B and step-6-C himself (20/10/2026)**:
+   every session reads this plan and the design from `dev`. **The owner created step-6-A, step-6-B and step-6-C (20/10/2026)**:
    the coordinator finds them with `ListAgents` and sends each its brief with `SendMessage` — step-6-A starts its tasks at once,
    step-6-B and step-6-C prepare their worktree and database at once and start their tasks once PR A1 is merged. A session may have
    been cut from `main` (seen in Bước 4), so each brief tells it to `git fetch origin` and cut every PR branch from `origin/dev`. The
