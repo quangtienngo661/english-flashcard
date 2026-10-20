@@ -1,12 +1,14 @@
 import { z } from 'zod';
 import { optionalPersonNameSchema, personNameSchema } from '../profile/person.js';
 
-const searchText = z.string().transform((value) => value.trim()).refine((value) => {
+const noNul = (value: string) => !value.includes('\u0000');
+/** NFC (names are stored NFC) then trim, 2-100 code points, no NUL (Postgres rejects it in text). */
+const searchText = z.string().transform((value) => value.normalize('NFC').trim()).refine((value) => {
   const length = [...value].length;
-  return length >= 2 && length <= 100;
+  return length >= 2 && length <= 100 && noNul(value);
 });
 export const adminUsersQuerySchema = z.strictObject({
-  email: z.string().max(320).optional(),
+  email: z.string().max(320).refine(noNul, 'Email cannot contain NUL').optional(),
   q: searchText.optional(),
   status: z.enum(['active', 'locked']).optional(),
   page_size: z.coerce.number().int().min(1).max(100).default(20),

@@ -69,6 +69,12 @@ describe('staff HTTP schemas and wiring (unit, isolated persistence)', () => {
     expect((await ctx.http().get('/v1/admin/users').set(auth()).query({ q: '  an  ' })).status).toBe(200);
     expect(listUsers).toHaveBeenCalledWith({ q: 'an', status: undefined, pageSize: 20, pageToken: undefined });
   });
+  it('rejects NUL in q and email with 400', async () => {
+    for (const query of [{ q: 'a\u0000b' }, { email: 'a\u0000b@x.y' }]) {
+      expect((await ctx.http().get('/v1/admin/users').set(auth()).query(query)).status).toBe(400);
+    }
+    expect(listUsers).not.toHaveBeenCalled(); expect(find).not.toHaveBeenCalled();
+  });
   it('list and detail routes bind query and id; email alone keeps the single-object response', async () => {
     const res = await ctx.http().get('/v1/admin/users').set(auth()).query({ status: 'locked', page_size: '5', page_token: 't' });
     expect(res.status).toBe(200); expect(res.body).toEqual({ items: [], next_page_token: null });
