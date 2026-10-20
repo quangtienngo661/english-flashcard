@@ -10,7 +10,8 @@ describe('profile HTTP routing (unit, isolated persistence)', () => {
   let ctx: TestApp;
   let token: string;
   let row: { id: string; email: string; emailVerifiedAt: Date | null; nativeLanguage: string | null;
-    timezone: string; staffRole: string | null } | null;
+    timezone: string; staffRole: string | null; mustChangePassword: boolean; givenName: string | null;
+    familyName: string | null; birthDate: Date | null } | null;
   let userId: string;
   const prisma = { user: { findUnique: vi.fn(), update: vi.fn() }, $disconnect: async () => {} };
   const hit = vi.spyOn(RateLimiter.prototype, 'hit');
@@ -24,7 +25,7 @@ describe('profile HTTP routing (unit, isolated persistence)', () => {
   beforeEach(async () => {
     userId = randomUUID();
     row = { id: userId, email: 'a@example.com', emailVerifiedAt: null, nativeLanguage: null,
-      timezone: 'Asia/Saigon', staffRole: null };
+      timezone: 'Asia/Saigon', staffRole: null, mustChangePassword: false, givenName: null, familyName: null, birthDate: null };
     prisma.user.findUnique.mockReset().mockImplementation(async () => row && { ...row });
     prisma.user.update.mockReset().mockImplementation(async ({ data }) => {
       if (!row) throw { code: 'P2025' };
@@ -42,7 +43,8 @@ describe('profile HTTP routing (unit, isolated persistence)', () => {
     const res = await get();
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ id: userId, email: row!.email, email_verified: false, native_language: null,
-      timezone: row!.timezone, staff_role: null, permissions: [] });
+      timezone: row!.timezone, staff_role: null, permissions: [], must_change_password: false,
+      given_name: null, family_name: null, birth_date: null });
     row!.emailVerifiedAt = ctx.clock.now();
     for (const staffRole of ['admin', 'editor']) {
       row!.staffRole = staffRole;
@@ -61,7 +63,8 @@ describe('profile HTTP routing (unit, isolated persistence)', () => {
       const res = await patch({ native_language: language });
       expect(res.status).toBe(200);
       expect(res.body).toEqual({ id: userId, email: before.email, email_verified: false, native_language: language,
-        timezone: before.timezone, staff_role: null, permissions: [] });
+        timezone: before.timezone, staff_role: null, permissions: [], must_change_password: false,
+        given_name: null, family_name: null, birth_date: null });
     }
     expect((await patch({ timezone: 'Asia/Saigon' })).status).toBe(200);
     const alias = await patch({ timezone: 'asia/ho_chi_minh' });
@@ -76,7 +79,8 @@ describe('profile HTTP routing (unit, isolated persistence)', () => {
     for (const body of [{ native_language: 'fr' }, { native_language: null }, { native_language: 42 },
       { timezone: 42 }, { timezone: null }, { timezone: 'x'.repeat(65) },
       { native_language: 'en', timezone: 'Mars/Base' }, { timezone: 'UTC\u0000' }, { timezone: '+07:00' },
-      { timezone: 'UTC', extra: true }, { staff_role: 'admin' }, { email_verified: true }]) {
+      { timezone: 'UTC', extra: true }, { staff_role: 'admin' }, { email_verified: true },
+      { birth_date: '2000-01-01' }, { given_name: null }, { given_name: '' }, { given_name: '   ' }, { given_name: 'x'.repeat(51) }]) {
       const res = await patch(body);
       expect(res.status).toBe(400);
       expect(res.body.type).toBe('https://api.example.com/problems/validation-failed');
@@ -85,6 +89,24 @@ describe('profile HTTP routing (unit, isolated persistence)', () => {
       expect(row).toEqual(before);
     }
     expect(prisma.user.update).not.toHaveBeenCalled();
+  });
+  it('GET /v1/me returns names and birth date (null for an old account)', async () => {
+    expect((await get()).body).toMatchObject({ given_name: null, family_name: null, birth_date: null });
+    Object.assign(row!, { givenName: 'Lan', familyName: 'Nguyen', birthDate: new Date('2000-02-29T00:00:00Z') });
+    expect((await get()).body).toMatchObject({ given_name: 'Lan', family_name: 'Nguyen', birth_date: '2000-02-29' });
+  });
+  it('FE15: an old account sets given_name', async () => {
+    const res = await patch({ given_name: '  Lan ' });
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({ given_name: 'Lan', family_name: null, birth_date: null });
+    expect(row!.givenName).toBe('Lan');
+  });
+  it('PATCH family_name null clears it', async () => {
+    row!.familyName = 'Nguyen';
+    const res = await patch({ family_name: null });
+    expect(res.status).toBe(200);
+    expect(res.body.family_name).toBeNull(); expect(row!.familyName).toBeNull();
+    expect((await patch({ family_name: '' })).body.family_name).toBeNull();
   });
   it('B1#24: an empty PATCH returns the current profile', async () => {
     const before = { ...row! };
