@@ -8,7 +8,8 @@ import type { SaveDraftResult } from './senses.service.js';
 
 export type PublishViolation = 'gloss-missing' | 'example-missing' | 'level-missing';
 export type PublishItemResult = { outcome: 'published' | 'already_published' } | {
-  outcome: 'refused'; reason: 'stale-revision' | 'publish-incomplete' | 'sense-not-found' | 'sense-retired';
+  outcome: 'refused';
+  reason: 'stale-revision' | 'revision-rejected' | 'publish-incomplete' | 'sense-not-found' | 'sense-retired' | 'sense-unpublished';
   violations?: PublishViolation[];
 };
 export type PublishItem = { senseId: string; revision: number };
@@ -43,9 +44,9 @@ export class PublishService {
     @Inject(Clock) private readonly clock: Clock,
   ) {}
 
-  // `opts.skipUnpublished` is declared for the publish job (Task 15) and not read yet.
-  async publishItem(item: PublishItem, actorId: string, _opts?: { skipUnpublished?: boolean }): Promise<PublishItemResult> {
-    return await this.writeSense(item.senseId, (tx) => this.publishRevision(tx, item, actorId))
+  /** `skipUnpublished` is for the publish job: it must not reopen a sense staff hid after the job's snapshot (FE21). */
+  async publishItem(item: PublishItem, actorId: string, opts?: { skipUnpublished?: boolean }): Promise<PublishItemResult> {
+    return await this.writeSense(item.senseId, (tx) => this.publishRevision(tx, item, actorId, opts))
       ?? { outcome: 'refused', reason: 'sense-not-found' };
   }
 
@@ -86,7 +87,9 @@ export class PublishService {
     }, transactionOptions);
   }
 
-  private async publishRevision(tx: Prisma.TransactionClient, item: PublishItem, actorId: string): Promise<PublishItemResult> {
+  private async publishRevision(
+    tx: Prisma.TransactionClient, item: PublishItem, actorId: string, opts?: { skipUnpublished?: boolean },
+  ): Promise<PublishItemResult> {
     const now = this.clock.now();
     const sense = await tx.sense.findUnique({ where: { id: item.senseId }, include: {
       revisions: { orderBy: { revisionNo: 'desc' }, take: 1, include: { texts: true } },
@@ -96,6 +99,11 @@ export class PublishService {
     const revision = sense.revisions[0];
     if (!revision || revision.revisionNo !== item.revision) return { outcome: 'refused', reason: 'stale-revision' };
     if (sense.state === 'open' && sense.liveRevisionId === revision.id) return { outcome: 'already_published' };
+    // A reviewer's rejection is final for that revision; a superseded one was replaced by a newer write.
+    // A `published` latest revision stays publishable: it is how an unpublished sense is republished.
+    if (revision.status === 'rejected') return { outcome: 'refused', reason: 'revision-rejected' };
+    if (revision.status === 'superseded') return { outcome: 'refused', reason: 'stale-revision' };
+    if (opts?.skipUnpublished && sense.state === 'unpublished') return { outcome: 'refused', reason: 'sense-unpublished' };
 
     const hasLevel = await tx.entryLevel.findFirst({ where: { entryId: sense.entryId }, select: { id: true } });
     const violations = publishViolations(revision, hasLevel !== null);
