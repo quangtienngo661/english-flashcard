@@ -11,6 +11,8 @@ mô tả *cách làm*; file này trả lời *tại sao chọn vậy và đã b�
 > "Mình duyệt bản design Bước 6 đã sửa" (20/10/2026). **Đã chốt toàn bộ.**
 > **Cập nhật 20/10/2026 (review plan):** ba câu của review plan chốt thành D26–D28; con số 16.000 của D28 chủ dự án xác nhận khi duyệt plan (20/10/2026). Một chỗ sửa kỹ thuật
 > của bảng lỗi Anthropic ghi ở mục "Đề xuất kỹ thuật sau review plan".
+> **Cập nhật 20/10/2026 (lúc implement):** D29 (biến môi trường `*_CUSTOM_HEADERS` của hai SDK) do phiên step-6-B tìm ra khi làm Task 8; phiên điều
+> phối hỏi chủ dự án trong chat, chủ dự án chọn (d).
 
 **Nhãn:** ✅ = phương án được chọn. **Ai chốt:** "Chủ dự án" = chọn trong chat; "Đề xuất của Claude" = Claude đề xuất sau khi chủ dự án trả lời, hoặc
 khi chủ dự án để trống một phần, chủ dự án đồng ý; "Duyệt cùng design" = Claude đề xuất khi trình một phần design, chủ dự án duyệt cả phần.
@@ -52,6 +54,7 @@ cách viết prompt theo nhà cung cấp và model); research chỉ nêu dữ ki
 | D26 | Ngôn ngữ lời dặn ban đầu (review plan, Q1) | Plan không chốt: lời dặn sửa được trong admin; bản nạp ban đầu chỉ là điểm khởi đầu (viết tiếng Anh); câu chặn do code giữ viết tiếng Anh | Chủ dự án (câu chặn tiếng Anh: đề xuất của Claude) |
 | D27 | Trình độ của câu khi từ không có level (review plan, Q2) | Level không bắt buộc: có thì dặn theo level, không có thì không nhắm trình độ nào | Chủ dự án |
 | D28 | Model Anthropic không cho biết số token tối đa (review plan, Q3) | Ô số token vẫn để trống được; khi đó gửi một số cố định trong code (16.000) | Chủ dự án (con số 16.000: đề xuất của Claude, chủ dự án xác nhận khi duyệt plan 20/10/2026) |
+| D29 | Biến `OPENAI_CUSTOM_HEADERS` / `ANTHROPIC_CUSTOM_HEADERS` (lúc implement, Task 8) | API, worker và mọi CLI từ chối khởi động khi một trong hai biến được đặt | Chủ dự án (chi tiết: đề xuất của Claude) |
 
 ## D1 — Cách làm việc
 
@@ -407,6 +410,35 @@ Claude đề xuất con số **16.000** (`ANTHROPIC_MAX_TOKENS_FALLBACK`, `ASSUM
 - Ước tính "lời gọi đắt nhất" dùng 16.000.
 
 Chủ dự án xác nhận khi duyệt plan (20/10/2026): "Duyệt plan, kèm Appendix A và 16 000".
+
+## D29 — Biến môi trường `*_CUSTOM_HEADERS` của hai SDK (lúc implement, Task 8)
+
+Bối cảnh:
+- Phiên step-6-B tìm ra khi làm Task 8 (plan review #6 sót). SDK `openai` 7.39.0 đọc `OPENAI_CUSTOM_HEADERS` (`client.js:253`) và SDK
+  `@anthropic-ai/sdk` 0.135.0 đọc `ANTHROPIC_CUSTOM_HEADERS` (`client.js:159`). SDK gắn các dòng header trong biến vào **mọi** request, và không có
+  tùy chọn nào để tắt. Phiên step-6-B thử thật: `OPENAI_CUSTOM_HEADERS="OpenAI-Organization: org-env"` làm request mang header
+  `openai-organization: org-env`.
+- Plan đã đặt tường minh mọi tùy chọn khác mà SDK tự đọc từ môi trường (địa chỉ gửi, tổ chức, project, log), nhưng không có tùy chọn nào cho hai biến
+  này.
+- Ví dụ hỏi chủ dự án: trên máy chủ có `OPENAI_CUSTOM_HEADERS="OpenAI-Organization: org-khac"`, Lan bấm tạo câu → lời gọi bị tính tiền vào tổ chức
+  khác, không có gì báo lỗi.
+- Lúc hỏi (20/10/2026), shell trên máy này không đặt biến nào như vậy, chỉ có `ANTHROPIC_BASE_URL`.
+
+| Phương án | Trade-off |
+|---|---|
+| (a) Để nguyên, ghi rủi ro vào design §19 | Không tốn công; không chặn gì |
+| (b) Lọc header theo danh sách cho phép (bọc `fetch` truyền cho SDK) | Chặn hết; phải sửa danh sách khi SDK thêm header, sót thì lời gọi thật hỏng, chỉ lộ khi gọi thật |
+| (c) Xóa vài header đã biết (`OpenAI-Organization`, `OpenAI-Project`…) | Đơn giản; header lạ vẫn đi qua |
+| ✅ (d) API và worker từ chối khởi động khi một trong hai biến được đặt (như `BILLING_PRODUCTION` + bản giả) | Chặn hết, đơn giản; ai lỡ đặt biến thì app không lên tới khi gỡ biến, có báo tên biến |
+
+Chủ dự án: "chọn (d)".
+
+Claude đồng ý (d) và đề xuất ba chi tiết:
+- Giá trị rỗng hoặc chỉ có khoảng trắng coi như **không đặt**, vì SDK cũng bỏ qua giá trị rỗng.
+- Chặn ở `loadConfig`, nên API, worker và mọi CLI (`ai:fake-call`, `maintenance:run`…) cùng từ chối. Thông báo nêu tên biến, không bao giờ in giá trị
+  (giá trị có thể chứa token).
+- Bộ nối không lọc header. Các tùy chọn khác mà SDK tự đọc từ môi trường vẫn đặt tường minh, cùng tinh thần plan review #6 (`adminAPIKey`,
+  `webhookSecret`, `webhookKey` là `null`; `openTelemetry: false`). Phiên step-6-B thêm các tùy chọn này lúc làm Task 8–9; phiên điều phối duyệt.
 
 ## Đề xuất kỹ thuật sau review plan (20/10/2026)
 
