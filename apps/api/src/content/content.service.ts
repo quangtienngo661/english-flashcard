@@ -12,7 +12,7 @@ import {
 } from './private/private-words.service.js';
 import { SentencesService, type Sentence } from './sentences/sentences.service.js';
 import { WordsService, type WordSense } from './words/words.service.js';
-import { practiceCandidates, practiceSenses, type CandidateSense, type PracticeSense } from './practice/practice-senses.js';
+import { practiceCandidates, practiceLemmaMeanings, practiceSenses, type CandidateSense, type LemmaMeanings, type PracticeSense } from './practice/practice-senses.js';
 import { InflectionsService, type EntryByForm, type InflectionInput, type InflectionSource } from './inflections/inflections.service.js';
 import { SourcesService, isSourceComplete, type SourceView } from './sources/sources.service.js';
 import { SensesService, type CreateSenseInput, type SaveDraftInput, type SaveDraftResult, type MarkRevisionItem, type MarkRevisionResult } from './senses/senses.service.js';
@@ -188,6 +188,12 @@ export class ContentService {
   practiceCandidates(viewerId: string, senseIds: string[], nativeLanguage: 'vi' | 'en', db?: Prisma.TransactionClient | PrismaClient):
     Promise<Map<string, CandidateSense>> {
     return practiceCandidates(db ?? this.prisma, viewerId, senseIds, nativeLanguage);
+  }
+
+  /** Every visible meaning of these lemmas (case-insensitive), so a distractor is never also right (T6/FE25). */
+  practiceLemmaMeanings(viewerId: string, lemmas: string[], _nativeLanguage: 'vi' | 'en', db?: Prisma.TransactionClient | PrismaClient):
+    Promise<LemmaMeanings> {
+    return practiceLemmaMeanings(db ?? this.prisma, viewerId, lemmas);
   }
 
   visibleSenseIds(viewerId: string, senseIds: string[]): Promise<Set<string>> {

@@ -59,7 +59,7 @@ describe('QuestionBuilder — reads through the client it is given (PX4)', () =>
       definition_en: null, form_of_entry_id: null, function_word: false,
     }] as const;
     const ids = ['a2', 'a3', 'a4'];
-    content.practiceCandidates.mockImplementation((async () => new Map([
+    content.practiceCandidates.mockImplementation((async () => new Map<string, unknown>([
       [senseId, cat], mate('a2', 'dog', 'con chó'), mate('a3', 'bird', 'con chim'), mate('a4', 'kitty', 'mèo con'),
     ])) as never);
     learning.practiceGroupMates.mockImplementation((async () => new Map([[senseId, ids]])) as never);
