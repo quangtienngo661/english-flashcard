@@ -51,6 +51,19 @@ function sameForms(current: Array<{ form: string; kind: string }>, next: Array<{
   return current.length === next.length && key(current) === key(next);
 }
 
+/** Only a batch that applied this content holds its key (T3, D14), so reverting that batch frees the row again.
+ * The key is unique without its batch: a live holder keeps it, a reverted batch's leftover passes to this batch. */
+async function claimContentKey(tx: Prisma.TransactionClient, batchId: string, row: NormalizedRow): Promise<void> {
+  const key = { kind: 'content', sourceId: OWNER_SOURCE_ID, rowKey: contentKey(row).key, contentHash: rowContentHash(row) };
+  const existing = await tx.importRowKey.findUnique({ where: { kind_sourceId_rowKey_contentHash: key },
+    select: { batchId: true, batch: { select: { revertedAt: true } } } });
+  if (!existing) {
+    await tx.importRowKey.createMany({ data: [{ ...key, batchId }], skipDuplicates: true });
+  } else if (existing.batch.revertedAt !== null) {
+    await tx.importRowKey.update({ where: { kind_sourceId_rowKey_contentHash: key }, data: { batchId } });
+  }
+}
+
 @Injectable()
 export class ImportRowProcessor {
   constructor(@Inject(ContentService) private readonly content: ContentService) {}
@@ -94,11 +107,10 @@ export class ImportRowProcessor {
                 ? { meta: { replacedRevisionId: result.supersededRevisionId,
                   replacedRevisionPreviousStatus: result.droppedReviewedMark ? 'reviewed' : 'draft' } } : {}),
             });
-            // Only the batch that wrote this content keeps its key (T3, D14): reverting that batch then frees the row again.
-            await tx.importRowKey.createMany({ data: [{
-              kind: 'content', sourceId: OWNER_SOURCE_ID, rowKey: contentKey(row).key, contentHash: rowContentHash(row), batchId: batch.id,
-            }], skipDuplicates: true });
           }
+          // Created, new revision or unchanged (rejected threw above). On unchanged this gives a row imported before content
+          // keys existed its key on the first re-upload (FE16), unless a live batch already holds it.
+          await claimContentKey(tx, batch.id, row);
         }
 
         if (changes.entryCreated && row.inflections === null) {

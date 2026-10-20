@@ -13,11 +13,13 @@ const row = (patch: Partial<NormalizedRow> = {}): NormalizedRow => ({
 
 type ImportResult = Awaited<ReturnType<ContentService['importContent']>>;
 
-function setup(opts: { importResult?: ImportResult; reviewedForms?: Array<{ form: string; kind: string }> } = {}) {
+function setup(opts: { importResult?: ImportResult; reviewedForms?: Array<{ form: string; kind: string }>;
+  existingKey?: { batchId: string; batch: { revertedAt: Date | null } } } = {}) {
   const tx = {
     backgroundJob: { findUniqueOrThrow: vi.fn(async () => ({ createdBy: 'staff-1' })) },
     batchRecord: { createMany: vi.fn(async () => ({ count: 1 })), findMany: vi.fn(async () => []) },
-    importRowKey: { createMany: vi.fn(async () => ({ count: 1 })) },
+    importRowKey: { createMany: vi.fn(async () => ({ count: 1 })), findUnique: vi.fn(async () => opts.existingKey ?? null),
+      update: vi.fn(async () => ({})) },
     importRowOutcome: { createMany: vi.fn(async () => ({ count: 1 })) },
     entry: { findUniqueOrThrow: vi.fn(async () => ({ inflectionsReviewedAt: new Date('2026-10-01T00:00:00Z') })) },
     entryInflection: { findMany: vi.fn(async () => (opts.reviewedForms ?? []).map((form) => ({ ...form, source: 'reviewed' }))) },
@@ -89,14 +91,39 @@ describe('ImportRowProcessor content-applied rows (T3, D14)', () => {
     expect(tx.importRowKey.createMany).toHaveBeenCalledWith(contentKeyWrite(normalized, 'batch-b'));
   });
 
-  it('not after an unchanged content outcome', async () => {
+  it('FE16: unchanged with no live key writes the key (a legacy row gets one on its first re-upload)', async () => {
     const { tx, content, ctx, processor, batch } = setup({ importResult: { kind: 'unchanged', senseId: 'sense-1' } });
+    const normalized = row();
+
+    await processor.process(ctx, batch, normalized, { contentApplied: false });
+
+    expect(content.importContent).toHaveBeenCalledOnce();
+    expect(tx.importRowKey.createMany).toHaveBeenCalledWith(contentKeyWrite(normalized, 'batch-b'));
+  });
+
+  it('unchanged with a live key from another batch writes nothing', async () => {
+    const { tx, ctx, processor, batch } = setup({ importResult: { kind: 'unchanged', senseId: 'sense-1' },
+      existingKey: { batchId: 'batch-a', batch: { revertedAt: null } } });
 
     await processor.process(ctx, batch, row(), { contentApplied: false });
 
-    expect(content.importContent).toHaveBeenCalledOnce();
     expect(tx.importRowKey.createMany).not.toHaveBeenCalledWith(expect.objectContaining({
       data: [expect.objectContaining({ kind: 'content' })] }));
+    expect(tx.importRowKey.update).not.toHaveBeenCalled();
+  });
+
+  it.each<[string, ImportResult]>([
+    ['unchanged', { kind: 'unchanged', senseId: 'sense-1' }],
+    ['created', { kind: 'created_sense', senseId: 'sense-1', revisionId: 'rev-1' }],
+  ])('%s with only a reverted batch\'s key: the key now belongs to the current batch', async (_label, importResult) => {
+    const { tx, ctx, processor, batch } = setup({ importResult,
+      existingKey: { batchId: 'batch-a', batch: { revertedAt: new Date('2026-10-21T00:00:00Z') } } });
+    const normalized = row();
+
+    await processor.process(ctx, batch, normalized, { contentApplied: false });
+
+    const key = { kind: 'content', sourceId: OWNER_SOURCE_ID, rowKey: contentKey(normalized).key, contentHash: rowContentHash(normalized) };
+    expect(tx.importRowKey.update).toHaveBeenCalledWith({ where: { kind_sourceId_rowKey_contentHash: key }, data: { batchId: 'batch-b' } });
   });
 
   it('a rejected content step writes no content key', async () => {
