@@ -49,12 +49,13 @@ function toAdminRow(row: Omit<AdminListRow, 'cursor_at'>): AdminUserRow {
   return {
     id: row.id, email: row.email, given_name: row.given_name, family_name: row.family_name,
     email_verified: row.email_verified_at !== null, staff_role: row.staff_role as StaffRole | null,
-    status: row.status === 'locked' ? 'locked' : 'active', created_at: row.created_at.toISOString(),
+    // Cast once: Bước 8 adds 'deleting'; a new status must not be reported as active.
+    status: row.status as 'active' | 'locked', created_at: row.created_at.toISOString(),
     last_seen_at: row.last_seen_at?.toISOString() ?? null,
   };
 }
 const staffSelect = {
-  id: true, email: true, emailVerifiedAt: true, staffRole: true, givenName: true, familyName: true,
+  id: true, email: true, emailVerifiedAt: true, staffRole: true, givenName: true, familyName: true, status: true,
 } satisfies Prisma.UserSelect;
 type StaffRow = Prisma.UserGetPayload<{ select: typeof staffSelect }>;
 const transactionOptions = { timeout: 10_000, maxWait: 5_000 };
@@ -251,7 +252,7 @@ export class StaffService {
       await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended('identity.staff_role', 0))`;
       const target = await tx.user.findUnique({ where: { id: targetId }, select: staffSelect });
       if (!target) throw staffUserNotFound();
-      if (role !== null && target.emailVerifiedAt === null) throw roleRule();
+      if (role !== null && (target.emailVerifiedAt === null || target.status === 'locked')) throw roleRule();
       if (target.staffRole === 'admin' && role !== 'admin' && await tx.user.count({ where: { staffRole: 'admin' } }) <= 1) {
         throw roleRule();
       }

@@ -160,7 +160,8 @@ describe('registration and login (unit, isolated persistence)', () => {
     await expect(auth.login(body)).rejects.toMatchObject({ status: 403, problemType: 'account-locked', problemTitle: 'Account locked' });
     expect(committed).toBe(true); expect(sessions.startChain).not.toHaveBeenCalled(); expect(tx.user.update).not.toHaveBeenCalled();
     expect(logs).toEqual([expect.objectContaining({ event: 'login_failed', user_id: user.id })]);
-    expect(Object.keys(logs[0]).sort()).toEqual(['event', 'level', 'user_id']);
+    expect(Object.keys(logs[0]).sort()).toEqual(['event', 'level', 'reason', 'user_id']);
+    expect(logs[0].reason).toBe('account_locked');
   });
   it('N4: locked + wrong password → 401 and the failed count increments', async () => {
     hasher.verify.mockResolvedValue(false);

@@ -67,6 +67,16 @@ describe('StaffService (unit, isolated persistence)', () => {
     await staff.setStaffRole('actor', target.id, null);
     expect(tx.user.update).toHaveBeenCalledOnce(); expect(tx.user.count).not.toHaveBeenCalled();
   });
+  it('refuses promoting a locked account; demoting a locked admin stays allowed', async () => {
+    tx.user.findUnique.mockResolvedValue({ ...target, staffRole: null, status: 'locked' });
+    for (const role of ['admin', 'editor'] as const) {
+      await expect(staff.setStaffRole('actor', target.id, role)).rejects.toMatchObject({ status: 409, problemType: 'staff-role-rule' });
+    }
+    expect(tx.user.update).not.toHaveBeenCalled(); expect(write).not.toHaveBeenCalled();
+    tx.user.findUnique.mockResolvedValue({ ...target, staffRole: 'admin', status: 'locked' });
+    await staff.setStaffRole('actor', target.id, null);
+    expect(tx.user.update).toHaveBeenCalledOnce();
+  });
   it('B1#27: missing target is 404 without a write or change log', async () => {
     tx.user.findUnique.mockResolvedValue(null);
     await expect(staff.setStaffRole('actor', target.id, 'editor')).rejects.toMatchObject({ status: 404, problemType: 'not-found' });

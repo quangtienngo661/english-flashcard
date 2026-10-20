@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { AppLogger } from '../../common/logging/app-logger.js';
 import type { PrismaClient } from '../../generated/prisma/client.js';
+import { adminUsersQuerySchema } from './staff.schemas.js';
 import { StaffService } from './staff.service.js';
 
 describe('StaffService.listUsers / getUserDetail (unit, isolated persistence)', () => {
@@ -16,6 +17,16 @@ describe('StaffService.listUsers / getUserDetail (unit, isolated persistence)', 
     vi.resetAllMocks();
     staff = new StaffService(prisma as unknown as PrismaClient, new AppLogger({ write: vi.fn() }),
       undefined as never, undefined as never, undefined as never, undefined as never, undefined as never, undefined as never);
+  });
+  it('passes an unknown stored status through instead of reporting it as active', async () => {
+    prisma.$queryRaw.mockResolvedValue([{ ...row(1), status: 'deleting' }]);
+    expect((await staff.listUsers({ pageSize: 20 })).items[0].status).toBe('deleting');
+  });
+  it('binds an NFC pattern for a decomposed query', async () => {
+    prisma.$queryRaw.mockResolvedValue([]);
+    const q = adminUsersQuerySchema.parse({ q: 'Nguyễn' }).q!;
+    await staff.listUsers({ q, pageSize: 20 });
+    expect(sqlOf().values).toContain('%' + 'Nguyễn' + '%');
   });
   it('FE14: q "50%" is escaped so the percent sign matches literally', async () => {
     prisma.$queryRaw.mockResolvedValue([]);

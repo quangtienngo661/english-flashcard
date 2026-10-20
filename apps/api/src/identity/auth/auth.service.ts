@@ -115,7 +115,8 @@ export class AuthService {
       }) };
     }, transactionOptions);
     if (outcome.kind !== 'ok') {
-      this.logger.info('login_failed', { user_id: account.id });
+      this.logger.info('login_failed', outcome.kind === 'account_locked'
+        ? { user_id: account.id, reason: 'account_locked' } : { user_id: account.id });
       if (outcome.newlyLocked) this.logger.warn('login_locked', { user_id: account.id });
       // Reached only with the right password: a wrong one on a locked account stays the generic 401.
       if (outcome.kind === 'account_locked') throw accountLocked();
