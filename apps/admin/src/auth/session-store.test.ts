@@ -80,6 +80,23 @@ describe('SessionStore sign-out failure (T9, FE38)', () => {
     expect(count('POST', '/v1/auth/refresh')).toBe(0);
   });
 
+  it('logout answered 429 counts as failed (the server did nothing)', async () => {
+    const { store } = newStore(signedInRoutes(() => problem(429, 'rate-limited')));
+    await store.login('a@example.com', 'pw');
+    await store.logout();
+    expect(store.state).toEqual({ status: 'signed-out', notice: 'logout-failed' });
+    expect(sessionStorage.getItem(PENDING_KEY)).toBe('1');
+  });
+
+  it('retryLogout answered 429 keeps the flag and the notice', async () => {
+    sessionStorage.setItem(PENDING_KEY, '1');
+    const { store } = newStore({ 'POST /v1/auth/logout': () => problem(429, 'rate-limited') });
+    await store.bootstrap();
+    await store.retryLogout();
+    expect(sessionStorage.getItem(PENDING_KEY)).toBe('1');
+    expect(store.state).toEqual({ status: 'signed-out', notice: 'logout-failed' });
+  });
+
   it('a sign-in after a failed sign-out clears the flag; a fresh store bootstraps normally', async () => {
     let logoutStatus = 503;
     const routes = {
