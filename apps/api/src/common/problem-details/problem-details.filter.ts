@@ -1,4 +1,5 @@
 import { ArgumentsHost, Catch, ExceptionFilter, HttpException, HttpStatus } from '@nestjs/common';
+import type { AppLogger } from '../logging/app-logger.js';
 import type { RequestWithOperationId } from '../logging/operation-id.middleware.js';
 import { ProblemDetailsException, type ProblemDetailsOptions } from './problem-details.exception.js';
 
@@ -11,7 +12,10 @@ interface ProblemDetailsResponse {
 
 @Catch()
 export class ProblemDetailsFilter implements ExceptionFilter {
-  constructor(private readonly problemTypeBase?: string) {}
+  constructor(
+    private readonly problemTypeBase?: string,
+    private readonly logger?: AppLogger,
+  ) {}
 
   catch(exception: unknown, host: ArgumentsHost): void {
     const ctx = host.switchToHttp();
@@ -19,6 +23,15 @@ export class ProblemDetailsFilter implements ExceptionFilter {
     const request = ctx.getRequest<Partial<RequestWithOperationId>>();
 
     const { status, type, title, detail, extensions, retryAfterSeconds } = this.toProblemDetails(exception);
+    if (status >= HttpStatus.INTERNAL_SERVER_ERROR) {
+      // The 500 body carries no cause; this line is the only trace tying its operation_id to a failure. It logs the
+      // route pattern (never the URL, which holds ids and query strings) and no message (it can hold row values).
+      this.logger?.error('request_failed', exception, {
+        method: request.method,
+        route: request.route?.path ?? 'unmatched',
+        stack: stackFrames(exception),
+      });
+    }
     if (retryAfterSeconds !== undefined) {
       response.setHeader('Retry-After', String(retryAfterSeconds));
     }
@@ -84,6 +97,18 @@ export class ProblemDetailsFilter implements ExceptionFilter {
       title: 'Internal Server Error',
     };
   }
+}
+
+const MAX_LOGGED_STACK_LINES = 10;
+
+// The first lines of `stack` are `Name: message`, and the message can span several lines (Prisma's does), so keep
+// only the `at ...` frames: they locate the failure without carrying any value from the request or the database.
+function stackFrames(exception: unknown): string[] {
+  const stack = exception !== null && typeof exception === 'object' && 'stack' in exception ? exception.stack : undefined;
+  if (typeof stack !== 'string') return [];
+  return stack.split('\n').map((line) => line.trim())
+    .filter((line) => line.startsWith('at '))
+    .slice(0, MAX_LOGGED_STACK_LINES);
 }
 
 function isExposedClientError(exception: unknown): exception is { status: number } {
