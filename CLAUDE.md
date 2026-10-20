@@ -41,7 +41,10 @@ under `apps/api` and `apps/admin`. Historical implementation branches:
   Bước 5 every account is Free** (3 practice sessions a day), the owner's and test accounts included; an `admin` grants Pro or custom
   numbers when needed (D9). Its UI comes in a later round.
 
-**Next (19/10/2026):** Bước 6 (AI Integration) is being brainstormed in a separate session. The learner UI for Bước 3–5 is still to be
+**Next (20/10/2026):** Bước 6 (AI Integration, API only): design approved 20/10/2026
+(`docs/superpowers/specs/2026-10-20-buoc-6-ai-integration-design.md`; decisions D1–D25 in
+`docs/superpowers/decisions/2026-10-20-buoc-6-ai-integration-decisions.md`; independent review
+`docs/superpowers/reviews/2026-10-20-buoc-6-design-review.md`); the implementation plan comes next. The learner UI for Bước 3–5 is still to be
 built. **Deploy** (hosting, durable Postgres/Redis, real SMTP, secrets, backup; design 2.5 §14) moved to **when the whole app is
 complete, before launch** (D3 round 3 of Bước 3, 18/10/2026): until then the owner tries the app locally (reminder emails land in
 Mailpit), `/app/*` stays blocked on production, and design Bước 3 §14 (things only checkable once deployed) is checked just before
@@ -179,8 +182,10 @@ decided-but-not-scaffolded:
   IANA timezone; per-user write rate limiting with 429 + retry-after.
 - Background jobs: **BullMQ + Redis, for real background work only** (batch content authoring/import) —
   user-facing flows (question generation, answer grading) call AI directly in-request, not via queue.
-- AI access goes through a provider port/adapter (`AiProvider`) so the provider can change later; no
-  provider is chosen yet.
+- AI access goes through one gateway module `ai` with a provider port (`AiAdapter`): **OpenAI and Anthropic** through their
+  official SDKs, plus a fake provider for tests and the smoke. No model is fixed in code: the admin adds models and chooses the
+  model, effort and max output tokens per operation (`generate_cloze`, `lookup_word`, `translate_sentence`); no automatic switch
+  between providers (Bước 6 design, D2, D6, D7, D13, D16, D21, D22, D25).
 - Identity: email+password (self-built) and Google OAuth 2.0; OTP via Google SMTP for email verification
   and password reset only (never for login); per-device logout.
 - Entitlements are per-feature (no single `is_pro` flag); entitlement ("allowed at all") is separate from
