@@ -140,11 +140,11 @@ export class SessionStore {
     this.set({ status: 'signed-out', notice: null });
   }
 
-  /** True when the server has it: a network error or a 5xx is the only failure (200/204/401/403 all mean "no session left"). */
+  /** True when the server has it: 2xx, 401 and 403 mean "no session left"; 429, 5xx and a network error mean the server did nothing. */
   private async postLogout(): Promise<boolean> {
     try {
       const res = await this.raw('/v1/auth/logout', json('POST', {}, this.csrf()), this.token);
-      return res.status < 500;
+      return res.ok || res.status === 401 || res.status === 403;
     } catch {
       return false;
     }
