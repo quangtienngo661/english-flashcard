@@ -4,7 +4,7 @@ import { ProblemDetailsException } from '../../common/problem-details/problem-de
 import type { Prisma, PrismaClient } from '../../generated/prisma/client.js';
 import { permissionsFor, type Permission, type StaffRole, type SupportedLanguage } from '../identity.types.js';
 import type { UpdateProfileBody } from './profile.schemas.js';
-import { isValidTimeZone } from './timezone.js';
+import { canonicalTimeZone } from './timezone.js';
 
 export interface Profile {
   id: string;
@@ -87,17 +87,18 @@ export class IdentityService {
   }
 
   async updateProfile(userId: string, body: UpdateProfileBody): Promise<Profile | null> {
-    if (body.timezone !== undefined && !isValidTimeZone(body.timezone)) {
+    const timezone = body.timezone === undefined ? undefined : canonicalTimeZone(body.timezone);
+    if (timezone === null) {
       throw new ProblemDetailsException({ status: 400, title: 'Validation failed', type: 'validation-failed' });
     }
-    if (body.native_language === undefined && body.timezone === undefined) return this.getProfile(userId);
+    if (body.native_language === undefined && timezone === undefined) return this.getProfile(userId);
     try {
       // One partial update changes only profile fields and returns the stored profile.
       const row = await this.prisma.user.update({
         where: { id: userId },
         data: {
           ...(body.native_language !== undefined ? { nativeLanguage: body.native_language } : {}),
-          ...(body.timezone !== undefined ? { timezone: body.timezone } : {}),
+          ...(timezone !== undefined ? { timezone } : {}),
         },
         select: profileSelect,
       });

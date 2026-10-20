@@ -15,7 +15,7 @@ import type { StaffRole } from '../identity.types.js';
 import { MailBudget } from '../../common/mail/mail-budget.service.js';
 import { MailDispatcher, sendPrepared } from '../../common/mail/mail-dispatcher.service.js';
 import { staffAccountMail } from '../mailer/templates.js';
-import { isValidTimeZone } from '../profile/timezone.js';
+import { canonicalTimeZone } from '../profile/timezone.js';
 import { withUserLock } from '../user-lock.js';
 import { generatePassword } from './password-generator.js';
 import { idParam, type CreateAccountBody } from './staff.schemas.js';
@@ -53,7 +53,8 @@ export class StaffService {
   /** The password only ever leaves through the mail: never in the response or a log line. */
   async createAccount(actorId: string, body: CreateAccountBody, res: Response): Promise<StaffUserView> {
     const email = normalizeEmail(body.email);
-    if (!email || !isValidTimeZone(body.timezone)) throw invalidInput();
+    const timezone = canonicalTimeZone(body.timezone);
+    if (!email || timezone === null) throw invalidInput();
     if (body.password !== undefined) {
       const violations = checkPasswordPolicy(body.password);
       if (violations.length > 0) throw new ProblemDetailsException({ status: 400, title: 'Validation failed',
@@ -69,7 +70,7 @@ export class StaffService {
         await withUserLock(tx, userId);
         const now = this.clock.now();
         const created = await tx.user.create({ data: {
-          id: userId, email, timezone: body.timezone, emailVerifiedAt: now, staffRole: body.staff_role,
+          id: userId, email, timezone, emailVerifiedAt: now, staffRole: body.staff_role,
           mustChangePassword: body.must_change_password, createdAt: now, updatedAt: now,
         }, select: staffSelect });
         await tx.passwordCredential.create({ data: { userId, hash, updatedAt: now } });

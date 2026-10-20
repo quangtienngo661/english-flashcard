@@ -1,5 +1,11 @@
-import { describe, expect, it } from 'vitest';
-import { addDays, daysBetween, localDate, localTime, nextLocalMidnight, zonedMidnight } from './local-date.js';
+import { describe, expect, it, vi } from 'vitest';
+import { addDays, daysBetween, formatterCacheSize, localDate, localTime, nextLocalMidnight, zonedMidnight } from './local-date.js';
+
+/** The `i`-th distinct upper/lower-case spelling of `name`: bit k of `i` upper-cases the k-th letter. */
+function spelling(name: string, i: number): string {
+  let bit = 0;
+  return [...name].map((char) => (char.toLowerCase() === char.toUpperCase() ? char : ((i >> bit++) & 1) === 1 ? char.toUpperCase() : char.toLowerCase())).join('');
+}
 
 describe('local dates', () => {
   it('Review Focus 1: 2026-11-01T10:30Z is 2026-11-02 in Pacific/Kiritimati and 2026-10-31 in Etc/GMT+12; America/New_York maps 05:30Z and 06:30Z on 2026-11-01 to 01:30 and 01:30 (DST end) and both to 2026-11-01', () => {
@@ -67,5 +73,38 @@ describe('local dates', () => {
 
   it('nextLocalMidnight at exactly 00:00 local is the following midnight', () => {
     expect(nextLocalMidnight('Asia/Ho_Chi_Minh', new Date('2026-11-01T17:00:00Z')).toISOString()).toBe('2026-11-02T17:00:00.000Z');
+  });
+});
+
+describe('formatter cache', () => {
+  const now = new Date('2026-11-01T10:30:00Z');
+
+  it('C2: 600 spellings of one zone leave at most 500 formatters cached and still format correctly', () => {
+    const variants = Array.from({ length: 600 }, (_, i) => spelling('Asia/Ho_Chi_Minh', i));
+    expect(new Set(variants).size).toBe(600);
+    for (const variant of variants) expect(localDate(variant, now)).toBe('2026-11-01');
+    expect(formatterCacheSize()).toBeLessThanOrEqual(500);
+    expect(formatterCacheSize()).toBeGreaterThan(0);
+  });
+
+  it('C2: a hit refreshes the entry, so the least recently used spelling is the one evicted', () => {
+    const Original = Intl.DateTimeFormat;
+    const construct = vi.spyOn(Intl, 'DateTimeFormat').mockImplementation(function (locales?: Intl.LocalesArgument, options?: Intl.DateTimeFormatOptions) {
+      return new Original(locales, options);
+    } as never);
+    try {
+      const variants = Array.from({ length: 502 }, (_, i) => spelling('Europe/Berlin', i));
+      for (const variant of variants.slice(0, 500)) localDate(variant, now);
+      localDate(variants[0], now); // refresh the oldest entry
+      localDate(variants[500], now); // evicts the next oldest, variants[1]
+      construct.mockClear();
+      localDate(variants[0], now);
+      expect(construct).not.toHaveBeenCalled();
+      localDate(variants[1], now);
+      expect(construct).toHaveBeenCalledOnce();
+      expect(formatterCacheSize()).toBeLessThanOrEqual(500);
+    } finally {
+      construct.mockRestore();
+    }
   });
 });

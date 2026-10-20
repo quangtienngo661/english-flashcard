@@ -24,7 +24,7 @@ describe('profile HTTP routing (unit, isolated persistence)', () => {
   beforeEach(async () => {
     userId = randomUUID();
     row = { id: userId, email: 'a@example.com', emailVerifiedAt: null, nativeLanguage: null,
-      timezone: 'Asia/Ho_Chi_Minh', staffRole: null };
+      timezone: 'Asia/Saigon', staffRole: null };
     prisma.user.findUnique.mockReset().mockImplementation(async () => row && { ...row });
     prisma.user.update.mockReset().mockImplementation(async ({ data }) => {
       if (!row) throw { code: 'P2025' };
@@ -55,7 +55,7 @@ describe('profile HTTP routing (unit, isolated persistence)', () => {
     }
     expect(hit).not.toHaveBeenCalled();
   });
-  it('B1#24/S8: partial PATCH changes vi then en, preserving other fields and accepted aliases', async () => {
+  it('B1#24/S8/C2: partial PATCH changes vi then en, preserving other fields and storing an accepted alias as its canonical name', async () => {
     const before = { ...row! };
     for (const language of ['vi', 'en']) {
       const res = await patch({ native_language: language });
@@ -64,8 +64,8 @@ describe('profile HTTP routing (unit, isolated persistence)', () => {
         timezone: before.timezone, staff_role: null, permissions: [] });
     }
     expect((await patch({ timezone: 'Asia/Saigon' })).status).toBe(200);
-    const alias = await patch({ timezone: 'Asia/Ho_Chi_Minh' });
-    expect(alias.status).toBe(200); expect(alias.body.timezone).toBe('Asia/Ho_Chi_Minh');
+    const alias = await patch({ timezone: 'asia/ho_chi_minh' });
+    expect(alias.status).toBe(200); expect(alias.body.timezone).toBe('Asia/Saigon');
     expect(alias.body.native_language).toBe('en');
     expect(row).toEqual({ ...before, nativeLanguage: 'en' });
     expect(hit).toHaveBeenCalledTimes(4);
@@ -75,7 +75,7 @@ describe('profile HTTP routing (unit, isolated persistence)', () => {
     const before = { ...row! };
     for (const body of [{ native_language: 'fr' }, { native_language: null }, { native_language: 42 },
       { timezone: 42 }, { timezone: null }, { timezone: 'x'.repeat(65) },
-      { native_language: 'en', timezone: 'Mars/Base' }, { timezone: 'UTC\u0000' },
+      { native_language: 'en', timezone: 'Mars/Base' }, { timezone: 'UTC\u0000' }, { timezone: '+07:00' },
       { timezone: 'UTC', extra: true }, { staff_role: 'admin' }, { email_verified: true }]) {
       const res = await patch(body);
       expect(res.status).toBe(400);

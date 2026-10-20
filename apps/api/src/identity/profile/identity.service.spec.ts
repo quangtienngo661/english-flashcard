@@ -42,17 +42,17 @@ describe('IdentityService (unit, isolated persistence)', () => {
     expect(await identity.getProfile(row.id)).toBeNull();
     expect(await identity.isEmailVerified(row.id)).toBe(false);
   });
-  it('B1#24: an invalid timezone rejects the whole update before persistence', async () => {
-    await expect(identity.updateProfile(row.id, { native_language: 'en', timezone: 'Mars/Base' }))
+  it.each(['Mars/Base', '+07:00'])('B1#24/C2: an invalid or offset timezone (%s) rejects the whole update before persistence', async (timezone) => {
+    await expect(identity.updateProfile(row.id, { native_language: 'en', timezone }))
       .rejects.toMatchObject({ status: 400, problemType: 'validation-failed' });
     expect(prisma.user.update).not.toHaveBeenCalled();
   });
-  it('B1#24: update returns stored fields and preserves the accepted timezone alias as sent', async () => {
-    const profile = await identity.updateProfile(row.id, { native_language: 'vi', timezone: 'Asia/Ho_Chi_Minh' });
+  it('B1#24/C2: update stores and returns the canonical spelling of the timezone, not the one sent', async () => {
+    const profile = await identity.updateProfile(row.id, { native_language: 'vi', timezone: 'asia/ho_chi_minh' });
     expect(profile).toEqual({ id: row.id, email: row.email, email_verified: false, native_language: 'vi',
-      timezone: 'Asia/Ho_Chi_Minh', staff_role: null, permissions: [] });
+      timezone: 'Asia/Saigon', staff_role: null, permissions: [] });
     expect(prisma.user.update.mock.calls[0][0]).toMatchObject({ where: { id: row.id },
-      data: { nativeLanguage: 'vi', timezone: 'Asia/Ho_Chi_Minh' } });
+      data: { nativeLanguage: 'vi', timezone: 'Asia/Saigon' } });
   });
   it('B1#24: a missing update target returns null while unexpected persistence errors propagate', async () => {
     prisma.user.update.mockRejectedValue({ code: 'P2025' });

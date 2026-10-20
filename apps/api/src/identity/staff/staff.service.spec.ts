@@ -1,9 +1,15 @@
 import { randomUUID } from 'node:crypto';
+import type { Response } from 'express';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { FakeClock } from '../../common/clock/clock.js';
 import { AppLogger } from '../../common/logging/app-logger.js';
+import type { MailBudget } from '../../common/mail/mail-budget.service.js';
+import type { MailDispatcher } from '../../common/mail/mail-dispatcher.service.js';
 import { runWithOperationId } from '../../common/logging/request-context.js';
 import { encodePageToken } from '../../common/pagination/page-token.util.js';
 import type { PrismaClient } from '../../generated/prisma/client.js';
+import { testConfig } from '../../../test/support/test-config.js';
+import type { PasswordHasher } from '../auth/password-hasher.service.js';
 import { StaffService } from './staff.service.js';
 
 describe('StaffService (unit, isolated persistence)', () => {
@@ -108,5 +114,41 @@ describe('StaffService (unit, isolated persistence)', () => {
     tx.user.update.mockRejectedValue(new Error('database unavailable'));
     await expect(staff.setStaffRole('actor', target.id, 'editor')).rejects.toThrow('database unavailable');
     expect(committed).toBe(false); expect(write).not.toHaveBeenCalled();
+  });
+});
+
+describe('StaffService.createAccount timezone (unit, isolated persistence)', () => {
+  const tx = { $executeRaw: vi.fn(), user: { create: vi.fn() }, passwordCredential: { create: vi.fn() } };
+  const prisma = { $transaction: vi.fn() };
+  const budget = { assertAvailable: vi.fn() };
+  const hasher = { hash: vi.fn() };
+  const dispatcher = { afterResponse: vi.fn() };
+  const body = { email: 'New@Example.com', staff_role: 'editor' as const, must_change_password: true, timezone: 'Asia/Ho_Chi_Minh' };
+  const res = {} as Response;
+  let staff: StaffService;
+  beforeEach(() => {
+    vi.resetAllMocks();
+    tx.$executeRaw.mockResolvedValue(1);
+    tx.user.create.mockImplementation(async ({ data }) => ({ id: data.id, email: data.email, emailVerifiedAt: data.emailVerifiedAt,
+      staffRole: data.staffRole }));
+    prisma.$transaction.mockImplementation(async (fn) => fn(tx));
+    budget.assertAvailable.mockResolvedValue(undefined); hasher.hash.mockResolvedValue('hash');
+    staff = new StaffService(prisma as unknown as PrismaClient, new AppLogger({ write: vi.fn() }),
+      new FakeClock(new Date('2026-10-20T12:00:00Z')), testConfig(), hasher as unknown as PasswordHasher,
+      budget as unknown as MailBudget, dispatcher as unknown as MailDispatcher);
+  });
+
+  it.each(['+07:00', 'Mars/Base'])('C2/FE32: %s is rejected as validation-failed before budget, hash or DB work', async (timezone) => {
+    await expect(staff.createAccount('actor', { ...body, timezone }, res))
+      .rejects.toMatchObject({ status: 400, problemType: 'validation-failed' });
+    expect(budget.assertAvailable).not.toHaveBeenCalled(); expect(hasher.hash).not.toHaveBeenCalled();
+    expect(prisma.$transaction).not.toHaveBeenCalled(); expect(dispatcher.afterResponse).not.toHaveBeenCalled();
+  });
+  it('C2: a valid zone is stored under its canonical name, whatever case the admin typed', async () => {
+    for (const timezone of ['asia/ho_chi_minh', 'Asia/Ho_Chi_Minh', 'Asia/Saigon']) {
+      tx.user.create.mockClear();
+      await staff.createAccount('actor', { ...body, timezone }, res);
+      expect(tx.user.create.mock.calls[0][0].data.timezone).toBe('Asia/Saigon');
+    }
   });
 });
