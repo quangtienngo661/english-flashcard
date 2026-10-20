@@ -1,0 +1,10 @@
+PL1 round-1 rejected.csv re-uploads: rows 1 rawHeaders ["headword","pos","_row","_error"]
+PL1 round-2 rejected.csv re-upload refused:  Duplicate header "_row" after trimming and lower-casing. Rename or remove the repeated column.
+PL2 import 1: succeeded [{"rowNumber":2,"outcome":"created"}] publish rev1 {"outcome":"published"}
+PL2 API edit rev2 200 publish rev2 200 {"results":[{"sense_id":"4e1f064b-bda8-443f-8bf4-4424ea82065d","outcome":"published"}]}
+PL2 import 2 of the same bytes: succeeded row outcomes [{"rowNumber":2,"outcome":"updated"}]
+PL2 revisions now: [{"revisionNo":1,"status":"superseded","draftSource":"csv","examples":["Original example."]},{"revisionNo":2,"status":"published","draftSource":"ui","examples":["Edited example."]},{"revisionNo":3,"status":"draft","draftSource":"csv","examples":["Original example."]}]
+PL3 batches A/B/C: succeeded succeeded succeeded [{"rowNumber":2,"outcome":"updated"}] [{"rowNumber":2,"outcome":"created"}]
+PL3 before revert: {"porkReviewedAt":"2026-10-18T12:00:00.000Z","wentFormOf":"10498973-8a7b-438d-b5a4-38ee7f45dfc2","privateFormOf":"ff9222ee-5565-4136-bdc6-d82e637ec8a9"} private sense created {"entryId":"71bf27b2-8abe-4802-bf13-4ecd1178b866","senseId":"2fb0b1db-833c-4b27-aa94-7364ad0e64e8","createdEntry":true,"
+PL3 revert A: 200 {"report":{"removed":{"entry":3,"variant":0,"level":3,"sense":0,"revision":0},"skipped":[]}}
+PL3 after revert: {"entries":[],"wentRevision":{"formOfEntryId":null,"formKind":null},"privateRevision":{"formOfEntryId":null,"formKind":null}}
