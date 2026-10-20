@@ -46,3 +46,25 @@ describe('PrivateWordsService.createPrivateSense', () => {
     expect(settingsService.get).toHaveBeenCalledWith(tx);
   });
 });
+
+describe('PrivateWordsService audit columns (N3)', () => {
+  it("N3: a private word's revision is published by its owner", async () => {
+    const now = new Date('2026-10-21T08:00:00.000Z');
+    const { tx } = setup(0);
+    const full = {
+      ...tx,
+      entry: { ...tx.entry, create: vi.fn(async () => ({ id: 'e1' })), findFirst: vi.fn(async () => null) },
+      sense: { findMany: vi.fn(async () => []), create: vi.fn(async () => ({ id: 's1' })), update: vi.fn(async () => ({})) },
+      senseRevision: { updateMany: vi.fn(async () => ({})), create: vi.fn(async () => ({ id: 'r1' })) },
+      entryLevel: { findFirst: vi.fn(async () => null), create: vi.fn(async () => ({})) },
+    };
+    const settings = structuredClone(SETTINGS_DEFAULTS);
+    const service = new PrivateWordsService({} as PrismaClient, new FakeClock(now), {} as LevelsService,
+      { replaceInflections: vi.fn(async () => undefined) } as unknown as InflectionsService,
+      { get: vi.fn(async () => settings) } as unknown as SettingsService);
+    await service.createPrivateSense(full as unknown as Prisma.TransactionClient, input);
+    expect(full.senseRevision.create).toHaveBeenCalledWith({ data: expect.objectContaining({ publishedBy: 'u1' }), select: { id: true } });
+    expect(full.sense.update).toHaveBeenCalledWith({ where: { id: 's1' }, data: {
+      state: 'open', liveRevisionId: 'r1', stateChangedBy: 'u1', stateChangedAt: now } });
+  });
+});

@@ -43,26 +43,26 @@ export class PublishService {
     @Inject(Clock) private readonly clock: Clock,
   ) {}
 
-  // Revision authorship stays immutable; the schema has no separate publisher column.
-  async publishItem(item: PublishItem, _actorId: string): Promise<PublishItemResult> {
-    return await this.writeSense(item.senseId, (tx) => this.publishRevision(tx, item))
+  // `opts.skipUnpublished` is declared for the publish job (Task 15) and not read yet.
+  async publishItem(item: PublishItem, actorId: string, _opts?: { skipUnpublished?: boolean }): Promise<PublishItemResult> {
+    return await this.writeSense(item.senseId, (tx) => this.publishRevision(tx, item, actorId))
       ?? { outcome: 'refused', reason: 'sense-not-found' };
   }
 
-  unpublish(senseIds: string[]): Promise<SenseStateResult[]> {
-    return this.changeStates(senseIds, 'unpublished');
+  unpublish(senseIds: string[], actorId: string): Promise<SenseStateResult[]> {
+    return this.changeStates(senseIds, 'unpublished', actorId);
   }
 
-  retire(senseIds: string[]): Promise<SenseStateResult[]> {
-    return this.changeStates(senseIds, 'retired');
+  retire(senseIds: string[], actorId: string): Promise<SenseStateResult[]> {
+    return this.changeStates(senseIds, 'retired', actorId);
   }
 
   async quickPublish(
-    senseId: string, saveDraft: (tx: Prisma.TransactionClient) => Promise<SaveDraftResult>,
+    senseId: string, actorId: string, saveDraft: (tx: Prisma.TransactionClient) => Promise<SaveDraftResult>,
   ): Promise<QuickPublishResult> {
     const result = await this.writeSense(senseId, async (tx) => {
       const draft = await saveDraft(tx);
-      const published = await this.publishRevision(tx, { senseId, revision: draft.revisionNo });
+      const published = await this.publishRevision(tx, { senseId, revision: draft.revisionNo }, actorId);
       if (published.outcome === 'refused') {
         // Throw inside the transaction: even supersession of the previous open revision rolls back.
         if (published.reason === 'publish-incomplete') throw new PublishIncompleteError(published.violations ?? []);
@@ -86,7 +86,8 @@ export class PublishService {
     }, transactionOptions);
   }
 
-  private async publishRevision(tx: Prisma.TransactionClient, item: PublishItem): Promise<PublishItemResult> {
+  private async publishRevision(tx: Prisma.TransactionClient, item: PublishItem, actorId: string): Promise<PublishItemResult> {
+    const now = this.clock.now();
     const sense = await tx.sense.findUnique({ where: { id: item.senseId }, include: {
       revisions: { orderBy: { revisionNo: 'desc' }, take: 1, include: { texts: true } },
     } });
@@ -102,26 +103,34 @@ export class PublishService {
 
     // This must precede the replacement's live pointer: senses_entry_label_live_key is not deferred.
     if (sense.replacesSenseId !== null) {
-      await tx.sense.update({ where: { id: sense.replacesSenseId }, data: { state: 'retired' } });
+      await tx.sense.update({ where: { id: sense.replacesSenseId }, data: {
+        state: 'retired', stateChangedBy: actorId, stateChangedAt: now,
+      } });
     }
     if (sense.liveRevisionId !== null && sense.liveRevisionId !== revision.id) {
       await tx.senseRevision.update({ where: { id: sense.liveRevisionId }, data: { status: 'superseded' } });
     }
     await tx.senseRevision.update({ where: { id: revision.id }, data: {
-      status: 'published', publishedAt: revision.publishedAt ?? this.clock.now(),
+      status: 'published', publishedAt: revision.publishedAt ?? now, publishedBy: actorId,
     } });
-    await tx.sense.update({ where: { id: sense.id }, data: { state: 'open', liveRevisionId: revision.id } });
+    await tx.sense.update({ where: { id: sense.id }, data: {
+      state: 'open', liveRevisionId: revision.id, stateChangedBy: actorId, stateChangedAt: now,
+    } });
     return { outcome: 'published' };
   }
 
-  private async changeStates(senseIds: string[], state: 'unpublished' | 'retired'): Promise<SenseStateResult[]> {
+  private async changeStates(
+    senseIds: string[], state: 'unpublished' | 'retired', actorId: string,
+  ): Promise<SenseStateResult[]> {
     const results: SenseStateResult[] = [];
     for (const senseId of senseIds) {
       const result = await this.writeSense(senseId, async (tx): Promise<SenseStateResult> => {
         const sense = await tx.sense.findUnique({ where: { id: senseId }, select: { state: true } });
         if (!sense) return { senseId, ok: false, reason: 'sense-not-found' };
         if (sense.state === 'retired' && state !== 'retired') return { senseId, ok: false, reason: 'sense-retired' };
-        if (sense.state !== state) await tx.sense.update({ where: { id: senseId }, data: { state } });
+        if (sense.state !== state) await tx.sense.update({ where: { id: senseId }, data: {
+          state, stateChangedBy: actorId, stateChangedAt: this.clock.now(),
+        } });
         // Keep live_revision_id and published_at: unpublish hides content without erasing publication history.
         return { senseId, ok: true };
       });

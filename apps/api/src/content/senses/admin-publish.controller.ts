@@ -40,17 +40,17 @@ export class AdminPublishController {
   @Post('unpublish')
   @HttpCode(200)
   @RateLimit('user.write')
-  async unpublish(@Body({ schema: stateSchema }) body: z.infer<typeof stateSchema>) {
+  async unpublish(@Body({ schema: stateSchema }) body: z.infer<typeof stateSchema>, @CurrentUser() actor: RequestUser) {
     this.checkSize(body.sense_ids.length);
-    return this.stateResults(await this.content.unpublish(body.sense_ids));
+    return this.stateResults(await this.content.unpublish(body.sense_ids, actor.userId));
   }
 
   @Post('retire')
   @HttpCode(200)
   @RateLimit('user.write')
-  async retire(@Body({ schema: stateSchema }) body: z.infer<typeof stateSchema>) {
+  async retire(@Body({ schema: stateSchema }) body: z.infer<typeof stateSchema>, @CurrentUser() actor: RequestUser) {
     this.checkSize(body.sense_ids.length);
-    return this.stateResults(await this.content.retire(body.sense_ids));
+    return this.stateResults(await this.content.retire(body.sense_ids, actor.userId));
   }
 
   @Post(':id/quick-publish')

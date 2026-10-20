@@ -111,7 +111,10 @@ export class SensesService {
     return { revisionId: revision.id, revisionNo: revision.revisionNo, changed: true, droppedTopics };
   }
 
-  async markRevisions(tx: Prisma.TransactionClient, items: MarkRevisionItem[]): Promise<MarkRevisionResult[]> {
+  async markRevisions(
+    tx: Prisma.TransactionClient, items: MarkRevisionItem[], actorId: string,
+  ): Promise<MarkRevisionResult[]> {
+    const now = new Date();
     const results: MarkRevisionResult[] = [];
     for (const item of items) {
       const sense = await tx.sense.findUnique({ where: { id: item.senseId }, include: {
@@ -125,9 +128,13 @@ export class SensesService {
         results.push({ senseId: item.senseId, ok: false, reason });
         continue;
       }
-      await tx.senseRevision.update({ where: { id: latest.id }, data: { status: item.action } });
+      await tx.senseRevision.update({ where: { id: latest.id }, data: {
+        status: item.action, reviewedBy: actorId, reviewedAt: now,
+      } });
       if (item.action === 'rejected' && sense.replacesSenseId !== null && sense.liveRevisionId === null) {
-        await tx.sense.update({ where: { id: sense.id }, data: { state: 'retired' } });
+        await tx.sense.update({ where: { id: sense.id }, data: {
+          state: 'retired', stateChangedBy: actorId, stateChangedAt: now,
+        } });
       }
       results.push({ senseId: item.senseId, ok: true });
     }

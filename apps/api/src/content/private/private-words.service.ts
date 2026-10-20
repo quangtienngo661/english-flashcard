@@ -98,18 +98,21 @@ export class PrivateWordsService {
   }
 
   private async publishRevision(tx: Tx, senseId: string, revisionNo: number, content: RevisionContent, ownerId: string): Promise<void> {
+    const now = this.clock.now();
     const texts = [
       ...(content.glossVi ? [{ language: 'vi', kind: 'gloss', text: content.glossVi }] : []),
       ...(content.definitionEn ? [{ language: 'en', kind: 'definition', text: content.definitionEn }] : []),
     ];
     await tx.senseRevision.updateMany({ where: { senseId, status: 'published' }, data: { status: 'superseded' } });
     const revision = await tx.senseRevision.create({ data: {
-      senseId, revisionNo, status: 'published', draftSource: 'user', createdBy: ownerId, publishedAt: this.clock.now(),
+      senseId, revisionNo, status: 'published', draftSource: 'user', createdBy: ownerId, publishedAt: now, publishedBy: ownerId,
       contentHash: contentHash(content), examples: content.examplesEn, topicCodes: content.topicCodes,
       acceptedForms: content.acceptedForms, formOfEntryId: content.formOf?.entryId ?? null, formKind: content.formOf?.kind ?? null,
       texts: { create: texts },
     }, select: { id: true } });
-    await tx.sense.update({ where: { id: senseId }, data: { state: 'open', liveRevisionId: revision.id } });
+    await tx.sense.update({ where: { id: senseId }, data: {
+      state: 'open', liveRevisionId: revision.id, stateChangedBy: ownerId, stateChangedAt: now,
+    } });
   }
 
   private async ownedEntry(tx: Tx, ownerId: string, entryId: string) {

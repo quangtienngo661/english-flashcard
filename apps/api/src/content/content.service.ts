@@ -96,24 +96,24 @@ export class ContentService {
     return revertRecords(this.prisma, this.entries, records);
   }
 
-  markRevisions(tx: Prisma.TransactionClient, items: MarkRevisionItem[]): Promise<MarkRevisionResult[]> {
-    return this.senses.markRevisions(tx, items);
+  markRevisions(tx: Prisma.TransactionClient, items: MarkRevisionItem[], actorId: string): Promise<MarkRevisionResult[]> {
+    return this.senses.markRevisions(tx, items, actorId);
   }
 
-  publishItem(item: PublishItem, actorId: string): Promise<PublishItemResult> {
-    return this.publish.publishItem(item, actorId);
+  publishItem(item: PublishItem, actorId: string, opts?: { skipUnpublished?: boolean }): Promise<PublishItemResult> {
+    return this.publish.publishItem(item, actorId, opts);
   }
 
-  unpublish(senseIds: string[]): Promise<SenseStateResult[]> {
-    return this.publish.unpublish(senseIds);
+  unpublish(senseIds: string[], actorId: string): Promise<SenseStateResult[]> {
+    return this.publish.unpublish(senseIds, actorId);
   }
 
-  retire(senseIds: string[]): Promise<SenseStateResult[]> {
-    return this.publish.retire(senseIds);
+  retire(senseIds: string[], actorId: string): Promise<SenseStateResult[]> {
+    return this.publish.retire(senseIds, actorId);
   }
 
   quickPublish(input: Omit<SaveDraftInput, 'source'>): Promise<QuickPublishResult> {
-    return this.publish.quickPublish(input.senseId, (tx) => this.saveDraft(tx, { ...input, source: 'ui' }));
+    return this.publish.quickPublish(input.senseId, input.actorId, (tx) => this.saveDraft(tx, { ...input, source: 'ui' }));
   }
 
   latestRevisions(senseIds: string[]): Promise<Map<string, LatestRevision>> {

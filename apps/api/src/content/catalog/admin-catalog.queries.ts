@@ -5,6 +5,7 @@ import { PRISMA_CLIENT } from '../../common/db/prisma.module.js';
 import { decodeBoundToken, encodeBoundToken } from '../../common/pagination/page-token.util.js';
 import { ProblemDetailsException } from '../../common/problem-details/problem-details.exception.js';
 import type { Prisma, PrismaClient } from '../../generated/prisma/client.js';
+import { IdentityService } from '../../identity/profile/identity.service.js';
 import { BATCH_SCOPE, type BatchScope } from '../batch-scope.port.js';
 import { INFLECTION_KINDS, LEVELS, VALID_POS, type InflectionKind, type Level } from '../content.constants.js';
 import { publishViolations } from '../senses/publish.service.js';
@@ -190,6 +191,7 @@ async function page<Row, View>(
 export class AdminCatalogQueries {
   constructor(
     @Inject(PRISMA_CLIENT) private readonly prisma: PrismaClient,
+    @Inject(IdentityService) private readonly identity: IdentityService,
     @Optional() @Inject(BATCH_SCOPE) private readonly batchScope?: BatchScope,
   ) {}
 
@@ -389,7 +391,17 @@ export class AdminCatalogQueries {
   async getSense(id: string) {
     const row = await this.prisma.sense.findFirst({ where: { id, entry: catalogWhere }, include: senseInclude });
     if (!row) throw new ProblemDetailsException({ status: 404, title: 'Not found', type: 'not-found' });
-    return senseView(row);
+    const revision = row.revisions[0];
+    const emails = await this.identity.emailsOf(
+      [revision?.reviewedBy, revision?.publishedBy, row.stateChangedBy].filter((actor): actor is string => !!actor));
+    const actor = (userId: string | null | undefined) => (userId ? { id: userId, email: emails.get(userId) ?? null } : null);
+    return {
+      ...senseView(row),
+      // Audit of the revision shown above and of the sense's latest unpublish, retire or replacement (N3).
+      reviewed_by: actor(revision?.reviewedBy), reviewed_at: revision?.reviewedAt?.toISOString() ?? null,
+      published_by: actor(revision?.publishedBy),
+      state_changed_by: actor(row.stateChangedBy), state_changed_at: row.stateChangedAt?.toISOString() ?? null,
+    };
   }
 
   async latestRevisions(senseIds: string[]): Promise<Map<string, LatestRevision>> {

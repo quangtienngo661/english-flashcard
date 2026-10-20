@@ -94,14 +94,14 @@ export class AdminSensesController {
   @Post('review')
   @HttpCode(200)
   @RateLimit('user.write')
-  async review(@Body({ schema: reviewSchema }) body: z.infer<typeof reviewSchema>) {
+  async review(@Body({ schema: reviewSchema }) body: z.infer<typeof reviewSchema>, @CurrentUser() actor: RequestUser) {
     const items: Array<{ sense_id: string; ok: boolean; reason?: string }> = [];
     // One transaction per item keeps independent outcomes and never locks two entry keys together.
     for (const item of body.items) {
       try {
         const [result] = await writeSense(this.prisma, this.content, item.sense_id, (tx) => this.content.markRevisions(tx, [{
           senseId: item.sense_id, revision: item.revision, action: item.action,
-        }]));
+        }], actor.userId));
         items.push({ sense_id: result.senseId, ok: result.ok, ...(result.reason ? { reason: result.reason } : {}) });
       } catch (error) {
         if (!(error instanceof ContentRuleError)) throw error;
