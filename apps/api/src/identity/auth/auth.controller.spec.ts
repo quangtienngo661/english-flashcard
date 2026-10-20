@@ -42,6 +42,14 @@ describe('registration and login HTTP routing (unit, isolated persistence)', () 
       expect(register).toHaveBeenCalledWith(input, expect.objectContaining({ cookie: expect.any(Function) }));
     } else expect(login).toHaveBeenCalledExactlyOnceWith(input);
   });
+  it('FE5: accept_terms false, missing or "true" -> 400 validation-failed and register is not called', async () => {
+    const { accept_terms: _omitted, ...missing } = body;
+    for (const invalid of [{ ...body, accept_terms: false }, missing, { ...body, accept_terms: 'true' }]) {
+      const res = await ctx.http().post('/v1/auth/register').send(invalid);
+      expect(res.status).toBe(400); expect(res.body.type).toBe('https://api.example.com/problems/validation-failed');
+    }
+    expect(register).not.toHaveBeenCalled();
+  });
   it('login still rejects unknown fields and does not require the new ones', async () => {
     const ok = await ctx.http().post('/v1/auth/login').send({ email: body.email, password: body.password, client: body.client });
     expect(ok.status).toBe(200);
