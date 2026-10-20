@@ -15,7 +15,10 @@ export type Me = {
   permissions: Permission[];
 };
 
-export type Notice = 'no-access' | 'expired' | 'rate-limited';
+export type Notice = 'no-access' | 'expired' | 'rate-limited' | 'logout-failed';
+
+/** FE38: set while a user-initiated sign-out has not reached the server, so a reload does not quietly resume the session. */
+const LOGOUT_PENDING_KEY = 'wordmet-admin-logout-pending';
 
 export type SessionState =
   /** `retryAt`: when the start-up refresh tries again after a 429 (ms since epoch, B25E30). */
@@ -119,14 +122,29 @@ export class SessionStore {
   }
 
   async logout(notice: Notice | null = null): Promise<void> {
-    try {
-      await this.raw('/v1/auth/logout', json('POST', {}, this.csrf()), this.token);
-    } catch {
-      // The local session ends either way; the server-side chain expires on its own.
-    }
+    const done = await this.postLogout();
     this.token = null;
-    this.set({ status: 'signed-out', notice });
+    const failed = !done && notice === null;
+    if (failed) setLogoutPending(true);
+    this.set({ status: 'signed-out', notice: failed ? 'logout-failed' : notice });
     this.broadcast({ type: 'logout' });
+  }
+
+  /** Sign-out did not reach the server: ask again. Done → the flag goes and the notice with it. */
+  async retryLogout(): Promise<void> {
+    if (!(await this.postLogout())) return;
+    setLogoutPending(false);
+    this.set({ status: 'signed-out', notice: null });
+  }
+
+  /** True when the server has it: a network error or a 5xx is the only failure (200/204/401/403 all mean "no session left"). */
+  private async postLogout(): Promise<boolean> {
+    try {
+      const res = await this.raw('/v1/auth/logout', json('POST', {}, this.csrf()), this.token);
+      return res.status < 500;
+    } catch {
+      return false;
+    }
   }
 
   /** `GET /v1/me` + gate rule. A failed `/me` leaves the state as it is. */
@@ -158,6 +176,10 @@ export class SessionStore {
   };
 
   private async runBootstrap(): Promise<void> {
+    if (isLogoutPending()) {
+      this.set({ status: 'signed-out', notice: 'logout-failed' });
+      return;
+    }
     const wasUnavailable = this.state.status === 'unavailable';
     try {
       const refreshed = await this.refresh();
@@ -286,6 +308,23 @@ export class SessionStore {
 
 function json(method: string, body: unknown, extra: Record<string, string> = {}): RequestInit {
   return { method, headers: { 'Content-Type': 'application/json', ...extra }, body: JSON.stringify(body) };
+}
+
+function isLogoutPending(): boolean {
+  try {
+    return sessionStorage.getItem(LOGOUT_PENDING_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
+function setLogoutPending(on: boolean): void {
+  try {
+    if (on) sessionStorage.setItem(LOGOUT_PENDING_KEY, '1');
+    else sessionStorage.removeItem(LOGOUT_PENDING_KEY);
+  } catch {
+    // Storage blocked: the notice still shows this time, a reload just cannot remember it.
+  }
 }
 
 function retryAfterSeconds(res: Response): number | null {

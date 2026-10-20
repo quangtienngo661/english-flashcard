@@ -34,7 +34,8 @@
     "validation-failed": "Dữ liệu không hợp lệ"
   },
   "notice": {
-    "expired": "Phiên đăng nhập đã hết hạn"
+    "expired": "Phiên đăng nhập đã hết hạn",
+    "logoutFailed": "Chưa đăng xuất được khỏi máy chủ."
   },
   "common": {
     "retry": "Thử lại",

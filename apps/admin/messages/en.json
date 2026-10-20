@@ -34,7 +34,8 @@
     "validation-failed": "The data is not valid"
   },
   "notice": {
-    "expired": "Your session has expired"
+    "expired": "Your session has expired",
+    "logoutFailed": "Signing out on the server failed."
   },
   "common": {
     "retry": "Retry",

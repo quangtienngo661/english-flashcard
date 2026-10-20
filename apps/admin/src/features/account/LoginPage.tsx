@@ -48,6 +48,18 @@ export function LoginPage() {
       <form onSubmit={submit} className="flex flex-col gap-4" noValidate>
         {notice === 'no-access' && <Banner variant="error">{t('errors.noAccess')}</Banner>}
         {notice === 'expired' && <Banner variant="info">{t('notice.expired')}</Banner>}
+        {notice === 'logout-failed' && (
+          <Banner
+            variant="error"
+            action={
+              <button type="button" className="underline" onClick={() => void store.retryLogout()}>
+                {t('session.retry')}
+              </button>
+            }
+          >
+            {t('notice.logoutFailed')}
+          </Banner>
+        )}
         {notice === 'rate-limited' && <Banner variant="info">{t('errors.rate-limited')}</Banner>}
         {error && <Banner variant="error">{error}</Banner>}
         <TextField
