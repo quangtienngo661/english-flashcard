@@ -24,6 +24,8 @@ const fileEnv = existsSync('.env') ? parseEnv(readFileSync('.env', 'utf8')) : {}
 if (!process.env.DATABASE_URL && fileEnv.DATABASE_URL) process.env.DATABASE_URL = fileEnv.DATABASE_URL;
 if (!process.env.DATABASE_URL) throw new Error('DATABASE_URL is not set (env or .env).');
 const DB_NAME = new URL(process.env.DATABASE_URL).pathname.slice(1);
+// The script inserts admins, idempotency rows and locks accounts: never against a working database.
+if (!DB_NAME.includes('smoke')) throw new Error(`Refusing to run against "${DB_NAME}": use a fresh smoke database (english_learning_smoke_fixes).`);
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const letters = (n) => Array.from({ length: n }, () => String.fromCharCode(97 + randomInt(26))).join('');
