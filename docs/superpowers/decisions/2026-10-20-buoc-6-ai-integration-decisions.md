@@ -9,6 +9,8 @@ mô tả *cách làm*; file này trả lời *tại sao chọn vậy và đã b�
 > rồi nhờ một agent review độc lập trước ([`../reviews/2026-10-20-buoc-6-design-review.md`](../reviews/2026-10-20-buoc-6-design-review.md)). Hai câu
 > sau review đã chốt (D24, D25); phần kỹ thuật sửa theo review ghi ở mục "Đề xuất kỹ thuật sau review" (design §0b). Chủ dự án duyệt bản đã sửa:
 > "Mình duyệt bản design Bước 6 đã sửa" (20/10/2026). **Đã chốt toàn bộ.**
+> **Cập nhật 20/10/2026 (review plan):** ba câu của review plan chốt thành D26–D28; con số 16.000 của D28 chủ dự án xác nhận khi duyệt plan (20/10/2026). Một chỗ sửa kỹ thuật
+> của bảng lỗi Anthropic ghi ở mục "Đề xuất kỹ thuật sau review plan".
 
 **Nhãn:** ✅ = phương án được chọn. **Ai chốt:** "Chủ dự án" = chọn trong chat; "Đề xuất của Claude" = Claude đề xuất sau khi chủ dự án trả lời, hoặc
 khi chủ dự án để trống một phần, chủ dự án đồng ý; "Duyệt cùng design" = Claude đề xuất khi trình một phần design, chủ dự án duyệt cả phần.
@@ -47,6 +49,9 @@ cách viết prompt theo nhà cung cấp và model); research chỉ nêu dữ ki
 | D23 | Chống gọi trùng | Lưu kết quả mỗi mã thao tác 24 giờ | Chủ dự án |
 | D24 | Lời gọi lỗi vẫn tốn tiền (sau review, Q1) | Cổng đếm mọi lời gọi nhà cung cấp trong ngày; vượt con số admin đặt thì AI của người học tạm tắt tới 0 giờ | Chủ dự án (con số 3.000: đề xuất của Claude) |
 | D25 | Số token tối đa (sau review, Q2) | Ô riêng cho từng thao tác; mặc định như cũ; để trống = không giới hạn | Chủ dự án |
+| D26 | Ngôn ngữ lời dặn ban đầu (review plan, Q1) | Plan không chốt: lời dặn sửa được trong admin; bản nạp ban đầu chỉ là điểm khởi đầu (viết tiếng Anh); câu chặn do code giữ viết tiếng Anh | Chủ dự án (câu chặn tiếng Anh: đề xuất của Claude) |
+| D27 | Trình độ của câu khi từ không có level (review plan, Q2) | Level không bắt buộc: có thì dặn theo level, không có thì không nhắm trình độ nào | Chủ dự án |
+| D28 | Model Anthropic không cho biết số token tối đa (review plan, Q3) | Ô số token vẫn để trống được; khi đó gửi một số cố định trong code (16.000) | Chủ dự án (con số 16.000: đề xuất của Claude, chủ dự án xác nhận khi duyệt plan 20/10/2026) |
 
 ## D1 — Cách làm việc
 
@@ -341,6 +346,75 @@ Bối cảnh (review R4): số này giới hạn độ dài câu trả lời, g�
 Chủ dự án: (b), "để trống thì không giới hạn". Claude đồng ý; chi tiết: trống thì OpenAI không gửi `max_output_tokens`, Anthropic (bắt buộc `max_tokens`) gửi số tối đa của
 model đọc lúc thêm; lý do riêng `truncated` vẫn thêm. Rủi ro ghi rõ: để trống thì lời gọi đắt nhất bằng số token tối đa của model (ví dụ ≈ 33.000đ với model tầng giữa ở
 128.000 token ra); API hiện "lời gọi đắt nhất ≈ X đ".
+
+## D26 — Ngôn ngữ lời dặn ban đầu (review plan, Q1 = P1 của plan)
+
+Bối cảnh (review plan [`../reviews/2026-10-20-buoc-6-plan-review.md`](../reviews/2026-10-20-buoc-6-plan-review.md)):
+- Design §7.5 giao Claude viết lời dặn ban đầu của ba thao tác trong plan để chủ dự án duyệt. Bản nháp viết tiếng Anh.
+- Plan hỏi lời dặn viết bằng tiếng gì, vì câu chặn do code giữ (design §7.2) phải cùng ngôn ngữ.
+- Câu trả lời của AI không phụ thuộc lựa chọn này.
+
+| Phương án | Trade-off |
+|---|---|
+| (a) Tiếng Anh | Theo cách viết trong tài liệu của hai nhà cung cấp; chủ dự án đọc và sửa bằng tiếng Anh |
+| (b) Tiếng Việt | Dễ đọc, dễ sửa với chủ dự án; câu chặn đổi theo |
+| (c) Cách khác chủ dự án đặt ra | — |
+
+Chủ dự án: "prompt mình tùy chỉnh mà, tại sao lại quyết định tiếng gì trong plan?"
+
+Claude đồng ý: lời dặn sửa được trong admin (D12), nên plan không cần chốt ngôn ngữ; bản nạp bằng migration chỉ là điểm khởi đầu, giữ tiếng Anh như bản nháp. Chỗ
+duy nhất cố định trong code là câu chặn. Claude đề xuất viết nó bằng tiếng Anh: AI hiểu đúng cả khi lời dặn của chủ dự án viết tiếng Việt, nên đổi ngôn ngữ lời dặn
+về sau không cần PR. Design §7.2 vì vậy dùng bản tiếng Anh của câu chặn.
+
+## D27 — Trình độ của câu khi từ không có level (review plan, Q2)
+
+Bối cảnh:
+- Design §5.1 gửi `level` = level của nghĩa (A1–C2), và `null` với từ riêng của người học.
+- Bản nháp lời dặn gọi ô này là "trình độ người học" (sai nghĩa, review plan #3) và tự chọn "không có level → viết ở mức B1".
+- Ví dụ: Lan (A2) lưu từ riêng "serendipity" rồi bấm "Tạo câu".
+
+| Phương án | Trade-off |
+|---|---|
+| (a) Một mức cố định khi `level = null` | Câu đều độ khó; có thể khó hơn trình độ người học |
+| (b) Không dặn trình độ khi `level = null` | Đơn giản; AI tự chọn độ khó |
+| (c) Thêm ô "trình độ người học" vào dữ liệu gửi đi | Câu hợp người học; đổi design §5.1 và việc của Bước 7 |
+| (d) Cách khác | — |
+
+Chủ dự án: "không cần phải nhắm vào trình độ nào, nó optional" (= b). Claude đồng ý. Lời dặn mô tả `level` là level của nghĩa, chỉ dặn "không khó hơn level" khi
+có level; khuôn dữ liệu §5.1 không đổi.
+
+## D28 — Model Anthropic không cho biết số token tối đa (review plan, Q3)
+
+Bối cảnh:
+- Anthropic bắt buộc gửi `max_tokens`. D25 chốt: để trống thì gửi số tối đa của model, đọc lúc thêm.
+- API "xem một model" có thể trả `max_tokens: null`, khi đó không có số nào để gửi.
+- Bản plan đầu bắt admin điền số cho riêng model đó.
+
+| Phương án | Trade-off |
+|---|---|
+| (a) Bắt admin điền số cho model đó | Không phải đoán; lệch "để trống = không giới hạn" của D25 |
+| (b) Một số cố định trong code khi model không cho biết | Giữ được "để trống"; số đó có thể vượt mức model nhận |
+| (c) Không cho thêm model Anthropic không cho biết số tối đa | Đơn giản; chặn cả model dùng tốt |
+| (d) Cách khác | — |
+
+Chủ dự án: "vậy để optional cho nó" (= b).
+
+Claude đề xuất con số **16.000** (`ANTHROPIC_MAX_TOKENS_FALLBACK`, `ASSUMPTION`):
+- Dư cho ba thao tác, kể cả phần nghĩ thầm.
+- Lời gọi đắt nhất ở giá ra $20/triệu token ≈ $0,32 ≈ 8.400đ.
+- Nếu model nhận ít hơn, Anthropic từ chối → `model-rejected`, hiện ngay ở nút chạy thử; khi đó admin điền số nhỏ hơn.
+- Ô số token với model không cho biết số tối đa nhận 1–128.000 (cùng cận trên đang dùng cho OpenAI).
+- Ước tính "lời gọi đắt nhất" dùng 16.000.
+
+Chủ dự án xác nhận khi duyệt plan (20/10/2026): "Duyệt plan, kèm Appendix A và 16 000".
+
+## Đề xuất kỹ thuật sau review plan (20/10/2026)
+
+Một chỗ sửa design do review plan tìm ra (#7), phần kỹ thuật:
+- **Bảng lỗi Anthropic (design §4.3):** chỉ coi là `provider_quota` khi 429 có `error.details.error_code = enforced_spend_limit_reached`, 400 có câu "You have
+  reached your specified…", hoặc 402.
+- Mọi 429 khác (kể cả không có `retry-after`) là `rate_limited`.
+- Lý do: trang rate-limits chính thức nói "Not every 429 carries it" và chỉ `error_code` mới phân biệt được trần chi với giới hạn tốc độ.
 
 ## Đề xuất kỹ thuật sau review (design §0b)
 

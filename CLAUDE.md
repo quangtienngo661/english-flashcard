@@ -238,6 +238,11 @@ D39–D40 were decided while implementing. Run the smoke against a real API and 
 says another mode, but cannot see the running API's); `smoke:buoc-4` now
 grants its learner 200 sessions a day first, since its learner is Free.
 
+## Bước 6 — plan & as-built
+
+`docs/deliveries/buoc-6.md` (plan tóm tắt 20/10/2026, awaiting the owner's approval; AI Integration, API only). Plan
+`docs/superpowers/plans/2026-10-20-buoc-6-ai-integration.md`.
+
 ## Việc phải phân tích khi tới bước tương ứng (ghi 12/10/2026, từ brainstorm Bước 2)
 
 Các điểm dưới đây phát sinh khi rà quyền của `admin`/`editor` (bảng D6) với các spec Bước 3–8. Chưa chốt, **không chặn Bước 2**;
