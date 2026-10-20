@@ -4,6 +4,7 @@ import { AdaptersRegistrar } from './adapters.registrar.js';
 import { AiAdapter, type AdapterOutcome, type ModelDescription } from './ai-adapter.js';
 import { AiAdapterRegistry } from './ai-adapter.registry.js';
 import { FakeAiAdapter } from './fake/fake.adapter.js';
+import { OpenAiAdapter } from './openai/openai.adapter.js';
 
 class StubAdapter extends AiAdapter {
   constructor(readonly provider: 'openai' | 'anthropic') {
@@ -44,6 +45,14 @@ describe('AdaptersRegistrar', () => {
     new AdaptersRegistrar(aiConfig(true), registry).onModuleInit();
     expect(registry.get('fake')).toBeInstanceOf(FakeAiAdapter);
     expect(registry.providers()).toEqual(['fake']);
+  });
+
+  it('registers OpenAI only when its key is set', () => {
+    const registry = new AiAdapterRegistry();
+    const config = testConfig({ ai: { openaiApiKey: 'sk-test', anthropicApiKey: null, fakeEnabled: false } });
+    new AdaptersRegistrar(config, registry).onModuleInit();
+    expect(registry.get('openai')).toBeInstanceOf(OpenAiAdapter);
+    expect(registry.providers()).toEqual(['openai']);
   });
 
   it('registers nothing when the fake is disabled and no key is set', () => {
