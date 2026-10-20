@@ -1,6 +1,7 @@
 import { Inject, Injectable, type OnModuleInit } from '@nestjs/common';
 import { APP_CONFIG, type AppConfig } from '../../common/config/app-config.js';
 import { AiAdapterRegistry } from './ai-adapter.registry.js';
+import { AnthropicAdapter, anthropicClient } from './anthropic/anthropic.adapter.js';
 import { FakeAiAdapter } from './fake/fake.adapter.js';
 import { OpenAiAdapter, openAiClient } from './openai/openai.adapter.js';
 
@@ -13,8 +14,9 @@ export class AdaptersRegistrar implements OnModuleInit {
   ) {}
 
   onModuleInit(): void {
-    const { openaiApiKey, fakeEnabled } = this.config.ai;
+    const { openaiApiKey, anthropicApiKey, fakeEnabled } = this.config.ai;
     if (openaiApiKey !== null) this.registry.register(new OpenAiAdapter(openAiClient(openaiApiKey)));
+    if (anthropicApiKey !== null) this.registry.register(new AnthropicAdapter(anthropicClient(anthropicApiKey)));
     if (fakeEnabled) this.registry.register(new FakeAiAdapter());
   }
 }

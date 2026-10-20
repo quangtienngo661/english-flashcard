@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { testConfig } from '../../../test/support/test-config.js';
 import { AdaptersRegistrar } from './adapters.registrar.js';
+import { AnthropicAdapter } from './anthropic/anthropic.adapter.js';
 import { AiAdapter, type AdapterOutcome, type ModelDescription } from './ai-adapter.js';
 import { AiAdapterRegistry } from './ai-adapter.registry.js';
 import { FakeAiAdapter } from './fake/fake.adapter.js';
@@ -53,6 +54,14 @@ describe('AdaptersRegistrar', () => {
     new AdaptersRegistrar(config, registry).onModuleInit();
     expect(registry.get('openai')).toBeInstanceOf(OpenAiAdapter);
     expect(registry.providers()).toEqual(['openai']);
+  });
+
+  it('registers Anthropic only when its key is set', () => {
+    const registry = new AiAdapterRegistry();
+    const config = testConfig({ ai: { openaiApiKey: null, anthropicApiKey: 'sk-ant-test', fakeEnabled: false } });
+    new AdaptersRegistrar(config, registry).onModuleInit();
+    expect(registry.get('anthropic')).toBeInstanceOf(AnthropicAdapter);
+    expect(registry.providers()).toEqual(['anthropic']);
   });
 
   it('registers nothing when the fake is disabled and no key is set', () => {
