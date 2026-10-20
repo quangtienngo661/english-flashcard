@@ -1,8 +1,8 @@
-import { screen, waitFor } from '@testing-library/react';
+import { act, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi as vitest } from 'vitest';
 import vi from '../../../messages/vi.json';
-import { makeMe, problem, tokenResponse } from '../../auth/test-support';
+import { makeMe, problem, rateLimited, tokenResponse } from '../../auth/test-support';
 import { LoginPage } from './LoginPage';
 import { renderAccount } from './test-utils';
 
@@ -111,4 +111,27 @@ describe('LoginPage', () => {
     await fillAndSubmit();
     expect(await screen.findByTestId('where')).toHaveTextContent('/change-password');
   });
+});
+
+const retryIn = (n: number) => vi.errors.retryIn.replace('{seconds}', String(n));
+afterEach(() => vitest.useRealTimers());
+async function tick() {
+  await act(async () => {
+    await vitest.advanceTimersByTimeAsync(1000);
+  });
+}
+
+describe('LoginPage — rate limit', () => {
+  it('B25#18: 429 with Retry-After 30 disables submit and counts 30 → 0, then re-enables', async () => {
+    renderAccount(<LoginPage />, { path: '/login', routes: { ...editorRoutes, 'POST /v1/auth/login': () => rateLimited(30) } });
+    await screen.findByLabelText(vi.account.login.email);
+    vitest.useFakeTimers({ shouldAdvanceTime: true });
+    await fillAndSubmit();
+
+    expect(await screen.findByRole('button', { name: retryIn(30) })).toBeDisabled();
+    await tick();
+    expect(screen.getByRole('button', { name: retryIn(29) })).toBeDisabled();
+    for (let i = 0; i < 29; i++) await tick();
+    expect(screen.getByRole('button', { name: vi.account.login.submit })).toBeEnabled();
+  }, 20_000);
 });

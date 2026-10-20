@@ -1,8 +1,8 @@
-import { screen, waitFor, within } from '@testing-library/react';
+import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi as vitest } from 'vitest';
 import vi from '../../../messages/vi.json';
-import { problem } from '../../auth/test-support';
+import { problem, rateLimited } from '../../auth/test-support';
 import { LIST_URL, renderApp, row } from './test-utils';
 
 const t = vi.staff.create;
@@ -129,5 +129,29 @@ describe('create account dialog', { timeout: 20_000 }, () => {
     await userEvent.click(within(await screen.findByRole('dialog')).getByRole('button', { name: t.submit }));
     await screen.findByText(t.doneBody.replace('{email}', CREATED.email));
     await waitFor(() => expect(count('GET', '/v1/admin/staff?page_size=20')).toBe(2));
+  });
+});
+
+const retryIn = (n: number) => vi.errors.retryIn.replace('{seconds}', String(n));
+afterEach(() => vitest.useRealTimers());
+async function tick() {
+  await act(async () => {
+    await vitest.advanceTimersByTimeAsync(1000);
+  });
+}
+
+describe('create account dialog — rate limit', { timeout: 20_000 }, () => {
+  it('B25#18: 429 with Retry-After 30 disables submit and counts 30 → 0, then re-enables', async () => {
+    const { dialog } = await openDialog(() => rateLimited(30));
+    vitest.useFakeTimers({ shouldAdvanceTime: true });
+    await userEvent.click(within(dialog).getByRole('button', { name: t.continue }));
+    const confirm = await screen.findByRole('dialog');
+    await userEvent.click(within(confirm).getByRole('button', { name: t.submit }));
+
+    expect(await screen.findByRole('button', { name: retryIn(30) })).toBeDisabled();
+    await tick();
+    expect(screen.getByRole('button', { name: retryIn(29) })).toBeDisabled();
+    for (let i = 0; i < 29; i++) await tick();
+    expect(screen.getByRole('button', { name: t.submit })).toBeEnabled();
   });
 });
