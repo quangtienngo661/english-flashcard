@@ -110,7 +110,8 @@ type Rev = { id: string; senseId: string; status: string; publishedAt: Date | nu
 
 /** Small stateful fake of the content tables one fresh batch touches: entries "go" and "went", one sense and one
  * draft revision each, "went"'s revision pointing at "go" with form_of, both inflection sets reviewed by the batch. */
-function batchWorld(goId: string, wentId: string) {
+function batchWorld(goId: string, wentId: string, opts: { wentPublished?: boolean } = {}) {
+  const PUBLISHED_AT = new Date(FINISHED.getTime() + 60_000);
   const reviewedAt = new Date(FINISHED.getTime() - 60_000);
   const entryRows = new Map([
     [goId, { id: goId, lemma: 'go', pos: 'verb', inflectionsReviewedAt: reviewedAt }],
@@ -118,11 +119,13 @@ function batchWorld(goId: string, wentId: string) {
   ]);
   const senseRows = new Map([
     ['s-go', { id: 's-go', entryId: goId, liveRevisionId: null, replacesSenseId: null as string | null }],
-    ['s-went', { id: 's-went', entryId: wentId, liveRevisionId: null, replacesSenseId: null as string | null }],
+    ['s-went', { id: 's-went', entryId: wentId, liveRevisionId: opts.wentPublished ? 'r-went' : null as string | null,
+      replacesSenseId: null as string | null }],
   ]);
   const revRows = new Map<string, Rev>([
-    ['r-go', { id: 'r-go', senseId: 's-go', status: 'draft', publishedAt: null, revisionNo: 1, formOfEntryId: null }],
-    ['r-went', { id: 'r-went', senseId: 's-went', status: 'draft', publishedAt: null, revisionNo: 1, formOfEntryId: goId }],
+    ['r-go', { id: 'r-go', senseId: 's-go', status: 'draft', publishedAt: null as Date | null, revisionNo: 1, formOfEntryId: null }],
+    ['r-went', { id: 'r-went', senseId: 's-went', status: opts.wentPublished ? 'published' : 'draft',
+      publishedAt: opts.wentPublished ? PUBLISHED_AT : null, revisionNo: 1, formOfEntryId: goId }],
   ]);
   const idMatches = (id: string, cond: unknown): boolean => {
     if (cond === undefined) return true;
@@ -175,7 +178,7 @@ function batchWorld(goId: string, wentId: string) {
     { type: 'revision', id: 'r-go' }, { type: 'revision', id: 'r-went' },
   ];
   const entries = { lockEntryKey: vi.fn(async () => undefined) } as unknown as EntriesService;
-  return { prisma: db as unknown as PrismaClient, entries, records, entryRows };
+  return { prisma: db as unknown as PrismaClient, entries, records, entryRows, revRows };
 }
 
 describe('revertRecords of a fresh batch (its own inflections and form_of links)', () => {
@@ -189,5 +192,18 @@ describe('revertRecords of a fresh batch (its own inflections and form_of links)
     expect(report.skipped).toEqual([]);
     expect(report.removed).toEqual({ entry: 2, variant: 0, level: 0, sense: 2, revision: 2 });
     expect(world.entryRows.size).toBe(0);
+  });
+
+  it.each([
+    ['"go" first', 'e-a', 'e-b'],
+    ['"went" first', 'e-b', 'e-a'],
+  ])('a published own revision "went -> go" keeps its form_of target (%s)', async (_order, goId, wentId) => {
+    const world = batchWorld(goId, wentId, { wentPublished: true });
+    const report = await revertRecords(world.prisma, world.entries, world.records,
+      ctx({ ownRevisionIds: new Set(['r-go', 'r-went']) }));
+    expect(report.skipped).toContainEqual({ type: 'entry', id: goId, reason: 'entry-in-use' });
+    expect(report.skipped).toContainEqual({ type: 'revision', id: 'r-went', reason: 'published' });
+    expect(world.entryRows.has(goId)).toBe(true);
+    expect(world.revRows.get('r-went')?.formOfEntryId).toBe(goId);
   });
 });
