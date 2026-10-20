@@ -28,7 +28,8 @@ describe('registration and login (unit, isolated persistence)', () => {
   const tx = { $executeRaw: vi.fn(), user: { create: vi.fn(), findUnique: vi.fn(), update: vi.fn() },
     passwordCredential: { create: vi.fn() } };
   const prisma = { user: { findUnique: vi.fn() }, $transaction: vi.fn() };
-  const body = { email: '  Foo@Example.COM ', password: 'Password1!', timezone: 'Asia/Ho_Chi_Minh', client: 'mobile' as const, device_label: 'Phone' };
+  const body = { email: '  Foo@Example.COM ', password: 'Password1!', timezone: 'Asia/Ho_Chi_Minh', client: 'mobile' as const, device_label: 'Phone',
+    given_name: 'Lan', family_name: null as string | null, birth_date: '2000-01-01', accept_terms: true as const };
   const user = { id: 'user', email: 'foo@example.com', failedLoginCount: 0, loginLockedUntil: null,
     passwordCredential: { hash: 'stored-hash' } };
   const issued = { accessToken: 'access', refreshToken: 'refresh', sessionChainId: 'chain', client: 'mobile', refreshExpiresAt: clock.now() };
@@ -83,6 +84,30 @@ describe('registration and login (unit, isolated persistence)', () => {
       status: 400, problemType: 'validation-failed', ...(violations ? { extensions: { violations } } : {}),
     });
     expect(budget.assertAvailable).not.toHaveBeenCalled(); expect(hasher.hash).not.toHaveBeenCalled(); expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+  it('N1/N2: register stores names, birth date, terms version and acceptance time', async () => {
+    await auth.register({ ...body, family_name: 'Nguyen' }, res);
+    expect(tx.user.create).toHaveBeenCalledWith({ data: expect.objectContaining({
+      givenName: 'Lan', familyName: 'Nguyen', birthDate: new Date('2000-01-01T00:00:00Z'),
+      termsAcceptedAt: clock.now(), termsVersion: config.termsVersion }) });
+  });
+  it('FE1: a 12-year-old gets 400 age-below-minimum before any hash or mail budget call', async () => {
+    // Ho Chi Minh local date is 2026-10-07: the 13th birthday would be tomorrow.
+    await expect(auth.register({ ...body, birth_date: '2013-10-08' }, res)).rejects.toMatchObject({
+      status: 400, problemType: 'age-below-minimum' });
+    expect(budget.assertAvailable).not.toHaveBeenCalled(); expect(hasher.hash).not.toHaveBeenCalled();
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+    expect(logs.filter((l) => l.event === 'register_rejected_age')).toHaveLength(1);
+    expect(JSON.stringify(logs)).not.toContain('2013-10-08');
+  });
+  it('FE2: Pacific/Kiritimati already on the 13th birthday -> accepted', async () => {
+    await auth.register({ ...body, timezone: 'Pacific/Kiritimati', birth_date: '2013-10-08' }, res);
+    expect(tx.user.create).toHaveBeenCalled();
+  });
+  it('birth date tomorrow (in the user zone) -> 400 validation-failed', async () => {
+    await expect(auth.register({ ...body, birth_date: '2026-10-08' }, res)).rejects.toMatchObject({
+      status: 400, problemType: 'validation-failed' });
+    expect(hasher.hash).not.toHaveBeenCalled();
   });
   it('C2: register stores the canonical spelling of the zone, whatever case the client sent', async () => {
     for (const timezone of ['asia/ho_chi_minh', 'ASIA/HO_CHI_MINH', 'Asia/Saigon']) {

@@ -35,7 +35,7 @@ export async function waitForHealth(timeoutMs = 60_000): Promise<void> {
 /** Register, then verify the email with the OTP that registration mails (read from Mailpit). */
 export async function registerVerified(email: string, password: string): Promise<void> {
   const registered = (await (
-    await expectStatus(await post('/v1/auth/register', { email, password, timezone: 'Asia/Ho_Chi_Minh', client: 'web' }), 201, `register ${email}`)
+    await expectStatus(await post('/v1/auth/register', { email, password, timezone: 'Asia/Ho_Chi_Minh', given_name: 'Smoke', birth_date: '2000-01-01', accept_terms: true, client: 'web' }), 201, `register ${email}`)
   ).json()) as { access_token: string };
   // Registration already mails one code; asking for another would invalidate it and race the mail delivery.
   const code = await otpCodeFor(email);

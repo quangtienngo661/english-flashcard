@@ -14,7 +14,8 @@ describe('registration and login HTTP routing (unit, isolated persistence)', () 
   const register = vi.spyOn(AuthService.prototype, 'register');
   const login = vi.spyOn(AuthService.prototype, 'login');
   const hit = vi.spyOn(RateLimiter.prototype, 'hit');
-  const body = { email: 'a@example.com', password: 'Password1!', timezone: 'Asia/Ho_Chi_Minh', client: 'mobile' };
+  const body = { email: 'a@example.com', password: 'Password1!', timezone: 'Asia/Ho_Chi_Minh', client: 'mobile',
+    given_name: 'Lan', birth_date: '2000-01-01', accept_terms: true };
   beforeAll(async () => {
     vi.spyOn(PrismaModule, 'forRoot').mockReturnValue({ module: PrismaModule, global: true,
       providers: [{ provide: PRISMA_CLIENT, useValue: { $disconnect: async () => {} } }], exports: [PRISMA_CLIENT] });
@@ -40,6 +41,12 @@ describe('registration and login HTTP routing (unit, isolated persistence)', () 
       expect(hit).toHaveBeenCalledWith('mail.ip.daily', expect.any(String));
       expect(register).toHaveBeenCalledWith(input, expect.objectContaining({ cookie: expect.any(Function) }));
     } else expect(login).toHaveBeenCalledExactlyOnceWith(input);
+  });
+  it('login still rejects unknown fields and does not require the new ones', async () => {
+    const ok = await ctx.http().post('/v1/auth/login').send({ email: body.email, password: body.password, client: body.client });
+    expect(ok.status).toBe(200);
+    const extra = await ctx.http().post('/v1/auth/login').send({ email: body.email, password: body.password, client: body.client, given_name: 'Lan' });
+    expect(extra.status).toBe(400);
   });
   it.each(['register', 'login'])('B1#1/B1#21: web %s sets the secure refresh cookie and omits the body token', async (route) => {
     issued.client = 'web';

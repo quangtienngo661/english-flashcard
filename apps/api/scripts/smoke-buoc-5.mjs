@@ -172,7 +172,7 @@ async function otpCodeFor(email) {
 
 async function registerVerified(email) {
   const registered = await want(api('POST', '/v1/auth/register', {
-    body: { email, password: PASSWORD, timezone: TIMEZONE, client: 'web' } }), 201, `register ${email}`);
+    body: { email, password: PASSWORD, timezone: TIMEZONE, given_name: 'Smoke', birth_date: '2000-01-01', accept_terms: true, client: 'web' } }), 201, `register ${email}`);
   await want(api('POST', '/v1/auth/otp', { token: registered.access_token, body: { purpose: 'verify_email' } }), 202, 'request OTP');
   const code = await otpCodeFor(email);
   await want(api('POST', '/v1/auth/verify-email', { token: registered.access_token, body: { code } }), 200, `verify ${email}`);

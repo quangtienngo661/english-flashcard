@@ -104,7 +104,7 @@ async function otpCodeFor(email) {
 async function registerAdmin() {
   const email = `smoke4-admin-${run}@example.com`;
   const registered = await want(api('POST', '/v1/auth/register', {
-    body: { email, password: PASSWORD, timezone: TIMEZONE, client: 'web' } }), 201, 'register admin');
+    body: { email, password: PASSWORD, timezone: TIMEZONE, given_name: 'Smoke', birth_date: '2000-01-01', accept_terms: true, client: 'web' } }), 201, 'register admin');
   await want(api('POST', '/v1/auth/otp', { token: registered.access_token, body: { purpose: 'verify_email' } }), 202, 'request OTP');
   const code = await otpCodeFor(email);
   await want(api('POST', '/v1/auth/verify-email', { token: registered.access_token, body: { code } }), 200, 'verify admin email');
@@ -118,7 +118,7 @@ async function registerAdmin() {
 async function registerLearner() {
   const email = `smoke4-learner-${run}@example.com`;
   const registered = await want(api('POST', '/v1/auth/register', {
-    body: { email, password: PASSWORD, timezone: TIMEZONE, client: 'web' } }), 201, 'register learner');
+    body: { email, password: PASSWORD, timezone: TIMEZONE, given_name: 'Smoke', birth_date: '2000-01-01', accept_terms: true, client: 'web' } }), 201, 'register learner');
   await want(api('PATCH', '/v1/me', { token: registered.access_token, body: { native_language: 'vi' } }), 200, 'set native_language');
   ok(`learner ${email} registered with native_language=vi, timezone ${TIMEZONE}`);
   return registered.access_token;

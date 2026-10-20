@@ -60,7 +60,7 @@ async function registerAdmin() {
   const registered = await expect(
     await fetch(`${BASE}/v1/auth/register`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password, timezone: 'Asia/Ho_Chi_Minh', client: 'web' }),
+      body: JSON.stringify({ email, password, timezone: 'Asia/Ho_Chi_Minh', given_name: 'Smoke', birth_date: '2000-01-01', accept_terms: true, client: 'web' }),
     }), 201, 'register admin',
   ).then((r) => r.json());
   await expect(
@@ -93,7 +93,7 @@ async function registerLearner() {
   const registered = await expect(
     await fetch(`${BASE}/v1/auth/register`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password: 'Smoke-Test-Pass-9!', timezone: 'Asia/Ho_Chi_Minh', client: 'web' }),
+      body: JSON.stringify({ email, password: 'Smoke-Test-Pass-9!', timezone: 'Asia/Ho_Chi_Minh', given_name: 'Smoke', birth_date: '2000-01-01', accept_terms: true, client: 'web' }),
     }), 201, 'register learner',
   ).then((r) => r.json());
   await expect(

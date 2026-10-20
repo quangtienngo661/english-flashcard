@@ -10,6 +10,8 @@ import { ProblemDetailsException } from '../../common/problem-details/problem-de
 import type { PrismaClient } from '../../generated/prisma/client.js';
 import { MailBudget } from '../../common/mail/mail-budget.service.js';
 import { MailDispatcher, type MailJob } from '../../common/mail/mail-dispatcher.service.js';
+import { dateValue, localDate } from '../../common/time/local-date.js';
+import { MIN_AGE, isOldEnough } from '../profile/person.js';
 import { canonicalTimeZone } from '../profile/timezone.js';
 import { SessionService, type IssuedSession } from '../sessions/session.service.js';
 import { withUserLock } from '../user-lock.js';
@@ -42,6 +44,12 @@ export class AuthService {
     if (violations.length > 0) throw this.validationFailed({ violations });
     const timezone = canonicalTimeZone(body.timezone);
     if (timezone === null) throw this.validationFailed();
+    const today = localDate(timezone, this.clock.now());
+    if (body.birth_date > today) throw this.validationFailed();
+    if (!isOldEnough(body.birth_date, today, MIN_AGE)) {
+      this.logger.info('register_rejected_age', { reason: 'below-minimum' });
+      throw new ProblemDetailsException({ status: 400, title: 'Age below minimum', type: 'age-below-minimum' });
+    }
     await this.budget.assertAvailable();
     const hash = await this.hasher.hash(body.password);
     // A preallocated ID lets even a new account follow the lock-first protocol.
@@ -51,7 +59,11 @@ export class AuthService {
       session = await this.prisma.$transaction(async (tx) => {
         await withUserLock(tx, userId);
         const now = this.clock.now();
-        await tx.user.create({ data: { id: userId, email, timezone, createdAt: now, updatedAt: now } });
+        await tx.user.create({ data: {
+          id: userId, email, timezone, givenName: body.given_name, familyName: body.family_name ?? null,
+          birthDate: dateValue(body.birth_date), termsAcceptedAt: now, termsVersion: this.config.termsVersion,
+          createdAt: now, updatedAt: now,
+        } });
         await tx.passwordCredential.create({ data: { userId, hash, updatedAt: now } });
         return this.sessions.startChain(tx, { userId, client: body.client, deviceLabel: body.device_label });
       }, transactionOptions);
