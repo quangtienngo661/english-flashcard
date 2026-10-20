@@ -1,13 +1,14 @@
 import { Inject, Injectable } from '@nestjs/common';
 import {
-  ContentService, generateInflections, INFLECTION_KINDS, MAX_EXAMPLES, normalizeContent, type FormOf,
+  ContentService, generateInflections, INFLECTION_KINDS, MAX_EXAMPLES, normalizeContent, OWNER_SOURCE_ID, type FormOf,
   type InflectionKind,
 } from '../../content/index.js';
 import type { Prisma } from '../../generated/prisma/client.js';
 import type { JobContext } from '../jobs/job-types.js';
 import type { RowError } from '../upload/row-errors.js';
-import { levelKey, type NormalizedRow } from '../upload/row-normalizer.js';
+import { contentKey, levelKey, type NormalizedRow } from '../upload/row-normalizer.js';
 import { recordBatchRecord } from './batch-records.js';
+import { rowContentHash } from './prefilter.js';
 
 export class RowRejected extends Error {
   constructor(readonly errors: RowError[]) {
@@ -54,7 +55,8 @@ function sameForms(current: Array<{ form: string; kind: string }>, next: Array<{
 export class ImportRowProcessor {
   constructor(@Inject(ContentService) private readonly content: ContentService) {}
 
-  async process(ctx: JobContext, batch: RowBatch, row: NormalizedRow): Promise<RowResult> {
+  /** contentApplied (D14): another batch already applied this row's content; leave the sense alone (content counts as unchanged). */
+  async process(ctx: JobContext, batch: RowBatch, row: NormalizedRow, opts: { contentApplied: boolean }): Promise<RowResult> {
     try {
       return await ctx.tx(async (tx) => {
         const changes = await this.processEntryAndLevel(tx, batch, row);
@@ -62,7 +64,7 @@ export class ImportRowProcessor {
           : changes.variantsAdded || changes.levelAdded ? 'updated' : 'unchanged';
         const warnings: string[] = [];
         const formOf = await this.resolveFormOf(tx, row);
-        if (row.content !== null) {
+        if (row.content !== null && !opts.contentApplied) {
           // JobContext carries lease metadata only. The batch id is its owning job's id.
           const actor = await tx.backgroundJob.findUniqueOrThrow({ where: { id: batch.id }, select: { createdBy: true } });
           const result = await this.content.importContent(tx, {
@@ -93,6 +95,12 @@ export class ImportRowProcessor {
                   replacedRevisionPreviousStatus: result.droppedReviewedMark ? 'reviewed' : 'draft' } } : {}),
             });
           }
+        }
+        if (row.content !== null) {
+          // Rejected rows threw above. Every version of a row ever applied keeps its own key (T3, D14).
+          await tx.importRowKey.createMany({ data: [{
+            kind: 'content', sourceId: OWNER_SOURCE_ID, rowKey: contentKey(row).key, contentHash: rowContentHash(row), batchId: batch.id,
+          }], skipDuplicates: true });
         }
 
         if (changes.entryCreated && row.inflections === null) {
