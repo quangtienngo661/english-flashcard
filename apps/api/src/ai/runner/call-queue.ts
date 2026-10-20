@@ -1,7 +1,16 @@
 // Provider calls running at once in this process (design §8.4, D17). FIFO; the limit is read again on every acquire and every
 // release, so raising it starts waiters at once and lowering it never cuts a running call. Deadlines are `performance.now()` times.
 
+import { Injectable } from '@nestjs/common';
+import { SETTINGS_DEFAULTS } from '../../settings/index.js';
+
 type Waiter = { grant: (release: () => void) => void; timer: ReturnType<typeof setTimeout> };
+
+/** `ai.max_concurrent_calls` of the most recent settings read by the runner; `AiModule`'s `CallQueue` reads it (design §8.4). */
+@Injectable()
+export class ConcurrencyLimit {
+  value = SETTINGS_DEFAULTS.ai.maxConcurrentCalls;
+}
 
 export class CallQueue {
   private running = 0;
