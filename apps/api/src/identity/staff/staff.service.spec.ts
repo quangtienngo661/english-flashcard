@@ -16,7 +16,8 @@ describe('StaffService (unit, isolated persistence)', () => {
   const tx = { $executeRaw: vi.fn(), user: { findUnique: vi.fn(), count: vi.fn(), update: vi.fn() } };
   const prisma = { $transaction: vi.fn(), user: { findUnique: vi.fn(), findMany: vi.fn() } };
   const write = vi.fn();
-  const target = { id: randomUUID(), email: 'a@example.com', emailVerifiedAt: new Date(), staffRole: 'admin' as string | null };
+  const target = { id: randomUUID(), email: 'a@example.com', emailVerifiedAt: new Date(), staffRole: 'admin' as string | null,
+    givenName: null as string | null, familyName: null as string | null };
   let staff: StaffService;
   let committed: boolean;
   beforeEach(() => {
@@ -40,7 +41,7 @@ describe('StaffService (unit, isolated persistence)', () => {
     write.mockImplementation(() => { expect(committed).toBe(true); });
     const result = await runWithOperationId('operation', () => staff.setStaffRole('actor', target.id, 'editor'));
     expectStaffLock();
-    expect(result).toEqual({ id: target.id, email: target.email, email_verified: true, staff_role: 'editor' });
+    expect(result).toEqual({ id: target.id, email: target.email, email_verified: true, staff_role: 'editor', given_name: null, family_name: null });
     expect(tx.user.update).toHaveBeenCalledWith(expect.objectContaining({ where: { id: target.id }, data: { staffRole: 'editor' } }));
     expect(write).toHaveBeenCalledWith({ level: 'info', event: 'staff_role_changed', operation_id: 'operation',
       actor_id: 'actor', target_id: target.id, staff_role: 'editor' });
@@ -86,7 +87,7 @@ describe('StaffService (unit, isolated persistence)', () => {
     expect(tx.user.update).not.toHaveBeenCalled(); expect(write).not.toHaveBeenCalled();
   });
   it('B1#27: exact email lookup normalizes, maps public fields, returns null and rejects invalid input', async () => {
-    expect(await staff.findByEmail('  A@Example.COM ')).toEqual({ id: target.id, email: target.email, email_verified: true, staff_role: 'admin' });
+    expect(await staff.findByEmail('  A@Example.COM ')).toEqual({ id: target.id, email: target.email, email_verified: true, staff_role: 'admin', given_name: null, family_name: null });
     expect(prisma.user.findUnique).toHaveBeenCalledWith(expect.objectContaining({ where: { email: target.email } }));
     prisma.user.findUnique.mockResolvedValue(null); expect(await staff.findByEmail('missing@example.com')).toBeNull();
     await expect(staff.findByEmail('bad')).rejects.toMatchObject({ status: 400, problemType: 'validation-failed' });
@@ -130,7 +131,7 @@ describe('StaffService.createAccount timezone (unit, isolated persistence)', () 
     vi.resetAllMocks();
     tx.$executeRaw.mockResolvedValue(1);
     tx.user.create.mockImplementation(async ({ data }) => ({ id: data.id, email: data.email, emailVerifiedAt: data.emailVerifiedAt,
-      staffRole: data.staffRole }));
+      staffRole: data.staffRole, givenName: data.givenName ?? null, familyName: data.familyName ?? null }));
     prisma.$transaction.mockImplementation(async (fn) => fn(tx));
     budget.assertAvailable.mockResolvedValue(undefined); hasher.hash.mockResolvedValue('hash');
     staff = new StaffService(prisma as unknown as PrismaClient, new AppLogger({ write: vi.fn() }),
@@ -143,6 +144,18 @@ describe('StaffService.createAccount timezone (unit, isolated persistence)', () 
       .rejects.toMatchObject({ status: 400, problemType: 'validation-failed' });
     expect(budget.assertAvailable).not.toHaveBeenCalled(); expect(hasher.hash).not.toHaveBeenCalled();
     expect(prisma.$transaction).not.toHaveBeenCalled(); expect(dispatcher.afterResponse).not.toHaveBeenCalled();
+  });
+  it('D8: staff create stores names when given, null when absent; no birth date, no consent', async () => {
+    const named = await staff.createAccount('actor', { ...body, given_name: 'Lan', family_name: 'Nguyen' }, res);
+    expect(named).toMatchObject({ given_name: 'Lan', family_name: 'Nguyen' });
+    const data = tx.user.create.mock.calls[0][0].data;
+    expect(data).toMatchObject({ givenName: 'Lan', familyName: 'Nguyen' });
+    expect(Object.keys(data).filter((key) => /birth|terms|consent/i.test(key))).toEqual([]);
+    tx.user.create.mockClear();
+    const bare = await staff.createAccount('actor', body, res);
+    expect(bare).toMatchObject({ given_name: null, family_name: null });
+    expect(tx.user.create.mock.calls[0][0].data.givenName ?? null).toBeNull();
+    expect(tx.user.create.mock.calls[0][0].data.familyName ?? null).toBeNull();
   });
   it('C2: a valid zone is stored under its canonical name, whatever case the admin typed', async () => {
     for (const timezone of ['asia/ho_chi_minh', 'Asia/Ho_Chi_Minh', 'Asia/Saigon']) {

@@ -20,13 +20,21 @@ import { withUserLock } from '../user-lock.js';
 import { generatePassword } from './password-generator.js';
 import { idParam, type CreateAccountBody } from './staff.schemas.js';
 
-export type StaffUserView = { id: string; email: string; email_verified: boolean; staff_role: StaffRole | null };
-const staffSelect = { id: true, email: true, emailVerifiedAt: true, staffRole: true } satisfies Prisma.UserSelect;
+export type StaffUserView = {
+  id: string; email: string; email_verified: boolean; staff_role: StaffRole | null;
+  given_name: string | null; family_name: string | null;
+};
+const staffSelect = {
+  id: true, email: true, emailVerifiedAt: true, staffRole: true, givenName: true, familyName: true,
+} satisfies Prisma.UserSelect;
 type StaffRow = Prisma.UserGetPayload<{ select: typeof staffSelect }>;
 const transactionOptions = { timeout: 10_000, maxWait: 5_000 };
 
 function toView(row: StaffRow): StaffUserView {
-  return { id: row.id, email: row.email, email_verified: row.emailVerifiedAt !== null, staff_role: row.staffRole as StaffRole | null };
+  return {
+    id: row.id, email: row.email, email_verified: row.emailVerifiedAt !== null, staff_role: row.staffRole as StaffRole | null,
+    given_name: row.givenName, family_name: row.familyName,
+  };
 }
 function invalidInput(): ProblemDetailsException {
   return new ProblemDetailsException({ status: 400, title: 'Validation failed', type: 'validation-failed' });
@@ -72,6 +80,7 @@ export class StaffService {
         const created = await tx.user.create({ data: {
           id: userId, email, timezone, emailVerifiedAt: now, staffRole: body.staff_role,
           mustChangePassword: body.must_change_password, createdAt: now, updatedAt: now,
+          givenName: body.given_name ?? null, familyName: body.family_name ?? null,
         }, select: staffSelect });
         await tx.passwordCredential.create({ data: { userId, hash, updatedAt: now } });
         return created;

@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { optionalPersonNameSchema, personNameSchema } from '../profile/person.js';
 
 export const findUserQuerySchema = z.strictObject({ email: z.string().max(320) });
 export const listStaffQuerySchema = z.strictObject({
@@ -14,6 +15,8 @@ export const createAccountSchema = z.strictObject({
   password: z.string().optional(),
   must_change_password: z.boolean(),
   timezone: z.string().max(64),
+  given_name: personNameSchema.optional(),
+  family_name: optionalPersonNameSchema.optional(),
 });
 
 export type CreateAccountBody = z.infer<typeof createAccountSchema>;
