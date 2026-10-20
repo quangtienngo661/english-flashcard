@@ -9,7 +9,7 @@ export default defineConfig({
   test: {
     globals: true,
     root: './',
-    include: ['test/learning/scale.e2e-spec.ts', 'test/practice/scale.e2e-spec.ts'],
+    include: ['test/learning/scale.e2e-spec.ts', 'test/practice/scale.e2e-spec.ts', 'test/content/lookup.scale.e2e-spec.ts'],
     globalSetup: ['./test/setup/postgres-global-setup.ts', './test/setup/redis-global-setup.ts'],
     fileParallelism: false,
     testTimeout: 300_000,

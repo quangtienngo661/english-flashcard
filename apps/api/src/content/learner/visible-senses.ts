@@ -13,3 +13,12 @@ export function visibleSenseCondition(senseIdColumn: Prisma.Sql, viewer: string 
     WHERE vs.id = ${senseIdColumn} AND vs.state = 'open' AND vs.live_revision_id IS NOT NULL
       AND (ve.scope = 'catalog' OR (ve.scope = 'private' AND ve.owner_user_id = ${viewerId})))`;
 }
+
+/**
+ * The entry half of that rule, written on the entry row itself so the planner can use the scope partial indexes instead of
+ * reading every learner's private entries (T5). Same viewer rules as `visibleSenseCondition`.
+ */
+export function visibleEntryCondition(entryAlias: Prisma.Sql, viewer: string | Prisma.Sql): Prisma.Sql {
+  const viewerId = typeof viewer === 'string' ? Prisma.sql`${viewer}::uuid` : viewer;
+  return Prisma.sql`(${entryAlias}.scope = 'catalog' OR (${entryAlias}.scope = 'private' AND ${entryAlias}.owner_user_id = ${viewerId}))`;
+}
