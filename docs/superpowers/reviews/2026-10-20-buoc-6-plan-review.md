@@ -29,6 +29,17 @@ Claude (phiên viết plan) đã **tự kiểm lại trong phiên** các phát h
 
 **Kết quả:** 1 cao, 9 trung bình, 17 thấp; 3 câu cần chủ dự án quyết (cuối file; câu 1 chính là P1 của plan).
 
+**Cập nhật 20/10/2026:**
+- **Chủ dự án trả lời ba câu** → D26–D28, ghi vào design và decision record:
+  - Q1: "prompt mình tùy chỉnh mà, tại sao lại quyết định tiếng gì trong plan?"
+  - Q2: "không cần phải nhắm vào trình độ nào, nó optional".
+  - Q3: "vậy để optional cho nó"; con số 16.000 là đề xuất của Claude, chờ xác nhận khi duyệt plan.
+- **Cả 27 phát hiện đã sửa vào plan và bản tóm tắt `buoc-6.md`** theo "Đề xuất sửa plan" của từng mục.
+  - #7 sửa luôn một dòng bảng lỗi Anthropic của design §4.3.
+  - #8 thêm một câu về `insufficient_quota` vào design §4.3.
+  - Phần đã giải quyết ngoài plan (design §20, PR #81) không cần sửa.
+- Plan chưa được duyệt. File này giữ nguyên nội dung review lúc viết.
+
 **Đã đúng như plan nói** (reviewer 2 kiểm, không thành phát hiện):
 - **Chống gọi trùng (Task 12) an toàn trước chạy đua.** `INSERT … ON CONFLICT DO NOTHING`, giành lại có điều kiện `attempt_id`, xóa dòng hết hạn rồi giành, lời gọi cũ xong muộn: đều chỉ một bên thắng ở READ COMMITTED.
 - **Không task nào giữ transaction trong lúc gọi nhà cung cấp.** Handler `@Idempotent()` chạy trên connection riêng, nên dòng `ai_eval_runs` đã commit trước khi `enqueue`.
