@@ -126,6 +126,7 @@ Hiện trạng trên `dev` @ `529fde3` (đã đọc 20/10):
 | D26 | Ngôn ngữ lời dặn ban đầu (review plan) | Plan không chốt: lời dặn sửa trong admin; bản nạp ban đầu tiếng Anh chỉ là điểm khởi đầu; câu chặn do code giữ viết tiếng Anh |
 | D27 | Từ không có level (review plan) | Level không bắt buộc: có thì dặn theo level, không có thì không nhắm trình độ nào |
 | D28 | Model Anthropic không cho biết số token tối đa (review plan) | Ô vẫn để trống được; khi đó gửi 16.000 (`ASSUMPTION`; chủ dự án xác nhận con số khi duyệt plan, 20/10/2026) |
+| D29 | Biến `OPENAI_CUSTOM_HEADERS` / `ANTHROPIC_CUSTOM_HEADERS` (lúc implement) | Đặt (khác rỗng) thì API, worker và mọi CLI từ chối khởi động; báo tên biến, không in giá trị |
 
 ## 3. Phạm vi
 
@@ -657,6 +658,7 @@ trạng, chi phí, trần lời gọi (như ngày của trần AI Bước 5); `A
 | `OPENAI_API_KEY` | không có | Bí mật; không có **hoặc để trống** thì `openai` = `provider-not-configured` |
 | `ANTHROPIC_API_KEY` | không có | Bí mật; như trên |
 | `AI_FAKE_ENABLED` | `false` | Bật bản giả; cấu hình từ chối khi `BILLING_PRODUCTION=true` |
+| `OPENAI_CUSTOM_HEADERS`, `ANTHROPIC_CUSTOM_HEADERS` | không có | **Phải để trống** (D29): SDK gắn các header trong biến vào mọi lời gọi, không tắt được; khác rỗng thì cấu hình từ chối khởi động |
 
 Key không bao giờ vào log, lỗi trả về hay database. Đổi key = sửa `.env` rồi khởi động lại. Trước mỗi lần push vẫn quét secret như mọi PR.
 
