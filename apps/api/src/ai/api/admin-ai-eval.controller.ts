@@ -1,0 +1,76 @@
+import { Body, Controller, Delete, Get, HttpCode, Inject, Param, Patch, Post, Query, Req, UseInterceptors } from '@nestjs/common';
+import { z } from 'zod';
+import { IdempotencyInterceptor } from '../../common/idempotency/idempotency.interceptor.js';
+import { Idempotent } from '../../common/idempotency/idempotent.decorator.js';
+import { RateLimit } from '../../common/rate-limit/rate-limit.decorator.js';
+import type { RequestWithUser } from '../../common/request-user/request-user.js';
+import { RequirePermission } from '../../identity/staff/require-permission.decorator.js';
+import { AI_OPERATIONS } from '../ai.types.js';
+import { createExampleSchema, EvalExamplesService, patchExampleSchema } from '../eval/eval-examples.service.js';
+import { createRunSchema, EvalRunsService } from '../eval/eval-runs.service.js';
+
+const idParams = z.strictObject({ id: z.uuid().transform((value) => value.toLowerCase()) });
+const examplesQuery = z.strictObject({ operation: z.enum(AI_OPERATIONS) });
+const runsQuery = z.strictObject({
+  operation: z.enum(AI_OPERATIONS),
+  page_size: z.coerce.number().int().min(1).max(100).default(20),
+  page_token: z.string().optional(),
+});
+
+/**
+ * The example set and its runs (design §10, §12.1 #13–#15). `POST /runs` is `@Idempotent()`: it only inserts a row and enqueues,
+ * so no provider is called inside the idempotency transaction (design §4.4); a replay returns the same run (B6E74).
+ */
+@Controller('admin/ai/eval')
+@RequirePermission('settings.manage')
+export class AdminAiEvalController {
+  constructor(
+    @Inject(EvalExamplesService) private readonly examples: EvalExamplesService,
+    @Inject(EvalRunsService) private readonly runs: EvalRunsService,
+  ) {}
+
+  @Get('examples')
+  listExamples(@Query({ schema: examplesQuery }) query: z.infer<typeof examplesQuery>) {
+    return this.examples.list(query.operation);
+  }
+
+  @Post('examples')
+  @HttpCode(201)
+  @RateLimit('user.write')
+  createExample(@Body({ schema: createExampleSchema }) body: z.infer<typeof createExampleSchema>, @Req() req: RequestWithUser) {
+    return this.examples.create(req.user!.userId, body);
+  }
+
+  @Patch('examples/:id')
+  @RateLimit('user.write')
+  updateExample(@Param({ schema: idParams }) params: z.infer<typeof idParams>,
+    @Body({ schema: patchExampleSchema }) body: z.infer<typeof patchExampleSchema>) {
+    return this.examples.update(params.id, body);
+  }
+
+  @Delete('examples/:id')
+  @HttpCode(204)
+  @RateLimit('user.write')
+  async removeExample(@Param({ schema: idParams }) params: z.infer<typeof idParams>): Promise<void> {
+    await this.examples.remove(params.id);
+  }
+
+  @Post('runs')
+  @HttpCode(202)
+  @Idempotent()
+  @UseInterceptors(IdempotencyInterceptor)
+  @RateLimit('ai.test')
+  createRun(@Body({ schema: createRunSchema }) body: z.infer<typeof createRunSchema>, @Req() req: RequestWithUser) {
+    return this.runs.create(req.user!.userId, body);
+  }
+
+  @Get('runs')
+  listRuns(@Query({ schema: runsQuery }) query: z.infer<typeof runsQuery>) {
+    return this.runs.list(query.operation, query.page_size, query.page_token);
+  }
+
+  @Get('runs/:id')
+  getRun(@Param({ schema: idParams }) params: z.infer<typeof idParams>) {
+    return this.runs.get(params.id);
+  }
+}
