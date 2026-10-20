@@ -3,8 +3,8 @@ import type { Response } from 'express';
 import { RateLimit } from '../../common/rate-limit/rate-limit.decorator.js';
 import type { RequestWithUser } from '../../common/request-user/request-user.js';
 import { RequirePermission } from './require-permission.decorator.js';
-import { createAccountSchema, findUserQuerySchema, listStaffQuerySchema, setStaffRoleSchema, staffUserParamsSchema,
-  type CreateAccountBody, type FindUserQuery, type ListStaffQuery, type SetStaffRoleBody, type StaffUserParams } from './staff.schemas.js';
+import { adminUsersQuerySchema, createAccountSchema, listStaffQuerySchema, setStaffRoleSchema, staffUserParamsSchema,
+  type AdminUsersQuery, type CreateAccountBody, type ListStaffQuery, type SetStaffRoleBody, type StaffUserParams } from './staff.schemas.js';
 import { StaffService, staffUserNotFound, type StaffUserView } from './staff.service.js';
 
 @Controller('admin')
@@ -13,10 +13,18 @@ export class StaffController {
   constructor(@Inject(StaffService) private readonly staff: StaffService) {}
 
   @Get('users')
-  async findUser(@Query({ schema: findUserQuerySchema }) query: FindUserQuery): Promise<StaffUserView> {
-    const user = await this.staff.findByEmail(query.email);
-    if (!user) throw staffUserNotFound();
-    return user;
+  async findUsers(@Query({ schema: adminUsersQuerySchema }) query: AdminUsersQuery) {
+    if (query.email !== undefined) {
+      const user = await this.staff.findByEmail(query.email);
+      if (!user) throw staffUserNotFound();
+      return user;
+    }
+    return this.staff.listUsers({ q: query.q, status: query.status, pageSize: query.page_size, pageToken: query.page_token });
+  }
+
+  @Get('users/:id')
+  getUser(@Param({ schema: staffUserParamsSchema }) params: StaffUserParams) {
+    return this.staff.getUserDetail(params.id);
   }
 
   @Get('staff')

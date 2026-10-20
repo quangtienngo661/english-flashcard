@@ -95,6 +95,15 @@ export class IdentityService {
     return new Map(rows.map((row) => [row.id, row.email]));
   }
 
+  /** Addresses of the given users with no status or verification filter; unknown ids are left out. */
+  async emailsOf(userIds: string[]): Promise<Map<string, string>> {
+    if (userIds.length === 0) return new Map();
+    const rows = await this.prisma.user.findMany({
+      where: { id: { in: [...new Set(userIds)] } }, select: { id: true, email: true },
+    });
+    return new Map(rows.map((row) => [row.id, row.email]));
+  }
+
   async updateProfile(userId: string, body: UpdateProfileBody): Promise<Profile | null> {
     const timezone = body.timezone === undefined ? undefined : canonicalTimeZone(body.timezone);
     if (timezone === null) {

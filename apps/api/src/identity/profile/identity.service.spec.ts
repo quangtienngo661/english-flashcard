@@ -17,6 +17,14 @@ describe('IdentityService (unit, isolated persistence)', () => {
     identity = new IdentityService(prisma as unknown as PrismaClient);
   });
 
+  it('emailsOf maps ids to addresses with no status or verification filter, and skips the query for no ids', async () => {
+    const findMany = vi.fn().mockResolvedValue([{ id: 'u1', email: 'a@example.com' }]);
+    const service = new IdentityService({ user: { findMany } } as unknown as PrismaClient);
+    expect(await service.emailsOf([])).toEqual(new Map()); expect(findMany).not.toHaveBeenCalled();
+    expect(await service.emailsOf(['u1', 'u1', 'u2'])).toEqual(new Map([['u1', 'a@example.com']]));
+    expect(findMany).toHaveBeenCalledWith({ where: { id: { in: ['u1', 'u2'] } }, select: { id: true, email: true } });
+  });
+
   it.each([null, 'editor', 'admin'] as const)('B2#67/B1#25: getProfile maps the stored %s role, content permissions and new-user defaults to the public contract', async (staffRole) => {
     prisma.user.findUnique.mockResolvedValue({ ...row, staffRole });
     expect(await identity.getProfile(row.id)).toEqual({

@@ -1,7 +1,18 @@
 import { z } from 'zod';
 import { optionalPersonNameSchema, personNameSchema } from '../profile/person.js';
 
-export const findUserQuerySchema = z.strictObject({ email: z.string().max(320) });
+const searchText = z.string().transform((value) => value.trim()).refine((value) => {
+  const length = [...value].length;
+  return length >= 2 && length <= 100;
+});
+export const adminUsersQuerySchema = z.strictObject({
+  email: z.string().max(320).optional(),
+  q: searchText.optional(),
+  status: z.enum(['active', 'locked']).optional(),
+  page_size: z.coerce.number().int().min(1).max(100).default(20),
+  page_token: z.string().optional(),
+}).refine((query) => query.email === undefined || (query.q === undefined && query.status === undefined && query.page_token === undefined
+  && query.page_size === 20), { message: 'email excludes the other filters' });
 export const listStaffQuerySchema = z.strictObject({
   page_size: z.coerce.number().int().min(1).max(100).default(20),
   page_token: z.string().optional(),
@@ -20,7 +31,7 @@ export const createAccountSchema = z.strictObject({
 });
 
 export type CreateAccountBody = z.infer<typeof createAccountSchema>;
-export type FindUserQuery = z.infer<typeof findUserQuerySchema>;
+export type AdminUsersQuery = z.infer<typeof adminUsersQuerySchema>;
 export type ListStaffQuery = z.infer<typeof listStaffQuerySchema>;
 export type StaffUserParams = z.infer<typeof staffUserParamsSchema>;
 export type SetStaffRoleBody = z.infer<typeof setStaffRoleSchema>;

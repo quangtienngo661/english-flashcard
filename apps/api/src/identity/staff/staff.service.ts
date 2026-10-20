@@ -1,14 +1,15 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
 import type { Response } from 'express';
+import { dateString } from '../../common/time/local-date.js';
 import { Clock } from '../../common/clock/clock.js';
 import { APP_CONFIG, type AppConfig } from '../../common/config/app-config.js';
 import { PRISMA_CLIENT } from '../../common/db/prisma.module.js';
 import { normalizeEmail } from '../../common/email/normalize-email.js';
 import { AppLogger } from '../../common/logging/app-logger.js';
-import { decodePageToken, encodePageToken } from '../../common/pagination/page-token.util.js';
+import { decodeBoundToken, decodePageToken, encodeBoundToken, encodePageToken } from '../../common/pagination/page-token.util.js';
 import { ProblemDetailsException } from '../../common/problem-details/problem-details.exception.js';
-import type { Prisma, PrismaClient } from '../../generated/prisma/client.js';
+import { Prisma, type PrismaClient } from '../../generated/prisma/client.js';
 import { PasswordHasher } from '../auth/password-hasher.service.js';
 import { checkPasswordPolicy } from '../auth/password-policy.js';
 import type { StaffRole } from '../identity.types.js';
@@ -24,6 +25,31 @@ export type StaffUserView = {
   id: string; email: string; email_verified: boolean; staff_role: StaffRole | null;
   given_name: string | null; family_name: string | null;
 };
+export type AdminUserRow = {
+  id: string; email: string; given_name: string | null; family_name: string | null; email_verified: boolean;
+  staff_role: StaffRole | null; status: 'active' | 'locked'; created_at: string; last_seen_at: string | null;
+};
+export type AdminUserDetail = AdminUserRow & {
+  birth_date: string | null; terms_accepted_at: string | null; terms_version: string | null; locked_at: string | null;
+  locked_by: { id: string; email: string | null } | null; lock_reason: string | null;
+};
+type AdminListRow = {
+  id: string; email: string; given_name: string | null; family_name: string | null; email_verified_at: Date | null;
+  staff_role: string | null; status: string; created_at: Date; last_seen_at: Date | null;
+};
+const adminDetailSelect = {
+  id: true, email: true, givenName: true, familyName: true, emailVerifiedAt: true, staffRole: true, status: true,
+  createdAt: true, lastSeenAt: true, birthDate: true, termsAcceptedAt: true, termsVersion: true, lockedAt: true,
+  lockedBy: true, lockReason: true,
+} satisfies Prisma.UserSelect;
+function toAdminRow(row: AdminListRow): AdminUserRow {
+  return {
+    id: row.id, email: row.email, given_name: row.given_name, family_name: row.family_name,
+    email_verified: row.email_verified_at !== null, staff_role: row.staff_role as StaffRole | null,
+    status: row.status === 'locked' ? 'locked' : 'active', created_at: row.created_at.toISOString(),
+    last_seen_at: row.last_seen_at?.toISOString() ?? null,
+  };
+}
 const staffSelect = {
   id: true, email: true, emailVerifiedAt: true, staffRole: true, givenName: true, familyName: true,
 } satisfies Prisma.UserSelect;
@@ -103,6 +129,54 @@ export class StaffService {
     if (!normalized) throw invalidInput();
     const row = await this.prisma.user.findUnique({ where: { email: normalized }, select: staffSelect });
     return row ? toView(row) : null;
+  }
+
+  async listUsers(query: { q?: string; status?: 'active' | 'locked'; pageSize: number; pageToken?: string }):
+    Promise<{ items: AdminUserRow[]; next_page_token: string | null }> {
+    const binding = `users:${query.q ?? ''}:${query.status ?? ''}`;
+    let cursor: { at: Date; id: string } | undefined;
+    if (query.pageToken !== undefined) {
+      const decoded = decodeBoundToken(query.pageToken, binding);
+      if (!decoded || typeof decoded.at !== 'string' || typeof decoded.id !== 'string'
+        || Number.isNaN(Date.parse(decoded.at)) || !idParam.safeParse(decoded.id).success) throw invalidInput();
+      cursor = { at: new Date(decoded.at), id: decoded.id };
+    }
+    const escaped = query.q?.replace(/[\\%_]/g, '\\$&');
+    const pattern = escaped === undefined ? undefined : '%' + escaped + '%';
+    const search = pattern === undefined ? Prisma.empty : Prisma.sql`AND (email ILIKE ${pattern} ESCAPE ${'\\'}
+      OR given_name ILIKE ${pattern} ESCAPE ${'\\'} OR family_name ILIKE ${pattern} ESCAPE ${'\\'}
+      OR coalesce(family_name, '') || ' ' || coalesce(given_name, '') ILIKE ${pattern} ESCAPE ${'\\'})`;
+    const status = query.status === undefined ? Prisma.empty : Prisma.sql`AND status = ${query.status}`;
+    const after = cursor === undefined ? Prisma.empty
+      : Prisma.sql`AND (created_at, id) < (${cursor.at}::timestamptz, ${cursor.id}::uuid)`;
+    const rows = await this.prisma.$queryRaw<AdminListRow[]>(Prisma.sql`
+      SELECT id, email, given_name, family_name, email_verified_at, staff_role, status, created_at, last_seen_at
+      FROM users WHERE TRUE ${search} ${status} ${after}
+      ORDER BY created_at DESC, id DESC LIMIT ${query.pageSize + 1}`);
+    const page = rows.slice(0, query.pageSize);
+    const last = page[page.length - 1];
+    return {
+      items: page.map(toAdminRow),
+      next_page_token: rows.length > query.pageSize
+        ? encodeBoundToken({ at: last.created_at.toISOString(), id: last.id }, binding) : null,
+    };
+  }
+
+  async getUserDetail(id: string): Promise<AdminUserDetail> {
+    const row = await this.prisma.user.findUnique({ where: { id }, select: adminDetailSelect });
+    if (!row) throw staffUserNotFound();
+    const locker = row.lockedBy === null ? null
+      : await this.prisma.user.findUnique({ where: { id: row.lockedBy }, select: { email: true } });
+    return {
+      ...toAdminRow({ id: row.id, email: row.email, given_name: row.givenName, family_name: row.familyName,
+        email_verified_at: row.emailVerifiedAt, staff_role: row.staffRole, status: row.status,
+        created_at: row.createdAt, last_seen_at: row.lastSeenAt }),
+      birth_date: row.birthDate === null ? null : dateString(row.birthDate),
+      terms_accepted_at: row.termsAcceptedAt?.toISOString() ?? null, terms_version: row.termsVersion,
+      locked_at: row.lockedAt?.toISOString() ?? null,
+      locked_by: row.lockedBy === null ? null : { id: row.lockedBy, email: locker?.email ?? null },
+      lock_reason: row.lockReason,
+    };
   }
 
   async listStaff(pageSize: number, pageToken?: string): Promise<{ items: StaffUserView[]; next_page_token: string | null }> {
