@@ -7,7 +7,7 @@ import { ProblemDetailsException } from '../../common/problem-details/problem-de
 import { Prisma, type PrismaClient } from '../../generated/prisma/client.js';
 import { INFLECTION_KINDS, LEVELS, PRIVATE_POS_UNSET, VALID_POS, type InflectionKind, type Level } from '../content.constants.js';
 import { InflectionsService } from '../inflections/inflections.service.js';
-import { visibleSenseCondition } from '../learner/visible-senses.js';
+import { visibleEntryCondition } from '../learner/visible-senses.js';
 
 type NativeLanguage = 'vi' | 'en';
 export type WordSense = {
@@ -43,8 +43,14 @@ const displayedLevel = Prisma.sql`
     array_position(ARRAY['A1', 'A2', 'B1', 'B2', 'C1', 'C2']::text[], el.level) ASC
   LIMIT 1`;
 
-/** The shared visibility rule (S6, B3#12): catalog or the viewer's own private sense, open with a live revision. */
-const visible = (viewerId: string) => visibleSenseCondition(Prisma.sql`s.id`, viewerId);
+/**
+ * The shared visibility rule (S6, B3#12): catalog or the viewer's own private sense, open with a live revision. Written on the
+ * rows of the query itself, with the entry half from `visibleEntryCondition`, so Postgres starts from the viewer's own entries and
+ * the catalog instead of from every learner's senses (T5). It is the same test as `visibleSenseCondition`, which Learning embeds.
+ */
+const visibleEntry = (viewerId: string) => visibleEntryCondition(Prisma.sql`e`, viewerId);
+const openLive = Prisma.sql`s.state = 'open' AND s.live_revision_id IS NOT NULL`;
+const visible = (viewerId: string) => Prisma.sql`${openLive} AND ${visibleEntry(viewerId)}`;
 
 /** Bước 2 meaning rule: the native gloss, else the English definition, else the gloss marked untranslated. */
 export function senseMeaning(glossVi: string | null, definitionEn: string | null, nativeLanguage: NativeLanguage): WordSense['meaning'] {
@@ -75,14 +81,18 @@ export class WordsService {
   ) {}
 
   /** One statement per read: visibility, displayed level and live content on one snapshot. */
-  private async senses(viewerId: string, nativeLanguage: NativeLanguage, where: Prisma.Sql): Promise<WordSense[]> {
+  private async senses(viewerId: string, nativeLanguage: NativeLanguage, where: Prisma.Sql, byEntry = false): Promise<WordSense[]> {
+    // byEntry: the condition is on entries, so start from the viewer's matching entries and probe senses(entry_id) once for each;
+    // OFFSET 0 stops the planner from flattening that back into a scan of every learner's senses (T5).
+    const from = byEntry
+      ? Prisma.sql`entries e CROSS JOIN LATERAL (SELECT * FROM senses s WHERE s.entry_id = e.id AND ${openLive} OFFSET 0) s`
+      : Prisma.sql`senses s JOIN entries e ON e.id = s.entry_id`;
     const rows = await this.prisma.$queryRaw<SenseRow[]>`
       SELECT s.id::text AS sense_id, e.id::text AS entry_id, e.scope, e.lemma, e.pos, s.context_label,
         displayed.level, r.examples, gloss.text AS gloss_vi, definition.text AS definition_en,
         COALESCE(topics.items, '[]'::jsonb) AS topics,
         r.form_of_entry_id::text AS form_of_entry_id, r.form_kind, base.lemma AS form_lemma, base.pos AS form_pos
-      FROM senses s
-      JOIN entries e ON e.id = s.entry_id
+      FROM ${from}
       JOIN sense_revisions r ON r.id = s.live_revision_id AND r.sense_id = s.id
       LEFT JOIN LATERAL (${displayedLevel}) displayed ON true
       LEFT JOIN sense_revision_texts gloss ON gloss.revision_id = r.id AND gloss.language = 'vi' AND gloss.kind = 'gloss'
@@ -108,7 +118,7 @@ export class WordsService {
   }
 
   async wordPage(viewerId: string, lemma: string, nativeLanguage: NativeLanguage) {
-    const senses = await this.senses(viewerId, nativeLanguage, Prisma.sql`e.lemma = ${lemma}`);
+    const senses = await this.senses(viewerId, nativeLanguage, Prisma.sql`e.lemma = ${lemma}`, true);
     if (senses.length === 0) throw new ProblemDetailsException({ status: 404, title: 'Not found', type: 'not-found' });
     const entryIds = [...new Set(senses.map(({ entry_id }) => entry_id))];
     const forms = await this.prisma.$queryRaw<Array<{ kind: InflectionKind; form: string; position: number; has_page: boolean }>>`
@@ -133,10 +143,10 @@ export class WordsService {
   /** Case-insensitive: the senses spelled q (lemma or variant), then every base listing q as an inflected form. */
   async lookup(viewerId: string, q: string, nativeLanguage: NativeLanguage) {
     const senses = await this.senses(viewerId, nativeLanguage, Prisma.sql`(lower(e.lemma) = ${q}
-      OR EXISTS (SELECT 1 FROM entry_variants v WHERE v.entry_id = e.id AND lower(v.text) = ${q}))`);
+      OR EXISTS (SELECT 1 FROM entry_variants v WHERE v.entry_id = e.id AND lower(v.text) = ${q}))`, true);
     const bases = await this.inflections.entriesByForm(q, viewerId);
     const baseSenses = bases.length === 0 ? [] : await this.senses(viewerId, nativeLanguage,
-      Prisma.sql`e.id = ANY(${[...new Set(bases.map(({ entryId }) => entryId))]}::uuid[])`);
+      Prisma.sql`e.id = ANY(${[...new Set(bases.map(({ entryId }) => entryId))]}::uuid[])`, true);
     const viaInflection = bases.map((base) => ({
       kind: base.kind, base: { entry_id: base.entryId, lemma: base.lemma, pos: base.pos },
       senses: baseSenses.filter(({ entry_id }) => entry_id === base.entryId),
@@ -159,26 +169,36 @@ export class WordsService {
       SELECT MIN(CASE WHEN lower(head.text) = ${query.q} THEN 0 WHEN head.text ILIKE ${escaped + '%'} ESCAPE ${'\\'} THEN 1 ELSE 2 END)
       FROM (SELECT e.lemma AS text UNION ALL SELECT v.text FROM entry_variants v WHERE v.entry_id = e.id) head
       WHERE head.text ILIKE ${'%' + escaped + '%'} ESCAPE ${'\\'})`;
-    const filters = [
-      visible(viewerId), Prisma.sql`s.live_revision_id IS NOT NULL`,
-      ...(query.level === undefined ? [] : [Prisma.sql`displayed.level = ${query.level}`]),
-      ...(query.topic === undefined ? [] : [Prisma.sql`${query.topic} = ANY(r.topic_codes)`]),
+    // Entry-level tests run first, on their own, so Postgres reads only the viewer's entries and the catalog before it touches
+    // senses; folded into the big join it started from every learner's senses (T5).
+    const entryFilters = [
+      visibleEntry(viewerId),
       ...(query.pos === undefined ? [] : [Prisma.sql`e.pos = ${query.pos}`]),
       ...(query.mine ? [Prisma.sql`e.scope = 'private'`] : []),
     ];
+    const filters = [
+      ...(query.level === undefined ? [] : [Prisma.sql`displayed.level = ${query.level}`]),
+      ...(query.topic === undefined ? [] : [Prisma.sql`${query.topic} = ANY(r.topic_codes)`]),
+    ];
     const after = cursor ? Prisma.sql`WHERE (rank, lemma COLLATE "C") > (${cursor.rank}, ${cursor.lemma} COLLATE "C")` : Prisma.empty;
     const rows = await this.prisma.$queryRaw<Array<WordRow & { rank: number }>>`
-      WITH matched AS (
-        SELECT e.lemma, e.pos, e.scope, displayed.level, ${rank} AS rank,
+      WITH candidates AS MATERIALIZED (
+        SELECT * FROM (SELECT e.id, e.lemma, e.pos, e.scope, ${rank} AS rank FROM entries e WHERE ${Prisma.join(entryFilters, ' AND ')}) c
+        WHERE c.rank IS NOT NULL
+      ), matched AS (
+        SELECT e.lemma, e.pos, e.scope, displayed.level, e.rank,
           CASE WHEN ${nativeLanguage} = 'vi' AND gloss.text IS NOT NULL THEN gloss.text ELSE COALESCE(definition.text, gloss.text, '') END AS meaning,
           array_position(${posOrder}::text[], e.pos) AS pos_rank, s.context_label, s.created_at, s.id
-        FROM senses s
-        JOIN entries e ON e.id = s.entry_id
+        FROM candidates e
+        -- One probe of senses(entry_id) per candidate (OFFSET 0 keeps the planner from flattening it back into a scan of every sense).
+        CROSS JOIN LATERAL (
+          SELECT s.id, s.context_label, s.created_at, s.live_revision_id FROM senses s WHERE s.entry_id = e.id AND ${openLive} OFFSET 0
+        ) s
         JOIN sense_revisions r ON r.id = s.live_revision_id AND r.sense_id = s.id
         LEFT JOIN LATERAL (${displayedLevel}) displayed ON true
         LEFT JOIN sense_revision_texts gloss ON gloss.revision_id = r.id AND gloss.language = 'vi' AND gloss.kind = 'gloss'
         LEFT JOIN sense_revision_texts definition ON definition.revision_id = r.id AND definition.language = 'en' AND definition.kind = 'definition'
-        WHERE ${Prisma.join(filters, ' AND ')}
+        ${filters.length === 0 ? Prisma.empty : Prisma.sql`WHERE ${Prisma.join(filters, ' AND ')}`}
       ), words AS (
         SELECT lemma, MIN(rank)::int AS rank, array_agg(DISTINCT pos) AS pos_list, bool_or(scope = 'private') AS has_private,
           (array_agg(level ORDER BY array_position(${LEVELS as unknown as string[]}::text[], level)) FILTER (WHERE level IS NOT NULL))[1] AS level,

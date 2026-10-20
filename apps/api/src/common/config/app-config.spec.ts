@@ -321,4 +321,10 @@ describe('loadConfig', () => {
     expect(env.ANTHROPIC_CUSTOM_HEADERS).toBeUndefined();
     expect(() => loadConfig(env)).not.toThrow();
   });
+
+  it('T16: pool defaults are 20 connections and 5000 ms; env overrides them', () => {
+    expect(loadConfig(validEnv()).database).toEqual({ poolMax: 20, poolTimeoutMs: 5000 });
+    expect(loadConfig({ ...validEnv(), DATABASE_POOL_MAX: '7', DATABASE_POOL_TIMEOUT_MS: '900' }).database)
+      .toEqual({ poolMax: 7, poolTimeoutMs: 900 });
+  });
 });

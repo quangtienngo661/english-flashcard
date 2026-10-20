@@ -2,6 +2,7 @@ import { StandardSchemaValidationPipe } from '@nestjs/common';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import cookieParser from 'cookie-parser';
 import type { AppConfig } from './common/config/app-config.js';
+import { AppLogger } from './common/logging/app-logger.js';
 import { operationIdMiddleware } from './common/logging/operation-id.middleware.js';
 import { ProblemDetailsFilter } from './common/problem-details/problem-details.filter.js';
 import { WEBHOOK_BODY_LIMIT } from './entitlements/entitlements.constants.js';
@@ -23,6 +24,6 @@ export function configureApp(app: NestExpressApplication, config: AppConfig): vo
     exposedHeaders: ['Retry-After'],
   });
   app.setGlobalPrefix('v1');
-  app.useGlobalFilters(new ProblemDetailsFilter(config.problemTypeBase));
+  app.useGlobalFilters(new ProblemDetailsFilter(config.problemTypeBase, app.get(AppLogger)));
   app.useGlobalPipes(new StandardSchemaValidationPipe());
 }

@@ -45,7 +45,7 @@ function candidate(row: CandidateRow, nativeLanguage: NativeLanguage): Candidate
 }
 
 /** Candidates for distractors and true/false pairs: visible senses only, one statement, no per-sense lists. */
-export async function practiceCandidates(prisma: PrismaClient, viewerId: string, senseIds: string[], nativeLanguage: NativeLanguage):
+export async function practiceCandidates(prisma: Prisma.TransactionClient | PrismaClient, viewerId: string, senseIds: string[], nativeLanguage: NativeLanguage):
   Promise<Map<string, CandidateSense>> {
   if (senseIds.length === 0) return new Map();
   const rows = await prisma.$queryRaw<CandidateRow[]>`SELECT ${columns} FROM ${from} WHERE ${where(viewerId, senseIds)}`;
@@ -53,7 +53,7 @@ export async function practiceCandidates(prisma: PrismaClient, viewerId: string,
 }
 
 /** Everything one question needs: visible senses only, one statement. */
-export async function practiceSenses(prisma: PrismaClient, viewerId: string, senseIds: string[], nativeLanguage: NativeLanguage):
+export async function practiceSenses(prisma: Prisma.TransactionClient | PrismaClient, viewerId: string, senseIds: string[], nativeLanguage: NativeLanguage):
   Promise<Map<string, PracticeSense>> {
   if (senseIds.length === 0) return new Map();
   const rows = await prisma.$queryRaw<SenseRow[]>`

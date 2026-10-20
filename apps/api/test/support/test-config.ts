@@ -8,6 +8,7 @@ export function testConfig(overrides?: Partial<AppConfig>): AppConfig {
   }
   return {
     databaseUrl: 'postgresql://dev:dev@localhost:5432/test',
+    database: { poolMax: 20, poolTimeoutMs: 5000 },
     redisUrl: 'redis://localhost:6379',
     jwt: {
       keys: [{ kid: 'test', secret: randomBytes(32) }],

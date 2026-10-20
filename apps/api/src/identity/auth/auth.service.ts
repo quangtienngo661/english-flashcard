@@ -10,7 +10,7 @@ import { ProblemDetailsException } from '../../common/problem-details/problem-de
 import type { PrismaClient } from '../../generated/prisma/client.js';
 import { MailBudget } from '../../common/mail/mail-budget.service.js';
 import { MailDispatcher, type MailJob } from '../../common/mail/mail-dispatcher.service.js';
-import { isValidTimeZone } from '../profile/timezone.js';
+import { canonicalTimeZone } from '../profile/timezone.js';
 import { SessionService, type IssuedSession } from '../sessions/session.service.js';
 import { withUserLock } from '../user-lock.js';
 import type { LoginBody, RegisterBody } from './auth.schemas.js';
@@ -40,7 +40,8 @@ export class AuthService {
     if (!email) throw this.validationFailed();
     const violations = checkPasswordPolicy(body.password);
     if (violations.length > 0) throw this.validationFailed({ violations });
-    if (!isValidTimeZone(body.timezone)) throw this.validationFailed();
+    const timezone = canonicalTimeZone(body.timezone);
+    if (timezone === null) throw this.validationFailed();
     await this.budget.assertAvailable();
     const hash = await this.hasher.hash(body.password);
     // A preallocated ID lets even a new account follow the lock-first protocol.
@@ -50,7 +51,7 @@ export class AuthService {
       session = await this.prisma.$transaction(async (tx) => {
         await withUserLock(tx, userId);
         const now = this.clock.now();
-        await tx.user.create({ data: { id: userId, email, timezone: body.timezone, createdAt: now, updatedAt: now } });
+        await tx.user.create({ data: { id: userId, email, timezone, createdAt: now, updatedAt: now } });
         await tx.passwordCredential.create({ data: { userId, hash, updatedAt: now } });
         return this.sessions.startChain(tx, { userId, client: body.client, deviceLabel: body.device_label });
       }, transactionOptions);

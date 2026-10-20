@@ -107,6 +107,7 @@ model Sense {
   revisions     SenseRevision[]
   sentences     ContextSentence[]
 
+  @@index([entryId])
   @@map("senses")
 }
 

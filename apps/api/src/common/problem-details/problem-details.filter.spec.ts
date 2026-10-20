@@ -1,6 +1,8 @@
-import { BadRequestException, StandardSchemaValidationPipe, type ArgumentsHost } from '@nestjs/common';
+import { BadRequestException, NotFoundException, StandardSchemaValidationPipe, type ArgumentsHost } from '@nestjs/common';
 import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
+import { AppLogger, type LogEntry } from '../logging/app-logger.js';
+import { runWithOperationId } from '../logging/request-context.js';
 import { ProblemDetailsException } from './problem-details.exception.js';
 import { ProblemDetailsFilter } from './problem-details.filter.js';
 
@@ -107,5 +109,86 @@ describe('ProblemDetailsFilter', () => {
     );
     expect(response.contentType).toBe('application/problem+json');
     expect(response.body).toMatchObject({ status: 409, title: 'Conflict', operation_id: 'op-2' });
+  });
+
+  describe('C3: logging 5xx', () => {
+    const frames = (n: number) => Array.from({ length: n }, (_, i) => `    at fn${i} (file:///src/mod${i}.ts:${i}:1)`);
+
+    function setup(requestExtras: Record<string, unknown> = {}) {
+      const entries: LogEntry[] = [];
+      const logger = new AppLogger({ write: (entry) => entries.push(entry) });
+      const filter = new ProblemDetailsFilter('https://api.example.com/problems/', logger);
+      return { entries, filter, ...mockArgumentsHost({ method: 'POST', route: { path: '/v1/groups/:id' }, ...requestExtras }) };
+    }
+
+    it('C3/FE34: a 500 logs request_failed with operation_id, method, route pattern, error name and Prisma code, ≤ 10 stack lines, no message', () => {
+      const { entries, filter, host, response } = setup({ url: '/v1/groups/9f1c?email=secret@example.com' });
+      const exception = Object.assign(new Error('value secret@example.com'), { code: 'P2002' });
+      exception.stack = `Error: value secret@example.com\n${frames(25).join('\n')}`;
+      runWithOperationId('op-1', () => filter.catch(exception, host));
+
+      expect(entries).toHaveLength(1);
+      const [entry] = entries;
+      expect(entry).toMatchObject({
+        level: 'error', event: 'request_failed', operation_id: 'op-1', method: 'POST',
+        route: '/v1/groups/:id', error: { name: 'Error', code: 'P2002' },
+      });
+      expect(entry.stack).toHaveLength(10);
+      expect(entry.stack).toEqual(frames(10).map((line) => line.trim()));
+      expect(JSON.stringify(entry)).not.toContain('secret@example.com');
+      expect(JSON.stringify(entry)).not.toContain('9f1c');
+      // the response itself is unchanged
+      expect(response.statusCode).toBe(500);
+      expect(response.body).toMatchObject({ status: 500, title: 'Internal Server Error', type: 'about:blank' });
+    });
+
+    it('C3: a message spanning several lines (Prisma errors do) does not leak through the stack', () => {
+      const { entries, filter, host } = setup();
+      const exception = new Error('Invalid invocation\nUnique constraint failed = secret@example.com\n  at user.create');
+      exception.stack = `Error: Invalid invocation\nUnique constraint failed = secret@example.com\n${frames(3).join('\n')}`;
+      runWithOperationId('op-1', () => filter.catch(exception, host));
+      expect(entries[0].stack).toEqual(frames(3).map((line) => line.trim()));
+      expect(JSON.stringify(entries[0])).not.toContain('secret@example.com');
+    });
+
+    it('C3: without a matched route the log says unmatched, never the url', () => {
+      const { entries, filter, host } = setup({ route: undefined, url: '/v1/nope/0f8fad5b-d9cb-469f-a165-70867728950e' });
+      runWithOperationId('op-1', () => filter.catch(new Error('boom'), host));
+      expect(entries[0]).toMatchObject({ event: 'request_failed', route: 'unmatched' });
+      expect(JSON.stringify(entries[0])).not.toContain('0f8fad5b');
+    });
+
+    it('C3: a thrown value with no stack logs an empty stack and the generic error name', () => {
+      const { entries, filter, host, response } = setup();
+      runWithOperationId('op-1', () => filter.catch('plain string', host));
+      expect(entries[0]).toMatchObject({ event: 'request_failed', error: { name: 'UnknownError' }, stack: [] });
+      expect(response.statusCode).toBe(500);
+    });
+
+    it('C3: any mapped 5xx is logged, not only unknown errors', () => {
+      const { entries, filter, host } = setup();
+      runWithOperationId('op-1', () => filter.catch(
+        new ProblemDetailsException({ status: 503, title: 'Service unavailable' }), host,
+      ));
+      expect(entries).toHaveLength(1);
+      expect(entries[0]).toMatchObject({ event: 'request_failed', route: '/v1/groups/:id' });
+    });
+
+    it('C3: a 4xx (validation, 404, 409) logs nothing', () => {
+      const { entries, filter, host } = setup();
+      runWithOperationId('op-1', () => {
+        filter.catch(new BadRequestException('invalid input'), host);
+        filter.catch(new NotFoundException(), host);
+        filter.catch(new ProblemDetailsException({ status: 409, title: 'Conflict' }), host);
+        filter.catch(Object.assign(new Error('x'), { status: 413, expose: true }), host);
+      });
+      expect(entries).toEqual([]);
+    });
+
+    it('C3: a 500 without a logger still renders the problem body', () => {
+      const { host, response } = mockArgumentsHost({ operationId: 'op-2' });
+      new ProblemDetailsFilter().catch(new Error('boom'), host);
+      expect(response.body).toMatchObject({ status: 500, operation_id: 'op-2' });
+    });
   });
 });

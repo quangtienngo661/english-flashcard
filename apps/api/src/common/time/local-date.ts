@@ -1,15 +1,27 @@
+const FORMATTER_CACHE_MAX = 500;
+/** Least recently used first: a Map iterates in insertion order and a hit re-inserts its key. */
 const formats = new Map<string, Intl.DateTimeFormat>();
 const DAY_MS = 86_400_000;
 
 function format(timeZone: string): Intl.DateTimeFormat {
-  let value = formats.get(timeZone);
-  if (!value) {
-    value = new Intl.DateTimeFormat('en-CA', {
-      timeZone, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
-    });
-    formats.set(timeZone, value);
+  const cached = formats.get(timeZone);
+  if (cached) {
+    formats.delete(timeZone);
+    formats.set(timeZone, cached);
+    return cached;
   }
+  const value = new Intl.DateTimeFormat('en-CA', {
+    timeZone, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
+  });
+  formats.set(timeZone, value);
+  // The name is whatever spelling a caller passed, so the cache must not grow with the number of spellings.
+  if (formats.size > FORMATTER_CACHE_MAX) formats.delete(formats.keys().next().value as string);
   return value;
+}
+
+/** How many formatters are cached (for the test of the bound). */
+export function formatterCacheSize(): number {
+  return formats.size;
 }
 
 function parts(timeZone: string, at: Date): Record<string, string> {

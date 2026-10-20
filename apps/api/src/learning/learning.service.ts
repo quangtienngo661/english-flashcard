@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import type { Prisma } from '../generated/prisma/client.js';
+import type { Prisma, PrismaClient } from '../generated/prisma/client.js';
 import {
   PracticeReadsService, type PracticeCheck, type PracticeItem, type PracticeScope,
 } from './practice/practice-reads.service.js';
@@ -23,18 +23,22 @@ export class LearningService {
     return this.queue.cardsLeftToday(entries);
   }
 
-  /** The learner's visible items of a practice source, one row per item; a group not owned → 404. */
-  practiceItems(userId: string, scope: PracticeScope): Promise<PracticeItem[]> {
-    return this.practice.items(userId, scope);
+  /**
+   * The learner's visible items of a practice source, one row per item; a group not owned → 404. The three practice reads take
+   * the client to read through: a caller inside an open transaction passes its `tx`, so the read needs no second connection.
+   */
+  practiceItems(userId: string, scope: PracticeScope, db?: Prisma.TransactionClient | PrismaClient): Promise<PracticeItem[]> {
+    return this.practice.items(userId, scope, db);
   }
 
   /** For each sense, the visible senses sharing a group with the learner's item of it (itself excluded; `[]` if none). */
-  practiceGroupMates(userId: string, senseIds: string[]): Promise<Map<string, string[]>> {
-    return this.practice.groupMates(userId, senseIds);
+  practiceGroupMates(userId: string, senseIds: string[], db?: Prisma.TransactionClient | PrismaClient): Promise<Map<string, string[]>> {
+    return this.practice.groupMates(userId, senseIds, db);
   }
 
-  practiceCheck(userId: string, senseId: string, groupId: string | null): Promise<PracticeCheck> {
-    return this.practice.check(userId, senseId, groupId);
+  practiceCheck(userId: string, senseId: string, groupId: string | null, db?: Prisma.TransactionClient | PrismaClient):
+    Promise<PracticeCheck> {
+    return this.practice.check(userId, senseId, groupId, db);
   }
 
   /** "Cần ôn tập" / "Đã biết" from practice, in the caller's transaction; idempotent by `reviewId`. */

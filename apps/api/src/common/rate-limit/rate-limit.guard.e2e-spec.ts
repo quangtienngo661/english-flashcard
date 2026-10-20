@@ -52,7 +52,7 @@ describe('RateLimitGuard (e2e)', () => {
     const moduleRef = await Test.createTestingModule({
       imports: [
         CommonModule.forRoot(config),
-        PrismaModule.forRoot({ connectionString: inject('databaseUrl') }),
+        PrismaModule.forRoot({ connectionString: inject('databaseUrl'), ...config.database }),
       ],
       controllers: [TestRateLimitedController],
     }).overrideProvider(Clock).useValue(clock).compile();

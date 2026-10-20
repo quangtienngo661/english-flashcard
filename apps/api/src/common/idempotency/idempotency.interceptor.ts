@@ -62,7 +62,7 @@ export class IdempotencyInterceptor implements NestInterceptor {
           const body = await firstValueFrom(next.handle());
           return { status: response.statusCode, body };
         },
-        { timeoutSeconds },
+        { leaseSeconds: timeoutSeconds },
       ).then((result) => {
         if (result.kind === 'conflict') {
           response.setHeader('Retry-After', String(result.retryAfterSeconds));

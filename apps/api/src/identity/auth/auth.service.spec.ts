@@ -60,7 +60,7 @@ describe('registration and login (unit, isolated persistence)', () => {
     tx.user.create.mockImplementation(async (args) => { events.push('create'); return { id: args.data.id }; });
     expect(await auth.register(body, res)).toEqual(issued);
     expect(events).toEqual(['hash', 'lock', 'create']);
-    expect(tx.user.create).toHaveBeenCalledWith({ data: expect.objectContaining({ email: user.email, timezone: body.timezone }) });
+    expect(tx.user.create).toHaveBeenCalledWith({ data: expect.objectContaining({ email: user.email, timezone: 'Asia/Saigon' }) });
     const userId = tx.user.create.mock.calls[0][0].data.id;
     expect(userId).toMatch(/^[0-9a-f-]{36}$/);
     expect(tx.passwordCredential.create).toHaveBeenCalledWith({ data: expect.objectContaining({ userId, hash: 'new-hash' }) });
@@ -77,11 +77,19 @@ describe('registration and login (unit, isolated persistence)', () => {
     [{ email: 'invalid' }, undefined],
     [{ password: 'abc' }, ['min_length', 'uppercase', 'digit', 'special']],
     [{ timezone: 'Mars/Base' }, undefined],
+    [{ timezone: '+07:00' }, undefined],
   ])('B1#3/B1E23: invalid registration is rejected before budget, hash or DB work (%j)', async (changes, violations) => {
     await expect(auth.register({ ...body, ...changes }, res)).rejects.toMatchObject({
       status: 400, problemType: 'validation-failed', ...(violations ? { extensions: { violations } } : {}),
     });
     expect(budget.assertAvailable).not.toHaveBeenCalled(); expect(hasher.hash).not.toHaveBeenCalled(); expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+  it('C2: register stores the canonical spelling of the zone, whatever case the client sent', async () => {
+    for (const timezone of ['asia/ho_chi_minh', 'ASIA/HO_CHI_MINH', 'Asia/Saigon']) {
+      tx.user.create.mockClear();
+      await auth.register({ ...body, timezone }, res);
+      expect(tx.user.create.mock.calls[0][0].data.timezone).toBe('Asia/Saigon');
+    }
   });
   it('B1#30: exhausted mail budget prevents hashing and creating the account', async () => {
     budget.assertAvailable.mockRejectedValue({ status: 503 });

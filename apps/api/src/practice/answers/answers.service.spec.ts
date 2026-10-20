@@ -27,10 +27,10 @@ function setup(at: Date, record?: () => Promise<void>) {
   const entitlements = {
     recordPracticeSession: vi.fn(record ?? (async () => { calls.push('record'); })),
   };
-  const identity = { getProfile: vi.fn(async () => ({ timezone: 'Asia/Ho_Chi_Minh' })) } as unknown as IdentityService;
-  const service = new AnswersService({} as PrismaClient, new FakeClock(at), identity, {} as LearningService,
+  const identity = { getProfile: vi.fn(async () => ({ timezone: 'Asia/Ho_Chi_Minh' })) };
+  const service = new AnswersService({} as PrismaClient, new FakeClock(at), identity as unknown as IdentityService, {} as LearningService,
     {} as SessionsService, entitlements as unknown as EntitlementsService);
-  return { service, tx: tx as unknown as Prisma.TransactionClient, rawTx: tx, entitlements, calls };
+  return { service, tx: tx as unknown as Prisma.TransactionClient, rawTx: tx, entitlements, calls, identity };
 }
 
 describe('AnswersService.writeFinal — records the practice session (Bước 5)', () => {
@@ -56,5 +56,70 @@ describe('AnswersService.writeFinal — records the practice session (Bước 5)
     const boom = new Error('insert failed');
     const { service, tx } = setup(new Date('2026-10-19T03:00:00Z'), async () => { throw boom; });
     await expect(service.writeFinal(tx, item, final)).rejects.toBe(boom);
+  });
+});
+
+// A mcq item the learner has not answered yet, with the parts `resultOf` and `writeFinal` read.
+const mcqItem = (overrides: Record<string, unknown> = {}) => ({
+  id: 'it-1', userId, sessionId: 'sess-1', senseId: 'sense-1', result: null, tries: 0, maxRetries: null, answersTried: [],
+  hintLevel: 0, skipped: false,
+  question: {
+    type: 'mcq_definition', prompt: { kind: 'mcq', options: ['cat', 'dog'] }, hints: { level1: null, level2: null },
+    answerKey: { kind: 'mcq', correct_index: 0, reveal: { lemma: 'cat', meaning: 'con meo', definition_en: null } },
+  },
+  ...overrides,
+}) as unknown as ItemWithQuestion;
+
+/** The route as the controller calls it, with every Learning / Identity read recorded by the client it was given. */
+function route(found: ItemWithQuestion) {
+  const reads: Array<{ read: string; db: unknown }> = [];
+  const tx = {
+    $queryRaw: vi.fn(async () => []),
+    practiceSessionItem: {
+      findUniqueOrThrow: vi.fn(async () => found),
+      update: vi.fn(async () => ({ ...found, result: 'correct', tries: 1 })),
+    },
+  };
+  const prisma = {
+    practiceSessionItem: { findFirst: vi.fn(async () => ({ sessionId: 'sess-1' })) },
+    $transaction: vi.fn(async (fn: (t: typeof tx) => unknown) => fn(tx)),
+  };
+  const identity = { getProfile: vi.fn(async (_id: string, db?: unknown) => { reads.push({ read: 'getProfile', db }); return { timezone: 'UTC' }; }) };
+  const learning = {
+    practiceCheck: vi.fn(async (_u: string, _s: string, _g: null, db?: unknown) => {
+      reads.push({ read: 'practiceCheck', db });
+      return { item: { due_now: true } };
+    }),
+  };
+  const sessions = { closeIfIdle: vi.fn(async () => undefined), lockOpen: vi.fn(async () => undefined) };
+  const entitlements = { recordPracticeSession: vi.fn(async () => undefined) };
+  const service = new AnswersService(prisma as unknown as PrismaClient, new FakeClock(new Date('2026-10-19T03:00:00Z')),
+    identity as unknown as IdentityService, learning as unknown as LearningService, sessions as unknown as SessionsService,
+    entitlements as unknown as EntitlementsService);
+  return { service, tx, reads, learning, identity };
+}
+
+describe('AnswersService — reads inside the answer transaction use the transaction (PX4)', () => {
+  it('PX4: writeFinal reads the profile through the transaction', async () => {
+    const { service, tx, identity } = setup(new Date('2026-10-19T03:00:00Z'));
+    await service.writeFinal(tx, item, final);
+    expect(identity.getProfile).toHaveBeenCalledExactlyOnceWith(userId, tx);
+  });
+
+  it('PX4: a final answer reads the profile and the learning item through tx, never the global client', async () => {
+    const found = mcqItem();
+    const { service, tx, reads, learning } = route(found);
+    await expect(service.answer(userId, 'it-1', { choice: 0 })).resolves.toMatchObject({ result: 'correct', show_known: true });
+    expect(reads.map(({ read }) => read)).toEqual(['getProfile', 'practiceCheck']);
+    expect(reads.every(({ db }) => db === tx)).toBe(true);
+    expect(learning.practiceCheck).toHaveBeenCalledWith(userId, 'sense-1', null, tx);
+  });
+
+  it('PX4: answering an item that is already answered reads the learning item through tx for the 409 body', async () => {
+    const { service, tx, learning } = route(mcqItem({ result: 'wrong' }));
+    await expect(service.answer(userId, 'it-1', { choice: 0 })).rejects.toMatchObject({
+      status: 409, problemType: 'already-answered', extensions: { result: { result: 'wrong' } },
+    });
+    expect(learning.practiceCheck).toHaveBeenCalledWith(userId, 'sense-1', null, tx);
   });
 });
