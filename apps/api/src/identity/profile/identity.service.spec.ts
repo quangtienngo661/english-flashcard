@@ -62,3 +62,62 @@ describe('IdentityService (unit, isolated persistence)', () => {
     await expect(identity.updateProfile(row.id, { native_language: 'en' })).rejects.toBe(error);
   });
 });
+
+type Row = { id: string; email: string; timezone: string };
+
+/** An in-memory `users` table that answers only the two calls the loop makes. */
+function fakePrisma(rows: Row[], afterFirstRead?: () => void) {
+  const findMany = vi.fn(async (args: { where?: { id?: { gt?: string } }; orderBy: { id: 'asc' }; take: number }) => {
+    const after = args.where?.id?.gt;
+    const page = rows.filter((row) => after === undefined || row.id > after).sort((a, b) => a.id.localeCompare(b.id))
+      .slice(0, args.take).map(({ id, timezone }) => ({ id, timezone }));
+    if (findMany.mock.calls.length === 1) afterFirstRead?.();
+    return page;
+  });
+  const updateMany = vi.fn(async (args: { where: { id: string; timezone: string }; data: { timezone: string } }) => {
+    const matching = rows.filter((row) => row.id === args.where.id && row.timezone === args.where.timezone);
+    for (const row of matching) row.timezone = args.data.timezone;
+    return { count: matching.length };
+  });
+  return { prisma: { user: { findMany, updateMany } } , findMany, updateMany };
+}
+const id = (n: number) => `u${String(n).padStart(5, '0')}`;
+
+describe('IdentityService.normalizeStoredTimeZones', () => {
+  it('normalize-timezones: rewrites only rows whose value changes, across pages of 500, and reports { scanned, changed }', async () => {
+    const rows: Row[] = Array.from({ length: 1201 }, (_, n) => ({ id: id(n), email: `user${n}@example.test`, timezone: 'Asia/Saigon' }));
+    rows[3].timezone = 'asia/ho_chi_minh'; rows[499].timezone = '+07:00'; rows[500].timezone = '-05:00';
+    rows[900].timezone = '+05:30'; rows[1200].timezone = 'Mars/Base'; rows[7].timezone = 'UTC';
+    const { prisma, findMany, updateMany } = fakePrisma(rows);
+
+    expect(await new IdentityService(prisma as unknown as PrismaClient).normalizeStoredTimeZones()).toEqual({ scanned: 1201, changed: 5 });
+
+    expect([rows[3], rows[499], rows[500], rows[900], rows[1200]].map((row) => row.timezone))
+      .toEqual(['Asia/Saigon', 'Etc/GMT-7', 'Etc/GMT+5', 'UTC', 'UTC']);
+    expect(rows[7].timezone).toBe('UTC');
+    expect(updateMany).toHaveBeenCalledTimes(5);
+    expect(updateMany.mock.calls.map(([args]) => args.where.id)).toEqual([id(3), id(499), id(500), id(900), id(1200)]);
+    expect(findMany.mock.calls.map(([args]) => args.take)).toEqual([500, 500, 500]);
+    expect(findMany.mock.calls.map(([args]) => args.where?.id?.gt)).toEqual([undefined, id(499), id(999)]);
+    expect(await new IdentityService(prisma as unknown as PrismaClient).normalizeStoredTimeZones()).toEqual({ scanned: 1201, changed: 0 });
+  });
+
+  it('normalize-timezones: never reads or touches emails, and leaves a row alone that changed after it was read', async () => {
+    const rows: Row[] = [
+      { id: id(1), email: 'lan@example.test', timezone: '+07:00' },
+      { id: id(2), email: 'minh@example.test', timezone: '+07:00' },
+    ];
+    const { prisma, findMany, updateMany } = fakePrisma(rows, () => { rows[1].timezone = 'Europe/Berlin'; });
+
+    expect(await new IdentityService(prisma as unknown as PrismaClient).normalizeStoredTimeZones()).toEqual({ scanned: 2, changed: 1 });
+
+    expect(rows.map((row) => row.timezone)).toEqual(['Etc/GMT-7', 'Europe/Berlin']);
+    expect(JSON.stringify([findMany.mock.calls, updateMany.mock.calls])).not.toContain('example.test');
+    for (const [args] of findMany.mock.calls) expect(args).toMatchObject({ select: { id: true, timezone: true } });
+    for (const [args] of updateMany.mock.calls) expect(Object.keys(args.data)).toEqual(['timezone']);
+  });
+
+  it('normalize-timezones: an empty table scans nothing', async () => {
+    expect(await new IdentityService(fakePrisma([]).prisma as unknown as PrismaClient).normalizeStoredTimeZones()).toEqual({ scanned: 0, changed: 0 });
+  });
+});

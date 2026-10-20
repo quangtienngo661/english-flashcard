@@ -4,7 +4,9 @@ import { ProblemDetailsException } from '../../common/problem-details/problem-de
 import type { Prisma, PrismaClient } from '../../generated/prisma/client.js';
 import { permissionsFor, type Permission, type StaffRole, type SupportedLanguage } from '../identity.types.js';
 import type { UpdateProfileBody } from './profile.schemas.js';
-import { canonicalTimeZone } from './timezone.js';
+import { canonicalTimeZone, normalizeStoredTimeZone } from './timezone.js';
+
+const NORMALIZE_PAGE_SIZE = 500;
 
 export interface Profile {
   id: string;
@@ -107,6 +109,33 @@ export class IdentityService {
       // Also handles deletion concurrent with PATCH without turning it into a 500.
       if (error !== null && typeof error === 'object' && 'code' in error && error.code === 'P2025') return null;
       throw error;
+    }
+  }
+
+  /**
+   * Rewrites every stored `users.timezone` to its canonical name, a page of 500 users by id at a time. A row is written only
+   * when its value changes, and only if it still holds the value that was read, so a concurrent PATCH /v1/me is never
+   * overwritten. Reads ids and zones only. Safe to run again: a second run changes nothing.
+   */
+  async normalizeStoredTimeZones(): Promise<{ scanned: number; changed: number }> {
+    let scanned = 0;
+    let changed = 0;
+    let after: string | undefined;
+    for (;;) {
+      const page = await this.prisma.user.findMany({
+        where: after === undefined ? {} : { id: { gt: after } },
+        select: { id: true, timezone: true },
+        orderBy: { id: 'asc' },
+        take: NORMALIZE_PAGE_SIZE,
+      });
+      for (const { id, timezone } of page) {
+        scanned += 1;
+        const next = normalizeStoredTimeZone(timezone);
+        if (next === timezone) continue;
+        changed += (await this.prisma.user.updateMany({ where: { id, timezone }, data: { timezone: next } })).count;
+      }
+      if (page.length < NORMALIZE_PAGE_SIZE) return { scanned, changed };
+      after = page[page.length - 1].id;
     }
   }
 }
