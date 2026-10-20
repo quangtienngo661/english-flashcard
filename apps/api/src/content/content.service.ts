@@ -5,7 +5,7 @@ import { AdminCatalogQueries, type EntryExportRow, type ExportRow, type LatestRe
 import type { SenseFilter } from './catalog/sense-filters.js';
 import { EntriesService, type EnsureEntryInput, type EnsureEntryResult, type VariantInput } from './catalog/entries.service.js';
 import { LevelsService, type EntryLevelView, type ImportedLevelInput } from './catalog/levels.service.js';
-import { revertRecords, type RevertRecord, type RevertReport } from './catalog/revert.service.js';
+import { revertRecords, type RevertContext, type RevertRecord, type RevertReport } from './catalog/revert.service.js';
 import type { Level } from './content.constants.js';
 import {
   PrivateWordsService, type CreatePrivateSenseInput, type CreatePrivateSenseResult, type PrivateWordPatch,
@@ -92,8 +92,8 @@ export class ContentService {
   }
 
   // Unlike other writes, revert owns one entry-key-locked transaction per entry, so it takes no tx.
-  revertRecords(records: RevertRecord[]): Promise<RevertReport> {
-    return revertRecords(this.prisma, this.entries, records);
+  revertRecords(records: RevertRecord[], context: RevertContext): Promise<RevertReport> {
+    return revertRecords(this.prisma, this.entries, records, context);
   }
 
   markRevisions(tx: Prisma.TransactionClient, items: MarkRevisionItem[], actorId: string): Promise<MarkRevisionResult[]> {
