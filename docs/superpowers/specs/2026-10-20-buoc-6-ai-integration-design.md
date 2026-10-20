@@ -125,7 +125,7 @@ Hiện trạng trên `dev` @ `529fde3` (đã đọc 20/10):
 | D25 | Số token tối đa (sau review, Q2) | Một ô cho từng thao tác, cạnh model và effort; mặc định như cũ; **để trống = không giới hạn** |
 | D26 | Ngôn ngữ lời dặn ban đầu (review plan) | Plan không chốt: lời dặn sửa trong admin; bản nạp ban đầu tiếng Anh chỉ là điểm khởi đầu; câu chặn do code giữ viết tiếng Anh |
 | D27 | Từ không có level (review plan) | Level không bắt buộc: có thì dặn theo level, không có thì không nhắm trình độ nào |
-| D28 | Model Anthropic không cho biết số token tối đa (review plan) | Ô vẫn để trống được; khi đó gửi 16.000 (`ASSUMPTION`, chờ xác nhận khi duyệt plan) |
+| D28 | Model Anthropic không cho biết số token tối đa (review plan) | Ô vẫn để trống được; khi đó gửi 16.000 (`ASSUMPTION`; chủ dự án xác nhận con số khi duyệt plan, 20/10/2026) |
 
 ## 3. Phạm vi
 

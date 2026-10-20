@@ -1,6 +1,6 @@
 # Bước 6 — plan tóm tắt (20/10/2026)
 
-Ảnh chụp lúc trình plan, chưa duyệt; đã cập nhật sau review plan
+Ảnh chụp lúc duyệt plan (chủ dự án duyệt 20/10/2026, kèm phụ lục A và con số 16.000); đã cập nhật sau review plan
 ([`../superpowers/reviews/2026-10-20-buoc-6-plan-review.md`](../superpowers/reviews/2026-10-20-buoc-6-plan-review.md)). Plan đầy đủ:
 [`../superpowers/plans/2026-10-20-buoc-6-ai-integration.md`](../superpowers/plans/2026-10-20-buoc-6-ai-integration.md); design:
 [`../superpowers/specs/2026-10-20-buoc-6-ai-integration-design.md`](../superpowers/specs/2026-10-20-buoc-6-ai-integration-design.md).
@@ -20,7 +20,7 @@ chạy qua API và worker thật trên DB mới với bản giả (B6#1–B6#30;
 **Chốt sau review plan** (chủ dự án trả lời trước, Claude đề xuất sau):
 - **D26:** plan không chốt ngôn ngữ lời dặn, vì lời dặn sửa được trong admin; bản nạp ban đầu chỉ là điểm khởi đầu, viết tiếng Anh; câu chặn do code giữ viết tiếng Anh.
 - **D27:** level không bắt buộc: có level thì dặn câu không khó hơn level đó, không có thì không nhắm trình độ nào.
-- **D28:** ô số token vẫn để trống được với model Anthropic không cho biết số tối đa; khi đó gửi 16.000 (con số chờ xác nhận khi duyệt plan).
+- **D28:** ô số token vẫn để trống được với model Anthropic không cho biết số tối đa; khi đó gửi 16.000 (chủ dự án xác nhận khi duyệt plan).
 
 **Chọn kỹ thuật trong plan** (design không ghi; ghi vào design khi xong; đánh số như plan):
 1. Bộ nối trả về chữ thô; cổng tự đọc JSON.
@@ -47,7 +47,7 @@ chạy qua API và worker thật trên DB mới với bản giả (B6#1–B6#30;
 22. Thêm vài hằng số cố định (độ dài ghi chú, giá tối đa, dạng mã thao tác, cận trên số token khi không biết, số 16.000 của D28).
 23. Dịch vụ AI có thêm hàm "chạy thử một lần" cho lệnh thử AI trên máy.
 
-**Chờ chủ dự án:** duyệt plan, kèm lời dặn + ví dụ ban đầu (phụ lục A của plan) và con số 16.000 của D28.
+**Đã duyệt (20/10/2026):** plan, kèm lời dặn + ví dụ ban đầu (phụ lục A của plan) và con số 16.000 của D28.
 
 **M1 — Nền móng (luồng A, B, C)**
 1. Thêm nhóm cài đặt `ai` (thời gian chờ, số lời gọi cùng lúc, trần lời gọi mỗi ngày, số ngày giữ nội dung, tỷ giá).

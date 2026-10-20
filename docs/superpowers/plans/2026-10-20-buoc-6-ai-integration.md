@@ -1,11 +1,11 @@
 # Bước 6 — AI Integration Implementation Plan (API only)
 
-> **Status 20/10/2026:** written after the design was approved (D1–D25; review R1–R17 applied, PR #80 merged into `dev`). **Not yet
-> approved by the owner.** **API only** (D8): no `apps/web`, no `apps/admin` screen. No real provider call in "Xong khi" (D19).
+> **Status 20/10/2026:** written after the design was approved (D1–D25; review R1–R17 applied, PR #80 merged into `dev`). **Approved
+> by the owner 20/10/2026** ("Duyệt plan, kèm Appendix A và 16 000"). **API only** (D8): no `apps/web`, no `apps/admin` screen. No real provider call in "Xong khi" (D19).
 > **Execution (D20):** parallel sessions, every task implemented by Claude, one coordinator session; no Codex loop. The owner's cap from
 > Bước 5 (19/10/2026, "4–5 sessions at most") is kept: three implementing sessions plus the coordinator, which also runs the gate.
 > Who does what: "Sessions and tracks". What the coordinator does: "Brief for the coordinator session".
-> **Waiting for the owner:** approval of this plan, including the initial prompts of Appendix A (design §7.5) and the number 16 000 of D28.
+> **Approved with the plan (20/10/2026):** the initial prompts of Appendix A (design §7.5) and the number 16 000 of D28.
 > **Updated 20/10/2026 after the plan review** ([`../reviews/2026-10-20-buoc-6-plan-review.md`](../reviews/2026-10-20-buoc-6-plan-review.md), 27
 > findings): every technical fix is in; the three questions became D26–D28 (design and decision record updated). "Plan review #N" in a task
 > points to finding N.
@@ -259,8 +259,8 @@ The coordinator implements no task. It:
   point (English, Appendix A); the code-held guard sentence is English.
 - **D27**: `level` is optional — the prompt asks for "at or below the level" only when a level is given; no target level otherwise.
 - **D28**: the token limit stays optional for an Anthropic model whose maximum is unknown; the call then sends
-  `ANTHROPIC_MAX_TOKENS_FALLBACK = 16 000` (the number awaits the owner's confirmation with the plan).
-- Still to approve with the plan: the initial prompts and examples in Appendix A (design §7.5).
+  `ANTHROPIC_MAX_TOKENS_FALLBACK = 16 000` (the number confirmed by the owner with the plan, 20/10/2026).
+- Approved with the plan (20/10/2026): the initial prompts and examples in Appendix A (design §7.5).
 
 ## Review Focus
 
@@ -1226,7 +1226,7 @@ notes: plan choices 1–23).
 
 ---
 
-# Appendix A — Initial prompts (design §7.5; for the owner's approval)
+# Appendix A — Initial prompts (design §7.5; approved by the owner 20/10/2026)
 
 Only a starting point (D26): the owner edits the instructions and examples in admin at any time, in any language (D12). The seeded text is
 English. The output fields' language is fixed by the fields themselves (`*_vi` Vietnamese, the rest English). `level` is optional

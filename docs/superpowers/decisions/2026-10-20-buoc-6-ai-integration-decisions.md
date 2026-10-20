@@ -9,7 +9,7 @@ mô tả *cách làm*; file này trả lời *tại sao chọn vậy và đã b�
 > rồi nhờ một agent review độc lập trước ([`../reviews/2026-10-20-buoc-6-design-review.md`](../reviews/2026-10-20-buoc-6-design-review.md)). Hai câu
 > sau review đã chốt (D24, D25); phần kỹ thuật sửa theo review ghi ở mục "Đề xuất kỹ thuật sau review" (design §0b). Chủ dự án duyệt bản đã sửa:
 > "Mình duyệt bản design Bước 6 đã sửa" (20/10/2026). **Đã chốt toàn bộ.**
-> **Cập nhật 20/10/2026 (review plan):** ba câu của review plan chốt thành D26–D28; con số 16.000 của D28 chờ xác nhận khi chủ dự án duyệt plan. Một chỗ sửa kỹ thuật
+> **Cập nhật 20/10/2026 (review plan):** ba câu của review plan chốt thành D26–D28; con số 16.000 của D28 chủ dự án xác nhận khi duyệt plan (20/10/2026). Một chỗ sửa kỹ thuật
 > của bảng lỗi Anthropic ghi ở mục "Đề xuất kỹ thuật sau review plan".
 
 **Nhãn:** ✅ = phương án được chọn. **Ai chốt:** "Chủ dự án" = chọn trong chat; "Đề xuất của Claude" = Claude đề xuất sau khi chủ dự án trả lời, hoặc
@@ -51,7 +51,7 @@ cách viết prompt theo nhà cung cấp và model); research chỉ nêu dữ ki
 | D25 | Số token tối đa (sau review, Q2) | Ô riêng cho từng thao tác; mặc định như cũ; để trống = không giới hạn | Chủ dự án |
 | D26 | Ngôn ngữ lời dặn ban đầu (review plan, Q1) | Plan không chốt: lời dặn sửa được trong admin; bản nạp ban đầu chỉ là điểm khởi đầu (viết tiếng Anh); câu chặn do code giữ viết tiếng Anh | Chủ dự án (câu chặn tiếng Anh: đề xuất của Claude) |
 | D27 | Trình độ của câu khi từ không có level (review plan, Q2) | Level không bắt buộc: có thì dặn theo level, không có thì không nhắm trình độ nào | Chủ dự án |
-| D28 | Model Anthropic không cho biết số token tối đa (review plan, Q3) | Ô số token vẫn để trống được; khi đó gửi một số cố định trong code (16.000) | Chủ dự án (con số 16.000: đề xuất của Claude, chờ xác nhận khi duyệt plan) |
+| D28 | Model Anthropic không cho biết số token tối đa (review plan, Q3) | Ô số token vẫn để trống được; khi đó gửi một số cố định trong code (16.000) | Chủ dự án (con số 16.000: đề xuất của Claude, chủ dự án xác nhận khi duyệt plan 20/10/2026) |
 
 ## D1 — Cách làm việc
 
@@ -406,7 +406,7 @@ Claude đề xuất con số **16.000** (`ANTHROPIC_MAX_TOKENS_FALLBACK`, `ASSUM
 - Ô số token với model không cho biết số tối đa nhận 1–128.000 (cùng cận trên đang dùng cho OpenAI).
 - Ước tính "lời gọi đắt nhất" dùng 16.000.
 
-Con số chờ chủ dự án xác nhận khi duyệt plan.
+Chủ dự án xác nhận khi duyệt plan (20/10/2026): "Duyệt plan, kèm Appendix A và 16 000".
 
 ## Đề xuất kỹ thuật sau review plan (20/10/2026)
 
