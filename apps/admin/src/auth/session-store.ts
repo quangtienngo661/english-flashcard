@@ -80,6 +80,8 @@ export class SessionStore {
         this.token = null;
         this.set({ status: 'signed-out', notice: null });
       } else if (type === 'login' && this.state.status === 'signed-out') {
+        // A sign-in elsewhere supersedes a sign-out that never reached the server.
+        setLogoutPending(false);
         void this.bootstrap();
       }
     });
@@ -107,6 +109,7 @@ export class SessionStore {
     if (!res.ok) throw await toApiError(res);
     this.token = ((await res.json()) as TokenBody).access_token;
     await this.recheck();
+    if (this.state.status === 'signed-in' || this.state.status === 'change-password') setLogoutPending(false);
     if (this.state.status === 'signed-in' || this.state.status === 'change-password') this.broadcast({ type: 'login' });
   }
 

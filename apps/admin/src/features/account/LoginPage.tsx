@@ -20,6 +20,7 @@ export function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const busy = useRef(false);
+  const [retrying, setRetrying] = useState(false);
 
   if (state.status === 'signed-in') return <Navigate to={from ?? '/'} replace />;
   if (state.status === 'change-password') return <Navigate to="/change-password" replace />;
@@ -52,7 +53,15 @@ export function LoginPage() {
           <Banner
             variant="error"
             action={
-              <button type="button" className="underline" onClick={() => void store.retryLogout()}>
+              <button
+                type="button"
+                className="underline disabled:opacity-60"
+                disabled={retrying}
+                onClick={() => {
+                  setRetrying(true);
+                  void store.retryLogout().finally(() => setRetrying(false));
+                }}
+              >
                 {t('session.retry')}
               </button>
             }
