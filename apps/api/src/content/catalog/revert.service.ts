@@ -6,6 +6,13 @@ export type RevertRecord = {
   type: RevertRecordType; id: string; replacedRevisionId?: string;
   replacedRevisionPreviousStatus?: 'draft' | 'reviewed';
 };
+/** What the calling batch knows about itself, as plain values (Content never reads Pipeline tables). */
+export type RevertContext = {
+  /** When the batch's job finished; a reviewed inflection set stamped later was set by someone else. */
+  batchFinishedAt: Date | null;
+  /** Revisions the batch itself recorded; their form_of links do not keep an entry while they are unpublished. */
+  ownRevisionIds: ReadonlySet<string>;
+};
 export type RevertReport = {
   removed: Record<RevertRecordType, number>;
   skipped: Array<{ type: string; id: string; reason: string }>;
@@ -76,8 +83,27 @@ async function restoreRevision(
   });
 }
 
-async function revertEntry(tx: Prisma.TransactionClient, entryId: string, records: RevertRecord[]): Promise<RevertReport> {
+/** Is a revision outside the batch, or a published one of the batch (revert keeps it), pointing at this entry with
+ * form_of? Paged by id, so the batch size never becomes a query parameter list. */
+async function referencedOutsideBatch(tx: Prisma.TransactionClient, entryId: string, own: ReadonlySet<string>): Promise<boolean> {
+  let after: string | undefined;
+  for (;;) {
+    const page = await tx.senseRevision.findMany({
+      where: { formOfEntryId: entryId, ...(after === undefined ? {} : { id: { gt: after } }) },
+      select: { id: true, publishedAt: true }, orderBy: { id: 'asc' }, take: 100,
+    });
+    if (page.some((revision) => !own.has(revision.id) || revision.publishedAt != null)) return true;
+    if (page.length < 100) return false;
+    after = page[page.length - 1].id;
+  }
+}
+
+async function revertEntry(
+  tx: Prisma.TransactionClient, entryId: string, records: RevertRecord[], context: RevertContext,
+): Promise<RevertReport> {
   const report = emptyReport();
+  // FE22: row lock first, so a concurrent private word cannot add a form_of link between our check and the delete.
+  await tx.$queryRaw`SELECT id FROM entries WHERE id = ${entryId}::uuid FOR UPDATE`;
   const ids = (type: RevertRecordType) => records.filter((record) => record.type === type).map((record) => record.id);
   const revisionRecords = new Map(records.filter((record) => record.type === 'revision').map((record) => [record.id, record]));
   const revisions = revisionRecords.size ? await tx.senseRevision.findMany({
@@ -129,12 +155,16 @@ async function revertEntry(tx: Prisma.TransactionClient, entryId: string, record
 
   const levelIds = new Set(ids('level'));
   if (levelIds.size) {
-    const allLevels = await tx.entryLevel.findMany({ where: { entryId }, select: { id: true }, orderBy: { id: 'asc' } });
+    const allLevels = await tx.entryLevel.findMany({ where: { entryId }, select: { id: true, basis: true }, orderBy: { id: 'asc' } });
     const levels = allLevels.filter((level) => levelIds.has(level.id));
     let remaining = allLevels.length; // Across every source, updated after each actual deletion.
     // CR5 protects currently live content; publication history alone does not require a level.
     const published = levels.length ? await tx.sense.findFirst({ where: { entryId, state: 'open', liveRevisionId: { not: null } }, select: { id: true } }) : null;
     for (const level of levels) {
+      if (level.basis === 'editorial') { // Staff confirmed this level after the import.
+        report.skipped.push({ type: 'level', id: level.id, reason: 'level-confirmed' });
+        continue;
+      }
       if (published && remaining === 1) {
         report.skipped.push({ type: 'level', id: level.id, reason: 'only-level-of-published-entry' });
         continue;
@@ -146,6 +176,18 @@ async function revertEntry(tx: Prisma.TransactionClient, entryId: string, record
   }
   if (ids('variant').length) report.removed.variant += (await tx.entryVariant.deleteMany({ where: { id: { in: ids('variant') }, entryId } })).count;
   if (ids('entry').includes(entryId)) {
+    // Others rely on this entry when its inflection set was reviewed after the batch finished (by another batch or
+    // staff; the batch's own inflections cell stamps it while running), or when a revision outside the batch
+    // (another batch, a staff draft, a learner's private word) or a published revision of the batch links to it
+    // with form_of.
+    const { inflectionsReviewedAt } = await tx.entry.findUnique({ where: { id: entryId }, select: { inflectionsReviewedAt: true } })
+      ?? { inflectionsReviewedAt: null };
+    const reviewedLater = inflectionsReviewedAt != null && context.batchFinishedAt !== null
+      && inflectionsReviewedAt > context.batchFinishedAt;
+    if (reviewedLater || await referencedOutsideBatch(tx, entryId, context.ownRevisionIds)) {
+      report.skipped.push({ type: 'entry', id: entryId, reason: 'entry-in-use' });
+      return report;
+    }
     // Kept entries with remaining content are ordinary non-events, not additional skips.
     report.removed.entry += (await tx.entry.deleteMany({ where: {
       id: entryId, senses: { none: {} }, levels: { none: {} }, variants: { none: {} },
@@ -155,12 +197,14 @@ async function revertEntry(tx: Prisma.TransactionClient, entryId: string, record
 }
 
 /** Plain function: one committed transaction per entry, with no whole-batch transaction or job lease. */
-export async function revertRecords(prisma: PrismaClient, entries: EntriesService, records: RevertRecord[]): Promise<RevertReport> {
+export async function revertRecords(
+  prisma: PrismaClient, entries: EntriesService, records: RevertRecord[], context: RevertContext,
+): Promise<RevertReport> {
   const report = emptyReport();
   for (const group of await groupRecords(prisma, records)) {
     const result = await prisma.$transaction(async (tx) => {
       await entries.lockEntryKey(tx, group.entry.lemma, group.entry.pos);
-      return revertEntry(tx, group.entry.id, group.records);
+      return revertEntry(tx, group.entry.id, group.records, context);
     }, { timeout: 30_000, maxWait: 5_000 });
     for (const type of recordTypes) report.removed[type] += result.removed[type];
     report.skipped.push(...result.skipped);

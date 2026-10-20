@@ -47,7 +47,9 @@ export class PublishJobHandler implements JobHandler, OnModuleInit {
             // The job's FOR SHARE fence stays held throughout Content's existing entry transaction.
             // If a crash occurs after publication but before this outcome commits, Content's
             // idempotent publishItem returns already_published on recovery.
-            const result = await this.content.publishItem({ senseId, revision: item.revisionNo }, actor.createdBy);
+            const result = await this.content.publishItem({ senseId, revision: item.revisionNo }, actor.createdBy, {
+              skipUnpublished: true,
+            });
             await tx.publishJobItem.update({ where, data: {
               outcome: result.outcome, reason: result.outcome === 'refused' ? result.reason : null,
             } });

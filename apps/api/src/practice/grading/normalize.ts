@@ -1,9 +1,10 @@
-// Typed answers (design 7.6): NFC, trim, one space for any whitespace run, curly quotes made straight, lower case.
+// Typed answers (design 7.6): NFC, trim, one space for any whitespace run, trailing . ! ? dropped, curly quotes made straight, lower case.
 export function normalizeAnswer(text: string): string {
   return text
     .normalize('NFC')
     .trim()
     .replace(/\s+/g, ' ')
+    .replace(/[.!?]+$/, '')
     .replace(/[‘’]/g, "'")
     .replace(/[“”]/g, '"')
     .toLowerCase();

@@ -105,7 +105,7 @@ export class ImportBatchHandler implements JobHandler, OnModuleInit {
         for (const row of filtered.toProcess) {
           const result = await withTransientRetry(() => this.rowProcessor.process(ctx, {
             id: batch.id, levelSourceId: batch.levelSourceId,
-          }, row.normalized), { retries: this.config.pipeline.rowRetries, baseMs: this.config.pipeline.rowRetryBaseMs });
+          }, row.normalized, { contentApplied: filtered.contentAppliedRows.has(row.normalized.rowNumber) }), { retries: this.config.pipeline.rowRetries, baseMs: this.config.pipeline.rowRetryBaseMs });
           if (result.outcome === 'rejected') {
             await recordRejected(ctx, batch.id, { rowNumber: row.normalized.rowNumber, raw: row.raw }, result.errors);
           } else {

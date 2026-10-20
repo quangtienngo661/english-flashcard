@@ -5,14 +5,14 @@ import { AdminCatalogQueries, type EntryExportRow, type ExportRow, type LatestRe
 import type { SenseFilter } from './catalog/sense-filters.js';
 import { EntriesService, type EnsureEntryInput, type EnsureEntryResult, type VariantInput } from './catalog/entries.service.js';
 import { LevelsService, type EntryLevelView, type ImportedLevelInput } from './catalog/levels.service.js';
-import { revertRecords, type RevertRecord, type RevertReport } from './catalog/revert.service.js';
+import { revertRecords, type RevertContext, type RevertRecord, type RevertReport } from './catalog/revert.service.js';
 import type { Level } from './content.constants.js';
 import {
   PrivateWordsService, type CreatePrivateSenseInput, type CreatePrivateSenseResult, type PrivateWordPatch,
 } from './private/private-words.service.js';
 import { SentencesService, type Sentence } from './sentences/sentences.service.js';
 import { WordsService, type WordSense } from './words/words.service.js';
-import { practiceCandidates, practiceSenses, type CandidateSense, type PracticeSense } from './practice/practice-senses.js';
+import { practiceCandidates, practiceLemmaMeanings, practiceSenses, type CandidateSense, type LemmaMeanings, type PracticeSense } from './practice/practice-senses.js';
 import { InflectionsService, type EntryByForm, type InflectionInput, type InflectionSource } from './inflections/inflections.service.js';
 import { SourcesService, isSourceComplete, type SourceView } from './sources/sources.service.js';
 import { SensesService, type CreateSenseInput, type SaveDraftInput, type SaveDraftResult, type MarkRevisionItem, type MarkRevisionResult } from './senses/senses.service.js';
@@ -92,28 +92,28 @@ export class ContentService {
   }
 
   // Unlike other writes, revert owns one entry-key-locked transaction per entry, so it takes no tx.
-  revertRecords(records: RevertRecord[]): Promise<RevertReport> {
-    return revertRecords(this.prisma, this.entries, records);
+  revertRecords(records: RevertRecord[], context: RevertContext): Promise<RevertReport> {
+    return revertRecords(this.prisma, this.entries, records, context);
   }
 
-  markRevisions(tx: Prisma.TransactionClient, items: MarkRevisionItem[]): Promise<MarkRevisionResult[]> {
-    return this.senses.markRevisions(tx, items);
+  markRevisions(tx: Prisma.TransactionClient, items: MarkRevisionItem[], actorId: string): Promise<MarkRevisionResult[]> {
+    return this.senses.markRevisions(tx, items, actorId);
   }
 
-  publishItem(item: PublishItem, actorId: string): Promise<PublishItemResult> {
-    return this.publish.publishItem(item, actorId);
+  publishItem(item: PublishItem, actorId: string, opts?: { skipUnpublished?: boolean }): Promise<PublishItemResult> {
+    return this.publish.publishItem(item, actorId, opts);
   }
 
-  unpublish(senseIds: string[]): Promise<SenseStateResult[]> {
-    return this.publish.unpublish(senseIds);
+  unpublish(senseIds: string[], actorId: string): Promise<SenseStateResult[]> {
+    return this.publish.unpublish(senseIds, actorId);
   }
 
-  retire(senseIds: string[]): Promise<SenseStateResult[]> {
-    return this.publish.retire(senseIds);
+  retire(senseIds: string[], actorId: string): Promise<SenseStateResult[]> {
+    return this.publish.retire(senseIds, actorId);
   }
 
   quickPublish(input: Omit<SaveDraftInput, 'source'>): Promise<QuickPublishResult> {
-    return this.publish.quickPublish(input.senseId, (tx) => this.saveDraft(tx, { ...input, source: 'ui' }));
+    return this.publish.quickPublish(input.senseId, input.actorId, (tx) => this.saveDraft(tx, { ...input, source: 'ui' }));
   }
 
   latestRevisions(senseIds: string[]): Promise<Map<string, LatestRevision>> {
@@ -188,6 +188,12 @@ export class ContentService {
   practiceCandidates(viewerId: string, senseIds: string[], nativeLanguage: 'vi' | 'en', db?: Prisma.TransactionClient | PrismaClient):
     Promise<Map<string, CandidateSense>> {
     return practiceCandidates(db ?? this.prisma, viewerId, senseIds, nativeLanguage);
+  }
+
+  /** Every visible meaning of these lemmas (case-insensitive), so a distractor is never also right (T6/FE25). */
+  practiceLemmaMeanings(viewerId: string, lemmas: string[], _nativeLanguage: 'vi' | 'en', db?: Prisma.TransactionClient | PrismaClient):
+    Promise<LemmaMeanings> {
+    return practiceLemmaMeanings(db ?? this.prisma, viewerId, lemmas);
   }
 
   visibleSenseIds(viewerId: string, senseIds: string[]): Promise<Set<string>> {

@@ -98,18 +98,21 @@ export class PrivateWordsService {
   }
 
   private async publishRevision(tx: Tx, senseId: string, revisionNo: number, content: RevisionContent, ownerId: string): Promise<void> {
+    const now = this.clock.now();
     const texts = [
       ...(content.glossVi ? [{ language: 'vi', kind: 'gloss', text: content.glossVi }] : []),
       ...(content.definitionEn ? [{ language: 'en', kind: 'definition', text: content.definitionEn }] : []),
     ];
     await tx.senseRevision.updateMany({ where: { senseId, status: 'published' }, data: { status: 'superseded' } });
     const revision = await tx.senseRevision.create({ data: {
-      senseId, revisionNo, status: 'published', draftSource: 'user', createdBy: ownerId, publishedAt: this.clock.now(),
+      senseId, revisionNo, status: 'published', draftSource: 'user', createdBy: ownerId, publishedAt: now, publishedBy: ownerId,
       contentHash: contentHash(content), examples: content.examplesEn, topicCodes: content.topicCodes,
       acceptedForms: content.acceptedForms, formOfEntryId: content.formOf?.entryId ?? null, formKind: content.formOf?.kind ?? null,
       texts: { create: texts },
     }, select: { id: true } });
-    await tx.sense.update({ where: { id: senseId }, data: { state: 'open', liveRevisionId: revision.id } });
+    await tx.sense.update({ where: { id: senseId }, data: {
+      state: 'open', liveRevisionId: revision.id, stateChangedBy: ownerId, stateChangedAt: now,
+    } });
   }
 
   private async ownedEntry(tx: Tx, ownerId: string, entryId: string) {
@@ -127,9 +130,11 @@ export class PrivateWordsService {
     if (input.level !== null && !LEVELS.includes(input.level)) throw invalid();
     await this.lockOwner(tx, input.ownerId);
     const topicCodes = await this.validTopics(tx, input.topicCodes);
-    if (input.formOf && !await tx.entry.findFirst({ where: { id: input.formOf.entryId,
-      OR: [{ scope: 'catalog' }, { scope: 'private', ownerUserId: input.ownerId }] }, select: { id: true } })) {
-      throw new ContentRuleError('not-found');
+    if (input.formOf) {
+      // FE22: FOR SHARE blocks a concurrent batch revert (FOR UPDATE) from deleting the base entry under us.
+      const base = await tx.$queryRaw<Array<{ id: string }>>`SELECT id FROM entries WHERE id = ${input.formOf.entryId}::uuid
+        AND (scope = 'catalog' OR (scope = 'private' AND owner_user_id = ${input.ownerId}::uuid)) FOR SHARE`;
+      if (base.length === 0) throw new ContentRuleError('not-found');
     }
 
     let entry = await tx.entry.findFirst({ where: { scope: 'private', ownerUserId: input.ownerId, language: 'en', lemma, pos } });

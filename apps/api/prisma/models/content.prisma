@@ -99,6 +99,9 @@ model Sense {
   state           String   @default("open")
   liveRevisionId  String?  @map("live_revision_id") @db.Uuid
   replacesSenseId String?  @map("replaces_sense_id") @db.Uuid
+  // Latest actor and time of an unpublish, retire or replacement (Identity user id, no FK).
+  stateChangedBy  String?  @map("state_changed_by") @db.Uuid
+  stateChangedAt  DateTime? @map("state_changed_at") @db.Timestamptz
   createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz
 
   entry         Entry           @relation(fields: [entryId], references: [id], onDelete: Cascade)
@@ -121,6 +124,10 @@ model SenseRevision {
   createdBy     String    @map("created_by") @db.Uuid
   createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz
   publishedAt   DateTime? @map("published_at") @db.Timestamptz
+  // Who reviewed or rejected it and who published it (Identity user ids, no FK).
+  reviewedBy    String?   @map("reviewed_by") @db.Uuid
+  reviewedAt    DateTime? @map("reviewed_at") @db.Timestamptz
+  publishedBy   String?   @map("published_by") @db.Uuid
   examples      String[]  @default([])
   topicCodes    String[]  @default([]) @map("topic_codes")
   acceptedForms String[]  @default([]) @map("accepted_forms")

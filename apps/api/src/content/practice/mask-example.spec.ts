@@ -58,4 +58,27 @@ describe('maskExample', () => {
   it('deploys inside "redeploys" is not a match', () => {
     expect(maskExample('She redeploys it.', deploy)).toBeNull();
   });
+
+  it.each([
+    ["CT5: possessive 's is not masked, only the stem", "The student's book.", { lemma: 'student', variants: [], inflections: [] },
+      { masked: "The ___'s book.", blank: 'student', base: true }],
+    ['CT5: a bare apostrophe possessive masks the stem', "The students' book.", { lemma: 'student', variants: [], inflections: [{ form: 'students' }] },
+      { masked: "The ___' book.", blank: 'students', base: false }],
+    ['CT5: a comma between the words of a multi-word form is not a match', 'I like ice, cream.', { lemma: 'ice cream', variants: [], inflections: [] }, null],
+    ['CT5: a multi-word form still matches across plain spaces', 'I like ice  cream.', { lemma: 'ice cream', variants: [], inflections: [] },
+      { masked: 'I like ___.', blank: 'ice cream', base: true }],
+    ['CT5: "Mr." does not end a sentence, so a capital March is not lower-case march', 'Mr. March is here.', { lemma: 'march', variants: [], inflections: [] }, null],
+    ['CT5: "Mr." does not end a sentence, target March still matches', 'Mr. March is here.', { lemma: 'March', variants: [], inflections: [] },
+      { masked: 'Mr. ___ is here.', blank: 'March', base: true }],
+    ['CT6: a form ending in a dot takes the sentence dot with it', 'We meet at 9 a.m.', { lemma: 'a.m.', variants: [], inflections: [] },
+      { masked: 'We meet at 9 ___', blank: 'a.m.', base: true }],
+    ['CT6: a dotted form is masked in the middle of a sentence', 'At 9 a.m. we meet.', { lemma: 'a.m.', variants: [], inflections: [] },
+      { masked: 'At 9 ___ we meet.', blank: 'a.m.', base: true }],
+    ['CT6: MP3 player does not match MP4 player (FE24)', 'An MP4 player.', { lemma: 'MP3 player', variants: [], inflections: [] }, null],
+    ['CT6: MP3 player matches itself', 'An MP3 player.', { lemma: 'MP3 player', variants: [], inflections: [] },
+      { masked: 'An ___.', blank: 'MP3 player', base: true }],
+    ['CT6: variant "am" of "a.m." does not mask the verb "am"', 'I am here.', { lemma: 'a.m.', variants: ['am'], inflections: [] }, null],
+  ])('%s', (_name, sentence, target, expected) => {
+    expect(maskExample(sentence, target)).toEqual(expected);
+  });
 });

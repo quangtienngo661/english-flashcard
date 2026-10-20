@@ -7,7 +7,7 @@ import { decodeBoundToken, encodeBoundToken } from '../../common/pagination/page
 import { ProblemDetailsException } from '../../common/problem-details/problem-details.exception.js';
 import type { PrismaClient } from '../../generated/prisma/client.js';
 import { RequirePermission } from '../../identity/staff/require-permission.decorator.js';
-import { toCsv } from './csv-writer.js';
+import { rejectedCsv } from './csv-writer.js';
 
 const uuid = z.uuid().transform((value) => value.toLowerCase());
 const batchParams = z.strictObject({ id: uuid });
@@ -59,9 +59,9 @@ export class UploadsReadController {
       where: { batchId: params.id, outcome: 'rejected' }, orderBy: { rowNumber: 'asc' },
     });
     // Upload validation and recordRejected persist ordered string arrays, including ignored columns.
-    const csv = toCsv([...(batch.rawHeaders as string[]), '_row', '_error'], outcomes.map((row) => [
-      ...(row.raw as string[]), String(row.rowNumber), row.errorMessages.join('; '),
-    ]));
+    const csv = rejectedCsv(batch.rawHeaders as string[], outcomes.map((row) => ({
+      raw: row.raw as string[], rowNumber: row.rowNumber, errors: row.errorMessages,
+    })));
     response.type('text/csv').setHeader('Content-Disposition', `attachment; filename="rejected-${params.id}.csv"`);
     response.send(csv);
   }

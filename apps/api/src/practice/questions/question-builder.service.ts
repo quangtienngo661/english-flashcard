@@ -49,12 +49,15 @@ export class QuestionBuilder {
     const mates = need > 0 ? await this.learning.practiceGroupMates(userId, senseIds, db) : new Map<string, string[]>();
     const ids = [...new Set([...senseIds, ...[...mates.values()].flat()])];
     const senses = await this.content.practiceCandidates(userId, ids, nativeLanguage, db);
+    const meanings = need > 0
+      ? await this.content.practiceLemmaMeanings(userId, [...senses.values()].map((s) => s.lemma), nativeLanguage, db)
+      : undefined;
     const result = new Map<string, QuestionType[]>();
     for (const senseId of senseIds) {
       const asked = senses.get(senseId);
       if (!asked) continue;
       const candidates = (mates.get(senseId) ?? []).flatMap((id) => senses.get(id) ?? []);
-      result.set(senseId, availableTypes(asked, eligibleCandidates(asked, candidates, need).length, chosenTypes));
+      result.set(senseId, availableTypes(asked, eligibleCandidates(asked, candidates, need, meanings).length, chosenTypes));
     }
     return result;
   }
@@ -65,7 +68,9 @@ export class QuestionBuilder {
     if (!sense) return { skip: 'not-visible' };
     const mates = (await this.learning.practiceGroupMates(userId, [senseId], db)).get(senseId) ?? [];
     const candidates = await this.content.practiceCandidates(userId, mates, nativeLanguage, db);
-    const eligible = eligibleCandidates(sense, mates.flatMap((id) => candidates.get(id) ?? []));
+    const pool = mates.flatMap((id) => candidates.get(id) ?? []);
+    const meanings = await this.content.practiceLemmaMeanings(userId, [sense.lemma, ...pool.map((c) => c.lemma)], nativeLanguage, db);
+    const eligible = eligibleCandidates(sense, pool, Infinity, meanings);
     const available = availableTypes(sense, eligible.length, input.chosenTypes);
     if (available.length === 0) return { skip: 'no-type' };
     const type = chooseType(available, input.previousType, random);

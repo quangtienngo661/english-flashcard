@@ -3,7 +3,7 @@ import { parse } from 'csv-parse/sync';
 import { describe, expect, it } from 'vitest';
 import { contentHash, type RevisionContent } from '../../content/index.js';
 import { parseUploadFile } from './csv-file.js';
-import { csvCell, toCsv } from './csv-writer.js';
+import { csvCell, rejectedCsv, toCsv } from './csv-writer.js';
 import { normalizeRow } from './row-normalizer.js';
 
 const limits = { maxRows: 20_000, maxBytes: 10_000_000 };
@@ -94,4 +94,22 @@ describe('toCsv', () => {
       expect(contentHash({ ...empty, ...imported.row.content })).toBe(contentHash({ ...empty, ...plain.row.content }));
     },
   );
+});
+
+describe('rejectedCsv', () => {
+  it('control: a round-1 file gains the pair', () => {
+    const text = rejectedCsv(['headword', 'pos'], [{ raw: ['cat', 'x'], rowNumber: 2, errors: ['bad pos', 'other'] }]);
+    expect(text).toBe('\uFEFFheadword,pos,_row,_error\r\ncat,x,2,bad pos; other\r\n');
+  });
+
+  it('T4/FE23: a round-3 file with _row/_error twice comes out with one pair and re-parses through parseUploadFile', () => {
+    const text = rejectedCsv(
+      ['headword', ' _Row ', 'pos', '_ERROR', '_row', '_error', 'notes'],
+      [{ raw: ['cat', '2', 'x', 'old', '5', 'older', 'n'], rowNumber: 9, errors: ['bad'] }],
+    );
+    expect(text).toBe('\uFEFFheadword,pos,notes,_row,_error\r\ncat,x,n,9,bad\r\n');
+    const parsed = parseUploadFile(Buffer.from(text, 'utf8'), limits);
+    expect(parsed.headers).toEqual(['headword', 'pos', 'notes', '_row', '_error']);
+    expect(parsed.rows[0].cells).toEqual(['cat', 'x', 'n', '9', 'bad']);
+  });
 });

@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
 import { seededRandom } from '../testing/seeded-random.js';
-import { eligibleCandidates, pickDistractors, subsenses, type QuestionWord } from './distractors.js';
+import { eligibleCandidates, pickDistractors, subsenses, type LemmaMeanings, type QuestionWord } from './distractors.js';
 
 function word(lemma: string, data: Partial<QuestionWord> = {}): QuestionWord {
   return {
@@ -51,6 +51,35 @@ describe('eligibleCandidates', () => {
     // Neither side has an English meaning to compare: kept.
     const bare = word('patch', { scope: 'private' });
     expect(eligibleCandidates(asked, [release, other, bare]).map((w) => w.lemma)).toEqual(['fix', 'patch']);
+  });
+});
+
+describe('eligibleCandidates — one right answer (T6/FE25)', () => {
+  it('T6/FE25: "quick" is dropped when any visible sense of "quick" means "nhanh", even outside the group', () => {
+    const asked = word('fast', { gloss_vi: 'nhanh' });
+    const quick = word('quick', { gloss_vi: 'nhanh trí' });
+    const meanings: LemmaMeanings = new Map([['quick', [
+      { gloss_vi: 'nhanh trí', definition_en: null }, { gloss_vi: 'nhanh', definition_en: null },
+    ]]]);
+    expect(eligibleCandidates(asked, [quick], Infinity, meanings)).toEqual([]);
+  });
+
+  it('T6 true/false: "arrange — sắp xếp, bố trí" is dropped when "deploy" has a sense "bố trí (quân)"', () => {
+    const deploy = word('deploy', { gloss_vi: 'triển khai (phần mềm)' });
+    const arrange = word('arrange', { gloss_vi: 'sắp xếp, bố trí' });
+    const meanings: LemmaMeanings = new Map([['deploy', [
+      { gloss_vi: 'triển khai (phần mềm)', definition_en: null }, { gloss_vi: 'bố trí (quân)', definition_en: null },
+    ]]]);
+    expect(eligibleCandidates(deploy, [arrange], Infinity, meanings)).toEqual([]);
+  });
+
+  it('control: an unrelated candidate stays', () => {
+    const asked = word('fast', { gloss_vi: 'nhanh' });
+    const slow = word('slow', { gloss_vi: 'chậm' });
+    const meanings: LemmaMeanings = new Map([
+      ['fast', [{ gloss_vi: 'nhanh', definition_en: null }]], ['slow', [{ gloss_vi: 'chậm', definition_en: null }]],
+    ]);
+    expect(eligibleCandidates(asked, [slow], Infinity, meanings).map((w) => w.lemma)).toEqual(['slow']);
   });
 });
 

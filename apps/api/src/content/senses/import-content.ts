@@ -1,7 +1,7 @@
 import type { Prisma } from '../../generated/prisma/client.js';
 import { normalizeText } from '../catalog/normalize.js';
 import { ContentRuleError, contentHash, mergeContent, normalizeContent, revisionFormOf, type RevisionContent } from './revision-content.js';
-import type { SensesService, TopicLookup } from './senses.service.js';
+import { emptyContent, latestUsableRevision, type SensesService, type TopicLookup } from './senses.service.js';
 
 export type ImportContentResult =
   | { kind: 'created_sense'; senseId: string; revisionId: string }
@@ -82,10 +82,14 @@ export async function importContent(
 
     const latest = sense.revisions[0];
     if (!latest) return rejected('stale-revision');
-    const base = readContent(latest);
+    // A rejected latest revision never seeds the merge: build on the last usable one (or empty content).
+    const latestRejected = latest.status === 'rejected';
+    const usable = latestRejected ? await latestUsableRevision(tx, sense.id) : latest;
+    const base = usable ? readContent(usable) : { ...emptyContent };
     const merged = mergeContent(base, normalizeContent(input.content, input.lemma));
     // This precedes conflicts AND topic validation/dropping. An already-applied merge writes nothing.
-    if (contentHash(merged) === latest.contentHash) return { kind: 'unchanged', senseId: sense.id };
+    // After a rejection the same content still needs a fresh revision, so that shortcut is skipped.
+    if (!latestRejected && contentHash(merged) === latest.contentHash) return { kind: 'unchanged', senseId: sense.id };
 
     const open = await tx.senseRevision.findFirst({ where: {
       senseId: sense.id, status: { in: ['draft', 'reviewed'] },

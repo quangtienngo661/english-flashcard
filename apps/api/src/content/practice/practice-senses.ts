@@ -1,9 +1,12 @@
 import { Prisma, type PrismaClient } from '../../generated/prisma/client.js';
 import { INFLECTION_KINDS, type InflectionKind } from '../content.constants.js';
-import { visibleSenseCondition } from '../learner/visible-senses.js';
+import { visibleEntryCondition, visibleSenseCondition } from '../learner/visible-senses.js';
 import { senseMeaning, type WordSense } from '../words/words.service.js';
 
 type NativeLanguage = 'vi' | 'en';
+
+/** Meanings of every visible sense, by lower-cased lemma (the distractor filter's second look, T6). */
+export type LemmaMeanings = Map<string, Array<{ gloss_vi: string | null; definition_en: string | null }>>;
 
 /** What the distractor filter and a true/false pair need of a sense (Bước 4 design 7.3). */
 export type CandidateSense = {
@@ -74,4 +77,21 @@ export async function practiceSenses(prisma: Prisma.TransactionClient | PrismaCl
       .filter((text) => text !== row.lemma),
     inflections: row.inflections,
   }]));
+}
+
+/**
+ * Every sense the viewer can see for these lemmas (case-insensitive), by lower-cased lemma: one statement bounded by `lemmas`.
+ * Visibility is written on the rows (as in words.service) so the lemma predicate can reach the partial lemma indexes.
+ */
+export async function practiceLemmaMeanings(prisma: Prisma.TransactionClient | PrismaClient, viewerId: string, lemmas: string[]):
+  Promise<LemmaMeanings> {
+  const keys = [...new Set(lemmas.map((lemma) => lemma.toLowerCase()))];
+  if (keys.length === 0) return new Map();
+  const rows = await prisma.$queryRaw<Array<{ lemma: string; gloss_vi: string | null; definition_en: string | null }>>`
+    SELECT lower(e.lemma) AS lemma, gloss.text AS gloss_vi, definition.text AS definition_en FROM ${from}
+    WHERE lower(e.lemma) = ANY(${keys}::text[]) AND s.state = 'open' AND s.live_revision_id IS NOT NULL
+      AND ${visibleEntryCondition(Prisma.sql`e`, viewerId)}`;
+  const result: LemmaMeanings = new Map();
+  for (const { lemma, ...meaning } of rows) result.set(lemma, [...(result.get(lemma) ?? []), meaning]);
+  return result;
 }

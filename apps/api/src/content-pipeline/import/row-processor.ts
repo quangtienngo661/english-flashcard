@@ -1,13 +1,14 @@
 import { Inject, Injectable } from '@nestjs/common';
 import {
-  ContentService, generateInflections, INFLECTION_KINDS, MAX_EXAMPLES, normalizeContent, type FormOf,
+  ContentService, generateInflections, INFLECTION_KINDS, MAX_EXAMPLES, normalizeContent, OWNER_SOURCE_ID, type FormOf,
   type InflectionKind,
 } from '../../content/index.js';
 import type { Prisma } from '../../generated/prisma/client.js';
 import type { JobContext } from '../jobs/job-types.js';
 import type { RowError } from '../upload/row-errors.js';
-import { levelKey, type NormalizedRow } from '../upload/row-normalizer.js';
+import { contentKey, levelKey, type NormalizedRow } from '../upload/row-normalizer.js';
 import { recordBatchRecord } from './batch-records.js';
+import { rowContentHash } from './prefilter.js';
 
 export class RowRejected extends Error {
   constructor(readonly errors: RowError[]) {
@@ -50,11 +51,25 @@ function sameForms(current: Array<{ form: string; kind: string }>, next: Array<{
   return current.length === next.length && key(current) === key(next);
 }
 
+/** Only a batch that applied this content holds its key (T3, D14), so reverting that batch frees the row again.
+ * The key is unique without its batch: a live holder keeps it, a reverted batch's leftover passes to this batch. */
+async function claimContentKey(tx: Prisma.TransactionClient, batchId: string, row: NormalizedRow): Promise<void> {
+  const key = { kind: 'content', sourceId: OWNER_SOURCE_ID, rowKey: contentKey(row).key, contentHash: rowContentHash(row) };
+  const existing = await tx.importRowKey.findUnique({ where: { kind_sourceId_rowKey_contentHash: key },
+    select: { batchId: true, batch: { select: { revertedAt: true } } } });
+  if (!existing) {
+    await tx.importRowKey.createMany({ data: [{ ...key, batchId }], skipDuplicates: true });
+  } else if (existing.batch.revertedAt !== null) {
+    await tx.importRowKey.update({ where: { kind_sourceId_rowKey_contentHash: key }, data: { batchId } });
+  }
+}
+
 @Injectable()
 export class ImportRowProcessor {
   constructor(@Inject(ContentService) private readonly content: ContentService) {}
 
-  async process(ctx: JobContext, batch: RowBatch, row: NormalizedRow): Promise<RowResult> {
+  /** contentApplied (D14): another batch already applied this row's content; leave the sense alone (content counts as unchanged). */
+  async process(ctx: JobContext, batch: RowBatch, row: NormalizedRow, opts: { contentApplied: boolean }): Promise<RowResult> {
     try {
       return await ctx.tx(async (tx) => {
         const changes = await this.processEntryAndLevel(tx, batch, row);
@@ -62,7 +77,7 @@ export class ImportRowProcessor {
           : changes.variantsAdded || changes.levelAdded ? 'updated' : 'unchanged';
         const warnings: string[] = [];
         const formOf = await this.resolveFormOf(tx, row);
-        if (row.content !== null) {
+        if (row.content !== null && !opts.contentApplied) {
           // JobContext carries lease metadata only. The batch id is its owning job's id.
           const actor = await tx.backgroundJob.findUniqueOrThrow({ where: { id: batch.id }, select: { createdBy: true } });
           const result = await this.content.importContent(tx, {
@@ -93,6 +108,9 @@ export class ImportRowProcessor {
                   replacedRevisionPreviousStatus: result.droppedReviewedMark ? 'reviewed' : 'draft' } } : {}),
             });
           }
+          // Created, new revision or unchanged (rejected threw above). On unchanged this gives a row imported before content
+          // keys existed its key on the first re-upload (FE16), unless a live batch already holds it.
+          await claimContentKey(tx, batch.id, row);
         }
 
         if (changes.entryCreated && row.inflections === null) {
