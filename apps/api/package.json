@@ -29,7 +29,8 @@
     "smoke:buoc-5": "node scripts/smoke-buoc-5.mjs",
     "maintenance:run": "node dist/cli/run-maintenance.js",
     "billing:fake-event": "node scripts/billing-fake-event.mjs",
-    "entitlements:fake-ai": "node dist/cli/fake-ai.js"
+    "entitlements:fake-ai": "node dist/cli/fake-ai.js",
+    "ai:fake-call": "node dist/cli/ai-fake-call.js"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "0.135.0",
