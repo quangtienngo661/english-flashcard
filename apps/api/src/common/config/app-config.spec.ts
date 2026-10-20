@@ -19,10 +19,18 @@ function validEnv(): NodeJS.ProcessEnv {
     PROBLEM_TYPE_BASE: 'https://api.example.com/problems/',
     ADMIN_APP_URL: 'https://admin.example.com',
     LEARNER_APP_URL: 'https://wordmet.example.com',
+    TERMS_VERSION: '2026-10-20',
   };
 }
 
 describe('loadConfig', () => {
+  it('TERMS_VERSION is required and kept verbatim', () => {
+    expect(loadConfig(validEnv()).termsVersion).toBe('2026-10-20');
+    const missing = validEnv();
+    delete missing.TERMS_VERSION;
+    expect(() => loadConfig(missing)).toThrow(/TERMS_VERSION/);
+  });
+
   it('Task 20 (config): a missing LEARNER_APP_URL fails fast naming it; it must be an http(s) origin and is exposed as learnerAppUrl', () => {
     expect(loadConfig(validEnv()).learnerAppUrl).toBe('https://wordmet.example.com');
     expect(loadConfig({ ...validEnv(), LEARNER_APP_URL: 'http://localhost:3001' }).learnerAppUrl).toBe('http://localhost:3001');
