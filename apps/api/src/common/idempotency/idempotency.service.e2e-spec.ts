@@ -101,7 +101,7 @@ describe('runIdempotent (e2e)', () => {
           await new Promise((resolve) => setTimeout(resolve, 600));
           return { status: 200, body: {} };
         },
-        { timeoutSeconds: 0.3 },
+        { leaseSeconds: 0.3 },
       ),
     ).rejects.toThrow();
 
