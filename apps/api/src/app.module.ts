@@ -1,4 +1,5 @@
 import { DynamicModule, Module } from '@nestjs/common';
+import { AiModule } from './ai/index.js';
 import { CommonModule } from './common/common.module.js';
 import type { AppConfig } from './common/config/app-config.js';
 import { PrismaModule } from './common/db/prisma.module.js';
@@ -18,7 +19,7 @@ import { SettingsModule } from './settings/settings.module.js';
 @Module({
   imports: [
     SampleModule, IdentityModule, BatchScopeModule, ContentModule, ContentPipelineModule, SettingsModule, NotificationsModule,
-    LearningModule, EntitlementsModule, PracticeModule, PracticePortsModule,
+    LearningModule, EntitlementsModule, PracticeModule, PracticePortsModule, AiModule,
   ],
   controllers: [HealthController],
   providers: [],
