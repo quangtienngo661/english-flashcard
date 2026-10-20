@@ -75,10 +75,14 @@ export class SessionStore {
       this.leaving = false;
     });
     opts.channel?.addEventListener('message', (event) => {
-      const type = (event.data as { type?: unknown } | null)?.type;
+      const data = event.data as { type?: unknown; failed?: unknown } | null;
+      const type = data?.type;
       if (type === 'logout') {
         this.token = null;
-        this.set({ status: 'signed-out', notice: null });
+        // The sign-out did not reach the server: this tab keeps the pending flag too, so F5 here does not sign back in.
+        const failed = data?.failed === true;
+        if (failed) setLogoutPending(true);
+        this.set({ status: 'signed-out', notice: failed ? 'logout-failed' : null });
       } else if (type === 'login' && this.state.status === 'signed-out') {
         // A sign-in elsewhere supersedes a sign-out that never reached the server.
         setLogoutPending(false);
@@ -130,7 +134,7 @@ export class SessionStore {
     const failed = !done && notice === null;
     if (failed) setLogoutPending(true);
     this.set({ status: 'signed-out', notice: failed ? 'logout-failed' : notice });
-    this.broadcast({ type: 'logout' });
+    this.broadcast(failed ? { type: 'logout', failed: true } : { type: 'logout' });
   }
 
   /** Sign-out did not reach the server: ask again. Done → the flag goes and the notice with it. */
@@ -295,7 +299,7 @@ export class SessionStore {
     return { 'X-CSRF-Protection': '1' };
   }
 
-  private broadcast(message: { type: 'login' | 'logout' }): void {
+  private broadcast(message: { type: 'login' | 'logout'; failed?: true }): void {
     try {
       this.opts.channel?.postMessage(message);
     } catch {
