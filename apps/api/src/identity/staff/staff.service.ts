@@ -33,16 +33,18 @@ export type AdminUserDetail = AdminUserRow & {
   birth_date: string | null; terms_accepted_at: string | null; terms_version: string | null; locked_at: string | null;
   locked_by: { id: string; email: string | null } | null; lock_reason: string | null;
 };
+/** Microsecond UTC text of created_at: the cursor must not lose the digits a JS Date cannot hold. */
+const CURSOR_AT = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}Z$/;
 type AdminListRow = {
   id: string; email: string; given_name: string | null; family_name: string | null; email_verified_at: Date | null;
-  staff_role: string | null; status: string; created_at: Date; last_seen_at: Date | null;
+  staff_role: string | null; status: string; created_at: Date; cursor_at: string; last_seen_at: Date | null;
 };
 const adminDetailSelect = {
   id: true, email: true, givenName: true, familyName: true, emailVerifiedAt: true, staffRole: true, status: true,
   createdAt: true, lastSeenAt: true, birthDate: true, termsAcceptedAt: true, termsVersion: true, lockedAt: true,
   lockedBy: true, lockReason: true,
 } satisfies Prisma.UserSelect;
-function toAdminRow(row: AdminListRow): AdminUserRow {
+function toAdminRow(row: Omit<AdminListRow, 'cursor_at'>): AdminUserRow {
   return {
     id: row.id, email: row.email, given_name: row.given_name, family_name: row.family_name,
     email_verified: row.email_verified_at !== null, staff_role: row.staff_role as StaffRole | null,
@@ -133,13 +135,13 @@ export class StaffService {
 
   async listUsers(query: { q?: string; status?: 'active' | 'locked'; pageSize: number; pageToken?: string }):
     Promise<{ items: AdminUserRow[]; next_page_token: string | null }> {
-    const binding = `users:${query.q ?? ''}:${query.status ?? ''}`;
-    let cursor: { at: Date; id: string } | undefined;
+    const binding = JSON.stringify([query.q ?? null, query.status ?? null]);
+    let cursor: { at: string; id: string } | undefined;
     if (query.pageToken !== undefined) {
       const decoded = decodeBoundToken(query.pageToken, binding);
       if (!decoded || typeof decoded.at !== 'string' || typeof decoded.id !== 'string'
-        || Number.isNaN(Date.parse(decoded.at)) || !idParam.safeParse(decoded.id).success) throw invalidInput();
-      cursor = { at: new Date(decoded.at), id: decoded.id };
+        || !CURSOR_AT.test(decoded.at) || !idParam.safeParse(decoded.id).success) throw invalidInput();
+      cursor = { at: decoded.at, id: decoded.id };
     }
     const escaped = query.q?.replace(/[\\%_]/g, '\\$&');
     const pattern = escaped === undefined ? undefined : '%' + escaped + '%';
@@ -150,7 +152,8 @@ export class StaffService {
     const after = cursor === undefined ? Prisma.empty
       : Prisma.sql`AND (created_at, id) < (${cursor.at}::timestamptz, ${cursor.id}::uuid)`;
     const rows = await this.prisma.$queryRaw<AdminListRow[]>(Prisma.sql`
-      SELECT id, email, given_name, family_name, email_verified_at, staff_role, status, created_at, last_seen_at
+      SELECT id, email, given_name, family_name, email_verified_at, staff_role, status, created_at, last_seen_at,
+        to_char(created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS cursor_at
       FROM users WHERE TRUE ${search} ${status} ${after}
       ORDER BY created_at DESC, id DESC LIMIT ${query.pageSize + 1}`);
     const page = rows.slice(0, query.pageSize);
@@ -158,7 +161,7 @@ export class StaffService {
     return {
       items: page.map(toAdminRow),
       next_page_token: rows.length > query.pageSize
-        ? encodeBoundToken({ at: last.created_at.toISOString(), id: last.id }, binding) : null,
+        ? encodeBoundToken({ at: last.cursor_at, id: last.id }, binding) : null,
     };
   }
 

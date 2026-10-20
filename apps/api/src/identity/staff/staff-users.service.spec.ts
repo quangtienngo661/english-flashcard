@@ -9,7 +9,8 @@ describe('StaffService.listUsers / getUserDetail (unit, isolated persistence)', 
   let staff: StaffService;
   const row = (n: number) => ({ id: `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`, email: `u${n}@example.com`,
     given_name: null, family_name: null, email_verified_at: new Date('2026-10-01T00:00:00.000Z'), staff_role: null, status: 'active',
-    created_at: new Date(Date.UTC(2026, 9, 1, 0, 0, 0, 500 + n)), last_seen_at: null });
+    created_at: new Date(Date.UTC(2026, 9, 1, 0, 0, 0, 500 + n)), last_seen_at: null,
+    cursor_at: `2026-10-01T00:00:00.${500 + n}${String(n).padStart(3, '0')}Z` });
   const sqlOf = () => prisma.$queryRaw.mock.calls.at(-1)![0] as { sql: string; values: unknown[] };
   beforeEach(() => {
     vi.resetAllMocks();
@@ -35,7 +36,7 @@ describe('StaffService.listUsers / getUserDetail (unit, isolated persistence)', 
     const second = await staff.listUsers({ pageSize: 2, pageToken: first.next_page_token! });
     const { sql, values } = sqlOf();
     expect(sql).toContain('(created_at, id) <');
-    expect(values).toContainEqual(new Date('2026-10-01T00:00:00.502Z')); expect(values).toContain(row(2).id);
+    expect(values).toContain('2026-10-01T00:00:00.502002Z'); expect(values).toContain(row(2).id);
     expect(second).toEqual({ items: [expect.objectContaining({ email: 'u1@example.com' })], next_page_token: null });
   });
   it('a token minted for another filter, or a malformed one, is 400 without a query', async () => {
@@ -48,6 +49,25 @@ describe('StaffService.listUsers / getUserDetail (unit, isolated persistence)', 
       expect(prisma.$queryRaw).not.toHaveBeenCalled();
     }
     await expect(staff.listUsers({ pageSize: 2, pageToken: 'garbage' })).rejects.toMatchObject({ status: 400 });
+  });
+  it('the cursor keeps microseconds: the token carries the exact text and the query receives it unchanged', async () => {
+    const tail = { ...row(1), cursor_at: '2026-10-01T00:00:00.502345Z' };
+    prisma.$queryRaw.mockResolvedValue([row(3), tail]);
+    const { next_page_token } = await staff.listUsers({ pageSize: 1 });
+    expect(JSON.parse(Buffer.from(next_page_token!, 'base64url').toString()).payload.at).toBe(row(3).cursor_at);
+    prisma.$queryRaw.mockResolvedValue([row(3), tail]);
+    const page2 = await staff.listUsers({ pageSize: 2 });
+    prisma.$queryRaw.mockResolvedValue([row(3), { ...tail, cursor_at: '2026-10-01T00:00:00.502345Z' }, row(1)]);
+    const { next_page_token: token } = await staff.listUsers({ pageSize: 2 });
+    prisma.$queryRaw.mockResolvedValue([]);
+    await staff.listUsers({ pageSize: 2, pageToken: token! });
+    expect(sqlOf().values).toContain('2026-10-01T00:00:00.502345Z'); expect(sqlOf().sql).toContain('::timestamptz');
+    expect(page2.next_page_token).toBeNull();
+  });
+  it('a q containing a colon cannot reuse a token minted for another filter', async () => {
+    prisma.$queryRaw.mockResolvedValue([row(3), row(2), row(1)]);
+    const { next_page_token } = await staff.listUsers({ q: 'a:locked', pageSize: 2 });
+    await expect(staff.listUsers({ q: 'a', status: 'locked', pageSize: 2, pageToken: next_page_token! })).rejects.toMatchObject({ status: 400 });
   });
   it('status=locked filters in SQL as a bound value', async () => {
     prisma.$queryRaw.mockResolvedValue([]);
