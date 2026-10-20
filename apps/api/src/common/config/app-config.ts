@@ -28,6 +28,8 @@ export interface RateLimitRuleConfig {
 
 export interface AppConfig {
   databaseUrl: string;
+  /** Connection pool of the Prisma client: the size, and how long a request waits for a free connection (T16). */
+  database: { poolMax: number; poolTimeoutMs: number };
   redisUrl: string;
   jwt: {
     keys: Array<{ kid: string; secret: Uint8Array }>;
@@ -158,6 +160,8 @@ const envSchema = z.object({
   DATABASE_URL: z.url().transform((value) => new URL(value))
     .refine((value) => ['postgres:', 'postgresql:'].includes(value.protocol))
     .transform((value) => value.toString()),
+  DATABASE_POOL_MAX: positiveInteger.default(20),
+  DATABASE_POOL_TIMEOUT_MS: positiveInteger.default(5000),
   REDIS_URL: z.url().transform((value) => new URL(value))
     .refine((value) => ['redis:', 'rediss:'].includes(value.protocol))
     .transform((value) => value.toString()),
@@ -246,6 +250,7 @@ export function loadConfig(env: NodeJS.ProcessEnv): AppConfig {
   const values = result.data;
   return {
     databaseUrl: values.DATABASE_URL,
+    database: { poolMax: values.DATABASE_POOL_MAX, poolTimeoutMs: values.DATABASE_POOL_TIMEOUT_MS },
     redisUrl: values.REDIS_URL,
     jwt: {
       keys: values.JWT_KEYS,

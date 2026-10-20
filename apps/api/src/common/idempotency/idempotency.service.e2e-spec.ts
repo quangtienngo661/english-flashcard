@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { Test, type TestingModule } from '@nestjs/testing';
 import { afterAll, beforeAll, beforeEach, describe, expect, inject, it } from 'vitest';
 import type { PrismaClient } from '../../generated/prisma/client.js';
+import { testConfig } from '../../../test/support/test-config.js';
 import { PRISMA_CLIENT, PrismaModule } from '../db/prisma.module.js';
 import { runIdempotent } from './idempotency.service.js';
 
@@ -13,7 +14,7 @@ describe('runIdempotent (e2e)', () => {
 
   beforeAll(async () => {
     moduleRef = await Test.createTestingModule({
-      imports: [PrismaModule.forRoot({ connectionString: inject('databaseUrl') })],
+      imports: [PrismaModule.forRoot({ connectionString: inject('databaseUrl'), ...testConfig().database })],
     }).compile();
     prisma = moduleRef.get(PRISMA_CLIENT);
   });

@@ -28,7 +28,7 @@ export class AppModule {
   static forRoot(config: AppConfig): DynamicModule {
     return {
       module: AppModule,
-      imports: [CommonModule.forRoot(config), PrismaModule.forRoot({ connectionString: config.databaseUrl })],
+      imports: [CommonModule.forRoot(config), PrismaModule.forRoot({ connectionString: config.databaseUrl, ...config.database })],
     };
   }
 }

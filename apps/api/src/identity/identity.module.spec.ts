@@ -27,7 +27,7 @@ describe('IdentityModule exports', () => {
       timezone: 'Asia/Ho_Chi_Minh', staffRole: null,
     }) } };
     const moduleRef = await Test.createTestingModule({ imports: [CommonModule.forRoot(testConfig()),
-      PrismaModule.forRoot({ connectionString: 'unused' }), ConsumerModule] })
+      PrismaModule.forRoot({ connectionString: 'unused', ...testConfig().database }), ConsumerModule] })
       .overrideProvider(PRISMA_CLIENT).useValue(prisma).compile();
     try {
       const consumer = moduleRef.get(ProfileConsumer);

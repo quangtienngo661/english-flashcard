@@ -45,7 +45,7 @@ class TestIdempotentController {
 @Module({
   imports: [
     CommonModule.forRoot(testConfig()),
-    PrismaModule.forRoot({ connectionString: inject('databaseUrl') }),
+    PrismaModule.forRoot({ connectionString: inject('databaseUrl'), ...testConfig().database }),
     SampleModule,
   ],
   controllers: [TestIdempotentController],
