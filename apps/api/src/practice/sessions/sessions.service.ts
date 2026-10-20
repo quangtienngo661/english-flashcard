@@ -15,8 +15,6 @@ import { PracticeStats } from '../weak/practice-stats.js';
 import { defaultSort, nextRoundOrder, sortWords, type SortKey, type SortableWord, type Source } from './order.js';
 import { itemView, sessionView, type ItemView, type ItemWithQuestion, type SessionView } from './session-views.js';
 
-// Session start walks a large source in batches; it holds the learner's practice lock meanwhile.
-const startTransaction = { timeout: 30_000, maxWait: 10_000 };
 const transactionOptions = { timeout: 15_000, maxWait: 10_000 };
 const AVAILABILITY_BATCH = 50;
 const OPEN = ['active', 'waiting_continue'];
@@ -66,33 +64,36 @@ export class SessionsService {
     // counts runs again inside the transaction, after the open session is closed.
     const early = await this.entitlements.checkQuota(learner.userId, 'practice_sessions');
     if (!early.allowed) throw refusalProblem(early);
+    // Every read below goes through the global client, so it runs before the transaction: inside it each would borrow a
+    // second connection while the transaction holds one (PX4). A word that stops being visible before the transaction
+    // commits is dropped later, when `build` skips it as not visible.
+    await this.assertEntitled(learner.userId);
+    const items = await this.sourceItems(learner.userId, input);
+    if (items.length === 0) throw noWords(input.source === 'group' ? 'group-empty' : 'source-empty');
+    const statsBySense = sort === 'least_practiced' || sort === 'most_wrong'
+      ? await this.stats.statsFor(learner.userId) : new Map();
+    const words: SortableWord[] = items.map((item) => ({
+      sense_id: item.sense_id, level: item.level, due_date: item.due_date, priority: item.priority, section: item.section,
+      added_at: item.added_at, last_needs_review_at: item.last_needs_review_at,
+      last_practiced_at: statsBySense.get(item.sense_id)?.last_practiced_at ?? null,
+      recent_wrong: statsBySense.get(item.sense_id)?.wrong ?? 0,
+    }));
+    const order = sortWords(words, sort, Math.random);
+    const kept: string[] = [];
+    // Each batch asks only for the words still missing (each word loads all its group mates), at most AVAILABILITY_BATCH.
+    for (let at = 0; at < order.length && kept.length < count;) {
+      const batch = order.slice(at, at + Math.min(AVAILABILITY_BATCH, count - kept.length));
+      at += batch.length;
+      const available = await this.builder.availability({
+        userId: learner.userId, nativeLanguage: learner.nativeLanguage, senseIds: batch, chosenTypes: input.types,
+      });
+      for (const senseId of batch) {
+        if (kept.length < count && (available.get(senseId)?.length ?? 0) > 0) kept.push(senseId);
+      }
+    }
+    if (kept.length === 0) throw noWords('no-word-fits-types');
     return this.prisma.$transaction(async (tx) => {
       await withPracticeLock(tx, learner.userId);
-      await this.assertEntitled(learner.userId);
-      const items = await this.sourceItems(learner.userId, input);
-      if (items.length === 0) throw noWords(input.source === 'group' ? 'group-empty' : 'source-empty');
-      const statsBySense = sort === 'least_practiced' || sort === 'most_wrong'
-        ? await this.stats.statsFor(learner.userId) : new Map();
-      const words: SortableWord[] = items.map((item) => ({
-        sense_id: item.sense_id, level: item.level, due_date: item.due_date, priority: item.priority, section: item.section,
-        added_at: item.added_at, last_needs_review_at: item.last_needs_review_at,
-        last_practiced_at: statsBySense.get(item.sense_id)?.last_practiced_at ?? null,
-        recent_wrong: statsBySense.get(item.sense_id)?.wrong ?? 0,
-      }));
-      const order = sortWords(words, sort, Math.random);
-      const kept: string[] = [];
-      // Each batch asks only for the words still missing (each word loads all its group mates), at most AVAILABILITY_BATCH.
-      for (let at = 0; at < order.length && kept.length < count;) {
-        const batch = order.slice(at, at + Math.min(AVAILABILITY_BATCH, count - kept.length));
-        at += batch.length;
-        const available = await this.builder.availability({
-          userId: learner.userId, nativeLanguage: learner.nativeLanguage, senseIds: batch, chosenTypes: input.types,
-        });
-        for (const senseId of batch) {
-          if (kept.length < count && (available.get(senseId)?.length ?? 0) > 0) kept.push(senseId);
-        }
-      }
-      if (kept.length === 0) throw noWords('no-word-fits-types');
       const now = this.clock.now();
       await tx.practiceSession.updateMany({
         where: { userId: learner.userId, status: { in: OPEN } }, data: { status: 'abandoned', endedAt: now },
@@ -108,7 +109,7 @@ export class SessionsService {
         lastActivityAt: now,
       } });
       return { session: sessionView(session, []) };
-    }, startTransaction);
+    }, transactionOptions);
   }
 
   async current(learner: Learner): Promise<{ session: SessionView; item: ItemView | null; notice?: Notice }> {

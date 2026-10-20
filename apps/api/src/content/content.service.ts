@@ -133,8 +133,9 @@ export class ContentService {
     return this.queries.exportEntriesWithoutSense(filter, limit);
   }
 
-  resolveBatchRecordOwners(records: ScopeRecord[]): Promise<{ entryIds: string[]; senseIds: string[] }> {
-    return this.queries.resolveBatchRecordOwners(records);
+  resolveBatchRecordOwners(records: ScopeRecord[], db?: Prisma.TransactionClient | PrismaClient):
+    Promise<{ entryIds: string[]; senseIds: string[] }> {
+    return this.queries.resolveBatchRecordOwners(records, db);
   }
 
   replaceInflections(tx: Prisma.TransactionClient, entryId: string, source: InflectionSource, forms: InflectionInput[]): Promise<void> {

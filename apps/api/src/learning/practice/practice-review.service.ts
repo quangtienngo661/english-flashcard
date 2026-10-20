@@ -30,8 +30,10 @@ export class PracticeReviewService {
 
   async review(tx: Prisma.TransactionClient, userId: string, inputs: PracticeReviewInput[]): Promise<PracticeReviewOutcome[]> {
     if (inputs.length === 0) return [];
-    const [profile, { learning }] = await Promise.all([this.identity.getProfile(userId), this.settings.get()]);
+    // Through the caller's tx, one after the other: the global client would borrow a second connection while tx holds one.
+    const profile = await this.identity.getProfile(userId, tx);
     if (!profile) throw notFound();
+    const { learning } = await this.settings.get(tx);
     // Every affected item first, in id order (as lockItems), so a duplicate waits here and then finds the first one's row.
     const items = await tx.$queryRaw<Array<{ id: string; sense_id: string }>>`
       SELECT id::text AS id, sense_id::text AS sense_id FROM learning_items

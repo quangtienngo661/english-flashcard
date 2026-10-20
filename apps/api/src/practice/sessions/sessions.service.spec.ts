@@ -69,8 +69,9 @@ function setup(options: { early?: Decision; late?: Decision; items?: PracticeIte
   };
   const settings = { get: vi.fn(async () => SETTINGS_DEFAULTS) } as unknown as SettingsService;
   const service = new SessionsService(prisma, new FakeClock(now), settings, entitlements as unknown as EntitlementsService,
-    learning, builder as unknown as QuestionBuilder, { statsFor: vi.fn(async () => new Map()) } as unknown as PracticeStats);
-  return { service, tx, calls, entitlements, builder };
+    learning, builder as unknown as QuestionBuilder,
+    { statsFor: vi.fn(async () => { calls.push('statsFor'); return new Map(); }) } as unknown as PracticeStats);
+  return { service, tx, calls, entitlements, builder, learning };
 }
 
 const input = { source: 'all' as const, types: ['mcq_definition' as const] };
@@ -114,6 +115,60 @@ describe('SessionsService.start — session quota (Bước 5)', () => {
     const { service, entitlements } = setup();
     await service.start(learner, input);
     expect(entitlements.recordPracticeSession).not.toHaveBeenCalled();
+  });
+});
+
+describe('SessionsService.start — reads before the transaction (PX4)', () => {
+  it('PX4: start reads the source items and the availability before opening the transaction', async () => {
+    const { service, calls, builder, learning } = setup();
+    await service.start(learner, { ...input, sort: 'least_practiced' });
+    const opened = calls.indexOf('transaction');
+    expect(opened).toBeGreaterThan(-1);
+    // Everything that reads through the global client has run by the time the one transaction connection is taken.
+    for (const read of ['check', 'practiceItems', 'statsFor', 'availability']) {
+      expect(calls.indexOf(read), read).toBeGreaterThan(-1);
+      expect(calls.indexOf(read), read).toBeLessThan(opened);
+    }
+    expect(calls.indexOf('practiceItems')).toBeLessThan(calls.indexOf('availability'));
+    // Inside it: the lock, the close, the counted quota check and the create only.
+    expect(calls.slice(opened + 1)).toEqual(['practice-lock', 'updateMany', 'checkQuota(tx)', 'create']);
+    expect(learning.practiceItems).toHaveBeenCalledTimes(1);
+    expect(builder.availability).toHaveBeenCalledTimes(1);
+  });
+
+  it.each([
+    ['an empty group', { ...input, source: 'group' as const, group_id: 'g1' }, [], 'group-empty'],
+    ['an empty source', input, [], 'source-empty'],
+  ])('PX4: %s is refused before a transaction is opened', async (_name, startInput, items, reason) => {
+    const { service, calls, tx } = setup({ items });
+    await expect(service.start(learner, startInput as never)).rejects.toMatchObject({
+      status: 409, problemType: 'practice-no-words', extensions: { reason },
+    });
+    expect(calls).not.toContain('transaction');
+    expect(tx.practiceSession.updateMany).not.toHaveBeenCalled();
+  });
+
+  it('PX4: no word fits the chosen types → refused before a transaction, the open session left alone', async () => {
+    const { service, calls, tx, builder } = setup();
+    builder.availability.mockImplementation(async ({ senseIds }: { senseIds: string[] }) => {
+      calls.push('availability');
+      return new Map(senseIds.map((id) => [id, []]));
+    });
+    await expect(service.start(learner, input)).rejects.toMatchObject({
+      status: 409, problemType: 'practice-no-words', extensions: { reason: 'no-word-fits-types' },
+    });
+    expect(calls).not.toContain('transaction');
+    expect(tx.practiceSession.updateMany).not.toHaveBeenCalled();
+  });
+
+  it('PX4: a refusal by the practice.basic entitlement is thrown before a transaction is opened', async () => {
+    const { service, calls, entitlements } = setup();
+    entitlements.check.mockImplementationOnce(async () => {
+      calls.push('check');
+      return { allowed: false, reason: 'plan-required' } as never;
+    });
+    await expect(service.start(learner, input)).rejects.toMatchObject({ status: 403, problemType: 'entitlement-required' });
+    expect(calls).not.toContain('transaction');
   });
 });
 
