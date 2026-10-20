@@ -139,7 +139,11 @@ export class SessionStore {
 
   /** Sign-out did not reach the server: ask again. Done → the flag goes and the notice with it. */
   async retryLogout(): Promise<void> {
+    const pending = () => this.state.status === 'signed-out' && this.state.notice === 'logout-failed';
+    if (!pending()) return;
     if (!(await this.postLogout())) return;
+    // A sign-in in another tab may have won meanwhile: then this answer is old news.
+    if (!pending()) return;
     setLogoutPending(false);
     this.set({ status: 'signed-out', notice: null });
   }
