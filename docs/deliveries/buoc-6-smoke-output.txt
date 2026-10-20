@@ -1,0 +1,221 @@
+# pnpm smoke:buoc-6 — output (20/10/2026)
+#
+# Code: dev @ 0125d63 (after PR #93 C2) + this branch's smoke script. Each run on a recreated database english_learning_smoke_b6:
+# dropdb/createdb, pnpm install, pnpm db:setup, pnpm build, pnpm run:dev (API + worker), then pnpm smoke:buoc-6.
+# Environment of every process: .env.example values, secrets generated in the shell (never printed, no .env), AI_FAKE_ENABLED=true,
+# JOB_QUEUE_PREFIX=wordmet-b6-smoke, OPENAI_API_KEY and ANTHROPIC_API_KEY empty. No real provider call (D19).
+# 'network error … ECONNRESET; retrying' lines: the API closes an idle keep-alive socket after 5 s (seen in Bước 5); the request is resent.
+
+## Run 1
+
+[1] 09:19:49Z Wait for the API
+    ok — reachable at http://localhost:3000; database english_learning_smoke_b6; children run with AI_FAKE_ENABLED=true, JOB_QUEUE_PREFIX=wordmet-b6-smoke, no key
+
+[2] 09:19:52Z Accounts: admin (CLI grant), one editor (created by the admin)
+    ok — admin smoke6-admin-e8de5343@example.com; editor smoke6-editor-e8de5343@example.com; learner uuid cb40ce3c-046c-46f0-b1be-683821eb9fb2
+
+[3] 09:19:56Z Fake provider on, no key: GET /v1/admin/ai/status
+    ok — providers: fake true, openai false, anthropic false
+
+[4] 09:19:56Z B6#1: a fresh database, no model chosen
+    ok — three operations model-not-set; prompts at revision 1; operations at version 0; ai:fake-call → unavailable/model-not-set
+
+[5] 09:19:59Z B6#2: add fake:ok (price 0), choose it for generate_cloze, call
+    ok — succeeded "Lan will ___ it tomorrow."; prompt_revision 1; one ai_calls row; price 0
+
+[6] 09:20:02Z B6#3: the same operation id and data again
+    ok — replayed: true; still one ai_calls row
+
+[7] 09:20:06Z B6#5: fake:503-then-ok
+    (network error on POST /v1/admin/ai/models: ECONNRESET; retrying)
+    ok — succeeded after one quick retry; two ai_calls rows (provider-error, succeeded); 657 ms
+
+[8] 09:20:10Z B6#6: fake:429-then-ok
+    ok — succeeded after waiting retry-after; 1210 ms; outcomes rate-limited, succeeded
+
+[9] 09:20:14Z B6#7: fake:two-blanks
+    ok — transient_failure/invalid-shape; one ai_calls row with outcome invalid-shape
+
+[10] 09:20:18Z B6#8: fake:refuse, twice with one operation id
+    ok — both permanent_failure/refused; one ai_calls row for the id (the second call replayed the stored failure)
+
+[11] 09:20:23Z B6#9 and B6#21: fake:quota, then the status page
+    ok — unavailable/provider-quota; status of generate_cloze: last_error provider-quota
+
+[12] 09:20:26Z B6#4: fake:slow
+    ok — transient_failure/timeout after 10141 ms; one ai_calls row, no retry
+
+[13] 09:20:39Z B6#10: the AI switch off (entitlements.ai_enabled)
+    (network error on GET /v1/admin/ai/operations: ECONNRESET; retrying)
+    ok — status ai-disabled; learner call ai-disabled (no ai_calls row); prompt test still ran (2 item(s)); switch on again
+
+[14] 09:20:43Z B6#11: max_concurrent_calls 1, fake:slow --parallel 2
+    (network error on GET /v1/admin/settings: ECONNRESET; retrying)
+    ok — one timeout, one busy after 10134 ms (no ai_calls row); max_concurrent_calls back to 50
+
+[15] 09:20:56Z B6#12 and B6E96: add a model that does not exist; a model id with "/../"
+    ok — fake:nope → 422 model-not-found; "fake/../x" → 400 validation-failed on model_id; nothing saved
+
+[16] 09:20:57Z B6#13: delete the model in use
+    ok — DELETE fake:ok (chosen for generate_cloze) → 409 model-in-use
+
+[17] 09:20:57Z B6#14: save the seeded prompt twice with expected_revision 1
+    ok — first save → revision 2 (the seeded examples pass the save rules); second → 409 prompt-revision-conflict; two revisions
+
+[18] 09:20:57Z B6#15: save a prompt with an example of the wrong shape
+    ok — 400 validation-failed with a path to the example: ["examples[0].output: blank-count"]
+
+[19] 09:20:57Z B6#16: test a draft prompt
+    ok — 2 item(s), each with its output; ai_prompts unchanged (revision 2); 2 ai_calls row(s) with purpose test
+
+[20] 09:20:58Z B6#17 and B6E74: three eval examples, one run in the worker; the same Idempotency-Key again
+    ok — run e6472934-3ae5-4bbf-bc45-a58ee0ab54a2 finished: total 3, valid 3, avg 1 ms, cost 0.00000000; same key → same run_id
+
+[21] 09:20:58Z B6#18: a word of 150 characters
+    ok — permanent_failure/bad-input; no ai_calls row
+
+[22] 09:21:01Z B6#19 and B6#26 are unit tests (adapters with stub fetch, Tasks 8–9): skipped here
+    ok — skipped
+
+[23] 09:21:01Z B6#22: calls of one operation id, then the content expires
+    (network error on GET /v1/admin/ai/calls: ECONNRESET; retrying)
+    ok — content with request and response; after back-dating and maintenance:run the content is gone and the ledger row stays
+
+[24] 09:21:07Z B6#23: a stored result expires
+    ok — row deleted by maintenance:run; the same id again → replayed false and a new ai_calls row
+
+[25] 09:21:17Z B6#24: deleteUserData (ai:fake-call delete-user-data)
+    ok — no ai_operations, no content of the user; the ai_calls row stays with user_id null
+
+[26] 09:21:24Z B6#25: an editor on every route of §12.1
+    (network error on GET /v1/admin/ai/status: ECONNRESET; retrying)
+    ok — 403 forbidden on all 21 routes; nothing changed
+
+[27] 09:21:24Z B6#27: fake:slow, two calls at once with one operation id
+    ok — one timeout, one in_progress; exactly one ai_calls row
+
+[28] 09:21:38Z Race (Review Focus 1): fake:ok, ten calls at once with one operation id
+    (network error on GET /v1/admin/ai/operations: ECONNRESET; retrying)
+    ok — 10 results {"in_progress":7,"succeeded":3}; exactly one ai_calls row
+
+[29] 09:21:42Z B6#28: the daily provider-call cap
+    (network error on POST /v1/admin/ai/prompts/generate_cloze/test: ECONNRESET; retrying)
+    ok — cap 25 (today 23); two calls succeeded, the third unavailable/daily-call-cap retry_after_seconds 27490; a prompt test still ran; cap back to 3000
+
+[30] 09:21:50Z B6#29: fake:truncated with max_output_tokens 50
+    ok — transient_failure/truncated with max_output_tokens 50; status last_error truncated
+
+[31] 09:21:53Z B6#30: start an eval run while Redis is down, then recover it
+    ok — 202 queued with Redis stopped; still queued after Redis is back; after back-dating 11 minutes and maintenance:run → finished (3 items)
+
+[32] 09:22:03Z B6#20: costs by model match ai_calls
+    ok — 8 model groups; calls and tokens match ai_calls; fake cost 0 (fake/fake:429-then-ok 2, fake/fake:503-then-ok 2, fake/fake:ok 21, fake/fake:quota 1, fake/fake:refuse 1, fake/fake:slow 3, fake/fake:truncated 1, fake/fake:two-blanks 1)
+
+Smoke Bước 6 passed in 134s (32 steps).
+
+## Run 2 (database dropped and recreated)
+
+[1] 09:22:29Z Wait for the API
+    ok — reachable at http://localhost:3000; database english_learning_smoke_b6; children run with AI_FAKE_ENABLED=true, JOB_QUEUE_PREFIX=wordmet-b6-smoke, no key
+
+[2] 09:22:32Z Accounts: admin (CLI grant), one editor (created by the admin)
+    ok — admin smoke6-admin-35cce6c4@example.com; editor smoke6-editor-35cce6c4@example.com; learner uuid 2c07e2b7-0b4b-4677-9d28-1d2fb38e0934
+
+[3] 09:22:36Z Fake provider on, no key: GET /v1/admin/ai/status
+    ok — providers: fake true, openai false, anthropic false
+
+[4] 09:22:36Z B6#1: a fresh database, no model chosen
+    ok — three operations model-not-set; prompts at revision 1; operations at version 0; ai:fake-call → unavailable/model-not-set
+
+[5] 09:22:38Z B6#2: add fake:ok (price 0), choose it for generate_cloze, call
+    ok — succeeded "Lan will ___ it tomorrow."; prompt_revision 1; one ai_calls row; price 0
+
+[6] 09:22:42Z B6#3: the same operation id and data again
+    ok — replayed: true; still one ai_calls row
+
+[7] 09:22:45Z B6#5: fake:503-then-ok
+    (network error on POST /v1/admin/ai/models: ECONNRESET; retrying)
+    ok — succeeded after one quick retry; two ai_calls rows (provider-error, succeeded); 631 ms
+
+[8] 09:22:49Z B6#6: fake:429-then-ok
+    ok — succeeded after waiting retry-after; 1177 ms; outcomes rate-limited, succeeded
+
+[9] 09:22:53Z B6#7: fake:two-blanks
+    ok — transient_failure/invalid-shape; one ai_calls row with outcome invalid-shape
+
+[10] 09:22:57Z B6#8: fake:refuse, twice with one operation id
+    ok — both permanent_failure/refused; one ai_calls row for the id (the second call replayed the stored failure)
+
+[11] 09:23:03Z B6#9 and B6#21: fake:quota, then the status page
+    ok — unavailable/provider-quota; status of generate_cloze: last_error provider-quota
+
+[12] 09:23:06Z B6#4: fake:slow
+    ok — transient_failure/timeout after 10132 ms; one ai_calls row, no retry
+
+[13] 09:23:19Z B6#10: the AI switch off (entitlements.ai_enabled)
+    (network error on GET /v1/admin/ai/operations: ECONNRESET; retrying)
+    ok — status ai-disabled; learner call ai-disabled (no ai_calls row); prompt test still ran (2 item(s)); switch on again
+
+[14] 09:23:23Z B6#11: max_concurrent_calls 1, fake:slow --parallel 2
+    (network error on GET /v1/admin/settings: ECONNRESET; retrying)
+    ok — one timeout, one busy after 10175 ms (no ai_calls row); max_concurrent_calls back to 50
+
+[15] 09:23:36Z B6#12 and B6E96: add a model that does not exist; a model id with "/../"
+    ok — fake:nope → 422 model-not-found; "fake/../x" → 400 validation-failed on model_id; nothing saved
+
+[16] 09:23:37Z B6#13: delete the model in use
+    ok — DELETE fake:ok (chosen for generate_cloze) → 409 model-in-use
+
+[17] 09:23:37Z B6#14: save the seeded prompt twice with expected_revision 1
+    ok — first save → revision 2 (the seeded examples pass the save rules); second → 409 prompt-revision-conflict; two revisions
+
+[18] 09:23:37Z B6#15: save a prompt with an example of the wrong shape
+    ok — 400 validation-failed with a path to the example: ["examples[0].output: blank-count"]
+
+[19] 09:23:37Z B6#16: test a draft prompt
+    ok — 2 item(s), each with its output; ai_prompts unchanged (revision 2); 2 ai_calls row(s) with purpose test
+
+[20] 09:23:38Z B6#17 and B6E74: three eval examples, one run in the worker; the same Idempotency-Key again
+    ok — run d6ad1d85-368e-4899-896a-5eaae97bf04f finished: total 3, valid 3, avg 1 ms, cost 0.00000000; same key → same run_id
+
+[21] 09:23:38Z B6#18: a word of 150 characters
+    ok — permanent_failure/bad-input; no ai_calls row
+
+[22] 09:23:41Z B6#19 and B6#26 are unit tests (adapters with stub fetch, Tasks 8–9): skipped here
+    ok — skipped
+
+[23] 09:23:41Z B6#22: calls of one operation id, then the content expires
+    (network error on GET /v1/admin/ai/calls: ECONNRESET; retrying)
+    ok — content with request and response; after back-dating and maintenance:run the content is gone and the ledger row stays
+
+[24] 09:23:47Z B6#23: a stored result expires
+    ok — row deleted by maintenance:run; the same id again → replayed false and a new ai_calls row
+
+[25] 09:23:56Z B6#24: deleteUserData (ai:fake-call delete-user-data)
+    ok — no ai_operations, no content of the user; the ai_calls row stays with user_id null
+
+[26] 09:24:04Z B6#25: an editor on every route of §12.1
+    (network error on GET /v1/admin/ai/status: ECONNRESET; retrying)
+    ok — 403 forbidden on all 21 routes; nothing changed
+
+[27] 09:24:04Z B6#27: fake:slow, two calls at once with one operation id
+    ok — one timeout, one in_progress; exactly one ai_calls row
+
+[28] 09:24:17Z Race (Review Focus 1): fake:ok, ten calls at once with one operation id
+    (network error on GET /v1/admin/ai/operations: ECONNRESET; retrying)
+    ok — 10 results {"in_progress":6,"succeeded":4}; exactly one ai_calls row
+
+[29] 09:24:21Z B6#28: the daily provider-call cap
+    (network error on POST /v1/admin/ai/prompts/generate_cloze/test: ECONNRESET; retrying)
+    ok — cap 25 (today 23); two calls succeeded, the third unavailable/daily-call-cap retry_after_seconds 27331; a prompt test still ran; cap back to 3000
+
+[30] 09:24:29Z B6#29: fake:truncated with max_output_tokens 50
+    ok — transient_failure/truncated with max_output_tokens 50; status last_error truncated
+
+[31] 09:24:32Z B6#30: start an eval run while Redis is down, then recover it
+    ok — 202 queued with Redis stopped; still queued after Redis is back; after back-dating 11 minutes and maintenance:run → finished (3 items)
+
+[32] 09:24:42Z B6#20: costs by model match ai_calls
+    ok — 8 model groups; calls and tokens match ai_calls; fake cost 0 (fake/fake:429-then-ok 2, fake/fake:503-then-ok 2, fake/fake:ok 21, fake/fake:quota 1, fake/fake:refuse 1, fake/fake:slow 3, fake/fake:truncated 1, fake/fake:two-blanks 1)
+
+Smoke Bước 6 passed in 133s (32 steps).

@@ -9,6 +9,7 @@
 > record: [`../decisions/2026-10-20-buoc-6-ai-integration-decisions.md`](../decisions/2026-10-20-buoc-6-ai-integration-decisions.md).
 > **Cập nhật 20/10/2026 (review plan, [`../reviews/2026-10-20-buoc-6-plan-review.md`](../reviews/2026-10-20-buoc-6-plan-review.md)):** thêm D26–D28 (§2, §5.4,
 > §7.2, §7.5) và sửa bảng lỗi Anthropic của §4.3 (429 chỉ là hết tiền khi có `enforced_spend_limit_reached`).
+> **Cập nhật 20/10/2026 (implement xong):** D29 thêm lúc implement (§2, §13); ghi chú as-built và lựa chọn của plan ở cuối §2.
 
 Ngày: 19–20/10/2026. Brainstorm qua `superpowers:brainstorming` trên nhánh `docs/buoc-6-design` (cắt từ `origin/dev` @ `7ede16d`, fast-forward lên
 `529fde3` ngày 20/10 sau khi Bước 5 implement xong). Design liên quan: [Bước 5](2026-10-19-buoc-5-entitlements-design.md) (§7 sổ lượt, §7.3 công tắc và
@@ -127,6 +128,47 @@ Hiện trạng trên `dev` @ `529fde3` (đã đọc 20/10):
 | D27 | Từ không có level (review plan) | Level không bắt buộc: có thì dặn theo level, không có thì không nhắm trình độ nào |
 | D28 | Model Anthropic không cho biết số token tối đa (review plan) | Ô vẫn để trống được; khi đó gửi 16.000 (`ASSUMPTION`; chủ dự án xác nhận con số khi duyệt plan, 20/10/2026) |
 | D29 | Biến `OPENAI_CUSTOM_HEADERS` / `ANTHROPIC_CUSTOM_HEADERS` (lúc implement) | Đặt (khác rỗng) thì API, worker và mọi CLI từ chối khởi động; báo tên biến, không in giá trị |
+
+### As-built (20/10/2026)
+
+Chi tiết, PR và số liệu: [`docs/deliveries/buoc-6.md`](../../deliveries/buoc-6.md) mục "as-built". Lựa chọn kỹ thuật của plan (design không ghi), như đã làm
+(đánh số như plan):
+1. Bộ nối trả về chữ thô; cổng tự đọc JSON (câu trả lời không phải JSON là `invalid-shape` của cổng).
+2. `ai_calls.outcome` = `succeeded` hoặc lý do của chính lần gọi (`timeout`, `connection`, `rate-limited`, `provider-error`, `invalid-shape`, `truncated`,
+   `stopped`, `refused`, `model-rejected`, `auth-failed`, `provider-quota`); câu trả lời sai khuôn ghi `invalid-shape`, không bao giờ `succeeded`.
+3. Lần gọi của chạy thử và bộ ví dụ ghi `user_id` = admin đã bấm (vẫn bị `deleteUserData` xóa).
+4. Nhận dạng "hết tiền / chạm giới hạn chi" theo đúng câu lỗi trên trang chính thức (§4.3); mọi 429 khác của Anthropic là `rate_limited`.
+5. `pnpm ai:fake-call delete-user-data --user <uuid>` để smoke kiểm `deleteUserData` (B6#24) trên database thật.
+6. Lời dặn ban đầu nằm trong `src/ai/prompts/initial-prompts.ts` và trong migration seed với cùng chữ; một unit test giữ hai bản khớp nhau.
+7. Hàng đợi `ai-eval`: bên gửi chép `JobQueueService` (Redis có giới hạn 2 giây, `enqueue` → `false`), worker chép `ReminderQueueService` (chỉ khi
+   `runWorkers`, kết nối riêng, mỗi lần một job); job id = id lần chạy.
+8. `.env.example` bật sẵn bản giả cho máy local; code mặc định vẫn tắt; hai key để trống.
+9. Thông tin model lưu thành cột; "chưa biết các mức effort" lưu `[]` như "không có mức nào"; "tắt thinking" đổi sang đúng kiểu của model lúc gọi.
+10. Mỗi lần chạy bộ ví dụ lưu sẵn tham số đã chốt, bản prompt dùng và danh sách ví dụ lúc bấm; job chỉ chạy đúng danh sách đó.
+11. Unit test so hằng số với Content cho các hằng số Content có export; giới hạn 2.000 ký tự của nhãn ngữ cảnh chép kèm ghi chú.
+12. Trường log đổi tên (`ai_op`, `usage_in`, `usage_cached`, `usage_out`, `usage_reasoning`, `provider_error`) để không bị bộ lọc log che.
+13. Ví dụ thứ 101 của một thao tác → 400 `validation-failed`.
+14. Kết quả `in_progress` không kèm `reason`.
+15. `GET /v1/admin/ai/costs` mặc định là hôm nay (giờ Việt Nam); khoảng dài hơn 366 ngày hoặc `from > to` → 400.
+16. Tình huống giả `*-then-ok` lỗi ở mọi lần gọi lẻ của một cặp (model, dữ liệu).
+17. Dòng `ai_operations` quá hạn bị xóa ngay lúc đọc, nên kết quả quá 24 giờ không bao giờ được trả lại (B6E24).
+18. `daily_provider_calls_cap = 0` → `daily-call-cap` không kèm `retry_after_seconds`.
+19. `AiService.run` ném `TypeError` khi mã thao tác hoặc mã người dùng sai dạng (lỗi lập trình của bên gọi, không phải `AiResult`).
+20. Có chỗ trong hàng đợi mà còn dưới 2 giây thì nhả chỗ và trả `busy`, không gọi.
+21. Chạy bộ ví dụ khi thao tác chưa có ví dụ → 400; đọc lại model trả lỗi như lúc thêm; `GET /calls` của mã không có → `items: []`; id không có ở API 4–6 và
+    15 → 404.
+22. Hằng số mới ngoài §13: `MODEL_NOTE_MAX`, `EVAL_NOTE_MAX`, `PRICE_MAX`, `OPERATION_ID_PATTERN`, `MAX_OUTPUT_TOKENS_UPPER` (128.000),
+    `ANTHROPIC_MAX_TOKENS_FALLBACK` (16.000, D28).
+23. `AiService.runAdminTest(op, data, actorId)` (export) để CLI chạy thử một lần mà không import `RunnerService`.
+
+Chỗ khác design khi làm:
+- **D29** (chủ dự án chọn lúc implement): đặt `OPENAI_CUSTOM_HEADERS` / `ANTHROPIC_CUSTOM_HEADERS` khác rỗng thì cấu hình từ chối khởi động (§13).
+- SDK được đặt tường minh thêm các tùy chọn tự đọc từ môi trường: OpenAI `adminAPIKey`, `webhookSecret` = `null`; Anthropic `webhookKey` = `null`,
+  `openTelemetry: false`.
+- Ước tính "lời gọi đắt nhất" (§6.6) khi không biết số tối đa: Anthropic dùng 16.000 (D28), OpenAI ghi `null` ("không biết").
+- Ví dụ `lookup_word` có 0 câu → `empty`, 3 câu → `too-long` (không có mã riêng cho số câu ví dụ).
+- Bản giả gọi với model `fake:*` lạ → `model_rejected` / 404. Lỗi job bộ ví dụ chỉ lưu tên và mã lỗi, không lưu message.
+- Không thêm mã lỗi nào ngoài §12.3.
 
 ## 3. Phạm vi
 
