@@ -13,6 +13,7 @@ import { EvalJob } from './eval/eval-job.js';
 import { EvalQueue } from './eval/eval-queue.service.js';
 import { EvalRunsRepository } from './eval/eval-runs.repository.js';
 import { EvalRunsService } from './eval/eval-runs.service.js';
+import { AiMaintenance } from './maintenance/ai-maintenance.js';
 import { ModelsService } from './models/models.service.js';
 import { OperationSettingsService } from './models/operation-settings.service.js';
 import { PromptsRepository } from './prompts/prompts.repository.js';
@@ -33,7 +34,7 @@ import { SelectionReader } from './runner/selection.js';
     // One queue per process (design §8.4); its limit is the one the runner read last.
     { provide: CallQueue, useFactory: (limit: ConcurrencyLimit) => new CallQueue(() => limit.value), inject: [ConcurrencyLimit] },
     RunnerService, AiService,
-    EvalExamplesService, EvalRunsService, EvalRunsRepository, EvalJob, EvalQueue, IdempotencyInterceptor,
+    EvalExamplesService, EvalRunsService, EvalRunsRepository, EvalJob, EvalQueue, IdempotencyInterceptor, AiMaintenance,
   ],
   exports: [AiService],
 })
