@@ -53,7 +53,7 @@ export class AnswersService {
 
   answer(userId: string, itemId: string, body: AnswerBody): Promise<AnswerResult | { result: 'try_again'; tries: number }> {
     return this.locked(userId, itemId, async (tx, item) => {
-      await this.assertUnanswered(userId, item, true);
+      await this.assertUnanswered(tx, userId, item, true);
       const key = item.question.answerKey as AnswerKey;
       let correct: boolean;
       let raw: string;
@@ -81,27 +81,27 @@ export class AnswersService {
         result: correct ? 'correct' : 'wrong', answerRaw: raw, answerNormalized: normalized, answersTried: item.answersTried,
         tries: item.tries + 1, skipped: false,
       });
-      return this.resultOf(userId, final);
+      return this.resultOf(userId, final, tx);
     });
   }
 
   /** "Bỏ qua": typing in try_again only; the last typed text becomes the stored answer. */
   skip(userId: string, itemId: string): Promise<AnswerResult> {
     return this.locked(userId, itemId, async (tx, item) => {
-      await this.assertUnanswered(userId, item, false);
+      await this.assertUnanswered(tx, userId, item, false);
       if (item.question.type !== 'type_word' || item.tries === 0) throw conflict('skip-not-allowed', 'Skip not allowed');
       const last = item.answersTried.at(-1)!;
       const final = await this.writeFinal(tx, item, {
         result: 'wrong', answerRaw: last, answerNormalized: normalizeAnswer(last), answersTried: item.answersTried.slice(0, -1),
         tries: item.tries, skipped: true,
       });
-      return this.resultOf(userId, final);
+      return this.resultOf(userId, final, tx);
     });
   }
 
   hint(userId: string, itemId: string, level: 1 | 2): Promise<{ level: 1 | 2; hint: Hints['level1'] | Hints['level2'] }> {
     return this.locked(userId, itemId, async (tx, item) => {
-      await this.assertUnanswered(userId, item, false);
+      await this.assertUnanswered(tx, userId, item, false);
       const hints = item.question.hints as Hints;
       const hint = level === 1 ? hints.level1 : hints.level2;
       if (hint === null) throw conflict('hint-unavailable', 'Hint unavailable');
@@ -112,7 +112,7 @@ export class AnswersService {
 
   /** The one place a final result is written (a test makes it throw, B4E23). */
   async writeFinal(tx: Prisma.TransactionClient, item: ItemWithQuestion, final: FinalWrite): Promise<ItemWithQuestion> {
-    const profile = await this.identity.getProfile(item.userId);
+    const profile = await this.identity.getProfile(item.userId, tx);
     if (!profile) throw notFound();
     const now = this.clock.now();
     const date = localDate(profile.timezone, now);
@@ -126,11 +126,14 @@ export class AnswersService {
     return written;
   }
 
-  /** The stored result as the app sees it; the buttons are worked out now (design 7.8). */
-  async resultOf(userId: string, item: ItemWithQuestion): Promise<AnswerResult> {
+  /**
+   * The stored result as the app sees it; the buttons are worked out now (design 7.8). A caller inside an open transaction
+   * passes its `tx` as `db`, so the learning item is read without a second connection.
+   */
+  async resultOf(userId: string, item: ItemWithQuestion, db?: Prisma.TransactionClient | PrismaClient): Promise<AnswerResult> {
     const key = item.question.answerKey as AnswerKey;
     const prompt = item.question.prompt as Prompt;
-    const { item: learningItem } = await this.learning.practiceCheck(userId, item.senseId, null);
+    const { item: learningItem } = await this.learning.practiceCheck(userId, item.senseId, null, db);
     const correct = item.result === 'correct';
     return {
       result: correct ? 'correct' : 'wrong', skipped: item.skipped, tries: item.tries, hint_level: item.hintLevel,
@@ -159,8 +162,8 @@ export class AnswersService {
     }, transactionOptions);
   }
 
-  private async assertUnanswered(userId: string, item: ItemWithQuestion, withResult: boolean): Promise<void> {
+  private async assertUnanswered(tx: Prisma.TransactionClient, userId: string, item: ItemWithQuestion, withResult: boolean): Promise<void> {
     if (item.result === null) return;
-    throw conflict('already-answered', 'Already answered', withResult ? { result: await this.resultOf(userId, item) } : undefined);
+    throw conflict('already-answered', 'Already answered', withResult ? { result: await this.resultOf(userId, item, tx) } : undefined);
   }
 }

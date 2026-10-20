@@ -1,4 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
+import type { Prisma, PrismaClient } from '../../generated/prisma/client.js';
 import { ContentService, maskExample, type CandidateSense, type PracticeSense } from '../../content/index.js';
 import { LearningService } from '../../learning/index.js';
 import type { AppSettings } from '../../settings/index.js';
@@ -21,6 +22,8 @@ export type BuildInput = {
   userId: string; nativeLanguage: NativeLanguage; senseId: string; chosenTypes: QuestionType[];
   promptStyle: 'meaning' | 'sentence' | 'mixed'; previousType: QuestionType | null; avoidDistractors: string[];
   settings: AppSettings['practice']; random: () => number;
+  /** The client to read through: a caller inside an open transaction passes its `tx` (default: the global client). */
+  db?: Prisma.TransactionClient | PrismaClient;
 };
 
 const DISTRACTORS = MCQ_OPTIONS - 1;
@@ -37,13 +40,15 @@ export class QuestionBuilder {
    * The chosen types each word can take now (design 7.3); a word missing from the map is not visible. One group-mates call
    * and one candidates call for the whole batch.
    */
-  async availability(input: { userId: string; nativeLanguage: NativeLanguage; senseIds: string[]; chosenTypes: QuestionType[] }):
-    Promise<Map<string, QuestionType[]>> {
-    const { userId, nativeLanguage, senseIds, chosenTypes } = input;
+  async availability(input: {
+    userId: string; nativeLanguage: NativeLanguage; senseIds: string[]; chosenTypes: QuestionType[];
+    db?: Prisma.TransactionClient | PrismaClient;
+  }): Promise<Map<string, QuestionType[]>> {
+    const { userId, nativeLanguage, senseIds, chosenTypes, db } = input;
     const need = chosenTypes.includes('mcq_definition') ? DISTRACTORS : chosenTypes.includes('true_false_definition') ? 1 : 0;
-    const mates = need > 0 ? await this.learning.practiceGroupMates(userId, senseIds) : new Map<string, string[]>();
+    const mates = need > 0 ? await this.learning.practiceGroupMates(userId, senseIds, db) : new Map<string, string[]>();
     const ids = [...new Set([...senseIds, ...[...mates.values()].flat()])];
-    const senses = await this.content.practiceCandidates(userId, ids, nativeLanguage);
+    const senses = await this.content.practiceCandidates(userId, ids, nativeLanguage, db);
     const result = new Map<string, QuestionType[]>();
     for (const senseId of senseIds) {
       const asked = senses.get(senseId);
@@ -55,11 +60,11 @@ export class QuestionBuilder {
   }
 
   async build(input: BuildInput): Promise<BuiltQuestion | { skip: 'not-visible' | 'no-type' }> {
-    const { userId, nativeLanguage, senseId, random } = input;
-    const sense = (await this.content.practiceSenses(userId, [senseId], nativeLanguage)).get(senseId);
+    const { userId, nativeLanguage, senseId, random, db } = input;
+    const sense = (await this.content.practiceSenses(userId, [senseId], nativeLanguage, db)).get(senseId);
     if (!sense) return { skip: 'not-visible' };
-    const mates = (await this.learning.practiceGroupMates(userId, [senseId])).get(senseId) ?? [];
-    const candidates = await this.content.practiceCandidates(userId, mates, nativeLanguage);
+    const mates = (await this.learning.practiceGroupMates(userId, [senseId], db)).get(senseId) ?? [];
+    const candidates = await this.content.practiceCandidates(userId, mates, nativeLanguage, db);
     const eligible = eligibleCandidates(sense, mates.flatMap((id) => candidates.get(id) ?? []));
     const available = availableTypes(sense, eligible.length, input.chosenTypes);
     if (available.length === 0) return { skip: 'no-type' };

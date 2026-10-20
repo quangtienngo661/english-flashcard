@@ -43,7 +43,7 @@ export class PracticeReviewsService {
       if (item.result === 'void') throw conflict('item-void', 'Item void');
       if (item.result === null) throw conflict('not-answered', 'Not answered');
       if (item.reviewAction !== null && item.reviewAction !== action) throw conflict('review-already-set', 'Review already set');
-      if (item.reviewAction === null && action === 'known' && !(await this.answers.resultOf(userId, item)).show_known) {
+      if (item.reviewAction === null && action === 'known' && !(await this.answers.resultOf(userId, item, tx)).show_known) {
         throw conflict('known-not-allowed', 'Known not allowed');
       }
       const [outcome] = await this.learning.practiceReview(tx, userId, [{ senseId: item.senseId, action: toLearning(action), reviewId: item.id }]);

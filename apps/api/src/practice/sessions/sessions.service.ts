@@ -202,8 +202,8 @@ export class SessionsService {
     return sessionView(session, items);
   }
 
-  private async assertEntitled(userId: string): Promise<void> {
-    const result = await this.entitlements.check(userId, 'practice.basic');
+  private async assertEntitled(userId: string, tx?: Prisma.TransactionClient): Promise<void> {
+    const result = await this.entitlements.check(userId, 'practice.basic', tx);
     if (!result.allowed) throw refusalProblem(result);
   }
 
@@ -218,10 +218,10 @@ export class SessionsService {
   }
 
   /** Senses of the session still usable: visible, in learning and, for a group source, still in that group (design 7.2). */
-  private async usable(userId: string, session: PracticeSession): Promise<Set<string>> {
+  private async usable(tx: Prisma.TransactionClient, userId: string, session: PracticeSession): Promise<Set<string>> {
     const items = session.source === 'group'
-      ? await this.learning.practiceItems(userId, { kind: 'group', groupId: session.groupId!, filter: 'all' })
-      : await this.learning.practiceItems(userId, { kind: 'senses', senseIds: session.senseIds });
+      ? await this.learning.practiceItems(userId, { kind: 'group', groupId: session.groupId!, filter: 'all' }, tx)
+      : await this.learning.practiceItems(userId, { kind: 'senses', senseIds: session.senseIds }, tx);
     const inSession = new Set(session.senseIds);
     return new Set(items.map(({ sense_id }) => sense_id).filter((id) => inSession.has(id)));
   }
@@ -229,6 +229,7 @@ export class SessionsService {
   /**
    * The rules of `next` (plan Task 14), in order: pending notice, group gone, pending item (kept or voided), end rule, round
    * rule, then a new question. `build` false (current) stops before building unless an item was just voided or a notice set.
+   * Every read goes through `tx`: a read on the global client would borrow a second connection while `tx` holds one (PX4).
    */
   private async advance(tx: Prisma.TransactionClient, learner: Learner, session: PracticeSession, build: boolean): Promise<Advance> {
     const { userId } = learner;
@@ -243,14 +244,14 @@ export class SessionsService {
     });
     const pending = items.find((item) => item.result === null);
     if (session.source === 'group') {
-      const { groupExists } = await this.learning.practiceCheck(userId, session.senseIds[0], session.groupId);
+      const { groupExists } = await this.learning.practiceCheck(userId, session.senseIds[0], session.groupId, tx);
       if (!groupExists) {
         if (pending) await this.voidItem(tx, pending);
         await this.finishRow(tx, session.id);
         return { state: 'finished', notice: 'group-not-found' };
       }
     }
-    const usable = await this.usable(userId, session);
+    const usable = await this.usable(tx, userId, session);
     if (pending) {
       if (usable.has(pending.senseId)) return { state: 'question', item: pending, notice };
       await this.voidItem(tx, pending);
@@ -282,15 +283,15 @@ export class SessionsService {
       ];
     }
 
-    if (plan.length > 0) await this.assertEntitled(userId);
-    const { practice } = await this.settings.get();
+    if (plan.length > 0) await this.assertEntitled(userId, tx);
+    const { practice } = await this.settings.get(tx);
     for (const { senseId, round } of plan) {
       const previous = items.filter((item) => item.senseId === senseId).at(-1);
       const built = await this.builder.build({
         userId, nativeLanguage: learner.nativeLanguage, senseId, chosenTypes: session.types as QuestionType[],
         promptStyle: session.promptStyle as 'meaning' | 'sentence' | 'mixed',
         previousType: (previous?.question.type as QuestionType | undefined) ?? null,
-        avoidDistractors: previous?.question.distractorSenseIds ?? [], settings: practice, random: Math.random,
+        avoidDistractors: previous?.question.distractorSenseIds ?? [], settings: practice, random: Math.random, db: tx,
       });
       if ('skip' in built) continue;
       const now = this.clock.now();

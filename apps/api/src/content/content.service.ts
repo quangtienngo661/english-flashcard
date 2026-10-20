@@ -175,14 +175,19 @@ export class ContentService {
     return this.words.cardContent(viewerId, senseIds, nativeLanguage);
   }
 
-  /** Practice questions: visible senses only, with examples, spellings, accepted answers and inflections. */
-  practiceSenses(viewerId: string, senseIds: string[], nativeLanguage: 'vi' | 'en'): Promise<Map<string, PracticeSense>> {
-    return practiceSenses(this.prisma, viewerId, senseIds, nativeLanguage);
+  /**
+   * Practice questions: visible senses only, with examples, spellings, accepted answers and inflections. A caller inside an
+   * open transaction passes its `tx` as `db`, so the read needs no second connection.
+   */
+  practiceSenses(viewerId: string, senseIds: string[], nativeLanguage: 'vi' | 'en', db?: Prisma.TransactionClient | PrismaClient):
+    Promise<Map<string, PracticeSense>> {
+    return practiceSenses(db ?? this.prisma, viewerId, senseIds, nativeLanguage);
   }
 
   /** Distractor and true/false candidates: visible senses only, light enough for thousands of ids. */
-  practiceCandidates(viewerId: string, senseIds: string[], nativeLanguage: 'vi' | 'en'): Promise<Map<string, CandidateSense>> {
-    return practiceCandidates(this.prisma, viewerId, senseIds, nativeLanguage);
+  practiceCandidates(viewerId: string, senseIds: string[], nativeLanguage: 'vi' | 'en', db?: Prisma.TransactionClient | PrismaClient):
+    Promise<Map<string, CandidateSense>> {
+    return practiceCandidates(db ?? this.prisma, viewerId, senseIds, nativeLanguage);
   }
 
   visibleSenseIds(viewerId: string, senseIds: string[]): Promise<Set<string>> {

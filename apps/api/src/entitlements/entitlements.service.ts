@@ -74,12 +74,15 @@ export class EntitlementsService {
     return this.ledger.refund(userId, pool, operationId, reportId);
   }
 
-  /** `practice.basic` is open to every plan (D4); an AI feature needs its pool's limit above 0 (design §5.4). */
-  async check(userId: string, feature: Feature): Promise<Decision> {
+  /**
+   * `practice.basic` is open to every plan (D4); an AI feature needs its pool's limit above 0 (design §5.4). A caller inside an
+   * open transaction passes its `tx`, so the reads need no second connection.
+   */
+  async check(userId: string, feature: Feature, tx?: Prisma.TransactionClient): Promise<Decision> {
     if (feature === 'practice.basic') return { allowed: true };
-    const { entitlements } = await this.settings.get();
+    const { entitlements } = tx ? await this.settings.get(tx) : await this.settings.get();
     const now = this.clock.now();
-    const resolved = await this.resolve(this.prisma, userId, entitlements, now);
+    const resolved = await this.resolve(tx ?? this.prisma, userId, entitlements, now);
     return resolved.limits[FEATURE_POOL[feature]] > 0 ? { allowed: true } : { allowed: false, reason: 'plan-required' };
   }
 

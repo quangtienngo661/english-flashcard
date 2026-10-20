@@ -176,6 +176,14 @@ describe('EntitlementsService.check', () => {
     expect(sources.load).not.toHaveBeenCalled();
   });
 
+  it('with a transaction, an AI feature reads settings and sources through it (no second connection)', async () => {
+    const { service, settings, sources } = setup();
+    const tx = { name: 'tx' };
+    expect(await service.check(USER, 'ai.practice', tx as never)).toEqual({ allowed: false, reason: 'plan-required' });
+    expect(settings.get).toHaveBeenCalledWith(tx);
+    expect(sources.load).toHaveBeenCalledWith(tx, USER, NOW);
+  });
+
   it('B5#20/B5E31: ai.practice limit 0 → plan-required; a Pro user without it is allowed', async () => {
     expect(await setup().service.check(USER, 'ai.practice')).toEqual({ allowed: false, reason: 'plan-required' });
     const zeroed = setup({ subscriptions: [proSubscription()], grants: [limitsGrant({ ai_practice_per_cycle: 0 })] });
