@@ -113,6 +113,33 @@ describe('SessionStore sign-out failure (T9, FE38)', () => {
     expect(fresh.count('POST', '/v1/auth/refresh')).toBe(0);
   });
 
+  it('a late retryLogout answer does not sign out a tab that signed in again meanwhile', async () => {
+    sessionStorage.setItem(PENDING_KEY, '1');
+    const hub = channelHub();
+    let release!: () => void;
+    const gateP = new Promise<void>((r) => (release = r));
+    const { store } = newStore(
+      {
+        'POST /v1/auth/logout': async () => {
+          await gateP;
+          return new Response(null, { status: 204 });
+        },
+        'POST /v1/auth/refresh': () => tokenResponse('tok-2'),
+        'GET /v1/me': ok(makeMe()),
+      },
+      hub.create(),
+    );
+    await store.bootstrap();
+    const retry = store.retryLogout();
+
+    hub.create().postMessage({ type: 'login' });
+    await vi.waitFor(() => expect(store.state.status).toBe('signed-in'));
+    release();
+    await retry;
+
+    expect(store.state.status).toBe('signed-in');
+  });
+
   it('a sign-in after a failed sign-out clears the flag; a fresh store bootstraps normally', async () => {
     let logoutStatus = 503;
     const routes = {
