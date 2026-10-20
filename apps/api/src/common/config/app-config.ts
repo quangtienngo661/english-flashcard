@@ -17,7 +17,8 @@ export type RateLimitRuleName =
   | 'mail.ip.daily'
   | 'user.write'
   | 'learning.review'
-  | 'practice.answer';
+  | 'practice.answer'
+  | 'ai.test';
 
 export interface RateLimitRuleConfig {
   by: 'user' | 'ip' | 'email' | 'chain';
@@ -88,6 +89,13 @@ export interface AppConfig {
     /** Off lets the smoke run the path of a provider without `fetchState` (R10). */
     fakeFetchState: boolean;
   };
+  /** AI gateway (Bước 6, design §13). A key is `null` when that provider is not configured; keys are never logged. */
+  ai: {
+    openaiApiKey: string | null;
+    anthropicApiKey: string | null;
+    /** The fake provider (models `fake:*`) never runs in production (B6E45). */
+    fakeEnabled: boolean;
+  };
   limits: Record<RateLimitRuleName, RateLimitRuleConfig>;
 }
 
@@ -108,6 +116,8 @@ export const DEFAULT_LIMITS: Record<RateLimitRuleName, RateLimitRuleConfig> = {
   'learning.review': { by: 'user', max: 120, windowSeconds: 60 },
   // Practice next/hint/answer/skip/review: a quick multiple-choice session writes 2–3 times per question (Bước 4 R1).
   'practice.answer': { by: 'user', max: 120, windowSeconds: 60 },
+  // Admin test calls of the AI gateway (Bước 6 design §12.1).
+  'ai.test': { by: 'user', max: 20, windowSeconds: 3600 },
 };
 
 const nonEmpty = z.string().trim().min(1);
@@ -199,11 +209,19 @@ const envSchema = z.object({
   BILLING_FAKE_ENABLED: booleanString.default(false),
   BILLING_FAKE_SECRET: secretSchema().optional(),
   BILLING_FAKE_FETCH_STATE: booleanString.default(true),
+  AI_FAKE_ENABLED: booleanString.default(false),
+  OPENAI_API_KEY: z.string().optional().transform((value) => value?.trim() || null),
+  ANTHROPIC_API_KEY: z.string().optional().transform((value) => value?.trim() || null),
 }).superRefine((values, ctx) => {
   if (values.BILLING_PRODUCTION && values.BILLING_FAKE_ENABLED) {
     const message = 'The fake billing provider is not allowed in production';
     ctx.addIssue({ code: 'custom', path: ['BILLING_PRODUCTION'], message });
     ctx.addIssue({ code: 'custom', path: ['BILLING_FAKE_ENABLED'], message });
+  }
+  if (values.BILLING_PRODUCTION && values.AI_FAKE_ENABLED) {
+    const message = 'The fake AI provider is not allowed in production';
+    ctx.addIssue({ code: 'custom', path: ['BILLING_PRODUCTION'], message });
+    ctx.addIssue({ code: 'custom', path: ['AI_FAKE_ENABLED'], message });
   }
   if (values.BILLING_FAKE_ENABLED && values.BILLING_FAKE_SECRET === undefined) {
     ctx.addIssue({ code: 'custom', path: ['BILLING_FAKE_SECRET'], message: 'Required when BILLING_FAKE_ENABLED=true' });
@@ -267,6 +285,11 @@ export function loadConfig(env: NodeJS.ProcessEnv): AppConfig {
       fakeEnabled: values.BILLING_FAKE_ENABLED,
       fakeSecret: values.BILLING_FAKE_SECRET ?? null,
       fakeFetchState: values.BILLING_FAKE_FETCH_STATE,
+    },
+    ai: {
+      openaiApiKey: values.OPENAI_API_KEY,
+      anthropicApiKey: values.ANTHROPIC_API_KEY,
+      fakeEnabled: values.AI_FAKE_ENABLED,
     },
     limits: structuredClone(DEFAULT_LIMITS),
   };

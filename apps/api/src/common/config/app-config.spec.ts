@@ -177,6 +177,7 @@ describe('loadConfig', () => {
       'user.write': { by: 'user', max: 30, windowSeconds: 60 },
       'learning.review': { by: 'user', max: 120, windowSeconds: 60 },
       'practice.answer': { by: 'user', max: 120, windowSeconds: 60 },
+      'ai.test': { by: 'user', max: 20, windowSeconds: 3600 },
     });
   });
 
@@ -257,5 +258,43 @@ describe('loadConfig', () => {
 
   it.each(['BILLING_PRODUCTION', 'BILLING_FAKE_ENABLED', 'BILLING_FAKE_FETCH_STATE'])('%s accepts only true or false', (name) => {
     expect(() => loadConfig({ ...validEnv(), [name]: 'yes' })).toThrow(new RegExp(name));
+  });
+
+  it('B6E45: AI_FAKE_ENABLED=true with BILLING_PRODUCTION=true fails naming both variables', () => {
+    expect(() => loadConfig({ ...validEnv(), BILLING_PRODUCTION: 'true', AI_FAKE_ENABLED: 'true' }))
+      .toThrow(/BILLING_PRODUCTION, AI_FAKE_ENABLED/);
+    expect(loadConfig({ ...validEnv(), BILLING_PRODUCTION: 'true', AI_FAKE_ENABLED: 'false' }).ai.fakeEnabled).toBe(false);
+    expect(loadConfig({ ...validEnv(), AI_FAKE_ENABLED: 'true' }).ai.fakeEnabled).toBe(true);
+    expect(() => loadConfig({ ...validEnv(), AI_FAKE_ENABLED: 'yes' })).toThrow(/AI_FAKE_ENABLED/);
+  });
+
+  it('B6E33: an empty or blank OPENAI_API_KEY loads as null', () => {
+    for (const blank of ['', '   ']) {
+      const ai = loadConfig({ ...validEnv(), OPENAI_API_KEY: blank, ANTHROPIC_API_KEY: blank }).ai;
+      expect(ai.openaiApiKey, JSON.stringify(blank)).toBeNull();
+      expect(ai.anthropicApiKey, JSON.stringify(blank)).toBeNull();
+    }
+    expect(loadConfig(validEnv()).ai).toEqual({ openaiApiKey: null, anthropicApiKey: null, fakeEnabled: false });
+  });
+
+  it('keys load trimmed', () => {
+    const ai = loadConfig({ ...validEnv(), OPENAI_API_KEY: '  sk-open  ', ANTHROPIC_API_KEY: '\tsk-ant\n' }).ai;
+    expect([ai.openaiApiKey, ai.anthropicApiKey]).toEqual(['sk-open', 'sk-ant']);
+  });
+
+  it('AI_FAKE_ENABLED defaults to false', () => {
+    expect(loadConfig(validEnv()).ai.fakeEnabled).toBe(false);
+  });
+
+  it('a configuration error never contains a key\'s value', () => {
+    const env = { ...validEnv(), OPENAI_API_KEY: 'sk-secret-123', ANTHROPIC_API_KEY: 'sk-secret-456', SMTP_PORT: 'x' };
+    let message = '';
+    try { loadConfig(env); } catch (error) { message = (error as Error).message; }
+    expect(message).toMatch(/SMTP_PORT/);
+    expect(message).not.toMatch(/sk-secret/);
+  });
+
+  it('ai.test allows 20 per hour per user', () => {
+    expect(loadConfig(validEnv()).limits['ai.test']).toEqual({ by: 'user', max: 20, windowSeconds: 3600 });
   });
 });

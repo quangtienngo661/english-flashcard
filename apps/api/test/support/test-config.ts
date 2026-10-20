@@ -45,6 +45,7 @@ export function testConfig(overrides?: Partial<AppConfig>): AppConfig {
     // with a low tick so they see several ticks in a few seconds.
     reminders: { tickSeconds: 1, runScheduler: false, retryBackoffMs: 10 },
     billing: { production: false, fakeEnabled: false, fakeSecret: null, fakeFetchState: true },
+    ai: { openaiApiKey: null, anthropicApiKey: null, fakeEnabled: false },
     limits,
     ...overrides,
   };
