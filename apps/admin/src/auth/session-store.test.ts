@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createApiClient } from '../api/client';
 import { ApiError, NetworkError } from '../api/problem';
 import { SessionStore } from './session-store';
@@ -78,6 +78,42 @@ describe('SessionStore sign-out failure (T9, FE38)', () => {
 
     expect(store.state).toEqual({ status: 'signed-out', notice: 'logout-failed' });
     expect(count('POST', '/v1/auth/refresh')).toBe(0);
+  });
+
+  it('a sign-in after a failed sign-out clears the flag; a fresh store bootstraps normally', async () => {
+    let logoutStatus = 503;
+    const routes = {
+      ...signedInRoutes(() => new Response(null, { status: logoutStatus })),
+      'POST /v1/auth/refresh': () => tokenResponse('tok-2'),
+    };
+    const { store } = newStore(routes);
+    await store.login('a@example.com', 'pw');
+    await store.logout();
+    expect(sessionStorage.getItem(PENDING_KEY)).toBe('1');
+    logoutStatus = 204;
+
+    await store.login('a@example.com', 'pw');
+
+    expect(sessionStorage.getItem(PENDING_KEY)).toBeNull();
+    const fresh = newStore(routes);
+    await fresh.store.bootstrap();
+    expect(fresh.count('POST', '/v1/auth/refresh')).toBe(1);
+    expect(fresh.store.state.status).toBe('signed-in');
+  });
+
+  it('a login in another tab clears the flag in a flagged tab, which then bootstraps', async () => {
+    sessionStorage.setItem(PENDING_KEY, '1');
+    const hub = channelHub();
+    const routes = { 'POST /v1/auth/refresh': () => tokenResponse('tok-2'), 'GET /v1/me': ok(makeMe()) };
+    const a = newStore(routes, hub.create());
+    await a.store.bootstrap();
+    expect(a.store.state).toEqual({ status: 'signed-out', notice: 'logout-failed' });
+
+    hub.create().postMessage({ type: 'login' });
+
+    await vi.waitFor(() => expect(a.store.state.status).toBe('signed-in'));
+    expect(sessionStorage.getItem(PENDING_KEY)).toBeNull();
+    expect(a.count('POST', '/v1/auth/refresh')).toBe(1);
   });
 
   it('retryLogout ok → flag removed, notice null', async () => {
