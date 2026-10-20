@@ -1,6 +1,8 @@
 {
   "errors": {
     "generic": "Something went wrong",
+    "code": "Code: {code}",
+    "copyCode": "Copy code",
     "inProgress": "The previous request is still running",
     "noAccess": "You do not have access to this site",
     "batch-filter-unavailable": "This batch filter is not available",
@@ -25,6 +27,7 @@
     "payload-too-large": "The request is too large",
     "profile-incomplete": "The profile is incomplete",
     "rate-limited": "Too many attempts, wait a moment",
+    "retryIn": "Try again in {seconds} s",
     "same_as_current": "The new password must differ from the current one",
     "source-exists": "This data source already exists",
     "source-incomplete": "A level source needs a version and a license",
@@ -34,7 +37,8 @@
     "validation-failed": "The data is not valid"
   },
   "notice": {
-    "expired": "Your session has expired"
+    "expired": "Your session has expired",
+    "logoutFailed": "Signing out on the server failed."
   },
   "common": {
     "retry": "Retry",
@@ -73,6 +77,10 @@
     "aiCosts": "Costs & reconciliation",
     "evalSets": "Example sets",
     "staff": "Roles & staff"
+  },
+  "session": {
+    "unavailable": "Can't reach the server. Your session is kept.",
+    "retry": "Try again"
   },
   "offline": {
     "message": "Cannot reach the server"

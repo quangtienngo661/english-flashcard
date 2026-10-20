@@ -1,6 +1,6 @@
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createApiClient } from '../api/client';
-import { ApiError } from '../api/problem';
+import { ApiError, NetworkError } from '../api/problem';
 import { SessionStore } from './session-store';
 import { BASE, channelHub, makeFetch, makeMe, problem, rateLimited, tokenResponse, type Call, type Route } from './test-support';
 
@@ -12,6 +12,191 @@ function newStore(routes: Record<string, Route>, channel: ReturnType<ReturnType<
   const store = new SessionStore({ baseUrl: BASE, fetch: f.fetch, channel });
   return { store, ...f };
 }
+
+const PENDING_KEY = 'wordmet-admin-logout-pending';
+
+describe('SessionStore sign-out failure (T9, FE38)', () => {
+  beforeEach(() => sessionStorage.clear());
+
+  const signedInRoutes = (logout: Route): Record<string, Route> => ({
+    'POST /v1/auth/login': () => tokenResponse('tok-1'),
+    'GET /v1/me': ok(makeMe()),
+    'POST /v1/auth/logout': logout,
+  });
+
+  it('T9: logout answered 503 → signed-out logout-failed, flag set', async () => {
+    const { store } = newStore(signedInRoutes(() => problem(503, 'unavailable')));
+    await store.login('a@example.com', 'pw');
+
+    await store.logout();
+
+    expect(store.state).toEqual({ status: 'signed-out', notice: 'logout-failed' });
+    expect(store.hasAccessToken).toBe(false);
+    expect(sessionStorage.getItem(PENDING_KEY)).toBe('1');
+  });
+
+  it('T9: logout with no answer (network error) → logout-failed too', async () => {
+    const { store } = newStore(
+      signedInRoutes(() => {
+        throw new TypeError('Failed to fetch');
+      }),
+    );
+    await store.login('a@example.com', 'pw');
+    await store.logout();
+    expect(store.state).toEqual({ status: 'signed-out', notice: 'logout-failed' });
+  });
+
+  it.each([200, 204, 401, 403])('logout answered %i counts as done', async (status) => {
+    const { store } = newStore(signedInRoutes(() => new Response(null, { status })));
+    await store.login('a@example.com', 'pw');
+    await store.logout();
+    expect(store.state).toEqual({ status: 'signed-out', notice: null });
+    expect(sessionStorage.getItem(PENDING_KEY)).toBeNull();
+  });
+
+  it("logout('expired') answered 401 → no logout-failed", async () => {
+    const { store } = newStore(signedInRoutes(() => problem(401, 'invalid-token')));
+    await store.login('a@example.com', 'pw');
+    await store.logout('expired');
+    expect(store.state).toEqual({ status: 'signed-out', notice: 'expired' });
+    expect(sessionStorage.getItem(PENDING_KEY)).toBeNull();
+  });
+
+  it("logout('expired') answered 503 → keeps its notice, no flag", async () => {
+    const { store } = newStore(signedInRoutes(() => problem(503, 'unavailable')));
+    await store.login('a@example.com', 'pw');
+    await store.logout('expired');
+    expect(store.state).toEqual({ status: 'signed-out', notice: 'expired' });
+    expect(sessionStorage.getItem(PENDING_KEY)).toBeNull();
+  });
+
+  it('FE38: a new store with the flag → logout-failed without calling refresh', async () => {
+    sessionStorage.setItem(PENDING_KEY, '1');
+    const { store, count } = newStore({ 'POST /v1/auth/refresh': () => tokenResponse('tok-9'), 'GET /v1/me': ok(makeMe()) });
+
+    await store.bootstrap();
+
+    expect(store.state).toEqual({ status: 'signed-out', notice: 'logout-failed' });
+    expect(count('POST', '/v1/auth/refresh')).toBe(0);
+  });
+
+  it('logout answered 429 counts as failed (the server did nothing)', async () => {
+    const { store } = newStore(signedInRoutes(() => problem(429, 'rate-limited')));
+    await store.login('a@example.com', 'pw');
+    await store.logout();
+    expect(store.state).toEqual({ status: 'signed-out', notice: 'logout-failed' });
+    expect(sessionStorage.getItem(PENDING_KEY)).toBe('1');
+  });
+
+  it('retryLogout answered 429 keeps the flag and the notice', async () => {
+    sessionStorage.setItem(PENDING_KEY, '1');
+    const { store } = newStore({ 'POST /v1/auth/logout': () => problem(429, 'rate-limited') });
+    await store.bootstrap();
+    await store.retryLogout();
+    expect(sessionStorage.getItem(PENDING_KEY)).toBe('1');
+    expect(store.state).toEqual({ status: 'signed-out', notice: 'logout-failed' });
+  });
+
+  it('a failed sign-out in tab A leaves tab B signed-out with logout-failed and the flag; a fresh store there does not refresh', async () => {
+    const hub = channelHub();
+    const a = newStore(signedInRoutes(() => problem(503, 'unavailable')), hub.create());
+    const b = newStore({ 'POST /v1/auth/refresh': () => tokenResponse('tok-9'), 'GET /v1/me': ok(makeMe()) }, hub.create());
+    await a.store.login('a@example.com', 'pw');
+    sessionStorage.clear();
+
+    await a.store.logout();
+
+    expect(b.store.state).toEqual({ status: 'signed-out', notice: 'logout-failed' });
+    expect(sessionStorage.getItem(PENDING_KEY)).toBe('1');
+    const fresh = newStore({ 'POST /v1/auth/refresh': () => tokenResponse('tok-9') });
+    await fresh.store.bootstrap();
+    expect(fresh.count('POST', '/v1/auth/refresh')).toBe(0);
+  });
+
+  it('a late retryLogout answer does not sign out a tab that signed in again meanwhile', async () => {
+    sessionStorage.setItem(PENDING_KEY, '1');
+    const hub = channelHub();
+    let release!: () => void;
+    const gateP = new Promise<void>((r) => (release = r));
+    const { store } = newStore(
+      {
+        'POST /v1/auth/logout': async () => {
+          await gateP;
+          return new Response(null, { status: 204 });
+        },
+        'POST /v1/auth/refresh': () => tokenResponse('tok-2'),
+        'GET /v1/me': ok(makeMe()),
+      },
+      hub.create(),
+    );
+    await store.bootstrap();
+    const retry = store.retryLogout();
+
+    hub.create().postMessage({ type: 'login' });
+    await vi.waitFor(() => expect(store.state.status).toBe('signed-in'));
+    release();
+    await retry;
+
+    expect(store.state.status).toBe('signed-in');
+  });
+
+  it('a sign-in after a failed sign-out clears the flag; a fresh store bootstraps normally', async () => {
+    let logoutStatus = 503;
+    const routes = {
+      ...signedInRoutes(() => new Response(null, { status: logoutStatus })),
+      'POST /v1/auth/refresh': () => tokenResponse('tok-2'),
+    };
+    const { store } = newStore(routes);
+    await store.login('a@example.com', 'pw');
+    await store.logout();
+    expect(sessionStorage.getItem(PENDING_KEY)).toBe('1');
+    logoutStatus = 204;
+
+    await store.login('a@example.com', 'pw');
+
+    expect(sessionStorage.getItem(PENDING_KEY)).toBeNull();
+    const fresh = newStore(routes);
+    await fresh.store.bootstrap();
+    expect(fresh.count('POST', '/v1/auth/refresh')).toBe(1);
+    expect(fresh.store.state.status).toBe('signed-in');
+  });
+
+  it('a login in another tab clears the flag in a flagged tab, which then bootstraps', async () => {
+    sessionStorage.setItem(PENDING_KEY, '1');
+    const hub = channelHub();
+    const routes = { 'POST /v1/auth/refresh': () => tokenResponse('tok-2'), 'GET /v1/me': ok(makeMe()) };
+    const a = newStore(routes, hub.create());
+    await a.store.bootstrap();
+    expect(a.store.state).toEqual({ status: 'signed-out', notice: 'logout-failed' });
+
+    hub.create().postMessage({ type: 'login' });
+
+    await vi.waitFor(() => expect(a.store.state.status).toBe('signed-in'));
+    expect(sessionStorage.getItem(PENDING_KEY)).toBeNull();
+    expect(a.count('POST', '/v1/auth/refresh')).toBe(1);
+  });
+
+  it('retryLogout ok → flag removed, notice null', async () => {
+    sessionStorage.setItem(PENDING_KEY, '1');
+    const { store, count } = newStore({ 'POST /v1/auth/logout': noContent });
+    await store.bootstrap();
+
+    await store.retryLogout();
+
+    expect(count('POST', '/v1/auth/logout')).toBe(1);
+    expect(sessionStorage.getItem(PENDING_KEY)).toBeNull();
+    expect(store.state).toEqual({ status: 'signed-out', notice: null });
+  });
+
+  it('retryLogout failing again keeps the flag and the notice', async () => {
+    sessionStorage.setItem(PENDING_KEY, '1');
+    const { store } = newStore({ 'POST /v1/auth/logout': () => problem(503, 'unavailable') });
+    await store.bootstrap();
+    await store.retryLogout();
+    expect(sessionStorage.getItem(PENDING_KEY)).toBe('1');
+    expect(store.state).toEqual({ status: 'signed-out', notice: 'logout-failed' });
+  });
+});
 
 describe('SessionStore', () => {
   it('B25#2: login of a verified user without role calls logout with X-CSRF-Protection: 1, keeps no token, state signed-out notice no-access', async () => {
@@ -523,7 +708,7 @@ describe('SessionStore', () => {
     });
     await store.bootstrap();
     expect(refreshTries(calls)).toEqual([true, undefined]);
-    expect(store.state).toEqual({ status: 'signed-out', notice: null });
+    expect(store.state).toEqual({ status: 'unavailable' });
   });
 
   it('RK8: once the page has fired pagehide, a rejected keepalive refresh is not sent again (the browser finishes the keepalive one)', async () => {
@@ -573,5 +758,94 @@ describe('SessionStore', () => {
       new Set(['/v1/auth/login', '/v1/me', '/v1/auth/password/change', '/v1/x', '/v1/auth/logout']),
     );
     expect(others.every((c) => c.keepalive === undefined)).toBe(true);
+  });
+});
+
+describe('SessionStore: API unavailable (FE35-FE37)', () => {
+  const heardOn = (hub: ReturnType<typeof channelHub>) => {
+    const heard: unknown[] = [];
+    hub.create().addEventListener('message', (e) => heard.push(e.data));
+    return heard;
+  };
+
+  it('FE35: 401 then refresh 503 → offline (NetworkError), no logout call, no broadcast, token cleared', async () => {
+    const hub = channelHub();
+    const heard = heardOn(hub);
+    const f = makeFetch({
+      'POST /v1/auth/login': () => tokenResponse('tok-1'),
+      'GET /v1/me': ok(makeMe()),
+      'GET /v1/x': () => problem(401, 'invalid-token'),
+      'POST /v1/auth/refresh': () => problem(503, 'unavailable'),
+      'POST /v1/auth/logout': noContent,
+    });
+    const store = new SessionStore({ baseUrl: BASE, fetch: f.fetch, channel: hub.create() });
+    await store.login('s@example.com', 'pw');
+    heard.length = 0;
+    await expect(createApiClient({ send: store.send }).get('/v1/x')).rejects.toBeInstanceOf(NetworkError);
+    expect(f.count('POST', '/v1/auth/logout')).toBe(0);
+    expect(heard).toEqual([]);
+    expect(store.hasAccessToken).toBe(false);
+    expect(store.state.status).toBe('signed-in');
+  });
+
+  it('403 forbidden then refresh 503 → the response is returned, no logout', async () => {
+    const f = makeFetch({
+      'POST /v1/auth/login': () => tokenResponse('tok-1'),
+      'GET /v1/me': ok(makeMe()),
+      'GET /v1/x': () => problem(403, 'forbidden'),
+      'POST /v1/auth/refresh': () => problem(503, 'unavailable'),
+      'POST /v1/auth/logout': noContent,
+    });
+    const store = new SessionStore({ baseUrl: BASE, fetch: f.fetch, channel: null });
+    await store.login('s@example.com', 'pw');
+    await expect(createApiClient({ send: store.send }).get('/v1/x')).rejects.toMatchObject({ problem: { slug: 'forbidden' } });
+    expect(f.count('POST', '/v1/auth/logout')).toBe(0);
+    expect(store.state.status).toBe('signed-in');
+  });
+
+  it('FE36: bootstrap with refresh 503 → unavailable; retry with refresh ok → signed-in', async () => {
+    let up = false;
+    const { store } = newStore({
+      'POST /v1/auth/refresh': () => (up ? tokenResponse('tok-1') : problem(503, 'unavailable')),
+      'GET /v1/me': ok(makeMe()),
+    });
+    await store.bootstrap();
+    expect(store.state).toEqual({ status: 'unavailable' });
+    up = true;
+    await store.bootstrap();
+    expect(store.state).toMatchObject({ status: 'signed-in' });
+  });
+
+  it('Review Focus 4: unavailable then retry with refresh 401 → signed-out "expired"', async () => {
+    let up = false;
+    const { store } = newStore({
+      'POST /v1/auth/refresh': () => (up ? problem(401, 'invalid-token') : problem(503, 'unavailable')),
+    });
+    await store.bootstrap();
+    expect(store.state).toEqual({ status: 'unavailable' });
+    up = true;
+    await store.bootstrap();
+    expect(store.state).toEqual({ status: 'signed-out', notice: 'expired' });
+  });
+
+  it('FE37 (control): refresh 401 mid-session → logout("expired") as before', async () => {
+    const { store, count } = newStore({
+      'POST /v1/auth/login': () => tokenResponse('tok-1'),
+      'GET /v1/me': ok(makeMe()),
+      'GET /v1/x': () => problem(401, 'invalid-token'),
+      'POST /v1/auth/refresh': () => problem(401, 'invalid-token'),
+      'POST /v1/auth/logout': noContent,
+    });
+    await store.login('s@example.com', 'pw');
+    await expect(createApiClient({ send: store.send }).get('/v1/x')).rejects.toBeInstanceOf(ApiError);
+    expect(store.state).toEqual({ status: 'signed-out', notice: 'expired' });
+    expect(count('POST', '/v1/auth/logout')).toBe(1);
+  });
+
+  it('control: 429 three times → rate-limited as before', async () => {
+    const f = makeFetch({ 'POST /v1/auth/refresh': () => rateLimited(1) });
+    const store = new SessionStore({ baseUrl: BASE, fetch: f.fetch, channel: null, wait: async () => {} });
+    await store.bootstrap();
+    expect(store.state).toEqual({ status: 'signed-out', notice: 'rate-limited' });
   });
 });

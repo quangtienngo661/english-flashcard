@@ -1,8 +1,8 @@
-import { screen, waitFor, within } from '@testing-library/react';
+import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi as vitest } from 'vitest';
 import vi from '../../../messages/vi.json';
-import { problem } from '../../auth/test-support';
+import { problem, rateLimited } from '../../auth/test-support';
 import { renderApp } from '../staff/test-utils';
 
 const t = vi.sources;
@@ -96,5 +96,31 @@ describe('source form', () => {
     await userEvent.click(within(dialog).getByRole('button', { name: t.form.save }));
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
     expect((await screen.findAllByText('CEFR-J Vocabulary Profile')).length).toBeGreaterThan(0);
+  }, 20_000);
+});
+
+const retryIn = (n: number) => vi.errors.retryIn.replace('{seconds}', String(n));
+afterEach(() => vitest.useRealTimers());
+async function tick() {
+  await act(async () => {
+    await vitest.advanceTimersByTimeAsync(1000);
+  });
+}
+
+describe('source form — rate limit', () => {
+  it('B25#18: 429 with Retry-After 30 disables save and counts 30 → 0, then re-enables', async () => {
+    const r = renderApp('/sources', { [LIST]: () => Response.json({ items: [] }), [CREATE]: () => rateLimited(30) });
+    await userEvent.click((await screen.findAllByRole('button', { name: t.register }))[0]);
+    await userEvent.type(await screen.findByLabelText(`${t.form.name} *`), 'CEFR-J');
+    await userEvent.click(screen.getByRole('checkbox', { name: t.form.asLevelSource }));
+    vitest.useFakeTimers({ shouldAdvanceTime: true });
+    await userEvent.click(screen.getByRole('button', { name: t.form.save }));
+
+    expect(await screen.findByRole('button', { name: retryIn(30) })).toBeDisabled();
+    await tick();
+    expect(screen.getByRole('button', { name: retryIn(29) })).toBeDisabled();
+    for (let i = 0; i < 29; i++) await tick();
+    expect(screen.getByRole('button', { name: t.form.save })).toBeEnabled();
+    expect(creates(r.calls)).toHaveLength(1);
   }, 20_000);
 });

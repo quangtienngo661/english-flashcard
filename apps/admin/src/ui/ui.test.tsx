@@ -205,6 +205,34 @@ describe('Stat and Banner', () => {
   });
 });
 
+describe('Banner error code', () => {
+  it('B25#19: shows "Code: op-123" as rendered text', () => {
+    wrap(<Banner variant="error" code="op-123">Oops</Banner>);
+    expect(screen.getByText('Code: op-123')).toBeTruthy();
+  });
+
+  it('the copy button writes op-123 to the clipboard', async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true });
+    wrap(<Banner variant="error" code="op-123">Oops</Banner>);
+    await userEvent.click(screen.getByRole('button', { name: 'Copy code' }));
+    expect(writeText).toHaveBeenCalledWith('op-123');
+  });
+
+  it('without a code there is no code text and no copy button', () => {
+    wrap(<Banner variant="error">Oops</Banner>);
+    expect(screen.queryByText(/Code:/)).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Copy code' })).toBeNull();
+  });
+
+  it('a missing navigator.clipboard does not throw when copying', async () => {
+    Object.defineProperty(navigator, 'clipboard', { value: undefined, configurable: true });
+    wrap(<Banner variant="error" code="op-123">Oops</Banner>);
+    await userEvent.click(screen.getByRole('button', { name: 'Copy code' }));
+    expect(screen.getByText('Code: op-123')).toBeTruthy();
+  });
+});
+
 describe('Button and TextField', () => {
   it('a pending Button ignores a second click (Review Focus 3)', async () => {
     const onPress = vi.fn();

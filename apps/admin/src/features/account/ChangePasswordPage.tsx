@@ -2,19 +2,24 @@ import { useRef, useState, type FormEvent } from 'react';
 import { Navigate } from 'react-router';
 import { useTranslations } from 'use-intl';
 import { ApiError } from '../../api/problem';
-import { useErrorMessage } from '../../api/use-error-message';
+import { useErrorDetails, useErrorMessage, type ErrorDetails } from '../../api/use-error-message';
 import { checkPasswordPolicy } from '../../auth/password-policy';
 import { useSession } from '../../auth/session-context';
 import { Banner } from '../../ui/Banner';
 import { Button } from '../../ui/Button';
 import { TextField } from '../../ui/TextField';
+import { SessionLoading } from '../../app/SessionLoading';
 import { AuthCard } from './AuthCard';
 import { PasswordRules } from './PasswordRules';
+import { useCountdown } from './useCountdown';
+
+const RATE_LIMIT_FALLBACK_SECONDS = 10;
 
 /** Forced password change (spec §5): the only screen a staff user with `must_change_password` can reach. */
 export function ChangePasswordPage() {
   const t = useTranslations();
   const errorMessage = useErrorMessage();
+  const errorDetails = useErrorDetails();
   const { state, store } = useSession();
   const [current, setCurrent] = useState('');
   const [next, setNext] = useState('');
@@ -22,12 +27,14 @@ export function ChangePasswordPage() {
   const [currentError, setCurrentError] = useState<string | null>(null);
   const [confirmError, setConfirmError] = useState<string | null>(null);
   const [violations, setViolations] = useState<string[]>([]);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<ErrorDetails | null>(null);
   const [pending, setPending] = useState(false);
   const busy = useRef(false);
+  const wait = useCountdown();
 
   if (state.status === 'signed-out') return <Navigate to="/login" replace />;
   if (state.status === 'signed-in') return <Navigate to="/" replace />;
+  if (state.status === 'unavailable') return <SessionLoading />;
   if (state.status === 'loading') {
     return (
       <p role="status" className="p-8 text-ui text-muted">
@@ -38,7 +45,7 @@ export function ChangePasswordPage() {
 
   async function submit(event: FormEvent) {
     event.preventDefault();
-    if (busy.current) return;
+    if (busy.current || wait.remaining > 0) return;
     setCurrentError(null);
     setConfirmError(null);
     setError(null);
@@ -53,10 +60,11 @@ export function ChangePasswordPage() {
     try {
       await store.changePassword(current, next);
     } catch (e) {
-      if (e instanceof ApiError && e.problem.slug === 'invalid-current-password') setCurrentError(errorMessage(e));
+      if (e instanceof ApiError && e.problem.status === 429) wait.start(e.retryAfterSeconds ?? RATE_LIMIT_FALLBACK_SECONDS);
+      else if (e instanceof ApiError && e.problem.slug === 'invalid-current-password') setCurrentError(errorMessage(e));
       else if (e instanceof ApiError && e.problem.slug === 'validation-failed' && e.problem.violations?.length) {
         setViolations(e.problem.violations);
-      } else setError(errorMessage(e));
+      } else setError(errorDetails(e));
     } finally {
       busy.current = false;
       setPending(false);
@@ -66,7 +74,7 @@ export function ChangePasswordPage() {
   return (
     <AuthCard title={t('account.changePassword.title')} subtitle={t('account.changePassword.subtitle')}>
       <form onSubmit={submit} className="flex flex-col gap-4" noValidate>
-        {error && <Banner variant="error">{error}</Banner>}
+        {error && <Banner variant="error" code={error.code}>{error.message}</Banner>}
         <TextField
           label={t('account.changePassword.current')}
           type="password"
@@ -95,8 +103,8 @@ export function ChangePasswordPage() {
           onChange={setConfirm}
           error={confirmError ?? undefined}
         />
-        <Button type="submit" size="touch" isPending={pending} className="w-full">
-          {t('account.changePassword.submit')}
+        <Button type="submit" size="touch" isPending={pending} isDisabled={wait.remaining > 0} className="w-full">
+          {wait.remaining > 0 ? t('errors.retryIn', { seconds: wait.remaining }) : t('account.changePassword.submit')}
         </Button>
         <Button variant="ghost" onPress={() => void store.logout()}>
           {t('account.changePassword.logout')}

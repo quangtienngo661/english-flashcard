@@ -1,6 +1,8 @@
 {
   "errors": {
     "generic": "Có lỗi xảy ra",
+    "code": "Mã: {code}",
+    "copyCode": "Chép mã",
     "inProgress": "Yêu cầu trước vẫn đang chạy",
     "noAccess": "Bạn không có quyền truy cập trang web này",
     "batch-filter-unavailable": "Bộ lọc theo lô này không dùng được",
@@ -25,6 +27,7 @@
     "payload-too-large": "Dữ liệu gửi lên quá lớn",
     "profile-incomplete": "Hồ sơ chưa đầy đủ",
     "rate-limited": "Thao tác quá nhanh, hãy đợi một lát",
+    "retryIn": "Thử lại sau {seconds} giây",
     "same_as_current": "Mật khẩu mới phải khác mật khẩu hiện tại",
     "source-exists": "Nguồn dữ liệu này đã tồn tại",
     "source-incomplete": "Nguồn level cần có phiên bản và license",
@@ -34,7 +37,8 @@
     "validation-failed": "Dữ liệu không hợp lệ"
   },
   "notice": {
-    "expired": "Phiên đăng nhập đã hết hạn"
+    "expired": "Phiên đăng nhập đã hết hạn",
+    "logoutFailed": "Chưa đăng xuất được khỏi máy chủ."
   },
   "common": {
     "retry": "Thử lại",
@@ -73,6 +77,10 @@
     "aiCosts": "Chi phí & đối soát",
     "evalSets": "Bộ ví dụ",
     "staff": "Vai trò & staff"
+  },
+  "session": {
+    "unavailable": "Không kết nối được máy chủ. Phiên đăng nhập của bạn vẫn được giữ.",
+    "retry": "Thử lại"
   },
   "offline": {
     "message": "Không kết nối được máy chủ"

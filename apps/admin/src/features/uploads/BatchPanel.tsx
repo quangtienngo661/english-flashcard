@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { useFormatter, useTranslations } from 'use-intl';
 import { saveBlob } from '../../api/download';
-import { useErrorMessage } from '../../api/use-error-message';
+import { useErrorDetails, type ErrorDetails } from '../../api/use-error-message';
 import { useApi } from '../../auth/session-context';
 import { useCan } from '../../auth/use-can';
 import { useDateTime } from '../../i18n/use-date-time';
@@ -31,7 +31,7 @@ export function BatchPanel({ id }: { id: string }) {
   const api = useApi();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const errorMessage = useErrorMessage();
+  const errorDetails = useErrorDetails();
   const canPublish = useCan('content.publish');
   const canRevert = useCan('content.edit');
 
@@ -42,7 +42,7 @@ export function BatchPanel({ id }: { id: string }) {
 
   const [revertOpen, setRevertOpen] = useState(false);
   const [report, setReport] = useState<RevertReport | null>(null);
-  const [downloadError, setDownloadError] = useState<string | null>(null);
+  const [downloadError, setDownloadError] = useState<ErrorDetails | null>(null);
   const [downloading, setDownloading] = useState(false);
   const publish = useSubmitAction((key) => createPublishJob(api, { batch_id: id }, key), `publish:${id}`, (job) => void navigate(`/publish-jobs/${job.job_id}`));
 
@@ -88,7 +88,7 @@ export function BatchPanel({ id }: { id: string }) {
     try {
       saveBlob(await downloadRejected(api, id), `rejected-${id}.csv`);
     } catch (e) {
-      setDownloadError(errorMessage(e));
+      setDownloadError(errorDetails(e));
     } finally {
       setDownloading(false);
     }
@@ -119,6 +119,7 @@ export function BatchPanel({ id }: { id: string }) {
         {(publish.error || downloadError) && (
           <Banner
             variant="error"
+            code={(publish.error ?? downloadError)?.code}
             action={
               publish.canRetry ? (
                 <Button variant="secondary" onPress={() => void publish.submit()}>
@@ -127,7 +128,7 @@ export function BatchPanel({ id }: { id: string }) {
               ) : undefined
             }
           >
-            {publish.error ?? downloadError}
+            {(publish.error ?? downloadError)?.message}
           </Banner>
         )}
         {report && (

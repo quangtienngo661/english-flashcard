@@ -2,7 +2,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useRef, useState } from 'react';
 import { useMatch, useNavigate } from 'react-router';
 import { useTranslations } from 'use-intl';
-import { useErrorMessage } from '../../api/use-error-message';
+import { ApiError } from '../../api/problem';
+import { useErrorDetails, type ErrorDetails } from '../../api/use-error-message';
 import { useApi } from '../../auth/session-context';
 import { PageActions } from '../../app/shell-slots';
 import { Banner } from '../../ui/Banner';
@@ -11,6 +12,7 @@ import { Checkbox } from '../../ui/Checkbox';
 import { DataList, type Column } from '../../ui/DataList';
 import { Dialog } from '../../ui/Dialog';
 import { TextField } from '../../ui/TextField';
+import { useCountdown } from '../account/useCountdown';
 import { createSource, listSources, type SourceView } from '../content/content-api';
 
 export function SourcesPage() {
@@ -58,13 +60,14 @@ export function SourcesPage() {
   );
 }
 
+const RATE_LIMIT_FALLBACK_SECONDS = 10;
 const IS_INT = /^-?\d+$/;
 
 /** Spec §6.3 "Nguồn dữ liệu": register a source. Version and license are required only for a level source. Shown in a dialog (UB9). */
 export function SourceForm({ onPendingChange }: { onPendingChange?: (pending: boolean) => void }) {
   const t = useTranslations();
   const api = useApi();
-  const errorMessage = useErrorMessage();
+  const errorDetails = useErrorDetails();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [name, setName] = useState('');
@@ -75,8 +78,9 @@ export function SourceForm({ onPendingChange }: { onPendingChange?: (pending: bo
   const [priority, setPriority] = useState('100');
   const [asLevelSource, setAsLevelSource] = useState(true);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [banner, setBanner] = useState<string | null>(null);
+  const [banner, setBanner] = useState<ErrorDetails | null>(null);
   const busy = useRef(false);
+  const wait = useCountdown();
   const mutation = useMutation({
     mutationFn: () =>
       createSource(api, {
@@ -94,7 +98,7 @@ export function SourceForm({ onPendingChange }: { onPendingChange?: (pending: bo
   const star = (label: string, required: boolean) => (required ? `${label} *` : label);
 
   async function submit() {
-    if (busy.current) return;
+    if (busy.current || wait.remaining > 0) return;
     const next: Record<string, string> = {};
     if (name.trim() === '') next.name = t('sources.form.required');
     if (asLevelSource && version.trim() === '') next.version = t('sources.form.required');
@@ -110,7 +114,8 @@ export function SourceForm({ onPendingChange }: { onPendingChange?: (pending: bo
       await queryClient.invalidateQueries({ queryKey: ['sources'] });
       void navigate('/sources');
     } catch (e) {
-      setBanner(errorMessage(e));
+      if (e instanceof ApiError && e.problem.status === 429) wait.start(e.retryAfterSeconds ?? RATE_LIMIT_FALLBACK_SECONDS);
+      else setBanner(errorDetails(e));
     } finally {
       busy.current = false;
     }
@@ -125,7 +130,7 @@ export function SourceForm({ onPendingChange }: { onPendingChange?: (pending: bo
       }}
       className="flex flex-col gap-4"
     >
-      {banner && <Banner variant="error">{banner}</Banner>}
+      {banner && <Banner variant="error" code={banner.code}>{banner.message}</Banner>}
       <div className="grid gap-4 shell:grid-cols-2">
         <TextField label={star(t('sources.form.name'), true)} autoComplete="off" value={name} onChange={setName} error={errors.name} />
         <TextField label={star(t('sources.form.version'), asLevelSource)} autoComplete="off" value={version} onChange={setVersion} error={errors.version} />
@@ -149,8 +154,8 @@ export function SourceForm({ onPendingChange }: { onPendingChange?: (pending: bo
         <Button variant="secondary" onPress={() => void navigate('/sources')}>
           {t('common.cancel')}
         </Button>
-        <Button type="submit" isPending={mutation.isPending}>
-          {t('sources.form.save')}
+        <Button type="submit" isPending={mutation.isPending} isDisabled={wait.remaining > 0}>
+          {wait.remaining > 0 ? t('errors.retryIn', { seconds: wait.remaining }) : t('sources.form.save')}
         </Button>
       </div>
     </form>
