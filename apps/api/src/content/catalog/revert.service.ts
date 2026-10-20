@@ -10,7 +10,7 @@ export type RevertRecord = {
 export type RevertContext = {
   /** When the batch's job finished; a reviewed inflection set stamped later was set by someone else. */
   batchFinishedAt: Date | null;
-  /** Revisions the batch itself recorded; their form_of links do not keep an entry. */
+  /** Revisions the batch itself recorded; their form_of links do not keep an entry while they are unpublished. */
   ownRevisionIds: ReadonlySet<string>;
 };
 export type RevertReport = {
@@ -83,16 +83,16 @@ async function restoreRevision(
   });
 }
 
-/** Is any revision outside the batch pointing at this entry with form_of? Paged by id, so the batch size never
- * becomes a query parameter list. */
+/** Is a revision outside the batch, or a published one of the batch (revert keeps it), pointing at this entry with
+ * form_of? Paged by id, so the batch size never becomes a query parameter list. */
 async function referencedOutsideBatch(tx: Prisma.TransactionClient, entryId: string, own: ReadonlySet<string>): Promise<boolean> {
   let after: string | undefined;
   for (;;) {
     const page = await tx.senseRevision.findMany({
       where: { formOfEntryId: entryId, ...(after === undefined ? {} : { id: { gt: after } }) },
-      select: { id: true }, orderBy: { id: 'asc' }, take: 100,
+      select: { id: true, publishedAt: true }, orderBy: { id: 'asc' }, take: 100,
     });
-    if (page.some((revision) => !own.has(revision.id))) return true;
+    if (page.some((revision) => !own.has(revision.id) || revision.publishedAt != null)) return true;
     if (page.length < 100) return false;
     after = page[page.length - 1].id;
   }
@@ -178,7 +178,8 @@ async function revertEntry(
   if (ids('entry').includes(entryId)) {
     // Others rely on this entry when its inflection set was reviewed after the batch finished (by another batch or
     // staff; the batch's own inflections cell stamps it while running), or when a revision outside the batch
-    // (another batch, a staff draft, a learner's private word) links to it with form_of.
+    // (another batch, a staff draft, a learner's private word) or a published revision of the batch links to it
+    // with form_of.
     const { inflectionsReviewedAt } = await tx.entry.findUnique({ where: { id: entryId }, select: { inflectionsReviewedAt: true } })
       ?? { inflectionsReviewedAt: null };
     const reviewedLater = inflectionsReviewedAt != null && context.batchFinishedAt !== null
