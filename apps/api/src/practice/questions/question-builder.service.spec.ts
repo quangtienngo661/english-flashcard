@@ -37,6 +37,7 @@ describe('QuestionBuilder — reads through the client it is given (PX4)', () =>
     expect(content.practiceSenses).toHaveBeenCalledExactlyOnceWith(userId, [senseId], 'vi', tx);
     expect(learning.practiceGroupMates).toHaveBeenCalledExactlyOnceWith(userId, [senseId], tx);
     expect(content.practiceCandidates).toHaveBeenCalledExactlyOnceWith(userId, [], 'vi', tx);
+    expect(content.practiceLemmaMeanings).toHaveBeenCalledExactlyOnceWith(userId, ['cat'], 'vi', tx);
   });
 
   it('PX4: availability reads the group mates and the candidates through the given client', async () => {
