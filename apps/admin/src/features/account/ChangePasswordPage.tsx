@@ -8,6 +8,7 @@ import { useSession } from '../../auth/session-context';
 import { Banner } from '../../ui/Banner';
 import { Button } from '../../ui/Button';
 import { TextField } from '../../ui/TextField';
+import { SessionLoading } from '../../app/SessionLoading';
 import { AuthCard } from './AuthCard';
 import { PasswordRules } from './PasswordRules';
 
@@ -28,6 +29,7 @@ export function ChangePasswordPage() {
 
   if (state.status === 'signed-out') return <Navigate to="/login" replace />;
   if (state.status === 'signed-in') return <Navigate to="/" replace />;
+  if (state.status === 'unavailable') return <SessionLoading />;
   if (state.status === 'loading') {
     return (
       <p role="status" className="p-8 text-ui text-muted">

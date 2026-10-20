@@ -1,3 +1,4 @@
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
 import { IntlProvider } from 'use-intl';
@@ -11,11 +12,13 @@ import { AppRoutes } from './routes';
 function renderWith(store: SessionStore, path: string) {
   render(
     <IntlProvider locale="vi" messages={vi} timeZone="Asia/Ho_Chi_Minh">
-      <SessionProvider store={store}>
-        <MemoryRouter initialEntries={[path]}>
-          <AppRoutes />
-        </MemoryRouter>
-      </SessionProvider>
+      <QueryClientProvider client={new QueryClient()}>
+        <SessionProvider store={store}>
+          <MemoryRouter initialEntries={[path]}>
+            <AppRoutes />
+          </MemoryRouter>
+        </SessionProvider>
+      </QueryClientProvider>
     </IntlProvider>,
   );
 }

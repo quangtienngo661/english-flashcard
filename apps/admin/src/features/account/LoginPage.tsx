@@ -23,7 +23,7 @@ export function LoginPage() {
 
   if (state.status === 'signed-in') return <Navigate to={from ?? '/'} replace />;
   if (state.status === 'change-password') return <Navigate to="/change-password" replace />;
-  if (state.status === 'loading') return <SessionLoading />;
+  if (state.status === 'loading' || state.status === 'unavailable') return <SessionLoading />;
 
   const notice = state.notice;
 

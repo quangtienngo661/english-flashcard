@@ -74,6 +74,10 @@
     "evalSets": "Example sets",
     "staff": "Roles & staff"
   },
+  "session": {
+    "unavailable": "Can't reach the server. Your session is kept.",
+    "retry": "Try again"
+  },
   "offline": {
     "message": "Cannot reach the server"
   },

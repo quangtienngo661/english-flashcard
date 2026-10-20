@@ -74,6 +74,10 @@
     "evalSets": "Bộ ví dụ",
     "staff": "Vai trò & staff"
   },
+  "session": {
+    "unavailable": "Không kết nối được máy chủ. Phiên đăng nhập của bạn vẫn được giữ.",
+    "retry": "Thử lại"
+  },
   "offline": {
     "message": "Không kết nối được máy chủ"
   },

@@ -21,6 +21,8 @@ export type SessionState =
   /** `retryAt`: when the start-up refresh tries again after a 429 (ms since epoch, B25E30). */
   | { status: 'loading'; retryAt?: number }
   | { status: 'signed-out'; notice: Notice | null }
+  /** The start-up refresh got a 5xx or no answer: the session is kept, the screen offers a retry (FE36). */
+  | { status: 'unavailable' }
   | { status: 'change-password'; me: Me }
   | { status: 'signed-in'; me: Me };
 
@@ -34,7 +36,7 @@ export const CHANNEL_NAME = 'wordmet-admin-auth';
 const DEVICE = { client: 'web', device_label: 'Wordmet Admin' } as const;
 
 type TokenBody = { access_token: string };
-type RefreshResult = 'ok' | 'failed' | 'rate-limited';
+type RefreshResult = 'ok' | 'failed' | 'rate-limited' | 'unavailable';
 
 /** B25E30: a refresh answered 429 is tried this many times in all before the session gives up. */
 export const REFRESH_TRIES = 3;
@@ -147,7 +149,7 @@ export class SessionStore {
         const refreshed = await this.refresh();
         if (refreshed === 'ok') await this.recheck();
         else if (refreshed === 'rate-limited') this.giveUpRateLimited();
-        else await this.logout('expired');
+        else if (refreshed === 'failed') await this.logout('expired');
       } else if (slug === 'password-change-required') {
         await this.recheck();
       }
@@ -156,14 +158,20 @@ export class SessionStore {
   };
 
   private async runBootstrap(): Promise<void> {
+    const wasUnavailable = this.state.status === 'unavailable';
     try {
       const refreshed = await this.refresh();
       if (refreshed === 'rate-limited') {
         this.giveUpRateLimited();
         return;
       }
+      if (refreshed === 'unavailable') {
+        this.set({ status: 'unavailable' });
+        return;
+      }
       if (refreshed === 'failed') {
-        this.set({ status: 'signed-out', notice: null });
+        // A retry after "unavailable": the session existed, so say it ended.
+        this.set({ status: 'signed-out', notice: wasUnavailable ? 'expired' : null });
         return;
       }
       await this.recheck();
@@ -187,12 +195,21 @@ export class SessionStore {
    */
   private async runRefresh(): Promise<RefreshResult> {
     for (let attempt = 1; ; attempt += 1) {
-      const res = await this.postRefresh();
+      let res: Response;
+      try {
+        res = await this.postRefresh();
+      } catch (error) {
+        // No answer (offline, server down). Not while the page is leaving: that is the unload, not an outage.
+        if (!(error instanceof TypeError) || this.leaving) throw error;
+        this.token = null;
+        return 'unavailable';
+      }
       if (res.ok) {
         this.token = ((await res.json()) as TokenBody).access_token;
         return 'ok';
       }
       this.token = null;
+      if (res.status >= 500) return 'unavailable';
       if (res.status !== 429) return 'failed';
       if (attempt >= REFRESH_TRIES) return 'rate-limited';
       const seconds = retryAfterSeconds(res) ?? REFRESH_RETRY_DEFAULT_S;
@@ -238,6 +255,8 @@ export class SessionStore {
       await this.logout('expired');
       return res;
     }
+    // The API is down, not the session: no logout, no broadcast. The API client turns this into the offline band.
+    if (refreshed === 'unavailable') throw new TypeError('refresh unavailable');
     return this.raw(path, init, this.token);
   }
 
