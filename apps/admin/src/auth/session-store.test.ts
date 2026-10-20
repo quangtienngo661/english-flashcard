@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { createApiClient } from '../api/client';
 import { ApiError, NetworkError } from '../api/problem';
 import { SessionStore } from './session-store';
@@ -12,6 +12,95 @@ function newStore(routes: Record<string, Route>, channel: ReturnType<ReturnType<
   const store = new SessionStore({ baseUrl: BASE, fetch: f.fetch, channel });
   return { store, ...f };
 }
+
+const PENDING_KEY = 'wordmet-admin-logout-pending';
+
+describe('SessionStore sign-out failure (T9, FE38)', () => {
+  beforeEach(() => sessionStorage.clear());
+
+  const signedInRoutes = (logout: Route): Record<string, Route> => ({
+    'POST /v1/auth/login': () => tokenResponse('tok-1'),
+    'GET /v1/me': ok(makeMe()),
+    'POST /v1/auth/logout': logout,
+  });
+
+  it('T9: logout answered 503 → signed-out logout-failed, flag set', async () => {
+    const { store } = newStore(signedInRoutes(() => problem(503, 'unavailable')));
+    await store.login('a@example.com', 'pw');
+
+    await store.logout();
+
+    expect(store.state).toEqual({ status: 'signed-out', notice: 'logout-failed' });
+    expect(store.hasAccessToken).toBe(false);
+    expect(sessionStorage.getItem(PENDING_KEY)).toBe('1');
+  });
+
+  it('T9: logout with no answer (network error) → logout-failed too', async () => {
+    const { store } = newStore(
+      signedInRoutes(() => {
+        throw new TypeError('Failed to fetch');
+      }),
+    );
+    await store.login('a@example.com', 'pw');
+    await store.logout();
+    expect(store.state).toEqual({ status: 'signed-out', notice: 'logout-failed' });
+  });
+
+  it.each([200, 204, 401, 403])('logout answered %i counts as done', async (status) => {
+    const { store } = newStore(signedInRoutes(() => new Response(null, { status })));
+    await store.login('a@example.com', 'pw');
+    await store.logout();
+    expect(store.state).toEqual({ status: 'signed-out', notice: null });
+    expect(sessionStorage.getItem(PENDING_KEY)).toBeNull();
+  });
+
+  it("logout('expired') answered 401 → no logout-failed", async () => {
+    const { store } = newStore(signedInRoutes(() => problem(401, 'invalid-token')));
+    await store.login('a@example.com', 'pw');
+    await store.logout('expired');
+    expect(store.state).toEqual({ status: 'signed-out', notice: 'expired' });
+    expect(sessionStorage.getItem(PENDING_KEY)).toBeNull();
+  });
+
+  it("logout('expired') answered 503 → keeps its notice, no flag", async () => {
+    const { store } = newStore(signedInRoutes(() => problem(503, 'unavailable')));
+    await store.login('a@example.com', 'pw');
+    await store.logout('expired');
+    expect(store.state).toEqual({ status: 'signed-out', notice: 'expired' });
+    expect(sessionStorage.getItem(PENDING_KEY)).toBeNull();
+  });
+
+  it('FE38: a new store with the flag → logout-failed without calling refresh', async () => {
+    sessionStorage.setItem(PENDING_KEY, '1');
+    const { store, count } = newStore({ 'POST /v1/auth/refresh': () => tokenResponse('tok-9'), 'GET /v1/me': ok(makeMe()) });
+
+    await store.bootstrap();
+
+    expect(store.state).toEqual({ status: 'signed-out', notice: 'logout-failed' });
+    expect(count('POST', '/v1/auth/refresh')).toBe(0);
+  });
+
+  it('retryLogout ok → flag removed, notice null', async () => {
+    sessionStorage.setItem(PENDING_KEY, '1');
+    const { store, count } = newStore({ 'POST /v1/auth/logout': noContent });
+    await store.bootstrap();
+
+    await store.retryLogout();
+
+    expect(count('POST', '/v1/auth/logout')).toBe(1);
+    expect(sessionStorage.getItem(PENDING_KEY)).toBeNull();
+    expect(store.state).toEqual({ status: 'signed-out', notice: null });
+  });
+
+  it('retryLogout failing again keeps the flag and the notice', async () => {
+    sessionStorage.setItem(PENDING_KEY, '1');
+    const { store } = newStore({ 'POST /v1/auth/logout': () => problem(503, 'unavailable') });
+    await store.bootstrap();
+    await store.retryLogout();
+    expect(sessionStorage.getItem(PENDING_KEY)).toBe('1');
+    expect(store.state).toEqual({ status: 'signed-out', notice: 'logout-failed' });
+  });
+});
 
 describe('SessionStore', () => {
   it('B25#2: login of a verified user without role calls logout with X-CSRF-Protection: 1, keeps no token, state signed-out notice no-access', async () => {

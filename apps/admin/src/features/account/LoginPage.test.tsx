@@ -1,6 +1,6 @@
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import vi from '../../../messages/vi.json';
 import { makeMe, problem, tokenResponse } from '../../auth/test-support';
 import { LoginPage } from './LoginPage';
@@ -20,6 +20,25 @@ async function fillAndSubmit(email = 'staff@example.com', password = 'secret-pas
 }
 
 describe('LoginPage', () => {
+  beforeEach(() => sessionStorage.clear());
+
+  it('shows the sign-out failure banner and its retry button', async () => {
+    let logoutStatus = 503;
+    const { store } = renderAccount(<LoginPage />, {
+      path: '/login',
+      routes: { ...editorRoutes, 'POST /v1/auth/logout': () => new Response(null, { status: logoutStatus }) },
+    });
+    await waitFor(() => expect(store.state.status).toBe('signed-out'));
+    await store.logout();
+
+    expect(await screen.findByText(vi.notice.logoutFailed)).toBeInTheDocument();
+    logoutStatus = 204;
+    await userEvent.click(screen.getByRole('button', { name: vi.session.retry }));
+
+    await waitFor(() => expect(screen.queryByText(vi.notice.logoutFailed)).toBeNull());
+    expect(store.state).toEqual({ status: 'signed-out', notice: null });
+  });
+
   it('B25#2 (screen): notice no-access shows errors.noAccess text on /login; the login card has no registration link', async () => {
     const { store } = renderAccount(<LoginPage />, {
       path: '/login',
