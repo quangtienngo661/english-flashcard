@@ -2,7 +2,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useEffect, useRef, useState } from 'react';
 import { useFormatter, useTranslations } from 'use-intl';
 import { saveBlob } from '../../api/download';
-import { useErrorMessage } from '../../api/use-error-message';
+import { useErrorDetails, type ErrorDetails } from '../../api/use-error-message';
 import { useApi } from '../../auth/session-context';
 import { useDateTime } from '../../i18n/use-date-time';
 import { Banner } from '../../ui/Banner';
@@ -26,10 +26,10 @@ export function PublishJobPanel({ id }: { id: string }) {
   const dateTime = useDateTime();
   const api = useApi();
   const queryClient = useQueryClient();
-  const errorMessage = useErrorMessage();
+  const errorDetails = useErrorDetails();
   const query = usePollingStatus<PublishJobView>(['publish-job', id], () => getPublishJob(api, id));
   const [downloading, setDownloading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<ErrorDetails | null>(null);
 
   const job = query.data;
   const now = useNow(1000, job?.status === 'queued');
@@ -63,7 +63,7 @@ export function PublishJobPanel({ id }: { id: string }) {
     try {
       saveBlob(await downloadPublishReport(api, id), `publish-${id}.csv`);
     } catch (e) {
-      setError(errorMessage(e));
+      setError(errorDetails(e));
     } finally {
       setDownloading(false);
     }
@@ -81,7 +81,7 @@ export function PublishJobPanel({ id }: { id: string }) {
         }
       />
       <PanelBody>
-        {error && <Banner variant="error">{error}</Banner>}
+        {error && <Banner variant="error" code={error.code}>{error.message}</Banner>}
         {job.status === 'queued' && (
           <Banner variant="info">
             {t(tooLong ? 'publishJobs.queuedLong' : 'publishJobs.queued', { seconds: Math.max(0, Math.floor((now - Date.parse(job.created_at)) / 1000)) })}

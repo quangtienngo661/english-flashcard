@@ -46,6 +46,7 @@ export function PublishJobForm({ onPendingChange }: { onPendingChange?: (pending
       {action.error && (
         <Banner
           variant="error"
+          code={action.error.code}
           action={
             action.canRetry ? (
               <Button variant="secondary" onPress={() => void action.submit()}>
@@ -54,7 +55,7 @@ export function PublishJobForm({ onPendingChange }: { onPendingChange?: (pending
             ) : undefined
           }
         >
-          {action.error}
+          {action.error.message}
         </Banner>
       )}
       <FilterFields values={values} onChange={setValues} />

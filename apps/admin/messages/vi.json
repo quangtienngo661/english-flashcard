@@ -1,6 +1,8 @@
 {
   "errors": {
     "generic": "Có lỗi xảy ra",
+    "code": "Mã: {code}",
+    "copyCode": "Chép mã",
     "inProgress": "Yêu cầu trước vẫn đang chạy",
     "noAccess": "Bạn không có quyền truy cập trang web này",
     "batch-filter-unavailable": "Bộ lọc theo lô này không dùng được",

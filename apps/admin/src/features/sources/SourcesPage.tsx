@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useRef, useState } from 'react';
 import { useMatch, useNavigate } from 'react-router';
 import { useTranslations } from 'use-intl';
-import { useErrorMessage } from '../../api/use-error-message';
+import { useErrorDetails, type ErrorDetails } from '../../api/use-error-message';
 import { useApi } from '../../auth/session-context';
 import { PageActions } from '../../app/shell-slots';
 import { Banner } from '../../ui/Banner';
@@ -64,7 +64,7 @@ const IS_INT = /^-?\d+$/;
 export function SourceForm({ onPendingChange }: { onPendingChange?: (pending: boolean) => void }) {
   const t = useTranslations();
   const api = useApi();
-  const errorMessage = useErrorMessage();
+  const errorDetails = useErrorDetails();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [name, setName] = useState('');
@@ -75,7 +75,7 @@ export function SourceForm({ onPendingChange }: { onPendingChange?: (pending: bo
   const [priority, setPriority] = useState('100');
   const [asLevelSource, setAsLevelSource] = useState(true);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [banner, setBanner] = useState<string | null>(null);
+  const [banner, setBanner] = useState<ErrorDetails | null>(null);
   const busy = useRef(false);
   const mutation = useMutation({
     mutationFn: () =>
@@ -110,7 +110,7 @@ export function SourceForm({ onPendingChange }: { onPendingChange?: (pending: bo
       await queryClient.invalidateQueries({ queryKey: ['sources'] });
       void navigate('/sources');
     } catch (e) {
-      setBanner(errorMessage(e));
+      setBanner(errorDetails(e));
     } finally {
       busy.current = false;
     }
@@ -125,7 +125,7 @@ export function SourceForm({ onPendingChange }: { onPendingChange?: (pending: bo
       }}
       className="flex flex-col gap-4"
     >
-      {banner && <Banner variant="error">{banner}</Banner>}
+      {banner && <Banner variant="error" code={banner.code}>{banner.message}</Banner>}
       <div className="grid gap-4 shell:grid-cols-2">
         <TextField label={star(t('sources.form.name'), true)} autoComplete="off" value={name} onChange={setName} error={errors.name} />
         <TextField label={star(t('sources.form.version'), asLevelSource)} autoComplete="off" value={version} onChange={setVersion} error={errors.version} />

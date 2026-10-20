@@ -3,7 +3,7 @@ import { Link, Navigate, useNavigate } from 'react-router';
 import { useTranslations } from 'use-intl';
 import { useApi, useSession } from '../../auth/session-context';
 import { ApiError } from '../../api/problem';
-import { useErrorMessage } from '../../api/use-error-message';
+import { useErrorDetails, useErrorMessage, type ErrorDetails } from '../../api/use-error-message';
 import { checkPasswordPolicy } from '../../auth/password-policy';
 import { Banner } from '../../ui/Banner';
 import { Button } from '../../ui/Button';
@@ -17,6 +17,7 @@ const FALLBACK_WAIT_SECONDS = 60;
 export function ForgotPasswordPage() {
   const t = useTranslations();
   const errorMessage = useErrorMessage();
+  const errorDetails = useErrorDetails();
   const api = useApi();
   const navigate = useNavigate();
   const { state } = useSession();
@@ -24,7 +25,7 @@ export function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
   const [code, setCode] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<ErrorDetails | null>(null);
   const [codeError, setCodeError] = useState<string | null>(null);
   const [violations, setViolations] = useState<string[]>([]);
   const [info, setInfo] = useState<string | null>(null);
@@ -59,7 +60,7 @@ export function ForgotPasswordPage() {
         if (resend) setInfo(t('account.forgot.resent'));
       } catch (e) {
         if (e instanceof ApiError && e.problem.status === 429) sendWait.start(e.retryAfterSeconds ?? FALLBACK_WAIT_SECONDS);
-        else setError(errorMessage(e));
+        else setError(errorDetails(e));
       }
     });
 
@@ -85,9 +86,9 @@ export function ForgotPasswordPage() {
           if (problem.status === 429) lockWait.start(e.retryAfterSeconds ?? FALLBACK_WAIT_SECONDS);
           else if (problem.slug === 'invalid-otp') setCodeError(errorMessage(e));
           else if (problem.slug === 'validation-failed' && problem.violations?.length) setViolations(problem.violations);
-          else setError(errorMessage(e));
+          else setError(errorDetails(e));
         } else {
-          setError(errorMessage(e));
+          setError(errorDetails(e));
         }
       }
     });
@@ -106,7 +107,7 @@ export function ForgotPasswordPage() {
     return (
       <AuthCard title={t('account.forgot.title')} subtitle={t('account.forgot.subtitle')}>
         <form onSubmit={submitEmail} className="flex flex-col gap-4" noValidate>
-          {error && <Banner variant="error">{error}</Banner>}
+          {error && <Banner variant="error" code={error.code}>{error.message}</Banner>}
           <TextField
             label={t('account.forgot.email')}
             type="email"
@@ -131,7 +132,7 @@ export function ForgotPasswordPage() {
   return (
     <AuthCard title={t('account.forgot.resetTitle')} subtitle={t('account.forgot.resetSubtitle', { email: email.trim() })}>
       <form onSubmit={submitReset} className="flex flex-col gap-4" noValidate>
-        {error && <Banner variant="error">{error}</Banner>}
+        {error && <Banner variant="error" code={error.code}>{error.message}</Banner>}
         {info && <Banner variant="info">{info}</Banner>}
         <div className="flex flex-col gap-1.5">
           <TextField

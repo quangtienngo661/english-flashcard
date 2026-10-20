@@ -2,7 +2,7 @@ import { useMutation } from '@tanstack/react-query';
 import { useRef, useState } from 'react';
 import { useTranslations } from 'use-intl';
 import { ApiError } from '../../api/problem';
-import { useErrorMessage } from '../../api/use-error-message';
+import { useErrorDetails, type ErrorDetails } from '../../api/use-error-message';
 import { checkPasswordPolicy } from '../../auth/password-policy';
 import { useApi } from '../../auth/session-context';
 import { Banner } from '../../ui/Banner';
@@ -22,7 +22,7 @@ type Props = { onClose: () => void; onCreated: () => void };
 export function CreateAccountDialog({ onClose, onCreated }: Props) {
   const t = useTranslations();
   const api = useApi();
-  const errorMessage = useErrorMessage();
+  const errorDetails = useErrorDetails();
   const [step, setStep] = useState<'form' | 'confirm' | 'done'>('form');
   const [email, setEmail] = useState('');
   const [role, setRole] = useState<StaffRole>('editor');
@@ -32,7 +32,7 @@ export function CreateAccountDialog({ onClose, onCreated }: Props) {
   const [mustChange, setMustChange] = useState(true);
   const [emailError, setEmailError] = useState<string | null>(null);
   const [confirmError, setConfirmError] = useState<string | null>(null);
-  const [banner, setBanner] = useState<string | null>(null);
+  const [banner, setBanner] = useState<ErrorDetails | null>(null);
   const busy = useRef(false);
   const mutation = useMutation({
     mutationFn: () =>
@@ -67,7 +67,7 @@ export function CreateAccountDialog({ onClose, onCreated }: Props) {
     } catch (e) {
       setStep('form');
       if (e instanceof ApiError && e.problem.slug === 'email-taken') setEmailError(t('staff.create.emailTaken'));
-      else setBanner(errorMessage(e));
+      else setBanner(errorDetails(e));
     } finally {
       busy.current = false;
     }
@@ -127,7 +127,7 @@ export function CreateAccountDialog({ onClose, onCreated }: Props) {
         </>
       }
     >
-      {banner && <Banner variant="error">{banner}</Banner>}
+      {banner && <Banner variant="error" code={banner.code}>{banner.message}</Banner>}
       <TextField
         label={t('staff.create.email')}
         type="email"

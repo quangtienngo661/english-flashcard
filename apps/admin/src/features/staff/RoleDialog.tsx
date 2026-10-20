@@ -2,7 +2,7 @@ import { useMutation } from '@tanstack/react-query';
 import { useRef, useState } from 'react';
 import { useTranslations } from 'use-intl';
 import { ApiError } from '../../api/problem';
-import { useErrorMessage } from '../../api/use-error-message';
+import { useErrorDetails, type ErrorDetails } from '../../api/use-error-message';
 import { useApi } from '../../auth/session-context';
 import { Banner } from '../../ui/Banner';
 import { Button } from '../../ui/Button';
@@ -23,8 +23,8 @@ type Props = {
 export function RoleDialog({ target, role, isSelf, onClose, onDone }: Props) {
   const t = useTranslations();
   const api = useApi();
-  const errorMessage = useErrorMessage();
-  const [error, setError] = useState<string | null>(null);
+  const errorDetails = useErrorDetails();
+  const [error, setError] = useState<ErrorDetails | null>(null);
   const busy = useRef(false);
   const losesAdmin = target.staff_role === 'admin' && role !== 'admin';
   const selfDemotion = isSelf && losesAdmin;
@@ -59,9 +59,9 @@ export function RoleDialog({ target, role, isSelf, onClose, onDone }: Props) {
     } catch (e) {
       if (e instanceof ApiError && e.problem.slug === 'staff-role-rule') {
         // The API names one rule for two cases: the last admin cannot be demoted; an unverified user cannot be granted.
-        setError(t(losesAdmin ? 'staff.dialog.lastAdmin' : 'staff.card.unverifiedHint'));
+        setError({ message: t(losesAdmin ? 'staff.dialog.lastAdmin' : 'staff.card.unverifiedHint'), code: null });
       } else {
-        setError(errorMessage(e));
+        setError(errorDetails(e));
       }
     } finally {
       busy.current = false;
@@ -86,7 +86,7 @@ export function RoleDialog({ target, role, isSelf, onClose, onDone }: Props) {
       }
     >
       <p className="break-words text-ui text-muted">{body}</p>
-      {error && <Banner variant="error">{error}</Banner>}
+      {error && <Banner variant="error" code={error.code}>{error.message}</Banner>}
     </Dialog>
   );
 }

@@ -2,7 +2,7 @@ import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
 import { Check } from 'lucide-react';
 import { useRef, useState, type FormEvent } from 'react';
 import { useTranslations } from 'use-intl';
-import { useErrorMessage } from '../../api/use-error-message';
+import { useErrorDetails, type ErrorDetails } from '../../api/use-error-message';
 import { useApi, useSession } from '../../auth/session-context';
 import { PageActions } from '../../app/shell-slots';
 import { Badge } from '../../ui/Badge';
@@ -44,7 +44,7 @@ function UserCard({ user, onChoose }: { user: StaffUser; onChoose: (role: StaffR
 export function StaffPage() {
   const t = useTranslations();
   const api = useApi();
-  const errorMessage = useErrorMessage();
+  const errorDetails = useErrorDetails();
   const queryClient = useQueryClient();
   const { state, store } = useSession();
   const meId = state.status === 'signed-in' ? state.me.id : '';
@@ -60,7 +60,7 @@ export function StaffPage() {
   const [email, setEmail] = useState('');
   const [target, setTarget] = useState<StaffUser | null>(null);
   const [notFound, setNotFound] = useState(false);
-  const [searchError, setSearchError] = useState<string | null>(null);
+  const [searchError, setSearchError] = useState<ErrorDetails | null>(null);
   const [searching, setSearching] = useState(false);
   const [change, setChange] = useState<{ role: StaffRole | null } | null>(null);
   const [creating, setCreating] = useState(false);
@@ -79,7 +79,7 @@ export function StaffPage() {
       setTarget(found);
       setNotFound(found === null);
     } catch (e) {
-      setSearchError(errorMessage(e));
+      setSearchError(errorDetails(e));
     } finally {
       searchBusy.current = false;
       setSearching(false);
@@ -139,7 +139,7 @@ export function StaffPage() {
         </Button>
       </form>
 
-      {searchError && <Banner variant="error">{searchError}</Banner>}
+      {searchError && <Banner variant="error" code={searchError.code}>{searchError.message}</Banner>}
       {notFound && (
         <div className={panel}>
           <Banner variant="info">{t('staff.search.notFound')}</Banner>

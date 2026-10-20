@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
 import { useTranslations } from 'use-intl';
 import { saveBlob } from '../../api/download';
-import { useErrorMessage } from '../../api/use-error-message';
+import { useErrorDetails, type ErrorDetails } from '../../api/use-error-message';
 import { useApi } from '../../auth/session-context';
 import { Banner } from '../../ui/Banner';
 import { Button } from '../../ui/Button';
@@ -18,10 +18,10 @@ function localDate(now: Date): string {
 export function ExportPage() {
   const t = useTranslations();
   const api = useApi();
-  const errorMessage = useErrorMessage();
+  const errorDetails = useErrorDetails();
   const [values, setValues] = useState<FilterValues>(NO_FILTER);
   const [pending, setPending] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<ErrorDetails | null>(null);
   const busy = useRef(false);
 
   async function download() {
@@ -32,7 +32,7 @@ export function ExportPage() {
     try {
       saveBlob(await exportSenses(api, toFilter(values, true)), `senses-${localDate(new Date())}.csv`);
     } catch (e) {
-      setError(errorMessage(e));
+      setError(errorDetails(e));
     } finally {
       busy.current = false;
       setPending(false);
@@ -48,7 +48,7 @@ export function ExportPage() {
       }}
       className="flex flex-col gap-4 rounded-panel border-2 border-border p-4"
     >
-      {error && <Banner variant="error">{error}</Banner>}
+      {error && <Banner variant="error" code={error.code}>{error.message}</Banner>}
       <FilterFields values={values} onChange={setValues} withStatus />
       <div className="flex justify-end">
         <Button type="submit" isPending={pending}>

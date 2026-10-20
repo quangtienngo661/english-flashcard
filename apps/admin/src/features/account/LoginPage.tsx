@@ -1,7 +1,7 @@
 import { useRef, useState, type FormEvent } from 'react';
 import { Link, Navigate, useLocation } from 'react-router';
 import { useTranslations } from 'use-intl';
-import { useErrorMessage } from '../../api/use-error-message';
+import { useErrorDetails, type ErrorDetails } from '../../api/use-error-message';
 import { SessionLoading } from '../../app/SessionLoading';
 import { useSession } from '../../auth/session-context';
 import { Banner } from '../../ui/Banner';
@@ -11,13 +11,13 @@ import { AuthCard } from './AuthCard';
 
 export function LoginPage() {
   const t = useTranslations();
-  const errorMessage = useErrorMessage();
+  const errorDetails = useErrorDetails();
   const { state, store } = useSession();
   const location = useLocation();
   const from = (location.state as { from?: string } | null)?.from;
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<ErrorDetails | null>(null);
   const [pending, setPending] = useState(false);
   const busy = useRef(false);
   const [retrying, setRetrying] = useState(false);
@@ -37,7 +37,7 @@ export function LoginPage() {
     try {
       await store.login(email.trim(), password);
     } catch (e) {
-      setError(errorMessage(e));
+      setError(errorDetails(e));
     } finally {
       busy.current = false;
       setPending(false);
@@ -70,7 +70,7 @@ export function LoginPage() {
           </Banner>
         )}
         {notice === 'rate-limited' && <Banner variant="info">{t('errors.rate-limited')}</Banner>}
-        {error && <Banner variant="error">{error}</Banner>}
+        {error && <Banner variant="error" code={error.code}>{error.message}</Banner>}
         <TextField
           label={t('account.login.email')}
           type="email"

@@ -1,6 +1,8 @@
 {
   "errors": {
     "generic": "Something went wrong",
+    "code": "Code: {code}",
+    "copyCode": "Copy code",
     "inProgress": "The previous request is still running",
     "noAccess": "You do not have access to this site",
     "batch-filter-unavailable": "This batch filter is not available",

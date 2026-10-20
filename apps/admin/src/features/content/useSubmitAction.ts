@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { ApiError, NetworkError } from '../../api/problem';
 import { useIdempotencyKey } from '../../api/idempotency';
-import { useErrorMessage } from '../../api/use-error-message';
+import { useErrorDetails, type ErrorDetails } from '../../api/use-error-message';
 import { useCountdown } from '../account/useCountdown';
 
 const IN_PROGRESS_DEFAULT_WAIT_S = 2;
@@ -16,11 +16,11 @@ const IN_PROGRESS_DEFAULT_WAIT_S = 2;
  * `fingerprint` names the form's content: when it changes the key changes.
  */
 export function useSubmitAction<T>(run: (key: string) => Promise<T>, fingerprint: string, onDone: (result: T) => void) {
-  const errorMessage = useErrorMessage();
+  const errorDetails = useErrorDetails();
   const idempotency = useIdempotencyKey(fingerprint);
   const countdown = useCountdown();
   const [pending, setPending] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<ErrorDetails | null>(null);
   const [canRetry, setCanRetry] = useState(false);
   const busy = useRef(false);
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -39,7 +39,7 @@ export function useSubmitAction<T>(run: (key: string) => Promise<T>, fingerprint
       const { run: send, onDone: done, key } = latest.current;
       done(await send(key));
     } catch (e) {
-      setError(errorMessage(e));
+      setError(errorDetails(e));
       if (e instanceof NetworkError) setCanRetry(true);
       else if (e instanceof ApiError) {
         if (e.problem.status === 429) countdown.start(e.retryAfterSeconds ?? 1);

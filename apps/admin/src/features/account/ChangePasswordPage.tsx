@@ -2,7 +2,7 @@ import { useRef, useState, type FormEvent } from 'react';
 import { Navigate } from 'react-router';
 import { useTranslations } from 'use-intl';
 import { ApiError } from '../../api/problem';
-import { useErrorMessage } from '../../api/use-error-message';
+import { useErrorDetails, useErrorMessage, type ErrorDetails } from '../../api/use-error-message';
 import { checkPasswordPolicy } from '../../auth/password-policy';
 import { useSession } from '../../auth/session-context';
 import { Banner } from '../../ui/Banner';
@@ -16,6 +16,7 @@ import { PasswordRules } from './PasswordRules';
 export function ChangePasswordPage() {
   const t = useTranslations();
   const errorMessage = useErrorMessage();
+  const errorDetails = useErrorDetails();
   const { state, store } = useSession();
   const [current, setCurrent] = useState('');
   const [next, setNext] = useState('');
@@ -23,7 +24,7 @@ export function ChangePasswordPage() {
   const [currentError, setCurrentError] = useState<string | null>(null);
   const [confirmError, setConfirmError] = useState<string | null>(null);
   const [violations, setViolations] = useState<string[]>([]);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<ErrorDetails | null>(null);
   const [pending, setPending] = useState(false);
   const busy = useRef(false);
 
@@ -58,7 +59,7 @@ export function ChangePasswordPage() {
       if (e instanceof ApiError && e.problem.slug === 'invalid-current-password') setCurrentError(errorMessage(e));
       else if (e instanceof ApiError && e.problem.slug === 'validation-failed' && e.problem.violations?.length) {
         setViolations(e.problem.violations);
-      } else setError(errorMessage(e));
+      } else setError(errorDetails(e));
     } finally {
       busy.current = false;
       setPending(false);
@@ -68,7 +69,7 @@ export function ChangePasswordPage() {
   return (
     <AuthCard title={t('account.changePassword.title')} subtitle={t('account.changePassword.subtitle')}>
       <form onSubmit={submit} className="flex flex-col gap-4" noValidate>
-        {error && <Banner variant="error">{error}</Banner>}
+        {error && <Banner variant="error" code={error.code}>{error.message}</Banner>}
         <TextField
           label={t('account.changePassword.current')}
           type="password"

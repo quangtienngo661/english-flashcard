@@ -12,7 +12,7 @@ const wrapper = ({ children }: { children: ReactNode }) => (
 );
 
 const apiError = (over: Partial<Problem>) =>
-  new ApiError({ type: 'about:blank', slug: '', status: 500, title: 't', ...over } as Problem);
+  new ApiError({ type: 'about:blank', slug: '', status: 500, title: 't', ...over } as Problem, null);
 
 describe('useErrorDetails', () => {
   it('B25#19: an unknown problem with operation_id "op-123" gives the generic message and the code', () => {
