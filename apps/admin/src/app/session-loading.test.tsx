@@ -1,11 +1,11 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
 import { IntlProvider } from 'use-intl';
 import { describe, expect, it } from 'vitest';
 import vi from '../../messages/vi.json';
 import { SessionProvider } from '../auth/session-context';
 import { SessionStore } from '../auth/session-store';
-import { BASE, makeFetch, rateLimited } from '../auth/test-support';
+import { BASE, makeFetch, makeMe, problem, rateLimited, tokenResponse } from '../auth/test-support';
 import { AppRoutes } from './routes';
 
 function renderWith(store: SessionStore, path: string) {
@@ -45,4 +45,24 @@ describe('session loading (B25E30)', () => {
     expect(await screen.findByText(vi.errors['rate-limited'])).toBeInTheDocument();
     expect(screen.getByRole('heading', { level: 1, name: vi.account.login.title })).toBeInTheDocument();
   });
+
+  it('the unavailable state shows the text and a retry button that bootstraps again (FE36)', async () => {
+    let up = false;
+    const f = makeFetch({
+      'POST /v1/auth/refresh': () => (up ? tokenResponse('tok-1') : problem(503, 'unavailable')),
+      'GET /v1/me': () => Response.json(makeMe()),
+      'GET /v1/admin/x': () => Response.json({}),
+    });
+    const store = new SessionStore({ baseUrl: BASE, fetch: f.fetch, channel: null });
+    renderWith(store, '/uploads');
+    expect(await screen.findByText(vi.session.unavailable)).toBeInTheDocument();
+    up = true;
+    fireEvent.click(screen.getByRole('button', { name: vi.session.retry }));
+    await vi_waitSignedIn(store);
+    expect(screen.queryByText(vi.session.unavailable)).not.toBeInTheDocument();
+  });
 });
+
+async function vi_waitSignedIn(store: SessionStore) {
+  await waitFor(() => expect(store.state.status).toBe('signed-in'));
+}

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createApiClient } from '../api/client';
-import { ApiError } from '../api/problem';
+import { ApiError, NetworkError } from '../api/problem';
 import { SessionStore } from './session-store';
 import { BASE, channelHub, makeFetch, makeMe, problem, rateLimited, tokenResponse, type Call, type Route } from './test-support';
 
@@ -523,7 +523,7 @@ describe('SessionStore', () => {
     });
     await store.bootstrap();
     expect(refreshTries(calls)).toEqual([true, undefined]);
-    expect(store.state).toEqual({ status: 'signed-out', notice: null });
+    expect(store.state).toEqual({ status: 'unavailable' });
   });
 
   it('RK8: once the page has fired pagehide, a rejected keepalive refresh is not sent again (the browser finishes the keepalive one)', async () => {
@@ -573,5 +573,94 @@ describe('SessionStore', () => {
       new Set(['/v1/auth/login', '/v1/me', '/v1/auth/password/change', '/v1/x', '/v1/auth/logout']),
     );
     expect(others.every((c) => c.keepalive === undefined)).toBe(true);
+  });
+});
+
+describe('SessionStore: API unavailable (FE35-FE37)', () => {
+  const heardOn = (hub: ReturnType<typeof channelHub>) => {
+    const heard: unknown[] = [];
+    hub.create().addEventListener('message', (e) => heard.push(e.data));
+    return heard;
+  };
+
+  it('FE35: 401 then refresh 503 → offline (NetworkError), no logout call, no broadcast, token cleared', async () => {
+    const hub = channelHub();
+    const heard = heardOn(hub);
+    const f = makeFetch({
+      'POST /v1/auth/login': () => tokenResponse('tok-1'),
+      'GET /v1/me': ok(makeMe()),
+      'GET /v1/x': () => problem(401, 'invalid-token'),
+      'POST /v1/auth/refresh': () => problem(503, 'unavailable'),
+      'POST /v1/auth/logout': noContent,
+    });
+    const store = new SessionStore({ baseUrl: BASE, fetch: f.fetch, channel: hub.create() });
+    await store.login('s@example.com', 'pw');
+    heard.length = 0;
+    await expect(createApiClient({ send: store.send }).get('/v1/x')).rejects.toBeInstanceOf(NetworkError);
+    expect(f.count('POST', '/v1/auth/logout')).toBe(0);
+    expect(heard).toEqual([]);
+    expect(store.hasAccessToken).toBe(false);
+    expect(store.state.status).toBe('signed-in');
+  });
+
+  it('403 forbidden then refresh 503 → the response is returned, no logout', async () => {
+    const f = makeFetch({
+      'POST /v1/auth/login': () => tokenResponse('tok-1'),
+      'GET /v1/me': ok(makeMe()),
+      'GET /v1/x': () => problem(403, 'forbidden'),
+      'POST /v1/auth/refresh': () => problem(503, 'unavailable'),
+      'POST /v1/auth/logout': noContent,
+    });
+    const store = new SessionStore({ baseUrl: BASE, fetch: f.fetch, channel: null });
+    await store.login('s@example.com', 'pw');
+    await expect(createApiClient({ send: store.send }).get('/v1/x')).rejects.toMatchObject({ problem: { slug: 'forbidden' } });
+    expect(f.count('POST', '/v1/auth/logout')).toBe(0);
+    expect(store.state.status).toBe('signed-in');
+  });
+
+  it('FE36: bootstrap with refresh 503 → unavailable; retry with refresh ok → signed-in', async () => {
+    let up = false;
+    const { store } = newStore({
+      'POST /v1/auth/refresh': () => (up ? tokenResponse('tok-1') : problem(503, 'unavailable')),
+      'GET /v1/me': ok(makeMe()),
+    });
+    await store.bootstrap();
+    expect(store.state).toEqual({ status: 'unavailable' });
+    up = true;
+    await store.bootstrap();
+    expect(store.state).toMatchObject({ status: 'signed-in' });
+  });
+
+  it('Review Focus 4: unavailable then retry with refresh 401 → signed-out "expired"', async () => {
+    let up = false;
+    const { store } = newStore({
+      'POST /v1/auth/refresh': () => (up ? problem(401, 'invalid-token') : problem(503, 'unavailable')),
+    });
+    await store.bootstrap();
+    expect(store.state).toEqual({ status: 'unavailable' });
+    up = true;
+    await store.bootstrap();
+    expect(store.state).toEqual({ status: 'signed-out', notice: 'expired' });
+  });
+
+  it('FE37 (control): refresh 401 mid-session → logout("expired") as before', async () => {
+    const { store, count } = newStore({
+      'POST /v1/auth/login': () => tokenResponse('tok-1'),
+      'GET /v1/me': ok(makeMe()),
+      'GET /v1/x': () => problem(401, 'invalid-token'),
+      'POST /v1/auth/refresh': () => problem(401, 'invalid-token'),
+      'POST /v1/auth/logout': noContent,
+    });
+    await store.login('s@example.com', 'pw');
+    await expect(createApiClient({ send: store.send }).get('/v1/x')).rejects.toBeInstanceOf(ApiError);
+    expect(store.state).toEqual({ status: 'signed-out', notice: 'expired' });
+    expect(count('POST', '/v1/auth/logout')).toBe(1);
+  });
+
+  it('control: 429 three times → rate-limited as before', async () => {
+    const f = makeFetch({ 'POST /v1/auth/refresh': () => rateLimited(1) });
+    const store = new SessionStore({ baseUrl: BASE, fetch: f.fetch, channel: null, wait: async () => {} });
+    await store.bootstrap();
+    expect(store.state).toEqual({ status: 'signed-out', notice: 'rate-limited' });
   });
 });
