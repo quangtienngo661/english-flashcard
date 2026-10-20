@@ -46,7 +46,7 @@ under `apps/api` and `apps/admin`. Historical implementation branches:
   an example set run in the worker (`ai-eval` queue), status, costs and calls; 10 s per call with one quick retry, 24 h replay per operation
   id, a daily provider-call cap, content kept 7 days. Locally `AI_FAKE_ENABLED=true` and both keys empty; `OPENAI_CUSTOM_HEADERS` /
   `ANTHROPIC_CUSTOM_HEADERS` must stay unset or the app refuses to start (D29). The owner builds its admin screens later (D8).
-- **Bước 0–3 fixes** (API + admin session layer only, D8 of its design; PR #98–#101 + M5, 21/10/2026) are on `dev`: accounts with names, birth
+- **Bước 0–3 fixes** (API + admin session layer only, D8 of its design; PR #98–#102, 21/10/2026) are on `dev`: accounts with names, birth
   date (13+) and terms consent (`TERMS_VERSION` now required), account lock, admin user list, who reviewed/published/hid each sense, revert and
   re-upload safety, practice masking and single-answer fixes, admin session handling when the API is briefly down; no admin screens for them yet.
 
@@ -258,7 +258,7 @@ go through `pnpm ai:fake-call`.
 
 ## Sửa thiếu sót Bước 0–3 — plan & as-built
 
-`docs/deliveries/buoc-0-3-fixes.md` (plan tóm tắt 20/10/2026, as-built 21/10/2026; PR #98–#101 + M5 into `dev`; API 2096 unit, admin 329 unit; "Xong khi" =
+`docs/deliveries/buoc-0-3-fixes.md` (plan tóm tắt 20/10/2026, as-built 21/10/2026; PR #98–#102 into `dev`; API 2096 unit, admin 329 unit; "Xong khi" =
 CI green on every PR + the runtime gate of each milestone + `pnpm smoke:buoc-0-3-fixes` on a fresh DB, output in `docs/deliveries/buoc-0-3-fixes-smoke-output.txt`).
 Design, decisions (D1–D17) and plan: `docs/superpowers/{specs,decisions,plans}/2026-10-20-buoc-0-3-fixes*.md`. Every local `apps/api/.env` needs `TERMS_VERSION`.
 
