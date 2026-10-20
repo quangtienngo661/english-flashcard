@@ -9,7 +9,7 @@ const ACTOR = '00000000-0000-4000-8000-0000000000a1';
 
 type SenseRow = {
   id: string; entryId: string; state: string; liveRevisionId: string | null; replacesSenseId: string | null;
-  revisions: Array<{ id: string; revisionNo: number; status?: string; publishedAt: Date | null; texts: unknown[]; examples: string[] }>;
+  revisions: Array<{ id: string; revisionNo: number; status?: string; publishedAt: Date | null; publishedBy?: string | null; texts: unknown[]; examples: string[] }>;
 };
 
 function setup(sense: SenseRow | null) {
@@ -55,6 +55,19 @@ describe('PublishService audit columns (N3)', () => {
     await retired.service.retire(['s1'], ACTOR);
     expect(retired.tx.sense.update).toHaveBeenCalledWith({ where: { id: 's1' }, data: {
       state: 'retired', stateChangedBy: ACTOR, stateChangedAt: NOW } });
+  });
+
+  it('N3: a republish after unpublish keeps the original publisher and publish time as a pair', async () => {
+    const FIRST = '00000000-0000-4000-8000-0000000000b2';
+    const FIRST_AT = new Date('2026-10-01T08:00:00.000Z');
+    const base = ready({ state: 'unpublished', liveRevisionId: 'r1' });
+    const { service, tx } = setup({ ...base, revisions: [{ ...base.revisions[0], status: 'published', publishedAt: FIRST_AT,
+      publishedBy: FIRST }] });
+    await expect(service.publishItem({ senseId: 's1', revision: 2 }, ACTOR)).resolves.toEqual({ outcome: 'published' });
+    expect(tx.senseRevision.update).toHaveBeenCalledWith({ where: { id: 'r1' }, data: {
+      status: 'published', publishedAt: FIRST_AT, publishedBy: FIRST } });
+    expect(tx.sense.update).toHaveBeenCalledWith({ where: { id: 's1' }, data: {
+      state: 'open', liveRevisionId: 'r1', stateChangedBy: ACTOR, stateChangedAt: NOW } });
   });
 
   it('N3: publishing a replacement stamps the retired old sense with the publisher', async () => {
