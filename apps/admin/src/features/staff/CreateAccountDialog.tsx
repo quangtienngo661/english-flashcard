@@ -12,8 +12,10 @@ import { Dialog } from '../../ui/Dialog';
 import { Select } from '../../ui/Select';
 import { TextField } from '../../ui/TextField';
 import { PasswordRules } from '../account/PasswordRules';
+import { useCountdown } from '../account/useCountdown';
 import { createStaffAccount, type StaffRole } from './staff-api';
 
+const RATE_LIMIT_FALLBACK_SECONDS = 10;
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 type Props = { onClose: () => void; onCreated: () => void };
@@ -34,6 +36,7 @@ export function CreateAccountDialog({ onClose, onCreated }: Props) {
   const [confirmError, setConfirmError] = useState<string | null>(null);
   const [banner, setBanner] = useState<ErrorDetails | null>(null);
   const busy = useRef(false);
+  const wait = useCountdown();
   const mutation = useMutation({
     mutationFn: () =>
       createStaffAccount(api, {
@@ -58,13 +61,18 @@ export function CreateAccountDialog({ onClose, onCreated }: Props) {
   }
 
   async function submit() {
-    if (busy.current) return;
+    if (busy.current || wait.remaining > 0) return;
     busy.current = true;
     try {
       await mutation.mutateAsync();
       setStep('done');
       onCreated();
     } catch (e) {
+      if (e instanceof ApiError && e.problem.status === 429) {
+        // Stay on the confirmation: its button carries the countdown.
+        wait.start(e.retryAfterSeconds ?? RATE_LIMIT_FALLBACK_SECONDS);
+        return;
+      }
       setStep('form');
       if (e instanceof ApiError && e.problem.slug === 'email-taken') setEmailError(t('staff.create.emailTaken'));
       else setBanner(errorDetails(e));
@@ -98,8 +106,8 @@ export function CreateAccountDialog({ onClose, onCreated }: Props) {
             <Button variant="secondary" onPress={() => setStep('form')} isDisabled={mutation.isPending}>
               {t('staff.create.back')}
             </Button>
-            <Button onPress={() => void submit()} isPending={mutation.isPending}>
-              {t('staff.create.submit')}
+            <Button onPress={() => void submit()} isPending={mutation.isPending} isDisabled={wait.remaining > 0}>
+              {wait.remaining > 0 ? t('errors.retryIn', { seconds: wait.remaining }) : t('staff.create.submit')}
             </Button>
           </>
         }

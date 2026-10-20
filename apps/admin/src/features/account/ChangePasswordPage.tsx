@@ -11,6 +11,9 @@ import { TextField } from '../../ui/TextField';
 import { SessionLoading } from '../../app/SessionLoading';
 import { AuthCard } from './AuthCard';
 import { PasswordRules } from './PasswordRules';
+import { useCountdown } from './useCountdown';
+
+const RATE_LIMIT_FALLBACK_SECONDS = 10;
 
 /** Forced password change (spec §5): the only screen a staff user with `must_change_password` can reach. */
 export function ChangePasswordPage() {
@@ -27,6 +30,7 @@ export function ChangePasswordPage() {
   const [error, setError] = useState<ErrorDetails | null>(null);
   const [pending, setPending] = useState(false);
   const busy = useRef(false);
+  const wait = useCountdown();
 
   if (state.status === 'signed-out') return <Navigate to="/login" replace />;
   if (state.status === 'signed-in') return <Navigate to="/" replace />;
@@ -41,7 +45,7 @@ export function ChangePasswordPage() {
 
   async function submit(event: FormEvent) {
     event.preventDefault();
-    if (busy.current) return;
+    if (busy.current || wait.remaining > 0) return;
     setCurrentError(null);
     setConfirmError(null);
     setError(null);
@@ -56,7 +60,8 @@ export function ChangePasswordPage() {
     try {
       await store.changePassword(current, next);
     } catch (e) {
-      if (e instanceof ApiError && e.problem.slug === 'invalid-current-password') setCurrentError(errorMessage(e));
+      if (e instanceof ApiError && e.problem.status === 429) wait.start(e.retryAfterSeconds ?? RATE_LIMIT_FALLBACK_SECONDS);
+      else if (e instanceof ApiError && e.problem.slug === 'invalid-current-password') setCurrentError(errorMessage(e));
       else if (e instanceof ApiError && e.problem.slug === 'validation-failed' && e.problem.violations?.length) {
         setViolations(e.problem.violations);
       } else setError(errorDetails(e));
@@ -98,8 +103,8 @@ export function ChangePasswordPage() {
           onChange={setConfirm}
           error={confirmError ?? undefined}
         />
-        <Button type="submit" size="touch" isPending={pending} className="w-full">
-          {t('account.changePassword.submit')}
+        <Button type="submit" size="touch" isPending={pending} isDisabled={wait.remaining > 0} className="w-full">
+          {wait.remaining > 0 ? t('errors.retryIn', { seconds: wait.remaining }) : t('account.changePassword.submit')}
         </Button>
         <Button variant="ghost" onPress={() => void store.logout()}>
           {t('account.changePassword.logout')}

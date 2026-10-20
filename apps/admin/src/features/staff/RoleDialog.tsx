@@ -7,7 +7,10 @@ import { useApi } from '../../auth/session-context';
 import { Banner } from '../../ui/Banner';
 import { Button } from '../../ui/Button';
 import { Dialog } from '../../ui/Dialog';
+import { useCountdown } from '../account/useCountdown';
 import { setStaffRole, type StaffRole, type StaffUser } from './staff-api';
+
+const RATE_LIMIT_FALLBACK_SECONDS = 10;
 
 type Props = {
   target: StaffUser;
@@ -26,6 +29,7 @@ export function RoleDialog({ target, role, isSelf, onClose, onDone }: Props) {
   const errorDetails = useErrorDetails();
   const [error, setError] = useState<ErrorDetails | null>(null);
   const busy = useRef(false);
+  const wait = useCountdown();
   const losesAdmin = target.staff_role === 'admin' && role !== 'admin';
   const selfDemotion = isSelf && losesAdmin;
 
@@ -51,13 +55,15 @@ export function RoleDialog({ target, role, isSelf, onClose, onDone }: Props) {
   }
 
   async function confirm() {
-    if (busy.current) return;
+    if (busy.current || wait.remaining > 0) return;
     busy.current = true;
     setError(null);
     try {
       onDone(await mutation.mutateAsync());
     } catch (e) {
-      if (e instanceof ApiError && e.problem.slug === 'staff-role-rule') {
+      if (e instanceof ApiError && e.problem.status === 429) {
+        wait.start(e.retryAfterSeconds ?? RATE_LIMIT_FALLBACK_SECONDS);
+      } else if (e instanceof ApiError && e.problem.slug === 'staff-role-rule') {
         // The API names one rule for two cases: the last admin cannot be demoted; an unverified user cannot be granted.
         setError({ message: t(losesAdmin ? 'staff.dialog.lastAdmin' : 'staff.card.unverifiedHint'), code: null });
       } else {
@@ -79,8 +85,8 @@ export function RoleDialog({ target, role, isSelf, onClose, onDone }: Props) {
           <Button variant="secondary" onPress={onClose} isDisabled={mutation.isPending}>
             {t('common.cancel')}
           </Button>
-          <Button variant={danger ? 'danger' : 'primary'} onPress={() => void confirm()} isPending={mutation.isPending}>
-            {confirmLabel}
+          <Button variant={danger ? 'danger' : 'primary'} onPress={() => void confirm()} isPending={mutation.isPending} isDisabled={wait.remaining > 0}>
+            {wait.remaining > 0 ? t('errors.retryIn', { seconds: wait.remaining }) : confirmLabel}
           </Button>
         </>
       }

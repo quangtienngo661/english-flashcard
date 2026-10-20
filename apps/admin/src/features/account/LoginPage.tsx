@@ -1,6 +1,7 @@
 import { useRef, useState, type FormEvent } from 'react';
 import { Link, Navigate, useLocation } from 'react-router';
 import { useTranslations } from 'use-intl';
+import { ApiError } from '../../api/problem';
 import { useErrorDetails, type ErrorDetails } from '../../api/use-error-message';
 import { SessionLoading } from '../../app/SessionLoading';
 import { useSession } from '../../auth/session-context';
@@ -8,6 +9,9 @@ import { Banner } from '../../ui/Banner';
 import { Button } from '../../ui/Button';
 import { TextField } from '../../ui/TextField';
 import { AuthCard } from './AuthCard';
+import { useCountdown } from './useCountdown';
+
+const RATE_LIMIT_FALLBACK_SECONDS = 10;
 
 export function LoginPage() {
   const t = useTranslations();
@@ -21,6 +25,7 @@ export function LoginPage() {
   const [pending, setPending] = useState(false);
   const busy = useRef(false);
   const [retrying, setRetrying] = useState(false);
+  const wait = useCountdown();
 
   if (state.status === 'signed-in') return <Navigate to={from ?? '/'} replace />;
   if (state.status === 'change-password') return <Navigate to="/change-password" replace />;
@@ -37,7 +42,8 @@ export function LoginPage() {
     try {
       await store.login(email.trim(), password);
     } catch (e) {
-      setError(errorDetails(e));
+      if (e instanceof ApiError && e.problem.status === 429) wait.start(e.retryAfterSeconds ?? RATE_LIMIT_FALLBACK_SECONDS);
+      else setError(errorDetails(e));
     } finally {
       busy.current = false;
       setPending(false);
@@ -94,8 +100,8 @@ export function LoginPage() {
             {t('account.login.forgot')}
           </Link>
         </div>
-        <Button type="submit" size="touch" isPending={pending} className="w-full">
-          {t('account.login.submit')}
+        <Button type="submit" size="touch" isPending={pending} isDisabled={wait.remaining > 0} className="w-full">
+          {wait.remaining > 0 ? t('errors.retryIn', { seconds: wait.remaining }) : t('account.login.submit')}
         </Button>
       </form>
     </AuthCard>
