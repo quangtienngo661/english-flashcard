@@ -74,6 +74,34 @@ describe('prefilterRows content-applied rows (T3, D14)', () => {
     expect(result.toProcess).toHaveLength(1);
   });
 
+  it.each<[string, NormalizedRow['formOf']]>([
+    ['relink', { lemma: 'apple', pos: 'noun', kind: 'plural' }],
+    ['clear (-)', 'clear'],
+  ])('a row whose key and hash match but carries a form_of cell is not content-applied (%s)', async (_label, formOf) => {
+    const normalized = row({ formOf });
+    const db = fakeDb([contentRowKey(normalized, 'batch-a')],
+      [{ id: 'batch-a', fileSha256: 'sha-f', levelSourceId: null, revertedAt: null }]);
+
+    const result = await prefilterRows(db, [fileRow(normalized)], current);
+
+    expect(result.contentAppliedRows).toEqual(new Set());
+    expect(result.toProcess).toHaveLength(1);
+  });
+
+  it('revert: once batch A (which wrote the content) is reverted, a row batch B only content-applied is processed again', async () => {
+    const normalized = row();
+    // B content-applied the row and, applying no content, wrote no content key (see row-processor.spec); A is reverted.
+    const db = fakeDb([contentRowKey(normalized, 'batch-a')], [
+      { id: 'batch-a', fileSha256: 'sha-f', levelSourceId: null, revertedAt: new Date('2026-10-21T00:00:00Z') },
+      { id: 'batch-b', fileSha256: 'sha-g', levelSourceId: null, revertedAt: null },
+    ]);
+
+    const result = await prefilterRows(db, [fileRow(normalized)], { batchId: 'batch-c', levelSourceId: null, fileSha256: 'sha-f' });
+
+    expect(result.contentAppliedRows).toEqual(new Set());
+    expect(result.toProcess).toHaveLength(1);
+  });
+
   it('the current batch\'s own key (crash retry) and a different content hash do not count', async () => {
     const normalized = row();
     const edited = { ...contentRowKey(normalized, 'batch-a'), contentHash: rowContentHash(row({ content: { glossVi: 'quả táo', examplesEn: ['Y'] } })) };

@@ -18,8 +18,8 @@ export function rowContentHash(row: NormalizedRow): string {
  * D13 is deliberately conservative: level keys hash identity, NOT level/variants. Require a
  * successful corresponding row from identical file bytes before bypassing the row processor.
  * Content patches needing a merge, and sense_id guards, remain the processor's responsibility.
- * contentAppliedRows (D14): a row without sense_id whose content key and hash any other non-reverted batch already
- * applied, whatever its file bytes or level source; the processor then leaves its content alone.
+ * contentAppliedRows (D14): a row without sense_id or form_of whose content key and hash any other non-reverted batch
+ * already applied, whatever its file bytes or level source; the processor then leaves its content alone.
  */
 export async function prefilterRows(
   db: Pick<Prisma.TransactionClient, 'importRowKey' | 'importRowOutcome'>,
@@ -106,7 +106,8 @@ export async function prefilterRows(
   const contentAppliedRows = new Set<number>();
   for (const { row, keys } of surviving) {
     const content = keys.find(({ kind }) => kind === 'content');
-    if (row.normalized.senseId === null && content && appliedContent.has(signature(content))) {
+    // form_of is not part of the row's content hash, so a row carrying a form_of cell is always applied again.
+    if (row.normalized.senseId === null && row.normalized.formOf === null && content && appliedContent.has(signature(content))) {
       contentAppliedRows.add(row.normalized.rowNumber);
     }
     const firstMatch = keys.length > 0 ? matches.get(signature(keys[0])) : undefined;

@@ -52,7 +52,8 @@ describe('ImportRowProcessor content-applied rows (T3, D14)', () => {
     expect(content.importContent).not.toHaveBeenCalled();
     expect(content.addImportedLevel).toHaveBeenCalledWith(tx, expect.objectContaining({ entryId: 'entry-1', level: 'A1' }));
     expect(result).toEqual({ outcome: 'updated' });
-    expect(tx.importRowKey.createMany).toHaveBeenCalledWith(contentKeyWrite(normalized, 'batch-b'));
+    // It applied no content, so it keeps no content key: reverting the batch that did frees the row (fix round 1).
+    expect(tx.importRowKey.createMany).not.toHaveBeenCalledWith(contentKeyWrite(normalized, 'batch-b'));
   });
 
   it('FE18: contentApplied with an inflections cell still restores the reviewed set', async () => {
@@ -78,8 +79,7 @@ describe('ImportRowProcessor content-applied rows (T3, D14)', () => {
     ['created', { kind: 'created_sense', senseId: 'sense-1', revisionId: 'rev-1' }],
     ['new_revision', { kind: 'new_revision', senseId: 'sense-1', revisionId: 'rev-2', supersededRevisionId: 'rev-1',
       droppedReviewedMark: false, droppedTopics: [] }],
-    ['unchanged', { kind: 'unchanged', senseId: 'sense-1' }],
-  ])('the processor writes the content key after created, new_revision and unchanged outcomes (%s)', async (_label, importResult) => {
+  ])('the processor writes the content key after created and new_revision outcomes (%s)', async (_label, importResult) => {
     const { tx, content, ctx, processor, batch } = setup({ importResult });
     const normalized = row();
 
@@ -87,6 +87,16 @@ describe('ImportRowProcessor content-applied rows (T3, D14)', () => {
 
     expect(content.importContent).toHaveBeenCalledOnce();
     expect(tx.importRowKey.createMany).toHaveBeenCalledWith(contentKeyWrite(normalized, 'batch-b'));
+  });
+
+  it('not after an unchanged content outcome', async () => {
+    const { tx, content, ctx, processor, batch } = setup({ importResult: { kind: 'unchanged', senseId: 'sense-1' } });
+
+    await processor.process(ctx, batch, row(), { contentApplied: false });
+
+    expect(content.importContent).toHaveBeenCalledOnce();
+    expect(tx.importRowKey.createMany).not.toHaveBeenCalledWith(expect.objectContaining({
+      data: [expect.objectContaining({ kind: 'content' })] }));
   });
 
   it('a rejected content step writes no content key', async () => {
@@ -97,5 +107,22 @@ describe('ImportRowProcessor content-applied rows (T3, D14)', () => {
     expect(result.outcome).toBe('rejected');
     expect(tx.importRowKey.createMany).not.toHaveBeenCalledWith(expect.objectContaining({
       data: [expect.objectContaining({ kind: 'content' })] }));
+  });
+});
+
+describe('ImportRowProcessor form_of rows (T3 fix round 1)', () => {
+  it.each<[string, NormalizedRow['formOf']]>([
+    ['relink', { lemma: 'go', pos: 'verb', kind: 'past' }],
+    ['clear (-)', 'clear'],
+  ])('a row with a form_of cell runs importContent when not content-applied (%s)', async (_label, formOf) => {
+    const { tx, content, ctx, processor, batch } = setup({ importResult: { kind: 'new_revision', senseId: 'sense-1', revisionId: 'rev-2',
+      supersededRevisionId: 'rev-1', droppedReviewedMark: false, droppedTopics: [] } });
+    (tx as unknown as { entry: { findFirst: unknown } }).entry.findFirst = vi.fn(async () => ({ id: 'entry-base' }));
+    const normalized = row({ content: {}, formOf });
+
+    await processor.process(ctx, batch, normalized, { contentApplied: false });
+
+    expect(content.importContent).toHaveBeenCalledWith(tx, expect.objectContaining({
+      content: { formOf: formOf === 'clear' ? null : { entryId: 'entry-base', kind: 'past' } } }));
   });
 });

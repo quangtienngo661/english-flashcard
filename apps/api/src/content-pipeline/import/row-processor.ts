@@ -94,13 +94,11 @@ export class ImportRowProcessor {
                 ? { meta: { replacedRevisionId: result.supersededRevisionId,
                   replacedRevisionPreviousStatus: result.droppedReviewedMark ? 'reviewed' : 'draft' } } : {}),
             });
+            // Only the batch that wrote this content keeps its key (T3, D14): reverting that batch then frees the row again.
+            await tx.importRowKey.createMany({ data: [{
+              kind: 'content', sourceId: OWNER_SOURCE_ID, rowKey: contentKey(row).key, contentHash: rowContentHash(row), batchId: batch.id,
+            }], skipDuplicates: true });
           }
-        }
-        if (row.content !== null) {
-          // Rejected rows threw above. Every version of a row ever applied keeps its own key (T3, D14).
-          await tx.importRowKey.createMany({ data: [{
-            kind: 'content', sourceId: OWNER_SOURCE_ID, rowKey: contentKey(row).key, contentHash: rowContentHash(row), batchId: batch.id,
-          }], skipDuplicates: true });
         }
 
         if (changes.entryCreated && row.inflections === null) {
