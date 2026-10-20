@@ -22,12 +22,12 @@ type Where = Partial<Pick<Row, 'key' | 'userId' | 'endpoint' | 'status'>>;
 function fakePrisma(options: { locked?: boolean } = {}) {
   let rows: Row[] = [];
   const events: string[] = [];
-  const failNext: { create?: unknown; updateMany?: unknown } = {};
+  const failNext: { create?: unknown; updateMany?: unknown; deleteMany?: unknown } = {};
   let transactions = 0;
 
   const matches = (row: Row, where: Where) =>
     Object.entries(where).every(([field, value]) => row[field as keyof Row] === value);
-  const takeFailure = (op: 'create' | 'updateMany') => {
+  const takeFailure = (op: 'create' | 'updateMany' | 'deleteMany') => {
     const failure = failNext[op];
     delete failNext[op];
     if (failure) throw failure;
@@ -57,6 +57,7 @@ function fakePrisma(options: { locked?: boolean } = {}) {
     },
     deleteMany: async ({ where }: { where: Where }) => {
       events.push(`${prefix}deleteMany`);
+      takeFailure('deleteMany');
       const before = rows.length;
       rows = rows.filter((row) => !matches(row, where));
       return { count: before - rows.length };
@@ -179,6 +180,16 @@ describe('runIdempotent: claim, run, finish (C1)', () => {
 
     const retry = await runIdempotent(fake.prisma, params, async () => ({ status: 201, body: { id: 'b' } }), { now: () => at(1) });
     expect(retry).toEqual({ kind: 'proceed', status: 201, body: { id: 'b' } });
+  });
+
+  it('FE30: the handler throws and releasing the key also fails → the handler\'s error propagates and the row stays in_progress', async () => {
+    const fake = fakePrisma();
+    const failure = new Error('handler failed');
+    fake.failNext.deleteMany = new Error('release failed');
+
+    await expect(runIdempotent(fake.prisma, params, async () => { throw failure; }, { now: () => t0 })).rejects.toBe(failure);
+    expect(fake.events).toEqual(['tx1:create', 'tx1:commit', 'deleteMany']);
+    expect(fake.rows()).toEqual([expect.objectContaining({ status: 'in_progress' })]);
   });
 
   it('FE31: the finish write fails → the error propagates and the row stays in_progress', async () => {

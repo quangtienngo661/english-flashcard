@@ -71,7 +71,9 @@ export async function runIdempotent<T>(
   try {
     response = await handler();
   } catch (error) {
-    await prisma.idempotencyKey.deleteMany({ where: claimed });
+    // The handler's error is what the client must see; if releasing the key fails too, the row stays in_progress and a
+    // retry past the lease is told the key was abandoned.
+    await prisma.idempotencyKey.deleteMany({ where: claimed }).catch(() => undefined);
     throw error;
   }
 
