@@ -212,7 +212,16 @@ const envSchema = z.object({
   AI_FAKE_ENABLED: booleanString.default(false),
   OPENAI_API_KEY: z.string().optional().transform((value) => value?.trim() || null),
   ANTHROPIC_API_KEY: z.string().optional().transform((value) => value?.trim() || null),
+  // Read by the AI SDKs themselves, which add these headers to every provider call; no client option turns them off (D29).
+  OPENAI_CUSTOM_HEADERS: z.string().optional(),
+  ANTHROPIC_CUSTOM_HEADERS: z.string().optional(),
 }).superRefine((values, ctx) => {
+  // Empty or blank counts as unset, as the SDKs' own readEnv does.
+  for (const name of ['OPENAI_CUSTOM_HEADERS', 'ANTHROPIC_CUSTOM_HEADERS'] as const) {
+    if (values[name]?.trim()) {
+      ctx.addIssue({ code: 'custom', path: [name], message: 'must be unset: the AI SDK would add these headers to every provider call (D29)' });
+    }
+  }
   if (values.BILLING_PRODUCTION && values.BILLING_FAKE_ENABLED) {
     const message = 'The fake billing provider is not allowed in production';
     ctx.addIssue({ code: 'custom', path: ['BILLING_PRODUCTION'], message });

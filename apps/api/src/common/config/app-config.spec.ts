@@ -297,4 +297,28 @@ describe('loadConfig', () => {
   it('ai.test allows 20 per hour per user', () => {
     expect(loadConfig(validEnv()).limits['ai.test']).toEqual({ by: 'user', max: 20, windowSeconds: 3600 });
   });
+
+  it.each(['OPENAI_CUSTOM_HEADERS', 'ANTHROPIC_CUSTOM_HEADERS'])('D29: %s set → refuses to start, naming the variable, never its value', (name) => {
+    const env = { ...validEnv(), [name]: 'OpenAI-Organization: org-x' };
+    expect(env[name]).toContain('org-x');
+    let message = '';
+    try {
+      loadConfig(env);
+    } catch (error) {
+      message = (error as Error).message;
+    }
+    expect(message).toContain(name);
+    expect(message).not.toContain('org-x');
+  });
+
+  it.each(['', '   '])('D29: custom-header variables set to %j → starts as if unset', (value) => {
+    expect(() => loadConfig({ ...validEnv(), OPENAI_CUSTOM_HEADERS: value, ANTHROPIC_CUSTOM_HEADERS: value })).not.toThrow();
+  });
+
+  it('D29: custom-header variables unset → starts', () => {
+    const env = validEnv();
+    expect(env.OPENAI_CUSTOM_HEADERS).toBeUndefined();
+    expect(env.ANTHROPIC_CUSTOM_HEADERS).toBeUndefined();
+    expect(() => loadConfig(env)).not.toThrow();
+  });
 });
