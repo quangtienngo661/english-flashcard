@@ -14,6 +14,7 @@ function setup(count: number) {
   settings.content.privateWordsPerUser = 1200;
   const tx = {
     $executeRaw: vi.fn(async () => 0),
+    $queryRaw: vi.fn(async (_s: TemplateStringsArray, ..._v: unknown[]) => [] as Array<{ id: string }>),
     topic: { count: vi.fn(async () => 0) },
     entry: {
       findFirst: vi.fn(async () => null),
@@ -44,6 +45,25 @@ describe('PrivateWordsService.createPrivateSense', () => {
     const { service, tx, settingsService } = setup(1199);
     await expect(service.createPrivateSense(tx as unknown as Prisma.TransactionClient, input)).rejects.toBeInstanceOf(PassedCheck);
     expect(settingsService.get).toHaveBeenCalledWith(tx);
+  });
+});
+
+describe('PrivateWordsService form_of base check (FE22)', () => {
+  const withFormOf = { ...input, formOf: { entryId: 'base1', kind: 'past' as never } };
+  it('FE22: the form_of check of a private word takes FOR SHARE on the base entry', async () => {
+    const { service, tx } = setup(0);
+    tx.$queryRaw.mockResolvedValueOnce([{ id: 'base1' }]);
+    await expect(service.createPrivateSense(tx as unknown as Prisma.TransactionClient, withFormOf)).rejects.toBeInstanceOf(PassedCheck);
+    const [strings, ...values] = tx.$queryRaw.mock.calls[0]!;
+    expect(strings.join('?').replace(/\s+/g, ' ')).toMatch(/FROM entries WHERE id = \?::uuid AND \(scope = 'catalog' OR \(scope = 'private' AND owner_user_id = \?::uuid\)\) FOR SHARE/);
+    expect(values).toEqual(['base1', 'u1']);
+  });
+
+  it('FE22: no visible base row → not-found', async () => {
+    const { service, tx } = setup(0);
+    await expect(service.createPrivateSense(tx as unknown as Prisma.TransactionClient, withFormOf))
+      .rejects.toMatchObject({ message: expect.stringContaining('not-found') });
+    expect(tx.entry.create).not.toHaveBeenCalled();
   });
 });
 

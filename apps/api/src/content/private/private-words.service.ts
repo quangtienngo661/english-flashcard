@@ -130,9 +130,11 @@ export class PrivateWordsService {
     if (input.level !== null && !LEVELS.includes(input.level)) throw invalid();
     await this.lockOwner(tx, input.ownerId);
     const topicCodes = await this.validTopics(tx, input.topicCodes);
-    if (input.formOf && !await tx.entry.findFirst({ where: { id: input.formOf.entryId,
-      OR: [{ scope: 'catalog' }, { scope: 'private', ownerUserId: input.ownerId }] }, select: { id: true } })) {
-      throw new ContentRuleError('not-found');
+    if (input.formOf) {
+      // FE22: FOR SHARE blocks a concurrent batch revert (FOR UPDATE) from deleting the base entry under us.
+      const base = await tx.$queryRaw<Array<{ id: string }>>`SELECT id FROM entries WHERE id = ${input.formOf.entryId}::uuid
+        AND (scope = 'catalog' OR (scope = 'private' AND owner_user_id = ${input.ownerId}::uuid)) FOR SHARE`;
+      if (base.length === 0) throw new ContentRuleError('not-found');
     }
 
     let entry = await tx.entry.findFirst({ where: { scope: 'private', ownerUserId: input.ownerId, language: 'en', lemma, pos } });

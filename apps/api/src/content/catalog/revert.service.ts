@@ -78,6 +78,8 @@ async function restoreRevision(
 
 async function revertEntry(tx: Prisma.TransactionClient, entryId: string, records: RevertRecord[]): Promise<RevertReport> {
   const report = emptyReport();
+  // FE22: row lock first, so a concurrent private word cannot add a form_of link between our check and the delete.
+  await tx.$queryRaw`SELECT id FROM entries WHERE id = ${entryId}::uuid FOR UPDATE`;
   const ids = (type: RevertRecordType) => records.filter((record) => record.type === type).map((record) => record.id);
   const revisionRecords = new Map(records.filter((record) => record.type === 'revision').map((record) => [record.id, record]));
   const revisions = revisionRecords.size ? await tx.senseRevision.findMany({
@@ -129,12 +131,16 @@ async function revertEntry(tx: Prisma.TransactionClient, entryId: string, record
 
   const levelIds = new Set(ids('level'));
   if (levelIds.size) {
-    const allLevels = await tx.entryLevel.findMany({ where: { entryId }, select: { id: true }, orderBy: { id: 'asc' } });
+    const allLevels = await tx.entryLevel.findMany({ where: { entryId }, select: { id: true, basis: true }, orderBy: { id: 'asc' } });
     const levels = allLevels.filter((level) => levelIds.has(level.id));
     let remaining = allLevels.length; // Across every source, updated after each actual deletion.
     // CR5 protects currently live content; publication history alone does not require a level.
     const published = levels.length ? await tx.sense.findFirst({ where: { entryId, state: 'open', liveRevisionId: { not: null } }, select: { id: true } }) : null;
     for (const level of levels) {
+      if (level.basis === 'editorial') { // Staff confirmed this level after the import.
+        report.skipped.push({ type: 'level', id: level.id, reason: 'level-confirmed' });
+        continue;
+      }
       if (published && remaining === 1) {
         report.skipped.push({ type: 'level', id: level.id, reason: 'only-level-of-published-entry' });
         continue;
@@ -146,6 +152,14 @@ async function revertEntry(tx: Prisma.TransactionClient, entryId: string, record
   }
   if (ids('variant').length) report.removed.variant += (await tx.entryVariant.deleteMany({ where: { id: { in: ids('variant') }, entryId } })).count;
   if (ids('entry').includes(entryId)) {
+    // A reviewed inflection set or a form_of link (any revision, any scope) means others rely on this entry.
+    const reviewed = await tx.entry.findUnique({ where: { id: entryId }, select: { inflectionsReviewedAt: true } });
+    const referenced = reviewed?.inflectionsReviewedAt == null
+      ? await tx.senseRevision.findFirst({ where: { formOfEntryId: entryId }, select: { id: true } }) : null;
+    if (reviewed?.inflectionsReviewedAt != null || referenced) {
+      report.skipped.push({ type: 'entry', id: entryId, reason: 'entry-in-use' });
+      return report;
+    }
     // Kept entries with remaining content are ordinary non-events, not additional skips.
     report.removed.entry += (await tx.entry.deleteMany({ where: {
       id: entryId, senses: { none: {} }, levels: { none: {} }, variants: { none: {} },
