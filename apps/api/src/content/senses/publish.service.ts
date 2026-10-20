@@ -119,7 +119,7 @@ export class PublishService {
       await tx.senseRevision.update({ where: { id: sense.liveRevisionId }, data: { status: 'superseded' } });
     }
     await tx.senseRevision.update({ where: { id: revision.id }, data: {
-      status: 'published', publishedAt: revision.publishedAt ?? now, publishedBy: actorId,
+      status: 'published', publishedAt: revision.publishedAt ?? now, publishedBy: revision.publishedBy ?? actorId,
     } });
     await tx.sense.update({ where: { id: sense.id }, data: {
       state: 'open', liveRevisionId: revision.id, stateChangedBy: actorId, stateChangedAt: now,
