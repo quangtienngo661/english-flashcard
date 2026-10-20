@@ -10,6 +10,11 @@ const ENTITLEMENT_DEFAULTS_API = {
   ai_cap_alert_percent: 75, ads_enabled: false, ads_interstitial_per_day: 3, ads_min_interval_minutes: 10,
 };
 
+const AI_DEFAULTS_API = {
+  call_timeout_seconds: 10, max_concurrent_calls: 50, daily_provider_calls_cap: 3000, content_retention_days: 7,
+  usd_vnd_rate: 26100,
+};
+
 const issues = (input: unknown) => {
   const result = settingsValuesPatchSchema.safeParse(input);
   return result.success ? [] : result.error.issues.map((issue) => issue.path.join('.'));
@@ -29,6 +34,7 @@ describe('settings definitions', () => {
       },
       entitlements: ENTITLEMENT_DEFAULTS_API,
       content: { private_words_per_user: 10000, sentences_per_sense: 20 },
+      ai: AI_DEFAULTS_API,
     });
   });
 
@@ -57,7 +63,7 @@ describe('settings definitions', () => {
 
   it('toApiValues names every new key in snake_case', () => {
     const api = toApiValues(SETTINGS_DEFAULTS);
-    expect(Object.keys(api)).toEqual(['reminders', 'learning', 'practice', 'entitlements', 'content']);
+    expect(Object.keys(api)).toEqual(['reminders', 'learning', 'practice', 'entitlements', 'content', 'ai']);
     expect(Object.keys(api.entitlements)).toEqual(Object.keys(ENTITLEMENT_DEFAULTS_API));
     for (const section of Object.values(api)) {
       for (const key of Object.keys(section)) expect(key).toMatch(/^[a-z]+(_[a-z]+)*$/);
@@ -228,5 +234,60 @@ describe('settings definitions', () => {
     expect(values.reminders).toEqual({ ...SETTINGS_DEFAULTS.reminders, sendTime: '21:00' });
     expect(values.reminders.minGapDays).toBe(2);
     expect(toApiValues(values).reminders).not.toHaveProperty('weekly_max');
+  });
+
+  it('ai defaults are 10, 50, 3000, 7, 26100', () => {
+    expect(toApiValues(SETTINGS_DEFAULTS).ai).toEqual(AI_DEFAULTS_API);
+    expect(Object.values(toApiValues(SETTINGS_DEFAULTS).ai)).toEqual([10, 50, 3000, 7, 26100]);
+  });
+
+  it('withDefaults fills the ai group for JSON stored before Bước 6 and keeps a stored null cap', () => {
+    const before6 = { reminders: {}, learning: {}, practice: {}, entitlements: { aiDailyCap: 500 }, content: {} };
+    const values = withDefaults(before6);
+    expect(values.ai).toEqual(SETTINGS_DEFAULTS.ai);
+    expect(values.entitlements.aiDailyCap).toBe(500);
+    expect(withDefaults({ ai: { dailyProviderCallsCap: null } }).ai.dailyProviderCallsCap).toBeNull();
+    expect(withDefaults({ ai: { usdVndRate: 25000 } }).ai).toEqual({ ...SETTINGS_DEFAULTS.ai, usdVndRate: 25000 });
+  });
+
+  it('toApiValues names the five keys in snake_case', () => {
+    expect(Object.keys(toApiValues(SETTINGS_DEFAULTS).ai)).toEqual([
+      'call_timeout_seconds', 'max_concurrent_calls', 'daily_provider_calls_cap', 'content_retention_days', 'usd_vnd_rate',
+    ]);
+  });
+
+  it('patch schema rejects min − 1 and max + 1 for every ai key', () => {
+    const edges: Array<[string, number, number]> = [
+      ['call_timeout_seconds', 3, 30], ['max_concurrent_calls', 1, 500], ['daily_provider_calls_cap', 0, 1_000_000],
+      ['content_retention_days', 0, 30], ['usd_vnd_rate', 10_000, 100_000],
+    ];
+    for (const [key, min, max] of edges) {
+      expect(issues({ ai: { [key]: min } }), `${key}=${min}`).toEqual([]);
+      expect(issues({ ai: { [key]: max } }), `${key}=${max}`).toEqual([]);
+      expect(issues({ ai: { [key]: min - 1 } }), `${key}=${min - 1}`).toEqual([`ai.${key}`]);
+      expect(issues({ ai: { [key]: max + 1 } }), `${key}=${max + 1}`).toEqual([`ai.${key}`]);
+      expect(issues({ ai: { [key]: min + 0.5 } }), `${key}=${min + 0.5}`).toEqual([`ai.${key}`]);
+    }
+    expect(issues({ ai: { other: 1 } })).toEqual(['ai']);
+  });
+
+  it('accepts null only for daily_provider_calls_cap', () => {
+    for (const key of Object.keys(AI_DEFAULTS_API)) {
+      expect(issues({ ai: { [key]: null } }), key).toEqual(key === 'daily_provider_calls_cap' ? [] : [`ai.${key}`]);
+    }
+    const patched = applyPatch(SETTINGS_DEFAULTS, { ai: { daily_provider_calls_cap: null } });
+    expect(patched.ai.dailyProviderCallsCap).toBeNull();
+  });
+
+  it('accepts 0 for daily_provider_calls_cap and content_retention_days', () => {
+    expect(issues({ ai: { daily_provider_calls_cap: 0, content_retention_days: 0 } })).toEqual([]);
+    const patched = applyPatch(SETTINGS_DEFAULTS, { ai: { daily_provider_calls_cap: 0, content_retention_days: 0 } });
+    expect([patched.ai.dailyProviderCallsCap, patched.ai.contentRetentionDays]).toEqual([0, 0]);
+    expect(crossFieldViolations(patched)).toEqual([]);
+  });
+
+  it('changedFields reports ai.max_concurrent_calls 50 → 1', () => {
+    const next = applyPatch(SETTINGS_DEFAULTS, { ai: { max_concurrent_calls: 1 } });
+    expect(changedFields(SETTINGS_DEFAULTS, next)).toEqual([{ key: 'ai.max_concurrent_calls', oldValue: 50, newValue: 1 }]);
   });
 });

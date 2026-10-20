@@ -1,0 +1,212 @@
+// AI Integration (Bước 6, design §11). Every user/actor id is a plain UUID: no relation crosses a module boundary. The only foreign
+// key is inside the module (ai_operation_settings.model_ref → ai_models.id, ON DELETE RESTRICT).
+// CHECKs on the enum columns live in the migration (as practice.prisma, entitlements.prisma).
+
+// One model an admin added (design §6.1). Unknown information is null; unknown effort levels are stored as [] (plan choice 9).
+model AiModel {
+  id                String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  // openai | anthropic | fake (CHECK).
+  provider          String
+  modelId           String    @map("model_id")
+  shutdownAt        DateTime? @map("shutdown_at") @db.Timestamptz
+  // active | deprecated | retired (CHECK; Anthropic only).
+  lifecycle         String?
+  effortLevels      String[]  @default([]) @map("effort_levels")
+  // disabled | between_tools (CHECK): how this model turns thinking off.
+  thinkingOff       String?   @map("thinking_off")
+  structuredOutputs Boolean?  @map("structured_outputs")
+  maxOutputTokens   Int?      @map("max_output_tokens")
+  // USD per million tokens, typed by the admin (design §6.5).
+  priceInput        Decimal?  @map("price_input") @db.Decimal(12, 4)
+  priceCachedInput  Decimal?  @map("price_cached_input") @db.Decimal(12, 4)
+  priceOutput       Decimal?  @map("price_output") @db.Decimal(12, 4)
+  note              String?
+  // Always written from Clock (no database default).
+  infoCheckedAt     DateTime  @map("info_checked_at") @db.Timestamptz
+  createdBy         String    @map("created_by") @db.Uuid
+  createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt         DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  operationSettings AiOperationSetting[]
+
+  @@unique([provider, modelId])
+  @@map("ai_models")
+}
+
+// The choice of one operation (design §6.3): three rows seeded by the migration; model_ref null = the operation is off (D9).
+model AiOperationSetting {
+  // generate_cloze | lookup_word | translate_sentence (CHECK).
+  operation       String    @id
+  modelRef        String?   @map("model_ref") @db.Uuid
+  effort          String?
+  // 'off' (CHECK) or null; resolved to the model's thinking_off at call time (plan choice 9).
+  thinking        String?
+  // > 0 (CHECK); null = no limit (D25).
+  maxOutputTokens Int?      @map("max_output_tokens")
+  version         Int       @default(0)
+  updatedBy       String?   @map("updated_by") @db.Uuid
+  updatedAt       DateTime  @default(now()) @map("updated_at") @db.Timestamptz
+
+  model AiModel? @relation(fields: [modelRef], references: [id], onDelete: Restrict)
+
+  @@map("ai_operation_settings")
+}
+
+// One change of an operation's choice (append-only).
+model AiOperationSettingChange {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  operation String
+  oldValue  Json     @map("old_value")
+  newValue  Json     @map("new_value")
+  changedBy String   @map("changed_by") @db.Uuid
+  changedAt DateTime @default(now()) @map("changed_at") @db.Timestamptz
+
+  @@index([operation, changedAt])
+  @@map("ai_operation_setting_changes")
+}
+
+// The prompt in use for one operation (design §7.3).
+model AiPrompt {
+  operation    String   @id
+  instructions String
+  examples     Json
+  revision     Int
+  updatedBy    String   @map("updated_by") @db.Uuid
+  updatedAt    DateTime @default(now()) @map("updated_at") @db.Timestamptz
+
+  @@map("ai_prompts")
+}
+
+// One save of a prompt (append-only).
+model AiPromptRevision {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  operation    String
+  revision     Int
+  instructions String
+  examples     Json
+  savedBy      String   @map("saved_by") @db.Uuid
+  savedAt      DateTime @default(now()) @map("saved_at") @db.Timestamptz
+
+  @@unique([operation, revision])
+  @@map("ai_prompt_revisions")
+}
+
+// One operation id of a caller, replayed for 24 h (design §8.1–8.2).
+model AiOperationRecord {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId      String    @map("user_id") @db.Uuid
+  operationId String    @map("operation_id")
+  operation   String
+  fingerprint String
+  // running | succeeded | permanent_failure (CHECK).
+  status      String
+  attemptId   String    @map("attempt_id") @db.Uuid
+  startedAt   DateTime  @map("started_at") @db.Timestamptz
+  deadlineAt  DateTime  @map("deadline_at") @db.Timestamptz
+  result      Json?
+  meta        Json?
+  finishedAt  DateTime? @map("finished_at") @db.Timestamptz
+  expiresAt   DateTime? @map("expires_at") @db.Timestamptz
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz
+
+  @@unique([userId, operationId])
+  @@index([expiresAt])
+  @@index([status, deadlineAt])
+  @@map("ai_operations")
+}
+
+// One call to a provider (design §9), kept for good.
+model AiCall {
+  id                String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  operationId       String    @map("operation_id")
+  aiOperationId     String?   @map("ai_operation_id") @db.Uuid
+  // 1 | 2 (CHECK).
+  attempt           Int
+  // learner | test | eval (CHECK).
+  purpose           String
+  operation         String
+  provider          String
+  model             String
+  effort            String?
+  thinking          String?
+  maxOutputTokens   Int?      @map("max_output_tokens")
+  promptRevision    Int?      @map("prompt_revision")
+  // succeeded or the call's own reason (CHECK, plan choice 2).
+  outcome           String
+  httpStatus        Int?      @map("http_status")
+  providerErrorCode String?   @map("provider_error_code")
+  latencyMs         Int       @map("latency_ms")
+  inputTokens       Int?      @map("input_tokens")
+  cachedInputTokens Int?      @map("cached_input_tokens")
+  outputTokens      Int?      @map("output_tokens")
+  reasoningTokens   Int?      @map("reasoning_tokens")
+  costUsd           Decimal?  @map("cost_usd") @db.Decimal(14, 8)
+  costKnown         Boolean   @map("cost_known")
+  providerRequestId String?   @map("provider_request_id")
+  // The learner, or the admin of a test or eval call (plan choice 3); nulled by deleteUserData.
+  userId            String?   @map("user_id") @db.Uuid
+  createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz
+
+  @@index([createdAt])
+  @@index([operationId])
+  @@index([userId])
+  @@map("ai_calls")
+}
+
+// The content of one call, kept content_retention_days (design §9).
+model AiCallContent {
+  callId    String   @id @map("call_id") @db.Uuid
+  request   Json
+  response  String?
+  expiresAt DateTime @map("expires_at") @db.Timestamptz
+
+  @@index([expiresAt])
+  @@map("ai_call_contents")
+}
+
+// One example of the example set (design §10).
+model AiEvalExample {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  operation String
+  input     Json
+  note      String?
+  createdBy String   @map("created_by") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  @@index([operation])
+  @@map("ai_eval_examples")
+}
+
+// One run of the example set (design §10). It stores the resolved request and the examples taken at creation (plan choice 10).
+model AiEvalRun {
+  id               String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  operation        String
+  provider         String
+  model            String
+  effort           String?
+  thinking         String?
+  maxOutputTokens  Int?      @map("max_output_tokens")
+  // Exactly one of prompt_revision and draft is set (CHECK).
+  promptRevision   Int?      @map("prompt_revision")
+  draft            Json?
+  exampleIds       String[]  @map("example_ids") @db.Uuid
+  // queued | running | finished | failed (CHECK).
+  status           String
+  total            Int
+  validCount       Int       @default(0) @map("valid_count")
+  avgLatencyMs     Int?      @map("avg_latency_ms")
+  costUsd          Decimal?  @map("cost_usd") @db.Decimal(14, 8)
+  costUnknownCount Int       @default(0) @map("cost_unknown_count")
+  items            Json      @default("[]")
+  error            String?
+  startedBy        String    @map("started_by") @db.Uuid
+  createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  startedAt        DateTime? @map("started_at") @db.Timestamptz
+  finishedAt       DateTime? @map("finished_at") @db.Timestamptz
+  heartbeatAt      DateTime? @map("heartbeat_at") @db.Timestamptz
+
+  @@index([operation, createdAt])
+  @@index([status, heartbeatAt])
+  @@map("ai_eval_runs")
+}

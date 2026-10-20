@@ -32,6 +32,13 @@ export type AppSettings = {
   };
   /** Bước 5 (design §13): were `PRIVATE_WORDS_MAX` / `SENTENCES_PER_SENSE_MAX`. */
   content: { privateWordsPerUser: number; sentencesPerSense: number };
+  /** Bước 6 (design §13). */
+  ai: {
+    callTimeoutSeconds: number; maxConcurrentCalls: number;
+    /** `null` = no cap. */
+    dailyProviderCallsCap: number | null;
+    contentRetentionDays: number; usdVndRate: number;
+  };
 };
 
 export const SETTINGS_DEFAULTS: AppSettings = {
@@ -48,6 +55,7 @@ export const SETTINGS_DEFAULTS: AppSettings = {
     adsInterstitialPerDay: 3, adsMinIntervalMinutes: 10,
   },
   content: { privateWordsPerUser: 10000, sentencesPerSense: 20 },
+  ai: { callTimeoutSeconds: 10, maxConcurrentCalls: 50, dailyProviderCallsCap: 3000, contentRetentionDays: 7, usdVndRate: 26100 },
 };
 
 /** Bounds are `ASSUMPTION` in design §9 (Bước 4: design 5.4); the admin page shows them next to each field. */
@@ -93,6 +101,13 @@ export const SETTINGS_BOUNDS = {
   content: {
     private_words_per_user: { min: 1000, max: 100000 },
     sentences_per_sense: { min: 5, max: 100 },
+  },
+  ai: {
+    call_timeout_seconds: { min: 3, max: 30 },
+    max_concurrent_calls: { min: 1, max: 500 },
+    daily_provider_calls_cap: { min: 0, max: 1000000, nullable: true },
+    content_retention_days: { min: 0, max: 30 },
+    usd_vnd_rate: { min: 10000, max: 100000 },
   },
 } as const;
 
@@ -150,6 +165,13 @@ export const settingsValuesPatchSchema = z.strictObject({
     private_words_per_user: intIn(b.content.private_words_per_user).optional(),
     sentences_per_sense: intIn(b.content.sentences_per_sense).optional(),
   }).optional(),
+  ai: z.strictObject({
+    call_timeout_seconds: intIn(b.ai.call_timeout_seconds).optional(),
+    max_concurrent_calls: intIn(b.ai.max_concurrent_calls).optional(),
+    daily_provider_calls_cap: intIn(b.ai.daily_provider_calls_cap).nullable().optional(),
+    content_retention_days: intIn(b.ai.content_retention_days).optional(),
+    usd_vnd_rate: intIn(b.ai.usd_vnd_rate).optional(),
+  }).optional(),
 });
 export type SettingsValuesPatch = z.infer<typeof settingsValuesPatchSchema>;
 
@@ -190,6 +212,11 @@ const FIELDS = [
   ['entitlements', 'ads_min_interval_minutes', 'adsMinIntervalMinutes'],
   ['content', 'private_words_per_user', 'privateWordsPerUser'],
   ['content', 'sentences_per_sense', 'sentencesPerSense'],
+  ['ai', 'call_timeout_seconds', 'callTimeoutSeconds'],
+  ['ai', 'max_concurrent_calls', 'maxConcurrentCalls'],
+  ['ai', 'daily_provider_calls_cap', 'dailyProviderCallsCap'],
+  ['ai', 'content_retention_days', 'contentRetentionDays'],
+  ['ai', 'usd_vnd_rate', 'usdVndRate'],
 ] as const;
 
 type Section = keyof AppSettings;
@@ -200,7 +227,7 @@ const read = (values: AppSettings, section: Section, field: string): AnyValue =>
 
 export function toApiValues(values: AppSettings): Record<Section, Record<string, AnyValue>> {
   const out: Record<Section, Record<string, AnyValue>> = {
-    reminders: {}, learning: {}, practice: {}, entitlements: {}, content: {},
+    reminders: {}, learning: {}, practice: {}, entitlements: {}, content: {}, ai: {},
   };
   for (const [section, apiKey, field] of FIELDS) out[section][apiKey] = read(values, section, field);
   return out;
