@@ -1,4 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
+import { dateString } from '../../common/time/local-date.js';
 import { PRISMA_CLIENT } from '../../common/db/prisma.module.js';
 import { ProblemDetailsException } from '../../common/problem-details/problem-details.exception.js';
 import type { Prisma, PrismaClient } from '../../generated/prisma/client.js';
@@ -17,11 +18,14 @@ export interface Profile {
   staff_role: StaffRole | null;
   permissions: Permission[];
   must_change_password: boolean;
+  given_name: string | null;
+  family_name: string | null;
+  birth_date: string | null;
 }
 
 const profileSelect = {
   id: true, email: true, emailVerifiedAt: true, nativeLanguage: true, timezone: true, staffRole: true,
-  mustChangePassword: true,
+  mustChangePassword: true, givenName: true, familyName: true, birthDate: true,
 } satisfies Prisma.UserSelect;
 type ProfileRow = Prisma.UserGetPayload<{ select: typeof profileSelect }>;
 
@@ -36,6 +40,9 @@ function toProfile(row: ProfileRow): Profile {
     staff_role: staffRole,
     permissions: permissionsFor(staffRole),
     must_change_password: row.mustChangePassword,
+    given_name: row.givenName,
+    family_name: row.familyName,
+    birth_date: row.birthDate === null ? null : dateString(row.birthDate),
   };
 }
 
@@ -88,12 +95,22 @@ export class IdentityService {
     return new Map(rows.map((row) => [row.id, row.email]));
   }
 
+  /** Addresses of the given users with no status or verification filter; unknown ids are left out. */
+  async emailsOf(userIds: string[]): Promise<Map<string, string>> {
+    if (userIds.length === 0) return new Map();
+    const rows = await this.prisma.user.findMany({
+      where: { id: { in: [...new Set(userIds)] } }, select: { id: true, email: true },
+    });
+    return new Map(rows.map((row) => [row.id, row.email]));
+  }
+
   async updateProfile(userId: string, body: UpdateProfileBody): Promise<Profile | null> {
     const timezone = body.timezone === undefined ? undefined : canonicalTimeZone(body.timezone);
     if (timezone === null) {
       throw new ProblemDetailsException({ status: 400, title: 'Validation failed', type: 'validation-failed' });
     }
-    if (body.native_language === undefined && timezone === undefined) return this.getProfile(userId);
+    if (body.native_language === undefined && timezone === undefined && body.given_name === undefined
+      && body.family_name === undefined) return this.getProfile(userId);
     try {
       // One partial update changes only profile fields and returns the stored profile.
       const row = await this.prisma.user.update({
@@ -101,6 +118,8 @@ export class IdentityService {
         data: {
           ...(body.native_language !== undefined ? { nativeLanguage: body.native_language } : {}),
           ...(timezone !== undefined ? { timezone } : {}),
+          ...(body.given_name !== undefined ? { givenName: body.given_name } : {}),
+          ...(body.family_name !== undefined ? { familyName: body.family_name } : {}),
         },
         select: profileSelect,
       });

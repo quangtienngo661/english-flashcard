@@ -25,6 +25,7 @@ export function testConfig(overrides?: Partial<AppConfig>): AppConfig {
     problemTypeBase: 'https://api.example.com/problems/',
     adminAppUrl: 'http://localhost:5173',
     learnerAppUrl: 'http://localhost:3001',
+    termsVersion: '2026-10-20',
     maintenanceEnabled: false,
     content: { publishMaxItems: 500 },
     pipeline: {

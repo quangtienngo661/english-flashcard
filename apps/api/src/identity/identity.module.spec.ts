@@ -24,7 +24,7 @@ describe('IdentityModule exports', () => {
     const userId = 'user';
     const prisma = { user: { findUnique: vi.fn().mockResolvedValue({
       id: userId, email: 'a@example.com', emailVerifiedAt: null, nativeLanguage: null,
-      timezone: 'Asia/Ho_Chi_Minh', staffRole: null,
+      timezone: 'Asia/Ho_Chi_Minh', staffRole: null, givenName: null, familyName: null, birthDate: null,
     }) } };
     const moduleRef = await Test.createTestingModule({ imports: [CommonModule.forRoot(testConfig()),
       PrismaModule.forRoot({ connectionString: 'unused', ...testConfig().database }), ConsumerModule] })

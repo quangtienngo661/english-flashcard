@@ -9,6 +9,14 @@ model User {
   failedLoginCount Int       @default(0) @map("failed_login_count")
   loginLockedUntil DateTime? @map("login_locked_until") @db.Timestamptz
   mustChangePassword Boolean @default(false) @map("must_change_password")
+  givenName        String?   @map("given_name") @db.VarChar(50)
+  familyName       String?   @map("family_name") @db.VarChar(50)
+  birthDate        DateTime? @map("birth_date") @db.Date
+  termsAcceptedAt  DateTime? @map("terms_accepted_at") @db.Timestamptz
+  termsVersion     String?   @map("terms_version")
+  lockedAt         DateTime? @map("locked_at") @db.Timestamptz
+  lockedBy         String?   @map("locked_by") @db.Uuid
+  lockReason       String?   @map("lock_reason") @db.VarChar(500)
   lastSeenAt       DateTime? @map("last_seen_at") @db.Timestamptz
   createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz
   updatedAt        DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
@@ -18,6 +26,7 @@ model User {
   otpCodes           OtpCode[]
   otpFailureWindows  OtpFailureWindow[]
 
+  @@index([createdAt(sort: Desc), id(sort: Desc)])
   @@map("users")
 }
 

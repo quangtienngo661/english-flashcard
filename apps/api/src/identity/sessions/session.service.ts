@@ -27,7 +27,7 @@ export interface IssuedSession {
 type SessionMaterial = Omit<IssuedSession, 'accessToken'>;
 type RefreshOutcome =
   | { kind: 'rotated' | 'grace'; session: SessionMaterial }
-  | { kind: 'rejected'; reason: 'expired' | 'reuse' | 'revoked' | 'path_mismatch' };
+  | { kind: 'rejected'; reason: 'expired' | 'reuse' | 'revoked' | 'path_mismatch' | 'locked' };
 
 @Injectable()
 export class SessionService {
@@ -141,11 +141,20 @@ export class SessionService {
     // A zero-count CAS gets one fresh decision, allowing the winner's grace path.
     // Two failed CAS attempts under the same advisory lock indicate an unexpected invariant violation.
     for (let attempt = 0; attempt < 2; attempt++) {
-      const row = await tx.refreshToken.findUnique({ where: { id: tokenId }, include: { chain: true } });
+      const row = await tx.refreshToken.findUnique({
+        where: { id: tokenId }, include: { chain: { include: { user: { select: { status: true } } } } },
+      });
       const successor = row?.successorId
         ? await tx.refreshToken.findUnique({ where: { id: row.successorId } }) : null;
       const now = this.clock.now();
       if (!row || row.chain.revokedAt) return { kind: 'rejected', reason: 'revoked' };
+      // Locking revokes every chain; this read also catches a chain that somehow outlived it (FE9).
+      if (row.chain.user.status === 'locked') {
+        await tx.sessionChain.updateMany({
+          where: { id: row.chain.id, revokedAt: null }, data: { revokedAt: now, revokeReason: 'locked' },
+        });
+        return { kind: 'rejected', reason: 'locked' };
+      }
       const chain = row.chain;
       if (chain.clientType !== path) return { kind: 'rejected', reason: 'path_mismatch' };
       if (now.getTime() > chain.lastUsedAt.getTime() + 90 * day

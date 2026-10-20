@@ -13,7 +13,8 @@ const NOW = new Date('2026-11-10T05:00:00Z'); // 12:00 in Vietnam
 function profile(overrides: Partial<Profile> = {}): Profile {
   return {
     id: USER, email: 'lan@example.test', email_verified: true, native_language: 'vi', timezone: 'Asia/Ho_Chi_Minh',
-    staff_role: null, permissions: [], must_change_password: false, ...overrides,
+    staff_role: null, permissions: [], must_change_password: false,
+    given_name: null, family_name: null, birth_date: null, ...overrides,
   };
 }
 

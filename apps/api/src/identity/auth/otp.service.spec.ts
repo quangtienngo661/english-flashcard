@@ -33,7 +33,7 @@ describe('OTP decisions (unit, isolated persistence)', () => {
   let res: Response;
   let committed: boolean;
   let otp: OtpService;
-  const dbUser = { id: userId, email: 'a@example.com', emailVerifiedAt: null };
+  const dbUser = { id: userId, email: 'a@example.com', emailVerifiedAt: null, status: 'active' };
   const live = { id: randomUUID(), userId, purpose: 'verify_email', attempts: 0,
     codeHmac: createHmac('sha256', config.otpHmacKey).update('012345').digest('hex'),
     expiresAt: new Date(clock.now().getTime() + 600_000), consumedAt: null, invalidatedAt: null,
@@ -99,6 +99,20 @@ describe('OTP decisions (unit, isolated persistence)', () => {
     expect(await otp.issueInTx(transactionClient(), userId, 'verify_email')).toBeNull();
     expect(tx.otpCode.create).not.toHaveBeenCalled();
     expect(await otp.issueInTx(transactionClient(), userId, 'reset_password')).toMatchObject({ to: dbUser.email });
+  });
+
+  it('N4: locked user asks for an OTP → 202, no mail', async () => {
+    tx.user.findUnique.mockResolvedValue({ ...dbUser, status: 'locked' });
+    prisma.user.findUnique.mockResolvedValue({ ...dbUser, status: 'locked' });
+    for (const purpose of ['verify_email', 'reset_password'] as const) {
+      expect(await otp.issueInTx(transactionClient(), userId, purpose)).toBeNull();
+    }
+    await expect(otp.requestVerifyEmail(user, res)).resolves.toBeUndefined();
+    await expect(otp.requestPasswordReset(dbUser.email, res)).resolves.toBeUndefined();
+    res.emit('close'); await dispatcher.drain();
+    expect(committed).toBe(true);
+    expect(tx.otpCode.create).not.toHaveBeenCalled(); expect(tx.otpCode.updateMany).not.toHaveBeenCalled();
+    expect(mailer.sent).toEqual([]); expect(logs.filter((entry) => entry.event === 'otp_sent')).toEqual([]);
   });
 
   it('B1E17: a locked purpose permits neither issue nor check and carries no repeated notice', async () => {

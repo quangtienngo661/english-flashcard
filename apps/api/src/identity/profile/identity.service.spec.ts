@@ -7,6 +7,7 @@ describe('IdentityService (unit, isolated persistence)', () => {
   const row = {
     id: 'user', email: 'a@example.com', emailVerifiedAt: null as Date | null,
     nativeLanguage: null as string | null, timezone: 'Asia/Ho_Chi_Minh', staffRole: null as string | null,
+    givenName: null as string | null, familyName: null as string | null, birthDate: null as Date | null,
   };
   let identity: IdentityService;
   beforeEach(() => {
@@ -16,11 +17,20 @@ describe('IdentityService (unit, isolated persistence)', () => {
     identity = new IdentityService(prisma as unknown as PrismaClient);
   });
 
+  it('emailsOf maps ids to addresses with no status or verification filter, and skips the query for no ids', async () => {
+    const findMany = vi.fn().mockResolvedValue([{ id: 'u1', email: 'a@example.com' }]);
+    const service = new IdentityService({ user: { findMany } } as unknown as PrismaClient);
+    expect(await service.emailsOf([])).toEqual(new Map()); expect(findMany).not.toHaveBeenCalled();
+    expect(await service.emailsOf(['u1', 'u1', 'u2'])).toEqual(new Map([['u1', 'a@example.com']]));
+    expect(findMany).toHaveBeenCalledWith({ where: { id: { in: ['u1', 'u2'] } }, select: { id: true, email: true } });
+  });
+
   it.each([null, 'editor', 'admin'] as const)('B2#67/B1#25: getProfile maps the stored %s role, content permissions and new-user defaults to the public contract', async (staffRole) => {
     prisma.user.findUnique.mockResolvedValue({ ...row, staffRole });
     expect(await identity.getProfile(row.id)).toEqual({
       id: row.id, email: row.email, email_verified: false, native_language: null,
-      timezone: row.timezone, staff_role: staffRole, permissions: staffRole === null ? [] : [
+      timezone: row.timezone, staff_role: staffRole, given_name: null, family_name: null, birth_date: null,
+      permissions: staffRole === null ? [] : [
         ...(staffRole === 'admin' ? ['roles.manage'] : []), 'content.edit', 'content.publish', 'content.import', 'taxonomy.manage',
         ...(staffRole === 'admin' ? ['settings.manage'] : []), 'entitlements.grant',
       ],
@@ -50,7 +60,7 @@ describe('IdentityService (unit, isolated persistence)', () => {
   it('B1#24/C2: update stores and returns the canonical spelling of the timezone, not the one sent', async () => {
     const profile = await identity.updateProfile(row.id, { native_language: 'vi', timezone: 'asia/ho_chi_minh' });
     expect(profile).toEqual({ id: row.id, email: row.email, email_verified: false, native_language: 'vi',
-      timezone: 'Asia/Saigon', staff_role: null, permissions: [] });
+      timezone: 'Asia/Saigon', staff_role: null, permissions: [], given_name: null, family_name: null, birth_date: null });
     expect(prisma.user.update.mock.calls[0][0]).toMatchObject({ where: { id: row.id },
       data: { nativeLanguage: 'vi', timezone: 'Asia/Saigon' } });
   });
