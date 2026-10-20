@@ -40,7 +40,8 @@ export class OtpService {
   /** Caller must hold withUserLock(tx, userId). Returns mail only after preparing DB state. */
   async issueInTx(tx: Prisma.TransactionClient, userId: string, purpose: OtpPurpose): Promise<MailMessage | null> {
     const user = await tx.user.findUnique({ where: { id: userId } });
-    if (!user || (purpose === 'verify_email' && user.emailVerifiedAt !== null)) return null;
+    // A locked account gets nothing, answered exactly like an unknown address (design §4.5).
+    if (!user || user.status !== 'active' || (purpose === 'verify_email' && user.emailVerifiedAt !== null)) return null;
     const window = await tx.otpFailureWindow.findUnique({ where: { userId_purpose: { userId, purpose } } });
     const now = this.clock.now();
     if (window?.lockedUntil && window.lockedUntil > now) return null;

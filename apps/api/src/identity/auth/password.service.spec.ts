@@ -27,7 +27,7 @@ describe('password change and reset (unit, isolated persistence)', () => {
     passwordCredential: { update: vi.fn(), upsert: vi.fn() }, sessionChain: { findUnique: vi.fn() } };
   const prisma = { user: { findUnique: vi.fn() }, $transaction: vi.fn() };
   const subject = { userId: 'user', sessionChainId: 'old-chain' };
-  const account = { id: 'user', email: 'foo@example.com', emailVerifiedAt: null, failedLoginCount: 0,
+  const account = { id: 'user', email: 'foo@example.com', emailVerifiedAt: null, failedLoginCount: 0, status: 'active',
     loginLockedUntil: null, passwordCredential: { hash: 'old-hash' } };
   const chain = { userId: 'user', clientType: 'web', deviceLabel: 'Browser' };
   const change = { current_password: 'Password1!', new_password: 'NewPassword1!' };
@@ -121,6 +121,21 @@ describe('password change and reset (unit, isolated persistence)', () => {
     expect(logs.filter((entry) => entry.event === 'login_locked')).toHaveLength(1);
     expect(tx.passwordCredential.update).not.toHaveBeenCalled();
     expect(sessions.revokeAllForUser).not.toHaveBeenCalled(); expect(sessions.startChain).not.toHaveBeenCalled();
+    expect(res.listenerCount('close')).toBe(0);
+  });
+  it('Review Focus 1: locked user cannot mint a session through password change → 403', async () => {
+    // A still-valid access token names a chain the lock already revoked; only the locked status read stops it.
+    tx.user.findUnique.mockResolvedValue({ ...account, status: 'locked' });
+    await expect(service.change(subject, change, res)).rejects.toMatchObject({ status: 403, problemType: 'account-locked' });
+    expect(committed).toBe(true); expect(tx.user.update).not.toHaveBeenCalled();
+    expect(tx.passwordCredential.update).not.toHaveBeenCalled(); expect(sessions.revokeAllForUser).not.toHaveBeenCalled();
+    expect(sessions.startChain).not.toHaveBeenCalled(); expect(res.listenerCount('close')).toBe(0);
+  });
+  it('N4: locked user submits a reset code → 400 invalid-otp', async () => {
+    tx.user.findUnique.mockResolvedValue({ ...account, status: 'locked' });
+    await expect(service.reset(reset, res)).rejects.toMatchObject({ status: 400, problemType: 'invalid-otp' });
+    expect(otp.checkInTx).not.toHaveBeenCalled(); expect(tx.passwordCredential.upsert).not.toHaveBeenCalled();
+    expect(tx.user.update).not.toHaveBeenCalled(); expect(sessions.revokeAllForUser).not.toHaveBeenCalled();
     expect(res.listenerCount('close')).toBe(0);
   });
   it.each(['missing account', 'missing credential', 'missing chain', 'foreign chain'])('B1#22: %s cannot create a replacement session', async (reason) => {

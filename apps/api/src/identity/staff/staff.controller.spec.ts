@@ -85,6 +85,34 @@ describe('staff HTTP schemas and wiring (unit, isolated persistence)', () => {
     const res = await ctx.http().get('/v1/admin/users').set(auth()).query({ email: 'missing@example.com' });
     expect(res.status).toBe(404); expect(res.body.type).toBe('https://api.example.com/problems/not-found');
   });
+  it('N4: lock and unlock routes pass the actor, the id and the NFC-trimmed reason, and are rate limited', async () => {
+    const staff = ctx.app.get(StaffService);
+    const lock = vi.spyOn(staff, 'lockUser').mockClear().mockResolvedValue({ id: userId, status: 'locked' } as never);
+    const unlock = vi.spyOn(staff, 'unlockUser').mockClear().mockResolvedValue({ id: userId, status: 'active' } as never);
+    const target = randomUUID();
+    const locked = await ctx.http().post(`/v1/admin/users/${target}/lock`).set(auth()).send({ reason: '  Café spam\n ' });
+    expect(locked.status).toBe(200); expect(locked.body).toEqual({ id: userId, status: 'locked' });
+    expect(lock).toHaveBeenCalledExactlyOnceWith(userId, target, 'Café spam');
+    expect((await ctx.http().post(`/v1/admin/users/${target}/lock`).set(auth()).send({ reason: '😀'.repeat(500) })).status).toBe(200);
+    const unlocked = await ctx.http().post(`/v1/admin/users/${target}/unlock`).set(auth());
+    expect(unlocked.status).toBe(200); expect(unlocked.body).toEqual({ id: userId, status: 'active' });
+    expect(unlock).toHaveBeenCalledExactlyOnceWith(userId, target);
+    expect(hit).toHaveBeenCalledTimes(3); expect(hit).toHaveBeenCalledWith('user.write', userId);
+  });
+  it('N4: a missing, blank, overlong or control-character reason, or a bad id, is 400 before the service', async () => {
+    const staff = ctx.app.get(StaffService);
+    const lock = vi.spyOn(staff, 'lockUser').mockClear().mockResolvedValue({} as never);
+    const unlock = vi.spyOn(staff, 'unlockUser').mockClear().mockResolvedValue({} as never);
+    const target = randomUUID();
+    for (const [id, body] of [[target, {}], [target, { reason: '' }], [target, { reason: '   ' }], [target, { reason: 'x'.repeat(501) }],
+      [target, { reason: 'bad\u0007bell' }], [target, { reason: 'ok\u0000' }], [target, { reason: 42 }], [target, { reason: 'ok', extra: 1 }],
+      ['not-a-uuid', { reason: 'ok' }]] as const) {
+      const res = await ctx.http().post(`/v1/admin/users/${id}/lock`).set(auth()).send(body);
+      expect(res.status).toBe(400); expect(res.body.type).toBe('https://api.example.com/problems/validation-failed');
+    }
+    expect((await ctx.http().post('/v1/admin/users/not-a-uuid/unlock').set(auth())).status).toBe(400);
+    expect(lock).not.toHaveBeenCalled(); expect(unlock).not.toHaveBeenCalled();
+  });
   it('B1#26: missing authentication is 401 and a revoked chain is 403 before services and rate limiting', async () => {
     expect((await ctx.http().get('/v1/admin/staff')).status).toBe(401);
     prisma.sessionChain.findUnique.mockResolvedValue({ userId, revokedAt: new Date(), user: { staffRole: 'admin' } });

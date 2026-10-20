@@ -42,6 +42,18 @@ describe('credential decision under the caller user lock', () => {
       expect(await decideCredential(client, input, clock)).toBe('stale');
       expect(tx.user.update).not.toHaveBeenCalled();
     });
+  it('N4: a locked account with the right password is account_locked and keeps its failure counter', async () => {
+    tx.user.findUnique.mockResolvedValue({ status: 'locked', failedLoginCount: 3, loginLockedUntil: null,
+      passwordCredential: { hash: input.verifiedHash } });
+    expect(await decideCredential(client, input, clock)).toBe('account_locked');
+    expect(tx.user.update).not.toHaveBeenCalled();
+  });
+  it('N4: a locked account with a wrong password still counts the failure and stays generic', async () => {
+    tx.user.findUnique.mockResolvedValue({ status: 'locked', failedLoginCount: 3, loginLockedUntil: null,
+      passwordCredential: { hash: input.verifiedHash } });
+    expect(await decideCredential(client, { ...input, passwordMatched: false }, clock)).toBe('wrong');
+    expect(tx.user.update).toHaveBeenCalledExactlyOnceWith({ where: { id: input.userId }, data: { failedLoginCount: { increment: 1 } } });
+  });
   it('B1#13: a lock ending exactly now permits correct credentials', async () => {
     tx.user.findUnique.mockResolvedValue({ loginLockedUntil: clock.now(), passwordCredential: { hash: input.verifiedHash } });
     expect(await decideCredential(client, input, clock)).toBe('ok');

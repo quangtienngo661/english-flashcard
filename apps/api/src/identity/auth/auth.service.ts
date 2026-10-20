@@ -16,7 +16,7 @@ import { canonicalTimeZone } from '../profile/timezone.js';
 import { SessionService, type IssuedSession } from '../sessions/session.service.js';
 import { withUserLock } from '../user-lock.js';
 import type { LoginBody, RegisterBody } from './auth.schemas.js';
-import { decideCredential } from './credential-decision.js';
+import { accountLocked, decideCredential } from './credential-decision.js';
 import { OtpService } from './otp.service.js';
 import { PasswordHasher } from './password-hasher.service.js';
 import { checkPasswordPolicy, normalizePassword } from './password-policy.js';
@@ -117,6 +117,8 @@ export class AuthService {
     if (outcome.kind !== 'ok') {
       this.logger.info('login_failed', { user_id: account.id });
       if (outcome.newlyLocked) this.logger.warn('login_locked', { user_id: account.id });
+      // Reached only with the right password: a wrong one on a locked account stays the generic 401.
+      if (outcome.kind === 'account_locked') throw accountLocked();
       throw this.invalidCredentials();
     }
     return outcome.session;

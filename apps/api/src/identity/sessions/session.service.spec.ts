@@ -25,9 +25,9 @@ function gate() {
 function setup() {
   const config = testConfig();
   const clock = new FakeClock(new Date('2026-10-07T12:00:00Z'));
-  const chain: SessionChain = {
+  const chain: SessionChain & { user: { status: string } } = {
     id: randomUUID(), userId: randomUUID(), clientType: 'mobile', deviceLabel: null,
-    createdAt: clock.now(), lastUsedAt: clock.now(), revokedAt: null, revokeReason: null,
+    createdAt: clock.now(), lastUsedAt: clock.now(), revokedAt: null, revokeReason: null, user: { status: 'active' },
   };
   const original = newRefreshToken();
   const row: RefreshToken & { chain: SessionChain } = {
@@ -159,6 +159,19 @@ describe('SessionService transaction invariants', () => {
       }
     },
   );
+
+  it('FE9: refresh of a locked user → 401 and the chain is revoked', async () => {
+    const s = setup();
+    s.chain.user.status = 'locked';
+    await expect(s.service.refresh(s.original.token, 'mobile')).rejects.toMatchObject({ status: 401, problemType: 'invalid-token' });
+    expect(s.findUnique).toHaveBeenCalledWith({ where: { id: s.row.id },
+      include: { chain: { include: { user: { select: { status: true } } } } } });
+    expect(s.chainUpdateMany).toHaveBeenCalledExactlyOnceWith({
+      where: { id: s.chain.id, revokedAt: null }, data: { revokedAt: s.clock.now(), revokeReason: 'locked' },
+    });
+    expect(s.events).toEqual(['rate-limit', 'lock', 'read', 'chain-write', 'commit']);
+    expect(s.updateMany).not.toHaveBeenCalled(); expect(s.create).not.toHaveBeenCalled(); expect(s.sign).not.toHaveBeenCalled();
+  });
 
   it('B1#18: rotation clips refresh expiry to the absolute deadline', async () => {
     const s = setup();

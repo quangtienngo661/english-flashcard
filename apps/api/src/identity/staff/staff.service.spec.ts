@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 import type { Response } from 'express';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { FakeClock } from '../../common/clock/clock.js';
-import { AppLogger } from '../../common/logging/app-logger.js';
+import { AppLogger, type LogEntry } from '../../common/logging/app-logger.js';
 import type { MailBudget } from '../../common/mail/mail-budget.service.js';
 import type { MailDispatcher } from '../../common/mail/mail-dispatcher.service.js';
 import { runWithOperationId } from '../../common/logging/request-context.js';
@@ -10,6 +10,7 @@ import { encodePageToken } from '../../common/pagination/page-token.util.js';
 import type { PrismaClient } from '../../generated/prisma/client.js';
 import { testConfig } from '../../../test/support/test-config.js';
 import type { PasswordHasher } from '../auth/password-hasher.service.js';
+import type { SessionService } from '../sessions/session.service.js';
 import { StaffService } from './staff.service.js';
 
 describe('StaffService (unit, isolated persistence)', () => {
@@ -29,7 +30,7 @@ describe('StaffService (unit, isolated persistence)', () => {
     prisma.$transaction.mockImplementation(async (fn) => { const result = await fn(tx); committed = true; return result; });
     // createAccount is covered end to end in test/identity/staff.e2e-spec.ts; these unit cases never reach those deps.
     staff = new StaffService(prisma as unknown as PrismaClient, new AppLogger({ write }),
-      undefined as never, undefined as never, undefined as never, undefined as never, undefined as never);
+      undefined as never, undefined as never, undefined as never, undefined as never, undefined as never, undefined as never);
   });
   const expectStaffLock = () => {
     expect(tx.$executeRaw).toHaveBeenCalledOnce();
@@ -136,7 +137,7 @@ describe('StaffService.createAccount timezone (unit, isolated persistence)', () 
     budget.assertAvailable.mockResolvedValue(undefined); hasher.hash.mockResolvedValue('hash');
     staff = new StaffService(prisma as unknown as PrismaClient, new AppLogger({ write: vi.fn() }),
       new FakeClock(new Date('2026-10-20T12:00:00Z')), testConfig(), hasher as unknown as PasswordHasher,
-      budget as unknown as MailBudget, dispatcher as unknown as MailDispatcher);
+      budget as unknown as MailBudget, dispatcher as unknown as MailDispatcher, undefined as never);
   });
 
   it.each(['+07:00', 'Mars/Base'])('C2/FE32: %s is rejected as validation-failed before budget, hash or DB work', async (timezone) => {
@@ -163,5 +164,102 @@ describe('StaffService.createAccount timezone (unit, isolated persistence)', () 
       await staff.createAccount('actor', { ...body, timezone }, res);
       expect(tx.user.create.mock.calls[0][0].data.timezone).toBe('Asia/Saigon');
     }
+  });
+});
+
+describe('StaffService.lockUser / unlockUser (unit, isolated persistence)', () => {
+  const clock = new FakeClock(new Date('2026-10-20T12:00:00Z'));
+  const actorId = randomUUID(); const targetId = randomUUID();
+  const tx = { $executeRaw: vi.fn(), user: { findUnique: vi.fn(), update: vi.fn() }, otpCode: { updateMany: vi.fn() } };
+  const prisma = { $transaction: vi.fn(), user: { findUnique: vi.fn() } };
+  const sessions = { revokeAllForUser: vi.fn() };
+  const logs: LogEntry[] = [];
+  const reason = 'Spam from lan@example.com';
+  type Stored = { id: string; email: string; givenName: string | null; familyName: string | null; emailVerifiedAt: Date | null;
+    staffRole: string | null; status: string; createdAt: Date; lastSeenAt: Date | null; birthDate: Date | null;
+    termsAcceptedAt: Date | null; termsVersion: string | null; lockedAt: Date | null; lockedBy: string | null; lockReason: string | null };
+  let stored: Stored;
+  let committed: boolean;
+  let staff: StaffService;
+  beforeEach(() => {
+    vi.resetAllMocks(); logs.length = 0; committed = false;
+    stored = { id: targetId, email: 'lan@example.com', givenName: 'Lan', familyName: null, emailVerifiedAt: clock.now(), staffRole: null,
+      status: 'active', createdAt: clock.now(), lastSeenAt: null, birthDate: null, termsAcceptedAt: null, termsVersion: null,
+      lockedAt: null, lockedBy: null, lockReason: null };
+    tx.$executeRaw.mockResolvedValue(1);
+    tx.user.findUnique.mockImplementation(async () => ({ ...stored }));
+    tx.user.update.mockImplementation(async ({ data }) => { stored = { ...stored, ...data }; return { ...stored }; });
+    tx.otpCode.updateMany.mockResolvedValue({ count: 2 });
+    prisma.user.findUnique.mockImplementation(async ({ where }) => (where.id === targetId ? { ...stored }
+      : where.id === actorId ? { email: 'admin@example.com' } : null));
+    prisma.$transaction.mockImplementation(async (fn) => { const result = await fn(tx); committed = true; return result; });
+    staff = new StaffService(prisma as unknown as PrismaClient, new AppLogger({ write: (entry) => { logs.push(entry); } }),
+      clock, undefined as never, undefined as never, undefined as never, undefined as never,
+      sessions as unknown as SessionService);
+  });
+  const nothingWritten = () => {
+    expect(tx.user.update).not.toHaveBeenCalled(); expect(sessions.revokeAllForUser).not.toHaveBeenCalled();
+    expect(tx.otpCode.updateMany).not.toHaveBeenCalled();
+  };
+
+  it('N4: lock sets status, columns, revokes every chain and invalidates live OTP codes', async () => {
+    const detail = await staff.lockUser(actorId, targetId, reason);
+    expect(tx.$executeRaw).toHaveBeenCalledOnce();
+    const [sql, ...values] = tx.$executeRaw.mock.calls[0];
+    expect(sql.join('?')).toBe('SELECT pg_advisory_xact_lock(hashtextextended(?, 0))');
+    expect(values).toEqual([`identity.user:${targetId}`]);
+    expect(tx.$executeRaw.mock.invocationCallOrder[0]).toBeLessThan(tx.user.findUnique.mock.invocationCallOrder[0]);
+    expect(prisma.$transaction).toHaveBeenCalledWith(expect.any(Function), { timeout: 10_000, maxWait: 5_000 });
+    expect(tx.user.update).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ where: { id: targetId },
+      data: { status: 'locked', lockedAt: clock.now(), lockedBy: actorId, lockReason: reason } }));
+    expect(sessions.revokeAllForUser).toHaveBeenCalledExactlyOnceWith(tx, targetId, 'locked');
+    expect(tx.otpCode.updateMany).toHaveBeenCalledExactlyOnceWith({
+      where: { userId: targetId, consumedAt: null, invalidatedAt: null }, data: { invalidatedAt: clock.now() } });
+    expect(committed).toBe(true);
+    expect(detail).toMatchObject({ id: targetId, status: 'locked', locked_at: clock.now().toISOString(),
+      locked_by: { id: actorId, email: 'admin@example.com' }, lock_reason: reason });
+  });
+  it('FE11: locking oneself or an admin → 409 lock-rule, nothing written', async () => {
+    stored = { ...stored, id: actorId };
+    await expect(staff.lockUser(actorId, actorId, reason)).rejects.toMatchObject({ status: 409, problemType: 'lock-rule', problemTitle: 'Lock rule' });
+    stored = { ...stored, id: targetId, staffRole: 'admin' };
+    await expect(staff.lockUser(actorId, targetId, reason)).rejects.toMatchObject({ status: 409, problemType: 'lock-rule' });
+    nothingWritten(); expect(logs).toEqual([]);
+  });
+  it('missing target → 404 for lock and unlock, nothing written', async () => {
+    tx.user.findUnique.mockResolvedValue(null);
+    await expect(staff.lockUser(actorId, targetId, reason)).rejects.toMatchObject({ status: 404, problemType: 'not-found' });
+    await expect(staff.unlockUser(actorId, targetId)).rejects.toMatchObject({ status: 404, problemType: 'not-found' });
+    nothingWritten(); expect(logs).toEqual([]);
+  });
+  it('FE12: a demoted ex-admin can be locked', async () => {
+    stored = { ...stored, staffRole: 'editor' };
+    await expect(staff.lockUser(actorId, targetId, reason)).resolves.toMatchObject({ status: 'locked', staff_role: 'editor' });
+    expect(sessions.revokeAllForUser).toHaveBeenCalledOnce();
+  });
+  it('lock twice and unlock twice change nothing the second time', async () => {
+    await staff.lockUser(actorId, targetId, reason);
+    vi.clearAllMocks();
+    const again = await staff.lockUser(randomUUID(), targetId, 'another reason');
+    nothingWritten();
+    expect(again).toMatchObject({ status: 'locked', lock_reason: reason, locked_by: { id: actorId } });
+    const unlocked = await staff.unlockUser(actorId, targetId);
+    expect(tx.$executeRaw.mock.calls.at(-1)!.slice(1)).toEqual([`identity.user:${targetId}`]);
+    expect(tx.user.update).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ where: { id: targetId },
+      data: { status: 'active', lockedAt: null, lockedBy: null, lockReason: null } }));
+    expect(unlocked).toMatchObject({ status: 'active', locked_at: null, locked_by: null, lock_reason: null });
+    tx.user.update.mockClear();
+    await expect(staff.unlockUser(actorId, targetId)).resolves.toMatchObject({ status: 'active' });
+    expect(tx.user.update).not.toHaveBeenCalled(); expect(sessions.revokeAllForUser).not.toHaveBeenCalled();
+    expect(logs.map((entry) => entry.event)).toEqual(['account_locked', 'account_unlocked']);
+  });
+  it('logs carry ids only (no reason, no email)', async () => {
+    await runWithOperationId('op', () => staff.lockUser(actorId, targetId, reason));
+    await runWithOperationId('op', () => staff.unlockUser(actorId, targetId));
+    expect(logs).toEqual([
+      { level: 'info', event: 'account_locked', operation_id: 'op', actor_id: actorId, target_id: targetId },
+      { level: 'info', event: 'account_unlocked', operation_id: 'op', actor_id: actorId, target_id: targetId },
+    ]);
+    expect(JSON.stringify(logs)).not.toContain('Spam'); expect(JSON.stringify(logs)).not.toContain('example.com');
   });
 });

@@ -15,7 +15,7 @@ describe('StaffService.listUsers / getUserDetail (unit, isolated persistence)', 
   beforeEach(() => {
     vi.resetAllMocks();
     staff = new StaffService(prisma as unknown as PrismaClient, new AppLogger({ write: vi.fn() }),
-      undefined as never, undefined as never, undefined as never, undefined as never, undefined as never);
+      undefined as never, undefined as never, undefined as never, undefined as never, undefined as never, undefined as never);
   });
   it('FE14: q "50%" is escaped so the percent sign matches literally', async () => {
     prisma.$queryRaw.mockResolvedValue([]);

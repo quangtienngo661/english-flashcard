@@ -17,6 +17,7 @@ import { MailBudget } from '../../common/mail/mail-budget.service.js';
 import { MailDispatcher, sendPrepared } from '../../common/mail/mail-dispatcher.service.js';
 import { staffAccountMail } from '../mailer/templates.js';
 import { canonicalTimeZone } from '../profile/timezone.js';
+import { SessionService } from '../sessions/session.service.js';
 import { withUserLock } from '../user-lock.js';
 import { generatePassword } from './password-generator.js';
 import { idParam, type CreateAccountBody } from './staff.schemas.js';
@@ -70,6 +71,9 @@ function invalidInput(): ProblemDetailsException {
 function roleRule(): ProblemDetailsException {
   return new ProblemDetailsException({ status: 409, title: 'Staff role rule', type: 'staff-role-rule' });
 }
+function lockRule(): ProblemDetailsException {
+  return new ProblemDetailsException({ status: 409, title: 'Lock rule', type: 'lock-rule' });
+}
 export function staffUserNotFound(): ProblemDetailsException {
   return new ProblemDetailsException({ status: 404, title: 'Not found', type: 'not-found' });
 }
@@ -84,6 +88,7 @@ export class StaffService {
     @Inject(PasswordHasher) private readonly hasher: PasswordHasher,
     @Inject(MailBudget) private readonly budget: MailBudget,
     @Inject(MailDispatcher) private readonly dispatcher: MailDispatcher,
+    @Inject(SessionService) private readonly sessions: SessionService,
   ) {}
 
   /** The password only ever leaves through the mail: never in the response or a log line. */
@@ -180,6 +185,46 @@ export class StaffService {
       locked_by: row.lockedBy === null ? null : { id: row.lockedBy, email: locker?.email ?? null },
       lock_reason: row.lockReason,
     };
+  }
+
+  /**
+   * Holds only the target's user lock (never the staff-role lock), the same lock login, refresh, password change,
+   * reset and OTP issuance take, so each of them sees either the whole lock or none of it (FE9, FE10).
+   */
+  async lockUser(actorId: string, targetId: string, reason: string): Promise<AdminUserDetail> {
+    const changed = await this.prisma.$transaction(async (tx) => {
+      await withUserLock(tx, targetId);
+      const target = await tx.user.findUnique({ where: { id: targetId }, select: { staffRole: true, status: true } });
+      if (!target) throw staffUserNotFound();
+      if (targetId === actorId || target.staffRole === 'admin') throw lockRule();
+      if (target.status === 'locked') return false;
+      const now = this.clock.now();
+      await tx.user.update({ where: { id: targetId }, data: {
+        status: 'locked', lockedAt: now, lockedBy: actorId, lockReason: reason,
+      }, select: { id: true } });
+      await this.sessions.revokeAllForUser(tx, targetId, 'locked');
+      await tx.otpCode.updateMany({ where: { userId: targetId, consumedAt: null, invalidatedAt: null }, data: { invalidatedAt: now } });
+      return true;
+    }, transactionOptions);
+    // The reason may hold personal data: ids only.
+    if (changed) this.logger.info('account_locked', { actor_id: actorId, target_id: targetId });
+    return this.getUserDetail(targetId);
+  }
+
+  /** Old sessions stay revoked: the user signs in again. */
+  async unlockUser(actorId: string, targetId: string): Promise<AdminUserDetail> {
+    const changed = await this.prisma.$transaction(async (tx) => {
+      await withUserLock(tx, targetId);
+      const target = await tx.user.findUnique({ where: { id: targetId }, select: { status: true } });
+      if (!target) throw staffUserNotFound();
+      if (target.status === 'active') return false;
+      await tx.user.update({ where: { id: targetId }, data: {
+        status: 'active', lockedAt: null, lockedBy: null, lockReason: null,
+      }, select: { id: true } });
+      return true;
+    }, transactionOptions);
+    if (changed) this.logger.info('account_unlocked', { actor_id: actorId, target_id: targetId });
+    return this.getUserDetail(targetId);
   }
 
   async listStaff(pageSize: number, pageToken?: string): Promise<{ items: StaffUserView[]; next_page_token: string | null }> {

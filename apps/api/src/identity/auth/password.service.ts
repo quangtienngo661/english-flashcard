@@ -12,7 +12,7 @@ import type { MailMessage } from '../../common/mail/mailer.js';
 import { passwordChangedMail, passwordResetMail } from '../mailer/templates.js';
 import { SessionService, type IssuedSession } from '../sessions/session.service.js';
 import { withUserLock } from '../user-lock.js';
-import { decideCredential } from './credential-decision.js';
+import { accountLocked, decideCredential } from './credential-decision.js';
 import { OtpService, type OtpCheckOutcome } from './otp.service.js';
 import { PasswordHasher } from './password-hasher.service.js';
 import { checkPasswordPolicy, normalizePassword } from './password-policy.js';
@@ -21,7 +21,7 @@ import type { ChangeBody, ResetBody } from './password.schemas.js';
 const transactionOptions = { timeout: 10_000, maxWait: 5_000 };
 type ChangeOutcome =
   | { kind: 'ok'; session: IssuedSession; message: MailMessage }
-  | { kind: 'wrong' | 'stale' | 'invalid_session' | 'same_as_current' }
+  | { kind: 'wrong' | 'stale' | 'invalid_session' | 'same_as_current' | 'account_locked' }
   | { kind: 'locked'; lockedUntil: Date; newlyLocked: boolean };
 type ResetOutcome = Exclude<OtpCheckOutcome, { kind: 'ok' }> | { kind: 'ok'; message: MailMessage };
 
@@ -76,6 +76,8 @@ export class PasswordService {
       return { kind, session, message: passwordChangedMail(current.email) };
     }, transactionOptions);
     if (outcome.kind === 'invalid_session') throw this.invalidToken();
+    // A still-valid access token can outlive the lock's session revocation; this stops it minting a new chain.
+    if (outcome.kind === 'account_locked') throw accountLocked();
     if (outcome.kind === 'locked') {
       if (outcome.newlyLocked) {
         this.logger.warn('login_locked', { user_id: user.userId });
@@ -102,7 +104,8 @@ export class PasswordService {
     const outcome = await this.prisma.$transaction(async (tx): Promise<ResetOutcome> => {
       await withUserLock(tx, account.id);
       const current = await tx.user.findUnique({ where: { id: account.id } });
-      if (!current) return { kind: 'no_live_code' };
+      // A locked account was never sent a code (issueInTx) and its live ones were invalidated by the lock.
+      if (!current || current.status !== 'active') return { kind: 'no_live_code' };
       const result = await this.otp.checkInTx(tx, account.id, 'reset_password', body.code);
       if (result.kind !== 'ok') return result;
       const now = this.clock.now();

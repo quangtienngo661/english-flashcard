@@ -155,6 +155,27 @@ describe('registration and login (unit, isolated persistence)', () => {
     expect(JSON.stringify(logs)).not.toContain(user.email); expect(JSON.stringify(logs)).not.toContain(body.password);
     if (reason === 'unknown') expect(logs[0].email_hmac).toBe(createHmac('sha256', config.rateLimitHmacKey).update(user.email).digest('hex'));
   });
+  it('N4: locked + right password → 403 account-locked, no chain', async () => {
+    tx.user.findUnique.mockResolvedValue({ ...user, status: 'locked' });
+    await expect(auth.login(body)).rejects.toMatchObject({ status: 403, problemType: 'account-locked', problemTitle: 'Account locked' });
+    expect(committed).toBe(true); expect(sessions.startChain).not.toHaveBeenCalled(); expect(tx.user.update).not.toHaveBeenCalled();
+    expect(logs).toEqual([expect.objectContaining({ event: 'login_failed', user_id: user.id })]);
+    expect(Object.keys(logs[0]).sort()).toEqual(['event', 'level', 'user_id']);
+  });
+  it('N4: locked + wrong password → 401 and the failed count increments', async () => {
+    hasher.verify.mockResolvedValue(false);
+    tx.user.findUnique.mockResolvedValue({ ...user, status: 'locked' });
+    await expect(auth.login(body)).rejects.toMatchObject({ status: 401, problemType: 'invalid-credentials' });
+    expect(tx.user.update).toHaveBeenCalledExactlyOnceWith({ where: { id: user.id }, data: { failedLoginCount: { increment: 1 } } });
+    expect(sessions.startChain).not.toHaveBeenCalled();
+  });
+  it('FE10: the lock committed while login waited on the user lock → 403, no session', async () => {
+    // The unlocked lookup saw an active account; the admin's lock committed before this login got the user lock.
+    prisma.user.findUnique.mockResolvedValue({ ...user, status: 'active' });
+    tx.$executeRaw.mockImplementation(async () => { tx.user.findUnique.mockResolvedValue({ ...user, status: 'locked' }); });
+    await expect(auth.login(body)).rejects.toMatchObject({ status: 403, problemType: 'account-locked' });
+    expect(sessions.startChain).not.toHaveBeenCalled();
+  });
   it('B1#13: the lock event is logged after the tenth failure commits', async () => {
     hasher.verify.mockResolvedValue(false);
     tx.user.update.mockImplementation(async ({ data }) => {
