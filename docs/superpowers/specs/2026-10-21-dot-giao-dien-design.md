@@ -40,6 +40,7 @@ phiên code sau này (đọc màn). Thành công = mọi màn ở mục 5 có tr
 | D14 | Chữ giao diện | Research cách viết tiếng Việt tự nhiên, dễ đọc → bản chữ giao diện → chủ dự án duyệt trước khi vẽ; mockup chỉ tiếng Việt |
 | D15 | Cách vẽ | Vẽ thẳng trong Figma, bỏ bước mockup HTML; prototype cho 3 luồng Bước 7 |
 | D16 | Chỗ của Cài đặt | Web: trong menu thả xuống của avatar; điện thoại: như page 09 (bấm avatar vào Cài đặt); cả hai: trang Cài đặt ẩn dải tìm kiếm |
+| D17 | Thuật ngữ và định dạng | "Lượt" chỉ cho AI (lượt câu AI, lượt tra AI), "phiên" cho phiên luyện, "câu" cho một lần trả lời; "Từ của tôi"; Miễn phí / Dùng thử / Pro; giữ "gợi ý" và "AI gợi ý"; dấu thanh kiểu "hòa"; ngày, giờ, tiền theo `Intl` vi-VN (mục 7) |
 
 ## 3. Phạm vi
 
@@ -145,6 +146,16 @@ design và decision record đợt sửa Bước 0–3.
 3. Chủ dự án duyệt bản chữ giao diện **trước khi vẽ** mảng A.
 4. Bảng thuật ngữ áp cho mọi màn của page 08 và 09, kể cả màn đã có (chỉ sửa chữ, không sửa bố cục).
 Mockup chỉ tiếng Việt; bản tiếng Anh kiểm khi code.
+
+**Thuật ngữ đã chốt (D17):**
+- "Lượt" chỉ dùng cho AI và luôn có chữ đi kèm: **lượt câu AI**, **lượt tra AI** (hai kho lượt của API). Số phiên luyện mỗi ngày gọi là **phiên**
+  ("Phiên luyện hôm nay: 2/3", "Hết phiên luyện hôm nay"); một lần trả lời là **câu**.
+- Từ người học tự thêm: nhãn **"Từ của tôi"**.
+- Tên gói: **Miễn phí**, **Dùng thử**, **Pro**.
+- **"Gợi ý"** cho gợi ý khi làm câu và **"AI gợi ý"** cho nhãn nguồn của nghĩa: giữ cả hai.
+- Dấu thanh kiểu **hòa, thủy, khỏe**.
+- Ngày, giờ, tiền theo định dạng `Intl` vi-VN: "Chủ Nhật, 18/10"; "20:00"; "99.000 ₫"; không đặt thứ ở giữa câu.
+- Sửa thêm vào mảng A: các màn ghi "Thứ Bảy, 18 tháng 10" (18/10/2026 là Chủ Nhật, đã kiểm bằng `Intl`).
 
 ## 8. Cách làm và duyệt (D1, D15)
 

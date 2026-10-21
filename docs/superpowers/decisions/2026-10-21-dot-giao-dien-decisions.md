@@ -32,6 +32,7 @@ theo D27 Bước 4: chủ dự án tự nói muốn đề xuất trước). Clau
 | D14 | Ngôn ngữ và chữ giao diện | Research tiếng Việt → bản chữ giao diện → duyệt trước khi vẽ; chỉ tiếng Việt | Chủ dự án, đổi đề xuất |
 | D15 | Cách vẽ | Thẳng trong Figma + prototype 3 luồng Bước 7 | Chủ dự án, theo đề xuất |
 | D16 | Chỗ của Cài đặt | Web: trong menu avatar; điện thoại: như page 09; trang Cài đặt ẩn dải tìm kiếm | Chủ dự án, tự nêu |
+| D17 | Thuật ngữ và định dạng (8 câu sau research) | Theo đề xuất ở cả 8 câu | Chủ dự án, theo đề xuất |
 
 ## D1 — Phạm vi và cách chia đợt
 
@@ -200,6 +201,24 @@ sửa qua API — mốc tuổi không bị lách", phần 1 của các đề xu�
 Chủ dự án: "đổi trang setting nằm chung với dropdown button khi ấn nút vào avatar giúp mình, đó là với web, còn với mobile thì giữ nguyên như hiện tại,
 tuy nhiên ở cả 2 nền tảng khi vào trang cài đặt thì mình nghĩ ẩn thanh search đi cho gọn". ✅ Web: Cài đặt là một mục trong menu thả xuống của avatar;
 điện thoại: như page 09 (bấm avatar vào Cài đặt); cả hai: trang Cài đặt không có dải tìm kiếm.
+
+## D17 — Thuật ngữ và định dạng (8 câu sau research)
+
+Bối cảnh: research [`../../mockups/2026-10-21/vietnamese-ux-writing-research.md`](../../mockups/2026-10-21/vietnamese-ux-writing-research.md) nêu 8 câu
+(Q1–Q8) cần chốt trước khi viết bản chữ giao diện. Claude đề xuất cho cả 8 câu; chủ dự án: "ok".
+
+| Câu | Phương án đưa ra (research + chat) | Chọn |
+|---|---|---|
+| Q1 "Lượt" mang ba nghĩa (phiên luyện của Free, lượt AI, một lần trả lời) | (a) "lượt" chỉ cho lượt AI, phiên luyện gọi "phiên", một lần trả lời gọi "câu"; (b) giữ "lượt luyện" và "lượt AI", luôn có chữ đi kèm; (c) cách khác | ✅ (a), tách hai kho lượt AI thành "lượt câu AI" và "lượt tra AI" như API |
+| Q2 Nhãn cho từ người học tự thêm | "Từ của tôi" (đang có), "Từ của bạn", "Từ tự thêm", "Từ riêng" | ✅ "Từ của tôi" (mockup đang dùng; cách đặt nhãn quen ở app Việt) |
+| Q3 Tên gói Free, Trial | "Miễn phí" / "Dùng thử"; giữ "Free" / "Trial" | ✅ "Miễn phí", "Dùng thử"; giữ "Pro" |
+| Q4 "Gợi ý" cho cả gợi ý làm câu lẫn nhãn "AI gợi ý" | Giữ cả hai; đổi một bên (ví dụ nhãn "AI tra") | ✅ Giữ cả hai (hai chỗ dùng khác hẳn; nhãn "AI gợi ý" đã có ở design Bước 7) |
+| Q5 Đặt dấu thanh | "hoà, thuỷ, khoẻ" (sách giáo khoa 2018); "hòa, thủy, khỏe" (Microsoft, Mozilla) | ✅ "hòa, thủy, khỏe"; quan trọng là thống nhất |
+| Q6 Thứ trong tuần giữa câu | "thứ Bảy" (Nghị định 30); "Thứ Bảy" (CLDR, mặc định của `Intl`) | ✅ Theo `Intl` vi-VN ("Chủ Nhật, 18/10"); tránh đặt thứ giữa câu |
+| Q7 Giờ trong câu | "20:00"; "8 giờ tối" | ✅ "20:00" (đã chạy thử `Intl` vi-VN) |
+| Q8 Tiền VND khi mở bán Pro | "99.000 ₫"; "99.000đ"; "99.000 VND" | ✅ "99.000 ₫" (đã chạy thử `Intl` vi-VN) |
+
+Thêm vào mảng A: mockup ghi "Thứ Bảy, 18 tháng 10" nhưng 18/10/2026 là Chủ Nhật (research phát hiện; Claude kiểm lại bằng `Intl`).
 
 ## Đề xuất kỹ thuật duyệt cùng design (bốn phần, chủ dự án "ok" từng phần)
 
