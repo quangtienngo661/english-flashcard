@@ -176,6 +176,21 @@ model EntryInflection {
   @@map("entry_inflections")
 }
 
+/// A form staff accepted for a lemma (Bước 7 design §10); applies to every entry with that lemma, catalog and private.
+model WordFormAddition {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  lemmaKey  String   @map("lemma_key")
+  form      String
+  // Lower-case NFC of form, as entry_inflections.form_key.
+  formKey   String   @map("form_key")
+  // Identity user id; no cross-module FK.
+  addedBy   String   @map("added_by") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  @@unique([lemmaKey, formKey])
+  @@map("word_form_additions")
+}
+
 /// A sentence where a learner met a word (design 7.4); only its owner sees it.
 model ContextSentence {
   id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
