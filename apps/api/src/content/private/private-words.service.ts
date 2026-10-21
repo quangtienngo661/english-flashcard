@@ -211,10 +211,14 @@ export class PrivateWordsService {
     return { senseIds };
   }
 
-  /** Catalog senses that are published and open, plus the viewer's own private senses. */
-  async visibleSenseIds(viewerId: string, senseIds: string[]): Promise<Set<string>> {
+  /**
+   * Catalog senses that are published and open, plus the viewer's own private senses. A caller inside an open transaction
+   * passes its `tx` as `db` (Bước 7 plan choice 5).
+   */
+  async visibleSenseIds(viewerId: string, senseIds: string[], db: Prisma.TransactionClient | PrismaClient = this.prisma):
+    Promise<Set<string>> {
     if (senseIds.length === 0) return new Set();
-    const rows = await this.prisma.$queryRaw<Array<{ id: string }>>`
+    const rows = await db.$queryRaw<Array<{ id: string }>>`
       SELECT t.id::text AS id FROM unnest(${senseIds}::uuid[]) AS t(id)
       WHERE ${visibleSenseCondition(Prisma.sql`t.id`, viewerId)}`;
     return new Set(rows.map(({ id }) => id));

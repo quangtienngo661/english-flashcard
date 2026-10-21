@@ -12,7 +12,10 @@ import {
 } from './private/private-words.service.js';
 import { SentencesService, type Sentence } from './sentences/sentences.service.js';
 import { WordsService, type WordSense } from './words/words.service.js';
-import { practiceCandidates, practiceLemmaMeanings, practiceSenses, type CandidateSense, type LemmaMeanings, type PracticeSense } from './practice/practice-senses.js';
+import {
+  practiceCandidates, practiceLemmaMeanings, practiceOtherSenses, practiceRandomMeanings, practiceSenses, type CandidateSense,
+  type LemmaMeanings, type PracticeSense,
+} from './practice/practice-senses.js';
 import { InflectionsService, type EntryByForm, type InflectionInput, type InflectionSource } from './inflections/inflections.service.js';
 import { SourcesService, isSourceComplete, type SourceView } from './sources/sources.service.js';
 import { SensesService, type CreateSenseInput, type SaveDraftInput, type SaveDraftResult, type MarkRevisionItem, type MarkRevisionResult } from './senses/senses.service.js';
@@ -162,8 +165,9 @@ export class ContentService {
     return this.sentences.addSentence(tx, input);
   }
 
-  listSentences(userId: string, senseIds: string[]): Promise<Map<string, Sentence[]>> {
-    return this.sentences.listSentences(userId, senseIds);
+  /** A caller inside an open transaction passes its `tx` as `db` (Bước 7 plan choice 5). */
+  listSentences(userId: string, senseIds: string[], db?: Prisma.TransactionClient | PrismaClient): Promise<Map<string, Sentence[]>> {
+    return this.sentences.listSentences(userId, senseIds, db);
   }
 
   deleteSentence(userId: string, id: string): Promise<boolean> {
@@ -196,8 +200,21 @@ export class ContentService {
     return practiceLemmaMeanings(db ?? this.prisma, viewerId, lemmas);
   }
 
-  visibleSenseIds(viewerId: string, senseIds: string[]): Promise<Set<string>> {
-    return this.privateWords.visibleSenseIds(viewerId, senseIds);
+  /** Wrong meanings of a `meaning_in_sentence` question, step 1 (Bước 7 design §7.4): other visible senses of the same entry. */
+  practiceOtherSenses(viewerId: string, senseId: string, nativeLanguage: 'vi' | 'en', db?: Prisma.TransactionClient | PrismaClient):
+    Promise<CandidateSense[]> {
+    return practiceOtherSenses(db ?? this.prisma, viewerId, senseId, nativeLanguage);
+  }
+
+  /** Wrong meanings, step 3 (Bước 7 design §7.4): random catalog senses with a Vietnamese gloss, none of `excludeLemmas`. */
+  practiceRandomMeanings(viewerId: string, excludeLemmas: string[], count: number, nativeLanguage: 'vi' | 'en',
+    db?: Prisma.TransactionClient | PrismaClient): Promise<CandidateSense[]> {
+    return practiceRandomMeanings(db ?? this.prisma, viewerId, excludeLemmas, count, nativeLanguage);
+  }
+
+  /** A caller inside an open transaction passes its `tx` as `db` (Bước 7 plan choice 5). */
+  visibleSenseIds(viewerId: string, senseIds: string[], db?: Prisma.TransactionClient | PrismaClient): Promise<Set<string>> {
+    return this.privateWords.visibleSenseIds(viewerId, senseIds, db);
   }
 
   bulkCandidates(filter: { level?: Level; topic?: string; pos?: string }, limit: number):

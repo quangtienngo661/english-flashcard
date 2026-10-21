@@ -88,3 +88,18 @@ describe('PrivateWordsService audit columns (N3)', () => {
       state: 'open', liveRevisionId: 'r1', stateChangedBy: 'u1', stateChangedAt: now } });
   });
 });
+
+describe('PrivateWordsService.visibleSenseIds — reads through the client it is given (Bước 7 plan choice 5)', () => {
+  it('a caller inside a transaction passes its tx; without one the global client is used', async () => {
+    const prisma = { $queryRaw: vi.fn(async () => [{ id: 's1' }]) };
+    const tx = { $queryRaw: vi.fn(async () => [{ id: 's1' }]) };
+    const service = new PrivateWordsService(prisma as unknown as PrismaClient, new FakeClock(), {} as LevelsService,
+      {} as InflectionsService, {} as SettingsService);
+    expect(await service.visibleSenseIds('00000000-0000-4000-8000-000000000001', ['s1'], tx as unknown as Prisma.TransactionClient))
+      .toEqual(new Set(['s1']));
+    expect(tx.$queryRaw).toHaveBeenCalledTimes(1);
+    expect(prisma.$queryRaw).not.toHaveBeenCalled();
+    await service.visibleSenseIds('00000000-0000-4000-8000-000000000001', ['s1']);
+    expect(prisma.$queryRaw).toHaveBeenCalledTimes(1);
+  });
+});
