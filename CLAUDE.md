@@ -46,6 +46,9 @@ under `apps/api` and `apps/admin`. Historical implementation branches:
   an example set run in the worker (`ai-eval` queue), status, costs and calls; 10 s per call with one quick retry, 24 h replay per operation
   id, a daily provider-call cap, content kept 7 days. Locally `AI_FAKE_ENABLED=true` and both keys empty; `OPENAI_CUSTOM_HEADERS` /
   `ANTHROPIC_CUSTOM_HEADERS` must stay unset or the app refuses to start (D29). The owner builds its admin screens later (D8).
+- **Bước 0–3 fixes** (API + admin session layer only, D8 of its design; PR #98–#102, 21/10/2026) are on `dev`: accounts with names, birth
+  date (13+) and terms consent (`TERMS_VERSION` now required), account lock, admin user list, who reviewed/published/hid each sense, revert and
+  re-upload safety, practice masking and single-answer fixes, admin session handling when the API is briefly down; no admin screens for them yet.
 - **Bước 7** (Practice AI + Content AI, API only, D2 Bước 7; PR #104–#116): three AI question types inside the normal practice session
   (`cloze` from AI, `meaning_in_sentence`, `mcq_sentence`) and `cloze` from the learner's saved sentences, for Trial/Pro; AI units checked
   when a session opens, K questions made ahead (`POST /v1/practice/sessions/:id/prepare`, setting `practice.ai_prefetch_count`), a pending
@@ -61,7 +64,7 @@ Bước 7 §20: AI question quality and the rule rejection rate are not measured
 built. **Deploy** (hosting, durable Postgres/Redis, real SMTP, secrets, backup; design 2.5 §14) moved to **when the whole app is
 complete, before launch** (D3 round 3 of Bước 3, 18/10/2026): until then the owner tries the app locally (reminder emails land in
 Mailpit), `/app/*` stays blocked on production, and design Bước 3 §14 (things only checkable once deployed) is checked just before
-launch. There is no pilot after Bước 3 any more: real users are sought once the app is complete (D12 Bước 3).
+launch; the items to do before launch are collected in `docs/deliveries/deploy-checklist.md`. There is no pilot after Bước 3 any more: real users are sought once the app is complete (D12 Bước 3).
 
 **Q-A–Q-D** (end of `docs/preparation/PROJECT_ASSESSMENT_2026-10-15.md`) were decided in Bước 3's brainstorm
 (`docs/superpowers/decisions/2026-10-16-buoc-3-learning-decisions.md`): **Q-A** full Bước 3 (D1); **Q-B** AI drafts the content as
@@ -261,6 +264,12 @@ D29 was decided while implementing. Run the smoke against a real API and worker 
 (it stops when its own environment or `.env` says otherwise; B6#30 stops and starts the shared `redis` container). Learner calls in the smoke
 go through `pnpm ai:fake-call`.
 
+## Sửa thiếu sót Bước 0–3 — plan & as-built
+
+`docs/deliveries/buoc-0-3-fixes.md` (plan tóm tắt 20/10/2026, as-built 21/10/2026; PR #98–#102 into `dev`; API 2096 unit, admin 329 unit; "Xong khi" =
+CI green on every PR + the runtime gate of each milestone + `pnpm smoke:buoc-0-3-fixes` on a fresh DB, output in `docs/deliveries/buoc-0-3-fixes-smoke-output.txt`).
+Design, decisions (D1–D17) and plan: `docs/superpowers/{specs,decisions,plans}/2026-10-20-buoc-0-3-fixes*.md`. Every local `apps/api/.env` needs `TERMS_VERSION`.
+
 ## Bước 7 — plan & as-built
 
 `docs/deliveries/buoc-7.md` (plan tóm tắt and as-built 21/10/2026; Practice AI + Content AI, API only; PR #104–#116 merged into `dev`, #115 a
@@ -291,10 +300,12 @@ Các điểm dưới đây phát sinh khi rà quyền của `admin`/`editor` (b�
 - ~~**Bước 5 — `entitlements.grant` so với D6 ("editor không đụng chi phí AI").**~~ **Đã rõ ở Bước 5 (D6–D8, D33):** `editor` cấp gói Pro
   bình thường (kèm lượt AI cố định của gói) nhưng **không** đặt con số lượt AI tùy ý, chỉ cấp và thu hồi cho người học thường, không thu hồi
   được lần cấp có con số lượt AI; `admin` xem lịch sử cấp của editor và thu hồi. Trần AI toàn hệ thống mỗi ngày là `ai_daily_cap`.
-- **Sau Bước 3 — rà nghiệp vụ schema DB (chủ dự án 17/10/2026; chưa chốt, chưa sửa code).** DB1 `users` không có họ tên,
+- ~~**Sau Bước 3 — rà nghiệp vụ schema DB (chủ dự án 17/10/2026; chưa chốt, chưa sửa code).** DB1 `users` không có họ tên,
   ngày sinh (chủ động giới hạn theo IR21; chủ dự án muốn thêm); DB2 không lưu ai đã review/publish/gỡ/retire một nghĩa; DB3
   đăng ký không lưu việc đồng ý điều khoản và tuổi tối thiểu. DB2–DB3 nên xong trước pilot. Chi tiết, bằng chứng và câu còn
-  mở: `docs/superpowers/reviews/2026-10-17-db-schema-business-review.md`.
+  mở: `docs/superpowers/reviews/2026-10-17-db-schema-business-review.md`.~~ **Đã rõ ở đợt sửa thiếu sót Bước 0–3 (21/10/2026, PR #99,
+  #100):** DB1 họ, tên, ngày sinh (từ 13 tuổi); DB2 cột người review / publish / gỡ / retire, chỉ lần gần nhất (D9); DB3 thời điểm và phiên bản
+  đồng ý điều khoản (D5). As-built: `docs/deliveries/buoc-0-3-fixes.md`.
 - ~~**Giao diện cấp vai trò:**~~ **Đã rõ 13/10/2026:** chốt thành Bước 2.5 (D9, design Bước 2 mục 15) — giao diện
   web (đăng nhập, trang admin, cấp vai trò) ngay sau Bước 2, trước Bước 3. Xem bảng ở HANDOFF §2. Đã xong 15/10/2026
   (as-built ở `docs/deliveries/buoc-2-5.md`).
@@ -376,7 +387,10 @@ for a concrete example of the loop catching real bugs each round.
   `docs/deliveries/ui-refresh-b.md` (UI refresh B: plan tóm tắt + landing and admin as-built), `docs/deliveries/buoc-3.md` +
   `docs/deliveries/buoc-3-test-flow.md` (Bước 3 system part), `docs/deliveries/buoc-4.md` (Bước 4, Practice API),
   `docs/deliveries/buoc-5.md` + `docs/deliveries/buoc-5-smoke-output.txt` (Bước 5, Entitlements API),
-  `docs/deliveries/buoc-6.md` + `docs/deliveries/buoc-6-smoke-output.txt` (Bước 6, AI Integration API), `docs/deliveries/buoc-7.md` + `docs/deliveries/buoc-7-smoke-output.txt` (Bước 7, Practice AI + Content AI API).
+  `docs/deliveries/buoc-6.md` + `docs/deliveries/buoc-6-smoke-output.txt` (Bước 6, AI Integration API),
+  `docs/deliveries/buoc-7.md` + `docs/deliveries/buoc-7-smoke-output.txt` (Bước 7, Practice AI + Content AI API),
+  `docs/deliveries/buoc-0-3-fixes.md` + `docs/deliveries/buoc-0-3-fixes-smoke-output.txt` (Bước 0–3 fixes),
+  `docs/deliveries/deploy-checklist.md` (what to do before launch).
 - Bước 2 test flow (automated gate, `pnpm smoke:buoc-2`, manual steps): `docs/deliveries/buoc-2-test-flow.md`.
 - Spec index and status: `docs/specs/README.md`.
 - Spec/design-doc writing convention (edge cases must be derived per-doc, not just cited): `docs/specs/SPEC_WRITING_CONVENTIONS.md`.
