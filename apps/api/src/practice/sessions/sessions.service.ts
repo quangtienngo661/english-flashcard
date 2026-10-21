@@ -7,8 +7,9 @@ import { EntitlementsService, refusalProblem } from '../../entitlements/index.js
 import type { PracticeSession, Prisma, PrismaClient } from '../../generated/prisma/client.js';
 import { LearningService, type PracticeItem, type PracticeScope } from '../../learning/index.js';
 import { SettingsService } from '../../settings/index.js';
+import { AiSessionPlanner } from '../ai/ai-session-planner.service.js';
 import { withPracticeLock } from '../practice-lock.js';
-import type { QuestionType } from '../practice.types.js';
+import type { ClozeSource, QuestionType } from '../practice.types.js';
 import { shuffle } from '../questions/distractors.js';
 import { QuestionBuilder } from '../questions/question-builder.service.js';
 import { PracticeStats } from '../weak/practice-stats.js';
@@ -23,6 +24,8 @@ export type GroupFilter = 'all' | 'due' | 'priority' | '0' | '1' | '2' | '3' | '
 export type StartInput = {
   source: Source; group_id?: string; group_filter?: GroupFilter; sort?: SortKey; types: QuestionType[];
   prompt_style?: 'meaning' | 'sentence' | 'mixed'; count?: number;
+  /** Bước 7 (design §6.1): only with `cloze`; default 'ai'. */
+  cloze_source?: ClozeSource;
 };
 type Notice = 'word-not-found';
 export type NextResult =
@@ -51,6 +54,7 @@ export class SessionsService {
     @Inject(LearningService) private readonly learning: LearningService,
     @Inject(QuestionBuilder) private readonly builder: QuestionBuilder,
     @Inject(PracticeStats) private readonly stats: PracticeStats,
+    @Inject(AiSessionPlanner) private readonly aiPlanner: AiSessionPlanner,
   ) {}
 
   async start(learner: Learner, input: StartInput): Promise<{ session: SessionView }> {
@@ -68,6 +72,9 @@ export class SessionsService {
     // second connection while the transaction holds one (PX4). A word that stops being visible before the transaction
     // commits is dropped later, when `build` skips it as not visible.
     await this.assertEntitled(learner.userId);
+    const clozeSource = input.types.includes('cloze') ? input.cloze_source ?? 'ai' : null;
+    // Bước 7 (design §6.1 step 2); null when no Bước 7 type is chosen.
+    const snapshot = await this.aiPlanner.gate(learner.userId, input.types, clozeSource);
     const items = await this.sourceItems(learner.userId, input);
     if (items.length === 0) throw noWords(input.source === 'group' ? 'group-empty' : 'source-empty');
     const statsBySense = sort === 'least_practiced' || sort === 'most_wrong'
@@ -80,18 +87,24 @@ export class SessionsService {
     }));
     const order = sortWords(words, sort, Math.random);
     const kept: string[] = [];
+    const availableBySense = new Map<string, QuestionType[]>();
     // Each batch asks only for the words still missing (each word loads all its group mates), at most AVAILABILITY_BATCH.
     for (let at = 0; at < order.length && kept.length < count;) {
       const batch = order.slice(at, at + Math.min(AVAILABILITY_BATCH, count - kept.length));
       at += batch.length;
       const available = await this.builder.availability({
-        userId: learner.userId, nativeLanguage: learner.nativeLanguage, senseIds: batch, chosenTypes: input.types,
+        userId: learner.userId, nativeLanguage: learner.nativeLanguage, senseIds: batch, chosenTypes: input.types, clozeSource,
       });
       for (const senseId of batch) {
-        if (kept.length < count && (available.get(senseId)?.length ?? 0) > 0) kept.push(senseId);
+        if (kept.length < count && (available.get(senseId)?.length ?? 0) > 0) {
+          kept.push(senseId);
+          availableBySense.set(senseId, available.get(senseId)!);
+        }
       }
     }
     if (kept.length === 0) throw noWords('no-word-fits-types');
+    // Steps 3–5: words marked for AI, the session's AI questions, units left (design §6.1).
+    const ai = await this.aiPlanner.plan(learner, { types: input.types, clozeSource, count, kept, available: availableBySense }, snapshot);
     return this.prisma.$transaction(async (tx) => {
       await withPracticeLock(tx, learner.userId);
       const now = this.clock.now();
@@ -106,7 +119,7 @@ export class SessionsService {
         userId: learner.userId, source: input.source, groupId: input.group_id ?? null,
         groupFilter: input.source === 'group' ? input.group_filter ?? 'all' : null, sort, types: input.types,
         promptStyle: input.prompt_style ?? 'mixed', targetCount: count, senseIds: kept, status: 'active', startedAt: now,
-        lastActivityAt: now,
+        lastActivityAt: now, clozeSource, aiPlanned: ai.aiPlanned, aiSenseIds: ai.aiSenseIds,
       } });
       return { session: sessionView(session, []) };
     }, transactionOptions);
