@@ -4,7 +4,7 @@ import type { PrismaClient } from '../../generated/prisma/client.js';
 import { SETTINGS_DEFAULTS, type AppSettings, type SettingsService } from '../../settings/index.js';
 import { AiAdapter, type AdapterOutcome, type ModelDescription } from '../adapters/ai-adapter.js';
 import { AiAdapterRegistry } from '../adapters/ai-adapter.registry.js';
-import type { AiOperation, AiProviderName } from '../ai.types.js';
+import { AI_OPERATIONS, type AiOperation, type AiProviderName } from '../ai.types.js';
 import type { CallLedger } from '../runner/call-ledger.service.js';
 import type { ReadinessCheck, ReadinessService } from '../runner/readiness.service.js';
 import type { ModelRow } from '../runner/selection.js';
@@ -52,11 +52,11 @@ function setup(input: Setup = {}) {
   const settings: AppSettings = {
     ...SETTINGS_DEFAULTS, entitlements: { ...SETTINGS_DEFAULTS.entitlements, aiEnabled: input.aiEnabled ?? true },
   };
-  const models = { generate_cloze: model(), lookup_word: null, translate_sentence: null, ...input.models };
+  const models: Partial<Record<AiOperation, Model | null>> = { generate_cloze: model(), ...input.models };
   const contentArgs: unknown[] = [];
   const prisma = {
     aiOperationSetting: {
-      findMany: vi.fn(async () => (['generate_cloze', 'lookup_word', 'translate_sentence'] as const).map((operation) => ({
+      findMany: vi.fn(async () => AI_OPERATIONS.map((operation) => ({
         operation, effort: operation === 'generate_cloze' ? 'low' : null, thinking: null, maxOutputTokens: 1_200,
         modelRef: models[operation]?.id ?? null, model: models[operation],
       }))),
@@ -124,6 +124,8 @@ describe('ReportsService.status', () => {
     const { operations } = await service.status(NOW);
     expect(operations.map((item) => [item.operation, item.ready, item.reason])).toEqual([
       ['generate_cloze', true, null], ['lookup_word', false, 'model-not-set'], ['translate_sentence', false, 'ai-disabled'],
+      ['generate_meaning_question', false, 'model-not-set'], ['generate_sentence_mcq', false, 'model-not-set'],
+      ['check_private_word', false, 'model-not-set'],
     ]);
     expect(operations[0]).toMatchObject({
       model: { provider: 'fake', model_id: 'fake:ok' }, effort: 'low', thinking: null, max_output_tokens: 1_200, model_warning: null,

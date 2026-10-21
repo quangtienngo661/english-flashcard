@@ -5,7 +5,8 @@ import { AI_OPERATIONS, OPERATION_ID_PATTERN, type AiOperation, type AiService }
 
 // Arguments of `pnpm ai:fake-call` (plan Task 19). Kept apart from the entry file, which runs on import.
 
-export const AI_FAKE_CALL_USAGE = 'usage: pnpm ai:fake-call <generate_cloze|lookup_word|translate_sentence> --user <uuid>'
+export const AI_FAKE_CALL_USAGE = 'usage: pnpm ai:fake-call <generate_cloze|lookup_word|translate_sentence|generate_meaning_question|generate_sentence_mcq'
+  + '|check_private_word> --user <uuid>'
   + ' --data <json|@file> [--operation-id <id>] [--parallel N (1–50)] [--purpose learner|test]\n'
   + '       pnpm ai:fake-call delete-user-data --user <uuid>';
 
