@@ -8,6 +8,7 @@ import { LearningModule } from '../learning/index.js';
 import { SettingsModule } from '../settings/index.js';
 import { AiQuestionGenerator } from './ai/ai-question-generator.service.js';
 import { AiRequestsRepository } from './ai/ai-requests.repository.js';
+import { AiSessionPlanner } from './ai/ai-session-planner.service.js';
 import { UnknownFormsRepository } from './ai/unknown-forms.repository.js';
 import { WordChecksRepository } from './ai/word-checks.repository.js';
 import { AnswersController } from './answers/answers.controller.js';
@@ -38,7 +39,7 @@ import { PracticeStats } from './weak/practice-stats.js';
   providers: [
     IdempotencyInterceptor, QuestionBuilder, PracticeStats, SessionsService, AnswersService, PracticeReviewsService, HistoryService,
     ReportsService, ReportReasonsService, PracticeCleanupService, AiRequestsRepository, WordChecksRepository, UnknownFormsRepository,
-    AiQuestionGenerator,
+    AiQuestionGenerator, AiSessionPlanner,
   ],
 })
 export class PracticeModule {}
