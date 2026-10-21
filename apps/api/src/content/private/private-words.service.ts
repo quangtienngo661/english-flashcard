@@ -4,7 +4,7 @@ import { PRISMA_CLIENT } from '../../common/db/prisma.module.js';
 import { Prisma, type PrismaClient } from '../../generated/prisma/client.js';
 import { normalizeLemma, normalizeText } from '../catalog/normalize.js';
 import {
-  LEMMA_MAX, LEVELS, MEANING_MAX, OWNER_SOURCE_ID, PRIVATE_POS_UNSET, VALID_POS,
+  LEMMA_MAX, LEVELS, MEANING_MAX, OWNER_SOURCE_ID, PRIVATE_EXAMPLES_MAX, PRIVATE_POS_UNSET, SENTENCE_MAX, VALID_POS,
   type InflectionKind, type Level,
 } from '../content.constants.js';
 import { ContentRuleError, contentHash, revisionFormOf, type RevisionContent } from '../senses/revision-content.js';
@@ -15,15 +15,20 @@ import { visibleSenseCondition } from '../learner/visible-senses.js';
 import { SettingsService } from '../../settings/index.js';
 
 export type Meaning = { text: string; language: 'vi' | 'en' };
+/**
+ * `examples` (0..PRIVATE_EXAMPLES_MAX) go to the first revision's `examples_en`; `aiSuggestion` marks it `draft_source =
+ * 'ai_suggestion'`, shown as "AI gợi ý" until a later edit publishes a revision (Bước 7 design §11.2, D22, plan choice 3).
+ */
 export type CreatePrivateSenseInput = {
   ownerId: string; lemma: string; pos: string | null; meaning: Meaning; level: Level | null; topicCodes: string[];
-  formOf: { entryId: string; kind: InflectionKind } | null;
+  formOf: { entryId: string; kind: InflectionKind } | null; examples: string[]; aiSuggestion: boolean;
 };
 export type CreatePrivateSenseResult = {
   entryId: string; senseId: string; createdEntry: boolean; catalogMatch: { entryId: string } | null;
 };
+/** Per sense: a new meaning, new examples (an empty list removes them; plan choice 4), or both. */
 export type PrivateWordPatch = {
-  lemma?: string; pos?: string | null; senses?: Array<{ senseId: string; meaning: Meaning }>;
+  lemma?: string; pos?: string | null; senses?: Array<{ senseId: string; meaning?: Meaning; examples?: string[] }>;
   level?: Level | null; topicCodes?: string[];
 };
 export class PrivateWordLimitError extends ContentRuleError {
@@ -51,6 +56,10 @@ function privatePos(value: string | null): string {
   const pos = normalizeText(value).toLowerCase();
   if (!VALID_POS.some((valid) => valid === pos)) throw invalid();
   return pos;
+}
+function privateExamples(examples: string[]): string[] {
+  if (examples.length > PRIVATE_EXAMPLES_MAX) throw invalid();
+  return examples.map((example) => boundedText(example, SENTENCE_MAX));
 }
 function meaningContent(meaning: Meaning): Pick<RevisionContent, 'glossVi' | 'definitionEn'> {
   const text = boundedText(meaning.text, MEANING_MAX);
@@ -97,7 +106,8 @@ export class PrivateWordsService {
     }
   }
 
-  private async publishRevision(tx: Tx, senseId: string, revisionNo: number, content: RevisionContent, ownerId: string): Promise<void> {
+  private async publishRevision(tx: Tx, senseId: string, revisionNo: number, content: RevisionContent, ownerId: string,
+    draftSource: 'user' | 'ai_suggestion' = 'user'): Promise<void> {
     const now = this.clock.now();
     const texts = [
       ...(content.glossVi ? [{ language: 'vi', kind: 'gloss', text: content.glossVi }] : []),
@@ -105,7 +115,7 @@ export class PrivateWordsService {
     ];
     await tx.senseRevision.updateMany({ where: { senseId, status: 'published' }, data: { status: 'superseded' } });
     const revision = await tx.senseRevision.create({ data: {
-      senseId, revisionNo, status: 'published', draftSource: 'user', createdBy: ownerId, publishedAt: now, publishedBy: ownerId,
+      senseId, revisionNo, status: 'published', draftSource, createdBy: ownerId, publishedAt: now, publishedBy: ownerId,
       contentHash: contentHash(content), examples: content.examplesEn, topicCodes: content.topicCodes,
       acceptedForms: content.acceptedForms, formOfEntryId: content.formOf?.entryId ?? null, formKind: content.formOf?.kind ?? null,
       texts: { create: texts },
@@ -127,6 +137,7 @@ export class PrivateWordsService {
     const lemma = privateLemma(input.lemma);
     const pos = privatePos(input.pos);
     const meaning = meaningContent(input.meaning);
+    const examples = privateExamples(input.examples);
     if (input.level !== null && !LEVELS.includes(input.level)) throw invalid();
     await this.lockOwner(tx, input.ownerId);
     const topicCodes = await this.validTopics(tx, input.topicCodes);
@@ -154,8 +165,8 @@ export class PrivateWordsService {
     let contextLabel: string | null = null;
     for (let n = 2; labels.has(contextLabel); n++) contextLabel = `p${n}`;
     const sense = await tx.sense.create({ data: { entryId: entry.id, contextLabel, state: 'unpublished' }, select: { id: true } });
-    await this.publishRevision(tx, sense.id, 1, { ...meaning, examplesEn: [], topicCodes, acceptedForms: [], formOf: input.formOf },
-      input.ownerId);
+    await this.publishRevision(tx, sense.id, 1, { ...meaning, examplesEn: examples, topicCodes, acceptedForms: [], formOf: input.formOf },
+      input.ownerId, input.aiSuggestion ? 'ai_suggestion' : 'user');
 
     if (input.level !== null) {
       await this.setLevel(tx, entry.id, input.level, 'user');
@@ -185,17 +196,21 @@ export class PrivateWordsService {
       }
     }
     const topicCodes = patch.topicCodes !== undefined ? await this.validTopics(tx, patch.topicCodes) : undefined;
-    const meanings = new Map((patch.senses ?? []).map(({ senseId, meaning }) => [senseId, meaningContent(meaning)]));
+    const changes = new Map((patch.senses ?? []).map(({ senseId, meaning, examples }) => [senseId, {
+      ...(meaning === undefined ? {} : meaningContent(meaning)),
+      ...(examples === undefined ? {} : { examplesEn: privateExamples(examples) }),
+    }]));
     const senses = await tx.sense.findMany({ where: { entryId: entry.id }, include: {
       revisions: { orderBy: { revisionNo: 'desc' }, take: 1, include: revisionInclude },
     } });
-    if ([...meanings.keys()].some((id) => !senses.some((sense) => sense.id === id))) throw new ContentRuleError('not-found');
+    if ([...changes.keys()].some((id) => !senses.some((sense) => sense.id === id))) throw new ContentRuleError('not-found');
     for (const sense of senses) {
       const latest = sense.revisions[0];
-      const meaning = meanings.get(sense.id);
-      if (!latest || (meaning === undefined && topicCodes === undefined)) continue;
+      const change = changes.get(sense.id);
+      if (!latest || (change === undefined && topicCodes === undefined)) continue;
       const base = readContent(latest);
-      const content: RevisionContent = { ...base, ...meaning, topicCodes: topicCodes ?? base.topicCodes };
+      // A published revision is the learner's own content, so it is always draft_source 'user' (the AI label goes, plan choice 3).
+      const content: RevisionContent = { ...base, ...change, topicCodes: topicCodes ?? base.topicCodes };
       if (contentHash(content) === latest.contentHash) continue;
       await this.publishRevision(tx, sense.id, latest.revisionNo + 1, content, ownerId);
     }
