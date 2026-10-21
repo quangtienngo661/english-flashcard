@@ -19,6 +19,14 @@ model PracticeSession {
   startedAt      DateTime  @map("started_at") @db.Timestamptz
   lastActivityAt DateTime  @map("last_activity_at") @db.Timestamptz
   endedAt        DateTime? @map("ended_at") @db.Timestamptz
+  // Bước 7 (design §12.1, §6.5). 'ai' / 'own' when the session has cloze; null otherwise.
+  clozeSource        String?  @map("cloze_source")
+  aiPlanned          Int      @default(0) @map("ai_planned")
+  aiSenseIds         String[] @default([]) @map("ai_sense_ids") @db.Uuid
+  // The slot waiting for an AI question (practice_ai_requests.id); plain UUID, no FK.
+  pendingAiRequestId String?  @map("pending_ai_request_id") @db.Uuid
+  aiStopped          String?  @map("ai_stopped")
+  aiNoticeShown      Boolean  @default(false) @map("ai_notice_shown")
 
   items PracticeSessionItem[]
 
@@ -41,9 +49,18 @@ model PracticeQuestion {
   hints              Json
   distractorSenseIds String[] @map("distractor_sense_ids") @db.Uuid
   createdAt          DateTime @map("created_at") @db.Timestamptz
+  // Bước 7 (design §12.1). ai_request_id is the ledger operation id (mã gốc); ai_meta holds call_operation_id.
+  source             String   @default("rule")
+  aiRequestId        String?  @map("ai_request_id")
+  aiMeta             Json?    @map("ai_meta")
+  aiCharged          Boolean  @default(false) @map("ai_charged")
+  senseRevisionId    String?  @map("sense_revision_id") @db.Uuid
+  // Content key of a private word when the question was made (design 7.6).
+  contentKey         String?  @map("content_key")
 
   items PracticeSessionItem[]
 
+  // Unseen AI questions are found by (user_id, sense_id) WHERE source = 'ai': the partial index lives in the migration.
   @@map("practice_questions")
 }
 
@@ -92,14 +109,92 @@ model PracticeReport {
   senseId          String    @map("sense_id") @db.Uuid
   questionSnapshot Json      @map("question_snapshot")
   reason           String
+  // The reason's learner label when reported (reasons can be renamed later).
+  reasonLabel      String    @map("reason_label")
   note             String?
   status           String    @default("open")
   resolvedBy       String?   @map("resolved_by") @db.Uuid
   resolvedAt       DateTime? @map("resolved_at") @db.Timestamptz
   createdAt        DateTime  @map("created_at") @db.Timestamptz
+  // Bước 7 (design §9). ai_operation_id = the question's ai_request_id; refunded null = no refund tried yet.
+  questionSource   String    @default("rule") @map("question_source")
+  aiOperationId    String?   @map("ai_operation_id")
+  aiMeta           Json?     @map("ai_meta")
+  aiCharged        Boolean   @default(false) @map("ai_charged")
+  refunded         Boolean?
+  resolvedByRole   String?   @map("resolved_by_role")
 
-  item PracticeSessionItem? @relation(fields: [itemId], references: [id], onDelete: SetNull)
+  item      PracticeSessionItem? @relation(fields: [itemId], references: [id], onDelete: SetNull)
+  reasonRef PracticeReportReason @relation(fields: [reason], references: [code], onDelete: Restrict)
 
   @@index([status, createdAt])
   @@map("practice_reports")
+}
+
+// One AI question being made for a slot (design §6.5); id = the ledger operation id (mã gốc). session_id and question_id are
+// plain UUIDs without FK (design §12.1, R21). Partial unique "one generating per (user, sense)" and the state CHECK live in the migration.
+model PracticeAiRequest {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId     String   @map("user_id") @db.Uuid
+  sessionId  String?  @map("session_id") @db.Uuid
+  senseId    String   @map("sense_id") @db.Uuid
+  type       String
+  round      Int
+  state      String
+  failure    String?
+  // The data sent to AI, kept so a retry after a crash sends the same input (design 6.5 D).
+  aiInput    Json?    @map("ai_input")
+  questionId String?  @map("question_id") @db.Uuid
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt  DateTime @default(now()) @map("updated_at") @db.Timestamptz
+
+  @@index([sessionId, state])
+  @@map("practice_ai_requests")
+}
+
+// Report reasons managed by the admin (design §9.1); never deleted, only turned off.
+model PracticeReportReason {
+  code         String   @id
+  labelVi      String   @map("label_vi")
+  labelEn      String   @map("label_en")
+  detailHintVi String?  @map("detail_hint_vi")
+  detailHintEn String?  @map("detail_hint_en")
+  appliesTo    String   @map("applies_to")
+  noteRequired Boolean  @map("note_required")
+  refundable   Boolean
+  active       Boolean  @default(true)
+  position     Int
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt    DateTime @default(now()) @map("updated_at") @db.Timestamptz
+  updatedBy    String?  @map("updated_by") @db.Uuid
+
+  reports PracticeReport[]
+
+  @@map("practice_report_reasons")
+}
+
+// Forms an AI used that the forms table did not know (design §10); no learner column.
+model PracticeUnknownForm {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  lemmaKey      String   @map("lemma_key")
+  formKey       String   @map("form_key")
+  form          String
+  rejectedCount Int      @default(1) @map("rejected_count")
+  firstSeenAt   DateTime @default(now()) @map("first_seen_at") @db.Timestamptz
+  lastSeenAt    DateTime @default(now()) @map("last_seen_at") @db.Timestamptz
+
+  @@unique([lemmaKey, formKey])
+  @@map("practice_unknown_forms")
+}
+
+// The last AI check of a private word (design 7.6), per learner and sense.
+model PracticeWordCheck {
+  userId     String   @map("user_id") @db.Uuid
+  senseId    String   @map("sense_id") @db.Uuid
+  contentKey String   @map("content_key")
+  verdict    String
+  checkedAt  DateTime @map("checked_at") @db.Timestamptz
+
+  @@id([userId, senseId])
+  @@map("practice_word_checks")
 }

@@ -78,9 +78,11 @@ export class ReportsService {
           type: item.question.type as QuestionType, prompt: item.question.prompt as Prompt, answerKey,
           hints: item.question.hints as Hints,
         }, { answer_raw: item.answerRaw, answers_tried: item.answersTried, result: item.result, hint_level: item.hintLevel });
+        // Bước 7 Task 2: reason_label is required; Task 20 replaces this with the reasons the learner is shown.
+        const { labelVi } = await tx.practiceReportReason.findUniqueOrThrow({ where: { code: input.reason }, select: { labelVi: true } });
         return tx.practiceReport.create({ data: {
-          userId, itemId, senseId: item.senseId, questionSnapshot: snapshot as Prisma.InputJsonValue, reason: input.reason, note: input.note,
-          createdAt: now,
+          userId, itemId, senseId: item.senseId, questionSnapshot: snapshot as Prisma.InputJsonValue, reason: input.reason,
+          reasonLabel: labelVi, note: input.note, createdAt: now,
         } });
       }, transactionOptions));
     } catch (error) {
