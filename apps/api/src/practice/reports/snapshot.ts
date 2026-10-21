@@ -5,18 +5,21 @@ export type SnapshotQuestion = { type: QuestionType; prompt: Prompt; answerKey: 
 export type SnapshotItem = { answer_raw: string | null; answers_tried: string[]; result: string | null; hint_level: number };
 
 /**
- * The copy of a question and its answers that staff read (design §10, D36). A learner's private word is replaced by
- * PRIVATE_WORD_MASK and a private paired meaning by PRIVATE_MEANING_MASK, so the original never reaches the report. Only
- * catalog words are asked here (a private asked word cannot be reported), so hints, accepted answers and the reveal hold
- * no private text.
+ * The copy of a question and its answers that staff read (design §10, D36; Bước 7 §7.8). A learner's private word is replaced
+ * by PRIVATE_WORD_MASK and a private meaning by PRIVATE_MEANING_MASK, so the original never reaches the report. A private
+ * asked word reaches here only from an AI question the learner agreed to share (D26): then the asked word, its option, hints
+ * and reveal stay; every other private option is still masked.
  */
 export function buildSnapshot(question: SnapshotQuestion, item: SnapshotItem) {
   const { prompt, answerKey: key } = question;
   let maskedPrompt: Prompt = prompt;
   let correct: Record<string, unknown> = { ...key.reveal };
   let answer = item.answer_raw;
-  if (prompt.kind === 'mcq' && key.kind === 'mcq') {
-    const options = prompt.options.map((text, index) => key.option_private[index] ? PRIVATE_WORD_MASK : text);
+  if ((prompt.kind === 'mcq' || prompt.kind === 'meaning_in_sentence' || prompt.kind === 'mcq_sentence') && key.kind === 'mcq') {
+    // The options of meaning_in_sentence are meanings; the others are words.
+    const mask = prompt.kind === 'meaning_in_sentence' ? PRIVATE_MEANING_MASK : PRIVATE_WORD_MASK;
+    const options = prompt.options.map((text, index) =>
+      key.option_private[index] && !(key.asked_private && index === key.correct_index) ? mask : text);
     maskedPrompt = { ...prompt, options };
     correct = { ...correct, option_index: key.correct_index };
     // answer_raw is the chosen index "0"…"3" (Task 8).
@@ -34,6 +37,7 @@ export function buildSnapshot(question: SnapshotQuestion, item: SnapshotItem) {
     hints_shown: {
       level1: item.hint_level >= 1 ? question.hints.level1 : null,
       level2: item.hint_level >= 2 ? question.hints.level2 : null,
+      level3: item.hint_level >= 3 ? question.hints.level3 ?? null : null,
     },
     learner: { answer, answers_tried: item.answers_tried, result: item.result, hint_level: item.hint_level },
   };

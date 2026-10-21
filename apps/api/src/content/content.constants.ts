@@ -20,6 +20,8 @@ export const OWNER_SOURCE_ID = '00000000-0000-4000-8000-000000000001';
 /** AGID 2016.01.19, seeded by migration agid_source (D46): the library source of inflected forms. */
 export const AGID_SOURCE_ID = '00000000-0000-4000-8000-000000000002';
 export const MAX_EXAMPLES = 3;
+/** Examples a learner keeps on a private word (Bước 7 design §11.2, D22). */
+export const PRIVATE_EXAMPLES_MAX = 2;
 
 export const INFLECTION_KINDS = [
   'third_person', 'present_participle', 'past', 'past_participle', 'plural', 'comparative', 'superlative',
