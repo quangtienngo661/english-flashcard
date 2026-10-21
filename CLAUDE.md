@@ -49,7 +49,7 @@ under `apps/api` and `apps/admin`. Historical implementation branches:
 
 **Next (21/10/2026):** Bước 7 (Practice AI + Content AI, API only) has an approved design (D1–D34, PR #103) and a plan (PR #104); the
 owner runs it in four sessions (step-7-coordinator, step-7-A, step-7-B, step-7-C; DBs `english_learning_b7_a|b|c`). See "Bước 7 — plan"
-below. "Xong khi" has no real AI call (D3 Bước 7): the owner tries real keys himself later. The learner UI for Bước 3–7 is still to be
+below. "Xong khi" has no real AI call (D3 Bước 7): the owner tries real keys later. The learner UI for Bước 3–7 is still to be
 built. **Deploy** (hosting, durable Postgres/Redis, real SMTP, secrets, backup; design 2.5 §14) moved to **when the whole app is
 complete, before launch** (D3 round 3 of Bước 3, 18/10/2026): until then the owner tries the app locally (reminder emails land in
 Mailpit), `/app/*` stays blocked on production, and design Bước 3 §14 (things only checkable once deployed) is checked just before
