@@ -26,6 +26,8 @@ import { PublishService } from './senses/publish.service.js';
 import { SensesService } from './senses/senses.service.js';
 import { LearnerTopicsController, TopicsController } from './taxonomy/topics.controller.js';
 import { TopicsService } from './taxonomy/topics.service.js';
+import { AdminWordFormsController } from './word-forms/admin-word-forms.controller.js';
+import { WordFormsService } from './word-forms/word-forms.service.js';
 
 @Module({
   imports: [IdentityModule, SettingsModule],
@@ -33,9 +35,10 @@ import { TopicsService } from './taxonomy/topics.service.js';
     SourcesController, PublicSourcesController, TopicsController, LearnerTopicsController,
     AdminEntriesController, EntryFunctionWordController, AdminSensesController, BatchEntriesController,
     AdminPublishController, AdminCatalogController, LearnerContentController, MyWordsController, SentencesController, WordsController,
+    AdminWordFormsController,
   ],
   providers: [ContentService, SourcesService, TopicsService, LearnerContentGuard, LearnerContentService, EntriesService, LevelsService, SensesService, PublishService, AdminCatalogQueries, InflectionsService,
-    PrivateWordsService, SentencesService, WordsService, IdempotencyInterceptor],
+    PrivateWordsService, SentencesService, WordsService, WordFormsService, IdempotencyInterceptor],
   exports: [ContentService],
 })
 export class ContentModule {}

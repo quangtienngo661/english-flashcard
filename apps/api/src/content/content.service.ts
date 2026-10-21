@@ -11,6 +11,7 @@ import {
   PrivateWordsService, type CreatePrivateSenseInput, type CreatePrivateSenseResult, type PrivateWordPatch,
 } from './private/private-words.service.js';
 import { SentencesService, type Sentence } from './sentences/sentences.service.js';
+import { WordFormsService, type WordFormAdded } from './word-forms/word-forms.service.js';
 import { WordsService, type WordSense } from './words/words.service.js';
 import {
   practiceCandidates, practiceLemmaMeanings, practiceOtherSenses, practiceRandomMeanings, practiceSenses, type CandidateSense,
@@ -36,7 +37,22 @@ export class ContentService {
     @Inject(PrivateWordsService) private readonly privateWords: PrivateWordsService,
     @Inject(SentencesService) private readonly sentences: SentencesService,
     @Inject(WordsService) private readonly words: WordsService,
+    @Inject(WordFormsService) private readonly wordForms: WordFormsService,
   ) {}
+
+  /** Bước 7 design §10: a form staff accept for a lemma (Practice's unknown-forms flow). */
+  addWordForm(actorId: string, lemma: string, form: string): Promise<WordFormAdded> {
+    return this.wordForms.add(actorId, lemma, form);
+  }
+
+  removeWordForm(id: string): Promise<boolean> {
+    return this.wordForms.remove(id);
+  }
+
+  /** `lemmaKey + ' ' + formKey` of the pairs staff accepted, so Practice can hide them from its unknown-forms list. */
+  knownWordForms(pairs: Array<{ lemmaKey: string; formKey: string }>): Promise<Set<string>> {
+    return this.wordForms.known(pairs);
+  }
 
   getSource(id: string): Promise<SourceView | null> {
     return this.sources.getSource(id);
