@@ -4,8 +4,10 @@ import { PRIVATE_SENSES_CLEANUP, type PrivateSensesCleanup } from '../../learnin
 
 /**
  * Removes what Practice keeps about private senses being deleted, inside `deleteMyWord`'s transaction (design §11, R2).
- * Lock order: the learner's open sessions holding those senses (step 2), then their items (step 3), both in id order;
- * Learning locks its own items only after this returns.
+ * Lock order: the learner's open sessions holding those senses (step 2), then the AI requests for them (Bước 7 §12.1), then
+ * their items (step 3), each in id order; Learning locks its own items only after this returns. The requests go first: a
+ * generation that reaches step H afterwards finds no row and writes no question (B7E115); one that wrote before is committed,
+ * so its question is deleted below with the others.
  */
 @Injectable()
 export class PracticePrivateSensesCleanup implements PrivateSensesCleanup {
@@ -14,11 +16,21 @@ export class PracticePrivateSensesCleanup implements PrivateSensesCleanup {
     await tx.$queryRaw`
       SELECT s.id FROM practice_sessions s
       WHERE s.user_id = ${userId}::uuid AND s.status IN ('active', 'waiting_continue')
-        AND EXISTS (SELECT 1 FROM practice_session_items i WHERE i.session_id = s.id AND i.sense_id = ANY(${senseIds}::uuid[]))
+        AND (EXISTS (SELECT 1 FROM practice_session_items i WHERE i.session_id = s.id AND i.sense_id = ANY(${senseIds}::uuid[]))
+          OR EXISTS (SELECT 1 FROM practice_ai_requests r WHERE r.id = s.pending_ai_request_id AND r.sense_id = ANY(${senseIds}::uuid[])))
       ORDER BY s.id FOR UPDATE`;
+    const requests = await tx.$queryRaw<Array<{ id: string }>>`
+      SELECT id FROM practice_ai_requests
+      WHERE user_id = ${userId}::uuid AND sense_id = ANY(${senseIds}::uuid[]) ORDER BY id FOR UPDATE`;
     await tx.$queryRaw`
       SELECT id FROM practice_session_items
       WHERE user_id = ${userId}::uuid AND sense_id = ANY(${senseIds}::uuid[]) ORDER BY id FOR UPDATE`;
+    const requestIds = requests.map(({ id }) => id);
+    if (requestIds.length > 0) await tx.practiceAiRequest.deleteMany({ where: { id: { in: requestIds } } });
+    await tx.practiceWordCheck.deleteMany({ where: { userId, senseId: { in: senseIds } } });
+    if (requestIds.length > 0) {
+      await tx.practiceSession.updateMany({ where: { userId, pendingAiRequestId: { in: requestIds } }, data: { pendingAiRequestId: null } });
+    }
     // The next next/current reads the notice and says "Không tìm thấy từ này" (B4E8); a final item needs none.
     await tx.practiceSession.updateMany({
       where: {
