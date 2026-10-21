@@ -2,8 +2,11 @@ import { Inject, Injectable } from '@nestjs/common';
 import { PRISMA_CLIENT } from '../../common/db/prisma.module.js';
 import { Prisma, type PrismaClient } from '../../generated/prisma/client.js';
 
-/** Lower-case NFC, as `entry_inflections.form_key` and `word_form_additions` (design §10). */
-export const formKey = (text: string) => text.normalize('NFC').toLowerCase();
+/**
+ * As Content's `inflectionFormKey` (trimmed, whitespace runs to one space, NFC, lower case), so a form staff accepted matches
+ * (design §10). Copied, not imported: Practice reads Content only through its service.
+ */
+export const formKey = (text: string) => text.trim().replace(/\s+/gu, ' ').normalize('NFC').toLowerCase();
 
 /** Forms the AI used that the table did not know (design §10): one row per (lemma, form), counted; no learner column. */
 @Injectable()
@@ -11,7 +14,7 @@ export class UnknownFormsRepository {
   constructor(@Inject(PRISMA_CLIENT) private readonly prisma: PrismaClient) {}
 
   async record(lemma: string, forms: string[], now: Date): Promise<void> {
-    const unique = [...new Map(forms.map((form) => [formKey(form), form.normalize('NFC')])).entries()];
+    const unique = [...new Map(forms.map((form) => [formKey(form), form.trim().replace(/\s+/gu, ' ').normalize('NFC')])).entries()];
     if (unique.length === 0) return;
     const lemmaKey = formKey(lemma);
     await this.prisma.$executeRaw`

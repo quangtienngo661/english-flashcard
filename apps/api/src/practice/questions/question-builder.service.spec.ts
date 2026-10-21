@@ -3,6 +3,7 @@ import type { ContentService, PracticeSense } from '../../content/index.js';
 import type { Prisma } from '../../generated/prisma/client.js';
 import type { LearningService } from '../../learning/index.js';
 import { SETTINGS_DEFAULTS } from '../../settings/index.js';
+import type { WordChecksRepository } from '../ai/word-checks.repository.js';
 import { QuestionBuilder } from './question-builder.service.js';
 
 const userId = '00000000-0000-4000-8000-000000000001';
@@ -22,7 +23,8 @@ function setup() {
     practiceLemmaMeanings: vi.fn(async () => new Map()),
   };
   const learning = { practiceGroupMates: vi.fn(async (_userId: string, ids: string[]) => new Map(ids.map((id) => [id, [] as string[]]))) };
-  const builder = new QuestionBuilder(content as unknown as ContentService, learning as unknown as LearningService);
+  const builder = new QuestionBuilder(content as unknown as ContentService, learning as unknown as LearningService,
+    { get: async () => null } as unknown as WordChecksRepository);
   return { builder, content, learning };
 }
 

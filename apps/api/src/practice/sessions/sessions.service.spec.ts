@@ -1,10 +1,13 @@
 import { describe, expect, it, vi } from 'vitest';
 import { FakeClock } from '../../common/clock/clock.js';
-import type { Learner } from '../../content/index.js';
-import type { EntitlementsService, Refusal } from '../../entitlements/index.js';
+import type { ContentService, Learner } from '../../content/index.js';
+import type { EntitlementsService, EntitlementsSnapshot, Refusal } from '../../entitlements/index.js';
 import type { PracticeSession, PrismaClient } from '../../generated/prisma/client.js';
 import type { LearningService, PracticeItem } from '../../learning/index.js';
 import { SETTINGS_DEFAULTS, type SettingsService } from '../../settings/index.js';
+import type { AiQuestionGenerator } from '../ai/ai-question-generator.service.js';
+import type { AiRequestsRepository } from '../ai/ai-requests.repository.js';
+import type { AiSessionPlan, AiSessionPlanner } from '../ai/ai-session-planner.service.js';
 import type { QuestionBuilder } from '../questions/question-builder.service.js';
 import type { ItemWithQuestion } from './session-views.js';
 import type { PracticeStats } from '../weak/practice-stats.js';
@@ -28,7 +31,10 @@ const sessionRow = (overrides: Partial<PracticeSession> = {}): PracticeSession =
 
 type Decision = { allowed: true } | ({ allowed: false } & Refusal);
 
-function setup(options: { early?: Decision; late?: Decision; items?: PracticeItem[]; session?: Partial<PracticeSession> } = {}) {
+function setup(options: {
+  early?: Decision; late?: Decision; items?: PracticeItem[]; session?: Partial<PracticeSession>;
+  snapshot?: EntitlementsSnapshot; aiPlan?: AiSessionPlan;
+} = {}) {
   const calls: string[] = [];
   // Facade reads made while the transaction is open without the transaction's own client (each would borrow a second connection).
   const globalReads: string[] = [];
@@ -85,10 +91,15 @@ function setup(options: { early?: Decision; late?: Decision; items?: PracticeIte
     build: vi.fn(async ({ db }: { db?: unknown }) => { via('build', db); return { skip: true }; }),
   };
   const settings = { get: vi.fn(async (db?: unknown) => { via('settings.get', db); return SETTINGS_DEFAULTS; }) };
+  const aiPlanner = {
+    gate: vi.fn(async () => { calls.push('gate'); return options.snapshot ?? null; }),
+    plan: vi.fn(async () => options.aiPlan ?? { aiPlanned: 0, aiSenseIds: [] }),
+  };
   const service = new SessionsService(prisma, new FakeClock(now), settings as unknown as SettingsService,
     entitlements as unknown as EntitlementsService, learning as unknown as LearningService, builder as unknown as QuestionBuilder,
-    { statsFor: vi.fn(async () => { calls.push('statsFor'); return new Map(); }) } as unknown as PracticeStats);
-  return { service, tx, calls, entitlements, builder, learning, settings, globalReads };
+    { statsFor: vi.fn(async () => { calls.push('statsFor'); return new Map(); }) } as unknown as PracticeStats,
+    aiPlanner as unknown as AiSessionPlanner, {} as AiQuestionGenerator, {} as AiRequestsRepository, {} as ContentService);
+  return { service, tx, calls, entitlements, builder, learning, settings, globalReads, aiPlanner };
 }
 
 const input = { source: 'all' as const, types: ['mcq_definition' as const] };
@@ -234,5 +245,38 @@ describe('SessionsService.current / next — every read goes through the transac
     expect(learning.practiceCheck).toHaveBeenCalledWith(learner.userId, 's1', 'g1', tx);
     expect(learning.practiceItems).toHaveBeenCalledWith(learner.userId, { kind: 'group', groupId: 'g1', filter: 'all' }, tx);
     expect(globalReads).toEqual([]);
+  });
+});
+
+describe('SessionsService.start — Bước 7 types (design §6.1)', () => {
+  it('the AI gate runs before the words are read; the plan is stored with the cloze source', async () => {
+    const plan = { aiPlanned: 1, aiSenseIds: ['s2'] };
+    const { service, tx, calls, aiPlanner, builder } = setup({ snapshot: {} as EntitlementsSnapshot, aiPlan: plan });
+    const result = await service.start(learner, { source: 'all', types: ['type_word', 'cloze'] });
+    expect(calls.indexOf('gate')).toBeLessThan(calls.indexOf('practiceItems'));
+    expect(aiPlanner.gate).toHaveBeenCalledWith(learner.userId, ['type_word', 'cloze'], 'ai');
+    expect(builder.availability).toHaveBeenCalledWith(expect.objectContaining({ clozeSource: 'ai' }));
+    expect(aiPlanner.plan).toHaveBeenCalledWith(learner, expect.objectContaining({ count: 10, kept: expect.arrayContaining(['s1', 's2']), clozeSource: 'ai' }), {});
+    expect(tx.practiceSession.create).toHaveBeenCalledWith({ data: expect.objectContaining({
+      clozeSource: 'ai', aiPlanned: 1, aiSenseIds: ['s2'],
+    }) });
+    expect(result.session).toMatchObject({ ai_planned: 1, cloze_source: 'ai' });
+  });
+
+  it('cloze_source own is kept; without cloze it is null', async () => {
+    const own = setup();
+    await own.service.start(learner, { source: 'all', types: ['cloze'], cloze_source: 'own' });
+    expect(own.tx.practiceSession.create).toHaveBeenCalledWith({ data: expect.objectContaining({ clozeSource: 'own' }) });
+    const none = setup();
+    await none.service.start(learner, input);
+    expect(none.tx.practiceSession.create).toHaveBeenCalledWith({ data: expect.objectContaining({ clozeSource: null, aiPlanned: 0 }) });
+  });
+
+  it('a refusal of the gate stops before any word is read and before the transaction', async () => {
+    const { service, aiPlanner, calls } = setup();
+    aiPlanner.gate.mockRejectedValueOnce(new Error('entitlement-required'));
+    await expect(service.start(learner, { source: 'all', types: ['cloze'] })).rejects.toThrow('entitlement-required');
+    expect(calls).not.toContain('practiceItems');
+    expect(calls).not.toContain('transaction');
   });
 });
