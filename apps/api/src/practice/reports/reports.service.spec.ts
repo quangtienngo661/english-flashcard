@@ -1,6 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { Clock } from '../../common/clock/clock.js';
+import type { AppLogger } from '../../common/logging/app-logger.js';
+import type { EntitlementsService } from '../../entitlements/index.js';
 import type { PrismaClient } from '../../generated/prisma/client.js';
+import type { IdentityService } from '../../identity/profile/identity.service.js';
 import type { SettingsService } from '../../settings/index.js';
 import { PRIVATE_MEANING_MASK } from '../practice.constants.js';
 import type { AnswerKey, Prompt } from '../practice.types.js';
@@ -68,7 +71,8 @@ const make = (question: Question, options: { recent?: number; existing?: boolean
   };
   const settings = { get: async () => ({ practice: { reportsPerHour: 5 } }) } as unknown as SettingsService;
   const clock = { now: () => NOW } as Clock;
-  const service = new ReportsService(prisma as unknown as PrismaClient, clock, settings, new ReportReasonsService(prisma as never, clock));
+  const service = new ReportsService(prisma as unknown as PrismaClient, clock, settings, new ReportReasonsService(prisma as never, clock),
+    {} as IdentityService, {} as EntitlementsService, {} as AppLogger);
   return { service, tx, prisma, created };
 };
 const vi_ = { userId: USER, nativeLanguage: 'vi' as const };
@@ -179,5 +183,146 @@ describe('ReportsService.listMine (design §9.2, D27)', () => {
     await expect(service.listMine('someone-else', { pageSize: 1, pageToken: token! }))
       .rejects.toMatchObject({ problemType: 'validation-failed' });
     await expect(service.list({ pageSize: 1, pageToken: token! })).rejects.toMatchObject({ problemType: 'validation-failed' });
+  });
+});
+
+describe('ReportsService.resolve (design §9.3)', () => {
+  const STAFF = '44444444-4444-4444-8444-444444444444';
+  type Stored = { id: string; userId: string; senseId: string; status: string; questionSource: string; aiOperationId: string | null;
+    aiMeta: unknown; aiCharged: boolean; refunded: boolean | null; resolvedBy: string | null; resolvedByRole: string | null;
+    resolvedAt: Date | null; reason: string; reasonLabel: string; note: null; questionSnapshot: object; createdAt: Date; itemId: null;
+    reasonRef: { refundable: boolean } };
+  const stored = (extra: Partial<Stored> = {}): Stored => ({
+    id: 'r-1', userId: USER, senseId: SENSE, status: 'open', questionSource: 'ai', aiOperationId: 'req-1', aiMeta: AI_META, aiCharged: true,
+    refunded: null, resolvedBy: null, resolvedByRole: null, resolvedAt: null, reason: 'ai_more_than_one_answer',
+    reasonLabel: 'Có hơn một đáp án đúng', note: null, questionSnapshot: {}, createdAt: NOW, itemId: null,
+    reasonRef: { refundable: true }, ...extra,
+  });
+  const build = (initial: Stored | null, options: { role?: 'admin' | 'editor'; refund?: () => Promise<{ refunded: boolean }> } = {}) => {
+    let row = initial;
+    const prisma = {
+      practiceReport: {
+        findUnique: vi.fn(async () => row),
+        // The conditional write: only an open report changes (B7E76).
+        updateMany: vi.fn(async ({ where, data }: { where: { status: string }; data: Partial<Stored> }) => {
+          if (!row || row.status !== where.status) return { count: 0 };
+          row = { ...row, ...data };
+          return { count: 1 };
+        }),
+        update: vi.fn(async ({ data }: { data: Partial<Stored> }) => { row = { ...row!, ...data }; return row; }),
+      },
+    };
+    const ledger = { refund: vi.fn(options.refund ?? (async () => ({ refunded: true }))) };
+    const identity = { getProfile: vi.fn(async () => ({ staff_role: options.role ?? 'editor' })) };
+    const logger = { warn: vi.fn() };
+    const service = new ReportsService(prisma as unknown as PrismaClient, { now: () => NOW } as Clock, {} as SettingsService,
+      {} as ReportReasonsService, identity as unknown as IdentityService, ledger as unknown as EntitlementsService,
+      logger as unknown as AppLogger);
+    return { service, prisma, ledger, logger, current: () => row };
+  };
+
+  it('B7E73: an editor confirms a charged AI question with a refundable reason → refund after the status write, refunded = true', async () => {
+    const { service, prisma, ledger, current } = build(stored());
+    const view = await service.resolve(STAFF, 'r-1', 'confirmed');
+    expect(ledger.refund).toHaveBeenCalledExactlyOnceWith(USER, 'ai_practice', 'req-1', 'r-1');
+    expect(prisma.practiceReport.updateMany.mock.invocationCallOrder[0]).toBeLessThan(ledger.refund.mock.invocationCallOrder[0]);
+    expect(current()).toMatchObject({ status: 'confirmed', resolvedBy: STAFF, resolvedByRole: 'editor', resolvedAt: NOW, refunded: true });
+    expect(view).toMatchObject({
+      status: 'confirmed', refunded: true, resolved_by: STAFF, resolved_by_role: 'editor', question_source: 'ai', ai_operation_id: 'req-1',
+      call_operation_id: 'req-1#2', model: 'fake:ok', prompt_revision: 1, ai_charged: true, reason_label: 'Có hơn một đáp án đúng',
+    });
+  });
+
+  it('B7E74: refund says false (no unit used in this cycle) → confirmed, refunded = false', async () => {
+    const { service, current } = build(stored(), { refund: async () => ({ refunded: false }) });
+    await service.resolve(STAFF, 'r-1', 'confirmed');
+    expect(current()).toMatchObject({ status: 'confirmed', refunded: false });
+  });
+
+  it.each([
+    ['B7E75 / B7E118: the question was given for free', stored({ aiCharged: false })],
+    ['the reason is not refundable', stored({ reasonRef: { refundable: false } })],
+  ])('%s → confirmed, refunded = false, refund never called', async (_name, initial) => {
+    const { service, ledger, current } = build(initial);
+    await service.resolve(STAFF, 'r-1', 'confirmed');
+    expect(ledger.refund).not.toHaveBeenCalled();
+    expect(current()).toMatchObject({ status: 'confirmed', refunded: false });
+  });
+
+  it('no_error on an AI question → no refund, refunded stays null', async () => {
+    const { service, ledger, current } = build(stored());
+    await service.resolve(STAFF, 'r-1', 'no_error');
+    expect(ledger.refund).not.toHaveBeenCalled();
+    expect(current()).toMatchObject({ status: 'no_error', refunded: null });
+  });
+
+  it('B7E76: a second resolve → 409 report-not-open and no second refund', async () => {
+    const { service, ledger } = build(stored());
+    await service.resolve(STAFF, 'r-1', 'confirmed');
+    await expect(service.resolve('someone-else', 'r-1', 'confirmed')).rejects.toMatchObject({ problemType: 'report-not-open', status: 409 });
+    expect(ledger.refund).toHaveBeenCalledTimes(1);
+  });
+
+  it('B7E77: refund throws after the status write → confirmed, refunded = null, logged by id only, still 200', async () => {
+    const { service, logger, current } = build(stored(), { refund: async () => { throw new Error('db down'); } });
+    const view = await service.resolve(STAFF, 'r-1', 'confirmed');
+    expect(current()).toMatchObject({ status: 'confirmed', refunded: null });
+    expect(view).toMatchObject({ status: 'confirmed', refunded: null });
+    expect(logger.warn).toHaveBeenCalledWith('practice_refund_failed', { report_id: 'r-1' });
+  });
+
+  it.each([
+    ['B7E84: confirmed for a rule question', stored({ questionSource: 'rule', aiOperationId: null, aiMeta: null, aiCharged: false }), 'confirmed'],
+    ['fixed for an AI question', stored(), 'fixed'],
+  ] as const)('%s → 409 resolve-status-not-allowed, nothing written', async (_name, initial, status) => {
+    const { service, prisma, ledger } = build(initial);
+    await expect(service.resolve(STAFF, 'r-1', status)).rejects.toMatchObject({ problemType: 'resolve-status-not-allowed', status: 409 });
+    expect(prisma.practiceReport.updateMany).not.toHaveBeenCalled();
+    expect(ledger.refund).not.toHaveBeenCalled();
+  });
+
+  it('B7E129: staff resolving their own report is allowed; the admin role is stored', async () => {
+    const { service, current } = build(stored({ userId: STAFF }), { role: 'admin' });
+    await service.resolve(STAFF, 'r-1', 'confirmed');
+    expect(current()).toMatchObject({ status: 'confirmed', resolvedBy: STAFF, resolvedByRole: 'admin', refunded: true });
+  });
+
+  it('a rule question keeps Bước 4: fixed, no refund, refunded null', async () => {
+    const { service, ledger, current } = build(stored({ questionSource: 'rule', aiOperationId: null, aiMeta: null, aiCharged: false }));
+    const view = await service.resolve(STAFF, 'r-1', 'fixed');
+    expect(ledger.refund).not.toHaveBeenCalled();
+    expect(current()).toMatchObject({ status: 'fixed', refunded: null });
+    expect(view).toMatchObject({ call_operation_id: null, model: null, prompt_revision: null });
+  });
+
+  it('an unknown report → 404 not-found', async () => {
+    const { service } = build(null);
+    await expect(service.resolve(STAFF, 'r-1', 'no_error')).rejects.toMatchObject({ problemType: 'not-found', status: 404 });
+  });
+});
+
+describe('ReportsService.listRefunds (design §9.3, D33)', () => {
+  it('confirmed AI reports only, filtered by resolver and time, with self_resolved', async () => {
+    const STAFF = '44444444-4444-4444-8444-444444444444';
+    const findMany = vi.fn(async () => [
+      { id: 'r-2', userId: STAFF, resolvedBy: STAFF, resolvedByRole: 'editor', refunded: true, resolvedAt: NOW },
+      { id: 'r-1', userId: USER, resolvedBy: STAFF, resolvedByRole: 'editor', refunded: false, resolvedAt: NOW },
+    ]);
+    const service = new ReportsService({ practiceReport: { findMany } } as unknown as PrismaClient, { now: () => NOW } as Clock,
+      {} as SettingsService, {} as ReportReasonsService, {} as IdentityService, {} as EntitlementsService, {} as AppLogger);
+    const from = new Date('2026-10-01T00:00:00Z'); const to = new Date('2026-11-01T00:00:00Z');
+    expect(await service.listRefunds({ resolvedBy: STAFF, from, to, pageSize: 20 })).toEqual({
+      items: [
+        { report_id: 'r-2', user_id: STAFF, resolved_by: STAFF, resolved_by_role: 'editor', self_resolved: true, refunded: true,
+          resolved_at: NOW.toISOString() },
+        { report_id: 'r-1', user_id: USER, resolved_by: STAFF, resolved_by_role: 'editor', self_resolved: false, refunded: false,
+          resolved_at: NOW.toISOString() },
+      ],
+      next_page_token: null,
+    });
+    expect(findMany).toHaveBeenCalledWith(expect.objectContaining({
+      where: { status: 'confirmed', questionSource: 'ai', resolvedBy: STAFF, resolvedAt: { gte: from, lt: to } },
+      orderBy: [{ resolvedAt: 'desc' }, { id: 'asc' }], take: 21,
+    }));
   });
 });

@@ -2,17 +2,21 @@ import { Inject, Injectable } from '@nestjs/common';
 import { createHash } from 'node:crypto';
 import { Clock } from '../../common/clock/clock.js';
 import { PRISMA_CLIENT } from '../../common/db/prisma.module.js';
+import { AppLogger } from '../../common/logging/app-logger.js';
 import { decodeBoundToken, encodeBoundToken } from '../../common/pagination/page-token.util.js';
 import { ProblemDetailsException } from '../../common/problem-details/problem-details.exception.js';
+import type { Learner } from '../../content/index.js';
+import { EntitlementsService } from '../../entitlements/index.js';
 import type { Prisma, PrismaClient } from '../../generated/prisma/client.js';
+import { IdentityService } from '../../identity/profile/identity.service.js';
 import { SettingsService } from '../../settings/index.js';
 import { withPracticeLock } from '../practice-lock.js';
-import type { Learner } from '../../content/index.js';
 import type { AnswerKey, Hints, Prompt, QuestionSource, QuestionType } from '../practice.types.js';
+import { allowedStatus, refundDecision, type ResolveStatus } from './refunds.js';
 import { ReportReasonsService } from './report-reasons.service.js';
 import { buildSnapshot } from './snapshot.js';
 
-export type ReportStatus = 'open' | 'no_error' | 'fixed';
+export type ReportStatus = 'open' | ResolveStatus;
 type ReportRow = Prisma.PracticeReportGetPayload<object>;
 
 const transactionOptions = { timeout: 30_000, maxWait: 5_000 };
@@ -39,11 +43,26 @@ const myReportView = (row: MyReportRow) => ({
 });
 
 /** What staff see: the masked snapshot, never the reporter (design §10). */
-const staffView = (row: ReportRow) => ({
-  id: row.id, sense_id: row.senseId, reason: row.reason, note: row.note, status: row.status,
-  question_snapshot: row.questionSnapshot, created_at: row.createdAt.toISOString(),
-  resolved_at: row.resolvedAt?.toISOString() ?? null, resolved_by: row.resolvedBy,
+const staffView = (row: ReportRow) => {
+  // AiResult.meta plus call_operation_id (design §7.7); null for a question made by rule.
+  const meta = (row.aiMeta ?? {}) as { call_operation_id?: string; model?: string; prompt_revision?: number };
+  return {
+    id: row.id, sense_id: row.senseId, reason: row.reason, reason_label: row.reasonLabel, note: row.note, status: row.status,
+    question_snapshot: row.questionSnapshot, created_at: row.createdAt.toISOString(),
+    resolved_at: row.resolvedAt?.toISOString() ?? null, resolved_by: row.resolvedBy, resolved_by_role: row.resolvedByRole,
+    question_source: row.questionSource, ai_operation_id: row.aiOperationId, call_operation_id: meta.call_operation_id ?? null,
+    model: meta.model ?? null, prompt_revision: meta.prompt_revision ?? null, ai_charged: row.aiCharged, refunded: row.refunded,
+  };
+};
+
+type RefundRow = Pick<ReportRow, 'id' | 'userId' | 'resolvedBy' | 'resolvedByRole' | 'refunded' | 'resolvedAt'>;
+/** The admin's review of confirmed AI errors (design §9.3, D33): self_resolved = the reporter resolved it. */
+const refundView = (row: RefundRow) => ({
+  report_id: row.id, user_id: row.userId, resolved_by: row.resolvedBy, resolved_by_role: row.resolvedByRole,
+  self_resolved: row.resolvedBy === row.userId, refunded: row.refunded, resolved_at: row.resolvedAt?.toISOString() ?? null,
 });
+
+const notOpen = () => new ProblemDetailsException({ status: 409, title: 'Report not open', type: 'report-not-open' });
 
 const reportExists = (row: ReportRow) => new ProblemDetailsException({
   status: 409, title: 'Report exists', type: 'report-exists', extensions: { report: learnerView(row) },
@@ -56,6 +75,9 @@ export class ReportsService {
     @Inject(Clock) private readonly clock: Clock,
     @Inject(SettingsService) private readonly settings: SettingsService,
     @Inject(ReportReasonsService) private readonly reasons: ReportReasonsService,
+    @Inject(IdentityService) private readonly identity: IdentityService,
+    @Inject(EntitlementsService) private readonly entitlements: EntitlementsService,
+    @Inject(AppLogger) private readonly logger: AppLogger,
   ) {}
 
   /**
@@ -145,9 +167,9 @@ export class ReportsService {
     };
   }
 
-  async list(query: { status?: ReportStatus; pageSize: number; pageToken?: string }) {
-    const binding = createHash('sha256')
-      .update(JSON.stringify({ route: 'practice-reports', filters: { status: query.status ?? null } })).digest('hex');
+  async list(query: { status?: ReportStatus; reason?: string; source?: 'rule' | 'ai'; pageSize: number; pageToken?: string }) {
+    const filters = { status: query.status ?? null, reason: query.reason ?? null, source: query.source ?? null };
+    const binding = createHash('sha256').update(JSON.stringify({ route: 'practice-reports', filters })).digest('hex');
     let cursor: { created_at: string; id: string } | undefined;
     if (query.pageToken !== undefined) {
       const decoded = decodeBoundToken(query.pageToken, binding);
@@ -159,6 +181,8 @@ export class ReportsService {
     const rows = await this.prisma.practiceReport.findMany({
       where: {
         ...(query.status ? { status: query.status } : {}),
+        ...(query.reason ? { reason: query.reason } : {}),
+        ...(query.source ? { questionSource: query.source } : {}),
         ...(cursor ? { OR: [{ createdAt: { lt: createdAt } }, { createdAt, id: { gt: cursor.id } }] } : {}),
       },
       orderBy: [{ createdAt: 'desc' }, { id: 'asc' }], take: query.pageSize + 1,
@@ -172,15 +196,75 @@ export class ReportsService {
     };
   }
 
-  /** Only an open report can be resolved; a second resolve is 409 report-not-open. */
-  async resolve(actorId: string, reportId: string, status: Exclude<ReportStatus, 'open'>) {
-    const now = this.clock.now();
+  /**
+   * Only an open report can be resolved; a second resolve is 409 report-not-open (B7E76). A confirmed AI error gives the unit
+   * back after the status write commits, outside any transaction (design §9.3, R6); a refund that throws leaves
+   * refunded = null for the hourly job to retry (B7E77).
+   */
+  async resolve(actorId: string, reportId: string, status: ResolveStatus) {
+    const report = await this.prisma.practiceReport.findUnique({ where: { id: reportId }, include: { reasonRef: true } });
+    if (!report) throw notFound();
+    if (report.status !== 'open') throw notOpen();
+    const questionSource = report.questionSource as QuestionSource;
+    if (!allowedStatus(questionSource, status)) {
+      throw new ProblemDetailsException({ status: 409, title: 'Resolve status not allowed', type: 'resolve-status-not-allowed' });
+    }
+    const role = (await this.identity.getProfile(actorId))?.staff_role ?? null;
+    const decision = refundDecision(
+      { questionSource, aiCharged: report.aiCharged && report.aiOperationId !== null, status }, report.reasonRef,
+    );
     const { count } = await this.prisma.practiceReport.updateMany({
-      where: { id: reportId, status: 'open' }, data: { status, resolvedBy: actorId, resolvedAt: now },
+      where: { id: reportId, status: 'open' },
+      data: {
+        status, resolvedBy: actorId, resolvedAt: this.clock.now(), resolvedByRole: role,
+        ...(status === 'confirmed' && decision === 'no-refund' ? { refunded: false } : {}),
+      },
     });
+    if (count === 0) throw notOpen();
+    if (decision === 'refund') await this.refund(report);
     const row = await this.prisma.practiceReport.findUnique({ where: { id: reportId } });
     if (!row) throw notFound();
-    if (count === 0) throw new ProblemDetailsException({ status: 409, title: 'Report not open', type: 'report-not-open' });
     return staffView(row);
+  }
+
+  /** Gives back the unit of a confirmed, charged AI question; idempotent by the operation id, so the hourly job may call it again. */
+  async refund(report: Pick<ReportRow, 'id' | 'userId' | 'aiOperationId'>): Promise<void> {
+    try {
+      const { refunded } = await this.entitlements.refund(report.userId, 'ai_practice', report.aiOperationId!, report.id);
+      await this.prisma.practiceReport.update({ where: { id: report.id }, data: { refunded } });
+    } catch {
+      this.logger.warn('practice_refund_failed', { report_id: report.id });
+    }
+  }
+
+  /** Confirmed AI reports for the admin (design §9.3), newest resolution first. */
+  async listRefunds(query: { resolvedBy?: string; from?: Date; to?: Date; pageSize: number; pageToken?: string }) {
+    const filters = { resolvedBy: query.resolvedBy ?? null, from: query.from?.toISOString() ?? null, to: query.to?.toISOString() ?? null };
+    const binding = createHash('sha256').update(JSON.stringify({ route: 'practice-refunds', filters })).digest('hex');
+    let cursor: { resolvedAt: Date; id: string } | undefined;
+    if (query.pageToken !== undefined) {
+      const decoded = decodeBoundToken(query.pageToken, binding);
+      if (typeof decoded?.resolved_at !== 'string' || typeof decoded.id !== 'string') throw invalidInput();
+      const resolvedAt = new Date(decoded.resolved_at);
+      if (Number.isNaN(resolvedAt.getTime())) throw invalidInput();
+      cursor = { resolvedAt, id: decoded.id };
+    }
+    const range = query.from || query.to
+      ? { resolvedAt: { ...(query.from ? { gte: query.from } : {}), ...(query.to ? { lt: query.to } : {}) } } : {};
+    const rows = await this.prisma.practiceReport.findMany({
+      where: {
+        status: 'confirmed', questionSource: 'ai', ...(query.resolvedBy ? { resolvedBy: query.resolvedBy } : {}), ...range,
+        ...(cursor ? { OR: [{ resolvedAt: { lt: cursor.resolvedAt } }, { resolvedAt: cursor.resolvedAt, id: { gt: cursor.id } }] } : {}),
+      },
+      orderBy: [{ resolvedAt: 'desc' }, { id: 'asc' }], take: query.pageSize + 1,
+      select: { id: true, userId: true, resolvedBy: true, resolvedByRole: true, refunded: true, resolvedAt: true },
+    });
+    const items = rows.slice(0, query.pageSize);
+    const last = items.at(-1);
+    return {
+      items: items.map(refundView),
+      next_page_token: rows.length > query.pageSize && last?.resolvedAt
+        ? encodeBoundToken({ resolved_at: last.resolvedAt.toISOString(), id: last.id }, binding) : null,
+    };
   }
 }
