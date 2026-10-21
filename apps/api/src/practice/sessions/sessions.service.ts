@@ -10,7 +10,7 @@ import { SettingsService } from '../../settings/index.js';
 import { contentKey } from '../ai/ai-inputs.js';
 import { aiBudget, aiChanceInLaterRound } from '../ai/ai-plan.js';
 import { AiQuestionGenerator } from '../ai/ai-question-generator.service.js';
-import { AiRequestsRepository } from '../ai/ai-requests.repository.js';
+import { AiRequestsRepository, type AiRequestRow } from '../ai/ai-requests.repository.js';
 import { AiSessionPlanner } from '../ai/ai-session-planner.service.js';
 import { findUnseen, pickUnseen } from '../ai/unseen-questions.js';
 import { withPracticeLock } from '../practice-lock.js';
@@ -35,16 +35,21 @@ export type StartInput = {
   cloze_source?: ClozeSource;
 };
 type Notice = 'word-not-found';
-/** Bước 7 (design §6.6): shown with the question that replaced an AI one. */
-type AiNotice = { notice: 'ai-fallback'; ai_reason: AiFailure } | { notice: 'word-not-recognized'; sense_id: string };
-type NoticeFields = { notice?: Notice | 'group-not-found' | AiNotice['notice']; ai_reason?: AiFailure; resets_at?: string;
+/** The reasons the app sees (design §6.6); the detail stays in `practice_ai_requests.failure`. */
+type PublicAiReason = 'ai-failed' | 'quota-exhausted' | 'plan-required' | 'ai-unavailable';
+const publicReason = (failure: AiFailure): PublicAiReason =>
+  failure === 'quota-exhausted' || failure === 'plan-required' || failure === 'ai-unavailable' ? failure : 'ai-failed';
+/** Bước 7 (design §6.6): shown with the question that replaced an AI one, or with `ai_unavailable` (row 4). */
+type AiNotice = { notice: 'ai-fallback'; ai_reason: PublicAiReason } | { notice: 'word-not-recognized'; sense_id: string };
+type NoticeFields = { notice?: Notice | 'group-not-found' | AiNotice['notice']; ai_reason?: PublicAiReason; resets_at?: string;
   sense_id?: string };
 export type NextResult =
   | ({ state: 'question'; session: SessionView; item: ItemView } & NoticeFields)
   | ({ state: 'waiting_continue'; session: SessionView } & NoticeFields)
   | ({ state: 'finished'; session: SessionView } & NoticeFields)
   | { state: 'preparing'; session: SessionView; retry_after_seconds: number }
-  | { state: 'ai_unavailable'; session: SessionView; reason: AiFailure; resets_at?: string; retry_after_seconds?: number };
+  | ({ state: 'ai_unavailable'; session: SessionView; reason: PublicAiReason; resets_at?: string; retry_after_seconds?: number }
+    & Pick<NoticeFields, 'notice' | 'sense_id'>);
 type Advance =
   | { state: 'question'; item: ItemWithQuestion; notice?: Notice; ai?: AiNotice;
     /** G attached a question not yet charged: confirm it after commit (B7E33). */
@@ -55,7 +60,7 @@ type Advance =
   /** A slot waits for an AI request: `fresh` = created now, run it; else run it only after taking it over as stale. */
   | { state: 'pending'; requestId: string; fresh: boolean }
   | { state: 'preparing' }
-  | { state: 'ai_unavailable'; reason: AiFailure };
+  | { state: 'ai_unavailable'; reason: PublicAiReason; ai?: AiNotice };
 
 const notFound = () => new ProblemDetailsException({ status: 404, title: 'Not found', type: 'not-found' });
 const sessionClosed = () => new ProblemDetailsException({ status: 409, title: 'Session closed', type: 'session-closed' });
@@ -268,6 +273,7 @@ export class SessionsService {
       case 'ai_unavailable':
         return {
           state: 'ai_unavailable', session: view, reason: result.reason, ...(failure.resetsAt ? { resets_at: failure.resetsAt } : {}),
+          ...(result.ai?.notice === 'word-not-recognized' ? { notice: 'word-not-recognized', sense_id: result.ai.sense_id } : {}),
           ...(failure.retryAfterSeconds !== undefined ? { retry_after_seconds: failure.retryAfterSeconds } : {}),
         };
       case 'preparing':
@@ -443,12 +449,12 @@ export class SessionsService {
       const previous = items.filter((item) => item.senseId === senseId).at(-1);
       if (aiTypes.length > 0 && session.aiStopped === null && this.wantsAi(session, senseId, round, budget,
         session.targetCount - answered, ruleTypes.length)) {
-        const slot = await this.aiSlot(tx, learner, session, items, senseId, round, aiTypes, ruleTypes.length,
+        const slot = await this.aiSlot(tx, learner, session, items, senseId, round, aiTypes, retryAi,
           (previous?.question.type as QuestionType | undefined) ?? null);
         if (slot) return slot.state === 'question' ? { ...slot, notice } : slot;
         // B7E47: the word no longer takes an AI type; a rule type if chosen, else the word is skipped.
       } else if (ruleTypes.length === 0 && session.aiStopped !== null) {
-        return { state: 'ai_unavailable', reason: session.aiStopped as AiFailure };
+        return { state: 'ai_unavailable', reason: publicReason(session.aiStopped as AiFailure) };
       }
       const item = await this.ruleItem(tx, learner, session, items, senseId, round, ruleTypes, previous);
       if (item) return { state: 'question', item, notice };
@@ -492,26 +498,28 @@ export class SessionsService {
   }
 
   /**
-   * An AI slot (design §6.5 A): an unseen AI question (0 units), else the session's request for this word and round (made by
-   * prepare), else another generating request of the learner for the word, else a new request. The pointer is set in this
-   * transaction. Null when the word cannot take an AI type now, or its AI already failed in a mixed session (B7E113).
+   * An AI slot (design §6.5 A): the session's request for this word and round when it failed (made by prepare; §6.6 as a
+   * failed pending slot, B7E113), else an unseen AI question (0 units), else that request when generating or ready, else
+   * another generating request of the learner for the word, else a new request. The pointer is set in this transaction. Null
+   * when the word cannot take an AI type now.
    */
   private async aiSlot(tx: Prisma.TransactionClient, learner: Learner, session: PracticeSession, items: ItemWithQuestion[],
-    senseId: string, round: number, aiTypes: QuestionType[], ruleCount: number, previousType: QuestionType | null): Promise<Advance | null> {
+    senseId: string, round: number, aiTypes: QuestionType[], retryAi: boolean, previousType: QuestionType | null): Promise<Advance | null> {
     const { userId, nativeLanguage } = learner;
+    const point = (requestId: string) =>
+      tx.practiceSession.update({ where: { id: session.id }, data: { pendingAiRequestId: requestId } });
+    const existing = await this.aiRequests.findForSession(tx, session.id, senseId);
+    // B7E113: made ahead by prepare and failed → §6.6 at once, as a failed pending slot. Read before availability, which drops
+    // the AI types of a private word checked as not recognized (B7E98).
+    if (existing && existing.round === round && existing.state === 'failed') {
+      await point(existing.id);
+      return this.failedSlot(tx, learner, { ...session, pendingAiRequestId: existing.id }, items, existing, retryAi);
+    }
     const available = (await this.builder.availability({
       userId, nativeLanguage, senseIds: [senseId], chosenTypes: aiTypes, clozeSource: session.clozeSource as ClozeSource | null, db: tx,
     })).get(senseId) ?? [];
     if (available.length === 0) return null;
-    const point = (requestId: string) =>
-      tx.practiceSession.update({ where: { id: session.id }, data: { pendingAiRequestId: requestId } });
-    const existing = await this.aiRequests.findForSession(tx, session.id, senseId);
     if (existing && existing.round === round) {
-      if (existing.state === 'failed') {
-        if (ruleCount > 0) return null;
-        await point(existing.id);
-        return { state: 'ai_unavailable', reason: existing.failure ?? 'ai-failed' };
-      }
       const asked = items.some((item) => item.questionId === existing.questionId);
       if (existing.state === 'generating' || !asked) {
         await point(existing.id);
@@ -553,22 +561,33 @@ export class SessionsService {
     if (request.state === 'ready') return this.attach(tx, session, items, request.id, request.questionId!, request.senseId, request.round);
     // current never applies the fallback: the app calls next.
     if (!build) return { state: 'none' };
+    return this.failedSlot(tx, learner, session, items, request, retryAi);
+  }
+
+  /**
+   * §6.6 for a failed request the session's pointer names: a mixed session gets a rule type for the same word, with
+   * `ai-fallback` the first time or `word-not-recognized`; an AI-only one gets `ai_unavailable` (with the same notice for a word
+   * not recognized) until `retry_ai`. Null when no rule type fits the word; planning goes on.
+   */
+  private async failedSlot(tx: Prisma.TransactionClient, learner: Learner, session: PracticeSession, items: ItemWithQuestion[],
+    request: AiRequestRow, retryAi: boolean): Promise<Advance | null> {
     const failure = request.failure ?? 'ai-failed';
+    const notRecognized: AiNotice | undefined = failure === 'word-not-recognized'
+      ? { notice: 'word-not-recognized', sense_id: request.senseId } : undefined;
     const ruleTypes = await this.ruleTypesOf(tx, learner.userId, session);
     if (ruleTypes.length > 0) {
-      await clear();
+      await tx.practiceSession.update({ where: { id: session.id }, data: { pendingAiRequestId: null } });
       const previous = items.filter((item) => item.senseId === request.senseId).at(-1);
       const item = await this.ruleItem(tx, learner, session, items, request.senseId, request.round, ruleTypes, previous);
       if (!item) return null;
-      let ai: AiNotice | undefined;
-      if (failure === 'word-not-recognized') ai = { notice: 'word-not-recognized', sense_id: request.senseId };
-      else if (!session.aiNoticeShown) {
-        ai = { notice: 'ai-fallback', ai_reason: failure };
+      let ai: AiNotice | undefined = notRecognized;
+      if (!ai && !session.aiNoticeShown) {
+        ai = { notice: 'ai-fallback', ai_reason: publicReason(failure) };
         await tx.practiceSession.update({ where: { id: session.id }, data: { aiNoticeShown: true } });
       }
       return { state: 'question', item, ai };
     }
-    if (!retryAi) return { state: 'ai_unavailable', reason: failure };
+    if (!retryAi) return { state: 'ai_unavailable', reason: publicReason(failure), ai: notRecognized };
     const retry = await this.aiRequests.create(tx, {
       userId: learner.userId, sessionId: session.id, senseId: request.senseId, type: request.type, round: request.round,
     });
