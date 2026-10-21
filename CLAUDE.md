@@ -47,9 +47,9 @@ under `apps/api` and `apps/admin`. Historical implementation branches:
   id, a daily provider-call cap, content kept 7 days. Locally `AI_FAKE_ENABLED=true` and both keys empty; `OPENAI_CUSTOM_HEADERS` /
   `ANTHROPIC_CUSTOM_HEADERS` must stay unset or the app refuses to start (D29). The owner builds its admin screens later (D8).
 
-**Next (20/10/2026):** Bước 7 (Practice AI + Content AI) is next; it must call the gateway as design Bước 6 §4.4 says (fixed operation id
-per question, no AI call inside a transaction or an `@Idempotent()` handler) and see §18 there. A first real AI call with the owner's own
-keys is worth doing early (design Bước 6 §19). The learner UI for Bước 3–6 is still to be
+**Next (21/10/2026):** Bước 7 (Practice AI + Content AI, API only) has an approved design (D1–D34, PR #103) and a plan (PR #104); the
+owner runs it in four sessions (step-7-coordinator, step-7-A, step-7-B, step-7-C; DBs `english_learning_b7_a|b|c`). See "Bước 7 — plan"
+below. "Xong khi" has no real AI call (D3 Bước 7): the owner tries real keys later. The learner UI for Bước 3–7 is still to be
 built. **Deploy** (hosting, durable Postgres/Redis, real SMTP, secrets, backup; design 2.5 §14) moved to **when the whole app is
 complete, before launch** (D3 round 3 of Bước 3, 18/10/2026): until then the owner tries the app locally (reminder emails land in
 Mailpit), `/app/*` stays blocked on production, and design Bước 3 §14 (things only checkable once deployed) is checked just before
@@ -253,12 +253,20 @@ D29 was decided while implementing. Run the smoke against a real API and worker 
 (it stops when its own environment or `.env` says otherwise; B6#30 stops and starts the shared `redis` container). Learner calls in the smoke
 go through `pnpm ai:fake-call`.
 
+## Bước 7 — plan
+
+`docs/deliveries/buoc-7.md` (plan tóm tắt 21/10/2026; Practice AI + Content AI, API only). Design, decisions (D1–D34) and plan:
+`docs/superpowers/{specs,decisions,plans}/2026-10-21-buoc-7-practice-ai-content-ai*.md`; Q&A log `docs/superpowers/reviews/2026-10-21-buoc-7-qa-log.md`,
+design review `docs/superpowers/reviews/2026-10-21-buoc-7-design-review.md`, code facts `docs/preparation/BUOC_7_PLAN_CODE_FACTS_2026-10-21.md`.
+"Xong khi" = CI green on every PR + `pnpm smoke:buoc-7` on a fresh DB with the fake AI (models chosen by the smoke), plus `smoke:buoc-4`–`6`.
+
 ## Việc phải phân tích khi tới bước tương ứng (ghi 12/10/2026, từ brainstorm Bước 2)
 
 Các điểm dưới đây phát sinh khi rà quyền của `admin`/`editor` (bảng D6) với các spec Bước 3–8. Chưa chốt, **không chặn Bước 2**;
 đọc lại khi brainstorm bước ghi bên cạnh.
 
-- **Bước 7 — danh sách dạng bất quy tắc (PRC7, QE5, Defense Analysis của Practice).** Chuyển về Bước 7 (design Bước 4 §15):
+- **Bước 7 — danh sách dạng bất quy tắc (PRC7, QE5, Defense Analysis của Practice).** **Đã rõ ở Bước 7 (D15, 21/10/2026):** danh sách
+  dạng chia bổ sung theo chữ ở Content, `admin` và `editor` (`content.edit`) nhận hoặc bỏ qua từ danh sách dạng AI dùng mà bảng chưa biết. Ghi chú cũ: Chuyển về Bước 7 (design Bước 4 §15):
   Bước 4 không có câu AI, và đã có bảng dạng chia AGID (D46 Bước 3). Kiểm rule câu AI sinh dạng chia bằng quy tắc cố định
   (`-s`, `-ed`, `-ing`…); dạng bất quy tắc (`go` → `went`, `gone`) không sinh được, nên câu AI đúng bị loại, sinh lại một lần
   và tốn thêm một lần gọi AI. Spec ghi "owner duy trì danh sách" nhưng **chưa gán quyền**. Đề xuất (chưa chốt): `questions.moderate`, vì dữ liệu thuộc Practice và người xử lý câu xấu là người thấy các câu bị loại nhầm.
@@ -356,7 +364,7 @@ for a concrete example of the loop catching real bugs each round.
   `docs/deliveries/ui-refresh-b.md` (UI refresh B: plan tóm tắt + landing and admin as-built), `docs/deliveries/buoc-3.md` +
   `docs/deliveries/buoc-3-test-flow.md` (Bước 3 system part), `docs/deliveries/buoc-4.md` (Bước 4, Practice API),
   `docs/deliveries/buoc-5.md` + `docs/deliveries/buoc-5-smoke-output.txt` (Bước 5, Entitlements API),
-  `docs/deliveries/buoc-6.md` + `docs/deliveries/buoc-6-smoke-output.txt` (Bước 6, AI Integration API).
+  `docs/deliveries/buoc-6.md` + `docs/deliveries/buoc-6-smoke-output.txt` (Bước 6, AI Integration API), `docs/deliveries/buoc-7.md` (Bước 7, plan tóm tắt).
 - Bước 2 test flow (automated gate, `pnpm smoke:buoc-2`, manual steps): `docs/deliveries/buoc-2-test-flow.md`.
 - Spec index and status: `docs/specs/README.md`.
 - Spec/design-doc writing convention (edge cases must be derived per-doc, not just cited): `docs/specs/SPEC_WRITING_CONVENTIONS.md`.
