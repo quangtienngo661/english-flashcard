@@ -26,19 +26,24 @@ import { PublishService } from './senses/publish.service.js';
 import { SensesService } from './senses/senses.service.js';
 import { LearnerTopicsController, TopicsController } from './taxonomy/topics.controller.js';
 import { TopicsService } from './taxonomy/topics.service.js';
+import { AiModule } from '../ai/index.js';
+import { EntitlementsModule } from '../entitlements/index.js';
+import { AiLookupController } from './lookup/ai-lookup.controller.js';
+import { AiLookupService } from './lookup/ai-lookup.service.js';
 import { AdminWordFormsController } from './word-forms/admin-word-forms.controller.js';
 import { WordFormsService } from './word-forms/word-forms.service.js';
 
 @Module({
-  imports: [IdentityModule, SettingsModule],
+  // AiModule and EntitlementsModule for the AI lookup (Bước 7 design §11.1); neither imports Content (facts P7).
+  imports: [IdentityModule, SettingsModule, AiModule, EntitlementsModule],
   controllers: [
     SourcesController, PublicSourcesController, TopicsController, LearnerTopicsController,
     AdminEntriesController, EntryFunctionWordController, AdminSensesController, BatchEntriesController,
     AdminPublishController, AdminCatalogController, LearnerContentController, MyWordsController, SentencesController, WordsController,
-    AdminWordFormsController,
+    AdminWordFormsController, AiLookupController,
   ],
   providers: [ContentService, SourcesService, TopicsService, LearnerContentGuard, LearnerContentService, EntriesService, LevelsService, SensesService, PublishService, AdminCatalogQueries, InflectionsService,
-    PrivateWordsService, SentencesService, WordsService, WordFormsService, IdempotencyInterceptor],
+    PrivateWordsService, SentencesService, WordsService, WordFormsService, AiLookupService, IdempotencyInterceptor],
   exports: [ContentService],
 })
 export class ContentModule {}
