@@ -60,6 +60,14 @@ export class SessionsController {
     return this.sessions.next(learner, params.id, body?.retry_ai === true);
   }
 
+  /** Bước 7 (design §6.4): AI questions made ahead; safe to repeat, so no Idempotency-Key. */
+  @Post(':id/prepare')
+  @HttpCode(200)
+  @RateLimit('practice.answer')
+  prepare(@Param({ schema: sessionParams }) params: z.infer<typeof sessionParams>, @CurrentLearner() learner: Learner) {
+    return this.sessions.prepare(learner, params.id);
+  }
+
   @Post(':id/continue')
   @HttpCode(200)
   @RateLimit('user.write')
