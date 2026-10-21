@@ -17,6 +17,8 @@ export type AppSettings = {
     idleSessionCloseHours: number; reportsPerHour: number; hintDefinitionMaxChars: number;
     /** `null` = no limit (Bước 4 design 5.4). */
     typeWordMaxRetries: number | null;
+    /** Bước 7 (design §14, D8): AI questions generated ahead of the learner. */
+    aiPrefetchCount: number;
   };
   /** Bước 5 (design §13, D18). */
   entitlements: {
@@ -47,6 +49,7 @@ export const SETTINGS_DEFAULTS: AppSettings = {
   practice: {
     maxQuestionsPerSession: 20, defaultQuestionsPerSession: 10, historyMonths: 6, trueFalseTruePercent: 50,
     idleSessionCloseHours: 24, reportsPerHour: 20, hintDefinitionMaxChars: 200, typeWordMaxRetries: null,
+    aiPrefetchCount: 2,
   },
   entitlements: {
     freePracticeSessionsPerDay: 3, proPracticeSessionsPerDay: 30, proAiPracticePerCycle: 300, proAiLookupPerCycle: 100,
@@ -82,6 +85,7 @@ export const SETTINGS_BOUNDS = {
     reports_per_hour: { min: 5, max: 100 },
     hint_definition_max_chars: { min: 80, max: 500 },
     type_word_max_retries: { min: 1, max: 10, nullable: true },
+    ai_prefetch_count: { min: 0, max: 20 },
   },
   entitlements: {
     free_practice_sessions_per_day: { min: 1, max: 50 },
@@ -143,6 +147,7 @@ export const settingsValuesPatchSchema = z.strictObject({
     reports_per_hour: intIn(b.practice.reports_per_hour).optional(),
     hint_definition_max_chars: intIn(b.practice.hint_definition_max_chars).optional(),
     type_word_max_retries: intIn(b.practice.type_word_max_retries).nullable().optional(),
+    ai_prefetch_count: intIn(b.practice.ai_prefetch_count).optional(),
   }).optional(),
   entitlements: z.strictObject({
     free_practice_sessions_per_day: intIn(b.entitlements.free_practice_sessions_per_day).optional(),
@@ -195,6 +200,7 @@ const FIELDS = [
   ['practice', 'reports_per_hour', 'reportsPerHour'],
   ['practice', 'hint_definition_max_chars', 'hintDefinitionMaxChars'],
   ['practice', 'type_word_max_retries', 'typeWordMaxRetries'],
+  ['practice', 'ai_prefetch_count', 'aiPrefetchCount'],
   ['entitlements', 'free_practice_sessions_per_day', 'freePracticeSessionsPerDay'],
   ['entitlements', 'pro_practice_sessions_per_day', 'proPracticeSessionsPerDay'],
   ['entitlements', 'pro_ai_practice_per_cycle', 'proAiPracticePerCycle'],
