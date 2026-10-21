@@ -29,7 +29,7 @@ describe('buildSnapshot', () => {
       type: 'mcq_definition',
       prompt: { ...mcqPrompt, options: ['release', PRIVATE_WORD_MASK, 'deploy', 'merge'] },
       correct: { lemma: 'deploy', meaning: 'triển khai', definition_en: 'to put software into use', option_index: 2 },
-      hints_shown: { level1: null, level2: null },
+      hints_shown: { level1: null, level2: null, level3: null },
       learner: { answer: PRIVATE_WORD_MASK, answers_tried: [], result: 'wrong', hint_level: 0 },
     });
     expect(deepStrings(snapshot).some((text) => text.includes('standup'))).toBe(false);
@@ -54,7 +54,7 @@ describe('buildSnapshot', () => {
       type: 'true_false_definition',
       prompt: { ...prompt, meaning: PRIVATE_MEANING_MASK },
       correct: { ...reveal, is_true: false },
-      hints_shown: { level1: null, level2: null },
+      hints_shown: { level1: null, level2: null, level3: null },
       learner: { answer: 'true', answers_tried: [], result: 'wrong', hint_level: 0 },
     });
     expect(deepStrings(snapshot).some((text) => text.includes('họp đứng'))).toBe(false);
@@ -75,10 +75,62 @@ describe('buildSnapshot', () => {
       type: 'type_word',
       prompt,
       correct: { ...reveal, main: 'deployed', accepted: ['deployed'] },
-      hints_shown: { level1: hints.level1, level2: null },
+      hints_shown: { level1: hints.level1, level2: null, level3: null },
       learner: { answer: 'deploy', answers_tried: ['deplo'], result: 'wrong', hint_level: 1 },
     });
     expect(buildSnapshot(question, answered('x', { hint_level: 2 }))).toMatchObject({ hints_shown: hints });
     expect(buildSnapshot(question, answered('x'))).toMatchObject({ hints_shown: { level1: null, level2: null } });
+  });
+
+  it('B7E80 meaning_in_sentence: private wrong meanings are masked as meanings; the asked private word and its meaning are kept', () => {
+    const prompt: Prompt = {
+      kind: 'meaning_in_sentence', sentence: 'We deploy on Fridays.', highlight: 'deploy', meaning_language: 'vi',
+      options: ['buổi họp đứng', 'triển khai', 'hợp nhất', 'nghĩa riêng khác'],
+    };
+    const answerKey: AnswerKey = {
+      reveal, asked_private: true, translation_vi: 'Chúng tôi triển khai vào thứ Sáu.', kind: 'mcq', correct_index: 1,
+      option_private: [true, true, false, true],
+    };
+    const snapshot = buildSnapshot({ type: 'meaning_in_sentence', prompt, answerKey, hints: noHints }, answered('0'));
+    expect(snapshot).toEqual({
+      type: 'meaning_in_sentence',
+      prompt: { ...prompt, options: [PRIVATE_MEANING_MASK, 'triển khai', 'hợp nhất', PRIVATE_MEANING_MASK] },
+      correct: { ...reveal, option_index: 1 },
+      hints_shown: { level1: null, level2: null, level3: null },
+      learner: { answer: PRIVATE_MEANING_MASK, answers_tried: [], result: 'wrong', hint_level: 0 },
+    });
+    const strings = deepStrings(snapshot);
+    expect(strings.some((text) => text.includes('họp đứng') || text.includes('nghĩa riêng khác'))).toBe(false);
+  });
+
+  it('mcq_sentence: a private distractor word is masked as a word', () => {
+    const prompt: Prompt = { kind: 'mcq_sentence', sentence: 'We ___ on Fridays.', options: ['standup', 'deploy', 'merge', 'release'] };
+    const answerKey: AnswerKey = { reveal, asked_private: false, kind: 'mcq', correct_index: 1, option_private: [true, false, false, false] };
+    const snapshot = buildSnapshot({ type: 'mcq_sentence', prompt, answerKey, hints: noHints }, answered('1', { result: 'correct' }));
+    expect(snapshot).toMatchObject({
+      prompt: { options: [PRIVATE_WORD_MASK, 'deploy', 'merge', 'release'] }, correct: { option_index: 1 }, learner: { answer: 'deploy' },
+    });
+    expect(deepStrings(snapshot).some((text) => text.includes('standup'))).toBe(false);
+  });
+
+  it('a Bước 4 mcq asking a catalog word still masks a private option at the correct index', () => {
+    const answerKey: AnswerKey = { ...mcqKey, option_private: [false, false, true, false] };
+    expect(buildSnapshot({ type: 'mcq_definition', prompt: mcqPrompt, answerKey, hints: noHints }, answered('2')))
+      .toMatchObject({ prompt: { options: ['release', 'standup', PRIVATE_WORD_MASK, 'merge'] } });
+  });
+
+  it('cloze carries main and accepted; level 3 is in hints_shown once seen', () => {
+    const prompt: Prompt = { kind: 'cloze', sentence: 'We ___ the app yesterday.' };
+    const answerKey: AnswerKey = { reveal, asked_private: false, kind: 'type_word', main: 'deployed', accepted: ['deployed'] };
+    const clozeHints: Hints = {
+      level1: { kind: 'first_letter', text: 'd' }, level2: { kind: 'definition', text: 'to put software into use' },
+      level3: { kind: 'meaning', text: 'triển khai' },
+    };
+    const question = { type: 'cloze' as const, prompt, answerKey, hints: clozeHints };
+    expect(buildSnapshot(question, answered('deploy', { hint_level: 3 }))).toEqual({
+      type: 'cloze', prompt, correct: { ...reveal, main: 'deployed', accepted: ['deployed'] }, hints_shown: clozeHints,
+      learner: { answer: 'deploy', answers_tried: [], result: 'wrong', hint_level: 3 },
+    });
+    expect(buildSnapshot(question, answered('x', { hint_level: 2 }))).toMatchObject({ hints_shown: { level3: null } });
   });
 });
