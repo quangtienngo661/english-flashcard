@@ -71,7 +71,7 @@ const mcqItem = (overrides: Record<string, unknown> = {}) => ({
 }) as unknown as ItemWithQuestion;
 
 /** The route as the controller calls it, with every Learning / Identity read recorded by the client it was given. */
-function route(found: ItemWithQuestion) {
+function route(found: ItemWithQuestion, nativeLanguage: 'vi' | 'en' = 'vi') {
   const reads: Array<{ read: string; db: unknown }> = [];
   const tx = {
     $queryRaw: vi.fn(async () => []),
@@ -84,7 +84,7 @@ function route(found: ItemWithQuestion) {
     practiceSessionItem: { findFirst: vi.fn(async () => ({ sessionId: 'sess-1' })) },
     $transaction: vi.fn(async (fn: (t: typeof tx) => unknown) => fn(tx)),
   };
-  const identity = { getProfile: vi.fn(async (_id: string, db?: unknown) => { reads.push({ read: 'getProfile', db }); return { timezone: 'UTC' }; }) };
+  const identity = { getProfile: vi.fn(async (_id: string, db?: unknown) => { reads.push({ read: 'getProfile', db }); return { timezone: 'UTC', native_language: nativeLanguage }; }) };
   const learning = {
     practiceCheck: vi.fn(async (_u: string, _s: string, _g: null, db?: unknown) => {
       reads.push({ read: 'practiceCheck', db });
@@ -121,5 +121,70 @@ describe('AnswersService — reads inside the answer transaction use the transac
       status: 409, problemType: 'already-answered', extensions: { result: { result: 'wrong' } },
     });
     expect(learning.practiceCheck).toHaveBeenCalledWith(userId, 'sense-1', null, tx);
+  });
+});
+
+// Bước 7 question kinds (design §7.8, §8).
+const aiItem = (question: Record<string, unknown>, overrides: Record<string, unknown> = {}) => mcqItem({
+  question: { hints: { level1: null, level2: null }, ...question }, ...overrides,
+});
+const meaningQuestion = {
+  type: 'meaning_in_sentence', prompt: { kind: 'meaning_in_sentence', sentence: 'We deployed it.', highlight: 'deployed',
+    options: ['phát hành', 'triển khai', 'đăng', 'mỏ'], meaning_language: 'vi' },
+  answerKey: { kind: 'mcq', correct_index: 1, option_private: [false, false, false, false], translation_vi: 'Chúng tôi đã triển khai.',
+    reveal: { lemma: 'deploy', meaning: 'triển khai', definition_en: 'to move software' }, asked_private: false },
+};
+const clozeQuestion = (hints: Record<string, unknown> = { level1: { kind: 'first_letter', text: 'd' }, level2: null, level3: null }) => ({
+  type: 'cloze', prompt: { kind: 'cloze', sentence: 'We ___ it.' }, hints,
+  answerKey: { kind: 'type_word', main: 'deployed', accepted: ['deployed'], translation_vi: 'Chúng tôi triển khai.',
+    reveal: { lemma: 'deploy', meaning: 'triển khai', definition_en: null }, asked_private: false },
+});
+
+describe('AnswersService — Bước 7 kinds', () => {
+  it('B7E56: a choice kind answered → the right option as correct text; the translation for a vi learner only', async () => {
+    const vi = route(aiItem(meaningQuestion));
+    await expect(vi.service.answer(userId, 'it-1', { choice: 1 })).resolves.toMatchObject({
+      result: 'correct', correct: { text: 'triển khai', choice_index: 1 }, translation: 'Chúng tôi đã triển khai.',
+      definition_en: 'to move software',
+    });
+    const en = route(aiItem(meaningQuestion), 'en');
+    await expect(en.service.answer(userId, 'it-1', { choice: 1 })).resolves.toMatchObject({ translation: null });
+  });
+
+  it('mcq_sentence: the right option is the answer form', async () => {
+    const { service } = route(aiItem({
+      type: 'mcq_sentence', prompt: { kind: 'mcq_sentence', sentence: 'We ___ it.', options: ['released', 'deployed', 'posted', 'built'] },
+      answerKey: { ...meaningQuestion.answerKey, correct_index: 1 },
+    }));
+    await expect(service.answer(userId, 'it-1', { choice: 1 })).resolves.toMatchObject({ correct: { text: 'deployed' } });
+  });
+
+  it('B7E51: cloze takes "Deployed." for deployed; B7E50: "release" asks to try again, never correct', async () => {
+    const right = route(aiItem(clozeQuestion()));
+    await expect(right.service.answer(userId, 'it-1', { text: 'Deployed.' })).resolves.toMatchObject({ result: 'correct' });
+    const wrong = route(aiItem(clozeQuestion()));
+    await expect(wrong.service.answer(userId, 'it-1', { text: 'release' })).resolves.toEqual({ result: 'try_again', tries: 1 });
+  });
+
+  it('skip is allowed for cloze in try_again, still refused for a choice kind', async () => {
+    const cloze = route(aiItem(clozeQuestion(), { tries: 1, answersTried: ['release'] }));
+    await cloze.service.skip(userId, 'it-1');
+    expect(cloze.tx.practiceSessionItem.update).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({ skipped: true, result: 'wrong', answerRaw: 'release' }),
+    }));
+    const choice = route(aiItem(meaningQuestion, { tries: 1, answersTried: ['x'] }));
+    await expect(choice.service.skip(userId, 'it-1')).rejects.toMatchObject({ status: 409, problemType: 'skip-not-allowed' });
+  });
+
+  it('hint level 3 is served when stored; B7E53: missing → 409 hint-unavailable; a Bước 4 level 2 keeps its shape', async () => {
+    const meaning = { kind: 'meaning', text: 'triển khai' };
+    const three = route(aiItem(clozeQuestion({ level1: { kind: 'first_letter', text: 'd' }, level2: null, level3: meaning })));
+    await expect(three.service.hint(userId, 'it-1', 3)).resolves.toEqual({ level: 3, hint: meaning });
+    const none = route(aiItem(clozeQuestion()));
+    await expect(none.service.hint(userId, 'it-1', 3)).rejects.toMatchObject({ status: 409, problemType: 'hint-unavailable' });
+    const legacyQuestion = { ...mcqItem().question, type: 'type_word', hints: { level1: null, level2: { first_letter: 'c', length: 3 } } };
+    const legacy = route(mcqItem({ question: legacyQuestion }));
+    await expect(legacy.service.hint(userId, 'it-1', 2)).resolves.toEqual({ level: 2, hint: { first_letter: 'c', length: 3 } });
+    await expect(legacy.service.hint(userId, 'it-1', 3)).rejects.toMatchObject({ problemType: 'hint-unavailable' });
   });
 });
