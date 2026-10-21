@@ -1,6 +1,7 @@
 # Đợt giao diện — mockup đầy đủ cho app người học và admin — Design (21/10/2026)
 
-> **Trạng thái 21/10/2026:** chủ dự án duyệt bốn phần của design trong chat ("ok" từng phần); bản viết này chờ chủ dự án duyệt.
+> **Trạng thái 21/10/2026:** chủ dự án duyệt bốn phần trong chat và **duyệt bản viết** ("Mình duyệt bản design đợt giao diện (kèm D17). Viết plan đi.").
+> Plan: [`../plans/2026-10-21-dot-giao-dien.md`](../plans/2026-10-21-dot-giao-dien.md).
 > **Chỉ mockup Figma, không code** (D1). Quyết định và mọi phương án đã đưa ra: [`../decisions/2026-10-21-dot-giao-dien-decisions.md`](../decisions/2026-10-21-dot-giao-dien-decisions.md).
 > **Đầu vào:** báo cáo rà Figma [`../../mockups/2026-10-21/figma-review.md`](../../mockups/2026-10-21/figma-review.md) (21/10/2026; "Có / Thiếu / Lệch" theo
 > từng bước và 13 câu hỏi), [`../../mockups/2026-10-16/UI-CONTEXT.md`](../../mockups/2026-10-16/UI-CONTEXT.md) (các quyết định giao diện từ Bước 3), design các
@@ -72,7 +73,7 @@ Ký hiệu khung giữ quy ước hiện có: web `K/xx` (page 08), điện tho�
 | **B. Tài khoản** | Menu avatar trên web (Cài đặt, Gói học, Đăng xuất: **Đề xuất** thêm trong bản viết); Cài đặt → Tài khoản: sửa Tên, Họ, Ngày sinh, lỗi ngày sinh dưới 13 tuổi (D12); màn đăng nhập khi tài khoản bị khóa | 5–6 |
 | **C. Điện thoại: Luyện tập và Gói học** | Theo bản web K/51–K/57, K/60–K/67: trang Luyện tập, tùy chỉnh phiên, phiên luyện (mỗi dạng, đúng, sai, gợi ý), kết thúc phiên, Từ hay sai, Lịch sử, hết lượt; Gói học Free và Pro do đội Wordmet cấp | ~16 |
 | **D. Bước 7 cho người học** (web và điện thoại) | Mở phiên có dạng AI (nhãn Pro, nguồn câu điền từ, "Phiên này dùng N lượt AI", trạng thái khóa của Free, không đủ lượt); đang tạo câu; ba dạng câu AI (đang hỏi, gợi ý, đã nộp có bản dịch); điền từ từ câu đã lưu; AI không dùng được + [Thử lại] [Dừng, để sau]; thông báo đổi dạng; thông báo từ chưa nhận ra; hỏi khi mở phiên mới lúc còn phiên cũ; báo lỗi theo lý do + dòng đồng ý cho từ riêng; tab "Báo lỗi của tôi"; Thêm từ có "Tra bằng AI" (kết quả, gợi ý AI cạnh nghĩa catalog, form sửa trước khi lưu kèm câu ví dụ); nhãn "AI gợi ý" | ~25 × 2 |
-| **E. Admin, mức khung** (page 04) | Cài đặt hệ thống (6 tab); Người dùng (danh sách, chi tiết, khóa/mở); Báo lỗi (lọc, xử lý, xác nhận + trả lượt); Lý do báo lỗi; Danh sách trả lượt; Dạng chia chưa biết + dạng chia bổ sung; Cấp gói và lượt (danh sách, cấp mới, lịch sử); AI của Bước 6: model, thao tác, prompt (lịch sử, chạy thử), bộ ví dụ và lần chạy, tình trạng, chi phí, các lần gọi | ~20 |
+| **E. Admin, mức khung** (page 04) | Nội dung: Từ, Nghĩa (kèm người review / publish / gỡ gần nhất, đợt sửa Bước 0–3), Chủ đề (thay A/D02–A/D04; bổ sung khi viết plan, theo ghi chú dưới bảng); Cài đặt hệ thống (6 tab); Người dùng (danh sách, chi tiết, khóa/mở); Báo lỗi (lọc, xử lý, xác nhận + trả lượt); Lý do báo lỗi; Danh sách trả lượt; Dạng chia chưa biết + dạng chia bổ sung; Cấp gói và lượt (danh sách, cấp mới, lịch sử); AI của Bước 6: model, thao tác, prompt (lịch sử, chạy thử), bộ ví dụ và lần chạy, tình trạng, chi phí, các lần gọi | ~20 |
 | **F. Bản tối mẫu** | Hôm nay, phiên luyện, Gói học, tấm Thêm từ ở chế độ Dark | 4–5 |
 | **G. Prototype** | Ba luồng Bước 7 trên web: (1) mở phiên AI → đang tạo câu → câu AI → gợi ý → nộp → bản dịch; (2) AI không dùng được → Thử lại → câu AI; (3) Thêm từ → Tra bằng AI → sửa → lưu thành từ riêng | — |
 
