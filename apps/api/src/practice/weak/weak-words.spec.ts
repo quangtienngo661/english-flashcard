@@ -36,6 +36,8 @@ describe('weakness (design §8 table)', () => {
     expect(countedAttempts(attempts('S', ['open']))).toEqual([]);
     expect(countedAttempts(attempts('S', ['no_error']))).toHaveLength(1);
     expect(countedAttempts(attempts('S', ['fixed']))).toEqual([]);
+    // Bước 7 design §8: a confirmed AI error is not the learner's mistake.
+    expect(countedAttempts(attempts('S', ['confirmed']))).toEqual([]);
     expect(weakness(attempts('SS', ['no_error', null]))).toMatchObject({ weak: true, wrong: 2 });
     expect(weakness(attempts('SS', ['fixed', null]))).toMatchObject({ weak: false, wrong: 1 });
   });

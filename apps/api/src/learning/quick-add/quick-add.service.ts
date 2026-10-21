@@ -16,7 +16,7 @@ const conflicts = new Set(['private-word-exists', 'private-word-limit-reached', 
 
 export type NewWord = {
   lemma: string; pos?: string | null; meaning: string; level?: Level | null; topics?: string[];
-  form_of?: { entry_id: string; kind: InflectionKind };
+  form_of?: { entry_id: string; kind: InflectionKind }; examples?: string[]; ai_suggestion?: boolean;
 };
 export type QuickAddInput = { groupId: string; senseId?: string; newWord?: NewWord; sentence?: string };
 export type QuickAddResult = {
@@ -69,6 +69,7 @@ export class QuickAddService {
           ownerId: userId, lemma: word.lemma, pos: word.pos ?? null, meaning: { text: word.meaning, language: nativeLanguage },
           level: word.level ?? null, topicCodes: word.topics ?? [],
           formOf: word.form_of ? { entryId: word.form_of.entry_id, kind: word.form_of.kind } : null,
+          examples: word.examples ?? [], aiSuggestion: word.ai_suggestion ?? false,
         })).senseId;
       }
       const today = localDate(profile.timezone, this.clock.now());

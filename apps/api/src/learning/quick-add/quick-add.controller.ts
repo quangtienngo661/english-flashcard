@@ -4,7 +4,8 @@ import { IdempotencyInterceptor } from '../../common/idempotency/idempotency.int
 import { Idempotent } from '../../common/idempotency/idempotent.decorator.js';
 import { RateLimit } from '../../common/rate-limit/rate-limit.decorator.js';
 import {
-  CurrentLearner, INFLECTION_KINDS, LEMMA_MAX, LEVELS, LearnerContent, MEANING_MAX, SENTENCE_MAX, VALID_POS, normalizeText,
+  CurrentLearner, INFLECTION_KINDS, LEMMA_MAX, LEVELS, LearnerContent, MEANING_MAX, PRIVATE_EXAMPLES_MAX, SENTENCE_MAX, VALID_POS,
+  normalizeText,
   type Learner,
 } from '../../content/index.js';
 import { QuickAddService } from './quick-add.service.js';
@@ -14,7 +15,7 @@ const uuid = z.uuid().transform((value) => value.toLowerCase());
 const bounded = (max: number) => z.string().transform(normalizeText)
   .refine((value) => !value.includes('\0') && [...value].length >= 1 && [...value].length <= max);
 
-const quickAddBody = z.strictObject({
+export const quickAddBody = z.strictObject({
   group_id: uuid,
   sense_id: uuid.optional(),
   new_word: z.strictObject({
@@ -25,6 +26,9 @@ const quickAddBody = z.strictObject({
     topics: z.array(z.string().transform((value) => normalizeText(value).toLowerCase())
       .pipe(z.string().min(1).regex(/^[a-z0-9-]+$/))).max(20).optional(),
     form_of: z.strictObject({ entry_id: uuid, kind: z.enum(INFLECTION_KINDS) }).optional(),
+    // Bước 7 design §11.2 (D22): the examples of an AI suggestion, as the learner edited them, and where the word came from.
+    examples: z.array(bounded(SENTENCE_MAX)).max(PRIVATE_EXAMPLES_MAX).optional(),
+    ai_suggestion: z.boolean().optional(),
   }).optional(),
   sentence: bounded(SENTENCE_MAX).optional(),
 }).refine((body) => (body.sense_id === undefined) !== (body.new_word === undefined));
