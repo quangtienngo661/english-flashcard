@@ -2,7 +2,9 @@ import type { z } from 'zod';
 import type { AiOperation } from '../ai.types.js';
 import { STRING, STRING_LIST, toViolations } from './text-rules.js';
 
-export type OutputProblem = 'not-json' | 'shape' | 'blank-count' | 'too-long' | 'empty' | 'answers-count' | 'answer-underscore' | 'pos';
+export type OutputProblem =
+  | 'not-json' | 'shape' | 'blank-count' | 'too-long' | 'empty' | 'answers-count' | 'answer-underscore' | 'pos'
+  | 'distractors' | 'verdict' | 'word';
 export type OutputCheck = { ok: true; value: Record<string, unknown> } | { ok: false; problem: OutputProblem };
 
 export type OperationDefinition = {

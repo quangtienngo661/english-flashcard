@@ -17,7 +17,11 @@ export const RETRY_JITTER_MAX_MS = 750;
 /** Bound of a call that reads a model's information from the provider (design §4.3). */
 export const AI_DESCRIBE_TIMEOUT_MS = 5_000;
 /** Default token limit of each operation (design §5.4). */
-export const DEFAULT_MAX_OUTPUT_TOKENS = { generate_cloze: 1200, lookup_word: 1200, translate_sentence: 800 } as const;
+export const DEFAULT_MAX_OUTPUT_TOKENS = {
+  generate_cloze: 1200, lookup_word: 1200, translate_sentence: 800,
+  // Bước 7 design §15 (ASSUMPTION).
+  generate_meaning_question: 1200, generate_sentence_mcq: 1200, check_private_word: 300,
+} as const;
 /** Upper bound of the token setting when the model's maximum is unknown (design §6.3). */
 export const MAX_OUTPUT_TOKENS_UPPER = 128_000;
 /** Sent to Anthropic when no limit is set and the model's maximum is unknown (D28). */
@@ -73,3 +77,12 @@ export const TRANSLATION_MAX = 600;
 export const ACCEPTED_ANSWERS_MAX = 5;
 export const ACCEPTED_ANSWER_MAX = 100;
 export const LOOKUP_EXAMPLES_MAX = 2;
+
+// Bước 7 operations (design §15).
+/** `generate_meaning_question.other_meanings_vi`: the three wrong choices. */
+export const OTHER_MEANINGS_COUNT = 3;
+/** `generate_sentence_mcq.candidates` and its output `distractors`. */
+export const MCQ_CANDIDATES_MIN = 3;
+export const MCQ_CANDIDATES_MAX = 6;
+export const MCQ_DISTRACTORS_COUNT = 3;
+export const PRIVATE_WORD_VERDICTS = ['ok', 'not_recognized'] as const;
