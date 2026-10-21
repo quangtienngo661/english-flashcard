@@ -211,12 +211,199 @@ describe('output schemas', () => {
   });
 
   it('schema names are versioned, lookup part_of_speech is an enum of the valid parts of speech, default token limits', () => {
-    expect(Object.values(OPERATIONS).map((op) => op.outputSchema.name))
-      .toEqual(['generate_cloze_v1', 'lookup_word_v1', 'translate_sentence_v1']);
+    expect(Object.values(OPERATIONS).map((op) => op.outputSchema.name)).toEqual([
+      'generate_cloze_v1', 'lookup_word_v1', 'translate_sentence_v1', 'generate_meaning_question_v1', 'generate_sentence_mcq_v1',
+      'check_private_word_v1',
+    ]);
     const pos = (lookup.outputSchema.schema.properties as Record<string, { enum?: string[] }>).part_of_speech;
     expect(pos.enum).toContain('modal auxiliary');
     expect(pos.enum).not.toContain('unspecified');
-    expect(Object.values(OPERATIONS).map((op) => op.defaultMaxOutputTokens)).toEqual([1200, 1200, 800]);
+    expect(Object.values(OPERATIONS).map((op) => op.defaultMaxOutputTokens)).toEqual([1200, 1200, 800, 1200, 1200, 300]);
+    const verdict = (OPERATIONS.check_private_word.outputSchema.schema.properties as Record<string, { enum?: string[] }>).verdict;
+    expect(verdict.enum).toEqual(['ok', 'not_recognized']);
     expect(lookup.inputFields).toEqual(['text', 'context_sentence']);
+  });
+});
+
+// Bước 7 design §15: the three new operations.
+const meaning = OPERATIONS.generate_meaning_question;
+const mcq = OPERATIONS.generate_sentence_mcq;
+const check = OPERATIONS.check_private_word;
+
+const SENSE_IN = { word: 'deploy', part_of_speech: 'verb', level: 'B2', meaning_vi: 'triển khai', context_label: null };
+const MEANING_IN = { ...SENSE_IN, other_meanings_vi: ['điều quân', 'trì hoãn', 'giao hàng'] };
+const MCQ_IN = { ...SENSE_IN, answer_form: 'deployed', candidates: ['delivered', 'debugged', 'delayed'] };
+const CHECK_IN = { word: 'rizz', part_of_speech: 'noun', meaning_vi: 'sức hút' };
+const MEANING_OUT = {
+  sentence: 'The developers deployed the update to all servers.', word_in_sentence: 'deployed',
+  translation_vi: 'Các lập trình viên đã triển khai bản cập nhật lên mọi máy chủ.',
+};
+const MCQ_OUT = {
+  sentence: 'After the tests passed, we ___ the new version.', distractors: ['delivered', 'debugged', 'delayed'],
+  translation_vi: 'Sau khi kiểm thử đạt, chúng tôi đã triển khai phiên bản mới.',
+};
+
+const meaningIn = (patch: Record<string, unknown>) => violations(meaning.validateInput({ ...MEANING_IN, ...patch }));
+const mcqIn = (patch: Record<string, unknown>) => violations(mcq.validateInput({ ...MCQ_IN, ...patch }));
+const checkIn = (patch: Record<string, unknown>) => violations(check.validateInput({ ...CHECK_IN, ...patch }));
+const meaningOut = (patch: Record<string, unknown>) => meaning.checkOutput({ ...MEANING_OUT, ...patch });
+const mcqOut = (patch: Record<string, unknown>) => mcq.checkOutput({ ...MCQ_OUT, ...patch });
+
+describe('bước 7 operation inputs (design §15)', () => {
+  it('each new operation accepts its valid row', () => {
+    expect(meaning.validateInput(MEANING_IN)).toEqual({ ok: true });
+    expect(mcq.validateInput(MCQ_IN)).toEqual({ ok: true });
+    expect(check.validateInput(CHECK_IN)).toEqual({ ok: true });
+    expect(check.validateInput({ ...CHECK_IN, part_of_speech: 'unspecified' })).toEqual({ ok: true });
+  });
+
+  it('the sense fields follow generate_cloze: word 0/101, level D1, meaning_vi 301, context_label 2 001 are refused', () => {
+    for (const run of [meaningIn, mcqIn]) {
+      expect(run({ word: '' })).toEqual([expect.stringMatching(/^word: /)]);
+      expect(run({ word: x(101) })).toEqual([expect.stringMatching(/^word: /)]);
+      expect(run({ word: x(100) })).toEqual([]);
+      expect(run({ part_of_speech: 'gerund' })).toEqual([expect.stringMatching(/^part_of_speech: /)]);
+      expect(run({ level: 'D1' })).toEqual([expect.stringMatching(/^level: /)]);
+      expect(run({ level: null })).toEqual([]);
+      expect(run({ meaning_vi: x(301) })).toEqual([expect.stringMatching(/^meaning_vi: /)]);
+      expect(run({ meaning_vi: x(300) })).toEqual([]);
+      expect(run({ context_label: x(2001) })).toEqual([expect.stringMatching(/^context_label: /)]);
+      expect(run({ user_id: 'u1' })).toEqual([expect.stringMatching(/^user_id: /)]);
+    }
+  });
+
+  it('other_meanings_vi: exactly 3 items of 1–300', () => {
+    expect(meaningIn({ other_meanings_vi: ['a', 'b'] })).toEqual([expect.stringMatching(/^other_meanings_vi: /)]);
+    expect(meaningIn({ other_meanings_vi: ['a', 'b', 'c', 'd'] })).toEqual([expect.stringMatching(/^other_meanings_vi: /)]);
+    expect(meaningIn({ other_meanings_vi: ['a', '', 'c'] })).toEqual([expect.stringMatching(/^other_meanings_vi\.1: /)]);
+    expect(meaningIn({ other_meanings_vi: ['a', x(301), 'c'] })).toEqual([expect.stringMatching(/^other_meanings_vi\.1: /)]);
+    expect(meaningIn({ other_meanings_vi: ['a', x(300), 'c'] })).toEqual([]);
+  });
+
+  it('answer_form 1–100; candidates 3–6 items of 1–100', () => {
+    expect(mcqIn({ answer_form: '' })).toEqual([expect.stringMatching(/^answer_form: /)]);
+    expect(mcqIn({ answer_form: x(101) })).toEqual([expect.stringMatching(/^answer_form: /)]);
+    expect(mcqIn({ answer_form: x(100) })).toEqual([]);
+    expect(mcqIn({ candidates: ['a', 'b'] })).toEqual([expect.stringMatching(/^candidates: /)]);
+    expect(mcqIn({ candidates: ['a', 'b', 'c', 'd', 'e', 'f'] })).toEqual([]);
+    expect(mcqIn({ candidates: ['a', 'b', 'c', 'd', 'e', 'f', 'g'] })).toEqual([expect.stringMatching(/^candidates: /)]);
+    expect(mcqIn({ candidates: ['a', x(101), 'c'] })).toEqual([expect.stringMatching(/^candidates\.1: /)]);
+  });
+
+  it('check_private_word: word 1–100, meaning_vi 1–300, a part of speech or unspecified, nothing else', () => {
+    expect(checkIn({ word: '' })).toEqual([expect.stringMatching(/^word: /)]);
+    expect(checkIn({ word: x(101) })).toEqual([expect.stringMatching(/^word: /)]);
+    expect(checkIn({ meaning_vi: x(301) })).toEqual([expect.stringMatching(/^meaning_vi: /)]);
+    expect(checkIn({ part_of_speech: 'gerund' })).toEqual([expect.stringMatching(/^part_of_speech: /)]);
+    expect(checkIn({ level: 'A1' })).toEqual([expect.stringMatching(/^level: /)]);
+  });
+
+  it('input fields in the order the prompts name them', () => {
+    expect(meaning.inputFields).toEqual(['word', 'part_of_speech', 'level', 'meaning_vi', 'context_label', 'other_meanings_vi']);
+    expect(mcq.inputFields).toEqual(['word', 'part_of_speech', 'level', 'meaning_vi', 'context_label', 'answer_form', 'candidates']);
+    expect(check.inputFields).toEqual(['word', 'part_of_speech', 'meaning_vi']);
+  });
+});
+
+describe('generate_meaning_question output (design §15)', () => {
+  it('a valid output is accepted unchanged; both ends are trimmed', () => {
+    expect(meaning.checkOutput(MEANING_OUT)).toEqual({ ok: true, value: MEANING_OUT });
+    expect(meaningOut({ word_in_sentence: ' deployed ', sentence: ` ${MEANING_OUT.sentence} ` }))
+      .toEqual({ ok: true, value: MEANING_OUT });
+  });
+
+  it('a \\n in sentence → shape; an empty sentence → empty', () => {
+    expect(problem(meaningOut({ sentence: 'We deployed it.\nAgain.' }))).toBe('shape');
+    expect(problem(meaningOut({ sentence: ' ' }))).toBe('empty');
+  });
+
+  it('sentence 301 → too-long; 300 accepted', () => {
+    expect(problem(meaningOut({ sentence: `deployed ${x(292)}` }))).toBe('too-long');
+    expect(meaningOut({ sentence: `deployed ${x(291)}` }).ok).toBe(true);
+  });
+
+  it('translation_vi empty → empty; 601 → too-long', () => {
+    expect(problem(meaningOut({ translation_vi: ' ' }))).toBe('empty');
+    expect(problem(meaningOut({ translation_vi: x(601) }))).toBe('too-long');
+  });
+
+  it("word_in_sentence empty or holding '_' → word; 101 → too-long; 100 accepted", () => {
+    expect(problem(meaningOut({ word_in_sentence: ' ' }))).toBe('word');
+    expect(problem(meaningOut({ word_in_sentence: 'de_ployed' }))).toBe('word');
+    expect(problem(meaningOut({ word_in_sentence: x(101) }))).toBe('too-long');
+    expect(meaningOut({ word_in_sentence: x(100) }).ok).toBe(true);
+  });
+
+  it('a missing or extra key → shape', () => {
+    const { word_in_sentence: _, ...missing } = MEANING_OUT;
+    expect(problem(meaning.checkOutput(missing))).toBe('shape');
+    expect(problem(meaningOut({ distractors: [] }))).toBe('shape');
+  });
+});
+
+describe('generate_sentence_mcq output (design §15)', () => {
+  it('a valid output is accepted unchanged; distractors are trimmed', () => {
+    expect(mcq.checkOutput(MCQ_OUT)).toEqual({ ok: true, value: MCQ_OUT });
+    expect(value(mcqOut({ distractors: [' delayed ', 'delivered', 'debugged'] }))?.distractors)
+      .toEqual(['delayed', 'delivered', 'debugged']);
+  });
+
+  it("two blanks / no blank → blank-count; '____' becomes '___'", () => {
+    expect(problem(mcqOut({ sentence: 'We ___ and ___ it.' }))).toBe('blank-count');
+    expect(problem(mcqOut({ sentence: 'We deployed it.' }))).toBe('blank-count');
+    expect(value(mcqOut({ sentence: 'We ____ it.' }))?.sentence).toBe('We ___ it.');
+  });
+
+  it('a \\n in sentence → shape; sentence 301 → too-long', () => {
+    expect(problem(mcqOut({ sentence: 'We ___ it.\nAgain.' }))).toBe('shape');
+    expect(problem(mcqOut({ sentence: `___ ${x(297)}` }))).toBe('too-long');
+    expect(mcqOut({ sentence: `___ ${x(296)}` }).ok).toBe(true);
+  });
+
+  it('distractors not exactly 3 → distractors', () => {
+    expect(problem(mcqOut({ distractors: ['a', 'b'] }))).toBe('distractors');
+    expect(problem(mcqOut({ distractors: ['a', 'b', 'c', 'd'] }))).toBe('distractors');
+    expect(problem(mcqOut({ distractors: [] }))).toBe('distractors');
+  });
+
+  it("duplicate (case-insensitive), empty or '_' distractors → distractors", () => {
+    expect(problem(mcqOut({ distractors: ['delayed', 'Delayed', 'debugged'] }))).toBe('distractors');
+    expect(problem(mcqOut({ distractors: ['delayed', ' ', 'debugged'] }))).toBe('distractors');
+    expect(problem(mcqOut({ distractors: ['delayed', 'de_bugged', 'delivered'] }))).toBe('distractors');
+  });
+
+  it('a distractor of 101 → too-long', () => {
+    expect(problem(mcqOut({ distractors: ['delayed', x(101), 'debugged'] }))).toBe('too-long');
+  });
+
+  it('translation_vi empty → empty; 601 → too-long', () => {
+    expect(problem(mcqOut({ translation_vi: '' }))).toBe('empty');
+    expect(problem(mcqOut({ translation_vi: x(601) }))).toBe('too-long');
+  });
+
+  it('distractors as a string → shape', () => {
+    expect(problem(mcqOut({ distractors: 'delayed' }))).toBe('shape');
+  });
+});
+
+describe('check_private_word output (design §15)', () => {
+  it("'ok' and 'not_recognized' are accepted; the case is lowered first", () => {
+    expect(check.checkOutput({ verdict: 'ok' })).toEqual({ ok: true, value: { verdict: 'ok' } });
+    expect(check.checkOutput({ verdict: 'not_recognized' })).toEqual({ ok: true, value: { verdict: 'not_recognized' } });
+    expect(check.checkOutput({ verdict: ' Not_Recognized ' })).toEqual({ ok: true, value: { verdict: 'not_recognized' } });
+  });
+
+  it('a value outside the two → verdict', () => {
+    expect(problem(check.checkOutput({ verdict: 'maybe' }))).toBe('verdict');
+    expect(problem(check.checkOutput({ verdict: '' }))).toBe('verdict');
+  });
+
+  it('a missing or extra key → shape', () => {
+    expect(problem(check.checkOutput({}))).toBe('shape');
+    expect(problem(check.checkOutput({ verdict: 'ok', reason: 'x' }))).toBe('shape');
+  });
+
+  it('parseOutput goes through the new definitions', () => {
+    expect(parseOutput('check_private_word', '{"verdict":"OK"}')).toEqual({ ok: true, value: { verdict: 'ok' } });
   });
 });

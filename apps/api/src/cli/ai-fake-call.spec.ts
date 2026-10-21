@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import type { AiResult, AiService, RunReport } from '../ai/index.js';
+import { AI_OPERATIONS, type AiResult, type AiService, type RunReport } from '../ai/index.js';
 import { AI_FAKE_CALL_USAGE, parseAiFakeCallArgs, runAiFakeCalls } from './ai-fake-call-args.js';
 
 const USER = '00000000-0000-4000-8000-000000000001';
@@ -69,7 +69,7 @@ describe('parseAiFakeCallArgs', () => {
   });
 
   it('the usage text names every form', () => {
-    for (const word of ['generate_cloze', 'lookup_word', 'translate_sentence', 'delete-user-data', '--parallel', '--purpose']) {
+    for (const word of [...AI_OPERATIONS, 'delete-user-data', '--parallel', '--purpose']) {
       expect(AI_FAKE_CALL_USAGE).toContain(word);
     }
   });

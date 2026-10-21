@@ -4,7 +4,7 @@ import { AiAdapter, type AdapterOutcome, type AdapterRequest, type ModelDescript
 /** The fake's models are scenarios (design §4.3). */
 export const FAKE_MODELS = [
   'fake:ok', 'fake:slow', 'fake:two-blanks', 'fake:bad-json', 'fake:truncated', 'fake:429-then-ok', 'fake:503-then-ok',
-  'fake:refuse', 'fake:quota', 'fake:auth',
+  'fake:refuse', 'fake:quota', 'fake:auth', 'fake:bad-form', 'fake:not-recognized',
 ] as const;
 
 const FAKE_USAGE: Usage = { inputTokens: 100, cachedInputTokens: 0, outputTokens: 50, reasoningTokens: 0 };
@@ -25,8 +25,36 @@ function okValue(schemaName: string, data: Data): Record<string, unknown> {
       };
     case 'translate_sentence_v1':
       return { translation_vi: `Bản dịch: ${String(data.sentence)}` };
+    case 'generate_meaning_question_v1':
+      return {
+        sentence: `Lan ${String(data.word)} it today.`, word_in_sentence: String(data.word), translation_vi: 'Hôm nay Lan làm việc đó.',
+      };
+    case 'generate_sentence_mcq_v1':
+      return {
+        sentence: 'Lan ___ it today.', distractors: (data.candidates as string[]).slice(0, 3), translation_vi: 'Hôm nay Lan làm việc đó.',
+      };
+    case 'check_private_word_v1':
+      return { verdict: 'ok' };
     default:
       return {};
+  }
+}
+
+/**
+ * Bước 7 plan choice 2: an answer that passes the gate but breaks Practice's rules — a cloze answer that is not a form of the
+ * word, an MCQ distractor outside `candidates`, a `word_in_sentence` absent from the sentence. Other operations as `fake:ok`.
+ */
+function badFormValue(schemaName: string, data: Data): Record<string, unknown> {
+  const value = okValue(schemaName, data);
+  switch (schemaName) {
+    case 'generate_cloze_v1':
+      return { ...value, accepted_answers: [`${String(data.word)}ment`] };
+    case 'generate_sentence_mcq_v1':
+      return { ...value, distractors: [...(value.distractors as string[]).slice(0, 2), 'outsider'] };
+    case 'generate_meaning_question_v1':
+      return { ...value, word_in_sentence: `${String(data.word)}zz` };
+    default:
+      return value;
   }
 }
 
@@ -72,6 +100,11 @@ export class FakeAiAdapter extends AiAdapter {
         return error('provider_quota', 429);
       case 'fake:auth':
         return error('auth', 401);
+      case 'fake:bad-form':
+        return ok(JSON.stringify(badFormValue(req.schema.name, data)));
+      case 'fake:not-recognized':
+        return ok(JSON.stringify(req.schema.name === 'check_private_word_v1'
+          ? { verdict: 'not_recognized' } : okValue(req.schema.name, data)));
       default:
         return { kind: 'error', error: 'model_rejected', httpStatus: 404, providerErrorCode: null, retryAfterMs: null, providerRequestId };
     }
