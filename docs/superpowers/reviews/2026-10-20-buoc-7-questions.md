@@ -39,7 +39,7 @@ Bước 3–6 giữ luật "chủ dự án trả lời trước, Claude đề xu
 Các hướng: (a) giữ cho Bước 7 · (b) bỏ: Claude đề xuất trước mọi câu · (c) giữ cho câu sản phẩm (người học thấy gì, trả tiền thế nào), Claude đề xuất trước
 cho câu kỹ thuật · (d) khác.
 
-**Trả lời:**
+**Trả lời:** a
 
 ### Câu 2. Chỉ API hay có cả màn hình
 
@@ -49,7 +49,7 @@ bước trước.
 Các hướng: (a) chỉ API, như Bước 4–6 · (b) API + màn hình người học cho riêng phần AI · (c) API + làm luôn giao diện người học còn thiếu của Bước 3–6 ·
 (d) khác.
 
-**Trả lời:**
+**Trả lời:** a
 
 ### Câu 3. "Xong khi" có gọi AI thật không; ai implement
 
@@ -60,7 +60,7 @@ lúc người học bắt đầu dùng AI. Gọi thật cần key của anh/ch�
   20 câu thật cho 20 từ, anh/chị đọc chất lượng) trước khi coi là xong · (c) gọi thật làm thành một việc riêng, trước Bước 7 · (d) khác.
 - 3b. Implement như Bước 4–6 (các phiên chạy song song + một phiên điều phối)? Có / khác.
 
-**Trả lời:**
+**Trả lời:** a
 
 ### Câu 4. Một design hay tách hai
 
@@ -68,7 +68,7 @@ Bước 7 có hai mảng dùng chung cổng AI nhưng đụng hai module khác n
 
 Các hướng: (a) một design, một plan · (b) một design, hai plan làm hai đợt (đợt nào trước?) · (c) hai design riêng (cái nào trước?) · (d) khác.
 
-**Trả lời:**
+**Trả lời:** a
 
 ---
 
@@ -86,7 +86,7 @@ Các hướng: (a) dạng bài AI là các lựa chọn mới trong cùng phiên
 
 Câu phụ 5b (nếu chọn a): một phiên có câu AI vẫn tính là 1 phiên trong số phiên mỗi ngày, **và** mỗi câu AI trừ 1 lượt. Đúng ý không?
 
-**Trả lời:**
+**Trả lời:** đào sâu vào a và b tại vì mình đang phân vân giữa 2 option, tạo visual cho mình xem mô phỏng
 
 ### Câu 6. AI không dùng được giữa phiên
 
@@ -98,7 +98,7 @@ lý do · (c) bỏ từ đó, sang từ kế tiếp, lần sau thử AI lại ·
 
 Câu phụ 6b: nếu Lan **chỉ** chọn dạng bài AI thì sao?
 
-**Trả lời:**
+**Trả lời:** cái này thì triển khai theo cách tính credit dự kiến (phải có pilot để đo thật nhưng tạm thời cứ đưa ra một con số phù hợp) xong rồi trừ vào lượng api còn lại trong db, trước khi tạo một phiên mới thì validate xem lượng api còn lại có đủ để tạo cho một phiên không, nếu không đủ thì báo lỗi đến learner, còn đủ thì cứ cho tạo như bình thường
 
 ### Câu 7. Chờ AI tạo câu
 
@@ -110,7 +110,7 @@ chờ, nhưng nếu Lan dừng phiên thì câu đã tạo trước bị bỏ ·
 Câu phụ 7b (nếu chọn b): câu tạo trước mà Lan không làm tới thì (x) vẫn trừ 1 lượt của Lan · (y) không trừ, anh/chị chịu tiền lời gọi đó · (z) giữ câu đó
 lại cho phiên sau, không tạo lại.
 
-**Trả lời:**
+**Trả lời:** theo hướng b, nhưng mình đang suy nghĩ theo hướng nếu một phiên đang dừng giữa chừng do sự cố hoặc do người dùng muốn dừng giữa chừng thì đưa trạng thái phiên đó sang paused (hoặc là un-done gì đó), các câu được tạo ra thì cứ giữ trong db, người dùng sẽ có 2 option: tạo phiên mới và bỏ phiên cũ (nếu tạo phiên mới thì + 1 phiên trong limit) hoặc là hoàn thành phiên cũ cho xong
 
 ### Câu 8. Luật của Bước 4 có áp nguyên cho bài AI không
 
@@ -126,7 +126,7 @@ Câu hỏi: áp nguyên cả 5 điều cho bài AI? Nếu có điều nào khác
 Câu phụ 8b: với câu điền từ AI, gợi ý nấc 1 là gì? Đề bài đã là một câu nên câu ví dụ không còn dùng làm gợi ý. Có thể là: nghĩa tiếng Việt của từ, định nghĩa
 tiếng Anh, bản dịch cả câu (hiện bản dịch chỉ hiện **sau** khi nộp), hoặc khác.
 
-**Trả lời:**
+**Trả lời:** có, với hint thì chữ cái đầu, definition và nghĩa tiếng Việt theo thứ tự
 
 ---
 
@@ -143,7 +143,7 @@ của Bước 4).
 Các hướng: (a) AI viết câu mới · (b) dùng câu ngữ cảnh của Lan · (c) cả hai: có câu của Lan thì dùng trước, không có thì AI viết · (d) cả hai, Lan chọn khi mở
 phiên · (e) khác.
 
-**Trả lời:**
+**Trả lời:** d
 
 ### Câu 10. Bài điền từ từ câu của chính Lan (chỉ hỏi nếu câu 9 không phải a)
 
@@ -153,7 +153,7 @@ Các hướng: (a) gói trả phí, trừ 1 lượt bài AI · (b) gói trả ph
 
 Câu phụ 10b: AI có làm gì với câu của Lan không? Ví dụ: dịch câu sang tiếng Việt (tốn lượt); kiểm câu có dùng từ đúng nghĩa không; không làm gì.
 
-**Trả lời:**
+**Trả lời:** 
 
 ### Câu 11. Dùng lại câu AI đã lưu
 
@@ -166,7 +166,7 @@ Các hướng: (a) luôn câu mới (1 lượt mỗi lần) · (b) dùng lại c
 
 Câu phụ 11b: xem lại các câu AI cũ: trang "Lịch sử" của Bước 4 (lọc theo ngày, theo từ) là đủ, hay cần thêm danh sách "Câu AI của tôi"?
 
-**Trả lời:**
+**Trả lời:** chỗ này mình khá là đắn đo, bởi vì nếu người dùng đã thanh toán pro rồi mà chức năng lại không đáp ứng được gói pro đưa ra (ví dụ dùng câu có sẵn thay vì để cho AI gen) thì nó lại không đúng với gói mô tả -> người dùng phát hiện thì sẽ có khả năng app bị phạt hoặc bị cấm,.... nên mình chưa có hướng xử lý cho phần này, bạn có thể đề xuất một vài hướng để mình xem
 
 ### Câu 12. Từ đồng nghĩa cũng vừa chỗ trống
 
@@ -176,7 +176,7 @@ AI vẫn có thể viết câu như vậy. Còn mở từ Bước 4 §15: "đáp
 Các hướng: (a) sai, như hiện nay; Lan báo lỗi được · (b) đúng nếu AI đã liệt kê `release` trong các đáp án chấp nhận · (c) không chấm sai: báo "đúng nghĩa,
 nhưng bài cần một từ khác", cho làm lại · (d) khác.
 
-**Trả lời:**
+**Trả lời:** mình nghĩ là phải handle làm sao để đừng lấy ngữ cảnh chung chung, mà lấy chi tiết hơn cho đúng với việc sử dụng từ đó, chứ không phải một câu dùng được nhiều từ
 
 ### Câu 13. Kiểm câu AI trước khi Lan thấy
 
@@ -186,7 +186,7 @@ Luật **không** phát hiện được câu sai nghĩa, câu không tự nhiên
 Các hướng: (a) chỉ kiểm bằng luật (K16), theo dõi tỉ lệ báo lỗi · (b) thêm một lần AI đọc lại câu trước khi đưa Lan: thêm một lời gọi, anh/chị chịu tiền,
 không trừ thêm lượt của Lan, câu chậm hơn vài giây · (c) AI đọc lại chỉ ở trắc nghiệm theo câu (bắt buộc, phần 5), điền từ chỉ kiểm bằng luật · (d) khác.
 
-**Trả lời:**
+**Trả lời:** phân tích sâu giúp mình
 
 ### Câu 14. AI dùng một dạng chia mà bảng dạng chia không biết
 
@@ -198,7 +198,7 @@ sung khi thấy câu bị loại nhầm (CLAUDE.md đang ghi việc này cho Bư
 
 Câu phụ 14b (nếu chọn c): ai được sửa danh sách đó: staff có quyền sửa nội dung (`admin` và `editor`), hay chỉ `admin`?
 
-**Trả lời:**
+**Trả lời:** c, admin và editor đều được
 
 ### Câu 15. Người học có tiếng mẹ đẻ là tiếng Anh
 
@@ -208,7 +208,7 @@ người học tiếng Anh thì chỉ có định nghĩa tiếng Anh.
 Các hướng: (a) người học tiếng Anh không có bài AI ở V1 · (b) có bài AI cho từ catalog, không có cho từ riêng của họ · (c) có cho mọi từ: sửa thao tác tạo câu của
 Bước 6 để nhận định nghĩa tiếng Anh thay nghĩa tiếng Việt (một sửa nhỏ ở Bước 6, sẽ ghi rủi ro) · (d) khác.
 
-**Trả lời:**
+**Trả lời:** không quan trọng chỗ này, không có case riêng biệt cho chuyện này, nhưng nếu được thì bạn có thể research để mình có thêm insight
 
 ---
 
@@ -228,7 +228,7 @@ Các hướng (ví dụ với từ `deploy`):
 Câu phụ 16b (nếu chọn a): ba nghĩa sai lấy từ đâu: các nghĩa khác của chính từ đó; nghĩa của các từ khác trong nhóm của Lan (như trắc nghiệm Bước 4); hay AI tự
 viết?
 
-**Trả lời:**
+**Trả lời:** phân tích chi tiết hơn và cho mình ngữ cảnh
 
 ---
 
@@ -244,7 +244,7 @@ câu, tức có hai đáp án đúng, mà không có AI thì không kiểm đư�
 - 17b. Ba đáp án nhiễu: (x) vẫn lấy trong các nhóm của Lan (như trắc nghiệm Bước 4); AI chỉ kiểm từng đáp án có vừa câu không và loại cái vừa · (y) AI tự đề
   xuất 3 đáp án không vừa câu (có thể là từ Lan chưa học) · (z) khác.
 
-**Trả lời:**
+**Trả lời:** như mình nói, phải tạo câu làm sao để 1 câu chỉ có thể dùng một từ duy nhất, tránh tạo câu mà có hơn 1 đáp án, kiểm tra ngữ cảnh của từ để có thể tạo câu cho chính xác
 
 ---
 
@@ -261,7 +261,7 @@ Ví dụ: Lan gõ `rizz` (catalog không có), hoặc gõ `deploy` nhưng nghĩa
 Các hướng: (a) tự động gọi khi catalog và từ riêng không có chữ đó · (b) chỉ khi Lan bấm nút "Tra bằng AI" (nút hiện khi không thấy từ, hoặc sau "không phải
 nghĩa này") · (c) tự động khi không có; bằng nút khi có mà sai nghĩa · (d) khác.
 
-**Trả lời:**
+**Trả lời:** mình chưa hiểu các option lắm, phân tích sâu hơn giúp mình
 
 ### Câu 19. Có gửi câu Lan gặp cho AI không
 
@@ -269,7 +269,7 @@ nghĩa này") · (c) tự động khi không có; bằng nút khi có mà sai ng
 
 Các hướng: (a) gửi khi Lan có nhập câu · (b) không bao giờ gửi · (c) Lan tự chọn mỗi lần (ô tick "gửi kèm câu để tra chính xác hơn") · (d) khác.
 
-**Trả lời:**
+**Trả lời:** c
 
 ### Câu 20. AI trả về một từ gốc đã có trong catalog
 
@@ -277,7 +277,7 @@ Ví dụ: Lan gõ `deployments`, bảng dạng chia không biết chữ này →
 
 Các hướng: (a) hiện nghĩa catalog thay cho gợi ý của AI (vẫn tính 1 lượt) · (b) hiện cả hai, Lan chọn · (c) chỉ hiện gợi ý của AI · (d) khác.
 
-**Trả lời:**
+**Trả lời:** chi tiết hơn đi
 
 ### Câu 21. Lưu gợi ý của AI thành từ riêng
 
@@ -287,7 +287,7 @@ Lan đồng ý với gợi ý thì gợi ý thành **từ riêng** của Lan (ch
   thì có hai thứ đó, nhưng câu do AI viết, không ai duyệt.
 - 21c. Từ riêng ghi nguồn "AI gợi ý" cho Lan thấy?
 
-**Trả lời:**
+**Trả lời:** b
 
 ### Câu 22. Từ điển ngoài
 
@@ -295,7 +295,7 @@ K20 (04/10) định chuỗi tra nghĩa: catalog → **từ điển ngoài** → 
 
 Các hướng: (a) Bước 7 bỏ qua từ điển ngoài: chuỗi là catalog → AI → tự nhập · (b) Bước 7 tìm hiểu và gắn một từ điển ngoài (cần research trước) · (c) khác.
 
-**Trả lời:**
+**Trả lời:** chưa hiểu câu hỏi 
 
 ---
 
@@ -310,7 +310,7 @@ hiện chỉ có tiếng Anh.
   trắc nghiệm theo câu (sau khi nộp) · không làm dịch bổ sung ở Bước 7 · khác.
 - 23b. Bản dịch có lưu lại để lần sau Lan xem không bị trừ lượt nữa? Có / không.
 
-**Trả lời:**
+**Trả lời:** bỏ phần dịch này dược không, trong catalog chỉ hiện ví dụ như cambridge làm, không có dịch ngay lúc tra từ trong catalog
 
 ---
 
@@ -323,7 +323,7 @@ Bước 4 có 4 lý do: nghĩa sai, chấm sai, gợi ý sai, khác.
 Các hướng: (a) giữ 4 lý do · (b) thêm lý do riêng cho câu AI, ví dụ: câu sai ngữ pháp hoặc không tự nhiên · có hơn một đáp án đúng · bản dịch sai · câu không
 đúng nghĩa của từ (anh/chị chọn) · (c) khác.
 
-**Trả lời:**
+**Trả lời:** chỗ lỗi này để cho admin tự động configure trên một trang, mình nghĩ admin có thể thiết lập template cho learner để báo lỗi, chi tiết hơn chắc mình sẽ để bạn phân tích sâu chỗ này, nó giống như kiểu learner chọn lỗi => chi tiết lỗi => confirm và gửi bản template đến cho admin hoặc editor trong một bảng quản lý của admin
 
 ### Câu 25. Câu AI cho từ riêng của Lan
 
@@ -333,7 +333,7 @@ Ví dụ: từ riêng `vibe check` của Lan, AI viết một câu sai nghĩa.
 Các hướng: (a) giữ D36: không báo lỗi, không trả lượt · (b) cho báo lỗi; staff thấy từ riêng và câu (chính sách riêng tư phải ghi) · (c) cho báo lỗi và trả
 lượt ngay, không cần staff xem (có thể bị lạm dụng: báo mọi câu để lấy lại lượt) · (d) khác.
 
-**Trả lời:**
+**Trả lời:** chỗ này để AI handle kiểm tra các từ riêng trước, nếu từ hợp lệ hoặc có ý nghĩa thì sẽ tạo câu, không thì AI sẽ báo lỗi về cho learner kiểm tra lại từ
 
 ### Câu 26. Ai xác nhận câu AI sai để trả lượt
 
@@ -342,7 +342,7 @@ Báo lỗi Bước 4 do staff có quyền sửa nội dung xử lý (`admin` và
 - 26a. Các hướng: (a) cả `admin` và `editor` (như báo lỗi Bước 4) · (b) chỉ `admin` · (c) khác.
 - 26b. Lan có được báo "đã trả lại 1 lượt" không? (Báo bằng email, hay chỉ hiện trong app khi có giao diện.)
 
-**Trả lời:**
+**Trả lời:** 26a: a, lưu ý là chỉ có lỗi và confirm lỗi đúng thì mới có thể trả lượt, nhưng mình sẽ cân nhắc là có nên đưa admin duyệt hay không để tránh editor lạm dụng; 26b: có thể là push notification hoặc email, tùy ý
 
 ---
 
@@ -355,7 +355,7 @@ Bước 7 sẽ có vài con số mới, ví dụ: tỉ lệ câu AI khi phiên t
 
 Các hướng: (a) admin chỉnh được hết · (b) cố định trong code, đổi bằng sửa code · (c) tùy từng số: Claude liệt kê trong design, anh/chị đánh dấu · (d) khác.
 
-**Trả lời:**
+**Trả lời:** a
 
 ---
 
