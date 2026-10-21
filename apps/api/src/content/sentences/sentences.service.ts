@@ -56,10 +56,12 @@ export class SentencesService {
     return sentence;
   }
 
-  async listSentences(userId: string, senseIds: string[]): Promise<Map<string, Sentence[]>> {
+  /** A caller inside an open transaction passes its `tx` as `db`, so the read needs no second connection (Bước 7 plan choice 5). */
+  async listSentences(userId: string, senseIds: string[], db: Prisma.TransactionClient | PrismaClient = this.prisma):
+    Promise<Map<string, Sentence[]>> {
     const result = new Map<string, Sentence[]>();
     if (senseIds.length === 0) return result;
-    const rows = await this.prisma.contextSentence.findMany({
+    const rows = await db.contextSentence.findMany({
       where: { userId, senseId: { in: senseIds } }, select: { ...sentenceSelect, senseId: true },
       orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
     });

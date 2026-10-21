@@ -1,6 +1,8 @@
 // Types shared by the AI gateway and its callers (design §5.5, §8; plan choice 2).
 
-export const AI_OPERATIONS = ['generate_cloze', 'lookup_word', 'translate_sentence'] as const;
+export const AI_OPERATIONS = [
+  'generate_cloze', 'lookup_word', 'translate_sentence', 'generate_meaning_question', 'generate_sentence_mcq', 'check_private_word',
+] as const;
 export type AiOperation = (typeof AI_OPERATIONS)[number];
 
 export const AI_PROVIDERS = ['openai', 'anthropic', 'fake'] as const;

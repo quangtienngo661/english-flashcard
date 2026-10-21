@@ -38,3 +38,19 @@ describe('SentencesService.addSentence', () => {
     expect(settingsService.get).toHaveBeenCalledWith(tx);
   });
 });
+
+describe('SentencesService.listSentences — reads through the client it is given (Bước 7 plan choice 5)', () => {
+  it('a caller inside a transaction passes its tx; without one the global client is used', async () => {
+    const row = { id: 'cs1', text: 'I run.', createdAt: new Date('2026-10-19T03:00:00Z'), senseId: 's1' };
+    const prisma = { contextSentence: { findMany: vi.fn(async () => [row]) } };
+    const tx = { contextSentence: { findMany: vi.fn(async () => [row]) } };
+    const service = new SentencesService(prisma as unknown as PrismaClient, new FakeClock(), { info: vi.fn() } as unknown as AppLogger,
+      {} as SettingsService);
+    const viaTx = await service.listSentences('u1', ['s1'], tx as unknown as Prisma.TransactionClient);
+    expect(viaTx.get('s1')).toEqual([{ id: 'cs1', text: 'I run.', createdAt: row.createdAt }]);
+    expect(tx.contextSentence.findMany).toHaveBeenCalledTimes(1);
+    expect(prisma.contextSentence.findMany).not.toHaveBeenCalled();
+    await service.listSentences('u1', ['s1']);
+    expect(prisma.contextSentence.findMany).toHaveBeenCalledTimes(1);
+  });
+});
