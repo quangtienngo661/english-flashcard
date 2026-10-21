@@ -134,6 +134,17 @@ describe('pickWrongMeanings (design §7.4, D17)', () => {
     expect(pickWrongMeanings(s, [], [], [vi, en('a'), en('b'), en('c')], none)?.map((c) => c.gloss_vi)).toEqual(['a', 'b', 'c']);
   });
 
+  it('en learner: a wrong meaning without gloss_vi is skipped even with an English definition, and one without an English definition too', () => {
+    const s = deploy({ meaning: { text: 'to move software', language: 'en', translation_missing: false } });
+    // As senseMeaning gives them for an `en` learner: English when there is a definition, else the Vietnamese gloss.
+    const noGloss = candidate({ gloss_vi: null, definition_en: 'a table', meaning: { text: 'a table', language: 'en', translation_missing: false } });
+    const noDefinition = candidate({ gloss_vi: 'cái ghế', definition_en: null });
+    const en = (gloss: string) => candidate({ gloss_vi: gloss, definition_en: gloss, meaning: { text: gloss, language: 'en', translation_missing: false } });
+    expect(pickWrongMeanings(s, [], [], [noGloss, noDefinition, en('a'), en('b')], none)).toBeNull();
+    expect(pickWrongMeanings(s, [], [], [noGloss, noDefinition, en('a'), en('b'), en('c')], none)?.map((c) => c.gloss_vi))
+      .toEqual(['a', 'b', 'c']);
+  });
+
   it('group mates go through the Bước 4 filter: the same lemma is dropped there', () => {
     const s = deploy();
     const sameLemma = candidate({ lemma: 'Deploy', gloss_vi: 'dàn quân' });
