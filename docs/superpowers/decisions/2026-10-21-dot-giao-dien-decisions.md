@@ -220,6 +220,17 @@ Bối cảnh: research [`../../mockups/2026-10-21/vietnamese-ux-writing-research
 
 Thêm vào mảng A: mockup ghi "Thứ Bảy, 18 tháng 10" nhưng 18/10/2026 là Chủ Nhật (research phát hiện; Claude kiểm lại bằng `Intl`).
 
+## Mốc 0 — duyệt bản chữ giao diện (21/10/2026, sau khi duyệt plan)
+
+Chủ dự án: "Ok bản chữ giao diện. Q1: đổi Level thành Trình độ. Q2: vẽ email người thao tác ở màn admin và ghi việc API trả email vào design §10." Theo luật hỏi của đợt, Claude đề xuất trước.
+
+| Câu | Phương án đưa ra | Chọn |
+|---|---|---|
+| Q1 Chữ "Level" trên màn người học | ✅ Đổi thành "Trình độ" (giữ khung giao diện bằng tiếng Việt, N17; sửa chữ nhiều màn có sẵn); giữ "Level" | Chủ dự án, theo đề xuất |
+| Q2 Màn admin hiện "ai làm" khi API chỉ trả mã người dùng (cấp gói, báo lỗi, prompt, bộ ví dụ) | ✅ Vẽ email, ghi việc "API trả email" vào design §10 (đổi API là việc ngoài đợt); chỉ vẽ vai trò | Chủ dự án, theo đề xuất |
+
+Cùng bản chữ, Claude tự đổi (chủ dự án duyệt cùng bản chữ): "dạng bài" → "kiểu câu"; "Ôn lại thêm", "Ôn tất cả" trong Luyện tập → "Luyện lại thêm", "Luyện tất cả".
+
 ## Đề xuất kỹ thuật duyệt cùng design (bốn phần, chủ dự án "ok" từng phần)
 
 | Chọn | Bỏ | Vì sao |

@@ -1,7 +1,7 @@
 # Bản chữ giao diện — đợt giao diện (21/10/2026)
 
-> **Trạng thái:** bản viết của Task 1 (plan [`../../superpowers/plans/2026-10-21-dot-giao-dien.md`](../../superpowers/plans/2026-10-21-dot-giao-dien.md)),
-> **chờ chủ dự án duyệt (mốc 0)** trước khi vẽ. Theo design [`../../superpowers/specs/2026-10-21-dot-giao-dien-design.md`](../../superpowers/specs/2026-10-21-dot-giao-dien-design.md)
+> **Trạng thái 21/10/2026: chủ dự án duyệt ở mốc 0** ("Ok bản chữ giao diện. Q1: đổi Level thành Trình độ. Q2: vẽ email người thao tác ở màn admin và ghi việc API trả email vào design §10."). Bản viết của Task 1 (plan [`../../superpowers/plans/2026-10-21-dot-giao-dien.md`](../../superpowers/plans/2026-10-21-dot-giao-dien.md)),
+> theo design [`../../superpowers/specs/2026-10-21-dot-giao-dien-design.md`](../../superpowers/specs/2026-10-21-dot-giao-dien-design.md)
 > (D1–D17) và research [`vietnamese-ux-writing-research.md`](vietnamese-ux-writing-research.md) (nguyên tắc N1–N20).
 > Các màn vẽ sau **chép nguyên chữ** từ file này. Chữ trong ngoặc vuông `[ ]` là nút; chữ nghiêng là ghi chú cho người vẽ, không hiện trên màn.
 
@@ -63,7 +63,7 @@ Mỗi khái niệm một từ. Cột "Tránh" gồm cả chữ tiếng Anh khôn
 | Bản dịch câu AI | **Bản dịch** + nhãn phụ **AI dịch** | bản dịch chuẩn | |
 | Người học chỉ ra câu sai | **báo lỗi** (động từ và danh từ) | báo cáo, phản hồi, report | |
 | Trả lượt cho câu AI lỗi | **trả lại lượt câu AI** ("Đã trả lại 1 lượt câu AI") | hoàn tiền, hoàn trả, refund | |
-| Mức A1–C2 | **Đề xuất: "trình độ"** ("Trình độ: A2", "Mọi trình độ"); mã CEFR giữ nguyên | level (trên màn người học) | **Đề xuất mới, cần bạn ok** (N17). Không ok thì giữ "Level" như hiện tại |
+| Mức A1–C2 | **trình độ** ("Trình độ: A2", "Mọi trình độ"); mã CEFR giữ nguyên | level (trên màn người học) | **Chốt mốc 0** (Q1, theo N17) |
 | Loại từ (verb, noun…) | Giữ nhãn tiếng Anh như từ điển: verb, noun, adjective, adverb | — | Là nội dung học, không phải khung giao diện (kiểu Cambridge) |
 | Email | **email** | thư điện tử | |
 | Mã OTP | **mã xác minh**, "mã 6 số" | OTP | |
@@ -518,7 +518,7 @@ Trạng thái phụ, vẽ gộp trong `K/85c`:
 | Ô | "Từ" · "rizz" |
 | Ô | "Loại từ" · "noun" |
 | Ô | "Nghĩa" · "sức hút, khả năng tán tỉnh" |
-| Ô | "Trình độ" · "B2" *(hoặc "Level" nếu bạn không đổi thuật ngữ)* |
+| Ô | "Trình độ" · "B2" |
 | Ô | "Chủ đề (không bắt buộc)" · "Đời sống" |
 | Ô | "Dạng chia của (không bắt buộc)" · trống |
 | Câu ví dụ | "Câu ví dụ (tối đa 2)" · "He's got serious rizz." · [+ Thêm câu ví dụ] · dòng phụ "Tối đa 300 ký tự mỗi câu." |
@@ -714,7 +714,7 @@ cài đặt khác. Tải lại để xem bản mới." (409 `version-conflict`);
 | Lý do báo lỗi | 7 lý do seed, cả 7 `note_required = false` (biến thể ghi chú bắt buộc vẽ cho trường hợp admin bật); câu thường thấy 4, câu AI thấy 7; ghi chú tối đa 300 |
 | Tra bằng AI lỗi | `503 ai-lookup-failed`: `retryable` false chỉ với lỗi vĩnh viễn; `409 ai-in-progress` coi như đang tra |
 | Gợi ý | Mức 1–3; gõ từ Bước 4 mức 2 = chữ cái đầu và số chữ |
-| Admin: "ai làm" | Chỉ cài đặt (lịch sử), khóa tài khoản và người thao tác trên nghĩa có email; cấp gói, prompt, bộ ví dụ, báo lỗi chỉ trả mã người dùng (xem câu hỏi Q2 trong tin nhắn mốc 0) |
+| Admin: "ai làm" | Chỉ cài đặt (lịch sử), khóa tài khoản và người thao tác trên nghĩa có email; cấp gói, prompt, bộ ví dụ, báo lỗi chỉ trả mã người dùng. **Chốt mốc 0 (Q2):** khung vẫn vẽ email người thao tác; API trả email là việc ngoài đợt (design §10) |
 | Admin: 41 cài đặt | `settings.definitions.ts`: reminders 5, learning 5, practice 9, entitlements 15, content 2, ai 5 |
 | Admin: 6 thao tác AI | Sau Bước 7 có 6 thao tác, đều seed không có model |
 
@@ -746,9 +746,9 @@ vẽ) và bảng so sánh màu không đổi ở Task 5; Task 12 cập nhật.
 | Bài AI 0/300 · AI tra nghĩa 0/100: sắp có, lượt mới vào 15/11. | Lượt câu AI: còn 287/300 · Lượt tra AI: còn 96/100 / Lượt mới có vào 15/11. | K/53 | 3 |
 | Thứ Bảy, 18 tháng 10 | Chủ Nhật, 18/10 | K/10, K/40, K/41 | 3 |
 | Thứ Bảy, 18/10 | Chủ Nhật, 18/10 | M/10, M/11, M/12, M/13 | 3 |
-| Mọi level | Mọi trình độ *(nếu bạn ok thuật ngữ "trình độ")* | Thanh trên web, mọi K có dải tra | 5 |
-| Level *(nút chọn ở đầu màn điện thoại; cột ở K/30)* | Trình độ *(như trên)* | `284:9`, mọi M có đầu màn; K/30, K/43 | 5 |
-| Level A2 · Level: A2 | Trình độ A2 · Trình độ: A2 *(như trên)* | K/30, K/43, M/40, M/44 | 5 |
+| Mọi level | Mọi trình độ | Thanh trên web, mọi K có dải tra | 5 |
+| Level *(nút chọn ở đầu màn điện thoại; cột ở K/30)* | Trình độ | `284:9`, mọi M có đầu màn; K/30, K/43 | 5 |
+| Level A2 · Level: A2 | Trình độ A2 · Trình độ: A2 | K/30, K/43, M/40, M/44 | 5 |
 | Gõ từ, dán câu bạn gặp. Wordmet tự nhận ra dạng chia. | Gõ từ bạn vừa gặp. Có câu chứa từ đó thì dán vào luôn. Wordmet tự nhận ra dạng chia, như went → go. | K/10, K/40, K/41, M/10–M/12 | 5 |
 | Không làm gì. Wordmet không bao giờ tự xoá từ. | Không làm gì. Wordmet không bao giờ tự xóa từ. | K/15 | 5 |
 | Từ về ngăn Mới và được tính như từ mới hôm nay. | Từ về ngăn Mới, tính như từ mới hôm nay. | K/15 | 5 |

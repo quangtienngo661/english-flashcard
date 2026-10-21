@@ -180,6 +180,7 @@ Mockup chỉ tiếng Việt; bản tiếng Anh kiểm khi code.
 - **Design Bước 7 §6.7:** sửa câu chữ theo D9 (app hỏi khi mở phiên mới, không hỏi mỗi lần mở Luyện tập); API không đổi.
 - **Design Bước 6 D8:** ghi rằng màn AI của admin đã vẽ trong đợt này (D11).
 - **Khi code:** kiểm bản tiếng Anh của mọi màn (D14).
+- **API trả email người thao tác** (chủ dự án, mốc 0 ngày 21/10/2026): các API admin hiện chỉ trả mã người dùng cho người cấp gói (`granted_by`, `revoked_by`, `changes[].changed_by`), người xử lý báo lỗi (`resolved_by`, kể cả danh sách trả lượt), người lưu prompt và người tạo, chạy bộ ví dụ. Màn admin của đợt này vẽ email; đợt code thêm email vào các response đó (chỉ thêm trường, như `locked_by` và `reviewed_by` đã có).
 
 ## 11. Rủi ro và việc còn mở
 
