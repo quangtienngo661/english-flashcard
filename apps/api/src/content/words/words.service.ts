@@ -32,8 +32,8 @@ const cursorSchema = z.strictObject({
 });
 const invalid = () => new ProblemDetailsException({ status: 400, title: 'Validation failed', type: 'validation-failed' });
 
-/** The displayed level of entry e: newest editorial/user choice, then source priority (derived rows have no rival). */
-const displayedLevel = Prisma.sql`
+/** The displayed level of entry e: newest editorial/user choice, then source priority (derived rows have no rival). Practice reads use it too. */
+export const displayedLevel = Prisma.sql`
   SELECT el.level FROM entry_levels el JOIN data_sources ds ON ds.id = el.source_id
   WHERE el.entry_id = e.id
   ORDER BY (el.basis IN ('editorial', 'user')) DESC,
