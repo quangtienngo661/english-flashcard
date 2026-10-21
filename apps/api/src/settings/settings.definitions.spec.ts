@@ -31,6 +31,7 @@ describe('settings definitions', () => {
       practice: {
         max_questions_per_session: 20, default_questions_per_session: 10, history_months: 6, true_false_true_percent: 50,
         idle_session_close_hours: 24, reports_per_hour: 20, hint_definition_max_chars: 200, type_word_max_retries: null,
+        ai_prefetch_count: 2,
       },
       entitlements: ENTITLEMENT_DEFAULTS_API,
       content: { private_words_per_user: 10000, sentences_per_sense: 20 },
@@ -128,7 +129,7 @@ describe('settings definitions', () => {
     const edges: Array<[string, number, number]> = [
       ['max_questions_per_session', 5, 100], ['default_questions_per_session', 1, 100], ['history_months', 3, 24],
       ['true_false_true_percent', 20, 80], ['idle_session_close_hours', 1, 168], ['reports_per_hour', 5, 100],
-      ['hint_definition_max_chars', 80, 500], ['type_word_max_retries', 1, 10],
+      ['hint_definition_max_chars', 80, 500], ['type_word_max_retries', 1, 10], ['ai_prefetch_count', 0, 20],
     ];
     for (const [key, min, max] of edges) {
       expect(issues({ practice: { [key]: min } }), `${key}=${min}`).toEqual([]);
@@ -222,6 +223,10 @@ describe('settings definitions', () => {
     expect(cleared.practice.typeWordMaxRetries).toBeNull();
     expect(changedFields(three, cleared)).toEqual([{ key: 'practice.type_word_max_retries', oldValue: 3, newValue: null }]);
     expect(changedFields(cleared, cleared)).toEqual([]);
+  });
+
+  it('Bước 7 D8: a stored practice group without ai_prefetch_count reads 2', () => {
+    expect(withDefaults({ practice: { historyMonths: 12 } }).practice.aiPrefetchCount).toBe(2);
   });
 
   it('stored values missing a key fall back to its default', () => {
