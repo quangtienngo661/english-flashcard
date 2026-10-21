@@ -84,11 +84,11 @@ for (const id of FRAME_IDS) {
     const r = ratio(fg, bg);
     if (exempt(t, top)) exempted++;
     else { if (r < minText) minText = r; if (r < 4.5) worst.push(`text ${t.id} "${t.characters.slice(0, 30)}" ${r.toFixed(2)}`); }
-    // Tràn = chữ ra ngoài khối chứa nó (cha gần nhất có nền hoặc viền: thẻ, nút, chip, hộp); chữ nằm thẳng trong khung màn thì
+    // Tràn = chữ ra ngoài khối chứa nó (cha gần nhất có nền, viền hoặc cắt nội dung: thẻ, nút, chip, hộp); chữ nằm thẳng trong khung màn thì
     // không được vượt mép trái/phải. Nội dung dưới mép dưới khung màn là phần cuộn, không tính.
     const tb = box(t);
     let holder = null, p = t.parent;
-    while (p && p !== top) { if ((Array.isArray(p.fills) && p.fills.some(x => x.visible !== false)) || (Array.isArray(p.strokes) && p.strokes.length)) { holder = p.absoluteBoundingBox; break; } p = p.parent; }
+    while (p && p !== top) { if (p.clipsContent || (Array.isArray(p.fills) && p.fills.some(x => x.visible !== false)) || (Array.isArray(p.strokes) && p.strokes.length)) { holder = p.absoluteBoundingBox; break; } p = p.parent; }
     const outX = tb.x < topBox.x - 0.5 || tb.x + tb.width > topBox.x + topBox.width + 0.5;
     const own = t.textAutoResize === 'NONE' && t.absoluteRenderBounds && t.absoluteRenderBounds.height > t.height + 1; // chữ tràn khỏi ô cao cố định
     if ((holder ? !contains(holder, tb) : outX) || own) { overflow++; worst.push(`overflow ${t.id} "${t.characters.slice(0, 30)}"`); }
@@ -104,7 +104,10 @@ for (const id of FRAME_IDS) {
       if (r < 3) worst.push(`icon ${ic.id} ${ic.name} ${r.toFixed(2)}`);
     }
   }
-  for (const n of top.findAll(n => visibleChain(n, top) && (n.type === 'INSTANCE' || n.type === 'FRAME'))) {
+  // Nút vàng nằm dưới lớp phủ (scrim) của hộp thoại là nền mờ, không tính.
+  const scrimIdx = top.children.findIndex(c => /scrim/i.test(c.name) && c.visible !== false);
+  const topIdx = n => { let p = n; while (p.parent !== top) p = p.parent; return top.children.indexOf(p); };
+  for (const n of top.findAll(n => visibleChain(n, top) && (n.type === 'INSTANCE' || n.type === 'FRAME') && (scrimIdx < 0 || topIdx(n) > scrimIdx))) {
     if (n.type === 'INSTANCE' && n.componentProperties && n.componentProperties.Style && n.componentProperties.Style.value === 'Sticker') { yellow++; continue; }
     // Nút tự vẽ đặt tên "btn …" / "cta …" / "nút …"; tab đang mở tô vàng ở thanh trên không phải nút.
     if (n.type === 'FRAME' && /^(btn|cta|nút|button)\b/i.test(n.name) && n.height >= 32 && n.height <= 72) {
