@@ -18,10 +18,12 @@ import { HistoryService } from './history/history.service.js';
 import { PracticeCleanupService } from './maintenance/practice-cleanup.service.js';
 import { AdminReportReasonsController } from './reports/admin-report-reasons.controller.js';
 import { AdminReportsController } from './reports/admin-reports.controller.js';
+import { AdminUnknownFormsController } from './reports/admin-unknown-forms.controller.js';
 import { ReportReasonsController } from './reports/report-reasons.controller.js';
 import { ReportReasonsService } from './reports/report-reasons.service.js';
 import { MyReportsController, ReportsController } from './reports/reports.controller.js';
 import { ReportsService } from './reports/reports.service.js';
+import { UnknownFormsAdminService } from './reports/unknown-forms-admin.service.js';
 import { PracticeReviewsController } from './reviews/practice-reviews.controller.js';
 import { PracticeReviewsService } from './reviews/practice-reviews.service.js';
 import { QuestionBuilder } from './questions/question-builder.service.js';
@@ -34,12 +36,12 @@ import { PracticeStats } from './weak/practice-stats.js';
   imports: [IdentityModule, ContentModule, LearningModule, SettingsModule, EntitlementsModule, AiModule],
   controllers: [
     SessionsController, AnswersController, PracticeReviewsController, HistoryController, ReportsController, AdminReportsController,
-    ReportReasonsController, AdminReportReasonsController, MyReportsController,
+    ReportReasonsController, AdminReportReasonsController, MyReportsController, AdminUnknownFormsController,
   ],
   providers: [
     IdempotencyInterceptor, QuestionBuilder, PracticeStats, SessionsService, AnswersService, PracticeReviewsService, HistoryService,
     ReportsService, ReportReasonsService, PracticeCleanupService, AiRequestsRepository, WordChecksRepository, UnknownFormsRepository,
-    AiQuestionGenerator, AiSessionPlanner,
+    AiQuestionGenerator, AiSessionPlanner, UnknownFormsAdminService,
   ],
 })
 export class PracticeModule {}
