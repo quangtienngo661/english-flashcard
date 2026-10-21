@@ -863,3 +863,20 @@ Design §6.3 (tra AI, từ riêng): `K/85`, `K/85t`, `K/85b`, `K/86`, `K/87`, `K
 - "Vui lòng": không có trong nút, nhãn hay câu nào (chỉ xuất hiện trong luật ở mục 1).
 - "..." ba dấu chấm: chỉ ở cột "Chữ cũ" của mục 10.
 - "xoá", "hoà", "thuỷ", "khoẻ": chỉ ở cột "Chữ cũ".
+
+---
+
+## 12. Sửa sau mốc A+B, vòng 1 (22/10/2026)
+
+Chủ dự án góp 9 điểm khi xem ảnh mốc A+B. Chữ của các khung đổi hoặc thêm:
+
+| Điểm | Khung | Chữ |
+|---|---|---|
+| 3, 6 Cài đặt chia mục; mức sử dụng nằm ở Cài đặt, bỏ khỏi Gói học | `K/50`, `M/90` (và nền `M/63`) | Mục "Thông tin cá nhân": Họ và tên · "Nguyễn Lan" · [Sửa]; Ngày sinh · "14/5/2008" · [Sửa]; Email · "lan@example.com · Đã xác minh". Mục "Gói và mức sử dụng": Gói hiện tại · "Miễn phí" · [Xem gói học]; "Phiên luyện hôm nay" · "1/3 đã dùng" · "Còn 2 phiên, mở lại lúc 0:00."; "Lượt câu AI" · nhãn "Cần gói Pro"; "Lượt tra AI" · nhãn "Cần gói Pro" (gói Pro, Dùng thử: thanh "còn 287/300", "Lượt mới có vào 15/11."). Mục "Học tập": Ngôn ngữ, Giao diện. Mục "Thông báo": Nhắc học qua email. Mục "Phím tắt" (chỉ web). Mục "Tài khoản": Đăng xuất · "Thoát khỏi thiết bị này"; Xóa tài khoản · "Sắp có". [Sửa] mở `K/91`, `M/91`. Gói học (`K/52`, `K/52t`, `K/53`, `M/62`) bỏ khối "Phiên luyện hôm nay". |
+| 4 Từ hay sai theo nhóm | `K/56` | Hàng "Nhóm": chip "Tất cả nhóm · 6" · "Công nghệ · 3" (đang chọn) · "IELTS · 2" · "Du lịch · 1"; tiêu đề bảng "3 từ trong nhóm Công nghệ"; nút "Luyện 3 từ của nhóm Công nghệ". |
+| 5 Bỏ dòng "Tra từ / …", "Nhóm / …"; điện thoại: nút quay lại thay logo ở trang con | Mọi trang con của page 08, 09 | Đầu màn trang con: "‹" + nơi quay về: "Nhóm" (trang nhóm), "Tra từ" (trang từ), "Cài đặt" (Tài khoản, Giao diện), "Quay lại" (Cài đặt mở từ avatar). Component mới: "Đầu màn · trang con (điện thoại, có dải tra)", "… (điện thoại, không dải tra)". |
+| 7 Chủ đề gợi ý: 3–5 từ + xem thêm để chọn từ | Thẻ chủ đề ở `K/16`, `K/94`, `M/15`, `M/94`; màn mới `K/18`, `M/16` | Thẻ: 4 dòng "budget · ngân sách"… · nút [Xem thêm và chọn từ]. Màn chọn: "Kinh doanh · B1" · "52 từ gợi ý. Chọn từ bạn muốn học, hoặc thêm cả chủ đề." · ô "Chọn tất cả (50 từ chưa học)" · "Đã chọn 3 từ" · mỗi dòng: ô tick, từ, loại từ, nghĩa, trình độ; từ đang học: "Đang học · Công việc" (không tick được) · "Còn 44 từ. Cuộn để xem thêm." · thanh đáy: "Thêm vào" · "Nhóm mới “Kinh doanh · B1” ▾" · [Thêm cả 50 từ] [Thêm 3 từ đã chọn]. |
+| 8 Web có đủ phần điện thoại có | `K/17`, `K/17b`, `K/16b`, `K/10b`, `K/42b`, `K/42c`; điện thoại thêm `M/13b` | Tạo nhóm: "Tạo nhóm" · "Tên nhóm" · "Du lịch Nhật" · "12/60" · [Hủy] [Tạo nhóm]. Đổi tên nhóm: "Đổi tên nhóm" · [Hủy] [Lưu tên mới]. 100 nhóm: "100 nhóm · 3.120 từ" · ô "Tìm trong 100 nhóm". Menu ⋯ thẻ nhóm ở Hôm nay: Đổi tên nhóm · Học tất cả 18 từ · Xóa nhóm. Lưu vào nhóm khi đang gõ: "du l" · [Tạo nhóm “du l”] · "Kết quả (5)"; không có nhóm khớp: "Chưa có nhóm nào tên “phỏng vấn”." · [Tạo nhóm và lưu]. |
+| 2 Form điện thoại gọn hơn | `M/01`–`M/05`, `M/93`, `M/91`, `M/92` | Không đổi chữ; ô nhập cao 44px, khoảng cách giữa ô nhỏ lại. |
+| 9 Khoảng trống sau khi bỏ dải tra | `M/90`, `M/91`, `M/92`, `M/63` | Không đổi chữ. |
+| 1 Hỏi tuổi bằng ô tick | `K/01`, `M/01`, `K/01b`, `M/01b` | Chờ chủ dự án chọn (câu hỏi sau vòng 1). |
