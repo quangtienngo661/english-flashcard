@@ -2,6 +2,7 @@
 
 > **Trạng thái 21/10/2026:** đã review độc lập (§0b) và chủ dự án duyệt ("ok viết plan luôn đi bạn", sau khi Claude nêu năm câu sau review và cách design tạm viết;
 > chốt D30–D34). Chỉ là tài liệu; chưa có code.
+> **Cập nhật 21/10/2026 (implement xong):** ghi chú as-built và lựa chọn của plan ở cuối §2; PR và số liệu ở `docs/deliveries/buoc-7.md`.
 > **Nhánh:** `docs/buoc-7-design` (cắt từ `origin/dev` @ `47ca600`; code đọc lại trên `origin/dev` @ `985531b`).
 > **Nguồn quyết định:** câu hỏi [`../reviews/2026-10-20-buoc-7-questions.md`](../reviews/2026-10-20-buoc-7-questions.md), nhật ký hỏi đáp bốn vòng
 > [`../reviews/2026-10-21-buoc-7-qa-log.md`](../reviews/2026-10-21-buoc-7-qa-log.md), decision record
@@ -121,6 +122,28 @@ là bên gọi đầu tiên của cả hai. Chưa gọi nhà cung cấp thật l
 | D32 | `graded_wrong` có trả lượt (sau review) | Không (admin đổi được) |
 | D33 | Staff xử lý báo cáo của chính mình (sau review) | Được; `admin` thấy rõ trong danh sách trả lượt |
 | D34 | Bản dịch cho hai dạng chọn (sau review) | Có, như điền từ AI |
+
+### As-built (21/10/2026)
+
+Chi tiết, PR và số liệu: [`docs/deliveries/buoc-7.md`](../../deliveries/buoc-7.md) mục "as-built". Lựa chọn kỹ thuật của plan (design không ghi), như đã làm
+(đánh số như plan):
+1. `generate_cloze` bản 2 được migration của Task 6 nạp với luật "chỉ khi chưa ai sửa"; `smoke:buoc-6` đọc revision hiện tại thay vì coi là 1.
+2. Model giả mới: `fake:bad-form` (đáp án điền từ = từ + `ment`; nhiễu ngoài danh sách; `word_in_sentence` không có trong câu), `fake:not-recognized`
+   (`verdict: not_recognized`); `fake:ok` trả giá trị hợp lệ cho mọi khuôn mới.
+3. Nhãn "AI gợi ý" nằm trên revision: sửa có publish revision (nghĩa, chủ đề, câu ví dụ) thì mất nhãn; sửa lemma, loại từ, level (không có revision) thì giữ.
+   Mục 11.2 ghi "mọi lần sửa"; đây là chỗ lệch as-built.
+4. Câu ví dụ sửa theo từng nghĩa: các mục `senses[]` của `PATCH /v1/my-words/:id` nhận `examples?: string[]`; `meaning` thành tùy chọn (mỗi mục cần
+   `meaning` hoặc `examples`).
+5. `listSentences(userId, senseIds, db?)` và `visibleSenseIds(viewerId, senseIds, db?)` nhận thêm `db` tùy chọn.
+6. `skip` cho cả `cloze` ngoài `type_word`.
+7. Danh sách trả lượt của admin là truy vấn trên `practice_reports` (không thêm bảng); `self_resolved = (resolved_by = user_id)`.
+
+Thêm lúc implement (21/10/2026):
+- Lý do trả cho app (`ai_unavailable.reason`, `ai-fallback.ai_reason`) chỉ thuộc `ai-failed | quota-exhausted | plan-required | ai-unavailable`; các lý do nội bộ
+  `rejected`, `input-mismatch`, `word-not-recognized` thành `ai-failed` (đúng mục 6.6); cột `practice_ai_requests.failure` giữ lý do chi tiết.
+- Dạng chia staff đã nhận bị **ẩn** khỏi danh sách dạng chưa biết, không xóa dòng (mục 10 và B7E96 ghi "xóa"): Content không gọi ngược Practice.
+- `reason_label` chụp theo ngôn ngữ của người học lúc gửi (`ASSUMPTION`; mục 9.2 không nói ngôn ngữ).
+- Xóa từ riêng khóa theo thứ tự phiên → yêu cầu tạo câu (`FOR UPDATE`) → lần hỏi; mọi đường của `next` / `current` / `prepare` khóa phiên trước yêu cầu.
 
 ## 3. Phạm vi
 
