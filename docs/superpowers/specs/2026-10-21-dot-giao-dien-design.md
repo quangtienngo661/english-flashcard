@@ -180,6 +180,11 @@ Mockup chỉ tiếng Việt; bản tiếng Anh kiểm khi code.
 - **Design Bước 7 §6.7:** sửa câu chữ theo D9 (app hỏi khi mở phiên mới, không hỏi mỗi lần mở Luyện tập); API không đổi.
 - **Design Bước 6 D8:** ghi rằng màn AI của admin đã vẽ trong đợt này (D11).
 - **Khi code:** kiểm bản tiếng Anh của mọi màn (D14).
+- **API lọc Từ hay sai theo nhóm** (chủ dự án, mốc A+B ngày 22/10/2026): `GET /v1/practice/weak-words` nhận thêm `group_id` (không bắt buộc) để
+  màn Từ hay sai liệt kê từ sai của một nhóm (`K/56`). Chỉ thêm tham số; không gửi thì như cũ.
+- **API thêm cả loạt theo danh sách từ** (chủ dự án, mốc A+B ngày 22/10/2026): `POST /v1/groups/{id}/items/bulk` nhận thêm `sense_ids[]` để màn chọn
+  từ theo chủ đề (`K/18`, `M/16`) thêm đúng các từ người học tick trong một lần gọi (thêm từng từ sẽ chạm giới hạn ghi 30 lần mỗi phút). Chỉ thêm
+  trường; bộ lọc trình độ, chủ đề, loại từ giữ nguyên.
 - **API trả email người thao tác** (chủ dự án, mốc 0 ngày 21/10/2026): các API admin hiện chỉ trả mã người dùng cho người cấp gói (`granted_by`, `revoked_by`, `changes[].changed_by`), người xử lý báo lỗi (`resolved_by`, kể cả danh sách trả lượt), người lưu prompt và người tạo, chạy bộ ví dụ. Màn admin của đợt này vẽ email; đợt code thêm email vào các response đó (chỉ thêm trường, như `locked_by` và `reviewed_by` đã có).
 
 ## 11. Rủi ro và việc còn mở

@@ -241,10 +241,12 @@ thoại có; bỏ khoảng trống phía trên trang Cài đặt điện thoại
 | Câu | Phương án đưa ra | Chọn |
 |---|---|---|
 | Điểm 1: hỏi tuổi bằng ô tick "Tôi đã đủ 13 tuổi" | Giữ ô Ngày sinh, báo lỗi ngay dưới ô thay màn riêng (đề xuất của Claude; không đổi API); ô tick thay ô Ngày sinh (đổi API, bỏ lưu ngày sinh) | ✅ Chủ dự án, vòng 2: "Bỏ màn k01b đi … chặn ở form nhập luôn, báo đỏ bằng cách báo một dòng lỗi hoặc tô đỏ ô nhập ngày tháng năm sinh" (giữ ô Ngày sinh) |
-| Điểm 4: lọc Từ hay sai theo nhóm (API chưa có lọc nhóm) | Thêm `group_id` cho `GET /v1/practice/weak-words` (đề xuất) | Chờ chủ dự án |
-| Điểm 7: thêm từng từ đã chọn (API thêm cả loạt chỉ nhận bộ lọc) | Thêm `sense_ids[]` cho `POST /v1/groups/{id}/items/bulk` (đề xuất) | Chờ chủ dự án |
+| Điểm 4: lọc Từ hay sai theo nhóm (API chưa có lọc nhóm) | ✅ Thêm `group_id` cho `GET /v1/practice/weak-words` (đề xuất; ghi design §10) | Chủ dự án, theo đề xuất |
+| Điểm 7: thêm từng từ đã chọn (API thêm cả loạt chỉ nhận bộ lọc) | ✅ Thêm `sense_ids[]` cho `POST /v1/groups/{id}/items/bulk` (đề xuất; ghi design §10) | Chủ dự án, theo đề xuất |
 
 Vòng 2, chủ dự án thêm: chọn ngôn ngữ ở màn đầu bằng danh sách thả xuống có cờ (K/06, M/06); sửa gờ dưới của các nút (bị khung bọc cắt mất).
+
+Chủ dự án duyệt mốc A+B (22/10/2026): "Ok mốc A+B. Hai việc API theo đề xuất: thêm group_id cho Từ hay sai và sense_ids[] cho thêm cả loạt, ghi vào design §10. Sang mốc C."
 
 ## Đề xuất kỹ thuật duyệt cùng design (bốn phần, chủ dự án "ok" từng phần)
 
