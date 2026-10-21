@@ -13,6 +13,8 @@ export type HistoryItem = {
   item_id: string; session_id: string; sense_id: string; lemma: string; type: string; prompt_style: string; prompt: Prompt;
   answer: string | null; correct: AnswerResult['correct']; result: string; skipped: boolean; tries: number; hint_level: number;
   review_action: string | null; answered_at: string; local_date: string;
+  /** Bước 7 (B7E124): the Vietnamese translation of an AI sentence, for a `vi` learner only. */
+  translation: string | null;
 };
 type Page = { page_size: number; page_token?: string };
 
@@ -49,7 +51,7 @@ export class HistoryService {
     };
   }
 
-  async history(userId: string, query: Page & { date?: string; sense_id?: string }):
+  async history(userId: string, query: Page & { date?: string; sense_id?: string }, nativeLanguage: 'vi' | 'en'):
     Promise<{ items: HistoryItem[]; next_page_token: string | null }> {
     const binding = `${query.date ?? ''}|${query.sense_id ?? ''}`;
     const cursor = query.page_token === undefined ? null : decodeBoundToken(query.page_token, binding);
@@ -81,6 +83,7 @@ export class HistoryService {
           prompt_style: row.question.promptStyle, prompt, answer: row.answerRaw, correct: correctOf(key, prompt), result: row.result!,
           skipped: row.skipped, tries: row.tries, hint_level: row.hintLevel, review_action: row.reviewAction,
           answered_at: row.answeredAt!.toISOString(), local_date: dateString(row.localDate!),
+          translation: nativeLanguage === 'vi' ? key.translation_vi ?? null : null,
         };
       }),
       next_page_token: rows.length > query.page_size && last

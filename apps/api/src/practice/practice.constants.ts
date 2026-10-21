@@ -14,3 +14,12 @@ export const SENTENCE_SHARE = 0.5;
 // What staff see in place of a learner's private word (D36).
 export const PRIVATE_WORD_MASK = '[từ riêng của người học]';
 export const PRIVATE_MEANING_MASK = '[nghĩa của từ riêng]';
+
+// Bước 7 (design §14, ASSUMPTION; fixed in code).
+// retry_after_seconds of a 'preparing' slot.
+export const PREPARING_RETRY_SECONDS = 2;
+// At most this many distractor candidates are sent to generate_sentence_mcq.
+export const MCQ_SENTENCE_CANDIDATES_MAX = 6;
+// A 'generating' AI request untouched for this long is taken over by the next caller.
+export const AI_REQUEST_STALE_MS = 120_000;
+export const AI_REQUEST_RETENTION_DAYS = 7;

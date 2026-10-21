@@ -13,9 +13,9 @@ private words; quick-add of words encountered elsewhere; word groups, flashcards
 schedule; non-AI definition quizzes; AI-generated fill-in-the-blank practice graded by rule; tier-based
 entitlements and quotas.
 
-**Current phase (20/10/2026): Bước 0, 1 (Identity core), 2 (Content + Pipeline), 2.5 (admin web, `apps/admin`), 3 (Learning +
-the Content pieces deferred from Bước 2, system part only), 4 (Practice, API only), 5 (Entitlements, API only) and 6 (AI Integration,
-API only) implemented; no learner UI yet.** Real code is
+**Current phase (21/10/2026): Bước 0, 1 (Identity core), 2 (Content + Pipeline), 2.5 (admin web, `apps/admin`), 3 (Learning +
+the Content pieces deferred from Bước 2, system part only), 4 (Practice, API only), 5 (Entitlements, API only), 6 (AI Integration,
+API only) and 7 (Practice AI + Content AI, API only) implemented; no learner UI yet.** Real code is
 under `apps/api` and `apps/admin`. Historical implementation branches:
 - `feat/buoc-0-backend-foundation` — Bước 0 built on **Drizzle ORM** (10 tasks, 5 unit + 23 e2e tests).
 - `feat/migrate-drizzle-to-prisma` (branched from the above) — the same Bước 0 re-implemented on
@@ -25,7 +25,7 @@ under `apps/api` and `apps/admin`. Historical implementation branches:
   See `docs/superpowers/plans/2026-10-06-migrate-drizzle-to-prisma.md` for the full migration and why.
 
 `main` holds Bước 0–3 (Bước 0–1 via PR #1–#5, the rest via the `dev` → `main` PR #45 of 18/10/2026; GitHub remote
-`english-flashcard`, CI required before merge). **Bước 4, 5 and 6 are on `dev` only** (PR #47–#58, #62–#78 and #82, #84–#94, 19–20/10/2026); no `dev` → `main` PR yet
+`english-flashcard`, CI required before merge). **Bước 4–7 are on `dev` only** (PR #47–#58, #62–#78, #82, #84–#94 and #104–#116, 19–21/10/2026); no `dev` → `main` PR yet
 (owner 19/10/2026: not needed yet; it opens only when the owner asks). As-built per Bước: sections below and `docs/deliveries/`.
 - **Bước 2.5** (admin web: login, admin page, role granting, CSV flow; PR #17–#20, 15/10/2026). **Owner note (15/10/2026): the admin
   UI will probably be refactored as a whole later** — treat the current visual layer (Sneat-style, Figma approved 14/10) as
@@ -49,10 +49,18 @@ under `apps/api` and `apps/admin`. Historical implementation branches:
 - **Bước 0–3 fixes** (API + admin session layer only, D8 of its design; PR #98–#102, 21/10/2026) are on `dev`: accounts with names, birth
   date (13+) and terms consent (`TERMS_VERSION` now required), account lock, admin user list, who reviewed/published/hid each sense, revert and
   re-upload safety, practice masking and single-answer fixes, admin session handling when the API is briefly down; no admin screens for them yet.
+- **Bước 7** (Practice AI + Content AI, API only, D2 Bước 7; PR #104–#116): three AI question types inside the normal practice session
+  (`cloze` from AI, `meaning_in_sentence`, `mcq_sentence`) and `cloze` from the learner's saved sentences, for Trial/Pro; AI units checked
+  when a session opens, K questions made ahead (`POST /v1/practice/sessions/:id/prepare`, setting `practice.ai_prefetch_count`), a pending
+  slot so a slot is generated and charged once, fallback to a non-AI type when AI fails; private words checked by AI
+  (`check_private_word`); `POST /v1/lookup/ai` and saving its suggestion as a private word; admin-managed report reasons, refunds of
+  confirmed AI errors, a staff list of AI forms the tables do not know. The three new AI operations (`generate_meaning_question`,
+  `generate_sentence_mcq`, `check_private_word`) are seeded with **no model** (`model_ref NULL`), like Bước 6's: an admin chooses a model for
+  each (and for `generate_cloze`, `lookup_word`) before learners get AI questions or lookups. **No real AI call yet** (D3 Bước 7). Its UI comes in a later round.
 
-**Next (20/10/2026):** Bước 7 (Practice AI + Content AI) is next; it must call the gateway as design Bước 6 §4.4 says (fixed operation id
-per question, no AI call inside a transaction or an `@Idempotent()` handler) and see §18 there. A first real AI call with the owner's own
-keys is worth doing early (design Bước 6 §19). The learner UI for Bước 3–6 is still to be
+**Next (21/10/2026):** in the fixed build order, Bước 8 (Identity remainder: Google login, account deletion) comes next; design Bước 7
+§19 lists what account deletion must also remove. A first real AI call with the owner's own keys is worth doing early (design Bước 6 §19,
+Bước 7 §20: AI question quality and the rule rejection rate are not measured yet). The learner UI for Bước 3–7 is still to be
 built. **Deploy** (hosting, durable Postgres/Redis, real SMTP, secrets, backup; design 2.5 §14) moved to **when the whole app is
 complete, before launch** (D3 round 3 of Bước 3, 18/10/2026): until then the owner tries the app locally (reminder emails land in
 Mailpit), `/app/*` stays blocked on production, and design Bước 3 §14 (things only checkable once deployed) is checked just before
@@ -156,7 +164,7 @@ Goal: experimental versions never reach `main`; `main` only receives work that p
 
 ## Architecture & Key Decisions (accepted, `docs/specs/system-spec.md`)
 
-Bước 0–6 are implemented (Bước 3 system part only, Bước 4–6 API only; see `docs/deliveries/`). Steps 7–8 are still
+Bước 0–7 are implemented (Bước 3 system part only, Bước 4–7 API only; see `docs/deliveries/`). Step 8 is still
 decided-but-not-scaffolded:
 
 - Backend: **NestJS modular monolith + PostgreSQL**. 7 V1 modules, each owning its own write path:
@@ -177,8 +185,8 @@ decided-but-not-scaffolded:
   deliveries `docs/deliveries/ui-refresh-b.md`, `docs/deliveries/admin-refresh-keepalive.md`)
   → **3 Learning**, plus the Content pieces deferred from Bước 2 (private words, context sentences, lookup chain), email
   reminders, admin-editable settings, inflections (system part done, PR #28–#44; UI not built) → **4 Practice non-AI** (API only;
-  done, PR #47–#58) → **5 Entitlements** (API only; done, PR #62–#78) → **6 AI Integration gateway** (API only; done, PR #82–#94) → 7 Practice AI + Content AI (incl. fill-in-the-blank from learners'
-  sentences and the "sentence with the word, then choose" type, both moved from Bước 4) → 8 Identity remainder (Google login,
+  done, PR #47–#58) → **5 Entitlements** (API only; done, PR #62–#78) → **6 AI Integration gateway** (API only; done, PR #82–#94) → **7 Practice AI + Content AI** (incl. fill-in-the-blank from learners'
+  sentences and the "sentence with the word, then choose" type, both moved from Bước 4; API only; done, PR #104–#116) → 8 Identity remainder (Google login,
   account deletion; forgot password already shipped in Bước 1) → **Deploy API + admin** (when the whole app is complete, before
   launch; D3 round 3 of Bước 3).
 - Cross-cutting API conventions (system-spec SR7–SR14): `/v1` prefix, additive-only within v1; errors as
@@ -262,12 +270,24 @@ go through `pnpm ai:fake-call`.
 CI green on every PR + the runtime gate of each milestone + `pnpm smoke:buoc-0-3-fixes` on a fresh DB, output in `docs/deliveries/buoc-0-3-fixes-smoke-output.txt`).
 Design, decisions (D1–D17) and plan: `docs/superpowers/{specs,decisions,plans}/2026-10-20-buoc-0-3-fixes*.md`. Every local `apps/api/.env` needs `TERMS_VERSION`.
 
+## Bước 7 — plan & as-built
+
+`docs/deliveries/buoc-7.md` (plan tóm tắt and as-built 21/10/2026; Practice AI + Content AI, API only; PR #104–#116 merged into `dev`, #115 a
+fix found by the smoke; API 2402 unit; "Xong khi" = CI green on every PR + `pnpm smoke:buoc-7` twice, each on a fresh DB, plus `smoke:buoc-4`,
+`smoke:buoc-5` in both fetchState modes and `smoke:buoc-6`; output in `docs/deliveries/buoc-7-smoke-output.txt`; no real provider call, D3).
+Design (as-built notes at the end of §2), decisions (D1–D34) and plan: `docs/superpowers/{specs,decisions,plans}/2026-10-21-buoc-7-practice-ai-content-ai*.md`;
+Q&A log `docs/superpowers/reviews/2026-10-21-buoc-7-qa-log.md`, design review `docs/superpowers/reviews/2026-10-21-buoc-7-design-review.md`, code facts
+`docs/preparation/BUOC_7_PLAN_CODE_FACTS_2026-10-21.md`. Run the smoke against a real API and worker started with `AI_FAKE_ENABLED=true`, no
+`OPENAI_API_KEY` / `ANTHROPIC_API_KEY` and `JOB_QUEUE_PREFIX=wordmet-b7-smoke` on a fresh `english_learning_smoke_b7`, then `pnpm smoke:buoc-7`
+(it chooses the fake models itself; registers 4 accounts, within the 5-per-IP-per-hour limit).
+
 ## Việc phải phân tích khi tới bước tương ứng (ghi 12/10/2026, từ brainstorm Bước 2)
 
 Các điểm dưới đây phát sinh khi rà quyền của `admin`/`editor` (bảng D6) với các spec Bước 3–8. Chưa chốt, **không chặn Bước 2**;
 đọc lại khi brainstorm bước ghi bên cạnh.
 
-- **Bước 7 — danh sách dạng bất quy tắc (PRC7, QE5, Defense Analysis của Practice).** Chuyển về Bước 7 (design Bước 4 §15):
+- **Bước 7 — danh sách dạng bất quy tắc (PRC7, QE5, Defense Analysis của Practice).** **Đã rõ ở Bước 7 (D15, 21/10/2026):** danh sách
+  dạng chia bổ sung theo chữ ở Content, `admin` và `editor` (`content.edit`) nhận hoặc bỏ qua từ danh sách dạng AI dùng mà bảng chưa biết. Ghi chú cũ: Chuyển về Bước 7 (design Bước 4 §15):
   Bước 4 không có câu AI, và đã có bảng dạng chia AGID (D46 Bước 3). Kiểm rule câu AI sinh dạng chia bằng quy tắc cố định
   (`-s`, `-ed`, `-ing`…); dạng bất quy tắc (`go` → `went`, `gone`) không sinh được, nên câu AI đúng bị loại, sinh lại một lần
   và tốn thêm một lần gọi AI. Spec ghi "owner duy trì danh sách" nhưng **chưa gán quyền**. Đề xuất (chưa chốt): `questions.moderate`, vì dữ liệu thuộc Practice và người xử lý câu xấu là người thấy các câu bị loại nhầm.
@@ -368,6 +388,7 @@ for a concrete example of the loop catching real bugs each round.
   `docs/deliveries/buoc-3-test-flow.md` (Bước 3 system part), `docs/deliveries/buoc-4.md` (Bước 4, Practice API),
   `docs/deliveries/buoc-5.md` + `docs/deliveries/buoc-5-smoke-output.txt` (Bước 5, Entitlements API),
   `docs/deliveries/buoc-6.md` + `docs/deliveries/buoc-6-smoke-output.txt` (Bước 6, AI Integration API),
+  `docs/deliveries/buoc-7.md` + `docs/deliveries/buoc-7-smoke-output.txt` (Bước 7, Practice AI + Content AI API),
   `docs/deliveries/buoc-0-3-fixes.md` + `docs/deliveries/buoc-0-3-fixes-smoke-output.txt` (Bước 0–3 fixes),
   `docs/deliveries/deploy-checklist.md` (what to do before launch).
 - Bước 2 test flow (automated gate, `pnpm smoke:buoc-2`, manual steps): `docs/deliveries/buoc-2-test-flow.md`.

@@ -15,6 +15,8 @@ export type WordSense = {
   context_label: string | null; meaning: { text: string; language: NativeLanguage; translation_missing: boolean };
   definition_en: string | null; examples: string[]; topics: Array<{ code: string; name: string }>;
   form_of: { entry_id: string; lemma: string; pos: string; kind: InflectionKind } | null;
+  /** The live revision came from an AI suggestion the learner saved and has not edited since (Bước 7 design §11.2). */
+  ai_suggested: boolean;
 };
 export type WordListQuery = {
   page_size: number; page_token?: string; q?: string; level?: Level; topic?: string; pos?: string; mine?: boolean;
@@ -32,8 +34,8 @@ const cursorSchema = z.strictObject({
 });
 const invalid = () => new ProblemDetailsException({ status: 400, title: 'Validation failed', type: 'validation-failed' });
 
-/** The displayed level of entry e: newest editorial/user choice, then source priority (derived rows have no rival). */
-const displayedLevel = Prisma.sql`
+/** The displayed level of entry e: newest editorial/user choice, then source priority (derived rows have no rival). Practice reads use it too. */
+export const displayedLevel = Prisma.sql`
   SELECT el.level FROM entry_levels el JOIN data_sources ds ON ds.id = el.source_id
   WHERE el.entry_id = e.id
   ORDER BY (el.basis IN ('editorial', 'user')) DESC,
@@ -69,6 +71,7 @@ function view(row: SenseRow, nativeLanguage: NativeLanguage): WordSense {
     definition_en: row.definition_en, examples: row.examples, topics: row.topics,
     form_of: row.form_of_entry_id && row.form_kind && row.form_lemma && row.form_pos
       ? { entry_id: row.form_of_entry_id, lemma: row.form_lemma, pos: row.form_pos, kind: row.form_kind } : null,
+    ai_suggested: row.ai_suggested,
   };
 }
 
@@ -91,7 +94,8 @@ export class WordsService {
       SELECT s.id::text AS sense_id, e.id::text AS entry_id, e.scope, e.lemma, e.pos, s.context_label,
         displayed.level, r.examples, gloss.text AS gloss_vi, definition.text AS definition_en,
         COALESCE(topics.items, '[]'::jsonb) AS topics,
-        r.form_of_entry_id::text AS form_of_entry_id, r.form_kind, base.lemma AS form_lemma, base.pos AS form_pos
+        r.form_of_entry_id::text AS form_of_entry_id, r.form_kind, base.lemma AS form_lemma, base.pos AS form_pos,
+        r.draft_source = 'ai_suggestion' AS ai_suggested
       FROM ${from}
       JOIN sense_revisions r ON r.id = s.live_revision_id AND r.sense_id = s.id
       LEFT JOIN LATERAL (${displayedLevel}) displayed ON true

@@ -26,6 +26,6 @@ export class HistoryController {
 
   @Get('history')
   list(@Query({ schema: historyQuery }) query: z.infer<typeof historyQuery>, @CurrentLearner() learner: Learner) {
-    return this.history.history(learner.userId, query);
+    return this.history.history(learner.userId, query, learner.nativeLanguage);
   }
 }

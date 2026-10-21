@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest';
+import type { AiOperation } from '../../ai.types.js';
+import { OPERATIONS, parseOutput } from '../../operations/operations.js';
 import type { AdapterOutcome, AdapterRequest } from '../ai-adapter.js';
 import { FAKE_MODELS, FakeAiAdapter } from './fake.adapter.js';
 
@@ -58,6 +60,51 @@ describe('FakeAiAdapter.call', () => {
       data: { sentence: 'I like tea.' }, schema: { name: 'translate_sentence_v1', schema: {} },
     }));
     expect(okText(outcome)).toEqual({ translation_vi: 'Bản dịch: I like tea.' });
+  });
+
+  // Bước 7 plan Task 5 and plan choice 2: each new schema under fake:ok passes the gate's own check.
+  const SENSE = { word: 'deploy', part_of_speech: 'verb', level: 'B2', meaning_vi: 'triển khai', context_label: null };
+  const NEW_OPS = [
+    { op: 'generate_meaning_question', data: { ...SENSE, other_meanings_vi: ['điều quân', 'trì hoãn', 'giao hàng'] } },
+    { op: 'generate_sentence_mcq', data: { ...SENSE, answer_form: 'deployed', candidates: ['delivered', 'debugged', 'delayed', 'deleted'] } },
+    { op: 'check_private_word', data: { word: 'rizz', part_of_speech: 'noun', meaning_vi: 'sức hút' } },
+  ] as const;
+  const run = (model: string, op: AiOperation, data: Record<string, unknown>) =>
+    call(new FakeAiAdapter(), request(model, { data, schema: OPERATIONS[op].outputSchema }));
+  const parsed = async (model: string, op: AiOperation, data: Record<string, unknown>) => {
+    const outcome = await run(model, op, data);
+    if (outcome.kind !== 'ok') throw new Error(`expected ok, got ${outcome.kind}`);
+    const check = parseOutput(op, outcome.text);
+    if (!check.ok) throw new Error(`${op}: ${check.problem}`);
+    return check.value;
+  };
+
+  it.each(NEW_OPS)('fake:ok $op passes parseOutput', async ({ op, data }) => {
+    await parsed('fake:ok', op, data);
+  });
+
+  it('fake:ok generate_meaning_question → the word itself in the sentence; generate_sentence_mcq → the first three candidates', async () => {
+    const meaning = await parsed('fake:ok', 'generate_meaning_question', NEW_OPS[0].data);
+    expect(meaning).toMatchObject({ sentence: 'Lan deploy it today.', word_in_sentence: 'deploy' });
+    const mcq = await parsed('fake:ok', 'generate_sentence_mcq', NEW_OPS[1].data);
+    expect(mcq).toMatchObject({ sentence: 'Lan ___ it today.', distractors: ['delivered', 'debugged', 'delayed'] });
+    expect(await parsed('fake:ok', 'check_private_word', NEW_OPS[2].data)).toEqual({ verdict: 'ok' });
+  });
+
+  it('fake:bad-form → passes the gate, but the answer is not a form of the word, a distractor is outside candidates and the word is absent', async () => {
+    const cloze = await parsed('fake:bad-form', 'generate_cloze', CLOZE_DATA);
+    expect(cloze.accepted_answers).toEqual(['deployment']);
+    const mcq = await parsed('fake:bad-form', 'generate_sentence_mcq', NEW_OPS[1].data);
+    const candidates: readonly string[] = NEW_OPS[1].data.candidates;
+    expect((mcq.distractors as string[]).filter((item) => !candidates.includes(item))).toHaveLength(1);
+    const meaning = await parsed('fake:bad-form', 'generate_meaning_question', NEW_OPS[0].data);
+    expect(String(meaning.sentence)).not.toContain(String(meaning.word_in_sentence));
+    expect(await parsed('fake:bad-form', 'check_private_word', NEW_OPS[2].data)).toEqual({ verdict: 'ok' });
+  });
+
+  it("fake:not-recognized → verdict 'not_recognized'; other operations as fake:ok", async () => {
+    expect(await parsed('fake:not-recognized', 'check_private_word', NEW_OPS[2].data)).toEqual({ verdict: 'not_recognized' });
+    expect(await parsed('fake:not-recognized', 'generate_cloze', CLOZE_DATA)).toMatchObject({ accepted_answers: ['deploy'] });
   });
 
   it('request ids count up per adapter', async () => {

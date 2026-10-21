@@ -247,17 +247,21 @@ async function main() {
   // ------------------------------------------------------------------------------------------------------------------
   step('B6#1: a fresh database, no model chosen');
   const ops = ['generate_cloze', 'lookup_word', 'translate_sentence'];
+  // Bước 7 seeds generate_cloze revision 2 on a fresh database (plan choice 1): read the revision instead of assuming 1.
+  const seededRevisions = {};
   for (const op of ops) {
     const row = first.operations.find((item) => item.operation === op);
     check(row && row.ready === false && row.reason === 'model-not-set', `${op} status ${JSON.stringify(row)}`);
     const seeded = await prompt(op);
-    check(seeded.revision === 1, `${op} prompt revision ${seeded.revision}`);
+    check(Number.isInteger(seeded.revision) && seeded.revision >= 1, `${op} prompt revision ${seeded.revision}`);
+    seededRevisions[op] = seeded.revision;
     const choice = await operation(op);
     check(choice.version === 0 && choice.model === null, `${op} operation ${JSON.stringify(choice)}`);
   }
   const notSet = call('generate_cloze', clozeData()).result;
   check(notSet.status === 'unavailable' && notSet.reason === 'model-not-set', `call ${JSON.stringify(notSet)}`);
-  ok('three operations model-not-set; prompts at revision 1; operations at version 0; ai:fake-call → unavailable/model-not-set');
+  const clozeRevision = seededRevisions.generate_cloze;
+  ok(`three operations model-not-set; prompts seeded (${JSON.stringify(seededRevisions)}); operations at version 0; ai:fake-call → unavailable/model-not-set`);
 
   // ------------------------------------------------------------------------------------------------------------------
   step('B6#2: add fake:ok (price 0), choose it for generate_cloze, call');
@@ -269,9 +273,9 @@ async function main() {
   const okCall = call('generate_cloze', okData);
   check(okCall.result.status === 'succeeded', `result ${JSON.stringify(okCall.result)}`);
   check(okCall.result.result.sentence.split('___').length === 2, `sentence ${okCall.result.result.sentence}`);
-  check(okCall.result.meta.prompt_revision === 1 && okCall.result.meta.replayed === false, `meta ${JSON.stringify(okCall.result.meta)}`);
+  check(okCall.result.meta.prompt_revision === clozeRevision && okCall.result.meta.replayed === false, `meta ${JSON.stringify(okCall.result.meta)}`);
   check(callsFor(okCall.operationId) === 1, `ai_calls rows ${callsFor(okCall.operationId)}`);
-  ok(`succeeded "${okCall.result.result.sentence}"; prompt_revision 1; one ai_calls row; price 0`);
+  ok(`succeeded "${okCall.result.result.sentence}"; prompt_revision ${clozeRevision}; one ai_calls row; price 0`);
 
   // ------------------------------------------------------------------------------------------------------------------
   step('B6#3: the same operation id and data again');
@@ -381,26 +385,26 @@ async function main() {
   ok('DELETE fake:ok (chosen for generate_cloze) → 409 model-in-use');
 
   // ------------------------------------------------------------------------------------------------------------------
-  step('B6#14: save the seeded prompt twice with expected_revision 1');
+  step('B6#14: save the seeded prompt twice with the seeded revision as expected_revision');
   const saved = await want(api('PUT', '/v1/admin/ai/prompts/generate_cloze', { token: admin, body: {
-    expected_revision: 1, instructions: seededCloze.instructions, examples: seededCloze.examples } }), 200, 'save prompt');
-  check(saved.revision === 2, `revision ${saved.revision}`);
+    expected_revision: clozeRevision, instructions: seededCloze.instructions, examples: seededCloze.examples } }), 200, 'save prompt');
+  check(saved.revision === clozeRevision + 1, `revision ${saved.revision}`);
   await wantProblem(api('PUT', '/v1/admin/ai/prompts/generate_cloze', { token: admin, body: {
-    expected_revision: 1, instructions: seededCloze.instructions, examples: seededCloze.examples } }), 409, 'prompt-revision-conflict',
+    expected_revision: clozeRevision, instructions: seededCloze.instructions, examples: seededCloze.examples } }), 409, 'prompt-revision-conflict',
   'save prompt again');
   const revisions = await want(api('GET', '/v1/admin/ai/prompts/generate_cloze/revisions', { token: admin }), 200, 'revisions');
-  check(revisions.items.length === 2 && revisions.items[0].revision === 2, `revisions ${JSON.stringify(revisions.items.map((r) => r.revision))}`);
-  ok('first save → revision 2 (the seeded examples pass the save rules); second → 409 prompt-revision-conflict; two revisions');
+  check(revisions.items.length === clozeRevision + 1 && revisions.items[0].revision === clozeRevision + 1, `revisions ${JSON.stringify(revisions.items.map((r) => r.revision))}`);
+  ok(`first save → revision ${clozeRevision + 1} (the seeded examples pass the save rules); second → 409 prompt-revision-conflict; ${clozeRevision + 1} revisions`);
 
   // ------------------------------------------------------------------------------------------------------------------
   step('B6#15: save a prompt with an example of the wrong shape');
   const twoBlanks = structuredClone(seededCloze.examples);
   twoBlanks[0].output = { ...twoBlanks[0].output, sentence: 'Lan will ___ it ___.' };
   const badSave = await wantProblem(api('PUT', '/v1/admin/ai/prompts/generate_cloze', { token: admin, body: {
-    expected_revision: 2, instructions: seededCloze.instructions, examples: twoBlanks } }), 400, 'validation-failed', 'save a bad example');
+    expected_revision: clozeRevision + 1, instructions: seededCloze.instructions, examples: twoBlanks } }), 400, 'validation-failed', 'save a bad example');
   const violations = JSON.stringify(badSave.extensions?.violations ?? badSave.violations ?? []);
   check(violations.includes('examples.0') || violations.includes('examples[0]'), `violations ${violations}`);
-  check((await prompt('generate_cloze')).revision === 2, 'a refused save changed the revision');
+  check((await prompt('generate_cloze')).revision === clozeRevision + 1, 'a refused save changed the revision');
   ok(`400 validation-failed with a path to the example: ${violations}`);
 
   // ------------------------------------------------------------------------------------------------------------------
@@ -411,10 +415,10 @@ async function main() {
     instructions: draft, examples: seededCloze.examples } }), 200, 'prompt test');
   check(tested.items.length >= 1 && tested.items.every((item) => item.status === 'succeeded' && item.output), `items ${JSON.stringify(tested.items)}`);
   const afterTest = await prompt('generate_cloze');
-  check(afterTest.revision === 2 && afterTest.instructions === seededCloze.instructions, 'a test changed the stored prompt');
+  check(afterTest.revision === clozeRevision + 1 && afterTest.instructions === seededCloze.instructions, 'a test changed the stored prompt');
   const testCalls = count(`SELECT count(*) FROM ai_calls WHERE purpose = 'test'`) - testCallsBefore;
   check(testCalls === tested.items.length, `test calls ${testCalls}, items ${tested.items.length}`);
-  ok(`${tested.items.length} item(s), each with its output; ai_prompts unchanged (revision 2); ${testCalls} ai_calls row(s) with purpose test`);
+  ok(`${tested.items.length} item(s), each with its output; ai_prompts unchanged (revision ${clozeRevision + 1}); ${testCalls} ai_calls row(s) with purpose test`);
 
   // ------------------------------------------------------------------------------------------------------------------
   step('B6#17 and B6E74: three eval examples, one run in the worker; the same Idempotency-Key again');

@@ -32,6 +32,38 @@ describe('availableTypes', () => {
   });
 });
 
+describe('availableTypes: Bước 7 types (design §6.2)', () => {
+  const extra = {
+    clozeSource: 'ai' as const, hasViMeaning: true, ownSentence: false, meaningPool: 3, mcqForms: 3, wordRejected: false,
+  };
+  const ai: QuestionType[] = ['cloze', 'meaning_in_sentence', 'mcq_sentence'];
+
+  it('a word with a Vietnamese meaning, 3 wrong meanings and 3 same-form candidates takes all three', () => {
+    expect(availableTypes(word(), 0, ai, extra)).toEqual(ai);
+  });
+
+  it('no Vietnamese meaning, a function word, or a private word checked as not recognized → none of them', () => {
+    expect(availableTypes(word(), 0, ai, { ...extra, hasViMeaning: false })).toEqual([]);
+    expect(availableTypes(word({ function_word: true }), 0, ai, extra)).toEqual([]);
+    expect(availableTypes(word({ scope: 'private' }), 0, ai, { ...extra, wordRejected: true })).toEqual([]);
+  });
+
+  it('meaning_in_sentence needs 3 wrong meanings; mcq_sentence needs 3 same-form candidates', () => {
+    expect(availableTypes(word(), 0, ai, { ...extra, meaningPool: 2 })).toEqual(['cloze', 'mcq_sentence']);
+    expect(availableTypes(word(), 0, ai, { ...extra, mcqForms: 2 })).toEqual(['cloze', 'meaning_in_sentence']);
+  });
+
+  it('cloze from saved sentences needs a maskable saved sentence, not a Vietnamese meaning', () => {
+    const own = { ...extra, clozeSource: 'own' as const, hasViMeaning: false };
+    expect(availableTypes(word(), 0, ['cloze'], { ...own, ownSentence: true })).toEqual(['cloze']);
+    expect(availableTypes(word(), 0, ['cloze'], own)).toEqual([]);
+  });
+
+  it('without the Bước 7 facts the new types are not offered; the Bước 4 types are unchanged', () => {
+    expect(availableTypes(word(), 3, [...all, ...ai])).toEqual(all);
+  });
+});
+
 describe('chooseType', () => {
   it('chooseType prefers a different type', () => {
     for (let seed = 1; seed <= 50; seed++) {
