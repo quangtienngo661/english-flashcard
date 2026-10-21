@@ -195,6 +195,68 @@ export class SessionsService {
     }
   }
 
+  /**
+   * Makes AI questions ahead (design §6.4): the next `ai_prefetch_count` round-1 words marked for AI after the current position,
+   * while the session's budget lasts. Requests are created in a short transaction, then run in parallel; the pending pointer is
+   * never set, so `next` finds them through the session's requests. Nothing when AI has stopped for the session.
+   */
+  async prepare(learner: Learner, sessionId: string): Promise<{ prepared: number; already_ready: number; failed: number }> {
+    await this.closeIfIdle(learner.userId, sessionId);
+    const { requestIds, already } = await this.prisma.$transaction(async (tx) => {
+      const session = await this.lockOpen(tx, learner.userId, sessionId);
+      const { practice } = await this.settings.get(tx);
+      const aiTypes = this.aiTypesOf(session);
+      const none = { requestIds: [] as string[], already: 0 };
+      if (session.aiStopped !== null || aiTypes.length === 0 || practice.aiPrefetchCount === 0 || session.continued === true) return none;
+      const items: ItemWithQuestion[] = await tx.practiceSessionItem.findMany({
+        where: { sessionId: session.id }, include: { question: true }, orderBy: { position: 'asc' },
+      });
+      // Round 1 only (design §6.4).
+      if (items.some((item) => item.round > 1)) return none;
+      const cursor = Math.max(-1, ...items.map((item) => session.senseIds.indexOf(item.senseId)));
+      const window = session.senseIds.slice(cursor + 1).filter((id) => session.aiSenseIds.includes(id)).slice(0, practice.aiPrefetchCount);
+      let budget = await this.aiBudgetOf(tx, session, items);
+      const pointed = session.pendingAiRequestId ? (await this.aiRequests.get(session.pendingAiRequestId, tx))?.senseId : undefined;
+      const result = { requestIds: [] as string[], already: 0 };
+      for (const senseId of window) {
+        if (budget <= 0) break;
+        if (senseId === pointed || (await this.aiRequests.findForSession(tx, session.id, senseId))?.round === 1) {
+          result.already++;
+          continue;
+        }
+        const available = (await this.builder.availability({
+          userId: learner.userId, nativeLanguage: learner.nativeLanguage, senseIds: [senseId], chosenTypes: aiTypes,
+          clozeSource: session.clozeSource as ClozeSource | null, db: tx,
+        })).get(senseId) ?? [];
+        if (available.length === 0) continue;
+        const sense = (await this.content.practiceSenses(learner.userId, [senseId], learner.nativeLanguage, tx)).get(senseId);
+        if (!sense) continue;
+        const key = sense.scope === 'private' ? contentKey(sense.lemma, sense.pos, sense.gloss_vi ?? '') : null;
+        const unseen = await findUnseen(tx, this.content,
+          { userId: learner.userId, senseId, types: available, liveRevisionId: sense.live_revision_id, contentKey: key });
+        const running = await tx.practiceAiRequest.findFirst({ where: { userId: learner.userId, senseId, state: 'generating' } });
+        if (unseen.length > 0 || running) {
+          result.already++;
+          continue;
+        }
+        const request = await this.aiRequests.create(tx, {
+          userId: learner.userId, sessionId: session.id, senseId, type: chooseType(available, null, Math.random), round: 1,
+        });
+        result.requestIds.push(request.id);
+        budget--;
+      }
+      return result;
+    }, transactionOptions);
+    // B7E126: a session closed meanwhile only leaves unseen questions behind.
+    const outcomes = await Promise.all(requestIds.map((id) =>
+      this.generator.run(id, { learner, session: { id: sessionId, aiStopped: null } })));
+    return {
+      prepared: outcomes.filter((o) => o.state === 'ready').length,
+      already_ready: already + outcomes.filter((o) => o.state === 'preparing').length,
+      failed: outcomes.filter((o) => o.state === 'failed').length,
+    };
+  }
+
   private nextResult(result: Advance, view: SessionView, failure: { resetsAt?: string; retryAfterSeconds?: number }): NextResult {
     switch (result.state) {
       case 'question': {

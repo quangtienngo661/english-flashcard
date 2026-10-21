@@ -14,7 +14,7 @@ export type SessionView = {
 
 export type ItemView = {
   item_id: string; round: number; position: number; type: QuestionType; prompt_style: PromptStyle; prompt: Prompt;
-  hints_available: { level1: boolean; level2: boolean }; hint_level: number; state: 'unanswered' | 'try_again'; tries: number;
+  hints_available: { level1: boolean; level2: boolean; level3: boolean }; hint_level: number; state: 'unanswered' | 'try_again'; tries: number;
   reportable: boolean;
 };
 
@@ -35,9 +35,12 @@ export function itemView(item: ItemWithQuestion): ItemView {
   return {
     item_id: item.id, round: item.round, position: item.position, type: item.question.type as QuestionType,
     prompt_style: item.question.promptStyle as PromptStyle, prompt: item.question.prompt as Prompt,
-    hints_available: { level1: hints.level1 !== null, level2: hints.level2 !== null }, hint_level: item.hintLevel,
+    hints_available: { level1: hints.level1 !== null, level2: hints.level2 !== null, level3: (hints.level3 ?? null) !== null },
+    hint_level: item.hintLevel,
     state: item.tries > 0 ? 'try_again' : 'unanswered', tries: item.tries,
-    // A private word is never sent to staff (D36); nor is the learner's own sentence (design §7.3).
-    reportable: !(item.question.answerKey as AnswerKey).asked_private && item.question.source !== 'own_sentence',
+    // Design §9.2: an AI question is reportable (a private word with consent, D26); a private non-AI one never (D36), nor the
+    // learner's own sentence (§7.3).
+    reportable: item.question.source === 'ai'
+      || (!(item.question.answerKey as AnswerKey).asked_private && item.question.source !== 'own_sentence'),
   };
 }

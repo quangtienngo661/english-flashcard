@@ -38,7 +38,7 @@ type Options = {
   aiStopped?: string | null; target?: number;
   /** What the generator does with a request. */
   generate?: (request: PracticeAiRequest) => GenerateOutcome | 'ready-free' | Promise<GenerateOutcome | 'ready-free'>;
-  aiAvailable?: (senseId: string) => QuestionType[]; ownClozeAllowed?: boolean;
+  aiAvailable?: (senseId: string) => QuestionType[]; ownClozeAllowed?: boolean; prefetch?: number;
 };
 
 function setup(options: Options) {
@@ -181,7 +181,8 @@ function setup(options: Options) {
     practiceSenses: async (_u: string, ids: string[]) => new Map(ids.map((id) => [id, sense(id)])),
     visibleSenseIds: async (_u: string, ids: string[]) => new Set(ids),
   };
-  const service = new SessionsService(prisma, new FakeClock(now), { get: async () => SETTINGS_DEFAULTS } as unknown as SettingsService,
+  const settings = { ...SETTINGS_DEFAULTS, practice: { ...SETTINGS_DEFAULTS.practice, aiPrefetchCount: options.prefetch ?? 2 } };
+  const service = new SessionsService(prisma, new FakeClock(now), { get: async () => settings } as unknown as SettingsService,
     entitlements as unknown as EntitlementsService, learning as unknown as LearningService, builder as unknown as QuestionBuilder,
     {} as PracticeStats, {} as AiSessionPlanner, generator as unknown as AiQuestionGenerator, aiRequests,
     content as unknown as ContentService);
@@ -364,5 +365,56 @@ describe('current with AI slots (design §6.8)', () => {
     expect(result).toMatchObject({ preparing: false, item: { type: 'cloze' } });
     expect(t.items[0].questionId).toBe(q.id);
     expect(t.session.pendingAiRequestId).toBeNull();
+  });
+});
+
+describe('prepare (design §6.4)', () => {
+  const marked = { types: ['type_word', 'cloze'] as QuestionType[], clozeSource: 'ai' as const, senseIds: ['s1', 's2', 's3', 's4'],
+    aiSenseIds: ['s2', 's3', 's4'] };
+
+  it('K = 2 → requests for the next two marked words, run now; the pending pointer is never set', async () => {
+    const t = setup({ ...marked, aiPlanned: 3 });
+    expect(await t.service.prepare(learner, 'sess-1')).toEqual({ prepared: 2, already_ready: 0, failed: 0 });
+    expect(t.requests.map((r) => r.senseId)).toEqual(['s2', 's3']);
+    expect(t.session.pendingAiRequestId).toBeNull();
+    // next uses the question made ahead for s2 without another run (s1 is a rule question first).
+    await t.service.next(learner, 'sess-1');
+    t.answerLast();
+    await t.service.next(learner, 'sess-1');
+    expect(t.generator.run).toHaveBeenCalledTimes(2);
+    expect(t.questionOf(t.items[1])).toMatchObject({ source: 'ai', senseId: 's2' });
+  });
+
+  it('budget 1 → one request; ai_stopped → none; K = 0 → none', async () => {
+    const one = setup({ ...marked, aiPlanned: 1 });
+    expect((await one.service.prepare(learner, 'sess-1')).prepared).toBe(1);
+    const stopped = setup({ ...marked, aiPlanned: 3, aiStopped: 'ai-unavailable' });
+    expect(await stopped.service.prepare(learner, 'sess-1')).toEqual({ prepared: 0, already_ready: 0, failed: 0 });
+    const off = setup({ ...marked, aiPlanned: 3, prefetch: 0 });
+    expect(await off.service.prepare(learner, 'sess-1')).toEqual({ prepared: 0, already_ready: 0, failed: 0 });
+    expect(stopped.requests).toHaveLength(0);
+    expect(off.requests).toHaveLength(0);
+  });
+
+  it('B7E17: two prepare calls at once → one request per word; the second counts them as already ready', async () => {
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => { release = resolve; });
+    const t = setup({ ...marked, aiPlanned: 3, generate: async () => { await gate; return { state: 'ready', questionId: '' }; } });
+    const a = t.service.prepare(learner, 'sess-1');
+    const b = t.service.prepare(learner, 'sess-1');
+    release();
+    const [first, second] = await Promise.all([a, b]);
+    expect(first).toEqual({ prepared: 2, already_ready: 0, failed: 0 });
+    expect(second).toEqual({ prepared: 0, already_ready: 2, failed: 0 });
+    expect(t.requests).toHaveLength(2);
+  });
+
+  it('a failed generation is counted; next then falls back at once for that word (B7E113)', async () => {
+    const t = setup({ ...marked, aiPlanned: 3, prefetch: 1, generate: () => failed('ai-failed') });
+    expect(await t.service.prepare(learner, 'sess-1')).toEqual({ prepared: 0, already_ready: 0, failed: 1 });
+    await t.service.next(learner, 'sess-1');
+    t.answerLast();
+    expect(await t.service.next(learner, 'sess-1')).toMatchObject({ state: 'question', item: { type: 'type_word' } });
+    expect(t.generator.run).toHaveBeenCalledTimes(1);
   });
 });

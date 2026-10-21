@@ -15,7 +15,7 @@ const answerBody = z.union([
   z.strictObject({ is_true: z.boolean() }),
   z.strictObject({ text: z.string().refine((text) => answerLength(text) >= 1 && answerLength(text) <= ANSWER_MAX) }),
 ]);
-const hintBody = z.strictObject({ level: z.union([z.literal(1), z.literal(2)]) });
+const hintBody = z.strictObject({ level: z.union([z.literal(1), z.literal(2), z.literal(3)]) });
 
 @Controller('practice/items')
 @LearnerContent()

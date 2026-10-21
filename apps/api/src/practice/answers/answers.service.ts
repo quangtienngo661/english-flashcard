@@ -19,15 +19,20 @@ export type AnswerResult = {
   result: 'correct' | 'wrong'; skipped: boolean; tries: number; hint_level: number;
   correct: { lemma: string; text: string; choice_index: number | null; is_true: boolean | null };
   meaning: string; definition_en: string | null; show_known: boolean; highlight_needs_review: boolean;
+  /** Bước 7 (PRC22): the Vietnamese translation of an AI sentence, for a `vi` learner only; else null. */
+  translation: string | null;
 };
 export type FinalWrite = {
   result: 'correct' | 'wrong'; answerRaw: string; answerNormalized: string; answersTried: string[]; tries: number; skipped: boolean;
 };
 
-/** The right answer as shown after a final result and in history: the main word, the right option, or the word's own meaning. */
+/**
+ * The right answer as shown after a final result and in history: the main word, the right option (multiple choice and both
+ * Bước 7 choice kinds, design §7.8), or the word's own meaning.
+ */
 export function correctOf(key: AnswerKey, prompt: Prompt): AnswerResult['correct'] {
   const text = key.kind === 'type_word' ? key.main
-    : key.kind === 'mcq' && prompt.kind === 'mcq' ? prompt.options[key.correct_index] : key.reveal.meaning;
+    : key.kind === 'mcq' && 'options' in prompt ? prompt.options[key.correct_index] : key.reveal.meaning;
   return {
     lemma: key.reveal.lemma, text, choice_index: key.kind === 'mcq' ? key.correct_index : null,
     is_true: key.kind === 'true_false' ? key.is_true : null,
@@ -85,11 +90,11 @@ export class AnswersService {
     });
   }
 
-  /** "Bỏ qua": typing in try_again only; the last typed text becomes the stored answer. */
+  /** "Bỏ qua": typing (and cloze, Bước 7 D9) in try_again only; the last typed text becomes the stored answer. */
   skip(userId: string, itemId: string): Promise<AnswerResult> {
     return this.locked(userId, itemId, async (tx, item) => {
       await this.assertUnanswered(tx, userId, item, false);
-      if (item.question.type !== 'type_word' || item.tries === 0) throw conflict('skip-not-allowed', 'Skip not allowed');
+      if (!['type_word', 'cloze'].includes(item.question.type) || item.tries === 0) throw conflict('skip-not-allowed', 'Skip not allowed');
       const last = item.answersTried.at(-1)!;
       const final = await this.writeFinal(tx, item, {
         result: 'wrong', answerRaw: last, answerNormalized: normalizeAnswer(last), answersTried: item.answersTried.slice(0, -1),
@@ -99,11 +104,13 @@ export class AnswersService {
     });
   }
 
-  hint(userId: string, itemId: string, level: 1 | 2): Promise<{ level: 1 | 2; hint: Hints['level1'] | Hints['level2'] }> {
+  /** Levels 1–3 (Bước 7 design §8); a Bước 4 question keeps its stored level-2 shape and has no level 3 (B7E53). */
+  hint(userId: string, itemId: string, level: 1 | 2 | 3):
+    Promise<{ level: 1 | 2 | 3; hint: Hints['level1'] | Hints['level2'] }> {
     return this.locked(userId, itemId, async (tx, item) => {
       await this.assertUnanswered(tx, userId, item, false);
       const hints = item.question.hints as Hints;
-      const hint = level === 1 ? hints.level1 : hints.level2;
+      const hint = level === 1 ? hints.level1 : level === 2 ? hints.level2 : hints.level3 ?? null;
       if (hint === null) throw conflict('hint-unavailable', 'Hint unavailable');
       await tx.practiceSessionItem.update({ where: { id: item.id }, data: { hintLevel: Math.max(item.hintLevel, level) } });
       return { level, hint };
@@ -135,12 +142,14 @@ export class AnswersService {
     const prompt = item.question.prompt as Prompt;
     const { item: learningItem } = await this.learning.practiceCheck(userId, item.senseId, null, db);
     const correct = item.result === 'correct';
+    const translation = key.translation_vi
+      ? ((await this.identity.getProfile(userId, db))?.native_language === 'vi' ? key.translation_vi : null) : null;
     return {
       result: correct ? 'correct' : 'wrong', skipped: item.skipped, tries: item.tries, hint_level: item.hintLevel,
       correct: correctOf(key, prompt),
       meaning: key.reveal.meaning, definition_en: key.reveal.definition_en,
       show_known: learningItem !== null && correct && item.hintLevel === 0 && learningItem.due_now,
-      highlight_needs_review: learningItem !== null && !correct,
+      highlight_needs_review: learningItem !== null && !correct, translation,
     };
   }
 
