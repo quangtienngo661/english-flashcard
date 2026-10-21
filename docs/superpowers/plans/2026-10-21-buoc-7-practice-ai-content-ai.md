@@ -1,7 +1,7 @@
 # Bước 7 — Practice AI + Content AI Implementation Plan (API only)
 
-> **Status 21/10/2026:** written after the owner approved the design ("ok viết plan luôn đi bạn", D1–D34; design review R1–R23 applied). Waiting
-> for the owner to approve this plan and Appendix A (prompts). **API only** (D2). No real provider call in "Xong khi" (D3).
+> **Status 21/10/2026:** written after the owner approved the design ("ok viết plan luôn đi bạn", D1–D34; design review R1–R23 applied). **Approved
+> by the owner 21/10/2026, with the four prompts of Appendix A, unchanged** ("Mình duyệt plan và bốn prompt ở phụ lục A, không đổi gì"). **API only** (D2). No real provider call in "Xong khi" (D3).
 > **Execution (D4):** parallel sessions, every task implemented by Claude, one coordinator session — as Bước 4–6. Three implementing sessions
 > plus the coordinator (the owner's cap of Bước 5: "4–5 sessions at most").
 

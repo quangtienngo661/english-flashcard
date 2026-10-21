@@ -3,6 +3,7 @@
 Plan: [`../superpowers/plans/2026-10-21-buoc-7-practice-ai-content-ai.md`](../superpowers/plans/2026-10-21-buoc-7-practice-ai-content-ai.md) (23 task, 8 mốc; phụ lục A là prompt).
 Design: [`../superpowers/specs/2026-10-21-buoc-7-practice-ai-content-ai-design.md`](../superpowers/specs/2026-10-21-buoc-7-practice-ai-content-ai-design.md).
 Chỉ API; "Xong khi" = CI xanh trên mọi PR + `pnpm smoke:buoc-7` với AI giả trên DB mới (D3). Làm bằng các phiên song song + một phiên điều phối (D4).
+Chủ dự án duyệt plan và bốn prompt ở phụ lục A, không đổi gì (21/10/2026).
 
 > Viết trước plan đầy đủ theo yêu cầu của chủ dự án (21/10), rồi đối chiếu lại với plan: khớp, trừ task 4 được gộp vào task 2 (một migration cho cả Practice và
 > Content). Số thứ tự dưới đây là số task trong plan.
