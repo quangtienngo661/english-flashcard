@@ -93,6 +93,13 @@ for (const id of FRAME_IDS) {
     const own = t.textAutoResize === 'NONE' && t.absoluteRenderBounds && t.absoluteRenderBounds.height > t.height + 1; // chữ tràn khỏi ô cao cố định
     if ((holder ? !contains(holder, tb) : outX) || own) { overflow++; worst.push(`overflow ${t.id} "${t.characters.slice(0, 30)}"`); }
   }
+  // Nút (Button, cta, btn, nút) không được tràn khỏi khối chứa nó, hay vượt mép trái/phải khung màn.
+  for (const bt of top.findAll(n => visibleChain(n, top) && (n.type === 'INSTANCE' || n.type === 'FRAME') && /^(cta|btn|nút |Button)/i.test(n.name))) {
+    let h = null, p = bt.parent;
+    while (p && p !== top) { if (p.clipsContent || (Array.isArray(p.fills) && p.fills.some(x => x.visible !== false))) { h = p.absoluteBoundingBox; break; } p = p.parent; }
+    const bb = bt.absoluteBoundingBox;
+    if ((h && !contains(h, bb)) || (!h && (bb.x < topBox.x - 0.5 || bb.x + bb.width > topBox.x + topBox.width + 0.5))) { overflow++; worst.push(`overflow nút ${bt.id} "${bt.name.slice(0, 24)}"`); }
+  }
   const icons = top.findAllWithCriteria({ types: ['INSTANCE'] }).filter(i => visibleChain(i, top) && /^icon\//.test(i.name || ''));
   for (const ic of icons) {
     const vecs = ic.findAll(n => n.visible !== false && 'strokes' in n && n.strokes.length);
