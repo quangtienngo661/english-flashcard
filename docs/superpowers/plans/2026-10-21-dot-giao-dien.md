@@ -1,7 +1,8 @@
 # UI round (Đợt giao diện) — full mockups Implementation Plan
 
-> **Status 21/10/2026:** written after the owner approved the design ("Mình duyệt bản design đợt giao diện (kèm D17). Viết plan đi."). Waiting for the
-> owner to review this plan and choose how it runs. **Mockups only, no code** (D1).
+> **Status 21/10/2026:** written after the owner approved the design ("Mình duyệt bản design đợt giao diện (kèm D17). Viết plan đi."). **Approved by
+> the owner 21/10/2026**, execution **Native** (Claude draws every task itself, one reviewer at the end of the round) **in a new session** ("Plan được.
+> Chạy kiểu Native …, trong một phiên mới vì phiên này đã dài."). **Mockups only, no code** (D1).
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement
 > this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
