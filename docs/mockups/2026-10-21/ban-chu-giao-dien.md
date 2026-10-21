@@ -123,7 +123,7 @@ Tên khung theo quy ước hiện có; khung mới thêm hậu tố chữ cái (
 
 *Thứ tự ô theo plan: Tên, Họ trên cùng một hàng ở web; điện thoại xếp dọc. Độ dài tên: xem mục 9.*
 
-### 4.2 `K/01b`, `M/01b` — Đăng ký, chưa đủ 13 tuổi
+### 4.2 `K/01b`, `M/01b` — Đăng ký, chưa đủ 13 tuổi (bỏ ngày 22/10/2026, thay bằng lỗi ngay ở ô Ngày sinh, mục 12)
 
 | Phần tử | Chữ |
 |---|---|
@@ -879,4 +879,6 @@ Chủ dự án góp 9 điểm khi xem ảnh mốc A+B. Chữ của các khung đ
 | 8 Web có đủ phần điện thoại có | `K/17`, `K/17b`, `K/16b`, `K/10b`, `K/42b`, `K/42c`; điện thoại thêm `M/13b` | Tạo nhóm: "Tạo nhóm" · "Tên nhóm" · "Du lịch Nhật" · "12/60" · [Hủy] [Tạo nhóm]. Đổi tên nhóm: "Đổi tên nhóm" · [Hủy] [Lưu tên mới]. 100 nhóm: "100 nhóm · 3.120 từ" · ô "Tìm trong 100 nhóm". Menu ⋯ thẻ nhóm ở Hôm nay: Đổi tên nhóm · Học tất cả 18 từ · Xóa nhóm. Lưu vào nhóm khi đang gõ: "du l" · [Tạo nhóm “du l”] · "Kết quả (5)"; không có nhóm khớp: "Chưa có nhóm nào tên “phỏng vấn”." · [Tạo nhóm và lưu]. |
 | 2 Form điện thoại gọn hơn | `M/01`–`M/05`, `M/93`, `M/91`, `M/92` | Không đổi chữ; ô nhập cao 44px, khoảng cách giữa ô nhỏ lại. |
 | 9 Khoảng trống sau khi bỏ dải tra | `M/90`, `M/91`, `M/92`, `M/63` | Không đổi chữ. |
-| 1 Hỏi tuổi bằng ô tick | `K/01`, `M/01`, `K/01b`, `M/01b` | Chờ chủ dự án chọn (câu hỏi sau vòng 1). |
+| 1 Chưa đủ 13 tuổi: chặn ngay ở form, không có màn riêng (chủ dự án, vòng 2) | `K/01b`, `M/01b` (thay màn cũ) | Ô Ngày sinh viền đỏ, giá trị "14/5/2015"; dòng dưới ô (thay dòng phụ): "Bạn cần đủ 13 tuổi để dùng Wordmet."; nút [Tạo tài khoản] mờ. Mục 4.2 không còn dùng. |
+| Vòng 2: chọn ngôn ngữ bằng danh sách thả xuống có cờ | `K/06`, `K/06b`, `M/06`, `M/06b` | Nhãn "Ngôn ngữ" (web) / "Ngôn ngữ của nghĩa và giao diện" (điện thoại); ô thả xuống: cờ Việt Nam + "Tiếng Việt" + mũi tên; danh sách mở: cờ Việt Nam "Tiếng Việt" (đang chọn, dấu tick), cờ Anh "English"; nút [Tiếp tục]. Component cờ `flag/vi`, `flag/en` ở 01 Foundations (màu cờ cố định, không theo biến). |
+| Vòng 2: gờ dưới của nút bị cắt | Mọi nút có gờ đặc trên page 04, 08, 09 | Không đổi chữ. Khung bọc nút không còn cắt nội dung (83 khung bọc), nên gờ 4px dưới nút hiện đủ. Script kiểm thêm chỉ số `ledgeClipped`. |

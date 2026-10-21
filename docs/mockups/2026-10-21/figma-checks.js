@@ -5,8 +5,8 @@
 //   return await new AF('figma', 'FRAME_IDS', figma.root.getSharedPluginData('wordmet', 'checks'))(figma, ['<id>', …]);
 // Sửa file này thì lưu lại bản trong Figma (figma.root.setSharedPluginData('wordmet', 'checks', <thân script>)).
 // Đối chứng 21/10/2026: K/10, M/10 → minTextContrast 5,61, overflowCount 0; khung nháp chữ xám trên nền xám → 1,77 và 1 chữ tràn.
-// Trả về mỗi khung: { frame, minTextContrast, minIconContrast, overflowCount, yellowButtonCount, exemptedTexts, worst }.
-// Ngưỡng của plan: minTextContrast >= 4.5, minIconContrast >= 3, overflowCount = 0, yellowButtonCount <= 1.
+// Trả về mỗi khung: { frame, ledgeClipped, minTextContrast, minIconContrast, overflowCount, yellowButtonCount, exemptedTexts, worst }.
+// Ngưỡng của plan: minTextContrast >= 4.5, minIconContrast >= 3, overflowCount = 0, yellowButtonCount <= 1; thêm 22/10: ledgeClipped = 0.
 const FRAME_IDS = ['REPLACE_ME'];
 
 const lum = c => { const f = v => (v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4)); return 0.2126 * f(c.r) + 0.7152 * f(c.g) + 0.0722 * f(c.b); };
@@ -115,6 +115,12 @@ for (const id of FRAME_IDS) {
       if (f && f.a > 0.99 && Math.abs(f.c.r - 1) < 0.02 && Math.abs(f.c.g - 0.847) < 0.02 && Math.abs(f.c.b - 0.29) < 0.03) yellow++;
     }
   }
-  results.push({ frame: `${top.name} ${id}`, minTextContrast: +minText.toFixed(2), minIconContrast: minIcon === 99 ? null : +minIcon.toFixed(2), overflowCount: overflow, yellowButtonCount: yellow, exemptedTexts: exempted, worst: worst.slice(0, 8) });
+  // Gờ đặc của nút (bóng đổ đặc lệch xuống) không được bị khung cha cắt mất.
+  let ledgeClipped = 0;
+  for (const x of top.findAll(n => visibleChain(n, top) && (n.type === 'INSTANCE' || n.type === 'FRAME') && Array.isArray(n.effects) && n.effects.some(e => e.type === 'DROP_SHADOW' && e.visible !== false && e.offset.y > 0 && e.radius === 0) && n.height <= 72)) {
+    const xb = x.absoluteBoundingBox; const need = xb.y + xb.height + Math.max(...x.effects.filter(e => e.type === 'DROP_SHADOW').map(e => e.offset.y + e.spread));
+    for (let p = x.parent; p && p !== top.parent; p = p.parent) { const pb = p.absoluteBoundingBox; if (pb.y + pb.height >= need) break; if (p.clipsContent) { ledgeClipped++; worst.push(`ledge ${x.id} "${x.name.slice(0, 24)}" cắt bởi ${p.name.slice(0, 24)}`); break; } }
+  }
+  results.push({ frame: `${top.name} ${id}`, ledgeClipped, minTextContrast: +minText.toFixed(2), minIconContrast: minIcon === 99 ? null : +minIcon.toFixed(2), overflowCount: overflow, yellowButtonCount: yellow, exemptedTexts: exempted, worst: worst.slice(0, 8) });
 }
 return results;
