@@ -14,7 +14,7 @@ import { AdminReportReasonsController } from './reports/admin-report-reasons.con
 import { AdminReportsController } from './reports/admin-reports.controller.js';
 import { ReportReasonsController } from './reports/report-reasons.controller.js';
 import { ReportReasonsService } from './reports/report-reasons.service.js';
-import { ReportsController } from './reports/reports.controller.js';
+import { MyReportsController, ReportsController } from './reports/reports.controller.js';
 import { ReportsService } from './reports/reports.service.js';
 import { PracticeReviewsController } from './reviews/practice-reviews.controller.js';
 import { PracticeReviewsService } from './reviews/practice-reviews.service.js';
@@ -28,7 +28,7 @@ import { PracticeStats } from './weak/practice-stats.js';
   imports: [IdentityModule, ContentModule, LearningModule, SettingsModule, EntitlementsModule],
   controllers: [
     SessionsController, AnswersController, PracticeReviewsController, HistoryController, ReportsController, AdminReportsController,
-    ReportReasonsController, AdminReportReasonsController,
+    ReportReasonsController, AdminReportReasonsController, MyReportsController,
   ],
   providers: [
     IdempotencyInterceptor, QuestionBuilder, PracticeStats, SessionsService, AnswersService, PracticeReviewsService, HistoryService,
