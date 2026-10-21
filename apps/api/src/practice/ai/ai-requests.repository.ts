@@ -33,8 +33,8 @@ export class AiRequestsRepository {
     return toRow(await tx.practiceAiRequest.create({ data: { ...input, state: 'generating' } }));
   }
 
-  async get(id: string): Promise<AiRequestRow | null> {
-    const row = await this.prisma.practiceAiRequest.findUnique({ where: { id } });
+  async get(id: string, db: Prisma.TransactionClient | PrismaClient = this.prisma): Promise<AiRequestRow | null> {
+    const row = await db.practiceAiRequest.findUnique({ where: { id } });
     return row ? toRow(row) : null;
   }
 

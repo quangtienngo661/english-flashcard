@@ -28,6 +28,8 @@ const startBody = z.strictObject({
   && (body.cloze_source === undefined || body.types.includes('cloze')));
 const sessionParams = z.strictObject({ id: uuid });
 const continueBody = z.strictObject({ continue: z.boolean() });
+// Bước 7 (design §6.6): a new AI request for a slot whose AI failed in an AI-only session.
+const nextBody = z.strictObject({ retry_ai: z.literal(true).optional() }).optional();
 
 @Controller('practice/sessions')
 @LearnerContent()
@@ -50,8 +52,12 @@ export class SessionsController {
   @Post(':id/next')
   @HttpCode(200)
   @RateLimit('practice.answer')
-  next(@Param({ schema: sessionParams }) params: z.infer<typeof sessionParams>, @CurrentLearner() learner: Learner) {
-    return this.sessions.next(learner, params.id);
+  next(
+    @Param({ schema: sessionParams }) params: z.infer<typeof sessionParams>,
+    @Body({ schema: nextBody }) body: z.infer<typeof nextBody>,
+    @CurrentLearner() learner: Learner,
+  ) {
+    return this.sessions.next(learner, params.id, body?.retry_ai === true);
   }
 
   @Post(':id/continue')

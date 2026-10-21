@@ -1,10 +1,12 @@
 import { describe, expect, it, vi } from 'vitest';
 import { FakeClock } from '../../common/clock/clock.js';
-import type { Learner } from '../../content/index.js';
+import type { ContentService, Learner } from '../../content/index.js';
 import type { EntitlementsService, EntitlementsSnapshot, Refusal } from '../../entitlements/index.js';
 import type { PracticeSession, PrismaClient } from '../../generated/prisma/client.js';
 import type { LearningService, PracticeItem } from '../../learning/index.js';
 import { SETTINGS_DEFAULTS, type SettingsService } from '../../settings/index.js';
+import type { AiQuestionGenerator } from '../ai/ai-question-generator.service.js';
+import type { AiRequestsRepository } from '../ai/ai-requests.repository.js';
 import type { AiSessionPlan, AiSessionPlanner } from '../ai/ai-session-planner.service.js';
 import type { QuestionBuilder } from '../questions/question-builder.service.js';
 import type { ItemWithQuestion } from './session-views.js';
@@ -96,7 +98,7 @@ function setup(options: {
   const service = new SessionsService(prisma, new FakeClock(now), settings as unknown as SettingsService,
     entitlements as unknown as EntitlementsService, learning as unknown as LearningService, builder as unknown as QuestionBuilder,
     { statsFor: vi.fn(async () => { calls.push('statsFor'); return new Map(); }) } as unknown as PracticeStats,
-    aiPlanner as unknown as AiSessionPlanner);
+    aiPlanner as unknown as AiSessionPlanner, {} as AiQuestionGenerator, {} as AiRequestsRepository, {} as ContentService);
   return { service, tx, calls, entitlements, builder, learning, settings, globalReads, aiPlanner };
 }
 

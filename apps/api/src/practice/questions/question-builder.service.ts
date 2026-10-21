@@ -6,6 +6,7 @@ import type { AppSettings } from '../../settings/index.js';
 import { normalizeAnswer } from '../grading/normalize.js';
 import { mcqForms, pickWrongMeanings } from '../ai/ai-checks.js';
 import { contentKey } from '../ai/ai-inputs.js';
+import { ownSentenceQuestion } from '../ai/ai-question.js';
 import { WordChecksRepository } from '../ai/word-checks.repository.js';
 import { MCQ_OPTIONS } from '../practice.constants.js';
 import type { AnswerKey, Blank, ClozeSource, Hints, Prompt, PromptStyle, QuestionType } from '../practice.types.js';
@@ -25,6 +26,8 @@ export type BuildInput = {
   userId: string; nativeLanguage: NativeLanguage; senseId: string; chosenTypes: QuestionType[];
   promptStyle: 'meaning' | 'sentence' | 'mixed'; previousType: QuestionType | null; avoidDistractors: string[];
   settings: AppSettings['practice']; random: () => number;
+  /** Bước 7: the session's cloze source; only 'own' makes `cloze` buildable here (AI cloze goes through the generator). */
+  clozeSource?: ClozeSource | null;
   /** The client to read through: a caller inside an open transaction passes its `tx` (default: the global client). */
   db?: Prisma.TransactionClient | PrismaClient;
 };
@@ -123,11 +126,23 @@ export class QuestionBuilder {
     const pool = mates.flatMap((id) => candidates.get(id) ?? []);
     const meanings = await this.content.practiceLemmaMeanings(userId, [sense.lemma, ...pool.map((c) => c.lemma)], nativeLanguage, db);
     const eligible = eligibleCandidates(sense, pool, Infinity, meanings);
-    const available = availableTypes(sense, eligible.length, input.chosenTypes);
+    const target = { lemma: sense.lemma, variants: sense.variants, inflections: sense.inflections };
+    // Bước 7 (design §7.3): cloze from the learner's saved sentences that maskExample can mask (B7E52); the only non-AI new type.
+    const ownMasked = input.chosenTypes.includes('cloze') && input.clozeSource === 'own'
+      ? ((await this.content.listSentences(userId, [senseId], db)).get(senseId) ?? [])
+        .flatMap(({ text }) => maskExample(text, target) ?? [])
+      : [];
+    const extra: AiTypeFacts | undefined = input.clozeSource === 'own' ? {
+      clozeSource: 'own', hasViMeaning: false, ownSentence: ownMasked.length > 0, meaningPool: 0, mcqForms: 0, wordRejected: false,
+    } : undefined;
+    const available = availableTypes(sense, eligible.length, input.chosenTypes, extra);
     if (available.length === 0) return { skip: 'no-type' };
     const type = chooseType(available, input.previousType, random);
+    if (type === 'cloze') {
+      return ownSentenceQuestion(sense, ownMasked[Math.floor(random() * ownMasked.length)], nativeLanguage,
+        input.settings.hintDefinitionMaxChars);
+    }
 
-    const target = { lemma: sense.lemma, variants: sense.variants, inflections: sense.inflections };
     const masked = sense.examples.flatMap((example) => maskExample(example, target) ?? []);
     const reveal = { lemma: sense.lemma, meaning: sense.meaning.text, definition_en: sense.definition_en };
     const asked_private = sense.scope === 'private';

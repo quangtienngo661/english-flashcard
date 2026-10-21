@@ -37,7 +37,7 @@ export function itemView(item: ItemWithQuestion): ItemView {
     prompt_style: item.question.promptStyle as PromptStyle, prompt: item.question.prompt as Prompt,
     hints_available: { level1: hints.level1 !== null, level2: hints.level2 !== null }, hint_level: item.hintLevel,
     state: item.tries > 0 ? 'try_again' : 'unanswered', tries: item.tries,
-    // A private word is never sent to staff (D36).
-    reportable: !(item.question.answerKey as AnswerKey).asked_private,
+    // A private word is never sent to staff (D36); nor is the learner's own sentence (design §7.3).
+    reportable: !(item.question.answerKey as AnswerKey).asked_private && item.question.source !== 'own_sentence',
   };
 }

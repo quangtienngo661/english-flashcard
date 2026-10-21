@@ -2,16 +2,23 @@ import { Inject, Injectable } from '@nestjs/common';
 import { Clock } from '../../common/clock/clock.js';
 import { PRISMA_CLIENT } from '../../common/db/prisma.module.js';
 import { ProblemDetailsException } from '../../common/problem-details/problem-details.exception.js';
-import type { Learner } from '../../content/index.js';
+import { ContentService, type Learner } from '../../content/index.js';
 import { EntitlementsService, refusalProblem } from '../../entitlements/index.js';
 import type { PracticeSession, Prisma, PrismaClient } from '../../generated/prisma/client.js';
 import { LearningService, type PracticeItem, type PracticeScope } from '../../learning/index.js';
 import { SettingsService } from '../../settings/index.js';
+import { contentKey } from '../ai/ai-inputs.js';
+import { aiBudget, aiChanceInLaterRound } from '../ai/ai-plan.js';
+import { AiQuestionGenerator } from '../ai/ai-question-generator.service.js';
+import { AiRequestsRepository } from '../ai/ai-requests.repository.js';
 import { AiSessionPlanner } from '../ai/ai-session-planner.service.js';
+import { findUnseen, pickUnseen } from '../ai/unseen-questions.js';
 import { withPracticeLock } from '../practice-lock.js';
-import type { ClozeSource, QuestionType } from '../practice.types.js';
+import { PREPARING_RETRY_SECONDS } from '../practice.constants.js';
+import { isAiType, type AiFailure, type ClozeSource, type QuestionType } from '../practice.types.js';
 import { shuffle } from '../questions/distractors.js';
 import { QuestionBuilder } from '../questions/question-builder.service.js';
+import { chooseType } from '../questions/question-types.js';
 import { PracticeStats } from '../weak/practice-stats.js';
 import { defaultSort, nextRoundOrder, sortWords, type SortKey, type SortableWord, type Source } from './order.js';
 import { itemView, sessionView, type ItemView, type ItemWithQuestion, type SessionView } from './session-views.js';
@@ -28,15 +35,27 @@ export type StartInput = {
   cloze_source?: ClozeSource;
 };
 type Notice = 'word-not-found';
+/** Bước 7 (design §6.6): shown with the question that replaced an AI one. */
+type AiNotice = { notice: 'ai-fallback'; ai_reason: AiFailure } | { notice: 'word-not-recognized'; sense_id: string };
+type NoticeFields = { notice?: Notice | 'group-not-found' | AiNotice['notice']; ai_reason?: AiFailure; resets_at?: string;
+  sense_id?: string };
 export type NextResult =
-  | { state: 'question'; session: SessionView; item: ItemView; notice?: Notice }
-  | { state: 'waiting_continue'; session: SessionView; notice?: Notice }
-  | { state: 'finished'; session: SessionView; notice?: Notice | 'group-not-found' };
+  | ({ state: 'question'; session: SessionView; item: ItemView } & NoticeFields)
+  | ({ state: 'waiting_continue'; session: SessionView } & NoticeFields)
+  | ({ state: 'finished'; session: SessionView } & NoticeFields)
+  | { state: 'preparing'; session: SessionView; retry_after_seconds: number }
+  | { state: 'ai_unavailable'; session: SessionView; reason: AiFailure; resets_at?: string; retry_after_seconds?: number };
 type Advance =
-  | { state: 'question'; item: ItemWithQuestion; notice?: Notice }
+  | { state: 'question'; item: ItemWithQuestion; notice?: Notice; ai?: AiNotice;
+    /** G attached a question not yet charged: confirm it after commit (B7E33). */
+    confirmRequestId?: string }
   | { state: 'waiting_continue'; notice?: Notice }
   | { state: 'finished'; notice?: Notice | 'group-not-found' }
-  | { state: 'none' };
+  | { state: 'none' }
+  /** A slot waits for an AI request: `fresh` = created now, run it; else run it only after taking it over as stale. */
+  | { state: 'pending'; requestId: string; fresh: boolean }
+  | { state: 'preparing' }
+  | { state: 'ai_unavailable'; reason: AiFailure };
 
 const notFound = () => new ProblemDetailsException({ status: 404, title: 'Not found', type: 'not-found' });
 const sessionClosed = () => new ProblemDetailsException({ status: 409, title: 'Session closed', type: 'session-closed' });
@@ -55,6 +74,9 @@ export class SessionsService {
     @Inject(QuestionBuilder) private readonly builder: QuestionBuilder,
     @Inject(PracticeStats) private readonly stats: PracticeStats,
     @Inject(AiSessionPlanner) private readonly aiPlanner: AiSessionPlanner,
+    @Inject(AiQuestionGenerator) private readonly generator: AiQuestionGenerator,
+    @Inject(AiRequestsRepository) private readonly aiRequests: AiRequestsRepository,
+    @Inject(ContentService) private readonly content: ContentService,
   ) {}
 
   async start(learner: Learner, input: StartInput): Promise<{ session: SessionView }> {
@@ -125,31 +147,80 @@ export class SessionsService {
     }, transactionOptions);
   }
 
-  async current(learner: Learner): Promise<{ session: SessionView; item: ItemView | null; notice?: Notice }> {
+  /** Never calls AI (design §6.8): a slot still waiting for its AI question is `preparing`; a ready one is attached (G). */
+  async current(learner: Learner): Promise<{ session: SessionView; item: ItemView | null; notice?: Notice; preparing: boolean }> {
     await this.closeIfIdle(learner.userId, null);
     const open = await this.prisma.practiceSession.findFirst({ where: { userId: learner.userId, status: { in: OPEN } } });
     if (!open) throw notFound();
-    return this.prisma.$transaction(async (tx) => {
+    const { result, view } = await this.prisma.$transaction(async (tx) => {
       const session = await this.lockOpen(tx, learner.userId, open.id);
-      const result = await this.advance(tx, learner, session, false);
-      const view = await this.view(tx, session.id);
-      const item = result.state === 'question' ? itemView(result.item) : null;
-      const notice = result.state !== 'none' && result.notice === 'word-not-found' ? result.notice : undefined;
-      return { session: view, item, ...(notice ? { notice } : {}) };
+      const advanced = await this.advance(tx, learner, session, false, false);
+      return { result: advanced, view: await this.view(tx, session.id) };
     }, transactionOptions);
+    if (result.state === 'question' && result.confirmRequestId) await this.lateConfirm(learner.userId, result.confirmRequestId, result.item.questionId);
+    const item = result.state === 'question' ? itemView(result.item) : null;
+    const notice = 'notice' in result && result.notice === 'word-not-found' ? result.notice : undefined;
+    return { session: view, item, ...(notice ? { notice } : {}), preparing: result.state === 'preparing' };
   }
 
-  async next(learner: Learner, sessionId: string): Promise<NextResult> {
+  /**
+   * Design §6.5, §6.8: A in a short transaction (the pending slot first), the generator (B–H) outside any transaction, then A
+   * again, which attaches the question (G) or applies the fallback of §6.6. `retryAi` makes a new request for a slot whose AI
+   * failed in an AI-only session (B7E48).
+   */
+  async next(learner: Learner, sessionId: string, retryAi = false): Promise<NextResult> {
     await this.closeIfIdle(learner.userId, sessionId);
-    return this.prisma.$transaction(async (tx) => {
-      const session = await this.lockOpen(tx, learner.userId, sessionId);
-      const result = await this.advance(tx, learner, session, true);
-      const view = await this.view(tx, session.id);
-      const notice = result.state !== 'none' && result.notice ? { notice: result.notice } : {};
-      if (result.state === 'question') return { state: 'question', session: view, item: itemView(result.item), ...notice } as NextResult;
-      if (result.state === 'waiting_continue') return { state: 'waiting_continue', session: view, ...notice } as NextResult;
-      return { state: 'finished', session: view, ...notice } as NextResult;
-    }, transactionOptions);
+    let retry = retryAi;
+    let failure: { resetsAt?: string; retryAfterSeconds?: number } = {};
+    for (let attempt = 0; ; attempt++) {
+      const { result, view } = await this.prisma.$transaction(async (tx) => {
+        const session = await this.lockOpen(tx, learner.userId, sessionId);
+        const advanced = await this.advance(tx, learner, session, true, retry);
+        return { result: advanced, view: await this.view(tx, session.id) };
+      }, transactionOptions);
+      retry = false;
+      if (result.state === 'pending') {
+        const preparing: NextResult = { state: 'preparing', session: view, retry_after_seconds: PREPARING_RETRY_SECONDS };
+        // B7E16, B7E111: someone else is making it; at most one run of the generator per call.
+        if (attempt > 0 || (!result.fresh && !(await this.aiRequests.claimStale(result.requestId, this.clock.now())))) return preparing;
+        const outcome = await this.generator.run(result.requestId, { learner, session: { id: sessionId, aiStopped: null } });
+        if (outcome.state === 'preparing') return preparing;
+        if (outcome.state === 'failed') failure = { resetsAt: outcome.resetsAt, retryAfterSeconds: outcome.retryAfterSeconds };
+        continue;
+      }
+      if (result.state === 'question' && result.confirmRequestId) {
+        await this.lateConfirm(learner.userId, result.confirmRequestId, result.item.questionId);
+      }
+      return this.nextResult(result, view, failure);
+    }
+  }
+
+  private nextResult(result: Advance, view: SessionView, failure: { resetsAt?: string; retryAfterSeconds?: number }): NextResult {
+    switch (result.state) {
+      case 'question': {
+        const ai: NoticeFields = !result.ai ? {} : result.ai.notice === 'ai-fallback'
+          ? { notice: 'ai-fallback', ai_reason: result.ai.ai_reason, ...(failure.resetsAt ? { resets_at: failure.resetsAt } : {}) }
+          : { notice: 'word-not-recognized', sense_id: result.ai.sense_id };
+        return { state: 'question', session: view, item: itemView(result.item), ...(result.notice ? { notice: result.notice } : {}), ...ai };
+      }
+      case 'ai_unavailable':
+        return {
+          state: 'ai_unavailable', session: view, reason: result.reason, ...(failure.resetsAt ? { resets_at: failure.resetsAt } : {}),
+          ...(failure.retryAfterSeconds !== undefined ? { retry_after_seconds: failure.retryAfterSeconds } : {}),
+        };
+      case 'preparing':
+        return { state: 'preparing', session: view, retry_after_seconds: PREPARING_RETRY_SECONDS };
+      case 'waiting_continue':
+        return { state: 'waiting_continue', session: view, ...(result.notice ? { notice: result.notice } : {}) };
+      default:
+        return { state: 'finished', session: view, ...('notice' in result && result.notice ? { notice: result.notice } : {}) };
+    }
+  }
+
+  /** G's late confirmation (design §6.5, R7 Bước 5): units left → charged; else the question stays free (B7E33). */
+  private async lateConfirm(userId: string, requestId: string, questionId: string): Promise<void> {
+    const confirmed = await this.entitlements.confirm(userId, 'ai_practice', requestId);
+    if (confirmed.state === 'confirmed') await this.aiRequests.setCharged(questionId);
   }
 
   async continue(userId: string, sessionId: string, go: boolean): Promise<{ session: SessionView }> {
@@ -244,7 +315,8 @@ export class SessionsService {
    * rule, then a new question. `build` false (current) stops before building unless an item was just voided or a notice set.
    * Every read goes through `tx`: a read on the global client would borrow a second connection while `tx` holds one (PX4).
    */
-  private async advance(tx: Prisma.TransactionClient, learner: Learner, session: PracticeSession, build: boolean): Promise<Advance> {
+  private async advance(tx: Prisma.TransactionClient, learner: Learner, session: PracticeSession, build: boolean,
+    retryAi: boolean): Promise<Advance> {
     const { userId } = learner;
     let notice: Notice | undefined;
     if (session.pendingNotice !== null) {
@@ -269,8 +341,13 @@ export class SessionsService {
       if (usable.has(pending.senseId)) return { state: 'question', item: pending, notice };
       await this.voidItem(tx, pending);
       notice = 'word-not-found';
-    } else if (!build && notice === undefined) {
-      return { state: 'none' };
+    } else {
+      // Design §6.5 A: the slot decided earlier is read before any planning, so a second call never plans again (B7E111).
+      if (session.pendingAiRequestId !== null) {
+        const slot = await this.pendingSlot(tx, learner, session, items, usable, build, retryAi);
+        if (slot) return slot.state === 'question' ? { ...slot, notice: slot.notice ?? notice } : slot;
+      }
+      if (!build && notice === undefined) return { state: 'none' };
     }
 
     const answered = items.filter((item) => item.result === 'correct' || item.result === 'wrong').length;
@@ -297,30 +374,22 @@ export class SessionsService {
     }
 
     if (plan.length > 0) await this.assertEntitled(userId, tx);
-    const { practice } = await this.settings.get(tx);
+    const aiTypes = this.aiTypesOf(session);
+    const ruleTypes = plan.length > 0 ? await this.ruleTypesOf(tx, userId, session) : [];
+    const budget = aiTypes.length > 0 ? await this.aiBudgetOf(tx, session, items) : 0;
     for (const { senseId, round } of plan) {
       const previous = items.filter((item) => item.senseId === senseId).at(-1);
-      const built = await this.builder.build({
-        userId, nativeLanguage: learner.nativeLanguage, senseId, chosenTypes: session.types as QuestionType[],
-        promptStyle: session.promptStyle as 'meaning' | 'sentence' | 'mixed',
-        previousType: (previous?.question.type as QuestionType | undefined) ?? null,
-        avoidDistractors: previous?.question.distractorSenseIds ?? [], settings: practice, random: Math.random, db: tx,
-      });
-      if ('skip' in built) continue;
-      const now = this.clock.now();
-      const question = await tx.practiceQuestion.create({ data: {
-        userId, senseId, type: built.type, promptStyle: built.promptStyle, blank: built.blank ?? undefined, schemaVersion: 1,
-        prompt: built.prompt, answerKey: built.answerKey, hints: built.hints, distractorSenseIds: built.distractorSenseIds,
-        createdAt: now,
-      } });
-      const item = await tx.practiceSessionItem.create({
-        data: {
-          sessionId: session.id, userId, questionId: question.id, senseId, round, position: (last?.position ?? 0) + 1, askedAt: now,
-          maxRetries: practice.typeWordMaxRetries,
-        },
-        include: { question: true },
-      });
-      return { state: 'question', item, notice };
+      if (aiTypes.length > 0 && session.aiStopped === null && this.wantsAi(session, senseId, round, budget,
+        session.targetCount - answered, ruleTypes.length)) {
+        const slot = await this.aiSlot(tx, learner, session, items, senseId, round, aiTypes, ruleTypes.length,
+          (previous?.question.type as QuestionType | undefined) ?? null);
+        if (slot) return slot.state === 'question' ? { ...slot, notice } : slot;
+        // B7E47: the word no longer takes an AI type; a rule type if chosen, else the word is skipped.
+      } else if (ruleTypes.length === 0 && session.aiStopped !== null) {
+        return { state: 'ai_unavailable', reason: session.aiStopped as AiFailure };
+      }
+      const item = await this.ruleItem(tx, learner, session, items, senseId, round, ruleTypes, previous);
+      if (item) return { state: 'question', item, notice };
     }
     // Round 1 done short of the target: ask once whether to go on, unless no word is left at all (B4E31).
     if (lastRound === 1 && session.continued === null && usable.size > 0) {
@@ -329,6 +398,164 @@ export class SessionsService {
     }
     await this.finishRow(tx, session.id);
     return { state: 'finished', notice };
+  }
+
+  /** Types the generator makes (design §5): meaning_in_sentence, mcq_sentence, and cloze when its source is AI. */
+  private aiTypesOf(session: PracticeSession): QuestionType[] {
+    return (session.types as QuestionType[]).filter((type) => isAiType(type, session.clozeSource as ClozeSource | null));
+  }
+
+  /** The other chosen types; cloze from saved sentences needs `ai.practice` at each question (B7E123, Bước 4 §12). */
+  private async ruleTypesOf(tx: Prisma.TransactionClient, userId: string, session: PracticeSession): Promise<QuestionType[]> {
+    const types = (session.types as QuestionType[]).filter((type) => !isAiType(type, session.clozeSource as ClozeSource | null));
+    if (!types.includes('cloze') || (await this.entitlements.check(userId, 'ai.practice', tx)).allowed) return types;
+    return types.filter((type) => type !== 'cloze');
+  }
+
+  /** r of design §6.3 (R9): planned − asked AI items (void included) − requests of the session not yet asked. */
+  private async aiBudgetOf(tx: Prisma.TransactionClient, session: PracticeSession, items: ItemWithQuestion[]): Promise<number> {
+    const asked = new Set(items.map((item) => item.questionId));
+    const open = await tx.practiceAiRequest.findMany({
+      where: { sessionId: session.id, state: { in: ['generating', 'ready'] } }, select: { questionId: true },
+    });
+    return aiBudget(session.aiPlanned, items.filter((item) => item.question.source === 'ai').length,
+      open.filter((request) => request.questionId === null || !asked.has(request.questionId)).length);
+  }
+
+  /** Round 1: the words marked at start; round ≥ 2: with chance r ÷ q, or always while r > 0 in an AI-only session (design §6.3). */
+  private wantsAi(session: PracticeSession, senseId: string, round: number, budget: number, left: number, ruleCount: number): boolean {
+    if (round === 1) return session.aiSenseIds.includes(senseId);
+    if (budget <= 0) return false;
+    return ruleCount === 0 || Math.random() < aiChanceInLaterRound(budget, left);
+  }
+
+  /**
+   * An AI slot (design §6.5 A): an unseen AI question (0 units), else the session's request for this word and round (made by
+   * prepare), else another generating request of the learner for the word, else a new request. The pointer is set in this
+   * transaction. Null when the word cannot take an AI type now, or its AI already failed in a mixed session (B7E113).
+   */
+  private async aiSlot(tx: Prisma.TransactionClient, learner: Learner, session: PracticeSession, items: ItemWithQuestion[],
+    senseId: string, round: number, aiTypes: QuestionType[], ruleCount: number, previousType: QuestionType | null): Promise<Advance | null> {
+    const { userId, nativeLanguage } = learner;
+    const available = (await this.builder.availability({
+      userId, nativeLanguage, senseIds: [senseId], chosenTypes: aiTypes, clozeSource: session.clozeSource as ClozeSource | null, db: tx,
+    })).get(senseId) ?? [];
+    if (available.length === 0) return null;
+    const point = (requestId: string) =>
+      tx.practiceSession.update({ where: { id: session.id }, data: { pendingAiRequestId: requestId } });
+    const existing = await this.aiRequests.findForSession(tx, session.id, senseId);
+    if (existing && existing.round === round) {
+      if (existing.state === 'failed') {
+        if (ruleCount > 0) return null;
+        await point(existing.id);
+        return { state: 'ai_unavailable', reason: existing.failure ?? 'ai-failed' };
+      }
+      const asked = items.some((item) => item.questionId === existing.questionId);
+      if (existing.state === 'generating' || !asked) {
+        await point(existing.id);
+        if (existing.state === 'generating') return { state: 'pending', requestId: existing.id, fresh: false };
+        return this.attach(tx, session, items, existing.id, existing.questionId!, senseId, round);
+      }
+    }
+    const sense = (await this.content.practiceSenses(userId, [senseId], nativeLanguage, tx)).get(senseId);
+    if (!sense) return null;
+    const key = sense.scope === 'private' ? contentKey(sense.lemma, sense.pos, sense.gloss_vi ?? '') : null;
+    const unseen = pickUnseen(await findUnseen(tx, this.content,
+      { userId, senseId, types: available, liveRevisionId: sense.live_revision_id, contentKey: key }));
+    if (unseen) return { state: 'question', item: await this.createItem(tx, session, items, unseen.id, senseId, round) };
+    const other = await tx.practiceAiRequest.findFirst({ where: { userId, senseId, state: 'generating' } });
+    if (other) {
+      await point(other.id);
+      return { state: 'pending', requestId: other.id, fresh: false };
+    }
+    const request = await this.aiRequests.create(tx, {
+      userId, sessionId: session.id, senseId, type: chooseType(available, previousType, Math.random), round,
+    });
+    await point(request.id);
+    return { state: 'pending', requestId: request.id, fresh: true };
+  }
+
+  /**
+   * The slot of `pending_ai_request_id` (design §6.5 A): generating → preparing (or run when taken over); ready → G; failed →
+   * §6.6 once. Null when the pointer was cleared and planning goes on.
+   */
+  private async pendingSlot(tx: Prisma.TransactionClient, learner: Learner, session: PracticeSession, items: ItemWithQuestion[],
+    usable: Set<string>, build: boolean, retryAi: boolean): Promise<Advance | null> {
+    const request = await this.aiRequests.get(session.pendingAiRequestId!, tx);
+    const clear = () => tx.practiceSession.update({ where: { id: session.id }, data: { pendingAiRequestId: null } });
+    if (!request || !usable.has(request.senseId)) {
+      await clear();
+      return null;
+    }
+    if (request.state === 'generating') return build ? { state: 'pending', requestId: request.id, fresh: false } : { state: 'preparing' };
+    if (request.state === 'ready') return this.attach(tx, session, items, request.id, request.questionId!, request.senseId, request.round);
+    // current never applies the fallback: the app calls next.
+    if (!build) return { state: 'none' };
+    const failure = request.failure ?? 'ai-failed';
+    const ruleTypes = await this.ruleTypesOf(tx, learner.userId, session);
+    if (ruleTypes.length > 0) {
+      await clear();
+      const previous = items.filter((item) => item.senseId === request.senseId).at(-1);
+      const item = await this.ruleItem(tx, learner, session, items, request.senseId, request.round, ruleTypes, previous);
+      if (!item) return null;
+      let ai: AiNotice | undefined;
+      if (failure === 'word-not-recognized') ai = { notice: 'word-not-recognized', sense_id: request.senseId };
+      else if (!session.aiNoticeShown) {
+        ai = { notice: 'ai-fallback', ai_reason: failure };
+        await tx.practiceSession.update({ where: { id: session.id }, data: { aiNoticeShown: true } });
+      }
+      return { state: 'question', item, ai };
+    }
+    if (!retryAi) return { state: 'ai_unavailable', reason: failure };
+    const retry = await this.aiRequests.create(tx, {
+      userId: learner.userId, sessionId: session.id, senseId: request.senseId, type: request.type, round: request.round,
+    });
+    await tx.practiceSession.update({ where: { id: session.id }, data: { pendingAiRequestId: retry.id } });
+    return { state: 'pending', requestId: retry.id, fresh: true };
+  }
+
+  /** G (design §6.5): the item only while the pointer still names this request (B7E112), then the pointer is cleared. */
+  private async attach(tx: Prisma.TransactionClient, session: PracticeSession, items: ItemWithQuestion[], requestId: string,
+    questionId: string, senseId: string, round: number): Promise<Advance | null> {
+    const { count } = await tx.practiceSession.updateMany({
+      where: { id: session.id, pendingAiRequestId: requestId }, data: { pendingAiRequestId: null },
+    });
+    if (count === 0) return null;
+    const item = await this.createItem(tx, session, items, questionId, senseId, round);
+    return { state: 'question', item, ...(item.question.aiCharged ? {} : { confirmRequestId: requestId }) };
+  }
+
+  private async createItem(tx: Prisma.TransactionClient, session: PracticeSession, items: ItemWithQuestion[], questionId: string,
+    senseId: string, round: number): Promise<ItemWithQuestion> {
+    const { practice } = await this.settings.get(tx);
+    return tx.practiceSessionItem.create({
+      data: {
+        sessionId: session.id, userId: session.userId, questionId, senseId, round, position: (items.at(-1)?.position ?? 0) + 1,
+        askedAt: this.clock.now(), maxRetries: practice.typeWordMaxRetries,
+      },
+      include: { question: true },
+    });
+  }
+
+  /** A question of a rule type, built and asked now (Bước 4, plus cloze from saved sentences); null when none fits. */
+  private async ruleItem(tx: Prisma.TransactionClient, learner: Learner, session: PracticeSession, items: ItemWithQuestion[],
+    senseId: string, round: number, types: QuestionType[], previous: ItemWithQuestion | undefined): Promise<ItemWithQuestion | null> {
+    if (types.length === 0) return null;
+    const { practice } = await this.settings.get(tx);
+    const built = await this.builder.build({
+      userId: learner.userId, nativeLanguage: learner.nativeLanguage, senseId, chosenTypes: types,
+      promptStyle: session.promptStyle as 'meaning' | 'sentence' | 'mixed',
+      previousType: (previous?.question.type as QuestionType | undefined) ?? null,
+      avoidDistractors: previous?.question.distractorSenseIds ?? [], settings: practice, random: Math.random, db: tx,
+      clozeSource: session.clozeSource as ClozeSource | null,
+    });
+    if ('skip' in built) return null;
+    const question = await tx.practiceQuestion.create({ data: {
+      userId: learner.userId, senseId, type: built.type, promptStyle: built.promptStyle, blank: built.blank ?? undefined, schemaVersion: 1,
+      prompt: built.prompt, answerKey: built.answerKey, hints: built.hints, distractorSenseIds: built.distractorSenseIds,
+      createdAt: this.clock.now(), source: built.type === 'cloze' ? 'own_sentence' : 'rule',
+    } });
+    return this.createItem(tx, session, items, question.id, senseId, round);
   }
 
   private async voidItem(tx: Prisma.TransactionClient, item: ItemWithQuestion): Promise<void> {
