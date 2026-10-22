@@ -578,6 +578,24 @@
       "forgotten": "Đã bỏ {count} từ khỏi việc học.",
       "empty": "Nhóm này không có từ nào quá hạn lâu."
     },
+    "topic": {
+      "title": "{topic} · {level}",
+      "intro": "{count} từ gợi ý. Chọn từ bạn muốn học, hoặc thêm cả chủ đề.",
+      "selectAll": "Chọn tất cả ({count} từ chưa học)",
+      "selected": "Đã chọn {count} từ",
+      "select": "Chọn {word}",
+      "learning": "Đang học · {groups}",
+      "learningNoGroup": "Đang học",
+      "addTo": "Thêm vào",
+      "newGroup": "Nhóm mới “{name}”",
+      "addAll": "Thêm cả {count} từ",
+      "addSelected": "Thêm {count} từ đã chọn",
+      "result": "Đã thêm {added} từ vào nhóm “{name}”.",
+      "resultSkipped": "{already} từ đã có trong nhóm, {full} từ không vừa vì nhóm đã đầy, {missing} từ không còn.",
+      "notFound": "Không tìm thấy chủ đề này.",
+      "back": "Quay lại",
+      "none": "Chưa có từ nào cho chủ đề và trình độ này."
+    },
     "stages": {
       "s0": "Mới",
       "s1": "1 ngày",

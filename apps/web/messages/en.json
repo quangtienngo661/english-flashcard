@@ -578,6 +578,24 @@
       "forgotten": "{count, plural, one {# word} other {# words}} removed from learning.",
       "empty": "No word in this deck is long overdue."
     },
+    "topic": {
+      "title": "{topic} · {level}",
+      "intro": "{count, plural, one {# suggested word} other {# suggested words}}. Pick the words you want, or add the whole topic.",
+      "selectAll": "Select all ({count, plural, one {# word} other {# words}} not learned yet)",
+      "selected": "{count} selected",
+      "select": "Select {word}",
+      "learning": "Learning · {groups}",
+      "learningNoGroup": "Learning",
+      "addTo": "Add to",
+      "newGroup": "New deck “{name}”",
+      "addAll": "Add all {count, plural, one {# word} other {# words}}",
+      "addSelected": "Add {count, plural, one {# selected word} other {# selected words}}",
+      "result": "{added, plural, one {# word} other {# words}} added to “{name}”.",
+      "resultSkipped": "{already} already in the deck, {full} didn’t fit because the deck is full, {missing} no longer available.",
+      "notFound": "This topic doesn’t exist.",
+      "back": "Back",
+      "none": "No words for this topic and level yet."
+    },
     "stages": {
       "s0": "New",
       "s1": "1 day",
