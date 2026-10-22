@@ -166,6 +166,11 @@
   translate: 0 0.18rem;
 }
 
+/* Phone bars fixed to the bottom keep clear of the home indicator. */
+@utility pb-safe {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
 /* The practice card leans slightly on wide screens and stands upright on phones (design §5.1). */
 @utility tilt-card {
   rotate: -1.5deg;

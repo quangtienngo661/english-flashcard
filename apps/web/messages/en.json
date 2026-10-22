@@ -222,11 +222,76 @@
   "App": {
     "common": {
       "retry": "Try again",
-      "loading": "Loading…"
+      "loading": "Loading…",
+      "close": "Close",
+      "cancel": "Cancel",
+      "save": "Save",
+      "saveChanges": "Save changes",
+      "continue": "Continue",
+      "back": "Back",
+      "comingSoon": "Coming soon",
+      "notFoundTitle": "Page not found",
+      "notFoundBody": "The link may be out of date.",
+      "home": "Go to Today",
+      "charCount": "{count}/{max}"
     },
     "session": {
       "offlineTitle": "Can’t connect",
       "offlineBody": "Check your connection and try again."
+    },
+    "chrome": {
+      "brand": "Wordmet",
+      "skipToContent": "Skip to content",
+      "mainNav": "Main navigation",
+      "tabs": {
+        "today": "Today",
+        "groups": "Decks",
+        "practice": "Practice",
+        "lookup": "Look up"
+      },
+      "addWord": "Add word",
+      "plans": "Plans",
+      "settings": "Settings",
+      "logout": "Sign out",
+      "account": "Your account",
+      "plan": {
+        "free": "Free",
+        "trial": "Trial",
+        "pro": "Pro"
+      },
+      "footer": {
+        "tagline": "Learn vocabulary in decks and review at the right time. Add words wherever you find them.",
+        "colWordmet": "Wordmet",
+        "about": "About",
+        "plans": "Plans",
+        "contact": "Contact",
+        "colSupport": "Support",
+        "help": "Help",
+        "faq": "FAQ",
+        "feedback": "Send feedback",
+        "colLegal": "Legal",
+        "terms": "Terms of use",
+        "privacy": "Privacy policy",
+        "copyright": "© {year} Wordmet"
+      },
+      "search": {
+        "level": "Level",
+        "allLevels": "All levels",
+        "placeholder": "Search 7,799 words: type a word, like left",
+        "placeholderShort": "Search 7,799 words",
+        "submit": "Search"
+      }
+    },
+    "ui": {
+      "proBadge": "Pro",
+      "lockedLine": "Part of the Pro plan. Pro is not on sale yet.",
+      "seePlans": "See plans",
+      "dob": {
+        "placeholder": "dd/mm/yyyy",
+        "invalid": "Enter your birth date as day/month/year, like 14/5/2008.",
+        "tooYoung": "You need to be 13 or older to use Wordmet.",
+        "future": "Your birth date can’t be after today."
+      }
     },
     "errors": {
       "generic": "Something went wrong. Try again later.",

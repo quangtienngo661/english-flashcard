@@ -4,6 +4,8 @@ import { MutationCache, QueryCache, QueryClient, QueryClientProvider } from '@ta
 import { useLocale, useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { createContext, useContext, useState, type ReactNode } from 'react';
+import { RouterProvider } from 'react-aria-components';
+import { ToastRegion } from '@/app-ui/Toast';
 import { ApiError, NetworkError } from './api/problem';
 import { SessionProvider } from './session/session-context';
 import type { SessionStore } from './session/session-store';
@@ -42,10 +44,14 @@ export function AppProviders({ children, store }: { children: ReactNode; store?:
     <QueryClientProvider client={client}>
       <SessionProvider store={store}>
         <ThemeProvider>
-          <OfflineContext.Provider value={{ offline, retry }}>
-            {offline ? <OfflineBand onRetry={retry} /> : null}
-            {children}
-          </OfflineContext.Provider>
+          {/* React Aria links (menu items) navigate with the Next router instead of reloading the page. */}
+          <RouterProvider navigate={(href) => router.push(href)}>
+            <OfflineContext.Provider value={{ offline, retry }}>
+              {offline ? <OfflineBand onRetry={retry} /> : null}
+              {children}
+              <ToastRegion />
+            </OfflineContext.Provider>
+          </RouterProvider>
         </ThemeProvider>
       </SessionProvider>
     </QueryClientProvider>

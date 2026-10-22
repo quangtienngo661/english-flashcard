@@ -222,11 +222,76 @@
   "App": {
     "common": {
       "retry": "Thử lại",
-      "loading": "Đang tải…"
+      "loading": "Đang tải…",
+      "close": "Đóng",
+      "cancel": "Hủy",
+      "save": "Lưu",
+      "saveChanges": "Lưu thay đổi",
+      "continue": "Tiếp tục",
+      "back": "Quay lại",
+      "comingSoon": "Sắp có",
+      "notFoundTitle": "Không tìm thấy trang này",
+      "notFoundBody": "Đường dẫn có thể đã cũ.",
+      "home": "Về Hôm nay",
+      "charCount": "{count}/{max}"
     },
     "session": {
       "offlineTitle": "Không kết nối được",
       "offlineBody": "Kiểm tra mạng rồi thử lại."
+    },
+    "chrome": {
+      "brand": "Wordmet",
+      "skipToContent": "Bỏ qua tới nội dung",
+      "mainNav": "Điều hướng chính",
+      "tabs": {
+        "today": "Hôm nay",
+        "groups": "Nhóm",
+        "practice": "Luyện tập",
+        "lookup": "Tra từ"
+      },
+      "addWord": "Thêm từ",
+      "plans": "Gói học",
+      "settings": "Cài đặt",
+      "logout": "Đăng xuất",
+      "account": "Tài khoản của bạn",
+      "plan": {
+        "free": "Miễn phí",
+        "trial": "Dùng thử",
+        "pro": "Pro"
+      },
+      "footer": {
+        "tagline": "Học từ vựng theo nhóm, ôn đúng lúc. Gặp từ ở đâu cũng thêm được.",
+        "colWordmet": "Wordmet",
+        "about": "Giới thiệu",
+        "plans": "Gói học",
+        "contact": "Liên hệ",
+        "colSupport": "Hỗ trợ",
+        "help": "Trợ giúp",
+        "faq": "Câu hỏi thường gặp",
+        "feedback": "Gửi góp ý",
+        "colLegal": "Pháp lý",
+        "terms": "Điều khoản sử dụng",
+        "privacy": "Chính sách bảo mật",
+        "copyright": "© {year} Wordmet"
+      },
+      "search": {
+        "level": "Trình độ",
+        "allLevels": "Mọi trình độ",
+        "placeholder": "Tra trong 7.799 từ: gõ một từ, ví dụ left",
+        "placeholderShort": "Tra trong 7.799 từ",
+        "submit": "Tra"
+      }
+    },
+    "ui": {
+      "proBadge": "Pro",
+      "lockedLine": "Dành cho gói Pro. Gói Pro chưa mở bán.",
+      "seePlans": "Xem Gói học",
+      "dob": {
+        "placeholder": "dd/mm/yyyy",
+        "invalid": "Nhập ngày sinh theo dạng ngày/tháng/năm, ví dụ 14/5/2008.",
+        "tooYoung": "Bạn cần đủ 13 tuổi để dùng Wordmet.",
+        "future": "Ngày sinh không thể sau hôm nay."
+      }
     },
     "errors": {
       "generic": "Có lỗi xảy ra. Thử lại sau.",
