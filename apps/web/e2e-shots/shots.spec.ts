@@ -35,7 +35,7 @@ async function setLanguage(page: Page, locale: 'vi' | 'en') {
 test('milestone screenshots', async ({ page }) => {
   test.skip(!email || !password, 'SHOTS_EMAIL / SHOTS_PASSWORD not set');
   // Signed-out pages first (a signed-in visit to them redirects into the app), then sign in once.
-  for (const scheme of ['light', 'dark'] as const) {
+  for (const scheme of MILESTONE === 'm1' ? (['light', 'dark'] as const) : []) {
     await page.emulateMedia({ colorScheme: scheme });
     for (const locale of ['vi', 'en'] as const) {
       for (const path of SIGNED_OUT) {
