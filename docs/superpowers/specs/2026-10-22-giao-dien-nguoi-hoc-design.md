@@ -15,7 +15,7 @@ xem ở danh sách cuối (mục 14); `ASSUMPTION` = chưa kiểm chứng. "Khun
 
 API của Bước 3–7 đã có trên `dev`; người học chưa có màn nào. Đợt mockup (21–22/10) đã vẽ đủ màn và chủ dự án duyệt từng mốc. Đợt này **code giao
 diện web cho người học** trong `apps/web`, dưới `/vi/app/...` và `/en/app/...`, cho mọi thứ API đã làm được, theo mockup đã duyệt, cộng các thay đổi chủ
-dự án nêu trong buổi brainstorm 22/10 (mục 6) và sáu việc API nhỏ mà các màn cần (mục 8).
+dự án nêu trong buổi brainstorm 22/10 (mục 6), màn Lịch sử giao dịch (D18) và chín việc API mà các màn cần (mục 8).
 
 Thành công = người học dùng được trọn vòng đăng ký → tạo nhóm → thêm từ → ôn → luyện (kể cả câu AI với AI giả) trên trình duyệt máy tính và điện thoại,
 bằng tiếng Việt và tiếng Anh, sáng và tối; chủ dự án tự kiểm bằng tay theo tài liệu kiểm và không còn lỗi đã báo nào chưa xử lý (mục 11).
@@ -24,8 +24,8 @@ bằng tiếng Việt và tiếng Anh, sáng và tối; chủ dự án tự ki�
 
 | # | Quyết định | Chọn | Ai chốt |
 |---|---|---|---|
-| D1 | Chia mốc và PR | 5 mốc M1–M5 (M5 hai PR); mỗi mốc một PR vào `dev`; CI xanh → ảnh + tài liệu kiểm → chủ dự án "ok" phần hình → merge | Chủ dự án, theo đề xuất (chủ dự án nhờ đề xuất) |
-| D2 | Việc API nhỏ | Làm cả sáu (a)–(f) ở mục 8, mỗi việc trong mốc đầu tiên cần nó | Chủ dự án ("làm toàn bộ"; (f) từ góp ý K/81) |
+| D1 | Chia mốc và PR | Mốc M1–M5 (thêm M4b cho D18; M5 hai PR); mỗi mốc một PR vào `dev`; CI xanh → ảnh + tài liệu kiểm → chủ dự án "ok" phần hình → merge | Chủ dự án, theo đề xuất (chủ dự án nhờ đề xuất) |
+| D2 | Việc API nhỏ | Làm cả (a)–(f) ở mục 8 (thêm (g), (h), (i) theo D16–D18), mỗi việc trong mốc đầu tiên cần nó | Chủ dự án ("làm toàn bộ"; (f) từ góp ý K/81) |
 | D3 | Bản tối | Làm, ngay từ M1, chỉ trong `/app`; Sáng / Tối / Theo hệ thống lưu trên từng thiết bị (giữ D40 Bước 3) | Chủ dự án; cách làm theo đề xuất |
 | D4 | "Xong khi" | Chủ dự án tự kiểm bằng tay theo tài liệu kiểm từng mốc, báo lỗi; Claude chạy thử với API thật và gửi ảnh trước khi giao | Chủ dự án; phần chạy thử theo đề xuất |
 | D5 | Co giãn | Bề ngang điện thoại theo page 09; cửa sổ vừa một cột; từ 1280px hai cột như page 08; không vẽ thêm khung; Flutter để sau | Chủ dự án; mốc bề ngang theo đề xuất |
@@ -39,20 +39,28 @@ bằng tiếng Việt và tiếng Anh, sáng và tối; chủ dự án tự ki�
 | D13 | Chữ tiếng Anh | Locale `en`, chính tả Mỹ, ngày có tên tháng, giờ 12 tiếng, sentence case, thuật ngữ ở mục 7.2 | Chủ dự án |
 | D14 | Sửa chữ tiếng Việt | Các dòng ở mục 7.3 | Chủ dự án |
 | D15 | Mức sử dụng | Mọi chỗ hiện mức đã dùng ghi luôn lúc được nạp lại (như "Resets at 7:20 PM" của Claude) | Chủ dự án |
+| D16 | Con số admin chỉnh được mà màn cần | Việc API (g): người học đọc được các con số; nghĩa ở Từ hay sai; ngày bắt đầu gói | Chủ dự án (sau builder check); chi tiết theo đề xuất |
+| D17 | Thẻ "Tạo nhóm nhanh theo chủ đề" | Việc API (h): API gợi ý chủ đề kèm số từ và 4 từ mẫu, **đổi ngẫu nhiên mỗi ngày** | Chủ dự án |
+| D18 | Lịch sử giao dịch | Màn mới Cài đặt → Lịch sử giao dịch (người học) và màn Giao dịch (admin); vẽ khung Figma trước, chủ dự án duyệt rồi mới code; việc API (i) lưu và trả đủ thông tin một giao dịch; dùng thử và lần đội Wordmet cấp nằm chung danh sách | Chủ dự án |
+| D19 | Dữ liệu cho chủ dự án kiểm | Nội dung thật đã nhập **và** một file CSV mẫu khoảng 300 nghĩa nạp qua luồng nhập CSV của admin | Chủ dự án; CSV theo đề xuất |
+| D20 | CSP khi SRI chặt không chạy | Cho phép `'unsafe-inline'` cho script và style nhúng; giữ chặt `connect-src`, `frame-ancestors`, `object-src`, `base-uri`, `form-action`; file script vẫn có SRI | Chủ dự án, theo đề xuất |
+| D21 | Worker Cloudflare gói Free | Cờ tắt → code `/app` không vào bản build production; đo cỡ Worker khi cờ bật, ghi vào checklist Deploy | Chủ dự án, theo đề xuất |
 
 ## 3. Phạm vi
 
 **Làm:**
 - Mọi khung người học của page 08 (trừ K/00 và 4 mẫu Dark, dùng để đối chiếu bản tối), dựng thành trang web co giãn theo D5; bản tối và bản tiếng Anh
   của mọi màn.
-- Sáu việc API ở mục 8 (trong `apps/api`, có unit test và migration khi cần).
+- Chín việc API ở mục 8, (a)–(i) (trong `apps/api`, có unit test và migration khi cần).
+- Lịch sử giao dịch (D18): khung Figma mới (người học web và điện thoại, admin), màn người học trong `apps/web`, **một** màn admin trong `apps/admin`.
+- File CSV mẫu và script dựng dữ liệu thử (D19, mục 11).
 - Token màu còn thiếu và giá trị bản tối trong `packages/design-tokens`.
 - CSP cho cả `apps/web` (landing và app).
 - Tài liệu kiểm cho chủ dự án và một script dựng dữ liệu thử (mục 11).
 - Cập nhật bản chữ (mục 17 mới) theo mục 6 và 7.
 
 **Không làm:**
-- Màn admin (page 04) và việc API "trả email người thao tác" (design đợt giao diện §10): thuộc đợt làm lại admin.
+- Màn admin của page 04 (trừ màn Giao dịch của D18) và việc API "trả email người thao tác" (design đợt giao diện §10): thuộc đợt làm lại admin.
 - App Flutter; push; các trang Liên hệ, Trợ giúp, Câu hỏi thường gặp, Gửi góp ý (D7); nội dung trang Điều khoản.
 - Đăng nhập Google, xóa tài khoản (Bước 8): Cài đặt giữ dòng "Xóa tài khoản · Sắp có" như K/50.
 - Sửa Figma theo các thay đổi của mục 6 (Claude tự quyết, mục 14): design này và bản chữ mục 17 là nguồn của các chỗ đổi.
@@ -97,6 +105,7 @@ bằng tiếng Việt và tiếng Anh, sáng và tối; chủ dự án tự ki�
 | `/app/plans` | K/52, K/53 | Gói học, phủ toàn màn |
 | `/app/settings` | K/50 | Đích của link trong email nhắc (UI-CONTEXT §9) |
 | `/app/settings/account` | K/91, K/92 | Tài khoản |
+| `/app/settings/transactions` | khung mới (D18) | Lịch sử giao dịch |
 
 ### 4.2 Phiên đăng nhập và gọi API (chép từ `apps/admin`, chưa tách package)
 
@@ -125,9 +134,10 @@ bằng tiếng Việt và tiếng Anh, sáng và tối; chủ dự án tự ki�
 
 ### 4.4 Màu, bản tối, font
 
-- Màu chỉ khai báo trong `packages/design-tokens/theme.css` (UBC1). Thêm các biến Figma có mà file chưa có (`navy`, `navy-raised`, `session-card`,
-  `highlight`, và biến nào khác page 08 dùng; giá trị đọc từ biến Figma, chế độ Light). Thêm khối giá trị tối (chế độ Dark của Figma; giá trị ở bản chữ
-  mục 15, 16) dưới selector `[data-theme='dark']`.
+- Màu chỉ khai báo trong `packages/design-tokens/theme.css` (UBC1). Nguồn giá trị là **biến màu của file Figma** (đã kiểm 22/10: session đọc được, ví
+  dụ `color/navy` `#1b2444`, `color/navy-raised`, `color/on-navy`, `color/on-navy-muted`, `color/shadow-ink`, `color/on-accent`): chế độ Light đọc bằng
+  `get_variable_defs`, chế độ Dark đọc bằng Plugin API (`getLocalVariablesAsync`). Thêm mọi biến page 08 dùng mà file chưa có (kể cả màu bóng gờ đang
+  ghi cứng `rgb(15 26 61 / .35)`), và khối giá trị tối đầy đủ dưới selector `[data-theme='dark']`. Bản chữ mục 15, 16 chỉ để đối chiếu.
 - Chỉ layout `/app` gắn `data-theme` lên `<html>`; landing và admin không bao giờ có `data-theme`, nên không đổi gì với chúng.
 - Lựa chọn Sáng / Tối / Theo hệ thống lưu trong `localStorage` của thiết bị (D40 Bước 3); mặc định Theo hệ thống (`prefers-color-scheme`). Một script nhỏ
   chạy trước khi vẽ trang để không nháy màu; script cố định nên CSP cho phép bằng hash (mục 4.6).
@@ -137,8 +147,11 @@ bằng tiếng Việt và tiếng Anh, sáng và tối; chủ dự án tự ki�
 ### 4.5 Chặn trên production (D8)
 
 - Biến build `NEXT_PUBLIC_LEARNER_APP=on` bật app; thiếu hoặc khác `on` = tắt. `deploy-web.yml` không đặt biến này cho tới bước Deploy.
-- Tắt: `proxy.ts` trả 307 từ `/{locale}/app` và mọi đường con về `/{locale}` (không giữ query), `Cache-Control: no-store`. Trang `/app` vẫn được build
-  nhưng không tới được; `sitemap.ts` không có `/app`, `robots.ts` chặn `/*/app` ở mọi chế độ.
+- Tắt: `proxy.ts` trả 307 từ `/{locale}/app` và mọi đường con về `/{locale}` (không giữ query), `Cache-Control: no-store`. Code `/app` **không vào bản
+  build** (D21; Worker Cloudflare đang ở gói Free, giới hạn khoảng 3 MiB sau nén): file trang và layout của app mang đuôi riêng (ví dụ `page.app.tsx`),
+  `next.config.ts` chỉ thêm đuôi đó vào `pageExtensions` khi cờ bật. Task đầu M1 kiểm cách này với Next 16.3.8 + OpenNext; không được thì báo chủ dự án.
+  `sitemap.ts` không có `/app`, `robots.ts` chặn `/*/app` ở mọi chế độ.
+- Đo cỡ Worker (sau nén) của bản build cờ bật mỗi mốc, ghi vào as-built; checklist Deploy thêm mục "app phải vừa giới hạn gói Free, hoặc nâng gói Paid".
 - Bật (máy chủ dự án, e2e, cloud): app chạy bình thường.
 
 ### 4.6 Content-Security-Policy (D9)
@@ -147,9 +160,11 @@ bằng tiếng Việt và tiếng Anh, sáng và tối; chủ dự án tự ki�
   tới khi task kiểm xong): `default-src 'self'`; `script-src 'self'` + hash của script chống nháy màu; `style-src 'self'`; `img-src 'self' data: blob:`;
   `font-src 'self'`; `connect-src 'self'` + origin của API; `object-src 'none'`; `base-uri 'self'`; `form-action 'self'`; `frame-ancestors 'none'`;
   `upgrade-insecure-requests` (trừ khi chạy local bằng http).
-- **Rủi ro chưa kiểm:** trang App Router có script nhúng trong HTML (dữ liệu trang Next ghi vào); tài liệu Next 16.3.8 nói `script-src 'self'` đủ khi bật SRI
-  nhưng chưa ai chạy thử với OpenNext Cloudflare. Task đầu của M1 build thật, mở landing và một trang `/app`, đọc lỗi CSP của trình duyệt. Chạy được thì
-  giữ. Bị chặn thì **dừng, báo chủ dự án** chỗ hỏng và các cách (ví dụ thêm hash, nới `'unsafe-inline'` cho riêng phần đó) trước khi chọn.
+- **Rủi ro đã thấy:** HTML thật của landing (chủ dự án gửi 22/10) có script nhúng `self.__next_f.push(…)`; React Aria có thể ghi `style="…"` trong HTML.
+  Task đầu của M1 build thật, mở landing và một trang `/app`, đọc lỗi CSP của trình duyệt. Chạy được với `'self'` thì giữ. Bị chặn thì dùng cách dự phòng
+  đã chốt (D20): thêm `'unsafe-inline'` cho `script-src` và `style-src`, giữ nguyên các chỉ thị còn lại, SRI vẫn bật cho file script; ghi kết quả vào as-built.
+- **Cloudflare Web Analytics** đang bật trên `wordmet.com` (HTML thật có `static.cloudflareinsights.com/beacon.min.js`); Cloudflare chèn script này ở edge
+  nên e2e local không thấy. Cách xử lý chờ chủ dự án (mục 12).
 - e2e: một test đọc header CSP và bắt sự kiện `securitypolicyviolation` trên landing và vài trang app; không được có vi phạm.
 
 ### 4.7 Co giãn (D5)
@@ -184,14 +199,15 @@ chưa nói.
   K/03 làm đúng như Figma (có hay không có lối bỏ qua theo khung).
 - Cài đặt (K/50): thông tin cá nhân, gói và mức sử dụng (từ `GET /v1/me/entitlements`, D15), học tập (Ngôn ngữ, Giao diện), thông báo (nhắc học qua email,
   `GET/PATCH /v1/me/reminders`), phím tắt (chỉ web), tài khoản (Đăng xuất, Xóa tài khoản "Sắp có").
-- Việc API (a): sửa ngày sinh (mục 8).
+- Việc API (a): sửa ngày sinh; (g): các con số cho người học, ngày bắt đầu gói (mục 8).
+- Script dựng dữ liệu thử và file CSV mẫu (mục 11) làm ở M1 để mọi mốc sau có dữ liệu.
 
 ### M2 — Học và ôn (1 PR)
 
 - Màn: K/10, K/10b, K/94, K/16, K/16b, K/17, K/17b, K/11, K/12, K/13, K/14, K/15, K/18, K/20, K/21, K/22.
 - Phiên ôn: `GET /groups/{id}/queue?mode=due|all`, `POST /reviews` (mỗi lần bấm một `review_id` mới); phím Space, 1, 2, Esc như mockup; mặt trước từ + loại
   từ, mặt sau nghĩa + câu đã gặp tô từ (D3 đợt giao diện).
-- Thẻ chủ đề và K/18: thêm cả chủ đề bằng bộ lọc (đã có), thêm từng từ đã tick bằng việc API (c).
+- Thẻ "Tạo nhóm nhanh theo chủ đề" (K/94, K/16) lấy từ việc API (h); K/18: thêm từng từ đã tick bằng việc API (c).
 - Từ lâu chưa ôn (K/15): `GET /groups/{id}/backlog`, `POST /items/relearn`.
 
 ### M3 — Tra từ và thêm từ (1 PR)
@@ -203,7 +219,15 @@ chưa nói.
 ### M4 — Luyện tập và Gói học (1 PR)
 
 - Màn: K/51, K/54 (bố cục mới của D10, chưa có công tắc AI), K/55, K/56, K/57, K/57b, K/82, K/83, K/77, K/60–K/67, K/52, K/53.
-- Từ hay sai theo nhóm (K/56) dùng việc API (b); thứ tự lý do báo lỗi và chữ tiếng Anh của lý do dùng việc API (d).
+- Từ hay sai theo nhóm (K/56) dùng việc API (b) và nghĩa từ (g); thứ tự lý do báo lỗi và chữ tiếng Anh của lý do dùng việc API (d).
+
+### M4b — Lịch sử giao dịch (1 PR, D18)
+
+1. Claude vẽ khung Figma trong một section riêng: page 08 (web), page 09 (điện thoại), page 04 (admin, mức khung như mảng E): danh sách, dòng chi tiết,
+   trạng thái trống, lỗi tải; vi; sáng/tối cho web. **Chủ dự án duyệt khung trước khi code.**
+2. Việc API (i) (mục 8.9).
+3. Màn người học `/app/settings/transactions` (Cài đặt → "Lịch sử giao dịch") và màn admin "Giao dịch" trong `apps/admin` (theo khung admin hiện tại, như
+   các màn Bước 2.5).
 - Phiên đang dở (D9 đợt giao diện): thẻ ở cột phụ; chỉ hỏi khi mở phiên mới lúc còn phiên cũ.
 
 ### M5a — Phiên có câu AI (1 PR)
@@ -286,9 +310,19 @@ Thêm **mục 17** vào bản chữ: các chỗ đổi của mục 6 và 7.3 (ch
 
 ## 8. Việc API
 
-Sáu việc, đều **chỉ thêm** vào v1 (không bỏ trường, không đổi nghĩa trường cũ) trừ (a) và (f) là đổi luật có chủ ý (ghi rõ quyết định cũ bị thay). Mỗi việc:
-unit test ở service và controller theo kiểu hiện có (`*.spec.ts` cạnh file, persistence giả, `FakeClock`), tên test mang mã trường hợp biên (`GA1`…). Không
-có bảng mới; chỉ (d) có migration (chỉ dữ liệu, nên kiểm drift của CI không đổi). Code facts: báo cáo đọc code ngày 22/10 (file:line ghi trong plan).
+Chín việc (a)–(i), đều **chỉ thêm** vào v1 (không bỏ trường, không đổi nghĩa trường cũ) trừ (a) và (f) là đổi luật có chủ ý (ghi rõ quyết định cũ bị thay).
+Mỗi việc: unit test ở service và controller theo kiểu hiện có (`*.spec.ts` cạnh file, persistence giả, `FakeClock`), tên test mang mã trường hợp biên
+(`GA1`…). Migration: (d) chỉ dữ liệu; (i) thêm bảng (model đổi, kèm migration để kiểm drift của CI qua). Code facts: báo cáo đọc code ngày 22/10 (file:line
+ghi trong plan).
+
+| Việc | Mốc |
+|---|---|
+| (a) sửa ngày sinh · (g) con số cho người học, nghĩa ở Từ hay sai, ngày bắt đầu gói | M1 |
+| (c) thêm theo `sense_ids` · (h) gợi ý chủ đề | M2 |
+| (e) câu đã gặp | M3 |
+| (b) Từ hay sai theo nhóm · (d) lý do báo lỗi | M4 |
+| (i) giao dịch | M4b |
+| (f) báo lỗi từ riêng không cần đồng ý | M5a |
 
 ### 8.1 (a) Sửa ngày sinh qua `PATCH /v1/me` (M1)
 
@@ -405,6 +439,72 @@ Một migration chỉ dữ liệu, mỗi lệnh chỉ đổi dòng **chưa bị 
 | GF3 | Báo câu không AI về từ riêng | 409 `report-not-available` (như cũ) |
 | GF4 | Câu AI về từ catalog, lựa chọn nhiễu là từ riêng | 201; từ riêng nhiễu vẫn bị che (như cũ) |
 
+### 8.7 (g) Con số cho người học, nghĩa ở Từ hay sai, ngày bắt đầu gói (M1)
+
+- Mới `GET /v1/me/app-config` (cần đăng nhập, không cần hồ sơ có ngôn ngữ): đọc từ cài đặt hệ thống, mỗi request đọc lại (admin đổi là thấy ngay):
+  `practice.max_questions_per_session`, `practice.default_questions_per_session`, `reminders.send_time`, `learning.backlog_after_days`,
+  `learning.groups_per_user`, và bảng con số các gói: Miễn phí (phiên luyện mỗi ngày), Dùng thử (lượt câu AI, lượt tra AI mỗi kỳ), Pro (phiên luyện mỗi ngày,
+  lượt câu AI, lượt tra AI mỗi kỳ). Không trả cài đặt nào khác (chỉ những số màn hiện). Module Settings sở hữu.
+- `GET /v1/practice/weak-words`: mỗi dòng thêm `meaning` (nghĩa theo ngôn ngữ người học; `null` khi nghĩa không còn thấy được). Practice đọc qua façade
+  Content.
+- `GET /v1/me/entitlements`: mỗi phần tử `sources[]` thêm `starts_at`.
+
+| # | Khi | Thì |
+|---|---|---|
+| GG1 | Admin đổi `max_questions_per_session` 20 → 30 | Lần đọc sau trả 30; Tùy chỉnh phiên ghi "tối đa 30" |
+| GG2 | Từ hay sai có nghĩa vừa bị gỡ | `meaning: null`; màn chỉ hiện chữ của từ |
+| GG3 | Gói Pro do đội Wordmet cấp từ 15/10 | `sources[0].starts_at` = 15/10; K/53 ghi "cấp từ 15/10/2026" |
+| GG4 | Gọi `app-config` khi chưa chọn ngôn ngữ | 200 (không cần hồ sơ đủ) |
+
+### 8.8 (h) Gợi ý chủ đề (M2)
+
+- Mới `GET /v1/topics/suggestions` → `{ items: [{ topic: { code, name }, level, count, samples: [{ sense_id, lemma, pos, meaning }] }] }`, tối đa 3 phần tử,
+  mỗi phần tử một chủ đề khác nhau. Module Content sở hữu.
+- Ứng viên: mọi cặp chủ đề × trình độ (chủ đề chưa lưu trữ) có ít nhất 10 nghĩa catalog đã publish, không phải từ chức năng (`count` đếm đúng tập này; ngưỡng
+  10 là Claude tự quyết). **Đổi ngẫu nhiên mỗi ngày** (D17): thứ tự trộn theo hạt giống = (id người học, ngày theo múi giờ người học), nên cùng một ngày thì
+  giống nhau, sang ngày mới thì đổi; mỗi người một kiểu. 4 từ mẫu cũng chọn theo cùng hạt giống.
+- Thẻ trên màn: "Kinh doanh · B1 · 52 từ" + 4 từ mẫu + [Xem thêm và chọn từ] (mở K/18 với `topic`, `level`).
+
+| # | Khi | Thì |
+|---|---|---|
+| GH1 | Gọi hai lần trong cùng ngày | Cùng 3 cặp, cùng từ mẫu |
+| GH2 | Sang ngày mới (theo múi giờ người học) | Có thể khác (trộn lại) |
+| GH3 | Chỉ có 2 cặp đủ ngưỡng | Trả 2; không có cặp nào thì `items: []` và màn ẩn khối |
+| GH4 | Chủ đề bị lưu trữ | Không vào ứng viên |
+
+### 8.9 (i) Giao dịch (M4b)
+
+- **Dữ liệu.** Bảng mới `billing_transactions` (module Entitlements): `id`, `user_id`, `subscription_id` (null được), `kind` (`purchase` | `renewal` |
+  `plan_change` | `refund` | `trial`), `plan`, `interval` (`month` | `year` | null), `amount_minor` (bigint, null được) + `currency` (ISO 4217, null được),
+  `occurred_at`, `period_start`, `period_end` (null được), `status` (`succeeded` | `refunded` | `pending` | `reversed`), `provider`, `environment`,
+  `provider_transaction_id` (null được), `created_at`. Unique `(provider, environment, provider_transaction_id, kind)` để sự kiện lặp không tạo dòng lặp.
+- **Ghi.** Sự kiện thanh toán chuẩn hóa (Bước 5 §9.3) thêm `amount` và `currency` (không bắt buộc; cổng nào không gửi thì null) cho
+  `subscription_started` có trả tiền, `renewed`, `plan_changed`. Bộ áp sự kiện ghi một dòng giao dịch **trong cùng transaction** với việc đổi subscription:
+  `subscription_started` có dùng thử → `trial` (không tiền, kỳ = tới `trialEndsAt`); có trả tiền → `purchase`; `renewed` → `renewal`; `plan_changed` →
+  `plan_change`; `refunded` → dòng `refund` (số tiền của sự kiện) và dòng gốc cùng `transactionId` thành `refunded`; `refund_reversed` → dòng `refund` thành
+  `reversed`, dòng gốc về `succeeded`. Cổng giả (`fake-wire`, `pnpm billing:fake-event`) gửi được `amount`, `currency`. `pending`: chưa có sự kiện nào sinh ra
+  (để cho cổng thật sau này).
+- **Lần đội Wordmet cấp** không ghi vào bảng; API đọc từ `entitlement_grants` và trộn vào danh sách với `kind: 'grant'` (gói, từ ngày, tới ngày; lần cấp bị
+  thu hồi thì `period_end` = ngày thu hồi; không tiền, không cổng).
+- **Đọc.** Người học: `GET /v1/me/transactions` (phân trang, mới trước) → `items: [{ id, kind, plan, interval, amount_minor, currency, occurred_at,
+  period_start, period_end, status, provider, provider_transaction_id }]`. Admin: `GET /v1/admin/transactions?email=&kind=&from=&to=` (phân trang), thêm
+  `user: { id, email }`; quyền `settings.manage` (chỉ `admin`; Claude tự quyết, như mọi màn có tiền ở Bước 5–6).
+- Màn hiển thị tiền bằng `Intl` theo `currency` ("99.000 ₫" ở `vi`); `amount_minor` null thì không ghi số tiền.
+- Ghi chú cho Bước 8 (xóa tài khoản): phải quyết giao dịch của người bị xóa giữ hay ẩn danh (sổ sách tiền có thể phải giữ, `ASSUMPTION`).
+
+| # | Khi | Thì |
+|---|---|---|
+| GI1 | Cổng giả gửi `subscription_started` có trả tiền, 99.000 VND | Một dòng `purchase`, `succeeded`, kỳ đúng như sự kiện |
+| GI2 | `subscription_started` có dùng thử | Một dòng `trial`, không tiền |
+| GI3 | `renewed` | Một dòng `renewal` |
+| GI4 | `refunded` cho giao dịch gia hạn | Dòng `refund` mới; dòng `renewal` thành `refunded` |
+| GI5 | Cùng sự kiện tới hai lần (webhook lặp) | Một dòng (khóa unique + bỏ trùng của inbox Bước 5) |
+| GI6 | Cổng không gửi số tiền | Dòng có `amount_minor: null`; màn không ghi tiền |
+| GI7 | Đội Wordmet cấp Pro 15/10–31/12, rồi thu hồi 01/11 | Danh sách có dòng `grant`, `period_end` = 01/11 |
+| GI8 | Người học xem `/me/transactions` | Chỉ giao dịch của mình; không có `user` |
+| GI9 | `editor` gọi `/admin/transactions` | 403 |
+| GI10 | Subscription có từ trước khi có bảng | Không có dòng cũ (chỉ dữ liệu local, cổng giả); không backfill |
+
 ## 9. Trường hợp biên của giao diện (When → Then)
 
 Các luật chung của API (SR7–SR14: Problem Details, `Idempotency-Key`, giới hạn ghi, múi giờ) áp vào giao diện như sau. Chữ cụ thể lấy từ bản chữ hoặc mục 17;
@@ -487,6 +587,7 @@ chỗ bản chữ chưa có, Claude viết theo mẫu §3.1 của bản chữ (c
 - **Unit (Vitest + Testing Library, `apps/web`):** mỗi store, hook và component có hành vi (phiên đăng nhập chép từ admin kèm test của nó, client API, định
   dạng ngày giờ theo múi giờ, plural, theme, cờ chặn, chuyển tiền tố, từng màn với API giả bằng `msw`). Viết test trước (TDD).
 - **Unit (`apps/api`):** mỗi việc API có test ở service và controller như các bước trước; migration qua kiểm drift của CI.
+- **`apps/admin` (màn Giao dịch, M4b):** unit test và e2e mock như các màn Bước 2.5 (job `admin` của CI).
 - **e2e (Playwright, job `web` của CI):** dựng bản Cloudflare như hiện nay với `NEXT_PUBLIC_LEARNER_APP=on`; API giả bằng `page.route` (không có API thật
   trong CI, như e2e mock của admin). Mỗi mốc có luồng chính của nó; axe không lỗi nghiêm trọng ở mọi trang × vi/en × 1440/390 × sáng/tối; test CSP (4.6);
   test cờ tắt chuyển 307 (build riêng hoặc test của `proxy.ts`). e2e landing giữ nguyên và phải xanh.
@@ -499,14 +600,20 @@ chỗ bản chữ chưa có, Claude viết theo mẫu §3.1 của bản chữ (c
 2. Mỗi mốc: Claude chạy thật và gửi ảnh (đặt cạnh khung Figma) + tài liệu kiểm; chủ dự án "ok" phần hình thì merge vào `dev`.
 3. Tài liệu kiểm `docs/deliveries/giao-dien-nguoi-hoc-test-flow.md`, một mục mỗi mốc: dựng trên máy Windows (PowerShell), dữ liệu cần có, rồi từng màn:
    bước làm → kết quả mong đợi → khung Figma; kiểm ở vi/en, sáng/tối, cửa sổ hẹp.
-4. Script dựng dữ liệu thử `apps/api/scripts/learner-test-setup.mjs` (gọi API admin như các smoke): thêm model AI giả và chọn `fake:ok` cho các thao tác
-   Bước 7; cấp gói Pro hoặc Dùng thử cho một email; chỉ chạy khi `AI_FAKE_ENABLED=true`, `BILLING_FAKE_ENABLED=true`.
+4. Script dựng dữ liệu thử `apps/api/scripts/learner-test-setup.mjs` (gọi API admin như các smoke): nạp file CSV mẫu khoảng 300 nghĩa
+   (`apps/api/scripts/fixtures/learner-sample.csv`, Claude soạn: nghĩa tiếng Việt, định nghĩa tiếng Anh, chủ đề, dạng chia; ít nhất một cặp chủ đề × trình độ
+   trên 100 nghĩa) qua luồng nhập CSV và publish của admin (D19); thêm model AI giả và chọn `fake:ok` cho các thao tác Bước 7; cấp gói Pro hoặc Dùng thử cho
+   một email; tạo vài giao dịch giả cho M4b (`billing:fake-event`). Chỉ chạy khi `AI_FAKE_ENABLED=true`, `BILLING_FAKE_ENABLED=true`. Chủ dự án vẫn dùng được
+   nội dung thật đã nhập.
 5. Chủ dự án kiểm bằng tay trên `dev` theo tài liệu kiểm; lỗi báo được sửa bằng PR `fix/` vào `dev`. Đợt xong khi chủ dự án đã chạy hết các mục và mọi lỗi
    đã báo được sửa hoặc ghi lại.
 
 ## 12. Rủi ro và việc còn mở
 
-- **CSP + SRI với OpenNext** chưa chạy thử (4.6); có thể phải quay lại hỏi.
+- **CSP + SRI với OpenNext** chưa chạy thử (4.6); cách dự phòng đã chốt (D20).
+- **Cloudflare Web Analytics** đang bật trên production: **chờ chủ dự án chọn** tắt (giữ ràng buộc "không script bên thứ ba") hay giữ và cho phép trong CSP.
+- **Worker gói Free (3 MiB):** loại `/app` khỏi bản build khi cờ tắt (D21) chưa kiểm với OpenNext; cỡ khi cờ bật chưa đo.
+- **Việc (i) là thay đổi cỡ vừa ở Entitlements** (mô hình sự kiện thanh toán, bảng mới), lớn hơn các việc API khác.
 - **Khối lượng:** khoảng 90 khung × hai thứ tiếng × hai chế độ; mỗi mốc là một PR lớn. Plan chia task nhỏ trong mốc.
 - **Bề ngang 768–1279px chưa có khung**; Claude dựng theo luật 4.7, chủ dự án xem qua ảnh 1024px.
 - **Cookie local:** admin (`localhost:5173`) và app người học (`localhost:3001`) cùng gọi API `localhost:3000` nên dùng chung cookie `refresh_token`; đăng
@@ -541,3 +648,7 @@ chỗ bản chữ chưa có, Claude viết theo mẫu §3.1 của bản chữ (c
 15. K/18 gửi `sense_ids` cho cả nút "Thêm cả N từ" khi N ≤ 100 (8.3).
 16. Practice đọc nhóm của từ qua một hàm mới của façade `LearningService` (8.2); phiên `weak` + nhóm không kết thúc khi nhóm bị xóa (GB8).
 17. Tên công tắc là "Kiểu câu có AI" (giữ chữ của mockup; bảng thuật ngữ tránh "bài tập").
+18. Gợi ý chủ đề: ngưỡng 10 nghĩa mỗi cặp; hạt giống theo (người học, ngày) (8.8).
+19. Giao dịch: lần đội Wordmet cấp đọc từ bảng cấp gói, không chép sang bảng giao dịch; thêm `kind: plan_change` và `status: reversed` cho hai sự kiện
+    Bước 5 có sẵn; admin xem bằng quyền `settings.manage`; tiền lưu theo đơn vị nhỏ nhất (8.9).
+20. `GET /v1/me/app-config` chỉ trả những số màn hiện (8.7).

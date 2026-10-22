@@ -31,6 +31,12 @@ cảnh và ràng buộc; rồi 32 câu của research chữ, cũng không đề 
 | D13 | Chữ tiếng Anh | Locale `en`, Mỹ, ngày có tên tháng, 12 giờ, sentence case, "we" khi lỗi do app, "Cancel", không please/sorry, thuật ngữ | Chủ dự án |
 | D14 | Sửa chữ tiếng Việt | Giữ "câu", hai tên câu, "ngăn"; nút một động từ, "Xem lại", [Kiểm tra], "chọn"/"nhấn", hoa tên trang, "đã dùng 1/3" | Chủ dự án |
 | D15 | Mức sử dụng | Ghi lúc nạp lại ở mọi chỗ | Chủ dự án, tự nêu |
+| D16 | Con số admin chỉnh được mà màn cần (builder check) | Việc API (g) | Chủ dự án |
+| D17 | Thẻ "Tạo nhóm nhanh theo chủ đề" (builder check) | Việc API (h), đổi ngẫu nhiên mỗi ngày | Chủ dự án |
+| D18 | Lịch sử giao dịch | Màn người học + màn admin + API (i); Figma trước; dùng thử và lần cấp chung danh sách | Chủ dự án, tự nêu |
+| D19 | Dữ liệu cho chủ dự án kiểm (builder check) | Nội dung thật + CSV mẫu khoảng 300 nghĩa | Chủ dự án (CSV theo đề xuất) |
+| D20 | CSP khi SRI chặt không chạy (builder check) | `'unsafe-inline'` cho script, style; giữ chặt phần còn lại | Chủ dự án, theo đề xuất |
+| D21 | Worker Cloudflare gói Free (builder check) | Không đưa `/app` vào bản build khi cờ tắt; đo cỡ khi cờ bật | Chủ dự án, theo đề xuất |
 
 ## D1 — Chia mốc và PR (câu 1)
 
@@ -194,6 +200,33 @@ riêng tư của design Bước 7 (D26). ✅ Thêm việc API (f). Câu chữ d�
 
 Chủ dự án gửi ảnh "Current session · Resets at 7:20 PM" (Claude): "ở trong giao diện session usage thì có thể để mốc reset là khi nào giống như usage của
 claude". ✅ Mọi chỗ hiện mức đã dùng ghi lúc nạp lại theo `resets_at`.
+
+## Builder check (22/10/2026)
+
+Một agent mới đọc design như người viết plan, nêu 6 điểm. Màu lấy ở đâu: Claude tự trả lời (session đọc được biến Figma, design §4.4). Năm điểm còn lại
+đưa chủ dự án một lượt, mỗi câu chỉ bối cảnh và phương án (không ưu tiên):
+
+| Câu | Phương án | Chủ dự án | Claude sau đó |
+|---|---|---|---|
+| 1 Con số admin chỉnh được (số câu tối đa, giờ nhắc, 60 ngày, 100 nhóm, số của các gói), nghĩa ở Từ hay sai, ngày bắt đầu gói | ghi cứng · bỏ chữ · ✅ thêm việc API (g) · trộn | "cái này" (g) | Đề xuất chi tiết (một `endpoint` các con số, `meaning`, `starts_at`); chủ dự án "đồng ý" |
+| 1b Ngày bắt đầu gói | — | Tự nêu: "làm thêm một màn lịch sử billing và ngày thanh toán mà learner đã mua gói" | → D18 |
+| 2 Thẻ chủ đề | cố định trong code · app tự chọn (chậm) · ✅ API (h) | "cái này"; luật chọn ✅ "đổi ngẫu nhiên mỗi ngày" (các cách khác: nhiều từ nhất A2–B1, bỏ cặp đã học gần hết, theo bộ lọc trình độ, danh sách cố định) | Ngưỡng 10 nghĩa, hạt giống (người học, ngày): Claude tự quyết |
+| 3 CSP dự phòng | `'unsafe-inline'` · nonce · hash sau build · Report-Only | "bạn đề xuất" | ✅ `'unsafe-inline'` cho script/style, giữ chặt phần còn lại (nonce: trang động, tốn CPU Worker gói Free; hash: dễ hỏng; Report-Only: không chặn gì); chủ dự án "đồng ý" |
+| 4 Dữ liệu kiểm | nội dung thật · CSV mẫu · ✅ cả hai | "(c)" | CSV khoảng 300 nghĩa nạp qua luồng nhập của admin; chủ dự án "đồng ý" |
+| 5 Gói Worker | Free · Paid | "đang là gói free" | ✅ không đưa `/app` vào bản build khi cờ tắt; đo cỡ; checklist Deploy; chủ dự án "đồng ý" |
+
+## D18 — Lịch sử giao dịch (chủ dự án tự nêu)
+
+Claude kiểm code: có lần cấp, dùng thử, subscription, sự kiện thanh toán có ngày; **không** lưu số tiền (trừ hoàn tiền); chưa có cổng thật. Câu hỏi: mỗi dòng
+gồm gì; màn ở đâu; có khung Figma trước không. Chủ dự án: "làm luôn giao diện cho phần này và để riêng trong figma, làm sẵn api trả về đầy đủ thông tin của
+một giao dịch để admin và learner có thể xem"; chỗ: "cài đặt => lịch sử giao dịch"; Figma trước: "có". Claude nêu hệ quả (mở rộng sự kiện thanh toán Bước 5,
+bảng mới, việc (i) cỡ vừa) và đề xuất PR M4b. Chủ dự án duyệt danh sách trường (loại, gói và kỳ, số tiền và đơn vị, ngày, kỳ được dùng, trạng thái, cổng, mã
+giao dịch: "ok được"); dùng thử và lần cấp chung danh sách: "có"; phía admin làm màn và API: "cả 2".
+
+## Cloudflare Web Analytics (chờ chủ dự án)
+
+Chủ dự án gửi HTML thật của landing: có beacon `static.cloudflareinsights.com` (Web Analytics bật), không có Rocket Loader, Email Obfuscation. Phương án: (a) tắt
+(giữ ràng buộc "không script bên thứ ba" của UI-CONTEXT §2); (b) giữ, cho phép trong CSP (đổi ràng buộc). Chủ dự án hỏi hệ quả; chưa chọn.
 
 ## Đề xuất kỹ thuật trong design (Claude tự quyết, chủ dự án xem khi duyệt design)
 
