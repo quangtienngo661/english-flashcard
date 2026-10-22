@@ -24,7 +24,7 @@ Mục lục: 1 Nguyên tắc dùng trong file · 2 Bảng thuật ngữ · 3 M�
 | 5 | Không "Vui lòng" trên nút, nhãn, gợi ý; trong câu chỉ khi lỗi do app bắt người học làm việc phiền (N13) | — |
 | 6 | Viết hoa kiểu câu, không VIẾT HOA HẾT kể cả nhãn nhỏ (N14) | "Gói của bạn", không "GÓI CỦA BẠN" |
 | 7 | Nút, nhãn, tiêu đề không có dấu chấm; câu trọn có dấu chấm; "…" là một ký tự; ngoặc kép cong “ ” (N11, N15) | "Đang tạo câu…" |
-| 8 | Ngày, giờ, số, tiền theo `Intl` vi-VN (D17): "Chủ Nhật, 18/10", "18/10/2026", "20:00", "0:00", "7.799", "99.000 ₫"; không đặt thứ giữa câu | "Lượt mới có vào 15/11." |
+| 8 | Ngày, giờ, số, tiền theo `Intl` vi-VN (D17): "Chủ Nhật, 18/10", "18/10/2026", "20:00", "0:00", "7.799", "99.000 ₫"; không đặt thứ giữa câu | "Lượt câu AI mới có vào 15/11." |
 | 9 | "Chưa" cho điều tạm thời, "không" cho điều cố định (N6) | "Gói Pro chưa mở bán" |
 | 10 | Dấu thanh kiểu "hòa, thủy, khỏe, xóa" (D17) | "Xóa nhóm", không "Xoá nhóm" |
 | 11 | Màn người học dùng "chọn" hoặc "bấm" trong câu hướng dẫn, không "click", "nhấp", "chạm" (N7) | "Bấm vào thẻ để lật" |
@@ -182,9 +182,11 @@ Tên khung theo quy ước hiện có; khung mới thêm hậu tố chữ cái (
 | Danh sách Pro | 30 phiên luyện mỗi ngày · Tối đa 300 câu AI mới mỗi tháng* · 100 lượt tra AI mỗi tháng · Không quảng cáo |
 | Chú thích * | *Câu AI có khi AI đang mở. Mỗi ngày cả hệ thống có một giới hạn chung; chạm giới hạn thì AI tạm dừng tới hôm sau.* |
 | Dòng cuối | Wordmet chưa nhận thanh toán. Khi mở bán, bạn đăng ký ngay tại đây. · link [So sánh chi tiết các gói] |
-| `K/53` (Pro do đội cấp) | Nhãn "Gói của bạn · Đội Wordmet tặng" · "Bạn đang dùng gói Pro" · "Đội Wordmet cấp từ 15/10/2026 tới hết 31/12/2026. Không thu tiền, không tự gia hạn." · "Phiên luyện hôm nay: 4/30 đã dùng" · "Còn 26 phiên, mở lại lúc 0:00." · "Lượt câu AI: còn 287/300 · Lượt tra AI: còn 96/100" · "Lượt mới có vào 15/11." · "Hết hạn thì tài khoản về gói Miễn phí; từ và lịch ôn giữ nguyên." |
+| `K/53` (Pro do đội cấp) | Nhãn "Gói của bạn · Đội Wordmet tặng" · "Bạn đang dùng gói Pro" · "Đội Wordmet cấp từ 15/10/2026 tới hết 31/12/2026. Không thu tiền, không tự gia hạn." · "Phiên luyện hôm nay: 4/30 đã dùng" · "Còn 26 phiên, mở lại lúc 0:00." · "Lượt câu AI: còn 287/300 · Lượt tra AI: còn 96/100" · "Lượt câu AI mới có vào 15/11." · "Hết hạn thì tài khoản về gói Miễn phí; từ và lịch ôn giữ nguyên." |
 
 *"Tối đa 300 câu AI mới mỗi tháng" là Chốt của design (mục 5, dòng A; design Bước 7 §19). "Không cần thẻ ngân hàng" thay "không cần thẻ" để không trùng "thẻ" ôn (bảng thuật ngữ).*
+
+*Khối mức sử dụng ở trên ("Phiên luyện hôm nay", "Lượt câu AI: còn …") đã bỏ khỏi Gói học ở mốc A+B (mục 12, điểm 3, 6); chữ của khối nay nằm ở mục "Gói và mức sử dụng" của Cài đặt (`K/50`, `M/90`). Ghi sau review cuối.*
 
 ### 4.8 Hết phiên luyện: `K/55` (và `M/L55`)
 
@@ -333,7 +335,7 @@ Nguồn câu của "Điền từ vào câu" (`cloze_source`): **"AI viết câu 
 | Kiểu đề | "Kiểu đề" · "cho kiểu Gõ từ" · Theo nghĩa · Theo câu · Trộn |
 | Số câu | "Số câu" · "10" · "tối đa 20" |
 | Dòng lượt (Pro, Dùng thử) | "Phiên này dùng tối đa 5 lượt câu AI · còn 287" |
-| Dòng phiên | "Dùng 1 trong 2 phiên còn lại hôm nay." |
+| Dòng phiên | Miễn phí: "Dùng 1 trong 2 phiên còn lại hôm nay." · Pro, Dùng thử: "Dùng 1 trong 28 phiên còn lại hôm nay."; thẻ cột phụ ghi "Gói Pro" / "Gói Dùng thử" · "còn 28/30 phiên" *(sửa sau review cuối)* |
 | Nút | [Bắt đầu 10 câu] |
 | `K/70t` khác `K/70` | Chip "Dùng thử" · "còn 98" *(con số theo gói Dùng thử, mục 9)* |
 | `K/70b` (Miễn phí) | Ba kiểu AI có ổ khóa + nhãn Pro, không tick được; bấm "Điền từ vào câu" → dòng "Dành cho gói Pro. Gói Pro chưa mở bán." + [Xem Gói học]; không có dòng lượt |
@@ -347,7 +349,7 @@ Hộp báo ngay trên nút bắt đầu, trên màn `K/70`:
 | Phần tử | Chữ |
 |---|---|
 | Tiêu đề hộp | Không đủ lượt câu AI |
-| Thân | Phiên này cần 5 lượt câu AI, bạn còn 2. Lượt mới có vào 15/11. |
+| Thân | Phiên này cần 5 lượt câu AI, bạn còn 2. Lượt câu AI mới có vào 15/11. |
 | Gợi ý | Giảm số câu, hoặc bỏ kiểu câu có AI rồi bắt đầu lại. |
 | Nút | [Bỏ kiểu câu có AI] |
 
@@ -378,8 +380,8 @@ Nút chung: [Thử lại] (gửi `retry_ai`) · [Dừng, để sau]. Dòng chung
 | Khung | `reason` | Tiêu đề | Thân |
 |---|---|---|---|
 | `K/74a` | `ai-failed` | Chưa tạo được câu | AI gặp lỗi khi viết câu này. Câu này không tính lượt câu AI. |
-| `K/74b` | `quota-exhausted` | Hết lượt câu AI | Lượt mới có vào 15/11. |
-| `K/74c` | `plan-required` | Gói của bạn chưa có câu AI | Gói Pro của bạn đã hết hạn nên phiên này dừng ở đây. |
+| `K/74b` | `quota-exhausted` | Hết lượt câu AI | Lượt câu AI mới có vào 15/11. |
+| `K/74c` | `plan-required` | Gói của bạn chưa có câu AI | Gói Pro của bạn đã hết hạn nên các câu AI còn lại không tạo được. *(Chỉ có nút vàng [Dừng, để sau]; không có [Thử lại] vì thử lại không được tới khi có gói. Sửa sau review cuối.)* |
 | `K/74d` | `ai-unavailable` | AI đang tạm dừng | Wordmet tạm dừng AI. Thử lại sau ít phút. |
 | `K/74a` + từ chưa nhận ra | `ai-failed` + `word-not-recognized` | Chưa tạo được câu | AI chưa nhận ra từ “rizz” bạn tự thêm. Kiểm lại từ này trong Từ của tôi. · link [Mở “rizz”] |
 
@@ -390,7 +392,7 @@ Dải báo trên câu hỏi (đóng được):
 | Biến thể | Chữ |
 |---|---|
 | AI lỗi ở một câu | AI tạm chưa dùng được, câu này đổi sang kiểu câu khác. Không tính lượt câu AI. |
-| Hết lượt giữa phiên | Hết lượt câu AI. Các câu còn lại của phiên dùng kiểu câu khác. Lượt mới có vào 15/11. |
+| Hết lượt giữa phiên | Hết lượt câu AI. Các câu còn lại của phiên dùng kiểu câu khác. Lượt câu AI mới có vào 15/11. |
 | Gói hết hạn giữa phiên | Gói của bạn không còn câu AI. Các câu còn lại của phiên dùng kiểu câu khác. |
 | AI tắt, chạm giới hạn chung | AI đang tạm dừng. Các câu còn lại của phiên dùng kiểu câu khác. |
 
@@ -466,7 +468,8 @@ Như `K/80`, thêm ô tick bắt buộc trên nút gửi:
 | Dòng 2 | cache · Câu sai ngữ pháp hoặc không tự nhiên · 17/10 · **Đã xác nhận lỗi** · "Đã trả lại 1 lượt câu AI" |
 | Dòng 3 | release · Nghĩa sai · 15/10 · **Đã sửa** |
 | Dòng 4 | network · Đáp án đúng mà bị chấm sai · 14/10 · **Không có lỗi** |
-| Dòng 5 | latency · Câu dùng sai nghĩa của từ · 12/10 · **Đã xác nhận lỗi** · "Lượt này không trả lại được" |
+| Dòng 5 | latency · Khác · 12/10 · **Đã xác nhận lỗi** · "Lượt câu AI này không trả lại được" |
+| Dòng phụ dưới trạng thái "Đã xác nhận lỗi" (theo `refunded` của `GET /v1/practice/reports`) | `true`: "Đã trả lại 1 lượt câu AI" · `null` (đang chờ hệ thống trả): "Đang trả lại 1 lượt câu AI" · `false` (lý do không có trả lượt, hoặc câu không tính lượt): "Lượt câu AI này không trả lại được". *(Thêm sau review cuối.)* |
 
 ### 7.15 `K/83` — "Báo lỗi của tôi" trống (Review Focus 4)
 
@@ -498,7 +501,7 @@ Trạng thái phụ, vẽ gộp trong `K/85c`:
 | Đang tra (cả `409 ai-in-progress`) | Đang tra… |
 | `503 ai-lookup-failed`, thử lại được | Chưa tra được từ này. Thử lại sau ít phút. [Thử lại] |
 | `503 ai-lookup-failed`, không thử lại được | AI không tra được từ này. Bạn tự nhập nghĩa nhé. [Tự nhập nghĩa] |
-| Hết lượt tra AI | Hết lượt tra AI. Lượt mới có vào 15/11. [Tự nhập nghĩa] |
+| Hết lượt tra AI | Hết lượt tra AI. Lượt tra AI mới có vào 15/11. [Tự nhập nghĩa] |
 | AI đang tạm dừng (`503 ai-unavailable`) | AI đang tạm dừng. Bạn tự nhập nghĩa nhé. [Tự nhập nghĩa] |
 
 ### 7.17 `K/86` — Kết quả tra bằng AI
@@ -625,6 +628,7 @@ cài đặt khác. Tải lại để xem bản mới." (409 `version-conflict`);
 | | Cột | Từ · Kiểu câu · Lý do · Nguồn · Ghi chú · Ngày gửi · Trạng thái · Người xử lý |
 | | Trống | Không còn báo lỗi chưa xử lý. |
 | `A/74` | Câu | Đề (từ riêng đã che: "[từ riêng của người học]", "[nghĩa của từ riêng]") · đáp án đúng · gợi ý đã xem · câu trả lời của người học |
+| `A/74b` *(sửa sau review cuối)* | Câu thường về từ catalog, lựa chọn nhiễu là từ riêng | "Báo lỗi · server" · "Câu thường · Trắc nghiệm" · Từ "server" (không che) · Đáp án đúng "máy chủ" · lựa chọn "máy chủ" (Đáp án đúng), "[nghĩa của từ riêng]" (đã che), "bộ nhớ đệm", "[nghĩa của từ riêng]" (đã che · Người học chọn) · Lý do "Nghĩa sai" · [Không có lỗi] [Đã sửa]. Câu thường mà từ đang hỏi là từ riêng thì không báo lỗi được (Bước 4 D36, `report-not-available`), nên không có màn cho trường hợp đó. |
 | | Câu AI có từ riêng được chia sẻ | Nhãn "Người học đồng ý cho xem từ này" · từ đang hỏi không bị che; các lựa chọn khác vẫn che *(Review Focus 3)* |
 | | Thông tin AI | Mã thao tác · Mã lời gọi · Model · Bản prompt |
 | | Nút, câu thường | [Không có lỗi] · [Đã sửa] |
@@ -750,7 +754,7 @@ vẽ) và bảng so sánh màu không đổi ở Task 5; Task 12 cập nhật.
 | 100 lượt AI tra nghĩa mỗi tháng | 100 lượt tra AI mỗi tháng | K/52, K/52t, K/53, M/62 | 5 |
 | Hết hạn Pro thì tài khoản tự về Free | Hết hạn Pro thì tài khoản tự về gói Miễn phí | K/53 | 5 |
 | Hết hạn thì tài khoản về Free; từ và lịch ôn giữ nguyên. | Hết hạn thì tài khoản về gói Miễn phí; từ và lịch ôn giữ nguyên. | K/53 | 5 |
-| Bài AI 0/300 · AI tra nghĩa 0/100: sắp có, lượt mới vào 15/11. | Lượt câu AI: còn 287/300 · Lượt tra AI: còn 96/100 / Lượt mới có vào 15/11. | K/53 | 3 |
+| Bài AI 0/300 · AI tra nghĩa 0/100: sắp có, lượt mới vào 15/11. | Lượt câu AI: còn 287/300 · Lượt tra AI: còn 96/100 / Lượt câu AI mới có vào 15/11. | K/53 | 3 |
 | Thứ Bảy, 18 tháng 10 | Chủ Nhật, 18/10 | K/10, K/40, K/41 | 3 |
 | Thứ Bảy, 18/10 | Chủ Nhật, 18/10 | M/10, M/11, M/12, M/13 | 3 |
 | Mọi level | Mọi trình độ | Thanh trên web, mọi K có dải tra | 5 |
@@ -839,7 +843,7 @@ Không đổi (đã đúng bảng thuật ngữ): "Ôn 10 thẻ", "Học tất c
 | E | Lý do báo lỗi; trả lượt; dạng chia chưa biết | `A/75`, `A/75b`, `A/76`, `A/77`, `A/77b` (8.5–8.7) |
 | E | Cấp gói và lượt | `A/78`, `A/79`, `A/79e` (8.8) |
 | E | AI của Bước 6 | `A/80`–`A/86` (8.9) |
-| F | Bản tối mẫu | Không có chữ mới (dùng chữ của `K/10`, `K/78a`, `K/52`, `K/50`) |
+| F | Bản tối mẫu | Không có chữ mới (dùng chữ của `K/10`, `K/78a`, `K/52`, `K/40`) |
 | G | Prototype | Không có chữ mới |
 
 ### 11.2 Mỗi dòng design §6.2 có khung
@@ -865,6 +869,8 @@ Design §6.3 (tra AI, từ riêng): `K/85`, `K/85t`, `K/85b`, `K/86`, `K/87`, `K
 
 ### 11.3 Kiểm chữ (grep trên file này, 21/10/2026)
 
+*Review cuối (22/10/2026) tìm ra 5 chữ "Lượt mới có vào 15/11." và "Lượt này không trả lại được" còn sót trên màn người học và trong file này; đã sửa thành "Lượt câu AI …" / "Lượt tra AI …", tìm lại trên page 08, 09: 0 chỗ; trong file này: 0 chỗ ngoài chính ghi chú này.*
+
 - "lượt" trên màn người học: mọi chỗ là "lượt câu AI" hoặc "lượt tra AI". Các chỗ "lượt" còn lại nằm ở cột "Chữ cũ", cột "Tránh" của bảng thuật ngữ, ghi chú
   cho người vẽ, hoặc màn admin. Màn admin giữ tên đã chốt "Gói và lượt" (D10), "Cấp gói và lượt" (design §5) và nhãn "Lượt AI hôm nay" (trần chung của hai kho).
 - "Vui lòng": không có trong nút, nhãn hay câu nào (chỉ xuất hiện trong luật ở mục 1).
@@ -879,7 +885,7 @@ Chủ dự án góp 9 điểm khi xem ảnh mốc A+B. Chữ của các khung đ
 
 | Điểm | Khung | Chữ |
 |---|---|---|
-| 3, 6 Cài đặt chia mục; mức sử dụng nằm ở Cài đặt, bỏ khỏi Gói học | `K/50`, `M/90` (và nền `M/63`) | Mục "Thông tin cá nhân": Họ và tên · "Nguyễn Lan" · [Sửa]; Ngày sinh · "14/5/2008" · [Sửa]; Email · "lan@example.com · Đã xác minh". Mục "Gói và mức sử dụng": Gói hiện tại · "Miễn phí" · [Xem gói học]; "Phiên luyện hôm nay" · "1/3 đã dùng" · "Còn 2 phiên, mở lại lúc 0:00."; "Lượt câu AI" · nhãn "Cần gói Pro"; "Lượt tra AI" · nhãn "Cần gói Pro" (gói Pro, Dùng thử: thanh "còn 287/300", "Lượt mới có vào 15/11."). Mục "Học tập": Ngôn ngữ, Giao diện. Mục "Thông báo": Nhắc học qua email. Mục "Phím tắt" (chỉ web). Mục "Tài khoản": Đăng xuất · "Thoát khỏi thiết bị này"; Xóa tài khoản · "Sắp có". [Sửa] mở `K/91`, `M/91`. Gói học (`K/52`, `K/52t`, `K/53`, `M/62`) bỏ khối "Phiên luyện hôm nay". |
+| 3, 6 Cài đặt chia mục; mức sử dụng nằm ở Cài đặt, bỏ khỏi Gói học | `K/50`, `M/90` (và nền `M/63`) | Mục "Thông tin cá nhân": Họ và tên · "Nguyễn Lan" · [Sửa]; Ngày sinh · "14/5/2008" · [Sửa]; Email · "lan@example.com · Đã xác minh". Mục "Gói và mức sử dụng": Gói hiện tại · "Miễn phí" · [Xem gói học]; "Phiên luyện hôm nay" · "1/3 đã dùng" · "Còn 2 phiên, mở lại lúc 0:00."; "Lượt câu AI" · nhãn "Cần gói Pro"; "Lượt tra AI" · nhãn "Cần gói Pro" (gói Pro, Dùng thử: thanh "còn 287/300", "Lượt câu AI mới có vào 15/11."). Mục "Học tập": Ngôn ngữ, Giao diện. Mục "Thông báo": Nhắc học qua email. Mục "Phím tắt" (chỉ web). Mục "Tài khoản": Đăng xuất · "Thoát khỏi thiết bị này"; Xóa tài khoản · "Sắp có". [Sửa] mở `K/91`, `M/91`. Gói học (`K/52`, `K/52t`, `K/53`, `M/62`) bỏ khối "Phiên luyện hôm nay". |
 | 4 Từ hay sai theo nhóm | `K/56` | Hàng "Nhóm": chip "Tất cả nhóm · 6" · "Công nghệ · 3" (đang chọn) · "IELTS · 2" · "Du lịch · 1"; tiêu đề bảng "3 từ trong nhóm Công nghệ"; nút "Luyện 3 từ của nhóm Công nghệ". |
 | 5 Bỏ dòng "Tra từ / …", "Nhóm / …"; điện thoại: nút quay lại thay logo ở trang con | Mọi trang con của page 08, 09 | Đầu màn trang con: "‹" + nơi quay về: "Nhóm" (trang nhóm), "Tra từ" (trang từ), "Cài đặt" (Tài khoản, Giao diện), "Quay lại" (Cài đặt mở từ avatar). Component mới: "Đầu màn · trang con (điện thoại, có dải tra)", "… (điện thoại, không dải tra)". |
 | 7 Chủ đề gợi ý: 3–5 từ + xem thêm để chọn từ | Thẻ chủ đề ở `K/16`, `K/94`, `M/15`, `M/94`; màn mới `K/18`, `M/16` | Thẻ: 4 dòng "budget · ngân sách"… · nút [Xem thêm và chọn từ]. Màn chọn: "Kinh doanh · B1" · "52 từ gợi ý. Chọn từ bạn muốn học, hoặc thêm cả chủ đề." · ô "Chọn tất cả (50 từ chưa học)" · "Đã chọn 3 từ" · mỗi dòng: ô tick, từ, loại từ, nghĩa, trình độ; từ đang học: "Đang học · Công việc" (không tick được) · "Còn 44 từ. Cuộn để xem thêm." · thanh đáy: "Thêm vào" · "Nhóm mới “Kinh doanh · B1” ▾" · [Thêm cả 50 từ] [Thêm 3 từ đã chọn]. |

@@ -218,6 +218,8 @@ mức khung). Page 03, 05, 06 là "(cũ, không dùng)", nằm cuối, chưa xó
 - D14, D17 chữ: chỉ tiếng Việt trong mockup; "lượt" chỉ dùng cho AI (lượt câu AI, lượt tra AI), "phiên" cho phiên luyện, "câu" cho một lần trả lời;
   "Từ của tôi"; Miễn phí / Dùng thử / Pro; "Trình độ" thay "Level"; ngày, giờ, tiền theo `Intl` vi-VN ("Chủ Nhật, 18/10", "20:00", "99.000 ₫").
 - D15 vẽ thẳng trong Figma (bỏ bước mockup HTML của mục 1.1); prototype "Web Bước 7: 1/2/3" trên page 08.
+- Màn điện thoại cao hơn 852 (ví dụ M/70, M/71, M/78d, M/80) được vẽ hết nội dung để xem đủ chữ; khi code, phần thân cuộn và nút chính (Nộp, Bắt đầu,
+  Gửi báo lỗi, Lưu) là chân trang dính, luôn thấy trên màn 852. Script kiểm chỉ chứng minh chữ xuống dòng không tràn, không chứng minh nút nằm trong màn.
 - Mỗi màn tối đa một nút vàng; chữ đạt tương phản ≥ 4,5:1, icon ≥ 3:1, không lớp tràn (script `../2026-10-21/figma-checks.js`).
 
 **Câu ở mục 7 đã trả lời.** 7.2: trang con điện thoại giữ tab dưới, thêm nút quay lại. 7.3: D3. 7.4: bố cục B không có sidebar, danh sách nhóm ở

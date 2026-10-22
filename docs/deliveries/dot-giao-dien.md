@@ -87,8 +87,14 @@ Chỉ mockup và tài liệu: không đổi gì dưới `apps/**`, `packages/**`
 
 Lời duyệt và các phương án: [`../superpowers/decisions/2026-10-21-dot-giao-dien-decisions.md`](../superpowers/decisions/2026-10-21-dot-giao-dien-decisions.md).
 
+Mỗi mốc gửi một phần ảnh, không phải mọi khung. **Các khung chưa từng có trong ảnh gửi duyệt** (kể cả bản điện thoại tương ứng): K/70t, K/74b, K/74c,
+K/74d, K/74e, K/75b, K/79b, K/80b, K/85t, K/86; M/74b–M/74e, M/75b, M/79b, M/80b, M/85t, M/86; A/70b, A/70e, A/75, A/77b, A/78b, A/78c, A/80 (theo review cuối,
+Claude soát lại bằng tên file ảnh). Các khung này qua script kiểm như mọi khung khác; K/74c và A/74b sửa sau review có ảnh ở `duyet/sua-sau-review/`.
+
 ## Kiểm
 
+- Giới hạn của phép kiểm tràn: phần nằm dưới mép khung được coi là phần cuộn, nên "không lớp tràn" chứng minh chữ xuống dòng đúng, **không** chứng minh nút
+  chính nằm trong màn 852 của điện thoại; các màn điện thoại cao hơn 852 dựa vào chân trang dính khi code (UI-CONTEXT §10).
 - Script kiểm chạy trên mọi khung mới của từng mảng: chữ thấp nhất 4,69:1 (bản tối 5,22:1), icon thấp nhất 4,69:1, không lớp tràn, không gờ nút bị cắt,
   tối đa một nút vàng mỗi màn. Mỗi luật của script có khung đối chứng cố ý sai để chắc script bắt được.
 - Mỗi khung K/7x–K/8x có bản M/ tương ứng (kiểm bằng script so tên).
@@ -136,11 +142,21 @@ không còn "7 email/tuần" và câu "/app") và vẽ bù 5 dòng "Một phần
 nhận tắt tự gia hạn ở Cấp gói; lỗi 409 khi lưu prompt). Kết quả: **146/146 Có**. Bảng đầy đủ: [`../mockups/2026-10-21/kiem-du-man.md`](../mockups/2026-10-21/kiem-du-man.md).
 Chữ của các màn vẽ bù: bản chữ mục 13.
 
+## Review cuối
+
+Một phiên mới, chỉ đọc (model Fable), review gói `54757a9..3faf49c`: không lỗi nghiêm trọng, 5 lỗi quan trọng, 9 điểm nhỏ, kết luận "merge sau khi sửa". Báo cáo nguyên
+văn và cách xử lý từng điểm: [`../superpowers/reviews/2026-10-22-dot-giao-dien-final-review.md`](../superpowers/reviews/2026-10-22-dot-giao-dien-final-review.md).
+Đã sửa: hai khung "Đọc trước" (K/00, M/00) và tên section 0; 10 chữ "Lượt" đứng một mình (5 mỗi page); A/74b vẽ lại thành câu thường về từ catalog có lựa chọn
+nhiễu là từ riêng; ghi giới hạn của phép kiểm tràn và chân trang dính; liệt kê khung chưa có trong ảnh duyệt; nút prototype ở K/78a, K/79a và flow trùng tên; nhãn
+gói trên màn Pro / Dùng thử; K/74c (chỉ còn [Dừng, để sau]); dòng trả lượt ở "Báo lỗi của tôi"; chữ lệch trong bản chữ.
+
 ## Việc còn lại và rủi ro
 
 - **Chưa bấm thử prototype ở chế độ Present**; chủ dự án bấm thử: page 08 → Present → chọn "Web Bước 7: 1/2/3".
 - **Bản tối:** lớp phủ sau hộp thoại khá mờ; bóng đổ hộp thoại và nút nguy hiểm chưa gắn biến.
 - **K/15** (có từ trước) có hai nút vàng; không sửa trong đợt.
+- **Để sau (điểm nhỏ của review):** nền của K/81 là câu "deploy" trong khi tấm báo lỗi nói về "rizz"; chữ hoa "[Xem Gói học]" / "[Xem gói học]" chưa thống
+  nhất; script kiểm chỉ đếm số chữ được miễn kiểm tương phản, chưa liệt kê id. Thẻ "Phiên luyện hôm nay" ở K/70–K/72 vẫn vẽ 3 vạch dù chữ đã là "còn 28/30 phiên".
 - **Page cũ** 03, 05, 06 còn đó: page 09 dùng lại vài tấm và component của page 05; xóa khi đã chuyển component gốc về 01 Foundations.
 - **Admin** là mức khung; chủ dự án đã ghi sẽ làm lại cả khối giao diện admin.
 - **Việc ngoài đợt** (design §10): ba việc API ở trên, sửa ngày sinh qua `PATCH /v1/me`, chữ design Bước 7 §6.7, ghi chú design Bước 6 D8, kiểm bản tiếng

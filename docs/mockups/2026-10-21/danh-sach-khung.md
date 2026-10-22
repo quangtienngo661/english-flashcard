@@ -10,7 +10,7 @@ Cột: page | section | tên khung.
 | 04 Admin · Web | 55 | section E1–E4 (40 khung); 15 khung có từ Bước 2.5 |
 
 ```
-08 | 0 · Đọc trước | K/00 Đọc trước
+08 | 0 · Đọc trước (bố cục kết hợp) | K/00 Đọc trước
 08 | 1 · Đăng ký và đăng nhập | K/01 Đăng ký
 08 | 1 · Đăng ký và đăng nhập | K/02 Đăng nhập
 08 | 1 · Đăng ký và đăng nhập | K/03 Nhập mã xác minh
@@ -107,7 +107,7 @@ Cột: page | section | tên khung.
 08 | 11 · Bản tối mẫu (Dark) | K/78a Câu AI · Điền từ vào câu · Dark
 08 | 11 · Bản tối mẫu (Dark) | K/52 Gói học (Free) · Dark
 08 | 11 · Bản tối mẫu (Dark) | K/40 Thêm từ (nhận ra went) · Dark
-09 | 0 · Đọc trước | M/00 Đọc trước
+09 | 0 · Đọc trước (điện thoại, bố cục kết hợp) | M/00 Đọc trước
 09 | 1 · Đăng ký và đăng nhập | M/01 Đăng ký
 09 | 1 · Đăng ký và đăng nhập | M/02 Đăng nhập
 09 | 1 · Đăng ký và đăng nhập | M/03 Nhập mã xác minh
@@ -235,7 +235,7 @@ Cột: page | section | tên khung.
 04 | E3 · Người dùng, báo lỗi, cấp gói | A/73 Báo lỗi · danh sách
 04 | E3 · Người dùng, báo lỗi, cấp gói | A/73e Báo lỗi · như editor thấy (lọc Chưa xử lý, trống)
 04 | E3 · Người dùng, báo lỗi, cấp gói | A/74 Chi tiết báo lỗi · câu AI, từ riêng được chia sẻ
-04 | E3 · Người dùng, báo lỗi, cấp gói | A/74b Chi tiết báo lỗi · câu thường về từ riêng (đã che)
+04 | E3 · Người dùng, báo lỗi, cấp gói | A/74b Chi tiết báo lỗi · câu thường về từ catalog, lựa chọn nhiễu là từ riêng (đã che)
 04 | E3 · Người dùng, báo lỗi, cấp gói | A/74c Chi tiết báo lỗi · đã xử lý (người xử lý, trả lượt, lỗi 409)
 04 | E3 · Người dùng, báo lỗi, cấp gói | A/75 Lý do báo lỗi (chỉ admin)
 04 | E3 · Người dùng, báo lỗi, cấp gói | A/75b Sửa lý do báo lỗi (hộp thoại)
