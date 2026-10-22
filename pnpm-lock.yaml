@@ -246,12 +246,18 @@ importers:
       '@opennextjs/cloudflare':
         specifier: 1.20.7
         version: 1.20.7(next@16.3.8(@opentelemetry/api@1.9.1)(@playwright/test@1.63.0)(@types/node@24.19.1)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(wrangler@4.145.0(@types/node@24.19.1))
+      '@tanstack/react-query':
+        specifier: 5.104.2
+        version: 5.104.2(react@19.3.0)
       '@wordmet/design-tokens':
         specifier: workspace:*
         version: link:../../packages/design-tokens
       clsx:
         specifier: 2.1.1
         version: 2.1.1
+      lucide-react:
+        specifier: 1.55.0
+        version: 1.55.0(@types/react@19.3.0)(react@19.3.0)
       next:
         specifier: 16.3.8
         version: 16.3.8(@opentelemetry/api@1.9.1)(@playwright/test@1.63.0)(@types/node@24.19.1)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
@@ -261,6 +267,9 @@ importers:
       react:
         specifier: 19.3.0
         version: 19.3.0
+      react-aria-components:
+        specifier: 1.22.1
+        version: 1.22.1(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       react-dom:
         specifier: 19.3.0
         version: 19.3.0(react@19.3.0)
@@ -313,6 +322,9 @@ importers:
       jsdom:
         specifier: 30.1.2
         version: 30.1.2(@noble/hashes@1.8.0)
+      msw:
+        specifier: 3.0.3
+        version: 3.0.3(@types/node@24.19.1)(typescript@6.0.3)(vite@8.3.4(@types/node@24.19.1)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.16.9)(tsx@4.23.15)(yaml@2.9.1))
       playwright-core:
         specifier: 1.63.0
         version: 1.63.0

@@ -2,11 +2,13 @@ import { initOpenNextCloudflareForDev } from '@opennextjs/cloudflare';
 import type { NextConfig } from 'next';
 import createNextIntlPlugin from 'next-intl/plugin';
 import { buildCsp, CSP_INLINE_FALLBACK } from './src/lib/csp';
+import { assertApiBaseUrl } from './src/app-shell/config';
 import { THEME_SCRIPT_HASH } from './src/app-shell/theme/theme-script';
 import { appPageExtensions, LEARNER_APP_ENABLED } from './src/lib/learner-app-flag';
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
-const apiOrigin = LEARNER_APP_ENABLED && process.env.NEXT_PUBLIC_API_BASE_URL ? new URL(process.env.NEXT_PUBLIC_API_BASE_URL).origin : null;
+// Design §4.2: with the app on, the build fails unless the API URL is absolute (and an api. host on wordmet.com).
+const apiOrigin = LEARNER_APP_ENABLED ? new URL(assertApiBaseUrl(siteUrl, process.env.NEXT_PUBLIC_API_BASE_URL)).origin : null;
 
 const csp = buildCsp({
   apiOrigin,

@@ -218,5 +218,59 @@
     "title": "Page not found",
     "body": "The page you're looking for doesn't exist or has been moved.",
     "home": "Back to home"
+  },
+  "App": {
+    "common": {
+      "retry": "Try again",
+      "loading": "Loading…"
+    },
+    "session": {
+      "offlineTitle": "Can’t connect",
+      "offlineBody": "Check your connection and try again."
+    },
+    "errors": {
+      "generic": "Something went wrong. Try again later.",
+      "code": "Code: {code}",
+      "inProgress": "Your last action is still being processed. Wait a moment and try again.",
+      "account-locked": "This account is locked. Contact the Wordmet team if you need it reopened.",
+      "age-below-minimum": "You need to be 13 or older to use Wordmet.",
+      "ai-in-progress": "Looking it up…",
+      "ai-lookup-failed": "We ran into a problem.",
+      "ai-quota-insufficient": "Not enough AI credits for questions for this session.",
+      "ai-unavailable": "We ran into a problem.",
+      "csrf-header-required": "Something went wrong. Reload the page and try again.",
+      "email-already-verified": "This email is already verified.",
+      "email-taken": "This email already has an account. Sign in or use another email.",
+      "entitlement-required": "Part of the Pro plan. Pro is not on sale yet.",
+      "forbidden": "You can’t do this.",
+      "group-full": "This deck is full.",
+      "group-limit-reached": "You’ve reached the deck limit. Delete a deck to create a new one.",
+      "group-name-taken": "You already have a deck with this name. Choose another name.",
+      "idempotency-key-abandoned": "Your last action stopped halfway. Try again.",
+      "invalid-credentials": "Wrong email or password.",
+      "invalid-current-password": "Your current password is wrong.",
+      "invalid-otp": "The code is wrong or has expired.",
+      "invalid-token": "Sign in again to continue.",
+      "mail-unavailable": "We couldn’t send the email. Try again in a few minutes.",
+      "not-found": "Not found.",
+      "password-change-required": "Change your password to continue.",
+      "payload-too-large": "This is too long to send.",
+      "practice-no-words": "No words to practice yet.",
+      "profile-incomplete": "Choose a language to continue.",
+      "quota-exhausted": "You’ve used them all.",
+      "rate-limited": "You’re going a bit fast. Try again in {seconds} s.",
+      "report-exists": "You’ve already reported this question.",
+      "report-not-available": "This question can’t be reported.",
+      "sentence-limit-reached": "This meaning has the most sentences it can hold. Delete one to add a new one.",
+      "session-closed": "This session has ended.",
+      "session-not-waiting": "This question has already been answered.",
+      "share-consent-required": "We couldn’t send the report. Try again later.",
+      "unsupported-media-type": "This format isn’t supported.",
+      "validation-failed": "Some details aren’t valid. Check the marked fields.",
+      "version-conflict": "This changed somewhere else. Check it and save again."
+    },
+    "offline": {
+      "message": "Can’t connect. Check your connection and try again."
+    }
   }
 }

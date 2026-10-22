@@ -218,5 +218,59 @@
     "title": "Không tìm thấy trang",
     "body": "Trang bạn đang tìm kiếm không tồn tại hoặc đã được di chuyển.",
     "home": "Về trang chủ"
+  },
+  "App": {
+    "common": {
+      "retry": "Thử lại",
+      "loading": "Đang tải…"
+    },
+    "session": {
+      "offlineTitle": "Không kết nối được",
+      "offlineBody": "Kiểm tra mạng rồi thử lại."
+    },
+    "errors": {
+      "generic": "Có lỗi xảy ra. Thử lại sau.",
+      "code": "Mã: {code}",
+      "inProgress": "Lần bấm trước vẫn đang xử lý. Chờ một lát rồi thử lại.",
+      "account-locked": "Tài khoản đang bị khóa. Liên hệ đội Wordmet nếu bạn cần mở lại.",
+      "age-below-minimum": "Bạn cần đủ 13 tuổi để dùng Wordmet.",
+      "ai-in-progress": "Đang tra…",
+      "ai-lookup-failed": "Hệ thống đang gặp lỗi.",
+      "ai-quota-insufficient": "Không đủ lượt câu AI cho phiên này.",
+      "ai-unavailable": "Hệ thống đang gặp lỗi.",
+      "csrf-header-required": "Có lỗi xảy ra. Tải lại trang rồi thử lại.",
+      "email-already-verified": "Email này đã được xác minh.",
+      "email-taken": "Email này đã có tài khoản. Đăng nhập hoặc dùng email khác.",
+      "entitlement-required": "Dành cho gói Pro. Gói Pro chưa mở bán.",
+      "forbidden": "Bạn không làm được thao tác này.",
+      "group-full": "Nhóm này đã đủ số từ tối đa.",
+      "group-limit-reached": "Bạn đã có đủ số nhóm tối đa. Xóa bớt một nhóm để tạo nhóm mới.",
+      "group-name-taken": "Đã có nhóm tên này. Chọn tên khác.",
+      "idempotency-key-abandoned": "Lần bấm trước bị dừng giữa chừng. Bấm lại.",
+      "invalid-credentials": "Email hoặc mật khẩu chưa đúng.",
+      "invalid-current-password": "Mật khẩu hiện tại chưa đúng.",
+      "invalid-otp": "Mã xác minh chưa đúng hoặc đã hết hạn.",
+      "invalid-token": "Bạn cần đăng nhập lại.",
+      "mail-unavailable": "Chưa gửi được email. Thử lại sau ít phút.",
+      "not-found": "Không tìm thấy.",
+      "password-change-required": "Bạn cần đổi mật khẩu trước khi tiếp tục.",
+      "payload-too-large": "Nội dung gửi lên quá dài.",
+      "practice-no-words": "Chưa có từ nào để luyện.",
+      "profile-incomplete": "Chọn ngôn ngữ để tiếp tục.",
+      "quota-exhausted": "Đã dùng hết lượt.",
+      "rate-limited": "Bạn thao tác hơi nhanh. Thử lại sau {seconds} giây.",
+      "report-exists": "Bạn đã báo lỗi câu này.",
+      "report-not-available": "Câu này không báo lỗi được.",
+      "sentence-limit-reached": "Nghĩa này đã đủ số câu tối đa. Xóa bớt một câu để thêm câu mới.",
+      "session-closed": "Phiên này đã kết thúc.",
+      "session-not-waiting": "Câu này đã được trả lời.",
+      "share-consent-required": "Chưa gửi được báo lỗi. Thử lại sau.",
+      "unsupported-media-type": "Định dạng này không dùng được.",
+      "validation-failed": "Thông tin chưa hợp lệ. Xem lại các ô được đánh dấu.",
+      "version-conflict": "Dữ liệu vừa được đổi ở nơi khác. Xem lại rồi lưu."
+    },
+    "offline": {
+      "message": "Không kết nối được. Kiểm tra mạng rồi thử lại."
+    }
   }
 }
