@@ -106,6 +106,9 @@ jobs:
 
       - name: Static pages
         run: pnpm assert:static
+        env:
+          # The e2e build above runs with the learner app on (playwright.config.ts), so /vi/app and /en/app must be static too.
+          NEXT_PUBLIC_LEARNER_APP: 'on'
 
   admin:
     name: admin (lint, typecheck, unit, build, e2e)

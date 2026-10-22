@@ -61,6 +61,10 @@ CI=1 pnpm install --frozen-lockfile
 cd apps/web
 if [ "$MODE" != test ]; then
   pnpm cf:build
+  pnpm assert:static
+  cp .next/prerender-manifest.json /out/prerender-manifest.json
+  # D21: report the Worker size (wrangler prints "Total Upload … / gzip: …") so each milestone can record it.
+  pnpm exec wrangler deploy --dry-run --outdir /tmp/worker-size | grep -i 'total upload' || true
   rm -rf /out/.open-next && cp -rL .open-next /out/.open-next
   if [ "$MODE" = deploy ]; then pnpm exec wrangler deploy; fi
   exit 0
@@ -68,7 +72,7 @@ fi
 pnpm exec playwright install --with-deps chromium
 status=0
 CI=1 pnpm test:e2e ${playwrightArgs} || status=$?
-if [ "$status" -eq 0 ]; then pnpm assert:static || status=$?; fi
+if [ "$status" -eq 0 ]; then NEXT_PUBLIC_LEARNER_APP=on pnpm assert:static || status=$?; fi
 rm -rf /out/playwright-report /out/test-results
 cp -r playwright-report test-results /out/ 2>/dev/null || true
 exit $status
@@ -86,7 +90,7 @@ const result = spawnSync(
     '-e', `MODE=${mode}`,
     ...(mode === 'deploy' ? ['-v', `${wranglerConfig}:/wcfg/.wrangler`, '-e', 'XDG_CONFIG_HOME=/wcfg'] : []),
     // Build-time NEXT_PUBLIC_* values are passed through from the host.
-    ...['NEXT_PUBLIC_SITE_URL', 'NEXT_PUBLIC_INDEXABLE', 'NEXT_PUBLIC_CONTACT_EMAIL'].flatMap((k) => (process.env[k] ? ['-e', `${k}=${process.env[k]}`] : [])),
+    ...['NEXT_PUBLIC_SITE_URL', 'NEXT_PUBLIC_INDEXABLE', 'NEXT_PUBLIC_CONTACT_EMAIL', 'NEXT_PUBLIC_LEARNER_APP', 'NEXT_PUBLIC_API_BASE_URL'].flatMap((k) => (process.env[k] ? ['-e', `${k}=${process.env[k]}`] : [])),
     'node:24.11.0-bookworm',
     'bash', '-c', script,
   ],

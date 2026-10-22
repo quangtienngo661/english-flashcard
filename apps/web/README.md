@@ -15,7 +15,7 @@ From the repo root: `pnpm install`. Then from `apps/web`:
 | `pnpm typecheck` | `tsc --noEmit` |
 | `pnpm test` | Vitest unit and component tests |
 | `pnpm test:e2e` | Playwright on the Worker (builds, migrates local D1 and starts on port 3100; desktop 1440 and mobile 390, with axe) |
-| `pnpm assert:static` | After a build: fails unless `/vi` and `/en` are prerendered |
+| `pnpm assert:static` | After a build: fails unless `/vi` and `/en` (and `/vi/app`, `/en/app` with `NEXT_PUBLIC_LEARNER_APP=on`) are prerendered |
 
 ## Environment
 
@@ -24,6 +24,8 @@ From the repo root: `pnpm install`. Then from `apps/web`:
 | `NEXT_PUBLIC_SITE_URL` | `http://localhost:3000` | `https://wordmet.com` | Absolute URLs in metadata, sitemap and JSON-LD |
 | `NEXT_PUBLIC_INDEXABLE` | off | `true` | Set to `true` at launch; until then robots.txt disallows everything and pages are `noindex` |
 | `NEXT_PUBLIC_CONTACT_EMAIL` | `hello@wordmet.com` | `hello@wordmet.com` | Footer and privacy contact link |
+| `NEXT_PUBLIC_LEARNER_APP` | off | off until Deploy | `on` builds the learner app under `/vi/app`, `/en/app`; otherwise its files are left out of the build and `/…/app/*` redirects (307) to the landing |
+| `NEXT_PUBLIC_API_BASE_URL` | — | `https://api.wordmet.com` | API origin the learner app calls (needed only with the app on) |
 
 `NEXT_PUBLIC_*` values are baked into the build. Changing them on the Cloudflare dashboard takes effect only after
 the next build and deploy.
