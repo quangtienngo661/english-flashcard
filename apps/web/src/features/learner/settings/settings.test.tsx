@@ -9,6 +9,7 @@ import { AccountPage } from './AccountPage';
 import { SettingsPage } from './SettingsPage';
 
 const replace = vi.fn();
+vi.mock('@/app-shell/navigate', () => ({ hardReplace: (path: string) => replace(path) }));
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ replace, push: vi.fn(), back: vi.fn() }),
   usePathname: () => '/vi/app/settings',

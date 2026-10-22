@@ -61,7 +61,7 @@ export function Switch({ label, description, isSelected, onChange, isDisabled, l
       </span>
       <span
         aria-hidden
-        className={`${TRACK} border-border-strong bg-surface group-data-focus-visible:ring-2 group-data-focus-visible:ring-primary group-data-focus-visible:ring-offset-2 group-data-selected:border-primary group-data-selected:bg-primary`}
+        className={`${TRACK} border-border-strong bg-surface group-data-focus-visible:ring-2 group-data-focus-visible:ring-primary group-data-focus-visible:ring-offset-2 group-data-selected:border-success group-data-selected:bg-success`}
       >
         <span className={`${THUMB} ml-0.5 bg-border-strong group-data-selected:translate-x-5 group-data-selected:bg-on-primary`} />
       </span>

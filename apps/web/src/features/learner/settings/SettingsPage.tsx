@@ -1,21 +1,23 @@
 'use client';
 
-import { Lock } from 'lucide-react';
+import { ChevronRight, Lock } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
-import type { ReactNode } from 'react';
+import { usePathname } from 'next/navigation';
+import { useState, type ReactNode } from 'react';
 import { AppShell } from '@/app-chrome/AppShell';
 import { displayName } from '@/app-chrome/AvatarMenu';
 import { PageTitle } from '@/app-chrome/PageTitle';
 import { useErrorMessage } from '@/app-shell/api/use-error-message';
 import { createFormat } from '@/app-shell/format';
+import { hardReplace } from '@/app-shell/navigate';
 import { useAppConfig, useEntitlements } from '@/app-shell/queries';
 import { useSession } from '@/app-shell/session/session-context';
 import type { ThemeChoice } from '@/app-shell/theme/theme';
 import { useTheme } from '@/app-shell/theme/ThemeProvider';
 import { useSubmitOnce } from '@/app-shell/use-submit-once';
 import { Button } from '@/app-ui/Button';
+import { Dialog } from '@/app-ui/Dialog';
 import { Segmented } from '@/app-ui/Segmented';
 import { Switch } from '@/app-ui/Switch';
 import { showToast } from '@/app-ui/Toast';
@@ -32,10 +34,10 @@ const LINK = 'shrink-0 text-ui font-semibold text-primary underline-offset-2 hov
 /** K/50, copy doc §12 (points 3, 6): personal details, plan and usage, learning, notifications, shortcuts, account. */
 export function SettingsPage() {
   const t = useTranslations('App.settings');
+  const tCommon = useTranslations('App.common');
   const tPlan = useTranslations('App.chrome.plan');
   const locale = useLocale() as AppLocale;
   const pathname = usePathname();
-  const router = useRouter();
   const errorText = useErrorMessage();
   // Birth dates and the reminder time are calendar values, not instants: shown as written, in no time zone.
   const calendar = createFormat(locale, 'UTC');
@@ -57,7 +59,7 @@ export function SettingsPage() {
     try {
       await updateProfile({ native_language: next });
       await store?.recheck();
-      router.replace(pathname.replace(/^\/(vi|en)(?=\/|$)/, `/${next}`));
+      hardReplace(pathname.replace(/^\/(vi|en)(?=\/|$)/, `/${next}`));
     } catch (error) {
       showToast(errorText(error), 'danger');
     }
@@ -74,7 +76,7 @@ export function SettingsPage() {
   const account = `/${locale}/app/settings/account`;
 
   return (
-    <AppShell variant="sub" back={{ href: `/${locale}/app`, label: t('title') }}>
+    <AppShell variant="sub" back={{ href: `/${locale}/app`, label: tCommon('back') }}>
       <PageTitle>{t('title')}</PageTitle>
       <div className="mx-auto flex max-w-3xl flex-col gap-6">
         <Section title={t('personal')}>
@@ -101,7 +103,12 @@ export function SettingsPage() {
           <Row
             title={t('currentPlan')}
             detail={entitlements.data ? tPlan(entitlements.data.plan) : '…'}
-            action={<Link href={`/${locale}/app/plans`} className={LINK}>{t('seePlans')}</Link>}
+            action={
+              <Link href={`/${locale}/app/plans`} className={LINK}>
+                <span className="hidden md:inline">{t('seePlans')}</span>
+                <ChevronRight aria-label={t('seePlans')} className="size-5 text-muted md:hidden" />
+              </Link>
+            }
           />
           <UsageRows />
         </Section>
@@ -111,7 +118,7 @@ export function SettingsPage() {
             title={t('language')}
             detail={t('languageHint')}
             action={
-              <Segmented
+              <Choice
                 label={t('language')}
                 value={locale}
                 onChange={(next) => void changeLanguage(next)}
@@ -123,7 +130,7 @@ export function SettingsPage() {
             title={t('theme')}
             detail={t('themeHint')}
             action={
-              <Segmented<ThemeChoice>
+              <Choice<ThemeChoice>
                 label={t('theme')}
                 value={choice}
                 onChange={setChoice}
@@ -160,6 +167,7 @@ export function SettingsPage() {
         <Section title={t('account')}>
           {SHOW_TRANSACTIONS && <Row title={t('transactions')} />}
           <Row
+            className="hidden md:flex"
             title={t('logout')}
             detail={t('logoutHint')}
             action={
@@ -170,8 +178,44 @@ export function SettingsPage() {
           />
           <Row title={t('deleteAccount')} action={<ComingSoon />} />
         </Section>
+        {/* M/90: on phones sign-out is the last, full-width button. */}
+        <Button variant="quiet" size="lg" className="w-full md:hidden" onPress={() => void store?.logout()}>
+          {t('logout')}
+        </Button>
       </div>
     </AppShell>
+  );
+}
+
+/** K/50 shows a pill switch; M/90 shows the current value and a chevron that opens the same choice in a sheet. */
+function Choice<T extends string>(props: { label: string; value: T; options: Array<{ id: T; label: string }>; onChange: (id: T) => void }) {
+  const [open, setOpen] = useState(false);
+  const current = props.options.find((o) => o.id === props.value)?.label ?? '';
+  return (
+    <>
+      <div className="hidden md:block">
+        <Segmented {...props} />
+      </div>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="flex items-center gap-1 text-ui text-muted outline-none focus-visible:ring-2 focus-visible:ring-primary md:hidden"
+      >
+        {current}
+        <ChevronRight aria-hidden className="size-5" />
+      </button>
+      {open && (
+        <Dialog isOpen onOpenChange={setOpen} title={props.label}>
+          <Segmented
+            {...props}
+            onChange={(id) => {
+              props.onChange(id);
+              setOpen(false);
+            }}
+          />
+        </Dialog>
+      )}
+    </>
   );
 }
 
@@ -194,9 +238,9 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
   );
 }
 
-function Row({ title, detail, action }: { title: string; detail?: string; action?: ReactNode }) {
+function Row({ title, detail, action, className = 'flex' }: { title: string; detail?: string; action?: ReactNode; className?: string }) {
   return (
-    <li className="flex flex-wrap items-center justify-between gap-3 py-4">
+    <li className={`${className} flex-wrap items-center justify-between gap-3 py-4`}>
       <div className="flex min-w-0 flex-col">
         <span className="text-ui font-semibold text-ink">{title}</span>
         {detail && <span className="break-words text-caption text-muted">{detail}</span>}

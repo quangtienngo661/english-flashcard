@@ -2,10 +2,10 @@
 
 import { useLocale, useTranslations } from 'next-intl';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { useState, type FormEvent, type ReactNode } from 'react';
 import { ApiError } from '@/app-shell/api/problem';
 import { useErrorMessage } from '@/app-shell/api/use-error-message';
+import { hardReplace } from '@/app-shell/navigate';
 import { useSession } from '@/app-shell/session/session-context';
 import { deviceTimezone } from '@/app-shell/timezone-sync';
 import { useSubmitOnce } from '@/app-shell/use-submit-once';
@@ -20,7 +20,6 @@ export function RegisterForm({ today }: { today?: string }) {
   const t = useTranslations('App.auth');
   const errorText = useErrorMessage();
   const locale = useLocale();
-  const router = useRouter();
   const { store } = useSession();
   const [givenName, setGivenName] = useState('');
   const [familyName, setFamilyName] = useState('');
@@ -40,7 +39,7 @@ export function RegisterForm({ today }: { today?: string }) {
       timezone: deviceTimezone(),
       accept_terms: true,
     });
-    router.replace(`/${locale}/app/verify-email?sent=1`);
+    hardReplace(`/${locale}/app/verify-email?sent=1`);
   });
 
   async function onSubmit(event: FormEvent) {

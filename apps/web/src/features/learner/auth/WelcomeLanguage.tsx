@@ -1,11 +1,12 @@
 'use client';
 
 import { useLocale, useTranslations } from 'next-intl';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { useState, type FormEvent } from 'react';
 import { createApiClient } from '@/app-shell/api/client';
 import { useErrorMessage } from '@/app-shell/api/use-error-message';
 import { safeNext } from '@/app-shell/locale-prefix';
+import { hardReplace } from '@/app-shell/navigate';
 import { useSession } from '@/app-shell/session/session-context';
 import { useSubmitOnce } from '@/app-shell/use-submit-once';
 import { Button } from '@/app-ui/Button';
@@ -19,7 +20,6 @@ export function WelcomeLanguage() {
   const t = useTranslations('App.auth.welcome');
   const errorText = useErrorMessage();
   const locale = useLocale() as AppLocale;
-  const router = useRouter();
   const params = useSearchParams();
   const { store } = useSession();
   const [language, setLanguage] = useState<AppLocale>(locale);
@@ -28,7 +28,7 @@ export function WelcomeLanguage() {
   const { submit, busy } = useSubmitOnce(async () => {
     await createApiClient({ send: store!.send }).patch('/v1/me', { native_language: language });
     await store!.recheck();
-    router.replace(safeNext(params.get('next'), language));
+    hardReplace(safeNext(params.get('next'), language));
   });
 
   async function onSubmit(event: FormEvent) {

@@ -1,11 +1,12 @@
 'use client';
 
 import { useLocale, useTranslations } from 'next-intl';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { useState, type FormEvent } from 'react';
 import { createApiClient } from '@/app-shell/api/client';
 import { ApiError } from '@/app-shell/api/problem';
 import { useErrorMessage } from '@/app-shell/api/use-error-message';
+import { hardReplace } from '@/app-shell/navigate';
 import { useSession } from '@/app-shell/session/session-context';
 import { useSubmitOnce } from '@/app-shell/use-submit-once';
 import { Button } from '@/app-ui/Button';
@@ -17,7 +18,6 @@ export function ResetPasswordForm() {
   const t = useTranslations('App.auth');
   const errorText = useErrorMessage();
   const locale = useLocale();
-  const router = useRouter();
   const params = useSearchParams();
   const { store } = useSession();
   const [code, setCode] = useState('');
@@ -31,7 +31,7 @@ export function ResetPasswordForm() {
       code: code.replace(/\s/g, ''),
       new_password: password,
     });
-    router.replace(`/${locale}/app/login?reset=1`);
+    hardReplace(`/${locale}/app/login?reset=1`);
   });
 
   async function onSubmit(event: FormEvent) {
@@ -48,7 +48,7 @@ export function ResetPasswordForm() {
   }
 
   return (
-    <AuthCard title={t('reset.title')} onBack={() => router.replace(`/${locale}/app/forgot-password`)}>
+    <AuthCard title={t('reset.title')} onBack={() => hardReplace(`/${locale}/app/forgot-password`)}>
       <form onSubmit={onSubmit} noValidate className="flex flex-col gap-4">
         <TextField label={t('reset.code')} value={code} onChange={setCode} inputMode="numeric" autoComplete="one-time-code" error={errors.code} />
         <TextField

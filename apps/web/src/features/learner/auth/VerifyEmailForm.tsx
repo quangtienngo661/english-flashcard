@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useRef, useState, type ClipboardEvent, type FormEvent, type KeyboardEvent } from 'react';
 import { createApiClient } from '@/app-shell/api/client';
 import { useErrorMessage } from '@/app-shell/api/use-error-message';
+import { hardReplace } from '@/app-shell/navigate';
 import { useSession } from '@/app-shell/session/session-context';
 import { useSubmitOnce } from '@/app-shell/use-submit-once';
 import { Button } from '@/app-ui/Button';
@@ -53,7 +54,7 @@ export function VerifyEmailForm() {
     await api!.post('/v1/auth/verify-email', { code: digits.join('') });
     await store!.recheck();
     const me = store!.state.status === 'signed-in' ? store!.state.me : null;
-    router.replace(me?.native_language ? `/${locale}/app` : `/${locale}/app/welcome`);
+    hardReplace(me?.native_language ? `/${locale}/app` : `/${locale}/app/welcome`);
   });
 
   async function onSubmit(event: FormEvent) {

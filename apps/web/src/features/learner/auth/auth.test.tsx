@@ -11,6 +11,7 @@ import { VerifyEmailForm } from './VerifyEmailForm';
 import { WelcomeLanguage } from './WelcomeLanguage';
 
 const replace = vi.fn();
+vi.mock('@/app-shell/navigate', () => ({ hardReplace: (path: string) => replace(path) }));
 let search = new URLSearchParams();
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ replace, push: vi.fn(), back: vi.fn() }),

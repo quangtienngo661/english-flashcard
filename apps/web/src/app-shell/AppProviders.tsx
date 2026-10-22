@@ -7,6 +7,7 @@ import { createContext, useContext, useState, type ReactNode } from 'react';
 import { RouterProvider } from 'react-aria-components';
 import { ToastRegion } from '@/app-ui/Toast';
 import { ApiError, NetworkError } from './api/problem';
+import { hardReplace } from './navigate';
 import { SessionProvider } from './session/session-context';
 import type { SessionStore } from './session/session-store';
 import { ThemeProvider } from './theme/ThemeProvider';
@@ -29,7 +30,7 @@ export function AppProviders({ children, store }: { children: ReactNode; store?:
       if (error instanceof NetworkError) setOffline(true);
       if (error instanceof ApiError && error.problem.slug === 'profile-incomplete') {
         const here = `${window.location.pathname}${window.location.search}`;
-        router.replace(`/${locale}/app/welcome?next=${encodeURIComponent(here)}`);
+        hardReplace(`/${locale}/app/welcome?next=${encodeURIComponent(here)}`);
       }
     };
     return new QueryClient({

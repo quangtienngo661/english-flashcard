@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "next dev",
+    "dev:app": "node scripts/dev-app.mjs",
     "build": "next build",
     "start": "next start",
     "lint": "eslint . && node scripts/check-tailwind-raw.mjs",
@@ -12,6 +13,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
+    "shots": "playwright test --config playwright.shots.config.ts",
     "assert:static": "node scripts/assert-static.mjs",
     "gen:og-fonts": "node scripts/gen-og-fonts.mjs",
     "cf:build": "opennextjs-cloudflare build",

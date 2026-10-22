@@ -3,11 +3,12 @@
 import { Lock } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { useState, type FormEvent } from 'react';
 import { ApiError } from '@/app-shell/api/problem';
 import { useErrorMessage } from '@/app-shell/api/use-error-message';
 import { safeNext } from '@/app-shell/locale-prefix';
+import { hardReplace } from '@/app-shell/navigate';
 import { useSession } from '@/app-shell/session/session-context';
 import type { Notice } from '@/app-shell/session/session-store';
 import { useSubmitOnce } from '@/app-shell/use-submit-once';
@@ -27,7 +28,6 @@ export function LoginForm() {
   const t = useTranslations('App.auth');
   const errorText = useErrorMessage();
   const locale = useLocale() as AppLocale;
-  const router = useRouter();
   const params = useSearchParams();
   const { state, store } = useSession();
   const [email, setEmail] = useState('');
@@ -37,7 +37,7 @@ export function LoginForm() {
 
   const { submit, busy } = useSubmitOnce(async () => {
     await store!.login(email.trim(), password);
-    router.replace(safeNext(params.get('next'), locale));
+    hardReplace(safeNext(params.get('next'), locale));
   });
 
   async function onSubmit(event: FormEvent) {

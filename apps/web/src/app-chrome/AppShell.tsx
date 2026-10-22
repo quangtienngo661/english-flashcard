@@ -132,11 +132,11 @@ function AuthFrame({ children }: { children: ReactNode }) {
           <p className="text-body text-on-navy-muted">{t('heroBody')}</p>
         </div>
         <div aria-hidden className="relative h-56">
-          <div className="absolute bottom-6 left-0 flex h-36 w-52 -rotate-3 flex-col items-center justify-center rounded-card bg-surface text-ink shadow-ledge-card">
+          <div className="absolute bottom-6 left-0 flex h-32 w-44 -rotate-3 flex-col items-center justify-center rounded-card bg-surface text-ink shadow-ledge-card">
             <span className="text-h3 font-bold">deploy</span>
             <span className="text-caption text-muted">verb</span>
           </div>
-          <div className="absolute bottom-16 left-48 flex h-36 w-52 rotate-6 flex-col items-center justify-center rounded-card bg-accent text-on-accent shadow-ledge-accent">
+          <div className="absolute bottom-16 left-36 flex h-32 w-44 rotate-6 flex-col items-center justify-center rounded-card bg-accent text-on-accent shadow-ledge-accent">
             <span className="text-h3 font-bold">went</span>
             <span className="text-caption">quá khứ của go</span>
           </div>
@@ -153,17 +153,35 @@ function AuthFrame({ children }: { children: ReactNode }) {
   );
 }
 
-/** "(mờ) Nền họa tiết học từ (web)": decoration only, never read aloud, hidden on phones. */
+/**
+ * "(mờ) Nền họa tiết học từ (web)": decoration only, drawn as one hidden SVG at 12% so it is never read as text, hidden on
+ * phones.
+ */
 function StudyPattern() {
   return (
-    <div aria-hidden className="pointer-events-none absolute inset-0 hidden select-none text-ink opacity-12 md:block">
-      <span className="absolute left-1/12 top-1/8 rounded-full border-2 border-current px-3 py-1 text-caption font-semibold">✓ Đã biết</span>
-      <span className="absolute left-2/5 top-1/8 bg-accent px-1 text-title font-bold">remember</span>
-      <span className="absolute right-1/16 top-1/12 flex h-24 w-40 rotate-6 items-center justify-center rounded-card border-2 border-current text-title font-bold">cache</span>
-      <span className="absolute right-1/10 top-2/5 text-title font-bold tracking-widest">— — — —</span>
-      <span className="absolute bottom-1/5 left-1/12 flex h-24 w-40 -rotate-3 items-center justify-center rounded-card border-2 border-current text-title font-bold">went</span>
-      <span className="absolute bottom-1/12 left-2/5 text-title font-bold">leave · left · left</span>
-      <span className="absolute bottom-1/8 right-1/8 text-display font-bold">?</span>
-    </div>
+    <svg
+      aria-hidden
+      focusable="false"
+      viewBox="0 0 1000 1000"
+      preserveAspectRatio="xMidYMid slice"
+      className="pointer-events-none absolute inset-0 hidden size-full select-none text-ink opacity-12 md:block"
+    >
+      <g fill="none" stroke="currentColor" strokeWidth="3">
+        <rect x="70" y="110" width="150" height="44" rx="22" />
+        <rect x="780" y="70" width="190" height="120" rx="20" transform="rotate(6 875 130)" />
+        <rect x="60" y="760" width="190" height="120" rx="20" transform="rotate(-4 155 820)" />
+        <circle cx="880" cy="350" r="32" />
+        <path d="M830 470h40M890 470h40M950 470h40" />
+      </g>
+      <g fill="currentColor" fontFamily="inherit" fontWeight="700">
+        <text x="95" y="140" fontSize="22">✓ Đã biết</text>
+        <rect x="390" y="122" width="190" height="22" className="fill-accent" />
+        <text x="395" y="140" fontSize="34">remember</text>
+        <text x="830" y="140" fontSize="32">cache</text>
+        <text x="110" y="830" fontSize="34">went</text>
+        <text x="380" y="930" fontSize="32">leave · left · left</text>
+        <text x="830" y="860" fontSize="90">?</text>
+      </g>
+    </svg>
   );
 }

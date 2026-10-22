@@ -9,7 +9,13 @@ import { SessionStore } from './session/session-store';
 import { BASE, makeFetch, makeMe, problem, tokenResponse, type Route } from './session/test-support';
 
 const replace = vi.fn();
-vi.mock('next/navigation', () => ({ useRouter: () => ({ replace, push: vi.fn() }) }));
+let routerPath: string | null = null;
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({ replace: vi.fn(), push: vi.fn() }),
+  // The router's path; null = same as the address bar.
+  usePathname: () => routerPath ?? window.location.pathname,
+}));
+vi.mock('./navigate', () => ({ hardReplace: (path: string) => replace(path) }));
 
 function at(path: string) {
   window.history.replaceState(null, '', path);
@@ -36,6 +42,7 @@ const signedIn = (me = makeMe()): Record<string, Route> => ({
 });
 
 beforeEach(() => {
+  routerPath = null;
   replace.mockReset();
   vi.spyOn(Intl.DateTimeFormat.prototype, 'resolvedOptions').mockReturnValue({
     timeZone: 'Asia/Ho_Chi_Minh',
@@ -82,6 +89,14 @@ describe('RequireSession', () => {
     at('/vi/app/settings');
     setup(signedIn(makeMe({ native_language: null })));
     await waitFor(() => expect(replace).toHaveBeenCalledWith('/vi/app/welcome?next=%2Fvi%2Fapp%2Fsettings'));
+  });
+
+  it('E9: a client-side move to verify-email is judged by the router path, not the address bar that has not changed yet', async () => {
+    at('/vi/app/register');
+    routerPath = '/vi/app/verify-email';
+    setup(signedIn(makeMe({ native_language: null })));
+    expect(await screen.findByText('secret')).toBeInTheDocument();
+    expect(replace).not.toHaveBeenCalled();
   });
 
   it('E9: the welcome and verify-email pages themselves open without a language', async () => {

@@ -37,7 +37,8 @@ export default async function LocaleLayout({ children, params }: LocaleParams & 
 
   // Root layout: html, body, font and locale only. The landing chrome lives in (site)/layout.tsx, the learner app in app/layout.app.tsx.
   return (
-    <html lang={locale} className={lexend.variable}>
+    // The learner app's theme script sets data-theme on <html> before React hydrates (design §4.4).
+    <html lang={locale} className={lexend.variable} suppressHydrationWarning>
       <body className="min-h-dvh font-sans">
         {/* Locale only: client islands get their copy as props, so no messages are sent to the client. */}
         <NextIntlClientProvider messages={null}>{children}</NextIntlClientProvider>
