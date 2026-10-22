@@ -93,6 +93,12 @@ for (const id of FRAME_IDS) {
     const own = t.textAutoResize === 'NONE' && t.absoluteRenderBounds && t.absoluteRenderBounds.height > t.height + 1; // chữ tràn khỏi ô cao cố định
     if ((holder ? !contains(holder, tb) : outX) || own) { overflow++; worst.push(`overflow ${t.id} "${t.characters.slice(0, 30)}"`); }
   }
+  // Khối con trực tiếp của khung (trừ lớp phủ) không được nằm lệch ra ngoài mép trái/phải (ví dụ tấm đặt sai x).
+  for (const ch of top.children) {
+    if (ch.visible === false || /scrim/i.test(ch.name)) continue;
+    const cb = ch.absoluteBoundingBox;
+    if (cb.x < topBox.x - 0.5 || cb.x + cb.width > topBox.x + topBox.width + 0.5) { overflow++; worst.push(`overflow khối ${ch.id} "${ch.name.slice(0, 24)}" ra ngoài khung`); }
+  }
   // Nút (Button, cta, btn, nút) không được tràn khỏi khối chứa nó, hay vượt mép trái/phải khung màn.
   for (const bt of top.findAll(n => visibleChain(n, top) && (n.type === 'INSTANCE' || n.type === 'FRAME') && /^(cta|btn|nút |Button)/i.test(n.name))) {
     let h = null, p = bt.parent;
