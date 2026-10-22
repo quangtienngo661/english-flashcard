@@ -281,6 +281,13 @@ Q&A log `docs/superpowers/reviews/2026-10-21-buoc-7-qa-log.md`, design review `d
 `OPENAI_API_KEY` / `ANTHROPIC_API_KEY` and `JOB_QUEUE_PREFIX=wordmet-b7-smoke` on a fresh `english_learning_smoke_b7`, then `pnpm smoke:buoc-7`
 (it chooses the fake models itself; registers 4 accounts, within the 5-per-IP-per-hour limit).
 
+## Đợt giao diện (mockup Bước 3–7) — plan & as-built
+
+`docs/deliveries/dot-giao-dien.md` (plan tóm tắt 21/10/2026, as-built 22/10/2026; Figma `7HcPAKLrWu32C27qYMJUOA` only, no code: web page 08, phone page 09,
+admin page 04 at wireframe level, Dark samples, prototype flows "Web Bước 7: 1/2/3"). Design (D1–D17), decisions and plan:
+`docs/superpowers/{specs,decisions,plans}/2026-10-21-dot-giao-dien*.md`; copy of every screen `docs/mockups/2026-10-21/ban-chu-giao-dien.md`; design §10 lists the
+API additions the screens assume (staff emails in admin responses, `group_id` for weak words, `sense_ids[]` for bulk add).
+
 ## Việc phải phân tích khi tới bước tương ứng (ghi 12/10/2026, từ brainstorm Bước 2)
 
 Các điểm dưới đây phát sinh khi rà quyền của `admin`/`editor` (bảng D6) với các spec Bước 3–8. Chưa chốt, **không chặn Bước 2**;

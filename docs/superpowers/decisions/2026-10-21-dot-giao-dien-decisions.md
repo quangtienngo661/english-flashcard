@@ -220,6 +220,46 @@ Bối cảnh: research [`../../mockups/2026-10-21/vietnamese-ux-writing-research
 
 Thêm vào mảng A: mockup ghi "Thứ Bảy, 18 tháng 10" nhưng 18/10/2026 là Chủ Nhật (research phát hiện; Claude kiểm lại bằng `Intl`).
 
+## Mốc 0 — duyệt bản chữ giao diện (21/10/2026, sau khi duyệt plan)
+
+Chủ dự án: "Ok bản chữ giao diện. Q1: đổi Level thành Trình độ. Q2: vẽ email người thao tác ở màn admin và ghi việc API trả email vào design §10." Theo luật hỏi của đợt, Claude đề xuất trước.
+
+| Câu | Phương án đưa ra | Chọn |
+|---|---|---|
+| Q1 Chữ "Level" trên màn người học | ✅ Đổi thành "Trình độ" (giữ khung giao diện bằng tiếng Việt, N17; sửa chữ nhiều màn có sẵn); giữ "Level" | Chủ dự án, theo đề xuất |
+| Q2 Màn admin hiện "ai làm" khi API chỉ trả mã người dùng (cấp gói, báo lỗi, prompt, bộ ví dụ) | ✅ Vẽ email, ghi việc "API trả email" vào design §10 (đổi API là việc ngoài đợt); chỉ vẽ vai trò | Chủ dự án, theo đề xuất |
+
+Cùng bản chữ, Claude tự đổi (chủ dự án duyệt cùng bản chữ): "dạng bài" → "kiểu câu"; "Ôn lại thêm", "Ôn tất cả" trong Luyện tập → "Luyện lại thêm", "Luyện tất cả".
+
+## Mốc A+B — góp ý của chủ dự án (22/10/2026)
+
+Vòng 1, chủ dự án nêu 9 điểm sau khi xem ảnh; Claude sửa điểm 2, 3, 5, 6, 7 (phần giao diện), 8, 9 theo đúng góp ý: form điện thoại gọn hơn; mức sử
+dụng chuyển vào Cài đặt và bỏ khỏi Gói học ("thanh usage không để ở subscription plan"); bỏ dòng "Tra từ / …"; điện thoại có nút quay lại ở trang con;
+Cài đặt chia mục (thông tin cá nhân, gói và mức sử dụng, học tập, thông báo, tài khoản); thẻ chủ đề có 3–5 từ và màn chọn từ; web có đủ các màn điện
+thoại có; bỏ khoảng trống phía trên trang Cài đặt điện thoại.
+
+| Câu | Phương án đưa ra | Chọn |
+|---|---|---|
+| Điểm 1: hỏi tuổi bằng ô tick "Tôi đã đủ 13 tuổi" | Giữ ô Ngày sinh, báo lỗi ngay dưới ô thay màn riêng (đề xuất của Claude; không đổi API); ô tick thay ô Ngày sinh (đổi API, bỏ lưu ngày sinh) | ✅ Chủ dự án, vòng 2: "Bỏ màn k01b đi … chặn ở form nhập luôn, báo đỏ bằng cách báo một dòng lỗi hoặc tô đỏ ô nhập ngày tháng năm sinh" (giữ ô Ngày sinh) |
+| Điểm 4: lọc Từ hay sai theo nhóm (API chưa có lọc nhóm) | ✅ Thêm `group_id` cho `GET /v1/practice/weak-words` (đề xuất; ghi design §10) | Chủ dự án, theo đề xuất |
+| Điểm 7: thêm từng từ đã chọn (API thêm cả loạt chỉ nhận bộ lọc) | ✅ Thêm `sense_ids[]` cho `POST /v1/groups/{id}/items/bulk` (đề xuất; ghi design §10) | Chủ dự án, theo đề xuất |
+
+Vòng 2, chủ dự án thêm: chọn ngôn ngữ ở màn đầu bằng danh sách thả xuống có cờ (K/06, M/06); sửa gờ dưới của các nút (bị khung bọc cắt mất).
+
+Chủ dự án duyệt mốc A+B (22/10/2026): "Ok mốc A+B. Hai việc API theo đề xuất: thêm group_id cho Từ hay sai và sense_ids[] cho thêm cả loạt, ghi vào design §10. Sang mốc C."
+
+## Mốc C – F+G — duyệt không kèm góp ý (22/10/2026)
+
+Các mốc sau được duyệt mà không có câu hỏi mở nào; những điều Claude tự quyết khi vẽ ghi ở as-built (`docs/deliveries/dot-giao-dien.md`).
+
+| Mốc | Chủ dự án |
+|---|---|
+| C — điện thoại: Luyện tập, Gói học | "Ok mốc C, sang mốc D-web." |
+| D-web — Bước 7 trên web | "Ok mốc D-web, sang mốc D-phone." |
+| D-phone — Bước 7 trên điện thoại | "Ok mốc D-phone, sang mốc E." (kèm việc sửa nhãn gói "Miễn phí" thành "Pro" / "Dùng thử" trên 11 màn web, báo trong lần gửi mốc) |
+| E — admin | "Ok mốc E, sang mốc F+G." (kèm việc xóa khung `A/60` và các khung giữ chỗ `A/D02`–`A/D11`, báo trong lần gửi mốc) |
+| F+G — bản tối, prototype | "Ok mốc F+G, sang Task 12." |
+
 ## Đề xuất kỹ thuật duyệt cùng design (bốn phần, chủ dự án "ok" từng phần)
 
 | Chọn | Bỏ | Vì sao |
