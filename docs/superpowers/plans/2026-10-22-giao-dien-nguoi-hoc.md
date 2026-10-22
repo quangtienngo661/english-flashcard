@@ -1,6 +1,8 @@
 # Giao diện người học trên web (Bước 3–7) — Implementation Plan
 
-> **Status 22/10/2026:** written after the owner approved the design ("ok viết plan giúp mình đi", D1–D22). Waiting for the owner's review of this plan.
+> **Status 22/10/2026:** written after the owner approved the design ("ok viết plan giúp mình đi", D1–D22). The owner read the plan and asked to merge it
+> into `dev` and run it from a local session ("push và merge vào dev, xong cho mình prompt để mình kéo code từ dev về và chạy ở local"). The execution
+> method (subagent-driven or native) is chosen with the owner at the start of the local session.
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement
 > this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
