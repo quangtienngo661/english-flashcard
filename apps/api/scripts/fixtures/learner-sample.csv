@@ -1,0 +1,304 @@
+headword,pos,CEFR,gloss_vi,definition_en,example_en_1,topics,inflections
+computer,noun,A1,"máy tính","An electronic machine that stores and works with information.","I use my computer to write emails every morning.",technology,
+phone,noun,A1,"điện thoại","A device you use to talk to people who are far away.","My phone is on the kitchen table.",technology,
+email,noun,A1,"thư điện tử, email","A message you send from one computer or phone to another.","She sent me an email about the class.",technology,
+internet,noun,A1,"mạng internet","The global network that connects computers around the world.","We read the news on the internet.",technology,
+screen,noun,A1,"màn hình","The flat surface of a computer, TV or phone where you see pictures and words.","The screen of my laptop is very bright.",technology,
+game,noun,A1,"trò chơi","An activity you play for fun, often on a computer or phone.","My brother plays a game on his tablet after school.",technology,
+click,verb,A1,"nhấp chuột, bấm","To press a button on a mouse or touch a link on a screen.","Click the blue button to start.",technology,third_person:clicks; present_participle:clicking; past:clicked; past_participle:clicked
+website,noun,A1,"trang web","A group of pages on the internet about one subject or company.","The school has a new website.",technology,
+laptop,noun,A2,"máy tính xách tay","A small computer that you can carry with you.","He takes his laptop to the café.",technology,
+password,noun,A2,"mật khẩu","A secret word you type to use a computer, account or app.","Do not share your password with anyone.",technology,
+download,verb,A2,"tải xuống","To copy a file or program from the internet to your device.","You can download the app for free.",technology,third_person:downloads; present_participle:downloading; past:downloaded; past_participle:downloaded
+upload,verb,A2,"tải lên","To send a file from your device to the internet.","I will upload the photos tonight.",technology,third_person:uploads; present_participle:uploading; past:uploaded; past_participle:uploaded
+app,noun,A2,"ứng dụng","A program you use on a phone or tablet.","This app helps me learn new words.",technology,
+keyboard,noun,A2,"bàn phím","The set of keys you press to type on a computer.","The keyboard is too small for my hands.",technology,
+message,noun,A2,"tin nhắn","A short piece of written information you send to someone.","I got a message from my teacher.",technology,
+printer,noun,A2,"máy in","A machine that puts words and pictures from a computer onto paper.","The printer in our office is broken again.",technology,
+battery,noun,A2,"pin","A small object that stores power for phones, cameras and other devices.","My phone battery is almost empty.",technology,
+online,adjective,A2,"trực tuyến","Connected to or available on the internet.","We had an online lesson yesterday.",technology,
+search,verb,A2,"tìm kiếm","To look for information, especially on the internet.","Search the word in the dictionary app.",technology,third_person:searches; present_participle:searching; past:searched; past_participle:searched
+video,noun,A2,"video, đoạn phim","A recording of moving pictures that you can watch on a screen.","She watched a cooking video on her phone.",technology,
+software,noun,B1,"phần mềm","The programs that tell a computer what to do.","Our team uses free software to edit photos.",technology,
+hardware,noun,B1,"phần cứng","The physical parts of a computer, such as the keyboard and the screen.","The problem is in the hardware, not the program.",technology,
+install,verb,B1,"cài đặt","To put a new program on a computer or phone so that it is ready to use.","It takes five minutes to install the update.",technology,third_person:installs; present_participle:installing; past:installed; past_participle:installed
+update,noun,B1,"bản cập nhật","A newer version of a program with fixes or new features.","The latest update makes the app faster.",technology,
+device,noun,B1,"thiết bị","A machine or tool made for a particular job, such as a phone or tablet.","Please turn off every device before the exam.",technology,
+network,noun,B1,"mạng lưới, mạng máy tính","A group of computers that are connected so they can share information.","The office network was slow this morning.",technology,
+data,noun,B1,"dữ liệu","Facts and numbers that a computer stores and uses.","The app collects data about how long you sleep.",technology,
+digital,adjective,B1,"kỹ thuật số","Using computers or electronic signals to store and show information.","Most people take digital photos now.",technology,
+file,noun,B1,"tệp, tập tin","A collection of information stored under one name on a computer.","Save the file before you close the program.",technology,
+connect,verb,B1,"kết nối","To join a device to a network or to another device.","Connect your phone to the Wi-Fi first.",technology,third_person:connects; present_participle:connecting; past:connected; past_participle:connected
+account,noun,B1,"tài khoản","A personal record that lets you use a website or service.","Create an account to save your progress.",technology,
+delete,verb,B1,"xóa","To remove words, a file or a message from a computer or phone.","I deleted the old photos to free up space.",technology,third_person:deletes; present_participle:deleting; past:deleted; past_participle:deleted
+charger,noun,B1,"bộ sạc","A device that puts power back into a battery.","I forgot my phone charger at home.",technology,
+browser,noun,B1,"trình duyệt","A program you use to look at websites.","Open the link in a different browser.",technology,
+backup,noun,B1,"bản sao lưu","An extra copy of files that you keep in case the original is lost.","Always keep a backup of your work.",technology,
+deploy,verb,B2,"triển khai (đưa phần mềm, hệ thống hoặc dịch vụ vào sử dụng thực tế trên máy chủ)","To put a new version of software or a service into use for real users.","The team will deploy the new version on Friday evening.",technology,third_person:deploys; present_participle:deploying; past:deployed; past_participle:deployed
+server,noun,B2,"máy chủ","A powerful computer that stores data and provides services to other computers.","The website was down because the server crashed.",technology,
+database,noun,B2,"cơ sở dữ liệu","An organized collection of data stored on a computer.","Every order is saved in the database.",technology,
+algorithm,noun,B2,"thuật toán","A set of steps a computer follows to solve a problem.","The app uses an algorithm to suggest new songs.",technology,
+encrypt,verb,B2,"mã hóa","To change information into a secret code so that others cannot read it.","Banks encrypt your data before sending it.",technology,third_person:encrypts; present_participle:encrypting; past:encrypted; past_participle:encrypted
+bug,noun,B2,"lỗi phần mềm","A mistake in a computer program that makes it work wrongly.","We found a bug in the payment page.",technology,
+upgrade,verb,B2,"nâng cấp","To improve a machine or program by adding newer parts or features.","We need to upgrade the old computers this year.",technology,third_person:upgrades; present_participle:upgrading; past:upgraded; past_participle:upgraded
+interface,noun,B2,"giao diện","The way a program shows information and lets people use it.","The new interface is much easier to use.",technology,
+automate,verb,B2,"tự động hóa","To make a process work by machines or computers instead of people.","We automated the weekly report last month.",technology,third_person:automates; present_participle:automating; past:automated; past_participle:automated
+wireless,adjective,B2,"không dây","Working without cables, using radio signals.","The café offers free wireless internet.",technology,
+cloud,noun,B2,"điện toán đám mây","Storage and services that you use over the internet instead of on your own device.","All our photos are stored in the cloud.",technology,
+virus,noun,B2,"vi-rút máy tính","A harmful program that copies itself and damages a computer.","The virus deleted several important files.",technology,
+developer,noun,B2,"lập trình viên","A person who writes and builds software.","She works as a developer at a game company.",technology,
+compatible,adjective,B2,"tương thích","Able to work together with another machine or program.","This charger is not compatible with my phone.",technology,
+configure,verb,B2,"cấu hình, thiết lập","To arrange the settings of a program or device so that it works in a certain way.","It took an hour to configure the new router.",technology,third_person:configures; present_participle:configuring; past:configured; past_participle:configured
+apple,noun,A1,"quả táo","A round fruit with red, green or yellow skin.","I eat an apple every day.",food,
+rice,noun,A1,"gạo, cơm","Small white or brown grains that are cooked and eaten.","We have rice with fish for dinner.",food,
+bread,noun,A1,"bánh mì","A food made from flour, water and yeast, baked in an oven.","She buys fresh bread every morning.",food,
+egg,noun,A1,"trứng","An oval object laid by a bird, often eaten as food.","I had an egg for breakfast.",food,
+milk,noun,A1,"sữa","The white liquid that cows and some other animals produce, used as a drink.","The children drink milk before bed.",food,
+water,noun,A1,"nước","The clear liquid that falls as rain and that people drink.","Please give me a glass of water.",food,
+eat,verb,A1,"ăn","To put food in your mouth and swallow it.","We eat lunch at twelve o'clock.",food,third_person:eats; present_participle:eating; past:ate; past_participle:eaten
+drink,verb,A1,"uống","To take liquid into your mouth and swallow it.","I drink coffee every morning.",food,third_person:drinks; present_participle:drinking; past:drank; past_participle:drunk
+chicken,noun,A1,"thịt gà","The meat of a chicken, used as food.","My mother cooks chicken soup on Sundays.",food,
+fish,noun,A1,"cá","An animal that lives in water, or its meat eaten as food.","Do you like fish or meat?",food,
+banana,noun,A1,"quả chuối","A long curved fruit with a yellow skin.","He puts a banana in his bag for lunch.",food,
+tea,noun,A1,"trà","A hot drink made by pouring water on dried leaves.","Would you like a cup of tea?",food,
+hungry,adjective,A1,"đói","Wanting or needing food.","I am hungry after the long walk.",food,
+breakfast,noun,A1,"bữa sáng","The first meal of the day.","We have breakfast at seven.",food,
+cook,verb,A1,"nấu ăn","To make food ready to eat by heating it.","My father likes to cook on weekends.",food,third_person:cooks; present_participle:cooking; past:cooked; past_participle:cooked
+vegetable,noun,A2,"rau củ","A plant or part of a plant that you eat, such as a carrot or a potato.","Eat a green vegetable with every meal.",food,
+delicious,adjective,A2,"ngon","Having a very good taste.","This soup is delicious.",food,
+recipe,noun,A2,"công thức nấu ăn","A list of the food you need and the steps to make a dish.","Can you send me the recipe for this cake?",food,
+menu,noun,A2,"thực đơn","A list of the food and drinks you can order in a restaurant.","The waiter brought us the menu.",food,
+dessert,noun,A2,"món tráng miệng","Sweet food eaten at the end of a meal.","We had ice cream for dessert.",food,
+sugar,noun,A2,"đường","A sweet white or brown substance added to food and drinks.","I don't take sugar in my coffee.",food,
+salt,noun,A2,"muối","A white substance used to give food more flavour.","Add a little salt to the water.",food,
+bake,verb,A2,"nướng (bằng lò)","To cook food such as bread or cake in an oven.","We bake a cake for every birthday.",food,third_person:bakes; present_participle:baking; past:baked; past_participle:baked
+fry,verb,A2,"chiên, rán","To cook food in hot oil.","She fried the eggs in a small pan.",food,third_person:fries; present_participle:frying; past:fried; past_participle:fried
+snack,noun,A2,"món ăn vặt","A small amount of food eaten between meals.","I always carry a snack in my bag.",food,
+noodle,noun,A2,"mì, sợi mì","A long thin strip of food made from flour and water.","Each noodle in this soup is made by hand.",food,
+spicy,adjective,A2,"cay","Having a hot, strong taste from spices or chilli.","This curry is too spicy for me.",food,
+ingredient,noun,B1,"nguyên liệu","One of the foods you mix together to make a dish.","Fresh fish is the main ingredient of this soup.",food,
+flavour,noun,B1,"hương vị","The particular taste of a food or drink.","Which flavour of ice cream do you want?",food,
+boil,verb,B1,"luộc, đun sôi","To heat water or another liquid until it bubbles, or to cook food in it.","Boil the eggs for eight minutes.",food,third_person:boils; present_participle:boiling; past:boiled; past_participle:boiled
+portion,noun,B1,"khẩu phần","The amount of food served to one person.","The portion was too big for a child.",food,
+vegetarian,adjective,B1,"ăn chay, món chay","Not containing meat or fish, or not eating them.","Is there a vegetarian dish on the menu?",food,
+raw,adjective,B1,"sống, chưa nấu chín","Not cooked.","Some people eat raw fish.",food,
+slice,noun,B1,"lát, miếng mỏng","A thin flat piece cut from a larger piece of food.","Can I have another slice of bread?",food,
+diet,noun,B1,"chế độ ăn uống","The kind of food that a person usually eats.","A healthy diet includes plenty of fruit.",food,
+nutritious,adjective,B2,"bổ dưỡng","Containing many things the body needs to stay healthy.","Soup with beans and vegetables is cheap and nutritious.",food,
+ferment,verb,B2,"lên men","To change chemically through the action of bacteria or yeast.","Fish sauce ferments in large jars for many months.",food,third_person:ferments; present_participle:fermenting; past:fermented; past_participle:fermented
+cuisine,noun,B2,"ẩm thực","A style of cooking typical of a country or region.","Vietnamese cuisine uses a lot of fresh herbs.",food,
+garnish,verb,B2,"trang trí món ăn","To add a small amount of food to a dish to make it look nicer.","Garnish the soup with fresh herbs.",food,third_person:garnishes; present_participle:garnishing; past:garnished; past_participle:garnished
+appetite,noun,B2,"sự thèm ăn, khẩu vị","The feeling that you want to eat.","Exercise gives me a good appetite.",food,
+left,adjective,A1,"trái, bên trái","On the side of the body that is toward the west when you face north.","She writes with her left hand.",daily-life,
+house,noun,A1,"ngôi nhà","A building where people live.","Our house has a small garden.",daily-life,
+family,noun,A1,"gia đình","A group of people related to each other, such as parents and children.","My family eats dinner together.",daily-life,
+friend,noun,A1,"bạn, bạn bè","A person you know well and like.","My best friend lives next door.",daily-life,
+sleep,verb,A1,"ngủ","To rest with your eyes closed and your mind not awake.","I usually sleep for eight hours.",daily-life,third_person:sleeps; present_participle:sleeping; past:slept; past_participle:slept
+clean,verb,A1,"lau dọn, làm sạch","To remove dirt from something.","We clean the kitchen after dinner.",daily-life,third_person:cleans; present_participle:cleaning; past:cleaned; past_participle:cleaned
+bed,noun,A1,"giường","A piece of furniture you sleep on.","The cat is sleeping on my bed.",daily-life,
+morning,noun,A1,"buổi sáng","The early part of the day, from when the sun rises until noon.","I go for a walk every morning.",daily-life,
+clock,noun,A1,"đồng hồ","A device that shows the time.","The clock in the kitchen is fast.",daily-life,
+wash,verb,A1,"rửa, giặt","To clean something with water and often soap.","Wash your hands before you eat.",daily-life,third_person:washes; present_participle:washing; past:washed; past_participle:washed
+happy,adjective,A1,"vui vẻ, hạnh phúc","Feeling pleased and in a good mood.","The children are happy at the park.",daily-life,
+shower,noun,A1,"vòi sen, việc tắm vòi sen","A way of washing your body by standing under running water.","I take a shower every evening.",daily-life,
+kitchen,noun,A1,"nhà bếp","The room where you prepare and cook food.","Mum is in the kitchen.",daily-life,
+door,noun,A1,"cửa ra vào","The thing you open to go into or out of a room or building.","Please close the door.",daily-life,
+live,verb,A1,"sống, ở","To have your home in a particular place.","They live in a small flat in Hanoi.",daily-life,third_person:lives; present_participle:living; past:lived; past_participle:lived
+neighbour,noun,A2,"hàng xóm","A person who lives next to you or near you.","Our neighbour has a big dog.",daily-life,
+laundry,noun,A2,"đồ giặt, việc giặt giũ","Clothes and sheets that need to be washed, or have just been washed.","I do the laundry on Saturday.",daily-life,
+rent,noun,A2,"tiền thuê nhà","Money you pay regularly to live in a house or flat that belongs to someone else.","The rent is due on the first day of the month.",daily-life,
+tidy,adjective,A2,"gọn gàng","Neat and in order.","Keep your room tidy, please.",daily-life,
+alarm,noun,A2,"chuông báo thức","A clock or sound that wakes you up at a time you choose.","My alarm goes off at six.",daily-life,
+borrow,verb,A2,"mượn","To take something from someone and promise to give it back.","Can I borrow your umbrella?",daily-life,third_person:borrows; present_participle:borrowing; past:borrowed; past_participle:borrowed
+habit,noun,A2,"thói quen","Something you do often and regularly, often without thinking.","Reading before bed is a good habit.",daily-life,
+busy,adjective,A2,"bận rộn","Having a lot of things to do.","She is too busy to call today.",daily-life,
+relax,verb,A2,"thư giãn","To rest and stop feeling worried or tired.","I relax by listening to music.",daily-life,third_person:relaxes; present_participle:relaxing; past:relaxed; past_participle:relaxed
+weekend,noun,A2,"cuối tuần","Saturday and Sunday.","What are you doing at the weekend?",daily-life,
+furniture,noun,A2,"đồ nội thất","Things such as chairs, tables and beds in a room.","We bought new furniture for the living room.",daily-life,
+remember,verb,A2,"nhớ","To keep something in your mind or bring it back into your mind.","I can't remember her phone number.",daily-life,third_person:remembers; present_participle:remembering; past:remembered; past_participle:remembered
+chore,noun,B1,"việc nhà","A small job you have to do regularly at home, such as washing up.","Cleaning the bathroom is my least favourite chore.",daily-life,
+routine,noun,B1,"nếp sinh hoạt hằng ngày","The usual order in which you do things every day.","Exercise is part of my morning routine.",daily-life,
+commute,verb,B1,"đi lại (giữa nhà và nơi làm việc)","To travel regularly between home and work.","He commutes to the city by train.",daily-life,third_person:commutes; present_participle:commuting; past:commuted; past_participle:commuted
+appointment,noun,B1,"cuộc hẹn","An arrangement to see someone at a particular time.","I have a dentist appointment at three.",daily-life,
+recycle,verb,B1,"tái chế","To treat used things so that they can be used again.","We recycle all our bottles and paper.",daily-life,third_person:recycles; present_participle:recycling; past:recycled; past_participle:recycled
+stressful,adjective,B1,"căng thẳng, gây áp lực","Making you feel worried and nervous.","Moving house is very stressful.",daily-life,
+bill,noun,B1,"hóa đơn","A piece of paper that shows how much you must pay for something.","Did you pay the electricity bill?",daily-life,
+errand,noun,B1,"việc vặt","A short trip to do a small job, such as buying something.","I have one more errand to run this afternoon.",daily-life,
+procrastinate,verb,B2,"trì hoãn, chần chừ","To delay doing something you should do, often because it is unpleasant.","I always procrastinate when I have to clean the fridge.",daily-life,third_person:procrastinates; present_participle:procrastinating; past:procrastinated; past_participle:procrastinated
+clutter,noun,B2,"đồ đạc bừa bộn","A lot of things in an untidy state.","There is too much clutter on my desk.",daily-life,
+household,noun,B2,"hộ gia đình","All the people who live together in one house.","Almost every household in our street has a motorbike.",daily-life,
+maintain,verb,B2,"duy trì, bảo dưỡng","To keep something in good condition or at the same level.","It is hard to maintain an old house.",daily-life,third_person:maintains; present_participle:maintaining; past:maintained; past_participle:maintained
+well-being,noun,B2,"sự khỏe mạnh và hạnh phúc","The state of feeling healthy and happy.","Sleep is important for your well-being.",daily-life,
+go,verb,A1,"đi","To move or travel from one place to another.","Last summer we went to the beach by train.",travel,third_person:goes; present_participle:going; past:went; past_participle:gone
+left,adverb,A1,"sang trái, về bên trái","Toward the left side.","Turn left at the next corner.",travel,
+bus,noun,A1,"xe buýt","A large vehicle that carries many passengers along a fixed route.","I take the bus to work.",travel,
+train,noun,A1,"tàu hỏa","A vehicle that runs on a railway and carries people or goods.","The train leaves at nine.",travel,
+ticket,noun,A1,"vé","A piece of paper or a digital code that lets you travel or enter a place.","I bought a train ticket online.",travel,
+hotel,noun,A1,"khách sạn","A building where you pay to stay and sleep when you are travelling.","Our hotel is near the sea.",travel,
+map,noun,A1,"bản đồ","A drawing of an area that shows roads, towns and rivers.","Let's look at the map before we start.",travel,
+beach,noun,A1,"bãi biển","An area of sand or small stones next to the sea.","The children played on the beach all day.",travel,
+airport,noun,A1,"sân bay","A place where planes take off and land.","We arrived at the airport two hours early.",travel,
+holiday,noun,A1,"kỳ nghỉ","A period of time when you do not work or go to school, often spent travelling.","We spent our holiday in Hue.",travel,
+leave,verb,A2,"rời đi, rời khỏi","To go away from a place or a person.","The bus leaves at eight, so don't be late.",travel,third_person:leaves; present_participle:leaving; past:left; past_participle:left
+passport,noun,A2,"hộ chiếu","An official document you need to travel to other countries.","Don't forget your passport!",travel,
+luggage,noun,A2,"hành lý","The bags and cases you take with you when you travel.","Our luggage was too heavy.",travel,
+trip,noun,A2,"chuyến đi","A journey to a place and back again.","We took a short trip to the mountains.",travel,
+tourist,noun,A2,"khách du lịch","A person who visits a place for pleasure.","Every tourist wants a photo of the old bridge.",travel,
+book,verb,A2,"đặt trước (vé, phòng)","To arrange to have a seat, room or ticket at a later time.","I booked a room for two nights.",travel,third_person:books; present_participle:booking; past:booked; past_participle:booked
+arrive,verb,A2,"đến nơi","To reach a place at the end of a journey.","We arrived in Hanoi late at night.",travel,third_person:arrives; present_participle:arriving; past:arrived; past_participle:arrived
+flight,noun,A2,"chuyến bay","A journey in a plane.","Our flight was delayed by two hours.",travel,
+station,noun,A2,"nhà ga, bến xe","A building where trains or buses stop for passengers.","Meet me at the station at six.",travel,
+guide,noun,A2,"hướng dẫn viên","A person whose job is to show a place to visitors.","Our guide told us about the history of the temple.",travel,
+abroad,adverb,A2,"ở nước ngoài, ra nước ngoài","In or to another country.","She wants to study abroad next year.",travel,
+suitcase,noun,A2,"va li","A large bag with a handle for carrying clothes when you travel.","My suitcase has wheels.",travel,
+destination,noun,B1,"điểm đến","The place where someone is going.","Da Lat is a popular destination for couples.",travel,
+accommodation,noun,B1,"chỗ ở","A place to live or stay, such as a room or a flat.","The price includes flights and accommodation.",travel,
+journey,noun,B1,"hành trình","The act of travelling from one place to another, especially a long way.","The journey from Hanoi to Saigon takes about thirty hours by train.",travel,
+reservation,noun,B1,"sự đặt chỗ trước","An arrangement to keep a table, room or seat for you.","I have a reservation for two at seven.",travel,
+delay,verb,B1,"trì hoãn, làm chậm trễ","To make something happen later than planned.","Bad weather delayed our flight.",travel,third_person:delays; present_participle:delaying; past:delayed; past_participle:delayed
+sightseeing,noun,B1,"việc tham quan","Visiting interesting places as a tourist.","We did some sightseeing in the old town.",travel,
+currency,noun,B1,"tiền tệ","The money used in a particular country.","You can change currency at the airport.",travel,
+customs,noun,B1,"hải quan","The place at a border where officials check your bags.","We waited an hour at customs.",travel,
+explore,verb,B1,"khám phá","To travel around a place to learn about it.","We explored the caves by boat.",travel,third_person:explores; present_participle:exploring; past:explored; past_participle:explored
+souvenir,noun,B1,"quà lưu niệm","Something you buy to remind you of a place you visited.","I bought a small souvenir for my sister.",travel,
+itinerary,noun,B2,"lịch trình chuyến đi","A detailed plan of a journey, with the places and times.","Our itinerary includes three days in Hoi An.",travel,
+embark,verb,B2,"lên tàu, lên máy bay","To get onto a ship or plane.","Passengers can embark from ten o'clock.",travel,third_person:embarks; present_participle:embarking; past:embarked; past_participle:embarked
+scenic,adjective,B2,"có phong cảnh đẹp","Having beautiful views of nature.","We took the scenic road along the coast.",travel,
+remote,adjective,B2,"xa xôi, hẻo lánh","Far away from towns and other people.","They stayed in a remote village in the mountains.",travel,
+layover,noun,B2,"chặng dừng nối chuyến","A short stop between two parts of a journey, especially between flights.","We had a four-hour layover in Bangkok.",travel,
+landmark,noun,B2,"địa danh nổi tiếng","A famous building or place that is easy to recognise.","The Temple of Literature is a famous landmark in Hanoi.",travel,
+job,noun,A1,"công việc","The work that you do regularly to earn money.","My sister has a new job in a bank.",business,
+office,noun,A1,"văn phòng","A room or building where people work at desks.","Our office is on the fifth floor.",business,
+work,verb,A1,"làm việc","To do a job, especially to earn money.","I work from nine to five.",business,third_person:works; present_participle:working; past:worked; past_participle:worked
+money,noun,A1,"tiền","Coins and notes that you use to buy things.","I don't have much money this month.",business,
+meeting,noun,A2,"cuộc họp","An event where people come together to discuss something.","The meeting starts at ten.",business,
+manager,noun,A2,"người quản lý","A person who is in charge of a team or a business.","Please ask the manager.",business,
+customer,noun,A2,"khách hàng","A person who buys goods or services from a shop or company.","The shop gives every customer a free bag.",business,
+company,noun,A2,"công ty","An organization that sells goods or services to make money.","She works for a small company.",business,
+pay,verb,A2,"trả tiền","To give money for something you buy or for work someone does.","Can I pay by card?",business,third_person:pays; present_participle:paying; past:paid; past_participle:paid
+sell,verb,A2,"bán","To give something to someone in exchange for money.","They sell fresh bread at the market.",business,third_person:sells; present_participle:selling; past:sold; past_participle:sold
+price,noun,A2,"giá cả","The amount of money you must pay for something.","The price of rice went up this year.",business,
+boss,noun,A2,"sếp","The person who is in charge of you at work.","My boss lets me work from home on Fridays.",business,
+entrepreneur,noun,B2,"doanh nhân khởi nghiệp","A person who starts a business and takes financial risks.","She became an entrepreneur at the age of twenty-five.",business,
+merger,noun,B2,"sự sáp nhập","The joining of two companies into one.","The merger created the biggest bank in the country.",business,
+revenue,noun,B2,"doanh thu","The money a company receives from its business.","Online sales now make up half of our revenue.",business,
+stakeholder,noun,B2,"bên liên quan","A person or group with an interest in how a business is run.","We invited every stakeholder to the planning meeting.",business,
+outsource,verb,B2,"thuê ngoài","To pay another company to do work instead of doing it yourself.","Many firms outsource their customer service.",business,third_person:outsources; present_participle:outsourcing; past:outsourced; past_participle:outsourced
+liability,noun,B2,"trách nhiệm pháp lý","Legal responsibility for something, especially for paying a cost.","The company accepted liability for the accident.",business,
+turnover,noun,B2,"tổng doanh số","The total amount of money a business takes in a period.","Our annual turnover is about two billion dong.",business,
+lucrative,adjective,B2,"sinh lời cao","Producing a lot of money.","Selling coffee online became a lucrative business.",business,
+negotiation,noun,B2,"cuộc đàm phán","Formal discussion between people who are trying to reach an agreement.","After a long negotiation, both sides signed the deal.",business,
+benchmark,noun,B2,"chuẩn so sánh","A standard used to measure or compare other things.","Last year's sales are our benchmark.",business,
+budget,noun,B1,"ngân sách","The amount of money a person or company plans to spend in a period.","We must stay within our budget this year.",business,
+profit,noun,B1,"lợi nhuận","Money you make from business after paying all costs.","The shop made a small profit in its first year.",business,
+invoice,noun,B1,"hóa đơn bán hàng","A document that lists goods or services and how much the buyer must pay.","Please send the invoice to our accounts team.",business,
+contract,noun,B1,"hợp đồng","A written legal agreement between two people or companies.","Read the contract carefully before you sign it.",business,
+client,noun,B1,"khách hàng (dịch vụ)","A person or company that pays for professional services.","Our biggest client is a hotel chain.",business,
+supplier,noun,B1,"nhà cung cấp","A company that provides goods to another business.","We changed our paper supplier last month.",business,
+salary,noun,B1,"lương","Money an employee is paid every month or year.","Her salary went up after the promotion.",business,
+employee,noun,B1,"nhân viên","A person who is paid to work for a company.","Every new employee gets a laptop.",business,
+employer,noun,B1,"người sử dụng lao động","A person or company that pays people to work for them.","My employer pays for my English lessons.",business,
+deadline,noun,B1,"hạn chót","The time or day by which something must be done.","The deadline for the report is Friday.",business,
+schedule,noun,B1,"lịch trình, lịch làm việc","A plan that lists the times when things will happen.","Check the schedule for next week's meetings.",business,
+agenda,noun,B1,"chương trình họp","A list of things to discuss at a meeting.","The first item on the agenda is the budget.",business,
+proposal,noun,B1,"bản đề xuất","A plan or idea that is formally suggested.","The board accepted our proposal.",business,
+report,noun,B1,"bản báo cáo","A written document that gives information about a subject.","I need to finish the sales report today.",business,
+investment,noun,B1,"khoản đầu tư","Money put into a business to make more money later.","The new machine was a good investment.",business,
+investor,noun,B1,"nhà đầu tư","A person who puts money into a business to make a profit.","An investor from Singapore wants to buy shares.",business,
+market,noun,B1,"thị trường","The people or countries that might buy a product.","The Asian market is growing fast.",business,
+brand,noun,B1,"thương hiệu","The name a company gives to its products.","This brand of shoes is popular with students.",business,
+product,noun,B1,"sản phẩm","Something that is made to be sold.","Our new product goes on sale in May.",business,
+service,noun,B1,"dịch vụ","Work that a company does for customers, rather than goods it sells.","The hotel is famous for its friendly service.",business,
+discount,noun,B1,"sự giảm giá","An amount taken off the usual price.","Students get a ten percent discount.",business,
+receipt,noun,B1,"biên lai","A piece of paper that shows you have paid for something.","Keep the receipt in case you want to return it.",business,
+warehouse,noun,B1,"nhà kho","A large building where goods are stored before they are sold.","All the boxes are kept in the warehouse.",business,
+delivery,noun,B1,"sự giao hàng","The act of taking goods to a person or place.","Delivery is free for orders over 500,000 dong.",business,
+shipment,noun,B1,"lô hàng","A load of goods sent together.","The next shipment arrives on Monday.",business,
+stock,noun,B1,"hàng tồn kho","Goods that a shop or company has available to sell.","That model is out of stock.",business,
+shareholder,noun,B1,"cổ đông","A person who owns part of a company.","Every shareholder received a letter about the meeting.",business,
+partner,noun,B1,"đối tác","A person or company that works with another in business.","We are looking for a local partner in Da Nang.",business,
+colleague,noun,B1,"đồng nghiệp","A person you work with.","A colleague helped me with the new software.",business,
+interview,noun,B1,"buổi phỏng vấn","A meeting where someone asks you questions to decide if you get a job.","I have a job interview tomorrow morning.",business,
+candidate,noun,B1,"ứng viên","A person who is trying to get a job.","The best candidate speaks three languages.",business,
+promotion,noun,B1,"sự thăng chức","A move to a more important job in the same company.","He got a promotion after two years.",business,
+bonus,noun,B1,"tiền thưởng","Extra money paid to workers for good work.","Everyone received a bonus at the end of the year.",business,
+tax,noun,B1,"thuế","Money you must pay to the government.","The price includes tax.",business,
+loan,noun,B1,"khoản vay","Money that you borrow from a bank and must pay back.","They took out a loan to open a café.",business,
+debt,noun,B1,"khoản nợ","Money that you owe to someone.","The company paid off its debt in three years.",business,
+payment,noun,B1,"khoản thanh toán","An amount of money that is paid.","We received your payment yesterday.",business,
+purchase,noun,B1,"món hàng đã mua, việc mua hàng","Something that you buy, or the act of buying it.","Keep your receipt as proof of purchase.",business,
+refund,noun,B1,"khoản hoàn tiền","Money that is paid back to you, for example when you return something.","The shop gave me a full refund.",business,
+complaint,noun,B1,"lời phàn nàn, khiếu nại","A statement that you are unhappy about something.","We take every complaint seriously.",business,
+feedback,noun,B1,"ý kiến phản hồi","Comments about how well someone has done something.","Thank you for your useful feedback.",business,
+survey,noun,B1,"cuộc khảo sát","A set of questions asked to many people to learn their opinions.","We sent a survey to all our customers.",business,
+target,noun,B1,"mục tiêu, chỉ tiêu","A result that you try to achieve.","We reached our sales target in November.",business,
+strategy,noun,B1,"chiến lược","A plan for reaching a goal over a long time.","Our strategy is to sell more online.",business,
+competitor,noun,B1,"đối thủ cạnh tranh","A company that sells the same kind of products as another.","Our main competitor lowered its prices.",business,
+advertisement,noun,B1,"quảng cáo","A picture, film or text that tries to make people buy something.","I saw an advertisement for the new phone on the bus.",business,
+campaign,noun,B1,"chiến dịch","A planned set of activities to reach a goal, such as selling a product.","The summer campaign brought in many new customers.",business,
+presentation,noun,B1,"bài thuyết trình","A talk in which someone shows and explains something to a group.","She gave a presentation about the new product.",business,
+conference,noun,B1,"hội nghị","A large formal meeting where people discuss a subject.","The conference takes place in Ho Chi Minh City.",business,
+department,noun,B1,"phòng, ban","One section of a large company.","He works in the sales department.",business,
+headquarters,noun,B1,"trụ sở chính","The main office of a company.","The headquarters is in Hanoi.",business,
+branch,noun,B1,"chi nhánh","One of the shops or offices of a large company.","The bank opened a new branch near my house.",business,
+factory,noun,B1,"nhà máy","A building where goods are made by machines.","The factory produces ten thousand shirts a day.",business,
+staff,noun,B1,"đội ngũ nhân viên","All the people who work for an organization.","The staff are very friendly.",business,
+experience,noun,B1,"kinh nghiệm","Knowledge and skill you get from doing a job.","Do you have any experience in sales?",business,
+career,noun,B1,"sự nghiệp","The jobs a person does during their working life.","She started her career as a teacher.",business,
+agreement,noun,B1,"thỏa thuận","A decision or arrangement accepted by two or more sides.","The two companies reached an agreement.",business,
+deal,noun,B1,"thương vụ, giao dịch","A business arrangement that two sides agree on.","We closed the deal on Friday.",business,
+demand,noun,B1,"nhu cầu","The need or wish of people to buy goods or services.","There is a high demand for electric bikes.",business,
+expense,noun,B1,"chi phí, khoản chi","Money spent on something.","Travel is our biggest expense.",business,
+income,noun,B1,"thu nhập","Money that you earn from work or investments.","Their income is enough for a family of four.",business,
+wage,noun,B1,"tiền công","Money paid each hour, day or week for work.","The minimum wage rose this year.",business,
+economy,noun,B1,"nền kinh tế","The system of trade and industry in a country.","The economy grew by six percent last year.",business,
+industry,noun,B1,"ngành công nghiệp","The businesses that make one kind of product or give one kind of service.","Tourism is an important industry in Vietnam.",business,
+firm,noun,B1,"công ty, hãng","A business or company, often a small one.","He works for a law firm.",business,
+negotiate,verb,B1,"đàm phán, thương lượng","To discuss something formally in order to reach an agreement.","After three long weeks of meetings, phone calls and emails, our small family company finally managed to negotiate a better price with its main supplier, which means that we can keep prices low for loyal customers and still pay every member of staff a fair bonus at the end of the year.",business,third_person:negotiates; present_participle:negotiating; past:negotiated; past_participle:negotiated
+hire,verb,B1,"thuê, tuyển dụng","To give someone a job.","We plan to hire two new designers.",business,third_person:hires; present_participle:hiring; past:hired; past_participle:hired
+employ,verb,B1,"tuyển dụng, thuê làm","To pay someone to work for you.","The hotel employs about forty people.",business,third_person:employs; present_participle:employing; past:employed; past_participle:employed
+resign,verb,B1,"từ chức, nghỉ việc","To officially leave your job.","She resigned to start her own business.",business,third_person:resigns; present_participle:resigning; past:resigned; past_participle:resigned
+retire,verb,B1,"nghỉ hưu","To stop working, usually because of your age.","My father retired last year.",business,third_person:retires; present_participle:retiring; past:retired; past_participle:retired
+invest,verb,B1,"đầu tư","To put money into a business so that you can make a profit.","They invested all their savings in the shop.",business,third_person:invests; present_participle:investing; past:invested; past_participle:invested
+earn,verb,B1,"kiếm được (tiền)","To get money for the work you do.","How much do you earn a month?",business,third_person:earns; present_participle:earning; past:earned; past_participle:earned
+owe,verb,B1,"nợ","To have to pay money back to someone.","I still owe the bank a lot of money.",business,third_person:owes; present_participle:owing; past:owed; past_participle:owed
+lend,verb,B1,"cho vay, cho mượn","To give money to someone who will pay it back later.","The bank agreed to lend us the money.",business,third_person:lends; present_participle:lending; past:lent; past_participle:lent
+afford,verb,B1,"đủ khả năng chi trả","To have enough money to pay for something.","We can't afford a new car this year.",business,third_person:affords; present_participle:affording; past:afforded; past_participle:afforded
+charge,verb,B1,"tính phí","To ask an amount of money for goods or a service.","They charge extra for delivery.",business,third_person:charges; present_participle:charging; past:charged; past_participle:charged
+deliver,verb,B1,"giao hàng","To take goods to the person who bought them.","We deliver to all districts of the city.",business,third_person:delivers; present_participle:delivering; past:delivered; past_participle:delivered
+export,verb,B1,"xuất khẩu","To sell goods to another country.","Vietnam exports a lot of coffee.",business,third_person:exports; present_participle:exporting; past:exported; past_participle:exported
+import,verb,B1,"nhập khẩu","To buy goods from another country and bring them in.","We import machines from Japan.",business,third_person:imports; present_participle:importing; past:imported; past_participle:imported
+manufacture,verb,B1,"sản xuất (hàng loạt)","To make goods in large numbers in a factory.","The company manufactures shoes for sports brands.",business,third_person:manufactures; present_participle:manufacturing; past:manufactured; past_participle:manufactured
+produce,verb,B1,"sản xuất, làm ra","To make or grow something to sell.","This farm produces fruit for local markets.",business,third_person:produces; present_participle:producing; past:produced; past_participle:produced
+advertise,verb,B1,"quảng cáo","To tell people about a product so that they buy it.","We advertise on social media.",business,third_person:advertises; present_participle:advertising; past:advertised; past_participle:advertised
+promote,verb,B1,"quảng bá","To help sell a product by advertising it or making it popular.","Famous singers promote the new drink.",business,third_person:promotes; present_participle:promoting; past:promoted; past_participle:promoted
+launch,verb,B1,"ra mắt (sản phẩm)","To make a new product available for sale for the first time.","The company will launch its new phone in June.",business,third_person:launches; present_participle:launching; past:launched; past_participle:launched
+manage,verb,B1,"quản lý","To be in charge of a business, team or project.","She manages a team of ten people.",business,third_person:manages; present_participle:managing; past:managed; past_participle:managed
+organize,verb,B1,"tổ chức","To plan and arrange an event or activity.","Who will organize the year-end party?",business,third_person:organizes; present_participle:organizing; past:organized; past_participle:organized
+cancel,verb,B1,"hủy bỏ","To decide that something planned will not happen.","We had to cancel the meeting.",business,third_person:cancels; present_participle:cancelling; past:cancelled; past_participle:cancelled
+postpone,verb,B1,"hoãn lại","To move an event to a later time.","The launch was postponed until next month.",business,third_person:postpones; present_participle:postponing; past:postponed; past_participle:postponed
+attend,verb,B1,"tham dự","To go to an event such as a meeting or class.","All managers must attend the training.",business,third_person:attends; present_participle:attending; past:attended; past_participle:attended
+apply,verb,B1,"nộp đơn, ứng tuyển","To ask formally for a job, usually in writing.","I applied for a job at a bank.",business,third_person:applies; present_participle:applying; past:applied; past_participle:applied
+sign,verb,B1,"ký (tên)","To write your name on a document to show that you agree with it.","Please sign the form at the bottom.",business,third_person:signs; present_participle:signing; past:signed; past_participle:signed
+approve,verb,B1,"phê duyệt","To officially accept a plan or request.","The director approved the budget.",business,third_person:approves; present_participle:approving; past:approved; past_participle:approved
+reject,verb,B1,"từ chối, bác bỏ","To refuse to accept an offer, plan or request.","They rejected our first offer.",business,third_person:rejects; present_participle:rejecting; past:rejected; past_participle:rejected
+recommend,verb,B1,"giới thiệu, đề xuất","To say that someone or something is good or suitable.","Can you recommend a good accountant?",business,third_person:recommends; present_participle:recommending; past:recommended; past_participle:recommended
+compete,verb,B1,"cạnh tranh","To try to be more successful than other companies.","Small shops cannot compete with big supermarkets on price.",business,third_person:competes; present_participle:competing; past:competed; past_participle:competed
+supply,verb,B1,"cung cấp","To provide goods to a person or company.","A local farm supplies all our vegetables.",business,third_person:supplies; present_participle:supplying; past:supplied; past_participle:supplied
+train,verb,B1,"đào tạo","To teach someone the skills they need for a job.","We train every new worker for two weeks.",business,third_person:trains; present_participle:training; past:trained; past_participle:trained
+achieve,verb,B1,"đạt được","To succeed in reaching a goal.","We achieved all our goals this year.",business,third_person:achieves; present_participle:achieving; past:achieved; past_participle:achieved
+increase,verb,B1,"tăng","To become or make something larger in amount.","Sales increased by twenty percent.",business,third_person:increases; present_participle:increasing; past:increased; past_participle:increased
+reduce,verb,B1,"giảm","To make something smaller in amount or size.","We need to reduce our costs.",business,third_person:reduces; present_participle:reducing; past:reduced; past_participle:reduced
+expand,verb,B1,"mở rộng","To become larger, or to make a business larger.","The company plans to expand into Thailand.",business,third_person:expands; present_participle:expanding; past:expanded; past_participle:expanded
+estimate,verb,B1,"ước tính","To guess a number or cost by using the information you have.","We estimate that the project will cost two billion dong.",business,third_person:estimates; present_participle:estimating; past:estimated; past_participle:estimated
+persuade,verb,B1,"thuyết phục","To make someone agree to do something by giving reasons.","She persuaded the client to sign the contract.",business,third_person:persuades; present_participle:persuading; past:persuaded; past_participle:persuaded
+confirm,verb,B1,"xác nhận","To say that something is true or will happen as planned.","Please confirm your order by email.",business,third_person:confirms; present_participle:confirming; past:confirmed; past_participle:confirmed
+profitable,adjective,B1,"có lãi, sinh lời","Making money.","The new branch is already profitable.",business,
+professional,adjective,B1,"chuyên nghiệp","Showing the skill and good behaviour expected at work.","The staff were very professional.",business,
+efficient,adjective,B1,"hiệu quả","Working well without wasting time or money.","The new system is more efficient.",business,
+competitive,adjective,B1,"có sức cạnh tranh","Good enough to compete well with others, especially on price.","Our prices are very competitive.",business,
+financial,adjective,B1,"thuộc về tài chính","Connected with money.","The company had financial problems last year.",business,
+annual,adjective,B1,"hằng năm","Happening once every year.","The annual meeting is in March.",business,
+urgent,adjective,B1,"khẩn cấp","Needing to be done or dealt with immediately.","I have an urgent message for the manager.",business,
+reliable,adjective,B1,"đáng tin cậy","Able to be trusted to work well or do what is expected.","We need a reliable supplier.",business,
+qualified,adjective,B1,"đủ trình độ, đủ tiêu chuẩn","Having the right training or exams for a job.","We are looking for a qualified accountant.",business,

@@ -58,3 +58,31 @@ admin). 38. Màn Lịch sử giao dịch. 39. Màn Giao dịch trong admin. 40. 
 - Task 2: ghi lại nếu phải dùng dự phòng `'unsafe-inline'` (đã chốt, không hỏi lại).
 - Task 35: duyệt khung Figma Lịch sử giao dịch.
 - Mỗi mốc: duyệt hình trước khi merge.
+
+# M1 — as-built (23/10/2026)
+
+Nhánh `feat/giao-dien-nguoi-hoc-m1` (cắt từ `origin/dev` @ `87502c0`), thực hiện kiểu Native (`executing-plans`), một commit mỗi task.
+
+**Đã có:** cờ `NEXT_PUBLIC_LEARNER_APP` (tắt: `/…/app/*` → 307 về landing, code app không vào bản build); CSP; màu từ biến Figma + bản tối;
+lớp phiên và API chép từ admin; chữ `App` vi/en và định dạng theo múi giờ người học; bộ thành phần và khung app (thanh trên, chân trang, menu
+avatar, tab dưới điện thoại); API (g) `GET /v1/me/app-config`, nghĩa ở Từ hay sai, `starts_at` của nguồn gói; API (a) sửa ngày sinh 13+; đăng ký,
+đăng nhập, mã xác minh, quên/đặt mật khẩu, chọn ngôn ngữ; Cài đặt, Tài khoản; CSV mẫu 303 nghĩa + `pnpm learner:setup`; e2e M1 (luồng, axe
+vi/en × sáng/tối × 1440/390, không cuộn ngang, CSP); `pnpm shots` chụp ảnh trên stack thật. Hôm nay chỉ có khung (M2).
+
+**Đo và kết quả kiểm**
+- Cỡ Worker (gzip, `wrangler deploy --dry-run`): landing không app 2.941,92 KiB; bật app (Task 1) 2.943,28 KiB. Gói Free khoảng 3.072 KiB:
+  **sát giới hạn** — mỗi mốc sau phải đo lại (checklist Deploy).
+- CSP: `'self'` + SRI chặn script nhúng `self.__next_f.push(…)` của Next (68 báo `script-src-elem inline`, không có lỗi style) → bật dự phòng D20
+  (`'unsafe-inline'` cho script và style; khi dự phòng bật thì không đưa hash vào, vì hash làm trình duyệt bỏ qua `'unsafe-inline'`).
+- Unit: web 289, API (toàn bộ) xanh; e2e app + CSP trên bản build Worker: xem PR.
+
+**Khác plan / cần chủ dự án biết**
+- `border-strong` bản tối dùng `#6b7491` thay `#59627d` của Figma: giá trị Figma chỉ 2,33:1 trên nền thẻ tối, dưới mức 3:1 của viền ô nhập.
+- Chuyển trang sau form và ở cổng phiên dùng tải trang đầy đủ (`location.replace`): trên bản build Worker, `router.replace` đôi khi không chuyển
+  trang (e2e). Rủi ro cần theo dõi ở M2: nếu link thường cũng chập chờn.
+- Trên Windows, `next dev` không chạy được (SWC bị chặn): `pnpm dev:app` chạy dev server trong container Linux.
+- Cài đặt bản điện thoại theo M/90 (Ngôn ngữ, Giao diện là hàng "giá trị ›" mở tấm chọn; Đăng xuất là nút rộng cuối trang); web theo K/50.
+- Admin mở bằng `127.0.0.1:5173` phải gọi API bằng `http://127.0.0.1:3000` (cookie `refresh_token` chỉ gửi cùng host).
+- `apps/api/.env` cũ thiếu `ADMIN_APP_URL`, `LEARNER_APP_URL`, `TERMS_VERSION` (API không khởi động); tài liệu kiểm ghi cách sửa.
+- File CSV mẫu ghi đè nghĩa trùng từ + loại từ: chạy `learner:setup` trên DB riêng nếu DB có nội dung thật (đã làm vậy khi chạy thật).
+- Chưa làm ở M1 (để mốc dùng tới): `Tabs`, dải tra từ, `Menu` chung, `useFormat.relativeDays`.

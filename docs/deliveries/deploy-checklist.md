@@ -59,3 +59,17 @@ secret, backup) nằm ở design Bước 2.5 §14; những thứ chỉ kiểm đ
 - [ ] **Quy ước migration khi bảng đã có dữ liệu: `CHECK … NOT VALID` rồi `VALIDATE CONSTRAINT`; `CREATE INDEX CONCURRENTLY` đứng riêng một
   migration.** Nguồn: DB18 (`inventory-foundation-db.md`, như trên). Vì sao: cách hiện nay khóa cả bảng trong lúc quét; vô hại khi bảng trống, chặn
   ghi khi `learning_log` đã lớn.
+
+## Giao diện người học (`apps/web`, design giao-dien-nguoi-hoc, 22/10/2026)
+
+- [ ] **Worker Cloudflare của `apps/web` phải vừa giới hạn gói Free (khoảng 3 MiB sau nén), hoặc nâng gói Paid, khi bật
+  `NEXT_PUBLIC_LEARNER_APP=on`.** Nguồn: D21, design §4.5. Vì sao: đo ngày 22/10 (M1, Task 1): bản landing **chưa có app** đã là
+  2.941,92 KiB gzip, bản có app 2.943,28 KiB; mỗi mốc ghi lại cỡ mới ở `docs/deliveries/giao-dien-nguoi-hoc.md`. Đo bằng
+  `pnpm cf:docker --build` (in dòng "Total Upload … gzip").
+- [ ] **Ngay sau lần đầu CSP lên `main`, mở `wordmet.com` và `/vi/app` trên production, xem Console không có lỗi CSP.** Nguồn: D22,
+  design §4.6. Vì sao: beacon Cloudflare Web Analytics chỉ chèn ở edge, e2e local không thấy; CSP đang ở chế độ dự phòng D20
+  (`'unsafe-inline'` cho script/style) vì Next chèn script `self.__next_f.push(…)`.
+- [ ] **Chính sách bảo mật nhắc việc đo lượt xem bằng Cloudflare Web Analytics.** Nguồn: D22, design §12. Vì sao: script bên thứ ba duy nhất
+  chạy trên mọi trang, kể cả `/app`.
+- [ ] **Bản build production bật app phải có `NEXT_PUBLIC_API_BASE_URL` với host bắt đầu bằng `api.`.** Nguồn: design §4.2. Vì sao: cookie
+  `refresh_token` host-only của `admin-api.` và `api.` không được đè nhau; `next.config.ts` dừng build khi sai.
