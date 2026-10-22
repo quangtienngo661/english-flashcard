@@ -11,7 +11,9 @@ export const bulkAddBody = z.strictObject({
   level: z.enum(LEVELS).optional(),
   topic: z.string().regex(/^[a-z0-9-]+$/).optional(),
   pos: z.enum(VALID_POS).optional(),
-});
+  // Design §8.3: hand-picked senses (K/18), 1–100 distinct ids, never together with a filter.
+  sense_ids: z.array(uuid).min(1).max(100).refine((ids) => new Set(ids).size === ids.length).optional(),
+}).refine((body) => body.sense_ids === undefined || (body.level === undefined && body.topic === undefined && body.pos === undefined));
 export const statesQuery = z.strictObject({
   sense_ids: z.string().transform((value) => value.split(',')).pipe(z.array(uuid).min(1).max(100)),
 });
