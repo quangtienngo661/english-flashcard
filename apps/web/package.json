@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "next dev",
+    "dev:app": "node scripts/dev-app.mjs",
     "build": "next build",
     "start": "next start",
     "lint": "eslint . && node scripts/check-tailwind-raw.mjs",
@@ -12,6 +13,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
+    "shots": "playwright test --config playwright.shots.config.ts",
     "assert:static": "node scripts/assert-static.mjs",
     "gen:og-fonts": "node scripts/gen-og-fonts.mjs",
     "cf:build": "opennextjs-cloudflare build",
@@ -24,11 +26,14 @@
   },
   "dependencies": {
     "@opennextjs/cloudflare": "1.20.7",
+    "@tanstack/react-query": "5.104.2",
     "@wordmet/design-tokens": "workspace:*",
     "clsx": "2.1.1",
+    "lucide-react": "1.55.0",
     "next": "16.3.8",
     "next-intl": "4.14.9",
     "react": "19.3.0",
+    "react-aria-components": "1.22.1",
     "react-dom": "19.3.0",
     "tailwind-merge": "3.7.0",
     "zod": "4.6.5"
@@ -48,6 +53,7 @@
     "eslint": "9.39.5",
     "eslint-config-next": "16.3.8",
     "jsdom": "30.1.2",
+    "msw": "3.0.3",
     "playwright-core": "1.63.0",
     "tailwindcss": "4.3.3",
     "typescript": "6.0.3",

@@ -4,11 +4,7 @@ import { hasLocale, NextIntlClientProvider } from 'next-intl';
 import { getTranslations } from 'next-intl/server';
 import { Lexend } from 'next/font/google';
 import { notFound } from 'next/navigation';
-import { SiteFooter } from '@/components/layout/SiteFooter';
-import { SiteHeader } from '@/components/layout/SiteHeader';
-import { SkipLink } from '@/components/layout/SkipLink';
-import { JsonLd } from '@/components/seo/JsonLd';
-import { routing, type AppLocale } from '@/i18n/routing';
+import { routing } from '@/i18n/routing';
 import { buildMetadata } from '@/lib/metadata';
 import '../globals.css';
 
@@ -38,22 +34,14 @@ export const viewport: Viewport = { themeColor: '#2445d6' };
 export default async function LocaleLayout({ children, params }: LocaleParams & { children: ReactNode }) {
   const { locale } = await params;
   if (!hasLocale(routing.locales, locale)) notFound();
-  const t = await getTranslations({ locale, namespace: 'Nav' });
-  const meta = await getTranslations({ locale, namespace: 'Metadata' });
 
+  // Root layout: html, body, font and locale only. The landing chrome lives in (site)/layout.tsx, the learner app in app/layout.app.tsx.
   return (
-    <html lang={locale} className={lexend.variable}>
+    // The learner app's theme script sets data-theme on <html> before React hydrates (design §4.4).
+    <html lang={locale} className={lexend.variable} suppressHydrationWarning>
       <body className="min-h-dvh font-sans">
-        <JsonLd locale={locale as AppLocale} description={meta('description')} />
         {/* Locale only: client islands get their copy as props, so no messages are sent to the client. */}
-        <NextIntlClientProvider messages={null}>
-          <SkipLink label={t('skipToContent')} />
-          <SiteHeader />
-          <main id="main" tabIndex={-1}>
-            {children}
-          </main>
-          <SiteFooter />
-        </NextIntlClientProvider>
+        <NextIntlClientProvider messages={null}>{children}</NextIntlClientProvider>
       </body>
     </html>
   );

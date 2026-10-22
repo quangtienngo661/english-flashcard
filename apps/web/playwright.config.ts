@@ -22,6 +22,8 @@ export default defineConfig({
     timeout: 300_000,
     env: {
       NEXT_PUBLIC_SITE_URL: baseURL,
+      NEXT_PUBLIC_LEARNER_APP: 'on',
+      NEXT_PUBLIC_API_BASE_URL: 'http://localhost:3000',
       CLOUDFLARE_CF_FETCH_PATH: fileURLToPath(new URL('./.wrangler/e2e-cf.json', import.meta.url)),
     },
   },

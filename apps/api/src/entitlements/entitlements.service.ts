@@ -25,7 +25,9 @@ type Decision = { allowed: true } | ({ allowed: false } & Refusal);
 export type EntitlementsSnapshot = {
   plan: 'free' | 'trial' | 'pro';
   sources: Array<{
-    kind: 'subscription' | 'grant_plan' | 'grant_limits'; id: string; status: SubscriptionStatus | null; ends_at: string | null;
+    kind: 'subscription' | 'grant_plan' | 'grant_limits'; id: string; status: SubscriptionStatus | null;
+    /** Design §8.7 (GG3): a grant's start, a subscription's current period start. */
+    starts_at: string | null; ends_at: string | null;
     renews_at: string | null; cancel_at_period_end: boolean | null; pending_interval: 'month' | 'year' | null;
     limits: Partial<Record<LimitKey, number>> | null;
   }>;
@@ -147,7 +149,7 @@ export class EntitlementsService {
       if (status === 'expired' || status === 'revoked') continue;
       const end = sub.status === 'trialing' ? sub.trialEndsAt ?? sub.currentPeriodEnd : sub.currentPeriodEnd;
       sourceViews.push({
-        kind: 'subscription', id: sub.id, status, ends_at: sub.cancelAtPeriodEnd ? end?.toISOString() ?? null : null,
+        kind: 'subscription', id: sub.id, status, starts_at: sub.currentPeriodStart?.toISOString() ?? null, ends_at: sub.cancelAtPeriodEnd ? end?.toISOString() ?? null : null,
         renews_at: sub.cancelAtPeriodEnd ? null : end?.toISOString() ?? null, cancel_at_period_end: sub.cancelAtPeriodEnd,
         pending_interval: sub.pendingInterval, limits: null,
       });
@@ -156,7 +158,7 @@ export class EntitlementsService {
       if (grant.startsAt > now) continue;
       sourceViews.push({
         kind: grant.kind === 'plan' ? 'grant_plan' : 'grant_limits', id: grant.id, status: null,
-        ends_at: grant.endsAt.toISOString(), renews_at: null, cancel_at_period_end: null, pending_interval: null,
+        starts_at: grant.startsAt.toISOString(), ends_at: grant.endsAt.toISOString(), renews_at: null, cancel_at_period_end: null, pending_interval: null,
         limits: grant.kind === 'limits' ? grant.limits : null,
       });
     }

@@ -21,7 +21,7 @@ export class HistoryController {
 
   @Get('weak-words')
   weakWords(@Query({ schema: weakQuery }) query: z.infer<typeof weakQuery>, @CurrentLearner() learner: Learner) {
-    return this.history.weakWords(learner.userId, query);
+    return this.history.weakWords(learner.userId, learner.nativeLanguage, query);
   }
 
   @Get('history')

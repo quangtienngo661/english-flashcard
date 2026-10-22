@@ -34,7 +34,7 @@ export class SourcesRepository {
       subscriptions: subscriptions.map((row) => ({
         id: row.id, provider: row.provider, externalSubscriptionId: row.externalSubscriptionId,
         status: row.status as SubscriptionStatus, trialDenied: row.trialDenied, cancelAtPeriodEnd: row.cancelAtPeriodEnd,
-        trialEndsAt: row.trialEndsAt, currentPeriodEnd: row.currentPeriodEnd, graceEndsAt: row.graceEndsAt,
+        trialEndsAt: row.trialEndsAt, currentPeriodStart: row.currentPeriodStart, currentPeriodEnd: row.currentPeriodEnd, graceEndsAt: row.graceEndsAt,
         quotaAnchorAt: row.quotaAnchorAt, interval: row.interval as Interval, pendingInterval: row.pendingInterval as Interval | null,
       })),
       grants: grants.map((row) => ({

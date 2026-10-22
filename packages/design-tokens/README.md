@@ -44,6 +44,21 @@ that variable loads the `Lexend` family itself (for example a Google Fonts `<lin
 | `danger-deep` | `#8a2219` | ledge under the admin danger button |
 | `neutral-soft` | `#eef0f5` | "queued", "reverted", "unchanged" |
 | `wrong-chip` / `wrong-chip-deep` | `#ffd3cd` / `#d99b92` | a sticker picked wrongly, and its ledge |
+| `navy` / `navy-raised` | `#1b2444` / `#2c3760` | learner app: top bar and lookup strip, raised items on it |
+| `on-navy` / `on-navy-muted` | `#f1f3fd` / `#b9c1e0` | learner app: text on `navy` |
+| `session-card` | `var(--color-canvas)` | learner app: card in review and practice sessions |
+| `on-accent` | `#0f1a3d` | learner app: text on `accent` (stays dark in both themes) |
+| `highlight` | `#ffd84a` | learner app: the word marked in a saved sentence |
+| `shadow-ink` | `rgb(15 26 61 / 0.35)` | colour of the flat ledges and overlay shadows |
+
+## Dark theme (learner app only)
+
+`dark.css` redefines every colour under `[data-theme='dark']`, from the "Dark" mode of the Figma variables (file
+`7HcPAKLrWu32C27qYMJUOA`, collection "Wordmet B"). Only the `/app` layout of `apps/web` sets `data-theme`, so the landing
+and admin never change. Exceptions to the Figma values: `border-strong` is `#6b7491` (Figma `#59627d` is 2.33:1 on the dark
+`surface`; inputs need 3:1), and `canvas-deep`, `danger-deep`, `wrong-chip`, `wrong-chip-deep` (not in Figma) are chosen
+here. `apps/web/src/styles/tokens.test.ts` checks that every colour has a dark value and the learner app's pairs in both
+modes.
 
 ## Contrast pairs checked (LP12)
 

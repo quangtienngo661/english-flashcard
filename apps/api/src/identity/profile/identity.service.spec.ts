@@ -1,6 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { FakeClock } from '../../common/clock/clock.js';
+import { AppLogger, type LogEntry } from '../../common/logging/app-logger.js';
+import type { ProblemDetailsException } from '../../common/problem-details/problem-details.exception.js';
 import type { PrismaClient } from '../../generated/prisma/client.js';
 import { IdentityService } from './identity.service.js';
+
+const silentLogger = new AppLogger({ write: () => {} });
 
 describe('IdentityService (unit, isolated persistence)', () => {
   const prisma = { user: { findUnique: vi.fn(), update: vi.fn() } };
@@ -14,12 +19,12 @@ describe('IdentityService (unit, isolated persistence)', () => {
     vi.resetAllMocks();
     prisma.user.findUnique.mockResolvedValue({ ...row });
     prisma.user.update.mockImplementation(async ({ data }) => ({ ...row, ...data }));
-    identity = new IdentityService(prisma as unknown as PrismaClient);
+    identity = new IdentityService(prisma as unknown as PrismaClient, new FakeClock(), silentLogger);
   });
 
   it('emailsOf maps ids to addresses with no status or verification filter, and skips the query for no ids', async () => {
     const findMany = vi.fn().mockResolvedValue([{ id: 'u1', email: 'a@example.com' }]);
-    const service = new IdentityService({ user: { findMany } } as unknown as PrismaClient);
+    const service = new IdentityService({ user: { findMany } } as unknown as PrismaClient, new FakeClock(), silentLogger);
     expect(await service.emailsOf([])).toEqual(new Map()); expect(findMany).not.toHaveBeenCalled();
     expect(await service.emailsOf(['u1', 'u1', 'u2'])).toEqual(new Map([['u1', 'a@example.com']]));
     expect(findMany).toHaveBeenCalledWith({ where: { id: { in: ['u1', 'u2'] } }, select: { id: true, email: true } });
@@ -100,7 +105,7 @@ describe('IdentityService.normalizeStoredTimeZones', () => {
     rows[900].timezone = '+05:30'; rows[1200].timezone = 'Mars/Base'; rows[7].timezone = 'UTC';
     const { prisma, findMany, updateMany } = fakePrisma(rows);
 
-    expect(await new IdentityService(prisma as unknown as PrismaClient).normalizeStoredTimeZones()).toEqual({ scanned: 1201, changed: 5 });
+    expect(await new IdentityService(prisma as unknown as PrismaClient, new FakeClock(), silentLogger).normalizeStoredTimeZones()).toEqual({ scanned: 1201, changed: 5 });
 
     expect([rows[3], rows[499], rows[500], rows[900], rows[1200]].map((row) => row.timezone))
       .toEqual(['Asia/Saigon', 'Etc/GMT-7', 'Etc/GMT+5', 'UTC', 'UTC']);
@@ -109,7 +114,7 @@ describe('IdentityService.normalizeStoredTimeZones', () => {
     expect(updateMany.mock.calls.map(([args]) => args.where.id)).toEqual([id(3), id(499), id(500), id(900), id(1200)]);
     expect(findMany.mock.calls.map(([args]) => args.take)).toEqual([500, 500, 500]);
     expect(findMany.mock.calls.map(([args]) => args.where?.id?.gt)).toEqual([undefined, id(499), id(999)]);
-    expect(await new IdentityService(prisma as unknown as PrismaClient).normalizeStoredTimeZones()).toEqual({ scanned: 1201, changed: 0 });
+    expect(await new IdentityService(prisma as unknown as PrismaClient, new FakeClock(), silentLogger).normalizeStoredTimeZones()).toEqual({ scanned: 1201, changed: 0 });
   });
 
   it('normalize-timezones: never reads or touches emails, and leaves a row alone that changed after it was read', async () => {
@@ -119,7 +124,7 @@ describe('IdentityService.normalizeStoredTimeZones', () => {
     ];
     const { prisma, findMany, updateMany } = fakePrisma(rows, () => { rows[1].timezone = 'Europe/Berlin'; });
 
-    expect(await new IdentityService(prisma as unknown as PrismaClient).normalizeStoredTimeZones()).toEqual({ scanned: 2, changed: 1 });
+    expect(await new IdentityService(prisma as unknown as PrismaClient, new FakeClock(), silentLogger).normalizeStoredTimeZones()).toEqual({ scanned: 2, changed: 1 });
 
     expect(rows.map((row) => row.timezone)).toEqual(['Etc/GMT-7', 'Europe/Berlin']);
     expect(JSON.stringify([findMany.mock.calls, updateMany.mock.calls])).not.toContain('example.test');
@@ -128,6 +133,92 @@ describe('IdentityService.normalizeStoredTimeZones', () => {
   });
 
   it('normalize-timezones: an empty table scans nothing', async () => {
-    expect(await new IdentityService(fakePrisma([]).prisma as unknown as PrismaClient).normalizeStoredTimeZones()).toEqual({ scanned: 0, changed: 0 });
+    expect(await new IdentityService(fakePrisma([]).prisma as unknown as PrismaClient, new FakeClock(), silentLogger).normalizeStoredTimeZones()).toEqual({ scanned: 0, changed: 0 });
+  });
+});
+
+describe('IdentityService.updateProfile birth_date (design §8.1, GA1–GA7)', () => {
+  // 2026-10-18T05:00Z is 12:00 on 18/10 in Ho Chi Minh City.
+  const clock = new FakeClock(new Date('2026-10-18T05:00:00Z'));
+  const base = {
+    id: 'user', email: 'a@example.com', emailVerifiedAt: null as Date | null, nativeLanguage: 'vi' as string | null,
+    timezone: 'Asia/Ho_Chi_Minh', staffRole: null as string | null, mustChangePassword: false,
+    givenName: 'Lan' as string | null, familyName: null as string | null, birthDate: new Date('2000-05-12T00:00:00Z') as Date | null,
+  };
+  function setup(row = base) {
+    const prisma = {
+      user: {
+        findUnique: vi.fn().mockResolvedValue({ ...row }),
+        update: vi.fn().mockImplementation(async ({ data }) => ({ ...row, ...data })),
+      },
+    };
+    const logs: LogEntry[] = [];
+    const logger = new AppLogger({ write: (entry) => { logs.push(entry); } });
+    return { prisma, logs, identity: new IdentityService(prisma as unknown as PrismaClient, clock, logger) };
+  }
+  const problemOf = async (promise: Promise<unknown>) => {
+    try {
+      await promise;
+    } catch (error) {
+      const problem = error as ProblemDetailsException;
+      return { type: problem.problemType, violations: problem.extensions?.violations as string[] | undefined };
+    }
+    throw new Error('expected a problem');
+  };
+
+  it('GA1: a valid 13+ birth date is stored and returned; the log names the user, not the date', async () => {
+    const { identity, prisma, logs } = setup();
+    const profile = await identity.updateProfile('user', { birth_date: '2008-05-14' });
+    expect(profile?.birth_date).toBe('2008-05-14');
+    expect(prisma.user.update.mock.calls[0][0].data).toEqual({ birthDate: new Date('2008-05-14T00:00:00Z') });
+    expect(JSON.stringify(logs)).not.toContain('2008');
+    expect(logs.map((l) => l.event)).toContain('profile_birth_date_changed');
+  });
+
+  it('GA2: under 13 → 400 age-below-minimum and nothing written', async () => {
+    const { identity, prisma } = setup();
+    expect((await problemOf(identity.updateProfile('user', { birth_date: '2013-10-19' }))).type).toContain('age-below-minimum');
+    expect(prisma.user.update).not.toHaveBeenCalled();
+  });
+
+  it('GA2: turning 13 today in the profile zone is allowed', async () => {
+    const { identity } = setup();
+    expect((await identity.updateProfile('user', { birth_date: '2013-10-18' }))?.birth_date).toBe('2013-10-18');
+  });
+
+  it('GA3: after today in the profile zone → validation-failed with violations [birth_date]', async () => {
+    const { identity, prisma } = setup();
+    const problem = await problemOf(identity.updateProfile('user', { birth_date: '2026-10-19' }));
+    expect(problem.type).toContain('validation-failed');
+    expect(problem.violations).toEqual(['birth_date']);
+    expect(prisma.user.update).not.toHaveBeenCalled();
+  });
+
+  it('GA3: "today" follows a timezone sent in the same request (at 12:00Z, UTC+14 is already 19/10)', async () => {
+    const noon = (tz?: string) =>
+      new IdentityService(setup().prisma as unknown as PrismaClient, new FakeClock(new Date('2026-10-18T12:00:00Z')),
+        new AppLogger({ write: () => {} })).updateProfile('user', { birth_date: '2013-10-19', ...(tz ? { timezone: tz } : {}) });
+    expect((await problemOf(noon())).type).toContain('age-below-minimum');
+    expect((await noon('Pacific/Kiritimati'))?.birth_date).toBe('2013-10-19');
+  });
+
+  it('GA5: a bad birth date with a new name changes nothing', async () => {
+    const { identity, prisma } = setup();
+    await problemOf(identity.updateProfile('user', { given_name: 'Mai', birth_date: '2020-01-01' }));
+    expect(prisma.user.update).not.toHaveBeenCalled();
+  });
+
+  it('GA6: born 29/2/2008 is 13 on 1/3/2021, not on 28/2/2021', async () => {
+    const early = new IdentityService(setup().prisma as unknown as PrismaClient, new FakeClock(new Date('2021-02-28T05:00:00Z')),
+      new AppLogger({ write: () => {} }));
+    expect((await problemOf(early.updateProfile('user', { birth_date: '2008-02-29' }))).type).toContain('age-below-minimum');
+    const onTime = new IdentityService(setup().prisma as unknown as PrismaClient, new FakeClock(new Date('2021-03-01T05:00:00Z')),
+      new AppLogger({ write: () => {} }));
+    expect((await onTime.updateProfile('user', { birth_date: '2008-02-29' }))?.birth_date).toBe('2008-02-29');
+  });
+
+  it('GA7: an old staff account with no birth date can set one, same 13+ rule', async () => {
+    const { identity } = setup({ ...base, staffRole: 'editor', birthDate: null });
+    expect((await identity.updateProfile('user', { birth_date: '1990-01-01' }))?.birth_date).toBe('1990-01-01');
   });
 });
