@@ -5,7 +5,7 @@ import { renderApp } from '@/app-ui/test-utils';
 import { AuthGate } from './AuthGate';
 
 const hardReplace = vi.fn();
-vi.mock('@/app-shell/navigate', () => ({ hardReplace: (path: string) => hardReplace(path) }));
+vi.mock('@/app-shell/navigate', () => ({ hardReplace: (path: string) => hardReplace(path), isLeaving: () => false }));
 vi.mock('next/navigation', () => ({ usePathname: () => '/vi/app/login', useRouter: () => ({ replace: vi.fn(), push: vi.fn() }) }));
 
 beforeEach(() => hardReplace.mockReset());

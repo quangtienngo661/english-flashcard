@@ -3,10 +3,16 @@ import { act, renderHook } from '@testing-library/react';
 import { ApiError, NetworkError } from './api/problem';
 import { useSubmitOnce } from './use-submit-once';
 
+let leaving = false;
+vi.mock('./navigate', () => ({ isLeaving: () => leaving }));
+
 const conflict = (slug: string, retryAfter: number | null) =>
   new ApiError({ type: slug ? `http://api.test/problems/${slug}` : 'about:blank', slug, status: 409, title: 'c' }, retryAfter);
 
-afterEach(() => vi.useRealTimers());
+afterEach(() => {
+  vi.useRealTimers();
+  leaving = false;
+});
 
 describe('useSubmitOnce (E12–E14, Review Focus 1)', () => {
   it('a second press while the first is pending sends nothing', async () => {
@@ -29,6 +35,22 @@ describe('useSubmitOnce (E12–E14, Review Focus 1)', () => {
     expect(await second).toBeUndefined();
     expect(fn).toHaveBeenCalledTimes(1);
     expect(result.current.busy).toBe(false);
+  });
+
+  it('Review Focus 1: a press that leaves the page stays busy, so a second press sends nothing', async () => {
+    const fn = vi.fn(async () => {
+      leaving = true;
+      return 'ok';
+    });
+    const { result } = renderHook(() => useSubmitOnce(fn));
+    await act(async () => {
+      await result.current.submit();
+    });
+    expect(result.current.busy).toBe(true);
+    await act(async () => {
+      await result.current.submit();
+    });
+    expect(fn).toHaveBeenCalledTimes(1);
   });
 
   it('E12: each press gets a new key; a retry after a NetworkError reuses it', async () => {

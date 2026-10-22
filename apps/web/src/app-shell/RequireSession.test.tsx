@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { NextIntlClientProvider } from 'next-intl';
 import vi_ from '../../messages/vi.json';
@@ -9,13 +9,18 @@ import { SessionStore } from './session/session-store';
 import { BASE, makeFetch, makeMe, problem, tokenResponse, type Route } from './session/test-support';
 
 const replace = vi.fn();
+vi.mock('./timezone-sync', async (original) => ({
+  ...(await original<typeof import('./timezone-sync')>()),
+  deviceTimezone: () => 'Asia/Ho_Chi_Minh',
+}));
+
 let routerPath: string | null = null;
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ replace: vi.fn(), push: vi.fn() }),
   // The router's path; null = same as the address bar.
   usePathname: () => routerPath ?? window.location.pathname,
 }));
-vi.mock('./navigate', () => ({ hardReplace: (path: string) => replace(path) }));
+vi.mock('./navigate', () => ({ hardReplace: (path: string) => replace(path), isLeaving: () => false }));
 
 function at(path: string) {
   window.history.replaceState(null, '', path);
@@ -39,14 +44,12 @@ function setup(routes: Record<string, Route>, locale: 'vi' | 'en' = 'vi') {
 const signedIn = (me = makeMe()): Record<string, Route> => ({
   'POST /v1/auth/refresh': () => tokenResponse('tok-1'),
   'GET /v1/me': () => Response.json(me),
+  'POST /v1/auth/logout': () => new Response(null, { status: 204 }),
 });
 
 beforeEach(() => {
   routerPath = null;
   replace.mockReset();
-  vi.spyOn(Intl.DateTimeFormat.prototype, 'resolvedOptions').mockReturnValue({
-    timeZone: 'Asia/Ho_Chi_Minh',
-  } as Intl.ResolvedDateTimeFormatOptions);
 });
 afterEach(() => vi.restoreAllMocks());
 
@@ -64,6 +67,14 @@ describe('RequireSession', () => {
     setup({ 'POST /v1/auth/refresh': () => problem(401, 'invalid-token') });
     await waitFor(() => expect(replace).toHaveBeenCalledWith('/vi/app/login?next=%2Fvi%2Fapp%2Fgroup%3Fid%3Dg1'));
     expect(screen.queryByText('secret')).not.toBeInTheDocument();
+  });
+
+  it('E3/E4: a session that ended mid-use carries its reason to the sign-in page', async () => {
+    at('/vi/app/settings');
+    const { store } = setup(signedIn());
+    await screen.findByText('secret');
+    await act(() => store.logout('expired'));
+    await waitFor(() => expect(replace).toHaveBeenCalledWith('/vi/app/login?next=%2Fvi%2Fapp%2Fsettings&reason=expired'));
   });
 
   it('E5: API down at start → offline screen; Thử lại starts again', async () => {

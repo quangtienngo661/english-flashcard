@@ -9,6 +9,10 @@ describe('timezoneToSync (E11)', () => {
     expect(timezoneToSync('Europe/Berlin', 'Asia/Ho_Chi_Minh')).toBe('Europe/Berlin');
   });
 
+  it('two names of the same zone are the same zone (API stores Asia/Saigon, a browser may say Asia/Ho_Chi_Minh)', () => {
+    expect(timezoneToSync('Asia/Ho_Chi_Minh', 'Asia/Saigon')).toBeNull();
+  });
+
   it('never sends an empty zone', () => {
     expect(timezoneToSync('', 'Asia/Ho_Chi_Minh')).toBeNull();
   });

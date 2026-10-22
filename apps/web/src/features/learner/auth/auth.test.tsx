@@ -11,7 +11,7 @@ import { VerifyEmailForm } from './VerifyEmailForm';
 import { WelcomeLanguage } from './WelcomeLanguage';
 
 const replace = vi.fn();
-vi.mock('@/app-shell/navigate', () => ({ hardReplace: (path: string) => replace(path) }));
+vi.mock('@/app-shell/navigate', () => ({ hardReplace: (path: string) => replace(path), isLeaving: () => false }));
 let search = new URLSearchParams();
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ replace, push: vi.fn(), back: vi.fn() }),
@@ -138,6 +138,12 @@ describe('LoginForm (K/02, K/93)', () => {
     expect(screen.getByRole('textbox', { name: 'Email' })).toHaveValue('lan@example.com');
   });
 
+  it('E3: ?reason=expired after a full reload still says the session ended', async () => {
+    search = new URLSearchParams({ reason: 'expired' });
+    renderApp(<LoginForm />, { routes: signedOut });
+    expect(await screen.findByText('Bạn cần đăng nhập lại.')).toBeInTheDocument();
+  });
+
   it('E4: three 429 refreshes end at the sign-in screen with a line that says why', async () => {
     renderApp(<LoginForm />, { routes: { 'POST /v1/auth/refresh': () => rateLimited(1) }, instantWaits: true });
     expect(await screen.findByText(/quá nhiều yêu cầu/)).toBeInTheDocument();
@@ -168,6 +174,22 @@ describe('VerifyEmailForm (K/03)', () => {
     await typeCode('000000');
     await userEvent.click(screen.getByRole('button', { name: 'Xác minh' }));
     expect(await screen.findByText('Mã xác minh chưa đúng hoặc đã hết hạn.')).toBeInTheDocument();
+  });
+
+  it('a double click on resend sends one request', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    search = new URLSearchParams({ sent: '1' });
+    let release!: () => void;
+    const { count } = renderApp(<VerifyEmailForm />, {
+      routes: { 'POST /v1/auth/otp': () => new Promise<Response>((r) => (release = () => r(Response.json({}, { status: 202 })))) },
+    });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(61_000);
+    });
+    await userEvent.dblClick(await screen.findByRole('button', { name: 'Gửi lại mã' }));
+    expect(count('POST', '/v1/auth/otp')).toBe(1);
+    release();
+    vi.useRealTimers();
   });
 
   it('opened from Settings it sends a code itself; resend waits 60 s', async () => {

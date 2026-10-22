@@ -10,7 +10,7 @@ import { BASE, makeFetch } from './session/test-support';
 
 const replace = vi.fn();
 vi.mock('next/navigation', () => ({ useRouter: () => ({ replace: vi.fn(), push: vi.fn() }) }));
-vi.mock('./navigate', () => ({ hardReplace: (path: string) => replace(path) }));
+vi.mock('./navigate', () => ({ hardReplace: (path: string) => replace(path), isLeaving: () => false }));
 
 function Failing({ error }: { error: Error }) {
   useQuery({ queryKey: ['x'], queryFn: () => Promise.reject(error) });
