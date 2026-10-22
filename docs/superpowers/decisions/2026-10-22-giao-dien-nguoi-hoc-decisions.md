@@ -245,3 +245,7 @@ Danh sách đầy đủ ở design §14: trang tĩnh + query string; tiền tố
 nhớ lựa chọn; chỗ AI khác giữ D6; dòng báo K/81; chân trang trong `/app` không đổi ngôn ngữ; không sửa Figma; không dựng K/79b; script dựng dữ liệu thử;
 429 khi refresh có dòng báo; `preparing` quá 60 giây; thêm theo `sense_ids` không bỏ từ chức năng; K/18 gửi `sense_ids` cho "Thêm cả"; hàm façade mới của
 Learning; tên công tắc "Kiểu câu có AI".
+
+## Duyệt bản viết
+
+Chủ dự án đọc design, đổi D7 (chân trang hiện đủ link, link chưa có trang thì tắt), rồi duyệt: "ok viết plan giúp mình đi" (22/10/2026).

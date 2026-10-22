@@ -1,6 +1,6 @@
 # Giao diện người học trên web (Bước 3–7) — Design (22/10/2026)
 
-> **Trạng thái 22/10/2026:** bản viết đủ (đã qua builder check), chờ chủ dự án duyệt. Quyết định và các phương án đã đưa ra:
+> **Trạng thái 22/10/2026:** chủ dự án **duyệt bản viết** ("ok viết plan giúp mình đi", sau khi đổi D7). Đã qua builder check. Quyết định và các phương án đã đưa ra:
 > [`../decisions/2026-10-22-giao-dien-nguoi-hoc-decisions.md`](../decisions/2026-10-22-giao-dien-nguoi-hoc-decisions.md).
 > **Đầu vào:** mockup đã duyệt của đợt giao diện (Figma `7HcPAKLrWu32C27qYMJUOA`, page `08 Người học · Web`, page `09 Người học · Điện thoại`;
 > design [`2026-10-21-dot-giao-dien-design.md`](2026-10-21-dot-giao-dien-design.md) D1–D17), bản chữ
