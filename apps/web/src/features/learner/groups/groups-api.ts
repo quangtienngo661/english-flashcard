@@ -40,6 +40,29 @@ export type GroupItem = {
   added_at: string;
 };
 
+/** `GET /v1/groups/{id}/queue` card (Learning QueueService.queue). */
+export type Card = {
+  item_id: string;
+  sense_id: string;
+  level: number;
+  due_date: string;
+  priority: boolean;
+  section: 'priority' | 'due' | 'new' | 'backlog' | 'early';
+  content: {
+    sense_id: string;
+    scope: 'catalog' | 'private';
+    lemma: string;
+    pos: string;
+    level: string | null;
+    context_label: string | null;
+    meaning: { text: string; language: 'vi' | 'en'; translation_missing: boolean };
+    definition_en: string | null;
+    examples: string[];
+    form_of: { lemma: string; kind: string } | null;
+    sentences: string[];
+  };
+};
+
 export type TopicSuggestion = {
   topic: { code: string; name: string };
   level: string;
@@ -89,6 +112,41 @@ export function useGroupItems(id: string, cell: Cell | null) {
     getNextPageParam: (last) => last.next_page_token,
   });
 }
+
+/** Every card of a deck with its content (`mode=all`), or today's queue (`mode=due`). */
+export function useGroupQueue(id: string | null, mode: 'due' | 'all') {
+  const api = useApi();
+  return useQuery({
+    queryKey: [...groupKey(id ?? ''), 'queue', mode],
+    queryFn: () => api.get<{ cards: Card[] }>(`/v1/groups/${id}/queue?mode=${mode}`),
+    enabled: id !== null,
+  });
+}
+
+/** All item rows of a deck (pages of 100), for what the queue does not carry: other decks, a changed meaning. */
+export function useAllGroupItems(id: string | null) {
+  const api = useApi();
+  return useQuery({
+    queryKey: [...groupKey(id ?? ''), 'items', 'every'],
+    enabled: id !== null,
+    queryFn: async () => {
+      const items: GroupItem[] = [];
+      let token: string | null = null;
+      do {
+        const page: { items: GroupItem[]; next_page_token: string | null } = await api.get(
+          `/v1/groups/${id}/items?page_size=100${token ? `&page_token=${encodeURIComponent(token)}` : ''}`,
+        );
+        items.push(...page.items);
+        token = page.next_page_token;
+      } while (token);
+      return new Map(items.map((item) => [item.item_id, item]));
+    },
+  });
+}
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+/** E17: an id from the address bar that is not a UUID never reaches the API. */
+export const isId = (value: string | null): value is string => value !== null && UUID.test(value);
 
 export function useTopicSuggestions() {
   const api = useApi();

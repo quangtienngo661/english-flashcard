@@ -60,7 +60,11 @@ export function GroupCard({ group, index, actions }: { group: GroupSummary; inde
           {t('words', { count: group.total })}
           {group.backlog > 0 && ` · ${t('backlogShort', { count: group.backlog })}`}
         </p>
-        <h3 className="break-words text-title font-semibold text-ink">{group.name}</h3>
+        <h3 className="break-words text-title font-semibold text-ink">
+          <Link href={`/${locale}/app/group?id=${group.id}`} className="hover:underline">
+            {group.name}
+          </Link>
+        </h3>
         <span
           className={cn(
             'w-fit rounded-full px-2 py-0.5 text-caption font-semibold',
