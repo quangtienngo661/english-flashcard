@@ -37,6 +37,7 @@ cảnh và ràng buộc; rồi 32 câu của research chữ, cũng không đề 
 | D19 | Dữ liệu cho chủ dự án kiểm (builder check) | Nội dung thật + CSV mẫu khoảng 300 nghĩa | Chủ dự án (CSV theo đề xuất) |
 | D20 | CSP khi SRI chặt không chạy (builder check) | `'unsafe-inline'` cho script, style; giữ chặt phần còn lại | Chủ dự án, theo đề xuất |
 | D21 | Worker Cloudflare gói Free (builder check) | Không đưa `/app` vào bản build khi cờ tắt; đo cỡ khi cờ bật | Chủ dự án, theo đề xuất |
+| D22 | Cloudflare Web Analytics | Giữ; CSP cho phép ở mọi trang; đổi ràng buộc "không script bên thứ ba" | Chủ dự án (phạm vi mọi trang theo đề xuất) |
 
 ## D1 — Chia mốc và PR (câu 1)
 
@@ -223,10 +224,18 @@ một giao dịch để admin và learner có thể xem"; chỗ: "cài đặt =>
 bảng mới, việc (i) cỡ vừa) và đề xuất PR M4b. Chủ dự án duyệt danh sách trường (loại, gói và kỳ, số tiền và đơn vị, ngày, kỳ được dùng, trạng thái, cổng, mã
 giao dịch: "ok được"); dùng thử và lần cấp chung danh sách: "có"; phía admin làm màn và API: "cả 2".
 
-## Cloudflare Web Analytics (chờ chủ dự án)
+## D22 — Cloudflare Web Analytics
 
-Chủ dự án gửi HTML thật của landing: có beacon `static.cloudflareinsights.com` (Web Analytics bật), không có Rocket Loader, Email Obfuscation. Phương án: (a) tắt
-(giữ ràng buộc "không script bên thứ ba" của UI-CONTEXT §2); (b) giữ, cho phép trong CSP (đổi ràng buộc). Chủ dự án hỏi hệ quả; chưa chọn.
+Chủ dự án gửi HTML thật của landing: có beacon `static.cloudflareinsights.com` (Web Analytics bật), không có Rocket Loader, Email Obfuscation. Chủ dự án hỏi
+hệ quả; Claude đưa bảng:
+
+| Phương án | Trade-off |
+|---|---|
+| (a) Tắt | Mất số liệu lượt xem landing; giữ ràng buộc "không script bên thứ ba"; CSP gọn; e2e local kiểm đúng như production |
+| ✅ (b) Giữ, cho phép trong CSP | Giữ số liệu; đổi ràng buộc; beacon chạy trong mọi trang kể cả `/app` (trang giữ `access_token`; rủi ro thấp vì Cloudflare vốn đứng giữa mọi request); chỉ kiểm được trên production; Chính sách bảo mật nên nhắc |
+
+Chủ dự án: "b". Claude: cho phép ở mọi trang (chặn riêng ở `/app` thì mỗi lần mở báo lỗi CSP và không có số liệu cho app); checklist Deploy thêm kiểm lỗi CSP
+trên production và mục Chính sách bảo mật.
 
 ## Đề xuất kỹ thuật trong design (Claude tự quyết, chủ dự án xem khi duyệt design)
 

@@ -1,6 +1,6 @@
 # Giao diện người học trên web (Bước 3–7) — Design (22/10/2026)
 
-> **Trạng thái 22/10/2026:** bản viết, chờ chủ dự án duyệt. Quyết định và các phương án đã đưa ra:
+> **Trạng thái 22/10/2026:** bản viết đủ (đã qua builder check), chờ chủ dự án duyệt. Quyết định và các phương án đã đưa ra:
 > [`../decisions/2026-10-22-giao-dien-nguoi-hoc-decisions.md`](../decisions/2026-10-22-giao-dien-nguoi-hoc-decisions.md).
 > **Đầu vào:** mockup đã duyệt của đợt giao diện (Figma `7HcPAKLrWu32C27qYMJUOA`, page `08 Người học · Web`, page `09 Người học · Điện thoại`;
 > design [`2026-10-21-dot-giao-dien-design.md`](2026-10-21-dot-giao-dien-design.md) D1–D17), bản chữ
@@ -45,6 +45,7 @@ bằng tiếng Việt và tiếng Anh, sáng và tối; chủ dự án tự ki�
 | D19 | Dữ liệu cho chủ dự án kiểm | Nội dung thật đã nhập **và** một file CSV mẫu khoảng 300 nghĩa nạp qua luồng nhập CSV của admin | Chủ dự án; CSV theo đề xuất |
 | D20 | CSP khi SRI chặt không chạy | Cho phép `'unsafe-inline'` cho script và style nhúng; giữ chặt `connect-src`, `frame-ancestors`, `object-src`, `base-uri`, `form-action`; file script vẫn có SRI | Chủ dự án, theo đề xuất |
 | D21 | Worker Cloudflare gói Free | Cờ tắt → code `/app` không vào bản build production; đo cỡ Worker khi cờ bật, ghi vào checklist Deploy | Chủ dự án, theo đề xuất |
+| D22 | Cloudflare Web Analytics | Giữ; CSP cho phép script `static.cloudflareinsights.com` và gửi số liệu về `cloudflareinsights.com`, ở mọi trang kể cả `/app`; đổi ràng buộc "không tải script bên thứ ba" (UI-CONTEXT §2) thành "chỉ trừ Cloudflare Web Analytics" | Chủ dự án; phạm vi mọi trang theo đề xuất |
 
 ## 3. Phạm vi
 
@@ -163,8 +164,9 @@ bằng tiếng Việt và tiếng Anh, sáng và tối; chủ dự án tự ki�
 - **Rủi ro đã thấy:** HTML thật của landing (chủ dự án gửi 22/10) có script nhúng `self.__next_f.push(…)`; React Aria có thể ghi `style="…"` trong HTML.
   Task đầu của M1 build thật, mở landing và một trang `/app`, đọc lỗi CSP của trình duyệt. Chạy được với `'self'` thì giữ. Bị chặn thì dùng cách dự phòng
   đã chốt (D20): thêm `'unsafe-inline'` cho `script-src` và `style-src`, giữ nguyên các chỉ thị còn lại, SRI vẫn bật cho file script; ghi kết quả vào as-built.
-- **Cloudflare Web Analytics** đang bật trên `wordmet.com` (HTML thật có `static.cloudflareinsights.com/beacon.min.js`); Cloudflare chèn script này ở edge
-  nên e2e local không thấy. Cách xử lý chờ chủ dự án (mục 12).
+- **Cloudflare Web Analytics** (D22): đang bật trên `wordmet.com`, Cloudflare chèn beacon ở edge vào mọi trang HTML. CSP thêm
+  `https://static.cloudflareinsights.com` vào `script-src` và `https://cloudflareinsights.com` vào `connect-src` cho mọi đường dẫn (landing và `/app`).
+  e2e local không thấy beacon, nên checklist Deploy thêm mục kiểm "không có lỗi CSP trên production" ngay sau lần đầu CSP lên `main`.
 - e2e: một test đọc header CSP và bắt sự kiện `securitypolicyviolation` trên landing và vài trang app; không được có vi phạm.
 
 ### 4.7 Co giãn (D5)
@@ -611,7 +613,8 @@ chỗ bản chữ chưa có, Claude viết theo mẫu §3.1 của bản chữ (c
 ## 12. Rủi ro và việc còn mở
 
 - **CSP + SRI với OpenNext** chưa chạy thử (4.6); cách dự phòng đã chốt (D20).
-- **Cloudflare Web Analytics** đang bật trên production: **chờ chủ dự án chọn** tắt (giữ ràng buộc "không script bên thứ ba") hay giữ và cho phép trong CSP.
+- **Cloudflare Web Analytics** (D22) chạy trong cả trang người học; beacon chỉ kiểm được trên production. Chính sách bảo mật chính thức (trước ra mắt) cần
+  nhắc việc đo lượt xem.
 - **Worker gói Free (3 MiB):** loại `/app` khỏi bản build khi cờ tắt (D21) chưa kiểm với OpenNext; cỡ khi cờ bật chưa đo.
 - **Việc (i) là thay đổi cỡ vừa ở Entitlements** (mô hình sự kiện thanh toán, bảng mới), lớn hơn các việc API khác.
 - **Khối lượng:** khoảng 90 khung × hai thứ tiếng × hai chế độ; mỗi mốc là một PR lớn. Plan chia task nhỏ trong mốc.
@@ -625,6 +628,9 @@ chỗ bản chữ chưa có, Claude viết theo mẫu §3.1 của bản chữ (c
 ## 13. Tài liệu cần cập nhật
 
 - Decision record (cùng nhánh); plan (sau khi bản này được duyệt) và plan tóm tắt `docs/deliveries/giao-dien-nguoi-hoc.md`.
+- `docs/deliveries/deploy-checklist.md`: cỡ Worker so với gói Free (D21); kiểm lỗi CSP trên production sau lần đầu CSP lên `main` (D22); Chính sách bảo mật
+  nhắc Cloudflare Web Analytics (D22).
+- UI-CONTEXT §2: ràng buộc "không tải script bên thứ ba" thêm ngoại lệ Cloudflare Web Analytics (D22).
 - Bản chữ mục 17 (7.4); UI-CONTEXT §10 thêm một đoạn trỏ tới đợt này; `.env.example` của API (`CORS_ORIGINS` thêm `http://localhost:3001`);
   README `apps/web` (chạy app người học, biến môi trường); CLAUDE.md (một mục "Giao diện người học").
 - Khi xong: as-built trong `docs/deliveries/giao-dien-nguoi-hoc.md`; design Bước 7 ghi rằng D12 đổi luật đồng ý và D10 bỏ đường vào điền từ từ câu đã lưu.
