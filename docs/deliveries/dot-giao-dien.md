@@ -161,3 +161,10 @@ gói trên màn Pro / Dùng thử; K/74c (chỉ còn [Dừng, để sau]); dòng
 - **Admin** là mức khung; chủ dự án đã ghi sẽ làm lại cả khối giao diện admin.
 - **Việc ngoài đợt** (design §10): ba việc API ở trên, sửa ngày sinh qua `PATCH /v1/me`, chữ design Bước 7 §6.7, ghi chú design Bước 6 D8, kiểm bản tiếng
   Anh khi code.
+
+## Sau merge: góp ý mobile (22/10/2026)
+
+Chủ dự án góp 6 điểm cho page 09 (web xem sau); đã sửa trên nhánh `claude/dot-giao-dien-build-ad3557`, PR mới vào `dev`. Chữ và khung: bản chữ mục 14;
+cách hiểu từng điểm: decision record, mục "Sau merge — góp ý mobile"; ảnh: `docs/mockups/2026-10-21/duyet/mobile-vong-3/`. Thêm khung M/21b (danh sách lọc
+đang mở). Script kiểm trên cả 97 khung của page 09: chữ thấp nhất 4,69:1, không tràn, tối đa một nút vàng, không gờ nút bị cắt. Khi đổi, hàng chip của
+M/40, M/44 (bộ lọc chọn nhiều) bị thay nhầm bằng một ô; đã dựng lại đủ bốn bộ lọc theo bản web K/30 (Trình độ, Chủ đề, Loại từ, Chỉ từ của tôi).
