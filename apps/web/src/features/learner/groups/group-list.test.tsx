@@ -53,6 +53,19 @@ describe('GroupListPage (K/16, K/16b)', () => {
   });
 });
 
+describe('topic suggestions (K/94)', () => {
+  it('until M3 there is no link to Tra từ (review I8)', async () => {
+    renderApp(<GroupListPage />, {
+      routes: withGroups([deck(1, 1)], {
+        'GET /v1/topics/suggestions': () =>
+          Response.json({ items: [{ topic: { code: 'business', name: 'Kinh doanh' }, level: 'B1', count: 40, samples: [] }] }),
+      }),
+    });
+    expect(await screen.findByText('Tạo nhóm nhanh theo chủ đề')).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Xem mọi chủ đề trong Tra từ' })).not.toBeInTheDocument();
+  });
+});
+
 describe('deck dialogs (K/17, K/14)', () => {
   it('K/17: create counts "12/60", stops at 60 characters, and a double click sends one request', async () => {
     let release!: () => void;
@@ -73,6 +86,26 @@ describe('deck dialogs (K/17, K/14)', () => {
     await userEvent.dblClick(within(screen.getByRole('dialog')).getByRole('button', { name: 'Tạo nhóm' }));
     expect(count('POST', '/v1/groups')).toBe(1);
     release();
+  });
+
+  it('E18: after a version conflict the name field shows the name saved elsewhere (review I6)', async () => {
+    let stored = { id: 'g1', name: 'Nhóm 1', version: 1, item_count: 10, removable_items: 0 };
+    renderApp(<GroupListPage />, {
+      routes: withGroups([deck(1, 1)], {
+        'GET /v1/groups/g1': () => Response.json(stored),
+        'PATCH /v1/groups/g1': () => {
+          stored = { ...stored, name: 'Tên từ máy khác', version: 2 };
+          return problem(409, 'version-conflict');
+        },
+      }),
+    });
+    await userEvent.click(await screen.findByRole('button', { name: 'Tùy chọn nhóm Nhóm 1' }));
+    await userEvent.click(await screen.findByRole('menuitem', { name: 'Đổi tên nhóm' }));
+    const field = await screen.findByRole('textbox', { name: 'Tên nhóm' });
+    await userEvent.clear(field);
+    await userEvent.type(field, 'Tên của tôi');
+    await userEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Lưu tên mới' }));
+    await waitFor(() => expect(field).toHaveValue('Tên từ máy khác'));
   });
 
   it('a 409 group-limit-reached says the limit with the admin number', async () => {

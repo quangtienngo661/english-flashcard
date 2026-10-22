@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { problem } from '@/app-shell/session/test-support';
 import { renderApp } from '@/app-ui/test-utils';
 import { BacklogPage } from './BacklogPage';
 
@@ -61,6 +62,32 @@ describe('BacklogPage (K/15)', () => {
     expect(count('DELETE', `/v1/items/${uuid(1)}`)).toBe(0);
     await userEvent.click(within(dialog).getByRole('button', { name: 'Bỏ 1 từ' }));
     await waitFor(() => expect(count('DELETE', `/v1/items/${uuid(1)}`)).toBe(1));
+  });
+
+  it('a failure halfway through "Bỏ khỏi việc học" keeps only the words not yet removed; a 404 counts as removed (review I5)', async () => {
+    let fail = true;
+    const { count } = renderApp(<BacklogPage />, {
+      routes: routes({
+        [`DELETE /v1/items/${uuid(1)}`]: () => new Response(null, { status: 204 }),
+        [`DELETE /v1/items/${uuid(2)}`]: () => {
+          if (fail) {
+            fail = false;
+            return problem(500, '');
+          }
+          return problem(404, 'not-found');
+        },
+        [`DELETE /v1/items/${uuid(3)}`]: () => new Response(null, { status: 204 }),
+      }),
+    });
+    for (const n of [1, 2, 3]) await userEvent.click(await screen.findByRole('checkbox', { name: `Chọn word${n}` }));
+    await userEvent.click(screen.getByRole('button', { name: 'Bỏ khỏi việc học' }));
+    await userEvent.click(within(await screen.findByRole('dialog')).getByRole('button', { name: 'Bỏ 3 từ' }));
+    expect(await screen.findByText('Đã chọn 2 từ')).toBeInTheDocument();
+    await waitFor(() => expect(count('GET', `/v1/groups/${G}/backlog?page_size=100`)).toBe(2));
+    await userEvent.click(screen.getByRole('button', { name: 'Bỏ khỏi việc học' }));
+    await userEvent.click(within(await screen.findByRole('dialog')).getByRole('button', { name: 'Bỏ 2 từ' }));
+    await waitFor(() => expect(count('DELETE', `/v1/items/${uuid(3)}`)).toBe(1));
+    expect(count('DELETE', `/v1/items/${uuid(1)}`)).toBe(1);
   });
 
   it('the explainer uses the admin number of days', async () => {

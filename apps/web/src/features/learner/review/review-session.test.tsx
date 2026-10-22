@@ -155,6 +155,17 @@ describe('ReviewSession (K/20–K/22)', () => {
     expect(screen.getByTestId('review-count')).toHaveTextContent('0');
   });
 
+  it('"Thử lại" on the offline band refetches active queries but the session keeps its cards (review I4)', async () => {
+    const { client, count } = renderApp(<ReviewSession />, { routes: routes([DEPLOY, CACHE]) });
+    await screen.findByRole('group', { name: 'Thẻ 1 trên 2' });
+    await userEvent.keyboard(' ');
+    await userEvent.keyboard('2');
+    await screen.findByRole('group', { name: 'Thẻ 2 trên 2' });
+    await client.refetchQueries({ type: 'active' });
+    expect(count('GET', `/v1/groups/${G}/queue?mode=due`)).toBe(1);
+    expect(screen.getByRole('group', { name: 'Thẻ 2 trên 2' })).toBeInTheDocument();
+  });
+
   it('mode=all asks for every card and labels long-overdue ones', async () => {
     params.current = new URLSearchParams({ group: G, mode: 'all' });
     const { count } = renderApp(<ReviewSession />, { routes: routes([card(3, 'leave', { section: 'backlog' })]) });

@@ -53,6 +53,28 @@ describe('GroupPage (K/11–K/13)', () => {
     expect(within(chart).getAllByRole('listitem').map((li) => li.dataset.stage)).toEqual(['Mới', '1', '3', '7', '14', '30']);
   });
 
+  it('English labels the first stage "New"', async () => {
+    renderApp(<GroupPage />, { routes: routes(), locale: 'en' });
+    const chart = await screen.findByRole('figure', { name: /New 1/ });
+    expect(within(chart).getAllByRole('listitem')[0].dataset.stage).toBe('New');
+  });
+
+  it("the creation date is the learner's day, not UTC (review I7)", async () => {
+    renderApp(<GroupPage />, {
+      routes: routes({
+        [`GET /v1/groups/${G}`]: () =>
+          Response.json({ id: G, name: 'Công nghệ', version: 1, item_count: 4, removable_items: 3, created_at: '2026-10-22T23:30:00Z', updated_at: '2026-10-22T23:30:00Z' }),
+      }),
+    });
+    expect(await screen.findByText(/tạo ngày .*23\/10/)).toBeInTheDocument();
+  });
+
+  it('until M3 a word is plain text, not a link to its page (review I8)', async () => {
+    renderApp(<GroupPage />, { routes: routes() });
+    const row = await screen.findByRole('listitem', { name: 'deploy' });
+    expect(within(row).queryByRole('link', { name: 'deploy' })).not.toBeInTheDocument();
+  });
+
   it('review button and the long-overdue link', async () => {
     renderApp(<GroupPage />, { routes: routes() });
     expect(await screen.findByRole('link', { name: 'Ôn 3 thẻ' })).toHaveAttribute('href', `/vi/app/review?group=${G}`);
