@@ -293,6 +293,84 @@
         "future": "Your birth date can’t be after today."
       }
     },
+    "auth": {
+      "heroTitle": "Review vocabulary on schedule, starting with the words you meet.",
+      "heroBody": "Add words wherever you find them. Wordmet reminds you to review at the right time, deck by deck.",
+      "back": "Back",
+      "email": "Email",
+      "password": "Password",
+      "google": "Sign in with Google",
+      "or": "Or",
+      "register": {
+        "title": "Create an account",
+        "subtitle": "Review vocabulary on schedule, starting with the words you meet.",
+        "givenName": "First name",
+        "givenNamePlaceholder": "Lan",
+        "familyName": "Last name (optional)",
+        "familyNamePlaceholder": "Nguyen",
+        "birthDate": "Date of birth",
+        "birthDateHint": "Wordmet is for people 13 and older.",
+        "passwordHint": "At least 8 characters, with an uppercase letter, a lowercase letter, a number and a symbol.",
+        "consent": "I agree to the <terms>Terms of use</terms> and the <privacy>Privacy policy</privacy>.",
+        "submit": "Create account",
+        "haveAccount": "Already have an account?",
+        "login": "Sign in",
+        "givenNameRequired": "Enter your first name."
+      },
+      "passwordRules": {
+        "min_length": "Use at least 8 characters.",
+        "max_length": "Use at most 128 characters.",
+        "uppercase": "Add an uppercase letter.",
+        "lowercase": "Add a lowercase letter.",
+        "digit": "Add a number.",
+        "special": "Add a symbol.",
+        "same_as_current": "Choose a password different from your current one."
+      },
+      "login": {
+        "title": "Sign in",
+        "forgot": "Forgot password?",
+        "submit": "Sign in",
+        "noAccount": "Don’t have an account?",
+        "register": "Sign up",
+        "lockedTitle": "This account is locked",
+        "lockedBody": "You can’t sign in to this account right now. Contact the Wordmet team if you need it reopened.",
+        "expired": "Sign in again to continue.",
+        "rateLimited": "Wordmet is getting too many requests from this browser, so you need to sign in again.",
+        "logoutFailed": "Sign-out didn’t finish because the connection dropped. Sign in again or try signing out once more.",
+        "retryLogout": "Sign out again",
+        "passwordReset": "Password changed. Sign in with your new password."
+      },
+      "verify": {
+        "title": "Enter the 6-digit code",
+        "body": "We sent a code to {email}. It works for 10 minutes.",
+        "digit": "Digit {n}",
+        "resendIn": "Resend code in {seconds} s",
+        "resend": "Resend code",
+        "submit": "Verify",
+        "resent": "New code sent."
+      },
+      "forgot": {
+        "title": "Forgot password",
+        "body": "Enter your email. If it has an account, Wordmet sends a reset code to it.",
+        "submit": "Send code",
+        "mustChange": "This account needs a new password before you continue. Enter your email to get a reset code."
+      },
+      "reset": {
+        "title": "Set a new password",
+        "code": "6-digit code from the email",
+        "newPassword": "New password",
+        "hint": "Once changed, your other devices are signed out.",
+        "submit": "Change password"
+      },
+      "welcome": {
+        "title": "Which language should meanings be in?",
+        "body": "The app uses this language too. You can change it in Settings.",
+        "language": "Language",
+        "vi": "Tiếng Việt",
+        "en": "English",
+        "submit": "Continue"
+      }
+    },
     "errors": {
       "generic": "Something went wrong. Try again later.",
       "code": "Code: {code}",

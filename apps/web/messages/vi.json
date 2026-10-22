@@ -293,6 +293,84 @@
         "future": "Ngày sinh không thể sau hôm nay."
       }
     },
+    "auth": {
+      "heroTitle": "Ôn từ vựng theo lịch, bắt đầu từ chính những từ bạn gặp.",
+      "heroBody": "Gặp từ ở đâu cũng thêm được. Wordmet nhắc bạn ôn đúng lúc, theo từng nhóm.",
+      "back": "Quay lại",
+      "email": "Email",
+      "password": "Mật khẩu",
+      "google": "Đăng nhập bằng Google",
+      "or": "Hoặc",
+      "register": {
+        "title": "Tạo tài khoản",
+        "subtitle": "Ôn từ vựng theo lịch, bắt đầu từ chính những từ bạn gặp.",
+        "givenName": "Tên",
+        "givenNamePlaceholder": "Lan",
+        "familyName": "Họ (không bắt buộc)",
+        "familyNamePlaceholder": "Nguyễn",
+        "birthDate": "Ngày sinh",
+        "birthDateHint": "Wordmet dành cho người từ 13 tuổi.",
+        "passwordHint": "Tối thiểu 8 ký tự, có chữ hoa, chữ thường, số và ký tự đặc biệt.",
+        "consent": "Tôi đồng ý với <terms>Điều khoản sử dụng</terms> và <privacy>Chính sách bảo mật</privacy>.",
+        "submit": "Tạo tài khoản",
+        "haveAccount": "Đã có tài khoản?",
+        "login": "Đăng nhập",
+        "givenNameRequired": "Nhập tên của bạn."
+      },
+      "passwordRules": {
+        "min_length": "Cần ít nhất 8 ký tự.",
+        "max_length": "Tối đa 128 ký tự.",
+        "uppercase": "Cần một chữ hoa.",
+        "lowercase": "Cần một chữ thường.",
+        "digit": "Cần một chữ số.",
+        "special": "Cần một ký tự đặc biệt.",
+        "same_as_current": "Mật khẩu mới phải khác mật khẩu cũ."
+      },
+      "login": {
+        "title": "Đăng nhập",
+        "forgot": "Quên mật khẩu?",
+        "submit": "Đăng nhập",
+        "noAccount": "Chưa có tài khoản?",
+        "register": "Đăng ký",
+        "lockedTitle": "Tài khoản đang bị khóa",
+        "lockedBody": "Bạn chưa đăng nhập được vào tài khoản này. Liên hệ đội Wordmet nếu bạn cần mở lại.",
+        "expired": "Bạn cần đăng nhập lại.",
+        "rateLimited": "Wordmet đang nhận quá nhiều yêu cầu từ trình duyệt này nên bạn cần đăng nhập lại.",
+        "logoutFailed": "Chưa đăng xuất xong vì mất kết nối. Đăng nhập lại hoặc thử đăng xuất lần nữa.",
+        "retryLogout": "Đăng xuất lần nữa",
+        "passwordReset": "Đã đổi mật khẩu. Đăng nhập bằng mật khẩu mới."
+      },
+      "verify": {
+        "title": "Nhập mã 6 số",
+        "body": "Mã đã gửi tới {email}. Mã có hiệu lực 10 phút.",
+        "digit": "Chữ số {n}",
+        "resendIn": "Gửi lại mã sau {seconds} giây",
+        "resend": "Gửi lại mã",
+        "submit": "Xác minh",
+        "resent": "Đã gửi mã mới."
+      },
+      "forgot": {
+        "title": "Quên mật khẩu",
+        "body": "Nhập email của bạn. Nếu email này có tài khoản, Wordmet gửi mã đặt lại tới đó.",
+        "submit": "Gửi mã",
+        "mustChange": "Tài khoản này cần mật khẩu mới trước khi dùng tiếp. Nhập email để nhận mã đặt lại."
+      },
+      "reset": {
+        "title": "Đặt mật khẩu mới",
+        "code": "Mã 6 số trong email",
+        "newPassword": "Mật khẩu mới",
+        "hint": "Đổi xong, mọi thiết bị khác sẽ bị đăng xuất.",
+        "submit": "Đổi mật khẩu"
+      },
+      "welcome": {
+        "title": "Bạn đọc nghĩa của từ bằng ngôn ngữ nào?",
+        "body": "Giao diện cũng dùng ngôn ngữ này. Đổi lại được trong Cài đặt.",
+        "language": "Ngôn ngữ",
+        "vi": "Tiếng Việt",
+        "en": "English",
+        "submit": "Tiếp tục"
+      }
+    },
     "errors": {
       "generic": "Có lỗi xảy ra. Thử lại sau.",
       "code": "Mã: {code}",
