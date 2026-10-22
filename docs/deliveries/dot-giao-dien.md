@@ -154,7 +154,7 @@ gói trên màn Pro / Dùng thử; K/74c (chỉ còn [Dừng, để sau]); dòng
 
 - **Chưa bấm thử prototype ở chế độ Present**; chủ dự án bấm thử: page 08 → Present → chọn "Web Bước 7: 1/2/3".
 - **Bản tối:** lớp phủ sau hộp thoại khá mờ; bóng đổ hộp thoại và nút nguy hiểm chưa gắn biến.
-- **K/15** (có từ trước) có hai nút vàng; không sửa trong đợt.
+- ~~**K/15** (có từ trước) có hai nút vàng; không sửa trong đợt.~~ Đã thay bằng K/15 mới (một nút vàng) ở vòng góp ý web, 22/10/2026.
 - **Để sau (điểm nhỏ của review):** nền của K/81 là câu "deploy" trong khi tấm báo lỗi nói về "rizz"; chữ hoa "[Xem Gói học]" / "[Xem gói học]" chưa thống
   nhất; script kiểm chỉ đếm số chữ được miễn kiểm tương phản, chưa liệt kê id. Thẻ "Phiên luyện hôm nay" ở K/70–K/72 vẫn vẽ 3 vạch dù chữ đã là "còn 28/30 phiên".
 - **Page cũ** 03, 05, 06 còn đó: page 09 dùng lại vài tấm và component của page 05; xóa khi đã chuyển component gốc về 01 Foundations.
@@ -176,3 +176,10 @@ các đề xuất chờ chọn (họa tiết nền, Lâu chưa ôn, chân trang,
 `docs/mockups/2026-10-21/duyet/web-vong-3/`. Thêm: component họa tiết nền (01 Foundations), component chân trang (page 08), K/15 bản đề xuất (bản cũ giữ để so),
 section "9 · Bản tối mẫu" trên page 09. Bảng màu bản tối đổi trong biến chế độ Dark (giá trị cũ ghi ở bản chữ mục 15 để quay lại). Script kiểm trên toàn bộ page 08
 (trừ K/15 bản cũ, hai nút vàng) và các mẫu Dark: chữ thấp nhất 4,69:1 (Dark 5,16:1), không tràn, không gờ nút bị cắt.
+
+## Góp ý web vòng 2, 3 và duyệt (22/10/2026)
+
+Vòng 2: vạch tô tiêu đề đọc được ở bản tối (biến `color/highlight`), thẻ bản tối sáng hơn, Gói học bỏ "Không cần thẻ ngân hàng" và thẻ Pro có giá giữ chỗ
+"XXX.000 ₫ / năm". Vòng 3: bỏ dòng "Wordmet chưa nhận thanh toán…" khỏi thẻ Pro. Chữ: bản chữ mục 16; ảnh: `docs/mockups/2026-10-21/duyet/web-vong-4/`,
+`docs/mockups/2026-10-21/duyet/web-vong-5/`. Chủ dự án duyệt cả vòng web: mọi đề xuất chốt; K/15 cũ đã xóa, bản đề xuất thành K/15 ở chỗ cũ và nhận 12 link
+prototype của bản cũ. Script kiểm K/15 mới: chữ thấp nhất 5,3:1, không tràn, một nút vàng, không gờ nút bị cắt. Gói học (5 khung): chữ thấp nhất 4,52:1.

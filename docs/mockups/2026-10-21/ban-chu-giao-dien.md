@@ -922,13 +922,13 @@ Chủ dự án góp 6 điểm cho bản điện thoại (web xem sau). Chỉ đ�
 
 ## 15. Góp ý web sau khi duyệt mobile (22/10/2026)
 
-Chủ dự án góp 15 điểm cho web, kèm: "Các thay đổi mình nêu ở mobile thì cũng sẽ thay đổi ở web luôn" và "bổ sung 15: mobile cũng vậy". Các mục ghi **đề xuất** chờ chủ dự án chọn.
+Chủ dự án góp 15 điểm cho web, kèm: "Các thay đổi mình nêu ở mobile thì cũng sẽ thay đổi ở web luôn" và "bổ sung 15: mobile cũng vậy". Các mục ghi **đề xuất** chờ chủ dự án chọn; chủ dự án duyệt cả vòng ngày 22/10/2026, nên mọi đề xuất dưới đây đã chốt.
 
 | Điểm | Khung | Đổi / chữ |
 |---|---|---|
 | Theo mobile (mục 14) | K/11–K/14, K/16, K/16b, K/54, K/56, K/70, K/70t, K/70b, K/71, K/72; mọi ô nhập, ô chọn, thẻ lựa chọn trên page 08; dải tra ở thanh trên | Viền thẻ nhóm và khối đầu trang nhóm; lọc trong nhóm, lọc danh sách nhóm, chọn nhóm ở Từ hay sai, ba ô ở Tùy chỉnh phiên thành danh sách thả xuống (chữ như mục 14; Danh sách nhóm "Tất cả · 4 nhóm"); ô gọn hơn, chữ 14px. Bộ lọc Tra từ K/30, K/43 vốn là nút thả xuống, giữ nguyên. |
 | 1 Họa tiết mờ ở nền (**đề xuất**) | K/01–K/06, K/93, K/01b, K/06b | Component "(mờ) Nền họa tiết học từ (web)" ở 01 Foundations: thẻ từ, ô trống "g _ _ _", trắc nghiệm A B C D, "went → go", hộp ngăn, dấu tick, chữ "remember" tô vàng, "?", "leave · left · left", "✓ Đã biết", độ mờ 12%. Không phải chữ để đọc. |
-| 2 Lâu chưa ôn (**đề xuất**) | K/15 bản mới đặt dưới bản cũ | "‹ Nhóm IELTS" · tiêu đề **"Từ lâu chưa ôn"** · "Nhóm IELTS · 40 từ quá hạn hơn 60 ngày" · nút vàng duy nhất "Học lại cả 40 từ" · cột "Quá hạn" · "Đang có 5 / 40 từ ·" [Xem thêm] · thẻ **"Vì sao có danh sách này?"**: "Từ ở ngăn 1 trở lên mà quá hạn hơn 60 ngày sẽ rời phần cần ôn, để việc ôn mỗi ngày không dồn quá dài. Wordmet không tự xóa từ nào." · giữ thẻ "Mỗi từ có ba cách xử lý". Nút "Học lại 2 từ" ở thanh chọn thành nút thường. |
+| 2 Lâu chưa ôn (**đề xuất**) | K/15 (bản cũ "Lâu chưa ôn" đã xóa khi duyệt; link "Xem" của thẻ nhóm IELTS trỏ sang bản này) | "‹ Nhóm IELTS" · tiêu đề **"Từ lâu chưa ôn"** · "Nhóm IELTS · 40 từ quá hạn hơn 60 ngày" · nút vàng duy nhất "Học lại cả 40 từ" · cột "Quá hạn" · "Đang có 5 / 40 từ ·" [Xem thêm] · thẻ **"Vì sao có danh sách này?"**: "Từ ở ngăn 1 trở lên mà quá hạn hơn 60 ngày sẽ rời phần cần ôn, để việc ôn mỗi ngày không dồn quá dài. Wordmet không tự xóa từ nào." · giữ thẻ "Mỗi từ có ba cách xử lý". Nút "Học lại 2 từ" ở thanh chọn thành nút thường. |
 | 3 Chân trang (**đề xuất**) | Mọi trang web có thanh trên (51 khung), component "Chân trang (web)" | "Wordmet" · "Học từ vựng theo nhóm, ôn đúng lúc. Gặp từ ở đâu cũng thêm được." · cột **Wordmet**: Giới thiệu, Gói học, Liên hệ · cột **Hỗ trợ**: Trợ giúp, Câu hỏi thường gặp, Gửi góp ý · cột **Pháp lý**: Điều khoản sử dụng, Chính sách bảo mật · "© 2026 Wordmet" · "Tiếng Việt" "English". Chân trang nằm ngay dưới nội dung, hoặc ở đáy màn khi nội dung ngắn. |
 | 4 Trang thẻ ôn đỡ trống (**đề xuất**) | K/20, K/21, K/22 | Cùng họa tiết mờ của điểm 1. |
 | 5 Khoảng cách đầu trang | Mọi trang web | Từ thanh trên tới tiêu đề 20px (trước 32px); giữa các khối 16px (trước 20–24px); hàng lọc ở K/17, K/30, K/43 không còn cao 100px. Không đổi chữ. |

@@ -26,7 +26,7 @@ Cột: page | section | tên khung.
 08 | 2 · Hôm nay và nhóm | K/12 Nhóm, lọc ngăn 1 ngày
 08 | 2 · Hôm nay và nhóm | K/13 Nhóm, menu ⋯
 08 | 2 · Hôm nay và nhóm | K/14 Xóa nhóm (cảnh báo)
-08 | 2 · Hôm nay và nhóm | K/15 Lâu chưa ôn (IELTS)
+08 | 2 · Hôm nay và nhóm | K/15 Từ lâu chưa ôn (IELTS)
 08 | 2 · Hôm nay và nhóm | K/94 Hôm nay · chưa có nhóm
 08 | 2 · Hôm nay và nhóm | K/90 Hôm nay · menu avatar mở
 08 | 2 · Hôm nay và nhóm | K/17 Danh sách nhóm · Tạo nhóm

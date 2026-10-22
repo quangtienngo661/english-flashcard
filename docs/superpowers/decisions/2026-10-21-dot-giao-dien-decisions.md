@@ -304,3 +304,16 @@ xem, chờ chủ dự án chọn:
 
 Claude tự quyết: điểm 9 áp cho cả thẻ của trang Luyện tập (K/51–K/55) lẫn thẻ câu trong phiên; điểm 11 và 12 áp cả cho phone vì đó là dữ liệu chung; các điểm còn lại
 chỉ web (mobile đã duyệt). Thứ tự lý do báo lỗi do dữ liệu seed quyết định, nên ghi việc đổi seed vào design §10.
+
+### Vòng 2, vòng 3 và duyệt (22/10/2026)
+
+| Góp ý của chủ dự án | Cách làm |
+|---|---|
+| "chỗ này bị chá không thấy" (vạch tô dưới tiêu đề ở bản tối) | Biến màu mới `color/highlight` (sáng #ffd84a, tối #6b5413) cho 65 vạch tô |
+| "Các card có màu khá tối" | Sáng thêm các bề mặt và mảng tô của bản tối (giá trị ở bản chữ mục 16) |
+| "Bỏ không cần thẻ ngân hàng đi … chỗ giá tiền thì cứ thiết kế theo kiểu placeholder thôi", "Bổ sugn là ở chỗ pro card" | Bỏ dòng ở thẻ Miễn phí; thẻ Pro có giá giữ chỗ "XXX.000 ₫ / năm", công tắc kỳ hạn hết mờ. Claude tự quyết giữ dải "Chưa mở bán" và dòng chưa nhận thanh toán (chủ dự án chỉ nói về giá) |
+| "bỏ thông báo chưa thanh toán luôn đi bạnh" | Bỏ dòng "Wordmet chưa nhận thanh toán…" khỏi thẻ Pro (K/52, K/52t, M/62 và bản Dark); dải "Chưa mở bán" vẫn giữ |
+
+**Chủ dự án duyệt:** "Vòng web ok: xóa K/15 cũ, giữ bản đề xuất làm K/15, CI xanh thì merge PR #121 vào dev." Như vậy mọi đề xuất ở bảng trên (nền họa tiết,
+K/15 mới, chân trang, bố cục gợi ý, màu bản tối) đã chốt. K/15 cũ (`274:1760`) đã xóa; bản đề xuất (`445:7913`) đổi tên thành "K/15 Từ lâu chưa ôn (IELTS)", đặt vào
+chỗ cũ, và 12 link prototype (thẻ nhóm IELTS, nút "Xem") trỏ sang nó.
