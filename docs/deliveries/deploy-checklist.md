@@ -64,7 +64,8 @@ secret, backup) nằm ở design Bước 2.5 §14; những thứ chỉ kiểm đ
 
 - [ ] **Worker Cloudflare của `apps/web` phải vừa giới hạn gói Free (khoảng 3 MiB sau nén), hoặc nâng gói Paid, khi bật
   `NEXT_PUBLIC_LEARNER_APP=on`.** Nguồn: D21, design §4.5. Vì sao: đo ngày 22/10 (M1, Task 1): bản landing **chưa có app** đã là
-  2.941,92 KiB gzip, bản có app 2.943,28 KiB; mỗi mốc ghi lại cỡ mới ở `docs/deliveries/giao-dien-nguoi-hoc.md`. Đo bằng
+  2.941,92 KiB gzip, bản có app 2.943,28 KiB; **hết M2 (23/10): tắt app 2.963,24 KiB, bật app 3.462,38 KiB — đã vượt gói Free**; mỗi mốc
+  ghi lại cỡ mới ở `docs/deliveries/giao-dien-nguoi-hoc.md`. Đo bằng
   `pnpm cf:docker --build` (in dòng "Total Upload … gzip").
 - [ ] **Ngay sau lần đầu CSP lên `main`, mở `wordmet.com` và `/vi/app` trên production, xem Console không có lỗi CSP.** Nguồn: D22,
   design §4.6. Vì sao: beacon Cloudflare Web Analytics chỉ chèn ở edge, e2e local không thấy; CSP đang ở chế độ dự phòng D20

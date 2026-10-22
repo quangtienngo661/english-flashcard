@@ -44,7 +44,8 @@ tiếng Việt và tiếng Anh, sáng và tối, cửa sổ rộng và hẹp (th
    Mở http://localhost:3001/vi/app. `dev:app` bật `NEXT_PUBLIC_LEARNER_APP=on` và trỏ API về `http://localhost:3000`. **Trên Windows** lệnh này
    chạy `next dev` trong container Linux (`pnpm cf:docker --dev-app`), vì Windows chặn thư viện SWC mà next-intl cần (`next dev` chạy thẳng báo
    "Failed to load native binding"). Lần đầu mất vài phút cài thư viện; mỗi trang mở lần đầu biên dịch vài giây. Thêm file mới khi đang chạy thì
-   tắt (Ctrl+C, rồi `docker stop wordmet-dev-app`) và chạy lại.
+   tắt (Ctrl+C, rồi `docker stop wordmet-dev-app`) và chạy lại. Nếu sau khi đổi nhánh mọi trang `/app` báo "Không tìm thấy trang" hoặc
+   không thấy thay đổi mới: tắt như trên, chạy `docker volume rm wordmet-dev-app-next` (bộ nhớ đệm của dev server), rồi chạy lại.
 6. **Admin cùng lúc** (khi cần, ví dụ cấp gói): chạy admin với API qua IP, rồi mở admin bằng IP — để cookie đăng nhập của admin không đè
    phiên của app người học:
    ```powershell
