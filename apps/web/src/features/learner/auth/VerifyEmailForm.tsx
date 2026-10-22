@@ -67,13 +67,18 @@ export function VerifyEmailForm() {
     }
   }
 
+  // One request per press: the API refuses a second code within 60 s.
+  const resendPress = useSubmitOnce(async () => {
+    await api!.post('/v1/auth/otp', { purpose: 'verify_email' });
+    setResendAt(Date.now() + RESEND_AFTER_S * 1000);
+    setNow(Date.now());
+    showToast(t('resent'), 'success');
+  });
+
   async function resend() {
     setError(null);
     try {
-      await api!.post('/v1/auth/otp', { purpose: 'verify_email' });
-      setResendAt(Date.now() + RESEND_AFTER_S * 1000);
-      setNow(Date.now());
-      showToast(t('resent'), 'success');
+      await resendPress.submit();
     } catch (failure) {
       setError(errorText(failure));
     }
@@ -125,7 +130,7 @@ export function VerifyEmailForm() {
         {wait > 0 ? (
           <p className="text-caption text-muted">{t('resendIn', { seconds: wait })}</p>
         ) : (
-          <button type="button" onClick={() => void resend()} className="w-fit text-caption font-semibold text-primary underline underline-offset-2">
+          <button type="button" disabled={resendPress.busy} onClick={() => void resend()} className="w-fit text-caption font-semibold text-primary underline underline-offset-2">
             {t('resend')}
           </button>
         )}

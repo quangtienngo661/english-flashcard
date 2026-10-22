@@ -52,7 +52,13 @@ export function LoginForm() {
     }
   }
 
-  const notice = state.status === 'signed-out' && state.notice ? state.notice : null;
+  const reason = params.get('reason');
+  const notice =
+    state.status === 'signed-out' && state.notice
+      ? state.notice
+      : reason === 'expired' || reason === 'rate-limited'
+        ? reason
+        : null;
   const info = params.get('reset') === '1' ? t('login.passwordReset') : notice ? t(`login.${NOTICE_KEY[notice]}`) : null;
 
   return (

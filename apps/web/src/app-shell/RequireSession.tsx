@@ -60,7 +60,11 @@ function redirectFor(
   here: string,
   pathname: string,
 ): string | null {
-  if (state.status === 'signed-out') return `/${locale}/app/login?next=${encodeURIComponent(here)}`;
+  if (state.status === 'signed-out') {
+    // The full page load drops the in-memory notice: the reason travels in the address (E3, E4).
+    const reason = state.notice === 'expired' || state.notice === 'rate-limited' ? `&reason=${state.notice}` : '';
+    return `/${locale}/app/login?next=${encodeURIComponent(here)}${reason}`;
+  }
   if (state.status === 'change-password') return `/${locale}/app/forgot-password?reason=change-password`;
   const fixed = prefixFix(here, state.me.native_language);
   if (fixed) return fixed;

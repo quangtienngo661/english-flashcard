@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ApiError, NetworkError } from './api/problem';
+import { isLeaving } from './navigate';
 
 const IN_PROGRESS_RETRY_S = 2;
 /** How many times a press waits out 409 "in progress" before it gives up (the key stays, so the next press is the same write). */
@@ -53,8 +54,11 @@ export function useSubmitOnce<T>(fn: (key: string) => Promise<T>): { submit(): P
         }
       }
     } finally {
-      busyRef.current = false;
-      setBusy(false);
+      // A press that sent the learner to another page stays busy until that page replaces this one (Review Focus 1).
+      if (!isLeaving()) {
+        busyRef.current = false;
+        setBusy(false);
+      }
     }
   }, []);
 
