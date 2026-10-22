@@ -286,7 +286,124 @@ Thêm **mục 17** vào bản chữ: các chỗ đổi của mục 6 và 7.3 (ch
 
 ## 8. Việc API
 
-(điền ở bước sau)
+Sáu việc, đều **chỉ thêm** vào v1 (không bỏ trường, không đổi nghĩa trường cũ) trừ (a) và (f) là đổi luật có chủ ý (ghi rõ quyết định cũ bị thay). Mỗi việc:
+unit test ở service và controller theo kiểu hiện có (`*.spec.ts` cạnh file, persistence giả, `FakeClock`), tên test mang mã trường hợp biên (`GA1`…). Không
+có bảng mới; chỉ (d) có migration (chỉ dữ liệu, nên kiểm drift của CI không đổi). Code facts: báo cáo đọc code ngày 22/10 (file:line ghi trong plan).
+
+### 8.1 (a) Sửa ngày sinh qua `PATCH /v1/me` (M1)
+
+- **Thay quyết định cũ:** design sửa thiếu sót Bước 0–3 §4.3 ("Không sửa được `birth_date` qua API"), FE8 và dòng 1 của decision record đó; thay bằng D12
+  đợt giao diện (21/10) và D2 đợt này.
+- Body `PATCH /v1/me` nhận thêm `birth_date` (`YYYY-MM-DD`), dùng lại `birthDateSchema` của đăng ký (ngày có thật, ≥ 1900-01-01). Không nhận `null` (không
+  xóa được ngày sinh).
+- Luật giống đăng ký: "hôm nay" = ngày theo múi giờ của hồ sơ (hoặc múi giờ mới nếu cùng request gửi `timezone`); sau hôm nay → 400 `validation-failed`
+  (`violations: ['birth_date']`); chưa đủ 13 tuổi (`isOldEnough`, `MIN_AGE`) → 400 `age-below-minimum`. Cả request không ghi gì khi một trường sai.
+- `IdentityService` thêm `Clock`. Không có bảng lịch sử (như tên, họ hiện nay); log sự kiện đổi ngày sinh chỉ có id người dùng, không có ngày.
+
+| # | Khi | Thì |
+|---|---|---|
+| GA1 | Gửi ngày sinh hợp lệ, đủ 13 tuổi | 200, hồ sơ trả `birth_date` mới |
+| GA2 | Ngày sinh làm người dùng dưới 13 tuổi | 400 `age-below-minimum`; hồ sơ không đổi (K/92 báo ngay ở ô) |
+| GA3 | Ngày sau hôm nay (theo múi giờ hồ sơ) | 400 `validation-failed`, `violations: ['birth_date']` |
+| GA4 | Ngày không có thật (`2010-02-30`), trước 1900, sai dạng, hoặc `null` | 400 `validation-failed` |
+| GA5 | Gửi cùng lúc `given_name` và `birth_date` sai | 400; tên cũng không đổi |
+| GA6 | Sinh 29/2, xét tuổi vào năm không nhuận | Như đăng ký (`isOldEnough` coi là 1/3) |
+| GA7 | Tài khoản staff cũ chưa có ngày sinh | Đặt được, cùng luật 13 tuổi |
+
+### 8.2 (b) Từ hay sai theo nhóm (M4)
+
+- `GET /v1/practice/weak-words` nhận thêm `group_id` (không bắt buộc): chỉ trả từ hay sai **đang ở nhóm đó**. Nhóm không có hoặc của người khác → 404
+  `not-found` (như `assertOwned`). `page_token` gắn với bộ lọc: token của danh sách không lọc dùng cho danh sách có lọc (hoặc ngược lại) → 400.
+- Mới `GET /v1/practice/weak-words/groups` → `{ total, items: [{ group_id, name, count }] }`: `total` = số từ hay sai (không trùng); `items` chỉ các nhóm có
+  `count > 0`, nhiều nhất trước rồi theo tên; không phân trang (tối đa 100 nhóm). Một từ ở hai nhóm được đếm ở cả hai nhóm.
+- `POST /v1/practice/sessions`: `group_id` **được phép** khi `source: 'weak'` (không bắt buộc); bắt buộc khi `source: 'group'`; vẫn cấm với nguồn khác;
+  `group_filter` vẫn chỉ đi với `group`. Phiên `weak` + nhóm lấy từ hay sai ∩ từ của nhóm; giữa phiên đọc lại theo từ như `weak` (nhóm bị xóa giữa phiên
+  không kết thúc phiên; từ rời việc học thì bị bỏ như hiện nay).
+- Ranh giới module: Practice cần biết từ nào ở nhóm nào; façade `LearningService` thêm một hàm đọc nhóm của các từ (ví dụ `groupsOfSenses(userId,
+  senseIds)` → nhóm `{id, name}` theo từ). Practice không đọc bảng của Learning (D3).
+
+| # | Khi | Thì |
+|---|---|---|
+| GB1 | `group_id` của nhóm mình, có 3 từ hay sai | 3 dòng, cùng thứ tự như danh sách không lọc |
+| GB2 | `group_id` của người khác hoặc đã xóa | 404 `not-found` |
+| GB3 | Nhóm không có từ hay sai | 200, `items: []` |
+| GB4 | Dùng `page_token` của danh sách không lọc kèm `group_id` | 400 |
+| GB5 | Một từ hay sai ở 2 nhóm | `/groups`: có ở cả hai `count`; `total` đếm 1 |
+| GB6 | Mở phiên `source: 'weak'` + `group_id` của nhóm không có từ hay sai | 409 `practice-no-words`, `reason: 'source-empty'` |
+| GB7 | `source: 'today'` + `group_id` | 400 `validation-failed` (như hiện nay) |
+| GB8 | Nhóm bị xóa giữa phiên `weak` + nhóm | Phiên tiếp tục với từ còn trong việc học |
+
+### 8.3 (c) Thêm cả loạt theo `sense_ids[]` (M2)
+
+- Body `POST /v1/groups/{id}/items/bulk` nhận thêm `sense_ids` (UUID, 1–100, không trùng). Có `sense_ids` thì **không** được gửi kèm `level`/`topic`/`pos`
+  (400). Không có `sense_ids` thì như hiện nay.
+- Chỉ thêm nghĩa người học thấy được (catalog đã publish hoặc từ riêng của chính họ, như thêm một từ). Id không thấy được không làm hỏng cả lệnh: được đếm ở
+  trường mới `skipped_not_found`. Từ chức năng **không** bị bỏ qua khi người học tự tick (như thêm một từ; Claude tự quyết), nên `skipped_function_words = 0`.
+- Nhóm sắp đầy: thêm theo thứ tự gửi tới khi đầy, phần còn lại đếm ở `skipped_group_full` (như lọc). Cùng khóa người học, `Idempotency-Key`, giới hạn 30/phút.
+- K/18: danh sách lấy từ `GET /v1/senses?topic=&level=&exclude_function_words=true` (đọc hết các trang, mỗi trang 100; API không trả tổng), trạng thái
+  "Đang học · nhóm" từ `GET /v1/items?sense_ids=` (100 id mỗi lần). Cả hai nút ("Thêm N từ đã chọn", "Thêm cả N từ") gửi `sense_ids` khi N ≤ 100; N > 100
+  thì "Thêm cả" dùng bộ lọc (Claude tự quyết: để "cả N từ" đúng là N từ chưa học).
+
+| # | Khi | Thì |
+|---|---|---|
+| GC1 | 3 id hợp lệ, chưa có trong nhóm | `added: 3` |
+| GC2 | Một id đã có trong nhóm | Đếm `already_in_group`, không lỗi |
+| GC3 | Một id là từ riêng của người khác, hoặc không tồn tại | Đếm `skipped_not_found`; các id khác vẫn được thêm |
+| GC4 | `sense_ids` kèm `topic` | 400 `validation-failed` |
+| GC5 | 101 id, hoặc id trùng nhau, hoặc mảng rỗng | 400 `validation-failed` |
+| GC6 | Nhóm còn chỗ cho 2, gửi 5 | `added: 2`, `skipped_group_full: 3` |
+| GC7 | Gửi lại cùng `Idempotency-Key`, cùng body | Trả lại kết quả cũ, không thêm lần hai |
+
+### 8.4 (d) Lý do báo lỗi: "Khác" cuối, tiếng Anh rút gọn (M4)
+
+Một migration chỉ dữ liệu, mỗi lệnh chỉ đổi dòng **chưa bị admin sửa** (`updated_by IS NULL` và giá trị còn đúng như seed):
+
+| `code` | Đổi |
+|---|---|
+| `other` | `position` 4 → 1000 (khớp A/75) |
+| `meaning_wrong` | `label_en` "The meaning is wrong" → "Wrong meaning" |
+| `graded_wrong` | "My right answer was marked wrong" → "Right answer marked wrong" |
+| `hint_wrong` | "The hint is wrong" → "Wrong hint" |
+| `ai_sentence_unnatural` | "The sentence is ungrammatical or unnatural" → "Ungrammatical or unnatural" |
+| `ai_more_than_one_answer` | "More than one answer is right" → "More than one right answer" |
+| `ai_wrong_meaning` | "The sentence uses the wrong meaning of the word" → "Wrong meaning of the word" |
+
+| # | Khi | Thì |
+|---|---|---|
+| GD1 | DB mới | `GET /practice/report-reasons?kind=ai` trả "Khác" cuối; `kind=non_ai` cũng vậy |
+| GD2 | Admin đã sửa dòng `other` trước migration | Dòng đó giữ nguyên |
+| GD3 | Báo cáo cũ | `reason_label` đã lưu không đổi (B7E78) |
+
+### 8.5 (e) Câu đã gặp: danh sách và số câu (M3)
+
+- Mới `GET /v1/senses/{id}/sentences` → `{ items: [{ id, text, created_at }] }`, cũ trước; không phân trang (tối đa bằng `content.sentencesPerSense`, ≤ 100).
+  Chỉ nghĩa người học thấy được (như `POST` cùng đường dẫn) → nếu không, 404 `not-found`. Cần hồ sơ có ngôn ngữ như các API học khác.
+- `GET /v1/words/{lemma}`: mỗi nghĩa trong `sections[].senses[]` có thêm `sentence_count` (số câu của người đang xem). Chỉ trang từ; `lookup` và thẻ ôn không
+  đổi (`WordSense` dùng chung ba chỗ, nên trường mới thêm ở lớp trang từ).
+- Chữ của câu không bao giờ ghi vào log (SR10).
+
+| # | Khi | Thì |
+|---|---|---|
+| GE1 | Nghĩa có 3 câu | 3 dòng, cũ trước; trang từ ghi `sentence_count: 3` |
+| GE2 | Nghĩa chưa có câu | `items: []`; `sentence_count: 0` (trang từ không hiện dòng "câu đã gặp") |
+| GE3 | Nghĩa là từ riêng của người khác, hoặc nghĩa catalog đã bị gỡ | 404 `not-found` (câu cũ còn trong bảng nhưng không đọc được) |
+| GE4 | Xóa một câu bằng `id` từ danh sách | 204; danh sách và số câu giảm 1 |
+| GE5 | Thêm câu khi đã đủ giới hạn | 409 `sentence-limit-reached` như hiện nay (K/44b) |
+
+### 8.6 (f) Báo lỗi câu AI về từ riêng không cần ô đồng ý (M5a)
+
+- **Thay quyết định cũ:** design Bước 7 §9.2 ("body phải có `share_private_word: true` … thiếu → `400 share-consent-required`"), D26 Bước 7, B7E79, B7E80.
+  Mới (D12): báo lỗi một câu AI về từ riêng **luôn** gửi được, đội Wordmet thấy từ đó trong bản sao câu hỏi (bản sao vốn đã không che từ đang hỏi).
+- Body vẫn nhận `share_private_word` (không bỏ trường trong v1) nhưng không dùng nữa; bỏ lỗi `share-consent-required`. Màn K/81 ghi một dòng báo cho người
+  học biết (mục 6).
+- Không đổi: câu **không AI** về từ riêng vẫn không báo được (`409 report-not-available`, D36 Bước 4); các từ riêng khác trong câu (lựa chọn nhiễu) vẫn bị che.
+
+| # | Khi | Thì |
+|---|---|---|
+| GF1 | Báo câu AI về từ riêng, không gửi `share_private_word` | 201; bản sao có từ đang hỏi |
+| GF2 | Như GF1 nhưng gửi `share_private_word: false` | 201 như GF1 (trường bị bỏ qua) |
+| GF3 | Báo câu không AI về từ riêng | 409 `report-not-available` (như cũ) |
+| GF4 | Câu AI về từ catalog, lựa chọn nhiễu là từ riêng | 201; từ riêng nhiễu vẫn bị che (như cũ) |
 
 ## 9. Trường hợp biên của giao diện (When → Then)
 
@@ -419,3 +536,8 @@ chỗ bản chữ chưa có, Claude viết theo mẫu §3.1 của bản chữ (c
 10. Không sửa Figma theo mục 6; design này và bản chữ mục 17 là nguồn (mục 3).
 11. Không dựng K/79b (mục 3).
 12. Script dựng dữ liệu thử cho chủ dự án (mục 11).
+13. `refresh` hết lượt thử vì 429 thì về đăng nhập **có** dòng báo (E4); `preparing` quá 60 giây thì báo lỗi chung kèm [Thử lại] (E29).
+14. Thêm theo `sense_ids` không bỏ từ chức năng; id không thấy được đếm ở `skipped_not_found` thay vì làm hỏng cả lệnh (8.3).
+15. K/18 gửi `sense_ids` cho cả nút "Thêm cả N từ" khi N ≤ 100 (8.3).
+16. Practice đọc nhóm của từ qua một hàm mới của façade `LearningService` (8.2); phiên `weak` + nhóm không kết thúc khi nhóm bị xóa (GB8).
+17. Tên công tắc là "Kiểu câu có AI" (giữ chữ của mockup; bảng thuật ngữ tránh "bài tập").
