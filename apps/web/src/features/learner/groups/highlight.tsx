@@ -15,7 +15,7 @@ export function highlightWord(sentence: string, word: string, forms: string[] = 
   return (
     <>
       {sentence.slice(0, match.index)}
-      <mark className="rounded-xs bg-highlight px-0.5 text-ink">{match[0]}</mark>
+      <mark className="bg-transparent font-semibold text-primary">{match[0]}</mark>
       {sentence.slice(match.index + match[0].length)}
     </>
   );
