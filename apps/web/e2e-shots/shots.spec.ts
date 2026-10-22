@@ -10,9 +10,9 @@ const MEMBER = ['', 'settings', 'settings/account'];
 const email = process.env.SHOTS_EMAIL ?? '';
 const password = process.env.SHOTS_PASSWORD ?? '';
 
-async function settle(page: Page) {
+async function settle(page: Page, ready = page.getByRole('heading', { level: 1 }).first()) {
   // Dev mode compiles a page on its first visit; give it time.
-  await expect(page.getByRole('heading', { level: 1 }).first()).toBeVisible({ timeout: 60_000 });
+  await expect(ready).toBeVisible({ timeout: 60_000 });
   await page.waitForLoadState('networkidle');
 }
 
@@ -51,6 +51,10 @@ test('milestone screenshots', async ({ page }) => {
   await page.getByLabel('Mật khẩu').fill(password);
   await page.getByRole('button', { name: 'Đăng nhập' }).click();
   await expect(page).toHaveURL(/\/app$/, { timeout: 60_000 });
+  if (MILESTONE === 'm2') {
+    await m2(page);
+    return;
+  }
   for (const locale of ['vi', 'en'] as const) {
     await setLanguage(page, locale);
     for (const scheme of ['light', 'dark'] as const) {
@@ -64,3 +68,68 @@ test('milestone screenshots', async ({ page }) => {
   }
   await setLanguage(page, 'vi');
 });
+
+const COMBOS = (['vi', 'en'] as const).flatMap((locale) => (['light', 'dark'] as const).map((scheme) => ({ locale, scheme })));
+const TOPIC = 'topic?code=business&level=B1';
+
+/**
+ * M2 on a learner with no decks yet: Today and the topic picker while empty, then one deck made from the Kinh doanh · B1
+ * suggestion (every word), then every M2 page. Each locale × scheme answers one card, so the summary has a count.
+ */
+async function m2(page: Page) {
+  for (const { locale, scheme } of COMBOS) {
+    await setLanguage(page, locale);
+    await page.emulateMedia({ colorScheme: scheme });
+    await page.goto(`/${locale}/app`);
+    await settle(page);
+    await shoot(page, `${locale}-${scheme}-today-empty`);
+    await page.goto(`/${locale}/app/${TOPIC}`);
+    await settle(page, page.getByRole('list').first());
+    await shoot(page, `${locale}-${scheme}-topic`);
+  }
+  await setLanguage(page, 'vi');
+  await page.goto(`/vi/app/${TOPIC}`);
+  await settle(page, page.getByRole('list').first());
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.getByRole('button', { name: /^Thêm cả \d+ từ$/ }).click();
+  await expect(page.getByText(/^Đã thêm \d+ từ vào nhóm/)).toBeVisible({ timeout: 30_000 });
+  await page.goto('/vi/app/groups');
+  await settle(page);
+  const href = await page.getByRole('link', { name: 'Kinh doanh · B1' }).first().getAttribute('href');
+  const id = new URL(href!, 'http://x').searchParams.get('id')!;
+
+  for (const { locale, scheme } of COMBOS) {
+    await setLanguage(page, locale);
+    await page.emulateMedia({ colorScheme: scheme });
+    const at = (path: string) => `/${locale}/app/${path}`;
+    const name = (n: string) => `${locale}-${scheme}-${n}`;
+    for (const [path, n] of [['', 'today'], ['groups', 'groups'], [`group?id=${id}`, 'group'], [`group/backlog?id=${id}`, 'backlog'], [TOPIC, 'topic-learning']] as const) {
+      await page.goto(at(path));
+      await settle(page, n.startsWith('topic') ? page.getByRole('list').first() : undefined);
+      await shoot(page, name(n));
+    }
+    // K/17 create dialog and K/10b deck menu, on the deck list.
+    await page.goto(at('groups'));
+    await settle(page);
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.getByRole('button', { name: locale === 'vi' ? 'Tạo nhóm' : 'Create deck', exact: true }).first().click();
+    await expect(page.getByRole('dialog')).toBeVisible();
+    await shoot(page, name('create-dialog'));
+    await page.keyboard.press('Escape');
+    // K/20–K/22: front, back, then one answer and Esc for the summary.
+    await page.goto(at(`review?group=${id}`));
+    await settle(page, page.getByRole('group').first());
+    await shoot(page, name('review-front'));
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.keyboard.press('Space');
+    await page.waitForLoadState('networkidle');
+    await shoot(page, name('review-back'));
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.keyboard.press('2');
+    await expect(page.getByRole('group').first()).toBeVisible();
+    await page.keyboard.press('Escape');
+    await settle(page);
+    await shoot(page, name('review-summary'));
+  }
+  await setLanguage(page, 'vi');
+}
