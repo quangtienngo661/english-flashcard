@@ -951,3 +951,61 @@ Chủ dự án góp 15 điểm cho web, kèm: "Các thay đổi mình nêu ở m
 | "Các card có màu khá tối" | Biến chế độ Dark | Đổi tiếp (bảng mục 15 → giá trị mới): surface #1c2130 → #242b3d · navy-raised, session-card #252b3d → #2c3448 · neutral-soft #262c3e → #2f364a · border #2e3548 → #384056 · primary-soft #232a45 → #2e3a6b · accent-soft #2b2920 → #463b1d · success-soft #1c2e27 → #1f4033 · danger-soft #33222a → #4a2830 · muted #a9b0c4 → #b0b7ca · placeholder #8a92a8 → #979fb6. Cột trong thẻ nhóm dùng màu `ink` thay `navy` nên thấy được trên nền tối. |
 | Bỏ "Không cần thẻ ngân hàng"; thẻ Pro trình bày giá như bình thường, con số để giữ chỗ | K/52, K/52t, K/53, M/62, M/62b và bản Dark | Thẻ Miễn phí bỏ dòng "Không cần thẻ ngân hàng". Thẻ Pro: thay "Giá công bố khi mở bán" bằng giá **"XXX.000 ₫" "/ năm"** (kỳ Theo năm đang chọn; kỳ Theo tháng: "XX.000 ₫" "/ tháng"); bỏ dòng "Giá và kỳ hạn hiện khi Pro mở bán"; công tắc kỳ hạn không còn mờ. Giữ dải "Chưa mở bán". Con số thật đặt khi có cổng thanh toán. |
 | "bỏ thông báo chưa thanh toán luôn" | K/52, K/52t, M/62 và bản Dark | Bỏ dòng "Wordmet chưa nhận thanh toán. Khi mở bán, bạn đăng ký ngay tại đây." ở cuối thẻ Pro; dòng "Dòng cuối" của mục Gói học chỉ còn link [So sánh chi tiết các gói]. |
+
+## 17. Chữ cuối cùng cho bản code (design giao diện người học, 22/10/2026)
+
+Ghi theo design [`../../superpowers/specs/2026-10-22-giao-dien-nguoi-hoc-design.md`](../../superpowers/specs/2026-10-22-giao-dien-nguoi-hoc-design.md) §6, §7.2, §7.3
+(D10–D15). Mục này ghi đè các mục trước ở đúng các chỗ dưới; Figma không sửa theo (design §14.10). Chữ tiếng Anh từng màn nằm ở
+`apps/web/messages/en.json`, không chép vào đây.
+
+### 17.1 Đổi chữ tiếng Việt (Chốt)
+
+| Chỗ | Chữ cũ (mockup) | Chữ dùng khi code |
+|---|---|---|
+| Hộp Tùy chỉnh phiên (K/54, K/70, K/70t, K/70b, K/71, K/72) | Khối "Kiểu câu có AI" luôn hiện; ô "Câu lấy từ đâu?"; mô tả trong mỗi ô; chú thích dưới "Kiểu đề", "Số câu" | Ba ô Trắc nghiệm · Đúng/sai · Gõ từ luôn hiện; công tắc **"Kiểu câu có AI"** + nhãn Pro: bật thì hiện Điền từ vào câu · Chọn nghĩa trong câu · Trắc nghiệm theo câu và dòng "Phiên này dùng tối đa N lượt câu AI · còn M"; tắt thì ẩn. Bỏ ô "Câu lấy từ đâu?", bỏ mô tả trong ô, bỏ chú thích dưới ô (D10) |
+| Công tắc AI, gói Miễn phí | Khối AI có ổ khóa | Công tắc mờ, nhãn Pro; bấm vào: "Dành cho gói Pro. Gói Pro chưa mở bán." + [Xem Gói học] |
+| K/72 (AI chưa dùng được khi mở phiên) | Nói nguyên nhân | "Hệ thống đang gặp lỗi, chưa dùng được kiểu câu có AI. Bỏ kiểu câu AI để bắt đầu, hoặc thử lại sau." (D11) |
+| K/74a, K/74d | Nói nguyên nhân | "Hệ thống đang gặp lỗi." + [Thử lại] [Để sau] (D11) |
+| K/75 | Nói nguyên nhân | "Câu này chuyển sang kiểu câu thường." (D11) |
+| K/81 (báo lỗi câu AI về từ tự thêm) | Ô tick "Cho đội Wordmet thấy từ này" | Không có ô tick; một dòng "Đội Wordmet sẽ thấy từ “rizz” bạn tự thêm để kiểm tra." (D12) |
+| Nút ghép hai vế | [Dừng, để sau] · [Bỏ, mở phiên mới] · [Bỏ qua, xem đáp án] | [Để sau] · [Mở phiên mới] · [Xem đáp án] |
+| K/74a, K/76, K/86, K/88 | "Kiểm lại từ trong Từ của tôi" | "Xem lại từ trong Từ của tôi" |
+| Nút gửi câu trả lời (K/78a, mọi câu gõ) | [Nộp] | [Kiểm tra] |
+| Câu hướng dẫn thao tác | "Bấm vào thẻ hoặc Space để lật" | "Chọn thẻ hoặc nhấn Space để lật" ("chọn" cho thứ trên màn, "nhấn" cho phím); điện thoại "Chọn thẻ để lật" |
+| Tên trang trong câu | [Xem Gói học] / [Xem gói học] lẫn lộn | Viết hoa khi là tên trang ("Xem Gói học"), thường khi là danh từ chung ("gói Pro") |
+| Số đếm | "1/3 đã dùng", "đã dùng 3/3" | "đã dùng 1/3" mọi chỗ |
+| Mức sử dụng (Cài đặt, thẻ phiên luyện, Gói học) | Có chỗ chưa ghi lúc nạp lại | Luôn ghi lúc nạp lại theo `resets_at`: hôm nay hoặc ngày mai ghi giờ ("Mở lại lúc 0:00"), xa hơn ghi ngày ("Lượt câu AI mới có vào 15/11") (D15) |
+| Chân trang trong `/app` | 3 nhóm link | Giữ đủ 3 nhóm (D7). Bấm được: Giới thiệu, Gói học, Liên hệ (`mailto:`), Điều khoản sử dụng, Chính sách bảo mật. Hiện nhưng tắt: Trợ giúp, Câu hỏi thường gặp, Gửi góp ý. Không có dòng đổi ngôn ngữ |
+| Lý do báo lỗi | — | "Khác" luôn cuối; bản tiếng Anh rút gọn (việc API (d)) |
+
+Giữ nguyên (design §7.3): "câu" cho một lần trả lời; hai tên "câu đã gặp" / "Câu bạn đã lưu"; "ngăn" và cách gọi hiện tại (theo số ở Tùy chỉnh phiên,
+theo ngày ở chỗ khác).
+
+### 17.2 Thuật ngữ tiếng Anh (Chốt, design §7.2)
+
+| Tiếng Việt | Tiếng Anh |
+|---|---|
+| nhóm | deck |
+| ôn, phiên ôn | review, review session |
+| luyện tập, phiên luyện | practice, practice session |
+| phiên | session |
+| câu (một lần trả lời) | question |
+| lượt câu AI · lượt tra AI | AI credits, kèm tên kho ("AI credits for questions", "AI credits for lookups") |
+| gói Miễn phí / Dùng thử / Pro | Free / Trial / Pro |
+| Từ của tôi | My words |
+| câu đã gặp, câu bạn đã lưu | saved sentences |
+| dạng chia | forms ("Forms: going · went · gone") |
+| báo lỗi | Report ("My reports") |
+| trả lại lượt câu AI | return ("1 AI credit returned") |
+| ngăn | stage ("Stage 2" ở Tùy chỉnh phiên, "3-day stage" ở chỗ khác) |
+| Cần ôn lại / Đã biết | Still learning / Know |
+
+Luật tiếng Anh (design §7.1, D13): sentence case; "we" chỉ khi lỗi do app ("We couldn’t save your word."); hộp hỏi xóa có nút việc ("Delete deck") và
+"Cancel"; không "please", "sorry", không "!" trong lỗi; "…" một ký tự, ngoặc kép cong; chính tả Mỹ; ngày "Sunday, Oct 18", "Dec 31, 2026"; giờ "8:00 PM",
+"12:00 AM"; bản `en` không ghi tổng số nấc gợi ý ("Hint").
+
+### 17.3 Câu báo lỗi chung của app (thêm khi code, theo mẫu 3.1)
+
+Các mã lỗi API người học có thể gặp đều có câu ở `App.errors` của `apps/web/messages/vi.json`. Chỗ bản chữ chưa có câu, Claude viết theo mẫu 3.1
+(chuyện gì xảy ra + làm gì tiếp), ví dụ: "Bạn thao tác hơi nhanh. Thử lại sau N giây." (E15), "Không kết nối được. Kiểm tra mạng rồi thử lại." (E5),
+"Lần bấm trước bị dừng giữa chừng. Bấm lại." (E14). Chủ dự án xem qua ảnh từng mốc.

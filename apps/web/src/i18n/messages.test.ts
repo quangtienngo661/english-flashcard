@@ -26,8 +26,8 @@ describe('messages', () => {
     expect(empty).toEqual([]);
   });
 
-  it('LP3 every rich break tag is one of br, brMd, brSm and every tag is closed', () => {
-    const allowed = new Set(['br', 'brMd', 'brSm', 'link']);
+  it('LP3 every rich tag is known (landing: br, brMd, brSm, link; app: b, hl) and every tag is closed', () => {
+    const allowed = new Set(['br', 'brMd', 'brSm', 'link', 'b', 'hl']);
     const problems: string[] = [];
     for (const [key, value] of [...flatVi, ...flatEn]) {
       const opened = [...value.matchAll(/<([a-zA-Z]+)>/g)].map((m) => m[1]);
@@ -36,6 +36,12 @@ describe('messages', () => {
       if (opened.join() !== closed.join()) problems.push(`${key}: unbalanced tags`);
     }
     expect(problems).toEqual([]);
+  });
+
+  it('the learner app never says "Vui lòng", "please" or "sorry", and uses one-character ellipses (design §7.1)', () => {
+    const app = [...flatVi, ...flatEn].filter(([k]) => k.startsWith('App.'));
+    expect(app.length).toBeGreaterThan(0);
+    expect(app.filter(([, v]) => /vui lòng|please|sorry|\.\.\./i.test(v)).map(([k]) => k)).toEqual([]);
   });
 
   it('LP30 Faq.items has exactly q1..q4 in both locales', () => {
