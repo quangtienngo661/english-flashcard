@@ -472,6 +472,10 @@ Như `K/80`, thêm ô tick bắt buộc trên nút gửi:
 
 "Bạn chưa báo lỗi câu nào." · "Gặp câu sai khi luyện tập, bấm Báo lỗi ngay trên câu đó. Kết quả hiện ở đây." · [Về Luyện tập]
 
+### 7.15b `K/57b`, `M/L57b` — Lịch sử luyện tập trống, tab "Câu đã làm" (Review Focus 4; thêm khi đóng đợt, mục 13)
+
+"Bạn chưa làm câu nào." · "Làm một phiên luyện, các câu bạn đã làm sẽ hiện ở đây." · [Về Luyện tập]
+
 ### 7.16 `K/85` (Pro), `K/85t` (Dùng thử), `K/85b` (Miễn phí) — Thêm từ có "Tra bằng AI"
 
 | Phần tử | Chữ |
@@ -653,7 +657,7 @@ cài đặt khác. Tải lại để xem bản mới." (409 `version-conflict`);
 | Mô tả | Dạng AI đã dùng mà bảng dạng chia chưa có. Có thể lẫn từ đồng nghĩa, cụm nhiều chữ, lỗi chính tả. |
 | Cột | Từ gốc · Dạng AI dùng · Số lần bị loại · Lần đầu · Lần gần nhất |
 | Nút | [Nhận dạng này] · [Bỏ qua] |
-| Sau khi nhận | Đã thêm “went” vào dạng chia của “go”. |
+| Sau khi nhận | Đã thêm “went” vào dạng chia của “go”. · [Hoàn tác] *(gỡ dạng vừa nhận, `DELETE /v1/admin/content/word-forms/{id}`; thêm khi đóng đợt, mục 13)* |
 | Trống `A/77b` | Chưa có dạng chia nào cần xem. Khi AI dùng một dạng bảng chưa biết, dạng đó hiện ở đây. |
 
 ### 8.8 `A/78` Cấp gói và lượt, `A/79` cấp mới, `A/79e` (editor) — thay `A/D08`
@@ -668,6 +672,8 @@ cài đặt khác. Tải lại để xem bản mới." (409 `version-conflict`);
 | `A/79` | Form | Người học (tìm theo email) · Loại: ◉ Gói Pro ○ Con số riêng · Phiên luyện mỗi ngày (0–200) · Lượt câu AI mỗi tháng (0–5.000) · Lượt tra AI mỗi tháng (0–5.000) · Từ ngày (mặc định bây giờ) · Tới ngày · Lý do · [Cấp] |
 | | Ghi chú | Cấp gói Pro bắt đầu ngay sẽ thay lần cấp gói đang có. Lượt AI mới tính theo chu kỳ tháng từ ngày bắt đầu. |
 | `A/79e` | Khác của editor | Không có hai ô lượt AI · không chọn được tài khoản staff hay chính mình · không có khối "Lượt AI hôm nay" · lỗi: "Editor không cấp được cho tài khoản này." (409 `grant-not-allowed`) |
+| `A/78d` *(mục 13)* | Hộp Sửa ngày (D38 Bước 5) | **Sửa ngày lần cấp của ngoc.tran@example.com** · "Gói Pro · đang hiệu lực từ 22/10/2026" · Từ ngày (chỉ sửa khi chưa bắt đầu) · Tới ngày · Lý do (bắt buộc) · "Dời ra hay rút ngắn đều được, miễn ngày mới vẫn ở tương lai. Lượt AI không đếm lại." · "Lần sửa trước: 20/10/2026 · an.admin@wordmet.com · tới 21/11 → 21/12 · Kéo dài cho lớp IELTS" · lỗi 409 `grant-not-active`: "Lần cấp này đã thu hồi hoặc đã hết hạn." · [Hủy] [Lưu ngày mới] |
+| `A/79b` *(mục 13)* | Xác nhận khi người nhận đang trả tiền tự gia hạn (D32 Bước 5, `confirm_turn_off_paid_renewal`) | **Cấp gói Pro cho minh.le@example.com?** · "Người này đang trả tiền cho gói Pro và đang tự gia hạn. Cấp gói sẽ:" · "tắt tự gia hạn của gói trả tiền, không hoàn tiền;" · "phần kỳ đã trả còn lại vẫn là Pro;" · "thu hồi lần cấp gói đang có (nếu có) và đếm lượt AI lại từ hôm nay." · [Giữ nguyên] [Cấp và tắt tự gia hạn] |
 
 ### 8.9 AI của Bước 6 (chỉ admin; thay `A/D09`–`A/D11`)
 
@@ -685,6 +691,7 @@ cài đặt khác. Tải lại để xem bản mới." (409 `version-conflict`);
 | `A/82` Prompt | Khối | Lời dặn (tối đa 8.000 ký tự) · Ví dụ (tối đa 10, mỗi ví dụ một cặp vào/ra) · "Dữ liệu prompt nhận: word, part_of_speech, level, meaning_vi, context_label" · Câu chặn cố định (không sửa được) · Bản số 3 · [Lưu] |
 | | Chạy thử | [Chạy thử] · "Còn 17/20 lần chạy thử trong giờ này (dùng chung với Bộ ví dụ)" · kết quả từng mẫu: đầu vào · trạng thái · lý do · đầu ra |
 | | Lịch sử | Bản · Thời điểm lưu · [Xem] · "Muốn quay về bản cũ: mở bản đó rồi lưu lại." |
+| | Lỗi *(mục 13)* | "Có người vừa lưu prompt này. Tải lại để xem bản mới." (409 `prompt-revision-conflict`) |
 | `A/83` Bộ ví dụ | Khối | Ví dụ theo thao tác (tối đa 100) · [Thêm ví dụ] · [Chạy bộ ví dụ] (prompt hiện tại / bản nháp) |
 | | Lần chạy | Trạng thái (Đang chờ / Đang chạy / Xong / Lỗi) · Tiến độ "12/20" · Hợp lệ · Thời gian trung bình · Chi phí · Model · Bản prompt |
 | `A/85` Chi phí | Lọc | Từ ngày · Đến ngày (tối đa 366 ngày) · Nhóm theo: Ngày / Thao tác / Model / Mục đích / Kết quả |
@@ -882,3 +889,14 @@ Chủ dự án góp 9 điểm khi xem ảnh mốc A+B. Chữ của các khung đ
 | 1 Chưa đủ 13 tuổi: chặn ngay ở form, không có màn riêng (chủ dự án, vòng 2) | `K/01b`, `M/01b` (thay màn cũ) | Ô Ngày sinh viền đỏ, giá trị "14/5/2015"; dòng dưới ô (thay dòng phụ): "Bạn cần đủ 13 tuổi để dùng Wordmet."; nút [Tạo tài khoản] mờ. Mục 4.2 không còn dùng. |
 | Vòng 2: chọn ngôn ngữ bằng danh sách thả xuống có cờ | `K/06`, `K/06b`, `M/06`, `M/06b` | Nhãn "Ngôn ngữ" (web) / "Ngôn ngữ của nghĩa và giao diện" (điện thoại); ô thả xuống: cờ Việt Nam + "Tiếng Việt" + mũi tên; danh sách mở: cờ Việt Nam "Tiếng Việt" (đang chọn, dấu tick), cờ Anh "English"; nút [Tiếp tục]. Component cờ `flag/vi`, `flag/en` ở 01 Foundations (màu cờ cố định, không theo biến). |
 | Vòng 2: gờ dưới của nút bị cắt | Mọi nút có gờ đặc trên page 04, 08, 09 | Không đổi chữ. Khung bọc nút không còn cắt nội dung (83 khung bọc), nên gờ 4px dưới nút hiện đủ. Script kiểm thêm chỉ số `ledgeClipped`. |
+
+## 13. Thêm khi đóng đợt (22/10/2026, sau bước đối chiếu đủ màn)
+
+Bước đối chiếu (`kiem-du-man.md`) thấy bốn chỗ chưa có màn; vẽ bù và ghi chữ ở các mục trên:
+
+| Chỗ thiếu | Khung | Chữ |
+|---|---|---|
+| Review Focus 4: lịch sử luyện tập trống | `K/57b`, `M/L57b` | mục 7.15b |
+| Gỡ dạng chia vừa nhận (design Bước 7 §10) | `A/77` | mục 8.7, [Hoàn tác] |
+| Sửa ngày lần cấp (D38 Bước 5), xác nhận tắt tự gia hạn (D32 Bước 5) | `A/78d`, `A/79b` | mục 8.8 |
+| Lỗi lưu prompt khi người khác vừa lưu (409) | `A/82` | mục 8.9 |

@@ -1,4 +1,4 @@
-// adminkit — helpers for the admin wireframes on page 04. Run as new AsyncFunction('figma', code)(figma) → K.
+// adminkit — helpers for the admin wireframes on page 04. Prototypes 413:* live in the frame "Kit admin · mẫu" on page 01 Foundations. Run as new AsyncFunction('figma', code)(figma) → K.
 const N = id => figma.getNodeByIdAsync(id);
 await Promise.all(['Regular','SemiBold','Medium','ExtraBold'].map(s => figma.loadFontAsync({ family: 'Lexend', style: s })));
 const vars = await figma.variables.getLocalVariablesAsync('COLOR');
@@ -7,11 +7,11 @@ const resolve = async (v) => { let val = v.valuesByMode['2:0']; let guard = 0; w
 const RC = {}; for (const [k, v] of Object.entries(V)) RC[k] = await resolve(v);
 const paint = (name) => { const c = RC[name]; return figma.variables.setBoundVariableForPaint({ type: 'SOLID', color: { r: c.r, g: c.g, b: c.b }, opacity: c.a ?? 1 }, 'color', V[name]); };
 const P = {
-  shell: await N('22:43'), head: await N('22:196'), panel: await N('24:880'), tablePanel: await N('22:201'),
+  shell: await N('22:43'), head: await N('22:196'), panel: await N('413:478'), tablePanel: await N('22:201'),
   thead: await N('22:222'), thCell: await N('22:223'), row: await N('22:232'),
   bold: await N('22:203'), reg16: await N('22:235'), reg13: await N('22:206'), pill: await N('22:204'), link: await N('22:202'), th: await N('22:224'),
-  title: await N('24:881'), desc: await N('24:883'), setting: await N('24:893'), settingUnit: await N('24:900'), switchRow: await N('24:887'), info: await N('24:924'),
-  seg: await N('24:995'), label: await N('26:2174'), input: await N('26:2176'), select: await N('26:2181'), check: await N('26:2186'),
+  title: await N('413:479'), desc: await N('413:481'), setting: await N('413:488'), settingUnit: await N('413:494'), switchRow: await N('413:501'), info: await N('413:507'),
+  seg: await N('413:509'), label: await N('26:2174'), input: await N('26:2176'), select: await N('26:2181'), check: await N('26:2186'),
   dialog: await N('26:2171'), scrim: (await N('26:2117')).children.find(c => c.name === 'scrim'), btnSet: await N('3:71'),
 };
 const ICON = { search: '3:15', more: '3:28', close: '3:32', plus: '3:35', check: '3:38', lock: '3:42', 'chevron-down': '207:241', info: '207:249', history: '207:211', calendar: '207:264', 'circle-x': '207:254', 'circle-check': '207:258', 'rotate-ccw': '207:268', flag: '207:206', sliders: '207:238' };

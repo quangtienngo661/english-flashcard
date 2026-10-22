@@ -248,6 +248,18 @@ Vòng 2, chủ dự án thêm: chọn ngôn ngữ ở màn đầu bằng danh s�
 
 Chủ dự án duyệt mốc A+B (22/10/2026): "Ok mốc A+B. Hai việc API theo đề xuất: thêm group_id cho Từ hay sai và sense_ids[] cho thêm cả loạt, ghi vào design §10. Sang mốc C."
 
+## Mốc C – F+G — duyệt không kèm góp ý (22/10/2026)
+
+Các mốc sau được duyệt mà không có câu hỏi mở nào; những điều Claude tự quyết khi vẽ ghi ở as-built (`docs/deliveries/dot-giao-dien.md`).
+
+| Mốc | Chủ dự án |
+|---|---|
+| C — điện thoại: Luyện tập, Gói học | "Ok mốc C, sang mốc D-web." |
+| D-web — Bước 7 trên web | "Ok mốc D-web, sang mốc D-phone." |
+| D-phone — Bước 7 trên điện thoại | "Ok mốc D-phone, sang mốc E." (kèm việc sửa nhãn gói "Miễn phí" thành "Pro" / "Dùng thử" trên 11 màn web, báo trong lần gửi mốc) |
+| E — admin | "Ok mốc E, sang mốc F+G." (kèm việc xóa khung `A/60` và các khung giữ chỗ `A/D02`–`A/D11`, báo trong lần gửi mốc) |
+| F+G — bản tối, prototype | "Ok mốc F+G, sang Task 12." |
+
 ## Đề xuất kỹ thuật duyệt cùng design (bốn phần, chủ dự án "ok" từng phần)
 
 | Chọn | Bỏ | Vì sao |
