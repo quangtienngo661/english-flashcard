@@ -287,3 +287,33 @@ Không có câu hỏi mở; Claude làm theo cách hiểu dưới đây và gử
 | 2 | Viền cho thẻ nhóm và khối đầu trang nhóm (hai chỗ có nền gần màu nền trang) |
 | 5 | Ngoài các ô ở ảnh (Tùy chỉnh phiên), đổi luôn các hàng chip chọn khác trên điện thoại sang danh sách thả xuống: Từ hay sai, Danh sách nhóm, bộ lọc của Tra từ và Thêm cả loạt; nút bật Lưới / Danh sách giữ nguyên |
 | 6 | "Các ô" là ô nhập, ô chọn, thẻ lựa chọn và dải tra đầu màn; nút chính giữ nguyên |
+
+## Góp ý web (22/10/2026, sau khi duyệt mobile)
+
+Chủ dự án duyệt mobile ("ok, mobile ổn"), PR #120 vào `dev`; rồi góp 15 điểm cho web, thêm "Các thay đổi mình nêu ở mobile thì cũng sẽ thay đổi ở web luôn,
+cái nào thuộc đặc trưng của mobile thì có thể bỏ đi" và "bổ sung 15: mobile cũng vậy". Chữ và khung: bản chữ mục 15. Các điểm chủ dự án nhờ đề xuất được vẽ thẳng để
+xem, chờ chủ dự án chọn:
+
+| Điểm | Đề xuất của Claude (chờ chủ dự án) | Nguồn tham khảo |
+|---|---|---|
+| 1, 4 Nền đỡ trống | Một component họa tiết mờ 12% (thẻ từ, ô trống, trắc nghiệm, dạng chia, hộp ngăn) đặt sau trang đăng ký, đăng nhập và trang thẻ ôn; tránh vùng form và thẻ | — |
+| 2 Lâu chưa ôn | Giữ trang (API có danh sách cân nhắc) nhưng làm lại: link quay lại thay nút "Về nhóm", một nút vàng, dòng ngữ cảnh, cột "Quá hạn", thẻ giải thích "Vì sao có danh sách này?". Cách khác chưa vẽ: gộp thành một tab trong trang nhóm | — |
+| 3 Chân trang | Chân trang vừa (thương hiệu + 3 nhóm link + bản quyền + ngôn ngữ), không lặp menu chính, chỉ trên trang web có thanh trên | Tóm tắt nghiên cứu NN/g về chân trang (uxcel.com/lessons/footers-best-practices-643; blog.logrocket.com/ux-design/website-footer-design-practices) |
+| 10 Gợi ý | Danh sách gợi ý đánh số có chấm tiến độ; gợi ý chưa mở là một nút "Mở gợi ý n" kèm phím H | — |
+| 15 Bản tối | Nền than lạnh ít bão hòa; thẻ sáng hơn nền theo độ nổi; mảng tô vàng, xanh lá, đỏ giảm độ đậm màu | m2.material.io/design/color/dark-theme (bề mặt nổi hơn thì sáng hơn, dùng xám đậm thay đen); material.io/blog/tone-based-surface-color-m3 |
+
+Claude tự quyết: điểm 9 áp cho cả thẻ của trang Luyện tập (K/51–K/55) lẫn thẻ câu trong phiên; điểm 11 và 12 áp cả cho phone vì đó là dữ liệu chung; các điểm còn lại
+chỉ web (mobile đã duyệt). Thứ tự lý do báo lỗi do dữ liệu seed quyết định, nên ghi việc đổi seed vào design §10.
+
+### Vòng 2, vòng 3 và duyệt (22/10/2026)
+
+| Góp ý của chủ dự án | Cách làm |
+|---|---|
+| "chỗ này bị chá không thấy" (vạch tô dưới tiêu đề ở bản tối) | Biến màu mới `color/highlight` (sáng #ffd84a, tối #6b5413) cho 65 vạch tô |
+| "Các card có màu khá tối" | Sáng thêm các bề mặt và mảng tô của bản tối (giá trị ở bản chữ mục 16) |
+| "Bỏ không cần thẻ ngân hàng đi … chỗ giá tiền thì cứ thiết kế theo kiểu placeholder thôi", "Bổ sugn là ở chỗ pro card" | Bỏ dòng ở thẻ Miễn phí; thẻ Pro có giá giữ chỗ "XXX.000 ₫ / năm", công tắc kỳ hạn hết mờ. Claude tự quyết giữ dải "Chưa mở bán" và dòng chưa nhận thanh toán (chủ dự án chỉ nói về giá) |
+| "bỏ thông báo chưa thanh toán luôn đi bạnh" | Bỏ dòng "Wordmet chưa nhận thanh toán…" khỏi thẻ Pro (K/52, K/52t, M/62 và bản Dark); dải "Chưa mở bán" vẫn giữ |
+
+**Chủ dự án duyệt:** "Vòng web ok: xóa K/15 cũ, giữ bản đề xuất làm K/15, CI xanh thì merge PR #121 vào dev." Như vậy mọi đề xuất ở bảng trên (nền họa tiết,
+K/15 mới, chân trang, bố cục gợi ý, màu bản tối) đã chốt. K/15 cũ (`274:1760`) đã xóa; bản đề xuất (`445:7913`) đổi tên thành "K/15 Từ lâu chưa ôn (IELTS)", đặt vào
+chỗ cũ, và 12 link prototype (thẻ nhóm IELTS, nút "Xem") trỏ sang nó.

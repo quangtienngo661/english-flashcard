@@ -187,6 +187,8 @@ Mockup chỉ tiếng Việt; bản tiếng Anh kiểm khi code.
   trường; bộ lọc trình độ, chủ đề, loại từ giữ nguyên.
 - **API trả email người thao tác** (chủ dự án, mốc 0 ngày 21/10/2026): các API admin hiện chỉ trả mã người dùng cho người cấp gói (`granted_by`, `revoked_by`, `changes[].changed_by`), người xử lý báo lỗi (`resolved_by`, kể cả danh sách trả lượt), người lưu prompt và người tạo, chạy bộ ví dụ. Màn admin của đợt này vẽ email; đợt code thêm email vào các response đó (chỉ thêm trường, như `locked_by` và `reviewed_by` đã có).
 
+- **Seed lý do báo lỗi** (chủ dự án, góp ý web 22/10/2026): lý do `Khác` luôn ở cuối danh sách người học thấy; đợt code đặt `position` của lý do `Khác` lớn nhất (admin vẫn sửa được thứ tự ở A/75).
+
 ## 11. Rủi ro và việc còn mở
 
 - **Khối lượng** khoảng 100 khung là ước tính từ báo cáo rà (`ASSUMPTION`); số thật biết sau mảng A–C.
