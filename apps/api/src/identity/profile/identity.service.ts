@@ -1,9 +1,12 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { dateString } from '../../common/time/local-date.js';
+import { Clock } from '../../common/clock/clock.js';
+import { AppLogger } from '../../common/logging/app-logger.js';
+import { dateString, dateValue, localDate } from '../../common/time/local-date.js';
 import { PRISMA_CLIENT } from '../../common/db/prisma.module.js';
 import { ProblemDetailsException } from '../../common/problem-details/problem-details.exception.js';
 import type { Prisma, PrismaClient } from '../../generated/prisma/client.js';
 import { permissionsFor, type Permission, type StaffRole, type SupportedLanguage } from '../identity.types.js';
+import { isOldEnough, MIN_AGE } from './person.js';
 import type { UpdateProfileBody } from './profile.schemas.js';
 import { canonicalTimeZone, normalizeStoredTimeZone } from './timezone.js';
 
@@ -56,7 +59,11 @@ export interface ReminderCandidate {
 
 @Injectable()
 export class IdentityService {
-  constructor(@Inject(PRISMA_CLIENT) private readonly prisma: PrismaClient) {}
+  constructor(
+    @Inject(PRISMA_CLIENT) private readonly prisma: PrismaClient,
+    @Inject(Clock) private readonly clock: Clock,
+    @Inject(AppLogger) private readonly logger: AppLogger,
+  ) {}
 
   /** A caller inside a transaction that holds a lock passes its `tx`, so the read needs no second connection. */
   async getProfile(userId: string, db: Prisma.TransactionClient = this.prisma): Promise<Profile | null> {
@@ -109,8 +116,9 @@ export class IdentityService {
     if (timezone === null) {
       throw new ProblemDetailsException({ status: 400, title: 'Validation failed', type: 'validation-failed' });
     }
+    if (body.birth_date !== undefined) await this.assertBirthDate(userId, body.birth_date, timezone);
     if (body.native_language === undefined && timezone === undefined && body.given_name === undefined
-      && body.family_name === undefined) return this.getProfile(userId);
+      && body.family_name === undefined && body.birth_date === undefined) return this.getProfile(userId);
     try {
       // One partial update changes only profile fields and returns the stored profile.
       const row = await this.prisma.user.update({
@@ -120,14 +128,34 @@ export class IdentityService {
           ...(timezone !== undefined ? { timezone } : {}),
           ...(body.given_name !== undefined ? { givenName: body.given_name } : {}),
           ...(body.family_name !== undefined ? { familyName: body.family_name } : {}),
+          ...(body.birth_date !== undefined ? { birthDate: dateValue(body.birth_date) } : {}),
         },
         select: profileSelect,
       });
+      // The date itself is personal data: the log names the user only.
+      if (body.birth_date !== undefined) this.logger.info('profile_birth_date_changed', { user_id: userId });
       return toProfile(row);
     } catch (error) {
       // Also handles deletion concurrent with PATCH without turning it into a 500.
       if (error !== null && typeof error === 'object' && 'code' in error && error.code === 'P2025') return null;
       throw error;
+    }
+  }
+
+  /**
+   * Design §8.1, the sign-up rule: "today" is the date in the profile's zone (or the zone sent in the same request); a date
+   * after it is 400 `validation-failed`, under 13 is 400 `age-below-minimum`. Checked before any write (GA5).
+   */
+  private async assertBirthDate(userId: string, birthDate: string, newTimezone: string | undefined): Promise<void> {
+    const zone = newTimezone ?? (await this.prisma.user.findUnique({ where: { id: userId }, select: { timezone: true } }))?.timezone ?? 'UTC';
+    const today = localDate(zone, this.clock.now());
+    if (birthDate > today) {
+      throw new ProblemDetailsException({
+        status: 400, title: 'Validation failed', type: 'validation-failed', extensions: { violations: ['birth_date'] },
+      });
+    }
+    if (!isOldEnough(birthDate, today, MIN_AGE)) {
+      throw new ProblemDetailsException({ status: 400, title: 'Age below minimum', type: 'age-below-minimum' });
     }
   }
 

@@ -74,13 +74,14 @@ describe('profile HTTP routing (unit, isolated persistence)', () => {
     expect(hit).toHaveBeenCalledTimes(4);
     for (const call of hit.mock.calls) expect(call).toEqual(['user.write', userId]);
   });
-  it('B1#24/SE5: invalid or extra fields reject the whole PATCH with Problem Details and no writes', async () => {
+  it('B1#24/SE5/GA4: invalid or extra fields reject the whole PATCH with Problem Details and no writes', async () => {
     const before = { ...row! };
     for (const body of [{ native_language: 'fr' }, { native_language: null }, { native_language: 42 },
       { timezone: 42 }, { timezone: null }, { timezone: 'x'.repeat(65) },
       { native_language: 'en', timezone: 'Mars/Base' }, { timezone: 'UTC\u0000' }, { timezone: '+07:00' },
       { timezone: 'UTC', extra: true }, { staff_role: 'admin' }, { email_verified: true },
-      { birth_date: '2000-01-01' }, { given_name: null }, { given_name: '' }, { given_name: '   ' }, { given_name: 'x'.repeat(51) }]) {
+      { birth_date: null }, { birth_date: '2010-02-30' }, { birth_date: '1899-12-31' }, { birth_date: '14/05/2008' },
+      { given_name: null }, { given_name: '' }, { given_name: '   ' }, { given_name: 'x'.repeat(51) }]) {
       const res = await patch(body);
       expect(res.status).toBe(400);
       expect(res.body.type).toBe('https://api.example.com/problems/validation-failed');
