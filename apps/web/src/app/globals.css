@@ -1,5 +1,7 @@
 @import 'tailwindcss';
 @import '@wordmet/design-tokens/theme.css';
+/* Dark values apply only under <html data-theme='dark'>, which only the learner app sets (design §4.4). */
+@import '@wordmet/design-tokens/dark.css';
 
 @theme {
   /* Type: rem; display/cta/h2 scale fluidly between 390px and 1440px (spec §6.1). */
@@ -46,6 +48,82 @@
   /* Sticky header (from md): its min height doubles as the page's scroll padding (UB16, WCAG 2.4.11). */
   --spacing-header: 4.5rem;
 
+  /* Learner app (design giao-dien-nguoi-hoc §4.2, §4.7): the density, ledges and overlay motion of the components copied
+     from apps/admin (its globals.css), plus the phone bottom sheet. No colours here (UBC1). */
+  --text-ui: 0.875rem;
+  --text-ui--line-height: 1.45;
+  --spacing-control: 2.5rem;
+  --spacing-control-touch: 2.75rem;
+  --shadow-sheet: 0 0.3rem 0 var(--color-canvas-deep);
+  --shadow-button: 0 0.18rem 0 var(--color-primary-deep);
+  --shadow-button-secondary: 0 0.18rem 0 var(--color-border-strong);
+  --shadow-button-danger: 0 0.18rem 0 var(--color-danger-deep);
+  --shadow-dialog: 0 0.5rem 0 var(--color-shadow-ink);
+  --shadow-menu: 0 0 0 0.0625rem var(--color-border), 0 0.35rem 0 var(--color-shadow-ink);
+  --shadow-toast: 0 0.3rem 0 var(--color-shadow-ink);
+  --motion-overlay: 200ms;
+  --animate-overlay-in: fade-in var(--motion-overlay) var(--ease-standard) both;
+  --animate-overlay-out: fade-out var(--transition-duration-fast) var(--ease-exit) both;
+  --animate-dialog-in: dialog-in var(--transition-duration-base) var(--ease-enter) both;
+  --animate-dialog-out: dialog-out var(--transition-duration-fast) var(--ease-exit) both;
+  --animate-sheet-in: sheet-in var(--transition-duration-base) var(--ease-enter) both;
+  --animate-sheet-out: sheet-out var(--transition-duration-fast) var(--ease-exit) both;
+  --animate-menu-in: menu-in var(--motion-overlay) var(--ease-enter) both;
+  --animate-menu-in-up: menu-in-up var(--motion-overlay) var(--ease-enter) both;
+  --animate-menu-out: fade-out var(--transition-duration-fast) var(--ease-exit) both;
+  --animate-toast-in: toast-in var(--motion-toast) var(--ease-spring) both;
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+  }
+  @keyframes fade-out {
+    to {
+      opacity: 0;
+    }
+  }
+  @keyframes dialog-in {
+    from {
+      opacity: 0;
+      transform: translateY(0.5rem) scale(0.97);
+    }
+  }
+  @keyframes dialog-out {
+    to {
+      opacity: 0;
+      transform: scale(0.98);
+    }
+  }
+  @keyframes sheet-in {
+    from {
+      transform: translateY(100%);
+    }
+  }
+  @keyframes sheet-out {
+    to {
+      transform: translateY(100%);
+    }
+  }
+  @keyframes menu-in {
+    from {
+      opacity: 0;
+      transform: translateY(-0.25rem);
+    }
+  }
+  @keyframes menu-in-up {
+    from {
+      opacity: 0;
+      transform: translateY(0.25rem);
+    }
+  }
+  @keyframes toast-in {
+    from {
+      opacity: 0;
+      transform: translateY(0.9rem) scale(0.96);
+    }
+  }
+
   /* Landing-only motion; shared durations and easings come from @wordmet/design-tokens. */
   --transition-duration-faq: 250ms;
 
@@ -78,6 +156,14 @@
       transform: scale(1.12);
     }
   }
+}
+
+/* A popover opened above its trigger slides up instead of down (from apps/admin). */
+@custom-variant placement-top (&[data-placement='top']);
+
+/* A pressed button sinks onto its ledge (from apps/admin); applied only under motion-safe. */
+@utility pressed {
+  translate: 0 0.18rem;
 }
 
 /* The practice card leans slightly on wide screens and stands upright on phones (design §5.1). */

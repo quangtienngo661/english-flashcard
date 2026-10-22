@@ -1,0 +1,40 @@
+/* Dark values of the shared colours, for the learner app only (design giao-dien-nguoi-hoc §4.4, D3). Values are the
+   "Dark" mode of the Figma variables (file 7HcPAKLrWu32C27qYMJUOA, collection "Wordmet B", read 22/10/2026). Only the
+   /app layout sets data-theme on <html>, so the landing and admin never match this selector. Tokens the Figma file
+   does not have (canvas-deep, danger-deep, wrong-chip, wrong-chip-deep) get values chosen here. */
+[data-theme='dark'] {
+  color-scheme: dark;
+  --color-primary: #8da2ff;
+  --color-primary-deep: #6f86f5;
+  --color-primary-soft: #2e3a6b;
+  --color-on-primary: #10131c;
+  --color-on-primary-muted: #2a3358;
+  --color-accent: #ffd84a;
+  --color-accent-deep: #c9a21a;
+  --color-accent-soft: #463b1d;
+  --color-ink: #eceef5;
+  --color-muted: #b0b7ca;
+  --color-placeholder: #979fb6;
+  --color-surface: #242b3d;
+  --color-canvas: #10131c;
+  --color-canvas-deep: #0a0c12;
+  --color-border: #384056;
+  --color-border-strong: #6b7491; /* Figma #59627d is 2.33:1 on surface; inputs need 3:1 */
+  --color-success: #5fd39a;
+  --color-success-soft: #1f4033;
+  --color-warning: #f2b84b;
+  --color-danger: #ff8b7c;
+  --color-danger-soft: #4a2830;
+  --color-danger-deep: #c9584c;
+  --color-neutral-soft: #2f364a;
+  --color-wrong-chip: #5c2f33;
+  --color-wrong-chip-deep: #3d1d21;
+  --color-navy: #171b27;
+  --color-navy-raised: #2c3448;
+  --color-on-navy: #f1f3fd;
+  --color-on-navy-muted: #b9c1e0;
+  --color-session-card: #2c3448;
+  --color-on-accent: #0f1a3d;
+  --color-highlight: #6b5413;
+  --color-shadow-ink: rgb(0 0 0 / 0.5);
+}

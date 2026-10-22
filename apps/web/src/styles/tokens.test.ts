@@ -5,6 +5,8 @@ import { fileURLToPath } from 'node:url';
 // Shared tokens come from the workspace package (spec UB3); resolving it here also proves apps/web can import it.
 const themePath = createRequire(import.meta.url).resolve('@wordmet/design-tokens/theme.css');
 const theme = readFileSync(themePath, 'utf8');
+// Dark values for the learner app (design §4.4, D3): a separate file so admin and the landing never see them.
+const dark = readFileSync(createRequire(import.meta.url).resolve('@wordmet/design-tokens/dark.css'), 'utf8');
 const globals = readFileSync(fileURLToPath(new URL('../app/globals.css', import.meta.url)), 'utf8');
 
 function tokens(css: string, prefix: string): Map<string, string> {
@@ -13,7 +15,23 @@ function tokens(css: string, prefix: string): Map<string, string> {
   return out;
 }
 
-const colors = tokens(theme, 'color');
+const lightColors = tokens(theme, 'color');
+const darkColors = tokens(dark, 'color');
+let colors = lightColors;
+
+// The learner app's colours (Figma variables, collection "Wordmet B"): text pairs and control pairs it relies on.
+const APP_TEXT: Array<[string, string]> = [
+  ['ink', 'surface'], ['ink', 'canvas'], ['muted', 'surface'], ['muted', 'canvas'], ['placeholder', 'surface'],
+  ['on-navy', 'navy'], ['on-navy', 'navy-raised'], ['on-navy-muted', 'navy'], ['ink', 'highlight'], ['ink', 'session-card'],
+  ['on-accent', 'accent'], ['on-primary', 'primary'], ['primary', 'surface'], ['primary', 'primary-soft'],
+  ['success', 'surface'], ['success', 'success-soft'], ['danger', 'surface'], ['danger', 'danger-soft'], ['warning', 'surface'],
+];
+const APP_CONTROLS: Array<[string, string]> = [
+  ['border-strong', 'surface'], ['border-strong', 'canvas'], ['primary', 'surface'], ['primary', 'canvas'], ['accent', 'navy'],
+];
+
+const below = (pairs: Array<[string, string]>, min: number) =>
+  pairs.filter(([f, b]) => contrast(f, b) < min).map(([f, b]) => `${f}/${b}=${contrast(f, b).toFixed(2)} < ${min}`);
 
 function luminance(hex: string): number {
   const [r, g, b] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255);
@@ -21,9 +39,16 @@ function luminance(hex: string): number {
   return 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
 }
 
+// session-card aliases canvas in light mode (as in Figma).
+function hexOf(name: string): string | undefined {
+  const value = colors.get(name);
+  const alias = value?.match(/^var\(--color-([a-z0-9-]+)\)$/);
+  return alias ? hexOf(alias[1]) : value;
+}
+
 function contrast(fg: string, bg: string): number {
-  const a = colors.get(fg);
-  const b = colors.get(bg);
+  const a = hexOf(fg);
+  const b = hexOf(bg);
   if (!a || !b) throw new Error(`missing color token ${a ? bg : fg}`);
   const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x);
   return (hi + 0.05) / (lo + 0.05);
@@ -49,6 +74,19 @@ describe('design tokens', () => {
       ...controls.filter(([f, b]) => contrast(f, b) < 3).map(([f, b]) => `${f}/${b}=${contrast(f, b).toFixed(2)} < 3`),
     ];
     expect(failures).toEqual([]);
+  });
+
+  it('D3: every light colour has a dark value', () => {
+    expect([...lightColors.keys()].filter((k) => !darkColors.has(k))).toEqual([]);
+    expect([...darkColors.keys()].filter((k) => !lightColors.has(k))).toEqual([]);
+  });
+
+  it('the learner app colours meet WCAG contrast in light and dark', () => {
+    for (const [mode, map] of [['light', lightColors], ['dark', darkColors]] as const) {
+      colors = map;
+      expect([...below(APP_TEXT, 4.5), ...below(APP_CONTROLS, 3)].map((f) => `${mode}: ${f}`)).toEqual([]);
+    }
+    colors = lightColors;
   });
 
   it('LP31 size tokens use rem and the clamp tokens hit the Figma sizes', () => {

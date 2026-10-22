@@ -32,6 +32,16 @@
   --color-wrong-chip: #ffd3cd;
   --color-wrong-chip-deep: #d99b92;
 
+  /* Learner app (Figma variables, collection "Wordmet B", design giao-dien-nguoi-hoc §4.4). Dark values: dark.css. */
+  --color-navy: #1b2444;
+  --color-navy-raised: #2c3760;
+  --color-on-navy: #f1f3fd;
+  --color-on-navy-muted: #b9c1e0;
+  --color-session-card: var(--color-canvas);
+  --color-on-accent: #0f1a3d;
+  --color-highlight: #ffd84a;
+  --color-shadow-ink: rgb(15 26 61 / 0.35);
+
   /* Radii (§4.5). */
   --radius-sm: 0.5rem;
   --radius-control: 0.75rem;
@@ -41,7 +51,7 @@
   --radius-feature: 1.5rem;
 
   /* B's flat "ledge" under an object instead of a soft shadow (§4.5). */
-  --shadow-ledge: 0 0.25rem 0 rgb(15 26 61 / 0.35);
+  --shadow-ledge: 0 0.25rem 0 var(--color-shadow-ink);
   --shadow-ledge-accent: 0 0.25rem 0 var(--color-accent-deep);
   --shadow-ledge-wrong: 0 0.25rem 0 var(--color-wrong-chip-deep);
   --shadow-ledge-card: 0 1.5rem 0 var(--color-primary-deep);

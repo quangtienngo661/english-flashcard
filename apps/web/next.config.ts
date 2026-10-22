@@ -2,6 +2,7 @@ import { initOpenNextCloudflareForDev } from '@opennextjs/cloudflare';
 import type { NextConfig } from 'next';
 import createNextIntlPlugin from 'next-intl/plugin';
 import { buildCsp, CSP_INLINE_FALLBACK } from './src/lib/csp';
+import { THEME_SCRIPT_HASH } from './src/app-shell/theme/theme-script';
 import { appPageExtensions, LEARNER_APP_ENABLED } from './src/lib/learner-app-flag';
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
@@ -12,7 +13,7 @@ const csp = buildCsp({
   // A production build served over plain http (local e2e on :3100) must not upgrade its own requests to https.
   dev: !siteUrl.startsWith('https://'),
   inline: CSP_INLINE_FALLBACK,
-  scriptHashes: [],
+  scriptHashes: [THEME_SCRIPT_HASH],
 });
 
 const nextConfig: NextConfig = {
