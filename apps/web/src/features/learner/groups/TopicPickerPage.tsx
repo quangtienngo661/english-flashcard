@@ -161,7 +161,7 @@ function Picker({ code, level }: { code: string; level: string }) {
                     <span className="block break-words text-caption text-ink">{s.meaning.text}</span>
                   </span>
                   {decks ? (
-                    <span className="shrink-0 rounded-full bg-neutral-soft px-2 py-0.5 text-caption text-muted">
+                    <span className="min-w-0 max-w-1/2 break-words rounded-inner bg-neutral-soft px-2 py-0.5 text-right text-caption text-muted">
                       {deckName(decks) ? t('learning', { groups: deckName(decks) }) : t('learningNoGroup')}
                     </span>
                   ) : (
@@ -176,7 +176,7 @@ function Picker({ code, level }: { code: string; level: string }) {
       {unlearned.length > 0 && (
         <div className="fixed inset-x-0 bottom-16 z-30 border-t border-border bg-surface md:bottom-0">
           <div className="mx-auto flex max-w-360 flex-wrap items-end gap-3 px-4 py-3 lg:px-8">
-            <div className="min-w-56 flex-1 sm:flex-none">
+            <div className="w-full min-w-0 sm:w-72">
               <Select
                 label={t('addTo')}
                 value={target}
