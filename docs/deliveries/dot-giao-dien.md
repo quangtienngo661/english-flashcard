@@ -168,3 +168,11 @@ Chủ dự án góp 6 điểm cho page 09 (web xem sau); đã sửa trên nhánh
 cách hiểu từng điểm: decision record, mục "Sau merge — góp ý mobile"; ảnh: `docs/mockups/2026-10-21/duyet/mobile-vong-3/`. Thêm khung M/21b (danh sách lọc
 đang mở). Script kiểm trên cả 97 khung của page 09: chữ thấp nhất 4,69:1, không tràn, tối đa một nút vàng, không gờ nút bị cắt. Khi đổi, hàng chip của
 M/40, M/44 (bộ lọc chọn nhiều) bị thay nhầm bằng một ô; đã dựng lại đủ bốn bộ lọc theo bản web K/30 (Trình độ, Chủ đề, Loại từ, Chỉ từ của tôi).
+
+## Góp ý web (22/10/2026)
+
+Sau khi duyệt mobile (PR #120 vào `dev`), chủ dự án góp 15 điểm cho web; đã sửa trên nhánh này, PR mới vào `dev`. Chữ và khung: bản chữ mục 15;
+các đề xuất chờ chọn (họa tiết nền, Lâu chưa ôn, chân trang, gợi ý, bản tối) và nguồn tham khảo: decision record, mục "Góp ý web"; ảnh:
+`docs/mockups/2026-10-21/duyet/web-vong-3/`. Thêm: component họa tiết nền (01 Foundations), component chân trang (page 08), K/15 bản đề xuất (bản cũ giữ để so),
+section "9 · Bản tối mẫu" trên page 09. Bảng màu bản tối đổi trong biến chế độ Dark (giá trị cũ ghi ở bản chữ mục 15 để quay lại). Script kiểm trên toàn bộ page 08
+(trừ K/15 bản cũ, hai nút vàng) và các mẫu Dark: chữ thấp nhất 4,69:1 (Dark 5,16:1), không tràn, không gờ nút bị cắt.
