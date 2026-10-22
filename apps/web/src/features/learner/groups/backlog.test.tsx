@@ -36,7 +36,8 @@ const routes = (extra = {}) => ({
 describe('BacklogPage (K/15)', () => {
   it('one yellow button relearns every word, in batches of 100 ids', async () => {
     const { calls } = renderApp(<BacklogPage />, { routes: routes() });
-    await userEvent.click(await screen.findByRole('button', { name: 'Học lại cả 150 từ' }));
+    // 150 rows: give the first render more than the default second under a busy run.
+    await userEvent.click(await screen.findByRole('button', { name: 'Học lại cả 150 từ' }, { timeout: 5000 }));
     await waitFor(() => expect(calls.filter((c) => c.path === '/v1/items/relearn')).toHaveLength(2));
     const batches = calls.filter((c) => c.path === '/v1/items/relearn').map((c) => (c.body as { item_ids: string[] }).item_ids.length);
     expect(batches).toEqual([100, 50]);
@@ -84,8 +85,8 @@ describe('BacklogPage (K/15)', () => {
     await userEvent.click(within(await screen.findByRole('dialog')).getByRole('button', { name: 'Bỏ 3 từ' }));
     expect(await screen.findByText('Đã chọn 2 từ')).toBeInTheDocument();
     await waitFor(() => expect(count('GET', `/v1/groups/${G}/backlog?page_size=100`)).toBe(2));
-    await userEvent.click(screen.getByRole('button', { name: 'Bỏ khỏi việc học' }));
-    await userEvent.click(within(await screen.findByRole('dialog')).getByRole('button', { name: 'Bỏ 2 từ' }));
+    // The question stays open after the failure; the learner presses again in it.
+    await userEvent.click(within(screen.getByRole('dialog', { name: 'Bỏ 2 từ khỏi việc học?' })).getByRole('button', { name: 'Bỏ 2 từ' }));
     await waitFor(() => expect(count('DELETE', `/v1/items/${uuid(3)}`)).toBe(1));
     expect(count('DELETE', `/v1/items/${uuid(1)}`)).toBe(1);
   });

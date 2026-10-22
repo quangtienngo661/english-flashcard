@@ -93,9 +93,28 @@ function BacklogBody({ groupId, name }: { groupId: string; name: string }) {
     }
     return ids.length;
   });
+  // One DELETE per word. A 404 means the word already left (an earlier press got through); a failure halfway keeps only the
+  // words not removed yet ticked and reloads the list, so the next press does not start again from the first word.
   const forget = useSubmitOnce(async (pressKey) => {
     const ids = [...selected];
-    for (const [i, itemId] of ids.entries()) await api.delete(`/v1/items/${itemId}`, { idempotencyKey: `${pressKey}:${i}` });
+    const removed: string[] = [];
+    try {
+      for (const [i, itemId] of ids.entries()) {
+        try {
+          await api.delete(`/v1/items/${itemId}`, { idempotencyKey: `${pressKey}:${i}` });
+        } catch (error) {
+          if (!(error instanceof ApiError && error.problem.status === 404)) throw error;
+        }
+        removed.push(itemId);
+      }
+    } catch (error) {
+      if (removed.length > 0) {
+        setSelected((current) => new Set([...current].filter((itemId) => !removed.includes(itemId))));
+        void client.invalidateQueries({ queryKey: key });
+        void client.invalidateQueries({ queryKey: GROUPS_KEY });
+      }
+      throw error;
+    }
     return ids.length;
   });
 

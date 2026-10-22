@@ -93,7 +93,7 @@ Dùng tài khoản người học của mục 0.4 (file CSV mẫu đã nạp). T
 | 1 | Đăng nhập, vào Hôm nay | "Chưa có nhóm nào" + [Tạo nhóm đầu tiên]; bên dưới "Tạo nhóm nhanh theo chủ đề" có thẻ "Kinh doanh · B1" (số từ, 3 từ mẫu) | K/94 `328:12804` |
 | 2 | Bấm "Xem thêm và chọn từ" ở thẻ Kinh doanh · B1 | Trang "Kinh doanh · B1": "113 từ gợi ý…", ô "Chọn tất cả (113 từ chưa học)", mỗi dòng từ · loại từ · nghĩa · trình độ; thanh dưới: "Thêm vào" (Nhóm mới "Kinh doanh · B1"), [Thêm cả 113 từ], [Thêm 0 từ đã chọn] mờ | K/18 `336:3463` |
 | 3 | Tick 3 từ, bấm [Thêm 3 từ đã chọn] | "Đã thêm 3 từ vào nhóm “Kinh doanh · B1”."; 3 dòng đó thành "Đang học · Kinh doanh · B1", không tick được nữa | K/18 |
-| 4 | Bấm [Thêm cả 110 từ] (vẫn chọn nhóm "Kinh doanh · B1" ở ô Thêm vào) | "Đã thêm 110 từ…"; không còn thanh dưới (hết từ chưa học) | K/18 |
+| 4 | Ô "Thêm vào" giờ chọn sẵn nhóm "Kinh doanh · B1" (không tạo nhóm thứ hai). Tick 2 từ rồi đổi ý, bấm [Thêm cả 110 từ] | "Đã thêm 110 từ…" (cả 110, không chỉ 2 từ đã tick; gửi thành lô 100 + 10); không còn thanh dưới | K/18 |
 | 5 | Vào Nhóm (tab) | Thẻ nhóm "Kinh doanh · B1": 6 cột ngăn, "113 từ", "… thẻ chờ", [Ôn … thẻ] | K/16 `268:905` |
 | 6 | Bấm [Tạo nhóm], gõ tên 61 ký tự | Ô dừng ở 60, bộ đếm "60/60"; tên ngắn "Công nghệ" → [Tạo nhóm] → "Đã tạo nhóm “Công nghệ”." | K/17 `335:2879` |
 | 7 | Tạo lại nhóm tên "Công nghệ" | Dưới ô: "Đã có nhóm tên này. Chọn tên khác." | K/17 |

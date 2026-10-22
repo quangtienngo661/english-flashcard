@@ -9,7 +9,7 @@ import { Button as AriaButton, Menu, MenuItem, MenuTrigger, Popover } from 'reac
 import { AppShell } from '@/app-chrome/AppShell';
 import { ApiError } from '@/app-shell/api/problem';
 import { useErrorMessage } from '@/app-shell/api/use-error-message';
-import { createFormat } from '@/app-shell/format';
+import { createFormat, useFormat } from '@/app-shell/format';
 import { Button } from '@/app-ui/Button';
 import { Dialog } from '@/app-ui/Dialog';
 import { Select } from '@/app-ui/Select';
@@ -34,7 +34,7 @@ import {
 import { STAGE_KEYS } from './stages';
 
 type Filter = 'all' | 'priority' | 'due' | 'new' | `stage-${1 | 2 | 3 | 4 | 5}`;
-const STAGE_AXIS = ['Mới', '1', '3', '7', '14', '30'] as const;
+const STAGE_DAYS = ['1', '3', '7', '14', '30'] as const;
 
 function matches(card: Card, filter: Filter): boolean {
   if (filter === 'all') return true;
@@ -77,6 +77,7 @@ function GroupBody({ detail }: { detail: GroupDetail }) {
   const t = useTranslations('App.group');
   const tStage = useTranslations('App.stages');
   const locale = useLocale() as AppLocale;
+  const format = useFormat();
   const summary = useGroups().data?.items.find((g) => g.id === detail.id);
   const queue = useGroupQueue(detail.id, 'all');
   const items = useAllGroupItems(detail.id).data;
@@ -85,7 +86,7 @@ function GroupBody({ detail }: { detail: GroupDetail }) {
   const cards = queue.data?.cards ?? [];
   const count = summary ? waiting(summary) : 0;
   const review = `/${locale}/app/review?group=${detail.id}`;
-  const created = createFormat(locale, 'UTC').date(detail.created_at, 'full');
+  const created = format.date(detail.created_at, 'full');
   const filters: Array<{ id: Filter; label: string }> = [
     { id: 'all', label: t('filterAll') },
     { id: 'priority', label: t('filterPriority') },
@@ -198,6 +199,8 @@ function DeckMenu({ studyAll, total, onRename, onDelete }: { studyAll: string; t
 /** The six stages as columns (TV9 labels "Mới · 1 · 3 · 7 · 14 · 30"): blue = due today, outline = not yet. */
 function StageChart({ summary }: { summary: GroupSummary }) {
   const t = useTranslations('App.group');
+  const tStage = useTranslations('App.stages');
+  const STAGE_AXIS = [tStage('s0'), ...STAGE_DAYS];
   const max = Math.max(1, ...summary.cells.map((c) => c.total));
   return (
     <figure aria-label={`${t('chartLabel')}: ${summary.cells.map((c, i) => `${STAGE_AXIS[i]} ${c.total}`).join(', ')}`} className="flex flex-col gap-2">
@@ -322,9 +325,8 @@ function WordRow({ card, groupId, groupCount, changed }: { card: Card; groupId: 
     <li aria-label={word} className="flex flex-wrap items-start justify-between gap-3 p-4">
       <div className="min-w-0 flex-1">
         <p className="flex flex-wrap items-baseline gap-2">
-          <Link href={`/${locale}/app/word?w=${encodeURIComponent(word)}`} className="break-all text-title font-semibold text-ink hover:underline">
-            {word}
-          </Link>
+          {/* The word page (K/30) arrives in M3; until then the word is plain text. */}
+          <span className="break-all text-title font-semibold text-ink">{word}</span>
           <span className="text-caption text-muted">{card.content.pos}</span>
         </p>
         <p className="break-words text-ui text-ink">{card.content.meaning.text}</p>

@@ -1,5 +1,6 @@
 'use client';
 
+import { useQueryClient } from '@tanstack/react-query';
 import { useLocale, useTranslations } from 'next-intl';
 import { useState, type FormEvent, type ReactNode } from 'react';
 import { useErrorMessage } from '@/app-shell/api/use-error-message';
@@ -11,7 +12,7 @@ import { Dialog } from '@/app-ui/Dialog';
 import { TextField } from '@/app-ui/TextField';
 import { showToast } from '@/app-ui/Toast';
 import { GROUP_NAME_MAX } from './group-name';
-import { groupError, useGroup, useGroupMutations } from './groups-api';
+import { groupError, groupKey, useGroup, useGroupMutations, type GroupDetail } from './groups-api';
 
 type Target = { id: string; name: string; version: number };
 type Open = { kind: 'create' } | { kind: 'rename'; group: Target } | { kind: 'delete'; group: Target; leaveTo?: string };
@@ -98,6 +99,7 @@ function RenameGroupDialog({ group, onClose }: { group: Target; onClose: () => v
   const t = useTranslations('App');
   const nameError = useNameError();
   const { renameGroup } = useGroupMutations();
+  const client = useQueryClient();
   const latest = useGroup(group.id).data;
   const version = latest?.version ?? group.version;
   const [name, setName] = useState(group.name);
@@ -112,7 +114,12 @@ function RenameGroupDialog({ group, onClose }: { group: Target; onClose: () => v
       showToast(t('groups.renamed'), 'success');
       onClose();
     } catch (failure) {
-      if (groupError(failure)?.kind === 'conflict' && latest) setName(latest.name);
+      if (groupError(failure)?.kind === 'conflict') {
+        // Wait for the reload so the field shows the name saved elsewhere, not the one cached before the press.
+        await client.refetchQueries({ queryKey: groupKey(group.id) });
+        const fresh = client.getQueryData<GroupDetail>(groupKey(group.id));
+        if (fresh) setName(fresh.name);
+      }
       setError(nameError(failure));
     }
   }

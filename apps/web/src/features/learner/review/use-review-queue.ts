@@ -17,10 +17,17 @@ type Pending = { itemId: string; answer: Answer; reviewId: string };
 export function useReviewQueue(groupId: string | null, mode: 'due' | 'all') {
   const api = useApi();
   const client = useQueryClient();
+  // The cards are read once: after that the query is disabled, so "Thử lại" on the offline band (refetch of every active
+  // query) cannot swap the deck under the learner's position.
+  const [loaded, setLoaded] = useState(false);
   const queue = useQuery({
     queryKey: ['review-session', groupId, mode],
-    queryFn: () => api.get<{ cards: Card[] }>(`/v1/groups/${groupId}/queue?mode=${mode}`),
-    enabled: groupId !== null,
+    queryFn: async () => {
+      const result = await api.get<{ cards: Card[] }>(`/v1/groups/${groupId}/queue?mode=${mode}`);
+      setLoaded(true);
+      return result;
+    },
+    enabled: groupId !== null && !loaded,
     staleTime: Infinity,
     gcTime: 0,
     refetchOnWindowFocus: false,

@@ -3,7 +3,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useLocale, useTranslations } from 'next-intl';
 import { useSearchParams } from 'next/navigation';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { AppShell } from '@/app-chrome/AppShell';
 import { PageTitle } from '@/app-chrome/PageTitle';
 import { useErrorMessage } from '@/app-shell/api/use-error-message';
@@ -14,7 +14,7 @@ import { Checkbox } from '@/app-ui/Checkbox';
 import { Select } from '@/app-ui/Select';
 import { FullScreenSpinner, NotFoundState } from '@/app-ui/States';
 import { showToast } from '@/app-ui/Toast';
-import { useGroupMutations, useGroups, type BulkBody } from './groups-api';
+import { useGroupMutations, useGroups, type BulkResult } from './groups-api';
 
 type Sense = {
   sense_id: string;
@@ -52,7 +52,10 @@ function Picker({ code, level }: { code: string; level: string }) {
   const groups = useGroups().data?.items ?? [];
   const { createGroup, bulkAdd } = useGroupMutations();
   const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [target, setTarget] = useState(NEW_DECK);
+  const [chosen, setChosen] = useState<string | null>(null);
+  // Which button the press came from, read when the press runs (state set in the same handler is not visible yet).
+  const addAll = useRef(false);
+  const [pressedAll, setPressedAll] = useState(false);
 
   // Every page of the topic (the API returns no total), then which of them the learner already learns, 100 ids a call.
   const data = useQuery({
@@ -83,26 +86,31 @@ function Picker({ code, level }: { code: string; level: string }) {
   const title = t('title', { topic: topicName, level });
   const unlearned = senses.filter((s) => !learning.has(s.sense_id));
   const deckName = (ids: string[]) => ids.map((gid) => groups.find((g) => g.id === gid)?.name).filter(Boolean).join(', ');
+  // A deck already named like the topic (made here earlier) is the default, so a second add never makes it again.
+  const target = chosen ?? groups.find((g) => g.name === title)?.id ?? NEW_DECK;
 
+  // Exactly the unlearned (or ticked) ids, 100 a request; each batch has its own key derived from the press.
   const add = useSubmitOnce(async (key) => {
-    const body: BulkBody =
-      selected.size > 0
-        ? { sense_ids: unlearned.filter((s) => selected.has(s.sense_id)).map((s) => s.sense_id) }
-        : unlearned.length <= PAGE
-          ? { sense_ids: unlearned.map((s) => s.sense_id) }
-          : { topic: code, level };
+    const ids = unlearned.filter((s) => addAll.current || selected.has(s.sense_id)).map((s) => s.sense_id);
     let deckId = target;
     let name = groups.find((g) => g.id === target)?.name ?? title;
     if (target === NEW_DECK) {
       const deck = await createGroup(title, `${key}:deck`);
       deckId = deck.id;
       name = deck.name;
+      setChosen(deck.id);
     }
-    return { result: await bulkAdd(deckId, body, `${key}:add`), name };
+    const total: BulkResult = { added: 0, already_in_group: 0, skipped_function_words: 0, skipped_group_full: 0, skipped_not_found: 0 };
+    for (let i = 0; i < ids.length; i += PAGE) {
+      const result = await bulkAdd(deckId, { sense_ids: ids.slice(i, i + PAGE) }, `${key}:add:${i / PAGE}`);
+      for (const field of Object.keys(total) as Array<keyof BulkResult>) total[field] += result[field];
+    }
+    return { result: total, name };
   });
 
   async function onAdd(all: boolean) {
-    if (all) setSelected(new Set());
+    addAll.current = all;
+    setPressedAll(all);
     try {
       const done = await add.submit();
       if (!done) return;
@@ -180,14 +188,14 @@ function Picker({ code, level }: { code: string; level: string }) {
               <Select
                 label={t('addTo')}
                 value={target}
-                onChange={setTarget}
+                onChange={setChosen}
                 items={[{ id: NEW_DECK, label: t('newGroup', { name: title }) }, ...groups.map((g) => ({ id: g.id, label: g.name }))]}
               />
             </div>
-            <Button variant="quiet" size="lg" isPending={add.busy && selected.size === 0} onPress={() => void onAdd(true)}>
+            <Button variant="quiet" size="lg" isPending={add.busy && pressedAll} onPress={() => void onAdd(true)}>
               {t('addAll', { count: unlearned.length })}
             </Button>
-            <Button variant="sticker" size="lg" isPending={add.busy && selected.size > 0} isDisabled={selected.size === 0} onPress={() => void onAdd(false)}>
+            <Button variant="sticker" size="lg" isPending={add.busy && !pressedAll} isDisabled={selected.size === 0} onPress={() => void onAdd(false)}>
               {t('addSelected', { count: selected.size })}
             </Button>
           </div>

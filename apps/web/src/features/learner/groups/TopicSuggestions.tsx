@@ -10,7 +10,6 @@ const TONES = ['bg-accent-soft', 'bg-success-soft', 'bg-primary-soft'] as const;
 /** "Tạo nhóm nhanh theo chủ đề" (K/94, K/16; API (h), D17): hidden when the API suggests nothing (GH3). */
 export function TopicSuggestions() {
   const t = useTranslations('App.groups');
-  const locale = useLocale();
   const { data } = useTopicSuggestions();
   if (!data || data.items.length === 0) return null;
   return (
@@ -19,9 +18,7 @@ export function TopicSuggestions() {
         <h2 id="topic-suggestions" className="text-title font-semibold text-ink">
           {t('suggestTitle')}
         </h2>
-        <Link href={`/${locale}/app/lookup`} className="text-ui font-semibold text-primary underline underline-offset-2">
-          {t('suggestAll')}
-        </Link>
+        {/* "Xem mọi chủ đề trong Tra từ" links to Tra từ, which arrives in M3. */}
       </div>
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {data.items.map((item, i) => (
