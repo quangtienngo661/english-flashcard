@@ -148,15 +148,25 @@ describe('EntitlementsService.snapshot', () => {
     }).service.snapshot(USER);
     expect(snapshot?.sources).toEqual([
       {
-        kind: 'subscription', id: 'sub-1', status: 'active', ends_at: null, renews_at: '2026-12-01T00:00:00.000Z',
+        kind: 'subscription', id: 'sub-1', status: 'active', starts_at: null, ends_at: null, renews_at: '2026-12-01T00:00:00.000Z',
         cancel_at_period_end: false, pending_interval: 'year', limits: null,
       },
       {
-        kind: 'grant_limits', id: 'grant-1', status: null, ends_at: '2026-12-31T00:00:00.000Z', renews_at: null,
+        kind: 'grant_limits', id: 'grant-1', status: null, starts_at: '2026-11-01T00:00:00.000Z', ends_at: '2026-12-31T00:00:00.000Z', renews_at: null,
         cancel_at_period_end: null, pending_interval: null, limits: { ai_lookup_per_cycle: 7 },
       },
     ]);
     expect(snapshot?.pools.ai_lookup.limit).toBe(7);
+  });
+
+  it('GG3: each source says when it started — a grant its start, a subscription its current period start', async () => {
+    const grant = { ...limitsGrant(null), kind: 'plan' as const, startsAt: new Date('2026-10-15T00:00:00Z') };
+    const subscription = proSubscription({ currentPeriodStart: new Date('2026-11-01T00:00:00Z') });
+    const snapshot = await setup({ subscriptions: [subscription], grants: [grant] }).service.snapshot(USER);
+    expect(snapshot?.sources.map((s) => [s.kind, s.starts_at])).toEqual([
+      ['subscription', '2026-11-01T00:00:00.000Z'],
+      ['grant_plan', '2026-10-15T00:00:00.000Z'],
+    ]);
   });
 
   it('a cancelled subscription shows ends_at and no renews_at; an expired one is not listed', async () => {

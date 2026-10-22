@@ -3,12 +3,17 @@ import { PRISMA_CLIENT } from '../../common/db/prisma.module.js';
 import { decodeBoundToken, encodeBoundToken } from '../../common/pagination/page-token.util.js';
 import { ProblemDetailsException } from '../../common/problem-details/problem-details.exception.js';
 import { dateString, dateValue } from '../../common/time/local-date.js';
+import { ContentService } from '../../content/content.service.js';
 import type { PrismaClient } from '../../generated/prisma/client.js';
 import { correctOf, type AnswerResult } from '../answers/answers.service.js';
 import type { AnswerKey, Prompt } from '../practice.types.js';
 import { PracticeStats } from '../weak/practice-stats.js';
 
-export type WeakWord = { sense_id: string; lemma: string; wrong: number; counted: number; level: number; last_wrong_at: string };
+export type WeakWord = {
+  sense_id: string; lemma: string; wrong: number; counted: number; level: number; last_wrong_at: string;
+  /** Design §8.7: the meaning in the learner's language; null when the sense is no longer visible to them (GG2). */
+  meaning: string | null;
+};
 export type HistoryItem = {
   item_id: string; session_id: string; sense_id: string; lemma: string; type: string; prompt_style: string; prompt: Prompt;
   answer: string | null; correct: AnswerResult['correct']; result: string; skipped: boolean; tries: number; hint_level: number;
@@ -27,9 +32,10 @@ export class HistoryService {
   constructor(
     @Inject(PRISMA_CLIENT) private readonly prisma: PrismaClient,
     @Inject(PracticeStats) private readonly stats: PracticeStats,
+    @Inject(ContentService) private readonly content: ContentService,
   ) {}
 
-  async weakWords(userId: string, page: Page): Promise<{ items: WeakWord[]; next_page_token: string | null }> {
+  async weakWords(userId: string, nativeLanguage: 'vi' | 'en', page: Page): Promise<{ items: WeakWord[]; next_page_token: string | null }> {
     const cursor = page.page_token === undefined ? null : decodeBoundToken(page.page_token, 'weak-words');
     if (page.page_token !== undefined && (cursor === null || typeof cursor.at !== 'string' || typeof cursor.id !== 'string')) {
       throw invalidInput();
@@ -40,12 +46,14 @@ export class HistoryService {
       .sort((a, b) => (a.at === b.at ? a.item.sense_id.localeCompare(b.item.sense_id) : a.at < b.at ? 1 : -1))
       .filter(({ at, item }) => cursor === null || at < cursor.at || (at === cursor.at && item.sense_id > (cursor.id as string)));
     const pageRows = weak.slice(0, page.page_size);
-    const lemmas = await this.lemmas(userId, pageRows.map(({ item }) => item.sense_id));
+    const senseIds = pageRows.map(({ item }) => item.sense_id);
+    const lemmas = await this.lemmas(userId, senseIds);
+    const senses = await this.content.practiceSenses(userId, senseIds, nativeLanguage);
     const last = pageRows.at(-1);
     return {
       items: pageRows.map(({ item, stats, at }) => ({
         sense_id: item.sense_id, lemma: lemmas.get(item.sense_id) ?? '', wrong: stats.wrong, counted: stats.counted, level: item.level,
-        last_wrong_at: at,
+        last_wrong_at: at, meaning: senses.get(item.sense_id)?.meaning?.text ?? null,
       })),
       next_page_token: weak.length > page.page_size && last ? encodeBoundToken({ at: last.at, id: last.item.sense_id }, 'weak-words') : null,
     };

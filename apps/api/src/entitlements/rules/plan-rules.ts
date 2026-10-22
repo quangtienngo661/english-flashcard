@@ -15,6 +15,8 @@ export type SubscriptionSource = {
   trialDenied: boolean;
   cancelAtPeriodEnd: boolean;
   trialEndsAt: Date | null;
+  /** Shown as the source's `starts_at` (design §8.7); not used by the rules. */
+  currentPeriodStart?: Date | null;
   currentPeriodEnd: Date | null;
   graceEndsAt: Date | null;
   quotaAnchorAt: Date | null;
