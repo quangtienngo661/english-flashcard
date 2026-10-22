@@ -30,7 +30,7 @@ bằng tiếng Việt và tiếng Anh, sáng và tối; chủ dự án tự ki�
 | D4 | "Xong khi" | Chủ dự án tự kiểm bằng tay theo tài liệu kiểm từng mốc, báo lỗi; Claude chạy thử với API thật và gửi ảnh trước khi giao | Chủ dự án; phần chạy thử theo đề xuất |
 | D5 | Co giãn | Bề ngang điện thoại theo page 09; cửa sổ vừa một cột; từ 1280px hai cột như page 08; không vẽ thêm khung; Flutter để sau | Chủ dự án; mốc bề ngang theo đề xuất |
 | D6 | Chữ giao diện | Research tiếng Việt + tiếng Anh, rồi chủ dự án chốt từng câu (mục 7) | Chủ dự án |
-| D7 | Chân trang | Chỉ hiện link đã có trang; trang Liên hệ, Trợ giúp, Câu hỏi thường gặp, Gửi góp ý để một giai đoạn riêng | Chủ dự án; "chỉ hiện link có trang" theo đề xuất |
+| D7 | Chân trang | Hiện đủ các link như mockup; link chưa có trang (Trợ giúp, Câu hỏi thường gặp, Gửi góp ý) hiện nhưng tắt, chưa bấm được; các trang đó để một giai đoạn riêng | Chủ dự án (đổi đề xuất "chỉ hiện link có trang" khi đọc bản viết) |
 | D8 | Production khi còn chặn | Biến cấu hình tắt → `/vi/app/...` chuyển (307) về `/vi`, `/en/app/...` về `/en` | Chủ dự án; mã 307 theo đề xuất |
 | D9 | Content-Security-Policy | Thêm trong đợt này, cho cả domain, kiểu SRI (băm script lúc build) | Chủ dự án |
 | D10 | Hộp Tùy chỉnh phiên | Ba kiểu không AI luôn hiện; công tắc "Kiểu câu có AI" ẩn/hiện ba kiểu AI; bỏ ô "Câu lấy từ đâu?"; gói Miễn phí thấy công tắc nhưng không bật được; ô cùng cỡ, bỏ mô tả trong ô và chú thích dưới ô | Chủ dự án |
@@ -62,7 +62,7 @@ bằng tiếng Việt và tiếng Anh, sáng và tối; chủ dự án tự ki�
 
 **Không làm:**
 - Màn admin của page 04 (trừ màn Giao dịch của D18) và việc API "trả email người thao tác" (design đợt giao diện §10): thuộc đợt làm lại admin.
-- App Flutter; push; các trang Liên hệ, Trợ giúp, Câu hỏi thường gặp, Gửi góp ý (D7); nội dung trang Điều khoản.
+- App Flutter; push; các trang Trợ giúp, Câu hỏi thường gặp, Gửi góp ý (D7: link hiện nhưng tắt); nội dung trang Điều khoản.
 - Đăng nhập Google, xóa tài khoản (Bước 8): Cài đặt giữ dòng "Xóa tài khoản · Sắp có" như K/50.
 - Sửa Figma theo các thay đổi của mục 6 (Claude tự quyết, mục 14): design này và bản chữ mục 17 là nguồn của các chỗ đổi.
 - Sửa chữ landing và email của API (chủ dự án: giữ nguyên).
@@ -260,7 +260,7 @@ chưa nói.
 | Viết hoa tên trang | [Xem Gói học] / [Xem gói học] lẫn lộn | Hoa khi là tên trang ("Xem Gói học"), thường khi là danh từ chung ("gói Pro") |
 | Số đếm | "1/3 đã dùng" và "đã dùng 3/3" | "đã dùng 1/3" mọi chỗ |
 | Mức sử dụng (Cài đặt, thẻ phiên luyện, Gói học) | Có chỗ chưa ghi lúc nạp lại | Mọi chỗ ghi lúc nạp lại theo `resets_at`: hôm nay/ngày mai ghi giờ ("Mở lại lúc 0:00", "Resets at 12:00 AM"), xa hơn ghi ngày ("Lượt câu AI mới có vào 15/11") (D15) |
-| Chân trang | 3 nhóm link | Chỉ link có trang: Giới thiệu (về landing), Gói học, Điều khoản sử dụng, Chính sách bảo mật; bỏ cột Hỗ trợ và link Liên hệ; trong `/app` không có dòng đổi ngôn ngữ (Claude tự quyết; ngôn ngữ đổi ở Cài đặt vì đổi cả nghĩa) |
+| Chân trang | 3 nhóm link | Giữ đủ 3 nhóm link (D7). Bấm được: Giới thiệu (về landing), Gói học, Liên hệ (`mailto:` email liên hệ như landing; Claude tự quyết), Điều khoản sử dụng, Chính sách bảo mật. Hiện nhưng tắt: Trợ giúp, Câu hỏi thường gặp, Gửi góp ý (chữ màu phụ, không phải link, `aria-disabled`, không nhận focus). Trong `/app` không có dòng đổi ngôn ngữ (Claude tự quyết; ngôn ngữ đổi ở Cài đặt vì đổi cả nghĩa) |
 
 ## 7. Chữ giao diện
 
@@ -645,7 +645,7 @@ chỗ bản chữ chưa có, Claude viết theo mẫu §3.1 của bản chữ (c
 6. Công tắc AI nhớ lần chọn trên thiết bị; công tắc khóa với gói Miễn phí hiện dòng D6 khi bấm (mục 6).
 7. Các chỗ AI khác với gói Miễn phí giữ D6 đã duyệt: nút "Tra bằng AI" mờ + nhãn Pro; hai dòng lượt AI trong Cài đặt ghi "Cần gói Pro".
 8. Dòng báo ở K/81 khi không còn ô đồng ý: "Đội Wordmet sẽ thấy từ “rizz” bạn tự thêm để kiểm tra." (mục 6).
-9. Chân trang trong `/app` không có dòng đổi ngôn ngữ (mục 6).
+9. Chân trang trong `/app` không có dòng đổi ngôn ngữ; "Liên hệ" là `mailto:` như landing nên bấm được (mục 6).
 10. Không sửa Figma theo mục 6; design này và bản chữ mục 17 là nguồn (mục 3).
 11. Không dựng K/79b (mục 3).
 12. Script dựng dữ liệu thử cho chủ dự án (mục 11).

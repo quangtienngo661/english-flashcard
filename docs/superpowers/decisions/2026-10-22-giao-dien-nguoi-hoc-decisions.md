@@ -22,7 +22,7 @@ cảnh và ràng buộc; rồi 32 câu của research chữ, cũng không đề 
 | D4 | "Xong khi" | Chủ dự án tự kiểm bằng tay theo tài liệu kiểm; Claude chạy thử với API thật trước khi giao | Chủ dự án |
 | D5 | Co giãn | Bề ngang điện thoại theo page 09; vừa một cột; ≥ 1280px hai cột; Flutter để sau | Chủ dự án (mốc bề ngang theo đề xuất) |
 | D6 | Chữ tiếng Anh và tiếng Việt | Research bằng agent → chủ dự án quyết từng câu | Chủ dự án |
-| D7 | Chân trang | Trang chưa có để một giai đoạn riêng; chỉ hiện link có trang | Chủ dự án (chỉ hiện link có trang theo đề xuất) |
+| D7 | Chân trang | Trang chưa có để một giai đoạn riêng; link chưa có trang hiện nhưng tắt | Chủ dự án (đổi đề xuất khi đọc bản viết) |
 | D8 | Production khi còn chặn | Chuyển về landing (307) | Chủ dự án (mã 307 theo đề xuất) |
 | D9 | CSP | Thêm trong đợt này, kiểu SRI | Chủ dự án |
 | D10 | Hộp Tùy chỉnh phiên | Công tắc "Kiểu câu có AI"; bỏ "Câu lấy từ đâu?"; Miễn phí thấy nhưng không bật được; bỏ mô tả | Chủ dự án, tự nêu |
@@ -93,7 +93,9 @@ trong giao diện, kể cả tiếng Anh và tiếng Việt, research xong rồi
 ## D7 — Chân trang (câu 7)
 
 Bối cảnh: chân trang có Giới thiệu, Gói học, Liên hệ, Trợ giúp, Câu hỏi thường gặp, Gửi góp ý, Điều khoản, Chính sách bảo mật; bốn link chưa có trang.
-**Chủ dự án:** "các trang thì để đó vào một giai đoạn riêng, mình sẽ làm việc sau". **Claude đề xuất (chủ dự án "ok"):** ✅ đợt này chỉ hiện link đã có trang.
+**Chủ dự án:** "các trang thì để đó vào một giai đoạn riêng, mình sẽ làm việc sau". **Claude đề xuất (chủ dự án "ok"):** đợt này chỉ hiện link đã có trang.
+Khi đọc bản viết, chủ dự án đổi: "cứ hiện các nút bấm như bình thường giúp mình, chỉ là disable chưa bấm được thôi". ✅ Hiện đủ link; Trợ giúp, Câu hỏi thường gặp,
+Gửi góp ý tắt. Claude tự quyết: "Liên hệ" là `mailto:` như landing nên bấm được.
 
 ## D8 — Production khi trang người học còn bị chặn (câu 8)
 
