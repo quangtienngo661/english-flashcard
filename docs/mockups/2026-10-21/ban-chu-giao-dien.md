@@ -906,3 +906,16 @@ Bước đối chiếu (`kiem-du-man.md`) thấy bốn chỗ chưa có màn; v�
 | Gỡ dạng chia vừa nhận (design Bước 7 §10) | `A/77` | mục 8.7, [Hoàn tác] |
 | Sửa ngày lần cấp (D38 Bước 5), xác nhận tắt tự gia hạn (D32 Bước 5) | `A/78d`, `A/79b` | mục 8.8 |
 | Lỗi lưu prompt khi người khác vừa lưu (409) | `A/82` | mục 8.9 |
+
+## 14. Góp ý mobile sau khi merge (22/10/2026, chỉ page 09)
+
+Chủ dự án góp 6 điểm cho bản điện thoại (web xem sau). Chỉ đổi page 09; web giữ nguyên.
+
+| Điểm | Khung | Đổi |
+|---|---|---|
+| 1 Khoảng trống dưới thẻ nhóm | Mọi thẻ nhóm dạng lưới trên page 09 (M/10–M/15, M/13b) | Thẻ co theo nội dung (nút ẩn trên điện thoại không còn giữ chỗ). Không đổi chữ. |
+| 2 Viền để không lẫn với nền | Thẻ nhóm; khối đầu trang nhóm (M/20 và các màn dùng lại nền này) | Viền 1px màu `border`. Không đổi chữ. |
+| 3 Lọc trong chi tiết nhóm bằng danh sách thả xuống | M/20, M/21, M/24 và các màn dùng lại nền (M/22, M/50, M/51, M/50b, M/85–M/87); M/21b mới (danh sách đang mở) | Ô thả xuống "Tất cả" · "18 từ" (M/24: "Ngăn 1 ngày" · "4 từ"). Danh sách: Tất cả · Ưu tiên · Đến hạn · Mới · Ngăn 1 ngày · Ngăn 3 ngày · Ngăn 7 ngày · Ngăn 14 ngày · Ngăn 30 ngày, mỗi dòng kèm số từ ("2 từ"); dòng đang chọn tô nền và có dấu tick. |
+| 4 Thẻ ôn bỏ đường kẻ bên trong | M/30, M/31 | Giữ viền ngoài; bỏ hai đường kẻ giữa các phần. Không đổi chữ. |
+| 5 Ô chọn dùng danh sách thả xuống | Tùy chỉnh phiên M/L54, M/70, M/70t, M/70b, M/71, M/72; Từ hay sai M/L56; Danh sách nhóm M/15; Tra từ M/40, Thêm cả loạt M/44 | Tùy chỉnh phiên: hai ô "Cần ôn hôm nay" và **"Mọi ngăn"** (chữ mới; danh sách: Mọi ngăn · Ngăn 0 … Ngăn 5), ô "Trộn" cho Kiểu đề (Theo nghĩa · Theo câu · Trộn). Từ hay sai: nhãn "Nhóm" + ô "Công nghệ · 3 từ". Danh sách nhóm: ô "Tất cả · 4 nhóm" (Tất cả · Còn thẻ chờ · Xong hôm nay). Tra từ, Thêm cả loạt: ô "Trình độ: A2", "Chủ đề: Ẩm thực", **"Loại từ: tất cả"** (chữ mới), ô tick "Chỉ từ của tôi", giữ link "Xóa lọc". Nút xem Lưới / Danh sách giữ dạng nút bật. |
+| 6 Ô gọn hơn, chữ nhỏ hơn | Mọi ô nhập, ô chọn, thẻ lựa chọn (kiểu câu), hàng "Thêm tùy chọn" trên page 09; dải tra ở đầu màn | Ô nhập và ô chọn cao khoảng 38–40px (trước 44–56px), lề trên dưới 9px, lề hai bên 12px; chữ trong ô 16 → 14px (chữ lớn 20 → 18px). Thẻ lựa chọn lề 8/12px, chữ 16 → 14px, dòng phụ 13 → 12px. Dải tra đầu màn: ô "Trình độ" và ô tra 38px, chữ 14px. Nút chính giữ nguyên. Không đổi chữ. |

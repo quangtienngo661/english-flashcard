@@ -272,3 +272,18 @@ Các mốc sau được duyệt mà không có câu hỏi mở nào; những đi
 | Ký hiệu khung giữ quy ước K/xx, M/xx, A/xx | Đặt tên mới | Khớp page 08, 09, 04 hiện có |
 | Màn admin "đang phát triển" đã có API thay bằng màn thật; Dashboard giữ placeholder | Giữ tất cả placeholder | Dashboard chưa có API |
 | Việc ngoài đợt ghi ở design §10 (API sửa ngày sinh, chữ §6.7 Bước 7, D8 Bước 6, bản tiếng Anh) | Làm ngay trong đợt | Đợt này chỉ mockup |
+
+## Sau merge — góp ý mobile (22/10/2026)
+
+Sau khi PR #119 vào `dev`, chủ dự án góp 6 điểm cho bản điện thoại, kèm ảnh: "1. Sao lại có khoảng trống ở bên dưới mỗi card? Sửa lại · 2. Mình nghĩ
+nên có một đường viền phân biệt để tránh trùng màu với background · 3. Đổi thành dropdown box ở trong chi tiết nhóm · 4. Ở phần flashcard, viền ngoài
+vẫn giữ, viền phân chia có thể bỏ · 5. Mấy cái ô chọn như hình cũng ưu tiên sử dụng dropdown box cho gọn giao diện · 6. Các ô có padding Y và X khá
+nhiều, giảm xuống lại cho gọn + giảm font size xuống cho nhỏ hơn 1 chút giúp mình, xong mobile rồi mình sẽ xem tiếp web sau".
+
+Không có câu hỏi mở; Claude làm theo cách hiểu dưới đây và gửi ảnh để chủ dự án xem (bản chữ mục 14):
+
+| Điểm | Cách hiểu của Claude (chờ chủ dự án xem) |
+|---|---|
+| 2 | Viền cho thẻ nhóm và khối đầu trang nhóm (hai chỗ có nền gần màu nền trang) |
+| 5 | Ngoài các ô ở ảnh (Tùy chỉnh phiên), đổi luôn các hàng chip chọn khác trên điện thoại sang danh sách thả xuống: Từ hay sai, Danh sách nhóm, bộ lọc của Tra từ và Thêm cả loạt; nút bật Lưới / Danh sách giữ nguyên |
+| 6 | "Các ô" là ô nhập, ô chọn, thẻ lựa chọn và dải tra đầu màn; nút chính giữ nguyên |
