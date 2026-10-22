@@ -166,6 +166,11 @@
   translate: 0 0.18rem;
 }
 
+/* Page titles carry a highlighter stroke across their lower half (Figma page titles; `highlight` is amber in dark mode). */
+@utility highlighter {
+  background: linear-gradient(transparent 55%, var(--color-highlight) 55%, var(--color-highlight) 92%, transparent 92%);
+}
+
 /* Phone bars fixed to the bottom keep clear of the home indicator. */
 @utility pb-safe {
   padding-bottom: env(safe-area-inset-bottom);

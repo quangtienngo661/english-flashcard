@@ -6,6 +6,7 @@ import en from '../../messages/en.json';
 import vi from '../../messages/vi.json';
 import { SessionProvider } from '@/app-shell/session/session-context';
 import { SessionStore, type Me } from '@/app-shell/session/session-store';
+import { ThemeProvider } from '@/app-shell/theme/ThemeProvider';
 import { BASE, makeFetch, makeMe, tokenResponse, type Route } from '@/app-shell/session/test-support';
 
 /** Renders app UI with the App copy, a QueryClient and a signed-in session whose API answers `routes`. */
@@ -29,7 +30,9 @@ export function renderApp(
   const view = render(
     <NextIntlClientProvider locale={locale} messages={messages} timeZone="UTC">
       <QueryClientProvider client={client}>
-        <SessionProvider store={store}>{ui}</SessionProvider>
+        <SessionProvider store={store}>
+          <ThemeProvider>{ui}</ThemeProvider>
+        </SessionProvider>
       </QueryClientProvider>
     </NextIntlClientProvider>,
   );
