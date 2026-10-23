@@ -16,7 +16,8 @@ async function settle(page: Page, ready = page.getByRole('heading', { level: 1 }
   await page.waitForLoadState('networkidle');
 }
 
-async function shoot(page: Page, name: string) {
+/** A page is shot full length; a page with a dialog open only as the window shows it (a full-length shot redraws the dialog half see-through). */
+async function shoot(page: Page, name: string, fullPage = true) {
   for (const width of WIDTHS) {
     await page.setViewportSize({ width, height: 900 });
     await page.waitForTimeout(300);
@@ -24,7 +25,7 @@ async function shoot(page: Page, name: string) {
     await expect
       .poll(() => page.evaluate(() => document.getAnimations().filter((a) => a.playState === 'running' && a.effect?.getTiming().iterations !== Infinity).length))
       .toBe(0);
-    await page.screenshot({ path: `test-results/shots/${MILESTONE}/${name}-${width}.png`, fullPage: true });
+    await page.screenshot({ path: `test-results/shots/${MILESTONE}/${name}-${width}.png`, fullPage });
   }
 }
 
@@ -122,7 +123,7 @@ async function m2(page: Page) {
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.getByRole('button', { name: locale === 'vi' ? 'Tạo nhóm' : 'Create deck', exact: true }).first().click();
     await expect(page.getByRole('dialog')).toBeVisible();
-    await shoot(page, name('create-dialog'));
+    await shoot(page, name('create-dialog'), false);
     await page.keyboard.press('Escape');
     // K/20–K/22: front, back, then one answer and Esc for the summary.
     await page.goto(at(`review?group=${id}`));
@@ -166,7 +167,7 @@ async function m3(page: Page) {
       await open();
       await expect(page.getByRole('dialog')).toBeVisible();
       await page.waitForLoadState('networkidle');
-      await shoot(page, name(n));
+      await shoot(page, name(n), false);
       await page.keyboard.press('Escape');
     };
     await page.goto(at('word?w=left'));

@@ -130,7 +130,9 @@ vừa gặp" ở Hôm nay, [Thêm từ này]) với went → go, tự nhập ngh
 thêm cả loạt theo bộ lọc (K/43); link tên từ ở trang nhóm và "Xem mọi chủ đề trong Tra từ" bật lại; e2e M3; mục M3 của tài liệu kiểm.
 
 **Kiểm**
-- Unit web 399/399 (hai lần liền); API toàn bộ xanh; e2e Worker (Docker): xem PR.
+- Unit web 399/399 (hai lần liền); API toàn bộ xanh; e2e Worker (Docker): 171 passed, 15 skipped, 2 flaky (hai test M1 chạy đầu lúc Worker
+  còn khởi động nguội, chạy lại thì qua; các lần chạy trước không gặp).
+- Cỡ Worker bật app (gzip): **3.706,34 KiB** (hết M2: 3.462,38), vượt gói Free thêm khoảng 634 KiB; bản tắt app không đổi đáng kể.
 - API (e) chạy thật trên DB riêng: GE1 3 câu cũ trước và `sentence_count` 3, GE2 rỗng và 0, GE3 404, GE4 204 và số câu giảm; log không có chữ của câu.
 - Reviewer mới: 0 Critical, 7 Important, 14 Minor. Đã sửa cả 7 Important, cộng 2 Minor nâng lên (tiêu đề từ dài làm trang cuộn ngang; nút
   "Lưu vào …" trong tấm không lưu) và một lỗi tự thấy khi xem ảnh (người học tiếng Anh thấy định nghĩa hai lần). Minor còn lại ghi trong ledger.
