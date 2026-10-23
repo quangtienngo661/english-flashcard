@@ -77,8 +77,9 @@ const make = (question: Question, options: { recent?: number; existing?: boolean
 };
 const vi_ = { userId: USER, nativeLanguage: 'vi' as const };
 const en = { userId: USER, nativeLanguage: 'en' as const };
+// `sharePrivateWord` is what a client may still send; the service ignores it (GF2).
 const input = (reasonCode: string, extra: { note?: string | null; sharePrivateWord?: boolean } = {}) =>
-  ({ reason: reasonCode, note: extra.note ?? null, sharePrivateWord: extra.sharePrivateWord ?? false });
+  ({ reason: reasonCode, note: extra.note ?? null });
 
 describe('ReportsService.create (design §9.2)', () => {
   it('B7E70: an AI question reported with an ai reason is stored open with its label, source, operation id, meta and charge', async () => {
@@ -117,14 +118,26 @@ describe('ReportsService.create (design §9.2)', () => {
     expect(created[0]).toMatchObject({ note: 'run is also right' });
   });
 
-  it('B7E79: an AI question about a private word without share_private_word → 400 share-consent-required', async () => {
+  it('GF1 (replaces B7E79, D12): an AI question about a private word is reported without share_private_word; the snapshot keeps the asked word', async () => {
     const { service, created } = make(aiQuestion(true));
-    await expect(service.create(vi_, ITEM, input('ai_more_than_one_answer')))
-      .rejects.toMatchObject({ problemType: 'share-consent-required', status: 400 });
-    expect(created).toEqual([]);
+    await service.create(vi_, ITEM, input('ai_more_than_one_answer'));
+    expect(created).toHaveLength(1);
+    expect((created[0].questionSnapshot as { correct: { lemma: string } }).correct.lemma).toBe('deploy');
   });
 
-  it('B7E80: with consent the snapshot keeps the asked private word and masks the other private option', async () => {
+  it('GF2: share_private_word false is ignored, as GF1', async () => {
+    const { service, created } = make(aiQuestion(true));
+    await service.create(vi_, ITEM, input('ai_more_than_one_answer', { sharePrivateWord: false }));
+    expect(created).toHaveLength(1);
+  });
+
+  it('GF4: an AI question about a catalog word still masks a private distractor', async () => {
+    const { service, created } = make(aiQuestion(false));
+    await service.create(vi_, ITEM, input('ai_more_than_one_answer'));
+    expect((created[0].questionSnapshot as { prompt: { options: string[] } }).prompt.options[0]).toBe(PRIVATE_MEANING_MASK);
+  });
+
+  it('B7E80: the snapshot keeps the asked private word and masks the other private option', async () => {
     const { service, created } = make(aiQuestion(true));
     await service.create(vi_, ITEM, input('ai_more_than_one_answer', { sharePrivateWord: true }));
     const snapshot = created[0].questionSnapshot as { prompt: { options: string[] }; correct: { lemma: string } };
@@ -132,7 +145,7 @@ describe('ReportsService.create (design §9.2)', () => {
     expect(snapshot.correct.lemma).toBe('deploy');
   });
 
-  it('B7E81: a non-AI question about a private word → 409 report-not-available, even with consent', async () => {
+  it('B7E81/GF3: a non-AI question about a private word → 409 report-not-available, even with consent', async () => {
     const { service } = make(ruleQuestion(true));
     await expect(service.create(vi_, ITEM, input('meaning_wrong', { sharePrivateWord: true })))
       .rejects.toMatchObject({ problemType: 'report-not-available', status: 409 });

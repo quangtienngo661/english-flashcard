@@ -32,14 +32,14 @@ describe('learner reports HTTP (unit, mocked service)', () => {
   });
   afterAll(async () => { await ctx?.close(); vi.restoreAllMocks(); });
 
-  it('a report takes any reason code, an optional note and share_private_word', async () => {
+  it('a report takes any reason code and an optional note; share_private_word is still accepted but no longer passed on (GF2)', async () => {
     const res = await http().post(`/v1/practice/items/${itemId}/report`).set(auth())
       .send({ reason: 'ai_more_than_one_answer', note: '  run  ', share_private_word: true });
     expect(res.status).toBe(201);
     expect(create).toHaveBeenCalledWith({ userId, nativeLanguage: 'vi' }, itemId,
-      { reason: 'ai_more_than_one_answer', note: 'run', sharePrivateWord: true });
+      { reason: 'ai_more_than_one_answer', note: 'run' });
     await http().post(`/v1/practice/items/${itemId}/report`).set(auth()).send({ reason: 'other' });
-    expect(create).toHaveBeenLastCalledWith({ userId, nativeLanguage: 'vi' }, itemId, { reason: 'other', note: null, sharePrivateWord: false });
+    expect(create).toHaveBeenLastCalledWith({ userId, nativeLanguage: 'vi' }, itemId, { reason: 'other', note: null });
   });
 
   it('a malformed body → 400 validation-failed before the service', async () => {

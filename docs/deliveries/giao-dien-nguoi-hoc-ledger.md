@@ -283,3 +283,11 @@ Final M4: minor (deferred): English hint header has no count (design §7.1, kept
 - Minor để lại: M2 hoàn tiền nhiều lần / hoàn tiền tới trước giao dịch gốc / hoàn tiền lại sau khi hủy hoàn tiền làm lệch trạng thái; M3 `page_token` tự
   chế với id không phải uuid trả 500 thay vì 400, con trỏ chỉ giữ mili giây; M4 lần cấp bị thu hồi trước ngày bắt đầu hiện kỳ ngược; M5 admin: Từ ngày
   sau Tới ngày báo lỗi chung, bấm Lọc lần hai không tải lại, nhãn gói cố định "Pro", `entitlement_grants` chưa có chỉ mục theo `created_at`.
+
+## M5a (nhánh `feat/giao-dien-nguoi-hoc-m5a`, cắt từ `origin/dev` @ `255e2ee`)
+
+### Task 41 — API (f) báo lỗi câu AI về từ riêng không cần ô đồng ý (23/10/2026)
+
+- Bỏ kiểm `share_private_word` và lỗi `share-consent-required`; body vẫn nhận trường này (zod `optional`) nhưng không truyền vào service. Test GF1, GF2,
+  GF4 mới; B7E79 đổi thành GF1, B7E81 ghi thêm GF3; `smoke-buoc-7.mjs` đổi bước B7E79 thành "gửi được không cần đồng ý".
+- Ruling: giữ câu báo lỗi `share-consent-required` trong `apps/web` (`problem.ts`, `messages`) — vì API cũ có thể còn trả — giá nếu sai: vài dòng thừa.
