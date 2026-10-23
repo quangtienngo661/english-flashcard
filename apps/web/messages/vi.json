@@ -1175,6 +1175,61 @@
         "unknownWord": "—",
         "more": "Xem thêm"
       }
+    },
+    "plans": {
+      "eyebrow": "Gói học",
+      "title": "Học đều mỗi ngày, lên Pro khi cần",
+      "titlePro": "Bạn đang dùng gói Pro",
+      "titleTrial": "Bạn đang dùng thử gói Pro",
+      "granted": "Đội Wordmet cấp từ {from} tới hết {to}. Không thu tiền, không tự gia hạn.",
+      "renews": "Gói Pro gia hạn vào {date}.",
+      "endsOn": "Gói Pro dùng tới hết {date}, không tự gia hạn.",
+      "trialUntil": "Dùng thử tới hết {date}.",
+      "close": "Đóng",
+      "period": "Kỳ hạn",
+      "year": "Theo năm",
+      "month": "Theo tháng",
+      "yours": "Gói của bạn",
+      "yoursGift": "Gói của bạn · Đội Wordmet tặng",
+      "notOnSale": "Chưa mở bán",
+      "free": "Miễn phí",
+      "pro": "Pro",
+      "usingThis": "Bạn đang dùng gói này",
+      "backToFree": "Hết hạn Pro thì tài khoản tự về gói Miễn phí",
+      "priceYear": "XXX.000 ₫",
+      "priceMonth": "XX.000 ₫",
+      "perYear": "/ năm",
+      "perMonth": "/ tháng",
+      "proLine": "Nhiều phiên luyện hơn, có câu AI và tra bằng AI.",
+      "until": "Tới hết {date}",
+      "afterEnd": "Hết hạn thì tài khoản về gói Miễn phí; từ và lịch ôn giữ nguyên.",
+      "freeList": {
+        "review": "Ôn thẻ, lịch ôn, nhắc học qua email",
+        "lookup": "Tra từ, thêm nhanh, tối đa {groups} nhóm",
+        "sessions": "{count} phiên luyện mỗi ngày",
+        "ai": "Câu AI và tra bằng AI: cần gói Pro"
+      },
+      "proList": {
+        "sessions": "{count} phiên luyện mỗi ngày",
+        "ai": "Tối đa {count} câu AI mới mỗi tháng*",
+        "lookup": "{count} lượt tra AI mỗi tháng",
+        "ads": "Không quảng cáo"
+      },
+      "footnote": "*Câu AI có khi AI đang mở. Mỗi ngày cả hệ thống có một giới hạn chung; chạm giới hạn thì AI tạm dừng tới hôm sau.",
+      "compare": "So sánh chi tiết các gói",
+      "compareTable": {
+        "feature": "Tính năng",
+        "review": "Ôn thẻ và lịch ôn",
+        "reminders": "Nhắc học qua email",
+        "groups": "Số nhóm",
+        "groupsValue": "tối đa {count}",
+        "sessions": "Phiên luyện mỗi ngày",
+        "ai": "Câu AI mới mỗi tháng",
+        "lookup": "Lượt tra AI mỗi tháng",
+        "ads": "Quảng cáo",
+        "yes": "Có",
+        "no": "Không"
+      }
     }
   }
 }

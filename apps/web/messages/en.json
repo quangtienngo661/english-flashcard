@@ -1175,6 +1175,61 @@
         "unknownWord": "—",
         "more": "Show more"
       }
+    },
+    "plans": {
+      "eyebrow": "Plans",
+      "title": "Learn a little every day, go Pro when you need it",
+      "titlePro": "You're on Pro",
+      "titleTrial": "You're trying Pro",
+      "granted": "Given by the Wordmet team from {from} through {to}. No charge, no automatic renewal.",
+      "renews": "Pro renews on {date}.",
+      "endsOn": "Pro runs through {date} and won't renew.",
+      "trialUntil": "Trial through {date}.",
+      "close": "Close",
+      "period": "Billing period",
+      "year": "Yearly",
+      "month": "Monthly",
+      "yours": "Your plan",
+      "yoursGift": "Your plan · from the Wordmet team",
+      "notOnSale": "Not on sale yet",
+      "free": "Free",
+      "pro": "Pro",
+      "usingThis": "You're on this plan",
+      "backToFree": "When Pro ends, your account goes back to Free",
+      "priceYear": "XXX,000 ₫",
+      "priceMonth": "XX,000 ₫",
+      "perYear": "/ year",
+      "perMonth": "/ month",
+      "proLine": "More practice sessions, plus AI questions and AI lookup.",
+      "until": "Through {date}",
+      "afterEnd": "When it ends, your account goes back to Free; your words and review schedule stay.",
+      "freeList": {
+        "review": "Card reviews, review schedule, email reminders",
+        "lookup": "Look up and quick add, up to {groups} decks",
+        "sessions": "{count} practice sessions a day",
+        "ai": "AI questions and AI lookup: Pro only"
+      },
+      "proList": {
+        "sessions": "{count} practice sessions a day",
+        "ai": "Up to {count} new AI questions a month*",
+        "lookup": "{count} AI lookups a month",
+        "ads": "No ads"
+      },
+      "footnote": "*AI questions are available while AI is on. The whole system has a daily limit; once reached, AI pauses until the next day.",
+      "compare": "Compare plans in detail",
+      "compareTable": {
+        "feature": "Feature",
+        "review": "Card reviews and schedule",
+        "reminders": "Email reminders",
+        "groups": "Decks",
+        "groupsValue": "up to {count}",
+        "sessions": "Practice sessions a day",
+        "ai": "New AI questions a month",
+        "lookup": "AI lookups a month",
+        "ads": "Ads",
+        "yes": "Yes",
+        "no": "No"
+      }
     }
   }
 }
