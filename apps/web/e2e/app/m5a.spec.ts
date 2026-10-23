@@ -170,7 +170,7 @@ for (const scheme of ['light', 'dark'] as const) {
       await page.emulateMedia({ colorScheme: scheme });
       await page.addInitScript(() => localStorage.setItem('wordmet-web.ai-types', 'on'));
       await signedInAs(page, 'pro', aiApi({ nexts: [
-        { state: 'question', item: cloze(LONG_SENTENCE), notice: 'word-not-recognized', sense_id: PRIVATE },
+        { state: 'question', item: cloze(LONG_SENTENCE), notice: 'word-not-recognized', sense_id: PRIVATE, lemma: 'rizz' },
         { state: 'ai_unavailable', reason: 'quota-exhausted', resets_at: '2026-11-14T17:00:00.000Z' },
       ] }), { native_language: locale });
       await page.goto(`/${locale}/app/practice`);
@@ -181,12 +181,15 @@ for (const scheme of ['light', 'dark'] as const) {
       expect(await seriousViolations(page), `${locale} setup`).toEqual([]);
       await dialog.getByRole('button', { name: /^(Bắt đầu|Start)/ }).click();
       await expect(page.getByText(LONG_SENTENCE)).toBeVisible();
-      await expect(page.getByRole('link', { name: copy[locale].App.practice.session.ai.seeWord })).toBeVisible();
+      // Review I3: the band does not name the word, nor link to it, before the answer.
+      await expect(page.getByText(copy[locale].App.practice.session.ai.notRecognizedAny)).toBeVisible();
+      await expect(page.getByRole('link', { name: copy[locale].App.practice.session.ai.seeWord })).toHaveCount(0);
       await noSideScroll(page, `${locale} long sentence`);
       expect(await seriousViolations(page), `${locale} long sentence`).toEqual([]);
       await page.getByRole('textbox').fill('deploy');
       await page.getByRole('textbox').press('Enter');
       await expect(page.getByRole('button', { name: /(Câu tiếp|Next)/ })).toBeVisible();
+      await expect(page.getByRole('link', { name: copy[locale].App.practice.session.ai.seeWord })).toBeVisible();
       await noSideScroll(page, `${locale} result`);
       expect(await seriousViolations(page), `${locale} result`).toEqual([]);
       await page.getByRole('button', { name: /(Câu tiếp|Next)/ }).click();
