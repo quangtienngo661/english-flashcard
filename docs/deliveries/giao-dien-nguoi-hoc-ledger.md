@@ -228,3 +228,17 @@ Final M4: minor (deferred): English hint header has no count (design §7.1, kept
   không có ngày cuối — vì `period_start` bắt buộc — giá nếu sai: màn ghi kỳ lạ cho vài dòng hoàn tiền cũ trên local.
 - Ruling: tiền chỉ ghi khi có cả `amount` và `currency` (CHECK) — vì không có đơn vị thì không đổi ra đơn vị nhỏ nhất được — giá nếu sai: mất số tiền của
   cổng chỉ gửi số; cổng thật sau này phải gửi tiền tệ.
+
+### Task 37 — API (i) đọc giao dịch (23/10/2026)
+
+- `GET /v1/me/transactions` (đăng nhập, không cần hồ sơ học) và `GET /v1/admin/transactions?email&kind&from&to` (`settings.manage`); `TransactionsService`
+  trộn `billing_transactions` với lần cấp gói (`kind: 'grant'`); `IdentityService.findUserIdByEmail`.
+- Test: GI7–GI9, email lạ → danh sách rỗng không đọc bảng, `page_token` sai / của bộ lọc khác / của người khác → 400; API unit 2488/2488; lint, build xanh.
+- Chạy trên Postgres local (script tạm, xóa dữ liệu sau): mua + gia hạn (gửi hai lần, còn một dòng) + hoàn tiền 4,99 USD (499) + lần cấp bị thu hồi;
+  trang 2 dòng một lần đi đủ 4 dòng đúng thứ tự; lọc admin `kind=grant` theo khoảng ngày đúng; CHECK chặn `kind` lạ.
+- Ruling: keyset trộn bằng hai truy vấn Prisma (mỗi nguồn lấy một trang sau con trỏ) rồi gộp trong code, thay cho UNION ALL của plan — vì cùng kết quả,
+  giữ kiểu của Prisma và không cần TypedSQL mới — giá nếu sai: mỗi trang đọc tối đa 2×(page_size+1) dòng.
+- Ruling: chỉ lần cấp `kind = 'plan'` vào lịch sử (cấp số lượt tùy ý không phải "cấp gói"); `occurred_at` của lần cấp là lúc tạo, kỳ là `starts_at` tới
+  `ends_at` (hoặc lúc thu hồi nếu sớm hơn) — giá nếu sai: thêm điều kiện.
+- Ruling: `from`/`to` của admin là thời điểm có múi giờ (`from` gồm, `to` không gồm); màn admin gửi ranh giới ngày theo giờ Việt Nam — vì API không
+  biết múi giờ của admin — giá nếu sai: đổi sang ngày `YYYY-MM-DD` + múi giờ cố định.
