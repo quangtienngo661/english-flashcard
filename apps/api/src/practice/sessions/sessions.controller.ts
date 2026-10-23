@@ -12,7 +12,7 @@ const QUESTION_TYPES = [
 ] as const;
 const SORTS = ['level_asc', 'overdue_first', 'new_first', 'least_practiced', 'most_wrong', 'queue', 'priority_oldest', 'random'] as const;
 
-const startBody = z.strictObject({
+export const startBody = z.strictObject({
   source: z.enum(['today', 'all', 'group', 'weak', 'priority']),
   group_id: uuid.optional(),
   group_filter: z.enum(['all', 'due', 'priority', '0', '1', '2', '3', '4', '5']).optional(),
@@ -23,7 +23,8 @@ const startBody = z.strictObject({
   count: z.int().min(1).optional(),
   // Bước 7 (design §6.1): only with cloze.
   cloze_source: z.enum(['ai', 'own']).optional(),
-}).refine((body) => (body.source === 'group') === (body.group_id !== undefined)
+  // API (b): a deck is required with `group`, allowed with `weak` (its weak words), refused with the other sources.
+}).refine((body) => (body.source === 'group' ? body.group_id !== undefined : body.source === 'weak' || body.group_id === undefined)
   && (body.source === 'group' || body.group_filter === undefined)
   && (body.cloze_source === undefined || body.types.includes('cloze')));
 const sessionParams = z.strictObject({ id: uuid });

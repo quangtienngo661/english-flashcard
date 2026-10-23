@@ -4,7 +4,7 @@ import { CurrentLearner, LearnerContent, type Learner } from '../../content/inde
 import { HistoryService } from './history.service.js';
 
 const page = { page_size: z.coerce.number().int().min(1).max(100).default(20), page_token: z.string().optional() };
-const weakQuery = z.strictObject(page);
+const weakQuery = z.strictObject({ ...page, group_id: z.uuid().transform((value) => value.toLowerCase()).optional() });
 const historyQuery = z.strictObject({
   ...page,
   // A calendar date in the learner's zone, compared with local_date.
@@ -22,6 +22,11 @@ export class HistoryController {
   @Get('weak-words')
   weakWords(@Query({ schema: weakQuery }) query: z.infer<typeof weakQuery>, @CurrentLearner() learner: Learner) {
     return this.history.weakWords(learner.userId, learner.nativeLanguage, query);
+  }
+
+  @Get('weak-words/groups')
+  weakGroups(@CurrentLearner() learner: Learner) {
+    return this.history.weakGroups(learner.userId);
   }
 
   @Get('history')

@@ -100,6 +100,17 @@ function itemRows(userId: string): Prisma.Sql {
     WHERE i.user_id = ${userId}::uuid`;
 }
 
+/** API (b): the learner's groups holding each given sense (visible senses only); senses in no group have no row. */
+export function groupsOfSensesQuery(userId: string, senseIds: string[]): Prisma.Sql {
+  return Prisma.sql`
+    SELECT i.sense_id::text AS sense_id, g.id::text AS group_id, g.name
+    FROM learning_items i
+    JOIN group_items gi ON gi.item_id = i.id
+    JOIN learning_groups g ON g.id = gi.group_id AND g.user_id = i.user_id
+    WHERE i.user_id = ${userId}::uuid AND i.sense_id = ANY(${senseIds}::uuid[]) AND ${visible(userId)}
+    ORDER BY i.sense_id, g.name, g.id`;
+}
+
 /**
  * For each given sense: the visible senses of every item sharing a group with the learner's item of that sense, without the
  * sense itself (design 7.4, R6). Senses with no mates have no row.

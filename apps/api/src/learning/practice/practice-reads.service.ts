@@ -9,7 +9,7 @@ import { SettingsService } from '../../settings/index.js';
 import { GroupsService } from '../groups/groups.service.js';
 import { isDueNow, sectionOf, type Section } from '../schedule/schedule.js';
 import {
-  groupMatesQuery, practiceItemOfSenseQuery, practiceItemsQuery, type GroupFilter, type ItemsWhere, type PracticeItemRow,
+  groupMatesQuery, groupsOfSensesQuery, practiceItemOfSenseQuery, practiceItemsQuery, type GroupFilter, type ItemsWhere, type PracticeItemRow,
 } from './practice-reads.queries.js';
 
 export type PracticeItem = {
@@ -71,6 +71,15 @@ export class PracticeReadsService {
     const rows = await db.$queryRaw<Array<{ sense_id: string; mates: string[] }>>(groupMatesQuery(userId, senseIds));
     for (const row of rows) mates.set(row.sense_id, row.mates);
     return mates;
+  }
+
+  /** API (b): for each sense, the learner's groups that hold it (visible senses only; `[]` when in none). */
+  async groupsOfSenses(userId: string, senseIds: string[], db: Db = this.prisma): Promise<Map<string, Array<{ id: string; name: string }>>> {
+    const groups = new Map(senseIds.map((senseId) => [senseId, [] as Array<{ id: string; name: string }>]));
+    if (senseIds.length === 0) return groups;
+    const rows = await db.$queryRaw<Array<{ sense_id: string; group_id: string; name: string }>>(groupsOfSensesQuery(userId, senseIds));
+    for (const row of rows) groups.get(row.sense_id)?.push({ id: row.group_id, name: row.name });
+    return groups;
   }
 
   /** The learner's item of the sense ("still in learning", visible or not) and, for a group, whether it still holds it. */

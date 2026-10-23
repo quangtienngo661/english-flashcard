@@ -360,7 +360,13 @@ export class SessionsService {
   }
 
   private async sourceItems(userId: string, input: StartInput): Promise<PracticeItem[]> {
-    if (input.source === 'weak') return (await this.stats.weakSenses(userId)).map(({ item }) => item);
+    if (input.source === 'weak') {
+      const weak = (await this.stats.weakSenses(userId)).map(({ item }) => item);
+      if (input.group_id === undefined) return weak;
+      // API (b): the weak words in the deck; the deck read also gives the 404 for a deck that is not the learner's.
+      const inDeck = new Set((await this.learning.practiceItems(userId, { kind: 'group', groupId: input.group_id, filter: 'all' })).map((i) => i.sense_id));
+      return weak.filter((item) => inDeck.has(item.sense_id));
+    }
     const filter = input.group_filter ?? 'all';
     // Stored as text ('0'…'5'); Learning takes a level as a number.
     const scope: PracticeScope = input.source === 'group'

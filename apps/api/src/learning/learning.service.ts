@@ -36,6 +36,12 @@ export class LearningService {
     return this.practice.groupMates(userId, senseIds, db);
   }
 
+  /** API (b): the learner's groups holding each sense, `{id, name}`, visible senses only. */
+  groupsOfSenses(userId: string, senseIds: string[], db?: Prisma.TransactionClient | PrismaClient):
+    Promise<Map<string, Array<{ id: string; name: string }>>> {
+    return this.practice.groupsOfSenses(userId, senseIds, db);
+  }
+
   practiceCheck(userId: string, senseId: string, groupId: string | null, db?: Prisma.TransactionClient | PrismaClient):
     Promise<PracticeCheck> {
     return this.practice.check(userId, senseId, groupId, db);

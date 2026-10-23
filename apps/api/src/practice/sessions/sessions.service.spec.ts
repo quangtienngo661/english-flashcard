@@ -33,7 +33,7 @@ type Decision = { allowed: true } | ({ allowed: false } & Refusal);
 
 function setup(options: {
   early?: Decision; late?: Decision; items?: PracticeItem[]; session?: Partial<PracticeSession>;
-  snapshot?: EntitlementsSnapshot; aiPlan?: AiSessionPlan;
+  snapshot?: EntitlementsSnapshot; aiPlan?: AiSessionPlan; weak?: PracticeItem[];
 } = {}) {
   const calls: string[] = [];
   // Facade reads made while the transaction is open without the transaction's own client (each would borrow a second connection).
@@ -97,7 +97,10 @@ function setup(options: {
   };
   const service = new SessionsService(prisma, new FakeClock(now), settings as unknown as SettingsService,
     entitlements as unknown as EntitlementsService, learning as unknown as LearningService, builder as unknown as QuestionBuilder,
-    { statsFor: vi.fn(async () => { calls.push('statsFor'); return new Map(); }) } as unknown as PracticeStats,
+    {
+      statsFor: vi.fn(async () => { calls.push('statsFor'); return new Map(); }),
+      weakSenses: vi.fn(async () => (options.weak ?? []).map((w) => ({ item: w, stats: { wrong: 2, counted: 5, last_wrong_at: '2026-10-20T03:00:00.000Z' } }))),
+    } as unknown as PracticeStats,
     aiPlanner as unknown as AiSessionPlanner, {} as AiQuestionGenerator, {} as AiRequestsRepository, {} as ContentService);
   return { service, tx, calls, entitlements, builder, learning, settings, globalReads, aiPlanner };
 }
@@ -278,5 +281,30 @@ describe('SessionsService.start — Bước 7 types (design §6.1)', () => {
     await expect(service.start(learner, { source: 'all', types: ['cloze'] })).rejects.toThrow('entitlement-required');
     expect(calls).not.toContain('practiceItems');
     expect(calls).not.toContain('transaction');
+  });
+});
+
+describe('SessionsService — weak words of one deck (API (b), design §8.2)', () => {
+  const G = '11111111-1111-4111-8111-111111111111';
+
+  it('weak + group_id practises the weak words that are in the deck', async () => {
+    const { service, learning, builder } = setup({ weak: [item('s1'), item('s2'), item('s3')], items: [item('s2'), item('s3'), item('s9')] });
+    await service.start(learner, { source: 'weak', group_id: G, types: ['mcq_definition'] } as never);
+    expect(learning.practiceItems).toHaveBeenCalledWith(learner.userId, { kind: 'group', groupId: G, filter: 'all' });
+    expect([...builder.availability.mock.calls[0][0].senseIds].sort()).toEqual(['s2', 's3']);
+  });
+
+  it('GB6: weak + a deck without weak words → 409 practice-no-words, reason source-empty', async () => {
+    const { service } = setup({ weak: [item('s1')], items: [item('s9')] });
+    await expect(service.start(learner, { source: 'weak', group_id: G, types: ['mcq_definition'] } as never)).rejects.toMatchObject({
+      status: 409, problemType: 'practice-no-words', extensions: { reason: 'source-empty' },
+    });
+  });
+
+  it('GB8: a weak session of a deck is not ended when the deck is deleted', async () => {
+    const { service, learning } = setup({ session: { source: 'weak', groupId: G, senseIds: ['s1', 's2'] } });
+    learning.practiceCheck.mockImplementation(async () => ({ groupExists: false, item: null }));
+    const result = await service.next(learner, 'sess-1');
+    expect(JSON.stringify(result)).not.toContain('group-not-found');
   });
 });
