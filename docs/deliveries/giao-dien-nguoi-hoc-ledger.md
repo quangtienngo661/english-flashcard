@@ -210,3 +210,7 @@ Final M4: minor (deferred): English hint header has no count (design §7.1, kept
 - Ruling: thêm trạng thái "Đang chờ" (chip `primary-soft`) ở một dòng Gia hạn mỗi danh sách — vì plan liệt kê 4 trạng thái mà khung ban đầu thiếu một —
   giá nếu sai: đổi màu chip.
 - Cổng duyệt: gửi ảnh ba section cho chủ dự án, chờ "ok" trước Task 36.
+- Sửa thêm: chi tiết của dòng Gia hạn (K/95b, K/95b Dark, M/95b, A/90b) ghi "Đang chờ" cho khớp danh sách; figma-checks chạy lại, 12/12 như trên.
+- Ruling: chủ dự án (23/10/2026) "kể từ về sau không cần hỏi mình, cứ triển khai mà làm" — cổng "ok" của Task 35 và các cổng xem ảnh sau không dừng
+  chờ nữa; ảnh vẫn ghi lại để xem khi rảnh — giá nếu sai: chủ dự án góp ý sau, sửa khung và code ở mốc sau.
+- M4 merge (PR #126, CI xanh); nhánh M4b `feat/giao-dien-nguoi-hoc-m4b` cắt từ `origin/dev` @ `dc737a4`.

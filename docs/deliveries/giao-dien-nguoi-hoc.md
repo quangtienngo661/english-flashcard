@@ -146,3 +146,25 @@ thêm cả loạt theo bộ lọc (K/43); link tên từ ở trang nhóm và "Xe
 - Chữ "Tra trong 7.799 từ" giữ như bản chữ dù con số không được tính.
 - Dev server trong container có lúc ghi hỏng `prerender-manifest.json` khi hai trang biên dịch cùng lúc (mọi trang 500); tài liệu kiểm mục 0.5 ghi
   cách xử lý.
+
+# M4 — as-built (23/10/2026)
+
+Nhánh `feat/giao-dien-nguoi-hoc-m4` (cắt từ `origin/dev` @ `e99b855`, sau khi M3 merge), PR #126 (merge 23/10). Task 28–34, cộng các commit sửa (test
+trước, sửa sau).
+
+**Đã có:** API (b) từ hay sai theo nhóm (`GET /v1/practice/weak-words?group_id=`, `GET /v1/practice/weak-words/groups`, `group_id` khi mở phiên
+`source: 'weak'`; GB1–GB8); migration dữ liệu (d) `20261023090000_report_reasons_order_labels` ("Khác" cuối, nhãn tiếng Anh ngắn, chỉ dòng admin chưa
+sửa; GD1–GD3). Web: Luyện tập (K/51, K/54 theo D10 chưa có khối AI, K/55 hết lượt, K/77), phiên luyện (K/60–K/67: trắc nghiệm, đúng/sai, gõ từ có thử
+lại, gợi ý, Cần ôn lại / Đã biết, hỏi vòng tiếp, tổng kết, báo lỗi), Từ hay sai (K/56), Lịch sử luyện tập và Báo lỗi của tôi (K/57, K/57b, K/82,
+K/83), Gói học (K/52, K/53). Problem Details giữ extension members; `useSubmitOnce` đổi khóa khi lần bấm mang nội dung khác.
+
+**Kiểm**
+- Unit web 461/461; API toàn bộ xanh (CI); e2e `e2e/app/m4.spec.ts` 24 test (desktop + mobile, axe, không cuộn ngang ở 390px, vi/en, sáng/tối); cả bộ
+  e2e 197 passed, 15 skipped.
+- Cỡ Worker bật app (gzip): **3.739,72 KiB** (hết M3: 3.706,34).
+- Task 28 chạy thật trên DB: một từ ở hai nhóm đếm ở mỗi nhóm, tổng đếm một lần; lọc theo nhóm đúng; nhóm của người khác 404.
+- Reviewer mới: 0 Critical, 3 Important và 3 Minor nâng lên Important, sửa hết (test trước); 8 Minor để lại, ghi trong ledger.
+
+**Khác plan / cần chủ dự án biết**
+- Chủ dự án tạm cho qua bước xem ảnh trước khi merge (23/10/2026: "tạm thời pass phần đó"; rồi "kể từ về sau không cần hỏi mình, cứ triển khai mà
+  làm"); bộ ảnh M4 chụp ở `apps/web/test-results/shots/m4` (không commit) và chạy lại bằng `e2e-shots`.
