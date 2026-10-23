@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, HttpCode, Inject, Param, Post, UseInterceptors } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, Inject, Param, Post, UseInterceptors } from '@nestjs/common';
 import { z } from 'zod';
 import { PRISMA_CLIENT } from '../../common/db/prisma.module.js';
 import { IdempotencyInterceptor } from '../../common/idempotency/idempotency.interceptor.js';
@@ -25,6 +25,14 @@ export class SentencesController {
     @Inject(PRISMA_CLIENT) private readonly prisma: PrismaClient,
     @Inject(SentencesService) private readonly sentences: SentencesService,
   ) {}
+
+  /** API (e): no paging, the list is at most `content.sentencesPerSense` long. The text is never logged (SR10). */
+  @Get('senses/:id/sentences')
+  async list(@Param({ schema: idParams }) params: z.infer<typeof idParams>, @CurrentLearner() learner: Learner) {
+    const sentences = await this.sentences.listForSense(learner.userId, params.id);
+    if (!sentences) throw notFound();
+    return { items: sentences.map((s) => ({ id: s.id, text: s.text, created_at: s.createdAt.toISOString() })) };
+  }
 
   @Post('senses/:id/sentences')
   @HttpCode(201)

@@ -69,6 +69,25 @@ export class SentencesService {
     return result;
   }
 
+  /** API (e): the learner's sentences of one sense, oldest first; null when the sense is not one they can see (GE3, as `addSentence`). */
+  async listForSense(userId: string, senseId: string): Promise<Sentence[] | null> {
+    const [visible] = await this.prisma.$queryRaw<Array<{ ok: boolean }>>`
+      SELECT ${visibleSenseCondition(Prisma.sql`${senseId}::uuid`, userId)} AS ok`;
+    if (!visible?.ok) return null;
+    return this.prisma.contextSentence.findMany({
+      where: { userId, senseId }, select: sentenceSelect, orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+    });
+  }
+
+  /** API (e): how many sentences the learner saved for each sense; senses without any are absent. */
+  async counts(userId: string, senseIds: string[]): Promise<Map<string, number>> {
+    if (senseIds.length === 0) return new Map();
+    const rows = await this.prisma.contextSentence.groupBy({
+      by: ['senseId'], where: { userId, senseId: { in: senseIds } }, _count: { _all: true },
+    });
+    return new Map(rows.map((row) => [row.senseId, row._count._all]));
+  }
+
   async deleteSentence(userId: string, id: string): Promise<boolean> {
     const deleted = (await this.prisma.contextSentence.deleteMany({ where: { id, userId } })).count === 1;
     if (deleted) this.logger.info('context_sentence_deleted', { user_id: userId, sentence_id: id });
