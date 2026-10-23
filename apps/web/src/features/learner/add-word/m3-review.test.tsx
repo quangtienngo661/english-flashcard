@@ -146,7 +146,7 @@ describe('I-3, M-2: hostile or long word in the URL', () => {
 
   it('a very long word is cut to 100 characters in the title, and the title may wrap', async () => {
     nav.params = new URLSearchParams({ w: 'x'.repeat(400) });
-    renderApp(<WordPage />, { routes: base() });
+    renderApp(<WordPage />, { routes: base({ [`GET /v1/words/${'x'.repeat(100)}`]: () => problem(404, 'not-found') }) });
     const title = await screen.findByRole('heading', { name: `Không tìm thấy từ “${'x'.repeat(100)}”` });
     expect(title.className).toMatch(/break-words|wrap-anywhere/);
   });

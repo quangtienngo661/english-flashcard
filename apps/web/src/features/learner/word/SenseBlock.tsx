@@ -63,7 +63,7 @@ export function SenseBlock({ index, sense, item, forms }: { index: number; sense
           <p className="break-words text-body font-semibold text-ink">
             <MeaningText sense={sense} />
           </p>
-          {sense.definition_en && <p className="break-words text-caption text-muted">{sense.definition_en}</p>}
+          {sense.definition_en && sense.definition_en !== sense.meaning.text && <p className="break-words text-caption text-muted">{sense.definition_en}</p>}
           {sense.examples[0] && <p className="break-words text-ui text-ink">{highlightWord(sense.examples[0], sense.lemma, forms)}</p>}
           {!item && sentencesButton && <p className="text-caption text-ink">{sentencesButton}</p>}
         </div>

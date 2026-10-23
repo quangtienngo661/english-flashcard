@@ -748,7 +748,8 @@
       "bulkNote": "Các từ chưa học vào ngăn Mới.",
       "bulkSubmit": "Thêm cả loạt",
       "bulkResult": "Đã thêm {added} từ vào nhóm “{name}”.",
-      "bulkSkipped": "{already} từ đã có trong nhóm, {function} từ chức năng bỏ qua, {full} từ không vừa vì nhóm đã đầy."
+      "bulkSkipped": "{already} từ đã có trong nhóm, {function} từ chức năng bỏ qua, {full} từ không vừa vì nhóm đã đầy.",
+      "pickDeck": "Chọn {group}"
     },
     "stages": {
       "s0": "Mới",

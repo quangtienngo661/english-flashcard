@@ -20,6 +20,10 @@ async function shoot(page: Page, name: string) {
   for (const width of WIDTHS) {
     await page.setViewportSize({ width, height: 900 });
     await page.waitForTimeout(300);
+    // A dialog switches between sheet and centred box at 768 px and animates in again; shoot it once it has settled.
+    await expect
+      .poll(() => page.evaluate(() => document.getAnimations().filter((a) => a.playState === 'running' && a.effect?.getTiming().iterations !== Infinity).length))
+      .toBe(0);
     await page.screenshot({ path: `test-results/shots/${MILESTONE}/${name}-${width}.png`, fullPage: true });
   }
 }

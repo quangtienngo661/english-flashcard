@@ -20,6 +20,7 @@ type Sense = { sense_id: string; lemma: string; pos: string; meaning: { text: st
 export function DeckPickerDialog({ sense, onClose }: { sense: Sense; onClose: () => void }) {
   const t = useTranslations('App.addWord');
   const tw = useTranslations('App.word');
+  const tc = useTranslations('App.common');
   const api = useApi();
   const client = useQueryClient();
   const errorText = useErrorMessage();
@@ -41,6 +42,7 @@ export function DeckPickerDialog({ sense, onClose }: { sense: Sense; onClose: ()
       target = created.id;
       name = created.name;
       setChosen(created.id);
+      setUnmatched(null);
     }
     const result = await api.post<{ created: boolean }>(`/v1/groups/${target}/items`, { sense_id: sense.sense_id }, { idempotencyKey: `${key}:add` });
     return { result, target, name };
@@ -56,6 +58,7 @@ export function DeckPickerDialog({ sense, onClose }: { sense: Sense; onClose: ()
       writeLastGroup(done.target);
       showToast(tw(done.result.created ? 'added' : 'alreadyIn', { word: sense.lemma, group: done.name }), 'success');
       void client.invalidateQueries({ queryKey: ['items'] });
+      void client.invalidateQueries({ queryKey: ['group'] });
       void client.invalidateQueries({ queryKey: GROUPS_KEY });
       onClose();
     } catch (failure) {
@@ -84,7 +87,11 @@ export function DeckPickerDialog({ sense, onClose }: { sense: Sense; onClose: ()
       title={t('pickerTitle')}
       isDismissable={!save.busy}
       footer={
-        unmatched ? (
+        <>
+          <Button variant="quiet" onPress={onClose}>
+            {tc('cancel')}
+          </Button>
+          {unmatched ? (
           <Button variant="sticker" isPending={save.busy} onPress={() => void onSave(unmatched)}>
             {t('createAndSave')}
           </Button>
@@ -94,10 +101,11 @@ export function DeckPickerDialog({ sense, onClose }: { sense: Sense; onClose: ()
               {t('saveTo', { group: deckName })}
             </Button>
           )
-        )
+        )}
+        </>
       }
     >
-      <p className="-mt-2 w-fit rounded-sm bg-accent-soft px-2 py-0.5 text-caption font-semibold text-ink">
+      <p className="-mt-2 w-fit break-words rounded-sm bg-accent-soft px-2 py-0.5 text-caption font-semibold text-ink">
         {sense.lemma}, {sense.pos}: {sense.meaning.text}
       </p>
       <GroupPicker groups={groups} value={deck} onChange={setChosen} onCreate={(name) => void onCreate(name)} onUnmatched={setUnmatched} recentId={lastGroup} />

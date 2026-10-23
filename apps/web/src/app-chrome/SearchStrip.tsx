@@ -2,7 +2,7 @@
 
 import { Search } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useRef, useState, useSyncExternalStore, type FormEvent } from 'react';
 import { Select } from '@/app-ui/Select';
 import { LEVELS, lookupHref, parseLookup } from '@/features/learner/lookup/lookup-api';
@@ -31,9 +31,19 @@ export function SearchStrip() {
   const t = useTranslations('App.chrome.search');
   const locale = useLocale();
   const router = useRouter();
-  const current = parseLookup(useSearchParams());
+  const params = useSearchParams();
+  const current = parseLookup(params);
+  const onLookup = /\/app\/lookup$/.test(usePathname());
   const [q, setQ] = useState(current.q ?? '');
   const [level, setLevel] = useState(current.level ?? ALL);
+  // The lookup page changes the URL under the strip (filters, "Xóa lọc", Back): follow it (review I-5).
+  const search = params.toString();
+  const [seen, setSeen] = useState(search);
+  if (seen !== search) {
+    setSeen(search);
+    setQ(current.q ?? '');
+    setLevel(current.level ?? ALL);
+  }
   const box = useRef<HTMLInputElement>(null);
   const wide = useWide();
 
@@ -52,7 +62,9 @@ export function SearchStrip() {
   function onSubmit(event: FormEvent) {
     event.preventDefault();
     const query = q.trim();
-    router.push(lookupHref(locale, { ...(query ? { q: query } : {}), ...(level !== ALL ? { level } : {}) }));
+    // On the lookup page a new search keeps the topic, part of speech and "Chỉ từ của tôi" filters.
+    const kept = onLookup ? { topic: current.topic, pos: current.pos, mine: current.mine } : {};
+    router.push(lookupHref(locale, { ...kept, ...(query ? { q: query } : {}), ...(level !== ALL ? { level } : {}) }));
   }
 
   return (

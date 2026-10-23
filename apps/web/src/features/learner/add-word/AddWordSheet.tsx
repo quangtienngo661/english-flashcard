@@ -80,6 +80,8 @@ export function AddWordSheet({ initialWord = '', onClose }: { initialWord?: stri
       target = created.id;
       targetName = created.name;
       setChosenDeck(created.id);
+      // The deck exists now: a retry after a failure of the add step saves into it instead of creating it again.
+      setUnmatched(null);
     }
     const body: QuickAddBody =
       manualMode.current
@@ -98,7 +100,8 @@ export function AddWordSheet({ initialWord = '', onClose }: { initialWord?: stri
     setDeckError(undefined);
     setFieldError(undefined);
     if (!lemma) return setFieldError(t('wordRequired'));
-    const manual = view === 'manual' || (view === 'picker' && back === 'manual');
+    // No known meaning to save (a word Wordmet does not have): the manual form, never a deck created for nothing (review I-1).
+    const manual = view === 'manual' || (view === 'picker' && back === 'manual') || !chosenSense;
     if (manual && !meaning.trim()) {
       setView('manual');
       return setFieldError(t('meaningRequired'));
@@ -111,7 +114,7 @@ export function AddWordSheet({ initialWord = '', onClose }: { initialWord?: stri
       if (!done) return;
       writeLastGroup(done.target);
       showToast(t('saved', { word: lemma, group: done.targetName }), 'success');
-      for (const queryKey of [GROUPS_KEY, ['items'], ['word'], ['words'], ['lookup']]) void client.invalidateQueries({ queryKey });
+      for (const queryKey of [GROUPS_KEY, ['group'], ['items'], ['word'], ['words'], ['lookup']]) void client.invalidateQueries({ queryKey });
       onClose();
     } catch (error) {
       const slug = error instanceof ApiError ? error.problem.slug : '';
@@ -205,6 +208,13 @@ export function AddWordSheet({ initialWord = '', onClose }: { initialWord?: stri
         recentId={lastGroup}
       />
     );
+    body = (
+      <div className="flex flex-col gap-4">
+        {body}
+        {deckError && <p className="text-caption text-danger">{deckError}</p>}
+        {failureLine}
+      </div>
+    );
     footer = (
       <>
         <Button variant="quiet" onPress={() => setView(back)}>
@@ -217,7 +227,7 @@ export function AddWordSheet({ initialWord = '', onClose }: { initialWord?: stri
         ) : (
           deck && (
             <Button variant="sticker" onPress={() => setView(back)}>
-              {t('saveTo', { group: deckName })}
+              {t('pickDeck', { group: deckName })}
             </Button>
           )
         )}
@@ -230,7 +240,7 @@ export function AddWordSheet({ initialWord = '', onClose }: { initialWord?: stri
         <p className="-mt-3 text-caption text-muted">{t('manualSub')}</p>
         <TextField label={t('word')} value={word} onChange={setWord} maxLength={LEMMA_MAX} />
         {via && <p className="-mt-2 text-caption text-ink">{t('recognized', { kind: kind(via.kind), base: via.base.lemma })}</p>}
-        <TextField label={t('meaning')} value={meaning} onChange={setMeaning} maxLength={500} error={fieldError} autoFocus />
+        <TextField label={t('meaning')} value={meaning} onChange={setMeaning} maxLength={300} error={fieldError} autoFocus />
         {sentenceField}
         {deckField}
         {failureLine}
@@ -239,7 +249,7 @@ export function AddWordSheet({ initialWord = '', onClose }: { initialWord?: stri
     footer = (
       <>
         <Button variant="quiet" onPress={() => setView('find')}>
-          {tc('cancel')}
+          {t('back')}
         </Button>
         {!noDecks && (
           <Button variant="sticker" isPending={save.busy} onPress={() => void submit()}>
@@ -283,6 +293,9 @@ export function AddWordSheet({ initialWord = '', onClose }: { initialWord?: stri
     );
     footer = (
       <>
+        <Button variant="ghost" onPress={onClose}>
+          {tc('cancel')}
+        </Button>
         <Button variant="quiet" onPress={() => setView('manual')}>
           {t('manualButton')}
         </Button>

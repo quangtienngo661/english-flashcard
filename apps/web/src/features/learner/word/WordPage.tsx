@@ -21,8 +21,9 @@ import { levelRange, useSenseItems, useWordPage, wordHref, type PageSense, type 
 export function WordPage() {
   const t = useTranslations('App.word');
   const locale = useLocale();
-  const raw = useSearchParams().get('w')?.trim() ?? '';
-  const lemma = raw.length > 0 && raw.length <= 100 ? raw : null;
+  // At most 100 characters (the API's limit); dots only would be dropped by the URL parser and reach the word list instead (review I-3).
+  const raw = [...(useSearchParams().get('w')?.trim() ?? '')].slice(0, 100).join('');
+  const lemma = raw.length > 0 && !/^\.+$/.test(raw) ? raw : null;
   const page = useWordPage(lemma);
   const errorText = useErrorMessage();
   const notFound = lemma === null || (page.error instanceof ApiError && page.error.problem.status === 404);

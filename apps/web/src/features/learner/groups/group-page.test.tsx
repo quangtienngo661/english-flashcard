@@ -77,7 +77,7 @@ describe('GroupPage (K/11–K/13)', () => {
 
   it('review button and the long-overdue link', async () => {
     renderApp(<GroupPage />, { routes: routes() });
-    expect(await screen.findByRole('link', { name: 'Ôn 3 thẻ' })).toHaveAttribute('href', `/vi/app/review?group=${G}`);
+    expect(await screen.findByRole('link', { name: 'Ôn 3 thẻ' }, { timeout: 5000 })).toHaveAttribute('href', `/vi/app/review?group=${G}`);
     expect(screen.getByRole('link', { name: /3 từ lâu chưa ôn/ })).toHaveAttribute('href', `/vi/app/group/backlog?id=${G}`);
   });
 

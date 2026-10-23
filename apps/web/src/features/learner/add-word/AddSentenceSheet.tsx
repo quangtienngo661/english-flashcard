@@ -26,7 +26,10 @@ export function AddSentenceSheet({ sense, onClose, onSeeAll }: { sense: Sense; o
   const [text, setText] = useState('');
   const [error, setError] = useState<string | undefined>();
   const [limit, setLimit] = useState(false);
-  const save = useSubmitOnce((key) => api.post(`/v1/senses/${sense.sense_id}/sentences`, { text: text.trim() }, { idempotencyKey: key }));
+  const save = useSubmitOnce(async (key) => {
+    await api.post(`/v1/senses/${sense.sense_id}/sentences`, { text: text.trim() }, { idempotencyKey: key });
+    return true;
+  });
   const info = { word: sense.lemma, pos: sense.pos, meaning: sense.meaning.text, count: sense.sentence_count };
 
   async function onSubmit(event: FormEvent) {
@@ -35,7 +38,8 @@ export function AddSentenceSheet({ sense, onClose, onSeeAll }: { sense: Sense; o
     setLimit(false);
     if (!text.trim()) return setError(t('sentenceRequired'));
     try {
-      await save.submit();
+      // undefined: a press ignored while the first one is still saving (review I-2).
+      if (!(await save.submit())) return;
       showToast(t('sentenceSaved'), 'success');
       void client.invalidateQueries({ queryKey: sentencesKey(sense.sense_id) });
       void client.invalidateQueries({ queryKey: wordKey(sense.lemma) });

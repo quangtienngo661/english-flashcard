@@ -50,11 +50,14 @@ function SentenceRow({ sentence, lemma, senseId }: { sentence: Sentence; lemma: 
   const api = useApi();
   const client = useQueryClient();
   const errorText = useErrorMessage();
-  const remove = useSubmitOnce((key) => api.delete(`/v1/sentences/${sentence.id}`, { idempotencyKey: key }));
+  const remove = useSubmitOnce(async (key) => {
+    await api.delete(`/v1/sentences/${sentence.id}`, { idempotencyKey: key });
+    return true;
+  });
 
   async function onDelete() {
     try {
-      await remove.submit();
+      if (!(await remove.submit())) return;
       showToast(t('sentenceDeleted'), 'success');
     } catch (error) {
       showToast(errorText(error), 'danger');

@@ -748,7 +748,8 @@
       "bulkNote": "Words not learned yet go to the New stage.",
       "bulkSubmit": "Add them all",
       "bulkResult": "Added {added} words to “{name}”.",
-      "bulkSkipped": "{already} already in the deck, {function} function words skipped, {full} did not fit because the deck is full."
+      "bulkSkipped": "{already} already in the deck, {function} function words skipped, {full} did not fit because the deck is full.",
+      "pickDeck": "Choose {group}"
     },
     "stages": {
       "s0": "New",
