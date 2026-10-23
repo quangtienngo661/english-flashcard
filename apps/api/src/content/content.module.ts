@@ -25,6 +25,8 @@ import { AdminPublishController } from './senses/admin-publish.controller.js';
 import { PublishService } from './senses/publish.service.js';
 import { SensesService } from './senses/senses.service.js';
 import { LearnerTopicsController, TopicsController } from './taxonomy/topics.controller.js';
+import { TopicSuggestionQueries } from './taxonomy/topic-suggestions.queries.js';
+import { TopicSuggestionsService } from './taxonomy/topic-suggestions.service.js';
 import { TopicsService } from './taxonomy/topics.service.js';
 import { AiModule } from '../ai/index.js';
 import { EntitlementsModule } from '../entitlements/index.js';
@@ -43,7 +45,8 @@ import { WordFormsService } from './word-forms/word-forms.service.js';
     AdminWordFormsController, AiLookupController,
   ],
   providers: [ContentService, SourcesService, TopicsService, LearnerContentGuard, LearnerContentService, EntriesService, LevelsService, SensesService, PublishService, AdminCatalogQueries, InflectionsService,
-    PrivateWordsService, SentencesService, WordsService, WordFormsService, AiLookupService, IdempotencyInterceptor],
+    PrivateWordsService, SentencesService, WordsService, WordFormsService, AiLookupService, IdempotencyInterceptor,
+    TopicSuggestionQueries, TopicSuggestionsService],
   exports: [ContentService],
 })
 export class ContentModule {}

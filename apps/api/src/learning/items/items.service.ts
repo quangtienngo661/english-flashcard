@@ -15,8 +15,12 @@ import { newItem } from '../schedule/schedule.js';
 const transactionOptions = { timeout: 30_000, maxWait: 5_000 };
 
 export type AddResult = { item_id: string; level: number; due_date: string; created: boolean };
-export type BulkFilter = { level?: Level; topic?: string; pos?: string };
-export type BulkResult = { added: number; already_in_group: number; skipped_function_words: number; skipped_group_full: number };
+export type BulkFilter = { level?: Level; topic?: string; pos?: string; sense_ids?: string[] };
+export type BulkResult = {
+  added: number; already_in_group: number; skipped_function_words: number; skipped_group_full: number;
+  /** Design §8.3: hand-picked ids the learner cannot see (another learner's private word, or none); 0 for a filter. */
+  skipped_not_found: number;
+};
 export type ItemState = { sense_id: string; item_id: string; level: number; due_date: string; priority: boolean; group_ids: string[] };
 export type GroupItemView = {
   item_id: string; sense_id: string; level: number; due_date: string; priority: boolean; group_count: number;
@@ -70,12 +74,24 @@ export class ItemsService {
     return addResult(item, item.created);
   }
 
-  /** Adds published catalog senses matching the filter, up to the group's free slots (B3E22). */
+  /**
+   * Adds published catalog senses matching the filter, up to the group's free slots (B3E22); or, with `sense_ids`, the
+   * hand-picked senses the learner can see, in the order sent (design §8.3; function words are not skipped).
+   */
   async bulkAdd(userId: string, groupId: string, filter: BulkFilter): Promise<BulkResult> {
     const today = await this.today(userId);
     await this.groups.assertOwned(this.prisma, userId, groupId);
-    // Every matching sense, not just enough to fill the group: what does not fit is reported as skipped_group_full (L3).
-    const { senseIds, skippedFunctionWords } = await this.content.bulkCandidates(filter, Number.POSITIVE_INFINITY);
+    let senseIds: string[];
+    let skippedFunctionWords = 0;
+    let skippedNotFound = 0;
+    if (filter.sense_ids) {
+      const visible = await this.content.visibleSenseIds(userId, filter.sense_ids);
+      senseIds = filter.sense_ids.filter((id) => visible.has(id));
+      skippedNotFound = filter.sense_ids.length - senseIds.length;
+    } else {
+      // Every matching sense, not just enough to fill the group: what does not fit is reported as skipped_group_full (L3).
+      ({ senseIds, skippedFunctionWords } = await this.content.bulkCandidates(filter, Number.POSITIVE_INFINITY));
+    }
     const { itemsPerGroup } = (await this.settings.get()).learning;
     return this.prisma.$transaction(async (tx) => {
       await withLearnerLock(tx, userId);
@@ -89,7 +105,7 @@ export class ItemsService {
       await this.ensureItems(tx, userId, groupId, toAdd, today);
       return {
         added: toAdd.length, already_in_group: linked.size, skipped_function_words: skippedFunctionWords,
-        skipped_group_full: fresh.length - toAdd.length,
+        skipped_group_full: fresh.length - toAdd.length, skipped_not_found: skippedNotFound,
       };
     }, transactionOptions);
   }

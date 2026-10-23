@@ -157,7 +157,7 @@ function AuthFrame({ children }: { children: ReactNode }) {
  * "(mờ) Nền họa tiết học từ (web)": decoration only, drawn as one hidden SVG at 12% so it is never read as text, hidden on
  * phones.
  */
-function StudyPattern() {
+export function StudyPattern() {
   return (
     <svg
       aria-hidden

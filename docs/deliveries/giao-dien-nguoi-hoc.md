@@ -86,3 +86,34 @@ vi/en × sáng/tối × 1440/390, không cuộn ngang, CSP); `pnpm shots` chụp
 - `apps/api/.env` cũ thiếu `ADMIN_APP_URL`, `LEARNER_APP_URL`, `TERMS_VERSION` (API không khởi động); tài liệu kiểm ghi cách sửa.
 - File CSV mẫu ghi đè nghĩa trùng từ + loại từ: chạy `learner:setup` trên DB riêng nếu DB có nội dung thật (đã làm vậy khi chạy thật).
 - Chưa làm ở M1 (để mốc dùng tới): `Tabs`, dải tra từ, `Menu` chung, `useFormat.relativeDays`.
+
+# M2 — as-built (23/10/2026)
+
+Nhánh `feat/giao-dien-nguoi-hoc-m2` (cắt từ `origin/dev` @ `c5e2536`, sau khi M1 merge), PR #124. Task 12–21, một commit mỗi task, cộng
+các commit sửa (test trước, sửa sau).
+
+**Đã có:** API (c) `POST /v1/groups/{id}/items/bulk` nhận `sense_ids` (1–100, không kèm bộ lọc; trả thêm `skipped_not_found`); API (h)
+`GET /v1/topics/suggestions` (vài cặp chủ đề × trình độ mỗi ngày cho từng người học, ≥10 nghĩa, 3 từ mẫu); Hôm nay (K/10, K/94); Danh sách nhóm,
+tạo/đổi tên/xóa nhóm (K/16, K/16b, K/17, K/17b, K/10b, K/14); trang nhóm (K/11–K/13); Từ lâu chưa ôn (K/15); chọn từ theo chủ đề (K/18);
+phiên ôn toàn màn (K/20–K/22, M/30–M/32; phím Space, 1, 2, Esc, Enter); e2e M2 (luồng, axe, không cuộn ngang với tên nhóm 60 ký tự và câu 280
+ký tự); mục M2 của tài liệu kiểm; `SHOTS_MILESTONE=m2` chụp ảnh trên stack thật.
+
+**Kiểm**
+- Unit web 353/353; API (toàn bộ) xanh; e2e Worker (Docker): 153 passed, 15 skipped; CI PR #124 xanh 4/4.
+- Cỡ Worker (gzip, `pnpm cf:docker --build`): tắt app (bản landing đang deploy) 2.963,24 KiB; **bật app (hết M2) 3.462,38 KiB, vượt gói Free
+  (~3.072 KiB)**. Không chặn M2 (production build tắt app), nhưng trước khi bật `/app` trên production phải nâng gói Paid hoặc giảm cỡ
+  (checklist Deploy).
+- Chạy thật: API + worker + Postgres (DB riêng) + Redis + Mailpit, người học mới, nhóm tạo từ gợi ý Kinh doanh · B1 (113 từ); 132 ảnh.
+- Reviewer mới (cả nhánh): 0 Critical, 8 Important, 15 Minor. Đã sửa cả 8 Important và nhãn trục biểu đồ tiếng Anh (test trước, sửa sau).
+  Minor còn lại ghi trong ledger, chưa sửa.
+
+**Khác plan / cần chủ dự án biết**
+- Dạng chia ở mặt sau thẻ lấy từ trang từ `GET /v1/words/{lemma}` (hàng đợi không có dạng chia); chưa tải xong thì không hiện.
+- K/22 bỏ câu "Ngày mai nhóm này có N thẻ đến hạn" (API không có số này). Câu "Thẻ cần ôn lại quay về ngăn 1 ngày…" chỉ hiện khi có thẻ cần ôn lại.
+- Từ được tô trong câu: chữ xanh đậm như K/21, M/31 (ô "Câu bạn đã gặp" đã nền vàng). Áp cho cả xem trước thẻ ở trang nhóm.
+- K/18: luôn gửi đúng danh sách nghĩa chưa học theo lô 100 (không dùng bộ lọc chủ đề), nên "Thêm cả N từ" thêm đúng N; ô "Thêm vào" chọn sẵn
+  nhóm trùng tên chủ đề nếu đã có.
+- Cho tới M3: tên từ ở trang nhóm là chữ thường (chưa có trang từ), và không có link "Xem mọi chủ đề trong Tra từ".
+- Đổi câu trả lời sau khi mất mạng là một lần bấm mới (`review_id` mới): nếu lần trước thật ra đã tới API thì thẻ được ghi hai lần (hiếm).
+- Dev server trong container đôi khi không thấy file vừa sửa hoặc giữ cache cũ (cả trang trả 404): tắt, `docker volume rm wordmet-dev-app-next`,
+  chạy lại `pnpm dev:app`.

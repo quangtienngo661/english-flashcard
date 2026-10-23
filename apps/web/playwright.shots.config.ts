@@ -7,6 +7,6 @@ export default defineConfig({
   fullyParallel: false,
   workers: 1,
   reporter: [['list']],
-  timeout: 300_000,
+  timeout: 1_800_000,
   use: { ...devices['Desktop Chrome'], baseURL: process.env.SHOTS_BASE_URL ?? 'http://localhost:3001' },
 });

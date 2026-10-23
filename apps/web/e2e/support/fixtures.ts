@@ -43,4 +43,8 @@ export const LONG = {
   givenName: 'Nguyễn Thị Phương Thảo Ngọc Bích Hoàng Anh Minh Châu',
   familyName: 'Tôn Nữ Huyền Trang Diệp Lam',
   email: 'phuong.thao.ngoc.bich.hoang.anh.minh.chau.2008@example-school.edu.vn',
+  /** 60 characters, the deck name limit. */
+  deckName: 'Từ vựng chuyên ngành công nghệ thông tin phát triển phần mềm',
+  /** A 280-character saved sentence. */
+  sentence: `We deploy ${'the newest internationalization-ready microservices '.repeat(5)}every Friday afternoon.`.slice(0, 280),
 };

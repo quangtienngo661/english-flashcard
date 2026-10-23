@@ -1,6 +1,6 @@
-import { TodayPlaceholder } from '@/features/learner/today/TodayPlaceholder';
+import { TodayPage } from '@/features/learner/today/TodayPage';
 
-// Today (K/10); a placeholder until Task 15.
+// Today (K/10, K/10b, K/94).
 export default function AppHomePage() {
-  return <TodayPlaceholder />;
+  return <TodayPage />;
 }
