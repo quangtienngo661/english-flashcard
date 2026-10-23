@@ -4,7 +4,7 @@ type Props = {
   label: string;
   value: string;
   onChange: (value: string) => void;
-  type?: 'text' | 'email' | 'password' | 'url';
+  type?: 'text' | 'email' | 'password' | 'url' | 'date';
   name?: string;
   autoComplete?: string;
   placeholder?: string;

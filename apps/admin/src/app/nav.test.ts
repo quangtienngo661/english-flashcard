@@ -3,7 +3,7 @@ import type { Permission } from '../auth/session-store';
 import { canAccess, firstVisiblePath, homePath, NAV, visibleNav } from './nav';
 
 const EDITOR: Permission[] = ['content.edit', 'content.import', 'content.publish', 'taxonomy.manage'];
-const ADMIN: Permission[] = [...EDITOR, 'roles.manage'];
+const ADMIN: Permission[] = [...EDITOR, 'roles.manage', 'settings.manage', 'entitlements.grant'];
 
 const FIGMA_ORDER = [
   ['overview', '/dashboard'],
@@ -18,6 +18,7 @@ const FIGMA_ORDER = [
   ['practice', '/irregular-forms'],
   ['learners', '/users'],
   ['learners', '/entitlements'],
+  ['learners', '/transactions'],
   ['ai', '/ai/settings'],
   ['ai', '/ai/costs'],
   ['ai', '/ai/eval-sets'],
@@ -25,19 +26,21 @@ const FIGMA_ORDER = [
 ];
 
 describe('nav', () => {
-  it('16 items in 6 groups in Figma order; available only for /uploads, /publish-jobs, /export, /sources, /staff', () => {
+  it('17 items in 6 groups in Figma order; available only for /uploads, /publish-jobs, /export, /sources, /transactions, /staff', () => {
     expect(NAV.map((n) => [n.group, n.path])).toEqual(FIGMA_ORDER);
     expect(new Set(NAV.map((n) => n.group)).size).toBe(6);
-    expect(NAV.filter((n) => n.available).map((n) => n.path)).toEqual(['/uploads', '/publish-jobs', '/export', '/sources', '/staff']);
+    expect(NAV.filter((n) => n.available).map((n) => n.path)).toEqual(['/uploads', '/publish-jobs', '/export', '/sources', '/transactions', '/staff']);
     expect(NAV.find((n) => n.path === '/ai/costs')?.plannedStep).toBe('6');
   });
 
-  it('editor sees no AI group and no /staff; admin sees all 16', () => {
+  it('editor sees no AI group, no /staff and no /transactions (settings.manage); admin sees all 17', () => {
     const editorPaths = visibleNav(EDITOR).map((n) => n.path);
     expect(editorPaths).toHaveLength(12);
     expect(editorPaths).not.toContain('/staff');
+    expect(editorPaths).not.toContain('/transactions');
+    expect(visibleNav([...EDITOR, 'entitlements.grant'])).toHaveLength(12);
     expect(visibleNav(EDITOR).some((n) => n.group === 'ai')).toBe(false);
-    expect(visibleNav(ADMIN)).toHaveLength(16);
+    expect(visibleNav(ADMIN)).toHaveLength(17);
   });
 
   it('an entry needs every permission it lists', () => {
@@ -63,6 +66,8 @@ describe('nav', () => {
   it('canAccess: a path and its children follow the entry permission; unknown paths are allowed', () => {
     expect(canAccess('/staff', EDITOR)).toBe(false);
     expect(canAccess('/staff', ADMIN)).toBe(true);
+    expect(canAccess('/transactions', EDITOR)).toBe(false);
+    expect(canAccess('/transactions', ADMIN)).toBe(true);
     expect(canAccess('/ai/costs', EDITOR)).toBe(false);
     expect(canAccess('/ai/costs', ADMIN)).toBe(true);
     expect(canAccess('/uploads/abc', EDITOR)).toBe(true);

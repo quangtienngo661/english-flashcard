@@ -73,6 +73,7 @@
     "irregular": "Irregular forms",
     "users": "Users",
     "entitlements": "Entitlements & AI uses",
+    "transactions": "Transactions",
     "aiSettings": "AI settings",
     "aiCosts": "Costs & reconciliation",
     "evalSets": "Example sets",
@@ -136,6 +137,69 @@
       "lowercase": "A lowercase letter",
       "digit": "A digit",
       "special": "A special character"
+    }
+  },
+  "transactions": {
+    "intro": "Purchases, renewals, billing changes, refunds, trials and plans granted by the Wordmet team, for every learner, newest first.",
+    "filters": {
+      "email": "Learner email",
+      "emailPlaceholder": "Search by email",
+      "kind": "Type",
+      "allKinds": "All types",
+      "from": "From",
+      "to": "To",
+      "apply": "Filter"
+    },
+    "cols": {
+      "user": "Learner",
+      "kind": "Type",
+      "plan": "Plan · Active period",
+      "at": "Time",
+      "amount": "Amount · Provider",
+      "status": "Status"
+    },
+    "kinds": {
+      "purchase": "Purchase",
+      "renewal": "Renewal",
+      "plan_change": "Billing change",
+      "refund": "Refund",
+      "trial": "Trial",
+      "grant": "Team grant"
+    },
+    "statuses": {
+      "succeeded": "Succeeded",
+      "refunded": "Refunded",
+      "pending": "Pending",
+      "reversed": "Refund reversed"
+    },
+    "intervals": {
+      "month": "monthly",
+      "year": "yearly"
+    },
+    "planInterval": "{plan} · {interval}",
+    "providers": {
+      "fake": "Fake (test)"
+    },
+    "noGateway": "No provider",
+    "detailLink": "Details",
+    "detailFor": "Transaction details for {email}",
+    "footer": "{count, plural, one {# transaction} other {# transactions}} · newest first · times in Asia/Ho_Chi_Minh",
+    "empty": "No transactions match the filters. Change the email, type or dates and try again.",
+    "detail": {
+      "title": "Transaction details",
+      "user": "Learner",
+      "userId": "Learner ID",
+      "kind": "Type",
+      "plan": "Plan",
+      "amount": "Amount",
+      "at": "Time",
+      "period": "Active period",
+      "status": "Status",
+      "gateway": "Payment provider",
+      "testEnv": "{gateway} · test environment",
+      "txId": "Provider transaction ID",
+      "readOnly": "Read only. Refunds are made at the payment provider; its refund event updates this row.",
+      "close": "Close"
     }
   },
   "staff": {

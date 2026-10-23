@@ -254,3 +254,14 @@ Final M4: minor (deferred): English hint header has no count (design §7.1, kept
 - Ruling: mỗi dòng là một nút có tên đọc đủ cả dòng; hai bố cục (bảng / ba dòng) chỉ để nhìn (`aria-hidden`) — vì cùng dữ liệu phải hiện theo hai cách mà
   không lặp cho trình đọc màn hình — giá nếu sai: người dùng trình đọc màn hình không duyệt được theo cột.
 - Ruling: chữ tiếng Anh tự viết theo luật §17.2 ("Billing change", "Granted by the Wordmet team", "Fake (test)") — chưa ai duyệt — giá nếu sai: sửa chữ.
+
+### Task 39 — Trang admin "Giao dịch" (23/10/2026)
+
+- `/transactions` trong nhóm Người học, chỉ `settings.manage` (admin); `Permission` thêm `settings.manage`, `entitlements.grant`; nav 17 mục (editor vẫn 12);
+  bộ lọc email · loại · từ ngày · tới ngày (ngày giờ Việt Nam, cả hai đầu gồm), bảng như A/90, "Tải thêm", hộp chi tiết chỉ xem, trống A/90c, lỗi + Thử lại.
+- Test: nav (17/12/17, quyền), 7 test trang; admin unit 336/336; lint, typecheck, Tailwind thô xanh; e2e mock 139 passed (shell 17 mục, a11y thêm
+  `/transactions`); `mock-api` `PERMISSIONS` theo API thật (editor có `entitlements.grant`, admin thêm `settings.manage`).
+- Ruling: hộp chi tiết không có "Mã subscription" của khung A/90b — vì `TransactionView` của API không trả nó — giá nếu sai: thêm một trường vào API và hộp.
+- Ruling: `TextField` của admin nhận `type="date"` (ô ngày của trình duyệt) — vì admin chưa có ô chọn ngày — giá nếu sai: thay bằng ô chọn ngày khi
+  refactor admin.
+- Ruling: vi-VN in ngày-tháng riêng là "15-10", nên kỳ cùng năm cắt năm khỏi ngày đầy đủ ("15/10 → 14/11/2026"); bản `en` ghi đủ năm hai đầu.

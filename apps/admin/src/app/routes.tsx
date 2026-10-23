@@ -9,6 +9,7 @@ import { ExportPage } from '../features/export/ExportPage';
 import { PublishJobsPage } from '../features/publish-jobs/PublishJobsPage';
 import { SourcesPage } from '../features/sources/SourcesPage';
 import { StaffPage } from '../features/staff/StaffPage';
+import { TransactionsPage } from '../features/transactions/TransactionsPage';
 import { homePath, NAV } from './nav';
 import { RequireSession } from './RequireSession';
 import { Shell } from './Shell';
@@ -42,6 +43,7 @@ export function AppRoutes() {
           <Route path="sources" element={<SourcesPage />}>
             <Route path="new" element={null} />
           </Route>
+          <Route path="transactions" element={<TransactionsPage />} />
           <Route path="staff" element={<StaffPage />} />
           {NAV.filter((entry) => !entry.available).map((entry) => (
             <Route key={entry.path} path={entry.path.slice(1)} element={<ComingSoonPage item={entry} />} />

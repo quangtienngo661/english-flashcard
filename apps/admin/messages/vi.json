@@ -73,6 +73,7 @@
     "irregular": "Dạng bất quy tắc",
     "users": "Người dùng",
     "entitlements": "Quyền lợi & lượt AI",
+    "transactions": "Giao dịch",
     "aiSettings": "Cài đặt AI",
     "aiCosts": "Chi phí & đối soát",
     "evalSets": "Bộ ví dụ",
@@ -136,6 +137,69 @@
       "lowercase": "Có chữ thường",
       "digit": "Có chữ số",
       "special": "Có ký tự đặc biệt"
+    }
+  },
+  "transactions": {
+    "intro": "Mua, gia hạn, đổi kỳ, hoàn tiền, dùng thử và lần đội Wordmet cấp gói của mọi người học, mới nhất trước.",
+    "filters": {
+      "email": "Email người học",
+      "emailPlaceholder": "Tìm theo email",
+      "kind": "Loại",
+      "allKinds": "Tất cả loại",
+      "from": "Từ ngày",
+      "to": "Tới ngày",
+      "apply": "Lọc"
+    },
+    "cols": {
+      "user": "Người học",
+      "kind": "Loại",
+      "plan": "Gói · Kỳ được dùng",
+      "at": "Thời điểm",
+      "amount": "Số tiền · Cổng",
+      "status": "Trạng thái"
+    },
+    "kinds": {
+      "purchase": "Mua",
+      "renewal": "Gia hạn",
+      "plan_change": "Đổi kỳ",
+      "refund": "Hoàn tiền",
+      "trial": "Dùng thử",
+      "grant": "Đội cấp"
+    },
+    "statuses": {
+      "succeeded": "Thành công",
+      "refunded": "Đã hoàn tiền",
+      "pending": "Đang chờ",
+      "reversed": "Đã hủy hoàn tiền"
+    },
+    "intervals": {
+      "month": "theo tháng",
+      "year": "theo năm"
+    },
+    "planInterval": "{plan} · {interval}",
+    "providers": {
+      "fake": "Giả (thử)"
+    },
+    "noGateway": "Không qua cổng",
+    "detailLink": "Chi tiết",
+    "detailFor": "Chi tiết giao dịch của {email}",
+    "footer": "{count} giao dịch · mới nhất trước · ngày giờ theo múi giờ Asia/Ho_Chi_Minh",
+    "empty": "Không có giao dịch nào khớp bộ lọc. Đổi email, loại hoặc khoảng ngày rồi xem lại.",
+    "detail": {
+      "title": "Chi tiết giao dịch",
+      "user": "Người học",
+      "userId": "Mã người học",
+      "kind": "Loại",
+      "plan": "Gói",
+      "amount": "Số tiền",
+      "at": "Thời điểm",
+      "period": "Kỳ được dùng",
+      "status": "Trạng thái",
+      "gateway": "Cổng thanh toán",
+      "testEnv": "{gateway} · môi trường test",
+      "txId": "Mã giao dịch của cổng",
+      "readOnly": "Chỉ xem. Hoàn tiền làm ở cổng thanh toán; sự kiện hoàn tiền của cổng tự cập nhật dòng này.",
+      "close": "Đóng"
     }
   },
   "staff": {
