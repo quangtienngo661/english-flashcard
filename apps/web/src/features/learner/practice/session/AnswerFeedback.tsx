@@ -17,7 +17,7 @@ export function AnswerFeedback({ result, onReview, onNext, busy }: {
   const t = useTranslations('App.practice.session');
   const right = result.result === 'correct';
   const Icon = right ? CircleCheck : CircleX;
-  const note = !right ? t('noteWrong', { lemma: result.correct.lemma }) : result.show_known ? t('noteRight') : t('noteHint');
+  const note = !right ? t('noteWrong', { lemma: result.correct.lemma }) : result.show_known ? t('noteRight') : result.hint_level > 0 ? t('noteHint') : t('noteRightNoKnow');
   return (
     <div className="flex flex-col gap-3">
       <div role="status" className={cn('flex gap-3 rounded-inner p-4', right ? 'bg-success-soft' : 'bg-danger-soft')}>

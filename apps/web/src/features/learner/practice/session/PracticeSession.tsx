@@ -50,6 +50,11 @@ export function PracticeSession() {
       // A graded typed answer keeps its (read-only) field focused; Enter there moves on like anywhere else.
       const field = target?.closest('input, textarea') as HTMLInputElement | null;
       const typing = Boolean(field && !field.readOnly);
+      if (e.key === 'Escape' && (typing || e.isComposing)) {
+        // Esc in the answer field (or closing an IME list) leaves the field; a second Esc ends the session.
+        if (!e.isComposing) field?.blur();
+        return;
+      }
       if (e.key === 'Escape') {
         if (phase?.kind === 'question' || phase?.kind === 'round') {
           e.preventDefault();

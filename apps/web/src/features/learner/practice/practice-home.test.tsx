@@ -73,7 +73,7 @@ describe('PracticePage (K/51)', () => {
   it('the big card starts today\'s words: "Bắt đầu N câu" with N = default_questions_per_session', async () => {
     const view = renderApp(<PracticePage />, { routes: routes() });
     const hero = await screen.findByRole('region', { name: 'Hôm nay' });
-    expect(await within(hero).findByText('27 từ trong 2 nhóm. 12 câu, trộn ba kiểu câu.')).toBeInTheDocument();
+    expect(await within(hero).findByText('34 từ trong 3 nhóm. 12 câu, trộn ba kiểu câu.')).toBeInTheDocument();
     await userEvent.click(within(hero).getByRole('button', { name: 'Bắt đầu 12 câu' }));
     await waitFor(() => expect(hardReplace).toHaveBeenCalledWith('/vi/app/practice/session'));
     const [start] = starts(view.calls);

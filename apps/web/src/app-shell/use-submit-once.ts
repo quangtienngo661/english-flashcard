@@ -14,19 +14,23 @@ const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve,
  * succeeds or fails for good: a retry after a NetworkError reuses it; 409 "in progress" waits `Retry-After` and sends the
  * same key again; 409 `idempotency-key-abandoned` sends once more with a new key.
  */
-export function useSubmitOnce<T>(fn: (key: string) => Promise<T>): { submit(): Promise<T | undefined>; busy: boolean } {
+export function useSubmitOnce<T>(fn: (key: string) => Promise<T>): { submit(payload?: string): Promise<T | undefined>; busy: boolean } {
   const [busy, setBusy] = useState(false);
   const busyRef = useRef(false);
   const keyRef = useRef<string | null>(null);
+  const payloadRef = useRef<string | undefined>(undefined);
   const fnRef = useRef(fn);
   useEffect(() => {
     fnRef.current = fn;
   }, [fn]);
 
-  const submit = useCallback(async (): Promise<T | undefined> => {
+  const submit = useCallback(async (payload?: string): Promise<T | undefined> => {
     if (busyRef.current) return undefined;
     busyRef.current = true;
     setBusy(true);
+    // A kept key belongs to the press that may have landed; a press with other content is a new write (one key per press).
+    if (payload !== payloadRef.current) keyRef.current = null;
+    payloadRef.current = payload;
     let key = (keyRef.current ??= crypto.randomUUID());
     let renewed = false;
     let waits = 0;

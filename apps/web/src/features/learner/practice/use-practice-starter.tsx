@@ -53,7 +53,7 @@ export function usePracticeStarter<Origin extends string>() {
     setOrigin(from);
     setErrors({});
     try {
-      await submit();
+      await submit(JSON.stringify(body));
     } catch (error) {
       setAsking(null);
       if (error instanceof ApiError && error.problem.slug === 'quota-exhausted') {

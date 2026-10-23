@@ -1065,7 +1065,8 @@
           "reviewAll": "Đưa {count} từ còn lại vào ưu tiên",
           "home": "Về Luyện tập",
           "again": "Luyện thêm một phiên"
-        }
+        },
+        "noteRightNoKnow": "Bấm Cần ôn lại hoặc Câu tiếp để sang câu tiếp."
       },
       "weak": {
         "title": "Từ hay sai",

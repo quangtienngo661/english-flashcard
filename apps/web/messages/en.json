@@ -1065,7 +1065,8 @@
           "reviewAll": "Add the other {count, plural, one {# word} other {# words}} to priority",
           "home": "Back to Practice",
           "again": "Practice another session"
-        }
+        },
+        "noteRightNoKnow": "Still learning or Next question moves on."
       },
       "weak": {
         "title": "Weak words",

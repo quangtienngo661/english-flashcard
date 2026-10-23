@@ -182,3 +182,19 @@ Task 33: Ruling: Trial and Pro by subscription (not drawn) get their own title/s
 Task 33: Ruling: the comparison table lists ôn thẻ, nhắc email, nhóm, phiên/ngày, câu AI, tra AI, quảng cáo with the same plan numbers; the year/month switch is a Segmented radio group — cost if wrong: table rows.
 Task 33: complete (commits 7b73c02..af88a5f, tests: pnpm --dir apps/web exec vitest run src/features/learner/plans →    Duration  2.70s (transform 428ms, setup 142ms, import 1.06s, tests 629ms, environment 714ms))
 Task 34: e2e found: Enter did nothing after a graded typed answer (focus stays in the read-only field) — PracticeSession test RED→GREEN, practice suite 49/49.
+Final M4: review M4 by a fresh reviewer (opus): 0 Critical, 3 Important, 11 Minor.
+Final M4: re-grade: Minor 6 (Esc in the answer field ends the session, no undo), Minor 7 (a right answer without a hint says "đúng nhờ gợi ý") and Minor 8 (two yellow buttons on K/64, Global Constraint) → Important.
+Final M4: fixed I-1 weak words table cells out of their columns from 768 px — m4.spec "weak words by deck" row order RED→GREEN (e2e 24/24)
+Final M4: fixed I-2 a changed press after a NetworkError reused the kept Idempotency-Key — use-submit-once "different payload gets a new one" + practice-session "new Idempotency-Key" RED→GREEN
+Final M4: fixed I-3 hero ignored today's new words (no start on a new-words-only day) — practice-home "only new words" RED→GREEN; Task 30 ruling on priority + due replaced (hero counts priority + due + new, as the API's today source)
+Final M4: fixed Esc in the answer field — practice-session "Esc in the answer field leaves the field first" RED→GREEN
+Final M4: fixed note blaming hints — practice-session "does not blame hints" RED→GREEN
+Final M4: fixed two yellow buttons on K/64 ([Kiểm tra] quiet while retrying) — practice-session "only [Làm lại] is yellow" RED→GREEN; web suite 461/461
+Final M4: minor (deferred): a reload during try_again loses the attempt counter and [Xem đáp án] until another wrong try
+Final M4: minor (deferred): a skip whose lost response landed gets already-answered without a result (generic error); item-void the same
+Final M4: minor (deferred): hint request failures are silent (row stays "Gợi ý N"), and the POST runs as a query with default retries
+Final M4: minor (deferred): a start pressed before GET current has loaded skips the K/77 question
+Final M4: minor (deferred): "Gần đây" shows only the clock time for older answers
+Final M4: minor (deferred): history day list steps by 24 h, can skip/repeat a local day around DST
+Final M4: minor (deferred): the question count field cannot be cleared while typing; role spinbutton without arrow keys
+Final M4: minor (deferred): English hint header has no count (design §7.1, kept as designed)

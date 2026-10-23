@@ -49,7 +49,7 @@ export function TypeWordInput({ outcome, onSubmit, disabled }: { outcome: Outcom
         {retry && <span className="absolute right-3 top-1/2 -translate-y-1/2 text-caption font-semibold text-danger">{t('attempt', { n: outcome.tries })}</span>}
       </div>
       {!final && (
-        <Button type="submit" variant="sticker" size="lg" className="px-8" isDisabled={!text.trim()} isPending={disabled}>
+        <Button type="submit" variant={retry ? 'quiet' : 'sticker'} size="lg" className="px-8" isDisabled={!text.trim()} isPending={disabled}>
           {t('check')}
         </Button>
       )}

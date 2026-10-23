@@ -197,7 +197,7 @@ export function usePracticeSession() {
     chosenRef.current = { itemId: item.item_id, body };
     setError(null);
     try {
-      const response = await answerOnce.submit();
+      const response = await answerOnce.submit(`${item.item_id}:${JSON.stringify(body)}`);
       if (!response) return;
       if (response.result === 'try_again') set({ kind: 'question', item: { ...item, state: 'try_again', tries: response.tries }, outcome: { kind: 'try_again', tries: response.tries } });
       else recordFinal(item, response, body);

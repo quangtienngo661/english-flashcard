@@ -47,8 +47,10 @@ export function PracticePage() {
 
   const quick = (source: Source, extra: Partial<StartBody> = {}): StartBody => ({ source, ...extra, types: [...RULE_TYPES], count });
 
-  const today = decks.reduce((sum, g) => sum + g.today.priority + g.today.due, 0);
-  const todayDecks = decks.filter((g) => g.today.priority + g.today.due > 0).length;
+  // The `today` source takes priority, due and today's new cards of every deck (as the review queue).
+  const todayWords = (g: (typeof decks)[number]) => g.today.priority + g.today.due + g.today.new;
+  const today = decks.reduce((sum, g) => sum + todayWords(g), 0);
+  const todayDecks = decks.filter((g) => todayWords(g) > 0).length;
   const priority = decks.reduce((sum, g) => sum + g.today.priority, 0);
   const priorityDecks = decks.filter((g) => g.today.priority > 0).length;
   const words = decks.reduce((sum, g) => sum + g.total, 0);

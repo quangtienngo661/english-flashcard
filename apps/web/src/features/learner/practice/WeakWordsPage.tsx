@@ -157,11 +157,11 @@ function WeakList({ words }: { words: WeakWord[] }) {
       <ul className="flex flex-col divide-y divide-border">
         {words.map((w) => (
           <li key={w.sense_id} className="grid grid-cols-2 gap-x-3 gap-y-1 py-3 md:grid-cols-12 md:items-center">
-            <span className="min-w-0 break-words text-ui font-semibold text-ink md:col-span-2">{w.lemma}</span>
-            <span className="text-right text-caption font-semibold text-danger md:order-none md:col-span-2 md:text-left">{t('wrongOf', { wrong: w.wrong, counted: w.counted })}</span>
-            <span className="col-span-2 min-w-0 break-words text-caption text-muted md:order-first md:col-span-4 md:col-start-3 md:text-ui md:text-ink">{w.meaning ?? '—'}</span>
-            <span className="text-caption text-ink md:col-span-2">{tStage(STAGE_KEYS[w.level] ?? 's0')}</span>
-            <span className="text-right text-caption text-muted md:col-span-2 md:text-left">
+            <span className="min-w-0 break-words text-ui font-semibold text-ink md:col-span-2 md:col-start-1 md:row-start-1">{w.lemma}</span>
+            <span className="text-right text-caption font-semibold text-danger md:col-span-2 md:col-start-7 md:row-start-1 md:text-left">{t('wrongOf', { wrong: w.wrong, counted: w.counted })}</span>
+            <span className="col-span-2 min-w-0 break-words text-caption text-muted md:col-span-4 md:col-start-3 md:row-start-1 md:text-ui md:text-ink">{w.meaning ?? '—'}</span>
+            <span className="text-caption text-ink md:col-span-2 md:col-start-9 md:row-start-1">{tStage(STAGE_KEYS[w.level] ?? 's0')}</span>
+            <span className="text-right text-caption text-muted md:col-span-2 md:col-start-11 md:row-start-1 md:text-left">
               {localDay(new Date(w.last_wrong_at), zone) === today ? t('today', { time: format.time(w.last_wrong_at) }) : format.date(w.last_wrong_at, 'dayMonth')}
             </span>
           </li>
