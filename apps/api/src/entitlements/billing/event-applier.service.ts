@@ -115,6 +115,10 @@ export class BillingEventApplier implements BillingApplyPort {
       return { outcome: 'ignored', refetch, endTrial: null };
     }
     const event = eventFromJson(row.payload);
+    // Review I2: a trial start is history only when it really started a trial (not denied, not a repeat for a live subscription).
+    const trialStart = event.type === 'subscription_started' && event.trialEndsAt !== null;
+    const record = (subscriptionId: string | null) =>
+      this.transactions.recordFromEvent(tx, event, { userId, subscriptionId, provider: row.provider });
 
     if (row.kind === 'additive') {
       const duplicate = await tx.billingEvent.findFirst({
@@ -127,7 +131,7 @@ export class BillingEventApplier implements BillingApplyPort {
       }
     } else if (sub !== null && orderDecision('state', row.occurredAt, sub.lastEventAt) === 'stale') {
       // A late plan_changed is still a charge: the history keeps it though the subscription keeps its newer state.
-      await this.transactions.recordFromEvent(tx, event, { userId, subscriptionId: sub.id, provider: row.provider });
+      if (!trialStart) await record(sub.id);
       await finish('stale', { userId, subscriptionId: sub.id });
       return { outcome: 'stale', refetch, endTrial: null };
     }
@@ -148,7 +152,7 @@ export class BillingEventApplier implements BillingApplyPort {
     const result = applyEvent(state, event, { now, graceDays, trialAllowed });
     if (result.log !== null) this.logger.info(result.log, { event_id: row.id, type: row.type, status: state?.status ?? 'none' });
     if (result.next === null) {
-      await this.transactions.recordFromEvent(tx, event, { userId, subscriptionId: sub?.id ?? null, provider: row.provider });
+      if (!trialStart) await record(sub?.id ?? null);
       await finish('applied', { userId });
       return { ...none, outcome: 'applied' };
     }
@@ -163,10 +167,10 @@ export class BillingEventApplier implements BillingApplyPort {
         data: { ...columns, userId, provider: row.provider, environment: row.environment, externalSubscriptionId: event.externalSubscriptionId },
       })
       : await tx.subscription.update({ where: { id: sub.id }, data: columns });
-    await this.transactions.recordFromEvent(tx, event, { userId, subscriptionId: written.id, provider: row.provider });
+    const trialStarted = startsTrial(state, event) && result.next.status === 'trialing';
+    if (!trialStart || (trialStarted && trialAllowed)) await record(written.id);
     await finish('applied', { userId, subscriptionId: written.id });
 
-    const trialStarted = startsTrial(state, event) && result.next.status === 'trialing';
     if (trialStarted && trialAllowed && result.next.trialEndsAt !== null) {
       await tx.entitlementNotice.createMany({
         data: [{

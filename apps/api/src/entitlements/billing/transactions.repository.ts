@@ -31,9 +31,15 @@ export type RecordContext = { userId: string; subscriptionId: string | null; pro
 /** Every paid subscription is Pro (Bước 5 design §5). */
 const PLAN = 'pro';
 
-function money(amount: number | null, currency: string | null): Pick<TransactionRow, 'amountMinor' | 'currency'> {
-  if (amount === null || currency === null) return { amountMinor: null, currency: null };
-  return { amountMinor: BigInt(toMinorUnits(amount, currency)), currency };
+/**
+ * Optional fields never fail the event (review I1, M1): a payload stored before these fields existed has neither key, and an
+ * amount that is negative or past what a number holds exactly is kept as "no amount".
+ */
+function money(amount: unknown, currency: unknown): Pick<TransactionRow, 'amountMinor' | 'currency'> {
+  if (typeof amount !== 'number' || typeof currency !== 'string' || !/^[A-Z]{3}$/.test(currency)) return { amountMinor: null, currency: null };
+  const minor = toMinorUnits(amount, currency);
+  if (!Number.isSafeInteger(minor) || minor < 0) return { amountMinor: null, currency: null };
+  return { amountMinor: BigInt(minor), currency };
 }
 
 /**

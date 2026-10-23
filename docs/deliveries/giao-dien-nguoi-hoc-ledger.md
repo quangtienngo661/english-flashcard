@@ -272,3 +272,14 @@ Final M4: minor (deferred): English hint header has no count (design §7.1, kept
   --transactions` gửi ba sự kiện cổng giả qua webhook thật (mua, gia hạn, hoàn tiền gia hạn) → 4 dòng (cùng lần cấp Pro); chạy lại bỏ qua.
 - Bộ ảnh `SHOTS_MILESTONE=m4b` (24 ảnh: danh sách và chi tiết × vi/en × sáng/tối × 390/1024/1440) trên API thật, app `:3001`.
 - Minor (để lại): ở 1440 cột "Kỳ được dùng" của dòng cấp gói xuống hai dòng ("23/10 –" / "22/11/2026") vì bảy cột chia đều.
+
+### Final M4b — reviewer (23/10/2026)
+
+- Reviewer mới (opus): 0 Critical, 2 Important, 5 Minor. Sửa một lượt, test trước (`test(api): reproduce the m4b review findings`), rồi sửa:
+  - I1: sự kiện lưu trước khi có `amount`/`currency` (không có hai khóa) làm `toMinorUnits` ném lỗi → cả sự kiện thất bại, gói không đổi. Giờ thiếu,
+    sai dạng, âm hoặc vượt số nguyên an toàn → không ghi tiền, sự kiện vẫn áp (gộp luôn M1).
+  - I2: lần dùng thử bị từ chối (B5E55) hoặc sự kiện bắt đầu dùng thử lặp cho subscription đang chạy vẫn ghi dòng "Dùng thử · Thành công". Giờ chỉ
+    ghi khi lần dùng thử thật sự bắt đầu.
+- Minor để lại: M2 hoàn tiền nhiều lần / hoàn tiền tới trước giao dịch gốc / hoàn tiền lại sau khi hủy hoàn tiền làm lệch trạng thái; M3 `page_token` tự
+  chế với id không phải uuid trả 500 thay vì 400, con trỏ chỉ giữ mili giây; M4 lần cấp bị thu hồi trước ngày bắt đầu hiện kỳ ngược; M5 admin: Từ ngày
+  sau Tới ngày báo lỗi chung, bấm Lọc lần hai không tải lại, nhãn gói cố định "Pro", `entitlement_grants` chưa có chỉ mục theo `created_at`.
