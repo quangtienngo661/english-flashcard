@@ -226,6 +226,13 @@ test.describe('M4 flows (mocked API)', () => {
     await signedInAs(page, 'free', practiceApi());
     await page.goto('/vi/app/practice/weak');
     await expect(page.getByRole('heading', { name: '4 từ hay sai' })).toBeVisible();
+    // M4 review: from 768 px each weak word is one table row, its cells on one line.
+    const row = page.getByRole('listitem').filter({ hasText: 'sai 3/5' });
+    const top = async (text: string) => (await row.getByText(text, { exact: true }).boundingBox())!.y;
+    if ((page.viewportSize()?.width ?? 0) >= 768) {
+      expect(Math.abs((await top('deploy')) - (await top('triển khai')))).toBeLessThan(8);
+      expect(Math.abs((await top('deploy')) - (await top('sai 3/5')))).toBeLessThan(8);
+    }
     await page.getByRole('button', { name: /Nhóm/ }).click();
     await page.getByRole('option', { name: 'Công nghệ · 2' }).click();
     await expect(page.getByRole('heading', { name: '2 từ trong nhóm Công nghệ' })).toBeVisible();

@@ -343,4 +343,12 @@ describe('English (design §7.1–§7.2)', () => {
     expect(await within(side).findByText('1/3 used')).toBeInTheDocument();
     expect(within(side).getByText('Free plan')).toBeInTheDocument();
   });
+
+  it('M4 review: a day with only new words still offers the start, and counts them', async () => {
+    const fresh = [deck(TECH, 'Công nghệ', 18, { priority: 0, due: 0, new: 5 })];
+    renderApp(<PracticePage />, { routes: routes({ 'GET /v1/groups': () => Response.json({ items: fresh }) }) });
+    const hero = await screen.findByRole('region', { name: 'Hôm nay' });
+    expect(await within(hero).findByText('5 từ trong 1 nhóm. 12 câu, trộn ba kiểu câu.')).toBeInTheDocument();
+    expect(within(hero).getByRole('button', { name: 'Bắt đầu 12 câu' })).toBeInTheDocument();
+  });
 });

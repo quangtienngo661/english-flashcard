@@ -116,4 +116,27 @@ describe('useSubmitOnce (E12–E14, Review Focus 1)', () => {
     expect(keys).toHaveLength(2);
     expect(keys[1]).not.toBe(keys[0]);
   });
+
+  it('M4 review: after a NetworkError the same payload reuses the key, a different payload gets a new one', async () => {
+    const keys: string[] = [];
+    let fail = true;
+    const fn = vi.fn(async (key: string) => {
+      keys.push(key);
+      if (fail) throw new NetworkError();
+      return 'ok';
+    });
+    const { result } = renderHook(() => useSubmitOnce(fn));
+    await act(async () => {
+      await result.current.submit('choice:0').catch(() => {});
+    });
+    await act(async () => {
+      await result.current.submit('choice:0').catch(() => {});
+    });
+    fail = false;
+    await act(async () => {
+      await result.current.submit('choice:1');
+    });
+    expect(keys[1]).toBe(keys[0]);
+    expect(keys[2]).not.toBe(keys[0]);
+  });
 });

@@ -326,4 +326,61 @@ describe('PracticeSession (K/60–K/67)', () => {
     await userEvent.keyboard('{Enter}');
     await waitFor(() => expect(posts(v.calls, `/v1/practice/sessions/${SESSION}/next`)).toHaveLength(1));
   });
+
+  it('M4 review: Esc in the answer field leaves the field first; it does not end the session', async () => {
+    const v = renderApp(<PracticeSession />, {
+      routes: routes({ 'GET /v1/practice/sessions/current': () => Response.json({ session: view({ asked: 6 }), item: typed(), preparing: false }) }),
+    });
+    const input = await screen.findByRole('textbox', { name: 'Câu trả lời' });
+    await userEvent.type(input, 'cac');
+    await userEvent.keyboard('{Escape}');
+    expect(input).not.toHaveFocus();
+    expect(posts(v.calls, `/v1/practice/sessions/${SESSION}/finish`)).toHaveLength(0);
+  });
+
+  it('M4 review: a right answer without a hint and without [Đã biết] does not blame hints', async () => {
+    renderApp(<PracticeSession />, {
+      routes: routes({ 'POST /v1/practice/items/item-4/answer': () => Response.json(result({ result: 'correct', show_known: false, highlight_needs_review: false, hint_level: 0 })) }),
+    });
+    await screen.findByText('triển khai');
+    await userEvent.keyboard('1');
+    expect(await screen.findByText('Đúng rồi')).toBeInTheDocument();
+    expect(screen.queryByText(/nhờ gợi ý/)).not.toBeInTheDocument();
+  });
+
+  it('M4 review: on a retry screen only [Làm lại] is yellow', async () => {
+    renderApp(<PracticeSession />, {
+      routes: routes({
+        'GET /v1/practice/sessions/current': () => Response.json({ session: view({ asked: 6 }), item: typed(), preparing: false }),
+        'POST /v1/practice/items/item-6/answer': () => Response.json({ result: 'try_again', tries: 1 }),
+      }),
+    });
+    await userEvent.type(await screen.findByRole('textbox', { name: 'Câu trả lời' }), 'cash{Enter}');
+    await screen.findByRole('button', { name: /Làm lại/ });
+    const yellow = screen.getAllByRole('button').filter((b) => b.getAttribute('data-variant') === 'sticker');
+    expect(yellow.map((b) => b.textContent)).toEqual(['Làm lạiEnter']);
+  });
+
+  it('M4 review: changing the choice after a lost answer sends a new Idempotency-Key', async () => {
+    let first = true;
+    const v = renderApp(<PracticeSession />, {
+      routes: routes({
+        'POST /v1/practice/items/item-4/answer': () => {
+          if (first) {
+            first = false;
+            throw new TypeError('network');
+          }
+          return Response.json(result());
+        },
+      }),
+    });
+    await screen.findByText('triển khai');
+    await userEvent.keyboard('1');
+    expect(await screen.findByRole('alert')).toBeInTheDocument();
+    await userEvent.keyboard('2');
+    await screen.findByText('Chưa đúng');
+    const keys = posts(v.calls, '/v1/practice/items/item-4/answer').map((c) => c.headers['Idempotency-Key']);
+    expect(keys).toHaveLength(2);
+    expect(keys[1]).not.toBe(keys[0]);
+  });
 });
