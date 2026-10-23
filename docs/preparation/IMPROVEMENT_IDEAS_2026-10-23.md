@@ -4,7 +4,8 @@
 của plan `docs/superpowers/plans/2026-10-22-giao-dien-nguoi-hoc.md`). Khi chọn một mục, mục đó đi qua quy trình thường: brainstorm → design →
 decision record → plan.
 
-Nguồn: đánh giá của Claude ngày 23/10/2026 trên `dev` @ `39f25c6` (M1–M5a đã merge), từ góc nhìn người học và giáo viên. Đối chiếu với design các
+Nguồn: đánh giá của Claude ngày 23/10/2026 trên `dev` @ `39f25c6` (M1–M5a đã merge), từ góc nhìn người học và giáo viên; bổ sung cùng ngày
+§1.3–§1.4 (đánh giá tổng thể, giả sử app hoàn thiện) và §5 (cách làm dự án). Đối chiếu với design các
 bước, [`APP_REFERENCES_FUTURE_IDEAS_2026-10-19.md`](APP_REFERENCES_FUTURE_IDEAS_2026-10-19.md) (ý tưởng I1–I13),
 [`COMPETITOR_ANALYSIS_AI_ENGLISH_APPS_2026-09-30.md`](COMPETITOR_ANALYSIS_AI_ENGLISH_APPS_2026-09-30.md) và
 [`SURVEY_ANALYSIS_2026-09-30.md`](SURVEY_ANALYSIS_2026-09-30.md). **Chưa có dữ liệu người dùng thật**: mọi nhận định dưới đây là giả thuyết, cần đo.
@@ -32,6 +33,21 @@ thông (ChatGPT Study Mode, Gemini).
 - Chưa dùng được để dạy: không có lớp, mã lớp, bộ từ chia sẻ, giao bài, hay theo dõi học sinh yếu từ nào. Admin hiện là công cụ soạn nội dung.
 - Giáo viên và trung tâm là kênh có người dùng rẻ ở Việt Nam (B2B2C); hiện chưa khai thác.
 
+### 1.3 Đánh giá tổng thể (không theo góc nhìn cụ thể)
+
+- **Kỹ thuật mạnh:** quy ước API, edge case, kiểm thử, ranh giới module đều ở mức của sản phẩm thật.
+- **Điểm khác biệt mỏng và chưa kiểm chứng:** luyện dùng từ trong câu bằng AI là lý do tồn tại, nhưng chưa có một lần gọi AI thật và
+  nằm sau gói trả phí.
+- **Thứ tự đầu tư lệch:** billing, trial, email gia hạn, lịch sử giao dịch, cấu hình AI cho admin đã xong trước khi có người dùng nào.
+
+### 1.4 Giả sử app hoàn thiện hết (đủ Bước 8, web + điện thoại, đã deploy)
+
+- **Sản phẩm: khoảng 7/10.** Đủ vòng thêm từ → ôn → luyện dùng từ, minh bạch về lượt và gói; thiếu âm thanh, động lực, lớp học (§2).
+- **Thương mại: khoảng 4–5/10 nếu chưa có kênh tiếp cận người dùng.** Người học từ vựng tiếng Anh ở Việt Nam đã có Quizlet, Anki, app nội
+  địa và AI chat miễn phí; sản phẩm tốt hơn một chút không tự có người dùng.
+- **Yếu tố quyết định là phân phối**, không phải thêm tính năng: giáo viên và trung tâm (C9), nội dung theo kỳ thi (C7), cộng đồng tự học.
+  Nên chọn và thử một kênh trước khi launch.
+
 ## 2. Danh sách cải thiện (xếp theo hiệu quả trên chi phí)
 
 | # | Đề xuất | Vì sao | Chi phí, chạm quyết định nào |
@@ -49,6 +65,7 @@ thông (ChatGPT Study Mode, Gemini).
 
 ## 3. Đề xuất thứ tự
 
+0. **Trước Bước 8 (đề xuất, §5):** C10 phần gọi AI thật, và cho 5–10 người học thật dùng bản hiện tại.
 1. **Làm ngay sau M5b (rẻ, không tốn AI, tăng giá trị hằng ngày):** C1, C3, C2.
 2. **Cần chủ dự án chốt về sản phẩm và chi phí trước:** C4, C5.
 3. **Trước khi tìm người dùng thật:** C10, C6, C7.
@@ -62,3 +79,34 @@ thông (ChatGPT Study Mode, Gemini).
 - C4: bao nhiêu lượt mỗi ngày, kho riêng hay chung với Dùng thử, ảnh hưởng chi phí dự kiến?
 - C5: chấm theo tiêu chí nào (đúng nghĩa của từ, ngữ pháp, tự nhiên), và câu bị chấm sai thì người học khiếu nại thế nào?
 - C9: giáo viên có cần gói riêng không, học sinh dưới 13 tuổi thì sao (luật tuổi từ đợt sửa Bước 0–3)?
+- Phân phối (§1.4): thử kênh nào trước (giáo viên, nhóm luyện thi, cộng đồng tự học), và bao giờ?
+
+## 5. Cách làm dự án (đánh giá 23/10/2026)
+
+Claude đánh giá cách chủ dự án triển khai từ 05/10 đến 23/10/2026, dựa trên tài liệu, quyết định và PR. Claude không thấy những gì chưa được viết
+ra, và phần lớn tài liệu do AI viết theo chỉ đạo của chủ dự án.
+
+**Mạnh**
+- Quy trình (design → decision record → plan → TDD → reviewer → CI) được giữ đều qua 7 bước và đợt sửa, dù làm một mình.
+- Đổi ý khi lý do cũ hết đúng: Drizzle → Prisma, bỏ e2e API (D38 Bước 4), bỏ nhánh `documents`, dời deploy về trước launch.
+- Dùng AI có kiểm chéo (một model viết, một model khác review, Claude chạy lại); kỷ luật git và secret chặt.
+- Tư duy hệ thống tốt: idempotency, Problem Details, ngày theo múi giờ người dùng, advisory lock, ranh giới module, log không chứa dữ liệu nhạy cảm;
+  quy ước bắt mỗi design viết When → Then riêng (`SPEC_WRITING_CONVENTIONS.md`).
+- Handoff và ledger giữ được mạch giữa các phiên.
+
+**Rủi ro**
+- Tối ưu "xây đúng cách" trước "xây đúng thứ": chưa người dùng thật, chưa gọi AI thật (§1.3).
+- Cơ chế giữ hiểu biết bị nới dần: phần code do chủ dự án tự viết chưa áp dụng lần nào (D14 Bước 3, D27 Bước 4), từ 23/10/2026 bỏ cả bước duyệt
+  hình. Chủ dự án hiểu hành vi (qua bảng ví dụ) nhiều hơn hiểu code; chỗ hở khi có sự cố lúc chạy thật.
+- Quy trình nặng như nhau cho mọi việc; CLAUDE.md và docs phình nhanh; spec V1 viết kỹ rồi hạ thành khung.
+- Phạm vi chỉ tăng, chưa có mốc "đủ để cho người khác dùng thử".
+
+**Đề xuất (chưa quyết định)**
+
+| # | Đề xuất |
+|---|---|
+| P1 | Trước Bước 8: một lần gọi AI thật bằng khóa của chủ dự án và 5–10 người học thật; cân nhắc deploy bản tối giản sớm hơn mốc "app hoàn chỉnh" |
+| P2 | Giữ một cơ chế hiểu biết nhẹ: mỗi milestone chủ dự án tự đọc và giải thích lại một luồng (vd. `Idempotency-Key`, trừ lượt AI) hoặc tự sửa một lỗi nhỏ không nhờ AI, khoảng 30 phút |
+| P3 | Quy trình theo mức rủi ro: tiền, dữ liệu, bảo mật giữ đủ; giao diện và nội dung nhẹ hơn (ledger ngắn, bớt ảnh chụp) |
+| P4 | Chốt bản cắt cho launch: danh sách phải có / để sau V1, dùng để từ chối việc mới |
+| P5 | Dọn tài liệu định kỳ: CLAUDE.md chỉ giữ trạng thái hiện tại và con trỏ, chi tiết sang `docs/deliveries/` |
