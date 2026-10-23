@@ -170,3 +170,9 @@ Task 31: Ruling: [Luyện thêm một phiên] starts a session with the ended se
 Task 31: Ruling: progress segments colour only answers seen on this page; earlier ones after a reload are grey "done" — cost if wrong: an API field per item.
 Task 31: Ruling: hint texts are read with POST …/hint as queries (the API only raises the level), so a reload shows opened hints again — cost if wrong: one extra request per opened hint after a reload.
 Task 31: Ruling: Button carries data-variant (tests read which button is the yellow one) — cost if wrong: none.
+Task 31: complete (commits 10f98bd..1b24ed0, tests: pnpm --dir apps/web exec vitest run src/features/learner/practice →    Duration  10.00s (transform 1.10s, setup 284ms, import 2.49s, tests 9.72s, environment 1.33s))
+Task 32: Ruling: the start flow (K/77, K/55, practice-no-words, customise dialog) moved from PracticePage into usePracticeStarter, so Từ hay sai starts the same way — cost if wrong: none (Task 30 tests still green).
+Task 32: Ruling: K/56 "5 câu gần nhất" shows "sai x/y" without the five dots (the API gives wrong/counted, not the order of the last five) — cost if wrong: an API field.
+Task 32: Ruling: K/57's "Lọc theo một từ" dropped (history takes sense_id only, no text); the day filter lists all days, today and the 6 days before, in the learner's zone; "cash, rồi bỏ qua" shows the stored answer and the result chip "Sai · bỏ qua" (earlier tries are not in the API); counts chips only once every page is loaded — cost if wrong: a search field + API.
+Task 32: Ruling: my reports have no lemma; each row reads GET /v1/senses/{id} (cached), a sense no longer shown → "—" — cost if wrong: one read per report row (page of 20).
+Task 32: Ruling: the tab is kept in ?tab= by history.replaceState (no navigation, the page is a static shell) — cost if wrong: none.

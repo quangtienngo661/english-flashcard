@@ -1066,6 +1066,114 @@
           "home": "Về Luyện tập",
           "again": "Luyện thêm một phiên"
         }
+      },
+      "weak": {
+        "title": "Từ hay sai",
+        "back": "Luyện tập",
+        "group": "Nhóm",
+        "all": "Tất cả nhóm · {count}",
+        "deckOption": "{name} · {count}",
+        "titleAll": "{count} từ hay sai",
+        "titleGroup": "{count} từ trong nhóm {name}",
+        "cols": {
+          "word": "Từ",
+          "meaning": "Nghĩa",
+          "recent": "5 câu gần nhất",
+          "stage": "Ngăn",
+          "last": "Sai gần nhất"
+        },
+        "wrongOf": "sai {wrong}/{counted}",
+        "today": "{time} hôm nay",
+        "more": "Xem thêm",
+        "emptyTitle": "Chưa có từ nào hay sai.",
+        "emptyBody": "Từ bạn sai 2 lần trong 5 câu gần nhất sẽ hiện ở đây.",
+        "cardChip": "Luyện từ hay sai",
+        "cardCount": "{count} từ",
+        "cardBody": "Ngăn thấp trước, trộn ba kiểu câu. Đúng 4 lần liền là từ rời danh sách.",
+        "start": "Luyện {count} từ",
+        "startGroup": "Luyện {count} từ của nhóm {name}",
+        "customize": "Tùy chỉnh",
+        "rulesTitle": "Từ vào và rời danh sách thế nào?",
+        "rules": {
+          "in": "Vào: sai 2 lần trong 5 câu gần nhất, ở mọi kiểu câu.",
+          "skip": "Không tính: câu đúng nhờ gợi ý, và câu bạn đã báo lỗi mà đội Wordmet đang xem, đã sửa hoặc đã xác nhận lỗi.",
+          "out": "Rời: khi 5 câu gần nhất còn dưới 2 câu sai.",
+          "removed": "Từ bạn đã bỏ khỏi việc học không nằm ở đây."
+        },
+        "reopens": "Hết phiên luyện hôm nay. Mở lại lúc {time}."
+      },
+      "history": {
+        "title": "Lịch sử luyện tập",
+        "back": "Luyện tập",
+        "tabs": {
+          "answers": "Câu đã làm",
+          "reports": "Báo lỗi của tôi"
+        },
+        "day": "Ngày",
+        "allDays": "Mọi ngày",
+        "today": "Hôm nay, {date}",
+        "yesterday": "Hôm qua, {date}",
+        "counts": {
+          "total": "{count} câu",
+          "correct": "{count} đúng",
+          "wrong": "{count} sai"
+        },
+        "cols": {
+          "time": "Giờ",
+          "word": "Từ",
+          "type": "Kiểu câu",
+          "prompt": "Đề",
+          "answer": "Bạn trả lời",
+          "correct": "Đáp án",
+          "result": "Kết quả",
+          "action": "Đã bấm"
+        },
+        "typeStyle": "{type} · {style}",
+        "styles": {
+          "meaning": "theo nghĩa",
+          "sentence": "theo câu"
+        },
+        "result": {
+          "correct": "Đúng",
+          "wrong": "Sai",
+          "skipped": "Sai · bỏ qua",
+          "hinted": "Đúng · có gợi ý",
+          "retried": "Đúng · lần {n}"
+        },
+        "actions": {
+          "needs_review": "Cần ôn lại",
+          "known": "Đã biết"
+        },
+        "none": "—",
+        "more": "Xem thêm",
+        "true": "Đúng",
+        "false": "Sai",
+        "emptyTitle": "Bạn chưa làm câu nào.",
+        "emptyBody": "Làm một phiên luyện, các câu bạn đã làm sẽ hiện ở đây.",
+        "emptyDay": "Ngày này bạn chưa làm câu nào.",
+        "toPractice": "Về Luyện tập"
+      },
+      "reports": {
+        "cols": {
+          "word": "Từ",
+          "reason": "Lý do",
+          "date": "Ngày gửi",
+          "status": "Kết quả"
+        },
+        "status": {
+          "open": "Đang xem",
+          "fixed": "Đã sửa",
+          "no_error": "Không có lỗi",
+          "confirmed": "Đã xác nhận lỗi"
+        },
+        "refunded": "Đã trả lại 1 lượt câu AI",
+        "refunding": "Đang trả lại 1 lượt câu AI",
+        "notRefundable": "Lượt câu AI này không trả lại được",
+        "emptyTitle": "Bạn chưa báo lỗi câu nào.",
+        "emptyBody": "Gặp câu sai khi luyện tập, bấm Báo lỗi ngay trên câu đó. Kết quả hiện ở đây.",
+        "toPractice": "Về Luyện tập",
+        "unknownWord": "—",
+        "more": "Xem thêm"
       }
     }
   }

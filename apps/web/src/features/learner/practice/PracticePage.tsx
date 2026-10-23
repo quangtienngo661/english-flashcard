@@ -3,97 +3,49 @@
 import { CircleCheck, CircleX, Folder, Layers, Star, Target } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import Link from 'next/link';
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import { AppShell } from '@/app-chrome/AppShell';
 import { PageTitle } from '@/app-chrome/PageTitle';
-import { ApiError } from '@/app-shell/api/problem';
 import { useErrorMessage } from '@/app-shell/api/use-error-message';
 import { useFormat } from '@/app-shell/format';
-import { hardReplace } from '@/app-shell/navigate';
 import { useAppConfig, useEntitlements, type Plan, type Pool } from '@/app-shell/queries';
-import { useSubmitOnce } from '@/app-shell/use-submit-once';
 import { ErrorState, FullScreenSpinner } from '@/app-ui/States';
 import { cn } from '@/lib/cn';
-import { sortForToday } from '../groups/GroupCard';
 import { useGroups } from '../groups/groups-api';
-import { CurrentSessionCard, ResumeDialog } from './CurrentSessionCard';
-import { CustomizeDialog, type CustomizeTarget } from './CustomizeDialog';
+import { CurrentSessionCard } from './CurrentSessionCard';
 import { answerSummary } from './history-format';
 import { OutOfSessions } from './OutOfSessions';
 import { TodayHero } from './PracticeHero';
 import { CHIP, SourceCard } from './SourceCard';
-import { RULE_TYPES, useCurrentSession, useRecentHistory, useStartSession, useWeakGroups, useWeakPreview, type Source, type StartBody } from './practice-api';
+import { usePracticeStarter } from './use-practice-starter';
+import { RULE_TYPES, useRecentHistory, useWeakGroups, useWeakPreview, type Source, type StartBody } from './practice-api';
 
-type Origin = Source | 'hero' | 'dialog';
-type Request = { origin: Origin; body: StartBody };
-const NO_WORDS_REASONS = ['group-empty', 'source-empty', 'no-word-fits-types'] as const;
+type Origin = Exclude<Source, 'today'> | 'hero';
+const ORIGINS: Origin[] = ['hero', 'group', 'weak', 'priority', 'all'];
 const DECK_CHIPS = 4;
 
 /** K/51 (K/55 when no session is left, K/77 before replacing an open session): `/app/practice`. */
 export function PracticePage() {
   const t = useTranslations('App.practice');
   const locale = useLocale();
-  const format = useFormat();
   const errorText = useErrorMessage();
   const groups = useGroups();
   const config = useAppConfig();
   const entitlements = useEntitlements();
-  const current = useCurrentSession();
   const weakGroups = useWeakGroups();
   const weakPreview = useWeakPreview(2);
-  const start = useStartSession();
-
+  const starter = usePracticeStarter<Origin>();
+  const { request, current, decks, out, reopensAt } = starter;
   const [deckId, setDeckId] = useState<string | null>(null);
-  const [customize, setCustomize] = useState<CustomizeTarget | null>(null);
-  const [asking, setAsking] = useState<Request | null>(null);
-  const [errors, setErrors] = useState<Partial<Record<Origin, string>>>({});
-  const [refusedAt, setRefusedAt] = useState<string | null>(null);
-  const [origin, setOrigin] = useState<Origin | null>(null);
-  const requestRef = useRef<Request | null>(null);
-  const { submit, busy } = useSubmitOnce(async (key) => {
-    await start(requestRef.current!.body, key);
-    hardReplace(`/${locale}/app/practice/session`);
-    return true;
-  });
-
-  const decks = sortForToday(groups.data?.items ?? []);
   const deck = decks.find((g) => g.id === deckId) ?? decks[0];
   const count = config.data?.practice.default_questions_per_session ?? 10;
   const pool = entitlements.data?.pools.practice_sessions;
   const plan = entitlements.data?.plan;
-  const out = refusedAt !== null || (pool !== undefined && pool.limit > 0 && pool.remaining === 0);
-  const resetsAt = pool?.resets_at ?? refusedAt;
-  const reopensAt = out && resetsAt ? format.resetAt(resetsAt) : null;
+  const setCustomize = starter.customize;
+  const errors: Partial<Record<Origin, string>> = Object.fromEntries(ORIGINS.map((o) => [o, starter.error(o) ?? undefined]));
+  const pending = starter.pending;
 
-  async function run(request: Request) {
-    requestRef.current = request;
-    setOrigin(request.origin);
-    setErrors({});
-    try {
-      await submit();
-    } catch (error) {
-      setAsking(null);
-      if (error instanceof ApiError && error.problem.slug === 'quota-exhausted') {
-        // E25: the page turns into K/55.
-        setCustomize(null);
-        const at = error.problem.extensions?.resets_at;
-        setRefusedAt(typeof at === 'string' ? at : '');
-        return;
-      }
-      const reason = error instanceof ApiError && error.problem.slug === 'practice-no-words' ? error.problem.extensions?.reason : undefined;
-      const known = NO_WORDS_REASONS.find((r) => r === reason);
-      setErrors({ [request.origin]: known ? t(`noWords.${known}`) : errorText(error) });
-    }
-  }
-
-  /** E35: an open session is confirmed first (K/77); otherwise the start goes out at once. */
-  function request(from: Origin, body: StartBody) {
-    if (busy) return;
-    if (current.data) setAsking({ origin: from, body });
-    else void run({ origin: from, body });
-  }
   const quick = (source: Source, extra: Partial<StartBody> = {}): StartBody => ({ source, ...extra, types: [...RULE_TYPES], count });
-  const pending = (from: Origin) => busy && origin === from;
 
   const today = decks.reduce((sum, g) => sum + g.today.priority + g.today.due, 0);
   const todayDecks = decks.filter((g) => g.today.priority + g.today.due > 0).length;
@@ -248,24 +200,7 @@ export function PracticePage() {
           <Shortcuts />
         </aside>
       </div>
-      <CustomizeDialog
-        target={customize}
-        onClose={() => setCustomize(null)}
-        groups={decks}
-        onStart={(b) => request('dialog', b)}
-        busy={pending('dialog')}
-        error={errors.dialog ?? null}
-        outLine={out && reopensAt ? t('usage.outShort', { time: reopensAt }) : null}
-      />
-      <ResumeDialog
-        current={current.data ?? null}
-        groups={decks}
-        isOpen={asking !== null}
-        onClose={() => setAsking(null)}
-        onResume={() => hardReplace(`/${locale}/app/practice/session`)}
-        onStartNew={() => asking && void run(asking)}
-        busy={busy}
-      />
+      {starter.dialogs}
     </AppShell>
   );
 }

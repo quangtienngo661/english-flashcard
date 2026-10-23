@@ -73,7 +73,7 @@ export type HistoryItem = {
   lemma: string;
   type: QuestionType;
   prompt_style: string;
-  prompt: { kind: string; options?: string[] };
+  prompt: { kind: string; options?: string[]; meaning?: string; lemma?: string; sentence?: string };
   answer: string | null;
   correct: { lemma: string; text: string; choice_index: number | null; is_true: boolean | null };
   result: 'correct' | 'wrong';
@@ -148,3 +148,15 @@ export function useStartSession() {
 export function doneCount(current: CurrentSession): number {
   return Math.max(0, current.session.asked - (current.item ? 1 : 0));
 }
+
+/** `GET /v1/practice/reports` row (D27 Bước 7): `refunded` says what became of the AI credit. */
+export type MyReport = {
+  id: string;
+  item_id: string;
+  sense_id: string;
+  reason_label: string;
+  status: 'open' | 'no_error' | 'fixed' | 'confirmed';
+  refunded: boolean | null;
+  created_at: string;
+  resolved_at: string | null;
+};

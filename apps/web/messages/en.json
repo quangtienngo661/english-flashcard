@@ -1066,6 +1066,114 @@
           "home": "Back to Practice",
           "again": "Practice another session"
         }
+      },
+      "weak": {
+        "title": "Weak words",
+        "back": "Practice",
+        "group": "Deck",
+        "all": "All decks · {count}",
+        "deckOption": "{name} · {count}",
+        "titleAll": "{count, plural, one {# weak word} other {# weak words}}",
+        "titleGroup": "{count, plural, one {# word} other {# words}} in the {name} deck",
+        "cols": {
+          "word": "Word",
+          "meaning": "Meaning",
+          "recent": "Last 5 questions",
+          "stage": "Stage",
+          "last": "Last wrong"
+        },
+        "wrongOf": "wrong {wrong}/{counted}",
+        "today": "{time} today",
+        "more": "Show more",
+        "emptyTitle": "No weak words yet.",
+        "emptyBody": "Words you get wrong twice in your last 5 questions show up here.",
+        "cardChip": "Practice weak words",
+        "cardCount": "{count, plural, one {# word} other {# words}}",
+        "cardBody": "Lowest stage first, all three question types. Four right in a row and a word leaves the list.",
+        "start": "Practice {count, plural, one {# word} other {# words}}",
+        "startGroup": "Practice {count, plural, one {# word} other {# words}} from {name}",
+        "customize": "Customize",
+        "rulesTitle": "How do words join and leave this list?",
+        "rules": {
+          "in": "Joins: wrong twice in the last 5 questions, any question type.",
+          "skip": "Not counted: right answers after a hint, and questions you reported that the Wordmet team is checking, fixed, or confirmed.",
+          "out": "Leaves: when fewer than 2 of the last 5 questions are wrong.",
+          "removed": "Words you stopped learning aren't listed."
+        },
+        "reopens": "No sessions left today. Resets at {time}."
+      },
+      "history": {
+        "title": "Practice history",
+        "back": "Practice",
+        "tabs": {
+          "answers": "Answered",
+          "reports": "My reports"
+        },
+        "day": "Day",
+        "allDays": "All days",
+        "today": "Today, {date}",
+        "yesterday": "Yesterday, {date}",
+        "counts": {
+          "total": "{count, plural, one {# question} other {# questions}}",
+          "correct": "{count} right",
+          "wrong": "{count} wrong"
+        },
+        "cols": {
+          "time": "Time",
+          "word": "Word",
+          "type": "Type",
+          "prompt": "Question",
+          "answer": "Your answer",
+          "correct": "Answer",
+          "result": "Result",
+          "action": "Marked"
+        },
+        "typeStyle": "{type} · {style}",
+        "styles": {
+          "meaning": "meaning",
+          "sentence": "sentence"
+        },
+        "result": {
+          "correct": "Right",
+          "wrong": "Wrong",
+          "skipped": "Wrong · skipped",
+          "hinted": "Right · with hint",
+          "retried": "Right · try {n}"
+        },
+        "actions": {
+          "needs_review": "Still learning",
+          "known": "Know"
+        },
+        "none": "—",
+        "more": "Show more",
+        "true": "True",
+        "false": "False",
+        "emptyTitle": "No questions answered yet.",
+        "emptyBody": "Do a practice session and your answers show up here.",
+        "emptyDay": "No questions answered that day.",
+        "toPractice": "Back to Practice"
+      },
+      "reports": {
+        "cols": {
+          "word": "Word",
+          "reason": "Reason",
+          "date": "Sent",
+          "status": "Outcome"
+        },
+        "status": {
+          "open": "Under review",
+          "fixed": "Fixed",
+          "no_error": "No error found",
+          "confirmed": "Error confirmed"
+        },
+        "refunded": "1 AI credit returned",
+        "refunding": "Returning 1 AI credit",
+        "notRefundable": "This AI credit can't be returned",
+        "emptyTitle": "You haven't reported any questions.",
+        "emptyBody": "If a question looks wrong during practice, choose Report on it. The outcome shows up here.",
+        "toPractice": "Back to Practice",
+        "unknownWord": "—",
+        "more": "Show more"
       }
     }
   }
