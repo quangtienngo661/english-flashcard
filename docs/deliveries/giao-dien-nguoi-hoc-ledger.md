@@ -180,3 +180,5 @@ Task 32: complete (commits 1b24ed0..7b73c02, tests: pnpm --dir apps/web exec vit
 Task 33: Ruling: "tới hết {date}" shows the day before an end at local midnight (ends_at − 1 ms), so a grant ending at the start of 1/1 reads "31/12" — cost if wrong: one day off for an end at noon (none seen).
 Task 33: Ruling: Trial and Pro by subscription (not drawn) get their own title/subtitle: "Bạn đang dùng thử gói Pro" / "Dùng thử tới hết …", "Gói Pro gia hạn vào …" / "… dùng tới hết …, không tự gia hạn" — cost if wrong: two strings.
 Task 33: Ruling: the comparison table lists ôn thẻ, nhắc email, nhóm, phiên/ngày, câu AI, tra AI, quảng cáo with the same plan numbers; the year/month switch is a Segmented radio group — cost if wrong: table rows.
+Task 33: complete (commits 7b73c02..af88a5f, tests: pnpm --dir apps/web exec vitest run src/features/learner/plans →    Duration  2.70s (transform 428ms, setup 142ms, import 1.06s, tests 629ms, environment 714ms))
+Task 34: e2e found: Enter did nothing after a graded typed answer (focus stays in the read-only field) — PracticeSession test RED→GREEN, practice suite 49/49.
