@@ -402,6 +402,23 @@ describe('BillingEventApplier.apply (design §9.2 step 4, §9.4)', () => {
     expect(recorded).toEqual([{ type: 'plan_changed', ctx: { userId: USER, subscriptionId: sub.id, provider: 'fake' }, inTx: true }]);
   });
 
+  it('review I2: a denied trial, or a trial start for a live subscription, writes no "Dùng thử" row; an allowed trial writes one', async () => {
+    const denied = setup({ endTrial: true });
+    denied.db.trials.push({ userId: USER, provider: 'fake', paymentFingerprint: null });
+    await denied.applier.apply(addEvent(denied.db, 'subscription_started', trialStart));
+    expect(denied.recorded).toEqual([]);
+
+    const again = setup();
+    addSub(again.db, { status: 'trialing', trialEndsAt: at('2026-11-22T10:00:00.000Z') });
+    await again.applier.apply(addEvent(again.db, 'subscription_started', trialStart));
+    await again.applier.apply(addEvent(again.db, 'subscription_started', { ...trialStart, occurredAt: '2026-11-10T10:00:00.000Z' }));
+    expect(again.recorded).toEqual([]);
+
+    const allowed = setup();
+    await allowed.applier.apply(addEvent(allowed.db, 'subscription_started', trialStart));
+    expect(allowed.recorded.map((r) => r.type)).toEqual(['subscription_started']);
+  });
+
   it('B5E55/B5#28: a trial for a user with history → trial_denied, endTrialNow after commit, no trial_started notice', async () => {
     const { db, applier, logs } = setup({ endTrial: true });
     db.trials.push({ userId: USER, provider: 'fake', paymentFingerprint: null });

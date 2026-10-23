@@ -132,6 +132,20 @@ describe('TransactionsRepository.recordFromEvent (design §8.9)', () => {
     expect(tx.rows.map((r) => [r.amountMinor, r.currency])).toEqual([[null, null], [null, null]]);
   });
 
+  it('review I1/M1: a payload stored before amount/currency existed, or an amount out of range, records no money and does not throw', async () => {
+    const tx = new FakeTx();
+    const old = renewed('tx-old') as Record<string, unknown>;
+    delete old.amount;
+    delete old.currency;
+    await record(tx, old as NormalizedEvent);
+    await record(tx, { ...common, type: 'refunded', occurredAt: at('2026-10-16T00:00:00Z'), transactionId: 'tx-old', amount: 99000 } as NormalizedEvent);
+    await record(tx, renewed('tx-huge', { amount: 1e20, currency: 'VND' }));
+    await record(tx, renewed('tx-negative', { amount: -5, currency: 'VND' }));
+    expect(tx.rows.map((r) => [r.kind, r.amountMinor, r.currency])).toEqual([
+      ['renewal', null, null], ['refund', null, null], ['renewal', null, null], ['renewal', null, null],
+    ]);
+  });
+
   it('other event types write nothing', async () => {
     const tx = new FakeTx();
     await record(tx, { ...common, type: 'expired', occurredAt: at('2026-10-16T00:00:00Z') } as NormalizedEvent);
