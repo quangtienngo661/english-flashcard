@@ -10,6 +10,7 @@ import { useErrorMessage } from '@/app-shell/api/use-error-message';
 import { useApi } from '@/app-shell/session/session-context';
 import { Button } from '@/app-ui/Button';
 import { EmptyState, ErrorState, FullScreenSpinner } from '@/app-ui/States';
+import { useAddWord } from '../add-word/add-word-context';
 import type { WordRow } from '../lookup/lookup-api';
 import { FormsLine } from './FormsLine';
 import { LearningBlock } from './LearningBlock';
@@ -33,7 +34,7 @@ export function WordPage() {
       aside={page.data ? <WordAside data={page.data} /> : undefined}
     >
       {notFound ? (
-        <EmptyState title={t('notFoundTitle', { word: raw })} body={t('notFoundBody')} action={<Button variant="sticker">{t('addThis')}</Button>} />
+        <EmptyState title={t('notFoundTitle', { word: raw })} body={t('notFoundBody')} action={<AddThis word={raw} />} />
       ) : page.data ? (
         <WordBody data={page.data} />
       ) : page.isError ? (
@@ -120,5 +121,15 @@ function SameTopic({ topic, lemma }: { topic: PageSense['topics'][number]; lemma
         ))}
       </div>
     </section>
+  );
+}
+
+function AddThis({ word }: { word: string }) {
+  const t = useTranslations('App.word');
+  const { open } = useAddWord();
+  return (
+    <Button variant="sticker" onPress={() => open(word)}>
+      {t('addThis')}
+    </Button>
   );
 }

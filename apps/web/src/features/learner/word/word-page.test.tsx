@@ -134,7 +134,7 @@ describe('WordPage (K/31–K/33, M/41)', () => {
     expect(await screen.findByRole('button', { name: '2 câu đã gặp' })).toBeInTheDocument();
   });
 
-  it('"Thêm vào nhóm" on a meaning not learned yet adds it to the chosen deck', async () => {
+  it('"Thêm vào nhóm" on a meaning not learned yet opens K/42 and adds it to the chosen deck', async () => {
     const { calls } = renderApp(
       <>
         <WordPage />
@@ -144,8 +144,9 @@ describe('WordPage (K/31–K/33, M/41)', () => {
     );
     const adjective = (await screen.findAllByRole('article'))[0];
     await userEvent.click(within(adjective).getByRole('button', { name: 'Thêm vào nhóm' }));
-    const dialog = await screen.findByRole('dialog', { name: 'Thêm “left” vào nhóm' });
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Thêm vào nhóm' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Lưu vào nhóm' });
+    await userEvent.click(within(dialog).getAllByRole('radio', { name: /IELTS/ })[0]);
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Lưu vào IELTS' }));
     await waitFor(() => expect(calls.find((c) => c.method === 'POST' && c.path === `/v1/groups/${G}/items`)?.body).toEqual({ sense_id: uuid(1) }));
     expect(await screen.findByText('Đã thêm “left” vào nhóm “IELTS”.')).toBeInTheDocument();
   });

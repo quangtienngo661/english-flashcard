@@ -4,6 +4,7 @@ import { ChevronLeft, Plus } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { Suspense, type ReactNode } from 'react';
+import { AddWordProvider, useAddWord } from '@/features/learner/add-word/add-word-context';
 import { cn } from '@/lib/cn';
 import { AppFooter } from './AppFooter';
 import { AvatarMenu } from './AvatarMenu';
@@ -22,50 +23,52 @@ type Props = {
   /** Side column from 1280 px (design §4.7); below that it follows the main content. */
   aside?: ReactNode;
   back?: BackLink;
-  /** Thêm từ, the + button and the lookup strip arrive in M3. */
+  /** Thêm từ (top bar) is on by default since M3; a page may turn it off. */
   features?: ChromeFeatures;
-  /** Phone + button on Today, Decks and Look up (M3). */
+  /** Phone + button on Today, Decks and Look up. */
   fab?: boolean;
 };
 
-const NO_FEATURES: ChromeFeatures = { addWord: false };
+const ALL_FEATURES: ChromeFeatures = { addWord: true };
 
-export function AppShell({ variant, children, aside, back, features = NO_FEATURES, fab = false }: Props) {
+export function AppShell({ variant, children, aside, back, features = ALL_FEATURES, fab = false }: Props) {
   const t = useTranslations('App.chrome');
   if (variant === 'full') return <>{children}</>;
   if (variant === 'bare') return <AuthFrame>{children}</AuthFrame>;
 
   return (
-    <div className="flex min-h-dvh flex-col">
-      <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-60 focus:rounded-control focus:bg-accent focus:px-4 focus:py-2 focus:text-on-accent">
-        {t('skipToContent')}
-      </a>
-      <header>
-        <div className="hidden md:block">
-          <TopBar features={features} />
-        </div>
-        <PhoneHeader back={variant === 'sub' ? back : undefined} />
-        {/* The strip reads the lookup query from the URL; Suspense keeps the rest of the static shell prerendered. */}
-        <Suspense>
-          <SearchStrip />
-        </Suspense>
-      </header>
-      <main id="main" tabIndex={-1} className="mx-auto w-full max-w-360 flex-1 px-4 pb-24 pt-5 outline-none md:pb-10 lg:px-8">
-        {aside ? (
-          <div className="flex flex-col gap-6 xl:flex-row">
-            <div className="min-w-0 flex-1">{children}</div>
-            <aside className="flex w-full flex-col gap-4 xl:w-90 xl:shrink-0">{aside}</aside>
+    <AddWordProvider>
+      <div className="flex min-h-dvh flex-col">
+        <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-60 focus:rounded-control focus:bg-accent focus:px-4 focus:py-2 focus:text-on-accent">
+          {t('skipToContent')}
+        </a>
+        <header>
+          <div className="hidden md:block">
+            <TopBar features={features} />
           </div>
-        ) : (
-          children
-        )}
-      </main>
-      <div className="hidden md:block">
-        <AppFooter />
+          <PhoneHeader back={variant === 'sub' ? back : undefined} />
+          {/* The strip reads the lookup query from the URL; Suspense keeps the rest of the static shell prerendered. */}
+          <Suspense>
+            <SearchStrip />
+          </Suspense>
+        </header>
+        <main id="main" tabIndex={-1} className="mx-auto w-full max-w-360 flex-1 px-4 pb-24 pt-5 outline-none md:pb-10 lg:px-8">
+          {aside ? (
+            <div className="flex flex-col gap-6 xl:flex-row">
+              <div className="min-w-0 flex-1">{children}</div>
+              <aside className="flex w-full flex-col gap-4 xl:w-90 xl:shrink-0">{aside}</aside>
+            </div>
+          ) : (
+            children
+          )}
+        </main>
+        <div className="hidden md:block">
+          <AppFooter />
+        </div>
+        {fab && features.addWord && <Fab />}
+        <MobileTabBar />
       </div>
-      {fab && features.addWord && <Fab />}
-      <MobileTabBar />
-    </div>
+    </AddWordProvider>
   );
 }
 
@@ -106,9 +109,11 @@ export function SubpageBack({ back, tone = 'navy' }: { back: BackLink; tone?: 'n
 /** Phone + button (M/10): opens Thêm từ (M3). */
 function Fab() {
   const t = useTranslations('App.chrome');
+  const { open } = useAddWord();
   return (
     <button
       type="button"
+      onClick={() => open()}
       aria-label={t('addWord')}
       className="fixed bottom-20 right-4 z-40 flex size-14 items-center justify-center rounded-inner bg-navy text-on-accent shadow-ledge md:hidden"
     >

@@ -90,9 +90,13 @@ describe('TodayPage (K/10, K/10b, K/94)', () => {
     expect(screen.queryByText('Tạo nhóm nhanh theo chủ đề')).not.toBeInTheDocument();
   });
 
-  it('the quick-add box is not there before M3', async () => {
-    renderApp(<TodayPage />, { routes: routes(GROUPS) });
+  it('M3: the quick-add box opens the add-word sheet with the typed word', async () => {
+    renderApp(<TodayPage />, { routes: { ...routes(GROUPS), 'GET /v1/lookup?q=went': () => Response.json({ senses: [], via_inflection: [] }) } });
     await screen.findByRole('region', { name: 'Công nghệ' });
-    expect(screen.queryByText('Thêm từ vừa gặp')).not.toBeInTheDocument();
+    const box = screen.getByRole('region', { name: 'Thêm từ vừa gặp' });
+    await userEvent.type(within(box).getByRole('textbox', { name: 'Từ' }), 'went');
+    await userEvent.click(within(box).getByRole('button', { name: 'Thêm' }));
+    const sheet = await screen.findByRole('dialog', { name: 'Bạn vừa gặp từ nào?' });
+    expect(within(sheet).getByRole('textbox', { name: 'Từ' })).toHaveValue('went');
   });
 });

@@ -1,6 +1,7 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
+import { Plus } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -12,6 +13,7 @@ import { useApi } from '@/app-shell/session/session-context';
 import { Button } from '@/app-ui/Button';
 import { EmptyState, ErrorState, FullScreenSpinner } from '@/app-ui/States';
 import { cn } from '@/lib/cn';
+import { useAddWord } from '../add-word/add-word-context';
 import { LookupFilters } from './LookupFilters';
 import { lookupHref, parseLookup, useWordSearch, type LookupParams, type WordRow } from './lookup-api';
 
@@ -29,10 +31,7 @@ export function LookupPage() {
   const go = (next: LookupParams) => router.replace(lookupHref(locale, next));
 
   return (
-    <AppShell
-      variant="main"
-      aside={preview ? <WordPreview word={preview} /> : undefined}
-    >
+    <AppShell variant="main" fab aside={preview ? <WordPreview word={preview} /> : undefined}>
       <div className="flex flex-col gap-4">
         <PageTitle>{t('title')}</PageTitle>
         <LookupFilters value={params} onChange={go} />
@@ -41,7 +40,7 @@ export function LookupPage() {
         ) : search.isError ? (
           <ErrorState message={errorText(search.error)} onRetry={() => void search.refetch()} />
         ) : words.length === 0 ? (
-          <EmptyState title={t('emptyTitle')} body={t('emptyBody')} action={<Button variant="sticker">{t('addThis')}</Button>} />
+          <EmptyState title={t('emptyTitle')} body={t('emptyBody')} action={<AddThis word={params.q} />} />
         ) : (
           <section aria-label={t('results')} className="flex flex-col rounded-card border border-border bg-surface p-2 md:p-4">
             <div aria-hidden className="hidden grid-cols-12 gap-3 border-b border-border px-3 pb-2 text-caption font-semibold text-muted md:grid">
@@ -70,6 +69,7 @@ export function LookupPage() {
                   <span className="col-span-3 col-start-10 row-start-1 flex items-center justify-end gap-1.5 md:col-span-2 md:col-start-auto md:row-start-auto md:justify-start">
                     {word.level && <span className="rounded-sm bg-primary-soft px-1.5 py-0.5 text-caption font-semibold text-primary">{word.level}</span>}
                     {word.has_private && <span className="rounded-sm bg-accent-soft px-1.5 py-0.5 text-caption font-semibold text-ink">{t('mineTag')}</span>}
+                    <AddRow word={word.lemma} />
                   </span>
                 </li>
               ))}
@@ -95,6 +95,7 @@ function WordPreview({ word }: { word: WordRow }) {
   const t = useTranslations('App.lookup');
   const locale = useLocale();
   const api = useApi();
+  const { open } = useAddWord();
   const page = useQuery({
     queryKey: ['word', word.lemma],
     queryFn: () => api.get<WordPage>(`/v1/words/${encodeURIComponent(word.lemma)}`),
@@ -118,12 +119,43 @@ function WordPreview({ word }: { word: WordRow }) {
           <p className="break-words text-ui text-ink">{first.examples[0]}</p>
         </div>
       )}
-      <Link
-        href={`/${locale}/app/word?w=${encodeURIComponent(word.lemma)}`}
-        className="flex min-h-control w-fit items-center rounded-inner border-2 border-border-strong px-4 text-ui font-semibold text-ink shadow-button-secondary hover:bg-primary-soft"
-      >
-        {t('openWord')}
-      </Link>
+      <div className="flex flex-wrap gap-2">
+        <Button variant="sticker" onPress={() => open(word.lemma)}>
+          {t('addToGroup')}
+        </Button>
+        <Link
+          href={`/${locale}/app/word?w=${encodeURIComponent(word.lemma)}`}
+          className="flex min-h-control w-fit items-center rounded-inner border-2 border-border-strong px-4 text-ui font-semibold text-ink shadow-button-secondary hover:bg-primary-soft"
+        >
+          {t('openWord')}
+        </Link>
+      </div>
     </section>
+  );
+}
+
+/** [Thêm từ này]: the add-word sheet with the searched word; inside AppShell, so inside its add-word provider. */
+function AddThis({ word }: { word?: string }) {
+  const t = useTranslations('App.lookup');
+  const { open } = useAddWord();
+  return (
+    <Button variant="sticker" onPress={() => open(word)}>
+      {t('addThis')}
+    </Button>
+  );
+}
+
+function AddRow({ word }: { word: string }) {
+  const t = useTranslations('App.lookup');
+  const { open } = useAddWord();
+  return (
+    <button
+      type="button"
+      aria-label={t('addRow', { word })}
+      onClick={() => open(word)}
+      className="ml-auto flex size-8 shrink-0 items-center justify-center rounded-inner border-2 border-border-strong text-ink outline-none hover:bg-primary-soft focus-visible:ring-2 focus-visible:ring-primary"
+    >
+      <Plus aria-hidden className="size-4" />
+    </button>
   );
 }
