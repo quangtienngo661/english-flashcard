@@ -45,7 +45,6 @@ const routes = (over: Record<string, Route> = {}): Record<string, Route> => ({
   'GET /v1/groups': () => Response.json({ items: [] }),
   'GET /v1/me/entitlements': () => Response.json(ENT),
   [PREPARE]: () => Response.json({ prepared: 1, already_ready: 0 }),
-  [`GET /v1/senses/${PRIVATE}`]: () => Response.json({ lemma: 'rizz' }),
   ...over,
 });
 type Call = { method: string; path: string; body: unknown };
@@ -142,7 +141,7 @@ describe('AI states in the practice session (K/73–K/76, E29–E33, D11)', () =
   it('K/74a + word-not-recognized: names the learner\'s word and links to it', async () => {
     renderApp(<PracticeSession />, { routes: routes({
       'GET /v1/practice/sessions/current': noItem,
-      [NEXT]: nextAnswers(unavailable('ai-failed', { notice: 'word-not-recognized', sense_id: PRIVATE })),
+      [NEXT]: nextAnswers(unavailable('ai-failed', { notice: 'word-not-recognized', sense_id: PRIVATE, lemma: 'rizz' })),
     }) });
     expect(await screen.findByText('AI chưa nhận ra từ “rizz” bạn tự thêm.')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Xem lại từ trong Từ của tôi' })).toHaveAttribute('href', '/vi/app/word?w=rizz');
@@ -167,12 +166,49 @@ describe('AI states in the practice session (K/73–K/76, E29–E33, D11)', () =
     expect(await screen.findByText('Hết lượt câu AI. Các câu còn lại của phiên dùng kiểu câu khác. Lượt câu AI mới có vào 15/11.')).toBeInTheDocument();
   });
 
-  it('E33, K/76: word-not-recognized over the question, with the link to the word', async () => {
+  it('review I3, E33, K/76: the band never names the word before the answer; the word and its link come with the result', async () => {
     renderApp(<PracticeSession />, { routes: routes({
       'GET /v1/practice/sessions/current': noItem,
-      [NEXT]: nextAnswers({ state: 'question', session: view(), item: mcq(), notice: 'word-not-recognized', sense_id: PRIVATE }),
+      [NEXT]: nextAnswers({ state: 'question', session: view(), item: mcq(), notice: 'word-not-recognized', sense_id: PRIVATE, lemma: 'rizz' }),
+      'POST /v1/practice/items/item-4/answer': () => Response.json({
+        result: 'correct', skipped: false, tries: 1, hint_level: 0, correct: { lemma: 'rizz', text: 'rizz', choice_index: 0, is_true: null },
+        meaning: 'sức hút', definition_en: null, show_known: true, highlight_needs_review: false, translation: null,
+      }),
     }) });
-    expect(await screen.findByText('AI chưa nhận ra từ “rizz” bạn tự thêm, nên câu này dùng kiểu câu khác.')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Xem lại từ trong Từ của tôi' })).toHaveAttribute('href', '/vi/app/word?w=rizz');
+    expect(await screen.findByText('AI chưa nhận ra một từ bạn tự thêm, nên câu này dùng kiểu câu khác.')).toBeInTheDocument();
+    expect(screen.queryByText(/rizz/)).toBeNull();
+    expect(screen.queryByRole('link', { name: 'Xem lại từ trong Từ của tôi' })).toBeNull();
+    await userEvent.keyboard('1');
+    expect(await screen.findByRole('link', { name: 'Xem lại từ trong Từ của tôi' })).toHaveAttribute('href', '/vi/app/word?w=rizz');
+  });
+
+  it('review I1: a /next that fails while preparing leaves "Đang tạo câu…" for the general error with [Thử lại]', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    let calls = 0;
+    renderApp(<PracticeSession />, { routes: routes({
+      'GET /v1/practice/sessions/current': noItem,
+      [NEXT]: () => (++calls === 1
+        ? Response.json({ state: 'preparing', session: view(), retry_after_seconds: 2 })
+        : Response.json({ type: 'http://x/problems/internal', status: 500, title: 'x' }, { status: 500 })),
+    }) });
+    await screen.findByText('Đang tạo câu…');
+    await act(() => vi.advanceTimersByTimeAsync(2_100));
+    expect(await screen.findByText('Hệ thống đang gặp lỗi.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Thử lại' })).toBeInTheDocument();
+    expect(screen.queryByText('Đang tạo câu…')).toBeNull();
+  });
+
+  it('review I1: [Thử lại] that fails again says so instead of doing nothing', async () => {
+    let calls = 0;
+    renderApp(<PracticeSession />, { routes: routes({
+      'GET /v1/practice/sessions/current': noItem,
+      [NEXT]: () => (++calls === 1
+        ? Response.json(unavailable('ai-failed'))
+        : Response.json({ type: 'http://x/problems/internal', status: 500, title: 'x' }, { status: 500 })),
+    }) });
+    await userEvent.click(await screen.findByRole('button', { name: 'Thử lại' }));
+    await waitFor(() => expect(calls).toBe(2));
+    expect(await screen.findByText('Có lỗi xảy ra. Thử lại sau.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Thử lại' })).toBeEnabled();
   });
 });
