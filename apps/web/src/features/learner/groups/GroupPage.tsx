@@ -325,8 +325,9 @@ function WordRow({ card, groupId, groupCount, changed }: { card: Card; groupId: 
     <li aria-label={word} className="flex flex-wrap items-start justify-between gap-3 p-4">
       <div className="min-w-0 flex-1">
         <p className="flex flex-wrap items-baseline gap-2">
-          {/* The word page (K/30) arrives in M3; until then the word is plain text. */}
-          <span className="break-all text-title font-semibold text-ink">{word}</span>
+          <Link href={`/${locale}/app/word?w=${encodeURIComponent(word)}`} className="break-all text-title font-semibold text-ink hover:underline">
+            {word}
+          </Link>
           <span className="text-caption text-muted">{card.content.pos}</span>
         </p>
         <p className="break-words text-ui text-ink">{card.content.meaning.text}</p>
