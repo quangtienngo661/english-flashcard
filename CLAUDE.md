@@ -298,7 +298,7 @@ the owner's Windows machine); the executing-plans ledger is `docs/deliveries/gia
 transaction history: API `billing_transactions`, `/v1/me/transactions`, `/v1/admin/transactions`, learner `/app/settings/transactions`, admin `/transactions`)
 merged (PR #127); M5a (Task 41–45, practice with AI questions) in PR #128 into `dev`; next M5b (AI lookup, My words). Owner 23/10/2026: no more
 stops for image or Figma approval ("cứ triển khai mà làm").
-Improvement ideas to weigh **after** the learner UI for Bước 3–7 is done (owner 23/10/2026; not decided): `docs/preparation/IMPROVEMENT_IDEAS_2026-10-23.md`.
+Improvement ideas to weigh **after** the learner UI for Bước 3–7 is done (owner 23/10/2026; not decided): `docs/preparation/IMPROVEMENT_IDEAS_2026-10-23.md` (product C1–C10, overall assessment, how the project is run P1–P5).
 
 ## Việc phải phân tích khi tới bước tương ứng (ghi 12/10/2026, từ brainstorm Bước 2)
 
