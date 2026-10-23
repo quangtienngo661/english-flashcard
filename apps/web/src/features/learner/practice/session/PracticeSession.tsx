@@ -47,7 +47,9 @@ export function PracticeSession() {
       if (e.altKey || e.ctrlKey || e.metaKey || reporting) return;
       const target = e.target as HTMLElement | null;
       if (target?.closest('[role="dialog"]')) return;
-      const typing = Boolean(target?.closest('input, textarea'));
+      // A graded typed answer keeps its (read-only) field focused; Enter there moves on like anywhere else.
+      const field = target?.closest('input, textarea') as HTMLInputElement | null;
+      const typing = Boolean(field && !field.readOnly);
       if (e.key === 'Escape') {
         if (phase?.kind === 'question' || phase?.kind === 'round') {
           e.preventDefault();
