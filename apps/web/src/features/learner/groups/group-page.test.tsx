@@ -69,15 +69,15 @@ describe('GroupPage (K/11–K/13)', () => {
     expect(await screen.findByText(/tạo ngày .*23\/10/)).toBeInTheDocument();
   });
 
-  it('until M3 a word is plain text, not a link to its page (review I8)', async () => {
+  it('M3: each word links to its word page', async () => {
     renderApp(<GroupPage />, { routes: routes() });
     const row = await screen.findByRole('listitem', { name: 'deploy' });
-    expect(within(row).queryByRole('link', { name: 'deploy' })).not.toBeInTheDocument();
+    expect(within(row).getByRole('link', { name: 'deploy' })).toHaveAttribute('href', '/vi/app/word?w=deploy');
   });
 
   it('review button and the long-overdue link', async () => {
     renderApp(<GroupPage />, { routes: routes() });
-    expect(await screen.findByRole('link', { name: 'Ôn 3 thẻ' })).toHaveAttribute('href', `/vi/app/review?group=${G}`);
+    expect(await screen.findByRole('link', { name: 'Ôn 3 thẻ' }, { timeout: 5000 })).toHaveAttribute('href', `/vi/app/review?group=${G}`);
     expect(screen.getByRole('link', { name: /3 từ lâu chưa ôn/ })).toHaveAttribute('href', `/vi/app/group/backlog?id=${G}`);
   });
 

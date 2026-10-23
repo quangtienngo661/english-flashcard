@@ -40,7 +40,7 @@ export function GroupListPage() {
   };
 
   return (
-    <AppShell variant="main">
+    <AppShell variant="main" fab>
       <PageTitle
         aside={
           <Button variant="sticker" onPress={() => open({ kind: 'create' })}>

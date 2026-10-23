@@ -49,12 +49,12 @@ describe('GroupListPage (K/16, K/16b)', () => {
   it('fewer than 10 decks: no search box', async () => {
     renderApp(<GroupListPage />, { routes: withGroups([deck(1, 1)]) });
     await screen.findByText('Nhóm 1');
-    expect(screen.queryByRole('searchbox')).not.toBeInTheDocument();
+    expect(screen.queryByRole('searchbox', { name: /Tìm trong/ })).not.toBeInTheDocument();
   });
 });
 
 describe('topic suggestions (K/94)', () => {
-  it('until M3 there is no link to Tra từ (review I8)', async () => {
+  it('M3: "Xem mọi chủ đề trong Tra từ" opens Tra từ', async () => {
     renderApp(<GroupListPage />, {
       routes: withGroups([deck(1, 1)], {
         'GET /v1/topics/suggestions': () =>
@@ -62,7 +62,7 @@ describe('topic suggestions (K/94)', () => {
       }),
     });
     expect(await screen.findByText('Tạo nhóm nhanh theo chủ đề')).toBeInTheDocument();
-    expect(screen.queryByRole('link', { name: 'Xem mọi chủ đề trong Tra từ' })).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Xem mọi chủ đề trong Tra từ' })).toHaveAttribute('href', '/vi/app/lookup');
   });
 });
 

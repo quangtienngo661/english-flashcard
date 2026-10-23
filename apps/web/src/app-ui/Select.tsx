@@ -16,10 +16,13 @@ type Props = {
   isDisabled?: boolean;
   placeholder?: string;
   error?: string;
+  /** What the closed button shows for the chosen item ("Trình độ: A2" while the list says "A2"); the item label by default. */
+  display?: (item: SelectItem) => string;
+  className?: string;
 };
 
 // Copied from apps/admin/src/ui/Select.tsx; adds an icon and a count suffix per row (the drop-down lists of copy doc §14.3).
-export function Select({ label, hideLabel, items, value, onChange, isDisabled, placeholder, error }: Props) {
+export function Select({ label, hideLabel, items, value, onChange, isDisabled, placeholder, error, display, className }: Props) {
   return (
     <AriaSelect
       selectedKey={value === '' ? null : value}
@@ -27,7 +30,7 @@ export function Select({ label, hideLabel, items, value, onChange, isDisabled, p
       isInvalid={error !== undefined}
       onSelectionChange={(key) => key !== null && onChange(String(key))}
       isDisabled={isDisabled}
-      className="group flex w-full min-w-0 flex-col gap-1.5"
+      className={className ?? 'group flex w-full min-w-0 flex-col gap-1.5'}
     >
       <Label className={hideLabel ? 'sr-only' : 'text-ui font-medium text-ink'}>{label}</Label>
       <Button className="flex min-h-control w-full items-center justify-between gap-2 rounded-control border-2 border-border-strong bg-surface px-3 py-2 text-left text-ui text-ink outline-none hover:bg-primary-soft focus-visible:border-primary disabled:opacity-60 group-data-invalid:border-danger">
@@ -37,7 +40,7 @@ export function Select({ label, hideLabel, items, value, onChange, isDisabled, p
             return item ? (
               <>
                 {item.icon}
-                <span className="truncate">{item.label}</span>
+                <span className="truncate">{display ? display(item) : item.label}</span>
               </>
             ) : (
               defaultChildren

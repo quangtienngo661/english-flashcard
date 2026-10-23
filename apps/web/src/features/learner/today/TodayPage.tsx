@@ -13,6 +13,7 @@ import { GroupCard, sortForToday, waiting } from '../groups/GroupCard';
 import { useGroupDialogs } from '../groups/GroupDialogs';
 import { useGroups, type GroupSummary } from '../groups/groups-api';
 import { TopicSuggestions } from '../groups/TopicSuggestions';
+import { QuickAddBox } from './QuickAddBox';
 import { STAGE_KEYS } from '../groups/stages';
 
 /** K/10, K/10b, K/94: the deck to review next, every deck, topic suggestions, and the side column. */
@@ -30,7 +31,16 @@ export function TodayPage() {
   };
 
   return (
-    <AppShell variant="main" aside={sorted.length > 0 ? <TodayAside groups={sorted} /> : null}>
+    <AppShell
+      variant="main"
+      fab
+      aside={
+        <>
+          <QuickAddBox />
+          {sorted.length > 0 && <TodayAside groups={sorted} />}
+        </>
+      }
+    >
       <PageTitle aside={<span className="rounded-full bg-surface px-3 py-1 text-caption font-semibold text-ink">{format.date(new Date(), 'weekdayDayMonth')}</span>}>
         {t('title')}
       </PageTitle>

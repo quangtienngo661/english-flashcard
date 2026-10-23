@@ -54,3 +54,52 @@ describe('SentencesService.listSentences — reads through the client it is give
     expect(prisma.contextSentence.findMany).toHaveBeenCalledTimes(1);
   });
 });
+
+describe('SentencesService.listForSense / counts (design §8.5, API (e))', () => {
+  const SENSE = '00000000-0000-4000-8000-0000000000aa';
+  const rows = [
+    { id: 'cs1', text: 'First.', createdAt: new Date('2026-10-19T03:00:00Z') },
+    { id: 'cs2', text: 'Second.', createdAt: new Date('2026-10-20T03:00:00Z') },
+    { id: 'cs3', text: 'Third.', createdAt: new Date('2026-10-21T03:00:00Z') },
+  ];
+  function make(visible: boolean, found = rows) {
+    const prisma = {
+      $queryRaw: vi.fn(async () => [{ ok: visible }]),
+      contextSentence: {
+        findMany: vi.fn(async () => found),
+        groupBy: vi.fn(async () => [{ senseId: 's1', _count: { _all: 3 } }]),
+      },
+    };
+    const service = new SentencesService(prisma as unknown as PrismaClient, new FakeClock(), { info: vi.fn() } as unknown as AppLogger,
+      {} as SettingsService);
+    return { service, prisma };
+  }
+
+  it('GE1: a sense with 3 sentences lists them oldest first, for this learner only', async () => {
+    const { service, prisma } = make(true);
+    expect((await service.listForSense('u1', SENSE))?.map((s) => s.id)).toEqual(['cs1', 'cs2', 'cs3']);
+    expect(prisma.contextSentence.findMany).toHaveBeenCalledWith(expect.objectContaining({
+      where: { userId: 'u1', senseId: SENSE }, orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+    }));
+  });
+
+  it('GE2: a sense without sentences gives an empty list', async () => {
+    const { service } = make(true, []);
+    expect(await service.listForSense('u1', SENSE)).toEqual([]);
+  });
+
+  it("GE3: a sense the learner cannot see (another learner's word, a hidden catalog sense) gives null, and no sentence is read", async () => {
+    const { service, prisma } = make(false);
+    expect(await service.listForSense('u1', SENSE)).toBeNull();
+    expect(prisma.contextSentence.findMany).not.toHaveBeenCalled();
+  });
+
+  it('counts: one grouped read for the senses asked; a sense without sentences is absent', async () => {
+    const { service, prisma } = make(true);
+    const counts = await service.counts('u1', ['s1', 's2']);
+    expect(counts.get('s1')).toBe(3);
+    expect(counts.get('s2')).toBeUndefined();
+    expect(prisma.contextSentence.groupBy).toHaveBeenCalledWith(expect.objectContaining({ where: { userId: 'u1', senseId: { in: ['s1', 's2'] } } }));
+    expect((await service.counts('u1', [])).size).toBe(0);
+  });
+});

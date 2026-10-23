@@ -7,6 +7,7 @@ import { ProblemDetailsException } from '../../common/problem-details/problem-de
 import { Prisma, type PrismaClient } from '../../generated/prisma/client.js';
 import { INFLECTION_KINDS, LEVELS, PRIVATE_POS_UNSET, VALID_POS, type InflectionKind, type Level } from '../content.constants.js';
 import { InflectionsService } from '../inflections/inflections.service.js';
+import { SentencesService } from '../sentences/sentences.service.js';
 import { visibleEntryCondition } from '../learner/visible-senses.js';
 
 type NativeLanguage = 'vi' | 'en';
@@ -18,6 +19,9 @@ export type WordSense = {
   /** The live revision came from an AI suggestion the learner saved and has not edited since (Bước 7 design §11.2). */
   ai_suggested: boolean;
 };
+/** A sense on the word page (`GET /words/{lemma}`): adds the viewer's saved-sentence count (API (e)). */
+export type WordPageSense = WordSense & { sentence_count: number };
+
 export type WordListQuery = {
   page_size: number; page_token?: string; q?: string; level?: Level; topic?: string; pos?: string; mine?: boolean;
 };
@@ -81,6 +85,7 @@ export class WordsService {
   constructor(
     @Inject(PRISMA_CLIENT) private readonly prisma: PrismaClient,
     @Inject(InflectionsService) private readonly inflections: InflectionsService,
+    @Inject(SentencesService) private readonly sentences: SentencesService,
   ) {}
 
   /** One statement per read: visibility, displayed level and live content on one snapshot. */
@@ -135,9 +140,12 @@ export class WordsService {
     // Every form of a kind, in the stored order (AGID order for library forms); the UI plan decides what to show.
     forms.sort((a, b) => INFLECTION_KINDS.indexOf(a.kind) - INFLECTION_KINDS.indexOf(b.kind)
       || a.position - b.position || (a.form < b.form ? -1 : a.form > b.form ? 1 : 0));
+    // API (e): the viewer's saved-sentence count, on the word page only (lookup and review cards share WordSense unchanged).
+    const counts = await this.sentences.counts(viewerId, senses.map((s) => s.sense_id));
     // senses() already orders by part of speech, so each section's senses arrive together.
-    const sections: Array<{ pos: string; senses: WordSense[] }> = [];
-    for (const sense of senses) {
+    const sections: Array<{ pos: string; senses: WordPageSense[] }> = [];
+    for (const base of senses) {
+      const sense: WordPageSense = { ...base, sentence_count: counts.get(base.sense_id) ?? 0 };
       if (sections.at(-1)?.pos !== sense.pos) sections.push({ pos: sense.pos, senses: [] });
       sections.at(-1)!.senses.push(sense);
     }

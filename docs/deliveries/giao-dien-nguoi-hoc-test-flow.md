@@ -46,6 +46,8 @@ tiếng Việt và tiếng Anh, sáng và tối, cửa sổ rộng và hẹp (th
    "Failed to load native binding"). Lần đầu mất vài phút cài thư viện; mỗi trang mở lần đầu biên dịch vài giây. Thêm file mới khi đang chạy thì
    tắt (Ctrl+C, rồi `docker stop wordmet-dev-app`) và chạy lại. Nếu sau khi đổi nhánh mọi trang `/app` báo "Không tìm thấy trang" hoặc
    không thấy thay đổi mới: tắt như trên, chạy `docker volume rm wordmet-dev-app-next` (bộ nhớ đệm của dev server), rồi chạy lại.
+   Nếu mọi trang báo lỗi 500 và log có "Unexpected non-whitespace character after JSON at position 512": hai trang biên dịch cùng lúc đã
+   ghi hỏng một file của dev server. Mở lần lượt từng trang sau khi khởi động (đừng mở nhiều tab cùng lúc), hoặc tắt, xóa volume như trên, chạy lại.
 6. **Admin cùng lúc** (khi cần, ví dụ cấp gói): chạy admin với API qua IP, rồi mở admin bằng IP — để cookie đăng nhập của admin không đè
    phiên của app người học:
    ```powershell
@@ -117,3 +119,34 @@ Dùng tài khoản người học của mục 0.4 (file CSV mẫu đã nạp). T
 Kiểm tự động của M2 (CI, job `web`): `e2e/app/m2.spec.ts` (Hôm nay có và chưa có nhóm, tạo → đổi tên → xóa nhóm, lọc nhóm, học lại từ lâu
 chưa ôn, chọn từ theo chủ đề cả hai nút, phiên ôn bằng phím; axe và không cuộn ngang ở mọi trang M2 với tên nhóm 60 ký tự và câu 280 ký tự ×
 vi/en × sáng/tối × 1440/390).
+
+## M3 — Tra từ và thêm từ
+
+Dùng tài khoản người học của mục 0.4. Trong file CSV mẫu có các từ `left`, `go`, `leave`, `profit`; chủ đề Kinh doanh · B1.
+
+| # | Làm | Thấy | Khung |
+|---|---|---|---|
+| 1 | Ở bất kỳ trang nào (màn rộng), nhấn phím `/` | Con trỏ vào ô tra trên dải dưới thanh trên ("Tra trong 7.799 từ…"); gõ `left`, Enter → sang Tra từ | K/10 dải tra, K/30 |
+| 2 | Tra từ: chọn "Trình độ: B1", "Chủ đề: Kinh doanh" | Đường dẫn đổi theo (`?level=B1&topic=business`); bảng Từ · Loại từ · Nghĩa · Trình độ, mỗi dòng có nút +; cột phải xem trước từ đang trỏ chuột (chủ đề, câu mẫu, [Thêm vào nhóm], [Mở trang từ]) | K/30 `258:413`, M/40 |
+| 3 | Tick "Chỉ từ của tôi", rồi bấm "Xóa lọc" | Chỉ còn từ bạn tự thêm; "Xóa lọc" bỏ hết bộ lọc, giữ chữ đang tra | K/30 |
+| 4 | Tra `zzzz` | "Không tìm thấy từ này" + [Thêm từ này] (mở tấm Thêm từ với chữ đã tra) | — |
+| 5 | Bấm từ `left` | Trang từ: "left", trình độ, "N nghĩa"; mỗi nghĩa có số thứ tự, loại từ, nghĩa, dòng định nghĩa tiếng Anh nhỏ, câu mẫu tô từ; nghĩa đang học có chip "Đang học · <nhóm>", nghĩa chưa học có [Thêm vào nhóm]; cột phải "Cùng chủ đề" | K/31 `259:508`, M/41 |
+| 6 | Mở `/vi/app/word?w=go` | Dòng vàng "Dạng chia: go · goes · going · went · gone", chỉ dạng có trang riêng là link | K/32 `275:1233` |
+| 7 | Ở một nghĩa chưa học, bấm [Thêm vào nhóm] | Hộp "Lưu vào nhóm": ô "Tìm hoặc tạo nhóm…", "Dùng gần đây", "Tất cả nhóm (N), A–Z" kèm số từ; chọn một nhóm → [Lưu vào …] → "Đã thêm “left” vào nhóm “…”." | K/42 `275:8211`, M/52 |
+| 8 | Trong hộp đó gõ một phần tên nhóm (ví dụ `kinh`) | "Kết quả (1)" và dòng [Tạo nhóm “kinh”]; gõ tên không khớp nhóm nào → "Chưa có nhóm nào tên “…”." + [Tạo nhóm và lưu] | K/42b `333:12049`, K/42c `333:12695` |
+| 9 | Ở nghĩa đang học: khối "Bạn đang học" bên phải → "Thêm câu đã gặp" | Tấm "Thêm câu đã gặp": dòng nghĩa, ô "Câu" đếm tới 300 và dừng; [Lưu câu] → "Đã lưu câu."; chip của nghĩa thành "… · 1 câu đã gặp" | K/44 `275:8964`, M/53 |
+| 10 | Thêm câu cho tới khi đủ (mặc định 20 câu mỗi nghĩa) | Lỗi dưới ô: "Nghĩa này đã đủ số câu tối đa. Xóa bớt một câu để thêm câu mới." + [Xem các câu đã gặp] (không ghi con số) | K/44b `327:10733` |
+| 11 | Bấm "N câu đã gặp" ở nghĩa | Danh sách câu, cũ trước; xóa một câu → câu biến mất, số câu giảm 1 | K/31 |
+| 12 | Nhấn phím `N` (hoặc nút "Thêm từ" trên thanh trên, nút + trên điện thoại) | Tấm "Bạn vừa gặp từ nào?" | K/40 `275:7927`, M/50 |
+| 13 | Gõ `went`, dán một câu | "went là quá khứ của go" và nghĩa của go; ô "Lưu vào nhóm" chọn sẵn nhóm dùng gần nhất; [Lưu went] → "Đã lưu từ “went” vào nhóm “…”." | K/40 |
+| 14 | Mở tấm, gõ một từ không có (ví dụ `rizz`) → [Nghĩa khác, tự nhập] | "Tự nhập nghĩa" · "Chỉ bạn thấy từ này."; bấm [Lưu từ] khi ô Nghĩa trống → "Nhập nghĩa của từ."; điền nghĩa → lưu được; tra lại `rizz` → có tag "Của tôi" | K/41 `275:8067` |
+| 15 | Lưu lại đúng từ `rizz` lần nữa bằng nghĩa tự nhập | "Bạn đã có từ “rizz” trong Từ của tôi." + link [Mở từ này] | — |
+| 16 | Xóa nhóm dùng gần nhất (trang Nhóm), mở lại tấm | Ô nhóm trống "Chọn nhóm"; bấm lưu → "Chọn một nhóm để lưu từ." (E21) | K/40 |
+| 17 | Tài khoản chưa có nhóm nào, mở tấm | "Bạn chưa có nhóm nào. Tạo nhóm đầu tiên để lưu từ này." + [Tạo nhóm đầu tiên]; không có nút lưu | K/40b `326:12207` |
+| 18 | Hôm nay: ô "Thêm từ vừa gặp" bên phải, gõ một từ, [Thêm] | Mở tấm Thêm từ với từ đó | K/10 |
+| 19 | Tra từ với "Trình độ: A2" (không gõ chữ tra) → [Thêm cả loạt vào nhóm] | Tấm "Thêm cả loạt vào nhóm": bộ lọc, "Vào nhóm" (mặc định "Nhóm mới: A2"), [Thêm cả loạt] → thông báo đủ các số: đã thêm, đã có trong nhóm, từ chức năng bỏ qua, không vừa vì nhóm đầy | K/43 `275:8778`, M/44 |
+| 20 | Thu cửa sổ còn 390px ở mỗi trang trên | Không cuộn ngang; tấm Thêm từ trượt lên từ đáy; nút chính ở đáy | M/40–M/53 |
+
+Kiểm tự động của M3 (CI, job `web`): `e2e/app/m3.spec.ts` (Tra từ → trang từ → thêm vào nhóm, phím N và `went`, tự nhập nghĩa, câu đã gặp tới giới hạn,
+thêm cả loạt, phím `/`; axe và không cuộn ngang ở Tra từ, trang từ, danh sách câu, tấm Thêm từ với nghĩa dài, câu 300 ký tự, tên nhóm 60 ký tự × vi/en ×
+sáng/tối × 1440/390).

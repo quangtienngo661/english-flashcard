@@ -16,11 +16,16 @@ async function settle(page: Page, ready = page.getByRole('heading', { level: 1 }
   await page.waitForLoadState('networkidle');
 }
 
-async function shoot(page: Page, name: string) {
+/** A page is shot full length; a page with a dialog open only as the window shows it (a full-length shot redraws the dialog half see-through). */
+async function shoot(page: Page, name: string, fullPage = true) {
   for (const width of WIDTHS) {
     await page.setViewportSize({ width, height: 900 });
     await page.waitForTimeout(300);
-    await page.screenshot({ path: `test-results/shots/${MILESTONE}/${name}-${width}.png`, fullPage: true });
+    // A dialog switches between sheet and centred box at 768 px and animates in again; shoot it once it has settled.
+    await expect
+      .poll(() => page.evaluate(() => document.getAnimations().filter((a) => a.playState === 'running' && a.effect?.getTiming().iterations !== Infinity).length))
+      .toBe(0);
+    await page.screenshot({ path: `test-results/shots/${MILESTONE}/${name}-${width}.png`, fullPage });
   }
 }
 
@@ -53,6 +58,10 @@ test('milestone screenshots', async ({ page }) => {
   await expect(page).toHaveURL(/\/app$/, { timeout: 60_000 });
   if (MILESTONE === 'm2') {
     await m2(page);
+    return;
+  }
+  if (MILESTONE === 'm3') {
+    await m3(page);
     return;
   }
   for (const locale of ['vi', 'en'] as const) {
@@ -114,7 +123,7 @@ async function m2(page: Page) {
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.getByRole('button', { name: locale === 'vi' ? 'Tạo nhóm' : 'Create deck', exact: true }).first().click();
     await expect(page.getByRole('dialog')).toBeVisible();
-    await shoot(page, name('create-dialog'));
+    await shoot(page, name('create-dialog'), false);
     await page.keyboard.press('Escape');
     // K/20–K/22: front, back, then one answer and Esc for the summary.
     await page.goto(at(`review?group=${id}`));
@@ -130,6 +139,53 @@ async function m2(page: Page) {
     await page.keyboard.press('Escape');
     await settle(page);
     await shoot(page, name('review-summary'));
+  }
+  await setLanguage(page, 'vi');
+}
+
+/** M3 on a learner who already has the Kinh doanh · B1 deck (the M2 run): lookup, word pages and every add sheet. */
+async function m3(page: Page) {
+  for (const { locale, scheme } of COMBOS) {
+    await setLanguage(page, locale);
+    await page.emulateMedia({ colorScheme: scheme });
+    const at = (path: string) => `/${locale}/app/${path}`;
+    const name = (n: string) => `${locale}-${scheme}-${n}`;
+    const pages: Array<[string, string, () => ReturnType<Page['getByRole']>]> = [
+      ['lookup?level=B1&topic=business', 'lookup', () => page.getByRole('listitem').first()],
+      ['lookup?q=zzzz', 'lookup-empty', () => page.getByRole('heading', { level: 2 }).first()],
+      ['word?w=left', 'word-left', () => page.getByRole('article').first()],
+      ['word?w=go', 'word-go', () => page.getByRole('article').first()],
+      ['word?w=profit', 'word-learning', () => page.getByRole('article').first()],
+    ];
+    for (const [path, n, ready] of pages) {
+      await page.goto(at(path));
+      await settle(page, ready());
+      await shoot(page, name(n));
+    }
+    const dialogShot = async (n: string, open: () => Promise<void>) => {
+      await page.setViewportSize({ width: 1440, height: 900 });
+      await open();
+      await expect(page.getByRole('dialog')).toBeVisible();
+      await page.waitForLoadState('networkidle');
+      await shoot(page, name(n), false);
+      await page.keyboard.press('Escape');
+    };
+    await page.goto(at('word?w=left'));
+    await settle(page, page.getByRole('article').first());
+    await dialogShot('deck-picker', () => page.getByRole('article').first().getByRole('button').last().click());
+    await page.goto(at('word?w=profit'));
+    await settle(page, page.getByRole('article').first());
+    await dialogShot('sentence', () => page.getByRole('region').first().getByRole('button').last().click());
+    await page.goto(at(''));
+    await settle(page);
+    await dialogShot('add-went', async () => {
+      await page.keyboard.press('n');
+      await page.getByRole('dialog').getByRole('textbox').first().fill('went');
+      await page.waitForTimeout(800);
+    });
+    await page.goto(at('lookup?level=B1&topic=business'));
+    await settle(page, page.getByRole('listitem').first());
+    await dialogShot('bulk', () => page.getByRole('button', { name: locale === 'vi' ? 'Thêm cả loạt vào nhóm' : 'Add them all to a deck' }).click());
   }
   await setLanguage(page, 'vi');
 }

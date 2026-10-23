@@ -34,7 +34,7 @@ export function OfflineScreen({ onRetry }: { onRetry: () => void }) {
 export function EmptyState({ title, body, action }: { title: string; body?: string; action?: ReactNode }) {
   return (
     <div className="flex flex-col items-start gap-3 rounded-card border border-border bg-surface p-6">
-      <h2 className="text-title font-bold text-ink">{title}</h2>
+      <h2 className="break-words text-title font-bold text-ink">{title}</h2>
       {body && <p className="text-body text-muted">{body}</p>}
       {action}
     </div>

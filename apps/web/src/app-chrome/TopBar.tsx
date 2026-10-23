@@ -4,6 +4,7 @@ import { Plus, Sun } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useAddWord } from '@/features/learner/add-word/add-word-context';
 import { cn } from '@/lib/cn';
 import { AvatarMenu } from './AvatarMenu';
 import { Logo } from './Logo';
@@ -17,6 +18,7 @@ export function TopBar({ features, onAddWord }: { features: ChromeFeatures; onAd
   const t = useTranslations('App.chrome');
   const locale = useLocale();
   const active = currentTab(usePathname());
+  const addWord = useAddWord();
 
   return (
     <div className="bg-navy text-on-navy">
@@ -49,7 +51,7 @@ export function TopBar({ features, onAddWord }: { features: ChromeFeatures; onAd
           {features.addWord && (
             <button
               type="button"
-              onClick={onAddWord}
+              onClick={() => (onAddWord ? onAddWord() : addWord.open())}
               className="flex items-center gap-2.5 rounded-control bg-navy-raised px-2.5 py-2 text-body font-semibold text-on-navy outline-none focus-visible:ring-2 focus-visible:ring-accent"
             >
               <span aria-hidden className="flex rounded-sm bg-accent p-0.5 text-on-accent">
