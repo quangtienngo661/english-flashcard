@@ -730,7 +730,25 @@
         "plural": "plural",
         "comparative": "comparative",
         "superlative": "superlative"
-      }
+      },
+      "sentenceTitle": "Add a saved sentence",
+      "sentenceSub": "{word}, {pos}: {meaning} · {count, plural, one {# sentence} other {# sentences}} so far",
+      "sentenceSubNone": "{word}, {pos}: {meaning}",
+      "sentenceField": "Sentence",
+      "sentenceHint": "Up to 300 characters. The sentence shows on the back of the card, with the word highlighted.",
+      "sentenceSave": "Save sentence",
+      "sentenceSaved": "Sentence saved.",
+      "sentenceRequired": "Enter the sentence you saw.",
+      "seeSentences": "See saved sentences",
+      "bulkButton": "Add them all to a deck",
+      "bulkTitle": "Add them all to a deck",
+      "bulkBody": "{filters}. Function words are skipped; words already in the deck stay as they are.",
+      "bulkInto": "Deck",
+      "bulkNewDeck": "New deck: {name}",
+      "bulkNote": "Words not learned yet go to the New stage.",
+      "bulkSubmit": "Add them all",
+      "bulkResult": "Added {added} words to “{name}”.",
+      "bulkSkipped": "{already} already in the deck, {function} function words skipped, {full} did not fit because the deck is full."
     },
     "stages": {
       "s0": "New",

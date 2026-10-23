@@ -1,15 +1,18 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
+import { AddSentenceSheet } from '../add-word/AddSentenceSheet';
 import { useGroups } from '../groups/groups-api';
 import { highlightWord } from '../groups/highlight';
+import { SavedSentencesDialog } from './SavedSentencesDialog';
 import { STAGE_DAYS, useSentences, type ItemState, type PageSense } from './word-api';
 
 /** "Bạn đang học" (copy §15 row 7): part of speech, meaning, each deck with its stage, the first saved sentence. */
 export function LearningBlock({ sense, item, forms }: { sense: PageSense; item: ItemState; forms: string[] }) {
   const t = useTranslations('App.word');
   const groups = useGroups().data?.items ?? [];
+  const [dialog, setDialog] = useState<'add' | 'list' | null>(null);
   const sentences = useSentences(sense.sentence_count > 0 ? sense.sense_id : null).data?.items ?? [];
   const decks = item.group_ids
     .map((id) => groups.find((g) => g.id === id)?.name)
@@ -39,6 +42,15 @@ export function LearningBlock({ sense, item, forms }: { sense: PageSense; item: 
           </Row>
         )}
       </dl>
+      <button
+        type="button"
+        onClick={() => setDialog('add')}
+        className="w-fit text-caption font-semibold text-primary underline underline-offset-2 outline-none focus-visible:ring-2 focus-visible:ring-primary"
+      >
+        {t('addSentence')}
+      </button>
+      {dialog === 'add' && <AddSentenceSheet sense={sense} onClose={() => setDialog(null)} onSeeAll={() => setDialog('list')} />}
+      {dialog === 'list' && <SavedSentencesDialog lemma={sense.lemma} senseId={sense.sense_id} onClose={() => setDialog(null)} />}
     </section>
   );
 }

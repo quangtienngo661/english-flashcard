@@ -730,7 +730,25 @@
         "plural": "số nhiều",
         "comparative": "so sánh hơn",
         "superlative": "so sánh nhất"
-      }
+      },
+      "sentenceTitle": "Thêm câu đã gặp",
+      "sentenceSub": "{word}, {pos}: {meaning} · đã có {count} câu",
+      "sentenceSubNone": "{word}, {pos}: {meaning}",
+      "sentenceField": "Câu",
+      "sentenceHint": "Tối đa 300 ký tự. Câu hiện ở mặt sau thẻ, từ được tô.",
+      "sentenceSave": "Lưu câu",
+      "sentenceSaved": "Đã lưu câu.",
+      "sentenceRequired": "Nhập câu bạn đã gặp.",
+      "seeSentences": "Xem các câu đã gặp",
+      "bulkButton": "Thêm cả loạt vào nhóm",
+      "bulkTitle": "Thêm cả loạt vào nhóm",
+      "bulkBody": "{filters}. Từ chức năng được bỏ qua; từ đã có trong nhóm giữ nguyên.",
+      "bulkInto": "Vào nhóm",
+      "bulkNewDeck": "Nhóm mới: {name}",
+      "bulkNote": "Các từ chưa học vào ngăn Mới.",
+      "bulkSubmit": "Thêm cả loạt",
+      "bulkResult": "Đã thêm {added} từ vào nhóm “{name}”.",
+      "bulkSkipped": "{already} từ đã có trong nhóm, {function} từ chức năng bỏ qua, {full} từ không vừa vì nhóm đã đầy."
     },
     "stages": {
       "s0": "Mới",

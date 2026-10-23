@@ -14,6 +14,7 @@ import { Button } from '@/app-ui/Button';
 import { EmptyState, ErrorState, FullScreenSpinner } from '@/app-ui/States';
 import { cn } from '@/lib/cn';
 import { useAddWord } from '../add-word/add-word-context';
+import { BulkAddSheet } from '../add-word/BulkAddSheet';
 import { LookupFilters } from './LookupFilters';
 import { lookupHref, parseLookup, useWordSearch, type LookupParams, type WordRow } from './lookup-api';
 
@@ -27,6 +28,10 @@ export function LookupPage() {
   const errorText = useErrorMessage();
   const words = search.data?.pages.flatMap((p) => p.items) ?? [];
   const [picked, setPicked] = useState<string | null>(null);
+  const [bulk, setBulk] = useState(false);
+  const tAdd = useTranslations('App.addWord');
+  // Bulk add takes the catalog filters only: not a search text, not "Chỉ từ của tôi" (API (c) body).
+  const canBulk = Boolean((params.level || params.topic || params.pos) && !params.q && !params.mine);
   const preview = words.find((w) => w.lemma === picked) ?? words[0];
   const go = (next: LookupParams) => router.replace(lookupHref(locale, next));
 
@@ -34,7 +39,15 @@ export function LookupPage() {
     <AppShell variant="main" fab aside={preview ? <WordPreview word={preview} /> : undefined}>
       <div className="flex flex-col gap-4">
         <PageTitle>{t('title')}</PageTitle>
-        <LookupFilters value={params} onChange={go} />
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <LookupFilters value={params} onChange={go} />
+          {canBulk && words.length > 0 && (
+            <Button variant="quiet" onPress={() => setBulk(true)}>
+              {tAdd('bulkButton')}
+            </Button>
+          )}
+        </div>
+        {bulk && <BulkAddSheet filter={params} onClose={() => setBulk(false)} />}
         {search.isPending ? (
           <FullScreenSpinner />
         ) : search.isError ? (
