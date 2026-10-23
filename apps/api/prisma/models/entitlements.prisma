@@ -123,6 +123,37 @@ model TrialHistory {
   @@map("trial_history")
 }
 
+// One payment event a learner can see in their transaction history (learner UI design §8.9). Staff grants are not copied
+// here: the reads merge them from entitlement_grants. No backfill: subscriptions older than the table have no rows (GI10).
+model BillingTransaction {
+  id                    String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId                String    @map("user_id") @db.Uuid
+  subscriptionId        String?   @map("subscription_id") @db.Uuid
+  // purchase | renewal | plan_change | refund | trial (CHECK).
+  kind                  String
+  plan                  String
+  // month | year | null (CHECK).
+  interval              String?
+  // Smallest currency unit (99.000 VND → 99000, 4.99 USD → 499); null when the provider did not say.
+  amountMinor           BigInt?   @map("amount_minor")
+  // ISO 4217, null with amount_minor.
+  currency              String?
+  occurredAt            DateTime  @map("occurred_at") @db.Timestamptz
+  periodStart           DateTime  @map("period_start") @db.Timestamptz
+  periodEnd             DateTime? @map("period_end") @db.Timestamptz
+  // succeeded | refunded | pending | reversed (CHECK); pending is for real providers later.
+  status                String
+  provider              String
+  environment           String
+  providerTransactionId String?   @map("provider_transaction_id")
+  createdAt             DateTime  @default(now()) @map("created_at") @db.Timestamptz
+
+  @@unique([provider, environment, providerTransactionId, kind])
+  @@index([userId, occurredAt(sort: Desc), id(sort: Desc)])
+  @@index([occurredAt(sort: Desc), id(sort: Desc)])
+  @@map("billing_transactions")
+}
+
 // One line of the usage ledger (design §7). No counter table (D28): what is left is always counted from these rows.
 // Partial uniques on (user_id, pool, operation_id) per kind live in the migration.
 model UsageRecord {

@@ -214,3 +214,17 @@ Final M4: minor (deferred): English hint header has no count (design §7.1, kept
 - Ruling: chủ dự án (23/10/2026) "kể từ về sau không cần hỏi mình, cứ triển khai mà làm" — cổng "ok" của Task 35 và các cổng xem ảnh sau không dừng
   chờ nữa; ảnh vẫn ghi lại để xem khi rảnh — giá nếu sai: chủ dự án góp ý sau, sửa khung và code ở mốc sau.
 - M4 merge (PR #126, CI xanh); nhánh M4b `feat/giao-dien-nguoi-hoc-m4b` cắt từ `origin/dev` @ `dc737a4`.
+
+### Task 36 — API (i) ghi giao dịch (23/10/2026)
+
+- Bảng `billing_transactions` (migration `20261023100000_billing_transactions`, CHECK cho kind/interval/status/environment và "amount_minor null đúng
+  khi currency null"); `NormalizedEvent` thêm `amount`, `currency` cho `subscription_started`, `renewed`, `plan_changed`, `refunded`; fake wire nhận
+  `amount` (số hữu hạn) và `currency` (`/^[A-Z]{3}$/`), sai dạng thì null chứ không thành "thiếu trường"; `pnpm billing:fake-event --currency`.
+- `TransactionsRepository.recordFromEvent` gọi trong transaction của bộ áp sự kiện; `toMinorUnits` theo số chữ số lẻ của `Intl`.
+- Test: GI1–GI6, GI10 (repository + fake wire + applier); API unit 2477/2477; drift diff rỗng trên DB local; build xanh.
+- Ruling: `plan_changed` tới trễ (stale) vẫn ghi giao dịch — vì đó vẫn là một lần trả tiền, chỉ trạng thái subscription giữ bản mới hơn — giá nếu sai:
+  một dòng thừa trong lịch sử, bỏ lời gọi ở nhánh stale.
+- Ruling: dòng `refund` chép `interval` và kỳ của dòng gốc; không thấy dòng gốc (giao dịch có trước bảng) thì `interval` null, kỳ bắt đầu lúc hoàn tiền,
+  không có ngày cuối — vì `period_start` bắt buộc — giá nếu sai: màn ghi kỳ lạ cho vài dòng hoàn tiền cũ trên local.
+- Ruling: tiền chỉ ghi khi có cả `amount` và `currency` (CHECK) — vì không có đơn vị thì không đổi ra đơn vị nhỏ nhất được — giá nếu sai: mất số tiền của
+  cổng chỉ gửi số; cổng thật sau này phải gửi tiền tệ.

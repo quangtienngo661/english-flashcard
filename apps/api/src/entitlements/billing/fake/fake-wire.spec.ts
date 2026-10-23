@@ -87,18 +87,18 @@ describe('fakeParse (design §9.3)', () => {
     [
       'subscription_started',
       { ...PERIOD, payment_fingerprint: 'fp-1', transaction_id: 'tx-1' },
-      { ...PERIOD_PARSED, trialEndsAt: null, paymentFingerprint: 'fp-1', transactionId: 'tx-1' },
+      { ...PERIOD_PARSED, trialEndsAt: null, paymentFingerprint: 'fp-1', transactionId: 'tx-1', amount: null, currency: null },
     ],
-    ['renewed', { ...PERIOD, transaction_id: 'tx-2' }, { ...PERIOD_PARSED, transactionId: 'tx-2' }],
+    ['renewed', { ...PERIOD, transaction_id: 'tx-2' }, { ...PERIOD_PARSED, transactionId: 'tx-2', amount: null, currency: null }],
     ['renewal_failed', { grace_ends_at: '2026-11-22T10:00:00.000Z' }, { graceEndsAt: at('2026-11-22T10:00:00.000Z') }],
     ['grace_ended', {}, {}],
     ['cancel_scheduled', {}, {}],
     ['cancel_unscheduled', {}, {}],
     ['expired', {}, {}],
     ['revoked', {}, {}],
-    ['refunded', { transaction_id: 'tx-2', amount: 4.99 }, { transactionId: 'tx-2', amount: 4.99 }],
+    ['refunded', { transaction_id: 'tx-2', amount: 4.99, currency: 'USD' }, { transactionId: 'tx-2', amount: 4.99, currency: 'USD' }],
     ['refund_reversed', { transaction_id: 'tx-2' }, { transactionId: 'tx-2' }],
-    ['plan_changed', { ...PERIOD, interval: 'year', transaction_id: 'tx-3' }, { ...PERIOD_PARSED, interval: 'year', transactionId: 'tx-3' }],
+    ['plan_changed', { ...PERIOD, interval: 'year', transaction_id: 'tx-3' }, { ...PERIOD_PARSED, interval: 'year', transactionId: 'tx-3', amount: null, currency: null }],
     ['plan_change_scheduled', { interval: 'month' }, { interval: 'month' }],
     ['plan_change_canceled', {}, {}],
   ];
@@ -122,6 +122,17 @@ describe('fakeParse (design §9.3)', () => {
   it('optional fields default to null: renewal_failed without grace_ends_at, refunded without amount', () => {
     expect(one({ ...base, type: 'renewal_failed' }).event).toMatchObject({ graceEndsAt: null });
     expect(one({ ...base, type: 'refunded', transaction_id: 'tx-2' }).event).toMatchObject({ amount: null });
+  });
+
+  it('GI1/GI6: a charge carries amount and currency when sent; a malformed one is null, never missing', () => {
+    const charge = { ...PERIOD, transaction_id: 'tx-1', amount: 99000, currency: 'VND' };
+    for (const type of ['subscription_started', 'renewed', 'plan_changed'] as const) {
+      expect(one({ ...base, type, ...charge }).event).toMatchObject({ amount: 99000, currency: 'VND' });
+    }
+    const odd = one({ ...base, type: 'renewed', ...PERIOD, transaction_id: 'tx-1', amount: 'lots', currency: 'vnd' });
+    expect(odd).toMatchObject({ missing: [] });
+    expect(odd.event).toMatchObject({ amount: null, currency: null });
+    expect(one({ ...base, type: 'refunded', transaction_id: 'tx-2', currency: 'US' }).event).toMatchObject({ currency: null });
   });
 
   it('D35: payment_succeeded is an unknown type (skipped and counted)', () => {

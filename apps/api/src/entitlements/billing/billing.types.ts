@@ -36,19 +36,22 @@ type EventBase = {
 
 type Period = { interval: Interval; currentPeriodStart: Date; currentPeriodEnd: Date };
 
+/** What a charge cost, when the provider says (learner UI design §8.9): major units and an ISO 4217 code, else null. */
+type Money = { amount: number | null; currency: string | null };
+
 /**
  * One event with the §9.3 fields of its type. D37: every charge carries its transaction id — `renewed`, `plan_changed` and a
  * `subscription_started` without a trial; a trial start charges nothing, so its id may be absent.
  */
 export type NormalizedEvent = EventBase &
   (
-    | ({ type: 'subscription_started'; paymentFingerprint: string | null } & Period &
+    | ({ type: 'subscription_started'; paymentFingerprint: string | null } & Period & Money &
         ({ trialEndsAt: Date; transactionId: string | null } | { trialEndsAt: null; transactionId: string }))
-    | ({ type: 'renewed'; transactionId: string } & Period)
+    | ({ type: 'renewed'; transactionId: string } & Period & Money)
     | { type: 'renewal_failed'; graceEndsAt: Date | null }
-    | { type: 'refunded'; transactionId: string; amount: number | null }
+    | ({ type: 'refunded'; transactionId: string } & Money)
     | { type: 'refund_reversed'; transactionId: string }
-    | ({ type: 'plan_changed'; transactionId: string } & Period)
+    | ({ type: 'plan_changed'; transactionId: string } & Period & Money)
     | { type: 'plan_change_scheduled'; interval: Interval }
     | { type: 'grace_ended' }
     | { type: 'cancel_scheduled' }
