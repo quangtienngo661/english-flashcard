@@ -198,3 +198,15 @@ Final M4: minor (deferred): "Gần đây" shows only the clock time for older an
 Final M4: minor (deferred): history day list steps by 24 h, can skip/repeat a local day around DST
 Final M4: minor (deferred): the question count field cannot be cleared while typing; role spinbutton without arrow keys
 Final M4: minor (deferred): English hint header has no count (design §7.1, kept as designed)
+
+### Task 35 — Figma frames Lịch sử giao dịch (23/10/2026)
+
+- Khung: page 08 section `472:7912` (K/95, K/95b, K/95c, K/95d, K/95 Dark, K/95b Dark), page 09 section `474:5484` (M/95, M/95b, M/95c), page 04 section
+  `477:3674` (A/90, A/90b, A/90c). Node id ở `docs/mockups/2026-10-22/figma-node-ids.md`; chữ ở copy doc §17.4.
+- figma-checks: 12/12 khung overflow 0, 0 nút vàng thừa, không ledge bị cắt; độ tương phản chữ nhỏ nhất web 6.46 (Dark 5.5), điện thoại 7.25, admin 4.69
+  (bằng A/71 đã duyệt, đạt AA).
+- Ruling: admin ghi loại "Đội cấp" thay vì "Đội Wordmet cấp" — vì ô Loại của bảng admin hẹp, chữ đủ bị cắt; admin hiểu nghĩa — giá nếu sai: đổi một nhãn
+  trong `apps/admin/messages`.
+- Ruling: thêm trạng thái "Đang chờ" (chip `primary-soft`) ở một dòng Gia hạn mỗi danh sách — vì plan liệt kê 4 trạng thái mà khung ban đầu thiếu một —
+  giá nếu sai: đổi màu chip.
+- Cổng duyệt: gửi ảnh ba section cho chủ dự án, chờ "ok" trước Task 36.

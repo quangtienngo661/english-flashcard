@@ -1009,3 +1009,34 @@ Luật tiếng Anh (design §7.1, D13): sentence case; "we" chỉ khi lỗi do a
 Các mã lỗi API người học có thể gặp đều có câu ở `App.errors` của `apps/web/messages/vi.json`. Chỗ bản chữ chưa có câu, Claude viết theo mẫu 3.1
 (chuyện gì xảy ra + làm gì tiếp), ví dụ: "Bạn thao tác hơi nhanh. Thử lại sau N giây." (E15), "Không kết nối được. Kiểm tra mạng rồi thử lại." (E5),
 "Lần bấm trước bị dừng giữa chừng. Bấm lại." (E14). Chủ dự án xem qua ảnh từng mốc.
+
+### 17.4 Lịch sử giao dịch (M4b, D18; khung K/95–K/95d, M/95–M/95c, A/90–A/90c, 23/10/2026)
+
+Người học (Cài đặt › Lịch sử giao dịch, `/app/settings/transactions`):
+
+| Chỗ | Chữ |
+|---|---|
+| Tiêu đề, link về | "Lịch sử giao dịch" · "‹ Cài đặt" |
+| Cột (web) | Ngày · Loại · Gói và kỳ · Số tiền · Kỳ được dùng · Trạng thái · [Chi tiết ›] |
+| Loại | Mua · Gia hạn · Đổi kỳ · Hoàn tiền · Dùng thử · Đội Wordmet cấp |
+| Trạng thái | Thành công · Đang chờ · Đã hoàn tiền · Đã hủy hoàn tiền |
+| Gói và kỳ | "Pro · theo tháng" · "Pro · theo năm"; dùng thử và đội cấp không ghi kỳ |
+| Số tiền | "99.000 ₫"; dùng thử và đội cấp ghi "—" (web) hoặc không ghi (điện thoại) |
+| Kỳ được dùng | "15/10 – 14/11/2026", khác năm thì ghi đủ "15/9/2026 – 14/9/2027"; điện thoại thêm "Dùng " ở đầu |
+| Dòng dưới bảng | Web: "Ngày theo múi giờ của bạn. Bấm Chi tiết để xem cổng thanh toán và mã giao dịch." Điện thoại: "Chạm một dòng để xem cổng thanh toán và mã giao dịch." |
+| Cột phụ (web) | "Gói Pro · Đội Wordmet cấp tới hết 31/12/2026" (gói hiện tại); khối "Về giao dịch": "Mua, Gia hạn, Đổi kỳ: lần trả tiền cho gói Pro." · "Hoàn tiền: tiền trả lại cho bạn; dòng gốc ghi “Đã hoàn tiền”." · "Dùng thử và Đội Wordmet cấp: không thu tiền." |
+| Chi tiết (hộp thoại web, tấm từ đáy điện thoại) | "Chi tiết giao dịch"; Loại · Gói · Số tiền · Thời điểm ("15/10/2026, 9:12") · Kỳ được dùng · Trạng thái · Cổng thanh toán ("Giả (thử)" cho `fake`) · Mã giao dịch; "Có câu hỏi về giao dịch này? Gửi mã giao dịch cho đội Wordmet qua mục Liên hệ." [Đóng] |
+| Trống | "Chưa có giao dịch nào." · "Khi bạn dùng thử, mua gói Pro hoặc được đội Wordmet cấp gói, giao dịch sẽ hiện ở đây." |
+| Lỗi tải | "Không tải được lịch sử giao dịch." · "Kiểm tra mạng rồi thử lại." [Thử lại] |
+
+Admin (trang "Giao dịch", chỉ `admin`):
+
+| Chỗ | Chữ |
+|---|---|
+| Mô tả | "Mua, gia hạn, đổi kỳ, hoàn tiền, dùng thử và lần đội Wordmet cấp gói của mọi người học, mới nhất trước." |
+| Bộ lọc | Email người học ("Tìm theo email") · Loại ("Tất cả loại") · Từ ngày · Tới ngày |
+| Cột | Người học · Loại · Gói · Kỳ được dùng · Thời điểm · Số tiền · Cổng · Trạng thái · [Chi tiết] |
+| Loại "Đội Wordmet cấp" | Trong bảng admin ghi gọn "Đội cấp"; cổng ghi "Không qua cổng" |
+| Chân bảng | "N giao dịch · mới nhất trước · ngày giờ theo múi giờ Asia/Ho_Chi_Minh" |
+| Chi tiết | "Chi tiết giao dịch"; thêm Mã người học · "99.000 ₫ (VND)" · "Giả (thử) · môi trường test" · Mã giao dịch của cổng · Mã subscription; "Chỉ xem. Hoàn tiền làm ở cổng thanh toán; sự kiện hoàn tiền của cổng tự cập nhật dòng này." [Đóng] |
+| Không khớp bộ lọc | "Không có giao dịch nào khớp bộ lọc. Đổi email, loại hoặc khoảng ngày rồi xem lại." |

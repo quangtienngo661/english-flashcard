@@ -121,6 +121,12 @@ Mở một khung: `https://www.figma.com/design/7HcPAKLrWu32C27qYMJUOA/?node-id=
 | 11 · Bản tối mẫu (Dark, đợt giao diện) (`402:5517`) | K/78a Câu AI · Điền từ vào câu · Dark | `402:5625` |
 | 11 · Bản tối mẫu (Dark, đợt giao diện) (`402:5517`) | K/52 Gói học (Free) · Dark | `402:5677` |
 | 11 · Bản tối mẫu (Dark, đợt giao diện) (`402:5517`) | K/40 Thêm từ (nhận ra went) · Dark | `402:5747` |
+| 12 · Lịch sử giao dịch (M4b, D18) (`472:7912`) | K/95 Cài đặt · Lịch sử giao dịch | `472:7913` |
+| 12 · Lịch sử giao dịch (M4b, D18) (`472:7912`) | K/95b Lịch sử giao dịch · chi tiết một giao dịch | `473:7923` |
+| 12 · Lịch sử giao dịch (M4b, D18) (`472:7912`) | K/95c Lịch sử giao dịch · chưa có giao dịch | `473:8081` |
+| 12 · Lịch sử giao dịch (M4b, D18) (`472:7912`) | K/95d Lịch sử giao dịch · lỗi tải | `473:8220` |
+| 12 · Lịch sử giao dịch (M4b, D18) (`472:7912`) | K/95 Cài đặt · Lịch sử giao dịch · Dark | `473:8361` |
+| 12 · Lịch sử giao dịch (M4b, D18) (`472:7912`) | K/95b Lịch sử giao dịch · chi tiết · Dark | `473:8486` |
 
 ## 09 Người học · Điện thoại (page `284:8`)
 
@@ -227,6 +233,9 @@ Mở một khung: `https://www.figma.com/design/7HcPAKLrWu32C27qYMJUOA/?node-id=
 | 9 · Bản tối mẫu (điện thoại, Dark) (`450:5219`) | M/78a Câu AI · Điền từ vào câu · Dark | `450:5282` |
 | 9 · Bản tối mẫu (điện thoại, Dark) (`450:5219`) | M/62 Gói học (Free) · Dark | `450:5331` |
 | 9 · Bản tối mẫu (điện thoại, Dark) (`450:5219`) | M/50 Thêm từ (nhận ra went) · Dark | `450:5406` |
+| 10 · Lịch sử giao dịch (điện thoại, M4b, D18) (`474:5484`) | M/95 Cài đặt · Lịch sử giao dịch | `474:5485` |
+| 10 · Lịch sử giao dịch (điện thoại, M4b, D18) (`474:5484`) | M/95b Lịch sử giao dịch · chi tiết (tấm từ đáy) | `474:5601` |
+| 10 · Lịch sử giao dịch (điện thoại, M4b, D18) (`474:5484`) | M/95c Lịch sử giao dịch · chưa có giao dịch | `474:5680` |
 
 ## 04 Admin · Web (page `2:5`)
 
@@ -287,6 +296,9 @@ Mở một khung: `https://www.figma.com/design/7HcPAKLrWu32C27qYMJUOA/?node-id=
 | E4 · AI của Bước 6 (A/80–A/86, chỉ admin) (`399:3706`) | A/83 Bộ ví dụ và các lần chạy | `400:5124` |
 | E4 · AI của Bước 6 (A/80–A/86, chỉ admin) (`399:3706`) | A/85 Chi phí AI | `400:5685` |
 | E4 · AI của Bước 6 (A/80–A/86, chỉ admin) (`399:3706`) | A/86 Các lần gọi theo mã thao tác | `400:6197` |
+| E5 · Giao dịch (A/90, M4b, D18; chỉ admin) (`477:3674`) | A/90 Giao dịch · danh sách | `477:3675` |
+| E5 · Giao dịch (A/90, M4b, D18; chỉ admin) (`477:3674`) | A/90b Giao dịch · chi tiết (hộp thoại) | `478:3743` |
+| E5 · Giao dịch (A/90, M4b, D18; chỉ admin) (`477:3674`) | A/90c Giao dịch · không có giao dịch khớp bộ lọc | `478:3957` |
 
 ## Thành phần dùng chung đặt ngay trên page 08 và 09 (ngoài section)
 
