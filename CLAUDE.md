@@ -293,10 +293,11 @@ API additions the screens assume (staff emails in admin responses, `group_id` fo
 `docs/deliveries/giao-dien-nguoi-hoc.md` (plan tóm tắt 22/10/2026; as-built per milestone, M1 23/10/2026); owner's manual test flow and Windows
 setup `docs/deliveries/giao-dien-nguoi-hoc-test-flow.md`. Design (D1–D22), decisions and plan: `docs/superpowers/{specs,decisions,plans}/2026-10-22-giao-dien-nguoi-hoc*.md`.
 One branch per milestone `feat/giao-dien-nguoi-hoc-<m1|m2|…>` from `origin/dev`. On Windows `pnpm dev:app` runs the app in a Linux container on :3001.
-**Handoff: read `docs/deliveries/giao-dien-nguoi-hoc-handoff-2026-10-23.md` first (§0 is the latest state)** (method, conventions, rulings, what only runs on
+**Handoff: read `docs/deliveries/giao-dien-nguoi-hoc-handoff-2026-10-23.md` first (§0a is the latest state)** (method, conventions, rulings, what only runs on
 the owner's Windows machine); the executing-plans ledger is `docs/deliveries/giao-dien-nguoi-hoc-ledger.md`. M1–M4 merged (PR #123–#126); M4b (Task 35–40,
 transaction history: API `billing_transactions`, `/v1/me/transactions`, `/v1/admin/transactions`, learner `/app/settings/transactions`, admin `/transactions`)
-in PR #127 into `dev`; next M5a (Task 41–45). Owner 23/10/2026: no more stops for image or Figma approval ("cứ triển khai mà làm").
+merged (PR #127); M5a (Task 41–45, practice with AI questions) in PR #128 into `dev`; next M5b (AI lookup, My words). Owner 23/10/2026: no more
+stops for image or Figma approval ("cứ triển khai mà làm").
 
 ## Việc phải phân tích khi tới bước tương ứng (ghi 12/10/2026, từ brainstorm Bước 2)
 
