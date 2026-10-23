@@ -117,3 +117,30 @@ ký tự); mục M2 của tài liệu kiểm; `SHOTS_MILESTONE=m2` chụp ảnh 
 - Đổi câu trả lời sau khi mất mạng là một lần bấm mới (`review_id` mới): nếu lần trước thật ra đã tới API thì thẻ được ghi hai lần (hiếm).
 - Dev server trong container đôi khi không thấy file vừa sửa hoặc giữ cache cũ (cả trang trả 404): tắt, `docker volume rm wordmet-dev-app-next`,
   chạy lại `pnpm dev:app`.
+
+# M3 — as-built (23/10/2026)
+
+Nhánh `feat/giao-dien-nguoi-hoc-m3` (cắt từ `origin/dev` @ `da92f9e`, sau khi M2 merge), PR #125. Task 22–27, cộng các commit sửa (test trước,
+sửa sau).
+
+**Đã có:** API (e) `GET /v1/senses/{id}/sentences` và `sentence_count` ở trang từ (GE1–GE5); dải tra dưới thanh trên ở mọi trang chính và trang
+con (phím `/`); Tra từ (K/30, M/40) với bộ lọc trong đường dẫn, nút + mỗi dòng, thẻ xem trước; trang từ (K/31–K/33, M/41): dạng chia, "Là dạng chia
+của …", định nghĩa, "Đang học", "Bạn đang học", "Cùng chủ đề", danh sách câu đã gặp; tấm Thêm từ (phím N, thanh trên, nút + điện thoại, ô "Thêm từ
+vừa gặp" ở Hôm nay, [Thêm từ này]) với went → go, tự nhập nghĩa, nhóm dùng gần nhất, bộ chọn nhóm K/42–K/42c; thêm câu đã gặp (K/44, K/44b);
+thêm cả loạt theo bộ lọc (K/43); link tên từ ở trang nhóm và "Xem mọi chủ đề trong Tra từ" bật lại; e2e M3; mục M3 của tài liệu kiểm.
+
+**Kiểm**
+- Unit web 399/399 (hai lần liền); API toàn bộ xanh; e2e Worker (Docker): xem PR.
+- API (e) chạy thật trên DB riêng: GE1 3 câu cũ trước và `sentence_count` 3, GE2 rỗng và 0, GE3 404, GE4 204 và số câu giảm; log không có chữ của câu.
+- Reviewer mới: 0 Critical, 7 Important, 14 Minor. Đã sửa cả 7 Important, cộng 2 Minor nâng lên (tiêu đề từ dài làm trang cuộn ngang; nút
+  "Lưu vào …" trong tấm không lưu) và một lỗi tự thấy khi xem ảnh (người học tiếng Anh thấy định nghĩa hai lần). Minor còn lại ghi trong ledger.
+
+**Khác plan / cần chủ dự án biết**
+- Không có API cho tổng số kết quả và cho từ gần nhau trong từ điển: Tra từ và trang từ bỏ "40 từ, đã bỏ qua 3 từ chức năng", "Còn 31 từ", khối
+  "Từ gần trong từ điển"; "Thêm cả loạt" chỉ biết số từ sau khi thêm (thông báo đủ các số).
+- "Thêm cả loạt" chỉ hiện khi có bộ lọc trình độ / chủ đề / loại từ và không có chữ tra hay "Chỉ từ của tôi" (body không nhận hai thứ đó; body rỗng
+  sẽ thêm cả từ điển).
+- "Dùng gần đây" chỉ có nhóm dùng gần nhất (một khóa `wordmet-web.last-group` như plan).
+- Chữ "Tra trong 7.799 từ" giữ như bản chữ dù con số không được tính.
+- Dev server trong container có lúc ghi hỏng `prerender-manifest.json` khi hai trang biên dịch cùng lúc (mọi trang 500); tài liệu kiểm mục 0.5 ghi
+  cách xử lý.

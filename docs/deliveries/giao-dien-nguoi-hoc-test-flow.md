@@ -46,6 +46,8 @@ tiếng Việt và tiếng Anh, sáng và tối, cửa sổ rộng và hẹp (th
    "Failed to load native binding"). Lần đầu mất vài phút cài thư viện; mỗi trang mở lần đầu biên dịch vài giây. Thêm file mới khi đang chạy thì
    tắt (Ctrl+C, rồi `docker stop wordmet-dev-app`) và chạy lại. Nếu sau khi đổi nhánh mọi trang `/app` báo "Không tìm thấy trang" hoặc
    không thấy thay đổi mới: tắt như trên, chạy `docker volume rm wordmet-dev-app-next` (bộ nhớ đệm của dev server), rồi chạy lại.
+   Nếu mọi trang báo lỗi 500 và log có "Unexpected non-whitespace character after JSON at position 512": hai trang biên dịch cùng lúc đã
+   ghi hỏng một file của dev server. Mở lần lượt từng trang sau khi khởi động (đừng mở nhiều tab cùng lúc), hoặc tắt, xóa volume như trên, chạy lại.
 6. **Admin cùng lúc** (khi cần, ví dụ cấp gói): chạy admin với API qua IP, rồi mở admin bằng IP — để cookie đăng nhập của admin không đè
    phiên của app người học:
    ```powershell
