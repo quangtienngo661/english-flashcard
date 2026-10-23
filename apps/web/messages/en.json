@@ -1065,6 +1065,7 @@
           "fallbackQuota": "No AI credits left for questions. The rest of this session uses other question types.",
           "notRecognized": "AI didn’t recognize “{lemma}”, a word you added, so this question uses another type.",
           "notRecognizedStop": "AI didn’t recognize “{lemma}”, a word you added.",
+          "notRecognizedAny": "AI didn’t recognize a word you added, so this question uses another type.",
           "seeWord": "Check the word in My words",
           "dismiss": "Close notice"
         },

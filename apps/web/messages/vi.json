@@ -1065,6 +1065,7 @@
           "fallbackQuota": "Hết lượt câu AI. Các câu còn lại của phiên dùng kiểu câu khác.",
           "notRecognized": "AI chưa nhận ra từ “{lemma}” bạn tự thêm, nên câu này dùng kiểu câu khác.",
           "notRecognizedStop": "AI chưa nhận ra từ “{lemma}” bạn tự thêm.",
+          "notRecognizedAny": "AI chưa nhận ra một từ bạn tự thêm, nên câu này dùng kiểu câu khác.",
           "seeWord": "Xem lại từ trong Từ của tôi",
           "dismiss": "Đóng thông báo"
         },

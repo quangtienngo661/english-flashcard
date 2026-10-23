@@ -51,7 +51,7 @@ export type AnswerResult = {
 export type AnswerBody = { choice: number } | { is_true: boolean } | { text: string };
 export type AiReason = 'ai-failed' | 'quota-exhausted' | 'plan-required' | 'ai-unavailable';
 /** Bước 7 §6.6 fields sent with a question or with `ai_unavailable`. */
-type AiFields = { notice?: string; ai_reason?: AiReason; resets_at?: string; sense_id?: string };
+type AiFields = { notice?: string; ai_reason?: AiReason; resets_at?: string; sense_id?: string; lemma?: string | null };
 type NextResult =
   | ({ state: 'question'; session: PracticeSessionView; item: Item } & AiFields)
   | { state: 'waiting_continue' | 'finished'; session: PracticeSessionView }
@@ -61,7 +61,7 @@ type NextResult =
 /** The band over a question (K/75, K/75b, K/76): shown once, the API sends it once per session. */
 export type SessionNotice =
   | { kind: 'ai-fallback'; reason: AiReason; resetsAt: string | null }
-  | { kind: 'word-not-recognized'; senseId: string };
+  | { kind: 'word-not-recognized'; senseId: string; lemma: string | null };
 
 export type Outcome = { kind: 'try_again'; tries: number } | { kind: 'final'; result: AnswerResult; chosen: AnswerBody | null };
 export type Phase =
@@ -69,7 +69,7 @@ export type Phase =
   /** K/73: the next AI question is still being written. */
   | { kind: 'preparing' }
   /** K/74a–K/74d: no AI question can be made now; the session stays open. */
-  | { kind: 'ai_stopped'; reason: AiReason; resetsAt: string | null; senseId: string | null }
+  | { kind: 'ai_stopped'; reason: AiReason; resetsAt: string | null; lemma: string | null }
   | { kind: 'round' }
   | { kind: 'summary' }
   | { kind: 'advancing' }
@@ -85,7 +85,7 @@ const PREPARING_LIMIT_SECONDS = 60;
 
 function noticeOf(next: AiFields): SessionNotice | null {
   if (next.notice === 'ai-fallback' && next.ai_reason) return { kind: 'ai-fallback', reason: next.ai_reason, resetsAt: next.resets_at ?? null };
-  if (next.notice === 'word-not-recognized' && next.sense_id) return { kind: 'word-not-recognized', senseId: next.sense_id };
+  if (next.notice === 'word-not-recognized' && next.sense_id) return { kind: 'word-not-recognized', senseId: next.sense_id, lemma: next.lemma ?? null };
   return null;
 }
 
@@ -176,16 +176,22 @@ export function usePracticeSession() {
     else if (next.state === 'finished') toSummary(next.session);
     else if (next.state === 'preparing') {
       if (waited >= PREPARING_LIMIT_SECONDS) {
-        set({ kind: 'ai_stopped', reason: 'ai-failed', resetsAt: null, senseId: null }, next.session);
+        set({ kind: 'ai_stopped', reason: 'ai-failed', resetsAt: null, lemma: null }, next.session);
         return;
       }
       set({ kind: 'preparing' }, next.session);
       await new Promise((resolve) => setTimeout(resolve, next.retry_after_seconds * 1000));
-      return advanceNow(id, false, waited + next.retry_after_seconds);
+      try {
+        return await advanceNow(id, false, waited + next.retry_after_seconds);
+      } catch (e) {
+        // Review I1: a failed poll must not leave "Đang tạo câu…" up for good; the general error has [Thử lại].
+        if (isSlug(e, 'session-closed')) throw e;
+        set({ kind: 'ai_stopped', reason: 'ai-failed', resetsAt: null, lemma: null });
+      }
     } else if (next.state === 'ai_unavailable') {
       set({
         kind: 'ai_stopped', reason: next.reason, resetsAt: next.resets_at ?? null,
-        senseId: next.notice === 'word-not-recognized' ? (next.sense_id ?? null) : null,
+        lemma: next.notice === 'word-not-recognized' ? (next.lemma ?? null) : null,
       }, next.session);
     }
   }
@@ -233,7 +239,9 @@ export function usePracticeSession() {
 
   function recordFinal(item: Item, result: AnswerResult, chosen: AnswerBody | null) {
     if (session) setResults((r) => ({ ...r, [session!.asked]: result.result }));
-    set({ kind: 'question', item: { ...item, hint_level: result.hint_level }, outcome: { kind: 'final', result, chosen } });
+    // The band stays with its question: K/76 names the word and links to it once the answer is shown (review I3).
+    const notice = phase?.kind === 'question' ? phase.notice : null;
+    set({ kind: 'question', item: { ...item, hint_level: result.hint_level }, outcome: { kind: 'final', result, chosen }, notice });
   }
 
   async function answer(body: AnswerBody) {
@@ -244,7 +252,9 @@ export function usePracticeSession() {
     try {
       const response = await answerOnce.submit(`${item.item_id}:${JSON.stringify(body)}`);
       if (!response) return;
-      if (response.result === 'try_again') set({ kind: 'question', item: { ...item, state: 'try_again', tries: response.tries }, outcome: { kind: 'try_again', tries: response.tries } });
+      if (response.result === 'try_again') {
+        set({ kind: 'question', item: { ...item, state: 'try_again', tries: response.tries }, outcome: { kind: 'try_again', tries: response.tries }, notice: phase.notice });
+      }
       else recordFinal(item, response, body);
     } catch (e) {
       fail(e);

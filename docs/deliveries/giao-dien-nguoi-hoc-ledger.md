@@ -341,3 +341,15 @@ Final M4: minor (deferred): English hint header has no count (design §7.1, kept
   câu điền từ có `private_word`, `prepare` 200, gợi ý 1 "d", lý do báo lỗi câu AI có "Khác" cuối, báo lỗi không gửi `share_private_word` → 201.
   Bộ ảnh `SHOTS_MILESTONE=m5a` (36 ảnh: Tùy chỉnh có AI, câu AI, sau khi trả lời × vi/en × sáng/tối × 390/1024/1440).
 - Ruling (e2e): công tắc khóa có `aria-disabled` (D6: bấm được để biết lý do) nên Playwright coi là tắt; test bấm bằng bàn phím (focus + Enter).
+
+### Final M5a — reviewer (23/10/2026)
+
+- Reviewer mới (opus): 0 Critical, 3 Important, 6 Minor. Sửa một lượt, test trước (`test: reproduce the m5a review findings`):
+  - I1: một lần gọi `next` lỗi khi đang "Đang tạo câu…" làm màn quay mãi → giờ sang câu chung "Hệ thống đang gặp lỗi." + [Thử lại]; [Thử lại] lỗi thì
+    hiện câu lỗi.
+  - I2: `GET /v1/senses/{id}` chỉ đọc từ catalog nên không lấy được từ riêng → API gửi kèm `lemma` (của chính người học) với `word-not-recognized`
+    (thêm vào, v1 additive); bỏ lần đọc nghĩa.
+  - I3: dải K/76 nêu từ trước khi trả lời là lộ đáp án (câu thay thế hỏi đúng từ đó) → trước khi trả lời ghi "một từ bạn tự thêm", tên từ và link hiện
+    khi đã có kết quả; dải giữ lại sau khi trả lời.
+- Minor để lại: M1 vòng chờ chạy tiếp tối đa 60 giây sau khi rời trang; M2 giới hạn 60 giây chỉ cộng `retry_after_seconds`; M3 mất focus khi đổi trạng
+  thái; M5 bấm Bắt đầu trước khi tải xong gói thì không gửi kiểu AI; M6 in đậm phân biệt hoa thường.

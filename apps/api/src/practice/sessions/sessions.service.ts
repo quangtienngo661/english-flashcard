@@ -40,16 +40,17 @@ type PublicAiReason = 'ai-failed' | 'quota-exhausted' | 'plan-required' | 'ai-un
 const publicReason = (failure: AiFailure): PublicAiReason =>
   failure === 'quota-exhausted' || failure === 'plan-required' || failure === 'ai-unavailable' ? failure : 'ai-failed';
 /** Bước 7 (design §6.6): shown with the question that replaced an AI one, or with `ai_unavailable` (row 4). */
-type AiNotice = { notice: 'ai-fallback'; ai_reason: PublicAiReason } | { notice: 'word-not-recognized'; sense_id: string };
+/** `lemma` names the learner's own word for the app (learner UI review M5a: no learner endpoint reads a private sense by id). */
+type AiNotice = { notice: 'ai-fallback'; ai_reason: PublicAiReason } | { notice: 'word-not-recognized'; sense_id: string; lemma: string | null };
 type NoticeFields = { notice?: Notice | 'group-not-found' | AiNotice['notice']; ai_reason?: PublicAiReason; resets_at?: string;
-  sense_id?: string };
+  sense_id?: string; lemma?: string | null };
 export type NextResult =
   | ({ state: 'question'; session: SessionView; item: ItemView } & NoticeFields)
   | ({ state: 'waiting_continue'; session: SessionView } & NoticeFields)
   | ({ state: 'finished'; session: SessionView } & NoticeFields)
   | { state: 'preparing'; session: SessionView; retry_after_seconds: number }
   | ({ state: 'ai_unavailable'; session: SessionView; reason: PublicAiReason; resets_at?: string; retry_after_seconds?: number }
-    & Pick<NoticeFields, 'notice' | 'sense_id'>);
+    & Pick<NoticeFields, 'notice' | 'sense_id' | 'lemma'>);
 type Advance =
   | { state: 'question'; item: ItemWithQuestion; notice?: Notice; ai?: AiNotice;
     /** G attached a question not yet charged: confirm it after commit (B7E33). */
@@ -267,13 +268,13 @@ export class SessionsService {
       case 'question': {
         const ai: NoticeFields = !result.ai ? {} : result.ai.notice === 'ai-fallback'
           ? { notice: 'ai-fallback', ai_reason: result.ai.ai_reason, ...(failure.resetsAt ? { resets_at: failure.resetsAt } : {}) }
-          : { notice: 'word-not-recognized', sense_id: result.ai.sense_id };
+          : { notice: 'word-not-recognized', sense_id: result.ai.sense_id, lemma: result.ai.lemma };
         return { state: 'question', session: view, item: itemView(result.item), ...(result.notice ? { notice: result.notice } : {}), ...ai };
       }
       case 'ai_unavailable':
         return {
           state: 'ai_unavailable', session: view, reason: result.reason, ...(failure.resetsAt ? { resets_at: failure.resetsAt } : {}),
-          ...(result.ai?.notice === 'word-not-recognized' ? { notice: 'word-not-recognized', sense_id: result.ai.sense_id } : {}),
+          ...(result.ai?.notice === 'word-not-recognized' ? { notice: 'word-not-recognized', sense_id: result.ai.sense_id, lemma: result.ai.lemma } : {}),
           ...(failure.retryAfterSeconds !== undefined ? { retry_after_seconds: failure.retryAfterSeconds } : {}),
         };
       case 'preparing':
@@ -578,8 +579,10 @@ export class SessionsService {
   private async failedSlot(tx: Prisma.TransactionClient, learner: Learner, session: PracticeSession, items: ItemWithQuestion[],
     request: AiRequestRow, retryAi: boolean): Promise<Advance | null> {
     const failure = request.failure ?? 'ai-failed';
-    const notRecognized: AiNotice | undefined = failure === 'word-not-recognized'
-      ? { notice: 'word-not-recognized', sense_id: request.senseId } : undefined;
+    const notRecognized: AiNotice | undefined = failure === 'word-not-recognized' ? {
+      notice: 'word-not-recognized', sense_id: request.senseId,
+      lemma: (await this.content.practiceSenses(learner.userId, [request.senseId], learner.nativeLanguage, tx)).get(request.senseId)?.lemma ?? null,
+    } : undefined;
     const ruleTypes = await this.ruleTypesOf(tx, learner.userId, session);
     if (ruleTypes.length > 0) {
       await tx.practiceSession.update({ where: { id: session.id }, data: { pendingAiRequestId: null } });

@@ -116,7 +116,10 @@ export function PracticeSession() {
   else if (phase.kind === 'ai_stopped')
     body = (
       <AiUnavailableState
-        {...phase}
+        reason={phase.reason}
+        resetsAt={phase.resetsAt}
+        lemma={phase.lemma}
+        error={state.error ? errorText(state.error) : null}
         busy={state.busy}
         onRetry={() => void state.retryAi()}
         onLater={() => hardReplace(practiceHref)}
@@ -125,7 +128,7 @@ export function PracticeSession() {
   else
     body = (
       <>
-        {phase.notice && <SessionNotice notice={phase.notice} onDismiss={state.dismissNotice} />}
+        {phase.notice && <SessionNotice notice={phase.notice} answered={phase.outcome?.kind === 'final'} onDismiss={state.dismissNotice} />}
         <Question state={state} item={phase.item} onReport={() => setReporting(true)} />
       </>
     );
