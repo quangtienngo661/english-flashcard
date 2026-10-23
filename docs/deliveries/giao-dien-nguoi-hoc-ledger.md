@@ -265,3 +265,10 @@ Final M4: minor (deferred): English hint header has no count (design §7.1, kept
 - Ruling: `TextField` của admin nhận `type="date"` (ô ngày của trình duyệt) — vì admin chưa có ô chọn ngày — giá nếu sai: thay bằng ô chọn ngày khi
   refactor admin.
 - Ruling: vi-VN in ngày-tháng riêng là "15-10", nên kỳ cùng năm cắt năm khỏi ngày đầy đủ ("15/10 → 14/11/2026"); bản `en` ghi đủ năm hai đầu.
+
+### Task 40 — M4b e2e, tài liệu kiểm, chạy thật (23/10/2026)
+
+- web `e2e/app/m4b.spec.ts` 12 passed (desktop + mobile); admin `e2e/transactions.spec.ts` 4 passed, cả bộ e2e admin 139 passed; `learner:setup
+  --transactions` gửi ba sự kiện cổng giả qua webhook thật (mua, gia hạn, hoàn tiền gia hạn) → 4 dòng (cùng lần cấp Pro); chạy lại bỏ qua.
+- Bộ ảnh `SHOTS_MILESTONE=m4b` (24 ảnh: danh sách và chi tiết × vi/en × sáng/tối × 390/1024/1440) trên API thật, app `:3001`.
+- Minor (để lại): ở 1440 cột "Kỳ được dùng" của dòng cấp gói xuống hai dòng ("23/10 –" / "22/11/2026") vì bảy cột chia đều.
