@@ -1046,6 +1046,25 @@
       "session": {
         "close": "Dừng phiên, xem tổng kết",
         "header": "Luyện tập · {source}",
+        "ai": {
+          "preparingTitle": "Đang tạo câu…",
+          "preparingBody": "Thường mất vài giây.",
+          "errorTitle": "Hệ thống đang gặp lỗi.",
+          "quotaTitle": "Hết lượt câu AI",
+          "refillDate": "Lượt câu AI mới có vào {date}.",
+          "refillTime": "Lượt câu AI mới có lúc {time}.",
+          "planTitle": "Gói của bạn chưa có câu AI",
+          "planBody": "Gói của bạn đã hết hạn nên các câu AI còn lại không tạo được.",
+          "stayOpen": "Dừng thì phiên vẫn đang dở, bạn làm tiếp sau được.",
+          "retry": "Thử lại",
+          "later": "Để sau",
+          "fallback": "Câu này chuyển sang kiểu câu thường.",
+          "fallbackQuota": "Hết lượt câu AI. Các câu còn lại của phiên dùng kiểu câu khác.",
+          "notRecognized": "AI chưa nhận ra từ “{lemma}” bạn tự thêm, nên câu này dùng kiểu câu khác.",
+          "notRecognizedStop": "AI chưa nhận ra từ “{lemma}” bạn tự thêm.",
+          "seeWord": "Xem lại từ trong Từ của tôi",
+          "dismiss": "Đóng thông báo"
+        },
         "progress": "Câu {n}/{total}",
         "progressDone": "Xong {total}/{total}",
         "kind": {

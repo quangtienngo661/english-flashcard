@@ -303,3 +303,17 @@ Final M4: minor (deferred): English hint header has no count (design §7.1, kept
   ghi cao hơn số dùng thật.
 - Ruling: nhãn Pro cạnh công tắc hiện cả với gói Pro/Dùng thử (khung K/70 có), không có ổ khóa; gói Miễn phí có ổ khóa (ProBadge).
 - Ruling: tắt công tắc xóa hộp K/71/K/72 và ghi `off`; bật lại thì cả ba kiểu AI vẫn như lần chọn trước trong hộp.
+
+### Task 43 — Trạng thái AI trong phiên luyện (23/10/2026)
+
+- `preparing` → K/73 "Đang tạo câu…", gọi lại `next` sau `retry_after_seconds`; cộng dồn thời gian chờ ≥ 60 giây → câu chung "Hệ thống đang gặp lỗi."
+  (E29). Mỗi câu hiện lên → `POST …/prepare` một lần, không chờ, bỏ qua lỗi (chỉ phiên có kiểu AI). `ai_unavailable`: `ai-failed`/`ai-unavailable` →
+  câu chung D11 + [Thử lại] (`{retry_ai:true}`) + [Để sau]; `quota-exhausted` → K/74b "Hết lượt câu AI" + lúc nạp (D15) + [Để sau]; `plan-required` →
+  K/74c + [Để sau]; kèm `word-not-recognized` → "AI chưa nhận ra từ “…” bạn tự thêm." + link tới trang từ. Dải trên câu: `ai-fallback` → "Câu này
+  chuyển sang kiểu câu thường." (K/75b khi hết lượt, có lúc nạp), `word-not-recognized` → K/76 + link; đóng được.
+- Test: 13 test (`session/ai-states.test.tsx`, đồng hồ giả cho 60 giây); web unit 488/488; typecheck, lint xanh.
+- Ruling: K/74b, K/74c chỉ có [Để sau] (thử lại không giúp được tới khi có lượt / có gói); K/74a, K/74d có [Thử lại] + [Để sau] — như ghi chú "sửa sau
+  review cuối" của bản chữ 7.6.
+- Ruling: lemma của từ riêng đọc bằng `GET /v1/senses/{id}` (API không gửi lemma kèm `word-not-recognized`); link tới trang từ `/app/word?w=` vì "Từ của
+  tôi" có ở M5b; chưa có lemma thì dải `word-not-recognized` chưa hiện — giá nếu sai: dải hiện trễ một nhịp.
+- Ruling: dải thông báo mất khi trả lời câu đó (kết quả thay chỗ) — API chỉ gửi một lần mỗi phiên.

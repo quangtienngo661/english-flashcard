@@ -13,12 +13,15 @@ import { cn } from '@/lib/cn';
 import { useGroups } from '../../groups/groups-api';
 import { useSourceLabel } from '../CurrentSessionCard';
 import type { PracticeSessionView } from '../practice-api';
+import { AiUnavailableState } from './AiUnavailableState';
 import { AnswerFeedback } from './AnswerFeedback';
 import { HintPanel, hintLevels } from './HintPanel';
 import { Choices, chosenChoice } from './McqQuestion';
+import { PreparingState } from './PreparingState';
 import { KBD, PromptTitle, QuestionCard, promptKind } from './QuestionCard';
 import { ReportDialog } from './ReportDialog';
 import { RoundPrompt } from './RoundPrompt';
+import { SessionNotice } from './SessionNotice';
 import { SessionSummary } from './SessionSummary';
 import { TrueFalseChoices } from './TrueFalseQuestion';
 import { focusAnswer, TryAgainActions, TypeWordInput } from './TypeWordQuestion';
@@ -108,7 +111,23 @@ export function PracticeSession() {
   else if (phase.kind === 'closed') body = <Ended message={t('closed')} href={practiceHref} />;
   else if (phase.kind === 'round') body = <RoundPrompt session={session!} onContinue={(go) => void state.continueRound(go)} busy={state.busy} />;
   else if (phase.kind === 'summary') body = <SessionSummary session={session!} sourceLabel={sourceLabel} />;
-  else body = <Question state={state} item={phase.item} onReport={() => setReporting(true)} />;
+  else if (phase.kind === 'preparing') body = <PreparingState />;
+  else if (phase.kind === 'ai_stopped')
+    body = (
+      <AiUnavailableState
+        {...phase}
+        busy={state.busy}
+        onRetry={() => void state.retryAi()}
+        onLater={() => hardReplace(practiceHref)}
+      />
+    );
+  else
+    body = (
+      <>
+        {phase.notice && <SessionNotice notice={phase.notice} onDismiss={state.dismissNotice} />}
+        <Question state={state} item={phase.item} onReport={() => setReporting(true)} />
+      </>
+    );
 
   const done = phase?.kind === 'summary';
   const total = session?.target_count ?? 0;

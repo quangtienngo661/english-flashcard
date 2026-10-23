@@ -47,15 +47,27 @@ export type AnswerResult = {
 };
 
 export type AnswerBody = { choice: number } | { is_true: boolean } | { text: string };
+export type AiReason = 'ai-failed' | 'quota-exhausted' | 'plan-required' | 'ai-unavailable';
+/** Bước 7 §6.6 fields sent with a question or with `ai_unavailable`. */
+type AiFields = { notice?: string; ai_reason?: AiReason; resets_at?: string; sense_id?: string };
 type NextResult =
-  | { state: 'question'; session: PracticeSessionView; item: Item }
+  | ({ state: 'question'; session: PracticeSessionView; item: Item } & AiFields)
   | { state: 'waiting_continue' | 'finished'; session: PracticeSessionView }
   | { state: 'preparing'; session: PracticeSessionView; retry_after_seconds: number }
-  | { state: 'ai_unavailable'; session: PracticeSessionView; reason: string };
+  | ({ state: 'ai_unavailable'; session: PracticeSessionView; reason: AiReason } & AiFields);
+
+/** The band over a question (K/75, K/75b, K/76): shown once, the API sends it once per session. */
+export type SessionNotice =
+  | { kind: 'ai-fallback'; reason: AiReason; resetsAt: string | null }
+  | { kind: 'word-not-recognized'; senseId: string };
 
 export type Outcome = { kind: 'try_again'; tries: number } | { kind: 'final'; result: AnswerResult; chosen: AnswerBody | null };
 export type Phase =
-  | { kind: 'question'; item: Item; outcome: Outcome | null }
+  | { kind: 'question'; item: Item; outcome: Outcome | null; notice?: SessionNotice | null }
+  /** K/73: the next AI question is still being written. */
+  | { kind: 'preparing' }
+  /** K/74a–K/74d: no AI question can be made now; the session stays open. */
+  | { kind: 'ai_stopped'; reason: AiReason; resetsAt: string | null; senseId: string | null }
   | { kind: 'round' }
   | { kind: 'summary' }
   | { kind: 'advancing' }
@@ -66,6 +78,18 @@ export type SummaryWord = { sense_id: string; lemma: string; meaning: string; it
 export type Summary = { session: PracticeSessionView; asked: number; correct: number; wrong: number; words: SummaryWord[] };
 
 const isSlug = (error: unknown, slug: string) => error instanceof ApiError && error.problem.slug === slug;
+/** E29: after this long in "Đang tạo câu…" the learner gets the general error instead of waiting on. */
+const PREPARING_LIMIT_SECONDS = 60;
+
+function noticeOf(next: AiFields): SessionNotice | null {
+  if (next.notice === 'ai-fallback' && next.ai_reason) return { kind: 'ai-fallback', reason: next.ai_reason, resetsAt: next.resets_at ?? null };
+  if (next.notice === 'word-not-recognized' && next.sense_id) return { kind: 'word-not-recognized', senseId: next.sense_id };
+  return null;
+}
+
+/** Whether the session asks AI questions (Bước 7), so it makes them ahead with `prepare`. */
+export const asksAi = (session: PracticeSessionView) =>
+  session.types.some((type) => type === 'meaning_in_sentence' || type === 'mcq_sentence' || (type === 'cloze' && session.cloze_source === 'ai'));
 
 /**
  * One practice session (K/60–K/67). Nothing is kept in the browser: the page reads `GET /practice/sessions/current` once and
@@ -143,16 +167,25 @@ export function usePracticeSession() {
     }
   }
 
-  async function advanceNow(id: string, retries = 0): Promise<void> {
-    const next = await api.post<NextResult>(`/v1/practice/sessions/${id}/next`, {});
-    if (next.state === 'question') set({ kind: 'question', item: next.item, outcome: null }, next.session);
+  async function advanceNow(id: string, retryAi = false, waited = 0): Promise<void> {
+    const next = await api.post<NextResult>(`/v1/practice/sessions/${id}/next`, retryAi ? { retry_ai: true } : {});
+    if (next.state === 'question') set({ kind: 'question', item: next.item, outcome: null, notice: noticeOf(next) }, next.session);
     else if (next.state === 'waiting_continue') set({ kind: 'round' }, next.session);
     else if (next.state === 'finished') toSummary(next.session);
-    else if (next.state === 'preparing' && retries < 10) {
-      // AI questions arrive in M5a; a rule-only session does not prepare, but waiting is harmless.
+    else if (next.state === 'preparing') {
+      if (waited >= PREPARING_LIMIT_SECONDS) {
+        set({ kind: 'ai_stopped', reason: 'ai-failed', resetsAt: null, senseId: null }, next.session);
+        return;
+      }
+      set({ kind: 'preparing' }, next.session);
       await new Promise((resolve) => setTimeout(resolve, next.retry_after_seconds * 1000));
-      return advanceNow(id, retries + 1);
-    } else throw new Error('practice-next-unavailable');
+      return advanceNow(id, false, waited + next.retry_after_seconds);
+    } else if (next.state === 'ai_unavailable') {
+      set({
+        kind: 'ai_stopped', reason: next.reason, resetsAt: next.resets_at ?? null,
+        senseId: next.notice === 'word-not-recognized' ? (next.sense_id ?? null) : null,
+      }, next.session);
+    }
   }
 
   function toSummary(view: PracticeSessionView) {
@@ -172,6 +205,16 @@ export function usePracticeSession() {
     // guarded/advanceNow are recreated each render; the id alone decides the one call.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [advanceId]);
+
+  // Bước 7 §6.4: once a question is on screen, ask the API to write the next AI questions; never awaited, errors ignored.
+  const shownItemId = phase?.kind === 'question' ? phase.item.item_id : null;
+  const prepareFor = shownItemId !== null && session && asksAi(session) ? session.id : null;
+  useEffect(() => {
+    if (shownItemId === null || prepareFor === null) return;
+    void api.post(`/v1/practice/sessions/${prepareFor}/prepare`, {}).catch(() => {});
+    // One call per question shown: the item id alone decides it.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [shownItemId]);
 
   const chosenRef = useRef<{ itemId: string; body: AnswerBody } | null>(null);
   const answerOnce = useSubmitOnce(async (key) => {
@@ -234,6 +277,14 @@ export function usePracticeSession() {
       guarded(async () => {
         if (session) await advanceNow(session.id);
       }),
+    /** K/74a, K/74d [Thử lại]: ask again with `retry_ai` (Bước 7 §6.6). */
+    retryAi: () =>
+      guarded(async () => {
+        if (session) await advanceNow(session.id, true);
+      }),
+    dismissNotice: () => {
+      if (phase?.kind === 'question') set({ ...phase, notice: null });
+    },
     continueRound: (go: boolean) =>
       guarded(async () => {
         if (!session) return;
