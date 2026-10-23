@@ -966,6 +966,106 @@
         },
         "start": "Bắt đầu {count} câu",
         "sessionsLeft": "Dùng 1 trong {remaining} phiên còn lại hôm nay."
+      },
+      "session": {
+        "close": "Dừng phiên, xem tổng kết",
+        "header": "Luyện tập · {source}",
+        "progress": "Câu {n}/{total}",
+        "progressDone": "Xong {total}/{total}",
+        "kind": {
+          "mcq": "Trắc nghiệm",
+          "true_false": "Đúng/sai",
+          "type_meaning": "Gõ từ · theo nghĩa",
+          "type_sentence": "Gõ từ · theo câu",
+          "other": "Câu"
+        },
+        "ask": {
+          "mcq": "Chọn từ có nghĩa này",
+          "true_false": "Từ và nghĩa này có khớp không?",
+          "type_meaning": "Gõ từ tiếng Anh có nghĩa này",
+          "type_sentence": "Gõ từ còn thiếu, đúng dạng trong câu",
+          "other": "Trả lời câu này"
+        },
+        "true": "Đúng",
+        "false": "Sai",
+        "rightOption": "Đáp án đúng",
+        "chosen": "Bạn chọn",
+        "chosenRight": "Bạn chọn · đúng",
+        "answerLabel": "Câu trả lời",
+        "answerPlaceholder": "Gõ từ tiếng Anh",
+        "check": "Kiểm tra",
+        "attempt": "Lần {n}",
+        "tryAgainBody": "Kiểm tra chính tả rồi gõ lại. Wordmet chưa hiện đáp án.",
+        "retry": "Làm lại",
+        "reveal": "Xem đáp án",
+        "tryAgainNote": "Làm lại mà đúng vẫn tính là đúng. Xem đáp án thì tính là sai.",
+        "right": "Đúng rồi",
+        "wrong": "Chưa đúng",
+        "revealLine": "{lemma} · {meaning}",
+        "stillLearning": "Cần ôn lại",
+        "know": "Đã biết",
+        "next": "Câu tiếp",
+        "noteWrong": "Wordmet không tự đổi lịch ôn. Bấm Cần ôn lại để đưa {lemma} lên đầu nhóm, về ngăn 1 ngày.",
+        "noteRight": "Bấm Cần ôn lại hoặc Đã biết cũng sang câu tiếp.",
+        "noteHint": "Dùng gợi ý vẫn được chấm như thường, nhưng câu đúng nhờ gợi ý không có nút Đã biết.",
+        "phoneHint": "Bấm vào đáp án. Chọn xong là chấm luôn.",
+        "failed": "Chưa lưu được câu trả lời. Kiểm tra mạng rồi bấm lại.",
+        "closed": "Phiên này đã kết thúc.",
+        "none": "Không có phiên luyện nào đang mở.",
+        "back": "Về Luyện tập",
+        "hint": {
+          "title": "Gợi ý",
+          "progress": "Gợi ý {opened}/{total}",
+          "button": "Gợi ý",
+          "open": "Mở gợi ý {n}",
+          "locked": "Gợi ý {n}",
+          "letters": "{first}… · {length} chữ",
+          "kinds": {
+            "definition": "Định nghĩa",
+            "example": "Câu ví dụ",
+            "meaning": "Nghĩa tiếng Việt",
+            "first_letter": "Chữ cái đầu",
+            "letters": "Chữ cái đầu và số chữ"
+          }
+        },
+        "report": {
+          "button": "Báo lỗi",
+          "sent": "Đã báo lỗi",
+          "title": "Báo lỗi câu này",
+          "question": "Lỗi gì?",
+          "chooseReason": "Chọn một lý do.",
+          "note": "Ghi chú",
+          "optional": "không bắt buộc · {count}/{max}",
+          "required": "bắt buộc · {count}/{max}",
+          "noteMissing": "Ghi rõ lỗi để gửi báo lỗi này.",
+          "info": "Đội Wordmet xem lại câu này. Trong lúc chờ, câu này không tính vào Từ hay sai; kết quả đã chấm giữ nguyên.",
+          "send": "Gửi báo lỗi",
+          "done": "Đã gửi báo lỗi. Xem kết quả trong Lịch sử → Báo lỗi của tôi."
+        },
+        "round": {
+          "chip": "Hết vòng {round}",
+          "title": "Bạn đã làm hết {words} từ",
+          "body": "Phiên đặt {target} câu, nhưng chỉ có {words} từ. Luyện lại thêm {left} câu với chính các từ này? Wordmet xáo thứ tự và đổi kiểu câu khi được.",
+          "correct": "{count} đúng",
+          "wrong": "{count} sai",
+          "go": "Luyện lại thêm {left} câu",
+          "stop": "Kết thúc, xem tổng kết",
+          "note": "Wordmet chỉ hỏi một lần. Luyện lại vẫn nằm trong phiên này, không tính thêm phiên."
+        },
+        "summary": {
+          "title": "Xong {count} câu.",
+          "line": "{source}, {types}. Hôm nay còn {remaining}/{limit} phiên luyện.",
+          "lineNoPool": "{source}, {types}.",
+          "mixed": "trộn {count} kiểu câu",
+          "correct": "Đúng",
+          "wrong": "Sai",
+          "listTitle": "Cần ôn lại · {count} từ",
+          "added": "Đã đưa vào ưu tiên",
+          "review": "Cần ôn lại",
+          "reviewAll": "Đưa {count} từ còn lại vào ưu tiên",
+          "home": "Về Luyện tập",
+          "again": "Luyện thêm một phiên"
+        }
       }
     }
   }

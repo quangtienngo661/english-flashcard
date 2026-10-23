@@ -162,3 +162,11 @@ Task 30: Ruling: side card says "đã dùng 1/3" (copy doc §6 / §17) instead o
 Task 30: Ruling: hero counts today = Σ(priority + due) over decks; 0 → "Hôm nay không còn từ nào cần ôn…" and no buttons; [Ôn thẻ] of K/55 goes to Today (/app) — cost if wrong: one link.
 Task 30: Ruling: the customise dialog is the shared Dialog (sheet on phones, sticky start) rather than M/L54's full page; Dialog gained titleAside, closeLabel (×) and wide — cost if wrong: phone layout differs a little from M/L54.
 Task 30: Ruling: hero frame and art live in an extra file PracticeHero.tsx (OutOfSessions reuses them); "Gần đây" shows the 3 newest answers — cost if wrong: none.
+Task 30: complete (commits 939cf0e..10f98bd, tests: pnpm --dir apps/web exec vitest run src/features/learner/practice src/app-shell/api →    Duration  9.98s (transform 1.23s, setup 818ms, import 2.15s, tests 7.41s, environment 3.82s))
+Task 31: Ruling: × and Esc end the session (POST finish → summary, as K/51's "Esc Dừng phiên, xem tổng kết"); leaving by navigation keeps it open (E34, pinned) — cost if wrong: one handler.
+Task 31: Ruling: K/66's per-reason descriptions dropped (the reasons API has a label and a note placeholder only); K/67's "Đúng nhờ gợi ý" tile and per-word tags (sai / bỏ qua / đúng nhờ gợi ý) dropped (summary API gives correct, wrong and the listed words only) — cost if wrong: two summary fields.
+Task 31: Ruling: an unopened hint row is named "Gợi ý N" (its kind is unknown until opened); K/62's "Đã biết: … lên ngăn 3 ngày" dropped (the next stage is not known before pressing) — cost if wrong: one string.
+Task 31: Ruling: [Luyện thêm một phiên] starts a session with the ended session's source, deck, filter, order, types and count — cost if wrong: one link to Luyện tập instead.
+Task 31: Ruling: progress segments colour only answers seen on this page; earlier ones after a reload are grey "done" — cost if wrong: an API field per item.
+Task 31: Ruling: hint texts are read with POST …/hint as queries (the API only raises the level), so a reload shows opened hints again — cost if wrong: one extra request per opened hint after a reload.
+Task 31: Ruling: Button carries data-variant (tests read which button is the yellow one) — cost if wrong: none.

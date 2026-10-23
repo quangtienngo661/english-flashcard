@@ -966,6 +966,106 @@
         },
         "start": "Start {count, plural, one {# question} other {# questions}}",
         "sessionsLeft": "Uses 1 of {remaining, plural, one {# session} other {# sessions}} left today."
+      },
+      "session": {
+        "close": "Stop, see summary",
+        "header": "Practice · {source}",
+        "progress": "Question {n} of {total}",
+        "progressDone": "Done {total} of {total}",
+        "kind": {
+          "mcq": "Multiple choice",
+          "true_false": "True or false",
+          "type_meaning": "Type the word · meaning",
+          "type_sentence": "Type the word · sentence",
+          "other": "Question"
+        },
+        "ask": {
+          "mcq": "Choose the word with this meaning",
+          "true_false": "Do this word and meaning match?",
+          "type_meaning": "Type the English word with this meaning",
+          "type_sentence": "Type the missing word, in the right form",
+          "other": "Answer this question"
+        },
+        "true": "True",
+        "false": "False",
+        "rightOption": "Right answer",
+        "chosen": "Your choice",
+        "chosenRight": "Your choice · right",
+        "answerLabel": "Your answer",
+        "answerPlaceholder": "Type the English word",
+        "check": "Check",
+        "attempt": "Try {n}",
+        "tryAgainBody": "Check the spelling and try again. The answer stays hidden.",
+        "retry": "Try again",
+        "reveal": "Show answer",
+        "tryAgainNote": "A right answer on a retry still counts as right. Showing the answer counts as wrong.",
+        "right": "Right",
+        "wrong": "Not quite",
+        "revealLine": "{lemma} · {meaning}",
+        "stillLearning": "Still learning",
+        "know": "Know",
+        "next": "Next question",
+        "noteWrong": "Your review schedule doesn't change on its own. Still learning moves {lemma} to the top of its deck, back to the 1-day stage.",
+        "noteRight": "Still learning or Know also moves to the next question.",
+        "noteHint": "Hints don't change the grading, but a right answer after a hint has no Know button.",
+        "phoneHint": "Tap an answer. It's graded right away.",
+        "failed": "Your answer wasn't saved. Check your connection and try again.",
+        "closed": "This session has ended.",
+        "none": "No practice session is open.",
+        "back": "Back to Practice",
+        "hint": {
+          "title": "Hint",
+          "progress": "Hint",
+          "button": "Hint",
+          "open": "Show next hint",
+          "locked": "Hint {n}",
+          "letters": "{first}… · {length} letters",
+          "kinds": {
+            "definition": "Definition",
+            "example": "Example",
+            "meaning": "Meaning",
+            "first_letter": "First letter",
+            "letters": "First letter and length"
+          }
+        },
+        "report": {
+          "button": "Report",
+          "sent": "Reported",
+          "title": "Report this question",
+          "question": "What's wrong?",
+          "chooseReason": "Choose a reason.",
+          "note": "Note",
+          "optional": "optional · {count}/{max}",
+          "required": "required · {count}/{max}",
+          "noteMissing": "Describe the problem to send this report.",
+          "info": "The Wordmet team will check this question. Until then it doesn't count toward Weak words; the grade stays as it is.",
+          "send": "Send report",
+          "done": "Report sent. See the outcome in History → My reports."
+        },
+        "round": {
+          "chip": "End of round {round}",
+          "title": "You've done all {words, plural, one {# word} other {# words}}",
+          "body": "The session has {target} questions, but only {words, plural, one {# word} other {# words}}. Practice {left} more with the same words? Wordmet shuffles them and changes the question type when it can.",
+          "correct": "{count} right",
+          "wrong": "{count} wrong",
+          "go": "Practice {left} more",
+          "stop": "Finish, see summary",
+          "note": "Wordmet asks only once. Extra questions stay in this session and don't use another session."
+        },
+        "summary": {
+          "title": "{count, plural, one {# question} other {# questions}} done.",
+          "line": "{source}, {types}. {remaining} of {limit} sessions left today.",
+          "lineNoPool": "{source}, {types}.",
+          "mixed": "{count} question types",
+          "correct": "Right",
+          "wrong": "Wrong",
+          "listTitle": "Still learning · {count, plural, one {# word} other {# words}}",
+          "added": "Added to priority",
+          "review": "Still learning",
+          "reviewAll": "Add the other {count, plural, one {# word} other {# words}} to priority",
+          "home": "Back to Practice",
+          "again": "Practice another session"
+        }
       }
     }
   }
