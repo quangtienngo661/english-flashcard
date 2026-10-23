@@ -1032,7 +1032,16 @@
           "random": "Ngẫu nhiên"
         },
         "start": "Bắt đầu {count} câu",
-        "sessionsLeft": "Dùng 1 trong {remaining} phiên còn lại hôm nay."
+        "sessionsLeft": "Dùng 1 trong {remaining} phiên còn lại hôm nay.",
+        "aiToggle": "Kiểu câu có AI",
+        "aiLine": "Phiên này dùng tối đa {needed} lượt câu AI · còn {remaining}",
+        "quotaTitle": "Không đủ lượt câu AI",
+        "quotaBody": "Phiên này cần {needed} lượt câu AI, bạn còn {remaining}.",
+        "quotaRefillDate": "Lượt câu AI mới có vào {date}.",
+        "quotaRefillTime": "Lượt câu AI mới có lúc {time}.",
+        "quotaHint": "Giảm số câu, hoặc bỏ kiểu câu có AI rồi bắt đầu lại.",
+        "aiUnavailable": "Hệ thống đang gặp lỗi, chưa dùng được kiểu câu có AI. Bỏ kiểu câu AI để bắt đầu, hoặc thử lại sau.",
+        "dropAi": "Bỏ kiểu câu có AI"
       },
       "session": {
         "close": "Dừng phiên, xem tổng kết",

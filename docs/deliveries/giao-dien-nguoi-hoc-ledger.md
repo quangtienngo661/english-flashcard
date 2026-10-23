@@ -291,3 +291,15 @@ Final M4: minor (deferred): English hint header has no count (design §7.1, kept
 - Bỏ kiểm `share_private_word` và lỗi `share-consent-required`; body vẫn nhận trường này (zod `optional`) nhưng không truyền vào service. Test GF1, GF2,
   GF4 mới; B7E79 đổi thành GF1, B7E81 ghi thêm GF3; `smoke-buoc-7.mjs` đổi bước B7E79 thành "gửi được không cần đồng ý".
 - Ruling: giữ câu báo lỗi `share-consent-required` trong `apps/web` (`problem.ts`, `messages`) — vì API cũ có thể còn trả — giá nếu sai: vài dòng thừa.
+
+### Task 42 — Công tắc "Kiểu câu có AI" trong Tùy chỉnh phiên (23/10/2026)
+
+- `AiTypesToggle` (công tắc + nhãn Pro, ba ô AI cùng cỡ, dòng "Phiên này dùng tối đa N lượt câu AI · còn M"); Miễn phí: công tắc khóa, bấm → dòng D6;
+  nhớ bật/tắt ở `localStorage` `wordmet-web.ai-types` (`on`/`off`, đọc ghi bọc try/catch); bắt đầu gửi `types` gồm kiểu AI, không bao giờ `cloze_source`.
+  Lỗi khi mở phiên: 403 `ai-quota-insufficient` → K/71 (cần, còn, lúc nạp theo D15), 503 `ai-unavailable` → câu chung D11, cả hai có [Bỏ kiểu câu có AI];
+  403 `entitlement-required` → công tắc khóa + dòng D6 + đọc lại `/me/entitlements` (E24).
+- Test: 6 test mới (`ai-toggle.test.tsx`); web unit 475/475; lint, typecheck xanh.
+- Ruling: N = ceil(số câu × số kiểu AI ÷ tổng số kiểu) như API (Bước 7 §6.1 bước 4), là mức tối đa; số thật (`ai_planned`) ≤ N — giá nếu sai: dòng lượt
+  ghi cao hơn số dùng thật.
+- Ruling: nhãn Pro cạnh công tắc hiện cả với gói Pro/Dùng thử (khung K/70 có), không có ổ khóa; gói Miễn phí có ổ khóa (ProBadge).
+- Ruling: tắt công tắc xóa hộp K/71/K/72 và ghi `off`; bật lại thì cả ba kiểu AI vẫn như lần chọn trước trong hộp.

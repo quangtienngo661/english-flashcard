@@ -1032,7 +1032,16 @@
           "random": "Random"
         },
         "start": "Start {count, plural, one {# question} other {# questions}}",
-        "sessionsLeft": "Uses 1 of {remaining, plural, one {# session} other {# sessions}} left today."
+        "sessionsLeft": "Uses 1 of {remaining, plural, one {# session} other {# sessions}} left today.",
+        "aiToggle": "AI question types",
+        "aiLine": "This session uses up to {needed, plural, one {# AI credit} other {# AI credits}} for questions · {remaining} left",
+        "quotaTitle": "Not enough AI credits for questions",
+        "quotaBody": "This session needs {needed, plural, one {# AI credit} other {# AI credits}} for questions, and you have {remaining}.",
+        "quotaRefillDate": "New AI credits for questions arrive on {date}.",
+        "quotaRefillTime": "New AI credits for questions arrive at {time}.",
+        "quotaHint": "Choose fewer questions, or turn off AI question types and start again.",
+        "aiUnavailable": "Something went wrong on our side, so AI question types can’t be used right now. Turn them off to start, or try again later.",
+        "dropAi": "Turn off AI question types"
       },
       "session": {
         "close": "Stop, see summary",

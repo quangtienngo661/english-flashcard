@@ -10,7 +10,16 @@ export type Source = 'today' | 'group' | 'weak' | 'priority' | 'all';
 /** The three question types without AI (Bước 4); the AI ones come with M5a. */
 export const RULE_TYPES = ['mcq_definition', 'true_false_definition', 'type_word'] as const;
 export type RuleType = (typeof RULE_TYPES)[number];
-export type QuestionType = RuleType | 'cloze' | 'meaning_in_sentence' | 'mcq_sentence';
+/** The three AI question types (Bước 7; Trial and Pro). `cloze` here is always a sentence written by AI (D10: no "Câu lấy từ đâu?"). */
+export const AI_TYPES = ['cloze', 'meaning_in_sentence', 'mcq_sentence'] as const;
+export type AiType = (typeof AI_TYPES)[number];
+export type QuestionType = RuleType | AiType;
+
+/** Why a start with AI types was refused, shown inside the customise dialog (K/71, K/72, E24). */
+export type AiStartProblem =
+  | { kind: 'quota'; needed: number; remaining: number; resetsAt: string | null }
+  | { kind: 'unavailable' }
+  | { kind: 'locked' };
 export type GroupFilter = 'all' | 'due' | 'priority' | '0' | '1' | '2' | '3' | '4' | '5';
 export const SORTS = ['queue', 'level_asc', 'overdue_first', 'new_first', 'least_practiced', 'most_wrong', 'priority_oldest', 'random'] as const;
 export type Sort = (typeof SORTS)[number];

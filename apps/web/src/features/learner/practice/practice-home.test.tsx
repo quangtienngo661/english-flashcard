@@ -249,14 +249,13 @@ describe('Customise dialog (K/54, D10, without the AI section)', () => {
     return { view, dialog: await screen.findByRole('dialog', { name: /Tùy chỉnh phiên/ }) };
   }
 
-  it('three type boxes with no descriptions, no notes, no AI section; the count stops at max_questions_per_session', async () => {
+  it('three type boxes with no descriptions, no notes; the count stops at max_questions_per_session', async () => {
     const { dialog } = await openFor('Theo nhóm');
     const boxes = within(dialog).getAllByRole('checkbox');
     expect(boxes.map((b) => b.closest('label')?.textContent)).toEqual(['Trắc nghiệm', 'Đúng/sai', 'Gõ từ']);
     expect(boxes.every((b) => (b as HTMLInputElement).checked)).toBe(true);
     expect(within(dialog).queryByText('4 lựa chọn, chọn từ đúng')).not.toBeInTheDocument();
     expect(within(dialog).queryByText(/Theo câu: một câu ví dụ/)).not.toBeInTheDocument();
-    expect(within(dialog).queryByText(/Kiểu câu có AI/)).not.toBeInTheDocument();
     expect(within(dialog).getByText('tối đa 20')).toBeInTheDocument();
     const more = within(dialog).getByRole('button', { name: 'Thêm 1 câu' });
     for (let i = 0; i < 10; i++) await userEvent.click(more);
