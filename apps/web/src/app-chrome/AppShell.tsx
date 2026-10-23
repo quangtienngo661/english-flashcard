@@ -3,13 +3,14 @@
 import { ChevronLeft, Plus } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import Link from 'next/link';
-import type { ReactNode } from 'react';
+import { Suspense, type ReactNode } from 'react';
 import { cn } from '@/lib/cn';
 import { AppFooter } from './AppFooter';
 import { AvatarMenu } from './AvatarMenu';
 import { Logo } from './Logo';
 import { MobileTabBar } from './MobileTabBar';
 import { PlanChip } from './PlanChip';
+import { SearchStrip } from './SearchStrip';
 import { TopBar, type ChromeFeatures } from './TopBar';
 
 export type BackLink = { href: string; label: string };
@@ -44,6 +45,10 @@ export function AppShell({ variant, children, aside, back, features = NO_FEATURE
           <TopBar features={features} />
         </div>
         <PhoneHeader back={variant === 'sub' ? back : undefined} />
+        {/* The strip reads the lookup query from the URL; Suspense keeps the rest of the static shell prerendered. */}
+        <Suspense>
+          <SearchStrip />
+        </Suspense>
       </header>
       <main id="main" tabIndex={-1} className="mx-auto w-full max-w-360 flex-1 px-4 pb-24 pt-5 outline-none md:pb-10 lg:px-8">
         {aside ? (

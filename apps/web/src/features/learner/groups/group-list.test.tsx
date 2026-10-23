@@ -49,7 +49,7 @@ describe('GroupListPage (K/16, K/16b)', () => {
   it('fewer than 10 decks: no search box', async () => {
     renderApp(<GroupListPage />, { routes: withGroups([deck(1, 1)]) });
     await screen.findByText('Nhóm 1');
-    expect(screen.queryByRole('searchbox')).not.toBeInTheDocument();
+    expect(screen.queryByRole('searchbox', { name: /Tìm trong/ })).not.toBeInTheDocument();
   });
 });
 
