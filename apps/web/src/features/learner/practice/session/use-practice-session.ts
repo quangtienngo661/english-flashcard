@@ -31,6 +31,8 @@ export type Item = {
   state: 'unanswered' | 'try_again';
   tries: number;
   reportable: boolean;
+  /** The asked word is the learner's own (K/81). Absent from an older API: treated as false. */
+  private_word?: boolean;
 };
 
 export type AnswerResult = {

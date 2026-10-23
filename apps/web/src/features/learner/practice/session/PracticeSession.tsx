@@ -21,6 +21,7 @@ import { PreparingState } from './PreparingState';
 import { KBD, PromptTitle, QuestionCard, promptKind } from './QuestionCard';
 import { ReportDialog } from './ReportDialog';
 import { RoundPrompt } from './RoundPrompt';
+import { SentenceText } from './SentenceQuestions';
 import { SessionNotice } from './SessionNotice';
 import { SessionSummary } from './SessionSummary';
 import { TrueFalseChoices } from './TrueFalseQuestion';
@@ -165,6 +166,8 @@ export function PracticeSession() {
           key={phase.item.item_id}
           itemId={phase.item.item_id}
           kind={isAi(phase.item, session) ? 'ai' : 'non_ai'}
+          privateWord={phase.item.private_word === true}
+          lemma={phase.outcome?.kind === 'final' ? phase.outcome.result.correct.lemma : null}
           subtitle={reportSubtitle(phase.item, t(`kind.${promptKind(phase.item.prompt)}`))}
           isOpen={reporting}
           onClose={() => setReporting(false)}
@@ -212,13 +215,28 @@ function Question({ state, item, onReport }: { state: PracticeSessionState; item
     );
   } else if (prompt.kind === 'type_meaning') {
     question = <PromptTitle text={prompt.meaning} label={prompt.context_label} />;
-  } else if ('sentence' in prompt) {
-    question = <p className="break-words text-title font-semibold text-ink">{prompt.sentence}</p>;
+  } else if (prompt.kind === 'meaning_in_sentence') {
+    question = (
+      <>
+        <SentenceText sentence={prompt.sentence} highlight={prompt.highlight} />
+        <Choices options={prompt.options} rightIndex={final?.result.correct.choice_index ?? null} chosenIndex={chosenChoice(outcome)} onChoose={(choice) => void state.answer({ choice })} disabled={state.busy} />
+      </>
+    );
+  } else if (prompt.kind === 'mcq_sentence') {
+    question = (
+      <>
+        <SentenceText sentence={prompt.sentence} />
+        <Choices options={prompt.options} rightIndex={final?.result.correct.choice_index ?? null} chosenIndex={chosenChoice(outcome)} onChoose={(choice) => void state.answer({ choice })} disabled={state.busy} />
+      </>
+    );
+  } else {
+    // type_sentence, cloze (K/78a): the sentence with its blank.
+    question = <SentenceText sentence={prompt.sentence} />;
   }
 
   return (
     <div className="flex flex-col gap-4">
-      <QuestionCard prompt={prompt} reportable={item.reportable} reported={state.reported.has(item.item_id)} onReport={onReport}>
+      <QuestionCard prompt={prompt} ai={state.session !== null && isAi(item, state.session)} reportable={item.reportable} reported={state.reported.has(item.item_id)} onReport={onReport}>
         {question}
         <HintPanel item={item} onOpen={state.setHintLevel} locked={final !== null} />
       </QuestionCard>
@@ -255,6 +273,12 @@ function Question({ state, item, onReport }: { state: PracticeSessionState; item
             <span />
           )}
           {item.hint_level > 0 && <p className="text-caption text-muted">{t('noteHint')}</p>}
+          {prompt.kind === 'cloze' && (
+            // K/78a: an AI cloze can be given up before any try (copy doc §17.1 "[Xem đáp án]").
+            <Button variant="quiet" isDisabled={state.busy} onPress={() => void state.skip()}>
+              {t('reveal')}
+            </Button>
+          )}
           {!typed && <p className="text-caption text-muted md:hidden">{t('phoneHint')}</p>}
         </div>
       )}

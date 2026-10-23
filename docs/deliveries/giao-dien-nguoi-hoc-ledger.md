@@ -317,3 +317,17 @@ Final M4: minor (deferred): English hint header has no count (design §7.1, kept
 - Ruling: lemma của từ riêng đọc bằng `GET /v1/senses/{id}` (API không gửi lemma kèm `word-not-recognized`); link tới trang từ `/app/word?w=` vì "Từ của
   tôi" có ở M5b; chưa có lemma thì dải `word-not-recognized` chưa hiện — giá nếu sai: dải hiện trễ một nhịp.
 - Ruling: dải thông báo mất khi trả lời câu đó (kết quả thay chỗ) — API chỉ gửi một lần mỗi phiên.
+
+### Task 44 — Ba kiểu câu AI và báo lỗi câu AI (23/10/2026)
+
+- API: `ItemView.private_word` (thêm vào, v1 additive; test trước `test(api): expect private_word on practice items`) để K/81 biết câu hỏi về từ riêng.
+- Web: nhãn "Câu AI" trên đề; Điền từ vào câu (câu có chỗ trống, ô gõ, [Kiểm tra], [Xem đáp án] trước lần thử đầu); Chọn nghĩa trong câu (từ đang hỏi in
+  đậm, 4 nghĩa, phím 1–4); Trắc nghiệm theo câu; khối gợi ý giữ như K/63 (chấm tiến độ, dòng có số, [Mở gợi ý n]); kết quả có khối "Bản dịch · AI dịch"
+  cho người học `vi` (không có cho `en`, E41); báo lỗi câu AI dùng lý do `kind=ai`, dòng cuối có câu trả lượt; K/81: không ô tick, dòng "Đội Wordmet sẽ
+  thấy từ “…” bạn tự thêm để kiểm tra." (chưa trả lời thì không nêu từ), body không có `share_private_word`.
+- Test: 9 test (`session/ai-questions.test.tsx`); web unit 497/497; typecheck, lint xanh.
+- Ruling: ba kiểu câu dùng chung `SentenceText` + `Choices` / ô gõ có sẵn trong `SentenceQuestions.tsx`, thay cho ba file riêng của plan — vì mỗi kiểu chỉ
+  khác vài dòng — giá nếu sai: tách file khi một kiểu lớn lên.
+- Ruling: trước khi trả lời, K/81 ghi "từ bạn tự thêm trong câu này" (không nêu từ) — vì nêu từ là lộ đáp án — giá nếu sai: chữ hơi chung chung.
+- Ruling: phím H không mở gợi ý khi ô gõ của câu điền từ đang có con trỏ (gõ chữ h vào ô), như kiểu Gõ từ của M4; dùng nút [Gợi ý].
+- Minor (để lại): phụ đề hộp báo lỗi câu AI chưa có "Câu AI · …" như bản chữ 7.12.

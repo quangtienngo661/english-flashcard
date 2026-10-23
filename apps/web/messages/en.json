@@ -1046,6 +1046,9 @@
       "session": {
         "close": "Stop, see summary",
         "header": "Practice · {source}",
+        "aiChip": "AI question",
+        "translation": "Translation",
+        "translationAi": "AI translation",
         "ai": {
           "preparingTitle": "Writing the question…",
           "preparingBody": "This usually takes a few seconds.",
@@ -1072,14 +1075,20 @@
           "true_false": "True or false",
           "type_meaning": "Type the word · meaning",
           "type_sentence": "Type the word · sentence",
-          "other": "Question"
+          "other": "Question",
+          "cloze": "Fill in the sentence",
+          "meaning_in_sentence": "Meaning in the sentence",
+          "mcq_sentence": "Sentence multiple choice"
         },
         "ask": {
           "mcq": "Choose the word with this meaning",
           "true_false": "Do this word and meaning match?",
           "type_meaning": "Type the English word with this meaning",
           "type_sentence": "Type the missing word, in the right form",
-          "other": "Answer this question"
+          "other": "Answer this question",
+          "cloze": "Type the missing word in the right form",
+          "meaning_in_sentence": "What does the bold word mean here?",
+          "mcq_sentence": "Choose the word that fills the gap"
         },
         "true": "True",
         "false": "False",
@@ -1135,7 +1144,10 @@
           "noteMissing": "Describe the problem to send this report.",
           "info": "The Wordmet team will check this question. Until then it doesn't count toward Weak words; the grade stays as it is.",
           "send": "Send report",
-          "done": "Report sent. See the outcome in History → My reports."
+          "done": "Report sent. See the outcome in History → My reports.",
+          "infoAi": "The Wordmet team will check this question. Until then it doesn’t count toward Weak words. If AI wrote the question wrong, you get 1 AI credit back.",
+          "privateWord": "The Wordmet team will see “{lemma}”, a word you added, to check it.",
+          "privateWordUnknown": "The Wordmet team will see the word you added in this question, to check it."
         },
         "round": {
           "chip": "End of round {round}",
