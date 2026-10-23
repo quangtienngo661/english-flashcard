@@ -310,4 +310,20 @@ describe('PracticeSession (K/60–K/67)', () => {
     expect(await screen.findByText('d…')).toBeInTheDocument();
     expect(screen.getByText('Chữ cái đầu')).toBeInTheDocument();
   });
+
+  it('after a typed answer is graded, Enter (focus still in the field) goes to the next question', async () => {
+    const v = renderApp(<PracticeSession />, {
+      routes: routes({
+        'GET /v1/practice/sessions/current': () => Response.json({ session: view({ asked: 6 }), item: typed(), preparing: false }),
+        'POST /v1/practice/items/item-6/answer': () =>
+          Response.json(result({ result: 'correct', correct: { lemma: 'cache', text: 'cache', choice_index: null, is_true: null }, meaning: 'bộ nhớ đệm', show_known: true, highlight_needs_review: false })),
+      }),
+    });
+    const input = await screen.findByRole('textbox', { name: 'Câu trả lời' });
+    await userEvent.type(input, 'cache{Enter}');
+    expect(await screen.findByText('Đúng rồi')).toBeInTheDocument();
+    expect(input).toHaveFocus();
+    await userEvent.keyboard('{Enter}');
+    await waitFor(() => expect(posts(v.calls, `/v1/practice/sessions/${SESSION}/next`)).toHaveLength(1));
+  });
 });
