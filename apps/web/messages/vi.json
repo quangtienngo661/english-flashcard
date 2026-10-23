@@ -419,6 +419,73 @@
       "transactions": "Lịch sử giao dịch",
       "saved": "Đã lưu thay đổi."
     },
+    "transactions": {
+      "title": "Lịch sử giao dịch",
+      "back": "Cài đặt",
+      "cols": {
+        "date": "Ngày",
+        "kind": "Loại",
+        "plan": "Gói và kỳ",
+        "amount": "Số tiền",
+        "period": "Kỳ được dùng",
+        "status": "Trạng thái"
+      },
+      "kinds": {
+        "purchase": "Mua",
+        "renewal": "Gia hạn",
+        "plan_change": "Đổi kỳ",
+        "refund": "Hoàn tiền",
+        "trial": "Dùng thử",
+        "grant": "Đội Wordmet cấp"
+      },
+      "statuses": {
+        "succeeded": "Thành công",
+        "refunded": "Đã hoàn tiền",
+        "pending": "Đang chờ",
+        "reversed": "Đã hủy hoàn tiền"
+      },
+      "intervals": {
+        "month": "theo tháng",
+        "year": "theo năm"
+      },
+      "planInterval": "{plan} · {interval}",
+      "used": "Dùng {period}",
+      "detailLink": "Chi tiết",
+      "rowLabel": "{kind}, {date}, {plan}, {amount}dùng {period}, {status}. Xem chi tiết",
+      "footWeb": "Ngày theo múi giờ của bạn. Bấm Chi tiết để xem cổng thanh toán và mã giao dịch.",
+      "footPhone": "Chạm một dòng để xem cổng thanh toán và mã giao dịch.",
+      "more": "Xem thêm",
+      "planCard": "Gói học",
+      "planGrant": "Gói {plan} · Đội Wordmet cấp tới hết {date}",
+      "planUntil": "Gói {plan} · tới hết {date}",
+      "planOnly": "Gói {plan}",
+      "aboutTitle": "Về giao dịch",
+      "about1": "Mua, Gia hạn, Đổi kỳ: lần trả tiền cho gói Pro.",
+      "about2": "Hoàn tiền: tiền trả lại cho bạn; dòng gốc ghi “Đã hoàn tiền”.",
+      "about3": "Dùng thử và Đội Wordmet cấp: không thu tiền.",
+      "detail": {
+        "title": "Chi tiết giao dịch",
+        "kind": "Loại",
+        "plan": "Gói",
+        "amount": "Số tiền",
+        "at": "Thời điểm",
+        "period": "Kỳ được dùng",
+        "status": "Trạng thái",
+        "provider": "Cổng thanh toán",
+        "id": "Mã giao dịch",
+        "atValue": "{date}, {time}",
+        "help": "Có câu hỏi về giao dịch này? Gửi mã giao dịch cho đội Wordmet qua mục Liên hệ.",
+        "close": "Đóng"
+      },
+      "providers": {
+        "fake": "Giả (thử)"
+      },
+      "emptyTitle": "Chưa có giao dịch nào.",
+      "emptyBody": "Khi bạn dùng thử, mua gói Pro hoặc được đội Wordmet cấp gói, giao dịch sẽ hiện ở đây.",
+      "errorTitle": "Không tải được lịch sử giao dịch.",
+      "errorBody": "Kiểm tra mạng rồi thử lại.",
+      "retry": "Thử lại"
+    },
     "account": {
       "title": "Tài khoản",
       "back": "Cài đặt",

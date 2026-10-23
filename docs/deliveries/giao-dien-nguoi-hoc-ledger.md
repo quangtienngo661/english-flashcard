@@ -242,3 +242,15 @@ Final M4: minor (deferred): English hint header has no count (design §7.1, kept
   `ends_at` (hoặc lúc thu hồi nếu sớm hơn) — giá nếu sai: thêm điều kiện.
 - Ruling: `from`/`to` của admin là thời điểm có múi giờ (`from` gồm, `to` không gồm); màn admin gửi ranh giới ngày theo giờ Việt Nam — vì API không
   biết múi giờ của admin — giá nếu sai: đổi sang ngày `YYYY-MM-DD` + múi giờ cố định.
+
+### Task 38 — Màn Lịch sử giao dịch của người học (23/10/2026)
+
+- `/app/settings/transactions` (K/95–K/95d, M/95–M/95c): bảng 7 cột từ 768px, ba dòng xếp chồng trên điện thoại, cả dòng bấm mở chi tiết (hộp thoại /
+  tấm từ đáy); cột phụ "Gói học" + "Về giao dịch"; "Xem thêm" theo `next_page_token`; trống; lỗi tải + [Thử lại]. Dòng "Lịch sử giao dịch" ở Cài đặt
+  bật (`SHOW_TRANSACTIONS = true`) và trỏ tới trang.
+- Test: 8 test màn + test Cài đặt sửa; web unit 469/469; lint, typecheck, kiểm Tailwind thô xanh.
+- Ruling: ngày cuối của kỳ trả tiền là ngày trước ngày kết thúc (15/10 09:12 – 15/11 09:12 → "15/10 – 14/11/2026", như khung); lần cấp gói kết thúc lúc
+  0:00 nên lấy ngày trước 0:00, lần cấp bị thu hồi giữa ngày ghi đúng ngày thu hồi (GI7) — giá nếu sai: lệch một ngày ở cột "Kỳ được dùng".
+- Ruling: mỗi dòng là một nút có tên đọc đủ cả dòng; hai bố cục (bảng / ba dòng) chỉ để nhìn (`aria-hidden`) — vì cùng dữ liệu phải hiện theo hai cách mà
+  không lặp cho trình đọc màn hình — giá nếu sai: người dùng trình đọc màn hình không duyệt được theo cột.
+- Ruling: chữ tiếng Anh tự viết theo luật §17.2 ("Billing change", "Granted by the Wordmet team", "Fake (test)") — chưa ai duyệt — giá nếu sai: sửa chữ.

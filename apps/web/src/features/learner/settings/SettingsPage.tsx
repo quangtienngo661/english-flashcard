@@ -27,7 +27,7 @@ import { ShortcutList } from './Shortcuts';
 import { UsageRows } from './UsageSection';
 
 /** Turned on with M4b (Lịch sử giao dịch, D18). */
-export const SHOW_TRANSACTIONS = false;
+export const SHOW_TRANSACTIONS = true;
 
 const LINK = 'shrink-0 text-ui font-semibold text-primary underline-offset-2 hover:underline';
 
@@ -165,7 +165,16 @@ export function SettingsPage() {
         </div>
 
         <Section title={t('account')}>
-          {SHOW_TRANSACTIONS && <Row title={t('transactions')} />}
+          {SHOW_TRANSACTIONS && (
+            <Row
+              title={t('transactions')}
+              action={
+                <Link href={`/${locale}/app/settings/transactions`} aria-label={t('transactions')} className={LINK}>
+                  <ChevronRight aria-hidden className="size-5 text-muted" />
+                </Link>
+              }
+            />
+          )}
           <Row
             className="hidden md:flex"
             title={t('logout')}

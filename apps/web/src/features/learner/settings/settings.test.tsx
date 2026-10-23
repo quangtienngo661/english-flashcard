@@ -131,12 +131,12 @@ describe('SettingsPage (K/50)', () => {
     expect(screen.getByRole('link', { name: 'Xác minh email' })).toHaveAttribute('href', '/vi/app/verify-email');
   });
 
-  it('Xóa tài khoản is "Sắp có" and not a control; the transaction history row is not there yet (M4b)', async () => {
+  it('Xóa tài khoản is "Sắp có" and not a control; Lịch sử giao dịch opens its page (M4b)', async () => {
     renderApp(<SettingsPage />, { routes: routes() });
     const row = (await screen.findByText('Xóa tài khoản')).closest('li')!;
     expect(within(row).getByText('Sắp có')).toBeInTheDocument();
     expect(within(row).queryByRole('button')).toBeNull();
-    expect(screen.queryByText('Lịch sử giao dịch')).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Lịch sử giao dịch/ })).toHaveAttribute('href', '/vi/app/settings/transactions');
   });
 });
 
