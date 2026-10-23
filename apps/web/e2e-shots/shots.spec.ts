@@ -55,6 +55,10 @@ test('milestone screenshots', async ({ page }) => {
     await m2(page);
     return;
   }
+  if (MILESTONE === 'm3') {
+    await m3(page);
+    return;
+  }
   for (const locale of ['vi', 'en'] as const) {
     await setLanguage(page, locale);
     for (const scheme of ['light', 'dark'] as const) {
@@ -130,6 +134,53 @@ async function m2(page: Page) {
     await page.keyboard.press('Escape');
     await settle(page);
     await shoot(page, name('review-summary'));
+  }
+  await setLanguage(page, 'vi');
+}
+
+/** M3 on a learner who already has the Kinh doanh · B1 deck (the M2 run): lookup, word pages and every add sheet. */
+async function m3(page: Page) {
+  for (const { locale, scheme } of COMBOS) {
+    await setLanguage(page, locale);
+    await page.emulateMedia({ colorScheme: scheme });
+    const at = (path: string) => `/${locale}/app/${path}`;
+    const name = (n: string) => `${locale}-${scheme}-${n}`;
+    const pages: Array<[string, string, () => ReturnType<Page['getByRole']>]> = [
+      ['lookup?level=B1&topic=business', 'lookup', () => page.getByRole('listitem').first()],
+      ['lookup?q=zzzz', 'lookup-empty', () => page.getByRole('heading', { level: 2 }).first()],
+      ['word?w=left', 'word-left', () => page.getByRole('article').first()],
+      ['word?w=go', 'word-go', () => page.getByRole('article').first()],
+      ['word?w=profit', 'word-learning', () => page.getByRole('article').first()],
+    ];
+    for (const [path, n, ready] of pages) {
+      await page.goto(at(path));
+      await settle(page, ready());
+      await shoot(page, name(n));
+    }
+    const dialogShot = async (n: string, open: () => Promise<void>) => {
+      await page.setViewportSize({ width: 1440, height: 900 });
+      await open();
+      await expect(page.getByRole('dialog')).toBeVisible();
+      await page.waitForLoadState('networkidle');
+      await shoot(page, name(n));
+      await page.keyboard.press('Escape');
+    };
+    await page.goto(at('word?w=left'));
+    await settle(page, page.getByRole('article').first());
+    await dialogShot('deck-picker', () => page.getByRole('article').first().getByRole('button').last().click());
+    await page.goto(at('word?w=profit'));
+    await settle(page, page.getByRole('article').first());
+    await dialogShot('sentence', () => page.getByRole('region').first().getByRole('button').last().click());
+    await page.goto(at(''));
+    await settle(page);
+    await dialogShot('add-went', async () => {
+      await page.keyboard.press('n');
+      await page.getByRole('dialog').getByRole('textbox').first().fill('went');
+      await page.waitForTimeout(800);
+    });
+    await page.goto(at('lookup?level=B1&topic=business'));
+    await settle(page, page.getByRole('listitem').first());
+    await dialogShot('bulk', () => page.getByRole('button', { name: locale === 'vi' ? 'Thêm cả loạt vào nhóm' : 'Add them all to a deck' }).click());
   }
   await setLanguage(page, 'vi');
 }

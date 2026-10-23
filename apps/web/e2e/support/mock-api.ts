@@ -117,6 +117,7 @@ export async function signedInAs(
     'GET /v1/me/reminders': () => ({ json: { enabled: true, email_verified: true } }),
     'GET /v1/groups': () => ({ json: { items: [] } }),
     'GET /v1/topics/suggestions': () => ({ json: { items: [] } }),
+    'GET /v1/topics': () => ({ json: { items: [] } }),
     ...extra,
   });
 }
