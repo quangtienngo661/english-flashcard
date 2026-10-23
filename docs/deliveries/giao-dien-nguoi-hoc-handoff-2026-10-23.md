@@ -32,6 +32,7 @@ ledger nằm ở [`giao-dien-nguoi-hoc-ledger.md`](giao-dien-nguoi-hoc-ledger.md
   M5b nên làm luôn trang "Từ của tôi" để link "Xem lại từ trong Từ của tôi" (hiện trỏ tới `/app/word?w=`) trỏ đúng chỗ.
 - Chạy thật M5a: `pnpm learner:setup -- --admin <email> --learner <email> --plan pro`; người học cần một nhóm có từ (tạo ở app, hoặc thêm cả loạt Kinh
   doanh · B1). Ảnh `SHOTS_MILESTONE=m5a`.
+- Sau khi xong M5b: chủ dự án sẽ xem lại danh sách cải thiện C1–C10 ở `docs/preparation/IMPROVEMENT_IDEAS_2026-10-23.md` (chưa quyết định).
 
 ## 0. Cập nhật cuối phiên cloud (23/10/2026, hết M4b) — đọc trước
 
