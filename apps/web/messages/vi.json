@@ -1032,11 +1032,43 @@
           "random": "Ngẫu nhiên"
         },
         "start": "Bắt đầu {count} câu",
-        "sessionsLeft": "Dùng 1 trong {remaining} phiên còn lại hôm nay."
+        "sessionsLeft": "Dùng 1 trong {remaining} phiên còn lại hôm nay.",
+        "aiToggle": "Kiểu câu có AI",
+        "aiLine": "Phiên này dùng tối đa {needed} lượt câu AI · còn {remaining}",
+        "quotaTitle": "Không đủ lượt câu AI",
+        "quotaBody": "Phiên này cần {needed} lượt câu AI, bạn còn {remaining}.",
+        "quotaRefillDate": "Lượt câu AI mới có vào {date}.",
+        "quotaRefillTime": "Lượt câu AI mới có lúc {time}.",
+        "quotaHint": "Giảm số câu, hoặc bỏ kiểu câu có AI rồi bắt đầu lại.",
+        "aiUnavailable": "Hệ thống đang gặp lỗi, chưa dùng được kiểu câu có AI. Bỏ kiểu câu AI để bắt đầu, hoặc thử lại sau.",
+        "dropAi": "Bỏ kiểu câu có AI"
       },
       "session": {
         "close": "Dừng phiên, xem tổng kết",
         "header": "Luyện tập · {source}",
+        "aiChip": "Câu AI",
+        "translation": "Bản dịch",
+        "translationAi": "AI dịch",
+        "ai": {
+          "preparingTitle": "Đang tạo câu…",
+          "preparingBody": "Thường mất vài giây.",
+          "errorTitle": "Hệ thống đang gặp lỗi.",
+          "quotaTitle": "Hết lượt câu AI",
+          "refillDate": "Lượt câu AI mới có vào {date}.",
+          "refillTime": "Lượt câu AI mới có lúc {time}.",
+          "planTitle": "Gói của bạn chưa có câu AI",
+          "planBody": "Gói của bạn đã hết hạn nên các câu AI còn lại không tạo được.",
+          "stayOpen": "Dừng thì phiên vẫn đang dở, bạn làm tiếp sau được.",
+          "retry": "Thử lại",
+          "later": "Để sau",
+          "fallback": "Câu này chuyển sang kiểu câu thường.",
+          "fallbackQuota": "Hết lượt câu AI. Các câu còn lại của phiên dùng kiểu câu khác.",
+          "notRecognized": "AI chưa nhận ra từ “{lemma}” bạn tự thêm, nên câu này dùng kiểu câu khác.",
+          "notRecognizedStop": "AI chưa nhận ra từ “{lemma}” bạn tự thêm.",
+          "notRecognizedAny": "AI chưa nhận ra một từ bạn tự thêm, nên câu này dùng kiểu câu khác.",
+          "seeWord": "Xem lại từ trong Từ của tôi",
+          "dismiss": "Đóng thông báo"
+        },
         "progress": "Câu {n}/{total}",
         "progressDone": "Xong {total}/{total}",
         "kind": {
@@ -1044,14 +1076,20 @@
           "true_false": "Đúng/sai",
           "type_meaning": "Gõ từ · theo nghĩa",
           "type_sentence": "Gõ từ · theo câu",
-          "other": "Câu"
+          "other": "Câu",
+          "cloze": "Điền từ vào câu",
+          "meaning_in_sentence": "Chọn nghĩa trong câu",
+          "mcq_sentence": "Trắc nghiệm theo câu"
         },
         "ask": {
           "mcq": "Chọn từ có nghĩa này",
           "true_false": "Từ và nghĩa này có khớp không?",
           "type_meaning": "Gõ từ tiếng Anh có nghĩa này",
           "type_sentence": "Gõ từ còn thiếu, đúng dạng trong câu",
-          "other": "Trả lời câu này"
+          "other": "Trả lời câu này",
+          "cloze": "Gõ từ còn thiếu, đúng dạng trong câu",
+          "meaning_in_sentence": "Từ in đậm trong câu này nghĩa là gì?",
+          "mcq_sentence": "Chọn từ điền vào chỗ trống"
         },
         "true": "Đúng",
         "false": "Sai",
@@ -1107,7 +1145,10 @@
           "noteMissing": "Ghi rõ lỗi để gửi báo lỗi này.",
           "info": "Đội Wordmet xem lại câu này. Trong lúc chờ, câu này không tính vào Từ hay sai; kết quả đã chấm giữ nguyên.",
           "send": "Gửi báo lỗi",
-          "done": "Đã gửi báo lỗi. Xem kết quả trong Lịch sử → Báo lỗi của tôi."
+          "done": "Đã gửi báo lỗi. Xem kết quả trong Lịch sử → Báo lỗi của tôi.",
+          "infoAi": "Đội Wordmet xem lại câu này. Trong lúc chờ, câu này không tính vào Từ hay sai. Nếu đúng là AI viết sai câu, bạn được trả lại 1 lượt câu AI.",
+          "privateWord": "Đội Wordmet sẽ thấy từ “{lemma}” bạn tự thêm để kiểm tra.",
+          "privateWordUnknown": "Đội Wordmet sẽ thấy từ bạn tự thêm trong câu này để kiểm tra."
         },
         "round": {
           "chip": "Hết vòng {round}",

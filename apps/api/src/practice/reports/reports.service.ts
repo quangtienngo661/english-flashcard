@@ -82,10 +82,11 @@ export class ReportsService {
 
   /**
    * B4E20, B4E40, B4E47: one report per item, counted per learner under the practice lock so two at once never pass the cap.
-   * Bước 7 (§9.2): the reason must fit the question's kind; an AI question about a private word needs the learner's consent
-   * (D26); a non-AI one about a private word, and a cloze from the learner's own sentence, cannot be reported.
+   * Bước 7 (§9.2): the reason must fit the question's kind; a non-AI question about a private word, and a cloze from the learner's
+   * own sentence, cannot be reported. An AI question about a private word needs no consent any more (learner UI D12, GF1): the
+   * snapshot shows the asked word and the screen tells the learner so.
    */
-  async create(learner: Learner, itemId: string, input: { reason: string; note: string | null; sharePrivateWord: boolean }) {
+  async create(learner: Learner, itemId: string, input: { reason: string; note: string | null }) {
     const { userId } = learner;
     const { reportsPerHour } = (await this.settings.get()).practice;
     try {
@@ -103,9 +104,6 @@ export class ReportsService {
         const reason = await this.reasons.forItem(tx, input.reason, isAi ? 'ai' : 'non_ai');
         if (!reason) throw invalidInput(['reason']);
         if (reason.noteRequired && input.note === null) throw invalidInput(['note']);
-        if (answerKey.asked_private && !input.sharePrivateWord) {
-          throw new ProblemDetailsException({ status: 400, title: 'Share consent required', type: 'share-consent-required' });
-        }
         const now = this.clock.now();
         const windowStart = new Date(now.getTime() - hour);
         const recent = await tx.practiceReport.findMany({

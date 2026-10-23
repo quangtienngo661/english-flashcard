@@ -33,7 +33,7 @@ export class ReportsController {
     @CurrentLearner() learner: Learner,
   ) {
     return this.reports.create(learner, path.id, {
-      reason: body.reason, note: body.note ?? null, sharePrivateWord: body.share_private_word ?? false,
+      reason: body.reason, note: body.note ?? null,
     });
   }
 }

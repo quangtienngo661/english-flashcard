@@ -1,16 +1,33 @@
 'use client';
 
-import { Check, ChevronDown, Minus, Plus } from 'lucide-react';
+import { ChevronDown, Minus, Plus } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useId, useState } from 'react';
-import { Checkbox } from 'react-aria-components';
+import { useFormat } from '@/app-shell/format';
 import { useAppConfig, useEntitlements } from '@/app-shell/queries';
+import { useSession } from '@/app-shell/session/session-context';
 import { Button } from '@/app-ui/Button';
 import { Dialog } from '@/app-ui/Dialog';
+import { LockedFeature } from '@/app-ui/Locked';
 import { Select, type SelectItem } from '@/app-ui/Select';
 import { cn } from '@/lib/cn';
 import type { GroupSummary } from '../groups/groups-api';
-import { DEFAULT_SORT, RULE_TYPES, SORTS, useWeakGroups, type PromptStyle, type RuleType, type Sort, type Source, type StartBody } from './practice-api';
+import { refillKind } from '../settings/refill';
+import { AiTypesToggle, readAiTypesOn, TypeBox, writeAiTypesOn } from './AiTypesToggle';
+import {
+  AI_TYPES,
+  DEFAULT_SORT,
+  RULE_TYPES,
+  SORTS,
+  useWeakGroups,
+  type AiStartProblem,
+  type AiType,
+  type PromptStyle,
+  type RuleType,
+  type Sort,
+  type Source,
+  type StartBody,
+} from './practice-api';
 
 export type CustomizeTarget = { source: Source; groupId?: string };
 
@@ -24,6 +41,9 @@ type Props = {
   error: string | null;
   /** No session left today (K/55): the start is off and `outLine` says when sessions refill. */
   outLine: string | null;
+  /** A start with AI types refused (K/71, K/72, E24); cleared when the learner turns AI off. */
+  aiProblem: AiStartProblem | null;
+  onClearAiProblem: () => void;
 };
 
 const FILTERS = ['all', 'due', 'priority'] as const;
@@ -31,7 +51,7 @@ const STAGES = ['all', '0', '1', '2', '3', '4', '5'] as const;
 const PROMPTS: PromptStyle[] = ['meaning', 'sentence', 'mixed'];
 const SOURCE_NAME: Record<Source, string> = { today: 'hero.title', group: 'sources.group.name', weak: 'sources.weak.name', priority: 'sources.priority.name', all: 'sources.all.name' };
 
-/** K/54 "Tùy chỉnh phiên" in the layout of D10, before the AI toggle of M5a: equal type boxes, no descriptions, no notes. */
+/** K/54, K/70 "Tùy chỉnh phiên" in the layout of D10: equal type boxes, no descriptions, no notes, the AI switch under them. */
 export function CustomizeDialog({ target, onClose, ...rest }: Props) {
   const t = useTranslations('App.practice');
   const tc = useTranslations('App.common');
@@ -51,10 +71,14 @@ export function CustomizeDialog({ target, onClose, ...rest }: Props) {
   );
 }
 
-function CustomizeForm({ target, groups, onStart, busy, error, outLine }: Omit<Props, 'onClose' | 'target'> & { target: CustomizeTarget }) {
+function CustomizeForm({
+  target, groups, onStart, busy, error, outLine, aiProblem, onClearAiProblem,
+}: Omit<Props, 'onClose' | 'target'> & { target: CustomizeTarget }) {
   const t = useTranslations('App.practice');
   const config = useAppConfig().data?.practice;
-  const pool = useEntitlements().data?.pools.practice_sessions;
+  const entitlements = useEntitlements().data;
+  const pool = entitlements?.pools.practice_sessions;
+  const aiAllowed = (entitlements?.features['ai.practice'].allowed ?? false) && aiProblem?.kind !== 'locked';
   const weakGroups = useWeakGroups();
   const { source } = target;
   const max = config?.max_questions_per_session ?? 20;
@@ -62,6 +86,8 @@ function CustomizeForm({ target, groups, onStart, busy, error, outLine }: Omit<P
   const [filter, setFilter] = useState<(typeof FILTERS)[number]>('all');
   const [stage, setStage] = useState<(typeof STAGES)[number]>('all');
   const [types, setTypes] = useState<Set<RuleType>>(() => new Set(RULE_TYPES));
+  const [aiOn, setAiOn] = useState(readAiTypesOn);
+  const [aiTypes, setAiTypes] = useState<Set<AiType>>(() => new Set(AI_TYPES));
   const [prompt, setPrompt] = useState<PromptStyle>('mixed');
   const [count, setCount] = useState(Math.min(config?.default_questions_per_session ?? 10, max));
   const [sort, setSort] = useState<Sort>(DEFAULT_SORT[source]);
@@ -77,7 +103,28 @@ function CustomizeForm({ target, groups, onStart, busy, error, outLine }: Omit<P
           ...(weakGroups.data?.items ?? []).map((g) => ({ id: g.group_id, label: t('customize.groupOption', { name: g.name, count: g.count }) })),
         ]
       : groups.map((g) => ({ id: g.id, label: t('customize.groupOption', { name: g.name, count: g.total }) }));
-  const noTypes = types.size === 0;
+  const aiChosen = aiAllowed && aiOn ? AI_TYPES.filter((type) => aiTypes.has(type)) : [];
+  const noTypes = types.size === 0 && aiChosen.length === 0;
+  // The API's own upper bound (Bước 7 design §6.1 step 4): ceil(count × AI types ÷ types); the session's real number is ≤ this.
+  const aiPool = entitlements?.pools.ai_practice;
+  const aiUsage = aiChosen.length > 0 && aiPool
+    ? { needed: Math.ceil((count * aiChosen.length) / (types.size + aiChosen.length)), remaining: aiPool.remaining }
+    : null;
+
+  function switchAi(on: boolean) {
+    setAiOn(on);
+    writeAiTypesOn(on);
+    if (!on) onClearAiProblem();
+  }
+
+  function chooseAi(type: AiType, on: boolean) {
+    setAiTypes((current) => {
+      const next = new Set(current);
+      if (on) next.add(type);
+      else next.delete(type);
+      return next;
+    });
+  }
   const noDeck = source === 'group' && groupId === '';
 
   function toggle(type: RuleType, on: boolean) {
@@ -90,7 +137,7 @@ function CustomizeForm({ target, groups, onStart, busy, error, outLine }: Omit<P
   }
 
   function start() {
-    const body: StartBody = { source, types: RULE_TYPES.filter((type) => types.has(type)) };
+    const body: StartBody = { source, types: [...RULE_TYPES.filter((type) => types.has(type)), ...aiChosen] };
     if (source === 'group') {
       body.group_id = groupId;
       body.group_filter = stage !== 'all' ? stage : filter;
@@ -143,31 +190,14 @@ function CustomizeForm({ target, groups, onStart, busy, error, outLine }: Omit<P
         </p>
         <div className="grid gap-2 sm:grid-cols-3">
           {RULE_TYPES.map((type) => (
-            <Checkbox
-              key={type}
-              isSelected={types.has(type)}
-              onChange={(on) => toggle(type, on)}
-              className="group flex min-h-control cursor-pointer items-center gap-2.5 rounded-inner border-2 border-border-strong bg-surface px-3 py-2 text-ui font-semibold text-ink outline-none data-focus-visible:ring-2 data-focus-visible:ring-primary data-selected:border-primary data-selected:bg-primary-soft"
-            >
-              {({ isSelected }) => (
-                <>
-                  <span
-                    aria-hidden
-                    className={cn(
-                      'flex size-5 shrink-0 items-center justify-center rounded-sm border-2',
-                      isSelected ? 'border-primary bg-primary text-on-primary' : 'border-border-strong bg-surface',
-                    )}
-                  >
-                    {isSelected && <Check className="size-3.5" />}
-                  </span>
-                  {t(`types.${type}`)}
-                </>
-              )}
-            </Checkbox>
+            <TypeBox key={type} type={type} selected={types.has(type)} onChange={(on) => toggle(type, on)} />
           ))}
         </div>
         {noTypes && <p className="text-caption text-danger">{t('customize.typesNone')}</p>}
       </div>
+
+      <AiTypesToggle allowed={aiAllowed} on={aiOn} onChange={switchAi} chosen={aiTypes} onChoose={chooseAi} usage={aiUsage} />
+      {aiProblem?.kind === 'locked' && <LockedFeature />}
 
       {types.has('type_word') && (
         <div className="flex flex-col gap-2">
@@ -242,6 +272,7 @@ function CustomizeForm({ target, groups, onStart, busy, error, outLine }: Omit<P
       </div>
 
       <div className="sticky bottom-0 -mx-5 -mb-6 flex flex-col gap-2 bg-surface px-5 pb-6 pt-2 md:static md:m-0 md:p-0">
+        {aiProblem && aiProblem.kind !== 'locked' && <AiProblemBox problem={aiProblem} onDrop={() => switchAi(false)} />}
         {error && (
           <p role="alert" className="text-ui text-danger">
             {error}
@@ -262,3 +293,33 @@ function CustomizeForm({ target, groups, onStart, busy, error, outLine }: Omit<P
 }
 
 const STEP = 'size-9 min-h-0 px-0';
+
+/** K/71 (not enough AI credits: needed, left, when they refill) and K/72 (one general line, D11), right above the start. */
+function AiProblemBox({ problem, onDrop }: { problem: Exclude<AiStartProblem, { kind: 'locked' }>; onDrop: () => void }) {
+  const t = useTranslations('App.practice.customize');
+  const format = useFormat();
+  const { state } = useSession();
+  const zone = state.status === 'signed-in' ? state.me.timezone : 'UTC';
+  let refill = '';
+  if (problem.kind === 'quota' && problem.resetsAt) {
+    refill = refillKind(problem.resetsAt, new Date(), zone) === 'time'
+      ? t('quotaRefillTime', { time: format.resetAt(problem.resetsAt) })
+      : t('quotaRefillDate', { date: format.date(problem.resetsAt, 'dayMonth') });
+  }
+  return (
+    <div role="alert" className="flex flex-col items-start gap-2 rounded-inner border-2 border-accent bg-accent-soft p-3">
+      {problem.kind === 'quota' ? (
+        <>
+          <p className="text-ui font-semibold text-ink">{t('quotaTitle')}</p>
+          <p className="text-ui text-ink">{[t('quotaBody', { needed: problem.needed, remaining: problem.remaining }), refill].filter(Boolean).join(' ')}</p>
+          <p className="text-caption text-muted">{t('quotaHint')}</p>
+        </>
+      ) : (
+        <p className="text-ui text-ink">{t('aiUnavailable')}</p>
+      )}
+      <Button variant="quiet" onPress={onDrop}>
+        {t('dropAi')}
+      </Button>
+    </div>
+  );
+}

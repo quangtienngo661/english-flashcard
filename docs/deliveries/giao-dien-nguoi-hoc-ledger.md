@@ -283,3 +283,73 @@ Final M4: minor (deferred): English hint header has no count (design §7.1, kept
 - Minor để lại: M2 hoàn tiền nhiều lần / hoàn tiền tới trước giao dịch gốc / hoàn tiền lại sau khi hủy hoàn tiền làm lệch trạng thái; M3 `page_token` tự
   chế với id không phải uuid trả 500 thay vì 400, con trỏ chỉ giữ mili giây; M4 lần cấp bị thu hồi trước ngày bắt đầu hiện kỳ ngược; M5 admin: Từ ngày
   sau Tới ngày báo lỗi chung, bấm Lọc lần hai không tải lại, nhãn gói cố định "Pro", `entitlement_grants` chưa có chỉ mục theo `created_at`.
+
+## M5a (nhánh `feat/giao-dien-nguoi-hoc-m5a`, cắt từ `origin/dev` @ `255e2ee`)
+
+### Task 41 — API (f) báo lỗi câu AI về từ riêng không cần ô đồng ý (23/10/2026)
+
+- Bỏ kiểm `share_private_word` và lỗi `share-consent-required`; body vẫn nhận trường này (zod `optional`) nhưng không truyền vào service. Test GF1, GF2,
+  GF4 mới; B7E79 đổi thành GF1, B7E81 ghi thêm GF3; `smoke-buoc-7.mjs` đổi bước B7E79 thành "gửi được không cần đồng ý".
+- Ruling: giữ câu báo lỗi `share-consent-required` trong `apps/web` (`problem.ts`, `messages`) — vì API cũ có thể còn trả — giá nếu sai: vài dòng thừa.
+
+### Task 42 — Công tắc "Kiểu câu có AI" trong Tùy chỉnh phiên (23/10/2026)
+
+- `AiTypesToggle` (công tắc + nhãn Pro, ba ô AI cùng cỡ, dòng "Phiên này dùng tối đa N lượt câu AI · còn M"); Miễn phí: công tắc khóa, bấm → dòng D6;
+  nhớ bật/tắt ở `localStorage` `wordmet-web.ai-types` (`on`/`off`, đọc ghi bọc try/catch); bắt đầu gửi `types` gồm kiểu AI, không bao giờ `cloze_source`.
+  Lỗi khi mở phiên: 403 `ai-quota-insufficient` → K/71 (cần, còn, lúc nạp theo D15), 503 `ai-unavailable` → câu chung D11, cả hai có [Bỏ kiểu câu có AI];
+  403 `entitlement-required` → công tắc khóa + dòng D6 + đọc lại `/me/entitlements` (E24).
+- Test: 6 test mới (`ai-toggle.test.tsx`); web unit 475/475; lint, typecheck xanh.
+- Ruling: N = ceil(số câu × số kiểu AI ÷ tổng số kiểu) như API (Bước 7 §6.1 bước 4), là mức tối đa; số thật (`ai_planned`) ≤ N — giá nếu sai: dòng lượt
+  ghi cao hơn số dùng thật.
+- Ruling: nhãn Pro cạnh công tắc hiện cả với gói Pro/Dùng thử (khung K/70 có), không có ổ khóa; gói Miễn phí có ổ khóa (ProBadge).
+- Ruling: tắt công tắc xóa hộp K/71/K/72 và ghi `off`; bật lại thì cả ba kiểu AI vẫn như lần chọn trước trong hộp.
+
+### Task 43 — Trạng thái AI trong phiên luyện (23/10/2026)
+
+- `preparing` → K/73 "Đang tạo câu…", gọi lại `next` sau `retry_after_seconds`; cộng dồn thời gian chờ ≥ 60 giây → câu chung "Hệ thống đang gặp lỗi."
+  (E29). Mỗi câu hiện lên → `POST …/prepare` một lần, không chờ, bỏ qua lỗi (chỉ phiên có kiểu AI). `ai_unavailable`: `ai-failed`/`ai-unavailable` →
+  câu chung D11 + [Thử lại] (`{retry_ai:true}`) + [Để sau]; `quota-exhausted` → K/74b "Hết lượt câu AI" + lúc nạp (D15) + [Để sau]; `plan-required` →
+  K/74c + [Để sau]; kèm `word-not-recognized` → "AI chưa nhận ra từ “…” bạn tự thêm." + link tới trang từ. Dải trên câu: `ai-fallback` → "Câu này
+  chuyển sang kiểu câu thường." (K/75b khi hết lượt, có lúc nạp), `word-not-recognized` → K/76 + link; đóng được.
+- Test: 13 test (`session/ai-states.test.tsx`, đồng hồ giả cho 60 giây); web unit 488/488; typecheck, lint xanh.
+- Ruling: K/74b, K/74c chỉ có [Để sau] (thử lại không giúp được tới khi có lượt / có gói); K/74a, K/74d có [Thử lại] + [Để sau] — như ghi chú "sửa sau
+  review cuối" của bản chữ 7.6.
+- Ruling: lemma của từ riêng đọc bằng `GET /v1/senses/{id}` (API không gửi lemma kèm `word-not-recognized`); link tới trang từ `/app/word?w=` vì "Từ của
+  tôi" có ở M5b; chưa có lemma thì dải `word-not-recognized` chưa hiện — giá nếu sai: dải hiện trễ một nhịp.
+- Ruling: dải thông báo mất khi trả lời câu đó (kết quả thay chỗ) — API chỉ gửi một lần mỗi phiên.
+
+### Task 44 — Ba kiểu câu AI và báo lỗi câu AI (23/10/2026)
+
+- API: `ItemView.private_word` (thêm vào, v1 additive; test trước `test(api): expect private_word on practice items`) để K/81 biết câu hỏi về từ riêng.
+- Web: nhãn "Câu AI" trên đề; Điền từ vào câu (câu có chỗ trống, ô gõ, [Kiểm tra], [Xem đáp án] trước lần thử đầu); Chọn nghĩa trong câu (từ đang hỏi in
+  đậm, 4 nghĩa, phím 1–4); Trắc nghiệm theo câu; khối gợi ý giữ như K/63 (chấm tiến độ, dòng có số, [Mở gợi ý n]); kết quả có khối "Bản dịch · AI dịch"
+  cho người học `vi` (không có cho `en`, E41); báo lỗi câu AI dùng lý do `kind=ai`, dòng cuối có câu trả lượt; K/81: không ô tick, dòng "Đội Wordmet sẽ
+  thấy từ “…” bạn tự thêm để kiểm tra." (chưa trả lời thì không nêu từ), body không có `share_private_word`.
+- Test: 9 test (`session/ai-questions.test.tsx`); web unit 497/497; typecheck, lint xanh.
+- Ruling: ba kiểu câu dùng chung `SentenceText` + `Choices` / ô gõ có sẵn trong `SentenceQuestions.tsx`, thay cho ba file riêng của plan — vì mỗi kiểu chỉ
+  khác vài dòng — giá nếu sai: tách file khi một kiểu lớn lên.
+- Ruling: trước khi trả lời, K/81 ghi "từ bạn tự thêm trong câu này" (không nêu từ) — vì nêu từ là lộ đáp án — giá nếu sai: chữ hơi chung chung.
+- Ruling: phím H không mở gợi ý khi ô gõ của câu điền từ đang có con trỏ (gõ chữ h vào ô), như kiểu Gõ từ của M4; dùng nút [Gợi ý].
+- Minor (để lại): phụ đề hộp báo lỗi câu AI chưa có "Câu AI · …" như bản chữ 7.12.
+
+### Task 45 — M5a e2e, tài liệu kiểm, chạy thật (23/10/2026)
+
+- `e2e/app/m5a.spec.ts` 20 passed (desktop + mobile): Pro bật công tắc → đang tạo câu → điền từ → gợi ý → trả lời → bản dịch; AI lỗi + [Thử lại]
+  (`retry_ai`); dải đổi kiểu câu; Miễn phí khóa; K/71; K/81 không ô tick; axe + không cuộn ngang với câu AI 300 ký tự × vi/en × sáng/tối. Cả bộ e2e web
+  229 passed, 15 skipped.
+- Chạy thật (API + worker + Postgres, `AI_FAKE_ENABLED=true`, người học Pro của `learner:setup`, nhóm Kinh doanh B1 113 từ): phiên chỉ kiểu AI mở được,
+  câu điền từ có `private_word`, `prepare` 200, gợi ý 1 "d", lý do báo lỗi câu AI có "Khác" cuối, báo lỗi không gửi `share_private_word` → 201.
+  Bộ ảnh `SHOTS_MILESTONE=m5a` (36 ảnh: Tùy chỉnh có AI, câu AI, sau khi trả lời × vi/en × sáng/tối × 390/1024/1440).
+- Ruling (e2e): công tắc khóa có `aria-disabled` (D6: bấm được để biết lý do) nên Playwright coi là tắt; test bấm bằng bàn phím (focus + Enter).
+
+### Final M5a — reviewer (23/10/2026)
+
+- Reviewer mới (opus): 0 Critical, 3 Important, 6 Minor. Sửa một lượt, test trước (`test: reproduce the m5a review findings`):
+  - I1: một lần gọi `next` lỗi khi đang "Đang tạo câu…" làm màn quay mãi → giờ sang câu chung "Hệ thống đang gặp lỗi." + [Thử lại]; [Thử lại] lỗi thì
+    hiện câu lỗi.
+  - I2: `GET /v1/senses/{id}` chỉ đọc từ catalog nên không lấy được từ riêng → API gửi kèm `lemma` (của chính người học) với `word-not-recognized`
+    (thêm vào, v1 additive); bỏ lần đọc nghĩa.
+  - I3: dải K/76 nêu từ trước khi trả lời là lộ đáp án (câu thay thế hỏi đúng từ đó) → trước khi trả lời ghi "một từ bạn tự thêm", tên từ và link hiện
+    khi đã có kết quả; dải giữ lại sau khi trả lời.
+- Minor để lại: M1 vòng chờ chạy tiếp tối đa 60 giây sau khi rời trang; M2 giới hạn 60 giây chỉ cộng `retry_after_seconds`; M3 mất focus khi đổi trạng
+  thái; M5 bấm Bắt đầu trước khi tải xong gói thì không gửi kiểu AI; M6 in đậm phân biệt hoa thường.

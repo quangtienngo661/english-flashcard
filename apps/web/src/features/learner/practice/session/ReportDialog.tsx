@@ -28,9 +28,13 @@ function useReasons(kind: 'ai' | 'non_ai', enabled: boolean) {
 }
 
 /** K/66: "Báo lỗi câu này"; one report per question (409 report-exists counts as sent). */
-export function ReportDialog({ itemId, kind, subtitle, isOpen, onClose, onSent }: {
+export function ReportDialog({ itemId, kind, privateWord = false, lemma = null, subtitle, isOpen, onClose, onSent }: {
   itemId: string;
   kind: 'ai' | 'non_ai';
+  /** K/81 (D12): an AI question about the learner's own word; no consent box, a line says the team will see it. */
+  privateWord?: boolean;
+  /** The asked word once the answer is shown; before that the line does not name it. */
+  lemma?: string | null;
   subtitle: string | null;
   isOpen: boolean;
   onClose: () => void;
@@ -132,7 +136,8 @@ export function ReportDialog({ itemId, kind, subtitle, isOpen, onClose, onSent }
         />
         {tried && noteMissing && <p className="text-caption text-danger">{t('noteMissing')}</p>}
       </div>
-      <p className="text-caption text-muted">{t('info')}</p>
+      {privateWord && <p className="text-ui text-ink">{lemma ? t('privateWord', { lemma }) : t('privateWordUnknown')}</p>}
+      <p className="text-caption text-muted">{kind === 'ai' ? t('infoAi') : t('info')}</p>
       {error && (
         <p role="alert" className="text-ui text-danger">
           {error}

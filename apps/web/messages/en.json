@@ -1032,11 +1032,43 @@
           "random": "Random"
         },
         "start": "Start {count, plural, one {# question} other {# questions}}",
-        "sessionsLeft": "Uses 1 of {remaining, plural, one {# session} other {# sessions}} left today."
+        "sessionsLeft": "Uses 1 of {remaining, plural, one {# session} other {# sessions}} left today.",
+        "aiToggle": "AI question types",
+        "aiLine": "This session uses up to {needed, plural, one {# AI credit} other {# AI credits}} for questions · {remaining} left",
+        "quotaTitle": "Not enough AI credits for questions",
+        "quotaBody": "This session needs {needed, plural, one {# AI credit} other {# AI credits}} for questions, and you have {remaining}.",
+        "quotaRefillDate": "New AI credits for questions arrive on {date}.",
+        "quotaRefillTime": "New AI credits for questions arrive at {time}.",
+        "quotaHint": "Choose fewer questions, or turn off AI question types and start again.",
+        "aiUnavailable": "Something went wrong on our side, so AI question types can’t be used right now. Turn them off to start, or try again later.",
+        "dropAi": "Turn off AI question types"
       },
       "session": {
         "close": "Stop, see summary",
         "header": "Practice · {source}",
+        "aiChip": "AI question",
+        "translation": "Translation",
+        "translationAi": "AI translation",
+        "ai": {
+          "preparingTitle": "Writing the question…",
+          "preparingBody": "This usually takes a few seconds.",
+          "errorTitle": "Something went wrong on our side.",
+          "quotaTitle": "No AI credits left for questions",
+          "refillDate": "New AI credits for questions arrive on {date}.",
+          "refillTime": "New AI credits for questions arrive at {time}.",
+          "planTitle": "Your plan has no AI questions",
+          "planBody": "Your plan has ended, so the remaining AI questions can’t be made.",
+          "stayOpen": "If you stop, the session stays open and you can finish it later.",
+          "retry": "Try again",
+          "later": "Later",
+          "fallback": "This question switched to a regular type.",
+          "fallbackQuota": "No AI credits left for questions. The rest of this session uses other question types.",
+          "notRecognized": "AI didn’t recognize “{lemma}”, a word you added, so this question uses another type.",
+          "notRecognizedStop": "AI didn’t recognize “{lemma}”, a word you added.",
+          "notRecognizedAny": "AI didn’t recognize a word you added, so this question uses another type.",
+          "seeWord": "Check the word in My words",
+          "dismiss": "Close notice"
+        },
         "progress": "Question {n} of {total}",
         "progressDone": "Done {total} of {total}",
         "kind": {
@@ -1044,14 +1076,20 @@
           "true_false": "True or false",
           "type_meaning": "Type the word · meaning",
           "type_sentence": "Type the word · sentence",
-          "other": "Question"
+          "other": "Question",
+          "cloze": "Fill in the sentence",
+          "meaning_in_sentence": "Meaning in the sentence",
+          "mcq_sentence": "Sentence multiple choice"
         },
         "ask": {
           "mcq": "Choose the word with this meaning",
           "true_false": "Do this word and meaning match?",
           "type_meaning": "Type the English word with this meaning",
           "type_sentence": "Type the missing word, in the right form",
-          "other": "Answer this question"
+          "other": "Answer this question",
+          "cloze": "Type the missing word in the right form",
+          "meaning_in_sentence": "What does the bold word mean here?",
+          "mcq_sentence": "Choose the word that fills the gap"
         },
         "true": "True",
         "false": "False",
@@ -1107,7 +1145,10 @@
           "noteMissing": "Describe the problem to send this report.",
           "info": "The Wordmet team will check this question. Until then it doesn't count toward Weak words; the grade stays as it is.",
           "send": "Send report",
-          "done": "Report sent. See the outcome in History → My reports."
+          "done": "Report sent. See the outcome in History → My reports.",
+          "infoAi": "The Wordmet team will check this question. Until then it doesn’t count toward Weak words. If AI wrote the question wrong, you get 1 AI credit back.",
+          "privateWord": "The Wordmet team will see “{lemma}”, a word you added, to check it.",
+          "privateWordUnknown": "The Wordmet team will see the word you added in this question, to check it."
         },
         "round": {
           "chip": "End of round {round}",

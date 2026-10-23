@@ -7,13 +7,13 @@ import type { Prompt } from './use-practice-session';
 
 export const KBD = 'hidden rounded-sm border px-1.5 text-caption font-semibold md:inline';
 
-export type PromptKind = 'mcq' | 'true_false' | 'type_meaning' | 'type_sentence' | 'other';
-export const promptKind = (prompt: Prompt): PromptKind =>
-  prompt.kind === 'mcq' || prompt.kind === 'true_false' || prompt.kind === 'type_meaning' || prompt.kind === 'type_sentence' ? prompt.kind : 'other';
+export type PromptKind = Prompt['kind'];
+export const promptKind = (prompt: Prompt): PromptKind => prompt.kind;
 
-/** The question card of K/60–K/64: type chip, what to do, [Báo lỗi], then the question itself. */
-export function QuestionCard({ prompt, reportable, reported, onReport, children }: {
+/** The question card of K/60–K/64, K/78a–K/78c: type chip ("Câu AI" too for an AI question), what to do, [Báo lỗi], the question. */
+export function QuestionCard({ prompt, ai = false, reportable, reported, onReport, children }: {
   prompt: Prompt;
+  ai?: boolean;
   reportable: boolean;
   reported: boolean;
   onReport: () => void;
@@ -25,6 +25,7 @@ export function QuestionCard({ prompt, reportable, reported, onReport, children 
     <section className="flex flex-col gap-5 rounded-feature border-2 border-border-strong bg-surface p-5 shadow-ledge md:p-6">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex min-w-0 flex-wrap items-center gap-2">
+          {ai && <span className="rounded-full bg-primary-soft px-2.5 py-0.5 text-caption font-semibold text-primary">{t('aiChip')}</span>}
           <span className="rounded-full bg-accent px-2.5 py-0.5 text-caption font-semibold text-on-accent">{t(`kind.${kind}`)}</span>
           <span className="text-caption text-muted">{t(`ask.${kind}`)}</span>
         </div>

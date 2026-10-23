@@ -280,7 +280,7 @@ describe('next with AI slots (design §6.3, §6.5)', () => {
     const t = setup({ types: ['type_word', 'meaning_in_sentence'], senseIds: ['s1'], aiSenseIds: ['s1'], aiPlanned: 1,
       generate: () => failed('word-not-recognized') });
     expect(await t.service.next(learner, 'sess-1'))
-      .toMatchObject({ state: 'question', notice: 'word-not-recognized', sense_id: 's1', item: { type: 'type_word' } });
+      .toMatchObject({ state: 'question', notice: 'word-not-recognized', sense_id: 's1', lemma: 'w-s1', item: { type: 'type_word' } });
   });
 
   it('B7E13: AI stopped for the session → mixed: rule types without calling AI; AI-only: ai_unavailable with the reason', async () => {
@@ -462,7 +462,7 @@ describe('AI failures as the app sees them (design §6.5 A, §6.6 rows 1 and 4)'
     const t = setupFailing(aiOnly, 'word-not-recognized');
     await t.service.prepare(learner, 'sess-1');
     expect(await t.service.next(learner, 'sess-1'))
-      .toMatchObject({ state: 'ai_unavailable', reason: 'ai-failed', notice: 'word-not-recognized', sense_id: 's1' });
+      .toMatchObject({ state: 'ai_unavailable', reason: 'ai-failed', notice: 'word-not-recognized', sense_id: 's1', lemma: 'w-s1' });
   });
 
   it('AI-only × failed in next × rejected twice → ai_unavailable, reason ai-failed', async () => {
@@ -473,7 +473,7 @@ describe('AI failures as the app sees them (design §6.5 A, §6.6 rows 1 and 4)'
   it('AI-only × failed in next × word not recognized → ai_unavailable ai-failed with word-not-recognized and the sense id', async () => {
     const t = setupFailing(aiOnly, 'word-not-recognized');
     expect(await t.service.next(learner, 'sess-1'))
-      .toMatchObject({ state: 'ai_unavailable', reason: 'ai-failed', notice: 'word-not-recognized', sense_id: 's1' });
+      .toMatchObject({ state: 'ai_unavailable', reason: 'ai-failed', notice: 'word-not-recognized', sense_id: 's1', lemma: 'w-s1' });
   });
 
   it('mixed × failed in next × word not recognized → rule type with word-not-recognized (B7E98)', async () => {

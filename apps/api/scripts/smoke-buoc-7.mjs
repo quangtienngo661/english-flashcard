@@ -1027,8 +1027,8 @@ async function main() {
           check(shown.item.reportable === true, 'an AI question about a private word is not reportable');
           await answer(L1, shown.item.item_id, rightAnswer(shown.item, word));
           if (type === 'mcq_sentence') {
-            await wantProblem(report(L1, shown.item.item_id, { reason: 'ai_sentence_unnatural' }), 400, 'share-consent-required', 'no consent (B7E79)');
-            found.consent = (await want(report(L1, shown.item.item_id, { reason: 'ai_sentence_unnatural', share_private_word: true }), 201, 'with consent')).id;
+            // Learner UI D12 (GF1): no consent box any more; the report goes through and the team sees the asked word.
+            found.consent = (await want(report(L1, shown.item.item_id, { reason: 'ai_sentence_unnatural' }), 201, 'no consent needed (GF1)')).id;
           }
           continue;
         }

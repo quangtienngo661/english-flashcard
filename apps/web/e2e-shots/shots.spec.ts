@@ -72,6 +72,10 @@ test('milestone screenshots', async ({ page }) => {
     await m4b(page);
     return;
   }
+  if (MILESTONE === 'm5a') {
+    await m5a(page);
+    return;
+  }
   for (const locale of ['vi', 'en'] as const) {
     await setLanguage(page, locale);
     for (const scheme of ['light', 'dark'] as const) {
@@ -278,6 +282,44 @@ async function m4b(page: Page) {
     await page.waitForLoadState('networkidle');
     await shoot(page, name('transaction-detail'), false);
     await page.keyboard.press('Escape');
+  }
+  await setLanguage(page, 'vi');
+}
+
+/** M5a on a Pro learner with a deck (learner:setup --plan pro, fake AI): the setup with AI on, an AI question, its hint and result. */
+async function m5a(page: Page) {
+  await page.addInitScript(() => localStorage.setItem('wordmet-web.ai-types', 'on'));
+  for (const { locale, scheme } of COMBOS) {
+    await setLanguage(page, locale);
+    await page.emulateMedia({ colorScheme: scheme });
+    const name = (n: string) => `${locale}-${scheme}-${n}`;
+    await page.goto(`/${locale}/app/practice`);
+    await settle(page);
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.getByRole('button', { name: /^(Tùy chỉnh|Customize): / }).last().click();
+    await expect(page.getByRole('dialog')).toBeVisible();
+    await page.waitForLoadState('networkidle');
+    await shoot(page, name('customize-ai'), false);
+    await page.getByRole('dialog').getByRole('button', { name: /^(Bắt đầu|Start)/ }).click();
+    await expect(page).toHaveURL(/practice\/session/, { timeout: 60_000 });
+    await settle(page, page.getByRole('progressbar').first());
+    await shoot(page, name('ai-question'), false);
+    const hint = page.getByRole('button', { name: /^(Gợi ý|Hint)/ });
+    if (await hint.count()) {
+      await hint.first().click();
+      await page.waitForLoadState('networkidle');
+    }
+    const box = page.getByRole('textbox');
+    if (await box.count()) {
+      await box.fill('deploy');
+      await box.press('Enter');
+    } else await page.keyboard.press('1');
+    await page.waitForTimeout(800);
+    await page.waitForLoadState('networkidle');
+    await shoot(page, name('ai-answered'), false);
+    await page.keyboard.press('Escape');
+    await page.keyboard.press('Escape');
+    await page.waitForLoadState('networkidle');
   }
   await setLanguage(page, 'vi');
 }

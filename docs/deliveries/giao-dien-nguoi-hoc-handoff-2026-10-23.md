@@ -23,6 +23,16 @@ ledger nằm ở [`giao-dien-nguoi-hoc-ledger.md`](giao-dien-nguoi-hoc-ledger.md
 - Luật git chung của chủ dự án: không commit `main`, không force-push; một lỗi = hai commit (test fail trước, sửa sau); nhánh `<type>/<slug>`;
   Conventional Commits.
 
+## 0a. Cập nhật mới nhất (23/10/2026, hết M5a) — đọc trước
+
+- **M4b merged** (PR #127). **M5a** (Task 41–45: báo lỗi câu AI không cần đồng ý, `ItemView.private_word`, công tắc "Kiểu câu có AI", trạng thái AI trong
+  phiên, ba kiểu câu AI, bản dịch, K/81; `lemma` kèm `word-not-recognized`) ở PR #128, merge vào `dev` khi CI xanh. Reviewer M5a đã chấm và sửa (ledger
+  "Final M5a"); 5 Minor còn để lại.
+- **Tiếp theo: M5b (Task 46–48 trong plan: Tra bằng AI, Từ của tôi)**, nhánh `feat/giao-dien-nguoi-hoc-m5b` cắt từ `origin/dev` sau khi #128 merge.
+  M5b nên làm luôn trang "Từ của tôi" để link "Xem lại từ trong Từ của tôi" (hiện trỏ tới `/app/word?w=`) trỏ đúng chỗ.
+- Chạy thật M5a: `pnpm learner:setup -- --admin <email> --learner <email> --plan pro`; người học cần một nhóm có từ (tạo ở app, hoặc thêm cả loạt Kinh
+  doanh · B1). Ảnh `SHOTS_MILESTONE=m5a`.
+
 ## 0. Cập nhật cuối phiên cloud (23/10/2026, hết M4b) — đọc trước
 
 - **M4 merged** (PR #126, `dc737a4`). **M4b** (Task 35–40) xong trên `feat/giao-dien-nguoi-hoc-m4b`, PR #127 vào `dev` (chờ CI; merge khi xanh).
