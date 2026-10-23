@@ -331,3 +331,13 @@ Final M4: minor (deferred): English hint header has no count (design §7.1, kept
 - Ruling: trước khi trả lời, K/81 ghi "từ bạn tự thêm trong câu này" (không nêu từ) — vì nêu từ là lộ đáp án — giá nếu sai: chữ hơi chung chung.
 - Ruling: phím H không mở gợi ý khi ô gõ của câu điền từ đang có con trỏ (gõ chữ h vào ô), như kiểu Gõ từ của M4; dùng nút [Gợi ý].
 - Minor (để lại): phụ đề hộp báo lỗi câu AI chưa có "Câu AI · …" như bản chữ 7.12.
+
+### Task 45 — M5a e2e, tài liệu kiểm, chạy thật (23/10/2026)
+
+- `e2e/app/m5a.spec.ts` 20 passed (desktop + mobile): Pro bật công tắc → đang tạo câu → điền từ → gợi ý → trả lời → bản dịch; AI lỗi + [Thử lại]
+  (`retry_ai`); dải đổi kiểu câu; Miễn phí khóa; K/71; K/81 không ô tick; axe + không cuộn ngang với câu AI 300 ký tự × vi/en × sáng/tối. Cả bộ e2e web
+  229 passed, 15 skipped.
+- Chạy thật (API + worker + Postgres, `AI_FAKE_ENABLED=true`, người học Pro của `learner:setup`, nhóm Kinh doanh B1 113 từ): phiên chỉ kiểu AI mở được,
+  câu điền từ có `private_word`, `prepare` 200, gợi ý 1 "d", lý do báo lỗi câu AI có "Khác" cuối, báo lỗi không gửi `share_private_word` → 201.
+  Bộ ảnh `SHOTS_MILESTONE=m5a` (36 ảnh: Tùy chỉnh có AI, câu AI, sau khi trả lời × vi/en × sáng/tối × 390/1024/1440).
+- Ruling (e2e): công tắc khóa có `aria-disabled` (D6: bấm được để biết lý do) nên Playwright coi là tắt; test bấm bằng bàn phím (focus + Enter).

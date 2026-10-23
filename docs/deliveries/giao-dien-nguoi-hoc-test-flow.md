@@ -211,3 +211,30 @@ tiền lần gia hạn; cộng lần đội Wordmet cấp Pro của `--plan pro`
 Kiểm tự động của M4b (CI): web `e2e/app/m4b.spec.ts` (Cài đặt → danh sách → chi tiết → Đóng; trống; axe và không cuộn ngang × vi/en × sáng/tối × 1440/390);
 admin `e2e/transactions.spec.ts` (menu → lọc gửi ranh giới ngày Việt Nam → chi tiết, axe; editor không thấy, không gọi API), `a11y.spec.ts` thêm `/transactions`;
 API unit GI1–GI10.
+
+## M5a — Luyện tập có câu AI
+
+Dữ liệu: `pnpm learner:setup -- --admin <email> --learner <email> --plan pro` (ở `apps/api`, cần `AI_FAKE_ENABLED=true`; script chọn model giả
+`fake:ok` cho mọi thao tác AI). Muốn thử AI lỗi: trong admin (hoặc API `PUT /v1/admin/ai/operations/:op`) thêm model giả `fake:bad-json` (AI trả câu hỏng) rồi
+chọn nó cho `generate_cloze`, hoặc tắt AI (`ai_enabled=false` ở Cài đặt hệ thống). Muốn thử hết lượt: admin cấp gói "limits" với `ai_practice_per_cycle` nhỏ (ví dụ 2).
+
+| # | Làm | Thấy | Khung |
+|---|---|---|---|
+| 1 | Luyện tập → [Tùy chỉnh] một nguồn | Dưới ba ô kiểu câu: công tắc "Kiểu câu có AI" + nhãn Pro, đang tắt; không có ô "Câu lấy từ đâu?" | K/70 (D10) |
+| 2 | Bật công tắc | Ba ô Điền từ vào câu · Chọn nghĩa trong câu · Trắc nghiệm theo câu (đã tick); dòng "Phiên này dùng tối đa N lượt câu AI · còn M"; bỏ tick một ô thì N giảm | K/70 |
+| 3 | Đóng hộp, mở lại; tải lại trang | Công tắc vẫn bật (nhớ trên máy này) | E21 |
+| 4 | [Bắt đầu] | Có lúc "Đang tạo câu… · Thường mất vài giây."; rồi câu AI có nhãn "Câu AI": điền từ (câu có ___, ô gõ, [Kiểm tra], [Xem đáp án]), chọn nghĩa (từ in đậm), trắc nghiệm theo câu | K/73, K/78a–c |
+| 5 | Ở câu điền từ bấm [Gợi ý], rồi [Mở gợi ý 2], [Mở gợi ý 3] | Khối "Gợi ý 1/3" có chấm tiến độ; dòng "Chữ cái đầu" · "Định nghĩa" · "Nghĩa tiếng Việt" | §15 điểm 10 |
+| 6 | Trả lời đúng | "Đúng rồi", từ · nghĩa, định nghĩa; khối "Bản dịch · AI dịch" với câu tiếng Việt (chỉ người học tiếng Việt) | K/79a |
+| 7 | Bấm "Báo lỗi" ở một câu AI | Lý do câu AI ("Khác" cuối); dòng cuối có "…bạn được trả lại 1 lượt câu AI."; câu AI về từ bạn tự thêm: không có ô tick, dòng "Đội Wordmet sẽ thấy từ “…” bạn tự thêm để kiểm tra." | K/80, K/81 (D12) |
+| 8 | Chọn `fake:bad-json` cho `generate_cloze`, mở phiên chỉ có Điền từ vào câu | "Hệ thống đang gặp lỗi." [Thử lại] [Để sau] + "Dừng thì phiên vẫn đang dở…"; đổi lại model tốt rồi [Thử lại] → có câu; [Để sau] về Luyện tập, thẻ "Phiên đang dở" | K/74a, K/74d (D11) |
+| 9 | Phiên trộn (có kiểu thường) khi AI lỗi | Dải "Câu này chuyển sang kiểu câu thường." một lần, đóng được | K/75 |
+| 10 | Hết lượt câu AI giữa phiên | Phiên trộn: dải "Hết lượt câu AI. Các câu còn lại của phiên dùng kiểu câu khác. Lượt câu AI mới có vào …"; phiên chỉ AI: "Hết lượt câu AI" + lúc nạp + [Để sau] | K/75b, K/74b |
+| 11 | Mở phiên AI khi còn ít lượt hơn cần | Hộp trong Tùy chỉnh: "Không đủ lượt câu AI · Phiên này cần N lượt câu AI, bạn còn M. Lượt câu AI mới có vào …" + [Bỏ kiểu câu có AI] | K/71 |
+| 12 | Tắt AI ở Cài đặt hệ thống rồi mở phiên AI | "Hệ thống đang gặp lỗi, chưa dùng được kiểu câu có AI. Bỏ kiểu câu AI để bắt đầu, hoặc thử lại sau." + [Bỏ kiểu câu có AI] | K/72 (D11) |
+| 13 | Tài khoản gói Miễn phí | Công tắc mờ + nhãn Pro có ổ khóa; bấm → "Dành cho gói Pro. Gói Pro chưa mở bán." [Xem Gói học] | K/70b (D6) |
+| 14 | English, Tối, cửa sổ 390px | "AI question types", "Writing the question…", không có khối bản dịch; câu AI dài không cuộn ngang | M/78d, E41 |
+
+Kiểm tự động của M5a (CI, job `web`): `e2e/app/m5a.spec.ts` (Pro: bật công tắc → đang tạo câu → điền từ → gợi ý → trả lời → bản dịch; AI lỗi + Thử lại;
+dải đổi kiểu câu; Miễn phí khóa; không đủ lượt; báo lỗi câu AI về từ riêng không có ô tick; axe và không cuộn ngang với câu AI 300 ký tự × vi/en × sáng/tối ×
+1440/390); API unit GF1–GF4 và `private_word`.
