@@ -35,6 +35,7 @@ export function Button({ variant = 'primary', size = 'md', className, children, 
       type={isPending ? 'button' : type}
       onPress={isPending ? undefined : onPress}
       aria-busy={isPending || undefined}
+      data-variant={variant}
       data-pending={isPending || undefined}
       className={cn(
         'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-inner px-4.5 font-semibold outline-none transition duration-instant ease-standard focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface disabled:cursor-not-allowed disabled:opacity-50 data-pending:cursor-progress motion-safe:data-pressed:pressed motion-safe:data-pressed:shadow-none',

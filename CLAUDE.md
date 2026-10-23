@@ -293,6 +293,9 @@ API additions the screens assume (staff emails in admin responses, `group_id` fo
 `docs/deliveries/giao-dien-nguoi-hoc.md` (plan tóm tắt 22/10/2026; as-built per milestone, M1 23/10/2026); owner's manual test flow and Windows
 setup `docs/deliveries/giao-dien-nguoi-hoc-test-flow.md`. Design (D1–D22), decisions and plan: `docs/superpowers/{specs,decisions,plans}/2026-10-22-giao-dien-nguoi-hoc*.md`.
 One branch per milestone `feat/giao-dien-nguoi-hoc-<m1|m2|…>` from `origin/dev`. On Windows `pnpm dev:app` runs the app in a Linux container on :3001.
+**Mid-M4 handoff (23/10/2026): read `docs/deliveries/giao-dien-nguoi-hoc-handoff-2026-10-23.md` first** (state, method, conventions, rulings, what only runs on
+the owner's Windows machine); the executing-plans ledger is copied to `docs/deliveries/giao-dien-nguoi-hoc-ledger.md`. M1–M3 merged (PR #123–#125); M4 on
+`feat/giao-dien-nguoi-hoc-m4`, Task 28 done, next Task 29.
 
 ## Việc phải phân tích khi tới bước tương ứng (ghi 12/10/2026, từ brainstorm Bước 2)
 

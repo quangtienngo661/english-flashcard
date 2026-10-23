@@ -150,3 +150,38 @@ Dùng tài khoản người học của mục 0.4. Trong file CSV mẫu có các
 Kiểm tự động của M3 (CI, job `web`): `e2e/app/m3.spec.ts` (Tra từ → trang từ → thêm vào nhóm, phím N và `went`, tự nhập nghĩa, câu đã gặp tới giới hạn,
 thêm cả loạt, phím `/`; axe và không cuộn ngang ở Tra từ, trang từ, danh sách câu, tấm Thêm từ với nghĩa dài, câu 300 ký tự, tên nhóm 60 ký tự × vi/en ×
 sáng/tối × 1440/390).
+
+## M4 — Luyện tập và Gói học
+
+Dùng tài khoản người học của mục 0.4 (gói Miễn phí: 3 phiên luyện mỗi ngày), đã có nhóm và vài từ đã ôn (M2). Câu sai trong phiên ở bước 6 tạo dữ liệu cho
+Từ hay sai và Lịch sử. Bước 15–17 cần gói Pro: chạy lại `pnpm learner:setup -- --admin <email> --learner <email> --plan pro` (ở `apps/api`, đội Wordmet cấp Pro 30
+ngày) rồi tải lại trang.
+
+| # | Làm | Thấy | Khung |
+|---|---|---|---|
+| 1 | Mở Luyện tập (tab dưới / thanh trên) | Thẻ lớn "Hôm nay": "N từ trong M nhóm. 10 câu, trộn ba kiểu câu.", chip ba kiểu câu và "10 câu", [Bắt đầu 10 câu] [Tùy chỉnh]; bên phải "Phiên luyện hôm nay" · "Gói Miễn phí" · "đã dùng x/3" · "Một phiên chỉ tính khi bạn trả lời câu đầu tiên. Mở lại lúc 0:00."; bốn nguồn Theo nhóm · Từ hay sai · Đang ưu tiên · Luyện tất cả, mỗi nguồn có nút luyện và nút Tùy chỉnh (icon); "Gần đây" + [Xem lịch sử]; "Phím tắt trong phiên" (chỉ web) | K/51 `276:2349`, M/L51 |
+| 2 | Theo nhóm: bấm chip một nhóm khác | Nút đổi thành "Luyện <tên nhóm>" | K/51 |
+| 3 | Bấm icon Tùy chỉnh của Theo nhóm | Hộp "Tùy chỉnh phiên" · chip "Theo nhóm": ô Nhóm "… · N từ", hai ô "Mọi từ / Cần ôn hôm nay / Đang ưu tiên" và "Mọi ngăn / Ngăn 0…5" (chọn ngăn thì ô kia về "Mọi từ"); ba ô kiểu câu cùng cỡ, không mô tả; "Kiểu đề · cho kiểu Gõ từ" chỉ hiện khi tick Gõ từ; "Số câu" − 10 + "tối đa 20" (dừng ở 20); "Thêm tùy chọn" mở ô "Thứ tự"; không có khối "Kiểu câu có AI"; dưới nút: "Dùng 1 trong N phiên còn lại hôm nay." | K/54 `276:2708` (bố cục D10), M/L54 |
+| 4 | Bỏ tick cả ba kiểu câu | "Chọn ít nhất một kiểu câu.", nút Bắt đầu mờ | — |
+| 5 | Chọn một nhóm chưa có từ nào cần ôn, "Cần ôn hôm nay" → Bắt đầu | Dòng đỏ trong hộp: "Nhóm này không có từ nào khớp lựa chọn." | — |
+| 6 | Đóng hộp, [Bắt đầu 10 câu] | Phiên toàn màn: "Luyện tập · Từ cần ôn hôm nay", vạch tiến độ + "Câu 1/10"; trắc nghiệm: nghĩa lớn, 4 đáp án có số; nhấn `H` → khối "Gợi ý 1/2" với dòng đã mở và [Mở gợi ý 2]; nhấn số của một đáp án sai → "Chưa đúng", đáp án đúng xanh "Đáp án đúng", đáp án chọn đỏ "Bạn chọn", nghĩa và định nghĩa; [Cần ôn lại 1] vàng, [Câu tiếp Enter] | K/60 `273:1598`, K/61 `273:1657`, K/63 `273:1800`, M/L60, M/L61 |
+| 7 | Câu Đúng/sai, trả lời đúng | "Đúng rồi"; [Cần ôn lại 1] [Đã biết 2] [Câu tiếp]; bấm [Đã biết] → sang câu tiếp | K/62 `273:1731` |
+| 8 | Câu Gõ từ: gõ sai chính tả, [Kiểm tra] | Ô đỏ "Lần 1", "Chưa đúng · Kiểm tra chính tả rồi gõ lại. Wordmet chưa hiện đáp án."; [Làm lại Enter] [Gợi ý H] [Xem đáp án]; [Xem đáp án] → tính sai, hiện đáp án | K/64 `273:1849`, M/L64 |
+| 9 | Ở một câu, bấm "Báo lỗi" | Hộp "Báo lỗi câu này": lý do theo thứ tự, **"Khác" cuối**; chọn "Khác" → "Ghi chú · bắt buộc · 0/300", gửi khi trống → "Ghi rõ lỗi để gửi báo lỗi này."; gửi được → "Đã gửi báo lỗi. Xem kết quả trong Lịch sử → Báo lỗi của tôi.", nút đổi thành "Đã báo lỗi" | K/66 `273:1954`, M/L66 |
+| 10 | Giữa phiên, tải lại trang (F5) rồi bấm Back của trình duyệt | Tải lại: đúng câu đang làm (gợi ý đã mở vẫn hiện); Back về Luyện tập: thẻ vàng "Phiên đang dở" · "…, đã làm x/10 câu. Bắt đầu phiên mới sẽ đóng phiên này." + [Làm tiếp câu x+1] | K/51, E34 |
+| 11 | Ở Luyện tập, bấm [Bắt đầu 10 câu] khi còn phiên dở | Hộp "Bạn có phiên đang dở x/10" · [Làm tiếp] [Mở phiên mới]; [Làm tiếp] về đúng câu cũ | K/77 `360:15650`, E35 |
+| 12 | Luyện một nhóm ít từ hơn số câu (ví dụ 5 từ, 10 câu) | Hết vòng 1: "Hết vòng 1 · Bạn đã làm hết 5 từ", chip "x đúng" "y sai"; [Luyện lại thêm 5 câu Enter] [Kết thúc, xem tổng kết Esc] | K/65 `273:1911`, M/L65 |
+| 13 | Nhấn `Esc` giữa phiên | Tổng kết: "Xong N câu.", "…, trộn 3 kiểu câu. Hôm nay còn x/3 phiên luyện.", ô Đúng / Sai; "Cần ôn lại · k từ" mỗi từ một [Cần ôn lại] (bấm → "Đã đưa vào ưu tiên"), [Đưa k từ còn lại vào ưu tiên]; [Về Luyện tập Enter] [Luyện thêm một phiên] | K/67 `273:2069`, M/L67 |
+| 14 | Luyện hết 3 phiên trong ngày (mỗi phiên trả lời ít nhất 1 câu), mở lại Luyện tập | Thẻ lớn "Hết phiên luyện hôm nay · Mai luyện tiếp nhé · Gói Miễn phí có 3 phiên luyện mỗi ngày, mở lại lúc 0:00…" + [Ôn thẻ] (không có [Xem gói học]); các nguồn ghi "Mở lại lúc 0:00"; cột phải "đã dùng 3/3" + "còn … giờ … phút" | K/55 `276:3140`, M/L55 |
+| 15 | Mở Từ hay sai (tiêu đề thẻ nguồn, hoặc "+N từ") | "N từ hay sai"; ô Nhóm "Tất cả nhóm · N" và từng nhóm "… · số từ"; mỗi từ: nghĩa, "sai x/y", ngăn, "21:06 hôm nay"; thẻ xanh đậm [Luyện N từ] [Tùy chỉnh]; hộp "Từ vào và rời danh sách thế nào?" | K/56 `276:3501`, M/L56 |
+| 16 | Chọn một nhóm trong ô Nhóm | Tiêu đề "x từ trong nhóm …", nút "Luyện x từ của nhóm …" mở phiên chỉ gồm các từ đó | K/56, API (b) |
+| 17 | Mở Lịch sử ([Xem lịch sử]) | Tab "Câu đã làm": ô Ngày (Mọi ngày · Hôm nay · Hôm qua…), mỗi câu: giờ, từ, kiểu câu ("Gõ từ · theo nghĩa"), đề, bạn trả lời, đáp án, kết quả ("Sai · bỏ qua", "Đúng · có gợi ý", "Đúng · lần 2"), đã bấm; tài khoản chưa làm câu nào → "Bạn chưa làm câu nào." | K/57 `276:3741`, K/57b `411:5825`, M/L57 |
+| 18 | Tab "Báo lỗi của tôi" | Báo lỗi ở bước 9: từ, lý do, ngày gửi, "Đang xem"; sau khi báo lỗi được xử lý (admin chưa có màn Báo lỗi; gọi `POST /v1/admin/practice/reports/{id}/resolve` bằng tài khoản admin): "Đã sửa" / "Không có lỗi" / "Đã xác nhận lỗi" + dòng lượt câu AI; tải lại vẫn ở tab này; chưa báo lỗi → "Bạn chưa báo lỗi câu nào." | K/82 `364:4453`, K/83 `364:4706` |
+| 19 | Chip gói trên thanh trên → Gói học | Toàn màn: "Gói học · Học đều mỗi ngày, lên Pro khi cần", công tắc Theo năm / Theo tháng (đổi giá giữ chỗ "XXX.000 ₫ / năm" ↔ "XX.000 ₫ / tháng"); thẻ Miễn phí "Gói của bạn" · "Bạn đang dùng gói này", không có "Không cần thẻ ngân hàng"; thẻ Pro dải "Chưa mở bán", không nút mua, không dòng thanh toán; [So sánh chi tiết các gói] mở bảng; × về Hôm nay | K/52 `265:844`, M/62 |
+| 20 | Sau `--plan pro`, mở lại Gói học | "Bạn đang dùng gói Pro · Đội Wordmet cấp từ <hôm nay> tới hết <30 ngày sau>. Không thu tiền, không tự gia hạn."; thẻ Pro dải "Gói của bạn · Đội Wordmet tặng", "Tới hết …"; Luyện tập ghi "Gói Pro" và "đã dùng x/30" | K/53 `277:2349`, M/62b |
+| 21 | Đổi sang English (Cài đặt), xem lại Luyện tập, một phiên, Từ hay sai, Lịch sử, Gói học | Chữ tiếng Anh ngắn ("Weak words", "Still learning / Know", "Check"), gợi ý ghi "Hint" không có tổng; giờ "12:00 AM" | design §7 |
+| 22 | Thu cửa sổ còn 390px ở mỗi màn trên, và Giao diện Tối | Không cuộn ngang; hộp Tùy chỉnh trượt lên từ đáy, nút Bắt đầu ở đáy; phiên toàn màn; chữ đọc được trên nền tối | M/L51–M/L67, M/62 |
+
+Kiểm tự động của M4 (CI, job `web`): `e2e/app/m4.spec.ts` (một phiên đủ ba kiểu câu, gợi ý, gõ lại, vòng 2, báo lỗi, tổng kết; tải lại giữa phiên; hộp phiên đang
+dở; hết phiên; Từ hay sai theo nhóm; Lịch sử và Báo lỗi của tôi; Gói học; axe và không cuộn ngang ở Luyện tập, hộp Tùy chỉnh, phiên với nghĩa và đáp án dài,
+Từ hay sai, Lịch sử, Báo lỗi của tôi, Gói học × vi/en × sáng/tối × 1440/390; câu gõ 100 ký tự).

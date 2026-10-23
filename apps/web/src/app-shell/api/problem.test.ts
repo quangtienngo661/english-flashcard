@@ -41,6 +41,15 @@ describe('problem mapping', () => {
     expect(err.retryAfterSeconds).toBeNull();
   });
 
+  it('extension members (resets_at, reason, result) are kept; the standard members are not repeated there', async () => {
+    const err = await toApiError(problemResponse(403, {
+      type: 'http://x/problems/quota-exhausted', status: 403, title: 'q', operation_id: 'op-1', resets_at: '2026-10-24T17:00:00.000Z',
+    }));
+    expect(err.problem.extensions).toEqual({ resets_at: '2026-10-24T17:00:00.000Z' });
+    const conflict = await toApiError(problemResponse(409, { type: 'http://x/problems/practice-no-words', status: 409, title: 'n', reason: 'group-empty' }));
+    expect(conflict.problem.extensions).toEqual({ reason: 'group-empty' });
+  });
+
   it('a non-problem body still becomes an ApiError with the status and the generic message', async () => {
     const err = await toApiError(new Response('<html>bad gateway</html>', { status: 502 }));
     expect(err.problem.status).toBe(502);

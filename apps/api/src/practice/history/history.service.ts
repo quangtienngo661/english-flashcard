@@ -5,6 +5,7 @@ import { ProblemDetailsException } from '../../common/problem-details/problem-de
 import { dateString, dateValue } from '../../common/time/local-date.js';
 import { ContentService } from '../../content/content.service.js';
 import type { PrismaClient } from '../../generated/prisma/client.js';
+import { LearningService } from '../../learning/index.js';
 import { correctOf, type AnswerResult } from '../answers/answers.service.js';
 import type { AnswerKey, Prompt } from '../practice.types.js';
 import { PracticeStats } from '../weak/practice-stats.js';
@@ -22,6 +23,7 @@ export type HistoryItem = {
   translation: string | null;
 };
 type Page = { page_size: number; page_token?: string };
+export type WeakGroups = { total: number; items: Array<{ group_id: string; name: string; count: number }> };
 
 const invalidInput = () => new ProblemDetailsException({ status: 400, title: 'Validation failed', type: 'validation-failed' });
 const uuidPattern = /^[0-9a-f-]{36}$/;
@@ -33,14 +35,22 @@ export class HistoryService {
     @Inject(PRISMA_CLIENT) private readonly prisma: PrismaClient,
     @Inject(PracticeStats) private readonly stats: PracticeStats,
     @Inject(ContentService) private readonly content: ContentService,
+    @Inject(LearningService) private readonly learning: LearningService,
   ) {}
 
-  async weakWords(userId: string, nativeLanguage: 'vi' | 'en', page: Page): Promise<{ items: WeakWord[]; next_page_token: string | null }> {
-    const cursor = page.page_token === undefined ? null : decodeBoundToken(page.page_token, 'weak-words');
+  async weakWords(userId: string, nativeLanguage: 'vi' | 'en', page: Page & { group_id?: string }):
+    Promise<{ items: WeakWord[]; next_page_token: string | null }> {
+    // API (b): a token only works for the deck filter it was made with (GB4).
+    const binding = `weak-words|${page.group_id ?? ''}`;
+    const cursor = page.page_token === undefined ? null : decodeBoundToken(page.page_token, binding);
     if (page.page_token !== undefined && (cursor === null || typeof cursor.at !== 'string' || typeof cursor.id !== 'string')) {
       throw invalidInput();
     }
+    // The deck's items (all of them) also give the 404 for a deck that is not the learner's (GB2).
+    const inDeck = page.group_id === undefined ? null
+      : new Set((await this.learning.practiceItems(userId, { kind: 'group', groupId: page.group_id, filter: 'all' })).map((i) => i.sense_id));
     const weak = (await this.stats.weakSenses(userId))
+      .filter(({ item }) => inDeck === null || inDeck.has(item.sense_id))
       .map(({ item, stats }) => ({ item, stats, at: stats.last_wrong_at! }))
       // Newest last wrong attempt first.
       .sort((a, b) => (a.at === b.at ? a.item.sense_id.localeCompare(b.item.sense_id) : a.at < b.at ? 1 : -1))
@@ -55,8 +65,24 @@ export class HistoryService {
         sense_id: item.sense_id, lemma: lemmas.get(item.sense_id) ?? '', wrong: stats.wrong, counted: stats.counted, level: item.level,
         last_wrong_at: at, meaning: senses.get(item.sense_id)?.meaning?.text ?? null,
       })),
-      next_page_token: weak.length > page.page_size && last ? encodeBoundToken({ at: last.at, id: last.item.sense_id }, 'weak-words') : null,
+      next_page_token: weak.length > page.page_size && last ? encodeBoundToken({ at: last.at, id: last.item.sense_id }, binding) : null,
     };
+  }
+
+  /** API (b): how many weak words each deck holds; a word in two decks counts in both, `total` counts it once (GB5). */
+  async weakGroups(userId: string): Promise<WeakGroups> {
+    const weak = await this.stats.weakSenses(userId);
+    const groups = await this.learning.groupsOfSenses(userId, weak.map(({ item }) => item.sense_id));
+    const counts = new Map<string, { group_id: string; name: string; count: number }>();
+    for (const list of groups.values()) {
+      for (const { id, name } of list) {
+        const entry = counts.get(id) ?? { group_id: id, name, count: 0 };
+        entry.count += 1;
+        counts.set(id, entry);
+      }
+    }
+    const items = [...counts.values()].sort((a, b) => b.count - a.count || a.name.localeCompare(b.name, 'vi') || a.group_id.localeCompare(b.group_id));
+    return { total: weak.length, items };
   }
 
   async history(userId: string, query: Page & { date?: string; sense_id?: string }, nativeLanguage: 'vi' | 'en'):

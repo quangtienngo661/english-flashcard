@@ -64,6 +64,10 @@ test('milestone screenshots', async ({ page }) => {
     await m3(page);
     return;
   }
+  if (MILESTONE === 'm4') {
+    await m4(page);
+    return;
+  }
   for (const locale of ['vi', 'en'] as const) {
     await setLanguage(page, locale);
     for (const scheme of ['light', 'dark'] as const) {
@@ -188,4 +192,70 @@ async function m3(page: Page) {
     await dialogShot('bulk', () => page.getByRole('button', { name: locale === 'vi' ? 'Thêm cả loạt vào nhóm' : 'Add them all to a deck' }).click());
   }
   await setLanguage(page, 'vi');
+}
+
+/**
+ * M4: Practice, the customise dialog, Weak words, History, My reports, Plans with sessions left; then one session (the learner's
+ * last Free session today) shot question by question, the summary, and Practice with no session left (K/55).
+ */
+async function m4(page: Page) {
+  const dialogShot = async (name: string, open: () => Promise<void>) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await open();
+    await expect(page.getByRole('dialog')).toBeVisible();
+    await page.waitForLoadState('networkidle');
+    await shoot(page, name, false);
+    await page.keyboard.press('Escape');
+  };
+  for (const { locale, scheme } of COMBOS) {
+    await setLanguage(page, locale);
+    await page.emulateMedia({ colorScheme: scheme });
+    const at = (path: string) => `/${locale}/app/${path}`;
+    const name = (n: string) => `${locale}-${scheme}-${n}`;
+    for (const [path, n] of [
+      ['practice', 'practice'],
+      ['practice/weak', 'weak'],
+      ['practice/history', 'history'],
+      ['practice/history?tab=reports', 'reports'],
+      ['plans', 'plans'],
+    ] as const) {
+      await page.goto(at(path));
+      await settle(page);
+      await shoot(page, name(n));
+    }
+    await page.goto(at('practice'));
+    await settle(page);
+    await dialogShot(name('customize'), () => page.getByRole('button', { name: /^(Tùy chỉnh|Customize): / }).first().click());
+  }
+  await setLanguage(page, 'vi');
+  await page.goto('/vi/app/practice');
+  await settle(page);
+  await page.getByRole('button', { name: /^Bắt đầu/ }).first().click();
+  await expect(page).toHaveURL(/practice\/session/, { timeout: 60_000 });
+  for (const { locale, scheme } of COMBOS) {
+    await setLanguage(page, locale);
+    await page.emulateMedia({ colorScheme: scheme });
+    const name = (n: string) => `${locale}-${scheme}-${n}`;
+    await page.goto(`/${locale}/app/practice/session`);
+    await settle(page, page.getByRole('progressbar').first());
+    await shoot(page, name('session-question'), false);
+    const box = page.getByRole('textbox');
+    if (await box.count()) {
+      await box.fill('zzzq');
+      await box.press('Enter');
+    } else await page.keyboard.press('1');
+    await page.waitForTimeout(800);
+    await page.waitForLoadState('networkidle');
+    await shoot(page, name('session-answered'), false);
+    await page.goto(`/${locale}/app/practice`);
+    await settle(page);
+    await shoot(page, name('practice-out'));
+  }
+  await setLanguage(page, 'vi');
+  await page.goto('/vi/app/practice/session');
+  await settle(page, page.getByRole('progressbar').first());
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('heading', { level: 1 })).toBeVisible({ timeout: 30_000 });
+  await page.waitForLoadState('networkidle');
+  await shoot(page, 'vi-light-summary');
 }

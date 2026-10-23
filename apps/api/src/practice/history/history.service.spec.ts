@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { PrismaClient } from '../../generated/prisma/client.js';
 import type { ContentService } from '../../content/content.service.js';
+import type { LearningService } from '../../learning/index.js';
 import type { PracticeStats } from '../weak/practice-stats.js';
 import { HistoryService } from './history.service.js';
 
@@ -17,7 +18,7 @@ const row = {
 };
 
 describe('HistoryService.history (B7E124)', () => {
-  const service = new HistoryService({ practiceSessionItem: { findMany: async () => [row] } } as unknown as PrismaClient, {} as PracticeStats, {} as ContentService);
+  const service = new HistoryService({ practiceSessionItem: { findMany: async () => [row] } } as unknown as PrismaClient, {} as PracticeStats, {} as ContentService, {} as LearningService);
 
   it('an AI question shows its sentence, options and right option; the translation only for a vi learner', async () => {
     const vi = (await service.history('u1', { page_size: 20 }, 'vi')).items[0];
@@ -46,14 +47,14 @@ describe('HistoryService.weakWords (design §8.7)', () => {
         return new Map([['s1', { meaning: vi('triển khai') }], ['s2', { meaning: vi('sức hút') }]]);
       },
     } as unknown as ContentService;
-    const page = await new HistoryService(prisma, stats, content).weakWords('u1', 'vi', { page_size: 20 });
+    const page = await new HistoryService(prisma, stats, content, {} as LearningService).weakWords('u1', 'vi', { page_size: 20 });
     expect(page.items.map((i) => [i.lemma, i.meaning])).toEqual([['deploy', 'triển khai'], ['rizz', 'sức hút']]);
     expect(calls[0].slice(0, 3)).toEqual(['u1', ['s1', 's2'], 'vi']);
   });
 
   it('GG2: a weak word whose meaning is no longer visible has meaning null', async () => {
     const content = { practiceSenses: async () => new Map([['s1', { meaning: vi('triển khai') }]]) } as unknown as ContentService;
-    const page = await new HistoryService(prisma, stats, content).weakWords('u1', 'vi', { page_size: 20 });
+    const page = await new HistoryService(prisma, stats, content, {} as LearningService).weakWords('u1', 'vi', { page_size: 20 });
     expect(page.items.find((i) => i.sense_id === 's2')).toMatchObject({ lemma: 'rizz', meaning: null });
   });
 });

@@ -1,3 +1,5 @@
+import { readdirSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
 import type { Clock } from '../../common/clock/clock.js';
 import type { PrismaClient } from '../../generated/prisma/client.js';
@@ -119,5 +121,75 @@ describe('ReportReasonsService', () => {
     expect(await service.forItem(prisma as never, 'old', 'ai')).toBeNull();
     prisma.practiceReportReason.findUnique.mockResolvedValue(null);
     expect(await service.forItem(prisma as never, 'nope', 'ai')).toBeNull();
+  });
+});
+
+// The seven seeded rows (Bước 7) with the data-only migration of the learner UI round applied (design §8.4).
+const MIGRATIONS = join(import.meta.dirname, '../../../prisma/migrations');
+const migration = (suffix: string) => {
+  const folder = readdirSync(MIGRATIONS).find((name) => name.endsWith(suffix));
+  if (!folder) throw new Error(`no migration *${suffix}`);
+  return readFileSync(join(MIGRATIONS, folder, 'migration.sql'), 'utf8').replace(/\r\n/g, '\n');
+};
+const literal = (token: string): string | number | boolean | null =>
+  token === 'NULL' ? null : token === 'true' ? true : token === 'false' ? false
+    : token.startsWith("'") ? token.slice(1, -1).replace(/''/g, "'") : Number(token);
+const COLUMNS: Record<string, keyof ReportReasonRow> = { position: 'position', label_en: 'labelEn', label_vi: 'labelVi' };
+const seededRows = (): ReportReasonRow[] => {
+  const insert = migration('_buoc7_practice_ai').split('INSERT INTO "practice_report_reasons"')[1]!.split(';')[0]!;
+  return [...insert.matchAll(/^\s*\((.*)\),?$/gm)].map(([, tuple]) => {
+    const [code, labelVi, labelEn, detailHintVi, detailHintEn, appliesTo, noteRequired, refundable, position] =
+      tuple!.match(/'(?:[^']|'')*'|NULL|true|false|\d+/g)!.map(literal);
+    return reason(code as string, position as number, {
+      labelVi: labelVi as string, labelEn: labelEn as string, detailHintVi: detailHintVi as string | null,
+      detailHintEn: detailHintEn as string | null, appliesTo: appliesTo as string, noteRequired: noteRequired as boolean,
+      refundable: refundable as boolean,
+    });
+  });
+};
+/** Applies each `UPDATE … SET "c" = new WHERE "code" = … AND "updated_by" IS NULL AND "c" = old` of the migration to the rows. */
+const applyOrderMigration = (rows: ReportReasonRow[]) => {
+  const sql = migration('_report_reasons_order_labels');
+  const updates = [...sql.matchAll(
+    /UPDATE "practice_report_reasons" SET "(\w+)" = ('(?:[^']|'')*'|\d+) WHERE "code" = '(\w+)' AND "updated_by" IS NULL AND "(\w+)" = ('(?:[^']|'')*'|\d+);/g,
+  )];
+  expect(updates.length).toBe(sql.match(/UPDATE /g)?.length);
+  for (const [, column, next, code, guardColumn, previous] of updates) {
+    expect(guardColumn, code).toBe(column);
+    const key = COLUMNS[column!]!;
+    for (const row of rows) {
+      if (row.code === code && row.updatedBy === null && row[key] === literal(previous!)) Object.assign(row, { [key]: literal(next!) });
+    }
+  }
+  return rows;
+};
+
+describe('report reasons order and English labels migration (design §8.4)', () => {
+  it('GD1: on a fresh DB "other" is the last reason for both kinds', () => {
+    const rows = applyOrderMigration(seededRows());
+    expect(learnerReasons(rows, 'ai', 'vi').map(({ code }) => code)).toEqual([
+      'meaning_wrong', 'graded_wrong', 'hint_wrong', 'ai_sentence_unnatural', 'ai_more_than_one_answer', 'ai_wrong_meaning', 'other',
+    ]);
+    expect(learnerReasons(rows, 'non_ai', 'vi').map(({ code }) => code)).toEqual(['meaning_wrong', 'graded_wrong', 'hint_wrong', 'other']);
+    expect(rows.find(({ code }) => code === 'other')?.position).toBe(1000);
+  });
+
+  it('GD1: the English labels are the short ones; Vietnamese labels unchanged', () => {
+    const rows = applyOrderMigration(seededRows());
+    expect(Object.fromEntries(rows.map(({ code, labelEn }) => [code, labelEn]))).toEqual({
+      meaning_wrong: 'Wrong meaning', graded_wrong: 'Right answer marked wrong', hint_wrong: 'Wrong hint', other: 'Other',
+      ai_sentence_unnatural: 'Ungrammatical or unnatural', ai_more_than_one_answer: 'More than one right answer',
+      ai_wrong_meaning: 'Wrong meaning of the word',
+    });
+    expect(rows.map(({ labelVi }) => labelVi)).toEqual(seededRows().map(({ labelVi }) => labelVi));
+  });
+
+  it('GD2: a row the admin edited before the migration stays as it is', () => {
+    const seeded = seededRows();
+    const edited = seeded.map((row) => row.code === 'other' ? { ...row, updatedBy: 'admin-1' }
+      : row.code === 'hint_wrong' ? { ...row, labelEn: 'Hint is off' } : row);
+    const rows = applyOrderMigration(edited);
+    expect(rows.find(({ code }) => code === 'other')?.position).toBe(4);
+    expect(rows.find(({ code }) => code === 'hint_wrong')?.labelEn).toBe('Hint is off');
   });
 });
