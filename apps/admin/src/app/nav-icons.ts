@@ -1,6 +1,7 @@
 import {
   Bot,
   BookOpen,
+  CreditCard,
   Database,
   FileDown,
   FileUp,
@@ -32,6 +33,7 @@ export const NAV_ICONS: Record<string, LucideIcon> = {
   '/irregular-forms': SpellCheck,
   '/users': Users,
   '/entitlements': Ticket,
+  '/transactions': CreditCard,
   '/ai/settings': Bot,
   '/ai/costs': Receipt,
   '/ai/eval-sets': FlaskConical,

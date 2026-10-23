@@ -419,6 +419,73 @@
       "transactions": "Transaction history",
       "saved": "Changes saved."
     },
+    "transactions": {
+      "title": "Transaction history",
+      "back": "Settings",
+      "cols": {
+        "date": "Date",
+        "kind": "Type",
+        "plan": "Plan and billing",
+        "amount": "Amount",
+        "period": "Active period",
+        "status": "Status"
+      },
+      "kinds": {
+        "purchase": "Purchase",
+        "renewal": "Renewal",
+        "plan_change": "Billing change",
+        "refund": "Refund",
+        "trial": "Trial",
+        "grant": "Granted by the Wordmet team"
+      },
+      "statuses": {
+        "succeeded": "Succeeded",
+        "refunded": "Refunded",
+        "pending": "Pending",
+        "reversed": "Refund reversed"
+      },
+      "intervals": {
+        "month": "monthly",
+        "year": "yearly"
+      },
+      "planInterval": "{plan} · {interval}",
+      "used": "Active {period}",
+      "detailLink": "Details",
+      "rowLabel": "{kind}, {date}, {plan}, {amount}active {period}, {status}. See details",
+      "footWeb": "Dates are in your time zone. Select Details to see the payment provider and transaction ID.",
+      "footPhone": "Tap a row to see the payment provider and transaction ID.",
+      "more": "Show more",
+      "planCard": "Plan",
+      "planGrant": "{plan} plan · granted by the Wordmet team through {date}",
+      "planUntil": "{plan} plan · through {date}",
+      "planOnly": "{plan} plan",
+      "aboutTitle": "About transactions",
+      "about1": "Purchase, Renewal, Billing change: a payment for Pro.",
+      "about2": "Refund: money returned to you; the original row says “Refunded”.",
+      "about3": "Trial and Granted by the Wordmet team: no charge.",
+      "detail": {
+        "title": "Transaction details",
+        "kind": "Type",
+        "plan": "Plan",
+        "amount": "Amount",
+        "at": "Time",
+        "period": "Active period",
+        "status": "Status",
+        "provider": "Payment provider",
+        "id": "Transaction ID",
+        "atValue": "{date}, {time}",
+        "help": "Questions about this transaction? Send the transaction ID to the Wordmet team through Contact.",
+        "close": "Close"
+      },
+      "providers": {
+        "fake": "Fake (test)"
+      },
+      "emptyTitle": "No transactions yet.",
+      "emptyBody": "When you start a trial, buy Pro or get a plan from the Wordmet team, it shows up here.",
+      "errorTitle": "We couldn’t load your transaction history.",
+      "errorBody": "Check your connection and try again.",
+      "retry": "Try again"
+    },
     "account": {
       "title": "Account",
       "back": "Settings",

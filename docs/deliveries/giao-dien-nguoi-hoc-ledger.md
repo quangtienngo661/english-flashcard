@@ -198,3 +198,88 @@ Final M4: minor (deferred): "Gần đây" shows only the clock time for older an
 Final M4: minor (deferred): history day list steps by 24 h, can skip/repeat a local day around DST
 Final M4: minor (deferred): the question count field cannot be cleared while typing; role spinbutton without arrow keys
 Final M4: minor (deferred): English hint header has no count (design §7.1, kept as designed)
+
+### Task 35 — Figma frames Lịch sử giao dịch (23/10/2026)
+
+- Khung: page 08 section `472:7912` (K/95, K/95b, K/95c, K/95d, K/95 Dark, K/95b Dark), page 09 section `474:5484` (M/95, M/95b, M/95c), page 04 section
+  `477:3674` (A/90, A/90b, A/90c). Node id ở `docs/mockups/2026-10-22/figma-node-ids.md`; chữ ở copy doc §17.4.
+- figma-checks: 12/12 khung overflow 0, 0 nút vàng thừa, không ledge bị cắt; độ tương phản chữ nhỏ nhất web 6.46 (Dark 5.5), điện thoại 7.25, admin 4.69
+  (bằng A/71 đã duyệt, đạt AA).
+- Ruling: admin ghi loại "Đội cấp" thay vì "Đội Wordmet cấp" — vì ô Loại của bảng admin hẹp, chữ đủ bị cắt; admin hiểu nghĩa — giá nếu sai: đổi một nhãn
+  trong `apps/admin/messages`.
+- Ruling: thêm trạng thái "Đang chờ" (chip `primary-soft`) ở một dòng Gia hạn mỗi danh sách — vì plan liệt kê 4 trạng thái mà khung ban đầu thiếu một —
+  giá nếu sai: đổi màu chip.
+- Cổng duyệt: gửi ảnh ba section cho chủ dự án, chờ "ok" trước Task 36.
+- Sửa thêm: chi tiết của dòng Gia hạn (K/95b, K/95b Dark, M/95b, A/90b) ghi "Đang chờ" cho khớp danh sách; figma-checks chạy lại, 12/12 như trên.
+- Ruling: chủ dự án (23/10/2026) "kể từ về sau không cần hỏi mình, cứ triển khai mà làm" — cổng "ok" của Task 35 và các cổng xem ảnh sau không dừng
+  chờ nữa; ảnh vẫn ghi lại để xem khi rảnh — giá nếu sai: chủ dự án góp ý sau, sửa khung và code ở mốc sau.
+- M4 merge (PR #126, CI xanh); nhánh M4b `feat/giao-dien-nguoi-hoc-m4b` cắt từ `origin/dev` @ `dc737a4`.
+
+### Task 36 — API (i) ghi giao dịch (23/10/2026)
+
+- Bảng `billing_transactions` (migration `20261023100000_billing_transactions`, CHECK cho kind/interval/status/environment và "amount_minor null đúng
+  khi currency null"); `NormalizedEvent` thêm `amount`, `currency` cho `subscription_started`, `renewed`, `plan_changed`, `refunded`; fake wire nhận
+  `amount` (số hữu hạn) và `currency` (`/^[A-Z]{3}$/`), sai dạng thì null chứ không thành "thiếu trường"; `pnpm billing:fake-event --currency`.
+- `TransactionsRepository.recordFromEvent` gọi trong transaction của bộ áp sự kiện; `toMinorUnits` theo số chữ số lẻ của `Intl`.
+- Test: GI1–GI6, GI10 (repository + fake wire + applier); API unit 2477/2477; drift diff rỗng trên DB local; build xanh.
+- Ruling: `plan_changed` tới trễ (stale) vẫn ghi giao dịch — vì đó vẫn là một lần trả tiền, chỉ trạng thái subscription giữ bản mới hơn — giá nếu sai:
+  một dòng thừa trong lịch sử, bỏ lời gọi ở nhánh stale.
+- Ruling: dòng `refund` chép `interval` và kỳ của dòng gốc; không thấy dòng gốc (giao dịch có trước bảng) thì `interval` null, kỳ bắt đầu lúc hoàn tiền,
+  không có ngày cuối — vì `period_start` bắt buộc — giá nếu sai: màn ghi kỳ lạ cho vài dòng hoàn tiền cũ trên local.
+- Ruling: tiền chỉ ghi khi có cả `amount` và `currency` (CHECK) — vì không có đơn vị thì không đổi ra đơn vị nhỏ nhất được — giá nếu sai: mất số tiền của
+  cổng chỉ gửi số; cổng thật sau này phải gửi tiền tệ.
+
+### Task 37 — API (i) đọc giao dịch (23/10/2026)
+
+- `GET /v1/me/transactions` (đăng nhập, không cần hồ sơ học) và `GET /v1/admin/transactions?email&kind&from&to` (`settings.manage`); `TransactionsService`
+  trộn `billing_transactions` với lần cấp gói (`kind: 'grant'`); `IdentityService.findUserIdByEmail`.
+- Test: GI7–GI9, email lạ → danh sách rỗng không đọc bảng, `page_token` sai / của bộ lọc khác / của người khác → 400; API unit 2488/2488; lint, build xanh.
+- Chạy trên Postgres local (script tạm, xóa dữ liệu sau): mua + gia hạn (gửi hai lần, còn một dòng) + hoàn tiền 4,99 USD (499) + lần cấp bị thu hồi;
+  trang 2 dòng một lần đi đủ 4 dòng đúng thứ tự; lọc admin `kind=grant` theo khoảng ngày đúng; CHECK chặn `kind` lạ.
+- Ruling: keyset trộn bằng hai truy vấn Prisma (mỗi nguồn lấy một trang sau con trỏ) rồi gộp trong code, thay cho UNION ALL của plan — vì cùng kết quả,
+  giữ kiểu của Prisma và không cần TypedSQL mới — giá nếu sai: mỗi trang đọc tối đa 2×(page_size+1) dòng.
+- Ruling: chỉ lần cấp `kind = 'plan'` vào lịch sử (cấp số lượt tùy ý không phải "cấp gói"); `occurred_at` của lần cấp là lúc tạo, kỳ là `starts_at` tới
+  `ends_at` (hoặc lúc thu hồi nếu sớm hơn) — giá nếu sai: thêm điều kiện.
+- Ruling: `from`/`to` của admin là thời điểm có múi giờ (`from` gồm, `to` không gồm); màn admin gửi ranh giới ngày theo giờ Việt Nam — vì API không
+  biết múi giờ của admin — giá nếu sai: đổi sang ngày `YYYY-MM-DD` + múi giờ cố định.
+
+### Task 38 — Màn Lịch sử giao dịch của người học (23/10/2026)
+
+- `/app/settings/transactions` (K/95–K/95d, M/95–M/95c): bảng 7 cột từ 768px, ba dòng xếp chồng trên điện thoại, cả dòng bấm mở chi tiết (hộp thoại /
+  tấm từ đáy); cột phụ "Gói học" + "Về giao dịch"; "Xem thêm" theo `next_page_token`; trống; lỗi tải + [Thử lại]. Dòng "Lịch sử giao dịch" ở Cài đặt
+  bật (`SHOW_TRANSACTIONS = true`) và trỏ tới trang.
+- Test: 8 test màn + test Cài đặt sửa; web unit 469/469; lint, typecheck, kiểm Tailwind thô xanh.
+- Ruling: ngày cuối của kỳ trả tiền là ngày trước ngày kết thúc (15/10 09:12 – 15/11 09:12 → "15/10 – 14/11/2026", như khung); lần cấp gói kết thúc lúc
+  0:00 nên lấy ngày trước 0:00, lần cấp bị thu hồi giữa ngày ghi đúng ngày thu hồi (GI7) — giá nếu sai: lệch một ngày ở cột "Kỳ được dùng".
+- Ruling: mỗi dòng là một nút có tên đọc đủ cả dòng; hai bố cục (bảng / ba dòng) chỉ để nhìn (`aria-hidden`) — vì cùng dữ liệu phải hiện theo hai cách mà
+  không lặp cho trình đọc màn hình — giá nếu sai: người dùng trình đọc màn hình không duyệt được theo cột.
+- Ruling: chữ tiếng Anh tự viết theo luật §17.2 ("Billing change", "Granted by the Wordmet team", "Fake (test)") — chưa ai duyệt — giá nếu sai: sửa chữ.
+
+### Task 39 — Trang admin "Giao dịch" (23/10/2026)
+
+- `/transactions` trong nhóm Người học, chỉ `settings.manage` (admin); `Permission` thêm `settings.manage`, `entitlements.grant`; nav 17 mục (editor vẫn 12);
+  bộ lọc email · loại · từ ngày · tới ngày (ngày giờ Việt Nam, cả hai đầu gồm), bảng như A/90, "Tải thêm", hộp chi tiết chỉ xem, trống A/90c, lỗi + Thử lại.
+- Test: nav (17/12/17, quyền), 7 test trang; admin unit 336/336; lint, typecheck, Tailwind thô xanh; e2e mock 139 passed (shell 17 mục, a11y thêm
+  `/transactions`); `mock-api` `PERMISSIONS` theo API thật (editor có `entitlements.grant`, admin thêm `settings.manage`).
+- Ruling: hộp chi tiết không có "Mã subscription" của khung A/90b — vì `TransactionView` của API không trả nó — giá nếu sai: thêm một trường vào API và hộp.
+- Ruling: `TextField` của admin nhận `type="date"` (ô ngày của trình duyệt) — vì admin chưa có ô chọn ngày — giá nếu sai: thay bằng ô chọn ngày khi
+  refactor admin.
+- Ruling: vi-VN in ngày-tháng riêng là "15-10", nên kỳ cùng năm cắt năm khỏi ngày đầy đủ ("15/10 → 14/11/2026"); bản `en` ghi đủ năm hai đầu.
+
+### Task 40 — M4b e2e, tài liệu kiểm, chạy thật (23/10/2026)
+
+- web `e2e/app/m4b.spec.ts` 12 passed (desktop + mobile); admin `e2e/transactions.spec.ts` 4 passed, cả bộ e2e admin 139 passed; `learner:setup
+  --transactions` gửi ba sự kiện cổng giả qua webhook thật (mua, gia hạn, hoàn tiền gia hạn) → 4 dòng (cùng lần cấp Pro); chạy lại bỏ qua.
+- Bộ ảnh `SHOTS_MILESTONE=m4b` (24 ảnh: danh sách và chi tiết × vi/en × sáng/tối × 390/1024/1440) trên API thật, app `:3001`.
+- Minor (để lại): ở 1440 cột "Kỳ được dùng" của dòng cấp gói xuống hai dòng ("23/10 –" / "22/11/2026") vì bảy cột chia đều.
+
+### Final M4b — reviewer (23/10/2026)
+
+- Reviewer mới (opus): 0 Critical, 2 Important, 5 Minor. Sửa một lượt, test trước (`test(api): reproduce the m4b review findings`), rồi sửa:
+  - I1: sự kiện lưu trước khi có `amount`/`currency` (không có hai khóa) làm `toMinorUnits` ném lỗi → cả sự kiện thất bại, gói không đổi. Giờ thiếu,
+    sai dạng, âm hoặc vượt số nguyên an toàn → không ghi tiền, sự kiện vẫn áp (gộp luôn M1).
+  - I2: lần dùng thử bị từ chối (B5E55) hoặc sự kiện bắt đầu dùng thử lặp cho subscription đang chạy vẫn ghi dòng "Dùng thử · Thành công". Giờ chỉ
+    ghi khi lần dùng thử thật sự bắt đầu.
+- Minor để lại: M2 hoàn tiền nhiều lần / hoàn tiền tới trước giao dịch gốc / hoàn tiền lại sau khi hủy hoàn tiền làm lệch trạng thái; M3 `page_token` tự
+  chế với id không phải uuid trả 500 thay vì 400, con trỏ chỉ giữ mili giây; M4 lần cấp bị thu hồi trước ngày bắt đầu hiện kỳ ngược; M5 admin: Từ ngày
+  sau Tới ngày báo lỗi chung, bấm Lọc lần hai không tải lại, nhãn gói cố định "Pro", `entitlement_grants` chưa có chỉ mục theo `created_at`.

@@ -9,6 +9,7 @@ import { BillingAdapterRegistry } from './billing/billing-adapter.registry.js';
 import { BILLING_APPLY_PORT, BillingInbox } from './billing/billing-inbox.service.js';
 import { BillingJobs } from './billing/billing-jobs.service.js';
 import { BillingEventApplier } from './billing/event-applier.service.js';
+import { TransactionsRepository } from './billing/transactions.repository.js';
 import { FakeBillingAdapter } from './billing/fake/fake-billing.adapter.js';
 import { WebhookController } from './billing/webhook.controller.js';
 import { EntitlementsService } from './entitlements.service.js';
@@ -19,11 +20,17 @@ import { NoticeSender } from './notices/notice-sender.service.js';
 import { SourcesRepository } from './sources/sources.repository.js';
 import { UsageExpireJob } from './usage/usage-expire.job.js';
 import { UsageLedgerService } from './usage/usage-ledger.service.js';
+import { AdminTransactionsController } from './transactions/admin-transactions.controller.js';
+import { MeTransactionsController } from './transactions/me-transactions.controller.js';
+import { TransactionsService } from './transactions/transactions.service.js';
 import { UsageQueries } from './usage/usage.queries.js';
 
 @Module({
   imports: [IdentityModule, SettingsModule, MailModule],
-  controllers: [WebhookController, AdminGrantsController, AdminEntitlementsController, MeEntitlementsController],
+  controllers: [
+    WebhookController, AdminGrantsController, AdminEntitlementsController, MeEntitlementsController, MeTransactionsController,
+    AdminTransactionsController,
+  ],
   providers: [
     EntitlementsService,
     SourcesRepository,
@@ -34,11 +41,13 @@ import { UsageQueries } from './usage/usage.queries.js';
     FakeBillingAdapter,
     BillingInbox,
     BillingEventApplier,
+    TransactionsRepository,
     BillingJobs,
     NoticePlanner,
     NoticeSender,
     { provide: BILLING_APPLY_PORT, useExisting: BillingEventApplier },
     GrantsService,
+    TransactionsService,
     IdempotencyInterceptor,
   ],
   exports: [EntitlementsService, BillingAdapterRegistry],

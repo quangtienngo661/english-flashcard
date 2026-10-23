@@ -93,6 +93,8 @@ function typeFields(type: EventType, entry: Record<string, unknown>, missing: st
     currentPeriodEnd: need('currentPeriodEnd', date(entry.current_period_end)),
   });
   const transactionId = () => need('transactionId', text(entry.transaction_id));
+  // Optional (learner UI design §8.9): a malformed amount or currency is null, never a missing field.
+  const money = () => ({ amount: amount(entry.amount), currency: currency(entry.currency) });
 
   switch (type) {
     case 'subscription_started': {
@@ -100,6 +102,7 @@ function typeFields(type: EventType, entry: Record<string, unknown>, missing: st
       const trialEndsAt = optionalDate('trialEndsAt', entry.trial_ends_at);
       return {
         ...fields,
+        ...money(),
         trialEndsAt,
         paymentFingerprint: text(entry.payment_fingerprint),
         // D37: a start without a trial is a charge, so it must name its transaction.
@@ -108,14 +111,11 @@ function typeFields(type: EventType, entry: Record<string, unknown>, missing: st
     }
     case 'renewed':
     case 'plan_changed':
-      return { transactionId: transactionId(), ...period() };
+      return { transactionId: transactionId(), ...period(), ...money() };
     case 'renewal_failed':
       return { graceEndsAt: optionalDate('graceEndsAt', entry.grace_ends_at) };
     case 'refunded':
-      return {
-        transactionId: transactionId(),
-        amount: typeof entry.amount === 'number' && Number.isFinite(entry.amount) ? entry.amount : null,
-      };
+      return { transactionId: transactionId(), ...money() };
     case 'refund_reversed':
       return { transactionId: transactionId() };
     case 'plan_change_scheduled':
@@ -141,6 +141,14 @@ function date(value: unknown): Date | null {
   if (typeof value !== 'string') return null;
   const time = Date.parse(value);
   return Number.isNaN(time) ? null : new Date(time);
+}
+
+function amount(value: unknown): number | null {
+  return typeof value === 'number' && Number.isFinite(value) ? value : null;
+}
+
+function currency(value: unknown): string | null {
+  return typeof value === 'string' && /^[A-Z]{3}$/.test(value) ? value : null;
 }
 
 function interval(value: unknown): Interval | null {

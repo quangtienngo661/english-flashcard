@@ -68,6 +68,10 @@ test('milestone screenshots', async ({ page }) => {
     await m4(page);
     return;
   }
+  if (MILESTONE === 'm4b') {
+    await m4b(page);
+    return;
+  }
   for (const locale of ['vi', 'en'] as const) {
     await setLanguage(page, locale);
     for (const scheme of ['light', 'dark'] as const) {
@@ -258,4 +262,22 @@ async function m4(page: Page) {
   await expect(page.getByRole('heading', { level: 1 })).toBeVisible({ timeout: 30_000 });
   await page.waitForLoadState('networkidle');
   await shoot(page, 'vi-light-summary');
+}
+
+/** M4b on a learner made with `learner:setup --plan pro --transactions`: the history and one row's detail. */
+async function m4b(page: Page) {
+  for (const { locale, scheme } of COMBOS) {
+    await setLanguage(page, locale);
+    await page.emulateMedia({ colorScheme: scheme });
+    const name = (n: string) => `${locale}-${scheme}-${n}`;
+    await page.goto(`/${locale}/app/settings/transactions`);
+    await settle(page, page.getByRole('list').getByRole('button').first());
+    await shoot(page, name('transactions'));
+    await page.getByRole('list').getByRole('button').nth(2).click();
+    await expect(page.getByRole('dialog')).toBeVisible();
+    await page.waitForLoadState('networkidle');
+    await shoot(page, name('transaction-detail'), false);
+    await page.keyboard.press('Escape');
+  }
+  await setLanguage(page, 'vi');
 }

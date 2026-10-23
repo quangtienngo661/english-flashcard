@@ -1,5 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { Clock } from '../../common/clock/clock.js';
+import { normalizeEmail } from '../../common/email/normalize-email.js';
 import { AppLogger } from '../../common/logging/app-logger.js';
 import { dateString, dateValue, localDate } from '../../common/time/local-date.js';
 import { PRISMA_CLIENT } from '../../common/db/prisma.module.js';
@@ -109,6 +110,14 @@ export class IdentityService {
       where: { id: { in: [...new Set(userIds)] } }, select: { id: true, email: true },
     });
     return new Map(rows.map((row) => [row.id, row.email]));
+  }
+
+  /** The id of the account with this address (normalized as at sign-up), or null; any status. */
+  async findUserIdByEmail(email: string): Promise<string | null> {
+    const normalized = normalizeEmail(email);
+    if (normalized === null) return null;
+    const row = await this.prisma.user.findUnique({ where: { email: normalized }, select: { id: true } });
+    return row?.id ?? null;
   }
 
   async updateProfile(userId: string, body: UpdateProfileBody): Promise<Profile | null> {

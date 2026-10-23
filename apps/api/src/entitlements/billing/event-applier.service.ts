@@ -16,6 +16,7 @@ import type { BillingApplyPort } from './billing-inbox.service.js';
 import { eventFromJson, type SubscriptionState } from './billing.types.js';
 import { nextLastEventAt, orderDecision } from './event-order.js';
 import { applyEvent, applyFetched, startsTrial } from './subscription-machine.js';
+import { TransactionsRepository } from './transactions.repository.js';
 
 type Tx = Prisma.TransactionClient;
 type Outcome = 'applied' | 'stale' | 'ignored' | 'failed' | 'skipped';
@@ -46,6 +47,7 @@ export class BillingEventApplier implements BillingApplyPort {
     @Inject(IdentityService) private readonly identity: IdentityService,
     @Inject(SettingsService) private readonly settings: SettingsService,
     @Inject(AppLogger) private readonly logger: AppLogger,
+    @Inject(TransactionsRepository) private readonly transactions: TransactionsRepository,
   ) {}
 
   async applyMany(ids: string[]): Promise<void> {
@@ -113,6 +115,10 @@ export class BillingEventApplier implements BillingApplyPort {
       return { outcome: 'ignored', refetch, endTrial: null };
     }
     const event = eventFromJson(row.payload);
+    // Review I2: a trial start is history only when it really started a trial (not denied, not a repeat for a live subscription).
+    const trialStart = event.type === 'subscription_started' && event.trialEndsAt !== null;
+    const record = (subscriptionId: string | null) =>
+      this.transactions.recordFromEvent(tx, event, { userId, subscriptionId, provider: row.provider });
 
     if (row.kind === 'additive') {
       const duplicate = await tx.billingEvent.findFirst({
@@ -124,6 +130,8 @@ export class BillingEventApplier implements BillingApplyPort {
         return { ...none, outcome: 'ignored' };
       }
     } else if (sub !== null && orderDecision('state', row.occurredAt, sub.lastEventAt) === 'stale') {
+      // A late plan_changed is still a charge: the history keeps it though the subscription keeps its newer state.
+      if (!trialStart) await record(sub.id);
       await finish('stale', { userId, subscriptionId: sub.id });
       return { outcome: 'stale', refetch, endTrial: null };
     }
@@ -144,6 +152,7 @@ export class BillingEventApplier implements BillingApplyPort {
     const result = applyEvent(state, event, { now, graceDays, trialAllowed });
     if (result.log !== null) this.logger.info(result.log, { event_id: row.id, type: row.type, status: state?.status ?? 'none' });
     if (result.next === null) {
+      if (!trialStart) await record(sub?.id ?? null);
       await finish('applied', { userId });
       return { ...none, outcome: 'applied' };
     }
@@ -158,9 +167,10 @@ export class BillingEventApplier implements BillingApplyPort {
         data: { ...columns, userId, provider: row.provider, environment: row.environment, externalSubscriptionId: event.externalSubscriptionId },
       })
       : await tx.subscription.update({ where: { id: sub.id }, data: columns });
+    const trialStarted = startsTrial(state, event) && result.next.status === 'trialing';
+    if (!trialStart || (trialStarted && trialAllowed)) await record(written.id);
     await finish('applied', { userId, subscriptionId: written.id });
 
-    const trialStarted = startsTrial(state, event) && result.next.status === 'trialing';
     if (trialStarted && trialAllowed && result.next.trialEndsAt !== null) {
       await tx.entitlementNotice.createMany({
         data: [{

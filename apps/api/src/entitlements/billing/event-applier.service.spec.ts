@@ -180,9 +180,15 @@ function setup(opts: { fetch?: boolean; endTrial?: boolean; production?: boolean
   const identity = { getProfile: vi.fn(async (id: string) => (opts.profile === false ? null : { id, email: 'lan@example.com' })) };
   const settings = { get: vi.fn(async () => ({ entitlements: { graceDays: 7 } })) };
   const config = testConfig({ billing: { production: opts.production ?? false, fakeEnabled: true, fakeSecret: null, fakeFetchState: true } });
+  const recorded: Array<{ type: string; ctx: unknown; inTx: boolean }> = [];
+  const transactions = {
+    recordFromEvent: vi.fn(async (_tx: unknown, event: { type: string }, ctx: unknown) => {
+      recorded.push({ type: event.type, ctx, inTx: db.inTx });
+    }),
+  };
   const applier = new BillingEventApplier(db.client as never, new FakeClock(NOW), config, registry, identity as never,
-    settings as never, logger);
-  return { db, applier, adapter, logs, identity };
+    settings as never, logger, transactions as never);
+  return { db, applier, adapter, logs, identity, recorded };
 }
 
 let seq = 0;
@@ -372,6 +378,47 @@ describe('BillingEventApplier.apply (design §9.2 step 4, §9.4)', () => {
     expect(sub).toEqual(before);
   });
 
+  it('GI1: an applied event is recorded as a transaction inside the same transaction, with the written subscription', async () => {
+    const { db, applier, recorded } = setup();
+    expect(await applier.apply(addEvent(db, 'subscription_started', paidStart))).toBe('applied');
+    expect(recorded).toEqual([{ type: 'subscription_started', ctx: { userId: USER, subscriptionId: db.subs[0].id, provider: 'fake' }, inTx: true }]);
+  });
+
+  it('GI5: a duplicate additive event is not recorded again; ignored events are never recorded', async () => {
+    const { db, applier, recorded } = setup();
+    addSub(db);
+    const renewal = { ...PERIOD, currentPeriodStart: '2026-12-01T00:00:00.000Z', currentPeriodEnd: '2027-01-01T00:00:00.000Z', transactionId: 'tx-2' };
+    await applier.apply(addEvent(db, 'renewed', renewal));
+    await applier.apply(addEvent(db, 'renewed', renewal));
+    await applier.apply(addEvent(db, 'renewed', {}, { payload: null }));
+    expect(recorded.map((r) => r.type)).toEqual(['renewed']);
+  });
+
+  it('a stale plan_changed is still a charge: recorded, though the subscription keeps its newer state', async () => {
+    const { db, applier, recorded } = setup();
+    const sub = addSub(db, { lastEventAt: at('2026-11-15T11:00:00.000Z') });
+    const id = addEvent(db, 'plan_changed', { ...PERIOD, interval: 'year', transactionId: 'tx-9' });
+    expect(await applier.apply(id)).toBe('stale');
+    expect(recorded).toEqual([{ type: 'plan_changed', ctx: { userId: USER, subscriptionId: sub.id, provider: 'fake' }, inTx: true }]);
+  });
+
+  it('review I2: a denied trial, or a trial start for a live subscription, writes no "Dùng thử" row; an allowed trial writes one', async () => {
+    const denied = setup({ endTrial: true });
+    denied.db.trials.push({ userId: USER, provider: 'fake', paymentFingerprint: null });
+    await denied.applier.apply(addEvent(denied.db, 'subscription_started', trialStart));
+    expect(denied.recorded).toEqual([]);
+
+    const again = setup();
+    addSub(again.db, { status: 'trialing', trialEndsAt: at('2026-11-22T10:00:00.000Z') });
+    await again.applier.apply(addEvent(again.db, 'subscription_started', trialStart));
+    await again.applier.apply(addEvent(again.db, 'subscription_started', { ...trialStart, occurredAt: '2026-11-10T10:00:00.000Z' }));
+    expect(again.recorded).toEqual([]);
+
+    const allowed = setup();
+    await allowed.applier.apply(addEvent(allowed.db, 'subscription_started', trialStart));
+    expect(allowed.recorded.map((r) => r.type)).toEqual(['subscription_started']);
+  });
+
   it('B5E55/B5#28: a trial for a user with history → trial_denied, endTrialNow after commit, no trial_started notice', async () => {
     const { db, applier, logs } = setup({ endTrial: true });
     db.trials.push({ userId: USER, provider: 'fake', paymentFingerprint: null });
@@ -539,7 +586,7 @@ describe('BillingEventApplier.apply (design §9.2 step 4, §9.4)', () => {
       fake.onModuleInit();
       const applier = new BillingEventApplier(db.client as never, new FakeClock(NOW), config, registry,
         { getProfile: async (id: string) => ({ id }) } as never, { get: async () => ({ entitlements: { graceDays: 7 } }) } as never,
-        new AppLogger({ write: () => {} }));
+        new AppLogger({ write: () => {} }), { recordFromEvent: async () => {} } as never);
 
       // What the provider sends, and what the inbox stores for the applier (same ids, same order).
       const wire = (id: string, type: string, occurredAt: string, fields: Record<string, unknown>) => ({

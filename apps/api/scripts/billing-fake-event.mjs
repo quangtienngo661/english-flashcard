@@ -2,7 +2,7 @@
 // BILLING_FAKE_SECRET (env, else .env). Import `sendFakeEvent` from a smoke script, or run it from the CLI:
 //   pnpm billing:fake-event --type renewed --sub s1 --user <uuid> --tx t1 --interval month --period-start … --period-end …
 // Options: --type --sub --user [--event-id] [--occurred-at] [--environment] [--interval] [--period-start] [--period-end]
-//          [--trial-ends] [--fingerprint] [--tx] [--amount] [--grace-ends] [--get] [--bad-signature] [--base-url]
+//          [--trial-ends] [--fingerprint] [--tx] [--amount] [--currency] [--grace-ends] [--get] [--bad-signature] [--base-url]
 // Prints the HTTP status and body; exit code 0 only on a 2xx answer.
 import { createHmac, randomBytes, randomUUID } from 'node:crypto';
 import { existsSync } from 'node:fs';
@@ -45,6 +45,7 @@ const FIELDS = {
   fingerprint: 'payment_fingerprint',
   tx: 'transaction_id',
   'grace-ends': 'grace_ends_at',
+  currency: 'currency',
 };
 
 function parseArgs(argv) {

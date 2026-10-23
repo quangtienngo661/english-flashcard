@@ -217,7 +217,9 @@ async function main() {
     }
   }
   const secret = envValue('BILLING_FAKE_SECRET');
-  if (flags.plan === 'trial' && !secret) throw new Error('BILLING_FAKE_SECRET is not set (env or .env); --plan trial needs it.');
+  if ((flags.plan === 'trial' || flags.transactions) && !secret) {
+    throw new Error('BILLING_FAKE_SECRET is not set (env or .env); --plan trial and --transactions need it.');
+  }
   ok('AI_FAKE_ENABLED=true, BILLING_FAKE_ENABLED=true');
 
   step('Wait for the API');
@@ -355,8 +357,31 @@ async function main() {
 
   if (flags.transactions) {
     step('Fake transactions (purchase, renewal, refund) for M4b');
-    // billing-fake-event.mjs sends --amount but has no currency, and the API keeps no transaction list yet (plan item (i)).
-    console.log('    transactions: needs API (i), skipped');
+    const list = await want(api('GET', '/v1/me/transactions?page_size=100', { as: learner }), 200, 'GET /v1/me/transactions');
+    if (list.items.some((item) => item.kind === 'purchase')) {
+      ok(`skipped: the learner already has ${list.items.length} transactions`);
+    } else {
+      // A paid month 60 days ago, renewed 30 days ago, then that renewal refunded: the refund revokes the subscription, so the
+      // learner's plan is whatever --plan gave (design §8.9, Bước 5 D34).
+      const sub = `learner-setup-paid-${learner.profile.id}`;
+      const tx = (name) => `fake_txn_${name}_${learner.profile.id.slice(0, 8)}`;
+      const base = { environment: 'sandbox', subscription_id: sub, app_user_id: learner.profile.id, interval: 'month' };
+      const events = [
+        { ...base, id: randomUUID(), type: 'subscription_started', occurred_at: iso(-60 * DAY), current_period_start: iso(-60 * DAY),
+          current_period_end: iso(-30 * DAY), transaction_id: tx('purchase'), amount: 99000, currency: 'VND' },
+        { ...base, id: randomUUID(), type: 'renewed', occurred_at: iso(-30 * DAY), current_period_start: iso(-30 * DAY),
+          current_period_end: iso(DAY), transaction_id: tx('renewal'), amount: 99000, currency: 'VND' },
+        { ...base, id: randomUUID(), type: 'refunded', occurred_at: iso(-29 * DAY), transaction_id: tx('renewal'), amount: 99000, currency: 'VND' },
+      ];
+      for (const event of events) {
+        const res = await sendFakeEvent({ baseUrl: BASE, secret, events: [event] });
+        check(res.status === 200, `webhook ${event.type}: ${res.status} ${JSON.stringify(res.body)}`);
+      }
+      const done = await waitFor(
+        () => want(api('GET', '/v1/me/transactions?page_size=100', { as: learner }), 200, 'GET /v1/me/transactions'),
+        (view) => view.items.some((item) => item.kind === 'refund'), 'the refund row');
+      ok(`${done.items.length} transactions: ${done.items.map((item) => `${item.kind}/${item.status}`).join(', ')}`);
+    }
   }
 
   step('Summary');

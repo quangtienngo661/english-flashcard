@@ -30,6 +30,17 @@ describe('IdentityService (unit, isolated persistence)', () => {
     expect(findMany).toHaveBeenCalledWith({ where: { id: { in: ['u1', 'u2'] } }, select: { id: true, email: true } });
   });
 
+  it('findUserIdByEmail matches the normalized address and returns null for an unknown or malformed one', async () => {
+    const findUnique = vi.fn().mockImplementation(async ({ where }) => (where.email === 'lan@example.com' ? { id: 'u1' } : null));
+    const service = new IdentityService({ user: { findUnique } } as unknown as PrismaClient, new FakeClock(), silentLogger);
+    expect(await service.findUserIdByEmail('  Lan@Example.com ')).toBe('u1');
+    expect(findUnique).toHaveBeenCalledWith({ where: { email: 'lan@example.com' }, select: { id: true } });
+    expect(await service.findUserIdByEmail('other@example.com')).toBeNull();
+    findUnique.mockClear();
+    expect(await service.findUserIdByEmail('not an email')).toBeNull();
+    expect(findUnique).not.toHaveBeenCalled();
+  });
+
   it.each([null, 'editor', 'admin'] as const)('B2#67/B1#25: getProfile maps the stored %s role, content permissions and new-user defaults to the public contract', async (staffRole) => {
     prisma.user.findUnique.mockResolvedValue({ ...row, staffRole });
     expect(await identity.getProfile(row.id)).toEqual({

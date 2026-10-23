@@ -2,7 +2,14 @@ import type { Transport } from '../api/client';
 import { problemSlug, toApiError } from '../api/problem';
 import { gate } from './gate';
 
-export type Permission = 'roles.manage' | 'content.edit' | 'content.publish' | 'content.import' | 'taxonomy.manage';
+export type Permission =
+  | 'roles.manage'
+  | 'content.edit'
+  | 'content.publish'
+  | 'content.import'
+  | 'taxonomy.manage'
+  | 'settings.manage'
+  | 'entitlements.grant';
 
 export type Me = {
   id: string;

@@ -18,7 +18,7 @@ export type NavEntry = {
 // Admin-only AI pages: the session has no AI permission yet, so `roles.manage` (admin) stands in.
 const ADMIN: Permission[] = ['roles.manage'];
 
-/** 16 items in 6 groups, in the order of the Figma `Sidebar`. */
+/** 17 items in 6 groups, in the order of the Figma `Sidebar` (Giao dịch added with M4b, frame A/90). */
 export const NAV: NavEntry[] = [
   { group: 'overview', path: '/dashboard', labelKey: 'nav.dashboard', needs: [], available: false },
   { group: 'content', path: '/uploads', labelKey: 'nav.uploads', needs: ['content.import'], available: true },
@@ -32,6 +32,7 @@ export const NAV: NavEntry[] = [
   { group: 'practice', path: '/irregular-forms', labelKey: 'nav.irregular', needs: [], available: false, plannedStep: '4/7' },
   { group: 'learners', path: '/users', labelKey: 'nav.users', needs: [], available: false, plannedStep: '5–8', etaNote: 'unconfirmed' },
   { group: 'learners', path: '/entitlements', labelKey: 'nav.entitlements', needs: [], available: false, plannedStep: '5' },
+  { group: 'learners', path: '/transactions', labelKey: 'nav.transactions', needs: ['settings.manage'], available: true },
   { group: 'ai', path: '/ai/settings', labelKey: 'nav.aiSettings', needs: ADMIN, available: false, plannedStep: '5–6' },
   { group: 'ai', path: '/ai/costs', labelKey: 'nav.aiCosts', needs: ADMIN, available: false, plannedStep: '6' },
   { group: 'ai', path: '/ai/eval-sets', labelKey: 'nav.evalSets', needs: ADMIN, available: false, plannedStep: '6' },

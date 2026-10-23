@@ -23,6 +23,15 @@ ledger nằm ở [`giao-dien-nguoi-hoc-ledger.md`](giao-dien-nguoi-hoc-ledger.md
 - Luật git chung của chủ dự án: không commit `main`, không force-push; một lỗi = hai commit (test fail trước, sửa sau); nhánh `<type>/<slug>`;
   Conventional Commits.
 
+## 0. Cập nhật cuối phiên cloud (23/10/2026, hết M4b) — đọc trước
+
+- **M4 merged** (PR #126, `dc737a4`). **M4b** (Task 35–40) xong trên `feat/giao-dien-nguoi-hoc-m4b`, PR #127 vào `dev` (chờ CI; merge khi xanh).
+  As-built M4 ở `docs/deliveries/giao-dien-nguoi-hoc.md`; M4b ở ledger (Task 35–40) và mục M4b của test-flow.
+- **Chủ dự án (23/10/2026): "kể từ về sau không cần hỏi mình, cứ triển khai mà làm"** — không dừng chờ "ok" ảnh hay duyệt Figma nữa; ảnh vẫn chụp để xem sau.
+- Chủ dự án chuyển sang làm ở máy local sau M4b. **Tiếp theo: M5a (Task 41–45)**, nhánh `feat/giao-dien-nguoi-hoc-m5a` cắt từ `origin/dev` sau khi #127 merge.
+- Chạy thật M4b: `pnpm learner:setup -- --admin <email> --learner <email> --plan pro --transactions` (cần `BILLING_FAKE_ENABLED=true` và
+  `BILLING_FAKE_SECRET` trong `apps/api/.env`); ảnh `SHOTS_MILESTONE=m4b`. Bảng §2 dưới là trạng thái lúc giữa M4 (giữ để tra).
+
 ## 2. Trạng thái (23/10/2026)
 
 | Mốc | Task | PR | Trạng thái |

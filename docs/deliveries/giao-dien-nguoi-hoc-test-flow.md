@@ -185,3 +185,29 @@ ngày) rồi tải lại trang.
 Kiểm tự động của M4 (CI, job `web`): `e2e/app/m4.spec.ts` (một phiên đủ ba kiểu câu, gợi ý, gõ lại, vòng 2, báo lỗi, tổng kết; tải lại giữa phiên; hộp phiên đang
 dở; hết phiên; Từ hay sai theo nhóm; Lịch sử và Báo lỗi của tôi; Gói học; axe và không cuộn ngang ở Luyện tập, hộp Tùy chỉnh, phiên với nghĩa và đáp án dài,
 Từ hay sai, Lịch sử, Báo lỗi của tôi, Gói học × vi/en × sáng/tối × 1440/390; câu gõ 100 ký tự).
+
+## M4b — Lịch sử giao dịch
+
+Dữ liệu: trong `apps/api`, `pnpm learner:setup -- --admin <email> --learner <email> --plan pro --transactions` (cần `BILLING_FAKE_ENABLED=true` và
+`BILLING_FAKE_SECRET` trong `.env`). Script gửi ba sự kiện cổng giả qua webhook thật: mua tháng Pro 60 ngày trước (99.000 ₫), gia hạn 30 ngày trước, rồi hoàn
+tiền lần gia hạn; cộng lần đội Wordmet cấp Pro của `--plan pro`. Chạy lại không tạo thêm. Tự gửi thêm: `pnpm billing:fake-event --type renewed --sub <id>
+--user <uuid> --tx <mã> --interval month --period-start … --period-end … --amount 99000 --currency VND`.
+
+| # | Làm | Thấy | Khung |
+|---|---|---|---|
+| 1 | Cài đặt → "Lịch sử giao dịch" (dòng có mũi tên ở mục Tài khoản) | Trang "Lịch sử giao dịch", link "← Cài đặt"; bảng Ngày · Loại · Gói và kỳ · Số tiền · Kỳ được dùng · Trạng thái · "Chi tiết ›"; 4 dòng mới nhất trước: Đội Wordmet cấp (Số tiền "—"), Hoàn tiền 99.000 ₫ "Thành công", Gia hạn "Đã hoàn tiền", Mua "Thành công"; kỳ "24/8 – 22/9/2026" (ngày cuối là ngày trước ngày gia hạn); dòng dưới bảng "Ngày theo múi giờ của bạn…" | K/95 `472:7913` |
+| 2 | Cột phải | "Gói học · Gói Pro · Đội Wordmet cấp tới hết <ngày>"; khối "Về giao dịch" ba dòng | K/95 |
+| 3 | Bấm dòng Gia hạn | Hộp "Chi tiết giao dịch": Loại · Gói · Số tiền · Thời điểm ("23/9/2026, 7:58") · Kỳ được dùng · Trạng thái · Cổng thanh toán "Giả (thử)" · Mã giao dịch; dòng "Có câu hỏi về giao dịch này?…"; [Đóng] hoặc Esc đóng | K/95b `473:7923` |
+| 4 | Bấm dòng Đội Wordmet cấp | Hộp không có Số tiền, Cổng thanh toán, Mã giao dịch | K/95b |
+| 5 | Tài khoản chưa có giao dịch nào (một người học mới) | "Chưa có giao dịch nào." + "Khi bạn dùng thử, mua gói Pro…" | K/95c `473:8081` |
+| 6 | Tắt API rồi tải lại trang | "Không tải được lịch sử giao dịch." · "Kiểm tra mạng rồi thử lại." [Thử lại]; bật API, [Thử lại] tải được | K/95d `473:8220` |
+| 7 | Cửa sổ 390px | Mỗi giao dịch ba dòng ("Gia hạn · 99.000 ₫" + chip, "Pro · theo tháng · ngày", "Dùng …"); chạm một dòng mở tấm từ đáy; không cuộn ngang | M/95 `474:5485`, M/95b `474:5601` |
+| 8 | English, Giao diện Tối | "Transaction history", "Renewal · ₫99,000", "Refunded", "Fake (test)"; chữ đọc được trên nền tối | K/95 Dark `473:8361` |
+| 9 | Admin (mở bằng `127.0.0.1:5173`, mục 0.6) bằng tài khoản admin → Người học → "Giao dịch" | Bảng mọi người học: email, Loại, Gói · Kỳ được dùng, Thời điểm, Số tiền · Cổng ("Giả (thử) · fake_txn_…"), Trạng thái, [Chi tiết]; chân bảng "N giao dịch · mới nhất trước · ngày giờ theo múi giờ Asia/Ho_Chi_Minh" | A/90 `477:3675` |
+| 10 | Lọc theo email người học, loại "Gia hạn", Từ ngày / Tới ngày → [Lọc] | Chỉ dòng khớp; email không có → "Không có giao dịch nào khớp bộ lọc…" | A/90c `478:3957` |
+| 11 | [Chi tiết] một dòng | Hộp chỉ xem: Người học, Mã người học, Số tiền "99.000 ₫ (VND)", "Giả (thử) · môi trường test", Mã giao dịch của cổng; dòng "Chỉ xem. Hoàn tiền làm ở cổng thanh toán…" | A/90b `478:3743` |
+| 12 | Đăng nhập admin bằng tài khoản editor | Không có mục "Giao dịch"; gõ `/transactions` thì về trang đầu | GI9 |
+
+Kiểm tự động của M4b (CI): web `e2e/app/m4b.spec.ts` (Cài đặt → danh sách → chi tiết → Đóng; trống; axe và không cuộn ngang × vi/en × sáng/tối × 1440/390);
+admin `e2e/transactions.spec.ts` (menu → lọc gửi ranh giới ngày Việt Nam → chi tiết, axe; editor không thấy, không gọi API), `a11y.spec.ts` thêm `/transactions`;
+API unit GI1–GI10.
