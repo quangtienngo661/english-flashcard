@@ -226,12 +226,14 @@ test.describe('M4 flows (mocked API)', () => {
     await signedInAs(page, 'free', practiceApi());
     await page.goto('/vi/app/practice/weak');
     await expect(page.getByRole('heading', { name: '4 từ hay sai' })).toBeVisible();
-    // M4 review: from 768 px each weak word is one table row, its cells on one line.
+    // M4 review: from 768 px each weak word is one table row: word, meaning, "sai x/y", stage, last wrong, left to right on one line.
     const row = page.getByRole('listitem').filter({ hasText: 'sai 3/5' });
-    const top = async (text: string) => (await row.getByText(text, { exact: true }).boundingBox())!.y;
     if ((page.viewportSize()?.width ?? 0) >= 768) {
-      expect(Math.abs((await top('deploy')) - (await top('triển khai')))).toBeLessThan(8);
-      expect(Math.abs((await top('deploy')) - (await top('sai 3/5')))).toBeLessThan(8);
+      const boxes = await Promise.all(['deploy', 'triển khai', 'sai 3/5', '1 ngày'].map(async (text) => (await row.getByText(text, { exact: true }).boundingBox())!));
+      expect(boxes.map((b) => Math.round(b.y / 8))).toEqual(Array(4).fill(Math.round(boxes[0].y / 8)));
+      expect(boxes.map((b) => b.x)).toEqual([...boxes.map((b) => b.x)].sort((a, b) => a - b));
+      const last = (await row.getByText(/hôm nay$/).boundingBox())!;
+      expect(Math.abs(last.y - boxes[0].y)).toBeLessThan(8);
     }
     await page.getByRole('button', { name: /Nhóm/ }).click();
     await page.getByRole('option', { name: 'Công nghệ · 2' }).click();
