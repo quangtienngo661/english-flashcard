@@ -802,6 +802,171 @@
     },
     "offline": {
       "message": "Can’t connect. Check your connection and try again."
+    },
+    "practice": {
+      "title": "Practice",
+      "types": {
+        "mcq_definition": "Multiple choice",
+        "true_false_definition": "True or false",
+        "type_word": "Type the word",
+        "cloze": "Fill in the blank",
+        "meaning_in_sentence": "Meaning in context",
+        "mcq_sentence": "Sentence multiple choice"
+      },
+      "countChip": "{count, plural, one {# question} other {# questions}}",
+      "hero": {
+        "chip": "Quick practice · words due today",
+        "title": "Today",
+        "line": "{words, plural, one {# word} other {# words}} in {groups, plural, one {# deck} other {# decks}}. {count, plural, one {# question} other {# questions}}, mixing three question types.",
+        "empty": "No words due today. Pick a source below.",
+        "start": "Start {count, plural, one {# question} other {# questions}}",
+        "customize": "Customize",
+        "artPrompt": "Choose the right word",
+        "artMeaning": "to put into action"
+      },
+      "sources": {
+        "title": "Practice from another source",
+        "count": "{count, plural, one {# source} other {# sources}}",
+        "customize": "Customize: {name}",
+        "reopens": "Resets at {time}",
+        "group": {
+          "name": "By deck",
+          "body": "One deck, filtered by stage or priority words.",
+          "chip": "{name} · {count}",
+          "start": "Practice {name}",
+          "empty": "No decks yet."
+        },
+        "weak": {
+          "name": "Weak words",
+          "body": "Wrong twice in the last 5 questions. Lowest stage first.",
+          "chip": "{lemma} · wrong {wrong}/{counted}",
+          "more": "+{count} more",
+          "start": "Practice {count, plural, one {# word} other {# words}}",
+          "empty": "No weak words yet."
+        },
+        "priority": {
+          "name": "Priority",
+          "body": "Words you marked Still learning, oldest first.",
+          "chip": "{count, plural, one {# word} other {# words}} in {groups, plural, one {# deck} other {# decks}}",
+          "start": "Practice {count, plural, one {# word} other {# words}}",
+          "empty": "No priority words yet."
+        },
+        "all": {
+          "name": "Practice all",
+          "body": "Every word you're learning, least practiced first.",
+          "chip": "{words, plural, one {# word} other {# words}} in {groups, plural, one {# deck} other {# decks}}",
+          "start": "Practice {count, plural, one {# question} other {# questions}}",
+          "empty": "No words in your decks yet."
+        }
+      },
+      "noWords": {
+        "group-empty": "No words in this deck match your choices.",
+        "source-empty": "No words to practice from this source.",
+        "no-word-fits-types": "No word works with the chosen question types. Choose another type."
+      },
+      "usage": {
+        "title": "Practice sessions today",
+        "plan": {
+          "free": "Free plan",
+          "trial": "Trial plan",
+          "pro": "Pro plan"
+        },
+        "used": "{used}/{limit} used",
+        "note": "A session counts once you answer its first question. Resets at {time}.",
+        "out": "No sessions left today. Resets at {time}, in {wait}.",
+        "hoursMinutes": "{hours} h {minutes} min",
+        "minutes": "{minutes} min",
+        "outShort": "No sessions left today. Resets at {time}."
+      },
+      "current": {
+        "title": "Session in progress",
+        "body": "{source}, {done}/{total} questions done. Starting a new session ends this one.",
+        "bodyOut": "{source}, {done}/{total} questions done. It already counts for today, so you can still finish it.",
+        "resume": "Continue at question {n}",
+        "resumeWaiting": "Continue",
+        "source": {
+          "today": "Words due today",
+          "group": "{name} deck",
+          "groupUnknown": "A deck",
+          "weak": "Weak words",
+          "weakGroup": "Weak words in {name}",
+          "priority": "Priority words",
+          "all": "All your words"
+        }
+      },
+      "resumeDialog": {
+        "title": "You have a session in progress ({done}/{total})",
+        "body": "{source}, {done}/{total} questions done. A new session ends this one.",
+        "resume": "Continue",
+        "startNew": "Start new session"
+      },
+      "out": {
+        "chip": "No sessions left today",
+        "title": "Back tomorrow",
+        "body": "The {plan} includes {limit} practice sessions a day, resetting at {time}. Meanwhile, review cards as much as you like.",
+        "review": "Review cards"
+      },
+      "recent": {
+        "title": "Recent",
+        "history": "See history",
+        "empty": "No questions answered yet.",
+        "correct": "right",
+        "typed": "you typed {answer}, answer {correct}",
+        "chose": "you chose {answer}, answer {correct}",
+        "choseTf": "you chose {answer}",
+        "skipped": "skipped, answer {correct}",
+        "true": "True",
+        "false": "False",
+        "right": "Right",
+        "wrong": "Wrong"
+      },
+      "shortcuts": {
+        "title": "Session shortcuts",
+        "choose": "Choose an answer",
+        "check": "Check, next question",
+        "hint": "Show a hint",
+        "stop": "Stop, see summary"
+      },
+      "customize": {
+        "title": "Customize session",
+        "group": "Deck",
+        "groupOption": "{name} · {count, plural, one {# word} other {# words}}",
+        "allGroups": "All decks · {count}",
+        "filter": "Words",
+        "filterAll": "All words",
+        "filterDue": "Due today",
+        "filterPriority": "Priority",
+        "stage": "Stage",
+        "stageAll": "All stages",
+        "stageN": "Stage {n}",
+        "types": "Question types",
+        "typesHint": "choose one or more",
+        "typesNone": "Choose at least one question type.",
+        "prompt": "Prompt",
+        "promptHint": "for Type the word",
+        "promptMeaning": "By meaning",
+        "promptSentence": "By sentence",
+        "promptMixed": "Mixed",
+        "count": "Questions",
+        "countMax": "up to {max}",
+        "more": "One more question",
+        "less": "One fewer question",
+        "options": "More options",
+        "order": "Order",
+        "orderSummary": "Order: {order}",
+        "sorts": {
+          "level_asc": "Lowest stage first",
+          "overdue_first": "Most overdue first",
+          "new_first": "New words first",
+          "least_practiced": "Least practiced first",
+          "most_wrong": "Most missed first",
+          "queue": "Priority, due, then new",
+          "priority_oldest": "Oldest Still learning first",
+          "random": "Random"
+        },
+        "start": "Start {count, plural, one {# question} other {# questions}}",
+        "sessionsLeft": "Uses 1 of {remaining, plural, one {# session} other {# sessions}} left today."
+      }
     }
   }
 }

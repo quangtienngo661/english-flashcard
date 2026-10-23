@@ -802,6 +802,171 @@
     },
     "offline": {
       "message": "Không kết nối được. Kiểm tra mạng rồi thử lại."
+    },
+    "practice": {
+      "title": "Luyện tập",
+      "types": {
+        "mcq_definition": "Trắc nghiệm",
+        "true_false_definition": "Đúng/sai",
+        "type_word": "Gõ từ",
+        "cloze": "Điền từ vào câu",
+        "meaning_in_sentence": "Chọn nghĩa trong câu",
+        "mcq_sentence": "Trắc nghiệm theo câu"
+      },
+      "countChip": "{count} câu",
+      "hero": {
+        "chip": "Luyện nhanh · từ cần ôn hôm nay",
+        "title": "Hôm nay",
+        "line": "{words} từ trong {groups} nhóm. {count} câu, trộn ba kiểu câu.",
+        "empty": "Hôm nay không còn từ nào cần ôn. Chọn một nguồn bên dưới.",
+        "start": "Bắt đầu {count} câu",
+        "customize": "Tùy chỉnh",
+        "artPrompt": "Chọn từ đúng nghĩa",
+        "artMeaning": "triển khai"
+      },
+      "sources": {
+        "title": "Luyện theo nguồn khác",
+        "count": "{count} nguồn",
+        "customize": "Tùy chỉnh: {name}",
+        "reopens": "Mở lại lúc {time}",
+        "group": {
+          "name": "Theo nhóm",
+          "body": "Một nhóm, lọc theo ngăn hoặc từ ưu tiên.",
+          "chip": "{name} · {count}",
+          "start": "Luyện {name}",
+          "empty": "Chưa có nhóm nào."
+        },
+        "weak": {
+          "name": "Từ hay sai",
+          "body": "Sai 2 lần trong 5 câu gần nhất. Xếp theo ngăn thấp trước.",
+          "chip": "{lemma} · sai {wrong}/{counted}",
+          "more": "+{count} từ",
+          "start": "Luyện {count} từ",
+          "empty": "Chưa có từ nào hay sai."
+        },
+        "priority": {
+          "name": "Đang ưu tiên",
+          "body": "Từ bạn đã bấm Cần ôn lại, bấm lâu nhất trước.",
+          "chip": "{count} từ trong {groups} nhóm",
+          "start": "Luyện {count} từ",
+          "empty": "Chưa có từ nào đang ưu tiên."
+        },
+        "all": {
+          "name": "Luyện tất cả",
+          "body": "Mọi từ đang học, từ lâu chưa luyện trước.",
+          "chip": "{words} từ trong {groups} nhóm",
+          "start": "Luyện {count} câu",
+          "empty": "Chưa có từ nào trong nhóm."
+        }
+      },
+      "noWords": {
+        "group-empty": "Nhóm này không có từ nào khớp lựa chọn.",
+        "source-empty": "Chưa có từ nào để luyện ở nguồn này.",
+        "no-word-fits-types": "Không từ nào làm được kiểu câu đã chọn. Chọn thêm kiểu câu khác."
+      },
+      "usage": {
+        "title": "Phiên luyện hôm nay",
+        "plan": {
+          "free": "Gói Miễn phí",
+          "trial": "Gói Dùng thử",
+          "pro": "Gói Pro"
+        },
+        "used": "đã dùng {used}/{limit}",
+        "note": "Một phiên chỉ tính khi bạn trả lời câu đầu tiên. Mở lại lúc {time}.",
+        "out": "Hết phiên luyện hôm nay. Mở lại lúc {time}, còn {wait}.",
+        "hoursMinutes": "{hours} giờ {minutes} phút",
+        "minutes": "{minutes} phút",
+        "outShort": "Hết phiên luyện hôm nay. Mở lại lúc {time}."
+      },
+      "current": {
+        "title": "Phiên đang dở",
+        "body": "{source}, đã làm {done}/{total} câu. Bắt đầu phiên mới sẽ đóng phiên này.",
+        "bodyOut": "{source}, đã làm {done}/{total} câu. Phiên này đã tính vào hôm nay nên bạn vẫn làm tiếp được.",
+        "resume": "Làm tiếp câu {n}",
+        "resumeWaiting": "Làm tiếp",
+        "source": {
+          "today": "Từ cần ôn hôm nay",
+          "group": "Nhóm {name}",
+          "groupUnknown": "Một nhóm",
+          "weak": "Từ hay sai",
+          "weakGroup": "Từ hay sai của nhóm {name}",
+          "priority": "Từ đang ưu tiên",
+          "all": "Mọi từ đang học"
+        }
+      },
+      "resumeDialog": {
+        "title": "Bạn có phiên đang dở {done}/{total}",
+        "body": "{source}, đã làm {done}/{total} câu. Mở phiên mới sẽ đóng phiên này.",
+        "resume": "Làm tiếp",
+        "startNew": "Mở phiên mới"
+      },
+      "out": {
+        "chip": "Hết phiên luyện hôm nay",
+        "title": "Mai luyện tiếp nhé",
+        "body": "{plan} có {limit} phiên luyện mỗi ngày, mở lại lúc {time}. Trong lúc chờ, ôn thẻ không giới hạn.",
+        "review": "Ôn thẻ"
+      },
+      "recent": {
+        "title": "Gần đây",
+        "history": "Xem lịch sử",
+        "empty": "Bạn chưa làm câu nào.",
+        "correct": "đúng",
+        "typed": "bạn gõ {answer}, đáp án {correct}",
+        "chose": "bạn chọn {answer}, đáp án {correct}",
+        "choseTf": "bạn chọn {answer}",
+        "skipped": "bỏ qua, đáp án {correct}",
+        "true": "Đúng",
+        "false": "Sai",
+        "right": "Đúng",
+        "wrong": "Sai"
+      },
+      "shortcuts": {
+        "title": "Phím tắt trong phiên",
+        "choose": "Chọn đáp án",
+        "check": "Kiểm tra, sang câu tiếp",
+        "hint": "Xem gợi ý",
+        "stop": "Dừng phiên, xem tổng kết"
+      },
+      "customize": {
+        "title": "Tùy chỉnh phiên",
+        "group": "Nhóm",
+        "groupOption": "{name} · {count} từ",
+        "allGroups": "Tất cả nhóm · {count}",
+        "filter": "Lọc từ",
+        "filterAll": "Mọi từ",
+        "filterDue": "Cần ôn hôm nay",
+        "filterPriority": "Đang ưu tiên",
+        "stage": "Ngăn",
+        "stageAll": "Mọi ngăn",
+        "stageN": "Ngăn {n}",
+        "types": "Kiểu câu",
+        "typesHint": "chọn một hoặc nhiều",
+        "typesNone": "Chọn ít nhất một kiểu câu.",
+        "prompt": "Kiểu đề",
+        "promptHint": "cho kiểu Gõ từ",
+        "promptMeaning": "Theo nghĩa",
+        "promptSentence": "Theo câu",
+        "promptMixed": "Trộn",
+        "count": "Số câu",
+        "countMax": "tối đa {max}",
+        "more": "Thêm 1 câu",
+        "less": "Bớt 1 câu",
+        "options": "Thêm tùy chọn",
+        "order": "Thứ tự",
+        "orderSummary": "Thứ tự: {order}",
+        "sorts": {
+          "level_asc": "Ngăn thấp trước",
+          "overdue_first": "Quá hạn lâu nhất trước",
+          "new_first": "Từ mới trước",
+          "least_practiced": "Lâu chưa luyện trước",
+          "most_wrong": "Sai nhiều nhất trước",
+          "queue": "Ưu tiên, đến hạn, rồi từ mới",
+          "priority_oldest": "Bấm Cần ôn lại lâu nhất trước",
+          "random": "Ngẫu nhiên"
+        },
+        "start": "Bắt đầu {count} câu",
+        "sessionsLeft": "Dùng 1 trong {remaining} phiên còn lại hôm nay."
+      }
     }
   }
 }

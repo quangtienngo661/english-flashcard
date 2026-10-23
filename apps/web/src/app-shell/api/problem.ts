@@ -7,6 +7,8 @@ export type Problem = {
   detail?: string;
   operation_id?: string;
   violations?: string[];
+  /** The other members of the problem (`resets_at`, `reason`, `result`…), as the API sent them. */
+  extensions?: Record<string, unknown>;
 };
 
 export class ApiError extends Error {
@@ -70,6 +72,7 @@ export const KNOWN_ERROR_SLUGS = [
 ] as const;
 
 const KNOWN = new Set<string>(KNOWN_ERROR_SLUGS);
+const STANDARD_MEMBERS = new Set(['type', 'status', 'title', 'detail', 'instance', 'operation_id', 'violations']);
 
 export function problemSlug(type: string): string {
   if (type === 'about:blank') return '';
@@ -94,6 +97,8 @@ export async function toApiError(res: Response): Promise<ApiError> {
   if (typeof body.detail === 'string') problem.detail = body.detail;
   if (typeof body.operation_id === 'string') problem.operation_id = body.operation_id;
   if (Array.isArray(body.violations)) problem.violations = body.violations.filter((v): v is string => typeof v === 'string');
+  const extensions = Object.fromEntries(Object.entries(body).filter(([name]) => !STANDARD_MEMBERS.has(name)));
+  if (Object.keys(extensions).length > 0) problem.extensions = extensions;
   const retry = Number.parseInt(res.headers.get('retry-after') ?? '', 10);
   return new ApiError(problem, Number.isFinite(retry) && retry >= 0 ? retry : null);
 }
