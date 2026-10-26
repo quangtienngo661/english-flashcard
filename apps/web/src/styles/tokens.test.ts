@@ -116,3 +116,21 @@ describe('design tokens', () => {
     expect(globals).not.toMatch(/--color-[a-z0-9-]+\s*:/);
   });
 });
+
+// dark-pastel.css: a variant kept for later, not imported (owner 27/10/2026). Its light islands must stay readable.
+describe('pastel dark variant (not on)', () => {
+  const pastel = readFileSync(createRequire(import.meta.url).resolve('@wordmet/design-tokens/dark-pastel.css'), 'utf8');
+  const island = pastel.slice(pastel.indexOf(':is(.bg-primary-soft'));
+
+  it('is not imported by the app', () => {
+    expect(globals).not.toContain('dark-pastel.css');
+  });
+
+  it('text on its pastel surfaces meets 4.5:1', () => {
+    colors = new Map([...darkColors, ...tokens(island.slice(0, island.indexOf('}') + 1), 'color')]);
+    const pairs: Array<[string, string]> = ['ink', 'muted', 'primary', 'success', 'danger', 'warning'].flatMap((fg) =>
+      ['primary-soft', 'accent-soft', 'success-soft', 'danger-soft', 'neutral-soft'].map((bg) => [fg, bg] as [string, string]));
+    expect(below(pairs, 4.5)).toEqual([]);
+    colors = lightColors;
+  });
+});

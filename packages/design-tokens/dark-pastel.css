@@ -1,0 +1,83 @@
+/* Pastel variant of the dark theme — NOT imported anywhere (owner 27/10/2026: tried, reverted, kept for later).
+   In the dark theme the soft surfaces (yellow, green, red, blue, grey) keep the light pastel of the light theme, and inside
+   such a surface the light palette applies again, so text on it stays dark and readable. Deck card bands, stage bars and the
+   ⋯ button follow automatically (they use the soft tokens and ink).
+   To turn it on: in apps/web/src/app/globals.css add, right after the dark.css import,
+     @import '@wordmet/design-tokens/dark-pastel.css';
+   apps/web/src/styles/tokens.test.ts checks its contrast, so it stays valid while it waits. */
+[data-theme='dark'] {
+  --color-primary-soft: #eceffe;
+  --color-accent-soft: #fff4c7;
+  --color-success-soft: #e3f4ea;
+  --color-danger-soft: #fde8e5;
+  --color-neutral-soft: #eef0f5;
+  --color-wrong-chip: #ffd3cd;
+  --color-wrong-chip-deep: #d99b92;
+}
+
+/* Owner 27/10/2026: in the dark theme the soft surfaces (yellow, green, red, blue, grey) keep the light pastel of the light
+   theme, everywhere. Inside such a surface the light palette applies again (dark text, white chips, light borders), so text on
+   it stays readable. State variants re-theme only while the state holds. */
+[data-theme='dark'] :is(.bg-primary-soft, .bg-accent-soft, .bg-success-soft, .bg-danger-soft, .bg-neutral-soft, .bg-wrong-chip),
+[data-theme='dark'] .hover\:bg-primary-soft:hover,
+[data-theme='dark'] .enabled\:hover\:bg-primary-soft:enabled:hover,
+[data-theme='dark'] .active\:bg-primary-soft:active,
+[data-theme='dark'] .data-focused\:bg-primary-soft[data-focused],
+[data-theme='dark'] .data-selected\:bg-primary-soft[data-selected] {
+  --color-primary: #2445d6;
+  --color-primary-deep: #1a32a6;
+  --color-primary-soft: #eceffe;
+  --color-on-primary: #ffffff;
+  --color-on-primary-muted: #dfe5ff;
+  --color-accent-soft: #fff4c7;
+  --color-ink: #0f1a3d;
+  --color-muted: #4d5577;
+  --color-placeholder: #5f6688;
+  --color-surface: #ffffff;
+  --color-canvas: #f1f3fd;
+  --color-canvas-deep: #dde1f5;
+  --color-border: #e3e6f4;
+  --color-border-strong: #7d84a8;
+  --color-success: #1b7a46;
+  --color-success-soft: #e3f4ea;
+  --color-warning: #7a5200;
+  --color-danger: #b8352a;
+  --color-danger-soft: #fde8e5;
+  --color-danger-deep: #8a2219;
+  --color-neutral-soft: #eef0f5;
+  --color-wrong-chip: #ffd3cd;
+  --color-wrong-chip-deep: #d99b92;
+  --color-highlight: #ffd84a;
+  --color-shadow-ink: rgb(15 26 61 / 0.35);
+  color-scheme: light;
+}
+@media (width >= 48rem) {
+  [data-theme='dark'] .md\:bg-accent-soft {
+    --color-primary: #2445d6;
+    --color-primary-deep: #1a32a6;
+    --color-primary-soft: #eceffe;
+    --color-on-primary: #ffffff;
+    --color-on-primary-muted: #dfe5ff;
+    --color-accent-soft: #fff4c7;
+    --color-ink: #0f1a3d;
+    --color-muted: #4d5577;
+    --color-placeholder: #5f6688;
+    --color-surface: #ffffff;
+    --color-canvas: #f1f3fd;
+    --color-canvas-deep: #dde1f5;
+    --color-border: #e3e6f4;
+    --color-border-strong: #7d84a8;
+    --color-success: #1b7a46;
+    --color-success-soft: #e3f4ea;
+    --color-warning: #7a5200;
+    --color-danger: #b8352a;
+    --color-danger-soft: #fde8e5;
+    --color-danger-deep: #8a2219;
+    --color-neutral-soft: #eef0f5;
+    --color-wrong-chip: #ffd3cd;
+    --color-wrong-chip-deep: #d99b92;
+    --color-highlight: #ffd84a;
+    --color-shadow-ink: rgb(15 26 61 / 0.35);
+    color-scheme: light;
+  }
+}

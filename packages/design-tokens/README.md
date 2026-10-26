@@ -60,6 +60,14 @@ and admin never change. Exceptions to the Figma values: `border-strong` is `#6b7
 here. `apps/web/src/styles/tokens.test.ts` checks that every colour has a dark value and the learner app's pairs in both
 modes.
 
+## Pastel dark variant (kept, not on)
+
+`dark-pastel.css` is a variant the owner tried on 27/10/2026 and set aside for later: in the dark theme the soft surfaces
+(`primary-soft`, `accent-soft`, `success-soft`, `danger-soft`, `neutral-soft`, `wrong-chip`) keep the light pastel, and inside them the
+light palette applies again so text stays dark. Nothing imports it. To turn it on, add
+`@import '@wordmet/design-tokens/dark-pastel.css';` right after the `dark.css` import in `apps/web/src/app/globals.css`.
+`apps/web/src/styles/tokens.test.ts` checks its contrast so it stays valid.
+
 ## Contrast pairs checked (LP12)
 
 - Text ≥ 4.5: `ink` on `surface`, `canvas`, `accent`, `accent-soft`, `wrong-chip`; `muted` on `surface`, `canvas`,
