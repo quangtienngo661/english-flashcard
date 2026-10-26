@@ -23,7 +23,7 @@ export type AnswerResult = {
   translation: string | null;
 };
 export type FinalWrite = {
-  result: 'correct' | 'wrong'; answerRaw: string; answerNormalized: string; answersTried: string[]; tries: number; skipped: boolean;
+  result: 'correct' | 'wrong'; answerRaw: string | null; answerNormalized: string | null; answersTried: string[]; tries: number; skipped: boolean;
 };
 
 /**
@@ -90,11 +90,22 @@ export class AnswersService {
     });
   }
 
-  /** "Bỏ qua": typing (and cloze, Bước 7 D9) in try_again only; the last typed text becomes the stored answer. */
+  /**
+   * "Bỏ qua": cloze may be skipped before any try (K/78a, design đợt cải thiện A §6.1); typing only after one try.
+   * After a try, the last typed text becomes the stored answer.
+   */
   skip(userId: string, itemId: string): Promise<AnswerResult> {
     return this.locked(userId, itemId, async (tx, item) => {
       await this.assertUnanswered(tx, userId, item, false);
-      if (!['type_word', 'cloze'].includes(item.question.type) || item.tries === 0) throw conflict('skip-not-allowed', 'Skip not allowed');
+      if (!['type_word', 'cloze'].includes(item.question.type) || (item.question.type === 'type_word' && item.tries === 0)) {
+        throw conflict('skip-not-allowed', 'Skip not allowed');
+      }
+      if (item.tries === 0) {
+        const final = await this.writeFinal(tx, item, {
+          result: 'wrong', answerRaw: null, answerNormalized: null, answersTried: [], tries: 0, skipped: true,
+        });
+        return this.resultOf(userId, final, tx);
+      }
       const last = item.answersTried.at(-1)!;
       const final = await this.writeFinal(tx, item, {
         result: 'wrong', answerRaw: last, answerNormalized: normalizeAnswer(last), answersTried: item.answersTried.slice(0, -1),
