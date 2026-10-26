@@ -1,9 +1,12 @@
 'use client';
 
+import { Plus } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useState, type ReactNode } from 'react';
+import { Button } from '@/app-ui/Button';
 import { SpeakSentence } from '@/app-ui/SpeakButtons';
 import { AddSentenceSheet } from '../add-word/AddSentenceSheet';
+import { DeckPickerDialog } from '../add-word/DeckPickerDialog';
 import { useGroups } from '../groups/groups-api';
 import { highlightWord } from '../groups/highlight';
 import { SavedSentencesDialog } from './SavedSentencesDialog';
@@ -70,5 +73,24 @@ function Row({ label, children }: { label: string; children: ReactNode }) {
       <dt className="text-caption text-muted">{label}</dt>
       <dd className="col-span-2 min-w-0 break-words text-ink">{children}</dd>
     </>
+  );
+}
+
+/** Owner 27/10/2026: add a word already being learned to another deck from its own page, without going back to Tra từ. */
+export function AddToDeckCard({ sense }: { sense: PageSense }) {
+  const t = useTranslations('App.word');
+  const [open, setOpen] = useState(false);
+  return (
+    <section aria-labelledby="add-to-deck" className="flex flex-col gap-3 rounded-card border border-border bg-surface p-5 shadow-ledge-soft">
+      <h2 id="add-to-deck" className="text-title font-semibold text-ink">
+        {t('addCardTitle')}
+      </h2>
+      <p className="text-ui text-muted">{t('addCardBody')}</p>
+      <Button variant="quiet" className="w-full" onPress={() => setOpen(true)}>
+        <Plus aria-hidden className="size-4" />
+        {t('addToGroup')}
+      </Button>
+      {open && <DeckPickerDialog sense={sense} onClose={() => setOpen(false)} />}
+    </section>
   );
 }

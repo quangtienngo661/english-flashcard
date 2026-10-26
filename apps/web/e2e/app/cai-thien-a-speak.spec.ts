@@ -3,7 +3,7 @@ import { copy } from '../copy';
 import { seriousViolations } from '../support/axe';
 import { signedInAs, type MockHandler } from '../support/mock-api';
 
-// Đợt cải thiện A, C1 (design §7): UK · US by a word, one button by a sentence, with the browser's own voices.
+// Đợt cải thiện A, C1 (design §7); owner 27/10/2026: one speaker icon (US voice) by a word, one button by a sentence, with the browser's own voices.
 const uuid = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`;
 const G = uuid(201);
 const SESSION = uuid(410);
@@ -73,22 +73,21 @@ async function setup(page: Page, locale: 'vi' | 'en' = 'vi') {
 }
 
 test.describe('Pronunciation buttons (C1, mocked API)', () => {
-  test('word page: UK and US read the word; the example and the saved sentence have a button', async ({ page }) => {
+  test('word page: the speaker icon reads the word in the US voice; the example and the saved sentence have a button', async ({ page }) => {
     await setup(page);
     await page.goto('/vi/app/word?w=deploy');
     await expect(page.getByRole('heading', { level: 1, name: 'deploy' })).toBeVisible();
-    await page.getByRole('button', { name: 'UK, nghe giọng Anh' }).click();
-    await page.getByRole('button', { name: 'US, nghe giọng Mỹ' }).click();
+    await page.getByRole('button', { name: 'Nghe phát âm' }).click();
     await expect(page.getByText('We deploy the app every Friday.')).toBeVisible();
     await expect(page.getByRole('button', { name: 'Nghe câu' })).toHaveCount(2);
-    expect(await spoken(page)).toEqual([{ text: 'deploy', lang: 'en-GB' }, { text: 'deploy', lang: 'en-US' }]);
+    expect(await spoken(page)).toEqual([{ text: 'deploy', lang: 'en-US' }]);
   });
 
   test('review card: the front button reads without flipping; the back reads the word and its sentences', async ({ page }) => {
     await setup(page);
     await page.goto(`/vi/app/review?group=${G}`);
     const front = page.getByRole('group', { name: /Thẻ 1/ });
-    await front.getByRole('button', { name: 'US, nghe giọng Mỹ' }).click();
+    await front.getByRole('button', { name: 'Nghe phát âm' }).click();
     expect(await spoken(page)).toEqual([{ text: 'deploy', lang: 'en-US' }]);
     await expect(page.getByText('triển khai')).toHaveCount(0);
     // Focus is on the speak button now, where Space reads again (A1-6); flip with the button instead.
@@ -97,19 +96,19 @@ test.describe('Pronunciation buttons (C1, mocked API)', () => {
     await expect(page.getByText('triển khai')).toHaveCount(0);
     await page.getByRole('button', { name: copy.vi.App.review.flip }).click();
     await expect(page.getByText('triển khai')).toBeVisible();
-    await page.getByRole('group', { name: /Thẻ 1/ }).getByRole('button', { name: 'UK, nghe giọng Anh' }).click();
-    expect((await spoken(page)).at(-1)).toEqual({ text: 'deploy', lang: 'en-GB' });
+    await page.getByRole('group', { name: /Thẻ 1/ }).getByRole('button', { name: 'Nghe phát âm' }).click();
+    expect((await spoken(page)).at(-1)).toEqual({ text: 'deploy', lang: 'en-US' });
     await expect(page.getByRole('button', { name: 'Nghe câu' })).toHaveCount(2);
   });
 
-  test('practice: no button on the question; after grading UK reads the word', async ({ page }) => {
+  test('practice: no button on the question; after grading the speaker reads the word', async ({ page }) => {
     await setup(page);
     await page.goto('/vi/app/practice/session');
     await expect(page.getByText('triển khai')).toBeVisible();
-    await expect(page.getByRole('button', { name: /nghe giọng/i })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Nghe phát âm' })).toHaveCount(0);
     await page.keyboard.press('1');
-    await page.getByRole('button', { name: 'UK, nghe giọng Anh' }).click();
-    expect(await spoken(page)).toEqual([{ text: 'deploy', lang: 'en-GB' }]);
+    await page.getByRole('button', { name: 'Nghe phát âm' }).click();
+    expect(await spoken(page)).toEqual([{ text: 'deploy', lang: 'en-US' }]);
   });
 });
 
@@ -129,12 +128,12 @@ for (const scheme of ['light', 'dark'] as const) {
         const where = `${locale} ${scheme} ${width}px`;
 
         await page.goto(`/${locale}/app/word?w=deploy`);
-        await expect(page.getByRole('button', { name: t.uk })).toBeVisible();
+        await expect(page.getByRole('button', { name: t.word })).toBeVisible();
         await noSideScroll(page, `${where} word`);
         expect(await seriousViolations(page), `${where} word`).toEqual([]);
 
         await page.goto(`/${locale}/app/review?group=${G}`);
-        await expect(page.getByRole('group').first().getByRole('button', { name: t.uk })).toBeVisible();
+        await expect(page.getByRole('group').first().getByRole('button', { name: t.word })).toBeVisible();
         await noSideScroll(page, `${where} card front`);
         expect(await seriousViolations(page), `${where} card front`).toEqual([]);
         await page.keyboard.press('Space');
@@ -145,7 +144,7 @@ for (const scheme of ['light', 'dark'] as const) {
         await page.goto(`/${locale}/app/practice/session`);
         await expect(page.getByText('triển khai')).toBeVisible();
         await page.keyboard.press('1');
-        await expect(page.getByRole('button', { name: t.uk })).toBeVisible();
+        await expect(page.getByRole('button', { name: t.word })).toBeVisible();
         await noSideScroll(page, `${where} practice result`);
         expect(await seriousViolations(page), `${where} practice result`).toEqual([]);
       });

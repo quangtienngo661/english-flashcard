@@ -13,31 +13,21 @@ afterEach(() => {
 });
 
 describe('pronunciation buttons', () => {
-  it('A1-1: UK reads the word with the local en-GB voice', async () => {
-    const uk = makeVoice('en-GB');
+  it('A1-1 (owner 27/10/2026): one speaker icon reads the word in the US voice; no UK button', async () => {
     const us = makeVoice('en-US');
-    const synth = installSpeech([makeVoice('en-GB', false), uk, us]);
+    const synth = installSpeech([makeVoice('en-GB'), us]);
     renderApp(<SpeakWord text="hello" />);
-    expect(screen.getByRole('button', { name: 'UK, nghe giọng Anh' })).toHaveTextContent(/^UK$/);
-    expect(screen.getByRole('button', { name: 'US, nghe giọng Mỹ' })).toHaveTextContent(/^US$/);
-    await userEvent.click(screen.getByRole('button', { name: 'UK, nghe giọng Anh' }));
-    expect(synth.speak).toHaveBeenLastCalledWith(expect.objectContaining({ text: 'hello', voice: uk, lang: 'en-GB' }));
-    await userEvent.click(screen.getByRole('button', { name: 'US, nghe giọng Mỹ' }));
-    expect(synth.speak).toHaveBeenLastCalledWith(expect.objectContaining({ voice: us }));
+    const button = screen.getByRole('button', { name: 'Nghe phát âm' });
+    expect(button).toHaveTextContent('');
+    expect(screen.getAllByRole('button')).toHaveLength(1);
+    await userEvent.click(button);
+    expect(synth.speak).toHaveBeenLastCalledWith(expect.objectContaining({ text: 'hello', voice: us }));
   });
 
-  it('WCAG 2.5.3: the accessible name starts with the visible "UK" / "US" (audit 26/10/2026 #12)', () => {
-    installSpeech([makeVoice('en-GB'), makeVoice('en-US')]);
-    renderApp(<SpeakWord text="deploy" />);
-    expect(screen.getByRole('button', { name: /^UK, / })).toHaveTextContent(/^UK$/);
-    expect(screen.getByRole('button', { name: /^US, / })).toHaveTextContent(/^US$/);
-  });
-
-  it('A1-2: no en-GB voice → no UK button; US still there', () => {
-    installSpeech([makeVoice('en-US')]);
+  it('A1-2: only an en-GB voice → no speaker button', () => {
+    installSpeech([makeVoice('en-GB')]);
     renderApp(<SpeakWord text="hello" />);
-    expect(screen.queryByRole('button', { name: 'UK, nghe giọng Anh' })).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'US, nghe giọng Mỹ' })).toBeInTheDocument();
+    expect(screen.queryByRole('button')).not.toBeInTheDocument();
   });
 
   it.each([
@@ -60,7 +50,7 @@ describe('pronunciation buttons', () => {
     const us = makeVoice('en-US', false);
     const synth = installSpeech([makeVoice('en-GB', false), us]);
     renderApp(<><SpeakWord text="hello" /><SpeakSentence text="Hello there." /><SpeakSentence text="Saved sentence." private /></>);
-    expect(screen.getAllByRole('button')).toHaveLength(3);
+    expect(screen.getAllByRole('button')).toHaveLength(2);
     await userEvent.click(screen.getByRole('button', { name: 'Nghe câu' }));
     expect(synth.speak).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ text: 'Hello there.', voice: us }));
   });
@@ -78,7 +68,7 @@ describe('pronunciation buttons', () => {
     renderApp(<><SpeakWord text="hello" /><SpeakSentence text="Hello there." /></>);
     expect(screen.queryByRole('button')).not.toBeInTheDocument();
     act(() => synth.setVoices([makeVoice('en-GB'), makeVoice('en-US')]));
-    expect(screen.getAllByRole('button')).toHaveLength(3);
+    expect(screen.getAllByRole('button')).toHaveLength(2);
   });
 
   it.each(['word', 'sentence'] as const)('A1-6: Space / 1 / 2 on a %s button never reach window; Space speaks', async (kind) => {
@@ -114,7 +104,7 @@ describe('pronunciation buttons', () => {
   it('uses English accessible labels in English', () => {
     installSpeech([makeVoice('en-GB'), makeVoice('en-US')]);
     renderApp(<><SpeakWord text="hello" /><SpeakSentence text="Hello there." /></>, { locale: 'en' });
-    for (const name of ['UK, British voice', 'US, American voice', 'Listen to the sentence']) {
+    for (const name of ['Listen', 'Listen to the sentence']) {
       expect(screen.getByRole('button', { name })).toBeInTheDocument();
     }
   });

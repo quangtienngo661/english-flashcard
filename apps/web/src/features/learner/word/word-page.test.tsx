@@ -56,11 +56,11 @@ beforeEach(() => {
 });
 
 describe('WordPage (K/31–K/33, M/41)', () => {
-  it('heads with the word, its level range and how many meanings; one numbered block per meaning with its definition', async () => {
+  it('heads with the word and its level range, no meaning count (owner 27/10/2026); one numbered block per meaning with its definition', async () => {
     renderApp(<WordPage />, { routes: routes() });
     expect(await screen.findByRole('heading', { level: 1, name: 'left' })).toBeInTheDocument();
     expect(screen.getByText('A1 – A2')).toBeInTheDocument();
-    expect(screen.getByText('3 nghĩa')).toBeInTheDocument();
+    expect(screen.queryByText('3 nghĩa')).not.toBeInTheDocument();
     const blocks = screen.getAllByRole('article');
     expect(blocks.map((b) => within(b).getByRole('heading', { level: 2 }).textContent)).toEqual(['adjective', 'adverb', 'verb']);
     expect(within(blocks[0]).getByText('bên trái')).toBeInTheDocument();
@@ -91,6 +91,13 @@ describe('WordPage (K/31–K/33, M/41)', () => {
     const p = line.closest('p')!;
     expect(p).toHaveTextContent('Dạng chia: go · goes · going · went · gone');
     expect(within(p).getAllByRole('link').map((a) => a.textContent)).toEqual(['went']);
+  });
+
+  it('a learned word has a card to add it to another deck from its own page (owner 27/10/2026)', async () => {
+    renderApp(<WordPage />, { routes: routes() });
+    const card = await screen.findByRole('region', { name: 'Thêm vào nhóm khác' }, { timeout: 5000 });
+    await userEvent.click(within(card).getByRole('button', { name: 'Thêm vào nhóm' }));
+    expect(await screen.findByRole('dialog')).toBeInTheDocument();
   });
 
   it('a learned meaning: "Đang học · 3 câu đã gặp" (the decks are only in the block, owner 26/10/2026) and the "Bạn đang học" block with its deck stage and first sentence', async () => {
@@ -170,13 +177,12 @@ describe('WordPage (K/31–K/33, M/41)', () => {
 describe('WordPage pronunciation (đợt cải thiện A, C1)', () => {
   afterEach(() => vi.unstubAllGlobals());
 
-  it('A1-5: UK · US by the word and a button by the example; saved sentences only with a local US voice', async () => {
+  it('A1-5: the speaker icon by the word (US voice) and a button by the example; saved sentences only with a local US voice', async () => {
     const synth = installSpeech([makeVoice('en-GB'), makeVoice('en-US', false)]);
     renderApp(<WordPage />, { routes: routes() });
     const head = (await screen.findByRole('heading', { level: 1, name: 'left' })).parentElement!;
-    await userEvent.click(within(head).getByRole('button', { name: 'UK, nghe giọng Anh' }));
-    expect(synth.speak).toHaveBeenLastCalledWith(expect.objectContaining({ text: 'left', lang: 'en-GB' }));
-    expect(within(head).getByRole('button', { name: 'US, nghe giọng Mỹ' })).toBeInTheDocument();
+    await userEvent.click(within(head).getByRole('button', { name: 'Nghe phát âm' }));
+    expect(synth.speak).toHaveBeenLastCalledWith(expect.objectContaining({ text: 'left', lang: 'en-US' }));
     const adjective = screen.getAllByRole('article')[0];
     await userEvent.click(within(adjective).getByRole('button', { name: 'Nghe câu' }));
     expect(synth.speak).toHaveBeenLastCalledWith(expect.objectContaining({ text: 'Turn left 1.', lang: 'en-US' }));

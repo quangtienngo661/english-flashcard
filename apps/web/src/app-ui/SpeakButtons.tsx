@@ -31,14 +31,15 @@ function SpeakButton({ text, voice, label, children }: {
   );
 }
 
+/** One speaker button in the American voice (owner 27/10/2026: no UK button, an icon instead of "US"). */
 export function SpeakWord({ text }: { text: string }) {
-  const { uk, us } = useVoices();
+  const { us } = useVoices();
   const t = useTranslations('App.speak');
+  if (!us) return null;
   return (
-    <>
-      {uk && <SpeakButton text={text} voice={uk} label={t('uk')}>UK</SpeakButton>}
-      {us && <SpeakButton text={text} voice={us} label={t('us')}>US</SpeakButton>}
-    </>
+    <SpeakButton text={text} voice={us} label={t('word')}>
+      <Volume2 aria-hidden="true" className="size-5" />
+    </SpeakButton>
   );
 }
 
