@@ -128,12 +128,12 @@ for (const scheme of ['light', 'dark'] as const) {
         const where = `${locale} ${scheme} ${width}px`;
 
         await page.goto(`/${locale}/app/word?w=deploy`);
-        await expect(page.getByRole('button', { name: t.word })).toBeVisible();
+        await expect(page.getByRole('button', { name: t.word, exact: true })).toBeVisible();
         await noSideScroll(page, `${where} word`);
         expect(await seriousViolations(page), `${where} word`).toEqual([]);
 
         await page.goto(`/${locale}/app/review?group=${G}`);
-        await expect(page.getByRole('group').first().getByRole('button', { name: t.word })).toBeVisible();
+        await expect(page.getByRole('group').first().getByRole('button', { name: t.word, exact: true })).toBeVisible();
         await noSideScroll(page, `${where} card front`);
         expect(await seriousViolations(page), `${where} card front`).toEqual([]);
         await page.keyboard.press('Space');
@@ -144,7 +144,7 @@ for (const scheme of ['light', 'dark'] as const) {
         await page.goto(`/${locale}/app/practice/session`);
         await expect(page.getByText('triển khai')).toBeVisible();
         await page.keyboard.press('1');
-        await expect(page.getByRole('button', { name: t.word })).toBeVisible();
+        await expect(page.getByRole('button', { name: t.word, exact: true })).toBeVisible();
         await noSideScroll(page, `${where} practice result`);
         expect(await seriousViolations(page), `${where} practice result`).toEqual([]);
       });
