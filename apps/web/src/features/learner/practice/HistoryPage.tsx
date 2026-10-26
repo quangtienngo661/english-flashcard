@@ -197,8 +197,14 @@ function HistoryRow({ item, withDate }: { item: HistoryItem; withDate: boolean }
         {item.lemma}
       </span>
       <span className={cn('col-span-2 min-w-0 break-words text-ink lg:order-3', COL.prompt)}>{question}</span>
-      <span className={cn('min-w-0 break-words lg:order-4', COL.answer, right ? 'text-ink' : 'text-danger')}>{answer}</span>
-      <span className={cn('min-w-0 break-words text-right text-ink lg:order-5 lg:text-left', COL.correct)}>{correct}</span>
+      <span className={cn('flex min-w-0 flex-col break-words lg:order-4', COL.answer)}>
+        <span className="text-muted lg:sr-only">{t('cols.answer')}</span>
+        <span className={right ? 'text-ink' : 'text-danger'}>{answer}</span>
+      </span>
+      <span className={cn('flex min-w-0 flex-col break-words text-right text-ink lg:order-5 lg:text-left', COL.correct)}>
+        <span className="text-muted lg:sr-only">{t('cols.correct')}</span>
+        <span>{correct}</span>
+      </span>
       <span className={cn('lg:order-6', COL.result)}>
         <span className={cn('rounded-full px-2 py-0.5 font-semibold text-ink', right ? (item.hint_level > 0 ? 'bg-accent-soft' : 'bg-success-soft') : 'bg-danger-soft')}>{result}</span>
       </span>
