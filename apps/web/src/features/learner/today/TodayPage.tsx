@@ -150,7 +150,7 @@ function TodayAside({ groups }: { groups: GroupSummary[] }) {
         <section className="flex items-center justify-between gap-3 rounded-card border border-border bg-surface p-4">
           <div className="min-w-0">
             <h2 className="text-body font-semibold text-danger">{t('backlogTitle', { count: backlog.backlog })}</h2>
-            <p className="text-caption text-muted">{t('backlogLine', { name: backlog.name, days })}</p>
+            <p className="wrap-anywhere text-caption text-muted">{t('backlogLine', { name: backlog.name, days })}</p>
           </div>
           <Link href={`/${locale}/app/group/backlog?id=${backlog.id}`} className="shrink-0 rounded-inner border-2 border-border-strong px-4 py-1.5 text-ui font-semibold text-ink">
             {t('see')}
