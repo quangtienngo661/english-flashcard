@@ -45,6 +45,8 @@ export const LONG = {
   email: 'phuong.thao.ngoc.bich.hoang.anh.minh.chau.2008@example-school.edu.vn',
   /** 60 characters, the deck name limit. */
   deckName: 'Từ vựng chuyên ngành công nghệ thông tin phát triển phần mềm',
+  /** 60 characters with no space (the API allows it): the word breaks nowhere on its own (audit 26/10/2026 #1, #11). */
+  unbrokenDeckName: 'Supercalifragilisticexpialidociousantidisestablishmentarianism'.slice(0, 60),
   /** A 280-character saved sentence. */
   sentence: `We deploy ${'the newest internationalization-ready microservices '.repeat(5)}every Friday afternoon.`.slice(0, 280),
 };
