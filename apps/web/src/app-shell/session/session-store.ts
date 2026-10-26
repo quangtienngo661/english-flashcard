@@ -125,9 +125,16 @@ export class SessionStore {
     await this.startSession('/v1/auth/login', { email, password, ...DEVICE });
   }
 
-  /** `POST /v1/auth/register` answers like login (token + refresh cookie), so the new account is signed in at once. */
-  async register(body: RegisterBody): Promise<void> {
-    await this.startSession('/v1/auth/register', { ...body, ...DEVICE });
+  /** Registration returns the email for verification and leaves the session unchanged. */
+  async register(body: RegisterBody): Promise<{ email: string }> {
+    const res = await this.raw('/v1/auth/register', json('POST', { ...body, ...DEVICE }), null);
+    if (!res.ok) throw await toApiError(res);
+    const { email } = (await res.json()) as { email: string };
+    return { email };
+  }
+
+  async verifyEmail(email: string, code: string, password: string): Promise<void> {
+    await this.startSession('/v1/auth/verify-email', { email, code, password, ...DEVICE });
   }
 
   private async startSession(path: string, body: unknown): Promise<void> {
