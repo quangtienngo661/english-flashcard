@@ -1073,11 +1073,11 @@
         "order": "Thứ tự",
         "orderSummary": "Thứ tự: {order}",
         "sorts": {
-          "level_asc": "Ngăn thấp trước",
-          "overdue_first": "Quá hạn lâu nhất trước",
-          "new_first": "Từ mới trước",
-          "least_practiced": "Lâu chưa luyện trước",
-          "most_wrong": "Sai nhiều nhất trước",
+          "level_asc": "Ngăn thấp",
+          "overdue_first": "Quá hạn lâu nhất",
+          "new_first": "Từ mới",
+          "least_practiced": "Lâu chưa luyện",
+          "most_wrong": "Sai nhiều nhất",
           "queue": "Ưu tiên, đến hạn, rồi từ mới",
           "priority_oldest": "Bấm Cần ôn lại lâu nhất trước",
           "random": "Ngẫu nhiên"

@@ -1073,11 +1073,11 @@
         "order": "Order",
         "orderSummary": "Order: {order}",
         "sorts": {
-          "level_asc": "Lowest stage first",
-          "overdue_first": "Most overdue first",
-          "new_first": "New words first",
-          "least_practiced": "Least practiced first",
-          "most_wrong": "Most missed first",
+          "level_asc": "Lowest stage",
+          "overdue_first": "Most overdue",
+          "new_first": "New words",
+          "least_practiced": "Least practiced",
+          "most_wrong": "Most missed",
           "queue": "Priority, due, then new",
           "priority_oldest": "Oldest Still learning first",
           "random": "Random"
