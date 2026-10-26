@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
+import type { AiService } from '../../ai/index.js';
 import { FakeClock } from '../../common/clock/clock.js';
 import type { ContentService, Learner } from '../../content/index.js';
 import type { EntitlementsService, EntitlementsSnapshot, Refusal } from '../../entitlements/index.js';
@@ -7,7 +8,8 @@ import type { LearningService, PracticeItem } from '../../learning/index.js';
 import { SETTINGS_DEFAULTS, type SettingsService } from '../../settings/index.js';
 import type { AiQuestionGenerator } from '../ai/ai-question-generator.service.js';
 import type { AiRequestsRepository } from '../ai/ai-requests.repository.js';
-import type { AiSessionPlan, AiSessionPlanner } from '../ai/ai-session-planner.service.js';
+import { AiSessionPlanner, type AiSessionPlan } from '../ai/ai-session-planner.service.js';
+import type { WordChecksRepository } from '../ai/word-checks.repository.js';
 import type { QuestionBuilder } from '../questions/question-builder.service.js';
 import type { ItemWithQuestion } from './session-views.js';
 import type { PracticeStats } from '../weak/practice-stats.js';
@@ -33,7 +35,7 @@ type Decision = { allowed: true } | ({ allowed: false } & Refusal);
 
 function setup(options: {
   early?: Decision; late?: Decision; items?: PracticeItem[]; session?: Partial<PracticeSession>;
-  snapshot?: EntitlementsSnapshot; aiPlan?: AiSessionPlan; weak?: PracticeItem[];
+  snapshot?: EntitlementsSnapshot; aiPlan?: AiSessionPlan; weak?: PracticeItem[]; realAiPlanner?: boolean;
 } = {}) {
   const calls: string[] = [];
   // Facade reads made while the transaction is open without the transaction's own client (each would borrow a second connection).
@@ -64,6 +66,7 @@ function setup(options: {
     practiceSession: { updateMany: vi.fn(async () => ({ count: 0 })), findFirst: vi.fn(async () => sessionRow(options.session)) },
   } as unknown as PrismaClient;
   const entitlements = {
+    snapshot: vi.fn(async () => options.snapshot ?? null),
     check: vi.fn(async (_userId: string, _feature: string, db?: unknown) => { calls.push('check'); via('check', db); return { allowed: true }; }),
     checkQuota: vi.fn(async (_userId: string, _pool: string, maybeTx?: unknown) => {
       calls.push(maybeTx === undefined ? 'checkQuota' : 'checkQuota(tx)');
@@ -101,7 +104,11 @@ function setup(options: {
       statsFor: vi.fn(async () => { calls.push('statsFor'); return new Map(); }),
       weakSenses: vi.fn(async () => (options.weak ?? []).map((w) => ({ item: w, stats: { wrong: 2, counted: 5, last_wrong_at: '2026-10-20T03:00:00.000Z' } }))),
     } as unknown as PracticeStats,
-    aiPlanner as unknown as AiSessionPlanner, {} as AiQuestionGenerator, {} as AiRequestsRepository, {} as ContentService);
+    options.realAiPlanner
+      ? new AiSessionPlanner(prisma, {} as AiService, entitlements as unknown as EntitlementsService,
+        {} as ContentService, {} as WordChecksRepository)
+      : aiPlanner as unknown as AiSessionPlanner,
+    {} as AiQuestionGenerator, {} as AiRequestsRepository, {} as ContentService);
   return { service, tx, calls, entitlements, builder, learning, settings, globalReads, aiPlanner };
 }
 
@@ -252,6 +259,48 @@ describe('SessionsService.current / next — every read goes through the transac
 });
 
 describe('SessionsService.start — Bước 7 types (design §6.1)', () => {
+  const free = () => setup({ realAiPlanner: true, snapshot: {
+    features: { 'ai.practice': { allowed: false, reason: 'plan-required' } },
+  } as unknown as EntitlementsSnapshot });
+
+  it('A3-1: Free, typing + own cloze → the session opens with ai_planned 0 and cloze_source own', async () => {
+    const { service, builder, entitlements, tx } = free();
+    builder.availability.mockImplementation(async ({ senseIds }) =>
+      new Map(senseIds.map((id) => [id, ['type_word', 'cloze']])));
+    const result = await service.start(learner, { source: 'all', types: ['type_word', 'cloze'], cloze_source: 'own' });
+    expect(result.session).toMatchObject({ ai_planned: 0, cloze_source: 'own' });
+    expect(tx.practiceSession.create).toHaveBeenCalledWith({ data: expect.objectContaining({
+      types: ['type_word', 'cloze'], aiPlanned: 0, aiSenseIds: [], clozeSource: 'own',
+    }) });
+    expect(builder.availability).toHaveBeenCalledWith(expect.objectContaining({
+      chosenTypes: ['type_word', 'cloze'], clozeSource: 'own',
+    }));
+    expect(entitlements.snapshot).not.toHaveBeenCalled();
+    expect(entitlements.recordPracticeSession).not.toHaveBeenCalled();
+  });
+
+  it('A3-2: Free, only own cloze without saved sentences → 409 practice-no-words, no-word-fits-types', async () => {
+    const { service, builder, entitlements, tx } = free();
+    builder.availability.mockImplementation(async ({ senseIds }) => new Map(senseIds.map((id) => [id, []])));
+    await expect(service.start(learner, { source: 'all', types: ['cloze'], cloze_source: 'own' })).rejects.toMatchObject({
+      status: 409, problemType: 'practice-no-words', extensions: { reason: 'no-word-fits-types' },
+    });
+    expect(builder.availability).toHaveBeenCalledWith(expect.objectContaining({ chosenTypes: ['cloze'], clozeSource: 'own' }));
+    expect(entitlements.snapshot).not.toHaveBeenCalled();
+    expect(tx.practiceSession.create).not.toHaveBeenCalled();
+  });
+
+  it('Free, only AI cloze → still 403 entitlement-required before reading words', async () => {
+    const { service, builder, entitlements, calls } = free();
+    await expect(service.start(learner, { source: 'all', types: ['cloze'], cloze_source: 'ai' })).rejects.toMatchObject({
+      status: 403, problemType: 'entitlement-required',
+    });
+    expect(entitlements.snapshot).toHaveBeenCalledExactlyOnceWith(learner.userId);
+    expect(builder.availability).not.toHaveBeenCalled();
+    expect(calls).not.toContain('practiceItems');
+    expect(calls).not.toContain('transaction');
+  });
+
   it('the AI gate runs before the words are read; the plan is stored with the cloze source', async () => {
     const plan = { aiPlanned: 1, aiSenseIds: ['s2'] };
     const { service, tx, calls, aiPlanner, builder } = setup({ snapshot: {} as EntitlementsSnapshot, aiPlan: plan });

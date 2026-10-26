@@ -101,7 +101,7 @@ export class SessionsService {
     // commits is dropped later, when `build` skips it as not visible.
     await this.assertEntitled(learner.userId);
     const clozeSource = input.types.includes('cloze') ? input.cloze_source ?? 'ai' : null;
-    // Bước 7 (design §6.1 step 2); null when no Bước 7 type is chosen.
+    // Bước 7 (design §6.1 step 2); null when no AI type is chosen (own cloze is a rule question).
     const snapshot = await this.aiPlanner.gate(learner.userId, input.types, clozeSource);
     const items = await this.sourceItems(learner.userId, input);
     if (items.length === 0) throw noWords(input.source === 'group' ? 'group-empty' : 'source-empty');
@@ -450,7 +450,7 @@ export class SessionsService {
 
     if (plan.length > 0) await this.assertEntitled(userId, tx);
     const aiTypes = this.aiTypesOf(session);
-    const ruleTypes = plan.length > 0 ? await this.ruleTypesOf(tx, userId, session) : [];
+    const ruleTypes = plan.length > 0 ? this.ruleTypesOf(session) : [];
     const budget = aiTypes.length > 0 ? await this.aiBudgetOf(tx, session, items) : 0;
     for (const { senseId, round } of plan) {
       const previous = items.filter((item) => item.senseId === senseId).at(-1);
@@ -480,11 +480,9 @@ export class SessionsService {
     return (session.types as QuestionType[]).filter((type) => isAiType(type, session.clozeSource as ClozeSource | null));
   }
 
-  /** The other chosen types; cloze from saved sentences needs `ai.practice` at each question (B7E123, Bước 4 §12). */
-  private async ruleTypesOf(tx: Prisma.TransactionClient, userId: string, session: PracticeSession): Promise<QuestionType[]> {
-    const types = (session.types as QuestionType[]).filter((type) => !isAiType(type, session.clozeSource as ClozeSource | null));
-    if (!types.includes('cloze') || (await this.entitlements.check(userId, 'ai.practice', tx)).allowed) return types;
-    return types.filter((type) => type !== 'cloze');
+  /** The chosen non-AI types, including own-sentence cloze on every plan (đợt cải thiện A C3, changes Bước 7 D11). */
+  private ruleTypesOf(session: PracticeSession): QuestionType[] {
+    return (session.types as QuestionType[]).filter((type) => !isAiType(type, session.clozeSource as ClozeSource | null));
   }
 
   /** r of design §6.3 (R9): planned − asked AI items (void included) − requests of the session not yet asked. */
@@ -583,7 +581,7 @@ export class SessionsService {
       notice: 'word-not-recognized', sense_id: request.senseId,
       lemma: (await this.content.practiceSenses(learner.userId, [request.senseId], learner.nativeLanguage, tx)).get(request.senseId)?.lemma ?? null,
     } : undefined;
-    const ruleTypes = await this.ruleTypesOf(tx, learner.userId, session);
+    const ruleTypes = this.ruleTypesOf(session);
     if (ruleTypes.length > 0) {
       await tx.practiceSession.update({ where: { id: session.id }, data: { pendingAiRequestId: null } });
       const previous = items.filter((item) => item.senseId === request.senseId).at(-1);

@@ -39,13 +39,13 @@ function setup(options: {
   } as unknown as ContentService;
   const prisma = {
     practiceQuestion: {
-      findMany: async ({ where }: { where: { senseId: string } }) =>
-        (options.unseen ?? []).includes(where.senseId) ? [{ id: `q-${where.senseId}`, distractorSenseIds: [] } as unknown as PracticeQuestion] : [],
+      findMany: vi.fn(async ({ where }: { where: { senseId: string } }) =>
+        (options.unseen ?? []).includes(where.senseId) ? [{ id: `q-${where.senseId}`, distractorSenseIds: [] } as unknown as PracticeQuestion] : []),
     },
   } as unknown as PrismaClient;
   const wordChecks = { get: async (_u: string, senseId: string) => options.checks?.get(senseId) ?? null } as unknown as WordChecksRepository;
   const planner = new AiSessionPlanner(prisma, ai, entitlements as unknown as EntitlementsService, content, wordChecks);
-  return { planner, entitlements, readiness };
+  return { planner, entitlements, readiness, prisma };
 }
 
 const words = (n: number) => Array.from({ length: n }, (_, i) => deploy({ sense_id: `s${i + 1}`, lemma: `w${i + 1}` }));
@@ -58,16 +58,24 @@ describe('AiSessionPlanner.gate (design §6.1 step 2)', () => {
     expect(t.entitlements.snapshot).not.toHaveBeenCalled();
   });
 
-  it.each<[QuestionType[], 'ai' | 'own' | null]>([[['cloze'], 'own'], [['cloze'], 'ai'], [['type_word', 'mcq_sentence'], null]])(
+  it.each<[QuestionType[], 'ai' | 'own' | null]>([[['cloze'], 'ai'], [['type_word', 'mcq_sentence'], null]])(
     'B7E1: Free (ai.practice not allowed) with %o (%s) → 403 entitlement-required', async (types, source) => {
       const t = setup({ snap: snapshot({ allowed: false }) });
       await expect(t.planner.gate(learner.userId, types, source)).rejects.toMatchObject({ status: 403, problemType: 'entitlement-required' });
     });
 
+  it('A3-1: Free with typing + own cloze → null, the snapshot is not read', async () => {
+    const t = setup({ snap: snapshot({ allowed: false }) });
+    await expect(t.planner.gate(learner.userId, ['type_word', 'cloze'], 'own')).resolves.toBeNull();
+    expect(t.entitlements.snapshot).not.toHaveBeenCalled();
+    expect(t.readiness).toEqual([]);
+  });
+
   it('B7E4: cloze from saved sentences only → no AI check, no readiness asked', async () => {
     const t = setup({ snap: snapshot({ enabled: false }) });
-    await expect(t.planner.gate(learner.userId, ['type_word', 'cloze'], 'own')).resolves.not.toBeNull();
+    await expect(t.planner.gate(learner.userId, ['cloze'], 'own')).resolves.toBeNull();
     expect(t.readiness).toEqual([]);
+    expect(t.entitlements.snapshot).not.toHaveBeenCalled();
   });
 
   it('B7E5, B7E6: AI off or the system cap reached → 503 ai-unavailable without seconds', async () => {
@@ -139,6 +147,26 @@ describe('AiSessionPlanner.plan (design §6.1 steps 3–5)', () => {
     const t = setup({ senses: words(3) });
     expect(await t.planner.plan(learner, { types, clozeSource: 'own', count: 3, kept: ['s1', 's2', 's3'],
       available: availableAll(['s1', 's2', 's3'], types) }, snapshot({ remaining: 0 }))).toEqual({ aiPlanned: 0, aiSenseIds: [] });
+  });
+
+  it('A3-3: Pro with own cloze + meaning_in_sentence → only meaning_in_sentence words are planned and need units', async () => {
+    const types: QuestionType[] = ['cloze', 'meaning_in_sentence'];
+    const senses = words(6);
+    const ids = senses.map((s) => s.sense_id);
+    const available = new Map(ids.map((id) => [id, ['s5', 's6'].includes(id) ? types : ['cloze'] as QuestionType[]]));
+    const t = setup({ senses });
+    const input = { types, clozeSource: 'own' as const, count: 6, kept: ids, available };
+    expect(await t.planner.plan(learner, input, snapshot({ remaining: 2 })))
+      .toEqual({ aiPlanned: 2, aiSenseIds: ['s5', 's6'] });
+    expect(t.prisma.practiceQuestion.findMany).toHaveBeenCalledTimes(2);
+    for (const senseId of ['s5', 's6']) {
+      expect(t.prisma.practiceQuestion.findMany).toHaveBeenCalledWith(expect.objectContaining({
+        where: expect.objectContaining({ senseId, type: { in: ['meaning_in_sentence'] } }),
+      }));
+    }
+    await expect(t.planner.plan(learner, input, snapshot({ remaining: 1 }))).rejects.toMatchObject({
+      status: 403, problemType: 'ai-quota-insufficient', extensions: { remaining: 1, needed: 2 },
+    });
   });
 
   it('a marked private word not checked for its content needs check_private_word ready; a checked one does not', async () => {
