@@ -809,7 +809,7 @@
       "results": "Kết quả ({count, number})",
       "noneNamed": "Chưa có nhóm nào tên “{name}”.",
       "createAndSave": "Tạo nhóm và lưu",
-      "saveTo": "Lưu vào {group}",
+      "saveTo": "Lưu vào nhóm",
       "words": "{count, number} từ",
       "back": "Quay lại",
       "quickTitle": "Thêm từ vừa gặp",

@@ -809,7 +809,7 @@
       "results": "Results ({count, number})",
       "noneNamed": "No deck named “{name}”.",
       "createAndSave": "Create deck and save",
-      "saveTo": "Save to {group}",
+      "saveTo": "Save to deck",
       "words": "{count, plural, one {# word} other {# words}}",
       "back": "Back",
       "quickTitle": "Add a word you just met",

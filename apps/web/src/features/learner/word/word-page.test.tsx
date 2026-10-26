@@ -155,7 +155,7 @@ describe('WordPage (K/31–K/33, M/41)', () => {
     await userEvent.click(within(adjective).getByRole('button', { name: 'Thêm vào nhóm' }));
     const dialog = await screen.findByRole('dialog', { name: 'Lưu vào nhóm' });
     await userEvent.click(within(dialog).getAllByRole('radio', { name: /IELTS/ })[0]);
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Lưu vào IELTS' }));
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Lưu vào nhóm' }));
     await waitFor(() => expect(calls.find((c) => c.method === 'POST' && c.path === `/v1/groups/${G}/items`)?.body).toEqual({ sense_id: uuid(1) }));
     expect(await screen.findByText('Đã thêm “left” vào nhóm “IELTS”.')).toBeInTheDocument();
   });
