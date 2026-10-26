@@ -294,8 +294,8 @@
       }
     },
     "speak": {
-      "uk": "Listen, British",
-      "us": "Listen, American",
+      "uk": "UK, British voice",
+      "us": "US, American voice",
       "sentence": "Listen to the sentence"
     },
     "auth": {

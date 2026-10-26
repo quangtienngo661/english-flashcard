@@ -29,8 +29,8 @@ describe('pronunciation buttons', () => {
   it('WCAG 2.5.3: the accessible name starts with the visible "UK" / "US" (audit 26/10/2026 #12)', () => {
     installSpeech([makeVoice('en-GB'), makeVoice('en-US')]);
     renderApp(<SpeakWord text="deploy" />);
-    expect(screen.getByRole('button', { name: /^UK/ })).toHaveTextContent(/^UK$/);
-    expect(screen.getByRole('button', { name: /^US/ })).toHaveTextContent(/^US$/);
+    expect(screen.getByRole('button', { name: /^UK, / })).toHaveTextContent(/^UK$/);
+    expect(screen.getByRole('button', { name: /^US, / })).toHaveTextContent(/^US$/);
   });
 
   it('A1-2: no en-GB voice → no UK button; US still there', () => {

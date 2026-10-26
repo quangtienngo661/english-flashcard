@@ -294,8 +294,8 @@
       }
     },
     "speak": {
-      "uk": "Nghe giọng Anh",
-      "us": "Nghe giọng Mỹ",
+      "uk": "UK, nghe giọng Anh",
+      "us": "US, nghe giọng Mỹ",
       "sentence": "Nghe câu"
     },
     "auth": {
