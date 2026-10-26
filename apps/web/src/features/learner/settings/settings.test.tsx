@@ -140,6 +140,15 @@ describe('SettingsPage (K/50)', () => {
     expect(within(row).queryByRole('button')).toBeNull();
     expect(screen.getByRole('link', { name: /Lịch sử giao dịch/ })).toHaveAttribute('href', '/vi/app/settings/transactions');
   });
+
+  it('the transactions and current plan rows are links over the whole row (audit 26/10/2026 #10)', async () => {
+    renderApp(<SettingsPage />, { routes: routes() });
+    const transactions = await screen.findByRole('link', { name: /Lịch sử giao dịch/ });
+    expect(transactions).toContainElement(screen.getByText('Lịch sử giao dịch'));
+    const plan = await screen.findByRole('link', { name: /Gói hiện tại/ });
+    expect(plan).toHaveAttribute('href', '/vi/app/plans');
+    expect(plan).toContainElement(screen.getByText('Gói hiện tại'));
+  });
 });
 
 describe('AccountPage (K/91, K/92)', () => {
