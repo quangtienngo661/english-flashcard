@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { screen, waitFor, within } from '@testing-library/react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { problem } from '@/app-shell/session/test-support';
 import { renderApp } from '@/app-ui/test-utils';
@@ -47,6 +47,14 @@ beforeEach(() => {
 });
 
 describe('GroupPage (K/11–K/13)', () => {
+  it('A14: the deck page scopes key N to its deck', async () => {
+    renderApp(<GroupPage />, { routes: routes() });
+    await screen.findByRole('heading', { name: 'Công nghệ' }, { timeout: 5000 });
+    fireEvent.keyDown(document.body, { key: 'n' });
+    expect(await screen.findByText('Lưu vào nhóm: Công nghệ', {}, { timeout: 5000 })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Lưu vào nhóm/ })).not.toBeInTheDocument();
+  });
+
   it('the stage chart is labelled Mới · 1 · 3 · 7 · 14 · 30', async () => {
     renderApp(<GroupPage />, { routes: routes() });
     const chart = await screen.findByRole('figure', { name: /số ngày giữa hai lần ôn/ });

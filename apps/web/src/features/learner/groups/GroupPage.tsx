@@ -15,6 +15,7 @@ import { Dialog } from '@/app-ui/Dialog';
 import { Select } from '@/app-ui/Select';
 import { ErrorState, FullScreenSpinner, NotFoundState } from '@/app-ui/States';
 import { showToast } from '@/app-ui/Toast';
+import { useAddWordScope } from '@/features/learner/add-word/add-word-context';
 import type { AppLocale } from '@/i18n/routing';
 import { cn } from '@/lib/cn';
 import { waiting } from './GroupCard';
@@ -74,6 +75,7 @@ function GroupError({ error, onRetry }: { error: unknown; onRetry: () => void })
 }
 
 function GroupBody({ detail }: { detail: GroupDetail }) {
+  useAddWordScope(detail.id);
   const t = useTranslations('App.group');
   const tStage = useTranslations('App.stages');
   const locale = useLocale() as AppLocale;

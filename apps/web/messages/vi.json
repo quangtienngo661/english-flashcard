@@ -780,7 +780,7 @@
       "wordRequired": "Nhập từ bạn vừa gặp.",
       "saveManual": "Lưu từ",
       "saved": "Đã lưu từ “{word}” vào nhóm “{group}”.",
-      "alreadyIn": "“{word}” đã có trong nhóm “{group}”.",
+      "alreadyIn": "Đã có trong nhóm",
       "exists": "Bạn đã có từ “{word}” trong Từ của tôi.",
       "openExisting": "Mở từ này",
       "groupFull": "Nhóm “{group}” đã đầy. Chọn nhóm khác.",
@@ -867,7 +867,9 @@
         "exampleHint": "Tối đa 300 ký tự mỗi câu.",
         "note": "Từ này mang nhãn AI gợi ý tới khi bạn sửa nghĩa, chủ đề hoặc câu ví dụ."
       },
-      "recognizedShort": "{kind} của {base}"
+      "recognizedShort": "{kind} của {base}",
+      "lockedDeck": "Lưu vào nhóm: {name}",
+      "deckGone": "Nhóm này không còn."
     },
     "stages": {
       "s0": "Mới",
