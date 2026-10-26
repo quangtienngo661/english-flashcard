@@ -16,9 +16,13 @@ import { TopicSuggestions } from '../groups/TopicSuggestions';
 import { QuickAddBox } from './QuickAddBox';
 import { STAGE_KEYS } from '../groups/stages';
 
-/** K/10, K/10b, K/94: the deck to review next, every deck, topic suggestions, and the side column. */
+/** Owner 27/10/2026: Today lists only the first decks (decks with cards waiting first); [Xem tất cả] opens the deck list. */
+const TODAY_DECKS = 6;
+
+/** K/10, K/10b, K/94: the deck to review next, the first decks, topic suggestions, and the side column. */
 export function TodayPage() {
   const t = useTranslations('App.today');
+  const locale = useLocale();
   const format = useFormat();
   const errorText = useErrorMessage();
   const groups = useGroups();
@@ -67,12 +71,22 @@ export function TodayPage() {
                     {t('yourGroups')}
                     <span className="rounded-full bg-surface px-2 py-0.5 text-caption font-medium text-muted">{t('groupCount', { count: sorted.length })}</span>
                   </h2>
-                  <Button variant="quiet" onPress={() => open({ kind: 'create' })}>
-                    {t('createGroup')}
-                  </Button>
+                  <div className="flex shrink-0 items-center gap-2">
+                    <Button variant="quiet" onPress={() => open({ kind: 'create' })}>
+                      {t('createGroup')}
+                    </Button>
+                    {sorted.length > TODAY_DECKS && (
+                      <Link
+                        href={`/${locale}/app/groups`}
+                        className="flex min-h-control items-center rounded-inner px-3 text-ui font-semibold text-primary underline-offset-2 outline-none hover:underline focus-visible:ring-2 focus-visible:ring-primary"
+                      >
+                        {t('seeAll')}
+                      </Link>
+                    )}
+                  </div>
                 </div>
                 <ul aria-label={t('yourGroups')} className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
-                  {sorted.map((group, i) => (
+                  {sorted.slice(0, TODAY_DECKS).map((group, i) => (
                     <GroupCard key={group.id} group={group} index={i} actions={actions} />
                   ))}
                 </ul>

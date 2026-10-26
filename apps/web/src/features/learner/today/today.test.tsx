@@ -57,6 +57,23 @@ describe('TodayPage (K/10, K/10b, K/94)', () => {
     expect(within(hero).getByText('262.962 thẻ chờ hôm nay · nhóm có 123.456 từ')).toBeInTheDocument();
   });
 
+  it('Today lists 6 decks at most and [Xem tất cả] opens the deck list (owner 27/10/2026)', async () => {
+    const many = Array.from({ length: 8 }, (_, i) => group(`g-${i}`, `Nhóm ${i}`, { priority: 0, due: i, new: 0 }));
+    renderApp(<TodayPage />, { routes: routes(many) });
+    const list = await screen.findByRole('list', { name: 'Nhóm của bạn' });
+    expect(within(list).getAllByRole('heading', { level: 3 })).toHaveLength(6);
+    expect(screen.getByRole('link', { name: 'Xem tất cả' })).toHaveAttribute('href', '/vi/app/groups');
+  });
+
+  it('a deck card opens its deck from anywhere on the card; Ôn N thẻ keeps its own link (owner 27/10/2026)', async () => {
+    renderApp(<TodayPage />, { routes: routes(GROUPS) });
+    const list = await screen.findByRole('list', { name: 'Nhóm của bạn' });
+    const name = within(list).getByRole('link', { name: 'IELTS' });
+    expect(name).toHaveAttribute('href', '/vi/app/group?id=g-ielts');
+    expect(name.className).toContain('after:inset-0');
+    expect(name.closest('li')).toHaveClass('relative');
+  });
+
   it('deck cards: waiting decks first (most cards first), done-today decks last', async () => {
     renderApp(<TodayPage />, { routes: routes(GROUPS) });
     const list = await screen.findByRole('list', { name: 'Nhóm của bạn' });

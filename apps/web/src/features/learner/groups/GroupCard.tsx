@@ -50,7 +50,9 @@ export function GroupCard({ group, index, actions }: { group: GroupSummary; inde
   const review = `/${locale}/app/review?group=${group.id}`;
 
   return (
-    <li className="flex min-w-0 flex-col overflow-hidden rounded-card border border-border bg-surface shadow-ledge-soft">
+    // Owner 27/10/2026: the whole card opens the deck (stretched link) and lifts a little on hover; the menu and the review
+    // button sit above the link and keep their own action.
+    <li className="relative flex min-w-0 flex-col overflow-hidden rounded-card border border-border bg-surface shadow-ledge-soft transition duration-fast ease-standard focus-within:shadow-ledge hover:shadow-ledge motion-safe:hover:-translate-y-1 motion-safe:focus-within:-translate-y-1">
       <div className={cn('relative px-4 pb-3 pt-4', TONES[index % TONES.length])}>
         <StageBars cells={group.cells} />
         <GroupMenu group={group} actions={actions} />
@@ -61,7 +63,7 @@ export function GroupCard({ group, index, actions }: { group: GroupSummary; inde
           {group.backlog > 0 && ` · ${t('backlogShort', { count: group.backlog })}`}
         </p>
         <h3 className="break-words text-title font-semibold text-ink">
-          <Link href={`/${locale}/app/group?id=${group.id}`} className="hover:underline">
+          <Link href={`/${locale}/app/group?id=${group.id}`} className="outline-none after:absolute after:inset-0 after:rounded-card focus-visible:after:ring-2 focus-visible:after:ring-primary">
             {group.name}
           </Link>
         </h3>
@@ -75,7 +77,7 @@ export function GroupCard({ group, index, actions }: { group: GroupSummary; inde
         </span>
         <Link
           href={count > 0 ? review : `${review}&mode=all`}
-          className="mt-auto flex min-h-control items-center justify-center rounded-inner border-2 border-border-strong bg-surface px-4 text-ui font-semibold text-ink shadow-button-secondary hover:bg-primary-soft"
+          className="relative z-10 mt-auto flex min-h-control items-center justify-center rounded-inner border-2 border-border-strong bg-surface px-4 text-ui font-semibold text-ink shadow-button-secondary hover:bg-primary-soft"
         >
           {count > 0 ? t('review', { count }) : t('studyAgain')}
         </Link>
@@ -93,7 +95,7 @@ function GroupMenu({ group, actions }: { group: GroupSummary; actions: Actions }
     <MenuTrigger>
       <Button
         aria-label={t('menu', { name: group.name })}
-        className="absolute right-3 top-3 rounded-sm p-1 text-ink outline-none hover:bg-surface/60 focus-visible:ring-2 focus-visible:ring-primary"
+        className="absolute right-3 top-3 z-10 rounded-sm p-1 text-ink outline-none hover:bg-surface/60 focus-visible:ring-2 focus-visible:ring-primary"
       >
         <MoreHorizontal aria-hidden className="size-5" />
       </Button>
