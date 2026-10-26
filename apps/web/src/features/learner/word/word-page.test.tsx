@@ -173,9 +173,9 @@ describe('WordPage pronunciation (đợt cải thiện A, C1)', () => {
     const synth = installSpeech([makeVoice('en-GB'), makeVoice('en-US', false)]);
     renderApp(<WordPage />, { routes: routes() });
     const head = (await screen.findByRole('heading', { level: 1, name: 'left' })).parentElement!;
-    await userEvent.click(within(head).getByRole('button', { name: 'Nghe giọng Anh' }));
+    await userEvent.click(within(head).getByRole('button', { name: 'UK, nghe giọng Anh' }));
     expect(synth.speak).toHaveBeenLastCalledWith(expect.objectContaining({ text: 'left', lang: 'en-GB' }));
-    expect(within(head).getByRole('button', { name: 'Nghe giọng Mỹ' })).toBeInTheDocument();
+    expect(within(head).getByRole('button', { name: 'US, nghe giọng Mỹ' })).toBeInTheDocument();
     const adjective = screen.getAllByRole('article')[0];
     await userEvent.click(within(adjective).getByRole('button', { name: 'Nghe câu' }));
     expect(synth.speak).toHaveBeenLastCalledWith(expect.objectContaining({ text: 'Turn left 1.', lang: 'en-US' }));

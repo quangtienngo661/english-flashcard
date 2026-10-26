@@ -77,8 +77,8 @@ test.describe('Pronunciation buttons (C1, mocked API)', () => {
     await setup(page);
     await page.goto('/vi/app/word?w=deploy');
     await expect(page.getByRole('heading', { level: 1, name: 'deploy' })).toBeVisible();
-    await page.getByRole('button', { name: 'Nghe giọng Anh' }).click();
-    await page.getByRole('button', { name: 'Nghe giọng Mỹ' }).click();
+    await page.getByRole('button', { name: 'UK, nghe giọng Anh' }).click();
+    await page.getByRole('button', { name: 'US, nghe giọng Mỹ' }).click();
     await expect(page.getByText('We deploy the app every Friday.')).toBeVisible();
     await expect(page.getByRole('button', { name: 'Nghe câu' })).toHaveCount(2);
     expect(await spoken(page)).toEqual([{ text: 'deploy', lang: 'en-GB' }, { text: 'deploy', lang: 'en-US' }]);
@@ -88,7 +88,7 @@ test.describe('Pronunciation buttons (C1, mocked API)', () => {
     await setup(page);
     await page.goto(`/vi/app/review?group=${G}`);
     const front = page.getByRole('group', { name: /Thẻ 1/ });
-    await front.getByRole('button', { name: 'Nghe giọng Mỹ' }).click();
+    await front.getByRole('button', { name: 'US, nghe giọng Mỹ' }).click();
     expect(await spoken(page)).toEqual([{ text: 'deploy', lang: 'en-US' }]);
     await expect(page.getByText('triển khai')).toHaveCount(0);
     // Focus is on the speak button now, where Space reads again (A1-6); flip with the button instead.
@@ -97,7 +97,7 @@ test.describe('Pronunciation buttons (C1, mocked API)', () => {
     await expect(page.getByText('triển khai')).toHaveCount(0);
     await page.getByRole('button', { name: copy.vi.App.review.flip }).click();
     await expect(page.getByText('triển khai')).toBeVisible();
-    await page.getByRole('group', { name: /Thẻ 1/ }).getByRole('button', { name: 'Nghe giọng Anh' }).click();
+    await page.getByRole('group', { name: /Thẻ 1/ }).getByRole('button', { name: 'UK, nghe giọng Anh' }).click();
     expect((await spoken(page)).at(-1)).toEqual({ text: 'deploy', lang: 'en-GB' });
     await expect(page.getByRole('button', { name: 'Nghe câu' })).toHaveCount(2);
   });
@@ -106,9 +106,9 @@ test.describe('Pronunciation buttons (C1, mocked API)', () => {
     await setup(page);
     await page.goto('/vi/app/practice/session');
     await expect(page.getByText('triển khai')).toBeVisible();
-    await expect(page.getByRole('button', { name: /Nghe giọng/ })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: /nghe giọng/i })).toHaveCount(0);
     await page.keyboard.press('1');
-    await page.getByRole('button', { name: 'Nghe giọng Anh' }).click();
+    await page.getByRole('button', { name: 'UK, nghe giọng Anh' }).click();
     expect(await spoken(page)).toEqual([{ text: 'deploy', lang: 'en-GB' }]);
   });
 });

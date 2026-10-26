@@ -590,11 +590,11 @@ describe('PracticeSession pronunciation (đợt cải thiện A, C1)', () => {
     const synth = installSpeech([makeVoice('en-GB'), makeVoice('en-US')]);
     const view_ = renderApp(<PracticeSession />, { routes: routes() });
     await screen.findByText('triển khai');
-    expect(screen.queryByRole('button', { name: /Nghe giọng/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /nghe giọng/i })).not.toBeInTheDocument();
     await userEvent.keyboard('2');
     await screen.findByText('Chưa đúng');
-    const uk = screen.getByRole('button', { name: 'Nghe giọng Anh' });
-    expect(screen.getByRole('button', { name: 'Nghe giọng Mỹ' })).toBeInTheDocument();
+    const uk = screen.getByRole('button', { name: 'UK, nghe giọng Anh' });
+    expect(screen.getByRole('button', { name: 'US, nghe giọng Mỹ' })).toBeInTheDocument();
     await userEvent.click(uk);
     expect(synth.speak).toHaveBeenLastCalledWith(expect.objectContaining({ text: 'deploy', lang: 'en-GB' }));
     uk.focus();
