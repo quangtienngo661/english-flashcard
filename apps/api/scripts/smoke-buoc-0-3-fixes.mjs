@@ -92,16 +92,19 @@ const psqlArgs = ['compose', '-p', 'english-learning', 'exec', '-T', 'postgres',
 function psql(sql) {
   return execFileSync('docker', [...psqlArgs, '-c', sql], { encoding: 'utf8' }).trim();
 }
-/** A psql session in the background (FE29 holds a lock with it); resolves with its exit code and output. */
+/**
+ * A psql session in the background (FE29 holds a lock with it). `sql` runs at once; `finish(sql)` sends the rest and closes the
+ * session; `done` resolves with its exit code and output. psql runs each statement as it arrives on stdin, so the session holds
+ * what `sql` took for as long as the caller needs, however slow `docker compose exec` is to start.
+ */
 function psqlBackground(sql) {
-  return new Promise((resolve) => {
-    const child = spawn('docker', psqlArgs, { stdio: ['pipe', 'pipe', 'pipe'] });
-    let out = '';
-    child.stdout.on('data', (chunk) => (out += chunk));
-    child.stderr.on('data', (chunk) => (out += chunk));
-    child.on('close', (code) => resolve({ code, out: out.trim() }));
-    child.stdin.end(sql);
-  });
+  const child = spawn('docker', psqlArgs, { stdio: ['pipe', 'pipe', 'pipe'] });
+  let out = '';
+  child.stdout.on('data', (chunk) => (out += chunk));
+  child.stderr.on('data', (chunk) => (out += chunk));
+  const done = new Promise((resolve) => child.on('close', (code) => resolve({ code, out: out.trim() })));
+  child.stdin.write(`${sql}\n`);
+  return { done, output: () => out.trim(), finish: (rest) => child.stdin.end(`${rest}\n`) };
 }
 
 async function waitFor(readValue, done, what, timeoutMs = 15_000) {
@@ -232,8 +235,15 @@ async function main() {
     S.lan = { id: me.id, email, token: verified.access_token };
     ok(`Lan registered (${me.id}), verified through the Mailpit OTP; GET /v1/me shows given_name Lan, family_name Nguyen, birth_date 2000-05-17`);
 
-    await wantProblem(api('PATCH', '/v1/me', { token: S.lan.token, body: { birth_date: '1999-01-01' } }), 400, 'validation-failed', 'PATCH birth_date');
-    ok('PATCH /v1/me with birth_date → 400 validation-failed');
+    // Learners may correct their birth date since 5a2bf53 (learner UI design §8.1): the sign-up rule applies, nothing else.
+    const tomorrow = new Date(Date.now() + 2 * 86_400_000).toISOString().slice(0, 10);
+    await wantProblem(api('PATCH', '/v1/me', { token: S.lan.token, body: { birth_date: twelve.toISOString().slice(0, 10) } }), 400,
+      'age-below-minimum', 'PATCH birth_date 12-year-old');
+    await wantProblem(api('PATCH', '/v1/me', { token: S.lan.token, body: { birth_date: tomorrow } }), 400, 'validation-failed', 'PATCH birth_date in the future');
+    check(psql(`SELECT birth_date::text FROM users WHERE id = '${S.lan.id}'`) === '2000-05-17', 'a refused PATCH changed birth_date');
+    const patched = await want(api('PATCH', '/v1/me', { token: S.lan.token, body: { birth_date: '1999-01-01' } }), 200, 'PATCH birth_date');
+    check(patched.birth_date === '1999-01-01', `PATCH /v1/me birth_date: ${JSON.stringify(patched.birth_date)}`);
+    ok('PATCH /v1/me birth_date: 12-year-old → 400 age-below-minimum, future → 400 validation-failed (unchanged); 1999-01-01 → 200, stored');
   });
 
   // ------------------------------------------------------------------------------------------------------------------------
@@ -266,18 +276,32 @@ async function main() {
 
   await step('C1 FE29', 'same key twice while the first request waits on the Learning lock', async () => {
     const L = S.learners;
-    // FE29: a background psql holds the learner's Learning lock for 3 s, so the first request waits inside its handler.
+    // FE29: a background psql holds the learner's Learning lock until the second call has its answer, so the first request
+    // waits inside its handler. The lock is released by the script, not after a fixed time: on a loaded machine
+    // `docker compose exec` can take seconds to start, and a timed hold ran out before the first request was sent.
     const lockKey = `learning.user:${L.l2.id}`;
-    const holder = psqlBackground(`SELECT pg_advisory_lock(hashtextextended('${lockKey}', 0)); SELECT pg_sleep(3); SELECT pg_advisory_unlock(hashtextextended('${lockKey}', 0));`);
-    await waitFor(() => psql(`SELECT count(*) FROM pg_locks WHERE locktype = 'advisory' AND granted AND database = (SELECT oid FROM pg_database WHERE datname = current_database())`), (n) => Number(n) >= 1,
-      'psql to hold the Learning lock', 5_000);
+    const holder = psqlBackground(`SELECT pg_advisory_lock(hashtextextended('${lockKey}', 0));`);
+    try {
+      await waitFor(() => psql(`SELECT count(*) FROM pg_locks WHERE locktype = 'advisory' AND granted AND database = (SELECT oid FROM pg_database WHERE datname = current_database())`), (n) => Number(n) >= 1,
+        'psql to hold the Learning lock', 20_000);
+    } catch (error) {
+      holder.finish('');
+      throw new Error(`${error.message}; psql said: ${holder.output() || '(nothing)'}`);
+    }
     const key = randomUUID();
     const sentAt = Date.now();
     const first = group(L.l2, `FE29 ${run}`, key).then((res) => ({ ...res, ms: Date.now() - sentAt }));
-    await sleep(700);
-    const second = await api('POST', '/v1/groups', { token: L.l2.token, idem: key, body: { name: `FE29 ${run}` } });
+    let second;
+    try {
+      await sleep(700);
+      second = await api('POST', '/v1/groups', { token: L.l2.token, idem: key, body: { name: `FE29 ${run}` } });
+      // Keep the first waiting at least 2 s in all, well inside its transaction's 10 s timeout (groups.service.ts).
+      await sleep(Math.max(0, 2_000 - (Date.now() - sentAt)));
+    } finally {
+      holder.finish(`SELECT pg_advisory_unlock(hashtextextended('${lockKey}', 0));`);
+    }
     const firstRes = await first;
-    const held = await holder;
+    const held = await holder.done;
     check(held.code === 0, `FE29 psql lock holder: ${held.out}`);
     check(second.status === 409 && second.retryAfter === '2', `FE29 second call: ${brief(second)}, Retry-After ${second.retryAfter}`);
     check(firstRes.status === 201 && firstRes.ms > 1_500, `FE29 first call after ${firstRes.ms} ms: ${brief(firstRes)}`);

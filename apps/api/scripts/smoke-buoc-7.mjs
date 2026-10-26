@@ -773,7 +773,7 @@ async function main() {
     const reasons = await want(api('GET', '/v1/practice/report-reasons?kind=ai', { as: L1 }), 200, 'reasons ai');
     const nonAi = await want(api('GET', '/v1/practice/report-reasons?kind=non_ai', { as: L1 }), 200, 'reasons non_ai');
     const codes = reasons.items.map((r) => r.code);
-    check(j(codes) === j(['meaning_wrong', 'graded_wrong', 'hint_wrong', 'other', 'ai_sentence_unnatural', 'ai_more_than_one_answer', 'ai_wrong_meaning']),
+    check(j(codes) === j(['meaning_wrong', 'graded_wrong', 'hint_wrong', 'ai_sentence_unnatural', 'ai_more_than_one_answer', 'ai_wrong_meaning', 'other']),
       `ai reasons ${j(codes)}`);
     check(j(nonAi.items.map((r) => r.code)) === j(['meaning_wrong', 'graded_wrong', 'hint_wrong', 'other']), `non_ai reasons ${j(nonAi.items)}`);
     const chosen = reasons.items.find((r) => r.code === 'ai_more_than_one_answer');
@@ -888,7 +888,9 @@ async function main() {
       code, label_vi: 'x', label_en: 'x', applies_to: 'ai', note_required: false, refundable: false, position: 9 } }), 409, 'report-reason-exists', 'same code');
     await wantProblem(api('GET', '/v1/admin/practice/report-reasons', { as: editor }), 403, 'forbidden', 'editor on reasons');
     let ai = await list('ai');
-    check(ai.at(-1)?.code === code && ai.at(-1).label === 'Lý do thử' && ai.at(-1).note_required === true, `ai list ${j(ai)}`);
+    // Position 8 lands after the seed reasons but before "other", which 939cf0e moved to position 1000 (always last).
+    check(ai.at(-2)?.code === code && ai.at(-2).label === 'Lý do thử' && ai.at(-2).note_required === true && ai.at(-1)?.code === 'other',
+      `ai list ${j(ai)}`);
     check(!(await list('non_ai')).some((r) => r.code === code), 'an ai reason in the non_ai list');
     await wantProblem(report(L1, items.meaning.itemId, { reason: code }), 400, 'validation-failed', 'note_required without a note (B7E72)');
     await want(api('PATCH', `/v1/admin/practice/report-reasons/${code}`, { as: admin, body: { label_vi: 'Lý do đã sửa', applies_to: 'non_ai' } }), 200, 'edit');
@@ -934,7 +936,8 @@ async function main() {
       const t0 = Date.now();
       // The first run holds the request: input saved, unit reserved, provider call running (fake:slow, ~10 s) — the state a server
       // that died after step E leaves behind.
-      first = nextCall(L1, session.id);
+      let firstSettledAt = null;
+      first = nextCall(L1, session.id).finally(() => { firstSettledAt = Date.now(); });
       const [stuck] = await waitFor(() => rows(`SELECT r.id, r.state, (r.ai_input IS NOT NULL),
         (SELECT coalesce(string_agg(u.kind || ':' || u.status, ','), '') FROM usage_records u WHERE u.operation_id = r.id::text),
         (SELECT count(*) FROM ai_operations o WHERE o.operation_id = r.id::text AND o.status = 'running')
@@ -950,7 +953,9 @@ async function main() {
       psql(`UPDATE ai_operations SET deadline_at = now() - interval '1 minute' WHERE operation_id = '${requestId}'`);
       const second = await next(L1, session.id);
       const overlap = Date.now() - t0;
-      check(overlap < 9_500, `the takeover finished ${overlap} ms after the first run started: the runs did not overlap`);
+      // The runs overlap when the first request is still waiting on its provider call as the takeover answers. A fixed bound
+      // (overlap < 9.5 s) failed on a loaded machine: the time also holds this script's own docker/psql calls.
+      check(firstSettledAt === null, `the first run answered ${firstSettledAt - t0} ms after it started, before the takeover (${overlap} ms): the runs did not overlap`);
       check(second.state === 'question' && second.item.type === 'cloze', `takeover next ${j(second)}`);
       const info = itemInfo(second.item.item_id);
       check(info.aiRequestId === requestId && info.aiCharged === true, `question ${j(info)}`);
