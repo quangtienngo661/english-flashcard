@@ -742,7 +742,19 @@
       "alreadyIn": "“{word}” is already in “{group}”.",
       "noGroups": "You have no decks yet.",
       "createFirst": "Create your first deck",
-      "groupFull": "This deck is full. Choose another deck."
+      "groupFull": "This deck is full. Choose another deck.",
+      "mine": {
+        "label": "My words",
+        "aiLabel": "AI suggestion",
+        "aiSource": "Source: AI suggestion. No one has checked this meaning yet, so check it yourself.",
+        "edit": "Edit",
+        "delete": "Delete word",
+        "editTitle": "Edit word",
+        "saveChanges": "Save changes",
+        "saved": "Changes saved.",
+        "deleteTitle": "Delete “{word}”?",
+        "deleteBody": "This word, its saved sentences and its place in every deck will be deleted. This can’t be undone."
+      }
     },
     "addWord": {
       "title": "Which word did you just meet?",
@@ -840,7 +852,22 @@
         "definition": "English definition (for reference, not saved): {text}",
         "caution": "AI suggestions can be wrong. Check before saving.",
         "edit": "Edit and save"
-      }
+      },
+      "edit": {
+        "title": "Edit before saving",
+        "word": "Word",
+        "pos": "Part of speech",
+        "meaning": "Meaning",
+        "level": "Level",
+        "topic": "Topic (optional)",
+        "formOf": "Form of:",
+        "examples": "Examples (up to 2)",
+        "example": "Example {n}",
+        "addExample": "+ Add an example",
+        "exampleHint": "Up to 300 characters each.",
+        "note": "This word keeps the AI suggestion label until you change its meaning, topic or examples."
+      },
+      "recognizedShort": "{kind} of {base}"
     },
     "stages": {
       "s0": "New",

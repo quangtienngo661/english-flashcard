@@ -20,6 +20,7 @@ import { useLookup, type LookupSense, type QuickAddBody, type QuickAddResult } f
 import type { AiLookupResult as AiResult } from './ai-lookup-api';
 import { AiLookupPanel } from './AiLookupPanel';
 import { AiLookupResult } from './AiLookupResult';
+import { cleanExamples, draftFromSuggestion, EditSuggestionForm, type WordDraft } from './EditSuggestionForm';
 import { GroupPicker } from './GroupPicker';
 import { readLastGroup, writeLastGroup } from './last-group';
 
@@ -27,7 +28,7 @@ const SENTENCE_MAX = 300;
 const KINDS = ['third_person', 'present_participle', 'past', 'past_participle', 'plural', 'comparative', 'superlative'] as const;
 type Kind = (typeof KINDS)[number];
 const LEMMA_MAX = 100;
-type View = 'find' | 'manual' | 'picker';
+type View = 'find' | 'manual' | 'edit' | 'picker';
 type Option = { sense: LookupSense; kind: string | null; base: string | null };
 type Failure = { text: string; existing?: string };
 
@@ -48,7 +49,9 @@ export function AddWordSheet({ initialWord = '', onClose }: { initialWord?: stri
   const groups = groupsQuery.data?.items ?? [];
   const { createGroup } = useGroupMutations();
   const [view, setView] = useState<View>('find');
-  const [back, setBack] = useState<'find' | 'manual'>('find');
+  const [back, setBack] = useState<'find' | 'manual' | 'edit'>('find');
+  // K/87: the AI suggestion as the learner edits it before saving.
+  const [draft, setDraft] = useState<WordDraft | null>(null);
   const [word, setWord] = useState(initialWord);
   const [sentence, setSentence] = useState('');
   const [meaning, setMeaning] = useState('');
@@ -60,7 +63,7 @@ export function AddWordSheet({ initialWord = '', onClose }: { initialWord?: stri
   const [fieldError, setFieldError] = useState<string | undefined>();
   const [failure, setFailure] = useState<Failure | null>(null);
   const newDeckName = useRef<string | null>(null);
-  const manualMode = useRef(false);
+  const mode = useRef<'sense' | 'manual' | 'ai'>('sense');
   // K/85–K/86: the AI lookup is offered when Wordmet lacks the word, or on "Không phải nghĩa bạn cần?"; its result belongs to one text.
   const [aiOpen, setAiOpen] = useState(false);
   const [aiResult, setAiResult] = useState<{ text: string; result: AiResult } | null>(null);
@@ -96,13 +99,24 @@ export function AddWordSheet({ initialWord = '', onClose }: { initialWord?: stri
       // The deck exists now: a retry after a failure of the add step saves into it instead of creating it again.
       setUnmatched(null);
     }
-    const body: QuickAddBody =
-      manualMode.current
-        ? {
-            group_id: target!,
-            new_word: { lemma, meaning: meaning.trim(), ...(via ? { form_of: { entry_id: via.base.entry_id, kind: via.kind } } : {}) },
-          }
-        : { group_id: target!, sense_id: chosenSense!.sense.sense_id };
+    const formOf = via ? { form_of: { entry_id: via.base.entry_id, kind: via.kind } } : {};
+    let body: QuickAddBody;
+    if (mode.current === 'ai' && draft) {
+      body = {
+        group_id: target!,
+        new_word: {
+          lemma: draft.lemma.trim(),
+          meaning: draft.meaning.trim(),
+          ...(draft.pos ? { pos: draft.pos } : {}),
+          ...(draft.level ? { level: draft.level } : {}),
+          ...(draft.topic ? { topics: [draft.topic] } : {}),
+          ...formOf,
+          examples: cleanExamples(draft.examples),
+          ai_suggestion: true,
+        },
+      };
+    } else if (mode.current === 'manual') body = { group_id: target!, new_word: { lemma, meaning: meaning.trim(), ...formOf } };
+    else body = { group_id: target!, sense_id: chosenSense!.sense.sense_id };
     if (sentence.trim()) body.sentence = sentence.trim();
     const result = await api.post<QuickAddResult>('/v1/quick-add', body, { idempotencyKey: `${key}:add` });
     return { result, target: target!, targetName };
@@ -112,26 +126,32 @@ export function AddWordSheet({ initialWord = '', onClose }: { initialWord?: stri
     setFailure(null);
     setDeckError(undefined);
     setFieldError(undefined);
-    if (!lemma) return setFieldError(t('wordRequired'));
+    const editing = (view === 'edit' || (view === 'picker' && back === 'edit')) && draft !== null;
+    const saved = editing ? draft.lemma.trim() : lemma;
+    if (!saved) return setFieldError(t('wordRequired'));
+    if (editing && !draft.meaning.trim()) {
+      setView('edit');
+      return setFieldError(t('meaningRequired'));
+    }
     // No known meaning to save (a word Wordmet does not have): the manual form, never a deck created for nothing (review I-1).
-    const manual = view === 'manual' || (view === 'picker' && back === 'manual') || !chosenSense;
+    const manual = !editing && (view === 'manual' || (view === 'picker' && back === 'manual') || !chosenSense);
     if (manual && !meaning.trim()) {
       setView('manual');
       return setFieldError(t('meaningRequired'));
     }
     if (!createName && !deck) return setDeckError(t('deckRequired'));
     newDeckName.current = createName;
-    manualMode.current = manual;
+    mode.current = editing ? 'ai' : manual ? 'manual' : 'sense';
     try {
       const done = await save.submit();
       if (!done) return;
       writeLastGroup(done.target);
-      showToast(t('saved', { word: lemma, group: done.targetName }), 'success');
+      showToast(t('saved', { word: saved, group: done.targetName }), 'success');
       for (const queryKey of [GROUPS_KEY, ['group'], ['items'], ['word'], ['words'], ['lookup']]) void client.invalidateQueries({ queryKey });
       onClose();
     } catch (error) {
       const slug = error instanceof ApiError ? error.problem.slug : '';
-      if (slug === 'private-word-exists') setFailure({ text: t('exists', { word: lemma }), existing: lemma });
+      if (slug === 'private-word-exists') setFailure({ text: t('exists', { word: saved }), existing: saved });
       else if (slug === 'group-full') setFailure({ text: t('groupFull', { group: deckName }) });
       else if (slug === 'private-word-limit-reached') setFailure({ text: t('privateLimit') });
       else if (slug === 'sentence-limit-reached') setFailure({ text: t('sentenceLimit') });
@@ -155,7 +175,7 @@ export function AddWordSheet({ initialWord = '', onClose }: { initialWord?: stri
   }
 
   const openPicker = () => {
-    setBack(view === 'manual' ? 'manual' : 'find');
+    setBack(view === 'manual' || view === 'edit' ? view : 'find');
     setUnmatched(null);
     setView('picker');
   };
@@ -243,6 +263,33 @@ export function AddWordSheet({ initialWord = '', onClose }: { initialWord?: stri
               {t('pickDeck', { group: deckName })}
             </Button>
           )
+        )}
+      </>
+    );
+  } else if (view === 'edit' && draft) {
+    title = t('edit.title');
+    body = (
+      <div className="flex flex-col gap-4">
+        <EditSuggestionForm
+          value={draft}
+          onChange={setDraft}
+          meaningError={fieldError}
+          formOf={via ? t('recognizedShort', { kind: kind(via.kind), base: via.base.lemma }) : undefined}
+        />
+        {deckField}
+        <p className="text-caption text-muted">{t('edit.note')}</p>
+        {failureLine}
+      </div>
+    );
+    footer = (
+      <>
+        <Button variant="quiet" onPress={() => setView('find')}>
+          {tc('cancel')}
+        </Button>
+        {!noDecks && (
+          <Button variant="sticker" isPending={save.busy} onPress={() => void submit()}>
+            {t('saveManual')}
+          </Button>
         )}
       </>
     );
@@ -341,8 +388,9 @@ export function AddWordSheet({ initialWord = '', onClose }: { initialWord?: stri
         <Button
           variant="sticker"
           onPress={() => {
-            setMeaning(aiShown.suggestion.meaning.text);
-            setView('manual');
+            setDraft(draftFromSuggestion(aiShown.suggestion));
+            setFieldError(undefined);
+            setView('edit');
           }}
         >
           {t('result.edit')}

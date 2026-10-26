@@ -368,3 +368,16 @@ Final M4: minor (deferred): English hint header has no count (design §7.1, kept
 - Ruling: [Chọn] một nghĩa có sẵn ở K/86b đưa nghĩa đó về danh sách chọn của tấm (chọn sẵn) để người học chọn nhóm rồi lưu, thay vì lưu ngay — cost: một
   lần bấm nữa.
 - Ruling: [Sửa rồi lưu] ở Task 46 tạm mở form tự nhập có sẵn nghĩa; Task 47 thay bằng "Sửa trước khi lưu".
+
+### Task 47 — Sửa trước khi lưu, trang Từ của tôi (26/10/2026)
+
+- `EditSuggestionForm.tsx` (K/87: từ, loại từ, nghĩa, trình độ, chủ đề, tối đa 2 câu ví dụ; dùng chung cho [Sửa] ở K/88); `AddWordSheet` thêm màn "Sửa trước
+  khi lưu", gửi `new_word{…, examples, ai_suggestion: true}`; `word/MyWordDialogs.tsx` ([Sửa] → `PATCH /v1/my-words/{entry}` chỉ phần đổi; [Xóa từ] hỏi
+  trước → `DELETE`, về Tra từ); `SenseBlock` từ riêng không có định nghĩa tiếng Anh, có [Sửa] [Xóa từ]; `WordPage` nhãn "Từ của tôi", "AI gợi ý" và dòng nguồn.
+  Test `edit-suggestion.test.tsx` 5/5, `my-word.test.tsx` 7/7; web 523/523; lint, typecheck sạch.
+- Ruling: API `lookup/ai` không trả trình độ, nên ô Trình độ để trống (plan ghi "prefilled level") — sai thì cần thêm trường ở API Bước 7.
+- Ruling: "Dạng chia của" chỉ hiện (chỉ đọc) khi Wordmet đã nhận ra từ là dạng chia; không cho gõ tay (API cần `entry_id` + `kind`, phải tra thêm) — cost:
+  người học không tự gắn được dạng chia cho từ AI gợi ý.
+- Ruling: chủ đề chọn một (API nhận mảng ≤ 20); trang từ riêng lấy chủ đề đầu.
+- Ruling: chữ các hộp [Sửa] / [Xóa từ] ("Sửa từ", "Lưu thay đổi", "Xóa từ “rizz”?" + câu cảnh báo) bản chữ chưa có, Claude viết theo mẫu 3.1.
+- Test note: toast nằm trong store chung của module nên còn lại giữa các test cùng file; test đếm theo `getAllByText`.

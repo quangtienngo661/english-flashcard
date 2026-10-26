@@ -57,6 +57,9 @@ function WordBody({ data }: { data: WordPageData }) {
   const range = levelRange(senses);
   const bases = [...new Set(senses.flatMap((s) => (s.form_of ? [s.form_of.lemma] : [])))];
   const onlyForms = senses.every((s) => s.form_of);
+  // K/88: "Từ của tôi" for the learner's own word, "AI gợi ý" while a meaning still comes as the AI suggested it.
+  const mine = senses.some((s) => s.scope === 'private');
+  const aiSuggested = senses.some((s) => s.ai_suggested);
 
   return (
     <section className="flex flex-col gap-5 rounded-card border border-border bg-surface p-5 shadow-ledge-soft md:p-8">
@@ -65,8 +68,11 @@ function WordBody({ data }: { data: WordPageData }) {
         <div className="mb-2 flex gap-1.5">
           {range && <span className="rounded-sm bg-primary-soft px-1.5 py-0.5 text-caption font-semibold text-primary">{range}</span>}
           <span className="rounded-sm bg-neutral-soft px-1.5 py-0.5 text-caption font-semibold text-muted">{t('senses', { count: senses.length })}</span>
+          {mine && <span className="rounded-sm bg-neutral-soft px-1.5 py-0.5 text-caption font-semibold text-ink">{t('mine.label')}</span>}
+          {aiSuggested && <span className="rounded-sm bg-accent-soft px-1.5 py-0.5 text-caption font-semibold text-ink">{t('mine.aiLabel')}</span>}
         </div>
       </div>
+      {aiSuggested && <p className="rounded-inner bg-accent-soft px-3 py-2 text-ui text-ink">{t('mine.aiSource')}</p>}
       {data.inflections.length > 0 && <FormsLine label={t('forms')} base={data.lemma} forms={data.inflections} current={data.lemma} />}
       {bases.map((base) => (
         <BaseForms key={base} base={base} label={t(onlyForms ? 'formOf' : 'alsoFormOf', { base })} current={data.lemma} />
