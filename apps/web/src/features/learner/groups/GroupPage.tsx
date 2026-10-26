@@ -160,6 +160,8 @@ function GroupBody({ detail }: { detail: GroupDetail }) {
           </div>
           {queue.isPending ? (
             <FullScreenSpinner />
+          ) : queue.isError ? (
+            <GroupError error={queue.error} onRetry={() => void queue.refetch()} />
           ) : cards.length === 0 ? (
             <p className="text-body text-muted">{t('empty')}</p>
           ) : (
