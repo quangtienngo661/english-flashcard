@@ -293,6 +293,11 @@
         "future": "Your birth date can’t be after today."
       }
     },
+    "speak": {
+      "uk": "Listen, British",
+      "us": "Listen, American",
+      "sentence": "Listen to the sentence"
+    },
     "auth": {
       "heroTitle": "Review vocabulary on schedule, starting with the words you meet.",
       "heroBody": "Add words wherever you find them. Wordmet reminds you to review at the right time, deck by deck.",

@@ -4,6 +4,7 @@ import { useLocale, useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { useState, type ReactNode } from 'react';
 import { Button } from '@/app-ui/Button';
+import { SpeakSentence } from '@/app-ui/SpeakButtons';
 import { useGroups } from '../groups/groups-api';
 import { highlightWord } from '../groups/highlight';
 import { DeckPickerDialog } from '../add-word/DeckPickerDialog';
@@ -80,7 +81,14 @@ export function SenseBlock({ index, sense, item, forms }: { index: number; sense
             <MeaningText sense={sense} />
           </p>
           {!mine && sense.definition_en && sense.definition_en !== sense.meaning.text && <p className="break-words text-caption text-muted">{sense.definition_en}</p>}
-          {sense.examples[0] && <p className="break-words text-ui text-ink">{highlightWord(sense.examples[0], sense.lemma, forms)}</p>}
+          {sense.examples[0] && (
+            <p className="flex items-start gap-1">
+              <span className="min-w-0 break-words text-ui text-ink">{highlightWord(sense.examples[0], sense.lemma, forms)}</span>
+              <span className="shrink-0">
+                <SpeakSentence text={sense.examples[0]} />
+              </span>
+            </p>
+          )}
           {!item && sentencesButton && <p className="text-caption text-ink">{sentencesButton}</p>}
           {mine && <div className="mt-2 self-start">{learning}</div>}
         </div>

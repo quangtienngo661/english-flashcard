@@ -293,6 +293,11 @@
         "future": "Ngày sinh không thể sau hôm nay."
       }
     },
+    "speak": {
+      "uk": "Nghe giọng Anh",
+      "us": "Nghe giọng Mỹ",
+      "sentence": "Nghe câu"
+    },
     "auth": {
       "heroTitle": "Ôn từ vựng theo lịch, bắt đầu từ chính những từ bạn gặp.",
       "heroBody": "Gặp từ ở đâu cũng thêm được. Wordmet nhắc bạn ôn đúng lúc, theo từng nhóm.",

@@ -9,6 +9,7 @@ import { ApiError } from '@/app-shell/api/problem';
 import { useErrorMessage } from '@/app-shell/api/use-error-message';
 import { useApi } from '@/app-shell/session/session-context';
 import { Button } from '@/app-ui/Button';
+import { SpeakWord } from '@/app-ui/SpeakButtons';
 import { EmptyState, ErrorState, FullScreenSpinner } from '@/app-ui/States';
 import { useAddWord } from '../add-word/add-word-context';
 import type { WordRow } from '../lookup/lookup-api';
@@ -65,6 +66,9 @@ function WordBody({ data }: { data: WordPageData }) {
     <section className="flex flex-col gap-5 rounded-card border border-border bg-surface p-5 shadow-ledge-soft md:p-8">
       <div className="flex flex-wrap items-end gap-x-4 gap-y-2">
         <h1 className="break-all text-display font-extrabold text-ink">{data.lemma}</h1>
+        <div className="mb-2 flex gap-1">
+          <SpeakWord text={data.lemma} />
+        </div>
         <div className="mb-2 flex gap-1.5">
           {range && <span className="rounded-sm bg-primary-soft px-1.5 py-0.5 text-caption font-semibold text-primary">{range}</span>}
           <span className="rounded-sm bg-neutral-soft px-1.5 py-0.5 text-caption font-semibold text-muted">{t('senses', { count: senses.length })}</span>

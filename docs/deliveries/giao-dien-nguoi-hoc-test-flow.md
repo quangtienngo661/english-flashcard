@@ -349,3 +349,31 @@ Kiểm tự động (CI): API `src/identity/**` (A13-1…A13-14), web `auth.test
 `settings.test.tsx`; e2e `e2e/app/m1.spec.ts` (đăng ký → mã → ngôn ngữ → Hôm nay; đăng nhập chưa xác nhận → mã → Hôm nay; axe và không cuộn ngang ở trang
 nhập mã × vi/en × sáng/tối × 1440/390); job `admin-e2e-real` (tài khoản thử xác nhận qua `verify-email` công khai). Script `learner:setup` và các smoke
 `smoke:buoc-*` đăng ký → lấy mã ở Mailpit → `verify-email` công khai.
+
+## Đợt cải thiện A — nút loa
+
+PR `feat/dot-cai-thien-a-speak`; design `docs/superpowers/specs/2026-10-26-dot-cai-thien-a-design.md` §7 (A1-1…A1-7). Giọng là giọng của trình duyệt / máy
+(`speechSynthesis`), không có file âm thanh; e2e không nghe được, phải nghe bằng tai trên máy thật.
+
+| # | Làm | Thấy | Mục |
+|---|---|---|---|
+| 1 | Mở trang từ `deploy` | Cạnh từ: nút **UK** (nếu máy có giọng `en-GB`) và **US**; bấm → nghe "deploy" giọng Anh / Mỹ | A1-1, A1-2 |
+| 2 | Cạnh câu ví dụ của nghĩa | Một nút loa; bấm → nghe câu | §7 |
+| 3 | Câu bạn đã lưu (khối "Bạn đang học", danh sách "câu đã gặp") | Có nút loa **chỉ khi** máy có giọng `en-US` cài trên máy; máy chỉ có giọng qua mạng thì không có nút | A1-5 (A13) |
+| 4 | Đang đọc câu dài, bấm loa khác | Câu cũ dừng, đọc cái mới | A1-4 |
+| 5 | Ôn thẻ: mặt trước | Nút loa ở góc trên phải, ngoài vùng bấm lật; bấm loa → đọc, thẻ không lật | review plan I3 |
+| 6 | Bấm loa (focus ở nút) rồi nhấn Space, phím 2 | Space đọc lại; thẻ không lật, không chấm | A1-6 |
+| 7 | Lật thẻ | Mặt sau: UK · US cạnh từ; loa cạnh ví dụ và câu đã lưu | §7 |
+| 8 | Luyện tập: câu hỏi | Không có nút loa | §7 |
+| 9 | Trả lời xong | UK · US cạnh "từ · nghĩa"; phím 1 khi đang focus nút loa không chấm "Cần ôn lại" | §7 |
+| 10 | Máy / trình duyệt không có giọng tiếng Anh | Không có nút loa nào, trang không lỗi | A1-3 |
+
+Kiểm tự động (CI, job `web`): `e2e/app/cai-thien-a-speak.spec.ts` (`speechSynthesis` giả cài bằng `addInitScript`: UK / US ở trang từ, thẻ ôn hai mặt, kết quả luyện
+tập; Space trên nút loa không lật; axe và không cuộn ngang × vi/en × sáng/tối × 1440/390); unit `src/app-ui/speech.test.ts`, `SpeakButtons.test.tsx`
+(A1-1…A1-7, `getVoices()` rỗng mãi), `word-page.test.tsx`, `review-session.test.tsx`, `practice-session.test.tsx` (chỗ đặt nút, câu đã lưu chỉ giọng trên máy).
+
+Đã chạy thật 26/10/2026 (máy Windows 11 của chủ dự án, trình duyệt nhúng của app Claude, Chromium 152): giọng cài trên máy chỉ có `en-US` (Microsoft David,
+Mark, Zira) và không có `en-GB` → trang từ chỉ có nút **US**; bấm US → sự kiện `start` với "Microsoft David" rồi `end`; câu ví dụ và câu đã lưu có nút; mặt
+trước thẻ ôn: bấm US, Space, phím 2 trên nút không lật, không chấm. Danh sách giọng tới muộn (lần đọc đầu `getVoices()` rỗng, vài giây sau có 12 giọng) —
+đúng trường hợp A1-7. **Chưa kiểm:** Chrome và Edge thật trên Windows (Chrome thường có thêm giọng Google `en-GB` qua mạng, Edge có giọng "Online (Natural)"
+qua mạng — suy luận, chưa thấy trên máy này); nghe bằng tai; Android, iOS.

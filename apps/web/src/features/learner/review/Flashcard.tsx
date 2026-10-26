@@ -3,6 +3,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
 import { useApi } from '@/app-shell/session/session-context';
+import { SpeakSentence, SpeakWord } from '@/app-ui/SpeakButtons';
 import type { Card } from '../groups/groups-api';
 import { highlightWord } from '../groups/highlight';
 
@@ -34,17 +35,23 @@ export function Flashcard({ card, position, total, flipped, onFlip }: { card: Ca
       <div aria-hidden className="absolute inset-0 -rotate-2 rounded-card border-2 border-ink bg-surface" />
       <div className="relative flex min-h-80 flex-col overflow-hidden rounded-card border-2 border-ink bg-surface shadow-ledge md:min-h-72">
         {!flipped ? (
-          <button type="button" onClick={onFlip} className="flex flex-1 flex-col p-5 text-left outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary">
-            <Badges card={card} />
-            <span className="flex flex-1 flex-col items-center justify-center gap-1 py-8 text-center">
-              <span className="break-all text-display font-extrabold text-ink">{content.lemma}</span>
-              <span className="text-ui text-muted">{content.pos}</span>
-            </span>
-            <span className="self-center text-caption text-muted">
-              <span className="hidden md:inline">{t('hintWeb')}</span>
-              <span className="md:hidden">{t('hintPhone')}</span>
-            </span>
-          </button>
+          <>
+            <button type="button" onClick={onFlip} className="flex flex-1 flex-col p-5 text-left outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary">
+              <Badges card={card} />
+              <span className="flex flex-1 flex-col items-center justify-center gap-1 py-8 text-center">
+                <span className="break-all text-display font-extrabold text-ink">{content.lemma}</span>
+                <span className="text-ui text-muted">{content.pos}</span>
+              </span>
+              <span className="self-center text-caption text-muted">
+                <span className="hidden md:inline">{t('hintWeb')}</span>
+                <span className="md:hidden">{t('hintPhone')}</span>
+              </span>
+            </button>
+            {/* Review plan I3: outside the flip button, so a press reads the word and never flips the card. */}
+            <div className="absolute right-3 top-3 flex gap-1">
+              <SpeakWord text={content.lemma} />
+            </div>
+          </>
         ) : (
           <div className="grid flex-1 md:grid-cols-2">
             <div className="flex min-w-0 flex-col gap-2 p-5">
@@ -52,6 +59,9 @@ export function Flashcard({ card, position, total, flipped, onFlip }: { card: Ca
               <p className="flex flex-wrap items-baseline gap-x-2">
                 <span className="break-all text-h3 font-bold text-ink">{content.lemma}</span>
                 <span className="text-ui text-muted">{content.pos}</span>
+                <span className="flex gap-1 self-center">
+                  <SpeakWord text={content.lemma} />
+                </span>
               </p>
               <p className="break-words text-h2 font-bold text-ink">{content.meaning.text}</p>
               {forms.length > 0 && (
@@ -68,15 +78,23 @@ export function Flashcard({ card, position, total, flipped, onFlip }: { card: Ca
               {content.examples[0] && (
                 <div className="flex flex-col gap-1 p-5">
                   <p className="text-caption font-semibold text-muted">{t('example')}</p>
-                  <p className="break-words text-ui text-ink">{highlightWord(content.examples[0], content.lemma, forms)}</p>
+                  <p className="flex items-start gap-1 text-ui text-ink">
+                    <span className="min-w-0 flex-1 break-words">{highlightWord(content.examples[0], content.lemma, forms)}</span>
+                    <span className="shrink-0">
+                      <SpeakSentence text={content.examples[0]} />
+                    </span>
+                  </p>
                 </div>
               )}
               {content.sentences.length > 0 && (
                 <div className="flex flex-col gap-1 bg-accent-soft p-5">
                   <p className="text-caption font-semibold text-ink">{t('seen')}</p>
                   {content.sentences.map((sentence) => (
-                    <p key={sentence} className="break-words text-ui text-ink">
-                      {highlightWord(sentence, content.lemma, forms)}
+                    <p key={sentence} className="flex items-start gap-1 text-ui text-ink">
+                      <span className="min-w-0 flex-1 break-words">{highlightWord(sentence, content.lemma, forms)}</span>
+                      <span className="shrink-0">
+                        <SpeakSentence private text={sentence} />
+                      </span>
                     </p>
                   ))}
                 </div>

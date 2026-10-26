@@ -2,6 +2,7 @@
 
 import { useTranslations } from 'next-intl';
 import { useState, type ReactNode } from 'react';
+import { SpeakSentence } from '@/app-ui/SpeakButtons';
 import { AddSentenceSheet } from '../add-word/AddSentenceSheet';
 import { useGroups } from '../groups/groups-api';
 import { highlightWord } from '../groups/highlight';
@@ -38,7 +39,12 @@ export function LearningBlock({ sense, item, forms }: { sense: PageSense; item: 
         )}
         {sentences[0] && (
           <Row label={t('rowSentence')}>
-            <p className="rounded-inner bg-accent-soft px-3 py-2 text-ink">{highlightWord(sentences[0].text, sense.lemma, forms)}</p>
+            <p className="flex items-start gap-1 rounded-inner bg-accent-soft px-3 py-2 text-ink">
+              <span className="min-w-0 flex-1 break-words">{highlightWord(sentences[0].text, sense.lemma, forms)}</span>
+              <span className="shrink-0">
+                <SpeakSentence private text={sentences[0].text} />
+              </span>
+            </p>
           </Row>
         )}
       </dl>
