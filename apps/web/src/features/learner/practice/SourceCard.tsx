@@ -76,9 +76,10 @@ export function SourceCard({ name, icon: Icon, tone, body, chips, startLabel, on
               <span className="truncate">{startLabel}</span>
             </Button>
           )}
-          <Button variant="quiet" className={startLabel && !reopensAt ? 'shrink-0' : 'w-full'} aria-label={t('customize', { name })} onPress={onCustomize}>
+          {/* Owner 27/10/2026: next to a start it is the icon only; alone (Theo nhóm) it keeps its word. */}
+          <Button variant="quiet" className={startLabel && !reopensAt ? 'shrink-0 px-3' : 'w-full'} aria-label={t('customize', { name })} onPress={onCustomize}>
             <SlidersHorizontal aria-hidden className="size-4" />
-            {t('customizeButton')}
+            {!(startLabel && !reopensAt) && t('customizeButton')}
           </Button>
         </div>
       </div>

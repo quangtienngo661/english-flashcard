@@ -118,11 +118,13 @@ describe('PracticePage (K/51)', () => {
     expect(starts(view.calls)).toHaveLength(0);
   });
 
-  it('each other card shows [Tùy chỉnh] next to its start (owner 27/10/2026)', async () => {
+  it('each other card shows an icon-only [Tùy chỉnh] next to its start (owner 27/10/2026)', async () => {
     renderApp(<PracticePage />, { routes: routes() });
     const card = await screen.findByRole('listitem', { name: 'Từ hay sai' });
     const start = await within(card).findByRole('button', { name: 'Luyện 6 từ' });
-    expect(start.parentElement).toContainElement(within(card).getByRole('button', { name: 'Tùy chỉnh: Từ hay sai' }));
+    const customize = within(card).getByRole('button', { name: 'Tùy chỉnh: Từ hay sai' });
+    expect(start.parentElement).toContainElement(customize);
+    expect(customize).toHaveTextContent('');
   });
 
   it('Từ hay sai: the two newest weak words, "+N từ", and the start sends source weak', async () => {
