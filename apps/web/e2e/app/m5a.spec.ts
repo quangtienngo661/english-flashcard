@@ -176,7 +176,7 @@ for (const scheme of ['light', 'dark'] as const) {
       await page.goto(`/${locale}/app/practice`);
       await page.getByRole('button', { name: /^(Tùy chỉnh|Customize): / }).last().click();
       const dialog = page.getByRole('dialog');
-      await expect(dialog.getByRole('switch')).toBeChecked();
+      await expect(dialog.getByRole('switch', { name: new RegExp(copy[locale].App.practice.customize.aiToggle) })).toBeChecked();
       await noSideScroll(page, `${locale} setup`);
       expect(await seriousViolations(page), `${locale} setup`).toEqual([]);
       await dialog.getByRole('button', { name: /^(Bắt đầu|Start)/ }).click();
@@ -189,10 +189,13 @@ for (const scheme of ['light', 'dark'] as const) {
       await page.getByRole('textbox').fill('deploy');
       await page.getByRole('textbox').press('Enter');
       await expect(page.getByRole('button', { name: /(Câu tiếp|Next)/ })).toBeVisible();
+      await expect(page.getByRole('button', { name: /(Câu tiếp|Next)/ })).toHaveAttribute('data-variant', 'sticker');
+      await expect(page.getByRole('button', { name: /(Cần ôn lại|Still learning)/ })).toHaveAttribute('data-variant', 'quiet');
       await expect(page.getByRole('link', { name: copy[locale].App.practice.session.ai.seeWord })).toBeVisible();
       await noSideScroll(page, `${locale} result`);
       expect(await seriousViolations(page), `${locale} result`).toEqual([]);
       await page.getByRole('button', { name: /(Câu tiếp|Next)/ }).click();
+      expect(requests(page, 'POST', `/v1/practice/items/${uuid(511)}/review`)).toHaveLength(0);
       await expect(page.getByText(copy[locale].App.practice.session.ai.quotaTitle)).toBeVisible();
       await noSideScroll(page, `${locale} ai stopped`);
       expect(await seriousViolations(page), `${locale} ai stopped`).toEqual([]);

@@ -1046,7 +1046,7 @@
       "shortcuts": {
         "title": "Session shortcuts",
         "choose": "Choose an answer",
-        "check": "Check, next question",
+        "check": "Check, then the bold button",
         "hint": "Show a hint",
         "stop": "Stop, see summary"
       },
@@ -1078,11 +1078,11 @@
         "order": "Order",
         "orderSummary": "Order: {order}",
         "sorts": {
-          "level_asc": "Lowest stage first",
-          "overdue_first": "Most overdue first",
-          "new_first": "New words first",
-          "least_practiced": "Least practiced first",
-          "most_wrong": "Most missed first",
+          "level_asc": "Lowest stage",
+          "overdue_first": "Most overdue",
+          "new_first": "New words",
+          "least_practiced": "Least practiced",
+          "most_wrong": "Most missed",
           "queue": "Priority, due, then new",
           "priority_oldest": "Oldest Still learning first",
           "random": "Random"
@@ -1091,6 +1091,9 @@
         "sessionsLeft": "Uses 1 of {remaining, plural, one {# session} other {# sessions}} left today.",
         "aiToggle": "AI question types",
         "aiLine": "This session uses up to {needed, plural, one {# AI credit} other {# AI credits}} for questions · {remaining} left",
+        "ownToggle": "Fill in your saved sentences",
+        "ownLine": "Only for words with a sentence you saved. Uses no AI credits.",
+        "ownReplacesAi": "Fill-in uses your saved sentences instead of AI ones.",
         "quotaTitle": "Not enough AI credits for questions",
         "quotaBody": "This session needs {needed, plural, one {# AI credit} other {# AI credits}} for questions, and you have {remaining}.",
         "quotaRefillDate": "New AI credits for questions arrive on {date}.",
@@ -1166,8 +1169,8 @@
         "stillLearning": "Still learning",
         "know": "Know",
         "next": "Next question",
-        "noteWrong": "Your review schedule doesn't change on its own. Still learning moves {lemma} to the top of its deck, back to the 1-day stage.",
-        "noteRight": "Still learning or Know also moves to the next question.",
+        "noteWrong": "Enter moves {lemma} to the top of its deck, back to stage 1. Next question keeps its schedule.",
+        "noteKnowEnter": "Enter means Know: {lemma} moves up a stage. Not sure? Choose Still learning.",
         "noteHint": "Hints don't change the grading, but a right answer after a hint has no Know button.",
         "phoneHint": "Tap an answer. It's graded right away.",
         "failed": "Your answer wasn't saved. Check your connection and try again.",
@@ -1230,7 +1233,7 @@
           "home": "Back to Practice",
           "again": "Practice another session"
         },
-        "noteRightNoKnow": "Still learning or Next question moves on."
+        "noteNotDue": "{lemma} isn't due yet, so its schedule stays the same."
       },
       "weak": {
         "title": "Weak words",

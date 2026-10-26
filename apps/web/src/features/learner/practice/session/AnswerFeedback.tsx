@@ -7,7 +7,18 @@ import { cn } from '@/lib/cn';
 import { KBD } from './QuestionCard';
 import type { AnswerResult } from './use-practice-session';
 
-/** K/61, K/62: right or not, the word and its meaning; then Cần ôn lại (1), Đã biết (2) when allowed, Câu tiếp (Enter). */
+export function feedbackCase(result: AnswerResult): 1 | 2 | 3 | 4 | null {
+  if (result.result === 'wrong') return result.highlight_needs_review ? 4 : null;
+  if (result.show_known) return 1;
+  return result.hint_level === 0 ? 2 : 3;
+}
+
+/**
+ * Design đợt cải thiện A §6.3: (1) correct + show_known → Know; (2) correct without Know or hints → Next;
+ * (3) correct with hints, without Know → Next; (4) wrong/skipped + highlight_needs_review → Still learning.
+ * Enter follows the bold button. Wrong outside learning offers only Next.
+ * D16 Bước 3: only buttons labelled Đã biết / Cần ôn lại change the schedule.
+ */
 export function AnswerFeedback({ result, onReview, onNext, busy }: {
   result: AnswerResult;
   onReview: (action: 'needs_review' | 'known') => void;
@@ -17,8 +28,9 @@ export function AnswerFeedback({ result, onReview, onNext, busy }: {
   const t = useTranslations('App.practice.session');
   const locale = useLocale();
   const right = result.result === 'correct';
+  const kind = feedbackCase(result);
   const Icon = right ? CircleCheck : CircleX;
-  const note = !right ? t('noteWrong', { lemma: result.correct.lemma }) : result.show_known ? t('noteRight') : result.hint_level > 0 ? t('noteHint') : t('noteRightNoKnow');
+  const noteKey = kind === 1 ? 'noteKnowEnter' : kind === 2 ? 'noteNotDue' : kind === 3 ? 'noteHint' : kind === 4 ? 'noteWrong' : null;
   return (
     <div className="flex flex-col gap-3">
       <div role="status" className={cn('flex gap-3 rounded-inner p-4', right ? 'bg-success-soft' : 'bg-danger-soft')}>
@@ -39,29 +51,32 @@ export function AnswerFeedback({ result, onReview, onNext, busy }: {
           <p className="break-words text-ui text-ink">{result.translation}</p>
         </div>
       )}
-      <div className={cn('grid gap-3', result.show_known ? 'sm:grid-cols-3' : 'sm:grid-cols-2')}>
-        <Button
-          variant={result.highlight_needs_review || !result.show_known ? 'sticker' : 'quiet'}
-          size="lg"
-          className="justify-between"
-          isDisabled={busy}
-          onPress={() => onReview('needs_review')}
-        >
-          {t('stillLearning')}
-          <kbd className={`${KBD} border-current`}>1</kbd>
-        </Button>
-        {result.show_known && (
-          <Button variant={result.highlight_needs_review ? 'quiet' : 'sticker'} size="lg" className="justify-between" isDisabled={busy} onPress={() => onReview('known')}>
-            {t('know')}
-            <kbd className={`${KBD} border-current`}>2</kbd>
+      <div className={cn('grid gap-3', kind !== null && 'sm:grid-cols-2')}>
+        {kind !== null && (
+          <Button
+            variant={kind === 4 ? 'sticker' : 'quiet'}
+            size="lg"
+            className={cn('justify-between', kind === 4 && 'font-bold')}
+            isDisabled={busy}
+            onPress={() => onReview('needs_review')}
+          >
+            {t('stillLearning')}
+            <kbd className={`${KBD} border-current`}>{kind === 4 ? 'Enter' : '1'}</kbd>
           </Button>
         )}
-        <Button variant="quiet" size="lg" className="justify-between" isPending={busy} onPress={onNext}>
-          {t('next')}
-          <kbd className={`${KBD} border-current`}>Enter</kbd>
-        </Button>
+        {kind === 1 ? (
+          <Button variant="sticker" size="lg" className="justify-between font-bold" isDisabled={busy} onPress={() => onReview('known')}>
+            {t('know')}
+            <kbd className={`${KBD} border-current`}>Enter</kbd>
+          </Button>
+        ) : (
+          <Button variant={kind === 4 ? 'quiet' : 'sticker'} size="lg" className={cn('justify-between', kind !== 4 && 'font-bold')} isPending={busy} onPress={onNext}>
+            {t('next')}
+            {kind !== 4 && <kbd className={`${KBD} border-current`}>Enter</kbd>}
+          </Button>
+        )}
       </div>
-      <p className="text-caption text-muted">{note}</p>
+      {noteKey && <p className="text-caption text-muted">{t(noteKey, { lemma: result.correct.lemma })}</p>}
     </div>
   );
 }

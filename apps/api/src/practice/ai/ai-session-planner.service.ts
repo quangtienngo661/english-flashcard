@@ -11,7 +11,6 @@ import { aiNeeded, aiPlanned, markAiSenses } from './ai-plan.js';
 import { findUnseen } from './unseen-questions.js';
 import { WordChecksRepository } from './word-checks.repository.js';
 
-const NEW_TYPES: QuestionType[] = ['cloze', 'meaning_in_sentence', 'mcq_sentence'];
 const OPERATION: Partial<Record<QuestionType, AiOperation>> = {
   cloze: 'generate_cloze', meaning_in_sentence: 'generate_meaning_question', mcq_sentence: 'generate_sentence_mcq',
 };
@@ -34,16 +33,15 @@ export class AiSessionPlanner {
   ) {}
 
   /**
-   * Step 2, before the words are read: any Bước 7 type needs `ai.practice` (B7E1, cloze from saved sentences too); an AI type
-   * also needs AI on and under its caps (B7E5, B7E6) and each chosen operation ready (B7E117). Null when no Bước 7 type is
-   * chosen: the snapshot is not read (Bước 4 unchanged).
+   * Step 2, before the words are read: AI types need `ai.practice` (B7E1), AI on and under its caps (B7E5, B7E6), and each
+   * chosen operation ready (B7E117). An own-sentence cloze is a rule question open to every plan (đợt cải thiện A C3,
+   * changes Bước 7 D11). Null when no AI type is chosen: the snapshot is not read (Bước 4 unchanged).
    */
   async gate(userId: string, types: QuestionType[], clozeSource: ClozeSource | null): Promise<EntitlementsSnapshot | null> {
-    if (!types.some((type) => NEW_TYPES.includes(type))) return null;
+    if (!types.some((type) => isAiType(type, clozeSource))) return null;
     const snapshot = await this.entitlements.snapshot(userId);
     if (!snapshot || !snapshot.features['ai.practice'].allowed) throw refusalProblem({ reason: 'plan-required' });
     const aiTypes = types.filter((type) => isAiType(type, clozeSource));
-    if (aiTypes.length === 0) return snapshot;
     // R19: the snapshot has flags only, so no seconds to wait.
     if (!snapshot.ai_available.enabled || snapshot.ai_available.cap_reached) throw unavailable();
     for (const type of aiTypes) await this.assertReady(OPERATION[type]!);

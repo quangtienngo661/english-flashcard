@@ -80,9 +80,27 @@ describe('AI question types (K/78a–K/81)', () => {
   });
 
   it('K/78a: [Xem đáp án] before any try skips the question', async () => {
-    const r = renderApp(<PracticeSession />, { routes: routes(cloze(), { 'POST /v1/practice/items/it-c/skip': () => Response.json(result({ result: 'wrong', skipped: true })) }) });
+    const r = renderApp(<PracticeSession />, { routes: routes(cloze(), { 'POST /v1/practice/items/it-c/skip': () => Response.json(result({ result: 'wrong', skipped: true, show_known: false, highlight_needs_review: true })) }) });
     await userEvent.click(await screen.findByRole('button', { name: 'Xem đáp án' }));
     await waitFor(() => expect(posts(r.calls, '/v1/practice/items/it-c/skip')).toHaveLength(1));
+  });
+
+  it('A16: [Xem đáp án] gives case 4: Still learning is primary with Enter', async () => {
+    const r = renderApp(<PracticeSession />, { routes: routes(cloze(), {
+      'POST /v1/practice/items/it-c/skip': () => Response.json(result({ result: 'wrong', skipped: true, show_known: false, highlight_needs_review: true })),
+      'POST /v1/practice/items/it-c/review': () => Response.json({ action: 'needs_review', item_id: 'it-c', level: 1 }),
+      [`POST /v1/practice/sessions/${SESSION}/next`]: () => Response.json({ state: 'question', session: view(), item: meaning }),
+    }) });
+    await userEvent.click(await screen.findByRole('button', { name: 'Xem đáp án' }));
+    const primary = await screen.findByRole('button', { name: /Cần ôn lại/ });
+    expect(primary).toHaveAttribute('data-variant', 'sticker');
+    expect(primary.querySelector('kbd')).toHaveTextContent('Enter');
+    expect(screen.getByRole('button', { name: 'Câu tiếp' })).toHaveAttribute('data-variant', 'quiet');
+    expect(screen.queryByRole('button', { name: /Đã biết/ })).not.toBeInTheDocument();
+    await userEvent.keyboard('{Enter}');
+    await screen.findByText('deployed', { selector: 'strong' });
+    expect(posts(r.calls, '/v1/practice/items/it-c/review').map((c) => c.body)).toEqual([{ action: 'needs_review' }]);
+    expect(posts(r.calls, `/v1/practice/sessions/${SESSION}/next`)).toHaveLength(1);
   });
 
   it('K/78b meaning in sentence: the asked word is bold; key 1 chooses the first meaning', async () => {

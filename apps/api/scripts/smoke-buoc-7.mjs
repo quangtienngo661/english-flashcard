@@ -863,16 +863,19 @@ async function main() {
     ok('lemma edit → ai_suggested true; examples edit → new revision (draft_source user), ai_suggested false, 1 example');
   });
 
-  await step('AC11 (B7E1, B7E22): a Free learner opens a session with cloze (either source) or an AI type, and looks a word up with AI', async () => {
+  await step('AC11 (B7E1, B7E22, đợt cải thiện A C3): Free cloze own opens; AI practice and lookup stay gated', async () => {
     const group = { source: 'group', group_id: groups.GL2 };
-    await wantProblem(startSession(L2, { ...group, types: ['type_word', 'cloze'], cloze_source: 'own' }), 403, 'entitlement-required', 'Free, cloze own');
+    const own = await start(L2, { ...group, types: ['type_word', 'cloze'], cloze_source: 'own' });
+    check(own.ai_planned === 0 && own.cloze_source === 'own', `Free own session ${j(own)}`);
+    // No final answer: opening and finishing spends none of Free's 3 daily sessions.
+    await finish(L2, own.id);
     await wantProblem(startSession(L2, { ...group, types: ['cloze'] }), 403, 'entitlement-required', 'Free, cloze ai');
     await wantProblem(startSession(L2, { ...group, types: ['meaning_in_sentence'] }), 403, 'entitlement-required', 'Free, meaning_in_sentence');
     await wantProblem(lookupAi(L2, { text: 'rizz' }), 403, 'entitlement-required', 'Free, lookup');
     check(count(`SELECT count(*) FROM usage_records WHERE user_id = '${L2.id}' AND pool <> 'practice_sessions'`) === 0, 'a Free refusal held a unit');
     const plain = await start(L2, { ...group, types: ['type_word'] });
     await finish(L2, plain.id);
-    ok('cloze own, cloze ai, meaning_in_sentence, AI lookup → 403 entitlement-required; no AI usage row; typing alone still opens');
+    ok('cloze own opens (đợt cải thiện A C3); cloze ai, meaning_in_sentence, AI lookup → 403 entitlement-required; no AI usage row; typing alone still opens');
   });
 
   await step('AC12 (B7E71, B7E72, B7E78): the admin adds, edits and turns off a report reason; L1 sees each list', async () => {

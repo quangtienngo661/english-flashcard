@@ -292,3 +292,33 @@ Kiểm tự động (CI, job `web`): `e2e/app/cai-thien-a-group.spec.ts` (A14-1,
 
 Chạy thật 26/10/2026 (API thật :3120 + worker, Postgres, Redis, Mailpit; DB mới; người học Pro qua `learner:setup`; app dev :3121): bước 1, 2, 3 (phím N), 4
 (`train`), 6 (Kinh doanh · B1, 113 từ vào IT, `GET /v1/groups` chỉ còn nhóm IT) đúng như bảng. Chưa chạy tay: bước 5, 7–11 (có unit / e2e).
+
+## Đợt cải thiện A — Luyện tập
+
+PR `fix/cloze-reveal-before-try` (#133) và `feat/dot-cai-thien-a-practice`; design `docs/superpowers/specs/2026-10-26-dot-cai-thien-a-design.md` §6.
+Dữ liệu: `pnpm learner:setup -- --admin <email> --learner <email>` (không `--plan`: người học gói Miễn phí). Trong app: tạo nhóm "IT", thêm `deploy` kèm câu
+"We deploy the app every Friday." (ô "Câu bạn gặp" của tấm Thêm từ) và `computer` không kèm câu.
+
+| # | Làm | Thấy | Mục design |
+|---|---|---|---|
+| 1 | Luyện tập → ⋯ Tùy chỉnh ở "Theo nhóm" | Thứ tự (Thêm tùy chọn): "Ngăn thấp", "Quá hạn lâu nhất", "Từ mới", "Lâu chưa luyện", "Sai nhiều nhất" (không còn chữ "trước") | §6.2 (C15) |
+| 2 | Cùng hộp, gói Miễn phí | Dưới "Kiểu câu có AI" (khóa) có công tắc **"Điền từ vào câu bạn đã lưu"** bấm được + dòng "Chỉ dùng cho từ có câu bạn đã lưu. Không tốn lượt AI." | §6.4 (C3) |
+| 3 | Bật công tắc đó, chọn nhóm IT, Bắt đầu | Phiên mở (không 403); có câu "Điền từ vào câu" với "We ___ the app every Friday."; câu này không có nút "Báo lỗi", không có bản dịch | A3-1, A3-6 |
+| 4 | Chỉ bật công tắc (bỏ tick cả ba kiểu thường), nhóm chỉ có từ không kèm câu | Thông báo có sẵn "không có từ nào hợp với kiểu câu đã chọn" (409 `no-word-fits-types`) | A3-2 |
+| 5 | Ở câu điền từ, bấm "Xem đáp án" **trước** khi gõ | Hiện "Chưa đúng" + đáp án (trước đây: lỗi 409); Lịch sử ghi câu đó là sai, câu trả lời "—" | §6.1 (PR #133) |
+| 6 | Trả lời đúng một từ mới / đến hạn | Hai nút: [Cần ôn lại 1] · **[Đã biết Enter]**; ghi chú "Nhấn Enter là Đã biết: … lên một ngăn. Chưa chắc thì bấm Cần ôn lại."; Enter → sang câu tiếp, từ lên một ngăn | A16-1 |
+| 7 | Trả lời đúng một từ chưa đến hạn | [Cần ôn lại 1] · **[Câu tiếp Enter]**; ghi chú "… chưa tới hạn ôn nên lịch ôn giữ nguyên." | A16-4 |
+| 8 | Dùng gợi ý rồi trả lời đúng | [Cần ôn lại 1] · **[Câu tiếp Enter]**; ghi chú gợi ý như cũ | A16-4 (TH3) |
+| 9 | Trả lời sai (hoặc "Xem đáp án") | **[Cần ôn lại Enter]** · [Câu tiếp]; ghi chú "Nhấn Enter để đưa … lên đầu nhóm, về ngăn 1. Câu tiếp: giữ lịch ôn." Enter → từ về ngăn 1, ưu tiên; bấm [Câu tiếp] → lịch giữ | A16-2, A16-3 |
+| 10 | Ở màn kết quả, Tab tới nút phụ rồi Enter | Kích hoạt nút đang focus, không phải nút chính | A16-7 |
+| 11 | Giữ Enter lâu ở màn kết quả | Chỉ một lần chấm + một lần sang câu | Review Focus 4 |
+| 12 | Gói Pro: bật "Kiểu câu có AI" và công tắc mới | Ô "Điền từ" của AI tắt, mờ + dòng "Điền từ dùng câu bạn đã lưu thay cho câu AI."; tắt công tắc mới → ô trở lại như trước | A3-3 |
+| 13 | Khung "Phím tắt trong phiên" ở trang Luyện tập | Enter: "Kiểm tra, rồi nút đậm" | review plan M7 |
+
+Kiểm tự động (CI, job `web`): `e2e/app/cai-thien-a-practice.spec.ts` (công tắc mới ở gói Miễn phí và Pro, thân request có `cloze_source: 'own'`; axe và không cuộn
+ngang × vi/en × sáng/tối × 1440/390), `e2e/app/m4.spec.ts` (TH1, TH4 với axe và không cuộn ngang); unit `practice-session.test.tsx` (A16-1…A16-7, giữ Enter),
+`ai-questions.test.tsx` (Xem đáp án → TH4), `ai-toggle.test.tsx` (A3-1…A3-3); API unit `answers.service.spec.ts` (bỏ qua trước lần thử),
+`ai-session-planner.service.spec.ts`, `sessions.service.spec.ts`, `sessions.ai.spec.ts` (A3-1…A3-4); smoke `smoke-buoc-7.mjs` AC11 (Miễn phí mở được phiên `own`).
+
+Đã chạy thật 26/10/2026 (API + worker + Postgres + Redis + Mailpit, DB mới, gói Miễn phí, app người học ở chế độ dev): bước 2, 3, 4 (qua API), 5, 6, 7, 9, 13.
+Chưa chạy thật: bước 8, 10, 11, 12 (có unit / e2e).

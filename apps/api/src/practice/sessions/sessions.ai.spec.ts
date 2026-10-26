@@ -38,7 +38,7 @@ type Options = {
   aiStopped?: string | null; target?: number;
   /** What the generator does with a request. */
   generate?: (request: PracticeAiRequest) => GenerateOutcome | 'ready-free' | Promise<GenerateOutcome | 'ready-free'>;
-  aiAvailable?: (senseId: string) => QuestionType[]; ownClozeAllowed?: boolean; prefetch?: number;
+  aiAvailable?: (senseId: string) => QuestionType[]; prefetch?: number;
 };
 
 function setup(options: Options) {
@@ -170,7 +170,7 @@ function setup(options: Options) {
     },
   };
   const entitlements = {
-    check: async (_u: string, feature: string) => ({ allowed: feature !== 'ai.practice' || options.ownClozeAllowed !== false }),
+    check: vi.fn(async (_u: string, _feature: string) => ({ allowed: true })),
     confirm: vi.fn(async () => { counters.confirm++; return { state: 'confirmed' }; }),
   };
   const learning = {
@@ -188,7 +188,7 @@ function setup(options: Options) {
     content as unknown as ContentService);
   const answerLast = () => { items.at(-1)!.result = 'correct'; };
   const questionOf = (item: PracticeSessionItem) => questions.find((q) => q.id === item.questionId)!;
-  return { service, session, items, requests, questions, counters, generator, answerLast, questionOf, question };
+  return { service, session, items, requests, questions, counters, generator, entitlements, answerLast, questionOf, question };
 }
 
 const failed = (failure: AiFailure): GenerateOutcome => ({ state: 'failed', failure });
@@ -322,13 +322,15 @@ describe('next with AI slots (design §6.3, §6.5)', () => {
     expect(t.generator.run).not.toHaveBeenCalled();
   });
 
-  it('B7E123: cloze from saved sentences is left out when ai.practice is no longer allowed', async () => {
-    const t = setup({ types: ['type_word', 'cloze'], clozeSource: 'own', senseIds: ['s1'], ownClozeAllowed: false });
+  it('A3-4: own cloze stays after ai.practice is lost mid-session', async () => {
+    const t = setup({ types: ['type_word', 'cloze'], clozeSource: 'own' });
     await t.service.next(learner, 'sess-1');
-    expect(t.counters.built).toEqual([['type_word']]);
-    const allowed = setup({ types: ['type_word', 'cloze'], clozeSource: 'own', senseIds: ['s1'] });
-    await allowed.service.next(learner, 'sess-1');
-    expect(allowed.counters.built).toEqual([['type_word', 'cloze']]);
+    t.answerLast();
+    t.entitlements.check.mockImplementation(async (_u, feature) => ({ allowed: feature !== 'ai.practice' }));
+    await t.service.next(learner, 'sess-1');
+    expect(t.counters.built).toEqual([['type_word', 'cloze'], ['type_word', 'cloze']]);
+    expect(t.generator.run).not.toHaveBeenCalled();
+    expect(t.counters.confirm).toBe(0);
   });
 
   it('round ≥ 2 never exceeds ai_planned: an AI-only session with its budget spent finishes instead of asking AI', async () => {

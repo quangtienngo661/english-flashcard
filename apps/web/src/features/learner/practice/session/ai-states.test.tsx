@@ -180,6 +180,9 @@ describe('AI states in the practice session (K/73–K/76, E29–E33, D11)', () =
     expect(screen.queryByRole('link', { name: 'Xem lại từ trong Từ của tôi' })).toBeNull();
     await userEvent.keyboard('1');
     expect(await screen.findByRole('link', { name: 'Xem lại từ trong Từ của tôi' })).toHaveAttribute('href', '/vi/app/word?w=rizz');
+    expect(screen.getByRole('button', { name: /Đã biết/ })).toHaveAttribute('data-variant', 'sticker');
+    expect(screen.getByRole('button', { name: /Cần ôn lại/ })).toHaveAttribute('data-variant', 'quiet');
+    expect(screen.queryByRole('button', { name: /Câu tiếp/ })).not.toBeInTheDocument();
   });
 
   it('review I1: a /next that fails while preparing leaves "Đang tạo câu…" for the general error with [Thử lại]', async () => {

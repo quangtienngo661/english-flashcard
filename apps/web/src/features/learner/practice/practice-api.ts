@@ -10,7 +10,7 @@ export type Source = 'today' | 'group' | 'weak' | 'priority' | 'all';
 /** The three question types without AI (Bước 4); the AI ones come with M5a. */
 export const RULE_TYPES = ['mcq_definition', 'true_false_definition', 'type_word'] as const;
 export type RuleType = (typeof RULE_TYPES)[number];
-/** The three AI question types (Bước 7; Trial and Pro). `cloze` here is always a sentence written by AI (D10: no "Câu lấy từ đâu?"). */
+/** The AI switch's three question types (Bước 7; Trial and Pro). Its `cloze` is AI-written; the own-sentences switch sends `cloze_source: 'own'` (đợt cải thiện A, C3). */
 export const AI_TYPES = ['cloze', 'meaning_in_sentence', 'mcq_sentence'] as const;
 export type AiType = (typeof AI_TYPES)[number];
 export type QuestionType = RuleType | AiType;
@@ -37,6 +37,7 @@ export type StartBody = {
   group_filter?: GroupFilter;
   sort?: Sort;
   types: QuestionType[];
+  cloze_source?: 'own';
   prompt_style?: PromptStyle;
   count?: number;
 };
