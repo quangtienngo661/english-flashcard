@@ -80,12 +80,13 @@ describe('AddWordSheet (K/40–K/42c, M/50–M/52c)', () => {
         'GET /v1/lookup?q=rizz': () => (++lookups === 1 ? problem(500, 'internal-error') : Response.json({ senses: [], via_inflection: [] })),
       }),
     });
-    const alert = await screen.findByRole('alert');
-    expect(within(alert).getByRole('button', { name: 'Thử lại' })).toBeInTheDocument();
+    // The toast region may hold an alert from an earlier test, so the error block is found through its button.
+    const retry = await screen.findByRole('button', { name: 'Thử lại' });
+    expect(retry.closest('[role="alert"]')).not.toBeNull();
     expect(screen.getByRole('button', { name: 'Tự nhập nghĩa' })).toBeInTheDocument();
-    await userEvent.click(within(alert).getByRole('button', { name: 'Thử lại' }));
+    await userEvent.click(retry);
     expect(await screen.findByText('Wordmet chưa có từ “rizz”. Tự nhập nghĩa để lưu.')).toBeInTheDocument();
-    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Thử lại' })).not.toBeInTheDocument();
   });
 
   it('manual meaning needs only the meaning', async () => {

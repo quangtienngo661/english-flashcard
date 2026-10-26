@@ -13,6 +13,7 @@ import { Button } from '@/app-ui/Button';
 import { Dialog } from '@/app-ui/Dialog';
 import { Select } from '@/app-ui/Select';
 import { TextField } from '@/app-ui/TextField';
+import { ErrorState } from '@/app-ui/States';
 import { showToast } from '@/app-ui/Toast';
 import { cn } from '@/lib/cn';
 import { GROUPS_KEY, useGroupMutations, useGroupQueue, useGroups } from '../groups/groups-api';
@@ -352,6 +353,7 @@ export function AddWordSheet({ initialWord = '', lockedGroupId, onClose }: { ini
         {sentenceField}
         {lemma && lookup.isPending && <p className="text-caption text-muted">{t('lookingUp')}</p>}
         {lookup.isSuccess && options.length === 0 && !aiShown && <p className="rounded-inner bg-canvas p-3 text-ui text-ink">{t('noMatch', { word: lemma })}</p>}
+        {lemma && lookup.isError && <ErrorState message={errorText(lookup.error)} onRetry={() => void lookup.refetch()} />}
         {aiShown ? (
           <AiLookupResult
             text={lemma}
@@ -447,9 +449,9 @@ export function AddWordSheet({ initialWord = '', lockedGroupId, onClose }: { ini
         <Button variant="ghost" onPress={onClose}>
           {tc('cancel')}
         </Button>
-        {options.length > 0 && (
+        {(options.length > 0 || (lemma && lookup.isError)) && (
           <Button variant="quiet" onPress={() => setView('manual')}>
-            {t('manualButton')}
+            {options.length > 0 ? t('manualButton') : t('ai.manual')}
           </Button>
         )}
         {chosenSense && !noDecks && (
