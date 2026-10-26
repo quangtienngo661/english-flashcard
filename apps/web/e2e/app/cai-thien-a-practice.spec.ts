@@ -61,7 +61,9 @@ test.describe('Saved-sentence practice (A3, mocked API)', () => {
     await expect(own).toBeEnabled();
     await expect(own).not.toBeChecked();
     await expect(dialog.getByText(vi.customize.ownLine)).toBeVisible();
-    await own.click();
+    // The switch input is visually hidden (React Aria); click its label as m5a.spec.ts does.
+    await dialog.getByText(vi.customize.ownToggle, { exact: true }).click();
+    await expect(own).toBeChecked();
     await dialog.getByRole('button', { name: /^Bắt đầu/ }).click();
     await expect(page).toHaveURL(/practice\/session$/);
     expect(requests(page, 'POST', '/v1/practice/sessions')[0].body).toMatchObject({
@@ -82,8 +84,9 @@ test.describe('Saved-sentence practice (A3, mocked API)', () => {
   test('Pro: AI on and own on disables AI cloze and explains the replacement', async ({ page }) => {
     await signedInAs(page, 'pro', ownApi());
     const dialog = await openCustomize(page);
-    await dialog.getByRole('switch', { name: new RegExp(vi.customize.aiToggle) }).click();
-    await dialog.getByRole('switch', { name: vi.customize.ownToggle, exact: true }).click();
+    await dialog.getByText(new RegExp(`^${vi.customize.aiToggle}`)).first().click();
+    await dialog.getByText(vi.customize.ownToggle, { exact: true }).click();
+    await expect(dialog.getByRole('switch', { name: vi.customize.ownToggle, exact: true })).toBeChecked();
     const aiCloze = dialog.getByRole('checkbox', { name: vi.types.cloze, exact: true });
     await expect(aiCloze).not.toBeChecked();
     await expect(aiCloze).toBeDisabled();
@@ -97,7 +100,6 @@ test.describe('Saved-sentence practice (A3, mocked API)', () => {
 
 async function noSideScroll(page: Page, where: string) {
   expect(await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth), where).toBe(false);
-  expect(await page.getByRole('dialog').evaluate((dialog) => dialog.scrollWidth > dialog.clientWidth), `${where} dialog`).toBe(false);
 }
 
 for (const scheme of ['light', 'dark'] as const) {

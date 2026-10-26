@@ -11,10 +11,12 @@ import { useApi } from '@/app-shell/session/session-context';
 import { useSubmitOnce } from '@/app-shell/use-submit-once';
 import { Button } from '@/app-ui/Button';
 import { Dialog } from '@/app-ui/Dialog';
+import { Select } from '@/app-ui/Select';
 import { TextField } from '@/app-ui/TextField';
 import { showToast } from '@/app-ui/Toast';
 import { cn } from '@/lib/cn';
-import { GROUPS_KEY, useGroupMutations, useGroups } from '../groups/groups-api';
+import { GROUPS_KEY, useGroupMutations, useGroupQueue, useGroups } from '../groups/groups-api';
+import { LEVELS, useTopics } from '../lookup/lookup-api';
 import { wordHref } from '../word/word-api';
 import { useLookup, type LookupSense, type QuickAddBody, type QuickAddResult } from './add-word-api';
 import type { AiLookupResult as AiResult } from './ai-lookup-api';
@@ -30,13 +32,13 @@ type Kind = (typeof KINDS)[number];
 const LEMMA_MAX = 100;
 type View = 'find' | 'manual' | 'edit' | 'picker';
 type Option = { sense: LookupSense; kind: string | null; base: string | null };
-type Failure = { text: string; existing?: string };
+type Failure = { text: string; existing?: string; deckGone?: boolean };
 
 /**
  * K/40–K/42c, M/50–M/52c: the word just met (and the sentence), what Wordmet knows of it (went → go), the deck to save to
  * (last used by default, E21), or a meaning typed by hand. One `POST /quick-add` [I] per press.
  */
-export function AddWordSheet({ initialWord = '', onClose }: { initialWord?: string; onClose: () => void }) {
+export function AddWordSheet({ initialWord = '', lockedGroupId, onClose }: { initialWord?: string; lockedGroupId?: string; onClose: () => void }) {
   const t = useTranslations('App.addWord');
   const tk = useTranslations('App.addWord.kinds');
   const kind = (k: string) => ((KINDS as readonly string[]).includes(k) ? tk(k as Kind) : k);
@@ -47,8 +49,11 @@ export function AddWordSheet({ initialWord = '', onClose }: { initialWord?: stri
   const errorText = useErrorMessage();
   const groupsQuery = useGroups();
   const groups = groupsQuery.data?.items ?? [];
+  const queue = useGroupQueue(lockedGroupId ?? null, 'all');
+  const inDeck = new Set(queue.data?.cards.map((card) => card.sense_id) ?? []);
   const { createGroup } = useGroupMutations();
   const [view, setView] = useState<View>('find');
+  const [byTopic, setByTopic] = useState(false);
   const [back, setBack] = useState<'find' | 'manual' | 'edit'>('find');
   // K/87: the AI suggestion as the learner edits it before saving.
   const [draft, setDraft] = useState<WordDraft | null>(null);
@@ -81,20 +86,22 @@ export function AddWordSheet({ initialWord = '', onClose }: { initialWord?: stri
     fromAi && !looked.some((o) => o.sense.sense_id === fromAi.sense_id) ? [{ sense: fromAi, kind: null, base: null }, ...looked] : looked;
   const aiShown = aiResult !== null && aiResult.text === lemma ? aiResult.result : null;
   const via = lookup.data?.via_inflection[0];
-  const chosenSense = options.find((o) => o.sense.sense_id === picked) ?? options[0];
+  // A14-2: wait for the deck queue before offering a meaning already saved there.
+  const pickable = lockedGroupId && queue.isPending ? [] : options.filter((o) => !inDeck.has(o.sense.sense_id));
+  const chosenSense = pickable.find((o) => o.sense.sense_id === picked) ?? pickable[0];
   // That meaning is saved, and named, as its own word ("run"), not as the text typed ("runnning").
   const senseWord = fromAi && chosenSense?.sense.sense_id === fromAi.sense_id ? fromAi.lemma : lemma;
   // The form Wordmet recognised belongs to the typed text: an AI word with another spelling is not that form (review I2).
   const draftFormOf = via && draft !== null && draft.lemma.trim() === lemma ? via : undefined;
-  const deck = chosenDeck ?? (groups.some((g) => g.id === lastGroup) ? lastGroup : null);
+  const deck = lockedGroupId ?? chosenDeck ?? (groups.some((g) => g.id === lastGroup) ? lastGroup : null);
   const deckName = groups.find((g) => g.id === deck)?.name ?? '';
-  const noDecks = groupsQuery.isSuccess && groups.length === 0;
+  const noDecks = !lockedGroupId && groupsQuery.isSuccess && groups.length === 0;
 
   // The body is built from what the learner sees when they press; a deck typed in the picker is created first (K/42c).
   const save = useSubmitOnce(async (key) => {
     let target = deck;
     let targetName = deckName;
-    if (newDeckName.current) {
+    if (!lockedGroupId && newDeckName.current) {
       const created = await createGroup(newDeckName.current, `${key}:deck`);
       target = created.id;
       targetName = created.name;
@@ -157,6 +164,17 @@ export function AddWordSheet({ initialWord = '', onClose }: { initialWord?: stri
       for (const queryKey of [GROUPS_KEY, ['group'], ['items'], ['word'], ['words'], ['lookup']]) void client.invalidateQueries({ queryKey });
       onClose();
     } catch (error) {
+      // A14-6: quick-add also returns 404 for a sense that is no longer visible.
+      if (lockedGroupId && error instanceof ApiError && error.problem.status === 404) {
+        try {
+          await api.get(`/v1/groups/${lockedGroupId}`);
+        } catch (groupError) {
+          if (groupError instanceof ApiError && groupError.problem.status === 404) {
+            setFailure({ text: t('deckGone'), deckGone: true });
+            return;
+          }
+        }
+      }
       const slug = error instanceof ApiError ? error.problem.slug : '';
       if (slug === 'private-word-exists') setFailure({ text: t('exists', { word: saved }), existing: saved });
       else if (slug === 'group-full') setFailure({ text: t('groupFull', { group: deckName }) });
@@ -187,7 +205,9 @@ export function AddWordSheet({ initialWord = '', onClose }: { initialWord?: stri
     setView('picker');
   };
 
-  const deckField = noDecks ? (
+  const deckField = lockedGroupId ? (
+    <p className="text-ui text-ink">{t('lockedDeck', { name: deckName })}</p>
+  ) : noDecks ? (
     <div className="flex flex-col items-start gap-2 rounded-inner bg-canvas p-3">
       <p className="text-ui text-ink">{t('noDecks')}</p>
       <Button variant="quiet" onPress={openPicker}>
@@ -233,7 +253,7 @@ export function AddWordSheet({ initialWord = '', onClose }: { initialWord?: stri
   let title = t('title');
   let body: ReactNode;
   let footer: ReactNode;
-  if (view === 'picker') {
+  if (view === 'picker' && !lockedGroupId) {
     title = t('pickerTitle');
     body = (
       <GroupPicker
@@ -351,14 +371,19 @@ export function AddWordSheet({ initialWord = '', onClose }: { initialWord?: stri
               <p className="text-ui font-semibold text-ink">{t('formOf', { word: lemma, kind: kind(via.kind), base: via.base.lemma })}</p>
             )}
             {options.map((o) => (
-              <label key={o.sense.sense_id} className="flex cursor-pointer items-start gap-2 py-1">
-                <input
-                  type="radio"
-                  name="add-word-sense"
-                  checked={chosenSense?.sense.sense_id === o.sense.sense_id}
-                  onChange={() => setPicked(o.sense.sense_id)}
-                  className="mt-1 size-4 shrink-0 accent-primary"
-                />
+              <label key={o.sense.sense_id} className={cn('flex items-start gap-2 py-1', !inDeck.has(o.sense.sense_id) && 'cursor-pointer')}>
+                {inDeck.has(o.sense.sense_id) ? (
+                  <span className="text-caption text-muted">{t('alreadyIn')}</span>
+                ) : (
+                  <input
+                    type="radio"
+                    name="add-word-sense"
+                    checked={chosenSense?.sense.sense_id === o.sense.sense_id}
+                    disabled={!!lockedGroupId && queue.isPending}
+                    onChange={() => setPicked(o.sense.sense_id)}
+                    className="mt-1 size-4 shrink-0 accent-primary"
+                  />
+                )}
                 <span className="min-w-0 break-words text-ui text-ink">
                   <span className="font-semibold">{o.sense.lemma}</span> <span className="text-caption text-muted">{[o.sense.pos, o.sense.level].filter(Boolean).join(', ')}</span>
                   <span className="block">{o.sense.meaning.text}</span>
@@ -381,8 +406,22 @@ export function AddWordSheet({ initialWord = '', onClose }: { initialWord?: stri
             onResult={(result) => setAiResult({ text: lemma, result })}
           />
         )}
-        {deckField}
+        {!lockedGroupId && deckField}
           </>
+        )}
+        {lockedGroupId && deckField}
+        {lockedGroupId && (
+          <div className="flex min-w-0 flex-col gap-3">
+            <button
+              type="button"
+              aria-expanded={byTopic}
+              onClick={() => setByTopic((open) => !open)}
+              className="min-h-control-touch self-start text-left text-ui font-semibold text-primary underline underline-offset-2 outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            >
+              {t('byTopic')}
+            </button>
+            {byTopic && <TopicFields groupId={lockedGroupId} />}
+          </div>
         )}
         {failureLine}
       </div>
@@ -413,7 +452,7 @@ export function AddWordSheet({ initialWord = '', onClose }: { initialWord?: stri
             {t('manualButton')}
           </Button>
         )}
-        {options.length > 0 && !noDecks && (
+        {chosenSense && !noDecks && (
           <Button variant="sticker" isPending={save.busy} onPress={() => void submit()}>
             {t('save', { word: senseWord })}
           </Button>
@@ -422,9 +461,34 @@ export function AddWordSheet({ initialWord = '', onClose }: { initialWord?: stri
     );
   }
 
+  if (failure?.deckGone) footer = <Button variant="quiet" onPress={onClose}>{tc('close')}</Button>;
+
   return (
     <Dialog isOpen onOpenChange={(open) => !open && onClose()} title={title} isDismissable={!save.busy} footer={footer}>
       {body}
     </Dialog>
+  );
+}
+
+/** A14-7: leave this page's sheet for the topic picker, carrying its deck. */
+function TopicFields({ groupId }: { groupId: string }) {
+  const t = useTranslations('App');
+  const locale = useLocale();
+  const topics = useTopics();
+  const [topic, setTopic] = useState('');
+  const [level, setLevel] = useState('');
+  return (
+    <div className="flex min-w-0 flex-col gap-3">
+      <Select label={t('lookup.topicLabel')} value={topic} onChange={setTopic} items={(topics.data?.items ?? []).map((item) => ({ id: item.code, label: item.name }))} placeholder="—" />
+      <Select label={t('addWord.edit.level')} value={level} onChange={setLevel} items={LEVELS.map((id) => ({ id, label: id }))} placeholder="—" />
+      {topic && level && (
+        <Link
+          href={`/${locale}/app/topic?code=${encodeURIComponent(topic)}&level=${level}&group=${groupId}`}
+          className="flex min-h-control-touch items-center justify-center rounded-inner border-2 border-border-strong bg-surface px-4 text-ui font-semibold text-ink outline-none hover:bg-primary-soft focus-visible:ring-2 focus-visible:ring-primary"
+        >
+          {t('addWord.seeWords')}
+        </Link>
+      )}
+    </div>
   );
 }
