@@ -142,6 +142,19 @@ test.describe('M5b flows (mocked API)', () => {
   });
 });
 
+test('review M4: at 390px the locked [Look up with AI] and [Enter a meaning] neither overlap nor spill their text (Free, English)', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await signedInAs(page, 'free', m5bApi(), { native_language: 'en' });
+  const sheet = await openSheet(page, 'en');
+  const ai = sheet.getByRole('button', { name: new RegExp(copy.en.App.addWord.ai.button) });
+  const manual = sheet.getByRole('button', { name: copy.en.App.addWord.ai.manual });
+  const a = (await ai.boundingBox())!;
+  const b = (await manual.boundingBox())!;
+  const overlap = a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
+  expect(overlap).toBe(false);
+  for (const button of [ai, manual]) expect(await button.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true);
+});
+
 async function noSideScroll(page: Page, where: string) {
   expect(await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth), where).toBe(false);
 }
