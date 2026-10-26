@@ -20,7 +20,7 @@ Luật hỏi vẫn là "chủ dự án trả lời trước, Claude đề xuất
 |---|---|
 | App người học nằm trong **`apps/web`** (cùng codebase với landing), **cùng domain `wordmet.com`**, dưới một đường dẫn chung (dự kiến `/app`; tên và tiền tố ngôn ngữ chốt trong plan). Không dùng `app.` nữa (đổi L8) | Chốt 16/10 |
 | Trang người học **chạy hoàn toàn ở trình duyệt** (client-side): cookie `refresh_token` nằm trên host API (`SameSite=Strict`, `path=/v1/auth`, xem `session-transport.ts`), server của `wordmet.com` không biết ai đang đăng nhập | Chốt 16/10 |
-| Landing **không tải script bên thứ ba**; cả domain có Content-Security-Policy (hiện chưa có CSP, đã kiểm) | Chốt 16/10 |
+| Landing **không tải script bên thứ ba**, **trừ Cloudflare Web Analytics** (beacon Cloudflare tự chèn, ở mọi trang kể cả `/app`; D22 design giao diện người học, 22/10); cả domain có Content-Security-Policy (có từ M1 của đợt giao diện người học, dự phòng `'unsafe-inline'` theo D20) | Chốt 16/10; ngoại lệ 22/10 |
 | Trang người học **bị chặn trên production** bằng biến cấu hình cho tới bước Deploy (`deploy-web.yml` deploy `apps/web` mỗi lần push `main`) | Đề xuất, duyệt cùng Phần 1 |
 | Phần phiên đăng nhập và gọi API **chép từ `apps/admin`**, chưa tách package | Đề xuất, duyệt cùng Phần 1 |
 | Admin (`apps/admin`) thêm trang **"Thông báo & giới hạn"** (quyền mới `settings.manage`, chỉ `admin`) và lựa chọn **"Từ chưa có nghĩa"** ở màn xuất CSV (D26) | Chốt 16/10 |
@@ -228,3 +228,8 @@ Hôm nay và trang Nhóm. 7.5: "Cần ôn lại" (chốt 20/10). 7.6: thay bằn
 
 **Việc API mà màn đã giả định** (design đợt §10, làm ở đợt code): trả email người thao tác ở các API admin; `group_id` cho
 `GET /v1/practice/weak-words`; `sense_ids[]` cho `POST /v1/groups/{id}/items/bulk`; sửa ngày sinh qua `PATCH /v1/me`.
+
+**Đợt code giao diện người học (22–26/10/2026).** Các màn trên đã được code trong `apps/web` (`/vi/app`, `/en/app`), 7 mốc M1–M5b; design
+`../../superpowers/specs/2026-10-22-giao-dien-nguoi-hoc-design.md` (D1–D22, đổi một số chỗ của mockup ở §6 và bản chữ §17), as-built
+`../../deliveries/giao-dien-nguoi-hoc.md`, tài liệu kiểm `../../deliveries/giao-dien-nguoi-hoc-test-flow.md`. Admin chỉ thêm trang "Giao dịch"; các màn admin
+khác của page 04 chưa code.

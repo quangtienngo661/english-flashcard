@@ -381,3 +381,15 @@ Final M4: minor (deferred): English hint header has no count (design §7.1, kept
 - Ruling: chủ đề chọn một (API nhận mảng ≤ 20); trang từ riêng lấy chủ đề đầu.
 - Ruling: chữ các hộp [Sửa] / [Xóa từ] ("Sửa từ", "Lưu thay đổi", "Xóa từ “rizz”?" + câu cảnh báo) bản chữ chưa có, Claude viết theo mẫu 3.1.
 - Test note: toast nằm trong store chung của module nên còn lại giữa các test cùng file; test đếm theo `getAllByText`.
+
+### Task 48 — M5b e2e, tài liệu kiểm, đóng đợt (26/10/2026)
+
+- `e2e/app/m5b.spec.ts` 9 test (Pro tra AI → sửa → lưu với `ai_suggestion`; Dùng thử, Miễn phí; 409 `ai-in-progress` cùng key; AI lỗi + Thử lại, hết lượt;
+  trang từ riêng sửa nghĩa, nhãn mất, xóa; axe + không cuộn ngang × vi/en × sáng/tối); `m3.spec.ts` đổi nút "Tự nhập nghĩa". Container Linux: 38 passed.
+- Chạy thật trên API (AI giả `fake:ok`, Pro): `lookup/ai` 200, cùng key trả lại kết quả cũ (khác thứ tự khóa JSON) và trừ 1 lượt; `quick-add` với
+  `ai_suggestion` 201; `PATCH` chỉ loại từ giữ nhãn, `PATCH` nghĩa bỏ nhãn; `DELETE` 204, trang từ 404. API không trả trình độ (khớp ruling Task 47).
+- Cỡ Worker bật app (gzip) 3.761,49 KiB. Mục M5b trong test-flow; as-built M4b, M5a, M5b và "Đóng đợt"; UI-CONTEXT §2 (D22), §10; CLAUDE.md; ghi chú design
+  Bước 7 (D10, D12); handoff §0b; deploy-checklist.
+- Kịch bản ảnh `SHOTS_MILESTONE=m5b` (tấm tra AI, kết quả, sửa trước khi lưu, trang từ riêng; từ tạo ra được xóa cuối mỗi lượt).
+- Test note: `pnpm cf:docker` dừng với "tar: file changed as we read it" khi có file trong repo đang đổi; chạy lại khi không sửa file. `--build` cần
+  `NEXT_PUBLIC_API_BASE_URL` khi bật app.

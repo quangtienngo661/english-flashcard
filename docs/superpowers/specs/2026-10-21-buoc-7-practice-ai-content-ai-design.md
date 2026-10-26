@@ -3,6 +3,9 @@
 > **Trạng thái 21/10/2026:** đã review độc lập (§0b) và chủ dự án duyệt ("ok viết plan luôn đi bạn", sau khi Claude nêu năm câu sau review và cách design tạm viết;
 > chốt D30–D34). Chỉ là tài liệu; chưa có code.
 > **Cập nhật 21/10/2026 (implement xong):** ghi chú as-built và lựa chọn của plan ở cuối §2; PR và số liệu ở `docs/deliveries/buoc-7.md`.
+> **Cập nhật 26/10/2026 (đợt giao diện người học):** D12 của design giao diện người học bỏ ô đồng ý khi báo lỗi câu AI về từ riêng (đổi luật đồng ý của D26
+> ở đây; API bỏ kiểm `share_private_word`, việc API (f), PR #128); D10 bỏ ô "Câu lấy từ đâu?", nên điền từ từ câu đã lưu (D11 ở đây) không còn đường vào
+> từ giao diện, API giữ nguyên. Xem `../specs/2026-10-22-giao-dien-nguoi-hoc-design.md` §6, §12.
 > **Nhánh:** `docs/buoc-7-design` (cắt từ `origin/dev` @ `47ca600`; code đọc lại trên `origin/dev` @ `985531b`).
 > **Nguồn quyết định:** câu hỏi [`../reviews/2026-10-20-buoc-7-questions.md`](../reviews/2026-10-20-buoc-7-questions.md), nhật ký hỏi đáp bốn vòng
 > [`../reviews/2026-10-21-buoc-7-qa-log.md`](../reviews/2026-10-21-buoc-7-qa-log.md), decision record

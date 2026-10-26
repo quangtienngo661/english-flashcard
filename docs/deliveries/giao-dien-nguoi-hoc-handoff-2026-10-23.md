@@ -23,7 +23,14 @@ ledger nằm ở [`giao-dien-nguoi-hoc-ledger.md`](giao-dien-nguoi-hoc-ledger.md
 - Luật git chung của chủ dự án: không commit `main`, không force-push; một lỗi = hai commit (test fail trước, sửa sau); nhánh `<type>/<slug>`;
   Conventional Commits.
 
-## 0a. Cập nhật mới nhất (23/10/2026, hết M5a) — đọc trước
+## 0b. Đóng đợt (26/10/2026, hết M5b) — đọc trước
+
+- **M5a merged** (PR #128). **M5b** (Task 46–48: Tra bằng AI trong tấm Thêm từ, Sửa trước khi lưu, trang từ riêng có [Sửa] [Xóa từ]) trên
+  `feat/giao-dien-nguoi-hoc-m5b`, là PR cuối của đợt. Cả 48 task của plan đã làm. As-built mọi mốc và phần đóng đợt: cuối `giao-dien-nguoi-hoc.md`.
+- Việc tiếp theo không thuộc plan này: chủ dự án tự kiểm theo `giao-dien-nguoi-hoc-test-flow.md` (D4), lỗi báo sửa bằng PR `fix/`; danh sách cải thiện
+  C1–C10; các màn admin "Sắp có" cần design + plan riêng.
+
+## 0a. Cập nhật (23/10/2026, hết M5a)
 
 - **M4b merged** (PR #127). **M5a** (Task 41–45: báo lỗi câu AI không cần đồng ý, `ItemView.private_word`, công tắc "Kiểu câu có AI", trạng thái AI trong
   phiên, ba kiểu câu AI, bản dịch, K/81; `lemma` kèm `word-not-recognized`) ở PR #128, merge vào `dev` khi CI xanh. Reviewer M5a đã chấm và sửa (ledger
