@@ -8,6 +8,7 @@ import { useApi } from '@/app-shell/session/session-context';
 import { useSubmitOnce } from '@/app-shell/use-submit-once';
 import { Button } from '@/app-ui/Button';
 import { Dialog } from '@/app-ui/Dialog';
+import { SpeakSentence } from '@/app-ui/SpeakButtons';
 import { FullScreenSpinner } from '@/app-ui/States';
 import { showToast } from '@/app-ui/Toast';
 import { highlightWord } from '../groups/highlight';
@@ -69,7 +70,8 @@ function SentenceRow({ sentence, lemma, senseId }: { sentence: Sentence; lemma: 
 
   return (
     <li className="flex items-start justify-between gap-3 py-3">
-      <p className="min-w-0 break-words text-body text-ink">{highlightWord(sentence.text, lemma)}</p>
+      <p className="min-w-0 flex-1 break-words text-body text-ink">{highlightWord(sentence.text, lemma)}</p>
+      <SpeakSentence private text={sentence.text} />
       <Button variant="ghost" aria-label={t('deleteSentence')} isPending={remove.busy} onPress={() => void onDelete()} className="shrink-0 px-2 text-danger">
         <Trash2 aria-hidden className="size-4" />
       </Button>

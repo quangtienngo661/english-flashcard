@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { installSpeech, makeVoice } from '@/app-ui/speech-test-support';
 import { renderApp } from '@/app-ui/test-utils';
 import { ToastRegion } from '@/app-ui/Toast';
 import type { Route } from '@/app-shell/session/test-support';
@@ -553,5 +554,26 @@ describe('PracticeSession (K/60–K/67)', () => {
     const keys = posts(v.calls, '/v1/practice/items/item-4/answer').map((c) => c.headers['Idempotency-Key']);
     expect(keys).toHaveLength(2);
     expect(keys[1]).not.toBe(keys[0]);
+  });
+});
+
+describe('PracticeSession pronunciation (đợt cải thiện A, C1)', () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('no speak button on the question; UK · US by the word after grading; 1 on a focused speak button does not review', async () => {
+    const synth = installSpeech([makeVoice('en-GB'), makeVoice('en-US')]);
+    const view_ = renderApp(<PracticeSession />, { routes: routes() });
+    await screen.findByText('triển khai');
+    expect(screen.queryByRole('button', { name: /Nghe giọng/ })).not.toBeInTheDocument();
+    await userEvent.keyboard('2');
+    await screen.findByText('Chưa đúng');
+    const uk = screen.getByRole('button', { name: 'Nghe giọng Anh' });
+    expect(screen.getByRole('button', { name: 'Nghe giọng Mỹ' })).toBeInTheDocument();
+    await userEvent.click(uk);
+    expect(synth.speak).toHaveBeenLastCalledWith(expect.objectContaining({ text: 'deploy', lang: 'en-GB' }));
+    uk.focus();
+    await userEvent.keyboard('1');
+    expect(posts(view_.calls, '/v1/practice/items/item-4/review')).toHaveLength(0);
+    expect(screen.getByText('Chưa đúng')).toBeInTheDocument();
   });
 });
