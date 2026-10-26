@@ -147,6 +147,8 @@ describe('AI lookup in the add-word sheet (K/85–K/86)', () => {
     expect(await screen.findByText('Hệ thống đang gặp lỗi.')).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Thử lại' }));
     expect(await screen.findByRole('heading', { name: 'Kết quả cho “rizz”' })).toBeInTheDocument();
+    // With a result on screen, the "enter a meaning" line above it is gone.
+    expect(screen.queryByText(/Wordmet chưa có từ “rizz”/)).not.toBeInTheDocument();
     expect(aiCalls(calls)).toHaveLength(2);
   });
 

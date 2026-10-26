@@ -195,7 +195,7 @@ Reviewer: 0 Critical, 3 Important (sửa, test trước), 5 Minor để lại.
 
 # M5b — as-built (26/10/2026)
 
-Nhánh `feat/giao-dien-nguoi-hoc-m5b` (cắt từ `origin/dev` @ `c0c3e55`), PR M5B_PR. Task 46–48. Chi tiết, ruling: ledger (Task 46–48, Final M5b).
+Nhánh `feat/giao-dien-nguoi-hoc-m5b` (cắt từ `origin/dev` @ `c0c3e55`), PR #131. Task 46–48. Chi tiết, ruling: ledger (Task 46–48, Final M5b).
 
 **Đã có:** tấm Thêm từ có [Tra bằng AI] · [Tự nhập nghĩa] bằng nhau, "còn N lượt tra AI", chip Dùng thử, khóa + dòng D6 cho gói Miễn phí, ô gửi kèm câu
 (mặc định không tick); "Đang tra…" và gửi lại **cùng** key khi 409 `ai-in-progress` (E38); AI lỗi → câu chung D11, [Thử lại] khi `retryable` (E39); hết

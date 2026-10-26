@@ -415,3 +415,6 @@ Final M4: minor (deferred): English hint header has no count (design §7.1, kept
 - Declined to judge (ruling): câu đã gặp gõ ở màn tìm được lưu kèm từ màn "Sửa trước khi lưu" dù màn đó không hiện ô câu — giữ, vì người học đã gõ câu đó
   cho chính từ này (bản chữ §7.18 không có ô) — sai thì thêm một dòng hiện câu sẽ lưu. Từ riêng nhiều nghĩa: hộp [Sửa] sửa nghĩa của khối được bấm, loại từ
   và trình độ theo cả từ (API `PATCH` theo từ) — sai thì tách theo nghĩa.
+- Ảnh `SHOTS_MILESTONE=m5b`: 48 ảnh (tấm tra AI, kết quả, sửa trước khi lưu, trang từ riêng × vi/en × sáng/tối × 390/1024/1440), ở `apps/web/test-results/shots/m5b`
+  (không commit). Test note: `next dev` trong container không nạp lại một lần sửa (ảnh vẫn ra bản cũ); khởi động lại `web-app` thì đúng — chụp ảnh sau khi
+  khởi động lại app. Test ghim việc ẩn dòng "Wordmet chưa có từ…" khi đã có kết quả AI thêm vào `ai-lookup.test.tsx` (E39).
