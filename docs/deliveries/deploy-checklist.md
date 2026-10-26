@@ -74,3 +74,6 @@ secret, backup) nằm ở design Bước 2.5 §14; những thứ chỉ kiểm đ
   chạy trên mọi trang, kể cả `/app`.
 - [ ] **Bản build production bật app phải có `NEXT_PUBLIC_API_BASE_URL` với host bắt đầu bằng `api.`.** Nguồn: design §4.2. Vì sao: cookie
   `refresh_token` host-only của `admin-api.` và `api.` không được đè nhau; `next.config.ts` dừng build khi sai.
+- [ ] **Dọn tài khoản chưa từng xác nhận email sau N ngày.** Nguồn: A5 đợt cải thiện nhóm A (design `../superpowers/specs/2026-10-26-dot-cai-thien-a-design.md` §4),
+  làm cùng phần xoá tài khoản của Bước 8. Vì sao: từ đợt này tài khoản chưa xác nhận không vào được app nhưng vẫn nằm trong DB và giữ chỗ email;
+  `identity-cleanup.service.ts` chỉ xoá OTP và chuỗi phiên hết hạn.

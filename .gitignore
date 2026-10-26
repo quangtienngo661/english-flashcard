@@ -9,3 +9,4 @@ coverage/
 !.env.example
 *.pem
 *.key
+.verify-b25-accounts.md
