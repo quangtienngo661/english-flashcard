@@ -11,7 +11,7 @@
 | Mức | Số | Sửa trong phiên này |
 |---|---|---|
 | Critical | 0 | — |
-| Important | 1 (lỗ hổng ở **design**, không phải lỗi code) | Không tự sửa: đổi hành vi đã chốt → hỏi phiên gốc |
+| Important | 1 (lỗ hổng ở **design**, không phải lỗi code) | Chủ dự án chọn **B** → chỉ sửa chữ 429 (PR `fix/verify-locked-forgot-hint`) |
 | Minor | 7 | Không (ghi lại) |
 
 Code khớp design ở mọi dòng When → Then đã soát. Không có PR sửa code.
@@ -55,7 +55,12 @@ sai lý do và không chỉ tới Quên mật khẩu. Chưa có production nên 
 | B. Giữ nguyên, sửa chữ 429 ở trang nhập mã thêm dòng "Hoặc dùng Quên mật khẩu" | Chỉ đổi chữ; lỗ vẫn còn nhưng người dùng có đường ra |
 | C. Giữ nguyên, ghi vào rủi ro của design | Không tốn gì; người bị phá phải tự tìm ra Quên mật khẩu |
 
-Đề xuất: **A** (nhỏ, đúng ý A15 "người ngoài không khoá được"), kèm test "đăng ký lại sau khi khoá → mã mới được gửi".
+Đề xuất của Claude: **A** (nhỏ, đúng ý A15 "người ngoài không khoá được"), kèm test "đăng ký lại sau khi khoá → mã mới được gửi".
+
+**Chủ dự án chốt B (26/10/2026):** "I1 chọn B: giữ cửa sổ khoá, thêm vào chữ 429 hướng dẫn dùng Quên mật khẩu ở trang đăng nhập". Lý do: A mở lại đường đoán
+mã cho kẻ biết mật khẩu. Chỉ là chữ, không thêm link Quên mật khẩu vào trang nhập mã. Đã làm: `App.auth.verify.locked` thành "Bạn đã nhập sai mã quá nhiều lần.
+Thử lại sau {time}, hoặc dùng Quên mật khẩu ở trang đăng nhập." / "Too many wrong codes. Try again in {time}, or use Forgot password on the sign-in page."
+(test trước, sửa sau); ghi vào design §8, §4.3 và decision record A15 vòng 3. Lỗ hổng còn đó, có đường ra.
 
 ## Minor
 
