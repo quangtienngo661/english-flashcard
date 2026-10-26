@@ -27,7 +27,7 @@ lần 2"). File này gom các quyết định của **nhóm A** và của phạm
 | A12 | Lỗi "Xem đáp án" | Sửa API, PR `fix/` riêng | Duyệt cùng design |
 | A13 | Câu đã lưu và giọng từ xa | Chỉ đọc bằng giọng trên máy | Duyệt cùng design |
 | A14 | Âm thanh đồng đều giữa các nền tảng | Đợt này dùng giọng của máy; file âm thanh làm sẵn ghi thành hướng nâng cấp | Chủ dự án (đề xuất của Claude) |
-| A15 | Nhập mã kèm mật khẩu; giới hạn và lỗi khi khoá (review plan I2) | Kiểm mật khẩu trước mã; khoá trả 429 rõ (chỉ người đúng mật khẩu thấy); bỏ giới hạn theo email; link Quên mật khẩu chỉ ở trang đăng nhập | Chủ dự án (sau nhiều vòng; kiểm mật khẩu: đề xuất của Claude) |
+| A15 | Nhập mã kèm mật khẩu; giới hạn và lỗi khi khoá (review plan I2) | Kiểm mật khẩu trước mã; khoá trả 429 rõ (chỉ người đúng mật khẩu thấy); bỏ giới hạn theo email; link Quên mật khẩu chỉ ở trang đăng nhập; vòng 3: chữ 429 hướng dẫn dùng Quên mật khẩu ở trang đăng nhập, giữ cửa sổ khoá | Chủ dự án (sau nhiều vòng; kiểm mật khẩu: đề xuất của Claude) |
 
 ## A0 — Luật hỏi đợt này (câu 1)
 
@@ -278,3 +278,16 @@ nhớ trang; tải lại trang thì hỏi lại). Chủ dự án: "ok".
 
 Hệ quả Claude ghi vào design (cùng hướng chủ dự án nghiêng về "b" ở vòng 1, nay không còn lộ): khoá trả 429 kèm thời gian; bỏ giới hạn theo email ở route nhập mã, giữ
 `auth.verify.ip`; link Quên mật khẩu chỉ ở trang đăng nhập. Chủ dự án có thể đổi lại khi đọc design.
+
+Vòng 3 (sau khi merge, code review `../reviews/2026-10-26-dot-cai-thien-a-code-review.md`, I1): câu "người ngoài không khoá được việc xác nhận của người khác"
+không đúng, vì đăng ký lại (A5) cho kẻ xấu đặt mật khẩu: kẻ xấu nộp sai mã 21 lần bằng mật khẩu của mình → khoá `verify_email` 24 giờ; Lan đăng ký lại không nhận mã,
+nộp mã thấy 429. Lối thoát: Quên mật khẩu (cửa sổ khoá riêng).
+
+| Phương án | Trade-off |
+|---|---|
+| A. Đăng ký lại xoá cửa sổ khoá `verify_email` (đề xuất của Claude) | Chủ thật đăng ký lại là hết khoá; nhưng mở lại đường đoán mã cho người biết mật khẩu (kẻ xấu tự xoá khoá bằng đăng ký lại) |
+| ✅ B. Giữ cửa sổ khoá; chữ 429 ở trang nhập mã thêm hướng dẫn dùng Quên mật khẩu ở trang đăng nhập | Chỉ đổi chữ; lỗ còn nhưng người bị phá có đường ra; link vẫn chỉ ở trang đăng nhập |
+| C. Giữ nguyên, ghi rủi ro | Không tốn gì; người bị khoá phải tự tìm Quên mật khẩu |
+
+Chủ dự án (26/10/2026): "I1 chọn B: giữ cửa sổ khoá, thêm vào chữ 429 hướng dẫn dùng Quên mật khẩu ở trang đăng nhập". Lý do: A mở lại đường đoán mã cho kẻ biết
+mật khẩu. Chỉ là chữ, không thêm link vào trang nhập mã.

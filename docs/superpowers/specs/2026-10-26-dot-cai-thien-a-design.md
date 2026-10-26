@@ -137,7 +137,7 @@ nhận, B1#23); `trial_eligible`; email nhắc học.
     còn mật khẩu trong bộ nhớ (tải lại trang, tab mới) → trang hiện thêm ô mật khẩu cạnh ô mã. Xoá mật khẩu khỏi bộ nhớ khi xác nhận xong hoặc rời trang.
   - Nộp → `POST /v1/auth/verify-email { email, code, password, client: 'web' }` → nhận phiên qua cùng đường với đăng nhập trong `session-store.ts`
     (`startSession`) → xoá email tạm → chưa có ngôn ngữ thì `/app/welcome`, có thì `next` hoặc `/app`.
-  - `400 invalid-otp` → chữ "Mã hoặc mật khẩu không đúng…" (§8); `429` (chỉ khi đúng mật khẩu) → "Bạn đã nhập sai mã quá nhiều lần. Thử lại sau {time}."
+  - `400 invalid-otp` → chữ "Mã hoặc mật khẩu không đúng…" (§8); `429` (chỉ khi đúng mật khẩu) → "Bạn đã nhập sai mã quá nhiều lần. Thử lại sau {time}, hoặc dùng Quên mật khẩu ở trang đăng nhập." (§8)
   - "Gửi lại mã": `POST /v1/auth/otp { purpose: 'verify_email', email }`, đếm ngược 60 s như hiện nay. **Bỏ việc tự gửi mã khi mở trang** (đăng ký và đăng nhập đã gửi).
   - Link "Gõ nhầm email? Đăng ký bằng email khác" → xoá email tạm → `/app/register`.
   - Mở trang khi đang có phiên → `AuthGate` đưa vào app như các trang `(auth)` khác.
@@ -323,7 +323,7 @@ Theo luật của `apps/web/src/i18n/messages.test.ts` (cùng key hai file, khô
 | Đăng ký, `email-taken` (sửa) | Email này đã có tài khoản. Nếu là email của bạn, dùng Quên mật khẩu. | This email already has an account. If it's yours, use Forgot password. |
 | Trang nhập mã, sau đăng nhập chưa xác nhận | Bạn cần xác nhận email trước khi vào app. Mã đã được gửi tới {email}. | Confirm your email to continue. We sent a code to {email}. |
 | Trang nhập mã, mã sai | Mã hoặc mật khẩu không đúng, hoặc mã đã hết hạn. Nếu email đã được xác nhận, hãy đăng nhập. | That code or password is wrong, or the code has expired. If your email is already confirmed, sign in. |
-| Trang nhập mã, bị khoá | Bạn đã nhập sai mã quá nhiều lần. Thử lại sau {time}. | Too many wrong codes. Try again in {time}. |
+| Trang nhập mã, bị khoá (sửa sau code review I1, A15 vòng 3: chỉ chữ, không link) | Bạn đã nhập sai mã quá nhiều lần. Thử lại sau {time}, hoặc dùng Quên mật khẩu ở trang đăng nhập. | Too many wrong codes. Try again in {time}, or use Forgot password on the sign-in page. |
 | Trang nhập mã, ô mật khẩu (khi mất bộ nhớ) | Mật khẩu | Password |
 | Trang nhập mã, link | Gõ nhầm email? Đăng ký bằng email khác | Typed the wrong email? Sign up with another one |
 | Trang nhóm, nút | Thêm từ | Add word |
