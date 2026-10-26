@@ -31,6 +31,8 @@ export const againBody = (s: PracticeSessionView): StartBody => ({
   ...(s.source === 'group' && s.group_filter ? { group_filter: s.group_filter } : {}),
   sort: s.sort,
   types: s.types,
+  // Without it the API treats `cloze` as AI-written and spends AI credits (audit 26/10/2026 #2).
+  ...(s.cloze_source === 'own' ? { cloze_source: 'own' as const } : {}),
   ...(s.types.includes('type_word') ? { prompt_style: s.prompt_style as StartBody['prompt_style'] } : {}),
   count: s.target_count,
 });
