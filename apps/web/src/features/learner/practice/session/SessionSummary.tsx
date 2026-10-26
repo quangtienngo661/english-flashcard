@@ -25,7 +25,7 @@ export function useSummary(sessionId: string) {
 }
 
 /** The same choices as the session that just ended ([Luyện thêm một phiên]). */
-const againBody = (s: PracticeSessionView): StartBody => ({
+export const againBody = (s: PracticeSessionView): StartBody => ({
   source: s.source,
   ...(s.group_id ? { group_id: s.group_id } : {}),
   ...(s.source === 'group' && s.group_filter ? { group_filter: s.group_filter } : {}),

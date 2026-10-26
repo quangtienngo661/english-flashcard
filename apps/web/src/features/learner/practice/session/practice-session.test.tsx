@@ -5,7 +5,9 @@ import { installSpeech, makeVoice } from '@/app-ui/speech-test-support';
 import { renderApp } from '@/app-ui/test-utils';
 import { ToastRegion } from '@/app-ui/Toast';
 import type { Route } from '@/app-shell/session/test-support';
+import type { PracticeSessionView } from '../practice-api';
 import { PracticeSession } from './PracticeSession';
+import { againBody } from './SessionSummary';
 
 const hardReplace = vi.fn();
 vi.mock('next/navigation', () => ({
@@ -575,5 +577,21 @@ describe('PracticeSession pronunciation (đợt cải thiện A, C1)', () => {
     await userEvent.keyboard('1');
     expect(posts(view_.calls, '/v1/practice/items/item-4/review')).toHaveLength(0);
     expect(screen.getByText('Chưa đúng')).toBeInTheDocument();
+  });
+});
+
+describe('[Luyện thêm một phiên] (audit 26/10/2026 #2)', () => {
+  const view = (cloze_source: PracticeSessionView['cloze_source']): PracticeSessionView => ({
+    id: 's-1', source: 'group', group_id: 'g-1', group_filter: 'all', sort: 'queue', types: ['cloze'], prompt_style: 'meaning',
+    target_count: 10, status: 'finished', round: 1, asked: 10, words: 10, ai_planned: 0, cloze_source,
+  });
+
+  it('after an own-sentence session it sends cloze_source: own, so no AI credit is spent', () => {
+    expect(againBody(view('own'))).toMatchObject({ types: ['cloze'], cloze_source: 'own' });
+  });
+
+  it('after an AI or rule session it sends no cloze_source (the API default stays)', () => {
+    expect(againBody(view('ai'))).not.toHaveProperty('cloze_source');
+    expect(againBody(view(null))).not.toHaveProperty('cloze_source');
   });
 });
