@@ -21,12 +21,13 @@ export function Segmented<T extends string>({ label, value, options, onChange, i
       className="flex shrink-0 flex-col"
     >
       <Label className="sr-only">{label}</Label>
-      <div className="flex rounded-control border border-border bg-surface p-1">
+      {/* Owner 27/10/2026 ("bị lệch"): equal-width options and one font weight, so nothing shifts when the choice changes. */}
+      <div className="grid auto-cols-fr grid-flow-col gap-1 rounded-control border border-border bg-surface p-1">
         {options.map((option) => (
           <Radio
             key={option.id}
             value={option.id}
-            className="cursor-pointer whitespace-nowrap rounded-sm px-3 py-1.5 text-ui text-ink outline-none data-focus-visible:ring-2 data-focus-visible:ring-primary data-selected:bg-ink data-selected:font-semibold data-selected:text-surface data-disabled:opacity-60"
+            className="cursor-pointer whitespace-nowrap rounded-sm px-3 py-1.5 text-center text-ui font-semibold text-ink outline-none data-focus-visible:ring-2 data-focus-visible:ring-primary data-selected:bg-ink data-selected:text-surface data-disabled:opacity-60"
           >
             {option.label}
           </Radio>

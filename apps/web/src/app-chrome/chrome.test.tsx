@@ -27,6 +27,15 @@ describe('app chrome', () => {
     expect(within(nav).getByRole('link', { name: /Hôm nay/ })).not.toHaveAttribute('aria-current');
   });
 
+  it('TopBar: the theme button switches light/dark at once instead of opening Cài đặt (owner 27/10/2026)', async () => {
+    renderApp(<TopBar features={{ addWord: false }} />, { routes: entitlements('free') });
+    await userEvent.click(screen.getByRole('button', { name: 'Chuyển sang giao diện tối' }));
+    await waitFor(() => expect(document.documentElement.dataset.theme).toBe('dark'));
+    await userEvent.click(screen.getByRole('button', { name: 'Chuyển sang giao diện sáng' }));
+    await waitFor(() => expect(document.documentElement.dataset.theme).toBe('light'));
+    expect(screen.queryByRole('link', { name: 'Cài đặt' })).not.toBeInTheDocument();
+  });
+
   it('TopBar hides the Thêm từ button before M3', () => {
     renderApp(<TopBar features={{ addWord: false }} />, { routes: entitlements('free') });
     expect(screen.queryByRole('button', { name: /Thêm từ/ })).not.toBeInTheDocument();

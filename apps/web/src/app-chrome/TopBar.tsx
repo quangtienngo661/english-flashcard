@@ -1,9 +1,10 @@
 'use client';
 
-import { Plus, Sun } from 'lucide-react';
+import { Moon, Plus, Sun } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useTheme } from '@/app-shell/theme/ThemeProvider';
 import { useAddWord } from '@/features/learner/add-word/add-word-context';
 import { cn } from '@/lib/cn';
 import { AvatarMenu } from './AvatarMenu';
@@ -19,6 +20,7 @@ export function TopBar({ features, onAddWord }: { features: ChromeFeatures; onAd
   const locale = useLocale();
   const active = currentTab(usePathname());
   const addWord = useAddWord();
+  const { resolved, setChoice } = useTheme();
 
   return (
     <div className="bg-navy text-on-navy">
@@ -68,13 +70,15 @@ export function TopBar({ features, onAddWord }: { features: ChromeFeatures; onAd
             {t('plans')}
             <PlanChip />
           </Link>
-          <Link
-            href={`/${locale}/app/settings`}
-            aria-label={t('settings')}
-            className="rounded-control p-2 text-on-navy outline-none hover:bg-navy-raised focus-visible:ring-2 focus-visible:ring-accent"
+          {/* Owner 27/10/2026: switches the theme at once instead of opening Cài đặt (still in the avatar menu). */}
+          <button
+            type="button"
+            aria-label={resolved === 'dark' ? t('themeToLight') : t('themeToDark')}
+            onClick={() => setChoice(resolved === 'dark' ? 'light' : 'dark')}
+            className="cursor-pointer rounded-control p-2 text-on-navy outline-none hover:bg-navy-raised focus-visible:ring-2 focus-visible:ring-accent"
           >
-            <Sun aria-hidden className="size-5.5" />
-          </Link>
+            {resolved === 'dark' ? <Sun aria-hidden className="size-5.5" /> : <Moon aria-hidden className="size-5.5" />}
+          </button>
           <AvatarMenu />
         </div>
       </div>
