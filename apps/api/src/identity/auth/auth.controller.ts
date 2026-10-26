@@ -36,7 +36,7 @@ export class AuthController {
     @Body({ schema: loginSchema }) body: LoginBody,
     @Res({ passthrough: true }) res: Response,
   ): Promise<TokenResponse> {
-    const session = await this.auth.login(body);
+    const session = await this.auth.login(body, res);
     return writeSession(res, session, this.clock.now(), this.config.jwt.accessTtlSeconds);
   }
 }

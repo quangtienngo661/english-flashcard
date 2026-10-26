@@ -63,6 +63,31 @@ export class OtpService {
     return message;
   }
 
+  async tryLimitEmail(email: string): Promise<boolean> {
+    try {
+      await this.limitEmail(email);
+      return true;
+    } catch (error) {
+      if (error instanceof ProblemDetailsException && error.getStatus() === 429 && error.problemType === 'rate-limited') return false;
+      throw error;
+    }
+  }
+
+  async sendVerifyCodeQuietly(userId: string, email: string, res: Response): Promise<void> {
+    if (!await this.tryLimitEmail(email)) return;
+    try {
+      await this.budget.assertAvailable();
+    } catch (error) {
+      if (error instanceof ProblemDetailsException && error.getStatus() === 503 && error.problemType === 'mail-unavailable') return;
+      throw error;
+    }
+    const job: MailJob = async () => this.noteIssued(userId, 'verify_email', await this.prisma.$transaction(async (tx) => {
+      await withUserLock(tx, userId);
+      return this.issueInTx(tx, userId, 'verify_email');
+    }, transactionOptions));
+    this.dispatcher.afterResponse(res, [job]);
+  }
+
   async requestVerifyEmail(user: RequestUser, res: Response): Promise<void> {
     const account = await this.prisma.user.findUnique({ where: { id: user.userId } });
     if (!account) throw this.invalidToken();

@@ -11,6 +11,7 @@ import { testConfig } from '../../../test/support/test-config.js';
 import { FakeMailer } from '../../common/mail/fake-mailer.js';
 import type { MailBudget } from '../../common/mail/mail-budget.service.js';
 import { MailDispatcher } from '../../common/mail/mail-dispatcher.service.js';
+import { ProblemDetailsException } from '../../common/problem-details/problem-details.exception.js';
 import { OtpService } from './otp.service.js';
 
 // Only the DB boundary is replaced; live-DB regeneration and SQL semantics are
@@ -77,6 +78,78 @@ describe('OTP decisions (unit, isolated persistence)', () => {
 
   const predicates = () => ({ userId, purpose: 'verify_email', consumedAt: null,
     invalidatedAt: null, expiresAt: { gt: clock.now() }, attempts: { lt: 5 } });
+
+  it('tryLimitEmail: returns true after both email limits allow sending', async () => {
+    expect(await otp.tryLimitEmail(dbUser.email)).toBe(true);
+    expect(limiter.hit.mock.calls).toEqual([
+      ['auth.otp.email.cooldown', dbUser.email], ['auth.otp.email.hourly', dbUser.email],
+    ]);
+  });
+
+  it.each(['auth.otp.email.cooldown', 'auth.otp.email.hourly'])('tryLimitEmail: returns false for %s rate limiting', async (rule) => {
+    limiter.hit.mockImplementation(async (name) => {
+      if (name === rule) throw new ProblemDetailsException({ status: 429, title: 'Too many requests', type: 'rate-limited' });
+    });
+    expect(await otp.tryLimitEmail(dbUser.email)).toBe(false);
+  });
+
+  it.each([
+    new Error('limiter unavailable'),
+    new ProblemDetailsException({ status: 503, title: 'Unavailable', type: 'rate-limited' }),
+    new ProblemDetailsException({ status: 429, title: 'Unexpected problem', type: 'unexpected' }),
+  ])('tryLimitEmail: rethrows unexpected errors (%s)', async (error) => {
+    limiter.hit.mockRejectedValue(error);
+    await expect(otp.tryLimitEmail(dbUser.email)).rejects.toBe(error);
+  });
+
+  it('sendVerifyCodeQuietly: within the 60 s cooldown -> no mail, no throw', async () => {
+    limiter.hit.mockRejectedValue(new ProblemDetailsException({ status: 429, title: 'Too many requests', type: 'rate-limited' }));
+    await expect(otp.sendVerifyCodeQuietly(userId, dbUser.email, res)).resolves.toBeUndefined();
+    expect(budget.assertAvailable).not.toHaveBeenCalled(); expect(res.listenerCount('close')).toBe(0);
+    res.emit('close'); await dispatcher.drain();
+    expect(prisma.$transaction).not.toHaveBeenCalled(); expect(tx.otpCode.updateMany).not.toHaveBeenCalled();
+    expect(mailer.sent).toEqual([]);
+  });
+
+  it('sendVerifyCodeQuietly: a 503 mail-unavailable budget error -> no mail, no throw', async () => {
+    budget.assertAvailable.mockRejectedValue(new ProblemDetailsException({ status: 503, title: 'Mail unavailable', type: 'mail-unavailable' }));
+    await expect(otp.sendVerifyCodeQuietly(userId, dbUser.email, res)).resolves.toBeUndefined();
+    expect(budget.assertAvailable).toHaveBeenCalledOnce(); expect(res.listenerCount('close')).toBe(0);
+    res.emit('close'); await dispatcher.drain();
+    expect(prisma.$transaction).not.toHaveBeenCalled(); expect(tx.otpCode.updateMany).not.toHaveBeenCalled();
+    expect(mailer.sent).toEqual([]);
+  });
+
+  it.each([
+    new Error('budget unavailable'),
+    new ProblemDetailsException({ status: 429, title: 'Mail unavailable', type: 'mail-unavailable' }),
+    new ProblemDetailsException({ status: 503, title: 'Unexpected problem', type: 'unexpected' }),
+  ])('sendVerifyCodeQuietly: rethrows unexpected budget errors (%s)', async (error) => {
+    budget.assertAvailable.mockRejectedValue(error);
+    await expect(otp.sendVerifyCodeQuietly(userId, dbUser.email, res)).rejects.toBe(error);
+    expect(prisma.$transaction).not.toHaveBeenCalled(); expect(res.listenerCount('close')).toBe(0);
+  });
+
+  it('sendVerifyCodeQuietly: issues under the user lock after close and mails after commit', async () => {
+    const events: string[] = [];
+    tx.$executeRaw.mockImplementation(async () => { events.push('lock'); });
+    tx.otpCode.create.mockImplementation(async () => { events.push('issue'); });
+    const noteIssued = vi.spyOn(otp, 'noteIssued').mockImplementation((_id, _purpose, message) => {
+      expect(committed).toBe(true); return message;
+    });
+    await otp.sendVerifyCodeQuietly(userId, dbUser.email, res);
+    expect(limiter.hit.mock.calls).toEqual([
+      ['auth.otp.email.cooldown', dbUser.email], ['auth.otp.email.hourly', dbUser.email],
+    ]);
+    expect(budget.assertAvailable).toHaveBeenCalledOnce(); expect(prisma.$transaction).not.toHaveBeenCalled();
+    expect(mailer.sent).toEqual([]); expect(events).toEqual([]);
+    res.emit('close'); await dispatcher.drain();
+    expect(events).toEqual(['lock', 'issue']); expect(committed).toBe(true);
+    expect(prisma.$transaction).toHaveBeenCalledExactlyOnceWith(expect.any(Function), { timeout: 10_000, maxWait: 5_000 });
+    expect(noteIssued).toHaveBeenCalledExactlyOnceWith(userId, 'verify_email', expect.objectContaining({ to: dbUser.email }));
+    expect(tx.otpCode.create).toHaveBeenCalledWith({ data: expect.objectContaining({ userId, purpose: 'verify_email' }) });
+    expect(mailer.sent).toHaveLength(1);
+  });
 
   it('B1#4: issuance invalidates live codes and prepares a padded code with a ten-minute keyed HMAC', async () => {
     const message = await otp.issueInTx(transactionClient(), userId, 'verify_email');

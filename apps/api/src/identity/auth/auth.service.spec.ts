@@ -23,14 +23,14 @@ describe('registration and login (unit, isolated persistence)', () => {
   const budget = { assertAvailable: vi.fn(), tryConsume: vi.fn() };
   const dispatcher = new MailDispatcher(mailer, budget as unknown as MailBudget, logger);
   const hasher = { hash: vi.fn(), verify: vi.fn(), verifyDummy: vi.fn() };
-  const otp = { issueInTx: vi.fn(), noteIssued: vi.fn((_u: string, _p: string, m: unknown) => m) };
+  const otp = { issueInTx: vi.fn(), noteIssued: vi.fn((_u: string, _p: string, m: unknown) => m), sendVerifyCodeQuietly: vi.fn() };
   const sessions = { startChain: vi.fn() };
   const tx = { $executeRaw: vi.fn(), user: { create: vi.fn(), findUnique: vi.fn(), update: vi.fn() },
     passwordCredential: { create: vi.fn() } };
   const prisma = { user: { findUnique: vi.fn() }, $transaction: vi.fn() };
   const body = { email: '  Foo@Example.COM ', password: 'Password1!', timezone: 'Asia/Ho_Chi_Minh', client: 'mobile' as const, device_label: 'Phone',
     given_name: 'Lan', family_name: null as string | null, birth_date: '2000-01-01', accept_terms: true as const };
-  const user = { id: 'user', email: 'foo@example.com', failedLoginCount: 0, loginLockedUntil: null,
+  const user = { id: 'user', email: 'foo@example.com', failedLoginCount: 0, loginLockedUntil: null, emailVerifiedAt: clock.now(),
     passwordCredential: { hash: 'stored-hash' } };
   const issued = { accessToken: 'access', refreshToken: 'refresh', sessionChainId: 'chain', client: 'mobile', refreshExpiresAt: clock.now() };
   let auth: AuthService;
@@ -50,6 +50,7 @@ describe('registration and login (unit, isolated persistence)', () => {
     hasher.hash.mockResolvedValue('new-hash'); hasher.verify.mockResolvedValue(true); hasher.verifyDummy.mockResolvedValue(false);
     sessions.startChain.mockResolvedValue(issued);
     otp.issueInTx.mockResolvedValue({ to: user.email, subject: 'Verify', text: '012345' });
+    otp.sendVerifyCodeQuietly.mockResolvedValue(undefined);
     auth = new AuthService(prisma as unknown as PrismaClient, config, clock, hasher as unknown as PasswordHasher,
       sessions as unknown as SessionService, budget as unknown as MailBudget, dispatcher, otp as unknown as OtpService, logger);
   });
@@ -135,7 +136,7 @@ describe('registration and login (unit, isolated persistence)', () => {
     const events: string[] = [];
     hasher.verify.mockImplementation(async () => { events.push('verify'); return true; });
     tx.$executeRaw.mockImplementation(async () => { events.push('lock'); });
-    expect(await auth.login(body)).toEqual(issued);
+    expect(await auth.login(body, res)).toEqual(issued);
     expect(prisma.user.findUnique).toHaveBeenCalledWith({ where: { email: user.email }, include: { passwordCredential: true } });
     expect(events).toEqual(['verify', 'lock']); expect(committed).toBe(true);
     expect(hasher.hash).not.toHaveBeenCalled(); expect(tx.passwordCredential.create).not.toHaveBeenCalled();
@@ -147,7 +148,7 @@ describe('registration and login (unit, isolated persistence)', () => {
     if (reason === 'wrong') hasher.verify.mockResolvedValue(false);
     if (reason === 'locked') tx.user.findUnique.mockResolvedValue({ ...user, loginLockedUntil: new Date(clock.now().getTime() + 900_000) });
     if (reason === 'stale') tx.user.findUnique.mockResolvedValue({ ...user, passwordCredential: { hash: 'changed-hash' } });
-    await expect(auth.login(body)).rejects.toMatchObject({ status: 401, problemType: 'invalid-credentials', problemTitle: 'Invalid credentials' });
+    await expect(auth.login(body, res)).rejects.toMatchObject({ status: 401, problemType: 'invalid-credentials', problemTitle: 'Invalid credentials' });
     expect(hasher.verify.mock.calls.length + hasher.verifyDummy.mock.calls.length).toBe(1);
     expect(committed).toBe(reason !== 'unknown'); expect(sessions.startChain).not.toHaveBeenCalled();
     if (reason !== 'wrong') expect(tx.user.update).not.toHaveBeenCalled();
@@ -155,9 +156,43 @@ describe('registration and login (unit, isolated persistence)', () => {
     expect(JSON.stringify(logs)).not.toContain(user.email); expect(JSON.stringify(logs)).not.toContain(body.password);
     if (reason === 'unknown') expect(logs[0].email_hmac).toBe(createHmac('sha256', config.rateLimitHmacKey).update(user.email).digest('hex'));
   });
+  it('A13-3: login with the right password on an unverified account -> 403 email-not-verified, no chain, failed count reset, quiet code sent', async () => {
+    tx.$executeRaw.mockImplementation(async () => {
+      tx.user.findUnique.mockResolvedValue({ ...user, emailVerifiedAt: null, failedLoginCount: 3 });
+    });
+    otp.sendVerifyCodeQuietly.mockImplementation(async () => { expect(committed).toBe(true); });
+    await expect(auth.login(body, res)).rejects.toMatchObject({
+      status: 403, problemType: 'email-not-verified', problemTitle: 'Email not verified',
+    });
+    expect(sessions.startChain).not.toHaveBeenCalled();
+    expect(tx.user.update).toHaveBeenCalledExactlyOnceWith({ where: { id: user.id }, data: { failedLoginCount: 0 } });
+    expect(otp.sendVerifyCodeQuietly).toHaveBeenCalledExactlyOnceWith(user.id, user.email, res);
+    expect(logs).toEqual([expect.objectContaining({ event: 'login_failed', user_id: user.id })]);
+    expect(JSON.stringify(logs)).not.toContain(user.email); expect(JSON.stringify(logs)).not.toContain(body.password);
+  });
+  it('A13-3: verification committed while login waited on the lock permits a session', async () => {
+    prisma.user.findUnique.mockResolvedValue({ ...user, emailVerifiedAt: null });
+    expect(await auth.login(body, res)).toEqual(issued);
+    expect(sessions.startChain).toHaveBeenCalledOnce();
+    expect(otp.sendVerifyCodeQuietly).not.toHaveBeenCalled();
+  });
+  it('A13-5: wrong password on an unverified account -> 401 invalid-credentials, count incremented, no code', async () => {
+    hasher.verify.mockResolvedValue(false);
+    tx.user.findUnique.mockResolvedValue({ ...user, emailVerifiedAt: null });
+    await expect(auth.login(body, res)).rejects.toMatchObject({ status: 401, problemType: 'invalid-credentials' });
+    expect(committed).toBe(true);
+    expect(tx.user.update).toHaveBeenCalledExactlyOnceWith({ where: { id: user.id }, data: { failedLoginCount: { increment: 1 } } });
+    expect(sessions.startChain).not.toHaveBeenCalled(); expect(otp.sendVerifyCodeQuietly).not.toHaveBeenCalled();
+  });
+  it('A13-6: locked account with the right password, unverified -> 403 account-locked', async () => {
+    tx.user.findUnique.mockResolvedValue({ ...user, status: 'locked', emailVerifiedAt: null });
+    await expect(auth.login(body, res)).rejects.toMatchObject({ status: 403, problemType: 'account-locked' });
+    expect(committed).toBe(true); expect(tx.user.update).not.toHaveBeenCalled();
+    expect(sessions.startChain).not.toHaveBeenCalled(); expect(otp.sendVerifyCodeQuietly).not.toHaveBeenCalled();
+  });
   it('N4: locked + right password → 403 account-locked, no chain', async () => {
     tx.user.findUnique.mockResolvedValue({ ...user, status: 'locked' });
-    await expect(auth.login(body)).rejects.toMatchObject({ status: 403, problemType: 'account-locked', problemTitle: 'Account locked' });
+    await expect(auth.login(body, res)).rejects.toMatchObject({ status: 403, problemType: 'account-locked', problemTitle: 'Account locked' });
     expect(committed).toBe(true); expect(sessions.startChain).not.toHaveBeenCalled(); expect(tx.user.update).not.toHaveBeenCalled();
     expect(logs).toEqual([expect.objectContaining({ event: 'login_failed', user_id: user.id })]);
     expect(Object.keys(logs[0]).sort()).toEqual(['event', 'level', 'reason', 'user_id']);
@@ -166,7 +201,7 @@ describe('registration and login (unit, isolated persistence)', () => {
   it('N4: locked + wrong password → 401 and the failed count increments', async () => {
     hasher.verify.mockResolvedValue(false);
     tx.user.findUnique.mockResolvedValue({ ...user, status: 'locked' });
-    await expect(auth.login(body)).rejects.toMatchObject({ status: 401, problemType: 'invalid-credentials' });
+    await expect(auth.login(body, res)).rejects.toMatchObject({ status: 401, problemType: 'invalid-credentials' });
     expect(tx.user.update).toHaveBeenCalledExactlyOnceWith({ where: { id: user.id }, data: { failedLoginCount: { increment: 1 } } });
     expect(sessions.startChain).not.toHaveBeenCalled();
   });
@@ -174,7 +209,7 @@ describe('registration and login (unit, isolated persistence)', () => {
     // The unlocked lookup saw an active account; the admin's lock committed before this login got the user lock.
     prisma.user.findUnique.mockResolvedValue({ ...user, status: 'active' });
     tx.$executeRaw.mockImplementation(async () => { tx.user.findUnique.mockResolvedValue({ ...user, status: 'locked' }); });
-    await expect(auth.login(body)).rejects.toMatchObject({ status: 403, problemType: 'account-locked' });
+    await expect(auth.login(body, res)).rejects.toMatchObject({ status: 403, problemType: 'account-locked' });
     expect(sessions.startChain).not.toHaveBeenCalled();
   });
   it('B1#13: the lock event is logged after the tenth failure commits', async () => {
@@ -183,22 +218,22 @@ describe('registration and login (unit, isolated persistence)', () => {
       if (data.loginLockedUntil) tx.user.findUnique.mockResolvedValue({ ...user, loginLockedUntil: data.loginLockedUntil });
       return { failedLoginCount: 10 };
     });
-    await expect(auth.login(body)).rejects.toMatchObject({ status: 401 });
+    await expect(auth.login(body, res)).rejects.toMatchObject({ status: 401 });
     expect(committed).toBe(true); expect(logs).toContainEqual(expect.objectContaining({ event: 'login_locked', user_id: user.id }));
   });
   it('B1E3: another wrong login at the same instant does not report an existing lock as newly established', async () => {
     hasher.verify.mockResolvedValue(false);
     tx.user.findUnique.mockResolvedValue({ ...user, loginLockedUntil: new Date(clock.now().getTime() + 900_000) });
-    await expect(auth.login(body)).rejects.toMatchObject({ status: 401 });
+    await expect(auth.login(body, res)).rejects.toMatchObject({ status: 401 });
     expect(logs.filter((entry) => entry.event === 'login_locked')).toHaveLength(0);
     expect(tx.user.update).not.toHaveBeenCalled();
   });
   it('B1E2: overlong NFC passwords return generic 401 without account lookup or Argon2', async () => {
-    await expect(auth.login({ ...body, password: '😀'.repeat(200) })).rejects.toMatchObject({ status: 401, problemType: 'invalid-credentials' });
+    await expect(auth.login({ ...body, password: '😀'.repeat(200) }, res)).rejects.toMatchObject({ status: 401, problemType: 'invalid-credentials' });
     expect(prisma.user.findUnique).not.toHaveBeenCalled(); expect(hasher.verify).not.toHaveBeenCalled(); expect(hasher.verifyDummy).not.toHaveBeenCalled();
   });
   it('B1E2: the 128-code-point NFC boundary still verifies', async () => {
-    await auth.login({ ...body, password: 'e\u0301'.repeat(128) });
+    await auth.login({ ...body, password: 'e\u0301'.repeat(128) }, res);
     expect(hasher.verify).toHaveBeenCalledOnce();
   });
 });

@@ -81,7 +81,7 @@ export class AuthService {
     return session;
   }
 
-  async login(body: LoginBody): Promise<IssuedSession> {
+  async login(body: LoginBody, res: Response): Promise<IssuedSession> {
     const email = normalizeEmail(body.email);
     const failedSubject = { email_hmac: createHmac('sha256', this.config.rateLimitHmacKey)
       .update(email ?? body.email).digest('hex') };
@@ -110,6 +110,8 @@ export class AuthService {
         return { kind, newlyLocked: kind === 'locked' && current?.loginLockedUntil !== null
           && current?.loginLockedUntil?.getTime() !== before?.loginLockedUntil?.getTime() };
       }
+      const user = await tx.user.findUnique({ where: { id: account.id }, select: { emailVerifiedAt: true } });
+      if (user?.emailVerifiedAt === null) return { kind: 'unverified' as const };
       return { kind, session: await this.sessions.startChain(tx, {
         userId: account.id, client: body.client, deviceLabel: body.device_label,
       }) };
@@ -120,6 +122,10 @@ export class AuthService {
       if (outcome.newlyLocked) this.logger.warn('login_locked', { user_id: account.id });
       // Reached only with the right password: a wrong one on a locked account stays the generic 401.
       if (outcome.kind === 'account_locked') throw accountLocked();
+      if (outcome.kind === 'unverified') {
+        await this.otp.sendVerifyCodeQuietly(account.id, account.email, res);
+        throw new ProblemDetailsException({ status: 403, title: 'Email not verified', type: 'email-not-verified' });
+      }
       throw this.invalidCredentials();
     }
     return outcome.session;

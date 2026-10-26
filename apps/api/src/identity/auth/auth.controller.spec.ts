@@ -40,7 +40,7 @@ describe('registration and login HTTP routing (unit, isolated persistence)', () 
     if (route === 'register') {
       expect(hit).toHaveBeenCalledWith('mail.ip.daily', expect.any(String));
       expect(register).toHaveBeenCalledWith(input, expect.objectContaining({ cookie: expect.any(Function) }));
-    } else expect(login).toHaveBeenCalledExactlyOnceWith(input);
+    } else expect(login).toHaveBeenCalledExactlyOnceWith(input, expect.objectContaining({ cookie: expect.any(Function) }));
   });
   it('FE5: accept_terms false, missing or "true" -> 400 validation-failed and register is not called', async () => {
     const { accept_terms: _omitted, ...missing } = body;
