@@ -2,10 +2,11 @@
 
 import { useLocale, useTranslations } from 'next-intl';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useState, type FormEvent, type ReactNode } from 'react';
 import { ApiError } from '@/app-shell/api/problem';
 import { useErrorMessage } from '@/app-shell/api/use-error-message';
-import { hardReplace } from '@/app-shell/navigate';
+import { setPendingPassword, writePendingEmail } from '@/app-shell/session/pending-email';
 import { useSession } from '@/app-shell/session/session-context';
 import { deviceTimezone } from '@/app-shell/timezone-sync';
 import { useSubmitOnce } from '@/app-shell/use-submit-once';
@@ -20,6 +21,7 @@ export function RegisterForm({ today }: { today?: string }) {
   const t = useTranslations('App.auth');
   const errorText = useErrorMessage();
   const locale = useLocale();
+  const router = useRouter();
   const { store } = useSession();
   const [givenName, setGivenName] = useState('');
   const [familyName, setFamilyName] = useState('');
@@ -30,7 +32,7 @@ export function RegisterForm({ today }: { today?: string }) {
   const [errors, setErrors] = useState<{ givenName?: string; email?: string; age?: boolean; password?: PasswordRule[]; form?: string }>({});
 
   const { submit, busy } = useSubmitOnce(async () => {
-    await store!.register({
+    const registered = await store!.register({
       given_name: givenName.trim(),
       ...(familyName.trim() ? { family_name: familyName.trim() } : {}),
       birth_date: birthDate!,
@@ -39,7 +41,9 @@ export function RegisterForm({ today }: { today?: string }) {
       timezone: deviceTimezone(),
       accept_terms: true,
     });
-    hardReplace(`/${locale}/app/verify-email?sent=1`);
+    writePendingEmail(registered.email);
+    setPendingPassword(password);
+    router.replace(`/${locale}/app/verify-email`);
   });
 
   async function onSubmit(event: FormEvent) {
@@ -99,16 +103,23 @@ export function RegisterForm({ today }: { today?: string }) {
           serverError={errors.age ? 'tooYoung' : null}
           today={today}
         />
-        <TextField
-          label={t('email')}
-          type="email"
-          value={email}
-          onChange={setEmail}
-          autoComplete="email"
-          spellCheck={false}
-          placeholder="lan@example.com"
-          error={errors.email}
-        />
+        <div className="flex flex-col gap-1.5">
+          <TextField
+            label={t('email')}
+            type="email"
+            value={email}
+            onChange={setEmail}
+            autoComplete="email"
+            spellCheck={false}
+            placeholder="lan@example.com"
+            error={errors.email}
+          />
+          {errors.email && (
+            <Link href={`/${locale}/app/forgot-password`} className="w-fit text-caption font-semibold text-primary underline underline-offset-2">
+              {t('login.forgot')}
+            </Link>
+          )}
+        </div>
         <TextField
           label={t('password')}
           type="password"

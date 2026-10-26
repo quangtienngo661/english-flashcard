@@ -894,7 +894,7 @@
       "ai-unavailable": "Hệ thống đang gặp lỗi.",
       "csrf-header-required": "Có lỗi xảy ra. Tải lại trang rồi thử lại.",
       "email-already-verified": "Email này đã được xác minh.",
-      "email-taken": "Email này đã có tài khoản. Đăng nhập hoặc dùng email khác.",
+      "email-taken": "Email này đã có tài khoản. Nếu là email của bạn, dùng Quên mật khẩu.",
       "entitlement-required": "Dành cho gói Pro. Gói Pro chưa mở bán.",
       "forbidden": "Bạn không làm được thao tác này.",
       "group-full": "Nhóm này đã đủ số từ tối đa.",

@@ -894,7 +894,7 @@
       "ai-unavailable": "We ran into a problem.",
       "csrf-header-required": "Something went wrong. Reload the page and try again.",
       "email-already-verified": "This email is already verified.",
-      "email-taken": "This email already has an account. Sign in or use another email.",
+      "email-taken": "This email already has an account. If it's yours, use Forgot password.",
       "entitlement-required": "Part of the Pro plan. Pro is not on sale yet.",
       "forbidden": "You can’t do this.",
       "group-full": "This deck is full.",
