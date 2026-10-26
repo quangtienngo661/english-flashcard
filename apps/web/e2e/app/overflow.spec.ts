@@ -62,3 +62,23 @@ test('no horizontal scroll on weak words with an unbroken deck name (vi)', async
   await expect(page.getByRole('button', { name: `Luyện 3 từ của nhóm ${UNBROKEN}` })).toBeVisible();
   await noSideScroll(page);
 });
+
+// Whole-branch review of the fix: the backlog line on Today and the Backlog page print the deck name too.
+test('no horizontal scroll on Today and Backlog with an unbroken deck name and overdue words (vi)', async ({ page }) => {
+  const summary = { id: DECK, name: UNBROKEN, version: 1, total: 2, today: { priority: 0, due: 0, new: 0 }, cells: [0, 1, 2, 3, 4, 5].map((level) => ({ level, total: level === 1 ? 2 : 0, due: 0 })), backlog: 2 };
+  const backlogRow = (n: number, lemma: string) => ({
+    item_id: `00000000-0000-4000-8000-00000000080${n}`, sense_id: `00000000-0000-4000-8000-00000000090${n}`, level: 2, due_date: '2026-08-01', days_overdue: 80 + n,
+    content: { lemma, pos: 'verb', meaning: { text: lemma, language: 'vi', translation_missing: false }, examples: [] },
+  });
+  await signedInAs(page, 'pro', {
+    'GET /v1/groups': () => ({ json: { items: [summary] } }),
+    [`GET /v1/groups/${DECK}`]: () => ({ json: { id: DECK, name: UNBROKEN, version: 1, item_count: 2, removable_items: 0, created_at: '2026-10-01T03:00:00Z', updated_at: '2026-10-01T03:00:00Z' } }),
+    [`GET /v1/groups/${DECK}/backlog`]: () => ({ json: { items: [backlogRow(1, 'leave'), backlogRow(2, 'forget')], next_page_token: null } }),
+  });
+  await page.goto('/vi/app');
+  await expect(page.getByText(new RegExp(`${UNBROKEN.slice(0, 20)}`)).first()).toBeVisible();
+  await noSideScroll(page);
+  await page.goto(`/vi/app/group/backlog?id=${DECK}`);
+  await expect(page.getByText('leave').first()).toBeVisible();
+  await noSideScroll(page);
+});

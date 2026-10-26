@@ -8,9 +8,9 @@ const load = (locale: 'vi' | 'en'): Messages =>
 
 export const copy = { vi: load('vi'), en: load('en') };
 
-/** Fills ICU-style `{name}` placeholders. */
+/** Fills ICU-style `{name}` and `{name, number}` placeholders (test numbers stay below 1.000, so no separator). */
 export const fill = (message: string, values: Record<string, string | number>) =>
-  message.replace(/\{(\w+)\}/g, (_, key: string) => String(values[key]));
+  message.replace(/\{(\w+)(?:, number)?\}/g, (_, key: string) => String(values[key]));
 
 /** First line of a rich message such as `A<br></br>B`. */
 export const firstLine = (message: string) => message.split(/<[^>]*>/)[0];

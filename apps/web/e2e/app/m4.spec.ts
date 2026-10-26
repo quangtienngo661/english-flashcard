@@ -179,7 +179,7 @@ test.describe('M4 flows (mocked API)', () => {
     await expect(page.getByText(vi.session.tryAgainBody)).toBeVisible();
     await answer.fill('cache');
     await answer.press('Enter');
-    await expect(page.getByText('cache · bộ nhớ đệm')).toBeVisible();
+    await expect(page.getByText('cache · bộ nhớ đệm', { exact: true })).toBeVisible();
     await page.keyboard.press('Enter');
 
     // Round prompt, one more question, then the summary.
