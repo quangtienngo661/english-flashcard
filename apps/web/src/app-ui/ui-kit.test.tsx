@@ -27,6 +27,13 @@ describe('UI kit', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 
+  it('Dialog overlay dims with navy, not ink (ink is light in dark mode; audit 26/10/2026 #3)', () => {
+    renderApp(<DialogHarness />);
+    const overlay = screen.getByRole('dialog').closest('.fixed.inset-0');
+    expect(overlay?.className).toContain('bg-navy/45');
+    expect(overlay?.className).not.toMatch(/\bbg-ink\//);
+  });
+
   it('DateOfBirthField shows the under-13 line from the copy doc and reports null', async () => {
     const onChange = vi.fn();
     renderApp(<DateOfBirthField label="Ngày sinh" today="2026-10-18" onChange={onChange} />);
