@@ -25,9 +25,10 @@ function gate() {
 function setup() {
   const config = testConfig();
   const clock = new FakeClock(new Date('2026-10-07T12:00:00Z'));
-  const chain: SessionChain & { user: { status: string } } = {
+  const chain: SessionChain & { user: { status: string; emailVerifiedAt: Date | null } } = {
     id: randomUUID(), userId: randomUUID(), clientType: 'mobile', deviceLabel: null,
-    createdAt: clock.now(), lastUsedAt: clock.now(), revokedAt: null, revokeReason: null, user: { status: 'active' },
+    createdAt: clock.now(), lastUsedAt: clock.now(), revokedAt: null, revokeReason: null,
+    user: { status: 'active', emailVerifiedAt: clock.now() },
   };
   const original = newRefreshToken();
   const row: RefreshToken & { chain: SessionChain } = {
@@ -165,7 +166,30 @@ describe('SessionService transaction invariants', () => {
     s.chain.user.status = 'locked';
     await expect(s.service.refresh(s.original.token, 'mobile')).rejects.toMatchObject({ status: 401, problemType: 'invalid-token' });
     expect(s.findUnique).toHaveBeenCalledWith({ where: { id: s.row.id },
-      include: { chain: { include: { user: { select: { status: true } } } } } });
+      include: { chain: { include: { user: { select: { status: true, emailVerifiedAt: true } } } } } });
+    expect(s.chainUpdateMany).toHaveBeenCalledExactlyOnceWith({
+      where: { id: s.chain.id, revokedAt: null }, data: { revokedAt: s.clock.now(), revokeReason: 'locked' },
+    });
+    expect(s.events).toEqual(['rate-limit', 'lock', 'read', 'chain-write', 'commit']);
+    expect(s.updateMany).not.toHaveBeenCalled(); expect(s.create).not.toHaveBeenCalled(); expect(s.sign).not.toHaveBeenCalled();
+  });
+
+  it('A13-14: refreshing a chain whose user is unverified → rejected, chain revoked with reason unverified, 401 invalid-token', async () => {
+    const s = setup();
+    s.chain.user.emailVerifiedAt = null;
+    await expect(s.service.refresh(s.original.token, 'mobile')).rejects.toMatchObject({ status: 401, problemType: 'invalid-token' });
+    expect(s.chainUpdateMany).toHaveBeenCalledExactlyOnceWith({
+      where: { id: s.chain.id, revokedAt: null }, data: { revokedAt: s.clock.now(), revokeReason: 'unverified' },
+    });
+    expect(s.events).toEqual(['rate-limit', 'lock', 'read', 'chain-write', 'commit']);
+    expect(s.updateMany).not.toHaveBeenCalled(); expect(s.create).not.toHaveBeenCalled(); expect(s.sign).not.toHaveBeenCalled();
+  });
+
+  it('A13-14: a locked and unverified user is revoked with reason locked', async () => {
+    const s = setup();
+    s.chain.user.status = 'locked';
+    s.chain.user.emailVerifiedAt = null;
+    await expect(s.service.refresh(s.original.token, 'mobile')).rejects.toMatchObject({ status: 401, problemType: 'invalid-token' });
     expect(s.chainUpdateMany).toHaveBeenCalledExactlyOnceWith({
       where: { id: s.chain.id, revokedAt: null }, data: { revokedAt: s.clock.now(), revokeReason: 'locked' },
     });
