@@ -3,6 +3,7 @@
 import { CircleCheck, CircleX } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import { Button } from '@/app-ui/Button';
+import { SpeakWord } from '@/app-ui/SpeakButtons';
 import { cn } from '@/lib/cn';
 import { KBD } from './QuestionCard';
 import type { AnswerResult } from './use-practice-session';
@@ -37,7 +38,12 @@ export function AnswerFeedback({ result, onReview, onNext, busy }: {
         <Icon aria-hidden className={cn('mt-0.5 size-5 shrink-0', right ? 'text-success' : 'text-danger')} />
         <div className="flex min-w-0 flex-col gap-0.5">
           <p className={cn('text-title font-bold', right ? 'text-success' : 'text-danger')}>{right ? t('right') : t('wrong')}</p>
-          <p className="break-words text-ui font-semibold text-ink">{t('revealLine', { lemma: result.correct.lemma, meaning: result.meaning })}</p>
+          <div className="flex flex-wrap items-center gap-x-2">
+            <p className="min-w-0 break-words text-ui font-semibold text-ink">{t('revealLine', { lemma: result.correct.lemma, meaning: result.meaning })}</p>
+            <span className="flex gap-1">
+              <SpeakWord text={result.correct.lemma} />
+            </span>
+          </div>
           {result.definition_en && result.definition_en !== result.meaning && <p className="break-words text-caption text-muted">{result.definition_en}</p>}
         </div>
       </div>
