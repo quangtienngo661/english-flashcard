@@ -252,6 +252,8 @@
       "addWord": "Add word",
       "plans": "Plans",
       "settings": "Settings",
+      "themeToDark": "Switch to dark theme",
+      "themeToLight": "Switch to light theme",
       "logout": "Sign out",
       "account": "Your account",
       "plan": {
@@ -277,8 +279,8 @@
       "search": {
         "level": "Level",
         "allLevels": "All levels",
-        "placeholder": "Search 7,799 words: type a word, like left",
-        "placeholderShort": "Search 7,799 words",
+        "placeholder": "Search for a word",
+        "placeholderShort": "Search for a word",
         "submit": "Search"
       }
     },
@@ -288,14 +290,13 @@
       "seePlans": "See plans",
       "dob": {
         "placeholder": "dd/mm/yyyy",
-        "invalid": "Enter your birth date as day/month/year, like 14/5/2008.",
+        "invalid": "That birth date isn’t valid. Pick another date.",
         "tooYoung": "You need to be 13 or older to use Wordmet.",
         "future": "Your birth date can’t be after today."
       }
     },
     "speak": {
-      "uk": "UK, British voice",
-      "us": "US, American voice",
+      "word": "Listen",
       "sentence": "Listen to the sentence"
     },
     "auth": {
@@ -518,6 +519,7 @@
       "yourGroups": "Your decks",
       "groupCount": "{count, plural, one {# deck} other {# decks}}",
       "createGroup": "Create deck",
+      "seeAll": "See all",
       "emptyTitle": "No decks yet",
       "emptyBody": "Create your first deck to save the words you find and review them on schedule.",
       "createFirst": "Create your first deck",
@@ -725,6 +727,8 @@
       "formOf": "A form of {base}:",
       "alsoFormOf": "Also a form of {base}:",
       "addToGroup": "Add to deck",
+      "addCardTitle": "Add to another deck",
+      "addCardBody": "Save this word to another of your decks.",
       "learning": "Learning",
       "sentences": "{count, plural, one {# saved sentence} other {# saved sentences}}",
       "learningTitle": "You are learning",
@@ -958,6 +962,7 @@
         "title": "Practice from another source",
         "count": "{count, plural, one {# source} other {# sources}}",
         "customize": "Customize: {name}",
+        "customizeButton": "Customize",
         "reopens": "Resets at {time}",
         "group": {
           "name": "By deck",
@@ -1364,8 +1369,8 @@
       "period": "Billing period",
       "year": "Yearly",
       "month": "Monthly",
-      "yours": "Your plan",
-      "yoursGift": "Your plan · from the Wordmet team",
+      "yours": "Current plan",
+      "yoursGift": "Current plan",
       "notOnSale": "Not on sale yet",
       "free": "Free",
       "pro": "Pro",

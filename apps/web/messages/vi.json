@@ -252,6 +252,8 @@
       "addWord": "Thêm từ",
       "plans": "Gói học",
       "settings": "Cài đặt",
+      "themeToDark": "Chuyển sang giao diện tối",
+      "themeToLight": "Chuyển sang giao diện sáng",
       "logout": "Đăng xuất",
       "account": "Tài khoản của bạn",
       "plan": {
@@ -277,8 +279,8 @@
       "search": {
         "level": "Trình độ",
         "allLevels": "Mọi trình độ",
-        "placeholder": "Tra trong 7.799 từ: gõ một từ, ví dụ left",
-        "placeholderShort": "Tra trong 7.799 từ",
+        "placeholder": "Tìm từ",
+        "placeholderShort": "Tìm từ",
         "submit": "Tra"
       }
     },
@@ -288,14 +290,13 @@
       "seePlans": "Xem Gói học",
       "dob": {
         "placeholder": "dd/mm/yyyy",
-        "invalid": "Nhập ngày sinh theo dạng ngày/tháng/năm, ví dụ 14/5/2008.",
+        "invalid": "Ngày sinh không hợp lệ. Chọn lại ngày.",
         "tooYoung": "Bạn cần đủ 13 tuổi để dùng Wordmet.",
         "future": "Ngày sinh không thể sau hôm nay."
       }
     },
     "speak": {
-      "uk": "UK, nghe giọng Anh",
-      "us": "US, nghe giọng Mỹ",
+      "word": "Nghe phát âm",
       "sentence": "Nghe câu"
     },
     "auth": {
@@ -518,6 +519,7 @@
       "yourGroups": "Nhóm của bạn",
       "groupCount": "{count, number} nhóm",
       "createGroup": "Tạo nhóm",
+      "seeAll": "Xem tất cả",
       "emptyTitle": "Chưa có nhóm nào",
       "emptyBody": "Tạo nhóm đầu tiên để lưu từ bạn gặp và ôn theo lịch.",
       "createFirst": "Tạo nhóm đầu tiên",
@@ -725,6 +727,8 @@
       "formOf": "Là dạng chia của {base}:",
       "alsoFormOf": "Cũng là dạng chia của {base}:",
       "addToGroup": "Thêm vào nhóm",
+      "addCardTitle": "Thêm vào nhóm khác",
+      "addCardBody": "Lưu từ này vào một nhóm khác của bạn.",
       "learning": "Đang học",
       "sentences": "{count, number} câu đã gặp",
       "learningTitle": "Bạn đang học",
@@ -958,6 +962,7 @@
         "title": "Luyện theo nguồn khác",
         "count": "{count, number} nguồn",
         "customize": "Tùy chỉnh: {name}",
+        "customizeButton": "Tùy chỉnh",
         "reopens": "Mở lại lúc {time}",
         "group": {
           "name": "Theo nhóm",
@@ -1364,8 +1369,8 @@
       "period": "Kỳ hạn",
       "year": "Theo năm",
       "month": "Theo tháng",
-      "yours": "Gói của bạn",
-      "yoursGift": "Gói của bạn · Đội Wordmet tặng",
+      "yours": "Gói hiện tại",
+      "yoursGift": "Gói hiện tại",
       "notOnSale": "Chưa mở bán",
       "free": "Miễn phí",
       "pro": "Pro",
