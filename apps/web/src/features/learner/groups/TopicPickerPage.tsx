@@ -14,7 +14,7 @@ import { Checkbox } from '@/app-ui/Checkbox';
 import { Select } from '@/app-ui/Select';
 import { FullScreenSpinner, NotFoundState } from '@/app-ui/States';
 import { showToast } from '@/app-ui/Toast';
-import { useGroupMutations, useGroups, type BulkResult } from './groups-api';
+import { isId, useGroupMutations, useGroups, type BulkResult } from './groups-api';
 
 type Sense = {
   sense_id: string;
@@ -37,15 +37,17 @@ export function TopicPickerPage() {
   const params = useSearchParams();
   const code = params.get('code') ?? '';
   const level = params.get('level') ?? '';
+  const rawGroup = params.get('group');
+  const groupId = isId(rawGroup) ? rawGroup.toLowerCase() : undefined;
   const valid = /^[a-z0-9-]+$/.test(code) && LEVELS.includes(level);
   return (
     <AppShell variant="sub" back={{ href: `/${locale}/app/groups`, label: t('back') }}>
-      {valid ? <Picker code={code} level={level} /> : <NotFoundState title={t('notFound')} />}
+      {valid ? <Picker code={code} level={level} groupId={groupId} /> : <NotFoundState title={t('notFound')} />}
     </AppShell>
   );
 }
 
-function Picker({ code, level }: { code: string; level: string }) {
+function Picker({ code, level, groupId }: { code: string; level: string; groupId?: string }) {
   const t = useTranslations('App.topic');
   const api = useApi();
   const errorText = useErrorMessage();
@@ -86,8 +88,8 @@ function Picker({ code, level }: { code: string; level: string }) {
   const title = t('title', { topic: topicName, level });
   const unlearned = senses.filter((s) => !learning.has(s.sense_id));
   const deckName = (ids: string[]) => ids.map((gid) => groups.find((g) => g.id === gid)?.name).filter(Boolean).join(', ');
-  // A deck already named like the topic (made here earlier) is the default, so a second add never makes it again.
-  const target = chosen ?? groups.find((g) => g.name === title)?.id ?? NEW_DECK;
+  // A14-7–A14-8: prefer the requested deck when it exists, otherwise keep the topic default.
+  const target = chosen ?? groups.find((g) => g.id === groupId)?.id ?? groups.find((g) => g.name === title)?.id ?? NEW_DECK;
 
   // Exactly the unlearned (or ticked) ids, 100 a request; each batch has its own key derived from the press.
   const add = useSubmitOnce(async (key) => {
