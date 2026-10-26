@@ -73,8 +73,8 @@ export function WeakWordsPage() {
                 <p className="text-ui font-semibold">{t('reopens', { time: starter.reopensAt })}</p>
               ) : (
                 <>
-                  <Button variant="sticker" size="lg" isPending={starter.pending('weak')} onPress={start}>
-                    {chosen ? t('startGroup', { count, name: chosen.name }) : t('start', { count })}
+                  <Button variant="sticker" size="lg" className="w-full" isPending={starter.pending('weak')} onPress={start}>
+                    <span className="truncate">{chosen ? t('startGroup', { count, name: chosen.name }) : t('start', { count })}</span>
                   </Button>
                   <Button
                     size="lg"
@@ -121,7 +121,7 @@ export function WeakWordsPage() {
               onChange={setDeck}
             />
           </div>
-          <h2 className="text-title font-semibold text-ink">{chosen ? t('titleGroup', { count, name: chosen.name }) : t('titleAll', { count })}</h2>
+          <h2 className="wrap-anywhere text-title font-semibold text-ink">{chosen ? t('titleGroup', { count, name: chosen.name }) : t('titleAll', { count })}</h2>
           {list.isError ? (
             <ErrorState message={errorText(list.error)} onRetry={() => void list.refetch()} />
           ) : (
