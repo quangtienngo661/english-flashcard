@@ -23,9 +23,9 @@ export class AuthController {
   async register(
     @Body({ schema: registerSchema }) body: RegisterBody,
     @Res({ passthrough: true }) res: Response,
-  ): Promise<TokenResponse> {
-    const session = await this.auth.register(body, res);
-    return writeSession(res, session, this.clock.now(), this.config.jwt.accessTtlSeconds);
+  ): Promise<{ email: string; verification_required: true }> {
+    const { email } = await this.auth.register(body, res);
+    return { email, verification_required: true };
   }
 
   @Post('login')

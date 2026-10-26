@@ -37,7 +37,7 @@ export class AuthService {
     @Inject(AppLogger) private readonly logger: AppLogger,
   ) {}
 
-  async register(body: RegisterBody, res: Response): Promise<IssuedSession> {
+  async register(body: RegisterBody, res: Response): Promise<{ email: string }> {
     const email = normalizeEmail(body.email);
     if (!email) throw this.validationFailed();
     const violations = checkPasswordPolicy(body.password);
@@ -52,33 +52,54 @@ export class AuthService {
     }
     await this.budget.assertAvailable();
     const hash = await this.hasher.hash(body.password);
+    // Count every registration before lookup; a new email still gets its first code.
+    const mailAllowed = await this.otp.tryLimitEmail(email);
     // A preallocated ID lets even a new account follow the lock-first protocol.
-    const userId = randomUUID();
-    let session: IssuedSession;
+    const newUserId = randomUUID();
+    let outcome: { userId: string; mail: boolean };
     try {
-      session = await this.prisma.$transaction(async (tx) => {
+      outcome = await this.prisma.$transaction(async (tx) => {
+        const existing = await tx.user.findUnique({ where: { email } });
+        const userId = existing?.id ?? newUserId;
         await withUserLock(tx, userId);
         const now = this.clock.now();
-        await tx.user.create({ data: {
-          id: userId, email, timezone, givenName: body.given_name, familyName: body.family_name ?? null,
+        const data = {
+          timezone, givenName: body.given_name, familyName: body.family_name ?? null,
           birthDate: dateValue(body.birth_date), termsAcceptedAt: now, termsVersion: this.config.termsVersion,
-          createdAt: now, updatedAt: now,
-        } });
-        await tx.passwordCredential.create({ data: { userId, hash, updatedAt: now } });
-        return this.sessions.startChain(tx, { userId, client: body.client, deviceLabel: body.device_label });
+          updatedAt: now,
+        };
+        if (!existing) {
+          await tx.user.create({ data: { id: userId, email, ...data, createdAt: now } });
+          await tx.passwordCredential.create({ data: { userId, hash, updatedAt: now } });
+          return { userId, mail: true };
+        }
+        const user = await tx.user.findUnique({ where: { id: userId } });
+        if (!user || user.emailVerifiedAt !== null || user.status !== 'active') throw this.emailTaken();
+        const updated = await tx.user.updateMany({
+          where: { id: userId, emailVerifiedAt: null, status: 'active' },
+          data: { ...data, failedLoginCount: 0, loginLockedUntil: null },
+        });
+        if (updated.count === 0) throw this.emailTaken();
+        await tx.passwordCredential.upsert({ where: { userId },
+          create: { userId, hash, updatedAt: now }, update: { hash, updatedAt: now } });
+        await this.sessions.revokeAllForUser(tx, userId, 'reregistered');
+        return { userId, mail: mailAllowed };
       }, transactionOptions);
     } catch (error) {
       if (error !== null && typeof error === 'object' && 'code' in error && error.code === 'P2002') {
-        throw new ProblemDetailsException({ status: 409, title: 'Email taken', type: 'email-taken' });
+        throw this.emailTaken();
       }
       throw error;
     }
-    const job: MailJob = async () => this.otp.noteIssued(userId, 'verify_email', await this.prisma.$transaction(async (tx) => {
-      await withUserLock(tx, userId);
-      return this.otp.issueInTx(tx, userId, 'verify_email');
-    }, transactionOptions));
-    this.dispatcher.afterResponse(res, [job]);
-    return session;
+    if (outcome.mail) {
+      const { userId } = outcome;
+      const job: MailJob = async () => this.otp.noteIssued(userId, 'verify_email', await this.prisma.$transaction(async (tx) => {
+        await withUserLock(tx, userId);
+        return this.otp.issueInTx(tx, userId, 'verify_email');
+      }, transactionOptions));
+      this.dispatcher.afterResponse(res, [job]);
+    }
+    return { email };
   }
 
   async login(body: LoginBody, res: Response): Promise<IssuedSession> {
@@ -131,6 +152,9 @@ export class AuthService {
     return outcome.session;
   }
 
+  private emailTaken(): ProblemDetailsException {
+    return new ProblemDetailsException({ status: 409, title: 'Email taken', type: 'email-taken' });
+  }
   private validationFailed(extensions?: Record<string, unknown>): ProblemDetailsException {
     return new ProblemDetailsException({ status: 400, title: 'Validation failed', type: 'validation-failed', extensions });
   }
