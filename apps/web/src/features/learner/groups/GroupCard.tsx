@@ -21,8 +21,7 @@ export function sortForToday(groups: GroupSummary[]): GroupSummary[] {
   );
 }
 
-// Band tokens stay light in the dark theme; the bars and ⋯ on them use on-accent, which stays dark (owner 27/10/2026).
-const TONES = ['bg-band-blue', 'bg-band-yellow', 'bg-band-green', 'bg-band-red'] as const;
+const TONES = ['bg-primary-soft', 'bg-accent-soft', 'bg-success-soft', 'bg-danger-soft'] as const;
 
 /** The six stages as small bars (K/10 card head): filled = due today, outline = the rest. */
 export function StageBars({ cells, className }: { cells: GroupSummary['cells']; className?: string }) {
@@ -32,7 +31,7 @@ export function StageBars({ cells, className }: { cells: GroupSummary['cells']; 
       {cells.map((cell) => (
         <span
           key={cell.level}
-          className={cn('w-4 rounded-sm border-2 border-on-accent', cell.total > 0 ? 'bg-on-accent' : 'bg-transparent')}
+          className={cn('w-4 rounded-sm border-2 border-ink', cell.total > 0 ? 'bg-ink' : 'bg-transparent')}
           // raw-ok: bar height is the stage's share of the deck
           style={{ height: `${Math.max(18, Math.round((cell.total / max) * 100))}%` }}
         />
@@ -96,7 +95,7 @@ function GroupMenu({ group, actions }: { group: GroupSummary; actions: Actions }
     <MenuTrigger>
       <Button
         aria-label={t('menu', { name: group.name })}
-        className="absolute right-3 top-3 z-10 rounded-sm p-1 text-on-accent outline-none hover:bg-on-accent/10 focus-visible:ring-2 focus-visible:ring-primary"
+        className="absolute right-3 top-3 z-10 rounded-sm p-1 text-ink outline-none hover:bg-surface/60 focus-visible:ring-2 focus-visible:ring-primary"
       >
         <MoreHorizontal aria-hidden className="size-5" />
       </Button>

@@ -36,10 +36,5 @@
   --color-session-card: #2c3448;
   --color-on-accent: #0f1a3d;
   --color-highlight: #6b5413;
-  /* Deck card bands keep their light tone in the dark theme (owner 27/10/2026). */
-  --color-band-blue: #eceffe;
-  --color-band-yellow: #fff4c7;
-  --color-band-green: #e3f4ea;
-  --color-band-red: #fde8e5;
   --color-shadow-ink: rgb(0 0 0 / 0.5);
 }
