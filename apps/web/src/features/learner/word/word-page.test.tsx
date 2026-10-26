@@ -93,10 +93,11 @@ describe('WordPage (K/31–K/33, M/41)', () => {
     expect(within(p).getAllByRole('link').map((a) => a.textContent)).toEqual(['went']);
   });
 
-  it('a learned meaning: "Đang học · IELTS · 3 câu đã gặp" and the "Bạn đang học" block with its deck stage and first sentence', async () => {
+  it('a learned meaning: "Đang học · 3 câu đã gặp" (the decks are only in the block, owner 26/10/2026) and the "Bạn đang học" block with its deck stage and first sentence', async () => {
     renderApp(<WordPage />, { routes: routes() });
     const adverb = (await screen.findAllByRole('article'))[1];
-    expect(await within(adverb).findByText(/Đang học · IELTS/)).toBeInTheDocument();
+    const chip = await within(adverb).findByText(/^Đang học/);
+    expect(chip).not.toHaveTextContent('IELTS');
     expect(within(adverb).getByRole('button', { name: '3 câu đã gặp' })).toBeInTheDocument();
     const block = screen.getByRole('region', { name: 'Bạn đang học' });
     expect(within(block).getByText('IELTS · ngăn 3 ngày')).toBeInTheDocument();
@@ -124,7 +125,7 @@ describe('WordPage (K/31–K/33, M/41)', () => {
       }),
     });
     // The count moves into the "Đang học" chip once the learning state arrives; press it there.
-    await screen.findByText(/Đang học · IELTS/);
+    await screen.findByText(/^Đang học/);
     await userEvent.click(screen.getByRole('button', { name: '3 câu đã gặp' }));
     const dialog = await screen.findByRole('dialog', { name: 'Câu đã gặp · left' });
     expect(within(dialog).getAllByRole('listitem')).toHaveLength(3);
