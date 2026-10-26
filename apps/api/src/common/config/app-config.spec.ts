@@ -174,6 +174,7 @@ describe('loadConfig', () => {
       'sample.create': { by: 'user', max: 10, windowSeconds: 60 },
       'auth.register.ip': { by: 'ip', max: 5, windowSeconds: 3600 },
       'auth.login.ip': { by: 'ip', max: 20, windowSeconds: 60 },
+      'auth.verify.ip': { by: 'ip', max: 20, windowSeconds: 3600 },
       'auth.otp.ip': { by: 'ip', max: 20, windowSeconds: 3600 },
       'auth.otp.email.cooldown': { by: 'email', max: 1, windowSeconds: 60 },
       'auth.otp.email.hourly': { by: 'email', max: 5, windowSeconds: 3600 },

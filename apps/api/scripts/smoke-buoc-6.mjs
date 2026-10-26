@@ -156,11 +156,11 @@ async function mailsTo(email) {
   return (list.messages ?? []).filter((m) => m.To?.some((to) => to.Address === email));
 }
 
-async function otpCodeFor(email) {
-  await sleep(1_000);
+async function otpCodeFor(email, atLeast) {
   const deadline = Date.now() + 10_000;
   for (;;) {
-    const message = (await mailsTo(email)).sort((a, b) => (a.Created < b.Created ? 1 : -1))[0];
+    const mails = await mailsTo(email);
+    const message = mails.length >= atLeast ? mails.sort((a, b) => (a.Created < b.Created ? 1 : -1))[0] : null;
     if (message) {
       const full = await (await send(`${MAILPIT}/api/v1/message/${message.ID}`)).json();
       const match = (full.Text ?? '').match(/(\d{6})/);
@@ -172,12 +172,12 @@ async function otpCodeFor(email) {
 }
 
 async function registerVerified(email) {
-  const registered = await want(api('POST', '/v1/auth/register', {
+  const before = (await mailsTo(email)).length;
+  await want(api('POST', '/v1/auth/register', {
     body: { email, password: PASSWORD, timezone: TIMEZONE, given_name: 'Smoke', birth_date: '2000-01-01', accept_terms: true, client: 'web' } }), 201, `register ${email}`);
-  await want(api('POST', '/v1/auth/otp', { token: registered.access_token, body: { purpose: 'verify_email' } }), 202, 'request OTP');
-  const code = await otpCodeFor(email);
-  await want(api('POST', '/v1/auth/verify-email', { token: registered.access_token, body: { code } }), 200, `verify ${email}`);
-  return registered.access_token;
+  const code = await otpCodeFor(email, before + 1);
+  const verified = await want(api('POST', '/v1/auth/verify-email', { body: { email, code, password: PASSWORD, client: 'web' } }), 200, `verify ${email}`);
+  return verified.access_token;
 }
 
 const login = async (email) => (await want(api('POST', '/v1/auth/login', {

@@ -25,22 +25,30 @@ describe('registration and login HTTP routing (unit, isolated persistence)', () 
   beforeEach(() => {
     issued = { accessToken: 'access', refreshToken: 'refresh', sessionChainId: randomUUID(), client: 'mobile',
       refreshExpiresAt: new Date(ctx.clock.now().getTime() + 86_400_000) };
-    register.mockReset().mockImplementation(async () => issued); login.mockReset().mockImplementation(async () => issued);
+    register.mockReset().mockImplementation(async () => ({ email: body.email })); login.mockReset().mockImplementation(async () => issued);
     hit.mockReset().mockResolvedValue(undefined);
   });
   afterAll(async () => { await ctx?.close(); vi.restoreAllMocks(); });
 
-  it.each(['register', 'login'])('B1#1/B1#11: public mobile %s returns tokens with the configured TTL and correct status', async (route) => {
-    const input = route === 'register' ? body : { email: body.email, password: body.password, client: body.client };
-    const res = await ctx.http().post(`/v1/auth/${route}`).send(input);
-    expect(res.status).toBe(route === 'register' ? 201 : 200);
+  it.each(['web', 'mobile'])('A13-1: public %s registration returns 201 with email and verification_required, no tokens or refresh cookie', async (client) => {
+    const input = { ...body, email: '  A@Example.COM ', client };
+    const res = await ctx.http().post('/v1/auth/register').send(input);
+    expect(res.status).toBe(201);
+    expect(res.body).toEqual({ email: body.email, verification_required: true });
+    expect(res.body).not.toHaveProperty('access_token'); expect(res.body).not.toHaveProperty('refresh_token');
+    expect(res.headers['set-cookie']).toBeUndefined();
+    expect(hit).toHaveBeenCalledWith('auth.register.ip', expect.any(String));
+    expect(hit).toHaveBeenCalledWith('mail.ip.daily', expect.any(String));
+    expect(register).toHaveBeenCalledExactlyOnceWith(input, expect.objectContaining({ cookie: expect.any(Function) }));
+  });
+  it('B1#11: public mobile login returns tokens with the configured TTL and correct status', async () => {
+    const input = { email: body.email, password: body.password, client: body.client };
+    const res = await ctx.http().post('/v1/auth/login').send(input);
+    expect(res.status).toBe(200);
     expect(res.body).toEqual({ access_token: 'access', refresh_token: 'refresh', token_type: 'Bearer', expires_in: 120 });
     expect(res.headers['set-cookie']).toBeUndefined();
-    expect(hit).toHaveBeenCalledWith(`auth.${route}.ip`, expect.any(String));
-    if (route === 'register') {
-      expect(hit).toHaveBeenCalledWith('mail.ip.daily', expect.any(String));
-      expect(register).toHaveBeenCalledWith(input, expect.objectContaining({ cookie: expect.any(Function) }));
-    } else expect(login).toHaveBeenCalledExactlyOnceWith(input);
+    expect(hit).toHaveBeenCalledWith('auth.login.ip', expect.any(String));
+    expect(login).toHaveBeenCalledExactlyOnceWith(input, expect.objectContaining({ cookie: expect.any(Function) }));
   });
   it('FE5: accept_terms false, missing or "true" -> 400 validation-failed and register is not called', async () => {
     const { accept_terms: _omitted, ...missing } = body;
@@ -56,11 +64,11 @@ describe('registration and login HTTP routing (unit, isolated persistence)', () 
     const extra = await ctx.http().post('/v1/auth/login').send({ email: body.email, password: body.password, client: body.client, given_name: 'Lan' });
     expect(extra.status).toBe(400);
   });
-  it.each(['register', 'login'])('B1#1/B1#21: web %s sets the secure refresh cookie and omits the body token', async (route) => {
+  it('B1#21: web login sets the secure refresh cookie and omits the body token', async () => {
     issued.client = 'web';
-    const input = route === 'register' ? { ...body, client: 'web' } : { email: body.email, password: body.password, client: 'web' };
-    const res = await ctx.http().post(`/v1/auth/${route}`).send(input);
-    expect(res.status).toBe(route === 'register' ? 201 : 200);
+    const input = { email: body.email, password: body.password, client: 'web' };
+    const res = await ctx.http().post('/v1/auth/login').send(input);
+    expect(res.status).toBe(200);
     expect(res.body).toEqual({ access_token: 'access', token_type: 'Bearer', expires_in: 120 });
     expect(cookieFrom(res)).toBe('refresh_token=refresh');
     for (const attr of ['HttpOnly', 'Secure', 'SameSite=Strict', 'Path=/v1/auth', 'Max-Age=86400']) expect(res.headers['set-cookie'][0]).toContain(attr);

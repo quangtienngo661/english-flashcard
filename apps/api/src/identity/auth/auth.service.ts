@@ -9,7 +9,7 @@ import { AppLogger } from '../../common/logging/app-logger.js';
 import { ProblemDetailsException } from '../../common/problem-details/problem-details.exception.js';
 import type { PrismaClient } from '../../generated/prisma/client.js';
 import { MailBudget } from '../../common/mail/mail-budget.service.js';
-import { MailDispatcher, type MailJob } from '../../common/mail/mail-dispatcher.service.js';
+import { MailDispatcher, sendPrepared, type MailJob } from '../../common/mail/mail-dispatcher.service.js';
 import { dateValue, localDate } from '../../common/time/local-date.js';
 import { MIN_AGE, isOldEnough } from '../profile/person.js';
 import { canonicalTimeZone } from '../profile/timezone.js';
@@ -17,7 +17,8 @@ import { SessionService, type IssuedSession } from '../sessions/session.service.
 import { withUserLock } from '../user-lock.js';
 import type { LoginBody, RegisterBody } from './auth.schemas.js';
 import { accountLocked, decideCredential } from './credential-decision.js';
-import { OtpService } from './otp.service.js';
+import { OtpService, otpLocked } from './otp.service.js';
+import type { VerifyEmailBody } from './otp.schemas.js';
 import { PasswordHasher } from './password-hasher.service.js';
 import { checkPasswordPolicy, normalizePassword } from './password-policy.js';
 
@@ -37,7 +38,7 @@ export class AuthService {
     @Inject(AppLogger) private readonly logger: AppLogger,
   ) {}
 
-  async register(body: RegisterBody, res: Response): Promise<IssuedSession> {
+  async register(body: RegisterBody, res: Response): Promise<{ email: string }> {
     const email = normalizeEmail(body.email);
     if (!email) throw this.validationFailed();
     const violations = checkPasswordPolicy(body.password);
@@ -52,36 +53,57 @@ export class AuthService {
     }
     await this.budget.assertAvailable();
     const hash = await this.hasher.hash(body.password);
+    // Count every registration before lookup; a new email still gets its first code.
+    const mailAllowed = await this.otp.tryLimitEmail(email);
     // A preallocated ID lets even a new account follow the lock-first protocol.
-    const userId = randomUUID();
-    let session: IssuedSession;
+    const newUserId = randomUUID();
+    let outcome: { userId: string; mail: boolean };
     try {
-      session = await this.prisma.$transaction(async (tx) => {
+      outcome = await this.prisma.$transaction(async (tx) => {
+        const existing = await tx.user.findUnique({ where: { email } });
+        const userId = existing?.id ?? newUserId;
         await withUserLock(tx, userId);
         const now = this.clock.now();
-        await tx.user.create({ data: {
-          id: userId, email, timezone, givenName: body.given_name, familyName: body.family_name ?? null,
+        const data = {
+          timezone, givenName: body.given_name, familyName: body.family_name ?? null,
           birthDate: dateValue(body.birth_date), termsAcceptedAt: now, termsVersion: this.config.termsVersion,
-          createdAt: now, updatedAt: now,
-        } });
-        await tx.passwordCredential.create({ data: { userId, hash, updatedAt: now } });
-        return this.sessions.startChain(tx, { userId, client: body.client, deviceLabel: body.device_label });
+          updatedAt: now,
+        };
+        if (!existing) {
+          await tx.user.create({ data: { id: userId, email, ...data, createdAt: now } });
+          await tx.passwordCredential.create({ data: { userId, hash, updatedAt: now } });
+          return { userId, mail: true };
+        }
+        const user = await tx.user.findUnique({ where: { id: userId } });
+        if (!user || user.emailVerifiedAt !== null || user.status !== 'active') throw this.emailTaken();
+        const updated = await tx.user.updateMany({
+          where: { id: userId, emailVerifiedAt: null, status: 'active' },
+          data: { ...data, failedLoginCount: 0, loginLockedUntil: null },
+        });
+        if (updated.count === 0) throw this.emailTaken();
+        await tx.passwordCredential.upsert({ where: { userId },
+          create: { userId, hash, updatedAt: now }, update: { hash, updatedAt: now } });
+        await this.sessions.revokeAllForUser(tx, userId, 'reregistered');
+        return { userId, mail: mailAllowed };
       }, transactionOptions);
     } catch (error) {
       if (error !== null && typeof error === 'object' && 'code' in error && error.code === 'P2002') {
-        throw new ProblemDetailsException({ status: 409, title: 'Email taken', type: 'email-taken' });
+        throw this.emailTaken();
       }
       throw error;
     }
-    const job: MailJob = async () => this.otp.noteIssued(userId, 'verify_email', await this.prisma.$transaction(async (tx) => {
-      await withUserLock(tx, userId);
-      return this.otp.issueInTx(tx, userId, 'verify_email');
-    }, transactionOptions));
-    this.dispatcher.afterResponse(res, [job]);
-    return session;
+    if (outcome.mail) {
+      const { userId } = outcome;
+      const job: MailJob = async () => this.otp.noteIssued(userId, 'verify_email', await this.prisma.$transaction(async (tx) => {
+        await withUserLock(tx, userId);
+        return this.otp.issueInTx(tx, userId, 'verify_email');
+      }, transactionOptions));
+      this.dispatcher.afterResponse(res, [job]);
+    }
+    return { email };
   }
 
-  async login(body: LoginBody): Promise<IssuedSession> {
+  async login(body: LoginBody, res: Response): Promise<IssuedSession> {
     const email = normalizeEmail(body.email);
     const failedSubject = { email_hmac: createHmac('sha256', this.config.rateLimitHmacKey)
       .update(email ?? body.email).digest('hex') };
@@ -110,6 +132,8 @@ export class AuthService {
         return { kind, newlyLocked: kind === 'locked' && current?.loginLockedUntil !== null
           && current?.loginLockedUntil?.getTime() !== before?.loginLockedUntil?.getTime() };
       }
+      const user = await tx.user.findUnique({ where: { id: account.id }, select: { emailVerifiedAt: true } });
+      if (user?.emailVerifiedAt === null) return { kind: 'unverified' as const };
       return { kind, session: await this.sessions.startChain(tx, {
         userId: account.id, client: body.client, deviceLabel: body.device_label,
       }) };
@@ -120,11 +144,57 @@ export class AuthService {
       if (outcome.newlyLocked) this.logger.warn('login_locked', { user_id: account.id });
       // Reached only with the right password: a wrong one on a locked account stays the generic 401.
       if (outcome.kind === 'account_locked') throw accountLocked();
+      if (outcome.kind === 'unverified') {
+        await this.otp.sendVerifyCodeQuietly(account.id, account.email, res);
+        throw new ProblemDetailsException({ status: 403, title: 'Email not verified', type: 'email-not-verified' });
+      }
       throw this.invalidCredentials();
     }
     return outcome.session;
   }
 
+  async verifyEmail(body: VerifyEmailBody, res: Response): Promise<IssuedSession> {
+    const email = normalizeEmail(body.email);
+    if ([...normalizePassword(body.password)].length > 128) throw this.invalidOtp();
+    const account = email ? await this.prisma.user.findUnique({
+      where: { email }, include: { passwordCredential: true },
+    }) : null;
+    if (!account?.passwordCredential) {
+      await this.hasher.verifyDummy(body.password);
+      throw this.invalidOtp();
+    }
+    const verifiedHash = account.passwordCredential.hash;
+    if (!await this.hasher.verify(verifiedHash, body.password)) throw this.invalidOtp();
+    const outcome = await this.prisma.$transaction(async (tx) => {
+      await withUserLock(tx, account.id);
+      const current = await tx.user.findUnique({ where: { id: account.id }, include: { passwordCredential: true } });
+      if (!current || current.passwordCredential?.hash !== verifiedHash
+        || current.status !== 'active' || current.emailVerifiedAt !== null) return { kind: 'no_live_code' as const };
+      const result = await this.otp.checkInTx(tx, account.id, 'verify_email', body.code);
+      if (result.kind !== 'ok') return result;
+      await tx.user.update({ where: { id: account.id }, data: { emailVerifiedAt: this.clock.now() } });
+      const session = await this.sessions.startChain(tx, {
+        userId: account.id, client: body.client, deviceLabel: body.device_label,
+      });
+      return { kind: 'ok' as const, session };
+    }, transactionOptions);
+    if (outcome.kind === 'locked') {
+      if (outcome.notice) {
+        this.logger.warn('otp_locked', { user_id: account.id, purpose: 'verify_email' });
+        this.dispatcher.afterResponse(res, [sendPrepared(outcome.notice)]);
+      }
+      throw otpLocked(outcome.lockedUntil, this.clock.now());
+    }
+    if (outcome.kind !== 'ok') throw this.invalidOtp();
+    return outcome.session;
+  }
+
+  private invalidOtp(): ProblemDetailsException {
+    return new ProblemDetailsException({ status: 400, title: 'Invalid OTP', type: 'invalid-otp' });
+  }
+  private emailTaken(): ProblemDetailsException {
+    return new ProblemDetailsException({ status: 409, title: 'Email taken', type: 'email-taken' });
+  }
   private validationFailed(extensions?: Record<string, unknown>): ProblemDetailsException {
     return new ProblemDetailsException({ status: 400, title: 'Validation failed', type: 'validation-failed', extensions });
   }

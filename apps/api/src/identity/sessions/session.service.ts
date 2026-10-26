@@ -27,7 +27,7 @@ export interface IssuedSession {
 type SessionMaterial = Omit<IssuedSession, 'accessToken'>;
 type RefreshOutcome =
   | { kind: 'rotated' | 'grace'; session: SessionMaterial }
-  | { kind: 'rejected'; reason: 'expired' | 'reuse' | 'revoked' | 'path_mismatch' | 'locked' };
+  | { kind: 'rejected'; reason: 'expired' | 'reuse' | 'revoked' | 'path_mismatch' | 'locked' | 'unverified' };
 
 @Injectable()
 export class SessionService {
@@ -142,7 +142,7 @@ export class SessionService {
     // Two failed CAS attempts under the same advisory lock indicate an unexpected invariant violation.
     for (let attempt = 0; attempt < 2; attempt++) {
       const row = await tx.refreshToken.findUnique({
-        where: { id: tokenId }, include: { chain: { include: { user: { select: { status: true } } } } },
+        where: { id: tokenId }, include: { chain: { include: { user: { select: { status: true, emailVerifiedAt: true } } } } },
       });
       const successor = row?.successorId
         ? await tx.refreshToken.findUnique({ where: { id: row.successorId } }) : null;
@@ -154,6 +154,12 @@ export class SessionService {
           where: { id: row.chain.id, revokedAt: null }, data: { revokedAt: now, revokeReason: 'locked' },
         });
         return { kind: 'rejected', reason: 'locked' };
+      }
+      if (row.chain.user.emailVerifiedAt === null) {
+        await tx.sessionChain.updateMany({
+          where: { id: row.chain.id, revokedAt: null }, data: { revokedAt: now, revokeReason: 'unverified' },
+        });
+        return { kind: 'rejected', reason: 'unverified' };
       }
       const chain = row.chain;
       if (chain.clientType !== path) return { kind: 'rejected', reason: 'path_mismatch' };

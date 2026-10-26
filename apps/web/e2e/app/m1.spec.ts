@@ -8,19 +8,16 @@ const signedOut = { 'POST /v1/auth/refresh': () => problem(401, 'invalid-token')
 
 test.describe('M1 flows (mocked API)', () => {
   test('sign-up → code → language → Today', async ({ page }) => {
-    let profile = meBody({ native_language: null, email_verified: false });
-    // Like the API: sign-up sets the refresh cookie, so the full page loads after it stay signed in.
-    let registered = false;
+    let profile = meBody({ native_language: null });
+    // Like the API (design §4.2): sign-up gives no session; the right code sets the refresh cookie, so later full loads stay signed in.
+    let verified = false;
     await mockApi(page, {
-      'POST /v1/auth/refresh': () => (registered ? tokenBody() : problem(401, 'invalid-token')),
-      'POST /v1/auth/register': () => {
-        registered = true;
-        return tokenBody();
-      },
+      'POST /v1/auth/refresh': () => (verified ? tokenBody() : problem(401, 'invalid-token')),
+      'POST /v1/auth/register': () => ({ status: 201, json: { email: 'lan@example.com', verification_required: true } }),
       'GET /v1/me': () => ({ json: profile }),
       'POST /v1/auth/verify-email': () => {
-        profile = { ...profile, email_verified: true };
-        return { json: {} };
+        verified = true;
+        return tokenBody();
       },
       'PATCH /v1/me': (req) => {
         profile = { ...profile, ...(req.body as object) };
@@ -36,7 +33,10 @@ test.describe('M1 flows (mocked API)', () => {
     await page.getByRole('checkbox').check({ force: true });
     await page.getByRole('button', { name: vi.auth.register.submit }).click();
 
-    await expect(page).toHaveURL(/\/vi\/app\/verify-email\?sent=1$/);
+    await expect(page).toHaveURL(/\/vi\/app\/verify-email$/);
+    await expect(page.getByText('lan@example.com')).toBeVisible();
+    // The password typed on the form is kept in memory (client-side move), so the page does not ask for it.
+    await expect(page.getByLabel(vi.auth.password)).toHaveCount(0);
     await page.getByRole('textbox', { name: 'Chữ số 1' }).click();
     await page.keyboard.type('481205');
     await page.getByRole('button', { name: vi.auth.verify.submit }).click();
@@ -45,6 +45,36 @@ test.describe('M1 flows (mocked API)', () => {
     await page.getByRole('button', { name: vi.auth.welcome.submit }).click();
     await expect(page).toHaveURL(/\/vi\/app$/);
     expect(requests(page, 'POST', '/v1/auth/register')[0].body).toMatchObject({ accept_terms: true, client: 'web', birth_date: '2008-05-14' });
+    expect(requests(page, 'POST', '/v1/auth/verify-email')[0].body).toMatchObject({
+      email: 'lan@example.com', code: '481205', password: 'Aa1!aaaa', client: 'web',
+    });
+    expect(requests(page, 'POST', '/v1/auth/otp')).toHaveLength(0);
+  });
+
+  test('sign-in unverified → code page → Today', async ({ page }) => {
+    let verified = false;
+    await mockApi(page, {
+      'POST /v1/auth/refresh': () => (verified ? tokenBody() : problem(401, 'invalid-token')),
+      'POST /v1/auth/login': () => problem(403, 'email-not-verified'),
+      'POST /v1/auth/verify-email': () => {
+        verified = true;
+        return tokenBody();
+      },
+      'GET /v1/me': () => ({ json: meBody() }),
+      'GET /v1/me/entitlements': () => problem(404, 'not-found'),
+    });
+    await page.goto('/vi/app/login');
+    await page.getByRole('textbox', { name: vi.auth.email }).fill('lan@example.com');
+    await page.getByLabel(vi.auth.password).fill('Aa1!aaaa');
+    await page.getByRole('button', { name: vi.auth.login.submit }).click();
+
+    await expect(page).toHaveURL(/\/vi\/app\/verify-email\?reason=login$/);
+    await expect(page.getByText(vi.auth.verify.loginBody.replace('{email}', 'lan@example.com'))).toBeVisible();
+    await page.getByRole('textbox', { name: 'Chữ số 1' }).click();
+    await page.keyboard.type('481205');
+    await page.getByRole('button', { name: vi.auth.verify.submit }).click();
+    await expect(page).toHaveURL(/\/vi\/app$/);
+    expect(requests(page, 'POST', '/v1/auth/verify-email')[0].body).toMatchObject({ email: 'lan@example.com', password: 'Aa1!aaaa' });
   });
 
   test('E2: signing in with ?next lands on Settings', async ({ page }) => {
@@ -90,8 +120,9 @@ test.describe('M1 flows (mocked API)', () => {
 });
 
 // Every M1 page × vi/en × light/dark; the desktop (1440) and mobile (390) projects run each once.
-const SIGNED_OUT_PAGES = ['login', 'register', 'forgot-password', 'reset-password?email=lan%40example.com'];
-const MEMBER_PAGES = ['', 'settings', 'settings/account', 'verify-email?sent=1', 'welcome'];
+// verify-email opened directly (no pending email, no password in memory) shows its email and password fields too.
+const SIGNED_OUT_PAGES = ['login', 'register', 'forgot-password', 'reset-password?email=lan%40example.com', 'verify-email', 'verify-email?reason=login'];
+const MEMBER_PAGES = ['', 'settings', 'settings/account', 'welcome'];
 
 async function open(page: Page, locale: 'vi' | 'en', path: string, signedIn: boolean) {
   if (signedIn) await signedInAs(page, 'free', {}, { native_language: locale });
@@ -108,6 +139,7 @@ for (const scheme of ['light', 'dark'] as const) {
       for (const path of SIGNED_OUT_PAGES) {
         await open(page, locale, path, false);
         expect(await seriousViolations(page), `${locale}/app/${path}`).toEqual([]);
+        expect(await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth), `${locale}/app/${path}`).toBe(false);
       }
       for (const path of MEMBER_PAGES) {
         await open(page, locale, path, true);

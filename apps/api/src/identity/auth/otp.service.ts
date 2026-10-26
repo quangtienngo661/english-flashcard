@@ -8,12 +8,11 @@ import { normalizeEmail } from '../../common/email/normalize-email.js';
 import { AppLogger } from '../../common/logging/app-logger.js';
 import { ProblemDetailsException } from '../../common/problem-details/problem-details.exception.js';
 import { RateLimiter } from '../../common/rate-limit/rate-limiter.service.js';
-import type { RequestUser } from '../../common/request-user/request-user.js';
 import type { Prisma, PrismaClient } from '../../generated/prisma/client.js';
 import { recordOtpFailure } from '../../generated/prisma/sql.js';
 import type { OtpPurpose } from '../identity.types.js';
 import { MailBudget } from '../../common/mail/mail-budget.service.js';
-import { MailDispatcher, sendPrepared, type MailJob } from '../../common/mail/mail-dispatcher.service.js';
+import { MailDispatcher, type MailJob } from '../../common/mail/mail-dispatcher.service.js';
 import type { MailMessage } from '../../common/mail/mailer.js';
 import { otpMail, otpLockedMail } from '../mailer/templates.js';
 import { withUserLock } from '../user-lock.js';
@@ -24,6 +23,13 @@ export type OtpCheckOutcome =
   | { kind: 'ok' }
   | { kind: 'wrong' | 'no_live_code' }
   | { kind: 'locked'; lockedUntil: Date; notice: MailMessage | null };
+
+export function otpLocked(lockedUntil: Date, now: Date): ProblemDetailsException {
+  return new ProblemDetailsException({
+    status: 429, title: 'Too many requests', type: 'rate-limited',
+    retryAfterSeconds: Math.max(1, Math.ceil((lockedUntil.getTime() - now.getTime()) / 1000)),
+  });
+}
 
 @Injectable()
 export class OtpService {
@@ -63,29 +69,40 @@ export class OtpService {
     return message;
   }
 
-  async requestVerifyEmail(user: RequestUser, res: Response): Promise<void> {
-    const account = await this.prisma.user.findUnique({ where: { id: user.userId } });
-    if (!account) throw this.invalidToken();
-    await this.limitEmail(account.email);
-    const where = { userId_purpose: { userId: user.userId, purpose: 'verify_email' } };
-    const window = await this.prisma.otpFailureWindow.findUnique({ where });
-    if (window?.lockedUntil && window.lockedUntil > this.clock.now()) throw this.locked(window.lockedUntil);
-    await this.budget.assertAvailable();
-    const outcome = await this.prisma.$transaction(async (tx) => {
-      await withUserLock(tx, user.userId);
-      // Re-read the purpose lock after acquiring the user lock: another check may
-      // have committed its 21st failure while this request was waiting.
-      const current = await tx.otpFailureWindow.findUnique({ where });
-      if (current?.lockedUntil && current.lockedUntil > this.clock.now()) {
-        return { kind: 'locked' as const, lockedUntil: current.lockedUntil };
-      }
-      return { kind: 'issued' as const, message: await this.issueInTx(tx, user.userId, 'verify_email') };
-    }, transactionOptions);
-    if (outcome.kind === 'locked') throw this.locked(outcome.lockedUntil);
-    this.dispatcher.afterResponse(res, [sendPrepared(this.noteIssued(user.userId, 'verify_email', outcome.message))]);
+  async tryLimitEmail(email: string): Promise<boolean> {
+    try {
+      await this.limitEmail(email);
+      return true;
+    } catch (error) {
+      if (error instanceof ProblemDetailsException && error.getStatus() === 429 && error.problemType === 'rate-limited') return false;
+      throw error;
+    }
+  }
+
+  async sendVerifyCodeQuietly(userId: string, email: string, res: Response): Promise<void> {
+    if (!await this.tryLimitEmail(email)) return;
+    try {
+      await this.budget.assertAvailable();
+    } catch (error) {
+      if (error instanceof ProblemDetailsException && error.getStatus() === 503 && error.problemType === 'mail-unavailable') return;
+      throw error;
+    }
+    const job: MailJob = async () => this.noteIssued(userId, 'verify_email', await this.prisma.$transaction(async (tx) => {
+      await withUserLock(tx, userId);
+      return this.issueInTx(tx, userId, 'verify_email');
+    }, transactionOptions));
+    this.dispatcher.afterResponse(res, [job]);
+  }
+
+  async requestVerifyEmail(rawEmail: string, res: Response): Promise<void> {
+    await this.requestCode(rawEmail, 'verify_email', res);
   }
 
   async requestPasswordReset(rawEmail: string, res: Response): Promise<void> {
+    await this.requestCode(rawEmail, 'reset_password', res);
+  }
+
+  private async requestCode(rawEmail: string, purpose: OtpPurpose, res: Response): Promise<void> {
     const email = normalizeEmail(rawEmail);
     if (!email) {
       throw new ProblemDetailsException({ status: 400, title: 'Validation failed', type: 'validation-failed' });
@@ -98,9 +115,9 @@ export class OtpService {
       if (!account) return null;
       const message = await this.prisma.$transaction(async (tx) => {
         await withUserLock(tx, account.id);
-        return this.issueInTx(tx, account.id, 'reset_password');
+        return this.issueInTx(tx, account.id, purpose);
       }, transactionOptions);
-      return this.noteIssued(account.id, 'reset_password', message);
+      return this.noteIssued(account.id, purpose, message);
     };
     this.dispatcher.afterResponse(res, [job]);
   }
@@ -136,34 +153,6 @@ export class OtpService {
     return { kind: 'wrong' };
   }
 
-  async verifyEmail(user: RequestUser, code: string, res: Response): Promise<{ email_verified: true }> {
-    const outcome = await this.prisma.$transaction(async (tx) => {
-      await withUserLock(tx, user.userId);
-      const account = await tx.user.findUnique({ where: { id: user.userId } });
-      if (!account) return { kind: 'missing_user' as const };
-      if (account.emailVerifiedAt !== null) return { kind: 'already_verified' as const };
-      const result = await this.checkInTx(tx, user.userId, 'verify_email', code);
-      if (result.kind === 'ok') {
-        await tx.user.update({ where: { id: user.userId }, data: { emailVerifiedAt: this.clock.now() } });
-      }
-      return result;
-    }, transactionOptions);
-    // Commit has completed. Schedule the one-time lock notice before mapping the denial.
-    if (outcome.kind === 'locked' && outcome.notice) {
-      this.logger.warn('otp_locked', { user_id: user.userId, purpose: 'verify_email' });
-      this.dispatcher.afterResponse(res, [sendPrepared(outcome.notice)]);
-    }
-    if (outcome.kind === 'missing_user') throw this.invalidToken();
-    if (outcome.kind === 'already_verified') {
-      throw new ProblemDetailsException({ status: 409, title: 'Email already verified', type: 'email-already-verified' });
-    }
-    if (outcome.kind === 'locked') throw this.locked(outcome.lockedUntil);
-    if (outcome.kind !== 'ok') {
-      throw new ProblemDetailsException({ status: 400, title: 'Invalid OTP', type: 'invalid-otp' });
-    }
-    return { email_verified: true };
-  }
-
   private hmac(code: string): Buffer {
     return createHmac('sha256', this.config.otpHmacKey).update(code).digest();
   }
@@ -171,16 +160,5 @@ export class OtpService {
   private async limitEmail(email: string): Promise<void> {
     await this.limiter.hit('auth.otp.email.cooldown', email);
     await this.limiter.hit('auth.otp.email.hourly', email);
-  }
-
-  private locked(lockedUntil: Date): ProblemDetailsException {
-    return new ProblemDetailsException({
-      status: 429, title: 'Too many requests', type: 'rate-limited',
-      retryAfterSeconds: Math.max(1, Math.ceil((lockedUntil.getTime() - this.clock.now().getTime()) / 1000)),
-    });
-  }
-
-  private invalidToken(): ProblemDetailsException {
-    return new ProblemDetailsException({ status: 401, title: 'Invalid token', type: 'invalid-token' });
   }
 }

@@ -352,7 +352,12 @@
         "resendIn": "Resend code in {seconds} s",
         "resend": "Resend code",
         "submit": "Verify",
-        "resent": "New code sent."
+        "resent": "New code sent.",
+        "bodyNoEmail": "Enter the email you signed up with and the 6-digit code from our message. It works for 10 minutes.",
+        "loginBody": "Confirm your email to continue. We sent a code to {email}.",
+        "wrongCode": "That code or password is wrong, or the code has expired. If your email is already confirmed, sign in.",
+        "locked": "Too many wrong codes. Try again in {time}.",
+        "otherEmail": "Typed the wrong email? Sign up with another one"
       },
       "forgot": {
         "title": "Forgot password",
@@ -383,9 +388,6 @@
       "birthDate": "Date of birth",
       "email": "Email",
       "edit": "Edit",
-      "verified": "Verified",
-      "unverified": "Not verified",
-      "verifyEmail": "Verify email",
       "planUsage": "Plan and usage",
       "currentPlan": "Current plan",
       "seePlans": "See plans",
@@ -899,7 +901,7 @@
       "ai-unavailable": "We ran into a problem.",
       "csrf-header-required": "Something went wrong. Reload the page and try again.",
       "email-already-verified": "This email is already verified.",
-      "email-taken": "This email already has an account. Sign in or use another email.",
+      "email-taken": "This email already has an account. If it's yours, use Forgot password.",
       "entitlement-required": "Part of the Pro plan. Pro is not on sale yet.",
       "forbidden": "You can’t do this.",
       "group-full": "This deck is full.",

@@ -62,11 +62,12 @@ describe('RequireSession', () => {
     expect(await screen.findByText('secret')).toBeInTheDocument();
   });
 
-  it('E1: signed out → login with next = the page being opened', async () => {
+  it('Review Focus 1 / E1: refresh 401 on load → signed-out → login with next = the page being opened', async () => {
     at('/vi/app/group?id=g1');
-    setup({ 'POST /v1/auth/refresh': () => problem(401, 'invalid-token') });
+    const { store } = setup({ 'POST /v1/auth/refresh': () => problem(401, 'invalid-token') });
     await waitFor(() => expect(replace).toHaveBeenCalledWith('/vi/app/login?next=%2Fvi%2Fapp%2Fgroup%3Fid%3Dg1'));
     expect(screen.queryByText('secret')).not.toBeInTheDocument();
+    expect(store.state.status).toBe('signed-out');
   });
 
   it('E3/E4: a session that ended mid-use carries its reason to the sign-in page', async () => {
@@ -102,19 +103,26 @@ describe('RequireSession', () => {
     await waitFor(() => expect(replace).toHaveBeenCalledWith('/vi/app/welcome?next=%2Fvi%2Fapp%2Fsettings'));
   });
 
-  it('E9: a client-side move to verify-email is judged by the router path, not the address bar that has not changed yet', async () => {
+  it('E9: a client-side move to welcome is judged by the router path, not the address bar that has not changed yet', async () => {
     at('/vi/app/register');
-    routerPath = '/vi/app/verify-email';
+    routerPath = '/vi/app/welcome';
     setup(signedIn(makeMe({ native_language: null })));
     expect(await screen.findByText('secret')).toBeInTheDocument();
     expect(replace).not.toHaveBeenCalled();
   });
 
-  it('E9: the welcome and verify-email pages themselves open without a language', async () => {
+  it('E9: welcome opens without a language', async () => {
     at('/vi/app/welcome');
     setup(signedIn(makeMe({ native_language: null })));
     expect(await screen.findByText('secret')).toBeInTheDocument();
     expect(replace).not.toHaveBeenCalled();
+  });
+
+  it.each(['vi', 'en', null] as const)('signed-in with email_verified false goes to verify-email before language checks (language=%s)', async (language) => {
+    at('/vi/app/settings');
+    setup(signedIn(makeMe({ email_verified: false, native_language: language })));
+    await waitFor(() => expect(replace).toHaveBeenCalledWith('/vi/app/verify-email'));
+    expect(screen.queryByText('secret')).not.toBeInTheDocument();
   });
 
   it('E11: a device zone other than the profile is sent once with PATCH /v1/me', async () => {

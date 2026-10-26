@@ -352,7 +352,12 @@
         "resendIn": "Gửi lại mã sau {seconds} giây",
         "resend": "Gửi lại mã",
         "submit": "Xác minh",
-        "resent": "Đã gửi mã mới."
+        "resent": "Đã gửi mã mới.",
+        "bodyNoEmail": "Nhập email bạn đã đăng ký và mã 6 số trong thư. Mã có hiệu lực 10 phút.",
+        "loginBody": "Bạn cần xác nhận email trước khi vào app. Mã đã được gửi tới {email}.",
+        "wrongCode": "Mã hoặc mật khẩu không đúng, hoặc mã đã hết hạn. Nếu email đã được xác nhận, hãy đăng nhập.",
+        "locked": "Bạn đã nhập sai mã quá nhiều lần. Thử lại sau {time}.",
+        "otherEmail": "Gõ nhầm email? Đăng ký bằng email khác"
       },
       "forgot": {
         "title": "Quên mật khẩu",
@@ -383,9 +388,6 @@
       "birthDate": "Ngày sinh",
       "email": "Email",
       "edit": "Sửa",
-      "verified": "Đã xác minh",
-      "unverified": "Chưa xác minh",
-      "verifyEmail": "Xác minh email",
       "planUsage": "Gói và mức sử dụng",
       "currentPlan": "Gói hiện tại",
       "seePlans": "Xem gói học",
@@ -899,7 +901,7 @@
       "ai-unavailable": "Hệ thống đang gặp lỗi.",
       "csrf-header-required": "Có lỗi xảy ra. Tải lại trang rồi thử lại.",
       "email-already-verified": "Email này đã được xác minh.",
-      "email-taken": "Email này đã có tài khoản. Đăng nhập hoặc dùng email khác.",
+      "email-taken": "Email này đã có tài khoản. Nếu là email của bạn, dùng Quên mật khẩu.",
       "entitlement-required": "Dành cho gói Pro. Gói Pro chưa mở bán.",
       "forbidden": "Bạn không làm được thao tác này.",
       "group-full": "Nhóm này đã đủ số từ tối đa.",

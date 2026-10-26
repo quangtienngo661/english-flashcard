@@ -323,6 +323,33 @@ ngang × vi/en × sáng/tối × 1440/390), `e2e/app/m4.spec.ts` (TH1, TH4 với
 Đã chạy thật 26/10/2026 (API + worker + Postgres + Redis + Mailpit, DB mới, gói Miễn phí, app người học ở chế độ dev): bước 2, 3, 4 (qua API), 5, 6, 7, 9, 13.
 Chưa chạy thật: bước 8, 10, 11, 12 (có unit / e2e).
 
+## Đợt cải thiện A — xác nhận email (C13, PR 1)
+
+Từ đợt này, tài khoản chưa xác nhận email không có phiên: đăng ký không vào app, đăng nhập của tài khoản chưa xác nhận dẫn sang trang nhập mã, nhập đúng
+mã (kèm mật khẩu) mới vào app. Design `docs/superpowers/specs/2026-10-26-dot-cai-thien-a-design.md` §4. Dùng máy như mục 0 (API mới build từ nhánh, Mailpit
+http://localhost:8025). Nếu mã không tới Mailpit và log API có `mail_send_failed` `ESOCKET`: nodemailer đã phân giải `localhost` thành `::1` trong khi
+Mailpit chỉ nghe `127.0.0.1`; chạy API với `SMTP_HOST=127.0.0.1` (gặp khi chạy thật 26/10/2026).
+
+| # | Làm | Thấy |
+|---|---|---|
+| 1 | Đăng ký một email mới (mật khẩu `Aa1!aaaa`) | Sang "Nhập mã 6 số" (`/vi/app/verify-email`, không có email trên đường dẫn), có email của bạn; **không** hỏi mật khẩu; "Gửi lại mã sau 60 giây"; chưa vào app (mở `/vi/app` ở tab khác → về đăng nhập) |
+| 2 | Lấy mã ở Mailpit, gõ 6 số, [Xác minh] | Sang chọn ngôn ngữ, rồi Hôm nay |
+| 3 | Đăng xuất. Đăng ký email thứ hai, tới trang nhập mã thì **đóng tab** | — |
+| 4 | Mở tab mới, đăng nhập email thứ hai đúng mật khẩu | Sang trang nhập mã (`?reason=login`) với dòng "Bạn cần xác nhận email trước khi vào app. Mã đã được gửi tới …"; Mailpit có mã mới (nếu đã quá 60 giây từ mã trước) |
+| 5 | Gõ mã mới nhất, [Xác minh] | Vào app (tài khoản chưa chọn ngôn ngữ thì sang chọn ngôn ngữ trước) |
+| 6 | Đăng nhập email thứ hai **sai** mật khẩu (trước khi xác nhận) | "Email hoặc mật khẩu chưa đúng." như cũ; không sang trang nhập mã |
+| 7 | Ở trang nhập mã, tải lại trang (F5) | Trang hiện thêm ô Mật khẩu (mật khẩu chỉ giữ trong bộ nhớ trang) |
+| 8 | Mở `/vi/app/verify-email` ở tab mới (không qua đăng ký) | Hiện ô Email và ô Mật khẩu cạnh 6 ô mã; "Gửi lại mã" mờ tới khi có email |
+| 9 | Gõ mã sai | "Mã hoặc mật khẩu không đúng, hoặc mã đã hết hạn. Nếu email đã được xác nhận, hãy đăng nhập."; vẫn ở trang |
+| 10 | Bấm "Gõ nhầm email? Đăng ký bằng email khác" | Sang trang đăng ký |
+| 11 | Đăng ký lại bằng email **đã xác nhận** ở bước 2 | Dưới ô email: "Email này đã có tài khoản. Nếu là email của bạn, dùng Quên mật khẩu." + link Quên mật khẩu |
+| 12 | Cài đặt của tài khoản đã vào app | Dòng Email chỉ có địa chỉ, không còn "Chưa xác minh" / nút xác minh |
+
+Kiểm tự động (CI): API `src/identity/**` (A13-1…A13-14), web `auth.test.tsx`, `session-store.test.ts`, `pending-email.test.ts`, `RequireSession.test.tsx`,
+`settings.test.tsx`; e2e `e2e/app/m1.spec.ts` (đăng ký → mã → ngôn ngữ → Hôm nay; đăng nhập chưa xác nhận → mã → Hôm nay; axe và không cuộn ngang ở trang
+nhập mã × vi/en × sáng/tối × 1440/390); job `admin-e2e-real` (tài khoản thử xác nhận qua `verify-email` công khai). Script `learner:setup` và các smoke
+`smoke:buoc-*` đăng ký → lấy mã ở Mailpit → `verify-email` công khai.
+
 ## Đợt cải thiện A — nút loa
 
 PR `feat/dot-cai-thien-a-speak`; design `docs/superpowers/specs/2026-10-26-dot-cai-thien-a-design.md` §7 (A1-1…A1-7). Giọng là giọng của trình duyệt / máy

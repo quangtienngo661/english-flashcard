@@ -86,17 +86,7 @@ export function SettingsPage() {
             detail={me.birth_date ? calendar.date(`${me.birth_date}T00:00:00Z`, 'full') : '—'}
             action={<Link href={account} className={LINK}>{t('edit')}</Link>}
           />
-          <Row
-            title={t('email')}
-            detail={`${me.email} · ${me.email_verified ? t('verified') : t('unverified')}`}
-            action={
-              me.email_verified ? null : (
-                <Link href={`/${locale}/app/verify-email`} className={LINK}>
-                  {t('verifyEmail')}
-                </Link>
-              )
-            }
-          />
+          <Row title={t('email')} detail={me.email} />
         </Section>
 
         <Section title={t('planUsage')}>

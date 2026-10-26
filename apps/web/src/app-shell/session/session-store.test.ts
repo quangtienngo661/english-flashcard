@@ -216,25 +216,39 @@ describe('SessionStore', () => {
     expect(login.body).toEqual({ email: 'learner@example.com', password: 'pw', client: 'web', device_label: 'Wordmet Web' });
   });
 
-  it('learner login: an unverified email still enters the app (D36 Bước 3: Settings invites to verify)', async () => {
-    const { store } = newStore({
-      'POST /v1/auth/login': () => tokenResponse('tok-1'),
-      'GET /v1/me': ok(makeMe({ email_verified: false })),
-    });
+  it('login 403 email-not-verified → throws, stays signed out', async () => {
+    const hub = channelHub();
+    const heard: unknown[] = [];
+    hub.create().addEventListener('message', (event) => heard.push(event.data));
+    const { store, calls } = newStore({
+      'POST /v1/auth/login': () => problem(403, 'email-not-verified'),
+    }, hub.create());
+    store.state = { status: 'signed-out', notice: null };
 
-    await store.login('new@example.com', 'pw');
+    const attempt = store.login('new@example.com', 'pw');
 
-    expect(store.state).toMatchObject({ status: 'signed-in', me: { email_verified: false } });
+    await expect(attempt).rejects.toBeInstanceOf(ApiError);
+    await expect(attempt).rejects.toMatchObject({ problem: { status: 403, slug: 'email-not-verified' } });
+    expect(store.state).toEqual({ status: 'signed-out', notice: null });
+    expect(store.hasAccessToken).toBe(false);
+    expect(calls.map((c) => c.path)).toEqual(['/v1/auth/login']);
+    expect(heard).toEqual([]);
   });
 
-  it('register: posts the form with the web device, keeps the token and signs in', async () => {
+  it('register: posts the form and stays signed out, returns the email', async () => {
+    const hub = channelHub();
+    const heard: unknown[] = [];
+    hub.create().addEventListener('message', (event) => heard.push(event.data));
     const { store, calls } = newStore({
-      'POST /v1/auth/register': () => tokenResponse('tok-1'),
-      'GET /v1/me': ok(makeMe()),
-    });
+      'POST /v1/auth/register': () => Response.json({ email: 'lan@example.com', verification_required: true }, { status: 201 }),
+    }, hub.create());
+    const signedOut = { status: 'signed-out', notice: null } as const;
+    store.state = signedOut;
+    const changed = vi.fn();
+    store.subscribe(changed);
 
-    await store.register({
-      email: 'lan@example.com',
+    const result = await store.register({
+      email: 'Lan@example.com',
       password: 'a-long-password',
       given_name: 'Lan',
       birth_date: '2000-05-12',
@@ -242,9 +256,16 @@ describe('SessionStore', () => {
       accept_terms: true,
     });
 
-    expect(store.state.status).toBe('signed-in');
+    expect(result).toEqual({ email: 'lan@example.com' });
+    expect(store.state).toBe(signedOut);
+    expect(store.hasAccessToken).toBe(false);
+    expect(changed).not.toHaveBeenCalled();
+    expect(heard).toEqual([]);
+    expect(calls).toHaveLength(1);
+    expect(calls[0].method).toBe('POST');
+    expect(calls[0].headers.Authorization).toBeUndefined();
     expect(calls.find((c) => c.path === '/v1/auth/register')!.body).toEqual({
-      email: 'lan@example.com',
+      email: 'Lan@example.com',
       password: 'a-long-password',
       given_name: 'Lan',
       birth_date: '2000-05-12',
@@ -253,8 +274,31 @@ describe('SessionStore', () => {
       client: 'web',
       device_label: 'Wordmet Web',
     });
+  });
+
+  it('verifyEmail: keeps the token and signs in, broadcasts login', async () => {
+    const hub = channelHub();
+    const heard: unknown[] = [];
+    hub.create().addEventListener('message', (event) => heard.push(event.data));
+    const { store, calls } = newStore({
+      'POST /v1/auth/verify-email': () => tokenResponse('tok-1'),
+      'GET /v1/me': ok(makeMe()),
+    }, hub.create());
+    store.state = { status: 'signed-out', notice: null };
+
+    await store.verifyEmail('lan@example.com', '123456', 'a-long-password');
+
+    expect(store.state).toMatchObject({ status: 'signed-in', me: { email_verified: true } });
+    expect(store.hasAccessToken).toBe(true);
+    const verify = calls.find((c) => c.path === '/v1/auth/verify-email')!;
+    expect(verify.method).toBe('POST');
+    expect(verify.headers.Authorization).toBeUndefined();
+    expect(verify.body).toEqual({
+      email: 'lan@example.com', code: '123456', password: 'a-long-password', client: 'web', device_label: 'Wordmet Web',
+    });
     const me = calls.find((c) => c.path === '/v1/me')!;
     expect(me.headers.Authorization).toBe('Bearer tok-1');
+    expect(heard).toEqual([{ type: 'login' }]);
   });
 
   it('register: a 409 email-taken is thrown and nothing is signed in', async () => {

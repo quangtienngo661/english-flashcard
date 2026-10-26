@@ -114,13 +114,17 @@ async function waitFor(readValue, done, what, timeoutMs = 15_000) {
   }
 }
 
-async function otpCodeFor(email) {
-  await sleep(1_000);
+async function mailsTo(email) {
+  const list = await (await send(`${MAILPIT}/api/v1/messages?limit=500`)).json();
+  return (list.messages ?? []).filter((m) => m.To?.some((to) => to.Address === email))
+    .sort((a, b) => (a.Created < b.Created ? 1 : -1));
+}
+
+async function otpCodeFor(email, atLeast) {
   const deadline = Date.now() + 10_000;
   for (;;) {
-    const list = await (await send(`${MAILPIT}/api/v1/messages?limit=500`)).json();
-    const message = (list.messages ?? []).filter((m) => m.To?.some((to) => to.Address === email))
-      .sort((a, b) => (a.Created < b.Created ? 1 : -1))[0];
+    const mails = await mailsTo(email);
+    const message = mails.length >= atLeast ? mails[0] : null;
     if (message) {
       const full = await (await send(`${MAILPIT}/api/v1/message/${message.ID}`)).json();
       const match = (full.Text ?? '').match(/(\d{6})/);
@@ -218,14 +222,14 @@ async function main() {
     ok('FE1 12-year-old → 400 age-below-minimum; FE5 accept_terms false → 400 validation-failed; no user created');
 
     const email = `smokefx-lan-${run}@example.com`;
-    const registered = await want(reg(email, {}), 201, 'register Lan');
-    await want(api('POST', '/v1/auth/otp', { token: registered.access_token, body: { purpose: 'verify_email' } }), 202, 'request OTP');
-    const code = await otpCodeFor(email);
-    await want(api('POST', '/v1/auth/verify-email', { token: registered.access_token, body: { code } }), 200, 'verify Lan');
-    const me = await want(api('GET', '/v1/me', { token: registered.access_token }), 200, 'GET /v1/me');
+    const before = (await mailsTo(email)).length;
+    await want(reg(email, {}), 201, 'register Lan');
+    const code = await otpCodeFor(email, before + 1);
+    const verified = await want(api('POST', '/v1/auth/verify-email', { body: { email, code, password: PASSWORD, client: 'web' } }), 200, 'verify Lan');
+    const me = await want(api('GET', '/v1/me', { token: verified.access_token }), 200, 'GET /v1/me');
     check(me.given_name === 'Lan' && me.family_name === 'Nguyen' && me.birth_date === '2000-05-17' && me.email_verified === true,
       `GET /v1/me: ${JSON.stringify({ given_name: me.given_name, family_name: me.family_name, birth_date: me.birth_date, email_verified: me.email_verified })}`);
-    S.lan = { id: me.id, email, token: registered.access_token };
+    S.lan = { id: me.id, email, token: verified.access_token };
     ok(`Lan registered (${me.id}), verified through the Mailpit OTP; GET /v1/me shows given_name Lan, family_name Nguyen, birth_date 2000-05-17`);
 
     await wantProblem(api('PATCH', '/v1/me', { token: S.lan.token, body: { birth_date: '1999-01-01' } }), 400, 'validation-failed', 'PATCH birth_date');

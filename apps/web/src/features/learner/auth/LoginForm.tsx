@@ -3,12 +3,13 @@
 import { Lock } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useState, type FormEvent } from 'react';
 import { ApiError } from '@/app-shell/api/problem';
 import { useErrorMessage } from '@/app-shell/api/use-error-message';
 import { safeNext } from '@/app-shell/locale-prefix';
 import { hardReplace } from '@/app-shell/navigate';
+import { setPendingPassword, writePendingEmail } from '@/app-shell/session/pending-email';
 import { useSession } from '@/app-shell/session/session-context';
 import type { Notice } from '@/app-shell/session/session-store';
 import { useSubmitOnce } from '@/app-shell/use-submit-once';
@@ -29,6 +30,7 @@ export function LoginForm() {
   const errorText = useErrorMessage();
   const locale = useLocale() as AppLocale;
   const params = useSearchParams();
+  const router = useRouter();
   const { state, store } = useSession();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -47,7 +49,12 @@ export function LoginForm() {
     try {
       await submit();
     } catch (failure) {
-      if (failure instanceof ApiError && failure.problem.slug === 'account-locked') setLocked(true);
+      if (failure instanceof ApiError && failure.problem.slug === 'email-not-verified') {
+        writePendingEmail(email.trim());
+        setPendingPassword(password);
+        const next = params.get('next');
+        router.replace(`/${locale}/app/verify-email?reason=login${next === null ? '' : `&next=${encodeURIComponent(next)}`}`);
+      } else if (failure instanceof ApiError && failure.problem.slug === 'account-locked') setLocked(true);
       else setError(errorText(failure));
     }
   }
