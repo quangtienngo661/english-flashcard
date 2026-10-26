@@ -280,14 +280,16 @@ describe('VerifyEmailForm (K/03)', () => {
   });
 
   it.each([
-    ['vi', 'Bạn đã nhập sai mã quá nhiều lần. Thử lại sau 2 phút.'],
-    ['en', 'Too many wrong codes. Try again in 2 minutes.'],
-  ] as const)('429 shows the page-specific wait in %s', async (locale, text) => {
+    ['vi', 'Bạn đã nhập sai mã quá nhiều lần. Thử lại sau 2 phút, hoặc dùng Quên mật khẩu ở trang đăng nhập.'],
+    ['en', 'Too many wrong codes. Try again in 2 minutes, or use Forgot password on the sign-in page.'],
+  ] as const)('429 shows the page-specific wait and points to Forgot password on the sign-in page in %s (review I1, B)', async (locale, text) => {
     setup({ locale, routes: { 'POST /v1/auth/verify-email': () => rateLimited(75) } });
     await userEvent.click(screen.getByRole('textbox', { name: locale === 'vi' ? 'Chữ số 1' : 'Digit 1' }));
     await userEvent.keyboard('000000');
     await userEvent.click(screen.getByRole('button', { name: locale === 'vi' ? 'Xác minh' : 'Verify' }));
     expect(await screen.findByText(text)).toBeInTheDocument();
+    // The Forgot password link stays on the sign-in page only (owner, 26/10/2026).
+    expect(screen.queryByRole('link', { name: /Quên mật khẩu|Forgot password/ })).not.toBeInTheDocument();
     expect(hardReplace).not.toHaveBeenCalled();
   });
 
