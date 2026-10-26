@@ -98,7 +98,7 @@ test.describe('M3 flows (mocked API)', () => {
     await page.evaluate((id) => window.localStorage.setItem('wordmet-web.last-group', id), DECK);
     await page.getByRole('button', { name: vi.lookup.addThis }).click();
     const sheet = page.getByRole('dialog', { name: vi.addWord.title });
-    await sheet.getByRole('button', { name: vi.addWord.manualButton }).click();
+    await sheet.getByRole('button', { name: vi.addWord.ai.manual }).click();
     const manual = page.getByRole('dialog', { name: vi.addWord.manualTitle });
     await manual.getByRole('textbox', { name: vi.addWord.meaning }).fill('sức hút');
     await manual.getByRole('button', { name: vi.addWord.saveManual }).click();

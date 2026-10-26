@@ -63,7 +63,7 @@ describe('AddWordSheet (K/40–K/42c, M/50–M/52c)', () => {
   it('a form whose base has no meaning yet: the manual form names the base and sends form_of', async () => {
     window.localStorage.setItem(LAST_GROUP_KEY, TECH);
     const { calls } = open('deployed', { routes: routes() });
-    await userEvent.click(await screen.findByRole('button', { name: 'Nghĩa khác, tự nhập' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Tự nhập nghĩa' }));
     expect(await screen.findByText(/Wordmet nhận ra đây là quá khứ của deploy và đã gắn sẵn/)).toBeInTheDocument();
     await userEvent.type(screen.getByRole('textbox', { name: 'Nghĩa' }), 'đã triển khai');
     await userEvent.click(screen.getByRole('button', { name: 'Lưu từ' }));
@@ -77,7 +77,7 @@ describe('AddWordSheet (K/40–K/42c, M/50–M/52c)', () => {
     window.localStorage.setItem(LAST_GROUP_KEY, TRAVEL);
     const { calls } = open('rizz', { routes: routes() });
     expect(await screen.findByText('Wordmet chưa có từ “rizz”. Tự nhập nghĩa để lưu.')).toBeInTheDocument();
-    await userEvent.click(screen.getByRole('button', { name: 'Nghĩa khác, tự nhập' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Tự nhập nghĩa' }));
     await userEvent.click(await screen.findByRole('button', { name: 'Lưu từ' }));
     expect(await screen.findByText('Nhập nghĩa của từ.')).toBeInTheDocument();
     expect(quickAdds(calls)).toHaveLength(0);
@@ -126,7 +126,7 @@ describe('AddWordSheet (K/40–K/42c, M/50–M/52c)', () => {
   it('409 private-word-exists links to the word the learner already has', async () => {
     window.localStorage.setItem(LAST_GROUP_KEY, TRAVEL);
     open('rizz', { routes: routes({ 'POST /v1/quick-add': () => problem(409, 'private-word-exists') }) });
-    await userEvent.click(await screen.findByRole('button', { name: 'Nghĩa khác, tự nhập' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Tự nhập nghĩa' }));
     await userEvent.type(await screen.findByRole('textbox', { name: 'Nghĩa' }), 'sức hút');
     await userEvent.click(screen.getByRole('button', { name: 'Lưu từ' }));
     expect(await screen.findByText('Bạn đã có từ “rizz” trong Từ của tôi.')).toBeInTheDocument();

@@ -353,3 +353,68 @@ Final M4: minor (deferred): English hint header has no count (design §7.1, kept
     khi đã có kết quả; dải giữ lại sau khi trả lời.
 - Minor để lại: M1 vòng chờ chạy tiếp tối đa 60 giây sau khi rời trang; M2 giới hạn 60 giây chỉ cộng `retry_after_seconds`; M3 mất focus khi đổi trạng
   thái; M5 bấm Bắt đầu trước khi tải xong gói thì không gửi kiểu AI; M6 in đậm phân biệt hoa thường.
+
+### Task 46 — Tra bằng AI trong tấm Thêm từ (26/10/2026)
+
+- Nhánh `feat/giao-dien-nguoi-hoc-m5b` cắt từ `origin/dev` `c0c3e55` (M5a merged #128).
+- `ai-lookup-api.ts` (`useAiLookup`: một key mỗi lần bấm; 409 `ai-in-progress` chờ `Retry-After` rồi gửi lại **cùng** key, tối đa 60 s, E38),
+  `AiLookupPanel.tsx` (K/85, K/85t, K/85b, K/85c), `AiLookupResult.tsx` (K/86, K/86b); `AddWordSheet` hiện tấm khi Wordmet không có từ, hoặc sau
+  "Không phải nghĩa bạn cần?". Test `ai-lookup.test.tsx` 12/12; add-word 41/41; lint, typecheck sạch.
+- Ruling: lỗi AI (`ai-lookup-failed`, `ai-unavailable`) hiện câu chung D11 "Hệ thống đang gặp lỗi." thay câu nói nguyên nhân của bản chữ K/85c (E39 + D11
+  thắng bản chữ) — sai thì chỉ đổi chữ.
+- Ruling: khi không có nghĩa nào, nút cuối tấm "Nghĩa khác, tự nhập" bỏ, thay bằng [Tự nhập nghĩa] trong tấm AI (hai nút bằng nhau, §15 điểm 13); 3 test M3
+  đổi tên nút theo — sai thì thêm lại nút cuối.
+- Ruling: khi đã có nghĩa và người học mở tấm AI, nút [Tra bằng AI] màu primary (không vàng) vì [Lưu …] đã vàng (một nút vàng mỗi màn).
+- Ruling: [Chọn] một nghĩa có sẵn ở K/86b đưa nghĩa đó về danh sách chọn của tấm (chọn sẵn) để người học chọn nhóm rồi lưu, thay vì lưu ngay — cost: một
+  lần bấm nữa.
+- Ruling: [Sửa rồi lưu] ở Task 46 tạm mở form tự nhập có sẵn nghĩa; Task 47 thay bằng "Sửa trước khi lưu".
+
+### Task 47 — Sửa trước khi lưu, trang Từ của tôi (26/10/2026)
+
+- `EditSuggestionForm.tsx` (K/87: từ, loại từ, nghĩa, trình độ, chủ đề, tối đa 2 câu ví dụ; dùng chung cho [Sửa] ở K/88); `AddWordSheet` thêm màn "Sửa trước
+  khi lưu", gửi `new_word{…, examples, ai_suggestion: true}`; `word/MyWordDialogs.tsx` ([Sửa] → `PATCH /v1/my-words/{entry}` chỉ phần đổi; [Xóa từ] hỏi
+  trước → `DELETE`, về Tra từ); `SenseBlock` từ riêng không có định nghĩa tiếng Anh, có [Sửa] [Xóa từ]; `WordPage` nhãn "Từ của tôi", "AI gợi ý" và dòng nguồn.
+  Test `edit-suggestion.test.tsx` 5/5, `my-word.test.tsx` 7/7; web 523/523; lint, typecheck sạch.
+- Ruling: API `lookup/ai` không trả trình độ, nên ô Trình độ để trống (plan ghi "prefilled level") — sai thì cần thêm trường ở API Bước 7.
+- Ruling: "Dạng chia của" chỉ hiện (chỉ đọc) khi Wordmet đã nhận ra từ là dạng chia; không cho gõ tay (API cần `entry_id` + `kind`, phải tra thêm) — cost:
+  người học không tự gắn được dạng chia cho từ AI gợi ý.
+- Ruling: chủ đề chọn một (API nhận mảng ≤ 20); trang từ riêng lấy chủ đề đầu.
+- Ruling: chữ các hộp [Sửa] / [Xóa từ] ("Sửa từ", "Lưu thay đổi", "Xóa từ “rizz”?" + câu cảnh báo) bản chữ chưa có, Claude viết theo mẫu 3.1.
+- Test note: toast nằm trong store chung của module nên còn lại giữa các test cùng file; test đếm theo `getAllByText`.
+
+### Task 48 — M5b e2e, tài liệu kiểm, đóng đợt (26/10/2026)
+
+- `e2e/app/m5b.spec.ts` 9 test (Pro tra AI → sửa → lưu với `ai_suggestion`; Dùng thử, Miễn phí; 409 `ai-in-progress` cùng key; AI lỗi + Thử lại, hết lượt;
+  trang từ riêng sửa nghĩa, nhãn mất, xóa; axe + không cuộn ngang × vi/en × sáng/tối); `m3.spec.ts` đổi nút "Tự nhập nghĩa". Container Linux: 38 passed.
+- Chạy thật trên API (AI giả `fake:ok`, Pro): `lookup/ai` 200, cùng key trả lại kết quả cũ (khác thứ tự khóa JSON) và trừ 1 lượt; `quick-add` với
+  `ai_suggestion` 201; `PATCH` chỉ loại từ giữ nhãn, `PATCH` nghĩa bỏ nhãn; `DELETE` 204, trang từ 404. API không trả trình độ (khớp ruling Task 47).
+- Cỡ Worker bật app (gzip) 3.761,49 KiB. Mục M5b trong test-flow; as-built M4b, M5a, M5b và "Đóng đợt"; UI-CONTEXT §2 (D22), §10; CLAUDE.md; ghi chú design
+  Bước 7 (D10, D12); handoff §0b; deploy-checklist.
+- Kịch bản ảnh `SHOTS_MILESTONE=m5b` (tấm tra AI, kết quả, sửa trước khi lưu, trang từ riêng; từ tạo ra được xóa cuối mỗi lượt).
+- Test note: `pnpm cf:docker` dừng với "tar: file changed as we read it" khi có file trong repo đang đổi; chạy lại khi không sửa file. `--build` cần
+  `NEXT_PUBLIC_API_BASE_URL` khi bật app.
+
+### Final M5b — reviewer (26/10/2026)
+
+- Reviewer mới (opus): 0 Critical, 2 Important, 8 Minor. Chấm lại theo tác động: M4 (nút khóa tràn chữ ở 390px, người dùng gói Miễn phí trên điện thoại
+  đều gặp) và M6 (sửa form sau lỗi mạng vẫn dùng key cũ → lỗi trùng key hoặc lưu bản cũ; cùng loại I-2 của M4) → Important. Sửa một lượt, test trước
+  (`test(web): reproduce the m5b review findings`):
+  - I1: nghĩa chọn bằng [Chọn] ở K/86b còn ở lại khi đổi từ, và nút/toast ghi chữ đã gõ ("Lưu runnning" lưu "run") → nghĩa đó gắn với chữ đã tra, đổi chữ
+    thì bỏ; nút và toast ghi tên của nghĩa ("Lưu run"). `m5b-review` "I1 …" ×2 RED→GREEN.
+  - I2: `form_of` của chữ đã gõ bị gắn vào từ AI khác chữ (hoặc đã đổi tên trong form) → chỉ gửi và chỉ hiện "Dạng chia của" khi từ trong form trùng chữ đã
+    gõ. "I2 …" ×2 RED→GREEN.
+  - M4: hai nút tấm AI cho xuống dòng (`whitespace-normal`). e2e "review M4" RED (chữ tràn) → GREEN; e2e m5b 20/20.
+  - M6: lần bấm gửi kèm nội dung (chế độ, từ, nghĩa, bản nháp, nghĩa chọn, nhóm, câu) để form đổi là lần ghi mới. "M6 …" RED→GREEN; bấm lại y nguyên vẫn
+    giữ key.
+  - Thêm (thấy ở ảnh chạy thật): dòng "Wordmet chưa có từ… Tự nhập nghĩa để lưu." ẩn khi đã có kết quả AI.
+  - Unit web 529/529; lint, typecheck sạch.
+- Minor để lại: M3 chờ 409 `ai-in-progress` quá 60 s thì bỏ key (bấm lại có thể trừ lượt lần hai); M5 [Hủy]/[Quay lại] bấm được khi đang lưu, đóng tấm khi
+  đang tra AI thì mất kết quả đã trừ lượt; M7 [Hủy] ở "Sửa trước khi lưu" rồi vào lại thì mất phần đã sửa; M8 lỗi tra AI cũ có thể còn khi đổi sang một từ
+  đã có trong cache; M9 "Đã dùng 1 lượt" đọc số trước khi tải lại, và lần trả lại kết quả cũ (không trừ) vẫn ghi "đã dùng 1"; M10 sửa chủ đề thay mọi chủ đề
+  (chỉ hiện chủ đề đầu).
+- Declined to judge (ruling): câu đã gặp gõ ở màn tìm được lưu kèm từ màn "Sửa trước khi lưu" dù màn đó không hiện ô câu — giữ, vì người học đã gõ câu đó
+  cho chính từ này (bản chữ §7.18 không có ô) — sai thì thêm một dòng hiện câu sẽ lưu. Từ riêng nhiều nghĩa: hộp [Sửa] sửa nghĩa của khối được bấm, loại từ
+  và trình độ theo cả từ (API `PATCH` theo từ) — sai thì tách theo nghĩa.
+- Ảnh `SHOTS_MILESTONE=m5b`: 48 ảnh (tấm tra AI, kết quả, sửa trước khi lưu, trang từ riêng × vi/en × sáng/tối × 390/1024/1440), ở `apps/web/test-results/shots/m5b`
+  (không commit). Test note: `next dev` trong container không nạp lại một lần sửa (ảnh vẫn ra bản cũ); khởi động lại `web-app` thì đúng — chụp ảnh sau khi
+  khởi động lại app. Test ghim việc ẩn dòng "Wordmet chưa có từ…" khi đã có kết quả AI thêm vào `ai-lookup.test.tsx` (E39).

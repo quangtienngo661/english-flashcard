@@ -64,9 +64,9 @@ secret, backup) nằm ở design Bước 2.5 §14; những thứ chỉ kiểm đ
 
 - [ ] **Worker Cloudflare của `apps/web` phải vừa giới hạn gói Free (khoảng 3 MiB sau nén), hoặc nâng gói Paid, khi bật
   `NEXT_PUBLIC_LEARNER_APP=on`.** Nguồn: D21, design §4.5. Vì sao: đo ngày 22/10 (M1, Task 1): bản landing **chưa có app** đã là
-  2.941,92 KiB gzip, bản có app 2.943,28 KiB; **hết M2 (23/10): tắt app 2.963,24 KiB, bật app 3.462,38 KiB — đã vượt gói Free**; hết M3: bật app 3.706,34 KiB; hết M4: bật app 3.739,72 KiB; mỗi mốc
+  2.941,92 KiB gzip, bản có app 2.943,28 KiB; **hết M2 (23/10): tắt app 2.963,24 KiB, bật app 3.462,38 KiB — đã vượt gói Free**; hết M3: bật app 3.706,34 KiB; hết M4: bật app 3.739,72 KiB; hết đợt (M5b, 26/10): bật app 3.761,49 KiB; mỗi mốc
   ghi lại cỡ mới ở `docs/deliveries/giao-dien-nguoi-hoc.md`. Đo bằng
-  `pnpm cf:docker --build` (in dòng "Total Upload … gzip").
+  `NEXT_PUBLIC_LEARNER_APP=on NEXT_PUBLIC_API_BASE_URL=http://localhost:3000 pnpm cf:docker --build` (in dòng "Total Upload … gzip"; thiếu `NEXT_PUBLIC_API_BASE_URL` thì build dừng).
 - [ ] **Ngay sau lần đầu CSP lên `main`, mở `wordmet.com` và `/vi/app` trên production, xem Console không có lỗi CSP.** Nguồn: D22,
   design §4.6. Vì sao: beacon Cloudflare Web Analytics chỉ chèn ở edge, e2e local không thấy; CSP đang ở chế độ dự phòng D20
   (`'unsafe-inline'` cho script/style) vì Next chèn script `self.__next_f.push(…)`.

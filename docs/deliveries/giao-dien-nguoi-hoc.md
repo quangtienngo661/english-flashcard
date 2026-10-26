@@ -168,3 +168,58 @@ K/83), Gói học (K/52, K/53). Problem Details giữ extension members; `useSub
 **Khác plan / cần chủ dự án biết**
 - Chủ dự án tạm cho qua bước xem ảnh trước khi merge (23/10/2026: "tạm thời pass phần đó"; rồi "kể từ về sau không cần hỏi mình, cứ triển khai mà
   làm"); bộ ảnh M4 chụp ở `apps/web/test-results/shots/m4` (không commit) và chạy lại bằng `e2e-shots`.
+
+# M4b — as-built (23/10/2026)
+
+Nhánh `feat/giao-dien-nguoi-hoc-m4b`, PR #127 (merge 23/10). Task 35–40. Chi tiết từng task, ruling và Minor để lại: ledger
+[`giao-dien-nguoi-hoc-ledger.md`](giao-dien-nguoi-hoc-ledger.md) (Task 35–40, Final M4b).
+
+**Đã có:** khung Figma Lịch sử giao dịch (K/95–K/95d, M/95–M/95c, A/90–A/90c); API (i) bảng `billing_transactions` (migration
+`20261023100000_billing_transactions`), `GET /v1/me/transactions`, `GET /v1/admin/transactions` (`settings.manage`), lần cấp gói nằm chung danh sách;
+màn người học `/app/settings/transactions`; trang admin `/transactions`; `learner:setup --transactions` gửi ba sự kiện cổng thanh toán giả.
+
+**Kiểm:** e2e web `m4b.spec.ts` 12 passed, admin `transactions.spec.ts` 4 passed (cả bộ admin 139); chạy thật webhook giả → 4 dòng. Reviewer: 0 Critical,
+2 Important (sửa, test trước), 5 Minor để lại.
+
+# M5a — as-built (23/10/2026)
+
+Nhánh `feat/giao-dien-nguoi-hoc-m5a`, PR #128 (merge). Task 41–45. Chi tiết: ledger (Task 41–45, Final M5a).
+
+**Đã có:** API (f) báo lỗi câu AI về từ riêng không cần ô đồng ý (D12; `share_private_word` vẫn nhận nhưng bỏ qua); `ItemView.private_word`; `lemma` kèm
+`word-not-recognized`. Web: công tắc "Kiểu câu có AI" trong Tùy chỉnh phiên (D10, nhớ trên máy), K/71, K/72; "Đang tạo câu…", `prepare` sau mỗi câu, AI
+lỗi → câu chung D11 + [Thử lại] [Để sau], hết lượt, cần gói, dải đổi kiểu câu; ba kiểu câu AI, gợi ý có chấm tiến độ, bản dịch AI, báo lỗi câu AI (K/81
+không ô tick).
+
+**Kiểm:** e2e `m5a.spec.ts` 20 passed (cả bộ web 229 passed, 15 skipped); chạy thật với AI giả (`fake:ok`) và người học Pro; 36 ảnh `SHOTS_MILESTONE=m5a`.
+Reviewer: 0 Critical, 3 Important (sửa, test trước), 5 Minor để lại.
+
+# M5b — as-built (26/10/2026)
+
+Nhánh `feat/giao-dien-nguoi-hoc-m5b` (cắt từ `origin/dev` @ `c0c3e55`), PR #131. Task 46–48. Chi tiết, ruling: ledger (Task 46–48, Final M5b).
+
+**Đã có:** tấm Thêm từ có [Tra bằng AI] · [Tự nhập nghĩa] bằng nhau, "còn N lượt tra AI", chip Dùng thử, khóa + dòng D6 cho gói Miễn phí, ô gửi kèm câu
+(mặc định không tick); "Đang tra…" và gửi lại **cùng** key khi 409 `ai-in-progress` (E38); AI lỗi → câu chung D11, [Thử lại] khi `retryable` (E39); hết
+lượt + lúc nạp (E40). Kết quả K/86, K/86b (nghĩa có sẵn trước, [Chọn]; rồi "AI gợi ý"); "Sửa trước khi lưu" (K/87) gửi `new_word{…, examples,
+ai_suggestion: true}`. Trang từ riêng (K/88): nhãn "Từ của tôi", "AI gợi ý", dòng nguồn, không định nghĩa tiếng Anh, [Sửa] (`PATCH /v1/my-words/{id}`
+chỉ phần đổi) và [Xóa từ] (hỏi trước, `DELETE`, về Tra từ).
+
+**Kiểm**
+- Unit web 523/523 (64 file); e2e `m5b.spec.ts` 18 passed (9 test × desktop + mobile), chạy cùng `m3.spec.ts` 38 passed trong container Linux; cả bộ e2e chạy ở CI.
+- Chạy thật (API + worker + Postgres, `AI_FAKE_ENABLED=true`, người học Pro của `learner:setup`): `POST /v1/lookup/ai` 200, cùng key gửi lại trả đúng kết
+  quả cũ và chỉ trừ 1 lượt; có `context_sentence` 200; `quick-add` với `ai_suggestion` 201 (từ riêng, `ai_suggested` true, không có `definition_en`);
+  `PATCH` chỉ loại từ giữ `ai_suggested`, `PATCH` nghĩa bỏ nhãn; `DELETE` 204 rồi trang từ 404.
+- Cỡ Worker bật app (gzip): **3.761,49 KiB** (hết M4: 3.739,72).
+
+# Đóng đợt (26/10/2026)
+
+- 7 PR (#123–#128, M5b) vào `dev`; 48 task của plan đã làm. Chín việc API nhỏ (a)–(i) và một trang admin (Giao dịch) đã có.
+- **CSP:** kiểu SRI chặt chặn script nhúng của Next (`self.__next_f.push`), nên bật dự phòng D20 (`'unsafe-inline'` cho script/style nhúng; `connect-src`,
+  `frame-ancestors`, `object-src`, `base-uri`, `form-action` giữ chặt) từ M1; kiểm bằng `e2e/csp.spec.ts` trên bản build Worker. Cloudflare Web Analytics
+  được phép (D22), chỉ kiểm được trên production.
+- **Cỡ Worker** (gzip, gói Free khoảng 3.072 KiB): tắt app (bản landing đang deploy) 2.963,24 KiB, vừa gói Free; bật app tăng dần M1 2.943 → M2 3.462 → M3
+  3.706 → M4 3.740 → hết đợt 3.761 KiB, **vượt gói Free**. Đã ghi ở `deploy-checklist.md` (bật app trên production cần gói Paid hoặc tách Worker).
+- **Lần gọi API khi dựng:** mọi màn chỉ gọi API Bước 3–7 có sẵn cộng chín việc (a)–(i); không gọi AI thật (chỉ model giả `fake:*`), không gọi nhà cung cấp
+  thanh toán thật (chỉ cổng giả).
+- Việc còn lại sau đợt: chủ dự án tự kiểm theo `giao-dien-nguoi-hoc-test-flow.md` (D4); các Minor để lại của từng mốc ở ledger; xem lại danh sách cải thiện
+  `docs/preparation/IMPROVEMENT_IDEAS_2026-10-23.md`; các màn admin còn "Sắp có" chưa có design/plan.
+

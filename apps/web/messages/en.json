@@ -742,7 +742,19 @@
       "alreadyIn": "“{word}” is already in “{group}”.",
       "noGroups": "You have no decks yet.",
       "createFirst": "Create your first deck",
-      "groupFull": "This deck is full. Choose another deck."
+      "groupFull": "This deck is full. Choose another deck.",
+      "mine": {
+        "label": "My words",
+        "aiLabel": "AI suggestion",
+        "aiSource": "Source: AI suggestion. No one has checked this meaning yet, so check it yourself.",
+        "edit": "Edit",
+        "delete": "Delete word",
+        "editTitle": "Edit word",
+        "saveChanges": "Save changes",
+        "saved": "Changes saved.",
+        "deleteTitle": "Delete “{word}”?",
+        "deleteBody": "This word, its saved sentences and its place in every deck will be deleted. This can’t be undone."
+      }
     },
     "addWord": {
       "title": "Which word did you just meet?",
@@ -816,7 +828,46 @@
       "bulkSubmit": "Add them all",
       "bulkResult": "Added {added} words to “{name}”.",
       "bulkSkipped": "{already} already in the deck, {function} function words skipped, {full} did not fit because the deck is full.",
-      "pickDeck": "Choose {group}"
+      "pickDeck": "Choose {group}",
+      "ai": {
+        "button": "Look up with AI",
+        "manual": "Enter a meaning",
+        "left": "{count} AI credits for lookups left",
+        "trial": "Trial",
+        "sendSentence": "Send the sentence to AI",
+        "looking": "Looking up…",
+        "failed": "We ran into a problem.",
+        "retry": "Try again",
+        "quota": "No AI credits for lookups left.",
+        "refillDate": "New AI credits for lookups on {date}.",
+        "refillTime": "New AI credits for lookups at {time}.",
+        "notThis": "Not the meaning you need?"
+      },
+      "result": {
+        "title": "Results for “{word}”",
+        "used": "Used 1 AI credit · {remaining} left",
+        "catalog": "Meanings in the dictionary",
+        "choose": "Choose",
+        "aiLabel": "AI suggestion",
+        "definition": "English definition (for reference, not saved): {text}",
+        "caution": "AI suggestions can be wrong. Check before saving.",
+        "edit": "Edit and save"
+      },
+      "edit": {
+        "title": "Edit before saving",
+        "word": "Word",
+        "pos": "Part of speech",
+        "meaning": "Meaning",
+        "level": "Level",
+        "topic": "Topic (optional)",
+        "formOf": "Form of:",
+        "examples": "Examples (up to 2)",
+        "example": "Example {n}",
+        "addExample": "+ Add an example",
+        "exampleHint": "Up to 300 characters each.",
+        "note": "This word keeps the AI suggestion label until you change its meaning, topic or examples."
+      },
+      "recognizedShort": "{kind} of {base}"
     },
     "stages": {
       "s0": "New",

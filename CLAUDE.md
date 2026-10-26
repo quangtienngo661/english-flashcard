@@ -13,9 +13,10 @@ private words; quick-add of words encountered elsewhere; word groups, flashcards
 schedule; non-AI definition quizzes; AI-generated fill-in-the-blank practice graded by rule; tier-based
 entitlements and quotas.
 
-**Current phase (21/10/2026): Bước 0, 1 (Identity core), 2 (Content + Pipeline), 2.5 (admin web, `apps/admin`), 3 (Learning +
+**Current phase (26/10/2026): Bước 0, 1 (Identity core), 2 (Content + Pipeline), 2.5 (admin web, `apps/admin`), 3 (Learning +
 the Content pieces deferred from Bước 2, system part only), 4 (Practice, API only), 5 (Entitlements, API only), 6 (AI Integration,
-API only) and 7 (Practice AI + Content AI, API only) implemented; no learner UI yet.** Real code is
+API only) and 7 (Practice AI + Content AI, API only) implemented; the learner web UI for Bước 3–7 (`apps/web` `/vi/app`, `/en/app`) is built
+(section "Giao diện người học" below), blocked on production until Deploy.** Real code is
 under `apps/api` and `apps/admin`. Historical implementation branches:
 - `feat/buoc-0-backend-foundation` — Bước 0 built on **Drizzle ORM** (10 tasks, 5 unit + 23 e2e tests).
 - `feat/migrate-drizzle-to-prisma` (branched from the above) — the same Bước 0 re-implemented on
@@ -293,11 +294,14 @@ API additions the screens assume (staff emails in admin responses, `group_id` fo
 `docs/deliveries/giao-dien-nguoi-hoc.md` (plan tóm tắt 22/10/2026; as-built per milestone, M1 23/10/2026); owner's manual test flow and Windows
 setup `docs/deliveries/giao-dien-nguoi-hoc-test-flow.md`. Design (D1–D22), decisions and plan: `docs/superpowers/{specs,decisions,plans}/2026-10-22-giao-dien-nguoi-hoc*.md`.
 One branch per milestone `feat/giao-dien-nguoi-hoc-<m1|m2|…>` from `origin/dev`. On Windows `pnpm dev:app` runs the app in a Linux container on :3001.
-**Handoff: read `docs/deliveries/giao-dien-nguoi-hoc-handoff-2026-10-23.md` first (§0a is the latest state)** (method, conventions, rulings, what only runs on
+**Handoff: read `docs/deliveries/giao-dien-nguoi-hoc-handoff-2026-10-23.md` first (§0b is the latest state)** (method, conventions, rulings, what only runs on
 the owner's Windows machine); the executing-plans ledger is `docs/deliveries/giao-dien-nguoi-hoc-ledger.md`. M1–M4 merged (PR #123–#126); M4b (Task 35–40,
 transaction history: API `billing_transactions`, `/v1/me/transactions`, `/v1/admin/transactions`, learner `/app/settings/transactions`, admin `/transactions`)
-merged (PR #127); M5a (Task 41–45, practice with AI questions) in PR #128 into `dev`; next M5b (AI lookup, My words). Owner 23/10/2026: no more
-stops for image or Figma approval ("cứ triển khai mà làm").
+merged (PR #127); M5a (Task 41–45, practice with AI questions) merged (PR #128); M5b (Task 46–48: AI lookup in Thêm từ, edit before saving, the
+learner's own word page with [Sửa] [Xóa từ]) is the last PR of the round (26/10/2026); as-built of every milestone and the round's close-out (CSP fallback D20,
+Worker over the Free plan when the app is on) at the end of `docs/deliveries/giao-dien-nguoi-hoc.md`. Owner 23/10/2026: no more stops for image or Figma
+approval ("cứ triển khai mà làm"). Still left after the round: the owner's own pass through the test flow (D4); admin screens other than "Giao dịch"
+show "Sắp có" and have no design or plan yet.
 Improvement ideas to weigh **after** the learner UI for Bước 3–7 is done (owner 23/10/2026; not decided): `docs/preparation/IMPROVEMENT_IDEAS_2026-10-23.md` (product C1–C10, overall assessment, how the project is run P1–P5).
 
 ## Việc phải phân tích khi tới bước tương ứng (ghi 12/10/2026, từ brainstorm Bước 2)

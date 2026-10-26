@@ -13,7 +13,17 @@ export type LookupResult = {
 export type QuickAddBody = {
   group_id: string;
   sense_id?: string;
-  new_word?: { lemma: string; meaning: string; form_of?: { entry_id: string; kind: string } };
+  new_word?: {
+    lemma: string;
+    meaning: string;
+    pos?: string;
+    level?: string;
+    topics?: string[];
+    form_of?: { entry_id: string; kind: string };
+    /** Bước 7 §11.2: the AI suggestion's examples as edited (≤ 2), and that the word came from AI. */
+    examples?: string[];
+    ai_suggestion?: boolean;
+  };
   sentence?: string;
 };
 export type QuickAddResult = { item_id: string; sense_id: string; created_item: boolean; created_word: boolean; sentence_id: string | null };

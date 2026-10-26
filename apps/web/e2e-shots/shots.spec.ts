@@ -76,6 +76,10 @@ test('milestone screenshots', async ({ page }) => {
     await m5a(page);
     return;
   }
+  if (MILESTONE === 'm5b') {
+    await m5b(page);
+    return;
+  }
   for (const locale of ['vi', 'en'] as const) {
     await setLanguage(page, locale);
     for (const scheme of ['light', 'dark'] as const) {
@@ -320,6 +324,55 @@ async function m5a(page: Page) {
     await page.keyboard.press('Escape');
     await page.keyboard.press('Escape');
     await page.waitForLoadState('networkidle');
+  }
+  await setLanguage(page, 'vi');
+}
+
+/**
+ * K/85–K/88: the AI lookup panel, its result, edit before saving, then the saved word's page; the word is deleted at the end so the
+ * run can be repeated (one made-up word per combination: the fake AI suggests the word it was asked).
+ */
+async function m5b(page: Page) {
+  for (const [i, { locale, scheme }] of COMBOS.entries()) {
+    await setLanguage(page, locale);
+    await page.emulateMedia({ colorScheme: scheme });
+    const name = (n: string) => `${locale}-${scheme}-${n}`;
+    const word = `rizz${'abcd'[i]}`;
+    await page.goto(`/${locale}/app`);
+    await settle(page);
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.keyboard.press('n');
+    const sheet = page.getByRole('dialog');
+    await sheet.getByRole('textbox', { name: locale === 'vi' ? 'Từ' : 'Word', exact: true }).fill(word);
+    await sheet.getByRole('textbox', { name: /^(Câu bạn gặp|Sentence you saw)/ }).fill(`That guy has so much ${word}.`);
+    const ai = sheet.getByRole('button', { name: /^(Tra bằng AI|Look up with AI)$/ });
+    await expect(ai).toBeVisible();
+    await page.waitForLoadState('networkidle');
+    await shoot(page, name('ai-lookup'), false);
+    await ai.click();
+    await expect(sheet.getByRole('heading', { level: 3 })).toBeVisible({ timeout: 30_000 });
+    await page.waitForLoadState('networkidle');
+    await shoot(page, name('ai-result'), false);
+    await sheet.getByRole('button', { name: /^(Sửa rồi lưu|Edit and save)$/ }).click();
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.getByRole('dialog').getByRole('button', { name: /(Trình độ|Level)/ }).click();
+    await page.getByRole('option', { name: 'B2' }).click();
+    if (await page.getByText(/^(Chọn nhóm|Choose a deck)$/).count()) {
+      await page.getByRole('button', { name: /^(Lưu vào nhóm|Save to deck)/ }).click();
+      await page.getByRole('radio').first().click({ force: true });
+      await page.getByRole('button', { name: /^(Chọn|Choose) / }).click();
+    }
+    await shoot(page, name('ai-edit'), false);
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.getByRole('dialog').getByRole('button', { name: /^(Lưu từ|Save word)$/ }).click();
+    await expect(page.getByRole('dialog')).toBeHidden({ timeout: 30_000 });
+    await page.goto(`/${locale}/app/word?w=${word}`);
+    await settle(page);
+    await shoot(page, name('my-word'));
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.getByRole('button', { name: /^(Xóa từ|Delete word)$/ }).click();
+    await page.getByRole('dialog').getByRole('button', { name: /^(Xóa từ|Delete word)$/ }).click();
+    await expect(page).toHaveURL(/\/app\/lookup$/, { timeout: 30_000 });
   }
   await setLanguage(page, 'vi');
 }

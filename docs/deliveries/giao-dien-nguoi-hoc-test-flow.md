@@ -238,3 +238,31 @@ chọn nó cho `generate_cloze`, hoặc tắt AI (`ai_enabled=false` ở Cài đ
 Kiểm tự động của M5a (CI, job `web`): `e2e/app/m5a.spec.ts` (Pro: bật công tắc → đang tạo câu → điền từ → gợi ý → trả lời → bản dịch; AI lỗi + Thử lại;
 dải đổi kiểu câu; Miễn phí khóa; không đủ lượt; báo lỗi câu AI về từ riêng không có ô tick; axe và không cuộn ngang với câu AI 300 ký tự × vi/en × sáng/tối ×
 1440/390); API unit GF1–GF4 và `private_word`.
+
+## M5b — Tra bằng AI và Từ của tôi
+
+Dữ liệu: `pnpm learner:setup -- --admin <email> --learner <email> --plan pro` (ở `apps/api`, cần `AI_FAKE_ENABLED=true`; script chọn `fake:ok` cho
+`lookup_word`). Thử gói Dùng thử: `--plan trial`; gói Miễn phí: một tài khoản mới. Thử hết lượt: admin cấp gói "limits" với `ai_lookup_per_cycle` nhỏ (ví dụ 1).
+Thử AI lỗi: chọn model giả `fake:bad-json` cho `lookup_word`, hoặc tắt AI ở Cài đặt hệ thống.
+
+| # | Làm | Thấy | Khung |
+|---|---|---|---|
+| 1 | Nhấn N (hoặc [Thêm từ]), gõ một từ Wordmet không có (ví dụ "rizz") | Dòng "Wordmet chưa có từ “rizz”…"; hai nút bằng nhau [Tra bằng AI] (vàng) · [Tự nhập nghĩa]; dưới nút AI "còn N lượt tra AI" | K/85, §15 điểm 13 |
+| 2 | Dán câu vào "Câu bạn gặp" | Ô tick "Gửi kèm câu đã gặp cho AI", mặc định không tick | K/85 |
+| 3 | [Tra bằng AI] | "Đang tra…", rồi "Kết quả cho “rizz”" · "Đã dùng 1 lượt tra AI · còn N−1"; khối **AI gợi ý**: từ, loại từ, nghĩa, "Định nghĩa tiếng Anh (chỉ để tham khảo, không lưu): …", câu ví dụ; "AI gợi ý có thể sai. Kiểm lại trước khi lưu." + [Sửa rồi lưu] | K/86 |
+| 4 | Gõ một từ có sẵn (ví dụ "sick"), bấm "Không phải nghĩa bạn cần?" → [Tra bằng AI] | "Nghĩa có sẵn trong từ điển" ở trên, mỗi nghĩa có [Chọn]; khối AI gợi ý ở dưới. [Chọn] → về danh sách nghĩa, nghĩa đó được chọn sẵn | K/86b |
+| 5 | [Sửa rồi lưu] | "Sửa trước khi lưu": Từ, Loại từ, Nghĩa, Trình độ (trống: AI không cho trình độ), Chủ đề, Câu ví dụ (tối đa 2, "+ Thêm câu ví dụ"), Lưu vào nhóm, dòng "Từ này mang nhãn AI gợi ý tới khi…" · [Hủy] [Lưu từ] | K/87 |
+| 6 | Chọn trình độ, [Lưu từ] | "Đã lưu từ “rizz” vào nhóm “…”." | K/87 |
+| 7 | Mở trang từ (Tra từ → "rizz", hoặc `/vi/app/word?w=rizz`) | Nhãn "Từ của tôi", "AI gợi ý"; dòng "Nguồn: AI gợi ý. Nghĩa này chưa ai duyệt, bạn nên kiểm lại."; không có định nghĩa tiếng Anh; [Sửa] [Xóa từ] (đỏ) | K/88 |
+| 8 | [Sửa] → chỉ đổi Loại từ → [Lưu thay đổi] | Nhãn "AI gợi ý" vẫn còn | K/88 |
+| 9 | [Sửa] → đổi Nghĩa (hoặc chủ đề, câu ví dụ) → [Lưu thay đổi] | Nhãn "AI gợi ý" và dòng nguồn biến mất | K/88 |
+| 10 | [Xóa từ] | Hộp "Xóa từ “rizz”?" + cảnh báo; [Xóa từ] → về Tra từ, từ không còn | K/88 |
+| 11 | Tài khoản Dùng thử | Chip "Dùng thử" cạnh "còn N lượt tra AI" | K/85t |
+| 12 | Tài khoản Miễn phí | Nút [Tra bằng AI] có ổ khóa + "Pro"; bấm → "Dành cho gói Pro. Gói Pro chưa mở bán." [Xem Gói học]; [Tự nhập nghĩa] vẫn dùng được | K/85b (D6) |
+| 13 | `fake:bad-json` cho `lookup_word`, tra lại | "Hệ thống đang gặp lỗi." (+ [Thử lại] khi thử lại được); lượt không bị trừ | K/85c (D11, E39) |
+| 14 | Hết lượt tra AI | "Hết lượt tra AI. Lượt tra AI mới có vào …" | K/85c (E40) |
+| 15 | English, Tối, cửa sổ 390px | "Look up with AI", "AI suggestion", "Edit before saving", "My words"; nghĩa dài không cuộn ngang | M/85–M/88 |
+
+Kiểm tự động của M5b (CI, job `web`): `e2e/app/m5b.spec.ts` (Pro: tra AI → sửa → lưu với `ai_suggestion`; Dùng thử, Miễn phí; 409 `ai-in-progress` gửi lại
+cùng key; AI lỗi + Thử lại; hết lượt; trang Từ của tôi: sửa nghĩa, nhãn mất, xóa; axe và không cuộn ngang × vi/en × sáng/tối × 1440/390); unit
+`ai-lookup.test.tsx`, `edit-suggestion.test.tsx`, `my-word.test.tsx`.
