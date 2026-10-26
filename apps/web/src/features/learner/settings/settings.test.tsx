@@ -125,10 +125,12 @@ describe('SettingsPage (K/50)', () => {
     expect(call.headers['Idempotency-Key']).toMatch(/[0-9a-f-]{36}/);
   });
 
-  it('an unverified email says so and offers to verify', async () => {
-    renderApp(<SettingsPage />, { me: makeMe({ email_verified: false }), routes: routes() });
-    expect(await screen.findByText(/Chưa xác minh/)).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Xác minh email' })).toHaveAttribute('href', '/vi/app/verify-email');
+  it.each([true, false])('the email row shows only the email, without a verification invitation (verified=%s)', async (verified) => {
+    renderApp(<SettingsPage />, { me: makeMe({ email_verified: verified }), routes: routes() });
+    expect(await screen.findByText('lan@example.com')).toBeInTheDocument();
+    expect(screen.queryByText(/Chưa xác minh|Đã xác minh/)).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Xác minh email' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Xác minh email' })).not.toBeInTheDocument();
   });
 
   it('Xóa tài khoản is "Sắp có" and not a control; Lịch sử giao dịch opens its page (M4b)', async () => {

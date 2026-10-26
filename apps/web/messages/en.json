@@ -347,7 +347,12 @@
         "resendIn": "Resend code in {seconds} s",
         "resend": "Resend code",
         "submit": "Verify",
-        "resent": "New code sent."
+        "resent": "New code sent.",
+        "bodyNoEmail": "Enter the email you signed up with and the 6-digit code from our message. It works for 10 minutes.",
+        "loginBody": "Confirm your email to continue. We sent a code to {email}.",
+        "wrongCode": "That code or password is wrong, or the code has expired. If your email is already confirmed, sign in.",
+        "locked": "Too many wrong codes. Try again in {time}.",
+        "otherEmail": "Typed the wrong email? Sign up with another one"
       },
       "forgot": {
         "title": "Forgot password",
@@ -378,9 +383,6 @@
       "birthDate": "Date of birth",
       "email": "Email",
       "edit": "Edit",
-      "verified": "Verified",
-      "unverified": "Not verified",
-      "verifyEmail": "Verify email",
       "planUsage": "Plan and usage",
       "currentPlan": "Current plan",
       "seePlans": "See plans",

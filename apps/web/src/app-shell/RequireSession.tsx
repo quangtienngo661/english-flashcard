@@ -12,8 +12,8 @@ import { useSession } from './session/session-context';
 import type { SessionState } from './session/session-store';
 import { deviceTimezone, timezoneToSync } from './timezone-sync';
 
-// Pages a learner opens before choosing a language (the sign-up flow: verify the email, then pick the language).
-const NO_LANGUAGE_PAGES = /\/app\/(welcome|verify-email)$/;
+// The page a learner opens before choosing a language (the end of sign-up).
+const NO_LANGUAGE_PAGES = /\/app\/welcome$/;
 
 /**
  * The page being opened: the router's path (during a client-side move the address bar still shows the old page), with the
@@ -66,6 +66,8 @@ function redirectFor(
     return `/${locale}/app/login?next=${encodeURIComponent(here)}${reason}`;
   }
   if (state.status === 'change-password') return `/${locale}/app/forgot-password?reason=change-password`;
+  // Defensive (design §4.3): a session is only issued after the code, so this should not happen any more.
+  if (!state.me.email_verified) return `/${locale}/app/verify-email`;
   const fixed = prefixFix(here, state.me.native_language);
   if (fixed) return fixed;
   if (state.me.native_language === null && !NO_LANGUAGE_PAGES.test(pathname)) {
