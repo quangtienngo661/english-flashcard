@@ -569,6 +569,7 @@
       "deleted": "Đã xóa nhóm “{name}”."
     },
     "group": {
+      "addWord": "Thêm từ",
       "back": "Nhóm",
       "meta": "{count} từ · tạo ngày {date}",
       "chipPriority": "{count} ưu tiên",
@@ -757,6 +758,8 @@
       }
     },
     "addWord": {
+      "byTopic": "Thêm nhiều từ theo chủ đề",
+      "seeWords": "Xem từ",
       "title": "Bạn vừa gặp từ nào?",
       "word": "Từ",
       "wordPlaceholder": "Ví dụ: went",

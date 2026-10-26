@@ -569,6 +569,7 @@
       "deleted": "Deck “{name}” deleted."
     },
     "group": {
+      "addWord": "Add word",
       "back": "Decks",
       "meta": "{count, plural, one {# word} other {# words}} · created {date}",
       "chipPriority": "{count} priority",
@@ -757,6 +758,8 @@
       }
     },
     "addWord": {
+      "byTopic": "Add several words by topic",
+      "seeWords": "See words",
       "title": "Which word did you just meet?",
       "word": "Word",
       "wordPlaceholder": "e.g. went",

@@ -11,10 +11,12 @@ import { useApi } from '@/app-shell/session/session-context';
 import { useSubmitOnce } from '@/app-shell/use-submit-once';
 import { Button } from '@/app-ui/Button';
 import { Dialog } from '@/app-ui/Dialog';
+import { Select } from '@/app-ui/Select';
 import { TextField } from '@/app-ui/TextField';
 import { showToast } from '@/app-ui/Toast';
 import { cn } from '@/lib/cn';
 import { GROUPS_KEY, useGroupMutations, useGroupQueue, useGroups } from '../groups/groups-api';
+import { LEVELS, useTopics } from '../lookup/lookup-api';
 import { wordHref } from '../word/word-api';
 import { useLookup, type LookupSense, type QuickAddBody, type QuickAddResult } from './add-word-api';
 import type { AiLookupResult as AiResult } from './ai-lookup-api';
@@ -51,6 +53,7 @@ export function AddWordSheet({ initialWord = '', lockedGroupId, onClose }: { ini
   const inDeck = new Set(queue.data?.cards.map((card) => card.sense_id) ?? []);
   const { createGroup } = useGroupMutations();
   const [view, setView] = useState<View>('find');
+  const [byTopic, setByTopic] = useState(false);
   const [back, setBack] = useState<'find' | 'manual' | 'edit'>('find');
   // K/87: the AI suggestion as the learner edits it before saving.
   const [draft, setDraft] = useState<WordDraft | null>(null);
@@ -407,6 +410,19 @@ export function AddWordSheet({ initialWord = '', lockedGroupId, onClose }: { ini
           </>
         )}
         {lockedGroupId && deckField}
+        {lockedGroupId && (
+          <div className="flex min-w-0 flex-col gap-3">
+            <button
+              type="button"
+              aria-expanded={byTopic}
+              onClick={() => setByTopic((open) => !open)}
+              className="min-h-control-touch self-start text-left text-ui font-semibold text-primary underline underline-offset-2 outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            >
+              {t('byTopic')}
+            </button>
+            {byTopic && <TopicFields groupId={lockedGroupId} />}
+          </div>
+        )}
         {failureLine}
       </div>
     );
@@ -451,5 +467,28 @@ export function AddWordSheet({ initialWord = '', lockedGroupId, onClose }: { ini
     <Dialog isOpen onOpenChange={(open) => !open && onClose()} title={title} isDismissable={!save.busy} footer={footer}>
       {body}
     </Dialog>
+  );
+}
+
+/** A14-7: leave this page's sheet for the topic picker, carrying its deck. */
+function TopicFields({ groupId }: { groupId: string }) {
+  const t = useTranslations('App');
+  const locale = useLocale();
+  const topics = useTopics();
+  const [topic, setTopic] = useState('');
+  const [level, setLevel] = useState('');
+  return (
+    <div className="flex min-w-0 flex-col gap-3">
+      <Select label={t('lookup.topicLabel')} value={topic} onChange={setTopic} items={(topics.data?.items ?? []).map((item) => ({ id: item.code, label: item.name }))} placeholder="—" />
+      <Select label={t('addWord.edit.level')} value={level} onChange={setLevel} items={LEVELS.map((id) => ({ id, label: id }))} placeholder="—" />
+      {topic && level && (
+        <Link
+          href={`/${locale}/app/topic?code=${encodeURIComponent(topic)}&level=${level}&group=${groupId}`}
+          className="flex min-h-control-touch items-center justify-center rounded-inner border-2 border-border-strong bg-surface px-4 text-ui font-semibold text-ink outline-none hover:bg-primary-soft focus-visible:ring-2 focus-visible:ring-primary"
+        >
+          {t('addWord.seeWords')}
+        </Link>
+      )}
+    </div>
   );
 }

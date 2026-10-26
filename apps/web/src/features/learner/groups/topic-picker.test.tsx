@@ -5,10 +5,11 @@ import { renderApp } from '@/app-ui/test-utils';
 import { ToastRegion } from '@/app-ui/Toast';
 import { TopicPickerPage } from './TopicPickerPage';
 
+let search = new URLSearchParams({ code: 'business', level: 'B1' });
 vi.mock('next/navigation', () => ({
   usePathname: () => '/vi/app/topic',
   useRouter: () => ({ replace: vi.fn(), push: vi.fn() }),
-  useSearchParams: () => new URLSearchParams({ code: 'business', level: 'B1' }),
+  useSearchParams: () => search,
 }));
 vi.mock('@/app-shell/navigate', () => ({ hardReplace: vi.fn(), isLeaving: () => false }));
 vi.setConfig({ testTimeout: 30_000 });
@@ -43,7 +44,53 @@ const base = (total: number, learning: number[] = [1, 2]) => {
   return routes;
 };
 
+beforeEach(() => { search = new URLSearchParams({ code: 'business', level: 'B1' }); });
+
 describe('TopicPickerPage (K/18)', () => {
+  it('A14-7: topic picker with group=<id> targets that deck', async () => {
+    const target = 'abcdefab-abcd-4abc-8abc-abcdefabcdef';
+    search.set('group', target.toUpperCase());
+    const { calls } = renderApp(<TopicPickerPage />, { routes: {
+      ...base(5),
+      'GET /v1/groups': () => Response.json({ items: [
+        { id: DECK, name: 'Kinh doanh · B1', version: 1, total: 2, today: { priority: 0, due: 0, new: 0 }, cells: [], backlog: 0 },
+        { id: target, name: 'Công việc', version: 1, total: 2, today: { priority: 0, due: 0, new: 0 }, cells: [], backlog: 0 },
+      ] }),
+      [`POST /v1/groups/${target}/items/bulk`]: () => Response.json({ added: 3, already_in_group: 0, skipped_function_words: 0, skipped_group_full: 0, skipped_not_found: 0 }),
+      [`POST /v1/groups/${DECK}/items/bulk`]: () => Response.json({ added: 1, already_in_group: 0, skipped_function_words: 0, skipped_group_full: 0, skipped_not_found: 0 }),
+    } });
+    expect(await screen.findByRole('button', { name: /Thêm vào/ }, { timeout: 5000 })).toHaveTextContent('Công việc');
+    await userEvent.click(screen.getByRole('button', { name: 'Thêm cả 3 từ' }));
+    await waitFor(() => expect(calls.find((c) => c.path === `/v1/groups/${target}/items/bulk`)?.body).toEqual({ sense_ids: [id(3), id(4), id(5)] }));
+    await userEvent.click(screen.getByRole('checkbox', { name: 'Chọn word4' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Thêm 1 từ đã chọn' }));
+    await waitFor(() => expect(calls.filter((c) => c.path === `/v1/groups/${target}/items/bulk`).map((c) => c.body)).toEqual([
+      { sense_ids: [id(3), id(4), id(5)] }, { sense_ids: [id(4)] },
+    ]));
+    await userEvent.click(screen.getByRole('button', { name: /Thêm vào/ }));
+    await userEvent.click(screen.getByRole('option', { name: 'Kinh doanh · B1' }));
+    await userEvent.click(screen.getByRole('checkbox', { name: 'Chọn word3' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Thêm 1 từ đã chọn' }));
+    await waitFor(() => expect(calls.find((c) => c.path === `/v1/groups/${DECK}/items/bulk`)?.body).toEqual({ sense_ids: [id(3)] }));
+    expect(calls.filter((c) => c.method === 'POST' && c.path === '/v1/groups')).toHaveLength(0);
+  });
+
+  it.each([id(999), '../../bad'])('A14-8: unknown group id → current default', async (group) => {
+    search.set('group', group);
+    renderApp(<TopicPickerPage />, { routes: base(5) });
+    expect(await screen.findByRole('button', { name: /Thêm vào/ }, { timeout: 5000 })).toHaveTextContent('Nhóm mới “Kinh doanh · B1”');
+  });
+
+  it.each([id(999), '../../bad'])('A14-8: unknown group id → current default (topic-named deck, %s)', async (group) => {
+    search.set('group', group);
+    renderApp(<TopicPickerPage />, { routes: { ...base(5),
+      'GET /v1/groups': () => Response.json({ items: [{ id: DECK, name: 'Kinh doanh · B1', version: 1, total: 2, today: { priority: 0, due: 0, new: 0 }, cells: [], backlog: 0 }] }),
+    } });
+    const select = await screen.findByRole('button', { name: /Thêm vào/ }, { timeout: 5000 });
+    expect(select).toHaveTextContent('Kinh doanh · B1');
+    expect(select).not.toHaveTextContent('Nhóm mới');
+  });
+
   it('counts suggested, unlearned and selected words; learning rows cannot be ticked', async () => {
     renderApp(<TopicPickerPage />, { routes: base(52) });
     expect(await screen.findByRole('heading', { name: 'Kinh doanh · B1' })).toBeInTheDocument();

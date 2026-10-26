@@ -80,6 +80,34 @@ beforeEach(() => {
 });
 
 describe('Locked add-word sheet (A14)', () => {
+  it('sheet (locked): "Add several words by topic" → pick topic and level → See words → /vi/app/topic?code=…&level=…&group=<id>', async () => {
+    openLocked({ 'GET /v1/topics': () => Response.json({ items: [{ code: 'daily-life', name: 'Đời sống' }, { code: 'food & drink', name: 'Ẩm thực' }] }) }, '');
+    const disclosure = await screen.findByRole('button', { name: 'Thêm nhiều từ theo chủ đề' }, slow);
+    expect(disclosure).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.queryByRole('button', { name: /Chủ đề/ })).not.toBeInTheDocument();
+    await userEvent.click(disclosure);
+    expect(disclosure).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.queryByRole('link', { name: 'Xem từ' })).not.toBeInTheDocument();
+    // React Aria's English default placeholder must not show on the Vietnamese page.
+    expect(screen.queryByText('Select an item')).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: /Chủ đề/ }));
+    await userEvent.click(await screen.findByRole('option', { name: 'Đời sống' }, slow));
+    expect(screen.queryByRole('link', { name: 'Xem từ' })).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: /Trình độ/ }));
+    expect(screen.getAllByRole('option').map((option) => option.textContent)).toEqual(['A1', 'A2', 'B1', 'B2', 'C1', 'C2']);
+    await userEvent.click(screen.getByRole('option', { name: 'B1' }));
+    expect(screen.getByRole('link', { name: 'Xem từ' })).toHaveAttribute('href', `/vi/app/topic?code=daily-life&level=B1&group=${TRAVEL}`);
+    await userEvent.click(screen.getByRole('button', { name: /Chủ đề/ }));
+    await userEvent.click(screen.getByRole('option', { name: 'Ẩm thực' }));
+    expect(screen.getByRole('link', { name: 'Xem từ' })).toHaveAttribute('href', `/vi/app/topic?code=food%20%26%20drink&level=B1&group=${TRAVEL}`);
+  });
+
+  it('the topic row is absent in unlocked mode', async () => {
+    renderApp(<AddWordSheet onClose={() => {}} />, { routes: routes(), locale: 'en' });
+    await screen.findByRole('button', { name: /Save to deck/ }, slow);
+    expect(screen.queryByRole('button', { name: 'Add several words by topic' })).not.toBeInTheDocument();
+  });
+
   it('A14-1: locked → quick-add posts group_id of the locked deck; toast; closes', async () => {
     const { calls, onClose } = openLocked();
     expect(await screen.findByText('Lưu vào nhóm: Du lịch', {}, slow)).toBeInTheDocument();
@@ -132,6 +160,7 @@ describe('Locked add-word sheet (A14)', () => {
   it('A14: manual entry stays locked even when the deck list is empty', async () => {
     const { calls } = openLocked({ 'GET /v1/groups': () => Response.json({ items: [] }) }, 'rizz');
     await userEvent.click(await screen.findByRole('button', { name: 'Tự nhập nghĩa' }, slow));
+    expect(screen.queryByRole('button', { name: 'Thêm nhiều từ theo chủ đề' })).not.toBeInTheDocument();
     expect(screen.getByText('Lưu vào nhóm:', { exact: false })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Lưu vào nhóm|Tạo nhóm đầu tiên/ })).not.toBeInTheDocument();
     await userEvent.type(screen.getByRole('textbox', { name: 'Nghĩa' }), 'sức hút');

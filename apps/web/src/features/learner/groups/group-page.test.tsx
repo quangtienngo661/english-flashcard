@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { useState } from 'react';
 import { problem } from '@/app-shell/session/test-support';
 import { renderApp } from '@/app-ui/test-utils';
 import { GroupPage } from './GroupPage';
@@ -47,6 +48,41 @@ beforeEach(() => {
 });
 
 describe('GroupPage (K/11–K/13)', () => {
+  it('group page shows [Add word] and opens the sheet locked to this deck', async () => {
+    renderApp(<GroupPage />, { routes: routes(), locale: 'en' });
+    const main = screen.getByRole('main');
+    await userEvent.click(await within(main).findByRole('button', { name: 'Add word' }, { timeout: 5000 }));
+    expect(await screen.findByText('Saving to deck: Công nghệ', {}, { timeout: 5000 })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Save to deck/ })).not.toBeInTheDocument();
+  });
+
+  it('phone: the + button opens it locked', async () => {
+    renderApp(<GroupPage />, { routes: routes() });
+    await screen.findByRole('heading', { name: 'Công nghệ' }, { timeout: 5000 });
+    const fab = screen.getAllByRole('button', { name: 'Thêm từ' }).find((button) => button.getAttribute('aria-label') === 'Thêm từ');
+    expect(fab).toBeDefined();
+    await userEvent.click(fab!);
+    expect(await screen.findByText('Lưu vào nhóm: Công nghệ', {}, { timeout: 5000 })).toBeInTheDocument();
+  });
+
+  it('group page sets the scope; leaving clears it', async () => {
+    // Keep AppShell and its provider mounted when GroupBody leaves on an invalid id.
+    function PersistentPage() {
+      const [, refresh] = useState(0);
+      return <><button onClick={() => { search = new URLSearchParams(); refresh((n) => n + 1); }}>Leave deck</button><GroupPage /></>;
+    }
+    renderApp(<PersistentPage />, { routes: routes() });
+    await screen.findByRole('heading', { name: 'Công nghệ' }, { timeout: 5000 });
+    fireEvent.keyDown(document.body, { key: 'n' });
+    await screen.findByText('Lưu vào nhóm: Công nghệ', {}, { timeout: 5000 });
+    await userEvent.click(screen.getByRole('button', { name: 'Hủy' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Leave deck' }));
+    await screen.findByText('Không tìm thấy nhóm này.', {}, { timeout: 5000 });
+    fireEvent.keyDown(document.body, { key: 'n' });
+    expect(await screen.findByRole('button', { name: /Lưu vào nhóm/ }, { timeout: 5000 })).toBeInTheDocument();
+    expect(screen.queryByText('Lưu vào nhóm: Công nghệ')).not.toBeInTheDocument();
+  });
+
   it('A14: the deck page scopes key N to its deck', async () => {
     renderApp(<GroupPage />, { routes: routes() });
     await screen.findByRole('heading', { name: 'Công nghệ' }, { timeout: 5000 });
