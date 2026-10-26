@@ -176,6 +176,30 @@ describe('AnswersService — Bước 7 kinds', () => {
     await expect(choice.service.skip(userId, 'it-1')).rejects.toMatchObject({ status: 409, problemType: 'skip-not-allowed' });
   });
 
+  it('cloze skipped before any try → wrong result with the answer shown (K/78a)', async () => {
+    const found = aiItem(clozeQuestion(), { tries: 0, answersTried: [] });
+    const { service, tx } = route(found);
+    tx.practiceSessionItem.update.mockResolvedValueOnce({
+      ...found, result: 'wrong', skipped: true, answerRaw: null, answerNormalized: null,
+    });
+    await expect(service.skip(userId, 'it-1')).resolves.toMatchObject({
+      result: 'wrong', skipped: true, tries: 0, correct: { lemma: 'deploy', text: 'deployed' },
+    });
+    expect(tx.practiceSessionItem.update).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({
+        skipped: true, result: 'wrong', answerRaw: null, answerNormalized: null, answersTried: [], tries: 0,
+      }),
+    }));
+  });
+
+  it('type_word skipped before any try → 409 skip-not-allowed', async () => {
+    const { service, tx } = route(aiItem({
+      ...clozeQuestion(), type: 'type_word', prompt: { kind: 'type_sentence', sentence: 'We ___ it.' },
+    }, { tries: 0, answersTried: [] }));
+    await expect(service.skip(userId, 'it-1')).rejects.toMatchObject({ status: 409, problemType: 'skip-not-allowed' });
+    expect(tx.practiceSessionItem.update).not.toHaveBeenCalled();
+  });
+
   it('hint level 3 is served when stored; B7E53: missing → 409 hint-unavailable; a Bước 4 level 2 keeps its shape', async () => {
     const meaning = { kind: 'meaning', text: 'triển khai' };
     const three = route(aiItem(clozeQuestion({ level1: { kind: 'first_letter', text: 'd' }, level2: null, level3: meaning })));

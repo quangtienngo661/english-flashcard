@@ -3,6 +3,7 @@
 // Stored answer formats on practice_session_items: answer_raw = the chosen index "0"…"3" for multiple choice, "true" or
 // "false" for true/false, the last typed text as sent for typing; answer_normalized = normalizeAnswer of that text for
 // typing, else the same as answer_raw; answers_tried = earlier typed texts, oldest first.
+// answer_raw and answer_normalized are null for a cloze skipped before any try.
 
 export type QuestionType =
   | 'mcq_definition' | 'true_false_definition' | 'type_word'
