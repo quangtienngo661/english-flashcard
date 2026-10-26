@@ -186,9 +186,14 @@ async function main() {
     await fetch(`${BASE}/v1/admin/content/senses/export?status=unpublishable`, { headers: { Authorization: `Bearer ${adminToken}` } }),
     200, 'export unpublishable list',
   ).then((r) => r.text());
-  const gapRow = unpublishableBefore.split('\r\n').find((line) => line.startsWith(`${lemma}-gap,`));
+  const exportLines = unpublishableBefore.split('\r\n');
+  const gapRow = exportLines.find((line) => line.startsWith(`${lemma}-gap,`));
   if (!gapRow) throw new Error(`Expected ${lemma}-gap in the unpublishable export:\n${unpublishableBefore}`);
-  const [, , , , , , , , , , senseId, revision] = gapRow.split(',');
+  // Read by header name: the export gains columns over time (form_of, inflections in 6652985).
+  const exportHeader = exportLines[0].replace(/^﻿/, '').split(',');
+  const gapCells = gapRow.split(',');
+  const senseId = gapCells[exportHeader.indexOf('sense_id')];
+  const revision = gapCells[exportHeader.indexOf('revision')];
   const fillUpload = await upload(adminToken, sourceId, [
     'headword,pos,CEFR,gloss_vi,definition_en,example_en_1,topics,sense_id,revision',
     `${lemma}-gap,noun,A1,lòng can đảm,Bravery.,She showed it.,business,${senseId},${revision}`,
