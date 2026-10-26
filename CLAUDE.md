@@ -304,6 +304,12 @@ approval ("cứ triển khai mà làm"). Still left after the round: the owner's
 show "Sắp có" and have no design or plan yet.
 Improvement ideas to weigh **after** the learner UI for Bước 3–7 is done (owner 23/10/2026; not decided): `docs/preparation/IMPROVEMENT_IDEAS_2026-10-23.md` (product C1–C10, overall assessment, how the project is run P1–P5).
 
+## Đợt cải thiện nhóm A — plan & as-built
+
+`docs/deliveries/dot-cai-thien-a.md` (plan tóm tắt 26/10/2026). Design, decisions (A0–A14) and plan: `docs/superpowers/{specs,decisions,plans}/2026-10-26-dot-cai-thien-a*.md`;
+questions and answers `docs/superpowers/reviews/2026-10-26-dot-cai-thien-questions.md`; code facts `docs/preparation/DOT_CAI_THIEN_A_CODE_FACTS_2026-10-26.md`. Group B
+(real AI call by Postman, eval, judge, prompt lifecycle) gets its own design after the first real AI call.
+
 ## Việc phải phân tích khi tới bước tương ứng (ghi 12/10/2026, từ brainstorm Bước 2)
 
 Các điểm dưới đây phát sinh khi rà quyền của `admin`/`editor` (bảng D6) với các spec Bước 3–8. Chưa chốt, **không chặn Bước 2**;
