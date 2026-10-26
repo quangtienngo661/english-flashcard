@@ -42,11 +42,8 @@ export function PlansPage() {
     const onPro = plan === 'pro';
     const gift = onPro && source?.kind === 'grant_plan';
     const end = source?.ends_at ? format.date(lastDay(source.ends_at), 'full') : null;
-    let subtitle: string | null = null;
-    if (gift && source?.starts_at && end) subtitle = t('granted', { from: format.date(source.starts_at, 'full'), to: end });
-    else if (onPro && source?.kind === 'subscription') {
-      subtitle = source.cancel_at_period_end && end ? t('endsOn', { date: end }) : source.renews_at ? t('renews', { date: format.date(source.renews_at, 'full') }) : null;
-    } else if (plan === 'trial' && end) subtitle = t('trialUntil', { date: end });
+    // Owner 27/10/2026: no line under "Bạn đang dùng gói Pro"; the Pro card already says until when.
+    const subtitle = plan === 'trial' && end ? t('trialUntil', { date: end }) : null;
 
     body = (
       <div className="flex flex-col items-center gap-6">
