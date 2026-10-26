@@ -188,20 +188,20 @@ const registerBody = (email) => ({
 
 /** Register sends one verification mail; its code is valid until another is issued. If it is refused, ask for a second one. */
 async function registerVerified(email) {
-  const registered = await want(api('POST', '/v1/auth/register', { body: registerBody(email) }), 201, `register ${email}`);
-  const actor = { email, token: registered.access_token };
-  let verified = await api('POST', '/v1/auth/verify-email', { as: actor, body: { code: await newestCode(email, 1) } });
+  const before = (await mailsTo(email)).length;
+  await want(api('POST', '/v1/auth/register', { body: registerBody(email) }), 201, `register ${email}`);
+  let verified = await api('POST', '/v1/auth/verify-email', { body: { email, code: await newestCode(email, before + 1), password: PASSWORD, client: 'web' } });
   if (verified.status !== 200) {
-    await want(api('POST', '/v1/auth/otp', { as: actor, body: { purpose: 'verify_email' } }), 202, 'request OTP');
-    verified = await api('POST', '/v1/auth/verify-email', { as: actor, body: { code: await newestCode(email, 2) } });
+    const beforeResend = (await mailsTo(email)).length;
+    await want(api('POST', '/v1/auth/otp', { body: { purpose: 'verify_email', email } }), 202, 'request OTP');
+    verified = await api('POST', '/v1/auth/verify-email', { body: { email, code: await newestCode(email, beforeResend + 1), password: PASSWORD, client: 'web' } });
   }
   check(verified.status === 200, `verify ${email}: ${verified.status} ${verified.text}`);
-  return actor;
+  return { email, token: verified.json.access_token };
 }
 
 async function registerLearner(email) {
-  const registered = await want(api('POST', '/v1/auth/register', { body: registerBody(email) }), 201, `register ${email}`);
-  const actor = { email, token: registered.access_token };
+  const actor = await registerVerified(email);
   await want(api('PATCH', '/v1/me', { as: actor, body: { native_language: 'vi' } }), 200, 'set native_language');
   actor.id = (await want(api('GET', '/v1/me', { as: actor }), 200, 'GET /v1/me')).id;
   return actor;

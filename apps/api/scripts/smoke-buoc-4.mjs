@@ -83,14 +83,17 @@ async function waitForApi(timeoutMs = 20_000) {
   }
 }
 
-async function otpCodeFor(email) {
+async function mailsTo(email) {
+  const list = await (await fetch(`${MAILPIT}/api/v1/messages?limit=500`)).json();
+  return (list.messages ?? []).filter((m) => m.To?.[0]?.Address === email)
+    .sort((a, b) => (a.Created < b.Created ? 1 : -1));
+}
+
+async function otpCodeFor(email, atLeast) {
   const deadline = Date.now() + 10_000;
-  // Register sends one OTP mail and the explicit request a second, milliseconds apart; only the newest code is valid.
-  await sleep(1_000);
   for (;;) {
-    const list = await (await fetch(`${MAILPIT}/api/v1/messages`)).json();
-    const message = (list.messages ?? []).filter((m) => m.To?.[0]?.Address === email)
-      .sort((a, b) => (a.Created < b.Created ? 1 : -1))[0];
+    const mails = await mailsTo(email);
+    const message = mails.length >= atLeast ? mails[0] : null;
     if (message) {
       const full = await (await fetch(`${MAILPIT}/api/v1/message/${message.ID}`)).json();
       const match = (full.Text ?? '').match(/(\d{6})/);
@@ -103,11 +106,11 @@ async function otpCodeFor(email) {
 
 async function registerAdmin() {
   const email = `smoke4-admin-${run}@example.com`;
-  const registered = await want(api('POST', '/v1/auth/register', {
+  const before = (await mailsTo(email)).length;
+  await want(api('POST', '/v1/auth/register', {
     body: { email, password: PASSWORD, timezone: TIMEZONE, given_name: 'Smoke', birth_date: '2000-01-01', accept_terms: true, client: 'web' } }), 201, 'register admin');
-  await want(api('POST', '/v1/auth/otp', { token: registered.access_token, body: { purpose: 'verify_email' } }), 202, 'request OTP');
-  const code = await otpCodeFor(email);
-  await want(api('POST', '/v1/auth/verify-email', { token: registered.access_token, body: { code } }), 200, 'verify admin email');
+  const code = await otpCodeFor(email, before + 1);
+  await want(api('POST', '/v1/auth/verify-email', { body: { email, code, password: PASSWORD, client: 'web' } }), 200, 'verify admin email');
   if (!existsSync('dist/cli/admin-grant.js')) throw new Error('Missing dist/cli/admin-grant.js; run `pnpm build` first.');
   execFileSync(process.execPath, ['dist/cli/admin-grant.js', email], { stdio: 'pipe' });
   const login = await want(api('POST', '/v1/auth/login', { body: { email, password: PASSWORD, client: 'web' } }), 200, 'admin login');
@@ -117,11 +120,14 @@ async function registerAdmin() {
 
 async function registerLearner() {
   const email = `smoke4-learner-${run}@example.com`;
-  const registered = await want(api('POST', '/v1/auth/register', {
+  const before = (await mailsTo(email)).length;
+  await want(api('POST', '/v1/auth/register', {
     body: { email, password: PASSWORD, timezone: TIMEZONE, given_name: 'Smoke', birth_date: '2000-01-01', accept_terms: true, client: 'web' } }), 201, 'register learner');
-  await want(api('PATCH', '/v1/me', { token: registered.access_token, body: { native_language: 'vi' } }), 200, 'set native_language');
-  ok(`learner ${email} registered with native_language=vi, timezone ${TIMEZONE}`);
-  return registered.access_token;
+  const code = await otpCodeFor(email, before + 1);
+  const verified = await want(api('POST', '/v1/auth/verify-email', { body: { email, code, password: PASSWORD, client: 'web' } }), 200, 'verify learner email');
+  await want(api('PATCH', '/v1/me', { token: verified.access_token, body: { native_language: 'vi' } }), 200, 'set native_language');
+  ok(`learner ${email} registered, verified with native_language=vi, timezone ${TIMEZONE}`);
+  return verified.access_token;
 }
 
 async function waitFor(read, done, what, timeoutMs = 20_000) {

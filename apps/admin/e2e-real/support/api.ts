@@ -1,6 +1,6 @@
 import { execFileSync } from 'node:child_process';
 import path from 'node:path';
-import { otpCodeFor } from './mailpit';
+import { mailsTo, otpCodeFor } from './mailpit';
 
 export const API = process.env.E2E_API_URL ?? 'http://localhost:3000';
 /** Where `dist/cli/admin-grant.js` lives. Default `../api` (CI); locally point it at the API worktree that has the `.env`. */
@@ -34,12 +34,11 @@ export async function waitForHealth(timeoutMs = 60_000): Promise<void> {
 
 /** Register, then verify the email with the OTP that registration mails (read from Mailpit). */
 export async function registerVerified(email: string, password: string): Promise<void> {
-  const registered = (await (
-    await expectStatus(await post('/v1/auth/register', { email, password, timezone: 'Asia/Ho_Chi_Minh', given_name: 'Smoke', birth_date: '2000-01-01', accept_terms: true, client: 'web' }), 201, `register ${email}`)
-  ).json()) as { access_token: string };
+  const before = (await mailsTo(email)).length;
+  await expectStatus(await post('/v1/auth/register', { email, password, timezone: 'Asia/Ho_Chi_Minh', given_name: 'Smoke', birth_date: '2000-01-01', accept_terms: true, client: 'web' }), 201, `register ${email}`);
   // Registration already mails one code; asking for another would invalidate it and race the mail delivery.
-  const code = await otpCodeFor(email);
-  await expectStatus(await post('/v1/auth/verify-email', { code }, registered.access_token), 200, 'verify email');
+  const code = await otpCodeFor(email, before + 1);
+  await expectStatus(await post('/v1/auth/verify-email', { email, code, password, client: 'web' }), 200, 'verify email');
 }
 
 /** Makes `email` an admin through the CLI, which loads the API's own environment (no secret passes through the tests). */

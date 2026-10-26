@@ -39,11 +39,17 @@ async function waitForApi(timeoutMs = 20_000) {
   }
 }
 
-async function otpCodeFor(email) {
+async function mailsTo(email) {
+  const list = await (await fetch(`${MAILPIT}/api/v1/messages?limit=500`)).json();
+  return (list.messages ?? []).filter((m) => m.To?.[0]?.Address === email)
+    .sort((a, b) => (a.Created < b.Created ? 1 : -1));
+}
+
+async function otpCodeFor(email, atLeast) {
   const deadline = Date.now() + 10_000;
   for (;;) {
-    const list = await (await fetch(`${MAILPIT}/api/v1/messages`)).json();
-    const message = list.messages?.find((m) => m.To?.[0]?.Address === email);
+    const mails = await mailsTo(email);
+    const message = mails.length >= atLeast ? mails[0] : null;
     if (message) {
       const full = await (await fetch(`${MAILPIT}/api/v1/message/${message.ID}`)).json();
       const match = (full.Text ?? '').match(/(\d{6})/);
@@ -57,23 +63,18 @@ async function otpCodeFor(email) {
 async function registerAdmin() {
   const email = `smoke-admin-${run}@example.com`;
   const password = 'Smoke-Test-Pass-9!';
-  const registered = await expect(
+  const before = (await mailsTo(email)).length;
+  await expect(
     await fetch(`${BASE}/v1/auth/register`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password, timezone: 'Asia/Ho_Chi_Minh', given_name: 'Smoke', birth_date: '2000-01-01', accept_terms: true, client: 'web' }),
     }), 201, 'register admin',
   ).then((r) => r.json());
-  await expect(
-    await fetch(`${BASE}/v1/auth/otp`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${registered.access_token}` },
-      body: JSON.stringify({ purpose: 'verify_email' }),
-    }), 202, 'request verify-email OTP',
-  );
-  const code = await otpCodeFor(email);
+  const code = await otpCodeFor(email, before + 1);
   await expect(
     await fetch(`${BASE}/v1/auth/verify-email`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${registered.access_token}` },
-      body: JSON.stringify({ code }),
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, code, password, client: 'web' }),
     }), 200, 'verify admin email',
   );
   if (!existsSync('dist/cli/admin-grant.js')) throw new Error('Missing dist/cli/admin-grant.js; run `pnpm build` first.');
@@ -90,20 +91,29 @@ async function registerAdmin() {
 
 async function registerLearner() {
   const email = `smoke-learner-${run}@example.com`;
-  const registered = await expect(
+  const password = 'Smoke-Test-Pass-9!';
+  const before = (await mailsTo(email)).length;
+  await expect(
     await fetch(`${BASE}/v1/auth/register`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password: 'Smoke-Test-Pass-9!', timezone: 'Asia/Ho_Chi_Minh', given_name: 'Smoke', birth_date: '2000-01-01', accept_terms: true, client: 'web' }),
+      body: JSON.stringify({ email, password, timezone: 'Asia/Ho_Chi_Minh', given_name: 'Smoke', birth_date: '2000-01-01', accept_terms: true, client: 'web' }),
     }), 201, 'register learner',
+  ).then((r) => r.json());
+  const code = await otpCodeFor(email, before + 1);
+  const verified = await expect(
+    await fetch(`${BASE}/v1/auth/verify-email`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, code, password, client: 'web' }),
+    }), 200, 'verify learner email',
   ).then((r) => r.json());
   await expect(
     await fetch(`${BASE}/v1/me`, {
-      method: 'PATCH', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${registered.access_token}` },
+      method: 'PATCH', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${verified.access_token}` },
       body: JSON.stringify({ native_language: 'vi' }),
     }), 200, 'set learner native_language',
   );
-  ok(`learner ${email} registered with native_language=vi`);
-  return registered.access_token;
+  ok(`learner ${email} registered, verified with native_language=vi`);
+  return verified.access_token;
 }
 
 async function registerSource(token) {

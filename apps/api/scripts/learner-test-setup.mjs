@@ -114,9 +114,18 @@ async function waitFor(read, done, what, timeoutMs = 20_000) {
 }
 
 async function loginToken(email) {
+  const before = (await mailsTo(email)).length;
+  const started = Date.now();
   const res = await api('POST', '/v1/auth/login', { body: { email, password: PASSWORD, client: 'web' } });
   if (res.status === 401) {
     throw new Error(`Login refused for ${email}: the account exists with another password. This script only uses its own test password.`);
+  }
+  if (res.status === 403 && String(res.json?.type).endsWith('email-not-verified')) {
+    // Login already sends a code. Only resend if none arrives, after the 60 s cooldown (review M4).
+    const code = await newestCode(email, before + 1, { allowMissing: true });
+    if (code) return (await verifyCode(email, code)).access_token;
+    await sleep(Math.max(0, 60_250 - (Date.now() - started)));
+    return (await requestAndVerify(email)).access_token;
   }
   check(res.status === 200, `login ${email}: ${res.status} ${res.text}`);
   return res.json.access_token;
@@ -131,7 +140,7 @@ async function mailsTo(email) {
 }
 
 /** The newest 6-digit code once `atLeast` mails reached `email` (only the newest code is valid). */
-async function newestCode(email, atLeast) {
+async function newestCode(email, atLeast, { allowMissing = false } = {}) {
   const deadline = Date.now() + 20_000;
   for (;;) {
     const mails = await mailsTo(email);
@@ -140,39 +149,42 @@ async function newestCode(email, atLeast) {
       const match = (full.Text ?? '').match(/(\d{6})/);
       if (match) return match[1];
     }
-    if (Date.now() > deadline) throw new Error(`No OTP mail for ${email} in Mailpit (${MAILPIT}) after 20s (found ${mails.length})`);
+    if (Date.now() > deadline) {
+      if (allowMissing) return null;
+      throw new Error(`No OTP mail for ${email} in Mailpit (${MAILPIT}) after 20s (found ${mails.length})`);
+    }
     await sleep(300);
   }
 }
 
-async function requestAndVerify(actor) {
-  const before = (await mailsTo(actor.email)).length;
-  await want(api('POST', '/v1/auth/otp', { as: actor, body: { purpose: 'verify_email' } }), 202, 'request OTP');
-  const code = await newestCode(actor.email, before + 1);
-  await want(api('POST', '/v1/auth/verify-email', { as: actor, body: { code } }), 200, `verify ${actor.email}`);
+async function verifyCode(email, code) {
+  return want(api('POST', '/v1/auth/verify-email', { body: { email, code, password: PASSWORD, client: 'web' } }), 200, `verify ${email}`);
+}
+
+async function requestAndVerify(email) {
+  const before = (await mailsTo(email)).length;
+  await want(api('POST', '/v1/auth/otp', { body: { purpose: 'verify_email', email } }), 202, 'request OTP');
+  return verifyCode(email, await newestCode(email, before + 1));
 }
 
 /** Registers `email` (or logs in when it is taken) and makes sure it is verified. Returns { email, token, profile, created }. */
 async function ensureAccount(email) {
   const actor = { email, token: null, created: false };
+  const before = (await mailsTo(email)).length;
   const registered = await api('POST', '/v1/auth/register', { body: {
     email, password: PASSWORD, timezone: TIMEZONE, given_name: 'Test', birth_date: '2000-01-01', accept_terms: true, client: 'web' } });
   if (registered.status === 201) {
-    actor.token = registered.json.access_token;
     actor.created = true;
-    // Register sends one verification mail; if its code is refused, ask for a second one (as smoke-buoc-7).
-    const first = await api('POST', '/v1/auth/verify-email', { as: actor, body: { code: await newestCode(email, 1) } });
-    if (first.status !== 200) await requestAndVerify(actor);
+    // Re-registration in the cooldown may keep the earlier code; resend if no new mail arrives or the code is refused.
+    const code = await newestCode(email, before + 1, { allowMissing: true });
+    const first = code ? await api('POST', '/v1/auth/verify-email', { body: { email, code, password: PASSWORD, client: 'web' } }) : null;
+    actor.token = first?.status === 200 ? first.json.access_token : (await requestAndVerify(email)).access_token;
   } else if (registered.status === 409) {
     actor.token = await loginToken(email);
   } else {
     throw new Error(`register ${email}: ${registered.status} ${registered.text}`);
   }
   actor.profile = await want(api('GET', '/v1/me', { as: actor }), 200, 'GET /v1/me');
-  if (!actor.profile.email_verified) {
-    await requestAndVerify(actor);
-    actor.profile = await want(api('GET', '/v1/me', { as: actor }), 200, 'GET /v1/me');
-  }
   check(actor.profile.email_verified, `${email} is still not verified`);
   return actor;
 }
