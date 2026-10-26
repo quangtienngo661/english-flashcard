@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { makeMe, problem } from '@/app-shell/session/test-support';
 import { THEME_STORAGE_KEY } from '@/app-shell/theme/theme';
 import { ThemeProvider } from '@/app-shell/theme/ThemeProvider';
-import { renderApp } from '@/app-ui/test-utils';
+import { pickDate, renderApp } from '@/app-ui/test-utils';
 import { AccountPage } from './AccountPage';
 import { SettingsPage } from './SettingsPage';
 
@@ -154,9 +154,8 @@ describe('SettingsPage (K/50)', () => {
 describe('AccountPage (K/91, K/92)', () => {
   it('K/92: a birth date under 13 shows the line at once and sends nothing', async () => {
     const { count } = renderApp(<AccountPage />, { routes: routes() });
-    const field = await screen.findByRole('textbox', { name: 'Ngày sinh' });
-    await userEvent.clear(field);
-    await userEvent.type(field, '14/5/2015');
+    await screen.findByLabelText('Ngày sinh');
+    pickDate('Ngày sinh', '2015-05-14');
     expect(screen.getByText('Bạn cần đủ 13 tuổi để dùng Wordmet.')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Lưu thay đổi' })).toBeDisabled();
     expect(count('PATCH', '/v1/me')).toBe(0);
@@ -174,9 +173,8 @@ describe('AccountPage (K/91, K/92)', () => {
 
   it('400 age-below-minimum from the API shows the same inline line', async () => {
     renderApp(<AccountPage />, { routes: routes('free', { 'PATCH /v1/me': () => problem(400, 'age-below-minimum') }) });
-    const field = await screen.findByRole('textbox', { name: 'Ngày sinh' });
-    await userEvent.clear(field);
-    await userEvent.type(field, '1/1/2000');
+    await screen.findByLabelText('Ngày sinh');
+    pickDate('Ngày sinh', '2000-01-02');
     await userEvent.click(screen.getByRole('button', { name: 'Lưu thay đổi' }));
     expect(await screen.findByText('Bạn cần đủ 13 tuổi để dùng Wordmet.')).toBeInTheDocument();
   });

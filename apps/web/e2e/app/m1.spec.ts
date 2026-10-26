@@ -27,7 +27,7 @@ test.describe('M1 flows (mocked API)', () => {
     });
     await page.goto('/vi/app/register');
     await page.getByRole('textbox', { name: vi.auth.register.givenName }).fill('Lan');
-    await page.getByRole('textbox', { name: vi.auth.register.birthDate }).fill('14/5/2008');
+    await page.getByLabel(vi.auth.register.birthDate).fill('2008-05-14');
     await page.getByRole('textbox', { name: vi.auth.email }).fill('lan@example.com');
     await page.getByLabel(vi.auth.password).fill('Aa1!aaaa');
     await page.getByRole('checkbox').check({ force: true });

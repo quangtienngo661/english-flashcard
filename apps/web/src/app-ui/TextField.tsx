@@ -7,7 +7,10 @@ type Props = {
   label: string;
   value: string;
   onChange: (value: string) => void;
-  type?: 'text' | 'email' | 'password';
+  type?: 'text' | 'email' | 'password' | 'date';
+  /** Bounds of a `date` field (`YYYY-MM-DD`). */
+  min?: string;
+  max?: string;
   name?: string;
   autoComplete?: string;
   placeholder?: string;
@@ -27,7 +30,7 @@ type Props = {
 
 // Copied from apps/admin/src/ui/TextField.tsx; adds the character counter and the compact Figma field (38–40 px, 14 px text).
 /** Label, input and error in one block; the error is tied to the input (`aria-describedby`, `aria-invalid`). */
-export function TextField({ label, value, onChange, error, description, placeholder, spellCheck, inputMode, showCount, maxLength, onBlur, ...rest }: Props) {
+export function TextField({ label, value, onChange, error, description, placeholder, spellCheck, inputMode, showCount, maxLength, onBlur, min, max, ...rest }: Props) {
   const t = useTranslations('App.common');
   return (
     <AriaTextField
@@ -44,6 +47,8 @@ export function TextField({ label, value, onChange, error, description, placehol
         placeholder={placeholder}
         spellCheck={spellCheck}
         inputMode={inputMode}
+        min={min}
+        max={max}
         className="min-h-control w-full min-w-0 rounded-control border-2 border-border-strong bg-surface px-3 py-2 text-ui text-ink outline-none placeholder:text-placeholder focus-visible:border-primary disabled:opacity-60 read-only:bg-canvas data-invalid:border-danger"
       />
       {(description || (showCount && maxLength)) && (

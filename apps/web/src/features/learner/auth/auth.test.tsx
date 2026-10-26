@@ -4,7 +4,8 @@ import userEvent from '@testing-library/user-event';
 import { StrictMode } from 'react';
 import { clearPendingEmail, readPendingEmail, readPendingPassword, setPendingPassword, writePendingEmail } from '@/app-shell/session/pending-email';
 import { makeMe, problem, rateLimited, tokenResponse } from '@/app-shell/session/test-support';
-import { renderApp } from '@/app-ui/test-utils';
+import { parseBirthDate } from '@/app-ui/date-of-birth';
+import { pickDate, renderApp } from '@/app-ui/test-utils';
 import { AuthGate } from './AuthGate';
 import { ForgotPasswordForm } from './ForgotPasswordForm';
 import { LoginForm } from './LoginForm';
@@ -48,7 +49,7 @@ afterEach(() => {
 async function fillRegister(birth = '14/5/2008', email = 'lan@example.com') {
   await userEvent.type(screen.getByRole('textbox', { name: 'Tên' }), 'Lan');
   await userEvent.type(screen.getByRole('textbox', { name: 'Họ (không bắt buộc)' }), 'Nguyễn');
-  await userEvent.type(screen.getByRole('textbox', { name: 'Ngày sinh' }), birth);
+  pickDate('Ngày sinh', parseBirthDate(birth)!);
   await userEvent.type(screen.getByRole('textbox', { name: 'Email' }), email);
   await userEvent.type(screen.getByLabelText('Mật khẩu'), 'Aa1!aaaa');
 }
