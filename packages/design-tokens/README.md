@@ -49,6 +49,7 @@ that variable loads the `Lexend` family itself (for example a Google Fonts `<lin
 | `session-card` | `var(--color-canvas)` | learner app: card in review and practice sessions |
 | `on-accent` | `#0f1a3d` | learner app: text on `accent` (stays dark in both themes) |
 | `highlight` | `#ffd84a` | learner app: the word marked in a saved sentence |
+| `band-blue` / `band-yellow` / `band-green` / `band-red` | `#eceffe` / `#fff4c7` / `#e3f4ea` / `#fde8e5` | learner app: the band on top of a deck card; same light tone in the dark theme, with `on-accent` bars |
 | `shadow-ink` | `rgb(15 26 61 / 0.35)` | colour of the flat ledges and overlay shadows |
 
 ## Dark theme (learner app only)

@@ -40,6 +40,12 @@
   --color-session-card: var(--color-canvas);
   --color-on-accent: #0f1a3d;
   --color-highlight: #ffd84a;
+  /* Learner app: the coloured band at the top of a deck card. It stays light in the dark theme too (owner 27/10/2026),
+     with on-accent (dark) bars on it. */
+  --color-band-blue: #eceffe;
+  --color-band-yellow: #fff4c7;
+  --color-band-green: #e3f4ea;
+  --color-band-red: #fde8e5;
   --color-shadow-ink: rgb(15 26 61 / 0.35);
 
   /* Radii (§4.5). */
