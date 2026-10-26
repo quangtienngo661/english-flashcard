@@ -725,7 +725,7 @@
       "formOf": "Là dạng chia của {base}:",
       "alsoFormOf": "Cũng là dạng chia của {base}:",
       "addToGroup": "Thêm vào nhóm",
-      "learning": "Đang học · {groups}",
+      "learning": "Đang học",
       "sentences": "{count, number} câu đã gặp",
       "learningTitle": "Bạn đang học",
       "rowPos": "Loại từ",

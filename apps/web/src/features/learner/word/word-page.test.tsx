@@ -100,7 +100,7 @@ describe('WordPage (K/31–K/33, M/41)', () => {
     expect(chip).not.toHaveTextContent('IELTS');
     expect(within(adverb).getByRole('button', { name: '3 câu đã gặp' })).toBeInTheDocument();
     const block = screen.getByRole('region', { name: 'Bạn đang học' });
-    expect(within(block).getByText('IELTS · ngăn 3 ngày')).toBeInTheDocument();
+    expect(await within(block).findByText('IELTS · ngăn 3 ngày')).toBeInTheDocument();
     expect(await within(block).findByText((_, el) => el?.tagName === 'P' && el.textContent === 'Turn left after the bridge.')).toBeInTheDocument();
   });
 

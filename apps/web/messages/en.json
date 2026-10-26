@@ -725,7 +725,7 @@
       "formOf": "A form of {base}:",
       "alsoFormOf": "Also a form of {base}:",
       "addToGroup": "Add to deck",
-      "learning": "Learning · {groups}",
+      "learning": "Learning",
       "sentences": "{count, plural, one {# saved sentence} other {# saved sentences}}",
       "learningTitle": "You are learning",
       "rowPos": "Part of speech",

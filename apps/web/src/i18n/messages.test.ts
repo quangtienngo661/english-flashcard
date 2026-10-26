@@ -21,7 +21,7 @@ const flatEn = flatten(en as Tree);
 const NUMERIC = new Set(['count', 'total', 'used', 'limit', 'remaining', 'waiting', 'groups', 'words', 'shown', 'done', 'n', 'needed',
   'target', 'left', 'opened', 'max', 'days', 'seconds']);
 /** Keys whose `{groups}` is a list of deck names, not a number. */
-const TEXT_ARGS = new Set(['topic.learning', 'word.learning']);
+const TEXT_ARGS = new Set(['topic.learning']);
 
 describe('messages', () => {
   it('every numeric placeholder in App is formatted as a number', () => {

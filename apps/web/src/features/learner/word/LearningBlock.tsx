@@ -30,11 +30,14 @@ export function LearningBlock({ sense, item, forms }: { sense: PageSense; item: 
         <Row label={t('rowMeaning')}>{sense.meaning.text}</Row>
         {decks.length > 0 && (
           <Row label={t('rowGroup')}>
-            {decks.map((deck) => (
-              <span key={deck} className="block">
-                {deck}
-              </span>
-            ))}
+            {/* One deck per line, spaced so a long name that wraps still reads as one deck (owner 26/10/2026). */}
+            <ul className="flex flex-col gap-1.5">
+              {decks.map((deck) => (
+                <li key={deck} className="wrap-anywhere">
+                  {deck}
+                </li>
+              ))}
+            </ul>
           </Row>
         )}
         {sentences[0] && (
