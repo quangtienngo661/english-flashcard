@@ -7,6 +7,7 @@ export type RateLimitRuleName =
   | 'sample.create'
   | 'auth.register.ip'
   | 'auth.login.ip'
+  | 'auth.verify.ip'
   | 'auth.otp.ip'
   | 'auth.otp.email.cooldown'
   | 'auth.otp.email.hourly'
@@ -107,6 +108,8 @@ export const DEFAULT_LIMITS: Record<RateLimitRuleName, RateLimitRuleConfig> = {
   'sample.create': { by: 'user', max: 10, windowSeconds: 60 },
   'auth.register.ip': { by: 'ip', max: 5, windowSeconds: 3600 },
   'auth.login.ip': { by: 'ip', max: 20, windowSeconds: 60 },
+  // ASSUMPTION number, design 4.2.
+  'auth.verify.ip': { by: 'ip', max: 20, windowSeconds: 3600 },
   'auth.otp.ip': { by: 'ip', max: 20, windowSeconds: 3600 },
   'auth.otp.email.cooldown': { by: 'email', max: 1, windowSeconds: 60 },
   'auth.otp.email.hourly': { by: 'email', max: 5, windowSeconds: 3600 },

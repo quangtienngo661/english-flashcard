@@ -9,7 +9,7 @@ import { AppLogger } from '../../common/logging/app-logger.js';
 import { ProblemDetailsException } from '../../common/problem-details/problem-details.exception.js';
 import type { PrismaClient } from '../../generated/prisma/client.js';
 import { MailBudget } from '../../common/mail/mail-budget.service.js';
-import { MailDispatcher, type MailJob } from '../../common/mail/mail-dispatcher.service.js';
+import { MailDispatcher, sendPrepared, type MailJob } from '../../common/mail/mail-dispatcher.service.js';
 import { dateValue, localDate } from '../../common/time/local-date.js';
 import { MIN_AGE, isOldEnough } from '../profile/person.js';
 import { canonicalTimeZone } from '../profile/timezone.js';
@@ -17,7 +17,8 @@ import { SessionService, type IssuedSession } from '../sessions/session.service.
 import { withUserLock } from '../user-lock.js';
 import type { LoginBody, RegisterBody } from './auth.schemas.js';
 import { accountLocked, decideCredential } from './credential-decision.js';
-import { OtpService } from './otp.service.js';
+import { OtpService, otpLocked } from './otp.service.js';
+import type { VerifyEmailBody } from './otp.schemas.js';
 import { PasswordHasher } from './password-hasher.service.js';
 import { checkPasswordPolicy, normalizePassword } from './password-policy.js';
 
@@ -152,6 +153,45 @@ export class AuthService {
     return outcome.session;
   }
 
+  async verifyEmail(body: VerifyEmailBody, res: Response): Promise<IssuedSession> {
+    const email = normalizeEmail(body.email);
+    if ([...normalizePassword(body.password)].length > 128) throw this.invalidOtp();
+    const account = email ? await this.prisma.user.findUnique({
+      where: { email }, include: { passwordCredential: true },
+    }) : null;
+    if (!account?.passwordCredential) {
+      await this.hasher.verifyDummy(body.password);
+      throw this.invalidOtp();
+    }
+    const verifiedHash = account.passwordCredential.hash;
+    if (!await this.hasher.verify(verifiedHash, body.password)) throw this.invalidOtp();
+    const outcome = await this.prisma.$transaction(async (tx) => {
+      await withUserLock(tx, account.id);
+      const current = await tx.user.findUnique({ where: { id: account.id }, include: { passwordCredential: true } });
+      if (!current || current.passwordCredential?.hash !== verifiedHash
+        || current.status !== 'active' || current.emailVerifiedAt !== null) return { kind: 'no_live_code' as const };
+      const result = await this.otp.checkInTx(tx, account.id, 'verify_email', body.code);
+      if (result.kind !== 'ok') return result;
+      await tx.user.update({ where: { id: account.id }, data: { emailVerifiedAt: this.clock.now() } });
+      const session = await this.sessions.startChain(tx, {
+        userId: account.id, client: body.client, deviceLabel: body.device_label,
+      });
+      return { kind: 'ok' as const, session };
+    }, transactionOptions);
+    if (outcome.kind === 'locked') {
+      if (outcome.notice) {
+        this.logger.warn('otp_locked', { user_id: account.id, purpose: 'verify_email' });
+        this.dispatcher.afterResponse(res, [sendPrepared(outcome.notice)]);
+      }
+      throw otpLocked(outcome.lockedUntil, this.clock.now());
+    }
+    if (outcome.kind !== 'ok') throw this.invalidOtp();
+    return outcome.session;
+  }
+
+  private invalidOtp(): ProblemDetailsException {
+    return new ProblemDetailsException({ status: 400, title: 'Invalid OTP', type: 'invalid-otp' });
+  }
   private emailTaken(): ProblemDetailsException {
     return new ProblemDetailsException({ status: 409, title: 'Email taken', type: 'email-taken' });
   }

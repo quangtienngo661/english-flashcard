@@ -25,6 +25,13 @@ export type OtpCheckOutcome =
   | { kind: 'wrong' | 'no_live_code' }
   | { kind: 'locked'; lockedUntil: Date; notice: MailMessage | null };
 
+export function otpLocked(lockedUntil: Date, now: Date): ProblemDetailsException {
+  return new ProblemDetailsException({
+    status: 429, title: 'Too many requests', type: 'rate-limited',
+    retryAfterSeconds: Math.max(1, Math.ceil((lockedUntil.getTime() - now.getTime()) / 1000)),
+  });
+}
+
 @Injectable()
 export class OtpService {
   constructor(
@@ -161,34 +168,6 @@ export class OtpService {
     return { kind: 'wrong' };
   }
 
-  async verifyEmail(user: RequestUser, code: string, res: Response): Promise<{ email_verified: true }> {
-    const outcome = await this.prisma.$transaction(async (tx) => {
-      await withUserLock(tx, user.userId);
-      const account = await tx.user.findUnique({ where: { id: user.userId } });
-      if (!account) return { kind: 'missing_user' as const };
-      if (account.emailVerifiedAt !== null) return { kind: 'already_verified' as const };
-      const result = await this.checkInTx(tx, user.userId, 'verify_email', code);
-      if (result.kind === 'ok') {
-        await tx.user.update({ where: { id: user.userId }, data: { emailVerifiedAt: this.clock.now() } });
-      }
-      return result;
-    }, transactionOptions);
-    // Commit has completed. Schedule the one-time lock notice before mapping the denial.
-    if (outcome.kind === 'locked' && outcome.notice) {
-      this.logger.warn('otp_locked', { user_id: user.userId, purpose: 'verify_email' });
-      this.dispatcher.afterResponse(res, [sendPrepared(outcome.notice)]);
-    }
-    if (outcome.kind === 'missing_user') throw this.invalidToken();
-    if (outcome.kind === 'already_verified') {
-      throw new ProblemDetailsException({ status: 409, title: 'Email already verified', type: 'email-already-verified' });
-    }
-    if (outcome.kind === 'locked') throw this.locked(outcome.lockedUntil);
-    if (outcome.kind !== 'ok') {
-      throw new ProblemDetailsException({ status: 400, title: 'Invalid OTP', type: 'invalid-otp' });
-    }
-    return { email_verified: true };
-  }
-
   private hmac(code: string): Buffer {
     return createHmac('sha256', this.config.otpHmacKey).update(code).digest();
   }
@@ -199,10 +178,7 @@ export class OtpService {
   }
 
   private locked(lockedUntil: Date): ProblemDetailsException {
-    return new ProblemDetailsException({
-      status: 429, title: 'Too many requests', type: 'rate-limited',
-      retryAfterSeconds: Math.max(1, Math.ceil((lockedUntil.getTime() - this.clock.now().getTime()) / 1000)),
-    });
+    return otpLocked(lockedUntil, this.clock.now());
   }
 
   private invalidToken(): ProblemDetailsException {

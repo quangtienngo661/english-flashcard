@@ -231,51 +231,21 @@ describe('OTP decisions (unit, isolated persistence)', () => {
     expect(tx.$queryRawTyped).not.toHaveBeenCalled();
   });
 
-  it('B1#8/B1#34: wrong-code HTTP denial follows commit of both attempt counters', async () => {
-    await expect(otp.verifyEmail(user, '999999', res)).rejects.toMatchObject({ status: 400, problemType: 'invalid-otp' });
-    expect(committed).toBe(true);
+  it('B1#8: wrong code counts both attempt counters', async () => {
+    expect(await otp.checkInTx(transactionClient(), userId, 'verify_email', '999999')).toEqual({ kind: 'wrong' });
     expect(tx.otpCode.updateMany).toHaveBeenCalledWith({ where: { ...predicates(), id: live.id }, data: { attempts: { increment: 1 } } });
     expect(tx.$queryRawTyped).toHaveBeenCalledExactlyOnceWith({ args: [userId, 'verify_email', clock.now()] });
-    expect(prisma.$transaction).toHaveBeenCalledWith(expect.any(Function), { timeout: 10_000, maxWait: 5_000 });
   });
 
-  it('B1#10/I28: 21st failure commits the lock, schedules a notice before 429, and sends only after close', async () => {
+  it('B1#10: 21st failure prepares the lock and notice', async () => {
     tx.$queryRawTyped.mockResolvedValue([{ failures: 21, locked_until: null }]);
-    await expect(otp.verifyEmail(user, '999999', res)).rejects.toMatchObject({
-      status: 429, problemType: 'rate-limited', retryAfterSeconds: 86400,
+    expect(await otp.checkInTx(transactionClient(), userId, 'verify_email', '999999')).toEqual({
+      kind: 'locked', lockedUntil: new Date('2026-10-08T12:00:00Z'),
+      notice: expect.objectContaining({ to: dbUser.email, subject: expect.stringContaining('temporarily locked') }),
     });
-    expect(committed).toBe(true);
     expect(tx.otpFailureWindow.update).toHaveBeenCalledWith({
       where: { userId_purpose: { userId, purpose: 'verify_email' } }, data: { lockedUntil: new Date('2026-10-08T12:00:00Z') },
     });
-    expect(mailer.sent).toEqual([]);
-    expect(logs).toContainEqual(expect.objectContaining({ event: 'otp_locked', user_id: userId, purpose: 'verify_email' }));
-    res.emit('close');
-    await dispatcher.drain();
-    expect(mailer.sent).toHaveLength(1);
-    expect(mailer.sent[0].subject).toContain('temporarily locked');
-  });
-
-  it('B1#7/D14: already verified is decided under lock and skips code comparison', async () => {
-    tx.user.findUnique.mockResolvedValue({ ...dbUser, emailVerifiedAt: clock.now() });
-    await expect(otp.verifyEmail(user, '999999', res)).rejects.toMatchObject({ status: 409, problemType: 'email-already-verified' });
-    expect(committed).toBe(true);
-    expect(tx.$executeRaw).toHaveBeenCalledOnce();
-    expect(tx.otpCode.findFirst).not.toHaveBeenCalled();
-  });
-
-  it('B1#7: correct verification writes the timestamp in the committed transaction', async () => {
-    expect(await otp.verifyEmail(user, '012345', res)).toEqual({ email_verified: true });
-    expect(tx.user.update).toHaveBeenCalledWith({ where: { id: userId }, data: { emailVerifiedAt: clock.now() } });
-    expect(committed).toBe(true);
-  });
-
-  it('B1#34: unexpected DB failures roll back and schedule no mail', async () => {
-    tx.otpCode.updateMany.mockRejectedValue(new Error('database unavailable'));
-    await expect(otp.verifyEmail(user, '999999', res)).rejects.toThrow('database unavailable');
-    expect(committed).toBe(false);
-    res.emit('close');
-    await dispatcher.drain();
     expect(mailer.sent).toEqual([]);
   });
 

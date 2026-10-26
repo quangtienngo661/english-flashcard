@@ -9,6 +9,8 @@ import { testConfig } from '../../../test/support/test-config.js';
 import type { MailBudget } from '../../common/mail/mail-budget.service.js';
 import { MailDispatcher } from '../../common/mail/mail-dispatcher.service.js';
 import { FakeMailer } from '../../common/mail/fake-mailer.js';
+import { ProblemDetailsException } from '../../common/problem-details/problem-details.exception.js';
+import { otpLockedMail } from '../mailer/templates.js';
 import type { SessionService } from '../sessions/session.service.js';
 import type { PasswordHasher } from './password-hasher.service.js';
 import type { OtpService } from './otp.service.js';
@@ -23,7 +25,7 @@ describe('registration and login (unit, isolated persistence)', () => {
   const budget = { assertAvailable: vi.fn(), tryConsume: vi.fn() };
   const dispatcher = new MailDispatcher(mailer, budget as unknown as MailBudget, logger);
   const hasher = { hash: vi.fn(), verify: vi.fn(), verifyDummy: vi.fn() };
-  const otp = { issueInTx: vi.fn(), noteIssued: vi.fn(), tryLimitEmail: vi.fn(), sendVerifyCodeQuietly: vi.fn() };
+  const otp = { issueInTx: vi.fn(), noteIssued: vi.fn(), tryLimitEmail: vi.fn(), sendVerifyCodeQuietly: vi.fn(), checkInTx: vi.fn() };
   const sessions = { startChain: vi.fn(), revokeAllForUser: vi.fn() };
   const tx = { $executeRaw: vi.fn(), user: { create: vi.fn(), findUnique: vi.fn(), update: vi.fn(), updateMany: vi.fn() },
     passwordCredential: { create: vi.fn(), upsert: vi.fn() }, otpCode: { updateMany: vi.fn() },
@@ -322,5 +324,136 @@ describe('registration and login (unit, isolated persistence)', () => {
   it('B1E2: the 128-code-point NFC boundary still verifies', async () => {
     await auth.login({ ...body, password: 'e\u0301'.repeat(128) }, res);
     expect(hasher.verify).toHaveBeenCalledOnce();
+  });
+
+  describe('public email verification', () => {
+    const input = { email: body.email, password: body.password, client: body.client, device_label: body.device_label, code: '012345' };
+    const invalid = { status: 400, problemTitle: 'Invalid OTP', problemType: 'invalid-otp' };
+    beforeEach(() => {
+      prisma.user.findUnique.mockResolvedValue({ ...user, emailVerifiedAt: null });
+      tx.user.findUnique.mockResolvedValue({ ...user, emailVerifiedAt: null });
+      otp.checkInTx.mockResolvedValue({ kind: 'ok' });
+    });
+
+    it('A13-7: right password and code -> emailVerifiedAt set and a chain started in the same transaction; returns the session', async () => {
+      const events: string[] = [];
+      hasher.verify.mockImplementation(async () => { events.push('password'); expect(prisma.$transaction).not.toHaveBeenCalled(); return true; });
+      tx.$executeRaw.mockImplementation(async () => { events.push('lock'); });
+      tx.user.findUnique.mockImplementation(async () => { events.push('reread'); return { ...user, emailVerifiedAt: null }; });
+      otp.checkInTx.mockImplementation(async () => { events.push('code'); return { kind: 'ok' }; });
+      tx.user.update.mockImplementation(async () => { events.push('verified'); });
+      sessions.startChain.mockImplementation(async () => { events.push('session'); expect(committed).toBe(false); return issued; });
+      expect(await auth.verifyEmail(input, res)).toEqual(issued);
+      expect(events).toEqual(['password', 'lock', 'reread', 'code', 'verified', 'session']);
+      expect(hasher.verify).toHaveBeenCalledExactlyOnceWith('stored-hash', input.password);
+      expect(tx.user.findUnique).toHaveBeenCalledExactlyOnceWith({ where: { id: user.id }, include: { passwordCredential: true } });
+      expect(otp.checkInTx).toHaveBeenCalledExactlyOnceWith(tx, user.id, 'verify_email', input.code);
+      expect(tx.user.update).toHaveBeenCalledExactlyOnceWith({ where: { id: user.id }, data: { emailVerifiedAt: clock.now() } });
+      expect(sessions.startChain).toHaveBeenCalledExactlyOnceWith(tx, { userId: user.id, client: input.client, deviceLabel: input.device_label });
+      expect(prisma.$transaction).toHaveBeenCalledExactlyOnceWith(expect.any(Function), { timeout: 10_000, maxWait: 5_000 });
+      expect(committed).toBe(true);
+    });
+    it('A13-7b: right code, wrong password -> 400 invalid-otp; code attempts, OTP failure window and failedLoginCount unchanged', async () => {
+      hasher.verify.mockResolvedValue(false);
+      await expect(auth.verifyEmail(input, res)).rejects.toMatchObject(invalid);
+      expect(prisma.$transaction).not.toHaveBeenCalled(); expect(otp.checkInTx).not.toHaveBeenCalled();
+      expect(tx.otpCode.updateMany).not.toHaveBeenCalled(); expect(tx.user.update).not.toHaveBeenCalled();
+      for (const method of Object.values(tx.otpFailureWindow)) expect(method).not.toHaveBeenCalled();
+    });
+    it("A13-7c: after a re-register with another password, the owner's code with the owner's old password -> 400 invalid-otp; account stays unverified", async () => {
+      const account = { ...user, emailVerifiedAt: null, passwordCredential: { hash: 'reregistered-hash' } };
+      prisma.user.findUnique.mockResolvedValue(account);
+      hasher.verify.mockImplementation(async (hash, password) => hash === 'stored-hash' && password === input.password);
+      await expect(auth.verifyEmail(input, res)).rejects.toMatchObject(invalid);
+      expect(hasher.verify).toHaveBeenCalledExactlyOnceWith('reregistered-hash', input.password);
+      expect(account.emailVerifiedAt).toBeNull(); expect(tx.user.update).not.toHaveBeenCalled();
+      expect(prisma.$transaction).not.toHaveBeenCalled(); expect(otp.checkInTx).not.toHaveBeenCalled();
+    });
+    it('A13-7d: hash changed between the password check and the lock -> 400 invalid-otp', async () => {
+      tx.$executeRaw.mockImplementation(async () => {
+        tx.user.findUnique.mockResolvedValue({ ...user, emailVerifiedAt: null, passwordCredential: { hash: 'changed-hash' } });
+      });
+      await expect(auth.verifyEmail(input, res)).rejects.toMatchObject(invalid);
+      expect(hasher.verify).toHaveBeenCalledExactlyOnceWith('stored-hash', input.password);
+      expect(tx.$executeRaw).toHaveBeenCalledOnce(); expect(otp.checkInTx).not.toHaveBeenCalled();
+      expect(tx.user.update).not.toHaveBeenCalled(); expect(sessions.startChain).not.toHaveBeenCalled();
+    });
+    it.each(['unknown', 'missing credential', 'invalid email'])('%s email -> verifyDummy is called, then 400 invalid-otp', async (reason) => {
+      if (reason === 'unknown') prisma.user.findUnique.mockResolvedValue(null);
+      if (reason === 'missing credential') prisma.user.findUnique.mockResolvedValue({ ...user, passwordCredential: null });
+      await expect(auth.verifyEmail({ ...input, email: reason === 'invalid email' ? 'invalid' : input.email }, res)).rejects.toMatchObject(invalid);
+      expect(hasher.verifyDummy).toHaveBeenCalledExactlyOnceWith(input.password);
+      expect(hasher.verify).not.toHaveBeenCalled(); expect(prisma.$transaction).not.toHaveBeenCalled();
+      if (reason === 'invalid email') expect(prisma.user.findUnique).not.toHaveBeenCalled();
+    });
+    it('A13-8: right password, wrong code -> 400 invalid-otp, attempt counted', async () => {
+      otp.checkInTx.mockResolvedValue({ kind: 'wrong' });
+      await expect(auth.verifyEmail({ ...input, code: '999999' }, res)).rejects.toMatchObject(invalid);
+      expect(otp.checkInTx).toHaveBeenCalledExactlyOnceWith(tx, user.id, 'verify_email', '999999');
+      expect(committed).toBe(true); expect(tx.user.update).not.toHaveBeenCalled(); expect(sessions.startChain).not.toHaveBeenCalled();
+    });
+    it('A13-9: right password, 21st wrong code -> 429 rate-limited with Retry-After; lock mail scheduled; with a wrong password the same request gets 400', async () => {
+      const notice = otpLockedMail(user.email, 'verify_email');
+      otp.checkInTx.mockResolvedValue({ kind: 'locked', lockedUntil: new Date(clock.now().getTime() + 86_400_000), notice });
+      const afterResponse = dispatcher.afterResponse.bind(dispatcher);
+      const schedule = vi.spyOn(dispatcher, 'afterResponse').mockImplementationOnce((...args) => {
+        expect(committed).toBe(true); expect(logs).toContainEqual({ level: 'warn', event: 'otp_locked', user_id: user.id, purpose: 'verify_email' });
+        afterResponse(...args);
+      });
+      await expect(auth.verifyEmail(input, res)).rejects.toMatchObject({ status: 429, problemType: 'rate-limited', retryAfterSeconds: 86400 });
+      expect(schedule).toHaveBeenCalledOnce(); schedule.mockRestore();
+      expect(committed).toBe(true); expect(sessions.startChain).not.toHaveBeenCalled(); expect(tx.user.update).not.toHaveBeenCalled();
+      expect(mailer.sent).toEqual([]);
+      res.emit('close'); await dispatcher.drain();
+      expect(mailer.sent).toEqual([notice]);
+      prisma.$transaction.mockClear(); otp.checkInTx.mockClear(); hasher.verify.mockResolvedValue(false);
+      await expect(auth.verifyEmail(input, res)).rejects.toMatchObject(invalid);
+      expect(prisma.$transaction).not.toHaveBeenCalled(); expect(otp.checkInTx).not.toHaveBeenCalled();
+    });
+    it('an existing OTP lock rounds Retry-After up and schedules no repeat notice', async () => {
+      otp.checkInTx.mockResolvedValue({ kind: 'locked', lockedUntil: new Date(clock.now().getTime() + 3500), notice: null });
+      await expect(auth.verifyEmail(input, res)).rejects.toMatchObject({ status: 429, retryAfterSeconds: 4 });
+      expect(committed).toBe(true); expect(res.listenerCount('close')).toBe(0); expect(logs).toEqual([]);
+    });
+    it.each(['unknown email', 'not active', 'already verified'])('A13-10: %s -> the same 400 invalid-otp body', async (reason) => {
+      if (reason === 'unknown email') prisma.user.findUnique.mockResolvedValue(null);
+      if (reason === 'not active') tx.user.findUnique.mockResolvedValue({ ...user, emailVerifiedAt: null, status: 'locked' });
+      if (reason === 'already verified') tx.user.findUnique.mockResolvedValue(user);
+      const problem = (error: unknown) => {
+        expect(error).toBeInstanceOf(ProblemDetailsException);
+        const e = error as ProblemDetailsException;
+        return { status: e.getStatus(), title: e.problemTitle, type: e.problemType, detail: e.problemDetail, extensions: e.extensions };
+      };
+      const denied = await auth.verifyEmail(input, res).catch(problem);
+      expect(otp.checkInTx).not.toHaveBeenCalled(); expect(sessions.startChain).not.toHaveBeenCalled();
+      prisma.user.findUnique.mockResolvedValue({ ...user, emailVerifiedAt: null });
+      tx.user.findUnique.mockResolvedValue({ ...user, emailVerifiedAt: null });
+      otp.checkInTx.mockResolvedValue({ kind: 'wrong' });
+      expect(denied).toEqual(await auth.verifyEmail(input, res).catch(problem));
+      expect(denied).toEqual({ status: 400, title: 'Invalid OTP', type: 'invalid-otp', detail: undefined, extensions: undefined });
+    });
+    it('A13-11: expired code -> 400 invalid-otp', async () => {
+      otp.checkInTx.mockResolvedValue({ kind: 'no_live_code' });
+      await expect(auth.verifyEmail(input, res)).rejects.toMatchObject(invalid);
+      expect(committed).toBe(true); expect(tx.user.update).not.toHaveBeenCalled(); expect(sessions.startChain).not.toHaveBeenCalled();
+    });
+    it('email with capitals and spaces -> same account', async () => {
+      await auth.verifyEmail(input, res);
+      expect(prisma.user.findUnique).toHaveBeenCalledExactlyOnceWith({ where: { email: user.email }, include: { passwordCredential: true } });
+    });
+    it('overlong NFC password -> 400 invalid-otp without lookup or Argon2', async () => {
+      await expect(auth.verifyEmail({ ...input, password: '😀'.repeat(129) }, res)).rejects.toMatchObject(invalid);
+      expect(prisma.user.findUnique).not.toHaveBeenCalled(); expect(hasher.verify).not.toHaveBeenCalled();
+      expect(hasher.verifyDummy).not.toHaveBeenCalled(); expect(prisma.$transaction).not.toHaveBeenCalled();
+    });
+    it('the 128-code-point NFC password boundary still verifies', async () => {
+      await auth.verifyEmail({ ...input, password: 'e\u0301'.repeat(128) }, res);
+      expect(hasher.verify).toHaveBeenCalledOnce();
+    });
+    it('a session failure rolls back verification and schedules no mail', async () => {
+      sessions.startChain.mockRejectedValue(new Error('database unavailable'));
+      await expect(auth.verifyEmail(input, res)).rejects.toThrow('database unavailable');
+      expect(committed).toBe(false); expect(res.listenerCount('close')).toBe(0);
+    });
   });
 });
