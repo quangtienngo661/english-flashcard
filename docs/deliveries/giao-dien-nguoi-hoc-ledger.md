@@ -353,3 +353,18 @@ Final M4: minor (deferred): English hint header has no count (design §7.1, kept
     khi đã có kết quả; dải giữ lại sau khi trả lời.
 - Minor để lại: M1 vòng chờ chạy tiếp tối đa 60 giây sau khi rời trang; M2 giới hạn 60 giây chỉ cộng `retry_after_seconds`; M3 mất focus khi đổi trạng
   thái; M5 bấm Bắt đầu trước khi tải xong gói thì không gửi kiểu AI; M6 in đậm phân biệt hoa thường.
+
+### Task 46 — Tra bằng AI trong tấm Thêm từ (26/10/2026)
+
+- Nhánh `feat/giao-dien-nguoi-hoc-m5b` cắt từ `origin/dev` `c0c3e55` (M5a merged #128).
+- `ai-lookup-api.ts` (`useAiLookup`: một key mỗi lần bấm; 409 `ai-in-progress` chờ `Retry-After` rồi gửi lại **cùng** key, tối đa 60 s, E38),
+  `AiLookupPanel.tsx` (K/85, K/85t, K/85b, K/85c), `AiLookupResult.tsx` (K/86, K/86b); `AddWordSheet` hiện tấm khi Wordmet không có từ, hoặc sau
+  "Không phải nghĩa bạn cần?". Test `ai-lookup.test.tsx` 12/12; add-word 41/41; lint, typecheck sạch.
+- Ruling: lỗi AI (`ai-lookup-failed`, `ai-unavailable`) hiện câu chung D11 "Hệ thống đang gặp lỗi." thay câu nói nguyên nhân của bản chữ K/85c (E39 + D11
+  thắng bản chữ) — sai thì chỉ đổi chữ.
+- Ruling: khi không có nghĩa nào, nút cuối tấm "Nghĩa khác, tự nhập" bỏ, thay bằng [Tự nhập nghĩa] trong tấm AI (hai nút bằng nhau, §15 điểm 13); 3 test M3
+  đổi tên nút theo — sai thì thêm lại nút cuối.
+- Ruling: khi đã có nghĩa và người học mở tấm AI, nút [Tra bằng AI] màu primary (không vàng) vì [Lưu …] đã vàng (một nút vàng mỗi màn).
+- Ruling: [Chọn] một nghĩa có sẵn ở K/86b đưa nghĩa đó về danh sách chọn của tấm (chọn sẵn) để người học chọn nhóm rồi lưu, thay vì lưu ngay — cost: một
+  lần bấm nữa.
+- Ruling: [Sửa rồi lưu] ở Task 46 tạm mở form tự nhập có sẵn nghĩa; Task 47 thay bằng "Sửa trước khi lưu".

@@ -17,6 +17,9 @@ import { cn } from '@/lib/cn';
 import { GROUPS_KEY, useGroupMutations, useGroups } from '../groups/groups-api';
 import { wordHref } from '../word/word-api';
 import { useLookup, type LookupSense, type QuickAddBody, type QuickAddResult } from './add-word-api';
+import type { AiLookupResult as AiResult } from './ai-lookup-api';
+import { AiLookupPanel } from './AiLookupPanel';
+import { AiLookupResult } from './AiLookupResult';
 import { GroupPicker } from './GroupPicker';
 import { readLastGroup, writeLastGroup } from './last-group';
 
@@ -58,13 +61,23 @@ export function AddWordSheet({ initialWord = '', onClose }: { initialWord?: stri
   const [failure, setFailure] = useState<Failure | null>(null);
   const newDeckName = useRef<string | null>(null);
   const manualMode = useRef(false);
+  // K/85–K/86: the AI lookup is offered when Wordmet lacks the word, or on "Không phải nghĩa bạn cần?"; its result belongs to one text.
+  const [aiOpen, setAiOpen] = useState(false);
+  const [aiResult, setAiResult] = useState<{ text: string; result: AiResult } | null>(null);
+  const [chosenFromAi, setChosenFromAi] = useState<LookupSense | null>(null);
 
   const lemma = word.trim();
   const lookup = useLookup(lemma);
-  const options: Option[] = [
+  const looked: Option[] = [
     ...(lookup.data?.senses ?? []).map((sense) => ({ sense, kind: null, base: null })),
     ...(lookup.data?.via_inflection ?? []).flatMap((v) => v.senses.map((sense) => ({ sense, kind: v.kind, base: v.base.lemma }))),
   ];
+  // A dictionary meaning chosen in the AI result ([Chọn], K/86b) joins the list when the typed text did not find it.
+  const options: Option[] =
+    chosenFromAi && !looked.some((o) => o.sense.sense_id === chosenFromAi.sense_id)
+      ? [{ sense: chosenFromAi, kind: null, base: null }, ...looked]
+      : looked;
+  const aiShown = aiResult !== null && aiResult.text === lemma ? aiResult.result : null;
   const via = lookup.data?.via_inflection[0];
   const chosenSense = options.find((o) => o.sense.sense_id === picked) ?? options[0];
   const deck = chosenDeck ?? (groups.some((g) => g.id === lastGroup) ? lastGroup : null);
@@ -265,6 +278,19 @@ export function AddWordSheet({ initialWord = '', onClose }: { initialWord?: stri
         {sentenceField}
         {lemma && lookup.isPending && <p className="text-caption text-muted">{t('lookingUp')}</p>}
         {lookup.isSuccess && options.length === 0 && <p className="rounded-inner bg-canvas p-3 text-ui text-ink">{t('noMatch', { word: lemma })}</p>}
+        {aiShown ? (
+          <AiLookupResult
+            text={lemma}
+            result={aiShown}
+            onChoose={(sense) => {
+              setChosenFromAi(sense);
+              setPicked(sense.sense_id);
+              setAiResult(null);
+              setAiOpen(false);
+            }}
+          />
+        ) : (
+          <>
         {options.length > 0 && (
           <div role="radiogroup" aria-label={t('pickSense')} className="flex flex-col gap-1 rounded-inner bg-primary-soft p-3">
             {via && via.senses.length > 0 && (
@@ -287,18 +313,51 @@ export function AddWordSheet({ initialWord = '', onClose }: { initialWord?: stri
             ))}
           </div>
         )}
+        {options.length > 0 && !aiOpen && lemma && (
+          <button type="button" onClick={() => setAiOpen(true)} className="self-start text-ui font-semibold text-primary underline underline-offset-2 outline-none focus-visible:ring-2 focus-visible:ring-primary">
+            {t('ai.notThis')}
+          </button>
+        )}
+        {lemma && lookup.isSuccess && (options.length === 0 || aiOpen) && (
+          <AiLookupPanel
+            text={lemma}
+            sentence={sentence}
+            accent={options.length === 0}
+            onManual={() => setView('manual')}
+            onResult={(result) => setAiResult({ text: lemma, result })}
+          />
+        )}
         {deckField}
+          </>
+        )}
         {failureLine}
       </div>
     );
-    footer = (
+    footer = aiShown ? (
       <>
         <Button variant="ghost" onPress={onClose}>
           {tc('cancel')}
         </Button>
-        <Button variant="quiet" onPress={() => setView('manual')}>
-          {t('manualButton')}
+        <Button
+          variant="sticker"
+          onPress={() => {
+            setMeaning(aiShown.suggestion.meaning.text);
+            setView('manual');
+          }}
+        >
+          {t('result.edit')}
         </Button>
+      </>
+    ) : (
+      <>
+        <Button variant="ghost" onPress={onClose}>
+          {tc('cancel')}
+        </Button>
+        {options.length > 0 && (
+          <Button variant="quiet" onPress={() => setView('manual')}>
+            {t('manualButton')}
+          </Button>
+        )}
         {options.length > 0 && !noDecks && (
           <Button variant="sticker" isPending={save.busy} onPress={() => void submit()}>
             {t('save', { word: lemma })}

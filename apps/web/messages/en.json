@@ -816,7 +816,31 @@
       "bulkSubmit": "Add them all",
       "bulkResult": "Added {added} words to “{name}”.",
       "bulkSkipped": "{already} already in the deck, {function} function words skipped, {full} did not fit because the deck is full.",
-      "pickDeck": "Choose {group}"
+      "pickDeck": "Choose {group}",
+      "ai": {
+        "button": "Look up with AI",
+        "manual": "Enter a meaning",
+        "left": "{count} AI credits for lookups left",
+        "trial": "Trial",
+        "sendSentence": "Send the sentence to AI",
+        "looking": "Looking up…",
+        "failed": "We ran into a problem.",
+        "retry": "Try again",
+        "quota": "No AI credits for lookups left.",
+        "refillDate": "New AI credits for lookups on {date}.",
+        "refillTime": "New AI credits for lookups at {time}.",
+        "notThis": "Not the meaning you need?"
+      },
+      "result": {
+        "title": "Results for “{word}”",
+        "used": "Used 1 AI credit · {remaining} left",
+        "catalog": "Meanings in the dictionary",
+        "choose": "Choose",
+        "aiLabel": "AI suggestion",
+        "definition": "English definition (for reference, not saved): {text}",
+        "caution": "AI suggestions can be wrong. Check before saving.",
+        "edit": "Edit and save"
+      }
     },
     "stages": {
       "s0": "New",

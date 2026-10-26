@@ -816,7 +816,31 @@
       "bulkSubmit": "Thêm cả loạt",
       "bulkResult": "Đã thêm {added} từ vào nhóm “{name}”.",
       "bulkSkipped": "{already} từ đã có trong nhóm, {function} từ chức năng bỏ qua, {full} từ không vừa vì nhóm đã đầy.",
-      "pickDeck": "Chọn {group}"
+      "pickDeck": "Chọn {group}",
+      "ai": {
+        "button": "Tra bằng AI",
+        "manual": "Tự nhập nghĩa",
+        "left": "còn {count} lượt tra AI",
+        "trial": "Dùng thử",
+        "sendSentence": "Gửi kèm câu đã gặp cho AI",
+        "looking": "Đang tra…",
+        "failed": "Hệ thống đang gặp lỗi.",
+        "retry": "Thử lại",
+        "quota": "Hết lượt tra AI.",
+        "refillDate": "Lượt tra AI mới có vào {date}.",
+        "refillTime": "Lượt tra AI mới có lúc {time}.",
+        "notThis": "Không phải nghĩa bạn cần?"
+      },
+      "result": {
+        "title": "Kết quả cho “{word}”",
+        "used": "Đã dùng 1 lượt tra AI · còn {remaining}",
+        "catalog": "Nghĩa có sẵn trong từ điển",
+        "choose": "Chọn",
+        "aiLabel": "AI gợi ý",
+        "definition": "Định nghĩa tiếng Anh (chỉ để tham khảo, không lưu): {text}",
+        "caution": "AI gợi ý có thể sai. Kiểm lại trước khi lưu.",
+        "edit": "Sửa rồi lưu"
+      }
     },
     "stages": {
       "s0": "Mới",
