@@ -85,7 +85,7 @@ export function McqArt() {
         <span className="text-caption text-muted">{t('artPrompt')}</span>
         <span className="text-body font-bold">{t('artMeaning')}</span>
         <span className="grid grid-cols-2 gap-1.5 text-caption font-semibold">
-          <span className="rounded-sm border-2 border-primary bg-primary-soft px-2 py-1 text-ink">deploy</span>
+          <span className="rounded-sm border-2 border-primary bg-primary-soft px-2 py-1">deploy</span>
           <span className="rounded-sm border border-border-strong px-2 py-1">delay</span>
           <span className="rounded-sm border border-border-strong px-2 py-1">deliver</span>
           <span className="rounded-sm border border-border-strong px-2 py-1">defend</span>

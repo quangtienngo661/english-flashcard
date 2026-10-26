@@ -16,11 +16,7 @@ function tokens(css: string, prefix: string): Map<string, string> {
 }
 
 const lightColors = tokens(theme, 'color');
-// The dark block only; the rules after it put the light palette back inside soft surfaces (owner 27/10/2026).
-const darkColors = tokens(dark.slice(0, dark.indexOf('}') + 1), 'color');
-const islandBlock = dark.slice(dark.indexOf(':is(.bg-primary-soft'));
-const islandColors = new Map([...darkColors, ...tokens(islandBlock.slice(0, islandBlock.indexOf('}') + 1), 'color')]);
-const SOFT = new Set(['primary-soft', 'accent-soft', 'success-soft', 'danger-soft', 'neutral-soft', 'wrong-chip', 'highlight']);
+const darkColors = tokens(dark, 'color');
 let colors = lightColors;
 
 // The learner app's colours (Figma variables, collection "Wordmet B"): text pairs and control pairs it relies on.
@@ -88,22 +84,8 @@ describe('design tokens', () => {
   it('the learner app colours meet WCAG contrast in light and dark', () => {
     for (const [mode, map] of [['light', lightColors], ['dark', darkColors]] as const) {
       colors = map;
-      const onSoft = ([, bg]: [string, string]) => mode === 'dark' && SOFT.has(bg);
-      const failures = [...below(APP_TEXT.filter((p) => !onSoft(p)), 4.5), ...below(APP_CONTROLS.filter((p) => !onSoft(p)), 3)];
-      // In the dark theme a soft surface is a light island: its text uses the light palette again.
-      colors = islandColors;
-      failures.push(...below(APP_TEXT.filter(onSoft), 4.5), ...below(APP_CONTROLS.filter(onSoft), 3));
-      expect(failures.map((f) => `${mode}: ${f}`)).toEqual([]);
+      expect([...below(APP_TEXT, 4.5), ...below(APP_CONTROLS, 3)].map((f) => `${mode}: ${f}`)).toEqual([]);
     }
-    colors = lightColors;
-  });
-
-  it('dark theme: soft surfaces are light pastel islands with readable dark text (owner 27/10/2026)', () => {
-    colors = islandColors;
-    const pairs: Array<[string, string]> = ['ink', 'muted', 'primary', 'success', 'danger', 'warning'].flatMap((fg) =>
-      ['primary-soft', 'accent-soft', 'success-soft', 'danger-soft', 'neutral-soft'].map((bg) => [fg, bg] as [string, string]));
-    expect(below(pairs, 4.5)).toEqual([]);
-    expect(islandColors.get('accent-soft')).toBe(lightColors.get('accent-soft'));
     colors = lightColors;
   });
 

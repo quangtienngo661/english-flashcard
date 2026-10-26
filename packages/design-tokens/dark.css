@@ -6,12 +6,12 @@
   color-scheme: dark;
   --color-primary: #8da2ff;
   --color-primary-deep: #6f86f5;
-  --color-primary-soft: #eceffe;
+  --color-primary-soft: #2e3a6b;
   --color-on-primary: #10131c;
   --color-on-primary-muted: #2a3358;
   --color-accent: #ffd84a;
   --color-accent-deep: #c9a21a;
-  --color-accent-soft: #fff4c7;
+  --color-accent-soft: #463b1d;
   --color-ink: #eceef5;
   --color-muted: #b0b7ca;
   --color-placeholder: #979fb6;
@@ -21,14 +21,14 @@
   --color-border: #384056;
   --color-border-strong: #6b7491; /* Figma #59627d is 2.33:1 on surface; inputs need 3:1 */
   --color-success: #5fd39a;
-  --color-success-soft: #e3f4ea;
+  --color-success-soft: #1f4033;
   --color-warning: #f2b84b;
   --color-danger: #ff8b7c;
-  --color-danger-soft: #fde8e5;
+  --color-danger-soft: #4a2830;
   --color-danger-deep: #c9584c;
-  --color-neutral-soft: #eef0f5;
-  --color-wrong-chip: #ffd3cd;
-  --color-wrong-chip-deep: #d99b92;
+  --color-neutral-soft: #2f364a;
+  --color-wrong-chip: #5c2f33;
+  --color-wrong-chip-deep: #3d1d21;
   --color-navy: #171b27;
   --color-navy-raised: #2c3448;
   --color-on-navy: #f1f3fd;
@@ -42,72 +42,4 @@
   --color-band-green: #e3f4ea;
   --color-band-red: #fde8e5;
   --color-shadow-ink: rgb(0 0 0 / 0.5);
-}
-
-/* Owner 27/10/2026: in the dark theme the soft surfaces (yellow, green, red, blue, grey) keep the light pastel of the light
-   theme, everywhere. Inside such a surface the light palette applies again (dark text, white chips, light borders), so text on
-   it stays readable. State variants re-theme only while the state holds. */
-[data-theme='dark'] :is(.bg-primary-soft, .bg-accent-soft, .bg-success-soft, .bg-danger-soft, .bg-neutral-soft, .bg-wrong-chip),
-[data-theme='dark'] :is(.bg-band-blue, .bg-band-yellow, .bg-band-green, .bg-band-red),
-[data-theme='dark'] .hover\:bg-primary-soft:hover,
-[data-theme='dark'] .enabled\:hover\:bg-primary-soft:enabled:hover,
-[data-theme='dark'] .active\:bg-primary-soft:active,
-[data-theme='dark'] .data-focused\:bg-primary-soft[data-focused],
-[data-theme='dark'] .data-selected\:bg-primary-soft[data-selected] {
-  --color-primary: #2445d6;
-  --color-primary-deep: #1a32a6;
-  --color-primary-soft: #eceffe;
-  --color-on-primary: #ffffff;
-  --color-on-primary-muted: #dfe5ff;
-  --color-accent-soft: #fff4c7;
-  --color-ink: #0f1a3d;
-  --color-muted: #4d5577;
-  --color-placeholder: #5f6688;
-  --color-surface: #ffffff;
-  --color-canvas: #f1f3fd;
-  --color-canvas-deep: #dde1f5;
-  --color-border: #e3e6f4;
-  --color-border-strong: #7d84a8;
-  --color-success: #1b7a46;
-  --color-success-soft: #e3f4ea;
-  --color-warning: #7a5200;
-  --color-danger: #b8352a;
-  --color-danger-soft: #fde8e5;
-  --color-danger-deep: #8a2219;
-  --color-neutral-soft: #eef0f5;
-  --color-wrong-chip: #ffd3cd;
-  --color-wrong-chip-deep: #d99b92;
-  --color-highlight: #ffd84a;
-  --color-shadow-ink: rgb(15 26 61 / 0.35);
-  color-scheme: light;
-}
-@media (width >= 48rem) {
-  [data-theme='dark'] .md\:bg-accent-soft {
-    --color-primary: #2445d6;
-    --color-primary-deep: #1a32a6;
-    --color-primary-soft: #eceffe;
-    --color-on-primary: #ffffff;
-    --color-on-primary-muted: #dfe5ff;
-    --color-accent-soft: #fff4c7;
-    --color-ink: #0f1a3d;
-    --color-muted: #4d5577;
-    --color-placeholder: #5f6688;
-    --color-surface: #ffffff;
-    --color-canvas: #f1f3fd;
-    --color-canvas-deep: #dde1f5;
-    --color-border: #e3e6f4;
-    --color-border-strong: #7d84a8;
-    --color-success: #1b7a46;
-    --color-success-soft: #e3f4ea;
-    --color-warning: #7a5200;
-    --color-danger: #b8352a;
-    --color-danger-soft: #fde8e5;
-    --color-danger-deep: #8a2219;
-    --color-neutral-soft: #eef0f5;
-    --color-wrong-chip: #ffd3cd;
-    --color-wrong-chip-deep: #d99b92;
-    --color-highlight: #ffd84a;
-    --color-shadow-ink: rgb(15 26 61 / 0.35);
-    color-scheme: light;
-  }
 }
