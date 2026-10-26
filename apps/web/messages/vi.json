@@ -356,7 +356,7 @@
         "bodyNoEmail": "Nhập email bạn đã đăng ký và mã 6 số trong thư. Mã có hiệu lực 10 phút.",
         "loginBody": "Bạn cần xác nhận email trước khi vào app. Mã đã được gửi tới {email}.",
         "wrongCode": "Mã hoặc mật khẩu không đúng, hoặc mã đã hết hạn. Nếu email đã được xác nhận, hãy đăng nhập.",
-        "locked": "Bạn đã nhập sai mã quá nhiều lần. Thử lại sau {time}.",
+        "locked": "Bạn đã nhập sai mã quá nhiều lần. Thử lại sau {time}, hoặc dùng Quên mật khẩu ở trang đăng nhập.",
         "otherEmail": "Gõ nhầm email? Đăng ký bằng email khác"
       },
       "forgot": {
