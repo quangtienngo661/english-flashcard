@@ -46,3 +46,19 @@ test('no horizontal scroll on the deck page with an unbroken 60-character name (
   await noSideScroll(page);
 });
 
+test('no horizontal scroll on weak words with an unbroken deck name (vi)', async ({ page }) => {
+  await signedInAs(page, 'pro', {
+    'GET /v1/practice/weak-words/groups': () => ({ json: { total: 3, items: [{ group_id: DECK, name: UNBROKEN, count: 3 }] } }),
+    'GET /v1/practice/weak-words': () => ({
+      json: {
+        items: ['arrive', 'leave', 'book'].map((lemma, i) => ({ sense_id: `00000000-0000-4000-8000-00000000070${i}`, lemma, wrong: 2, counted: 2, level: 0, last_wrong_at: new Date().toISOString(), meaning: lemma })),
+        next_page_token: null,
+      },
+    }),
+  });
+  await page.goto('/vi/app/practice/weak');
+  await page.getByRole('button', { name: /Nhóm/ }).click();
+  await page.getByRole('option', { name: `${UNBROKEN} · 3` }).click();
+  await expect(page.getByRole('button', { name: `Luyện 3 từ của nhóm ${UNBROKEN}` })).toBeVisible();
+  await noSideScroll(page);
+});
