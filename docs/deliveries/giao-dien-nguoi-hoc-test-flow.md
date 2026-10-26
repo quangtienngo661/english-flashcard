@@ -266,3 +266,29 @@ Thử AI lỗi: chọn model giả `fake:bad-json` cho `lookup_word`, hoặc t�
 Kiểm tự động của M5b (CI, job `web`): `e2e/app/m5b.spec.ts` (Pro: tra AI → sửa → lưu với `ai_suggestion`; Dùng thử, Miễn phí; 409 `ai-in-progress` gửi lại
 cùng key; AI lỗi + Thử lại; hết lượt; trang Từ của tôi: sửa nghĩa, nhãn mất, xóa; axe và không cuộn ngang × vi/en × sáng/tối × 1440/390); unit
 `ai-lookup.test.tsx`, `edit-suggestion.test.tsx`, `my-word.test.tsx`.
+
+## Đợt cải thiện A — thêm từ từ nhóm
+
+Design `docs/superpowers/specs/2026-10-26-dot-cai-thien-a-design.md` §5 (A14-1…A14-9). Dữ liệu: `pnpm learner:setup -- --admin <email> --learner <email>`
+(ở `apps/api`), rồi trong app tạo một nhóm "IT" có vài từ (ví dụ Chủ đề Công nghệ · B1). Để thử nhãn "Đã có trong nhóm" cần một từ có hai nghĩa trong
+dữ liệu mẫu, ví dụ `train` (tàu hỏa, đào tạo): thêm một nghĩa vào "IT" trước (trang từ → [Thêm vào nhóm]).
+
+| # | Làm | Thấy | Mục |
+|---|---|---|---|
+| 1 | Mở nhóm IT | Dưới nút ôn có nút [+ Thêm từ]; điện thoại (390px) có thêm nút + nổi | A6 |
+| 2 | [+ Thêm từ], gõ `deploy`, chọn nghĩa, [Lưu deploy] | Không có ô chọn nhóm, chỉ dòng "Lưu vào nhóm: IT"; toast "Đã lưu từ “deploy” vào nhóm “IT”."; tấm đóng; `deploy` hiện trong danh sách nhóm | A14-1 |
+| 3 | Nhấn N trên trang nhóm (hoặc [Thêm từ] trên thanh trên cùng, hoặc nút + trên điện thoại) | Tấm mở với "Lưu vào nhóm: IT" | A14-4 |
+| 4 | Gõ `train` | Nghĩa đã có trong IT hiện "Đã có trong nhóm", không có nút chọn; nghĩa còn lại được chọn sẵn | A14-2 |
+| 5 | Gõ một từ chưa có ("rizz") → [Tra bằng AI] → [Sửa rồi lưu] (cần Pro / Dùng thử) hoặc [Tự nhập nghĩa] | Màn sửa vẫn chỉ có dòng "Lưu vào nhóm: IT"; lưu vào IT | A14-3 |
+| 6 | Trong tấm: "Thêm nhiều từ theo chủ đề" → Chủ đề Kinh doanh, Trình độ B1 → [Xem từ] | Trang "Kinh doanh · B1", ô "Thêm vào" chọn sẵn IT; [Thêm cả N từ] → "Đã thêm N từ vào nhóm “IT”."; không có nhóm mới | A14-7 |
+| 7 | Mở `/vi/app/topic?code=business&level=B1&group=<id lạ>` | Ô "Thêm vào" như cũ (nhóm trùng tên chủ đề, hoặc "Nhóm mới “Kinh doanh · B1”") | A14-8 |
+| 8 | Về Hôm nay, nhấn N | Tấm thường, có ô chọn nhóm, chọn sẵn IT (nhóm dùng gần nhất), đổi được | A14-9 |
+| 9 | Nhóm đầy (giới hạn số từ một nhóm), thêm một từ | Lỗi "Nhóm “IT” đã đầy…" trong tấm, tấm không đóng | A14-5 |
+| 10 | Mở tấm ở tab A, xóa nhóm IT ở tab B, rồi lưu ở tab A | "Nhóm này không còn." + nút [Đóng] | A14-6 |
+| 11 | English, Tối, 390px | "Add word", "Saving to deck: IT", "Already in this deck", "Add several words by topic", "See words"; không cuộn ngang | §8 |
+
+Kiểm tự động (CI, job `web`): `e2e/app/cai-thien-a-group.spec.ts` (A14-1, A14-2, A14-7; axe và không cuộn ngang × vi/en × sáng/tối × 1440/390); unit
+`add-word/locked-add-word.test.tsx`, `groups/group-page.test.tsx`, `groups/topic-picker.test.tsx`.
+
+Chạy thật 26/10/2026 (API thật :3120 + worker, Postgres, Redis, Mailpit; DB mới; người học Pro qua `learner:setup`; app dev :3121): bước 1, 2, 3 (phím N), 4
+(`train`), 6 (Kinh doanh · B1, 113 từ vào IT, `GET /v1/groups` chỉ còn nhóm IT) đúng như bảng. Chưa chạy tay: bước 5, 7–11 (có unit / e2e).
