@@ -27,13 +27,14 @@ export function writeAiTypesOn(on: boolean) {
 }
 
 /** One question-type box (K/54, K/70): equal size, no description (D10). */
-export function TypeBox({ type, selected, onChange }: { type: QuestionType; selected: boolean; onChange: (on: boolean) => void }) {
+export function TypeBox({ type, selected, onChange, disabled }: { type: QuestionType; selected: boolean; onChange: (on: boolean) => void; disabled?: boolean }) {
   const t = useTranslations('App.practice');
   return (
     <Checkbox
       isSelected={selected}
       onChange={onChange}
-      className="group flex min-h-control cursor-pointer items-center gap-2.5 rounded-inner border-2 border-border-strong bg-surface px-3 py-2 text-ui font-semibold text-ink outline-none data-focus-visible:ring-2 data-focus-visible:ring-primary data-selected:border-primary data-selected:bg-primary-soft"
+      isDisabled={disabled}
+      className="group flex min-h-control cursor-pointer items-center gap-2.5 rounded-inner border-2 border-border-strong bg-surface px-3 py-2 text-ui font-semibold text-ink outline-none data-focus-visible:ring-2 data-focus-visible:ring-primary data-selected:border-primary data-selected:bg-primary-soft data-disabled:cursor-not-allowed data-disabled:opacity-50"
     >
       {({ isSelected }) => (
         <>
@@ -57,6 +58,7 @@ type Props = {
   /** `features['ai.practice'].allowed`; false → the switch is locked and says why (D6). */
   allowed: boolean;
   on: boolean;
+  ownOn: boolean;
   onChange: (on: boolean) => void;
   chosen: Set<AiType>;
   onChoose: (type: AiType, on: boolean) => void;
@@ -65,7 +67,7 @@ type Props = {
 };
 
 /** K/70, K/70b: the "Kiểu câu có AI" switch with the Pro label; on shows the three AI types and the credit line (D10). */
-export function AiTypesToggle({ allowed, on, onChange, chosen, onChoose, usage }: Props) {
+export function AiTypesToggle({ allowed, on, ownOn, onChange, chosen, onChoose, usage }: Props) {
   const t = useTranslations('App.practice.customize');
   const tUi = useTranslations('App.ui');
   return (
@@ -89,9 +91,16 @@ export function AiTypesToggle({ allowed, on, onChange, chosen, onChoose, usage }
         <>
           <div className="grid gap-2 sm:grid-cols-3">
             {AI_TYPES.map((type) => (
-              <TypeBox key={type} type={type} selected={chosen.has(type)} onChange={(v) => onChoose(type, v)} />
+              <TypeBox
+                key={type}
+                type={type}
+                selected={chosen.has(type) && !(ownOn && type === 'cloze')}
+                disabled={ownOn && type === 'cloze'}
+                onChange={(v) => onChoose(type, v)}
+              />
             ))}
           </div>
+          {ownOn && <p className="text-caption text-muted">{t('ownReplacesAi')}</p>}
           {usage && <p className="text-caption text-muted">{t('aiLine', usage)}</p>}
         </>
       )}

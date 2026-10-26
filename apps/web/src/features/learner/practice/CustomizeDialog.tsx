@@ -14,6 +14,7 @@ import { cn } from '@/lib/cn';
 import type { GroupSummary } from '../groups/groups-api';
 import { refillKind } from '../settings/refill';
 import { AiTypesToggle, readAiTypesOn, TypeBox, writeAiTypesOn } from './AiTypesToggle';
+import { OwnSentencesToggle, readOwnSentencesOn, writeOwnSentencesOn } from './OwnSentencesToggle';
 import {
   AI_TYPES,
   DEFAULT_SORT,
@@ -87,6 +88,7 @@ function CustomizeForm({
   const [stage, setStage] = useState<(typeof STAGES)[number]>('all');
   const [types, setTypes] = useState<Set<RuleType>>(() => new Set(RULE_TYPES));
   const [aiOn, setAiOn] = useState(readAiTypesOn);
+  const [ownOn, setOwnOn] = useState(readOwnSentencesOn);
   const [aiTypes, setAiTypes] = useState<Set<AiType>>(() => new Set(AI_TYPES));
   const [prompt, setPrompt] = useState<PromptStyle>('mixed');
   const [count, setCount] = useState(Math.min(config?.default_questions_per_session ?? 10, max));
@@ -103,18 +105,24 @@ function CustomizeForm({
           ...(weakGroups.data?.items ?? []).map((g) => ({ id: g.group_id, label: t('customize.groupOption', { name: g.name, count: g.count }) })),
         ]
       : groups.map((g) => ({ id: g.id, label: t('customize.groupOption', { name: g.name, count: g.total }) }));
-  const aiChosen = aiAllowed && aiOn ? AI_TYPES.filter((type) => aiTypes.has(type)) : [];
-  const noTypes = types.size === 0 && aiChosen.length === 0;
+  const aiChosen = aiAllowed && aiOn ? AI_TYPES.filter((type) => aiTypes.has(type) && !(ownOn && type === 'cloze')) : [];
+  const chosenTypes: StartBody['types'] = [...RULE_TYPES.filter((type) => types.has(type)), ...(ownOn ? ['cloze' as const] : []), ...aiChosen];
+  const noTypes = chosenTypes.length === 0;
   // The API's own upper bound (Bước 7 design §6.1 step 4): ceil(count × AI types ÷ types); the session's real number is ≤ this.
   const aiPool = entitlements?.pools.ai_practice;
   const aiUsage = aiChosen.length > 0 && aiPool
-    ? { needed: Math.ceil((count * aiChosen.length) / (types.size + aiChosen.length)), remaining: aiPool.remaining }
+    ? { needed: Math.ceil((count * aiChosen.length) / chosenTypes.length), remaining: aiPool.remaining }
     : null;
 
   function switchAi(on: boolean) {
     setAiOn(on);
     writeAiTypesOn(on);
     if (!on) onClearAiProblem();
+  }
+
+  function switchOwn(on: boolean) {
+    setOwnOn(on);
+    writeOwnSentencesOn(on);
   }
 
   function chooseAi(type: AiType, on: boolean) {
@@ -137,7 +145,8 @@ function CustomizeForm({
   }
 
   function start() {
-    const body: StartBody = { source, types: [...RULE_TYPES.filter((type) => types.has(type)), ...aiChosen] };
+    const body: StartBody = { source, types: chosenTypes };
+    if (ownOn) body.cloze_source = 'own';
     if (source === 'group') {
       body.group_id = groupId;
       body.group_filter = stage !== 'all' ? stage : filter;
@@ -196,8 +205,9 @@ function CustomizeForm({
         {noTypes && <p className="text-caption text-danger">{t('customize.typesNone')}</p>}
       </div>
 
-      <AiTypesToggle allowed={aiAllowed} on={aiOn} onChange={switchAi} chosen={aiTypes} onChoose={chooseAi} usage={aiUsage} />
+      <AiTypesToggle allowed={aiAllowed} on={aiOn} ownOn={ownOn} onChange={switchAi} chosen={aiTypes} onChoose={chooseAi} usage={aiUsage} />
       {aiProblem?.kind === 'locked' && <LockedFeature />}
+      <OwnSentencesToggle on={ownOn} onChange={switchOwn} />
 
       {types.has('type_word') && (
         <div className="flex flex-col gap-2">

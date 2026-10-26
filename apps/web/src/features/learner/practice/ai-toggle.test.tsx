@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { renderApp } from '@/app-ui/test-utils';
 import type { Route } from '@/app-shell/session/test-support';
 import { PracticePage } from './PracticePage';
+import { readOwnSentencesOn, writeOwnSentencesOn } from './OwnSentencesToggle';
 
 const hardReplace = vi.fn();
 vi.mock('next/navigation', () => ({
@@ -19,6 +20,7 @@ beforeEach(() => {
 });
 
 const KEY = 'wordmet-web.ai-types';
+const OWN_KEY = 'wordmet-web.own-sentences';
 const TECH = '11111111-1111-4111-8111-111111111111';
 const GROUPS = [{ id: TECH, name: 'Công nghệ', version: 1, total: 18, today: { priority: 3, due: 12, new: 3 }, cells: [], backlog: 0 }];
 const RESETS = '2026-10-23T17:00:00.000Z';
@@ -69,6 +71,7 @@ async function open(plan: 'free' | 'pro', over: Record<string, Route> = {}) {
   return { view, dialog };
 }
 const aiSwitch = (dialog: HTMLElement) => within(dialog).getByRole('switch', { name: /Kiểu câu có AI/ });
+const ownSwitch = (dialog: HTMLElement) => within(dialog).getByRole('switch', { name: 'Điền từ vào câu bạn đã lưu' });
 
 describe('Kiểu câu có AI in Tùy chỉnh phiên (K/70, K/70b, K/71, K/72; D10)', () => {
   it('K/70b Free: the switch is shown dimmed with the Pro label; pressing it tells why and never shows the AI types', async () => {
@@ -80,7 +83,7 @@ describe('Kiểu câu có AI in Tùy chỉnh phiên (K/70, K/70b, K/71, K/72; D1
     for (const name of AI) expect(within(dialog).queryByRole('checkbox', { name })).toBeNull();
   });
 
-  it('K/70 Pro: off hides the AI types; on shows them ticked and "Phiên này dùng tối đa N lượt câu AI · còn M"; the start sends them, never cloze_source', async () => {
+  it('K/70 Pro: AI on shows ticked types and usage; with own off, start sends AI types without cloze_source', async () => {
     const { view, dialog } = await open('pro');
     await waitFor(() => expect(aiSwitch(dialog)).not.toBeChecked());
     for (const name of AI) expect(within(dialog).queryByRole('checkbox', { name })).toBeNull();
@@ -156,5 +159,112 @@ describe('Kiểu câu có AI in Tùy chỉnh phiên (K/70, K/70b, K/71, K/72; D1
     await waitFor(() => expect(view.count('GET', '/v1/me/entitlements')).toBeGreaterThan(before));
     await waitFor(() => expect(aiSwitch(dialog)).toHaveAttribute('aria-disabled', 'true'));
     for (const name of AI) expect(within(dialog).queryByRole('checkbox', { name })).toBeNull();
+  });
+});
+
+describe('Saved sentences in Tùy chỉnh phiên (A3, C3)', () => {
+  it('A3-1 Free: the own switch is enabled; start sends types with cloze and cloze_source own', async () => {
+    const { view, dialog } = await open('free');
+    expect(ownSwitch(dialog)).toBeEnabled();
+    expect(ownSwitch(dialog)).not.toBeChecked();
+    expect(within(dialog).getByText('Chỉ dùng cho từ có câu bạn đã lưu. Không tốn lượt AI.')).toBeInTheDocument();
+    await userEvent.click(ownSwitch(dialog));
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Bắt đầu 12 câu' }));
+    await waitFor(() => expect(starts(view.calls)).toHaveLength(1));
+    expect(starts(view.calls)[0].body).toEqual({
+      source: 'all', types: ['mcq_definition', 'true_false_definition', 'type_word', 'cloze'],
+      cloze_source: 'own', prompt_style: 'mixed', count: 12,
+    });
+  });
+
+  it('A3-2 Free: only own on enables start; 409 no-word-fits-types shows the existing message', async () => {
+    const { view, dialog } = await open('free', {
+      'POST /v1/practice/sessions': problem(409, 'practice-no-words', { reason: 'no-word-fits-types' }),
+    });
+    for (const box of within(dialog).getAllByRole('checkbox')) await userEvent.click(box);
+    const start = within(dialog).getByRole('button', { name: 'Bắt đầu 12 câu' });
+    expect(start).toBeDisabled();
+    await userEvent.click(ownSwitch(dialog));
+    expect(start).toBeEnabled();
+    await userEvent.click(start);
+    await waitFor(() => expect(starts(view.calls)).toHaveLength(1));
+    expect(starts(view.calls)[0].body).toEqual({ source: 'all', types: ['cloze'], cloze_source: 'own', count: 12 });
+    expect(await within(dialog).findByRole('alert')).toHaveTextContent('Không từ nào làm được kiểu câu đã chọn. Chọn thêm kiểu câu khác.');
+  });
+
+  it('A3-3 Pro: AI and own on disables AI cloze, sends cloze once, and counts only AI types in usage', async () => {
+    const { view, dialog } = await open('pro');
+    await userEvent.click(aiSwitch(dialog));
+    await userEvent.click(ownSwitch(dialog));
+    const cloze = within(dialog).getByRole('checkbox', { name: AI[0] });
+    expect(cloze).not.toBeChecked();
+    expect(cloze).toBeDisabled();
+    for (const name of AI.slice(1)) {
+      expect(within(dialog).getByRole('checkbox', { name })).toBeChecked();
+      expect(within(dialog).getByRole('checkbox', { name })).toBeEnabled();
+    }
+    expect(within(dialog).getByText('Điền từ dùng câu bạn đã lưu thay cho câu AI.')).toBeInTheDocument();
+    // ceil(12 × 2 AI types ÷ 6 total types) = 4; own cloze uses no AI credit.
+    expect(within(dialog).getByText('Phiên này dùng tối đa 4 lượt câu AI · còn 287')).toBeInTheDocument();
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Bắt đầu 12 câu' }));
+    await waitFor(() => expect(starts(view.calls)).toHaveLength(1));
+    expect(starts(view.calls)[0].body).toEqual({
+      source: 'all', types: ['mcq_definition', 'true_false_definition', 'type_word', 'cloze', 'meaning_in_sentence', 'mcq_sentence'],
+      cloze_source: 'own', prompt_style: 'mixed', count: 12,
+    });
+  });
+
+  it.each([true, false])('own off restores the learner\'s earlier AI cloze choice (%s), without cloze_source', async (chosen) => {
+    const { view, dialog } = await open('pro');
+    await userEvent.click(aiSwitch(dialog));
+    const cloze = within(dialog).getByRole('checkbox', { name: AI[0] });
+    if (!chosen) await userEvent.click(cloze);
+    await userEvent.click(ownSwitch(dialog));
+    expect(cloze).not.toBeChecked();
+    expect(cloze).toBeDisabled();
+    await userEvent.click(ownSwitch(dialog));
+    expect(cloze).toBeEnabled();
+    if (chosen) expect(cloze).toBeChecked();
+    else expect(cloze).not.toBeChecked();
+    expect(within(dialog).queryByText('Điền từ dùng câu bạn đã lưu thay cho câu AI.')).toBeNull();
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Bắt đầu 12 câu' }));
+    await waitFor(() => expect(starts(view.calls)).toHaveLength(1));
+    expect(starts(view.calls)[0].body).toEqual({
+      source: 'all', types: ['mcq_definition', 'true_false_definition', 'type_word', ...(chosen ? ['cloze'] : []), 'meaning_in_sentence', 'mcq_sentence'],
+      prompt_style: 'mixed', count: 12,
+    });
+  });
+
+  it('the own switch is remembered on this device; unreadable storage leaves it off', async () => {
+    const first = await open('free');
+    await userEvent.click(ownSwitch(first.dialog));
+    expect(localStorage.getItem(OWN_KEY)).toBe('on');
+    first.view.unmount();
+    const second = await open('free');
+    expect(ownSwitch(second.dialog)).toBeChecked();
+    await userEvent.click(ownSwitch(second.dialog));
+    expect(localStorage.getItem(OWN_KEY)).toBe('off');
+    second.view.unmount();
+    localStorage.setItem(OWN_KEY, 'on');
+    const spy = vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => { throw new Error('blocked'); });
+    try {
+      expect(readOwnSentencesOn()).toBe(false);
+      const third = await open('free');
+      expect(ownSwitch(third.dialog)).not.toBeChecked();
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
+  it('a failed storage write is ignored and the own switch still works', async () => {
+    const { dialog } = await open('free');
+    const spy = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => { throw new Error('blocked'); });
+    try {
+      expect(() => writeOwnSentencesOn(true)).not.toThrow();
+      await userEvent.click(ownSwitch(dialog));
+      expect(ownSwitch(dialog)).toBeChecked();
+    } finally {
+      spy.mockRestore();
+    }
   });
 });

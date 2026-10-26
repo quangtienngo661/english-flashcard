@@ -176,7 +176,7 @@ for (const scheme of ['light', 'dark'] as const) {
       await page.goto(`/${locale}/app/practice`);
       await page.getByRole('button', { name: /^(Tùy chỉnh|Customize): / }).last().click();
       const dialog = page.getByRole('dialog');
-      await expect(dialog.getByRole('switch')).toBeChecked();
+      await expect(dialog.getByRole('switch', { name: new RegExp(copy[locale].App.practice.customize.aiToggle) })).toBeChecked();
       await noSideScroll(page, `${locale} setup`);
       expect(await seriousViolations(page), `${locale} setup`).toEqual([]);
       await dialog.getByRole('button', { name: /^(Bắt đầu|Start)/ }).click();
