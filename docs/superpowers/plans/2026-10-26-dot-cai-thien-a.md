@@ -94,12 +94,13 @@ và chưa có design / plan / decision record / code facts (chưa commit).
   - `A13-2: email of a verified (or locked) account → 409 email-taken` (sửa B1#2).
   - `A13-2b: email of an unverified active account → same 201; password hash, given/family name, birth date, timezone, terms accepted at/version replaced; live verify_email
     codes invalidated; new code mailed; still one users row`.
-  - `A13-2c: re-register within the email cooldown → 201, data replaced, no mail`.
+  - `A13-2c: re-register within the email cooldown → 201, data replaced, no mail, the earlier live code still verifies (until its 10-minute expiry)`.
   - `first registration of a new email does not consult the email limiter` (giữ hành vi cũ).
 - [ ] **Step 2: Chạy** `pnpm --filter api test src/identity/auth` — Expected: FAIL.
 - [ ] **Step 3: Cài**: bỏ `sessions.startChain`; trước khi tạo, tra `users` theo email trong transaction + `withUserLock(tx, existing.id)`: không có → tạo như cũ (giữ bắt
   `P2002` cho trường hợp hai lần đăng ký email mới cùng lúc → 409); có, đã xác nhận hoặc không `active` → 409 `email-taken`; có, chưa xác nhận và `active` → cập nhật
-  các trường trên + upsert mật khẩu, huỷ mã `verify_email` còn sống, `tryLimitEmail` ngoài transaction quyết định có hẹn gửi mã hay không. Giữ rate limit IP, ngân sách.
+  các trường trên + upsert mật khẩu; `tryLimitEmail` ngoài transaction quyết định có hẹn gửi mã hay không. **Chỉ huỷ mã `verify_email` cũ khi gửi mã mới** (việc này
+  `issueInTx` đã làm); bị giới hạn thì không đụng tới mã cũ. Thời gian sống của mã giữ 10 phút. Giữ rate limit IP, ngân sách.
   Review I1, M3:
   - **Đọc lại dòng `users` sau `withUserLock`**, và ghi bằng `updateMany({ where: { id, emailVerifiedAt: null, status: 'active' } })`; `count === 0` (vừa được xác
     nhận ở tab khác) → 409 `email-taken`. Test `A13-2d: verification commits between the read and the lock → 409, password unchanged`.

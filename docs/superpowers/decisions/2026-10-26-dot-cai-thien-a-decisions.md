@@ -129,6 +129,17 @@ Kèm hai luật Claude đề xuất: email đã xác nhận hoặc tài khoản 
 hạn thì vẫn thay dữ liệu, trả 201, không gửi mail. Chủ dự án hỏi "tổng quan lại thì đây có phải là thiết kế ổn không"; Claude đánh giá ổn về kỹ thuật, đánh đổi lớn
 nhất là người đăng ký bỏ ngang ở bước nhập mã (chưa đo). Chủ dự án: "ừm sửa đi".
 
+Vòng 3 (rà luồng sau review plan): đăng ký lại trong 60 s bị giới hạn nên không gửi mã mới, mà design lúc đó vẫn huỷ mã cũ → người dùng tới trang nhập mã không có mã
+nào dùng được.
+
+| Phương án | Trade-off |
+|---|---|
+| Huỷ mã cũ dù không gửi được mã mới | Luôn chỉ mã mới nhất sống; người dùng phải chờ đếm ngược rồi "Gửi lại mã" |
+| ✅ Chỉ huỷ mã cũ khi thật sự gửi được mã mới; bị giới hạn thì mã cũ dùng được tới hết hạn | Không kẹt; vẫn an toàn vì mã cũ nằm trong cùng hộp thư |
+
+Chủ dự án hỏi lại vì nghĩ mã sẽ "luôn có hiệu lực"; Claude làm rõ mã vẫn hết hạn theo thời gian sống, và nêu riêng việc rút thời gian sống xuống 5 phút (áp cho cả mã
+xác nhận và mã đặt lại mật khẩu; mail chậm thì nhiều người phải gửi lại hơn). Chủ dự án: "theo đề xuất và giữ nguyên 10p" (✅ không huỷ sớm; ✅ giữ thời gian sống 10 phút).
+
 ## A6 — Thêm từ từ trang nhóm (câu 8)
 
 Vòng 1 (đề xuất của Claude, có mô phỏng): một ô tìm đặt trên danh sách từ của nhóm, kết quả có [+] và nhãn "Đã có trong nhóm"; "rizz" mở tấm Thêm từ với nhóm chọn

@@ -83,10 +83,11 @@ Phiên cũ của tài khoản chưa xác nhận ──làm mới phiên bị t�
 - Trả `201 { email, verification_required: true }` (email đã chuẩn hoá); **không token, không cookie**. Rate limit, ngân sách mail giữ nguyên.
 - **Email đã có tài khoản** (tra trước khi tạo, trong transaction + `withUserLock`):
   - đã xác nhận, hoặc `status` không `active` → `409 email-taken` như hiện nay;
-  - **chưa xác nhận và `active` → thay dữ liệu bằng lần đăng ký mới** (mật khẩu, họ, tên, ngày sinh, múi giờ, thời điểm và phiên bản đồng ý điều khoản), huỷ mọi mã
-    `verify_email` còn sống, gửi mã mới; trả `201` giống email mới (không lộ là email đã có).
+  - **chưa xác nhận và `active` → thay dữ liệu bằng lần đăng ký mới** (mật khẩu, họ, tên, ngày sinh, múi giờ, thời điểm và phiên bản đồng ý điều khoản), gửi mã mới
+    (việc gửi mã mới huỷ mã cũ như hiện nay, `issueInTx`); trả `201` giống email mới (không lộ là email đã có).
   - Lần thay này đi qua giới hạn theo email của bước xin mã (`auth.otp.email.cooldown` 1/60 s, `auth.otp.email.hourly` 5/giờ) để form đăng ký không thành công cụ
-    spam hộp thư người khác. Bị giới hạn: vẫn thay dữ liệu, vẫn `201`, **không gửi mail**; trang nhập mã cho bấm "Gửi lại mã" khi hết đếm ngược.
+    spam hộp thư người khác. Bị giới hạn: vẫn thay dữ liệu, vẫn `201`, **không gửi mail và không huỷ mã cũ**: mã đã gửi trước đó vẫn dùng được tới hết hạn
+    (10 phút, giữ nguyên); trang nhập mã cho bấm "Gửi lại mã" khi hết đếm ngược. (Chủ dự án 26/10/2026: chỉ huỷ mã cũ khi thật sự gửi được mã mới; giữ hạn 10 phút.)
   - Lần đăng ký đầu tiên của một email mới vẫn không qua giới hạn theo email (như hiện nay).
 
 **Đăng nhập `POST /v1/auth/login`** (`auth.service.ts:84-126`)
@@ -162,7 +163,7 @@ Danh sách theo dòng: code facts phần 2 mục 7, 8, 10.
 | A13-1 | Lan đăng ký với email mới | 201 `{ email, verification_required: true }`; không cookie; DB có `users` chưa xác nhận, **không** có `session_chains`; mail mã được gửi sau khi trả lời |
 | A13-2 | Đăng ký với email đã có tài khoản **đã xác nhận** (hoặc bị khoá) | 409 `email-taken`; web hiện dòng có Quên mật khẩu |
 | A13-2b | Đăng ký với email đã có tài khoản **chưa xác nhận** | 201 như email mới; mật khẩu, họ tên, ngày sinh, đồng ý điều khoản là của lần mới; mã cũ bị huỷ; mã mới được gửi; vẫn chỉ một dòng `users` |
-| A13-2c | Như A13-2b, lần thứ hai trong 60 s (hoặc lần thứ sáu trong giờ) | 201, dữ liệu vẫn được thay, **không** gửi mail; mã của lần trước đã bị huỷ, người dùng bấm "Gửi lại mã" khi hết đếm ngược |
+| A13-2c | Như A13-2b, lần thứ hai trong 60 s (hoặc lần thứ sáu trong giờ) | 201, dữ liệu vẫn được thay, **không** gửi mail; mã của lần trước **vẫn dùng được** tới hết hạn 10 phút (nhập đúng → cấp phiên với mật khẩu của lần đăng ký sau cùng) |
 | A13-2d | Hai lần đăng ký cùng một email chưa xác nhận tới cùng lúc | `withUserLock` xếp hàng; lần tới sau thắng; chỉ mã của lần sau còn sống |
 | A13-3 | Lan đăng nhập, đúng mật khẩu, chưa xác nhận | 403 `email-not-verified`; không phiên; đếm sai về 0; một mã mới (nếu qua giới hạn email); web sang trang nhập mã, giữ `next` |
 | A13-4 | Như A13-3, trong 60 s sau lần gửi trước | 403 như trên, **không** gửi thêm mail; trang nhập mã cho bấm "Gửi lại mã" khi hết đếm ngược |
