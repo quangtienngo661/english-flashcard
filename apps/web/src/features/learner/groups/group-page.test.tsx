@@ -163,6 +163,18 @@ describe('GroupPage (K/11–K/13)', () => {
     await waitFor(() => expect(count('DELETE', `/v1/groups/${G}/items/i-deploy`)).toBe(1));
   });
 
+  it('E5: a failed card list shows the error with [Thử lại], not "Nhóm chưa có từ nào." (audit 26/10/2026 #5)', async () => {
+    let loads = 0;
+    renderApp(<GroupPage />, {
+      routes: routes({ [`GET /v1/groups/${G}/queue?mode=all`]: () => (++loads === 1 ? problem(500, 'internal-error') : Response.json({ cards: CARDS })) }),
+    });
+    const retry = await screen.findByRole('button', { name: 'Thử lại' }, { timeout: 5000 });
+    expect(retry.closest('[role="alert"]')).not.toBeNull();
+    expect(screen.queryByText('Nhóm chưa có từ nào.')).not.toBeInTheDocument();
+    await userEvent.click(retry);
+    expect(await screen.findByRole('list', { name: /Toàn bộ 4 từ/ }, { timeout: 5000 })).toBeInTheDocument();
+  });
+
   it('E17: an unknown or deleted deck shows not found with the way back', async () => {
     search = new URLSearchParams({ id: '00000000-0000-4000-8000-000000000000' });
     renderApp(<GroupPage />, {
