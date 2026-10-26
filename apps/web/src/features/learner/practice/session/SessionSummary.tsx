@@ -91,7 +91,7 @@ export function SessionSummary({ session, sourceLabel }: { session: PracticeSess
   return (
     <div className="flex flex-col gap-4">
       <div>
-        <h1 className="text-h1 font-extrabold text-ink">{ts('title', { count: data?.asked ?? session.asked })}</h1>
+        <h1 className="text-display font-extrabold text-ink">{ts('title', { count: data?.asked ?? session.asked })}</h1>
         <p className="text-ui text-muted">
           {pool && pool.limit > 0
             ? ts('line', { source: sourceLabel, types, remaining: pool.remaining, limit: pool.limit })
