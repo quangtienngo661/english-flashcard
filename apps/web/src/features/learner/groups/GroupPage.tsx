@@ -1,6 +1,6 @@
 'use client';
 
-import { MoreHorizontal } from 'lucide-react';
+import { MoreHorizontal, Plus } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
@@ -15,6 +15,7 @@ import { Dialog } from '@/app-ui/Dialog';
 import { Select } from '@/app-ui/Select';
 import { ErrorState, FullScreenSpinner, NotFoundState } from '@/app-ui/States';
 import { showToast } from '@/app-ui/Toast';
+import { useAddWord, useAddWordScope } from '@/features/learner/add-word/add-word-context';
 import type { AppLocale } from '@/i18n/routing';
 import { cn } from '@/lib/cn';
 import { waiting } from './GroupCard';
@@ -54,7 +55,7 @@ export function GroupPage() {
   const notFound = id === null || (detail.error instanceof ApiError && detail.error.problem.status === 404);
 
   return (
-    <AppShell variant="sub" back={{ href: `/${locale}/app/groups`, label: t('back') }}>
+    <AppShell variant="sub" back={{ href: `/${locale}/app/groups`, label: t('back') }} fab>
       {notFound ? (
         <NotFoundState title={t('notFound')} back={{ href: `/${locale}/app/groups`, label: t('toList') }} />
       ) : detail.data ? (
@@ -74,6 +75,8 @@ function GroupError({ error, onRetry }: { error: unknown; onRetry: () => void })
 }
 
 function GroupBody({ detail }: { detail: GroupDetail }) {
+  useAddWordScope(detail.id);
+  const addWord = useAddWord();
   const t = useTranslations('App.group');
   const tStage = useTranslations('App.stages');
   const locale = useLocale() as AppLocale;
@@ -127,6 +130,10 @@ function GroupBody({ detail }: { detail: GroupDetail }) {
             onDelete={() => open({ kind: 'delete', group: detail, leaveTo: 'groups' })}
           />
         </div>
+        <Button variant="quiet" size="lg" onPress={() => addWord.open(undefined, { groupId: detail.id })}>
+          <Plus aria-hidden className="size-5 shrink-0" />
+          {t('addWord')}
+        </Button>
         {summary && <StageChart summary={summary} />}
         {summary && summary.backlog > 0 && (
           <Link href={`/${locale}/app/group/backlog?id=${detail.id}`} className="flex items-center justify-between rounded-inner bg-danger-soft px-3 py-2 text-ui font-semibold text-danger">

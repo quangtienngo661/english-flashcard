@@ -569,6 +569,7 @@
       "deleted": "Deck “{name}” deleted."
     },
     "group": {
+      "addWord": "Add word",
       "back": "Decks",
       "meta": "{count, plural, one {# word} other {# words}} · created {date}",
       "chipPriority": "{count} priority",
@@ -757,6 +758,8 @@
       }
     },
     "addWord": {
+      "byTopic": "Add several words by topic",
+      "seeWords": "See words",
       "title": "Which word did you just meet?",
       "word": "Word",
       "wordPlaceholder": "e.g. went",
@@ -780,7 +783,7 @@
       "wordRequired": "Enter the word you met.",
       "saveManual": "Save word",
       "saved": "Saved “{word}” to “{group}”.",
-      "alreadyIn": "“{word}” is already in “{group}”.",
+      "alreadyIn": "Already in this deck",
       "exists": "“{word}” is already in My words.",
       "openExisting": "Open this word",
       "groupFull": "“{group}” is full. Choose another deck.",
@@ -867,7 +870,9 @@
         "exampleHint": "Up to 300 characters each.",
         "note": "This word keeps the AI suggestion label until you change its meaning, topic or examples."
       },
-      "recognizedShort": "{kind} of {base}"
+      "recognizedShort": "{kind} of {base}",
+      "lockedDeck": "Saving to deck: {name}",
+      "deckGone": "This deck no longer exists."
     },
     "stages": {
       "s0": "New",
