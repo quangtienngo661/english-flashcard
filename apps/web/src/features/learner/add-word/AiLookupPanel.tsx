@@ -83,7 +83,7 @@ export function AiLookupPanel({ text, sentence, onManual, onResult, accent = tru
       )}
       <div className="grid grid-cols-2 items-start gap-3">
         <div className="flex flex-col items-stretch gap-1">
-          <Button variant={!allowed ? 'quiet' : accent ? 'sticker' : 'primary'} isPending={lookup.busy} onPress={() => void run()} className="w-full">
+          <Button variant={!allowed ? 'quiet' : accent ? 'sticker' : 'primary'} isPending={lookup.busy} onPress={() => void run()} className="w-full flex-wrap whitespace-normal py-2 text-center">
             {t('button')}
             {!allowed && (
               <span className="inline-flex items-center gap-1 rounded-full bg-primary-soft px-2 py-0.5 text-caption font-semibold text-primary">
@@ -101,7 +101,7 @@ export function AiLookupPanel({ text, sentence, onManual, onResult, accent = tru
             </p>
           )}
         </div>
-        <Button variant="quiet" onPress={onManual} className="w-full">
+        <Button variant="quiet" onPress={onManual} className="w-full whitespace-normal py-2 text-center">
           {t('manual')}
         </Button>
       </div>

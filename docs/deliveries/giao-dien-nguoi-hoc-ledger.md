@@ -393,3 +393,25 @@ Final M4: minor (deferred): English hint header has no count (design §7.1, kept
 - Kịch bản ảnh `SHOTS_MILESTONE=m5b` (tấm tra AI, kết quả, sửa trước khi lưu, trang từ riêng; từ tạo ra được xóa cuối mỗi lượt).
 - Test note: `pnpm cf:docker` dừng với "tar: file changed as we read it" khi có file trong repo đang đổi; chạy lại khi không sửa file. `--build` cần
   `NEXT_PUBLIC_API_BASE_URL` khi bật app.
+
+### Final M5b — reviewer (26/10/2026)
+
+- Reviewer mới (opus): 0 Critical, 2 Important, 8 Minor. Chấm lại theo tác động: M4 (nút khóa tràn chữ ở 390px, người dùng gói Miễn phí trên điện thoại
+  đều gặp) và M6 (sửa form sau lỗi mạng vẫn dùng key cũ → lỗi trùng key hoặc lưu bản cũ; cùng loại I-2 của M4) → Important. Sửa một lượt, test trước
+  (`test(web): reproduce the m5b review findings`):
+  - I1: nghĩa chọn bằng [Chọn] ở K/86b còn ở lại khi đổi từ, và nút/toast ghi chữ đã gõ ("Lưu runnning" lưu "run") → nghĩa đó gắn với chữ đã tra, đổi chữ
+    thì bỏ; nút và toast ghi tên của nghĩa ("Lưu run"). `m5b-review` "I1 …" ×2 RED→GREEN.
+  - I2: `form_of` của chữ đã gõ bị gắn vào từ AI khác chữ (hoặc đã đổi tên trong form) → chỉ gửi và chỉ hiện "Dạng chia của" khi từ trong form trùng chữ đã
+    gõ. "I2 …" ×2 RED→GREEN.
+  - M4: hai nút tấm AI cho xuống dòng (`whitespace-normal`). e2e "review M4" RED (chữ tràn) → GREEN; e2e m5b 20/20.
+  - M6: lần bấm gửi kèm nội dung (chế độ, từ, nghĩa, bản nháp, nghĩa chọn, nhóm, câu) để form đổi là lần ghi mới. "M6 …" RED→GREEN; bấm lại y nguyên vẫn
+    giữ key.
+  - Thêm (thấy ở ảnh chạy thật): dòng "Wordmet chưa có từ… Tự nhập nghĩa để lưu." ẩn khi đã có kết quả AI.
+  - Unit web 529/529; lint, typecheck sạch.
+- Minor để lại: M3 chờ 409 `ai-in-progress` quá 60 s thì bỏ key (bấm lại có thể trừ lượt lần hai); M5 [Hủy]/[Quay lại] bấm được khi đang lưu, đóng tấm khi
+  đang tra AI thì mất kết quả đã trừ lượt; M7 [Hủy] ở "Sửa trước khi lưu" rồi vào lại thì mất phần đã sửa; M8 lỗi tra AI cũ có thể còn khi đổi sang một từ
+  đã có trong cache; M9 "Đã dùng 1 lượt" đọc số trước khi tải lại, và lần trả lại kết quả cũ (không trừ) vẫn ghi "đã dùng 1"; M10 sửa chủ đề thay mọi chủ đề
+  (chỉ hiện chủ đề đầu).
+- Declined to judge (ruling): câu đã gặp gõ ở màn tìm được lưu kèm từ màn "Sửa trước khi lưu" dù màn đó không hiện ô câu — giữ, vì người học đã gõ câu đó
+  cho chính từ này (bản chữ §7.18 không có ô) — sai thì thêm một dòng hiện câu sẽ lưu. Từ riêng nhiều nghĩa: hộp [Sửa] sửa nghĩa của khối được bấm, loại từ
+  và trình độ theo cả từ (API `PATCH` theo từ) — sai thì tách theo nghĩa.

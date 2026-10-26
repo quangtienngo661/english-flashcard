@@ -355,7 +355,7 @@ async function m5b(page: Page) {
     await shoot(page, name('ai-result'), false);
     await sheet.getByRole('button', { name: /^(Sửa rồi lưu|Edit and save)$/ }).click();
     await page.setViewportSize({ width: 1440, height: 900 });
-    await page.getByRole('button', { name: /^(Trình độ|Level)/ }).click();
+    await page.getByRole('button', { name: /(Trình độ|Level)/ }).click();
     await page.getByRole('option', { name: 'B2' }).click();
     if (await page.getByText(/^(Chọn nhóm|Choose a deck)$/).count()) {
       await page.getByRole('button', { name: /^(Lưu vào nhóm|Save to deck)/ }).click();
