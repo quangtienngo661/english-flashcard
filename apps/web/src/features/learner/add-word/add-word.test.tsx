@@ -73,6 +73,21 @@ describe('AddWordSheet (K/40–K/42c, M/50–M/52c)', () => {
     });
   });
 
+  it('E5: a failed dictionary lookup shows the error with [Thử lại] and keeps [Tự nhập nghĩa] (audit 26/10/2026 #4)', async () => {
+    let lookups = 0;
+    open('rizz', {
+      routes: routes({
+        'GET /v1/lookup?q=rizz': () => (++lookups === 1 ? problem(500, 'internal-error') : Response.json({ senses: [], via_inflection: [] })),
+      }),
+    });
+    const alert = await screen.findByRole('alert');
+    expect(within(alert).getByRole('button', { name: 'Thử lại' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Tự nhập nghĩa' })).toBeInTheDocument();
+    await userEvent.click(within(alert).getByRole('button', { name: 'Thử lại' }));
+    expect(await screen.findByText('Wordmet chưa có từ “rizz”. Tự nhập nghĩa để lưu.')).toBeInTheDocument();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
   it('manual meaning needs only the meaning', async () => {
     window.localStorage.setItem(LAST_GROUP_KEY, TRAVEL);
     const { calls } = open('rizz', { routes: routes() });
