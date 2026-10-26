@@ -38,3 +38,16 @@ Nhánh `fix/ui-nguoi-hoc-major`, cắt từ `origin/dev` `6e72bb3`, làm trong w
   - #4: khi tra từ lỗi, nút có chữ "Tự nhập nghĩa".
   - #8: chỉ chuyển focus sang nút chính ở câu chọn. Câu gõ giữ focus trong ô gõ, theo hành vi đã duyệt và có test giữ.
   - #12: chữ mới "UK, nghe giọng Anh" / "US, nghe giọng Mỹ" (en "UK, British voice" / "US, American voice"), chủ dự án duyệt cùng plan.
+- **Review cả nhánh** (reviewer opus): 0 Critical, 1 Important, 4 Minor.
+  - Important đã sửa: tên nhóm dài liền còn làm tràn trang ở dòng backlog của Hôm nay, trang Từ lâu chưa ôn, thẻ phiên đang dở và dòng tổng kết phiên.
+    - Thêm test e2e cho Hôm nay và trang Từ lâu chưa ôn: trước khi sửa thì fail, kể cả ở 1440px; sau khi sửa thì qua.
+    - Thẻ phiên đang dở và dòng tổng kết dùng cùng cách sửa nhưng chưa có test riêng.
+  - Minor để lại, chưa sửa:
+    - Danh sách số trong test chữ thiếu `added`, `already`, `full`, `function`, `asked`, nên kết quả "Thêm cả loạt" vẫn in "1000" thay vì "1.000".
+    - Ô "Ngăn" ở Tùy chỉnh phiên truyền chuỗi `'0'`…`'5'` vào `{n, number}`. Hiện vẫn in đúng, nhưng không có gì chặn nếu sau này truyền sai kiểu.
+    - Lớp phủ ở bản sáng nhạt hơn khoảng 5/255 mỗi kênh màu.
+    - Hàng Cài đặt có link bỏ qua `className` và bỏ `flex-wrap`.
+- **e2e:**
+  - Lần chạy đủ đầu tiên có 5 test fail. 2 test do nhánh này gây ra: hàm `fill` của e2e không thay được `{x, number}`, và `getByText` trùng với vùng đọc kết quả mới. Cả 2 đã sửa ở phía test.
+  - m3 và m5a chập chờn, qua khi chạy lại.
+  - Lần chạy đủ sau cùng: **321 passed, 0 failed, 0 flaky**.
