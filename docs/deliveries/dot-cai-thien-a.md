@@ -7,7 +7,7 @@ phiên 2 làm PR 2, phiên 3 làm PR 3 → 4 → 5.
 **PR 1 — Xác nhận email trước khi có phiên (phiên 1)**
 1. Đăng nhập đúng mật khẩu mà chưa xác nhận email thì trả 403 `email-not-verified` và gửi mã mới.
 2. Đăng ký không còn cấp phiên đăng nhập; đăng ký lại vào email chưa xác nhận thì thay dữ liệu và gửi mã mới.
-3. Nhập mã thành API công khai (email + mã), đúng thì cấp phiên; thêm giới hạn theo email và IP.
+3. Nhập mã thành API công khai (email + mã + mật khẩu, kiểm mật khẩu trước), đúng thì cấp phiên; giới hạn theo IP.
 4. Gửi lại mã bằng email, không cần đăng nhập.
 5. Làm mới phiên từ chối tài khoản chưa xác nhận.
 6. Sửa `learner:setup`, 6 smoke và admin e2e-real theo luồng mới, chạy lại hết.

@@ -27,6 +27,7 @@ lần 2"). File này gom các quyết định của **nhóm A** và của phạm
 | A12 | Lỗi "Xem đáp án" | Sửa API, PR `fix/` riêng | Duyệt cùng design |
 | A13 | Câu đã lưu và giọng từ xa | Chỉ đọc bằng giọng trên máy | Duyệt cùng design |
 | A14 | Âm thanh đồng đều giữa các nền tảng | Đợt này dùng giọng của máy; file âm thanh làm sẵn ghi thành hướng nâng cấp | Chủ dự án (đề xuất của Claude) |
+| A15 | Nhập mã kèm mật khẩu; giới hạn và lỗi khi khoá (review plan I2) | Kiểm mật khẩu trước mã; khoá trả 429 rõ (chỉ người đúng mật khẩu thấy); bỏ giới hạn theo email; link Quên mật khẩu chỉ ở trang đăng nhập | Chủ dự án (sau nhiều vòng; kiểm mật khẩu: đề xuất của Claude) |
 
 ## A0 — Luật hỏi đợt này (câu 1)
 
@@ -250,3 +251,30 @@ Dự án coi câu đã gặp là dữ liệu nhạy cảm.
 | Tấm Thêm từ thêm tham số khoá nhóm | Tấm riêng cho trang nhóm | Dùng lại mọi đường lưu (kể cả AI) |
 | Thêm cả loạt qua `TopicPickerPage` + `?group=` | `BulkAddSheet` theo bộ lọc | Cho tick từng từ, bỏ qua từ đang học |
 | Một component loa dùng `speechSynthesis`, nghe `voiceschanged` | Thư viện TTS | Không cần thư viện; danh sách giọng có thể tới muộn |
+
+## A15 — Nhập mã kèm mật khẩu; giới hạn và lỗi khi khoá (review plan I2)
+
+Review plan độc lập (`../reviews/2026-10-26-dot-cai-thien-a-plan-review.md`, I2): API nhập mã công khai với giới hạn 10 / giờ theo email cho phép người ngoài chặn
+việc xác nhận của người mới; lần sai thứ 21 khoá 24 giờ; trả 429 khi khoá trái với B1E17 của Bước 1 (khoá mã đặt lại mật khẩu vẫn trả `invalid-otp` để không lộ tài
+khoản) và lộ email nào chưa xác nhận.
+
+Vòng 1 (đề xuất của Claude): bỏ giới hạn theo email; khoá trả `400 invalid-otp`; trang nhập mã luôn có link Quên mật khẩu (lối thoát khi bị khoá, vì đặt lại mật khẩu
+dùng mã loại khác và đặt lại xong là đã xác nhận). Chủ dự án: link "không nha, chỉ ở trang đăng nhập thôi". Claude nêu hệ quả (người bị khoá không biết, không thấy
+lối thoát) và hai hướng: (a) giữ `invalid-otp`, thêm hướng dẫn Quên mật khẩu vào mail báo khoá · (b) báo rõ 429 "thử lại sau X giờ", đổi lại lộ email chưa xác nhận.
+Chủ dự án ghi "b" rồi hỏi Bước 1 đã xử lý chuyện lộ email khi 429 chưa ("mình chưa chốt"); Claude trích B1E17 và mục I8 của design Bước 1.
+
+Vòng 2: chủ dự án hỏi "nếu kẻ xấu dò được thì hậu quả gì". Claude trả lời (lộ một chút riêng tư, lừa đảo nhắm đích, không tự chiếm được tài khoản) và nêu một lỗ
+hổng nặng hơn tìm thấy khi phân tích: với A5 (đăng ký lại thì thay dữ liệu), kẻ xấu đăng ký lại email chưa xác nhận của Lan bằng mật khẩu của mình; Lan nhập mã mới
+nhất, xác nhận thành công, nhưng mật khẩu tài khoản là của kẻ xấu → kẻ xấu đăng nhập được.
+
+| Phương án | Trade-off |
+|---|---|
+| ✅ Nhập mã kèm mật khẩu hiện tại; kiểm mật khẩu trước mã | Tài khoản đã xác nhận luôn có mật khẩu do chủ hộp thư gõ; sai mật khẩu không đụng bộ đếm OTP nên người ngoài không khoá được ai; khoá chỉ tới được khi đúng mật khẩu nên 429 rõ ràng không lộ gì; tốn thêm Argon2 mỗi lần; kẻ xấu vẫn phá đám được bằng đăng ký lại (Lan đặt lại mật khẩu), không chiếm được |
+| Mã gắn với lần đăng ký (token riêng cho client đăng ký) | Cũng chặn được; thêm token phải lưu và kiểm |
+| Bảng chờ (kiểu 2 của A5) | Mỗi lần đăng ký giữ dữ liệu riêng; vẫn cần cách biết người nhập mã là người đặt mật khẩu |
+
+Chủ dự án hỏi "có nghĩa là nhập mật khẩu => đúng => qua trang otp?"; Claude làm rõ người dùng chỉ gõ mật khẩu một lần ở form, trang nhập mã tự gửi kèm (giữ trong bộ
+nhớ trang; tải lại trang thì hỏi lại). Chủ dự án: "ok".
+
+Hệ quả Claude ghi vào design (cùng hướng chủ dự án nghiêng về "b" ở vòng 1, nay không còn lộ): khoá trả 429 kèm thời gian; bỏ giới hạn theo email ở route nhập mã, giữ
+`auth.verify.ip`; link Quên mật khẩu chỉ ở trang đăng nhập. Chủ dự án có thể đổi lại khi đọc design.

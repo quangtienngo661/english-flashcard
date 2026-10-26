@@ -47,6 +47,7 @@ chủ (ghi vào `IMPROVEMENT_IDEAS` thành hướng nâng cấp).
 | A10, A13, A14 | Nút loa | Giọng của máy; hai nút UK · US ở từ, một nút US ở câu; câu đã lưu chỉ đọc bằng giọng trên máy; file âm thanh làm sẵn để sau |
 | A11 | Điền từ từ câu đã lưu | Mọi gói (đổi D11 Bước 7); công tắc riêng, luôn hiện |
 | A12 | Lỗi "Xem đáp án" | Sửa API: cho bỏ qua câu điền từ trước lần thử đầu, tính là sai (theo mockup K/78a) |
+| A15 | Nhập mã kèm mật khẩu (sau review plan I2) | API nhập mã nhận email + mã + mật khẩu, kiểm mật khẩu trước; sai mật khẩu không đụng bộ đếm OTP; khoá trả 429 rõ ràng (chỉ người đúng mật khẩu thấy); bỏ giới hạn theo email; web giữ mật khẩu trong bộ nhớ trang; link Quên mật khẩu chỉ ở trang đăng nhập |
 
 **Quyết định cũ bị đổi:** K7 và D8, D14 Bước 1 (§4.5); D11 Bước 7 (C3); luật "chỉ bỏ qua sau một lần thử" của Bước 4 áp cho câu điền từ qua D9 Bước 7 (lỗi
 "Xem đáp án"); D36 Bước 3 (lời mời xác nhận ở Cài đặt bỏ đi); quy ước `/v1` chỉ thêm, không đổi (SR7–SR14) có một ngoại lệ ở §4.5.
@@ -98,13 +99,19 @@ Phiên cũ của tài khoản chưa xác nhận ──làm mới phiên bị t�
 - Chỉ người đúng mật khẩu mới biết tài khoản chưa xác nhận, giống `account-locked`.
 
 **Nhập mã `POST /v1/auth/verify-email`** (`otp.controller.ts:34-44`, `otp.service.ts:139-165`)
-- Thành **`@Public()`**. Body `z.strictObject({ email, code, client, device_label? })` (`client`, `device_label` như đăng nhập).
-- Đúng: `checkInTx(..., 'verify_email', code)` ok → `emailVerifiedAt = now` → `startChain` → trả **như đăng nhập** (`writeSession`: body token, cookie cho web).
-- Mọi thất bại trả **cùng `400 invalid-otp`**: email sai định dạng hoặc không có tài khoản, tài khoản không `active`, **đã xác nhận**, mã sai, không có mã sống. Mẫu theo
-  `PasswordService.reset` (`password.service.ts:97-129`).
-- Khoá OTP (lần sai thứ 21 trong 24 giờ) → `429 rate-limited` + `Retry-After`, mail báo khoá như hiện nay.
-- Rate limit mới: `auth.verify.ip` (ip, 20 / 3600 s) và `auth.verify.email` (email, 10 / 3600 s) khai bằng `@RateLimit` (guard lấy email từ body); bỏ `user.write`
-  (không có user). Con số theo `auth.reset.ip` (`ASSUMPTION`, chỉnh được ở `DEFAULT_LIMITS`).
+- Thành **`@Public()`**. Body `z.strictObject({ email, code, password, client, device_label? })` (`password`, `client`, `device_label` như đăng nhập).
+- **Kiểm mật khẩu trước, rồi mới kiểm mã** (A15, chủ dự án 26/10/2026: chặn việc kẻ xấu đặt mật khẩu bằng cách đăng ký lại rồi chờ chủ hộp thư nhập mã):
+  1. Tìm tài khoản theo email đã chuẩn hoá; không có → `hasher.verifyDummy` rồi `400 invalid-otp` (giữ thời gian như đăng nhập).
+  2. `hasher.verify(hash, password)` **ngoài** khoá (như đăng nhập). Sai → `400 invalid-otp`, **không** đụng tới `attempts` hay cửa sổ khoá OTP; không tăng
+     `failedLoginCount` (để kẻ xấu không khoá đăng nhập của người khác qua đường này).
+  3. Transaction + `withUserLock`: đọc lại tài khoản; hash đã đổi trong lúc chờ (đăng ký lại xen vào) → `400 invalid-otp`; không `active` hoặc **đã xác nhận** →
+     `400 invalid-otp`; rồi `checkInTx(..., 'verify_email', code)`.
+  4. Mã đúng → `emailVerifiedAt = now` → `startChain` → trả **như đăng nhập** (`writeSession`: body token, cookie cho web).
+  5. Mã sai / không có mã sống → `400 invalid-otp`.
+  6. Khoá OTP (lần sai thứ 21 trong 24 giờ) → **`429 rate-limited` + `Retry-After`**, mail báo khoá như hiện nay. Chỉ người đúng mật khẩu mới tới được bước này, nên
+     429 không lộ gì (cùng lý lẽ với `account-locked` của đăng nhập và B1E17 của Bước 1).
+- Vì chỉ người đúng mật khẩu mới làm tăng bộ đếm sai mã, người ngoài không khoá được việc xác nhận của người khác. **Không có giới hạn theo email** ở route này;
+  giữ `auth.verify.ip` (ip, 20 / 3600 s, `ASSUMPTION`, chỉnh được ở `DEFAULT_LIMITS`) khai bằng `@RateLimit`; bỏ `user.write` (không có user). (Review plan I2.)
 - Giữ: 5 lần thử mỗi mã, mã sống 10 phút, khoá 24 giờ ở lần sai thứ 21.
 
 **Gửi lại mã `POST /v1/auth/otp`** (`otp.schemas.ts:3-6`, `otp.service.ts:66-106`)
@@ -125,8 +132,12 @@ nhận, B1#23); `trial_eligible`; email nhắc học.
 - **Đăng nhập** (`LoginForm.tsx`): 403 `email-not-verified` → giữ email → `/app/verify-email?next=…` (giữ `next`).
 - **Trang nhập mã** chuyển từ nhóm `(member)` sang nhóm `(auth)` (không `RequireSession`):
   - Email lấy từ `sessionStorage`; không có (mở ở tab mới) → hiện ô email.
-  - Nộp → `POST /v1/auth/verify-email { email, code, client: 'web' }` → nhận phiên qua cùng đường với đăng nhập trong `session-store.ts` (`startSession`) →
-    xoá email tạm → chưa có ngôn ngữ thì `/app/welcome`, có thì `next` hoặc `/app`.
+  - **Mật khẩu** (A15): mật khẩu vừa gõ ở form đăng ký / đăng nhập giữ **chỉ trong bộ nhớ JS của trang** (biến module, không `sessionStorage`, không URL, không log)
+    và gửi kèm khi nộp mã. Để bộ nhớ còn, đăng ký / đăng nhập chuyển sang trang nhập mã bằng **điều hướng phía client** (router của Next), không tải lại trang. Không
+    còn mật khẩu trong bộ nhớ (tải lại trang, tab mới) → trang hiện thêm ô mật khẩu cạnh ô mã. Xoá mật khẩu khỏi bộ nhớ khi xác nhận xong hoặc rời trang.
+  - Nộp → `POST /v1/auth/verify-email { email, code, password, client: 'web' }` → nhận phiên qua cùng đường với đăng nhập trong `session-store.ts`
+    (`startSession`) → xoá email tạm → chưa có ngôn ngữ thì `/app/welcome`, có thì `next` hoặc `/app`.
+  - `400 invalid-otp` → chữ "Mã hoặc mật khẩu không đúng…" (§8); `429` (chỉ khi đúng mật khẩu) → "Bạn đã nhập sai mã quá nhiều lần. Thử lại sau {time}."
   - "Gửi lại mã": `POST /v1/auth/otp { purpose: 'verify_email', email }`, đếm ngược 60 s như hiện nay. **Bỏ việc tự gửi mã khi mở trang** (đăng ký và đăng nhập đã gửi).
   - Link "Gõ nhầm email? Đăng ký bằng email khác" → xoá email tạm → `/app/register`.
   - Mở trang khi đang có phiên → `AuthGate` đưa vào app như các trang `(auth)` khác.
@@ -169,18 +180,22 @@ Danh sách theo dòng: code facts phần 2 mục 7, 8, 10.
 | A13-4 | Như A13-3, trong 60 s sau lần gửi trước | 403 như trên, **không** gửi thêm mail; trang nhập mã cho bấm "Gửi lại mã" khi hết đếm ngược |
 | A13-5 | Đăng nhập sai mật khẩu, tài khoản chưa xác nhận | 401 `invalid-credentials`, tăng đếm như hiện nay; không lộ trạng thái xác nhận |
 | A13-6 | Tài khoản `status = locked`, đúng mật khẩu, chưa xác nhận | 403 `account-locked` (khoá đứng trước chưa xác nhận) |
-| A13-7 | Nhập đúng mã | 200 + phiên như đăng nhập; `emailVerifiedAt` có giá trị; mã đã dùng; web sang `/app/welcome` |
-| A13-8 | Nhập sai mã | 400 `invalid-otp`; `attempts` của mã tăng; sai lần 5 thì mã chết, các lần sau vẫn 400 |
-| A13-9 | Sai lần thứ 21 trong 24 giờ | 429 + `Retry-After`; mail báo khoá; nhập đúng trong lúc khoá vẫn 429 |
+| A13-7 | Nhập đúng mã, đúng mật khẩu | 200 + phiên như đăng nhập; `emailVerifiedAt` có giá trị; mã đã dùng; web sang `/app/welcome` |
+| A13-7b | Đúng mã, **sai mật khẩu** | 400 `invalid-otp`; `attempts` của mã và cửa sổ khoá OTP **không** đổi; `failedLoginCount` không đổi |
+| A13-7c | Kẻ xấu đăng ký lại email chưa xác nhận của Lan bằng mật khẩu của mình; Lan nhập mã mới nhất (trang gửi kèm mật khẩu của Lan) | 400 `invalid-otp` (mật khẩu không khớp); tài khoản vẫn chưa xác nhận; Lan đăng ký lại bằng mật khẩu của mình rồi nhập mã mới → vào app; kẻ xấu không có mã nên không xác nhận được |
+| A13-7d | Đăng ký lại (đổi hash) xen vào giữa lúc kiểm mật khẩu và lúc khoá dòng | Đọc lại dưới khoá thấy hash đổi → 400 `invalid-otp` |
+| A13-8 | Đúng mật khẩu, sai mã | 400 `invalid-otp`; `attempts` của mã tăng; sai lần 5 thì mã chết, các lần sau vẫn 400 |
+| A13-9 | Đúng mật khẩu, sai mã lần thứ 21 trong 24 giờ | 429 + `Retry-After`; mail báo khoá; nhập đúng trong lúc khoá vẫn 429; người không biết mật khẩu chỉ thấy 400 |
 | A13-10 | Email không có tài khoản, hoặc tài khoản đã xác nhận, hoặc không `active` | 400 `invalid-otp`, cùng body với mã sai |
 | A13-11 | Mã quá 10 phút | 400 `invalid-otp`; "Gửi lại mã" tạo mã mới và huỷ mã cũ |
-| A13-12 | Một IP gửi quá 20 lần nhập mã / giờ, hoặc một email quá 10 lần / giờ | 429 `rate-limited` + `retryAfterSeconds` |
+| A13-12 | Một IP gửi quá 20 lần nhập mã / giờ | 429 `rate-limited` + `retryAfterSeconds` (không có giới hạn theo email) |
+| A13-12b | Tải lại trang nhập mã (mất mật khẩu trong bộ nhớ) | Trang hiện ô mật khẩu; nộp email + mã + mật khẩu như thường |
 | A13-13 | "Gửi lại mã" với email lạ hoặc đã xác nhận | 202 `{}`, không gửi gì |
 | A13-14 | Phiên cũ (từ trước khi đổi) của tài khoản chưa xác nhận làm mới phiên | Bị từ chối, chuỗi bị thu hồi (`unverified`); web về đăng nhập → A13-3 |
 | A13-15 | Mở trang nhập mã ở tab mới, không có email tạm | Hiện ô email; nộp email + mã như thường |
 | A13-16 | Bấm "Đăng ký bằng email khác" | Email tạm bị xoá; sang trang đăng ký; tài khoản cũ chưa xác nhận vẫn còn trong DB |
 | A13-17 | Lan gõ nhầm `lam@gmail.com` (của Lâm), không nhập mã; sau đó Lâm đăng ký bằng email của mình | A13-2b: tài khoản thành của Lâm với mật khẩu của Lâm; dữ liệu Lan gõ mất; Lâm nhập mã → vào app |
-| A13-17b | Như trên, nhưng Lâm nhập luôn mã nhận được từ lần Lan đăng ký (không đăng ký lại) | Lâm vào tài khoản với mật khẩu Lan đặt; đổi được mật khẩu, hoặc dùng Quên mật khẩu (A13-18) |
+| A13-17b | Như trên, nhưng Lâm muốn nhập luôn mã nhận được từ lần Lan đăng ký (không đăng ký lại) | Lâm không biết mật khẩu Lan đặt → 400; Lâm đăng ký lại (A13-2b) hoặc dùng Quên mật khẩu (A13-18) |
 | A13-18 | Quên mật khẩu trên tài khoản chưa xác nhận | Như hiện nay: đặt lại xong là đã xác nhận, mọi phiên thu hồi; đăng nhập sau đó cấp phiên |
 | A13-19 | Bấm nộp mã hai lần nhanh | `useSubmitOnce` chặn lần hai; nếu lần hai vẫn tới API: 400 `invalid-otp` (mã đã dùng), web đã rời trang |
 | A13-20 | Nhân viên do admin tạo đăng nhập admin | Như hiện nay (đã xác nhận lúc tạo) |
@@ -307,7 +322,9 @@ Theo luật của `apps/web/src/i18n/messages.test.ts` (cùng key hai file, khô
 |---|---|---|
 | Đăng ký, `email-taken` (sửa) | Email này đã có tài khoản. Nếu là email của bạn, dùng Quên mật khẩu. | This email already has an account. If it's yours, use Forgot password. |
 | Trang nhập mã, sau đăng nhập chưa xác nhận | Bạn cần xác nhận email trước khi vào app. Mã đã được gửi tới {email}. | Confirm your email to continue. We sent a code to {email}. |
-| Trang nhập mã, mã sai | Mã không đúng hoặc đã hết hạn. Nếu email đã được xác nhận, hãy đăng nhập. | That code is wrong or expired. If your email is already confirmed, sign in. |
+| Trang nhập mã, mã sai | Mã hoặc mật khẩu không đúng, hoặc mã đã hết hạn. Nếu email đã được xác nhận, hãy đăng nhập. | That code or password is wrong, or the code has expired. If your email is already confirmed, sign in. |
+| Trang nhập mã, bị khoá | Bạn đã nhập sai mã quá nhiều lần. Thử lại sau {time}. | Too many wrong codes. Try again in {time}. |
+| Trang nhập mã, ô mật khẩu (khi mất bộ nhớ) | Mật khẩu | Password |
 | Trang nhập mã, link | Gõ nhầm email? Đăng ký bằng email khác | Typed the wrong email? Sign up with another one |
 | Trang nhóm, nút | Thêm từ | Add word |
 | Tấm Thêm từ, khoá nhóm | Lưu vào nhóm: {name} | Saving to deck: {name} |
@@ -352,7 +369,9 @@ Bỏ: lời mời xác nhận ở Cài đặt; `noteRight`, `noteRightNoKnow` th
 - **Giọng đọc trên Windows / Android / iOS** (có `en-GB` trên máy không) chưa kiểm; e2e không nghe được âm thanh.
 - **C13 đụng nhiều nơi** (Identity, web, admin e2e-real, 7 script): sót một script là smoke gãy; danh sách ở code facts mục 7.
 - **Ngoại lệ SR7** chỉ đúng khi chưa có client ngoài repo; app Flutter sau này phải theo luồng mới từ đầu.
-- **Rate limit `auth.verify.*`** là con số `ASSUMPTION`; email lạ trả nhanh hơn email có thật (cùng hạn chế của Quên mật khẩu).
+- **Rate limit `auth.verify.ip`** là con số `ASSUMPTION`. Route nhập mã công khai chạy Argon2 mỗi lần (khoảng 44 ms), nên tốn CPU hơn; giới hạn theo IP chặn bớt.
+- **Mật khẩu giữ trong bộ nhớ trang** từ form tới trang nhập mã: mất khi tải lại (trang hỏi lại); không ghi xuống máy, không URL.
+- **Kẻ xấu vẫn phá đám được** bằng cách đăng ký lại liên tục (Lan phải đặt lại mật khẩu của mình), nhưng không chiếm được tài khoản (A13-7c); giới hạn 5 / giờ theo email.
 - **Tài khoản chưa xác nhận tích lại trong DB** cho tới khi có việc dọn (Bước 8).
 - **Đăng ký lại liên tục vào một email chưa xác nhận** làm mã của chủ thật hết hiệu lực (A13-2b); giới hạn theo email (5 / giờ) chặn bớt, chủ thật bấm "Gửi lại mã".
 - **Người đăng ký bỏ ngang ở bước nhập mã** (đánh đổi sản phẩm của A4): chưa đo được, theo dõi khi có người dùng thật.

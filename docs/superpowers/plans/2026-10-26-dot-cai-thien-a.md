@@ -19,7 +19,8 @@ lệnh trên Windows của app người học: [`../../deliveries/giao-dien-nguo
   `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`. Sửa lỗi = hai commit: test lỗi trước, sửa sau.
 - Không đọc, không in `.env`. Không gọi nhà cung cấp AI thật, không gọi cổng thanh toán thật.
 - Lỗi API là `application/problem+json`; `type` mới của đợt: `email-not-verified`. Mọi thất bại nhập mã: `400 invalid-otp` (cùng body).
-- Rate limit mới (`DEFAULT_LIMITS`): `'auth.verify.ip': { by: 'ip', max: 20, windowSeconds: 3600 }`, `'auth.verify.email': { by: 'email', max: 10, windowSeconds: 3600 }`.
+- Rate limit mới (`DEFAULT_LIMITS`): `'auth.verify.ip': { by: 'ip', max: 20, windowSeconds: 3600 }`. Không có luật theo email cho route nhập mã (design §4.2, A15).
+- Nhập mã luôn kèm mật khẩu (A15): kiểm mật khẩu trước, sai mật khẩu không đụng bộ đếm OTP; mật khẩu ở web chỉ trong bộ nhớ JS, không `sessionStorage`, không URL, không log.
 - Giữ: 5 lần thử mỗi mã, mã sống 600 000 ms, khoá 24 giờ ở lần sai thứ 21, `auth.otp.email.cooldown` 1/60 s, `auth.otp.email.hourly` 5/3600 s, `ACCESS_TOKEN_TTL_SECONDS` 900.
 - Bản chữ: `apps/web/messages/vi.json` và `en.json` cùng key, không rỗng; không "vui lòng", "please", "sorry"; "…" một ký tự (`src/i18n/messages.test.ts`). Chữ chính xác: design §8.
 - `sessionStorage` key `wordmet-web.pending-email`; không đưa email lên URL.
@@ -119,25 +120,30 @@ và chưa có design / plan / decision record / code facts (chưa commit).
 - Test: `otp.controller.spec.ts` (78-92), `otp.service.spec.ts`, `auth.service.spec.ts`, `common/config/app-config.spec.ts` nếu có test liệt kê luật
 
 **Interfaces:**
-- Produces: `verifyEmailSchema = registerSchema.pick({ email: true, client: true, device_label: true }).extend({ code: z.string().max(20) })` (strict);
+- Produces: `verifyEmailSchema = registerSchema.pick({ email: true, password: true, client: true, device_label: true }).extend({ code: z.string().max(20) })` (strict);
   `AuthService.verifyEmail(body: VerifyEmailBody, res: Response): Promise<IssuedSession>`; route `POST /v1/auth/verify-email` `@Public()`
-  `@RateLimit('auth.verify.ip', 'auth.verify.email')`, 200 + `writeSession(...)` (body token; cookie cho web).
-- Consumes: `OtpService.checkInTx(tx, userId, 'verify_email', code)`, `SessionService.startChain(tx, { userId, client, deviceLabel })`.
+  `@RateLimit('auth.verify.ip')`, 200 + `writeSession(...)` (body token; cookie cho web).
+- Consumes: `OtpService.checkInTx(tx, userId, 'verify_email', code)`, `SessionService.startChain(tx, { userId, client, deviceLabel })`, `hasher.verify` / `hasher.verifyDummy` (như `login`).
 
 - [ ] **Step 1: Viết test lỗi** (`auth.service.spec.ts` trừ khi ghi khác):
-  - `A13-7: right code → emailVerifiedAt set and a chain started in the same transaction; returns the session`.
-  - `A13-8: wrong code → 400 invalid-otp, attempt counted`.
-  - `A13-9: 21st failure → 429 rate-limited with Retry-After; lock mail scheduled`.
+  - `A13-7: right password and code → emailVerifiedAt set and a chain started in the same transaction; returns the session`.
+  - `A13-7b: right code, wrong password → 400 invalid-otp; code attempts, OTP failure window and failedLoginCount unchanged`.
+  - `A13-7c: after a re-register with another password, the owner's code with the owner's old password → 400 invalid-otp; account stays unverified`.
+  - `A13-7d: hash changed between the password check and the lock → 400 invalid-otp`.
+  - `unknown email → verifyDummy is called, then 400 invalid-otp`.
+  - `A13-8: right password, wrong code → 400 invalid-otp, attempt counted`.
+  - `A13-9: right password, 21st wrong code → 429 rate-limited with Retry-After; lock mail scheduled; with a wrong password the same request gets 400`.
   - `A13-10: unknown email | not active | already verified → the same 400 invalid-otp body` (một `it.each` ba ca; so body bằng nhau).
   - `A13-11: expired code → 400 invalid-otp`.
   - `email with capitals and spaces → same account` (Review Focus 2).
-  - `otp.controller.spec.ts`: `verify-email is public: no token → handled` (thay B1#7), `body { email, code, client } strict, extra key → 400`,
+  - `otp.controller.spec.ts`: `verify-email is public: no token → handled` (thay B1#7), `body { email, code, password, client } strict, missing password or extra key → 400`,
     `A13-12: the route declares @RateLimit with the verify rules` (kiểm metadata của decorator và `DEFAULT_LIMITS`; test harness mock Prisma và spy
-    `RateLimiter.hit`, không có limiter thật — review M1). Luật theo email tuỳ câu trả lời I2 của chủ dự án.
+    `RateLimiter.hit`, không có limiter thật — review M1). Chỉ `auth.verify.ip`, không có luật theo email.
 - [ ] **Step 2: Chạy** `pnpm --filter api test src/identity/auth src/common/config` — Expected: FAIL.
-- [ ] **Step 3: Cài.** Mẫu theo `PasswordService.reset` (`password.service.ts:97-129`): chuẩn hoá email, tìm tài khoản, transaction + `withUserLock`; mọi nhánh không ok
-  → `invalid-otp`; ok → `emailVerifiedAt = now` + `startChain`; khoá → 429 + mail khoá (chuyển phần lập mail khoá từ `OtpService.verifyEmail` cũ). Thêm hai luật
-  rate limit (Global Constraints). Xoá `OtpService.verifyEmail(user, …)`.
+- [ ] **Step 3: Cài** theo thứ tự ở design §4.2 (1–6): tìm tài khoản (không có → `verifyDummy`, 400); `hasher.verify` ngoài khoá (sai → 400, không đụng OTP,
+  không tăng `failedLoginCount`); transaction + `withUserLock`, đọc lại (hash đổi / không `active` / đã xác nhận → 400); `checkInTx`; ok → `emailVerifiedAt = now`
+  + `startChain`; sai → 400; khoá → 429 + mail khoá (chuyển phần lập mail khoá từ `OtpService.verifyEmail` cũ). Thêm luật `auth.verify.ip`. Xoá
+  `OtpService.verifyEmail(user, …)`.
 - [ ] **Step 4: Chạy lại** — Expected: PASS.
 - [ ] **Step 5: Commit** `feat(api): verify the email without a session and sign in on success`.
 
@@ -181,7 +187,7 @@ và chưa có design / plan / decision record / code facts (chưa commit).
 - Modify: `apps/admin/e2e-real/support/api.ts` (36-43)
 
 **Interfaces:**
-- Consumes: `POST /v1/auth/register` → `{ email }`; mã lấy ở Mailpit như các script đang làm; `POST /v1/auth/verify-email { email, code, client: 'mobile' }` → token (mobile để có
+- Consumes: `POST /v1/auth/register` → `{ email }`; mã lấy ở Mailpit như các script đang làm; `POST /v1/auth/verify-email { email, code, password, client: 'mobile' }` → token (mobile để có
   `refresh_token` trong body như các script đang dùng; nếu script dùng web thì `client: 'web'`).
 
 - [ ] **Step 1:** Trong mỗi file, thay mọi chỗ dùng token trả về từ đăng ký bằng: đăng ký → đọc mã ở Mailpit → `verify-email` công khai → token. Người học trước đây cố ý để
@@ -203,8 +209,9 @@ và chưa có design / plan / decision record / code facts (chưa commit).
 
 **Interfaces:**
 - Produces: `readPendingEmail(): string | null`, `writePendingEmail(email: string): void`, `clearPendingEmail(): void` (try/catch, key `wordmet-web.pending-email`);
-  `SessionStore.register(body: RegisterBody): Promise<{ email: string }>` (không đổi state); `SessionStore.verifyEmail(email: string, code: string): Promise<void>`
-  (`POST /v1/auth/verify-email` với `{ email, code, ...DEVICE }` qua `startSession`); `SessionStore.login` ném `ApiError` với `type: 'email-not-verified'` như lỗi khác.
+  `SessionStore.register(body: RegisterBody): Promise<{ email: string }>` (không đổi state); `SessionStore.verifyEmail(email: string, code: string, password: string): Promise<void>`
+  (`POST /v1/auth/verify-email` với `{ email, code, password, ...DEVICE }` qua `startSession`); `setPendingPassword(password: string): void`,
+  `takePendingPassword(): string | null` (biến module trong `pending-email.ts`, **không** ghi `sessionStorage`; `clearPendingEmail()` xoá cả mật khẩu); `SessionStore.login` ném `ApiError` với `type: 'email-not-verified'` như lỗi khác.
 
 - [ ] **Step 1: Sửa / viết test**: `register: posts the form and stays signed out, returns the email` (thay 230-258); `verifyEmail: keeps the token and signs in, broadcasts login`;
   bỏ test 219-228 ("unverified email still enters the app"); `login 403 email-not-verified → throws, stays signed out`; `pending-email` đọc / ghi / xoá, chịu được
@@ -221,10 +228,12 @@ và chưa có design / plan / decision record / code facts (chưa commit).
 - Test: `apps/web/src/features/learner/auth/auth.test.tsx` (46-58), `AuthGate.test.tsx` (23-44)
 
 **Interfaces:**
-- Consumes: Task 7 (`register` trả `{ email }`, `writePendingEmail`).
+- Consumes: Task 7 (`register` trả `{ email }`, `writePendingEmail`, `setPendingPassword`).
+- Chuyển sang trang nhập mã bằng **router của Next** (`router.replace`, điều hướng phía client), **không** `hardReplace`, để mật khẩu trong bộ nhớ còn (A15).
 
-- [ ] **Step 1: Sửa / viết test**: `register → writes the pending email → /vi/app/verify-email` (không `?sent=1`); `register 409 email-taken → the new hint with Forgot password`;
-  `login 403 email-not-verified → writes the pending email → /vi/app/verify-email?next=<next>`; AuthGate: đăng ký trên trang không vào `signed-in`.
+- [ ] **Step 1: Sửa / viết test**: `register → writes the pending email and keeps the password in memory → client-side navigation to /vi/app/verify-email` (không
+  `?sent=1`; không có mật khẩu trong `sessionStorage` hay URL); `register 409 email-taken → the new hint with Forgot password`;
+  `login 403 email-not-verified → same, to /vi/app/verify-email?reason=login&next=<next>`; AuthGate: đăng ký trên trang không vào `signed-in`.
 - [ ] **Step 2: Chạy** `pnpm --filter web test src/features/learner/auth` — Expected: FAIL.
 - [ ] **Step 3: Cài**; chữ `email-taken` mới (design §8).
 - [ ] **Step 4: Chạy lại** cùng `pnpm --filter web test src/i18n` — Expected: PASS.
@@ -243,7 +252,9 @@ và chưa có design / plan / decision record / code facts (chưa commit).
 
 - [ ] **Step 1: Sửa / viết test** (`auth.test.tsx`):
   - `reads the pending email and shows it; no email → shows an email field (A13-15)`.
-  - `submit → verifyEmail(email, code) → clears the pending email → /vi/app/welcome when no language, else next or /vi/app`.
+  - `submit → verifyEmail(email, code, password from memory) → clears the pending email and password → /vi/app/welcome when no language, else next or /vi/app`.
+  - `A13-12b: no password in memory (reload) → shows a password field; submit sends it`.
+  - `400 invalid-otp → "code or password is wrong" text; 429 → "too many wrong codes, try again in …"`.
   - `invalid-otp → the new wrong-code text (design §8)`; `429 → wait text with seconds` (như hiện nay).
   - `resend posts { purpose: 'verify_email', email } and restarts the 60 s countdown`; `no auto-send on open`.
   - `"Typed the wrong email?" link clears the pending email and goes to register (A13-16)`.
