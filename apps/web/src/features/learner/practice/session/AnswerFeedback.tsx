@@ -20,11 +20,13 @@ export function feedbackCase(result: AnswerResult): 1 | 2 | 3 | 4 | null {
  * Enter follows the bold button. Wrong outside learning offers only Next.
  * D16 Bước 3: only buttons labelled Đã biết / Cần ôn lại change the schedule.
  */
-export function AnswerFeedback({ result, onReview, onNext, busy }: {
+export function AnswerFeedback({ result, onReview, onNext, busy, focusPrimary = false }: {
   result: AnswerResult;
   onReview: (action: 'needs_review' | 'known') => void;
   onNext: () => void;
   busy: boolean;
+  /** A chosen answer disables the option that held focus; the primary action takes it (audit 26/10/2026 #8). A typed answer keeps its field focused. */
+  focusPrimary?: boolean;
 }) {
   const t = useTranslations('App.practice.session');
   const locale = useLocale();
@@ -34,7 +36,8 @@ export function AnswerFeedback({ result, onReview, onNext, busy }: {
   const noteKey = kind === 1 ? 'noteKnowEnter' : kind === 2 ? 'noteNotDue' : kind === 3 ? 'noteHint' : kind === 4 ? 'noteWrong' : null;
   return (
     <div className="flex flex-col gap-3">
-      <div role="status" className={cn('flex gap-3 rounded-inner p-4', right ? 'bg-success-soft' : 'bg-danger-soft')}>
+      {/* Announced through the session's live region (audit 26/10/2026 #8), so this block is not a second status. */}
+      <div className={cn('flex gap-3 rounded-inner p-4', right ? 'bg-success-soft' : 'bg-danger-soft')}>
         <Icon aria-hidden className={cn('mt-0.5 size-5 shrink-0', right ? 'text-success' : 'text-danger')} />
         <div className="flex min-w-0 flex-col gap-0.5">
           <p className={cn('text-title font-bold', right ? 'text-success' : 'text-danger')}>{right ? t('right') : t('wrong')}</p>
@@ -63,6 +66,7 @@ export function AnswerFeedback({ result, onReview, onNext, busy }: {
             variant={kind === 4 ? 'sticker' : 'quiet'}
             size="lg"
             className={cn('justify-between', kind === 4 && 'font-bold')}
+            autoFocus={focusPrimary && kind === 4}
             isDisabled={busy}
             onPress={() => onReview('needs_review')}
           >
@@ -71,12 +75,12 @@ export function AnswerFeedback({ result, onReview, onNext, busy }: {
           </Button>
         )}
         {kind === 1 ? (
-          <Button variant="sticker" size="lg" className="justify-between font-bold" isDisabled={busy} onPress={() => onReview('known')}>
+          <Button variant="sticker" size="lg" className="justify-between font-bold" autoFocus={focusPrimary} isDisabled={busy} onPress={() => onReview('known')}>
             {t('know')}
             <kbd className={`${KBD} border-current`}>Enter</kbd>
           </Button>
         ) : (
-          <Button variant={kind === 4 ? 'quiet' : 'sticker'} size="lg" className={cn('justify-between', kind !== 4 && 'font-bold')} isPending={busy} onPress={onNext}>
+          <Button variant={kind === 4 ? 'quiet' : 'sticker'} size="lg" className={cn('justify-between', kind !== 4 && 'font-bold')} autoFocus={focusPrimary && kind !== 4} isPending={busy} onPress={onNext}>
             {t('next')}
             {kind !== 4 && <kbd className={`${KBD} border-current`}>Enter</kbd>}
           </Button>
