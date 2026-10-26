@@ -51,6 +51,12 @@ describe('TodayPage (K/10, K/10b, K/94)', () => {
     expect(within(hero).getByRole('link', { name: 'Hoặc học tất cả 18 từ' })).toHaveAttribute('href', '/vi/app/review?group=g-tech&mode=all');
   });
 
+  it('counts follow the locale: 262962 waiting cards show as "262.962" (audit 26/10/2026 #9)', async () => {
+    renderApp(<TodayPage />, { routes: routes([group('g-big', 'Lớn', { priority: 0, due: 262962, new: 0 }, 123456)]) });
+    const hero = await screen.findByRole('region', { name: 'Lớn' });
+    expect(within(hero).getByText('262.962 thẻ chờ hôm nay · nhóm có 123.456 từ')).toBeInTheDocument();
+  });
+
   it('deck cards: waiting decks first (most cards first), done-today decks last', async () => {
     renderApp(<TodayPage />, { routes: routes(GROUPS) });
     const list = await screen.findByRole('list', { name: 'Nhóm của bạn' });

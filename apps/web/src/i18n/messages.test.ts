@@ -16,7 +16,19 @@ function flatten(tree: Tree, prefix = ''): Map<string, string> {
 const flatVi = flatten(vi as Tree);
 const flatEn = flatten(en as Tree);
 
+// Audit 26/10/2026 #9: next-intl prints a plain `{count}` as "262962"; `{count, number}` follows the locale ("262.962",
+// "262,962"). Every placeholder that carries a number in the app copy is declared as one.
+const NUMERIC = new Set(['count', 'total', 'used', 'limit', 'remaining', 'waiting', 'groups', 'words', 'shown', 'done', 'n', 'needed',
+  'target', 'left', 'opened', 'max', 'days', 'seconds']);
+
 describe('messages', () => {
+  it('every numeric placeholder in App is formatted as a number', () => {
+    const plain = [...flatten((vi as Tree).App as Tree, 'vi.App'), ...flatten((en as Tree).App as Tree, 'en.App')].flatMap(([key, value]) =>
+      [...value.matchAll(/\{(\w+)\}/g)].filter((m) => NUMERIC.has(m[1])).map((m) => `${key}: {${m[1]}}`),
+    );
+    expect(plain).toEqual([]);
+  });
+
   it('LP3 vi and en messages have identical keys and no empty values', () => {
     const onlyVi = [...flatVi.keys()].filter((k) => !flatEn.has(k));
     const onlyEn = [...flatEn.keys()].filter((k) => !flatVi.has(k));
