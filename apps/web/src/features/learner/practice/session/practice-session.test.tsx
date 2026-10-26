@@ -270,6 +270,30 @@ describe('PracticeSession (K/60–K/67)', () => {
     expect(screen.getAllByRole('button', { name: /^[1-4] / }).map((b) => b.textContent)).toEqual(['1 deploy', '2 delay', '3 deliver', '4 defend']);
   });
 
+  it('a live region present before answering says the result; focus moves to the primary action (audit 26/10/2026 #8)', async () => {
+    const { container } = renderApp(<PracticeSession />, { routes: routes() });
+    await screen.findByText('triển khai');
+    const live = container.querySelector('[data-live="result"]')!;
+    expect(live).toHaveAttribute('aria-live', 'polite');
+    expect(live).toHaveTextContent('');
+    await userEvent.click(screen.getByRole('button', { name: /2 delay/ }));
+    await waitFor(() => expect(live).toHaveTextContent('Chưa đúng. deploy · triển khai (phần mềm)'));
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: /Cần ôn lại/ }));
+  });
+
+  it('try_again keeps focus in the word box (Review Focus 5)', async () => {
+    renderApp(<PracticeSession />, {
+      routes: routes({
+        'GET /v1/practice/sessions/current': () => Response.json({ session: view({ asked: 6 }), item: typed(), preparing: false }),
+        'POST /v1/practice/items/item-6/answer': () => Response.json({ result: 'try_again', tries: 1 }),
+      }),
+    });
+    const input = await screen.findByRole('textbox', { name: 'Câu trả lời' });
+    await userEvent.type(input, 'cash{Enter}');
+    expect(await screen.findByText('Kiểm tra chính tả rồi gõ lại. Wordmet chưa hiện đáp án.')).toBeInTheDocument();
+    expect(document.activeElement).toBe(screen.getByRole('textbox', { name: 'Câu trả lời' }));
+  });
+
   it('K/61: key 2 answers option 2 with an Idempotency-Key; the result marks the right and the chosen option', async () => {
     const view_ = renderApp(<PracticeSession />, { routes: routes() });
     await screen.findByText('triển khai');

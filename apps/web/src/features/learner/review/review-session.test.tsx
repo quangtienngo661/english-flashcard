@@ -87,6 +87,19 @@ describe('ReviewSession (K/20–K/22)', () => {
     expect(screen.getByTestId('review-count')).toHaveTextContent('1');
   });
 
+  it('after answering, the live region says the new card and focus is on [Lật thẻ] (audit 26/10/2026 #8)', async () => {
+    const { container } = renderApp(<ReviewSession />, { routes: routes([DEPLOY, CACHE]) });
+    await screen.findByRole('group', { name: 'Thẻ 1 trên 2' });
+    const live = container.querySelector('[data-live="result"]')!;
+    expect(live).toHaveAttribute('aria-live', 'polite');
+    expect(live).toHaveTextContent('');
+    await userEvent.keyboard(' ');
+    await userEvent.click(screen.getByRole('button', { name: /Đã biết/ }));
+    await screen.findByRole('group', { name: 'Thẻ 2 trên 2' });
+    await waitFor(() => expect(live).toHaveTextContent('Thẻ 2 trên 2'));
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: /Lật thẻ/ }));
+  });
+
   it('answers only after the card is flipped', async () => {
     const { calls } = renderApp(<ReviewSession />, { routes: routes([DEPLOY, CACHE]) });
     await screen.findByRole('group', { name: 'Thẻ 1 trên 2' });
