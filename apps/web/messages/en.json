@@ -1041,7 +1041,7 @@
       "shortcuts": {
         "title": "Session shortcuts",
         "choose": "Choose an answer",
-        "check": "Check, next question",
+        "check": "Check, then the bold button",
         "hint": "Show a hint",
         "stop": "Stop, see summary"
       },
@@ -1161,8 +1161,8 @@
         "stillLearning": "Still learning",
         "know": "Know",
         "next": "Next question",
-        "noteWrong": "Your review schedule doesn't change on its own. Still learning moves {lemma} to the top of its deck, back to the 1-day stage.",
-        "noteRight": "Still learning or Know also moves to the next question.",
+        "noteWrong": "Enter moves {lemma} to the top of its deck, back to stage 1. Next question keeps its schedule.",
+        "noteKnowEnter": "Enter means Know: {lemma} moves up a stage. Not sure? Choose Still learning.",
         "noteHint": "Hints don't change the grading, but a right answer after a hint has no Know button.",
         "phoneHint": "Tap an answer. It's graded right away.",
         "failed": "Your answer wasn't saved. Check your connection and try again.",
@@ -1225,7 +1225,7 @@
           "home": "Back to Practice",
           "again": "Practice another session"
         },
-        "noteRightNoKnow": "Still learning or Next question moves on."
+        "noteNotDue": "{lemma} isn't due yet, so its schedule stays the same."
       },
       "weak": {
         "title": "Weak words",

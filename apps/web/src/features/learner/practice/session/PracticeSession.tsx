@@ -14,7 +14,7 @@ import { useGroups } from '../../groups/groups-api';
 import { useSourceLabel } from '../CurrentSessionCard';
 import type { PracticeSessionView } from '../practice-api';
 import { AiUnavailableState } from './AiUnavailableState';
-import { AnswerFeedback } from './AnswerFeedback';
+import { AnswerFeedback, feedbackCase } from './AnswerFeedback';
 import { HintPanel, hintLevels } from './HintPanel';
 import { Choices, chosenChoice } from './McqQuestion';
 import { PreparingState } from './PreparingState';
@@ -44,14 +44,14 @@ export function PracticeSession() {
   const sourceLabel = session ? label({ session, item: null, preparing: false }, groups.data?.items ?? []) : '';
   const practiceHref = `/${locale}/app/practice`;
 
-  // Keys (K/51 "Phím tắt"): 1–4 choose, 1/2 Cần ôn lại / Đã biết after a result, Enter next, H hint, Esc stop.
+  // Keys (K/51): 1–4 choose; on results Enter follows the bold button, 1 reviews, 2 knows in case 1; H hint, Esc stop.
   const keys = useRef<(e: KeyboardEvent) => void>(() => {});
   useEffect(() => {
     keys.current = (e) => {
       if (e.altKey || e.ctrlKey || e.metaKey || reporting) return;
       const target = e.target as HTMLElement | null;
       if (target?.closest('[role="dialog"]')) return;
-      // A graded typed answer keeps its (read-only) field focused; Enter there moves on like anywhere else.
+      // A graded typed answer keeps its read-only field focused; Enter there follows the result's primary action.
       const field = target?.closest('input, textarea') as HTMLInputElement | null;
       const typing = Boolean(field && !field.readOnly);
       if (e.key === 'Escape' && (typing || e.isComposing)) {
@@ -80,9 +80,15 @@ export function PracticeSession() {
       if (phase?.kind !== 'question') return;
       const { item, outcome } = phase;
       if (outcome?.kind === 'final') {
-        if (e.key === '1') void state.review('needs_review');
-        else if (e.key === '2' && outcome.result.show_known) void state.review('known');
-        else if (e.key === 'Enter') void state.next();
+        if (e.repeat && (e.key === 'Enter' || e.key === '1' || e.key === '2')) return;
+        const kind = feedbackCase(outcome.result);
+        if (e.key === '1' && kind !== null) void state.review('needs_review');
+        else if (e.key === '2' && kind === 1) void state.review('known');
+        else if (e.key === 'Enter') {
+          if (kind === 1) void state.review('known');
+          else if (kind === 4) void state.review('needs_review');
+          else void state.next();
+        }
         return;
       }
       if (e.key === 'h' || e.key === 'H') {

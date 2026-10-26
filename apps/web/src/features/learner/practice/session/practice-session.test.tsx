@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { renderApp } from '@/app-ui/test-utils';
 import { ToastRegion } from '@/app-ui/Toast';
@@ -78,6 +78,7 @@ const routes = (over: Record<string, Route> = {}): Record<string, Route> => ({
   'GET /v1/groups': () => Response.json({ items: GROUPS }),
   'GET /v1/me/entitlements': () => Response.json(ENT),
   [`POST /v1/practice/items/item-4/answer`]: () => Response.json(result()),
+  'POST /v1/practice/items/item-4/review': () => Response.json({ action: 'needs_review', item_id: 'item-4', level: 1 }),
   [`POST /v1/practice/sessions/${SESSION}/next`]: () => Response.json({ state: 'question', session: view({ asked: 5 }), item: trueFalse() }),
   [`POST /v1/practice/sessions/${SESSION}/finish`]: () => Response.json({ session: view({ status: 'finished' }) }),
   [`GET /v1/practice/sessions/${SESSION}/summary`]: () => Response.json(SUMMARY),
@@ -88,6 +89,174 @@ type Call = { method: string; path: string; body: unknown; headers: Record<strin
 const posts = (calls: Call[], path: string) => calls.filter((c) => c.method === 'POST' && c.path === path);
 
 describe('PracticeSession (K/60–K/67)', () => {
+  const cases = [
+    { id: 1, title: 'A16-1: case 1, Enter → review known, then next', answer: { result: 'correct', show_known: true, highlight_needs_review: false }, primary: 'Đã biết', action: 'known', note: 'Nhấn Enter là Đã biết: deploy lên một ngăn. Chưa chắc thì bấm Cần ôn lại.' },
+    { id: 2, title: 'A16-4: case 2, Enter → next only', answer: { result: 'correct', show_known: false, hint_level: 0, highlight_needs_review: false }, primary: 'Câu tiếp', action: null, note: 'deploy chưa tới hạn ôn nên lịch ôn giữ nguyên.' },
+    { id: 3, title: 'A16-4: case 3, Enter → next only', answer: { result: 'correct', show_known: false, hint_level: 1, highlight_needs_review: false }, primary: 'Câu tiếp', action: null, note: 'Dùng gợi ý vẫn được chấm như thường, nhưng câu đúng nhờ gợi ý không có nút Đã biết.' },
+    { id: 4, title: 'A16-2: case 4, Enter → review needs_review, then next', answer: { result: 'wrong', show_known: false, highlight_needs_review: true }, primary: 'Cần ôn lại', action: 'needs_review', note: 'Nhấn Enter để đưa deploy lên đầu nhóm, về ngăn 1. Câu tiếp: giữ lịch ôn.' },
+  ];
+
+  it.each(cases)('$title', async ({ id, answer, primary, action, note }) => {
+    const v = renderApp(<PracticeSession />, { routes: routes({
+      'POST /v1/practice/items/item-4/answer': () => Response.json(result(answer)),
+    }) });
+    await screen.findByText('triển khai');
+    await userEvent.keyboard('1');
+    expect(await screen.findByText(note)).toBeInTheDocument();
+    const buttons = screen.getAllByRole('button').filter((b) => /^(Cần ôn lại|Đã biết|Câu tiếp)/.test(b.textContent ?? ''));
+    expect(buttons.map((b) => b.textContent)).toEqual(id === 1 ? ['Cần ôn lại1', 'Đã biếtEnter'] : id === 4 ? ['Cần ôn lạiEnter', 'Câu tiếp'] : ['Cần ôn lại1', 'Câu tiếpEnter']);
+    const bold = screen.getByRole('button', { name: new RegExp(primary) });
+    expect(bold.querySelector('kbd')).toHaveTextContent('Enter');
+    expect(bold).toHaveAttribute('data-variant', 'sticker');
+    expect(bold).toHaveClass('font-bold');
+    expect(buttons.find((b) => b !== bold)).toHaveAttribute('data-variant', 'quiet');
+    expect(bold.parentElement).toHaveClass('sm:grid-cols-2');
+    await userEvent.keyboard('{Enter}');
+    await screen.findByText('server');
+    const reviewPath = '/v1/practice/items/item-4/review';
+    const nextPath = `/v1/practice/sessions/${SESSION}/next`;
+    expect(posts(v.calls, reviewPath).map((c) => c.body)).toEqual(action ? [{ action }] : []);
+    expect(posts(v.calls, nextPath)).toHaveLength(1);
+    expect(v.calls.filter((c) => c.method === 'POST' && [reviewPath, nextPath].includes(c.path)).map((c) => c.path)).toEqual(action ? [reviewPath, nextPath] : [nextPath]);
+  });
+
+  it.each([
+    { answer: { result: 'correct', show_known: true, highlight_needs_review: false }, note: 'Enter means Know: deploy moves up a stage. Not sure? Choose Still learning.' },
+    { answer: { result: 'correct', show_known: false, highlight_needs_review: false, hint_level: 0 }, note: "deploy isn't due yet, so its schedule stays the same." },
+    { answer: { result: 'correct', show_known: false, highlight_needs_review: false, hint_level: 1 }, note: "Hints don't change the grading, but a right answer after a hint has no Know button." },
+    { answer: { result: 'wrong', show_known: false, highlight_needs_review: true }, note: 'Enter moves deploy to the top of its deck, back to stage 1. Next question keeps its schedule.' },
+  ])('English result note: $note', async ({ answer, note }) => {
+    renderApp(<PracticeSession />, { locale: 'en', routes: routes({ 'POST /v1/practice/items/item-4/answer': () => Response.json(result(answer)) }) });
+    await screen.findByText('triển khai');
+    await userEvent.keyboard('1');
+    expect(await screen.findByText(note)).toHaveClass('text-caption', 'text-muted');
+  });
+
+  it.each([
+    { name: 'A16-3: case 4, [Next question] → next only', answer: {}, secondary: 'Câu tiếp', action: null, keyboard: false },
+    { name: 'A16-7: case 4, focus secondary + Enter → next only', answer: {}, secondary: 'Câu tiếp', action: null, keyboard: true },
+    { name: 'A16-7: case 1, focus secondary + Enter → needs_review', answer: { result: 'correct', show_known: true, highlight_needs_review: false }, secondary: 'Cần ôn lại', action: 'needs_review', keyboard: true },
+  ])('$name', async ({ answer, secondary, action, keyboard }) => {
+    const v = renderApp(<PracticeSession />, { routes: routes({ 'POST /v1/practice/items/item-4/answer': () => Response.json(result(answer)) }) });
+    await screen.findByText('triển khai');
+    await userEvent.keyboard('1');
+    const button = await screen.findByRole('button', { name: new RegExp(secondary) });
+    if (keyboard) {
+      button.focus();
+      await userEvent.keyboard('{Enter}');
+    } else await userEvent.click(button);
+    await screen.findByText('server');
+    expect(posts(v.calls, '/v1/practice/items/item-4/review').map((c) => c.body)).toEqual(action ? [{ action }] : []);
+    expect(posts(v.calls, `/v1/practice/sessions/${SESSION}/next`)).toHaveLength(1);
+  });
+
+  it('wrong while not in learning → only Next question; Enter → next only', async () => {
+    const v = renderApp(<PracticeSession />, { routes: routes({
+      'POST /v1/practice/items/item-4/answer': () => Response.json(result({ highlight_needs_review: false })),
+    }) });
+    await screen.findByText('triển khai');
+    await userEvent.keyboard('1');
+    const next = await screen.findByRole('button', { name: /Câu tiếp/ });
+    expect(next).toHaveAttribute('data-variant', 'sticker');
+    expect(screen.queryByRole('button', { name: /Cần ôn lại|Đã biết/ })).not.toBeInTheDocument();
+    expect(screen.getByText('deploy · triển khai (phần mềm)')).toBeInTheDocument();
+    expect(next.parentElement?.nextElementSibling).toBeNull();
+    await userEvent.keyboard('12');
+    expect(posts(v.calls, '/v1/practice/items/item-4/review')).toHaveLength(0);
+    expect(posts(v.calls, `/v1/practice/sessions/${SESSION}/next`)).toHaveLength(0);
+    await userEvent.keyboard('{Enter}');
+    await screen.findByText('server');
+    expect(posts(v.calls, '/v1/practice/items/item-4/review')).toHaveLength(0);
+    expect(posts(v.calls, `/v1/practice/sessions/${SESSION}/next`)).toHaveLength(1);
+  });
+
+  it.each(cases.flatMap((c) => ['1', '2'].map((key) => ({ ...c, key }))))('case $id: key $key follows its available review action', async ({ id, answer, key }) => {
+    const v = renderApp(<PracticeSession />, { routes: routes({ 'POST /v1/practice/items/item-4/answer': () => Response.json(result(answer)) }) });
+    await screen.findByText('triển khai');
+    await userEvent.keyboard('1');
+    await screen.findByRole('button', { name: /Cần ôn lại/ });
+    // Repeats of either shortcut must be inert too.
+    fireEvent.keyDown(document.body, { key: '1', repeat: true });
+    fireEvent.keyDown(document.body, { key: '2', repeat: true });
+    expect(posts(v.calls, '/v1/practice/items/item-4/review')).toHaveLength(0);
+    await userEvent.keyboard(key);
+    if (key === '2' && id !== 1) {
+      expect(posts(v.calls, '/v1/practice/items/item-4/review')).toHaveLength(0);
+      expect(posts(v.calls, `/v1/practice/sessions/${SESSION}/next`)).toHaveLength(0);
+      return;
+    }
+    await screen.findByText('server');
+    expect(posts(v.calls, '/v1/practice/items/item-4/review').map((c) => c.body)).toEqual([{ action: key === '2' ? 'known' : 'needs_review' }]);
+    expect(posts(v.calls, `/v1/practice/sessions/${SESSION}/next`)).toHaveLength(1);
+  });
+
+  it('held Enter (repeat) → one review and one next per question', async () => {
+    let release!: () => void;
+    let nextCount = 0;
+    const v = renderApp(<PracticeSession />, { routes: routes({
+      'POST /v1/practice/items/item-4/review': () => new Promise((resolve) => { release = () => resolve(Response.json({ action: 'needs_review' })); }),
+      'POST /v1/practice/items/item-5/answer': () => Response.json(result()),
+      'POST /v1/practice/items/item-5/review': () => Response.json({ action: 'needs_review' }),
+      [`POST /v1/practice/sessions/${SESSION}/next`]: () => Response.json({ state: 'question', session: view(), item: ++nextCount === 1 ? trueFalse() : typed() }),
+    }) });
+    await screen.findByText('triển khai');
+    await userEvent.keyboard('1');
+    await screen.findByText('Chưa đúng');
+    fireEvent.keyDown(document.body, { key: 'Enter' });
+    await waitFor(() => expect(posts(v.calls, '/v1/practice/items/item-4/review')).toHaveLength(1));
+    for (let i = 0; i < 3; i++) fireEvent.keyDown(document.body, { key: 'Enter', repeat: true });
+    expect(posts(v.calls, `/v1/practice/sessions/${SESSION}/next`)).toHaveLength(0);
+    await act(async () => release());
+    await screen.findByText('server');
+    for (let i = 0; i < 3; i++) fireEvent.keyDown(document.body, { key: 'Enter', repeat: true });
+    await userEvent.keyboard('1');
+    await screen.findByText('Chưa đúng');
+    for (let i = 0; i < 3; i++) fireEvent.keyDown(document.body, { key: 'Enter', repeat: true });
+    expect(posts(v.calls, '/v1/practice/items/item-4/review')).toHaveLength(1);
+    expect(posts(v.calls, '/v1/practice/items/item-5/review')).toHaveLength(0);
+    expect(posts(v.calls, `/v1/practice/sessions/${SESSION}/next`)).toHaveLength(1);
+    fireEvent.keyDown(document.body, { key: 'Enter' });
+    await screen.findByText('bộ nhớ đệm');
+    expect(posts(v.calls, '/v1/practice/items/item-5/review')).toHaveLength(1);
+    expect(posts(v.calls, `/v1/practice/sessions/${SESSION}/next`)).toHaveLength(2);
+  });
+
+  it('A16-5: network error on review keeps the result, shows failed, and permits a safe retry', async () => {
+    let attempts = 0;
+    const v = renderApp(<PracticeSession />, { routes: routes({
+      'POST /v1/practice/items/item-4/review': () => {
+        if (++attempts === 1) throw new TypeError('network');
+        return Response.json({ action: 'needs_review' });
+      },
+    }) });
+    await screen.findByText('triển khai');
+    await userEvent.keyboard('1');
+    await screen.findByText('Chưa đúng');
+    await userEvent.keyboard('{Enter}');
+    expect(await screen.findByRole('alert')).toHaveTextContent('Chưa lưu được câu trả lời. Kiểm tra mạng rồi bấm lại.');
+    expect(screen.getByText('Chưa đúng')).toBeInTheDocument();
+    expect(posts(v.calls, `/v1/practice/sessions/${SESSION}/next`)).toHaveLength(0);
+    await userEvent.keyboard('{Enter}');
+    await screen.findByText('server');
+    expect(posts(v.calls, '/v1/practice/items/item-4/review').map((c) => c.body)).toEqual([{ action: 'needs_review' }, { action: 'needs_review' }]);
+    expect(posts(v.calls, `/v1/practice/sessions/${SESSION}/next`)).toHaveLength(1);
+  });
+
+  it('A16-6: 409 known-not-allowed stays on the result and shows the existing error', async () => {
+    const v = renderApp(<PracticeSession />, { routes: routes({
+      'POST /v1/practice/items/item-4/answer': () => Response.json(result({ result: 'correct', show_known: true, highlight_needs_review: false })),
+      'POST /v1/practice/items/item-4/review': () => problem(409, 'known-not-allowed'),
+    }) });
+    await screen.findByText('triển khai');
+    await userEvent.keyboard('1');
+    await screen.findByText('Đúng rồi');
+    await userEvent.keyboard('{Enter}');
+    expect(await screen.findByRole('alert')).toHaveTextContent('Có lỗi xảy ra. Thử lại sau.');
+    expect(screen.getByRole('button', { name: /Đã biết/ })).toBeEnabled();
+    expect(posts(v.calls, '/v1/practice/items/item-4/review').map((c) => c.body)).toEqual([{ action: 'known' }]);
+    expect(posts(v.calls, `/v1/practice/sessions/${SESSION}/next`)).toHaveLength(0);
+  });
+
   it('Review Focus 4: a reload resumes through GET current — position, progress and the open question', async () => {
     renderApp(<PracticeSession />, { routes: routes() });
     expect(await screen.findByText('triển khai')).toBeInTheDocument();
@@ -311,12 +480,13 @@ describe('PracticeSession (K/60–K/67)', () => {
     expect(screen.getByText('Chữ cái đầu')).toBeInTheDocument();
   });
 
-  it('after a typed answer is graded, Enter (focus still in the field) goes to the next question', async () => {
+  it('after a typed answer is graded, Enter (focus still in the field) reviews known and goes to the next question', async () => {
     const v = renderApp(<PracticeSession />, {
       routes: routes({
         'GET /v1/practice/sessions/current': () => Response.json({ session: view({ asked: 6 }), item: typed(), preparing: false }),
         'POST /v1/practice/items/item-6/answer': () =>
           Response.json(result({ result: 'correct', correct: { lemma: 'cache', text: 'cache', choice_index: null, is_true: null }, meaning: 'bộ nhớ đệm', show_known: true, highlight_needs_review: false })),
+        'POST /v1/practice/items/item-6/review': () => Response.json({ action: 'known', item_id: 'item-6', level: 3 }),
       }),
     });
     const input = await screen.findByRole('textbox', { name: 'Câu trả lời' });
@@ -325,6 +495,7 @@ describe('PracticeSession (K/60–K/67)', () => {
     expect(input).toHaveFocus();
     await userEvent.keyboard('{Enter}');
     await waitFor(() => expect(posts(v.calls, `/v1/practice/sessions/${SESSION}/next`)).toHaveLength(1));
+    expect(posts(v.calls, '/v1/practice/items/item-6/review').map((c) => c.body)).toEqual([{ action: 'known' }]);
   });
 
   it('M4 review: Esc in the answer field leaves the field first; it does not end the session', async () => {

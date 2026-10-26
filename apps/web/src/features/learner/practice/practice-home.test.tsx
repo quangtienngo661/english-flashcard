@@ -161,7 +161,7 @@ describe('PracticePage (K/51)', () => {
   it('the shortcuts box lists the session keys with [Kiểm tra] wording (copy doc §17)', async () => {
     renderApp(<PracticePage />, { routes: routes() });
     const box = await screen.findByRole('region', { name: 'Phím tắt trong phiên' });
-    expect(within(box).getByText('Kiểm tra, sang câu tiếp')).toBeInTheDocument();
+    expect(within(box).getByText('Kiểm tra, rồi nút đậm')).toBeInTheDocument();
   });
 });
 

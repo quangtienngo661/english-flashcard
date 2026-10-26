@@ -1041,7 +1041,7 @@
       "shortcuts": {
         "title": "Phím tắt trong phiên",
         "choose": "Chọn đáp án",
-        "check": "Kiểm tra, sang câu tiếp",
+        "check": "Kiểm tra, rồi nút đậm",
         "hint": "Xem gợi ý",
         "stop": "Dừng phiên, xem tổng kết"
       },
@@ -1161,8 +1161,8 @@
         "stillLearning": "Cần ôn lại",
         "know": "Đã biết",
         "next": "Câu tiếp",
-        "noteWrong": "Wordmet không tự đổi lịch ôn. Bấm Cần ôn lại để đưa {lemma} lên đầu nhóm, về ngăn 1 ngày.",
-        "noteRight": "Bấm Cần ôn lại hoặc Đã biết cũng sang câu tiếp.",
+        "noteWrong": "Nhấn Enter để đưa {lemma} lên đầu nhóm, về ngăn 1. Câu tiếp: giữ lịch ôn.",
+        "noteKnowEnter": "Nhấn Enter là Đã biết: {lemma} lên một ngăn. Chưa chắc thì bấm Cần ôn lại.",
         "noteHint": "Dùng gợi ý vẫn được chấm như thường, nhưng câu đúng nhờ gợi ý không có nút Đã biết.",
         "phoneHint": "Bấm vào đáp án. Chọn xong là chấm luôn.",
         "failed": "Chưa lưu được câu trả lời. Kiểm tra mạng rồi bấm lại.",
@@ -1225,7 +1225,7 @@
           "home": "Về Luyện tập",
           "again": "Luyện thêm một phiên"
         },
-        "noteRightNoKnow": "Bấm Cần ôn lại hoặc Câu tiếp để sang câu tiếp."
+        "noteNotDue": "{lemma} chưa tới hạn ôn nên lịch ôn giữ nguyên."
       },
       "weak": {
         "title": "Từ hay sai",

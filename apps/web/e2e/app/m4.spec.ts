@@ -96,15 +96,17 @@ function practiceApi({ long = false, open = false, used = 1 } = {}): Record<stri
     }),
     [`POST /v1/practice/items/${uuid(501)}/answer`]: (req) => ({ json: result((req.body as { choice: number }).choice === 0, 'deploy', 'triển khai') }),
     [`POST /v1/practice/items/${uuid(501)}/hint`]: () => ({ json: { level: 1, hint: { kind: 'definition', text: 'to start using a new system' } } }),
-    [`POST /v1/practice/items/${uuid(501)}/review`]: () => ({ json: { action: 'needs_review', item_id: uuid(501), level: 1, due_date: '2026-10-23', priority: true } }),
+    [`POST /v1/practice/items/${uuid(501)}/review`]: (req) => ({ json: { action: (req.body as { action: string }).action, item_id: uuid(501), level: 1, due_date: '2026-10-23', priority: true } }),
     [`POST /v1/practice/items/${uuid(501)}/report`]: () => ({ status: 201, json: { id: uuid(701) } }),
     [`POST /v1/practice/items/${uuid(502)}/answer`]: () => ({ json: result(true, 'server', 'máy chủ') }),
+    [`POST /v1/practice/items/${uuid(502)}/review`]: () => ({ json: { action: 'known', item_id: uuid(502), level: 3, due_date: '2026-10-26', priority: false } }),
     [`POST /v1/practice/items/${uuid(503)}/answer`]: (req) => {
       typedTries += 1;
       if (typedTries === 1) return { json: { result: 'try_again', tries: 1 } };
       return { json: result((req.body as { text: string }).text === 'cache', 'cache', 'bộ nhớ đệm', { tries: 2, show_known: false }) };
     },
     [`POST /v1/practice/items/${uuid(504)}/answer`]: () => ({ json: result(true, 'cache', 'bộ nhớ đệm') }),
+    [`POST /v1/practice/items/${uuid(504)}/review`]: () => ({ json: { action: 'known', item_id: uuid(504), level: 3, due_date: '2026-10-26', priority: false } }),
     'GET /v1/practice/report-reasons': () => ({
       json: { items: [
         { code: 'meaning_wrong', label: 'Nghĩa sai', detail_hint: null, note_required: false },
@@ -165,9 +167,10 @@ test.describe('M4 flows (mocked API)', () => {
 
     // True/false, right.
     await expect(page.getByText(vi.session.ask.true_false)).toBeVisible();
+    expect(requests(page, 'POST', `/v1/practice/items/${uuid(501)}/review`).map((r) => r.body)).toEqual([{ action: 'needs_review' }]);
     await page.getByRole('button', { name: /1 Đúng/ }).click();
     await expect(page.getByText(vi.session.right, { exact: true })).toBeVisible();
-    await page.getByRole('button', { name: /Câu tiếp/ }).click();
+    await page.getByRole('button', { name: /Đã biết/ }).click();
 
     // Typing: a miss, then the right word.
     const answer = page.getByRole('textbox', { name: vi.session.answerLabel });
@@ -186,10 +189,13 @@ test.describe('M4 flows (mocked API)', () => {
     await page.getByRole('textbox', { name: vi.session.answerLabel }).fill('cache');
     await page.keyboard.press('Enter');
     await expect(page.getByText(vi.session.right, { exact: true })).toBeVisible();
-    await page.getByRole('button', { name: /Câu tiếp/ }).click();
+    await page.getByRole('button', { name: /Đã biết/ }).click();
     await expect(page.getByRole('heading', { name: 'Xong 4 câu.' })).toBeVisible();
     await page.getByRole('list', { name: /Cần ôn lại · 1 từ/ }).getByRole('button', { name: vi.session.summary.review }).click();
-    await expect.poll(() => requests(page, 'POST', `/v1/practice/items/${uuid(501)}/review`).length).toBe(1);
+    await expect.poll(() => requests(page, 'POST', `/v1/practice/items/${uuid(501)}/review`).length).toBe(2);
+    expect(requests(page, 'POST', `/v1/practice/items/${uuid(502)}/review`).map((r) => r.body)).toEqual([{ action: 'known' }]);
+    expect(requests(page, 'POST', `/v1/practice/items/${uuid(503)}/review`)).toHaveLength(0);
+    expect(requests(page, 'POST', `/v1/practice/items/${uuid(504)}/review`).map((r) => r.body)).toEqual([{ action: 'known' }]);
     expect(requests(page, 'POST', `/v1/practice/items/${uuid(501)}/answer`)[0].headers['idempotency-key']).toBeTruthy();
   });
 
@@ -294,6 +300,35 @@ async function noSideScroll(page: Page, where: string) {
 
 for (const scheme of ['light', 'dark'] as const) {
   for (const locale of ['vi', 'en'] as const) {
+    // The desktop/mobile projects cover 1440/390 px for both result cases.
+    test(`axe and overflow: case 1 and case 4 feedback (${locale}, ${scheme})`, async ({ page }) => {
+      test.setTimeout(120_000);
+      await page.emulateMedia({ colorScheme: scheme });
+      const t = copy[locale].App.practice.session;
+      for (const kind of [1, 4] as const) {
+        await signedInAs(page, 'free', {
+          ...practiceApi({ long: true, open: true }),
+          [`POST /v1/practice/items/${uuid(501)}/answer`]: () => ({ json: result(kind === 1, 'deploy', LONG_MEANING) }),
+        }, { native_language: locale });
+        await page.goto(`/${locale}/app/practice/session`);
+        await expect(page.getByText(LONG_MEANING, { exact: true })).toBeVisible();
+        await page.keyboard.press(kind === 1 ? '1' : '2');
+        const primary = page.getByRole('button', { name: new RegExp(kind === 1 ? t.know : t.stillLearning) });
+        await expect(primary).toBeVisible();
+        await expect(primary).toHaveAttribute('data-variant', 'sticker');
+        await expect(primary.locator('kbd')).toHaveText('Enter');
+        await expect(page.getByRole('button', { name: new RegExp(kind === 1 ? t.stillLearning : t.next) })).toHaveAttribute('data-variant', 'quiet');
+        if (kind === 1) await expect(page.getByRole('button', { name: new RegExp(t.next) })).toHaveCount(0);
+        const where = `${locale} case ${kind} feedback (${scheme})`;
+        await noSideScroll(page, where);
+        expect(await seriousViolations(page), where).toEqual([]);
+        await page.keyboard.press('Enter');
+        await expect(page.getByText(t.ask.true_false)).toBeVisible();
+        expect(requests(page, 'POST', `/v1/practice/items/${uuid(501)}/review`).map((r) => r.body)).toEqual([{ action: kind === 1 ? 'known' : 'needs_review' }]);
+        expect(requests(page, 'POST', `/v1/practice/sessions/${SESSION}/next`)).toHaveLength(1);
+      }
+    });
+
     test(`axe and overflow: M4 pages with long content (${locale}, ${scheme})`, async ({ page }) => {
       test.setTimeout(240_000);
       await page.emulateMedia({ colorScheme: scheme });
@@ -322,7 +357,7 @@ test('long typed answer stays inside the screen (Review Focus 2)', async ({ page
   await page.keyboard.press('Enter');
   await page.getByRole('button', { name: /1 Đúng/ }).click();
   await expect(page.getByText(vi.session.right, { exact: true })).toBeVisible();
-  await page.getByRole('button', { name: /Câu tiếp/ }).click();
+  await page.getByRole('button', { name: /Đã biết/ }).click();
   await page.getByRole('textbox', { name: vi.session.answerLabel }).fill('x'.repeat(100));
   await noSideScroll(page, 'typed answer');
 });
