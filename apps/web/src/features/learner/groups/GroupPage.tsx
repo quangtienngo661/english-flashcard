@@ -101,9 +101,9 @@ function GroupBody({ detail }: { detail: GroupDetail }) {
 
   return (
     <div className="grid gap-6 lg:grid-cols-3">
-      <section className="flex flex-col gap-4 rounded-card border border-border bg-surface p-5 lg:col-span-1 lg:self-start">
+      <section className="flex min-w-0 flex-col gap-4 rounded-card border border-border bg-surface p-5 lg:col-span-1 lg:self-start">
         <div>
-          <h1 className="break-words text-h2 font-extrabold text-ink">{detail.name}</h1>
+          <h1 className="wrap-anywhere text-h2 font-extrabold text-ink">{detail.name}</h1>
           <p className="text-caption text-muted">{t('meta', { count: detail.item_count, date: created })}</p>
         </div>
         {summary && (
