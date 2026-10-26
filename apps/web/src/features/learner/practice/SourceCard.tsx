@@ -54,14 +54,6 @@ export function SourceCard({ name, icon: Icon, tone, body, chips, startLabel, on
             <span className="truncate">{name}</span>
           )}
         </h3>
-        <button
-          type="button"
-          aria-label={t('customize', { name })}
-          onClick={onCustomize}
-          className="shrink-0 rounded-sm p-1 text-ink outline-none hover:bg-surface focus-visible:ring-2 focus-visible:ring-primary"
-        >
-          <SlidersHorizontal aria-hidden className="size-4" />
-        </button>
       </div>
       <p className="text-caption text-muted">{body}</p>
       <div className="flex min-h-7 flex-wrap gap-1.5">{chips}</div>
@@ -71,18 +63,24 @@ export function SourceCard({ name, icon: Icon, tone, body, chips, startLabel, on
             {error}
           </p>
         )}
-        {reopensAt ? (
+        {reopensAt && (
           <p className="flex items-center gap-2 text-ui font-semibold text-ink">
             <History aria-hidden className="size-4" />
             {t('reopens', { time: reopensAt })}
           </p>
-        ) : (
-          startLabel && (
-            <Button variant="quiet" className="w-full" isPending={busy} onPress={onStart}>
+        )}
+        {/* Owner 27/10/2026: [Tùy chỉnh] is a visible button next to the start, not an icon in the corner. */}
+        <div className="flex gap-2">
+          {!reopensAt && startLabel && (
+            <Button variant="quiet" className="min-w-0 flex-1" isPending={busy} onPress={onStart}>
               <span className="truncate">{startLabel}</span>
             </Button>
-          )
-        )}
+          )}
+          <Button variant="quiet" className={startLabel && !reopensAt ? 'shrink-0' : 'w-full'} aria-label={t('customize', { name })} onPress={onCustomize}>
+            <SlidersHorizontal aria-hidden className="size-4" />
+            {t('customizeButton')}
+          </Button>
+        </div>
       </div>
     </li>
   );
