@@ -75,7 +75,8 @@
     "loadMore": "Load more",
     "loading": "Loading…",
     "close": "Close",
-    "systemUser": "System"
+    "systemUser": "System",
+    "unsavedChanges": "(unsaved changes)"
   },
   "shell": {
     "brand": "Wordmet Admin",
@@ -144,7 +145,8 @@
     "loading": "Loading…",
     "error": "Could not load the list",
     "empty": "Nothing here yet",
-    "shown": "{count} items shown"
+    "shown": "{count} items shown",
+    "selectAll": "Select all on this page"
   },
   "account": {
     "login": {
@@ -658,5 +660,354 @@
     "undone": "Removed “{form}” from the forms of “{lemma}”.",
     "empty": "No forms to review yet.",
     "emptyHint": "When the AI uses a form the table does not know, it shows up here."
+  },
+  "settings": {
+    "tabsLabel": "Setting groups",
+    "tabs": {
+      "reminders": "Reminders",
+      "learning": "Learning and review",
+      "practice": "Practice",
+      "entitlements": "Plans and quotas",
+      "content": "Content",
+      "ai": "AI"
+    },
+    "save": "Save changes",
+    "saved": "Saved",
+    "history": "Change history",
+    "outOfRange": "This value is outside the allowed range.",
+    "reload": "Reload",
+    "reloadTitle": "Reload the settings?",
+    "reloadBody": "Unsaved changes will be lost.",
+    "emailTemplates": "Email templates: to be discussed.",
+    "hint": {
+      "default": "default {value}",
+      "on": "on",
+      "off": "off",
+      "onOff": "on/off",
+      "empty": "empty",
+      "orEmpty": "or empty = {meaning}",
+      "zero": "0 = {meaning}",
+      "step": "every {minutes} minutes"
+    },
+    "emptyMeaning": {
+      "noLimit": "no limit",
+      "renewal_notice_days_before": "not sent",
+      "ai_cap_alert_percent": "no yellow alert"
+    },
+    "zeroMeaning": {
+      "ai_prefetch_count": "off",
+      "content_retention_days": "not kept"
+    },
+    "cross": {
+      "stop_after_days": "and greater than the field above",
+      "default_questions_per_session": "and ≤ the maximum",
+      "pro_practice_sessions_per_day": "and ≥ the Free plan"
+    },
+    "units": {
+      "days": "days",
+      "hours": "hours",
+      "minutes": "minutes",
+      "months": "months",
+      "percent": "%",
+      "chars": "characters",
+      "seconds": "seconds",
+      "sessions": "sessions",
+      "uses": "uses",
+      "times": "times"
+    },
+    "fields": {
+      "reminders": {
+        "enabled": "Reminders on for the whole system",
+        "send_time": "Send time, in the learner’s time",
+        "min_gap_days": "Minimum gap between two reminder emails",
+        "inactive_after_days": "Away for how long before “It’s been a while”",
+        "stop_after_days": "Away for how long before reminders stop"
+      },
+      "learning": {
+        "new_per_group_per_day": "New words per group per day",
+        "reviews_per_group_per_day": "Reviews per group per day",
+        "backlog_after_days": "Overdue for how long before the backlog list",
+        "groups_per_user": "Groups per person",
+        "items_per_group": "Words per group"
+      },
+      "practice": {
+        "max_questions_per_session": "Maximum questions per session",
+        "default_questions_per_session": "Default questions per session",
+        "history_months": "Keep practice history for",
+        "true_false_true_percent": "Share of true pairs in True/False",
+        "idle_session_close_hours": "Close an abandoned session after",
+        "reports_per_hour": "Reports per hour per person",
+        "hint_definition_max_chars": "Maximum length of a definition used as a hint",
+        "type_word_max_retries": "Retries after a wrong typed answer",
+        "ai_prefetch_count": "AI questions generated ahead"
+      },
+      "entitlements": {
+        "free_practice_sessions_per_day": "Practice sessions per day, Free plan",
+        "pro_practice_sessions_per_day": "Practice sessions per day, Pro and Trial",
+        "pro_ai_practice_per_cycle": "AI questions per month, Pro",
+        "pro_ai_lookup_per_cycle": "AI lookups per month, Pro",
+        "trial_ai_practice_per_cycle": "AI questions per month, Trial",
+        "trial_ai_lookup_per_cycle": "AI lookups per month, Trial",
+        "grace_days": "Grace days",
+        "trial_reminder_days_before": "Remind before the trial ends",
+        "renewal_notice_days_before": "Remind before renewal",
+        "ai_enabled": "AI on for the whole system",
+        "ai_daily_cap": "Daily AI cap, whole system",
+        "ai_cap_alert_percent": "Turn yellow at",
+        "ads_enabled": "Ads on",
+        "ads_interstitial_per_day": "Full-screen ads per day",
+        "ads_min_interval_minutes": "Gap between two ads"
+      },
+      "content": {
+        "private_words_per_user": "Private words per person",
+        "sentences_per_sense": "Seen sentences per sense"
+      },
+      "ai": {
+        "call_timeout_seconds": "Timeout per call",
+        "max_concurrent_calls": "Concurrent calls",
+        "daily_provider_calls_cap": "Provider calls cap per day",
+        "content_retention_days": "Keep call content for",
+        "usd_vnd_rate": "USD → VND rate"
+      }
+    },
+    "aiUsage": {
+      "today": "AI uses today: {used}/{cap} ({percent}%)",
+      "split": "Confirmed {confirmed} · reserved {reserved}",
+      "zone": "Counted by the Vietnam day.",
+      "error": "Today’s AI uses could not be loaded."
+    },
+    "historyDialog": {
+      "title": "Change history",
+      "empty": "No changes yet.",
+      "change": "{old} → {new}",
+      "by": "{email} · {at}",
+      "unknownUser": "Deleted user"
+    }
+  },
+  "words": {
+    "search": "Search words",
+    "searchPlaceholder": "Search by word or other spelling",
+    "searchSubmit": "Search",
+    "pasteButton": "Paste a word list",
+    "filters": {
+      "all": "All",
+      "level": "Level",
+      "hasSense": "Senses",
+      "hasSenseHint": "Has senses counts retired senses too.",
+      "withSense": "Has senses",
+      "withoutSense": "No senses yet",
+      "conflict": "Levels disagree",
+      "batch": "Import batch"
+    },
+    "cols": {
+      "lemma": "Word",
+      "pos": "Part of speech",
+      "level": "Shown level",
+      "senses": "Senses",
+      "functionWord": "Function word",
+      "variants": "Other spellings"
+    },
+    "conflictBadge": "disagree",
+    "noSense": "No senses yet",
+    "senseCount": "{count, plural, one {# sense} other {# senses}}",
+    "published": "{count} published",
+    "drafts": "{count, plural, one {# draft} other {# drafts}}",
+    "retired": "{count} retired",
+    "yes": "Yes",
+    "no": "No",
+    "empty": "No word matches these filters.",
+    "footer": "{count} words shown · 20 per load",
+    "actions": "Actions",
+    "actionsFor": "Actions for {word}",
+    "editLevel": "Edit level",
+    "editVariants": "Edit other spellings",
+    "editFunctionWord": "Mark as function word",
+    "addSense": "Add a sense",
+    "save": "Save",
+    "saved": "Saved “{word}”",
+    "level": "Level",
+    "noLevel": "No level yet",
+    "levelTitle": "Level of “{word}”",
+    "levelHint": "This level replaces every source level on display.",
+    "functionWord": "Function word",
+    "functionWordTitle": "Function word “{word}”",
+    "auto": "Derived (now: {value})",
+    "variantsTitle": "Other spellings of “{word}”",
+    "noVariants": "No other spellings yet.",
+    "variantText": "Spelling",
+    "variantKind": "Kind",
+    "kinds": {
+      "spelling": "Other spelling",
+      "alias": "Alias"
+    },
+    "acceptedAsAnswer": "Accept when a learner types it",
+    "removeVariant": "Remove",
+    "addVariant": "Add a spelling",
+    "paste": {
+      "title": "Paste a word list",
+      "label": "Word list",
+      "hint": "One word per line: lemma,pos (at most 500 lines). Each new word comes with an empty sense to write.",
+      "tooMany": "{count} lines, at most {max}. Remove some and try again.",
+      "submit": "Add these words",
+      "summary": "Created {created} · already there {exists} · invalid {invalid}",
+      "line": "Line {line}",
+      "status": {
+        "created": "Created",
+        "exists": "Already there",
+        "invalid": "Invalid"
+      },
+      "writeSense": "Write the sense",
+      "invalid": "Needs lemma,pos with a valid part of speech.",
+      "caseWarning": "This word differs from an existing one only by letter case."
+    }
+  },
+  "senses": {
+    "filters": {
+      "all": "All",
+      "status": "Status",
+      "level": "Level",
+      "pos": "Part of speech",
+      "topic": "Topic",
+      "batch": "Import batch",
+      "statuses": {
+        "unpublishable": "Missing content",
+        "open_draft": "Open draft",
+        "published": "Published"
+      }
+    },
+    "archived": "archived",
+    "cols": {
+      "lemma": "Word",
+      "pos": "Part of speech",
+      "gloss": "Vietnamese meaning",
+      "level": "Level",
+      "status": "Status",
+      "revision": "Revision",
+      "missing": "Missing"
+    },
+    "status": {
+      "draft": "Draft",
+      "reviewed": "Reviewed",
+      "published": "Published",
+      "rejected": "Rejected",
+      "superseded": "Superseded",
+      "unpublished": "Removed from the app",
+      "retired": "Retired",
+      "none": "No content yet"
+    },
+    "openEdit": "#{revision} · open edit",
+    "empty": "No sense matches these filters.",
+    "footer": "{count} senses shown · 20 per load",
+    "bulk": {
+      "region": "Bulk actions",
+      "selected": "{count} selected",
+      "pick": "Select {word}",
+      "tooMany": "At most {max} senses at a time.",
+      "actions": {
+        "review": "Mark reviewed",
+        "reject": "Reject",
+        "publish": "Publish",
+        "unpublish": "Remove from the app",
+        "retire": "Retire"
+      },
+      "confirm": {
+        "unpublish": {
+          "title": "Remove {count} senses from the app?",
+          "body": "Learners no longer see these senses until they are published again."
+        },
+        "retire": {
+          "title": "Retire {count} senses?",
+          "body": "A retired sense can no longer be edited or published."
+        }
+      },
+      "resultTitle": "Result",
+      "summary": "{ok} succeeded · {failed} could not be done",
+      "close": "Close",
+      "reasons": {
+        "stale-revision": "The sense changed, reload",
+        "publish-incomplete": "Content is missing",
+        "sense-retired": "The sense is retired",
+        "not-found": "Sense not found",
+        "sense-not-found": "Sense not found",
+        "revision-not-open": "This revision is no longer open for review",
+        "revision-rejected": "This revision was rejected",
+        "other": "Could not be done ({reason})"
+      },
+      "missing": {
+        "gloss-missing": "Vietnamese meaning",
+        "example-missing": "example sentence",
+        "level-missing": "level"
+      }
+    },
+    "detail": {
+      "back": "Senses",
+      "notFound": "This sense was not found. The link may be old.",
+      "noLevel": "no level yet",
+      "publishedWithEdit": "Published, with an open edit",
+      "content": "Content",
+      "gloss": "Vietnamese meaning",
+      "definition": "English definition",
+      "examples": "Example sentences (at most {max})",
+      "example": "Example sentence {n}",
+      "removeExample": "Remove example sentence {n}",
+      "addExample": "Add an example sentence",
+      "topics": "Topics",
+      "noTopics": "No topics yet.",
+      "acceptedForms": "Accepted forms",
+      "acceptedFormsHint": "Separated by commas, e.g. deploys, deployed, deploying",
+      "saveDraft": "Save draft",
+      "savePublish": "Save and publish",
+      "draftSaved": "Draft saved",
+      "published": "Saved and published",
+      "droppedTopics": "Archived topics were dropped: {topics}",
+      "stale": "This sense was just edited. Reload to see the new version.",
+      "reload": "Reload",
+      "incomplete": "{missing} missing, so it was not published.",
+      "people": "Last people (latest only)",
+      "reviewedBy": "Review: {email} · {at}",
+      "notReviewed": "Draft not reviewed yet",
+      "publishedBy": "Publish: {email}",
+      "stateChangedBy": "Last state change: {email} · {action} · {at}",
+      "stateActions": {
+        "open": "published",
+        "unpublished": "removed from the app",
+        "retired": "retired"
+      },
+      "unknownUser": "deleted user",
+      "lastOnly": "Only the latest is kept, no history."
+    }
+  },
+  "topics": {
+    "intro": "Rename, archive and use topics again. Topics are never deleted.",
+    "cols": {
+      "code": "Code",
+      "vi": "Vietnamese name",
+      "en": "English name",
+      "state": "Status"
+    },
+    "active": "In use",
+    "archived": "Archived",
+    "rename": "Rename",
+    "renameFor": "Rename {code}",
+    "archive": "Archive",
+    "archiveFor": "Archive {code}",
+    "restore": "Use again",
+    "restoreFor": "Use {code} again",
+    "addTitle": "Add a topic",
+    "renameTitle": "Rename topic “{code}”",
+    "add": "Add",
+    "save": "Save",
+    "code": "Code",
+    "codeHint": "Lower-case letters, digits and hyphens, e.g. food, daily-life. It cannot change later.",
+    "codeRule": "A code has only lower-case a–z, digits and hyphens.",
+    "exists": "A topic with this code exists. Pick another code.",
+    "nameVi": "Vietnamese name",
+    "nameEn": "English name",
+    "created": "Added topic “{code}”",
+    "renamed": "Renamed “{code}”",
+    "archivedToast": "Archived “{code}”",
+    "restoredToast": "“{code}” is in use again",
+    "empty": "No topics yet.",
+    "footer": "{count, plural, one {# topic} other {# topics}}"
   }
 }

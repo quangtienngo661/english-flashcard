@@ -16,6 +16,7 @@ import { NumberField } from './NumberField';
 import { RadioGroup } from './RadioGroup';
 import { Stat } from './Stat';
 import { Switch } from './Switch';
+import { Tabs } from './Tabs';
 import { TextArea } from './TextArea';
 import { TextField } from './TextField';
 
@@ -126,6 +127,63 @@ describe('DataList', () => {
     expect(selectedRows.map((r) => r.textContent)).toEqual([expect.stringContaining('b@x.co')]);
     const selectedCards = screen.getAllByTestId('card').filter((c) => c.hasAttribute('data-selected'));
     expect(selectedCards.map((c) => c.textContent)).toEqual([expect.stringContaining('b@x.co')]);
+  });
+
+  function Selectable({ onChange, initial = [] }: { onChange?: (next: Set<string>) => void; initial?: string[] }) {
+    const [selected, setSelected] = useState<ReadonlySet<string>>(new Set(initial));
+    return (
+      <DataList
+        rows={rows}
+        rowKey={(r) => r.id}
+        columns={columns}
+        state="ready"
+        selection={{
+          selected,
+          onChange: (next) => {
+            onChange?.(next);
+            setSelected(next);
+          },
+          label: (r) => `Select ${r.email}`,
+        }}
+      />
+    );
+  }
+
+  it('selection: toggling a row reports the new set; the table has a checkbox column', async () => {
+    const onChange = vi.fn();
+    wrap(<Selectable onChange={onChange} />);
+    const table = screen.getByRole('table');
+    expect(within(table).getAllByRole('columnheader')).toHaveLength(3);
+    await userEvent.click(within(table).getByRole('checkbox', { name: 'Select b@x.co' }));
+    expect([...onChange.mock.calls.at(-1)![0]]).toEqual(['2']);
+    expect(within(table).getByRole('checkbox', { name: 'Select b@x.co' })).toBeChecked();
+    await userEvent.click(within(table).getByRole('checkbox', { name: 'Select b@x.co' }));
+    expect([...onChange.mock.calls.at(-1)![0]]).toEqual([]);
+  });
+
+  it('selection: the header checkbox selects every row of the page, then clears them; partial is mixed', async () => {
+    const onChange = vi.fn();
+    wrap(<Selectable onChange={onChange} initial={['1', 'elsewhere']} />);
+    const all = within(screen.getByRole('table')).getByRole('checkbox', { name: en.list.selectAll });
+    expect(all).toBePartiallyChecked();
+    await userEvent.click(all);
+    expect([...onChange.mock.calls.at(-1)![0]].sort()).toEqual(['1', '2', 'elsewhere']);
+    await userEvent.click(within(screen.getByRole('table')).getByRole('checkbox', { name: en.list.selectAll }));
+    expect([...onChange.mock.calls.at(-1)![0]]).toEqual(['elsewhere']);
+  });
+
+  it('selection: each card has the same checkbox (390 layout)', async () => {
+    const onChange = vi.fn();
+    wrap(<Selectable onChange={onChange} />);
+    const card = screen.getAllByTestId('card')[0];
+    await userEvent.click(within(card).getByRole('checkbox', { name: 'Select a@x.co' }));
+    expect([...onChange.mock.calls.at(-1)![0]]).toEqual(['1']);
+  });
+
+  it('without selection there is no checkbox', () => {
+    wrap(<DataList rows={rows} rowKey={(r) => r.id} columns={columns} state="ready" />);
+    expect(screen.queryAllByRole('checkbox')).toHaveLength(0);
+    expect(screen.getAllByRole('columnheader')).toHaveLength(2);
   });
 
   it('delegates empty to ListState', () => {
@@ -445,5 +503,59 @@ describe('form controls: TextArea, Switch, NumberField, RadioGroup', () => {
     );
     expect(screen.getByText('9.000/8.000')).toBeInTheDocument();
     expect(screen.getByLabelText('Prompt')).toHaveAccessibleDescription('Plain text 9.000/8.000');
+  });
+});
+
+describe('Tabs', () => {
+  const items = [
+    { id: 'a', label: 'Alpha' },
+    { id: 'b', label: 'Beta', marked: true },
+    { id: 'c', label: 'Gamma' },
+  ];
+
+  function Controlled({ onSelect }: { onSelect?: (id: string) => void }) {
+    const [selected, setSelected] = useState('a');
+    return (
+      <Tabs
+        label="Sections"
+        items={items}
+        selected={selected}
+        onSelect={(id) => {
+          onSelect?.(id);
+          setSelected(id);
+        }}
+        aside={<a href="#history">History</a>}
+      >
+        {(id) => <p>panel {id}</p>}
+      </Tabs>
+    );
+  }
+
+  it('shows the selected panel only and reports a click', async () => {
+    const onSelect = vi.fn();
+    wrap(<Controlled onSelect={onSelect} />);
+    expect(screen.getByRole('tab', { name: 'Alpha' })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('tabpanel')).toHaveTextContent('panel a');
+    await userEvent.click(screen.getByRole('tab', { name: /Gamma/ }));
+    expect(onSelect).toHaveBeenLastCalledWith('c');
+    expect(screen.getByRole('tabpanel')).toHaveTextContent('panel c');
+    expect(screen.getByRole('link', { name: 'History' })).toBeInTheDocument();
+  });
+
+  it('arrow keys move the selection', async () => {
+    const onSelect = vi.fn();
+    wrap(<Controlled onSelect={onSelect} />);
+    await userEvent.click(screen.getByRole('tab', { name: 'Alpha' }));
+    await userEvent.keyboard('{ArrowRight}');
+    expect(onSelect).toHaveBeenLastCalledWith('b');
+    expect(screen.getByRole('tabpanel')).toHaveTextContent('panel b');
+  });
+
+  it('a marked tab carries a dot that is named for screen readers (§6.7)', () => {
+    wrap(<Controlled />);
+    const beta = screen.getByRole('tab', { name: /Beta/ });
+    expect(within(beta).getByTestId('tab-dot')).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /^Beta\s*\(unsaved changes\)$/ })).toBe(beta);
+    expect(within(screen.getByRole('tab', { name: 'Alpha' })).queryByTestId('tab-dot')).toBeNull();
   });
 });

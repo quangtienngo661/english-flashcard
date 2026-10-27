@@ -18,9 +18,9 @@ export type NavEntry = {
 /** 24 items in 6 groups: the admin sidebar of the copy doc §8.0 plus Giao dịch (design §4.4). */
 export const NAV: NavEntry[] = [
   { group: 'overview', path: '/dashboard', labelKey: 'nav.dashboard', needs: [], available: false },
-  { group: 'content', path: '/words', labelKey: 'nav.words', needs: ['content.edit'], available: false, etaNote: 'apiReady' },
-  { group: 'content', path: '/senses', labelKey: 'nav.senses', needs: ['content.edit'], available: false, etaNote: 'apiReady' },
-  { group: 'content', path: '/topics', labelKey: 'nav.topics', needs: ['taxonomy.manage'], available: false, etaNote: 'apiReady' },
+  { group: 'content', path: '/words', labelKey: 'nav.words', needs: ['content.edit'], available: true },
+  { group: 'content', path: '/senses', labelKey: 'nav.senses', needs: ['content.edit'], available: true },
+  { group: 'content', path: '/topics', labelKey: 'nav.topics', needs: ['taxonomy.manage'], available: true },
   { group: 'content', path: '/uploads', labelKey: 'nav.uploads', needs: ['content.import'], available: true },
   { group: 'content', path: '/publish-jobs', labelKey: 'nav.publishJobs', needs: ['content.publish'], available: true },
   { group: 'content', path: '/export', labelKey: 'nav.export', needs: ['content.edit'], available: true },
@@ -39,7 +39,7 @@ export const NAV: NavEntry[] = [
   { group: 'ai', path: '/ai/eval', labelKey: 'nav.aiEval', needs: ['settings.manage'], available: false },
   { group: 'ai', path: '/ai/costs', labelKey: 'nav.aiCosts', needs: ['settings.manage'], available: false, plannedStep: '6' },
   { group: 'ai', path: '/ai/calls', labelKey: 'nav.aiCalls', needs: ['settings.manage'], available: false },
-  { group: 'system', path: '/settings', labelKey: 'nav.settings', needs: ['settings.manage'], available: false },
+  { group: 'system', path: '/settings', labelKey: 'nav.settings', needs: ['settings.manage'], available: true },
   { group: 'system', path: '/staff', labelKey: 'nav.staff', needs: ['roles.manage'], available: true },
 ];
 

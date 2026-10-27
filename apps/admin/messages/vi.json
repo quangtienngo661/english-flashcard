@@ -75,7 +75,8 @@
     "loadMore": "Tải thêm",
     "loading": "Đang tải…",
     "close": "Đóng",
-    "systemUser": "Hệ thống"
+    "systemUser": "Hệ thống",
+    "unsavedChanges": "(có thay đổi chưa lưu)"
   },
   "shell": {
     "brand": "Wordmet Admin",
@@ -144,7 +145,8 @@
     "loading": "Đang tải…",
     "error": "Không tải được danh sách",
     "empty": "Chưa có mục nào",
-    "shown": "{count} mục đã hiển thị"
+    "shown": "{count} mục đã hiển thị",
+    "selectAll": "Chọn tất cả trên trang"
   },
   "account": {
     "login": {
@@ -658,5 +660,354 @@
     "undone": "Đã gỡ “{form}” khỏi dạng chia của “{lemma}”.",
     "empty": "Chưa có dạng chia nào cần xem.",
     "emptyHint": "Khi AI dùng một dạng bảng chưa biết, dạng đó hiện ở đây."
+  },
+  "settings": {
+    "tabsLabel": "Nhóm cài đặt",
+    "tabs": {
+      "reminders": "Nhắc học",
+      "learning": "Học và ôn",
+      "practice": "Luyện tập",
+      "entitlements": "Gói và lượt",
+      "content": "Nội dung",
+      "ai": "AI"
+    },
+    "save": "Lưu thay đổi",
+    "saved": "Đã lưu",
+    "history": "Lịch sử thay đổi",
+    "outOfRange": "Giá trị ngoài khoảng cho phép.",
+    "reload": "Tải lại",
+    "reloadTitle": "Tải lại cài đặt?",
+    "reloadBody": "Thay đổi chưa lưu sẽ mất.",
+    "emailTemplates": "Mẫu email: bàn sau.",
+    "hint": {
+      "default": "mặc định {value}",
+      "on": "bật",
+      "off": "tắt",
+      "onOff": "bật/tắt",
+      "empty": "để trống",
+      "orEmpty": "hoặc để trống = {meaning}",
+      "zero": "0 = {meaning}",
+      "step": "mỗi {minutes} phút"
+    },
+    "emptyMeaning": {
+      "noLimit": "không giới hạn",
+      "renewal_notice_days_before": "không gửi",
+      "ai_cap_alert_percent": "không tô vàng"
+    },
+    "zeroMeaning": {
+      "ai_prefetch_count": "tắt",
+      "content_retention_days": "không lưu"
+    },
+    "cross": {
+      "stop_after_days": "và lớn hơn ô trên",
+      "default_questions_per_session": "và ≤ số tối đa",
+      "pro_practice_sessions_per_day": "và ≥ gói Miễn phí"
+    },
+    "units": {
+      "days": "ngày",
+      "hours": "giờ",
+      "minutes": "phút",
+      "months": "tháng",
+      "percent": "%",
+      "chars": "ký tự",
+      "seconds": "giây",
+      "sessions": "phiên",
+      "uses": "lượt",
+      "times": "lần"
+    },
+    "fields": {
+      "reminders": {
+        "enabled": "Bật nhắc học toàn hệ thống",
+        "send_time": "Giờ gửi theo giờ người học",
+        "min_gap_days": "Khoảng cách tối thiểu giữa hai email nhắc",
+        "inactive_after_days": "Vắng bao lâu thì gửi “Đã lâu rồi bạn chưa vào học”",
+        "stop_after_days": "Vắng bao lâu thì ngừng nhắc"
+      },
+      "learning": {
+        "new_per_group_per_day": "Từ mới mỗi nhóm mỗi ngày",
+        "reviews_per_group_per_day": "Từ ôn mỗi nhóm mỗi ngày",
+        "backlog_after_days": "Quá hạn bao lâu thì vào danh sách cân nhắc",
+        "groups_per_user": "Số nhóm mỗi người",
+        "items_per_group": "Số từ mỗi nhóm"
+      },
+      "practice": {
+        "max_questions_per_session": "Số câu tối đa mỗi phiên",
+        "default_questions_per_session": "Số câu mặc định",
+        "history_months": "Giữ lịch sử luyện tập",
+        "true_false_true_percent": "Tỉ lệ cặp đúng ở câu Đúng/sai",
+        "idle_session_close_hours": "Tự đóng phiên bỏ dở sau",
+        "reports_per_hour": "Số báo lỗi mỗi giờ mỗi người",
+        "hint_definition_max_chars": "Độ dài tối đa của định nghĩa làm gợi ý",
+        "type_word_max_retries": "Số lần làm lại khi gõ sai",
+        "ai_prefetch_count": "Số câu AI tạo trước"
+      },
+      "entitlements": {
+        "free_practice_sessions_per_day": "Phiên luyện mỗi ngày, gói Miễn phí",
+        "pro_practice_sessions_per_day": "Phiên luyện mỗi ngày, gói Pro và Dùng thử",
+        "pro_ai_practice_per_cycle": "Lượt câu AI mỗi tháng, Pro",
+        "pro_ai_lookup_per_cycle": "Lượt tra AI mỗi tháng, Pro",
+        "trial_ai_practice_per_cycle": "Lượt câu AI mỗi tháng, Dùng thử",
+        "trial_ai_lookup_per_cycle": "Lượt tra AI mỗi tháng, Dùng thử",
+        "grace_days": "Số ngày ân hạn",
+        "trial_reminder_days_before": "Nhắc trước khi hết dùng thử",
+        "renewal_notice_days_before": "Nhắc trước khi gia hạn",
+        "ai_enabled": "Bật AI toàn hệ thống",
+        "ai_daily_cap": "Trần lượt AI mỗi ngày, toàn hệ thống",
+        "ai_cap_alert_percent": "Tô vàng khi dùng tới",
+        "ads_enabled": "Bật quảng cáo",
+        "ads_interstitial_per_day": "Quảng cáo toàn màn mỗi ngày",
+        "ads_min_interval_minutes": "Khoảng cách giữa hai quảng cáo"
+      },
+      "content": {
+        "private_words_per_user": "Số từ riêng mỗi người",
+        "sentences_per_sense": "Số câu đã gặp mỗi nghĩa"
+      },
+      "ai": {
+        "call_timeout_seconds": "Thời gian chờ mỗi lời gọi",
+        "max_concurrent_calls": "Số lời gọi cùng lúc",
+        "daily_provider_calls_cap": "Trần lời gọi nhà cung cấp mỗi ngày",
+        "content_retention_days": "Giữ nội dung lời gọi",
+        "usd_vnd_rate": "Tỷ giá USD → VND"
+      }
+    },
+    "aiUsage": {
+      "today": "Lượt AI hôm nay: {used}/{cap} ({percent}%)",
+      "split": "Đã xác nhận {confirmed} · đang giữ chỗ {reserved}",
+      "zone": "Tính theo ngày giờ Việt Nam.",
+      "error": "Chưa tải được lượt AI hôm nay."
+    },
+    "historyDialog": {
+      "title": "Lịch sử thay đổi",
+      "empty": "Chưa có thay đổi nào.",
+      "change": "{old} → {new}",
+      "by": "{email} · {at}",
+      "unknownUser": "Người dùng đã xóa"
+    }
+  },
+  "words": {
+    "search": "Tìm từ",
+    "searchPlaceholder": "Tìm theo từ hoặc cách viết khác",
+    "searchSubmit": "Tìm",
+    "pasteButton": "Dán danh sách từ",
+    "filters": {
+      "all": "Tất cả",
+      "level": "Trình độ",
+      "hasSense": "Nghĩa",
+      "hasSenseHint": "Có nghĩa tính cả nghĩa đã ngừng dùng.",
+      "withSense": "Có nghĩa",
+      "withoutSense": "Chưa có nghĩa",
+      "conflict": "Trình độ lệch nhau",
+      "batch": "Lô nhập"
+    },
+    "cols": {
+      "lemma": "Từ",
+      "pos": "Loại từ",
+      "level": "Trình độ hiển thị",
+      "senses": "Nghĩa",
+      "functionWord": "Từ chức năng",
+      "variants": "Cách viết khác"
+    },
+    "conflictBadge": "lệch",
+    "noSense": "Chưa có nghĩa",
+    "senseCount": "{count} nghĩa",
+    "published": "{count} đã publish",
+    "drafts": "{count} bản nháp",
+    "retired": "{count} ngừng dùng",
+    "yes": "Có",
+    "no": "Không",
+    "empty": "Không có từ nào khớp bộ lọc.",
+    "footer": "{count} từ đã hiển thị · 20 mỗi lần tải",
+    "actions": "Thao tác",
+    "actionsFor": "Thao tác cho {word}",
+    "editLevel": "Sửa trình độ",
+    "editVariants": "Sửa cách viết khác",
+    "editFunctionWord": "Đánh dấu từ chức năng",
+    "addSense": "Thêm nghĩa",
+    "save": "Lưu",
+    "saved": "Đã lưu “{word}”",
+    "level": "Trình độ",
+    "noLevel": "Chưa có trình độ",
+    "levelTitle": "Sửa trình độ “{word}”",
+    "levelHint": "Trình độ này thay mọi trình độ từ nguồn khi hiển thị.",
+    "functionWord": "Từ chức năng",
+    "functionWordTitle": "Từ chức năng “{word}”",
+    "auto": "Tự suy (hiện: {value})",
+    "variantsTitle": "Cách viết khác của “{word}”",
+    "noVariants": "Chưa có cách viết khác.",
+    "variantText": "Cách viết",
+    "variantKind": "Loại",
+    "kinds": {
+      "spelling": "Chính tả khác",
+      "alias": "Tên gọi khác"
+    },
+    "acceptedAsAnswer": "Chấp nhận khi người học gõ",
+    "removeVariant": "Xóa",
+    "addVariant": "Thêm cách viết",
+    "paste": {
+      "title": "Dán danh sách từ",
+      "label": "Danh sách từ",
+      "hint": "Mỗi dòng một từ: lemma,pos (tối đa 500 dòng). Mỗi từ mới có sẵn một nghĩa trống để soạn.",
+      "tooMany": "Có {count} dòng, tối đa {max}. Bớt dòng rồi thử lại.",
+      "submit": "Thêm các từ này",
+      "summary": "Đã tạo {created} · đã có {exists} · sai {invalid}",
+      "line": "Dòng {line}",
+      "status": {
+        "created": "Đã tạo",
+        "exists": "Đã có",
+        "invalid": "Sai"
+      },
+      "writeSense": "Soạn nghĩa",
+      "invalid": "Cần đúng dạng lemma,pos với loại từ hợp lệ.",
+      "caseWarning": "Từ này chỉ khác một từ có sẵn ở chữ hoa/thường."
+    }
+  },
+  "senses": {
+    "filters": {
+      "all": "Tất cả",
+      "status": "Trạng thái",
+      "level": "Trình độ",
+      "pos": "Loại từ",
+      "topic": "Chủ đề",
+      "batch": "Lô nhập",
+      "statuses": {
+        "unpublishable": "Thiếu nội dung",
+        "open_draft": "Bản nháp đang mở",
+        "published": "Đã publish"
+      }
+    },
+    "archived": "đã lưu trữ",
+    "cols": {
+      "lemma": "Từ",
+      "pos": "Loại từ",
+      "gloss": "Nghĩa tiếng Việt",
+      "level": "Trình độ",
+      "status": "Trạng thái",
+      "revision": "Bản sửa",
+      "missing": "Thiếu"
+    },
+    "status": {
+      "draft": "Bản nháp",
+      "reviewed": "Đã review",
+      "published": "Đã publish",
+      "rejected": "Bị từ chối",
+      "superseded": "Bản cũ",
+      "unpublished": "Đã gỡ khỏi app",
+      "retired": "Ngừng dùng",
+      "none": "Chưa có nội dung"
+    },
+    "openEdit": "#{revision} · có bản sửa mở",
+    "empty": "Không có nghĩa nào khớp bộ lọc.",
+    "footer": "{count} nghĩa đã hiển thị · 20 mỗi lần tải",
+    "bulk": {
+      "region": "Thao tác hàng loạt",
+      "selected": "Đã chọn {count} nghĩa",
+      "pick": "Chọn {word}",
+      "tooMany": "Mỗi lần tối đa {max} nghĩa.",
+      "actions": {
+        "review": "Đánh dấu đã review",
+        "reject": "Từ chối",
+        "publish": "Publish",
+        "unpublish": "Gỡ khỏi app",
+        "retire": "Ngừng dùng"
+      },
+      "confirm": {
+        "unpublish": {
+          "title": "Gỡ {count} nghĩa khỏi app?",
+          "body": "Người học không còn thấy các nghĩa này cho tới khi publish lại."
+        },
+        "retire": {
+          "title": "Ngừng dùng {count} nghĩa?",
+          "body": "Nghĩa ngừng dùng không sửa hay publish lại được nữa."
+        }
+      },
+      "resultTitle": "Kết quả",
+      "summary": "{ok} nghĩa thành công · {failed} nghĩa không làm được",
+      "close": "Đóng",
+      "reasons": {
+        "stale-revision": "Nghĩa đã đổi, tải lại",
+        "publish-incomplete": "Còn thiếu nội dung",
+        "sense-retired": "Nghĩa đã ngừng dùng",
+        "not-found": "Không tìm thấy nghĩa",
+        "sense-not-found": "Không tìm thấy nghĩa",
+        "revision-not-open": "Bản sửa này không còn mở để review",
+        "revision-rejected": "Bản này đã bị từ chối",
+        "other": "Không làm được ({reason})"
+      },
+      "missing": {
+        "gloss-missing": "nghĩa tiếng Việt",
+        "example-missing": "câu ví dụ",
+        "level-missing": "trình độ"
+      }
+    },
+    "detail": {
+      "back": "Nghĩa",
+      "notFound": "Không tìm thấy nghĩa này. Có thể link đã cũ.",
+      "noLevel": "chưa có trình độ",
+      "publishedWithEdit": "Đã publish, có bản sửa mở",
+      "content": "Nội dung",
+      "gloss": "Nghĩa tiếng Việt",
+      "definition": "Định nghĩa tiếng Anh",
+      "examples": "Câu ví dụ (tối đa {max})",
+      "example": "Câu ví dụ {n}",
+      "removeExample": "Xóa câu ví dụ {n}",
+      "addExample": "Thêm câu ví dụ",
+      "topics": "Chủ đề",
+      "noTopics": "Chưa có chủ đề nào.",
+      "acceptedForms": "Dạng được chấp nhận",
+      "acceptedFormsHint": "Cách nhau bằng dấu phẩy, ví dụ: deploys, deployed, deploying",
+      "saveDraft": "Lưu bản nháp",
+      "savePublish": "Lưu và publish",
+      "draftSaved": "Đã lưu bản nháp",
+      "published": "Đã lưu và publish",
+      "droppedTopics": "Đã bỏ chủ đề đã lưu trữ: {topics}",
+      "stale": "Nghĩa này vừa được sửa. Tải lại để xem bản mới.",
+      "reload": "Tải lại",
+      "incomplete": "Còn thiếu {missing} nên chưa publish được.",
+      "people": "Người thao tác (gần nhất)",
+      "reviewedBy": "Review: {email} · {at}",
+      "notReviewed": "Bản nháp chưa review",
+      "publishedBy": "Publish: {email}",
+      "stateChangedBy": "Đổi trạng thái gần nhất: {email} · {action} · {at}",
+      "stateActions": {
+        "open": "publish",
+        "unpublished": "gỡ khỏi app",
+        "retired": "ngừng dùng"
+      },
+      "unknownUser": "người dùng đã xóa",
+      "lastOnly": "Chỉ lưu lần gần nhất, không có lịch sử."
+    }
+  },
+  "topics": {
+    "intro": "Sửa tên, lưu trữ và dùng lại chủ đề. Không xóa chủ đề.",
+    "cols": {
+      "code": "Mã",
+      "vi": "Tên tiếng Việt",
+      "en": "Tên tiếng Anh",
+      "state": "Trạng thái"
+    },
+    "active": "Đang dùng",
+    "archived": "Đã lưu trữ",
+    "rename": "Sửa tên",
+    "renameFor": "Sửa tên {code}",
+    "archive": "Lưu trữ",
+    "archiveFor": "Lưu trữ {code}",
+    "restore": "Dùng lại",
+    "restoreFor": "Dùng lại {code}",
+    "addTitle": "Thêm chủ đề",
+    "renameTitle": "Sửa tên chủ đề “{code}”",
+    "add": "Thêm",
+    "save": "Lưu",
+    "code": "Mã",
+    "codeHint": "Chữ thường, số và dấu gạch ngang, ví dụ: food, daily-life. Không đổi được sau khi tạo.",
+    "codeRule": "Mã chỉ gồm chữ thường a–z, số và dấu gạch ngang.",
+    "exists": "Đã có chủ đề mã này. Chọn mã khác.",
+    "nameVi": "Tên tiếng Việt",
+    "nameEn": "Tên tiếng Anh",
+    "created": "Đã thêm chủ đề “{code}”",
+    "renamed": "Đã đổi tên “{code}”",
+    "archivedToast": "Đã lưu trữ “{code}”",
+    "restoredToast": "Đã dùng lại “{code}”",
+    "empty": "Chưa có chủ đề nào.",
+    "footer": "{count} chủ đề"
   }
 }

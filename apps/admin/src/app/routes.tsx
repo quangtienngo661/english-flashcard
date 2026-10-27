@@ -10,10 +10,15 @@ import { ReportReasonsPage } from '../features/reports/ReportReasonsPage';
 import { RefundsPage } from '../features/reports/RefundsPage';
 import { ReportsPage } from '../features/reports/ReportsPage';
 import { PublishJobsPage } from '../features/publish-jobs/PublishJobsPage';
+import { SenseDetail } from '../features/senses/SenseDetail';
+import { SensesPage } from '../features/senses/SensesPage';
+import { SettingsPage } from '../features/settings/SettingsPage';
 import { SourcesPage } from '../features/sources/SourcesPage';
 import { StaffPage } from '../features/staff/StaffPage';
+import { TopicsPage } from '../features/topics/TopicsPage';
 import { TransactionsPage } from '../features/transactions/TransactionsPage';
 import { UnknownFormsPage } from '../features/unknown-forms/UnknownFormsPage';
+import { WordsPage } from '../features/words/WordsPage';
 import { homePath, NAV } from './nav';
 import { RequireSession } from './RequireSession';
 import { Shell } from './Shell';
@@ -35,6 +40,10 @@ export const appRoutes: RouteObject[] = createRoutesFromElements(
       <Route element={<Shell />}>
         <Route index element={<Home />} />
         {/* A list page owns its children (UB8, UB9): `new` opens the form dialog, `:id` the detail panel. */}
+        <Route path="words" element={<WordsPage />} />
+        <Route path="senses" element={<SensesPage />} />
+        <Route path="senses/:id" element={<SenseDetail />} />
+        <Route path="topics" element={<TopicsPage />} />
         <Route path="uploads" element={<UploadsPage />}>
           <Route path="new" element={null} />
           <Route path=":id" element={null} />
@@ -57,6 +66,7 @@ export const appRoutes: RouteObject[] = createRoutesFromElements(
         <Route path="refunds" element={<RefundsPage />} />
         <Route path="unknown-forms" element={<UnknownFormsPage />} />
         <Route path="transactions" element={<TransactionsPage />} />
+        <Route path="settings" element={<SettingsPage />} />
         <Route path="staff" element={<StaffPage />} />
         {NAV.filter((entry) => !entry.available).map((entry) => (
           <Route key={entry.path} path={entry.path.slice(1)} element={<ComingSoonPage item={entry} />} />

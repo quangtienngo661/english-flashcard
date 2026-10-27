@@ -2,6 +2,8 @@ import { expect, test, type Page } from '@playwright/test';
 import en from '../messages/en.json' with { type: 'json' };
 import vi from '../messages/vi.json' with { type: 'json' };
 import { signedInAs } from './support/mock-api';
+import { contentMocks, SENSE_ID, tick } from './support/content';
+import { settingsMocks } from './support/settings';
 
 /** Defects found by the Web Interface Guidelines review (15/10/2026); each test sets its own viewport. */
 test.use({ locale: 'vi-VN' });
@@ -258,4 +260,36 @@ test('the four Báo lỗi pages at 390 fit the window with a 300-character note 
     await expect(page.locator('tbody tr, [data-testid="card"]').first()).toBeAttached();
     await expectNoHorizontalScroll(page);
   }
+});
+
+test('Cài đặt hệ thống at 390: every tab and the history dialog fit the window (Review Focus 4)', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await signedInAs(page, 'admin', settingsMocks);
+  for (const tab of ['reminders', 'learning', 'practice', 'entitlements', 'content', 'ai'] as const) {
+    await page.goto(`/settings?tab=${tab}`);
+    await expect(page.getByRole('tabpanel').getByRole('heading', { level: 2, name: vi.settings.tabs[tab] })).toBeVisible();
+    await expectNoHorizontalScroll(page);
+  }
+  await page.getByRole('button', { name: vi.settings.history }).click();
+  await expect(page.getByRole('dialog').getByText('reminders.send_time')).toBeVisible();
+  await expectNoHorizontalScroll(page);
+});
+
+test('Từ, Nghĩa, Chi tiết nghĩa, Chủ đề at 390 with long values fit the window (Review Focus 4)', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await signedInAs(page, 'editor', { ...listMocks, ...contentMocks });
+  for (const [path, ready] of [
+    ['/words', 'deploy'],
+    ['/senses', 'deploy'],
+    [`/senses/${SENSE_ID}`, vi.senses.detail.people],
+    ['/topics', 'Ăn uống'],
+  ] as const) {
+    await page.goto(path);
+    await expect(page.getByText(ready).filter({ visible: true }).first()).toBeVisible();
+    await expectNoHorizontalScroll(page);
+  }
+  await page.goto('/senses');
+  await tick(page, vi.senses.bulk.pick.replace('{word}', 'deploy · verb'));
+  await expect(page.getByRole('region', { name: vi.senses.bulk.region })).toBeVisible();
+  await expectNoHorizontalScroll(page);
 });

@@ -140,6 +140,57 @@ Màn cần biết: `lookup` trả `user: { id, email }` **không có** `system` 
 Trả lượt trả danh sách rỗng (thứ tự kiểm khác nhau; chỉ lộ khi cả hai cùng sai). Kiểm: unit 195 file / 2623 test, `tsc`, lint (chỉ warning cũ ở
 `mail-dispatcher.service.ts`); CI xanh từng PR. Chưa chạy API thật qua HTTP cho các endpoint mới (ngoài kiểm `replaced` trên Postgres thật).
 
+# Đợt giao diện admin — M2 as-built (27/10/2026)
+
+Nhánh `feat/giao-dien-admin-m2`, một PR vào `dev`. Màn Cài đặt hệ thống `/settings` (A/70a–A/70f) đã thay "Tính năng chưa có" (chỉ admin, `settings.manage`).
+
+## Đã làm (Task 22–23)
+
+1. `ui/Tabs.tsx` (tab có kiểm soát trên `react-aria-components`, mũi tên trái/phải đổi tab, dấu chấm "có thay đổi chưa lưu" có chữ cho trình đọc màn hình);
+   `Select` thêm `description` (dòng phụ). Trang Cài đặt: 6 tab ghi vào URL (`?tab=`), 41 ô theo thứ tự copy doc §8.2, dòng phụ
+   "`khóa` · khoảng (đơn vị, luật chéo, nghĩa của ô trống / số 0) · mặc định …" lấy từ `bounds` và `defaults`; một nút [Lưu thay đổi] gửi đúng các khóa đã đổi
+   kèm `version` và `Idempotency-Key` (`useSubmitAction`); 400 gắn lỗi vào ô, mở tab chứa ô lỗi đầu và focus ô đó; 409 `version-conflict` hiện câu copy doc và
+   [Tải lại] (hỏi trước nếu có thay đổi); khối "Lượt AI hôm nay" đầu tab Gói và lượt (tô vàng khi `alert_reached`); hộp [Lịch sử thay đổi] (khóa, cũ → mới,
+   email, giờ, "Tải thêm"); hỏi "Rời trang?" khi rời trang lúc có thay đổi, không hỏi khi chỉ đổi tab; giữ bản đang sửa khi phiên hết hạn và hỏi khôi phục
+   (`useKeptDraft('settings')`, lưu phần thay đổi chứ không lưu cả bộ giá trị): `feat(admin): add the system settings page`.
+2. e2e mock `e2e/settings.spec.ts` (lưu 2 tab một lần, 400 sang tab khác, rời trang, editor không có quyền), `/settings` và `?tab=entitlements` vào
+   `a11y.spec.ts`, kiểm không cuộn ngang ở 390 cho 6 tab và hộp lịch sử; e2e stack thật `e2e-real/m2.real.spec.ts` (đổi một ô ở Nhắc học và một ô ở AI,
+   lưu một lần, lịch sử có hai dòng với email admin): `test(admin): add the m2 real-stack check and as-built`.
+
+## Ảnh chụp (stack thật, 27/10/2026)
+
+Khung Figma file `7HcPAKLrWu32C27qYMJUOA`: A/70a `397:3287`, A/70b `397:3684`, A/70c `397:3943`, A/70d `397:4231`, A/70e `397:4607`, A/70f `397:4845`.
+Ảnh ở `docs/deliveries/giao-dien-admin/m2/`.
+
+Khác khung Figma, có chủ ý: nhãn nằm **trên** ô số (component `NumberField` dùng chung), khung vẽ nhãn bên trái và ô nhỏ bên phải có đơn vị trong ô; đơn vị
+ở đây nằm trong dòng phụ ("1–50 phiên"). Nút chính dùng màu primary của hướng B (xanh), khung vẽ vàng. Dòng phụ không có chữ "khoảng" (theo khung; plan ghi có).
+
+| Màn | Desktop 1440 | Phone 390 |
+|---|---|---|
+| A/70a Nhắc học | [desktop](giao-dien-admin/m2/a70a-reminders-desktop.png) | [mobile](giao-dien-admin/m2/a70a-reminders-mobile.png) |
+| A/70b Học và ôn | [desktop](giao-dien-admin/m2/a70b-learning-desktop.png) | [mobile](giao-dien-admin/m2/a70b-learning-mobile.png) |
+| A/70c Luyện tập | [desktop](giao-dien-admin/m2/a70c-practice-desktop.png) | [mobile](giao-dien-admin/m2/a70c-practice-mobile.png) |
+| A/70c có ô đã đổi (dấu chấm trên tab, nút Lưu bật) | [desktop](giao-dien-admin/m2/a70c-dirty-desktop.png) | [mobile](giao-dien-admin/m2/a70c-dirty-mobile.png) |
+| A/70d Gói và lượt (khối Lượt AI hôm nay) | [desktop](giao-dien-admin/m2/a70d-entitlements-desktop.png) | [mobile](giao-dien-admin/m2/a70d-entitlements-mobile.png) |
+| A/70e Nội dung | [desktop](giao-dien-admin/m2/a70e-content-desktop.png) | [mobile](giao-dien-admin/m2/a70e-content-mobile.png) |
+| A/70f AI | [desktop](giao-dien-admin/m2/a70f-ai-desktop.png) | [mobile](giao-dien-admin/m2/a70f-ai-mobile.png) |
+| Hộp Lịch sử thay đổi | [desktop](giao-dien-admin/m2/history-desktop.png) | [mobile](giao-dien-admin/m2/history-mobile.png) |
+| Khôi phục sau khi phiên hết hạn (đổi mật khẩu bằng API giữa lúc sửa → bấm Lưu → `/login` → đăng nhập lại) | [desktop](giao-dien-admin/m2/restore-banner-desktop.png) | — |
+
+## Kiểm đã chạy
+
+- Stack thật (API 3300 + worker, admin preview 5383, DB `english_learning_admin_m2`, `AI_FAKE_ENABLED=true`): `pnpm test:e2e:real` 11/11 (8 cũ + 2 M0 + 1 M2).
+  Thêm bằng script Playwright: phiên hết hạn giữa lúc sửa → đăng nhập lại về `/settings?tab=content` → thanh khôi phục → [Khôi phục] trả lại đúng giá trị đã gõ.
+- `pnpm --filter admin test` 423 test (một lần chạy cả bộ có `BatchPanel.test.tsx` rớt vì chậm; chạy riêng 27/27 qua; file đó không đổi), lint, typecheck sạch;
+  `pnpm --filter admin test:e2e` 153 passed, 55 skipped.
+
+## Câu chữ tự viết (không có trong copy doc §8.2)
+
+- `settings.*`: nhãn trợ năng "Nhóm cài đặt"; "Đã lưu" (toast); "Tải lại cài đặt?" / "Thay đổi chưa lưu sẽ mất." (hỏi trước khi tải lại lúc 409); đơn vị trong
+  dòng phụ (ngày, giờ, phút, tháng, ký tự, giây, phiên, lượt, lần); "mỗi 15 phút"; "Chưa tải được lượt AI hôm nay."; hộp lịch sử: "Chưa có thay đổi nào.",
+  "Người dùng đã xóa" (người đổi không còn email); `common.unsavedChanges` "(có thay đổi chưa lưu)" cho dấu chấm trên tab. Bản tiếng Anh của mọi khóa
+  `settings.*` do Claude viết.
+
 ---
 
 # Đợt giao diện admin — M3 as-built (27/10/2026)
@@ -213,3 +264,70 @@ Khác biệt nhìn thấy ở ảnh thật (chưa mở Figma để so từng đi
   "Nhập số nguyên từ 0 đến 10.000."), "Lưu". Mặc định hộp thêm: "Cả hai", hai ô tick tắt, thứ tự 0 (API không có mặc định).
 - Trả lượt (Task 28): "Email người xử lý", "Lọc", "Xem báo lỗi", ô gợi ý "minh@example.com".
 - Dạng chia chưa biết (Task 29): `acceptFor` / `ignoreFor` (nhãn cho trình đọc màn hình) và `undone` "Đã gỡ “{form}” khỏi dạng chia của “{lemma}”."
+
+# Đợt giao diện admin — M5 as-built (27/10/2026)
+
+Nhánh `feat/giao-dien-admin-m5`, một PR vào `dev`. Bốn màn Nội dung thay "Tính năng chưa có": Từ `/words` (A/87), Nghĩa `/senses` (A/88), Chi tiết nghĩa
+`/senses/:id` (A/88b), Chủ đề `/topics` (A/89). Editor dùng được cả bốn (đủ quyền `content.edit`, `content.publish`, `taxonomy.manage`). Phần đóng đợt (plan
+Task 43 Step 4–5: `CLAUDE.md`, memory, `buoc-2-5.md`, copy doc §8, as-built của cả đợt) **chưa làm**: chờ M1a, M1b, M3, M4 merge.
+
+## Đã làm (Task 38–42, và phần kiểm của Task 43)
+
+1. `DataList` có thêm `selection` (tùy chọn, không truyền thì markup như cũ): cột ô chọn ở bảng, ô chọn ở mỗi thẻ (390), ô "Chọn tất cả trên trang" ở đầu
+   bảng (chọn một phần thì hiện dấu trừ); `Checkbox` có dạng chỉ ô (`aria-label`) và `isIndeterminate`: `feat(admin): add row selection to data lists`.
+   Thêm sau: bấm vào ô chọn trong một dòng có `rowHref` không mở dòng đó (bỏ qua `label`, `input` như đã bỏ qua `a`, `button`).
+2. Từ: tìm (`q`), lọc trình độ / có-chưa có nghĩa (dòng phụ "Có nghĩa tính cả nghĩa đã ngừng dùng.") / trình độ lệch nhau / lô nhập, tất cả trong URL; cột Nghĩa
+   đếm số nghĩa và "x đã publish · y bản nháp · z ngừng dùng"; menu [Thao tác] mỗi dòng: Sửa trình độ, Sửa cách viết khác (gửi lại cả bộ), Đánh dấu từ chức năng
+   (Có / Không / Tự suy = `null`; chỉ hiện khi có `taxonomy.manage`), Thêm nghĩa (tạo rồi mở `/senses/<id>`); [Dán danh sách từ] (hộp thoại, chặn > 500 dòng ở
+   client, kết quả từng dòng Đã tạo / Đã có / Sai, link "Soạn nghĩa"): `feat(admin): add the words page`.
+3. Nghĩa + Chi tiết nghĩa: lọc trạng thái / trình độ / loại từ / chủ đề / lô nhập trong URL; cột Thiếu từ `missing[]`; chọn nhiều dòng; 5 thao tác hàng loạt mỗi dòng
+   gửi đúng `revision` của nó (Publish, Gỡ khỏi app, Ngừng dùng chỉ hiện khi có `content.publish`; Gỡ và Ngừng dùng hỏi lại trước); hộp kết quả: số thành công, từng
+   dòng lỗi kèm lý do (`stale-revision` "Nghĩa đã đổi, tải lại", `publish-incomplete` kèm phần thiếu). Chi tiết: sửa nghĩa tiếng Việt, định nghĩa, ≤ 3 câu ví dụ,
+   chủ đề (ô chọn, chủ đề đã lưu trữ chỉ hiện khi nghĩa đang dùng nó), dạng được chấp nhận; [Lưu bản nháp], [Lưu và publish]; 409 `stale-revision` → câu copy +
+   [Tải lại]; 422 `publish-incomplete` → lỗi ở ô thiếu, focus ô đầu; toast nêu chủ đề bị bỏ (`dropped_topics`); khối "Người thao tác (gần nhất)" theo design
+   §6.12 ("Bản nháp chưa review" khi có bản nháp mới, không có "Publish: —", hành động đổi trạng thái suy từ `state`); "Rời trang?" và giữ bản đang sửa
+   (`sense:<id>`): `feat(admin): add the senses list with bulk actions and the sense detail editor`.
+4. Chủ đề: cả danh sách, không phân trang; [Thêm chủ đề] (mã `[a-z0-9-]+` kiểm ở client, `topic-exists` hiện ngay ở ô Mã), Sửa tên, Lưu trữ / Dùng lại; không có
+   xóa: `feat(admin): add the topics page`.
+5. Kiểm M5: e2e mock `e2e/content-screens.spec.ts` (một luồng chính mỗi màn, editor), 4 màn vào `a11y.spec.ts`, kiểm không cuộn ngang ở 390 (giá trị dài);
+   e2e stack thật `e2e-real/m5.real.spec.ts` (Minh sửa trình độ một từ mới; lưu bản nháp nghĩa của nó rồi publish từ danh sách; thêm rồi lưu trữ một chủ đề):
+   `test(admin): add the m5 checks and as-built`.
+
+6. Sửa lỗi (báo từ review của M1a): trang Cài đặt (M2) và Chi tiết nghĩa giữ form theo `version` / `revision`, nên khi tab được focus lại và TanStack Query
+   lấy lại dữ liệu có bản mới (người khác vừa lưu), form bị dựng lại và thay đổi chưa lưu biến mất khỏi form (chỉ còn thanh khôi phục). Không mất cập nhật
+   (lưu vẫn gửi `version` / `revision` của bản form đang sửa, nên API trả 409). Nay: không có thay đổi chưa lưu thì nhận bản mới; có thì giữ thay đổi và hiện
+   ngay câu xung đột ("Có người vừa lưu cài đặt khác…" / "Nghĩa này vừa được sửa…") kèm [Tải lại]: `test(admin): pin unsaved edits across a refetch…`,
+   `fix(admin): keep unsaved settings and sense edits when a refetch brings a newer version`.
+
+Lệch plan / khung, có chủ ý:
+- Plan Task 40 ghi bộ lọc `q` cho Nghĩa; API `GET /v1/admin/content/senses` không nhận `q` (`sense-filters.ts`), nên màn không có ô tìm. Muốn có thì cần thêm ở API.
+- [Dán danh sách từ] mở hộp thoại (plan: `PasteWordsDialog`); khung A/87 vẽ thành khối "Thêm cả loạt" dưới bảng.
+- Chủ đề của một nghĩa là danh sách ô chọn (một nghĩa có nhiều chủ đề); khung vẽ một ô chọn một.
+- Thêm hỏi lại trước [Gỡ khỏi app] và [Ngừng dùng] hàng loạt (khung không có; ngừng dùng không quay lại được).
+- Trang chi tiết: tiêu đề trang (h1) là "Nghĩa" như mọi trang con, "deploy · verb" là tiêu đề phụ; khung vẽ "deploy · verb" làm tiêu đề lớn.
+
+## Ảnh chụp (stack thật, 27/10/2026)
+
+Khung Figma file `7HcPAKLrWu32C27qYMJUOA`: A/87 `395:2999`, A/88 `395:3514`, A/88b `395:4038`, A/89 `395:4326`. Ảnh ở `docs/deliveries/giao-dien-admin/m5/`,
+đăng nhập bằng Minh (editor), dữ liệu do test stack thật tạo.
+
+| Màn | Desktop 1440 | Phone 390 |
+|---|---|---|
+| A/87 Từ | [desktop](giao-dien-admin/m5/a87-words-desktop.png) | [mobile](giao-dien-admin/m5/a87-words-mobile.png) |
+| A/87 menu Thao tác | [desktop](giao-dien-admin/m5/a87-row-menu-desktop.png) | [mobile](giao-dien-admin/m5/a87-row-menu-mobile.png) |
+| A/87 kết quả Dán danh sách từ | [desktop](giao-dien-admin/m5/a87-paste-result-desktop.png) | [mobile](giao-dien-admin/m5/a87-paste-result-mobile.png) |
+| A/88 Nghĩa (một dòng đã chọn, thanh thao tác hàng loạt) | [desktop](giao-dien-admin/m5/a88-senses-desktop.png) | [mobile](giao-dien-admin/m5/a88-senses-mobile.png) |
+| A/88b Chi tiết nghĩa | [desktop](giao-dien-admin/m5/a88b-sense-detail-desktop.png) | [mobile](giao-dien-admin/m5/a88b-sense-detail-mobile.png) |
+| A/89 Chủ đề | [desktop](giao-dien-admin/m5/a89-topics-desktop.png) | [mobile](giao-dien-admin/m5/a89-topics-mobile.png) |
+
+## Kiểm đã chạy
+
+- Stack thật (API 3300 + worker, admin preview 5383, DB `english_learning_admin_m2`, `AI_FAKE_ENABLED=true`): `pnpm test:e2e:real` 14/14 (8 cũ + M0 2 + M2 1 + M5 3).
+- `pnpm --filter admin test` 450 test: 448 qua; 2 test cũ (Publish job, Giao dịch; không đổi ở M5) quá 5 s khi cả bộ chạy cùng lúc trên máy đang bận, chạy riêng
+  thì qua. Các file test mới đặt `asyncUtilTimeout` 4 s vì trang dựng cả app. Lint, typecheck sạch. e2e mock (Từ/Nghĩa/Chủ đề + a11y + ui-guidelines) 40 passed.
+
+## Câu chữ tự viết (không có trong copy doc §8.1)
+
+`words.*`, `senses.*`, `topics.*`: mọi dòng phụ, toast, hộp thoại sửa (trình độ, cách viết khác, từ chức năng), kết quả dán danh sách, lý do lỗi hàng loạt, hỏi lại khi
+gỡ / ngừng dùng, câu không tìm thấy nghĩa, gợi ý mã chủ đề; `list.selectAll` "Chọn tất cả trên trang". Bản tiếng Anh do Claude viết.
+
