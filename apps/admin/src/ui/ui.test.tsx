@@ -406,6 +406,24 @@ describe('form controls: TextArea, Switch, NumberField, RadioGroup', () => {
     expect(onChange).toHaveBeenCalledWith('high');
   });
 
+  it('RadioGroup: an item description describes the radio but is not part of its name', () => {
+    wrap(
+      <RadioGroup
+        label="Effort"
+        value="low"
+        onChange={() => {}}
+        items={[
+          { id: 'low', label: 'Low' },
+          { id: 'high', label: 'High', description: 'Slower, costs more' },
+        ]}
+      />,
+    );
+    const high = screen.getByRole('radio', { name: 'High' });
+    expect(high).toHaveAccessibleName('High');
+    expect(high).toHaveAccessibleDescription('Slower, costs more');
+    expect(screen.getByRole('radio', { name: 'Low' })).toHaveAccessibleDescription('');
+  });
+
   it('NumberField displays in the app locale: vi "1.234,5", en "1,234.5"', () => {
     const inLocale = (locale: string) => (
       <IntlProvider locale={locale} messages={en}>
