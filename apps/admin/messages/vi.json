@@ -203,6 +203,25 @@
         "generate_meaning_question": "Sinh câu hỏi nghĩa",
         "generate_sentence_mcq": "Sinh câu chọn đáp án",
         "check_private_word": "Kiểm từ riêng"
+      },
+      "row": {
+        "model": "Model",
+        "noModel": "Không có model",
+        "effort": "Effort",
+        "effortDefault": "Mặc định",
+        "effortDropped": "Model này không có mức {effort}",
+        "thinking": "Thinking",
+        "thinkingDefault": "Mặc định",
+        "thinkingOff": "Tắt",
+        "thinkingCannotOff": "Model này không tắt được thinking.",
+        "thinkingNeedsEffort": "Tắt thinking cần effort high trở xuống.",
+        "maxTokens": "Số token đầu ra tối đa",
+        "note": "Chọn “Không có model” là tắt thao tác. Áp từ lần gọi sau.",
+        "save": "Lưu",
+        "saveFor": "Lưu {operation}",
+        "saved": "Đã lưu. Áp từ lần gọi sau.",
+        "reload": "Tải lại",
+        "rowLabel": "{name} ({operation})"
       }
     },
     "reasons": {

@@ -274,3 +274,28 @@ test('Model at 390 fits the window with a 100-character model id and a long note
   await expect(page.getByText(new RegExp(long)).first()).toBeAttached();
   await expectNoHorizontalScroll(page);
 });
+
+test('Thao tác at 390 fits the window with a 100-character model id', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  const long = 'm'.repeat(100);
+  await signedInAs(page, 'admin', {
+    'GET /v1/admin/ai/operations': () => ({
+      json: {
+        items: ['generate_cloze', 'lookup_word', 'translate_sentence', 'generate_meaning_question', 'generate_sentence_mcq', 'check_private_word'].map((operation) => ({
+          operation, model: { id: 'm1', provider: 'anthropic', model_id: long }, effort: 'high', thinking: 'off', max_output_tokens: 128000, version: 1, input_fields: [], estimate: null,
+        })),
+      },
+    }),
+    'GET /v1/admin/ai/models': () => ({
+      json: {
+        items: [{
+          id: 'm1', provider: 'anthropic', model_id: long, shutdown_at: null, lifecycle: null, effort_choices: ['low', 'high'], thinking_off_available: true,
+          structured_outputs: true, max_output_tokens: 200000, price: null, note: null, info_checked_at: at, used_by: [], estimate: null,
+        }],
+      },
+    }),
+  });
+  await page.goto('/ai/operations');
+  await expect(page.getByRole('group', { name: /lookup_word/ })).toBeVisible();
+  await expectNoHorizontalScroll(page);
+});

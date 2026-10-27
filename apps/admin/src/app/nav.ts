@@ -34,7 +34,7 @@ export const NAV: NavEntry[] = [
   { group: 'learners', path: '/transactions', labelKey: 'nav.transactions', needs: ['settings.manage'], available: true },
   { group: 'ai', path: '/ai/status', labelKey: 'nav.aiStatus', needs: ['settings.manage'], available: true },
   { group: 'ai', path: '/ai/models', labelKey: 'nav.aiModels', needs: ['settings.manage'], available: true },
-  { group: 'ai', path: '/ai/operations', labelKey: 'nav.aiOperations', needs: ['settings.manage'], available: false },
+  { group: 'ai', path: '/ai/operations', labelKey: 'nav.aiOperations', needs: ['settings.manage'], available: true },
   { group: 'ai', path: '/ai/prompts', labelKey: 'nav.aiPrompts', needs: ['settings.manage'], available: false },
   { group: 'ai', path: '/ai/eval', labelKey: 'nav.aiEval', needs: ['settings.manage'], available: false },
   { group: 'ai', path: '/ai/costs', labelKey: 'nav.aiCosts', needs: ['settings.manage'], available: false, plannedStep: '6' },

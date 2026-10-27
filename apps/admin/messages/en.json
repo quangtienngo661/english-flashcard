@@ -203,6 +203,25 @@
         "generate_meaning_question": "Generate meaning question",
         "generate_sentence_mcq": "Generate sentence choice",
         "check_private_word": "Check private word"
+      },
+      "row": {
+        "model": "Model",
+        "noModel": "No model",
+        "effort": "Effort",
+        "effortDefault": "Default",
+        "effortDropped": "This model has no {effort} level",
+        "thinking": "Thinking",
+        "thinkingDefault": "Default",
+        "thinkingOff": "Off",
+        "thinkingCannotOff": "This model cannot turn thinking off.",
+        "thinkingNeedsEffort": "Turning thinking off needs effort high or below.",
+        "maxTokens": "Maximum output tokens",
+        "note": "Choosing “No model” turns the operation off. Applies from the next call.",
+        "save": "Save",
+        "saveFor": "Save {operation}",
+        "saved": "Saved. Applies from the next call.",
+        "reload": "Reload",
+        "rowLabel": "{name} ({operation})"
       }
     },
     "reasons": {

@@ -53,6 +53,10 @@ const mocks: Record<string, MockHandler> = {
       structured_outputs: null, max_output_tokens: null, price: null, note: null, info_checked_at: at, used_by: [], estimate: null,
     },
   ] } }),
+  'GET /v1/admin/ai/operations': () => ({ json: { items: ['generate_cloze', 'lookup_word', 'translate_sentence', 'generate_meaning_question', 'generate_sentence_mcq', 'check_private_word'].map((operation, i) => ({
+    operation, model: i === 1 ? { id: 'm1', provider: 'openai', model_id: 'gpt-x' } : null, effort: null, thinking: null, max_output_tokens: i === 1 ? 800 : null,
+    version: 1, input_fields: [], estimate: null,
+  })) } }),
   'GET /v1/admin/transactions': () => ({ json: { items: [{
     id: 't1', kind: 'renewal', plan: 'pro', interval: 'month', amount_minor: 99000, currency: 'VND', occurred_at: at, period_start: at,
     period_end: '2026-11-14T09:30:00.000Z', status: 'pending', provider: 'fake', provider_transaction_id: 'fake_txn_8f2c41d9a7',
@@ -60,7 +64,7 @@ const mocks: Record<string, MockHandler> = {
   }], next_page_token: null } }),
 };
 
-const pages = ['/uploads', '/uploads/b1', '/uploads/new', '/publish-jobs', `/publish-jobs/${JOB}`, '/sources', '/sources/new', '/export', '/ai/costs', '/transactions', '/ai/status', '/ai/models', '/ai/models/new', '/ai/models/m1'];
+const pages = ['/uploads', '/uploads/b1', '/uploads/new', '/publish-jobs', `/publish-jobs/${JOB}`, '/sources', '/sources/new', '/export', '/ai/costs', '/transactions', '/ai/status', '/ai/models', '/ai/models/new', '/ai/models/m1', '/ai/operations'];
 
 for (const [lang, copy] of [['vi', vi], ['en', en]] as const) {
   test.describe(`axe (${lang})`, () => {
@@ -104,6 +108,7 @@ async function waitForContent(page: Page, path: string) {
   if (path.endsWith('/new') || path === '/ai/models/m1') await expect(page.getByRole('dialog')).toBeVisible();
   else if (path === '/uploads/b1') await expect(page.getByTestId('detail-panel').getByRole('heading', { level: 2, name: batch.file_name })).toBeVisible();
   else if (path.startsWith('/publish-jobs/')) await expect(page.getByTestId('detail-panel').getByRole('heading', { level: 2 })).toContainText('a3f2c1');
+  else if (path === '/ai/operations') await expect(page.getByRole('group', { name: /lookup_word/ })).toBeVisible();
   else if (path === '/export' || path === '/ai/costs') await expect(page.getByRole('main')).toBeVisible();
   else await expect(page.locator('tbody tr, [data-testid="card"]').first()).toBeAttached();
 }
