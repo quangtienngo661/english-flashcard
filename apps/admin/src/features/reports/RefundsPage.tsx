@@ -43,7 +43,6 @@ export function RefundsPage() {
   });
   const rows = list.data?.pages.flatMap((p) => p.items) ?? [];
 
-  const system = t('common.systemUser');
   const columns: Column<Refund>[] = [
     {
       key: 'report', header: t('refunds.cols.report'), className: 'whitespace-nowrap font-semibold',
@@ -53,12 +52,12 @@ export function RefundsPage() {
         </Link>
       ),
     },
-    { key: 'user', header: t('refunds.cols.user'), className: 'wrap-anywhere', card: 'field', cell: (r) => userLabel(r.user, system) },
+    { key: 'user', header: t('refunds.cols.user'), className: 'wrap-anywhere', card: 'field', cell: (r) => userLabel(r.user, t) },
     {
       key: 'resolver', header: t('refunds.cols.resolver'), className: 'wrap-anywhere', card: 'field',
       cell: (r) => (
         <span className="flex flex-col">
-          <span>{userLabel(r.resolved_by_user, system)}</span>
+          <span>{r.resolved_by_user ? userLabel(r.resolved_by_user, t) : '—'}</span>
           {r.self_resolved && <span className="text-xs text-muted">{t('refunds.selfResolved')}</span>}
         </span>
       ),

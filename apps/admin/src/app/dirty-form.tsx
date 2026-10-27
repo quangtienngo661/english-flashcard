@@ -97,14 +97,15 @@ export function useDirtyForm(
  * The handler for a form dialog's [Hủy], ✕ and Esc: clean → `close()`; dirty → "Bỏ thay đổi?" first, then `release()` and
  * `close()`. The dialog's form also counts as dirty for leaving the page. The form's state must live inside the dialog
  * content (so it is unmounted on close), or `close()` must reset it: otherwise a discarded edit comes back when the dialog reopens.
+ * The returned function also has `release()` (see `useDirtyForm`): call it right before a save-and-go `navigate`.
  */
-export function useDialogDirtyClose(isDirty: boolean, close: () => void): () => void {
+export function useDialogDirtyClose(isDirty: boolean, close: () => void): (() => void) & { release(): void } {
   const { askDiscard, dropDiscard } = useDirtyForms();
   const { release } = useDirtyForm(isDirty);
   const owner = useId();
   // A question still open when its dialog goes away (e.g. the page was left) must not outlive it or run a stale `close()`.
   useEffect(() => () => dropDiscard(owner), [dropDiscard, owner]);
-  return useCallback(() => {
+  const requestClose = useCallback(() => {
     if (!isDirty) {
       close();
       return;
@@ -114,6 +115,7 @@ export function useDialogDirtyClose(isDirty: boolean, close: () => void): () => 
       close();
     });
   }, [askDiscard, close, isDirty, owner, release]);
+  return useMemo(() => Object.assign(requestClose, { release }), [requestClose, release]);
 }
 
 /**

@@ -12,4 +12,12 @@ describe('message copy (Web Interface Guidelines, typography)', () => {
     const bad = values(messages).filter(([, text]) => text.includes('"') || text.includes('...'));
     expect(bad).toEqual([]);
   });
+
+  it.each([['vi', vi], ['en', en]])('%s: the accessible name of [Chọn model] starts with its visible label', (_, messages) => {
+    expect(messages.ai.status.chooseModelFor.toLowerCase().startsWith(messages.ai.status.chooseModel.toLowerCase())).toBe(true);
+  });
+
+  it('vi: the price hint writes the ceiling without a thousands dot', () => {
+    expect(vi.ai.models.form.priceHint.startsWith('Từ 0 đến 1000,')).toBe(true);
+  });
 });

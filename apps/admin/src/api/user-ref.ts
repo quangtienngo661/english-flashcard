@@ -1,9 +1,8 @@
-/** A user named in an API response: the id, the address when the id is a known account, and whether it is a system actor. */
-export type UserRef = { id: string; email: string | null; system: boolean };
+/** A person shown in admin objects (API `userRef()`): `email` is null when the account is gone, `system` for the seeded actor. */
+export type UserRef = { id: string; email: string | null; system?: boolean };
 
-/** How a user reference reads on screen: the address, else `systemLabel` for a system actor, else a dash. */
-export function userLabel(ref: UserRef | null | undefined, systemLabel: string): string {
-  if (!ref) return '—';
-  if (ref.email) return ref.email;
-  return ref.system ? systemLabel : '—';
+/** Plain label for a `UserRef`; a ref without `system` (older objects) counts as `system: false`. */
+export function userLabel(ref: UserRef, t: (key: string) => string): string {
+  if (ref.system === true) return t('common.system');
+  return ref.email ?? t('common.unknownUser');
 }

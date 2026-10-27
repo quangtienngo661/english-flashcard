@@ -59,7 +59,7 @@ export function ReportReasonsPage() {
         />
       ),
     },
-    { key: 'updatedBy', header: t('reportReasons.cols.updatedBy'), cell: (r) => userLabel(r.updated_by_user, t('common.systemUser')) },
+    { key: 'updatedBy', header: t('reportReasons.cols.updatedBy'), cell: (r) => (r.updated_by_user ? userLabel(r.updated_by_user, t) : '—') },
     {
       key: 'actions',
       header: t('reportReasons.cols.actions'),

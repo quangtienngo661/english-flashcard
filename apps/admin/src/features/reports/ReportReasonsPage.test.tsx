@@ -34,7 +34,7 @@ describe('report reasons list', { timeout: 20_000 }, () => {
     const codes = screen.getAllByTestId('reason-code').map((e) => e.textContent).slice(0, 3);
     expect(codes).toEqual(['other', 'wrong_meaning', 'bad_sentence']);
     expect(screen.getAllByText('admin@wordmet.com').length).toBeGreaterThan(0);
-    expect(screen.getAllByText(vi.common.systemUser).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(vi.common.system).length).toBeGreaterThan(0);
   });
 
   it('§6.9: a note under the table says old reports keep the name they were sent with', async () => {

@@ -134,7 +134,7 @@ export function ReportDetail({ id, listSearch }: { id: string; listSearch: strin
   // Only the button pressed last has a say: an older failure of another button must not outlive a later success.
   const failed = lastPressed === 'no_error' ? noError : lastPressed === 'fixed' ? fixed : lastPressed === 'confirmed' ? confirmed : undefined;
 
-  const who = [report.resolved_by_user ? userLabel(report.resolved_by_user, t('common.systemUser')) : null, report.resolved_by_role].filter(Boolean).join(' · ');
+  const who = [report.resolved_by_user ? userLabel(report.resolved_by_user, t) : null, report.resolved_by_role].filter(Boolean).join(' · ');
   const callId = report.call_operation_id;
 
   return (

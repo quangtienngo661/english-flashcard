@@ -97,7 +97,7 @@ export function ReportsPage() {
       key: 'status', header: t('reports.cols.status'), card: 'field', className: 'whitespace-nowrap',
       cell: (r) => <Badge tone={STATUS_TONE[r.status]}>{t(`reports.statuses.${r.status}`)}</Badge>,
     },
-    { key: 'resolvedBy', header: t('reports.cols.resolvedBy'), card: 'field', className: 'wrap-anywhere', cell: (r) => r.resolved_by_user ? userLabel(r.resolved_by_user, t('common.systemUser')) : (r.resolved_by_role ?? '—') },
+    { key: 'resolvedBy', header: t('reports.cols.resolvedBy'), card: 'field', className: 'wrap-anywhere', cell: (r) => r.resolved_by_user ? userLabel(r.resolved_by_user, t) : (r.resolved_by_role ?? '—') },
   ];
 
   // Beside the open report the table only has room for the word, the reason and the status; the rest is in the panel.

@@ -46,7 +46,7 @@ describe('refunds list', { timeout: 20_000 }, () => {
 
   it('§6.9: a resolver the API cannot name shows as the system label or a dash', async () => {
     renderApp('/refunds', { [LIST]: json(page([item({ resolved_by_user: { id: 'x', email: null, system: true } })])) }, ADMIN);
-    expect(within(await rowOf('lan@example.com')).getByText(vi.common.systemUser)).toBeInTheDocument();
+    expect(within(await rowOf('lan@example.com')).getByText(vi.common.system)).toBeInTheDocument();
   });
 
   it('§6.9: the empty list says "Chưa có lần xác nhận lỗi nào trong khoảng này."', async () => {
