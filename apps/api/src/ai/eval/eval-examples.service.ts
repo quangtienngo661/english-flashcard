@@ -1,9 +1,11 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { z } from 'zod';
 import { PRISMA_CLIENT } from '../../common/db/prisma.module.js';
+import { userRef, type UserRef } from '../../common/user-ref.js';
 import { ProblemDetailsException } from '../../common/problem-details/problem-details.exception.js';
 import type { Prisma, PrismaClient } from '../../generated/prisma/client.js';
-import { EVAL_EXAMPLES_PER_OPERATION_MAX, EVAL_NOTE_MAX } from '../ai.constants.js';
+import { IdentityService } from '../../identity/profile/identity.service.js';
+import { AI_SYSTEM_ACTOR_ID, EVAL_EXAMPLES_PER_OPERATION_MAX, EVAL_NOTE_MAX } from '../ai.constants.js';
 import { AI_OPERATIONS, type AiOperation } from '../ai.types.js';
 import { OPERATIONS } from '../operations/operations.js';
 
@@ -17,13 +19,16 @@ export const patchExampleSchema = z.strictObject({ input: z.unknown().optional()
 export type PatchExampleBody = z.input<typeof patchExampleSchema>;
 
 export type ExampleView = {
-  id: string; operation: AiOperation; input: unknown; note: string | null; created_by: string; created_at: string; updated_at: string;
+  id: string; operation: AiOperation; input: unknown; note: string | null; created_by: string; created_by_user: UserRef; created_at: string; updated_at: string;
 };
 
 type Row = { id: string; operation: string; input: unknown; note: string | null; createdBy: string; createdAt: Date; updatedAt: Date };
 
-const view = (row: Row): ExampleView => ({
+const SYSTEM_IDS: ReadonlySet<string> = new Set([AI_SYSTEM_ACTOR_ID]);
+
+const view = (row: Row, emails: ReadonlyMap<string, string>): ExampleView => ({
   id: row.id, operation: row.operation as AiOperation, input: row.input, note: row.note, created_by: row.createdBy,
+  created_by_user: userRef(row.createdBy, emails, SYSTEM_IDS),
   created_at: row.createdAt.toISOString(), updated_at: row.updatedAt.toISOString(),
 });
 
@@ -46,13 +51,17 @@ function checkInput(op: AiOperation, input: unknown): void {
 /** The example set written by the owner (design §10): at most 100 per operation, no pagination. */
 @Injectable()
 export class EvalExamplesService {
-  constructor(@Inject(PRISMA_CLIENT) private readonly prisma: PrismaClient) {}
+  constructor(
+    @Inject(PRISMA_CLIENT) private readonly prisma: PrismaClient,
+    @Inject(IdentityService) private readonly identity: IdentityService,
+  ) {}
 
   async list(op: AiOperation): Promise<{ items: ExampleView[] }> {
     const rows = await this.prisma.aiEvalExample.findMany({
       where: { operation: op }, orderBy: [{ createdAt: 'asc' }, { id: 'asc' }], take: EVAL_EXAMPLES_PER_OPERATION_MAX,
     });
-    return { items: rows.map(view) };
+    const emails = await this.identity.emailsOf(rows.map((row) => row.createdBy));
+    return { items: rows.map((row) => view(row, emails)) };
   }
 
   async create(actorId: string, body: CreateExampleBody): Promise<ExampleView> {
@@ -65,7 +74,7 @@ export class EvalExamplesService {
     const row = await this.prisma.aiEvalExample.create({ data: {
       operation: input.operation, input: input.input as Prisma.InputJsonValue, note: input.note ?? null, createdBy: actorId,
     } });
-    return view(row);
+    return view(row, await this.identity.emailsOf([row.createdBy]));
   }
 
   async update(id: string, patch: PatchExampleBody): Promise<ExampleView> {
@@ -78,7 +87,8 @@ export class EvalExamplesService {
       ...(input.note !== undefined ? { note: input.note } : {}),
     };
     try {
-      return view(await this.prisma.aiEvalExample.update({ where: { id }, data }));
+      const updated = await this.prisma.aiEvalExample.update({ where: { id }, data });
+      return view(updated, await this.identity.emailsOf([updated.createdBy]));
     } catch (error) {
       if (error !== null && typeof error === 'object' && 'code' in error && error.code === 'P2025') throw notFound();
       throw error;

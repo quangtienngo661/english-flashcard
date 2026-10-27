@@ -48,9 +48,11 @@ async function problemOf(promise: Promise<unknown>) {
 describe('EvalExamplesService', () => {
   let prisma: ReturnType<typeof fakePrisma>;
   let service: EvalExamplesService;
+  let emailsOf: ReturnType<typeof vi.fn>;
   beforeEach(() => {
     prisma = fakePrisma();
-    service = new EvalExamplesService(prisma as never);
+    emailsOf = vi.fn(async (ids: string[]) => new Map(ids.filter((id) => id === ADMIN).map((id) => [id, 'admin@x.test'])));
+    service = new EvalExamplesService(prisma as never, { emailsOf } as never);
   });
 
   it('create stores the example and returns its view', async () => {
@@ -114,5 +116,25 @@ describe('EvalExamplesService', () => {
     const { id } = await service.create(ADMIN, { operation: 'generate_cloze', input: INPUT });
     await service.remove(id);
     expect(prisma.rows).toHaveLength(0);
+  });
+
+  it('list: one emailsOf call with every author; unknown author has email null', async () => {
+    const other = '22222222-2222-4222-8222-222222222222';
+    await service.create(ADMIN, { operation: 'generate_cloze', input: INPUT });
+    await service.create(other, { operation: 'generate_cloze', input: INPUT });
+    emailsOf.mockClear();
+    const { items } = await service.list('generate_cloze');
+    expect(emailsOf).toHaveBeenCalledTimes(1);
+    expect([...emailsOf.mock.calls[0]![0] as string[]].sort()).toEqual([ADMIN, other].sort());
+    expect(items.map((item) => item.created_by_user)).toEqual([
+      { id: ADMIN, email: 'admin@x.test', system: false }, { id: other, email: null, system: false },
+    ]);
+  });
+
+  it('create and update return created_by_user', async () => {
+    const created = await service.create(ADMIN, { operation: 'generate_cloze', input: INPUT });
+    expect(created.created_by_user).toEqual({ id: ADMIN, email: 'admin@x.test', system: false });
+    const updated = await service.update(created.id, { note: 'n' });
+    expect(updated.created_by_user).toEqual({ id: ADMIN, email: 'admin@x.test', system: false });
   });
 });
