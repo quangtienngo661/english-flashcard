@@ -65,7 +65,8 @@ export function Flashcard({ card, position, total, flipped, onFlip }: { card: Ca
           </div>
         </div>
         <div data-face="back" aria-hidden={!flipped || undefined} inert={!flipped} className={cn(FACE, 'motion-safe:rotate-y-180', !flipped && 'motion-reduce:opacity-0')}>
-          <div className="grid flex-1 md:grid-cols-2">
+          {/* Option C (owner 27/10/2026, docs/audit/2026-10-27-mat-sau-the.html): one column, the meaning across the card, examples below. */}
+          <div className="flex flex-1 flex-col">
             <div className="flex min-w-0 flex-col gap-2 p-5">
               <Badges card={card} />
               <p className="flex flex-wrap items-baseline gap-x-2">
@@ -75,7 +76,7 @@ export function Flashcard({ card, position, total, flipped, onFlip }: { card: Ca
                   <SpeakWord text={content.lemma} />
                 </span>
               </p>
-              <p className="break-words text-h2 font-bold text-ink">{content.meaning.text}</p>
+              <p className="break-words text-title-lg font-bold text-ink">{content.meaning.text}</p>
               {forms.length > 0 && (
                 <ul aria-label={t('forms')} className="flex flex-wrap gap-1.5">
                   {forms.map((form) => (
@@ -86,9 +87,9 @@ export function Flashcard({ card, position, total, flipped, onFlip }: { card: Ca
                 </ul>
               )}
             </div>
-            <div className="flex min-w-0 flex-col justify-between">
+            <div className="flex min-w-0 flex-col">
               {content.examples[0] && (
-                <div className="flex flex-col gap-1 p-5">
+                <div className="flex flex-col gap-1 border-t border-border p-5">
                   <p className="text-caption font-semibold text-muted">{t('example')}</p>
                   <p className="flex items-start gap-1 text-ui text-ink">
                     <span className="min-w-0 flex-1 break-words">{highlightWord(content.examples[0], content.lemma, forms)}</span>
