@@ -8,6 +8,7 @@ import en from '../../messages/en.json';
 import { Banner } from './Banner';
 import { Button } from './Button';
 import { Checkbox } from './Checkbox';
+import { ConfirmDialog } from './ConfirmDialog';
 import { DataList } from './DataList';
 import { FileDrop } from './FileDrop';
 import { ListState } from './ListState';
@@ -246,5 +247,53 @@ describe('Button and TextField', () => {
     const input = screen.getByLabelText('Email');
     expect(input).toBeInvalid();
     expect(input).toHaveAccessibleDescription('Wrong email');
+  });
+});
+
+describe('ConfirmDialog', () => {
+  const props = { title: 'Leave this page?', confirmLabel: 'Leave', onConfirm: () => {}, onCancel: () => {} };
+
+  it('shows the title and body; confirm and cancel call their handlers; cancel defaults to common.cancel', async () => {
+    const onConfirm = vi.fn();
+    const onCancel = vi.fn();
+    wrap(
+      <ConfirmDialog {...props} isOpen onConfirm={onConfirm} onCancel={onCancel}>
+        Unsaved changes will be lost.
+      </ConfirmDialog>,
+    );
+    const dialog = screen.getByRole('dialog', { name: 'Leave this page?' });
+    expect(dialog).toHaveTextContent('Unsaved changes will be lost.');
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Leave' }));
+    expect(onConfirm).toHaveBeenCalledTimes(1);
+    await userEvent.click(within(dialog).getByRole('button', { name: en.common.cancel }));
+    expect(onCancel).toHaveBeenCalledTimes(1);
+  });
+
+  it('Esc calls onCancel, not onConfirm', async () => {
+    const onConfirm = vi.fn();
+    const onCancel = vi.fn();
+    wrap(<ConfirmDialog {...props} isOpen cancelLabel="Stay" onConfirm={onConfirm} onCancel={onCancel} />);
+    expect(screen.getByRole('button', { name: 'Stay' })).toBeInTheDocument();
+    await userEvent.keyboard('{Escape}');
+    expect(onCancel).toHaveBeenCalledTimes(1);
+    expect(onConfirm).not.toHaveBeenCalled();
+  });
+
+  it('tone danger styles the confirm button; while pending neither Esc nor the buttons act', async () => {
+    const onConfirm = vi.fn();
+    const onCancel = vi.fn();
+    wrap(<ConfirmDialog {...props} isOpen tone="danger" isPending onConfirm={onConfirm} onCancel={onCancel} />);
+    const confirm = screen.getByRole('button', { name: 'Leave' });
+    expect(confirm.className).toContain('bg-danger');
+    await userEvent.click(confirm);
+    await userEvent.keyboard('{Escape}');
+    await userEvent.click(screen.getByRole('button', { name: en.common.cancel }));
+    expect(onConfirm).not.toHaveBeenCalled();
+    expect(onCancel).not.toHaveBeenCalled();
+  });
+
+  it('renders nothing while closed', () => {
+    wrap(<ConfirmDialog {...props} isOpen={false} />);
+    expect(screen.queryByRole('dialog')).toBeNull();
   });
 });

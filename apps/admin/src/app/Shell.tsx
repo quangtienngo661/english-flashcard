@@ -8,6 +8,7 @@ import { useLocaleSwitch } from '../i18n/locale-context';
 import { Banner } from '../ui/Banner';
 import { Button } from '../ui/Button';
 import { Logo } from '../ui/Logo';
+import { DirtyFormProvider, LeaveGuard } from './dirty-form';
 import { canAccess, navLabelKey, visibleNav, type NavEntry, type NavGroup } from './nav';
 import { NAV_ICONS } from './nav-icons';
 import { NoAccess } from './NoAccess';
@@ -137,92 +138,95 @@ export function Shell() {
   const logout = () => void store.logout();
 
   return (
-    <div className="flex min-h-dvh text-ink">
-      <a
-        href="#main"
-        onClick={(event) => {
-          event.preventDefault();
-          document.getElementById('main')?.focus();
-        }}
-        className="sr-only rounded-control bg-surface px-3 py-2 text-ui font-medium text-primary shadow-menu outline-none focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus-visible:ring-2 focus-visible:ring-primary"
-      >
-        {t('shell.skipToContent')}
-      </a>
-      {/* Only the menu list scrolls, so VI/EN and the account stay at the foot on short screens. */}
-      <aside className="sticky top-0 hidden h-dvh w-sidebar shrink-0 flex-col px-3 pb-4 pt-5 shell:flex">
-        <div className="shrink-0 px-2.5 pb-3">
-          <Logo />
-        </div>
-        <div className="scroll-fade min-h-0 flex-1 overflow-y-auto">
-          <SidebarNav permissions={me.permissions} />
-        </div>
-        <SidebarFoot email={me.email} onLogout={logout} />
-      </aside>
+    <DirtyFormProvider>
+      <div className="flex min-h-dvh text-ink">
+        <a
+          href="#main"
+          onClick={(event) => {
+            event.preventDefault();
+            document.getElementById('main')?.focus();
+          }}
+          className="sr-only rounded-control bg-surface px-3 py-2 text-ui font-medium text-primary shadow-menu outline-none focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus-visible:ring-2 focus-visible:ring-primary"
+        >
+          {t('shell.skipToContent')}
+        </a>
+        {/* Only the menu list scrolls, so VI/EN and the account stay at the foot on short screens. */}
+        <aside className="sticky top-0 hidden h-dvh w-sidebar shrink-0 flex-col px-3 pb-4 pt-5 shell:flex">
+          <div className="shrink-0 px-2.5 pb-3">
+            <Logo />
+          </div>
+          <div className="scroll-fade min-h-0 flex-1 overflow-y-auto">
+            <SidebarNav permissions={me.permissions} />
+          </div>
+          <SidebarFoot email={me.email} onLogout={logout} />
+        </aside>
 
-      <div className="flex min-w-0 flex-1 flex-col shell:py-3 shell:pr-3">
-        <div className="flex items-center gap-2.5 bg-primary px-3 pb-4 pt-2.5 text-on-primary shell:hidden">
-          <AriaButton
-            aria-label={t('shell.openMenu')}
-            onPress={() => setDrawerOpen(true)}
-            className="flex min-h-control min-w-control items-center justify-center rounded-control outline-none pointer-coarse:min-h-control-touch pointer-coarse:min-w-control-touch hover:bg-on-primary/15 focus-visible:ring-2 focus-visible:ring-accent"
-          >
-            <MenuIcon aria-hidden className="size-5" />
-          </AriaButton>
-          <Logo tone="onPrimary" />
+        <div className="flex min-w-0 flex-1 flex-col shell:py-3 shell:pr-3">
+          <div className="flex items-center gap-2.5 bg-primary px-3 pb-4 pt-2.5 text-on-primary shell:hidden">
+            <AriaButton
+              aria-label={t('shell.openMenu')}
+              onPress={() => setDrawerOpen(true)}
+              className="flex min-h-control min-w-control items-center justify-center rounded-control outline-none pointer-coarse:min-h-control-touch pointer-coarse:min-w-control-touch hover:bg-on-primary/15 focus-visible:ring-2 focus-visible:ring-accent"
+            >
+              <MenuIcon aria-hidden className="size-5" />
+            </AriaButton>
+            <Logo tone="onPrimary" />
+          </div>
+
+          <ShellSlotsContext.Provider value={slots}>
+            <main
+              id="main"
+              tabIndex={-1}
+              className="-mt-2 flex min-w-0 flex-1 flex-col overflow-clip rounded-t-card bg-surface outline-none shell:mt-0 shell:rounded-card shell:shadow-sheet panel:grid panel:grid-sheet"
+            >
+              <div className="flex min-w-0 flex-col gap-4 px-page-pad-min pb-10 shell:px-page-pad-max">
+                <header className="flex flex-wrap items-end justify-between gap-4 pt-6 shell:pt-7">
+                  <h1 id="page-title" tabIndex={-1} className="min-w-0 break-words text-3xl font-extrabold tracking-tight text-ink outline-none">
+                    {labelKey ? t(labelKey) : ''}
+                  </h1>
+                  <div ref={setActions} className="flex flex-wrap gap-2 empty:hidden" />
+                </header>
+                {offline && (
+                  <Banner
+                    variant="offline"
+                    action={
+                      <Button variant="secondary" onPress={retry}>
+                        {t('common.retry')}
+                      </Button>
+                    }
+                  >
+                    {t('offline.message')}
+                  </Banner>
+                )}
+                {allowed ? <Outlet /> : <NoAccess />}
+              </div>
+              <div ref={setPanel} className="min-w-0" />
+            </main>
+          </ShellSlotsContext.Provider>
         </div>
 
-        <ShellSlotsContext.Provider value={slots}>
-          <main
-            id="main"
-            tabIndex={-1}
-            className="-mt-2 flex min-w-0 flex-1 flex-col overflow-clip rounded-t-card bg-surface outline-none shell:mt-0 shell:rounded-card shell:shadow-sheet panel:grid panel:grid-sheet"
-          >
-            <div className="flex min-w-0 flex-col gap-4 px-page-pad-min pb-10 shell:px-page-pad-max">
-              <header className="flex flex-wrap items-end justify-between gap-4 pt-6 shell:pt-7">
-                <h1 id="page-title" tabIndex={-1} className="min-w-0 break-words text-3xl font-extrabold tracking-tight text-ink outline-none">
-                  {labelKey ? t(labelKey) : ''}
-                </h1>
-                <div ref={setActions} className="flex flex-wrap gap-2 empty:hidden" />
-              </header>
-              {offline && (
-                <Banner
-                  variant="offline"
-                  action={
-                    <Button variant="secondary" onPress={retry}>
-                      {t('common.retry')}
-                    </Button>
-                  }
+        <ModalOverlay isOpen={drawerOpen} onOpenChange={setDrawerOpen} isDismissable className="fixed inset-0 z-40 overscroll-contain bg-ink/45 shell:hidden motion-safe:data-entering:animate-overlay-in motion-safe:data-exiting:animate-overlay-out">
+          <Modal className="fixed inset-y-0 left-0 w-drawer max-w-full bg-canvas outline-none motion-safe:data-entering:animate-drawer-in motion-safe:data-exiting:animate-drawer-out">
+            <Dialog aria-label={t('shell.mainNav')} className="flex h-full flex-col px-3 pb-4 pt-5 outline-none">
+              <div className="flex shrink-0 items-center justify-between pb-3 pl-2.5">
+                <Logo />
+                <AriaButton
+                  aria-label={t('shell.closeMenu')}
+                  onPress={() => setDrawerOpen(false)}
+                  className="flex min-h-control min-w-control items-center justify-center rounded-control outline-none pointer-coarse:min-h-control-touch pointer-coarse:min-w-control-touch hover:bg-primary/7 focus-visible:ring-2 focus-visible:ring-primary"
                 >
-                  {t('offline.message')}
-                </Banner>
-              )}
-              {allowed ? <Outlet /> : <NoAccess />}
-            </div>
-            <div ref={setPanel} className="min-w-0" />
-          </main>
-        </ShellSlotsContext.Provider>
+                  <X aria-hidden className="size-5" />
+                </AriaButton>
+              </div>
+              <div className="scroll-fade min-h-0 flex-1 overflow-y-auto">
+                <SidebarNav permissions={me.permissions} onNavigate={() => setDrawerOpen(false)} />
+              </div>
+              <SidebarFoot email={me.email} onLogout={logout} />
+            </Dialog>
+          </Modal>
+        </ModalOverlay>
+        <LeaveGuard />
       </div>
-
-      <ModalOverlay isOpen={drawerOpen} onOpenChange={setDrawerOpen} isDismissable className="fixed inset-0 z-40 overscroll-contain bg-ink/45 shell:hidden motion-safe:data-entering:animate-overlay-in motion-safe:data-exiting:animate-overlay-out">
-        <Modal className="fixed inset-y-0 left-0 w-drawer max-w-full bg-canvas outline-none motion-safe:data-entering:animate-drawer-in motion-safe:data-exiting:animate-drawer-out">
-          <Dialog aria-label={t('shell.mainNav')} className="flex h-full flex-col px-3 pb-4 pt-5 outline-none">
-            <div className="flex shrink-0 items-center justify-between pb-3 pl-2.5">
-              <Logo />
-              <AriaButton
-                aria-label={t('shell.closeMenu')}
-                onPress={() => setDrawerOpen(false)}
-                className="flex min-h-control min-w-control items-center justify-center rounded-control outline-none pointer-coarse:min-h-control-touch pointer-coarse:min-w-control-touch hover:bg-primary/7 focus-visible:ring-2 focus-visible:ring-primary"
-              >
-                <X aria-hidden className="size-5" />
-              </AriaButton>
-            </div>
-            <div className="scroll-fade min-h-0 flex-1 overflow-y-auto">
-              <SidebarNav permissions={me.permissions} onNavigate={() => setDrawerOpen(false)} />
-            </div>
-            <SidebarFoot email={me.email} onLogout={logout} />
-          </Dialog>
-        </Modal>
-      </ModalOverlay>
-    </div>
+    </DirtyFormProvider>
   );
 }

@@ -122,6 +122,15 @@
     "title": "You don't have access to this page.",
     "home": "Back to home"
   },
+  "leave": {
+    "title": "Leave this page?",
+    "body": "Unsaved changes will be lost.",
+    "stay": "Stay",
+    "leave": "Leave",
+    "discardTitle": "Discard changes?",
+    "discard": "Discard",
+    "keepEditing": "Keep editing"
+  },
   "offline": {
     "message": "Cannot reach the server"
   },

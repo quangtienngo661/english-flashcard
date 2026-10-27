@@ -122,6 +122,15 @@
     "title": "Bạn không có quyền xem trang này.",
     "home": "Về trang chủ"
   },
+  "leave": {
+    "title": "Rời trang?",
+    "body": "Thay đổi chưa lưu sẽ mất.",
+    "stay": "Ở lại",
+    "leave": "Rời trang",
+    "discardTitle": "Bỏ thay đổi?",
+    "discard": "Bỏ thay đổi",
+    "keepEditing": "Tiếp tục sửa"
+  },
   "offline": {
     "message": "Không kết nối được máy chủ"
   },
