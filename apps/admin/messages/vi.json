@@ -617,5 +617,27 @@
     "confirmAllTitle": "Publish toàn bộ catalog?",
     "confirmAllBody": "Bạn chưa chọn bộ lọc nào, nên job này sẽ publish mọi sense đủ điều kiện trong toàn bộ catalog. Chỉ tiếp tục nếu đó là điều bạn muốn.",
     "confirmAllSubmit": "Publish tất cả"
+  },
+  "refunds": {
+    "filters": {
+      "resolver": "Email người xử lý",
+      "resolverPlaceholder": "minh@example.com",
+      "from": "Từ ngày",
+      "to": "Đến ngày",
+      "apply": "Lọc"
+    },
+    "cols": {
+      "report": "Báo lỗi",
+      "user": "Người học",
+      "resolver": "Người xử lý",
+      "role": "Vai trò",
+      "refunded": "Trả lượt",
+      "at": "Thời điểm"
+    },
+    "reportLink": "Xem báo lỗi",
+    "selfResolved": "Tự xử lý báo lỗi của mình",
+    "refunded": { "true": "Đã trả", "false": "Không trả", "null": "Đang thử lại" },
+    "empty": "Chưa có lần xác nhận lỗi nào trong khoảng này.",
+    "note": "Không thu hồi được lượt đã trả."
   }
 }

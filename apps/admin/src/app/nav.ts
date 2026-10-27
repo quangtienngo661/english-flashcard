@@ -28,7 +28,7 @@ export const NAV: NavEntry[] = [
   { group: 'content', path: '/unknown-forms', labelKey: 'nav.unknownForms', needs: ['content.edit'], available: false, plannedStep: '4/7' },
   { group: 'practice', path: '/reports', labelKey: 'nav.reports', needs: ['content.edit'], available: true },
   { group: 'practice', path: '/report-reasons', labelKey: 'nav.reportReasons', needs: ['settings.manage'], available: true },
-  { group: 'practice', path: '/refunds', labelKey: 'nav.refunds', needs: ['settings.manage'], available: false },
+  { group: 'practice', path: '/refunds', labelKey: 'nav.refunds', needs: ['settings.manage'], available: true },
   { group: 'learners', path: '/users', labelKey: 'nav.users', needs: ['roles.manage'], available: false, plannedStep: '5–8', etaNote: 'unconfirmed' },
   { group: 'learners', path: '/entitlements', labelKey: 'nav.entitlements', needs: ['entitlements.grant'], available: false, plannedStep: '5' },
   { group: 'learners', path: '/transactions', labelKey: 'nav.transactions', needs: ['settings.manage'], available: true },

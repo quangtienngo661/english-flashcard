@@ -617,5 +617,27 @@
     "confirmAllTitle": "Publish the whole catalog?",
     "confirmAllBody": "You have not chosen any filter, so this job will publish every eligible sense in the whole catalog. Continue only if that is what you want.",
     "confirmAllSubmit": "Publish everything"
+  },
+  "refunds": {
+    "filters": {
+      "resolver": "Resolver email",
+      "resolverPlaceholder": "minh@example.com",
+      "from": "From date",
+      "to": "To date",
+      "apply": "Filter"
+    },
+    "cols": {
+      "report": "Report",
+      "user": "Learner",
+      "resolver": "Resolved by",
+      "role": "Role",
+      "refunded": "Unit given back",
+      "at": "Time"
+    },
+    "reportLink": "View report",
+    "selfResolved": "Resolved their own report",
+    "refunded": { "true": "Given back", "false": "Not given back", "null": "Retrying" },
+    "empty": "No confirmed errors in this range yet.",
+    "note": "A unit that was given back cannot be taken back."
   }
 }

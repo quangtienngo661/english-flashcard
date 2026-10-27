@@ -38,7 +38,7 @@ describe('nav', () => {
   it('24 items in 6 groups in menu order; available only for the screens that exist', () => {
     expect(NAV.map((n) => [n.group, n.path])).toEqual(MENU_ORDER);
     expect(new Set(NAV.map((n) => n.group)).size).toBe(6);
-    expect(NAV.filter((n) => n.available).map((n) => n.path)).toEqual(['/uploads', '/publish-jobs', '/export', '/sources', '/reports', '/report-reasons', '/transactions', '/staff']);
+    expect(NAV.filter((n) => n.available).map((n) => n.path)).toEqual(['/uploads', '/publish-jobs', '/export', '/sources', '/reports', '/report-reasons', '/refunds', '/transactions', '/staff']);
     expect(NAV.find((n) => n.path === '/ai/costs')?.plannedStep).toBe('6');
   });
 

@@ -125,3 +125,43 @@ export function updateReportReason(api: ApiClient, code: string, body: Partial<R
 
 /** The word the question was about: the snapshot has no field of its own, `correct` is the answer key's reveal. */
 export const reportWord = (report: Report): string => report.question_snapshot.correct.lemma ?? '—';
+
+/** One row of `GET /v1/admin/practice/refunds` (`refundView` in `reports.service.ts`): a confirmed AI report. */
+export type Refund = {
+  report_id: string;
+  user_id: string;
+  user: UserRef;
+  resolved_by: string | null;
+  resolved_by_role: string | null;
+  resolved_by_user: UserRef | null;
+  /** The learner resolved their own report. */
+  self_resolved: boolean;
+  /** `true` given back, `false` not given back, `null` not decided yet (the hourly job retries). */
+  refunded: boolean | null;
+  resolved_at: string | null;
+};
+
+/** What the URL holds: the resolver's address, and Vietnam days as `YYYY-MM-DD` (both inclusive). */
+export type RefundFilters = { resolved_by_email: string; from: string; to: string };
+
+/** The next calendar day of `YYYY-MM-DD`, for the exclusive end of "Đến ngày". */
+function nextDay(day: string): string {
+  const at = new Date(`${day}T00:00:00Z`);
+  at.setUTCDate(at.getUTCDate() + 1);
+  return at.toISOString().slice(0, 10);
+}
+
+/** A Vietnam day starts at 00:00 +07:00 (no daylight saving); `to` is the start of the day after the typed one. */
+export function refundsQuery(filters: RefundFilters, pageToken?: string): string {
+  const query = new URLSearchParams();
+  if (filters.resolved_by_email.trim()) query.set('resolved_by_email', filters.resolved_by_email.trim());
+  if (filters.from) query.set('from', `${filters.from}T00:00:00+07:00`);
+  if (filters.to) query.set('to', `${nextDay(filters.to)}T00:00:00+07:00`);
+  query.set('page_size', String(PAGE_SIZE));
+  if (pageToken) query.set('page_token', pageToken);
+  return query.toString();
+}
+
+export function listRefunds(api: ApiClient, filters: RefundFilters, pageToken?: string) {
+  return api.get<{ items: Refund[]; next_page_token: string | null }>(`/v1/admin/practice/refunds?${refundsQuery(filters, pageToken)}`);
+}
