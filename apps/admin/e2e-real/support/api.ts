@@ -1,4 +1,5 @@
 import { execFileSync } from 'node:child_process';
+import { randomUUID } from 'node:crypto';
 import path from 'node:path';
 import { mailsTo, otpCodeFor } from './mailpit';
 
@@ -54,4 +55,38 @@ export async function loginToken(email: string, password: string): Promise<strin
 /** Revokes every session of the user (the API's behaviour on a password change). */
 export async function changePasswordViaApi(token: string, current: string, next: string): Promise<void> {
   await expectStatus(await post('/v1/auth/password/change', { current_password: current, new_password: next }, token), 200, 'change password');
+}
+
+/** One authenticated call to the real API (`X-CSRF-Protection` included); returns the parsed JSON body, or `undefined` for 204. */
+export async function apiCall<T>(method: string, pathname: string, token: string, body?: unknown, opts: { idempotencyKey?: string } = {}): Promise<T> {
+  const res = await fetch(`${API}${pathname}`, {
+    method,
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'X-CSRF-Protection': '1',
+      ...(body === undefined ? {} : { 'Content-Type': 'application/json' }),
+      ...(opts.idempotencyKey ? { 'Idempotency-Key': opts.idempotencyKey } : {}),
+    },
+    body: body === undefined ? undefined : JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error(`${method} ${pathname}: ${res.status} ${await res.text()}`);
+  return res.status === 204 ? (undefined as T) : ((await res.json()) as T);
+}
+
+/**
+ * An account made by the admin instead of a registration (`user.write` rate limit, so it does not use the 5-an-hour
+ * `auth.register.ip` budget). `'editor'` stays an editor; `null` creates an editor, removes the role and sets the learner's
+ * native language, which every learner route needs (`profile-incomplete` otherwise).
+ */
+export async function createAccount(adminToken: string, email: string, role: 'editor' | null): Promise<{ id: string; password: string }> {
+  const password = `Real-${randomUUID().slice(0, 8)}-Pass-9!`;
+  const created = await apiCall<{ id: string }>('POST', '/v1/admin/users', adminToken, {
+    email, staff_role: 'editor', password, must_change_password: false, timezone: 'Asia/Ho_Chi_Minh', given_name: 'E2E',
+  });
+  if (role === null) {
+    await apiCall('PUT', `/v1/admin/users/${created.id}/staff-role`, adminToken, { staff_role: null });
+    const token = await loginToken(email, password);
+    await apiCall('PATCH', '/v1/me', token, { native_language: 'vi' });
+  }
+  return { id: created.id, password };
 }

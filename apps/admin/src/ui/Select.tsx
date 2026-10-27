@@ -2,6 +2,8 @@ import { Check, ChevronDown } from 'lucide-react';
 import { Button, Label, ListBox, ListBoxItem, Popover, Select as AriaSelect, SelectValue, Text } from 'react-aria-components';
 
 type Props = {
+  /** So a form can focus the field (`document.getElementById`), e.g. the first one a 400 flagged. */
+  id?: string;
   label: string;
   items: Array<{ id: string; label: string }>;
   value: string;
@@ -11,9 +13,10 @@ type Props = {
   error?: string;
 };
 
-export function Select({ label, items, value, onChange, isDisabled, placeholder, error }: Props) {
+export function Select({ id, label, items, value, onChange, isDisabled, placeholder, error }: Props) {
   return (
     <AriaSelect
+      id={id}
       selectedKey={value === '' ? null : value}
       placeholder={placeholder}
       isInvalid={error !== undefined}

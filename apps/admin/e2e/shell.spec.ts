@@ -33,7 +33,7 @@ test.describe('shell (vi)', () => {
     await expect(admin.getByRole('navigation', { name: vi.shell.mainNav }).getByRole('link', { name: vi.nav.staff })).toBeVisible();
   });
 
-  test('Task 12a: group titles TỔNG QUAN … HỆ THỐNG are visible at 1440; at 390 the drawer lists all 17 items and scrolls inside the viewport', async ({ page }, info) => {
+  test('Task 12a: group titles TỔNG QUAN … HỆ THỐNG are visible at 1440; at 390 the drawer lists all 24 items and scrolls inside the viewport', async ({ page }, info) => {
     await signedInAs(page, 'admin', { 'GET /v1/admin/content/uploads': () => emptyUploads });
     await page.goto('/uploads');
     await openNavIfCollapsed(page);
@@ -41,7 +41,7 @@ test.describe('shell (vi)', () => {
     for (const title of Object.values(vi.navGroups)) {
       await expect(nav.getByRole('group', { name: title, exact: true })).toBeAttached();
     }
-    await expect(nav.getByRole('link')).toHaveCount(17);
+    await expect(nav.getByRole('link')).toHaveCount(24);
     if (info.project.name === 'mobile') {
       const last = nav.getByRole('link', { name: vi.nav.staff });
       await last.scrollIntoViewIfNeeded();
@@ -70,9 +70,14 @@ test.describe('shell (vi)', () => {
     await expect(page).toHaveURL(/\/uploads$/);
   });
 
-  test('an editor opening /staff is sent to the first visible page', async ({ page }) => {
+  test('an editor opening /staff keeps the title, sees the no-access text, and [Về trang chủ] leads to /uploads', async ({ page }) => {
     await signedInAs(page, 'editor', { 'GET /v1/admin/content/uploads': () => emptyUploads });
     await page.goto('/staff');
+    await expect(page).toHaveURL(/\/staff$/);
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText(vi.nav.staff);
+    await expect(page.getByText(vi.noAccess.title)).toBeVisible();
+    expect(await seriousViolations(page)).toEqual([]);
+    await page.getByRole('button', { name: vi.noAccess.home }).click();
     await expect(page).toHaveURL(/\/uploads$/);
   });
 
@@ -123,7 +128,7 @@ test.describe('shell (vi)', () => {
     await expect(active).toHaveAttribute('aria-current', 'page');
     expect(await active.getByText(vi.nav.uploads).evaluate((el) => getComputedStyle(el).backgroundImage)).toContain('linear-gradient');
     for (const link of await aside.getByRole('link').all()) await expect(link.locator('svg')).toHaveCount(1);
-    // The foot stays on screen at 1440×900 even with all 17 items: only the menu list scrolls.
+    // The foot stays on screen at 1440×900 even with all 24 items: only the menu list scrolls.
     await expect(aside.getByRole('group', { name: vi.shell.language })).toBeInViewport({ ratio: 1 });
     const account = aside.getByRole('button', { name: new RegExp(`^${vi.shell.account}:`) });
     await expect(account).toBeInViewport({ ratio: 1 });

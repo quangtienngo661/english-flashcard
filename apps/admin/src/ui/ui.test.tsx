@@ -1,6 +1,6 @@
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, MemoryRouter, Route, Routes, useLocation, useNavigationType } from 'react-router';
 import { IntlProvider } from 'use-intl';
 import { describe, expect, it, vi } from 'vitest';
@@ -8,10 +8,15 @@ import en from '../../messages/en.json';
 import { Banner } from './Banner';
 import { Button } from './Button';
 import { Checkbox } from './Checkbox';
+import { ConfirmDialog } from './ConfirmDialog';
 import { DataList } from './DataList';
 import { FileDrop } from './FileDrop';
 import { ListState } from './ListState';
+import { NumberField } from './NumberField';
+import { RadioGroup } from './RadioGroup';
 import { Stat } from './Stat';
+import { Switch } from './Switch';
+import { TextArea } from './TextArea';
 import { TextField } from './TextField';
 
 const wrap = (ui: React.ReactNode, path = '/list') =>
@@ -246,5 +251,199 @@ describe('Button and TextField', () => {
     const input = screen.getByLabelText('Email');
     expect(input).toBeInvalid();
     expect(input).toHaveAccessibleDescription('Wrong email');
+  });
+});
+
+describe('ConfirmDialog', () => {
+  const props = { title: 'Leave this page?', confirmLabel: 'Leave', onConfirm: () => {}, onCancel: () => {} };
+
+  it('shows the title and body; confirm and cancel call their handlers; cancel defaults to common.cancel', async () => {
+    const onConfirm = vi.fn();
+    const onCancel = vi.fn();
+    wrap(
+      <ConfirmDialog {...props} isOpen onConfirm={onConfirm} onCancel={onCancel}>
+        Unsaved changes will be lost.
+      </ConfirmDialog>,
+    );
+    const dialog = screen.getByRole('dialog', { name: 'Leave this page?' });
+    expect(dialog).toHaveTextContent('Unsaved changes will be lost.');
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Leave' }));
+    expect(onConfirm).toHaveBeenCalledTimes(1);
+    await userEvent.click(within(dialog).getByRole('button', { name: en.common.cancel }));
+    expect(onCancel).toHaveBeenCalledTimes(1);
+  });
+
+  it('Esc calls onCancel, not onConfirm', async () => {
+    const onConfirm = vi.fn();
+    const onCancel = vi.fn();
+    wrap(<ConfirmDialog {...props} isOpen cancelLabel="Stay" onConfirm={onConfirm} onCancel={onCancel} />);
+    expect(screen.getByRole('button', { name: 'Stay' })).toBeInTheDocument();
+    await userEvent.keyboard('{Escape}');
+    expect(onCancel).toHaveBeenCalledTimes(1);
+    expect(onConfirm).not.toHaveBeenCalled();
+  });
+
+  it('tone danger styles the confirm button; while pending neither Esc nor the buttons act', async () => {
+    const onConfirm = vi.fn();
+    const onCancel = vi.fn();
+    wrap(<ConfirmDialog {...props} isOpen tone="danger" isPending onConfirm={onConfirm} onCancel={onCancel} />);
+    const confirm = screen.getByRole('button', { name: 'Leave' });
+    expect(confirm.className).toContain('bg-danger');
+    await userEvent.click(confirm);
+    await userEvent.keyboard('{Escape}');
+    await userEvent.click(screen.getByRole('button', { name: en.common.cancel }));
+    expect(onConfirm).not.toHaveBeenCalled();
+    expect(onCancel).not.toHaveBeenCalled();
+  });
+
+  it('renders nothing while closed', () => {
+    wrap(<ConfirmDialog {...props} isOpen={false} />);
+    expect(screen.queryByRole('dialog')).toBeNull();
+  });
+});
+
+describe('form controls: TextArea, Switch, NumberField, RadioGroup', () => {
+  it('TextArea shows its label and reports typing', async () => {
+    const onChange = vi.fn();
+    wrap(<TextArea label="Prompt" value="" onChange={onChange} description="Plain text" />);
+    await userEvent.type(screen.getByLabelText('Prompt'), 'a');
+    expect(onChange).toHaveBeenCalledWith('a');
+    expect(screen.getByLabelText('Prompt')).toHaveAccessibleDescription('Plain text');
+  });
+
+  it('TextArea counter shows 1,234/8,000 and, over maxLength, is danger-styled and still accepts input', async () => {
+    const { rerender } = wrap(<TextArea label="Prompt" value={'x'.repeat(1234)} onChange={() => {}} maxLength={8000} counter />);
+    expect(screen.getByText('1,234/8,000')).not.toHaveAttribute('data-over');
+    expect(screen.getByLabelText('Prompt')).not.toHaveAttribute('aria-invalid', 'true');
+
+    function Harness() {
+      const [v, setV] = useState('abc');
+      return <TextArea label="Prompt" value={v} onChange={setV} maxLength={3} counter />;
+    }
+    rerender(
+      <IntlProvider locale="en" messages={en}>
+        <MemoryRouter>
+          <Harness />
+        </MemoryRouter>
+      </IntlProvider>,
+    );
+    const box = screen.getByLabelText('Prompt');
+    await userEvent.type(box, 'de');
+    expect(box).toHaveValue('abcde');
+    const counter = screen.getByText('5/3');
+    expect(counter).toHaveAttribute('data-over');
+    expect(counter.className).toContain('data-over:text-danger');
+    expect(box).toHaveAttribute('aria-invalid', 'true');
+  });
+
+  it('TextArea without a counter hands maxLength to the browser', () => {
+    wrap(<TextArea label="Note" value="" onChange={() => {}} maxLength={5} />);
+    expect(screen.getByLabelText('Note')).toHaveAttribute('maxlength', '5');
+  });
+
+  it('Switch shows its label and description and reports a toggle', async () => {
+    const onChange = vi.fn();
+    wrap(<Switch label="AI on" description="Turns every AI call on" isSelected={false} onChange={onChange} />);
+    const sw = screen.getByRole('switch', { name: 'AI on' });
+    expect(sw).toHaveAccessibleDescription('Turns every AI call on');
+    await userEvent.click(sw);
+    expect(onChange).toHaveBeenCalledWith(true);
+  });
+
+  it('NumberField reports numbers; cleared it reports null only when nullable', async () => {
+    const onChange = vi.fn();
+    const { rerender } = wrap(<NumberField label="Daily cap" value={5} onChange={onChange} isNullable minValue={0} />);
+    const input = screen.getByLabelText('Daily cap');
+    expect(input).toHaveValue('5');
+    await userEvent.clear(input);
+    await userEvent.tab(); // React Aria commits a number on blur
+    expect(onChange).toHaveBeenLastCalledWith(null);
+
+    onChange.mockClear();
+    rerender(
+      <IntlProvider locale="en" messages={en}>
+        <NumberField label="Daily cap" value={5} onChange={onChange} />
+      </IntlProvider>,
+    );
+    await userEvent.clear(screen.getByLabelText('Daily cap'));
+    await userEvent.tab();
+    expect(onChange).not.toHaveBeenCalled();
+
+    rerender(
+      <IntlProvider locale="en" messages={en}>
+        <NumberField label="Daily cap" value={null} onChange={onChange} />
+      </IntlProvider>,
+    );
+    await userEvent.type(screen.getByLabelText('Daily cap'), '7');
+    await userEvent.tab();
+    expect(onChange).toHaveBeenLastCalledWith(7);
+  });
+
+  it('NumberField shows an empty value as an empty field and its error', () => {
+    wrap(<NumberField label="Cap" value={null} onChange={() => {}} isNullable error="Too big" />);
+    expect(screen.getByLabelText('Cap')).toHaveValue('');
+    expect(screen.getByLabelText('Cap')).toHaveAttribute('aria-invalid', 'true');
+    expect(screen.getByText('Too big')).toBeInTheDocument();
+  });
+
+  it('RadioGroup lists its items with descriptions and reports the chosen id', async () => {
+    const onChange = vi.fn();
+    wrap(
+      <RadioGroup
+        label="Effort"
+        value="low"
+        onChange={onChange}
+        items={[
+          { id: 'low', label: 'Low' },
+          { id: 'high', label: 'High', description: 'Slower, costs more' },
+        ]}
+      />,
+    );
+    expect(screen.getByRole('radiogroup', { name: 'Effort' })).toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: /Low/ })).toBeChecked();
+    expect(screen.getByText('Slower, costs more')).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('radio', { name: /High/ }));
+    expect(onChange).toHaveBeenCalledWith('high');
+  });
+
+  it('RadioGroup: an item description describes the radio but is not part of its name', () => {
+    wrap(
+      <RadioGroup
+        label="Effort"
+        value="low"
+        onChange={() => {}}
+        items={[
+          { id: 'low', label: 'Low' },
+          { id: 'high', label: 'High', description: 'Slower, costs more' },
+        ]}
+      />,
+    );
+    const high = screen.getByRole('radio', { name: 'High' });
+    expect(high).toHaveAccessibleName('High');
+    expect(high).toHaveAccessibleDescription('Slower, costs more');
+    expect(screen.getByRole('radio', { name: 'Low' })).toHaveAccessibleDescription('');
+  });
+
+  it('NumberField displays in the app locale: vi "1.234,5", en "1,234.5"', () => {
+    const inLocale = (locale: string) => (
+      <IntlProvider locale={locale} messages={en}>
+        <NumberField label="Cap" value={1234.5} onChange={() => {}} />
+      </IntlProvider>
+    );
+    const { unmount } = render(inLocale('vi'));
+    expect(screen.getByLabelText('Cap')).toHaveValue('1.234,5');
+    unmount();
+    render(inLocale('en'));
+    expect(screen.getByLabelText('Cap')).toHaveValue('1,234.5');
+  });
+
+  it('TextArea counter follows the app locale (vi "1.234/8.000") and describes the field', () => {
+    render(
+      <IntlProvider locale="vi" messages={en}>
+        <TextArea label="Prompt" value={'x'.repeat(9000)} onChange={() => {}} maxLength={8000} counter description="Plain text" />
+      </IntlProvider>,
+    );
+    expect(screen.getByText('9.000/8.000')).toBeInTheDocument();
+    expect(screen.getByLabelText('Prompt')).toHaveAccessibleDescription('Plain text 9.000/8.000');
   });
 });

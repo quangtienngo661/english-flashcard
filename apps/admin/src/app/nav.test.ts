@@ -1,46 +1,72 @@
 import { describe, expect, it } from 'vitest';
 import type { Permission } from '../auth/session-store';
+import { NAV_ICONS } from './nav-icons';
 import { canAccess, firstVisiblePath, homePath, NAV, visibleNav } from './nav';
 
-const EDITOR: Permission[] = ['content.edit', 'content.import', 'content.publish', 'taxonomy.manage'];
-const ADMIN: Permission[] = [...EDITOR, 'roles.manage', 'settings.manage', 'entitlements.grant'];
+const EDITOR: Permission[] = ['content.edit', 'content.import', 'content.publish', 'taxonomy.manage', 'entitlements.grant'];
+const ADMIN: Permission[] = [...EDITOR, 'roles.manage', 'settings.manage'];
 
-const FIGMA_ORDER = [
+// Design §4.4 / copy doc §8.0: the sidebar of the admin, group by group.
+const MENU_ORDER = [
   ['overview', '/dashboard'],
+  ['content', '/words'],
+  ['content', '/senses'],
+  ['content', '/topics'],
   ['content', '/uploads'],
   ['content', '/publish-jobs'],
   ['content', '/export'],
   ['content', '/sources'],
-  ['content', '/words'],
-  ['content', '/senses'],
-  ['content', '/topics'],
-  ['practice', '/reported'],
-  ['practice', '/irregular-forms'],
+  ['content', '/unknown-forms'],
+  ['practice', '/reports'],
+  ['practice', '/report-reasons'],
+  ['practice', '/refunds'],
   ['learners', '/users'],
   ['learners', '/entitlements'],
   ['learners', '/transactions'],
-  ['ai', '/ai/settings'],
+  ['ai', '/ai/status'],
+  ['ai', '/ai/models'],
+  ['ai', '/ai/operations'],
+  ['ai', '/ai/prompts'],
+  ['ai', '/ai/eval'],
   ['ai', '/ai/costs'],
-  ['ai', '/ai/eval-sets'],
+  ['ai', '/ai/calls'],
+  ['system', '/settings'],
   ['system', '/staff'],
 ];
 
 describe('nav', () => {
-  it('17 items in 6 groups in Figma order; available only for /uploads, /publish-jobs, /export, /sources, /transactions, /staff', () => {
-    expect(NAV.map((n) => [n.group, n.path])).toEqual(FIGMA_ORDER);
+  it('24 items in 6 groups in menu order; available only for the screens that exist', () => {
+    expect(NAV.map((n) => [n.group, n.path])).toEqual(MENU_ORDER);
     expect(new Set(NAV.map((n) => n.group)).size).toBe(6);
     expect(NAV.filter((n) => n.available).map((n) => n.path)).toEqual(['/uploads', '/publish-jobs', '/export', '/sources', '/transactions', '/staff']);
     expect(NAV.find((n) => n.path === '/ai/costs')?.plannedStep).toBe('6');
   });
 
-  it('editor sees no AI group, no /staff and no /transactions (settings.manage); admin sees all 17', () => {
-    const editorPaths = visibleNav(EDITOR).map((n) => n.path);
-    expect(editorPaths).toHaveLength(12);
-    expect(editorPaths).not.toContain('/staff');
-    expect(editorPaths).not.toContain('/transactions');
-    expect(visibleNav([...EDITOR, 'entitlements.grant'])).toHaveLength(12);
+  it('every entry has an icon', () => {
+    for (const n of NAV) expect(NAV_ICONS[n.path], n.path).toBeDefined();
+  });
+
+  it('editor sees the 11 entries of A/71e; admin sees all 24', () => {
+    expect(visibleNav(EDITOR).map((n) => n.path)).toEqual([
+      '/dashboard',
+      '/words',
+      '/senses',
+      '/topics',
+      '/uploads',
+      '/publish-jobs',
+      '/export',
+      '/sources',
+      '/unknown-forms',
+      '/reports',
+      '/entitlements',
+    ]);
     expect(visibleNav(EDITOR).some((n) => n.group === 'ai')).toBe(false);
-    expect(visibleNav(ADMIN)).toHaveLength(17);
+    expect(visibleNav(ADMIN)).toHaveLength(24);
+  });
+
+  it('the AI group needs settings.manage, not roles.manage', () => {
+    for (const n of NAV.filter((x) => x.group === 'ai')) expect(n.needs, n.path).toEqual(['settings.manage']);
+    expect(visibleNav([...EDITOR, 'roles.manage']).some((n) => n.group === 'ai')).toBe(false);
   });
 
   it('an entry needs every permission it lists', () => {
@@ -70,6 +96,8 @@ describe('nav', () => {
     expect(canAccess('/transactions', ADMIN)).toBe(true);
     expect(canAccess('/ai/costs', EDITOR)).toBe(false);
     expect(canAccess('/ai/costs', ADMIN)).toBe(true);
+    expect(canAccess('/words', ['content.import'])).toBe(false);
+    expect(canAccess('/words', EDITOR)).toBe(true);
     expect(canAccess('/uploads/abc', EDITOR)).toBe(true);
     expect(canAccess('/uploads/abc', ['roles.manage'])).toBe(false);
     expect(canAccess('/publish-jobs/1', EDITOR)).toBe(true);

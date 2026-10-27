@@ -51,7 +51,7 @@ test.describe('Giao dịch (A/90)', () => {
     await expect(dialog).toBeHidden();
   });
 
-  test('editor: no menu entry, and /transactions sends them home without calling the API', async ({ page }) => {
+  test('editor: no menu entry, and /transactions shows the no-access view without calling the API', async ({ page }) => {
     let calls = 0;
     await signedInAs(page, 'editor', {
       'GET /v1/admin/content/uploads': () => uploads,
@@ -61,7 +61,9 @@ test.describe('Giao dịch (A/90)', () => {
       },
     });
     await page.goto('/transactions');
-    await expect(page).toHaveURL(/\/uploads$/);
+    await expect(page).toHaveURL(/\/transactions$/);
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText(vi.nav.transactions);
+    await expect(page.getByText(vi.noAccess.title)).toBeVisible();
     await openNavIfCollapsed(page);
     await expect(page.getByRole('navigation', { name: vi.shell.mainNav }).getByRole('link', { name: vi.nav.transactions })).toHaveCount(0);
     expect(calls).toBe(0);

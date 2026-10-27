@@ -1,9 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { render } from '@testing-library/react';
 import { IntlProvider } from 'use-intl';
-import { MemoryRouter } from 'react-router';
 import vi from '../../../messages/vi.json';
-import { AppRoutes } from '../../app/routes';
+import { renderRoutes } from '../../app/test-router';
 import { SessionProvider } from '../../auth/session-context';
 import { SessionStore } from '../../auth/session-store';
 import { BASE, makeFetch, makeMe, tokenResponse, type Route } from '../../auth/test-support';
@@ -13,7 +11,7 @@ export const ME_ADMIN = makeMe({
   id: 'me-1',
   email: 'admin@wordmet.com',
   staff_role: 'admin',
-  permissions: ['content.edit', 'content.import', 'content.publish', 'taxonomy.manage', 'roles.manage'],
+  permissions: ['content.edit', 'content.import', 'content.publish', 'taxonomy.manage', 'roles.manage', 'settings.manage', 'entitlements.grant'],
 });
 
 export type StaffRow = { id: string; email: string; email_verified: boolean; staff_role: 'admin' | 'editor' | null };
@@ -34,17 +32,15 @@ export function renderApp(path: string, routes: Record<string, Route>, me = ME_A
   });
   const store = new SessionStore({ baseUrl: BASE, fetch: f.fetch, channel: null });
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  const utils = render(
+  const utils = renderRoutes(path, (routerNode) => (
     <IntlProvider locale="vi" messages={vi} timeZone="Asia/Ho_Chi_Minh">
       <QueryClientProvider client={client}>
         <SessionProvider store={store}>
-          <MemoryRouter initialEntries={[path]}>
-            <AppRoutes />
-          </MemoryRouter>
+          {routerNode}
           <ToastRegion />
         </SessionProvider>
       </QueryClientProvider>
-    </IntlProvider>,
-  );
+    </IntlProvider>
+  ));
   return { store, client, ...f, ...utils };
 }

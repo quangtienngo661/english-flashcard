@@ -42,6 +42,15 @@ describe('problem mapping', () => {
     expect(err.retryAfterSeconds).toBeNull();
   });
 
+  it('a top-level reason string is kept; a non-string reason is dropped', async () => {
+    const kept = await toApiError(
+      problemResponse(409, { type: 'http://x/problems/grant-not-allowed', status: 409, title: 'g', reason: 'self-grant' }),
+    );
+    expect(kept.problem.reason).toBe('self-grant');
+    const dropped = await toApiError(problemResponse(409, { type: 'http://x/problems/grant-not-allowed', status: 409, title: 'g', reason: 7 }));
+    expect(dropped.problem.reason).toBeUndefined();
+  });
+
   it('a non-problem body still becomes an ApiError with the status and the generic message', async () => {
     const err = await toApiError(new Response('<html>bad gateway</html>', { status: 502 }));
     expect(err.problem.status).toBe(502);
@@ -68,6 +77,18 @@ describe('problem mapping', () => {
       'validation-failed', 'rate-limited', 'file-invalid', 'file-too-large', 'payload-too-large', 'level-source-required',
       'source-incomplete', 'source-exists', 'nothing-to-publish', 'batch-not-revertable', 'batch-filter-unavailable',
       'export-too-large', 'idempotency-key-abandoned', 'csrf-header-required', 'mail-unavailable', 'invalid-token', 'forbidden',
+    ]) {
+      expect(KNOWN_ERROR_SLUGS).toContain(slug);
+    }
+  });
+
+  it('KNOWN_ERROR_SLUGS covers every slug of design §4.5', () => {
+    for (const slug of [
+      'version-conflict', 'lock-rule', 'report-not-open', 'resolve-status-not-allowed', 'report-reason-exists', 'grant-not-allowed',
+      'grant-not-active', 'model-exists', 'model-in-use', 'model-not-found', 'model-not-supported', 'provider-not-configured',
+      'provider-unavailable', 'model-not-set', 'operation-settings-conflict', 'prompt-revision-conflict', 'word-form-exists',
+      'stale-revision', 'publish-incomplete', 'sense-exists', 'replacement-exists', 'replacement-waiting', 'sense-retired',
+      'sense-entry-mismatch', 'revision-rejected', 'unknown-topic', 'topic-archived', 'too-many-examples', 'topic-exists',
     ]) {
       expect(KNOWN_ERROR_SLUGS).toContain(slug);
     }
