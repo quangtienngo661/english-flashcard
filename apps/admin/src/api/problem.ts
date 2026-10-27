@@ -6,6 +6,8 @@ export type Problem = {
   detail?: string;
   operation_id?: string;
   violations?: string[];
+  /** Top-level extension member of some problems (e.g. `grant-not-allowed`): the API spreads extensions into the body. */
+  reason?: string;
 };
 
 export class ApiError extends Error {
@@ -27,7 +29,7 @@ export class NetworkError extends Error {
 
 /**
  * Every problem `type` slug thrown in `apps/api/src` (grep `type: '` over ProblemDetailsException, plus the
- * body-parser mappings in `problem-details.filter.ts`), checked 14/10/2026. Each has a vi and en message.
+ * body-parser mappings in `problem-details.filter.ts`), checked 14/10/2026, extended 27/10/2026 for the admin UI round (design §4.5). Each has a vi and en message.
  */
 export const KNOWN_ERROR_SLUGS = [
   'batch-filter-unavailable',
@@ -39,25 +41,53 @@ export const KNOWN_ERROR_SLUGS = [
   'file-invalid',
   'file-too-large',
   'forbidden',
+  'grant-not-active',
+  'grant-not-allowed',
   'idempotency-key-abandoned',
   'invalid-credentials',
   'invalid-current-password',
   'invalid-otp',
   'invalid-token',
   'level-source-required',
+  'lock-rule',
   'mail-unavailable',
+  'model-exists',
+  'model-in-use',
+  'model-not-found',
+  'model-not-set',
+  'model-not-supported',
   'not-found',
   'nothing-to-publish',
+  'operation-settings-conflict',
   'password-change-required',
   'payload-too-large',
   'profile-incomplete',
+  'prompt-revision-conflict',
+  'provider-not-configured',
+  'provider-unavailable',
+  'publish-incomplete',
   'rate-limited',
+  'replacement-exists',
+  'replacement-waiting',
+  'report-not-open',
+  'report-reason-exists',
+  'resolve-status-not-allowed',
+  'revision-rejected',
+  'sense-entry-mismatch',
+  'sense-exists',
+  'sense-retired',
   'source-exists',
   'source-incomplete',
   'staff-role-rule',
+  'stale-revision',
+  'too-many-examples',
+  'topic-archived',
   'topic-exists',
+  'unknown-topic',
   'unsupported-media-type',
   'validation-failed',
+  'version-conflict',
+  'word-form-exists',
 ] as const;
 
 const KNOWN = new Set<string>(KNOWN_ERROR_SLUGS);
@@ -85,6 +115,7 @@ export async function toApiError(res: Response): Promise<ApiError> {
   if (typeof body.detail === 'string') problem.detail = body.detail;
   if (typeof body.operation_id === 'string') problem.operation_id = body.operation_id;
   if (Array.isArray(body.violations)) problem.violations = body.violations.filter((v): v is string => typeof v === 'string');
+  if (typeof body.reason === 'string') problem.reason = body.reason;
   const retry = Number.parseInt(res.headers.get('retry-after') ?? '', 10);
   return new ApiError(problem, Number.isFinite(retry) && retry >= 0 ? retry : null);
 }
