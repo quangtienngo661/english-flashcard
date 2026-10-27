@@ -253,7 +253,8 @@ function Question({ state, item, onReport }: { state: PracticeSessionState; item
       <p data-live="result" aria-live="polite" aria-atomic="true" className="sr-only">
         {announce}
       </p>
-      <QuestionCard prompt={prompt} ai={state.session !== null && isAi(item, state.session)} reportable={item.reportable} reported={state.reported.has(item.item_id)} onReport={onReport}>
+      {/* Keyed per item so each question mounts again and rises in (2A); not the bare id, which the answer field below uses. */}
+      <QuestionCard key={`card-${item.item_id}`} prompt={prompt} ai={state.session !== null && isAi(item, state.session)} reportable={item.reportable} reported={state.reported.has(item.item_id)} onReport={onReport}>
         {question}
         <HintPanel item={item} onOpen={state.setHintLevel} locked={final !== null} />
       </QuestionCard>
@@ -267,7 +268,7 @@ function Question({ state, item, onReport }: { state: PracticeSessionState; item
         <AnswerFeedback result={final.result} onReview={(action) => void state.review(action)} onNext={() => void state.next()} busy={state.busy} focusPrimary={!typed} />
       ) : outcome?.kind === 'try_again' ? (
         <>
-          <div className="flex flex-col gap-0.5 rounded-inner bg-danger-soft p-4">
+          <div data-feedback className="flex flex-col gap-0.5 rounded-inner bg-danger-soft p-4 motion-safe:animate-feedback-in">
             <p className="text-title font-bold text-danger">{t('wrong')}</p>
             <p className="text-ui font-semibold text-ink">{t('tryAgainBody')}</p>
           </div>

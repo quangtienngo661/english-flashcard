@@ -30,6 +30,8 @@ export function Choices({ options, rightIndex, chosenIndex, onChoose, disabled, 
             className={cn(
               'flex min-h-control-touch min-w-0 items-center gap-3 rounded-inner border-2 px-3 py-2 text-left text-body font-semibold text-ink outline-none focus-visible:ring-2 focus-visible:ring-primary',
               right ? 'border-success bg-success-soft' : chosen ? 'border-danger bg-danger-soft' : 'border-border-strong bg-surface enabled:hover:bg-primary-soft',
+              // 3C (owner 27/10/2026): a wrong choice wiggles once (300ms); reduced motion keeps only the colours.
+              chosen && !right && 'motion-safe:animate-wiggle-soft',
             )}
           >
             <span className="flex size-6 shrink-0 items-center justify-center rounded-sm border border-border-strong text-caption">{index + 1}</span>{' '}
@@ -37,7 +39,7 @@ export function Choices({ options, rightIndex, chosenIndex, onChoose, disabled, 
             {right && (
               <span className="flex shrink-0 items-center gap-1 text-caption font-semibold text-success">
                 {chosen ? t('chosenRight') : t('rightOption')}
-                <CircleCheck aria-hidden className="size-4" />
+                <CircleCheck aria-hidden className={cn('size-4', chosen && 'motion-safe:animate-pop-in')} />
               </span>
             )}
             {chosen && !right && (

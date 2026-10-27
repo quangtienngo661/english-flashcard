@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
 import { useApi } from '@/app-shell/session/session-context';
 import { SpeakSentence, SpeakWord } from '@/app-ui/SpeakButtons';
+import { cn } from '@/lib/cn';
 import type { Card } from '../groups/groups-api';
 import { highlightWord } from '../groups/highlight';
 
@@ -23,36 +24,47 @@ export function useForms(lemma: string | undefined) {
 }
 
 const BADGE = 'w-fit rounded-full px-2 py-0.5 text-caption font-semibold';
+// Both faces share one grid cell, so the card is as tall as its taller face and does not jump when it turns.
+const FACE =
+  'relative col-start-1 row-start-1 flex min-h-80 flex-col overflow-hidden rounded-card border-2 border-ink bg-surface shadow-ledge backface-hidden md:min-h-72';
 
-/** K/20, K/21, M/30, M/31: word and part of speech in front; forms, meaning, example and saved sentences behind (D3). */
+/**
+ * K/20, K/21, M/30, M/31: word and part of speech in front; forms, meaning, example and saved sentences behind (D3).
+ * 1C (owner 27/10/2026): the card turns over in 3D (420ms); with reduced motion it does not turn and the faces swap. The face that is
+ * turned away stays mounted but is inert and aria-hidden. A new card (keyed by item) rises in (2A).
+ */
 export function Flashcard({ card, position, total, flipped, onFlip }: { card: Card; position: number; total: number; flipped: boolean; onFlip: () => void }) {
   const t = useTranslations('App.review');
   const { content } = card;
   const forms = useForms(content.lemma);
 
   return (
-    <div role="group" aria-label={t('card', { n: position, total })} className="relative w-full">
+    <div
+      role="group"
+      aria-label={t('card', { n: position, total })}
+      data-flipped={flipped}
+      className="relative w-full perspective-distant motion-safe:animate-card-rise"
+    >
       <div aria-hidden className="absolute inset-0 -rotate-2 rounded-card border-2 border-ink bg-surface" />
-      <div className="relative flex min-h-80 flex-col overflow-hidden rounded-card border-2 border-ink bg-surface shadow-ledge md:min-h-72">
-        {!flipped ? (
-          <>
-            <button type="button" onClick={onFlip} className="flex flex-1 flex-col p-5 text-left outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary">
-              <Badges card={card} />
-              <span className="flex flex-1 flex-col items-center justify-center gap-1 py-8 text-center">
-                <span className="break-all text-display font-extrabold text-ink">{content.lemma}</span>
-                <span className="text-ui text-muted">{content.pos}</span>
-              </span>
-              <span className="self-center text-caption text-muted">
-                <span className="hidden md:inline">{t('hintWeb')}</span>
-                <span className="md:hidden">{t('hintPhone')}</span>
-              </span>
-            </button>
-            {/* Review plan I3: outside the flip button, so a press reads the word and never flips the card. */}
-            <div className="absolute right-3 top-3 flex gap-1">
-              <SpeakWord text={content.lemma} />
-            </div>
-          </>
-        ) : (
+      <div className={cn('relative grid transform-3d motion-safe:transition-transform motion-safe:duration-flip motion-safe:ease-standard', flipped && 'motion-safe:rotate-y-180')}>
+        <div data-face="front" aria-hidden={flipped || undefined} inert={flipped} className={cn(FACE, flipped && 'motion-reduce:opacity-0')}>
+          <button type="button" onClick={onFlip} className="flex flex-1 flex-col p-5 text-left outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary">
+            <Badges card={card} />
+            <span className="flex flex-1 flex-col items-center justify-center gap-1 py-8 text-center">
+              <span className="break-all text-display font-extrabold text-ink">{content.lemma}</span>
+              <span className="text-ui text-muted">{content.pos}</span>
+            </span>
+            <span className="self-center text-caption text-muted">
+              <span className="hidden md:inline">{t('hintWeb')}</span>
+              <span className="md:hidden">{t('hintPhone')}</span>
+            </span>
+          </button>
+          {/* Review plan I3: outside the flip button, so a press reads the word and never flips the card. */}
+          <div className="absolute right-3 top-3 flex gap-1">
+            <SpeakWord text={content.lemma} />
+          </div>
+        </div>
+        <div data-face="back" aria-hidden={!flipped || undefined} inert={!flipped} className={cn(FACE, 'motion-safe:rotate-y-180', !flipped && 'motion-reduce:opacity-0')}>
           <div className="grid flex-1 md:grid-cols-2">
             <div className="flex min-w-0 flex-col gap-2 p-5">
               <Badges card={card} />
@@ -101,7 +113,7 @@ export function Flashcard({ card, position, total, flipped, onFlip }: { card: Ca
               )}
             </div>
           </div>
-        )}
+        </div>
       </div>
     </div>
   );
