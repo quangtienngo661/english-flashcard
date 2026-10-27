@@ -108,26 +108,26 @@ function Hero({ group }: { group: GroupSummary }) {
   const count = waiting(group);
   const review = `/${locale}/app/review?group=${group.id}`;
   return (
-    // Owner 27/10/2026: the same deep navy card as Hôm nay on Luyện tập.
-    <section aria-label={group.name} className="flex flex-col gap-4 rounded-card border-b-4 border-primary bg-navy-card p-5 text-on-navy md:p-7">
+    // Owner 27/10/2026: the same hero card as Hôm nay on Luyện tập (light in the light theme, deep navy in the dark one).
+    <section aria-label={group.name} className="flex flex-col gap-4 rounded-card border-b-4 border-primary bg-hero p-5 text-on-hero md:p-7">
       <span className="w-fit rounded-full bg-accent px-2.5 py-0.5 text-caption font-semibold text-on-accent">
         {group.today.priority > 0 ? t('heroChipPriority') : t('heroChip')}
       </span>
       <div>
-        <h2 className="break-words text-h2 font-extrabold text-on-navy">{group.name}</h2>
-        <p className="text-ui text-on-navy-muted">{t('heroLine', { waiting: count, total: group.total })}</p>
+        <h2 className="break-words text-h2 font-extrabold text-on-hero">{group.name}</h2>
+        <p className="text-ui text-on-hero-muted">{t('heroLine', { waiting: count, total: group.total })}</p>
       </div>
       <dl className="grid max-w-md grid-cols-3 gap-3">
         {(
           [
             ['priority', group.today.priority, 'bg-accent'],
             ['due', group.today.due, 'bg-primary'],
-            ['new', group.today.new, 'bg-on-navy-muted'],
+            ['new', group.today.new, 'bg-on-hero-muted'],
           ] as const
         ).map(([key, value, dot]) => (
-          <div key={key} className="flex flex-col rounded-inner bg-navy-raised px-3 py-2.5">
-            <dd className="text-title font-bold text-on-navy">{value}</dd>
-            <dt className="flex items-center gap-1.5 text-caption text-on-navy-muted">
+          <div key={key} className="flex flex-col rounded-inner bg-hero-raised px-3 py-2.5">
+            <dd className="text-title font-bold text-on-hero">{value}</dd>
+            <dt className="flex items-center gap-1.5 text-caption text-on-hero-muted">
               <span aria-hidden className={`size-2 rounded-full ${dot}`} />
               {t(key)}
             </dt>
@@ -138,7 +138,7 @@ function Hero({ group }: { group: GroupSummary }) {
         <Link href={review} className="flex min-h-control-touch items-center rounded-inner bg-accent px-6 text-body font-semibold text-on-accent shadow-ledge-accent">
           {t('review', { count })}
         </Link>
-        <Link href={`${review}&mode=all`} className="text-ui font-semibold text-on-navy underline underline-offset-2">
+        <Link href={`${review}&mode=all`} className="text-ui font-semibold text-on-hero underline underline-offset-2">
           {t('studyAll', { total: group.total })}
         </Link>
       </div>

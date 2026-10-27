@@ -122,7 +122,7 @@ function WordPreview({ word }: { word: WordRow }) {
         {first?.topics[0] && <span className="rounded-sm bg-success-soft px-1.5 py-0.5 text-caption font-semibold text-success">{first.topics[0].name}</span>}
       </div>
       <p className="flex flex-wrap items-baseline gap-x-2">
-        <span className="break-all text-h2 font-extrabold text-ink">{word.lemma}</span>
+        <span className="wrap-anywhere text-title-lg font-extrabold text-ink">{word.lemma}</span>
         <span className="text-ui text-muted">{word.pos_list.join(', ')}</span>
       </p>
       <p className="break-words text-title font-semibold text-ink">{word.meaning_preview}</p>

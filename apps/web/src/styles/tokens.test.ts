@@ -154,7 +154,8 @@ describe('light islands and the navy card', () => {
   it('on-navy and on-navy-muted read on navy-card in both themes', () => {
     for (const map of [lightColors, darkColors]) {
       colors = map;
-      expect(below([['on-navy', 'navy-card'], ['on-navy-muted', 'navy-card'], ['on-navy', 'navy-raised']], 4.5)).toEqual([]);
+      expect(below([['on-navy', 'navy-card'], ['on-navy-muted', 'navy-card'], ['on-navy', 'navy-raised'],
+        ['on-hero', 'hero'], ['on-hero-muted', 'hero'], ['on-hero', 'hero-raised'], ['on-hero-muted', 'hero-raised']], 4.5)).toEqual([]);
     }
     colors = lightColors;
   });

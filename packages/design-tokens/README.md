@@ -45,6 +45,7 @@ that variable loads the `Lexend` family itself (for example a Google Fonts `<lin
 | `neutral-soft` | `#eef0f5` | "queued", "reverted", "unchanged" |
 | `wrong-chip` / `wrong-chip-deep` | `#ffd3cd` / `#d99b92` | a sticker picked wrongly, and its ledge |
 | `navy` / `navy-raised` | `#1b2444` / `#2c3760` | learner app: top bar and lookup strip, raised items on it |
+| `hero` / `hero-raised` / `on-hero` / `on-hero-muted` | light `#eceffe` / `#ffffff` / `#0f1a3d` / `#4d5577`; dark `#12151f` / `#2c3448` / `#f1f3fd` / `#b9c1e0` | learner app: the big "Hôm nay" cards on Today and Practice — light in the light theme, deep navy in the dark one |
 | `navy-card` | `#121833` (dark `#12151f`) | learner app: the big navy cards (Hôm nay hero on Today and Practice, Từ hay sai), darker than `navy` |
 | `on-navy` / `on-navy-muted` | `#f1f3fd` / `#b9c1e0` | learner app: text on `navy` |
 | `session-card` | `var(--color-canvas)` | learner app: card in review and practice sessions |

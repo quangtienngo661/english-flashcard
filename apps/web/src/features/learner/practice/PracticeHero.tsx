@@ -5,7 +5,7 @@ import type { ReactNode } from 'react';
 import { Button } from '@/app-ui/Button';
 import { RULE_TYPES } from './practice-api';
 
-const CHIP = 'rounded-full border border-on-navy-muted px-2.5 py-0.5 text-caption font-semibold text-on-navy';
+const CHIP = 'rounded-full border border-on-hero-muted px-2.5 py-0.5 text-caption font-semibold text-on-hero';
 
 /** K/51 big card: today's words across decks, the three types, and the default number of questions. */
 export function TodayHero({ words, groups, count, onStart, onCustomize, busy, error }: {
@@ -25,10 +25,10 @@ export function TodayHero({ words, groups, count, onStart, onCustomize, busy, er
         {t('hero.title')}
       </h2>
       {words === 0 ? (
-        <p className="text-ui text-on-navy-muted">{t('hero.empty')}</p>
+        <p className="text-ui text-on-hero-muted">{t('hero.empty')}</p>
       ) : (
         <>
-          <p className="text-ui text-on-navy-muted">{t('hero.line', { words, groups, count })}</p>
+          <p className="text-ui text-on-hero-muted">{t('hero.line', { words, groups, count })}</p>
           <ul className="flex flex-wrap gap-2">
             {RULE_TYPES.map((type) => (
               <li key={type} className={CHIP}>
@@ -38,7 +38,7 @@ export function TodayHero({ words, groups, count, onStart, onCustomize, busy, er
             <li className={CHIP}>{t('countChip', { count })}</li>
           </ul>
           {error && (
-            <p role="alert" className="text-ui font-semibold text-on-navy">
+            <p role="alert" className="text-ui font-semibold text-on-hero">
               {error}
             </p>
           )}
@@ -48,7 +48,7 @@ export function TodayHero({ words, groups, count, onStart, onCustomize, busy, er
             </Button>
             <Button
               size="lg"
-              className="bg-transparent px-8 text-on-navy shadow-none ring-2 ring-inset ring-on-navy-muted hover:bg-navy-raised"
+              className="bg-transparent px-8 text-on-hero shadow-none ring-2 ring-inset ring-on-hero-muted hover:bg-hero-raised"
               onPress={onCustomize}
             >
               {t('hero.customize')}
@@ -65,7 +65,7 @@ export function HeroFrame({ labelledBy, art, children }: { labelledBy: string; a
   return (
     <section
       aria-labelledby={labelledBy}
-      className="relative flex items-center gap-6 overflow-hidden rounded-card border-b-4 border-primary bg-navy-card p-5 text-on-navy md:p-7"
+      className="relative flex items-center gap-6 overflow-hidden rounded-card border-b-4 border-primary bg-hero p-5 text-on-hero md:p-7"
     >
       <div className="flex min-w-0 flex-1 flex-col gap-3">{children}</div>
       <div aria-hidden className="hidden shrink-0 md:block">
