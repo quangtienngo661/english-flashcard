@@ -1,6 +1,8 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
+import type { CSSProperties } from 'react';
+import { flushSync } from 'react-dom';
 import {
   Button,
   Text,
@@ -16,7 +18,18 @@ export type ToastTone = 'neutral' | 'success' | 'danger';
 export type ToastMessage = { text: string; tone: ToastTone };
 
 /** One queue for the whole app, so a toast outlives the page that raised it. */
-export const toastQueue = new AriaToastQueue<ToastMessage>({ maxVisibleToasts: 3 });
+export const toastQueue = new AriaToastQueue<ToastMessage>({
+  maxVisibleToasts: 3,
+  // React Aria's documented way to animate a toast out (react-aria.adobe.com/Toast): close it inside a view transition, styled in
+  // globals.css. Adding one keeps its own toast-in; without View Transitions or with reduced motion it just disappears.
+  wrapUpdate(fn, action) {
+    if (action === 'add' || !('startViewTransition' in document) || !window.matchMedia('(prefers-reduced-motion: no-preference)').matches) {
+      fn();
+      return;
+    }
+    document.startViewTransition(() => flushSync(fn));
+  },
+});
 
 /** Confirms an action or reports a failure; closes itself after 5 s. */
 export function showToast(text: string, tone: ToastTone = 'neutral'): void {
@@ -32,7 +45,9 @@ export function ToastRegion() {
       {({ toast }) => (
         <AriaToast
           toast={toast}
-          className={`flex max-w-lg items-center gap-4 rounded-inner px-4 py-3 text-ui shadow-toast outline-none focus-visible:ring-2 focus-visible:ring-accent motion-safe:animate-toast-in ${TONE[toast.content.tone]}`}
+          // raw-ok: each toast needs its own view-transition name so only the closing one animates out
+          style={{ viewTransitionName: toast.key } as CSSProperties}
+          className={`flex max-w-lg items-center gap-4 rounded-inner px-4 py-3 text-ui shadow-toast outline-none [view-transition-class:toast] focus-visible:ring-2 focus-visible:ring-accent motion-safe:animate-toast-in ${TONE[toast.content.tone]}`}
         >
           <AriaToastContent className="min-w-0 wrap-anywhere">
             <Text slot="title">{toast.content.text}</Text>

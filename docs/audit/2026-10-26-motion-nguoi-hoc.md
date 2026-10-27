@@ -92,3 +92,30 @@ Chủ dự án thử trên app thật, thấy lật thẻ hơi lâu và muốn c
   (thẻ lướt qua phải), tắt khi đang ở thẻ đầu. Giảm chuyển động: thẻ đổi ngay.
 - **Mặt sau thẻ ôn, bản C** (visual `2026-10-27-mat-sau-the.html`): một cột, nghĩa chạy hết bề ngang ở cỡ `text-title-lg` (24px, trước là
   `text-h2` ≈ 38px), dạng chia ngay dưới, một đường kẻ mảnh rồi câu mẫu và câu đã gặp. Ảnh thật: `after/back-c-1280.png`, `after/back-c-390.png`.
+
+## 6. Vòng 3 — #4–#6 (27/10/2026, branch `feat/motion-polish`)
+
+Chủ dự án: "được thì làm luôn".
+
+- **#4 Thanh tiến độ phiên ôn trên phone** (`review/ReviewSession.tsx`): thanh luôn rộng hết khung và được đẩy sang trái bằng
+  `transform: translateX(<phần đã ôn> − 100%)`, `transition-transform` 200ms `--ease-standard`. Khác đề xuất (`scaleX`) một chút:
+  `translateX` giữ đầu thanh tròn, `scaleX` làm đầu tròn bị bẹp. Không còn đổi `width` (không gây layout). Thanh vẫn làm tròn theo % nguyên
+  như trước, nên phiên rất dài (135 thẻ) có lúc không nhích sau một thẻ.
+- **#5 Toast lúc đóng** (`app-ui/Toast.tsx`, `globals.css`): React Aria không có trạng thái "đang đóng" cho toast; cách tài liệu của nó chỉ
+  (react-aria.adobe.com/Toast, đọc 27/10/2026) là đóng toast bên trong một View Transition. Toast cũ mờ dần và trượt xuống 0.5rem,
+  150ms `--ease-exit`; các toast còn lại trượt về chỗ cùng 150ms. Lúc thêm toast không dùng View Transition (giữ `toast-in` cũ).
+  Trang không bị chụp vào transition (`:root { view-transition-name: none }`) và `::view-transition { pointer-events: none }`, nên trong
+  150ms đó trang vẫn bấm được. Trình duyệt không có View Transitions hoặc bật giảm chuyển động: toast biến mất ngay như trước.
+- **#6 Màn tổng kết** (`review/ReviewSummary.tsx`, `practice/session/SessionSummary.tsx`): các khối hiện lần lượt (`summary-in`:
+  `opacity 0, translateY(0.5rem)` → yên, 250ms `--ease-enter`), cách nhau 50ms, tối đa 5 khối (tiêu đề, hai ô số, danh sách từ, nút).
+  Nút bấm được ngay cả khi chưa hiện hết. Giảm chuyển động: hiện cùng lúc.
+- **Kiểm tra trên app thật** (Chromium, `polish/polish-check.json`):
+  - thanh tiến độ đi từ −329px, qua −326px ở mốc 60ms, tới −297px (bộ 12 thẻ);
+  - đóng toast chỉ chạy một animation `toast-out` 150ms, và một cú bấm vào tiêu đề trang ngay lúc đó tới đúng `H1`;
+  - ở màn tổng kết lúc 90ms: tiêu đề gần hiện xong, nút (delay 150ms) còn ẩn.
+
+  Ảnh giữa chuyển động: `polish/progress-mid.png`, `polish/toast-closing.png`, `polish/summary-mid.png`.
+- **Chưa kiểm:** Safari và Firefox (View Transitions và `view-transition-class` có ở Chrome 125+ và Safari 18.2+; trình duyệt cũ hơn thì
+  toast biến mất ngay hoặc mờ chéo mặc định), điện thoại thật.
+- **Ghi chú ngoài phạm vi:** nút đóng của toast có `aria-label="Close"` tiếng Anh từ React Aria, đè lên chữ "Đóng" (trình đọc màn hình đọc
+  "Close"). Có từ trước, chưa sửa.

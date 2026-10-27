@@ -110,3 +110,83 @@ Khung Figma chỉ ghi bằng node id, có chủ ý: ảnh nằm trong Figma, kh�
 - `noAccess`: "Bạn không có quyền xem trang này." và nút "Về trang chủ".
 - `leave.*`: "Rời trang?", "Thay đổi chưa lưu sẽ mất.", "Ở lại", "Rời trang", "Bỏ thay đổi?", "Bỏ thay đổi", "Tiếp tục sửa".
 - `draft.*` (thanh khôi phục bản đang sửa): "Bạn có thay đổi chưa lưu từ lần trước.", "Khôi phục", "Bỏ".
+
+# Đợt giao diện admin — API (AD15) as-built (27/10/2026)
+
+Plan Task 9, 10, 17, 21, 24, 25, 31, 32, 37, làm ở phiên riêng (AD15), mỗi module một PR vào `dev`. Chỉ **thêm** (trường mới cạnh trường cũ, endpoint đọc mới,
+một quyền đọc rộng hơn). Mọi object người mới có dạng `{ id, email: string | null, system: boolean }` (`apps/api/src/common/user-ref.ts`, `userRef()`), email tra
+một lần mỗi response bằng `IdentityService.emailsOf`, ngoài transaction. Tên trường khớp design §5 và plan, không đổi tên nào.
+
+- **PR #145 — AI (Task 9, 10, 17).** `GET /v1/admin/ai/prompts/{op}` (và response của `PUT`): `updated_by_user`, `guard` (chữ của `PROMPT_GUARD`);
+  `…/revisions`: `saved_by_user`; bản seed do `AI_SYSTEM_ACTOR_ID` lưu → `{ email: null, system: true }`. Mới `GET /v1/admin/ai/test-quota` (`settings.manage`)
+  → `{ limit, remaining, resets_at }` cho rule `ai.test` của người gọi (`RateLimiter.peek`, không trừ lượt; `remaining` không âm). `GET /v1/admin/ai/status`:
+  `operations[].last_error.purpose` (`learner | test | eval`). Ví dụ eval (`GET`, `POST`, `PATCH`): `created_by_user`; lần chạy (`GET …/runs`, `…/runs/{id}`):
+  `started_by_user`.
+- **PR #146 — Cài đặt (Task 21).** `GET /v1/admin/settings` thêm `defaults` (cùng dạng `values`, từ `SETTINGS_DEFAULTS`).
+- **PR #147 — Báo lỗi (Task 24, 25).** Mỗi báo lỗi (`GET /v1/admin/practice/reports`, response của `resolve`): `resolved_by_user` (hoặc `null`), `refundable`
+  (giá trị hiện tại của lý do). Mới `GET /v1/admin/practice/reports/{id}` (`content.edit`, cùng dạng một dòng; id lạ → 404 `not-found`). Snapshot câu dạng mcq
+  (`mcq_*`, `meaning_in_sentence`, `mcq_sentence`) của báo lỗi **mới** thêm `learner.option_index` (`number | null`). `GET /v1/admin/practice/refunds`: `user`,
+  `resolved_by_user`; bộ lọc mới `resolved_by_email` (email không có tài khoản → danh sách rỗng; email nằm trong `page_token`). `GET /v1/admin/practice/report-reasons`:
+  `updated_by_user`; GET đổi quyền thành `content.edit` (editor đọc được), `POST` / `PATCH` vẫn `settings.manage`.
+- **PR #148 — Cấp gói (Task 31, 32).** Mỗi lần cấp (list, `POST`, `PATCH`, `revoke`, `GET …/users/{user_id}`): `user`, `granted_by_user`, `revoked_by_user`,
+  `status` (`replaced → revoked → expired → scheduled → active`), `last_change` (lần sửa mới nhất + `changed_by_user`, hoặc `null`); `changes[]` thêm
+  `changed_by_user`. `replaced` = có lần cấp plan khác của cùng người học tạo đúng lúc `revoked_at` bởi `revoked_by` (kiểm cả trên Postgres thật); thu hồi tay gõ
+  lý do "replaced" vẫn là `revoked`. Bộ lọc mới `user_email`, `granted_by_email`. Mới `GET /v1/admin/entitlements/lookup?email=` (`entitlements.grant`, rule
+  `entitlements.lookup` 60 lần/giờ/người) → `{ user: { id, email }, grantable, reason: 'self-grant' | 'target-is-admin' | 'target-is-staff' | null }`, không thấy → 404.
+- **PR #149 — Nội dung (Task 37).** `GET /v1/admin/content/senses`: mọi dòng có `missing[]` (khi bản mới nhất là `draft` / `reviewed`; còn lại `[]`); kết quả
+  `status=unpublishable` không đổi.
+
+Màn cần biết: `lookup` trả `user: { id, email }` **không có** `system` (đúng §5.2; màn coi thiếu là `false`). Với `page_token` hỏng kèm email lạ: Cấp gói trả 400,
+Trả lượt trả danh sách rỗng (thứ tự kiểm khác nhau; chỉ lộ khi cả hai cùng sai). Kiểm: unit 195 file / 2623 test, `tsc`, lint (chỉ warning cũ ở
+`mail-dispatcher.service.ts`); CI xanh từng PR. Chưa chạy API thật qua HTTP cho các endpoint mới (ngoài kiểm `replaced` trên Postgres thật).
+
+# Đợt giao diện admin — M2 as-built (27/10/2026)
+
+Nhánh `feat/giao-dien-admin-m2`, một PR vào `dev`. Màn Cài đặt hệ thống `/settings` (A/70a–A/70f) đã thay "Tính năng chưa có" (chỉ admin, `settings.manage`).
+
+## Đã làm (Task 22–23)
+
+1. `ui/Tabs.tsx` (tab có kiểm soát trên `react-aria-components`, mũi tên trái/phải đổi tab, dấu chấm "có thay đổi chưa lưu" có chữ cho trình đọc màn hình);
+   `Select` thêm `description` (dòng phụ). Trang Cài đặt: 6 tab ghi vào URL (`?tab=`), 41 ô theo thứ tự copy doc §8.2, dòng phụ
+   "`khóa` · khoảng (đơn vị, luật chéo, nghĩa của ô trống / số 0) · mặc định …" lấy từ `bounds` và `defaults`; một nút [Lưu thay đổi] gửi đúng các khóa đã đổi
+   kèm `version` và `Idempotency-Key` (`useSubmitAction`); 400 gắn lỗi vào ô, mở tab chứa ô lỗi đầu và focus ô đó; 409 `version-conflict` hiện câu copy doc và
+   [Tải lại] (hỏi trước nếu có thay đổi); khối "Lượt AI hôm nay" đầu tab Gói và lượt (tô vàng khi `alert_reached`); hộp [Lịch sử thay đổi] (khóa, cũ → mới,
+   email, giờ, "Tải thêm"); hỏi "Rời trang?" khi rời trang lúc có thay đổi, không hỏi khi chỉ đổi tab; giữ bản đang sửa khi phiên hết hạn và hỏi khôi phục
+   (`useKeptDraft('settings')`, lưu phần thay đổi chứ không lưu cả bộ giá trị): `feat(admin): add the system settings page`.
+2. e2e mock `e2e/settings.spec.ts` (lưu 2 tab một lần, 400 sang tab khác, rời trang, editor không có quyền), `/settings` và `?tab=entitlements` vào
+   `a11y.spec.ts`, kiểm không cuộn ngang ở 390 cho 6 tab và hộp lịch sử; e2e stack thật `e2e-real/m2.real.spec.ts` (đổi một ô ở Nhắc học và một ô ở AI,
+   lưu một lần, lịch sử có hai dòng với email admin): `test(admin): add the m2 real-stack check and as-built`.
+
+## Ảnh chụp (stack thật, 27/10/2026)
+
+Khung Figma file `7HcPAKLrWu32C27qYMJUOA`: A/70a `397:3287`, A/70b `397:3684`, A/70c `397:3943`, A/70d `397:4231`, A/70e `397:4607`, A/70f `397:4845`.
+Ảnh ở `docs/deliveries/giao-dien-admin/m2/`.
+
+Khác khung Figma, có chủ ý: nhãn nằm **trên** ô số (component `NumberField` dùng chung), khung vẽ nhãn bên trái và ô nhỏ bên phải có đơn vị trong ô; đơn vị
+ở đây nằm trong dòng phụ ("1–50 phiên"). Nút chính dùng màu primary của hướng B (xanh), khung vẽ vàng. Dòng phụ không có chữ "khoảng" (theo khung; plan ghi có).
+
+| Màn | Desktop 1440 | Phone 390 |
+|---|---|---|
+| A/70a Nhắc học | [desktop](giao-dien-admin/m2/a70a-reminders-desktop.png) | [mobile](giao-dien-admin/m2/a70a-reminders-mobile.png) |
+| A/70b Học và ôn | [desktop](giao-dien-admin/m2/a70b-learning-desktop.png) | [mobile](giao-dien-admin/m2/a70b-learning-mobile.png) |
+| A/70c Luyện tập | [desktop](giao-dien-admin/m2/a70c-practice-desktop.png) | [mobile](giao-dien-admin/m2/a70c-practice-mobile.png) |
+| A/70c có ô đã đổi (dấu chấm trên tab, nút Lưu bật) | [desktop](giao-dien-admin/m2/a70c-dirty-desktop.png) | [mobile](giao-dien-admin/m2/a70c-dirty-mobile.png) |
+| A/70d Gói và lượt (khối Lượt AI hôm nay) | [desktop](giao-dien-admin/m2/a70d-entitlements-desktop.png) | [mobile](giao-dien-admin/m2/a70d-entitlements-mobile.png) |
+| A/70e Nội dung | [desktop](giao-dien-admin/m2/a70e-content-desktop.png) | [mobile](giao-dien-admin/m2/a70e-content-mobile.png) |
+| A/70f AI | [desktop](giao-dien-admin/m2/a70f-ai-desktop.png) | [mobile](giao-dien-admin/m2/a70f-ai-mobile.png) |
+| Hộp Lịch sử thay đổi | [desktop](giao-dien-admin/m2/history-desktop.png) | [mobile](giao-dien-admin/m2/history-mobile.png) |
+| Khôi phục sau khi phiên hết hạn (đổi mật khẩu bằng API giữa lúc sửa → bấm Lưu → `/login` → đăng nhập lại) | [desktop](giao-dien-admin/m2/restore-banner-desktop.png) | — |
+
+## Kiểm đã chạy
+
+- Stack thật (API 3300 + worker, admin preview 5383, DB `english_learning_admin_m2`, `AI_FAKE_ENABLED=true`): `pnpm test:e2e:real` 11/11 (8 cũ + 2 M0 + 1 M2).
+  Thêm bằng script Playwright: phiên hết hạn giữa lúc sửa → đăng nhập lại về `/settings?tab=content` → thanh khôi phục → [Khôi phục] trả lại đúng giá trị đã gõ.
+- `pnpm --filter admin test` 423 test (một lần chạy cả bộ có `BatchPanel.test.tsx` rớt vì chậm; chạy riêng 27/27 qua; file đó không đổi), lint, typecheck sạch;
+  `pnpm --filter admin test:e2e` 153 passed, 55 skipped.
+
+## Câu chữ tự viết (không có trong copy doc §8.2)
+
+- `settings.*`: nhãn trợ năng "Nhóm cài đặt"; "Đã lưu" (toast); "Tải lại cài đặt?" / "Thay đổi chưa lưu sẽ mất." (hỏi trước khi tải lại lúc 409); đơn vị trong
+  dòng phụ (ngày, giờ, phút, tháng, ký tự, giây, phiên, lượt, lần); "mỗi 15 phút"; "Chưa tải được lượt AI hôm nay."; hộp lịch sử: "Chưa có thay đổi nào.",
+  "Người dùng đã xóa" (người đổi không còn email); `common.unsavedChanges` "(có thay đổi chưa lưu)" cho dấu chấm trên tab. Bản tiếng Anh của mọi khóa
+  `settings.*` do Claude viết.

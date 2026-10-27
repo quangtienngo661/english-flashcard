@@ -1,0 +1,57 @@
+import { describe, expect, it } from 'vitest';
+import { applyPatch, changedValues, FIELD_ORDER, fieldOfPath, SETTINGS_LAYOUT, SECTIONS, timeOptions, type Values } from './settings-api';
+
+const values = (): Values => ({
+  reminders: { enabled: true, send_time: '20:00' },
+  learning: { reviews_per_group_per_day: 100 },
+  practice: { max_questions_per_session: 20, default_questions_per_session: 10 },
+  entitlements: { ai_cap_alert_percent: 75 },
+  content: {},
+  ai: {},
+});
+
+describe('settings-api', () => {
+  it('the layout has the 41 keys of the copy doc, each once', () => {
+    expect(FIELD_ORDER).toHaveLength(41);
+    expect(new Set(FIELD_ORDER).size).toBe(41);
+    expect(SECTIONS.map((s) => SETTINGS_LAYOUT[s].length)).toEqual([5, 5, 9, 15, 2, 5]);
+  });
+
+  it('changedValues keeps only changed keys; a value set back to the server value is not a change', () => {
+    const draft = values();
+    draft.reminders.send_time = '21:00';
+    draft.practice.max_questions_per_session = 20; // unchanged
+    draft.entitlements.ai_cap_alert_percent = null;
+    expect(changedValues(values(), draft)).toEqual({ reminders: { send_time: '21:00' }, entitlements: { ai_cap_alert_percent: null } });
+    draft.reminders.send_time = '20:00';
+    draft.entitlements.ai_cap_alert_percent = 75;
+    expect(changedValues(values(), draft)).toEqual({});
+  });
+
+  it('fieldOfPath maps a values path to its field id; anything else is form-level', () => {
+    expect(fieldOfPath('values.practice.default_questions_per_session')).toBe('practice.default_questions_per_session');
+    expect(fieldOfPath('values.practice.nope')).toBeNull();
+    expect(fieldOfPath('version')).toBeNull();
+  });
+
+  it('applyPatch keeps known keys of the right type only', () => {
+    const next = applyPatch(values(), {
+      reminders: { send_time: '21:15', enabled: 'yes', bogus: 1 },
+      learning: { reviews_per_group_per_day: null },
+      practice: { max_questions_per_session: 2.5 },
+      nope: { x: 1 },
+    });
+    expect(next.reminders).toEqual({ enabled: true, send_time: '21:15' });
+    expect(next.learning.reviews_per_group_per_day).toBeNull();
+    expect(next.practice.max_questions_per_session).toBe(20);
+    expect(applyPatch(values(), 'garbage')).toEqual(values());
+  });
+
+  it('timeOptions steps the send_time bound by 15 minutes', () => {
+    const options = timeOptions({ min: '06:00', max: '22:00', step_minutes: 15 });
+    expect(options[0]).toBe('06:00');
+    expect(options[1]).toBe('06:15');
+    expect(options.at(-1)).toBe('22:00');
+    expect(options).toHaveLength(65);
+  });
+});

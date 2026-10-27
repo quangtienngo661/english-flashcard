@@ -114,6 +114,27 @@ describe('ReviewSession (K/20–K/22)', () => {
     expect(screen.getByTestId('review-count')).toHaveTextContent('1');
   });
 
+  it('motion audit #4, #6: the phone progress bar slides by transform, not width; the summary blocks rise 50ms apart', async () => {
+    renderApp(<ReviewSession />, { routes: routes([DEPLOY, CACHE]) });
+    await screen.findByRole('group', { name: 'Thẻ 1 trên 2' });
+    const bar = screen.getByTestId('review-progress');
+    expect(bar.style.transform).toBe('translateX(-50%)');
+    expect(bar.style.width).toBe('');
+    expect(bar).toHaveClass('motion-safe:transition-transform');
+    await userEvent.keyboard(' ');
+    await userEvent.keyboard('2');
+    await screen.findByRole('group', { name: 'Thẻ 2 trên 2' });
+    expect(screen.getByTestId('review-progress').style.transform).toBe('translateX(0%)');
+
+    await userEvent.keyboard(' ');
+    await userEvent.keyboard('1');
+    const heading = await screen.findByRole('heading', { name: 'Xong 2 thẻ.' });
+    expect(heading.parentElement).toHaveClass('motion-safe:animate-summary-in');
+    expect(screen.getByTestId('known-count').parentElement).toHaveClass('motion-safe:[animation-delay:50ms]');
+    expect(screen.getByTestId('review-count').parentElement).toHaveClass('motion-safe:[animation-delay:100ms]');
+    expect(screen.getByRole('link', { name: /Về trang chủ|Về Hôm nay/ })).toHaveClass('motion-safe:[animation-delay:150ms]');
+  });
+
   it('after answering, the live region says the new card and focus is on [Lật thẻ] (audit 26/10/2026 #8)', async () => {
     const { container } = renderApp(<ReviewSession />, { routes: routes([DEPLOY, CACHE]) });
     await screen.findByRole('group', { name: 'Thẻ 1 trên 2' });

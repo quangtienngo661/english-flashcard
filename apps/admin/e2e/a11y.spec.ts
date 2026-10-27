@@ -3,6 +3,7 @@ import en from '../messages/en.json' with { type: 'json' };
 import vi from '../messages/vi.json' with { type: 'json' };
 import { seriousViolations } from './support/axe';
 import { mockApi, problem, signedInAs, type MockHandler } from './support/mock-api';
+import { settingsMocks } from './support/settings';
 
 /** Design §8: axe on every refreshed screen × VI/EN × 1440/390 (the two projects): no serious or critical violation. */
 
@@ -71,6 +72,7 @@ const mocks: Record<string, MockHandler> = {
     id: 'e1', operation: 'generate_cloze', input: { word: 'bank', part_of_speech: 'noun', level: 'A2', meaning_vi: 'bờ sông', context_label: null }, note: 'river',
     created_by: 'u9', created_by_user: { id: 'u9', email: 'lan@wordmet.com', system: false }, created_at: at, updated_at: at,
   }] } }),
+  ...settingsMocks,
   'GET /v1/admin/transactions': () => ({ json: { items: [{
     id: 't1', kind: 'renewal', plan: 'pro', interval: 'month', amount_minor: 99000, currency: 'VND', occurred_at: at, period_start: at,
     period_end: '2026-11-14T09:30:00.000Z', status: 'pending', provider: 'fake', provider_transaction_id: 'fake_txn_8f2c41d9a7',
@@ -78,7 +80,7 @@ const mocks: Record<string, MockHandler> = {
   }], next_page_token: null } }),
 };
 
-const pages = ['/uploads', '/uploads/b1', '/uploads/new', '/publish-jobs', `/publish-jobs/${JOB}`, '/sources', '/sources/new', '/export', '/ai/costs', '/transactions', '/ai/status', '/ai/models', '/ai/models/new', '/ai/models/m1', '/ai/operations', '/ai/prompts'];
+const pages = ['/uploads', '/uploads/b1', '/uploads/new', '/publish-jobs', `/publish-jobs/${JOB}`, '/sources', '/sources/new', '/export', '/ai/costs', '/transactions', '/ai/status', '/ai/models', '/ai/models/new', '/ai/models/m1', '/ai/operations', '/ai/prompts', '/settings', '/settings?tab=entitlements'];
 
 for (const [lang, copy] of [['vi', vi], ['en', en]] as const) {
   test.describe(`axe (${lang})`, () => {
@@ -129,5 +131,6 @@ async function waitForContent(page: Page, path: string) {
     await expect(page.getByRole('button', { name: /^(Xem bản|View revision) 3$/ })).toBeVisible();
   }
   else if (path === '/export' || path === '/ai/costs') await expect(page.getByRole('main')).toBeVisible();
+  else if (path.startsWith('/settings')) await expect(page.getByRole('tabpanel').getByRole('heading', { level: 2 })).toBeVisible();
   else await expect(page.locator('tbody tr, [data-testid="card"]').first()).toBeAttached();
 }

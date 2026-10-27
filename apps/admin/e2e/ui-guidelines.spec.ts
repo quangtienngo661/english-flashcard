@@ -3,6 +3,7 @@ import en from '../messages/en.json' with { type: 'json' };
 import vi from '../messages/vi.json' with { type: 'json' };
 import { signedInAs } from './support/mock-api';
 import { expectNoHorizontalScroll } from './support/overflow';
+import { settingsMocks } from './support/settings';
 
 /** Defects found by the Web Interface Guidelines review (15/10/2026); each test sets its own viewport. */
 test.use({ locale: 'vi-VN' });
@@ -312,4 +313,54 @@ test('Prompt at 390 fits the window with 8.000-character instructions', async ({
   await page.goto('/ai/prompts');
   await expect(page.getByText('8.000/8.000')).toBeVisible();
   await expectNoHorizontalScroll(page);
+});
+
+test('Cài đặt hệ thống at 390: every tab and the history dialog fit the window (Review Focus 4)', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await signedInAs(page, 'admin', settingsMocks);
+  for (const tab of ['reminders', 'learning', 'practice', 'entitlements', 'content', 'ai'] as const) {
+    await page.goto(`/settings?tab=${tab}`);
+    await expect(page.getByRole('tabpanel').getByRole('heading', { level: 2, name: vi.settings.tabs[tab] })).toBeVisible();
+    await expectNoHorizontalScroll(page);
+  }
+  await page.getByRole('button', { name: vi.settings.history }).click();
+  await expect(page.getByRole('dialog').getByText('reminders.send_time')).toBeVisible();
+  await expectNoHorizontalScroll(page);
+});
+
+test('Model at 1440: the "Vòng đời" header and a lifecycle word such as "active" never break inside a word', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await signedInAs(page, 'admin', {
+    'GET /v1/admin/ai/models': () => ({
+      json: {
+        items: [{
+          id: 'm1', provider: 'fake', model_id: 'fake:ok', shutdown_at: null, lifecycle: 'active', effort_choices: [], thinking_off_available: false,
+          structured_outputs: true, max_output_tokens: null, price: { input: '0.0000', cached_input: '0.0000', output: '0.0000' }, note: null, info_checked_at: at,
+          used_by: ['generate_cloze'], estimate: { per_call_usd: '0.0000', per_call_vnd: 0, per_day_1000_vnd: 0, max_call_usd: null, max_call_vnd: null },
+        }],
+      },
+    }),
+  });
+  await page.goto('/ai/models');
+  const table = page.getByRole('table');
+  await expect(table.getByText('active', { exact: true })).toBeVisible();
+  const lines = await table.evaluate((el) => {
+    // The text itself (not the boxes around it): one top per line it wraps onto.
+    const count = (node: Element) => {
+      const tops = new Set<number>();
+      const walker = document.createTreeWalker(node, NodeFilter.SHOW_TEXT);
+      for (let text = walker.nextNode(); text; text = walker.nextNode()) {
+        const range = document.createRange();
+        range.selectNodeContents(text);
+        for (const rect of range.getClientRects()) tops.add(Math.round(rect.top));
+      }
+      return tops.size;
+    };
+    const head = [...el.querySelectorAll('th')].find((th) => th.textContent === 'Vòng đời')!;
+    const cell = [...el.querySelectorAll('td')].find((td) => td.textContent === 'active')!;
+    return { head: count(head), cell: count(cell) };
+  });
+  expect(lines.cell).toBe(1);
+  // The two words of the header may sit on two lines; a third line means a word was split.
+  expect(lines.head).toBeLessThanOrEqual(2);
 });
