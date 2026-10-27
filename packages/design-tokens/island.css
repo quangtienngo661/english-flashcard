@@ -21,6 +21,8 @@
   background-image: linear-gradient(var(--tone), var(--tone));
   background-size: 100% 0.3125rem;
   background-repeat: no-repeat;
+  /* Room between the stripe and the content (owner 27/10/2026). */
+  padding-top: 1.5rem;
 }
 [data-theme='dark'] .pastel-island h3 > svg:first-child {
   color: var(--tone);
