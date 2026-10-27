@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, render, renderHook, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Navigate, Route, createRoutesFromElements, useLocation } from 'react-router';
 import { IntlProvider } from 'use-intl';
 import { afterEach, beforeEach, describe, expect, it, vi as vitest } from 'vitest';
@@ -18,7 +18,19 @@ import { ME_ADMIN } from '../features/staff/test-utils';
 import { RestoreDraftBanner } from '../ui/RestoreDraftBanner';
 import { useKeptDraft } from './use-kept-draft';
 
-const STORED = 'wordmet-admin.draft.ai-prompt:cloze';
+const STORED = 'wordmet-admin.draft.me-1.ai-prompt:cloze';
+const PREFIX = 'wordmet-admin.draft.me-1.';
+
+/** A signed-in store without any request: the hook only reads `state.me.id`. */
+function signedInStore(me = ME_ADMIN) {
+  const store = new SessionStore({ baseUrl: BASE, fetch: makeFetch({}).fetch, channel: null });
+  store.state = { status: 'signed-in', me };
+  return store;
+}
+const wrapperFor = (store: SessionStore) =>
+  function Wrapper({ children }: { children: ReactNode }) {
+    return <SessionProvider store={store}>{children}</SessionProvider>;
+  };
 
 beforeEach(() => sessionStorage.clear());
 afterEach(() => vitest.restoreAllMocks());
@@ -27,6 +39,7 @@ describe('useKeptDraft', () => {
   it('writes the value on each change while dirty, and clear() removes it', () => {
     const { rerender, result } = renderHook(({ value, dirty }) => useKeptDraft('ai-prompt:cloze', value, dirty), {
       initialProps: { value: 'a', dirty: false },
+      wrapper: wrapperFor(signedInStore()),
     });
     expect(sessionStorage.getItem(STORED)).toBeNull();
 
@@ -42,6 +55,7 @@ describe('useKeptDraft', () => {
   it('a form edited back to clean removes its draft', () => {
     const { rerender } = renderHook(({ value, dirty }) => useKeptDraft('ai-prompt:cloze', value, dirty), {
       initialProps: { value: 'ab', dirty: true },
+      wrapper: wrapperFor(signedInStore()),
     });
     expect(sessionStorage.getItem(STORED)).not.toBeNull();
     rerender({ value: 'a', dirty: false });
@@ -50,41 +64,42 @@ describe('useKeptDraft', () => {
 
   it('a second mount with a stored draft returns it as `kept` and does not overwrite it while clean', () => {
     sessionStorage.setItem(STORED, JSON.stringify({ text: 'from last time' }));
-    const { result } = renderHook(() => useKeptDraft('ai-prompt:cloze', { text: 'server' }, false));
+    const { result } = renderHook(() => useKeptDraft('ai-prompt:cloze', { text: 'server' }, false), { wrapper: wrapperFor(signedInStore()) });
     expect(result.current.kept).toEqual({ text: 'from last time' });
     expect(JSON.parse(sessionStorage.getItem(STORED)!)).toEqual({ text: 'from last time' });
   });
 
   it('another key has its own draft', () => {
     sessionStorage.setItem(STORED, JSON.stringify('x'));
-    const { result } = renderHook(() => useKeptDraft('ai-prompt:lookup', 'y', false));
+    const { result } = renderHook(() => useKeptDraft('ai-prompt:lookup', 'y', false), { wrapper: wrapperFor(signedInStore()) });
     expect(result.current.kept).toBeNull();
   });
 
   it('moving to another key while dirty keeps the stored draft of the new key, offers it, and writes nothing of the old key under it', () => {
-    sessionStorage.setItem('wordmet-admin.draft.sense:b', JSON.stringify('B from last time'));
+    sessionStorage.setItem(PREFIX + 'sense:b', JSON.stringify('B from last time'));
     const { rerender, result } = renderHook(({ k, value, dirty }) => useKeptDraft(k, value, dirty), {
       initialProps: { k: 'sense:a', value: 'A text', dirty: true },
+      wrapper: wrapperFor(signedInStore()),
     });
-    expect(JSON.parse(sessionStorage.getItem('wordmet-admin.draft.sense:a')!)).toBe('A text');
+    expect(JSON.parse(sessionStorage.getItem(PREFIX + 'sense:a')!)).toBe('A text');
 
     // the render in which the key changes still carries A's value and dirty flag
     rerender({ k: 'sense:b', value: 'A text', dirty: true });
     expect(result.current.kept).toBe('B from last time');
-    expect(JSON.parse(sessionStorage.getItem('wordmet-admin.draft.sense:b')!)).toBe('B from last time');
+    expect(JSON.parse(sessionStorage.getItem(PREFIX + 'sense:b')!)).toBe('B from last time');
 
     // B's form resets to clean: still no deletion of B's draft
     rerender({ k: 'sense:b', value: 'B server', dirty: false });
-    expect(JSON.parse(sessionStorage.getItem('wordmet-admin.draft.sense:b')!)).toBe('B from last time');
+    expect(JSON.parse(sessionStorage.getItem(PREFIX + 'sense:b')!)).toBe('B from last time');
 
     // editing B writes B
     rerender({ k: 'sense:b', value: 'B edited', dirty: true });
-    expect(JSON.parse(sessionStorage.getItem('wordmet-admin.draft.sense:b')!)).toBe('B edited');
+    expect(JSON.parse(sessionStorage.getItem(PREFIX + 'sense:b')!)).toBe('B edited');
   });
 
   it('discard() removes the draft and clears `kept`', () => {
     sessionStorage.setItem(STORED, JSON.stringify('x'));
-    const { result } = renderHook(() => useKeptDraft('ai-prompt:cloze', 'y', false));
+    const { result } = renderHook(() => useKeptDraft('ai-prompt:cloze', 'y', false), { wrapper: wrapperFor(signedInStore()) });
     expect(result.current.kept).toBe('x');
     act(() => result.current.discard());
     expect(result.current.kept).toBeNull();
@@ -93,7 +108,7 @@ describe('useKeptDraft', () => {
 
   it('a stored value that is not JSON counts as no draft and is removed', () => {
     sessionStorage.setItem(STORED, '{not json');
-    const { result } = renderHook(() => useKeptDraft('ai-prompt:cloze', 'y', false));
+    const { result } = renderHook(() => useKeptDraft('ai-prompt:cloze', 'y', false), { wrapper: wrapperFor(signedInStore()) });
     expect(result.current.kept).toBeNull();
     expect(sessionStorage.getItem(STORED)).toBeNull();
   });
@@ -104,7 +119,10 @@ describe('useKeptDraft', () => {
         throw new Error('blocked');
       });
     }
-    const { result, rerender } = renderHook(({ dirty }) => useKeptDraft('ai-prompt:cloze', 'y', dirty), { initialProps: { dirty: false } });
+    const { result, rerender } = renderHook(({ dirty }) => useKeptDraft('ai-prompt:cloze', 'y', dirty), {
+      initialProps: { dirty: false },
+      wrapper: wrapperFor(signedInStore()),
+    });
     expect(result.current.kept).toBeNull();
     rerender({ dirty: true });
     expect(() => act(() => result.current.clear())).not.toThrow();
@@ -204,7 +222,7 @@ describe('a session that ends mid-edit (Review Focus 1)', () => {
 
     await userEvent.type(await screen.findByLabelText('Draft field', {}, { timeout: 5000 }), 'my unsaved text');
     expect(screen.queryByRole('status')).toBeNull();
-    expect(JSON.parse(sessionStorage.getItem('wordmet-admin.draft.settings')!)).toBe('my unsaved text');
+    expect(JSON.parse(sessionStorage.getItem('wordmet-admin.draft.me-1.settings')!)).toBe('my unsaved text');
 
     await userEvent.click(screen.getByRole('button', { name: 'Expire session' }));
     await screen.findByRole('button', { name: 'Sign in again' });
@@ -220,6 +238,64 @@ describe('a session that ends mid-edit (Review Focus 1)', () => {
     await userEvent.click(screen.getByRole('button', { name: vi.draft.restore }));
     expect(screen.getByLabelText('Draft field')).toHaveValue('my unsaved text');
     expect(screen.queryByRole('status')).toBeNull();
+  });
+});
+
+describe('drafts belong to the signed-in user', () => {
+  it('without a signed-in user nothing is read or written', () => {
+    sessionStorage.setItem(STORED, JSON.stringify('x'));
+    const store = new SessionStore({ baseUrl: BASE, fetch: makeFetch({}).fetch, channel: null }); // status: loading
+    const { result, rerender } = renderHook(({ value }) => useKeptDraft('ai-prompt:cloze', value, true), {
+      initialProps: { value: 'a' },
+      wrapper: wrapperFor(store),
+    });
+    expect(result.current.kept).toBeNull();
+    rerender({ value: 'ab' });
+    expect(JSON.parse(sessionStorage.getItem(STORED)!)).toBe('x');
+    expect(sessionStorage.length).toBe(1);
+  });
+
+  it("user B does not get user A's draft on the same tab; A gets it back after signing in again", async () => {
+    const USER_A = ME_ADMIN;
+    const USER_B = { ...ME_ADMIN, id: 'me-2', email: 'other@wordmet.com' };
+    let current = USER_A;
+    const f = makeFetch({
+      'POST /v1/auth/refresh': () => tokenResponse('tok-1'),
+      'GET /v1/me': () => Response.json(current),
+      'POST /v1/auth/logout': () => new Response(null, { status: 204 }),
+      'POST /v1/auth/login': () => tokenResponse('tok-2'),
+    });
+    const store = new SessionStore({ baseUrl: BASE, fetch: f.fetch, channel: null });
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const { router } = renderRouteTree(routes, { initialEntries: ['/settings'] }, (node) => (
+      <IntlProvider locale="vi" messages={vi} timeZone="Asia/Ho_Chi_Minh">
+        <QueryClientProvider client={client}>
+          <SessionProvider store={store}>{node}</SessionProvider>
+        </QueryClientProvider>
+      </IntlProvider>
+    ));
+
+    await userEvent.type(await screen.findByLabelText('Draft field', {}, { timeout: 5000 }), 'A text');
+    expect(JSON.parse(sessionStorage.getItem('wordmet-admin.draft.me-1.settings')!)).toBe('A text');
+    await userEvent.click(screen.getByRole('button', { name: 'Expire session' }));
+    await screen.findByRole('button', { name: 'Sign in again' });
+
+    current = USER_B;
+    await userEvent.click(screen.getByRole('button', { name: 'Sign in again' }));
+    expect(await screen.findByLabelText('Draft field', {}, { timeout: 5000 })).toHaveValue('');
+    await waitFor(() => expect(router.state.location.pathname).toBe('/settings'));
+    expect(screen.queryByRole('status')).toBeNull();
+    expect(JSON.parse(sessionStorage.getItem('wordmet-admin.draft.me-1.settings')!)).toBe('A text');
+    expect(sessionStorage.getItem('wordmet-admin.draft.me-2.settings')).toBeNull();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Expire session' }));
+    await screen.findByRole('button', { name: 'Sign in again' });
+    current = USER_A;
+    await userEvent.click(screen.getByRole('button', { name: 'Sign in again' }));
+    await screen.findByLabelText('Draft field', {}, { timeout: 5000 });
+    expect(await screen.findByRole('status')).toHaveTextContent(vi.draft.message);
+    await userEvent.click(screen.getByRole('button', { name: vi.draft.restore }));
+    expect(screen.getByLabelText('Draft field')).toHaveValue('A text');
   });
 });
 
@@ -259,7 +335,7 @@ describe('a confirmed leave drops the kept draft', () => {
         </QueryClientProvider>
       </IntlProvider>
     ));
-    const key = 'wordmet-admin.draft.settings';
+    const key = 'wordmet-admin.draft.me-1.settings';
     await userEvent.type(await screen.findByLabelText('Draft field', {}, { timeout: 5000 }), 'abc');
     expect(sessionStorage.getItem(key)).not.toBeNull();
 

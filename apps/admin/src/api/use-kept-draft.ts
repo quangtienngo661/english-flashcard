@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useSession } from '../auth/session-context';
 
 const PREFIX = 'wordmet-admin.draft.';
 
 // `sessionStorage` can be missing or throw (blocked site data, private modes): every access is guarded, and "no storage" means "no draft".
-function readDraft<T>(storageKey: string): T | null {
+function readDraft<T>(storageKey: string | null): T | null {
+  if (storageKey === null) return null;
   try {
     const raw = window.sessionStorage.getItem(storageKey);
     if (raw === null) return null;
@@ -18,7 +20,8 @@ function readDraft<T>(storageKey: string): T | null {
   }
 }
 
-function removeDraft(storageKey: string) {
+function removeDraft(storageKey: string | null) {
+  if (storageKey === null) return;
   try {
     window.sessionStorage.removeItem(storageKey);
   } catch {
@@ -32,12 +35,15 @@ function removeDraft(storageKey: string) {
  * the screen is back at `from`; `kept` is then the saved value, to offer [Khôi phục] / [Bỏ]. The caller calls `clear()` after
  * a successful save, `discard()` on [Bỏ] (and after a restore), and puts `kept` back into its own form state itself.
  *
- * Callers must validate the shape of `kept` before using it (it may come from an older build), and must resolve the banner
+ * A draft belongs to the signed-in user (`wordmet-admin.draft.<userId>.<key>`): someone else signing in on the same tab is not
+ * offered it, and with nobody signed in nothing is read or written. Callers must validate the shape of `kept` before using it (it may come from an older build), and must resolve the banner
  * (restore or discard) before the first edit: that edit overwrites the stored draft. Pass `clear` as `useDirtyForm`'s
  * `onLeave`, so a confirmed [Rời trang] drops the draft too.
  */
 export function useKeptDraft<T>(key: string, value: T, isDirty: boolean): { kept: T | null; discard(): void; clear(): void } {
-  const storageKey = PREFIX + key;
+  const { state } = useSession();
+  const userId = state.status === 'signed-in' ? state.me.id : null;
+  const storageKey = userId === null ? null : `${PREFIX}${userId}.${key}`;
   const [read, setRead] = useState(() => ({ storageKey, kept: readDraft<T>(storageKey) }));
   let kept = read.kept;
   if (read.storageKey !== storageKey) {
@@ -63,6 +69,7 @@ export function useKeptDraft<T>(key: string, value: T, isDirty: boolean): { kept
       wasDirty.current = false;
       return;
     }
+    if (storageKey === null) return;
     if (isDirty) {
       wasDirty.current = true;
       if (serialized === null) return;
