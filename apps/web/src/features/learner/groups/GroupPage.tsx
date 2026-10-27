@@ -4,7 +4,7 @@ import { MoreHorizontal, Plus } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { useState } from 'react';
+import { useState, type AnimationEvent } from 'react';
 import { Button as AriaButton, Menu, MenuItem, MenuTrigger, Popover } from 'react-aria-components';
 import { AppShell } from '@/app-chrome/AppShell';
 import { ApiError } from '@/app-shell/api/problem';
@@ -257,52 +257,93 @@ function StageChart({ summary }: { summary: GroupSummary }) {
   );
 }
 
-/** K/11 "Xem trước thẻ": the front, then the back on a press or Space. */
+type Slide = 'out-left' | 'out-right' | 'in-right' | 'in-left';
+const SLIDE: Record<Slide, string> = {
+  'out-left': 'motion-safe:animate-slide-out-left',
+  'out-right': 'motion-safe:animate-slide-out-right',
+  'in-right': 'motion-safe:animate-slide-in-right',
+  'in-left': 'motion-safe:animate-slide-in-left',
+};
+// Both faces share one grid cell, so the card keeps the taller face's height while it turns.
+const PREVIEW_FACE =
+  'col-start-1 row-start-1 flex min-h-40 flex-col items-center justify-center gap-1 rounded-card border-2 border-ink bg-session-card p-4 text-center shadow-ledge-accent backface-hidden';
+
+/**
+ * K/11 "Xem trước thẻ": the front, then the back on a press or Space. Owner 27/10/2026: it turns over in 3D like the review
+ * card; [Thẻ sau] swipes it out to the left and the next one in from the right, [Thẻ trước] goes back the other way. With
+ * reduced motion the card changes at once.
+ */
 function CardPreview({ cards }: { cards: DeckWord[] }) {
   const t = useTranslations('App.group');
   const [index, setIndex] = useState(0);
   const [back, setBack] = useState(false);
+  const [slide, setSlide] = useState<Slide | null>(null);
   const card = cards[index % cards.length].content;
+  const leaving = slide === 'out-left' || slide === 'out-right';
+
+  function move(step: 1 | -1) {
+    setIndex((i) => i + step);
+    setBack(false);
+  }
+
+  function go(step: 1 | -1) {
+    if (leaving) return;
+    if (window.matchMedia('(prefers-reduced-motion: no-preference)').matches) setSlide(step === 1 ? 'out-left' : 'out-right');
+    else move(step);
+  }
+
+  function onAnimationEnd(event: AnimationEvent<HTMLDivElement>) {
+    if (event.target !== event.currentTarget) return;
+    if (slide === 'out-left' || slide === 'out-right') {
+      move(slide === 'out-left' ? 1 : -1);
+      setSlide(slide === 'out-left' ? 'in-right' : 'in-left');
+    } else setSlide(null);
+  }
+
   return (
     <section className="flex flex-col gap-3">
       <div className="flex items-baseline justify-between gap-2">
         <h2 className="text-title font-semibold text-ink">{t('preview')}</h2>
         <span className="text-caption text-muted">{t('previewHint')}</span>
       </div>
-      <div className="flex flex-col items-center gap-3 rounded-card border border-border bg-surface p-6">
-        <button
-          type="button"
-          onClick={() => setBack((b) => !b)}
-          onKeyDown={(e) => {
-            if (e.key === ' ') {
-              e.preventDefault();
-              setBack((b) => !b);
-            }
-          }}
-          className="flex min-h-40 w-full max-w-xs flex-col items-center justify-center gap-1 rounded-card border-2 border-ink bg-session-card p-4 text-center shadow-ledge-accent outline-none focus-visible:ring-2 focus-visible:ring-primary"
-        >
-          {back ? (
-            <>
-              <span className="text-title font-semibold text-ink">{card.meaning.text}</span>
-              {card.examples[0] && <span className="text-caption text-muted">{highlightWord(card.examples[0], card.lemma)}</span>}
-            </>
-          ) : (
-            <>
+      <div className="flex flex-col items-center gap-3 overflow-hidden rounded-card border border-border bg-surface p-6">
+        <div data-testid="preview-slide" onAnimationEnd={onAnimationEnd} className={cn('w-full max-w-xs perspective-distant', slide && SLIDE[slide])}>
+          {/* Keyed per card, so a new card starts face up without turning back. */}
+          <button
+            key={index}
+            type="button"
+            data-flipped={back}
+            onClick={() => setBack((b) => !b)}
+            onKeyDown={(e) => {
+              if (e.key === ' ') {
+                e.preventDefault();
+                setBack((b) => !b);
+              }
+            }}
+            className={cn(
+              'grid w-full rounded-card outline-none transform-3d focus-visible:ring-2 focus-visible:ring-primary motion-safe:transition-transform motion-safe:duration-flip motion-safe:ease-standard',
+              back && 'motion-safe:rotate-y-180',
+            )}
+          >
+            <span data-face="front" aria-hidden={back || undefined} className={cn(PREVIEW_FACE, back && 'motion-reduce:opacity-0')}>
               <span className="break-all text-h3 font-extrabold text-ink">{card.lemma}</span>
               <span className="text-caption text-muted">{card.pos}</span>
-            </>
-          )}
-        </button>
+            </span>
+            <span data-face="back" aria-hidden={!back || undefined} className={cn(PREVIEW_FACE, 'motion-safe:rotate-y-180', !back && 'motion-reduce:opacity-0')}>
+              <span className="text-title font-semibold text-ink">{card.meaning.text}</span>
+              {card.examples[0] && <span className="text-caption text-muted">{highlightWord(card.examples[0], card.lemma)}</span>}
+            </span>
+          </button>
+        </div>
         {cards.length > 1 && (
-          <Button
-            variant="quiet"
-            onPress={() => {
-              setIndex((i) => i + 1);
-              setBack(false);
-            }}
-          >
-            {t('nextCard')} ›
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="quiet" isDisabled={index === 0} onPress={() => go(-1)}>
+              ‹ {t('prevCard')}
+            </Button>
+            <Button variant="quiet" onPress={() => go(1)}>
+              {t('nextCard')} ›
+            </Button>
+          </div>
         )}
       </div>
     </section>

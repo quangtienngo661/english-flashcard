@@ -81,3 +81,14 @@ Token và keyframe mới ở `apps/web/src/app/globals.css`. Mọi animation đi
   không animate CSS variable theo frame. **Chưa kiểm** trên điện thoại tầm trung và Safari iOS (`backface-visibility` cùng `overflow: hidden`).
 - **Bằng chứng:** video trước/sau `2026-10-26-motion-nguoi-hoc/before/review-practice.webm`, `after/review-practice.webm` (ôn 3 thẻ rồi
   luyện 4 câu, 1280×800); khung hình giữa chuyển động `after/flip-100ms.png`, `after/answer-0-90ms.png`.
+
+## 5. Vòng 2 (27/10/2026, branch `feat/motion-preview-card`)
+
+Chủ dự án thử trên app thật, thấy lật thẻ hơi lâu và muốn có motion ở ô "Xem trước thẻ".
+
+- **Lật thẻ:** 420ms → **280ms** (`--transition-duration-flip`), dùng chung cho phiên ôn và ô xem trước.
+- **Ô "Xem trước thẻ"** (`features/learner/groups/GroupPage.tsx` `CardPreview`): lật 3D như thẻ ôn; [Thẻ sau ›] cho thẻ vuốt qua trái
+  (`slide-out-left` 100ms `--ease-exit`) rồi thẻ mới vào từ phải (`slide-in-right` 160ms `--ease-enter`); nút mới [‹ Thẻ trước] đi ngược lại
+  (thẻ lướt qua phải), tắt khi đang ở thẻ đầu. Giảm chuyển động: thẻ đổi ngay.
+- **Mặt sau thẻ ôn, bản C** (visual `2026-10-27-mat-sau-the.html`): một cột, nghĩa chạy hết bề ngang ở cỡ `text-title-lg` (24px, trước là
+  `text-h2` ≈ 38px), dạng chia ngay dưới, một đường kẻ mảnh rồi câu mẫu và câu đã gặp. Ảnh thật: `after/back-c-1280.png`, `after/back-c-390.png`.

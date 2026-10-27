@@ -597,6 +597,7 @@
       "backlogSee": "Xem",
       "preview": "Xem trước thẻ",
       "previewHint": "Chọn thẻ hoặc nhấn Space để lật",
+      "prevCard": "Thẻ trước",
       "nextCard": "Thẻ sau",
       "allWords": "Toàn bộ {count, number} từ",
       "filterLabel": "Lọc từ trong nhóm",
