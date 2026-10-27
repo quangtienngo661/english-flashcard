@@ -75,6 +75,8 @@
     "loadMore": "Tải thêm",
     "loading": "Đang tải…",
     "close": "Đóng",
+    "system": "Hệ thống",
+    "unknownUser": "Không rõ người dùng",
     "unsavedChanges": "(có thay đổi chưa lưu)"
   },
   "shell": {
@@ -192,6 +194,202 @@
       "lowercase": "Có chữ thường",
       "digit": "Có chữ số",
       "special": "Có ký tự đặc biệt"
+    }
+  },
+  "ai": {
+    "operations": {
+      "names": {
+        "generate_cloze": "Sinh câu điền từ",
+        "lookup_word": "Tra từ bằng AI",
+        "translate_sentence": "Dịch câu",
+        "generate_meaning_question": "Sinh câu hỏi nghĩa",
+        "generate_sentence_mcq": "Sinh câu chọn đáp án",
+        "check_private_word": "Kiểm từ riêng"
+      },
+      "row": {
+        "model": "Model",
+        "noModel": "Không có model",
+        "effort": "Effort",
+        "effortDefault": "Mặc định",
+        "effortDropped": "Model này không có mức {effort}",
+        "thinking": "Thinking",
+        "thinkingDefault": "Mặc định",
+        "thinkingOff": "Tắt",
+        "thinkingCannotOff": "Model này không tắt được thinking.",
+        "thinkingNeedsEffort": "Tắt thinking cần effort high trở xuống.",
+        "maxTokens": "Số token đầu ra tối đa",
+        "note": "Chọn “Không có model” là tắt thao tác. Áp từ lần gọi sau.",
+        "save": "Lưu",
+        "saveFor": "Lưu {operation}",
+        "saved": "Đã lưu. Áp từ lần gọi sau.",
+        "reload": "Tải lại",
+        "rowLabel": "{name} ({operation})"
+      }
+    },
+    "reasons": {
+      "ai-disabled": "AI đang tắt",
+      "model-not-set": "Chưa chọn model",
+      "provider-not-configured": "Nhà cung cấp chưa có key",
+      "daily-call-cap": "Chạm trần lời gọi",
+      "provider-quota": "Nhà cung cấp hết hạn mức"
+    },
+    "providers": {
+      "openai": "OpenAI",
+      "anthropic": "Anthropic",
+      "fake": "Fake"
+    },
+    "status": {
+      "today": {
+        "calls": "Lời gọi hôm nay: {calls}/{cap}",
+        "callsNoCap": "Lời gọi hôm nay: {calls}",
+        "failed": "Lỗi: {count} ({cost})",
+        "cost": "Chi phí hôm nay: {usd} · {vnd}",
+        "providers": "Nhà cung cấp có key: {names}",
+        "noProvider": "Nhà cung cấp có key: chưa có",
+        "system": "AI toàn hệ thống: {state}",
+        "on": "Đang bật",
+        "off": "Đang tắt",
+        "openSettings": "Mở Cài đặt"
+      },
+      "cols": {
+        "operation": "Thao tác",
+        "ready": "Sẵn sàng",
+        "reason": "Lý do / Model",
+        "lastError": "Lỗi gần nhất",
+        "warning": "Cảnh báo model"
+      },
+      "ready": "Sẵn sàng",
+      "notReady": "Chưa sẵn sàng",
+      "chooseModel": "Chọn model",
+      "chooseModelFor": "Chọn model cho {operation}",
+      "noError": "—",
+      "purposes": {
+        "learner": "người học",
+        "test": "chạy thử",
+        "eval": "bộ ví dụ"
+      },
+      "shutdown": "Ngừng ngày {date}",
+      "lifecycle": "Vòng đời: {lifecycle}",
+      "errorNote": "Gồm cả lỗi khi chạy thử và chạy bộ ví dụ."
+    },
+    "models": {
+      "add": "Thêm model",
+      "empty": "Chưa có model nào",
+      "emptyHint": "Thêm model đầu tiên để chọn cho các thao tác AI.",
+      "cols": {
+        "model": "Nhà cung cấp · Model id",
+        "price": "Giá đầu vào / đầu vào cache / đầu ra (US$ mỗi 1 triệu token)",
+        "usedBy": "Thao tác đang dùng",
+        "lifecycle": "Vòng đời",
+        "estimate": "Ước tính mỗi lời gọi",
+        "checked": "Kiểm tra thông tin lần cuối",
+        "actions": "Hành động"
+      },
+      "noPrice": "Chưa có giá",
+      "none": "—",
+      "editPrice": "Sửa giá",
+      "editPriceFor": "Sửa giá {model}",
+      "refresh": "Đọc lại thông tin",
+      "refreshFor": "Đọc lại thông tin {model}",
+      "delete": "Xóa",
+      "deleteFor": "Xóa {model}",
+      "estimate": "{usd} · {vnd}",
+      "usedBy": "Thao tác đang dùng: {operations}.",
+      "deleteTitle": "Xóa model {model}?",
+      "deleteBody": "Model bị xóa khỏi danh sách và không hoàn tác được.",
+      "deleteConfirm": "Xóa model",
+      "toast": {
+        "added": "Đã thêm model {model}.",
+        "saved": "Đã lưu thay đổi của {model}.",
+        "refreshed": "Đã đọc lại thông tin của {model}.",
+        "deleted": "Đã xóa model {model}."
+      },
+      "form": {
+        "addTitle": "Thêm model",
+        "editTitle": "Sửa giá {model}",
+        "provider": "Nhà cung cấp",
+        "modelId": "Model id",
+        "modelIdHint": "Đúng tên model như nhà cung cấp ghi.",
+        "priceInput": "Giá đầu vào (US$ mỗi 1 triệu token)",
+        "priceCached": "Giá đầu vào cache (US$ mỗi 1 triệu token)",
+        "priceOutput": "Giá đầu ra (US$ mỗi 1 triệu token)",
+        "priceHint": "Từ 0 đến 1000, tối đa 4 số lẻ. Để trống nếu chưa biết.",
+        "fakePrice": "Model Fake luôn có giá 0.",
+        "note": "Ghi chú",
+        "submitAdd": "Thêm",
+        "submitSave": "Lưu",
+        "noProvider": "Chưa có nhà cung cấp nào có key, nên chưa thêm được model.",
+        "modelIdRequired": "Nhập model id.",
+        "modelIdInvalid": "Chỉ dùng chữ, số và các ký tự . _ : - (tối đa 100 ký tự).",
+        "priceInvalid": "Nhập số từ 0 đến 1.000, tối đa 4 số lẻ."
+      }
+    },
+    "prompts": {
+      "operation": "Thao tác",
+      "instructions": "Lời dặn",
+      "instructionsHint": "Tối đa 8.000 ký tự.",
+      "inputFields": "Dữ liệu prompt nhận: {fields}",
+      "examples": "Ví dụ ({count}/10)",
+      "examplesHint": "Tối đa 10 ví dụ, mỗi ví dụ một cặp vào/ra.",
+      "example": "Ví dụ {n}",
+      "output": "Đầu ra (JSON)",
+      "fieldHint": "Để trống là null. Danh sách viết dạng JSON, bắt đầu bằng dấu [.",
+      "addExample": "Thêm ví dụ",
+      "remove": "Xóa",
+      "removeExample": "Xóa ví dụ {n}",
+      "guard": "Câu chặn cố định (không sửa được)",
+      "revision": "Bản số {revision}",
+      "updated": "Lưu lần cuối {at} · {by}",
+      "save": "Lưu",
+      "saved": "Đã lưu bản số {revision}.",
+      "loadNewer": "Tải bản mới",
+      "newerTitle": "Bản mới nhất: bản số {revision}",
+      "hideNewer": "Ẩn bản mới",
+      "copyToEditor": "Chép vào ô sửa",
+      "errors": {
+        "tooLong": "Lời dặn dài quá 8.000 ký tự. Rút gọn rồi lưu lại.",
+        "blank": "Nhập lời dặn.",
+        "outputJson": "Đầu ra phải là một object JSON. Sửa lại rồi thử lại."
+      },
+      "test": {
+        "title": "Chạy thử",
+        "run": "Chạy thử",
+        "quota": "Còn {remaining}/{limit} lần chạy thử trong giờ này (dùng chung với Bộ ví dụ)",
+        "pick": "Ví dụ từ Bộ ví dụ (chọn tối đa 5)",
+        "pickEmpty": "Bộ ví dụ của thao tác này chưa có ví dụ nào.",
+        "quotaFailed": "Không đọc được số lần chạy thử còn lại.",
+        "examplesFailed": "Không đọc được bộ ví dụ. [Chạy thử] vẫn chạy với 5 ví dụ đầu của Bộ ví dụ, hoặc ví dụ trong prompt khi bộ trống.",
+        "withSelected": "Chạy với: {count} ví dụ đã chọn",
+        "withFirst": "Chạy với: {count} ví dụ đầu của Bộ ví dụ",
+        "withPrompt": "Chạy với: ví dụ trong prompt",
+        "note": "Chạy bản đang sửa, chưa cần lưu. Mỗi lần chạy gọi AI thật và tốn một lượt.",
+        "needExample": "Cần ít nhất một ví dụ để chạy thử.",
+        "rateLimited": "Đã dùng hết {limit} lần chạy thử trong giờ này. Thử lại lúc {time}.",
+        "openOperations": "Mở Thao tác",
+        "results": "Kết quả chạy thử",
+        "sample": "Mẫu {n}",
+        "input": "Đầu vào",
+        "status": "Trạng thái",
+        "reason": "Lý do",
+        "outputLabel": "Đầu ra",
+        "none": "—",
+        "statuses": {
+          "succeeded": "Thành công",
+          "transient_failure": "Lỗi tạm thời",
+          "permanent_failure": "Lỗi",
+          "unavailable": "Không chạy được"
+        }
+      },
+      "history": {
+        "title": "Lịch sử",
+        "revision": "Bản {revision}",
+        "savedBy": "{at} · {by}",
+        "viewFor": "Xem bản {revision}",
+        "view": "Xem",
+        "viewTitle": "Bản số {revision}",
+        "note": "Muốn quay về bản cũ: mở bản đó rồi lưu lại.",
+        "empty": "Chưa có bản nào."
+      }
     }
   },
   "transactions": {
@@ -346,7 +544,6 @@
       "refunds": "Trả lượt AI cho người học khi một lỗi do AI đã được xác nhận.",
       "users": "Danh sách người dùng, trạng thái tài khoản, khóa hoặc mở khóa.",
       "entitlements": "Cấp, thu hồi quyền và lượt AI cho người học, kèm lý do và hạn.",
-      "aiStatus": "Tình trạng AI toàn hệ thống: công tắc, trần mỗi ngày, model đang dùng cho từng thao tác.",
       "aiModels": "Thêm model của OpenAI và Anthropic, bật hoặc tắt từng model.",
       "aiOperations": "Chọn model, effort, thinking và số token tối đa cho từng thao tác AI.",
       "aiPrompts": "Soạn prompt cho từng thao tác, xem lịch sử bản sửa và chạy thử.",

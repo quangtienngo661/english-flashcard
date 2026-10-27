@@ -5,6 +5,10 @@ import { ForgotPasswordPage } from '../features/account/ForgotPasswordPage';
 import { LoginPage } from '../features/account/LoginPage';
 import { UploadsPage } from '../features/uploads/UploadsPage';
 import { ComingSoonPage } from '../features/coming-soon/ComingSoonPage';
+import { AiModelsPage } from '../features/ai/AiModelsPage';
+import { AiOperationsPage } from '../features/ai/AiOperationsPage';
+import { AiPromptsPage } from '../features/ai/AiPromptsPage';
+import { AiStatusPage } from '../features/ai/AiStatusPage';
 import { ExportPage } from '../features/export/ExportPage';
 import { PublishJobsPage } from '../features/publish-jobs/PublishJobsPage';
 import { SenseDetail } from '../features/senses/SenseDetail';
@@ -53,6 +57,13 @@ export const appRoutes: RouteObject[] = createRoutesFromElements(
           <Route path="new" element={null} />
         </Route>
         <Route path="transactions" element={<TransactionsPage />} />
+        <Route path="ai/status" element={<AiStatusPage />} />
+        <Route path="ai/models" element={<AiModelsPage />}>
+          <Route path="new" element={null} />
+          <Route path=":id" element={null} />
+        </Route>
+        <Route path="ai/operations" element={<AiOperationsPage />} />
+        <Route path="ai/prompts" element={<AiPromptsPage />} />
         <Route path="settings" element={<SettingsPage />} />
         <Route path="staff" element={<StaffPage />} />
         {NAV.filter((entry) => !entry.available).map((entry) => (

@@ -3,10 +3,10 @@ import type { ReactNode } from 'react';
 import { createMemoryRouter, RouterProvider, type RouteObject } from 'react-router';
 import { appRoutes } from './routes';
 
-/** The whole route tree as a data router at `path`; `providers` wraps it (and whatever else the test mounts beside it). */
-export function renderRoutes(path: string, providers: (node: ReactNode) => ReactNode): ReturnType<typeof render> {
+/** The whole route tree as a data router at `path`; `providers` wraps it (and whatever else the test mounts beside it). The router is returned so a test can read the location. */
+export function renderRoutes(path: string, providers: (node: ReactNode) => ReactNode) {
   const router = createMemoryRouter(appRoutes, { initialEntries: [path] });
-  return render(providers(<RouterProvider router={router} />));
+  return { router, ...render(providers(<RouterProvider router={router} />)) };
 }
 
 /** A test's own route tree (e.g. a test-only page inside the real `Shell`) as a data router; the router is returned so a test can drive history. */

@@ -47,9 +47,61 @@ Cổng 3000, 3100, 5173 và 5183 có thể đang bị phiên khác dùng; runboo
 Chưa kiểm được ở M0, vì chưa có màn nào dùng (`useDirtyForm`, `useDialogDirtyClose`, `useKeptDraft`) — các test đơn vị đã phủ, nhưng chưa có gì để bấm:
 
 - Hộp "Rời trang?" khi rời form đang sửa dở (hỏi một lần, "Ở lại" giữ chữ, "Rời trang" thì sang trang kia và không hỏi lại; đổi bộ lọc, đổi tab, hoặc rời sau
-  khi vừa lưu thì không hỏi). **Kiểm đầu tiên ở màn Prompt (M1a).**
+  khi vừa lưu thì không hỏi). **Kiểm ở màn Prompt, mục M1a bên dưới.**
 - Thanh "Bạn có thay đổi chưa lưu từ lần trước." với [Khôi phục] [Bỏ] sau khi phiên hết hạn giữa lúc sửa (để form có chữ chưa lưu, đổi mật khẩu của chính tài khoản đó
-  bằng API ở cửa sổ khác, bấm lưu → về trang đăng nhập; đăng nhập lại → thanh hiện). **Kiểm đầu tiên ở màn Settings (M2).**
+  bằng API ở cửa sổ khác, bấm lưu → về trang đăng nhập; đăng nhập lại → thanh hiện). **Kiểm ở màn Prompt, mục M1a bên dưới** (Settings ở M2 kiểm lại).
+
+## M1a — AI: cấu hình (Tình trạng A/84, Model A/80, Thao tác A/81, Prompt A/82)
+
+Đăng nhập bằng admin (tài khoản trong `.state.json`). API và worker chạy với `AI_FAKE_ENABLED=true` và không có key nhà cung cấp nào (mục 0), nên
+không có lời gọi AI thật; model giả `fake:ok` luôn trả lời được. Khung Figma: A/84 `399:3707`, A/84b `399:4386`, A/80 `399:5057`, A/80b `399:5435`,
+A/81 `400:3985`, A/82 `400:4436`.
+
+### Tình trạng, Model, Thao tác (A/84b, A/80, A/81)
+
+1. **Lần đầu vào, chưa chọn model.** Menu AI › Tình trạng. → sáu thao tác, mỗi dòng "Chưa sẵn sàng" và "Chưa chọn model" kèm nút [Chọn model]; ở
+   đầu trang có "Nhà cung cấp có key: Fake" và "AI toàn hệ thống: Đang bật". Bấm một nút [Chọn model] → sang Thao tác.
+2. **Thêm model giả.** Menu AI › Model → [Thêm model]. Nhà cung cấp chỉ có "Fake" (nhà cung cấp khác chưa có key nên không hiện). Gõ Model id `fake:ok`,
+   bấm [Thêm]. → hộp đóng, dòng "Fake · fake:ok" hiện trong danh sách với giá "0,00 / 0,00 / 0,00" (model Fake luôn có giá 0; trong hộp không có ô giá).
+   Thử gõ một id lạ như `fake:xyz` → hộp vẫn mở và báo đỏ "Nhà cung cấp không có model này. Kiểm lại tên model.".
+3. **Chọn model cho một thao tác.** Menu AI › Thao tác → dòng "Sinh câu điền từ" → ô Model chọn "Fake · fake:ok" → [Lưu] sáng lên; bấm → toast
+   "Đã lưu. Áp từ lần gọi sau.". Sửa dở một dòng (chưa bấm [Lưu]) rồi bấm mục menu khác → hộp "Rời trang?".
+4. **Tình trạng đổi theo.** Quay về AI › Tình trạng. → dòng "Sinh câu điền từ" là "Sẵn sàng", cột Lý do / Model ghi "Fake · fake:ok"; năm dòng
+   kia vẫn "Chưa sẵn sàng".
+5. **Model đang được dùng thì không xóa được.** Ở AI › Model bấm [Xóa] của `fake:ok` → hộp "Xóa model fake:ok?" → [Xóa model] → "Model đang được thao
+   tác dùng, chưa xóa được. Thao tác đang dùng: Sinh câu điền từ." (Muốn xóa: ở Thao tác chọn "Không có model" cho dòng đó, lưu, rồi xóa.)
+6. **Hẹp 390px và tiếng Anh.** Cả bốn màn không cuộn ngang; model id dài 100 ký tự xuống dòng trong ô; đổi EN → mọi nhãn tiếng Anh.
+
+### Prompt (A/82)
+
+Mở **AI › Prompt** (`/ai/prompts`). Chưa cần model cho thao tác (trừ bước 4 cuối cùng).
+
+1. **Hỏi "Rời trang?".** Sửa một chữ trong ô "Lời dặn". Bấm **AI › Tình trạng** ở menu. → Hộp "Rời trang?" hiện một lần. Bấm [Ở lại] → vẫn ở
+   Prompt, chữ vừa sửa còn nguyên. Bấm lại mục menu, chọn [Rời trang] → sang Tình trạng, không hỏi lần nữa. Quay lại Prompt → chữ cũ (bản đã
+   lưu), không có thanh khôi phục.
+2. **Không hỏi khi chỉ đổi thao tác hay khi vừa lưu.** Sửa "Lời dặn", rồi đổi ô "Thao tác" sang "Tra từ bằng AI" → URL thành `?op=lookup_word`,
+   không có hộp hỏi. Đổi về "Sinh câu điền từ" → thanh "Bạn có thay đổi chưa lưu từ lần trước." hiện (chữ sửa dở của thao tác đó được giữ).
+   Bấm [Bỏ] → thanh mất, ô là chữ đã lưu. Sửa lại, bấm [Lưu] → "Đã lưu bản số N."; bấm một mục menu → sang ngay, không hỏi.
+3. **Thanh khôi phục sau khi phiên kết thúc.** Sửa "Lời dặn" (đừng lưu). Mở một tab thứ hai cùng trình duyệt vào admin, bấm Đăng xuất ở tab đó.
+   → Tab đang sửa về trang đăng nhập, không có hộp "Rời trang?". Đăng nhập lại ở tab đang sửa → về đúng `/ai/prompts`, ô là chữ đã lưu, phía
+   trên có "Bạn có thay đổi chưa lưu từ lần trước." [Khôi phục] [Bỏ]. Bấm [Khôi phục] → chữ sửa dở quay lại, thanh mất, [Lưu] bấm được.
+4. **Chạy thử khi chưa có model.** Bấm [Chạy thử] → "Thao tác này chưa có model. Chọn model ở Thao tác." và nút "Mở Thao tác" dẫn sang `/ai/operations`.
+   Dòng "Còn …/20 lần chạy thử trong giờ này (dùng chung với Bộ ví dụ)" được đọc lại sau lần bấm này (design §6.4: lần lỗi cũng trừ lượt, nên số giảm một).
+
+### Gắn model và key của chính bạn (chưa chạy với key thật ở M1a)
+
+Làm một lần khi muốn thử AI thật; việc này tốn tiền nhà cung cấp, nên làm sau khi đã đi hết các bước giả ở trên. Đo chất lượng bằng bộ ví dụ là M1b.
+
+1. Trong `apps/api/.env` điền `OPENAI_API_KEY=` hoặc `ANTHROPIC_API_KEY=` (một trong hai, hoặc cả hai) bằng key của bạn. Để nguyên
+   `OPENAI_CUSTOM_HEADERS` và `ANTHROPIC_CUSTOM_HEADERS` trống: đặt một trong hai thì API không chịu khởi động (D29). `AI_FAKE_ENABLED=true` có
+   thể giữ, model giả vẫn dùng được cạnh model thật. File `.env` không bao giờ commit.
+2. Dừng rồi chạy lại API và worker (mục 0, bước 4): key chỉ được đọc lúc khởi động.
+3. AI › Tình trạng → "Nhà cung cấp có key" phải có thêm nhà cung cấp của bạn.
+4. AI › Model → [Thêm model], chọn nhà cung cấp, gõ đúng tên model như nhà cung cấp ghi (ví dụ ở trang model của họ), ô giá có thể để trống và điền
+   sau bằng [Sửa giá]. Nhà cung cấp trả "không có model này" thì sửa lại tên.
+5. AI › Thao tác → chọn model đó cho thao tác cần thử, [Lưu]. Có thể đặt "Số token đầu ra tối đa" nhỏ để giới hạn tiền cho mỗi lần thử.
+6. AI › Prompt → chọn đúng thao tác → [Chạy thử]. Mỗi lần chạy là một lời gọi thật và trừ một trong 20 lượt chạy thử mỗi giờ.
+7. Muốn chặn chi tiêu: Cài đặt hệ thống › tab AI › "Trần lời gọi nhà cung cấp mỗi ngày", hoặc tắt công tắc AI toàn hệ thống ở đó.
 
 ## M2 — Cài đặt hệ thống
 
