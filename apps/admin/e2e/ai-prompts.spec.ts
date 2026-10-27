@@ -2,6 +2,7 @@ import { expect, test, type Page } from '@playwright/test';
 import vi from '../messages/vi.json' with { type: 'json' };
 import { seriousViolations } from './support/axe';
 import { problem, requests, signedInAs, type MockHandler } from './support/mock-api';
+import { expectNoHorizontalScroll } from './support/overflow';
 
 const at = '2026-10-15T02:12:00.000Z';
 const t = vi.ai.prompts;
@@ -130,16 +131,7 @@ test.describe('Prompt (A/82)', () => {
     await expect(page.getByText('8.000/8.000')).toBeVisible();
     await page.getByRole('button', { name: t.test.run }).click();
     await expect(page.getByRole('group', { name: t.test.sample.replace('{n}', '1') })).toBeVisible();
-    const { scrollWidth, innerWidth } = await page.evaluate(() => ({ scrollWidth: document.documentElement.scrollWidth, innerWidth: window.innerWidth }));
-    expect(scrollWidth).toBeLessThanOrEqual(innerWidth);
-    // The shell's main area clips (`overflow-clip`), so a too-wide child would be cut off rather than scroll the page: check the children too.
-    const sticking = await page.evaluate(() => {
-      const main = document.querySelector('main');
-      if (!main) return ['no main'];
-      const edge = main.getBoundingClientRect().right + 1;
-      return [...main.querySelectorAll('*')].filter((el) => el.getBoundingClientRect().right > edge).map((el) => `${el.tagName}.${el.className}`.slice(0, 80));
-    });
-    expect(sticking).toEqual([]);
+    await expectNoHorizontalScroll(page);
   });
 
   test('an editor sees no menu entry and the page does not call the API', async ({ page }) => {

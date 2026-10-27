@@ -206,7 +206,7 @@ function OperationRow({ setting, models, draft, onChange, onDrop }: RowProps) {
         </Banner>
       )}
       {banner && <Banner variant="error" code={banner.code}>{banner.message}</Banner>}
-      <div className="grid gap-4 shell:grid-cols-2 panel:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 shell:grid-cols-2 panel:grid-cols-4">
         <Select
           id={id('model')}
           label={t('ai.operations.row.model')}

@@ -1,17 +1,12 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test } from '@playwright/test';
 import en from '../messages/en.json' with { type: 'json' };
 import vi from '../messages/vi.json' with { type: 'json' };
 import { signedInAs } from './support/mock-api';
+import { expectNoHorizontalScroll } from './support/overflow';
 
 /** Defects found by the Web Interface Guidelines review (15/10/2026); each test sets its own viewport. */
 test.use({ locale: 'vi-VN' });
 test.beforeEach(() => test.skip(test.info().project.name !== 'desktop', 'sets its own viewport'));
-
-/** Nothing sideways: the page is no wider than the window (Review Focus 4). */
-async function expectNoHorizontalScroll(page: Page) {
-  const { scrollWidth, innerWidth } = await page.evaluate(() => ({ scrollWidth: document.documentElement.scrollWidth, innerWidth: window.innerWidth }));
-  expect(scrollWidth).toBeLessThanOrEqual(innerWidth);
-}
 
 const UPLOADS = {
   items: [{ id: 'b1', status: 'succeeded', file_name: 'cefrj-vocabulary-profile-1.5.csv', row_count: 7799, created_at: '2026-10-14T09:30:00.000Z' }],
