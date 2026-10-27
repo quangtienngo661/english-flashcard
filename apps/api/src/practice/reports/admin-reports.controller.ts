@@ -20,6 +20,7 @@ const listQuery = z.strictObject({
 const resolveBody = z.strictObject({ status: z.enum(['no_error', 'fixed', 'confirmed']) });
 const refundsQuery = z.strictObject({
   resolved_by: z.uuid().transform((value) => value.toLowerCase()).optional(),
+  resolved_by_email: z.string().max(320).optional(),
   from: z.iso.datetime({ offset: true }).transform((value) => new Date(value)).optional(),
   to: z.iso.datetime({ offset: true }).transform((value) => new Date(value)).optional(),
   ...page,
@@ -59,7 +60,7 @@ export class AdminReportsController {
   @RequirePermission('settings.manage')
   refunds(@Query({ schema: refundsQuery }) query: z.infer<typeof refundsQuery>) {
     return this.reports.listRefunds({
-      resolvedBy: query.resolved_by, from: query.from, to: query.to, pageSize: query.page_size, pageToken: query.page_token,
+      resolvedBy: query.resolved_by, resolvedByEmail: query.resolved_by_email, from: query.from, to: query.to, pageSize: query.page_size, pageToken: query.page_token,
     });
   }
 }

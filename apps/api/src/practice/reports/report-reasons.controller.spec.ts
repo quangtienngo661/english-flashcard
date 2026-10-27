@@ -49,9 +49,9 @@ describe('report reasons HTTP (unit, mocked service)', () => {
   });
   afterAll(async () => { await ctx?.close(); vi.restoreAllMocks(); });
 
-  it('admin routes need settings.manage; the learner route needs no staff permission', () => {
+  it('the admin list needs content.edit, writes need settings.manage; the learner route needs no staff permission', () => {
     expect(listRoutes(ctx.app).filter(({ path }) => path.includes('report-reasons'))).toEqual([
-      { method: 'GET', path: '/v1/admin/practice/report-reasons', permissions: ['settings.manage'] },
+      { method: 'GET', path: '/v1/admin/practice/report-reasons', permissions: ['content.edit'] },
       { method: 'POST', path: '/v1/admin/practice/report-reasons', permissions: ['settings.manage'] },
       { method: 'PATCH', path: '/v1/admin/practice/report-reasons/:code', permissions: ['settings.manage'] },
       { method: 'GET', path: '/v1/practice/report-reasons', permissions: null },
@@ -102,12 +102,19 @@ describe('report reasons HTTP (unit, mocked service)', () => {
     expect(create).not.toHaveBeenCalled(); expect(update).not.toHaveBeenCalled();
   });
 
-  it('an editor gets 403 forbidden', async () => {
+  it('an editor reads the list (200) but cannot create or update (403)', async () => {
     role = 'editor';
-    const res = await http().get('/v1/admin/practice/report-reasons').set(auth());
-    expect(res.status).toBe(403);
-    expect(res.body.type).toBe(`${PROBLEM}forbidden`);
-    expect(adminList).not.toHaveBeenCalled();
+    expect((await http().get('/v1/admin/practice/report-reasons').set(auth())).status).toBe(200);
+    expect(adminList).toHaveBeenCalledTimes(1);
+    for (const request of [
+      () => http().post('/v1/admin/practice/report-reasons').set(auth()).set('Idempotency-Key', 'k').send(validCreate),
+      () => http().patch('/v1/admin/practice/report-reasons/other').set(auth()).send({ active: false }),
+    ]) {
+      const res = await request();
+      expect(res.status).toBe(403);
+      expect(res.body.type).toBe(`${PROBLEM}forbidden`);
+    }
+    expect(create).not.toHaveBeenCalled(); expect(update).not.toHaveBeenCalled();
   });
 
   it('POST is idempotent: marked @Idempotent and run through the real interceptor, which needs an Idempotency-Key', async () => {

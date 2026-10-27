@@ -81,6 +81,15 @@ describe('admin reports HTTP (unit, mocked service)', () => {
     });
   });
 
+  it('refunds passes resolved_by_email through; an over-long one → 400', async () => {
+    role = 'admin';
+    expect((await http().get('/v1/admin/practice/refunds').set(auth()).query({ resolved_by_email: 'Staff@Example.com' })).status).toBe(200);
+    expect(listRefunds).toHaveBeenCalledWith(expect.objectContaining({ resolvedByEmail: 'Staff@Example.com' }));
+    listRefunds.mockClear();
+    expect((await http().get('/v1/admin/practice/refunds').set(auth()).query({ resolved_by_email: 'a'.repeat(321) })).status).toBe(400);
+    expect(listRefunds).not.toHaveBeenCalled();
+  });
+
   it('bad statuses and filters → 400 validation-failed before the service', async () => {
     role = 'admin';
     for (const request of [

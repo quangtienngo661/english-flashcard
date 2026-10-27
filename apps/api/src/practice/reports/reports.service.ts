@@ -61,8 +61,9 @@ const staffView = (row: StaffRow, emails: ReadonlyMap<string, string>) => {
 
 type RefundRow = Pick<ReportRow, 'id' | 'userId' | 'resolvedBy' | 'resolvedByRole' | 'refunded' | 'resolvedAt'>;
 /** The admin's review of confirmed AI errors (design §9.3, D33): self_resolved = the reporter resolved it. */
-const refundView = (row: RefundRow) => ({
-  report_id: row.id, user_id: row.userId, resolved_by: row.resolvedBy, resolved_by_role: row.resolvedByRole,
+const refundView = (row: RefundRow, emails: ReadonlyMap<string, string>) => ({
+  report_id: row.id, user_id: row.userId, user: userRef(row.userId, emails), resolved_by: row.resolvedBy, resolved_by_role: row.resolvedByRole,
+  resolved_by_user: row.resolvedBy ? userRef(row.resolvedBy, emails) : null,
   self_resolved: row.resolvedBy === row.userId, refunded: row.refunded, resolved_at: row.resolvedAt?.toISOString() ?? null,
 });
 
@@ -200,8 +201,9 @@ export class ReportsService {
   }
 
   /** One staff address lookup per call (design §5.1), never inside a transaction. */
-  private emailsOf(rows: readonly { resolvedBy: string | null }[]) {
-    return this.identity.emailsOf([...new Set(rows.flatMap((row) => row.resolvedBy ? [row.resolvedBy] : []))]);
+  private emailsOf(rows: readonly { resolvedBy: string | null; userId?: string }[], withReporters = false) {
+    return this.identity.emailsOf([...new Set(rows.flatMap((row) =>
+      [row.resolvedBy, withReporters ? row.userId : null].filter((id): id is string => !!id)))]);
   }
 
   async get(reportId: string) {
@@ -252,9 +254,20 @@ export class ReportsService {
   }
 
   /** Confirmed AI reports for the admin (design §9.3), newest resolution first. */
-  async listRefunds(query: { resolvedBy?: string; from?: Date; to?: Date; pageSize: number; pageToken?: string }) {
-    const filters = { resolvedBy: query.resolvedBy ?? null, from: query.from?.toISOString() ?? null, to: query.to?.toISOString() ?? null };
+  async listRefunds(
+    query: { resolvedBy?: string; resolvedByEmail?: string; from?: Date; to?: Date; pageSize: number; pageToken?: string },
+  ) {
+    const filters = {
+      resolvedBy: query.resolvedBy ?? null, resolvedByEmail: query.resolvedByEmail ?? null, from: query.from?.toISOString() ?? null, to: query.to?.toISOString() ?? null,
+    };
     const binding = createHash('sha256').update(JSON.stringify({ route: 'practice-refunds', filters })).digest('hex');
+    // Both resolver filters apply when both are sent; an address no account has matches nothing.
+    const resolvers: string[] = query.resolvedBy ? [query.resolvedBy] : [];
+    if (query.resolvedByEmail !== undefined) {
+      const found = await this.identity.findUserIdByEmail(query.resolvedByEmail);
+      if (found === null) return { items: [], next_page_token: null };
+      resolvers.push(found);
+    }
     let cursor: { resolvedAt: Date; id: string } | undefined;
     if (query.pageToken !== undefined) {
       const decoded = decodeBoundToken(query.pageToken, binding);
@@ -267,7 +280,8 @@ export class ReportsService {
       ? { resolvedAt: { ...(query.from ? { gte: query.from } : {}), ...(query.to ? { lt: query.to } : {}) } } : {};
     const rows = await this.prisma.practiceReport.findMany({
       where: {
-        status: 'confirmed', questionSource: 'ai', ...(query.resolvedBy ? { resolvedBy: query.resolvedBy } : {}), ...range,
+        status: 'confirmed', questionSource: 'ai', ...(resolvers.length === 1 ? { resolvedBy: resolvers[0] } : {}),
+        ...(resolvers.length > 1 ? { AND: resolvers.map((resolvedBy) => ({ resolvedBy })) } : {}), ...range,
         ...(cursor ? { OR: [{ resolvedAt: { lt: cursor.resolvedAt } }, { resolvedAt: cursor.resolvedAt, id: { gt: cursor.id } }] } : {}),
       },
       orderBy: [{ resolvedAt: 'desc' }, { id: 'asc' }], take: query.pageSize + 1,
@@ -275,8 +289,9 @@ export class ReportsService {
     });
     const items = rows.slice(0, query.pageSize);
     const last = items.at(-1);
+    const emails = await this.emailsOf(items, true);
     return {
-      items: items.map(refundView),
+      items: items.map((row) => refundView(row, emails)),
       next_page_token: rows.length > query.pageSize && last?.resolvedAt
         ? encodeBoundToken({ resolved_at: last.resolvedAt.toISOString(), id: last.id }, binding) : null,
     };
