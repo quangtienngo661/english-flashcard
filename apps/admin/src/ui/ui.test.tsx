@@ -405,4 +405,27 @@ describe('form controls: TextArea, Switch, NumberField, RadioGroup', () => {
     await userEvent.click(screen.getByRole('radio', { name: /High/ }));
     expect(onChange).toHaveBeenCalledWith('high');
   });
+
+  it('NumberField displays in the app locale: vi "1.234,5", en "1,234.5"', () => {
+    const inLocale = (locale: string) => (
+      <IntlProvider locale={locale} messages={en}>
+        <NumberField label="Cap" value={1234.5} onChange={() => {}} />
+      </IntlProvider>
+    );
+    const { unmount } = render(inLocale('vi'));
+    expect(screen.getByLabelText('Cap')).toHaveValue('1.234,5');
+    unmount();
+    render(inLocale('en'));
+    expect(screen.getByLabelText('Cap')).toHaveValue('1,234.5');
+  });
+
+  it('TextArea counter follows the app locale (vi "1.234/8.000") and describes the field', () => {
+    render(
+      <IntlProvider locale="vi" messages={en}>
+        <TextArea label="Prompt" value={'x'.repeat(9000)} onChange={() => {}} maxLength={8000} counter description="Plain text" />
+      </IntlProvider>,
+    );
+    expect(screen.getByText('9.000/8.000')).toBeInTheDocument();
+    expect(screen.getByLabelText('Prompt')).toHaveAccessibleDescription('Plain text 9.000/8.000');
+  });
 });

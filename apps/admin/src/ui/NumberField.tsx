@@ -1,4 +1,5 @@
-import { FieldError, Input, Label, NumberField as AriaNumberField, Text } from 'react-aria-components';
+import { FieldError, I18nProvider, Input, Label, NumberField as AriaNumberField, Text } from 'react-aria-components';
+import { useLocale } from 'use-intl';
 
 type Props = {
   /** So a form can focus the field (`document.getElementById`), e.g. the first one a 400 flagged. */
@@ -19,33 +20,39 @@ type Props = {
   isDisabled?: boolean;
 };
 
-/** Number input with the same label, description and error wiring as `TextField`; React Aria reports an empty field as `NaN`. */
+/**
+ * Number input with the same label, description and error wiring as `TextField`; React Aria reports an empty field as `NaN`.
+ * Display and parsing follow the app locale (vi "1.234,5", en "1,234.5"), not the browser's.
+ */
 export function NumberField({ label, value, onChange, isNullable, error, description, placeholder, ...rest }: Props) {
+  const locale = useLocale();
   return (
-    <AriaNumberField
-      {...rest}
-      value={value ?? Number.NaN}
-      onChange={(next) => {
-        if (Number.isNaN(next)) {
-          if (isNullable) onChange(null);
-          return;
-        }
-        onChange(next);
-      }}
-      isInvalid={error !== undefined}
-      className="flex w-full flex-col gap-1.5"
-    >
-      <Label className="text-ui font-medium text-ink">{label}</Label>
-      <Input
-        placeholder={placeholder}
-        className="min-h-control w-full min-w-0 rounded-control bg-canvas px-3 py-1.5 text-ui text-ink outline-none ring-2 ring-inset ring-border-strong placeholder:text-placeholder focus-visible:bg-surface focus-visible:ring-primary disabled:opacity-60 data-invalid:ring-danger"
-      />
-      {description && (
-        <Text slot="description" className="text-xs text-muted">
-          {description}
-        </Text>
-      )}
-      <FieldError className="text-xs text-danger">{error}</FieldError>
-    </AriaNumberField>
+    <I18nProvider locale={locale}>
+      <AriaNumberField
+        {...rest}
+        value={value ?? Number.NaN}
+        onChange={(next) => {
+          if (Number.isNaN(next)) {
+            if (isNullable) onChange(null);
+            return;
+          }
+          onChange(next);
+        }}
+        isInvalid={error !== undefined}
+        className="flex w-full flex-col gap-1.5"
+      >
+        <Label className="text-ui font-medium text-ink">{label}</Label>
+        <Input
+          placeholder={placeholder}
+          className="min-h-control w-full min-w-0 rounded-control bg-canvas px-3 py-1.5 text-ui text-ink outline-none ring-2 ring-inset ring-border-strong placeholder:text-placeholder focus-visible:bg-surface focus-visible:ring-primary disabled:opacity-60 data-invalid:ring-danger"
+        />
+        {description && (
+          <Text slot="description" className="text-xs text-muted">
+            {description}
+          </Text>
+        )}
+        <FieldError className="text-xs text-danger">{error}</FieldError>
+      </AriaNumberField>
+    </I18nProvider>
   );
 }
