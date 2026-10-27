@@ -321,6 +321,71 @@
         "modelIdInvalid": "Chỉ dùng chữ, số và các ký tự . _ : - (tối đa 100 ký tự).",
         "priceInvalid": "Nhập số từ 0 đến 1.000, tối đa 4 số lẻ."
       }
+    },
+    "prompts": {
+      "operation": "Thao tác",
+      "instructions": "Lời dặn",
+      "instructionsHint": "Tối đa 8.000 ký tự.",
+      "inputFields": "Dữ liệu prompt nhận: {fields}",
+      "examples": "Ví dụ ({count}/10)",
+      "examplesHint": "Tối đa 10 ví dụ, mỗi ví dụ một cặp vào/ra.",
+      "example": "Ví dụ {n}",
+      "output": "Đầu ra (JSON)",
+      "fieldHint": "Để trống là null. Danh sách viết dạng JSON, bắt đầu bằng dấu [.",
+      "addExample": "Thêm ví dụ",
+      "remove": "Xóa",
+      "removeExample": "Xóa ví dụ {n}",
+      "guard": "Câu chặn cố định (không sửa được)",
+      "revision": "Bản số {revision}",
+      "updated": "Lưu lần cuối {at} · {by}",
+      "save": "Lưu",
+      "saved": "Đã lưu bản số {revision}.",
+      "loadNewer": "Tải bản mới",
+      "newerTitle": "Bản mới nhất: bản số {revision}",
+      "hideNewer": "Ẩn bản mới",
+      "copyToEditor": "Chép vào ô sửa",
+      "errors": {
+        "tooLong": "Lời dặn dài quá 8.000 ký tự. Rút gọn rồi lưu lại.",
+        "blank": "Nhập lời dặn.",
+        "outputJson": "Đầu ra phải là một object JSON. Sửa lại rồi thử lại."
+      },
+      "test": {
+        "title": "Chạy thử",
+        "run": "Chạy thử",
+        "quota": "Còn {remaining}/{limit} lần chạy thử trong giờ này (dùng chung với Bộ ví dụ)",
+        "pick": "Ví dụ từ Bộ ví dụ (chọn tối đa 5)",
+        "pickEmpty": "Bộ ví dụ của thao tác này chưa có ví dụ nào.",
+        "withSelected": "Chạy với: {count} ví dụ đã chọn",
+        "withFirst": "Chạy với: {count} ví dụ đầu của Bộ ví dụ",
+        "withPrompt": "Chạy với: ví dụ trong prompt",
+        "note": "Chạy bản đang sửa, chưa cần lưu. Mỗi lần chạy gọi AI thật và tốn một lượt.",
+        "needExample": "Cần ít nhất một ví dụ để chạy thử.",
+        "rateLimited": "Đã dùng hết {limit} lần chạy thử trong giờ này. Thử lại lúc {time}.",
+        "openOperations": "Mở Thao tác",
+        "results": "Kết quả chạy thử",
+        "sample": "Mẫu {n}",
+        "input": "Đầu vào",
+        "status": "Trạng thái",
+        "reason": "Lý do",
+        "outputLabel": "Đầu ra",
+        "none": "—",
+        "statuses": {
+          "succeeded": "Thành công",
+          "transient_failure": "Lỗi tạm thời",
+          "permanent_failure": "Lỗi",
+          "unavailable": "Không chạy được"
+        }
+      },
+      "history": {
+        "title": "Lịch sử",
+        "revision": "Bản {revision}",
+        "savedBy": "{at} · {by}",
+        "viewFor": "Xem bản {revision}",
+        "view": "Xem",
+        "viewTitle": "Bản số {revision}",
+        "note": "Muốn quay về bản cũ: mở bản đó rồi lưu lại.",
+        "empty": "Chưa có bản nào."
+      }
     }
   },
   "transactions": {

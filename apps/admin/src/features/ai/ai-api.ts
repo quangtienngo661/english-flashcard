@@ -107,16 +107,20 @@ export type PromptRevision = {
 export type SavePromptBody = { expected_revision: number; instructions: string; examples: PromptExample[] };
 export type TestBody = { instructions: string; examples: PromptExample[]; example_ids?: string[] };
 
+/** One provider call of a test sample (API `CallSummary`); `outcome` is a `CallOutcome` such as `succeeded`, `timeout`, `invalid-shape`. */
+export type TestCall = { attempt: 1 | 2; outcome: string; latency_ms: number; cost_usd: string | null; http_status: number | null };
+export type TestStatus = 'succeeded' | 'transient_failure' | 'permanent_failure' | 'unavailable';
+/** `POST …/prompts/{op}/test`: one item per input (the chosen examples, else the first five of the set, else the prompt's own). */
 export type TestResult = {
   items: Array<{
-    input: unknown;
-    status: string;
+    input: Record<string, unknown>;
+    status: TestStatus;
     reason: string | null;
     output: Record<string, unknown> | null;
     raw_output: string | null;
     latency_ms: number;
     cost_usd: string | null;
-    calls: unknown[];
+    calls: TestCall[];
   }>;
 };
 export type TestQuota = { limit: number; remaining: number; resets_at: string };

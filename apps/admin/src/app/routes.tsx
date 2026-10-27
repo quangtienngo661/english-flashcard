@@ -7,6 +7,7 @@ import { UploadsPage } from '../features/uploads/UploadsPage';
 import { ComingSoonPage } from '../features/coming-soon/ComingSoonPage';
 import { AiModelsPage } from '../features/ai/AiModelsPage';
 import { AiOperationsPage } from '../features/ai/AiOperationsPage';
+import { AiPromptsPage } from '../features/ai/AiPromptsPage';
 import { AiStatusPage } from '../features/ai/AiStatusPage';
 import { ExportPage } from '../features/export/ExportPage';
 import { PublishJobsPage } from '../features/publish-jobs/PublishJobsPage';
@@ -53,6 +54,7 @@ export const appRoutes: RouteObject[] = createRoutesFromElements(
           <Route path=":id" element={null} />
         </Route>
         <Route path="ai/operations" element={<AiOperationsPage />} />
+        <Route path="ai/prompts" element={<AiPromptsPage />} />
         <Route path="staff" element={<StaffPage />} />
         {NAV.filter((entry) => !entry.available).map((entry) => (
           <Route key={entry.path} path={entry.path.slice(1)} element={<ComingSoonPage item={entry} />} />

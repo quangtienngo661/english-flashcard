@@ -14,6 +14,8 @@ export function useAiFormat() {
   return {
     date: (at: string) => date.format(new Date(at)),
     dateTime: (at: string) => `${date.format(new Date(at))} ${time.format(new Date(at))}`,
+    /** "15:00" (vi), "3:00 PM" (en). */
+    time: (at: Date) => time.format(at),
     number: (n: number) => number.format(n),
     usd: (amount: string) => usd.format(Number(amount)),
     vnd: (amount: number) => vnd.format(amount),

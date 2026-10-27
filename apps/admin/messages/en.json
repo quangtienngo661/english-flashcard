@@ -321,6 +321,71 @@
         "modelIdInvalid": "Use only letters, digits and the characters . _ : - (up to 100 characters).",
         "priceInvalid": "Enter a number from 0 to 1,000 with up to 4 decimals."
       }
+    },
+    "prompts": {
+      "operation": "Operation",
+      "instructions": "Instructions",
+      "instructionsHint": "Up to 8,000 characters.",
+      "inputFields": "Data the prompt receives: {fields}",
+      "examples": "Examples ({count}/10)",
+      "examplesHint": "Up to 10 examples, each an input/output pair.",
+      "example": "Example {n}",
+      "output": "Output (JSON)",
+      "fieldHint": "Leave empty for null. Write a list as JSON, starting with [.",
+      "addExample": "Add example",
+      "remove": "Remove",
+      "removeExample": "Remove example {n}",
+      "guard": "Fixed guard sentence (cannot be edited)",
+      "revision": "Revision {revision}",
+      "updated": "Last saved {at} · {by}",
+      "save": "Save",
+      "saved": "Saved revision {revision}.",
+      "loadNewer": "Load the newer revision",
+      "newerTitle": "Newest: revision {revision}",
+      "hideNewer": "Hide the newer revision",
+      "copyToEditor": "Copy into the editor",
+      "errors": {
+        "tooLong": "The instructions are over 8,000 characters. Shorten them and save again.",
+        "blank": "Enter the instructions.",
+        "outputJson": "The output must be a JSON object. Fix it and try again."
+      },
+      "test": {
+        "title": "Test run",
+        "run": "Test run",
+        "quota": "{remaining}/{limit} test runs left this hour (shared with Example set)",
+        "pick": "Examples from the example set (choose up to 5)",
+        "pickEmpty": "This operation’s example set has no examples yet.",
+        "withSelected": "Runs with: {count} chosen examples",
+        "withFirst": "Runs with: the first {count} examples of the example set",
+        "withPrompt": "Runs with: the examples in the prompt",
+        "note": "Runs the version you are editing, no need to save. Each run makes a real AI call and uses one run.",
+        "needExample": "At least one example is needed for a test run.",
+        "rateLimited": "All {limit} test runs of this hour are used. Try again at {time}.",
+        "openOperations": "Open Operations",
+        "results": "Test run results",
+        "sample": "Sample {n}",
+        "input": "Input",
+        "status": "Status",
+        "reason": "Reason",
+        "outputLabel": "Output",
+        "none": "—",
+        "statuses": {
+          "succeeded": "Succeeded",
+          "transient_failure": "Temporary failure",
+          "permanent_failure": "Failed",
+          "unavailable": "Could not run"
+        }
+      },
+      "history": {
+        "title": "History",
+        "revision": "Revision {revision}",
+        "savedBy": "{at} · {by}",
+        "viewFor": "View revision {revision}",
+        "view": "View",
+        "viewTitle": "Revision {revision}",
+        "note": "To go back to an old revision: open it, then save it again.",
+        "empty": "No revisions yet."
+      }
     }
   },
   "transactions": {

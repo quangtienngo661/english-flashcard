@@ -47,6 +47,22 @@ Cổng 3000, 3100, 5173 và 5183 có thể đang bị phiên khác dùng; runboo
 Chưa kiểm được ở M0, vì chưa có màn nào dùng (`useDirtyForm`, `useDialogDirtyClose`, `useKeptDraft`) — các test đơn vị đã phủ, nhưng chưa có gì để bấm:
 
 - Hộp "Rời trang?" khi rời form đang sửa dở (hỏi một lần, "Ở lại" giữ chữ, "Rời trang" thì sang trang kia và không hỏi lại; đổi bộ lọc, đổi tab, hoặc rời sau
-  khi vừa lưu thì không hỏi). **Kiểm đầu tiên ở màn Prompt (M1a).**
+  khi vừa lưu thì không hỏi). **Kiểm ở màn Prompt, mục M1a bên dưới.**
 - Thanh "Bạn có thay đổi chưa lưu từ lần trước." với [Khôi phục] [Bỏ] sau khi phiên hết hạn giữa lúc sửa (để form có chữ chưa lưu, đổi mật khẩu của chính tài khoản đó
-  bằng API ở cửa sổ khác, bấm lưu → về trang đăng nhập; đăng nhập lại → thanh hiện). **Kiểm đầu tiên ở màn Settings (M2).**
+  bằng API ở cửa sổ khác, bấm lưu → về trang đăng nhập; đăng nhập lại → thanh hiện). **Kiểm ở màn Prompt, mục M1a bên dưới** (Settings ở M2 kiểm lại).
+
+## M1a — AI: Prompt (A/82)
+
+Đăng nhập bằng admin, mở **AI › Prompt** (`/ai/prompts`). Chưa cần model cho thao tác.
+
+1. **Hỏi "Rời trang?".** Sửa một chữ trong ô "Lời dặn". Bấm **AI › Tình trạng** ở menu. → Hộp "Rời trang?" hiện một lần. Bấm [Ở lại] → vẫn ở
+   Prompt, chữ vừa sửa còn nguyên. Bấm lại mục menu, chọn [Rời trang] → sang Tình trạng, không hỏi lần nữa. Quay lại Prompt → chữ cũ (bản đã
+   lưu), không có thanh khôi phục.
+2. **Không hỏi khi chỉ đổi thao tác hay khi vừa lưu.** Sửa "Lời dặn", rồi đổi ô "Thao tác" sang "Tra từ bằng AI" → URL thành `?op=lookup_word`,
+   không có hộp hỏi. Đổi về "Sinh câu điền từ" → thanh "Bạn có thay đổi chưa lưu từ lần trước." hiện (chữ sửa dở của thao tác đó được giữ).
+   Bấm [Bỏ] → thanh mất, ô là chữ đã lưu. Sửa lại, bấm [Lưu] → "Đã lưu bản số N."; bấm một mục menu → sang ngay, không hỏi.
+3. **Thanh khôi phục sau khi phiên kết thúc.** Sửa "Lời dặn" (đừng lưu). Mở một tab thứ hai cùng trình duyệt vào admin, bấm Đăng xuất ở tab đó.
+   → Tab đang sửa về trang đăng nhập, không có hộp "Rời trang?". Đăng nhập lại ở tab đang sửa → về đúng `/ai/prompts`, ô là chữ đã lưu, phía
+   trên có "Bạn có thay đổi chưa lưu từ lần trước." [Khôi phục] [Bỏ]. Bấm [Khôi phục] → chữ sửa dở quay lại, thanh mất, [Lưu] bấm được.
+4. **Chạy thử khi chưa có model.** Bấm [Chạy thử] → "Thao tác này chưa có model. Chọn model ở Thao tác." và nút "Mở Thao tác" dẫn sang `/ai/operations`.
+   Dòng "Còn …/20 lần chạy thử trong giờ này (dùng chung với Bộ ví dụ)" được đọc lại sau lần bấm này (design §6.4: lần lỗi cũng trừ lượt, nên số giảm một).
