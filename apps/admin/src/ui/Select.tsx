@@ -10,10 +10,11 @@ type Props = {
   onChange: (id: string) => void;
   isDisabled?: boolean;
   placeholder?: string;
+  description?: string;
   error?: string;
 };
 
-export function Select({ id, label, items, value, onChange, isDisabled, placeholder, error }: Props) {
+export function Select({ id, label, items, value, onChange, isDisabled, placeholder, description, error }: Props) {
   return (
     <AriaSelect
       id={id}
@@ -29,6 +30,11 @@ export function Select({ id, label, items, value, onChange, isDisabled, placehol
         <SelectValue className="min-w-0 truncate" />
         <ChevronDown aria-hidden className="size-4 shrink-0" />
       </Button>
+      {description && (
+        <Text slot="description" className="text-xs text-muted">
+          {description}
+        </Text>
+      )}
       {error && <Text slot="errorMessage" className="text-xs text-danger">{error}</Text>}
       {/* React Aria caps the popover's height to the space left on screen; the list scrolls inside it. */}
       <Popover offset={4} className="w-(--trigger-width) overflow-y-auto overscroll-contain rounded-inner bg-surface p-1 shadow-menu motion-safe:data-entering:animate-menu-in motion-safe:placement-top:data-entering:animate-menu-in-up motion-safe:data-exiting:animate-menu-out">

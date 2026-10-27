@@ -74,7 +74,8 @@
     "confirm": "Confirm",
     "loadMore": "Load more",
     "loading": "Loading…",
-    "close": "Close"
+    "close": "Close",
+    "unsavedChanges": "(unsaved changes)"
   },
   "shell": {
     "brand": "Wordmet Admin",
@@ -489,5 +490,128 @@
     "confirmAllTitle": "Publish the whole catalog?",
     "confirmAllBody": "You have not chosen any filter, so this job will publish every eligible sense in the whole catalog. Continue only if that is what you want.",
     "confirmAllSubmit": "Publish everything"
+  },
+  "settings": {
+    "tabsLabel": "Setting groups",
+    "tabs": {
+      "reminders": "Reminders",
+      "learning": "Learning and review",
+      "practice": "Practice",
+      "entitlements": "Plans and quotas",
+      "content": "Content",
+      "ai": "AI"
+    },
+    "save": "Save changes",
+    "saved": "Saved",
+    "history": "Change history",
+    "outOfRange": "This value is outside the allowed range.",
+    "reload": "Reload",
+    "reloadTitle": "Reload the settings?",
+    "reloadBody": "Unsaved changes will be lost.",
+    "emailTemplates": "Email templates: to be discussed.",
+    "hint": {
+      "default": "default {value}",
+      "on": "on",
+      "off": "off",
+      "onOff": "on/off",
+      "empty": "empty",
+      "orEmpty": "or empty = {meaning}",
+      "zero": "0 = {meaning}",
+      "step": "every {minutes} minutes"
+    },
+    "emptyMeaning": {
+      "noLimit": "no limit",
+      "renewal_notice_days_before": "not sent",
+      "ai_cap_alert_percent": "no yellow alert"
+    },
+    "zeroMeaning": {
+      "ai_prefetch_count": "off",
+      "content_retention_days": "not kept"
+    },
+    "cross": {
+      "stop_after_days": "and greater than the field above",
+      "default_questions_per_session": "and ≤ the maximum",
+      "pro_practice_sessions_per_day": "and ≥ the Free plan"
+    },
+    "units": {
+      "days": "days",
+      "hours": "hours",
+      "minutes": "minutes",
+      "months": "months",
+      "percent": "%",
+      "chars": "characters",
+      "seconds": "seconds",
+      "sessions": "sessions",
+      "uses": "uses",
+      "times": "times"
+    },
+    "fields": {
+      "reminders": {
+        "enabled": "Reminders on for the whole system",
+        "send_time": "Send time, in the learner’s time",
+        "min_gap_days": "Minimum gap between two reminder emails",
+        "inactive_after_days": "Away for how long before “It’s been a while”",
+        "stop_after_days": "Away for how long before reminders stop"
+      },
+      "learning": {
+        "new_per_group_per_day": "New words per group per day",
+        "reviews_per_group_per_day": "Reviews per group per day",
+        "backlog_after_days": "Overdue for how long before the backlog list",
+        "groups_per_user": "Groups per person",
+        "items_per_group": "Words per group"
+      },
+      "practice": {
+        "max_questions_per_session": "Maximum questions per session",
+        "default_questions_per_session": "Default questions per session",
+        "history_months": "Keep practice history for",
+        "true_false_true_percent": "Share of true pairs in True/False",
+        "idle_session_close_hours": "Close an abandoned session after",
+        "reports_per_hour": "Reports per hour per person",
+        "hint_definition_max_chars": "Maximum length of a definition used as a hint",
+        "type_word_max_retries": "Retries after a wrong typed answer",
+        "ai_prefetch_count": "AI questions generated ahead"
+      },
+      "entitlements": {
+        "free_practice_sessions_per_day": "Practice sessions per day, Free plan",
+        "pro_practice_sessions_per_day": "Practice sessions per day, Pro and Trial",
+        "pro_ai_practice_per_cycle": "AI questions per month, Pro",
+        "pro_ai_lookup_per_cycle": "AI lookups per month, Pro",
+        "trial_ai_practice_per_cycle": "AI questions per month, Trial",
+        "trial_ai_lookup_per_cycle": "AI lookups per month, Trial",
+        "grace_days": "Grace days",
+        "trial_reminder_days_before": "Remind before the trial ends",
+        "renewal_notice_days_before": "Remind before renewal",
+        "ai_enabled": "AI on for the whole system",
+        "ai_daily_cap": "Daily AI cap, whole system",
+        "ai_cap_alert_percent": "Turn yellow at",
+        "ads_enabled": "Ads on",
+        "ads_interstitial_per_day": "Full-screen ads per day",
+        "ads_min_interval_minutes": "Gap between two ads"
+      },
+      "content": {
+        "private_words_per_user": "Private words per person",
+        "sentences_per_sense": "Seen sentences per sense"
+      },
+      "ai": {
+        "call_timeout_seconds": "Timeout per call",
+        "max_concurrent_calls": "Concurrent calls",
+        "daily_provider_calls_cap": "Provider calls cap per day",
+        "content_retention_days": "Keep call content for",
+        "usd_vnd_rate": "USD → VND rate"
+      }
+    },
+    "aiUsage": {
+      "today": "AI uses today: {used}/{cap} ({percent}%)",
+      "split": "Confirmed {confirmed} · reserved {reserved}",
+      "zone": "Counted by the Vietnam day.",
+      "error": "Today’s AI uses could not be loaded."
+    },
+    "historyDialog": {
+      "title": "Change history",
+      "empty": "No changes yet.",
+      "change": "{old} → {new}",
+      "by": "{email} · {at}",
+      "unknownUser": "Deleted user"
+    }
   }
 }

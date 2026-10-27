@@ -16,6 +16,7 @@ import { NumberField } from './NumberField';
 import { RadioGroup } from './RadioGroup';
 import { Stat } from './Stat';
 import { Switch } from './Switch';
+import { Tabs } from './Tabs';
 import { TextArea } from './TextArea';
 import { TextField } from './TextField';
 
@@ -445,5 +446,59 @@ describe('form controls: TextArea, Switch, NumberField, RadioGroup', () => {
     );
     expect(screen.getByText('9.000/8.000')).toBeInTheDocument();
     expect(screen.getByLabelText('Prompt')).toHaveAccessibleDescription('Plain text 9.000/8.000');
+  });
+});
+
+describe('Tabs', () => {
+  const items = [
+    { id: 'a', label: 'Alpha' },
+    { id: 'b', label: 'Beta', marked: true },
+    { id: 'c', label: 'Gamma' },
+  ];
+
+  function Controlled({ onSelect }: { onSelect?: (id: string) => void }) {
+    const [selected, setSelected] = useState('a');
+    return (
+      <Tabs
+        label="Sections"
+        items={items}
+        selected={selected}
+        onSelect={(id) => {
+          onSelect?.(id);
+          setSelected(id);
+        }}
+        aside={<a href="#history">History</a>}
+      >
+        {(id) => <p>panel {id}</p>}
+      </Tabs>
+    );
+  }
+
+  it('shows the selected panel only and reports a click', async () => {
+    const onSelect = vi.fn();
+    wrap(<Controlled onSelect={onSelect} />);
+    expect(screen.getByRole('tab', { name: 'Alpha' })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('tabpanel')).toHaveTextContent('panel a');
+    await userEvent.click(screen.getByRole('tab', { name: /Gamma/ }));
+    expect(onSelect).toHaveBeenLastCalledWith('c');
+    expect(screen.getByRole('tabpanel')).toHaveTextContent('panel c');
+    expect(screen.getByRole('link', { name: 'History' })).toBeInTheDocument();
+  });
+
+  it('arrow keys move the selection', async () => {
+    const onSelect = vi.fn();
+    wrap(<Controlled onSelect={onSelect} />);
+    await userEvent.click(screen.getByRole('tab', { name: 'Alpha' }));
+    await userEvent.keyboard('{ArrowRight}');
+    expect(onSelect).toHaveBeenLastCalledWith('b');
+    expect(screen.getByRole('tabpanel')).toHaveTextContent('panel b');
+  });
+
+  it('a marked tab carries a dot that is named for screen readers (§6.7)', () => {
+    wrap(<Controlled />);
+    const beta = screen.getByRole('tab', { name: /Beta/ });
+    expect(within(beta).getByTestId('tab-dot')).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /^Beta\s*\(unsaved changes\)$/ })).toBe(beta);
+    expect(within(screen.getByRole('tab', { name: 'Alpha' })).queryByTestId('tab-dot')).toBeNull();
   });
 });

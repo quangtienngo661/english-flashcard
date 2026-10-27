@@ -3,6 +3,7 @@ import en from '../messages/en.json' with { type: 'json' };
 import vi from '../messages/vi.json' with { type: 'json' };
 import { seriousViolations } from './support/axe';
 import { mockApi, problem, signedInAs, type MockHandler } from './support/mock-api';
+import { settingsMocks } from './support/settings';
 
 /** Design §8: axe on every refreshed screen × VI/EN × 1440/390 (the two projects): no serious or critical violation. */
 
@@ -32,6 +33,7 @@ const mocks: Record<string, MockHandler> = {
   'GET /v1/admin/staff': () => ({ json: { items: [{ id: 'admin-1', email: 'admin@wordmet.com', email_verified: true, staff_role: 'admin' }], next_page_token: null } }),
   'GET /v1/admin/users': () => ({ json: staffRow }),
   'PUT /v1/admin/users/u9/staff-role': () => ({ json: { ...staffRow, staff_role: 'editor' } }),
+  ...settingsMocks,
   'GET /v1/admin/transactions': () => ({ json: { items: [{
     id: 't1', kind: 'renewal', plan: 'pro', interval: 'month', amount_minor: 99000, currency: 'VND', occurred_at: at, period_start: at,
     period_end: '2026-11-14T09:30:00.000Z', status: 'pending', provider: 'fake', provider_transaction_id: 'fake_txn_8f2c41d9a7',
@@ -39,7 +41,7 @@ const mocks: Record<string, MockHandler> = {
   }], next_page_token: null } }),
 };
 
-const pages = ['/uploads', '/uploads/b1', '/uploads/new', '/publish-jobs', `/publish-jobs/${JOB}`, '/sources', '/sources/new', '/export', '/ai/costs', '/transactions'];
+const pages = ['/uploads', '/uploads/b1', '/uploads/new', '/publish-jobs', `/publish-jobs/${JOB}`, '/sources', '/sources/new', '/export', '/ai/costs', '/transactions', '/settings', '/settings?tab=entitlements'];
 
 for (const [lang, copy] of [['vi', vi], ['en', en]] as const) {
   test.describe(`axe (${lang})`, () => {
@@ -83,5 +85,6 @@ async function waitForContent(page: Page, path: string) {
   else if (path === '/uploads/b1') await expect(page.getByTestId('detail-panel').getByRole('heading', { level: 2, name: batch.file_name })).toBeVisible();
   else if (path.startsWith('/publish-jobs/')) await expect(page.getByTestId('detail-panel').getByRole('heading', { level: 2 })).toContainText('a3f2c1');
   else if (path === '/export' || path === '/ai/costs') await expect(page.getByRole('main')).toBeVisible();
+  else if (path.startsWith('/settings')) await expect(page.getByRole('tabpanel').getByRole('heading', { level: 2 })).toBeVisible();
   else await expect(page.locator('tbody tr, [data-testid="card"]').first()).toBeAttached();
 }
