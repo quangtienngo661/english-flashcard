@@ -1,29 +1,29 @@
 /* Light islands in the dark theme (owner 27/10/2026). An element with `pastel-island` keeps the light palette in the dark
-   theme: its soft background stays pastel and the text on it stays dark. Used only where the owner asked: deck card bands,
+   theme: its soft background takes the saturated tone of the accent button (owner 27/10/2026: "tone màu như màu này") and the text on it stays dark. Used only where the owner asked: deck card bands,
    topic suggestion cards, "Thêm từ vừa gặp", practice source cards, the picked row of Tra từ (`md:` only, as its background).
    The whole-app variant of this idea is dark-pastel.css (kept, not imported). */
 [data-theme='dark'] .pastel-island {
-  --color-primary: #2445d6;
+  --color-primary: #14257a;
   --color-primary-deep: #1a32a6;
-  --color-primary-soft: #eceffe;
+  --color-primary-soft: #8da2ff;
   --color-on-primary: #ffffff;
   --color-on-primary-muted: #dfe5ff;
-  --color-accent-soft: #fff4c7;
+  --color-accent-soft: #ffd84a;
   --color-ink: #0f1a3d;
-  --color-muted: #4d5577;
+  --color-muted: #2a3150;
   --color-placeholder: #5f6688;
   --color-surface: #ffffff;
   --color-canvas: #f1f3fd;
   --color-canvas-deep: #dde1f5;
   --color-border: #e3e6f4;
   --color-border-strong: #7d84a8;
-  --color-success: #1b7a46;
-  --color-success-soft: #e3f4ea;
-  --color-warning: #7a5200;
-  --color-danger: #b8352a;
-  --color-danger-soft: #fde8e5;
+  --color-success: #0b4426;
+  --color-success-soft: #5fd39a;
+  --color-warning: #4a3200;
+  --color-danger: #6e1a12;
+  --color-danger-soft: #ff8b7c;
   --color-danger-deep: #8a2219;
-  --color-neutral-soft: #eef0f5;
+  --color-neutral-soft: #b0b7ca;
   --color-wrong-chip: #ffd3cd;
   --color-wrong-chip-deep: #d99b92;
   --color-highlight: #ffd84a;
@@ -32,27 +32,27 @@
 }
 @media (width >= 48rem) {
   [data-theme='dark'] .md\:pastel-island {
-    --color-primary: #2445d6;
+    --color-primary: #14257a;
     --color-primary-deep: #1a32a6;
-    --color-primary-soft: #eceffe;
+    --color-primary-soft: #8da2ff;
     --color-on-primary: #ffffff;
     --color-on-primary-muted: #dfe5ff;
-    --color-accent-soft: #fff4c7;
+    --color-accent-soft: #ffd84a;
     --color-ink: #0f1a3d;
-    --color-muted: #4d5577;
+    --color-muted: #2a3150;
     --color-placeholder: #5f6688;
     --color-surface: #ffffff;
     --color-canvas: #f1f3fd;
     --color-canvas-deep: #dde1f5;
     --color-border: #e3e6f4;
     --color-border-strong: #7d84a8;
-    --color-success: #1b7a46;
-    --color-success-soft: #e3f4ea;
-    --color-warning: #7a5200;
-    --color-danger: #b8352a;
-    --color-danger-soft: #fde8e5;
+    --color-success: #0b4426;
+    --color-success-soft: #5fd39a;
+    --color-warning: #4a3200;
+    --color-danger: #6e1a12;
+    --color-danger-soft: #ff8b7c;
     --color-danger-deep: #8a2219;
-    --color-neutral-soft: #eef0f5;
+    --color-neutral-soft: #b0b7ca;
     --color-wrong-chip: #ffd3cd;
     --color-wrong-chip-deep: #d99b92;
     --color-highlight: #ffd84a;
