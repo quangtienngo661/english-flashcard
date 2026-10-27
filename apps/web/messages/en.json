@@ -597,6 +597,7 @@
       "backlogSee": "See",
       "preview": "Card preview",
       "previewHint": "Select the card or press Space to flip",
+      "prevCard": "Previous card",
       "nextCard": "Next card",
       "allWords": "All {count, plural, one {# word} other {# words}}",
       "filterLabel": "Filter words in the deck",
