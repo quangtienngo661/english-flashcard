@@ -153,6 +153,31 @@ Dữ liệu cần có (bộ test `m3.real.spec.ts` dựng bằng chính API, kh�
 
 Khi một báo lỗi đang mở ở bên phải, bảng bên trái chỉ còn ba cột Từ, Lý do, Trạng thái; đóng panel thì đủ 8 cột.
 
+## M4 — Người học (Người dùng, Cấp gói và lượt)
+
+Chuẩn bị như M3. `pnpm test:e2e:real` chạy `m4.real.spec.ts` bằng ba tài khoản do admin tạo qua API: Minh (editor), Lan và Khoa (người học). Muốn tự bấm thì đăng nhập
+bằng admin hoặc Minh trong `.state.json`. Khung Figma: A/71 `386:1698`, A/71e `387:1767`, A/72 `387:1965`, A/72b `387:2293`, A/78 `394:2657`, A/78b `394:3168`,
+A/78c `394:3719`, A/78d `414:3533`, A/79 `394:3994`, A/79b `414:3823`, A/79e `394:4288`.
+
+1. **Admin khóa rồi mở khóa Khoa.** Đăng nhập admin → menu "Người dùng". Gõ email Khoa vào ô tìm (một ký tự thì chỉ báo "Gõ từ 2 ký tự", chưa gửi gì) → còn đúng một dòng.
+   Bấm email → panel bên phải hiện email, họ tên, ngày sinh, "Đồng ý điều khoản", vai trò, trạng thái. Bấm [Khóa tài khoản] → hộp hỏi lý do (1 dòng, tối đa 500 ký tự) → [Khóa tài khoản].
+   → Panel đổi sang "Đang khóa từ … · bởi <email admin>" và "Lý do: …", nút thành [Mở khóa]. Khoa đăng nhập thử thì bị từ chối. Bấm [Mở khóa] → dòng khóa biến mất, nút lại là [Khóa tài khoản],
+   và Khoa đăng nhập lại được. (A/71, A/72, A/72b.) Nút khóa không có với chính bạn và với tài khoản admin.
+2. **Editor không vào được "Người dùng".** Đăng nhập Minh → menu không có "Người dùng"; gõ thẳng `/users` → "Bạn không có quyền xem trang này." (A/71e).
+3. **Minh cấp gói Pro cho Lan, sửa ngày, thu hồi.** Đăng nhập Minh → menu "Cấp gói và lượt" → [Cấp mới]. Gõ email Lan → [Kiểm] (hoặc rời ô) → "Đã xác nhận tài khoản …". Loại mặc định "Gói Pro";
+   chọn "Tới ngày" (ngày D: Lan còn Pro hết ngày D), gõ lý do → [Cấp]. → Toast "Đã cấp cho …", hộp đóng, danh sách có dòng mới "Đang hiệu lực" với Minh là người cấp.
+   Lọc "Người học (email)" bằng email Lan → [Lọc]. Bấm "Sửa ngày" ở dòng đó → ô "Từ ngày" không sửa được (đã bắt đầu), đổi "Tới ngày" + lý do → [Lưu ngày mới]. Mở "Sửa ngày" lần nữa
+   → có dòng "Lần sửa trước: … · email Minh · tới … → … · lý do". Bấm "Thu hồi" → lý do → [Thu hồi] → dòng thành "Đã thu hồi", ghi "Thu hồi: lý do", hết nút thao tác. (A/78, A/78b, A/78d, A/79.)
+4. **Cấp Pro hai lần.** Đăng nhập admin → [Cấp mới] cho Lan, "Tới ngày" xa, lý do "lần một" → [Cấp]; làm lại với lý do "lần hai". Lọc theo Lan → dòng "lần một" có nhãn "Bị thay thế"
+   và không còn nút thao tác, dòng "lần hai" là "Đang hiệu lực". Với admin, hộp có thêm ba ô con số riêng (phiên luyện mỗi ngày, lượt câu AI, lượt tra AI); Minh chỉ thấy ô phiên luyện.
+5. **Từ chối trước khi cấp.** Minh gõ email của admin → [Kiểm] → "Editor không cấp được cho tài khoản admin." và [Cấp] tắt (A/79e). Email không có tài khoản → "Không có tài khoản với email này.".
+   Người đang trả tiền cho Pro và tự gia hạn (không dựng được trên stack thật này, chỉ kiểm bằng test mock): [Cấp] ra hộp "Cấp gói Pro cho … ?" với [Giữ nguyên] / [Cấp và tắt tự gia hạn] (A/79b).
+6. **Lọc và trống.** Ở "Cấp gói và lượt" lọc email của người chưa từng được cấp → "Không có lần cấp nào khớp bộ lọc. Đổi email hoặc số ngày rồi xem lại." (A/78c). Admin thấy thêm dòng
+   "Lượt AI hôm nay: x/y"; editor thì không.
+7. **Phone 390.** Hai màn và các hộp ở 390 không cuộn ngang, bảng thành thẻ; email dài và lý do 300 ký tự xuống dòng gọn (ảnh trong `docs/deliveries/giao-dien-admin/m4/`).
+
+Ngày "Tới ngày" là ngày cuối còn hiệu lực (hết ngày D mới hết hạn); danh sách hiện lại đúng ngày D.
+
 ## M5 — Nội dung (Từ, Nghĩa, Chủ đề)
 
 Đăng nhập bằng Minh (editor) — editor làm được mọi thao tác ở đây. Khung Figma A/87 `395:2999`, A/88 `395:3514`, A/88b `395:4038`, A/89 `395:4326`.

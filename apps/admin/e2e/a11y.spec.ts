@@ -2,7 +2,7 @@ import { expect, test, type Page } from '@playwright/test';
 import en from '../messages/en.json' with { type: 'json' };
 import vi from '../messages/vi.json' with { type: 'json' };
 import { seriousViolations } from './support/axe';
-import { mockApi, problem, signedInAs, type MockHandler } from './support/mock-api';
+import { mockApi, problem, signedInAs, type MockHandler, type MockRequest } from './support/mock-api';
 import { contentMocks, SENSE_ID } from './support/content';
 import { settingsMocks } from './support/settings';
 
@@ -110,7 +110,22 @@ Object.assign(mocks, {
   'GET /v1/admin/practice/unknown-forms': () => ({ json: { items: [{ id: 'f-1', lemma_key: 'go', form: 'went', rejected_count: 3, first_seen_at: at, last_seen_at: at }], next_page_token: null } }),
 });
 
-const pages = ['/uploads', '/uploads/b1', '/uploads/new', '/publish-jobs', `/publish-jobs/${JOB}`, '/sources', '/sources/new', '/export', '/ai/costs', '/transactions', '/ai/status', '/ai/models', '/ai/models/new', '/ai/models/m1', '/ai/operations', '/ai/prompts', '/settings', '/settings?tab=entitlements', '/words', '/senses', `/senses/${SENSE_ID}`, '/topics', '/reports', `/reports/${RID}`, '/report-reasons', '/report-reasons/new', '/refunds', '/unknown-forms'];
+const UID = '6b1f0000-0000-4000-8000-00000000e42a';
+const userRow = { id: UID, email: 'lan@example.com', given_name: 'Lan', family_name: 'Nguyễn', email_verified: true, staff_role: null, status: 'locked', created_at: at, last_seen_at: at };
+const grantRow = {
+  id: '9a000000-0000-4000-8000-000000000001', user_id: UID, kind: 'plan', plan: 'pro', limits: null, starts_at: at, ends_at: '2099-11-21T17:00:00.000Z', reason: 'Giải IELTS tháng 10',
+  granted_by: 'a1', granted_by_role: 'admin', revoked_at: null, revoked_by: null, revoke_reason: null, paid_renewal_action: null, created_at: at,
+  user: { id: UID, email: 'lan@example.com' }, granted_by_user: { id: 'a1', email: 'admin@wordmet.com' }, revoked_by_user: null, status: 'active', last_change: null,
+};
+Object.assign(mocks, {
+  // The staff page asks the same path with `?email=` and expects one user, the Người dùng list asks for a page.
+  'GET /v1/admin/users': (req: MockRequest) => ({ json: req.query.has('email') ? staffRow : { items: [userRow], next_page_token: null } }),
+  [`GET /v1/admin/users/${UID}`]: () => ({ json: { ...userRow, birth_date: '2008-05-14', terms_accepted_at: at, terms_version: '2026-10-01', locked_at: at, locked_by: { id: 'a1', email: 'admin@wordmet.com' }, lock_reason: 'Spam' } }),
+  'GET /v1/admin/entitlements/grants': () => ({ json: { items: [grantRow], next_page_token: null } }),
+  'GET /v1/admin/entitlements/ai-usage': () => ({ json: { date: '2026-10-27', used: 812, confirmed: 800, reserved: 12, cap: 1000, alert_percent: 80, alert_reached: false, enabled: true } }),
+});
+
+const pages = ['/uploads', '/uploads/b1', '/uploads/new', '/publish-jobs', `/publish-jobs/${JOB}`, '/sources', '/sources/new', '/export', '/ai/costs', '/transactions', '/ai/status', '/ai/models', '/ai/models/new', '/ai/models/m1', '/ai/operations', '/ai/prompts', '/settings', '/settings?tab=entitlements', '/words', '/senses', `/senses/${SENSE_ID}`, '/topics', '/reports', `/reports/${RID}`, '/report-reasons', '/report-reasons/new', '/refunds', '/unknown-forms', '/users', `/users/${UID}`, '/entitlements', '/entitlements/new'];
 
 for (const [lang, copy] of [['vi', vi], ['en', en]] as const) {
   test.describe(`axe (${lang})`, () => {
@@ -154,6 +169,7 @@ async function waitForContent(page: Page, path: string) {
   if (path.endsWith('/new') || path === '/ai/models/m1') await expect(page.getByRole('dialog')).toBeVisible();
   else if (path === '/uploads/b1') await expect(page.getByTestId('detail-panel').getByRole('heading', { level: 2, name: batch.file_name })).toBeVisible();
   else if (path.startsWith('/publish-jobs/')) await expect(page.getByTestId('detail-panel').getByRole('heading', { level: 2 })).toContainText('a3f2c1');
+  else if (path.startsWith('/users/')) await expect(page.getByTestId('detail-panel').getByRole('heading', { level: 2 })).toBeVisible();
   else if (path.startsWith('/reports/')) await expect(page.getByTestId('detail-panel').getByRole('heading', { level: 2 })).toBeVisible();
   else if (path === '/ai/operations') await expect(page.getByRole('group', { name: /lookup_word/ })).toBeVisible();
   else if (path === '/ai/prompts') {

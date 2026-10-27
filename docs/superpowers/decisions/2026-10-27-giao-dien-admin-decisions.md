@@ -27,6 +27,7 @@ API từng khung: [`../../preparation/giao-dien-admin-facts/`](../../preparation
 | AD13 | Editor cấp gói không tìm được người học | Endpoint tra đúng một email cho `entitlements.grant`; lọc theo người bằng email | Chủ dự án (đề xuất của Claude) |
 | AD14 | Editor không đọc được lý do báo lỗi | `content.edit` được đọc danh sách lý do; báo lỗi mang cờ `refundable` | Chủ dự án (đề xuất của Claude) |
 | AD15 | Thời điểm làm việc API | 9 task API làm ở một phiên riêng, song song với các milestone màn | Chủ dự án (đề xuất của Claude) |
+| AD17 | "Tới ngày" khi cấp / sửa ngày lần cấp | Ngày D tính trọn: còn hiệu lực hết ngày D (giờ Việt Nam); API nhận 00:00 ngày D+1 | Chủ dự án (giữ cách màn M4 đã làm) |
 
 ## AD0 — Luật hỏi đợt này (câu 1)
 
@@ -225,3 +226,13 @@ Chủ dự án hỏi còn bao nhiêu task và làm song song được không. Cl
 | (1) giữ nối tiếp như design §3, §5 | Không xung đột; chậm nhất |
 | ✅ (2) 9 task API (Task 9, 10, 17, 21, 24, 25, 31, 32, 37) ở một phiên riêng song song; màn vẫn nối tiếp | Bỏ luật "API nằm trong PR của milestone dùng nó"; Task 9 (`UserRef`) phải làm trước; vài spec dùng chung |
 | (3) mỗi milestone một phiên chạy cùng lúc | Nhanh nhất; 6 nhánh cùng sửa `nav.ts`, `routes.tsx`, `messages/*.json`, `ui/` |
+
+## AD17 — "Tới ngày" của lần cấp (27/10/2026, khi làm M4)
+
+API coi `ends_at` là mốc đã hết hạn (`endsAt <= now` là hết hạn, `grants.service.ts`); design và bản chữ không nói "Tới ngày" tính trọn ngày hay không. Màn M4
+(Task 34–35) chọn cách như màn Giao dịch; Claude báo lại kèm hệ quả nếu hiểu khác (lần cấp dài thêm một ngày). Chủ dự án (qua phiên điều phối): giữ cách hiện có.
+
+| Phương án | Trade-off |
+|---|---|
+| ✅ (a) Ngày D tính trọn: còn hiệu lực hết ngày D, API nhận 00:00 ngày D+1 (+07:00); màn hiện lại ngày của `ends_at − 1ms` | Khớp cách đọc "tới ngày 30"; cùng quy ước với bộ lọc Giao dịch |
+| (b) Ngày D là mốc hết hạn: API nhận 00:00 ngày D | Khớp nguyên nghĩa `ends_at` của API; cấp "tới ngày 30" thì ngày 30 đã hết hiệu lực |
