@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Link } from 'react-router';
 import { useTranslations } from 'use-intl';
 import { ApiError } from '../../api/problem';
@@ -16,6 +16,7 @@ import { ListState } from '../../ui/ListState';
 import { STATUS_TONE, useTypeLabel } from './ReportsPage';
 import { getReport, reportWord, resolveReport, type Report, type ResolveStatus } from './reports-api';
 
+const UUID = /^[0-9a-f]{8}[-][0-9a-f]{4}[-][0-9a-f]{4}[-][0-9a-f]{4}[-][0-9a-f]{12}$/i;
 const reportKey = (id: string) => ['report', id] as const;
 
 /** One `Idempotency-Key` per status the staff member may send; a lost answer is retried with the same key (spec §6.3). */
@@ -80,14 +81,21 @@ export function ReportDetail({ id, listSearch }: { id: string; listSearch: strin
   const dateTime = useDateTime();
   const typeLabel = useTypeLabel();
   const canSeeCalls = useCan('settings.manage');
-  const query = useQuery({ queryKey: reportKey(id), queryFn: () => getReport(api, id) });
+  const query = useQuery({ queryKey: reportKey(id), queryFn: () => getReport(api, id), enabled: UUID.test(id) });
   const noError = useResolve(id, 'no_error');
   const fixed = useResolve(id, 'fixed');
   const confirmed = useResolve(id, 'confirmed');
 
+  const [lastPressed, setLastPressed] = useState<ResolveStatus | null>(null);
+  const press = (status: ResolveStatus, action: ReturnType<typeof useResolve>) => {
+    setLastPressed(status);
+    void action.submit();
+  };
+
   const report = query.data;
   if (!report) {
-    const missing = query.error instanceof ApiError && query.error.problem.status === 404;
+    // An id that is no UUID cannot exist (the API would answer 400): same as a 404.
+    const missing = !UUID.test(id) || (query.error instanceof ApiError && query.error.problem.status === 404);
     return (
       <>
         <PanelHead title={t('reports.detail.titleUnknown')} />
@@ -123,7 +131,8 @@ export function ReportDetail({ id, listSearch }: { id: string; listSearch: strin
   const refundLine = isOpen && isAi && report.ai_charged && report.ai_operation_id !== null && report.refundable;
   const actions = [noError, fixed, confirmed];
   const busy = actions.some((a) => a.pending || a.waitSeconds > 0);
-  const failed = actions.find((a) => a.error);
+  // Only the button pressed last has a say: an older failure of another button must not outlive a later success.
+  const failed = lastPressed === 'no_error' ? noError : lastPressed === 'fixed' ? fixed : lastPressed === 'confirmed' ? confirmed : undefined;
 
   const who = [report.resolved_by_user ? userLabel(report.resolved_by_user, t('common.systemUser')) : null, report.resolved_by_role].filter(Boolean).join(' · ');
   const callId = report.call_operation_id;
@@ -257,15 +266,15 @@ export function ReportDetail({ id, listSearch }: { id: string; listSearch: strin
           <div className="flex w-full flex-col gap-3">
             {refundLine && <p className="text-ui text-muted">{t('reports.actions.refundLine')}</p>}
             <div className="flex flex-wrap gap-2.5">
-              <Button variant="secondary" isPending={noError.pending} isDisabled={busy && !noError.pending} onPress={() => void noError.submit()}>
+              <Button variant="secondary" isPending={noError.pending} isDisabled={busy && !noError.pending} onPress={() => press('no_error', noError)}>
                 {t('reports.actions.noError')}
               </Button>
               {isAi ? (
-                <Button isPending={confirmed.pending} isDisabled={busy && !confirmed.pending} onPress={() => void confirmed.submit()}>
+                <Button isPending={confirmed.pending} isDisabled={busy && !confirmed.pending} onPress={() => press('confirmed', confirmed)}>
                   {t('reports.actions.confirmed')}
                 </Button>
               ) : (
-                <Button isPending={fixed.pending} isDisabled={busy && !fixed.pending} onPress={() => void fixed.submit()}>
+                <Button isPending={fixed.pending} isDisabled={busy && !fixed.pending} onPress={() => press('fixed', fixed)}>
                   {t('reports.actions.fixed')}
                 </Button>
               )}

@@ -50,7 +50,7 @@ function AcceptButton({ row, onChanged }: { row: UnknownForm; onChanged: () => v
 
   return (
     <span className="flex flex-col items-start gap-1">
-      <Button isPending={action.pending} aria-label={t('unknownForms.acceptFor', names)} onPress={() => void action.submit()}>
+      <Button variant="secondary" isPending={action.pending} aria-label={t('unknownForms.acceptFor', names)} onPress={() => void action.submit()}>
         {t('unknownForms.accept')}
       </Button>
       {action.error && (
@@ -120,11 +120,13 @@ export function UnknownFormsPage() {
   // The API drops forms the table already knows after it has cut the page, so a page can come back empty with more behind it.
   let trailingEmpty = 0;
   for (let i = pages.length - 1; i >= 0 && pages[i]!.items.length === 0; i -= 1) trailingEmpty += 1;
-  const mayFetchOn = rows.length === 0 && trailingEmpty > 0 && trailingEmpty < MAX_EMPTY_PAGES && list.hasNextPage;
+  // A failed page ends the run: the error state with [Thử lại] shows instead of asking for the same page again.
+  const mayFetchOn = rows.length === 0 && trailingEmpty > 0 && trailingEmpty < MAX_EMPTY_PAGES && list.hasNextPage && !list.isError;
   const fetchOn = mayFetchOn && !list.isFetching;
+  const { fetchNextPage } = list;
   useEffect(() => {
-    if (fetchOn) void list.fetchNextPage();
-  }, [fetchOn, trailingEmpty, list]);
+    if (fetchOn) void fetchNextPage();
+  }, [fetchOn, trailingEmpty, fetchNextPage]);
 
   const changed = () => void queryClient.invalidateQueries({ queryKey: KEY });
 

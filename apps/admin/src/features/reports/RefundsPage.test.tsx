@@ -76,6 +76,17 @@ describe('refunds list', { timeout: 20_000 }, () => {
     await waitFor(() => expect(r.count('GET', want)).toBe(1));
   });
 
+  it('after Back the filter boxes match the URL again', async () => {
+    const r = renderApp('/refunds', { [LIST]: json(page([item()])), [`GET /v1/admin/practice/refunds?resolved_by_email=minh%40example.com&page_size=20`]: json(page([])) }, ADMIN);
+    await screen.findAllByText('lan@example.com');
+    await userEvent.type(screen.getByLabelText(t.filters.resolver), 'minh@example.com');
+    await userEvent.click(screen.getByRole('button', { name: t.filters.apply }));
+    await waitFor(() => expect(r.router.state.location.search).toContain('minh'));
+    await r.router.navigate(-1);
+    await waitFor(() => expect(r.router.state.location.search).toBe(''));
+    await waitFor(() => expect(screen.getByLabelText(t.filters.resolver)).toHaveValue(''));
+  });
+
   it('§6.9: Tải thêm sends the page token', async () => {
     const r = renderApp('/refunds', {
       [LIST]: json(page([item()], 'tok1')),

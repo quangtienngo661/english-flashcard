@@ -28,6 +28,12 @@ export function RefundsPage() {
   const dateTime = useDateTime();
   const [filters, setFilters] = useUrlFilters(FILTERS);
   const [draft, setDraft] = useState(filters);
+  // Back/Forward changes the URL filters: the boxes follow them.
+  const [shown, setShown] = useState(filters);
+  if (shown !== filters) {
+    setShown(filters);
+    setDraft(filters);
+  }
 
   const list = useInfiniteQuery({
     queryKey: ['refunds', filters],

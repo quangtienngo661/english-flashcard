@@ -95,6 +95,13 @@ describe('report detail', { timeout: 20_000 }, () => {
     expect(screen.getByRole('link', { name: t.detail.backToList })).toHaveAttribute('href', '/reports');
   });
 
+  it('a report id that is not a UUID says not found without calling the API', async () => {
+    const r = open({}, '/reports/not-a-uuid');
+    expect(await screen.findByText(t.detail.notFound)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: t.detail.backToList })).toHaveAttribute('href', '/reports');
+    expect(r.calls.filter((c) => c.path.includes('/reports/not-a-uuid'))).toHaveLength(0);
+  });
+
   it('§6.8: an ordinary question offers [Không có lỗi] and [Đã sửa], never "Xác nhận lỗi"', async () => {
     open({ [ONE]: () => json(report()) });
     expect(await screen.findByRole('button', { name: t.actions.noError })).toBeInTheDocument();
@@ -196,6 +203,22 @@ describe('report detail', { timeout: 20_000 }, () => {
     open({ [ONE]: () => json(report()), [RESOLVE]: () => problem(409, 'resolve-status-not-allowed') });
     await userEvent.click(await screen.findByRole('button', { name: t.actions.noError }));
     expect(await screen.findByText(vi.errors['resolve-status-not-allowed'])).toBeInTheDocument();
+  });
+
+  it('an error of one button does not outlive a later press of another button that worked', async () => {
+    let n = 0;
+    open({
+      [ONE]: () => json(aiReport()),
+      [RESOLVE]: () => {
+        if (++n === 1) throw new TypeError('network down');
+        return json(aiReport({ status: 'confirmed', refunded: true, ...DONE }));
+      },
+    });
+    await userEvent.click(await screen.findByRole('button', { name: t.actions.noError }));
+    expect(await screen.findByRole('button', { name: vi.common.retry })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: t.actions.confirmed }));
+    expect(await screen.findByText(t.detail.refunded)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: vi.common.retry })).toBeNull();
   });
 
   it('§6.8: a retry after a network error keeps the Idempotency-Key', async () => {

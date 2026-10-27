@@ -45,6 +45,24 @@ describe('unknown word forms', { timeout: 20_000 }, () => {
     expect(screen.queryByText(t.empty)).toBeNull();
   });
 
+  it('an empty first page whose next page fails asks for that page once and shows the error state', async () => {
+    const r = renderApp('/unknown-forms', {
+      [LIST]: json(page([], 'p2')),
+      [`GET ${withToken('p2')}`]: () => new Response(JSON.stringify({ type: 'http://localhost:3000/problems/internal', status: 500, title: 'x', operation_id: 'op' }), { status: 500, headers: { 'content-type': 'application/problem+json' } }),
+    }, EDITOR);
+    expect(await screen.findByRole('button', { name: vi.common.retry })).toBeInTheDocument();
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    expect(r.count('GET', withToken('p2'))).toBe(1);
+  });
+
+  it('the row buttons are all secondary: [Nhận dạng này] is not the yellow primary', async () => {
+    renderApp('/unknown-forms', { [LIST]: json(page([row()])) }, EDITOR);
+    await rowOf('went');
+    const accept = screen.getAllByRole('button', { name: acceptName })[0]!;
+    const ignore = screen.getAllByRole('button', { name: ignoreName })[0]!;
+    expect(accept.className).toBe(ignore.className);
+  });
+
   it('§6.9: empty pages with a next_page_token are fetched at most 5 pages in a row, then the empty state A/77b shows', async () => {
     const r = renderApp('/unknown-forms', {
       [LIST]: json(page([], 'p2')),
