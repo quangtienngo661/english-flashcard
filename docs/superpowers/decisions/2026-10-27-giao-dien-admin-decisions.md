@@ -26,6 +26,7 @@ API từng khung: [`../../preparation/giao-dien-admin-facts/`](../../preparation
 | AD12 | Việc nhỏ thêm | Quyền và menu AI theo `settings.manage`, 7 mục; 3 điểm guideline cho màn mới; sửa ghi chú cũ | Chủ dự án (đề xuất của Claude, vòng 2) |
 | AD13 | Editor cấp gói không tìm được người học | Endpoint tra đúng một email cho `entitlements.grant`; lọc theo người bằng email | Chủ dự án (đề xuất của Claude) |
 | AD14 | Editor không đọc được lý do báo lỗi | `content.edit` được đọc danh sách lý do; báo lỗi mang cờ `refundable` | Chủ dự án (đề xuất của Claude) |
+| AD15 | Thời điểm làm việc API | 9 task API làm ở một phiên riêng, song song với các milestone màn | Chủ dự án (đề xuất của Claude) |
 
 ## AD0 — Luật hỏi đợt này (câu 1)
 
@@ -214,3 +215,13 @@ các mục I1, I2, I5, I6). Chủ dự án bảo "sửa đi" sau khi đọc revi
 | T7 | "Bị thay thế" suy từ lần cấp Pro mới của cùng người học có `created_at = revoked_at` và `granted_by = revoked_by` | (a) thêm cột đánh dấu (migration); (b) chặn staff gõ lý do `replaced` (đổi luật) | Lần thay thế và lần cấp mới ghi cùng `now` trong một transaction (`grants.service.ts:124-137`); không migration, không đổi luật. Chưa kiểm trên Postgres thật (R3) |
 | T8 | Thêm PR M0 "khung chung" (router, blocker, menu, quyền, component `ui/`, mã lỗi client, tài khoản test, `AI_FAKE_ENABLED`) trước M1a; đợt thành 7 PR | Gộp phần chung vào M1a (AD8 bản đầu) | M1a gộp phần rủi ro nhất (đổi router đụng mọi màn cũ) với phần quan trọng nhất (màn AI); tách ra thì chạy lại test cũ trên router mới trước khi có màn mới. Đổi số PR của AD8 |
 | T9 | Mở thẳng đường dẫn không đủ quyền: trang "Bạn không có quyền xem trang này." [Về trang chủ] theo khung A/71e và bản chữ §8.0; áp cả màn cũ | Giữ chuyển hướng im lặng (`Shell.tsx:132`) và sửa khung A/71e, bản chữ §8.0 | Khung và bản chữ đã duyệt vẽ trang báo không có quyền; design bản đầu ghi ngược lại. Đổi hành vi của màn cũ (sửa `e2e/shell.spec.ts`) |
+
+## AD15 — Làm song song (chat 27/10/2026, sau khi M0 xong)
+
+Chủ dự án hỏi còn bao nhiêu task và làm song song được không. Claude đưa 3 cách; chủ dự án: "cách 2 đi để tối ưu về mặt thời gian".
+
+| Phương án | Trade-off |
+|---|---|
+| (1) giữ nối tiếp như design §3, §5 | Không xung đột; chậm nhất |
+| ✅ (2) 9 task API (Task 9, 10, 17, 21, 24, 25, 31, 32, 37) ở một phiên riêng song song; màn vẫn nối tiếp | Bỏ luật "API nằm trong PR của milestone dùng nó"; Task 9 (`UserRef`) phải làm trước; vài spec dùng chung |
+| (3) mỗi milestone một phiên chạy cùng lúc | Nhanh nhất; 6 nhánh cùng sửa `nav.ts`, `routes.tsx`, `messages/*.json`, `ui/` |

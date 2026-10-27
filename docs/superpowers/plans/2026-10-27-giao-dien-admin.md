@@ -63,6 +63,8 @@ Code facts (all on `origin/dev` `5a60dce`): `docs/preparation/giao-dien-admin-fa
 ## Execution model
 
 - **One milestone at a time, one branch and one PR each** (design §3). After a PR merges, the next branch starts from a fresh `origin/dev`.
+- **AD15 (27/10/2026):** the API tasks 9, 10, 17, 21, 24, 25, 31, 32, 37 run in a separate session on their own branch and PRs, in that order
+  (Task 9 first: `UserRef`). A screen task that needs a new field starts after the API PR carrying it has merged into `dev`.
 - **Milestone gate (design §8):** tasks green locally → push → PR → CI green (`api`, `web`, `admin`, `admin-e2e-real`) → real run (API + worker +
   Postgres + Redis + Mailpit, `AI_FAKE_ENABLED=true`) of every screen of the milestone at 1440 and 390, screenshots next to the Figma frame in
   `docs/deliveries/giao-dien-admin.md` → the milestone's section of `docs/deliveries/giao-dien-admin-test-flow.md` → merge. No stop for screenshot

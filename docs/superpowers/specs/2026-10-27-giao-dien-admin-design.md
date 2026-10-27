@@ -195,8 +195,8 @@ Mỗi bảng ở §6 chỉ ghi phần riêng của màn đó; các trường h�
 
 ## 5. Thay đổi API
 
-Mọi thay đổi chỉ **thêm**: thêm trường, thêm endpoint đọc, mở thêm quyền đọc. Không đổi hay xóa trường cũ (SR7, T1). Mỗi thay đổi có unit test ở `apps/api` và nằm
-trong PR của milestone dùng nó.
+Mọi thay đổi chỉ **thêm**: thêm trường, thêm endpoint đọc, mở thêm quyền đọc. Không đổi hay xóa trường cũ (SR7, T1). Mỗi thay đổi có unit test ở `apps/api`. Theo AD15 (27/10/2026), cả 9 task API (plan Task 9, 10, 17, 21, 24, 25, 31, 32, 37)
+làm ở một phiên riêng, song song với các milestone màn, trên nhánh và PR riêng; milestone màn nào cần trường mới thì đợi PR API tương ứng merge.
 
 ### 5.1 Email người thao tác và người học (AD7, T1)
 
