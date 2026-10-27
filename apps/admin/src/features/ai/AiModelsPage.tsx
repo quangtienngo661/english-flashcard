@@ -90,7 +90,7 @@ export function AiModelsPage() {
       cell: (m) => (m.used_by.length > 0 ? m.used_by.map((op) => t(`ai.operations.names.${op}`)).join(', ') : t('ai.models.none')),
     },
     {
-      key: 'lifecycle', header: t('ai.models.cols.lifecycle'), className: 'wrap-anywhere', card: 'field',
+      key: 'lifecycle', header: t('ai.models.cols.lifecycle'), className: 'wrap-normal', card: 'field',
       cell: (m) => {
         if (!m.lifecycle && !m.shutdown_at) return t('ai.models.none');
         return (
