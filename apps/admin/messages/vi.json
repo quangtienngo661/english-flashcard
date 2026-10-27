@@ -614,5 +614,198 @@
       "by": "{email} · {at}",
       "unknownUser": "Người dùng đã xóa"
     }
+  },
+  "words": {
+    "search": "Tìm từ",
+    "searchPlaceholder": "Tìm theo từ hoặc cách viết khác",
+    "searchSubmit": "Tìm",
+    "pasteButton": "Dán danh sách từ",
+    "filters": {
+      "all": "Tất cả",
+      "level": "Trình độ",
+      "hasSense": "Nghĩa",
+      "hasSenseHint": "Có nghĩa tính cả nghĩa đã ngừng dùng.",
+      "withSense": "Có nghĩa",
+      "withoutSense": "Chưa có nghĩa",
+      "conflict": "Trình độ lệch nhau",
+      "batch": "Lô nhập"
+    },
+    "cols": {
+      "lemma": "Từ",
+      "pos": "Loại từ",
+      "level": "Trình độ hiển thị",
+      "senses": "Nghĩa",
+      "functionWord": "Từ chức năng",
+      "variants": "Cách viết khác"
+    },
+    "conflictBadge": "lệch",
+    "noSense": "Chưa có nghĩa",
+    "senseCount": "{count} nghĩa",
+    "published": "{count} đã publish",
+    "drafts": "{count} bản nháp",
+    "retired": "{count} ngừng dùng",
+    "yes": "Có",
+    "no": "Không",
+    "empty": "Không có từ nào khớp bộ lọc.",
+    "footer": "{count} từ đã hiển thị · 20 mỗi lần tải",
+    "actions": "Thao tác",
+    "actionsFor": "Thao tác cho {word}",
+    "editLevel": "Sửa trình độ",
+    "editVariants": "Sửa cách viết khác",
+    "editFunctionWord": "Đánh dấu từ chức năng",
+    "addSense": "Thêm nghĩa",
+    "save": "Lưu",
+    "saved": "Đã lưu “{word}”",
+    "level": "Trình độ",
+    "noLevel": "Chưa có trình độ",
+    "levelTitle": "Sửa trình độ “{word}”",
+    "levelHint": "Trình độ này thay mọi trình độ từ nguồn khi hiển thị.",
+    "functionWord": "Từ chức năng",
+    "functionWordTitle": "Từ chức năng “{word}”",
+    "auto": "Tự suy (hiện: {value})",
+    "variantsTitle": "Cách viết khác của “{word}”",
+    "noVariants": "Chưa có cách viết khác.",
+    "variantText": "Cách viết",
+    "variantKind": "Loại",
+    "kinds": {
+      "spelling": "Chính tả khác",
+      "alias": "Tên gọi khác"
+    },
+    "acceptedAsAnswer": "Chấp nhận khi người học gõ",
+    "removeVariant": "Xóa",
+    "addVariant": "Thêm cách viết",
+    "paste": {
+      "title": "Dán danh sách từ",
+      "label": "Danh sách từ",
+      "hint": "Mỗi dòng một từ: lemma,pos (tối đa 500 dòng). Mỗi từ mới có sẵn một nghĩa trống để soạn.",
+      "tooMany": "Có {count} dòng, tối đa {max}. Bớt dòng rồi thử lại.",
+      "submit": "Thêm các từ này",
+      "summary": "Đã tạo {created} · đã có {exists} · sai {invalid}",
+      "line": "Dòng {line}",
+      "status": {
+        "created": "Đã tạo",
+        "exists": "Đã có",
+        "invalid": "Sai"
+      },
+      "writeSense": "Soạn nghĩa",
+      "invalid": "Cần đúng dạng lemma,pos với loại từ hợp lệ.",
+      "caseWarning": "Từ này chỉ khác một từ có sẵn ở chữ hoa/thường."
+    }
+  },
+  "senses": {
+    "filters": {
+      "all": "Tất cả",
+      "status": "Trạng thái",
+      "level": "Trình độ",
+      "pos": "Loại từ",
+      "topic": "Chủ đề",
+      "batch": "Lô nhập",
+      "statuses": {
+        "unpublishable": "Thiếu nội dung",
+        "open_draft": "Bản nháp đang mở",
+        "published": "Đã publish"
+      }
+    },
+    "archived": "đã lưu trữ",
+    "cols": {
+      "lemma": "Từ",
+      "pos": "Loại từ",
+      "gloss": "Nghĩa tiếng Việt",
+      "level": "Trình độ",
+      "status": "Trạng thái",
+      "revision": "Bản sửa",
+      "missing": "Thiếu"
+    },
+    "status": {
+      "draft": "Bản nháp",
+      "reviewed": "Đã review",
+      "published": "Đã publish",
+      "rejected": "Bị từ chối",
+      "superseded": "Bản cũ",
+      "unpublished": "Đã gỡ khỏi app",
+      "retired": "Ngừng dùng",
+      "none": "Chưa có nội dung"
+    },
+    "openEdit": "#{revision} · có bản sửa mở",
+    "empty": "Không có nghĩa nào khớp bộ lọc.",
+    "footer": "{count} nghĩa đã hiển thị · 20 mỗi lần tải",
+    "bulk": {
+      "region": "Thao tác hàng loạt",
+      "selected": "Đã chọn {count} nghĩa",
+      "pick": "Chọn {word}",
+      "tooMany": "Mỗi lần tối đa {max} nghĩa.",
+      "actions": {
+        "review": "Đánh dấu đã review",
+        "reject": "Từ chối",
+        "publish": "Publish",
+        "unpublish": "Gỡ khỏi app",
+        "retire": "Ngừng dùng"
+      },
+      "confirm": {
+        "unpublish": {
+          "title": "Gỡ {count} nghĩa khỏi app?",
+          "body": "Người học không còn thấy các nghĩa này cho tới khi publish lại."
+        },
+        "retire": {
+          "title": "Ngừng dùng {count} nghĩa?",
+          "body": "Nghĩa ngừng dùng không sửa hay publish lại được nữa."
+        }
+      },
+      "resultTitle": "Kết quả",
+      "summary": "{ok} nghĩa thành công · {failed} nghĩa không làm được",
+      "close": "Đóng",
+      "reasons": {
+        "stale-revision": "Nghĩa đã đổi, tải lại",
+        "publish-incomplete": "Còn thiếu nội dung",
+        "sense-retired": "Nghĩa đã ngừng dùng",
+        "not-found": "Không tìm thấy nghĩa",
+        "sense-not-found": "Không tìm thấy nghĩa",
+        "revision-not-open": "Bản sửa này không còn mở để review",
+        "revision-rejected": "Bản này đã bị từ chối",
+        "other": "Không làm được ({reason})"
+      },
+      "missing": {
+        "gloss-missing": "nghĩa tiếng Việt",
+        "example-missing": "câu ví dụ",
+        "level-missing": "trình độ"
+      }
+    },
+    "detail": {
+      "back": "Nghĩa",
+      "notFound": "Không tìm thấy nghĩa này. Có thể link đã cũ.",
+      "noLevel": "chưa có trình độ",
+      "publishedWithEdit": "Đã publish, có bản sửa mở",
+      "content": "Nội dung",
+      "gloss": "Nghĩa tiếng Việt",
+      "definition": "Định nghĩa tiếng Anh",
+      "examples": "Câu ví dụ (tối đa {max})",
+      "example": "Câu ví dụ {n}",
+      "removeExample": "Xóa câu ví dụ {n}",
+      "addExample": "Thêm câu ví dụ",
+      "topics": "Chủ đề",
+      "noTopics": "Chưa có chủ đề nào.",
+      "acceptedForms": "Dạng được chấp nhận",
+      "acceptedFormsHint": "Cách nhau bằng dấu phẩy, ví dụ: deploys, deployed, deploying",
+      "saveDraft": "Lưu bản nháp",
+      "savePublish": "Lưu và publish",
+      "draftSaved": "Đã lưu bản nháp",
+      "published": "Đã lưu và publish",
+      "droppedTopics": "Đã bỏ chủ đề đã lưu trữ: {topics}",
+      "stale": "Nghĩa này vừa được sửa. Tải lại để xem bản mới.",
+      "reload": "Tải lại",
+      "incomplete": "Còn thiếu {missing} nên chưa publish được.",
+      "people": "Người thao tác (gần nhất)",
+      "reviewedBy": "Review: {email} · {at}",
+      "notReviewed": "Bản nháp chưa review",
+      "publishedBy": "Publish: {email}",
+      "stateChangedBy": "Đổi trạng thái gần nhất: {email} · {action} · {at}",
+      "stateActions": {
+        "open": "publish",
+        "unpublished": "gỡ khỏi app",
+        "retired": "ngừng dùng"
+      },
+      "unknownUser": "người dùng đã xóa",
+      "lastOnly": "Chỉ lưu lần gần nhất, không có lịch sử."
+    }
   }
 }
