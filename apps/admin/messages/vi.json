@@ -144,7 +144,8 @@
     "loading": "Đang tải…",
     "error": "Không tải được danh sách",
     "empty": "Chưa có mục nào",
-    "shown": "{count} mục đã hiển thị"
+    "shown": "{count} mục đã hiển thị",
+    "selectAll": "Chọn tất cả trên trang"
   },
   "account": {
     "login": {

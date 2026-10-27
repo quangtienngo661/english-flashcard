@@ -144,7 +144,8 @@
     "loading": "Loading…",
     "error": "Could not load the list",
     "empty": "Nothing here yet",
-    "shown": "{count} items shown"
+    "shown": "{count} items shown",
+    "selectAll": "Select all on this page"
   },
   "account": {
     "login": {

@@ -129,6 +129,63 @@ describe('DataList', () => {
     expect(selectedCards.map((c) => c.textContent)).toEqual([expect.stringContaining('b@x.co')]);
   });
 
+  function Selectable({ onChange, initial = [] }: { onChange?: (next: Set<string>) => void; initial?: string[] }) {
+    const [selected, setSelected] = useState<ReadonlySet<string>>(new Set(initial));
+    return (
+      <DataList
+        rows={rows}
+        rowKey={(r) => r.id}
+        columns={columns}
+        state="ready"
+        selection={{
+          selected,
+          onChange: (next) => {
+            onChange?.(next);
+            setSelected(next);
+          },
+          label: (r) => `Select ${r.email}`,
+        }}
+      />
+    );
+  }
+
+  it('selection: toggling a row reports the new set; the table has a checkbox column', async () => {
+    const onChange = vi.fn();
+    wrap(<Selectable onChange={onChange} />);
+    const table = screen.getByRole('table');
+    expect(within(table).getAllByRole('columnheader')).toHaveLength(3);
+    await userEvent.click(within(table).getByRole('checkbox', { name: 'Select b@x.co' }));
+    expect([...onChange.mock.calls.at(-1)![0]]).toEqual(['2']);
+    expect(within(table).getByRole('checkbox', { name: 'Select b@x.co' })).toBeChecked();
+    await userEvent.click(within(table).getByRole('checkbox', { name: 'Select b@x.co' }));
+    expect([...onChange.mock.calls.at(-1)![0]]).toEqual([]);
+  });
+
+  it('selection: the header checkbox selects every row of the page, then clears them; partial is mixed', async () => {
+    const onChange = vi.fn();
+    wrap(<Selectable onChange={onChange} initial={['1', 'elsewhere']} />);
+    const all = within(screen.getByRole('table')).getByRole('checkbox', { name: en.list.selectAll });
+    expect(all).toBePartiallyChecked();
+    await userEvent.click(all);
+    expect([...onChange.mock.calls.at(-1)![0]].sort()).toEqual(['1', '2', 'elsewhere']);
+    await userEvent.click(within(screen.getByRole('table')).getByRole('checkbox', { name: en.list.selectAll }));
+    expect([...onChange.mock.calls.at(-1)![0]]).toEqual(['elsewhere']);
+  });
+
+  it('selection: each card has the same checkbox (390 layout)', async () => {
+    const onChange = vi.fn();
+    wrap(<Selectable onChange={onChange} />);
+    const card = screen.getAllByTestId('card')[0];
+    await userEvent.click(within(card).getByRole('checkbox', { name: 'Select a@x.co' }));
+    expect([...onChange.mock.calls.at(-1)![0]]).toEqual(['1']);
+  });
+
+  it('without selection there is no checkbox', () => {
+    wrap(<DataList rows={rows} rowKey={(r) => r.id} columns={columns} state="ready" />);
+    expect(screen.queryAllByRole('checkbox')).toHaveLength(0);
+    expect(screen.getAllByRole('columnheader')).toHaveLength(2);
+  });
+
   it('delegates empty to ListState', () => {
     wrap(<DataList rows={[]} rowKey={(r: { id: string }) => r.id} columns={[]} state="ready" emptyText="Nothing here" />);
     expect(screen.queryByRole('table')).toBeNull();

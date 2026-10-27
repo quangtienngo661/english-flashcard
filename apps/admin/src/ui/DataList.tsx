@@ -1,5 +1,7 @@
 import type { MouseEvent, ReactNode } from 'react';
 import { useLocation, useNavigate } from 'react-router';
+import { useTranslations } from 'use-intl';
+import { Checkbox } from './Checkbox';
 import { ListState } from './ListState';
 
 export type Column<T> = {
@@ -24,6 +26,11 @@ type Props<T> = {
   rowHref?: (row: T) => string;
   /** The row whose detail is open (highlighted). */
   selectedKey?: string;
+  /**
+   * Rows picked for a bulk action: a checkbox per row (table and card) and "select all on this page" in the header.
+   * `selected` may hold keys of rows not on this page; the header only adds or removes this page's rows.
+   */
+  selection?: { selected: ReadonlySet<string>; onChange: (next: Set<string>) => void; label: (row: T) => string };
 };
 
 /**
@@ -33,7 +40,8 @@ type Props<T> = {
  * content by page-pad) and its header row sticks to the top while the page scrolls (`overflow-clip`, unlike
  * `overflow-hidden`, keeps sticky working).
  */
-export function DataList<T>({ rows, rowKey, columns, state, emptyText, emptyHint, onRetry, rowHref, selectedKey }: Props<T>) {
+export function DataList<T>({ rows, rowKey, columns, state, emptyText, emptyHint, onRetry, rowHref, selectedKey, selection }: Props<T>) {
+  const t = useTranslations();
   const navigate = useNavigate();
   const { pathname } = useLocation();
 
@@ -48,6 +56,27 @@ export function DataList<T>({ rows, rowKey, columns, state, emptyText, emptyHint
     void navigate(href, { replace: href === pathname });
   }
 
+  const keys = rows.map(rowKey);
+  const picked = keys.filter((key) => selection?.selected.has(key)).length;
+  function toggle(key: string, on: boolean) {
+    if (!selection) return;
+    const next = new Set(selection.selected);
+    if (on) next.add(key);
+    else next.delete(key);
+    selection.onChange(next);
+  }
+  function toggleAll(on: boolean) {
+    if (!selection) return;
+    const next = new Set(selection.selected);
+    for (const key of keys) {
+      if (on) next.add(key);
+      else next.delete(key);
+    }
+    selection.onChange(next);
+  }
+  const rowBox = (row: T, key: string) =>
+    selection && <Checkbox aria-label={selection.label(row)} isSelected={selection.selected.has(key)} onChange={(on) => toggle(key, on)} />;
+
   const edge = 'first:pl-page-pad-min last:pr-page-pad-min shell:first:pl-page-pad-max shell:last:pr-page-pad-max';
   return (
     <div className="@container">
@@ -56,6 +85,16 @@ export function DataList<T>({ rows, rowKey, columns, state, emptyText, emptyHint
         <table className="w-full table-auto text-ui">
           <thead className="text-left">
             <tr>
+              {selection && (
+                <th scope="col" className={`sticky top-0 z-10 w-10 border-b-2 border-border bg-surface px-4 py-2.5 ${edge}`}>
+                  <Checkbox
+                    aria-label={t('list.selectAll')}
+                    isSelected={picked === keys.length}
+                    isIndeterminate={picked > 0 && picked < keys.length}
+                    onChange={() => toggleAll(picked < keys.length)}
+                  />
+                </th>
+              )}
               {columns.map((c) => (
                 <th key={c.key} scope="col" className={`sticky top-0 z-10 border-b-2 border-border bg-surface px-4 py-2.5 font-medium text-muted ${edge} ${c.className ?? ''}`}>
                   {c.header}
@@ -74,6 +113,7 @@ export function DataList<T>({ rows, rowKey, columns, state, emptyText, emptyHint
                   onClick={href ? (event) => openRow(event, href) : undefined}
                   className={`border-b border-border transition-colors duration-instant ease-standard data-selected:bg-accent-soft ${href ? 'cursor-pointer hover:bg-primary/4' : ''}`}
                 >
+                  {selection && <td className={`w-10 px-4 py-3.5 align-middle ${edge}`}>{rowBox(row, key)}</td>}
                   {columns.map((c) => (
                     <td key={c.key} className={`min-w-0 wrap-anywhere px-4 py-3.5 align-middle ${edge} ${c.className ?? ''}`}>
                       {c.cell(row)}
@@ -95,6 +135,7 @@ export function DataList<T>({ rows, rowKey, columns, state, emptyText, emptyHint
               data-selected={key === selectedKey || undefined}
               className="flex flex-col gap-1.5 rounded-panel border-2 border-border bg-surface px-4 py-3 data-selected:bg-accent-soft"
             >
+              {selection && <div className="flex">{rowBox(row, key)}</div>}
               {columns.map((c, i) => {
                 const role = c.card ?? (i === 0 ? 'title' : 'field');
                 if (role === 'title') return <div key={c.key} className="min-w-0 wrap-anywhere font-semibold text-ink">{c.cell(row)}</div>;
