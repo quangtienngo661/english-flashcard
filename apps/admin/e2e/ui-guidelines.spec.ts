@@ -2,6 +2,7 @@ import { expect, test } from '@playwright/test';
 import en from '../messages/en.json' with { type: 'json' };
 import vi from '../messages/vi.json' with { type: 'json' };
 import { signedInAs } from './support/mock-api';
+import { contentMocks, SENSE_ID, tick } from './support/content';
 import { expectNoHorizontalScroll } from './support/overflow';
 import { settingsMocks } from './support/settings';
 
@@ -363,4 +364,23 @@ test('Model at 1440: the "Vòng đời" header and a lifecycle word such as "act
   expect(lines.cell).toBe(1);
   // The two words of the header may sit on two lines; a third line means a word was split.
   expect(lines.head).toBeLessThanOrEqual(2);
+});
+
+test('Từ, Nghĩa, Chi tiết nghĩa, Chủ đề at 390 with long values fit the window (Review Focus 4)', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await signedInAs(page, 'editor', { ...listMocks, ...contentMocks });
+  for (const [path, ready] of [
+    ['/words', 'deploy'],
+    ['/senses', 'deploy'],
+    [`/senses/${SENSE_ID}`, vi.senses.detail.people],
+    ['/topics', 'Ăn uống'],
+  ] as const) {
+    await page.goto(path);
+    await expect(page.getByText(ready).filter({ visible: true }).first()).toBeVisible();
+    await expectNoHorizontalScroll(page);
+  }
+  await page.goto('/senses');
+  await tick(page, vi.senses.bulk.pick.replace('{word}', 'deploy · verb'));
+  await expect(page.getByRole('region', { name: vi.senses.bulk.region })).toBeVisible();
+  await expectNoHorizontalScroll(page);
 });

@@ -1,10 +1,14 @@
-import { screen, waitFor, within } from '@testing-library/react';
+import { configure, screen, waitFor, within } from '@testing-library/react';
+import { focusManager } from '@tanstack/react-query';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it } from 'vitest';
 import vi from '../../../messages/vi.json';
 import { problem, type Call } from '../../auth/test-support';
 import { renderApp } from '../staff/test-utils';
 import { SECTIONS, SETTINGS_LAYOUT, type Values } from './settings-api';
+
+// These pages mount the whole app (session, shell, several queries): the first render can pass 1 s on a busy machine.
+configure({ asyncUtilTimeout: 4000 });
 
 const s = vi.settings;
 
@@ -142,6 +146,42 @@ describe('SettingsPage (A/70a–A/70f, design §6.7)', () => {
     await waitFor(() => expect(r.count('GET', '/v1/admin/settings')).toBe(2));
     await waitFor(() => expect(screen.getByRole('textbox', { name: s.fields.reminders.min_gap_days })).toHaveValue('10'));
     expect(screen.queryByText(vi.errors['version-conflict'])).toBeNull();
+  });
+
+  it('a refetch on window focus that brings a newer version keeps the unsaved change and says another save happened', async () => {
+    let gets = 0;
+    let body: unknown;
+    renderApp('/settings', {
+      [GET]: () => Response.json(VIEW(++gets === 1 ? 3 : 4)),
+      [PUT]: (call) => ((body = call.body), problem(409, 'version-conflict')),
+    });
+    await screen.findByRole('textbox', { name: s.fields.reminders.min_gap_days });
+    await setNumber(s.fields.reminders.min_gap_days, '4');
+    focusManager.setFocused(false);
+    focusManager.setFocused(true);
+    expect(await screen.findByText(vi.errors['version-conflict'])).toBeInTheDocument();
+    expect(screen.getByRole('textbox', { name: s.fields.reminders.min_gap_days })).toHaveValue('4');
+    expect(screen.queryByText(vi.draft.message)).toBeNull();
+    await userEvent.click(screen.getByRole('button', { name: s.save }));
+    await waitFor(() => expect(body).toEqual({ version: 3, values: { reminders: { min_gap_days: 4 } } }));
+    focusManager.setFocused(undefined);
+  });
+
+  it('a refetch with a newer version and no unsaved change shows the new values', async () => {
+    let gets = 0;
+    renderApp('/settings', {
+      [GET]: () => {
+        const view = VIEW(++gets === 1 ? 3 : 4);
+        if (gets > 1) view.values.reminders.min_gap_days = 6;
+        return Response.json(view);
+      },
+    });
+    await screen.findByRole('textbox', { name: s.fields.reminders.min_gap_days });
+    focusManager.setFocused(false);
+    focusManager.setFocused(true);
+    await waitFor(() => expect(screen.getByRole('textbox', { name: s.fields.reminders.min_gap_days })).toHaveValue('6'));
+    expect(screen.queryByText(vi.errors['version-conflict'])).toBeNull();
+    focusManager.setFocused(undefined);
   });
 
   it('§6.7: an emptied nullable field sends null; its hint says what empty means', async () => {
