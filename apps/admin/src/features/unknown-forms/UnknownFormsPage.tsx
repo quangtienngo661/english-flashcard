@@ -1,5 +1,5 @@
 import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'use-intl';
 import { useErrorMessage } from '../../api/use-error-message';
 import { useApi } from '../../auth/session-context';
@@ -18,6 +18,7 @@ const KEY = ['unknown-forms'];
 function AcceptButton({ row, onChanged }: { row: UnknownForm; onChanged: () => void }) {
   const t = useTranslations();
   const api = useApi();
+  const message = useErrorMessage();
   const names = { form: row.form, lemma: row.lemma_key };
   const action = useSubmitAction(
     (key) => acceptForm(api, { lemma: row.lemma_key, form: row.form }, key),
@@ -28,18 +29,24 @@ function AcceptButton({ row, onChanged }: { row: UnknownForm; onChanged: () => v
         onPress: () => {
           void undoForm(api, added.id)
             .then(() => showToast(t('unknownForms.undone', names)))
-            .catch(() => undefined)
+            .catch((e: unknown) => showToast(message(e)))
             .finally(onChanged);
         },
       });
       onChanged();
     },
   );
-  // The API says it is already there: the next list no longer holds the row.
+  // The API says it is already there: say so in a toast (the row, and its inline notice, goes with the reload), once.
   const exists = action.problem?.slug === 'word-form-exists';
+  const latest = useRef({ onChanged, text: action.error?.message ?? '' });
   useEffect(() => {
-    if (exists) onChanged();
-  }, [exists, onChanged]);
+    latest.current = { onChanged, text: action.error?.message ?? '' };
+  });
+  useEffect(() => {
+    if (!exists) return;
+    showToast(latest.current.text);
+    latest.current.onChanged();
+  }, [exists]);
 
   return (
     <span className="flex flex-col items-start gap-1">
@@ -79,7 +86,6 @@ function IgnoreButton({ row, onChanged }: { row: UnknownForm; onChanged: () => v
     <span className="flex flex-col items-start gap-1">
       <Button
         variant="secondary"
-       
         isPending={pending}
         aria-label={t('unknownForms.ignoreFor', { form: row.form, lemma: row.lemma_key })}
         onPress={() => void ignore()}

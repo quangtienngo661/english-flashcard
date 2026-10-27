@@ -112,8 +112,26 @@ describe('unknown word forms', { timeout: 20_000 }, () => {
     }, EDITOR);
     await rowOf('went');
     await press(acceptName);
-    expect((await screen.findAllByText(vi.errors['word-form-exists'])).length).toBeGreaterThan(0);
     await waitFor(() => expect(screen.queryAllByText('went')).toHaveLength(0));
+    expect(await screen.findByText(vi.errors['word-form-exists'])).toBeInTheDocument();
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    expect(screen.getByText(vi.errors['word-form-exists'])).toBeInTheDocument();
+  });
+
+  it('§6.9: a failed [Hoàn tác] shows the error instead of staying silent', async () => {
+    renderApp('/unknown-forms', {
+      [LIST]: json(page([row()])),
+      'POST /v1/admin/content/word-forms': () => Response.json({ id: 'wf-1', lemma_key: 'go', form: 'went' }, { status: 201 }),
+      'DELETE /v1/admin/content/word-forms/wf-1': () =>
+        new Response(JSON.stringify({ type: 'http://localhost:3000/problems/not-found', status: 404, title: 'Not found', operation_id: 'op' }), {
+          status: 404,
+          headers: { 'content-type': 'application/problem+json' },
+        }),
+    }, EDITOR);
+    await rowOf('went');
+    await press(acceptName);
+    await userEvent.click(await screen.findByRole('button', { name: t.undo }));
+    expect(await screen.findByText(vi.errors['not-found'])).toBeInTheDocument();
   });
 
   it('§6.9: [Bỏ qua] sends DELETE on the practice row and removes it', async () => {
