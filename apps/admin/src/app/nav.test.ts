@@ -39,7 +39,7 @@ describe('nav', () => {
     expect(NAV.map((n) => [n.group, n.path])).toEqual(MENU_ORDER);
     expect(new Set(NAV.map((n) => n.group)).size).toBe(6);
     expect(NAV.filter((n) => n.available).map((n) => n.path)).toEqual(['/words', '/senses', '/topics', '/uploads', '/publish-jobs', '/export', '/sources', '/transactions', '/ai/status', '/ai/models', '/ai/operations', '/ai/prompts', '/ai/eval', '/ai/costs', '/ai/calls', '/settings', '/staff']);
-    expect(NAV.find((n) => n.path === '/entitlements')?.plannedStep).toBe('5');
+    expect(NAV.find((n) => n.path === '/dashboard')?.plannedStep).toBeUndefined();
   });
 
   it('every entry has an icon', () => {

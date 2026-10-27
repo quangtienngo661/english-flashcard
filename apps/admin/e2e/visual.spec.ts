@@ -73,7 +73,7 @@ for (const lang of ['vi', 'en'] as const) {
     await page.getByRole('heading', { level: 1 }).waitFor();
     await shot(page, '04-export', lang);
 
-    await page.goto('/entitlements');
+    await page.goto('/dashboard');
     await page.getByRole('heading', { level: 1 }).waitFor();
     await shot(page, '05-coming-soon', lang);
 

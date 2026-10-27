@@ -57,8 +57,6 @@ export function AiCallsPage() {
 
   if (query.error instanceof ApiError && query.error.problem.slug === 'forbidden') return <Banner variant="error">{t('errors.forbidden')}</Banner>;
 
-  /** The day and month only ("25/10"): a kept call is at most a few days old. */
-  const shortDate = (at: string) => format.date(at).slice(0, -5);
   const two = (top: string, bottom: string | null) => (
     <span className="flex flex-col">
       <span>{top}</span>
@@ -100,7 +98,7 @@ export function AiCallsPage() {
       cell: (r) =>
         r.content ? (
           <span className="flex flex-col items-start">
-            <span>{t('ai.calls.untilDate', { date: shortDate(r.content.expires_at) })}</span>
+            <span>{t('ai.calls.untilDate', { date: format.dayMonth(r.content.expires_at) })}</span>
             <Button variant="ghost" aria-label={t('ai.calls.viewFor', { attempt: r.attempt })} onPress={() => setOpen(r)}>
               {t('ai.calls.view')}
             </Button>
@@ -123,15 +121,15 @@ export function AiCallsPage() {
     <div className="flex flex-col gap-6">
       <form onSubmit={search} noValidate className="flex flex-col gap-3 shell:flex-row shell:items-end">
         <div className="min-w-0 flex-1">
-        <TextField
-          label={t('ai.calls.search.label')}
-          placeholder={t('ai.calls.search.placeholder')}
-          autoComplete="off"
-          spellCheck={false}
-          maxLength={MAX_ID}
-          value={draft}
-          onChange={setDraft}
-        />
+          <TextField
+            label={t('ai.calls.search.label')}
+            placeholder={t('ai.calls.search.placeholder')}
+            autoComplete="off"
+            spellCheck={false}
+            maxLength={MAX_ID}
+            value={draft}
+            onChange={setDraft}
+          />
         </div>
         <Button type="submit" className="w-fit">
           {t('ai.calls.search.submit')}

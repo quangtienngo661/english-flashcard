@@ -253,11 +253,11 @@ export function EvalRunPanel({ id, onDone }: { id: string; onDone?: () => void }
       <PanelBody>
         {notice && <Banner variant={notice.variant}>{notice.text}</Banner>}
         {!isRunDone(run.status) && <p className="text-ui text-muted">{t('ai.eval.detail.background')}</p>}
-        <dl className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-2 text-ui">
+        <dl className="flex min-w-0 flex-col gap-2 text-ui">
           {rows.map(([label, value, extra]) => (
-            <div key={label} className="contents">
-              <dt className="text-muted">{label}</dt>
-              <dd className="tabular-nums text-ink wrap-anywhere">
+            <div key={label} className="flex min-w-0 gap-4">
+              <dt className="w-32 shrink-0 text-muted">{label}</dt>
+              <dd className="min-w-0 tabular-nums text-ink wrap-anywhere">
                 {value}
                 {extra && <span className="block text-xs text-muted">{extra}</span>}
               </dd>

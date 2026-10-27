@@ -14,10 +14,10 @@ const show = (path: string, over: Partial<NavEntry> = {}) =>
   );
 
 describe('ComingSoonPage', () => {
-  it('shows "Tính năng chưa có", the purpose line and "Dự kiến: Bước 5" for /entitlements', () => {
-    show('/entitlements');
+  it('shows "Tính năng chưa có", the purpose line and "Dự kiến: Bước 5" for an entry with a planned step', () => {
+    show('/dashboard', { plannedStep: '5' });
     expect(screen.getByText('Tính năng chưa có')).toBeInTheDocument();
-    expect(screen.getByText(vi.comingSoon.purpose.entitlements)).toBeInTheDocument();
+    expect(screen.getByText(vi.comingSoon.purpose.dashboard)).toBeInTheDocument();
     expect(screen.getByText('Dự kiến: Bước 5')).toBeInTheDocument();
   });
 

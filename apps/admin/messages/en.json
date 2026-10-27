@@ -534,7 +534,6 @@
       "viewFor": "View the content of attempt {attempt}",
       "content": { "title": "Call content", "request": "Request", "response": "Response" }
     }
-  
   },
   "transactions": {
     "intro": "Purchases, renewals, billing changes, refunds, trials and plans granted by the Wordmet team, for every learner, newest first.",

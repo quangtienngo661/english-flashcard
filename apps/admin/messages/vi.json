@@ -534,7 +534,6 @@
       "viewFor": "Xem nội dung lần thử {attempt}",
       "content": { "title": "Nội dung lần gọi", "request": "Yêu cầu", "response": "Phản hồi" }
     }
-  
   },
   "transactions": {
     "intro": "Mua, gia hạn, đổi kỳ, hoàn tiền, dùng thử và lần đội Wordmet cấp gói của mọi người học, mới nhất trước.",
