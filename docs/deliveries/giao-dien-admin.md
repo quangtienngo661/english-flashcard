@@ -81,12 +81,18 @@ Nhánh `feat/giao-dien-admin-m0`, một PR vào `dev`. Khung chung đã xong; ch
 ## Ảnh chụp (stack thật, 27/10/2026)
 
 Khung Figma đối chiếu: A/71e = node `387:1767`, file `7HcPAKLrWu32C27qYMJUOA`. Ảnh ở `docs/deliveries/giao-dien-admin/m0/`.
+Khung Figma chỉ ghi bằng node id, có chủ ý: ảnh nằm trong Figma, không chép vào repo. Khác biệt nhìn thấy: trang "Bạn không có quyền xem trang này." đặt trên tờ trắng của trang
+(như mọi màn khác), còn khung A/71e vẽ một thẻ trắng trên nền canvas.
 
 | Màn | Desktop 1440×900 | Phone 390×844 |
 |---|---|---|
 | `/uploads` (admin, menu đủ mục) | [uploads-admin-desktop.png](giao-dien-admin/m0/uploads-admin-desktop.png) | [uploads-admin-mobile.png](giao-dien-admin/m0/uploads-admin-mobile.png) |
 | `/staff` do Minh (editor) mở: "Bạn không có quyền xem trang này." (A/71e) | [no-access-minh-desktop.png](giao-dien-admin/m0/no-access-minh-desktop.png) | [no-access-minh-mobile.png](giao-dien-admin/m0/no-access-minh-mobile.png) |
 | Menu của Minh (chỉ mục editor được thấy) | [sidebar-minh-desktop.png](giao-dien-admin/m0/sidebar-minh-desktop.png) | [sidebar-minh-mobile.png](giao-dien-admin/m0/sidebar-minh-mobile.png) (mở bằng ☰) |
+| `/sources` (admin) — Nguồn, trên router mới | [sources-admin-desktop.png](giao-dien-admin/m0/sources-admin-desktop.png) | [sources-admin-mobile.png](giao-dien-admin/m0/sources-admin-mobile.png) |
+| `/publish-jobs` (admin) — Publish job, trên router mới | [publish-jobs-admin-desktop.png](giao-dien-admin/m0/publish-jobs-admin-desktop.png) | [publish-jobs-admin-mobile.png](giao-dien-admin/m0/publish-jobs-admin-mobile.png) |
+| `/staff` (admin) — Vai trò & staff, trên router mới | [staff-admin-desktop.png](giao-dien-admin/m0/staff-admin-desktop.png) | [staff-admin-mobile.png](giao-dien-admin/m0/staff-admin-mobile.png) |
+| `/transactions` (admin) — Giao dịch, trên router mới | [transactions-admin-desktop.png](giao-dien-admin/m0/transactions-admin-desktop.png) | [transactions-admin-mobile.png](giao-dien-admin/m0/transactions-admin-mobile.png) |
 
 ## Kiểm đã chạy
 

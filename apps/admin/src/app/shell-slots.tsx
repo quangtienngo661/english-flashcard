@@ -3,8 +3,8 @@ import { createPortal } from 'react-dom';
 
 /**
  * Two places inside the white sheet that a page fills (design §6.1): its primary action beside the page title, and
- * the side-panel column. Portals, because the app uses `<Routes>` (no data-router `handle`) and lifting the button
- * into Shell state would need effects to keep it in sync.
+ * the side-panel column. Portals (not a data-router route `handle`), because the button depends on the page's own state
+ * and lifting it into Shell state would need effects to keep it in sync.
  */
 export type ShellSlots = { actions: HTMLElement | null; panel: HTMLElement | null };
 

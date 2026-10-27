@@ -42,9 +42,11 @@ Cổng 3000, 3100, 5173 và 5183 có thể đang bị phiên khác dùng; runboo
    "Vai trò & staff" còn đó, dưới tiêu đề là "Bạn không có quyền xem trang này." và nút "Về trang chủ"; không bị chuyển đi im lặng. Bấm nút
    → về `/uploads`. Khung Figma A/71e (node `387:1767`). Menu bên trái của Minh chỉ có các mục của editor (không có Vai trò & staff,
    Người dùng, Giao dịch, AI).
-2. **Rời form đang sửa dở chỉ hỏi một lần.** Đăng nhập admin, mở một form có ô nhập (ví dụ `/sources/new`), gõ vài chữ rồi bấm một mục menu khác.
-   → hiện hộp "Rời trang?" với "Thay đổi chưa lưu sẽ mất."; bấm "Ở lại" thì còn nguyên chữ đã gõ, bấm "Rời trang" thì sang trang kia và không
-   hỏi lần nữa. Đổi bộ lọc hoặc đổi tab trong danh sách, hoặc rời sau khi vừa lưu, thì không hỏi.
-3. **Menu 24 mục.** Admin thấy đủ các nhóm; mục chưa có màn hiện "Tính năng chưa có" cùng một dòng mục đích và "Dự kiến: …".
-4. **Phiên hết hạn giữa lúc sửa** (tùy chọn): để form có chữ chưa lưu, đổi mật khẩu của chính tài khoản đó bằng API ở cửa sổ khác, bấm lưu
-   → về trang đăng nhập; đăng nhập lại → form hiện thanh "Bạn có thay đổi chưa lưu từ lần trước." với [Khôi phục] [Bỏ].
+2. **Menu 24 mục.** Admin thấy đủ các nhóm; mục chưa có màn hiện "Tính năng chưa có" cùng một dòng mục đích và "Dự kiến: …".
+
+Chưa kiểm được ở M0, vì chưa có màn nào dùng (`useDirtyForm`, `useDialogDirtyClose`, `useKeptDraft`) — các test đơn vị đã phủ, nhưng chưa có gì để bấm:
+
+- Hộp "Rời trang?" khi rời form đang sửa dở (hỏi một lần, "Ở lại" giữ chữ, "Rời trang" thì sang trang kia và không hỏi lại; đổi bộ lọc, đổi tab, hoặc rời sau
+  khi vừa lưu thì không hỏi). **Kiểm đầu tiên ở màn Prompt (M1a).**
+- Thanh "Bạn có thay đổi chưa lưu từ lần trước." với [Khôi phục] [Bỏ] sau khi phiên hết hạn giữa lúc sửa (để form có chữ chưa lưu, đổi mật khẩu của chính tài khoản đó
+  bằng API ở cửa sổ khác, bấm lưu → về trang đăng nhập; đăng nhập lại → thanh hiện). **Kiểm đầu tiên ở màn Settings (M2).**
