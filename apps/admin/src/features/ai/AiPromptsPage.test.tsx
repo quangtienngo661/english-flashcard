@@ -131,6 +131,68 @@ describe('AiPromptsPage (A/82)', () => {
     expect(puts(r.calls).map((c) => (c.body as { expected_revision: number }).expected_revision)).toEqual([3, 4]);
   });
 
+  it('a 409 re-reads the prompt and the revision list too, so the history shows the newer revision', async () => {
+    let current = promptView();
+    const r = await openPage(promptRoutes({
+      [URL.prompt()]: () => Response.json(current),
+      [URL.save()]: () => {
+        current = promptView({ instructions: 'Someone else wrote this.', revision: 4 });
+        return problem(409, 'prompt-revision-conflict');
+      },
+    }));
+    await retype('My own text.');
+    expect(r.count('GET', '/v1/admin/ai/prompts/generate_cloze/revisions?page_size=20')).toBe(1);
+    await userEvent.click(saveButton());
+    await screen.findByText(vi.errors['prompt-revision-conflict']);
+    await waitFor(() => expect(r.count('GET', '/v1/admin/ai/prompts/generate_cloze/revisions?page_size=20')).toBe(2));
+  });
+
+  it('a 409 whose re-read fails keeps the editor and the text, with [Lưu] off and [Tải bản mới] offered', async () => {
+    let reads = 0;
+    await openPage(promptRoutes({
+      [URL.prompt()]: () => {
+        reads += 1;
+        return reads === 1 ? Response.json(promptView()) : problem(500, 'internal-error');
+      },
+      [URL.save()]: () => problem(409, 'prompt-revision-conflict'),
+    }));
+    await retype('My own text.');
+    await userEvent.click(saveButton());
+    expect(await screen.findByText(vi.errors['prompt-revision-conflict'])).toBeInTheDocument();
+    expect(instructions()).toHaveValue('My own text.');
+    expect(saveButton()).toBeDisabled();
+  });
+
+  it('removing an example clears the field errors, so a later example does not inherit them', async () => {
+    const two = promptView({ examples: [example('go'), example('see')] });
+    await openPage(promptRoutes({ [URL.prompt()]: () => Response.json(two) }));
+    const outputOf = (n: number) => within(screen.getByRole('group', { name: t.example.replace('{n}', String(n)) })).getByLabelText(t.output);
+    await userEvent.clear(outputOf(1));
+    await userEvent.click(outputOf(1));
+    await userEvent.paste('not json');
+    await userEvent.click(saveButton());
+    expect(await screen.findByText(t.errors.outputJson)).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: t.removeExample.replace('{n}', '1') }));
+    expect(screen.queryByText(t.errors.outputJson)).not.toBeInTheDocument();
+    expect(outputOf(1)).toBeValid();
+  });
+
+  it('while a save is pending the instructions and the examples cannot be edited', async () => {
+    let release: () => void = () => {};
+    await openPage(promptRoutes({
+      [URL.save()]: (call) => new Promise<Response>((resolve) => {
+        release = () => resolve(Response.json(promptView({ ...(call.body as object), revision: 4 })));
+      }),
+    }));
+    await retype('Changed.');
+    await userEvent.click(saveButton());
+    await waitFor(() => expect(instructions()).toBeDisabled());
+    expect(screen.getByRole('button', { name: t.addExample })).toBeDisabled();
+    release();
+    await screen.findByText(t.saved.replace('{revision}', '4'));
+    expect(instructions()).toBeEnabled();
+  });
+
   it('§4.6 / Review Focus 2: a 409 after our own lost save, where the newer revision equals the screen, says "Đã lưu"', async () => {
     let current = promptView();
     await openPage(promptRoutes({

@@ -142,6 +142,8 @@ export function TestRunPanel({ op, prepare, showViolations }: Props) {
       {quota.data && (
         <p className="text-ui text-muted">{t('ai.prompts.test.quota', { remaining: quota.data.remaining, limit: quota.data.limit })}</p>
       )}
+      {quota.isError && <p className="text-ui text-danger">{t('ai.prompts.test.quotaFailed')}</p>}
+      {examples.isError && <p className="text-ui text-danger">{t('ai.prompts.test.examplesFailed')}</p>}
       {failure && (
         <Banner
           variant={failure.offline ? 'offline' : 'error'}

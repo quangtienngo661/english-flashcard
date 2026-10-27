@@ -114,6 +114,16 @@ describe('Chạy thử on the Prompt page (A/82)', () => {
     expect(posts(r.calls)).toHaveLength(1);
   });
 
+  it('a failed quota read or example-set read says so under the button instead of staying silent', async () => {
+    await openPage({
+      [URL.quota]: () => problem(500, 'internal-error'),
+      [URL.examples()]: () => problem(500, 'internal-error'),
+    });
+    expect(await screen.findByText(t.quotaFailed)).toBeInTheDocument();
+    expect(await screen.findByText(t.examplesFailed)).toBeInTheDocument();
+    expect(runButton()).toBeEnabled();
+  });
+
   it('a double press sends one request', async () => {
     let release: () => void = () => {};
     const r = await openPage({

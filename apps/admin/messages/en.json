@@ -259,7 +259,7 @@
       "ready": "Ready",
       "notReady": "Not ready",
       "chooseModel": "Choose model",
-      "chooseModelFor": "Choose a model for {operation}",
+      "chooseModelFor": "Choose model for {operation}",
       "noError": "—",
       "purposes": {
         "learner": "learner",
@@ -355,6 +355,8 @@
         "quota": "{remaining}/{limit} test runs left this hour (shared with Example set)",
         "pick": "Examples from the example set (choose up to 5)",
         "pickEmpty": "This operation’s example set has no examples yet.",
+        "quotaFailed": "Could not read the test runs left.",
+        "examplesFailed": "Could not read the example set. Test run will use the examples in the prompt.",
         "withSelected": "Runs with: {count} chosen examples",
         "withFirst": "Runs with: the first {count} examples of the example set",
         "withPrompt": "Runs with: the examples in the prompt",

@@ -42,7 +42,8 @@ export function AiOperationsPage() {
   });
   useDirtyForm(anyDirty);
 
-  const failed = operations.isError ? operations : models.isError ? models : null;
+  // A failed re-read with rows on screen (after a 409) keeps the rows, with their edits and their conflict mark.
+  const failed = operations.isError && !operations.data ? operations : models.isError && !models.data ? models : null;
   if (failed) {
     if (failed.error instanceof ApiError && failed.error.problem.slug === 'forbidden') return <Banner variant="error">{t('errors.forbidden')}</Banner>;
     return <ListState state="error" onRetry={() => void failed.refetch()} />;
@@ -133,6 +134,8 @@ function OperationRow({ setting, models, draft, onChange, onDrop }: RowProps) {
       if (row && sameDraft(toDraft(row), draft)) saved();
       else setConflict(true);
     } catch (e) {
+      // The newer row could not be read: the conflict still stands, so [Lưu] stays off until [Tải lại].
+      setConflict(true);
       setBanner(errorDetails(e));
     }
   }

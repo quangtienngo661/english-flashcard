@@ -128,6 +128,24 @@ describe('AiOperationsPage (A/81)', () => {
     expect(puts(r.calls)).toHaveLength(1);
   });
 
+  it('a 409 whose re-read fails still marks the conflict: Lưu stays off and [Tải lại] is offered', async () => {
+    let reads = 0;
+    renderApp('/ai/operations', {
+      [OPS]: () => {
+        reads += 1;
+        return reads === 1 ? Response.json({ items: rows({ lookup_word: withM1 }) }) : problem(500, 'internal-error');
+      },
+      [MODELS]: models(m1),
+      [PUT('lookup_word')]: () => problem(409, 'operation-settings-conflict'),
+    });
+    await screen.findByRole('group', { name: /lookup_word/ });
+    const row = rowOf('lookup_word');
+    await pick(row, t.effort, 'low');
+    await userEvent.click(within(row).getByRole('button', { name: saveName('lookup_word') }));
+    expect(await within(row).findByText(t.reload)).toBeInTheDocument();
+    expect(within(row).getByRole('button', { name: saveName('lookup_word') })).toBeDisabled();
+  });
+
   it('Review Focus 2: a 409 after our own lost save, where the reloaded row equals the screen, says "Đã lưu"', async () => {
     let serverRow = setting('lookup_word', withM1);
     renderApp('/ai/operations', {

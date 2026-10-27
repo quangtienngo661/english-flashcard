@@ -47,7 +47,7 @@ export function AiPromptsPage() {
   const items = AI_OPERATION_ORDER.map((id) => ({ id, label: `${t(`ai.operations.names.${id}`)} (${id})` }));
 
   let body;
-  if (prompt.isError) {
+  if (prompt.isError && !prompt.data) {
     body = prompt.error instanceof ApiError && prompt.error.problem.slug === 'forbidden'
       ? <Banner variant="error">{t('errors.forbidden')}</Banner>
       : <ListState state="error" onRetry={() => void prompt.refetch()} />;
@@ -125,7 +125,12 @@ function PromptEditor({ op, prompt }: { op: AiOperation; prompt: PromptView }) {
     showToast(t('ai.prompts.saved', { revision: result.revision }));
   }
 
-  const readFresh = () => queryClient.fetchQuery({ queryKey: aiKeys.prompt(op), queryFn: () => getPrompt(api, op), staleTime: 0 });
+  /** Reads the newest revision; the history list is read again too, since someone else's save is not in it yet. */
+  const readFresh = async () => {
+    const fresh = await queryClient.fetchQuery({ queryKey: aiKeys.prompt(op), queryFn: () => getPrompt(api, op), staleTime: 0 });
+    void queryClient.invalidateQueries({ queryKey: aiKeys.revisions(op) });
+    return fresh;
+  };
 
   /** The reply to our own save may have been lost: if the newer revision is exactly what we sent, it did land (design §4.6). */
   async function afterConflict(sent: { instructions: string; examples: PromptExample[] }) {
@@ -223,6 +228,7 @@ function PromptEditor({ op, prompt }: { op: AiOperation; prompt: PromptView }) {
             maxLength={INSTRUCTIONS_MAX}
             counter
             rows={12}
+            isDisabled={pending}
           />
           <p className="text-ui text-ink wrap-anywhere">{t('ai.prompts.inputFields', { fields: server.input_fields.join(', ') })}</p>
 
@@ -241,7 +247,12 @@ function PromptEditor({ op, prompt }: { op: AiOperation; prompt: PromptView }) {
                   <Button
                     variant="ghost"
                     aria-label={t('ai.prompts.removeExample', { n: index + 1 })}
-                    onPress={() => setForm((prev) => ({ ...prev, examples: prev.examples.filter((_, i) => i !== index) }))}
+                    isDisabled={pending}
+                    onPress={() => {
+                      // Errors are keyed by position: after a removal they would land on the example that moved up.
+                      setErrors({});
+                      setForm((prev) => ({ ...prev, examples: prev.examples.filter((_, i) => i !== index) }));
+                    }}
                   >
                     {t('ai.prompts.remove')}
                   </Button>
@@ -255,6 +266,7 @@ function PromptEditor({ op, prompt }: { op: AiOperation; prompt: PromptView }) {
                       value={example.input[field]}
                       onChange={(text) => setExample(index, { ...example, input: { ...example.input, [field]: text } })}
                       error={errors[inputFieldId(index, field)]}
+                      isDisabled={pending}
                       spellCheck={false}
                     />
                   ))}
@@ -266,6 +278,7 @@ function PromptEditor({ op, prompt }: { op: AiOperation; prompt: PromptView }) {
                   onChange={(output) => setExample(index, { ...example, output })}
                   error={errors[outputFieldId(index)]}
                   rows={5}
+                  isDisabled={pending}
                   spellCheck={false}
                 />
               </div>
@@ -273,7 +286,7 @@ function PromptEditor({ op, prompt }: { op: AiOperation; prompt: PromptView }) {
             <Button
               variant="secondary"
               className="self-start"
-              isDisabled={form.examples.length >= EXAMPLES_MAX}
+              isDisabled={pending || form.examples.length >= EXAMPLES_MAX}
               onPress={() => setForm((prev) => ({ ...prev, examples: [...prev.examples, emptyExample(server.input_fields)] }))}
             >
               {t('ai.prompts.addExample')}
