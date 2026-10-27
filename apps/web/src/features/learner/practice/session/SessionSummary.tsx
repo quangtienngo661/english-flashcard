@@ -13,6 +13,7 @@ import { useSubmitOnce } from '@/app-shell/use-submit-once';
 import { Button } from '@/app-ui/Button';
 import { GROUPS_KEY } from '../../groups/groups-api';
 import { useStartSession, type PracticeSessionView, type StartBody } from '../practice-api';
+import { STAGGER } from '../../review/ReviewSummary';
 import { KBD } from './QuestionCard';
 import type { Summary } from './use-practice-session';
 
@@ -92,7 +93,7 @@ export function SessionSummary({ session, sourceLabel }: { session: PracticeSess
   const left = data?.words.filter((w) => w.action === null).length ?? 0;
   return (
     <div className="flex flex-col gap-4">
-      <div>
+      <div className={STAGGER[0]}>
         <h1 className="text-display font-extrabold text-ink">{ts('title', { count: data?.asked ?? session.asked })}</h1>
         <p className="wrap-anywhere text-ui text-muted">
           {pool && pool.limit > 0
@@ -102,18 +103,18 @@ export function SessionSummary({ session, sourceLabel }: { session: PracticeSess
       </div>
       {data && (
         <dl className="grid grid-cols-2 gap-3">
-          <div className="flex flex-col-reverse rounded-card bg-surface p-4">
+          <div className={`flex flex-col-reverse rounded-card bg-surface p-4 ${STAGGER[1]}`}>
             <dt className="text-caption text-muted">{ts('correct')}</dt>
             <dd className="text-h3 font-extrabold text-success">{data.correct}</dd>
           </div>
-          <div className="flex flex-col-reverse rounded-card bg-surface p-4">
+          <div className={`flex flex-col-reverse rounded-card bg-surface p-4 ${STAGGER[2]}`}>
             <dt className="text-caption text-muted">{ts('wrong')}</dt>
             <dd className="text-h3 font-extrabold text-danger">{data.wrong}</dd>
           </div>
         </dl>
       )}
       {data && data.words.length > 0 && (
-        <section className="flex flex-col gap-2 rounded-card bg-surface p-4">
+        <section className={`flex flex-col gap-2 rounded-card bg-surface p-4 ${STAGGER[3]}`}>
           <div className="flex flex-wrap items-center justify-between gap-2">
             <h2 id="summary-words" className="text-title font-semibold text-ink">
               {ts('listTitle', { count: data.words.length })}
@@ -149,7 +150,7 @@ export function SessionSummary({ session, sourceLabel }: { session: PracticeSess
           {error}
         </p>
       )}
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className={`grid gap-3 sm:grid-cols-2 ${STAGGER[4]}`}>
         <Link
           href={`/${locale}/app/practice`}
           className="flex min-h-control-touch items-center justify-between gap-2 rounded-inner bg-accent px-4.5 text-body font-semibold text-on-accent shadow-ledge-accent outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"

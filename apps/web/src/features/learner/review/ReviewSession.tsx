@@ -139,9 +139,10 @@ export function ReviewSession() {
       {showProgress && (
         <div aria-hidden className="relative mx-4 mt-3 h-2 overflow-hidden rounded-full bg-neutral-soft md:hidden">
           <div
-            className="h-full rounded-full bg-primary"
-            // raw-ok: progress share of the session
-            style={{ width: `${Math.round(((session.index + 1) / total) * 100)}%` }}
+            data-testid="review-progress"
+            className="h-full rounded-full bg-primary motion-safe:transition-transform motion-safe:duration-200 motion-safe:ease-standard"
+            // raw-ok: progress share of the session; a full-width bar slid left, so the step animates without layout and the end stays round
+            style={{ transform: `translateX(${Math.round(((session.index + 1) / total) * 100) - 100}%)` }}
           />
         </div>
       )}
