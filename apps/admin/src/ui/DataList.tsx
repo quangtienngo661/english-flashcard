@@ -51,7 +51,7 @@ export function DataList<T>({ rows, rowKey, columns, state, emptyText, emptyHint
   function openRow(event: MouseEvent<HTMLElement>, href: string) {
     // A link or button in the row handles its own click; dragging to select text is not a click on the row; the second
     // click of a double-click lands before the URL has re-rendered, so it would push the same entry twice (Review Focus 2).
-    if (event.detail > 1 || (event.target as Element).closest('a, button') || window.getSelection()?.toString()) return;
+    if (event.detail > 1 || (event.target as Element).closest('a, button, label, input') || window.getSelection()?.toString()) return;
     // Clicking the row that is already open must not stack a second history entry (Review Focus 2).
     void navigate(href, { replace: href === pathname });
   }
