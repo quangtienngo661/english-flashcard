@@ -9,7 +9,9 @@ import type { ExecuteInput, RunnerService, RunReport } from '../runner/runner.se
 import type { Selection, SelectionReader } from '../runner/selection.js';
 import { INITIAL_PROMPTS } from './initial-prompts.js';
 import { PromptsRepository } from './prompts.repository.js';
+import { PROMPT_GUARD } from './prompt-rules.js';
 import { PromptsService } from './prompts.service.js';
+import type { IdentityService } from '../../identity/profile/identity.service.js';
 
 const ADMIN = '00000000-0000-4000-8000-0000000000a1';
 const SEED_ACTOR = '00000000-0000-4000-8000-000000000060';
@@ -119,11 +121,13 @@ function setup(input: Setup = {}) {
   const registry = new AiAdapterRegistry();
   for (const provider of input.registered ?? ['fake']) registry.register(new StubAdapter(provider));
   const repository = new PromptsRepository(memory.prisma);
+  const emailsOf = vi.fn(async (ids: string[]) => new Map(ids.filter((id) => id === ADMIN).map((id) => [id, 'admin@x.test'])));
   const service = new PromptsService(
     memory.prisma, new FakeClock(NOW), repository, runner,
     { load: async () => (input.selection === undefined ? selection : input.selection) } as unknown as SelectionReader, registry,
+    { emailsOf } as unknown as IdentityService,
   );
-  return { service, repository, executed, ...memory };
+  return { service, repository, executed, emailsOf, ...memory };
 }
 
 async function problem(promise: Promise<unknown>): Promise<{ status: number; type: string; violations?: string[] }> {
@@ -150,8 +154,15 @@ describe('PromptsService.get', () => {
     await expect(service.get(OP)).resolves.toEqual({
       operation: OP, instructions: INITIAL_PROMPTS[OP].instructions, examples: INITIAL_PROMPTS[OP].examples, revision: 1,
       input_fields: ['word', 'part_of_speech', 'level', 'meaning_vi', 'context_label'], updated_at: '2026-10-20T00:00:00.000Z',
-      updated_by: SEED_ACTOR,
+      updated_by: SEED_ACTOR, updated_by_user: { id: SEED_ACTOR, email: null, system: true }, guard: PROMPT_GUARD,
     });
+  });
+
+  it('PUT response carries updated_by_user with the actor email and the guard', async () => {
+    const { service } = setup();
+    const saved = await service.save(ADMIN, OP, { expected_revision: 1, instructions: 'New text.', examples: [] });
+    expect(saved.updated_by_user).toEqual({ id: ADMIN, email: 'admin@x.test', system: false });
+    expect(saved.guard).toBe(PROMPT_GUARD);
   });
 });
 
@@ -226,12 +237,17 @@ describe('PromptsService.save', () => {
 
 describe('PromptsService.revisions', () => {
   it('revisions are newest first and paginate', async () => {
-    const { service } = setup();
+    const { service, emailsOf } = setup();
     await service.save(ADMIN, OP, { expected_revision: 1, instructions: 'Two.', examples: [] });
     await service.save(ADMIN, OP, { expected_revision: 2, instructions: 'Three.', examples: [] });
+    emailsOf.mockClear();
     const first = await service.revisions(OP, 2);
+    expect(emailsOf).toHaveBeenCalledTimes(1);
     expect(first.items.map((item) => item.revision)).toEqual([3, 2]);
-    expect(first.items[0]).toEqual({ revision: 3, instructions: 'Three.', examples: [], saved_by: ADMIN, saved_at: NOW.toISOString() });
+    expect(first.items[0]).toEqual({
+      revision: 3, instructions: 'Three.', examples: [], saved_by: ADMIN, saved_at: NOW.toISOString(),
+      saved_by_user: { id: ADMIN, email: 'admin@x.test', system: false },
+    });
     expect(first.next_page_token).toEqual(expect.any(String));
     const second = await service.revisions(OP, 2, first.next_page_token as string);
     expect(second.items.map((item) => item.revision)).toEqual([1]);
