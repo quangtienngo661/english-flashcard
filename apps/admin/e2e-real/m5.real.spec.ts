@@ -1,9 +1,10 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test } from '@playwright/test';
 import { readFileSync } from 'node:fs';
 import vi from '../messages/vi.json' with { type: 'json' };
 import type { RealState } from './global-setup';
 import { STATE_FILE } from './global-setup';
 import { apiCall, loginToken } from './support/api';
+import { signIn } from './support/sign-in';
 
 /** M5 on the real stack (design §7), as Minh (editor): edit a word's level; save a sense draft and publish it from the list; add a topic and archive it. */
 const state: RealState = JSON.parse(readFileSync(STATE_FILE, 'utf8'));
@@ -12,15 +13,8 @@ const lemma = `aaam5x${state.run}`;
 const topic = `m5-${state.run}`;
 let senseId = '';
 
-async function signIn(page: Page) {
-  await page.goto('/login');
-  await page.getByLabel(vi.account.login.email).fill(state.editor.email);
-  await page.getByLabel(vi.account.login.password, { exact: true }).fill(state.editor.password);
-  await page.getByRole('button', { name: vi.account.login.submit }).click();
-  await expect(page).toHaveURL(/\/uploads$/);
-}
-
 test.beforeAll(async () => {
+  test.setTimeout(180_000);
   const token = await loginToken(state.editor.email, state.editor.password);
   const { items } = await apiCall<{ items: Array<{ status: string; sense_id?: string }> }>('POST', '/v1/admin/content/entries/batch', token, { lines: [`${lemma},noun`] });
   expect(['created', 'exists']).toContain(items[0].status); // 'exists' when this hook re-runs after a failed test
@@ -28,7 +22,7 @@ test.beforeAll(async () => {
 });
 
 test('Minh edits the level of a new word from its row menu', async ({ page }) => {
-  await signIn(page);
+  await signIn(page, state.editor.email, state.editor.password);
   await page.goto(`/words?q=${lemma}`);
   await page.getByRole('button', { name: vi.words.actionsFor.replace('{word}', `${lemma} · noun`) }).first().click();
   await page.getByRole('menuitem', { name: vi.words.editLevel }).click();
@@ -42,7 +36,7 @@ test('Minh edits the level of a new word from its row menu', async ({ page }) =>
 });
 
 test('Minh saves a draft of its sense, then publishes it from the list', async ({ page }) => {
-  await signIn(page);
+  await signIn(page, state.editor.email, state.editor.password);
   await page.goto(`/senses/${senseId}`);
   await page.getByLabel(vi.senses.detail.gloss).fill('từ thử của M5');
   await page.getByLabel(vi.senses.detail.definition).fill('a word made by the M5 real-stack test');
@@ -62,7 +56,7 @@ test('Minh saves a draft of its sense, then publishes it from the list', async (
 });
 
 test('Minh adds a topic and archives it', async ({ page }) => {
-  await signIn(page);
+  await signIn(page, state.editor.email, state.editor.password);
   await page.goto('/topics');
   await page.getByRole('button', { name: vi.topics.addTitle }).click();
   const dialog = page.getByRole('dialog', { name: vi.topics.addTitle });

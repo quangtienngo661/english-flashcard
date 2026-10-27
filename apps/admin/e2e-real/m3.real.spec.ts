@@ -1,10 +1,11 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test } from '@playwright/test';
 import { randomUUID } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import vi from '../messages/vi.json' with { type: 'json' };
 import type { RealState } from './global-setup';
 import { STATE_FILE } from './global-setup';
 import { apiCall, loginToken } from './support/api';
+import { signIn } from './support/sign-in';
 import { seedAiReport, type AiReportSeed } from './support/ai-report';
 
 /**
@@ -24,14 +25,6 @@ test.beforeAll(async () => {
   state = JSON.parse(readFileSync(STATE_FILE, 'utf8'));
   seed = await seedAiReport(state);
 });
-
-async function signIn(page: Page, email: string, password: string) {
-  await page.goto('/login');
-  await page.getByLabel(vi.account.login.email).fill(email);
-  await page.getByLabel(vi.account.login.password, { exact: true }).fill(password);
-  await page.getByRole('button', { name: vi.account.login.submit }).click();
-  await expect(page).toHaveURL(/\/uploads$/);
-}
 
 /** Lan's AI practice units left, read as Lan (`GET /v1/me/entitlements`). */
 async function lanUnits(): Promise<number> {
