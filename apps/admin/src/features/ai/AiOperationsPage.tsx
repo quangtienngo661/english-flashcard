@@ -35,6 +35,8 @@ export function AiOperationsPage() {
   const operations = useQuery({ queryKey: aiKeys.operations(), queryFn: () => listOperations(api) });
   const models = useQuery({ queryKey: aiKeys.models(), queryFn: () => listModels(api) });
   const [drafts, setDrafts] = useState<Partial<Record<AiOperation, Draft>>>({});
+  // The version each draft started from: kept from the first edit, so a row refetched meanwhile cannot lend its newer version to a stale draft.
+  const [bases, setBases] = useState<Partial<Record<AiOperation, number>>>({});
   const rows = operations.data ? sortByOperationOrder(operations.data.items) : [];
   const anyDirty = rows.some((row) => {
     const draft = drafts[row.operation];
@@ -59,14 +61,20 @@ export function AiOperationsPage() {
           setting={row}
           models={models.data.items}
           draft={drafts[row.operation] ?? toDraft(row)}
-          onChange={(draft) => setDrafts((prev) => ({ ...prev, [row.operation]: draft }))}
-          onDrop={() =>
-            setDrafts((prev) => {
+          baseVersion={bases[row.operation] ?? row.version}
+          onChange={(draft) => {
+            setBases((prev) => (prev[row.operation] === undefined ? { ...prev, [row.operation]: row.version } : prev));
+            setDrafts((prev) => ({ ...prev, [row.operation]: draft }));
+          }}
+          onDrop={() => {
+            const without = <T,>(prev: Partial<Record<AiOperation, T>>) => {
               const rest = { ...prev };
               delete rest[row.operation];
               return rest;
-            })
-          }
+            };
+            setDrafts(without);
+            setBases(without);
+          }}
         />
       ))}
     </div>
@@ -77,12 +85,14 @@ type RowProps = {
   setting: AiOperationSetting;
   models: AiModel[];
   draft: Draft;
+  /** The row version the draft started from (the server row's own while the row is untouched). */
+  baseVersion: number;
   onChange: (draft: Draft) => void;
   /** Forgets this row's edits (after a save, or [Tải lại]). */
   onDrop: () => void;
 };
 
-function OperationRow({ setting, models, draft, onChange, onDrop }: RowProps) {
+function OperationRow({ setting, models, draft, baseVersion, onChange, onDrop }: RowProps) {
   const t = useTranslations();
   const api = useApi();
   const queryClient = useQueryClient();
@@ -91,13 +101,15 @@ function OperationRow({ setting, models, draft, onChange, onDrop }: RowProps) {
   const id = (field: Field) => `${op}-${field}`;
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [banner, setBanner] = useState<ErrorDetails | null>(null);
-  const [conflict, setConflict] = useState(false);
+  const [conflictSeen, setConflictSeen] = useState(false);
   const [pending, setPending] = useState(false);
   const [droppedEffort, setDroppedEffort] = useState<string | null>(null);
   const busy = useRef(false);
   useFocusFirstError(errors, FIELDS.map(id));
 
   const dirty = !sameDraft(draft, toDraft(setting));
+  // Another save moved the row while this draft was open: same state as a 409, without sending anything.
+  const conflict = conflictSeen || (setting.version !== baseVersion);
   const model = models.find((m) => m.id === draft.modelId);
   const name = t(`ai.operations.names.${op}`);
   const providerName = (m: { provider: AiModel['provider']; model_id: string }) => `${t(`ai.providers.${m.provider}`)} · ${m.model_id}`;
@@ -132,10 +144,10 @@ function OperationRow({ setting, models, draft, onChange, onDrop }: RowProps) {
       const fresh = await queryClient.fetchQuery({ queryKey: aiKeys.operations(), queryFn: () => listOperations(api), staleTime: 0 });
       const row = fresh.items.find((item) => item.operation === op);
       if (row && sameDraft(toDraft(row), draft)) saved();
-      else setConflict(true);
+      else setConflictSeen(true);
     } catch (e) {
       // The newer row could not be read: the conflict still stands, so [Lưu] stays off until [Tải lại].
-      setConflict(true);
+      setConflictSeen(true);
       setBanner(errorDetails(e));
     }
   }
@@ -166,7 +178,7 @@ function OperationRow({ setting, models, draft, onChange, onDrop }: RowProps) {
     busy.current = true;
     setPending(true);
     try {
-      const result = await saveOperation(api, op, toBody(draft, setting.version));
+      const result = await saveOperation(api, op, toBody(draft, baseVersion));
       queryClient.setQueryData<{ items: AiOperationSetting[] }>(aiKeys.operations(), (old) =>
         old && { items: old.items.map((item) => (item.operation === op ? result : item)) },
       );
@@ -181,7 +193,7 @@ function OperationRow({ setting, models, draft, onChange, onDrop }: RowProps) {
   }
 
   function reload() {
-    setConflict(false);
+    setConflictSeen(false);
     onDrop();
     void queryClient.invalidateQueries({ queryKey: aiKeys.operations() });
   }
