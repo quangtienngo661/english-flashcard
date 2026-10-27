@@ -48,13 +48,13 @@ export function GroupListPage() {
             {t('create')}
           </Button>
         }
-      >
-        <span className="flex flex-wrap items-center gap-3">
-          {t('title')}
-          {all.length > 0 && (
+        meta={
+          all.length > 0 && (
             <span className="rounded-full bg-surface px-2.5 py-0.5 text-caption font-medium text-muted">{t('summary', { groups: all.length, words })}</span>
-          )}
-        </span>
+          )
+        }
+      >
+        {t('title')}
       </PageTitle>
       {groups.isPending ? (
         <FullScreenSpinner />

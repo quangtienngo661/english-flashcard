@@ -126,7 +126,7 @@ describe('AI states in the practice session (K/73–K/76, E29–E33, D11)', () =
       'GET /v1/practice/sessions/current': noItem, [NEXT]: nextAnswers(unavailable('quota-exhausted', { resets_at: LATER })),
     }) });
     expect(await screen.findByText('Hết lượt câu AI')).toBeInTheDocument();
-    expect(screen.getByText('Lượt câu AI mới có vào 15/11.')).toBeInTheDocument();
+    expect(screen.getByText('Lượt câu AI mới vào 15/11.')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Thử lại' })).toBeNull();
     expect(screen.getByRole('button', { name: 'Để sau' })).toBeInTheDocument();
   });
@@ -163,7 +163,7 @@ describe('AI states in the practice session (K/73–K/76, E29–E33, D11)', () =
       'GET /v1/practice/sessions/current': noItem,
       [NEXT]: nextAnswers({ state: 'question', session: view(), item: mcq(), notice: 'ai-fallback', ai_reason: 'quota-exhausted', resets_at: LATER }),
     }) });
-    expect(await screen.findByText('Hết lượt câu AI. Các câu còn lại của phiên dùng kiểu câu khác. Lượt câu AI mới có vào 15/11.')).toBeInTheDocument();
+    expect(await screen.findByText('Hết lượt câu AI. Các câu còn lại của phiên dùng kiểu câu khác. Lượt câu AI mới vào 15/11.')).toBeInTheDocument();
   });
 
   it('review I3, E33, K/76: the band never names the word before the answer; the word and its link come with the result', async () => {

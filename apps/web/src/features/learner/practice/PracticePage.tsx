@@ -89,14 +89,14 @@ export function PracticePage() {
                 decks.length === 0 ? (
                   <span className="text-caption text-muted">{t('sources.group.empty')}</span>
                 ) : (
-                  // Owner 27/10/2026: the decks are only shown here (dimmed, not buttons); a deck is chosen in [Tùy chỉnh].
+                  // Owner 27/10/2026: the decks are only shown here (look normal, not buttons); a deck is chosen in [Tùy chỉnh].
                   <>
                     {decks.slice(0, DECK_CHIPS).map((g) => (
-                      <span key={g.id} className={cn(CHIP, 'opacity-60')}>
+                      <span key={g.id} className={cn(CHIP, 'cursor-default')}>
                         <span className="truncate">{t('sources.group.chip', { name: g.name, count: g.total })}</span>
                       </span>
                     ))}
-                    {decks.length > DECK_CHIPS && <span className={cn(CHIP, 'opacity-60')}>+{decks.length - DECK_CHIPS}</span>}
+                    {decks.length > DECK_CHIPS && <span className={cn(CHIP, 'cursor-default')}>+{decks.length - DECK_CHIPS}</span>}
                   </>
                 )
               }

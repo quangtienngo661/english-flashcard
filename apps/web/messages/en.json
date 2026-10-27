@@ -444,7 +444,7 @@
         "plan_change": "Billing change",
         "refund": "Refund",
         "trial": "Trial",
-        "grant": "Granted by the Wordmet team"
+        "grant": "Plan granted"
       },
       "statuses": {
         "succeeded": "Succeeded",
@@ -464,13 +464,13 @@
       "footPhone": "Tap a row to see the payment provider and transaction ID.",
       "more": "Show more",
       "planCard": "Plan",
-      "planGrant": "{plan} plan · granted by the Wordmet team through {date}",
+      "planGrant": "{plan} plan · through {date}",
       "planUntil": "{plan} plan · through {date}",
       "planOnly": "{plan} plan",
       "aboutTitle": "About transactions",
       "about1": "Purchase, Renewal, Billing change: a payment for Pro.",
       "about2": "Refund: money returned to you; the original row says “Refunded”.",
-      "about3": "Trial and Granted by the Wordmet team: no charge.",
+      "about3": "Trial and Plan granted: no charge.",
       "detail": {
         "title": "Transaction details",
         "kind": "Type",

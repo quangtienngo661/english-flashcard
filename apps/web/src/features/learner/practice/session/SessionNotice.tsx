@@ -9,7 +9,7 @@ import { refillKind } from '../../settings/refill';
 import { wordHref } from '../../word/word-api';
 import type { SessionNotice as Notice } from './use-practice-session';
 
-/** "Lượt câu AI mới có vào 15/11." or "… lúc 0:00." (D15). */
+/** "Lượt câu AI mới vào 15/11." or "… lúc 0:00." (D15). */
 export function useAiRefillLine() {
   const t = useTranslations('App.practice.session.ai');
   const format = useFormat();

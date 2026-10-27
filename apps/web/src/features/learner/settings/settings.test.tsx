@@ -75,13 +75,13 @@ describe('SettingsPage (K/50)', () => {
     renderApp(<SettingsPage />, { routes: routes('free') });
     await screen.findByText('đã dùng 1/3');
     expect(screen.getAllByText('Cần gói Pro')).toHaveLength(2);
-    expect(screen.queryByText(/mới có vào/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/mới vào/)).not.toBeInTheDocument();
   });
 
   it('Pro: AI rows show what is left and the refill date', async () => {
     renderApp(<SettingsPage />, { routes: routes('pro') });
     expect(await screen.findByText('còn 287/300')).toBeInTheDocument();
-    expect(screen.getByText('Lượt câu AI mới có vào 15/11.')).toBeInTheDocument();
+    expect(screen.getByText('Lượt câu AI mới vào 15/11.')).toBeInTheDocument();
     expect(screen.getByText('còn 96/100')).toBeInTheDocument();
   });
 
