@@ -723,6 +723,22 @@ describe('SessionStore', () => {
     window.dispatchEvent(new Event('pageshow'));
   });
 
+  it('RK8: the keepalive refresh rejected before pagehide is not sent again when another pagehide listener runs first (RKC3)', async () => {
+    const { store, calls } = newStore({
+      'POST /v1/auth/refresh': () => {
+        throw new TypeError('Failed to fetch');
+      },
+    });
+    // Chromium rejects the keepalive fetch before pagehide fires and runs a microtask checkpoint after each listener: an
+    // earlier listener (React Router's) lets the rejection settle before ours sets `leaving`. jsdom has no such checkpoint.
+    const started = store.bootstrap();
+    for (let i = 0; i < 10; i += 1) await Promise.resolve();
+    window.dispatchEvent(new Event('pagehide'));
+    await started;
+    expect(refreshTries(calls)).toEqual([true]);
+    window.dispatchEvent(new Event('pageshow'));
+  });
+
   it('RK8: after pageshow (back from the back/forward cache) the fallback works again', async () => {
     let tries = 0;
     const { store, calls } = newStore({
