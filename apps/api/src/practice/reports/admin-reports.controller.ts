@@ -38,6 +38,11 @@ export class AdminReportsController {
     });
   }
 
+  @Get('reports/:id')
+  get(@Param({ schema: params }) path: z.infer<typeof params>) {
+    return this.reports.get(path.id);
+  }
+
   @Post('reports/:id/resolve')
   @HttpCode(200)
   @Idempotent()

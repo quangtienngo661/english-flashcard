@@ -30,7 +30,7 @@ describe('buildSnapshot', () => {
       prompt: { ...mcqPrompt, options: ['release', PRIVATE_WORD_MASK, 'deploy', 'merge'] },
       correct: { lemma: 'deploy', meaning: 'triển khai', definition_en: 'to put software into use', option_index: 2 },
       hints_shown: { level1: null, level2: null, level3: null },
-      learner: { answer: PRIVATE_WORD_MASK, answers_tried: [], result: 'wrong', hint_level: 0 },
+      learner: { answer: PRIVATE_WORD_MASK, option_index: 1, answers_tried: [], result: 'wrong', hint_level: 0 },
     });
     expect(deepStrings(snapshot).some((text) => text.includes('standup'))).toBe(false);
   });
@@ -38,6 +38,19 @@ describe('buildSnapshot', () => {
   it('a catalog option the learner chose is shown as its text', () => {
     const snapshot = buildSnapshot({ type: 'mcq_definition', prompt: mcqPrompt, answerKey: mcqKey, hints: noHints }, answered('0'));
     expect(snapshot).toMatchObject({ learner: { answer: 'release' } });
+  });
+
+  it('the chosen option index is kept as a number; a skipped item has null', () => {
+    const question = { type: 'mcq_definition' as const, prompt: mcqPrompt, answerKey: mcqKey, hints: noHints };
+    expect(buildSnapshot(question, answered('1'))).toMatchObject({ learner: { option_index: 1 } });
+    expect(buildSnapshot(question, answered(null, { result: null }))).toMatchObject({ learner: { answer: null, option_index: null } });
+  });
+
+  it('a non-mcq kind has no option_index', () => {
+    const prompt: Prompt = { kind: 'type_sentence', sentence: 'We ___ the app yesterday.' };
+    const answerKey: AnswerKey = { reveal, asked_private: false, kind: 'type_word', main: 'deployed', accepted: ['deployed'] };
+    const { learner } = buildSnapshot({ type: 'type_word', prompt, answerKey, hints: noHints }, answered('x'));
+    expect('option_index' in learner).toBe(false);
   });
 
   it('an unanswered item has no learner answer', () => {
@@ -97,7 +110,7 @@ describe('buildSnapshot', () => {
       prompt: { ...prompt, options: [PRIVATE_MEANING_MASK, 'triển khai', 'hợp nhất', PRIVATE_MEANING_MASK] },
       correct: { ...reveal, option_index: 1 },
       hints_shown: { level1: null, level2: null, level3: null },
-      learner: { answer: PRIVATE_MEANING_MASK, answers_tried: [], result: 'wrong', hint_level: 0 },
+      learner: { answer: PRIVATE_MEANING_MASK, option_index: 0, answers_tried: [], result: 'wrong', hint_level: 0 },
     });
     const strings = deepStrings(snapshot);
     expect(strings.some((text) => text.includes('họp đứng') || text.includes('nghĩa riêng khác'))).toBe(false);

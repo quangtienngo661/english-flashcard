@@ -15,6 +15,7 @@ export function buildSnapshot(question: SnapshotQuestion, item: SnapshotItem) {
   let maskedPrompt: Prompt = prompt;
   let correct: Record<string, unknown> = { ...key.reveal };
   let answer = item.answer_raw;
+  let optionIndex: { option_index: number | null } | object = {};
   if ((prompt.kind === 'mcq' || prompt.kind === 'meaning_in_sentence' || prompt.kind === 'mcq_sentence') && key.kind === 'mcq') {
     // The options of meaning_in_sentence are meanings; the others are words.
     const mask = prompt.kind === 'meaning_in_sentence' ? PRIVATE_MEANING_MASK : PRIVATE_WORD_MASK;
@@ -24,6 +25,7 @@ export function buildSnapshot(question: SnapshotQuestion, item: SnapshotItem) {
     correct = { ...correct, option_index: key.correct_index };
     // answer_raw is the chosen index "0"…"3" (Task 8).
     answer = item.answer_raw === null ? null : options[Number(item.answer_raw)] ?? null;
+    optionIndex = { option_index: item.answer_raw === null ? null : Number(item.answer_raw) };
   } else if (prompt.kind === 'true_false' && key.kind === 'true_false') {
     if (key.paired_private) maskedPrompt = { ...prompt, meaning: PRIVATE_MEANING_MASK };
     correct = { ...correct, is_true: key.is_true };
@@ -39,6 +41,6 @@ export function buildSnapshot(question: SnapshotQuestion, item: SnapshotItem) {
       level2: item.hint_level >= 2 ? question.hints.level2 : null,
       level3: item.hint_level >= 3 ? question.hints.level3 ?? null : null,
     },
-    learner: { answer, answers_tried: item.answers_tried, result: item.result, hint_level: item.hint_level },
+    learner: { answer, ...optionIndex, answers_tried: item.answers_tried, result: item.result, hint_level: item.hint_level },
   };
 }

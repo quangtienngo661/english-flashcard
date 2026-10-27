@@ -15,6 +15,7 @@ describe('admin reports HTTP (unit, mocked service)', () => {
   const prisma = { sessionChain: { findUnique: vi.fn() }, $disconnect: async () => {} };
   const hit = vi.spyOn(RateLimiter.prototype, 'hit');
   const passThrough = vi.spyOn(IdempotencyInterceptor.prototype, 'intercept');
+  let get: ReturnType<typeof vi.spyOn>;
   let list: ReturnType<typeof vi.spyOn>; let resolve: ReturnType<typeof vi.spyOn>; let listRefunds: ReturnType<typeof vi.spyOn>;
   const auth = () => ({ Authorization: `Bearer ${token}` });
   const http = () => ctx.http();
@@ -25,13 +26,14 @@ describe('admin reports HTTP (unit, mocked service)', () => {
       providers: [{ provide: PRISMA_CLIENT, useValue: prisma }], exports: [PRISMA_CLIENT] });
     ctx = await createTestApp({ databaseUrl: 'unused' });
     const reports = ctx.app.get(ReportsService);
-    list = vi.spyOn(reports, 'list'); resolve = vi.spyOn(reports, 'resolve'); listRefunds = vi.spyOn(reports, 'listRefunds');
+    get = vi.spyOn(reports, 'get'); list = vi.spyOn(reports, 'list'); resolve = vi.spyOn(reports, 'resolve'); listRefunds = vi.spyOn(reports, 'listRefunds');
   });
   beforeEach(async () => {
     actorId = randomUUID(); role = 'editor';
     token = await ctx.app.get(AccessTokenService).sign({ userId: actorId, sessionChainId: randomUUID() });
     prisma.sessionChain.findUnique.mockReset().mockImplementation(async () => ({ userId: actorId, revokedAt: null, user: { staffRole: role } }));
     list.mockReset().mockResolvedValue({ items: [], next_page_token: null }); resolve.mockReset().mockResolvedValue({ id: reportId });
+    get.mockReset().mockResolvedValue({ id: reportId });
     listRefunds.mockReset().mockResolvedValue({ items: [], next_page_token: null });
     hit.mockReset().mockResolvedValue(undefined);
     passThrough.mockReset().mockImplementation((_context, next) => next.handle());
@@ -42,6 +44,7 @@ describe('admin reports HTTP (unit, mocked service)', () => {
     expect(listRoutes(ctx.app).filter(({ path }) => /^\/v1\/admin\/practice\/(reports|refunds)/.test(path))).toEqual([
       { method: 'GET', path: '/v1/admin/practice/refunds', permissions: ['settings.manage'] },
       { method: 'GET', path: '/v1/admin/practice/reports', permissions: ['content.edit'] },
+      { method: 'GET', path: '/v1/admin/practice/reports/:id', permissions: ['content.edit'] },
       { method: 'POST', path: '/v1/admin/practice/reports/:id/resolve', permissions: ['content.edit'] },
     ]);
   });
@@ -55,6 +58,14 @@ describe('admin reports HTTP (unit, mocked service)', () => {
     expect(res.status).toBe(200);
     expect(resolve).toHaveBeenCalledWith(actorId, reportId, 'confirmed');
     expect(hit).toHaveBeenCalledWith('user.write', actorId);
+  });
+
+  it('an editor reads one report by id; a bad id → 400 before the service', async () => {
+    expect((await http().get(`/v1/admin/practice/reports/${reportId}`).set(auth())).status).toBe(200);
+    expect(get).toHaveBeenCalledWith(reportId);
+    get.mockClear();
+    expect((await http().get('/v1/admin/practice/reports/nope').set(auth())).status).toBe(400);
+    expect(get).not.toHaveBeenCalled();
   });
 
   it('an editor gets 403 on refunds; an admin reads it with its filters', async () => {

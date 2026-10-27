@@ -226,12 +226,13 @@ describe('ReportsService.resolve (design §9.3)', () => {
       },
     };
     const ledger = { refund: vi.fn(options.refund ?? (async () => ({ refunded: true }))) };
-    const identity = { getProfile: vi.fn(async () => ({ staff_role: options.role ?? 'editor' })) };
+    const identity = { getProfile: vi.fn(async () => ({ staff_role: options.role ?? 'editor' })),
+      emailsOf: vi.fn(async () => new Map([[STAFF, 'staff@example.com']])) };
     const logger = { warn: vi.fn() };
     const service = new ReportsService(prisma as unknown as PrismaClient, { now: () => NOW } as Clock, {} as SettingsService,
       {} as ReportReasonsService, identity as unknown as IdentityService, ledger as unknown as EntitlementsService,
       logger as unknown as AppLogger);
-    return { service, prisma, ledger, logger, current: () => row };
+    return { service, prisma, ledger, logger, identity, current: () => row };
   };
 
   it('B7E73: an editor confirms a charged AI question with a refundable reason → refund after the status write, refunded = true', async () => {
@@ -244,6 +245,15 @@ describe('ReportsService.resolve (design §9.3)', () => {
       status: 'confirmed', refunded: true, resolved_by: STAFF, resolved_by_role: 'editor', question_source: 'ai', ai_operation_id: 'req-1',
       call_operation_id: 'req-1#2', model: 'fake:ok', prompt_revision: 1, ai_charged: true, reason_label: 'Có hơn một đáp án đúng',
     });
+  });
+
+  it('the response names who resolved it and says whether the reason is refundable', async () => {
+    const { service, prisma, identity } = build(stored());
+    const view = await service.resolve(STAFF, 'r-1', 'confirmed');
+    expect(view).toMatchObject({ refundable: true, resolved_by_user: { id: STAFF, email: 'staff@example.com', system: false } });
+    expect(identity.emailsOf).toHaveBeenCalledTimes(1);
+    expect(prisma.practiceReport.findUnique).toHaveBeenLastCalledWith(
+      expect.objectContaining({ include: { reasonRef: { select: { refundable: true } } } }));
   });
 
   it('B7E74: refund says false (no unit used in this cycle) → confirmed, refunded = false', async () => {
@@ -337,5 +347,48 @@ describe('ReportsService.listRefunds (design §9.3, D33)', () => {
       where: { status: 'confirmed', questionSource: 'ai', resolvedBy: STAFF, resolvedAt: { gte: from, lt: to } },
       orderBy: [{ resolvedAt: 'desc' }, { id: 'asc' }], take: 21,
     }));
+  });
+});
+
+describe('ReportsService.list / get (admin, authors and refundable)', () => {
+  const STAFF = '44444444-4444-4444-8444-444444444444';
+  const row = (id: string, extra: Record<string, unknown> = {}) => ({
+    id, userId: USER, senseId: SENSE, status: 'open', questionSource: 'ai', aiOperationId: null, aiMeta: null, aiCharged: false,
+    refunded: null, resolvedBy: null, resolvedByRole: null, resolvedAt: null, reason: 'x', reasonLabel: 'x', note: null,
+    questionSnapshot: {}, createdAt: NOW, itemId: null, reasonRef: { refundable: false }, ...extra,
+  });
+  const build = (rows: unknown[]) => {
+    const findMany = vi.fn(async () => rows);
+    const findUnique = vi.fn(async () => (rows[0] as unknown) ?? null);
+    const identity = { emailsOf: vi.fn(async () => new Map([[STAFF, 'staff@example.com']])) };
+    const service = new ReportsService({ practiceReport: { findMany, findUnique } } as unknown as PrismaClient, { now: () => NOW } as Clock,
+      {} as SettingsService, {} as ReportReasonsService, identity as unknown as IdentityService, {} as EntitlementsService,
+      {} as AppLogger);
+    return { service, findMany, findUnique, identity };
+  };
+
+  it('rows carry refundable from the reason and resolved_by_user; one emailsOf per page', async () => {
+    const { service, findMany, identity } = build([
+      row('r-1', { resolvedBy: STAFF, reasonRef: { refundable: true } }), row('r-2'),
+    ]);
+    const page = await service.list({ pageSize: 20 });
+    expect(findMany).toHaveBeenCalledWith(expect.objectContaining({ include: { reasonRef: { select: { refundable: true } } } }));
+    expect(page.items[0]).toMatchObject({
+      refundable: true, resolved_by: STAFF, resolved_by_user: { id: STAFF, email: 'staff@example.com', system: false },
+    });
+    expect(page.items[1]).toMatchObject({ refundable: false, resolved_by_user: null });
+    expect(identity.emailsOf).toHaveBeenCalledExactlyOnceWith([STAFF]);
+  });
+
+  it('get returns the same view for one report', async () => {
+    const { service, findUnique, identity } = build([row('r-1', { resolvedBy: STAFF })]);
+    expect(await service.get('r-1')).toMatchObject({ id: 'r-1', refundable: false, resolved_by_user: { email: 'staff@example.com' } });
+    expect(findUnique).toHaveBeenCalledWith({ where: { id: 'r-1' }, include: { reasonRef: { select: { refundable: true } } } });
+    expect(identity.emailsOf).toHaveBeenCalledTimes(1);
+  });
+
+  it('get of an unknown report → 404 not-found', async () => {
+    const { service } = build([]);
+    await expect(service.get('nope')).rejects.toMatchObject({ problemType: 'not-found', status: 404 });
   });
 });
