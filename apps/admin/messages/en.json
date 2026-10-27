@@ -255,6 +255,87 @@
       "close": "Close"
     }
   },
+  "reports": {
+    "filters": {
+      "status": "Status",
+      "reason": "Reason",
+      "source": "Question source",
+      "allStatuses": "All statuses",
+      "allReasons": "All reasons",
+      "allSources": "Any source"
+    },
+    "statuses": {
+      "open": "Open",
+      "no_error": "No error",
+      "fixed": "Fixed",
+      "confirmed": "Error confirmed"
+    },
+    "sources": { "rule": "Rule question", "ai": "AI question" },
+    "types": {
+      "mcq_definition": "Multiple choice",
+      "true_false_definition": "True / False",
+      "type_word": "Type the word",
+      "cloze": "Fill in the blank",
+      "meaning_in_sentence": "Meaning in a sentence",
+      "mcq_sentence": "Multiple choice in a sentence"
+    },
+    "cols": {
+      "word": "Word",
+      "type": "Question type",
+      "reason": "Reason",
+      "source": "Source",
+      "note": "Note",
+      "sentAt": "Sent",
+      "status": "Status",
+      "resolvedBy": "Handled by"
+    },
+    "empty": "No open reports left.",
+    "emptyFiltered": "No reports match the filters.",
+    "detail": {
+      "title": "Report · {word}",
+      "titleUnknown": "Report",
+      "notFound": "This report was not found.",
+      "backToList": "Back to the reports",
+      "question": "Question",
+      "prompt": "Prompt",
+      "meaning": "Meaning",
+      "sentence": "Sentence",
+      "options": "Options",
+      "correctAnswer": "Correct answer",
+      "correctMark": "Correct answer",
+      "learnerPicked": "Learner chose",
+      "unclearOption": "Cannot tell which option",
+      "learnerAnswer": "Learner's answer",
+      "noAnswer": "No answer",
+      "triedAnswers": "Tried",
+      "hints": "Hints seen",
+      "noHints": "No hint was used",
+      "true": "True",
+      "false": "False",
+      "reason": "Reason",
+      "note": "Learner's note",
+      "noNote": "No note",
+      "ai": "AI details",
+      "operationId": "Operation ID",
+      "callId": "Call ID",
+      "model": "Model",
+      "promptRevision": "Prompt revision",
+      "openCall": "View this call",
+      "resolved": "Handled",
+      "resolvedLine": "{status} · {who} · {time}",
+      "refunded": "1 AI question unit given back",
+      "refundPending": "Not refunded yet, the system retries every hour",
+      "notRefunded": "No unit refunded",
+      "fixHint": "Edit the content under Senses",
+      "fixLink": "Open the senses of “{word}”"
+    },
+    "actions": {
+      "noError": "No error",
+      "fixed": "Fixed",
+      "confirmed": "Confirm error",
+      "refundLine": "Confirming the error gives the learner back 1 AI question unit."
+    }
+  },
   "staff": {
     "toast": {
       "granted": "Granted the {role} role to {email}.",

@@ -6,6 +6,7 @@ import { LoginPage } from '../features/account/LoginPage';
 import { UploadsPage } from '../features/uploads/UploadsPage';
 import { ComingSoonPage } from '../features/coming-soon/ComingSoonPage';
 import { ExportPage } from '../features/export/ExportPage';
+import { ReportsPage } from '../features/reports/ReportsPage';
 import { PublishJobsPage } from '../features/publish-jobs/PublishJobsPage';
 import { SourcesPage } from '../features/sources/SourcesPage';
 import { StaffPage } from '../features/staff/StaffPage';
@@ -42,6 +43,9 @@ export const appRoutes: RouteObject[] = createRoutesFromElements(
         <Route path="export" element={<ExportPage />} />
         <Route path="sources" element={<SourcesPage />}>
           <Route path="new" element={null} />
+        </Route>
+        <Route path="reports" element={<ReportsPage />}>
+          <Route path=":id" element={null} />
         </Route>
         <Route path="transactions" element={<TransactionsPage />} />
         <Route path="staff" element={<StaffPage />} />
