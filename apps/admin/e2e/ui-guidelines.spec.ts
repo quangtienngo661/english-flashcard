@@ -333,14 +333,27 @@ test('Bộ ví dụ at 390 fits the window with a long example input, a long not
       created_by: 'u9', created_by_user: lan, created_at: at, updated_at: at,
     }] } }),
     'GET /v1/admin/ai/eval/runs': () => ({ json: { items: [run], next_page_token: null } }),
-    'GET /v1/admin/ai/eval/runs/r1': () => ({ json: { ...run, draft: null, heartbeat_at: null, items: [] } }),
+    'GET /v1/admin/ai/eval/runs/r1': () => ({ json: { ...run, draft: null, heartbeat_at: null, items: [
+      { example_id: 'e1', status: 'succeeded', reason: null, output: { sentence: 's'.repeat(600), accepted_answers: ['a'.repeat(200)] }, raw_output: 'x'.repeat(2000), latency_ms: 812, cost_usd: '0.00100000' },
+      { example_id: 'gone', status: 'permanent_failure', reason: 'r'.repeat(200), output: null, raw_output: 'y'.repeat(2000), latency_ms: 300, cost_usd: null },
+    ] } }),
   });
   await page.goto('/ai/eval');
   await expect(page.getByText('w'.repeat(200), { exact: false }).first()).toBeAttached();
   await expectNoHorizontalScroll(page);
   await page.goto('/ai/eval/runs/r1');
   await expect(page.getByTestId('detail-panel').getByText('e'.repeat(300), { exact: false })).toBeVisible();
+  for (const summary of await page.getByTestId('detail-panel').getByText(vi.ai.eval.detail.rawOutput).all()) {
+    if (await summary.isVisible()) await summary.click();
+  }
+  await expect(page.getByTestId('detail-panel').getByText('x'.repeat(2000)).filter({ visible: true })).toBeVisible();
   await expectNoHorizontalScroll(page);
+  // At 390 the run opens as a sheet outside `main`: nothing in it may stick out sideways either.
+  const sticking = await page.getByTestId('detail-panel').evaluate((panel) => {
+    const edge = panel.getBoundingClientRect().right + 1;
+    return [...panel.querySelectorAll('*')].filter((el) => el.getBoundingClientRect().right > edge).map((el) => el.tagName);
+  });
+  expect(sticking).toEqual([]);
 });
 
 test('Cài đặt hệ thống at 390: every tab and the history dialog fit the window (Review Focus 4)', async ({ page }) => {

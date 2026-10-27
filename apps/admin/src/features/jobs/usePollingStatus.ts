@@ -1,4 +1,5 @@
 import { useQuery, type UseQueryResult } from '@tanstack/react-query';
+import { ApiError } from '../../api/problem';
 import type { JobStatus } from '../content/content-api';
 
 export type { JobStatus };
@@ -12,7 +13,7 @@ export const isTerminal = (status: string | undefined): boolean => status === 's
 
 /**
  * `refetchInterval` as a function ends polling by returning `false`. A hidden tab is not polled (TanStack's default
- * `refetchIntervalInBackground: false`); showing it again refetches at once because the data is stale. `done` says which
+ * `refetchIntervalInBackground: false`); showing it again refetches at once because the data is stale; a 404 (unknown id) also ends it. `done` says which
  * status ends polling: batch and publish jobs by default; another resource (an eval run ends at `finished`) passes its own.
  */
 export function usePollingStatus<T extends { status: string }>(
@@ -24,6 +25,9 @@ export function usePollingStatus<T extends { status: string }>(
     queryKey: key,
     queryFn: fetcher,
     refetchInterval: (query) => {
+      // An unknown id stays unknown: reading it again every 2 s would only repeat the 404.
+      const { error } = query.state;
+      if (error instanceof ApiError && error.problem.status === 404) return false;
       const status = query.state.data?.status;
       return status !== undefined && done(status) ? false : POLL_INTERVAL_MS;
     },

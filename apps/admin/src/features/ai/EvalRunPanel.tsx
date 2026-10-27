@@ -9,16 +9,23 @@ import { Badge } from '../../ui/Badge';
 import { Banner } from '../../ui/Banner';
 import { Button } from '../../ui/Button';
 import { PanelBody, PanelHead } from '../../ui/DetailPanel';
+import { DataList, type Column } from '../../ui/DataList';
 import { ListState } from '../../ui/ListState';
 import { useSubmitAction } from '../content/useSubmitAction';
 import { getSettings } from '../settings/settings-api';
 import { useNow } from '../jobs/useNow';
 import { usePollingStatus, useQueuedTooLong } from '../jobs/usePollingStatus';
-import { aiKeys, getRun, getTestQuota, isRunDone, startRun, type AiOperation, type EvalRun, type EvalRunStatus, type StartRunBody } from './ai-api';
+import {
+  aiKeys, getRun, getTestQuota, isRunDone, listExamples, startRun, type AiOperation, type EvalRun, type EvalRunItem, type EvalRunStatus, type StartRunBody,
+  type TestStatus,
+} from './ai-api';
+import { exampleSummary } from './prompt-form';
 import { useAiFormat } from './useAiFormat';
 
 const TONE = { queued: 'neutral', running: 'primary', finished: 'success', failed: 'danger' } as const;
 const NEED_EXAMPLE = 'examples: at least one example is needed';
+const ITEM_STATUSES: TestStatus[] = ['succeeded', 'transient_failure', 'permanent_failure', 'unavailable'];
+const codeBlock = 'block whitespace-pre-wrap wrap-anywhere rounded-inner bg-canvas p-2 font-mono text-xs text-ink';
 const linkClass =
   'inline-flex min-h-control w-fit items-center whitespace-nowrap rounded-control px-4 text-ui font-medium text-primary outline-none hover:bg-primary-soft focus-visible:ring-2 focus-visible:ring-primary pointer-coarse:min-h-control-touch';
 
@@ -44,6 +51,9 @@ export function useStartRun(op: AiOperation, fingerprint: string, onStarted: (ru
   const queryClient = useQueryClient();
   const prompt = useRef<StartRunBody['prompt']>('current');
   const [started, setStarted] = useState(0);
+  const keyName = `eval-run:${op}:${started}:${fingerprint}`;
+  /** What the last press sent: once the editor or the operation changes, its failure (and [Thử lại], which would resend it) is gone. */
+  const [sent, setSent] = useState<string | null>(null);
   /** When the hourly limit lets the next run through (from `Retry-After`), for the 429 sentence. */
   const [retryAt, setRetryAt] = useState<Date | null>(null);
   const action = useSubmitAction(
@@ -60,18 +70,23 @@ export function useStartRun(op: AiOperation, fingerprint: string, onStarted: (ru
         void queryClient.invalidateQueries({ queryKey: aiKeys.testQuota() });
       }
     },
-    `eval-run:${op}:${started}:${fingerprint}`,
+    keyName,
     (result) => {
       setStarted((n) => n + 1);
       void queryClient.invalidateQueries({ queryKey: aiKeys.runs(op) });
       onStarted(result.run_id);
     },
   );
+  const stale = sent !== keyName;
   return {
     ...action,
+    error: stale ? null : action.error,
+    problem: stale ? null : action.problem,
+    canRetry: !stale && action.canRetry,
     retryAt,
     start(next: StartRunBody['prompt']) {
       prompt.current = next;
+      setSent(keyName);
       void action.submit();
     },
   };
@@ -127,6 +142,9 @@ export function EvalRunPanel({ id, onDone }: { id: string; onDone?: () => void }
   const format = useAiFormat();
   const promptLabel = usePromptLabel();
   const query = usePollingStatus(aiKeys.run(id), () => getRun(api, id), isRunDone);
+  const operation = query.data?.operation ?? 'generate_cloze';
+  // Same key as the page's list: the input of each result is looked up there by `example_id`.
+  const examples = useQuery({ queryKey: aiKeys.examples(operation), queryFn: () => listExamples(api, operation), enabled: query.data !== undefined });
   // Same key as the settings page: an admin who just changed the rate sees the new ₫ here.
   const settings = useQuery({ queryKey: ['settings'], queryFn: () => getSettings(api) });
   const run = query.data;
@@ -146,7 +164,11 @@ export function EvalRunPanel({ id, onDone }: { id: string; onDone?: () => void }
       <>
         <PanelHead title={t('nav.aiEval')} />
         <PanelBody>
-          <ListState state={query.isPending ? 'loading' : 'error'} onRetry={() => void query.refetch()} />
+          {query.error instanceof ApiError && query.error.problem.status === 404 ? (
+            <Banner variant="error">{t('ai.eval.detail.notFound')}</Banner>
+          ) : (
+            <ListState state={query.isPending ? 'loading' : 'error'} onRetry={() => void query.refetch()} />
+          )}
         </PanelBody>
       </>
     );
@@ -168,6 +190,51 @@ export function EvalRunPanel({ id, onDone }: { id: string; onDone?: () => void }
     [t('ai.eval.detail.model'), model],
     [t('ai.eval.detail.prompt'), promptLabel(run)],
     [t('ai.eval.detail.startedBy'), userLabel(run.started_by_user, t)],
+  ];
+
+  const inputs = new Map((examples.data?.items ?? []).map((example) => [example.id, example.input]));
+  const results = run.items.map((item, index) => ({ ...item, index }));
+  const resultColumns: Column<EvalRunItem & { index: number }>[] = [
+    {
+      key: 'example', header: t('ai.eval.detail.cols.example'), className: 'wrap-anywhere',
+      cell: (item) => {
+        const input = inputs.get(item.example_id);
+        if (input) return exampleSummary(input);
+        return examples.isPending ? t('ai.eval.detail.none') : t('ai.eval.detail.deletedExample');
+      },
+    },
+    {
+      key: 'status', header: t('ai.eval.detail.cols.status'), card: 'field',
+      cell: (item) => (
+        <span className={item.status === 'succeeded' ? 'text-ink' : 'font-semibold text-danger'}>
+          {item.status === 'skipped' ? t('ai.eval.detail.skipped')
+            : ITEM_STATUSES.includes(item.status) ? t(`ai.prompts.test.statuses.${item.status}`) : item.status}
+        </span>
+      ),
+    },
+    { key: 'reason', header: t('ai.eval.detail.cols.reason'), className: 'wrap-anywhere', card: 'field', cell: (item) => item.reason ?? t('ai.eval.detail.none') },
+    {
+      key: 'output', header: t('ai.eval.detail.cols.output'), className: 'min-w-0', card: 'field',
+      cell: (item) => (
+        <span className="flex min-w-0 flex-col gap-1">
+          {item.output ? <code className={codeBlock}>{JSON.stringify(item.output)}</code> : <span>{t('ai.eval.detail.none')}</span>}
+          {item.raw_output !== null && (
+            <details className="min-w-0">
+              <summary className="cursor-pointer text-xs font-medium text-primary">{t('ai.eval.detail.rawOutput')}</summary>
+              <pre className={codeBlock}>{item.raw_output}</pre>
+            </details>
+          )}
+        </span>
+      ),
+    },
+    {
+      key: 'latency', header: t('ai.eval.detail.cols.latency'), className: 'whitespace-nowrap tabular-nums', card: 'field',
+      cell: (item) => (item.latency_ms === null ? t('ai.eval.detail.none') : t('ai.eval.detail.latency', { ms: format.number(item.latency_ms) })),
+    },
+    {
+      key: 'cost', header: t('ai.eval.detail.cols.cost'), className: 'whitespace-nowrap tabular-nums', card: 'field',
+      cell: (item) => (item.cost_usd === null ? t('ai.eval.detail.none') : format.usd(item.cost_usd)),
+    },
   ];
 
   let notice: { variant: 'info' | 'error'; text: string } | null = null;
@@ -197,6 +264,12 @@ export function EvalRunPanel({ id, onDone }: { id: string; onDone?: () => void }
             </div>
           ))}
         </dl>
+        {results.length > 0 && (
+          <section aria-labelledby="eval-run-results" className="flex min-w-0 flex-col gap-2">
+            <h3 id="eval-run-results" className="text-ui font-semibold text-ink">{t('ai.eval.detail.results')}</h3>
+            <DataList rows={results} rowKey={(item) => String(item.index)} columns={resultColumns} state="ready" />
+          </section>
+        )}
       </PanelBody>
     </>
   );

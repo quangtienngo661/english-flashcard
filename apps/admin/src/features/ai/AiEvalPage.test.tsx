@@ -173,6 +173,21 @@ describe('AiEvalPage runs (A/83)', () => {
     expect(keys[0]).toBe(keys[1]);
   });
 
+  it('a network error, then another operation: [Thử lại] is gone (it would send the old operation)', async () => {
+    await openPage({
+      [URL.startRun]: () => {
+        throw new TypeError('Failed to fetch');
+      },
+      [URL.examples('lookup_word')]: () => Response.json({ items: [] }),
+      [URL.runs('lookup_word')]: () => Response.json({ items: [], next_page_token: null }),
+    });
+    await userEvent.click(runButton());
+    expect(await screen.findByRole('button', { name: vi.common.retry })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: new RegExp(`${t.operation}$`) }));
+    await userEvent.click(await screen.findByRole('option', { name: /lookup_word/ }));
+    await waitFor(() => expect(screen.queryByRole('button', { name: vi.common.retry })).not.toBeInTheDocument());
+  });
+
   it('lists the runs: status, progress, valid, prompt revision ("Bản nháp" for a draft) and who started it', async () => {
     await openPage({
       [URL.runs()]: () => Response.json({

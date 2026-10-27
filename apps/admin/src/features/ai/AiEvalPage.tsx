@@ -23,15 +23,10 @@ import {
 } from './ai-api';
 import { EvalRunPanel, RunStatusBadge, StartRunFailure, usePromptLabel, useStartRun } from './EvalRunPanel';
 import { ExampleDialog } from './ExampleDialog';
+import { exampleSummary } from './prompt-form';
 import { useAiFormat } from './useAiFormat';
 
 const FILTERS = { op: { default: 'generate_cloze', valid: (value: string) => (AI_OPERATION_ORDER as readonly string[]).includes(value) } };
-
-/** "go · verb": the first two text values of an example's input, so the admin can tell examples apart. */
-export function exampleSummary(input: Record<string, unknown>): string {
-  const texts = Object.values(input).filter((value): value is string => typeof value === 'string' && value !== '');
-  return texts.length > 0 ? texts.slice(0, 2).join(' · ') : JSON.stringify(input);
-}
 
 const isForbidden = (error: unknown) => error instanceof ApiError && error.problem.slug === 'forbidden';
 

@@ -2,6 +2,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, renderHook } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { ApiError } from '../../api/problem';
 import { isTerminal, useQueuedTooLong, usePollingStatus, type JobStatus } from './usePollingStatus';
 
 type Item = { status: JobStatus };
@@ -105,6 +106,21 @@ describe('usePollingStatus with its own end', () => {
     expect(fetcher).toHaveBeenCalledTimes(3);
     await tick(10_000);
     expect(fetcher).toHaveBeenCalledTimes(3);
+  });
+});
+
+describe('usePollingStatus and a 404', () => {
+  it('an unknown id (404) is not read again', async () => {
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const wrapper = ({ children }: { children: ReactNode }) => <QueryClientProvider client={client}>{children}</QueryClientProvider>;
+    const fetcher = vi.fn(async (): Promise<Item> => {
+      throw new ApiError({ type: 'not-found', slug: 'not-found', status: 404, title: 'Not found' }, null);
+    });
+    const hook = renderHook(() => usePollingStatus<Item>(['job', 'missing'], fetcher), { wrapper });
+    await tick(0);
+    await vi.waitFor(() => expect(hook.result.current.isError).toBe(true));
+    await tick(10_000);
+    expect(fetcher).toHaveBeenCalledTimes(1);
   });
 });
 

@@ -1,10 +1,11 @@
 import { act, screen, waitFor, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi as vitest } from 'vitest';
 import vi from '../../../messages/vi.json';
 import { problem } from '../../auth/test-support';
 import { renderApp } from '../staff/test-utils';
 import type { EvalRunDetail } from './ai-api';
-import { URL, evalRoutes, evalRun } from './prompt-test-support';
+import { URL, evalExample, evalRoutes, evalRun } from './prompt-test-support';
 
 const t = vi.ai.eval;
 const PATH = '/ai/eval/runs/r1';
@@ -73,8 +74,39 @@ describe('EvalRunPanel (A/83)', () => {
     expect(r.calls.filter((c) => c.method === 'POST' && c.path === '/v1/admin/ai/eval/runs')).toHaveLength(0);
   });
 
-  it('an unknown run (404) says it cannot be read', async () => {
-    renderApp(PATH, evalRoutes({ [URL.run()]: () => problem(404, 'not-found') }));
-    expect(await screen.findByRole('button', { name: vi.common.retry })).toBeInTheDocument();
+  it('an unknown run (404) says it is not found and is not read again', async () => {
+    vitest.useFakeTimers({ shouldAdvanceTime: true });
+    const r = renderApp(PATH, evalRoutes({ [URL.run()]: () => problem(404, 'not-found') }));
+    expect(await screen.findByText(t.detail.notFound)).toBeInTheDocument();
+    await act(async () => { await vitest.advanceTimersByTimeAsync(10_000); });
+    expect(r.count('GET', '/v1/admin/ai/eval/runs/r1')).toBe(1);
+  });
+
+  it('per-example results: input looked up in the set, status, reason, output; the raw output behind [Xem đầu ra gốc]; a deleted example says so', async () => {
+    const items: EvalRunDetail['items'] = [
+      { example_id: 'e1', status: 'succeeded', reason: null, output: { sentence: 'I ___ home.' }, raw_output: '{"sentence":"I ___ home."}', latency_ms: 700, cost_usd: '0.00100000' },
+      { example_id: 'gone', status: 'permanent_failure', reason: 'invalid-shape', output: null, raw_output: 'not json at all', latency_ms: 300, cost_usd: null },
+    ];
+    renderApp(PATH, evalRoutes({
+      [URL.examples()]: () => Response.json({ items: [evalExample('e1', 'go')] }),
+      [URL.run()]: () => Response.json(evalRun({ status: 'running', done: 2, items })),
+    }));
+    const scope = within(await panel());
+    const results = await scope.findByRole('region', { name: t.detail.results });
+    await waitFor(() => expect(within(results).getAllByRole('row')[1]).toHaveTextContent('go · verb'));
+    const [, first, second] = within(results).getAllByRole('row');
+    expect(within(results).getAllByRole('columnheader').map((h) => h.textContent)).toEqual([
+      t.detail.cols.example, t.detail.cols.status, t.detail.cols.reason, t.detail.cols.output, t.detail.cols.latency, t.detail.cols.cost,
+    ]);
+    expect(first).toHaveTextContent(vi.ai.prompts.test.statuses.succeeded);
+    expect(first).toHaveTextContent('{"sentence":"I ___ home."}');
+    expect(second).toHaveTextContent(t.detail.deletedExample);
+    expect(second).toHaveTextContent(vi.ai.prompts.test.statuses.permanent_failure);
+    expect(second).toHaveTextContent('invalid-shape');
+    const details = within(second).getByText(t.detail.rawOutput).closest('details') as HTMLDetailsElement;
+    expect(details.open).toBe(false);
+    await userEvent.click(within(second).getByText(t.detail.rawOutput));
+    expect(details.open).toBe(true);
+    expect(within(details).getByText('not json at all')).toBeInTheDocument();
   });
 });

@@ -476,7 +476,20 @@
         "running": "Running: {done}/{total} examples. The page updates by itself.",
         "failed": "Failed: {error}",
         "failedNoReason": "The run failed.",
-        "background": "Closing the page does not stop the run; open it again to see its progress."
+        "background": "Closing the page does not stop the run; open it again to see its progress.",
+        "results": "Result per example",
+        "deletedExample": "Deleted example",
+        "rawOutput": "Show raw output",
+        "notFound": "This run was not found. The run id may be wrong.",
+        "skipped": "Skipped (example deleted)",
+        "cols": {
+          "example": "Example",
+          "status": "Status",
+          "reason": "Reason",
+          "output": "Output",
+          "latency": "Time",
+          "cost": "Cost"
+        }
       },
       "fromPrompt": {
         "title": "Run example set",

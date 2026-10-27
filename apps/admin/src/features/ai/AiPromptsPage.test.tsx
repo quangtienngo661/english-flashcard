@@ -329,6 +329,28 @@ describe('AiPromptsPage [Chạy bộ ví dụ với bản này] (A/82 → A/83)'
     expect(screen.getByRole('link', { name: vi.ai.eval.fromPrompt.open })).toHaveAttribute('href', '/ai/eval/runs/r1?op=generate_cloze');
   });
 
+  it('a network error, then an edit: [Thử lại] is gone and the next press sends the new text with a new key', async () => {
+    let n = 0;
+    const r = await openPage({
+      ...runRoutes(),
+      [URL.startRun]: () => {
+        n += 1;
+        if (n === 1) throw new TypeError('Failed to fetch');
+        return Response.json({ run_id: 'r1', status: 'queued' }, { status: 202 });
+      },
+    });
+    await userEvent.click(evalButton());
+    expect(await screen.findByRole('button', { name: vi.common.retry })).toBeInTheDocument();
+    await retype('Edited after the error.');
+    expect(screen.queryByRole('button', { name: vi.common.retry })).not.toBeInTheDocument();
+    await userEvent.click(evalButton());
+    await screen.findByText(vi.leave.title);
+    const sent = r.calls.filter((c) => c.method === 'POST' && c.path === '/v1/admin/ai/eval/runs');
+    expect(sent).toHaveLength(2);
+    expect((sent[1].body as { prompt: { instructions: string } }).prompt.instructions).toBe('Edited after the error.');
+    expect(sent[1].headers['Idempotency-Key']).not.toBe(sent[0].headers['Idempotency-Key']);
+  });
+
   it('409 model-not-set → the copy and a link to Thao tác; nothing navigates', async () => {
     const r = await openPage({ ...runRoutes(), [URL.startRun]: () => problem(409, 'model-not-set') });
     await userEvent.click(evalButton());

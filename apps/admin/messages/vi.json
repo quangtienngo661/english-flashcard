@@ -476,7 +476,20 @@
         "running": "Đang chạy: {done}/{total} ví dụ. Trang tự cập nhật.",
         "failed": "Lỗi: {error}",
         "failedNoReason": "Lần chạy bị lỗi.",
-        "background": "Đóng trang thì lần chạy vẫn chạy tiếp; mở lại để xem tiến độ."
+        "background": "Đóng trang thì lần chạy vẫn chạy tiếp; mở lại để xem tiến độ.",
+        "results": "Kết quả từng ví dụ",
+        "deletedExample": "Ví dụ đã xóa",
+        "rawOutput": "Xem đầu ra gốc",
+        "notFound": "Không tìm thấy lần chạy này. Có thể mã lần chạy sai.",
+        "skipped": "Bỏ qua (ví dụ đã xóa)",
+        "cols": {
+          "example": "Ví dụ",
+          "status": "Trạng thái",
+          "reason": "Lý do",
+          "output": "Đầu ra",
+          "latency": "Thời gian",
+          "cost": "Chi phí"
+        }
       },
       "fromPrompt": {
         "title": "Chạy bộ ví dụ",
