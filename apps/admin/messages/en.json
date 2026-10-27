@@ -256,6 +256,52 @@
       "close": "Close"
     }
   },
+  "reportReasons": {
+    "add": "Add reason",
+    "cols": {
+      "position": "Order",
+      "code": "Code",
+      "labelVi": "Vietnamese name",
+      "labelEn": "English name",
+      "appliesTo": "Applies to",
+      "noteRequired": "Note required",
+      "refundable": "Refunds a unit",
+      "active": "In use",
+      "updatedBy": "Last edited by",
+      "actions": "Actions"
+    },
+    "appliesTo": { "ai": "AI questions", "non_ai": "Regular questions", "all": "Both" },
+    "yes": "Yes",
+    "no": "No",
+    "edit": "Edit",
+    "editFor": "Edit reason {code}",
+    "activeFor": "In use: {code}",
+    "note": "A turned-off reason is no longer shown to learners; older reports keep the name they were sent with.",
+    "empty": "There are no report reasons yet.",
+    "emptyHint": "Add a reason so learners can pick it when reporting a problem.",
+    "newTitle": "Add a report reason",
+    "editTitle": "Edit a report reason",
+    "form": {
+      "code": "Code",
+      "codeHint": "Starts with a letter, 2–40 characters of a–z, 0–9, _",
+      "codeInvalid": "The code must start with a letter and be 2–40 characters of a–z, 0–9, _.",
+      "labelVi": "Vietnamese name",
+      "labelEn": "English name",
+      "labelHint": "1–100 characters",
+      "labelInvalid": "Enter a name of 1 to 100 characters.",
+      "hintVi": "Hint in the note box (Vietnamese)",
+      "hintEn": "Hint in the note box (English)",
+      "hintHint": "Optional, up to 200 characters",
+      "appliesTo": "Applies to",
+      "noteRequired": "Note required",
+      "refundable": "Refunds a unit",
+      "refundableHint": "Only has an effect on AI questions",
+      "position": "Order",
+      "positionHint": "From 0 to 10,000; smaller shows first",
+      "positionInvalid": "Enter a whole number from 0 to 10,000.",
+      "save": "Save"
+    }
+  },
   "reports": {
     "filters": {
       "status": "Status",

@@ -256,6 +256,52 @@
       "close": "Đóng"
     }
   },
+  "reportReasons": {
+    "add": "Thêm lý do",
+    "cols": {
+      "position": "Thứ tự",
+      "code": "Mã",
+      "labelVi": "Tên tiếng Việt",
+      "labelEn": "Tên tiếng Anh",
+      "appliesTo": "Áp cho",
+      "noteRequired": "Bắt buộc ghi chú",
+      "refundable": "Có trả lượt",
+      "active": "Đang dùng",
+      "updatedBy": "Sửa lần cuối bởi",
+      "actions": "Thao tác"
+    },
+    "appliesTo": { "ai": "Câu AI", "non_ai": "Câu thường", "all": "Cả hai" },
+    "yes": "Có",
+    "no": "Không",
+    "edit": "Sửa",
+    "editFor": "Sửa lý do {code}",
+    "activeFor": "Đang dùng: {code}",
+    "note": "Lý do đã tắt không hiện cho người học; báo lỗi cũ giữ tên lúc gửi.",
+    "empty": "Chưa có lý do báo lỗi nào.",
+    "emptyHint": "Thêm lý do để người học có thể chọn khi báo lỗi.",
+    "newTitle": "Thêm lý do báo lỗi",
+    "editTitle": "Sửa lý do báo lỗi",
+    "form": {
+      "code": "Mã",
+      "codeHint": "Bắt đầu bằng chữ, 2–40 ký tự a–z, 0–9, _",
+      "codeInvalid": "Mã phải bắt đầu bằng chữ, dài 2–40 ký tự, chỉ gồm a–z, 0–9, _.",
+      "labelVi": "Tên tiếng Việt",
+      "labelEn": "Tên tiếng Anh",
+      "labelHint": "1–100 ký tự",
+      "labelInvalid": "Nhập tên từ 1 đến 100 ký tự.",
+      "hintVi": "Gợi ý trong ô ghi chú (tiếng Việt)",
+      "hintEn": "Gợi ý trong ô ghi chú (tiếng Anh)",
+      "hintHint": "Không bắt buộc, tối đa 200 ký tự",
+      "appliesTo": "Áp cho",
+      "noteRequired": "Bắt buộc ghi chú",
+      "refundable": "Có trả lượt",
+      "refundableHint": "Chỉ có tác dụng với câu AI",
+      "position": "Thứ tự",
+      "positionHint": "Từ 0 đến 10.000; số nhỏ hiện trước",
+      "positionInvalid": "Nhập số nguyên từ 0 đến 10.000.",
+      "save": "Lưu"
+    }
+  },
   "reports": {
     "filters": {
       "status": "Trạng thái",

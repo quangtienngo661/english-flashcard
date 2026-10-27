@@ -54,7 +54,35 @@ export type Report = {
   refunded: boolean | null;
 };
 
-export type ReportReason = { code: string; label_vi: string; label_en: string; refundable: boolean; active: boolean; position: number };
+export type ReasonAppliesTo = 'ai' | 'non_ai' | 'all';
+
+/** One row of `GET …/report-reasons` (`adminView` in `report-reasons.service.ts`), in the API's `position` order. */
+export type ReportReason = {
+  code: string;
+  label_vi: string;
+  label_en: string;
+  detail_hint_vi: string | null;
+  detail_hint_en: string | null;
+  applies_to: ReasonAppliesTo;
+  note_required: boolean;
+  refundable: boolean;
+  active: boolean;
+  position: number;
+  updated_at: string;
+  updated_by_user: UserRef | null;
+};
+
+/** The body of "thêm lý do" (`createReasonSchema`); a hint left empty is `null`. */
+export type ReasonFields = {
+  label_vi: string;
+  label_en: string;
+  detail_hint_vi: string | null;
+  detail_hint_en: string | null;
+  applies_to: ReasonAppliesTo;
+  note_required: boolean;
+  refundable: boolean;
+  position: number;
+};
 
 export type ReportFilters = { status: string; reason: string; source: string };
 const PAGE_SIZE = 20;
@@ -84,6 +112,15 @@ export function resolveReport(api: ApiClient, id: string, status: ResolveStatus,
 
 export function listReportReasons(api: ApiClient) {
   return api.get<{ items: ReportReason[] }>('/v1/admin/practice/report-reasons');
+}
+
+export function createReportReason(api: ApiClient, body: ReasonFields & { code: string }, key: string) {
+  return api.post<ReportReason>('/v1/admin/practice/report-reasons', body, { idempotencyKey: key });
+}
+
+/** PATCH is idempotent by itself (the same value twice gives the same row), so it carries no key. */
+export function updateReportReason(api: ApiClient, code: string, body: Partial<ReasonFields> & { active?: boolean }) {
+  return api.patch<ReportReason>(`/v1/admin/practice/report-reasons/${encodeURIComponent(code)}`, body);
 }
 
 /** The word the question was about: the snapshot has no field of its own, `correct` is the answer key's reveal. */
