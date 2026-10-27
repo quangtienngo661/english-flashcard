@@ -244,9 +244,12 @@ export class AdminCatalogQueries {
     }), (row) => ({ lemma: row.entry.lemma, pos: row.entry.pos as Cursor['pos'], id: row.id }), (row) => {
       const selected = selectedSense(row, query);
       if (!selected) return null;
-      // Preserve the existing list interface: missing is present only for unpublishable.
-      const { missing, ...view } = selected;
-      return query.status === 'unpublishable' ? { ...view, missing } : view;
+      // Every filter lists what an open draft still lacks; published, rejected and revision-less rows list [].
+      const revision = row.revisions[0];
+      const missing = revision && ['draft', 'reviewed'].includes(revision.status)
+        ? publishViolations(revision, row.entry.levels.length > 0) : [];
+      const { missing: _unused, ...view } = selected;
+      return { ...view, missing };
     });
   }
 
