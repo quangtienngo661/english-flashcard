@@ -1,5 +1,6 @@
 import { act, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { useState } from 'react';
 import { createMemoryRouter, RouterProvider, useLocation } from 'react-router';
 import { describe, expect, it } from 'vitest';
 import { useUrlFilters } from './use-url-filters';
@@ -77,5 +78,22 @@ describe('useUrlFilters', () => {
     mount('/reports');
     await set({ status: 'foo' });
     expect(url()).toBe('/reports');
+  });
+
+  it('a rerender with the same URL returns the same `values` and `set` references', async () => {
+    const seen: Array<{ values: unknown; set: unknown }> = [];
+    function Stable() {
+      const [filters, setFilters] = useUrlFilters<{ status: string; source: string }>(SPEC);
+      const [n, setN] = useState(0);
+      seen.push({ values: filters, set: setFilters });
+      return <button onClick={() => setN(n + 1)}>rerender {n}</button>;
+    }
+    const router = createMemoryRouter([{ path: '/reports', element: <Stable /> }], { initialEntries: ['/reports?status=resolved'] });
+    render(<RouterProvider router={router} />);
+    await userEvent.click(screen.getByText('rerender 0'));
+    await screen.findByText('rerender 1');
+    expect(seen.length).toBeGreaterThanOrEqual(2);
+    expect(seen.at(-1)!.values).toBe(seen[0]!.values);
+    expect(seen.at(-1)!.set).toBe(seen[0]!.set);
   });
 });

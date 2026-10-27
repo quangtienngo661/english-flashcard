@@ -95,7 +95,8 @@ export function useDirtyForm(
 
 /**
  * The handler for a form dialog's [Hủy], ✕ and Esc: clean → `close()`; dirty → "Bỏ thay đổi?" first, then `release()` and
- * `close()`. The dialog's form also counts as dirty for leaving the page.
+ * `close()`. The dialog's form also counts as dirty for leaving the page. The form's state must live inside the dialog
+ * content (so it is unmounted on close), or `close()` must reset it: otherwise a discarded edit comes back when the dialog reopens.
  */
 export function useDialogDirtyClose(isDirty: boolean, close: () => void): () => void {
   const { askDiscard, dropDiscard } = useDirtyForms();
