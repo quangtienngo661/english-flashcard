@@ -191,6 +191,15 @@
   --animate-feedback-in: feedback-in 160ms var(--ease-enter) both;
   --animate-wiggle-soft: wiggle-soft var(--motion-wiggle) var(--ease-standard);
   --animate-pop-in: pop-in 180ms var(--ease-spring) both;
+  /* End-of-session summary: its blocks rise one after another, 50ms apart (motion audit #6). */
+  --animate-summary-in: summary-in 250ms var(--ease-enter) both;
+
+  @keyframes summary-in {
+    from {
+      opacity: 0;
+      transform: translateY(0.5rem);
+    }
+  }
 
   @keyframes card-rise {
     from {
@@ -252,6 +261,33 @@
 
 /* A popover opened above its trigger slides up instead of down (from apps/admin). */
 @custom-variant placement-top (&[data-placement='top']);
+
+/* A closing toast fades down (motion audit #5). React Aria removes a toast at once, so app-ui/Toast.tsx closes it inside a view
+   transition and these rules animate only the toasts. The page is left out of the transition (no root snapshot) and clicks pass through
+   the overlay, so it stays live and clickable meanwhile. The app has no other view transition; one added later must name its own parts. */
+:root {
+  view-transition-name: none;
+}
+
+::view-transition {
+  pointer-events: none;
+}
+
+::view-transition-group(.toast) {
+  animation-duration: var(--transition-duration-fast);
+  animation-timing-function: var(--ease-standard);
+}
+
+::view-transition-old(.toast):only-child {
+  animation: toast-out var(--transition-duration-fast) var(--ease-exit) forwards;
+}
+
+@keyframes toast-out {
+  to {
+    opacity: 0;
+    transform: translateY(0.5rem);
+  }
+}
 
 /* A pressed button sinks onto its ledge (from apps/admin); applied only under motion-safe. */
 @utility pressed {

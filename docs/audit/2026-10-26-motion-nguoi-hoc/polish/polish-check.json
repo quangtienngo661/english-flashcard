@@ -1,0 +1,66 @@
+{
+  "deckTotal": 12,
+  "barBefore": {
+    "transform": "matrix(1, 0, 0, 1, -329.36, 0)",
+    "width": 358,
+    "prop": "transform, translate, scale, rotate",
+    "dur": "0.2s"
+  },
+  "barMid": {
+    "transform": "matrix(1, 0, 0, 1, -326.126, 0)",
+    "width": 358,
+    "prop": "transform, translate, scale, rotate",
+    "dur": "0.2s"
+  },
+  "barAfter": {
+    "transform": "matrix(1, 0, 0, 1, -297.14, 0)",
+    "width": 358,
+    "prop": "transform, translate, scale, rotate",
+    "dur": "0.2s"
+  },
+  "summary": [
+    {
+      "tag": "DIV",
+      "anim": "summary-in",
+      "delay": "0s",
+      "dur": "0.25s",
+      "opacity": "0.958429"
+    },
+    {
+      "tag": "DIV",
+      "anim": "none",
+      "delay": "0s",
+      "dur": "0s",
+      "opacity": "1"
+    },
+    {
+      "tag": "A",
+      "anim": "summary-in",
+      "delay": "0.15s",
+      "dur": "0.25s",
+      "opacity": "0"
+    }
+  ],
+  "vtAfterAdd": 0,
+  "vt": {
+    "count": 1,
+    "anims": [
+      {
+        "name": "toast-out",
+        "pseudo": "::view-transition-old(_mpy7vqnunal)",
+        "dur": 150
+      }
+    ],
+    "hit": {
+      "el": "FORM#.mx-auto flex max-w-3xl items-c",
+      "pe": "none",
+      "rootName": "none"
+    },
+    "clicks": [
+      "BUTTON:Đóng",
+      "H1:Nhóm của bạn"
+    ]
+  },
+  "toastLeft": 0,
+  "cleanup": 204
+}
