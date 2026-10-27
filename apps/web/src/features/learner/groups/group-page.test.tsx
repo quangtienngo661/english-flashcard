@@ -51,6 +51,9 @@ beforeEach(() => {
   search = new URLSearchParams({ id: G });
 });
 
+/** The flip button of "Xem trước thẻ" (the word rows have buttons named after the word too). */
+const previewCard = async (name: RegExp) => within(await screen.findByTestId('preview-slide')).findByRole('button', { name });
+
 describe('GroupPage (K/11–K/13)', () => {
   it('group page shows [Add word] and opens the sheet locked to this deck', async () => {
     renderApp(<GroupPage />, { routes: routes(), locale: 'en' });
@@ -199,6 +202,56 @@ describe('GroupPage (K/11–K/13)', () => {
     expect(screen.queryByText('Nhóm chưa có từ nào.')).not.toBeInTheDocument();
     await userEvent.click(retry);
     expect(await screen.findByRole('list', { name: /Toàn bộ 4 từ/ }, { timeout: 5000 })).toBeInTheDocument();
+  });
+
+  it('preview (owner 27/10/2026): the card turns over in 3D; the face turned away is inert and aria-hidden', async () => {
+    renderApp(<GroupPage />, { routes: routes() });
+    const card = await previewCard(/deploy/);
+    const preview = card.closest('[data-flipped]')!;
+    expect(preview).toHaveAttribute('data-flipped', 'false');
+    expect(preview.querySelector('[data-face="back"]')).toHaveAttribute('aria-hidden', 'true');
+    await userEvent.click(card);
+    expect(preview).toHaveAttribute('data-flipped', 'true');
+    expect(preview.querySelector('[data-face="front"]')).toHaveAttribute('aria-hidden', 'true');
+    expect(preview.querySelector('[data-face="back"]')).not.toHaveAttribute('aria-hidden');
+  });
+
+  it('preview: [Thẻ trước] is off on the first card; [Thẻ sau] then [Thẻ trước] go forward and back, each card face up', async () => {
+    renderApp(<GroupPage />, { routes: routes() });
+    const prev = await screen.findByRole('button', { name: /Thẻ trước/ });
+    expect(prev).toBeDisabled();
+    await userEvent.click(within(screen.getByTestId('preview-slide')).getByRole('button', { name: /deploy/ }));
+    await userEvent.click(screen.getByRole('button', { name: /Thẻ sau/ }));
+    const preview = within(screen.getByTestId('preview-slide')).getByRole('button', { name: /release/ }).closest('[data-flipped]')!;
+    expect(preview).toHaveAttribute('data-flipped', 'false');
+    expect(prev).toBeEnabled();
+    await userEvent.click(prev);
+    expect(within(screen.getByTestId('preview-slide')).getByRole('button', { name: /deploy/ })).toBeInTheDocument();
+    expect(prev).toBeDisabled();
+  });
+
+  it('preview with motion: [Thẻ sau] slides the card out to the left and the next one in from the right; [Thẻ trước] the other way', async () => {
+    const media = window.matchMedia;
+    window.matchMedia = ((query: string) => ({ matches: query.includes('no-preference'), media: query, addEventListener: () => {}, removeEventListener: () => {} })) as unknown as typeof window.matchMedia;
+    try {
+      renderApp(<GroupPage />, { routes: routes() });
+      const slide = () => screen.getByTestId('preview-slide');
+      await previewCard(/deploy/);
+      await userEvent.click(screen.getByRole('button', { name: /Thẻ sau/ }));
+      expect(slide()).toHaveClass('motion-safe:animate-slide-out-left');
+      expect(within(screen.getByTestId('preview-slide')).getByRole('button', { name: /deploy/ })).toBeInTheDocument();
+      fireEvent.animationEnd(slide());
+      expect(within(screen.getByTestId('preview-slide')).getByRole('button', { name: /release/ })).toBeInTheDocument();
+      expect(slide()).toHaveClass('motion-safe:animate-slide-in-right');
+      fireEvent.animationEnd(slide());
+      await userEvent.click(screen.getByRole('button', { name: /Thẻ trước/ }));
+      expect(slide()).toHaveClass('motion-safe:animate-slide-out-right');
+      fireEvent.animationEnd(slide());
+      expect(within(screen.getByTestId('preview-slide')).getByRole('button', { name: /deploy/ })).toBeInTheDocument();
+      expect(slide()).toHaveClass('motion-safe:animate-slide-in-left');
+    } finally {
+      window.matchMedia = media;
+    }
   });
 
   it('E17: an unknown or deleted deck shows not found with the way back', async () => {
