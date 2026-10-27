@@ -1,6 +1,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useMemo, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
+import { Link, useNavigate } from 'react-router';
 import { useTranslations } from 'use-intl';
 import { useFocusFirstError, violationsToFields } from '../../api/field-errors';
 import { ApiError } from '../../api/problem';
@@ -23,6 +24,7 @@ import {
   EXAMPLES_MAX, INSTRUCTIONS_FIELD, emptyExample, fieldOfViolation, fieldOrder, inputFieldId, isPromptForm, outputFieldId, sameForm, samePrompt,
   toForm, toPayload, type FormExample, type PromptForm,
 } from './prompt-form';
+import { StartRunFailure, useStartRun } from './EvalRunPanel';
 import { PromptHistory, RevisionContent } from './PromptHistory';
 import { TestRunPanel } from './TestRunPanel';
 import { useAiFormat } from './useAiFormat';
@@ -36,6 +38,8 @@ const VIOLATION_COPY: Record<string, string> = {
   'instructions: Must not be blank': 'blank',
 };
 const textBlock = 'whitespace-pre-wrap wrap-anywhere rounded-inner bg-canvas p-3 text-ui text-ink';
+const linkClass =
+  'inline-flex min-h-control w-fit items-center whitespace-nowrap rounded-control px-4 text-ui font-medium text-primary outline-none hover:bg-primary-soft focus-visible:ring-2 focus-visible:ring-primary pointer-coarse:min-h-control-touch';
 
 /** A/82 `/ai/prompts?op=` (admin only): the instructions and examples of one AI operation, its history and test runs. */
 export function AiPromptsPage() {
@@ -312,7 +316,66 @@ function PromptEditor({ op, prompt }: { op: AiOperation; prompt: PromptView }) {
       </div>
 
       <TestRunPanel op={op} prepare={prepare} showViolations={showViolations} />
+      <EvalDraftRun op={op} fingerprint={JSON.stringify(form)} prepare={prepare} showViolations={showViolations} />
       <PromptHistory op={op} onCopy={copy} />
     </div>
+  );
+}
+
+type EvalDraftRunProps = {
+  op: AiOperation;
+  /** The editor content: a change makes the next press a new run (a new `Idempotency-Key`). */
+  fingerprint: string;
+  prepare: () => { instructions: string; examples: PromptExample[] } | null;
+  showViolations: (violations: string[]) => string[];
+};
+
+/**
+ * [Chạy bộ ví dụ với bản này] (design §6.4, §6.5): runs the whole example set with the unsaved editor content, then opens that run on the
+ * Bộ ví dụ page. The editor's leave guard still applies: with unsaved text it asks "Rời trang?", and [Ở lại] keeps a link to the run.
+ */
+function EvalDraftRun({ op, fingerprint, prepare, showViolations }: EvalDraftRunProps) {
+  const t = useTranslations();
+  const navigate = useNavigate();
+  const [runHref, setRunHref] = useState<string | null>(null);
+  const [rest, setRest] = useState<string[] | undefined>(undefined);
+  const start = useStartRun(
+    op,
+    fingerprint,
+    (id) => {
+      const href = `/ai/eval/runs/${id}?op=${op}`;
+      setRunHref(href);
+      void navigate(href);
+    },
+    // A draft is checked by the save rules: its violations (`prompt.instructions: …`) go on the editor's boxes like a failed [Lưu].
+    (problem) => {
+      const draft = problem.slug === 'validation-failed'
+        ? (problem.violations ?? []).filter((v) => v.startsWith('prompt.')).map((v) => v.slice('prompt.'.length))
+        : [];
+      setRest(draft.length > 0 ? showViolations(draft) : undefined);
+    },
+  );
+
+  function run() {
+    const body = prepare();
+    if (!body) return;
+    setRunHref(null);
+    start.start(body);
+  }
+
+  return (
+    <section aria-labelledby="prompt-eval" className="flex flex-col gap-3 rounded-panel border-2 border-border p-4">
+      <h2 id="prompt-eval" className="text-lg font-bold text-ink">{t('ai.eval.fromPrompt.title')}</h2>
+      <p className="text-ui text-muted">{t('ai.eval.fromPrompt.note')}</p>
+      <Button variant="secondary" className="self-start" isPending={start.pending} isDisabled={start.waitSeconds > 0} onPress={run}>
+        {start.waitSeconds > 0 ? t('ai.eval.run.wait', { seconds: start.waitSeconds }) : t('ai.eval.fromPrompt.button')}
+      </Button>
+      {runHref && (
+        <Banner variant="info" action={<Link to={runHref} className={linkClass}>{t('ai.eval.fromPrompt.open')}</Link>}>
+          {t('ai.eval.fromPrompt.started')}
+        </Banner>
+      )}
+      <StartRunFailure action={start} rest={rest} />
+    </section>
   );
 }

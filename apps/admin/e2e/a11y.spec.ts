@@ -73,6 +73,8 @@ const mocks: Record<string, MockHandler> = {
     id: 'e1', operation: 'generate_cloze', input: { word: 'bank', part_of_speech: 'noun', level: 'A2', meaning_vi: 'bờ sông', context_label: null }, note: 'river',
     created_by: 'u9', created_by_user: { id: 'u9', email: 'lan@wordmet.com', system: false }, created_at: at, updated_at: at,
   }] } }),
+  'GET /v1/admin/ai/eval/runs': () => ({ json: { items: [evalRun], next_page_token: null } }),
+  'GET /v1/admin/ai/eval/runs/r1': () => ({ json: { ...evalRun, draft: null, heartbeat_at: null, items: [] } }),
   ...settingsMocks,
   ...contentMocks,
   'GET /v1/admin/transactions': () => ({ json: { items: [{
@@ -82,7 +84,12 @@ const mocks: Record<string, MockHandler> = {
   }], next_page_token: null } }),
 };
 
-const pages = ['/uploads', '/uploads/b1', '/uploads/new', '/publish-jobs', `/publish-jobs/${JOB}`, '/sources', '/sources/new', '/export', '/ai/costs', '/transactions', '/ai/status', '/ai/models', '/ai/models/new', '/ai/models/m1', '/ai/operations', '/ai/prompts', '/settings', '/settings?tab=entitlements', '/words', '/senses', `/senses/${SENSE_ID}`, '/topics'];
+const evalRun = {
+  id: 'r1', operation: 'generate_cloze', provider: 'openai', model: 'gpt-x', effort: null, thinking: null, max_output_tokens: null, prompt_revision: null,
+  status: 'finished', total: 1, done: 1, valid_count: 1, avg_latency_ms: 700, cost_usd: '0.01000000', cost_unknown_count: 0, error: null, started_by: 'u9',
+  started_by_user: { id: 'u9', email: 'lan@wordmet.com', system: false }, created_at: at, started_at: at, finished_at: at,
+};
+const pages = ['/uploads', '/uploads/b1', '/uploads/new', '/publish-jobs', `/publish-jobs/${JOB}`, '/sources', '/sources/new', '/export', '/ai/costs', '/transactions', '/ai/status', '/ai/models', '/ai/models/new', '/ai/models/m1', '/ai/operations', '/ai/prompts', '/ai/eval', '/ai/eval/new', '/ai/eval/runs/r1', '/settings', '/settings?tab=entitlements', '/words', '/senses', `/senses/${SENSE_ID}`, '/topics'];
 
 for (const [lang, copy] of [['vi', vi], ['en', en]] as const) {
   test.describe(`axe (${lang})`, () => {
@@ -125,6 +132,7 @@ for (const [lang, copy] of [['vi', vi], ['en', en]] as const) {
 async function waitForContent(page: Page, path: string) {
   if (path.endsWith('/new') || path === '/ai/models/m1') await expect(page.getByRole('dialog')).toBeVisible();
   else if (path === '/uploads/b1') await expect(page.getByTestId('detail-panel').getByRole('heading', { level: 2, name: batch.file_name })).toBeVisible();
+  else if (path === '/ai/eval/runs/r1') await expect(page.getByTestId('detail-panel').getByRole('heading', { level: 2 })).toContainText(/Lần chạy|Run/);
   else if (path.startsWith('/publish-jobs/')) await expect(page.getByTestId('detail-panel').getByRole('heading', { level: 2 })).toContainText('a3f2c1');
   else if (path === '/ai/operations') await expect(page.getByRole('group', { name: /lookup_word/ })).toBeVisible();
   else if (path === '/ai/prompts') {

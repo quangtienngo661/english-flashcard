@@ -390,6 +390,101 @@
         "note": "To go back to an old revision: open it, then save it again.",
         "empty": "No revisions yet."
       }
+    },
+    "eval": {
+      "operation": "Operation",
+      "examples": "Examples ({count}/100)",
+      "examplesHint": "Up to 100 examples per operation. Test runs on the Prompt page and [Run example set] use these examples.",
+      "add": "Add example",
+      "empty": "This operation has no examples yet.",
+      "emptyHint": "Add examples to test the prompt and run the example set.",
+      "examplesFailed": "Could not read the example set.",
+      "cols": {
+        "input": "Input",
+        "note": "Note",
+        "createdBy": "Added by",
+        "actions": "Actions"
+      },
+      "edit": "Edit",
+      "editFor": "Edit example {summary}",
+      "delete": "Delete",
+      "deleteFor": "Delete example {summary}",
+      "deleteTitle": "Delete this example?",
+      "deleteBody": "Runs so far keep their results. Later runs no longer include this example.",
+      "deleteConfirm": "Delete example",
+      "toast": {
+        "added": "Example added.",
+        "saved": "Example saved.",
+        "deleted": "Example deleted."
+      },
+      "form": {
+        "addTitle": "Add example",
+        "editTitle": "Edit example",
+        "fieldsHint": "Data the prompt receives: {fields}. Empty means null. Write a list as JSON, starting with [.",
+        "note": "Note",
+        "noteHint": "Optional, up to 500 characters.",
+        "submitAdd": "Add example",
+        "submitSave": "Save",
+        "tooMany": "Each operation can have at most 100 examples."
+      },
+      "run": {
+        "title": "Run example set",
+        "start": "Run example set",
+        "note": "Runs the whole set with the current prompt. Each run calls the AI for every example and uses one run.",
+        "quota": "{remaining}/{limit} runs left this hour (shared with Test run on the Prompt page)",
+        "quotaFailed": "Could not read the runs left.",
+        "needExample": "This operation’s example set has no examples. Add an example, then run again.",
+        "rateLimited": "All {limit} runs this hour are used. Try again at {time}.",
+        "wait": "Wait {seconds} s"
+      },
+      "runs": {
+        "title": "Runs",
+        "empty": "No runs yet.",
+        "emptyHint": "Press [Run example set] to run the whole set.",
+        "cols": {
+          "time": "Time",
+          "status": "Status",
+          "progress": "Progress",
+          "valid": "Valid",
+          "prompt": "Prompt revision",
+          "startedBy": "Started by"
+        }
+      },
+      "status": {
+        "queued": "Queued",
+        "running": "Running",
+        "finished": "Done",
+        "failed": "Failed"
+      },
+      "detail": {
+        "title": "Run {time}",
+        "progress": "Progress",
+        "valid": "Valid",
+        "avgLatency": "Average time",
+        "cost": "Cost",
+        "model": "Model",
+        "prompt": "Prompt revision",
+        "startedBy": "Started by",
+        "draft": "Draft",
+        "revision": "Revision {revision}",
+        "latency": "{ms} ms",
+        "costVnd": "{usd} · {vnd} at today’s rate",
+        "unknownCost": "{count} calls without a price",
+        "none": "—",
+        "queued": "Waiting for a worker to pick up the run. The page updates by itself.",
+        "queuedLong": "No worker has picked up this run yet.",
+        "running": "Running: {done}/{total} examples. The page updates by itself.",
+        "failed": "Failed: {error}",
+        "failedNoReason": "The run failed.",
+        "background": "Closing the page does not stop the run; open it again to see its progress."
+      },
+      "fromPrompt": {
+        "title": "Run example set",
+        "button": "Run example set with this version",
+        "note": "Runs the whole example set with the text being edited, without saving. The result opens on the Example sets page.",
+        "started": "The run has started.",
+        "open": "View run"
+      }
     }
   },
   "transactions": {

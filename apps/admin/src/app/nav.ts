@@ -36,7 +36,7 @@ export const NAV: NavEntry[] = [
   { group: 'ai', path: '/ai/models', labelKey: 'nav.aiModels', needs: ['settings.manage'], available: true },
   { group: 'ai', path: '/ai/operations', labelKey: 'nav.aiOperations', needs: ['settings.manage'], available: true },
   { group: 'ai', path: '/ai/prompts', labelKey: 'nav.aiPrompts', needs: ['settings.manage'], available: true },
-  { group: 'ai', path: '/ai/eval', labelKey: 'nav.aiEval', needs: ['settings.manage'], available: false },
+  { group: 'ai', path: '/ai/eval', labelKey: 'nav.aiEval', needs: ['settings.manage'], available: true },
   { group: 'ai', path: '/ai/costs', labelKey: 'nav.aiCosts', needs: ['settings.manage'], available: false, plannedStep: '6' },
   { group: 'ai', path: '/ai/calls', labelKey: 'nav.aiCalls', needs: ['settings.manage'], available: false },
   { group: 'system', path: '/settings', labelKey: 'nav.settings', needs: ['settings.manage'], available: true },

@@ -136,6 +136,55 @@ export type EvalExample = {
   updated_at: string;
 };
 
+export type EvalExampleBody = { operation: AiOperation; input: Record<string, unknown>; note: string | null };
+export type EvalExamplePatch = { input?: Record<string, unknown>; note?: string | null };
+
+export type EvalRunStatus = 'queued' | 'running' | 'finished' | 'failed';
+/** A run of the example set (`GET …/eval/runs`): the model choice and prompt revision are those stored when it was created. */
+export type EvalRun = {
+  id: string;
+  operation: AiOperation;
+  provider: AiProvider;
+  model: string;
+  effort: string | null;
+  thinking: string | null;
+  max_output_tokens: number | null;
+  /** `null`: the run used a draft from the Prompt page ("Bản nháp"). */
+  prompt_revision: number | null;
+  status: EvalRunStatus;
+  total: number;
+  done: number;
+  valid_count: number;
+  avg_latency_ms: number | null;
+  cost_usd: string | null;
+  cost_unknown_count: number;
+  error: string | null;
+  started_by: string;
+  started_by_user: UserRef;
+  created_at: string;
+  started_at: string | null;
+  finished_at: string | null;
+};
+export type EvalRunItem = {
+  example_id: string;
+  status: TestStatus | 'skipped';
+  reason: string | null;
+  output: Record<string, unknown> | null;
+  raw_output: string | null;
+  latency_ms: number | null;
+  cost_usd: string | null;
+};
+/** `GET …/eval/runs/{id}` adds the draft, the worker's heartbeat and the per-example results. */
+export type EvalRunDetail = EvalRun & {
+  draft: { instructions: string; examples: PromptExample[] } | null;
+  heartbeat_at: string | null;
+  items: EvalRunItem[];
+};
+export type StartRunBody = { operation: AiOperation; prompt: 'current' | { instructions: string; examples: PromptExample[] } };
+
+/** A run is over once it is `finished` or `failed`; the job rule of `usePollingStatus` does not know `finished`. */
+export const isRunDone = (status: string): boolean => status === 'finished' || status === 'failed';
+
 export const aiKeys = {
   all: ['ai'] as const,
   status: () => ['ai', 'status'] as const,
@@ -145,10 +194,13 @@ export const aiKeys = {
   revisions: (op: AiOperation) => ['ai', 'revisions', op] as const,
   testQuota: () => ['ai', 'test-quota'] as const,
   examples: (op: AiOperation) => ['ai', 'eval-examples', op] as const,
+  runs: (op: AiOperation) => ['ai', 'eval-runs', op] as const,
+  run: (id: string) => ['ai', 'eval-run', id] as const,
 };
 
 const base = '/v1/admin/ai';
 const REVISIONS_PAGE_SIZE = 20;
+const RUNS_PAGE_SIZE = 20;
 
 export const getStatus = (api: ApiClient) => api.get<AiStatus>(`${base}/status`);
 
@@ -175,6 +227,18 @@ export const getTestQuota = (api: ApiClient) => api.get<TestQuota>(`${base}/test
 
 export const listExamples = (api: ApiClient, operation: AiOperation) =>
   api.get<{ items: EvalExample[] }>(`${base}/eval/examples?operation=${operation}`);
+export const createExample = (api: ApiClient, body: EvalExampleBody) => api.post<EvalExample>(`${base}/eval/examples`, body);
+export const updateExample = (api: ApiClient, id: string, body: EvalExamplePatch) => api.patch<EvalExample>(`${base}/eval/examples/${id}`, body);
+export const deleteExample = (api: ApiClient, id: string) => api.delete<void>(`${base}/eval/examples/${id}`);
+/** Needs an `Idempotency-Key` (send through `useSubmitAction`); a replay returns the same run. Uses one `ai.test` slot. */
+export const startRun = (api: ApiClient, body: StartRunBody, idempotencyKey: string) =>
+  api.post<{ run_id: string; status: 'queued' }>(`${base}/eval/runs`, body, { idempotencyKey });
+export function listRuns(api: ApiClient, operation: AiOperation, pageToken?: string) {
+  const query = new URLSearchParams({ operation, page_size: String(RUNS_PAGE_SIZE) });
+  if (pageToken) query.set('page_token', pageToken);
+  return api.get<{ items: EvalRun[]; next_page_token: string | null }>(`${base}/eval/runs?${query.toString()}`);
+}
+export const getRun = (api: ApiClient, id: string) => api.get<EvalRunDetail>(`${base}/eval/runs/${id}`);
 
 /** The API lists operations a→z; the screens show them in the copy deck's order. */
 export function sortByOperationOrder<T extends { operation: AiOperation }>(rows: T[]): T[] {

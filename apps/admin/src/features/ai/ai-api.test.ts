@@ -1,8 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { ApiClient } from '../../api/client';
 import {
-  AI_OPERATION_ORDER, createModel, deleteModel, effortChoicesFor, getPrompt, getStatus, getTestQuota, listExamples, listModels, listOperations,
-  listRevisions, refreshModel, runTest, saveOperation, savePrompt, sortByOperationOrder, updateModel, type AiModel,
+  AI_OPERATION_ORDER, createExample, createModel, deleteExample, deleteModel, effortChoicesFor, getPrompt, getRun, getStatus, getTestQuota,
+  isRunDone, listExamples, listModels, listOperations, listRevisions, listRuns, refreshModel, runTest, saveOperation, savePrompt,
+  sortByOperationOrder, startRun, updateExample, updateModel, type AiModel,
 } from './ai-api';
 
 function fakeApi() {
@@ -51,6 +52,37 @@ describe('ai api paths and methods', () => {
     expect(mock.patch).toHaveBeenCalledWith('/v1/admin/ai/models/m1', { note: 'n' });
     expect(mock.delete).toHaveBeenCalledWith('/v1/admin/ai/models/m1');
     expect(mock.put.mock.calls).toEqual([['/v1/admin/ai/operations/lookup_word', op], ['/v1/admin/ai/prompts/lookup_word', prompt]]);
+  });
+});
+
+describe('eval example set and runs (A/83)', () => {
+  it('examples: list by operation, add, edit, delete', async () => {
+    const { api, mock } = fakeApi();
+    const body = { operation: 'lookup_word' as const, input: { word: 'go' }, note: null };
+    await createExample(api, body);
+    await updateExample(api, 'e1', { input: { word: 'went' }, note: 'past' });
+    await deleteExample(api, 'e1');
+    expect(mock.post).toHaveBeenCalledWith('/v1/admin/ai/eval/examples', body);
+    expect(mock.patch).toHaveBeenCalledWith('/v1/admin/ai/eval/examples/e1', { input: { word: 'went' }, note: 'past' });
+    expect(mock.delete).toHaveBeenCalledWith('/v1/admin/ai/eval/examples/e1');
+  });
+
+  it('a run is started with the Idempotency-Key; runs are paged by operation; one run by id', async () => {
+    const { api, mock } = fakeApi();
+    await startRun(api, { operation: 'generate_cloze', prompt: 'current' }, 'key-1');
+    expect(mock.post).toHaveBeenCalledWith('/v1/admin/ai/eval/runs', { operation: 'generate_cloze', prompt: 'current' }, { idempotencyKey: 'key-1' });
+    await listRuns(api, 'generate_cloze');
+    await listRuns(api, 'generate_cloze', 'tok+/=');
+    await getRun(api, 'r1');
+    expect(mock.get.mock.calls.map((c) => c[0])).toEqual([
+      '/v1/admin/ai/eval/runs?operation=generate_cloze&page_size=20',
+      '/v1/admin/ai/eval/runs?operation=generate_cloze&page_size=20&page_token=tok%2B%2F%3D',
+      '/v1/admin/ai/eval/runs/r1',
+    ]);
+  });
+
+  it('a run ends at finished or failed, not at queued or running', () => {
+    expect(['queued', 'running', 'finished', 'failed'].map(isRunDone)).toEqual([false, false, true, true]);
   });
 });
 

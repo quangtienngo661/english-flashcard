@@ -38,7 +38,7 @@ describe('nav', () => {
   it('24 items in 6 groups in menu order; available only for the screens that exist', () => {
     expect(NAV.map((n) => [n.group, n.path])).toEqual(MENU_ORDER);
     expect(new Set(NAV.map((n) => n.group)).size).toBe(6);
-    expect(NAV.filter((n) => n.available).map((n) => n.path)).toEqual(['/words', '/senses', '/topics', '/uploads', '/publish-jobs', '/export', '/sources', '/transactions', '/ai/status', '/ai/models', '/ai/operations', '/ai/prompts', '/settings', '/staff']);
+    expect(NAV.filter((n) => n.available).map((n) => n.path)).toEqual(['/words', '/senses', '/topics', '/uploads', '/publish-jobs', '/export', '/sources', '/transactions', '/ai/status', '/ai/models', '/ai/operations', '/ai/prompts', '/ai/eval', '/settings', '/staff']);
     expect(NAV.find((n) => n.path === '/ai/costs')?.plannedStep).toBe('6');
   });
 

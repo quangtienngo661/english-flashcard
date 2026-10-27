@@ -390,6 +390,101 @@
         "note": "Muốn quay về bản cũ: mở bản đó rồi lưu lại.",
         "empty": "Chưa có bản nào."
       }
+    },
+    "eval": {
+      "operation": "Thao tác",
+      "examples": "Ví dụ ({count}/100)",
+      "examplesHint": "Mỗi thao tác tối đa 100 ví dụ. Chạy thử ở Prompt và [Chạy bộ ví dụ] dùng các ví dụ này.",
+      "add": "Thêm ví dụ",
+      "empty": "Thao tác này chưa có ví dụ nào.",
+      "emptyHint": "Thêm ví dụ để chạy thử prompt và chạy bộ ví dụ.",
+      "examplesFailed": "Không đọc được bộ ví dụ.",
+      "cols": {
+        "input": "Đầu vào",
+        "note": "Ghi chú",
+        "createdBy": "Người thêm",
+        "actions": "Hành động"
+      },
+      "edit": "Sửa",
+      "editFor": "Sửa ví dụ {summary}",
+      "delete": "Xóa",
+      "deleteFor": "Xóa ví dụ {summary}",
+      "deleteTitle": "Xóa ví dụ này?",
+      "deleteBody": "Lần chạy đã có vẫn giữ kết quả. Lần chạy sau không còn ví dụ này.",
+      "deleteConfirm": "Xóa ví dụ",
+      "toast": {
+        "added": "Đã thêm ví dụ.",
+        "saved": "Đã lưu ví dụ.",
+        "deleted": "Đã xóa ví dụ."
+      },
+      "form": {
+        "addTitle": "Thêm ví dụ",
+        "editTitle": "Sửa ví dụ",
+        "fieldsHint": "Dữ liệu prompt nhận: {fields}. Để trống là null. Danh sách viết dạng JSON, bắt đầu bằng dấu [.",
+        "note": "Ghi chú",
+        "noteHint": "Không bắt buộc, tối đa 500 ký tự.",
+        "submitAdd": "Thêm ví dụ",
+        "submitSave": "Lưu",
+        "tooMany": "Mỗi thao tác tối đa 100 ví dụ."
+      },
+      "run": {
+        "title": "Chạy bộ ví dụ",
+        "start": "Chạy bộ ví dụ",
+        "note": "Chạy cả bộ với prompt hiện tại. Mỗi lần chạy gọi AI thật cho từng ví dụ và tốn một lượt.",
+        "quota": "Còn {remaining}/{limit} lần chạy trong giờ này (dùng chung với Chạy thử ở Prompt)",
+        "quotaFailed": "Không đọc được số lần chạy còn lại.",
+        "needExample": "Bộ ví dụ của thao tác này chưa có ví dụ nào. Thêm ví dụ rồi chạy lại.",
+        "rateLimited": "Đã dùng hết {limit} lần chạy trong giờ này. Thử lại lúc {time}.",
+        "wait": "Chờ {seconds} giây"
+      },
+      "runs": {
+        "title": "Lần chạy",
+        "empty": "Chưa có lần chạy nào.",
+        "emptyHint": "Bấm [Chạy bộ ví dụ] để chạy cả bộ.",
+        "cols": {
+          "time": "Thời điểm",
+          "status": "Trạng thái",
+          "progress": "Tiến độ",
+          "valid": "Hợp lệ",
+          "prompt": "Bản prompt",
+          "startedBy": "Người chạy"
+        }
+      },
+      "status": {
+        "queued": "Đang chờ",
+        "running": "Đang chạy",
+        "finished": "Xong",
+        "failed": "Lỗi"
+      },
+      "detail": {
+        "title": "Lần chạy {time}",
+        "progress": "Tiến độ",
+        "valid": "Hợp lệ",
+        "avgLatency": "Thời gian trung bình",
+        "cost": "Chi phí",
+        "model": "Model",
+        "prompt": "Bản prompt",
+        "startedBy": "Người chạy",
+        "draft": "Bản nháp",
+        "revision": "Bản số {revision}",
+        "latency": "{ms} ms",
+        "costVnd": "{usd} · {vnd} theo tỷ giá hôm nay",
+        "unknownCost": "{count} lời gọi chưa có giá",
+        "none": "—",
+        "queued": "Đang chờ worker nhận lần chạy. Trang tự cập nhật.",
+        "queuedLong": "Chưa có worker nhận lần chạy này.",
+        "running": "Đang chạy: {done}/{total} ví dụ. Trang tự cập nhật.",
+        "failed": "Lỗi: {error}",
+        "failedNoReason": "Lần chạy bị lỗi.",
+        "background": "Đóng trang thì lần chạy vẫn chạy tiếp; mở lại để xem tiến độ."
+      },
+      "fromPrompt": {
+        "title": "Chạy bộ ví dụ",
+        "button": "Chạy bộ ví dụ với bản này",
+        "note": "Chạy cả Bộ ví dụ với bản đang sửa, chưa cần lưu. Kết quả mở ở màn Bộ ví dụ.",
+        "started": "Đã bắt đầu lần chạy.",
+        "open": "Xem lần chạy"
+      }
     }
   },
   "transactions": {

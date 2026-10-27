@@ -316,6 +316,33 @@ test('Prompt at 390 fits the window with 8.000-character instructions', async ({
   await expectNoHorizontalScroll(page);
 });
 
+test('Bộ ví dụ at 390 fits the window with a long example input, a long note and an open run', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  const lan = { id: 'u9', email: `${'a'.repeat(120)}@example.com`, system: false };
+  const run = {
+    id: 'r1', operation: 'generate_cloze', provider: 'openai', model: 'm'.repeat(100), effort: null, thinking: null, max_output_tokens: null, prompt_revision: 3,
+    status: 'failed', total: 100, done: 37, valid_count: 30, avg_latency_ms: 812, cost_usd: '12.34560000', cost_unknown_count: 3, error: 'e'.repeat(300),
+    started_by: 'u9', started_by_user: lan, created_at: at, started_at: at, finished_at: at,
+  };
+  await signedInAs(page, 'admin', {
+    ...settingsMocks,
+    'GET /v1/admin/ai/operations': () => ({ json: { items: [{ operation: 'generate_cloze', model: null, effort: null, thinking: null, max_output_tokens: null, version: 1, input_fields: ['word', 'meaning_vi'], estimate: null }] } }),
+    'GET /v1/admin/ai/test-quota': () => ({ json: { limit: 20, remaining: 17, resets_at: at } }),
+    'GET /v1/admin/ai/eval/examples': () => ({ json: { items: [{
+      id: 'e1', operation: 'generate_cloze', input: { word: 'w'.repeat(200), meaning_vi: 'nghĩa '.repeat(60) }, note: 'n'.repeat(500),
+      created_by: 'u9', created_by_user: lan, created_at: at, updated_at: at,
+    }] } }),
+    'GET /v1/admin/ai/eval/runs': () => ({ json: { items: [run], next_page_token: null } }),
+    'GET /v1/admin/ai/eval/runs/r1': () => ({ json: { ...run, draft: null, heartbeat_at: null, items: [] } }),
+  });
+  await page.goto('/ai/eval');
+  await expect(page.getByText('w'.repeat(200), { exact: false }).first()).toBeAttached();
+  await expectNoHorizontalScroll(page);
+  await page.goto('/ai/eval/runs/r1');
+  await expect(page.getByTestId('detail-panel').getByText('e'.repeat(300), { exact: false })).toBeVisible();
+  await expectNoHorizontalScroll(page);
+});
+
 test('Cài đặt hệ thống at 390: every tab and the history dialog fit the window (Review Focus 4)', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await signedInAs(page, 'admin', settingsMocks);

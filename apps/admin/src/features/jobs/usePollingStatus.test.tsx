@@ -88,6 +88,26 @@ describe('usePollingStatus', () => {
   });
 });
 
+describe('usePollingStatus with its own end', () => {
+  it('A/83: an eval run (queued → running → finished) polls every 2 s and stops at finished, which the job rule does not know', async () => {
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const wrapper = ({ children }: { children: ReactNode }) => <QueryClientProvider client={client}>{children}</QueryClientProvider>;
+    const sequence = ['queued', 'running', 'finished'];
+    let calls = 0;
+    const fetcher = vi.fn(async () => ({ status: sequence[Math.min(calls++, sequence.length - 1)] }));
+    const done = (s: string) => s === 'finished' || s === 'failed';
+    const hook = renderHook(() => usePollingStatus(['run', 'x'], fetcher, done), { wrapper });
+    await tick(0);
+    await tick(2000);
+    await tick(2000);
+    await tick(0);
+    await vi.waitFor(() => expect(hook.result.current.data?.status).toBe('finished'));
+    expect(fetcher).toHaveBeenCalledTimes(3);
+    await tick(10_000);
+    expect(fetcher).toHaveBeenCalledTimes(3);
+  });
+});
+
 describe('useQueuedTooLong', () => {
   const created = '2026-10-14T10:00:00.000Z';
   const at = (seconds: number) => Date.parse(created) + seconds * 1000;
