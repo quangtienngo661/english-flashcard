@@ -131,6 +131,11 @@
     "discard": "Bỏ thay đổi",
     "keepEditing": "Tiếp tục sửa"
   },
+  "draft": {
+    "message": "Bạn có thay đổi chưa lưu từ lần trước.",
+    "restore": "Khôi phục",
+    "discard": "Bỏ"
+  },
   "offline": {
     "message": "Không kết nối được máy chủ"
   },

@@ -131,6 +131,11 @@
     "discard": "Discard",
     "keepEditing": "Keep editing"
   },
+  "draft": {
+    "message": "You have unsaved changes from last time.",
+    "restore": "Restore",
+    "discard": "Discard"
+  },
   "offline": {
     "message": "Cannot reach the server"
   },
