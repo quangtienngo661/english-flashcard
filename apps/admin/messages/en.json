@@ -807,5 +807,38 @@
       "unknownUser": "deleted user",
       "lastOnly": "Only the latest is kept, no history."
     }
+  },
+  "topics": {
+    "intro": "Rename, archive and use topics again. Topics are never deleted.",
+    "cols": {
+      "code": "Code",
+      "vi": "Vietnamese name",
+      "en": "English name",
+      "state": "Status"
+    },
+    "active": "In use",
+    "archived": "Archived",
+    "rename": "Rename",
+    "renameFor": "Rename {code}",
+    "archive": "Archive",
+    "archiveFor": "Archive {code}",
+    "restore": "Use again",
+    "restoreFor": "Use {code} again",
+    "addTitle": "Add a topic",
+    "renameTitle": "Rename topic “{code}”",
+    "add": "Add",
+    "save": "Save",
+    "code": "Code",
+    "codeHint": "Lower-case letters, digits and hyphens, e.g. food, daily-life. It cannot change later.",
+    "codeRule": "A code has only lower-case a–z, digits and hyphens.",
+    "exists": "A topic with this code exists. Pick another code.",
+    "nameVi": "Vietnamese name",
+    "nameEn": "English name",
+    "created": "Added topic “{code}”",
+    "renamed": "Renamed “{code}”",
+    "archivedToast": "Archived “{code}”",
+    "restoredToast": "“{code}” is in use again",
+    "empty": "No topics yet.",
+    "footer": "{count, plural, one {# topic} other {# topics}}"
   }
 }

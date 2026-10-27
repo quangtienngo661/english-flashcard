@@ -12,6 +12,7 @@ import { SensesPage } from '../features/senses/SensesPage';
 import { SettingsPage } from '../features/settings/SettingsPage';
 import { SourcesPage } from '../features/sources/SourcesPage';
 import { StaffPage } from '../features/staff/StaffPage';
+import { TopicsPage } from '../features/topics/TopicsPage';
 import { TransactionsPage } from '../features/transactions/TransactionsPage';
 import { WordsPage } from '../features/words/WordsPage';
 import { homePath, NAV } from './nav';
@@ -38,6 +39,7 @@ export const appRoutes: RouteObject[] = createRoutesFromElements(
         <Route path="words" element={<WordsPage />} />
         <Route path="senses" element={<SensesPage />} />
         <Route path="senses/:id" element={<SenseDetail />} />
+        <Route path="topics" element={<TopicsPage />} />
         <Route path="uploads" element={<UploadsPage />}>
           <Route path="new" element={null} />
           <Route path=":id" element={null} />

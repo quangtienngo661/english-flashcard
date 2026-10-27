@@ -807,5 +807,38 @@
       "unknownUser": "người dùng đã xóa",
       "lastOnly": "Chỉ lưu lần gần nhất, không có lịch sử."
     }
+  },
+  "topics": {
+    "intro": "Sửa tên, lưu trữ và dùng lại chủ đề. Không xóa chủ đề.",
+    "cols": {
+      "code": "Mã",
+      "vi": "Tên tiếng Việt",
+      "en": "Tên tiếng Anh",
+      "state": "Trạng thái"
+    },
+    "active": "Đang dùng",
+    "archived": "Đã lưu trữ",
+    "rename": "Sửa tên",
+    "renameFor": "Sửa tên {code}",
+    "archive": "Lưu trữ",
+    "archiveFor": "Lưu trữ {code}",
+    "restore": "Dùng lại",
+    "restoreFor": "Dùng lại {code}",
+    "addTitle": "Thêm chủ đề",
+    "renameTitle": "Sửa tên chủ đề “{code}”",
+    "add": "Thêm",
+    "save": "Lưu",
+    "code": "Mã",
+    "codeHint": "Chữ thường, số và dấu gạch ngang, ví dụ: food, daily-life. Không đổi được sau khi tạo.",
+    "codeRule": "Mã chỉ gồm chữ thường a–z, số và dấu gạch ngang.",
+    "exists": "Đã có chủ đề mã này. Chọn mã khác.",
+    "nameVi": "Tên tiếng Việt",
+    "nameEn": "Tên tiếng Anh",
+    "created": "Đã thêm chủ đề “{code}”",
+    "renamed": "Đã đổi tên “{code}”",
+    "archivedToast": "Đã lưu trữ “{code}”",
+    "restoredToast": "Đã dùng lại “{code}”",
+    "empty": "Chưa có chủ đề nào.",
+    "footer": "{count} chủ đề"
   }
 }

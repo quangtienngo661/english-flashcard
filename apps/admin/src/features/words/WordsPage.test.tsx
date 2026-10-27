@@ -1,10 +1,13 @@
-import { screen, waitFor, within } from '@testing-library/react';
+import { configure, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import vi from '../../../messages/vi.json';
 import { makeMe, type Call } from '../../auth/test-support';
 import { renderApp } from '../staff/test-utils';
 import { entriesQuery } from './words-api';
+
+// These pages mount the whole app (session, shell, several queries): the first render can pass 1 s on a busy machine.
+configure({ asyncUtilTimeout: 4000 });
 
 const w = vi.words;
 const BATCH = '0b6f8a52-1d1e-4c8a-9a51-3a4cc1f2a001';

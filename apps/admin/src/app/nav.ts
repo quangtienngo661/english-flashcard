@@ -20,7 +20,7 @@ export const NAV: NavEntry[] = [
   { group: 'overview', path: '/dashboard', labelKey: 'nav.dashboard', needs: [], available: false },
   { group: 'content', path: '/words', labelKey: 'nav.words', needs: ['content.edit'], available: true },
   { group: 'content', path: '/senses', labelKey: 'nav.senses', needs: ['content.edit'], available: true },
-  { group: 'content', path: '/topics', labelKey: 'nav.topics', needs: ['taxonomy.manage'], available: false, etaNote: 'apiReady' },
+  { group: 'content', path: '/topics', labelKey: 'nav.topics', needs: ['taxonomy.manage'], available: true },
   { group: 'content', path: '/uploads', labelKey: 'nav.uploads', needs: ['content.import'], available: true },
   { group: 'content', path: '/publish-jobs', labelKey: 'nav.publishJobs', needs: ['content.publish'], available: true },
   { group: 'content', path: '/export', labelKey: 'nav.export', needs: ['content.edit'], available: true },

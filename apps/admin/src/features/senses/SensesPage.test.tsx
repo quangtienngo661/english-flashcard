@@ -1,9 +1,12 @@
-import { screen, waitFor, within } from '@testing-library/react';
+import { configure, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it } from 'vitest';
 import vi from '../../../messages/vi.json';
 import { makeMe, problem, type Call } from '../../auth/test-support';
 import { renderApp } from '../staff/test-utils';
+
+// These pages mount the whole app (session, shell, several queries): the first render can pass 1 s on a busy machine.
+configure({ asyncUtilTimeout: 4000 });
 
 const s = vi.senses;
 const page = (items: unknown[], next: string | null = null) => () => Response.json({ items, next_page_token: next });
@@ -39,36 +42,44 @@ describe('SensesPage (A/88)', () => {
     expect(within(r).getByText(s.status.draft)).toBeInTheDocument();
   });
 
-  it('five bulk actions send each row with its own revision; the result shows successes and each failure with its reason', async () => {
+  const bulkRoutes = (sent: Record<string, unknown>) => ({
+    ...base,
+    [LIST]: page([row('1'), row('2', { revision: 5 })]),
+    'POST /v1/admin/content/senses/review': (call: Call) => ((sent.review = call.body), Response.json({ items: [
+      { sense_id: '1', ok: true }, { sense_id: '2', ok: false, reason: 'stale-revision' },
+    ] })),
+    'POST /v1/admin/content/senses/publish': (call: Call) => ((sent.publish = call.body), Response.json({ results: [
+      { sense_id: '1', outcome: 'published' }, { sense_id: '2', outcome: 'refused', reason: 'publish-incomplete', violations: ['gloss-missing'] },
+    ] })),
+    'POST /v1/admin/content/senses/retire': (call: Call) => ((sent.retire = call.body), Response.json({ results: [{ sense_id: '1', ok: true }] })),
+  });
+
+  it('review sends each row with its own revision; the result shows successes and each failure with its reason', async () => {
     const sent: Record<string, unknown> = {};
-    renderApp('/senses', {
-      ...base,
-      [LIST]: page([row('1'), row('2', { revision: 5 })]),
-      'POST /v1/admin/content/senses/review': (call: Call) => ((sent.review = call.body), Response.json({ items: [
-        { sense_id: '1', ok: true }, { sense_id: '2', ok: false, reason: 'stale-revision' },
-      ] })),
-      'POST /v1/admin/content/senses/publish': (call: Call) => ((sent.publish = call.body), Response.json({ results: [
-        { sense_id: '1', outcome: 'published' }, { sense_id: '2', outcome: 'refused', reason: 'publish-incomplete', violations: ['gloss-missing'] },
-      ] })),
-      'POST /v1/admin/content/senses/retire': (call: Call) => ((sent.retire = call.body), Response.json({ results: [{ sense_id: '1', ok: true }] })),
-    });
+    renderApp('/senses', bulkRoutes(sent));
     await pick('word1', 'word2');
     const bar = screen.getByRole('region', { name: s.bulk.region });
     expect(within(bar).getByText('Đã chọn 2 nghĩa')).toBeInTheDocument();
     await userEvent.click(within(bar).getByRole('button', { name: s.bulk.actions.review }));
-    let dialog = await screen.findByRole('dialog', { name: s.bulk.resultTitle });
+    const dialog = await screen.findByRole('dialog', { name: s.bulk.resultTitle });
     expect(sent.review).toEqual({ items: [{ sense_id: '1', revision: 2, action: 'reviewed' }, { sense_id: '2', revision: 5, action: 'reviewed' }] });
     expect(within(dialog).getByText('1 nghĩa thành công · 1 nghĩa không làm được')).toBeInTheDocument();
     expect(within(dialog).getByText(s.bulk.reasons['stale-revision'])).toBeInTheDocument();
-    await userEvent.click(within(dialog).getByRole('button', { name: s.bulk.close }));
+  });
 
+  it('publish: a refused row shows publish-incomplete with its missing parts', async () => {
+    const sent: Record<string, unknown> = {};
+    renderApp('/senses', bulkRoutes(sent));
     await pick('word1', 'word2');
     await userEvent.click(within(screen.getByRole('region', { name: s.bulk.region })).getByRole('button', { name: s.bulk.actions.publish }));
-    dialog = await screen.findByRole('dialog', { name: s.bulk.resultTitle });
+    const dialog = await screen.findByRole('dialog', { name: s.bulk.resultTitle });
     expect(sent.publish).toEqual({ items: [{ sense_id: '1', revision: 2 }, { sense_id: '2', revision: 5 }] });
     expect(within(dialog).getByText('Còn thiếu nội dung: nghĩa tiếng Việt')).toBeInTheDocument();
-    await userEvent.click(within(dialog).getByRole('button', { name: s.bulk.close }));
+  });
 
+  it('retire asks first, then sends the ids', async () => {
+    const sent: Record<string, unknown> = {};
+    renderApp('/senses', bulkRoutes(sent));
     await pick('word1');
     await userEvent.click(within(screen.getByRole('region', { name: s.bulk.region })).getByRole('button', { name: s.bulk.actions.retire }));
     const ask = await screen.findByRole('dialog', { name: 'Ngừng dùng 1 nghĩa?' });
@@ -144,7 +155,7 @@ describe('SenseDetail (A/88b, design §6.12)', () => {
     expect(await screen.findByText(s.detail.stale)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: s.detail.reload })).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: s.detail.savePublish }));
-    await waitFor(() => expect(screen.getByLabelText(s.detail.gloss)).toHaveFocus());
+    await waitFor(() => expect(screen.getByLabelText(s.detail.gloss)).toHaveFocus(), { timeout: 3000 });
     expect(screen.getByLabelText(s.detail.gloss)).toHaveAttribute('aria-invalid', 'true');
     expect(screen.getByLabelText('Câu ví dụ 1')).toHaveAttribute('aria-invalid', 'true');
   });

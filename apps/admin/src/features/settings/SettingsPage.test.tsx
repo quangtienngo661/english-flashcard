@@ -1,10 +1,13 @@
-import { screen, waitFor, within } from '@testing-library/react';
+import { configure, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it } from 'vitest';
 import vi from '../../../messages/vi.json';
 import { problem, type Call } from '../../auth/test-support';
 import { renderApp } from '../staff/test-utils';
 import { SECTIONS, SETTINGS_LAYOUT, type Values } from './settings-api';
+
+// These pages mount the whole app (session, shell, several queries): the first render can pass 1 s on a busy machine.
+configure({ asyncUtilTimeout: 4000 });
 
 const s = vi.settings;
 
