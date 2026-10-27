@@ -219,6 +219,12 @@ Task 43 Step 4–5: `CLAUDE.md`, memory, `buoc-2-5.md`, copy doc §8, as-built c
    e2e stack thật `e2e-real/m5.real.spec.ts` (Minh sửa trình độ một từ mới; lưu bản nháp nghĩa của nó rồi publish từ danh sách; thêm rồi lưu trữ một chủ đề):
    `test(admin): add the m5 checks and as-built`.
 
+6. Sửa lỗi (báo từ review của M1a): trang Cài đặt (M2) và Chi tiết nghĩa giữ form theo `version` / `revision`, nên khi tab được focus lại và TanStack Query
+   lấy lại dữ liệu có bản mới (người khác vừa lưu), form bị dựng lại và thay đổi chưa lưu biến mất khỏi form (chỉ còn thanh khôi phục). Không mất cập nhật
+   (lưu vẫn gửi `version` / `revision` của bản form đang sửa, nên API trả 409). Nay: không có thay đổi chưa lưu thì nhận bản mới; có thì giữ thay đổi và hiện
+   ngay câu xung đột ("Có người vừa lưu cài đặt khác…" / "Nghĩa này vừa được sửa…") kèm [Tải lại]: `test(admin): pin unsaved edits across a refetch…`,
+   `fix(admin): keep unsaved settings and sense edits when a refetch brings a newer version`.
+
 Lệch plan / khung, có chủ ý:
 - Plan Task 40 ghi bộ lọc `q` cho Nghĩa; API `GET /v1/admin/content/senses` không nhận `q` (`sense-filters.ts`), nên màn không có ô tìm. Muốn có thì cần thêm ở API.
 - [Dán danh sách từ] mở hộp thoại (plan: `PasteWordsDialog`); khung A/87 vẽ thành khối "Thêm cả loạt" dưới bảng.
