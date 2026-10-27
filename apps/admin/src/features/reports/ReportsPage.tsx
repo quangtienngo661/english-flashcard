@@ -2,6 +2,7 @@ import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { Link, useLocation, useMatch, useNavigate } from 'react-router';
 import { useLocale, useTranslations } from 'use-intl';
 import { useUrlFilters } from '../../api/use-url-filters';
+import { userLabel } from '../../api/user-ref';
 import { useApi } from '../../auth/session-context';
 import { useDateTime } from '../../i18n/use-date-time';
 import { Badge } from '../../ui/Badge';
@@ -96,7 +97,7 @@ export function ReportsPage() {
       key: 'status', header: t('reports.cols.status'), card: 'field', className: 'whitespace-nowrap',
       cell: (r) => <Badge tone={STATUS_TONE[r.status]}>{t(`reports.statuses.${r.status}`)}</Badge>,
     },
-    { key: 'resolvedBy', header: t('reports.cols.resolvedBy'), card: 'field', className: 'wrap-anywhere', cell: (r) => r.resolved_by_user?.email ?? r.resolved_by_role ?? '—' },
+    { key: 'resolvedBy', header: t('reports.cols.resolvedBy'), card: 'field', className: 'wrap-anywhere', cell: (r) => r.resolved_by_user ? userLabel(r.resolved_by_user, t('common.systemUser')) : (r.resolved_by_role ?? '—') },
   ];
 
   const reasonItems = [

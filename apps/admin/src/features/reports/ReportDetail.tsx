@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import { Link } from 'react-router';
 import { useTranslations } from 'use-intl';
 import { ApiError } from '../../api/problem';
+import { userLabel } from '../../api/user-ref';
 import { useSubmitAction } from '../content/useSubmitAction';
 import { useApi } from '../../auth/session-context';
 import { useCan } from '../../auth/use-can';
@@ -124,7 +125,7 @@ export function ReportDetail({ id, listSearch }: { id: string; listSearch: strin
   const busy = actions.some((a) => a.pending || a.waitSeconds > 0);
   const failed = actions.find((a) => a.error);
 
-  const who = [report.resolved_by_user?.email, report.resolved_by_role].filter(Boolean).join(' · ');
+  const who = [report.resolved_by_user ? userLabel(report.resolved_by_user, t('common.systemUser')) : null, report.resolved_by_role].filter(Boolean).join(' · ');
   const callId = report.call_operation_id;
 
   return (

@@ -1,4 +1,5 @@
 import type { ApiClient } from '../../api/client';
+import type { UserRef } from '../../api/user-ref';
 
 export type ReportStatus = 'open' | 'no_error' | 'fixed' | 'confirmed';
 export type ResolveStatus = Exclude<ReportStatus, 'open'>;
@@ -27,8 +28,6 @@ export type ReportSnapshot = {
   /** `option_index` is missing on a report older than the field, and null when the learner gave no answer. */
   learner: { answer: string | null; option_index?: number | null; answers_tried: string[]; result: string | null; hint_level: number };
 };
-
-export type UserRef = { id: string; email: string | null; system: boolean };
 
 /** One row of `GET /v1/admin/practice/reports` and the body of `GET …/reports/:id` and of the resolve call (`staffView`). */
 export type Report = {
