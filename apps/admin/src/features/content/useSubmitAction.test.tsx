@@ -3,7 +3,7 @@ import type { ReactNode } from 'react';
 import { IntlProvider } from 'use-intl';
 import { describe, expect, it, vi } from 'vitest';
 import en from '../../../messages/en.json';
-import { ApiError, type Problem } from '../../api/problem';
+import { ApiError, NetworkError, type Problem } from '../../api/problem';
 import { useSubmitAction } from './useSubmitAction';
 
 const wrapper = ({ children }: { children: ReactNode }) => (
@@ -37,5 +37,13 @@ describe('useSubmitAction', () => {
     expect(onDone).toHaveBeenCalledWith('ok');
     expect(result.current.problem).toBeNull();
     expect(result.current.error).toBeNull();
+  });
+
+  it('problem stays null after a network error', async () => {
+    const run = vi.fn().mockRejectedValue(new NetworkError());
+    const { result } = renderHook(() => useSubmitAction(run, 'f', () => {}), { wrapper });
+    await act(async () => result.current.submit());
+    expect(result.current.problem).toBeNull();
+    expect(result.current.canRetry).toBe(true);
   });
 });

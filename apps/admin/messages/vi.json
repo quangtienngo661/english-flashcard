@@ -31,7 +31,7 @@
     "model-not-supported": "Model này chưa dùng được với Wordmet.",
     "not-found": "Không tìm thấy",
     "nothing-to-publish": "Không có mục nào đủ điều kiện publish",
-    "operation-settings-conflict": "Có người vừa lưu thao tác này. Tải lại để xem bản mới.",
+    "operation-settings-conflict": "Có người vừa đổi thao tác này. Tải lại để xem bản mới.",
     "password-change-required": "Bạn phải đổi mật khẩu trước khi tiếp tục",
     "payload-too-large": "Dữ liệu gửi lên quá lớn",
     "profile-incomplete": "Hồ sơ chưa đầy đủ",

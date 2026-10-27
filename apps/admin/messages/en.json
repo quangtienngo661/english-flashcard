@@ -31,7 +31,7 @@
     "model-not-supported": "This model cannot be used with Wordmet yet.",
     "not-found": "Not found",
     "nothing-to-publish": "Nothing is eligible to publish",
-    "operation-settings-conflict": "Someone just saved this operation. Reload to see the latest version.",
+    "operation-settings-conflict": "Someone just changed this operation. Reload to see the latest version.",
     "password-change-required": "You must change your password before continuing",
     "payload-too-large": "The request is too large",
     "profile-incomplete": "The profile is incomplete",
