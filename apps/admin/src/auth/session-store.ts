@@ -269,7 +269,11 @@ export class SessionStore {
     try {
       return await this.raw('/v1/auth/refresh', { ...init, keepalive: true }, null);
     } catch (error) {
-      if (!(error instanceof TypeError) || this.leaving) throw error;
+      if (!(error instanceof TypeError)) throw error;
+      // The rejection can settle between two pagehide listeners, before ours sets `leaving` (RKC3): decide after the whole
+      // dispatch. A page that is torn down or frozen never runs this timer, so no second refresh is sent.
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      if (this.leaving) throw error;
       return this.raw('/v1/auth/refresh', init, null);
     }
   }
