@@ -105,4 +105,46 @@ test.describe('Cấp gói và lượt (A/78)', () => {
     await expect(revoke.getByText(t.refusal['target-is-staff'])).toBeVisible();
     expect(await seriousViolations(page)).toEqual([]);
   });
+  test('admin: Cấp mới → lookup → 409 asks A/79b → resend with the flag; axe clean', async ({ page }) => {
+    await signedInAs(page, 'admin', {
+      ...base,
+      [`GET ${USAGE}`]: () => usage,
+      [`GET ${LIST}`]: () => ({ json: { items: [], next_page_token: null } }),
+      'GET /v1/admin/entitlements/lookup': () => ({ json: { user: { id: LAN_ID, email: 'lan@example.com' }, grantable: true, reason: null } }),
+      [`POST ${LIST}`]: (req) =>
+        (req.body as { confirm_turn_off_paid_renewal?: boolean }).confirm_turn_off_paid_renewal
+          ? { status: 201, json: grant({ paid_renewal_action: 'turned_off' }) }
+          : problem(409, 'grant-not-allowed', { reason: 'target-has-paid-subscription' }),
+    });
+    await page.goto('/entitlements');
+    await page.getByRole('button', { name: t.new.open }).first().click();
+    const dialog = page.getByRole('dialog', { name: t.new.title });
+    await dialog.getByLabel(t.new.email).fill('lan@example.com');
+    await dialog.getByRole('button', { name: t.new.check }).click();
+    await expect(dialog.getByText(t.new.confirmed.replace('{email}', 'lan@example.com'))).toBeVisible();
+    await dialog.getByLabel(t.new.to).fill('2026-12-01');
+    await dialog.getByLabel(t.new.reason).fill('Giải IELTS');
+    expect(await seriousViolations(page)).toEqual([]);
+    await expectNoHorizontalScroll(page);
+    await dialog.getByRole('button', { name: t.new.submit }).click();
+    const ask = page.getByRole('dialog', { name: t.new.confirm.title.replace('{email}', 'lan@example.com') });
+    await expect(ask).toBeVisible();
+    expect(await seriousViolations(page)).toEqual([]);
+    await ask.getByRole('button', { name: t.new.confirm.ok }).click();
+    await expect(dialog).toBeHidden();
+    const posts = requests(page, 'POST', LIST);
+    expect(posts).toHaveLength(2);
+    expect(posts[0]!.body).toEqual({ user_id: LAN_ID, kind: 'plan', plan: 'pro', ends_at: '2026-12-02T00:00:00+07:00', reason: 'Giải IELTS' });
+    expect((posts[1]!.body as { confirm_turn_off_paid_renewal?: boolean }).confirm_turn_off_paid_renewal).toBe(true);
+  });
+
+  test('editor: custom numbers have no AI fields', async ({ page }) => {
+    await signedInAs(page, 'editor', { ...base, [`GET ${LIST}`]: () => ({ json: { items: [], next_page_token: null } }) });
+    await page.goto('/entitlements/new');
+    const dialog = page.getByRole('dialog', { name: t.new.title });
+    await dialog.getByText(t.kinds.limits, { exact: true }).click();
+    await expect(dialog.getByLabel(t.new.practiceSessions)).toBeVisible();
+    await expect(dialog.getByLabel(t.new.aiPractice)).toHaveCount(0);
+    await expect(dialog.getByLabel(t.new.aiLookup)).toHaveCount(0);
+  });
 });

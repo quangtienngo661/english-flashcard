@@ -74,7 +74,9 @@ export const appRoutes: RouteObject[] = createRoutesFromElements(
         <Route path="users" element={<UsersPage />}>
           <Route path=":id" element={null} />
         </Route>
-        <Route path="entitlements" element={<GrantsPage />} />
+        <Route path="entitlements" element={<GrantsPage />}>
+          <Route path="new" element={null} />
+        </Route>
         <Route path="transactions" element={<TransactionsPage />} />
         <Route path="ai/status" element={<AiStatusPage />} />
         <Route path="ai/models" element={<AiModelsPage />}>

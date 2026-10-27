@@ -1,10 +1,12 @@
 import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState, type FormEvent } from 'react';
+import { useMatch, useNavigate } from 'react-router';
 import { useFormatter, useTranslations } from 'use-intl';
 import { useUrlFilters } from '../../api/use-url-filters';
 import { userLabel } from '../../api/user-ref';
 import { useApi } from '../../auth/session-context';
 import { useCan } from '../../auth/use-can';
+import { PageActions } from '../../app/shell-slots';
 import { Badge } from '../../ui/Badge';
 import { Banner } from '../../ui/Banner';
 import { Button } from '../../ui/Button';
@@ -14,6 +16,7 @@ import { showToast } from '../../ui/Toast';
 import { TextField } from '../../ui/TextField';
 import { getAiUsage } from '../settings/settings-api';
 import { EditDatesDialog } from './EditDatesDialog';
+import { GrantDialog } from './GrantDialog';
 import {
   LIMIT_KEYS,
   listGrants,
@@ -48,6 +51,9 @@ export function GrantsPage() {
   const api = useApi();
   const queryClient = useQueryClient();
   const format = useGrantFormat();
+  const navigate = useNavigate();
+  // `/entitlements/new` keeps the list and opens the form over it.
+  const isNew = useMatch('/entitlements/new') !== null;
   const [filters, setFilters] = useUrlFilters(FILTERS);
   const [action, setAction] = useState<{ kind: 'revoke' | 'edit'; grant: AdminGrant } | null>(null);
 
@@ -142,6 +148,9 @@ export function GrantsPage() {
 
   return (
     <div className="flex flex-col gap-6">
+      <PageActions>
+        <Button onPress={() => void navigate('/entitlements/new')}>{t('entitlements.new.open')}</Button>
+      </PageActions>
       <AiTodayBlock />
       <form onSubmit={apply} noValidate className="grid gap-3 shell:grid-cols-5 shell:items-start">
         <TextField
@@ -197,6 +206,11 @@ export function GrantsPage() {
         emptyText={filtered ? t('entitlements.emptyFiltered') : t('entitlements.empty')}
         onRetry={() => void list.refetch()}
       />
+      {!list.isPending && !list.isError && rows.length === 0 && !filtered && (
+        <Button variant="secondary" className="mx-auto w-fit" onPress={() => void navigate('/entitlements/new')}>
+          {t('entitlements.new.open')}
+        </Button>
+      )}
 
       {rows.length > 0 && (
         <div className="flex flex-col items-center gap-2 py-4">
@@ -209,6 +223,7 @@ export function GrantsPage() {
         </div>
       )}
 
+      {isNew && <GrantDialog />}
       {action?.kind === 'revoke' && (
         <RevokeDialog
           grant={action.grant}

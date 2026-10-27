@@ -80,6 +80,30 @@ export function revokeGrant(api: ApiClient, id: string, reason: string): Promise
   return api.post(`/v1/admin/entitlements/grants/${id}/revoke`, { reason });
 }
 
+/** `GET /v1/admin/entitlements/lookup`: the learner behind an address, and whether this staff account may grant to them. */
+export type LearnerLookup = { user: { id: string; email: string }; grantable: boolean; reason: RefusalReason | null };
+
+/** 404 `not-found` when no account has this email; 429 on the `entitlements.lookup` rule (60 an hour). */
+export function lookupLearner(api: ApiClient, email: string): Promise<LearnerLookup> {
+  return api.get(`/v1/admin/entitlements/lookup?email=${encodeURIComponent(email)}`);
+}
+
+export type CreateGrantBody = {
+  user_id: string;
+  kind: GrantKind;
+  plan?: 'pro';
+  limits?: Partial<Record<LimitKey, number>>;
+  starts_at?: string;
+  ends_at: string;
+  reason: string;
+  confirm_turn_off_paid_renewal?: true;
+};
+
+/** Needs an `Idempotency-Key`; the retry after the A/79b confirmation is a different body, so it gets a new key. */
+export function createGrant(api: ApiClient, body: CreateGrantBody, idempotencyKey: string): Promise<AdminGrant> {
+  return api.post('/v1/admin/entitlements/grants', body, { idempotencyKey });
+}
+
 export type GrantDatesBody = { starts_at?: string; ends_at?: string; reason: string };
 
 /** No `Idempotency-Key`: the same dates again change nothing. */
