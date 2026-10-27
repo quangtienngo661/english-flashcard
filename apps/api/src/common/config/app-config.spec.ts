@@ -187,6 +187,7 @@ describe('loadConfig', () => {
       'learning.review': { by: 'user', max: 120, windowSeconds: 60 },
       'practice.answer': { by: 'user', max: 120, windowSeconds: 60 },
       'ai.test': { by: 'user', max: 20, windowSeconds: 3600 },
+      'entitlements.lookup': { by: 'user', max: 60, windowSeconds: 3600 },
     });
   });
 

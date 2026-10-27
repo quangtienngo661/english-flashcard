@@ -19,7 +19,8 @@ export type RateLimitRuleName =
   | 'user.write'
   | 'learning.review'
   | 'practice.answer'
-  | 'ai.test';
+  | 'ai.test'
+  | 'entitlements.lookup';
 
 export interface RateLimitRuleConfig {
   by: 'user' | 'ip' | 'email' | 'chain';
@@ -125,6 +126,8 @@ export const DEFAULT_LIMITS: Record<RateLimitRuleName, RateLimitRuleConfig> = {
   'practice.answer': { by: 'user', max: 120, windowSeconds: 60 },
   // Admin test calls of the AI gateway (Bước 6 design §12.1).
   'ai.test': { by: 'user', max: 20, windowSeconds: 3600 },
+  // Staff look a learner up by email before a grant (design §5.2): 60 an hour, per staff account.
+  'entitlements.lookup': { by: 'user', max: 60, windowSeconds: 3600 },
 };
 
 const nonEmpty = z.string().trim().min(1);
