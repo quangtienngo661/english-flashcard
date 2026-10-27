@@ -1,14 +1,14 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router';
-import { useLocale, useTranslations } from 'use-intl';
+import { useTranslations } from 'use-intl';
 import { ApiError } from '../../api/problem';
 import { useApi } from '../../auth/session-context';
 import { Badge } from '../../ui/Badge';
 import { Banner } from '../../ui/Banner';
 import { DataList, type Column } from '../../ui/DataList';
 import { ListState } from '../../ui/ListState';
-import { ADMIN_ZONE } from '../transactions/transactions-api';
 import { aiKeys, getStatus, sortByOperationOrder, type AiProvider, type AiStatus } from './ai-api';
+import { useAiFormat } from './useAiFormat';
 
 type Operation = AiStatus['operations'][number];
 
@@ -17,29 +17,11 @@ const panel = 'flex flex-col gap-1 rounded-panel border-2 border-border p-4 text
 const linkClass =
   'inline-flex min-h-control w-fit items-center whitespace-nowrap rounded-control px-4 text-ui font-medium text-primary outline-none hover:bg-primary-soft focus-visible:ring-2 focus-visible:ring-primary pointer-coarse:min-h-control-touch';
 
-/** Dates, numbers and money in the admin's fixed zone and the page's language: "15/10/2026 09:12", "1.240", "2,31 US$", "60.291 ₫". */
-function useStatusFormat() {
-  const locale = useLocale();
-  const tag = locale === 'en' ? 'en-US' : 'vi-VN';
-  const date = new Intl.DateTimeFormat(tag, { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: ADMIN_ZONE });
-  const time = new Intl.DateTimeFormat(tag, { hour: 'numeric', minute: '2-digit', timeZone: ADMIN_ZONE, hour12: locale === 'en' });
-  const number = new Intl.NumberFormat(tag);
-  const usd = new Intl.NumberFormat(tag, { style: 'currency', currency: 'USD', minimumFractionDigits: 2, maximumFractionDigits: 4 });
-  const vnd = new Intl.NumberFormat(tag, { style: 'currency', currency: 'VND', maximumFractionDigits: 0 });
-  return {
-    date: (at: string) => date.format(new Date(at)),
-    dateTime: (at: string) => `${date.format(new Date(at))} ${time.format(new Date(at))}`,
-    number: (n: number) => number.format(n),
-    usd: (amount: string) => usd.format(Number(amount)),
-    vnd: (amount: number) => vnd.format(amount),
-  };
-}
-
 /** A/84, A/84b `/ai/status` (admin only, `settings.manage`): the AI switch, today's totals and one row per operation. */
 export function AiStatusPage() {
   const t = useTranslations();
   const api = useApi();
-  const format = useStatusFormat();
+  const format = useAiFormat();
   const query = useQuery({ queryKey: aiKeys.status(), queryFn: () => getStatus(api) });
 
   if (query.isPending) return <ListState state="loading" />;

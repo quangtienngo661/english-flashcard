@@ -250,6 +250,58 @@
       "shutdown": "Shuts down {date}",
       "lifecycle": "Lifecycle: {lifecycle}",
       "errorNote": "Includes errors from test runs and example-set runs."
+    },
+    "models": {
+      "add": "Add model",
+      "empty": "No models yet",
+      "emptyHint": "Add the first model to choose it for the AI operations.",
+      "cols": {
+        "model": "Provider · Model id",
+        "price": "Input / cached input / output price (US$ per 1 million tokens)",
+        "usedBy": "Used by",
+        "lifecycle": "Lifecycle",
+        "estimate": "Estimate per call",
+        "checked": "Info last checked",
+        "actions": "Actions"
+      },
+      "noPrice": "No price yet",
+      "none": "—",
+      "editPrice": "Edit price",
+      "editPriceFor": "Edit price of {model}",
+      "refresh": "Re-read info",
+      "refreshFor": "Re-read info of {model}",
+      "delete": "Delete",
+      "deleteFor": "Delete {model}",
+      "estimate": "{usd} · {vnd}",
+      "usedBy": "Used by: {operations}.",
+      "deleteTitle": "Delete model {model}?",
+      "deleteBody": "The model is removed from the list and this cannot be undone.",
+      "deleteConfirm": "Delete model",
+      "toast": {
+        "added": "Model {model} added.",
+        "saved": "Changes to {model} saved.",
+        "refreshed": "Info of {model} re-read.",
+        "deleted": "Model {model} deleted."
+      },
+      "form": {
+        "addTitle": "Add model",
+        "editTitle": "Edit price of {model}",
+        "provider": "Provider",
+        "modelId": "Model id",
+        "modelIdHint": "The model name exactly as the provider writes it.",
+        "priceInput": "Input price (US$ per 1 million tokens)",
+        "priceCached": "Cached input price (US$ per 1 million tokens)",
+        "priceOutput": "Output price (US$ per 1 million tokens)",
+        "priceHint": "0 to 1,000, up to 4 decimals. Leave empty if unknown.",
+        "fakePrice": "The Fake model always costs 0.",
+        "note": "Note",
+        "submitAdd": "Add",
+        "submitSave": "Save",
+        "noProvider": "No provider has a key yet, so no model can be added.",
+        "modelIdRequired": "Enter the model id.",
+        "modelIdInvalid": "Use only letters, digits and the characters . _ : - (up to 100 characters).",
+        "priceInvalid": "Enter a number from 0 to 1,000 with up to 4 decimals."
+      }
     }
   },
   "transactions": {

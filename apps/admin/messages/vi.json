@@ -250,6 +250,58 @@
       "shutdown": "Ngừng ngày {date}",
       "lifecycle": "Vòng đời: {lifecycle}",
       "errorNote": "Gồm cả lỗi khi chạy thử và chạy bộ ví dụ."
+    },
+    "models": {
+      "add": "Thêm model",
+      "empty": "Chưa có model nào",
+      "emptyHint": "Thêm model đầu tiên để chọn cho các thao tác AI.",
+      "cols": {
+        "model": "Nhà cung cấp · Model id",
+        "price": "Giá đầu vào / đầu vào cache / đầu ra (US$ mỗi 1 triệu token)",
+        "usedBy": "Thao tác đang dùng",
+        "lifecycle": "Vòng đời",
+        "estimate": "Ước tính mỗi lời gọi",
+        "checked": "Kiểm tra thông tin lần cuối",
+        "actions": "Hành động"
+      },
+      "noPrice": "Chưa có giá",
+      "none": "—",
+      "editPrice": "Sửa giá",
+      "editPriceFor": "Sửa giá {model}",
+      "refresh": "Đọc lại thông tin",
+      "refreshFor": "Đọc lại thông tin {model}",
+      "delete": "Xóa",
+      "deleteFor": "Xóa {model}",
+      "estimate": "{usd} · {vnd}",
+      "usedBy": "Thao tác đang dùng: {operations}.",
+      "deleteTitle": "Xóa model {model}?",
+      "deleteBody": "Model bị xóa khỏi danh sách và không hoàn tác được.",
+      "deleteConfirm": "Xóa model",
+      "toast": {
+        "added": "Đã thêm model {model}.",
+        "saved": "Đã lưu thay đổi của {model}.",
+        "refreshed": "Đã đọc lại thông tin của {model}.",
+        "deleted": "Đã xóa model {model}."
+      },
+      "form": {
+        "addTitle": "Thêm model",
+        "editTitle": "Sửa giá {model}",
+        "provider": "Nhà cung cấp",
+        "modelId": "Model id",
+        "modelIdHint": "Đúng tên model như nhà cung cấp ghi.",
+        "priceInput": "Giá đầu vào (US$ mỗi 1 triệu token)",
+        "priceCached": "Giá đầu vào cache (US$ mỗi 1 triệu token)",
+        "priceOutput": "Giá đầu ra (US$ mỗi 1 triệu token)",
+        "priceHint": "Từ 0 đến 1.000, tối đa 4 số lẻ. Để trống nếu chưa biết.",
+        "fakePrice": "Model Fake luôn có giá 0.",
+        "note": "Ghi chú",
+        "submitAdd": "Thêm",
+        "submitSave": "Lưu",
+        "noProvider": "Chưa có nhà cung cấp nào có key, nên chưa thêm được model.",
+        "modelIdRequired": "Nhập model id.",
+        "modelIdInvalid": "Chỉ dùng chữ, số và các ký tự . _ : - (tối đa 100 ký tự).",
+        "priceInvalid": "Nhập số từ 0 đến 1.000, tối đa 4 số lẻ."
+      }
     }
   },
   "transactions": {

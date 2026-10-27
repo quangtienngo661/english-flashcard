@@ -254,3 +254,23 @@ test('Tình trạng at 390 fits the window with six operations, a warning and a 
   await expect(page.getByText('Lời gọi hôm nay: 1.240/3.000')).toBeVisible();
   await expectNoHorizontalScroll(page);
 });
+
+test('Model at 390 fits the window with a 100-character model id and a long note', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  const long = 'm'.repeat(100);
+  await signedInAs(page, 'admin', {
+    'GET /v1/admin/ai/models': () => ({
+      json: {
+        items: [{
+          id: 'm1', provider: 'anthropic', model_id: long, shutdown_at: '2026-11-30T00:00:00.000Z', lifecycle: 'deprecated', effort_choices: [], thinking_off_available: false,
+          structured_outputs: true, max_output_tokens: null, price: { input: '2.5000', cached_input: '0.2500', output: '10.0000' }, note: 'n'.repeat(80), info_checked_at: at,
+          used_by: ['generate_cloze', 'generate_meaning_question', 'check_private_word'],
+          estimate: { per_call_usd: '0.0065', per_call_vnd: 169, per_day_1000_vnd: 169000, max_call_usd: null, max_call_vnd: null },
+        }],
+      },
+    }),
+  });
+  await page.goto('/ai/models');
+  await expect(page.getByText(new RegExp(long)).first()).toBeAttached();
+  await expectNoHorizontalScroll(page);
+});
