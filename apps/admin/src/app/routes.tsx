@@ -19,6 +19,7 @@ import { SensesPage } from '../features/senses/SensesPage';
 import { SettingsPage } from '../features/settings/SettingsPage';
 import { SourcesPage } from '../features/sources/SourcesPage';
 import { StaffPage } from '../features/staff/StaffPage';
+import { UsersPage } from '../features/users/UsersPage';
 import { TopicsPage } from '../features/topics/TopicsPage';
 import { TransactionsPage } from '../features/transactions/TransactionsPage';
 import { UnknownFormsPage } from '../features/unknown-forms/UnknownFormsPage';
@@ -69,6 +70,9 @@ export const appRoutes: RouteObject[] = createRoutesFromElements(
         </Route>
         <Route path="refunds" element={<RefundsPage />} />
         <Route path="unknown-forms" element={<UnknownFormsPage />} />
+        <Route path="users" element={<UsersPage />}>
+          <Route path=":id" element={null} />
+        </Route>
         <Route path="transactions" element={<TransactionsPage />} />
         <Route path="ai/status" element={<AiStatusPage />} />
         <Route path="ai/models" element={<AiModelsPage />}>

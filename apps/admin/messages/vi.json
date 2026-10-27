@@ -582,6 +582,47 @@
       "refundLine": "Xác nhận lỗi sẽ trả lại 1 lượt câu AI cho người học."
     }
   },
+  "users": {
+    "search": "Tìm theo email, họ hoặc tên (từ 2 ký tự)",
+    "searchHint": "Không phân biệt hoa thường; có phân biệt dấu.",
+    "searchShort": "Gõ từ 2 ký tự",
+    "filters": { "status": "Trạng thái", "all": "Tất cả", "active": "Đang hoạt động", "locked": "Đang khóa" },
+    "cols": { "email": "Email", "name": "Họ tên", "role": "Vai trò", "verified": "Email đã xác minh", "status": "Trạng thái", "created": "Ngày tạo", "lastSeen": "Lần cuối vào" },
+    "roles": { "admin": "admin", "editor": "editor", "learner": "người học" },
+    "statuses": { "active": "Đang hoạt động", "locked": "Đang khóa" },
+    "verified": { "yes": "Đã xác minh", "no": "Chưa xác minh" },
+    "footer": "Mới nhất trước · 20 người mỗi trang",
+    "empty": "Chưa có người dùng nào.",
+    "emptySearch": "Không có ai khớp “{q}”. Thử tìm theo email.",
+    "emptyFiltered": "Không có người dùng nào ở trạng thái này.",
+    "detail": {
+      "titleUnknown": "Người dùng",
+      "notFound": "Không tìm thấy người dùng này.",
+      "backToList": "Về danh sách",
+      "email": "Email",
+      "givenName": "Tên",
+      "familyName": "Họ",
+      "birthDate": "Ngày sinh",
+      "terms": "Đồng ý điều khoản",
+      "termsValue": "{time} · bản {version}",
+      "role": "Vai trò",
+      "status": "Trạng thái",
+      "lockedLine": "Đang khóa từ {time} · bởi {who}",
+      "lockReason": "Lý do: {reason}",
+      "lock": "Khóa tài khoản",
+      "unlock": "Mở khóa",
+      "unlocked": "Đã mở khóa {email}.",
+      "locked": "Đã khóa {email}."
+    },
+    "lock": {
+      "title": "Khóa tài khoản {email}?",
+      "body": "Người này bị đăng xuất khỏi mọi thiết bị và không đăng nhập được tới khi mở khóa.",
+      "reason": "Lý do (1–500 ký tự, một dòng)",
+      "reasonInvalid": "Nhập lý do từ 1 đến 500 ký tự, trên một dòng.",
+      "confirm": "Khóa tài khoản",
+      "keep": "Giữ nguyên"
+    }
+  },
   "staff": {
     "toast": {
       "granted": "Đã cấp vai trò {role} cho {email}.",

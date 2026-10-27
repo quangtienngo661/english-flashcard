@@ -582,6 +582,47 @@
       "refundLine": "Confirming the error gives the learner back 1 AI question unit."
     }
   },
+  "users": {
+    "search": "Search by email, family or given name (2+ characters)",
+    "searchHint": "Not case-sensitive; accents matter.",
+    "searchShort": "Type at least 2 characters",
+    "filters": { "status": "Status", "all": "All", "active": "Active", "locked": "Locked" },
+    "cols": { "email": "Email", "name": "Name", "role": "Role", "verified": "Email verified", "status": "Status", "created": "Created", "lastSeen": "Last seen" },
+    "roles": { "admin": "admin", "editor": "editor", "learner": "learner" },
+    "statuses": { "active": "Active", "locked": "Locked" },
+    "verified": { "yes": "Verified", "no": "Not verified" },
+    "footer": "Newest first · 20 people per page",
+    "empty": "No users yet.",
+    "emptySearch": "Nobody matches “{q}”. Try searching by email.",
+    "emptyFiltered": "No user has this status.",
+    "detail": {
+      "titleUnknown": "User",
+      "notFound": "This user was not found.",
+      "backToList": "Back to the list",
+      "email": "Email",
+      "givenName": "Given name",
+      "familyName": "Family name",
+      "birthDate": "Date of birth",
+      "terms": "Accepted the terms",
+      "termsValue": "{time} · version {version}",
+      "role": "Role",
+      "status": "Status",
+      "lockedLine": "Locked since {time} · by {who}",
+      "lockReason": "Reason: {reason}",
+      "lock": "Lock account",
+      "unlock": "Unlock",
+      "unlocked": "Unlocked {email}.",
+      "locked": "Locked {email}."
+    },
+    "lock": {
+      "title": "Lock the account of {email}?",
+      "body": "This person is signed out of every device and cannot sign in until the account is unlocked.",
+      "reason": "Reason (1–500 characters, one line)",
+      "reasonInvalid": "Enter a reason of 1 to 500 characters, on one line.",
+      "confirm": "Lock account",
+      "keep": "Keep as is"
+    }
+  },
   "staff": {
     "toast": {
       "granted": "Granted the {role} role to {email}.",
