@@ -1,15 +1,16 @@
 import { Menu as MenuIcon, X } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { Dialog, Menu, MenuItem, MenuTrigger, Modal, ModalOverlay, Popover, Button as AriaButton } from 'react-aria-components';
-import { Navigate, NavLink, Outlet, useLocation } from 'react-router';
+import { NavLink, Outlet, useLocation } from 'react-router';
 import { useTranslations } from 'use-intl';
 import { useSession } from '../auth/session-context';
 import { useLocaleSwitch } from '../i18n/locale-context';
 import { Banner } from '../ui/Banner';
 import { Button } from '../ui/Button';
 import { Logo } from '../ui/Logo';
-import { canAccess, homePath, navLabelKey, visibleNav, type NavEntry, type NavGroup } from './nav';
+import { canAccess, navLabelKey, visibleNav, type NavEntry, type NavGroup } from './nav';
 import { NAV_ICONS } from './nav-icons';
+import { NoAccess } from './NoAccess';
 import { useOffline } from './offline';
 import { ShellSlotsContext } from './shell-slots';
 
@@ -129,7 +130,8 @@ export function Shell() {
 
   if (state.status !== 'signed-in') return null;
   const { me } = state;
-  if (!canAccess(pathname, me.permissions)) return <Navigate to={homePath(me.permissions)} replace />;
+  // A path the user may not open keeps the entry's title and says so in the page area (A/71e); the sidebar already hides the entry.
+  const allowed = canAccess(pathname, me.permissions);
 
   const labelKey = navLabelKey(pathname);
   const logout = () => void store.logout();
@@ -194,7 +196,7 @@ export function Shell() {
                   {t('offline.message')}
                 </Banner>
               )}
-              <Outlet />
+              {allowed ? <Outlet /> : <NoAccess />}
             </div>
             <div ref={setPanel} className="min-w-0" />
           </main>

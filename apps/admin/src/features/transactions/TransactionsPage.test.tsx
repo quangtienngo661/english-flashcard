@@ -33,9 +33,10 @@ describe('TransactionsPage (A/90–A/90c)', () => {
     expect(screen.getAllByRole('link', { name: vi.nav.transactions }).length).toBeGreaterThan(0);
   });
 
-  it('an editor has no menu entry and is sent away from /transactions', async () => {
+  it('an editor has no menu entry; /transactions keeps the title, says there is no access, and calls no API', async () => {
     const r = renderApp('/transactions', { 'GET /v1/admin/content/uploads?page_size=20': page([]) }, EDITOR);
-    await waitFor(() => expect(screen.queryByRole('heading', { level: 1, name: vi.nav.transactions })).toBeNull());
+    expect(await screen.findByText(vi.noAccess.title)).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(vi.nav.transactions);
     expect(screen.queryByRole('link', { name: vi.nav.transactions })).toBeNull();
     expect(r.calls.some((c) => c.path.startsWith('/v1/admin/transactions'))).toBe(false);
   });
