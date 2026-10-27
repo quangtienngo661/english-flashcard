@@ -74,7 +74,8 @@
     "confirm": "Xác nhận",
     "loadMore": "Tải thêm",
     "loading": "Đang tải…",
-    "close": "Đóng"
+    "close": "Đóng",
+    "unsavedChanges": "(có thay đổi chưa lưu)"
   },
   "shell": {
     "brand": "Wordmet Admin",
@@ -489,5 +490,128 @@
     "confirmAllTitle": "Publish toàn bộ catalog?",
     "confirmAllBody": "Bạn chưa chọn bộ lọc nào, nên job này sẽ publish mọi sense đủ điều kiện trong toàn bộ catalog. Chỉ tiếp tục nếu đó là điều bạn muốn.",
     "confirmAllSubmit": "Publish tất cả"
+  },
+  "settings": {
+    "tabsLabel": "Nhóm cài đặt",
+    "tabs": {
+      "reminders": "Nhắc học",
+      "learning": "Học và ôn",
+      "practice": "Luyện tập",
+      "entitlements": "Gói và lượt",
+      "content": "Nội dung",
+      "ai": "AI"
+    },
+    "save": "Lưu thay đổi",
+    "saved": "Đã lưu",
+    "history": "Lịch sử thay đổi",
+    "outOfRange": "Giá trị ngoài khoảng cho phép.",
+    "reload": "Tải lại",
+    "reloadTitle": "Tải lại cài đặt?",
+    "reloadBody": "Thay đổi chưa lưu sẽ mất.",
+    "emailTemplates": "Mẫu email: bàn sau.",
+    "hint": {
+      "default": "mặc định {value}",
+      "on": "bật",
+      "off": "tắt",
+      "onOff": "bật/tắt",
+      "empty": "để trống",
+      "orEmpty": "hoặc để trống = {meaning}",
+      "zero": "0 = {meaning}",
+      "step": "mỗi {minutes} phút"
+    },
+    "emptyMeaning": {
+      "noLimit": "không giới hạn",
+      "renewal_notice_days_before": "không gửi",
+      "ai_cap_alert_percent": "không tô vàng"
+    },
+    "zeroMeaning": {
+      "ai_prefetch_count": "tắt",
+      "content_retention_days": "không lưu"
+    },
+    "cross": {
+      "stop_after_days": "và lớn hơn ô trên",
+      "default_questions_per_session": "và ≤ số tối đa",
+      "pro_practice_sessions_per_day": "và ≥ gói Miễn phí"
+    },
+    "units": {
+      "days": "ngày",
+      "hours": "giờ",
+      "minutes": "phút",
+      "months": "tháng",
+      "percent": "%",
+      "chars": "ký tự",
+      "seconds": "giây",
+      "sessions": "phiên",
+      "uses": "lượt",
+      "times": "lần"
+    },
+    "fields": {
+      "reminders": {
+        "enabled": "Bật nhắc học toàn hệ thống",
+        "send_time": "Giờ gửi theo giờ người học",
+        "min_gap_days": "Khoảng cách tối thiểu giữa hai email nhắc",
+        "inactive_after_days": "Vắng bao lâu thì gửi “Đã lâu rồi bạn chưa vào học”",
+        "stop_after_days": "Vắng bao lâu thì ngừng nhắc"
+      },
+      "learning": {
+        "new_per_group_per_day": "Từ mới mỗi nhóm mỗi ngày",
+        "reviews_per_group_per_day": "Từ ôn mỗi nhóm mỗi ngày",
+        "backlog_after_days": "Quá hạn bao lâu thì vào danh sách cân nhắc",
+        "groups_per_user": "Số nhóm mỗi người",
+        "items_per_group": "Số từ mỗi nhóm"
+      },
+      "practice": {
+        "max_questions_per_session": "Số câu tối đa mỗi phiên",
+        "default_questions_per_session": "Số câu mặc định",
+        "history_months": "Giữ lịch sử luyện tập",
+        "true_false_true_percent": "Tỉ lệ cặp đúng ở câu Đúng/sai",
+        "idle_session_close_hours": "Tự đóng phiên bỏ dở sau",
+        "reports_per_hour": "Số báo lỗi mỗi giờ mỗi người",
+        "hint_definition_max_chars": "Độ dài tối đa của định nghĩa làm gợi ý",
+        "type_word_max_retries": "Số lần làm lại khi gõ sai",
+        "ai_prefetch_count": "Số câu AI tạo trước"
+      },
+      "entitlements": {
+        "free_practice_sessions_per_day": "Phiên luyện mỗi ngày, gói Miễn phí",
+        "pro_practice_sessions_per_day": "Phiên luyện mỗi ngày, gói Pro và Dùng thử",
+        "pro_ai_practice_per_cycle": "Lượt câu AI mỗi tháng, Pro",
+        "pro_ai_lookup_per_cycle": "Lượt tra AI mỗi tháng, Pro",
+        "trial_ai_practice_per_cycle": "Lượt câu AI mỗi tháng, Dùng thử",
+        "trial_ai_lookup_per_cycle": "Lượt tra AI mỗi tháng, Dùng thử",
+        "grace_days": "Số ngày ân hạn",
+        "trial_reminder_days_before": "Nhắc trước khi hết dùng thử",
+        "renewal_notice_days_before": "Nhắc trước khi gia hạn",
+        "ai_enabled": "Bật AI toàn hệ thống",
+        "ai_daily_cap": "Trần lượt AI mỗi ngày, toàn hệ thống",
+        "ai_cap_alert_percent": "Tô vàng khi dùng tới",
+        "ads_enabled": "Bật quảng cáo",
+        "ads_interstitial_per_day": "Quảng cáo toàn màn mỗi ngày",
+        "ads_min_interval_minutes": "Khoảng cách giữa hai quảng cáo"
+      },
+      "content": {
+        "private_words_per_user": "Số từ riêng mỗi người",
+        "sentences_per_sense": "Số câu đã gặp mỗi nghĩa"
+      },
+      "ai": {
+        "call_timeout_seconds": "Thời gian chờ mỗi lời gọi",
+        "max_concurrent_calls": "Số lời gọi cùng lúc",
+        "daily_provider_calls_cap": "Trần lời gọi nhà cung cấp mỗi ngày",
+        "content_retention_days": "Giữ nội dung lời gọi",
+        "usd_vnd_rate": "Tỷ giá USD → VND"
+      }
+    },
+    "aiUsage": {
+      "today": "Lượt AI hôm nay: {used}/{cap} ({percent}%)",
+      "split": "Đã xác nhận {confirmed} · đang giữ chỗ {reserved}",
+      "zone": "Tính theo ngày giờ Việt Nam.",
+      "error": "Chưa tải được lượt AI hôm nay."
+    },
+    "historyDialog": {
+      "title": "Lịch sử thay đổi",
+      "empty": "Chưa có thay đổi nào.",
+      "change": "{old} → {new}",
+      "by": "{email} · {at}",
+      "unknownUser": "Người dùng đã xóa"
+    }
   }
 }

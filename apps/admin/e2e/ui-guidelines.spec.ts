@@ -2,6 +2,7 @@ import { expect, test, type Page } from '@playwright/test';
 import en from '../messages/en.json' with { type: 'json' };
 import vi from '../messages/vi.json' with { type: 'json' };
 import { signedInAs } from './support/mock-api';
+import { settingsMocks } from './support/settings';
 
 /** Defects found by the Web Interface Guidelines review (15/10/2026); each test sets its own viewport. */
 test.use({ locale: 'vi-VN' });
@@ -229,5 +230,18 @@ test('the no-access page at 390 fits the window and its text and button are in v
   await page.goto('/staff');
   await expect(page.getByText(vi.noAccess.title)).toBeVisible();
   await expect(page.getByRole('button', { name: vi.noAccess.home })).toBeVisible();
+  await expectNoHorizontalScroll(page);
+});
+
+test('Cài đặt hệ thống at 390: every tab and the history dialog fit the window (Review Focus 4)', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await signedInAs(page, 'admin', settingsMocks);
+  for (const tab of ['reminders', 'learning', 'practice', 'entitlements', 'content', 'ai'] as const) {
+    await page.goto(`/settings?tab=${tab}`);
+    await expect(page.getByRole('tabpanel').getByRole('heading', { level: 2, name: vi.settings.tabs[tab] })).toBeVisible();
+    await expectNoHorizontalScroll(page);
+  }
+  await page.getByRole('button', { name: vi.settings.history }).click();
+  await expect(page.getByRole('dialog').getByText('reminders.send_time')).toBeVisible();
   await expectNoHorizontalScroll(page);
 });
