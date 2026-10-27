@@ -3,10 +3,13 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vites
 import { createTestApp, type TestApp } from '../../../test/support/create-test-app.js';
 import { listRoutes } from '../../../test/support/list-routes.js';
 import { PRISMA_CLIENT, PrismaModule } from '../../common/db/prisma.module.js';
+import { RateLimiter } from '../../common/rate-limit/rate-limiter.service.js';
+import { RATE_LIMIT_KEY } from '../../common/rate-limit/rate-limit.decorator.js';
 import { AccessTokenService } from '../../identity/sessions/access-token.service.js';
 import { EntitlementsService, type EntitlementsSnapshot } from '../entitlements.service.js';
 import { GrantsService } from '../grants/grants.service.js';
 import { alertReached } from './ai-usage.js';
+import { AdminEntitlementsController } from './admin-entitlements.controller.js';
 
 const PROBLEM = 'https://api.example.com/problems/';
 const SNAPSHOT = { plan: 'free' } as unknown as EntitlementsSnapshot;
@@ -26,7 +29,8 @@ describe('entitlements read APIs (unit, mocked services)', () => {
   let ctx: TestApp; let token: string; let userId: string;
   let role: 'admin' | 'editor' | null; let nativeLanguage: string | null;
   const prisma = { sessionChain: { findUnique: vi.fn() }, $disconnect: async () => {} };
-  let snapshot: ReturnType<typeof vi.spyOn>; let aiUsage: ReturnType<typeof vi.spyOn>; let forUser: ReturnType<typeof vi.spyOn>;
+  let snapshot: ReturnType<typeof vi.spyOn>; let aiUsage: ReturnType<typeof vi.spyOn>; let forUser: ReturnType<typeof vi.spyOn>; let lookup: ReturnType<typeof vi.spyOn>;
+  const hit = vi.spyOn(RateLimiter.prototype, 'hit');
   const auth = () => ({ Authorization: `Bearer ${token}` });
   const http = () => ctx.http();
 
@@ -37,6 +41,7 @@ describe('entitlements read APIs (unit, mocked services)', () => {
     const entitlements = ctx.app.get(EntitlementsService);
     snapshot = vi.spyOn(entitlements, 'snapshot'); aiUsage = vi.spyOn(entitlements, 'aiUsage');
     forUser = vi.spyOn(ctx.app.get(GrantsService), 'forUser');
+    lookup = vi.spyOn(ctx.app.get(GrantsService), 'lookup');
   });
   beforeEach(async () => {
     userId = randomUUID(); role = null; nativeLanguage = null;
@@ -47,6 +52,8 @@ describe('entitlements read APIs (unit, mocked services)', () => {
     snapshot.mockReset().mockResolvedValue(SNAPSHOT);
     aiUsage.mockReset().mockResolvedValue({ date: '2026-11-10' });
     forUser.mockReset().mockResolvedValue([{ id: 'grant-1', changes: [] }]);
+    hit.mockReset().mockResolvedValue(undefined);
+    lookup.mockReset().mockResolvedValue({ user: { id: 'u', email: 'lan@example.test' }, grantable: true, reason: null });
   });
   afterAll(async () => { await ctx?.close(); vi.restoreAllMocks(); });
 
@@ -106,6 +113,26 @@ describe('entitlements read APIs (unit, mocked services)', () => {
       expect(bad.body.type).toBe(`${PROBLEM}validation-failed`);
     }
     expect(aiUsage).toHaveBeenCalledTimes(2);
+  });
+
+  it('lookup: passes the actor and the address; staff only; the address is validated', async () => {
+    role = 'editor';
+    const res = await http().get('/v1/admin/entitlements/lookup').set(auth()).query({ email: 'Lan@example.test' });
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ user: { id: 'u', email: 'lan@example.test' }, grantable: true, reason: null });
+    expect(lookup).toHaveBeenCalledWith(userId, 'Lan@example.test');
+    expect(hit).toHaveBeenCalledWith('entitlements.lookup', userId);
+    for (const query of [{}, { email: 'ab' }, { email: 'a@example.test', extra: '1' }]) {
+      expect((await http().get('/v1/admin/entitlements/lookup').set(auth()).query(query)).status).toBe(400);
+    }
+    expect(lookup).toHaveBeenCalledTimes(1);
+    role = null;
+    expect((await http().get('/v1/admin/entitlements/lookup').set(auth()).query({ email: 'lan@example.test' })).status).toBe(403);
+  });
+
+  it('lookup carries the entitlements.grant permission and the entitlements.lookup rate rule', () => {
+    expect(listRoutes(ctx.app)).toContainEqual({ method: 'GET', path: '/v1/admin/entitlements/lookup', permissions: ['entitlements.grant'] });
+    expect(Reflect.getMetadata(RATE_LIMIT_KEY, AdminEntitlementsController.prototype.lookup)).toEqual(['entitlements.lookup']);
   });
 
   it('listRoutes: users/:user_id needs entitlements.grant, ai-usage needs settings.manage, /me needs no staff permission', () => {

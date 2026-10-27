@@ -30,6 +30,11 @@ export type GrantChangeView = {
 
 export type GrantChangeWithUser = GrantChangeView & { changed_by_user: UserRef };
 
+/** `ai-limits-admin-only` and `target-has-paid-subscription` cannot occur: no limits are touched and nothing is created. */
+export type GrantLookup = {
+  user: { id: string; email: string }; grantable: boolean; reason: 'self-grant' | 'target-is-admin' | 'target-is-staff' | null;
+};
+
 export type GrantStatus = 'active' | 'scheduled' | 'revoked' | 'expired' | 'replaced';
 
 export type GrantView = {
@@ -169,6 +174,19 @@ export class GrantsService {
     if (paid.length === 0) return this.viewOne(row);
     const action = await this.turnOffPaidRenewals(paid);
     return this.viewOne(await this.prisma.entitlementGrant.update({ where: { id: row.id }, data: { paidRenewalAction: action } }));
+  }
+
+  /** Before the grant form: who the address is and whether this staff account may grant to them (design §5.2). */
+  async lookup(actorId: string, email: string): Promise<GrantLookup> {
+    const targetId = await this.identity.findUserIdByEmail(email);
+    if (targetId === null) throw notFound();
+    const target = await this.identity.getProfile(targetId);
+    if (!target) throw notFound();
+    const actorRole = await this.roleOf(actorId);
+    const reason = grantRefusal({
+      action: 'create', actorId, actorRole, targetId: target.id, targetRole: target.staff_role, touchesAiLimits: false,
+    }) as GrantLookup['reason'];
+    return { user: { id: target.id, email: target.email }, grantable: reason === null, reason };
   }
 
   async revoke(actorId: string, grantId: string, reason: string): Promise<GrantView> {

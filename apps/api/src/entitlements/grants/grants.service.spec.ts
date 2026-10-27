@@ -529,6 +529,41 @@ describe('GrantsService.list', () => {
   });
 });
 
+describe('GrantsService.lookup (design §5.2)', () => {
+  const OTHER_EDITOR = '00000000-0000-4000-8000-0000000000e2';
+  const lookupSetup = () => setup({ profiles: [
+    profile(ADMIN, 'admin', 'admin@example.test'), profile(EDITOR, 'editor', 'editor@example.test'),
+    profile(OTHER_EDITOR, 'editor', 'other@example.test'), profile(LEARNER, null, 'lan@example.test'),
+  ] });
+
+  it('an editor looking up a learner: grantable', async () => {
+    const { service } = lookupSetup();
+    expect(await service.lookup(EDITOR, 'lan@example.test'))
+      .toEqual({ user: { id: LEARNER, email: 'lan@example.test' }, grantable: true, reason: null });
+  });
+
+  it('an editor looking up another editor: target-is-staff; an admin: target-is-admin; themselves: self-grant', async () => {
+    const { service } = lookupSetup();
+    expect(await service.lookup(EDITOR, 'other@example.test'))
+      .toEqual({ user: { id: OTHER_EDITOR, email: 'other@example.test' }, grantable: false, reason: 'target-is-staff' });
+    expect((await service.lookup(EDITOR, 'admin@example.test')).reason).toBe('target-is-admin');
+    expect(await service.lookup(EDITOR, 'editor@example.test'))
+      .toEqual({ user: { id: EDITOR, email: 'editor@example.test' }, grantable: false, reason: 'self-grant' });
+  });
+
+  it('an admin may grant to anyone: grantable true, reason null', async () => {
+    const { service } = lookupSetup();
+    expect((await service.lookup(ADMIN, 'other@example.test'))).toMatchObject({ grantable: true, reason: null });
+    expect((await service.lookup(ADMIN, 'lan@example.test'))).toMatchObject({ grantable: true, reason: null });
+  });
+
+  it('an unknown address is 404 not-found; the match ignores case and spaces', async () => {
+    const { service } = lookupSetup();
+    expect(await problem(service.lookup(ADMIN, 'nobody@example.test'))).toEqual({ status: 404, type: 'not-found' });
+    expect(await service.lookup(EDITOR, '  LAN@Example.TEST ')).toMatchObject({ user: { id: LEARNER }, grantable: true });
+  });
+});
+
 describe('locks and logs', () => {
   it('no shared-client query while lockUser is held (create, revoke, update), and the lock is the target user\'s', async () => {
     const { service, events } = setup({ grants: [{ kind: 'plan' }], subscriptions: [paidSub()] });
