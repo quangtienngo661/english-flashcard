@@ -1,9 +1,12 @@
-import { useInfiniteQuery } from '@tanstack/react-query';
+import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { Link, useLocation, useMatch, useNavigate } from 'react-router';
 import { useTranslations } from 'use-intl';
 import { useUrlFilters } from '../../api/use-url-filters';
+import { PageActions } from '../../app/shell-slots';
 import { useApi } from '../../auth/session-context';
+import { useCan } from '../../auth/use-can';
+import { CreateAccountDialog } from '../staff/CreateAccountDialog';
 import { useDateTime } from '../../i18n/use-date-time';
 import { Badge } from '../../ui/Badge';
 import { Button } from '../../ui/Button';
@@ -23,7 +26,7 @@ const FILTERS = {
   status: { default: 'all', valid: (v: string) => (STATUSES as string[]).includes(v) },
 };
 
-/** A/71 `/users` (admin only, `roles.manage`): search by 2+ characters, filter by status, 20 per page; a row opens its detail (A/72). */
+/** A/71 `/users` (`users.read`: admin and editor read; AD18: only `roles.manage` creates, from [Tạo người dùng]): search by 2+ characters, filter by status, 20 per page; a row opens its detail (A/72). */
 export function UsersPage() {
   const t = useTranslations();
   const api = useApi();
@@ -31,6 +34,9 @@ export function UsersPage() {
   const { search } = useLocation();
   const dateTime = useDateTime();
   const [filters, setFilters] = useUrlFilters(FILTERS);
+  const queryClient = useQueryClient();
+  const canManage = useCan('roles.manage');
+  const [creating, setCreating] = useState(false);
   const panelId = useMatch('/users/:id')?.params.id;
   const shownId = useRetained(panelId);
 
@@ -86,6 +92,18 @@ export function UsersPage() {
   const shortSearch = codePoints(normalizeSearch(draft)) === 1;
   return (
     <div className="flex flex-col gap-4">
+      {canManage && (
+        <PageActions>
+          <Button onPress={() => setCreating(true)}>{t('users.create')}</Button>
+        </PageActions>
+      )}
+      {creating && (
+        <CreateAccountDialog
+          allowLearner
+          onClose={() => setCreating(false)}
+          onCreated={() => void queryClient.invalidateQueries({ queryKey: ['users'] })}
+        />
+      )}
       <div className="grid gap-3 shell:grid-cols-2 shell:items-start">
         <TextField
           label={t('users.search')}

@@ -6,6 +6,7 @@ import { ApiError } from '../../api/problem';
 import { useErrorDetails, type ErrorDetails } from '../../api/use-error-message';
 import { userLabel } from '../../api/user-ref';
 import { useApi, useSession } from '../../auth/session-context';
+import { useCan } from '../../auth/use-can';
 import { useDateTime } from '../../i18n/use-date-time';
 import { Badge } from '../../ui/Badge';
 import { Banner } from '../../ui/Banner';
@@ -13,7 +14,9 @@ import { Button } from '../../ui/Button';
 import { PanelBody, PanelFooter, PanelHead } from '../../ui/DetailPanel';
 import { ListState } from '../../ui/ListState';
 import { showToast } from '../../ui/Toast';
+import { EditUserDialog } from './EditUserDialog';
 import { LockDialog } from './LockDialog';
+import { ResetPasswordDialog } from './ResetPasswordDialog';
 import { getUser, STATUS_TONE, unlockUser, UUID, type AdminUserDetail } from './users-api';
 
 const userKey = (id: string) => ['user', id] as const;
@@ -37,7 +40,11 @@ export function UserDetail({ id, listSearch }: { id: string; listSearch: string 
   const errorDetails = useErrorDetails();
   const { state } = useSession();
   const meId = state.status === 'signed-in' ? state.me.id : null;
+  // AD18: editors read users; only `roles.manage` edits, resets, locks.
+  const canManage = useCan('roles.manage');
   const [locking, setLocking] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [resetting, setResetting] = useState(false);
   const [unlockError, setUnlockError] = useState<ErrorDetails | null>(null);
   // An id that is no UUID cannot exist (the API would answer 400): same as a 404, and the API is not asked.
   const query = useQuery({ queryKey: userKey(id), queryFn: () => getUser(api, id), enabled: UUID.test(id) });
@@ -85,7 +92,7 @@ export function UserDetail({ id, listSearch }: { id: string; listSearch: string 
   }
   const isLocked = user.status === 'locked';
   // Locking is refused for yourself and for an admin (409 `lock-rule`); the screen does not offer it.
-  const canLock = !isLocked && user.id !== meId && user.staff_role !== 'admin';
+  const canLock = canManage && !isLocked && user.id !== meId && user.staff_role !== 'admin';
   const none = <span className="text-muted">—</span>;
 
   return (
@@ -122,24 +129,53 @@ export function UserDetail({ id, listSearch }: { id: string; listSearch: string 
               ? t('users.detail.termsValue', { time: dateTime(user.terms_accepted_at), version: user.terms_version ?? '—' })
               : none}
           </Row>
+          <Row label={t('users.edit.timezone')}>{user.timezone}</Row>
           <Row label={t('users.detail.role')}>{t(`users.roles.${user.staff_role ?? 'learner'}`)}</Row>
           <Row label={t('users.cols.verified')}>{t(user.email_verified ? 'users.verified.yes' : 'users.verified.no')}</Row>
           <Row label={t('users.cols.created')}>{dateTime(user.created_at)}</Row>
           <Row label={t('users.cols.lastSeen')}>{user.last_seen_at ? dateTime(user.last_seen_at) : none}</Row>
         </dl>
       </PanelBody>
-      {(canLock || isLocked) && (
+      {canManage && (
         <PanelFooter>
+          <Button variant="secondary" onPress={() => setEditing(true)}>
+            {t('users.detail.edit')}
+          </Button>
+          <Button variant="secondary" onPress={() => setResetting(true)}>
+            {t('users.detail.resetPassword')}
+          </Button>
           {isLocked ? (
             <Button variant="secondary" isPending={unlock.isPending} onPress={() => unlock.mutate()}>
               {t('users.detail.unlock')}
             </Button>
-          ) : (
+          ) : canLock ? (
             <Button variant="danger" onPress={() => setLocking(true)}>
               {t('users.detail.lock')}
             </Button>
-          )}
+          ) : null}
         </PanelFooter>
+      )}
+      {editing && (
+        <EditUserDialog
+          user={user}
+          onClose={() => setEditing(false)}
+          onSaved={(result) => {
+            saved(result);
+            setEditing(false);
+            showToast(t('users.edit.saved', { email: result.email }));
+          }}
+        />
+      )}
+      {resetting && (
+        <ResetPasswordDialog
+          user={user}
+          onClose={() => setResetting(false)}
+          onDone={(result) => {
+            saved(result);
+            setResetting(false);
+            showToast(t('users.reset.done', { email: result.email }));
+          }}
+        />
       )}
       {locking && (
         <LockDialog

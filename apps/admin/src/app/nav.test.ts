@@ -3,7 +3,7 @@ import type { Permission } from '../auth/session-store';
 import { NAV_ICONS } from './nav-icons';
 import { canAccess, firstVisiblePath, homePath, NAV, visibleNav } from './nav';
 
-const EDITOR: Permission[] = ['content.edit', 'content.import', 'content.publish', 'taxonomy.manage', 'entitlements.grant'];
+const EDITOR: Permission[] = ['content.edit', 'content.import', 'content.publish', 'taxonomy.manage', 'entitlements.grant', 'users.read'];
 const ADMIN: Permission[] = [...EDITOR, 'roles.manage', 'settings.manage'];
 
 // Design §4.4 / copy doc §8.0: the sidebar of the admin, group by group.
@@ -46,7 +46,7 @@ describe('nav', () => {
     for (const n of NAV) expect(NAV_ICONS[n.path], n.path).toBeDefined();
   });
 
-  it('editor sees the 11 entries of A/71e; admin sees all 24', () => {
+  it('editor sees the 11 entries of A/71e plus Người dùng (AD18, read only); admin sees all 24', () => {
     expect(visibleNav(EDITOR).map((n) => n.path)).toEqual([
       '/dashboard',
       '/words',
@@ -58,6 +58,7 @@ describe('nav', () => {
       '/sources',
       '/unknown-forms',
       '/reports',
+      '/users',
       '/entitlements',
     ]);
     expect(visibleNav(EDITOR).some((n) => n.group === 'ai')).toBe(false);
