@@ -58,7 +58,7 @@ export function WeakWordsPage() {
       aside={
         <>
           {count > 0 && (
-            <section aria-labelledby="weak-card" className="flex flex-col gap-3 rounded-card border-b-4 border-primary bg-navy p-5 text-on-navy">
+            <section aria-labelledby="weak-card" className="flex flex-col gap-3 rounded-card border-b-4 border-primary bg-navy-card p-5 text-on-navy">
               <span className="w-fit rounded-full bg-accent px-2.5 py-0.5 text-caption font-semibold text-on-accent">{t('cardChip')}</span>
               <h2 id="weak-card" className="text-h2 font-extrabold">
                 {t('cardCount', { count })}

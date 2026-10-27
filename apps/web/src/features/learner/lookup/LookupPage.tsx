@@ -69,7 +69,7 @@ export function LookupPage() {
                   aria-label={word.lemma}
                   onMouseEnter={() => setPicked(word.lemma)}
                   onFocus={() => setPicked(word.lemma)}
-                  className={cn('grid grid-cols-12 items-center gap-x-3 gap-y-0.5 rounded-inner px-3 py-3', preview?.lemma === word.lemma && 'md:bg-accent-soft')}
+                  className={cn('grid grid-cols-12 items-center gap-x-3 gap-y-0.5 rounded-inner px-3 py-3', preview?.lemma === word.lemma && 'md:pastel-island md:bg-accent-soft')}
                 >
                   <span className="col-span-9 row-start-1 flex min-w-0 flex-wrap items-baseline gap-x-2 md:col-span-3">
                     <Link href={`/${locale}/app/word?w=${encodeURIComponent(word.lemma)}`} className="break-all text-ui font-semibold text-ink hover:underline">

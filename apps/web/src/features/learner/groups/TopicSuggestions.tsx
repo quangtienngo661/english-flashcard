@@ -37,7 +37,7 @@ function SuggestionCard({ item, tone }: { item: TopicSuggestion; tone: string })
   const locale = useLocale();
   const title = t('suggestCard', { topic: item.topic.name, level: item.level });
   return (
-    <section aria-label={title} className={cn('flex flex-col gap-3 rounded-card p-4 shadow-ledge-soft', tone)}>
+    <section aria-label={title} className={cn('pastel-island flex flex-col gap-3 rounded-card p-4 shadow-ledge-soft', tone)}>
       <div className="flex items-baseline justify-between gap-2">
         <h3 className="text-body font-semibold text-ink">{title}</h3>
         <span className="shrink-0 text-caption text-muted">{t('suggestCount', { count: item.count })}</span>

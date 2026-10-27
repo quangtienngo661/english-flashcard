@@ -45,6 +45,7 @@ that variable loads the `Lexend` family itself (for example a Google Fonts `<lin
 | `neutral-soft` | `#eef0f5` | "queued", "reverted", "unchanged" |
 | `wrong-chip` / `wrong-chip-deep` | `#ffd3cd` / `#d99b92` | a sticker picked wrongly, and its ledge |
 | `navy` / `navy-raised` | `#1b2444` / `#2c3760` | learner app: top bar and lookup strip, raised items on it |
+| `navy-card` | `#121833` (dark `#12151f`) | learner app: the big navy cards (Hôm nay hero on Today and Practice, Từ hay sai), darker than `navy` |
 | `on-navy` / `on-navy-muted` | `#f1f3fd` / `#b9c1e0` | learner app: text on `navy` |
 | `session-card` | `var(--color-canvas)` | learner app: card in review and practice sessions |
 | `on-accent` | `#0f1a3d` | learner app: text on `accent` (stays dark in both themes) |
@@ -67,6 +68,12 @@ modes.
 light palette applies again so text stays dark. Nothing imports it. To turn it on, add
 `@import '@wordmet/design-tokens/dark-pastel.css';` right after the `dark.css` import in `apps/web/src/app/globals.css`.
 `apps/web/src/styles/tokens.test.ts` checks its contrast so it stays valid.
+
+## Light islands (`island.css`)
+
+`island.css` (imported by `apps/web`) gives an element with the class `pastel-island` (or `md:pastel-island` from 768 px) the light palette
+in the dark theme, so its soft background stays pastel with dark text (owner 27/10/2026). Used only on deck card bands, topic
+suggestion cards, "Thêm từ vừa gặp", practice source cards and the picked row of Tra từ.
 
 ## Contrast pairs checked (LP12)
 

@@ -134,3 +134,28 @@ describe('pastel dark variant (not on)', () => {
     colors = lightColors;
   });
 });
+
+// island.css: the light islands the app uses in the dark theme (owner 27/10/2026), and the darker navy card.
+describe('light islands and the navy card', () => {
+  const islandCss = readFileSync(createRequire(import.meta.url).resolve('@wordmet/design-tokens/island.css'), 'utf8');
+
+  it('the app imports island.css', () => {
+    expect(globals).toContain("@import '@wordmet/design-tokens/island.css'");
+  });
+
+  it('text on an island surface meets 4.5:1 in the dark theme', () => {
+    colors = new Map([...darkColors, ...tokens(islandCss.slice(0, islandCss.indexOf('}') + 1), 'color')]);
+    const pairs: Array<[string, string]> = ['ink', 'muted', 'primary', 'success', 'danger', 'warning'].flatMap((fg) =>
+      ['primary-soft', 'accent-soft', 'success-soft', 'danger-soft', 'surface'].map((bg) => [fg, bg] as [string, string]));
+    expect(below(pairs, 4.5)).toEqual([]);
+    colors = lightColors;
+  });
+
+  it('on-navy and on-navy-muted read on navy-card in both themes', () => {
+    for (const map of [lightColors, darkColors]) {
+      colors = map;
+      expect(below([['on-navy', 'navy-card'], ['on-navy-muted', 'navy-card'], ['on-navy', 'navy-raised']], 4.5)).toEqual([]);
+    }
+    colors = lightColors;
+  });
+});

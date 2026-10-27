@@ -53,7 +53,7 @@ export function GroupCard({ group, index, actions }: { group: GroupSummary; inde
     // Owner 27/10/2026: the whole card opens the deck (stretched link) and lifts a little on hover; the menu and the review
     // button sit above the link and keep their own action.
     <li className="relative flex min-w-0 flex-col overflow-hidden rounded-card border border-border bg-surface shadow-ledge-soft transition duration-fast ease-standard focus-within:shadow-ledge hover:shadow-ledge motion-safe:hover:-translate-y-1 motion-safe:focus-within:-translate-y-1">
-      <div className={cn('relative px-4 pb-3 pt-4', TONES[index % TONES.length])}>
+      <div className={cn('pastel-island relative px-4 pb-3 pt-4', TONES[index % TONES.length])}>
         <StageBars cells={group.cells} />
         <GroupMenu group={group} actions={actions} />
       </div>

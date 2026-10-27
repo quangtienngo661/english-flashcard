@@ -42,7 +42,7 @@ type Props = {
 export function SourceCard({ name, icon: Icon, tone, body, chips, startLabel, onStart, busy, onCustomize, error, reopensAt, titleHref }: Props) {
   const t = useTranslations('App.practice.sources');
   return (
-    <li aria-label={name} className={cn('flex min-w-0 flex-col gap-3 rounded-card p-4 shadow-ledge-soft', TONE[tone])}>
+    <li aria-label={name} className={cn('pastel-island flex min-w-0 flex-col gap-3 rounded-card p-4 shadow-ledge-soft', TONE[tone])}>
       <div className="flex items-start justify-between gap-2">
         <h3 className="flex min-w-0 items-center gap-2 text-title font-semibold text-ink">
           <Icon aria-hidden className="size-5 shrink-0" />

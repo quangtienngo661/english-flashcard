@@ -5,6 +5,7 @@
   "exports": {
     "./theme.css": "./theme.css",
     "./dark.css": "./dark.css",
-    "./dark-pastel.css": "./dark-pastel.css"
+    "./dark-pastel.css": "./dark-pastel.css",
+    "./island.css": "./island.css"
   }
 }
