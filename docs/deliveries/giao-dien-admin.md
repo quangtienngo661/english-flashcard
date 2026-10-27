@@ -139,3 +139,74 @@ một lần mỗi response bằng `IdentityService.emailsOf`, ngoài transaction
 Màn cần biết: `lookup` trả `user: { id, email }` **không có** `system` (đúng §5.2; màn coi thiếu là `false`). Với `page_token` hỏng kèm email lạ: Cấp gói trả 400,
 Trả lượt trả danh sách rỗng (thứ tự kiểm khác nhau; chỉ lộ khi cả hai cùng sai). Kiểm: unit 195 file / 2623 test, `tsc`, lint (chỉ warning cũ ở
 `mail-dispatcher.service.ts`); CI xanh từng PR. Chưa chạy API thật qua HTTP cho các endpoint mới (ngoài kiểm `replaced` trên Postgres thật).
+
+---
+
+# Đợt giao diện admin — M3 as-built (27/10/2026)
+
+Nhánh `feat/giao-dien-admin-m3`. Bốn màn mới (Báo lỗi, Lý do báo lỗi, Trả lượt, Dạng chia chưa biết); mục menu tương ứng đã bật.
+
+## Đã làm (Task 26–30)
+
+1. Task 26 — Báo lỗi: danh sách có lọc trạng thái / lý do / nguồn câu (lọc nằm trong URL, mặc định "Chưa xử lý"), panel chi tiết (câu hỏi, đáp án, người học chọn gì,
+   thông tin AI, ba nút xử lý, dòng trả lượt): `c2f2c7a`; người xử lý hiện bằng email (`userLabel`): `ce3732e`.
+2. Task 27 — Lý do báo lỗi (chỉ admin): bảng theo thứ tự của API, công tắc "Đang dùng" gửi `PATCH { active }`, hộp thêm / sửa lý do: `e9d49eb`.
+3. Task 28 — Trả lượt (chỉ admin): lọc theo email người xử lý và khoảng ngày (ranh giới ngày giờ Việt Nam), liên kết sang báo lỗi: `10c4c44`.
+4. Task 29 — Dạng chia chưa biết: [Nhận dạng này] kèm toast có [Hoàn tác], [Bỏ qua]: `f3d7630`; báo lỗi khi hoàn tác thất bại và giữ thông báo `word-form-exists`: `f8e4c1d`.
+5. Task 30 — a11y (axe, VI/EN, 1440/390) và kiểm không cuộn ngang ở 390 (ghi chú 300 ký tự) cho bốn màn; e2e stack thật `m3.real.spec.ts` với
+   `support/ai-report.ts` (dựng một báo lỗi câu AI và một dạng chia chưa biết bằng chính API); ảnh chụp; hai tài liệu này: commit
+   `test(admin): add the m3 real-stack checks and the m3 delivery record`.
+
+Cách dựng dữ liệu thật (`seedAiReport`, không ghi thẳng DB): chọn model `fake:ok` cho `generate_cloze` → nguồn mới + CSV 3 từ riêng của lần chạy, publish bằng job
+→ Lan lên Pro → một lý do riêng của lần chạy (`e2e_<mã>`, có trả lượt) → nhóm 1 từ + phiên `cloze` → `next` → trả lời → báo lỗi. Dạng chia chưa biết: đổi
+`generate_cloze` sang `fake:bad-form`, mở phiên cho từ thứ hai (model trả dạng `<từ>ment`, bị loại, dạng được ghi vào bảng), rồi đổi lại `fake:ok`.
+
+## Ảnh chụp (stack thật, 27/10/2026)
+
+Ảnh ở `docs/deliveries/giao-dien-admin/m3/`; desktop 1440×900 là một màn hình, phone 390×844 là cả trang. Node Figma: A/73 `391:2300`, A/73e `389:2436`, A/74 `389:2667`,
+A/74c `389:3417`, A/75 `393:2300`, A/75b `393:2876`, A/76 `393:3535`, A/77 `393:3990`, A/77b `393:4368`.
+
+| Màn | Desktop | Phone |
+|---|---|---|
+| A/73 Báo lỗi · danh sách (admin) | [a73-reports-list-desktop.png](giao-dien-admin/m3/a73-reports-list-desktop.png) | [a73-reports-list-mobile.png](giao-dien-admin/m3/a73-reports-list-mobile.png) |
+| A/73e Báo lỗi như Minh (editor) thấy, lọc một lý do không còn báo lỗi chưa xử lý | [a73e-reports-editor-empty-desktop.png](giao-dien-admin/m3/a73e-reports-editor-empty-desktop.png) | [a73e-reports-editor-empty-mobile.png](giao-dien-admin/m3/a73e-reports-editor-empty-mobile.png) |
+| A/74 Chi tiết báo lỗi câu AI, chưa xử lý | [a74-report-ai-open-desktop.png](giao-dien-admin/m3/a74-report-ai-open-desktop.png) | [a74-report-ai-open-mobile.png](giao-dien-admin/m3/a74-report-ai-open-mobile.png) |
+| A/74c Chi tiết báo lỗi đã xử lý (Minh xác nhận, đã trả lượt) | [a74c-report-resolved-desktop.png](giao-dien-admin/m3/a74c-report-resolved-desktop.png) | [a74c-report-resolved-mobile.png](giao-dien-admin/m3/a74c-report-resolved-mobile.png) |
+| A/75 Lý do báo lỗi | [a75-report-reasons-desktop.png](giao-dien-admin/m3/a75-report-reasons-desktop.png) | [a75-report-reasons-mobile.png](giao-dien-admin/m3/a75-report-reasons-mobile.png) |
+| A/75b Sửa lý do (hộp thoại) | [a75b-reason-edit-dialog-desktop.png](giao-dien-admin/m3/a75b-reason-edit-dialog-desktop.png) | [a75b-reason-edit-dialog-mobile.png](giao-dien-admin/m3/a75b-reason-edit-dialog-mobile.png) |
+| A/76 Trả lượt | [a76-refunds-desktop.png](giao-dien-admin/m3/a76-refunds-desktop.png) | [a76-refunds-mobile.png](giao-dien-admin/m3/a76-refunds-mobile.png) |
+| A/77 Dạng chia chưa biết | [a77-unknown-forms-desktop.png](giao-dien-admin/m3/a77-unknown-forms-desktop.png) | [a77-unknown-forms-mobile.png](giao-dien-admin/m3/a77-unknown-forms-mobile.png) |
+| A/77b Dạng chia chưa biết · trống (*) | [a77b-unknown-forms-empty-desktop.png](giao-dien-admin/m3/a77b-unknown-forms-empty-desktop.png) | [a77b-unknown-forms-empty-mobile.png](giao-dien-admin/m3/a77b-unknown-forms-empty-mobile.png) |
+
+(*) Trên DB dùng chung danh sách thật không bao giờ trống, nên riêng khung này câu trả lời của danh sách được thay bằng danh sách rỗng khi chụp.
+
+Khác biệt nhìn thấy ở ảnh thật (chưa mở Figma để so từng điểm):
+- A/73 / A/74 ở 1440 khi panel chi tiết đang mở: bảng bị ép hẹp, cột "Từ", "Lý do", "Người xử lý" xuống dòng từng chữ cái. Đây là lỗi bố cục thật của màn Báo lỗi
+  (panel chiếm khoảng 415px bên phải), chưa sửa; nên cho bảng cuộn ngang trong tờ trắng hoặc ẩn bớt cột khi panel mở.
+- Ô ngày của Trả lượt hiện `mm/dd/yyyy` theo ngôn ngữ của trình duyệt chụp (Chrome en-US), không theo ngôn ngữ của app.
+- A/75b: ảnh phone là cả trang, hộp thoại nằm trên đầu trang còn bảng phía sau vẫn hiện (là cách chụp fullPage, không phải lỗi hộp thoại).
+- Khung A/74c có thêm lỗi 409 (báo lỗi đã xử lý); ảnh thật chụp báo lỗi đã xử lý thành công, không có lỗi 409 (đã có trong test mock e2e).
+
+## Kiểm đã chạy
+
+- Stack thật (API + worker cổng 3200, `AI_FAKE_ENABLED=true`, DB `english_learning_admin_m3`, admin preview 5283): `pnpm test:e2e:real` **13/13** (8 test cũ + 2 M0 + 3 M3), chạy cả bộ.
+  M3: Minh lọc theo lý do riêng, mở báo lỗi AI, bấm [Xác nhận lỗi] → "Đã trả lại 1 lượt câu AI" và số lượt AI của Lan tăng đúng 1 (đọc `GET /v1/me/entitlements`);
+  admin thấy dòng Trả lượt có email Lan và Minh (vai trò `editor`, "Đã trả"), thêm lý do mới rồi tắt, tải lại vẫn tắt; Minh nhận dạng chia vừa bị loại → toast → [Hoàn tác] → toast "Đã gỡ …".
+- `pnpm --filter admin test:e2e` (cổng 5391, mock): **165 passed, 55 skipped** (bốn màn thêm vào a11y và kiểm không cuộn ngang ở 390).
+- Unit, lint, typecheck: số ở báo lỗi của Task 30 (`.superpowers/sdd/2026-10-27-giao-dien-admin/task-30-report.md`).
+- Chưa kiểm: CI trên PR; sau [Hoàn tác] dòng có quay lại danh sách thật hay không (test thật chỉ kiểm toast); lần chạy đầy đủ từ đầu với phiên mới (khi lặp đã dùng `E2E_REUSE_STATE`; lần đầu 10/10 cũ + M3 đã chạy trước khi sửa lỗi session id của seed).
+- Lưu ý chạy tại máy: CLI `admin:grant` cần `.env` của một API worktree có `.env` (`E2E_API_DIR`) cùng `DATABASE_URL` của stack đang chạy.
+
+## Câu chữ tự viết (không có trong copy doc §8.4–8.7; chủ dự án duyệt lại khi cần)
+
+- Báo lỗi (Task 26): bộ lọc "Tất cả trạng thái", "Tất cả lý do", "Mọi nguồn"; `emptyFiltered` "Không có báo lỗi nào khớp bộ lọc."; tên kiểu câu "Trắc nghiệm", "Đúng / Sai",
+  "Gõ từ", "Điền chỗ trống", "Nghĩa trong câu", "Trắc nghiệm trong câu"; chi tiết "Báo lỗi · {word}", "Báo lỗi", "Về danh sách báo lỗi", "Câu hỏi", "Nghĩa", "Câu",
+  "Các lựa chọn", "Đáp án đúng" (dấu), "Chưa trả lời", "Đã thử", "Không xem gợi ý nào", "Đúng", "Sai", "Ghi chú của người học", "Không có ghi chú", "Xem lần gọi này",
+  "Đã xử lý", "{status} · {who} · {time}", "Mở nghĩa của từ “{word}”"; `common.systemUser` "Hệ thống".
+- Lý do báo lỗi (Task 27): "Thêm lý do", "Sửa lần cuối bởi", "Thao tác", "Có" / "Không", "Sửa", "Sửa lý do {code}", "Đang dùng: {code}" (chỉ cho trình đọc màn hình),
+  "Chưa có lý do báo lỗi nào.", "Thêm lý do để người học có thể chọn khi báo lỗi.", "Thêm lý do báo lỗi", "Sửa lý do báo lỗi", gợi ý và lỗi ô mã / tên / thứ tự
+  ("Bắt đầu bằng chữ, 2–40 ký tự a–z, 0–9, _", "Mã phải bắt đầu bằng chữ, dài 2–40 ký tự, chỉ gồm a–z, 0–9, _.", "1–100 ký tự", "Nhập tên từ 1 đến 100 ký tự.",
+  "Gợi ý trong ô ghi chú (tiếng Việt / tiếng Anh)", "Không bắt buộc, tối đa 200 ký tự", "Chỉ có tác dụng với câu AI", "Từ 0 đến 10.000; số nhỏ hiện trước",
+  "Nhập số nguyên từ 0 đến 10.000."), "Lưu". Mặc định hộp thêm: "Cả hai", hai ô tick tắt, thứ tự 0 (API không có mặc định).
+- Trả lượt (Task 28): "Email người xử lý", "Lọc", "Xem báo lỗi", ô gợi ý "minh@example.com".
+- Dạng chia chưa biết (Task 29): `acceptFor` / `ignoreFor` (nhãn cho trình đọc màn hình) và `undone` "Đã gỡ “{form}” khỏi dạng chia của “{lemma}”."

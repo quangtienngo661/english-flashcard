@@ -50,3 +50,29 @@ Chưa kiểm được ở M0, vì chưa có màn nào dùng (`useDirtyForm`, `us
   khi vừa lưu thì không hỏi). **Kiểm đầu tiên ở màn Prompt (M1a).**
 - Thanh "Bạn có thay đổi chưa lưu từ lần trước." với [Khôi phục] [Bỏ] sau khi phiên hết hạn giữa lúc sửa (để form có chữ chưa lưu, đổi mật khẩu của chính tài khoản đó
   bằng API ở cửa sổ khác, bấm lưu → về trang đăng nhập; đăng nhập lại → thanh hiện). **Kiểm đầu tiên ở màn Settings (M2).**
+
+## M3 — Báo lỗi
+
+Chuẩn bị: stack thật với `AI_FAKE_ENABLED=true` (không có khóa OpenAI / Anthropic). Chạy `pnpm test:e2e:real` một lần thì bộ test tự dựng dữ liệu (xem dưới);
+muốn tự bấm thì làm theo các bước dưới bằng tài khoản Lan (người học), Minh (editor), admin trong `.state.json`.
+
+Dữ liệu cần có (bộ test `m3.real.spec.ts` dựng bằng chính API, không ghi thẳng DB): 3 từ riêng đã publish; Lan là Pro; một lý do báo lỗi riêng có trả lượt; Lan có một câu
+điền chỗ trống do AI sinh đã trả lời và báo lỗi bằng lý do đó; một dạng chia (`<từ>ment`) mà AI đã dùng nhưng bảng chưa có.
+
+1. **Minh xác nhận lỗi.** Đăng nhập Minh → menu "Báo lỗi". → Danh sách mặc định lọc "Chưa xử lý". Mở ô "Lý do", chọn lý do riêng → còn đúng một dòng (nguồn "Câu AI").
+   Bấm tên từ → panel bên phải hiện câu hỏi, câu trả lời của Lan, ghi chú của Lan, "Thông tin AI", dòng "Xác nhận lỗi sẽ trả lại 1 lượt câu AI cho người học." và ba nút.
+   Bấm [Xác nhận lỗi] → panel đổi sang dòng "Đã xử lý" kèm "Đã trả lại 1 lượt câu AI", hai nút biến mất. Đóng panel → danh sách (đã lọc) không còn dòng đó.
+   Kiểm thêm: số lượt AI của Lan (`GET /v1/me/entitlements`, `pools.ai_practice.remaining`) tăng đúng 1. Khung Figma A/73, A/73e, A/74, A/74c.
+2. **Admin xem Trả lượt.** Đăng nhập admin → menu "Trả lượt". Gõ email Minh vào "Email người xử lý" → [Lọc]. → Có dòng của báo lỗi vừa xử lý: người học là email Lan, người xử lý
+   là email Minh, vai trò "editor", "Đã trả". Bấm "Xem báo lỗi" → mở đúng báo lỗi đó. Dưới bảng có dòng "Không thu hồi được lượt đã trả." (A/76).
+3. **Admin thêm rồi tắt một lý do.** Menu "Lý do báo lỗi" → [Thêm lý do] → nhập mã (ví dụ `thu_m3`), tên tiếng Việt, tên tiếng Anh → [Lưu]. → Hộp đóng, bảng có dòng mới,
+   công tắc "Đang dùng" bật. Tắt công tắc → tải lại trang vẫn tắt (và người học không còn thấy lý do này khi báo lỗi). Bấm "Sửa" ở một dòng → hộp "Sửa lý do báo lỗi" (A/75, A/75b).
+   Thử nhập mã đã có → lỗi hiện ngay dưới ô mã.
+4. **Minh nhận một dạng chia.** Đăng nhập Minh → menu "Dạng chia chưa biết" (A/77). → Có dòng `<từ>` / `<từ>ment` với số lần bị loại. Bấm [Nhận dạng này] → toast
+   "Đã thêm “…” vào dạng chia của “…”." có nút [Hoàn tác], dòng biến khỏi danh sách. Bấm [Hoàn tác] → toast "Đã gỡ “…” khỏi dạng chia của “…”.".
+   (Chưa kiểm bằng test thật: sau Hoàn tác dòng có quay lại danh sách hay không; xem bằng mắt.) Khi bảng trống: "Chưa có dạng chia nào cần xem." (A/77b).
+5. **Editor không thấy màn của admin.** Minh gõ thẳng `/refunds` hoặc `/report-reasons` → "Bạn không có quyền xem trang này." và menu của Minh không có hai mục đó; Minh vẫn có
+   "Báo lỗi" và "Dạng chia chưa biết".
+6. **Phone 390.** Mở bốn màn ở chiều rộng 390 (hoặc xem ảnh trong `docs/deliveries/giao-dien-admin/m3/`) → không cuộn ngang, bảng thành thẻ.
+
+Lỗi bố cục đã biết (chưa sửa): ở 1440 khi panel chi tiết báo lỗi đang mở, bảng bên trái bị ép hẹp và vài cột xuống dòng từng chữ cái.
