@@ -41,6 +41,9 @@ export const grantIdParams = z.strictObject({ id: uuid });
 export const listGrantsQuery = z.strictObject({
   user_id: uuid.optional(),
   granted_by: uuid.optional(),
+  // Exact address of an account (design §5.2); one no account has gives an empty list.
+  user_email: z.string().max(320).optional(),
+  granted_by_email: z.string().max(320).optional(),
   active: z.enum(['true', 'false']).optional(),
   expiring_within_days: z.coerce.number().int().min(1).max(365).optional(),
   page_size: z.coerce.number().int().min(1).max(100).default(20),

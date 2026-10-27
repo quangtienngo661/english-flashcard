@@ -7,7 +7,7 @@ import type { Profile } from '../../identity/profile/identity.service.js';
 import { SETTINGS_DEFAULTS } from '../../settings/index.js';
 import type { SubscriptionSource } from '../rules/plan-rules.js';
 import { createGrantSchema, listGrantsQuery, updateGrantSchema } from './grants.schemas.js';
-import { GrantsService } from './grants.service.js';
+import { grantStatus, GrantsService } from './grants.service.js';
 
 const NOW = new Date('2026-11-10T05:00:00Z');
 const DAY = 86_400_000;
@@ -61,6 +61,7 @@ type Setup = {
   grants?: Array<Partial<GrantRow>>;
   subscriptions?: SubscriptionSource[];
   adapter?: { cancelAtPeriodEnd?: (id: string) => Promise<void> } | null;
+  changes?: Array<Record<string, unknown>>;
 };
 
 function setup(input: Setup = {}) {
@@ -72,7 +73,7 @@ function setup(input: Setup = {}) {
     endsAt: new Date(NOW.getTime() + 5 * DAY), reason: 'old', grantedBy: ADMIN, grantedByRole: 'admin', revokedAt: null,
     revokedBy: null, revokeReason: null, paidRenewalAction: null, createdAt: new Date(NOW.getTime() - 5 * DAY), ...g,
   }));
-  const changes: Array<Record<string, unknown>> = [];
+  const changes: Array<Record<string, unknown>> = [...(input.changes ?? [])];
   const events: string[] = [];
   let locked = false;
   const guard = (what: string) => {
@@ -128,9 +129,11 @@ function setup(input: Setup = {}) {
       events.push('change');
       return row;
     }),
-    findMany: vi.fn(async ({ where }: { where: { grantId: string } }) => {
+    findMany: vi.fn(async ({ where }: { where: Record<string, unknown> }) => {
       if (shared) guard('prisma.entitlementGrantChange.findMany');
-      return changes.filter((c) => c.grantId === where.grantId).reverse();
+      // Newest first by created_at, then id; rows created here all have NOW, so a later one sorts first by its id.
+      return changes.filter((c) => matches(c, where)).sort((a, b) => (b.createdAt as Date).getTime() - (a.createdAt as Date).getTime()
+        || String(b.id).localeCompare(String(a.id), undefined, { numeric: true }));
     }),
   });
 
@@ -159,7 +162,20 @@ function setup(input: Setup = {}) {
     entitlementGrant: grantDelegate(true),
     entitlementGrantChange: changeDelegate(true),
   };
-  const identity = { getProfile: vi.fn(async (id: string) => (guard('IdentityService.getProfile'), profiles.get(id) ?? null)) };
+  const identity = {
+    getProfile: vi.fn(async (id: string) => (guard('IdentityService.getProfile'), profiles.get(id) ?? null)),
+    emailsOf: vi.fn(async (ids: string[]) => {
+      guard('IdentityService.emailsOf');
+      return new Map(ids.flatMap((id) => {
+        const p = profiles.get(id);
+        return p ? [[id, p.email] as [string, string]] : [];
+      }));
+    }),
+    findUserIdByEmail: vi.fn(async (email: string) => {
+      guard('IdentityService.findUserIdByEmail');
+      return [...profiles.values()].find((p) => p.email === email.trim().toLowerCase())?.id ?? null;
+    }),
+  };
   const settings = { get: vi.fn(async () => (guard('SettingsService.get'), SETTINGS_DEFAULTS)) };
   const sources = {
     load: vi.fn(async (db: unknown) => {
@@ -175,7 +191,7 @@ function setup(input: Setup = {}) {
   const service = new GrantsService(
     prisma as never, clock, identity as never, settings as never, sources as never, registry as never, logger,
   );
-  return { service, grants, changes, events, logs, adapter, registry, clock, tx };
+  return { service, grants, changes, events, logs, adapter, registry, clock, tx, prisma, identity };
 }
 
 async function problem(promise: Promise<unknown>): Promise<{ status: number; type: string; extensions?: Record<string, unknown> }> {
@@ -522,6 +538,14 @@ describe('locks and logs', () => {
     expect(events.filter((e) => e.startsWith('lock:'))).toEqual(Array(3).fill(`lock:entitlements.user:${LEARNER}`));
   });
 
+  it('create, revoke and update look up emails after the transaction (the fake emailsOf throws under the lock), one call each', async () => {
+    const { service, identity } = setup({ grants: [{ kind: 'plan' }], subscriptions: [paidSub()] });
+    await service.create(ADMIN, planBody({ confirm_turn_off_paid_renewal: true }));
+    await service.update(ADMIN, 'grant-2', updateGrantSchema.parse({ ends_at: iso(60 * DAY), reason: 'r' }));
+    await service.revoke(ADMIN, 'grant-2', 'r');
+    expect(identity.emailsOf).toHaveBeenCalledTimes(3);
+  });
+
   it('B5E62: create, revoke and update logs carry ids and operation_id, never the reason text or an email', async () => {
     const { service, logs } = setup({ subscriptions: [paidSub()], adapter: {} });
     await runWithOperationId('op-123', async () => {
@@ -537,5 +561,117 @@ describe('locks and logs', () => {
     const text = JSON.stringify(logs);
     for (const secret of [REASON, 'bí mật 2', 'bí mật 3', '@example.test']) expect(text).not.toContain(secret);
     expect(text).toContain(LEARNER);
+  });
+});
+
+describe('grant status, people and last change (design §5.1, §5.4 10.4–10.5)', () => {
+  const ref = (id: string, email: string | null) => ({ id, email, system: false });
+  const LEARNER_EMAIL = '01@example.test';
+  const ADMIN_EMAIL = 'a1@example.test';
+  const EDITOR_EMAIL = 'e1@example.test';
+
+  it('grantStatus: replaced → revoked → expired → scheduled → active, in that order', () => {
+    const base = { revokedAt: null, startsAt: new Date(NOW.getTime() - DAY), endsAt: new Date(NOW.getTime() + DAY) };
+    expect(grantStatus(base, NOW, false)).toBe('active');
+    expect(grantStatus({ ...base, startsAt: new Date(NOW.getTime() + 1) }, NOW, false)).toBe('scheduled');
+    expect(grantStatus({ ...base, endsAt: NOW }, NOW, false)).toBe('expired');
+    expect(grantStatus({ ...base, endsAt: NOW, revokedAt: NOW }, NOW, false)).toBe('revoked');
+    expect(grantStatus({ ...base, endsAt: NOW, revokedAt: NOW }, NOW, true)).toBe('replaced');
+    expect(grantStatus(base, NOW, true)).toBe('replaced');
+  });
+
+  it('B5E78: after a Pro grant starting now, the old row is replaced and the new one active (list, create and forUser)', async () => {
+    const { service } = setup({ grants: [{ kind: 'plan' }] });
+    const created = await service.create(EDITOR, planBody());
+    expect(created.status).toBe('active');
+    const listed = await service.list(listGrantsQuery.parse({}));
+    expect(listed.items.map((g) => [g.id, g.status])).toEqual([['grant-2', 'active'], ['grant-1', 'replaced']]);
+    expect(listed.items[1].revoked_by_user).toEqual(ref(EDITOR, EDITOR_EMAIL));
+    expect((await service.forUser(LEARNER)).map((g) => g.status)).toEqual(['active', 'replaced']);
+  });
+
+  it('T7: the replacing grant is found even when the list filters it out (granted_by of the old grant)', async () => {
+    const { service } = setup({ grants: [{ kind: 'plan' }] });
+    await service.create(EDITOR, planBody());
+    const listed = await service.list(listGrantsQuery.parse({ granted_by: ADMIN }));
+    expect(listed.items.map((g) => [g.id, g.status])).toEqual([['grant-1', 'replaced']]);
+  });
+
+  it('T7: a manual revoke whose reason is typed "replaced" is still revoked', async () => {
+    const { service } = setup({ grants: [{ kind: 'plan' }] });
+    const view = await service.revoke(ADMIN, 'grant-1', 'replaced');
+    expect(view).toMatchObject({ status: 'revoked', revoke_reason: 'replaced', revoked_by_user: ref(ADMIN, ADMIN_EMAIL) });
+    expect((await service.list(listGrantsQuery.parse({}))).items[0].status).toBe('revoked');
+  });
+
+  it('starts_at > now → scheduled; ends_at ≤ now → expired', async () => {
+    const { service } = setup({ grants: [
+      { startsAt: new Date(NOW.getTime() + DAY), endsAt: new Date(NOW.getTime() + 9 * DAY), createdAt: new Date(NOW.getTime() - DAY) },
+      { endsAt: NOW, createdAt: new Date(NOW.getTime() - 2 * DAY) },
+    ] });
+    expect((await service.list(listGrantsQuery.parse({}))).items.map((g) => [g.id, g.status]))
+      .toEqual([['grant-1', 'scheduled'], ['grant-2', 'expired']]);
+  });
+
+  it('every view names its people as { id, email, system }; an unknown id has email null', async () => {
+    const gone = '00000000-0000-4000-8000-0000000000dd';
+    const { service } = setup({ grants: [{ grantedBy: gone }] });
+    const [view] = (await service.list(listGrantsQuery.parse({}))).items;
+    expect(view).toMatchObject({
+      user_id: LEARNER, user: ref(LEARNER, LEARNER_EMAIL), granted_by: gone, granted_by_user: ref(gone, null),
+      revoked_by: null, revoked_by_user: null, status: 'active', last_change: null,
+    });
+  });
+
+  it('10.5: last_change is the newest of two changes, with changed_by_user; null for a grant with none; one emailsOf per page', async () => {
+    const change = (id: string, ago: number, by: string) => ({
+      id, grantId: 'grant-1', changedBy: by, changedByRole: 'admin', oldStartsAt: NOW, newStartsAt: NOW, oldEndsAt: NOW,
+      newEndsAt: NOW, reason: id, createdAt: new Date(NOW.getTime() - ago),
+    });
+    const { service, identity } = setup({
+      grants: [{}, { createdAt: new Date(NOW.getTime() - 9 * DAY) }],
+      changes: [change('change-old', 2 * DAY, ADMIN), change('change-new', DAY, EDITOR)],
+    });
+    const { items } = await service.list(listGrantsQuery.parse({}));
+    expect(items[0].last_change).toMatchObject({
+      id: 'change-new', reason: 'change-new', changed_by: EDITOR, changed_by_user: ref(EDITOR, EDITOR_EMAIL),
+    });
+    expect(items[1].last_change).toBeNull();
+    expect(identity.emailsOf).toHaveBeenCalledTimes(1);
+  });
+
+  it('update returns changes[] with changed_by_user and last_change equal to the newest change', async () => {
+    const { service } = setup({ grants: [{}] });
+    const view = await service.update(EDITOR, 'grant-1', updateGrantSchema.parse({ ends_at: iso(20 * DAY), reason: 'r' }));
+    expect(view.changes).toEqual([expect.objectContaining({ id: 'change-1', changed_by_user: ref(EDITOR, EDITOR_EMAIL) })]);
+    expect(view.last_change).toEqual(view.changes![0]);
+  });
+
+  it('§5.2: an unknown user_email or granted_by_email → empty list, no grant findMany; known emails filter like the ids', async () => {
+    const { service, prisma } = setup({ grants: [{ grantedBy: EDITOR }, { userId: ADMIN, createdAt: new Date(NOW.getTime() - 9 * DAY) }] });
+    for (const query of [{ user_email: 'nobody@example.test' }, { granted_by_email: 'nobody@example.test' }]) {
+      expect(await service.list(listGrantsQuery.parse(query))).toEqual({ items: [], next_page_token: null });
+    }
+    expect(prisma.entitlementGrant.findMany).not.toHaveBeenCalled();
+    expect((await service.list(listGrantsQuery.parse({ user_email: ' 01@Example.test ' }))).items.map((g) => g.id)).toEqual(['grant-1']);
+    expect((await service.list(listGrantsQuery.parse({ granted_by_email: EDITOR_EMAIL }))).items.map((g) => g.id)).toEqual(['grant-1']);
+    // Both the id and the email apply (AND): a user_id of another person gives nothing.
+    expect((await service.list(listGrantsQuery.parse({ user_id: ADMIN, user_email: LEARNER_EMAIL }))).items).toEqual([]);
+  });
+
+  it('§5.2: the page token is bound to the email filters', async () => {
+    const { service } = setup({ grants: [{}, { createdAt: new Date(NOW.getTime() - 9 * DAY) }] });
+    const first = await service.list(listGrantsQuery.parse({ user_email: LEARNER_EMAIL, page_size: '1' }));
+    expect(first.next_page_token).not.toBeNull();
+    expect(await problem(service.list({ ...listGrantsQuery.parse({ page_size: '1' }), page_token: first.next_page_token! })))
+      .toEqual({ status: 400, type: 'validation-failed' });
+    const second = await service.list({ ...listGrantsQuery.parse({ user_email: LEARNER_EMAIL, page_size: '1' }), page_token: first.next_page_token! });
+    expect(second.items.map((g) => g.id)).toEqual(['grant-2']);
+  });
+
+  it('listGrantsQuery accepts user_email and granted_by_email up to 320 characters', () => {
+    expect(listGrantsQuery.safeParse({ user_email: 'a@b.c', granted_by_email: 'x@y.z' }).success).toBe(true);
+    expect(listGrantsQuery.safeParse({ user_email: 'x'.repeat(321) }).success).toBe(false);
+    expect(listGrantsQuery.safeParse({ granted_by_email: 'x'.repeat(321) }).success).toBe(false);
   });
 });

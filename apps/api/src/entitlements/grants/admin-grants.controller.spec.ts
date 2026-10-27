@@ -69,6 +69,13 @@ describe('admin grants HTTP (unit, mocked service)', () => {
     expect(hit).not.toHaveBeenCalled();
   });
 
+  it('§5.2: the list passes user_email and granted_by_email as given', async () => {
+    const res = await http().get('/v1/admin/entitlements/grants').set(auth())
+      .query({ user_email: 'lan@example.test', granted_by_email: 'Editor@Example.test' });
+    expect(res.status).toBe(200);
+    expect(list).toHaveBeenCalledWith({ user_email: 'lan@example.test', granted_by_email: 'Editor@Example.test', page_size: 20 });
+  });
+
   it('bad bodies, params and queries → 400 validation-failed before the service (PATCH with no date too)', async () => {
     for (const request of [
       () => http().post('/v1/admin/entitlements/grants').set(auth()).set('Idempotency-Key', 'k').send({ ...validCreate, ends_at: undefined }),
@@ -80,6 +87,8 @@ describe('admin grants HTTP (unit, mocked service)', () => {
       () => http().patch(`/v1/admin/entitlements/grants/${grantId}`).set(auth()).send({ reason: 'no date' }),
       () => http().get('/v1/admin/entitlements/grants').set(auth()).query({ expiring_within_days: '0' }),
       () => http().get('/v1/admin/entitlements/grants').set(auth()).query({ active: 'yes' }),
+      () => http().get('/v1/admin/entitlements/grants').set(auth()).query({ user_email: 'x'.repeat(321) }),
+      () => http().get('/v1/admin/entitlements/grants').set(auth()).query({ granted_by_email: 'x'.repeat(321) }),
     ]) {
       const res = await request();
       expect(res.status).toBe(400);
