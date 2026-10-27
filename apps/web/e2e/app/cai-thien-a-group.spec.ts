@@ -22,10 +22,10 @@ const card = {
 
 function groupApi(alreadyIn = false): Record<string, MockHandler> {
   return {
-    'GET /v1/groups': () => ({ json: { items: [{ id: DECK, name: NAME, version: 1, total: 1, today: { priority: 0, due: 0, new: 1 }, cells: [], backlog: 0 }] } }),
+    'GET /v1/groups': () => ({ json: { items: [{ id: DECK, name: NAME, version: 1, total: 1, today: { priority: 0, due: 0, new: 1 }, cells: [], backlog: 0, available: { due: 0, new: 1 } }] } }),
     [`GET /v1/groups/${DECK}`]: () => ({ json: { id: DECK, name: NAME, version: 1, item_count: 1, removable_items: 1, created_at: '2026-10-02T03:00:00Z', updated_at: '2026-10-02T03:00:00Z' } }),
     [`GET /v1/groups/${DECK}/queue`]: () => ({ json: { cards: alreadyIn ? [card] : [] } }),
-    [`GET /v1/groups/${DECK}/items`]: () => ({ json: { items: [], next_page_token: null } }),
+    [`GET /v1/groups/${DECK}/items`]: () => ({ json: { items: alreadyIn ? [{ ...card, group_count: 1, sense_changed: false, added_at: '2026-10-02T03:00:00Z' }] : [], next_page_token: null } }),
     'GET /v1/topics': () => ({ json: { items: [TOPIC] } }),
     'GET /v1/lookup': (req) => ({ json: { senses: req.query.get('q') === 'deploy' ? [FIRST, SECOND] : [], via_inflection: [] } }),
     'POST /v1/quick-add': () => ({ status: 201, json: { item_id: uuid(90), sense_id: FIRST.sense_id, created_item: true, created_word: false, sentence_id: null } }),

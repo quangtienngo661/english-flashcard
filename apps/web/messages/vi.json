@@ -621,6 +621,8 @@
       "removed": "Đã bỏ “{word}” khỏi nhóm.",
       "notFound": "Không tìm thấy nhóm này.",
       "toList": "Về Danh sách nhóm",
+      "emptyFilter": "Không có từ nào ở mục này.",
+      "loadMore": "Xem thêm từ",
       "empty": "Nhóm chưa có từ nào."
     },
     "backlog": {

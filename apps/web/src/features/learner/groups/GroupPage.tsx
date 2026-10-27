@@ -23,26 +23,27 @@ import { useGroupDialogs } from './GroupDialogs';
 import { highlightWord } from './highlight';
 import {
   isId,
-  useAllGroupItems,
+  useDeckWords,
   useGroup,
   useGroupMutations,
-  useGroupQueue,
   useGroups,
-  type Card,
+  type DeckWord,
   type GroupDetail,
   type GroupSummary,
+  type WordFilter,
 } from './groups-api';
 import { STAGE_KEYS } from './stages';
 
-type Filter = 'all' | 'priority' | 'due' | 'new' | `stage-${1 | 2 | 3 | 4 | 5}`;
 const STAGE_DAYS = ['1', '3', '7', '14', '30'] as const;
 
-function matches(card: Card, filter: Filter): boolean {
-  if (filter === 'all') return true;
-  if (filter === 'priority') return card.section === 'priority';
-  if (filter === 'due') return card.section === 'due';
-  if (filter === 'new') return card.section === 'new';
-  return card.level === Number(filter.slice(6));
+/** The number of words behind each filter, from the deck summary (counted on the server, owner 27/10/2026). */
+function filterCount(summary: GroupSummary | undefined, filter: WordFilter, total: number): number | null {
+  if (filter === 'all') return summary?.total ?? total;
+  if (!summary) return null;
+  if (filter === 'priority') return summary.today.priority;
+  if (filter === 'due') return summary.available.due;
+  if (filter === 'new') return summary.available.new;
+  return summary.cells[Number(filter.slice(6))]?.total ?? 0;
 }
 
 /** K/11–K/13: `/app/group?id=` — the deck's stages, today's counts, a card preview and every word with its stage. */
@@ -82,22 +83,21 @@ function GroupBody({ detail }: { detail: GroupDetail }) {
   const locale = useLocale() as AppLocale;
   const format = useFormat();
   const summary = useGroups().data?.items.find((g) => g.id === detail.id);
-  const queue = useGroupQueue(detail.id, 'all');
-  const items = useAllGroupItems(detail.id).data;
   const { open, dialogs } = useGroupDialogs();
-  const [filter, setFilter] = useState<Filter>('all');
-  const cards = queue.data?.cards ?? [];
+  const [filter, setFilter] = useState<WordFilter>('all');
+  const words = useDeckWords(detail.id, filter);
+  const shown = words.data?.pages.flatMap((page) => page.items) ?? [];
+  const total = summary?.total ?? detail.item_count;
   const count = summary ? waiting(summary) : 0;
   const review = `/${locale}/app/review?group=${detail.id}`;
   const created = format.date(detail.created_at, 'full');
-  const filters: Array<{ id: Filter; label: string }> = [
+  const filters: Array<{ id: WordFilter; label: string }> = [
     { id: 'all', label: t('filterAll') },
     { id: 'priority', label: t('filterPriority') },
     { id: 'due', label: t('filterDue') },
     { id: 'new', label: t('filterNew') },
-    ...([1, 2, 3, 4, 5] as const).map((level) => ({ id: `stage-${level}` as Filter, label: t('filterStage', { stage: tStage(STAGE_KEYS[level]) }) })),
+    ...([1, 2, 3, 4, 5] as const).map((level) => ({ id: `stage-${level}` as WordFilter, label: t('filterStage', { stage: tStage(STAGE_KEYS[level]) }) })),
   ];
-  const shown = cards.filter((c) => matches(c, filter));
 
   return (
     <div className="grid gap-6 lg:grid-cols-3">
@@ -144,32 +144,42 @@ function GroupBody({ detail }: { detail: GroupDetail }) {
       </section>
 
       <div className="flex min-w-0 flex-col gap-6 lg:col-span-2">
-        {cards.length > 0 && <CardPreview cards={cards} />}
+        {shown.length > 0 && <CardPreview cards={shown} />}
         <section className="flex flex-col gap-3">
           <h2 id="all-words" className="text-title font-semibold text-ink">
-            {t('allWords', { count: cards.length })}
+            {t('allWords', { count: total })}
           </h2>
           <div className="w-full sm:w-72">
             <Select
               label={t('filterLabel')}
               hideLabel
               value={filter}
-              onChange={(next) => setFilter(next as Filter)}
-              items={filters.map((f) => ({ ...f, suffix: t('filterCount', { count: cards.filter((c) => matches(c, f.id)).length }) }))}
+              onChange={(next) => setFilter(next as WordFilter)}
+              items={filters.map((f) => {
+                const count = filterCount(summary, f.id, detail.item_count);
+                return count === null ? f : { ...f, suffix: t('filterCount', { count }) };
+              })}
             />
           </div>
-          {queue.isPending ? (
+          {words.isPending ? (
             <FullScreenSpinner />
-          ) : queue.isError ? (
-            <GroupError error={queue.error} onRetry={() => void queue.refetch()} />
-          ) : cards.length === 0 ? (
-            <p className="text-body text-muted">{t('empty')}</p>
+          ) : words.isError ? (
+            <GroupError error={words.error} onRetry={() => void words.refetch()} />
+          ) : shown.length === 0 ? (
+            <p className="text-body text-muted">{filter === 'all' ? t('empty') : t('emptyFilter')}</p>
           ) : (
-            <ul aria-label={t('allWords', { count: cards.length })} className="divide-y divide-border rounded-card border border-border bg-surface">
-              {shown.map((card) => (
-                <WordRow key={card.item_id} card={card} groupId={detail.id} groupCount={items?.get(card.item_id)?.group_count} changed={items?.get(card.item_id)?.sense_changed ?? false} />
-              ))}
-            </ul>
+            <>
+              <ul aria-label={t('allWords', { count: total })} className="divide-y divide-border rounded-card border border-border bg-surface">
+                {shown.map((word) => (
+                  <WordRow key={word.item_id} card={word} groupId={detail.id} />
+                ))}
+              </ul>
+              {words.hasNextPage && (
+                <Button variant="quiet" onPress={() => void words.fetchNextPage()} isPending={words.isFetchingNextPage}>
+                  {t('loadMore')}
+                </Button>
+              )}
+            </>
           )}
         </section>
       </div>
@@ -248,7 +258,7 @@ function StageChart({ summary }: { summary: GroupSummary }) {
 }
 
 /** K/11 "Xem trước thẻ": the front, then the back on a press or Space. */
-function CardPreview({ cards }: { cards: Card[] }) {
+function CardPreview({ cards }: { cards: DeckWord[] }) {
   const t = useTranslations('App.group');
   const [index, setIndex] = useState(0);
   const [back, setBack] = useState(false);
@@ -299,7 +309,7 @@ function CardPreview({ cards }: { cards: Card[] }) {
   );
 }
 
-function WordRow({ card, groupId, groupCount, changed }: { card: Card; groupId: string; groupCount: number | undefined; changed: boolean }) {
+function WordRow({ card, groupId }: { card: DeckWord; groupId: string }) {
   const t = useTranslations('App.group');
   const tStage = useTranslations('App.stages');
   const locale = useLocale() as AppLocale;
@@ -346,13 +356,13 @@ function WordRow({ card, groupId, groupCount, changed }: { card: Card; groupId: 
         <span className={cn('rounded-full px-2 py-0.5 text-caption font-semibold', card.priority ? 'bg-accent-soft text-ink' : 'bg-primary-soft text-ink')}>
           {card.priority ? `${stage} · ${t('priorityTag')}` : stage}
         </span>
-        {changed && <span className="rounded-full bg-danger-soft px-2 py-0.5 text-caption font-semibold text-danger">{t('senseChanged')}</span>}
+        {card.sense_changed && <span className="rounded-full bg-danger-soft px-2 py-0.5 text-caption font-semibold text-danger">{t('senseChanged')}</span>}
         <span className="text-caption text-muted">{status}</span>
         <button
           type="button"
           aria-label={t('removeLabel', { word })}
-          disabled={busy || groupCount === undefined}
-          onClick={() => (groupCount === 1 ? setConfirm(true) : void remove())}
+          disabled={busy}
+          onClick={() => (card.group_count === 1 ? setConfirm(true) : void remove())}
           className="text-caption font-semibold text-primary underline-offset-2 hover:underline disabled:opacity-50"
         >
           {t('remove')}

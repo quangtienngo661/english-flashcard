@@ -20,6 +20,10 @@ export const statesQuery = z.strictObject({
 export const groupItemsQuery = z.strictObject({
   cell: z.enum(['priority', '0', '1', '2', '3', '4', '5'])
     .transform((value) => (value === 'priority' ? value : Number(value) as 0 | 1 | 2 | 3 | 4 | 5)).optional(),
+  // Deck page (owner 27/10/2026): the filter of the word list, as the review queue sorts cards (schedule.ts sectionOf).
+  section: z.enum(['priority', 'due', 'new']).optional(),
+  // Deck page: each item also carries its card content, its saved sentences and its section.
+  content: z.enum(['true']).transform(() => true as const).optional(),
   page_size: z.coerce.number().int().min(1).max(100).default(20),
   page_token: z.string().optional(),
 });

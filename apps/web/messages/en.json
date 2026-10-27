@@ -621,6 +621,8 @@
       "removed": "“{word}” removed from the deck.",
       "notFound": "This deck doesn’t exist anymore.",
       "toList": "Go to your decks",
+      "emptyFilter": "No words in this filter.",
+      "loadMore": "Show more words",
       "empty": "This deck has no words yet."
     },
     "backlog": {

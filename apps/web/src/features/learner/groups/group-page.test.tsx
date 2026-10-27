@@ -25,19 +25,23 @@ const card = (lemma: string, level: number, section: string, priority = false) =
   item_id: `i-${lemma}`, sense_id: `s-${lemma}`, level, due_date: '2026-10-18', priority, section, content: content(lemma, `nghĩa ${lemma}`),
 });
 const CARDS = [card('deploy', 1, 'priority', true), card('release', 1, 'due'), card('went', 0, 'new'), card('ship', 3, 'early')];
-const ITEMS = CARDS.map((c) => ({
-  item_id: c.item_id, sense_id: c.sense_id, level: c.level, due_date: c.due_date, priority: c.priority,
-  group_count: c.item_id === 'i-ship' ? 2 : 1, sense_changed: c.item_id === 'i-release', added_at: '2026-10-02T00:00:00Z',
+// GET /v1/groups/{id}/items?content=true rows (owner 27/10/2026): the item with its card content and its section.
+const WORDS = CARDS.map((c) => ({
+  ...c, group_count: c.item_id === 'i-ship' ? 2 : 1, sense_changed: c.item_id === 'i-release', added_at: '2026-10-02T00:00:00Z',
 }));
+const WORDS_URL = `/v1/groups/${G}/items?content=true&page_size=50`;
+// The filter counts come from the summary, not from the rows loaded: `available.due` 7 has only one row on the page.
 const SUMMARY = {
   id: G, name: 'Công nghệ', version: 1, total: 4, today: { priority: 1, due: 1, new: 1 },
   cells: [1, 2, 0, 1, 0, 0].map((total, level) => ({ level, total, due: level === 1 ? 2 : 0 })), backlog: 3,
+  available: { due: 7, new: 1 },
 };
 const routes = (extra = {}) => ({
   [`GET /v1/groups/${G}`]: () => Response.json({ id: G, name: 'Công nghệ', version: 1, item_count: 4, removable_items: 3, created_at: '2026-10-02T03:00:00Z', updated_at: '2026-10-02T03:00:00Z' }),
   'GET /v1/groups': () => Response.json({ items: [SUMMARY] }),
-  [`GET /v1/groups/${G}/queue?mode=all`]: () => Response.json({ cards: CARDS }),
-  [`GET /v1/groups/${G}/items?page_size=100`]: () => Response.json({ items: ITEMS, next_page_token: null }),
+  [`GET ${WORDS_URL}`]: () => Response.json({ items: WORDS, next_page_token: null }),
+  [`GET ${WORDS_URL}&cell=1`]: () => Response.json({ items: WORDS.filter((w) => w.level === 1), next_page_token: null }),
+  [`GET ${WORDS_URL}&section=due`]: () => Response.json({ items: WORDS.filter((w) => w.section === 'due'), next_page_token: null }),
   'GET /v1/me/app-config': () => Response.json({ learning: { backlog_after_days: 60, groups_per_user: 100 } }),
   'GET /v1/me/entitlements': () => Response.json({ plan: 'free', pools: {}, sources: [] }),
   ...extra,
@@ -139,11 +143,34 @@ describe('GroupPage (K/11–K/13)', () => {
     await userEvent.click(screen.getByRole('button', { name: /Lọc từ trong nhóm/ }));
     const options = (await screen.findAllByRole('option')).map((o) => o.textContent);
     expect(options).toEqual([
-      'Tất cả4 từ', 'Ưu tiên1 từ', 'Đến hạn1 từ', 'Mới1 từ', 'Ngăn 1 ngày2 từ', 'Ngăn 3 ngày0 từ', 'Ngăn 7 ngày1 từ', 'Ngăn 14 ngày0 từ', 'Ngăn 30 ngày0 từ',
+      'Tất cả4 từ', 'Ưu tiên1 từ', 'Đến hạn7 từ', 'Mới1 từ', 'Ngăn 1 ngày2 từ', 'Ngăn 3 ngày0 từ', 'Ngăn 7 ngày1 từ', 'Ngăn 14 ngày0 từ', 'Ngăn 30 ngày0 từ',
     ]);
     await userEvent.click(screen.getByRole('option', { name: /Ngăn 1 ngày/ }));
-    const list = screen.getByRole('list', { name: 'Toàn bộ 4 từ' });
-    expect(within(list).getAllByRole('listitem').map((li) => li.getAttribute('aria-label'))).toEqual(['deploy', 'release']);
+    await waitFor(() => expect(within(screen.getByRole('list', { name: 'Toàn bộ 4 từ' })).getAllByRole('listitem').map((li) => li.getAttribute('aria-label'))).toEqual(['deploy', 'release']));
+  });
+
+  it('a section filter asks the server for that section (no whole-deck load)', async () => {
+    const { count } = renderApp(<GroupPage />, { routes: routes() });
+    await screen.findByRole('list', { name: 'Toàn bộ 4 từ' });
+    await userEvent.click(screen.getByRole('button', { name: /Lọc từ trong nhóm/ }));
+    await userEvent.click(await screen.findByRole('option', { name: /Đến hạn/ }));
+    await waitFor(() => expect(within(screen.getByRole('list', { name: 'Toàn bộ 4 từ' })).getAllByRole('listitem').map((li) => li.getAttribute('aria-label'))).toEqual(['release']));
+    expect(count('GET', `${WORDS_URL}&section=due`)).toBe(1);
+    expect(count('GET', `/v1/groups/${G}/queue?mode=all`)).toBe(0);
+  });
+
+  it('[Xem thêm từ] loads the next page with its token and appends it', async () => {
+    renderApp(<GroupPage />, {
+      routes: routes({
+        [`GET ${WORDS_URL}`]: () => Response.json({ items: WORDS.slice(0, 2), next_page_token: 'p2' }),
+        [`GET ${WORDS_URL}&page_token=p2`]: () => Response.json({ items: WORDS.slice(2), next_page_token: null }),
+      }),
+    });
+    await screen.findByRole('listitem', { name: 'release' });
+    expect(screen.queryByRole('listitem', { name: 'went' })).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Xem thêm từ' }));
+    expect(await screen.findByRole('listitem', { name: 'ship' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Xem thêm từ' })).not.toBeInTheDocument();
   });
 
   it('removing a word that is only in this deck asks first; one in two decks goes at once', async () => {
@@ -153,7 +180,6 @@ describe('GroupPage (K/11–K/13)', () => {
         [`DELETE /v1/groups/${G}/items/i-ship`]: () => Response.json({ removed_from_learning: false }),
       }),
     });
-    await waitFor(() => expect(count('GET', `/v1/groups/${G}/items?page_size=100`)).toBe(1));
     await userEvent.click(await screen.findByRole('button', { name: 'Bỏ ship khỏi nhóm' }));
     await waitFor(() => expect(count('DELETE', `/v1/groups/${G}/items/i-ship`)).toBe(1));
     await userEvent.click(screen.getByRole('button', { name: 'Bỏ deploy khỏi nhóm' }));
@@ -166,7 +192,7 @@ describe('GroupPage (K/11–K/13)', () => {
   it('E5: a failed card list shows the error with [Thử lại], not "Nhóm chưa có từ nào." (audit 26/10/2026 #5)', async () => {
     let loads = 0;
     renderApp(<GroupPage />, {
-      routes: routes({ [`GET /v1/groups/${G}/queue?mode=all`]: () => (++loads === 1 ? problem(500, 'internal-error') : Response.json({ cards: CARDS })) }),
+      routes: routes({ [`GET ${WORDS_URL}`]: () => (++loads === 1 ? problem(500, 'internal-error') : Response.json({ items: WORDS, next_page_token: null })) }),
     });
     const retry = await screen.findByRole('button', { name: 'Thử lại' }, { timeout: 5000 });
     expect(retry.closest('[role="alert"]')).not.toBeNull();
@@ -180,8 +206,7 @@ describe('GroupPage (K/11–K/13)', () => {
     renderApp(<GroupPage />, {
       routes: routes({
         'GET /v1/groups/00000000-0000-4000-8000-000000000000': () => problem(404, 'not-found'),
-        'GET /v1/groups/00000000-0000-4000-8000-000000000000/queue?mode=all': () => problem(404, 'not-found'),
-        'GET /v1/groups/00000000-0000-4000-8000-000000000000/items?page_size=100': () => problem(404, 'not-found'),
+        'GET /v1/groups/00000000-0000-4000-8000-000000000000/items?content=true&page_size=50': () => problem(404, 'not-found'),
       }),
     });
     expect(await screen.findByText('Không tìm thấy nhóm này.')).toBeInTheDocument();
