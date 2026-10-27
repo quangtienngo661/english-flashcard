@@ -97,7 +97,7 @@ Khung Figma chỉ ghi bằng node id, có chủ ý: ảnh nằm trong Figma, kh�
 ## Kiểm đã chạy
 
 - Stack thật (API cổng 3300, admin preview 5203, DB `english_learning_admin_e2e`): `pnpm test:e2e:real` 10/10 (8 test cũ + 2 test M0).
-- `pnpm --filter admin test` 400/400, lint và typecheck sạch, `pnpm --filter admin test:e2e` (cổng 5193) 144 passed, 54 skipped (test chỉ chạy desktop hoặc chỉ mobile).
+- `pnpm --filter admin test` 400/400 lúc làm M0 (552 sau M1a, gồm các test của M1a), lint và typecheck sạch, `pnpm --filter admin test:e2e` (cổng 5193) 144 passed, 54 skipped (test chỉ chạy desktop hoặc chỉ mobile).
 - Chưa kiểm: CI trên PR (cần `AI_FAKE_ENABLED=true` mới thêm ở job `admin-e2e-real`).
 
 ## Câu chữ tự viết (không có trong copy doc §8; chủ dự án duyệt lại khi cần)
@@ -139,6 +139,71 @@ một lần mỗi response bằng `IdentityService.emailsOf`, ngoài transaction
 Màn cần biết: `lookup` trả `user: { id, email }` **không có** `system` (đúng §5.2; màn coi thiếu là `false`). Với `page_token` hỏng kèm email lạ: Cấp gói trả 400,
 Trả lượt trả danh sách rỗng (thứ tự kiểm khác nhau; chỉ lộ khi cả hai cùng sai). Kiểm: unit 195 file / 2623 test, `tsc`, lint (chỉ warning cũ ở
 `mail-dispatcher.service.ts`); CI xanh từng PR. Chưa chạy API thật qua HTTP cho các endpoint mới (ngoài kiểm `replaced` trên Postgres thật).
+
+# Đợt giao diện admin — M1a as-built (27/10/2026)
+
+Nhánh `feat/giao-dien-admin-m1a`, một PR vào `dev`. Bốn màn AI cấu hình đã xong: Tình trạng (`/ai/status`), Model (`/ai/models`, kèm hộp thêm / sửa giá),
+Thao tác (`/ai/operations`), Prompt (`/ai/prompts`); chỉ admin (`settings.manage`), editor thấy trang "không có quyền" và không gọi API. Chưa gọi AI thật (D3 Bước 7).
+
+## Đã làm (Task 9–16)
+
+9–10. API (trường `updated_by_user`, `guard`, `test-quota`, `last_error.purpose`...): đã ở `dev` qua PR #145–#149, as-built ở mục "API (AD15)" bên dưới.
+11. Client API cho các màn AI (`ai-api.ts`, khóa query, kiểu): `110c106` feat(admin): add the ai api client.
+12. Tình trạng: `51fddc2` feat(admin): add the ai status page.
+13. Model (thêm, sửa giá, đọc lại thông tin, xóa): `55aaef1` feat(admin): add the ai models page.
+14. Thao tác (model, effort, thinking, token tối đa từng thao tác; lưu từng dòng): `6aded95` feat(admin): add the ai operation settings page.
+15. Prompt (sửa, lịch sử, chạy thử, số lần còn lại, giữ bản đang sửa): `2c97bc3` feat(admin): add the ai prompt page with test runs.
+16. e2e, test flow và cổng:
+    - `d59b6c0` test: kiểm "không phần tử nào lòi ra ngoài `main`" cho mọi trang đã có ở 390 (thay kiểm `scrollWidth`, vốn mù vì `main` là `overflow-clip`); nó lộ một lỗi ở Thao tác (ô chọn model dài 100 ký tự đẩy cột ra ngoài), đã sửa trong cùng nhánh.
+    - `b370732` fix: giờ trong các màn AI có hai chữ số ("09:12") theo copy doc.
+    - `9199745` fix sau review: Prompt đọc lại lịch sử sau 409, xóa lỗi ô khi xóa một ví dụ, báo khi không đọc được bộ ví dụ hoặc số lượt, khóa ô sửa lúc đang lưu; đọc lại sau 409 thất bại thì giữ ô sửa và khóa [Lưu] (Prompt và Thao tác); Tình trạng en "Choose model for {operation}"; giá Model vi "Từ 0 đến 1000".
+    - `c0ba644` merge `origin/dev` (M2 đã vào `dev` trước M1a; hai bên cùng sửa routes, menu, câu chữ, a11y, test flow).
+    - `7ed3f44` fix: cột "Vòng đời" ở Model không còn cắt giữa chữ ("activ / e", "Vòn / g đời"); lỗi chỉ thấy với dữ liệu thật (mock dùng "deprecated" hoặc rỗng).
+    - `f2d58cd` test: `e2e-real/m1a.real.spec.ts` (thêm model giả `fake:ok`, chọn cho `generate_cloze`, Tình trạng "Sẵn sàng", sửa lời dặn, lưu, chạy thử ra "Mẫu 1" "Thành công"; chạy lại trên DB đã có model thì bỏ qua bước đã làm). Mục test flow M1a và ảnh chụp: commit cuối của nhánh.
+
+## Ảnh chụp (stack thật, 27/10/2026)
+
+Khung Figma đối chiếu (file `7HcPAKLrWu32C27qYMJUOA`; node id theo `docs/mockups/2026-10-22/figma-node-ids.md`). Ảnh nằm ở `docs/deliveries/giao-dien-admin/m1a/`;
+khung Figma chỉ ghi bằng node id. Dữ liệu: DB mới, một model giả `fake:ok` đã chọn cho `generate_cloze`, một lần sửa lời dặn.
+
+| Màn | Khung Figma | Desktop 1440×900 | Phone 390×844 |
+|---|---|---|---|
+| Tình trạng (một thao tác sẵn sàng, năm thao tác chưa chọn model) | A/84 `399:3707`, A/84b `399:4386` | [status-desktop.png](giao-dien-admin/m1a/status-desktop.png) | [status-mobile.png](giao-dien-admin/m1a/status-mobile.png) |
+| Model | A/80 `399:5057` | [models-desktop.png](giao-dien-admin/m1a/models-desktop.png) | [models-mobile.png](giao-dien-admin/m1a/models-mobile.png) |
+| Thao tác | A/81 `400:3985` | [operations-desktop.png](giao-dien-admin/m1a/operations-desktop.png) | [operations-mobile.png](giao-dien-admin/m1a/operations-mobile.png) |
+| Prompt | A/82 `400:4436` | [prompts-desktop.png](giao-dien-admin/m1a/prompts-desktop.png) | [prompts-mobile.png](giao-dien-admin/m1a/prompts-mobile.png) |
+
+Hộp "Thêm model" (A/80b `399:5435`) không có ảnh riêng: kiểm bằng e2e và trong mục test flow. Ảnh là màn thật, chưa đặt cạnh khung Figma từng điểm một; chủ dự án so với Figma khi duyệt.
+
+Khác với khung / copy doc (có chủ ý):
+- Tình trạng gộp "Lý do" và "Model" thành một cột "Lý do / Model" (một dòng nói "Chưa chọn model" kèm [Chọn model], hoặc "Fake · fake:ok" khi sẵn sàng); khung vẽ hai cột.
+- Model: cột "Ghi chú" gập xuống dưới ô nhà cung cấp · model id (chín cột không vừa ở 1024).
+- Ghi của Model, Thao tác và Prompt là ghi thường, không có `Idempotency-Key` (API không đánh dấu các ghi này là idempotent); Prompt và Thao tác tự nhận ra một 409 do chính lần lưu của mình (trả lời bị mất).
+- Giờ ở các màn AI theo giờ Việt Nam, hai chữ số; tiếng Anh dùng 12 giờ ("09:12 AM").
+- Giá Fake hiện "0,00 / 0,00 / 0,00" (API ép giá 0), không phải "Chưa có giá".
+
+## Kiểm đã chạy
+
+- Stack thật (API cổng 3310, admin preview 5213, DB riêng `english_learning_admin_e2e_m1a`, vì 3300 đang do phiên khác dùng; `AI_FAKE_ENABLED=true`, không key): `CI=1 pnpm test:e2e:real` 13/13 (admin 8 + M0 2 + M1a 2 + M2 1).
+- `pnpm --filter admin test` 552/552 (`--maxWorkers=3`; với mọi worker mà máy đang bận thì vài test 5 giây hết giờ, chạy lại riêng thì qua); lint và typecheck sạch; `pnpm --filter admin test:e2e` (cổng 5193) 189 passed, 61 skipped (test chỉ chạy desktop hoặc chỉ mobile).
+- Chưa kiểm: CI trên PR; gọi AI thật bằng key (cách làm nằm ở test flow, mục "Gắn model và key của chính bạn"); hộp "Rời trang?" và thanh khôi phục qua tab thứ hai trong trình duyệt thật (viết từ mã, mục Prompt bước 3 của test flow).
+- Quan sát ngoài phạm vi M1a: ở cửa sổ cao 900 px menu bên trái dài hơn khung, các mục AI sau "Tình trạng" bị khung ngôn ngữ / tài khoản che; không sửa ở đây (thuộc `Shell` của M0).
+
+## Câu chữ tự viết (không có trong copy doc §8; chủ dự án duyệt lại khi cần)
+
+- Dùng chung: `common.system` "Hệ thống", `common.unknownUser` "Không rõ người dùng".
+- Tình trạng (`ai.status.*`, `ai.operations.names.*`, `ai.reasons.*`, `ai.providers.*`): tên hiển thị sáu thao tác, câu lý do `provider-quota`, "Mở Cài đặt", tiêu đề cột
+  (Thao tác / Sẵn sàng / Lý do / Model / Lỗi gần nhất / Cảnh báo model), nhãn "Chưa sẵn sàng" / "Sẵn sàng", từ chỉ mục đích lỗi ("người học", "chạy thử", "bộ ví dụ"),
+  "Vòng đời: {lifecycle}", nút "Chọn model" và tên đọc cho màn hình "Chọn model cho {operation}".
+- Model (`ai.models.*`): "Chưa có model nào" và gợi ý, "Hành động", "Chưa có giá", Sửa giá / Đọc lại thông tin / Xóa (kèm tên đọc cho màn hình), "Thao tác đang dùng: {operations}.",
+  hộp xóa (tiêu đề, nội dung, nút), bốn toast (đã thêm / lưu / đọc lại / xóa), và cả nhóm `form.*` (tiêu đề, nhãn, gợi ý giá, "Model Fake luôn có giá 0.",
+  "Chưa có nhà cung cấp nào có key…", các câu lỗi ô).
+- Thao tác (`ai.operations.row.*`): Model, "Không có model", Effort, Thinking, mặc định, tắt, "Số token đầu ra tối đa", Lưu và tên đọc, "Đã lưu. Áp từ lần gọi sau.", "Tải lại",
+  câu lúc effort bị bỏ khi đổi model, dòng ghi chú đầu trang.
+- Prompt (`ai.prompts.*`): "Lời dặn" và gợi ý, "Ví dụ ({count}/10)", "Đầu ra (JSON)", Thêm / Xóa ví dụ, "Lưu lần cuối {at} · {by}", Lưu và "Đã lưu bản số {revision}.", câu lỗi
+  `tooLong` / `blank` / `outputJson`, khối Chạy thử (tiêu đề, ghi chú, chọn ví dụ, "Chạy với: …", hạn mức, "Không đọc được số lần chạy thử còn lại.",
+  "Không đọc được bộ ví dụ. [Chạy thử] sẽ dùng các ví dụ trong prompt.", "Mẫu {n}", bốn trạng thái), khối "Bản mới nhất" (tiêu đề, [Chép vào ô sửa], [Ẩn bản mới]) và Lịch sử
+  (tiêu đề, "Bản {revision}", [Xem], hộp xem).
 
 # Đợt giao diện admin — M2 as-built (27/10/2026)
 

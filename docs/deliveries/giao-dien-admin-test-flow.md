@@ -62,11 +62,10 @@ A/81 `400:3985`, A/82 `400:4436`.
 1. **Lần đầu vào, chưa chọn model.** Menu AI › Tình trạng. → sáu thao tác, mỗi dòng "Chưa sẵn sàng" và "Chưa chọn model" kèm nút [Chọn model]; ở
    đầu trang có "Nhà cung cấp có key: Fake" và "AI toàn hệ thống: Đang bật". Bấm một nút [Chọn model] → sang Thao tác.
 2. **Thêm model giả.** Menu AI › Model → [Thêm model]. Nhà cung cấp chỉ có "Fake" (nhà cung cấp khác chưa có key nên không hiện). Gõ Model id `fake:ok`,
-   bấm [Thêm]. → hộp đóng, dòng "Fake · fake:ok" hiện trong danh sách, "Chưa có giá" (model Fake không có giá; ô giá không hiện). Thử gõ một id lạ
-   như `fake:xyz` → hộp vẫn mở, báo "Nhà cung cấp không có model này. Kiểm lại tên model." và ô Model id có con trỏ.
+   bấm [Thêm]. → hộp đóng, dòng "Fake · fake:ok" hiện trong danh sách với giá "0,00 / 0,00 / 0,00" (model Fake luôn có giá 0; trong hộp không có ô giá).
+   Thử gõ một id lạ như `fake:xyz` → hộp vẫn mở và báo đỏ "Nhà cung cấp không có model này. Kiểm lại tên model.".
 3. **Chọn model cho một thao tác.** Menu AI › Thao tác → dòng "Sinh câu điền từ" → ô Model chọn "Fake · fake:ok" → [Lưu] sáng lên; bấm → toast
-   "Đã lưu. Áp từ lần gọi sau.". Đổi Effort hay Thinking mà model không cho (Fake không có mức effort) → ô tắt hoặc báo lỗi ngay ở ô đó. Sửa dở một
-   dòng rồi bấm mục menu khác → hộp "Rời trang?".
+   "Đã lưu. Áp từ lần gọi sau.". Sửa dở một dòng (chưa bấm [Lưu]) rồi bấm mục menu khác → hộp "Rời trang?".
 4. **Tình trạng đổi theo.** Quay về AI › Tình trạng. → dòng "Sinh câu điền từ" là "Sẵn sàng", cột Lý do / Model ghi "Fake · fake:ok"; năm dòng
    kia vẫn "Chưa sẵn sàng".
 5. **Model đang được dùng thì không xóa được.** Ở AI › Model bấm [Xóa] của `fake:ok` → hộp "Xóa model fake:ok?" → [Xóa model] → "Model đang được thao

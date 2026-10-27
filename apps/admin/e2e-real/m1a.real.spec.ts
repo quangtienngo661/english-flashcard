@@ -40,7 +40,7 @@ test('the admin adds a fake model, chooses it for generate_cloze, and TÃ¬nh tráº
   await expect(listed.or(page.getByText(vi.ai.models.empty).filter({ visible: true }))).toBeVisible();
   if ((await listed.count()) === 0) {
     await page.getByRole('button', { name: vi.ai.models.add }).filter({ visible: true }).first().click();
-    const dialog = page.getByRole('dialog');
+    const dialog = page.getByRole('dialog', { name: vi.ai.models.form.addTitle });
     await dialog.getByRole('button', { name: new RegExp(vi.ai.models.form.provider) }).click();
     await page.getByRole('option', { name: 'Fake' }).click();
     await dialog.getByLabel(vi.ai.models.form.modelId).fill(modelId);
