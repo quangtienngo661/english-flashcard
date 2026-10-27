@@ -1,4 +1,5 @@
 import { configure, screen, waitFor, within } from '@testing-library/react';
+import { focusManager } from '@tanstack/react-query';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it } from 'vitest';
 import vi from '../../../messages/vi.json';
@@ -158,6 +159,26 @@ describe('SenseDetail (A/88b, design §6.12)', () => {
     await waitFor(() => expect(screen.getByLabelText(s.detail.gloss)).toHaveFocus(), { timeout: 3000 });
     expect(screen.getByLabelText(s.detail.gloss)).toHaveAttribute('aria-invalid', 'true');
     expect(screen.getByLabelText('Câu ví dụ 1')).toHaveAttribute('aria-invalid', 'true');
+  });
+
+  it('a refetch on window focus that brings a newer revision keeps the unsaved edit and says the sense changed', async () => {
+    let gets = 0;
+    let body: unknown;
+    renderApp('/senses/d1', {
+      ...base,
+      [GET_D]: () => Response.json(detail({ revision: ++gets === 1 ? 3 : 4 })),
+      'PUT /v1/admin/content/senses/d1/draft': (call: Call) => ((body = call.body), problem(409, 'stale-revision')),
+    });
+    const gloss = await screen.findByLabelText(s.detail.gloss);
+    await userEvent.clear(gloss);
+    await userEvent.type(gloss, 'bản đang sửa');
+    focusManager.setFocused(false);
+    focusManager.setFocused(true);
+    expect(await screen.findByText(s.detail.stale)).toBeInTheDocument();
+    expect(screen.getByLabelText(s.detail.gloss)).toHaveValue('bản đang sửa');
+    await userEvent.click(screen.getByRole('button', { name: s.detail.saveDraft }));
+    await waitFor(() => expect(body).toMatchObject({ revision: 3 }));
+    focusManager.setFocused(undefined);
   });
 
   it('§4.6: a draft kept from an ended session is offered back', async () => {
