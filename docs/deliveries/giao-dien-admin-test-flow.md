@@ -50,3 +50,27 @@ Chưa kiểm được ở M0, vì chưa có màn nào dùng (`useDirtyForm`, `us
   khi vừa lưu thì không hỏi). **Kiểm đầu tiên ở màn Prompt (M1a).**
 - Thanh "Bạn có thay đổi chưa lưu từ lần trước." với [Khôi phục] [Bỏ] sau khi phiên hết hạn giữa lúc sửa (để form có chữ chưa lưu, đổi mật khẩu của chính tài khoản đó
   bằng API ở cửa sổ khác, bấm lưu → về trang đăng nhập; đăng nhập lại → thanh hiện). **Kiểm đầu tiên ở màn Settings (M2).**
+
+## M2 — Cài đặt hệ thống
+
+Đăng nhập bằng admin (tài khoản trong `.state.json`). Khung Figma A/70a–A/70f (node `397:3287` … `397:4845`).
+
+1. **Mở trang.** Menu Hệ thống → Cài đặt hệ thống. → 6 tab Nhắc học · Học và ôn · Luyện tập · Gói và lượt · Nội dung · AI; mỗi ô có dòng phụ
+   "`khóa` · khoảng · mặc định …". Đổi tab → URL thành `/settings?tab=…`; tải lại trang vẫn ở tab đó.
+2. **Sửa ở hai tab rồi lưu một lần.** Nhắc học: đổi "Khoảng cách tối thiểu giữa hai email nhắc". Sang tab AI (→ **không** hỏi "Rời trang?"; tab Nhắc học có
+   dấu chấm vàng). Đổi "Thời gian chờ mỗi lời gọi". Bấm [Lưu thay đổi]. → toast "Đã lưu", dấu chấm mất, nút Lưu mờ lại. Bấm [Lịch sử thay đổi] → hai dòng
+   mới nhất là hai khóa vừa đổi, giá trị cũ → mới, email của bạn, giờ Việt Nam.
+3. **Trả về giá trị cũ.** Đổi một ô rồi gõ lại đúng số cũ. → dấu chấm mất; bấm Nguồn ở menu → không hỏi gì.
+4. **Rời trang khi chưa lưu.** Đổi một ô, bấm Lô nhập ở menu. → hộp "Rời trang?" [Ở lại] [Rời trang]. [Ở lại] giữ số vừa gõ.
+5. **Lỗi ở tab khác.** Luyện tập: đặt "Số câu tối đa mỗi phiên" = 5 (nhỏ hơn "Số câu mặc định" = 10). Sang tab Nhắc học, bấm Lưu. → trang tự về tab Luyện tập,
+   con trỏ ở "Số câu mặc định", ô viền đỏ "Giá trị ngoài khoảng cho phép.", banner đỏ cùng câu ở đầu trang. Sửa lại cho hợp lệ để lưu được.
+6. **Ô để trống.** Gói và lượt: xóa trắng "Nhắc trước khi gia hạn" (dòng phụ có "hoặc để trống = không gửi") rồi lưu. → lịch sử ghi giá trị mới "để trống".
+7. **Lượt AI hôm nay.** Tab Gói và lượt: khối đầu "Lượt AI hôm nay: x/1.000 (y%)", "Đã xác nhận … · đang giữ chỗ …", "Tính theo ngày giờ Việt Nam.". Khối
+   tô vàng khi đã dùng tới ngưỡng "Tô vàng khi dùng tới" (DB mới có 0 lượt nên khối màu xanh nhạt).
+8. **Người khác vừa lưu.** Mở `/settings` ở hai tab trình duyệt. Tab 1 đổi một ô, lưu. Tab 2 đổi ô khác, lưu. → tab 2: "Có người vừa lưu cài đặt khác. Tải lại
+   để xem bản mới." + [Tải lại] → hỏi "Tải lại cài đặt?" → đồng ý → thấy giá trị của tab 1; thay đổi của tab 2 mất.
+9. **Phiên hết hạn giữa lúc sửa.** Đổi một ô (chưa lưu). Ở cửa sổ khác đổi mật khẩu tài khoản này bằng API (`POST /v1/auth/password/change`). Quay lại bấm Lưu
+   → về trang đăng nhập. Đăng nhập lại (mật khẩu mới) → về đúng `/settings?tab=…`, thanh "Bạn có thay đổi chưa lưu từ lần trước." [Khôi phục] [Bỏ];
+   [Khôi phục] → số đã gõ trở lại, tab có dấu chấm.
+10. **Editor.** Đăng nhập bằng Minh → menu không có Cài đặt hệ thống; gõ `/settings` → "Bạn không có quyền xem trang này.".
+11. **Hẹp 390px và tiếng Anh.** Mọi tab và hộp lịch sử không cuộn ngang; đổi EN → nhãn, dòng phụ và toast đều tiếng Anh.
