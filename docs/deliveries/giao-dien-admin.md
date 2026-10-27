@@ -110,3 +110,32 @@ Khung Figma chỉ ghi bằng node id, có chủ ý: ảnh nằm trong Figma, kh�
 - `noAccess`: "Bạn không có quyền xem trang này." và nút "Về trang chủ".
 - `leave.*`: "Rời trang?", "Thay đổi chưa lưu sẽ mất.", "Ở lại", "Rời trang", "Bỏ thay đổi?", "Bỏ thay đổi", "Tiếp tục sửa".
 - `draft.*` (thanh khôi phục bản đang sửa): "Bạn có thay đổi chưa lưu từ lần trước.", "Khôi phục", "Bỏ".
+
+# Đợt giao diện admin — API (AD15) as-built — as-built (27/10/2026)
+
+Plan Task 9, 10, 17, 21, 24, 25, 31, 32, 37, làm ở phiên riêng (AD15), mỗi module một PR vào `dev`. Chỉ **thêm** (trường mới cạnh trường cũ, endpoint đọc mới,
+một quyền đọc rộng hơn). Mọi object người mới có dạng `{ id, email: string | null, system: boolean }` (`apps/api/src/common/user-ref.ts`, `userRef()`), email tra
+một lần mỗi response bằng `IdentityService.emailsOf`, ngoài transaction. Tên trường khớp design §5 và plan, không đổi tên nào.
+
+- **PR #145 — AI (Task 9, 10, 17).** `GET /v1/admin/ai/prompts/{op}` (và response của `PUT`): `updated_by_user`, `guard` (chữ của `PROMPT_GUARD`);
+  `…/revisions`: `saved_by_user`; bản seed do `AI_SYSTEM_ACTOR_ID` lưu → `{ email: null, system: true }`. Mới `GET /v1/admin/ai/test-quota` (`settings.manage`)
+  → `{ limit, remaining, resets_at }` cho rule `ai.test` của người gọi (`RateLimiter.peek`, không trừ lượt; `remaining` không âm). `GET /v1/admin/ai/status`:
+  `operations[].last_error.purpose` (`learner | test | eval`). Ví dụ eval (`GET`, `POST`, `PATCH`): `created_by_user`; lần chạy (`GET …/runs`, `…/runs/{id}`):
+  `started_by_user`.
+- **PR #146 — Cài đặt (Task 21).** `GET /v1/admin/settings` thêm `defaults` (cùng dạng `values`, từ `SETTINGS_DEFAULTS`).
+- **PR #147 — Báo lỗi (Task 24, 25).** Mỗi báo lỗi (`GET /v1/admin/practice/reports`, response của `resolve`): `resolved_by_user` (hoặc `null`), `refundable`
+  (giá trị hiện tại của lý do). Mới `GET /v1/admin/practice/reports/{id}` (`content.edit`, cùng dạng một dòng; id lạ → 404 `not-found`). Snapshot câu dạng mcq
+  (`mcq_*`, `meaning_in_sentence`, `mcq_sentence`) của báo lỗi **mới** thêm `learner.option_index` (`number | null`). `GET /v1/admin/practice/refunds`: `user`,
+  `resolved_by_user`; bộ lọc mới `resolved_by_email` (email không có tài khoản → danh sách rỗng; email nằm trong `page_token`). `GET /v1/admin/practice/report-reasons`:
+  `updated_by_user`; GET đổi quyền thành `content.edit` (editor đọc được), `POST` / `PATCH` vẫn `settings.manage`.
+- **PR #148 — Cấp gói (Task 31, 32).** Mỗi lần cấp (list, `POST`, `PATCH`, `revoke`, `GET …/users/{user_id}`): `user`, `granted_by_user`, `revoked_by_user`,
+  `status` (`replaced → revoked → expired → scheduled → active`), `last_change` (lần sửa mới nhất + `changed_by_user`, hoặc `null`); `changes[]` thêm
+  `changed_by_user`. `replaced` = có lần cấp plan khác của cùng người học tạo đúng lúc `revoked_at` bởi `revoked_by` (kiểm cả trên Postgres thật); thu hồi tay gõ
+  lý do "replaced" vẫn là `revoked`. Bộ lọc mới `user_email`, `granted_by_email`. Mới `GET /v1/admin/entitlements/lookup?email=` (`entitlements.grant`, rule
+  `entitlements.lookup` 60 lần/giờ/người) → `{ user: { id, email }, grantable, reason: 'self-grant' | 'target-is-admin' | 'target-is-staff' | null }`, không thấy → 404.
+- **PR #149 — Nội dung (Task 37).** `GET /v1/admin/content/senses`: mọi dòng có `missing[]` (khi bản mới nhất là `draft` / `reviewed`; còn lại `[]`); kết quả
+  `status=unpublishable` không đổi.
+
+Màn cần biết: `lookup` trả `user: { id, email }` **không có** `system` (đúng §5.2; màn coi thiếu là `false`). Với `page_token` hỏng kèm email lạ: Cấp gói trả 400,
+Trả lượt trả danh sách rỗng (thứ tự kiểm khác nhau; chỉ lộ khi cả hai cùng sai). Kiểm: unit 195 file / 2623 test, `tsc`, lint (chỉ warning cũ ở
+`mail-dispatcher.service.ts`); CI xanh từng PR. Chưa chạy API thật qua HTTP cho các endpoint mới (ngoài kiểm `replaced` trên Postgres thật).
