@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { optionalPersonNameSchema, personNameSchema } from '../profile/person.js';
+import { birthDateSchema, optionalPersonNameSchema, personNameSchema } from '../profile/person.js';
 
 const noNul = (value: string) => !value.includes('\u0000');
 /** NFC (names are stored NFC) then trim, 2-100 code points, no NUL (Postgres rejects it in text). */
@@ -29,7 +29,8 @@ export const lockUserSchema = z.strictObject({
 });
 export const createAccountSchema = z.strictObject({
   email: z.string().max(320),
-  staff_role: z.enum(['admin', 'editor']),
+  // AD18: null creates a learner.
+  staff_role: z.enum(['admin', 'editor']).nullable(),
   password: z.string().optional(),
   must_change_password: z.boolean(),
   timezone: z.string().max(64),
@@ -37,6 +38,23 @@ export const createAccountSchema = z.strictObject({
   family_name: optionalPersonNameSchema.optional(),
 });
 
+// AD18: the admin edits a user's profile and email; every field optional, at least one.
+export const updateUserSchema = z.strictObject({
+  email: z.string().max(320).optional(),
+  given_name: personNameSchema.optional(),
+  family_name: optionalPersonNameSchema.optional(),
+  birth_date: birthDateSchema.optional(),
+  timezone: z.string().max(64).optional(),
+}).refine((body) => Object.keys(body).length > 0);
+
+// AD18: no password means a generated one; it reaches the user only by mail.
+export const resetPasswordSchema = z.strictObject({
+  password: z.string().optional(),
+  must_change_password: z.boolean(),
+});
+
+export type UpdateUserBody = z.infer<typeof updateUserSchema>;
+export type ResetPasswordBody = z.infer<typeof resetPasswordSchema>;
 export type CreateAccountBody = z.infer<typeof createAccountSchema>;
 export type AdminUsersQuery = z.infer<typeof adminUsersQuerySchema>;
 export type ListStaffQuery = z.infer<typeof listStaffQuerySchema>;

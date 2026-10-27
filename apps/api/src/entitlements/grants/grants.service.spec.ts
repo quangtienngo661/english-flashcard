@@ -26,7 +26,7 @@ type GrantRow = {
 function profile(id: string, staffRole: Profile['staff_role'], email = `${id.slice(-2)}@example.test`): Profile {
   return {
     id, email, email_verified: true, native_language: 'vi', timezone: 'Asia/Ho_Chi_Minh', staff_role: staffRole,
-    permissions: [], must_change_password: false, given_name: null, family_name: null, birth_date: null,
+    permissions: [], must_change_password: false, given_name: null, family_name: null, birth_date: null, terms_accepted_at: null,
   };
 }
 

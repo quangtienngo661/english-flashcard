@@ -1,11 +1,11 @@
-import { Body, Controller, Get, HttpCode, Inject, Param, Post, Put, Query, Req, Res } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Inject, Param, Patch, Post, Put, Query, Req, Res } from '@nestjs/common';
 import type { Response } from 'express';
 import { RateLimit } from '../../common/rate-limit/rate-limit.decorator.js';
 import type { RequestWithUser } from '../../common/request-user/request-user.js';
 import { RequirePermission } from './require-permission.decorator.js';
-import { adminUsersQuerySchema, createAccountSchema, listStaffQuerySchema, lockUserSchema, setStaffRoleSchema, staffUserParamsSchema,
-  type AdminUsersQuery, type CreateAccountBody, type ListStaffQuery, type LockUserBody, type SetStaffRoleBody,
-  type StaffUserParams } from './staff.schemas.js';
+import { adminUsersQuerySchema, createAccountSchema, listStaffQuerySchema, lockUserSchema, resetPasswordSchema, setStaffRoleSchema,
+  staffUserParamsSchema, updateUserSchema, type AdminUsersQuery, type CreateAccountBody, type ListStaffQuery, type LockUserBody,
+  type ResetPasswordBody, type SetStaffRoleBody, type StaffUserParams, type UpdateUserBody } from './staff.schemas.js';
 import { StaffService, staffUserNotFound, type AdminUserDetail, type StaffUserView } from './staff.service.js';
 
 @Controller('admin')
@@ -13,7 +13,9 @@ import { StaffService, staffUserNotFound, type AdminUserDetail, type StaffUserVi
 export class StaffController {
   constructor(@Inject(StaffService) private readonly staff: StaffService) {}
 
+  // AD18: editors read users too; every write below stays roles.manage.
   @Get('users')
+  @RequirePermission('users.read')
   async findUsers(@Query({ schema: adminUsersQuerySchema }) query: AdminUsersQuery) {
     if (query.email !== undefined) {
       const user = await this.staff.findByEmail(query.email);
@@ -24,6 +26,7 @@ export class StaffController {
   }
 
   @Get('users/:id')
+  @RequirePermission('users.read')
   getUser(@Param({ schema: staffUserParamsSchema }) params: StaffUserParams) {
     return this.staff.getUserDetail(params.id);
   }
@@ -51,6 +54,29 @@ export class StaffController {
     @Req() req: RequestWithUser,
   ): Promise<StaffUserView> {
     return this.staff.setStaffRole(req.user!.userId, params.id, body.staff_role);
+  }
+
+  @Patch('users/:id')
+  @RateLimit('user.write')
+  updateUser(
+    @Param({ schema: staffUserParamsSchema }) params: StaffUserParams,
+    @Body({ schema: updateUserSchema }) body: UpdateUserBody,
+    @Req() req: RequestWithUser,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<AdminUserDetail> {
+    return this.staff.updateUser(req.user!.userId, params.id, body, res);
+  }
+
+  @Post('users/:id/password')
+  @HttpCode(200)
+  @RateLimit('user.write')
+  resetPassword(
+    @Param({ schema: staffUserParamsSchema }) params: StaffUserParams,
+    @Body({ schema: resetPasswordSchema }) body: ResetPasswordBody,
+    @Req() req: RequestWithUser,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<AdminUserDetail> {
+    return this.staff.resetPassword(req.user!.userId, params.id, body, res);
   }
 
   @Post('users/:id/lock')

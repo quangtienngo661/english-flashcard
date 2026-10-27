@@ -8,6 +8,8 @@ export const updateProfileSchema = z.strictObject({
   family_name: optionalPersonNameSchema.optional(),
   // Design §8.1: correctable, never cleared (no null); the 13+ and "not after today" checks are the service's.
   birth_date: birthDateSchema.optional(),
+  // AD18: an account made by an admin (or older than the consent column) accepts the terms here; only `true` is meaningful.
+  accept_terms: z.literal(true).optional(),
 });
 
 export type UpdateProfileBody = z.infer<typeof updateProfileSchema>;
