@@ -32,6 +32,16 @@ const mocks: Record<string, MockHandler> = {
   'GET /v1/admin/staff': () => ({ json: { items: [{ id: 'admin-1', email: 'admin@wordmet.com', email_verified: true, staff_role: 'admin' }], next_page_token: null } }),
   'GET /v1/admin/users': () => ({ json: staffRow }),
   'PUT /v1/admin/users/u9/staff-role': () => ({ json: { ...staffRow, staff_role: 'editor' } }),
+  'GET /v1/admin/ai/status': () => ({ json: {
+    operations: ['generate_cloze', 'lookup_word', 'translate_sentence', 'generate_meaning_question', 'generate_sentence_mcq', 'check_private_word'].map((operation, i) => ({
+      operation, ready: i === 0, reason: i === 0 ? null : 'model-not-set', model: i === 0 ? { provider: 'openai', model_id: 'gpt-x' } : null, effort: null, thinking: null,
+      max_output_tokens: null, last_error: i === 1 ? { at, outcome: 'timeout', http_status: 504, purpose: 'test' } : null,
+      model_warning: i === 0 ? { shutdown_at: '2026-11-30T00:00:00.000Z', lifecycle: 'deprecated' } : null,
+    })),
+    today: { calls: 1240, cap: 3000, failed_calls: 12, failed_cost_usd: '0.0400', cost_usd: '2.3100', cost_vnd: 60291 },
+    ai_enabled: true,
+    providers: { openai: true, anthropic: false, fake: true },
+  } }),
   'GET /v1/admin/transactions': () => ({ json: { items: [{
     id: 't1', kind: 'renewal', plan: 'pro', interval: 'month', amount_minor: 99000, currency: 'VND', occurred_at: at, period_start: at,
     period_end: '2026-11-14T09:30:00.000Z', status: 'pending', provider: 'fake', provider_transaction_id: 'fake_txn_8f2c41d9a7',
@@ -39,7 +49,7 @@ const mocks: Record<string, MockHandler> = {
   }], next_page_token: null } }),
 };
 
-const pages = ['/uploads', '/uploads/b1', '/uploads/new', '/publish-jobs', `/publish-jobs/${JOB}`, '/sources', '/sources/new', '/export', '/ai/costs', '/transactions'];
+const pages = ['/uploads', '/uploads/b1', '/uploads/new', '/publish-jobs', `/publish-jobs/${JOB}`, '/sources', '/sources/new', '/export', '/ai/costs', '/transactions', '/ai/status'];
 
 for (const [lang, copy] of [['vi', vi], ['en', en]] as const) {
   test.describe(`axe (${lang})`, () => {

@@ -231,3 +231,26 @@ test('the no-access page at 390 fits the window and its text and button are in v
   await expect(page.getByRole('button', { name: vi.noAccess.home })).toBeVisible();
   await expectNoHorizontalScroll(page);
 });
+
+test('Tình trạng at 390 fits the window with six operations, a warning and a last error', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  const ops = ['generate_cloze', 'lookup_word', 'translate_sentence', 'generate_meaning_question', 'generate_sentence_mcq', 'check_private_word'];
+  await signedInAs(page, 'admin', {
+    'GET /v1/admin/ai/status': () => ({
+      json: {
+        operations: ops.map((operation, i) => ({
+          operation, ready: i === 0, reason: i === 0 ? null : 'provider-not-configured', model: { provider: 'anthropic', model_id: 'claude-sonnet-long-model-id-20261130' },
+          effort: null, thinking: null, max_output_tokens: null,
+          last_error: i === 1 ? { at, outcome: 'provider-unavailable-timeout', http_status: 504, purpose: 'test' } : null,
+          model_warning: i === 0 ? { shutdown_at: '2026-11-30T00:00:00.000Z', lifecycle: 'deprecated' } : null,
+        })),
+        today: { calls: 1240, cap: 3000, failed_calls: 12, failed_cost_usd: '0.0400', cost_usd: '2.3100', cost_vnd: 60291 },
+        ai_enabled: true,
+        providers: { openai: true, anthropic: true, fake: true },
+      },
+    }),
+  });
+  await page.goto('/ai/status');
+  await expect(page.getByText('Lời gọi hôm nay: 1.240/3.000')).toBeVisible();
+  await expectNoHorizontalScroll(page);
+});

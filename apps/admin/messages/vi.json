@@ -194,6 +194,64 @@
       "special": "Có ký tự đặc biệt"
     }
   },
+  "ai": {
+    "operations": {
+      "names": {
+        "generate_cloze": "Sinh câu điền từ",
+        "lookup_word": "Tra từ bằng AI",
+        "translate_sentence": "Dịch câu",
+        "generate_meaning_question": "Sinh câu hỏi nghĩa",
+        "generate_sentence_mcq": "Sinh câu chọn đáp án",
+        "check_private_word": "Kiểm từ riêng"
+      }
+    },
+    "reasons": {
+      "ai-disabled": "AI đang tắt",
+      "model-not-set": "Chưa chọn model",
+      "provider-not-configured": "Nhà cung cấp chưa có key",
+      "daily-call-cap": "Chạm trần lời gọi",
+      "provider-quota": "Nhà cung cấp hết hạn mức"
+    },
+    "providers": {
+      "openai": "OpenAI",
+      "anthropic": "Anthropic",
+      "fake": "Fake"
+    },
+    "status": {
+      "today": {
+        "calls": "Lời gọi hôm nay: {calls}/{cap}",
+        "callsNoCap": "Lời gọi hôm nay: {calls}",
+        "failed": "Lỗi: {count} ({cost})",
+        "cost": "Chi phí hôm nay: {usd} · {vnd}",
+        "providers": "Nhà cung cấp có key: {names}",
+        "noProvider": "Nhà cung cấp có key: chưa có",
+        "system": "AI toàn hệ thống: {state}",
+        "on": "Đang bật",
+        "off": "Đang tắt",
+        "openSettings": "Mở Cài đặt"
+      },
+      "cols": {
+        "operation": "Thao tác",
+        "ready": "Sẵn sàng",
+        "reason": "Lý do / Model",
+        "lastError": "Lỗi gần nhất",
+        "warning": "Cảnh báo model"
+      },
+      "ready": "Sẵn sàng",
+      "notReady": "Chưa sẵn sàng",
+      "chooseModel": "Chọn model",
+      "chooseModelFor": "Chọn model cho {operation}",
+      "noError": "—",
+      "purposes": {
+        "learner": "người học",
+        "test": "chạy thử",
+        "eval": "bộ ví dụ"
+      },
+      "shutdown": "Ngừng ngày {date}",
+      "lifecycle": "Vòng đời: {lifecycle}",
+      "errorNote": "Gồm cả lỗi khi chạy thử và chạy bộ ví dụ."
+    }
+  },
   "transactions": {
     "intro": "Mua, gia hạn, đổi kỳ, hoàn tiền, dùng thử và lần đội Wordmet cấp gói của mọi người học, mới nhất trước.",
     "filters": {
@@ -346,7 +404,6 @@
       "refunds": "Trả lượt AI cho người học khi một lỗi do AI đã được xác nhận.",
       "users": "Danh sách người dùng, trạng thái tài khoản, khóa hoặc mở khóa.",
       "entitlements": "Cấp, thu hồi quyền và lượt AI cho người học, kèm lý do và hạn.",
-      "aiStatus": "Tình trạng AI toàn hệ thống: công tắc, trần mỗi ngày, model đang dùng cho từng thao tác.",
       "aiModels": "Thêm model của OpenAI và Anthropic, bật hoặc tắt từng model.",
       "aiOperations": "Chọn model, effort, thinking và số token tối đa cho từng thao tác AI.",
       "aiPrompts": "Soạn prompt cho từng thao tác, xem lịch sử bản sửa và chạy thử.",

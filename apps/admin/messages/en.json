@@ -194,6 +194,64 @@
       "special": "A special character"
     }
   },
+  "ai": {
+    "operations": {
+      "names": {
+        "generate_cloze": "Generate fill-in-the-blank",
+        "lookup_word": "AI word lookup",
+        "translate_sentence": "Translate sentence",
+        "generate_meaning_question": "Generate meaning question",
+        "generate_sentence_mcq": "Generate sentence choice",
+        "check_private_word": "Check private word"
+      }
+    },
+    "reasons": {
+      "ai-disabled": "AI is off",
+      "model-not-set": "No model chosen",
+      "provider-not-configured": "Provider has no key",
+      "daily-call-cap": "Daily call cap reached",
+      "provider-quota": "Provider quota used up"
+    },
+    "providers": {
+      "openai": "OpenAI",
+      "anthropic": "Anthropic",
+      "fake": "Fake"
+    },
+    "status": {
+      "today": {
+        "calls": "Calls today: {calls}/{cap}",
+        "callsNoCap": "Calls today: {calls}",
+        "failed": "Failed: {count} ({cost})",
+        "cost": "Cost today: {usd} · {vnd}",
+        "providers": "Providers with a key: {names}",
+        "noProvider": "Providers with a key: none",
+        "system": "AI system-wide: {state}",
+        "on": "On",
+        "off": "Off",
+        "openSettings": "Open Settings"
+      },
+      "cols": {
+        "operation": "Operation",
+        "ready": "Ready",
+        "reason": "Reason / Model",
+        "lastError": "Last error",
+        "warning": "Model warning"
+      },
+      "ready": "Ready",
+      "notReady": "Not ready",
+      "chooseModel": "Choose model",
+      "chooseModelFor": "Choose a model for {operation}",
+      "noError": "—",
+      "purposes": {
+        "learner": "learner",
+        "test": "test run",
+        "eval": "example set"
+      },
+      "shutdown": "Shuts down {date}",
+      "lifecycle": "Lifecycle: {lifecycle}",
+      "errorNote": "Includes errors from test runs and example-set runs."
+    }
+  },
   "transactions": {
     "intro": "Purchases, renewals, billing changes, refunds, trials and plans granted by the Wordmet team, for every learner, newest first.",
     "filters": {
@@ -346,7 +404,6 @@
       "refunds": "Give AI uses back to a learner when an AI error has been confirmed.",
       "users": "User list, account status, lock or unlock.",
       "entitlements": "Grant and revoke access and AI uses for learners, with a reason and an expiry.",
-      "aiStatus": "AI status for the whole system: the switch, the daily cap, and the model used for each operation.",
       "aiModels": "Add OpenAI and Anthropic models and turn each one on or off.",
       "aiOperations": "Choose the model, effort, thinking and maximum tokens for each AI operation.",
       "aiPrompts": "Write the prompt for each operation, see its revision history and run a test.",
