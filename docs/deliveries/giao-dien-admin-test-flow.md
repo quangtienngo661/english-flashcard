@@ -74,3 +74,27 @@ Chưa kiểm được ở M0, vì chưa có màn nào dùng (`useDirtyForm`, `us
    [Khôi phục] → số đã gõ trở lại, tab có dấu chấm.
 10. **Editor.** Đăng nhập bằng Minh → menu không có Cài đặt hệ thống; gõ `/settings` → "Bạn không có quyền xem trang này.".
 11. **Hẹp 390px và tiếng Anh.** Mọi tab và hộp lịch sử không cuộn ngang; đổi EN → nhãn, dòng phụ và toast đều tiếng Anh.
+
+## M5 — Nội dung (Từ, Nghĩa, Chủ đề)
+
+Đăng nhập bằng Minh (editor) — editor làm được mọi thao tác ở đây. Khung Figma A/87 `395:2999`, A/88 `395:3514`, A/88b `395:4038`, A/89 `395:4326`.
+
+1. **Từ — tìm và lọc.** Menu Nội dung → Từ. Gõ một từ vào ô tìm, bấm Tìm; chọn Trình độ, Nghĩa = "Chưa có nghĩa", bật "Trình độ lệch nhau". → URL đổi theo
+   (`/words?q=…&level=…`); tải lại trang vẫn giữ bộ lọc. Dưới ô Nghĩa có dòng "Có nghĩa tính cả nghĩa đã ngừng dùng.". Sửa tay URL thành `?level=Z9` → bộ lọc
+   bị bỏ, danh sách hiện như không lọc, không có lỗi đỏ.
+2. **Từ — thao tác dòng.** Bấm [Thao tác ▾] ở một dòng: Sửa trình độ (chọn B2, Lưu → cột trình độ thành B2); Sửa cách viết khác (thêm một cách viết, Lưu);
+   Đánh dấu từ chức năng (Có / Không / Tự suy); Thêm nghĩa → mở trang chi tiết nghĩa mới. Đang sửa trong hộp mà bấm Hủy → hỏi "Bỏ thay đổi?".
+3. **Từ — dán danh sách.** [Dán danh sách từ] → dán `rizz,noun`, một từ đã có (ví dụ `apple,noun`) và một dòng sai (`abc`). → kết quả: Đã tạo / Đã có / Sai,
+   hai dòng đầu có link "Soạn nghĩa". Dán hơn 500 dòng → chữ đỏ "Có … dòng, tối đa 500…", nút Thêm bị khóa.
+4. **Nghĩa — lọc và chọn.** Menu → Nghĩa. Lọc Trạng thái = "Thiếu nội dung" → cột Thiếu ghi phần còn thiếu (nghĩa tiếng Việt · câu ví dụ · trình độ); bỏ lọc
+   thì cột Thiếu vẫn có. Tick vài dòng → thanh "Đã chọn N nghĩa" với 5 nút. Ô ở đầu bảng chọn / bỏ cả trang.
+5. **Nghĩa — thao tác hàng loạt.** Chọn một nghĩa đủ nội dung và một nghĩa còn thiếu → [Publish] → hộp Kết quả: "1 nghĩa thành công · 1 nghĩa không làm được",
+   dòng lỗi "Còn thiếu nội dung: …". [Gỡ khỏi app] và [Ngừng dùng] hỏi lại trước khi làm.
+6. **Chi tiết nghĩa.** Bấm vào một dòng. → trang có "‹ Nghĩa", "từ · loại từ", trình độ và trạng thái; khối "Người thao tác (gần nhất)". Sửa nghĩa tiếng Việt,
+   thêm câu ví dụ (tối đa 3: nút "Thêm câu ví dụ" biến mất ở câu thứ ba), [Lưu bản nháp] → "Đã lưu bản nháp"; khối người thao tác hiện "Bản nháp chưa review"
+   nếu nghĩa đã publish trước đó.
+7. **Chi tiết nghĩa — lỗi.** Xóa trắng nghĩa tiếng Việt, bấm [Lưu và publish] → ô viền đỏ, con trỏ nằm ở ô đó. Mở cùng nghĩa ở hai tab, lưu ở tab 1, rồi lưu ở
+   tab 2 → "Nghĩa này vừa được sửa. Tải lại để xem bản mới." + [Tải lại]. Đang sửa mà bấm sang trang khác → "Rời trang?".
+8. **Chủ đề.** Menu → Chủ đề. [Thêm chủ đề]: gõ mã có chữ hoa (`Du_Lich`) → chữ đỏ về luật mã; gõ một mã đã có → "Đã có chủ đề mã này."; mã mới → dòng mới
+   "Đang dùng". [Sửa tên] (không sửa được mã), [Lưu trữ] → "Đã lưu trữ", [Dùng lại] → "Đang dùng". Không có nút xóa.
+9. **Hẹp 390px và tiếng Anh.** Bốn màn hiện dạng thẻ, ô chọn nằm trên mỗi thẻ, không cuộn ngang; đổi EN → mọi chữ tiếng Anh.

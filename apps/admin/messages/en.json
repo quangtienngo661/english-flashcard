@@ -144,7 +144,8 @@
     "loading": "Loading…",
     "error": "Could not load the list",
     "empty": "Nothing here yet",
-    "shown": "{count} items shown"
+    "shown": "{count} items shown",
+    "selectAll": "Select all on this page"
   },
   "account": {
     "login": {
@@ -613,5 +614,231 @@
       "by": "{email} · {at}",
       "unknownUser": "Deleted user"
     }
+  },
+  "words": {
+    "search": "Search words",
+    "searchPlaceholder": "Search by word or other spelling",
+    "searchSubmit": "Search",
+    "pasteButton": "Paste a word list",
+    "filters": {
+      "all": "All",
+      "level": "Level",
+      "hasSense": "Senses",
+      "hasSenseHint": "Has senses counts retired senses too.",
+      "withSense": "Has senses",
+      "withoutSense": "No senses yet",
+      "conflict": "Levels disagree",
+      "batch": "Import batch"
+    },
+    "cols": {
+      "lemma": "Word",
+      "pos": "Part of speech",
+      "level": "Shown level",
+      "senses": "Senses",
+      "functionWord": "Function word",
+      "variants": "Other spellings"
+    },
+    "conflictBadge": "disagree",
+    "noSense": "No senses yet",
+    "senseCount": "{count, plural, one {# sense} other {# senses}}",
+    "published": "{count} published",
+    "drafts": "{count, plural, one {# draft} other {# drafts}}",
+    "retired": "{count} retired",
+    "yes": "Yes",
+    "no": "No",
+    "empty": "No word matches these filters.",
+    "footer": "{count} words shown · 20 per load",
+    "actions": "Actions",
+    "actionsFor": "Actions for {word}",
+    "editLevel": "Edit level",
+    "editVariants": "Edit other spellings",
+    "editFunctionWord": "Mark as function word",
+    "addSense": "Add a sense",
+    "save": "Save",
+    "saved": "Saved “{word}”",
+    "level": "Level",
+    "noLevel": "No level yet",
+    "levelTitle": "Level of “{word}”",
+    "levelHint": "This level replaces every source level on display.",
+    "functionWord": "Function word",
+    "functionWordTitle": "Function word “{word}”",
+    "auto": "Derived (now: {value})",
+    "variantsTitle": "Other spellings of “{word}”",
+    "noVariants": "No other spellings yet.",
+    "variantText": "Spelling",
+    "variantKind": "Kind",
+    "kinds": {
+      "spelling": "Other spelling",
+      "alias": "Alias"
+    },
+    "acceptedAsAnswer": "Accept when a learner types it",
+    "removeVariant": "Remove",
+    "addVariant": "Add a spelling",
+    "paste": {
+      "title": "Paste a word list",
+      "label": "Word list",
+      "hint": "One word per line: lemma,pos (at most 500 lines). Each new word comes with an empty sense to write.",
+      "tooMany": "{count} lines, at most {max}. Remove some and try again.",
+      "submit": "Add these words",
+      "summary": "Created {created} · already there {exists} · invalid {invalid}",
+      "line": "Line {line}",
+      "status": {
+        "created": "Created",
+        "exists": "Already there",
+        "invalid": "Invalid"
+      },
+      "writeSense": "Write the sense",
+      "invalid": "Needs lemma,pos with a valid part of speech.",
+      "caseWarning": "This word differs from an existing one only by letter case."
+    }
+  },
+  "senses": {
+    "filters": {
+      "all": "All",
+      "status": "Status",
+      "level": "Level",
+      "pos": "Part of speech",
+      "topic": "Topic",
+      "batch": "Import batch",
+      "statuses": {
+        "unpublishable": "Missing content",
+        "open_draft": "Open draft",
+        "published": "Published"
+      }
+    },
+    "archived": "archived",
+    "cols": {
+      "lemma": "Word",
+      "pos": "Part of speech",
+      "gloss": "Vietnamese meaning",
+      "level": "Level",
+      "status": "Status",
+      "revision": "Revision",
+      "missing": "Missing"
+    },
+    "status": {
+      "draft": "Draft",
+      "reviewed": "Reviewed",
+      "published": "Published",
+      "rejected": "Rejected",
+      "superseded": "Superseded",
+      "unpublished": "Removed from the app",
+      "retired": "Retired",
+      "none": "No content yet"
+    },
+    "openEdit": "#{revision} · open edit",
+    "empty": "No sense matches these filters.",
+    "footer": "{count} senses shown · 20 per load",
+    "bulk": {
+      "region": "Bulk actions",
+      "selected": "{count} selected",
+      "pick": "Select {word}",
+      "tooMany": "At most {max} senses at a time.",
+      "actions": {
+        "review": "Mark reviewed",
+        "reject": "Reject",
+        "publish": "Publish",
+        "unpublish": "Remove from the app",
+        "retire": "Retire"
+      },
+      "confirm": {
+        "unpublish": {
+          "title": "Remove {count} senses from the app?",
+          "body": "Learners no longer see these senses until they are published again."
+        },
+        "retire": {
+          "title": "Retire {count} senses?",
+          "body": "A retired sense can no longer be edited or published."
+        }
+      },
+      "resultTitle": "Result",
+      "summary": "{ok} succeeded · {failed} could not be done",
+      "close": "Close",
+      "reasons": {
+        "stale-revision": "The sense changed, reload",
+        "publish-incomplete": "Content is missing",
+        "sense-retired": "The sense is retired",
+        "not-found": "Sense not found",
+        "sense-not-found": "Sense not found",
+        "revision-not-open": "This revision is no longer open for review",
+        "revision-rejected": "This revision was rejected",
+        "other": "Could not be done ({reason})"
+      },
+      "missing": {
+        "gloss-missing": "Vietnamese meaning",
+        "example-missing": "example sentence",
+        "level-missing": "level"
+      }
+    },
+    "detail": {
+      "back": "Senses",
+      "notFound": "This sense was not found. The link may be old.",
+      "noLevel": "no level yet",
+      "publishedWithEdit": "Published, with an open edit",
+      "content": "Content",
+      "gloss": "Vietnamese meaning",
+      "definition": "English definition",
+      "examples": "Example sentences (at most {max})",
+      "example": "Example sentence {n}",
+      "removeExample": "Remove example sentence {n}",
+      "addExample": "Add an example sentence",
+      "topics": "Topics",
+      "noTopics": "No topics yet.",
+      "acceptedForms": "Accepted forms",
+      "acceptedFormsHint": "Separated by commas, e.g. deploys, deployed, deploying",
+      "saveDraft": "Save draft",
+      "savePublish": "Save and publish",
+      "draftSaved": "Draft saved",
+      "published": "Saved and published",
+      "droppedTopics": "Archived topics were dropped: {topics}",
+      "stale": "This sense was just edited. Reload to see the new version.",
+      "reload": "Reload",
+      "incomplete": "{missing} missing, so it was not published.",
+      "people": "Last people (latest only)",
+      "reviewedBy": "Review: {email} · {at}",
+      "notReviewed": "Draft not reviewed yet",
+      "publishedBy": "Publish: {email}",
+      "stateChangedBy": "Last state change: {email} · {action} · {at}",
+      "stateActions": {
+        "open": "published",
+        "unpublished": "removed from the app",
+        "retired": "retired"
+      },
+      "unknownUser": "deleted user",
+      "lastOnly": "Only the latest is kept, no history."
+    }
+  },
+  "topics": {
+    "intro": "Rename, archive and use topics again. Topics are never deleted.",
+    "cols": {
+      "code": "Code",
+      "vi": "Vietnamese name",
+      "en": "English name",
+      "state": "Status"
+    },
+    "active": "In use",
+    "archived": "Archived",
+    "rename": "Rename",
+    "renameFor": "Rename {code}",
+    "archive": "Archive",
+    "archiveFor": "Archive {code}",
+    "restore": "Use again",
+    "restoreFor": "Use {code} again",
+    "addTitle": "Add a topic",
+    "renameTitle": "Rename topic “{code}”",
+    "add": "Add",
+    "save": "Save",
+    "code": "Code",
+    "codeHint": "Lower-case letters, digits and hyphens, e.g. food, daily-life. It cannot change later.",
+    "codeRule": "A code has only lower-case a–z, digits and hyphens.",
+    "exists": "A topic with this code exists. Pick another code.",
+    "nameVi": "Vietnamese name",
+    "nameEn": "English name",
+    "created": "Added topic “{code}”",
+    "renamed": "Renamed “{code}”",
+    "archivedToast": "Archived “{code}”",
+    "restoredToast": "“{code}” is in use again",
+    "empty": "No topics yet.",
+    "footer": "{count, plural, one {# topic} other {# topics}}"
   }
 }

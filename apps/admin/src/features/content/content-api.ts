@@ -119,6 +119,15 @@ export async function listTopics(api: ApiClient): Promise<TopicView[]> {
   return (await api.get<{ items: TopicView[] }>('/v1/admin/taxonomy/topics')).items;
 }
 
+export function createTopic(api: ApiClient, body: { code: string; names: { vi?: string; en?: string } }): Promise<TopicView> {
+  return api.post('/v1/admin/taxonomy/topics', body);
+}
+
+/** Rename (`names`) or archive / use again (`archived`); there is no delete. */
+export function updateTopic(api: ApiClient, code: string, body: { names: { vi?: string; en?: string } } | { archived: boolean }): Promise<TopicView> {
+  return api.patch(`/v1/admin/taxonomy/topics/${encodeURIComponent(code)}`, body);
+}
+
 export function createPublishJob(api: ApiClient, filter: SenseFilter, key: string): Promise<{ job_id: string }> {
   return api.post(JOBS, { filter }, { idempotencyKey: key });
 }

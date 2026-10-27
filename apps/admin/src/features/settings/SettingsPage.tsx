@@ -49,26 +49,35 @@ export function SettingsPage() {
   }
   return (
     <SettingsForm
-      key={settings.data.version}
-      view={settings.data}
+      live={settings.data}
       onSaved={(next) => queryClient.setQueryData<SettingsView>(['settings'], { ...settings.data, ...next })}
       onReload={() => void settings.refetch()}
     />
   );
 }
 
-/** Keyed by `version`: a save or a reload that brings a new version starts the form from the server values. */
-function SettingsForm({ view, onSaved, onReload }: { view: SettingsView; onSaved: (next: { version: number; values: Values }) => void; onReload: () => void }) {
+/**
+ * `view` is the version the draft started from; every save sends its `version`. A newer `live` version (a save, a reload, or a
+ * refetch on window focus after someone else saved) is taken over only while nothing is unsaved; under unsaved changes the page
+ * keeps them and shows the conflict, as a 409 would.
+ */
+function SettingsForm({ live, onSaved, onReload }: { live: SettingsView; onSaved: (next: { version: number; values: Values }) => void; onReload: () => void }) {
   const t = useTranslations();
   const api = useApi();
   const [{ tab }, setFilters] = useUrlFilters(TAB_FILTER);
   const section = tab as Section;
-  const [draft, setDraft] = useState<Values>(view.values);
+  const [view, setView] = useState(live);
+  const [draft, setDraft] = useState<Values>(live.values);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [askReload, setAskReload] = useState(false);
 
   const patch = useMemo(() => changedValues(view.values, draft), [view.values, draft]);
   const dirty = !isEmptyPatch(patch);
+  if (live.version !== view.version && !dirty) {
+    setView(live);
+    setDraft(live.values);
+  }
+  const moved = live.version !== view.version;
   const kept = useKeptDraft<unknown>('settings', patch, dirty);
   const { release } = useDirtyForm(dirty, { onLeave: kept.clear });
 
@@ -79,11 +88,20 @@ function SettingsForm({ view, onSaved, onReload }: { view: SettingsView; onSaved
       release();
       kept.clear();
       showToast(t('settings.saved'));
+      setView({ ...view, ...next });
+      setDraft(next.values);
       onSaved(next);
     },
   );
 
-  const problem = save.problem;
+  // A failure belongs to the version it was sent for: once a newer version is taken over, its banner and field errors go.
+  const [sentFor, setSentFor] = useState(view.version);
+  const send = () => {
+    setSentFor(view.version);
+    void save.submit();
+  };
+  const current = sentFor === view.version;
+  const problem = current ? save.problem : null;
   const { fields: fieldErrors, form: formErrors } = useMemo(
     () => (problem?.slug === 'validation-failed' ? violationsToFields(problem.violations ?? [], fieldOfPath) : { fields: {}, form: [] }),
     [problem],
@@ -101,14 +119,14 @@ function SettingsForm({ view, onSaved, onReload }: { view: SettingsView; onSaved
   );
   useFocusFirstError(shownErrors, FIELD_ORDER);
 
-  const conflict = problem?.slug === 'version-conflict';
+  const conflict = moved || problem?.slug === 'version-conflict';
   const setValue = (s: Section, key: string, value: SettingValue) => setDraft((d) => ({ ...d, [s]: { ...d[s], [key]: value } }));
   const marked = (s: Section) => patch[s] !== undefined;
 
   return (
     <div className="flex flex-col gap-6">
       <PageActions>
-        <Button isPending={save.pending} isDisabled={!dirty || save.waitSeconds > 0} onPress={() => void save.submit()}>
+        <Button isPending={save.pending} isDisabled={!dirty || save.waitSeconds > 0} onPress={send}>
           {save.waitSeconds > 0 ? t('errors.retryIn', { seconds: save.waitSeconds }) : t('settings.save')}
         </Button>
       </PageActions>
@@ -140,13 +158,13 @@ function SettingsForm({ view, onSaved, onReload }: { view: SettingsView; onSaved
           {formErrors.length > 0 && <span className="block text-xs">{formErrors.join(' · ')}</span>}
         </Banner>
       ) : (
-        save.error && (
+        current && save.error && (
           <Banner
             variant={save.canRetry ? 'offline' : 'error'}
             code={save.error.code}
             action={
               save.canRetry && (
-                <Button variant="secondary" onPress={() => void save.submit()}>
+                <Button variant="secondary" onPress={send}>
                   {t('common.retry')}
                 </Button>
               )
@@ -207,8 +225,9 @@ function SettingsForm({ view, onSaved, onReload }: { view: SettingsView; onSaved
           setAskReload(false);
           release();
           kept.clear();
+          // Clean again: the newer version on hand (or the one the reload brings) is taken over.
           setDraft(view.values);
-          onReload();
+          if (!moved) onReload();
         }}
         onCancel={() => setAskReload(false)}
       >
