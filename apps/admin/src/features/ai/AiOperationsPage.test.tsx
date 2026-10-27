@@ -128,6 +128,23 @@ describe('AiOperationsPage (A/81)', () => {
     expect(puts(r.calls)).toHaveLength(1);
   });
 
+  it('a dirty draft at version 3 whose row is refetched at version 4 never saves over it: conflict copy, Lưu off, no PUT', async () => {
+    let serverRow = setting('lookup_word', withM1);
+    const r = renderApp('/ai/operations', {
+      [OPS]: () => Response.json({ items: rows().map((s) => (s.operation === 'lookup_word' ? serverRow : s)) }),
+      [MODELS]: models(m1),
+      [PUT('lookup_word')]: () => Response.json(serverRow),
+    });
+    await screen.findByRole('group', { name: /lookup_word/ });
+    const row = rowOf('lookup_word');
+    await pick(row, t.effort, 'low');
+    serverRow = { ...serverRow, effort: 'high', max_output_tokens: 900, version: 4 }; // another tab saved
+    await r.client.refetchQueries({ queryKey: ['ai', 'operations'] });
+    expect(await within(row).findByText(vi.errors['operation-settings-conflict'])).toBeInTheDocument();
+    expect(within(row).getByRole('button', { name: saveName('lookup_word') })).toBeDisabled();
+    expect(puts(r.calls)).toHaveLength(0);
+  });
+
   it('a 409 whose re-read fails still marks the conflict: Lưu stays off and [Tải lại] is offered', async () => {
     let reads = 0;
     renderApp('/ai/operations', {
