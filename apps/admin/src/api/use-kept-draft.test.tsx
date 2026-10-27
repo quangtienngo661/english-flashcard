@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { act, render, renderHook, screen, waitFor } from '@testing-library/react';
+import { act, render, renderHook, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 import { Navigate, Route, createRoutesFromElements, useLocation } from 'react-router';
@@ -59,6 +59,27 @@ describe('useKeptDraft', () => {
     sessionStorage.setItem(STORED, JSON.stringify('x'));
     const { result } = renderHook(() => useKeptDraft('ai-prompt:lookup', 'y', false));
     expect(result.current.kept).toBeNull();
+  });
+
+  it('moving to another key while dirty keeps the stored draft of the new key, offers it, and writes nothing of the old key under it', () => {
+    sessionStorage.setItem('wordmet-admin.draft.sense:b', JSON.stringify('B from last time'));
+    const { rerender, result } = renderHook(({ k, value, dirty }) => useKeptDraft(k, value, dirty), {
+      initialProps: { k: 'sense:a', value: 'A text', dirty: true },
+    });
+    expect(JSON.parse(sessionStorage.getItem('wordmet-admin.draft.sense:a')!)).toBe('A text');
+
+    // the render in which the key changes still carries A's value and dirty flag
+    rerender({ k: 'sense:b', value: 'A text', dirty: true });
+    expect(result.current.kept).toBe('B from last time');
+    expect(JSON.parse(sessionStorage.getItem('wordmet-admin.draft.sense:b')!)).toBe('B from last time');
+
+    // B's form resets to clean: still no deletion of B's draft
+    rerender({ k: 'sense:b', value: 'B server', dirty: false });
+    expect(JSON.parse(sessionStorage.getItem('wordmet-admin.draft.sense:b')!)).toBe('B from last time');
+
+    // editing B writes B
+    rerender({ k: 'sense:b', value: 'B edited', dirty: true });
+    expect(JSON.parse(sessionStorage.getItem('wordmet-admin.draft.sense:b')!)).toBe('B edited');
   });
 
   it('discard() removes the draft and clears `kept`', () => {
@@ -199,5 +220,58 @@ describe('a session that ends mid-edit (Review Focus 1)', () => {
     await userEvent.click(screen.getByRole('button', { name: vi.draft.restore }));
     expect(screen.getByLabelText('Draft field')).toHaveValue('my unsaved text');
     expect(screen.queryByRole('status')).toBeNull();
+  });
+});
+
+/** Dirty page form with a kept draft whose `clear` runs on a confirmed leave, and a way to leave. */
+function LeavePage() {
+  const [text, setText] = useState('');
+  const { clear } = useKeptDraft<string>('settings', text, text !== '');
+  useDirtyForm(text !== '', { onLeave: clear });
+  return (
+    <div>
+      <label>
+        Draft field
+        <input value={text} onChange={(e) => setText(e.target.value)} />
+      </label>
+      <a href="/sources">Go to sources</a>
+    </div>
+  );
+}
+
+describe('a confirmed leave drops the kept draft', () => {
+  it('[Ở lại] keeps it, [Rời trang] removes it', async () => {
+    const f = makeFetch({ 'POST /v1/auth/refresh': () => tokenResponse('tok-1'), 'GET /v1/me': () => Response.json(ME_ADMIN) });
+    const store = new SessionStore({ baseUrl: BASE, fetch: f.fetch, channel: null });
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const leaveRoutes = createRoutesFromElements(
+      <Route element={<RequireSession />}>
+        <Route element={<Shell />}>
+          <Route path="settings" element={<LeavePage />} />
+          <Route path="sources" element={<p>Sources page</p>} />
+        </Route>
+      </Route>,
+    );
+    renderRouteTree(leaveRoutes, { initialEntries: ['/settings'] }, (node) => (
+      <IntlProvider locale="vi" messages={vi} timeZone="Asia/Ho_Chi_Minh">
+        <QueryClientProvider client={client}>
+          <SessionProvider store={store}>{node}</SessionProvider>
+        </QueryClientProvider>
+      </IntlProvider>
+    ));
+    const key = 'wordmet-admin.draft.settings';
+    await userEvent.type(await screen.findByLabelText('Draft field', {}, { timeout: 5000 }), 'abc');
+    expect(sessionStorage.getItem(key)).not.toBeNull();
+
+    await userEvent.click(screen.getByRole('link', { name: vi.nav.sources }));
+    const dialog = await screen.findByRole('dialog', { name: vi.leave.title });
+    await userEvent.click(within(dialog).getByRole('button', { name: vi.leave.stay }));
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: vi.leave.title })).toBeNull());
+    expect(JSON.parse(sessionStorage.getItem(key)!)).toBe('abc');
+
+    await userEvent.click(screen.getByRole('link', { name: vi.nav.sources }));
+    await userEvent.click(within(await screen.findByRole('dialog', { name: vi.leave.title })).getByRole('button', { name: vi.leave.leave }));
+    await screen.findByText('Sources page');
+    expect(sessionStorage.getItem(key)).toBeNull();
   });
 });

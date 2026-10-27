@@ -4,8 +4,8 @@ import { useTranslations } from 'use-intl';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
 
 type DirtyForms = {
-  /** Form id → the pathname it was dirty on. A ref, so `release()` is seen by the very next navigation. */
-  registry: { current: Map<string, string> };
+  /** Form id → the pathname it was dirty on, and what to run when the user confirms leaving. A ref, so `release()` is seen by the very next navigation. */
+  registry: { current: Map<string, { pathname: string; onLeave?: () => void }> };
   /** Asks "Bỏ thay đổi?" for the dialog `owner`; `discard` runs only on [Bỏ thay đổi]. */
   askDiscard: (owner: string, discard: () => void) => void;
   /** Withdraws `owner`'s question, if it is the one open (its dialog went away). */
@@ -26,7 +26,7 @@ function useDirtyForms(): DirtyForms {
  */
 export function DirtyFormProvider({ children }: { children: ReactNode }) {
   const t = useTranslations();
-  const registry = useRef(new Map<string, string>());
+  const registry = useRef(new Map<string, { pathname: string; onLeave?: () => void }>());
   const [pendingDiscard, setPendingDiscard] = useState<{ owner: string; discard: () => void } | null>(null);
   const value = useMemo<DirtyForms>(
     () => ({
@@ -60,20 +60,28 @@ export function DirtyFormProvider({ children }: { children: ReactNode }) {
 
 /**
  * Marks this form dirty on the current page while `isDirty`. Call `release()` right before a post-save or post-cancel
- * `navigate`: it drops the mark at once, so that navigation is not blocked.
+ * `navigate`: it drops the mark at once, so that navigation is not blocked. `onLeave` runs when the user confirms
+ * [Rời trang] (they accepted losing the changes, so e.g. a kept draft must go too), before the navigation proceeds.
  */
-export function useDirtyForm(isDirty: boolean): {
+export function useDirtyForm(
+  isDirty: boolean,
+  opts?: { onLeave?: () => void },
+): {
   /** Call only right before a navigation (save-and-go, cancel-and-go); the form is not marked again until `isDirty` changes. */
   release(): void;
 } {
   const { registry } = useDirtyForms();
   const id = useId();
   const { pathname } = useLocation();
+  const onLeaveRef = useRef(opts?.onLeave);
+  useEffect(() => {
+    onLeaveRef.current = opts?.onLeave;
+  });
 
   useEffect(() => {
     if (!isDirty) return;
     const forms = registry.current;
-    forms.set(id, pathname);
+    forms.set(id, { pathname, onLeave: () => onLeaveRef.current?.() });
     return () => {
       forms.delete(id);
     };
@@ -115,7 +123,7 @@ export function LeaveGuard() {
   const t = useTranslations();
   const { registry } = useDirtyForms();
   const blocker = useBlocker(({ currentLocation, nextLocation }) => {
-    const dirtyHere = [...registry.current.values()].includes(currentLocation.pathname);
+    const dirtyHere = [...registry.current.values()].some((form) => form.pathname === currentLocation.pathname);
     return dirtyHere && nextLocation.pathname !== currentLocation.pathname;
   });
   useBeforeUnload((event) => {
@@ -132,7 +140,9 @@ export function LeaveGuard() {
       cancelLabel={t('leave.stay')}
       tone="danger"
       onConfirm={() => {
+        const forms = [...registry.current.values()];
         registry.current.clear();
+        for (const form of forms) form.onLeave?.();
         blocker.proceed?.();
       }}
       onCancel={() => blocker.reset?.()}

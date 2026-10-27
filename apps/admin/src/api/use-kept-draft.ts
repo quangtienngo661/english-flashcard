@@ -31,6 +31,10 @@ function removeDraft(storageKey: string) {
  * replaces the page with `/login`, which unmounts it before any leave question can run; design §4.6). After signing in again
  * the screen is back at `from`; `kept` is then the saved value, to offer [Khôi phục] / [Bỏ]. The caller calls `clear()` after
  * a successful save, `discard()` on [Bỏ] (and after a restore), and puts `kept` back into its own form state itself.
+ *
+ * Callers must validate the shape of `kept` before using it (it may come from an older build), and must resolve the banner
+ * (restore or discard) before the first edit: that edit overwrites the stored draft. Pass `clear` as `useDirtyForm`'s
+ * `onLeave`, so a confirmed [Rời trang] drops the draft too.
  */
 export function useKeptDraft<T>(key: string, value: T, isDirty: boolean): { kept: T | null; discard(): void; clear(): void } {
   const storageKey = PREFIX + key;
@@ -51,7 +55,14 @@ export function useKeptDraft<T>(key: string, value: T, isDirty: boolean): { kept
   }, [value]);
 
   const wasDirty = useRef(false);
+  const lastKey = useRef(storageKey);
   useEffect(() => {
+    if (lastKey.current !== storageKey) {
+      // Another record: nothing of the previous key's form may be written to, or removed from, this key's draft.
+      lastKey.current = storageKey;
+      wasDirty.current = false;
+      return;
+    }
     if (isDirty) {
       wasDirty.current = true;
       if (serialized === null) return;
