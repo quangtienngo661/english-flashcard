@@ -70,7 +70,7 @@ export function SenseDetail() {
         {t('back')}
       </Link>
       {sense.data ? (
-        <SenseForm key={`${sense.data.sense_id}:${sense.data.revision}`} view={sense.data} onReload={() => void sense.refetch()} />
+        <SenseForm key={sense.data.sense_id} live={sense.data} onReload={() => void sense.refetch()} />
       ) : notFound ? (
         <Banner variant="error">{t('notFound')}</Banner>
       ) : (
@@ -80,7 +80,11 @@ export function SenseDetail() {
   );
 }
 
-function SenseForm({ view, onReload }: { view: SenseDetailView; onReload: () => void }) {
+/**
+ * `view` is the revision the form started from; saves send its number. A newer `live` read (after a save, a reload, or a refetch on
+ * window focus) is taken over only while nothing is unsaved; under unsaved edits the page keeps them and says the sense changed.
+ */
+function SenseForm({ live, onReload }: { live: SenseDetailView; onReload: () => void }) {
   const t = useTranslations('senses');
   const locale = useLocale();
   const format = useFormatter();
@@ -89,13 +93,17 @@ function SenseForm({ view, onReload }: { view: SenseDetailView; onReload: () => 
   const errorMessage = useErrorMessage();
   const canPublish = useCan('content.publish');
   const topics = useQuery({ queryKey: ['topics'], queryFn: () => listTopics(api) });
+  const [view, setView] = useState(live);
+  const [seen, setSeen] = useState(live);
   const server = useMemo(() => toForm(view.content), [view.content]);
   const [form, setForm] = useState<Form>(server);
   const dirty = JSON.stringify(toContent(form)) !== JSON.stringify(toContent(server));
   const kept = useKeptDraft<unknown>(`sense:${view.sense_id}`, form, dirty);
   const { release } = useDirtyForm(dirty, { onLeave: kept.clear });
 
-  const done = async (droppedTopics: string[], message: string) => {
+  const done = async (revision: number, droppedTopics: string[], message: string) => {
+    // The saved text is now the base, so the read that follows (same revision) is taken over without a conflict.
+    setView({ ...view, revision, content: toContent(form) });
     release();
     kept.clear();
     showToast(message);
@@ -105,12 +113,36 @@ function SenseForm({ view, onReload }: { view: SenseDetailView; onReload: () => 
   };
   const draft = useMutation({
     mutationFn: () => saveDraft(api, view.sense_id, view.revision, toContent(form)),
-    onSuccess: (r) => done(r.dropped_topics, t('detail.draftSaved')),
+    onSuccess: (r) => done(r.revision, r.dropped_topics, t('detail.draftSaved')),
   });
   const publish = useMutation({
     mutationFn: () => quickPublish(api, view.sense_id, view.revision, toContent(form)),
-    onSuccess: (r) => done(r.dropped_topics, t('detail.published')),
+    onSuccess: (r) => done(r.revision, r.dropped_topics, t('detail.published')),
   });
+  if (live !== seen) {
+    setSeen(live);
+    if (!dirty) {
+      setView(live);
+      setForm(toForm(live.content));
+      draft.reset();
+      publish.reset();
+    }
+  }
+  const moved = live.revision !== view.revision;
+  /** [Tải lại] drops the unsaved edit: the newer read on hand is taken over, else one is fetched. */
+  const reload = () => {
+    release();
+    kept.clear();
+    draft.reset();
+    publish.reset();
+    if (moved) {
+      setView(live);
+      setForm(toForm(live.content));
+    } else {
+      setForm(server);
+      onReload();
+    }
+  };
   const error = draft.error ?? publish.error;
   const problem = error instanceof ApiError ? error.problem : null;
   const missing = (problem?.slug === 'publish-incomplete' ? problem.violations ?? [] : []) as Missing[];
@@ -147,8 +179,8 @@ function SenseForm({ view, onReload }: { view: SenseDetailView; onReload: () => 
           onDiscard={kept.discard}
         />
       )}
-      {problem?.slug === 'stale-revision' ? (
-        <Banner variant="error" action={<Button variant="secondary" onPress={onReload}>{t('detail.reload')}</Button>}>
+      {moved || problem?.slug === 'stale-revision' ? (
+        <Banner variant="error" action={<Button variant="secondary" onPress={reload}>{t('detail.reload')}</Button>}>
           {t('detail.stale')}
         </Banner>
       ) : problem?.slug === 'publish-incomplete' ? (
