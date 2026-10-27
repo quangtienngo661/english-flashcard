@@ -10,6 +10,9 @@ import { AiOperationsPage } from '../features/ai/AiOperationsPage';
 import { AiPromptsPage } from '../features/ai/AiPromptsPage';
 import { AiStatusPage } from '../features/ai/AiStatusPage';
 import { ExportPage } from '../features/export/ExportPage';
+import { ReportReasonsPage } from '../features/reports/ReportReasonsPage';
+import { RefundsPage } from '../features/reports/RefundsPage';
+import { ReportsPage } from '../features/reports/ReportsPage';
 import { PublishJobsPage } from '../features/publish-jobs/PublishJobsPage';
 import { SenseDetail } from '../features/senses/SenseDetail';
 import { SensesPage } from '../features/senses/SensesPage';
@@ -18,6 +21,7 @@ import { SourcesPage } from '../features/sources/SourcesPage';
 import { StaffPage } from '../features/staff/StaffPage';
 import { TopicsPage } from '../features/topics/TopicsPage';
 import { TransactionsPage } from '../features/transactions/TransactionsPage';
+import { UnknownFormsPage } from '../features/unknown-forms/UnknownFormsPage';
 import { WordsPage } from '../features/words/WordsPage';
 import { homePath, NAV } from './nav';
 import { RequireSession } from './RequireSession';
@@ -56,6 +60,15 @@ export const appRoutes: RouteObject[] = createRoutesFromElements(
         <Route path="sources" element={<SourcesPage />}>
           <Route path="new" element={null} />
         </Route>
+        <Route path="reports" element={<ReportsPage />}>
+          <Route path=":id" element={null} />
+        </Route>
+        <Route path="report-reasons" element={<ReportReasonsPage />}>
+          <Route path="new" element={null} />
+          <Route path=":code" element={null} />
+        </Route>
+        <Route path="refunds" element={<RefundsPage />} />
+        <Route path="unknown-forms" element={<UnknownFormsPage />} />
         <Route path="transactions" element={<TransactionsPage />} />
         <Route path="ai/status" element={<AiStatusPage />} />
         <Route path="ai/models" element={<AiModelsPage />}>

@@ -82,7 +82,35 @@ const mocks: Record<string, MockHandler> = {
   }], next_page_token: null } }),
 };
 
-const pages = ['/uploads', '/uploads/b1', '/uploads/new', '/publish-jobs', `/publish-jobs/${JOB}`, '/sources', '/sources/new', '/export', '/ai/costs', '/transactions', '/ai/status', '/ai/models', '/ai/models/new', '/ai/models/m1', '/ai/operations', '/ai/prompts', '/settings', '/settings?tab=entitlements', '/words', '/senses', `/senses/${SENSE_ID}`, '/topics'];
+const RID = '5b1f0000-0000-4000-8000-0000000000a1';
+const reportRow = {
+  id: RID, sense_id: 's1', reason: 'wrong_meaning', reason_label: 'Nghĩa sai', note: 'Nghĩa không khớp', status: 'open',
+  question_snapshot: {
+    type: 'mcq_definition',
+    prompt: { kind: 'mcq', meaning: 'a computer that serves', meaning_language: 'en', context_label: null, options: ['máy chủ', 'bộ nhớ', 'bộ nhớ đệm', 'ổ đĩa'] },
+    correct: { lemma: 'server', meaning: 'máy chủ', definition_en: null, option_index: 0 },
+    hints_shown: { level1: null, level2: null, level3: null },
+    learner: { answer: 'ổ đĩa', option_index: 3, answers_tried: [], result: 'wrong', hint_level: 0 },
+  },
+  created_at: at, resolved_at: null, resolved_by: null, resolved_by_role: null, resolved_by_user: null,
+  refundable: true, question_source: 'ai', ai_operation_id: 'op-1', call_operation_id: 'call-1', model: 'gpt-x', prompt_revision: 3, ai_charged: true, refunded: null,
+};
+const reasonRow = {
+  code: 'wrong_meaning', label_vi: 'Nghĩa sai', label_en: 'Wrong meaning', detail_hint_vi: null, detail_hint_en: null, applies_to: 'all', note_required: false,
+  refundable: true, active: true, position: 10, updated_at: at, updated_by_user: { id: 'admin-1', email: 'admin@wordmet.com', system: false },
+};
+Object.assign(mocks, {
+  'GET /v1/admin/practice/report-reasons': () => ({ json: { items: [reasonRow] } }),
+  'GET /v1/admin/practice/reports': () => ({ json: { items: [reportRow], next_page_token: null } }),
+  [`GET /v1/admin/practice/reports/${RID}`]: () => ({ json: reportRow }),
+  'GET /v1/admin/practice/refunds': () => ({ json: { items: [{
+    report_id: RID, user_id: 'u-lan', user: { id: 'u-lan', email: 'lan@example.com', system: false }, resolved_by: 'u-minh', resolved_by_role: 'editor',
+    resolved_by_user: { id: 'u-minh', email: 'minh@example.com', system: false }, self_resolved: false, refunded: true, resolved_at: at,
+  }], next_page_token: null } }),
+  'GET /v1/admin/practice/unknown-forms': () => ({ json: { items: [{ id: 'f-1', lemma_key: 'go', form: 'went', rejected_count: 3, first_seen_at: at, last_seen_at: at }], next_page_token: null } }),
+});
+
+const pages = ['/uploads', '/uploads/b1', '/uploads/new', '/publish-jobs', `/publish-jobs/${JOB}`, '/sources', '/sources/new', '/export', '/ai/costs', '/transactions', '/ai/status', '/ai/models', '/ai/models/new', '/ai/models/m1', '/ai/operations', '/ai/prompts', '/settings', '/settings?tab=entitlements', '/words', '/senses', `/senses/${SENSE_ID}`, '/topics', '/reports', `/reports/${RID}`, '/report-reasons', '/report-reasons/new', '/refunds', '/unknown-forms'];
 
 for (const [lang, copy] of [['vi', vi], ['en', en]] as const) {
   test.describe(`axe (${lang})`, () => {
@@ -98,7 +126,7 @@ for (const [lang, copy] of [['vi', vi], ['en', en]] as const) {
     });
 
     test('every signed-in screen, its panels and dialogs', async ({ page }) => {
-      test.setTimeout(90_000); // one test walks every screen; each added screen adds seconds under parallel load
+      test.setTimeout(150_000); // one test walks every screen; each added screen adds seconds under parallel load
       await signedInAs(page, 'admin', mocks);
       for (const path of pages) {
         await page.goto(path);
@@ -126,6 +154,7 @@ async function waitForContent(page: Page, path: string) {
   if (path.endsWith('/new') || path === '/ai/models/m1') await expect(page.getByRole('dialog')).toBeVisible();
   else if (path === '/uploads/b1') await expect(page.getByTestId('detail-panel').getByRole('heading', { level: 2, name: batch.file_name })).toBeVisible();
   else if (path.startsWith('/publish-jobs/')) await expect(page.getByTestId('detail-panel').getByRole('heading', { level: 2 })).toContainText('a3f2c1');
+  else if (path.startsWith('/reports/')) await expect(page.getByTestId('detail-panel').getByRole('heading', { level: 2 })).toBeVisible();
   else if (path === '/ai/operations') await expect(page.getByRole('group', { name: /lookup_word/ })).toBeVisible();
   else if (path === '/ai/prompts') {
     await expect(page.getByText(/17\/20/)).toBeVisible();

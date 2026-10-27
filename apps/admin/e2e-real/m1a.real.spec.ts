@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 import vi from '../messages/vi.json' with { type: 'json' };
 import type { RealState } from './global-setup';
 import { STATE_FILE } from './global-setup';
+import { signIn } from './support/sign-in';
 
 /**
  * M1a on the real stack (design §7): the admin adds a fake model, chooses it for `generate_cloze`, Tình trạng turns "Sẵn sàng",
@@ -22,11 +23,7 @@ const state = (): RealState => JSON.parse(readFileSync(STATE_FILE, 'utf8'));
 
 async function signInAsAdmin(page: Page) {
   const { admin } = state();
-  await page.goto('/login');
-  await page.getByLabel(vi.account.login.email).fill(admin.email);
-  await page.getByLabel(vi.account.login.password, { exact: true }).fill(admin.password);
-  await page.getByRole('button', { name: vi.account.login.submit }).click();
-  await expect(page).toHaveURL(/\/uploads$/);
+  await signIn(page, admin.email, admin.password);
 }
 
 const opRow = (page: Page) => page.getByRole('group', { name: new RegExp(OP) });

@@ -455,6 +455,133 @@
       "close": "Đóng"
     }
   },
+  "reportReasons": {
+    "add": "Thêm lý do",
+    "cols": {
+      "position": "Thứ tự",
+      "code": "Mã",
+      "labelVi": "Tên tiếng Việt",
+      "labelEn": "Tên tiếng Anh",
+      "appliesTo": "Áp cho",
+      "noteRequired": "Bắt buộc ghi chú",
+      "refundable": "Có trả lượt",
+      "active": "Đang dùng",
+      "updatedBy": "Sửa lần cuối bởi",
+      "actions": "Thao tác"
+    },
+    "appliesTo": { "ai": "Câu AI", "non_ai": "Câu thường", "all": "Cả hai" },
+    "yes": "Có",
+    "no": "Không",
+    "edit": "Sửa",
+    "editFor": "Sửa lý do {code}",
+    "activeFor": "Đang dùng: {code}",
+    "note": "Lý do đã tắt không hiện cho người học; báo lỗi cũ giữ tên lúc gửi.",
+    "empty": "Chưa có lý do báo lỗi nào.",
+    "emptyHint": "Thêm lý do để người học có thể chọn khi báo lỗi.",
+    "newTitle": "Thêm lý do báo lỗi",
+    "editTitle": "Sửa lý do báo lỗi",
+    "form": {
+      "code": "Mã",
+      "codeHint": "Bắt đầu bằng chữ, 2–40 ký tự a–z, 0–9, _",
+      "codeInvalid": "Mã phải bắt đầu bằng chữ, dài 2–40 ký tự, chỉ gồm a–z, 0–9, _.",
+      "labelVi": "Tên tiếng Việt",
+      "labelEn": "Tên tiếng Anh",
+      "labelHint": "1–100 ký tự",
+      "labelInvalid": "Nhập tên từ 1 đến 100 ký tự.",
+      "hintVi": "Gợi ý trong ô ghi chú (tiếng Việt)",
+      "hintEn": "Gợi ý trong ô ghi chú (tiếng Anh)",
+      "hintHint": "Không bắt buộc, tối đa 200 ký tự",
+      "appliesTo": "Áp cho",
+      "noteRequired": "Bắt buộc ghi chú",
+      "refundable": "Có trả lượt",
+      "refundableHint": "Chỉ có tác dụng với câu AI",
+      "position": "Thứ tự",
+      "positionHint": "Từ 0 đến 10.000; số nhỏ hiện trước",
+      "positionInvalid": "Nhập số nguyên từ 0 đến 10.000.",
+      "save": "Lưu"
+    }
+  },
+  "reports": {
+    "filters": {
+      "status": "Trạng thái",
+      "reason": "Lý do",
+      "source": "Nguồn câu",
+      "allStatuses": "Tất cả trạng thái",
+      "allReasons": "Tất cả lý do",
+      "allSources": "Mọi nguồn"
+    },
+    "statuses": {
+      "open": "Chưa xử lý",
+      "no_error": "Không có lỗi",
+      "fixed": "Đã sửa",
+      "confirmed": "Đã xác nhận lỗi"
+    },
+    "sources": { "rule": "Câu thường", "ai": "Câu AI" },
+    "types": {
+      "mcq_definition": "Trắc nghiệm",
+      "true_false_definition": "Đúng / Sai",
+      "type_word": "Gõ từ",
+      "cloze": "Điền chỗ trống",
+      "meaning_in_sentence": "Nghĩa trong câu",
+      "mcq_sentence": "Trắc nghiệm trong câu"
+    },
+    "cols": {
+      "word": "Từ",
+      "type": "Kiểu câu",
+      "reason": "Lý do",
+      "source": "Nguồn",
+      "note": "Ghi chú",
+      "sentAt": "Ngày gửi",
+      "status": "Trạng thái",
+      "resolvedBy": "Người xử lý"
+    },
+    "empty": "Không còn báo lỗi chưa xử lý.",
+    "emptyFiltered": "Không có báo lỗi nào khớp bộ lọc.",
+    "detail": {
+      "title": "Báo lỗi · {word}",
+      "titleUnknown": "Báo lỗi",
+      "notFound": "Không tìm thấy báo lỗi này.",
+      "backToList": "Về danh sách báo lỗi",
+      "question": "Câu hỏi",
+      "prompt": "Đề",
+      "meaning": "Nghĩa",
+      "sentence": "Câu",
+      "options": "Các lựa chọn",
+      "correctAnswer": "Đáp án đúng",
+      "correctMark": "Đáp án đúng",
+      "learnerPicked": "Người học chọn",
+      "unclearOption": "Không rõ lựa chọn nào",
+      "learnerAnswer": "Câu trả lời của người học",
+      "noAnswer": "Chưa trả lời",
+      "triedAnswers": "Đã thử",
+      "hints": "Gợi ý đã xem",
+      "noHints": "Không xem gợi ý nào",
+      "true": "Đúng",
+      "false": "Sai",
+      "reason": "Lý do",
+      "note": "Ghi chú của người học",
+      "noNote": "Không có ghi chú",
+      "ai": "Thông tin AI",
+      "operationId": "Mã thao tác",
+      "callId": "Mã lời gọi",
+      "model": "Model",
+      "promptRevision": "Bản prompt",
+      "openCall": "Xem lần gọi này",
+      "resolved": "Đã xử lý",
+      "resolvedLine": "{status} · {who} · {time}",
+      "refunded": "Đã trả lại 1 lượt câu AI",
+      "refundPending": "Chưa trả được, hệ thống thử lại mỗi giờ",
+      "notRefunded": "Không trả lượt",
+      "fixHint": "Sửa nội dung ở Nghĩa",
+      "fixLink": "Mở nghĩa của từ “{word}”"
+    },
+    "actions": {
+      "noError": "Không có lỗi",
+      "fixed": "Đã sửa",
+      "confirmed": "Xác nhận lỗi",
+      "refundLine": "Xác nhận lỗi sẽ trả lại 1 lượt câu AI cho người học."
+    }
+  },
   "staff": {
     "toast": {
       "granted": "Đã cấp vai trò {role} cho {email}.",
@@ -688,6 +815,47 @@
     "confirmAllTitle": "Publish toàn bộ catalog?",
     "confirmAllBody": "Bạn chưa chọn bộ lọc nào, nên job này sẽ publish mọi sense đủ điều kiện trong toàn bộ catalog. Chỉ tiếp tục nếu đó là điều bạn muốn.",
     "confirmAllSubmit": "Publish tất cả"
+  },
+  "refunds": {
+    "filters": {
+      "resolver": "Email người xử lý",
+      "resolverPlaceholder": "minh@example.com",
+      "from": "Từ ngày",
+      "to": "Đến ngày",
+      "apply": "Lọc"
+    },
+    "cols": {
+      "report": "Báo lỗi",
+      "user": "Người học",
+      "resolver": "Người xử lý",
+      "role": "Vai trò",
+      "refunded": "Trả lượt",
+      "at": "Thời điểm"
+    },
+    "reportLink": "Xem báo lỗi",
+    "selfResolved": "Tự xử lý báo lỗi của mình",
+    "refunded": { "true": "Đã trả", "false": "Không trả", "null": "Đang thử lại" },
+    "empty": "Chưa có lần xác nhận lỗi nào trong khoảng này.",
+    "note": "Không thu hồi được lượt đã trả."
+  },
+  "unknownForms": {
+    "intro": "Dạng AI đã dùng mà bảng dạng chia chưa có. Có thể lẫn từ đồng nghĩa, cụm nhiều chữ, lỗi chính tả.",
+    "cols": {
+      "lemma": "Từ gốc",
+      "form": "Dạng AI dùng",
+      "rejected": "Số lần bị loại",
+      "first": "Lần đầu",
+      "last": "Lần gần nhất"
+    },
+    "accept": "Nhận dạng này",
+    "acceptFor": "Nhận dạng “{form}” của “{lemma}”",
+    "ignore": "Bỏ qua",
+    "ignoreFor": "Bỏ qua dạng “{form}” của “{lemma}”",
+    "accepted": "Đã thêm “{form}” vào dạng chia của “{lemma}”.",
+    "undo": "Hoàn tác",
+    "undone": "Đã gỡ “{form}” khỏi dạng chia của “{lemma}”.",
+    "empty": "Chưa có dạng chia nào cần xem.",
+    "emptyHint": "Khi AI dùng một dạng bảng chưa biết, dạng đó hiện ở đây."
   },
   "settings": {
     "tabsLabel": "Nhóm cài đặt",

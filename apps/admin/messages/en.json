@@ -455,6 +455,133 @@
       "close": "Close"
     }
   },
+  "reportReasons": {
+    "add": "Add reason",
+    "cols": {
+      "position": "Order",
+      "code": "Code",
+      "labelVi": "Vietnamese name",
+      "labelEn": "English name",
+      "appliesTo": "Applies to",
+      "noteRequired": "Note required",
+      "refundable": "Refunds a unit",
+      "active": "In use",
+      "updatedBy": "Last edited by",
+      "actions": "Actions"
+    },
+    "appliesTo": { "ai": "AI questions", "non_ai": "Regular questions", "all": "Both" },
+    "yes": "Yes",
+    "no": "No",
+    "edit": "Edit",
+    "editFor": "Edit reason {code}",
+    "activeFor": "In use: {code}",
+    "note": "A turned-off reason is no longer shown to learners; older reports keep the name they were sent with.",
+    "empty": "There are no report reasons yet.",
+    "emptyHint": "Add a reason so learners can pick it when reporting a problem.",
+    "newTitle": "Add a report reason",
+    "editTitle": "Edit a report reason",
+    "form": {
+      "code": "Code",
+      "codeHint": "Starts with a letter, 2–40 characters of a–z, 0–9, _",
+      "codeInvalid": "The code must start with a letter and be 2–40 characters of a–z, 0–9, _.",
+      "labelVi": "Vietnamese name",
+      "labelEn": "English name",
+      "labelHint": "1–100 characters",
+      "labelInvalid": "Enter a name of 1 to 100 characters.",
+      "hintVi": "Hint in the note box (Vietnamese)",
+      "hintEn": "Hint in the note box (English)",
+      "hintHint": "Optional, up to 200 characters",
+      "appliesTo": "Applies to",
+      "noteRequired": "Note required",
+      "refundable": "Refunds a unit",
+      "refundableHint": "Only has an effect on AI questions",
+      "position": "Order",
+      "positionHint": "From 0 to 10,000; smaller shows first",
+      "positionInvalid": "Enter a whole number from 0 to 10,000.",
+      "save": "Save"
+    }
+  },
+  "reports": {
+    "filters": {
+      "status": "Status",
+      "reason": "Reason",
+      "source": "Question source",
+      "allStatuses": "All statuses",
+      "allReasons": "All reasons",
+      "allSources": "Any source"
+    },
+    "statuses": {
+      "open": "Open",
+      "no_error": "No error",
+      "fixed": "Fixed",
+      "confirmed": "Error confirmed"
+    },
+    "sources": { "rule": "Rule question", "ai": "AI question" },
+    "types": {
+      "mcq_definition": "Multiple choice",
+      "true_false_definition": "True / False",
+      "type_word": "Type the word",
+      "cloze": "Fill in the blank",
+      "meaning_in_sentence": "Meaning in a sentence",
+      "mcq_sentence": "Multiple choice in a sentence"
+    },
+    "cols": {
+      "word": "Word",
+      "type": "Question type",
+      "reason": "Reason",
+      "source": "Source",
+      "note": "Note",
+      "sentAt": "Sent",
+      "status": "Status",
+      "resolvedBy": "Handled by"
+    },
+    "empty": "No open reports left.",
+    "emptyFiltered": "No reports match the filters.",
+    "detail": {
+      "title": "Report · {word}",
+      "titleUnknown": "Report",
+      "notFound": "This report was not found.",
+      "backToList": "Back to the reports",
+      "question": "Question",
+      "prompt": "Prompt",
+      "meaning": "Meaning",
+      "sentence": "Sentence",
+      "options": "Options",
+      "correctAnswer": "Correct answer",
+      "correctMark": "Correct answer",
+      "learnerPicked": "Learner chose",
+      "unclearOption": "Cannot tell which option",
+      "learnerAnswer": "Learner's answer",
+      "noAnswer": "No answer",
+      "triedAnswers": "Tried",
+      "hints": "Hints seen",
+      "noHints": "No hint was used",
+      "true": "True",
+      "false": "False",
+      "reason": "Reason",
+      "note": "Learner's note",
+      "noNote": "No note",
+      "ai": "AI details",
+      "operationId": "Operation ID",
+      "callId": "Call ID",
+      "model": "Model",
+      "promptRevision": "Prompt revision",
+      "openCall": "View this call",
+      "resolved": "Handled",
+      "resolvedLine": "{status} · {who} · {time}",
+      "refunded": "1 AI question unit given back",
+      "refundPending": "Not refunded yet, the system retries every hour",
+      "notRefunded": "No unit refunded",
+      "fixHint": "Edit the content under Senses",
+      "fixLink": "Open the senses of “{word}”"
+    },
+    "actions": {
+      "noError": "No error",
+      "fixed": "Fixed",
+      "confirmed": "Confirm error",
+      "refundLine": "Confirming the error gives the learner back 1 AI question unit."
+    }
+  },
   "staff": {
     "toast": {
       "granted": "Granted the {role} role to {email}.",
@@ -688,6 +815,47 @@
     "confirmAllTitle": "Publish the whole catalog?",
     "confirmAllBody": "You have not chosen any filter, so this job will publish every eligible sense in the whole catalog. Continue only if that is what you want.",
     "confirmAllSubmit": "Publish everything"
+  },
+  "refunds": {
+    "filters": {
+      "resolver": "Resolver email",
+      "resolverPlaceholder": "minh@example.com",
+      "from": "From date",
+      "to": "To date",
+      "apply": "Filter"
+    },
+    "cols": {
+      "report": "Report",
+      "user": "Learner",
+      "resolver": "Resolved by",
+      "role": "Role",
+      "refunded": "Unit given back",
+      "at": "Time"
+    },
+    "reportLink": "View report",
+    "selfResolved": "Resolved their own report",
+    "refunded": { "true": "Given back", "false": "Not given back", "null": "Retrying" },
+    "empty": "No confirmed errors in this range yet.",
+    "note": "A unit that was given back cannot be taken back."
+  },
+  "unknownForms": {
+    "intro": "Forms the AI used that the word-form table does not have yet. They can include synonyms, multi-word phrases and typos.",
+    "cols": {
+      "lemma": "Base word",
+      "form": "Form the AI used",
+      "rejected": "Times rejected",
+      "first": "First seen",
+      "last": "Last seen"
+    },
+    "accept": "Accept this form",
+    "acceptFor": "Accept “{form}” for “{lemma}”",
+    "ignore": "Ignore",
+    "ignoreFor": "Ignore “{form}” for “{lemma}”",
+    "accepted": "Added “{form}” to the forms of “{lemma}”.",
+    "undo": "Undo",
+    "undone": "Removed “{form}” from the forms of “{lemma}”.",
+    "empty": "No forms to review yet.",
+    "emptyHint": "When the AI uses a form the table does not know, it shows up here."
   },
   "settings": {
     "tabsLabel": "Setting groups",

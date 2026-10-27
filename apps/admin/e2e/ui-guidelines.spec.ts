@@ -229,6 +229,34 @@ test('the no-access page at 390 fits the window and its text and button are in v
   await expectNoHorizontalScroll(page);
 });
 
+test('the four Báo lỗi pages at 390 fit the window with a 300-character note in the data', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  const note = 'Nghĩa không khớp với câu ví dụ, '.repeat(10).slice(0, 300);
+  expect(note).toHaveLength(300);
+  const id = '5b1f0000-0000-4000-8000-0000000000a1';
+  const report = {
+    id, sense_id: 's1', reason: 'wrong_meaning', reason_label: 'Nghĩa sai', note, status: 'open',
+    question_snapshot: { type: 'cloze', prompt: { kind: 'cloze', sentence: 'Lan will ___ it tomorrow.', context_label: null }, correct: { lemma: 'server', meaning: 'máy chủ', definition_en: null, option_index: null }, hints_shown: { level1: null, level2: null, level3: null }, learner: { answer: 'serve', option_index: null, answers_tried: [], result: 'wrong', hint_level: 0 } },
+    created_at: at, resolved_at: null, resolved_by: null, resolved_by_role: null, resolved_by_user: null,
+    refundable: true, question_source: 'ai', ai_operation_id: 'op-1', call_operation_id: 'call-1', model: 'gpt-x', prompt_revision: 3, ai_charged: true, refunded: null,
+  };
+  const reason = { code: 'wrong_meaning', label_vi: 'Nghĩa sai', label_en: 'Wrong meaning', detail_hint_vi: note.slice(0, 200), detail_hint_en: null, applies_to: 'all', note_required: false, refundable: true, active: true, position: 10, updated_at: at, updated_by_user: { id: 'a1', email: 'admin@wordmet.com', system: false } };
+  await signedInAs(page, 'admin', {
+    'GET /v1/admin/content/uploads': () => ({ json: UPLOADS }),
+    'GET /v1/admin/practice/report-reasons': () => ({ json: { items: [reason] } }),
+    'GET /v1/admin/practice/reports': () => ({ json: { items: [report], next_page_token: null } }),
+    [`GET /v1/admin/practice/reports/${id}`]: () => ({ json: report }),
+    'GET /v1/admin/practice/refunds': () => ({ json: { items: [{ report_id: id, user_id: 'u1', user: { id: 'u1', email: `${'long'.repeat(15)}@example.com`, system: false }, resolved_by: 'u2', resolved_by_role: 'editor', resolved_by_user: { id: 'u2', email: 'minh@example.com', system: false }, self_resolved: false, refunded: true, resolved_at: at }], next_page_token: null } }),
+    'GET /v1/admin/practice/unknown-forms': () => ({ json: { items: [{ id: 'f-1', lemma_key: 'go', form: 'went'.repeat(10), rejected_count: 3, first_seen_at: at, last_seen_at: at }], next_page_token: null } }),
+  });
+  for (const path of ['/reports', `/reports/${id}`, '/report-reasons', '/refunds', '/unknown-forms']) {
+    await page.goto(path);
+    await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+    await expect(page.locator('tbody tr, [data-testid="card"]').first()).toBeAttached();
+    await expectNoHorizontalScroll(page);
+  }
+});
+
 test('Tình trạng at 390 fits the window with six operations, a warning and a last error', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   const ops = ['generate_cloze', 'lookup_word', 'translate_sentence', 'generate_meaning_question', 'generate_sentence_mcq', 'check_private_word'];

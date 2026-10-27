@@ -47,8 +47,17 @@ export function grantAdmin(email: string): void {
   execFileSync(process.execPath, ['dist/cli/admin-grant.js', email], { cwd: API_DIR, stdio: 'pipe' });
 }
 
+/** Seconds to wait from a 429's `Retry-After` (the whole suite signs in more than `auth.login.ip` allows in one minute). */
+export const retryAfterSeconds = (header: string | null | undefined): number => Number(header ?? '') || 60;
+
 export async function loginToken(email: string, password: string): Promise<string> {
-  const res = await expectStatus(await post('/v1/auth/login', { email, password, client: 'web', device_label: 'e2e-real' }), 200, `login ${email}`);
+  const body = { email, password, client: 'web', device_label: 'e2e-real' };
+  let res = await post('/v1/auth/login', body);
+  if (res.status === 429) {
+    await new Promise((resolve) => setTimeout(resolve, (retryAfterSeconds(res.headers.get('retry-after')) + 1) * 1000));
+    res = await post('/v1/auth/login', body);
+  }
+  await expectStatus(res, 200, `login ${email}`);
   return ((await res.json()) as { access_token: string }).access_token;
 }
 
