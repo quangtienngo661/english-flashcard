@@ -13,6 +13,7 @@ describe('admin ai reports HTTP (unit, mocked service)', () => {
   let ctx: TestApp; let token: string; let actorId: string; let role: 'admin' | 'editor' | null;
   const prisma = { sessionChain: { findUnique: vi.fn() }, $disconnect: async () => {} };
   const hit = vi.spyOn(RateLimiter.prototype, 'hit');
+  const peekSpy = vi.spyOn(RateLimiter.prototype, 'peek');
   let status: ReturnType<typeof vi.spyOn>; let costs: ReturnType<typeof vi.spyOn>; let calls: ReturnType<typeof vi.spyOn>;
   const auth = () => ({ Authorization: `Bearer ${token}` });
   const http = () => ctx.http();
@@ -32,15 +33,30 @@ describe('admin ai reports HTTP (unit, mocked service)', () => {
     costs.mockReset().mockResolvedValue({ items: [], total: {} });
     calls.mockReset().mockResolvedValue({ items: [] });
     hit.mockReset().mockResolvedValue(undefined);
+    peekSpy.mockReset().mockResolvedValue({ limit: 20, used: 23, resetsAt: new Date('2026-10-07T13:00:00.000Z') });
   });
   afterAll(async () => { await ctx?.close(); vi.restoreAllMocks(); });
 
   it('every route requires settings.manage', () => {
-    const routes = listRoutes(ctx.app).filter(({ path }) => ['/v1/admin/ai/status', '/v1/admin/ai/costs', '/v1/admin/ai/calls'].includes(path));
+    const routes = listRoutes(ctx.app).filter(({ path }) => ['/v1/admin/ai/status', '/v1/admin/ai/costs', '/v1/admin/ai/calls', '/v1/admin/ai/test-quota'].includes(path));
     expect(routes.map(({ method, path }) => `${method} ${path}`).sort()).toEqual([
-      'GET /v1/admin/ai/calls', 'GET /v1/admin/ai/costs', 'GET /v1/admin/ai/status',
+      'GET /v1/admin/ai/calls', 'GET /v1/admin/ai/costs', 'GET /v1/admin/ai/status', 'GET /v1/admin/ai/test-quota',
     ]);
     for (const route of routes) expect(route.permissions).toEqual(['settings.manage']);
+  });
+
+  it('GET test-quota reads the caller quota without counting; remaining never goes below 0', async () => {
+    const res = await http().get('/v1/admin/ai/test-quota').set(auth());
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ limit: 20, remaining: 0, resets_at: '2026-10-07T13:00:00.000Z' });
+    expect(peekSpy).toHaveBeenCalledWith('ai.test', actorId);
+    expect(hit).not.toHaveBeenCalled();
+  });
+
+  it('GET test-quota answers 403 for an editor', async () => {
+    role = 'editor';
+    expect((await http().get('/v1/admin/ai/test-quota').set(auth())).status).toBe(403);
+    expect(peekSpy).not.toHaveBeenCalled();
   });
 
   it('GET status passes now; no rate rule', async () => {
