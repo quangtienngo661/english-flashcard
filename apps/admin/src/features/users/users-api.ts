@@ -65,3 +65,9 @@ export function lockUser(api: ApiClient, id: string, reason: string): Promise<Ad
 export function unlockUser(api: ApiClient, id: string): Promise<AdminUserDetail> {
   return api.post(`/v1/admin/users/${id}/unlock`);
 }
+
+export const STATUS_TONE: Record<UserStatus, 'success' | 'danger'> = { active: 'success', locked: 'danger' };
+
+/** "Nguyễn Lan": the family name first, as the API searches it. */
+export const fullName = (u: { given_name: string | null; family_name: string | null }) =>
+  [u.family_name, u.given_name].filter(Boolean).join(' ');

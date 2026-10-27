@@ -1,7 +1,7 @@
 import { useQueryClient } from '@tanstack/react-query';
-import { useRef, useState, type FocusEvent, type FormEvent } from 'react';
+import { useRef, useState, type FocusEvent, type FormEvent, type KeyboardEvent } from 'react';
 import { flushSync } from 'react-dom';
-import { useNavigate } from 'react-router';
+import { useLocation, useNavigate } from 'react-router';
 import { useFormatter, useTranslations } from 'use-intl';
 import { useFocusFirstError, violationsToFields } from '../../api/field-errors';
 import { ApiError } from '../../api/problem';
@@ -24,6 +24,7 @@ import {
   lookupLearner,
   MAX_EMAIL,
   MAX_REASON,
+  MIN_EMAIL,
   startOfDay,
   vnDay,
   type CreateGrantBody,
@@ -69,6 +70,7 @@ export function GrantDialog() {
   const format = useFormatter();
   const api = useApi();
   const navigate = useNavigate();
+  const { search } = useLocation();
   const queryClient = useQueryClient();
   const canSetAi = useCan('settings.manage');
 
@@ -101,6 +103,10 @@ export function GrantDialog() {
   async function check() {
     if (trimmed === '') {
       setErrors((e) => ({ ...e, email: t('entitlements.new.emailRequired') }));
+      return;
+    }
+    if (trimmed.length < MIN_EMAIL) {
+      setErrors((e) => ({ ...e, email: t('entitlements.new.emailShort') }));
       return;
     }
     const asked = trimmed;
@@ -143,6 +149,13 @@ export function GrantDialog() {
     void check();
   }
 
+  /** [Cấp] is disabled until the email is confirmed, so the browser would ignore Enter: here it asks the lookup instead. */
+  function onEmailKeyDown(event: KeyboardEvent<HTMLDivElement>) {
+    if (event.key !== 'Enter' || verified || (event.target as HTMLElement).tagName !== 'INPUT') return;
+    event.preventDefault();
+    onCheckPress();
+  }
+
   function onCheckPress() {
     const last = lastLookup.current;
     if (checking || (last && last.email === trimmed && Date.now() - last.at < SAME_LOOKUP_MS)) return;
@@ -151,7 +164,7 @@ export function GrantDialog() {
 
   const dirty =
     email !== '' || kind !== 'plan' || from !== '' || to !== '' || reason !== '' || Object.values(limits).some((v) => v !== null && v !== undefined);
-  const requestClose = useDialogDirtyClose(dirty && !warned, () => void navigate('/entitlements'));
+  const requestClose = useDialogDirtyClose(dirty && !warned, () => void navigate(`/entitlements${search}`));
 
   const fingerprint = JSON.stringify({ id: verified?.id ?? null, kind, limits, from, to, reason, confirmed });
   const action = useSubmitAction(
@@ -165,7 +178,7 @@ export function GrantDialog() {
         return;
       }
       showToast(t('entitlements.new.done', { email: sentRef.current }));
-      void navigate('/entitlements');
+      void navigate(`/entitlements${search}`);
     },
   );
 
@@ -259,13 +272,13 @@ export function GrantDialog() {
         <div className="flex flex-col gap-4">
           <Banner variant="warning">{t('entitlements.new.notSupported')}</Banner>
           <div className="flex justify-end">
-            <Button onPress={() => void navigate('/entitlements')}>{t('entitlements.new.understood')}</Button>
+            <Button onPress={() => void navigate(`/entitlements${search}`)}>{t('entitlements.new.understood')}</Button>
           </div>
         </div>
       ) : (
       <form ref={formRef} noValidate onSubmit={submit} className="flex flex-col gap-4">
         {banner && <Banner variant="error" code={banner.code}>{banner.message}</Banner>}
-        <div className="flex items-start gap-2" onBlur={onEmailBlur}>
+        <div className="flex items-start gap-2" onBlur={onEmailBlur} onKeyDown={onEmailKeyDown}>
           <TextField
             id="email"
             label={t('entitlements.new.email')}

@@ -1,6 +1,6 @@
 import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState, type FormEvent, type ReactNode } from 'react';
-import { useMatch, useNavigate } from 'react-router';
+import { useLocation, useMatch, useNavigate } from 'react-router';
 import { useFormatter, useTranslations } from 'use-intl';
 import { useUrlFilters } from '../../api/use-url-filters';
 import { userLabel } from '../../api/user-ref';
@@ -53,6 +53,7 @@ export function GrantsPage() {
   const queryClient = useQueryClient();
   const format = useGrantFormat();
   const navigate = useNavigate();
+  const { search } = useLocation();
   // `/entitlements/new` keeps the list and opens the form over it.
   const isNew = useMatch('/entitlements/new') !== null;
   const [filters, setFilters] = useUrlFilters(FILTERS);
@@ -150,7 +151,7 @@ export function GrantsPage() {
   return (
     <div className="flex flex-col gap-6">
       <PageActions>
-        <Button onPress={() => void navigate('/entitlements/new')}>{t('entitlements.new.open')}</Button>
+        <Button onPress={() => void navigate(`/entitlements/new${search}`)}>{t('entitlements.new.open')}</Button>
       </PageActions>
       <AiTodayBlock />
       <form onSubmit={apply} noValidate className="grid gap-3 shell:grid-cols-5 shell:items-start">
@@ -194,7 +195,7 @@ export function GrantsPage() {
           description={t('entitlements.filters.expiringHint')}
           error={daysInvalid ? t('entitlements.filters.expiringHint') : undefined}
         />
-        <Button type="submit" className="w-fit shell:mt-7">
+        <Button type="submit" variant="secondary" className="w-fit shell:mt-7">
           {t('entitlements.filters.apply')}
         </Button>
       </form>
@@ -208,7 +209,7 @@ export function GrantsPage() {
         onRetry={() => void list.refetch()}
       />
       {!list.isPending && !list.isError && rows.length === 0 && !filtered && (
-        <Button variant="secondary" className="mx-auto w-fit" onPress={() => void navigate('/entitlements/new')}>
+        <Button variant="secondary" className="mx-auto w-fit" onPress={() => void navigate(`/entitlements/new${search}`)}>
           {t('entitlements.new.open')}
         </Button>
       )}
@@ -246,12 +247,22 @@ export function GrantsPage() {
 /** A/78 head, admin only: today's system AI uses. `ai-usage` needs `settings.manage`, so an editor sends no request at all. */
 function AiTodayBlock() {
   const t = useTranslations('entitlements');
+  const tc = useTranslations();
   const api = useApi();
   const format = useFormatter();
   const allowed = useCan('settings.manage');
   const usage = useQuery({ queryKey: ['entitlements', 'ai-usage'], queryFn: () => getAiUsage(api), enabled: allowed });
   if (!allowed || usage.isPending) return null;
-  if (!usage.data) return <Banner variant="error">{t('aiTodayError')}</Banner>;
+  if (!usage.data) {
+    return (
+      <Banner
+        variant="error"
+        action={<Button variant="secondary" isPending={usage.isFetching} onPress={() => void usage.refetch()}>{tc('common.retry')}</Button>}
+      >
+        {t('aiTodayError')}
+      </Banner>
+    );
+  }
   return (
     <div role="status" className={`${panel} ${usage.data.alert_reached ? 'bg-accent-soft' : 'bg-primary-soft'}`}>
       <p className="text-ui font-extrabold text-ink">{t('aiToday', { used: format.number(usage.data.used), cap: format.number(usage.data.cap) })}</p>

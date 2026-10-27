@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import vi from '../../../messages/vi.json';
 import { makeMe, problem, rateLimited, type Call } from '../../auth/test-support';
+import { vnDay } from './entitlements-api';
 import { ME_ADMIN, renderApp } from '../staff/test-utils';
 
 const t = vi.entitlements;
@@ -101,6 +102,34 @@ describe('grants list', { timeout: 20_000 }, () => {
     await userEvent.click(await screen.findByRole('button', { name: vi.common.loadMore }));
     expect((await screen.findAllByText('binh@example.com')).length).toBeGreaterThan(0);
     expect(r.count('GET', '/v1/admin/entitlements/grants?page_size=20&page_token=tok-2')).toBe(1);
+  });
+
+  it('review: [Lọc] is a secondary button, so [Cấp mới] stays the one primary action', async () => {
+    renderApp('/entitlements', { [LIST]: () => json(page([grant()])), [USAGE]: () => json(usage) });
+    const apply = await screen.findByRole('button', { name: t.filters.apply });
+    expect(apply.className).toContain('ring-border-strong');
+    expect(apply.className).not.toContain('text-on-primary');
+  });
+
+  it('review: opening and closing [Cấp mới] keeps the list filters in the URL', async () => {
+    const r = renderApp('/entitlements?active=false', { [LIST.replace('page_size=20', 'active=false&page_size=20')]: () => json(page([grant({ status: 'expired' })])), [USAGE]: () => json(usage) });
+    await userEvent.click((await screen.findAllByRole('button', { name: t.new.open }))[0]!);
+    const dialog = await screen.findByRole('dialog', { name: t.new.title });
+    expect(r.router.state.location.pathname).toBe('/entitlements/new');
+    expect(r.router.state.location.search).toBe('?active=false');
+    await userEvent.click(within(dialog).getByRole('button', { name: vi.common.cancel }));
+    await waitFor(() => expect(r.router.state.location.pathname).toBe('/entitlements'));
+    expect(r.router.state.location.search).toBe('?active=false');
+  });
+
+  it('review: when the AI uses of today fail to load, the error has [Thử lại] that asks again', async () => {
+    let fail = true;
+    const r = renderApp('/entitlements', { [LIST]: () => json(page([grant()])), [USAGE]: () => (fail ? problem(500, 'internal') : json(usage)) });
+    expect(await screen.findByText(t.aiTodayError)).toBeInTheDocument();
+    fail = false;
+    await userEvent.click(screen.getByRole('button', { name: vi.common.retry }));
+    expect(await screen.findByText('Lượt AI hôm nay: 812/1.000')).toBeInTheDocument();
+    expect(r.count('GET', '/v1/admin/entitlements/ai-usage')).toBe(2);
   });
 
   it('§6.11: an empty list says nothing was granted yet', async () => {
@@ -285,6 +314,19 @@ describe('edit-dates dialog', { timeout: 20_000 }, () => {
     await userEvent.click(within(dialog).getByRole('button', { name: t.editDates.confirm }));
     await waitFor(() => expect(calls(r.calls, 'PATCH', '/v1/admin/entitlements/grants/')).toHaveLength(1));
     expect(calls(r.calls, 'PATCH', '/v1/admin/entitlements/grants/')[0]!.body).toEqual({ starts_at: '2027-01-05T00:00:00+07:00', reason: 'Dời lịch' });
+  });
+
+  it('review: moving "Từ ngày" to today sends now, not 00:00, so the API start skew does not refuse it', async () => {
+    const scheduled = grant({ status: 'scheduled', starts_at: '2099-12-31T17:00:00.000Z', ends_at: '2100-01-31T17:00:00.000Z' });
+    const r = renderApp('/entitlements', { [LIST]: () => json(page([scheduled])), [PATCH(G1)]: () => json(scheduled), [USAGE]: () => json(usage) });
+    const dialog = await openEdit();
+    const before = Date.now();
+    fireEvent.change(within(dialog).getByLabelText(t.editDates.from), { target: { value: vnDay(new Date()) } });
+    await userEvent.type(within(dialog).getByLabelText(t.editDates.reason), 'Cho chạy ngay');
+    await userEvent.click(within(dialog).getByRole('button', { name: t.editDates.confirm }));
+    await waitFor(() => expect(calls(r.calls, 'PATCH', '/v1/admin/entitlements/grants/')).toHaveLength(1));
+    const sent = (calls(r.calls, 'PATCH', '/v1/admin/entitlements/grants/')[0]!.body as { starts_at: string }).starts_at;
+    expect(Math.abs(new Date(sent).getTime() - before)).toBeLessThan(60_000);
   });
 
   it('§6.11: 409 grant-not-active → "Lần cấp này đã thu hồi hoặc đã hết hạn."', async () => {

@@ -415,6 +415,17 @@ Khác biệt nhìn thấy ở ảnh thật (chưa mở Figma để so từng đi
   "Hãy nhập email rồi kiểm.", "Loại", ba nhãn con số, các lỗi con số / ngày ("Ngày bắt đầu không được ở quá khứ.", "Hãy chọn ngày kết thúc.", "Ngày kết thúc phải sau hoặc bằng ngày bắt đầu."),
   [Cấp], "Đã cấp cho {email}.", [Đã hiểu]. Dải cảnh báo `not_supported` dùng kiểu mới `warning` của `Banner` (thêm ở Task 35), không phải toast.
 
+## Sau review cuối
+
+- Test khóa đăng nhập trên stack thật nay đòi đúng 403 và `type` kết thúc `account-locked` (429 của `auth.login.ip` thì chờ `Retry-After` rồi hỏi lại một lần), không còn chỉ "khác 200".
+- [Lọc] ở Cấp gói và lượt là nút phụ (`secondary`), để [Cấp mới] là nút chính duy nhất; Người dùng không có nút Lọc. Hoàn tiền (M3) vẫn để [Lọc] là nút chính vì trang đó không có nút chính nào khác. Ảnh a78 chụp lại trên stack thật.
+- Mở và đóng [Cấp mới] giữ chuỗi bộ lọc trên URL (`/entitlements/new?...` rồi quay lại `/entitlements?...`).
+- Ô email của [Cấp mới] không gửi tra cứu khi dưới 3 ký tự (API đòi tối thiểu 3); hiện gợi ý "Nhập ít nhất 3 ký tự của email." (chữ mới, có cả bản tiếng Anh).
+- Enter trong ô email khi chưa xác nhận thì chạy tra cứu (nút [Cấp] đang tắt nên trình duyệt không tự gửi form).
+- Sửa ngày: đổi "Từ ngày" của lần cấp chưa bắt đầu sang hôm nay gửi thời điểm hiện tại thay vì 00:00 (API từ chối mốc cũ hơn 5 phút).
+- Khối "Lượt AI hôm nay" có [Thử lại] khi lỗi.
+- `STATUS_TONE` và `fullName` chuyển sang `users-api.ts`, hết import vòng giữa `UsersPage` và `UserDetail`.
+
 ---
 
 # Đợt giao diện admin — M5 as-built (27/10/2026)

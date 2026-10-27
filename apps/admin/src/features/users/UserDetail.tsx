@@ -14,8 +14,7 @@ import { PanelBody, PanelFooter, PanelHead } from '../../ui/DetailPanel';
 import { ListState } from '../../ui/ListState';
 import { showToast } from '../../ui/Toast';
 import { LockDialog } from './LockDialog';
-import { STATUS_TONE } from './UsersPage';
-import { getUser, unlockUser, UUID, type AdminUserDetail } from './users-api';
+import { getUser, STATUS_TONE, unlockUser, UUID, type AdminUserDetail } from './users-api';
 
 const userKey = (id: string) => ['user', id] as const;
 

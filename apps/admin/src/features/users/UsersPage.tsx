@@ -14,7 +14,7 @@ import { Select } from '../../ui/Select';
 import { TextField } from '../../ui/TextField';
 import { useRetained } from '../../ui/use-retained';
 import { UserDetail } from './UserDetail';
-import { codePoints, listUsers, MAX_SEARCH, MIN_SEARCH, normalizeSearch, type AdminUser, type UserStatus } from './users-api';
+import { codePoints, fullName, listUsers, MAX_SEARCH, MIN_SEARCH, normalizeSearch, STATUS_TONE, type AdminUser, type UserStatus } from './users-api';
 
 const STATUSES: UserStatus[] = ['active', 'locked'];
 const SEARCH_DELAY_MS = 300;
@@ -22,12 +22,6 @@ const FILTERS = {
   q: { default: '', valid: (v: string) => codePoints(v) >= MIN_SEARCH && codePoints(v) <= MAX_SEARCH && v === normalizeSearch(v) },
   status: { default: 'all', valid: (v: string) => (STATUSES as string[]).includes(v) },
 };
-
-export const STATUS_TONE: Record<UserStatus, 'success' | 'danger'> = { active: 'success', locked: 'danger' };
-
-/** "Nguyễn Lan": the family name first, as the API searches it. */
-export const fullName = (u: { given_name: string | null; family_name: string | null }) =>
-  [u.family_name, u.given_name].filter(Boolean).join(' ');
 
 /** A/71 `/users` (admin only, `roles.manage`): search by 2+ characters, filter by status, 20 per page; a row opens its detail (A/72). */
 export function UsersPage() {

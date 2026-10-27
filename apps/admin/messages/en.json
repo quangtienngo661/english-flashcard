@@ -482,6 +482,7 @@
       "retryAt": "Try again at {time}.",
       "lookupFailed": "Could not check this email. Try again.",
       "emailRequired": "Enter an email, then check it.",
+      "emailShort": "Enter at least 3 characters of the email.",
       "kind": "Type",
       "practiceSessions": "Practice sessions per day (0–200)",
       "aiPractice": "AI question uses per month (0–5,000)",

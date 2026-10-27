@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 import vi from '../messages/vi.json' with { type: 'json' };
 import type { RealState } from './global-setup';
 import { STATE_FILE } from './global-setup';
-import { API, loginToken } from './support/api';
+import { API, loginToken, retryAfterSeconds } from './support/api';
 import { signIn } from './support/sign-in';
 
 /**
@@ -77,12 +77,20 @@ test('the admin finds Khoa by email, locks him with a reason (he cannot log in),
   await expect(panel.getByText(u.detail.lockReason.replace('{reason}', reason))).toBeVisible();
 
   // The API refuses the locked account. The unlock below, followed by a good login with the same password, rules out a wrong password.
-  const refused = await fetch(`${API}/v1/auth/login`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'X-CSRF-Protection': '1' },
-    body: JSON.stringify({ email: state.khoa.email, password: state.khoa.password, client: 'web', device_label: 'e2e-real' }),
-  });
-  expect(refused.status).not.toBe(200);
+  const tryLogin = () =>
+    fetch(`${API}/v1/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRF-Protection': '1' },
+      body: JSON.stringify({ email: state.khoa.email, password: state.khoa.password, client: 'web', device_label: 'e2e-real' }),
+    });
+  let refused = await tryLogin();
+  if (refused.status === 429) {
+    // `auth.login.ip` (20 a minute) answered, not the account check: wait it out and ask once more.
+    await new Promise((resolve) => setTimeout(resolve, (retryAfterSeconds(refused.headers.get('retry-after')) + 1) * 1000));
+    refused = await tryLogin();
+  }
+  expect(refused.status).toBe(403);
+  expect(((await refused.json()) as { type: string }).type).toMatch(/account-locked$/);
 
   await panel.getByRole('button', { name: u.detail.unlock }).click();
   await expect(panel.getByRole('button', { name: u.detail.lock })).toBeVisible();

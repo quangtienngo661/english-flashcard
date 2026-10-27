@@ -482,6 +482,7 @@
       "retryAt": "Thử lại lúc {time}.",
       "lookupFailed": "Chưa kiểm được email này. Hãy thử lại.",
       "emailRequired": "Hãy nhập email rồi kiểm.",
+      "emailShort": "Nhập ít nhất 3 ký tự của email.",
       "kind": "Loại",
       "practiceSessions": "Phiên luyện mỗi ngày (0–200)",
       "aiPractice": "Lượt câu AI mỗi tháng (0–5.000)",

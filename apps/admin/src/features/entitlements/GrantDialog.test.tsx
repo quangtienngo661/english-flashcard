@@ -112,6 +112,29 @@ describe('new grant dialog', { timeout: 20_000 }, () => {
     expect(submit()).toBeDisabled();
   });
 
+  it('review: an email under 3 characters is not sent (the API needs 3) and shows a hint', async () => {
+    const r = renderApp('/entitlements/new', base);
+    await userEvent.type(await screen.findByLabelText(n.email), 'ab');
+    await userEvent.click(screen.getByRole('button', { name: n.check }));
+    expect(await screen.findByText(n.emailShort)).toBeInTheDocument();
+    expect(calls(r.calls, 'GET', '/v1/admin/entitlements/lookup')).toHaveLength(0);
+  });
+
+  it('review: Enter in the email box starts the lookup when nothing is verified yet', async () => {
+    const r = renderApp('/entitlements/new', { ...base, [lookupPath('lan@example.com')]: () => json(found()) });
+    await userEvent.type(await screen.findByLabelText(n.email), 'lan@example.com{Enter}');
+    expect(await screen.findByText(confirmedText)).toBeInTheDocument();
+    expect(calls(r.calls, 'GET', '/v1/admin/entitlements/lookup')).toHaveLength(1);
+    expect(calls(r.calls, 'POST', '/v1/admin/entitlements/grants')).toHaveLength(0);
+  });
+
+  it('review: closing the dialog goes back to the list with its filters', async () => {
+    const r = renderApp('/entitlements/new?active=false', base);
+    await userEvent.click(await screen.findByRole('button', { name: vi.common.cancel }));
+    await waitFor(() => expect(r.router.state.location.pathname).toBe('/entitlements'));
+    expect(r.router.state.location.search).toBe('?active=false');
+  });
+
   it('§6.11: a Pro grant starting now shows the replace note before sending; a future start hides it', async () => {
     renderApp('/entitlements/new', base);
     expect(await screen.findByText(n.note)).toBeInTheDocument();

@@ -51,6 +51,8 @@ export type GrantFilters = { user_email: string; granted_by_email: string; activ
 
 export const PAGE_SIZE = 20;
 export const MAX_EMAIL = 320;
+/** The lookup endpoint rejects an `email` shorter than this. */
+export const MIN_EMAIL = 3;
 export const MAX_REASON = 300;
 export const MAX_EXPIRING_DAYS = 365;
 
@@ -124,6 +126,9 @@ export const lastDay = (endsAt: string): string => vnDay(new Date(new Date(endsA
 
 /** The start instant of a Vietnam day. */
 export const startOfDay = (day: string): string => `${day}T00:00:00+07:00`;
+
+/** A start the API accepts for `day`: today starts now (00:00 would be older than its 5-minute start skew), any other day at 00:00. */
+export const startInstant = (day: string): string => (day === vnDay(new Date()) ? new Date().toISOString() : startOfDay(day));
 
 /** The instant a grant whose last day is `day` ends: midnight after it. */
 export function endAfterDay(day: string): string {

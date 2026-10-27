@@ -13,7 +13,7 @@ import {
   endAfterDay,
   lastDay,
   MAX_REASON,
-  startOfDay,
+  startInstant,
   updateGrantDates,
   vnDay,
   type AdminGrant,
@@ -53,7 +53,7 @@ export function EditDatesDialog({ grant, onClose, onSaved }: { grant: AdminGrant
   function submit() {
     setError(null);
     const body: Partial<GrantDatesBody> = {};
-    if (!started && from !== '' && from !== initialFrom) body.starts_at = startOfDay(from);
+    if (!started && from !== '' && from !== initialFrom) body.starts_at = startInstant(from);
     if (to !== '' && to !== initialTo) body.ends_at = endAfterDay(to);
     const text = reason.trim();
     const next: typeof problems = {};
