@@ -163,7 +163,7 @@ describe('AI lookup in the add-word sheet (K/85–K/86)', () => {
   it('E40: 403 quota-exhausted → "Hết lượt tra AI." with the refill date', async () => {
     open('rizz', { routes: routes('pro', { 'POST /v1/lookup/ai': () => problem(403, 'quota-exhausted', { resets_at: '2030-11-15T00:00:00Z' }) }) });
     await userEvent.click(await screen.findByRole('button', { name: 'Tra bằng AI' }));
-    expect(await screen.findByText('Hết lượt tra AI. Lượt tra AI mới có vào 15/11.')).toBeInTheDocument();
+    expect(await screen.findByText('Hết lượt tra AI. Lượt tra AI mới vào 15/11.')).toBeInTheDocument();
   });
 
   it('E24: 403 entitlement-required → the D6 line', async () => {

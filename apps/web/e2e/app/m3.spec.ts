@@ -71,7 +71,7 @@ test.describe('M3 flows (mocked API)', () => {
     // The phone sheet slides up first; wait until it has settled before choosing the deck.
     await expect(dialog.getByRole('radio', { name: /Du lịch/ }).first()).toBeInViewport();
     await dialog.getByText('Du lịch', { exact: true }).first().click();
-    await dialog.getByRole('button', { name: 'Lưu vào Du lịch' }).click();
+    await dialog.getByRole('button', { name: 'Lưu vào nhóm' }).click();
     await expect(page.getByText('Đã thêm “left” vào nhóm “Du lịch”.')).toBeVisible();
     expect(requests(page, 'POST', `/v1/groups/${DECK}/items`)[0].body).toEqual({ sense_id: uuid(1) });
   });

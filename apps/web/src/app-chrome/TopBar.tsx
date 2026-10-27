@@ -1,6 +1,6 @@
 'use client';
 
-import { Plus, Sun } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -10,6 +10,7 @@ import { AvatarMenu } from './AvatarMenu';
 import { Logo } from './Logo';
 import { currentTab, TABS } from './nav';
 import { PlanChip } from './PlanChip';
+import { ThemeToggle } from './ThemeToggle';
 
 export type ChromeFeatures = { addWord: boolean };
 
@@ -68,13 +69,8 @@ export function TopBar({ features, onAddWord }: { features: ChromeFeatures; onAd
             {t('plans')}
             <PlanChip />
           </Link>
-          <Link
-            href={`/${locale}/app/settings`}
-            aria-label={t('settings')}
-            className="rounded-control p-2 text-on-navy outline-none hover:bg-navy-raised focus-visible:ring-2 focus-visible:ring-accent"
-          >
-            <Sun aria-hidden className="size-5.5" />
-          </Link>
+          {/* Owner 27/10/2026: switches the theme at once instead of opening Cài đặt (still in the avatar menu). */}
+          <ThemeToggle />
           <AvatarMenu />
         </div>
       </div>

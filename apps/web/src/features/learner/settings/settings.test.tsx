@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { makeMe, problem } from '@/app-shell/session/test-support';
 import { THEME_STORAGE_KEY } from '@/app-shell/theme/theme';
 import { ThemeProvider } from '@/app-shell/theme/ThemeProvider';
-import { renderApp } from '@/app-ui/test-utils';
+import { pickDate, renderApp } from '@/app-ui/test-utils';
 import { AccountPage } from './AccountPage';
 import { SettingsPage } from './SettingsPage';
 
@@ -75,13 +75,13 @@ describe('SettingsPage (K/50)', () => {
     renderApp(<SettingsPage />, { routes: routes('free') });
     await screen.findByText('đã dùng 1/3');
     expect(screen.getAllByText('Cần gói Pro')).toHaveLength(2);
-    expect(screen.queryByText(/mới có vào/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/mới vào/)).not.toBeInTheDocument();
   });
 
   it('Pro: AI rows show what is left and the refill date', async () => {
     renderApp(<SettingsPage />, { routes: routes('pro') });
     expect(await screen.findByText('còn 287/300')).toBeInTheDocument();
-    expect(screen.getByText('Lượt câu AI mới có vào 15/11.')).toBeInTheDocument();
+    expect(screen.getByText('Lượt câu AI mới vào 15/11.')).toBeInTheDocument();
     expect(screen.getByText('còn 96/100')).toBeInTheDocument();
   });
 
@@ -140,14 +140,22 @@ describe('SettingsPage (K/50)', () => {
     expect(within(row).queryByRole('button')).toBeNull();
     expect(screen.getByRole('link', { name: /Lịch sử giao dịch/ })).toHaveAttribute('href', '/vi/app/settings/transactions');
   });
+
+  it('the transactions and current plan rows are links over the whole row (audit 26/10/2026 #10)', async () => {
+    renderApp(<SettingsPage />, { routes: routes() });
+    const transactions = await screen.findByRole('link', { name: /Lịch sử giao dịch/ });
+    expect(transactions).toContainElement(screen.getByText('Lịch sử giao dịch'));
+    const plan = await screen.findByRole('link', { name: /Gói hiện tại/ });
+    expect(plan).toHaveAttribute('href', '/vi/app/plans');
+    expect(plan).toContainElement(screen.getByText('Gói hiện tại'));
+  });
 });
 
 describe('AccountPage (K/91, K/92)', () => {
   it('K/92: a birth date under 13 shows the line at once and sends nothing', async () => {
     const { count } = renderApp(<AccountPage />, { routes: routes() });
-    const field = await screen.findByRole('textbox', { name: 'Ngày sinh' });
-    await userEvent.clear(field);
-    await userEvent.type(field, '14/5/2015');
+    await screen.findByLabelText('Ngày sinh');
+    pickDate('Ngày sinh', '2015-05-14');
     expect(screen.getByText('Bạn cần đủ 13 tuổi để dùng Wordmet.')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Lưu thay đổi' })).toBeDisabled();
     expect(count('PATCH', '/v1/me')).toBe(0);
@@ -165,9 +173,8 @@ describe('AccountPage (K/91, K/92)', () => {
 
   it('400 age-below-minimum from the API shows the same inline line', async () => {
     renderApp(<AccountPage />, { routes: routes('free', { 'PATCH /v1/me': () => problem(400, 'age-below-minimum') }) });
-    const field = await screen.findByRole('textbox', { name: 'Ngày sinh' });
-    await userEvent.clear(field);
-    await userEvent.type(field, '1/1/2000');
+    await screen.findByLabelText('Ngày sinh');
+    pickDate('Ngày sinh', '2000-01-02');
     await userEvent.click(screen.getByRole('button', { name: 'Lưu thay đổi' }));
     expect(await screen.findByText('Bạn cần đủ 13 tuổi để dùng Wordmet.')).toBeInTheDocument();
   });

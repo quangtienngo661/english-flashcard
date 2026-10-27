@@ -98,7 +98,7 @@ export function DeckPickerDialog({ sense, onClose }: { sense: Sense; onClose: ()
         ) : (
           deck && (
             <Button variant="sticker" isPending={save.busy} onPress={() => void onSave(null)}>
-              {t('saveTo', { group: deckName })}
+              {t('saveTo')}
             </Button>
           )
         )}

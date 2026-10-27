@@ -123,7 +123,7 @@ describe('Kiểu câu có AI in Tùy chỉnh phiên (K/70, K/70b, K/71, K/72; D1
     await userEvent.click(within(dialog).getByRole('button', { name: 'Bắt đầu 12 câu' }));
     const box = await within(dialog).findByRole('alert');
     expect(within(box).getByText('Không đủ lượt câu AI')).toBeInTheDocument();
-    expect(within(box).getByText('Phiên này cần 5 lượt câu AI, bạn còn 2. Lượt câu AI mới có vào 15/11.')).toBeInTheDocument();
+    expect(within(box).getByText('Phiên này cần 5 lượt câu AI, bạn còn 2. Lượt câu AI mới vào 15/11.')).toBeInTheDocument();
     expect(within(box).getByText('Giảm số câu, hoặc bỏ kiểu câu có AI rồi bắt đầu lại.')).toBeInTheDocument();
     await userEvent.click(within(box).getByRole('button', { name: 'Bỏ kiểu câu có AI' }));
     expect(aiSwitch(dialog)).not.toBeChecked();

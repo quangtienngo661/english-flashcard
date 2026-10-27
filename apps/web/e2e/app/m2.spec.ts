@@ -10,10 +10,10 @@ const G2 = '44444444-4444-4444-8444-444444444444';
 const NEW = '33333333-3333-4333-8333-333333333333';
 const uuid = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`;
 
-type Summary = { id: string; name: string; version: number; total: number; today: { priority: number; due: number; new: number }; cells: unknown[]; backlog: number };
+type Summary = { id: string; name: string; version: number; total: number; today: { priority: number; due: number; new: number }; cells: unknown[]; backlog: number; available: { due: number; new: number } };
 const cells = (due: number[]) => [3, 4, 2, 1, 0, 0].map((total, level) => ({ level, total, due: due[level] }));
 const summary = (id: string, name: string, over: Partial<Summary> = {}): Summary => ({
-  id, name, version: 1, total: 10, today: { priority: 1, due: 2, new: 1 }, cells: cells([1, 1, 1, 0, 0, 0]), backlog: 3, ...over,
+  id, name, version: 1, total: 10, today: { priority: 1, due: 2, new: 1 }, cells: cells([1, 1, 1, 0, 0, 0]), backlog: 3, available: { due: 2, new: 1 }, ...over,
 });
 const done = (id: string, name: string) => summary(id, name, { today: { priority: 0, due: 0, new: 0 }, cells: cells([0, 0, 0, 0, 0, 0]), backlog: 0 });
 const detail = (g: Summary) => ({ id: g.id, name: g.name, version: g.version, item_count: g.total, removable_items: 0, created_at: '2026-10-01T03:00:00Z', updated_at: '2026-10-01T03:00:00Z' });
@@ -61,7 +61,7 @@ function decksApi(initial: Summary[], cards = [queueCard(1, 'deploy', 'priority'
       return { status: 204 };
     };
     handlers[`GET /v1/groups/${id}/queue`] = () => ({ json: { cards: id === G ? cards : [] } });
-    handlers[`GET /v1/groups/${id}/items`] = () => ({ json: { items: id === G ? cards.map((_, i) => itemRow(i + 1)) : [], next_page_token: null } });
+    handlers[`GET /v1/groups/${id}/items`] = () => ({ json: { items: id === G ? cards.map((c, i) => ({ ...itemRow(i + 1), ...c })) : [], next_page_token: null } });
     handlers[`GET /v1/groups/${id}/backlog`] = () => ({ json: { items: id === G ? [backlogRow(7, 'leave'), backlogRow(8, 'forget'), backlogRow(9, 'remember')] : [], next_page_token: null } });
   }
   return { state, handlers };

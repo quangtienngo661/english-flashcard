@@ -130,7 +130,7 @@ describe('I-7: one write per press', () => {
     const { calls } = renderApp(<DeckPickerDialog sense={{ sense_id: uuid(1), lemma: 'go', pos: 'verb', meaning: { text: 'đi' } }} onClose={() => {}} />, {
       routes: base({ [`POST /v1/groups/${TRAVEL}/items`]: () => new Promise<Response>((r) => (release = () => r(Response.json({ created: true })))) }),
     });
-    await userEvent.dblClick(await screen.findByRole('button', { name: 'Lưu vào Du lịch' }));
+    await userEvent.dblClick(await screen.findByRole('button', { name: 'Lưu vào nhóm' }));
     expect(posts(calls, `/v1/groups/${TRAVEL}/items`)).toHaveLength(1);
     release();
   });
@@ -205,7 +205,7 @@ describe('I-6, M-7: every sheet can be closed without saving; the deck list only
     renderApp(<AddWordSheet initialWord="went" onClose={() => {}} />, { routes: base() });
     await userEvent.click(await screen.findByRole('button', { name: /Lưu vào nhóm.*Du lịch/ }));
     expect(await screen.findByRole('button', { name: 'Chọn Du lịch' })).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Lưu vào Du lịch' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Lưu vào nhóm' })).not.toBeInTheDocument();
   });
 });
 

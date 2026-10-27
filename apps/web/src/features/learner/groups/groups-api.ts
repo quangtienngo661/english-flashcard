@@ -16,6 +16,8 @@ export type GroupSummary = {
   today: { priority: number; due: number; new: number };
   cells: Array<{ level: number; total: number; due: number }>;
   backlog: number;
+  /** Due and new cards before the daily caps (the deck page filter counts). */
+  available: { due: number; new: number };
 };
 
 /** `GET /v1/groups/{id}`. */
@@ -39,6 +41,12 @@ export type GroupItem = {
   sense_changed: boolean;
   added_at: string;
 };
+
+/** Deck page word list filter: a queue section or a stage. */
+export type WordFilter = 'all' | 'priority' | 'due' | 'new' | `stage-${1 | 2 | 3 | 4 | 5}`;
+
+/** `GET /v1/groups/{id}/items?content=true` row: the item with its card content and its section. */
+export type DeckWord = GroupItem & Pick<Card, 'section' | 'content'>;
 
 /** `GET /v1/groups/{id}/queue` card (Learning QueueService.queue). */
 export type Card = {
@@ -113,6 +121,23 @@ export function useGroupItems(id: string, cell: Cell | null) {
   });
 }
 
+/** The deck page word list, oldest first, one page of 50 at a time, filtered on the server (owner 27/10/2026). */
+export function useDeckWords(id: string, filter: WordFilter) {
+  const api = useApi();
+  return useInfiniteQuery({
+    queryKey: [...groupKey(id), 'words', filter],
+    initialPageParam: null as string | null,
+    queryFn: ({ pageParam }) => {
+      const params = new URLSearchParams({ content: 'true', page_size: String(ITEMS_PAGE) });
+      if (filter.startsWith('stage-')) params.set('cell', filter.slice(6));
+      else if (filter !== 'all') params.set('section', filter);
+      if (pageParam) params.set('page_token', pageParam);
+      return api.get<{ items: DeckWord[]; next_page_token: string | null }>(`/v1/groups/${id}/items?${params}`);
+    },
+    getNextPageParam: (last) => last.next_page_token,
+  });
+}
+
 /** Every card of a deck with its content (`mode=all`), or today's queue (`mode=due`). */
 export function useGroupQueue(id: string | null, mode: 'due' | 'all') {
   const api = useApi();
@@ -120,27 +145,6 @@ export function useGroupQueue(id: string | null, mode: 'due' | 'all') {
     queryKey: [...groupKey(id ?? ''), 'queue', mode],
     queryFn: () => api.get<{ cards: Card[] }>(`/v1/groups/${id}/queue?mode=${mode}`),
     enabled: id !== null,
-  });
-}
-
-/** All item rows of a deck (pages of 100), for what the queue does not carry: other decks, a changed meaning. */
-export function useAllGroupItems(id: string | null) {
-  const api = useApi();
-  return useQuery({
-    queryKey: [...groupKey(id ?? ''), 'items', 'every'],
-    enabled: id !== null,
-    queryFn: async () => {
-      const items: GroupItem[] = [];
-      let token: string | null = null;
-      do {
-        const page: { items: GroupItem[]; next_page_token: string | null } = await api.get(
-          `/v1/groups/${id}/items?page_size=100${token ? `&page_token=${encodeURIComponent(token)}` : ''}`,
-        );
-        items.push(...page.items);
-        token = page.next_page_token;
-      } while (token);
-      return new Map(items.map((item) => [item.item_id, item]));
-    },
   });
 }
 

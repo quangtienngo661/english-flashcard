@@ -16,6 +16,8 @@ import {
 export type GroupSummary = {
   id: string; name: string; version: number; total: number; today: { priority: number; due: number; new: number };
   cells: Array<{ level: number; total: number; due: number }>; backlog: number;
+  /** Deck page counts (owner 27/10/2026): due and new cards before the daily caps, as the word list filters them. */
+  available: { due: number; new: number };
 };
 export type Card = {
   item_id: string; sense_id: string; level: number; due_date: string; priority: boolean; section: Section;
@@ -50,6 +52,7 @@ export class QueueService {
     const items = rows.map((row) => ({
       id: row.group_id, name: row.name, version: row.version, total: row.total, today: today(row, learning),
       cells: row.cell_total.map((total, level) => ({ level, total, due: row.cell_due[level] })), backlog: row.backlog,
+      available: { due: row.due_available, new: row.new_available },
     }));
     const waiting = (g: GroupSummary) => g.today.priority + g.today.due + g.today.new;
     items.sort((a, b) => Number(b.today.priority > 0) - Number(a.today.priority > 0) || waiting(b) - waiting(a)

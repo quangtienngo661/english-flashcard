@@ -243,8 +243,16 @@ function Question({ state, item, onReport }: { state: PracticeSessionState; item
     question = <SentenceText sentence={prompt.sentence} />;
   }
 
+  // One live region from the start of the question, so screen readers hear the result (audit 26/10/2026 #8).
+  const announce = final
+    ? `${final.result.result === 'correct' ? t('right') : t('wrong')}. ${t('revealLine', { lemma: final.result.correct.lemma, meaning: final.result.meaning })}`
+    : outcome?.kind === 'try_again' ? t('wrong') : '';
+
   return (
     <div className="flex flex-col gap-4">
+      <p data-live="result" aria-live="polite" aria-atomic="true" className="sr-only">
+        {announce}
+      </p>
       <QuestionCard prompt={prompt} ai={state.session !== null && isAi(item, state.session)} reportable={item.reportable} reported={state.reported.has(item.item_id)} onReport={onReport}>
         {question}
         <HintPanel item={item} onOpen={state.setHintLevel} locked={final !== null} />
@@ -256,10 +264,10 @@ function Question({ state, item, onReport }: { state: PracticeSessionState; item
         </p>
       )}
       {final ? (
-        <AnswerFeedback result={final.result} onReview={(action) => void state.review(action)} onNext={() => void state.next()} busy={state.busy} />
+        <AnswerFeedback result={final.result} onReview={(action) => void state.review(action)} onNext={() => void state.next()} busy={state.busy} focusPrimary={!typed} />
       ) : outcome?.kind === 'try_again' ? (
         <>
-          <div role="status" className="flex flex-col gap-0.5 rounded-inner bg-danger-soft p-4">
+          <div className="flex flex-col gap-0.5 rounded-inner bg-danger-soft p-4">
             <p className="text-title font-bold text-danger">{t('wrong')}</p>
             <p className="text-ui font-semibold text-ink">{t('tryAgainBody')}</p>
           </div>

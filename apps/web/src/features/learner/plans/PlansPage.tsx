@@ -42,17 +42,14 @@ export function PlansPage() {
     const onPro = plan === 'pro';
     const gift = onPro && source?.kind === 'grant_plan';
     const end = source?.ends_at ? format.date(lastDay(source.ends_at), 'full') : null;
-    let subtitle: string | null = null;
-    if (gift && source?.starts_at && end) subtitle = t('granted', { from: format.date(source.starts_at, 'full'), to: end });
-    else if (onPro && source?.kind === 'subscription') {
-      subtitle = source.cancel_at_period_end && end ? t('endsOn', { date: end }) : source.renews_at ? t('renews', { date: format.date(source.renews_at, 'full') }) : null;
-    } else if (plan === 'trial' && end) subtitle = t('trialUntil', { date: end });
+    // Owner 27/10/2026: no line under "Bạn đang dùng gói Pro"; the Pro card already says until when.
+    const subtitle = plan === 'trial' && end ? t('trialUntil', { date: end }) : null;
 
     body = (
       <div className="flex flex-col items-center gap-6">
         <div className="flex flex-col items-center gap-2 text-center">
           <p className="text-caption font-semibold text-muted">{t('eyebrow')}</p>
-          <h1 className="text-h1 font-extrabold text-ink">{onPro ? t('titlePro') : plan === 'trial' ? t('titleTrial') : t('title')}</h1>
+          <h1 className="text-display font-extrabold text-ink">{onPro ? t('titlePro') : plan === 'trial' ? t('titleTrial') : t('title')}</h1>
           {subtitle && <p className="text-caption text-muted">{subtitle}</p>}
           {!onPro && (
             <Segmented
@@ -104,7 +101,7 @@ export function PlansPage() {
             ) : (
               <>
                 <p className="flex items-baseline gap-2">
-                  <span className="text-h1 font-extrabold text-ink">{period === 'year' ? t('priceYear') : t('priceMonth')}</span>
+                  <span className="text-h2 font-extrabold text-ink">{period === 'year' ? t('priceYear') : t('priceMonth')}</span>
                   <span className="text-ui text-muted">{period === 'year' ? t('perYear') : t('perMonth')}</span>
                 </p>
                 <p className="text-caption text-muted">{t('proLine')}</p>

@@ -3,7 +3,6 @@
 import { CircleCheck, CircleX, Folder, Layers, Star, Target } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import Link from 'next/link';
-import { useState } from 'react';
 import { AppShell } from '@/app-chrome/AppShell';
 import { PageTitle } from '@/app-chrome/PageTitle';
 import { useErrorMessage } from '@/app-shell/api/use-error-message';
@@ -36,8 +35,6 @@ export function PracticePage() {
   const weakPreview = useWeakPreview(2);
   const starter = usePracticeStarter<Origin>();
   const { request, current, decks, out, reopensAt } = starter;
-  const [deckId, setDeckId] = useState<string | null>(null);
-  const deck = decks.find((g) => g.id === deckId) ?? decks[0];
   const count = config.data?.practice.default_questions_per_session ?? 10;
   const pool = entitlements.data?.pools.practice_sessions;
   const plan = entitlements.data?.plan;
@@ -92,30 +89,21 @@ export function PracticePage() {
                 decks.length === 0 ? (
                   <span className="text-caption text-muted">{t('sources.group.empty')}</span>
                 ) : (
+                  // Owner 27/10/2026: the decks are only shown here (look normal, not buttons); a deck is chosen in [Tùy chỉnh].
                   <>
                     {decks.slice(0, DECK_CHIPS).map((g) => (
-                      <button
-                        key={g.id}
-                        type="button"
-                        aria-pressed={g.id === deck?.id}
-                        onClick={() => setDeckId(g.id)}
-                        className={cn(CHIP, 'outline-none focus-visible:ring-2 focus-visible:ring-primary aria-pressed:border-primary aria-pressed:bg-primary aria-pressed:text-on-primary')}
-                      >
+                      <span key={g.id} className={cn(CHIP, 'cursor-default')}>
                         <span className="truncate">{t('sources.group.chip', { name: g.name, count: g.total })}</span>
-                      </button>
+                      </span>
                     ))}
-                    {decks.length > DECK_CHIPS && (
-                      <button type="button" onClick={() => setCustomize({ source: 'group', groupId: deck?.id })} className={cn(CHIP, 'outline-none focus-visible:ring-2 focus-visible:ring-primary')}>
-                        +{decks.length - DECK_CHIPS}
-                      </button>
-                    )}
+                    {decks.length > DECK_CHIPS && <span className={cn(CHIP, 'cursor-default')}>+{decks.length - DECK_CHIPS}</span>}
                   </>
                 )
               }
-              startLabel={deck ? t('sources.group.start', { name: deck.name }) : null}
-              onStart={() => deck && request('group', quick('group', { group_id: deck.id }))}
+              startLabel={null}
+              onStart={() => {}}
               busy={pending('group')}
-              onCustomize={() => setCustomize({ source: 'group', groupId: deck?.id })}
+              onCustomize={() => setCustomize({ source: 'group', groupId: decks[0]?.id })}
               error={errors.group ?? null}
               reopensAt={reopensAt}
             />

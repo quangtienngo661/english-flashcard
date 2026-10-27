@@ -32,11 +32,11 @@ const routes = (entitlements: unknown) => ({
 });
 
 describe('PlansPage (K/52, K/53)', () => {
-  it('Free: its card is "Gói của bạn", no "Không cần thẻ ngân hàng"; numbers from plans; Pro not on sale, placeholder price', async () => {
+  it('Free: its card is "Gói hiện tại", no "Không cần thẻ ngân hàng"; numbers from plans; Pro not on sale, placeholder price', async () => {
     renderApp(<PlansPage />, { routes: routes(ent('free')) });
     expect(await screen.findByRole('heading', { level: 1, name: 'Học đều mỗi ngày, lên Pro khi cần' })).toBeInTheDocument();
     const free = screen.getByRole('region', { name: 'Miễn phí' });
-    expect(within(free).getByText('Gói của bạn')).toBeInTheDocument();
+    expect(within(free).getByText('Gói hiện tại')).toBeInTheDocument();
     expect(within(free).getByText('Bạn đang dùng gói này')).toBeInTheDocument();
     expect(within(free).getByText('4 phiên luyện mỗi ngày')).toBeInTheDocument();
     expect(within(free).getByText('Tra từ, thêm nhanh, tối đa 90 nhóm')).toBeInTheDocument();
@@ -62,12 +62,12 @@ describe('PlansPage (K/52, K/53)', () => {
     expect(within(pro).getByText('/ tháng')).toBeInTheDocument();
   });
 
-  it('GG3: Pro given by the team shows when it started and ends, from starts_at / ends_at', async () => {
+  it('GG3: Pro given by the team: card says "Gói hiện tại" and until when; no line under the title (owner 27/10/2026)', async () => {
     renderApp(<PlansPage />, { routes: routes(ent('pro', [GRANT])) });
     expect(await screen.findByRole('heading', { level: 1, name: 'Bạn đang dùng gói Pro' })).toBeInTheDocument();
-    expect(screen.getByText('Đội Wordmet cấp từ 15/10/2026 tới hết 31/12/2026. Không thu tiền, không tự gia hạn.')).toBeInTheDocument();
+    expect(screen.queryByText(/Đội Wordmet cấp từ/)).not.toBeInTheDocument();
     const pro = screen.getByRole('region', { name: 'Pro' });
-    expect(within(pro).getByText('Gói của bạn · Đội Wordmet tặng')).toBeInTheDocument();
+    expect(within(pro).getByText('Gói hiện tại')).toBeInTheDocument();
     expect(within(pro).getByText('Tới hết 31/12/2026')).toBeInTheDocument();
     expect(within(pro).queryByText('Chưa mở bán')).not.toBeInTheDocument();
     expect(screen.queryByRole('radio', { name: 'Theo tháng' })).not.toBeInTheDocument();

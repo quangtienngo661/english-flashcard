@@ -25,12 +25,14 @@ export function useSummary(sessionId: string) {
 }
 
 /** The same choices as the session that just ended ([Luyện thêm một phiên]). */
-const againBody = (s: PracticeSessionView): StartBody => ({
+export const againBody = (s: PracticeSessionView): StartBody => ({
   source: s.source,
   ...(s.group_id ? { group_id: s.group_id } : {}),
   ...(s.source === 'group' && s.group_filter ? { group_filter: s.group_filter } : {}),
   sort: s.sort,
   types: s.types,
+  // Without it the API treats `cloze` as AI-written and spends AI credits (audit 26/10/2026 #2).
+  ...(s.cloze_source === 'own' ? { cloze_source: 'own' as const } : {}),
   ...(s.types.includes('type_word') ? { prompt_style: s.prompt_style as StartBody['prompt_style'] } : {}),
   count: s.target_count,
 });
@@ -91,8 +93,8 @@ export function SessionSummary({ session, sourceLabel }: { session: PracticeSess
   return (
     <div className="flex flex-col gap-4">
       <div>
-        <h1 className="text-h1 font-extrabold text-ink">{ts('title', { count: data?.asked ?? session.asked })}</h1>
-        <p className="text-ui text-muted">
+        <h1 className="text-display font-extrabold text-ink">{ts('title', { count: data?.asked ?? session.asked })}</h1>
+        <p className="wrap-anywhere text-ui text-muted">
           {pool && pool.limit > 0
             ? ts('line', { source: sourceLabel, types, remaining: pool.remaining, limit: pool.limit })
             : ts('lineNoPool', { source: sourceLabel, types })}

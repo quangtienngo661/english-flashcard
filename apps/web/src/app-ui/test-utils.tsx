@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { render } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { NextIntlClientProvider } from 'next-intl';
 import type { ReactElement } from 'react';
 import en from '../../messages/en.json';
@@ -37,4 +37,9 @@ export function renderApp(
     </NextIntlClientProvider>,
   );
   return { ...view, store, client, ...f };
+}
+
+/** Picks a date in a `type="date"` field (DateOfBirthField): jsdom has no picker, so the value is set as the browser would. */
+export function pickDate(label: string, iso: string) {
+  fireEvent.change(screen.getByLabelText(label), { target: { value: iso } });
 }

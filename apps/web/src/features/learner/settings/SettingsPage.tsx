@@ -93,11 +93,12 @@ export function SettingsPage() {
           <Row
             title={t('currentPlan')}
             detail={entitlements.data ? tPlan(entitlements.data.plan) : '…'}
+            href={`/${locale}/app/plans`}
             action={
-              <Link href={`/${locale}/app/plans`} className={LINK}>
+              <span className="shrink-0 text-ui font-semibold text-primary underline-offset-2 group-hover:underline">
                 <span className="hidden md:inline">{t('seePlans')}</span>
-                <ChevronRight aria-label={t('seePlans')} className="size-5 text-muted md:hidden" />
-              </Link>
+                <ChevronRight aria-hidden className="size-5 text-muted md:hidden" />
+              </span>
             }
           />
           <UsageRows />
@@ -158,11 +159,8 @@ export function SettingsPage() {
           {SHOW_TRANSACTIONS && (
             <Row
               title={t('transactions')}
-              action={
-                <Link href={`/${locale}/app/settings/transactions`} aria-label={t('transactions')} className={LINK}>
-                  <ChevronRight aria-hidden className="size-5 text-muted" />
-                </Link>
-              }
+              href={`/${locale}/app/settings/transactions`}
+              action={<ChevronRight aria-hidden className="size-5 shrink-0 text-muted" />}
             />
           )}
           <Row
@@ -237,7 +235,23 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
   );
 }
 
-function Row({ title, detail, action, className = 'flex' }: { title: string; detail?: string; action?: ReactNode; className?: string }) {
+function Row({ title, detail, action, className = 'flex', href }: { title: string; detail?: string; action?: ReactNode; className?: string; href?: string }) {
+  if (href)
+    // The whole row is the link when it has one destination (audit 26/10/2026 #10).
+    return (
+      <li>
+        <Link
+          href={href}
+          className="group flex min-h-control-touch items-center justify-between gap-3 rounded-inner py-4 outline-none focus-visible:ring-2 focus-visible:ring-primary"
+        >
+          <div className="flex min-w-0 flex-col">
+            <span className="text-ui font-semibold text-ink">{title}</span>
+            {detail && <span className="break-words text-caption text-muted">{detail}</span>}
+          </div>
+          {action}
+        </Link>
+      </li>
+    );
   return (
     <li className={`${className} flex-wrap items-center justify-between gap-3 py-4`}>
       <div className="flex min-w-0 flex-col">

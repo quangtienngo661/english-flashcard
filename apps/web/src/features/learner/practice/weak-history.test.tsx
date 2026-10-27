@@ -138,6 +138,15 @@ describe('HistoryPage (K/57, K/57b, K/82, K/83)', () => {
     expect(screen.getByText('2 đúng')).toBeInTheDocument();
   });
 
+  it('K/57: each answered row labels "Bạn trả lời" and "Đáp án" for every width and screen readers (audit 26/10/2026 #7)', async () => {
+    renderApp(<HistoryPage />, { routes: historyRoutes() });
+    const cache = (await screen.findByText('cache', { selector: '[data-col="word"]' })).closest('li')!;
+    const answerCell = within(cache).getByText('cash').parentElement!;
+    expect(within(answerCell).getByText('Bạn trả lời')).toBeInTheDocument();
+    const correctCell = within(cache).getAllByText('cache').find((el) => el.dataset.col !== 'word')!.parentElement!;
+    expect(within(correctCell).getByText('Đáp án')).toBeInTheDocument();
+  });
+
   it('K/57b: nothing answered yet', async () => {
     renderApp(<HistoryPage />, { routes: historyRoutes({ 'GET /v1/practice/history?page_size=50': () => Response.json({ items: [], next_page_token: null }) }) });
     expect(await screen.findByText('Bạn chưa làm câu nào.')).toBeInTheDocument();

@@ -35,7 +35,7 @@ export function CurrentSessionCard({ current, groups, out }: { current: CurrentS
       <h2 id="current-session" className="text-title font-semibold text-ink">
         {t('title')}
       </h2>
-      <p className="text-caption text-ink">{out ? t('bodyOut', values) : t('body', values)}</p>
+      <p className="wrap-anywhere text-caption text-ink">{out ? t('bodyOut', values) : t('body', values)}</p>
       <Link
         href={`/${locale}/app/practice/session`}
         className="flex min-h-control items-center justify-center rounded-inner bg-navy px-4 text-ui font-semibold text-on-navy shadow-ledge outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"

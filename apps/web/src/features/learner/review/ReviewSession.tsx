@@ -79,6 +79,10 @@ export function ReviewSession() {
   else if (session.card)
     body = (
       <div className="flex w-full flex-1 flex-col justify-between gap-6 md:flex-none md:justify-center">
+        {/* Says which card came up after an answer (audit 26/10/2026 #8); empty until the first answer. */}
+        <p data-live="result" aria-live="polite" aria-atomic="true" className="sr-only">
+          {session.index > 0 ? t('review.card', { n: session.index + 1, total }) : ''}
+        </p>
         <Flashcard key={session.card.item_id} card={session.card} position={session.index + 1} total={total} flipped={session.flipped} onFlip={session.flip} />
         <div className="flex flex-col gap-3">
           {session.error !== null && (
@@ -87,7 +91,7 @@ export function ReviewSession() {
             </p>
           )}
           {!session.flipped ? (
-            <Button variant="sticker" size="lg" className="justify-between" onPress={session.flip}>
+            <Button variant="sticker" size="lg" className="justify-between" autoFocus onPress={session.flip}>
               {t('review.flip')}
               <kbd className={`${KBD} border-on-accent`}>Space</kbd>
             </Button>

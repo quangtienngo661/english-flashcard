@@ -16,9 +16,13 @@ import { TopicSuggestions } from '../groups/TopicSuggestions';
 import { QuickAddBox } from './QuickAddBox';
 import { STAGE_KEYS } from '../groups/stages';
 
-/** K/10, K/10b, K/94: the deck to review next, every deck, topic suggestions, and the side column. */
+/** Owner 27/10/2026: Today lists only the first decks (decks with cards waiting first); [Xem tất cả] opens the deck list. */
+const TODAY_DECKS = 6;
+
+/** K/10, K/10b, K/94: the deck to review next, the first decks, topic suggestions, and the side column. */
 export function TodayPage() {
   const t = useTranslations('App.today');
+  const locale = useLocale();
   const format = useFormat();
   const errorText = useErrorMessage();
   const groups = useGroups();
@@ -67,12 +71,22 @@ export function TodayPage() {
                     {t('yourGroups')}
                     <span className="rounded-full bg-surface px-2 py-0.5 text-caption font-medium text-muted">{t('groupCount', { count: sorted.length })}</span>
                   </h2>
-                  <Button variant="quiet" onPress={() => open({ kind: 'create' })}>
-                    {t('createGroup')}
-                  </Button>
+                  <div className="flex shrink-0 items-center gap-2">
+                    <Button variant="quiet" onPress={() => open({ kind: 'create' })}>
+                      {t('createGroup')}
+                    </Button>
+                    {sorted.length > TODAY_DECKS && (
+                      <Link
+                        href={`/${locale}/app/groups`}
+                        className="flex min-h-control items-center rounded-inner px-3 text-ui font-semibold text-primary underline-offset-2 outline-none hover:underline focus-visible:ring-2 focus-visible:ring-primary"
+                      >
+                        {t('seeAll')}
+                      </Link>
+                    )}
+                  </div>
                 </div>
                 <ul aria-label={t('yourGroups')} className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
-                  {sorted.map((group, i) => (
+                  {sorted.slice(0, TODAY_DECKS).map((group, i) => (
                     <GroupCard key={group.id} group={group} index={i} actions={actions} />
                   ))}
                 </ul>
@@ -94,25 +108,26 @@ function Hero({ group }: { group: GroupSummary }) {
   const count = waiting(group);
   const review = `/${locale}/app/review?group=${group.id}`;
   return (
-    <section aria-label={group.name} className="flex flex-col gap-4 rounded-card border-2 border-border-strong bg-primary-soft p-5 shadow-ledge md:p-7">
+    // Owner 27/10/2026: the same hero card as Hôm nay on Luyện tập (light in the light theme, deep navy in the dark one).
+    <section aria-label={group.name} className="flex flex-col gap-4 rounded-card border border-on-hero/15 border-b-4 border-b-primary bg-hero p-5 text-on-hero md:p-7">
       <span className="w-fit rounded-full bg-accent px-2.5 py-0.5 text-caption font-semibold text-on-accent">
         {group.today.priority > 0 ? t('heroChipPriority') : t('heroChip')}
       </span>
       <div>
-        <h2 className="break-words text-h2 font-extrabold text-ink">{group.name}</h2>
-        <p className="text-ui text-muted">{t('heroLine', { waiting: count, total: group.total })}</p>
+        <h2 className="break-words text-h2 font-extrabold text-on-hero">{group.name}</h2>
+        <p className="text-ui text-on-hero-muted">{t('heroLine', { waiting: count, total: group.total })}</p>
       </div>
       <dl className="grid max-w-md grid-cols-3 gap-3">
         {(
           [
             ['priority', group.today.priority, 'bg-accent'],
             ['due', group.today.due, 'bg-primary'],
-            ['new', group.today.new, 'bg-muted'],
+            ['new', group.today.new, 'bg-on-hero-muted'],
           ] as const
         ).map(([key, value, dot]) => (
-          <div key={key} className="flex flex-col rounded-inner bg-surface px-3 py-2.5">
-            <dd className="text-title font-bold text-ink">{value}</dd>
-            <dt className="flex items-center gap-1.5 text-caption text-muted">
+          <div key={key} className="flex flex-col rounded-inner bg-hero-raised px-3 py-2.5">
+            <dd className="text-title font-bold text-on-hero">{value}</dd>
+            <dt className="flex items-center gap-1.5 text-caption text-on-hero-muted">
               <span aria-hidden className={`size-2 rounded-full ${dot}`} />
               {t(key)}
             </dt>
@@ -123,7 +138,7 @@ function Hero({ group }: { group: GroupSummary }) {
         <Link href={review} className="flex min-h-control-touch items-center rounded-inner bg-accent px-6 text-body font-semibold text-on-accent shadow-ledge-accent">
           {t('review', { count })}
         </Link>
-        <Link href={`${review}&mode=all`} className="text-ui font-semibold text-primary underline underline-offset-2">
+        <Link href={`${review}&mode=all`} className="text-ui font-semibold text-on-hero underline underline-offset-2">
           {t('studyAll', { total: group.total })}
         </Link>
       </div>
@@ -150,7 +165,7 @@ function TodayAside({ groups }: { groups: GroupSummary[] }) {
         <section className="flex items-center justify-between gap-3 rounded-card border border-border bg-surface p-4">
           <div className="min-w-0">
             <h2 className="text-body font-semibold text-danger">{t('backlogTitle', { count: backlog.backlog })}</h2>
-            <p className="text-caption text-muted">{t('backlogLine', { name: backlog.name, days })}</p>
+            <p className="wrap-anywhere text-caption text-muted">{t('backlogLine', { name: backlog.name, days })}</p>
           </div>
           <Link href={`/${locale}/app/group/backlog?id=${backlog.id}`} className="shrink-0 rounded-inner border-2 border-border-strong px-4 py-1.5 text-ui font-semibold text-ink">
             {t('see')}

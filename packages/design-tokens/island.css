@@ -1,0 +1,46 @@
+/* Coloured cards in the dark theme, option B (owner 27/10/2026, research docs/research/2026-10-27-dark-theme-the-mau.html):
+   the card is a neutral dark surface like the others and its colour is only an accent — a stripe on top and the title icon.
+   Applies to elements with `pastel-island` (deck card bands, topic suggestion cards, "Thêm từ vừa gặp", practice source
+   cards) and, from 768 px, `md:pastel-island` (the picked row of Tra từ, with a stripe on the left). Text keeps the dark
+   palette. The light theme is untouched. */
+[data-theme='dark'] .pastel-island {
+  /* The soft background becomes the card surface; chips and buttons inside sit one step up. */
+  --color-primary-soft: #242b3d;
+  --color-accent-soft: #242b3d;
+  --color-success-soft: #242b3d;
+  --color-danger-soft: #242b3d;
+  --color-neutral-soft: #242b3d;
+  --color-surface: #2f364a;
+}
+[data-theme='dark'] .pastel-island.bg-primary-soft { --tone: #8da2ff; }
+[data-theme='dark'] .pastel-island.bg-accent-soft { --tone: #ffd84a; }
+[data-theme='dark'] .pastel-island.bg-success-soft { --tone: #5fd39a; }
+[data-theme='dark'] .pastel-island.bg-danger-soft { --tone: #ff8b7c; }
+[data-theme='dark'] .pastel-island:is(.bg-primary-soft, .bg-accent-soft, .bg-success-soft, .bg-danger-soft) {
+  /* A real top border, as in the option B mockup: it follows the card corners and stays 5px thick (owner 27/10/2026). */
+  border-top: 0.3125rem solid var(--tone);
+}
+/* Deck cards: the band is inside the card, whose corners would clip a stripe on the band. The stripe goes on the card itself
+   (its top border, following its own corners) and the band gets none. */
+[data-theme='dark'] li:has(> .pastel-island.bg-primary-soft:first-child) { --tone: #8da2ff; }
+[data-theme='dark'] li:has(> .pastel-island.bg-accent-soft:first-child) { --tone: #ffd84a; }
+[data-theme='dark'] li:has(> .pastel-island.bg-success-soft:first-child) { --tone: #5fd39a; }
+[data-theme='dark'] li:has(> .pastel-island.bg-danger-soft:first-child) { --tone: #ff8b7c; }
+[data-theme='dark'] li:has(> .pastel-island:first-child) {
+  border-top: 0.3125rem solid var(--tone);
+}
+[data-theme='dark'] li:has(> .pastel-island:first-child) > .pastel-island:first-child {
+  border-top: 0;
+}
+[data-theme='dark'] .pastel-island h3 > svg:first-child {
+  color: var(--tone);
+}
+
+@media (width >= 48rem) {
+  [data-theme='dark'] .md\:pastel-island {
+    --color-accent-soft: #2f364a;
+    background-image: linear-gradient(#ffd84a, #ffd84a);
+    background-size: 0.25rem 100%;
+    background-repeat: no-repeat;
+  }
+}

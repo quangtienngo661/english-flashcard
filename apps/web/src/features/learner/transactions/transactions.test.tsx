@@ -57,20 +57,20 @@ describe('TransactionsPage (K/95–K/95d, M/95–M/95c)', () => {
     expect(await screen.findByRole('heading', { name: 'Lịch sử giao dịch' })).toBeInTheDocument();
     const renewal = await rowButton(/^Gia hạn/);
     expect(nameOf(renewal)).toBe('Gia hạn, 15/10/2026, Pro · theo tháng, 99.000 ₫, dùng 15/10 – 14/11/2026, Đang chờ. Xem chi tiết');
-    expect(nameOf(await rowButton(/^Đội Wordmet cấp/))).toBe('Đội Wordmet cấp, 20/10/2026, Pro, dùng 20/10 – 31/12/2026, Thành công. Xem chi tiết');
+    expect(nameOf(await rowButton(/^Cấp gói/))).toBe('Cấp gói, 20/10/2026, Pro, dùng 20/10 – 31/12/2026, Thành công. Xem chi tiết');
     expect(nameOf(await rowButton(/^Dùng thử/))).toBe('Dùng thử, 1/8/2026, Pro · theo tháng, dùng 1/8 – 14/8/2026, Thành công. Xem chi tiết');
     expect(nameOf(await rowButton(/^Đổi kỳ/))).toBe(
       'Đổi kỳ, 15/9/2026, Pro · theo năm, 990.000 ₫, dùng 15/9/2026 – 14/9/2027, Đã hoàn tiền. Xem chi tiết');
     expect(nameOf(await rowButton(/^Hoàn tiền/))).toBe(
       'Hoàn tiền, 16/9/2026, Pro · theo tháng, 99.000 ₫, dùng 15/9 – 14/10/2026, Đã hủy hoàn tiền. Xem chi tiết');
     expect(within(renewal).getAllByText(/^99\.000\s₫$/).length).toBeGreaterThan(0);
-    expect(within(await rowButton(/^Đội Wordmet cấp/)).queryByText(/₫/)).toBeNull();
+    expect(within(await rowButton(/^Cấp gói/)).queryByText(/₫/)).toBeNull();
   });
 
   it('the aside names the current plan and how long it lasts', async () => {
     renderApp(<TransactionsPage />, { routes: routes() });
-    expect(await screen.findByText('Gói Pro · Đội Wordmet cấp tới hết 31/12/2026')).toBeInTheDocument();
-    expect(screen.getByText('Dùng thử và Đội Wordmet cấp: không thu tiền.')).toBeInTheDocument();
+    expect(await screen.findByText('Gói Pro · tới hết 31/12/2026')).toBeInTheDocument();
+    expect(screen.getByText('Dùng thử và Cấp gói: không thu tiền.')).toBeInTheDocument();
   });
 
   it('a row opens its detail: time, gateway "Giả (thử)" and the transaction id; Đóng closes it', async () => {
@@ -89,7 +89,7 @@ describe('TransactionsPage (K/95–K/95d, M/95–M/95c)', () => {
 
   it('a grant\'s detail has no amount, gateway or id', async () => {
     renderApp(<TransactionsPage />, { routes: routes() });
-    await userEvent.click(await rowButton(/^Đội Wordmet cấp/));
+    await userEvent.click(await rowButton(/^Cấp gói/));
     const dialog = await screen.findByRole('dialog', { name: 'Chi tiết giao dịch' });
     expect(within(dialog).queryByText('Số tiền')).toBeNull();
     expect(within(dialog).queryByText('Cổng thanh toán')).toBeNull();

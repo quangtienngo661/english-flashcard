@@ -107,14 +107,24 @@ describe('PracticePage (K/51)', () => {
     for (const name of names) expect(within(list).getByRole('button', { name: `Tùy chỉnh: ${name}` })).toBeInTheDocument();
   });
 
-  it('Theo nhóm: deck chips choose the deck; the start sends source group + group_id', async () => {
+  it('Theo nhóm (owner 27/10/2026): decks are shown but not buttons; the only action is a visible [Tùy chỉnh]', async () => {
     const view = renderApp(<PracticePage />, { routes: routes() });
     const card = await screen.findByRole('listitem', { name: 'Theo nhóm' });
-    expect(within(card).getByRole('button', { name: 'Công nghệ · 18', pressed: true })).toBeInTheDocument();
-    await userEvent.click(within(card).getByRole('button', { name: 'IELTS · 80' }));
-    await userEvent.click(within(card).getByRole('button', { name: 'Luyện IELTS' }));
-    await waitFor(() => expect(starts(view.calls)).toHaveLength(1));
-    expect(starts(view.calls)[0].body).toEqual({ source: 'group', group_id: IELTS, types: THREE, count: 12 });
+    expect(await within(card).findByText('Công nghệ · 18')).toBeInTheDocument();
+    expect(within(card).queryByRole('button', { name: /Công nghệ/ })).not.toBeInTheDocument();
+    expect(within(card).getAllByRole('button').map((b) => b.textContent)).toEqual(['Tùy chỉnh']);
+    await userEvent.click(within(card).getByRole('button', { name: 'Tùy chỉnh: Theo nhóm' }));
+    expect(await screen.findByRole('dialog')).toBeInTheDocument();
+    expect(starts(view.calls)).toHaveLength(0);
+  });
+
+  it('each other card shows an icon-only [Tùy chỉnh] next to its start (owner 27/10/2026)', async () => {
+    renderApp(<PracticePage />, { routes: routes() });
+    const card = await screen.findByRole('listitem', { name: 'Từ hay sai' });
+    const start = await within(card).findByRole('button', { name: 'Luyện 6 từ' });
+    const customize = within(card).getByRole('button', { name: 'Tùy chỉnh: Từ hay sai' });
+    expect(start.parentElement).toContainElement(customize);
+    expect(customize).toHaveTextContent('');
   });
 
   it('Từ hay sai: the two newest weak words, "+N từ", and the start sends source weak', async () => {

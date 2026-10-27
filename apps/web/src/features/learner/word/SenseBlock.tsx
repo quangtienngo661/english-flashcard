@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { useState, type ReactNode } from 'react';
 import { Button } from '@/app-ui/Button';
 import { SpeakSentence } from '@/app-ui/SpeakButtons';
-import { useGroups } from '../groups/groups-api';
 import { highlightWord } from '../groups/highlight';
 import { DeckPickerDialog } from '../add-word/DeckPickerDialog';
 import { DeleteMyWordDialog, EditMyWordDialog } from './MyWordDialogs';
@@ -40,10 +39,8 @@ function MeaningText({ sense }: { sense: PageSense }) {
  */
 export function SenseBlock({ index, sense, item, forms }: { index: number; sense: PageSense; item: ItemState | undefined; forms: string[] }) {
   const t = useTranslations('App.word');
-  const groups = useGroups().data?.items ?? [];
   const [dialog, setDialog] = useState<'sentences' | 'add' | 'edit' | 'delete' | null>(null);
   const mine = sense.scope === 'private';
-  const deckNames = item ? item.group_ids.map((id) => groups.find((g) => g.id === id)?.name).filter(Boolean).join(', ') : '';
   const headingId = `sense-${sense.sense_id}`;
 
   const sentencesButton: ReactNode =
@@ -55,7 +52,7 @@ export function SenseBlock({ index, sense, item, forms }: { index: number; sense
 
   const learning: ReactNode = item ? (
     <span className="inline-flex flex-wrap items-center gap-x-1 rounded-full bg-success-soft px-2.5 py-1 text-caption font-semibold text-success">
-      {t('learning', { groups: deckNames })}
+      {t('learning')}
       {sentencesButton && <> · {sentencesButton}</>}
     </span>
   ) : (

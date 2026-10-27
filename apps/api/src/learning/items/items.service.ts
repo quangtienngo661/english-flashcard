@@ -4,13 +4,13 @@ import { PRISMA_CLIENT } from '../../common/db/prisma.module.js';
 import { decodeBoundToken, encodeBoundToken } from '../../common/pagination/page-token.util.js';
 import { ProblemDetailsException } from '../../common/problem-details/problem-details.exception.js';
 import { dateString, dateValue, localDate } from '../../common/time/local-date.js';
-import { ContentService, type Level } from '../../content/index.js';
+import { ContentService, type Level, type WordSense } from '../../content/index.js';
 import type { Prisma, PrismaClient } from '../../generated/prisma/client.js';
 import { IdentityService } from '../../identity/profile/identity.service.js';
 import { GroupsService } from '../groups/groups.service.js';
 import { SettingsService } from '../../settings/index.js';
 import { withLearnerLock } from '../learning-lock.js';
-import { newItem } from '../schedule/schedule.js';
+import { newItem, sectionOf, type Section } from '../schedule/schedule.js';
 
 const transactionOptions = { timeout: 30_000, maxWait: 5_000 };
 
@@ -25,8 +25,20 @@ export type ItemState = { sense_id: string; item_id: string; level: number; due_
 export type GroupItemView = {
   item_id: string; sense_id: string; level: number; due_date: string; priority: boolean; group_count: number;
   sense_changed: boolean; added_at: string;
+  /** Only with `content=true` (deck page). */
+  section?: Section; content?: WordSense & { sentences: string[] };
 };
 export type Cell = 'priority' | 0 | 1 | 2 | 3 | 4 | 5;
+export type ListSection = 'priority' | 'due' | 'new';
+
+/** The deck page filters, the same rules as schedule.ts sectionOf: a card past the backlog days is not priority nor due. */
+function sectionWhere(section: ListSection, today: string, backlogDays: number): Prisma.LearningItemWhereInput {
+  const todayDate = dateValue(today);
+  const cutoff = new Date(todayDate.getTime() - backlogDays * 86_400_000);
+  if (section === 'priority') return { priority: true, OR: [{ level: 0 }, { dueDate: { gte: cutoff } }] };
+  if (section === 'due') return { priority: false, level: { gte: 1 }, dueDate: { lte: todayDate, gte: cutoff } };
+  return { priority: false, level: 0 };
+}
 
 const notFound = () => new ProblemDetailsException({ status: 404, title: 'Not found', type: 'not-found' });
 const invalidInput = () => new ProblemDetailsException({ status: 400, title: 'Validation failed', type: 'validation-failed' });
@@ -148,10 +160,21 @@ export class ItemsService {
     }) };
   }
 
-  async listGroup(userId: string, groupId: string, query: { cell?: Cell; page_size: number; page_token?: string }):
+  /**
+   * One page of a deck's words, oldest first (keyset on added_at, item_id). Deck page (owner 27/10/2026): `section` filters as the
+   * review queue sorts cards (priority, due, new; never backlog for the first two), and `content` adds each card's content, its
+   * saved sentences and its section. Without them the response is exactly as before (SR7, additive only).
+   */
+  async listGroup(userId: string, groupId: string,
+    query: { cell?: Cell; section?: ListSection; content?: true; page_size: number; page_token?: string }, nativeLanguage: 'vi' | 'en'):
     Promise<{ items: GroupItemView[]; next_page_token: string | null }> {
     await this.groups.assertOwned(this.prisma, userId, groupId);
-    const binding = `${groupId}:${query.cell ?? ''}`;
+    const needsDay = query.section !== undefined || query.content === true;
+    const [day, backlogDays] = needsDay
+      ? await Promise.all([this.today(userId), this.settings.get().then(({ learning }) => learning.backlogAfterDays)])
+      : [null, 0];
+    // A section depends on the learner's day, so its token is bound to that day too (a token from yesterday is refused).
+    const binding = `${groupId}:${query.cell ?? ''}${query.section ? `:${query.section}:${day}` : ''}`;
     let after: { addedAt: Date; itemId: string } | undefined;
     if (query.page_token !== undefined) {
       const cursor = decodeBoundToken(query.page_token, binding);
@@ -161,22 +184,39 @@ export class ItemsService {
       after = { addedAt: new Date(cursor.at), itemId: cursor.id };
     }
     const cell = query.cell === undefined ? {} : query.cell === 'priority' ? { priority: true } : { level: query.cell };
+    const item = query.section === undefined ? cell : { AND: [cell, sectionWhere(query.section, day!, backlogDays)] };
     const rows = await this.prisma.groupItem.findMany({
       where: {
-        groupId, item: cell,
+        groupId, item,
         ...(after ? { OR: [{ addedAt: { gt: after.addedAt } }, { addedAt: after.addedAt, itemId: { gt: after.itemId } }] } : {}),
       },
       include: { item: { include: { _count: { select: { groups: true } } } } },
       orderBy: [{ addedAt: 'asc' }, { itemId: 'asc' }], take: query.page_size + 1,
     });
     const page = rows.slice(0, query.page_size);
-    const visible = await this.content.visibleSenseIds(userId, page.map((row) => row.item.senseId));
+    const senseIds = page.map((row) => row.item.senseId);
+    const [visible, contents, sentences] = await Promise.all([
+      this.content.visibleSenseIds(userId, senseIds),
+      query.content ? this.content.cardContent(userId, senseIds, nativeLanguage) : null,
+      query.content ? this.content.listSentences(userId, senseIds) : null,
+    ]);
     const last = page[page.length - 1];
     return {
-      items: page.map(({ item, addedAt }) => ({
-        item_id: item.id, sense_id: item.senseId, level: item.level, due_date: dateString(item.dueDate), priority: item.priority,
-        group_count: item._count.groups, sense_changed: !visible.has(item.senseId), added_at: addedAt.toISOString(),
-      })),
+      items: page.flatMap(({ item: row, addedAt }) => {
+        const view: GroupItemView = {
+          item_id: row.id, sense_id: row.senseId, level: row.level, due_date: dateString(row.dueDate), priority: row.priority,
+          group_count: row._count.groups, sense_changed: !visible.has(row.senseId), added_at: addedAt.toISOString(),
+        };
+        if (!contents) return [view];
+        // A sense hidden between the reads has no content: the row is left out, as the review queue does.
+        const content = contents.get(row.senseId);
+        if (!content) return [];
+        const state = { level: row.level, dueDate: view.due_date, priority: row.priority };
+        return [{
+          ...view, section: sectionOf(state, day!, backlogDays),
+          content: { ...content, sentences: (sentences?.get(row.senseId) ?? []).map(({ text }) => text) },
+        }];
+      }),
       next_page_token: rows.length > query.page_size
         ? encodeBoundToken({ at: last.addedAt.toISOString(), id: last.itemId }, binding) : null,
     };

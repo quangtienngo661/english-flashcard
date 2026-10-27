@@ -87,6 +87,19 @@ describe('ReviewSession (K/20–K/22)', () => {
     expect(screen.getByTestId('review-count')).toHaveTextContent('1');
   });
 
+  it('after answering, the live region says the new card and focus is on [Lật thẻ] (audit 26/10/2026 #8)', async () => {
+    const { container } = renderApp(<ReviewSession />, { routes: routes([DEPLOY, CACHE]) });
+    await screen.findByRole('group', { name: 'Thẻ 1 trên 2' });
+    const live = container.querySelector('[data-live="result"]')!;
+    expect(live).toHaveAttribute('aria-live', 'polite');
+    expect(live).toHaveTextContent('');
+    await userEvent.keyboard(' ');
+    await userEvent.click(screen.getByRole('button', { name: /Đã biết/ }));
+    await screen.findByRole('group', { name: 'Thẻ 2 trên 2' });
+    await waitFor(() => expect(live).toHaveTextContent('Thẻ 2 trên 2'));
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: /Lật thẻ/ }));
+  });
+
   it('answers only after the card is flipped', async () => {
     const { calls } = renderApp(<ReviewSession />, { routes: routes([DEPLOY, CACHE]) });
     await screen.findByRole('group', { name: 'Thẻ 1 trên 2' });
@@ -230,12 +243,12 @@ describe('ReviewSession pronunciation (đợt cải thiện A, C1; review plan I
     const synth = installSpeech([makeVoice('en-GB'), makeVoice('en-US')]);
     const { calls } = renderApp(<ReviewSession />, { routes: routes([DEPLOY, CACHE]) });
     const front = await screen.findByRole('group', { name: 'Thẻ 1 trên 2' });
-    const uk = within(front).getByRole('button', { name: 'Nghe giọng Anh' });
+    const uk = within(front).getByRole('button', { name: 'Nghe phát âm' });
     const flip = within(front).getAllByRole('button').find((b) => b.textContent?.includes('deploy') && !b.getAttribute('aria-label'))!;
     expect(flip.contains(uk)).toBe(false);
     expect(uk.closest('button')).toBe(uk);
     await userEvent.click(uk);
-    expect(synth.speak).toHaveBeenLastCalledWith(expect.objectContaining({ text: 'deploy', lang: 'en-GB' }));
+    expect(synth.speak).toHaveBeenLastCalledWith(expect.objectContaining({ text: 'deploy', lang: 'en-US' }));
     uk.focus();
     await userEvent.keyboard(' 12');
     expect(screen.queryByText('triển khai')).not.toBeInTheDocument();
@@ -243,15 +256,14 @@ describe('ReviewSession pronunciation (đợt cải thiện A, C1; review plan I
     expect(synth.speak).toHaveBeenCalledTimes(2);
   });
 
-  it('back: UK · US by the word, a button by the example and by the saved sentence (local voice)', async () => {
+  it('back: the speaker icon by the word (US voice), a button by the example and by the saved sentence (local voice)', async () => {
     const synth = installSpeech([makeVoice('en-GB'), makeVoice('en-US')]);
     renderApp(<ReviewSession />, { routes: routes([DEPLOY, CACHE]) });
     await screen.findByRole('group', { name: 'Thẻ 1 trên 2' });
     await userEvent.keyboard(' ');
     const card = await screen.findByRole('group', { name: 'Thẻ 1 trên 2' });
     await within(card).findByText('triển khai');
-    expect(within(card).getByRole('button', { name: 'Nghe giọng Anh' })).toBeInTheDocument();
-    expect(within(card).getByRole('button', { name: 'Nghe giọng Mỹ' })).toBeInTheDocument();
+    expect(within(card).getByRole('button', { name: 'Nghe phát âm' })).toBeInTheDocument();
     const sentences = within(card).getAllByRole('button', { name: 'Nghe câu' });
     expect(sentences).toHaveLength(2);
     await userEvent.click(sentences[1]);

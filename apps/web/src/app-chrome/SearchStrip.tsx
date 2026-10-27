@@ -92,7 +92,6 @@ export function SearchStrip() {
             placeholder={wide ? t('placeholder') : t('placeholderShort')}
             className="peer min-w-0 flex-1 bg-transparent py-2 text-ui text-ink outline-none placeholder:text-placeholder"
           />
-          <kbd className="hidden rounded-sm border border-border-strong px-1.5 text-caption text-muted md:inline">/</kbd>
         </label>
         <button
           type="submit"

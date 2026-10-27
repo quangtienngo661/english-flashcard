@@ -46,7 +46,7 @@ export class ItemsController {
     @Query({ schema: groupItemsQuery }) query: z.infer<typeof groupItemsQuery>,
     @CurrentLearner() learner: Learner,
   ) {
-    return this.items.listGroup(learner.userId, params.id, query);
+    return this.items.listGroup(learner.userId, params.id, query, learner.nativeLanguage);
   }
 
   @Delete('groups/:id/items/:itemId')

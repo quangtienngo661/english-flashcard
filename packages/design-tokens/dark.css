@@ -31,6 +31,11 @@
   --color-wrong-chip-deep: #3d1d21;
   --color-navy: #171b27;
   --color-navy-raised: #2c3448;
+  --color-navy-card: #12151f;
+  --color-hero: #12151f;
+  --color-hero-raised: #2c3448;
+  --color-on-hero: #f1f3fd;
+  --color-on-hero-muted: #b9c1e0;
   --color-on-navy: #f1f3fd;
   --color-on-navy-muted: #b9c1e0;
   --color-session-card: #2c3448;

@@ -35,6 +35,13 @@
   /* Learner app (Figma variables, collection "Wordmet B", design giao-dien-nguoi-hoc §4.4). Dark values: dark.css. */
   --color-navy: #1b2444;
   --color-navy-raised: #2c3760;
+  /* A darker navy for the big navy cards (Hôm nay hero on Today and Practice, Từ hay sai); owner 27/10/2026. */
+  --color-navy-card: #121833;
+  /* The big "Hôm nay" cards on Today and Practice (owner 27/10/2026): light in the light theme, deep navy in the dark one. */
+  --color-hero: #eceffe;
+  --color-hero-raised: #ffffff;
+  --color-on-hero: #0f1a3d;
+  --color-on-hero-muted: #4d5577;
   --color-on-navy: #f1f3fd;
   --color-on-navy-muted: #b9c1e0;
   --color-session-card: var(--color-canvas);

@@ -117,7 +117,7 @@ test.describe('M5b flows (mocked API)', () => {
     await sheet.getByRole('button', { name: vi.addWord.ai.button }).click();
     await expect(sheet.getByText(vi.addWord.ai.failed)).toBeVisible();
     await sheet.getByRole('button', { name: vi.addWord.ai.retry }).click();
-    await expect(sheet.getByText('Hết lượt tra AI. Lượt tra AI mới có vào 15/11.')).toBeVisible();
+    await expect(sheet.getByText('Hết lượt tra AI. Lượt tra AI mới vào 15/11.')).toBeVisible();
   });
 
   test('My word page: labels, edit the meaning (label gone after refetch), then delete', async ({ page }) => {

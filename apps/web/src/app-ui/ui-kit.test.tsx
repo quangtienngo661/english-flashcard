@@ -6,7 +6,7 @@ import { DateOfBirthField } from './DateOfBirthField';
 import { Dialog } from './Dialog';
 import { Switch } from './Switch';
 import { TextField } from './TextField';
-import { renderApp } from './test-utils';
+import { pickDate, renderApp } from './test-utils';
 
 vi.mock('next/navigation', () => ({ usePathname: () => '/vi/app', useRouter: () => ({ replace: vi.fn(), push: vi.fn() }) }));
 
@@ -27,11 +27,17 @@ describe('UI kit', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 
+  it('Dialog overlay dims with navy, not ink (ink is light in dark mode; audit 26/10/2026 #3)', () => {
+    renderApp(<DialogHarness />);
+    const overlay = screen.getByRole('dialog').closest('.fixed.inset-0');
+    expect(overlay?.className).toContain('bg-navy/45');
+    expect(overlay?.className).not.toMatch(/\bbg-ink\//);
+  });
+
   it('DateOfBirthField shows the under-13 line from the copy doc and reports null', async () => {
     const onChange = vi.fn();
     renderApp(<DateOfBirthField label="Ngày sinh" today="2026-10-18" onChange={onChange} />);
-    await userEvent.type(screen.getByRole('textbox', { name: 'Ngày sinh' }), '19/10/2013');
-    await userEvent.tab();
+    pickDate('Ngày sinh', '2013-10-19');
     expect(screen.getByText('Bạn cần đủ 13 tuổi để dùng Wordmet.')).toBeInTheDocument();
     expect(onChange).toHaveBeenLastCalledWith(null);
   });
@@ -39,15 +45,15 @@ describe('UI kit', () => {
   it('DateOfBirthField reports the ISO date when valid', async () => {
     const onChange = vi.fn();
     renderApp(<DateOfBirthField label="Ngày sinh" today="2026-10-18" onChange={onChange} />);
-    await userEvent.type(screen.getByRole('textbox', { name: 'Ngày sinh' }), '18/10/2013');
+    pickDate('Ngày sinh', '2013-10-18');
     expect(onChange).toHaveBeenLastCalledWith('2013-10-18');
   });
 
-  it('DateOfBirthField says an impossible date is invalid', async () => {
+  it('DateOfBirthField is a date picker (owner 27/10/2026) and says a date before 1900 is invalid', async () => {
     renderApp(<DateOfBirthField label="Ngày sinh" today="2026-10-18" onChange={() => {}} />);
-    await userEvent.type(screen.getByRole('textbox', { name: 'Ngày sinh' }), '31/02/2010');
-    await userEvent.tab();
-    expect(screen.getByText(/Nhập ngày sinh theo dạng/)).toBeInTheDocument();
+    expect(screen.getByLabelText('Ngày sinh')).toHaveAttribute('type', 'date');
+    pickDate('Ngày sinh', '1899-12-31');
+    expect(screen.getByText('Ngày sinh không hợp lệ. Chọn lại ngày.')).toBeInTheDocument();
   });
 
   it('a locked Switch cannot be turned on; pressing it shows the D6 line and the link to Plans', async () => {

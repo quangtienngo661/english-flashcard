@@ -5,7 +5,9 @@ import { installSpeech, makeVoice } from '@/app-ui/speech-test-support';
 import { renderApp } from '@/app-ui/test-utils';
 import { ToastRegion } from '@/app-ui/Toast';
 import type { Route } from '@/app-shell/session/test-support';
+import type { PracticeSessionView } from '../practice-api';
 import { PracticeSession } from './PracticeSession';
+import { againBody } from './SessionSummary';
 
 const hardReplace = vi.fn();
 vi.mock('next/navigation', () => ({
@@ -266,6 +268,30 @@ describe('PracticeSession (K/60–K/67)', () => {
     expect(screen.getByRole('progressbar', { name: 'Câu 4/10' })).toBeInTheDocument();
     expect(screen.getByText('Chọn từ có nghĩa này')).toBeInTheDocument();
     expect(screen.getAllByRole('button', { name: /^[1-4] / }).map((b) => b.textContent)).toEqual(['1 deploy', '2 delay', '3 deliver', '4 defend']);
+  });
+
+  it('a live region present before answering says the result; focus moves to the primary action (audit 26/10/2026 #8)', async () => {
+    const { container } = renderApp(<PracticeSession />, { routes: routes() });
+    await screen.findByText('triển khai');
+    const live = container.querySelector('[data-live="result"]')!;
+    expect(live).toHaveAttribute('aria-live', 'polite');
+    expect(live).toHaveTextContent('');
+    await userEvent.click(screen.getByRole('button', { name: /2 delay/ }));
+    await waitFor(() => expect(live).toHaveTextContent('Chưa đúng. deploy · triển khai (phần mềm)'));
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: /Cần ôn lại/ }));
+  });
+
+  it('try_again keeps focus in the word box (Review Focus 5)', async () => {
+    renderApp(<PracticeSession />, {
+      routes: routes({
+        'GET /v1/practice/sessions/current': () => Response.json({ session: view({ asked: 6 }), item: typed(), preparing: false }),
+        'POST /v1/practice/items/item-6/answer': () => Response.json({ result: 'try_again', tries: 1 }),
+      }),
+    });
+    const input = await screen.findByRole('textbox', { name: 'Câu trả lời' });
+    await userEvent.type(input, 'cash{Enter}');
+    expect(await screen.findByText('Kiểm tra chính tả rồi gõ lại. Wordmet chưa hiện đáp án.')).toBeInTheDocument();
+    expect(document.activeElement).toBe(screen.getByRole('textbox', { name: 'Câu trả lời' }));
   });
 
   it('K/61: key 2 answers option 2 with an Idempotency-Key; the result marks the right and the chosen option', async () => {
@@ -560,20 +586,35 @@ describe('PracticeSession (K/60–K/67)', () => {
 describe('PracticeSession pronunciation (đợt cải thiện A, C1)', () => {
   afterEach(() => vi.unstubAllGlobals());
 
-  it('no speak button on the question; UK · US by the word after grading; 1 on a focused speak button does not review', async () => {
+  it('no speak button on the question; the speaker icon by the word (US voice) after grading; 1 on a focused speak button does not review', async () => {
     const synth = installSpeech([makeVoice('en-GB'), makeVoice('en-US')]);
     const view_ = renderApp(<PracticeSession />, { routes: routes() });
     await screen.findByText('triển khai');
-    expect(screen.queryByRole('button', { name: /Nghe giọng/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Nghe phát âm' })).not.toBeInTheDocument();
     await userEvent.keyboard('2');
     await screen.findByText('Chưa đúng');
-    const uk = screen.getByRole('button', { name: 'Nghe giọng Anh' });
-    expect(screen.getByRole('button', { name: 'Nghe giọng Mỹ' })).toBeInTheDocument();
+    const uk = screen.getByRole('button', { name: 'Nghe phát âm' });
     await userEvent.click(uk);
-    expect(synth.speak).toHaveBeenLastCalledWith(expect.objectContaining({ text: 'deploy', lang: 'en-GB' }));
+    expect(synth.speak).toHaveBeenLastCalledWith(expect.objectContaining({ text: 'deploy', lang: 'en-US' }));
     uk.focus();
     await userEvent.keyboard('1');
     expect(posts(view_.calls, '/v1/practice/items/item-4/review')).toHaveLength(0);
     expect(screen.getByText('Chưa đúng')).toBeInTheDocument();
+  });
+});
+
+describe('[Luyện thêm một phiên] (audit 26/10/2026 #2)', () => {
+  const view = (cloze_source: PracticeSessionView['cloze_source']): PracticeSessionView => ({
+    id: 's-1', source: 'group', group_id: 'g-1', group_filter: 'all', sort: 'queue', types: ['cloze'], prompt_style: 'meaning',
+    target_count: 10, status: 'finished', round: 1, asked: 10, words: 10, ai_planned: 0, cloze_source,
+  });
+
+  it('after an own-sentence session it sends cloze_source: own, so no AI credit is spent', () => {
+    expect(againBody(view('own'))).toMatchObject({ types: ['cloze'], cloze_source: 'own' });
+  });
+
+  it('after an AI or rule session it sends no cloze_source (the API default stays)', () => {
+    expect(againBody(view('ai'))).not.toHaveProperty('cloze_source');
+    expect(againBody(view(null))).not.toHaveProperty('cloze_source');
   });
 });

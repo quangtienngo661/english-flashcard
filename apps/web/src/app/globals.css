@@ -2,6 +2,8 @@
 @import '@wordmet/design-tokens/theme.css';
 /* Dark values apply only under <html data-theme='dark'>, which only the learner app sets (design §4.4). */
 @import '@wordmet/design-tokens/dark.css';
+/* `pastel-island`: a few cards keep the light palette in the dark theme (owner 27/10/2026). */
+@import '@wordmet/design-tokens/island.css';
 
 @theme {
   /* Type: rem; display/cta/h2 scale fluidly between 390px and 1440px (spec §6.1). */
@@ -72,6 +74,9 @@
   --animate-menu-in-up: menu-in-up var(--motion-overlay) var(--ease-enter) both;
   --animate-menu-out: fade-out var(--transition-duration-fast) var(--ease-exit) both;
   --animate-toast-in: toast-in var(--motion-toast) var(--ease-spring) both;
+  /* Theme button (owner 27/10/2026): the old icon flies up and out while the new one rises into place. */
+  --animate-theme-icon-in: theme-icon-in var(--transition-duration-base) var(--ease-enter) both;
+  --animate-theme-icon-out: theme-icon-out var(--transition-duration-base) var(--ease-exit) both;
 
   @keyframes fade-in {
     from {
@@ -93,6 +98,18 @@
     to {
       opacity: 0;
       transform: scale(0.98);
+    }
+  }
+  @keyframes theme-icon-in {
+    from {
+      transform: translateY(100%);
+      opacity: 0;
+    }
+  }
+  @keyframes theme-icon-out {
+    to {
+      transform: translateY(-100%);
+      opacity: 0;
     }
   }
   @keyframes sheet-in {

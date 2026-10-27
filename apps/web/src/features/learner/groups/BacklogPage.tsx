@@ -144,7 +144,7 @@ function BacklogBody({ groupId, name }: { groupId: string; name: string }) {
       <section className="flex flex-wrap items-center justify-between gap-4 rounded-card bg-accent-soft p-5 shadow-ledge-accent md:p-7">
         <div className="min-w-0">
           <h1 className="text-h2 font-extrabold text-ink">{t('title')}</h1>
-          {days !== undefined && <p className="text-ui text-muted">{t('line', { name, count: items.length, days })}</p>}
+          {days !== undefined && <p className="wrap-anywhere text-ui text-muted">{t('line', { name, count: items.length, days })}</p>}
         </div>
         {items.length > 0 && (
           <Button variant="sticker" size="lg" isPending={relearn.busy && selected.size === 0} onPress={() => selected.size === 0 && void run(relearn, 'relearned')} isDisabled={selected.size > 0}>
