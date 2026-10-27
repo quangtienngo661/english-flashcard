@@ -392,6 +392,92 @@
       }
     }
   },
+  "entitlements": {
+    "aiToday": "AI uses today: {used}/{cap}",
+    "aiTodayError": "Could not load today's AI uses.",
+    "filters": {
+      "learner": "Learner (email)",
+      "grantedBy": "Granted by (email)",
+      "emailPlaceholder": "Full email address",
+      "active": "Still in effect",
+      "activeAll": "All",
+      "activeYes": "Still in effect",
+      "activeNo": "No longer in effect",
+      "expiring": "Expiring within … days",
+      "expiringHint": "1 to 365 days",
+      "apply": "Filter"
+    },
+    "cols": {
+      "learner": "Learner",
+      "kind": "Type",
+      "limits": "Numbers",
+      "from": "From",
+      "to": "Until",
+      "grantedBy": "Granted by",
+      "reason": "Reason",
+      "status": "Status",
+      "actions": "Actions"
+    },
+    "kinds": { "plan": "Pro plan", "limits": "Custom numbers" },
+    "limitLines": {
+      "practice_sessions_per_day": "{n} practice sessions a day",
+      "ai_practice_per_cycle": "{n} AI question uses a month",
+      "ai_lookup_per_cycle": "{n} AI lookup uses a month"
+    },
+    "statuses": {
+      "active": "Active",
+      "scheduled": "Not started",
+      "revoked": "Revoked",
+      "expired": "Expired",
+      "replaced": "Replaced"
+    },
+    "actions": {
+      "editDates": "Edit dates",
+      "revoke": "Revoke",
+      "editDatesFor": "Edit dates of the grant for {email}",
+      "revokeFor": "Revoke the grant for {email}"
+    },
+    "revokedNote": "Revoked: {reason}",
+    "empty": "No plan or custom numbers granted to anyone yet.",
+    "emptyFiltered": "No grant matches the filters. Change the emails or the number of days and look again.",
+    "footer": "Newest first · 20 grants per page · dates in Asia/Ho_Chi_Minh time",
+    "revoke": {
+      "title": "Revoke the grant for {email}?",
+      "body": "The grant stops at once. To give it back, make a new grant.",
+      "summary": "{kind} · {status} from {date}",
+      "reason": "Reason for revoking (1–300 characters)",
+      "reasonInvalid": "Enter a reason of at most 300 characters.",
+      "keep": "Keep it",
+      "confirm": "Revoke",
+      "done": "Revoked the grant for {email}."
+    },
+    "editDates": {
+      "title": "Edit dates of the grant for {email}",
+      "summary": "{kind} · {status} from {date}",
+      "from": "From",
+      "fromLocked": "This grant has started, so its start date cannot change.",
+      "fromHint": "Can only be changed before the grant starts.",
+      "to": "Until",
+      "reason": "Reason (1–300 characters)",
+      "reasonInvalid": "Enter a reason of at most 300 characters.",
+      "hint": "Moving it later or earlier both work, as long as the new date is still in the future. AI uses are not counted again.",
+      "noChange": "No date has changed.",
+      "dateRequired": "Pick a date.",
+      "lastChange": "Last edit: {date} · {email} · {change} · {reason}",
+      "changeFrom": "from {old} → {new}",
+      "changeTo": "until {old} → {new}",
+      "keep": "Cancel",
+      "confirm": "Save new dates",
+      "done": "Saved the new dates for {email}."
+    },
+    "refusal": {
+      "self-grant": "You cannot grant to yourself.",
+      "target-is-admin": "An editor cannot grant to an admin account.",
+      "target-is-staff": "An editor cannot grant to a staff account.",
+      "ai-limits-admin-only": "Only an admin can set AI use numbers.",
+      "target-has-paid-subscription": "This person pays for Pro and renews automatically."
+    }
+  },
   "transactions": {
     "intro": "Purchases, renewals, billing changes, refunds, trials and plans granted by the Wordmet team, for every learner, newest first.",
     "filters": {

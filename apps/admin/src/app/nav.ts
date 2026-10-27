@@ -30,7 +30,7 @@ export const NAV: NavEntry[] = [
   { group: 'practice', path: '/report-reasons', labelKey: 'nav.reportReasons', needs: ['settings.manage'], available: true },
   { group: 'practice', path: '/refunds', labelKey: 'nav.refunds', needs: ['settings.manage'], available: true },
   { group: 'learners', path: '/users', labelKey: 'nav.users', needs: ['roles.manage'], available: true },
-  { group: 'learners', path: '/entitlements', labelKey: 'nav.entitlements', needs: ['entitlements.grant'], available: false, plannedStep: '5' },
+  { group: 'learners', path: '/entitlements', labelKey: 'nav.entitlements', needs: ['entitlements.grant'], available: true },
   { group: 'learners', path: '/transactions', labelKey: 'nav.transactions', needs: ['settings.manage'], available: true },
   { group: 'ai', path: '/ai/status', labelKey: 'nav.aiStatus', needs: ['settings.manage'], available: true },
   { group: 'ai', path: '/ai/models', labelKey: 'nav.aiModels', needs: ['settings.manage'], available: true },

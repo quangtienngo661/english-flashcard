@@ -392,6 +392,92 @@
       }
     }
   },
+  "entitlements": {
+    "aiToday": "Lượt AI hôm nay: {used}/{cap}",
+    "aiTodayError": "Chưa xem được lượt AI hôm nay.",
+    "filters": {
+      "learner": "Người học (email)",
+      "grantedBy": "Người cấp (email)",
+      "emailPlaceholder": "Email đầy đủ",
+      "active": "Còn hiệu lực",
+      "activeAll": "Tất cả",
+      "activeYes": "Còn hiệu lực",
+      "activeNo": "Đã hết hiệu lực",
+      "expiring": "Sắp hết hạn trong … ngày",
+      "expiringHint": "Từ 1 đến 365 ngày",
+      "apply": "Lọc"
+    },
+    "cols": {
+      "learner": "Người học",
+      "kind": "Loại",
+      "limits": "Con số",
+      "from": "Từ ngày",
+      "to": "Tới ngày",
+      "grantedBy": "Người cấp",
+      "reason": "Lý do",
+      "status": "Trạng thái",
+      "actions": "Thao tác"
+    },
+    "kinds": { "plan": "Gói Pro", "limits": "Con số riêng" },
+    "limitLines": {
+      "practice_sessions_per_day": "{n} phiên luyện mỗi ngày",
+      "ai_practice_per_cycle": "{n} lượt câu AI mỗi tháng",
+      "ai_lookup_per_cycle": "{n} lượt tra AI mỗi tháng"
+    },
+    "statuses": {
+      "active": "Đang hiệu lực",
+      "scheduled": "Chưa bắt đầu",
+      "revoked": "Đã thu hồi",
+      "expired": "Đã hết hạn",
+      "replaced": "Bị thay thế"
+    },
+    "actions": {
+      "editDates": "Sửa ngày",
+      "revoke": "Thu hồi",
+      "editDatesFor": "Sửa ngày lần cấp của {email}",
+      "revokeFor": "Thu hồi lần cấp của {email}"
+    },
+    "revokedNote": "Thu hồi: {reason}",
+    "empty": "Chưa cấp gói hay con số riêng cho ai.",
+    "emptyFiltered": "Không có lần cấp nào khớp bộ lọc. Đổi email hoặc số ngày rồi xem lại.",
+    "footer": "Mới nhất trước · 20 lần cấp mỗi trang · ngày theo múi giờ Asia/Ho_Chi_Minh",
+    "revoke": {
+      "title": "Thu hồi lần cấp của {email}?",
+      "body": "Lần cấp dừng có hiệu lực ngay. Muốn cấp lại thì cấp một lần mới.",
+      "summary": "{kind} · {status} từ {date}",
+      "reason": "Lý do thu hồi (1–300 ký tự)",
+      "reasonInvalid": "Hãy nhập lý do, tối đa 300 ký tự.",
+      "keep": "Giữ nguyên",
+      "confirm": "Thu hồi",
+      "done": "Đã thu hồi lần cấp của {email}."
+    },
+    "editDates": {
+      "title": "Sửa ngày lần cấp của {email}",
+      "summary": "{kind} · {status} từ {date}",
+      "from": "Từ ngày",
+      "fromLocked": "Lần cấp đã bắt đầu nên không đổi được ngày bắt đầu.",
+      "fromHint": "Chỉ sửa được khi lần cấp chưa bắt đầu.",
+      "to": "Tới ngày",
+      "reason": "Lý do (1–300 ký tự)",
+      "reasonInvalid": "Hãy nhập lý do, tối đa 300 ký tự.",
+      "hint": "Dời ra hay rút ngắn đều được, miễn ngày mới vẫn ở tương lai. Lượt AI không đếm lại.",
+      "noChange": "Chưa đổi ngày nào.",
+      "dateRequired": "Hãy chọn ngày.",
+      "lastChange": "Lần sửa trước: {date} · {email} · {change} · {reason}",
+      "changeFrom": "từ {old} → {new}",
+      "changeTo": "tới {old} → {new}",
+      "keep": "Hủy",
+      "confirm": "Lưu ngày mới",
+      "done": "Đã lưu ngày mới cho {email}."
+    },
+    "refusal": {
+      "self-grant": "Bạn không cấp được cho chính mình.",
+      "target-is-admin": "Editor không cấp được cho tài khoản admin.",
+      "target-is-staff": "Editor không cấp được cho tài khoản staff.",
+      "ai-limits-admin-only": "Con số lượt AI chỉ admin đặt được.",
+      "target-has-paid-subscription": "Người này đang trả tiền cho gói Pro và đang tự gia hạn."
+    }
+  },
   "transactions": {
     "intro": "Mua, gia hạn, đổi kỳ, hoàn tiền, dùng thử và lần đội Wordmet cấp gói của mọi người học, mới nhất trước.",
     "filters": {
