@@ -68,7 +68,7 @@ export function ReportsPage() {
   // The filters stay in the URL while a report is open, so closing the panel returns to the same list.
   const href = (r: Report) => `/reports/${r.id}${search}`;
 
-  const columns: Column<Report>[] = [
+  const allColumns: Column<Report>[] = [
     {
       key: 'word', header: t('reports.cols.word'), className: 'wrap-anywhere font-semibold',
       cell: (r) => (
@@ -99,6 +99,9 @@ export function ReportsPage() {
     },
     { key: 'resolvedBy', header: t('reports.cols.resolvedBy'), card: 'field', className: 'wrap-anywhere', cell: (r) => r.resolved_by_user ? userLabel(r.resolved_by_user, t('common.systemUser')) : (r.resolved_by_role ?? '—') },
   ];
+
+  // Beside the open report the table only has room for the word, the reason and the status; the rest is in the panel.
+  const columns = panelId === undefined ? allColumns : allColumns.filter((c) => ['word', 'reason', 'status'].includes(c.key));
 
   const reasonItems = [
     { id: 'all', label: t('reports.filters.allReasons') },

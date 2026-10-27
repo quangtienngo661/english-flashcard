@@ -63,6 +63,16 @@ describe('reports list', { timeout: 20_000 }, () => {
     expect(screen.getAllByText('Nghĩa sai').length).toBeGreaterThan(0);
   });
 
+  it('§6.8: closed, the table has all eight columns; with a report open only Từ, Lý do and Trạng thái stay', async () => {
+    const headers = () => screen.queryAllByRole('columnheader').map((h) => h.textContent);
+    const all = [t.cols.word, t.cols.type, t.cols.reason, t.cols.source, t.cols.note, t.cols.sentAt, t.cols.status, t.cols.resolvedBy];
+    const closed = renderApp('/reports', { [LIST]: () => json(page([report()])), [REASONS]: () => json(reasons) });
+    await waitFor(() => expect(headers()).toEqual(all));
+    closed.unmount();
+    open({ [ONE]: () => json(report()) });
+    await waitFor(() => expect(headers()).toEqual([t.cols.word, t.cols.reason, t.cols.status]));
+  });
+
   it('§6.8: the filters go into the request (status, reason, source)', async () => {
     const url = '/v1/admin/practice/reports?status=confirmed&reason=other&source=ai&page_size=20';
     const r = renderApp('/reports?status=confirmed&reason=other&source=ai', {

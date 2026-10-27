@@ -75,4 +75,4 @@ Dữ liệu cần có (bộ test `m3.real.spec.ts` dựng bằng chính API, kh�
    "Báo lỗi" và "Dạng chia chưa biết".
 6. **Phone 390.** Mở bốn màn ở chiều rộng 390 (hoặc xem ảnh trong `docs/deliveries/giao-dien-admin/m3/`) → không cuộn ngang, bảng thành thẻ.
 
-Lỗi bố cục đã biết (chưa sửa): ở 1440 khi panel chi tiết báo lỗi đang mở, bảng bên trái bị ép hẹp và vài cột xuống dòng từng chữ cái.
+Khi một báo lỗi đang mở ở bên phải, bảng bên trái chỉ còn ba cột Từ, Lý do, Trạng thái; đóng panel thì đủ 8 cột.

@@ -181,8 +181,9 @@ A/74c `389:3417`, A/75 `393:2300`, A/75b `393:2876`, A/76 `393:3535`, A/77 `393:
 (*) Trên DB dùng chung danh sách thật không bao giờ trống, nên riêng khung này câu trả lời của danh sách được thay bằng danh sách rỗng khi chụp.
 
 Khác biệt nhìn thấy ở ảnh thật (chưa mở Figma để so từng điểm):
-- A/73 / A/74 ở 1440 khi panel chi tiết đang mở: bảng bị ép hẹp, cột "Từ", "Lý do", "Người xử lý" xuống dòng từng chữ cái. Đây là lỗi bố cục thật của màn Báo lỗi
-  (panel chiếm khoảng 415px bên phải), chưa sửa; nên cho bảng cuộn ngang trong tờ trắng hoặc ẩn bớt cột khi panel mở.
+- Đã sửa sau khi chụp lần đầu: ở 1440 khi panel báo lỗi đang mở, bảng 8 cột bị ép và cột Từ / Lý do / Người xử lý xuống dòng từng chữ cái. Giờ khi có panel mở bảng chỉ giữ
+  ba cột Từ, Lý do, Trạng thái (phần còn lại đã nằm trong panel); không mở panel thì đủ 8 cột. Ảnh A/74 và A/74c desktop chụp lại sau sửa; ở 1280 panel là tờ phủ lên
+  và không ô nào xuống dòng từng chữ (đã kiểm bằng script). Thẻ ở 390 không đổi. Commit `fix(admin): show fewer report columns beside the open report`.
 - Ô ngày của Trả lượt hiện `mm/dd/yyyy` theo ngôn ngữ của trình duyệt chụp (Chrome en-US), không theo ngôn ngữ của app.
 - A/75b: ảnh phone là cả trang, hộp thoại nằm trên đầu trang còn bảng phía sau vẫn hiện (là cách chụp fullPage, không phải lỗi hộp thoại).
 - Khung A/74c có thêm lỗi 409 (báo lỗi đã xử lý); ảnh thật chụp báo lỗi đã xử lý thành công, không có lỗi 409 (đã có trong test mock e2e).
@@ -195,7 +196,9 @@ Khác biệt nhìn thấy ở ảnh thật (chưa mở Figma để so từng đi
 - `pnpm --filter admin test:e2e` (cổng 5391, mock): **165 passed, 55 skipped** (bốn màn thêm vào a11y và kiểm không cuộn ngang ở 390).
 - Unit, lint, typecheck: số ở báo lỗi của Task 30 (`.superpowers/sdd/2026-10-27-giao-dien-admin/task-30-report.md`).
 - Chưa kiểm: CI trên PR; sau [Hoàn tác] dòng có quay lại danh sách thật hay không (test thật chỉ kiểm toast); lần chạy đầy đủ từ đầu với phiên mới (khi lặp đã dùng `E2E_REUSE_STATE`; lần đầu 10/10 cũ + M3 đã chạy trước khi sửa lỗi session id của seed).
-- Lưu ý chạy tại máy: CLI `admin:grant` cần `.env` của một API worktree có `.env` (`E2E_API_DIR`) cùng `DATABASE_URL` của stack đang chạy.
+- Cách chạy `grantAdmin` tại máy: worktree này không có `.env`, nên đặt `E2E_API_DIR` = `apps/api` của worktree `giao-dien-admin` (có `dist/cli/admin-grant.js` đã build và `.env`; CLI tự nạp
+  `.env` đó, người chạy không đọc nó) và ghi đè `DATABASE_URL` (trỏ DB `english_learning_admin_m3` của stack đang chạy), `JOB_QUEUE_PREFIX=wordmet-admin-m3`, `AI_FAKE_ENABLED=true` bằng biến môi trường
+  (`process.loadEnvFile` không đè biến đã có). Nếu không đè `DATABASE_URL`, CLI sẽ cấp quyền admin vào DB của `.env` kia thay vì DB của stack.
 
 ## Câu chữ tự viết (không có trong copy doc §8.4–8.7; chủ dự án duyệt lại khi cần)
 
