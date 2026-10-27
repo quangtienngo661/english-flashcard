@@ -34,7 +34,7 @@ describe('AiPromptsPage (A/82)', () => {
     expect(screen.getByText(GUARD)).toBeInTheDocument();
     expect(screen.queryByRole('textbox', { name: t.guard })).not.toBeInTheDocument();
     expect(screen.getByText(t.revision.replace('{revision}', '3'))).toBeInTheDocument();
-    expect(screen.getByText(t.updated.replace('{at}', '15/10/2026 9:12').replace('{by}', vi.common.system))).toBeInTheDocument();
+    expect(screen.getByText(t.updated.replace('{at}', '15/10/2026 09:12').replace('{by}', vi.common.system))).toBeInTheDocument();
     const first = screen.getByRole('group', { name: t.example.replace('{n}', '1') });
     expect(within(first).getByLabelText('word')).toHaveValue('go');
     expect(within(first).getByLabelText('context_label')).toHaveValue('');

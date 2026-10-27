@@ -18,7 +18,7 @@ describe('Prompt history (A/82)', () => {
     const items = within(await screen.findByRole('list', { name: t.title })).getAllByRole('listitem');
     expect(items).toHaveLength(3);
     expect(items[0]).toHaveTextContent(t.revision.replace('{revision}', '3'));
-    expect(items[0]).toHaveTextContent('15/10/2026 9:12');
+    expect(items[0]).toHaveTextContent('15/10/2026 09:12');
     expect(items[0]).toHaveTextContent('lan@wordmet.com');
     expect(items[2]).toHaveTextContent(vi.common.system);
     expect(screen.getByText(t.note)).toBeInTheDocument();

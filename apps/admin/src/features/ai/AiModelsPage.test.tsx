@@ -51,7 +51,7 @@ describe('AiModelsPage list (A/80)', () => {
     expect(rows[0]).toHaveTextContent('Tra từ bằng AI');
     expect(rows[0]).toHaveTextContent('Ngừng ngày 30/11/2026');
     expect(rows[0]).toHaveTextContent(/0,0065\s*US\$\s*·\s*169\s*₫/);
-    expect(rows[0]).toHaveTextContent('15/10/2026 9:12');
+    expect(rows[0]).toHaveTextContent('15/10/2026 09:12');
     expect(rows[1]).toHaveTextContent('Anthropic · claude-bare');
     expect(within(rows[1]).getByText(t.noPrice)).toBeInTheDocument();
     expect(within(rows[1]).getAllByText('—').length).toBeGreaterThanOrEqual(2);

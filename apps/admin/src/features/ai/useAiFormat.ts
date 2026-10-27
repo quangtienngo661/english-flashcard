@@ -6,7 +6,7 @@ export function useAiFormat() {
   const locale = useLocale();
   const tag = locale === 'en' ? 'en-US' : 'vi-VN';
   const date = new Intl.DateTimeFormat(tag, { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: ADMIN_ZONE });
-  const time = new Intl.DateTimeFormat(tag, { hour: 'numeric', minute: '2-digit', timeZone: ADMIN_ZONE, hour12: locale === 'en' });
+  const time = new Intl.DateTimeFormat(tag, { hour: '2-digit', minute: '2-digit', timeZone: ADMIN_ZONE, hour12: locale === 'en' });
   const number = new Intl.NumberFormat(tag);
   const usd = new Intl.NumberFormat(tag, { style: 'currency', currency: 'USD', minimumFractionDigits: 2, maximumFractionDigits: 4 });
   const vnd = new Intl.NumberFormat(tag, { style: 'currency', currency: 'VND', maximumFractionDigits: 0 });
