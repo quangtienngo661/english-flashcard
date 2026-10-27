@@ -1,5 +1,5 @@
 import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useState, type FormEvent } from 'react';
+import { useState, type FormEvent, type ReactNode } from 'react';
 import { useMatch, useNavigate } from 'react-router';
 import { useFormatter, useTranslations } from 'use-intl';
 import { useUrlFilters } from '../../api/use-url-filters';
@@ -15,6 +15,7 @@ import { Select } from '../../ui/Select';
 import { showToast } from '../../ui/Toast';
 import { TextField } from '../../ui/TextField';
 import { getAiUsage } from '../settings/settings-api';
+import { BreakableEmail } from './BreakableEmail';
 import { EditDatesDialog } from './EditDatesDialog';
 import { GrantDialog } from './GrantDialog';
 import {
@@ -92,7 +93,7 @@ export function GrantsPage() {
     void queryClient.invalidateQueries({ queryKey: ['grants'] });
   }
 
-  const two = (top: string, bottom: string) => (
+  const two = (top: ReactNode, bottom: string) => (
     <span className="flex flex-col">
       <span>{top}</span>
       <span className="text-xs text-muted">{bottom}</span>
@@ -106,7 +107,7 @@ export function GrantsPage() {
         ));
 
   const columns: Column<AdminGrant>[] = [
-    { key: 'learner', header: t('entitlements.cols.learner'), className: 'w-1/6 wrap-anywhere font-semibold', cell: (g) => userLabel(g.user, t) },
+    { key: 'learner', header: t('entitlements.cols.learner'), className: 'w-1/6 wrap-anywhere font-semibold', cell: (g) => <BreakableEmail email={userLabel(g.user, t)} /> },
     {
       key: 'kind', header: t('entitlements.cols.kind'), className: 'whitespace-nowrap', card: 'field',
       cell: (g) => <Badge tone="primary">{t(`entitlements.kinds.${g.kind}`)}</Badge>,
@@ -119,7 +120,7 @@ export function GrantsPage() {
     { key: 'to', header: t('entitlements.cols.to'), className: 'whitespace-nowrap', card: 'field', cell: (g) => format.lastDate(g.ends_at) },
     {
       key: 'grantedBy', header: t('entitlements.cols.grantedBy'), className: 'wrap-anywhere', card: 'field',
-      cell: (g) => two(userLabel(g.granted_by_user, t), g.granted_by_role === 'admin' || g.granted_by_role === 'editor' ? t(`users.roles.${g.granted_by_role}`) : g.granted_by_role),
+      cell: (g) => two(<BreakableEmail email={userLabel(g.granted_by_user, t)} />, g.granted_by_role === 'admin' || g.granted_by_role === 'editor' ? t(`users.roles.${g.granted_by_role}`) : g.granted_by_role),
     },
     {
       key: 'reason', header: t('entitlements.cols.reason'), className: 'wrap-anywhere', card: 'field',
