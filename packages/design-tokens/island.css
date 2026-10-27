@@ -20,9 +20,17 @@
   /* A real top border, as in the option B mockup: it follows the card corners and stays 5px thick (owner 27/10/2026). */
   border-top: 0.3125rem solid var(--tone);
 }
-/* Deck cards: the stripe sits on the band inside the card, so the card drops its own 1px top border there. */
-[data-theme='dark'] :has(> .pastel-island:first-child) {
-  border-top-width: 0;
+/* Deck cards: the band is inside the card, whose corners would clip a stripe on the band. The stripe goes on the card itself
+   (its top border, following its own corners) and the band gets none. */
+[data-theme='dark'] li:has(> .pastel-island.bg-primary-soft:first-child) { --tone: #8da2ff; }
+[data-theme='dark'] li:has(> .pastel-island.bg-accent-soft:first-child) { --tone: #ffd84a; }
+[data-theme='dark'] li:has(> .pastel-island.bg-success-soft:first-child) { --tone: #5fd39a; }
+[data-theme='dark'] li:has(> .pastel-island.bg-danger-soft:first-child) { --tone: #ff8b7c; }
+[data-theme='dark'] li:has(> .pastel-island:first-child) {
+  border-top: 0.3125rem solid var(--tone);
+}
+[data-theme='dark'] li:has(> .pastel-island:first-child) > .pastel-island:first-child {
+  border-top: 0;
 }
 [data-theme='dark'] .pastel-island h3 > svg:first-child {
   color: var(--tone);
