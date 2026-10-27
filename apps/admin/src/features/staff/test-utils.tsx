@@ -1,9 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { render } from '@testing-library/react';
 import { IntlProvider } from 'use-intl';
-import { MemoryRouter } from 'react-router';
 import vi from '../../../messages/vi.json';
-import { AppRoutes } from '../../app/routes';
+import { renderRoutes } from '../../app/test-router';
 import { SessionProvider } from '../../auth/session-context';
 import { SessionStore } from '../../auth/session-store';
 import { BASE, makeFetch, makeMe, tokenResponse, type Route } from '../../auth/test-support';
@@ -34,17 +32,15 @@ export function renderApp(path: string, routes: Record<string, Route>, me = ME_A
   });
   const store = new SessionStore({ baseUrl: BASE, fetch: f.fetch, channel: null });
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  const utils = render(
+  const utils = renderRoutes(path, (routerNode) => (
     <IntlProvider locale="vi" messages={vi} timeZone="Asia/Ho_Chi_Minh">
       <QueryClientProvider client={client}>
         <SessionProvider store={store}>
-          <MemoryRouter initialEntries={[path]}>
-            <AppRoutes />
-          </MemoryRouter>
+          {routerNode}
           <ToastRegion />
         </SessionProvider>
       </QueryClientProvider>
-    </IntlProvider>,
-  );
+    </IntlProvider>
+  ));
   return { store, client, ...f, ...utils };
 }

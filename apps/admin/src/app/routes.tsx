@@ -1,4 +1,4 @@
-import { Navigate, Route, Routes } from 'react-router';
+import { createRoutesFromElements, Navigate, Route, type RouteObject } from 'react-router';
 import { useSession } from '../auth/session-context';
 import { ChangePasswordPage } from '../features/account/ChangePasswordPage';
 import { ForgotPasswordPage } from '../features/account/ForgotPasswordPage';
@@ -21,36 +21,35 @@ function Home() {
   return <Navigate to={homePath(state.me.permissions)} replace />;
 }
 
-export function AppRoutes() {
-  return (
-    <Routes>
-      <Route path="login" element={<LoginPage />} />
-      <Route path="forgot-password" element={<ForgotPasswordPage />} />
-      <Route path="change-password" element={<ChangePasswordPage />} />
-      <Route element={<RequireSession />}>
-        <Route element={<Shell />}>
-          <Route index element={<Home />} />
-          {/* A list page owns its children (UB8, UB9): `new` opens the form dialog, `:id` the detail panel. */}
-          <Route path="uploads" element={<UploadsPage />}>
-            <Route path="new" element={null} />
-            <Route path=":id" element={null} />
-          </Route>
-          <Route path="publish-jobs" element={<PublishJobsPage />}>
-            <Route path="new" element={null} />
-            <Route path=":id" element={null} />
-          </Route>
-          <Route path="export" element={<ExportPage />} />
-          <Route path="sources" element={<SourcesPage />}>
-            <Route path="new" element={null} />
-          </Route>
-          <Route path="transactions" element={<TransactionsPage />} />
-          <Route path="staff" element={<StaffPage />} />
-          {NAV.filter((entry) => !entry.available).map((entry) => (
-            <Route key={entry.path} path={entry.path.slice(1)} element={<ComingSoonPage item={entry} />} />
-          ))}
+/** Route objects, not `<Routes>`: a data router is what lets the shell block navigation (`useBlocker`). */
+export const appRoutes: RouteObject[] = createRoutesFromElements(
+  <>
+    <Route path="login" element={<LoginPage />} />
+    <Route path="forgot-password" element={<ForgotPasswordPage />} />
+    <Route path="change-password" element={<ChangePasswordPage />} />
+    <Route element={<RequireSession />}>
+      <Route element={<Shell />}>
+        <Route index element={<Home />} />
+        {/* A list page owns its children (UB8, UB9): `new` opens the form dialog, `:id` the detail panel. */}
+        <Route path="uploads" element={<UploadsPage />}>
+          <Route path="new" element={null} />
+          <Route path=":id" element={null} />
         </Route>
+        <Route path="publish-jobs" element={<PublishJobsPage />}>
+          <Route path="new" element={null} />
+          <Route path=":id" element={null} />
+        </Route>
+        <Route path="export" element={<ExportPage />} />
+        <Route path="sources" element={<SourcesPage />}>
+          <Route path="new" element={null} />
+        </Route>
+        <Route path="transactions" element={<TransactionsPage />} />
+        <Route path="staff" element={<StaffPage />} />
+        {NAV.filter((entry) => !entry.available).map((entry) => (
+          <Route key={entry.path} path={entry.path.slice(1)} element={<ComingSoonPage item={entry} />} />
+        ))}
       </Route>
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
-  );
-}
+    </Route>
+    <Route path="*" element={<Navigate to="/" replace />} />
+  </>,
+);
