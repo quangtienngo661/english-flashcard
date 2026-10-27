@@ -74,7 +74,9 @@
     "confirm": "Xác nhận",
     "loadMore": "Tải thêm",
     "loading": "Đang tải…",
-    "close": "Đóng"
+    "close": "Đóng",
+    "system": "Hệ thống",
+    "unknownUser": "Không rõ người dùng"
   },
   "shell": {
     "brand": "Wordmet Admin",

@@ -74,7 +74,9 @@
     "confirm": "Confirm",
     "loadMore": "Load more",
     "loading": "Loading…",
-    "close": "Close"
+    "close": "Close",
+    "system": "System",
+    "unknownUser": "Unknown user"
   },
   "shell": {
     "brand": "Wordmet Admin",
