@@ -357,7 +357,7 @@
         "pick": "Ví dụ từ Bộ ví dụ (chọn tối đa 5)",
         "pickEmpty": "Bộ ví dụ của thao tác này chưa có ví dụ nào.",
         "quotaFailed": "Không đọc được số lần chạy thử còn lại.",
-        "examplesFailed": "Không đọc được bộ ví dụ. [Chạy thử] sẽ dùng các ví dụ trong prompt.",
+        "examplesFailed": "Không đọc được bộ ví dụ. [Chạy thử] vẫn chạy với 5 ví dụ đầu của Bộ ví dụ, hoặc ví dụ trong prompt khi bộ trống.",
         "withSelected": "Chạy với: {count} ví dụ đã chọn",
         "withFirst": "Chạy với: {count} ví dụ đầu của Bộ ví dụ",
         "withPrompt": "Chạy với: ví dụ trong prompt",
