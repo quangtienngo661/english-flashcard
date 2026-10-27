@@ -33,6 +33,8 @@ export type AdminUserRow = {
 };
 export type AdminUserDetail = AdminUserRow & {
   birth_date: string | null; terms_accepted_at: string | null; terms_version: string | null; locked_at: string | null;
+  /** AD18: shown and edited on the admin's user detail. */
+  timezone: string;
   locked_by: { id: string; email: string | null } | null; lock_reason: string | null;
 };
 /** Microsecond UTC text of created_at: the cursor must not lose the digits a JS Date cannot hold. */
@@ -43,7 +45,7 @@ type AdminListRow = {
 };
 const adminDetailSelect = {
   id: true, email: true, givenName: true, familyName: true, emailVerifiedAt: true, staffRole: true, status: true,
-  createdAt: true, lastSeenAt: true, birthDate: true, termsAcceptedAt: true, termsVersion: true, lockedAt: true,
+  createdAt: true, lastSeenAt: true, birthDate: true, termsAcceptedAt: true, termsVersion: true, lockedAt: true, timezone: true,
   lockedBy: true, lockReason: true,
 } satisfies Prisma.UserSelect;
 function toAdminRow(row: Omit<AdminListRow, 'cursor_at'>): AdminUserRow {
@@ -259,7 +261,7 @@ export class StaffService {
         email_verified_at: row.emailVerifiedAt, staff_role: row.staffRole, status: row.status,
         created_at: row.createdAt, last_seen_at: row.lastSeenAt }),
       birth_date: row.birthDate === null ? null : dateString(row.birthDate),
-      terms_accepted_at: row.termsAcceptedAt?.toISOString() ?? null, terms_version: row.termsVersion,
+      terms_accepted_at: row.termsAcceptedAt?.toISOString() ?? null, terms_version: row.termsVersion, timezone: row.timezone,
       locked_at: row.lockedAt?.toISOString() ?? null,
       locked_by: row.lockedBy === null ? null : { id: row.lockedBy, email: locker?.email ?? null },
       lock_reason: row.lockReason,

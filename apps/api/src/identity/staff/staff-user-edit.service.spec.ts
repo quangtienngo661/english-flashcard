@@ -75,7 +75,7 @@ describe('StaffService learner create / updateUser / resetPassword (unit, isolat
       const detail = await staff.updateUser(actorId, targetId, { given_name: 'Mai', family_name: 'Tran', timezone: 'asia/ho_chi_minh' }, res);
       expect(tx.user.update).toHaveBeenCalledWith(expect.objectContaining({ where: { id: targetId },
         data: { givenName: 'Mai', familyName: 'Tran', timezone: 'Asia/Saigon' } }));
-      expect(detail).toMatchObject({ given_name: 'Mai', family_name: 'Tran' });
+      expect(detail).toMatchObject({ given_name: 'Mai', family_name: 'Tran', timezone: 'Asia/Saigon' });
       expect(await mailsSent()).toEqual([]);
     });
     it('birth date: under 13 in the learner zone → 400 age-below-minimum; a future date → 400 validation-failed; nothing written', async () => {
