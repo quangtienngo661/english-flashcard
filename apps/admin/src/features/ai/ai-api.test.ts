@@ -1,8 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { ApiClient } from '../../api/client';
 import {
-  AI_OPERATION_ORDER, createExample, createModel, deleteExample, deleteModel, effortChoicesFor, getPrompt, getRun, getStatus, getTestQuota,
-  isRunDone, listExamples, listModels, listOperations, listRevisions, listRuns, refreshModel, runTest, saveOperation, savePrompt,
+  AI_OPERATION_ORDER, createExample, createModel, deleteExample, deleteModel, effortChoicesFor, getCosts, getPrompt, getRun, getStatus, getTestQuota,
+  isRunDone, listCalls, listExamples, listModels, listOperations, listRevisions, listRuns, refreshModel, runTest, saveOperation, savePrompt,
   sortByOperationOrder, startRun, updateExample, updateModel, type AiModel,
 } from './ai-api';
 
@@ -104,5 +104,17 @@ describe('effortChoicesFor', () => {
   it('is empty without a model or with an unknown one', () => {
     expect(effortChoicesFor({ model: null }, models)).toEqual([]);
     expect(effortChoicesFor({ model: { id: 'zz', provider: 'openai', model_id: 'x' } }, models)).toEqual([]);
+  });
+});
+
+describe('ai reports api (A/85, A/86)', () => {
+  it('reads costs with from, to and group_by, and the calls of one operation id (encoded)', async () => {
+    const { api, mock } = fakeApi();
+    await getCosts(api, '2026-10-01', '2026-10-27', 'operation');
+    await listCalls(api, 'a b/1');
+    expect(mock.get.mock.calls.map((c) => c[0])).toEqual([
+      '/v1/admin/ai/costs?from=2026-10-01&to=2026-10-27&group_by=operation',
+      '/v1/admin/ai/calls?operation_id=a+b%2F1',
+    ]);
   });
 });

@@ -185,6 +185,42 @@ export type StartRunBody = { operation: AiOperation; prompt: 'current' | { instr
 /** A run is over once it is `finished` or `failed`; the job rule of `usePollingStatus` does not know `finished`. */
 export const isRunDone = (status: string): boolean => status === 'finished' || status === 'failed';
 
+export const COST_GROUPS = ['day', 'operation', 'model', 'purpose', 'outcome'] as const;
+export type CostGroup = (typeof COST_GROUPS)[number];
+/** One group of `GET …/costs` (or its `total`); `cost_usd` is a string with 8 decimals, `cost_vnd` the current rate times it. */
+export type CostTotals = {
+  calls: number; input_tokens: number; cached_input_tokens: number; output_tokens: number; reasoning_tokens: number;
+  cost_usd: string; cost_vnd: number; unknown_cost_calls: number;
+};
+/** `key` is a `YYYY-MM-DD` Vietnam day, an operation, `provider/model`, a purpose or an outcome, by `group_by`. */
+export type CostsReply = { items: Array<CostTotals & { key: string }>; total: CostTotals };
+
+/** One provider call (`GET …/calls`); `content` is `null` once it expired or when content is not kept (the two look the same). */
+export type AiCall = {
+  id: string;
+  attempt: number;
+  purpose: AiPurpose;
+  operation: AiOperation;
+  provider: AiProvider;
+  model: string;
+  effort: string | null;
+  thinking: string | null;
+  max_output_tokens: number | null;
+  prompt_revision: number | null;
+  outcome: string;
+  http_status: number | null;
+  provider_error_code: string | null;
+  latency_ms: number;
+  input_tokens: number;
+  cached_input_tokens: number;
+  output_tokens: number;
+  reasoning_tokens: number;
+  cost_usd: string | null;
+  cost_known: boolean;
+  created_at: string;
+  content: { request: unknown; response: unknown; expires_at: string } | null;
+};
+
 export const aiKeys = {
   all: ['ai'] as const,
   status: () => ['ai', 'status'] as const,
@@ -196,6 +232,8 @@ export const aiKeys = {
   examples: (op: AiOperation) => ['ai', 'eval-examples', op] as const,
   runs: (op: AiOperation) => ['ai', 'eval-runs', op] as const,
   run: (id: string) => ['ai', 'eval-run', id] as const,
+  costs: (from: string, to: string, groupBy: CostGroup) => ['ai', 'costs', from, to, groupBy] as const,
+  calls: (operationId: string) => ['ai', 'calls', operationId] as const,
 };
 
 const base = '/v1/admin/ai';
@@ -239,6 +277,13 @@ export function listRuns(api: ApiClient, operation: AiOperation, pageToken?: str
   return api.get<{ items: EvalRun[]; next_page_token: string | null }>(`${base}/eval/runs?${query.toString()}`);
 }
 export const getRun = (api: ApiClient, id: string) => api.get<EvalRunDetail>(`${base}/eval/runs/${id}`);
+
+/** `from` and `to` are `YYYY-MM-DD` Vietnam days, both inclusive; the API refuses `from > to` and more than 366 days with a 400. */
+export const getCosts = (api: ApiClient, from: string, to: string, groupBy: CostGroup) =>
+  api.get<CostsReply>(`${base}/costs?${new URLSearchParams({ from, to, group_by: groupBy }).toString()}`);
+/** Oldest first; an unknown id is a 200 with no items. */
+export const listCalls = (api: ApiClient, operationId: string) =>
+  api.get<{ items: AiCall[] }>(`${base}/calls?${new URLSearchParams({ operation_id: operationId }).toString()}`);
 
 /** The API lists operations a→z; the screens show them in the copy deck's order. */
 export function sortByOperationOrder<T extends { operation: AiOperation }>(rows: T[]): T[] {

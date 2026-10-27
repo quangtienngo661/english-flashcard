@@ -73,6 +73,16 @@ const mocks: Record<string, MockHandler> = {
     id: 'e1', operation: 'generate_cloze', input: { word: 'bank', part_of_speech: 'noun', level: 'A2', meaning_vi: 'bờ sông', context_label: null }, note: 'river',
     created_by: 'u9', created_by_user: { id: 'u9', email: 'lan@wordmet.com', system: false }, created_at: at, updated_at: at,
   }] } }),
+  'GET /v1/admin/ai/costs': () => ({ json: {
+    items: [{ key: '2026-10-15', calls: 10, input_tokens: 1200, cached_input_tokens: 300, output_tokens: 800, reasoning_tokens: 50, cost_usd: '0.01230000', cost_vnd: 321, unknown_cost_calls: 2 }],
+    total: { calls: 10, input_tokens: 1200, cached_input_tokens: 300, output_tokens: 800, reasoning_tokens: 50, cost_usd: '0.01230000', cost_vnd: 321, unknown_cost_calls: 2 },
+  } }),
+  'GET /v1/admin/ai/calls': () => ({ json: { items: [{
+    id: 'c1', attempt: 1, purpose: 'learner', operation: 'generate_cloze', provider: 'openai', model: 'gpt-x', effort: null, thinking: null, max_output_tokens: null,
+    prompt_revision: 3, outcome: 'timeout', http_status: null, provider_error_code: null, latency_ms: 10000, input_tokens: 120, cached_input_tokens: 20,
+    output_tokens: 0, reasoning_tokens: 0, cost_usd: '0.00010000', cost_known: true, created_at: at,
+    content: { request: { messages: ['hi'] }, response: '{}', expires_at: '2026-10-15T10:00:00.000Z' },
+  }] } }),
   'GET /v1/admin/ai/eval/runs': () => ({ json: { items: [evalRun], next_page_token: null } }),
   'GET /v1/admin/ai/eval/runs/r1': () => ({ json: { ...evalRun, draft: null, heartbeat_at: null, items: [] } }),
   ...settingsMocks,
@@ -89,7 +99,7 @@ const evalRun = {
   status: 'finished', total: 1, done: 1, valid_count: 1, avg_latency_ms: 700, cost_usd: '0.01000000', cost_unknown_count: 0, error: null, started_by: 'u9',
   started_by_user: { id: 'u9', email: 'lan@wordmet.com', system: false }, created_at: at, started_at: at, finished_at: at,
 };
-const pages = ['/uploads', '/uploads/b1', '/uploads/new', '/publish-jobs', `/publish-jobs/${JOB}`, '/sources', '/sources/new', '/export', '/ai/costs', '/transactions', '/ai/status', '/ai/models', '/ai/models/new', '/ai/models/m1', '/ai/operations', '/ai/prompts', '/ai/eval', '/ai/eval/new', '/ai/eval/runs/r1', '/settings', '/settings?tab=entitlements', '/words', '/senses', `/senses/${SENSE_ID}`, '/topics'];
+const pages = ['/uploads', '/uploads/b1', '/uploads/new', '/publish-jobs', `/publish-jobs/${JOB}`, '/sources', '/sources/new', '/export', '/ai/costs', '/ai/costs?group_by=operation', '/ai/calls', '/ai/calls?operation_id=op-1', '/transactions', '/ai/status', '/ai/models', '/ai/models/new', '/ai/models/m1', '/ai/operations', '/ai/prompts', '/ai/eval', '/ai/eval/new', '/ai/eval/runs/r1', '/settings', '/settings?tab=entitlements', '/words', '/senses', `/senses/${SENSE_ID}`, '/topics'];
 
 for (const [lang, copy] of [['vi', vi], ['en', en]] as const) {
   test.describe(`axe (${lang})`, () => {
@@ -140,7 +150,7 @@ async function waitForContent(page: Page, path: string) {
     await expect(page.getByText(/bank · noun/)).toBeVisible();
     await expect(page.getByRole('button', { name: /^(Xem bản|View revision) 3$/ })).toBeVisible();
   }
-  else if (path === '/export' || path === '/ai/costs') await expect(page.getByRole('main')).toBeVisible();
+  else if (path === '/export' || path === '/ai/calls') await expect(page.getByRole('main')).toBeVisible();
   else if (path.startsWith('/senses/')) await expect(page.getByRole('heading', { level: 2, name: 'deploy · verb' })).toBeVisible();
   else if (path.startsWith('/settings')) await expect(page.getByRole('tabpanel').getByRole('heading', { level: 2 })).toBeVisible();
   else await expect(page.locator('tbody tr, [data-testid="card"]').first()).toBeAttached();

@@ -498,7 +498,43 @@
         "started": "The run has started.",
         "open": "View run"
       }
+    },
+    "costs": {
+      "note": "Costs are estimated from token counts and the prices entered.",
+      "filters": { "from": "From", "to": "To", "groupBy": "Group by", "apply": "Show" },
+      "groups": { "day": "Day", "operation": "Operation", "model": "Model", "purpose": "Purpose", "outcome": "Outcome" },
+      "cols": {
+        "group": "Group", "calls": "Calls", "input": "Input tokens", "cached": "Cached tokens", "output": "Output tokens",
+        "reasoning": "Reasoning tokens", "usd": "Cost US$", "vnd": "Cost ₫", "unknown": "Calls without a price"
+      },
+      "total": "Total",
+      "empty": "No calls in this date range.",
+      "errors": {
+        "required": "Pick a date.",
+        "fromAfterTo": "From must be on or before To.",
+        "tooLong": "The range is at most 366 days."
+      }
+    },
+    "calls": {
+      "search": { "label": "Operation id (operation_id)", "submit": "Search", "placeholder": "Paste the id from an error report or a log" },
+      "hint": "Enter an operation id to see its calls.",
+      "empty": "No calls with this id.",
+      "forId": "Operation id: {id}",
+      "cols": {
+        "attempt": "Attempt", "purpose": "Purpose", "operation": "Operation", "model": "Model", "outcome": "Outcome", "http": "HTTP",
+        "tokens": "Tokens", "cost": "Cost", "time": "Time", "content": "Content"
+      },
+      "tokensInOut": "{input} in · {output} out",
+      "tokensExtra": "cache {cached} · reasoning {reasoning}",
+      "costUnknown": "No price yet",
+      "revision": "Prompt revision {revision}",
+      "untilDate": "Kept until {date}",
+      "noContent": "Content no longer available",
+      "view": "View",
+      "viewFor": "View the content of attempt {attempt}",
+      "content": { "title": "Call content", "request": "Request", "response": "Response" }
     }
+  
   },
   "transactions": {
     "intro": "Purchases, renewals, billing changes, refunds, trials and plans granted by the Wordmet team, for every learner, newest first.",

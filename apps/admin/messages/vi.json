@@ -498,7 +498,43 @@
         "started": "Đã bắt đầu lần chạy.",
         "open": "Xem lần chạy"
       }
+    },
+    "costs": {
+      "note": "Chi phí là ước tính từ số token và giá đã nhập.",
+      "filters": { "from": "Từ ngày", "to": "Đến ngày", "groupBy": "Nhóm theo", "apply": "Xem" },
+      "groups": { "day": "Ngày", "operation": "Thao tác", "model": "Model", "purpose": "Mục đích", "outcome": "Kết quả" },
+      "cols": {
+        "group": "Nhóm", "calls": "Lời gọi", "input": "Token đầu vào", "cached": "Token cache", "output": "Token đầu ra",
+        "reasoning": "Token suy luận", "usd": "Chi phí US$", "vnd": "Chi phí ₫", "unknown": "Lời gọi chưa có giá"
+      },
+      "total": "Tổng",
+      "empty": "Không có lời gọi nào trong khoảng ngày này.",
+      "errors": {
+        "required": "Chọn ngày.",
+        "fromAfterTo": "Từ ngày phải trước hoặc bằng Đến ngày.",
+        "tooLong": "Khoảng ngày tối đa 366 ngày."
+      }
+    },
+    "calls": {
+      "search": { "label": "Mã thao tác (operation_id)", "submit": "Tìm", "placeholder": "Dán mã từ báo lỗi hoặc log" },
+      "hint": "Nhập mã thao tác để xem các lần gọi của nó.",
+      "empty": "Không có lời gọi nào với mã này.",
+      "forId": "Mã thao tác: {id}",
+      "cols": {
+        "attempt": "Lần thử", "purpose": "Mục đích", "operation": "Thao tác", "model": "Model", "outcome": "Kết quả", "http": "HTTP",
+        "tokens": "Token", "cost": "Chi phí", "time": "Thời gian", "content": "Nội dung"
+      },
+      "tokensInOut": "{input} vào · {output} ra",
+      "tokensExtra": "cache {cached} · suy luận {reasoning}",
+      "costUnknown": "Chưa có giá",
+      "revision": "Prompt bản {revision}",
+      "untilDate": "Còn tới {date}",
+      "noContent": "Không còn nội dung",
+      "view": "Xem",
+      "viewFor": "Xem nội dung lần thử {attempt}",
+      "content": { "title": "Nội dung lần gọi", "request": "Yêu cầu", "response": "Phản hồi" }
     }
+  
   },
   "transactions": {
     "intro": "Mua, gia hạn, đổi kỳ, hoàn tiền, dùng thử và lần đội Wordmet cấp gói của mọi người học, mới nhất trước.",

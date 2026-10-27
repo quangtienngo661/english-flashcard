@@ -252,6 +252,43 @@ test('Tình trạng at 390 fits the window with six operations, a warning and a 
   await expectNoHorizontalScroll(page);
 });
 
+test('Chi phí and Các lần gọi at 390 fit the window: nine columns as cards, a 200-character operation id, long model and outcome text', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  const longId = 'op-' + 'x'.repeat(197);
+  const totals = { calls: 1240, input_tokens: 123456789, cached_input_tokens: 23456789, output_tokens: 3456789, reasoning_tokens: 456789, cost_usd: '1234.56780000', cost_vnd: 32222222, unknown_cost_calls: 12 };
+  await signedInAs(page, 'admin', {
+    'GET /v1/admin/ai/costs': () => ({ json: { items: [{ key: 'anthropic/claude-sonnet-long-model-id-20261130', ...totals }], total: totals } }),
+    'GET /v1/admin/ai/calls': () => ({
+      json: {
+        items: [{
+          id: 'c1', attempt: 1, purpose: 'learner', operation: 'generate_sentence_mcq', provider: 'anthropic', model: 'claude-sonnet-long-model-id-20261130', effort: 'high',
+          thinking: null, max_output_tokens: null, prompt_revision: 3, outcome: 'provider-unavailable-timeout', http_status: 504, provider_error_code: 'overloaded_error_with_a_long_code',
+          latency_ms: 10000, input_tokens: 123456, cached_input_tokens: 23456, output_tokens: 3456, reasoning_tokens: 456, cost_usd: '0.00010000', cost_known: true, created_at: at,
+          content: { request: { text: 'x'.repeat(300) }, response: 'y'.repeat(300), expires_at: '2026-10-25T10:00:00.000Z' },
+        }],
+      },
+    }),
+  });
+  await page.goto('/ai/costs?from=2026-10-01&to=2026-10-20&group_by=model');
+  await expect(page.getByText('anthropic/claude-sonnet-long-model-id-20261130').filter({ visible: true })).toBeVisible();
+  await expectNoHorizontalScroll(page);
+  await page.goto(`/ai/calls?operation_id=${longId}`);
+  await expect(page.getByText('provider-unavailable-timeout').filter({ visible: true })).toBeVisible();
+  await expectNoHorizontalScroll(page);
+  await page.getByRole('button', { name: /Xem nội dung/ }).filter({ visible: true }).click();
+  await expect(page.getByRole('dialog')).toBeVisible();
+  await expectNoHorizontalScroll(page);
+});
+
+test('Chi phí at 1440 keeps the nine columns inside the page', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  const totals = { calls: 1240, input_tokens: 123456789, cached_input_tokens: 23456789, output_tokens: 3456789, reasoning_tokens: 456789, cost_usd: '1234.56780000', cost_vnd: 32222222, unknown_cost_calls: 12 };
+  await signedInAs(page, 'admin', { 'GET /v1/admin/ai/costs': () => ({ json: { items: [{ key: 'anthropic/claude-sonnet-long-model-id-20261130', ...totals }], total: totals } }) });
+  await page.goto('/ai/costs?group_by=model');
+  await expect(page.getByRole('columnheader', { name: vi.ai.costs.cols.unknown })).toBeVisible();
+  await expectNoHorizontalScroll(page);
+});
+
 test('Model at 390 fits the window with a 100-character model id and a long note', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   const long = 'm'.repeat(100);

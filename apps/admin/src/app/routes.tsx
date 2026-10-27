@@ -5,6 +5,8 @@ import { ForgotPasswordPage } from '../features/account/ForgotPasswordPage';
 import { LoginPage } from '../features/account/LoginPage';
 import { UploadsPage } from '../features/uploads/UploadsPage';
 import { ComingSoonPage } from '../features/coming-soon/ComingSoonPage';
+import { AiCallsPage } from '../features/ai/AiCallsPage';
+import { AiCostsPage } from '../features/ai/AiCostsPage';
 import { AiEvalPage } from '../features/ai/AiEvalPage';
 import { AiModelsPage } from '../features/ai/AiModelsPage';
 import { AiOperationsPage } from '../features/ai/AiOperationsPage';
@@ -69,6 +71,8 @@ export const appRoutes: RouteObject[] = createRoutesFromElements(
           <Route path="new" element={null} />
           <Route path="runs/:id" element={null} />
         </Route>
+        <Route path="ai/costs" element={<AiCostsPage />} />
+        <Route path="ai/calls" element={<AiCallsPage />} />
         <Route path="settings" element={<SettingsPage />} />
         <Route path="staff" element={<StaffPage />} />
         {NAV.filter((entry) => !entry.available).map((entry) => (
