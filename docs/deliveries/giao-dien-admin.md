@@ -187,7 +187,7 @@ Khác với khung / copy doc (có chủ ý):
 - Stack thật (API cổng 3310, admin preview 5213, DB riêng `english_learning_admin_e2e_m1a`, vì 3300 đang do phiên khác dùng; `AI_FAKE_ENABLED=true`, không key): `CI=1 pnpm test:e2e:real` 13/13 (admin 8 + M0 2 + M1a 2 + M2 1).
 - `pnpm --filter admin test` 552/552 (`--maxWorkers=3`; với mọi worker mà máy đang bận thì vài test 5 giây hết giờ, chạy lại riêng thì qua); lint và typecheck sạch; `pnpm --filter admin test:e2e` (cổng 5193) 189 passed, 61 skipped (test chỉ chạy desktop hoặc chỉ mobile).
 - Chưa kiểm: CI trên PR; gọi AI thật bằng key (cách làm nằm ở test flow, mục "Gắn model và key của chính bạn"); hộp "Rời trang?" và thanh khôi phục qua tab thứ hai trong trình duyệt thật (viết từ mã, mục Prompt bước 3 của test flow).
-- Quan sát ngoài phạm vi M1a: ở cửa sổ cao 900 px menu bên trái dài hơn khung, các mục AI sau "Tình trạng" bị khung ngôn ngữ / tài khoản che; không sửa ở đây (thuộc `Shell` của M0).
+- Thanh bên (ghi chú ngoài phạm vi M1a, đã sửa lại): chỉ danh sách menu cuộn, VI/EN và tài khoản nằm cố định dưới chân. Khi danh sách dài hơn khung (ví dụ cao 900 px với đủ mục AI) phần mép dưới mờ dần để báo còn mục phía dưới, cuộn là thấy (`Shell.tsx:154-158`; kiểm bằng `e2e/shell.spec.ts:186`, cửa sổ 1440×640 và ngăn kéo 390). Các ảnh ở 1440×900 không chứng minh các mục AI cuối menu hiện hết mà không cuộn.
 
 ## Câu chữ tự viết (không có trong copy doc §8; chủ dự án duyệt lại khi cần)
 
