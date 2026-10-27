@@ -373,6 +373,11 @@
         "hint": "Once changed, your other devices are signed out.",
         "submit": "Change password"
       },
+      "complete": {
+        "title": "Complete your account",
+        "body": "Before you go on, Wordmet needs your birth date and your agreement to the terms.",
+        "submit": "Continue"
+      },
       "welcome": {
         "title": "Which language should meanings be in?",
         "body": "The app uses this language too. You can change it in Settings.",

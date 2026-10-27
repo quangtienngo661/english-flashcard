@@ -15,6 +15,7 @@ export const makeMe = (over: Partial<Me> = {}): Me => ({
   given_name: 'Lan',
   family_name: 'Nguyễn',
   birth_date: '2000-05-12',
+  terms_accepted_at: '2026-10-20T03:00:00.000Z',
   ...over,
 });
 

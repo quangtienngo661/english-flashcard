@@ -111,6 +111,19 @@ describe('RequireSession', () => {
     expect(replace).not.toHaveBeenCalled();
   });
 
+  it.each([{ birth_date: null }, { terms_accepted_at: null }])('AD18: %o → complete-profile first, even before the language', async (missing) => {
+    at('/vi/app/settings');
+    setup(signedIn(makeMe({ ...missing, native_language: null })));
+    await waitFor(() => expect(replace).toHaveBeenCalledWith('/vi/app/complete-profile?next=%2Fvi%2Fapp%2Fsettings'));
+  });
+
+  it('AD18: complete-profile opens without a birth date, consent or language', async () => {
+    at('/vi/app/complete-profile');
+    setup(signedIn(makeMe({ birth_date: null, terms_accepted_at: null, native_language: null })));
+    expect(await screen.findByText('secret')).toBeInTheDocument();
+    expect(replace).not.toHaveBeenCalled();
+  });
+
   it('E9: welcome opens without a language', async () => {
     at('/vi/app/welcome');
     setup(signedIn(makeMe({ native_language: null })));
