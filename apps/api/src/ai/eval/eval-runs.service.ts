@@ -3,9 +3,12 @@ import { Inject, Injectable } from '@nestjs/common';
 import { z } from 'zod';
 import { PRISMA_CLIENT } from '../../common/db/prisma.module.js';
 import { decodeBoundToken, encodeBoundToken } from '../../common/pagination/page-token.util.js';
+import { userRef } from '../../common/user-ref.js';
 import { ProblemDetailsException } from '../../common/problem-details/problem-details.exception.js';
 import type { Prisma, PrismaClient } from '../../generated/prisma/client.js';
+import { IdentityService } from '../../identity/profile/identity.service.js';
 import { AiAdapterRegistry } from '../adapters/ai-adapter.registry.js';
+import { AI_SYSTEM_ACTOR_ID } from '../ai.constants.js';
 import { AI_OPERATIONS, type AiOperation } from '../ai.types.js';
 import { promptViolations } from '../prompts/prompt-rules.js';
 import { PromptsRepository } from '../prompts/prompts.repository.js';
@@ -33,13 +36,15 @@ const invalid = (violations: string[]) => new ProblemDetailsException({
   status: 400, type: 'validation-failed', title: 'Validation failed', extensions: { violations },
 });
 
-function summary(row: RunRecord) {
+const SYSTEM_IDS: ReadonlySet<string> = new Set([AI_SYSTEM_ACTOR_ID]);
+
+function summary(row: RunRecord, emails: ReadonlyMap<string, string>) {
   return {
     id: row.id, operation: row.operation as AiOperation, provider: row.provider, model: row.model, effort: row.effort,
     thinking: row.thinking, max_output_tokens: row.maxOutputTokens, prompt_revision: row.promptRevision, status: row.status,
     total: row.total, done: Array.isArray(row.items) ? row.items.length : 0, valid_count: row.validCount,
     avg_latency_ms: row.avgLatencyMs, cost_usd: row.costUsd?.toFixed(8) ?? null, cost_unknown_count: row.costUnknownCount,
-    error: row.error, started_by: row.startedBy, created_at: row.createdAt.toISOString(),
+    error: row.error, started_by: row.startedBy, started_by_user: userRef(row.startedBy, emails, SYSTEM_IDS), created_at: row.createdAt.toISOString(),
     started_at: row.startedAt?.toISOString() ?? null, finished_at: row.finishedAt?.toISOString() ?? null,
   };
 }
@@ -53,6 +58,7 @@ export class EvalRunsService {
     @Inject(AiAdapterRegistry) private readonly registry: AiAdapterRegistry,
     @Inject(PromptsRepository) private readonly prompts: PromptsRepository,
     @Inject(EvalQueue) private readonly queue: EvalQueue,
+    @Inject(IdentityService) private readonly identity: IdentityService,
   ) {}
 
   async create(actorId: string, body: CreateRunBody): Promise<{ run_id: string; status: 'queued' }> {
@@ -107,8 +113,9 @@ export class EvalRunsService {
     });
     const page = rows.slice(0, pageSize);
     const last = page.at(-1);
+    const emails = await this.identity.emailsOf(page.map((row) => row.startedBy));
     return {
-      items: page.map(summary),
+      items: page.map((row) => summary(row, emails)),
       next_page_token: rows.length > pageSize && last
         ? encodeBoundToken({ created_at: last.createdAt.toISOString(), id: last.id }, binding) : null,
     };
@@ -117,6 +124,7 @@ export class EvalRunsService {
   async get(id: string) {
     const row = await this.prisma.aiEvalRun.findUnique({ where: { id } });
     if (!row) throw problem(404, 'not-found', 'Not found');
-    return { ...summary(row), draft: row.draft, heartbeat_at: row.heartbeatAt?.toISOString() ?? null, items: row.items };
+    const emails = await this.identity.emailsOf([row.startedBy]);
+    return { ...summary(row, emails), draft: row.draft, heartbeat_at: row.heartbeatAt?.toISOString() ?? null, items: row.items };
   }
 }

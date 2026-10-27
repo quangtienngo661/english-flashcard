@@ -15,13 +15,8 @@ export class RateLimiter {
   ) {}
 
   async hit(rule: RateLimitRuleName, subject: string): Promise<void> {
-    const { by, max, windowSeconds } = this.config.limits[rule];
-    const value = by === 'user' || by === 'chain' ? subject
-      : createHmac('sha256', this.config.rateLimitHmacKey).update(subject).digest('hex').slice(0, 32);
-    const key = `${rule}:${by}:${value}`;
-    const now = this.clock.now().getTime();
-    const windowMs = windowSeconds * 1000;
-    const windowStart = new Date(Math.floor(now / windowMs) * windowMs);
+    const { max } = this.config.limits[rule];
+    const { key, windowStart, windowMs, now } = this.slot(rule, subject);
 
     // Preserve Bước 0's verified native-upsert pattern: one INSERT ... ON CONFLICT
     // DO UPDATE SET count = count + 1 RETURNING, with matching where/create keys.
@@ -39,5 +34,23 @@ export class RateLimiter {
         retryAfterSeconds: Math.ceil((windowStart.getTime() + windowMs - now) / 1000),
       });
     }
+  }
+
+  /** Reads the counter of the current window without counting a hit; a missing row is `used: 0`. */
+  async peek(rule: RateLimitRuleName, subject: string): Promise<{ limit: number; used: number; resetsAt: Date }> {
+    const { key, windowStart, windowMs } = this.slot(rule, subject);
+    const row = await this.prisma.rateLimitCounter.findUnique({ where: { key_windowStart: { key, windowStart } } });
+    return { limit: this.config.limits[rule].max, used: row?.count ?? 0, resetsAt: new Date(windowStart.getTime() + windowMs) };
+  }
+
+  private slot(rule: RateLimitRuleName, subject: string) {
+    const { by, windowSeconds } = this.config.limits[rule];
+    const value = by === 'user' || by === 'chain' ? subject
+      : createHmac('sha256', this.config.rateLimitHmacKey).update(subject).digest('hex').slice(0, 32);
+    const key = `${rule}:${by}:${value}`;
+    const now = this.clock.now().getTime();
+    const windowMs = windowSeconds * 1000;
+    const windowStart = new Date(Math.floor(now / windowMs) * windowMs);
+    return { key, windowStart, windowMs, now };
   }
 }

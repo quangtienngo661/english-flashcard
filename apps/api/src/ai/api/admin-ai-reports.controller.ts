@@ -1,6 +1,8 @@
-import { Controller, Get, Inject, Query } from '@nestjs/common';
+import { Controller, Get, Inject, Query, Req } from '@nestjs/common';
 import { z } from 'zod';
 import { Clock } from '../../common/clock/clock.js';
+import { RateLimiter } from '../../common/rate-limit/rate-limiter.service.js';
+import type { RequestWithUser } from '../../common/request-user/request-user.js';
 import { RequirePermission } from '../../identity/staff/require-permission.decorator.js';
 import { COST_GROUPS, ReportsService } from '../reports/reports.service.js';
 
@@ -19,6 +21,7 @@ export class AdminAiReportsController {
   constructor(
     @Inject(ReportsService) private readonly reports: ReportsService,
     @Inject(Clock) private readonly clock: Clock,
+    @Inject(RateLimiter) private readonly rateLimiter: RateLimiter,
   ) {}
 
   @Get('status')
@@ -34,5 +37,12 @@ export class AdminAiReportsController {
   @Get('calls')
   calls(@Query({ schema: callsQuery }) query: z.infer<typeof callsQuery>) {
     return this.reports.calls(query.operation_id, this.clock.now());
+  }
+
+  /** How many test runs the caller has left in the current window; reads the counter, never counts. */
+  @Get('test-quota')
+  async testQuota(@Req() req: RequestWithUser) {
+    const { limit, used, resetsAt } = await this.rateLimiter.peek('ai.test', req.user!.userId);
+    return { limit, remaining: Math.max(0, limit - used), resets_at: resetsAt.toISOString() };
   }
 }

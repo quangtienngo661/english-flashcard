@@ -3,16 +3,18 @@ import { Inject, Injectable } from '@nestjs/common';
 import { z } from 'zod';
 import { Clock } from '../../common/clock/clock.js';
 import { PRISMA_CLIENT } from '../../common/db/prisma.module.js';
+import { userRef, type UserRef } from '../../common/user-ref.js';
 import { decodePageToken, encodePageToken } from '../../common/pagination/page-token.util.js';
 import { ProblemDetailsException } from '../../common/problem-details/problem-details.exception.js';
 import type { Prisma, PrismaClient } from '../../generated/prisma/client.js';
+import { IdentityService } from '../../identity/profile/identity.service.js';
 import { AiAdapterRegistry } from '../adapters/ai-adapter.registry.js';
-import { TEST_EXAMPLES_MAX } from '../ai.constants.js';
+import { AI_SYSTEM_ACTOR_ID, TEST_EXAMPLES_MAX } from '../ai.constants.js';
 import type { AiOperation } from '../ai.types.js';
 import { OPERATIONS } from '../operations/operations.js';
 import { RunnerService, type CallSummary } from '../runner/runner.service.js';
 import { SelectionReader } from '../runner/selection.js';
-import { promptViolations, type PromptExample } from './prompt-rules.js';
+import { PROMPT_GUARD, promptViolations, type PromptExample } from './prompt-rules.js';
 import { PromptsRepository } from './prompts.repository.js';
 
 /** Body of `PUT /v1/admin/ai/prompts/{op}` (design §7.3); the content rules run in the service so every error has a path. */
@@ -39,9 +41,11 @@ export type PromptView = {
   input_fields: string[];
   updated_at: string;
   updated_by: string;
+  updated_by_user: UserRef;
+  guard: string;
 };
 
-export type PromptRevisionView = { revision: number; instructions: string; examples: PromptExample[]; saved_by: string; saved_at: string };
+export type PromptRevisionView = { revision: number; instructions: string; examples: PromptExample[]; saved_by: string; saved_at: string; saved_by_user: UserRef };
 
 export type TestItem = {
   input: unknown;
@@ -59,6 +63,8 @@ const invalid = (violations: string[]) => new ProblemDetailsException({
 });
 const conflict = () => new ProblemDetailsException({ status: 409, type: 'prompt-revision-conflict', title: 'Prompt changed' });
 const isUniqueViolation = (error: unknown) => error !== null && typeof error === 'object' && 'code' in error && error.code === 'P2002';
+
+const SYSTEM_IDS: ReadonlySet<string> = new Set([AI_SYSTEM_ACTOR_ID]);
 
 const USD_SCALE = 1e8;
 
@@ -79,13 +85,16 @@ export class PromptsService {
     @Inject(RunnerService) private readonly runner: RunnerService,
     @Inject(SelectionReader) private readonly selections: SelectionReader,
     @Inject(AiAdapterRegistry) private readonly registry: AiAdapterRegistry,
+    @Inject(IdentityService) private readonly identity: IdentityService,
   ) {}
 
   async get(op: AiOperation): Promise<PromptView> {
     const row = await this.prisma.aiPrompt.findUniqueOrThrow({ where: { operation: op } });
+    const emails = await this.identity.emailsOf([row.updatedBy]);
     return {
       operation: op, instructions: row.instructions, examples: row.examples as PromptExample[], revision: row.revision,
       input_fields: [...OPERATIONS[op].inputFields], updated_at: row.updatedAt.toISOString(), updated_by: row.updatedBy,
+      updated_by_user: userRef(row.updatedBy, emails, SYSTEM_IDS), guard: PROMPT_GUARD,
     };
   }
 
@@ -134,10 +143,11 @@ export class PromptsService {
       take: pageSize + 1,
     });
     const page = rows.slice(0, pageSize);
+    const emails = await this.identity.emailsOf(page.map((row) => row.savedBy));
     return {
       items: page.map((row) => ({
         revision: row.revision, instructions: row.instructions, examples: row.examples as PromptExample[], saved_by: row.savedBy,
-        saved_at: row.savedAt.toISOString(),
+        saved_at: row.savedAt.toISOString(), saved_by_user: userRef(row.savedBy, emails, SYSTEM_IDS),
       })),
       next_page_token: rows.length > pageSize ? encodePageToken({ id: page[page.length - 1].id }) : null,
     };

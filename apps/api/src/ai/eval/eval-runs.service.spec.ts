@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ProblemDetailsException } from '../../common/problem-details/problem-details.exception.js';
 import type { Selection } from '../runner/selection.js';
+import { AI_SYSTEM_ACTOR_ID } from '../ai.constants.js';
 import { EvalRunsService } from './eval-runs.service.js';
 
 const ADMIN = '11111111-1111-4111-8111-111111111111';
@@ -22,17 +23,19 @@ function setup() {
         created.push(row);
         return row;
       }),
-      findUnique: vi.fn(async () => null),
+      findUnique: vi.fn(async (): Promise<Record<string, unknown> | null> => null),
+      findMany: vi.fn(async (): Promise<Array<Record<string, unknown>>> => []),
     },
   };
   const selections = { load: vi.fn(async (): Promise<Selection | null> => SELECTION) };
   const registry = { get: vi.fn((provider: string) => (provider === 'fake' ? {} : undefined)) };
   const prompts = { current: vi.fn(async () => ({ instructions: 'x', examples: [], revision: 4 })) };
   const queue = { enqueue: vi.fn(async () => true) };
+  const emailsOf = vi.fn(async (ids: string[]) => new Map(ids.filter((id) => id === ADMIN).map((id) => [id, 'admin@x.test'])));
   const service = new EvalRunsService(
-    prisma as never, selections as never, registry as never, prompts as never, queue as never,
+    prisma as never, selections as never, registry as never, prompts as never, queue as never, { emailsOf } as never,
   );
-  return { service, prisma, created, selections, registry, prompts, queue };
+  return { service, prisma, created, selections, registry, prompts, queue, emailsOf };
 }
 
 async function problemOf(promise: Promise<unknown>) {
@@ -115,5 +118,38 @@ describe('EvalRunsService.get', () => {
     const ctx = setup();
     const problem = await problemOf(ctx.service.get(randomUUID()));
     expect(problem).toMatchObject({ status: 404, type: 'not-found' });
+  });
+});
+
+function runRow(startedBy: string, id: string = randomUUID()) {
+  return {
+    id, operation: 'generate_cloze', provider: 'fake', model: 'fake:ok', effort: null, thinking: 'disabled', maxOutputTokens: 4096,
+    promptRevision: 4, draft: null, status: 'done', total: 2, items: [], validCount: 2, avgLatencyMs: 5, costUsd: null,
+    costUnknownCount: 0, error: null, startedBy, createdAt: new Date('2026-10-01T00:00:00Z'), startedAt: null, finishedAt: null,
+    heartbeatAt: null,
+  };
+}
+
+describe('EvalRunsService started_by_user', () => {
+  it('get of a found run has started_by_user and keeps started_by', async () => {
+    const ctx = setup();
+    ctx.prisma.aiEvalRun.findUnique.mockResolvedValueOnce(runRow(ADMIN));
+    const run = await ctx.service.get(randomUUID());
+    expect(run.started_by).toBe(ADMIN);
+    expect(run.started_by_user).toEqual({ id: ADMIN, email: 'admin@x.test', system: false });
+    expect(ctx.emailsOf).toHaveBeenCalledTimes(1);
+  });
+
+  it('list: one emailsOf call for the page; system actor and unknown user', async () => {
+    const ctx = setup();
+    const unknown = '33333333-3333-4333-8333-333333333333';
+    ctx.prisma.aiEvalRun.findMany.mockResolvedValueOnce([runRow(ADMIN), runRow(AI_SYSTEM_ACTOR_ID), runRow(unknown)]);
+    const { items } = await ctx.service.list('generate_cloze', 20, undefined);
+    expect(ctx.emailsOf).toHaveBeenCalledTimes(1);
+    expect(items.map((item) => item.started_by_user)).toEqual([
+      { id: ADMIN, email: 'admin@x.test', system: false },
+      { id: AI_SYSTEM_ACTOR_ID, email: null, system: true },
+      { id: unknown, email: null, system: false },
+    ]);
   });
 });

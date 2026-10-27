@@ -38,7 +38,7 @@ type Setup = {
   models?: Partial<Record<AiOperation, Model | null>>;
   registered?: AiProviderName[];
   aiEnabled?: boolean;
-  lastErrors?: Array<{ operation: string; created_at: Date; outcome: string; http_status: number | null }>;
+  lastErrors?: Array<{ operation: string; created_at: Date; outcome: string; http_status: number | null; purpose: string }>;
   today?: { failed_calls: number; failed_cost_usd: string; cost_usd: string };
   grouped?: Array<Record<string, unknown>>;
   total?: Record<string, unknown>;
@@ -136,10 +136,10 @@ describe('ReportsService.status', () => {
   it('B6#21: the newest failed call is provider-quota → last_error provider-quota; succeeded calls never show', async () => {
     const at = new Date('2026-10-20T04:59:00.000Z');
     const { service, statements } = setup({
-      lastErrors: [{ operation: 'generate_cloze', created_at: at, outcome: 'provider-quota', http_status: 429 }],
+      lastErrors: [{ operation: 'generate_cloze', created_at: at, outcome: 'provider-quota', http_status: 429, purpose: 'test' }],
     });
     const { operations } = await service.status(NOW);
-    expect(operations[0].last_error).toEqual({ at: at.toISOString(), outcome: 'provider-quota', http_status: 429 });
+    expect(operations[0].last_error).toEqual({ at: at.toISOString(), outcome: 'provider-quota', http_status: 429, purpose: 'test' });
     expect(operations[1].last_error).toBeNull();
     const distinct = statements.find((statement) => statement.sql.includes('DISTINCT ON'));
     expect(distinct?.sql).toContain("WHERE outcome <> 'succeeded'");
@@ -149,11 +149,11 @@ describe('ReportsService.status', () => {
   it('plan review #2: an invalid-shape call shows as last_error and in failed_calls', async () => {
     const at = new Date('2026-10-20T04:00:00.000Z');
     const { service } = setup({
-      lastErrors: [{ operation: 'lookup_word', created_at: at, outcome: 'invalid-shape', http_status: null }],
+      lastErrors: [{ operation: 'lookup_word', created_at: at, outcome: 'invalid-shape', http_status: null, purpose: 'learner' }],
       today: { failed_calls: 1, failed_cost_usd: '0.00003500', cost_usd: '0.00010500' },
     });
     const report = await service.status(NOW);
-    expect(report.operations[1].last_error).toEqual({ at: at.toISOString(), outcome: 'invalid-shape', http_status: null });
+    expect(report.operations[1].last_error).toEqual({ at: at.toISOString(), outcome: 'invalid-shape', http_status: null, purpose: 'learner' });
     expect(report.today).toMatchObject({ failed_calls: 1, failed_cost_usd: '0.00003500' });
   });
 

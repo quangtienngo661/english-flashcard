@@ -25,8 +25,13 @@ function setup() {
     counters.set(id, count);
     return { ...args.create, count };
   });
-  const prisma = { rateLimitCounter: { upsert } } as unknown as PrismaClient;
-  return { config, clock, upsert, limiter: new RateLimiter(prisma, config, clock) };
+  const findUnique = vi.fn(async (args: { where: { key_windowStart: { key: string; windowStart: Date } } }) => {
+    const { key, windowStart } = args.where.key_windowStart;
+    const count = counters.get(`${key}:${windowStart.toISOString()}`);
+    return count === undefined ? null : { key, windowStart, count };
+  });
+  const prisma = { rateLimitCounter: { upsert, findUnique } } as unknown as PrismaClient;
+  return { config, clock, upsert, findUnique, limiter: new RateLimiter(prisma, config, clock) };
 }
 
 describe('RateLimiter', () => {
@@ -90,5 +95,33 @@ describe('RateLimiter', () => {
     const error = new Error('database unavailable');
     upsert.mockRejectedValueOnce(error);
     await expect(limiter.hit('sample.create', 'user-1')).rejects.toBe(error);
+  });
+
+  describe('peek', () => {
+    it('reports used after 3 hits and writes nothing', async () => {
+      const { limiter, upsert } = setup();
+      for (let i = 0; i < 3; i += 1) await limiter.hit('ai.test', 'user-1');
+      const writes = upsert.mock.calls.length;
+      expect(await limiter.peek('ai.test', 'user-1')).toEqual({ limit: 20, used: 3, resetsAt: new Date('2026-10-07T13:00:00.000Z') });
+      expect(await limiter.peek('ai.test', 'user-1')).toMatchObject({ used: 3 });
+      expect(upsert.mock.calls.length).toBe(writes);
+    });
+
+    it('a missing row is used 0', async () => {
+      const { limiter } = setup();
+      expect(await limiter.peek('ai.test', 'nobody')).toMatchObject({ limit: 20, used: 0 });
+    });
+
+    it('resetsAt is the window end: 12:59:59Z gives 13:00:00Z', async () => {
+      const { limiter, clock } = setup();
+      clock.advance(3_599_000);
+      expect((await limiter.peek('ai.test', 'user-1')).resetsAt).toEqual(new Date('2026-10-07T13:00:00.000Z'));
+    });
+
+    it('used above the max is returned as counted', async () => {
+      const { limiter } = setup();
+      for (let i = 0; i < 23; i += 1) await limiter.hit('ai.test', 'user-1').catch(() => undefined);
+      expect((await limiter.peek('ai.test', 'user-1')).used).toBe(23);
+    });
   });
 });

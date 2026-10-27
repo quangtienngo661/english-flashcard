@@ -6,7 +6,7 @@ import { Prisma, type PrismaClient } from '../../generated/prisma/client.js';
 import { SettingsService } from '../../settings/index.js';
 import { AiAdapterRegistry } from '../adapters/ai-adapter.registry.js';
 import { AI_DAY_ZONE, MODEL_SHUTDOWN_WARNING_DAYS } from '../ai.constants.js';
-import { AI_OPERATIONS, AI_PROVIDERS, type AiOperation, type AiProviderName, type CallOutcome, type UnavailableReason } from '../ai.types.js';
+import { AI_OPERATIONS, AI_PROVIDERS, type AiOperation, type AiPurpose, type AiProviderName, type CallOutcome, type UnavailableReason } from '../ai.types.js';
 import { CallLedger } from '../runner/call-ledger.service.js';
 import { ReadinessService } from '../runner/readiness.service.js';
 import { toSelection } from '../runner/selection.js';
@@ -51,7 +51,7 @@ export type StatusReport = {
     effort: string | null;
     thinking: 'disabled' | 'between_tools' | null;
     max_output_tokens: number | null;
-    last_error: { at: string; outcome: CallOutcome; http_status: number | null } | null;
+    last_error: { at: string; outcome: CallOutcome; http_status: number | null; purpose: AiPurpose } | null;
     model_warning: { shutdown_at: string | null; lifecycle: string | null } | null;
   }>;
   today: { calls: number; cap: number | null; failed_calls: number; failed_cost_usd: string; cost_usd: string; cost_vnd: number };
@@ -87,8 +87,8 @@ export class ReportsService {
           coalesce(sum(cost_usd), 0)::numeric(20, 8)::text AS cost_usd
         FROM ai_calls WHERE created_at >= ${since}`,
       // A reason that made no provider call (busy, in_progress, ai-disabled, …) has no ai_calls row, so it never shows here.
-      this.prisma.$queryRaw<Array<{ operation: string; created_at: Date; outcome: CallOutcome; http_status: number | null }>>`
-        SELECT DISTINCT ON (operation) operation, created_at, outcome, http_status FROM ai_calls
+      this.prisma.$queryRaw<Array<{ operation: string; created_at: Date; outcome: CallOutcome; http_status: number | null; purpose: AiPurpose }>>`
+        SELECT DISTINCT ON (operation) operation, created_at, outcome, http_status, purpose FROM ai_calls
         WHERE outcome <> 'succeeded' ORDER BY operation, created_at DESC, id DESC`,
     ]);
     const warnBefore = now.getTime() + MODEL_SHUTDOWN_WARNING_DAYS * DAY_MS;
@@ -109,7 +109,7 @@ export class ReportsService {
         effort: selection?.effort ?? null,
         thinking: selection?.thinking ?? null,
         max_output_tokens: selection?.maxOutputTokens ?? null,
-        last_error: error ? { at: error.created_at.toISOString(), outcome: error.outcome, http_status: error.http_status } : null,
+        last_error: error ? { at: error.created_at.toISOString(), outcome: error.outcome, http_status: error.http_status, purpose: error.purpose } : null,
         model_warning: warned ? { shutdown_at: model.shutdownAt?.toISOString() ?? null, lifecycle: model.lifecycle } : null,
       };
     });
