@@ -13,6 +13,7 @@ import { PublishJobsPage } from '../features/publish-jobs/PublishJobsPage';
 import { SourcesPage } from '../features/sources/SourcesPage';
 import { StaffPage } from '../features/staff/StaffPage';
 import { TransactionsPage } from '../features/transactions/TransactionsPage';
+import { UnknownFormsPage } from '../features/unknown-forms/UnknownFormsPage';
 import { homePath, NAV } from './nav';
 import { RequireSession } from './RequireSession';
 import { Shell } from './Shell';
@@ -54,6 +55,7 @@ export const appRoutes: RouteObject[] = createRoutesFromElements(
           <Route path=":code" element={null} />
         </Route>
         <Route path="refunds" element={<RefundsPage />} />
+        <Route path="unknown-forms" element={<UnknownFormsPage />} />
         <Route path="transactions" element={<TransactionsPage />} />
         <Route path="staff" element={<StaffPage />} />
         {NAV.filter((entry) => !entry.available).map((entry) => (

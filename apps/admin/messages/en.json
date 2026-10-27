@@ -639,5 +639,24 @@
     "refunded": { "true": "Given back", "false": "Not given back", "null": "Retrying" },
     "empty": "No confirmed errors in this range yet.",
     "note": "A unit that was given back cannot be taken back."
+  },
+  "unknownForms": {
+    "intro": "Forms the AI used that the word-form table does not have yet. They can include synonyms, multi-word phrases and typos.",
+    "cols": {
+      "lemma": "Base word",
+      "form": "Form the AI used",
+      "rejected": "Times rejected",
+      "first": "First seen",
+      "last": "Last seen"
+    },
+    "accept": "Accept this form",
+    "acceptFor": "Accept “{form}” for “{lemma}”",
+    "ignore": "Ignore",
+    "ignoreFor": "Ignore “{form}” for “{lemma}”",
+    "accepted": "Added “{form}” to the forms of “{lemma}”.",
+    "undo": "Undo",
+    "undone": "Removed “{form}” from the forms of “{lemma}”.",
+    "empty": "No forms to review yet.",
+    "emptyHint": "When the AI uses a form the table does not know, it shows up here."
   }
 }

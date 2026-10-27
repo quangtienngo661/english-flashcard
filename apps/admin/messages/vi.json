@@ -639,5 +639,24 @@
     "refunded": { "true": "Đã trả", "false": "Không trả", "null": "Đang thử lại" },
     "empty": "Chưa có lần xác nhận lỗi nào trong khoảng này.",
     "note": "Không thu hồi được lượt đã trả."
+  },
+  "unknownForms": {
+    "intro": "Dạng AI đã dùng mà bảng dạng chia chưa có. Có thể lẫn từ đồng nghĩa, cụm nhiều chữ, lỗi chính tả.",
+    "cols": {
+      "lemma": "Từ gốc",
+      "form": "Dạng AI dùng",
+      "rejected": "Số lần bị loại",
+      "first": "Lần đầu",
+      "last": "Lần gần nhất"
+    },
+    "accept": "Nhận dạng này",
+    "acceptFor": "Nhận dạng “{form}” của “{lemma}”",
+    "ignore": "Bỏ qua",
+    "ignoreFor": "Bỏ qua dạng “{form}” của “{lemma}”",
+    "accepted": "Đã thêm “{form}” vào dạng chia của “{lemma}”.",
+    "undo": "Hoàn tác",
+    "undone": "Đã gỡ “{form}” khỏi dạng chia của “{lemma}”.",
+    "empty": "Chưa có dạng chia nào cần xem.",
+    "emptyHint": "Khi AI dùng một dạng bảng chưa biết, dạng đó hiện ở đây."
   }
 }
