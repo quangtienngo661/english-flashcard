@@ -60,3 +60,45 @@ describe('AdminCatalogQueries.getSense audit (N3)', () => {
     });
   });
 });
+
+describe('AdminCatalogQueries.listSenses missing parts (Task 37)', () => {
+  const level = { id: 'l1', level: 'A1', sourceId: 'src', basis: 'editorial', sourceExtra: null, createdAt: new Date('2026-10-01T00:00:00Z'),
+    source: { id: 'src', kind: 'editorial', name: 'n', version: null, url: null, license: null, attribution: null, displayPriority: 1 } };
+  function senseRow(id: string, revision: { status: string; texts: unknown[]; examples: string[] } | null) {
+    return {
+      id, entryId: 'e1', contextLabel: null, state: 'open', liveRevisionId: null, replacesSenseId: null,
+      entry: { lemma: 'cat', pos: 'noun', levels: [level], functionWordDerived: false, functionWordOverride: null, variants: [] },
+      revisions: revision ? [{ id: `r-${id}`, revisionNo: 1, topicCodes: [], acceptedForms: [], formKind: null, formOfEntryId: null, ...revision }] : [],
+    };
+  }
+  const gloss = [{ language: 'vi', kind: 'gloss', text: 'mèo' }];
+  async function list(rows: unknown[], status?: 'open_draft' | 'published' | 'unpublishable') {
+    const { queries, prisma } = setup();
+    prisma.sense.findMany.mockResolvedValueOnce(rows as never);
+    return queries.listSenses({ page_size: 20, ...(status ? { status } : {}) } as never);
+  }
+
+  it('open_draft: a draft without a gloss lists gloss-missing', async () => {
+    const page = await list([senseRow('s1', { status: 'draft', texts: [], examples: ['A cat.'] })], 'open_draft');
+    expect(page.items.map((item) => (item as { missing: unknown }).missing)).toEqual([['gloss-missing']]);
+  });
+
+  it('no filter: a published row, a rejected row and a row with no revision list missing []', async () => {
+    const page = await list([
+      senseRow('s1', { status: 'published', texts: [], examples: [] }),
+      senseRow('s2', { status: 'rejected', texts: [], examples: [] }),
+      senseRow('s3', null),
+      senseRow('s4', { status: 'reviewed', texts: gloss, examples: ['A cat.'] }),
+    ]);
+    expect(page.items.map((item) => (item as { missing: unknown }).missing)).toEqual([[], [], [], []]);
+  });
+
+  it('unpublishable: unchanged, only incomplete drafts with their missing parts', async () => {
+    const page = await list([
+      senseRow('s1', { status: 'draft', texts: gloss, examples: [] }),
+      senseRow('s2', { status: 'reviewed', texts: gloss, examples: ['A cat.'] }),
+    ], 'unpublishable');
+    expect(page.items.map((item) => [(item as { sense_id: string }).sense_id, (item as { missing: unknown }).missing]))
+      .toEqual([['s1', ['example-missing']]]);
+  });
+});
