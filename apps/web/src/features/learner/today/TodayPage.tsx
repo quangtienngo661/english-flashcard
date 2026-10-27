@@ -109,7 +109,7 @@ function Hero({ group }: { group: GroupSummary }) {
   const review = `/${locale}/app/review?group=${group.id}`;
   return (
     // Owner 27/10/2026: the same hero card as Hôm nay on Luyện tập (light in the light theme, deep navy in the dark one).
-    <section aria-label={group.name} className="flex flex-col gap-4 rounded-card border-b-4 border-primary bg-hero p-5 text-on-hero md:p-7">
+    <section aria-label={group.name} className="flex flex-col gap-4 rounded-card border border-on-hero/15 border-b-4 border-b-primary bg-hero p-5 text-on-hero md:p-7">
       <span className="w-fit rounded-full bg-accent px-2.5 py-0.5 text-caption font-semibold text-on-accent">
         {group.today.priority > 0 ? t('heroChipPriority') : t('heroChip')}
       </span>

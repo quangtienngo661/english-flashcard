@@ -65,7 +65,7 @@ export function HeroFrame({ labelledBy, art, children }: { labelledBy: string; a
   return (
     <section
       aria-labelledby={labelledBy}
-      className="relative flex items-center gap-6 overflow-hidden rounded-card border-b-4 border-primary bg-hero p-5 text-on-hero md:p-7"
+      className="relative flex items-center gap-6 overflow-hidden rounded-card border border-on-hero/15 border-b-4 border-b-primary bg-hero p-5 text-on-hero md:p-7"
     >
       <div className="flex min-w-0 flex-1 flex-col gap-3">{children}</div>
       <div aria-hidden className="hidden shrink-0 md:block">
