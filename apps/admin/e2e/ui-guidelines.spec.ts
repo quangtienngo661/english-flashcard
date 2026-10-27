@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 import en from '../messages/en.json' with { type: 'json' };
 import vi from '../messages/vi.json' with { type: 'json' };
 import { signedInAs } from './support/mock-api';
@@ -6,6 +6,12 @@ import { signedInAs } from './support/mock-api';
 /** Defects found by the Web Interface Guidelines review (15/10/2026); each test sets its own viewport. */
 test.use({ locale: 'vi-VN' });
 test.beforeEach(() => test.skip(test.info().project.name !== 'desktop', 'sets its own viewport'));
+
+/** Nothing sideways: the page is no wider than the window (Review Focus 4). */
+async function expectNoHorizontalScroll(page: Page) {
+  const { scrollWidth, innerWidth } = await page.evaluate(() => ({ scrollWidth: document.documentElement.scrollWidth, innerWidth: window.innerWidth }));
+  expect(scrollWidth).toBeLessThanOrEqual(innerWidth);
+}
 
 const UPLOADS = {
   items: [{ id: 'b1', status: 'succeeded', file_name: 'cefrj-vocabulary-profile-1.5.csv', row_count: 7799, created_at: '2026-10-14T09:30:00.000Z' }],
@@ -216,3 +222,12 @@ for (const width of [1440, 1280]) {
     expect(scrollWidth).toBeLessThanOrEqual(clientWidth);
   });
 }
+
+test('the no-access page at 390 fits the window and its text and button are in view', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await signedInAs(page, 'editor', listMocks);
+  await page.goto('/staff');
+  await expect(page.getByText(vi.noAccess.title)).toBeVisible();
+  await expect(page.getByRole('button', { name: vi.noAccess.home })).toBeVisible();
+  await expectNoHorizontalScroll(page);
+});
