@@ -3,7 +3,9 @@ import { z } from 'zod';
 import { Clock } from '../../common/clock/clock.js';
 import { PRISMA_CLIENT } from '../../common/db/prisma.module.js';
 import { ProblemDetailsException } from '../../common/problem-details/problem-details.exception.js';
+import { userRef } from '../../common/user-ref.js';
 import type { Prisma, PrismaClient } from '../../generated/prisma/client.js';
+import { IdentityService } from '../../identity/profile/identity.service.js';
 import type { MeaningLanguage } from '../practice.types.js';
 
 export type ReportReasonRow = Prisma.PracticeReportReasonGetPayload<object>;
@@ -40,10 +42,11 @@ export function learnerReasons(rows: ReportReasonRow[], kind: ReasonKind, langua
   }));
 }
 
-const adminView = (row: ReportReasonRow) => ({
+const adminView = (row: ReportReasonRow, emails: ReadonlyMap<string, string>) => ({
   code: row.code, label_vi: row.labelVi, label_en: row.labelEn, detail_hint_vi: row.detailHintVi, detail_hint_en: row.detailHintEn,
   applies_to: row.appliesTo, note_required: row.noteRequired, refundable: row.refundable, active: row.active, position: row.position,
   updated_at: row.updatedAt.toISOString(), updated_by: row.updatedBy,
+  updated_by_user: row.updatedBy ? userRef(row.updatedBy, emails) : null,
 });
 
 const errorCode = (error: unknown) => error !== null && typeof error === 'object' && 'code' in error ? error.code : undefined;
@@ -54,24 +57,33 @@ export class ReportReasonsService {
   constructor(
     @Inject(PRISMA_CLIENT) private readonly prisma: PrismaClient,
     @Inject(Clock) private readonly clock: Clock,
+    @Inject(IdentityService) private readonly identity: IdentityService,
   ) {}
+
+  /** One staff address lookup per call (design §5.1), always outside a transaction. */
+  private emailsOf(rows: readonly ReportReasonRow[]) {
+    return this.identity.emailsOf([...new Set(rows.flatMap((row) => row.updatedBy ? [row.updatedBy] : []))]);
+  }
 
   async learnerList(kind: ReasonKind, language: MeaningLanguage) {
     return { items: learnerReasons(await this.prisma.practiceReportReason.findMany(), kind, language) };
   }
 
   async adminList() {
-    return { items: [...await this.prisma.practiceReportReason.findMany()].sort(byPosition).map(adminView) };
+    const rows = [...await this.prisma.practiceReportReason.findMany()].sort(byPosition);
+    const emails = await this.emailsOf(rows);
+    return { items: rows.map((row) => adminView(row, emails)) };
   }
 
   async create(actorId: string, body: CreateReasonBody) {
     const now = this.clock.now();
     try {
-      return adminView(await this.prisma.practiceReportReason.create({ data: {
+      const row = await this.prisma.practiceReportReason.create({ data: {
         code: body.code, labelVi: body.label_vi, labelEn: body.label_en, detailHintVi: body.detail_hint_vi ?? null,
         detailHintEn: body.detail_hint_en ?? null, appliesTo: body.applies_to, noteRequired: body.note_required, refundable: body.refundable,
         position: body.position, createdAt: now, updatedAt: now, updatedBy: actorId,
-      } }));
+      } });
+      return adminView(row, await this.emailsOf([row]));
     } catch (error) {
       if (errorCode(error) !== 'P2002') throw error;
       throw new ProblemDetailsException({ status: 409, title: 'Report reason exists', type: 'report-reason-exists' });
@@ -92,7 +104,8 @@ export class ReportReasonsService {
       updatedAt: this.clock.now(), updatedBy: actorId,
     };
     try {
-      return adminView(await this.prisma.practiceReportReason.update({ where: { code }, data }));
+      const row = await this.prisma.practiceReportReason.update({ where: { code }, data });
+      return adminView(row, await this.emailsOf([row]));
     } catch (error) {
       if (errorCode(error) !== 'P2025') throw error;
       throw new ProblemDetailsException({ status: 404, title: 'Not found', type: 'not-found' });

@@ -3,6 +3,7 @@ import { join } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
 import type { Clock } from '../../common/clock/clock.js';
 import type { PrismaClient } from '../../generated/prisma/client.js';
+import type { IdentityService } from '../../identity/profile/identity.service.js';
 import { fitsKind, learnerReasons, ReportReasonsService, type ReportReasonRow } from './report-reasons.service.js';
 
 const NOW = new Date('2026-10-22T08:00:00Z');
@@ -64,7 +65,10 @@ describe('ReportReasonsService', () => {
       },
     };
     const clock = { now: () => NOW } as Clock;
-    return { prisma, service: new ReportReasonsService(prisma as unknown as PrismaClient, clock) };
+    const identity = { emailsOf: vi.fn(async (_ids: string[]) => new Map([['actor-1', 'staff@example.com']])) };
+    return {
+      prisma, identity, service: new ReportReasonsService(prisma as unknown as PrismaClient, clock, identity as unknown as IdentityService),
+    };
   };
   const body = {
     code: 'new_reason', label_vi: 'Mới', label_en: 'New', applies_to: 'ai' as const, note_required: true, refundable: true, position: 8,
@@ -77,8 +81,22 @@ describe('ReportReasonsService', () => {
     expect(items[4]).toEqual({
       code: 'ai_more_than_one_answer', label_vi: 'vi ai_more_than_one_answer', label_en: 'en ai_more_than_one_answer',
       detail_hint_vi: 'Từ nào khác cũng đúng?', detail_hint_en: 'Which other word also fits?', applies_to: 'ai', note_required: false,
-      refundable: true, active: true, position: 6, updated_at: NOW.toISOString(), updated_by: null,
+      refundable: true, active: true, position: 6, updated_at: NOW.toISOString(), updated_by: null, updated_by_user: null,
     });
+  });
+
+  it('updated_by_user names the editor; one emailsOf per call, an unknown id has email null', async () => {
+    const { prisma, identity, service } = make();
+    prisma.practiceReportReason.findMany.mockResolvedValueOnce([
+      reason('a', 1, { updatedBy: 'actor-1' }), reason('b', 2, { updatedBy: 'ghost' }), reason('c', 3, { updatedBy: 'actor-1' }),
+    ]);
+    const { items } = await service.adminList();
+    expect(items.map((item) => item.updated_by_user)).toEqual([
+      { id: 'actor-1', email: 'staff@example.com', system: false }, { id: 'ghost', email: null, system: false },
+      { id: 'actor-1', email: 'staff@example.com', system: false },
+    ]);
+    expect(identity.emailsOf).toHaveBeenCalledTimes(1);
+    expect(identity.emailsOf).toHaveBeenCalledWith(['actor-1', 'ghost']);
   });
 
   it('create stores the actor and the time; missing hints are null', async () => {
@@ -89,6 +107,7 @@ describe('ReportReasonsService', () => {
       refundable: true, position: 8, createdAt: NOW, updatedAt: NOW, updatedBy: 'actor-1',
     } });
     expect(view.code).toBe('new_reason');
+    expect(view.updated_by_user).toEqual({ id: 'actor-1', email: 'staff@example.com', system: false });
   });
 
   it('create of an existing code → 409 report-reason-exists', async () => {

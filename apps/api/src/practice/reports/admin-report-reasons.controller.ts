@@ -18,7 +18,9 @@ const params = z.strictObject({ code: z.string().regex(REASON_CODE_PATTERN) });
 export class AdminReportReasonsController {
   constructor(@Inject(ReportReasonsService) private readonly reasons: ReportReasonsService) {}
 
+  // Editors read the list (design §5.3); writes keep the class permission.
   @Get()
+  @RequirePermission('content.edit')
   list() {
     return this.reasons.adminList();
   }

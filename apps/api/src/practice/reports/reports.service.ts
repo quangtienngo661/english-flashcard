@@ -5,6 +5,7 @@ import { PRISMA_CLIENT } from '../../common/db/prisma.module.js';
 import { AppLogger } from '../../common/logging/app-logger.js';
 import { decodeBoundToken, encodeBoundToken } from '../../common/pagination/page-token.util.js';
 import { ProblemDetailsException } from '../../common/problem-details/problem-details.exception.js';
+import { userRef } from '../../common/user-ref.js';
 import type { Learner } from '../../content/index.js';
 import { EntitlementsService } from '../../entitlements/index.js';
 import type { Prisma, PrismaClient } from '../../generated/prisma/client.js';
@@ -18,6 +19,8 @@ import { buildSnapshot } from './snapshot.js';
 
 export type ReportStatus = 'open' | ResolveStatus;
 type ReportRow = Prisma.PracticeReportGetPayload<object>;
+const withRefundable = { reasonRef: { select: { refundable: true } } } as const;
+type StaffRow = Prisma.PracticeReportGetPayload<{ include: typeof withRefundable }>;
 
 const transactionOptions = { timeout: 30_000, maxWait: 5_000 };
 const hour = 3_600_000;
@@ -43,13 +46,14 @@ const myReportView = (row: MyReportRow) => ({
 });
 
 /** What staff see: the masked snapshot, never the reporter (design §10). */
-const staffView = (row: ReportRow) => {
+const staffView = (row: StaffRow, emails: ReadonlyMap<string, string>) => {
   // AiResult.meta plus call_operation_id (design §7.7); null for a question made by rule.
   const meta = (row.aiMeta ?? {}) as { call_operation_id?: string; model?: string; prompt_revision?: number };
   return {
     id: row.id, sense_id: row.senseId, reason: row.reason, reason_label: row.reasonLabel, note: row.note, status: row.status,
     question_snapshot: row.questionSnapshot, created_at: row.createdAt.toISOString(),
     resolved_at: row.resolvedAt?.toISOString() ?? null, resolved_by: row.resolvedBy, resolved_by_role: row.resolvedByRole,
+    resolved_by_user: row.resolvedBy ? userRef(row.resolvedBy, emails) : null, refundable: row.reasonRef.refundable,
     question_source: row.questionSource, ai_operation_id: row.aiOperationId, call_operation_id: meta.call_operation_id ?? null,
     model: meta.model ?? null, prompt_revision: meta.prompt_revision ?? null, ai_charged: row.aiCharged, refunded: row.refunded,
   };
@@ -57,8 +61,9 @@ const staffView = (row: ReportRow) => {
 
 type RefundRow = Pick<ReportRow, 'id' | 'userId' | 'resolvedBy' | 'resolvedByRole' | 'refunded' | 'resolvedAt'>;
 /** The admin's review of confirmed AI errors (design §9.3, D33): self_resolved = the reporter resolved it. */
-const refundView = (row: RefundRow) => ({
-  report_id: row.id, user_id: row.userId, resolved_by: row.resolvedBy, resolved_by_role: row.resolvedByRole,
+const refundView = (row: RefundRow, emails: ReadonlyMap<string, string>) => ({
+  report_id: row.id, user_id: row.userId, user: userRef(row.userId, emails), resolved_by: row.resolvedBy, resolved_by_role: row.resolvedByRole,
+  resolved_by_user: row.resolvedBy ? userRef(row.resolvedBy, emails) : null,
   self_resolved: row.resolvedBy === row.userId, refunded: row.refunded, resolved_at: row.resolvedAt?.toISOString() ?? null,
 });
 
@@ -183,15 +188,28 @@ export class ReportsService {
         ...(query.source ? { questionSource: query.source } : {}),
         ...(cursor ? { OR: [{ createdAt: { lt: createdAt } }, { createdAt, id: { gt: cursor.id } }] } : {}),
       },
-      orderBy: [{ createdAt: 'desc' }, { id: 'asc' }], take: query.pageSize + 1,
+      orderBy: [{ createdAt: 'desc' }, { id: 'asc' }], take: query.pageSize + 1, include: withRefundable,
     });
     const items = rows.slice(0, query.pageSize);
     const last = items.at(-1);
+    const emails = await this.emailsOf(items);
     return {
-      items: items.map(staffView),
+      items: items.map((row) => staffView(row, emails)),
       next_page_token: rows.length > query.pageSize && last
         ? encodeBoundToken({ created_at: last.createdAt.toISOString(), id: last.id }, binding) : null,
     };
+  }
+
+  /** One staff address lookup per call (design §5.1), never inside a transaction. */
+  private emailsOf(rows: readonly { resolvedBy: string | null; userId?: string }[], withReporters = false) {
+    return this.identity.emailsOf([...new Set(rows.flatMap((row) =>
+      [row.resolvedBy, withReporters ? row.userId : null].filter((id): id is string => !!id)))]);
+  }
+
+  async get(reportId: string) {
+    const row = await this.prisma.practiceReport.findUnique({ where: { id: reportId }, include: withRefundable });
+    if (!row) throw notFound();
+    return staffView(row, await this.emailsOf([row]));
   }
 
   /**
@@ -220,9 +238,9 @@ export class ReportsService {
     });
     if (count === 0) throw notOpen();
     if (decision === 'refund') await this.refund(report);
-    const row = await this.prisma.practiceReport.findUnique({ where: { id: reportId } });
+    const row = await this.prisma.practiceReport.findUnique({ where: { id: reportId }, include: withRefundable });
     if (!row) throw notFound();
-    return staffView(row);
+    return staffView(row, await this.emailsOf([row]));
   }
 
   /** Gives back the unit of a confirmed, charged AI question; idempotent by the operation id, so the hourly job may call it again. */
@@ -236,9 +254,20 @@ export class ReportsService {
   }
 
   /** Confirmed AI reports for the admin (design §9.3), newest resolution first. */
-  async listRefunds(query: { resolvedBy?: string; from?: Date; to?: Date; pageSize: number; pageToken?: string }) {
-    const filters = { resolvedBy: query.resolvedBy ?? null, from: query.from?.toISOString() ?? null, to: query.to?.toISOString() ?? null };
+  async listRefunds(
+    query: { resolvedBy?: string; resolvedByEmail?: string; from?: Date; to?: Date; pageSize: number; pageToken?: string },
+  ) {
+    const filters = {
+      resolvedBy: query.resolvedBy ?? null, resolvedByEmail: query.resolvedByEmail ?? null, from: query.from?.toISOString() ?? null, to: query.to?.toISOString() ?? null,
+    };
     const binding = createHash('sha256').update(JSON.stringify({ route: 'practice-refunds', filters })).digest('hex');
+    // Both resolver filters apply when both are sent; an address no account has matches nothing.
+    const resolvers: string[] = query.resolvedBy ? [query.resolvedBy] : [];
+    if (query.resolvedByEmail !== undefined) {
+      const found = await this.identity.findUserIdByEmail(query.resolvedByEmail);
+      if (found === null) return { items: [], next_page_token: null };
+      resolvers.push(found);
+    }
     let cursor: { resolvedAt: Date; id: string } | undefined;
     if (query.pageToken !== undefined) {
       const decoded = decodeBoundToken(query.pageToken, binding);
@@ -251,7 +280,8 @@ export class ReportsService {
       ? { resolvedAt: { ...(query.from ? { gte: query.from } : {}), ...(query.to ? { lt: query.to } : {}) } } : {};
     const rows = await this.prisma.practiceReport.findMany({
       where: {
-        status: 'confirmed', questionSource: 'ai', ...(query.resolvedBy ? { resolvedBy: query.resolvedBy } : {}), ...range,
+        status: 'confirmed', questionSource: 'ai', ...(resolvers.length === 1 ? { resolvedBy: resolvers[0] } : {}),
+        ...(resolvers.length > 1 ? { AND: resolvers.map((resolvedBy) => ({ resolvedBy })) } : {}), ...range,
         ...(cursor ? { OR: [{ resolvedAt: { lt: cursor.resolvedAt } }, { resolvedAt: cursor.resolvedAt, id: { gt: cursor.id } }] } : {}),
       },
       orderBy: [{ resolvedAt: 'desc' }, { id: 'asc' }], take: query.pageSize + 1,
@@ -259,8 +289,9 @@ export class ReportsService {
     });
     const items = rows.slice(0, query.pageSize);
     const last = items.at(-1);
+    const emails = await this.emailsOf(items, true);
     return {
-      items: items.map(refundView),
+      items: items.map((row) => refundView(row, emails)),
       next_page_token: rows.length > query.pageSize && last?.resolvedAt
         ? encodeBoundToken({ resolved_at: last.resolvedAt.toISOString(), id: last.id }, binding) : null,
     };
