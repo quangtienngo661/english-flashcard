@@ -89,12 +89,14 @@ test.describe('Pronunciation buttons (C1, mocked API)', () => {
     const front = page.getByRole('group', { name: /Thẻ 1/ });
     await front.getByRole('button', { name: 'Nghe phát âm' }).click();
     expect(await spoken(page)).toEqual([{ text: 'deploy', lang: 'en-US' }]);
-    await expect(page.getByText('triển khai')).toHaveCount(0);
+    // Both faces stay mounted for the 3D flip (owner 27/10/2026, 1C): "not flipped" is the card's own state.
+    await expect(front).toHaveAttribute('data-flipped', 'false');
     // Focus is on the speak button now, where Space reads again (A1-6); flip with the button instead.
     await page.keyboard.press('Space');
     expect(await spoken(page)).toHaveLength(2);
-    await expect(page.getByText('triển khai')).toHaveCount(0);
+    await expect(front).toHaveAttribute('data-flipped', 'false');
     await page.getByRole('button', { name: copy.vi.App.review.flip }).click();
+    await expect(front).toHaveAttribute('data-flipped', 'true');
     await expect(page.getByText('triển khai')).toBeVisible();
     await page.getByRole('group', { name: /Thẻ 1/ }).getByRole('button', { name: 'Nghe phát âm' }).click();
     expect((await spoken(page)).at(-1)).toEqual({ text: 'deploy', lang: 'en-US' });
