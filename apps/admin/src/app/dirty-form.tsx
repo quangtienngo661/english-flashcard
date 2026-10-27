@@ -6,8 +6,10 @@ import { ConfirmDialog } from '../ui/ConfirmDialog';
 type DirtyForms = {
   /** Form id → the pathname it was dirty on. A ref, so `release()` is seen by the very next navigation. */
   registry: { current: Map<string, string> };
-  /** Asks "Bỏ thay đổi?"; `discard` runs only on [Bỏ thay đổi]. */
-  askDiscard: (discard: () => void) => void;
+  /** Asks "Bỏ thay đổi?" for the dialog `owner`; `discard` runs only on [Bỏ thay đổi]. */
+  askDiscard: (owner: string, discard: () => void) => void;
+  /** Withdraws `owner`'s question, if it is the one open (its dialog went away). */
+  dropDiscard: (owner: string) => void;
 };
 
 const DirtyFormContext = createContext<DirtyForms | null>(null);
@@ -25,8 +27,15 @@ function useDirtyForms(): DirtyForms {
 export function DirtyFormProvider({ children }: { children: ReactNode }) {
   const t = useTranslations();
   const registry = useRef(new Map<string, string>());
-  const [pendingDiscard, setPendingDiscard] = useState<{ discard: () => void } | null>(null);
-  const value = useMemo<DirtyForms>(() => ({ registry, askDiscard: (discard) => setPendingDiscard({ discard }) }), []);
+  const [pendingDiscard, setPendingDiscard] = useState<{ owner: string; discard: () => void } | null>(null);
+  const value = useMemo<DirtyForms>(
+    () => ({
+      registry,
+      askDiscard: (owner, discard) => setPendingDiscard({ owner, discard }),
+      dropDiscard: (owner) => setPendingDiscard((pending) => (pending?.owner === owner ? null : pending)),
+    }),
+    [],
+  );
 
   return (
     <DirtyFormContext.Provider value={value}>
@@ -53,7 +62,10 @@ export function DirtyFormProvider({ children }: { children: ReactNode }) {
  * Marks this form dirty on the current page while `isDirty`. Call `release()` right before a post-save or post-cancel
  * `navigate`: it drops the mark at once, so that navigation is not blocked.
  */
-export function useDirtyForm(isDirty: boolean): { release(): void } {
+export function useDirtyForm(isDirty: boolean): {
+  /** Call only right before a navigation (save-and-go, cancel-and-go); the form is not marked again until `isDirty` changes. */
+  release(): void;
+} {
   const { registry } = useDirtyForms();
   const id = useId();
   const { pathname } = useLocation();
@@ -78,18 +90,21 @@ export function useDirtyForm(isDirty: boolean): { release(): void } {
  * `close()`. The dialog's form also counts as dirty for leaving the page.
  */
 export function useDialogDirtyClose(isDirty: boolean, close: () => void): () => void {
-  const { askDiscard } = useDirtyForms();
+  const { askDiscard, dropDiscard } = useDirtyForms();
   const { release } = useDirtyForm(isDirty);
+  const owner = useId();
+  // A question still open when its dialog goes away (e.g. the page was left) must not outlive it or run a stale `close()`.
+  useEffect(() => () => dropDiscard(owner), [dropDiscard, owner]);
   return useCallback(() => {
     if (!isDirty) {
       close();
       return;
     }
-    askDiscard(() => {
+    askDiscard(owner, () => {
       release();
       close();
     });
-  }, [askDiscard, close, isDirty, release]);
+  }, [askDiscard, close, isDirty, owner, release]);
 }
 
 /**
@@ -104,7 +119,9 @@ export function LeaveGuard() {
     return dirtyHere && nextLocation.pathname !== currentLocation.pathname;
   });
   useBeforeUnload((event) => {
-    if (registry.current.size > 0) event.preventDefault();
+    if (registry.current.size === 0) return;
+    event.preventDefault();
+    event.returnValue = ''; // older browsers prompt only when this is set
   });
 
   return (
@@ -113,6 +130,7 @@ export function LeaveGuard() {
       title={t('leave.title')}
       confirmLabel={t('leave.leave')}
       cancelLabel={t('leave.stay')}
+      tone="danger"
       onConfirm={() => {
         registry.current.clear();
         blocker.proceed?.();

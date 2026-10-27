@@ -39,7 +39,7 @@ export function ConfirmDialog({ isOpen, title, children, confirmLabel, cancelLab
         </>
       }
     >
-      {children && <div className="break-words text-ui text-muted">{children}</div>}
+      {children != null && <div className="break-words text-ui text-muted">{children}</div>}
     </Dialog>
   );
 }

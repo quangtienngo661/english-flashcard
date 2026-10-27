@@ -109,7 +109,7 @@ const makeDirty = async (label = 'Page field') => userEvent.type(await screen.fi
 const leaveDialog = () => screen.queryByRole('dialog', { name: vi.leave.title });
 
 describe('dirty forms (T6)', () => {
-  it('a clean form leaves without a question', async () => {
+  it('§4.3 T6: a clean form leaves without a question', async () => {
     renderForm();
     await screen.findByLabelText('Page field', {}, { timeout: 5000 });
     await userEvent.click(screen.getByRole('link', { name: vi.nav.sources }));
@@ -117,7 +117,7 @@ describe('dirty forms (T6)', () => {
     expect(leaveDialog()).toBeNull();
   });
 
-  it('dirty on /settings, a nav link asks first: [Ở lại] stays with the text kept, [Rời trang] goes', async () => {
+  it('§4.3 T6: dirty on /settings, a nav link asks "Rời trang?" first: [Ở lại] stays with the text kept, [Rời trang] goes', async () => {
     renderForm();
     await makeDirty();
     await userEvent.click(screen.getByRole('link', { name: vi.nav.sources }));
@@ -135,7 +135,7 @@ describe('dirty forms (T6)', () => {
     await waitFor(() => expect(leaveDialog()).toBeNull());
   });
 
-  it('changing only the search on the same page (?tab=) does not ask (design §4.3)', async () => {
+  it('§4.3 "Chỉ chặn khi đổi trang": changing only the search on the same page (?tab=) does not ask', async () => {
     renderForm();
     await makeDirty();
     await userEvent.click(screen.getByRole('button', { name: 'Tab AI' }));
@@ -144,7 +144,7 @@ describe('dirty forms (T6)', () => {
     expect(screen.getByLabelText('Page field')).toHaveValue('x');
   });
 
-  it('release() right before navigate lets the save leave without a question', async () => {
+  it('§4.3 "Lưu xong thì hết bẩn trước khi điều hướng": release() right before navigate leaves without a question', async () => {
     renderForm();
     await makeDirty();
     await userEvent.click(screen.getByRole('button', { name: 'Save and go' }));
@@ -152,7 +152,7 @@ describe('dirty forms (T6)', () => {
     expect(leaveDialog()).toBeNull();
   });
 
-  it('history back while dirty asks too', async () => {
+  it('§4.3 T6: history back while dirty asks too', async () => {
     const { router } = renderForm(['/sources', '/settings']);
     await makeDirty();
     await act(() => router.navigate(-1));
@@ -162,7 +162,7 @@ describe('dirty forms (T6)', () => {
     await waitFor(() => expect(where()).toBe('/sources'));
   });
 
-  it('two dirty forms (page + dialog) still raise one question', async () => {
+  it('§4.3 "Một blocker duy nhất": two dirty forms (page + dialog) still raise one question', async () => {
     const { router } = renderForm(['/sources', '/settings']);
     await makeDirty();
     await userEvent.click(screen.getByRole('button', { name: 'Open dialog' }));
@@ -174,7 +174,7 @@ describe('dirty forms (T6)', () => {
     await waitFor(() => expect(where()).toBe('/sources'));
   });
 
-  it('beforeunload is cancelled only while a form is dirty', async () => {
+  it('§4.3 T6 useBeforeUnload: beforeunload is cancelled only while a form is dirty', async () => {
     renderForm();
     const unload = () => {
       const event = new Event('beforeunload', { cancelable: true });
@@ -191,7 +191,7 @@ describe('dirty forms (T6)', () => {
 });
 
 describe('dialog close with a dirty form (useDialogDirtyClose)', () => {
-  it('a clean dialog closes at once', async () => {
+  it('§4.3 "Hộp thoại tự hỏi khi đóng": a clean dialog closes at once', async () => {
     renderForm(['/settings/new']);
     await screen.findByRole('dialog', { name: 'Form dialog' }, { timeout: 5000 });
     await userEvent.click(screen.getByRole('button', { name: vi.common.cancel }));
@@ -200,7 +200,7 @@ describe('dialog close with a dirty form (useDialogDirtyClose)', () => {
     expect(leaveDialog()).toBeNull();
   });
 
-  it('dirty: Esc asks "Bỏ thay đổi?"; [Tiếp tục sửa] keeps the text; [Hủy] then [Bỏ thay đổi] closes with no leave question', async () => {
+  it('§4.3 "Hộp thoại tự hỏi khi đóng": dirty, Esc asks "Bỏ thay đổi?"; [Tiếp tục sửa] keeps the text; [Hủy] then [Bỏ thay đổi] closes with no leave question', async () => {
     renderForm(['/settings/new']);
     await makeDirty('Dialog field');
     await userEvent.keyboard('{Escape}');
@@ -216,10 +216,21 @@ describe('dialog close with a dirty form (useDialogDirtyClose)', () => {
     await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Form dialog' })).toBeNull());
     expect(leaveDialog()).toBeNull();
   });
+  it('§4.3 "Hộp thoại tự hỏi khi đóng": a "Bỏ thay đổi?" question left open goes away with its dialog when the page is left', async () => {
+    const { router } = renderForm(['/sources', '/settings/new']);
+    await makeDirty('Dialog field');
+    await userEvent.keyboard('{Escape}');
+    await screen.findByRole('dialog', { name: vi.leave.discardTitle });
+    await act(() => router.navigate(-1));
+    await userEvent.click(within(await screen.findByRole('dialog', { name: vi.leave.title })).getByRole('button', { name: vi.leave.leave }));
+    await waitFor(() => expect(where()).toBe('/sources'));
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: vi.leave.discardTitle, hidden: true })).toBeNull());
+    expect(screen.queryByRole('dialog', { hidden: true })).toBeNull();
+  });
 });
 
 describe('leave copy', () => {
-  it('both languages have it', () => {
+  it('§4.3 T6: both languages have the copy', () => {
     expect(vi.leave).toEqual({
       title: 'Rời trang?',
       body: 'Thay đổi chưa lưu sẽ mất.',
