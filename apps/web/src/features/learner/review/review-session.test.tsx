@@ -84,6 +84,12 @@ describe('ReviewSession (K/20–K/22)', () => {
     expect(back).not.toHaveAttribute('aria-hidden');
     expect(back).not.toHaveAttribute('inert');
     expect(card.querySelector('[data-face="front"]')).toBe(front);
+    // Option C (owner 27/10/2026): one column — the meaning runs the full width at text-title-lg, the example comes below it.
+    const meaning = within(back as HTMLElement).getByText('triển khai');
+    expect(meaning).toHaveClass('text-title-lg');
+    expect(back.querySelector('.md\:grid-cols-2')).toBeNull();
+    const example = within(back as HTMLElement).getByText('Câu mẫu');
+    expect(meaning.compareDocumentPosition(example) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     // The next card rises in.
     expect(card).toHaveClass('motion-safe:animate-card-rise');
   });
