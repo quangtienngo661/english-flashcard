@@ -241,8 +241,8 @@ describe('new grant dialog', { timeout: 20_000 }, () => {
     expect(screen.getByLabelText(n.reason)).toHaveValue('Giải IELTS');
   });
 
-  it('§6.11: paid_renewal_action not_supported shows the warning sentence', async () => {
-    renderApp('/entitlements/new', {
+  it('§6.11: paid_renewal_action not_supported keeps a warning in the open dialog until [Đã hiểu], and the list refreshes', async () => {
+    const r = renderApp('/entitlements/new', {
       ...base,
       [lookupPath('lan@example.com')]: () => json(found()),
       [CREATE]: () => json(created({ paid_renewal_action: 'not_supported' }), 201),
@@ -251,7 +251,37 @@ describe('new grant dialog', { timeout: 20_000 }, () => {
     await screen.findByText(confirmedText);
     await fillEnd();
     await userEvent.click(submit());
-    expect(await screen.findByText(n.notSupported)).toBeInTheDocument();
+    const warning = await screen.findByText(n.notSupported);
+    expect(warning.closest('[role="alert"]')).not.toBeNull();
+    expect(screen.getByRole('dialog', { name: n.title })).toBeInTheDocument();
+    expect(r.router.state.location.pathname).toBe('/entitlements/new');
+    await waitFor(() => expect(calls(r.calls, 'GET', '/v1/admin/entitlements/grants?page_size=20').length).toBeGreaterThan(1));
+    await userEvent.click(screen.getByRole('button', { name: n.understood }));
+    await waitFor(() => expect(r.router.state.location.pathname).toBe('/entitlements'));
+    expect(screen.queryByText(n.notSupported)).not.toBeInTheDocument();
+  });
+
+  it('§6.11: a created grant with turned_off closes the dialog at once with the toast', async () => {
+    const r = renderApp('/entitlements/new', {
+      ...base,
+      [lookupPath('lan@example.com')]: () => json(found()),
+      [CREATE]: () => json(created({ paid_renewal_action: 'turned_off' }), 201),
+    });
+    await checkEmail();
+    await screen.findByText(confirmedText);
+    await fillEnd();
+    await userEvent.click(submit());
+    await waitFor(() => expect(r.router.state.location.pathname).toBe('/entitlements'));
+    expect(await screen.findByText(n.done.replace('{email}', 'lan@example.com'))).toBeInTheDocument();
+    expect(screen.queryByText(n.notSupported)).not.toBeInTheDocument();
+  });
+
+  it('§6.11: moving focus from the email to [Hủy] does not look the email up', async () => {
+    const r = renderApp('/entitlements/new', { ...base, [lookupPath('lan@example.com')]: () => json(found()) });
+    await userEvent.type(await screen.findByLabelText(n.email), 'lan@example.com');
+    await userEvent.click(screen.getByRole('button', { name: vi.common.cancel }));
+    expect(await screen.findByText(vi.leave.discardTitle)).toBeInTheDocument();
+    expect(calls(r.calls, 'GET', '/v1/admin/entitlements/lookup')).toHaveLength(0);
   });
 
   it('§6.11: another 409 grant-not-allowed reason shows its own sentence in the dialog', async () => {

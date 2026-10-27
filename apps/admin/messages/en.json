@@ -500,6 +500,7 @@
       "note": "A Pro grant that starts now replaces the Pro grant already in place. New AI uses count by monthly cycle from the start day.",
       "submit": "Grant",
       "done": "Granted to {email}.",
+      "understood": "Got it",
       "notSupported": "Granted. Auto-renewal could not be turned off at the payment provider; the learner may still be charged next period.",
       "confirm": {
         "title": "Grant Pro to {email}?",

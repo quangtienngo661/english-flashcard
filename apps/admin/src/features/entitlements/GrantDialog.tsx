@@ -1,5 +1,5 @@
 import { useQueryClient } from '@tanstack/react-query';
-import { useRef, useState, type FormEvent } from 'react';
+import { useRef, useState, type FocusEvent, type FormEvent } from 'react';
 import { flushSync } from 'react-dom';
 import { useNavigate } from 'react-router';
 import { useFormatter, useTranslations } from 'use-intl';
@@ -83,10 +83,15 @@ export function GrantDialog() {
   const [confirmed, setConfirmed] = useState(false);
   const [keptProblem, setKeptProblem] = useState<unknown>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  // The address the request went out for, and the Pro-renewal warning that must stay on screen after a successful create.
+  const [sentTo, setSentTo] = useState('');
+  const [warned, setWarned] = useState(false);
 
   const lookupSeq = useRef(0);
   const lastLookup = useRef<{ email: string; at: number } | null>(null);
   const body = useRef<CreateGrantBody | null>(null);
+  const formRef = useRef<HTMLFormElement>(null);
+  const sentRef = useRef(''); // read by the completion callback, which runs before the next render
 
   const trimmed = email.trim();
   const verified = lookup?.status === 'ok' && lookup.email === trimmed ? lookup.user : null;
@@ -130,7 +135,10 @@ export function GrantDialog() {
     setErrors((e) => ({ ...e, email: '' }));
   }
 
-  function onEmailBlur() {
+  function onEmailBlur(event: FocusEvent<HTMLDivElement>) {
+    // Focus going to [Hủy], the ✕, or out of the form is leaving, not asking: it must not spend the hourly lookups.
+    const next = event.relatedTarget as HTMLElement | null;
+    if (!next || !formRef.current?.contains(next) || next.closest('[data-skip-lookup]')) return;
     if (trimmed === '' || lookup !== null || checking) return;
     void check();
   }
@@ -143,7 +151,7 @@ export function GrantDialog() {
 
   const dirty =
     email !== '' || kind !== 'plan' || from !== '' || to !== '' || reason !== '' || Object.values(limits).some((v) => v !== null && v !== undefined);
-  const requestClose = useDialogDirtyClose(dirty, () => void navigate('/entitlements'));
+  const requestClose = useDialogDirtyClose(dirty && !warned, () => void navigate('/entitlements'));
 
   const fingerprint = JSON.stringify({ id: verified?.id ?? null, kind, limits, from, to, reason, confirmed });
   const action = useSubmitAction(
@@ -151,8 +159,12 @@ export function GrantDialog() {
     fingerprint,
     (grant) => {
       void queryClient.invalidateQueries({ queryKey: ['grants'] });
-      showToast(grant.paid_renewal_action === 'not_supported' ? t('entitlements.new.notSupported') : t('entitlements.new.done', { email: verified?.email ?? '' }));
       requestClose.release();
+      if (grant.paid_renewal_action === 'not_supported') {
+        setWarned(true);
+        return;
+      }
+      showToast(t('entitlements.new.done', { email: sentRef.current }));
       void navigate('/entitlements');
     },
   );
@@ -192,6 +204,8 @@ export function GrantDialog() {
     }
     flushSync(() => setErrors(next));
     if (Object.keys(next).length > 0) return;
+    sentRef.current = verified.email;
+    setSentTo(verified.email);
     body.current = {
       user_id: verified.id,
       kind,
@@ -241,7 +255,15 @@ export function GrantDialog() {
   const pending = action.pending;
   return (
     <Dialog isOpen onOpenChange={(open) => !open && !pending && requestClose()} isDismissable={!pending} title={t('entitlements.new.title')} size="lg">
-      <form noValidate onSubmit={submit} className="flex flex-col gap-4">
+      {warned ? (
+        <div className="flex flex-col gap-4">
+          <Banner variant="warning">{t('entitlements.new.notSupported')}</Banner>
+          <div className="flex justify-end">
+            <Button onPress={() => void navigate('/entitlements')}>{t('entitlements.new.understood')}</Button>
+          </div>
+        </div>
+      ) : (
+      <form ref={formRef} noValidate onSubmit={submit} className="flex flex-col gap-4">
         {banner && <Banner variant="error" code={banner.code}>{banner.message}</Banner>}
         <div className="flex items-start gap-2" onBlur={onEmailBlur}>
           <TextField
@@ -323,18 +345,21 @@ export function GrantDialog() {
         {kind === 'plan' && startsNow && <p className="break-words text-xs text-muted">{t('entitlements.new.note')}</p>}
 
         <div className="flex flex-wrap justify-end gap-2">
-          <Button variant="secondary" isDisabled={pending} onPress={requestClose}>
-            {t('common.cancel')}
-          </Button>
+          <span data-skip-lookup>
+            <Button variant="secondary" isDisabled={pending} onPress={requestClose}>
+              {t('common.cancel')}
+            </Button>
+          </span>
           <Button type="submit" isPending={pending} isDisabled={!verified || action.waitSeconds > 0}>
             {action.waitSeconds > 0 ? t('errors.retryIn', { seconds: action.waitSeconds }) : action.canRetry ? t('common.retry') : t('entitlements.new.submit')}
           </Button>
         </div>
       </form>
+      )}
 
       <ConfirmDialog
         isOpen={asksToTurnOffRenewal}
-        title={t('entitlements.new.confirm.title', { email: verified?.email ?? trimmed })}
+        title={t('entitlements.new.confirm.title', { email: sentTo })}
         confirmLabel={t('entitlements.new.confirm.ok')}
         cancelLabel={t('entitlements.new.confirm.keep')}
         tone="danger"

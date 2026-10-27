@@ -500,6 +500,7 @@
       "note": "Cấp gói Pro bắt đầu ngay sẽ thay lần cấp gói đang có. Lượt AI mới tính theo chu kỳ tháng từ ngày bắt đầu.",
       "submit": "Cấp",
       "done": "Đã cấp cho {email}.",
+      "understood": "Đã hiểu",
       "notSupported": "Đã cấp. Chưa tắt được tự gia hạn ở cổng thanh toán; người học vẫn có thể bị trừ tiền kỳ sau.",
       "confirm": {
         "title": "Cấp gói Pro cho {email}?",

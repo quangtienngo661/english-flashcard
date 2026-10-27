@@ -2,17 +2,18 @@ import { Info, TriangleAlert, WifiOff } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useTranslations } from 'use-intl';
 
-type Variant = 'info' | 'error' | 'offline';
+type Variant = 'info' | 'error' | 'offline' | 'warning';
 
 const STYLE: Record<Variant, string> = {
   info: 'bg-primary-soft text-ink',
   error: 'bg-danger-soft text-danger',
   offline: 'bg-accent-soft text-ink',
+  warning: 'bg-accent-soft text-ink',
 };
 
-const ICON = { info: Info, error: TriangleAlert, offline: WifiOff } as const;
+const ICON = { info: Info, error: TriangleAlert, offline: WifiOff, warning: TriangleAlert } as const;
 
-/** `error` and `offline` interrupt (role alert); `info` is a quiet status. */
+/** `error`, `offline` and `warning` interrupt (role alert); `info` is a quiet status. */
 export function Banner({
   variant,
   children,
