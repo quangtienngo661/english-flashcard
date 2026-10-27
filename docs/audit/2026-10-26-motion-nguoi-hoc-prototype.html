@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Motion prototype</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  /* Values copied from packages/design-tokens/theme.css and apps/web/src/app/globals.css (27/10/2026). */
+  :root {
+    --primary: #2445d6; --accent: #ffd84a; --accent-deep: #c9a21a; --ink: #0f1a3d; --muted: #4d5577;
+    --surface: #fff; --canvas: #f1f3fd; --border: #e3e6f4; --border-strong: #7d84a8;
+    --success: #1b7a46; --success-soft: #e3f4ea; --danger: #b8352a; --danger-soft: #fde8e5;
+    --shadow-ink: rgb(15 26 61 / 0.35);
+    --ease-standard: cubic-bezier(0.2, 0, 0, 1); --ease-enter: cubic-bezier(0.05, 0.7, 0.1, 1);
+    --ease-exit: cubic-bezier(0.3, 0, 0.8, 0.15); --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+    --slow: 1;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: Lexend, system-ui, sans-serif; background: var(--canvas); color: var(--ink); }
+  main { max-width: 72rem; margin: 0 auto; padding: 1.5rem 1rem 4rem; }
+  h1 { font-size: 1.6rem; margin: 0 0 .25rem; }
+  .lead { color: var(--muted); margin: 0 0 1rem; }
+  .bar { display: flex; flex-wrap: wrap; gap: .75rem; align-items: center; background: var(--surface); border: 1px solid var(--border); border-radius: 1rem; padding: .75rem 1rem; position: sticky; top: .5rem; z-index: 5; }
+  .bar label { display: flex; gap: .4rem; align-items: center; font-size: .9rem; cursor: pointer; }
+  section.motion { margin-top: 2rem; }
+  section.motion > h2 { font-size: 1.25rem; margin: 0 0 .25rem; }
+  section.motion > p { color: var(--muted); margin: 0 0 1rem; font-size: .95rem; }
+  .grid { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr)); }
+  .opt { background: var(--surface); border: 1px solid var(--border); border-radius: 1.25rem; padding: 1rem; display: flex; flex-direction: column; gap: .75rem; min-width: 0; }
+  .opt h3 { margin: 0; font-size: 1rem; display: flex; gap: .5rem; align-items: center; }
+  .tag { font-size: .75rem; font-weight: 700; background: var(--accent); color: var(--ink); border-radius: 999px; padding: .1rem .55rem; }
+  .spec { font-size: .8rem; color: var(--muted); margin: 0; }
+  button { font: inherit; }
+  .btn { min-height: 2.75rem; border-radius: .875rem; border: 0; padding: 0 1rem; font-weight: 600; cursor: pointer; background: var(--accent); color: var(--ink); box-shadow: 0 .18rem 0 var(--accent-deep); transition: translate 100ms var(--ease-standard), box-shadow 100ms var(--ease-standard); }
+  .btn:active { translate: 0 .18rem; box-shadow: none; }
+  .btn.quiet { background: var(--surface); border: 2px solid var(--border-strong); box-shadow: 0 .18rem 0 var(--border-strong); }
+  .row { display: flex; gap: .5rem; flex-wrap: wrap; }
+  .row .btn { flex: 1; }
+
+  /* Flashcard */
+  .stage { position: relative; perspective: 60rem; }
+  .card { position: relative; min-height: 12rem; border: 2px solid var(--ink); border-radius: 1.25rem; background: var(--surface); box-shadow: 0 .25rem 0 var(--shadow-ink); display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 1rem; cursor: pointer; user-select: none; }
+  .card .word { font-size: 2rem; font-weight: 800; }
+  .card .pos { color: var(--muted); font-size: .9rem; }
+  .card .meaning { font-size: 1.4rem; font-weight: 700; }
+  .card .ex { color: var(--muted); font-size: .85rem; margin-top: .5rem; }
+  .card .ex b { color: var(--primary); }
+
+  @keyframes squash-out { to { transform: scaleX(0); } }
+  @keyframes squash-in { from { transform: scaleX(0); } }
+  @keyframes fade-scale-in { from { opacity: 0; transform: scale(0.97); } }
+  @keyframes fade-in { from { opacity: 0; } }
+  @keyframes rise-in { from { opacity: 0; transform: translateY(.75rem); } }
+  @keyframes slide-in-right { from { opacity: 0; transform: translateX(2rem); } }
+  @keyframes slide-out-left { to { opacity: 0; transform: translateX(-2rem); } }
+  @keyframes shake-x { 20% { transform: translateX(-4px); } 50% { transform: translateX(4px); } 80% { transform: translateX(-2px); } }
+  @keyframes wiggle { 25% { transform: rotate(-3deg); } 50% { transform: rotate(2.5deg); } 75% { transform: rotate(-1deg); } }
+  @keyframes pop { from { transform: scale(0.8); } }
+  @keyframes panel-in { from { opacity: 0; transform: translateY(.25rem); } }
+
+  .card3d { transition: transform calc(420ms * var(--slow)) var(--ease-standard); transform-style: preserve-3d; min-height: 12rem; position: relative; }
+  .card3d.flipped { transform: rotateY(180deg); }
+  .card3d .face { position: absolute; inset: 0; backface-visibility: hidden; }
+  .card3d .back { transform: rotateY(180deg); }
+
+  /* Practice */
+  .q { border: 2px solid var(--border-strong); border-radius: 1.5rem; background: var(--surface); padding: 1rem; box-shadow: 0 .25rem 0 var(--shadow-ink); display: flex; flex-direction: column; gap: .75rem; }
+  .q .chip { width: fit-content; font-size: .75rem; font-weight: 600; background: var(--accent); border-radius: 999px; padding: .1rem .6rem; }
+  .q .prompt { font-size: 1.35rem; font-weight: 800; margin: 0; }
+  .choice { display: flex; gap: .6rem; align-items: center; min-height: 2.75rem; border-radius: .875rem; border: 2px solid var(--border-strong); background: var(--surface); padding: .4rem .75rem; font-weight: 600; text-align: left; cursor: pointer; width: 100%; }
+  .choice:disabled { cursor: default; }
+  .choice.right { border-color: var(--success); background: var(--success-soft); }
+  .choice.wrong { border-color: var(--danger); background: var(--danger-soft); }
+  .choice .n { display: inline-flex; width: 1.5rem; height: 1.5rem; align-items: center; justify-content: center; border: 1px solid var(--border-strong); border-radius: .5rem; font-size: .75rem; flex-shrink: 0; }
+  .choice .mark { margin-left: auto; display: inline-block; }
+  .fb { display: flex; gap: .6rem; border-radius: .875rem; padding: .75rem; }
+  .fb.ok { background: var(--success-soft); color: var(--success); }
+  .fb.no { background: var(--danger-soft); color: var(--danger); }
+  .fb strong { display: block; }
+  .fb span { color: var(--ink); font-size: .9rem; }
+  .icon { display: inline-block; font-weight: 800; }
+  .counter { font-size: .8rem; color: var(--muted); }
+
+  @media (prefers-reduced-motion: reduce) { :root:not(.force-motion) * { animation-duration: 1ms !important; transition-duration: 1ms !important; } }
+  .reduce * { animation: none !important; transition: none !important; }
+  .reduce .rm-fade { animation: fade-in 120ms linear both !important; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Thử motion cho phiên học</h1>
+  <p class="lead">Bấm vào từng phương án để thử. Thẻ lật được bằng chuột hoặc phím <b>Space</b> (bấm vào thẻ trước để chọn nó). Mỗi motion chọn một phương án, hoặc "không có".</p>
+  <div class="bar">
+    <label><input type="checkbox" id="slow"> Chậm lại ×5 (để nhìn rõ)</label>
+    <label><input type="checkbox" id="reduce"> Giả lập "giảm chuyển động" (chỉ còn mờ dần 120ms)</label>
+  </div>
+
+  <section class="motion">
+    <h2>1. Lật thẻ (phiên ôn)</h2>
+    <p>Hôm nay: bấm "Lật thẻ" thì mặt sau thay mặt trước ngay lập tức.</p>
+    <div class="grid" id="flips"></div>
+  </section>
+
+  <section class="motion">
+    <h2>2. Sang thẻ / câu tiếp theo</h2>
+    <p>Hôm nay: thẻ mới thay thẻ cũ ngay lập tức. Bấm "Đã biết" liên tục để cảm nhịp.</p>
+    <div class="grid" id="nexts"></div>
+  </section>
+
+  <section class="motion">
+    <h2>3. Phản hồi đúng / sai (phiên luyện tập)</h2>
+    <p>Hôm nay: màu đáp án và khối "Đúng rồi / Chưa đúng" hiện ngay. Đáp án đúng là <b>2</b>; chọn sai để xem phản hồi sai.</p>
+    <div class="grid" id="feedbacks"></div>
+  </section>
+</main>
+<script>
+const WORDS = [
+  { w: 'deploy', pos: 'verb', m: 'triển khai', ex: 'We <b>deploy</b> every Friday.' },
+  { w: 'release', pos: 'verb', m: 'phát hành', ex: 'They <b>release</b> a new version.' },
+  { w: 'cache', pos: 'noun', m: 'bộ nhớ đệm', ex: 'Clear the <b>cache</b> first.' },
+  { w: 'rollback', pos: 'noun', m: 'quay lui bản cũ', ex: 'A <b>rollback</b> took five minutes.' },
+];
+const slow = () => (document.getElementById('slow').checked ? 5 : 1);
+const reduced = () => document.getElementById('reduce').checked;
+document.getElementById('slow').onchange = (e) => document.documentElement.style.setProperty('--slow', e.target.checked ? 5 : 1);
+document.getElementById('reduce').onchange = (e) => document.body.classList.toggle('reduce', e.target.checked);
+
+function play(el, name, ms, ease, fill = 'both') {
+  el.style.animation = 'none';
+  void el.offsetWidth;
+  if (reduced()) { el.style.animation = `fade-in ${120 * slow()}ms linear both`; return Promise.resolve(); }
+  el.style.animation = `${name} ${ms * slow()}ms ${ease} ${fill}`;
+  return new Promise((r) => setTimeout(r, ms * slow()));
+}
+const face = (i, back) => back
+  ? `<div class="meaning">${WORDS[i].m}</div><div class="ex">${WORDS[i].ex}</div>`
+  : `<div class="word">${WORDS[i].w}</div><div class="pos">${WORDS[i].pos}</div>`;
+
+/* 1. Flip */
+const FLIPS = [
+  { id: 'A', name: 'Lật dẹt', spec: 'Mặt trước co lại theo chiều ngang 90ms, mặt sau giãn ra 120ms. Tổng ~210ms.',
+    run: async (card, set) => { await play(card, 'squash-out', 90, 'var(--ease-exit)', 'forwards'); set(); await play(card, 'squash-in', 120, 'var(--ease-enter)'); } },
+  { id: 'B', name: 'Mờ + phóng nhẹ', spec: 'Mặt sau hiện từ mờ và nhỏ hơn 3%, 160ms. Không có cảm giác "lật", chỉ đổi mặt mềm.',
+    run: async (card, set) => { set(); await play(card, 'fade-scale-in', 160, 'var(--ease-enter)'); } },
+  { id: 'C', name: 'Lật 3D thật', spec: 'Xoay quanh trục dọc 180°, 420ms. Đẹp nhưng dài gấp đôi, và thẻ thật có hai mặt cao khác nhau (ở đây ép cùng chiều cao).', three: true },
+  { id: '0', name: 'Không có (như hôm nay)', spec: 'Đổi mặt tức thì.', run: async (card, set) => set() },
+];
+const flips = document.getElementById('flips');
+for (const f of FLIPS) {
+  const box = document.createElement('div');
+  box.className = 'opt';
+  box.innerHTML = `<h3><span class="tag">${f.id}</span>${f.name}</h3><p class="spec">${f.spec}</p><div class="stage"></div><div class="row"><button class="btn">Lật thẻ</button></div>`;
+  const stage = box.querySelector('.stage');
+  let back = false, i = 0;
+  if (f.three) {
+    stage.innerHTML = `<div class="card3d" tabindex="0"><div class="card face">${face(i, false)}</div><div class="card face back">${face(i, true)}</div></div>`;
+    const c = stage.firstChild;
+    const flip = () => { back = !back; if (reduced()) { c.style.transition = 'none'; } else c.style.transition = ''; c.classList.toggle('flipped', back); };
+    c.onclick = flip; box.querySelector('.btn').onclick = flip;
+    c.onkeydown = (e) => { if (e.key === ' ') { e.preventDefault(); flip(); } };
+  } else {
+    stage.innerHTML = `<div class="card" tabindex="0">${face(i, false)}</div>`;
+    const c = stage.firstChild;
+    let busy = false;
+    const flip = async () => { if (busy) return; busy = true; back = !back; await f.run(c, () => (c.innerHTML = face(i, back))); busy = false; };
+    c.onclick = flip; box.querySelector('.btn').onclick = flip;
+    c.onkeydown = (e) => { if (e.key === ' ') { e.preventDefault(); flip(); } };
+  }
+  flips.appendChild(box);
+}
+
+/* 2. Next card */
+const NEXTS = [
+  { id: 'A', name: 'Trồi lên', spec: 'Thẻ mới đi lên 0.75rem và hiện dần, 200ms. Thẻ cũ không chờ ra.',
+    run: async (c, set) => { set(); await play(c, 'rise-in', 200, 'var(--ease-enter)'); } },
+  { id: 'B', name: 'Trượt ngang', spec: 'Thẻ cũ trượt sang trái 120ms, thẻ mới vào từ phải 180ms. Tổng ~300ms, có cảm giác "chồng thẻ".',
+    run: async (c, set) => { await play(c, 'slide-out-left', 120, 'var(--ease-exit)', 'forwards'); set(); await play(c, 'slide-in-right', 180, 'var(--ease-enter)'); } },
+  { id: 'C', name: 'Chỉ mờ dần', spec: 'Thẻ mới hiện dần tại chỗ, 150ms. Nhẹ nhất.',
+    run: async (c, set) => { set(); await play(c, 'fade-in', 150, 'var(--ease-standard)'); } },
+  { id: '0', name: 'Không có (như hôm nay)', spec: 'Thay tức thì.', run: async (c, set) => set() },
+];
+const nexts = document.getElementById('nexts');
+for (const f of NEXTS) {
+  const box = document.createElement('div');
+  box.className = 'opt';
+  box.innerHTML = `<h3><span class="tag">${f.id}</span>${f.name}</h3><p class="spec">${f.spec}</p><span class="counter"></span><div class="stage" style="overflow:hidden;padding:.25rem"><div class="card"></div></div><div class="row"><button class="btn quiet">Cần ôn lại</button><button class="btn">Đã biết</button></div>`;
+  const c = box.querySelector('.card'), counter = box.querySelector('.counter');
+  let i = 0;
+  const render = () => { c.innerHTML = `<div class="meaning" style="font-size:1rem;color:var(--muted)">${WORDS[i].w}</div><div class="meaning">${WORDS[i].m}</div><div class="ex">${WORDS[i].ex}</div>`; counter.textContent = `Thẻ ${i + 1}/${WORDS.length}`; };
+  render();
+  const next = () => { i = (i + 1) % WORDS.length; f.run(c, render); };
+  box.querySelectorAll('.btn').forEach((b) => (b.onclick = next));
+  nexts.appendChild(box);
+}
+
+/* 3. Feedback */
+const FEEDBACKS = [
+  { id: 'A', name: 'Rung ngang khi sai, ✓ bật khi đúng', spec: 'Sai: đáp án đã chọn rung ngang 4px, 240ms, một lần. Đúng: dấu ✓ phóng từ 80% → 100%, 180ms. Khối phản hồi trồi lên 160ms.', wrong: ['shake-x', 240, 'var(--ease-standard)'], right: ['pop', 180, 'var(--ease-spring)'] },
+  { id: 'B', name: 'Chỉ khối phản hồi trồi lên', spec: 'Đáp án đổi màu tức thì; chỉ khối "Đúng rồi / Chưa đúng" trồi lên 160ms. Không rung, không bật.', wrong: null, right: null },
+  { id: 'C', name: 'Lắc xoay khi sai (giống landing)', spec: 'Sai: đáp án lắc xoay ±3°, 300ms (bản "wiggle" đang dùng ở landing). Đúng: ✓ bật 180ms.', wrong: ['wiggle', 300, 'var(--ease-standard)'], right: ['pop', 180, 'var(--ease-spring)'] },
+  { id: '0', name: 'Không có (như hôm nay)', spec: 'Mọi thứ hiện tức thì.', none: true },
+];
+const OPTIONS = ['phát hành', 'triển khai', 'bộ nhớ đệm', 'quay lui'];
+const feedbacks = document.getElementById('feedbacks');
+for (const f of FEEDBACKS) {
+  const box = document.createElement('div');
+  box.className = 'opt';
+  box.innerHTML = `<h3><span class="tag">${f.id}</span>${f.name}</h3><p class="spec">${f.spec}</p><div class="q"><span class="chip">Chọn nghĩa</span><p class="prompt">deploy</p><div class="choices" style="display:grid;gap:.5rem"></div><div class="fbwrap"></div></div><div class="row"><button class="btn quiet again">Làm lại</button></div>`;
+  const choices = box.querySelector('.choices'), wrap = box.querySelector('.fbwrap');
+  const reset = () => {
+    wrap.innerHTML = '';
+    choices.innerHTML = OPTIONS.map((o, k) => `<button class="choice" data-k="${k}"><span class="n">${k + 1}</span>${o}<span class="mark"></span></button>`).join('');
+    choices.querySelectorAll('.choice').forEach((b) => (b.onclick = () => choose(Number(b.dataset.k))));
+  };
+  const choose = (k) => {
+    const ok = k === 1;
+    choices.querySelectorAll('.choice').forEach((b) => (b.disabled = true));
+    const right = choices.children[1], chosen = choices.children[k];
+    right.classList.add('right'); right.querySelector('.mark').innerHTML = '<span class="icon" style="color:var(--success)">✓</span>';
+    if (!ok) { chosen.classList.add('wrong'); chosen.querySelector('.mark').innerHTML = '<span class="icon" style="color:var(--danger)">✕</span>'; }
+    wrap.innerHTML = `<div class="fb ${ok ? 'ok' : 'no'}"><span class="icon">${ok ? '✓' : '✕'}</span><div><strong>${ok ? 'Đúng rồi' : 'Chưa đúng'}</strong><span>deploy — triển khai</span></div></div>`;
+    if (f.none) return;
+    play(wrap.firstChild, 'panel-in', 160, 'var(--ease-enter)');
+    if (!ok && f.wrong) play(chosen, ...f.wrong);
+    if (ok && f.right) play(right.querySelector('.icon'), ...f.right);
+  };
+  box.querySelector('.again').onclick = reset;
+  reset();
+  feedbacks.appendChild(box);
+}
+</script>
+</body>
+</html>

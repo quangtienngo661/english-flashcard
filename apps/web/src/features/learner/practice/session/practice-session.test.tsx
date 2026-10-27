@@ -328,6 +328,24 @@ describe('PracticeSession (K/60–K/67)', () => {
     expect(posts(v.calls, '/v1/practice/items/item-4/answer')).toHaveLength(1);
   });
 
+  it('motion (owner 27/10/2026, 3C/2A): the chosen wrong option wiggles, the right check pops, the result rises; the next question rises in', async () => {
+    renderApp(<PracticeSession />, { routes: routes() });
+    await screen.findByText('triển khai');
+    const card = screen.getByText('triển khai').closest('section')!;
+    expect(card).toHaveClass('motion-safe:animate-card-rise');
+    await userEvent.keyboard('2');
+    await screen.findByText('Chưa đúng');
+    expect(screen.getByRole('button', { name: /2 delay/ })).toHaveClass('motion-safe:animate-wiggle-soft');
+    expect(screen.getByRole('button', { name: /1 deploy/ })).not.toHaveClass('motion-safe:animate-wiggle-soft');
+    // As in the prototype, the check pops only when the learner chose it.
+    expect(screen.getByRole('button', { name: /1 deploy/ }).querySelector('svg')).not.toHaveClass('motion-safe:animate-pop-in');
+    expect(screen.getByText('Chưa đúng').closest('[data-feedback]')).toHaveClass('motion-safe:animate-feedback-in');
+    await userEvent.keyboard('{Enter}');
+    expect(await screen.findByText('server')).toBeInTheDocument();
+    // A new question is a new card: it mounts again, so its rise plays again.
+    expect(screen.getByText('server').closest('section')).not.toBe(card);
+  });
+
   it('K/62: true/false right → [Đã biết] (show_known); pressing it reviews the word and goes on', async () => {
     const v = renderApp(<PracticeSession />, {
       routes: routes({
@@ -341,6 +359,7 @@ describe('PracticeSession (K/60–K/67)', () => {
     expect(await screen.findByText('Từ và nghĩa này có khớp không?')).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: /1 Đúng/ }));
     expect(await screen.findByText('Đúng rồi')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /1 Đúng/ }).querySelector('svg')).toHaveClass('motion-safe:animate-pop-in');
     expect(posts(v.calls, '/v1/practice/items/item-5/answer')[0].body).toEqual({ is_true: true });
     await userEvent.click(screen.getByRole('button', { name: /Đã biết/ }));
     expect(await screen.findByText('bộ nhớ đệm')).toBeInTheDocument();
@@ -523,6 +542,9 @@ describe('PracticeSession (K/60–K/67)', () => {
     await userEvent.keyboard('{Enter}');
     await waitFor(() => expect(posts(v.calls, `/v1/practice/sessions/${SESSION}/next`)).toHaveLength(1));
     expect(posts(v.calls, '/v1/practice/items/item-6/review').map((c) => c.body)).toEqual([{ action: 'known' }]);
+    // The typed question's card leaves the page (its key must not clash with the answer field's key; motion round 27/10/2026).
+    expect(await screen.findByText('Từ và nghĩa này có khớp không?')).toBeInTheDocument();
+    expect(v.container.querySelectorAll('main section')).toHaveLength(1);
   });
 
   it('M4 review: Esc in the answer field leaves the field first; it does not end the session', async () => {

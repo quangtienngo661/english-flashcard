@@ -22,7 +22,8 @@ export function QuestionCard({ prompt, ai = false, reportable, reported, onRepor
   const t = useTranslations('App.practice.session');
   const kind = promptKind(prompt);
   return (
-    <section className="flex flex-col gap-5 rounded-feature border-2 border-border-strong bg-surface p-5 shadow-ledge md:p-6">
+    // 2A (owner 27/10/2026): each question is a new card (keyed by item) and rises in.
+    <section className="flex flex-col gap-5 rounded-feature border-2 border-border-strong bg-surface p-5 shadow-ledge motion-safe:animate-card-rise md:p-6">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex min-w-0 flex-wrap items-center gap-2">
           {ai && <span className="rounded-full bg-primary-soft px-2.5 py-0.5 text-caption font-semibold text-primary">{t('aiChip')}</span>}

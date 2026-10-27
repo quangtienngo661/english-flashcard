@@ -149,6 +149,47 @@
   --animate-wiggle: wiggle var(--motion-wiggle) var(--ease-standard);
   --animate-pop: pop var(--motion-pop) var(--ease-spring);
 
+  /* Learner sessions (owner 27/10/2026, docs/audit/2026-10-26-motion-nguoi-hoc.md): 1C flip, 2A next card, 3C answer feedback.
+     The flip (420ms) and the wiggle (300ms) are the owner's choice from the prototype. With reduced motion the rule at the end
+     of this file stops every animation, so the flashcard swaps its faces at once. */
+  --transition-duration-flip: 420ms;
+  --animate-card-rise: card-rise 200ms var(--ease-enter) both;
+  --animate-feedback-in: feedback-in 160ms var(--ease-enter) both;
+  --animate-wiggle-soft: wiggle-soft var(--motion-wiggle) var(--ease-standard);
+  --animate-pop-in: pop-in 180ms var(--ease-spring) both;
+
+  @keyframes card-rise {
+    from {
+      opacity: 0;
+      transform: translateY(0.75rem);
+    }
+  }
+
+  @keyframes feedback-in {
+    from {
+      opacity: 0;
+      transform: translateY(0.25rem);
+    }
+  }
+
+  @keyframes wiggle-soft {
+    25% {
+      transform: rotate(-3deg);
+    }
+    50% {
+      transform: rotate(2.5deg);
+    }
+    75% {
+      transform: rotate(-1deg);
+    }
+  }
+
+  @keyframes pop-in {
+    from {
+      transform: scale(0.8);
+    }
+  }
+
   @keyframes card-in {
     from {
       opacity: 0;

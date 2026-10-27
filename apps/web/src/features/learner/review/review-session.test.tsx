@@ -49,11 +49,12 @@ beforeEach(() => {
 describe('ReviewSession (K/20–K/22)', () => {
   it('front shows the word, its part of speech and "Ưu tiên"; Space flips to forms, meaning, example and the saved sentence', async () => {
     renderApp(<ReviewSession />, { routes: routes([DEPLOY, CACHE]) });
-    const front = await screen.findByRole('group', { name: 'Thẻ 1 trên 2' });
+    // Both faces stay mounted (1C); the front is its own face.
+    const front = (await screen.findByRole('group', { name: 'Thẻ 1 trên 2' })).querySelector<HTMLElement>('[data-face="front"]')!;
     expect(within(front).getByText('deploy')).toBeInTheDocument();
     expect(within(front).getByText('verb')).toBeInTheDocument();
     expect(within(front).getByText('Ưu tiên')).toBeInTheDocument();
-    expect(screen.queryByText('triển khai')).not.toBeInTheDocument();
+    expect(screen.getByText('triển khai').closest('[data-face]')).toHaveAttribute('aria-hidden', 'true');
     expect(screen.getByText('còn 2 thẻ')).toBeInTheDocument();
 
     await userEvent.keyboard(' ');
@@ -65,6 +66,26 @@ describe('ReviewSession (K/20–K/22)', () => {
     expect(within(seen).getByText('deploy', { selector: 'mark' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Cần ôn lại/ })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Đã biết/ })).toBeInTheDocument();
+  });
+
+  it('3D flip (owner 27/10/2026, 1C): both faces stay mounted, so the card keeps the taller face; the hidden face is inert and aria-hidden', async () => {
+    renderApp(<ReviewSession />, { routes: routes([DEPLOY, CACHE]) });
+    const card = await screen.findByRole('group', { name: 'Thẻ 1 trên 2' });
+    const front = card.querySelector('[data-face="front"]')!;
+    const back = card.querySelector('[data-face="back"]')!;
+    expect(card).toHaveAttribute('data-flipped', 'false');
+    expect(front).not.toHaveAttribute('aria-hidden');
+    expect(back).toHaveAttribute('aria-hidden', 'true');
+    expect(back).toHaveAttribute('inert');
+    await userEvent.keyboard(' ');
+    expect(card).toHaveAttribute('data-flipped', 'true');
+    expect(front).toHaveAttribute('aria-hidden', 'true');
+    expect(front).toHaveAttribute('inert');
+    expect(back).not.toHaveAttribute('aria-hidden');
+    expect(back).not.toHaveAttribute('inert');
+    expect(card.querySelector('[data-face="front"]')).toBe(front);
+    // The next card rises in.
+    expect(card).toHaveClass('motion-safe:animate-card-rise');
   });
 
   it('keys 2 and 1 answer Know / Still learning, each press with a new review_id; the summary counts them', async () => {
@@ -183,7 +204,7 @@ describe('ReviewSession (K/20–K/22)', () => {
   it('mode=all asks for every card and labels long-overdue ones', async () => {
     params.current = new URLSearchParams({ group: G, mode: 'all' });
     const { count } = renderApp(<ReviewSession />, { routes: routes([card(3, 'leave', { section: 'backlog' })]) });
-    const front = await screen.findByRole('group', { name: 'Thẻ 1 trên 1' });
+    const front = (await screen.findByRole('group', { name: 'Thẻ 1 trên 1' })).querySelector<HTMLElement>('[data-face="front"]')!;
     expect(within(front).getByText('Lâu chưa ôn')).toBeInTheDocument();
     expect(count('GET', `/v1/groups/${G}/queue?mode=all`)).toBe(1);
   });
@@ -251,7 +272,7 @@ describe('ReviewSession pronunciation (đợt cải thiện A, C1; review plan I
     expect(synth.speak).toHaveBeenLastCalledWith(expect.objectContaining({ text: 'deploy', lang: 'en-US' }));
     uk.focus();
     await userEvent.keyboard(' 12');
-    expect(screen.queryByText('triển khai')).not.toBeInTheDocument();
+    expect(screen.getByText('triển khai').closest('[data-face]')).toHaveAttribute('aria-hidden', 'true');
     expect(posts(calls)).toHaveLength(0);
     expect(synth.speak).toHaveBeenCalledTimes(2);
   });
