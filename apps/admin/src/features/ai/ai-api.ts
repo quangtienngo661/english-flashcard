@@ -188,6 +188,9 @@ export type StartRunBody = { operation: AiOperation; prompt: 'current' | { instr
 /** A run is over once it is `finished` or `failed`; the job rule of `usePollingStatus` does not know `finished`. */
 export const isRunDone = (status: string): boolean => status === 'finished' || status === 'failed';
 
+/** An admin stopped it: the API stores that as `failed` with `error: 'cancelled'` (no status of its own). */
+export const isRunCancelled = (run: Pick<EvalRun, 'status' | 'error'>): boolean => run.status === 'failed' && run.error === 'cancelled';
+
 export const COST_GROUPS = ['day', 'operation', 'model', 'purpose', 'outcome'] as const;
 export type CostGroup = (typeof COST_GROUPS)[number];
 /** One group of `GET …/costs` (or its `total`); `cost_usd` is a string with 8 decimals, `cost_vnd` the current rate times it. */
@@ -283,6 +286,10 @@ export function listRuns(api: ApiClient, operation: AiOperation, pageToken?: str
 /** A run id that does not look like this cannot exist (the API answers 400): the panel says "not found" without asking. */
 export const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 export const getRun = (api: ApiClient, id: string) => api.get<EvalRunDetail>(`${base}/eval/runs/${id}`);
+/** A queued or running run becomes `failed` with `error: 'cancelled'` ("Đã dừng"); 409 `run-not-active` when it already ended. */
+export const cancelRun = (api: ApiClient, id: string) => api.post<EvalRunDetail>(`${base}/eval/runs/${id}/cancel`);
+/** Only a finished or failed run (409 `run-active` otherwise); its costs stay in the cost report. */
+export const deleteRun = (api: ApiClient, id: string) => api.delete<void>(`${base}/eval/runs/${id}`);
 
 /** `from` and `to` are `YYYY-MM-DD` Vietnam days, both inclusive; the API refuses `from > to` and more than 366 days with a 400. */
 export const getCosts = (api: ApiClient, from: string, to: string, groupBy: CostGroup) =>

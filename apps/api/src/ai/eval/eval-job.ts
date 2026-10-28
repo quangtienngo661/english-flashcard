@@ -71,7 +71,11 @@ export class EvalJob {
       const selection = await this.selection(run);
       const rows = await this.prisma.aiEvalExample.findMany({ where: { id: { in: pending } } });
       const inputs = new Map(rows.map((row) => [row.id, row.input]));
+      let stopped = false;
       await inPool(pending, EVAL_JOB_CONCURRENCY, async (exampleId) => {
+        // A run cancelled (or closed as stalled) meanwhile is no longer `running`: no further paid call, nothing written.
+        if (!stopped && !(await this.runs.isRunning(run.id))) stopped = true;
+        if (stopped) return;
         const item = inputs.has(exampleId)
           ? toItem(exampleId, await this.runner.execute({
             purpose: 'eval', operation: run.operation, data: inputs.get(exampleId), actorId: run.startedBy,
@@ -83,7 +87,8 @@ export class EvalJob {
           };
         await this.runs.appendItem(run.id, item, this.clock.now());
       });
-      await this.runs.finish(run.id, this.clock.now());
+      // `finish` is guarded by `status = 'running'` as well; skipping it just spares a statement.
+      if (!stopped) await this.runs.finish(run.id, this.clock.now());
     } catch (error) {
       const message = oneLine(error);
       this.logger.warn('ai_eval_run_failed', { run_id: run.id, error: message });

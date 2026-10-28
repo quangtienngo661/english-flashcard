@@ -7,6 +7,7 @@ import { listRoutes } from '../../../test/support/list-routes.js';
 import { PRISMA_CLIENT, PrismaModule } from '../../common/db/prisma.module.js';
 import { IdempotencyInterceptor } from '../../common/idempotency/idempotency.interceptor.js';
 import { IDEMPOTENT_KEY } from '../../common/idempotency/idempotent.decorator.js';
+import { ProblemDetailsException } from '../../common/problem-details/problem-details.exception.js';
 import { RATE_LIMIT_KEY } from '../../common/rate-limit/rate-limit.decorator.js';
 import { RateLimiter } from '../../common/rate-limit/rate-limiter.service.js';
 import { AccessTokenService } from '../../identity/sessions/access-token.service.js';
@@ -21,7 +22,7 @@ describe('admin ai eval HTTP (unit, mocked services)', () => {
   const prisma = { sessionChain: { findUnique: vi.fn() }, $disconnect: async () => {} };
   const hit = vi.spyOn(RateLimiter.prototype, 'hit');
   let examples: Record<'list' | 'create' | 'createMany' | 'update' | 'remove', ReturnType<typeof vi.spyOn>>;
-  let runs: Record<'list' | 'get', ReturnType<typeof vi.spyOn>>;
+  let runs: Record<'list' | 'get' | 'cancel' | 'remove', ReturnType<typeof vi.spyOn>>;
   const auth = () => ({ Authorization: `Bearer ${token}` });
   const id = randomUUID();
   const http = () => ctx.http();
@@ -35,7 +36,7 @@ describe('admin ai eval HTTP (unit, mocked services)', () => {
     examples = {
       list: vi.spyOn(ex, 'list'), create: vi.spyOn(ex, 'create'), createMany: vi.spyOn(ex, 'createMany'), update: vi.spyOn(ex, 'update'), remove: vi.spyOn(ex, 'remove'),
     };
-    runs = { list: vi.spyOn(rs, 'list'), get: vi.spyOn(rs, 'get') };
+    runs = { list: vi.spyOn(rs, 'list'), get: vi.spyOn(rs, 'get'), cancel: vi.spyOn(rs, 'cancel'), remove: vi.spyOn(rs, 'remove') };
   });
   beforeEach(async () => {
     actorId = randomUUID(); role = 'admin';
@@ -45,6 +46,7 @@ describe('admin ai eval HTTP (unit, mocked services)', () => {
     examples.createMany.mockReset().mockResolvedValue({ total: 1, valid: 1, created: 1, invalid: [] });
     examples.update.mockReset().mockResolvedValue({ id }); examples.remove.mockReset().mockResolvedValue(undefined);
     runs.list.mockReset().mockResolvedValue({ items: [], next_page_token: null }); runs.get.mockReset().mockResolvedValue({ id });
+    runs.cancel.mockReset().mockResolvedValue({ id, status: 'failed', error: 'cancelled' }); runs.remove.mockReset().mockResolvedValue(undefined);
     hit.mockReset().mockResolvedValue(undefined);
   });
   afterAll(async () => { await ctx?.close(); vi.restoreAllMocks(); });
@@ -52,9 +54,10 @@ describe('admin ai eval HTTP (unit, mocked services)', () => {
   it('every route requires settings.manage', () => {
     const routes = listRoutes(ctx.app).filter(({ path }) => path.startsWith('/v1/admin/ai/eval'));
     expect(routes.map(({ method, path }) => `${method} ${path}`).sort()).toEqual([
-      'DELETE /v1/admin/ai/eval/examples/:id', 'GET /v1/admin/ai/eval/examples', 'GET /v1/admin/ai/eval/runs',
-      'GET /v1/admin/ai/eval/runs/:id', 'PATCH /v1/admin/ai/eval/examples/:id', 'POST /v1/admin/ai/eval/examples',
-      'POST /v1/admin/ai/eval/examples/bulk', 'POST /v1/admin/ai/eval/runs',
+      'DELETE /v1/admin/ai/eval/examples/:id', 'DELETE /v1/admin/ai/eval/runs/:id', 'GET /v1/admin/ai/eval/examples',
+      'GET /v1/admin/ai/eval/runs', 'GET /v1/admin/ai/eval/runs/:id', 'PATCH /v1/admin/ai/eval/examples/:id',
+      'POST /v1/admin/ai/eval/examples', 'POST /v1/admin/ai/eval/examples/bulk', 'POST /v1/admin/ai/eval/runs',
+      'POST /v1/admin/ai/eval/runs/:id/cancel',
     ]);
     for (const route of routes) expect(route.permissions, `${route.method} ${route.path}`).toEqual(['settings.manage']);
   });
@@ -114,6 +117,36 @@ describe('admin ai eval HTTP (unit, mocked services)', () => {
     expect(runs.get).toHaveBeenCalledWith(id);
   });
 
+  it('POST /runs/:id/cancel: 200 with the run detail, user.write, the service gets the lower-cased id', async () => {
+    const res = await http().post(`/v1/admin/ai/eval/runs/${id.toUpperCase()}/cancel`).set(auth());
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ id, status: 'failed', error: 'cancelled' });
+    expect(runs.cancel).toHaveBeenCalledWith(id);
+    expect(hit).toHaveBeenCalledExactlyOnceWith('user.write', actorId);
+    expect(new Reflector().get(IDEMPOTENT_KEY, AdminAiEvalController.prototype.cancelRun)).toBeUndefined();
+  });
+
+  it('DELETE /runs/:id: 204 with no body, user.write, the service gets the id', async () => {
+    const res = await http().delete(`/v1/admin/ai/eval/runs/${id}`).set(auth());
+    expect(res.status).toBe(204);
+    expect(res.text).toBe('');
+    expect(runs.remove).toHaveBeenCalledWith(id);
+    expect(hit).toHaveBeenCalledExactlyOnceWith('user.write', actorId);
+  });
+
+  it('the service\'s 409s and 404 reach the client as problems (run-not-active, run-active, not-found)', async () => {
+    const problem = (status: number, type: string) => new ProblemDetailsException({ status, type, title: type });
+    runs.cancel.mockRejectedValueOnce(problem(409, 'run-not-active'));
+    const notActive = await http().post(`/v1/admin/ai/eval/runs/${id}/cancel`).set(auth());
+    expect([notActive.status, notActive.body.type]).toEqual([409, `${PROBLEM}run-not-active`]);
+    runs.remove.mockRejectedValueOnce(problem(409, 'run-active'));
+    const active = await http().delete(`/v1/admin/ai/eval/runs/${id}`).set(auth());
+    expect([active.status, active.body.type]).toEqual([409, `${PROBLEM}run-active`]);
+    runs.cancel.mockRejectedValueOnce(problem(404, 'not-found'));
+    const missing = await http().post(`/v1/admin/ai/eval/runs/${id}/cancel`).set(auth());
+    expect([missing.status, missing.body.type]).toEqual([404, `${PROBLEM}not-found`]);
+  });
+
   it('bad queries, params and bodies → 400 validation-failed before the service', async () => {
     for (const request of [
       () => http().get('/v1/admin/ai/eval/examples').set(auth()),
@@ -122,6 +155,8 @@ describe('admin ai eval HTTP (unit, mocked services)', () => {
       () => http().patch('/v1/admin/ai/eval/examples/not-a-uuid').set(auth()).send({ note: 'x' }),
       () => http().get('/v1/admin/ai/eval/runs').set(auth()).query({ operation: 'generate_cloze', page_size: '101' }),
       () => http().get('/v1/admin/ai/eval/runs/not-a-uuid').set(auth()),
+      () => http().post('/v1/admin/ai/eval/runs/not-a-uuid/cancel').set(auth()),
+      () => http().delete('/v1/admin/ai/eval/runs/not-a-uuid').set(auth()),
     ]) {
       const res = await request();
       expect(res.status).toBe(400);
@@ -129,6 +164,7 @@ describe('admin ai eval HTTP (unit, mocked services)', () => {
     }
     expect(examples.list).not.toHaveBeenCalled(); expect(examples.create).not.toHaveBeenCalled();
     expect(examples.update).not.toHaveBeenCalled(); expect(runs.list).not.toHaveBeenCalled(); expect(runs.get).not.toHaveBeenCalled();
+    expect(runs.cancel).not.toHaveBeenCalled(); expect(runs.remove).not.toHaveBeenCalled();
   });
 
   it('an editor gets 403 forbidden', async () => {
@@ -136,5 +172,12 @@ describe('admin ai eval HTTP (unit, mocked services)', () => {
     const res = await http().get('/v1/admin/ai/eval/examples').set(auth()).query({ operation: 'lookup_word' });
     expect(res.status).toBe(403);
     expect(res.body.type).toBe(`${PROBLEM}forbidden`);
+  });
+
+  it('an editor cannot cancel or delete a run', async () => {
+    role = 'editor';
+    expect((await http().post(`/v1/admin/ai/eval/runs/${id}/cancel`).set(auth())).status).toBe(403);
+    expect((await http().delete(`/v1/admin/ai/eval/runs/${id}`).set(auth())).status).toBe(403);
+    expect(runs.cancel).not.toHaveBeenCalled(); expect(runs.remove).not.toHaveBeenCalled();
   });
 });

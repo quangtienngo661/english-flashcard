@@ -94,6 +94,48 @@ test.describe('Bộ ví dụ (A/83)', () => {
     expect(await seriousViolations(page)).toEqual([]);
   });
 
+  test('a running run is stopped after a question, then deleted: the panel shows "Đã dừng", then closes and the list is read again', async ({ page }) => {
+    const id = 'aaaaaaaa-0000-4000-8000-000000000001';
+    let state: 'running' | 'stopped' | 'gone' = 'running';
+    const current = () => (state === 'running'
+      ? run({ status: 'running', done: 1, valid_count: 1 })
+      : run({ status: 'failed', error: 'cancelled', done: 1, valid_count: 1 }));
+    await signedInAs(page, 'admin', evalMocks({
+      'GET /v1/admin/ai/eval/runs': () => ({ json: { items: state === 'gone' ? [] : [current()], next_page_token: null } }),
+      [`GET /v1/admin/ai/eval/runs/${id}`]: () => ({ json: current() }),
+      [`POST /v1/admin/ai/eval/runs/${id}/cancel`]: () => {
+        state = 'stopped';
+        return { json: current() };
+      },
+      [`DELETE /v1/admin/ai/eval/runs/${id}`]: () => {
+        state = 'gone';
+        return { status: 204 };
+      },
+    }));
+    await page.goto(`/ai/eval/runs/${id}`);
+    const panel = page.getByTestId('detail-panel');
+    await panel.getByRole('button', { name: t.stop.button }).click();
+    const stopDialog = page.getByRole('dialog', { name: t.stop.title });
+    await expect(stopDialog).toContainText(t.stop.body);
+    expect(await seriousViolations(page)).toEqual([]);
+    await stopDialog.getByRole('button', { name: t.stop.confirm }).click();
+    await expect(page.getByText(t.toast.stopped)).toBeVisible();
+    await expect(panel.getByText(t.detail.cancelled)).toBeVisible();
+    await expect(panel.getByText(t.status.cancelled, { exact: true })).toBeVisible();
+
+    await panel.getByRole('button', { name: t.removeRun.button }).click();
+    const deleteDialog = page.getByRole('dialog', { name: t.removeRun.title });
+    await expect(deleteDialog).toContainText(t.removeRun.body);
+    expect(await seriousViolations(page)).toEqual([]);
+    await deleteDialog.getByRole('button', { name: t.removeRun.confirm }).click();
+    await expect(page.getByText(t.toast.runDeleted)).toBeVisible();
+    await expect(page).toHaveURL(/\/ai\/eval$/);
+    await expect(page.getByTestId('detail-panel')).toHaveCount(0);
+    expect(requests(page, 'POST', `/v1/admin/ai/eval/runs/${id}/cancel`)).toHaveLength(1);
+    expect(requests(page, 'DELETE', `/v1/admin/ai/eval/runs/${id}`)).toHaveLength(1);
+    await expect(page.getByText(t.runs.empty)).toBeVisible();
+  });
+
   test('§6.5: a network error on [Chạy bộ ví dụ], then [Thử lại], sends the same Idempotency-Key', async ({ page }) => {
     let n = 0;
     await signedInAs(page, 'admin', evalMocks({

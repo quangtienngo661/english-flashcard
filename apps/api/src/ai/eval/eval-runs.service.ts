@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 import { Inject, Injectable } from '@nestjs/common';
 import { z } from 'zod';
+import { Clock } from '../../common/clock/clock.js';
 import { PRISMA_CLIENT } from '../../common/db/prisma.module.js';
 import { RateLimiter } from '../../common/rate-limit/rate-limiter.service.js';
 import { decodeBoundToken, encodeBoundToken } from '../../common/pagination/page-token.util.js';
@@ -61,6 +62,7 @@ export class EvalRunsService {
     @Inject(EvalQueue) private readonly queue: EvalQueue,
     @Inject(IdentityService) private readonly identity: IdentityService,
     @Inject(RateLimiter) private readonly limiter: RateLimiter,
+    @Inject(Clock) private readonly clock: Clock,
   ) {}
 
   async create(actorId: string, body: CreateRunBody): Promise<{ run_id: string; status: 'queued' }> {
@@ -130,5 +132,31 @@ export class EvalRunsService {
     if (!row) throw problem(404, 'not-found', 'Not found');
     const emails = await this.identity.emailsOf([row.startedBy]);
     return { ...summary(row, emails), draft: row.draft, heartbeat_at: row.heartbeatAt?.toISOString() ?? null, items: row.items };
+  }
+
+  /**
+   * Stops a queued or running run. It is stored as `failed` with `error = 'cancelled'` (no new status, no migration). The guarded
+   * UPDATE is the only write, so a run that finished a moment earlier is not overwritten; the job asks before each paid call
+   * (`EvalRunsRepository.isRunning`), so no new provider call starts once this has committed.
+   */
+  async cancel(id: string) {
+    const { count } = await this.prisma.aiEvalRun.updateMany({
+      where: { id, status: { in: ['queued', 'running'] } },
+      data: { status: 'failed', error: 'cancelled', finishedAt: this.clock.now() },
+    });
+    if (count === 0) throw await this.refusal(id, 'run-not-active', 'Run is not active');
+    return this.get(id);
+  }
+
+  /** Deletes a finished or failed run. `ai_calls` is not touched: the costs report reads it, not the runs. */
+  async remove(id: string): Promise<void> {
+    const { count } = await this.prisma.aiEvalRun.deleteMany({ where: { id, status: { in: ['finished', 'failed'] } } });
+    if (count === 0) throw await this.refusal(id, 'run-active', 'Run is still active');
+  }
+
+  /** The guarded statement changed no row: the run is gone (404) or in the other state (409). */
+  private async refusal(id: string, type: string, title: string): Promise<ProblemDetailsException> {
+    const row = await this.prisma.aiEvalRun.findUnique({ where: { id }, select: { id: true } });
+    return row ? problem(409, type, title) : problem(404, 'not-found', 'Not found');
   }
 }

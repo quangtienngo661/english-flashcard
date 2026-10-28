@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { FakeClock } from '../../common/clock/clock.js';
 import { ProblemDetailsException } from '../../common/problem-details/problem-details.exception.js';
 import type { Selection } from '../runner/selection.js';
 import { AI_SYSTEM_ACTOR_ID } from '../ai.constants.js';
@@ -10,6 +11,7 @@ const SELECTION: Selection = {
   operation: 'generate_cloze', modelRef: randomUUID(), provider: 'fake', modelId: 'fake:ok', effort: null, thinking: 'disabled',
   maxOutputTokens: 4096, price: null,
 };
+const NOW = new Date('2026-10-28T03:00:00Z');
 const [EX1, EX2] = [randomUUID(), randomUUID()];
 const EXAMPLE_INPUT = { word: 'deploy', part_of_speech: 'verb', level: 'B1', meaning_vi: 'triển khai', context_label: null };
 
@@ -25,7 +27,11 @@ function setup() {
       }),
       findUnique: vi.fn(async (): Promise<Record<string, unknown> | null> => null),
       findMany: vi.fn(async (): Promise<Array<Record<string, unknown>>> => []),
+      updateMany: vi.fn(async (): Promise<{ count: number }> => ({ count: 0 })),
+      deleteMany: vi.fn(async (): Promise<{ count: number }> => ({ count: 0 })),
     },
+    aiCall: { deleteMany: vi.fn(async () => ({ count: 0 })) },
+    $executeRaw: vi.fn(async () => 0),
   };
   const selections = { load: vi.fn(async (): Promise<Selection | null> => SELECTION) };
   const registry = { get: vi.fn((provider: string) => (provider === 'fake' ? {} : undefined)) };
@@ -35,7 +41,7 @@ function setup() {
   const limiter = { hit: vi.fn(async (): Promise<void> => undefined) };
   const service = new EvalRunsService(
     prisma as never, selections as never, registry as never, prompts as never, queue as never, { emailsOf } as never,
-    limiter as never,
+    limiter as never, new FakeClock(NOW),
   );
   return { service, prisma, created, selections, registry, prompts, queue, emailsOf, limiter };
 }
@@ -156,6 +162,87 @@ function runRow(startedBy: string, id: string = randomUUID()) {
     heartbeatAt: null,
   };
 }
+
+describe('EvalRunsService.cancel', () => {
+  const ACTIVE = ['queued', 'running'];
+
+  it('a queued or running run becomes failed / cancelled with finished_at, in one UPDATE guarded by the status; the answer is the run detail', async () => {
+    const ctx = setup();
+    const id = randomUUID();
+    ctx.prisma.aiEvalRun.updateMany.mockResolvedValue({ count: 1 });
+    ctx.prisma.aiEvalRun.findUnique.mockResolvedValue({ ...runRow(ADMIN, id), status: 'failed', error: 'cancelled', finishedAt: NOW });
+    const run = await ctx.service.cancel(id);
+    expect(ctx.prisma.aiEvalRun.updateMany).toHaveBeenCalledExactlyOnceWith({
+      where: { id, status: { in: ACTIVE } }, data: { status: 'failed', error: 'cancelled', finishedAt: NOW },
+    });
+    expect(run).toMatchObject({ id, status: 'failed', error: 'cancelled', finished_at: NOW.toISOString(), started_by_user: { email: 'admin@x.test' } });
+    expect(run).toHaveProperty('items');
+    expect(run).toHaveProperty('draft');
+  });
+
+  it('a run that finished a moment earlier (the guarded UPDATE changes no row) → 409 run-not-active and nothing is overwritten', async () => {
+    const ctx = setup();
+    const id = randomUUID();
+    ctx.prisma.aiEvalRun.findUnique.mockResolvedValue({ ...runRow(ADMIN, id), status: 'finished' });
+    expect(await problemOf(ctx.service.cancel(id))).toMatchObject({ status: 409, type: 'run-not-active' });
+    expect(ctx.prisma.aiEvalRun.updateMany).toHaveBeenCalledTimes(1);
+  });
+
+  it('a run that already failed (or was cancelled before) → 409 run-not-active', async () => {
+    const ctx = setup();
+    const id = randomUUID();
+    ctx.prisma.aiEvalRun.findUnique.mockResolvedValue({ ...runRow(ADMIN, id), status: 'failed', error: 'cancelled' });
+    expect(await problemOf(ctx.service.cancel(id))).toMatchObject({ status: 409, type: 'run-not-active' });
+  });
+
+  it('an unknown id → 404 not-found', async () => {
+    const ctx = setup();
+    expect(await problemOf(ctx.service.cancel(randomUUID()))).toMatchObject({ status: 404, type: 'not-found' });
+  });
+
+  it('cancelling enqueues nothing, uses no ai.test run and calls no provider', async () => {
+    const ctx = setup();
+    ctx.prisma.aiEvalRun.updateMany.mockResolvedValue({ count: 1 });
+    ctx.prisma.aiEvalRun.findUnique.mockResolvedValue({ ...runRow(ADMIN), status: 'failed', error: 'cancelled' });
+    await ctx.service.cancel(randomUUID());
+    expect(ctx.queue.enqueue).not.toHaveBeenCalled();
+    expect(ctx.limiter.hit).not.toHaveBeenCalled();
+    expect(ctx.prisma.aiCall.deleteMany).not.toHaveBeenCalled();
+  });
+});
+
+describe('EvalRunsService.remove', () => {
+  const ENDED = ['finished', 'failed'];
+
+  it('a finished or failed run is deleted by one DELETE guarded by the status; the answer is nothing', async () => {
+    const ctx = setup();
+    const id = randomUUID();
+    ctx.prisma.aiEvalRun.deleteMany.mockResolvedValue({ count: 1 });
+    await expect(ctx.service.remove(id)).resolves.toBeUndefined();
+    expect(ctx.prisma.aiEvalRun.deleteMany).toHaveBeenCalledExactlyOnceWith({ where: { id, status: { in: ENDED } } });
+  });
+
+  it.each(['queued', 'running'])('a %s run → 409 run-active (cancel it first) and it stays', async (status) => {
+    const ctx = setup();
+    const id = randomUUID();
+    ctx.prisma.aiEvalRun.findUnique.mockResolvedValue({ ...runRow(ADMIN, id), status });
+    expect(await problemOf(ctx.service.remove(id))).toMatchObject({ status: 409, type: 'run-active' });
+    expect(ctx.prisma.aiEvalRun.deleteMany).toHaveBeenCalledTimes(1);
+  });
+
+  it('an unknown id → 404 not-found', async () => {
+    const ctx = setup();
+    expect(await problemOf(ctx.service.remove(randomUUID()))).toMatchObject({ status: 404, type: 'not-found' });
+  });
+
+  it('deleting a run leaves ai_calls alone: the costs report reads ai_calls, so the money stays on the books', async () => {
+    const ctx = setup();
+    ctx.prisma.aiEvalRun.deleteMany.mockResolvedValue({ count: 1 });
+    await ctx.service.remove(randomUUID());
+    expect(ctx.prisma.aiCall.deleteMany).not.toHaveBeenCalled();
+    expect(ctx.prisma.$executeRaw).not.toHaveBeenCalled();
+  });
+});
 
 describe('EvalRunsService started_by_user', () => {
   it('get of a found run has started_by_user and keeps started_by', async () => {

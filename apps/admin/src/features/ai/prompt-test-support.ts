@@ -67,6 +67,8 @@ export const URL = {
   startRun: 'POST /v1/admin/ai/eval/runs',
   runs: (op = 'generate_cloze') => `GET /v1/admin/ai/eval/runs?operation=${op}&page_size=20`,
   run: (id = 'aaaaaaaa-0000-4000-8000-000000000001') => `GET /v1/admin/ai/eval/runs/${id}`,
+  cancelRun: (id = 'aaaaaaaa-0000-4000-8000-000000000001') => `POST /v1/admin/ai/eval/runs/${id}/cancel`,
+  deleteRun: (id = 'aaaaaaaa-0000-4000-8000-000000000001') => `DELETE /v1/admin/ai/eval/runs/${id}`,
   operations: 'GET /v1/admin/ai/operations',
   settings: 'GET /v1/admin/settings',
 };
