@@ -16,6 +16,8 @@ import { AnswersService } from './answers/answers.service.js';
 import { HistoryController } from './history/history.controller.js';
 import { HistoryService } from './history/history.service.js';
 import { PracticeCleanupService } from './maintenance/practice-cleanup.service.js';
+import { AdminAiQualityController } from './reports/admin-ai-quality.controller.js';
+import { AiQualityService } from './reports/ai-quality.service.js';
 import { AdminReportReasonsController } from './reports/admin-report-reasons.controller.js';
 import { AdminReportsController } from './reports/admin-reports.controller.js';
 import { AdminUnknownFormsController } from './reports/admin-unknown-forms.controller.js';
@@ -36,12 +38,12 @@ import { PracticeStats } from './weak/practice-stats.js';
   imports: [IdentityModule, ContentModule, LearningModule, SettingsModule, EntitlementsModule, AiModule],
   controllers: [
     SessionsController, AnswersController, PracticeReviewsController, HistoryController, ReportsController, AdminReportsController,
-    ReportReasonsController, AdminReportReasonsController, MyReportsController, AdminUnknownFormsController,
+    ReportReasonsController, AdminReportReasonsController, MyReportsController, AdminUnknownFormsController, AdminAiQualityController,
   ],
   providers: [
     IdempotencyInterceptor, QuestionBuilder, PracticeStats, SessionsService, AnswersService, PracticeReviewsService, HistoryService,
     ReportsService, ReportReasonsService, PracticeCleanupService, AiRequestsRepository, WordChecksRepository, UnknownFormsRepository,
-    AiQuestionGenerator, AiSessionPlanner, UnknownFormsAdminService,
+    AiQuestionGenerator, AiSessionPlanner, UnknownFormsAdminService, AiQualityService,
   ],
 })
 export class PracticeModule {}

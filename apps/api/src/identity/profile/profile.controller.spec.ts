@@ -52,7 +52,7 @@ describe('profile HTTP routing (unit, isolated persistence)', () => {
       expect(profile.status).toBe(200);
       expect(profile.body).toMatchObject({ email_verified: true, staff_role: staffRole, permissions: [
         ...(staffRole === 'admin' ? ['roles.manage'] : []), 'content.edit', 'content.publish', 'content.import', 'taxonomy.manage',
-        ...(staffRole === 'admin' ? ['settings.manage'] : []), 'entitlements.grant', 'users.read',
+        ...(staffRole === 'admin' ? ['settings.manage'] : []), 'entitlements.grant', 'users.read', 'ai.view',
       ] });
     }
     expect(hit).not.toHaveBeenCalled();

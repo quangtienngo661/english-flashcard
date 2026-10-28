@@ -7,6 +7,7 @@ import { UploadsPage } from '../features/uploads/UploadsPage';
 import { ComingSoonPage } from '../features/coming-soon/ComingSoonPage';
 import { AiCallsPage } from '../features/ai/AiCallsPage';
 import { AiCostsPage } from '../features/ai/AiCostsPage';
+import { DashboardPage } from '../features/dashboard/DashboardPage';
 import { AiEvalPage } from '../features/ai/AiEvalPage';
 import { AiModelsPage } from '../features/ai/AiModelsPage';
 import { AiOperationsPage } from '../features/ai/AiOperationsPage';
@@ -81,6 +82,7 @@ export const appRoutes: RouteObject[] = createRoutesFromElements(
           <Route path="new" element={null} />
         </Route>
         <Route path="transactions" element={<TransactionsPage />} />
+        <Route path="dashboard" element={<DashboardPage />} />
         <Route path="ai/status" element={<AiStatusPage />} />
         <Route path="ai/models" element={<AiModelsPage />}>
           <Route path="new" element={null} />

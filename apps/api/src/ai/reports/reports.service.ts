@@ -1,6 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { PRISMA_CLIENT } from '../../common/db/prisma.module.js';
 import { ProblemDetailsException } from '../../common/problem-details/problem-details.exception.js';
+import { dayRange, daysOf } from '../../common/time/day-range.js';
 import { addDays, daysBetween, localDate, zonedMidnight } from '../../common/time/local-date.js';
 import { Prisma, type PrismaClient } from '../../generated/prisma/client.js';
 import { SettingsService } from '../../settings/index.js';
@@ -57,6 +58,23 @@ export type StatusReport = {
   today: { calls: number; cap: number | null; failed_calls: number; failed_cost_usd: string; cost_usd: string; cost_vnd: number };
   ai_enabled: boolean;
   providers: Record<AiProviderName, boolean>;
+};
+
+/** Days shown when the dashboard is opened without a range. */
+export const DASHBOARD_DEFAULT_DAYS = 30;
+
+export type DashboardReport = {
+  from: string;
+  to: string;
+  ai_enabled: boolean;
+  today: StatusReport['today'];
+  operations: Array<Pick<StatusReport['operations'][number], 'operation' | 'ready' | 'reason' | 'model' | 'last_error'>>;
+  total: CostTotals;
+  days: Array<{ date: string; calls: number; cost_usd: string; cost_vnd: number; learner_calls: number; learner_failed: number }>;
+  by_operation: Array<CostTotals & { key: string }>;
+  by_model: Array<CostTotals & { key: string }>;
+  by_purpose: Array<CostTotals & { key: string }>;
+  learner_health: Array<{ operation: string; calls: number; failed: number; p50_ms: number; p95_ms: number; outcomes: Record<string, number> }>;
 };
 
 const invalid = (violations: string[]) => new ProblemDetailsException({
@@ -146,6 +164,54 @@ export class ReportsService {
     ]);
     const rate = settings.ai.usdVndRate;
     return { items: grouped.map((row) => ({ key: row.key, ...totals(row, rate) })), total: totals(total, rate) };
+  }
+
+  /**
+   * The AI dashboard (owner 28/10/2026, `ai.view`): only totals, never the content of a call. Health counts learner calls only;
+   * cost counts every purpose, as the costs report does. Days with no call are listed as zero.
+   */
+  async dashboard(query: { from?: string; to?: string }, now: Date): Promise<DashboardReport> {
+    const range = dayRange(query, AI_DAY_ZONE, now, DASHBOARD_DEFAULT_DAYS);
+    const costsOf = (group_by: CostGroup) => this.costs({ from: range.from, to: range.to, group_by }, now);
+    const learnerOnly = Prisma.sql`purpose = 'learner' AND created_at >= ${range.start} AND created_at < ${range.end}`;
+    const [status, byDay, byOperation, byModel, byPurpose, health, outcomes, learnerDays] = await Promise.all([
+      this.status(now), costsOf('day'), costsOf('operation'), costsOf('model'), costsOf('purpose'),
+      this.prisma.$queryRaw<Array<{ operation: string; calls: number; failed: number; p50_ms: number; p95_ms: number }>>(Prisma.sql`
+        SELECT operation, count(*)::int AS calls, (count(*) FILTER (WHERE outcome <> 'succeeded'))::int AS failed,
+          round(percentile_cont(0.5) WITHIN GROUP (ORDER BY latency_ms))::int AS p50_ms,
+          round(percentile_cont(0.95) WITHIN GROUP (ORDER BY latency_ms))::int AS p95_ms
+        FROM ai_calls WHERE ${learnerOnly} GROUP BY 1 ORDER BY 1`),
+      this.prisma.$queryRaw<Array<{ operation: string; outcome: string; calls: number }>>(Prisma.sql`
+        SELECT operation, outcome, count(*)::int AS calls FROM ai_calls WHERE ${learnerOnly} GROUP BY 1, 2 ORDER BY 1, 2`),
+      this.prisma.$queryRaw<Array<{ key: string; calls: number; failed: number }>>(Prisma.sql`
+        SELECT ${GROUP_KEYS.day} AS key, count(*)::int AS calls, (count(*) FILTER (WHERE outcome <> 'succeeded'))::int AS failed
+        FROM ai_calls WHERE ${learnerOnly} GROUP BY 1 ORDER BY 1`),
+    ]);
+    const costByDay = new Map(byDay.items.map((item) => [item.key, item]));
+    const learnerByDay = new Map(learnerDays.map((row) => [row.key, row]));
+    return {
+      from: range.from,
+      to: range.to,
+      ai_enabled: status.ai_enabled,
+      today: status.today,
+      operations: status.operations.map(({ operation, ready, reason, model, last_error }) => ({ operation, ready, reason, model, last_error })),
+      total: byDay.total,
+      days: daysOf(range).map((date) => {
+        const cost = costByDay.get(date);
+        const learner = learnerByDay.get(date);
+        return {
+          date, calls: cost?.calls ?? 0, cost_usd: cost?.cost_usd ?? '0.00000000', cost_vnd: cost?.cost_vnd ?? 0,
+          learner_calls: learner?.calls ?? 0, learner_failed: learner?.failed ?? 0,
+        };
+      }),
+      by_operation: byOperation.items,
+      by_model: byModel.items,
+      by_purpose: byPurpose.items,
+      learner_health: health.map((row) => ({
+        ...row,
+        outcomes: Object.fromEntries(outcomes.filter((item) => item.operation === row.operation).map((item) => [item.outcome, item.calls])),
+      })),
+    };
   }
 
   /** Every call of one operation id, oldest first, with its content while it is kept (design §12.1 #17). */

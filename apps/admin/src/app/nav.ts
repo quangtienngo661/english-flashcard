@@ -17,7 +17,7 @@ export type NavEntry = {
 
 /** 24 items in 6 groups: the admin sidebar of the copy doc §8.0 plus Giao dịch (design §4.4). */
 export const NAV: NavEntry[] = [
-  { group: 'overview', path: '/dashboard', labelKey: 'nav.dashboard', needs: [], available: false },
+  { group: 'overview', path: '/dashboard', labelKey: 'nav.dashboard', needs: ['ai.view'], available: true },
   { group: 'content', path: '/words', labelKey: 'nav.words', needs: ['content.edit'], available: true },
   { group: 'content', path: '/senses', labelKey: 'nav.senses', needs: ['content.edit'], available: true },
   { group: 'content', path: '/topics', labelKey: 'nav.topics', needs: ['taxonomy.manage'], available: true },

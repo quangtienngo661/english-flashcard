@@ -5,6 +5,7 @@ import { AdaptersRegistrar } from './adapters/adapters.registrar.js';
 import { AiAdapterRegistry } from './adapters/ai-adapter.registry.js';
 import { IdempotencyInterceptor } from '../common/idempotency/idempotency.interceptor.js';
 import { AiService } from './ai.service.js';
+import { AdminAiDashboardController } from './api/admin-ai-dashboard.controller.js';
 import { AdminAiEvalController } from './api/admin-ai-eval.controller.js';
 import { AdminAiModelsController } from './api/admin-ai-models.controller.js';
 import { AdminAiOperationsController } from './api/admin-ai-operations.controller.js';
@@ -33,6 +34,7 @@ import { SelectionReader } from './runner/selection.js';
   imports: [SettingsModule, IdentityModule],
   controllers: [
     AdminAiModelsController, AdminAiOperationsController, AdminAiEvalController, AdminAiPromptsController, AdminAiReportsController,
+    AdminAiDashboardController,
   ],
   providers: [
     AiAdapterRegistry, AdaptersRegistrar, PromptsRepository, ModelsService, OperationSettingsService, SelectionReader, CallLedger,
