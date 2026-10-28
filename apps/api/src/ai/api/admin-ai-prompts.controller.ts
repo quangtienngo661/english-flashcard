@@ -46,7 +46,6 @@ export class AdminAiPromptsController {
 
   @Post(':op/test')
   @HttpCode(200)
-  @RateLimit('ai.test')
   test(
     @Param({ schema: operationParams }) params: z.infer<typeof operationParams>,
     @Body({ schema: testPromptSchema }) body: z.infer<typeof testPromptSchema>,
