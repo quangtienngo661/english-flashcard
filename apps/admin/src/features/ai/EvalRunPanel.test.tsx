@@ -82,6 +82,14 @@ describe('EvalRunPanel (A/83)', () => {
     expect(r.count('GET', '/v1/admin/ai/eval/runs/r1')).toBe(1);
   });
 
+  it('an id that is no UUID cannot exist: it says not found, and the API is neither asked nor polled', async () => {
+    vitest.useFakeTimers({ shouldAdvanceTime: true });
+    const r = renderApp('/ai/eval/runs/abc', evalRoutes());
+    expect(await screen.findByText(t.detail.notFound)).toBeInTheDocument();
+    await act(async () => { await vitest.advanceTimersByTimeAsync(10_000); });
+    expect(r.calls.filter((c) => c.path.startsWith('/v1/admin/ai/eval/runs/'))).toHaveLength(0);
+  });
+
   it('per-example results: input looked up in the set, status, reason, output; the raw output behind [Xem đầu ra gốc]; a deleted example says so', async () => {
     const items: EvalRunDetail['items'] = [
       { example_id: 'e1', status: 'succeeded', reason: null, output: { sentence: 'I ___ home.' }, raw_output: '{"sentence":"I ___ home."}', latency_ms: 700, cost_usd: '0.00100000' },
