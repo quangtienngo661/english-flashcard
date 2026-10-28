@@ -1,6 +1,7 @@
 # Bước 8 — Identity còn lại: đăng nhập Google và xóa tài khoản — Design (28/10/2026)
 
-> **Trạng thái 29/10/2026:** đã review độc lập và sửa theo review (§0b); mọi câu đã chốt (D1–D30; câu 26 để sau). Chờ chủ dự án duyệt design. Chỉ là tài liệu; chưa có code.
+> **Trạng thái 29/10/2026:** đã review độc lập và sửa theo review (§0b); mọi câu đã chốt (D1–D30; câu 26 để sau); **chủ dự án duyệt design** ("Duyệt, viết plan"). Plan:
+> [`../plans/2026-10-29-buoc-8-identity-remainder.md`](../plans/2026-10-29-buoc-8-identity-remainder.md). Chỉ là tài liệu; chưa có code.
 > **Nhánh:** `docs/buoc-8-brainstorm` (cắt từ `dev` @ `9e35eb5`).
 > **Nguồn quyết định:** câu hỏi [`../reviews/2026-10-28-buoc-8-questions.md`](../reviews/2026-10-28-buoc-8-questions.md), nhật ký hỏi đáp
 > [`../reviews/2026-10-28-buoc-8-qa-log.md`](../reviews/2026-10-28-buoc-8-qa-log.md), decision record
@@ -317,7 +318,7 @@ xóa). Hộp xác nhận nói rõ. Lý do: admin xóa theo yêu cầu của ngư
 4. **Sau commit:** thư "tài khoản đã được xóa" tới email đọc ở bước 3 (D13; tính vào ngân sách thư như mọi thư). Trong request dùng `MailDispatcher.afterResponse`; trong việc
    định kỳ dùng `runNow` (`mail-dispatcher.service.ts:25-36`), nên nhánh thử lại cũng gửi đúng một thư (review R16). Dọn tài khoản chưa xác nhận và chạy lại sau backup **không**
    gửi thư.
-5. Trả 204. Web xóa phiên trong bộ nhớ và chuyển tới trang `/{locale}/account-deleted` (ngoài `/app`).
+5. Trả 204. Web xóa phiên trong bộ nhớ và chuyển tới trang `/{locale}/app/account-deleted` (nhóm route `(auth)`, không cần phiên).
 
 **Thứ tự khóa trong Tx B** (review R14; ghi theo thứ tự đã có trong code): `identity.user` → `practice.user` → hàng Practice → `learning.user` → item Learning → `content.private`
 → `entitlements.user` → `entitlements.pool:*`. `deleteMyWord` khóa `learning.user` trước Practice (`quick-add.service.ts:89-92`), nên một `deleteMyWord` đã qua guard trước Tx A
@@ -347,7 +348,7 @@ scope = 'private' AND owner_user_id = $1`, không gọi `deletePrivateEntryConte
 |---|---|---|---|
 | Practice | `practice_session_items`, `practice_questions`, `practice_sessions`, `practice_ai_requests`, `practice_word_checks` của người đó | `practice_reports`: `user_id` = mã ẩn danh, `note` = null. Ngoại lệ D14 (câu làm từ câu người học tự viết) không có hàng nào để xóa: những câu đó không báo lỗi được (409 `report-not-available`, `reports.service.ts:106`); giữ một test cho điều đó (review R5). **Xóa hẳn** báo lỗi có `sense_id` là nghĩa riêng của người học (câu 27a vòng 2: như `deleteForSenses` khi xóa một từ riêng, `private-senses-cleanup.provider.ts:42`; bản chụp của chúng chứa từ và nghĩa người học tự viết). Báo lỗi giữ lại: để trống câu trả lời trong bản chụp (`learner.answer`, `answers_tried`, `snapshot.ts`), như ghi chú (câu 27b vòng 2). `resolved_by` của nhân sự: id trơ | D14, Bước 4 §15, Bước 7 §19 |
 | Learning | `learning_groups`, `learning_items`, `learning_log` | — | SR11 |
-| Content | Từ riêng (`entries.owner_user_id`, xóa qua `deletePrivateEntryContent`, cascade nghĩa, bản sửa, câu), `context_sentences` của người đó | `sense_revisions.created_by` / `reviewed_by` / `published_by`, `senses.state_changed_by`, `word_form_additions.added_by` của nhân sự: giữ id trơ | D18 |
+| Content | Từ riêng (`entries.owner_user_id`, xóa hàng loạt, cascade nghĩa, bản sửa, câu), `context_sentences` của người đó | `sense_revisions.created_by` / `reviewed_by` / `published_by`, `senses.state_changed_by`, `word_form_additions.added_by` của nhân sự: giữ id trơ | D18 |
 | Notifications | `reminder_prefs`, `reminder_deliveries` | — | SR11 |
 | Entitlements | `entitlement_grants` (+ `entitlement_grant_changes` cascade) của người nhận (chủ dự án chốt câu 30 vòng 2: xóa, không giữ dạng ẩn danh), `subscriptions`, `billing_events` có `user_id` hoặc `app_user_id` là người đó hoặc `subscription_id` thuộc gói của người đó (cả `payload`, `raw_payload`), `trial_history`, `entitlement_notices` có `user_id` hoặc `recipient_user_id` là người đó, `fake_billing_subscriptions` | `usage_records`: `user_id` = mã ẩn danh (D16); `billing_transactions`: `user_id` = mã ẩn danh (D15); `granted_by`, `revoked_by`, `changed_by` của nhân sự: id trơ | ER16, D12, D15, D16, D18 |
 | AI | `ai_call_contents` của các lời gọi của người đó, `ai_operations` | `ai_calls`: `user_id` = null (Bước 6, `deleteUserData`) | B6E68 |
@@ -455,7 +456,7 @@ sẽ chuyển Minh đi (review R11). Dùng lại thành phần của `CompletePr
 2. Có gói tự gia hạn → khối chặn: "Bạn đang có gói Pro tự gia hạn. Hủy gói trước khi xóa tài khoản." + link tới trang Gói. Không hiện phần dưới.
 3. Ô tick "Tôi hiểu dữ liệu sẽ mất và không khôi phục được"; ô "Gõ lại email của bạn"; ô mật khẩu, hoặc nút "Xác nhận bằng Google" (§5.9) khi không có mật khẩu.
 4. Nút đỏ "Xóa vĩnh viễn" (bấm được khi đủ ba ô). Lỗi mật khẩu sai: câu chung như đăng nhập.
-5. Trang `/[locale]/account-deleted`: "Tài khoản của bạn đã được xóa." (202: "đang hoàn tất…").
+5. Trang `/[locale]/app/account-deleted`: "Tài khoản của bạn đã được xóa." (202: "đang hoàn tất…").
 
 ### 9.5 Trang Gói: nút "Hủy gói" (§8.2)
 
@@ -489,7 +490,7 @@ Toàn bộ chữ vi và en; dùng token chung `packages/design-tokens`.
 
 | Bảng | Đổi |
 |---|---|
-| `users` | CHECK `status` thêm `deleting`; thêm `deleting_since timestamptz null`, `avatar_url varchar(2048) null` |
+| `users` | CHECK `status` thêm `deleting`; thêm `deleting_since timestamptz null`, `deleting_by varchar(16) null` (`self` / `admin` / `cleanup`, để việc thử lại ghi đúng `deleted_accounts.by`; thêm lúc viết plan), `avatar_url varchar(2048) null` |
 | `user_identities` (mới, Identity) | `id`, `user_id` FK → `users` ON DELETE CASCADE, `provider` (`google`), `subject` (varchar 255), `created_at`; unique `(provider, subject)`, unique `(user_id, provider)` |
 | `session_chains` | thêm `auth_method varchar(16) not null default 'password'`, CHECK `('password','google')` |
 | `deleted_accounts` (mới, Identity) | `user_id uuid` PK (không FK), `deleted_at timestamptz`, `by varchar(16)` CHECK `('self','admin','cleanup')` |
@@ -553,12 +554,12 @@ Theo khuôn của `identity/mailer/templates.ts` (chữ thường, vi rồi en t
 | B8E24 | Lan đang có một request AI chạy dở lúc Tx A commit (đã qua guard trước đó) | Ghi trước Tx B thì Tx B xóa. Ghi sau Tx B: câu AI của Practice không ghi được vì `practice_ai_requests` đã mất (B7E115); `ai_calls`, `ai_call_contents`, `practice_word_checks`, `ai_operations` ghi muộn bị lượt quét lại trong 24 giờ xóa hoặc ẩn danh (§7.2, review R1) |
 | B8E25 | Webhook thanh toán của Lan tới sau khi xóa xong | Ghi `ignored`, lý do `unknown-user` (`event-applier.service.ts:62,99-101`, B5E59) |
 | B8E26 | Job nhắc học của Lan còn trong Redis lúc xóa | Lúc chạy không tìm thấy email đã xác minh → bỏ qua (`email.provider.ts:23`) |
-| B8E27 | Báo lỗi của Lan đã được staff xác nhận, chưa trả lượt | Báo lỗi giữ với mã ẩn danh; việc trả lượt cho mã ẩn danh không có người nhận → đánh dấu đã xử lý, không trả (Đề xuất; plan kiểm `refunds.ts`) |
+| B8E27 | Báo lỗi của Lan đã được staff xác nhận, chưa trả lượt | Báo lỗi giữ với mã ẩn danh; việc trả lượt cho mã ẩn danh không thấy gói → `refunded: false`, không lỗi, không lặp (`usage-ledger.service.ts:140-159`, review đã kiểm) |
 | B8E28 | Lan đăng ký lại bằng `lan@gmail.com` hôm sau | Tài khoản mới, id mới, có trial lại trên web (D12) |
 | B8E29 | Admin xóa chính mình, hoặc xóa admin cuối | 409 `self-delete` hoặc 409 `last-admin`; nút đã ẩn |
 | B8E30 | Hà (editor) gọi `POST /v1/me/account/delete` | 409 `staff-account` (D18) |
-| B8E31 | Editor gọi `DELETE /v1/admin/users/{id}` | 403 (không có `roles.manage`) |
-| B8E32 | Tài khoản chưa xác nhận đăng ký lại ở ngày thứ 6 | `updated_at` đặt lại; việc dọn đếm lại 7 ngày từ lần đăng ký mới (D19) |
+| B8E31 | Editor gọi `POST /v1/admin/users/{id}/delete` | 403 (không có `roles.manage`) |
+| B8E32 | Tài khoản chưa xác nhận đăng ký lại ở ngày thứ 6 | `terms_accepted_at` đặt lại; việc dọn đếm lại 7 ngày từ lần đăng ký mới (D19) |
 | B8E33 | Admin đổi `unverified_cleanup_days` từ 7 xuống 1 | Lần chạy kế tiếp dọn mọi tài khoản chưa xác nhận quá 1 ngày, tối đa 200 mỗi lần |
 | B8E34 | Khôi phục một backup cũ có Lan | `pnpm accounts:replay-deletions` xóa lại Lan (D21) |
 | B8E35 | Thư "đã xóa" không gửi được (SMTP lỗi, hết ngân sách thư) | Việc xóa vẫn xong; lỗi được log; không thử lại thư (IR19) |
