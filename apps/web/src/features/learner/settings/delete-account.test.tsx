@@ -167,6 +167,18 @@ describe('DeleteAccountPage (design §9.4)', () => {
       expect(await screen.findByText('Hãy xác nhận lại bằng tài khoản Google của bạn trước khi xóa.')).toBeInTheDocument();
       void view;
     });
+
+    it('B8E19 (final review I3): after reauth-required the Google button is usable again and the red button is off', async () => {
+      search = 'reauth=ok';
+      renderApp(<DeleteAccountPage />, { routes: routes([], { 'POST /v1/me/account/delete': () => problem(403, 'reauth-required') }), me: googleOnly });
+      await screen.findByText('Đã xác nhận bằng Google');
+      await userEvent.click(screen.getByRole('checkbox'));
+      await userEvent.type(screen.getByLabelText('Gõ lại email của bạn'), 'lan@example.com');
+      await userEvent.click(screen.getByRole('button', { name: 'Xóa vĩnh viễn' }));
+      await screen.findByText('Hãy xác nhận lại bằng tài khoản Google của bạn trước khi xóa.');
+      expect(screen.getByRole('button', { name: 'Xác nhận bằng Google' })).toBeEnabled();
+      expect(screen.getByRole('button', { name: 'Xóa vĩnh viễn' })).toBeDisabled();
+    });
   });
 });
 

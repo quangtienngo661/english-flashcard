@@ -97,9 +97,11 @@ function DeleteForm({ email, hasPassword }: { email: string; hasPassword: boolea
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [googleBusy, setGoogleBusy] = useState(false);
+  // The Google proof lasts five minutes (B8E19): once the API says it ran out, `?reauth=ok` in the address no longer counts.
+  const [proofExpired, setProofExpired] = useState(false);
 
   // A Google-only account proves itself with a Google trip (the cookie it leaves is sent with the delete request, D25).
-  const proven = hasPassword ? password !== '' : reauth === 'ok';
+  const proven = hasPassword ? password !== '' : reauth === 'ok' && !proofExpired;
   const ready = understood && typedEmail.trim() !== '' && proven;
 
   const { submit, busy } = useSubmitOnce(async () => {
@@ -116,6 +118,7 @@ function DeleteForm({ email, hasPassword }: { email: string; hasPassword: boolea
     try {
       await submit();
     } catch (failure) {
+      if (failure instanceof ApiError && failure.problem.slug === 'reauth-required') setProofExpired(true);
       setError(errorText(failure));
     }
   }
@@ -142,8 +145,8 @@ function DeleteForm({ email, hasPassword }: { email: string; hasPassword: boolea
         <TextField label={t('password')} type="password" value={password} onChange={setPassword} autoComplete="current-password" />
       ) : (
         <div className="flex flex-col gap-2">
-          <Button type="button" variant="quiet" className="w-fit" onPress={() => void confirmWithGoogle()} isPending={googleBusy} isDisabled={reauth === 'ok'}>
-            {reauth === 'ok' ? t('googleConfirmed') : t('confirmWithGoogle')}
+          <Button type="button" variant="quiet" className="w-fit" onPress={() => void confirmWithGoogle()} isPending={googleBusy} isDisabled={proven}>
+            {proven ? t('googleConfirmed') : t('confirmWithGoogle')}
           </Button>
           {reauth === 'wrong-account' && <p role="alert" className="text-caption text-danger">{t('wrongAccount')}</p>}
           {reauth === 'failed' && <p role="alert" className="text-caption text-danger">{t('googleFailed')}</p>}
