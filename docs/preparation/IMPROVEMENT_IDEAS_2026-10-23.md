@@ -48,13 +48,12 @@ thông (ChatGPT Study Mode, Gemini).
 - **Yếu tố quyết định là phân phối**, không phải thêm tính năng: giáo viên và trung tâm (C9), nội dung theo kỳ thi (C7), cộng đồng tự học.
   Nên chọn và thử một kênh trước khi launch.
 
-## 2. Danh sách cải thiện (xếp theo hiệu quả trên chi phí)
+## 2. Danh sách cải thiện còn lại (xếp theo hiệu quả trên chi phí)
+
+Các mục đã làm, đang làm hoặc đã bỏ nằm ở §2b (tách ra 26/10/2026).
 
 | # | Đề xuất | Vì sao | Chi phí, chạm quyết định nào |
 |---|---|---|---|
-| C1 | **Phát âm bằng giọng đọc của trình duyệt** (`speechSynthesis`) ở trang từ, thẻ ôn, kết quả luyện | Lấp khoảng trống lớn nhất của người học | Gần như 0 đồng, không cần API; một nút loa. Giọng phụ thuộc máy (cần kiểm trên Windows, Android, iOS) |
-| C2 | **Kết quả luyện gợi ý cập nhật lịch ôn**: trả lời sai trong Luyện tập thì hỏi "Đưa vào ưu tiên?" (mặc định có), hoặc thêm cài đặt bật tự động | Nối hai vòng ôn và luyện; bớt chuyện tự chấm sai | Nới D16 Bước 3 ("hệ thống không bao giờ tự đổi mức") thành tùy chọn bật; `learning_log` đã đủ dữ liệu |
-| C3 | **Đưa lại "Điền từ từ câu bạn đã lưu"** thành một nguồn trong Tùy chỉnh phiên, mở cho gói Miễn phí | Không tốn AI, cá nhân hóa, cho người học lý do lưu câu | Chỉ giao diện: API Bước 7 đã có (`cloze_source: own`); đổi D10 giao diện người học và luật gói của kiểu câu này |
 | C4 | **Cho gói Miễn phí nếm câu AI** (ví dụ 3 câu AI mỗi ngày, ý tưởng I4) | Người dùng phải thấy điểm khác biệt trước khi trả tiền | Đổi F31 (Free không có AI); kho lượt AI theo ngày (sổ lượt Bước 5 đã có kiểu kho theo ngày); giữ trần chi phí toàn hệ thống `ai_daily_cap` |
 | C5 | **Bài "Đặt câu với từ này"**, AI chấm và nhận xét ngắn | Tự viết ra câu (generation effect) nhớ lâu hơn nhận diện; AI chat phổ thông không tự gói được việc này vào lịch ôn | Đổi quyết định 02/10/2026 (tạm bỏ góp ý câu); tốn AI nên dành cho Pro; một thao tác AI mới, luật chấm và báo lỗi |
 | C6 | **Động lực nhẹ**: chuỗi ngày, mục tiêu tuần, "đã thuộc N từ", email tóm tắt tuần | Giữ người dùng quay lại mà không cần xu, cửa hàng (I1, I2 là bản nặng hơn) | Nhỏ; số liệu đã có trong `learning_log`; email dùng hạ tầng nhắc học Bước 3 |
@@ -64,44 +63,54 @@ thông (ChatGPT Study Mode, Gemini).
 | C10 | **Đo trước khi mở rộng**: một lần gọi AI thật bằng khóa của chủ dự án, tỷ lệ câu AI bị luật loại, giữ chân D7/D30 | Hiện chất lượng câu AI và độ giữ chân đều chưa biết | Design Bước 6 §19, Bước 7 §20 đã nêu; telemetry (thứ tự ưu tiên trong `PROJECT_CONTEXT.md`) |
 | C11 | **Nâng cấp AI eval và dashboard theo dõi AI** (thêm 24/10/2026): ví dụ có đáp án mong đợi, chấm tự động ba tầng (luật Practice, model khác chấm, người duyệt), so sánh hai lần chạy, màn admin; dashboard theo 5 câu hỏi (AI có chạy, câu có tốt, người học có bị ảnh hưởng, tốn bao nhiêu, hạn mức có hợp lý). Chi tiết: [`AI_EVAL_DASHBOARD_2026-10-24.md`](AI_EVAL_DASHBOARD_2026-10-24.md) | Eval hiện chỉ kiểm khuôn, thời gian, chi phí (D18 Bước 6); đổi prompt hay model không biết tốt lên hay xấu đi | Phần đo của C10 dựa vào đây; chặn đổi model khi điểm giảm là đổi D18 Bước 6; lần luật loại đầu tiên hiện chỉ có trong log |
 | C12 | **Vòng đời prompt trên admin và vị trí của LLM-as-judge** (thêm 24/10/2026): prompt sửa trên admin có bản nháp → eval (dev, held-out) → publish canary → mở 100% → rollback một cú bấm; judge là module backend qua cổng AI, không nằm trên đường trả câu cho người học, dùng cho eval offline, online eval (lấy mẫu câu AI đã phục vụ) và có thể trong `prepare`; bộ nhãn người để hiệu chỉnh judge. Chi tiết: [`AI_PROMPT_LIFECYCLE_AND_JUDGE_2026-10-24.md`](AI_PROMPT_LIFECYCLE_AND_JUDGE_2026-10-24.md) | Hiện lưu prompt là có hiệu lực ngay, không cổng eval, không bật dần; quay lại phải lưu lại chữ cũ bằng tay (D15, D18 Bước 6) | Đổi D15, có thể D18 Bước 6; dựa trên C11 (tiêu chí, grader); judge ăn vào trần lời gọi mỗi ngày |
-| C13 | **Đăng ký xong vào thẳng chọn ngôn ngữ; nhắc xác nhận email trên giao diện** (chủ dự án, 26/10/2026) | Bớt một bước chặn ngay lúc đăng ký | Hiện: đăng ký → `/app/verify-email` (nhập mã) → `/app/welcome` (`RegisterForm.tsx`, `VerifyEmailForm.tsx`). API không chặn tài khoản chưa xác nhận (đăng nhập, học đều được; `/v1/me` có `email_verified`); web chỉ hiện "chưa xác nhận" ở Cài đặt. Chưa xác nhận thì không nhận email nhắc học. Chỉ giao diện; đổi luồng K/03 của design giao diện người học |
-| C14 | **Ô tìm từ và thêm từ ngay trong trang nhóm** (chủ dự án, 26/10/2026) | Thêm từ vào đúng nhóm đang xem, không phải mở tấm Thêm từ rồi chọn nhóm | Hiện: trang nhóm chỉ lọc theo ngăn / ưu tiên / đến hạn / mới (`GroupPage.tsx`), không có ô tìm theo chữ; thêm từ qua tấm Thêm từ (phím N) có chọn nhóm. Có thể dùng lại tấm Thêm từ và `/v1/lookup`, `/items/bulk` có sẵn |
-| C15 | **Sửa chữ ở Tùy chỉnh phiên**: bỏ chữ "trước" ở cuối mỗi lựa chọn thứ tự; viết lại "Bấm Cần ôn lại lâu nhất trước" (chủ dự án chưa hiểu) (chủ dự án, 26/10/2026) | Chữ dễ hiểu hơn | Chỉ bản chữ (`messages/vi.json`, `en.json` `sorts.*`). Nghĩa hiện tại của `priority_oldest`: trong các từ đang ưu tiên, từ bạn bấm Cần ôn lại **cách đây lâu nhất** ra trước (`apps/api/src/practice/sessions/order.ts`, sắp theo `last_needs_review_at`). Câu "Từ bạn đã bấm Cần ôn lại, bấm lâu nhất trước." ở thẻ "Đang ưu tiên" cùng nghĩa, cũng cần xem lại |
-| C16 | **Bỏ nút "Câu tiếp" sau khi trả lời trong Luyện tập**: mặc định là Đã biết và sang câu kế; cần ôn thì bấm Cần ôn lại (chủ dự án, 26/10/2026) | Bớt một nút, ít thao tác hơn | Hiện có ba nút: Cần ôn lại (1), Đã biết (2, chỉ hiện khi được phép), Câu tiếp (Enter, không đổi lịch ôn) (`AnswerFeedback.tsx`). Đã biết chỉ được khi trả lời đúng, không dùng gợi ý **và** từ đang đến hạn (`known-not-allowed`, `practice-review.service.ts`). Mặc định Đã biết là hệ thống tự đổi mức của từ → đổi D16 Bước 3 ("chỉ người học bấm"); liên quan C2 |
-| C17 | **`baseURL` của AI adapter lấy từ biến môi trường** thay vì viết cứng (chủ dự án, 26/10/2026) | Chưa ghi lý do (vd. đi qua proxy / gateway, một dịch vụ tương thích OpenAI, máy giả để thử) | Hiện viết cứng **có chủ ý**: `https://api.openai.com/v1` (`openai.adapter.ts`), `https://api.anthropic.com` (`anthropic.adapter.ts`); SDK bị chặn đọc `OPENAI_BASE_URL` / `ANTHROPIC_BASE_URL` (plan review #6 Bước 6; test `ignores the environment` trong hai file spec). Lý do: shell của Claude Code trên máy này **có đặt** `ANTHROPIC_BASE_URL` (kiểm 26/10/2026), nên nếu đọc biến đó thì API chạy từ shell ấy gửi key Anthropic thật tới địa chỉ khác. Cùng nhóm với D29 Bước 6 (`*_CUSTOM_HEADERS` đặt thì từ chối khởi động). Đổi là đổi plan review #6 |
+| C15b | **Chữ cho lựa chọn "Bấm Cần ôn lại lâu nhất trước"** (`priority_oldest`) và câu trên thẻ "Đang ưu tiên" (phần còn lại của C15, dời ở câu 10 đợt cải thiện) | Chủ dự án chưa hiểu câu này | Chỉ bản chữ. Nghĩa: trong các từ đang ưu tiên, từ bấm Cần ôn lại **cách đây lâu nhất** ra trước (`apps/api/src/practice/sessions/order.ts`, sắp theo `last_needs_review_at`). Đề xuất cũ của Claude: "Chờ ôn lâu nhất" |
+| C18 | **Phiên âm IPA cho từng từ** (chủ dự án, 26/10/2026) | Người học thấy cách đọc chính xác, không phụ thuộc giọng của máy (C1) | Hiện **chưa có**: không bảng nào trong `apps/api/prisma/models` có trường phiên âm; file CEFR-J chỉ có `headword, pos, CEFR, …` (kiểm 26/10/2026). Cần: nguồn dữ liệu, cột mới, bước nhập, chọn gắn theo **từ** hay theo **nghĩa / loại từ** (`record` danh từ khác động từ). Nguồn và giấy phép ở dưới bảng |
+| C19 | **File âm thanh UK / US làm sẵn trên máy chủ** cho mỗi từ của kho (hướng nâng cấp của C1, A14 đợt cải thiện) | Mọi nền tảng (web, Flutter) nghe cùng một giọng, máy nào cũng có cả UK và US | Tốn tiền tạo và lưu (khoảng 8.812 từ × 2), giấy phép nguồn, mở CSP âm thanh; câu đã lưu của người học không làm sẵn được. Xét lại khi làm Flutter hoặc khi người học phàn nàn về giọng |
 
-## 3. Đề xuất thứ tự
+**Nguồn IPA cho C18 và giấy phép** (Claude đọc văn bản gốc 26/10/2026; **không phải tư vấn pháp lý**, nên hỏi luật sư trước lần thu tiền đầu tiên như
+[`COMMERCIALIZATION_READINESS_2026-10-19.md`](COMMERCIALIZATION_READINESS_2026-10-19.md) đã khuyên):
 
-0. **Trước Bước 8 (đề xuất, §5):** C10 phần gọi AI thật, và cho 5–10 người học thật dùng bản hiện tại.
-1. **Làm ngay sau M5b (rẻ, không tốn AI, tăng giá trị hằng ngày):** C1, C3, C2.
-2. **Cần chủ dự án chốt về sản phẩm và chi phí trước:** C4, C5.
-3. **Trước khi tìm người dùng thật:** C10, C6, C7; với C11, tối thiểu là chạy eval thật (E1) và phần dashboard về sức khoẻ và chi phí AI.
-4. **Khi có app điện thoại hoặc trước Flutter:** C8.
+| Nguồn | Có gì | Giấy phép | Thương mại hoá | Ràng buộc |
+|---|---|---|---|---|
+| CMUdict (`github.com/cmusphinx/cmudict`, tệp `LICENSE`) | Giọng Mỹ, ký hiệu ARPAbet (phải đổi sang IPA) | Kiểu BSD, Carnegie Mellon | Văn bản cho "use" và phân phối lại, có hoặc không sửa; không có điều khoản cấm thương mại, nhưng cũng không ghi chữ "commercial" | Giữ thông báo bản quyền, danh sách điều kiện và dòng miễn trừ trong tài liệu đi kèm (như AGID trong `THIRD_PARTY_NOTICES.md`) |
+| Wiktionary (điều khoản Wikimedia) | Cả UK và US, sẵn IPA | CC BY-SA 4.0 (hoặc GFDL) | **Có**: trang giấy phép ghi "for any purpose, even commercially" | Ghi công (link trang gốc, link giấy phép, ghi đã sửa); **share-alike**: phần IPA lấy về và chỉnh sửa trên nó phải phát hành theo CC BY-SA (app và code không bị buộc mở); không thêm hạn chế pháp lý hay kỹ thuật lên phần dữ liệu đó. **Chưa chắc**: khoá IPA sau gói trả phí có vi phạm điều "không thêm hạn chế" không, cần hỏi luật sư |
+
+Đề xuất của Claude (chưa chốt): một giọng thì CMUdict (ràng buộc nhẹ nhất); cần cả UK và US thì Wiktionary, chấp nhận share-alike như Octanove. Dù chọn nguồn nào,
+trước khi bán phải có màn ghi nguồn dữ liệu cho người dùng (`GET /v1/sources` có API, chưa có giao diện).
+
+## 2b. Đã làm, đang làm, đã bỏ (tách ra 26/10/2026)
+
+Đợt cải thiện nhóm A: design [`2026-10-26-dot-cai-thien-a-design.md`](../superpowers/specs/2026-10-26-dot-cai-thien-a-design.md), câu hỏi và trả lời
+[`2026-10-26-dot-cai-thien-questions.md`](../superpowers/reviews/2026-10-26-dot-cai-thien-questions.md), tóm tắt [`dot-cai-thien-a.md`](../deliveries/dot-cai-thien-a.md).
+
+| # | Mục | Trạng thái (26/10/2026) | Đã làm thế nào |
+|---|---|---|---|
+| C1 | Nút loa | ✅ merge vào `dev`, PR #136 | Giọng của máy (`speechSynthesis`); hai nút UK · US ở từ, một nút US ở câu; câu đã lưu chỉ đọc bằng giọng trên máy. Chưa kiểm giọng `en-GB` trên Chrome / Edge thật |
+| C2 | Kết quả luyện gợi ý cập nhật lịch ôn | ✅ merge, PR #134 (gộp vào C16) | Trả lời sai thì nút chính (Enter) là Cần ôn lại; D16 Bước 3 giữ |
+| C3 | Điền từ từ câu đã lưu | ✅ merge, PR #134 | Mọi gói, kể cả Miễn phí (đổi D11 Bước 7); công tắc riêng trong Tùy chỉnh phiên, luôn hiện |
+| C13 | Xác nhận email | ⏳ PR #137 mở, chờ CI | **Đổi so với ý gốc**: bắt buộc nhập mã trước khi có phiên (đăng ký không cấp phiên; nhập mã kèm mật khẩu; đăng ký lại vào email chưa xác nhận thì thay dữ liệu) |
+| C14 | Thêm từ trong trang nhóm | ✅ merge, PR #135 | Nút Thêm từ mở tấm Thêm từ khoá nhóm, nhãn "Đã có trong nhóm", thêm cả loạt qua trang Chọn từ theo chủ đề |
+| C15 | Chữ ở Tùy chỉnh phiên | ✅ merge, PR #134 (một phần) | Bỏ "trước" ở 5 lựa chọn; phần `priority_oldest` còn lại thành C15b |
+| C16 | Bỏ nút "Câu tiếp" | ✅ merge, PR #134 | Hai nút: Cần ôn lại + nút chính đổi chữ theo trường hợp |
+| — | Lỗi "Xem đáp án" trước lần thử đầu (phát hiện khi làm design) | ✅ merge, PR #133 | API cho bỏ qua câu điền từ trước lần thử, tính là sai |
+| C17 | `baseURL` của AI adapter từ biến môi trường | ❌ bỏ (archived) | Địa chỉ viết cứng trùng mặc định của SDK; nhà cung cấp ít khả năng đổi |
+
+## 3. Đề xuất thứ tự (các mục còn lại)
+
+0. **Trước Bước 8 (đề xuất, §5):** C10 phần gọi AI thật (nhóm B của đợt cải thiện: Postman trước, rồi design B), và cho 5–10 người học thật dùng bản hiện tại.
+1. **Rẻ, làm lúc nào cũng được:** C15b (chữ).
+2. **Cần chủ dự án chốt về sản phẩm và chi phí trước:** C4, C5 (dời ở đợt cải thiện, "brainstorm sau").
+3. **Trước khi tìm người dùng thật:** C10, C6, C7, C18 (kèm màn ghi nguồn dữ liệu); với C11, tối thiểu là chạy eval thật (E1) và phần dashboard về sức khoẻ và chi phí AI.
+4. **Khi có app điện thoại hoặc trước Flutter:** C8, C19.
 5. **Sau V1:** C9.
-
-**Đợt cải thiện 26/10/2026** (câu hỏi và trả lời: [`2026-10-26-dot-cai-thien-questions.md`](../superpowers/reviews/2026-10-26-dot-cai-thien-questions.md); chưa có
-design): vào đợt C13, C14, C15, C16 + C2, C1, C3 (nhóm A) và C10 / C11 / C12 phần nền (nhóm B). Để sau: **C15 dòng "Bấm Cần ôn lại lâu nhất trước"**
-(`priority_oldest`, câu 10: chữ mới cho lựa chọn này và cho thẻ "Đang ưu tiên", chủ dự án "xử lý sau"), **C4**, **C5** ("archived, brainstorm sau").
-**C17 archived** (địa chỉ viết cứng trùng địa chỉ mặc định của SDK; nhà cung cấp ít khả năng đổi). C6–C9 không vào đợt.
-Design nhóm A: [`2026-10-26-dot-cai-thien-a-design.md`](../superpowers/specs/2026-10-26-dot-cai-thien-a-design.md). **Hướng nâng cấp của C1** (A14, 26/10/2026): file âm
-thanh UK / US làm sẵn trên máy chủ cho mỗi từ của kho, để mọi nền tảng (web, Flutter) nghe cùng một giọng; xét lại khi làm Flutter hoặc khi người học phàn nàn về giọng
-(tốn tiền tạo và lưu khoảng 8.812 từ × 2, giấy phép nguồn, mở CSP âm thanh; câu đã lưu của người học không làm sẵn được).
 
 ## 4. Câu hỏi mở cho lúc xem lại
 
-- C2: gợi ý từng lần (hỏi) hay cài đặt bật/tắt một lần? Mặc định nào?
-- C3: kiểu câu từ câu đã lưu có thuộc gói Miễn phí không (hiện thuộc Dùng thử / Pro theo Bước 7)?
 - C4: bao nhiêu lượt mỗi ngày, kho riêng hay chung với Dùng thử, ảnh hưởng chi phí dự kiến?
 - C5: chấm theo tiêu chí nào (đúng nghĩa của từ, ngữ pháp, tự nhiên), và câu bị chấm sai thì người học khiếu nại thế nào?
 - C9: giáo viên có cần gói riêng không, học sinh dưới 13 tuổi thì sao (luật tuổi từ đợt sửa Bước 0–3)?
-- C13: trang chọn ngôn ngữ có cần email đã xác nhận không; lời nhắc xác nhận hiện ở đâu (dải trên mọi trang, chỉ ở Hôm nay), bỏ được không; có giới hạn
-  gì cho tài khoản chưa xác nhận lâu ngày không?
-- C14: ô trong trang nhóm tìm trong kho từ (để thêm) hay tìm trong các từ đã có của nhóm, hay cả hai?
-- C15: chữ mới cho từng lựa chọn thứ tự và cho thẻ "Đang ưu tiên".
-- C16: khi không được bấm Đã biết (trả lời sai, dùng gợi ý, từ chưa đến hạn) thì nút còn lại làm gì: sang câu không đổi lịch, hay tự tính Cần ôn lại?
-  Phím Enter làm gì? Có giữ cách cũ thành một tùy chọn không?
-- C17: cần đổi địa chỉ để làm gì; tên biến (tên riêng của app hay tên mặc định của SDK); địa chỉ nào được chấp nhận (chỉ `https`, danh sách cho phép);
-  đổi theo môi trường (`.env`) hay theo từng model trong admin?
+- C15b: chữ mới cho lựa chọn `priority_oldest` và cho thẻ "Đang ưu tiên".
+- C18: một giọng (CMUdict) hay hai giọng (Wiktionary, share-alike); IPA gắn theo từ hay theo nghĩa / loại từ; có khoá sau gói trả phí không (xem câu hỏi giấy phép ở §2)?
 - Phân phối (§1.4): thử kênh nào trước (giáo viên, nhóm luyện thi, cộng đồng tự học), và bao giờ?
 
 ## 5. Cách làm dự án (đánh giá 23/10/2026)
