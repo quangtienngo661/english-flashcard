@@ -90,6 +90,22 @@ describe('EvalRunPanel (A/83)', () => {
     expect(r.calls.filter((c) => c.path.startsWith('/v1/admin/ai/eval/runs/'))).toHaveLength(0);
   });
 
+  it('when the example set cannot be read, the example column shows "—", not "Ví dụ đã xóa"', async () => {
+    const items: EvalRunDetail['items'] = [
+      { example_id: 'e1', status: 'succeeded', reason: null, output: { sentence: 'I ___ home.' }, raw_output: null, latency_ms: 700, cost_usd: null },
+    ];
+    renderApp(PATH, evalRoutes({
+      [URL.examples()]: () => problem(500, ''),
+      [URL.run()]: () => Response.json(evalRun({ items })),
+    }));
+    const scope = within(await panel());
+    const results = await scope.findByRole('region', { name: t.detail.results });
+    const row = within(results).getAllByRole('row')[1];
+    expect(row).toHaveTextContent('{"sentence":"I ___ home."}');
+    await waitFor(() => expect(row.querySelector('td')).toHaveTextContent(t.detail.none));
+    expect(results).not.toHaveTextContent(t.detail.deletedExample);
+  });
+
   it('per-example results: input looked up in the set, status, reason, output; the raw output behind [Xem đầu ra gốc]; a deleted example says so', async () => {
     const items: EvalRunDetail['items'] = [
       { example_id: 'e1', status: 'succeeded', reason: null, output: { sentence: 'I ___ home.' }, raw_output: '{"sentence":"I ___ home."}', latency_ms: 700, cost_usd: '0.00100000' },

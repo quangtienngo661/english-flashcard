@@ -322,7 +322,7 @@ function PromptEditor({ op, prompt }: { op: AiOperation; prompt: PromptView }) {
       </div>
 
       <TestRunPanel op={op} prepare={prepare} showViolations={showViolations} />
-      <EvalDraftRun op={op} fingerprint={JSON.stringify(form)} prepare={prepare} showViolations={showViolations} startedRunPath={startedRunPath} />
+      <EvalDraftRun op={op} fingerprint={JSON.stringify(form)} prepare={prepare} showViolations={showViolations} startedRunPathRef={startedRunPath} />
       <PromptHistory op={op} onCopy={copy} />
     </div>
   );
@@ -335,14 +335,14 @@ type EvalDraftRunProps = {
   prepare: () => { instructions: string; examples: PromptExample[] } | null;
   showViolations: (violations: string[]) => string[];
   /** Set to the run's path just before opening it, so the editor's leave guard keeps the unsaved draft for that one destination. */
-  startedRunPath: { current: string | null };
+  startedRunPathRef: { current: string | null };
 };
 
 /**
  * [Chạy bộ ví dụ với bản này] (design §6.4, §6.5): runs the whole example set with the unsaved editor content, then opens that run on the
  * Bộ ví dụ page. The editor's leave guard still applies: with unsaved text it asks "Rời trang?", and [Ở lại] keeps a link to the run.
  */
-function EvalDraftRun({ op, fingerprint, prepare, showViolations, startedRunPath }: EvalDraftRunProps) {
+function EvalDraftRun({ op, fingerprint, prepare, showViolations, startedRunPathRef }: EvalDraftRunProps) {
   const t = useTranslations();
   const navigate = useNavigate();
   const [runHref, setRunHref] = useState<string | null>(null);
@@ -353,7 +353,7 @@ function EvalDraftRun({ op, fingerprint, prepare, showViolations, startedRunPath
     (id) => {
       const href = `/ai/eval/runs/${id}?op=${op}`;
       setRunHref(href);
-      startedRunPath.current = `/ai/eval/runs/${id}`;
+      startedRunPathRef.current = `/ai/eval/runs/${id}`;
       void navigate(href);
     },
     // A draft is checked by the save rules: its violations (`prompt.instructions: …`) go on the editor's boxes like a failed [Lưu].

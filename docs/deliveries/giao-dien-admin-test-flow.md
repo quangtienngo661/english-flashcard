@@ -110,11 +110,13 @@ A/85 `400:5685`, A/86 `400:6197`. Editor mở ba trang này thấy "Bạn không
 
 1. **Thêm ví dụ.** AI › Bộ ví dụ, thao tác "Sinh câu điền từ". [Thêm ví dụ] → hộp có một ô cho mỗi trường đầu vào của thao tác (word, part_of_speech, level, meaning_vi, context_label),
    ô để trống là null. Điền word `test`, part_of_speech `verb`, level `A1`, meaning_vi `thử`, ghi chú tùy ý → [Thêm ví dụ]. → toast "Đã thêm ví dụ.", tiêu đề "Ví dụ (n/100)" tăng một.
-   Gõ thêm chữ rồi bấm Hủy hoặc Esc → hỏi "Rời trang?". [Sửa] mở lại đúng hộp; [Xóa] hỏi trước.
+   Gõ thêm chữ rồi bấm Hủy hoặc Esc → hỏi "Bỏ thay đổi?". [Sửa] mở lại đúng hộp; [Xóa] hỏi trước.
 2. **Chạy bộ ví dụ.** Bấm [Chạy bộ ví dụ]. → khung bên phải mở "Lần chạy <giờ>": "Đang chờ" rồi "Đang chạy" rồi "Xong" (trang tự cập nhật, không cần tải lại); có Tiến độ, Hợp lệ,
    Thời gian trung bình, Chi phí, Model, Bản prompt, Người chạy (email của bạn) và "Kết quả từng ví dụ" (trạng thái, đầu ra, [Xem đầu ra gốc]). Dòng "Còn …/20 lần chạy trong giờ này" giảm một.
    Thử tắt worker rồi chạy: sau 30 giây khung nói "Chưa có worker nhận lần chạy này."
-3. **Chạy bản đang sửa.** AI › Prompt, sửa lời dặn nhưng chưa lưu → [Chạy bộ ví dụ với bản này] → "Đã bắt đầu lần chạy." và [Xem lần chạy]; ở Bộ ví dụ cột Bản prompt của dòng đó ghi "Bản nháp".
+3. **Chạy bản đang sửa.** AI › Prompt, sửa lời dặn nhưng chưa lưu → [Chạy bộ ví dụ với bản này]. Vì còn chữ chưa lưu, trang hỏi "Rời trang?" trước khi mở lần chạy.
+   [Ở lại] → giữ nguyên chữ đang sửa, hiện "Đã bắt đầu lần chạy." và [Xem lần chạy]. [Rời trang] → mở lần chạy; ở Bộ ví dụ cột Bản prompt của dòng đó ghi "Bản nháp".
+   Quay lại AI › Prompt → vẫn thấy "Bạn có thay đổi chưa lưu từ lần trước." với [Khôi phục] / [Bỏ]: bản nháp được giữ lại vì lần chạy vừa dùng nó. (Rời Prompt bằng đường khác, ví dụ bấm menu, rồi [Rời trang] thì bản nháp mất.)
 4. **Chi phí.** AI › Chi phí. Từ ngày / Đến ngày mặc định là hôm nay (giờ Việt Nam); nhóm theo "Thao tác" → có dòng `generate_cloze`, cuối bảng dòng "Tổng". Đổi nhóm
    (Ngày, Model, Mục đích, Kết quả) → bảng đổi ngay; Từ ngày sau Đến ngày → "Từ ngày phải trước hoặc bằng Đến ngày." và không gọi API. Model giả luôn tính US$ 0,00.
 5. **Các lần gọi.** `operation_id` của lần gọi trong một lần chạy là `eval-<id lần chạy>-<id ví dụ>` (id lần chạy nằm ở thanh địa chỉ khi khung chi tiết mở). AI › Các lần gọi, dán mã

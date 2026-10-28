@@ -140,7 +140,7 @@ export function AiEvalPage() {
   return (
     <div className="flex flex-col gap-6">
       <PageActions>
-        <Button isDisabled={!inputFields} onPress={() => void navigate(`/ai/eval/new${search}`)}>{t('ai.eval.add')}</Button>
+        <Button variant="secondary" isDisabled={!inputFields} onPress={() => void navigate(`/ai/eval/new${search}`)}>{t('ai.eval.add')}</Button>
       </PageActions>
       <div className="w-full max-w-sm">
         <Select label={t('ai.eval.operation')} items={items} value={op} onChange={(value) => setFilters({ op: value })} />

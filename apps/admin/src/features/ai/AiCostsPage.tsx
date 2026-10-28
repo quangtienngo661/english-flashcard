@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { useState, type FormEvent, type ReactNode } from 'react';
+import { flushSync } from 'react-dom';
 import { useTranslations } from 'use-intl';
 import { violationsToFields, useFocusFirstError } from '../../api/field-errors';
 import { ApiError } from '../../api/problem';
@@ -73,6 +74,8 @@ export function AiCostsPage() {
   function apply(event: FormEvent) {
     event.preventDefault();
     const problem = rangeProblem(draft.from, draft.to);
+    // Cleared and committed first, so a repeated failure is a new error set and refocuses its field (screen rules).
+    flushSync(() => setSubmitProblem(null));
     setSubmitProblem(problem);
     if (problem) return;
     setFilters({ from: draft.from, to: draft.to });

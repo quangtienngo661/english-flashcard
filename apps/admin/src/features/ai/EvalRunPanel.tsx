@@ -201,7 +201,8 @@ export function EvalRunPanel({ id, onDone }: { id: string; onDone?: () => void }
       cell: (item) => {
         const input = inputs.get(item.example_id);
         if (input) return exampleSummary(input);
-        return examples.isPending ? t('ai.eval.detail.none') : t('ai.eval.detail.deletedExample');
+        // Only a set that was read can say an example is gone; while it loads, or if it failed, the input is just unknown.
+        return examples.isSuccess ? t('ai.eval.detail.deletedExample') : t('ai.eval.detail.none');
       },
     },
     {

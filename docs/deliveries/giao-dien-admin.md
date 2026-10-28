@@ -239,6 +239,10 @@ Khác với khung / design (có chủ ý):
 - **Kết quả từng ví dụ ở chi tiết lần chạy (AD16):** thêm ngoài design §6.5 và bản chữ A/83; chủ dự án đã nói "giữ" (27/10/2026). Xem decision record.
 - Sửa ví dụ là hộp thoại mở bằng state, không có route `:id` (design chỉ liệt kê `new` và `runs/:id`).
 - Đường dẫn lần chạy mang theo `?op=` (`/ai/eval/runs/:id?op=generate_cloze`) để màn phía sau hiện đúng thao tác của lần chạy.
+- **Sau review cuối (quyết định của controller):** (1) [Chạy bộ ví dụ với bản này] khi Prompt còn chữ chưa lưu: [Rời trang] để mở lần chạy **giữ** bản nháp đã lưu tạm
+  (trước đó xóa mất ngay lúc vừa dùng), nên quay lại Prompt vẫn được mời [Khôi phục]; chỉ đúng đích là lần chạy vừa bắt đầu được miễn, rời sang trang khác vẫn xóa
+  (`useDirtyForm` nay báo đích đến cho `onLeave`). (2) Trang `/ai/eval` chỉ có một nút chính [Chạy bộ ví dụ]; [Thêm ví dụ] là nút phụ.
+  Mã lần chạy không phải UUID (`/ai/eval/runs/abc`) nói "không tìm thấy" và không gọi API, không đọc lại.
 
 ## Kiểm đã chạy
 

@@ -94,6 +94,19 @@ describe('AiCostsPage (A/85)', () => {
     expect(costCalls(r.calls)).toHaveLength(1);
   });
 
+  it('a repeated failed Apply puts the focus back on the field with the error', async () => {
+    renderApp('/ai/costs', { [costsUrl()]: () => Response.json(reply()) });
+    await screen.findAllByText('15/10/2026');
+    await userEvent.clear(field(t.filters.from));
+    await userEvent.type(field(t.filters.from), '2999-01-01');
+    await userEvent.click(screen.getByRole('button', { name: t.filters.apply }));
+    await waitFor(() => expect(field(t.filters.from)).toHaveFocus());
+    await userEvent.click(field(t.filters.to));
+    expect(field(t.filters.from)).not.toHaveFocus();
+    await userEvent.click(screen.getByRole('button', { name: t.filters.apply }));
+    await waitFor(() => expect(field(t.filters.from)).toHaveFocus());
+  });
+
   it('more than 366 days → error on the To field, and no request is sent', async () => {
     const r = renderApp('/ai/costs', { [costsUrl()]: () => Response.json(reply()) });
     await screen.findAllByText('15/10/2026');
