@@ -6,6 +6,8 @@ import { SettingsModule } from '../settings/index.js';
 import { EntitlementsAccountDeletion } from './account-deletion.provider.js';
 import { AdminEntitlementsController } from './api/admin-entitlements.controller.js';
 import { MeEntitlementsController } from './api/me-entitlements.controller.js';
+import { MeSubscriptionsController } from './api/me-subscriptions.controller.js';
+import { SubscriptionCancelService } from './api/subscription-cancel.service.js';
 import { BillingAdapterRegistry } from './billing/billing-adapter.registry.js';
 import { BILLING_APPLY_PORT, BillingInbox } from './billing/billing-inbox.service.js';
 import { BillingJobs } from './billing/billing-jobs.service.js';
@@ -30,7 +32,7 @@ import { UsageQueries } from './usage/usage.queries.js';
 @Module({
   imports: [IdentityModule, SettingsModule, MailModule],
   controllers: [
-    WebhookController, AdminGrantsController, AdminEntitlementsController, MeEntitlementsController, MeTransactionsController,
+    WebhookController, AdminGrantsController, AdminEntitlementsController, MeEntitlementsController, MeSubscriptionsController, MeTransactionsController,
     AdminTransactionsController,
   ],
   providers: [
@@ -52,6 +54,7 @@ import { UsageQueries } from './usage/usage.queries.js';
     TransactionsService,
     IdempotencyInterceptor,
     EntitlementsAccountDeletion,
+    SubscriptionCancelService,
     TransactionsExpireJob,
   ],
   exports: [EntitlementsService, BillingAdapterRegistry],

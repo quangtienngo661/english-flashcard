@@ -207,6 +207,35 @@ describe('FakeBillingAdapter optional methods', () => {
     });
   });
 
+  it('Bước 8 (P5): cancelAtPeriodEnd stores a cancel_scheduled event and applies it before it returns, once, as a state event of the user', async () => {
+    const applied: string[][] = [];
+    const stored: Array<Record<string, unknown>> = [];
+    const inbox = { store: vi.fn(async (_p: string, events: Array<Record<string, unknown>>) => { stored.push(...events); return ['evt-row-1']; }) };
+    const applier = { applyMany: vi.fn(async (ids: string[]) => { applied.push(ids); }) };
+    const table = fakeTable();
+    const subscription = { findFirst: vi.fn(async () => ({ userId: USER, environment: 'sandbox' })) };
+    const prisma = { fakeBillingSubscription: table, subscription } as unknown as PrismaClient;
+    const config = testConfig({ billing: { production: false, fakeEnabled: true, fakeSecret: SECRET, fakeFetchState: true } });
+    const adapter = new FakeBillingAdapter(config, prisma, new FakeClock(NOW), new BillingAdapterRegistry(), inbox as never, applier);
+    await adapter.verify(signedPost(monthly('tx-1')));
+    await adapter.cancelAtPeriodEnd('sub-1');
+    expect(stored).toHaveLength(1);
+    expect(stored[0]).toMatchObject({ type: 'cancel_scheduled', environment: 'sandbox', externalSubscriptionId: 'sub-1', appUserId: USER, occurredAt: NOW, transactionId: null });
+    expect(applied).toEqual([['evt-row-1']]);
+    // The provider's own truth now says the same, also after a later event rebuilds it from the history.
+    expect(await adapter.fetchState!('sub-1')).toMatchObject({ cancelAtPeriodEnd: true });
+    expect(table.rows.get('sub-1')!.history as unknown[]).toHaveLength(2);
+  });
+
+  it('cancelAtPeriodEnd for a subscription Wordmet does not know sends no event', async () => {
+    const inbox = { store: vi.fn(async () => []) };
+    const prisma = { fakeBillingSubscription: fakeTable(), subscription: { findFirst: vi.fn(async () => null) } } as unknown as PrismaClient;
+    const adapter = new FakeBillingAdapter(testConfig({ billing: { production: false, fakeEnabled: true, fakeSecret: SECRET, fakeFetchState: true } }),
+      prisma, new FakeClock(NOW), new BillingAdapterRegistry(), inbox as never, { applyMany: vi.fn() });
+    await adapter.cancelAtPeriodEnd('sub-9');
+    expect(inbox.store).not.toHaveBeenCalled();
+  });
+
   it('registers itself only when BILLING_FAKE_ENABLED=true', () => {
     const on = setup();
     on.adapter.onModuleInit();
