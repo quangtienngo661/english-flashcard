@@ -80,4 +80,20 @@ export class AdminAiEvalController {
   getRun(@Param({ schema: idParams }) params: z.infer<typeof idParams>) {
     return this.runs.get(params.id);
   }
+
+  /** 200, not 201: nothing is created. A run that is not queued or running → 409 `run-not-active`. */
+  @Post('runs/:id/cancel')
+  @HttpCode(200)
+  @RateLimit('user.write')
+  cancelRun(@Param({ schema: idParams }) params: z.infer<typeof idParams>) {
+    return this.runs.cancel(params.id);
+  }
+
+  /** Only a finished or failed run; a queued or running one → 409 `run-active`. `ai_calls` (and so the costs) stay. */
+  @Delete('runs/:id')
+  @HttpCode(204)
+  @RateLimit('user.write')
+  async removeRun(@Param({ schema: idParams }) params: z.infer<typeof idParams>): Promise<void> {
+    await this.runs.remove(params.id);
+  }
 }
