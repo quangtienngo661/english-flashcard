@@ -1543,5 +1543,120 @@
     "restoredToast": "Đã dùng lại “{code}”",
     "empty": "Chưa có chủ đề nào.",
     "footer": "{count} chủ đề"
+  },
+  "dashboard": {
+    "note": "Số tổng của AI trong khoảng ngày đã chọn, theo giờ Việt Nam. Không hiện nội dung câu hay tên người học.",
+    "range": "Khoảng thời gian",
+    "lastDays": "{days} ngày gần nhất",
+    "empty": "Chưa có số liệu trong khoảng này.",
+    "aiDisabled": "AI đang tắt cho người học (Cài đặt › Gói và hạn mức).",
+    "ready": "Sẵn sàng",
+    "ms": "{ms} ms",
+    "today": {
+      "title": "Hôm nay",
+      "calls": "Lời gọi AI / trần mỗi ngày",
+      "cost": "Chi phí AI hôm nay",
+      "units": "Lượt AI người học dùng / trần hệ thống",
+      "notReady": "Thao tác chưa sẵn sàng"
+    },
+    "health": {
+      "title": "AI có đang chạy không",
+      "hint": "Chỉ tính lời gọi phục vụ người học (không tính Chạy thử, Bộ ví dụ).",
+      "calls": "Lời gọi của người học",
+      "failed": "Tỉ lệ lời gọi lỗi"
+    },
+    "cost": {
+      "title": "Tốn bao nhiêu",
+      "hint": "Tính mọi lời gọi, kể cả Chạy thử và Bộ ví dụ. Tiền đồng theo tỉ giá hiện tại trong Cài đặt.",
+      "total": "Chi phí trong khoảng",
+      "usd": "Chi phí (USD)",
+      "calls": "Số lời gọi",
+      "unknown": "Lời gọi chưa biết giá",
+      "chart": "Chi phí theo ngày",
+      "byOperation": "Theo thao tác",
+      "byModel": "Theo model",
+      "byPurpose": "Theo mục đích"
+    },
+    "quality": {
+      "title": "Câu AI có tốt không",
+      "hint": "So câu AI với câu không AI cùng khoảng: tỉ lệ đúng, dùng gợi ý, bỏ qua; báo lỗi trên 1.000 câu.",
+      "reports": "Báo lỗi",
+      "noReports": "Chưa có báo lỗi trong khoảng này.",
+      "aiReasons": "Lý do báo lỗi câu AI",
+      "forms": "Dạng chia lạ và kiểm từ riêng",
+      "newForms": "Dạng chia lạ mới",
+      "formsSeen": "Dạng chia lạ gặp lại",
+      "wordCheck": "Kiểm từ riêng: {verdict}"
+    },
+    "impact": {
+      "title": "Người học có bị ảnh hưởng không",
+      "hint": "Câu AI không làm được thì phiên đổi sang câu không AI.",
+      "requests": "Câu AI được yêu cầu",
+      "failedShare": "Tỉ lệ không làm được",
+      "failures": "Vì sao không làm được",
+      "noFailure": "Không có câu AI nào hỏng.",
+      "sessions": "Phiên có câu AI, theo lý do AI dừng",
+      "notStopped": "AI không dừng"
+    },
+    "usage": {
+      "title": "Hạn mức có hợp lý không",
+      "hint": "Lượt AI người học đã dùng mỗi ngày, so với trần hệ thống hiện tại.",
+      "total": "Lượt AI đã dùng",
+      "daysAtCap": "Số ngày chạm trần",
+      "refunds": "Lượt đã trả lại",
+      "peakLearners": "Người học nhiều nhất một ngày",
+      "chart": "Lượt AI theo ngày"
+    },
+    "cols": {
+      "operation": "Thao tác",
+      "ready": "Trạng thái",
+      "calls": "Lời gọi",
+      "failedShare": "Lỗi",
+      "p50": "Thời gian p50",
+      "p95": "Thời gian p95",
+      "errors": "Loại lỗi",
+      "group": "Nhóm",
+      "vnd": "Chi phí (₫)",
+      "usd": "Chi phí (USD)",
+      "unknownCost": "Chưa biết giá",
+      "type": "Dạng câu",
+      "source": "Nguồn",
+      "asked": "Đã hỏi",
+      "correct": "Đúng",
+      "hinted": "Dùng gợi ý",
+      "skipped": "Bỏ qua",
+      "reports": "Báo lỗi",
+      "per1000": "Trên 1.000 câu",
+      "open": "Chưa xử lý",
+      "fixed": "Đã sửa",
+      "noError": "Không lỗi",
+      "refunded": "Đã trả lượt"
+    },
+    "types": {
+      "mcq_definition": "Chọn từ theo nghĩa",
+      "true_false_definition": "Đúng / sai",
+      "type_word": "Gõ từ",
+      "cloze": "Điền vào chỗ trống",
+      "meaning_in_sentence": "Nghĩa trong câu",
+      "mcq_sentence": "Chọn từ cho câu"
+    },
+    "sources": {
+      "ai": "AI",
+      "rule": "Không AI",
+      "own_sentence": "Câu của người học"
+    },
+    "failures": {
+      "ai-unavailable": "AI không sẵn sàng",
+      "quota-exhausted": "Hết lượt AI",
+      "plan-required": "Gói không có AI",
+      "ai-failed": "Lời gọi AI lỗi",
+      "rejected": "Bị luật loại",
+      "input-mismatch": "Dữ liệu từ đã đổi",
+      "word-not-recognized": "AI không nhận ra từ riêng"
+    },
+    "verdicts": {
+      "ok": "hợp lệ",
+      "not_recognized": "không nhận ra"
+    }
   }
 }

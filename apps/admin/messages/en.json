@@ -1543,5 +1543,120 @@
     "restoredToast": "“{code}” is in use again",
     "empty": "No topics yet.",
     "footer": "{count, plural, one {# topic} other {# topics}}"
+  },
+  "dashboard": {
+    "note": "AI totals for the chosen days, in Vietnam time. No sentence or learner name is shown.",
+    "range": "Range",
+    "lastDays": "Last {days} days",
+    "empty": "No data in this range yet.",
+    "aiDisabled": "AI is off for learners (Settings › Plans and limits).",
+    "ready": "Ready",
+    "ms": "{ms} ms",
+    "today": {
+      "title": "Today",
+      "calls": "AI calls / daily cap",
+      "cost": "AI cost today",
+      "units": "Learner AI units / system cap",
+      "notReady": "Operations not ready"
+    },
+    "health": {
+      "title": "Is AI working",
+      "hint": "Learner calls only (not test runs or example-set runs).",
+      "calls": "Learner calls",
+      "failed": "Failed call rate"
+    },
+    "cost": {
+      "title": "What it costs",
+      "hint": "Every call, test runs and example-set runs included. VND at the current rate in Settings.",
+      "total": "Cost in range",
+      "usd": "Cost (USD)",
+      "calls": "Calls",
+      "unknown": "Calls with unknown price",
+      "chart": "Cost per day",
+      "byOperation": "By operation",
+      "byModel": "By model",
+      "byPurpose": "By purpose"
+    },
+    "quality": {
+      "title": "Are AI questions good",
+      "hint": "AI questions next to non-AI ones in the same range: correct, hints, skips; reports per 1,000 questions.",
+      "reports": "Reports",
+      "noReports": "No report in this range.",
+      "aiReasons": "Report reasons on AI questions",
+      "forms": "Unknown forms and private-word checks",
+      "newForms": "New unknown forms",
+      "formsSeen": "Unknown forms seen again",
+      "wordCheck": "Private-word check: {verdict}"
+    },
+    "impact": {
+      "title": "Are learners affected",
+      "hint": "When an AI question cannot be made, the session switches to a non-AI one.",
+      "requests": "AI questions requested",
+      "failedShare": "Share not made",
+      "failures": "Why not made",
+      "noFailure": "No AI question failed.",
+      "sessions": "Sessions with AI questions, by why AI stopped",
+      "notStopped": "AI did not stop"
+    },
+    "usage": {
+      "title": "Are the limits right",
+      "hint": "AI units learners used per day, against the current system cap.",
+      "total": "AI units used",
+      "daysAtCap": "Days at the cap",
+      "refunds": "Units refunded",
+      "peakLearners": "Most learners in a day",
+      "chart": "AI units per day"
+    },
+    "cols": {
+      "operation": "Operation",
+      "ready": "Status",
+      "calls": "Calls",
+      "failedShare": "Failed",
+      "p50": "p50 time",
+      "p95": "p95 time",
+      "errors": "Errors",
+      "group": "Group",
+      "vnd": "Cost (₫)",
+      "usd": "Cost (USD)",
+      "unknownCost": "Unknown price",
+      "type": "Question type",
+      "source": "Source",
+      "asked": "Asked",
+      "correct": "Correct",
+      "hinted": "Used a hint",
+      "skipped": "Skipped",
+      "reports": "Reports",
+      "per1000": "Per 1,000 questions",
+      "open": "Open",
+      "fixed": "Fixed",
+      "noError": "No error",
+      "refunded": "Refunded"
+    },
+    "types": {
+      "mcq_definition": "Pick the word",
+      "true_false_definition": "True / false",
+      "type_word": "Type the word",
+      "cloze": "Fill in the blank",
+      "meaning_in_sentence": "Meaning in a sentence",
+      "mcq_sentence": "Word for a sentence"
+    },
+    "sources": {
+      "ai": "AI",
+      "rule": "Non-AI",
+      "own_sentence": "Learner sentence"
+    },
+    "failures": {
+      "ai-unavailable": "AI not ready",
+      "quota-exhausted": "Out of AI units",
+      "plan-required": "Plan has no AI",
+      "ai-failed": "AI call failed",
+      "rejected": "Rejected by the rules",
+      "input-mismatch": "Word data changed",
+      "word-not-recognized": "AI did not recognise the private word"
+    },
+    "verdicts": {
+      "ok": "valid",
+      "not_recognized": "not recognised"
+    }
   }
 }

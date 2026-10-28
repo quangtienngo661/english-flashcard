@@ -1,5 +1,6 @@
 import { test, type Page } from '@playwright/test';
 import vi from '../messages/vi.json' with { type: 'json' };
+import { dashboardMocks } from './support/dashboard-mocks';
 import { mockApi, problem, signedInAs, type MockHandler } from './support/mock-api';
 
 /**
@@ -42,6 +43,7 @@ const mocks: Record<string, MockHandler> = {
   'GET /v1/admin/users': () => ({ json: { id: 'u9', email: 'new.editor@wordmet.com', email_verified: true, staff_role: null } }),
   'PUT /v1/admin/users/u9/staff-role': () => ({ json: { id: 'u9', email: 'new.editor@wordmet.com', email_verified: true, staff_role: 'editor' } }),
   'GET /v1/admin/content/sources': () => ({ json: { items: [] } }),
+  ...dashboardMocks,
 };
 
 async function shot(page: Page, name: string, lang: string) {
@@ -75,7 +77,7 @@ for (const lang of ['vi', 'en'] as const) {
 
     await page.goto('/dashboard');
     await page.getByRole('heading', { level: 1 }).waitFor();
-    await shot(page, '05-coming-soon', lang);
+    await shot(page, '05-dashboard', lang);
 
     await page.goto('/uploads/b3');
     await page.getByTestId('detail-panel').getByRole('heading', { level: 2 }).waitFor();

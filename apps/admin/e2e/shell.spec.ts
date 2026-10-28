@@ -3,6 +3,7 @@ import en from '../messages/en.json' with { type: 'json' };
 import vi from '../messages/vi.json' with { type: 'json' };
 import { requestCount, signedInAs } from './support/mock-api';
 import { seriousViolations } from './support/axe';
+import { dashboardMocks } from './support/dashboard-mocks';
 
 const emptyUploads = {
   json: { items: [{ id: 'b1', status: 'succeeded', file_name: 'one.csv', row_count: 3, created_at: '2026-10-14T09:30:00.000Z' }], next_page_token: null },
@@ -54,13 +55,15 @@ test.describe('shell (vi)', () => {
     }
   });
 
-  test('Task 12a: an unavailable menu item opens "Tính năng chưa có" with its purpose and planned step; axe is clean', async ({ page }) => {
-    await signedInAs(page, 'admin', {});
+  test('the AI dashboard (owner 28/10/2026) shows its sections for an editor with ai.view; axe is clean', async ({ page }) => {
+    await signedInAs(page, 'editor', dashboardMocks);
     await page.goto('/dashboard');
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(vi.nav.dashboard);
-    await expect(page.getByText(vi.comingSoon.title)).toBeVisible();
-    await expect(page.getByText(vi.comingSoon.purpose.dashboard)).toBeVisible();
-    await expect(page.getByText('Dự kiến: chưa xếp bước')).toBeVisible();
+    for (const title of [vi.dashboard.today.title, vi.dashboard.health.title, vi.dashboard.cost.title, vi.dashboard.quality.title,
+      vi.dashboard.impact.title, vi.dashboard.usage.title]) {
+      await expect(page.getByRole('heading', { level: 2, name: title })).toBeVisible();
+    }
+    await expect(page.getByRole('img', { name: vi.dashboard.cost.chart })).toBeVisible();
     expect(await seriousViolations(page)).toEqual([]);
   });
 
