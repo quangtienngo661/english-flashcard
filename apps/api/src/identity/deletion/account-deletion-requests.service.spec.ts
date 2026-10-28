@@ -148,9 +148,17 @@ describe('AccountDeletionRequests.deleteByAdmin (D17, D31)', () => {
     expect(s.deletion.delete).not.toHaveBeenCalled();
   });
 
-  it('B8E43: a deleting account skips the renewal step and goes straight to the deletion', async () => {
+  it('B8E43 / B8E52: a deleting account whose plan renews again has renewal turned off, so the run can finish (final review I2)', async () => {
     const s = setup({ status: 'deleting' });
     s.precondition.renewing.mockResolvedValue(true);
+    s.precondition.turnOffRenewalForAdminDelete.mockResolvedValue('turned_off');
+    await byAdmin(s);
+    expect(s.precondition.turnOffRenewalForAdminDelete).toHaveBeenCalledWith(USER);
+    expect(s.deletion.delete).toHaveBeenCalledTimes(1);
+  });
+
+  it('B8E43: a deleting account with no renewing plan goes straight to the deletion', async () => {
+    const s = setup({ status: 'deleting' });
     await byAdmin(s);
     expect(s.precondition.turnOffRenewalForAdminDelete).not.toHaveBeenCalled();
     expect(s.deletion.delete).toHaveBeenCalledTimes(1);

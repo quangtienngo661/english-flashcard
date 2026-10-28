@@ -57,9 +57,10 @@ export class AccountDeletionRequests {
     if (!target) throw staffUserNotFound();
     if (targetId === actorId) throw problem(409, 'Self delete', 'self-delete');
     if (normalizeEmail(body.confirm_email) !== target.email) throw problem(400, 'Confirm email mismatch', 'confirm-email-mismatch');
-    // A deleting account is past this step (B8E43): its plans are already gone or a retry is finishing them.
+    // A deleting account goes through this step too (B8E43, final review I2): when its plans are gone nothing renews and this is a no-op,
+    // but a plan that renewed again after the first run would otherwise fail the retry every hour with no way out.
     const precondition = this.registry.precondition();
-    if (target.status !== 'deleting' && await precondition.renewing(this.prisma, targetId)) {
+    if (await precondition.renewing(this.prisma, targetId)) {
       // D31: when the provider accepts in time the flag is recorded here and the deletion goes on in this request.
       if (await precondition.turnOffRenewalForAdminDelete(targetId) === 'not_supported') {
         throw problem(409, 'Renewal not cancelled', 'renewal-not-cancelled');
