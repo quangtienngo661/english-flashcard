@@ -113,9 +113,9 @@ test.describe('Bộ ví dụ (A/83)', () => {
     expect(keys[0]).toBe(keys[1]);
   });
 
-  test('§6.5: the 101st example is refused with "Mỗi thao tác tối đa 100 ví dụ."; model-not-set links to Thao tác', async ({ page }) => {
+  test('§6.5: the 1001st example is refused with "Mỗi thao tác tối đa 1.000 ví dụ."; model-not-set links to Thao tác', async ({ page }) => {
     await signedInAs(page, 'admin', evalMocks({
-      'POST /v1/admin/ai/eval/examples': () => problem(400, 'validation-failed', { violations: ['operation: at most 100 examples'] }),
+      'POST /v1/admin/ai/eval/examples': () => problem(400, 'validation-failed', { violations: ['operation: at most 1000 examples'] }),
       'POST /v1/admin/ai/eval/runs': () => problem(409, 'model-not-set'),
     }));
     await page.goto('/ai/eval/new');

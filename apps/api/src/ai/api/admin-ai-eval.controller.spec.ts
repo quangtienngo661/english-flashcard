@@ -20,7 +20,7 @@ describe('admin ai eval HTTP (unit, mocked services)', () => {
   let ctx: TestApp; let token: string; let actorId: string; let role: 'admin' | 'editor' | null;
   const prisma = { sessionChain: { findUnique: vi.fn() }, $disconnect: async () => {} };
   const hit = vi.spyOn(RateLimiter.prototype, 'hit');
-  let examples: Record<'list' | 'create' | 'update' | 'remove', ReturnType<typeof vi.spyOn>>;
+  let examples: Record<'list' | 'create' | 'createMany' | 'update' | 'remove', ReturnType<typeof vi.spyOn>>;
   let runs: Record<'list' | 'get', ReturnType<typeof vi.spyOn>>;
   const auth = () => ({ Authorization: `Bearer ${token}` });
   const id = randomUUID();
@@ -33,7 +33,7 @@ describe('admin ai eval HTTP (unit, mocked services)', () => {
     const ex = ctx.app.get(EvalExamplesService);
     const rs = ctx.app.get(EvalRunsService);
     examples = {
-      list: vi.spyOn(ex, 'list'), create: vi.spyOn(ex, 'create'), update: vi.spyOn(ex, 'update'), remove: vi.spyOn(ex, 'remove'),
+      list: vi.spyOn(ex, 'list'), create: vi.spyOn(ex, 'create'), createMany: vi.spyOn(ex, 'createMany'), update: vi.spyOn(ex, 'update'), remove: vi.spyOn(ex, 'remove'),
     };
     runs = { list: vi.spyOn(rs, 'list'), get: vi.spyOn(rs, 'get') };
   });
@@ -42,6 +42,7 @@ describe('admin ai eval HTTP (unit, mocked services)', () => {
     token = await ctx.app.get(AccessTokenService).sign({ userId: actorId, sessionChainId: randomUUID() });
     prisma.sessionChain.findUnique.mockReset().mockImplementation(async () => ({ userId: actorId, revokedAt: null, user: { staffRole: role } }));
     examples.list.mockReset().mockResolvedValue({ items: [] }); examples.create.mockReset().mockResolvedValue({ id });
+    examples.createMany.mockReset().mockResolvedValue({ total: 1, valid: 1, created: 1, invalid: [] });
     examples.update.mockReset().mockResolvedValue({ id }); examples.remove.mockReset().mockResolvedValue(undefined);
     runs.list.mockReset().mockResolvedValue({ items: [], next_page_token: null }); runs.get.mockReset().mockResolvedValue({ id });
     hit.mockReset().mockResolvedValue(undefined);
@@ -53,7 +54,7 @@ describe('admin ai eval HTTP (unit, mocked services)', () => {
     expect(routes.map(({ method, path }) => `${method} ${path}`).sort()).toEqual([
       'DELETE /v1/admin/ai/eval/examples/:id', 'GET /v1/admin/ai/eval/examples', 'GET /v1/admin/ai/eval/runs',
       'GET /v1/admin/ai/eval/runs/:id', 'PATCH /v1/admin/ai/eval/examples/:id', 'POST /v1/admin/ai/eval/examples',
-      'POST /v1/admin/ai/eval/runs',
+      'POST /v1/admin/ai/eval/examples/bulk', 'POST /v1/admin/ai/eval/runs',
     ]);
     for (const route of routes) expect(route.permissions, `${route.method} ${route.path}`).toEqual(['settings.manage']);
   });
@@ -64,6 +65,30 @@ describe('admin ai eval HTTP (unit, mocked services)', () => {
     expect(reflector.get(IDEMPOTENT_KEY, handler)).toBeDefined();
     expect(reflector.get(INTERCEPTORS_METADATA, handler)).toContain(IdempotencyInterceptor);
     expect(reflector.get(RATE_LIMIT_KEY, handler)).toBeUndefined();
+  });
+
+  it('POST /examples/bulk: 200, user.write, the service gets the rows; a body far over 100 kB (1000 rows) is read', async () => {
+    const row = { input: { word: 'deploy', part_of_speech: 'verb', level: 'B1', meaning_vi: 'x'.repeat(400), context_label: null }, note: 'n' };
+    const body = { operation: 'generate_cloze', rows: Array.from({ length: 1000 }, () => row) };
+    expect(JSON.stringify(body).length).toBeGreaterThan(400_000);
+    const res = await http().post('/v1/admin/ai/eval/examples/bulk').set(auth()).send(body);
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ total: 1, valid: 1, created: 1, invalid: [] });
+    expect(examples.createMany).toHaveBeenCalledWith(actorId, body);
+    expect(hit).toHaveBeenCalledWith('user.write', actorId);
+  });
+
+  it('a body over 100 kB is still refused on another route (only the bulk route has the larger limit)', async () => {
+    const big = { operation: 'translate_sentence', input: { sentence: 'x'.repeat(150_000) } };
+    expect((await http().post('/v1/admin/ai/eval/examples').set(auth()).send(big)).status).toBe(413);
+    expect(examples.create).not.toHaveBeenCalled();
+  });
+
+  it('an editor gets 403 on the bulk route', async () => {
+    role = 'editor';
+    const res = await http().post('/v1/admin/ai/eval/examples/bulk').set(auth()).send({ operation: 'generate_cloze', rows: [{ input: {} }] });
+    expect(res.status).toBe(403);
+    expect(examples.createMany).not.toHaveBeenCalled();
   });
 
   it('example routes call the service; writes carry user.write; reads do not', async () => {

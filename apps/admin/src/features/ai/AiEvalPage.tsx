@@ -22,6 +22,7 @@ import {
   AI_OPERATION_ORDER, aiKeys, deleteExample, getTestQuota, listExamples, listOperations, listRuns, type AiOperation, type EvalExample, type EvalRun,
 } from './ai-api';
 import { EvalRunPanel, RunStatusBadge, StartRunFailure, usePromptLabel, useStartRun } from './EvalRunPanel';
+import { BulkExamplesDialog } from './BulkExamplesDialog';
 import { ExampleDialog } from './ExampleDialog';
 import { exampleSummary } from './prompt-form';
 import { useAiFormat } from './useAiFormat';
@@ -31,7 +32,7 @@ const FILTERS = { op: { default: 'generate_cloze', valid: (value: string) => (AI
 const isForbidden = (error: unknown) => error instanceof ApiError && error.problem.slug === 'forbidden';
 
 /**
- * A/83 `/ai/eval?op=` (admin only): the example set of one operation (at most 100) and its runs. `new` opens the add dialog over the
+ * A/83 `/ai/eval?op=` (admin only): the example set of one operation (at most 1000) and its runs. `new` and `bulk` open the add dialogs over the
  * page, `runs/:id` a run beside it. [Chạy bộ ví dụ] here runs the current prompt; a draft is run from the Prompt page (design §6.5).
  */
 export function AiEvalPage() {
@@ -46,6 +47,7 @@ export function AiEvalPage() {
   const [filters, setFilters] = useUrlFilters(FILTERS);
   const op = filters.op as AiOperation;
   const isNew = useMatch('/ai/eval/new') !== null;
+  const isBulk = useMatch('/ai/eval/bulk') !== null;
   const runId = useMatch('/ai/eval/runs/:id')?.params.id;
   const shownRunId = useRetained(runId);
   const [editing, setEditing] = useState<EvalExample | null>(null);
@@ -140,6 +142,7 @@ export function AiEvalPage() {
   return (
     <div className="flex flex-col gap-6">
       <PageActions>
+        <Button variant="secondary" isDisabled={!inputFields} onPress={() => void navigate(`/ai/eval/bulk${search}`)}>{t('ai.eval.bulk.add')}</Button>
         <Button variant="secondary" isDisabled={!inputFields} onPress={() => void navigate(`/ai/eval/new${search}`)}>{t('ai.eval.add')}</Button>
       </PageActions>
       <div className="w-full max-w-sm">
@@ -192,6 +195,7 @@ export function AiEvalPage() {
       </section>
 
       {isNew && inputFields && <ExampleDialog op={op} inputFields={inputFields} onClose={back} />}
+      {isBulk && inputFields && <BulkExamplesDialog op={op} inputFields={inputFields} onClose={back} />}
       {editing && inputFields && <ExampleDialog key={editing.id} op={op} inputFields={inputFields} example={editing} onClose={() => setEditing(null)} />}
       {shownRunId && (
         <DetailPanel

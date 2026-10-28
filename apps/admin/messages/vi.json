@@ -393,9 +393,38 @@
     },
     "eval": {
       "operation": "Thao tác",
-      "examples": "Ví dụ ({count}/100)",
-      "examplesHint": "Mỗi thao tác tối đa 100 ví dụ. Chạy thử ở Prompt và [Chạy bộ ví dụ] dùng các ví dụ này.",
+      "examples": "Ví dụ ({count}/1.000)",
+      "examplesHint": "Mỗi thao tác tối đa 1.000 ví dụ. Chạy thử ở Prompt và [Chạy bộ ví dụ] dùng các ví dụ này.",
       "add": "Thêm ví dụ",
+      "bulk": {
+        "add": "Nhập hàng loạt",
+        "title": "Nhập nhiều ví dụ",
+        "hint": "Mỗi dòng là một ví dụ, tối đa {max} dòng mỗi lần. Dòng đầu là tên cột: {fields}, và cột note (không bắt buộc). Dán từ bảng tính cũng được. Dòng nào sai thì bị bỏ qua, các dòng đúng vẫn được nhập.",
+        "filePrompt": "Kéo file vào đây",
+        "fileHint": "CSV, TSV hoặc JSON Lines, tối đa 2 MB",
+        "choose": "Chọn file",
+        "change": "Chọn file khác",
+        "fileTooLarge": "File lớn hơn 2 MB.",
+        "fileLoaded": "Nội dung đã được đưa vào ô bên dưới.",
+        "paste": "Hoặc dán nội dung",
+        "readable": "Đọc được {count} dòng",
+        "unreadable": "{count} dòng không đọc được",
+        "submit": "Nhập {count} ví dụ",
+        "added": "Đã thêm {count} ví dụ.",
+        "skipped": "{count} dòng bị bỏ qua. Sửa rồi nhập lại các dòng này:",
+        "line": "Dòng {line}",
+        "noRoom": "Bộ ví dụ chỉ còn chỗ cho {room} ví dụ, bạn đang nhập {sent}.",
+        "problems": {
+          "empty": "Chưa có dòng nào để nhập.",
+          "columns": "Tên cột không đúng: {names}. Các cột hợp lệ: {fields}.",
+          "tooMany": "Có {count} dòng, mỗi lần nhập tối đa {max}."
+        },
+        "reasons": {
+          "bad-json": "không phải JSON hợp lệ",
+          "not-object": "không phải một đối tượng JSON",
+          "columns": "nhiều ô hơn số cột"
+        }
+      },
       "empty": "Thao tác này chưa có ví dụ nào.",
       "emptyHint": "Thêm ví dụ để chạy thử prompt và chạy bộ ví dụ.",
       "examplesFailed": "Không đọc được bộ ví dụ.",
@@ -425,7 +454,7 @@
         "noteHint": "Không bắt buộc, tối đa 500 ký tự.",
         "submitAdd": "Thêm ví dụ",
         "submitSave": "Lưu",
-        "tooMany": "Mỗi thao tác tối đa 100 ví dụ."
+        "tooMany": "Mỗi thao tác tối đa 1.000 ví dụ."
       },
       "run": {
         "title": "Chạy bộ ví dụ",

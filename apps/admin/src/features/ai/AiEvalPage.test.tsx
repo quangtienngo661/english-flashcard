@@ -64,8 +64,8 @@ describe('AiEvalPage examples (A/83)', () => {
     expect(await screen.findByRole('heading', { level: 2, name: t.examples.replace('{count}', '2') })).toBeInTheDocument();
   });
 
-  it('§6.5: the 101st example → "Mỗi thao tác tối đa 100 ví dụ."; an input violation lands on its box', async () => {
-    let reply = () => problem(400, 'validation-failed', { violations: ['operation: at most 100 examples'] });
+  it('§6.5: the 1001st example → "Mỗi thao tác tối đa 1.000 ví dụ."; an input violation lands on its box', async () => {
+    let reply = () => problem(400, 'validation-failed', { violations: ['operation: at most 1000 examples'] });
     await openPage({ [URL.addExample]: () => reply() });
     await userEvent.click((await screen.findAllByRole('button', { name: t.add }))[0]);
     const dialog = await screen.findByRole('dialog');

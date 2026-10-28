@@ -137,6 +137,9 @@ export type EvalExample = {
 };
 
 export type EvalExampleBody = { operation: AiOperation; input: Record<string, unknown>; note: string | null };
+/** `POST …/eval/examples/bulk`: the valid rows are stored, the invalid ones come back by their position in `rows` (1-based). */
+export type BulkExamplesBody = { operation: AiOperation; rows: Array<{ input: Record<string, unknown>; note: string | null }> };
+export type BulkExamplesResult = { total: number; valid: number; created: number; invalid: Array<{ row: number; violations: string[] }> };
 export type EvalExamplePatch = { input?: Record<string, unknown>; note?: string | null };
 
 export type EvalRunStatus = 'queued' | 'running' | 'finished' | 'failed';
@@ -266,6 +269,7 @@ export const getTestQuota = (api: ApiClient) => api.get<TestQuota>(`${base}/test
 export const listExamples = (api: ApiClient, operation: AiOperation) =>
   api.get<{ items: EvalExample[] }>(`${base}/eval/examples?operation=${operation}`);
 export const createExample = (api: ApiClient, body: EvalExampleBody) => api.post<EvalExample>(`${base}/eval/examples`, body);
+export const createExamples = (api: ApiClient, body: BulkExamplesBody) => api.post<BulkExamplesResult>(`${base}/eval/examples/bulk`, body);
 export const updateExample = (api: ApiClient, id: string, body: EvalExamplePatch) => api.patch<EvalExample>(`${base}/eval/examples/${id}`, body);
 export const deleteExample = (api: ApiClient, id: string) => api.delete<void>(`${base}/eval/examples/${id}`);
 /** Needs an `Idempotency-Key` (send through `useSubmitAction`); a replay returns the same run. Uses one `ai.test` slot. */
