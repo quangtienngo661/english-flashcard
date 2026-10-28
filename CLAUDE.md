@@ -13,10 +13,10 @@ private words; quick-add of words encountered elsewhere; word groups, flashcards
 schedule; non-AI definition quizzes; AI-generated fill-in-the-blank practice graded by rule; tier-based
 entitlements and quotas.
 
-**Current phase (26/10/2026): Bước 0, 1 (Identity core), 2 (Content + Pipeline), 2.5 (admin web, `apps/admin`), 3 (Learning +
+**Current phase (28/10/2026): Bước 0, 1 (Identity core), 2 (Content + Pipeline), 2.5 (admin web, `apps/admin`), 3 (Learning +
 the Content pieces deferred from Bước 2, system part only), 4 (Practice, API only), 5 (Entitlements, API only), 6 (AI Integration,
 API only) and 7 (Practice AI + Content AI, API only) implemented; the learner web UI for Bước 3–7 (`apps/web` `/vi/app`, `/en/app`) is built
-(section "Giao diện người học" below), blocked on production until Deploy.** Real code is
+(section "Giao diện người học" below), blocked on production until Deploy; the admin UI round (24 screens in `apps/admin`) is built (section "Đợt giao diện admin" below).** Real code is
 under `apps/api` and `apps/admin`. Historical implementation branches:
 - `feat/buoc-0-backend-foundation` — Bước 0 built on **Drizzle ORM** (10 tasks, 5 unit + 23 e2e tests).
 - `feat/migrate-drizzle-to-prisma` (branched from the above) — the same Bước 0 re-implemented on
@@ -28,28 +28,27 @@ under `apps/api` and `apps/admin`. Historical implementation branches:
 `main` holds Bước 0–3 (Bước 0–1 via PR #1–#5, the rest via the `dev` → `main` PR #45 of 18/10/2026; GitHub remote
 `english-flashcard`, CI required before merge). **Bước 4–7 are on `dev` only** (PR #47–#58, #62–#78, #82, #84–#94 and #104–#116, 19–21/10/2026); no `dev` → `main` PR yet
 (owner 19/10/2026: not needed yet; it opens only when the owner asks). As-built per Bước: sections below and `docs/deliveries/`.
-- **Bước 2.5** (admin web: login, admin page, role granting, CSV flow; PR #17–#20, 15/10/2026). **Owner note (15/10/2026): the admin
-  UI will probably be refactored as a whole later** — treat the current visual layer (Sneat-style, Figma approved 14/10) as
-  provisional; keep the session/API logic and the design's edge cases. Known items left for that refactor: B25E30 (refresh 429 →
-  `/login` without a notice) and the unfixed guideline points listed in `buoc-2-5.md`.
+- **Bước 2.5** (admin web: login, admin page, role granting, CSV flow; PR #17–#20, 15/10/2026). The owner's 15/10 note that the admin UI would be refactored is closed
+  (owner AD2, 27/10/2026): UI refresh B (PR #22–#24) was that refactor, so the admin look is direction B and no longer provisional; B25E30 was fixed there
+  (`docs/deliveries/ui-refresh-b.md`).
 - **Bước 3** (system part: API, worker, DB; PR #28–#44; the owner confirmed the system part done 18/10/2026). The learner app
-  (`apps/web` under `/vi/app`, `/en/app`) and the admin "Thông báo & giới hạn" page have their own plan and are **not built yet**;
-  UI decisions and mockups: `docs/mockups/2026-10-16/UI-CONTEXT.md`.
-- **Bước 4** (Practice, API only, D24 Bước 4; PR #47–#58). Its UI comes in a later round.
+  (`apps/web` under `/vi/app`, `/en/app`) and the admin settings page ("Cài đặt hệ thống", which replaced the planned "Thông báo & giới hạn" page) were built later
+  (sections below); UI decisions and mockups: `docs/mockups/2026-10-16/UI-CONTEXT.md`.
+- **Bước 4** (Practice, API only, D24 Bước 4; PR #47–#58). Its learner and admin UI came in later rounds (sections below).
 - **Bước 5** (Entitlements, API only, D2 Bước 5; PR #62–#78): plans Free / Trial / Pro, Free practice 3 sessions a day, the AI unit ledger
   with a system-wide daily cap and an on/off switch, staff grants, a provider-neutral billing gateway with a **fake** provider only (no real
   payment provider yet; auto-renewing subscriptions only, D35), trial and renewal emails, ad settings served by the API (no ad SDK). **Since
   Bước 5 every account is Free** (3 practice sessions a day), the owner's and test accounts included; an `admin` grants Pro or custom
-  numbers when needed (D9). Its UI comes in a later round.
+  numbers when needed (D9). Its learner and admin UI came in later rounds (sections below).
 - **Bước 6** (AI Integration, API only, D8 Bước 6; PR #82, #84–#94): one gateway module `ai` with three operations (`generate_cloze`,
-  `lookup_word`, `translate_sentence`); OpenAI and Anthropic adapters on the official SDKs (**never called for real yet**, D19) and a fake
+  `lookup_word`, `translate_sentence`); OpenAI and Anthropic adapters on the official SDKs (**never called for real yet** as of 20/10/2026, D19) and a fake
   provider; admin APIs for models, per-operation choices (model, effort, thinking, max output tokens), prompts with history and a test run,
   an example set run in the worker (`ai-eval` queue), status, costs and calls; 10 s per call with one quick retry, 24 h replay per operation
   id, a daily provider-call cap, content kept 7 days. Locally `AI_FAKE_ENABLED=true` and both keys empty; `OPENAI_CUSTOM_HEADERS` /
-  `ANTHROPIC_CUSTOM_HEADERS` must stay unset or the app refuses to start (D29). The owner builds its admin screens later (D8).
+  `ANTHROPIC_CUSTOM_HEADERS` must stay unset or the app refuses to start (D29). Its admin screens are built (M1a, M1b of the admin round).
 - **Bước 0–3 fixes** (API + admin session layer only, D8 of its design; PR #98–#102, 21/10/2026) are on `dev`: accounts with names, birth
   date (13+) and terms consent (`TERMS_VERSION` now required), account lock, admin user list, who reviewed/published/hid each sense, revert and
-  re-upload safety, practice masking and single-answer fixes, admin session handling when the API is briefly down; no admin screens for them yet.
+  re-upload safety, practice masking and single-answer fixes, admin session handling when the API is briefly down; their admin screens (user list and account lock, who reviewed/published each sense) came with the admin round.
 - **Bước 7** (Practice AI + Content AI, API only, D2 Bước 7; PR #104–#116): three AI question types inside the normal practice session
   (`cloze` from AI, `meaning_in_sentence`, `mcq_sentence`) and `cloze` from the learner's saved sentences, for Trial/Pro; AI units checked
   when a session opens, K questions made ahead (`POST /v1/practice/sessions/:id/prepare`, setting `practice.ai_prefetch_count`), a pending
@@ -57,12 +56,12 @@ under `apps/api` and `apps/admin`. Historical implementation branches:
   (`check_private_word`); `POST /v1/lookup/ai` and saving its suggestion as a private word; admin-managed report reasons, refunds of
   confirmed AI errors, a staff list of AI forms the tables do not know. The three new AI operations (`generate_meaning_question`,
   `generate_sentence_mcq`, `check_private_word`) are seeded with **no model** (`model_ref NULL`), like Bước 6's: an admin chooses a model for
-  each (and for `generate_cloze`, `lookup_word`) before learners get AI questions or lookups. **No real AI call yet** (D3 Bước 7). Its UI comes in a later round.
+  each (and for `generate_cloze`, `lookup_word`) before learners get AI questions or lookups. **No real AI call yet** as of 21/10/2026 (D3 Bước 7). Its learner and admin UI came in later rounds (sections below).
 
 **Next (21/10/2026):** in the fixed build order, Bước 8 (Identity remainder: Google login, account deletion) comes next; design Bước 7
 §19 lists what account deletion must also remove. A first real AI call with the owner's own keys is worth doing early (design Bước 6 §19,
-Bước 7 §20: AI question quality and the rule rejection rate are not measured yet). The learner UI for Bước 3–7 is still to be
-built. **Deploy** (hosting, durable Postgres/Redis, real SMTP, secrets, backup; design 2.5 §14) moved to **when the whole app is
+Bước 7 §20: AI question quality and the rule rejection rate are not measured yet). *(Update 28/10/2026: the learner UI for Bước 3–7 and the admin UI (24 screens, `docs/deliveries/giao-dien-admin.md`) are built; the work still open, and the first real AI call the owner reported on 28/10/2026, are in
+`docs/preparation/IMPROVEMENT_PLAN_2026-10-28.md`.)* **Deploy** (hosting, durable Postgres/Redis, real SMTP, secrets, backup; design 2.5 §14) moved to **when the whole app is
 complete, before launch** (D3 round 3 of Bước 3, 18/10/2026): until then the owner tries the app locally (reminder emails land in
 Mailpit), `/app/*` stays blocked on production, and design Bước 3 §14 (things only checkable once deployed) is checked just before
 launch; the items to do before launch are collected in `docs/deliveries/deploy-checklist.md`. There is no pilot after Bước 3 any more: real users are sought once the app is complete (D12 Bước 3).
@@ -185,7 +184,7 @@ decided-but-not-scaffolded:
   → **UI refresh B** (landing + admin in direction B; done, PR #22–#24; design `docs/superpowers/specs/2026-10-15-ui-refresh-b-design.md`,
   deliveries `docs/deliveries/ui-refresh-b.md`, `docs/deliveries/admin-refresh-keepalive.md`)
   → **3 Learning**, plus the Content pieces deferred from Bước 2 (private words, context sentences, lookup chain), email
-  reminders, admin-editable settings, inflections (system part done, PR #28–#44; UI not built) → **4 Practice non-AI** (API only;
+  reminders, admin-editable settings, inflections (system part done, PR #28–#44; its learner UI and admin screens came in later rounds) → **4 Practice non-AI** (API only;
   done, PR #47–#58) → **5 Entitlements** (API only; done, PR #62–#78) → **6 AI Integration gateway** (API only; done, PR #82–#94) → **7 Practice AI + Content AI** (incl. fill-in-the-blank from learners'
   sentences and the "sentence with the word, then choose" type, both moved from Bước 4; API only; done, PR #104–#116) → 8 Identity remainder (Google login,
   account deletion; forgot password already shipped in Bước 1) → **Deploy API + admin** (when the whole app is complete, before
@@ -300,9 +299,17 @@ transaction history: API `billing_transactions`, `/v1/me/transactions`, `/v1/adm
 merged (PR #127); M5a (Task 41–45, practice with AI questions) merged (PR #128); M5b (Task 46–48: AI lookup in Thêm từ, edit before saving, the
 learner's own word page with [Sửa] [Xóa từ]) is the last PR of the round (26/10/2026); as-built of every milestone and the round's close-out (CSP fallback D20,
 Worker size when the app is on; the "over the Free plan" note there is stale, see `deploy-checklist.md`, corrected 26/10/2026) at the end of `docs/deliveries/giao-dien-nguoi-hoc.md`. Owner 23/10/2026: no more stops for image or Figma
-approval ("cứ triển khai mà làm"). Still left after the round: the owner's own pass through the test flow (D4); admin screens other than "Giao dịch"
-show "Sắp có" and have no design or plan yet.
+approval ("cứ triển khai mà làm"). Still left after the round: the owner's own pass through the test flow (D4). The admin screens other than "Giao dịch" were built later, in the admin round (next section).
 Improvement ideas to weigh **after** the learner UI for Bước 3–7 is done (owner 23/10/2026; not decided): `docs/preparation/IMPROVEMENT_IDEAS_2026-10-23.md` (product C1–C10, overall assessment, how the project is run P1–P5).
+
+## Đợt giao diện admin (apps/admin) — plan & as-built
+
+`docs/deliveries/giao-dien-admin.md` (plan tóm tắt 27/10/2026; as-built per milestone and of the whole round, closed 28/10/2026; PR #144–#156 and #161 for the milestones, then #157, #159, #162–#165,
+#169; CI green on every PR). 24 admin screens, every item of `apps/admin/src/app/nav.ts` (none shows "Sắp có" any more): AI (status, models, operations, prompts, example set, costs, calls),
+system settings, reports / report reasons / refunds / unknown forms, users and grants, words / senses / topics. Added after the plan: AI dashboard at `/dashboard` (`ai.view`), bulk import of
+eval examples (limit per operation now 1000), edit and delete for sources, eval runs, publish jobs and unused words (`docs/preparation/ADMIN_CRUD_SURVEY_2026-10-28.md`). Design, decisions (AD1–AD18) and
+plan: `docs/superpowers/{specs,decisions,plans}/2026-10-27-giao-dien-admin*.md`; owner's test flow `docs/deliveries/giao-dien-admin-test-flow.md`. Not done: the dashboard's two missing numbers,
+group B of the AI work (`docs/preparation/IMPROVEMENT_PLAN_2026-10-28.md` §4), Bước 8, Deploy.
 
 ## Đợt cải thiện nhóm A — plan & as-built
 
@@ -325,7 +332,8 @@ Các điểm dưới đây phát sinh khi rà quyền của `admin`/`editor` (b�
 - **Bước 5–6 — xem chi phí AI và báo cáo đối soát** (AI Integration AR6, Entitlements): **chủ dự án chốt 12/10/2026** thuộc
   `ai.settings` (chỉ `admin`). **Đã rõ ở Bước 5 (19/10/2026, ⚠8 và D6 của design Bước 5):** bỏ quyền `ai.settings`, mọi con số hạn mức,
   tham số trial/Pro, công tắc và trần AI dùng lại `settings.manage` (chỉ `admin`). **Đã rõ ở Bước 6 (20/10/2026):** mọi API AI của admin,
-  gồm tình trạng, chi phí và các lần gọi, cần `settings.manage` (chỉ `admin`; design Bước 6 §12.1, B6#25).
+  gồm tình trạng, chi phí và các lần gọi, cần `settings.manage` (chỉ `admin`; design Bước 6 §12.1, B6#25). **Ngoại lệ (chủ dự án 28/10/2026):** dashboard AI (`/v1/admin/ai/dashboard`, `/v1/admin/practice/ai-quality`,
+  `/v1/admin/entitlements/ai-usage/days`) cần quyền `ai.view`, cả `admin` và `editor` đọc được; mọi cài đặt AI, chi phí và các lần gọi vẫn `settings.manage`.
 - ~~**Bước 5 — `entitlements.grant` so với D6 ("editor không đụng chi phí AI").**~~ **Đã rõ ở Bước 5 (D6–D8, D33):** `editor` cấp gói Pro
   bình thường (kèm lượt AI cố định của gói) nhưng **không** đặt con số lượt AI tùy ý, chỉ cấp và thu hồi cho người học thường, không thu hồi
   được lần cấp có con số lượt AI; `admin` xem lịch sử cấp của editor và thu hồi. Trần AI toàn hệ thống mỗi ngày là `ai_daily_cap`.
@@ -390,6 +398,7 @@ pnpm start:worker
 runs with `pnpm dev` in `apps/admin` on **5173**, with `VITE_API_BASE_URL=http://localhost:3000`; the API's `.env`
 needs `http://localhost:5173` in `CORS_ORIGINS` and `ADMIN_APP_URL=http://localhost:5173` (both in `.env.example`).
 First admin: register through the API, verify with the OTP from Mailpit, then `pnpm admin:grant <email>` in `apps/api`.
+Alternative to the steps above: `pnpm bootstrap` at the repo root runs the API, worker, admin and learner web in Docker; see `docs/deliveries/docker-bootstrap.md`.
 
 ## Machine state (verified 2026-10-05–07)
 

@@ -571,6 +571,9 @@ Mức khung (D11): cấu trúc, cột, bộ lọc, trạng thái, khác nhau `ad
 
 Khung `A/73e` vẽ danh sách báo lỗi như `editor` thấy (thanh bên thiếu các mục chỉ admin). Mở thẳng đường dẫn của trang chỉ admin khi là `editor`: "Bạn không có quyền xem trang này." · [Về trang chủ].
 
+*Sửa sau khi code (28/10/2026), bảng trên là chữ lúc vẽ khung:* Dashboard không còn là placeholder mà là dashboard AI, quyền `ai.view`, cả `admin` và `editor` đều thấy (PR #163, #164).
+Người dùng mở cho `editor` đọc (quyền `users.read`, AD18); `editor` thấy danh sách và chi tiết nhưng không có nút nào để đổi. Nhóm AI vẫn chỉ `admin` (`settings.manage`).
+
 ### 8.1 `A/87` Từ, `A/88` Nghĩa (+ `A/88b` chi tiết), `A/89` Chủ đề — thay `A/D02`–`A/D04`
 
 | Khung | Phần tử | Chữ |
@@ -629,7 +632,7 @@ cài đặt khác. Tải lại để xem bản mới." (409 `version-conflict`);
 | | Trống | Không còn báo lỗi chưa xử lý. |
 | `A/74` | Câu | Đề (từ riêng đã che: "[từ riêng của người học]", "[nghĩa của từ riêng]") · đáp án đúng · gợi ý đã xem · câu trả lời của người học |
 | `A/74b` *(sửa sau review cuối)* | Câu thường về từ catalog, lựa chọn nhiễu là từ riêng | "Báo lỗi · server" · "Câu thường · Trắc nghiệm" · Từ "server" (không che) · Đáp án đúng "máy chủ" · lựa chọn "máy chủ" (Đáp án đúng), "[nghĩa của từ riêng]" (đã che), "bộ nhớ đệm", "[nghĩa của từ riêng]" (đã che · Người học chọn) · Lý do "Nghĩa sai" · [Không có lỗi] [Đã sửa]. Câu thường mà từ đang hỏi là từ riêng thì không báo lỗi được (Bước 4 D36, `report-not-available`), nên không có màn cho trường hợp đó. |
-| | Câu AI có từ riêng được chia sẻ | Nhãn "Người học đồng ý cho xem từ này" · từ đang hỏi không bị che; các lựa chọn khác vẫn che *(Review Focus 3)* |
+| | Câu AI có từ riêng | **Không có nhãn đồng ý** (nhãn "Người học đồng ý cho xem từ này" là chữ cũ: luật đồng ý đã bỏ, báo lỗi thì đội Wordmet luôn thấy từ, và API không có cờ nào cho nhãn đó; đợt giao diện admin, AD5) · từ đang hỏi không bị che; các lựa chọn khác vẫn che *(Review Focus 3)* |
 | | Thông tin AI | Mã thao tác · Mã lời gọi · Model · Bản prompt |
 | | Nút, câu thường | [Không có lỗi] · [Đã sửa] |
 | | Nút, câu AI | [Không có lỗi] · [Xác nhận lỗi] · dòng phụ khi lý do có trả lượt: "Xác nhận lỗi sẽ trả lại 1 lượt câu AI cho người học." |
@@ -643,7 +646,7 @@ cài đặt khác. Tải lại để xem bản mới." (409 `version-conflict`);
 | Cột | Thứ tự · Mã · Tên tiếng Việt · Tên tiếng Anh · Áp cho (Câu AI / Câu thường / Cả hai) · Bắt buộc ghi chú · Có trả lượt · Đang dùng |
 | Nút | [Thêm lý do] · Sửa · Tắt / Bật *(không có xóa)* |
 | Ghi chú | Lý do đã tắt không hiện cho người học; báo lỗi cũ giữ tên lúc gửi. |
-| Form `A/75b` | Mã (chỉ đặt khi tạo, a–z, 0–9, _) · Tên tiếng Việt · Tên tiếng Anh (1–100 ký tự) · Gợi ý trong ô ghi chú, tiếng Việt / tiếng Anh (không bắt buộc, tối đa 200) · Áp cho · Bắt buộc ghi chú · Có trả lượt (chỉ có tác dụng với câu AI) · Thứ tự (0–10.000) · [Lưu] |
+| Form `A/75b` | Mã (chỉ đặt khi tạo; bắt đầu bằng chữ, 2–40 ký tự a–z, 0–9, _ — theo API; gợi ý "Bắt đầu bằng chữ, 2–40 ký tự a–z, 0–9, _", lỗi "Mã phải bắt đầu bằng chữ, dài 2–40 ký tự, chỉ gồm a–z, 0–9, _.") · Tên tiếng Việt · Tên tiếng Anh (1–100 ký tự) · Gợi ý trong ô ghi chú, tiếng Việt / tiếng Anh (không bắt buộc, tối đa 200) · Áp cho · Bắt buộc ghi chú · Có trả lượt (chỉ có tác dụng với câu AI) · Thứ tự (0–10.000) · [Lưu] |
 
 ### 8.6 `A/76` Trả lượt (chỉ admin)
 
@@ -704,6 +707,38 @@ cài đặt khác. Tải lại để xem bản mới." (409 `version-conflict`);
 | `A/86` Các lần gọi | Ô tìm | "Mã thao tác (operation_id)" · [Tìm] |
 | | Cột | Lần thử · Mục đích · Thao tác · Model · Kết quả · HTTP · Token · Chi phí · Thời gian · Nội dung (còn tới 25/10 / đã xóa) |
 | | Trống | Không có lời gọi nào với mã này. |
+
+### 8.10 Câu lỗi thêm khi code (đợt giao diện admin, 27–28/10/2026; plan Task 43)
+
+Các mã lỗi dưới đây không có câu ở 8.1–8.9 khi vẽ khung; câu được viết khi code theo văn phong của bản chữ (nói chuyện gì xảy ra, rồi làm gì) và chép nguyên từ
+`apps/admin/messages/vi.json`, khóa `errors.*`, ngày 28/10/2026. Mỗi câu có bản tiếng Anh trong `en.json`. Chủ dự án duyệt lại khi cần.
+
+| Nhóm | Mã lỗi | Câu |
+|---|---|---|
+| Thêm, sửa, publish nghĩa (`A/87`, `A/88`, `A/88b`) | `publish-incomplete` | Còn thiếu nội dung nên chưa publish được. Điền các ô còn thiếu rồi thử lại. |
+| | `sense-exists` | Từ này đã có nghĩa với nhãn ngữ cảnh đó. Hãy sửa nghĩa đã có thay vì thêm mới. |
+| | `replacement-exists` | Nghĩa này đã có bản thay thế đang chờ. Hoàn tất bản đó trước. |
+| | `replacement-waiting` | Nghĩa này đang là bản thay thế chưa publish nên chưa thay tiếp được. Hãy publish nó trước. |
+| | `sense-retired` | Nghĩa này đã retire nên không sửa được. |
+| | `sense-entry-mismatch` | Nghĩa này không thuộc từ đang chọn. Tải lại trang. |
+| | `revision-rejected` | Bản này đã bị từ chối nên không publish được. Hãy sửa để tạo bản mới. |
+| | `unknown-topic` | Có mã chủ đề không tồn tại. Hãy chọn lại chủ đề. |
+| | `topic-archived` | Có chủ đề đã ẩn. Bỏ chủ đề đó rồi lưu lại. |
+| | `too-many-examples` | Chỉ nhận tối đa 3 câu ví dụ. Bỏ bớt rồi lưu lại. |
+| | `stale-revision` | Nghĩa này vừa được sửa. Tải lại để xem bản mới. |
+| Báo lỗi và dạng chia (`A/73`–`A/77`) | `resolve-status-not-allowed` | Không xử lý được báo lỗi này. Tải lại trang. |
+| | `report-reason-exists` | Đã có lý do mã này. |
+| | `word-form-exists` | Dạng này đã có. |
+| AI (`A/80`–`A/82`) | `model-not-found` | Nhà cung cấp không có model này. Kiểm lại tên model. |
+| | `model-not-supported` | Model này chưa dùng được với Wordmet. |
+| | `provider-unavailable` | Nhà cung cấp đang không trả lời. Thử lại sau ít phút. |
+| | `model-not-set` | Thao tác này chưa có model. Chọn model ở Thao tác. |
+| Sửa và xóa (PR #169) | `entry-in-use` (Từ) | Từ này đang được dùng nên chưa xóa được. *(kèm từng lý do, mỗi lý do một dòng)* |
+| | `source-in-use` (Nguồn) | Nguồn này đang được dùng (mức độ của từ hoặc lô nhập) nên không xóa được. |
+| | `source-protected` (Nguồn) | Nguồn có sẵn của hệ thống không sửa hoặc xóa được. |
+| | `run-active` (Bộ ví dụ) | Lần chạy đang chạy, hãy dừng trước khi xóa. |
+| | `run-not-active` (Bộ ví dụ) | Lần chạy này đã kết thúc. |
+| | `job-not-active` (Publish job) | Lô này đã kết thúc. |
 
 ---
 

@@ -22,6 +22,9 @@ Plan đầy đủ: `docs/superpowers/plans/2026-10-14-buoc-2-5-admin-web.md` (18
 **Lưu ý của chủ dự án (15/10/2026):** giao diện admin nhiều khả năng sẽ **refactor lại toàn bộ** sau này. Coi lớp hiển thị
 hiện tại (kiểu Sneat, Figma duyệt 14/10/2026) là tạm. Phần nên giữ khi refactor: luật phiên và cổng truy cập, cách gọi API
 (`Idempotency-Key`, Problem Details, polling), các edge case B25E1–E29 của design, và bộ test hành vi.
+**Cập nhật 28/10/2026:** việc làm lại này đã xong qua UI refresh B (PR #22–#24, `docs/deliveries/ui-refresh-b.md`); chủ dự án chốt như vậy ở AD2 ngày 27/10/2026
+(`docs/superpowers/decisions/2026-10-27-giao-dien-admin-decisions.md`), nên lớp hiển thị hiện tại không còn là "tạm". Đợt giao diện admin code các màn mới theo Figma page 04, hướng B
+(`docs/deliveries/giao-dien-admin.md`).
 
 | Milestone | Trạng thái | Nhánh / PR |
 |---|---|---|
@@ -36,7 +39,7 @@ hiện tại (kiểu Sneat, Figma duyệt 14/10/2026) là tạm. Phần nên gi�
 tạo tài khoản staff, mật khẩu sinh hoặc tự đặt, gửi qua email). Full e2e API xanh trên CI của PR #17.
 
 **M2 có gì:** `apps/admin` (Vite + React): API client, quản lý phiên (refresh cookie, luật cổng, đồng bộ tab), đăng nhập, quên
-mật khẩu, đổi mật khẩu bắt buộc, khung app 16 mục menu (mục ngoài 2.5 hiện "Tính năng chưa có"), trang Vai trò & staff + tạo
+mật khẩu, đổi mật khẩu bắt buộc, khung app 16 mục menu (mục ngoài 2.5 hiện "Tính năng chưa có"; đến 28/10/2026 cả 24 mục menu đều có màn, xem `giao-dien-admin.md`), trang Vai trò & staff + tạo
 tài khoản. Không có tự đăng ký. Kiểm tay 14/10/2026 với API thật: đăng nhập, trang staff, F5 giữ phiên đều chạy.
 
 **M3 đã làm (review từng task, gate chạy lại trên bản copy sạch):** nguồn + upload CSV (13); chi tiết lô, polling, publish,
@@ -80,6 +83,8 @@ chọn và nút ngôn ngữ/tài khoản, tắt spellcheck ở email và mã OTP
 tên thương hiệu, spinner theo `prefers-reduced-motion`, `overscroll-contain` cho hộp thoại. Chưa sửa (để khi refactor giao diện):
 nút điều hướng là button chứ không phải link, chưa focus ô lỗi đầu tiên, không cảnh báo rời form đang nhập, bộ lọc chưa vào URL,
 danh sách luật mật khẩu đỏ ngay khi chưa gõ, vùng kéo thả nháy khi rê qua phần tử con.
+*Cập nhật 28/10/2026:* ba điểm (focus ô lỗi đầu tiên, cảnh báo rời form đang nhập, bộ lọc vào URL) đã làm ở lớp dùng chung của M0 đợt giao diện admin (AD12, cho màn mới); ba điểm còn lại
+chưa thấy tài liệu nào ghi là đã sửa.
 
 **Số test (15/10/2026, local):** API 578 unit + 475 e2e; admin 219 unit + 67 e2e API giả + 7 e2e API thật (sau bản sửa giao
 diện) — tất cả xanh.
@@ -89,7 +94,8 @@ thấy, learner bị chặn, editor bị đá khi gỡ quyền, 24 tổ hợp tr
 chủ dự án chốt (D26–D28 trong decision record):
 - D26: xuất `unpublishable` rỗng sau CEFR-J (xuất CSV chỉ duyệt sense) → sửa kịch bản trong design §1; "xuất từ chưa có nghĩa" vào
   backlog.
-- D27 / B25E30: refresh bị 429 khi tải lại trang quá nhanh → app về `/login` không báo; để sửa khi refactor giao diện admin.
+- D27 / B25E30: refresh bị 429 khi tải lại trang quá nhanh → app về `/login` không báo; để sửa khi refactor giao diện admin. **Đã sửa ở UI refresh B** (`docs/deliveries/ui-refresh-b.md`
+  dòng 123: 429 khi làm mới phiên thì chờ `Retry-After`, thử tối đa 3 lần; ba lần 429 thì về đăng nhập kèm thông báo).
 - D28: docs Bước 2.5 nằm trên `docs/buoc-2-5-design`, PR M3 chỉ chứa code.
 
 **Giới hạn đã chấp nhận** (giữ nguyên từ mục tiến độ): danh sách lô không hiện "Đã hoàn tác"; bộ lọc "Lô nhập" chỉ có 20 lô mới
