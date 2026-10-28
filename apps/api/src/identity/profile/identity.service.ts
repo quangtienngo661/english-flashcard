@@ -77,6 +77,22 @@ export class IdentityService {
     return row ? toProfile(row) : null;
   }
 
+  /** `'password'` when a password credential exists, `'google'` when a Google identity is linked (order fixed). */
+  async signInMethods(userId: string): Promise<Array<'password' | 'google'>> {
+    const row = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { passwordCredential: { select: { userId: true } }, identities: { select: { provider: true } } },
+    });
+    if (!row) return [];
+    return [...(row.passwordCredential ? ['password' as const] : []), ...(row.identities.length > 0 ? ['google' as const] : [])];
+  }
+
+  /** Current account status, or null for an unknown id (Entitlements refuses to change a deleting account's grants). */
+  async accountStatus(userId: string): Promise<'active' | 'locked' | 'deleting' | null> {
+    const row = await this.prisma.user.findUnique({ where: { id: userId }, select: { status: true } });
+    return row ? (row.status as 'active' | 'locked' | 'deleting') : null;
+  }
+
   async isEmailVerified(userId: string): Promise<boolean> {
     const row = await this.prisma.user.findUnique({ where: { id: userId }, select: { emailVerifiedAt: true } });
     return row !== null && row.emailVerifiedAt !== null;

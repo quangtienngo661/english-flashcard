@@ -58,6 +58,7 @@ function matches(row: Record<string, unknown>, where: Record<string, unknown>): 
 
 type Setup = {
   profiles?: Profile[];
+  deleting?: string[];
   grants?: Array<Partial<GrantRow>>;
   subscriptions?: SubscriptionSource[];
   adapter?: { cancelAtPeriodEnd?: (id: string) => Promise<void> } | null;
@@ -164,6 +165,8 @@ function setup(input: Setup = {}) {
   };
   const identity = {
     getProfile: vi.fn(async (id: string) => (guard('IdentityService.getProfile'), profiles.get(id) ?? null)),
+    accountStatus: vi.fn(async (id: string) => (guard('IdentityService.accountStatus'),
+      profiles.has(id) ? ((input.deleting ?? []).includes(id) ? 'deleting' as const : 'active' as const) : null)),
     emailsOf: vi.fn(async (ids: string[]) => {
       guard('IdentityService.emailsOf');
       return new Map(ids.flatMap((id) => {
@@ -381,6 +384,19 @@ describe('GrantsService.create', () => {
       user_id: LEARNER, kind: 'limits', limits: { ai_practice_per_cycle: 500 }, ends_at: iso(DAY), reason: 'r',
     }));
     expect(events).not.toContain('adapter');
+  });
+});
+
+describe('GrantsService with a deleting learner (Bước 8, design §6.2)', () => {
+  it('create, revoke and update for a deleting learner → 409 account-deleting, nothing written', async () => {
+    const { service, grants } = setup({ deleting: [LEARNER], grants: [{}] });
+    const before = structuredClone(grants[0]);
+    expect(await problem(service.create(ADMIN, planBody()))).toMatchObject({ status: 409, type: 'account-deleting' });
+    expect(await problem(service.revoke(ADMIN, 'grant-1', 'r'))).toMatchObject({ status: 409, type: 'account-deleting' });
+    expect(await problem(service.update(ADMIN, 'grant-1', updateGrantSchema.parse({ ends_at: '2026-12-31T00:00:00Z', reason: 'r' }))))
+      .toMatchObject({ status: 409, type: 'account-deleting' });
+    expect(grants).toHaveLength(1);
+    expect(grants[0]).toEqual(before);
   });
 });
 

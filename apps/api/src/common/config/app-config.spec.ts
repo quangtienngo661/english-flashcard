@@ -188,6 +188,8 @@ describe('loadConfig', () => {
       'practice.answer': { by: 'user', max: 120, windowSeconds: 60 },
       'ai.test': { by: 'user', max: 20, windowSeconds: 3600 },
       'entitlements.lookup': { by: 'user', max: 60, windowSeconds: 3600 },
+      'auth.google.ip': { by: 'ip', max: 20, windowSeconds: 60 },
+      'auth.delete.user': { by: 'user', max: 5, windowSeconds: 3600 },
     });
   });
 

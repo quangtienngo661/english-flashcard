@@ -42,6 +42,12 @@ describe('credential decision under the caller user lock', () => {
       expect(await decideCredential(client, input, clock)).toBe('stale');
       expect(tx.user.update).not.toHaveBeenCalled();
     });
+  it.each([true, false])('B8 (IE11): a deleting account is stale (generic failure) and never counted (matched=%s)', async (passwordMatched) => {
+    tx.user.findUnique.mockResolvedValue({ status: 'deleting', failedLoginCount: 3, loginLockedUntil: null,
+      passwordCredential: { hash: input.verifiedHash } });
+    expect(await decideCredential(client, { ...input, passwordMatched }, clock)).toBe('stale');
+    expect(tx.user.update).not.toHaveBeenCalled();
+  });
   it('N4: a locked account with the right password is account_locked and keeps its failure counter', async () => {
     tx.user.findUnique.mockResolvedValue({ status: 'locked', failedLoginCount: 3, loginLockedUntil: null,
       passwordCredential: { hash: input.verifiedHash } });

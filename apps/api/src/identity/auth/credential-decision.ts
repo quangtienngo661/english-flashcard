@@ -19,6 +19,8 @@ export async function decideCredential(
     where: { id: input.userId }, include: { passwordCredential: true },
   });
   const now = clock.now();
+  // IE11: a deleting account looks like any other failed login, whatever the password.
+  if (user?.status === 'deleting') return 'stale';
   if (user?.loginLockedUntil && user.loginLockedUntil > now) return 'locked';
   if (!user?.passwordCredential || user.passwordCredential.hash !== input.verifiedHash) return 'stale';
   if (!input.passwordMatched) {

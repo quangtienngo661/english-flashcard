@@ -63,6 +63,12 @@ describe('PermissionGuard', () => {
     prisma.sessionChain.findUnique.mockResolvedValue(chain);
     await expect(guard.canActivate(context)).rejects.toMatchObject({ status: 403, problemType: 'forbidden' });
   });
+  it('B8 (D5): a Google session is refused on a staff route with 403 password-login-required, a password session passes', async () => {
+    prisma.sessionChain.findUnique.mockResolvedValue({ userId: 'user', revokedAt: null, authMethod: 'google', user: { staffRole: 'admin' } });
+    await expect(guard.canActivate(context)).rejects.toMatchObject({ status: 403, problemType: 'password-login-required' });
+    prisma.sessionChain.findUnique.mockResolvedValue({ userId: 'user', revokedAt: null, authMethod: 'password', user: { staffRole: 'admin' } });
+    expect(await guard.canActivate(context)).toBe(true);
+  });
   it('B1#26: no authenticated user is forbidden without persistence access', async () => {
     request.user = undefined;
     await expect(guard.canActivate(context)).rejects.toMatchObject({ status: 403, problemType: 'forbidden' });

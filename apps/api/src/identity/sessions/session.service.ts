@@ -42,13 +42,13 @@ export class SessionService {
 
   /** The caller must already hold withUserLock(tx, input.userId). */
   async startChain(tx: Prisma.TransactionClient, input: {
-    userId: string; client: ClientType; deviceLabel?: string;
+    userId: string; client: ClientType; deviceLabel?: string; authMethod?: 'password' | 'google';
   }): Promise<IssuedSession> {
     const now = this.clock.now();
     const chain = await tx.sessionChain.create({
       data: {
         userId: input.userId, clientType: input.client, deviceLabel: input.deviceLabel,
-        createdAt: now, lastUsedAt: now,
+        createdAt: now, lastUsedAt: now, authMethod: input.authMethod ?? 'password',
       },
     });
     await tx.user.update({ where: { id: input.userId }, data: { lastSeenAt: now } });
@@ -152,6 +152,13 @@ export class SessionService {
       if (row.chain.user.status === 'locked') {
         await tx.sessionChain.updateMany({
           where: { id: row.chain.id, revokedAt: null }, data: { revokedAt: now, revokeReason: 'locked' },
+        });
+        return { kind: 'rejected', reason: 'locked' };
+      }
+      // D24: Tx A of a deletion revokes the chains; this read catches one that outlived it.
+      if (row.chain.user.status === 'deleting') {
+        await tx.sessionChain.updateMany({
+          where: { id: row.chain.id, revokedAt: null }, data: { revokedAt: now, revokeReason: 'account-deleted' },
         });
         return { kind: 'rejected', reason: 'locked' };
       }

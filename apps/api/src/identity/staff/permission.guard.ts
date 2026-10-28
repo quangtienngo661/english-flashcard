@@ -28,8 +28,12 @@ export class PermissionGuard implements CanActivate {
       // A single query binds the chain to its owner and reads the current role.
       const chain = await this.prisma.sessionChain.findUnique({
         where: { id: user.sessionChainId },
-        select: { userId: true, revokedAt: true, user: { select: { staffRole: true, mustChangePassword: true } } },
+        select: { userId: true, revokedAt: true, authMethod: true, user: { select: { staffRole: true, mustChangePassword: true } } },
       });
+      // D5: a session started with Google never reaches a staff route, whatever the role.
+      if (chain && chain.userId === user.userId && chain.revokedAt === null && chain.authMethod === 'google') {
+        throw new ProblemDetailsException({ status: 403, title: 'Password sign-in required', type: 'password-login-required' });
+      }
       const role = chain?.user.staffRole;
       if (chain && chain.userId === user.userId && chain.revokedAt === null &&
         (role === 'admin' || role === 'editor') && permissions.every((permission) => this.rolePermissions[role].includes(permission))) {

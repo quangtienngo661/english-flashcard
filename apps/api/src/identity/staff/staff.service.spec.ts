@@ -53,7 +53,7 @@ describe('StaffService (unit, isolated persistence)', () => {
       await expect(staff.setStaffRole('actor', target.id, role)).rejects.toMatchObject({ status: 409, problemType: 'staff-role-rule' });
     }
     expect(tx.user.update).not.toHaveBeenCalled(); expect(write).not.toHaveBeenCalled();
-    expect(tx.user.count).toHaveBeenCalledWith({ where: { staffRole: 'admin' } });
+    expect(tx.user.count).toHaveBeenCalledWith({ where: { staffRole: 'admin', status: { not: 'deleting' } } });
     tx.user.count.mockClear();
     await staff.setStaffRole('actor', target.id, 'admin');
     expect(tx.user.count).not.toHaveBeenCalled();
@@ -187,7 +187,8 @@ describe('StaffService.lockUser / unlockUser (unit, isolated persistence)', () =
   const reason = 'Spam from lan@example.com';
   type Stored = { id: string; email: string; givenName: string | null; familyName: string | null; emailVerifiedAt: Date | null;
     staffRole: string | null; status: string; createdAt: Date; lastSeenAt: Date | null; birthDate: Date | null;
-    termsAcceptedAt: Date | null; termsVersion: string | null; lockedAt: Date | null; lockedBy: string | null; lockReason: string | null };
+    termsAcceptedAt: Date | null; termsVersion: string | null; lockedAt: Date | null; lockedBy: string | null; lockReason: string | null;
+    passwordCredential: { userId: string } | null; identities: Array<{ provider: string }> };
   let stored: Stored;
   let committed: boolean;
   let staff: StaffService;
@@ -195,7 +196,7 @@ describe('StaffService.lockUser / unlockUser (unit, isolated persistence)', () =
     vi.resetAllMocks(); logs.length = 0; committed = false;
     stored = { id: targetId, email: 'lan@example.com', givenName: 'Lan', familyName: null, emailVerifiedAt: clock.now(), staffRole: null,
       status: 'active', createdAt: clock.now(), lastSeenAt: null, birthDate: null, termsAcceptedAt: null, termsVersion: null,
-      lockedAt: null, lockedBy: null, lockReason: null };
+      lockedAt: null, lockedBy: null, lockReason: null, passwordCredential: null, identities: [] };
     tx.$executeRaw.mockResolvedValue(1);
     tx.user.findUnique.mockImplementation(async () => ({ ...stored }));
     tx.user.update.mockImplementation(async ({ data }) => { stored = { ...stored, ...data }; return { ...stored }; });
