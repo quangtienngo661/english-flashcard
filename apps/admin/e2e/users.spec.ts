@@ -80,17 +80,18 @@ test.describe('Người dùng (A/71, A/72, A/72b)', () => {
     await expect(dialog.getByText(vi.errors['lock-rule'])).toBeVisible();
   });
 
-  test('editor: no menu entry, and /users shows the no-access view without calling the API', async ({ page }) => {
+  test('editor (AD18): the menu entry and the list are there, but no [Tạo người dùng]', async ({ page }) => {
     await signedInAs(page, 'editor', {
       ...base,
       [`GET ${LIST}`]: () => ({ json: { items: [], next_page_token: null } }),
     });
     await page.goto('/users');
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(vi.nav.users);
-    await expect(page.getByText(vi.noAccess.title)).toBeVisible();
+    await expect(page.getByText(vi.noAccess.title)).toHaveCount(0);
     await openNavIfCollapsed(page);
-    await expect(page.getByRole('navigation', { name: vi.shell.mainNav }).getByRole('link', { name: vi.nav.users })).toHaveCount(0);
-    expect(requestCount(page, 'GET', LIST)).toBe(0);
+    await expect(page.getByRole('navigation', { name: vi.shell.mainNav }).getByRole('link', { name: vi.nav.users })).toBeVisible();
+    await expect(page.getByRole('button', { name: vi.users.create })).toHaveCount(0);
+    expect(requestCount(page, 'GET', LIST)).toBeGreaterThan(0);
   });
 
   test('an unknown id shows "Không tìm thấy người dùng này."', async ({ page }) => {
