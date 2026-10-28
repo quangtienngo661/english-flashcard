@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 import { Inject, Injectable } from '@nestjs/common';
 import { z } from 'zod';
 import { PRISMA_CLIENT } from '../../common/db/prisma.module.js';
+import { RateLimiter } from '../../common/rate-limit/rate-limiter.service.js';
 import { decodeBoundToken, encodeBoundToken } from '../../common/pagination/page-token.util.js';
 import { userRef } from '../../common/user-ref.js';
 import { ProblemDetailsException } from '../../common/problem-details/problem-details.exception.js';
@@ -59,6 +60,7 @@ export class EvalRunsService {
     @Inject(PromptsRepository) private readonly prompts: PromptsRepository,
     @Inject(EvalQueue) private readonly queue: EvalQueue,
     @Inject(IdentityService) private readonly identity: IdentityService,
+    @Inject(RateLimiter) private readonly limiter: RateLimiter,
   ) {}
 
   async create(actorId: string, body: CreateRunBody): Promise<{ run_id: string; status: 'queued' }> {
@@ -81,6 +83,8 @@ export class EvalRunsService {
       where: { operation }, orderBy: [{ createdAt: 'asc' }, { id: 'asc' }], select: { id: true },
     });
     if (examples.length === 0) throw invalid(['examples: at least one example is needed']);
+    // The run counts against `ai.test` only now: a request refused above (no model, bad draft, no example) costs nothing.
+    await this.limiter.hit('ai.test', actorId);
     // The resolved selection is stored (plan choice 10): a later change of the operation's choice does not change this run.
     const row = await this.prisma.aiEvalRun.create({ data: {
       operation, provider: selection.provider, model: selection.modelId, effort: selection.effort, thinking: selection.thinking,

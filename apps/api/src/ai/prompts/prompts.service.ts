@@ -3,6 +3,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import { z } from 'zod';
 import { Clock } from '../../common/clock/clock.js';
 import { PRISMA_CLIENT } from '../../common/db/prisma.module.js';
+import { RateLimiter } from '../../common/rate-limit/rate-limiter.service.js';
 import { userRef, type UserRef } from '../../common/user-ref.js';
 import { decodePageToken, encodePageToken } from '../../common/pagination/page-token.util.js';
 import { ProblemDetailsException } from '../../common/problem-details/problem-details.exception.js';
@@ -86,6 +87,7 @@ export class PromptsService {
     @Inject(SelectionReader) private readonly selections: SelectionReader,
     @Inject(AiAdapterRegistry) private readonly registry: AiAdapterRegistry,
     @Inject(IdentityService) private readonly identity: IdentityService,
+    @Inject(RateLimiter) private readonly limiter: RateLimiter,
   ) {}
 
   async get(op: AiOperation): Promise<PromptView> {
@@ -164,6 +166,8 @@ export class PromptsService {
     if (violations.length > 0) throw invalid(violations);
     const inputs = await this.inputs(op, body);
     const prompt = { instructions: body.instructions, examples: body.examples as PromptExample[], revision: null };
+    // Counted only now: a test refused above (no model, bad draft, no example) costs nothing; the provider is called after.
+    await this.limiter.hit('ai.test', actorId);
     const items = await Promise.all(inputs.map(async (input): Promise<TestItem> => {
       const report = await this.runner.execute({
         purpose: 'test', operation: op, data: input, actorId, callOperationId: `test-${randomUUID()}`, selection, prompt,

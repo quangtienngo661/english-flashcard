@@ -59,7 +59,6 @@ export class AdminAiEvalController {
   @HttpCode(202)
   @Idempotent()
   @UseInterceptors(IdempotencyInterceptor)
-  @RateLimit('ai.test')
   createRun(@Body({ schema: createRunSchema }) body: z.infer<typeof createRunSchema>, @Req() req: RequestWithUser) {
     return this.runs.create(req.user!.userId, body);
   }
