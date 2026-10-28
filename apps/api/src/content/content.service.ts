@@ -4,6 +4,8 @@ import type { Prisma, PrismaClient } from '../generated/prisma/client.js';
 import { AdminCatalogQueries, type EntryExportRow, type ExportRow, type LatestRevision, type ScopeRecord } from './catalog/admin-catalog.queries.js';
 import type { SenseFilter } from './catalog/sense-filters.js';
 import { EntriesService, type EnsureEntryInput, type EnsureEntryResult, type VariantInput } from './catalog/entries.service.js';
+import { EntryDeleteService } from './catalog/entry-delete.service.js';
+import { EntryUsageRegistry, type EntryUsageProbe } from './catalog/entry-usage.js';
 import { LevelsService, type EntryLevelView, type ImportedLevelInput } from './catalog/levels.service.js';
 import { revertRecords, type RevertContext, type RevertRecord, type RevertReport } from './catalog/revert.service.js';
 import type { Level } from './content.constants.js';
@@ -38,7 +40,19 @@ export class ContentService {
     @Inject(SentencesService) private readonly sentences: SentencesService,
     @Inject(WordsService) private readonly words: WordsService,
     @Inject(WordFormsService) private readonly wordForms: WordFormsService,
+    @Inject(EntryDeleteService) private readonly entryDeletion: EntryDeleteService,
+    @Inject(EntryUsageRegistry) private readonly entryUsage: EntryUsageRegistry,
   ) {}
+
+  /** Deletes a catalog entry that was never published and that nothing else refers to; 409 `entry-in-use` with `reasons` otherwise. */
+  deleteEntry(entryId: string): Promise<void> {
+    return this.entryDeletion.deleteEntry(entryId);
+  }
+
+  /** Learning, Practice and Pipeline register the part of the delete check that reads their own tables, when they start. */
+  registerEntryUsageProbe(probe: EntryUsageProbe): void {
+    this.entryUsage.register(probe);
+  }
 
   /** Bước 7 design §10: a form staff accept for a lemma (Practice's unknown-forms flow). */
   addWordForm(actorId: string, lemma: string, form: string): Promise<WordFormAdded> {

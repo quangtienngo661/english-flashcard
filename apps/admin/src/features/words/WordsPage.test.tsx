@@ -2,7 +2,7 @@ import { configure, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import vi from '../../../messages/vi.json';
-import { makeMe, type Call } from '../../auth/test-support';
+import { makeMe, problem, type Call } from '../../auth/test-support';
 import { renderApp } from '../staff/test-utils';
 import { entriesQuery } from './words-api';
 
@@ -126,6 +126,164 @@ describe('WordsPage (A/87)', () => {
     await userEvent.click(screen.getAllByRole('button', { name: w.actionsFor.replace('{word}', 'deploy · verb') })[0]);
     await userEvent.click(await screen.findByRole('menuitem', { name: w.addSense }));
     await waitFor(() => expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(vi.nav.senses));
+  });
+
+  describe('Xóa từ (only a word that was never published and nothing uses)', () => {
+    const DELETE = 'DELETE /v1/admin/content/entries/e1';
+    const openMenu = async () => userEvent.click(screen.getAllByRole('button', { name: w.actionsFor.replace('{word}', 'deploy · verb') })[0]);
+    const askDelete = async () => {
+      await openMenu();
+      await userEvent.click(await screen.findByRole('menuitem', { name: w.deleteWord }));
+      return screen.findByRole('dialog');
+    };
+    const confirm = (dialog: HTMLElement) => userEvent.click(within(dialog).getByRole('button', { name: w.deleteConfirm }));
+    const deletes = (calls: Call[]) => calls.filter((c) => c.method === 'DELETE');
+    const refusal = (reasons: unknown) => () => problem(409, 'entry-in-use', { reasons });
+    const blocked = w.deleteBlocked as Record<string, string>;
+
+    it('the action is the last item of the menu, for every row, with or without taxonomy.manage', async () => {
+      renderApp('/words', { [LIST]: page([entry(), entry({ id: 'e2', lemma: 'run' })]), [UPLOADS]: uploads });
+      await screen.findAllByText('deploy');
+      await openMenu();
+      expect((await screen.findAllByRole('menuitem')).map((item) => item.textContent)).toEqual([
+        w.editLevel, w.editVariants, w.editFunctionWord, w.addSense, w.deleteWord,
+      ]);
+      await userEvent.keyboard('{Escape}');
+      await userEvent.click(screen.getAllByRole('button', { name: w.actionsFor.replace('{word}', 'run · verb') })[0]);
+      expect((await screen.findAllByRole('menuitem')).at(-1)).toHaveTextContent(w.deleteWord);
+    });
+
+    it('an editor without taxonomy.manage still gets it, after Thêm nghĩa', async () => {
+      renderApp('/words', { [LIST]: page([entry()]), [UPLOADS]: uploads }, EDITOR);
+      await screen.findAllByText('deploy');
+      await openMenu();
+      expect((await screen.findAllByRole('menuitem')).map((item) => item.textContent)).toEqual([w.editLevel, w.editVariants, w.addSense, w.deleteWord]);
+    });
+
+    it('the menu opens with the keyboard and the action is reached with arrow keys and Enter', async () => {
+      renderApp('/words', { [LIST]: page([entry()]), [UPLOADS]: uploads });
+      await screen.findAllByText('deploy');
+      screen.getAllByRole('button', { name: w.actionsFor.replace('{word}', 'deploy · verb') })[0].focus();
+      await userEvent.keyboard('{ArrowUp}');
+      expect(await screen.findByRole('menuitem', { name: w.deleteWord })).toHaveFocus();
+      await userEvent.keyboard('{Enter}');
+      expect(await screen.findByRole('dialog', { name: w.deleteTitle.replace('{word}', 'deploy') })).toBeInTheDocument();
+    });
+
+    it('asks first: the danger dialog says the word and its unpublished drafts go and that it cannot be undone; Hủy sends nothing', async () => {
+      const r = renderApp('/words', { [LIST]: page([entry()]), [UPLOADS]: uploads });
+      await screen.findAllByText('deploy');
+      const dialog = await askDelete();
+      expect(dialog).toHaveAccessibleName(w.deleteTitle.replace('{word}', 'deploy'));
+      expect(within(dialog).getByText(w.deleteBody)).toBeInTheDocument();
+      expect(w.deleteBody).toMatch(/không hoàn tác được/i);
+      expect(within(dialog).getByRole('button', { name: w.deleteConfirm }).className).toContain('bg-danger');
+      await userEvent.click(within(dialog).getByRole('button', { name: vi.common.cancel }));
+      await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+      expect(deletes(r.calls)).toHaveLength(0);
+    });
+
+    it('Esc closes the question without deleting', async () => {
+      const r = renderApp('/words', { [LIST]: page([entry()]), [UPLOADS]: uploads });
+      await screen.findAllByText('deploy');
+      await askDelete();
+      await userEvent.keyboard('{Escape}');
+      await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+      expect(deletes(r.calls)).toHaveLength(0);
+    });
+
+    it('confirm: one DELETE for this word, the dialog closes, a toast says it, and the list reloads', async () => {
+      const r = renderApp('/words', { [LIST]: page([entry()]), [UPLOADS]: uploads, [DELETE]: () => new Response(null, { status: 204 }) });
+      await screen.findAllByText('deploy');
+      await confirm(await askDelete());
+      await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+      expect(await screen.findByText(w.deleted.replace('{word}', 'deploy'))).toBeInTheDocument();
+      await waitFor(() => expect(r.count('GET', '/v1/admin/content/entries?page_size=20')).toBe(2));
+      expect(deletes(r.calls).map((c) => c.path)).toEqual(['/v1/admin/content/entries/e1']);
+    });
+
+    it('while the request runs the buttons are locked, so a second click sends nothing more', async () => {
+      let release!: () => void;
+      const gate = new Promise<void>((resolve) => { release = resolve; });
+      const r = renderApp('/words', {
+        [LIST]: page([entry()]), [UPLOADS]: uploads,
+        [DELETE]: async () => { await gate; return new Response(null, { status: 204 }); },
+      });
+      await screen.findAllByText('deploy');
+      const dialog = await askDelete();
+      await confirm(dialog);
+      await waitFor(() => expect(deletes(r.calls)).toHaveLength(1));
+      expect(within(dialog).getByRole('button', { name: vi.common.cancel })).toBeDisabled();
+      await userEvent.keyboard('{Escape}');
+      expect(screen.getByRole('dialog')).toBeInTheDocument();
+      release();
+      await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+      expect(deletes(r.calls)).toHaveLength(1);
+    });
+
+    it.each(Object.keys(blocked).filter((code) => code !== 'title'))('409 entry-in-use [%s]: the dialog stays open with the title and that sentence; the word stays; nothing reloads', async (code) => {
+      const r = renderApp('/words', { [LIST]: page([entry()]), [UPLOADS]: uploads, [DELETE]: refusal([code]) });
+      await screen.findAllByText('deploy');
+      const dialog = await askDelete();
+      await confirm(dialog);
+      const alert = await within(dialog).findByRole('alert');
+      expect(within(alert).getByText(w.deleteBlocked.title.replace('{word}', 'deploy'))).toBeInTheDocument();
+      expect(within(alert).getAllByRole('listitem').map((item) => item.textContent)).toEqual([blocked[code]]);
+      expect(screen.getAllByText('deploy').length).toBeGreaterThan(0);
+      expect(r.count('GET', '/v1/admin/content/entries?page_size=20')).toBe(1);
+      expect(vi.errors['entry-in-use']).toBeTruthy();
+    });
+
+    it('409 with several reasons lists one sentence each, in the order the API gave', async () => {
+      renderApp('/words', { [LIST]: page([entry()]), [UPLOADS]: uploads, [DELETE]: refusal(['published-sense', 'learner-data', 'active-job']) });
+      await screen.findAllByText('deploy');
+      const dialog = await askDelete();
+      await confirm(dialog);
+      const alert = await within(dialog).findByRole('alert');
+      expect(within(alert).getAllByRole('listitem').map((item) => item.textContent)).toEqual([
+        blocked['published-sense'], blocked['learner-data'], blocked['active-job'],
+      ]);
+    });
+
+    it.each([[[]], [['a-reason-from-a-newer-api']], [undefined]])('409 whose reasons are %j: the general "in use" sentence, never an empty list', async (reasons) => {
+      renderApp('/words', { [LIST]: page([entry()]), [UPLOADS]: uploads, [DELETE]: refusal(reasons) });
+      await screen.findAllByText('deploy');
+      const dialog = await askDelete();
+      await confirm(dialog);
+      const alert = await within(dialog).findByRole('alert');
+      expect(within(alert).getByText(vi.errors['entry-in-use'])).toBeInTheDocument();
+      expect(within(alert).queryAllByRole('listitem')).toHaveLength(0);
+    });
+
+    it('a refusal can be read again after closing and reopening; the old message does not stay', async () => {
+      renderApp('/words', { [LIST]: page([entry()]), [UPLOADS]: uploads, [DELETE]: refusal(['learner-data']) });
+      await screen.findAllByText('deploy');
+      let dialog = await askDelete();
+      await confirm(dialog);
+      await within(dialog).findByRole('alert');
+      await userEvent.click(within(dialog).getByRole('button', { name: vi.common.cancel }));
+      await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+      dialog = await askDelete();
+      expect(within(dialog).queryByRole('alert')).toBeNull();
+    });
+
+    it('404 (someone deleted it first): the message, and the list reloads so the word is gone', async () => {
+      const r = renderApp('/words', { [LIST]: page([entry()]), [UPLOADS]: uploads, [DELETE]: () => problem(404, 'not-found') });
+      await screen.findAllByText('deploy');
+      const dialog = await askDelete();
+      await confirm(dialog);
+      expect(await within(dialog).findByText(vi.errors['not-found'])).toBeInTheDocument();
+      await waitFor(() => expect(r.count('GET', '/v1/admin/content/entries?page_size=20')).toBe(2));
+    });
+
+    it('any other error shows its mapped message and keeps the word', async () => {
+      const r = renderApp('/words', { [LIST]: page([entry()]), [UPLOADS]: uploads, [DELETE]: () => problem(429, 'rate-limited') });
+      await screen.findAllByText('deploy');
+      const dialog = await askDelete();
+      await confirm(dialog);
+      expect(await within(dialog).findByText(vi.errors['rate-limited'])).toBeInTheDocument();
+      expect(r.count('GET', '/v1/admin/content/entries?page_size=20')).toBe(1);
+    });
   });
 
   it('paste: more than 500 lines is refused on the client; the result lists each line with "Soạn nghĩa"', async () => {

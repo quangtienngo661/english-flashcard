@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Button as AriaButton, Menu, MenuItem, MenuTrigger, Popover } from 'react-aria-components';
 import { useNavigate } from 'react-router';
 import { useTranslations } from 'use-intl';
+import { ApiError } from '../../api/problem';
 import { useErrorMessage } from '../../api/use-error-message';
 import { useDialogDirtyClose } from '../../app/dirty-form';
 import { useApi } from '../../auth/session-context';
@@ -11,17 +12,20 @@ import { useCan } from '../../auth/use-can';
 import { Banner } from '../../ui/Banner';
 import { Button } from '../../ui/Button';
 import { Checkbox } from '../../ui/Checkbox';
+import { ConfirmDialog } from '../../ui/ConfirmDialog';
 import { Dialog } from '../../ui/Dialog';
 import { RadioGroup } from '../../ui/RadioGroup';
 import { Select } from '../../ui/Select';
 import { TextField } from '../../ui/TextField';
 import { showToast } from '../../ui/Toast';
 import { LEVELS } from '../content/content-api';
-import { addSense, setEditorialLevel, setFunctionWord, setVariants, type EntryView, type Level, type Variant } from './words-api';
+import {
+  addSense, deleteEntry, isEntryInUseReason, setEditorialLevel, setFunctionWord, setVariants, type EntryView, type Level, type Variant,
+} from './words-api';
 
-type Action = 'level' | 'variants' | 'functionWord';
+type Action = 'level' | 'variants' | 'functionWord' | 'delete';
 
-/** "Thao tác" of one word (A/87): edit level, variants, function word (`taxonomy.manage`), add a sense. */
+/** "Thao tác" of one word (A/87): edit level, variants, function word (`taxonomy.manage`), add a sense, delete the word. */
 export function WordRowActions({ entry }: { entry: EntryView }) {
   const t = useTranslations('words');
   const api = useApi();
@@ -56,8 +60,13 @@ export function WordRowActions({ entry }: { entry: EntryView }) {
               { id: 'variants', label: t('editVariants') },
               ...(canTaxonomy ? [{ id: 'functionWord', label: t('editFunctionWord') }] : []),
               { id: 'sense', label: t('addSense') },
+              { id: 'delete', label: t('deleteWord') },
             ].map((item) => (
-              <MenuItem key={item.id} id={item.id} className="cursor-pointer rounded-sm px-3 py-2 text-ui text-ink outline-none data-focused:bg-primary-soft">
+              <MenuItem
+                key={item.id}
+                id={item.id}
+                className={`cursor-pointer rounded-sm px-3 py-2 text-ui outline-none ${item.id === 'delete' ? 'text-danger data-focused:bg-danger-soft' : 'text-ink data-focused:bg-primary-soft'}`}
+              >
                 {item.label}
               </MenuItem>
             ))}
@@ -67,7 +76,61 @@ export function WordRowActions({ entry }: { entry: EntryView }) {
       {open === 'level' && <LevelDialog entry={entry} onClose={() => setOpen(null)} />}
       {open === 'variants' && <VariantsDialog entry={entry} onClose={() => setOpen(null)} />}
       {open === 'functionWord' && <FunctionWordDialog entry={entry} onClose={() => setOpen(null)} />}
+      {open === 'delete' && <DeleteDialog entry={entry} onClose={() => setOpen(null)} />}
     </>
+  );
+}
+
+/** Asks first. A refusal (409 `entry-in-use`) stays in the dialog and lists why; success closes it and reloads the list. */
+function DeleteDialog({ entry, onClose }: { entry: EntryView; onClose: () => void }) {
+  const t = useTranslations('words');
+  const api = useApi();
+  const queryClient = useQueryClient();
+  const errorMessage = useErrorMessage();
+  const remove = useMutation({
+    mutationFn: () => deleteEntry(api, entry.id),
+    onSuccess: async () => {
+      onClose();
+      showToast(t('deleted', { word: entry.lemma }));
+      await queryClient.invalidateQueries({ queryKey: ['entries'] });
+    },
+    // Already gone (someone deleted it first): the list on screen is stale.
+    onError: (error) => {
+      if (error instanceof ApiError && error.problem.slug === 'not-found') void queryClient.invalidateQueries({ queryKey: ['entries'] });
+    },
+  });
+  const reasons = remove.error instanceof ApiError && remove.error.problem.slug === 'entry-in-use'
+    ? (remove.error.problem.reasons ?? []).filter(isEntryInUseReason) : [];
+  return (
+    <ConfirmDialog
+      isOpen
+      title={t('deleteTitle', { word: entry.lemma })}
+      confirmLabel={t('deleteConfirm')}
+      tone="danger"
+      isPending={remove.isPending}
+      onConfirm={() => remove.mutate()}
+      onCancel={onClose}
+    >
+      <div className="flex flex-col gap-3">
+        <p>{t('deleteBody')}</p>
+        {remove.isError && (
+          <Banner variant="error">
+            {reasons.length > 0 ? (
+              <>
+                <p>{t('deleteBlocked.title', { word: entry.lemma })}</p>
+                <ul className="mt-1 list-disc pl-5">
+                  {reasons.map((reason) => (
+                    <li key={reason}>{t(`deleteBlocked.${reason}`)}</li>
+                  ))}
+                </ul>
+              </>
+            ) : (
+              errorMessage(remove.error)
+            )}
+          </Banner>
+        )}
+      </div>
+    </ConfirmDialog>
   );
 }
 
