@@ -493,7 +493,7 @@ Khác biệt nhìn thấy ở ảnh thật (chưa mở Figma để so từng đi
 
 Nhánh `feat/giao-dien-admin-m5`, một PR vào `dev`. Bốn màn Nội dung thay "Tính năng chưa có": Từ `/words` (A/87), Nghĩa `/senses` (A/88), Chi tiết nghĩa
 `/senses/:id` (A/88b), Chủ đề `/topics` (A/89). Editor dùng được cả bốn (đủ quyền `content.edit`, `content.publish`, `taxonomy.manage`). Phần đóng đợt (plan
-Task 43 Step 4–5: `CLAUDE.md`, memory, `buoc-2-5.md`, copy doc §8, as-built của cả đợt) **chưa làm**: chờ M1a, M1b, M3, M4 merge.
+Task 43 Step 4–5: `CLAUDE.md`, memory, `buoc-2-5.md`, copy doc §8, as-built của cả đợt) **chưa làm** lúc viết (chờ M1a, M1b, M3, M4 merge); đã làm ở mục "as-built cả đợt" cuối file.
 
 ## Đã làm (Task 38–42, và phần kiểm của Task 43)
 
@@ -570,4 +570,62 @@ Thêm sau M4 theo yêu cầu trực tiếp của chủ dự án; quyết định
   email cũ, người học vẫn đăng nhập; email trùng → 409; đặt lại mật khẩu → đăng nhập được với mật khẩu trong thư, `must_change_password` true; editor: GET 200, PATCH / POST 403.
 - **Chưa kiểm:** các hộp trên giao diện thật trong trình duyệt (chỉ có unit test); `pnpm smoke:*` và e2e `admin-e2e-real` chưa chạy cho thay đổi này.
 - **Chưa làm:** xóa người dùng (Bước 8).
+
+# Đợt giao diện admin — as-built cả đợt (28/10/2026)
+
+Đóng đợt (plan Task 43, bước 4–5). Mọi milestone đã merge vào `dev`; cả bốn check CI (`api`, `web`, `admin`, `admin-e2e-real`) xanh ở mọi PR #144–#169 (đọc bằng `gh pr list --state merged`,
+28/10/2026). Menu admin có 24 mục và cả 24 đều `available: true` ở `apps/admin/src/app/nav.ts`, nên không còn màn nào hiện "Sắp có". Ảnh chụp, số test, câu chữ tự viết và chỗ lệch
+plan của từng milestone nằm ở các mục as-built phía trên; mục này chỉ gom lại. (Việc helper đăng nhập của test thật chờ hết giới hạn 429 đã ghi ở "Sau khi viết mục này" của M3, không nhắc lại.)
+
+## Theo milestone
+
+| Milestone | Có gì | PR vào `dev` |
+|---|---|---|
+| M0 | Khung chung: data router, client API, menu 24 mục, trang "không có quyền", chặn rời trang, giữ bản đang sửa, bộ lọc trong URL, tài khoản dùng chung cho test thật | #144 |
+| API (AD15) | 9 task API: người thao tác hiện bằng email, số lần chạy thử còn lại, giá trị mặc định của cài đặt, báo lỗi, cấp gói, cột "Thiếu" | #145 (AI), #146 (Cài đặt), #147 (Báo lỗi), #148 (Cấp gói), #149 (Nội dung); as-built #150 |
+| M1a | AI cấu hình: Tình trạng, Model, Thao tác, Prompt | #153 |
+| M1b | AI đo: Bộ ví dụ, Chi phí, Các lần gọi | #161 |
+| M2 | Cài đặt hệ thống | #152 |
+| M3 | Báo lỗi, Lý do báo lỗi, Trả lượt, Dạng chia chưa biết | #155 |
+| M4 | Người dùng, Cấp gói và lượt | #156 |
+| M5 | Từ, Nghĩa (và chi tiết), Chủ đề | #154 |
+
+## Thêm sau plan (đều đã merge vào `dev`, 28/10/2026)
+
+- **AD18, admin tạo và sửa người dùng, đặt lại mật khẩu:** #157 (mục AD18 phía trên).
+- **Docker:** `pnpm bootstrap` dựng và chạy API + worker, admin, web học trong container từ root: #159; cách dùng ở `docs/deliveries/docker-bootstrap.md`.
+- **Lượt `ai.test`:** [Chạy bộ ví dụ] hoặc [Chạy thử] bị từ chối (thiếu ví dụ, model, bản nháp...) không còn trừ một trong 20 lượt mỗi giờ; lượt chỉ đếm sau mọi bước kiểm: #162.
+- **Dashboard AI** thay trang "Sắp có" ở `/dashboard`: #163, chữ viết lại ở #164. Quyền mới `ai.view` cho cả `admin` và `editor` (`identity.types.ts`); ba endpoint đọc
+  `GET /v1/admin/ai/dashboard`, `GET /v1/admin/practice/ai-quality`, `GET /v1/admin/entitlements/ai-usage/days`; màn có 6 phần, chọn 7 / 30 / 90 ngày. Mọi cài đặt AI,
+  Chi phí và Các lần gọi vẫn `settings.manage` (chỉ `admin`). AD6 trong decision record ("Dashboard ngoài đợt, giữ Sắp có") đã bị thay: theo mô tả #163, đây là yêu cầu của chủ dự án
+  ngày 28/10/2026; decision record chưa được sửa theo.
+- **Nhập ví dụ hàng loạt cho Bộ ví dụ:** #165. `POST /v1/admin/ai/eval/examples/bulk` (tối đa 1000 dòng một lần), nút [Nhập hàng loạt] (`/ai/eval/bulk`) nhận file
+  `.csv`, `.tsv`, `.txt`, `.jsonl` (tối đa 2 MB) hoặc dán; dòng sai bị bỏ qua và được liệt kê. **Trần ví dụ mỗi thao tác đổi từ 100 lên 1000**
+  (`EVAL_EXAMPLES_PER_OPERATION_MAX`); số 100 ở mục M1b phía trên là số lúc làm M1b.
+- **Sửa và xóa ở các trang trước đây chỉ tạo và đọc:** #169. Nguồn (sửa; xóa chỉ khi chưa ai dùng; nguồn `owner` và AGID có sẵn được bảo vệ), lần chạy Bộ ví dụ (dừng, xóa),
+  lô xuất bản (dừng; nghĩa đã publish giữ nguyên), từ (xóa chỉ khi chưa từng publish và chưa ai dùng). Khảo sát gốc và bảng theo trang:
+  `docs/preparation/ADMIN_CRUD_SURVEY_2026-10-28.md`. Theo mô tả #169, chưa kiểm: worker thật dừng gọi AI giữa chừng trên Redis và BullMQ thật, dừng lô đang chạy với worker thật,
+  các hộp thoại mới trong trình duyệt thật.
+
+## Chưa làm (ngoài đợt này)
+
+- **Dashboard AI còn thiếu hai số:** "Tỉ lệ câu bị luật loại ở lần đầu" và "Người Pro dùng bao nhiêu % lượt".
+- **Nhóm B của việc AI** (golden set, chấm bằng luật và judge, so lần chạy, vòng đời prompt, các màn admin còn lại của nhóm này): chưa có design hay plan.
+  Xem `docs/preparation/IMPROVEMENT_PLAN_2026-10-28.md` §4.
+- **Bước 8** (đăng nhập Google, xóa tài khoản người dùng) và **Deploy** (hosting, Postgres và Redis chạy lâu dài, SMTP thật, secrets, backup).
+- **Phần người học và sản phẩm:** app điện thoại (Flutter), cổng thanh toán thật, SDK quảng cáo, người học thật dùng thử (theo dòng "Chưa có" ở §1 của `IMPROVEMENT_PLAN_2026-10-28.md`).
+- **Figma page 04:** mục "Giao dịch" trong thanh bên (plan Task 43, "vẽ bù, không chặn code") chưa vẽ.
+- **Memory** `project_admin_ui_refactor.md` (design §9) nằm ngoài repo; không sửa ở đây.
+- Các mục "Chưa kiểm" của từng milestone phía trên vẫn đúng, trừ dòng "CI trên PR" (đã xanh); ví dụ chưa mở trình duyệt thật cho hộp "Rời trang?" và thanh khôi phục (M1a), hộp A/79b
+  và dải `not_supported` (M4, cần người đang trả tiền và cổng thanh toán), các hộp của AD18 và của #165, #169. Ảnh màn thật chưa đặt cạnh khung Figma từng điểm một
+  (M1a, M1b, M3, M4); chủ dự án so khi duyệt.
+
+## Tài liệu đã sửa khi đóng đợt (design §9, plan Task 43 bước 4)
+
+- `CLAUDE.md`: bỏ ghi chú "admin UI sẽ làm lại" và dòng B25E30 (AD2, AD12); bỏ các câu "admin chưa có màn / Sắp có"; thêm mục "Đợt giao diện admin" trỏ về file này; thêm một dòng trỏ
+  `pnpm bootstrap` sang `docs/deliveries/docker-bootstrap.md`.
+- `docs/deliveries/buoc-2-5.md`: ghi B25E30 đã sửa ở UI refresh B (`docs/deliveries/ui-refresh-b.md`, dòng 123) và admin đã được làm lại.
+- `docs/mockups/2026-10-21/ban-chu-giao-dien.md` §8: bỏ nhãn A/74 "Người học đồng ý cho xem từ này"; sửa luật mã lý do của A/75b theo API (bắt đầu bằng chữ, 2–40 ký tự a–z, 0–9, `_`);
+  thêm mục 8.10 các câu lỗi mới.
+- `docs/preparation/IMPROVEMENT_PLAN_2026-10-28.md`: A2 và A5, ghi chú dashboard ở B8.
 
