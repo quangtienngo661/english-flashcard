@@ -357,8 +357,7 @@
         "bodyNoEmail": "Enter the email you signed up with and the 6-digit code from our message. It works for 10 minutes.",
         "loginBody": "Confirm your email to continue. We sent a code to {email}.",
         "wrongCode": "That code or password is wrong, or the code has expired. If your email is already confirmed, sign in.",
-        "locked": "Too many wrong codes. Try again in {time}, or use Forgot password on the sign-in page.",
-        "otherEmail": "Typed the wrong email? Sign up with another one"
+        "locked": "Too many wrong codes. Try again in {time}, or use Forgot password on the sign-in page."
       },
       "forgot": {
         "title": "Forgot password",
