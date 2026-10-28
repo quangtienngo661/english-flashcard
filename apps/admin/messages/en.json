@@ -54,7 +54,7 @@
     "source-exists": "This data source already exists",
     "source-in-use": "This source is in use (word levels or import batches), so it cannot be deleted.",
     "source-incomplete": "A level source needs a version and a license",
-    "source-protected": "The project owner's source cannot be edited or deleted.",
+    "source-protected": "A built-in source cannot be edited or deleted.",
     "staff-role-rule": "This role cannot be changed (the user has not verified their email, or this is the last admin)",
     "stale-revision": "This sense was just edited. Reload to see the latest version.",
     "too-many-examples": "At most 3 example sentences are allowed. Remove some and save again.",
@@ -1078,7 +1078,7 @@
     "deleteTitle": "Delete source “{name}”?",
     "deleteBody": "The source is removed from the list and from the public license page, and this cannot be undone.",
     "deleteConfirm": "Delete source",
-    "ownerNote": "The project owner's source, cannot be edited or deleted",
+    "ownerNote": "A built-in source, cannot be edited or deleted",
     "toast": {
       "saved": "Source “{name}” saved.",
       "deleted": "Source “{name}” deleted."

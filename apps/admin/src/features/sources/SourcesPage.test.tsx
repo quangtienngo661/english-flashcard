@@ -147,6 +147,18 @@ describe('source rows: edit and delete buttons', () => {
   });
 });
 
+describe('a protected source (the API flags the owner source and the built-in AGID one)', () => {
+  it('a third-party row flagged protected has no buttons and shows the note', async () => {
+    const agid = { ...SRC, id: 'agid', name: 'AGID', protected: true };
+    renderApp('/sources', { [LIST]: () => Response.json({ items: [agid, SRC] }) });
+    await screen.findAllByText(agid.name);
+    expect(screen.queryByRole('button', { name: named(t.editFor, 'AGID') })).toBeNull();
+    expect(screen.queryByRole('button', { name: named(t.deleteFor, 'AGID') })).toBeNull();
+    expect(screen.getAllByText(t.ownerNote).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole('button', { name: /^(Sửa|Xóa) nguồn / })).toHaveLength(4);
+  });
+});
+
 describe('source edit dialog', () => {
   const FULL = { ...SRC, url: 'https://www.cefr-j.org', attribution: 'Tono Yukio' };
 
@@ -278,7 +290,7 @@ describe('source edit dialog', () => {
     await userEvent.clear(field(dialog, `${t.form.name} *`));
     await userEvent.type(field(dialog, `${t.form.name} *`), 'x');
     await save(dialog);
-    expect(await within(dialog).findByText('Nguồn của chủ dự án không sửa hoặc xóa được.')).toBeInTheDocument();
+    expect(await within(dialog).findByText('Nguồn có sẵn của hệ thống không sửa hoặc xóa được.')).toBeInTheDocument();
   });
 
   it('not-found (the source was deleted meanwhile): says so and reloads the list', async () => {
@@ -365,7 +377,7 @@ describe('source delete', () => {
   it('source-protected: the banner says the owner\'s source cannot be deleted', async () => {
     const { dialog } = await openDelete({ [DELETE]: () => problem(409, 'source-protected') });
     await userEvent.click(within(dialog).getByRole('button', { name: t.deleteConfirm }));
-    expect(await screen.findByText('Nguồn của chủ dự án không sửa hoặc xóa được.')).toBeInTheDocument();
+    expect(await screen.findByText('Nguồn có sẵn của hệ thống không sửa hoặc xóa được.')).toBeInTheDocument();
   });
 
   it('not-found (already deleted elsewhere): a banner, and the list is reloaded', async () => {

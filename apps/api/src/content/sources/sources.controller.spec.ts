@@ -20,6 +20,7 @@ describe('admin sources HTTP (unit, mocked service)', () => {
   const http = () => ctx.http();
   const view: SourceView = {
     id, kind: 'third_party', name: 'CEFR-J', version: '2', url: null, license: 'MIT', attribution: 'by me', display_priority: 7,
+    protected: false,
   };
 
   beforeAll(async () => {

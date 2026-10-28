@@ -54,7 +54,7 @@
     "source-exists": "Nguồn dữ liệu này đã tồn tại",
     "source-in-use": "Nguồn này đang được dùng (mức độ của từ hoặc lô nhập) nên không xóa được.",
     "source-incomplete": "Nguồn level cần có phiên bản và license",
-    "source-protected": "Nguồn của chủ dự án không sửa hoặc xóa được.",
+    "source-protected": "Nguồn có sẵn của hệ thống không sửa hoặc xóa được.",
     "staff-role-rule": "Không thể đổi vai trò này (người dùng chưa xác minh email, hoặc đây là admin cuối cùng)",
     "stale-revision": "Nghĩa này vừa được sửa. Tải lại để xem bản mới.",
     "too-many-examples": "Chỉ nhận tối đa 3 câu ví dụ. Bỏ bớt rồi lưu lại.",
@@ -1078,7 +1078,7 @@
     "deleteTitle": "Xóa nguồn “{name}”?",
     "deleteBody": "Nguồn bị xóa khỏi danh sách và khỏi trang license công khai, không hoàn tác được.",
     "deleteConfirm": "Xóa nguồn",
-    "ownerNote": "Nguồn của chủ dự án, không sửa hoặc xóa được",
+    "ownerNote": "Nguồn có sẵn của hệ thống, không sửa hoặc xóa được",
     "toast": {
       "saved": "Đã lưu nguồn “{name}”.",
       "deleted": "Đã xóa nguồn “{name}”."

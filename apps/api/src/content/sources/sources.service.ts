@@ -2,6 +2,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import { PRISMA_CLIENT } from '../../common/db/prisma.module.js';
 import { ProblemDetailsException } from '../../common/problem-details/problem-details.exception.js';
 import type { Prisma, PrismaClient } from '../../generated/prisma/client.js';
+import { AGID_SOURCE_ID } from '../content.constants.js';
 import type { CreateSourceBody, UpdateSourceBody } from './sources.schemas.js';
 
 export type SourceView = {
@@ -13,6 +14,8 @@ export type SourceView = {
   license: string;
   attribution: string;
   display_priority: number;
+  /** The owner's source and the built-in AGID one: they can be neither edited nor deleted (their notices are required). */
+  protected: boolean;
 };
 
 const sourceSelect = {
@@ -25,6 +28,7 @@ function toView(row: SourceRow): SourceView {
   return {
     id: row.id, kind: row.kind as SourceView['kind'], name: row.name, version: row.version,
     url: row.url, license: row.license, attribution: row.attribution, display_priority: row.displayPriority,
+    protected: row.kind === 'owner' || row.id === AGID_SOURCE_ID,
   };
 }
 
@@ -91,8 +95,9 @@ export class SourcesService {
     }
   }
 
-  /** Only a third_party source can change (`kind` never does); the owner source is built in. */
+  /** Only a third_party source can change (`kind` never does); the owner source and the built-in AGID source are protected. */
   async update(id: string, body: UpdateSourceBody): Promise<SourceView> {
+    if (id === AGID_SOURCE_ID) throw sourceProtected();
     try {
       const row = await this.prisma.dataSource.update({
         where: { id, kind: 'third_party' },
@@ -125,6 +130,7 @@ export class SourcesService {
    * foreign key of entry_levels (ON DELETE RESTRICT) stays the backstop for a level written while this runs.
    */
   async remove(id: string): Promise<void> {
+    if (id === AGID_SOURCE_ID) throw sourceProtected();
     try {
       const deleted = await this.prisma.$executeRaw`
         DELETE FROM data_sources ds

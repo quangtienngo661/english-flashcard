@@ -19,8 +19,10 @@ export type SourceView = {
   license: string;
   attribution: string;
   display_priority: number;
+  /** The owner's source and the built-in AGID one: neither can be edited or deleted (set by the API). */
+  protected?: boolean;
 };
-export type NewSource = Omit<SourceView, 'id' | 'kind'>;
+export type NewSource = Omit<SourceView, 'id' | 'kind' | 'protected'>;
 
 export type UploadListItem = { id: string; status: JobStatus; file_name: string; row_count: number; created_at: string };
 export type Page<T> = { items: T[]; next_page_token: string | null };
@@ -85,7 +87,7 @@ export function createSource(api: ApiClient, body: NewSource): Promise<SourceVie
   return api.post(SOURCES, body);
 }
 
-/** Only the keys that changed; `kind` is not editable, and the API refuses an empty body and the owner's source. */
+/** Only the keys that changed; `kind` is not editable, and the API refuses an empty body and a protected source. */
 export function updateSource(api: ApiClient, id: string, body: Partial<NewSource>): Promise<SourceView> {
   return api.patch(`${SOURCES}/${encodeURIComponent(id)}`, body);
 }

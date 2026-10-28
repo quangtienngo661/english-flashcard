@@ -58,9 +58,9 @@ export function SourcesPage() {
       key: 'actions',
       header: t('sources.list.actions'),
       card: 'action',
-      // The owner's source is built in: the API refuses to change or delete it, so the row says so instead of offering buttons.
+      // The owner's and the AGID source are built in: the API refuses to change or delete them, so the row says so instead of offering buttons.
       cell: (s) =>
-        s.kind === 'owner' ? (
+        s.protected || s.kind === 'owner' ? (
           <span className="text-xs text-muted">{t('sources.ownerNote')}</span>
         ) : (
           <span className="flex flex-wrap gap-1">

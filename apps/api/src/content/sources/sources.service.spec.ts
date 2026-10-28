@@ -1,11 +1,12 @@
 import { describe, expect, it, vi } from 'vitest';
 import { ProblemDetailsException } from '../../common/problem-details/problem-details.exception.js';
 import { Prisma, type PrismaClient } from '../../generated/prisma/client.js';
+import { AGID_SOURCE_ID, OWNER_SOURCE_ID } from '../content.constants.js';
 import { isSourceComplete, SourcesService, type SourceView } from './sources.service.js';
 
 const source: SourceView = {
   id: '00000000-0000-4000-8000-000000000002', kind: 'third_party', name: 'CEFR-J',
-  version: '1.5', url: null, license: 'test license', attribution: '', display_priority: 10,
+  version: '1.5', url: null, license: 'test license', attribution: '', display_priority: 10, protected: true,
 };
 
 describe('source completeness', () => {
@@ -32,7 +33,7 @@ const prismaError = (code: string) => new Prisma.PrismaClientKnownRequestError(c
 
 function setup() {
   const prisma = {
-    dataSource: { update: vi.fn(), findUnique: vi.fn() },
+    dataSource: { update: vi.fn(), findUnique: vi.fn(), findMany: vi.fn() },
     $executeRaw: vi.fn(),
   };
   return { prisma, service: new SourcesService(prisma as unknown as PrismaClient) };
@@ -60,6 +61,7 @@ describe('SourcesService.update', () => {
     expect(Object.keys(prisma.dataSource.update.mock.calls[0]![0].data).sort()).toEqual(['displayPriority', 'name']);
     expect(view).toEqual({
       id: ID, kind: 'third_party', name: 'CEFR-J v2', version: '1.5', url: null, license: 'test license', attribution: '', display_priority: 3,
+      protected: false,
     });
   });
 
@@ -180,5 +182,23 @@ describe('SourcesService.remove', () => {
     const boom = new Error('connection lost');
     prisma.$executeRaw.mockRejectedValue(boom);
     await expect(service.remove(ID)).rejects.toBe(boom);
+  });
+});
+
+describe('the built-in AGID source (its licence notice is required on the public page)', () => {
+  it('update and remove refuse it as source-protected without touching the database', async () => {
+    const { prisma, service } = setup();
+    expect(await problem(service.update(AGID_SOURCE_ID, { name: 'x' }))).toEqual({ status: 409, type: 'source-protected' });
+    expect(await problem(service.remove(AGID_SOURCE_ID))).toEqual({ status: 409, type: 'source-protected' });
+    expect(prisma.dataSource.update).not.toHaveBeenCalled();
+    expect(prisma.$executeRaw).not.toHaveBeenCalled();
+  });
+
+  it('the view flags it, and the owner source, as protected; a third-party source is not', async () => {
+    const { prisma, service } = setup();
+    const owner = { ...row, id: OWNER_SOURCE_ID, kind: 'owner' };
+    prisma.dataSource.findMany.mockResolvedValue([owner, { ...row, id: AGID_SOURCE_ID }, row]);
+    const { items } = await service.list();
+    expect(items.map((item) => item.protected)).toEqual([true, true, false]);
   });
 });
