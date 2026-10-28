@@ -69,15 +69,15 @@ Việc cần làm trước ra mắt: mục "Bước 8" của [`deploy-checklist.
 
 | # | Nhánh | Nội dung | Commit |
 |---|---|---|---|
-| 0 | `docs/buoc-8-brainstorm` | design, decisions D1–D33, review, plan, plan tóm tắt | d9d9e06 … |
-| 1 | `feat/buoc-8-m1` | schema Bước 8; guard kiểm trạng thái và phiên mỗi request; phiên Google không vào route admin; phần dùng chung | e0436e7, f610916, 26d79bd |
-| 2 | `feat/buoc-8-m2` | cổng bộ xóa của từng module + bộ xóa; dịch vụ xóa hai transaction, route, việc định kỳ, lệnh export/replay | 50629d3, 5b2808a, 61b1e34 |
-| 3 | `feat/buoc-8-m3` | đăng nhập Google (thật và giả), hoàn tất đăng ký, xác nhận lại trước khi xóa; script chuẩn bị tài khoản cho lần 1 | cc8638f, c2243ae, 2bacd3a |
-| 4 | `feat/buoc-8-m4` | `POST /v1/me/subscriptions/:id/cancel` | fc69854 |
-| 5 | `feat/buoc-8-m5` | web người học: nút Google, hoàn tất đăng ký, Cài đặt, xóa tài khoản, "Hủy gói" | 41324ea, 7e5adb7 |
-| 6 | `feat/buoc-8-m6` | admin: xóa người dùng, phiên Google, hai cài đặt mới; sửa a11y chi tiết người dùng (R17) | 31716aa, f46126c |
-| 7 | `feat/buoc-8-m7` | `pnpm smoke:buoc-8` + kết quả | 46f4f94, 69a86a0, 4288674 |
-| 8 | `docs/buoc-8-as-built` | tài liệu này, test flow, rulings, deploy checklist, CLAUDE.md | — |
+| 0 | `docs/buoc-8-brainstorm` (PR #172) | design, decisions D1–D33, review, plan, plan tóm tắt | d9d9e06 … |
+| 1 | `feat/buoc-8-m1` (PR #173) | schema Bước 8; guard kiểm trạng thái và phiên mỗi request; phiên Google không vào route admin; phần dùng chung | e0436e7, f610916, 26d79bd |
+| 2 | `feat/buoc-8-m2` (PR #174) | cổng bộ xóa của từng module + bộ xóa; dịch vụ xóa hai transaction, route, việc định kỳ, lệnh export/replay | 50629d3, 5b2808a, 61b1e34 |
+| 3 | `feat/buoc-8-m3` (PR #175) | đăng nhập Google (thật và giả), hoàn tất đăng ký, xác nhận lại trước khi xóa; script chuẩn bị tài khoản cho lần 1 | cc8638f, c2243ae, 2bacd3a |
+| 4 | `feat/buoc-8-m4` (PR #176) | `POST /v1/me/subscriptions/:id/cancel` | fc69854 |
+| 5 | `feat/buoc-8-m5` (PR #177) | web người học: nút Google, hoàn tất đăng ký, Cài đặt, xóa tài khoản, "Hủy gói" | 41324ea, 7e5adb7 |
+| 6 | `feat/buoc-8-m6` (PR #178) | admin: xóa người dùng, phiên Google, hai cài đặt mới; sửa a11y chi tiết người dùng (R17) | 31716aa, f46126c |
+| 7 | `feat/buoc-8-m7` (PR #179) | `pnpm smoke:buoc-8` + kết quả | 46f4f94, 69a86a0, 4288674 |
+| 8 | `docs/buoc-8-as-built` (PR #180) | tài liệu này, test flow, rulings, deploy checklist, CLAUDE.md | — |
 
 ## Đã có (những gì chạy được)
 
