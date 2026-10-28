@@ -296,7 +296,7 @@ Bình thường `deleting` chỉ kéo dài vài giây; khi Tx B lỗi (§7.2) n�
 **"Đang tự gia hạn"** là một vị từ dùng chung cho: chặn xóa, hiện nút "Hủy gói", cho phép `POST …/cancel` (review R7): gói có `status` ∈ (`trialing`, `active`, `grace`,
 `on_hold`) và `cancel_at_period_end = false`. `grace` và `on_hold` (trừ tiền lỗi, nhà cung cấp còn thử lại) được tính theo chủ dự án (câu 28 vòng 2): Lan phải hủy gói trước,
 không thì lần thử trừ tiền sau có thể thành công cho một tài khoản không còn. Máy trạng thái đã cho `cancel_scheduled` ở cả bốn trạng thái (`subscription-machine.ts:164-170`).
-Job thư gia hạn giữ định nghĩa riêng của nó (`billing-jobs.service.ts:133`, chỉ `trialing`, `active`).
+Chỗ code hỏi lại nhà cung cấp khi gói quá hạn (`billing-jobs.service.ts:133`, chỉ `trialing`, `active`) giữ định nghĩa riêng của nó.
 
 Admin xóa người học đang có gói tự gia hạn (**Đề xuất**, khác D11 vốn chỉ nói người học tự xóa): app tắt gia hạn **trước** Tx A, ngoài mọi khóa, như khi cấp Pro
 (`grants.service.ts:384-396`); bộ nối trả lỗi, hết giờ hoặc không hỗ trợ (`not_supported`) → 409 `renewal-not-cancelled`, **không** xóa (người đó sẽ tiếp tục bị trừ tiền nếu
@@ -412,8 +412,8 @@ Việc định kỳ `billing.transactions-expire` (mỗi giờ như các việc 
 
 `POST /v1/me/subscriptions/{id}/cancel` (cần `Idempotency-Key` như các lệnh ghi khác):
 - Gói phải của người gọi và thỏa vị từ "đang tự gia hạn" (§7.1); không thì 409 `subscription-not-cancellable`.
-- `GET /v1/me/entitlements` hiện chỉ trả `ends_at` khi gói đã hủy gia hạn (`entitlements.service.ts:157`); thêm `subscription_id`, `renews_at`, `cancel_at_period_end` để màn
-  hiện "Gia hạn ngày …" và nút (review R19).
+- `GET /v1/me/entitlements` **không đổi**: từ Bước 5 mỗi phần tử `sources[]` đã có `id`, `kind`, `status`, `renews_at`, `cancel_at_period_end`
+  (`entitlements.service.ts:30-38`); màn đọc thẳng từ đó (review plan P9; câu "chỉ trả `ends_at`" của bản trước là sai).
 - Gọi `cancelAtPeriodEnd` của bộ nối (`billing-adapter.ts:40`), không giữ khóa khi gọi (R6 Bước 5), timeout như `turnOffPaidRenewals` (`grants.service.ts:384-396`). Bộ nối
   không hỗ trợ (sau này: gói mua qua App Store / Google Play) → 409 `cancel-in-store`.
 - Thành công → 202. `subscriptions.cancel_at_period_end` đổi khi nhà cung cấp báo lại sự kiện `cancel_scheduled` (`subscription-machine.ts:164-169`), như mọi thay đổi khác.

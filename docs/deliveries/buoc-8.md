@@ -5,14 +5,15 @@ Bước 8 = đăng nhập Google + xóa tài khoản (cộng dọn tài khoản 
 [`../superpowers/specs/2026-10-28-buoc-8-identity-remainder-design.md`](../superpowers/specs/2026-10-28-buoc-8-identity-remainder-design.md); quyết định D1–D30
 [`../superpowers/decisions/2026-10-28-buoc-8-identity-remainder-decisions.md`](../superpowers/decisions/2026-10-28-buoc-8-identity-remainder-decisions.md).
 
-Thứ tự: M1 → (M2, M3, M4 song song) → (M5, M6 song song) → M7. Mỗi mốc một nhánh `feat/buoc-8-m<N>`, một PR vào `dev`.
+Thứ tự: M1 → (M2, M3, M4 song song; merge M2 trước) → (M5, M6 song song) → M7. Plan đã sửa theo review plan 29/10/2026
+([`../superpowers/reviews/2026-10-29-buoc-8-plan-review.md`](../superpowers/reviews/2026-10-29-buoc-8-plan-review.md)). Mỗi mốc một nhánh `feat/buoc-8-m<N>`, một PR vào `dev`.
 
 **M1 — API nền**
 1. Thêm cột và bảng mới: trạng thái "đang xóa", ảnh đại diện, danh tính Google, cách đăng nhập của phiên, danh sách tài khoản đã xóa.
 2. Mỗi request kiểm tài khoản còn dùng được và phiên chưa bị thu hồi (khóa, đang xóa, đã đăng xuất đều bị chặn ngay).
 3. Phiên tạo bằng Google không vào được route admin; `/v1/me` trả cách đăng nhập.
 4. Đăng nhập, gia hạn phiên và các thao tác admin cũ biết trạng thái "đang xóa".
-5. Một luật dùng chung "gói đang tự gia hạn" (gồm cả trừ tiền lỗi).
+5. Phần dùng chung: luật "gói đang tự gia hạn" (gồm cả trừ tiền lỗi), giới hạn tần suất mới, hai mẫu thư, biến môi trường.
 
 **M2 — API xóa tài khoản**
 6. Cổng cho từng module tự xóa dữ liệu của mình, cộng test bắt buộc mọi cột trỏ tới người dùng phải có cách xử lý.
@@ -35,7 +36,7 @@ Thứ tự: M1 → (M2, M3, M4 song song) → (M5, M6 song song) → M7. Mỗi m
 21. Xác nhận lại bằng Google trước khi xóa tài khoản chỉ có Google.
 
 **M4 — API hủy gói**
-22. Route hủy gia hạn, thêm ngày gia hạn vào thông tin gói, nhà cung cấp giả báo lại sự kiện hủy.
+22. Route hủy gia hạn; nhà cung cấp giả báo lại sự kiện hủy ngay (thông tin gói đã có sẵn ngày gia hạn).
 
 **M5 — Web người học**
 23. Nút "Tiếp tục với Google" và xử lý khi quay về.
