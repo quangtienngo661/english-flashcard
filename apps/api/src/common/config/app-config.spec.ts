@@ -23,6 +23,50 @@ function validEnv(): NodeJS.ProcessEnv {
   };
 }
 
+describe('Google sign-in configuration (Bước 8)', () => {
+  const key = () => randomBytes(32).toString('base64url');
+  const real = () => ({ ...validEnv(), GOOGLE_CLIENT_ID: 'id.apps.googleusercontent.com', GOOGLE_CLIENT_SECRET: 'secret',
+    GOOGLE_REDIRECT_URI: 'https://api.example.com/v1/auth/google/callback', OAUTH_COOKIE_KEY: key() });
+
+  it('is off by default and needs none of the Google variables', () => {
+    expect(loadConfig(validEnv()).google).toEqual({ mode: 'off', clientId: null, clientSecret: null, redirectUri: null, apiOrigin: null, cookieKey: null });
+  });
+
+  it('a client id makes it real: the secret, the redirect URI and the cookie key are then required; apiOrigin comes from the redirect URI', () => {
+    const config = loadConfig(real());
+    expect(config.google).toMatchObject({ mode: 'real', clientId: 'id.apps.googleusercontent.com', clientSecret: 'secret',
+      redirectUri: 'https://api.example.com/v1/auth/google/callback', apiOrigin: 'https://api.example.com' });
+    expect(config.google.cookieKey).toHaveLength(32);
+    for (const name of ['GOOGLE_CLIENT_SECRET', 'GOOGLE_REDIRECT_URI', 'OAUTH_COOKIE_KEY']) {
+      const env = real();
+      delete (env as Record<string, string | undefined>)[name];
+      expect(() => loadConfig(env), name).toThrow(new RegExp(name));
+    }
+  });
+
+  it('a blank client id counts as unset (an empty line in .env)', () => {
+    expect(loadConfig({ ...validEnv(), GOOGLE_CLIENT_ID: '  ', GOOGLE_CLIENT_SECRET: '' }).google.mode).toBe('off');
+  });
+
+  it('the fake needs a redirect URI and a cookie key but no client; it wins over a client id (P18)', () => {
+    const fake = { ...validEnv(), GOOGLE_FAKE_ENABLED: 'true', GOOGLE_REDIRECT_URI: 'http://localhost:3000/v1/auth/google/callback', OAUTH_COOKIE_KEY: key() };
+    expect(loadConfig(fake).google).toMatchObject({ mode: 'fake', apiOrigin: 'http://localhost:3000' });
+    expect(loadConfig({ ...fake, GOOGLE_CLIENT_ID: 'id', GOOGLE_CLIENT_SECRET: 's' }).google.mode).toBe('fake');
+    const noUri = { ...fake } as Record<string, string | undefined>;
+    delete noUri.GOOGLE_REDIRECT_URI;
+    expect(() => loadConfig(noUri)).toThrow(/GOOGLE_REDIRECT_URI/);
+  });
+
+  it('B8E38: the fake together with BILLING_PRODUCTION=true refuses to start', () => {
+    const env = { ...validEnv(), GOOGLE_FAKE_ENABLED: 'true', BILLING_PRODUCTION: 'true', GOOGLE_REDIRECT_URI: 'http://localhost:3000/cb', OAUTH_COOKIE_KEY: key() };
+    expect(() => loadConfig(env)).toThrow(/GOOGLE_FAKE_ENABLED/);
+  });
+
+  it('the cookie key must be a 32-byte secret', () => {
+    expect(() => loadConfig({ ...real(), OAUTH_COOKIE_KEY: 'short' })).toThrow(/OAUTH_COOKIE_KEY/);
+  });
+});
+
 describe('loadConfig', () => {
   it('TERMS_VERSION is required and kept verbatim', () => {
     expect(loadConfig(validEnv()).termsVersion).toBe('2026-10-20');

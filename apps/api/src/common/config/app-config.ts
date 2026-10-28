@@ -104,6 +104,18 @@ export interface AppConfig {
     /** The fake provider (models `fake:*`) never runs in production (B6E45). */
     fakeEnabled: boolean;
   };
+  /** Google sign-in (Bước 8, design §5.2). `fake` wins over `real`; the fake never runs in production (B8E38). */
+  google: {
+    mode: 'off' | 'real' | 'fake';
+    clientId: string | null;
+    clientSecret: string | null;
+    /** The API's own callback URL; the fake page returns to it too. */
+    redirectUri: string | null;
+    /** Origin of `redirectUri`: the API does not otherwise know its own address (used for `start_url`). */
+    apiOrigin: string | null;
+    /** Seals the short-lived Google cookies (AES-256-GCM, 32 bytes). */
+    cookieKey: Buffer | null;
+  };
   limits: Record<RateLimitRuleName, RateLimitRuleConfig>;
 }
 
@@ -233,6 +245,12 @@ const envSchema = z.object({
   // Read by the AI SDKs themselves, which add these headers to every provider call; no client option turns them off (D29).
   OPENAI_CUSTOM_HEADERS: z.string().optional(),
   ANTHROPIC_CUSTOM_HEADERS: z.string().optional(),
+  GOOGLE_CLIENT_ID: z.string().optional().transform((value) => value?.trim() || null),
+  GOOGLE_CLIENT_SECRET: z.string().optional().transform((value) => value?.trim() || null),
+  GOOGLE_REDIRECT_URI: z.string().optional().transform((value) => value?.trim() || null)
+    .refine((value) => value === null || (URL.canParse(value) && ['http:', 'https:'].includes(new URL(value).protocol))),
+  OAUTH_COOKIE_KEY: secretSchema(32).optional(),
+  GOOGLE_FAKE_ENABLED: booleanString.default(false),
 }).superRefine((values, ctx) => {
   // Empty or blank counts as unset, as the SDKs' own readEnv does.
   for (const name of ['OPENAI_CUSTOM_HEADERS', 'ANTHROPIC_CUSTOM_HEADERS'] as const) {
@@ -249,6 +267,17 @@ const envSchema = z.object({
     const message = 'The fake AI provider is not allowed in production';
     ctx.addIssue({ code: 'custom', path: ['BILLING_PRODUCTION'], message });
     ctx.addIssue({ code: 'custom', path: ['AI_FAKE_ENABLED'], message });
+  }
+  if (values.BILLING_PRODUCTION && values.GOOGLE_FAKE_ENABLED) {
+    const message = 'The fake Google page is not allowed in production';
+    ctx.addIssue({ code: 'custom', path: ['BILLING_PRODUCTION'], message });
+    ctx.addIssue({ code: 'custom', path: ['GOOGLE_FAKE_ENABLED'], message });
+  }
+  if (values.GOOGLE_FAKE_ENABLED || values.GOOGLE_CLIENT_ID !== null) {
+    const required = values.GOOGLE_FAKE_ENABLED ? ['GOOGLE_REDIRECT_URI', 'OAUTH_COOKIE_KEY'] : ['GOOGLE_CLIENT_SECRET', 'GOOGLE_REDIRECT_URI', 'OAUTH_COOKIE_KEY'];
+    for (const name of required as Array<'GOOGLE_CLIENT_SECRET' | 'GOOGLE_REDIRECT_URI' | 'OAUTH_COOKIE_KEY'>) {
+      if (values[name] === undefined || values[name] === null) ctx.addIssue({ code: 'custom', path: [name], message: 'Required when Google sign-in is on' });
+    }
   }
   if (values.BILLING_FAKE_ENABLED && values.BILLING_FAKE_SECRET === undefined) {
     ctx.addIssue({ code: 'custom', path: ['BILLING_FAKE_SECRET'], message: 'Required when BILLING_FAKE_ENABLED=true' });
@@ -319,6 +348,14 @@ export function loadConfig(env: NodeJS.ProcessEnv): AppConfig {
       openaiApiKey: values.OPENAI_API_KEY,
       anthropicApiKey: values.ANTHROPIC_API_KEY,
       fakeEnabled: values.AI_FAKE_ENABLED,
+    },
+    google: {
+      mode: values.GOOGLE_FAKE_ENABLED ? 'fake' : values.GOOGLE_CLIENT_ID !== null ? 'real' : 'off',
+      clientId: values.GOOGLE_CLIENT_ID,
+      clientSecret: values.GOOGLE_CLIENT_SECRET,
+      redirectUri: values.GOOGLE_REDIRECT_URI,
+      apiOrigin: values.GOOGLE_REDIRECT_URI === null ? null : new URL(values.GOOGLE_REDIRECT_URI).origin,
+      cookieKey: values.OAUTH_COOKIE_KEY ?? null,
     },
     limits: structuredClone(DEFAULT_LIMITS),
   };
