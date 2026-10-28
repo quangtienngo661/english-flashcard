@@ -27,7 +27,7 @@ function setup() {
   const clock = new FakeClock(new Date('2026-10-07T12:00:00Z'));
   const chain: SessionChain & { user: { status: string; emailVerifiedAt: Date | null } } = {
     id: randomUUID(), userId: randomUUID(), clientType: 'mobile', deviceLabel: null,
-    createdAt: clock.now(), lastUsedAt: clock.now(), revokedAt: null, revokeReason: null,
+    createdAt: clock.now(), lastUsedAt: clock.now(), revokedAt: null, revokeReason: null, authMethod: 'password',
     user: { status: 'active', emailVerifiedAt: clock.now() },
   };
   const original = newRefreshToken();

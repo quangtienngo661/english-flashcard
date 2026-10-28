@@ -18,10 +18,15 @@ model User {
   lockedBy         String?   @map("locked_by") @db.Uuid
   lockReason       String?   @map("lock_reason") @db.VarChar(500)
   lastSeenAt       DateTime? @map("last_seen_at") @db.Timestamptz
+  deletingSince    DateTime? @map("deleting_since") @db.Timestamptz
+  // Who started the deletion ('self' | 'admin' | 'cleanup'); the retry job writes it to deleted_accounts.by and sends no mail for 'cleanup'.
+  deletingBy       String?   @map("deleting_by") @db.VarChar(16)
+  avatarUrl        String?   @map("avatar_url") @db.VarChar(2048)
   createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz
   updatedAt        DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
 
   passwordCredential PasswordCredential?
+  identities         UserIdentity[]
   sessionChains      SessionChain[]
   otpCodes           OtpCode[]
   otpFailureWindows  OtpFailureWindow[]
@@ -49,6 +54,7 @@ model SessionChain {
   lastUsedAt   DateTime  @map("last_used_at") @db.Timestamptz
   revokedAt    DateTime? @map("revoked_at") @db.Timestamptz
   revokeReason String?   @map("revoke_reason")
+  authMethod   String    @default("password") @map("auth_method") @db.VarChar(16)
 
   user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   refreshTokens RefreshToken[]
@@ -98,5 +104,29 @@ model OtpFailureWindow {
 
   @@id([userId, purpose])
   @@map("otp_failure_windows")
+}
+
+model UserIdentity {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  provider  String   @db.VarChar(16)
+  subject   String   @db.VarChar(255)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, subject])
+  @@unique([userId, provider])
+  @@map("user_identities")
+}
+
+// No foreign key: the user row is gone. Holds only the id, when and by whom, so a restore from backup can delete the account again (D21).
+model DeletedAccount {
+  userId    String   @id @map("user_id") @db.Uuid
+  deletedAt DateTime @map("deleted_at") @db.Timestamptz
+  by        String   @db.VarChar(16)
+
+  @@index([deletedAt])
+  @@map("deleted_accounts")
 }
 
