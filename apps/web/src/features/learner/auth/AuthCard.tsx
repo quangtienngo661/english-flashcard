@@ -3,7 +3,9 @@
 import { ArrowLeft } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import type { ReactNode } from 'react';
+import { useLocale } from 'next-intl';
 import { ApiError } from '@/app-shell/api/problem';
+import { apiBaseUrl } from '@/app-shell/config';
 
 /** The white card of K/01–K/06 (title, optional back link, intro line). */
 export function AuthCard({
@@ -73,16 +75,25 @@ export function PasswordRules({ rules }: { rules: PasswordRule[] }) {
   );
 }
 
-/** "Đăng nhập bằng Google · Sắp có" (Bước 8): shown, never pressable. */
-export function GoogleSoon() {
+/**
+ * "Tiếp tục với Google" (design §9.1): a full page change to the API, which sends the browser to Google and back. It does not touch the
+ * sign-out flag: if the trip fails the old session must not resume by itself (FE38, plan review P21).
+ */
+export function GoogleButton({ next }: { next: string }) {
   const t = useTranslations('App');
+  const locale = useLocale();
   return (
-    <div
-      aria-disabled="true"
-      className="flex min-h-control-touch items-center justify-center gap-3 rounded-inner bg-neutral-soft px-4 text-ui font-semibold text-muted"
+    <button
+      type="button"
+      onClick={() => {
+        // The API is another origin: a full page change, not a Next route.
+        const target = new URL('/v1/auth/google/start', apiBaseUrl());
+        target.search = new URLSearchParams({ intent: 'login', locale, next }).toString();
+        window.location.assign(target.toString());
+      }}
+      className="flex min-h-control-touch w-full items-center justify-center gap-3 rounded-inner border border-border-strong bg-surface px-4 text-ui font-semibold text-ink outline-none hover:bg-neutral-soft focus-visible:ring-2 focus-visible:ring-primary"
     >
       {t('auth.google')}
-      <span className="rounded-full bg-surface px-2 py-0.5 text-caption">{t('common.comingSoon')}</span>
-    </div>
+    </button>
   );
 }

@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { screen, waitFor, within } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { makeMe, problem } from '@/app-shell/session/test-support';
 import { THEME_STORAGE_KEY } from '@/app-shell/theme/theme';
@@ -133,12 +133,10 @@ describe('SettingsPage (K/50)', () => {
     expect(screen.queryByRole('button', { name: 'Xác minh email' })).not.toBeInTheDocument();
   });
 
-  it('Xóa tài khoản is "Sắp có" and not a control; Lịch sử giao dịch opens its page (M4b)', async () => {
+  it('Lịch sử giao dịch opens its page (M4b); Xóa tài khoản is a link now, no longer "Sắp có" (Bước 8)', async () => {
     renderApp(<SettingsPage />, { routes: routes() });
-    const row = (await screen.findByText('Xóa tài khoản')).closest('li')!;
-    expect(within(row).getByText('Sắp có')).toBeInTheDocument();
-    expect(within(row).queryByRole('button')).toBeNull();
-    expect(screen.getByRole('link', { name: /Lịch sử giao dịch/ })).toHaveAttribute('href', '/vi/app/settings/transactions');
+    expect(await screen.findByRole('link', { name: /Lịch sử giao dịch/ })).toHaveAttribute('href', '/vi/app/settings/transactions');
+    expect(screen.getByRole('link', { name: /Xóa tài khoản/ })).toBeInTheDocument();
   });
 
   it('the transactions and current plan rows are links over the whole row (audit 26/10/2026 #10)', async () => {
@@ -177,5 +175,36 @@ describe('AccountPage (K/91, K/92)', () => {
     pickDate('Ngày sinh', '2000-01-02');
     await userEvent.click(screen.getByRole('button', { name: 'Lưu thay đổi' }));
     expect(await screen.findByText('Bạn cần đủ 13 tuổi để dùng Wordmet.')).toBeInTheDocument();
+  });
+});
+
+describe('SettingsPage account section (Bước 8)', () => {
+  it('shows how the account signs in and links "Xóa tài khoản" to the delete page for a learner', async () => {
+    renderApp(<SettingsPage />, { routes: routes(), me: makeMe({ sign_in_methods: ['password', 'google'] }) });
+    expect(await screen.findByText('Đăng nhập bằng')).toBeInTheDocument();
+    expect(screen.getByText('Mật khẩu · Google')).toBeInTheDocument();
+    const del = screen.getByRole('link', { name: /Xóa tài khoản/ });
+    expect(del).toHaveAttribute('href', '/vi/app/settings/delete-account');
+    expect(screen.queryByText('Đặt mật khẩu')).not.toBeInTheDocument();
+    expect(screen.queryByText('Sắp có')).not.toBeInTheDocument();
+  });
+
+  it('a Google-only account gets "Đặt mật khẩu", which goes to forgot password', async () => {
+    renderApp(<SettingsPage />, { routes: routes(), me: makeMe({ auth_method: 'google', sign_in_methods: ['google'] }) });
+    const set = await screen.findByRole('link', { name: /Đặt mật khẩu/ });
+    expect(set).toHaveAttribute('href', '/vi/app/forgot-password');
+    expect(screen.getByText('Google')).toBeInTheDocument();
+  });
+
+  it('a staff account sees "Liên hệ admin để xóa tài khoản" and no link to the delete page', async () => {
+    renderApp(<SettingsPage />, { routes: routes(), me: makeMe({ staff_role: 'editor', permissions: ['content.edit'] }) });
+    expect(await screen.findByText('Liên hệ admin để xóa tài khoản')).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /Xóa tài khoản/ })).not.toBeInTheDocument();
+  });
+
+  it('an older API answer without sign_in_methods is treated as password only', async () => {
+    renderApp(<SettingsPage />, { routes: routes(), me: makeMe({ sign_in_methods: undefined, auth_method: undefined }) });
+    expect(await screen.findByText('Mật khẩu')).toBeInTheDocument();
+    expect(screen.queryByText('Đặt mật khẩu')).not.toBeInTheDocument();
   });
 });

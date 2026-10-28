@@ -1,7 +1,9 @@
 // @vitest-environment jsdom
 import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { problem } from '@/app-shell/session/test-support';
 import { renderApp } from '@/app-ui/test-utils';
+import { ToastRegion } from '@/app-ui/Toast';
 import { PlansPage } from './PlansPage';
 
 vi.mock('next/navigation', () => ({
@@ -93,5 +95,65 @@ describe('PlansPage (K/52, K/53)', () => {
     expect(await screen.findByRole('heading', { level: 1, name: 'Learn a little every day, go Pro when you need it' })).toBeInTheDocument();
     expect(screen.getByText('Not on sale yet')).toBeInTheDocument();
     expect(screen.getByText('4 practice sessions a day')).toBeInTheDocument();
+  });
+});
+
+describe('Hủy gói (Bước 8, design §8.2)', () => {
+  const SUB = {
+    kind: 'subscription', id: 'sub-1', status: 'active', starts_at: '2026-10-15T03:00:00.000Z', ends_at: null,
+    renews_at: '2026-11-12T03:00:00.000Z', cancel_at_period_end: false, pending_interval: null,
+  };
+
+  it('a renewing subscription says when it renews and has a button; a staff-granted plan has none', async () => {
+    renderApp(<PlansPage />, { routes: routes(ent('pro', [SUB, GRANT])) });
+    expect(await screen.findByText('Gia hạn ngày 12/11/2026')).toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: 'Hủy gói' })).toHaveLength(1);
+  });
+
+  it('D28: a subscription in grace (the provider retries the charge) can be cancelled too', async () => {
+    renderApp(<PlansPage />, { routes: routes(ent('pro', [{ ...SUB, status: 'grace' }])) });
+    expect(await screen.findByRole('button', { name: 'Hủy gói' })).toBeInTheDocument();
+  });
+
+  it('a cancelled subscription says "Gói kết thúc ngày …" and has no button', async () => {
+    renderApp(<PlansPage />, { routes: routes(ent('pro', [{ ...SUB, cancel_at_period_end: true }])) });
+    expect(await screen.findByText('Gói kết thúc ngày 12/11/2026')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Hủy gói' })).not.toBeInTheDocument();
+  });
+
+  it('the dialog says what happens, "Giữ gói" closes it without a request, "Hủy gia hạn" posts once with an Idempotency-Key and the row shows the request', async () => {
+    let cancelled = false;
+    const view = renderApp(<PlansPage />, {
+      routes: {
+        'GET /v1/me/app-config': () => Response.json(CONFIG),
+        'GET /v1/me/entitlements': () => Response.json(ent('pro', [{ ...SUB, cancel_at_period_end: cancelled }])),
+        'POST /v1/me/subscriptions/sub-1/cancel': () => { cancelled = true; return Response.json({ status: 'requested' }, { status: 202 }); },
+      },
+    });
+    await userEvent.click(await screen.findByRole('button', { name: 'Hủy gói' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Hủy gói?' });
+    expect(within(dialog).getByText(/Gói vẫn dùng tới hết 12\/11\/2026, sau đó không gia hạn\. Không hoàn tiền/)).toBeInTheDocument();
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Giữ gói' }));
+    expect(view.calls.some((c) => c.method === 'POST' && c.path.includes('/cancel'))).toBe(false);
+
+    await userEvent.click(screen.getByRole('button', { name: 'Hủy gói' }));
+    await userEvent.click(within(await screen.findByRole('dialog', { name: 'Hủy gói?' })).getByRole('button', { name: 'Hủy gia hạn' }));
+    expect(await screen.findByText('Gói kết thúc ngày 12/11/2026')).toBeInTheDocument();
+    const posts = view.calls.filter((c) => c.method === 'POST' && c.path === '/v1/me/subscriptions/sub-1/cancel');
+    expect(posts).toHaveLength(1);
+    expect(posts[0].headers['Idempotency-Key']).toMatch(/^[0-9a-f-]{36}$/);
+  });
+
+  it('B8E36: a 409 subscription-not-cancellable shows its text and the row is read again', async () => {
+    renderApp(<><PlansPage /><ToastRegion /></>, {
+      routes: {
+        'GET /v1/me/app-config': () => Response.json(CONFIG),
+        'GET /v1/me/entitlements': () => Response.json(ent('pro', [SUB])),
+        'POST /v1/me/subscriptions/sub-1/cancel': () => problem(409, 'subscription-not-cancellable'),
+      },
+    });
+    await userEvent.click(await screen.findByRole('button', { name: 'Hủy gói' }));
+    await userEvent.click(within(await screen.findByRole('dialog')).getByRole('button', { name: 'Hủy gia hạn' }));
+    expect(await screen.findByText('Gói này không còn tự gia hạn nên không cần hủy.')).toBeInTheDocument();
   });
 });

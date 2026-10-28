@@ -305,7 +305,7 @@
       "back": "Back",
       "email": "Email",
       "password": "Password",
-      "google": "Sign in with Google",
+      "google": "Continue with Google",
       "or": "Or",
       "register": {
         "title": "Create an account",
@@ -321,7 +321,8 @@
         "submit": "Create account",
         "haveAccount": "Already have an account?",
         "login": "Sign in",
-        "givenNameRequired": "Enter your first name."
+        "givenNameRequired": "Enter your first name.",
+        "accountDeleting": "This account is being deleted. Try again later."
       },
       "passwordRules": {
         "min_length": "Use at least 8 characters.",
@@ -371,6 +372,14 @@
         "newPassword": "New password",
         "hint": "Once changed, your other devices are signed out.",
         "submit": "Change password"
+      },
+      "googleComplete": {
+        "title": "Finish signing up",
+        "intro": "You are about to create a Wordmet account with {email}. A few details are left.",
+        "submit": "Create account",
+        "expiredTitle": "Your sign-up session expired",
+        "expiredBody": "Choose your Google account again to continue.",
+        "toLogin": "Back to sign in"
       },
       "complete": {
         "title": "Complete your account",
@@ -428,8 +437,47 @@
       "logout": "Sign out",
       "logoutHint": "Sign out of this device",
       "deleteAccount": "Delete account",
+      "signInMethods": "Sign in with",
+      "methodPassword": "Password",
+      "methodGoogle": "Google",
+      "setPassword": "Set a password",
+      "setPasswordHint": "This account signs in with Google only. Set a password to sign in with email too.",
+      "deleteAccountStaff": "Ask an admin to delete your account",
       "transactions": "Transaction history",
       "saved": "Changes saved."
+    },
+    "deleteAccount": {
+      "title": "Delete account",
+      "back": "Settings",
+      "deletedTitle": "What is deleted",
+      "keptTitle": "What is kept",
+      "deleted": {
+        "learning": "Learning data: groups, review schedule, answer history",
+        "privateWords": "Your own words and sentences",
+        "plans": "Your plans and usage",
+        "sessions": "Every sign-in session"
+      },
+      "kept": {
+        "payments": "Payment records for {years, number} years, without your name",
+        "paymentsNoYears": "Payment records for the legal period, without your name",
+        "reports": "Error reports you sent, without your name",
+        "totals": "Totals that do not identify you"
+      },
+      "blocked": "You have a plan that renews. Cancel it before deleting your account.",
+      "blockedLink": "Go to Plans",
+      "understand": "I understand my data will be lost and cannot be restored",
+      "typeEmail": "Type your email again",
+      "password": "Password",
+      "confirmWithGoogle": "Confirm with Google",
+      "googleConfirmed": "Confirmed with Google",
+      "wrongAccount": "That is not your Google account. Choose the right one.",
+      "googleFailed": "Could not confirm with Google. Try again.",
+      "submit": "Delete permanently",
+      "doneTitle": "Your account has been deleted.",
+      "doneBody": "Thank you for learning with Wordmet. A confirmation was sent to your email.",
+      "pendingTitle": "Your account is being deleted",
+      "pendingBody": "The deletion is being finished and can take up to an hour. You do not need to do anything.",
+      "toLogin": "Back to sign in"
     },
     "transactions": {
       "title": "Transaction history",
@@ -921,6 +969,16 @@
       "idempotency-key-abandoned": "Your last action stopped halfway. Try again.",
       "invalid-credentials": "Wrong email or password.",
       "invalid-current-password": "Your current password is wrong.",
+      "cancel-in-store": "This plan was bought in an app store: cancel it in that store's subscription settings.",
+      "confirm-email-mismatch": "The email you typed does not match this account's email.",
+      "google-email-unverified": "Google has not verified this email address yet. Verify it with Google and try again.",
+      "google-failed": "Signing in with Google did not work. Try again.",
+      "google-unavailable": "Google sign-in is not available right now. Use your email and password.",
+      "provider-unavailable": "The payment provider did not answer. Try again in a few minutes.",
+      "reauth-required": "Confirm with your Google account before deleting.",
+      "staff-account": "A staff account cannot delete itself. Ask an admin to do it.",
+      "subscription-not-cancellable": "This plan no longer renews, so there is nothing to cancel.",
+      "subscription-renewing": "You still have a plan that renews. Cancel it before deleting your account.",
       "invalid-otp": "The code is wrong or has expired.",
       "invalid-token": "Sign in again to continue.",
       "mail-unavailable": "We couldn’t send the email. Try again in a few minutes.",
@@ -1364,6 +1422,20 @@
       }
     },
     "plans": {
+      "subscriptions": {
+        "title": "Your subscription",
+        "renewsOn": "Renews on {date}",
+        "renews": "The plan renews automatically",
+        "endsOn": "Plan ends on {date}",
+        "ends": "Renewal is cancelled",
+        "cancel": "Cancel plan",
+        "dialogTitle": "Cancel the plan?",
+        "dialogBody": "The plan stays until {date}, then it does not renew. No refund for the time left.",
+        "dialogBodyNoDate": "The plan stays until the end of the paid period, then it does not renew. No refund for the time left.",
+        "keep": "Keep plan",
+        "confirm": "Cancel renewal",
+        "requested": "Cancel request sent"
+      },
       "eyebrow": "Plans",
       "title": "Learn a little every day, go Pro when you need it",
       "titlePro": "You're on Pro",

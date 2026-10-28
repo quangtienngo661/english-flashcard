@@ -17,6 +17,9 @@ export type Me = {
   birth_date: string | null;
   /** AD18: null until the user accepts the terms (an account made by an admin, or an older one). */
   terms_accepted_at: string | null;
+  /** Bước 8: how this session signed in, and every way the account can (password, Google). */
+  auth_method?: 'password' | 'google';
+  sign_in_methods?: Array<'password' | 'google'>;
 };
 
 export type RegisterBody = {
@@ -127,6 +130,16 @@ export class SessionStore {
     await this.startSession('/v1/auth/login', { email, password, ...DEVICE });
   }
 
+  /** The API opened a session outside the login routes (Google sign-up completion): adopt its access token like a sign-in. */
+  async startFromToken(accessToken: string): Promise<void> {
+    this.token = accessToken;
+    await this.recheck();
+    if (this.state.status === 'signed-in' || this.state.status === 'change-password') {
+      setLogoutPending(false);
+      this.broadcast({ type: 'login' });
+    }
+  }
+
   /** Registration returns the email for verification and leaves the session unchanged. */
   async register(body: RegisterBody): Promise<{ email: string }> {
     const res = await this.raw('/v1/auth/register', json('POST', { ...body, ...DEVICE }), null);
@@ -168,6 +181,16 @@ export class SessionStore {
     if (failed) setLogoutPending(true);
     this.set({ status: 'signed-out', notice: failed ? 'logout-failed' : notice });
     this.broadcast(failed ? { type: 'logout', failed: true } : { type: 'logout' });
+  }
+
+  /**
+   * The account was deleted: the server already revoked every session, so there is no sign-out to send. This tab and the others go to
+   * signed-out at once, with no notice and no pending flag (nothing to resume).
+   */
+  endAfterDeletion(): void {
+    this.token = null;
+    this.set({ status: 'signed-out', notice: null });
+    this.broadcast({ type: 'logout' });
   }
 
   /** Sign-out did not reach the server: ask again. Done → the flag goes and the notice with it. */
@@ -217,6 +240,10 @@ export class SessionStore {
   };
 
   private async runBootstrap(): Promise<void> {
+    // Back from Google (`?signed_in=google`): the API has just opened a session and set its cookie, so the sign-out flag of an older
+    // session no longer applies (it is cleared only here, never when the Google trip starts, plan review P21).
+    const fromGoogle = takeSignedInParam();
+    if (fromGoogle) clearLogoutPending();
     if (isLogoutPending()) {
       this.set({ status: 'signed-out', notice: 'logout-failed' });
       return;
@@ -238,6 +265,8 @@ export class SessionStore {
         return;
       }
       await this.recheck();
+      // Like a password sign-in: the other tabs learn about it (B8E45).
+      if (fromGoogle && (this.state.status === 'signed-in' || this.state.status === 'change-password')) this.broadcast({ type: 'login' });
     } catch {
       this.set({ status: 'signed-out', notice: null });
     }
@@ -357,6 +386,23 @@ function isLogoutPending(): boolean {
   } catch {
     return false;
   }
+}
+
+/** The page returned from Google with `?signed_in=google`: true once, and the parameter is removed from the address. */
+function takeSignedInParam(): boolean {
+  try {
+    const url = new URL(window.location.href);
+    if (url.searchParams.get('signed_in') !== 'google') return false;
+    url.searchParams.delete('signed_in');
+    window.history.replaceState(window.history.state, '', url.pathname + url.search + url.hash);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export function clearLogoutPending(): void {
+  setLogoutPending(false);
 }
 
 function setLogoutPending(on: boolean): void {
