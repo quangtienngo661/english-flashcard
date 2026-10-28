@@ -8,9 +8,10 @@ import { runWithOperationId } from '../logging/request-context.js';
 const HOURLY = 3_600_000;
 
 /**
- * Runs registered cleanup jobs every hour inside the API process (design §7). Each module registers
- * its own job so cleanup of a module's tables stays inside that module (D3). Running the same job on
- * several instances at once is harmless: every job only deletes or nulls expired rows.
+ * Runs registered cleanup jobs every hour (design §7). Each module registers its own job so cleanup of a module's tables stays
+ * inside that module (D3). The scheduler starts in **both** the API and the worker (`worker.ts` builds the whole app,
+ * `common.module.ts` provides it), so every job must be safe to run twice at once: the old ones only delete or null expired rows;
+ * the account-deletion jobs (Bước 8) take the user lock and treat a missing `users` row as done.
  */
 @Injectable()
 export class MaintenanceScheduler implements OnApplicationBootstrap, OnModuleDestroy {

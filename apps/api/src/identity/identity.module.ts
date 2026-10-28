@@ -1,6 +1,10 @@
 import { Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
+import { AccountDeletionController } from './deletion/account-deletion.controller.js';
+import { AccountDeletionRequests } from './deletion/account-deletion-requests.service.js';
+import { AccountDeletionService } from './deletion/account-deletion.service.js';
 import { AccountDeletionRegistry } from './deletion/account-eraser.js';
+import { DeletionJobs } from './deletion/deletion-jobs.service.js';
 import { MailModule } from '../common/mail/mail.module.js';
 import { ROLE_PERMISSIONS } from './identity.types.js';
 import { AuthController } from './auth/auth.controller.js';
@@ -25,12 +29,12 @@ import { StaffService } from './staff/staff.service.js';
 
 @Module({
   imports: [MailModule],
-  controllers: [SessionsController, OtpController, AuthController, PasswordController, ProfileController, StaffController],
+  controllers: [SessionsController, OtpController, AuthController, PasswordController, ProfileController, StaffController, AccountDeletionController],
   providers: [
     PasswordHasher, OtpService, AuthService, PasswordService, IdentityService, AccessTokenService, SessionService, StaffService, PermissionGuard,
     { provide: AccountStatusReader, useClass: PrismaAccountStatusReader }, { provide: APP_GUARD, useClass: AuthGuard },
     { provide: ROLE_PERMISSIONS_TOKEN, useValue: ROLE_PERMISSIONS },
-    IdentityCleanupService, AccountDeletionRegistry,
+    IdentityCleanupService, AccountDeletionRegistry, AccountDeletionService, AccountDeletionRequests, DeletionJobs,
   ],
   exports: [IdentityService, ROLE_PERMISSIONS_TOKEN, AccountDeletionRegistry],
 })

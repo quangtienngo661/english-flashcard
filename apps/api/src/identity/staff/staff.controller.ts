@@ -1,5 +1,11 @@
 import { Body, Controller, Get, HttpCode, Inject, Param, Patch, Post, Put, Query, Req, Res } from '@nestjs/common';
 import type { Response } from 'express';
+import { PRISMA_CLIENT } from '../../common/db/prisma.module.js';
+import type { PrismaClient } from '../../generated/prisma/client.js';
+import { answerDeletion } from '../deletion/account-deletion.controller.js';
+import { AccountDeletionRequests } from '../deletion/account-deletion-requests.service.js';
+import { AccountDeletionRegistry } from '../deletion/account-eraser.js';
+import { adminDeleteUserSchema, type AdminDeleteUserBody } from '../deletion/delete.schemas.js';
 import { RateLimit } from '../../common/rate-limit/rate-limit.decorator.js';
 import type { RequestWithUser } from '../../common/request-user/request-user.js';
 import { RequirePermission } from './require-permission.decorator.js';
@@ -11,7 +17,12 @@ import { StaffService, staffUserNotFound, type AdminUserDetail, type StaffUserVi
 @Controller('admin')
 @RequirePermission('roles.manage')
 export class StaffController {
-  constructor(@Inject(StaffService) private readonly staff: StaffService) {}
+  constructor(
+    @Inject(StaffService) private readonly staff: StaffService,
+    @Inject(AccountDeletionRequests) private readonly deletions: AccountDeletionRequests,
+    @Inject(AccountDeletionRegistry) private readonly deletionPorts: AccountDeletionRegistry,
+    @Inject(PRISMA_CLIENT) private readonly prisma: PrismaClient,
+  ) {}
 
   // AD18: editors read users too; every write below stays roles.manage.
   @Get('users')
@@ -27,8 +38,10 @@ export class StaffController {
 
   @Get('users/:id')
   @RequirePermission('users.read')
-  getUser(@Param({ schema: staffUserParamsSchema }) params: StaffUserParams) {
-    return this.staff.getUserDetail(params.id);
+  async getUser(@Param({ schema: staffUserParamsSchema }) params: StaffUserParams) {
+    const detail = await this.staff.getUserDetail(params.id);
+    // The delete dialog says "auto-renewing plans will be switched off" (design §10).
+    return { ...detail, auto_renewing: await this.deletionPorts.precondition().renewing(this.prisma, params.id) };
   }
 
   @Get('staff')
@@ -88,6 +101,18 @@ export class StaffController {
     @Req() req: RequestWithUser,
   ): Promise<AdminUserDetail> {
     return this.staff.lockUser(req.user!.userId, params.id, body.reason);
+  }
+
+  /** Design §7.1, D17: 204 when gone, 202 `{ status: 'pending' }` when the account is left `deleting`. */
+  @Post('users/:id/delete')
+  @RateLimit('user.write')
+  async deleteUser(
+    @Param({ schema: staffUserParamsSchema }) params: StaffUserParams,
+    @Body({ schema: adminDeleteUserSchema }) body: AdminDeleteUserBody,
+    @Req() req: RequestWithUser,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    return answerDeletion(res, await this.deletions.deleteByAdmin(req.user!.userId, params.id, body, res));
   }
 
   @Post('users/:id/unlock')

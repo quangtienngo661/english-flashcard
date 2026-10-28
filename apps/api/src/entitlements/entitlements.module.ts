@@ -9,6 +9,7 @@ import { MeEntitlementsController } from './api/me-entitlements.controller.js';
 import { BillingAdapterRegistry } from './billing/billing-adapter.registry.js';
 import { BILLING_APPLY_PORT, BillingInbox } from './billing/billing-inbox.service.js';
 import { BillingJobs } from './billing/billing-jobs.service.js';
+import { TransactionsExpireJob } from './billing/transactions-expire.job.js';
 import { BillingEventApplier } from './billing/event-applier.service.js';
 import { TransactionsRepository } from './billing/transactions.repository.js';
 import { FakeBillingAdapter } from './billing/fake/fake-billing.adapter.js';
@@ -51,6 +52,7 @@ import { UsageQueries } from './usage/usage.queries.js';
     TransactionsService,
     IdempotencyInterceptor,
     EntitlementsAccountDeletion,
+    TransactionsExpireJob,
   ],
   exports: [EntitlementsService, BillingAdapterRegistry],
 })
