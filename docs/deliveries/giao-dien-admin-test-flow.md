@@ -103,6 +103,39 @@ Làm một lần khi muốn thử AI thật; việc này tốn tiền nhà cung 
 6. AI › Prompt → chọn đúng thao tác → [Chạy thử]. Mỗi lần chạy là một lời gọi thật và trừ một trong 20 lượt chạy thử mỗi giờ.
 7. Muốn chặn chi tiêu: Cài đặt hệ thống › tab AI › "Trần lời gọi nhà cung cấp mỗi ngày", hoặc tắt công tắc AI toàn hệ thống ở đó.
 
+## M1b — AI: đo (Bộ ví dụ A/83, Chi phí A/85, Các lần gọi A/86)
+
+Đăng nhập bằng admin. Làm sau M1a: cần một model đã chọn cho `generate_cloze` (với model giả `fake:ok` thì mọi bước dưới chạy không tốn tiền). Khung Figma A/83 `400:5124`,
+A/85 `400:5685`, A/86 `400:6197`. Editor mở ba trang này thấy "Bạn không có quyền xem trang này." và không gọi API.
+
+1. **Thêm ví dụ.** AI › Bộ ví dụ, thao tác "Sinh câu điền từ". [Thêm ví dụ] → hộp có một ô cho mỗi trường đầu vào của thao tác (word, part_of_speech, level, meaning_vi, context_label),
+   ô để trống là null. Điền word `test`, part_of_speech `verb`, level `A1`, meaning_vi `thử`, ghi chú tùy ý → [Thêm ví dụ]. → toast "Đã thêm ví dụ.", tiêu đề "Ví dụ (n/100)" tăng một.
+   Gõ thêm chữ rồi bấm Hủy hoặc Esc → hỏi "Rời trang?". [Sửa] mở lại đúng hộp; [Xóa] hỏi trước.
+2. **Chạy bộ ví dụ.** Bấm [Chạy bộ ví dụ]. → khung bên phải mở "Lần chạy <giờ>": "Đang chờ" rồi "Đang chạy" rồi "Xong" (trang tự cập nhật, không cần tải lại); có Tiến độ, Hợp lệ,
+   Thời gian trung bình, Chi phí, Model, Bản prompt, Người chạy (email của bạn) và "Kết quả từng ví dụ" (trạng thái, đầu ra, [Xem đầu ra gốc]). Dòng "Còn …/20 lần chạy trong giờ này" giảm một.
+   Thử tắt worker rồi chạy: sau 30 giây khung nói "Chưa có worker nhận lần chạy này."
+3. **Chạy bản đang sửa.** AI › Prompt, sửa lời dặn nhưng chưa lưu → [Chạy bộ ví dụ với bản này] → "Đã bắt đầu lần chạy." và [Xem lần chạy]; ở Bộ ví dụ cột Bản prompt của dòng đó ghi "Bản nháp".
+4. **Chi phí.** AI › Chi phí. Từ ngày / Đến ngày mặc định là hôm nay (giờ Việt Nam); nhóm theo "Thao tác" → có dòng `generate_cloze`, cuối bảng dòng "Tổng". Đổi nhóm
+   (Ngày, Model, Mục đích, Kết quả) → bảng đổi ngay; Từ ngày sau Đến ngày → "Từ ngày phải trước hoặc bằng Đến ngày." và không gọi API. Model giả luôn tính US$ 0,00.
+5. **Các lần gọi.** `operation_id` của lần gọi trong một lần chạy là `eval-<id lần chạy>-<id ví dụ>` (id lần chạy nằm ở thanh địa chỉ khi khung chi tiết mở). AI › Các lần gọi, dán mã
+   → [Tìm]. → một dòng mục đích "bộ ví dụ", model, token, chi phí, "Còn tới <ngày>" và [Xem] → hộp "Nội dung lần gọi" có Yêu cầu và Phản hồi. Mã không có → "Không có lời gọi nào với mã này."
+   Để trống: dòng hướng dẫn, không gọi API.
+
+### Lần gọi AI thật đầu tiên (chủ dự án làm một lần; tốn tiền nhà cung cấp, AD1, design §7)
+
+Mục đích: có số đo đầu tiên cho nhóm B (chất lượng câu AI, tỷ lệ bị rule loại). Làm sau khi năm bước trên đã chạy ổn với model giả.
+
+1. Đặt key của chính bạn trong `apps/api/.env` (`OPENAI_API_KEY=` hoặc `ANTHROPIC_API_KEY=`); `OPENAI_CUSTOM_HEADERS` / `ANTHROPIC_CUSTOM_HEADERS` để trống (D29). Dừng và chạy lại API và worker.
+   AI › Tình trạng → "Nhà cung cấp có key" có thêm nhà cung cấp của bạn.
+2. **Chặn chi tiêu trước.** Cài đặt hệ thống › tab AI › "Trần lời gọi nhà cung cấp mỗi ngày" (`daily_provider_calls_cap`): đặt một số nhỏ (ví dụ 30), [Lưu thay đổi]. Một lần chạy bộ ví dụ
+   gọi nhà cung cấp ít nhất một lần cho mỗi ví dụ, nên số này là mức chi tiêu tối đa bạn chấp nhận trong ngày.
+3. AI › Model → [Thêm model], chọn nhà cung cấp, gõ đúng tên model như nhà cung cấp ghi; giá có thể điền sau bằng [Sửa giá] (chưa có giá thì Chi phí ghi "Chưa có giá" chứ không tính nhầm).
+4. AI › Thao tác → chọn model đó cho `generate_cloze` (đặt "Số token đầu ra tối đa" nhỏ nếu muốn), [Lưu]. Tình trạng phải ghi "Sẵn sàng".
+5. AI › Bộ ví dụ → thêm 3–5 ví dụ thật (từ, loại từ, trình độ, nghĩa tiếng Việt) → [Chạy bộ ví dụ].
+6. Đọc kết quả: trong chi tiết lần chạy, ví dụ nào "Thành công" hay không, lý do, đầu ra và [Xem đầu ra gốc] cho ví dụ lỗi; Hợp lệ / Tiến độ là tỷ lệ qua rule. Rồi AI › Chi phí (nhóm theo Mục đích)
+   xem tiền thật của lần chạy, và AI › Các lần gọi (mã `eval-…`) xem yêu cầu / phản hồi gốc của từng ví dụ.
+7. Chưa hài lòng thì sửa lời dặn ở AI › Prompt và chạy lại (có thể bằng [Chạy bộ ví dụ với bản này] khi chưa lưu). Quy trình đo và sửa prompt về sau thuộc nhóm B.
+
 ## M2 — Cài đặt hệ thống
 
 Đăng nhập bằng admin (tài khoản trong `.state.json`). Khung Figma A/70a–A/70f (node `397:3287` … `397:4845`).
