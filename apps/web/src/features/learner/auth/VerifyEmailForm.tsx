@@ -1,7 +1,6 @@
 'use client';
 
 import { useLocale, useTranslations } from 'next-intl';
-import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useRef, useState, type ClipboardEvent, type FormEvent, type KeyboardEvent } from 'react';
 import { createApiClient } from '@/app-shell/api/client';
@@ -124,11 +123,6 @@ export function VerifyEmailForm() {
     }
   }
 
-  function otherEmail() {
-    clearPendingEmail();
-    router.replace(`/${locale}/app/register`);
-  }
-
   function put(index: number, value: string) {
     const digit = value.replace(/\D/g, '').slice(-1);
     setDigits((current) => current.map((d, i) => (i === index ? digit : d)));
@@ -196,16 +190,6 @@ export function VerifyEmailForm() {
         <Button type="submit" variant="sticker" size="lg" isPending={busy} isDisabled={!complete || !store || !email || !password}>
           {t('verify.submit')}
         </Button>
-        <Link
-          href={`/${locale}/app/register`}
-          onClick={(event) => {
-            event.preventDefault();
-            otherEmail();
-          }}
-          className="w-fit text-caption font-semibold text-primary underline underline-offset-2"
-        >
-          {t('verify.otherEmail')}
-        </Link>
       </form>
     </AuthCard>
   );

@@ -321,12 +321,10 @@ describe('VerifyEmailForm (K/03)', () => {
     expect(screen.getByText('Gửi lại mã sau 60 giây')).toBeInTheDocument();
   });
 
-  it('A13-16: the wrong-email link clears pending data and goes to register', async () => {
+  it('A13-16: no wrong-email link (owner 28/10/2026)', async () => {
     setup();
-    await userEvent.click(await screen.findByRole('link', { name: 'Gõ nhầm email? Đăng ký bằng email khác' }));
-    expect(readPendingEmail()).toBeNull();
-    expect(readPendingPassword()).toBeNull();
-    expect(replace).toHaveBeenCalledWith('/vi/app/register');
+    await screen.findByRole('button', { name: 'Xác minh' });
+    expect(screen.queryByRole('link', { name: /Gõ nhầm email/ })).toBeNull();
   });
 
   it('opened while signed in: AuthGate sends to the app once', async () => {
