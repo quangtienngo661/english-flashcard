@@ -335,3 +335,6 @@ Các đề xuất dưới đây nằm trong design và được duyệt cùng de
 - Một mã ẩn danh mỗi lần xóa, dùng chung cho sổ lượt, giao dịch, báo lỗi; không lưu nối mã đó với người (D14–D16).
 - Bảng `deleted_accounts` và lệnh chạy lại việc xóa sau khi khôi phục (D21).
 - Admin xóa người học đang có gói tự gia hạn: app tự tắt gia hạn như khi cấp Pro (khác D11, vốn chỉ nói người học tự xóa).
+- Thêm sau review độc lập (28/10/2026, design §0b): bộ xóa idempotent + quét lại 24 giờ cho hàng ghi muộn; port điều kiện của Entitlements và port đọc cài đặt thay cho
+  import ngược; guard đọc một hàng chuỗi phiên nối người dùng; tài khoản chưa xác minh trùng email Google đi màn D6 và dùng lại `id` lúc hoàn tất; mốc dọn tài khoản chưa xác minh
+  là `terms_accepted_at`. Năm câu mới (26–30) chờ chủ dự án ở vòng 2 của nhật ký hỏi đáp; khi chốt sẽ thêm D26–D30 vào file này.
