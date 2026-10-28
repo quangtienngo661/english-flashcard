@@ -1,23 +1,26 @@
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router';
 import { useTranslations } from 'use-intl';
 import { ApiError, type Problem } from '../../api/problem';
+import { useErrorDetails, type ErrorDetails } from '../../api/use-error-message';
 import { userLabel } from '../../api/user-ref';
 import { useApi } from '../../auth/session-context';
 import { Badge } from '../../ui/Badge';
 import { Banner } from '../../ui/Banner';
 import { Button } from '../../ui/Button';
-import { PanelBody, PanelHead } from '../../ui/DetailPanel';
+import { ConfirmDialog } from '../../ui/ConfirmDialog';
+import { PanelBody, PanelFooter, PanelHead } from '../../ui/DetailPanel';
 import { DataList, type Column } from '../../ui/DataList';
 import { ListState } from '../../ui/ListState';
+import { showToast } from '../../ui/Toast';
 import { useSubmitAction } from '../content/useSubmitAction';
 import { getSettings } from '../settings/settings-api';
 import { useNow } from '../jobs/useNow';
 import { usePollingStatus, useQueuedTooLong } from '../jobs/usePollingStatus';
 import {
-  UUID, aiKeys, getRun, getTestQuota, isRunDone, listExamples, startRun, type AiOperation, type EvalRun, type EvalRunItem, type EvalRunStatus, type StartRunBody,
-  type TestStatus,
+  UUID, aiKeys, cancelRun, deleteRun, getRun, getTestQuota, isRunCancelled, isRunDone, listExamples, startRun, type AiOperation, type EvalRun, type EvalRunItem,
+  type EvalRunStatus, type StartRunBody, type TestStatus,
 } from './ai-api';
 import { exampleSummary } from './prompt-form';
 import { useAiFormat } from './useAiFormat';
@@ -29,8 +32,10 @@ const codeBlock = 'block whitespace-pre-wrap wrap-anywhere rounded-inner bg-canv
 const linkClass =
   'inline-flex min-h-control w-fit items-center whitespace-nowrap rounded-control px-4 text-ui font-medium text-primary outline-none hover:bg-primary-soft focus-visible:ring-2 focus-visible:ring-primary pointer-coarse:min-h-control-touch';
 
-export function RunStatusBadge({ status }: { status: EvalRunStatus }) {
+/** A run an admin stopped is stored as `failed` with the error "cancelled": it reads "Đã dừng", not "Lỗi". */
+export function RunStatusBadge({ status, error }: { status: EvalRunStatus; error?: string | null }) {
   const t = useTranslations();
+  if (isRunCancelled({ status, error: error ?? null })) return <Badge tone="neutral">{t('ai.eval.status.cancelled')}</Badge>;
   return <Badge tone={TONE[status] ?? 'neutral'}>{TONE[status] ? t(`ai.eval.status.${status}`) : status}</Badge>;
 }
 
@@ -135,10 +140,13 @@ export function StartRunFailure({ action, rest }: StartFailureProps) {
 /**
  * A/83 run detail beside the runs list (`/ai/eval/runs/:id`): read again every 2 s until `finished` or `failed` (not while the tab is
  * hidden); a failed run shows its error and is never re-run by itself. ₫ is computed here from today's `usd_vnd_rate` (design §6.5).
+ * A queued or running run can be stopped, a finished or failed one deleted (both ask first); `onDeleted` lets the page close the panel.
  */
-export function EvalRunPanel({ id, onDone }: { id: string; onDone?: () => void }) {
+export function EvalRunPanel({ id, onDone, onDeleted }: { id: string; onDone?: () => void; onDeleted?: () => void }) {
   const t = useTranslations();
   const api = useApi();
+  const queryClient = useQueryClient();
+  const errorDetails = useErrorDetails();
   const format = useAiFormat();
   const promptLabel = usePromptLabel();
   const validId = UUID.test(id);
@@ -151,6 +159,43 @@ export function EvalRunPanel({ id, onDone }: { id: string; onDone?: () => void }
   const run = query.data;
   const now = useNow(1000, run?.status === 'queued');
   const tooLong = useQueuedTooLong(run?.status ?? 'running', run?.created_at ?? '', now);
+
+  const [asking, setAsking] = useState<'stop' | 'delete' | null>(null);
+  const [actionError, setActionError] = useState<ErrorDetails | null>(null);
+  const refreshRuns = () => void queryClient.invalidateQueries({ queryKey: aiKeys.runs(operation) });
+  // 409 (the run is not in the state the panel showed) and 404 (gone): read the run and the list again.
+  const onActionError = (e: unknown) => {
+    setAsking(null);
+    setActionError(errorDetails(e));
+    if (e instanceof ApiError && (e.problem.status === 409 || e.problem.status === 404)) {
+      void queryClient.invalidateQueries({ queryKey: aiKeys.run(id) });
+      refreshRuns();
+    }
+  };
+  const stop = useMutation({
+    mutationFn: () => cancelRun(api, id),
+    onMutate: () => setActionError(null),
+    onSuccess: async (stopped) => {
+      setAsking(null);
+      // A poll still in flight would put the old "running" back; the answer already is the stopped run.
+      await queryClient.cancelQueries({ queryKey: aiKeys.run(id) });
+      queryClient.setQueryData(aiKeys.run(id), stopped);
+      showToast(t('ai.eval.toast.stopped'));
+      // The list is read again by the effect below: the panel sees the run end, as when the worker finishes it.
+    },
+    onError: onActionError,
+  });
+  const remove = useMutation({
+    mutationFn: () => deleteRun(api, id),
+    onMutate: () => setActionError(null),
+    onSuccess: () => {
+      setAsking(null);
+      refreshRuns();
+      showToast(t('ai.eval.toast.runDeleted'));
+      onDeleted?.();
+    },
+    onError: onActionError,
+  });
 
   // When the polling sees the run end, the list is read again so its row matches the panel (as Lô nhập, UBE27).
   const seen = useRef<string | undefined>(undefined);
@@ -239,9 +284,11 @@ export function EvalRunPanel({ id, onDone }: { id: string; onDone?: () => void }
     },
   ];
 
+  const live = run.status === 'queued' || run.status === 'running';
   let notice: { variant: 'info' | 'error'; text: string } | null = null;
   if (run.status === 'queued') notice = { variant: 'info', text: t(tooLong ? 'ai.eval.detail.queuedLong' : 'ai.eval.detail.queued') };
   else if (run.status === 'running') notice = { variant: 'info', text: t('ai.eval.detail.running', { done: run.done, total: run.total }) };
+  else if (isRunCancelled(run)) notice = { variant: 'info', text: t('ai.eval.detail.cancelled') };
   else if (run.status === 'failed') {
     notice = { variant: 'error', text: run.error ? t('ai.eval.detail.failed', { error: run.error }) : t('ai.eval.detail.failedNoReason') };
   }
@@ -250,9 +297,10 @@ export function EvalRunPanel({ id, onDone }: { id: string; onDone?: () => void }
     <>
       <PanelHead
         title={t('ai.eval.detail.title', { time: format.dateTime(run.created_at) })}
-        status={<RunStatusBadge status={run.status} />}
+        status={<RunStatusBadge status={run.status} error={run.error} />}
       />
       <PanelBody>
+        {actionError && <Banner variant="error" code={actionError.code}>{actionError.message}</Banner>}
         {notice && <Banner variant={notice.variant}>{notice.text}</Banner>}
         {!isRunDone(run.status) && <p className="text-ui text-muted">{t('ai.eval.detail.background')}</p>}
         <dl className="flex min-w-0 flex-col gap-2 text-ui">
@@ -273,6 +321,38 @@ export function EvalRunPanel({ id, onDone }: { id: string; onDone?: () => void }
           </section>
         )}
       </PanelBody>
+      {/* Gone for the moment between a delete and the panel closing. */}
+      {!remove.isSuccess && (live || isRunDone(run.status)) && (
+        <PanelFooter>
+          {live ? (
+            <Button variant="secondary" onPress={() => setAsking('stop')}>{t('ai.eval.stop.button')}</Button>
+          ) : (
+            <Button variant="danger" onPress={() => setAsking('delete')}>{t('ai.eval.removeRun.button')}</Button>
+          )}
+        </PanelFooter>
+      )}
+      <ConfirmDialog
+        isOpen={asking === 'stop'}
+        title={t('ai.eval.stop.title')}
+        confirmLabel={t('ai.eval.stop.confirm')}
+        cancelLabel={t('ai.eval.stop.keep')}
+        isPending={stop.isPending}
+        onConfirm={() => stop.mutate()}
+        onCancel={() => setAsking(null)}
+      >
+        {t('ai.eval.stop.body')}
+      </ConfirmDialog>
+      <ConfirmDialog
+        isOpen={asking === 'delete'}
+        title={t('ai.eval.removeRun.title')}
+        confirmLabel={t('ai.eval.removeRun.confirm')}
+        tone="danger"
+        isPending={remove.isPending}
+        onConfirm={() => remove.mutate()}
+        onCancel={() => setAsking(null)}
+      >
+        {t('ai.eval.removeRun.body')}
+      </ConfirmDialog>
     </>
   );
 }

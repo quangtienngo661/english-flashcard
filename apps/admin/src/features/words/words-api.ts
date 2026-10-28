@@ -66,6 +66,14 @@ export const setVariants = (api: ApiClient, id: string, variants: Variant[]) =>
 export const setFunctionWord = (api: ApiClient, id: string, override: boolean | null) =>
   api.put<void>(`/v1/admin/taxonomy/entries/${id}/function-word`, { override });
 
+/** Only a word that was never published and that nothing uses; otherwise 409 `entry-in-use` with `reasons`. */
+export const deleteEntry = (api: ApiClient, id: string) => api.delete<void>(`/v1/admin/content/entries/${id}`);
+
+/** Why `DELETE` refused, in the order the API sorts them; each has a sentence in `words.deleteBlocked`. */
+export const ENTRY_IN_USE_REASONS = ['published-sense', 'form-of-link', 'learner-data', 'batch-record', 'publish-job', 'active-job'] as const;
+export type EntryInUseReason = (typeof ENTRY_IN_USE_REASONS)[number];
+export const isEntryInUseReason = (reason: string): reason is EntryInUseReason => (ENTRY_IN_USE_REASONS as readonly string[]).includes(reason);
+
 export const addSense = (api: ApiClient, entryId: string) =>
   api.post<{ sense_id: string; revision_id: string; revision: number }>('/v1/admin/content/senses', { entry_id: entryId });
 

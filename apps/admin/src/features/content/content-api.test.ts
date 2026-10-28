@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { createApiClient } from '../../api/client';
 import {
+  cancelPublishJob,
   createPublishJob,
   createSource,
   createUpload,
+  deleteSource,
   downloadPublishReport,
   downloadRejected,
   exportSenses,
@@ -15,6 +17,7 @@ import {
   listTopics,
   listUploads,
   revertUpload,
+  updateSource,
   VALID_POS,
 } from './content-api';
 
@@ -48,6 +51,19 @@ describe('content-api', () => {
     expect(seen[1].path).toBe('/v1/admin/content/sources');
     expect(seen[1].init.method).toBe('POST');
     expect(JSON.parse(String(seen[1].init.body))).toEqual(body);
+  });
+
+  it('updateSource patches the changed keys; deleteSource deletes by id and resolves with nothing on 204', async () => {
+    const { api, seen } = setup(() => Response.json({ id: 's 1' }));
+    await updateSource(api, 's 1', { name: 'CEFR-J 2', url: null });
+    expect(seen[0].path).toBe('/v1/admin/content/sources/s%201');
+    expect(seen[0].init.method).toBe('PATCH');
+    expect(JSON.parse(String(seen[0].init.body))).toEqual({ name: 'CEFR-J 2', url: null });
+
+    const gone = setup(() => new Response(null, { status: 204 }));
+    await expect(deleteSource(gone.api, 's 1')).resolves.toBeUndefined();
+    expect(gone.seen[0].path).toBe('/v1/admin/content/sources/s%201');
+    expect(gone.seen[0].init.method).toBe('DELETE');
   });
 
   it('listUploads: page_size and the page token', async () => {
@@ -114,5 +130,14 @@ describe('content-api', () => {
       '/v1/admin/content/senses/publish-jobs/j1',
       '/v1/admin/content/senses/publish-jobs/j1/report.csv',
     ]);
+  });
+
+  it('cancelPublishJob: POST .../publish-jobs/:id/cancel, no body and no Idempotency-Key, returns the job', async () => {
+    const { api, seen } = setup(() => Response.json({ id: 'j1', status: 'failed', cancelled: true }));
+    expect(await cancelPublishJob(api, 'j1')).toEqual({ id: 'j1', status: 'failed', cancelled: true });
+    expect(seen[0].path).toBe('/v1/admin/content/senses/publish-jobs/j1/cancel');
+    expect(seen[0].init.method).toBe('POST');
+    expect(seen[0].init.body).toBeUndefined();
+    expect((seen[0].init.headers as Record<string, string>)['Idempotency-Key']).toBeUndefined();
   });
 });

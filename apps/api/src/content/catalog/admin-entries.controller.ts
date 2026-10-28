@@ -1,4 +1,4 @@
-import { Body, Controller, HttpCode, Inject, Param, Put } from '@nestjs/common';
+import { Body, Controller, Delete, HttpCode, Inject, Param, Put } from '@nestjs/common';
 import { z } from 'zod';
 import { PRISMA_CLIENT } from '../../common/db/prisma.module.js';
 import { ProblemDetailsException } from '../../common/problem-details/problem-details.exception.js';
@@ -64,6 +64,14 @@ export class AdminEntriesController {
     @Body({ schema: editorialLevelSchema }) body: EditorialLevelBody,
   ): Promise<void> {
     return writeEntry(this.prisma, this.content, params.id, (tx) => this.content.setEditorialLevel(tx, params.id, body.level));
+  }
+
+  /** Only a word that was never published and that nothing uses; otherwise 409 `entry-in-use` with `reasons`. */
+  @Delete(':id')
+  @HttpCode(204)
+  @RateLimit('user.write')
+  deleteEntry(@Param({ schema: entryParamsSchema }) params: EntryParams): Promise<void> {
+    return this.content.deleteEntry(params.id);
   }
 }
 

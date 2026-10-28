@@ -75,6 +75,13 @@ export class EvalRunsRepository {
     return raw ? toRow(raw) : null;
   }
 
+  /** True only while the run is `running`; the job asks before each paid call, so a cancelled run costs no more. */
+  async isRunning(id: string): Promise<boolean> {
+    const rows = await this.prisma.$queryRaw<Array<{ one: number }>>`
+      SELECT 1 AS one FROM ai_eval_runs WHERE id = ${id}::uuid AND status = 'running'`;
+    return rows.length > 0;
+  }
+
   /** Each example is written as soon as it is done (B6E92): a later run of the job skips it (B6E93). */
   async appendItem(id: string, item: EvalItem, now: Date): Promise<void> {
     await this.prisma.$executeRaw`

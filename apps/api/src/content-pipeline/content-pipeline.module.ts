@@ -4,6 +4,7 @@ import { APP_CONFIG, type AppConfig } from '../common/config/app-config.js';
 import { IdempotencyInterceptor } from '../common/idempotency/idempotency.interceptor.js';
 import { ContentModule } from '../content/content.module.js';
 import { IdentityModule } from '../identity/identity.module.js';
+import { PipelineEntryUsageProbe } from './entry-usage.probe.js';
 import { ExportService } from './export/export.service.js';
 import { EntriesExportController, SensesExportController } from './export/senses-export.controller.js';
 import { InflectionsBackfillController } from './inflections/inflections-backfill.controller.js';
@@ -18,6 +19,7 @@ import { JobReconcilerService } from './jobs/job-reconciler.service.js';
 import { JobRunnerService } from './jobs/job-runner.service.js';
 import { PublishJobHandler } from './publish/publish-job.handler.js';
 import { PublishJobsController } from './publish/publish-jobs.controller.js';
+import { PublishJobsService } from './publish/publish-jobs.service.js';
 import { MulterExceptionFilter } from './upload/multer-exception.filter.js';
 import { UploadsController } from './upload/uploads.controller.js';
 import { UploadsReadController } from './upload/uploads-read.controller.js';
@@ -41,7 +43,7 @@ import { UploadsService } from './upload/uploads.service.js';
     BackgroundJobsService, JobQueueService, JobHandlerRegistry, JobRunnerService, JobReconcilerService,
     UploadsService, MulterExceptionFilter, IdempotencyInterceptor,
     ImportRowProcessor, ImportBatchHandler, ImportFileCleanupService,
-    ExportService, PublishJobHandler, InflectionsBackfillHandler,
+    ExportService, PublishJobHandler, PublishJobsService, InflectionsBackfillHandler, PipelineEntryUsageProbe,
   ],
   exports: [BackgroundJobsService, JobQueueService, JobHandlerRegistry, JobRunnerService, JobReconcilerService],
 })

@@ -8,6 +8,8 @@ export type Problem = {
   violations?: string[];
   /** Top-level extension member of some problems (e.g. `grant-not-allowed`): the API spreads extensions into the body. */
   reason?: string;
+  /** Top-level extension member of `entry-in-use`: why the word cannot be deleted (a list of codes). */
+  reasons?: string[];
 };
 
 export class ApiError extends Error {
@@ -29,7 +31,7 @@ export class NetworkError extends Error {
 
 /**
  * Every problem `type` slug thrown in `apps/api/src` (grep `type: '` over ProblemDetailsException, plus the
- * body-parser mappings in `problem-details.filter.ts`), checked 14/10/2026, extended 27/10/2026 for the admin UI round (design §4.5). Each has a vi and en message.
+ * body-parser mappings in `problem-details.filter.ts`), checked 14/10/2026, extended 27/10/2026 for the admin UI round (design §4.5) and 28/10/2026 with `run-active` / `run-not-active` (stopping and deleting an eval run). Each has a vi and en message.
  */
 export const KNOWN_ERROR_SLUGS = [
   'batch-filter-unavailable',
@@ -37,6 +39,7 @@ export const KNOWN_ERROR_SLUGS = [
   'csrf-header-required',
   'email-already-verified',
   'email-taken',
+  'entry-in-use',
   'export-too-large',
   'file-invalid',
   'file-too-large',
@@ -48,6 +51,7 @@ export const KNOWN_ERROR_SLUGS = [
   'invalid-current-password',
   'invalid-otp',
   'invalid-token',
+  'job-not-active',
   'level-source-required',
   'lock-rule',
   'mail-unavailable',
@@ -73,11 +77,15 @@ export const KNOWN_ERROR_SLUGS = [
   'report-reason-exists',
   'resolve-status-not-allowed',
   'revision-rejected',
+  'run-active',
+  'run-not-active',
   'sense-entry-mismatch',
   'sense-exists',
   'sense-retired',
   'source-exists',
+  'source-in-use',
   'source-incomplete',
+  'source-protected',
   'staff-role-rule',
   'stale-revision',
   'too-many-examples',
@@ -116,6 +124,7 @@ export async function toApiError(res: Response): Promise<ApiError> {
   if (typeof body.operation_id === 'string') problem.operation_id = body.operation_id;
   if (Array.isArray(body.violations)) problem.violations = body.violations.filter((v): v is string => typeof v === 'string');
   if (typeof body.reason === 'string') problem.reason = body.reason;
+  if (Array.isArray(body.reasons)) problem.reasons = body.reasons.filter((r): r is string => typeof r === 'string');
   const retry = Number.parseInt(res.headers.get('retry-after') ?? '', 10);
   return new ApiError(problem, Number.isFinite(retry) && retry >= 0 ? retry : null);
 }

@@ -2,15 +2,15 @@ import { useTranslations } from 'use-intl';
 import { Badge } from '../../ui/Badge';
 import type { JobStatus } from '../content/content-api';
 
-const TONE = { queued: 'neutral', running: 'primary', succeeded: 'success', partial: 'warning', failed: 'danger', reverted: 'neutral' } as const;
+const TONE = { queued: 'neutral', running: 'primary', succeeded: 'success', partial: 'warning', failed: 'danger', cancelled: 'neutral', reverted: 'neutral' } as const;
 
 type Props = {
-  status: JobStatus | 'reverted';
+  status: JobStatus | 'cancelled' | 'reverted';
   /** Rows done so far; drawn as a thin bar under a running status only. */
   progress?: { done: number; total: number };
 };
 
-/** Batch and publish-job status as a pill; `reverted` is a batch-only extra shown instead of its job status. */
+/** Batch and publish-job status as a pill; `reverted` is a batch-only extra and `cancelled` a publish-job one, each shown instead of its job status. */
 export function StatusBadge({ status, progress }: Props) {
   const t = useTranslations();
   const badge = <Badge tone={TONE[status]}>{t(`status.${status}`)}</Badge>;

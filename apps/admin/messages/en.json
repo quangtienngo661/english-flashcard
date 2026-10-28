@@ -10,6 +10,7 @@
     "csrf-header-required": "The request is missing the CSRF protection header (programming error)",
     "email-already-verified": "This email is already verified",
     "email-taken": "This email is already in use",
+    "entry-in-use": "This word is in use and cannot be deleted yet.",
     "export-too-large": "Too many rows to export, narrow the filters",
     "file-invalid": "The file is not valid",
     "file-too-large": "The file is too large (10 MB maximum)",
@@ -21,6 +22,7 @@
     "invalid-current-password": "The current password is wrong",
     "invalid-otp": "The code is wrong or has expired",
     "invalid-token": "The session or link is not valid",
+    "job-not-active": "This job has already ended.",
     "level-source-required": "The file has a level column, choose a level source",
     "lock-rule": "You cannot lock yourself or an admin.",
     "mail-unavailable": "The email cannot be sent right now, so no account was created. Please try again in a few minutes.",
@@ -47,12 +49,16 @@
     "resolve-status-not-allowed": "This report cannot be handled this way. Reload the page.",
     "retryIn": "Try again in {seconds} s",
     "revision-rejected": "This revision was rejected, so it cannot be published. Edit it to make a new one.",
+    "run-active": "The run is still active. Stop it before deleting.",
+    "run-not-active": "This run has already ended.",
     "same_as_current": "The new password must differ from the current one",
     "sense-entry-mismatch": "This sense does not belong to the selected word. Reload the page.",
     "sense-exists": "This word already has a sense with that context label. Edit the existing sense instead of adding a new one.",
     "sense-retired": "This sense is retired and cannot be edited.",
     "source-exists": "This data source already exists",
+    "source-in-use": "This source is in use (word levels or import batches), so it cannot be deleted.",
     "source-incomplete": "A level source needs a version and a license",
+    "source-protected": "A built-in source cannot be edited or deleted.",
     "staff-role-rule": "This role cannot be changed (the user has not verified their email, or this is the last admin)",
     "stale-revision": "This sense was just edited. Reload to see the latest version.",
     "too-many-examples": "At most 3 example sentences are allowed. Remove some and save again.",
@@ -444,7 +450,22 @@
       "toast": {
         "added": "Example added.",
         "saved": "Example saved.",
-        "deleted": "Example deleted."
+        "deleted": "Example deleted.",
+        "stopped": "Run stopped.",
+        "runDeleted": "Run deleted."
+      },
+      "stop": {
+        "button": "Stop run",
+        "title": "Stop this run?",
+        "body": "Examples not yet run will not call the AI. Calls already sent are still charged, and a stopped run cannot be resumed. Results of the examples already run are kept.",
+        "confirm": "Stop run",
+        "keep": "Let it run"
+      },
+      "removeRun": {
+        "button": "Delete run",
+        "title": "Delete this run?",
+        "body": "The per-example results of this run are lost. The cost already incurred stays in the Costs report.",
+        "confirm": "Delete run"
       },
       "form": {
         "addTitle": "Add example",
@@ -483,7 +504,8 @@
         "queued": "Queued",
         "running": "Running",
         "finished": "Done",
-        "failed": "Failed"
+        "failed": "Failed",
+        "cancelled": "Stopped"
       },
       "detail": {
         "title": "Run {time}",
@@ -505,6 +527,7 @@
         "running": "Running: {done}/{total} examples. The page updates by itself.",
         "failed": "Failed: {error}",
         "failedNoReason": "The run failed.",
+        "cancelled": "The run was stopped. Results of the examples already run are kept.",
         "background": "Closing the page does not stop the run; open it again to see its progress.",
         "results": "Result per example",
         "deletedExample": "Deleted example",
@@ -1054,6 +1077,7 @@
     "succeeded": "Done",
     "partial": "Partial",
     "failed": "Failed",
+    "cancelled": "Stopped",
     "reverted": "Reverted"
   },
   "sources": {
@@ -1065,7 +1089,21 @@
       "name": "Source name",
       "version": "Version",
       "license": "License",
-      "priority": "Priority"
+      "priority": "Priority",
+      "actions": "Actions"
+    },
+    "edit": "Edit",
+    "editFor": "Edit source {name}",
+    "editTitle": "Edit source “{name}”",
+    "delete": "Delete",
+    "deleteFor": "Delete source {name}",
+    "deleteTitle": "Delete source “{name}”?",
+    "deleteBody": "The source is removed from the list and from the public license page, and this cannot be undone.",
+    "deleteConfirm": "Delete source",
+    "ownerNote": "A built-in source, cannot be edited or deleted",
+    "toast": {
+      "saved": "Source “{name}” saved.",
+      "deleted": "Source “{name}” deleted."
     },
     "form": {
       "name": "Source name",
@@ -1181,7 +1219,13 @@
     "queuedLong": "The job has waited {seconds} s. Is the worker running? Check the worker process, then reload the page.",
     "confirmAllTitle": "Publish the whole catalog?",
     "confirmAllBody": "You have not chosen any filter, so this job will publish every eligible sense in the whole catalog. Continue only if that is what you want.",
-    "confirmAllSubmit": "Publish everything"
+    "confirmAllSubmit": "Publish everything",
+    "stop": "Stop job",
+    "stopTitle": "Stop publish job #{id}?",
+    "stopBody": "Senses already published stay published. The job stops before the next sense and cannot be resumed; to publish the rest, create a new publish job.",
+    "stopKeep": "Keep running",
+    "stopped": "Stopped publish job #{id}",
+    "stoppedNotice": "The job stopped after {done} / {total} senses. Senses already published stay published; the rest were not published."
   },
   "refunds": {
     "filters": {
@@ -1386,6 +1430,20 @@
     "editVariants": "Edit other spellings",
     "editFunctionWord": "Mark as function word",
     "addSense": "Add a sense",
+    "deleteWord": "Delete word",
+    "deleteTitle": "Delete “{word}”?",
+    "deleteBody": "This word and its unpublished draft senses are removed. This cannot be undone.",
+    "deleteConfirm": "Delete word",
+    "deleted": "Deleted “{word}”",
+    "deleteBlocked": {
+      "title": "“{word}” cannot be deleted:",
+      "published-sense": "This word has a sense that was published.",
+      "form-of-link": "A sense of another word is recorded as a form of this word.",
+      "learner-data": "Learners have study data for this word.",
+      "batch-record": "This word belongs to an import batch that was not reverted. Revert that batch first.",
+      "publish-job": "This word is listed in the report of a bulk publish.",
+      "active-job": "An import batch or a bulk publish that involves it is running. Wait for it to finish, then try again."
+    },
     "save": "Save",
     "saved": "Saved “{word}”",
     "level": "Level",

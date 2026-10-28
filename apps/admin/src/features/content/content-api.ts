@@ -19,8 +19,10 @@ export type SourceView = {
   license: string;
   attribution: string;
   display_priority: number;
+  /** The owner's source and the built-in AGID one: neither can be edited or deleted (set by the API). */
+  protected?: boolean;
 };
-export type NewSource = Omit<SourceView, 'id' | 'kind'>;
+export type NewSource = Omit<SourceView, 'id' | 'kind' | 'protected'>;
 
 export type UploadListItem = { id: string; status: JobStatus; file_name: string; row_count: number; created_at: string };
 export type Page<T> = { items: T[]; next_page_token: string | null };
@@ -57,6 +59,8 @@ export type PublishJobCounters = { processed?: number; pending?: number; publish
 export type PublishJobView = {
   id: string;
   status: JobStatus;
+  /** A job staff stopped: the API stores it as `failed`, and this tells it from a real failure. */
+  cancelled?: boolean;
   snapshot_count: number;
   not_ready_count: number;
   counters: PublishJobCounters;
@@ -83,6 +87,16 @@ export async function listSources(api: ApiClient): Promise<SourceView[]> {
 
 export function createSource(api: ApiClient, body: NewSource): Promise<SourceView> {
   return api.post(SOURCES, body);
+}
+
+/** Only the keys that changed; `kind` is not editable, and the API refuses an empty body and a protected source. */
+export function updateSource(api: ApiClient, id: string, body: Partial<NewSource>): Promise<SourceView> {
+  return api.patch(`${SOURCES}/${encodeURIComponent(id)}`, body);
+}
+
+/** The API refuses a source that a level or an import batch still refers to (`source-in-use`) and the owner's (`source-protected`). */
+export function deleteSource(api: ApiClient, id: string): Promise<void> {
+  return api.delete<void>(`${SOURCES}/${encodeURIComponent(id)}`);
 }
 
 export function listUploads(api: ApiClient, pageToken?: string): Promise<Page<UploadListItem>> {
@@ -138,6 +152,11 @@ export function listPublishJobs(api: ApiClient, pageToken?: string): Promise<Pag
 
 export function getPublishJob(api: ApiClient, id: string): Promise<PublishJobView> {
   return api.get(`${JOBS}/${id}`);
+}
+
+/** Stops a queued or running job; the senses it already published stay. 409 `job-not-active` when it has already ended. */
+export function cancelPublishJob(api: ApiClient, id: string): Promise<PublishJobView> {
+  return api.post(`${JOBS}/${id}/cancel`);
 }
 
 export function downloadPublishReport(api: ApiClient, id: string): Promise<Blob> {

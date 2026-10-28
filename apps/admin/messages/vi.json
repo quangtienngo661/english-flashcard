@@ -10,6 +10,7 @@
     "csrf-header-required": "Yêu cầu thiếu header bảo vệ CSRF (lỗi lập trình)",
     "email-already-verified": "Email này đã được xác minh",
     "email-taken": "Email đã được dùng",
+    "entry-in-use": "Từ này đang được dùng nên chưa xóa được.",
     "export-too-large": "Quá nhiều dòng để xuất, hãy thu hẹp bộ lọc",
     "file-invalid": "File không hợp lệ",
     "file-too-large": "File quá lớn (tối đa 10 MB)",
@@ -21,6 +22,7 @@
     "invalid-current-password": "Mật khẩu hiện tại không đúng",
     "invalid-otp": "Mã xác minh không đúng hoặc đã hết hạn",
     "invalid-token": "Phiên hoặc liên kết không hợp lệ",
+    "job-not-active": "Lô này đã kết thúc.",
     "level-source-required": "File có cột level, hãy chọn nguồn level",
     "lock-rule": "Không khóa được chính bạn hoặc một admin.",
     "mail-unavailable": "Hiện chưa gửi được email nên chưa tạo tài khoản. Vui lòng thử lại sau ít phút.",
@@ -47,12 +49,16 @@
     "resolve-status-not-allowed": "Không xử lý được báo lỗi này. Tải lại trang.",
     "retryIn": "Thử lại sau {seconds} giây",
     "revision-rejected": "Bản này đã bị từ chối nên không publish được. Hãy sửa để tạo bản mới.",
+    "run-active": "Lần chạy đang chạy, hãy dừng trước khi xóa.",
+    "run-not-active": "Lần chạy này đã kết thúc.",
     "same_as_current": "Mật khẩu mới phải khác mật khẩu hiện tại",
     "sense-entry-mismatch": "Nghĩa này không thuộc từ đang chọn. Tải lại trang.",
     "sense-exists": "Từ này đã có nghĩa với nhãn ngữ cảnh đó. Hãy sửa nghĩa đã có thay vì thêm mới.",
     "sense-retired": "Nghĩa này đã retire nên không sửa được.",
     "source-exists": "Nguồn dữ liệu này đã tồn tại",
+    "source-in-use": "Nguồn này đang được dùng (mức độ của từ hoặc lô nhập) nên không xóa được.",
     "source-incomplete": "Nguồn level cần có phiên bản và license",
+    "source-protected": "Nguồn có sẵn của hệ thống không sửa hoặc xóa được.",
     "staff-role-rule": "Không thể đổi vai trò này (người dùng chưa xác minh email, hoặc đây là admin cuối cùng)",
     "stale-revision": "Nghĩa này vừa được sửa. Tải lại để xem bản mới.",
     "too-many-examples": "Chỉ nhận tối đa 3 câu ví dụ. Bỏ bớt rồi lưu lại.",
@@ -444,7 +450,22 @@
       "toast": {
         "added": "Đã thêm ví dụ.",
         "saved": "Đã lưu ví dụ.",
-        "deleted": "Đã xóa ví dụ."
+        "deleted": "Đã xóa ví dụ.",
+        "stopped": "Đã dừng lần chạy.",
+        "runDeleted": "Đã xóa lần chạy."
+      },
+      "stop": {
+        "button": "Dừng lần chạy",
+        "title": "Dừng lần chạy này?",
+        "body": "Các ví dụ chưa chạy sẽ không gọi AI nữa. Lời gọi đã gửi vẫn bị tính phí, và lần chạy đã dừng không chạy tiếp được. Kết quả các ví dụ đã chạy vẫn được giữ.",
+        "confirm": "Dừng lần chạy",
+        "keep": "Để chạy tiếp"
+      },
+      "removeRun": {
+        "button": "Xóa lần chạy",
+        "title": "Xóa lần chạy này?",
+        "body": "Kết quả từng ví dụ của lần chạy này sẽ mất. Chi phí đã tính vẫn nằm trong báo cáo Chi phí.",
+        "confirm": "Xóa lần chạy"
       },
       "form": {
         "addTitle": "Thêm ví dụ",
@@ -483,7 +504,8 @@
         "queued": "Đang chờ",
         "running": "Đang chạy",
         "finished": "Xong",
-        "failed": "Lỗi"
+        "failed": "Lỗi",
+        "cancelled": "Đã dừng"
       },
       "detail": {
         "title": "Lần chạy {time}",
@@ -505,6 +527,7 @@
         "running": "Đang chạy: {done}/{total} ví dụ. Trang tự cập nhật.",
         "failed": "Lỗi: {error}",
         "failedNoReason": "Lần chạy bị lỗi.",
+        "cancelled": "Lần chạy đã dừng. Kết quả các ví dụ đã chạy vẫn được giữ.",
         "background": "Đóng trang thì lần chạy vẫn chạy tiếp; mở lại để xem tiến độ.",
         "results": "Kết quả từng ví dụ",
         "deletedExample": "Ví dụ đã xóa",
@@ -1054,6 +1077,7 @@
     "succeeded": "Hoàn tất",
     "partial": "Một phần",
     "failed": "Thất bại",
+    "cancelled": "Đã dừng",
     "reverted": "Đã hoàn tác"
   },
   "sources": {
@@ -1065,7 +1089,21 @@
       "name": "Tên nguồn",
       "version": "Phiên bản",
       "license": "License",
-      "priority": "Ưu tiên"
+      "priority": "Ưu tiên",
+      "actions": "Hành động"
+    },
+    "edit": "Sửa",
+    "editFor": "Sửa nguồn {name}",
+    "editTitle": "Sửa nguồn “{name}”",
+    "delete": "Xóa",
+    "deleteFor": "Xóa nguồn {name}",
+    "deleteTitle": "Xóa nguồn “{name}”?",
+    "deleteBody": "Nguồn bị xóa khỏi danh sách và khỏi trang license công khai, không hoàn tác được.",
+    "deleteConfirm": "Xóa nguồn",
+    "ownerNote": "Nguồn có sẵn của hệ thống, không sửa hoặc xóa được",
+    "toast": {
+      "saved": "Đã lưu nguồn “{name}”.",
+      "deleted": "Đã xóa nguồn “{name}”."
     },
     "form": {
       "name": "Tên nguồn",
@@ -1181,7 +1219,13 @@
     "queuedLong": "Job đã chờ {seconds} giây. Worker có đang chạy không? Kiểm tra tiến trình worker rồi tải lại trang.",
     "confirmAllTitle": "Publish toàn bộ catalog?",
     "confirmAllBody": "Bạn chưa chọn bộ lọc nào, nên job này sẽ publish mọi sense đủ điều kiện trong toàn bộ catalog. Chỉ tiếp tục nếu đó là điều bạn muốn.",
-    "confirmAllSubmit": "Publish tất cả"
+    "confirmAllSubmit": "Publish tất cả",
+    "stop": "Dừng lô",
+    "stopTitle": "Dừng publish job #{id}?",
+    "stopBody": "Các sense đã publish vẫn giữ nguyên. Lô dừng trước sense tiếp theo và không chạy tiếp được; muốn publish phần còn lại, tạo publish job mới.",
+    "stopKeep": "Không dừng",
+    "stopped": "Đã dừng publish job #{id}",
+    "stoppedNotice": "Lô đã dừng sau {done} / {total} sense. Các sense đã publish vẫn giữ nguyên; phần còn lại chưa được publish."
   },
   "refunds": {
     "filters": {
@@ -1386,6 +1430,20 @@
     "editVariants": "Sửa cách viết khác",
     "editFunctionWord": "Đánh dấu từ chức năng",
     "addSense": "Thêm nghĩa",
+    "deleteWord": "Xóa từ",
+    "deleteTitle": "Xóa “{word}”?",
+    "deleteBody": "Từ này và các nghĩa bản nháp chưa publish của nó sẽ bị xóa. Không hoàn tác được.",
+    "deleteConfirm": "Xóa từ",
+    "deleted": "Đã xóa “{word}”",
+    "deleteBlocked": {
+      "title": "Không xóa được “{word}”:",
+      "published-sense": "Từ này đã có nghĩa được publish.",
+      "form-of-link": "Có nghĩa của từ khác ghi từ này là dạng gốc của nó.",
+      "learner-data": "Từ này đã có dữ liệu học của người học.",
+      "batch-record": "Từ này thuộc một lô nhập chưa hoàn tác. Hoàn tác lô đó trước.",
+      "publish-job": "Từ này có trong báo cáo của một lần publish hàng loạt.",
+      "active-job": "Đang có lô nhập hoặc lần publish hàng loạt chạy liên quan. Chờ chạy xong rồi thử lại."
+    },
     "save": "Lưu",
     "saved": "Đã lưu “{word}”",
     "level": "Trình độ",

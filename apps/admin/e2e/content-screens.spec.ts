@@ -32,6 +32,27 @@ test('Từ: menu → filter in the URL → edit a level through the row menu', a
   expect(requests(page, 'PUT', '/v1/admin/content/entries/e1/levels/editorial')[0].body).toEqual({ level: 'C1' });
 });
 
+test('Từ: Xóa từ asks first; a refusal lists why and keeps the word; the next confirm deletes it', async ({ page }) => {
+  let refuse = true;
+  await signedInAs(page, 'editor', {
+    ...contentMocks,
+    'GET /v1/admin/content/uploads': () => ({ json: { items: [], next_page_token: null } }),
+    'DELETE /v1/admin/content/entries/e1': () => (refuse ? problem(409, 'entry-in-use', { reasons: ['published-sense', 'learner-data'] }) : { status: 204 }),
+  });
+  await page.goto('/words');
+  await page.getByRole('button', { name: vi.words.actionsFor.replace('{word}', 'deploy · verb') }).filter({ visible: true }).first().click();
+  await page.getByRole('menuitem', { name: vi.words.deleteWord }).click();
+  const dialog = page.getByRole('dialog', { name: vi.words.deleteTitle.replace('{word}', 'deploy') });
+  await expect(dialog.getByText(vi.words.deleteBody)).toBeVisible();
+  expect(requests(page, 'DELETE', '/v1/admin/content/entries/e1')).toHaveLength(0);
+  await dialog.getByRole('button', { name: vi.words.deleteConfirm }).click();
+  await expect(dialog.getByRole('alert').getByRole('listitem')).toHaveText([vi.words.deleteBlocked['published-sense'], vi.words.deleteBlocked['learner-data']]);
+  refuse = false;
+  await dialog.getByRole('button', { name: vi.words.deleteConfirm }).click();
+  await expect(dialog).toBeHidden();
+  expect(requests(page, 'DELETE', '/v1/admin/content/entries/e1')).toHaveLength(2);
+});
+
 test('Nghĩa: pick a row → Publish → result; the row opens its detail', async ({ page }) => {
   await signedInAs(page, 'editor', {
     ...contentMocks,

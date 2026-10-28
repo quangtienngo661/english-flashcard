@@ -10,7 +10,7 @@ import type { EvalItem, EvalRunRow } from './eval-runs.repository.js';
 const NOW = new Date('2026-10-20T03:00:00Z');
 const ADMIN = '11111111-1111-4111-8111-111111111111';
 const RUN = '22222222-2222-4222-8222-222222222222';
-const [EX1, EX2, EX3, EX4] = ['a', 'b', 'c', 'd'].map((c) => `${c.repeat(8)}-${c.repeat(4)}-4${c.repeat(3)}-8${c.repeat(3)}-${c.repeat(12)}`);
+const [EX1, EX2, EX3, EX4, EX5] = ['a', 'b', 'c', 'd', 'e'].map((c) => `${c.repeat(8)}-${c.repeat(4)}-4${c.repeat(3)}-8${c.repeat(3)}-${c.repeat(12)}`);
 const INPUT = (word: string) => ({ word, part_of_speech: 'verb', level: 'B1', meaning_vi: 'nghĩa', context_label: null });
 const PROMPT: StoredPrompt = { instructions: 'Write one sentence.', examples: [], revision: 3 };
 
@@ -32,6 +32,7 @@ function memoryRepository(row: EvalRunRow) {
       Object.assign(row, { status: 'running', startedAt: row.startedAt ?? now, heartbeatAt: now });
       return structuredClone(row);
     }),
+    isRunning: vi.fn(async (id: string) => row.id === id && row.status === 'running'),
     appendItem: vi.fn(async (id: string, item: EvalItem, now: Date) => {
       if (row.id === id && row.status === 'running') Object.assign(row, { items: [...row.items, item], heartbeatAt: now });
     }),
@@ -198,6 +199,75 @@ describe('EvalJob.run', () => {
     await ctx.job.run(RUN);
     expect(ctx.runner.execute).not.toHaveBeenCalled();
     expect(ctx.repo.finish).not.toHaveBeenCalled();
+  });
+
+  it('the run is checked before every paid call, not once for the whole run', async () => {
+    await ctx.job.run(RUN);
+    expect(ctx.repo.isRunning).toHaveBeenCalledTimes(3);
+    expect(ctx.repo.isRunning).toHaveBeenCalledWith(RUN);
+    ctx.runner.execute.mock.invocationCallOrder.forEach((order, index) => {
+      expect(ctx.repo.isRunning.mock.invocationCallOrder[index]!).toBeLessThan(order);
+    });
+  });
+
+  it('a run cancelled while it is running → no new provider call after that, results still in flight are not stored, it is never finished', async () => {
+    const ids = [EX1, EX2, EX3, EX4, EX5];
+    ctx = setup(runRow({ exampleIds: ids, total: 5 }), ids);
+    const cancelledAt = new Date('2026-10-20T03:05:00Z');
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => { release = resolve; });
+    let calls = 0;
+    ctx.runner.execute.mockImplementation(async (input: ExecuteInput) => {
+      calls += 1;
+      if (calls === 1) return succeeded(input); // example 1 is done at once and stored
+      if (calls === 4) { // the cancel arrives during the fourth call; calls 2 and 3 are still in flight
+        Object.assign(ctx.repo.row, { status: 'failed', error: 'cancelled', finishedAt: cancelledAt });
+        release();
+        return succeeded(input);
+      }
+      await gate;
+      return succeeded(input);
+    });
+    await ctx.job.run(RUN);
+    expect(ctx.runner.execute).toHaveBeenCalledTimes(4);
+    expect(ctx.runner.execute.mock.calls.map(([input]) => (input as { callOperationId: string }).callOperationId))
+      .not.toContain(`eval-${RUN}-${EX5}`);
+    expect(ctx.repo.row).toMatchObject({ status: 'failed', error: 'cancelled', finishedAt: cancelledAt });
+    expect(ctx.repo.row.items.map((item) => item.example_id)).toEqual([EX1]);
+    expect(ctx.repo.finish).not.toHaveBeenCalled();
+    expect(ctx.repo.fail).not.toHaveBeenCalled();
+  });
+
+  it('a run cancelled just after it started, before its first call → nothing is called and nothing is written', async () => {
+    const start = ctx.repo.start.getMockImplementation()!;
+    ctx.repo.start.mockImplementation(async (id: string, now: Date) => {
+      const started = await start(id, now);
+      Object.assign(ctx.repo.row, { status: 'failed', error: 'cancelled', finishedAt: now });
+      return started;
+    });
+    await ctx.job.run(RUN);
+    expect(ctx.repo.row).toMatchObject({ status: 'failed', error: 'cancelled', items: [] });
+    expect(ctx.runner.execute).not.toHaveBeenCalled();
+    expect(ctx.repo.appendItem).not.toHaveBeenCalled();
+    expect(ctx.repo.finish).not.toHaveBeenCalled();
+    expect(ctx.repo.fail).not.toHaveBeenCalled();
+  });
+
+  it('a run cancelled while still queued is never started: start finds it failed and the job returns', async () => {
+    ctx = setup(runRow({ status: 'failed', error: 'cancelled', finishedAt: NOW }));
+    await ctx.job.run(RUN);
+    expect(ctx.repo.start).toHaveBeenCalledTimes(1);
+    expect(ctx.repo.isRunning).not.toHaveBeenCalled();
+    expect(ctx.runner.execute).not.toHaveBeenCalled();
+    expect(ctx.prisma.aiEvalExample.findMany).not.toHaveBeenCalled();
+    expect(ctx.repo.row).toMatchObject({ status: 'failed', error: 'cancelled', items: [], startedAt: null });
+  });
+
+  it('the status check itself failing → the run is failed with the error name, like any other throw', async () => {
+    ctx.repo.isRunning.mockRejectedValue(new Error('connection lost with a secret in it'));
+    await ctx.job.run(RUN);
+    expect(ctx.runner.execute).not.toHaveBeenCalled();
+    expect(ctx.repo.row).toMatchObject({ status: 'failed', error: 'Error' });
   });
 
   it('a throw → failed with a one-line error that carries no content', async () => {

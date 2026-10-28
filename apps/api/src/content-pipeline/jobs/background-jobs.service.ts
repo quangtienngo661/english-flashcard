@@ -3,7 +3,7 @@ import { Clock } from '../../common/clock/clock.js';
 import { APP_CONFIG, type AppConfig } from '../../common/config/app-config.js';
 import { PRISMA_CLIENT } from '../../common/db/prisma.module.js';
 import { Prisma, type PrismaClient } from '../../generated/prisma/client.js';
-import { LeaseLostError, type JobContext, type JobQueueName } from './job-types.js';
+import { CANCELLED_SUMMARY, LeaseLostError, type JobContext, type JobQueueName } from './job-types.js';
 
 const EXCLUSIVE_KEY_INDEX = 'background_jobs_exclusive_key_running_key';
 
@@ -106,6 +106,23 @@ export class BackgroundJobsService {
     const result = await this.prisma.backgroundJob.updateMany({
       where: { id: jobId, leaseEpoch: epoch, status: 'running' },
       data: { status: 'queued', leaseOwner: null, leaseExpiresAt: null },
+    });
+    return result.count > 0;
+  }
+
+  /**
+   * Stops a queued or running job for good, in the caller's transaction: `failed` + CANCELLED_SUMMARY (the status CHECK
+   * has no `cancelled`). The epoch bump fences a live worker: its next `ctx.tx` throws LeaseLostError, and its
+   * finish/release/extend match nothing. No acquire or reconcile pass takes a `failed` job up again.
+   * False when the job is not queued/running in that queue (already ended, or no such job).
+   */
+  async cancel(tx: Prisma.TransactionClient, jobId: string, queue: JobQueueName): Promise<boolean> {
+    const result = await tx.backgroundJob.updateMany({
+      where: { id: jobId, queue, status: { in: ['queued', 'running'] } },
+      data: {
+        status: 'failed', errorSummary: CANCELLED_SUMMARY, finishedAt: this.clock.now(),
+        leaseOwner: null, leaseExpiresAt: null, leaseEpoch: { increment: 1 },
+      },
     });
     return result.count > 0;
   }
