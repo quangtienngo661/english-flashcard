@@ -25,6 +25,7 @@ dùng Gmail `minh@gmail.com`. **Hà**, editor.
 | IR18: Google xác nhận lại bằng `prompt=login` / `max_age` và `auth_time` trong 5 phút | Google không có `prompt=login`; `auth_time` chỉ có khi app đã xác minh và "In production". Xác nhận lại = một lần chọn lại đúng tài khoản Google (`prompt=select_account`) | D25; tài liệu Google đọc 28/10/2026 |
 | IR18 thứ tự (2) thu hồi phiên, (3) module xóa, "thử lại tới khi xong" | Giữ nguyên; (3) và (4) chạy trong **một** transaction ngay trong request, lỗi thì việc định kỳ thử lại | D23 |
 | `AuthGuard` không đọc DB (Bước 1, `auth.guard.ts:15-27`) | Đọc `users.status` mỗi request; `locked` và `deleting` bị từ chối ngay | D24 |
+| IR13: access token còn dùng được tối đa 15 phút sau khi đăng xuất (giới hạn đã biết) | Cùng lần đọc đó kiểm chuỗi phiên đã thu hồi: đăng xuất có hiệu lực ngay | Câu 29 vòng 2 |
 | IR17: thao tác admin chỉ kiểm vai trò và chuỗi phiên | Thêm: chuỗi phiên tạo bằng Google không dùng được cho route admin | D5 |
 | PRC27: báo lỗi giữ ẩn danh (`ASSUMPTION`) | Chốt: giữ, bỏ tên, xóa ghi chú; báo lỗi về câu làm từ câu người học tự viết thì xóa hẳn | D14 |
 | Bước 5 (D22): một trial theo tài khoản và thẻ, "trial lại sau khi xóa" để Bước 8 | Xóa `trial_history` của người đó; đăng ký lại thì có trial lại trên web | D12 |
@@ -49,13 +50,13 @@ Review: [`../reviews/2026-10-28-buoc-8-design-review.md`](../reviews/2026-10-28-
 | R4 | 6.2, M2, M3, M15 | Bảng "đường nào làm gì với `deleting`" |
 | R5 | 7.3, M21 | Bỏ luật `cloze_source='own'`; ngoại lệ D14 do `report-not-available` bảo đảm. **Chờ chủ dự án (câu 27)**: báo lỗi về từ riêng, câu trả lời trong bản chụp |
 | R6 | 0, 5.4, 5.5, B8E6, B8E10 | Tài khoản chưa xác minh đi màn D6; hoàn tất dùng lại `id` |
-| R7 | 7.1, 8.1, M8, M9, M20 | Một vị từ "đang tự gia hạn" dùng chung; admin xóa: tắt gia hạn trước, lỗi thì không xóa. **Chờ chủ dự án (câu 28)**: `grace` / `on_hold` |
+| R7 | 7.1, 8.1, M8, M9, M20 | Một vị từ "đang tự gia hạn" dùng chung, gồm cả `grace`, `on_hold` (chủ dự án chốt câu 28); admin xóa: tắt gia hạn trước, lỗi thì không xóa |
 | R8 | 7.2, M4 | Xóa nhân sự: khóa `identity.staff_role` trước; đếm admin bỏ người `deleting` |
 | R9 | 4, 7.4 | Port điều kiện của Entitlements, port đọc cài đặt; Common gọi thẳng, registry còn sáu module |
 | R10 | 5.7, 10, M5 | Admin xử lý 403 `password-login-required`; `/v1/me` trả `auth_method` |
 | R11 | 5.3, 5.4, 9.1, 9.2, M6, M7 | Cờ `logout-pending`, định dạng `next`, nhóm route `(auth)`, báo tab khác |
 | R12 | 7.2, 7.4, 17, M12 | Timeout riêng cho Tx B, xóa hàng loạt, đo một người học lớn |
-| R13 | 6, 17, M22 | Route `@Public` không đổi; một lần đọc dùng chung cho các guard; test và smoke bị ảnh hưởng. **Tùy chọn (câu 29)**: kiểm cả chuỗi phiên đã thu hồi |
+| R13 | 6, 17, M22 | Route `@Public` không đổi; một lần đọc dùng chung cho các guard; test và smoke bị ảnh hưởng. Kiểm cả chuỗi phiên đã thu hồi (chủ dự án chốt câu 29) |
 | R14 | 7.2, 7.3, M13, M24 | Việc thử lại chỉ chọn `deleting` quá 10 phút; "không còn `users` = xong"; thứ tự khóa đầy đủ |
 | R15 | 7.6, M16 | Mốc dọn = `terms_accepted_at`; dọn cả tài khoản chưa xác minh bị khóa |
 | R16 | 7.2, M14 | Thư "đã xóa" cũng gửi khi việc định kỳ xóa xong |
@@ -250,9 +251,9 @@ Giới hạn đã biết (D25): nếu trình duyệt đang đăng nhập Google 
 ### 6.1 Guard
 
 - `AuthGuard` (`auth.guard.ts:15-27`), trên route **không** `@Public`, sau khi token hợp lệ đọc **một** hàng: `session_chains` theo `sid` nối `users` (khóa chính), lấy
-  `users.status` và `session_chains.auth_method`. Không có hàng, `locked` hoặc `deleting` → 401 `invalid-token`; web đã coi 401 là hết phiên và đưa về trang đăng nhập.
-  Kết quả gắn vào request để `PermissionGuard` (`auth_method`, §5.7) dùng lại, không đọc lần hai (**Đề xuất**, review R13). **Chờ câu 29 (vòng 2, tùy chọn):** có từ chối luôn
-  chuỗi phiên đã thu hồi (`revoked_at`) không.
+  `users.status`, `session_chains.auth_method` và `session_chains.revoked_at`. Không có hàng, chuỗi đã thu hồi, `locked` hoặc `deleting` → 401 `invalid-token`; web đã coi 401 là hết phiên và đưa về trang đăng nhập.
+  Kết quả gắn vào request để `PermissionGuard` (`auth_method`, §5.7) dùng lại, không đọc lần hai (**Đề xuất**, review R13). Kiểm `revoked_at` do chủ dự án chốt (câu 29
+  vòng 2): đăng xuất, đổi mật khẩu, khóa rồi mở khóa có hiệu lực ngay ở request kế tiếp; giới hạn "tối đa 15 phút" của IR13 không còn.
 - Route `@Public` **không đổi** (review R13): token hợp lệ vẫn gắn `request.user` như hiện nay (`auth.guard.ts:22`), không đọc DB; các service trên route công khai đã tự kiểm
   trạng thái (phát OTP chỉ khi `active`, `otp.service.ts:50`; đặt lại mật khẩu đòi `active`, `password.service.ts:108`).
 - Không cache (**Đề xuất**). Bịt luôn kẽ hở "bị khóa vẫn dùng được tới 15 phút" ghi ở code facts §3.
@@ -286,9 +287,10 @@ Bình thường `deleting` chỉ kéo dài vài giây; khi Tx B lỗi (§7.2) n�
 | Admin (`roles.manage`) | Người khác, kể cả nhân sự | Không phải chính mình; không phải admin cuối (cùng luật với `setStaffRole`, `staff.service.ts:336-338`) | Gõ lại email (D17) |
 | Việc định kỳ | Tài khoản chưa xác nhận email quá N ngày (D19) | §7.6 | — |
 
-**"Đang tự gia hạn"** là một vị từ dùng chung cho: chặn xóa, hiện nút "Hủy gói", cho phép `POST …/cancel` (review R7). Hiện tại: gói có `status` ∈ (`trialing`, `active`) và
-`cancel_at_period_end = false`, khớp định nghĩa "sẽ gia hạn" của job thư gia hạn (`billing-jobs.service.ts:133`). **Chờ câu 28 (vòng 2):** gói `grace` / `on_hold` (trừ tiền lỗi,
-nhà cung cấp đang thử lại) có tính là "đang tự gia hạn" không. Máy trạng thái đã cho `cancel_scheduled` ở cả hai trạng thái này (`subscription-machine.ts:164-170`).
+**"Đang tự gia hạn"** là một vị từ dùng chung cho: chặn xóa, hiện nút "Hủy gói", cho phép `POST …/cancel` (review R7): gói có `status` ∈ (`trialing`, `active`, `grace`,
+`on_hold`) và `cancel_at_period_end = false`. `grace` và `on_hold` (trừ tiền lỗi, nhà cung cấp còn thử lại) được tính theo chủ dự án (câu 28 vòng 2): Lan phải hủy gói trước,
+không thì lần thử trừ tiền sau có thể thành công cho một tài khoản không còn. Máy trạng thái đã cho `cancel_scheduled` ở cả bốn trạng thái (`subscription-machine.ts:164-170`).
+Job thư gia hạn giữ định nghĩa riêng của nó (`billing-jobs.service.ts:133`, chỉ `trialing`, `active`).
 
 Admin xóa người học đang có gói tự gia hạn (**Đề xuất**, khác D11 vốn chỉ nói người học tự xóa): app tắt gia hạn **trước** Tx A, ngoài mọi khóa, như khi cấp Pro
 (`grants.service.ts:384-396`); bộ nối trả lỗi, hết giờ hoặc không hỗ trợ (`not_supported`) → 409 `renewal-not-cancelled`, **không** xóa (người đó sẽ tiếp tục bị trừ tiền nếu
@@ -574,6 +576,8 @@ Theo khuôn của `identity/mailer/templates.ts` (chữ thường, vi rồi en t
 | B8E52 | Webhook bật lại gia hạn của Lan tới giữa Tx A và Tx B | Bộ xóa Entitlements thấy "đang tự gia hạn": Tx B lỗi, sang nhánh thử lại, log cảnh báo (M20) |
 | B8E53 | Chạy lại việc xóa từ file sau khôi phục, bản cũ ghi Lan đang gia hạn hoặc là admin cuối | Bỏ qua điều kiện, vẫn xóa; không thư (M23) |
 | B8E54 | Lan bấm xóa hai lần, cả hai request qua guard trước khi Tx A đầu commit | Request sau thấy `deleting` trong Tx A: trả 202, không chạy Tx B song song (M24) |
+| B8E56 | Lan đăng xuất trên laptop; tab khác trên laptop đó còn access token | Request kế tiếp của tab đó → 401, về trang đăng nhập (câu 29) |
+| B8E57 | Gói của Lan ở `grace` (thẻ hết tiền), Lan bấm xóa | 409 `subscription-renewing`; màn chỉ tới nút "Hủy gói", nút này hiện ở cả `grace` và `on_hold` (câu 28) |
 | B8E55 | Câu điền từ làm từ câu Lan tự viết | Không báo lỗi được (409 `report-not-available`, đã có); test giữ điều này để ngoại lệ D14 luôn đúng |
 
 ## 16. Acceptance criteria (When → Then)
