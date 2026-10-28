@@ -6,9 +6,10 @@ import { makeMe, problem } from '../../auth/test-support';
 import { AI_OPERATION_ORDER } from '../ai/ai-api';
 import { todayInAdminZone } from '../ai/cost-range';
 import { renderApp } from '../staff/test-utils';
-import type { AiDashboard, AiQuality, AiUsageDays } from './dashboard-api';
+import type { AiDashboard, AiQuality, AiUsageDays, AiUsagePro } from './dashboard-api';
 
 const t = vi.dashboard;
+const PRO_URL = 'GET /v1/admin/entitlements/ai-usage/pro';
 const TODAY = todayInAdminZone(new Date());
 const back = (days: number) => new Date(Date.parse(`${TODAY}T00:00:00Z`) - days * 86_400_000).toISOString().slice(0, 10);
 const urls = (from = back(29), to = TODAY) => ({
@@ -54,6 +55,18 @@ const qualityReply = (over: Partial<AiQuality> = {}): AiQuality => ({
   ai_report_reasons: [{ reason: 'wrong_answer', label_vi: 'Đáp án sai', label_en: 'Wrong answer', count: 3 }],
   unknown_forms: { new_forms: 2, rejected_seen: 4 },
   word_checks: [{ verdict: 'not_recognized', count: 1 }],
+  ai_second_tries: [
+    { type: 'cloze', first_answers: 24, second_tries: 3 },
+    { type: 'meaning_in_sentence', first_answers: 10, second_tries: 0 },
+  ],
+  ...over,
+});
+const proReply = (over: Partial<AiUsagePro> = {}): AiUsagePro => ({
+  pro_learners: 12, no_limit: 0, truncated: false,
+  buckets: [
+    { key: '0', learners: 3 }, { key: '1-49', learners: 5 }, { key: '50-79', learners: 2 }, { key: '80-99', learners: 1 },
+    { key: '100', learners: 1 },
+  ],
   ...over,
 });
 const usageReply = (over: Partial<AiUsageDays> = {}): AiUsageDays => ({
@@ -63,10 +76,11 @@ const usageReply = (over: Partial<AiUsageDays> = {}): AiUsageDays => ({
   refunds: 1, days_at_cap: 0,
   ...over,
 });
-const routes = (u = urls(), replies: { ai?: AiDashboard; quality?: AiQuality; usage?: AiUsageDays } = {}) => ({
+const routes = (u = urls(), replies: { ai?: AiDashboard; quality?: AiQuality; usage?: AiUsageDays; pro?: AiUsagePro } = {}) => ({
   [u.ai]: () => Response.json(replies.ai ?? aiReply()),
   [u.quality]: () => Response.json(replies.quality ?? qualityReply()),
   [u.usage]: () => Response.json(replies.usage ?? usageReply()),
+  [PRO_URL]: () => Response.json(replies.pro ?? proReply()),
 });
 const tile = (label: string) => screen.getByText(label).parentElement as HTMLElement;
 
@@ -116,6 +130,54 @@ describe('DashboardPage (/dashboard, ai.view)', () => {
     expect(screen.getByRole('list', { name: t.impact.failures })).toHaveTextContent(t.failures.rejected);
   });
 
+  it('quality: per AI question type, the share rewritten after the first try failed the rules, with its counts', async () => {
+    renderApp('/dashboard', routes());
+    await screen.findByRole('heading', { level: 2, name: t.quality.title });
+    const list = screen.getByRole('list', { name: t.quality.retry.title });
+    const cloze = within(list).getByText(new RegExp(`^${t.types.cloze} \\(3 / 24\\)$`)).closest('li') as HTMLElement;
+    expect(within(cloze).getByText(/^12,5\s?%$/)).toBeInTheDocument();
+    const meaning = within(list).getByText(new RegExp(`^${t.types.meaning_in_sentence} \\(0 / 10\\)$`)).closest('li') as HTMLElement;
+    expect(within(meaning).getByText(/^0\s?%$/)).toBeInTheDocument();
+    expect(within(list).queryByText(new RegExp(t.types.mcq_sentence))).not.toBeInTheDocument();
+  });
+
+  it('quality: no AI answer in the range → the empty text instead of the list', async () => {
+    renderApp('/dashboard', routes(urls(), { quality: qualityReply({ ai_second_tries: [] }) }));
+    const card = (await screen.findByRole('heading', { level: 2, name: t.quality.title })).closest('section') as HTMLElement;
+    expect(within(card).queryByRole('list', { name: t.quality.retry.title })).not.toBeInTheDocument();
+    expect(within(card).getByRole('heading', { level: 3, name: t.quality.retry.title })).toBeInTheDocument();
+    expect(within(card).getAllByText(t.empty).length).toBeGreaterThan(0);
+  });
+
+  it('usage: Pro learners by share of limit used, in the five buckets, with the number of Pro learners', async () => {
+    renderApp('/dashboard', routes());
+    const card = (await screen.findByRole('heading', { level: 2, name: t.usage.title })).closest('section') as HTMLElement;
+    expect(within(card).getByRole('heading', { level: 3, name: t.usage.pro.title })).toBeInTheDocument();
+    expect(within(tile(t.usage.pro.learners)).getByText('12')).toBeInTheDocument();
+    const list = within(card).getByRole('list', { name: t.usage.pro.chart });
+    const counts = [
+      [t.usage.pro.bucketZero, '3'], [t.usage.pro.bucketLow, '5'], [t.usage.pro.bucketMid, '2'], [t.usage.pro.bucketHigh, '1'],
+      [t.usage.pro.bucketFull, '1'],
+    ];
+    expect(within(list).getAllByRole('listitem').map((item) => item.textContent)).toEqual(counts.map(([label, n]) => `${label}${n}`));
+    expect(within(card).queryByText(t.usage.pro.truncated)).not.toBeInTheDocument();
+    expect(within(card).queryByText(/không có hạn mức AI/)).not.toBeInTheDocument();
+  });
+
+  it('usage: no Pro learner → the empty state, no list', async () => {
+    renderApp('/dashboard', routes(urls(), { pro: proReply({ pro_learners: 0, buckets: proReply().buckets.map((b) => ({ ...b, learners: 0 })) }) }));
+    const card = (await screen.findByRole('heading', { level: 2, name: t.usage.title })).closest('section') as HTMLElement;
+    expect(within(card).getByText(t.usage.pro.none)).toBeInTheDocument();
+    expect(within(card).queryByRole('list', { name: t.usage.pro.chart })).not.toBeInTheDocument();
+  });
+
+  it('usage: Pro learners without an AI limit and a truncated read are each said in one line', async () => {
+    renderApp('/dashboard', routes(urls(), { pro: proReply({ no_limit: 2, truncated: true }) }));
+    const card = (await screen.findByRole('heading', { level: 2, name: t.usage.title })).closest('section') as HTMLElement;
+    expect(within(card).getByText('2 người dùng gói Pro không có hạn mức AI nên không nằm trong các nhóm trên.')).toBeInTheDocument();
+    expect(within(card).getByText(t.usage.pro.truncated)).toBeInTheDocument();
+  });
+
   it('a column takes keyboard focus and shows its day with every series in a tooltip', async () => {
     renderApp('/dashboard', routes());
     const chart = await screen.findByRole('group', { name: t.health.chart });
@@ -137,6 +199,8 @@ describe('DashboardPage (/dashboard, ai.view)', () => {
     await user.click(await screen.findByRole('option', { name: '7 ngày gần nhất' }));
     await waitFor(() => expect(r.count('GET', urls(back(6)).ai.slice(4))).toBe(1));
     expect(r.count('GET', urls(back(6)).usage.slice(4))).toBe(1);
+    // The Pro spread is of the current cycle, not of the range: it is not asked again.
+    expect(r.count('GET', PRO_URL.slice(4))).toBe(1);
   });
 
   it('an editor with ai.view sees the page and its menu item', async () => {
@@ -153,6 +217,11 @@ describe('DashboardPage (/dashboard, ai.view)', () => {
   it('a 403 from any part → the forbidden banner', async () => {
     const u = urls();
     renderApp('/dashboard', { ...routes(), [u.quality]: () => problem(403, 'forbidden') });
+    expect(await screen.findByText(vi.errors.forbidden)).toBeInTheDocument();
+  });
+
+  it('a 403 from the Pro spread alone → the forbidden banner too', async () => {
+    renderApp('/dashboard', { ...routes(), [PRO_URL]: () => problem(403, 'forbidden') });
     expect(await screen.findByText(vi.errors.forbidden)).toBeInTheDocument();
   });
 });

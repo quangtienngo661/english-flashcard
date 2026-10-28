@@ -5,7 +5,7 @@ const totals = (calls: number, cost_vnd: number) => ({
 });
 const OPERATIONS = ['generate_cloze', 'lookup_word', 'translate_sentence', 'generate_meaning_question', 'generate_sentence_mcq', 'check_private_word'];
 
-/** The three reads of `/dashboard`, answered with the numbers of the first real AI run (28/10/2026); the range is echoed back. */
+/** The four reads of `/dashboard`, answered with the numbers of the first real AI run (28/10/2026); the range is echoed back. */
 export const dashboardMocks: Record<string, MockHandler> = {
   'GET /v1/admin/ai/dashboard': ({ query }) => ({ json: {
     from: query.get('from'), to: query.get('to'), ai_enabled: true,
@@ -30,6 +30,14 @@ export const dashboardMocks: Record<string, MockHandler> = {
     ai_requests: [{ type: 'cloze', state: 'ready', failure: null, count: 3 }],
     ai_sessions: [{ stopped: null, count: 1 }],
     reports: [], ai_report_reasons: [], unknown_forms: { new_forms: 0, rejected_seen: 0 }, word_checks: [],
+    ai_second_tries: [{ type: 'cloze', first_answers: 3, second_tries: 0 }],
+  } }),
+  'GET /v1/admin/entitlements/ai-usage/pro': () => ({ json: {
+    pro_learners: 1, no_limit: 0, truncated: false,
+    buckets: [
+      { key: '0', learners: 1 }, { key: '1-49', learners: 0 }, { key: '50-79', learners: 0 }, { key: '80-99', learners: 0 },
+      { key: '100', learners: 0 },
+    ],
   } }),
   'GET /v1/admin/entitlements/ai-usage/days': ({ query }) => ({ json: {
     from: query.get('from'), to: query.get('to'),

@@ -1678,7 +1678,11 @@
       "formsSeen": "Dạng chia tiếp tục xuất hiện",
       "wordCheck": "Kiểm tra từ riêng: {verdict}",
       "compare": "Câu hỏi AI so với câu hỏi không dùng AI",
-      "reportsAi": "Báo lỗi câu hỏi AI"
+      "reportsAi": "Báo lỗi câu hỏi AI",
+      "retry": {
+        "title": "Câu AI phải viết lại vì không đạt kiểm tra tự động",
+        "hint": "Tỉ lệ câu AI bị kiểm tra tự động loại ở lần đầu nên phải nhờ AI viết lại. Trong ngoặc: số câu viết lại / số câu AI trả về lần đầu."
+      }
     },
     "impact": {
       "title": "Tác động đến người học",
@@ -1699,7 +1703,21 @@
       "peakLearners": "Số người học cao nhất trong ngày",
       "chart": "Lượt AI theo ngày",
       "practice": "Câu hỏi AI khi luyện tập",
-      "lookup": "Tra cứu từ bằng AI"
+      "lookup": "Tra cứu từ bằng AI",
+      "pro": {
+        "title": "Người dùng gói Pro đã dùng bao nhiêu hạn mức",
+        "hint": "Tính theo chu kỳ hiện tại của từng người, không phụ thuộc khoảng thời gian đã chọn. Mỗi người được xếp theo loại có tỉ lệ đã dùng cao hơn: câu hỏi AI khi luyện tập hoặc tra cứu từ bằng AI.",
+        "learners": "Người dùng gói Pro",
+        "none": "Chưa có người dùng gói Pro",
+        "chart": "Số người dùng gói Pro theo mức đã dùng",
+        "bucketZero": "Chưa dùng (0 %)",
+        "bucketLow": "Đã dùng 1–49 %",
+        "bucketMid": "Đã dùng 50–79 %",
+        "bucketHigh": "Đã dùng 80–99 %",
+        "bucketFull": "Đã dùng hết (100 %)",
+        "noLimit": "{count} người dùng gói Pro không có hạn mức AI nên không nằm trong các nhóm trên.",
+        "truncated": "Có nhiều người dùng gói Pro hơn số hệ thống tính trong một lần, nên các con số chỉ phản ánh một phần."
+      }
     },
     "cols": {
       "operation": "Thao tác",
