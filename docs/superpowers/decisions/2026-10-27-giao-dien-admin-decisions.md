@@ -27,6 +27,7 @@ API từng khung: [`../../preparation/giao-dien-admin-facts/`](../../preparation
 | AD13 | Editor cấp gói không tìm được người học | Endpoint tra đúng một email cho `entitlements.grant`; lọc theo người bằng email | Chủ dự án (đề xuất của Claude) |
 | AD14 | Editor không đọc được lý do báo lỗi | `content.edit` được đọc danh sách lý do; báo lỗi mang cờ `refundable` | Chủ dự án (đề xuất của Claude) |
 | AD15 | Thời điểm làm việc API | 9 task API làm ở một phiên riêng, song song với các milestone màn | Chủ dự án (đề xuất của Claude) |
+| AD16 | Kết quả từng ví dụ ở chi tiết lần chạy Bộ ví dụ (thêm ngoài design, 27/10/2026) | Thêm bảng kết quả từng ví dụ (tóm tắt đầu vào, trạng thái, lý do, đầu ra, đầu ra gốc xem khi cần) | Chủ dự án ("giữ") |
 | AD17 | "Tới ngày" khi cấp / sửa ngày lần cấp | Ngày D tính trọn: còn hiệu lực hết ngày D (giờ Việt Nam); API nhận 00:00 ngày D+1 | Chủ dự án (giữ cách màn M4 đã làm) |
 | AD18 | Admin tạo / sửa người dùng (thêm sau M4, 28/10/2026) | `POST /v1/admin/users` nhận thêm vai trò người học; admin sửa email, tên, ngày sinh, múi giờ và đặt lại mật khẩu; editor chỉ đọc; ngày sinh và điều khoản do người học tự bổ sung ở lần đăng nhập đầu | Chủ dự án (6 câu + 4 câu, đề xuất của Claude được duyệt) |
 
@@ -227,6 +228,16 @@ Chủ dự án hỏi còn bao nhiêu task và làm song song được không. Cl
 | (1) giữ nối tiếp như design §3, §5 | Không xung đột; chậm nhất |
 | ✅ (2) 9 task API (Task 9, 10, 17, 21, 24, 25, 31, 32, 37) ở một phiên riêng song song; màn vẫn nối tiếp | Bỏ luật "API nằm trong PR của milestone dùng nó"; Task 9 (`UserRef`) phải làm trước; vài spec dùng chung |
 | (3) mỗi milestone một phiên chạy cùng lúc | Nhanh nhất; 6 nhánh cùng sửa `nav.ts`, `routes.tsx`, `messages/*.json`, `ui/` |
+
+## AD16 — Kết quả từng ví dụ ở chi tiết lần chạy Bộ ví dụ (27/10/2026, khi làm M1b; thêm ngoài design)
+
+Design §6.5 và bản chữ A/83 chỉ có phần tóm tắt của một lần chạy (tiến độ, hợp lệ, thời gian trung bình, chi phí, model, bản prompt, người chạy). API trả thêm
+`items[]` (kết quả từng ví dụ). Màn M1b đã thêm bảng này; Claude báo lại là việc thêm ngoài design. Chủ dự án: "giữ".
+
+| Phương án | Trade-off |
+|---|---|
+| (a) Chỉ các trường tóm tắt của design §6.5 / bản chữ A/83 | Đúng khung đã duyệt, ít màn hơn; lần chạy thật đầu tiên nuôi nhóm B (đo chất lượng prompt) mà tóm tắt không cho thấy ví dụ nào lỗi |
+| ✅ (b) Thêm bảng từng ví dụ: tóm tắt đầu vào, trạng thái, lý do, đầu ra, đầu ra gốc xem khi cần | Thêm bản chữ tự viết (đã ghi ở as-built); nhìn được ví dụ nào lỗi và vì sao ngay sau lần chạy thật đầu tiên |
 
 ## AD17 — "Tới ngày" của lần cấp (27/10/2026, khi làm M4)
 
