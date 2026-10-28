@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
+import { AccountDeletionRegistry } from './deletion/account-eraser.js';
 import { MailModule } from '../common/mail/mail.module.js';
 import { ROLE_PERMISSIONS } from './identity.types.js';
 import { AuthController } from './auth/auth.controller.js';
@@ -29,8 +30,8 @@ import { StaffService } from './staff/staff.service.js';
     PasswordHasher, OtpService, AuthService, PasswordService, IdentityService, AccessTokenService, SessionService, StaffService, PermissionGuard,
     { provide: AccountStatusReader, useClass: PrismaAccountStatusReader }, { provide: APP_GUARD, useClass: AuthGuard },
     { provide: ROLE_PERMISSIONS_TOKEN, useValue: ROLE_PERMISSIONS },
-    IdentityCleanupService,
+    IdentityCleanupService, AccountDeletionRegistry,
   ],
-  exports: [IdentityService, ROLE_PERMISSIONS_TOKEN],
+  exports: [IdentityService, ROLE_PERMISSIONS_TOKEN, AccountDeletionRegistry],
 })
 export class IdentityModule {}

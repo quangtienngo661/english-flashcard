@@ -17,6 +17,7 @@ import { PracticeReviewService } from './practice/practice-review.service.js';
 import { QuickAddController } from './quick-add/quick-add.controller.js';
 import { QuickAddService } from './quick-add/quick-add.service.js';
 import { QueueController } from './queue/queue.controller.js';
+import { LearningAccountEraser } from './account-eraser.provider.js';
 import { QueueService } from './queue/queue.service.js';
 import { ReviewsController } from './reviews/reviews.controller.js';
 import { ReviewsService } from './reviews/reviews.service.js';
@@ -30,7 +31,7 @@ import { ReviewsService } from './reviews/reviews.service.js';
   ],
   providers: [
     BacklogService, GroupsService, ItemsService, QueueService, QuickAddService, ReviewsService, PracticeReadsService,
-    PracticeReviewService, LearningService, IdempotencyInterceptor, LearningEntryUsageProbe,
+    PracticeReviewService, LearningService, IdempotencyInterceptor, LearningEntryUsageProbe, LearningAccountEraser,
   ],
   exports: [LearningService],
 })

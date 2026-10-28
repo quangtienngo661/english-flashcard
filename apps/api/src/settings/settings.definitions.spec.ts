@@ -8,6 +8,7 @@ const ENTITLEMENT_DEFAULTS_API = {
   pro_ai_lookup_per_cycle: 100, trial_ai_practice_per_cycle: 300, trial_ai_lookup_per_cycle: 100, grace_days: 7,
   trial_reminder_days_before: 2, renewal_notice_days_before: null, ai_enabled: true, ai_daily_cap: 1000,
   ai_cap_alert_percent: 75, ads_enabled: false, ads_interstitial_per_day: 3, ads_min_interval_minutes: 10,
+  transaction_retention_years: 10,
 };
 
 const AI_DEFAULTS_API = {
@@ -36,13 +37,30 @@ describe('settings definitions', () => {
       entitlements: ENTITLEMENT_DEFAULTS_API,
       content: { private_words_per_user: 10000, sentences_per_sense: 20 },
       ai: AI_DEFAULTS_API,
+      identity: { unverified_cleanup_days: 7 },
     });
+  });
+
+  it('Bước 8: unverified_cleanup_days is 1–365 and transaction_retention_years is 5–30 (D15, D19)', () => {
+    expect(issues({ identity: { unverified_cleanup_days: 1 } })).toEqual([]);
+    expect(issues({ identity: { unverified_cleanup_days: 365 } })).toEqual([]);
+    expect(issues({ identity: { unverified_cleanup_days: 0 } })).toEqual(['identity.unverified_cleanup_days']);
+    expect(issues({ identity: { unverified_cleanup_days: 366 } })).toEqual(['identity.unverified_cleanup_days']);
+    expect(issues({ entitlements: { transaction_retention_years: 5 } })).toEqual([]);
+    expect(issues({ entitlements: { transaction_retention_years: 30 } })).toEqual([]);
+    expect(issues({ entitlements: { transaction_retention_years: 4 } })).toEqual(['entitlements.transaction_retention_years']);
+    expect(issues({ entitlements: { transaction_retention_years: 31 } })).toEqual(['entitlements.transaction_retention_years']);
+  });
+
+  it('Bước 8: a change to the identity group is recorded in the history diff', () => {
+    const next = applyPatch(SETTINGS_DEFAULTS, { identity: { unverified_cleanup_days: 3 } });
+    expect(changedFields(SETTINGS_DEFAULTS, next)).toEqual([{ key: 'identity.unverified_cleanup_days', oldValue: 7, newValue: 3 }]);
   });
 
   it('D18: defaults are 3, 30, 300, 100, 300, 100, 7, 2, null, true, 1000, 75, false, 3, 10; learning 100/2000; content 10000/20', () => {
     const api = toApiValues(SETTINGS_DEFAULTS);
     expect(api.entitlements).toEqual(ENTITLEMENT_DEFAULTS_API);
-    expect(Object.values(api.entitlements)).toEqual([3, 30, 300, 100, 300, 100, 7, 2, null, true, 1000, 75, false, 3, 10]);
+    expect(Object.values(api.entitlements)).toEqual([3, 30, 300, 100, 300, 100, 7, 2, null, true, 1000, 75, false, 3, 10, 10]);
     expect([api.learning.groups_per_user, api.learning.items_per_group]).toEqual([100, 2000]);
     expect(api.content).toEqual({ private_words_per_user: 10000, sentences_per_sense: 20 });
   });
@@ -64,7 +82,7 @@ describe('settings definitions', () => {
 
   it('toApiValues names every new key in snake_case', () => {
     const api = toApiValues(SETTINGS_DEFAULTS);
-    expect(Object.keys(api)).toEqual(['reminders', 'learning', 'practice', 'entitlements', 'content', 'ai']);
+    expect(Object.keys(api)).toEqual(['reminders', 'learning', 'practice', 'entitlements', 'content', 'ai', 'identity']);
     expect(Object.keys(api.entitlements)).toEqual(Object.keys(ENTITLEMENT_DEFAULTS_API));
     for (const section of Object.values(api)) {
       for (const key of Object.keys(section)) expect(key).toMatch(/^[a-z]+(_[a-z]+)*$/);

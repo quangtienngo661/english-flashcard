@@ -31,7 +31,11 @@ export type AppSettings = {
     /** `null` = no alert (D36). */
     aiCapAlertPercent: number | null;
     adsEnabled: boolean; adsInterstitialPerDay: number; adsMinIntervalMinutes: number;
+    /** Bước 8 (D15): years a payment record is kept after the account is deleted. */
+    transactionRetentionYears: number;
   };
+  /** Bước 8 (D19): days before an account that never verified its email is deleted. */
+  identity: { unverifiedCleanupDays: number };
   /** Bước 5 (design §13): were `PRIVATE_WORDS_MAX` / `SENTENCES_PER_SENSE_MAX`. */
   content: { privateWordsPerUser: number; sentencesPerSense: number };
   /** Bước 6 (design §13). */
@@ -55,8 +59,9 @@ export const SETTINGS_DEFAULTS: AppSettings = {
     freePracticeSessionsPerDay: 3, proPracticeSessionsPerDay: 30, proAiPracticePerCycle: 300, proAiLookupPerCycle: 100,
     trialAiPracticePerCycle: 300, trialAiLookupPerCycle: 100, graceDays: 7, trialReminderDaysBefore: 2,
     renewalNoticeDaysBefore: null, aiEnabled: true, aiDailyCap: 1000, aiCapAlertPercent: 75, adsEnabled: false,
-    adsInterstitialPerDay: 3, adsMinIntervalMinutes: 10,
+    adsInterstitialPerDay: 3, adsMinIntervalMinutes: 10, transactionRetentionYears: 10,
   },
+  identity: { unverifiedCleanupDays: 7 },
   content: { privateWordsPerUser: 10000, sentencesPerSense: 20 },
   ai: { callTimeoutSeconds: 10, maxConcurrentCalls: 50, dailyProviderCallsCap: 3000, contentRetentionDays: 7, usdVndRate: 26100 },
 };
@@ -101,6 +106,10 @@ export const SETTINGS_BOUNDS = {
     ai_cap_alert_percent: { min: 50, max: 95, nullable: true },
     ads_interstitial_per_day: { min: 0, max: 20 },
     ads_min_interval_minutes: { min: 1, max: 240 },
+    transaction_retention_years: { min: 5, max: 30 },
+  },
+  identity: {
+    unverified_cleanup_days: { min: 1, max: 365 },
   },
   content: {
     private_words_per_user: { min: 1000, max: 100000 },
@@ -165,6 +174,10 @@ export const settingsValuesPatchSchema = z.strictObject({
     ads_enabled: z.boolean().optional(),
     ads_interstitial_per_day: intIn(b.entitlements.ads_interstitial_per_day).optional(),
     ads_min_interval_minutes: intIn(b.entitlements.ads_min_interval_minutes).optional(),
+    transaction_retention_years: intIn(b.entitlements.transaction_retention_years).optional(),
+  }).optional(),
+  identity: z.strictObject({
+    unverified_cleanup_days: intIn(b.identity.unverified_cleanup_days).optional(),
   }).optional(),
   content: z.strictObject({
     private_words_per_user: intIn(b.content.private_words_per_user).optional(),
@@ -216,6 +229,8 @@ const FIELDS = [
   ['entitlements', 'ads_enabled', 'adsEnabled'],
   ['entitlements', 'ads_interstitial_per_day', 'adsInterstitialPerDay'],
   ['entitlements', 'ads_min_interval_minutes', 'adsMinIntervalMinutes'],
+  ['entitlements', 'transaction_retention_years', 'transactionRetentionYears'],
+  ['identity', 'unverified_cleanup_days', 'unverifiedCleanupDays'],
   ['content', 'private_words_per_user', 'privateWordsPerUser'],
   ['content', 'sentences_per_sense', 'sentencesPerSense'],
   ['ai', 'call_timeout_seconds', 'callTimeoutSeconds'],
@@ -233,7 +248,7 @@ const read = (values: AppSettings, section: Section, field: string): AnyValue =>
 
 export function toApiValues(values: AppSettings): Record<Section, Record<string, AnyValue>> {
   const out: Record<Section, Record<string, AnyValue>> = {
-    reminders: {}, learning: {}, practice: {}, entitlements: {}, content: {}, ai: {},
+    reminders: {}, learning: {}, practice: {}, entitlements: {}, content: {}, ai: {}, identity: {},
   };
   for (const [section, apiKey, field] of FIELDS) out[section][apiKey] = read(values, section, field);
   return out;

@@ -106,6 +106,21 @@ describe('AiService.deleteUserData', () => {
   });
 });
 
+describe('AiService.deleteUserData inside an account deletion (Bước 8)', () => {
+  it('with a transaction client it runs the same three statements in order on it and opens no transaction of its own', async () => {
+    const { service, prisma } = setup();
+    const sql: string[] = [];
+    const tx = { $executeRaw: vi.fn(async (strings: TemplateStringsArray, ...values: unknown[]) => { sql.push(strings.join('?')); expect(values[0]).toBe(USER); return 1; }) };
+    await service.deleteUserData(USER, tx as never);
+    expect(sql).toEqual([
+      'DELETE FROM ai_call_contents c USING ai_calls a WHERE c.call_id = a.id AND a.user_id = ?::uuid',
+      'DELETE FROM ai_operations WHERE user_id = ?::uuid',
+      'UPDATE ai_calls SET user_id = NULL WHERE user_id = ?::uuid',
+    ]);
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+});
+
 describe('AiService.secondTries', () => {
   const range = { start: new Date('2026-09-20T17:00:00.000Z'), end: new Date('2026-10-20T17:00:00.000Z') };
 

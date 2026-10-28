@@ -9,6 +9,7 @@ import { EntryDeleteService } from './catalog/entry-delete.service.js';
 import { EntryUsageRegistry } from './catalog/entry-usage.js';
 import { LevelsService } from './catalog/levels.service.js';
 import { ContentService } from './content.service.js';
+import { ContentAccountEraser } from './private/account-eraser.provider.js';
 import { InflectionsService } from './inflections/inflections.service.js';
 import { MyWordsController } from './private/my-words.controller.js';
 import { PrivateWordsService } from './private/private-words.service.js';
@@ -48,7 +49,7 @@ import { WordFormsService } from './word-forms/word-forms.service.js';
   ],
   providers: [ContentService, SourcesService, TopicsService, LearnerContentGuard, LearnerContentService, EntriesService, LevelsService, SensesService, PublishService, AdminCatalogQueries, InflectionsService,
     PrivateWordsService, SentencesService, WordsService, WordFormsService, AiLookupService, IdempotencyInterceptor,
-    TopicSuggestionQueries, TopicSuggestionsService, EntryDeleteService, EntryUsageRegistry],
+    TopicSuggestionQueries, TopicSuggestionsService, EntryDeleteService, EntryUsageRegistry, ContentAccountEraser],
   exports: [ContentService],
 })
 export class ContentModule {}

@@ -198,3 +198,15 @@ describe('PrivateWordsService.updatePrivateWord — examples and the AI label (B
     expect(tx.senseRevision.create).not.toHaveBeenCalled();
   });
 });
+
+describe('PrivateWordsService.privateSenseIdsOf (Bước 8: Practice reads it before the account eraser runs)', () => {
+  it("returns the ids of the owner's private senses and queries nothing else", async () => {
+    const { service } = setup(0);
+    const findMany = vi.fn(async () => [{ id: 's1' }, { id: 's2' }]);
+    const tx = { sense: { findMany } } as unknown as Prisma.TransactionClient;
+    expect(await service.privateSenseIdsOf(tx, 'owner-1')).toEqual(['s1', 's2']);
+    expect(findMany).toHaveBeenCalledExactlyOnceWith({
+      where: { entry: { scope: 'private', ownerUserId: 'owner-1' } }, select: { id: true },
+    });
+  });
+});
