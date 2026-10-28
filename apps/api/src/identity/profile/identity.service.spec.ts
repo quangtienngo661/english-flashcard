@@ -48,7 +48,7 @@ describe('IdentityService (unit, isolated persistence)', () => {
       timezone: row.timezone, staff_role: staffRole, given_name: null, family_name: null, birth_date: null, terms_accepted_at: null,
       permissions: staffRole === null ? [] : [
         ...(staffRole === 'admin' ? ['roles.manage'] : []), 'content.edit', 'content.publish', 'content.import', 'taxonomy.manage',
-        ...(staffRole === 'admin' ? ['settings.manage'] : []), 'entitlements.grant', 'users.read',
+        ...(staffRole === 'admin' ? ['settings.manage'] : []), 'entitlements.grant', 'users.read', 'ai.view',
       ],
     });
     expect(prisma.user.findUnique.mock.calls[0][0].where).toEqual({ id: row.id });

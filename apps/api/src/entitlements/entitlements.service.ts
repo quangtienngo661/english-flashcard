@@ -1,11 +1,13 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { Clock } from '../common/clock/clock.js';
 import { PRISMA_CLIENT } from '../common/db/prisma.module.js';
+import { dayRange, daysOf } from '../common/time/day-range.js';
 import { localDate, nextLocalMidnight } from '../common/time/local-date.js';
 import type { Prisma, PrismaClient } from '../generated/prisma/client.js';
 import { IdentityService } from '../identity/profile/identity.service.js';
 import { SettingsService, type AppSettings } from '../settings/index.js';
-import { alertReached, type AiUsageView } from './api/ai-usage.js';
+import { AI_USAGE_DEFAULT_DAYS, alertReached, type AiUsageDaysView, type AiUsageView } from './api/ai-usage.js';
+import { AI_DAY_ZONE } from './entitlements.constants.js';
 import type { AiPool, LimitKey, Pool, SubscriptionStatus } from './entitlements.types.js';
 import type { Refusal } from './refusal.js';
 import { aiDay, cycleAt } from './rules/cycle.js';
@@ -188,6 +190,24 @@ export class EntitlementsService {
       date: day, used, confirmed, reserved, cap: entitlements.aiDailyCap, alert_percent: entitlements.aiCapAlertPercent,
       alert_reached: alertReached(used, entitlements.aiDailyCap, entitlements.aiCapAlertPercent), enabled: entitlements.aiEnabled,
     };
+  }
+
+  /**
+   * AI units used per cap day (the AI dashboard, owner 28/10/2026). `days_at_cap` compares each day with today's cap: an earlier
+   * cap is not kept, so a day before a cap change is measured against the current one.
+   */
+  async aiUsageDays(query: { from?: string; to?: string }): Promise<AiUsageDaysView> {
+    const now = this.clock.now();
+    const range = dayRange(query, AI_DAY_ZONE, now, AI_USAGE_DEFAULT_DAYS);
+    const [today, { pools, learners }, refunds] = await Promise.all([
+      this.aiUsage(), this.usage.aiDays(this.prisma, range.from, range.to), this.usage.aiCredits(this.prisma, range.start, range.end),
+    ]);
+    const days = daysOf(range).map((date) => {
+      const used = (pool: AiPool) => pools.find((row) => row.date === date && row.pool === pool)?.used ?? 0;
+      const [practice, lookup] = [used('ai_practice'), used('ai_lookup')];
+      return { date, ai_practice: practice, ai_lookup: lookup, total: practice + lookup, learners: learners.find((row) => row.date === date)?.learners ?? 0 };
+    });
+    return { from: range.from, to: range.to, today, days, refunds, days_at_cap: days.filter((day) => day.total >= today.cap).length };
   }
 
   private async resolve(db: Db, userId: string, settings: AppSettings['entitlements'], now: Date): Promise<Resolved> {

@@ -10,6 +10,7 @@ import { GrantsService } from '../grants/grants.service.js';
 const userParams = z.strictObject({ user_id: z.uuid().transform((value) => value.toLowerCase()) });
 const lookupQuery = z.strictObject({ email: z.string().min(3).max(320) });
 const aiUsageQuery = z.strictObject({ date: z.iso.date().optional() });
+const rangeQuery = z.strictObject({ from: z.iso.date().optional(), to: z.iso.date().optional() });
 
 /** Staff read APIs (design §12.2 rows 5–6). Nothing here writes. */
 @Controller('admin/entitlements')
@@ -33,6 +34,13 @@ export class AdminEntitlementsController {
   @RateLimit('entitlements.lookup')
   lookup(@Query({ schema: lookupQuery }) query: z.infer<typeof lookupQuery>, @Req() req: RequestWithUser) {
     return this.grants.lookup(req.user!.userId, query.email);
+  }
+
+  /** The AI dashboard's usage part (owner 28/10/2026): totals only, editors read it too. */
+  @Get('ai-usage/days')
+  @RequirePermission('ai.view')
+  aiUsageDays(@Query({ schema: rangeQuery }) query: z.infer<typeof rangeQuery>) {
+    return this.entitlements.aiUsageDays(query);
   }
 
   @Get('ai-usage')
