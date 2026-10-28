@@ -32,10 +32,12 @@ function setup() {
   const prompts = { current: vi.fn(async () => ({ instructions: 'x', examples: [], revision: 4 })) };
   const queue = { enqueue: vi.fn(async () => true) };
   const emailsOf = vi.fn(async (ids: string[]) => new Map(ids.filter((id) => id === ADMIN).map((id) => [id, 'admin@x.test'])));
+  const limiter = { hit: vi.fn(async (): Promise<void> => undefined) };
   const service = new EvalRunsService(
     prisma as never, selections as never, registry as never, prompts as never, queue as never, { emailsOf } as never,
+    limiter as never,
   );
-  return { service, prisma, created, selections, registry, prompts, queue, emailsOf };
+  return { service, prisma, created, selections, registry, prompts, queue, emailsOf, limiter };
 }
 
 async function problemOf(promise: Promise<unknown>) {
@@ -103,6 +105,31 @@ describe('EvalRunsService.create', () => {
     const problem = await problemOf(ctx.service.create(ADMIN, { operation: 'generate_cloze', prompt: 'current' }));
     expect(problem).toMatchObject({ status: 400, violations: ['examples: at least one example is needed'] });
     expect(ctx.created).toHaveLength(0);
+  });
+
+  it('a run counts one ai.test use, taken once the request is accepted and before the row is made', async () => {
+    await ctx.service.create(ADMIN, { operation: 'generate_cloze', prompt: 'current' });
+    expect(ctx.limiter.hit).toHaveBeenCalledExactlyOnceWith('ai.test', ADMIN);
+    expect(ctx.limiter.hit.mock.invocationCallOrder[0]!).toBeLessThan(ctx.prisma.aiEvalRun.create.mock.invocationCallOrder[0]!);
+  });
+
+  it('over the ai.test limit → the 429 from the limiter, no row, nothing enqueued', async () => {
+    ctx.limiter.hit.mockRejectedValue(new ProblemDetailsException({ status: 429, type: 'rate-limited', title: 'Too many requests' }));
+    const problem = await problemOf(ctx.service.create(ADMIN, { operation: 'generate_cloze', prompt: 'current' }));
+    expect(problem).toMatchObject({ status: 429, type: 'rate-limited' });
+    expect(ctx.created).toHaveLength(0);
+    expect(ctx.queue.enqueue).not.toHaveBeenCalled();
+  });
+
+  it('a request that is refused (no model, no provider, bad draft, no example) does not use up an ai.test run', async () => {
+    ctx.selections.load.mockResolvedValueOnce(null);
+    await problemOf(ctx.service.create(ADMIN, { operation: 'generate_cloze', prompt: 'current' }));
+    ctx.selections.load.mockResolvedValueOnce({ ...SELECTION, provider: 'openai' });
+    await problemOf(ctx.service.create(ADMIN, { operation: 'generate_cloze', prompt: 'current' }));
+    await problemOf(ctx.service.create(ADMIN, { operation: 'generate_cloze', prompt: { instructions: '   ', examples: [] } }));
+    ctx.prisma.aiEvalExample.findMany.mockResolvedValueOnce([]);
+    await problemOf(ctx.service.create(ADMIN, { operation: 'generate_cloze', prompt: 'current' }));
+    expect(ctx.limiter.hit).not.toHaveBeenCalled();
   });
 
   it('B6E91: enqueue returns false → the answer is still queued and the row stays queued', async () => {

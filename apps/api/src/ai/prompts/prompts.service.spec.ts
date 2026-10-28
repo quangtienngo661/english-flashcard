@@ -122,12 +122,13 @@ function setup(input: Setup = {}) {
   for (const provider of input.registered ?? ['fake']) registry.register(new StubAdapter(provider));
   const repository = new PromptsRepository(memory.prisma);
   const emailsOf = vi.fn(async (ids: string[]) => new Map(ids.filter((id) => id === ADMIN).map((id) => [id, 'admin@x.test'])));
+  const limiter = { hit: vi.fn(async (): Promise<void> => undefined) };
   const service = new PromptsService(
     memory.prisma, new FakeClock(NOW), repository, runner,
     { load: async () => (input.selection === undefined ? selection : input.selection) } as unknown as SelectionReader, registry,
-    { emailsOf } as unknown as IdentityService,
+    { emailsOf } as unknown as IdentityService, limiter as never,
   );
-  return { service, repository, executed, emailsOf, ...memory };
+  return { service, repository, executed, emailsOf, limiter, ...memory };
 }
 
 async function problem(promise: Promise<unknown>): Promise<{ status: number; type: string; violations?: string[] }> {
@@ -281,6 +282,34 @@ describe('PromptsService.test', () => {
       expect((run as { callOperationId: string }).callOperationId).toMatch(/^test-[0-9a-f-]{36}$/);
     }
     expect(new Set(executed.map((run) => (run as { callOperationId: string }).callOperationId)).size).toBe(2);
+  });
+
+  it('a test counts one ai.test use, taken before the provider is called', async () => {
+    const { service, limiter, executed } = setup({ examples: [eval_('e1', 1), eval_('e2', 2)] });
+    limiter.hit.mockImplementation(async () => { expect(executed).toHaveLength(0); });
+    await service.test(ADMIN, OP, draft);
+    expect(limiter.hit).toHaveBeenCalledExactlyOnceWith('ai.test', ADMIN);
+  });
+
+  it('over the ai.test limit → the 429 from the limiter and no provider call', async () => {
+    const { service, limiter, executed } = setup({ examples: [eval_('e1', 1)] });
+    limiter.hit.mockRejectedValue(new ProblemDetailsException({ status: 429, type: 'rate-limited', title: 'Too many requests' }));
+    await expect(service.test(ADMIN, OP, draft)).rejects.toMatchObject({ status: 429 });
+    expect(executed).toHaveLength(0);
+  });
+
+  it('a refused test (no model, no provider, bad draft, bad example ids, no example) does not use up an ai.test run', async () => {
+    const noModel = setup({ selection: null });
+    await expect(noModel.service.test(ADMIN, OP, draft)).rejects.toMatchObject({ status: 409 });
+    const noProvider = setup({ registered: [] });
+    await expect(noProvider.service.test(ADMIN, OP, draft)).rejects.toMatchObject({ status: 409 });
+    const badDraft = setup({ examples: [eval_('e1', 1)] });
+    await expect(badDraft.service.test(ADMIN, OP, { instructions: '  ', examples: [] })).rejects.toMatchObject({ status: 400 });
+    const badIds = setup({ examples: [eval_('e1', 1)] });
+    await expect(badIds.service.test(ADMIN, OP, { ...draft, example_ids: ['nope'] })).rejects.toMatchObject({ status: 400 });
+    const none = setup();
+    await expect(none.service.test(ADMIN, OP, { instructions: 'Draft text.', examples: [] })).rejects.toMatchObject({ status: 400 });
+    for (const { limiter } of [noModel, noProvider, badDraft, badIds, none]) expect(limiter.hit).not.toHaveBeenCalled();
   });
 
   it('B6E84: a test whose call is truncated → the item has reason truncated', async () => {

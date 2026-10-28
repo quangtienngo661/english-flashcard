@@ -58,12 +58,12 @@ describe('admin ai eval HTTP (unit, mocked services)', () => {
     for (const route of routes) expect(route.permissions, `${route.method} ${route.path}`).toEqual(['settings.manage']);
   });
 
-  it('B6E74: POST /runs carries the idempotent metadata, the interceptor and the ai.test rate rule', () => {
+  it('B6E74: POST /runs carries the idempotent metadata and the interceptor; ai.test is counted by the service, not the guard', () => {
     const handler = AdminAiEvalController.prototype.createRun;
     const reflector = new Reflector();
     expect(reflector.get(IDEMPOTENT_KEY, handler)).toBeDefined();
     expect(reflector.get(INTERCEPTORS_METADATA, handler)).toContain(IdempotencyInterceptor);
-    expect(reflector.get(RATE_LIMIT_KEY, handler)).toEqual(['ai.test']);
+    expect(reflector.get(RATE_LIMIT_KEY, handler)).toBeUndefined();
   });
 
   it('example routes call the service; writes carry user.write; reads do not', async () => {

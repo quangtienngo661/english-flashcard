@@ -69,12 +69,12 @@ describe('admin ai prompts HTTP (unit, mocked service)', () => {
     expect(revisions).toHaveBeenLastCalledWith('generate_cloze', 5, 'abc');
   });
 
-  it('test carries ai.test, answers 200 and lower-cases the example ids', async () => {
+  it('test answers 200 and lower-cases the example ids; ai.test is counted by the service, not the guard', async () => {
     const body = { instructions: 'Draft.', examples: [], example_ids: [exampleId.toUpperCase()] };
     const res = await http().post('/v1/admin/ai/prompts/generate_cloze/test').set(auth()).send(body);
     expect(res.status).toBe(200);
     expect(test).toHaveBeenCalledWith(actorId, 'generate_cloze', { ...body, example_ids: [exampleId] });
-    expect(hit).toHaveBeenCalledWith('ai.test', actorId);
+    expect(hit).not.toHaveBeenCalled();
   });
 
   it('an unknown operation, a bad body or bad paging → 400 validation-failed before the service', async () => {
