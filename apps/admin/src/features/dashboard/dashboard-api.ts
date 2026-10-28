@@ -27,6 +27,8 @@ export type AiQuality = {
   ai_report_reasons: Array<{ reason: string; label_vi: string; label_en: string; count: number }>;
   unknown_forms: { new_forms: number; rejected_seen: number };
   word_checks: Array<{ verdict: string; count: number }>;
+  /** Per AI question type: valid first answers, and how many of them the rules rejected so the AI was asked again. */
+  ai_second_tries: Array<{ type: string; first_answers: number; second_tries: number }>;
 };
 
 /** `GET /v1/admin/entitlements/ai-usage/days` (`ai.view`): AI units per cap day against today's cap. */
@@ -39,10 +41,22 @@ export type AiUsageDays = {
   days_at_cap: number;
 };
 
+/**
+ * `GET /v1/admin/entitlements/ai-usage/pro` (`ai.view`): Pro learners by the larger share of their two AI pools used in their
+ * current cycle, as counts only. It does not depend on the selected range. `no_limit` Pro learners are in `pro_learners` but in no bucket.
+ */
+export type AiUsagePro = {
+  pro_learners: number;
+  no_limit: number;
+  truncated: boolean;
+  buckets: Array<{ key: '0' | '1-49' | '50-79' | '80-99' | '100'; learners: number }>;
+};
+
 export const dashboardKeys = {
   ai: (from: string, to: string) => ['dashboard', 'ai', from, to] as const,
   quality: (from: string, to: string) => ['dashboard', 'quality', from, to] as const,
   usage: (from: string, to: string) => ['dashboard', 'usage', from, to] as const,
+  usagePro: () => ['dashboard', 'usage-pro'] as const,
 };
 
 const range = (from: string, to: string) => new URLSearchParams({ from, to }).toString();
@@ -51,6 +65,8 @@ export const getAiDashboard = (api: ApiClient, from: string, to: string) => api.
 export const getAiQuality = (api: ApiClient, from: string, to: string) => api.get<AiQuality>(`/v1/admin/practice/ai-quality?${range(from, to)}`);
 export const getAiUsageDays = (api: ApiClient, from: string, to: string) =>
   api.get<AiUsageDays>(`/v1/admin/entitlements/ai-usage/days?${range(from, to)}`);
+
+export const getAiUsagePro = (api: ApiClient) => api.get<AiUsagePro>('/v1/admin/entitlements/ai-usage/pro');
 
 /** `count / total` as a share, or null when nothing was counted (shown as "—", never as 0 %). */
 export const share = (count: number, total: number): number | null => (total > 0 ? count / total : null);

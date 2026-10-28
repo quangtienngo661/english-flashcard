@@ -1678,7 +1678,11 @@
       "formsSeen": "Word forms seen again",
       "wordCheck": "Private-word check: {verdict}",
       "compare": "AI questions compared with non-AI questions",
-      "reportsAi": "Reports on AI questions"
+      "reportsAi": "Reports on AI questions",
+      "retry": {
+        "title": "AI questions rewritten after failing the automatic check",
+        "hint": "Share of AI answers rejected by the automatic check on the first try, so the AI was asked to write another one. In brackets: rewritten / first AI answers."
+      }
     },
     "impact": {
       "title": "Learner impact",
@@ -1699,7 +1703,21 @@
       "peakLearners": "Peak learners in a day",
       "chart": "AI units per day",
       "practice": "AI practice questions",
-      "lookup": "AI word lookups"
+      "lookup": "AI word lookups",
+      "pro": {
+        "title": "How much of their limit Pro learners have used",
+        "hint": "Counted in each learner’s current cycle, whatever period is selected. Each learner is placed by the pool they have used the most of: AI practice questions or AI word lookups.",
+        "learners": "Pro learners",
+        "none": "No Pro learners yet",
+        "chart": "Pro learners by share of limit used",
+        "bucketZero": "None used (0%)",
+        "bucketLow": "Used 1–49%",
+        "bucketMid": "Used 50–79%",
+        "bucketHigh": "Used 80–99%",
+        "bucketFull": "Used all (100%)",
+        "noLimit": "{count, plural, one {# Pro learner has} other {# Pro learners have}} no AI limit and {count, plural, one {is} other {are}} not in the groups above.",
+        "truncated": "There are more Pro learners than one read covers, so these figures show only part of them."
+      }
     },
     "cols": {
       "operation": "Operation",

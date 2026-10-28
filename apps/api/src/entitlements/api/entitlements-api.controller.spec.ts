@@ -30,6 +30,7 @@ describe('entitlements read APIs (unit, mocked services)', () => {
   let role: 'admin' | 'editor' | null; let nativeLanguage: string | null;
   const prisma = { sessionChain: { findUnique: vi.fn() }, $disconnect: async () => {} };
   let snapshot: ReturnType<typeof vi.spyOn>; let aiUsage: ReturnType<typeof vi.spyOn>; let forUser: ReturnType<typeof vi.spyOn>; let lookup: ReturnType<typeof vi.spyOn>;
+  let aiUsagePro: ReturnType<typeof vi.spyOn>;
   const hit = vi.spyOn(RateLimiter.prototype, 'hit');
   const auth = () => ({ Authorization: `Bearer ${token}` });
   const http = () => ctx.http();
@@ -39,7 +40,7 @@ describe('entitlements read APIs (unit, mocked services)', () => {
       providers: [{ provide: PRISMA_CLIENT, useValue: prisma }], exports: [PRISMA_CLIENT] });
     ctx = await createTestApp({ databaseUrl: 'unused' });
     const entitlements = ctx.app.get(EntitlementsService);
-    snapshot = vi.spyOn(entitlements, 'snapshot'); aiUsage = vi.spyOn(entitlements, 'aiUsage');
+    snapshot = vi.spyOn(entitlements, 'snapshot'); aiUsage = vi.spyOn(entitlements, 'aiUsage'); aiUsagePro = vi.spyOn(entitlements, 'aiUsagePro');
     forUser = vi.spyOn(ctx.app.get(GrantsService), 'forUser');
     lookup = vi.spyOn(ctx.app.get(GrantsService), 'lookup');
   });
@@ -135,10 +136,28 @@ describe('entitlements read APIs (unit, mocked services)', () => {
     expect(Reflect.getMetadata(RATE_LIMIT_KEY, AdminEntitlementsController.prototype.lookup)).toEqual(['entitlements.lookup']);
   });
 
+  it('ai-usage/pro: ai.view is enough (an editor reads it), a learner gets 403, and the view is the service’s own', async () => {
+    const view = { pro_learners: 2, no_limit: 0, truncated: false, buckets: [{ key: '0', learners: 2 }] };
+    aiUsagePro.mockReset().mockResolvedValue(view);
+    role = 'editor';
+    const res = await http().get('/v1/admin/entitlements/ai-usage/pro').set(auth());
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual(view);
+    role = 'admin';
+    expect((await http().get('/v1/admin/entitlements/ai-usage/pro').set(auth())).status).toBe(200);
+    role = null;
+    const learner = await http().get('/v1/admin/entitlements/ai-usage/pro').set(auth());
+    expect(learner.status).toBe(403);
+    expect(learner.body.type).toBe(`${PROBLEM}forbidden`);
+    expect(aiUsagePro).toHaveBeenCalledTimes(2);
+    expect((await http().get('/v1/admin/entitlements/ai-usage/pro')).status).toBe(401);
+  });
+
   it('listRoutes: users/:user_id needs entitlements.grant, ai-usage needs settings.manage, /me needs no staff permission', () => {
     const routes = listRoutes(ctx.app);
     expect(routes).toContainEqual({ method: 'GET', path: '/v1/admin/entitlements/users/:user_id', permissions: ['entitlements.grant'] });
     expect(routes).toContainEqual({ method: 'GET', path: '/v1/admin/entitlements/ai-usage', permissions: ['settings.manage'] });
+    expect(routes).toContainEqual({ method: 'GET', path: '/v1/admin/entitlements/ai-usage/pro', permissions: ['ai.view'] });
     expect(routes).toContainEqual({ method: 'GET', path: '/v1/me/entitlements', permissions: null });
   });
 });

@@ -21,6 +21,34 @@ export class UsageQueries {
     return Math.max(0, confirmed + reserved - credits);
   }
 
+  /**
+   * `aiUsed` of both AI pools for many learners in one query (the AI dashboard); each learner has their own cycle. Every window's
+   * learner has an entry, 0 for a pool without a row. Reservations are judged at `now` whatever the cycle, as in `aiUsed`.
+   */
+  async aiUsedMany(
+    db: Db, windows: Array<{ userId: string } & Cycle>, now: Date,
+  ): Promise<Map<string, Record<AiPool, number>>> {
+    const used = new Map(windows.map(({ userId }) => [userId, { ai_practice: 0, ai_lookup: 0 }]));
+    if (windows.length === 0) return used;
+    // Dates go in as ISO text: a text array is the one array form every driver sends the same way.
+    const [ids, starts, ends] = [
+      windows.map((w) => w.userId), windows.map((w) => w.start.toISOString()), windows.map((w) => w.end.toISOString()),
+    ];
+    const rows = await db.$queryRaw<Array<{ user_id: string; pool: AiPool; used: number }>>(Prisma.sql`
+      SELECT w.user_id::text AS user_id, u.pool, greatest(0,
+        count(*) FILTER (WHERE u.kind = 'use' AND u.status = 'confirmed' AND u.confirmed_at >= w.starts_at AND u.confirmed_at < w.ends_at)
+        + count(*) FILTER (WHERE u.kind = 'use' AND u.status = 'reserved' AND u.expires_at > ${now})
+        - count(*) FILTER (WHERE u.kind = 'credit' AND u.credited_at >= w.starts_at AND u.credited_at < w.ends_at))::int AS used
+      FROM unnest(${ids}::uuid[], ${starts}::timestamptz[], ${ends}::timestamptz[]) AS w(user_id, starts_at, ends_at)
+      JOIN usage_records u ON u.user_id = w.user_id AND u.pool IN ('ai_practice', 'ai_lookup')
+      GROUP BY w.user_id, u.pool`);
+    for (const row of rows) {
+      const entry = used.get(row.user_id);
+      if (entry) entry[row.pool] = row.used;
+    }
+    return used;
+  }
+
   async confirmedInCycle(db: Db, userId: string, pool: AiPool, cycle: Cycle): Promise<number> {
     return db.usageRecord.count({
       where: { userId, pool, kind: 'use', status: 'confirmed', confirmedAt: { gte: cycle.start, lt: cycle.end } },

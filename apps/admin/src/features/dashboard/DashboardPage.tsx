@@ -14,7 +14,8 @@ import { todayInAdminZone } from '../ai/cost-range';
 import { useAiFormat } from '../ai/useAiFormat';
 import { BarList, ColumnChart, Meter, SERIES, TableView } from './charts';
 import {
-  dashboardKeys, getAiDashboard, getAiQuality, getAiUsageDays, share, type AiDashboard, type AiQuality, type AiUsageDays,
+  dashboardKeys, getAiDashboard, getAiQuality, getAiUsageDays, getAiUsagePro, share, type AiDashboard, type AiQuality, type AiUsageDays,
+  type AiUsagePro,
 } from './dashboard-api';
 
 const RANGES = ['7', '30', '90'] as const;
@@ -26,6 +27,9 @@ const KNOWN_TYPES = ['mcq_definition', 'true_false_definition', 'type_word', 'cl
 const KNOWN_SOURCES = ['ai', 'rule', 'own_sentence'];
 const KNOWN_FAILURES = ['ai-unavailable', 'quota-exhausted', 'plan-required', 'ai-failed', 'rejected', 'input-mismatch', 'word-not-recognized'];
 const KNOWN_VERDICTS = ['ok', 'not_recognized'];
+const PRO_BUCKET_LABEL = {
+  '0': 'bucketZero', '1-49': 'bucketLow', '50-79': 'bucketMid', '80-99': 'bucketHigh', '100': 'bucketFull',
+} as const;
 
 const addDays = (day: string, days: number) => new Date(Date.parse(`${day}T00:00:00Z`) + days * 86_400_000).toISOString().slice(0, 10);
 
@@ -40,8 +44,10 @@ export function DashboardPage() {
   const ai = useQuery({ queryKey: dashboardKeys.ai(from, to), queryFn: () => getAiDashboard(api, from, to) });
   const quality = useQuery({ queryKey: dashboardKeys.quality(from, to), queryFn: () => getAiQuality(api, from, to) });
   const usage = useQuery({ queryKey: dashboardKeys.usage(from, to), queryFn: () => getAiUsageDays(api, from, to) });
+  // The Pro spread is of each learner's current cycle, so the selected range does not change it.
+  const usagePro = useQuery({ queryKey: dashboardKeys.usagePro(), queryFn: () => getAiUsagePro(api) });
 
-  const queries = [ai, quality, usage];
+  const queries = [ai, quality, usage, usagePro];
   if (queries.some((q) => q.error instanceof ApiError && q.error.problem.slug === 'forbidden')) {
     return <Banner variant="error">{t('errors.forbidden')}</Banner>;
   }
@@ -59,10 +65,10 @@ export function DashboardPage() {
       </div>
       {queries.some((q) => q.isPending) ? (
         <ListState state="loading" />
-      ) : ai.isError || quality.isError || usage.isError ? (
+      ) : queries.some((q) => q.isError) ? (
         <ListState state="error" onRetry={() => queries.forEach((q) => q.isError && void q.refetch())} />
       ) : (
-        <Body ai={ai.data!} quality={quality.data!} usage={usage.data!} />
+        <Body ai={ai.data!} quality={quality.data!} usage={usage.data!} usagePro={usagePro.data!} />
       )}
     </div>
   );
@@ -91,7 +97,7 @@ function SubTitle({ children }: { children: ReactNode }) {
 const tiles = 'grid gap-3 grid-cols-2';
 const numeric = 'whitespace-nowrap';
 
-function Body({ ai, quality, usage }: { ai: AiDashboard; quality: AiQuality; usage: AiUsageDays }) {
+function Body({ ai, quality, usage, usagePro }: { ai: AiDashboard; quality: AiQuality; usage: AiUsageDays; usagePro: AiUsagePro }) {
   const t = useTranslations();
   const locale = useLocale();
   const format = useAiFormat();
@@ -292,6 +298,26 @@ function Body({ ai, quality, usage }: { ai: AiDashboard; quality: AiQuality; usa
               rows={compare.map((row) => ({ key: row.key, label: row.label, values: row.values.map((v) => v ?? 0), display: row.values.map(pct) }))}
             />
           )}
+          <div className="flex flex-col gap-3">
+            <SubTitle>{t('dashboard.quality.retry.title')}</SubTitle>
+            <p className="text-ui text-muted">{t('dashboard.quality.retry.hint')}</p>
+            {quality.ai_second_tries.length === 0 ? <p className="text-ui text-muted">{t('dashboard.empty')}</p> : (
+              <BarList
+                label={t('dashboard.quality.retry.title')}
+                series={one(t('dashboard.quality.retry.title'))}
+                max={1}
+                rows={quality.ai_second_tries.map((row) => {
+                  const rate = share(row.second_tries, row.first_answers);
+                  return {
+                    key: row.type,
+                    label: `${known(KNOWN_TYPES, row.type, 'dashboard.types')} (${format.number(row.second_tries)} / ${format.number(row.first_answers)})`,
+                    values: [rate ?? 0],
+                    display: [pct(rate)],
+                  };
+                })}
+              />
+            )}
+          </div>
           <div className="grid gap-3 grid-cols-2">
             <Stat label={t('dashboard.quality.newForms')} value={format.number(quality.unknown_forms.new_forms)} />
             <Stat label={t('dashboard.quality.reportsAi')} value={format.number(quality.reports.find((r) => r.source === 'ai')?.total ?? 0)} />
@@ -359,6 +385,29 @@ function Body({ ai, quality, usage }: { ai: AiDashboard; quality: AiQuality; usa
             formatValue={(v) => format.number(Math.round(v))}
             formatDay={day}
           />
+          <div className="flex flex-col gap-3">
+            <SubTitle>{t('dashboard.usage.pro.title')}</SubTitle>
+            <p className="text-ui text-muted">{t('dashboard.usage.pro.hint')}</p>
+            {usagePro.pro_learners === 0 ? <p className="text-ui text-muted">{t('dashboard.usage.pro.none')}</p> : (
+              <>
+                <div className="grid gap-3 grid-cols-2 shell:grid-cols-4">
+                  <Stat label={t('dashboard.usage.pro.learners')} value={format.number(usagePro.pro_learners)} />
+                </div>
+                <BarList
+                  label={t('dashboard.usage.pro.chart')}
+                  series={one(t('dashboard.usage.pro.chart'))}
+                  rows={usagePro.buckets.map((bucket) => ({
+                    key: bucket.key,
+                    label: t(`dashboard.usage.pro.${PRO_BUCKET_LABEL[bucket.key]}`),
+                    values: [bucket.learners],
+                    display: [format.number(bucket.learners)],
+                  }))}
+                />
+                {usagePro.no_limit > 0 && <p className="text-ui text-muted">{t('dashboard.usage.pro.noLimit', { count: usagePro.no_limit })}</p>}
+                {usagePro.truncated && <p className="text-ui text-muted">{t('dashboard.usage.pro.truncated')}</p>}
+              </>
+            )}
+          </div>
           <TableView summary={t('dashboard.showTable')}>
             <DataList
               rows={usage.days.filter((d) => d.total > 0)}
