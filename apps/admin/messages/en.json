@@ -1563,7 +1563,10 @@
       "title": "Is AI working",
       "hint": "Learner calls only (not test runs or example-set runs).",
       "calls": "Learner calls",
-      "failed": "Failed call rate"
+      "failed": "Failed call rate",
+      "chart": "Learner calls per day",
+      "ok": "Succeeded",
+      "failedCalls": "Failed"
     },
     "cost": {
       "title": "What it costs",
@@ -1586,7 +1589,9 @@
       "forms": "Unknown forms and private-word checks",
       "newForms": "New unknown forms",
       "formsSeen": "Unknown forms seen again",
-      "wordCheck": "Private-word check: {verdict}"
+      "wordCheck": "Private-word check: {verdict}",
+      "compare": "AI questions next to non-AI ones",
+      "reportsAi": "Reports on AI questions"
     },
     "impact": {
       "title": "Are learners affected",
@@ -1605,7 +1610,9 @@
       "daysAtCap": "Days at the cap",
       "refunds": "Units refunded",
       "peakLearners": "Most learners in a day",
-      "chart": "AI units per day"
+      "chart": "AI units per day",
+      "practice": "AI practice questions",
+      "lookup": "AI word lookup"
     },
     "cols": {
       "operation": "Operation",
@@ -1630,7 +1637,9 @@
       "open": "Open",
       "fixed": "Fixed",
       "noError": "No error",
-      "refunded": "Refunded"
+      "refunded": "Refunded",
+      "date": "Day",
+      "learners": "Learners"
     },
     "types": {
       "mcq_definition": "Pick the word",
@@ -1657,6 +1666,8 @@
     "verdicts": {
       "ok": "valid",
       "not_recognized": "not recognised"
-    }
+    },
+    "byOperation": "Show by operation",
+    "showTable": "Show as a table"
   }
 }

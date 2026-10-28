@@ -99,6 +99,36 @@ describe('DashboardPage (/dashboard, ai.view)', () => {
     expect(screen.getByText(t.impact.notStopped)).toBeInTheDocument();
   });
 
+  it('charts: each section is a card; the meters carry today against the caps; AI and non-AI shares side by side', async () => {
+    renderApp('/dashboard', routes());
+    await screen.findByRole('heading', { level: 2, name: t.today.title });
+    for (const title of [t.today.title, t.health.title, t.cost.title, t.quality.title, t.impact.title, t.usage.title]) {
+      expect(screen.getByRole('heading', { level: 2, name: title }).closest('section')).toBeInTheDocument();
+    }
+    const units = screen.getByRole('meter', { name: t.today.units });
+    expect(units).toHaveAttribute('aria-valuenow', '10');
+    expect(units).toHaveAttribute('aria-valuemax', '1000');
+    const compare = screen.getByRole('list', { name: t.quality.compare });
+    // Correct: AI 135/180 answered, non-AI 90/100; hints: AI 50/200 asked.
+    expect(within(compare).getByText(/^75\s?%$/)).toBeInTheDocument();
+    expect(within(compare).getByText(/^90\s?%$/)).toBeInTheDocument();
+    expect(within(compare).getByText(/^25\s?%$/)).toBeInTheDocument();
+    expect(screen.getByRole('list', { name: t.impact.failures })).toHaveTextContent(t.failures.rejected);
+  });
+
+  it('a column takes keyboard focus and shows its day with every series in a tooltip', async () => {
+    renderApp('/dashboard', routes());
+    const chart = await screen.findByRole('group', { name: t.health.chart });
+    const columns = chart.querySelectorAll('rect[tabindex="0"]');
+    expect(columns).toHaveLength(1);
+    (columns[columns.length - 1] as SVGRectElement).focus();
+    const tip = await screen.findByRole('status');
+    expect(tip).toHaveTextContent(t.health.ok);
+    expect(tip).toHaveTextContent(t.health.failedCalls);
+    expect(within(tip).getByText('9')).toBeInTheDocument();
+    expect(within(tip).getByText('1')).toBeInTheDocument();
+  });
+
   it('a 7-day range asks the APIs again for 7 days', async () => {
     const user = userEvent.setup();
     const r = renderApp('/dashboard', { ...routes(), ...routes(urls(back(6))) });

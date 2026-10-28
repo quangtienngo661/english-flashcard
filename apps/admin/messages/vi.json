@@ -1563,7 +1563,10 @@
       "title": "AI có đang chạy không",
       "hint": "Chỉ tính lời gọi phục vụ người học (không tính Chạy thử, Bộ ví dụ).",
       "calls": "Lời gọi của người học",
-      "failed": "Tỉ lệ lời gọi lỗi"
+      "failed": "Tỉ lệ lời gọi lỗi",
+      "chart": "Lời gọi của người học theo ngày",
+      "ok": "Thành công",
+      "failedCalls": "Lỗi"
     },
     "cost": {
       "title": "Tốn bao nhiêu",
@@ -1586,7 +1589,9 @@
       "forms": "Dạng chia lạ và kiểm từ riêng",
       "newForms": "Dạng chia lạ mới",
       "formsSeen": "Dạng chia lạ gặp lại",
-      "wordCheck": "Kiểm từ riêng: {verdict}"
+      "wordCheck": "Kiểm từ riêng: {verdict}",
+      "compare": "Câu AI so với câu không AI",
+      "reportsAi": "Báo lỗi câu AI"
     },
     "impact": {
       "title": "Người học có bị ảnh hưởng không",
@@ -1605,7 +1610,9 @@
       "daysAtCap": "Số ngày chạm trần",
       "refunds": "Lượt đã trả lại",
       "peakLearners": "Người học nhiều nhất một ngày",
-      "chart": "Lượt AI theo ngày"
+      "chart": "Lượt AI theo ngày",
+      "practice": "Câu AI khi luyện tập",
+      "lookup": "Tra từ bằng AI"
     },
     "cols": {
       "operation": "Thao tác",
@@ -1630,7 +1637,9 @@
       "open": "Chưa xử lý",
       "fixed": "Đã sửa",
       "noError": "Không lỗi",
-      "refunded": "Đã trả lượt"
+      "refunded": "Đã trả lượt",
+      "date": "Ngày",
+      "learners": "Người học"
     },
     "types": {
       "mcq_definition": "Chọn từ theo nghĩa",
@@ -1657,6 +1666,8 @@
     "verdicts": {
       "ok": "hợp lệ",
       "not_recognized": "không nhận ra"
-    }
+    },
+    "byOperation": "Xem theo thao tác",
+    "showTable": "Xem dạng bảng"
   }
 }

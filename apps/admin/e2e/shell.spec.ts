@@ -63,7 +63,7 @@ test.describe('shell (vi)', () => {
       vi.dashboard.impact.title, vi.dashboard.usage.title]) {
       await expect(page.getByRole('heading', { level: 2, name: title })).toBeVisible();
     }
-    await expect(page.getByRole('img', { name: vi.dashboard.cost.chart })).toBeVisible();
+    await expect(page.getByRole('group', { name: vi.dashboard.cost.chart })).toBeVisible();
     expect(await seriousViolations(page)).toEqual([]);
   });
 
