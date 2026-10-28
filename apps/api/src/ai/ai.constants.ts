@@ -32,7 +32,7 @@ export const PROMPT_EXAMPLES_MAX = 10;
 /** Examples per test run of a draft prompt (design §7.4). */
 export const TEST_EXAMPLES_MAX = 5;
 /** Example set (design §10). */
-export const EVAL_EXAMPLES_PER_OPERATION_MAX = 100;
+export const EVAL_EXAMPLES_PER_OPERATION_MAX = 1000;
 export const EVAL_JOB_CONCURRENCY = 3;
 export const EVAL_QUEUED_RECOVER_MS = 600_000;
 export const EVAL_RUNNING_STALE_MS = 900_000;

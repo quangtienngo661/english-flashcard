@@ -15,6 +15,20 @@ const note = z.string().trim().max(EVAL_NOTE_MAX).nullable().optional();
 export const createExampleSchema = z.strictObject({ operation: z.enum(AI_OPERATIONS), input: z.unknown(), note });
 export type CreateExampleBody = z.input<typeof createExampleSchema>;
 
+/**
+ * Body of `POST /v1/admin/ai/eval/examples/bulk` (owner 28/10/2026): many examples of one operation at once. Rows are checked one by
+ * one; the valid ones are stored and the invalid ones come back by row number.
+ */
+export const bulkExamplesSchema = z.strictObject({
+  operation: z.enum(AI_OPERATIONS),
+  rows: z.array(z.strictObject({ input: z.unknown(), note: z.unknown().optional() })).min(1).max(EVAL_EXAMPLES_PER_OPERATION_MAX),
+});
+export type BulkExamplesBody = z.input<typeof bulkExamplesSchema>;
+
+export type BulkExamplesResult = {
+  total: number; valid: number; created: number; invalid: Array<{ row: number; violations: string[] }>;
+};
+
 export const patchExampleSchema = z.strictObject({ input: z.unknown().optional(), note });
 export type PatchExampleBody = z.input<typeof patchExampleSchema>;
 
@@ -48,7 +62,7 @@ function checkInput(op: AiOperation, input: unknown): void {
   if (!result.ok) throw invalid(result.violations.map((violation) => `input.${violation}`));
 }
 
-/** The example set written by the owner (design §10): at most 100 per operation, no pagination. */
+/** The example set written by the owner (design §10): at most 1000 per operation, no pagination. */
 @Injectable()
 export class EvalExamplesService {
   constructor(
@@ -75,6 +89,44 @@ export class EvalExamplesService {
       operation: input.operation, input: input.input as Prisma.InputJsonValue, note: input.note ?? null, createdBy: actorId,
     } });
     return view(row, await this.identity.emailsOf([row.createdBy]));
+  }
+
+  async createMany(actorId: string, body: BulkExamplesBody): Promise<BulkExamplesResult> {
+    const { operation, rows } = parse(bulkExamplesSchema, body);
+    // A row's own faults are reported per row, so the note is parsed here and not by the body schema.
+    const checkRow = (row: (typeof rows)[number]): { violations: string[]; note: string | null } => {
+      const result = OPERATIONS[operation].validateInput(row.input);
+      const parsedNote = note.safeParse(row.note);
+      return {
+        violations: [
+          ...(result.ok ? [] : result.violations.map((violation) => `input.${violation}`)),
+          ...(parsedNote.success ? [] : parsedNote.error.issues.map((issue) => `note: ${issue.message}`)),
+        ],
+        note: parsedNote.success ? (parsedNote.data ?? null) : null,
+      };
+    };
+    const rejected: BulkExamplesResult['invalid'] = [];
+    const valid: Array<{ input: unknown; note: string | null }> = [];
+    rows.forEach((row, index) => {
+      const { violations, note: text } = checkRow(row);
+      if (violations.length > 0) rejected.push({ row: index + 1, violations });
+      else valid.push({ input: row.input, note: text });
+    });
+    const room = EVAL_EXAMPLES_PER_OPERATION_MAX - await this.prisma.aiEvalExample.count({ where: { operation } });
+    if (valid.length > room) {
+      throw invalid([`operation: room for ${Math.max(0, room)} more examples, ${valid.length} valid rows sent`]);
+    }
+    if (valid.length > 0) {
+      // One timestamp per row, a millisecond apart: the list and a run read examples by (created_at, id), so the file's order holds.
+      const start = Date.now();
+      await this.prisma.aiEvalExample.createMany({
+        data: valid.map((row, index) => ({
+          operation, input: row.input as Prisma.InputJsonValue, note: row.note, createdBy: actorId,
+          createdAt: new Date(start + index),
+        })),
+      });
+    }
+    return { total: rows.length, valid: valid.length, created: valid.length, invalid: rejected };
   }
 
   async update(id: string, patch: PatchExampleBody): Promise<ExampleView> {

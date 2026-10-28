@@ -6,7 +6,7 @@ import { RateLimit } from '../../common/rate-limit/rate-limit.decorator.js';
 import type { RequestWithUser } from '../../common/request-user/request-user.js';
 import { RequirePermission } from '../../identity/staff/require-permission.decorator.js';
 import { AI_OPERATIONS } from '../ai.types.js';
-import { createExampleSchema, EvalExamplesService, patchExampleSchema } from '../eval/eval-examples.service.js';
+import { bulkExamplesSchema, createExampleSchema, EvalExamplesService, patchExampleSchema } from '../eval/eval-examples.service.js';
 import { createRunSchema, EvalRunsService } from '../eval/eval-runs.service.js';
 
 const idParams = z.strictObject({ id: z.uuid().transform((value) => value.toLowerCase()) });
@@ -39,6 +39,14 @@ export class AdminAiEvalController {
   @RateLimit('user.write')
   createExample(@Body({ schema: createExampleSchema }) body: z.infer<typeof createExampleSchema>, @Req() req: RequestWithUser) {
     return this.examples.create(req.user!.userId, body);
+  }
+
+  /** Many examples at once. 200, not 201: a request whose rows are all invalid creates nothing. */
+  @Post('examples/bulk')
+  @HttpCode(200)
+  @RateLimit('user.write')
+  createExamples(@Body({ schema: bulkExamplesSchema }) body: z.infer<typeof bulkExamplesSchema>, @Req() req: RequestWithUser) {
+    return this.examples.createMany(req.user!.userId, body);
   }
 
   @Patch('examples/:id')

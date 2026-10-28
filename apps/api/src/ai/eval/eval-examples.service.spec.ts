@@ -22,6 +22,10 @@ function fakePrisma() {
         rows.push(row);
         return row;
       }),
+      createMany: vi.fn(async ({ data }: { data: Array<Omit<Row, 'id' | 'updatedAt'>> }) => {
+        for (const item of data) rows.push({ id: randomUUID(), updatedAt: new Date(), ...item });
+        return { count: data.length };
+      }),
       update: vi.fn(async ({ where, data }: { where: { id: string }; data: Partial<Row> }) => {
         const row = rows.find((r) => r.id === where.id)!;
         Object.assign(row, data);
@@ -136,5 +140,70 @@ describe('EvalExamplesService', () => {
     expect(created.created_by_user).toEqual({ id: ADMIN, email: 'admin@x.test', system: false });
     const updated = await service.update(created.id, { note: 'n' });
     expect(updated.created_by_user).toEqual({ id: ADMIN, email: 'admin@x.test', system: false });
+  });
+
+  describe('createMany', () => {
+    const good = (word: string) => ({ input: { ...INPUT, word }, note: word });
+    const bad = { input: { ...INPUT, meaning_vi: '' } };
+
+    it('stores the valid rows in file order and lists the invalid ones by row number (owner: only the right rows go in)', async () => {
+      const answer = await service.createMany(ADMIN, { operation: 'generate_cloze', rows: [good('a'), good('b'), bad, good('c'), good('d')] });
+      expect(answer).toEqual({
+        total: 5, valid: 4, created: 4,
+        invalid: [{ row: 3, violations: [expect.stringMatching(/^input.meaning_vi/)] }],
+      });
+      expect(prisma.rows.map((row) => (row.input as { word: string }).word)).toEqual(['a', 'b', 'c', 'd']);
+      expect(prisma.rows.every((row) => row.createdBy === ADMIN && row.operation === 'generate_cloze')).toBe(true);
+    });
+
+    it('rows keep their order when listed: createdAt rises by row even inside one batch', async () => {
+      await service.createMany(ADMIN, { operation: 'generate_cloze', rows: [good('a'), good('b'), good('c')] });
+      const times = prisma.rows.map((row) => row.createdAt.getTime());
+      expect(times).toEqual([...times].sort((x, y) => x - y));
+      expect(new Set(times).size).toBe(3);
+    });
+
+    it('all rows invalid → nothing stored and no insert is made', async () => {
+      const answer = await service.createMany(ADMIN, { operation: 'generate_cloze', rows: [bad, bad] });
+      expect(answer).toMatchObject({ total: 2, valid: 0, created: 0, invalid: [{ row: 1 }, { row: 2 }] });
+      expect(prisma.aiEvalExample.createMany).not.toHaveBeenCalled();
+    });
+
+    it('a note over the limit makes only that row invalid', async () => {
+      const answer = await service.createMany(ADMIN, {
+        operation: 'generate_cloze', rows: [good('a'), { ...good('b'), note: 'x'.repeat(EVAL_NOTE_MAX + 1) }],
+      });
+      expect(answer).toMatchObject({ valid: 1, created: 1, invalid: [{ row: 2, violations: [expect.stringMatching(/^note: /)] }] });
+    });
+
+    it('the valid rows that would pass the limit refuse the whole batch: nothing stored, the room left is named', async () => {
+      for (let i = 0; i < EVAL_EXAMPLES_PER_OPERATION_MAX - 2; i += 1) {
+        prisma.rows.push({ id: randomUUID(), operation: 'generate_cloze', input: INPUT, note: null, createdBy: ADMIN, createdAt: new Date(), updatedAt: new Date() });
+      }
+      const problem = await problemOf(service.createMany(ADMIN, { operation: 'generate_cloze', rows: [good('a'), good('b'), bad, good('c')] }));
+      expect(problem).toMatchObject({ status: 400, extensions: { violations: ['operation: room for 2 more examples, 3 valid rows sent'] } });
+      expect(prisma.rows).toHaveLength(EVAL_EXAMPLES_PER_OPERATION_MAX - 2);
+    });
+
+    it('invalid rows do not count against the room left', async () => {
+      for (let i = 0; i < EVAL_EXAMPLES_PER_OPERATION_MAX - 1; i += 1) {
+        prisma.rows.push({ id: randomUUID(), operation: 'generate_cloze', input: INPUT, note: null, createdBy: ADMIN, createdAt: new Date(), updatedAt: new Date() });
+      }
+      await expect(service.createMany(ADMIN, { operation: 'generate_cloze', rows: [good('a'), bad, bad] })).resolves.toMatchObject({ created: 1 });
+    });
+
+    it('no rows, an unknown operation or an extra key → 400', async () => {
+      await expect(service.createMany(ADMIN, { operation: 'generate_cloze', rows: [] })).rejects.toBeInstanceOf(ProblemDetailsException);
+      await expect(service.createMany(ADMIN, { operation: 'nope' as never, rows: [good('a')] })).rejects.toBeInstanceOf(ProblemDetailsException);
+      await expect(service.createMany(ADMIN, { operation: 'generate_cloze', rows: [{ ...good('a'), extra: 1 } as never] })).rejects.toBeInstanceOf(ProblemDetailsException);
+      expect(prisma.rows).toHaveLength(0);
+    });
+
+    it('more rows than the per-operation limit in one request → 400 before any check', async () => {
+      const rows = Array.from({ length: EVAL_EXAMPLES_PER_OPERATION_MAX + 1 }, (_, i) => good(`w${i}`));
+      const problem = await problemOf(service.createMany(ADMIN, { operation: 'generate_cloze', rows }));
+      expect(problem.status).toBe(400);
+      expect(prisma.rows).toHaveLength(0);
+    });
   });
 });
