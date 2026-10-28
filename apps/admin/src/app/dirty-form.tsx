@@ -3,9 +3,12 @@ import { useBeforeUnload, useBlocker, useLocation } from 'react-router';
 import { useTranslations } from 'use-intl';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
 
+/** Where a confirmed [Rời trang] is going. */
+type LeaveTarget = { pathname: string };
+
 type DirtyForms = {
   /** Form id → the pathname it was dirty on, and what to run when the user confirms leaving. A ref, so `release()` is seen by the very next navigation. */
-  registry: { current: Map<string, { pathname: string; onLeave?: () => void }> };
+  registry: { current: Map<string, { pathname: string; onLeave?: (to: LeaveTarget) => void }> };
   /** Asks "Bỏ thay đổi?" for the dialog `owner`; `discard` runs only on [Bỏ thay đổi]. */
   askDiscard: (owner: string, discard: () => void) => void;
   /** Withdraws `owner`'s question, if it is the one open (its dialog went away). */
@@ -26,7 +29,7 @@ function useDirtyForms(): DirtyForms {
  */
 export function DirtyFormProvider({ children }: { children: ReactNode }) {
   const t = useTranslations();
-  const registry = useRef(new Map<string, { pathname: string; onLeave?: () => void }>());
+  const registry = useRef(new Map<string, { pathname: string; onLeave?: (to: LeaveTarget) => void }>());
   const [pendingDiscard, setPendingDiscard] = useState<{ owner: string; discard: () => void } | null>(null);
   const value = useMemo<DirtyForms>(
     () => ({
@@ -61,11 +64,12 @@ export function DirtyFormProvider({ children }: { children: ReactNode }) {
 /**
  * Marks this form dirty on the current page while `isDirty`. Call `release()` right before a post-save or post-cancel
  * `navigate`: it drops the mark at once, so that navigation is not blocked. `onLeave` runs when the user confirms
- * [Rời trang] (they accepted losing the changes, so e.g. a kept draft must go too), before the navigation proceeds.
+ * [Rời trang] (they accepted losing the changes, so e.g. a kept draft must go too), before the navigation proceeds; it is told the
+ * destination, for the rare form that hands its work over to one page (the Prompt editor, to the eval run it started).
  */
 export function useDirtyForm(
   isDirty: boolean,
-  opts?: { onLeave?: () => void },
+  opts?: { onLeave?: (to: LeaveTarget) => void },
 ): {
   /** Call only right before a navigation (save-and-go, cancel-and-go); the form is not marked again until `isDirty` changes. */
   release(): void;
@@ -81,7 +85,7 @@ export function useDirtyForm(
   useEffect(() => {
     if (!isDirty) return;
     const forms = registry.current;
-    forms.set(id, { pathname, onLeave: () => onLeaveRef.current?.() });
+    forms.set(id, { pathname, onLeave: (to) => onLeaveRef.current?.(to) });
     return () => {
       forms.delete(id);
     };
@@ -145,7 +149,8 @@ export function LeaveGuard() {
       onConfirm={() => {
         const forms = [...registry.current.values()];
         registry.current.clear();
-        for (const form of forms) form.onLeave?.();
+        const to = { pathname: blocker.state === 'blocked' ? blocker.location.pathname : '' };
+        for (const form of forms) form.onLeave?.(to);
         blocker.proceed?.();
       }}
       onCancel={() => blocker.reset?.()}

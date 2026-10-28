@@ -89,7 +89,13 @@ function PromptEditor({ op, prompt }: { op: AiOperation; prompt: PromptView }) {
 
   const dirty = !sameForm(form, base);
   const kept = useKeptDraft<unknown>(`ai-prompt:${op}`, form, dirty);
-  useDirtyForm(dirty, { onLeave: kept.clear });
+  /**
+   * The path of the eval run this editor just started with its unsaved text ([Chạy bộ ví dụ với bản này]). A confirmed [Rời trang] to
+   * exactly that page keeps the kept draft (the run was made from it, and coming back should offer "Khôi phục"); any other
+   * destination drops it as usual (design §4.6 / M1b ruling).
+   */
+  const startedRunPath = useRef<string | null>(null);
+  useDirtyForm(dirty, { onLeave: (to) => (to.pathname === startedRunPath.current ? undefined : kept.clear()) });
   const [draftAnswered, setDraftAnswered] = useState(false);
   const offered = !draftAnswered && !dirty && isPromptForm(kept.kept) && !sameForm(kept.kept, base) ? kept.kept : null;
   useFocusFirstError(errors, fieldOrder(form));
@@ -316,7 +322,7 @@ function PromptEditor({ op, prompt }: { op: AiOperation; prompt: PromptView }) {
       </div>
 
       <TestRunPanel op={op} prepare={prepare} showViolations={showViolations} />
-      <EvalDraftRun op={op} fingerprint={JSON.stringify(form)} prepare={prepare} showViolations={showViolations} />
+      <EvalDraftRun op={op} fingerprint={JSON.stringify(form)} prepare={prepare} showViolations={showViolations} startedRunPath={startedRunPath} />
       <PromptHistory op={op} onCopy={copy} />
     </div>
   );
@@ -328,13 +334,15 @@ type EvalDraftRunProps = {
   fingerprint: string;
   prepare: () => { instructions: string; examples: PromptExample[] } | null;
   showViolations: (violations: string[]) => string[];
+  /** Set to the run's path just before opening it, so the editor's leave guard keeps the unsaved draft for that one destination. */
+  startedRunPath: { current: string | null };
 };
 
 /**
  * [Chạy bộ ví dụ với bản này] (design §6.4, §6.5): runs the whole example set with the unsaved editor content, then opens that run on the
  * Bộ ví dụ page. The editor's leave guard still applies: with unsaved text it asks "Rời trang?", and [Ở lại] keeps a link to the run.
  */
-function EvalDraftRun({ op, fingerprint, prepare, showViolations }: EvalDraftRunProps) {
+function EvalDraftRun({ op, fingerprint, prepare, showViolations, startedRunPath }: EvalDraftRunProps) {
   const t = useTranslations();
   const navigate = useNavigate();
   const [runHref, setRunHref] = useState<string | null>(null);
@@ -345,6 +353,7 @@ function EvalDraftRun({ op, fingerprint, prepare, showViolations }: EvalDraftRun
     (id) => {
       const href = `/ai/eval/runs/${id}?op=${op}`;
       setRunHref(href);
+      startedRunPath.current = `/ai/eval/runs/${id}`;
       void navigate(href);
     },
     // A draft is checked by the save rules: its violations (`prompt.instructions: …`) go on the editor's boxes like a failed [Lưu].
