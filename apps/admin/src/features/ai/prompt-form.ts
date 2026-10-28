@@ -11,6 +11,12 @@ export const INSTRUCTIONS_FIELD = 'prompt-instructions';
 export const inputFieldId = (index: number, field: string) => `example-${index}-input-${field}`;
 export const outputFieldId = (index: number) => `example-${index}-output`;
 
+/** "go · verb": the first two text values of an example's input, so the admin can tell examples apart. */
+export function exampleSummary(input: Record<string, unknown>): string {
+  const texts = Object.values(input).filter((value): value is string => typeof value === 'string' && value !== '');
+  return texts.length > 0 ? texts.slice(0, 2).join(' · ') : JSON.stringify(input);
+}
+
 /** A value of an input field as text: a string as is, null as empty, anything else (a list) as JSON. */
 export function fieldText(value: unknown): string {
   if (value === null || value === undefined) return '';

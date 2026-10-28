@@ -14,11 +14,11 @@ const show = (path: string, over: Partial<NavEntry> = {}) =>
   );
 
 describe('ComingSoonPage', () => {
-  it('shows "Tính năng chưa có", the purpose line and "Dự kiến: Bước 6" for /ai/costs', () => {
-    show('/ai/costs');
+  it('shows "Tính năng chưa có", the purpose line and "Dự kiến: Bước 5" for an entry with a planned step', () => {
+    show('/dashboard', { plannedStep: '5' });
     expect(screen.getByText('Tính năng chưa có')).toBeInTheDocument();
-    expect(screen.getByText('Nhật ký từng lời gọi AI, tổng theo ngày và theo model, đối soát hóa đơn.')).toBeInTheDocument();
-    expect(screen.getByText('Dự kiến: Bước 6')).toBeInTheDocument();
+    expect(screen.getByText(vi.comingSoon.purpose.dashboard)).toBeInTheDocument();
+    expect(screen.getByText('Dự kiến: Bước 5')).toBeInTheDocument();
   });
 
   it('an item with no planned step says so', () => {

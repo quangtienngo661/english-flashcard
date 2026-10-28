@@ -35,7 +35,7 @@ async function waitFor<T>(read: () => Promise<T>, done: (value: T) => boolean, w
 const letters = (n: number) => Array.from({ length: n }, () => String.fromCharCode(97 + Math.floor(Math.random() * 26))).join('');
 
 /** Puts `modelId` on `generate_cloze`, adding the fake model first when the admin has not yet. */
-async function chooseClozeModel(adminToken: string, modelId: string): Promise<void> {
+export async function chooseClozeModel(adminToken: string, modelId: string): Promise<void> {
   const listed = await apiCall<{ items: Array<{ id: string; model_id: string }> }>('GET', '/v1/admin/ai/models', adminToken);
   const model = listed.items.find((m) => m.model_id === modelId)
     ?? (await apiCall<{ id: string }>('POST', '/v1/admin/ai/models', adminToken, { provider: 'fake', model_id: modelId }));

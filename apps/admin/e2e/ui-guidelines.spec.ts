@@ -308,6 +308,43 @@ test('Tình trạng at 390 fits the window with six operations, a warning and a 
   await expectNoHorizontalScroll(page);
 });
 
+test('Chi phí and Các lần gọi at 390 fit the window: nine columns as cards, a 200-character operation id, long model and outcome text', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  const longId = 'op-' + 'x'.repeat(197);
+  const totals = { calls: 1240, input_tokens: 123456789, cached_input_tokens: 23456789, output_tokens: 3456789, reasoning_tokens: 456789, cost_usd: '1234.56780000', cost_vnd: 32222222, unknown_cost_calls: 12 };
+  await signedInAs(page, 'admin', {
+    'GET /v1/admin/ai/costs': () => ({ json: { items: [{ key: 'anthropic/claude-sonnet-long-model-id-20261130', ...totals }], total: totals } }),
+    'GET /v1/admin/ai/calls': () => ({
+      json: {
+        items: [{
+          id: 'c1', attempt: 1, purpose: 'learner', operation: 'generate_sentence_mcq', provider: 'anthropic', model: 'claude-sonnet-long-model-id-20261130', effort: 'high',
+          thinking: null, max_output_tokens: null, prompt_revision: 3, outcome: 'provider-unavailable-timeout', http_status: 504, provider_error_code: 'overloaded_error_with_a_long_code',
+          latency_ms: 10000, input_tokens: 123456, cached_input_tokens: 23456, output_tokens: 3456, reasoning_tokens: 456, cost_usd: '0.00010000', cost_known: true, created_at: at,
+          content: { request: { text: 'x'.repeat(300) }, response: 'y'.repeat(300), expires_at: '2026-10-25T10:00:00.000Z' },
+        }],
+      },
+    }),
+  });
+  await page.goto('/ai/costs?from=2026-10-01&to=2026-10-20&group_by=model');
+  await expect(page.getByText('anthropic/claude-sonnet-long-model-id-20261130').filter({ visible: true })).toBeVisible();
+  await expectNoHorizontalScroll(page);
+  await page.goto(`/ai/calls?operation_id=${longId}`);
+  await expect(page.getByText('provider-unavailable-timeout').filter({ visible: true })).toBeVisible();
+  await expectNoHorizontalScroll(page);
+  await page.getByRole('button', { name: /Xem nội dung/ }).filter({ visible: true }).click();
+  await expect(page.getByRole('dialog')).toBeVisible();
+  await expectNoHorizontalScroll(page);
+});
+
+test('Chi phí at 1440 keeps the nine columns inside the page', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  const totals = { calls: 1240, input_tokens: 123456789, cached_input_tokens: 23456789, output_tokens: 3456789, reasoning_tokens: 456789, cost_usd: '1234.56780000', cost_vnd: 32222222, unknown_cost_calls: 12 };
+  await signedInAs(page, 'admin', { 'GET /v1/admin/ai/costs': () => ({ json: { items: [{ key: 'anthropic/claude-sonnet-long-model-id-20261130', ...totals }], total: totals } }) });
+  await page.goto('/ai/costs?group_by=model');
+  await expect(page.getByRole('columnheader', { name: vi.ai.costs.cols.unknown })).toBeVisible();
+  await expectNoHorizontalScroll(page);
+});
+
 test('Model at 390 fits the window with a 100-character model id and a long note', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   const long = 'm'.repeat(100);
@@ -370,6 +407,46 @@ test('Prompt at 390 fits the window with 8.000-character instructions', async ({
   await page.goto('/ai/prompts');
   await expect(page.getByText('8.000/8.000')).toBeVisible();
   await expectNoHorizontalScroll(page);
+});
+
+test('Bộ ví dụ at 390 fits the window with a long example input, a long note and an open run', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  const lan = { id: 'u9', email: `${'a'.repeat(120)}@example.com`, system: false };
+  const run = {
+    id: 'aaaaaaaa-0000-4000-8000-000000000001', operation: 'generate_cloze', provider: 'openai', model: 'm'.repeat(100), effort: null, thinking: null, max_output_tokens: null, prompt_revision: 3,
+    status: 'failed', total: 100, done: 37, valid_count: 30, avg_latency_ms: 812, cost_usd: '12.34560000', cost_unknown_count: 3, error: 'e'.repeat(300),
+    started_by: 'u9', started_by_user: lan, created_at: at, started_at: at, finished_at: at,
+  };
+  await signedInAs(page, 'admin', {
+    ...settingsMocks,
+    'GET /v1/admin/ai/operations': () => ({ json: { items: [{ operation: 'generate_cloze', model: null, effort: null, thinking: null, max_output_tokens: null, version: 1, input_fields: ['word', 'meaning_vi'], estimate: null }] } }),
+    'GET /v1/admin/ai/test-quota': () => ({ json: { limit: 20, remaining: 17, resets_at: at } }),
+    'GET /v1/admin/ai/eval/examples': () => ({ json: { items: [{
+      id: 'e1', operation: 'generate_cloze', input: { word: 'w'.repeat(200), meaning_vi: 'nghĩa '.repeat(60) }, note: 'n'.repeat(500),
+      created_by: 'u9', created_by_user: lan, created_at: at, updated_at: at,
+    }] } }),
+    'GET /v1/admin/ai/eval/runs': () => ({ json: { items: [run], next_page_token: null } }),
+    'GET /v1/admin/ai/eval/runs/aaaaaaaa-0000-4000-8000-000000000001': () => ({ json: { ...run, draft: null, heartbeat_at: null, items: [
+      { example_id: 'e1', status: 'succeeded', reason: null, output: { sentence: 's'.repeat(600), accepted_answers: ['a'.repeat(200)] }, raw_output: 'x'.repeat(2000), latency_ms: 812, cost_usd: '0.00100000' },
+      { example_id: 'gone', status: 'permanent_failure', reason: 'r'.repeat(200), output: null, raw_output: 'y'.repeat(2000), latency_ms: 300, cost_usd: null },
+    ] } }),
+  });
+  await page.goto('/ai/eval');
+  await expect(page.getByText('w'.repeat(200), { exact: false }).first()).toBeAttached();
+  await expectNoHorizontalScroll(page);
+  await page.goto('/ai/eval/runs/aaaaaaaa-0000-4000-8000-000000000001');
+  await expect(page.getByTestId('detail-panel').getByText('e'.repeat(300), { exact: false })).toBeVisible();
+  for (const summary of await page.getByTestId('detail-panel').getByText(vi.ai.eval.detail.rawOutput).all()) {
+    if (await summary.isVisible()) await summary.click();
+  }
+  await expect(page.getByTestId('detail-panel').getByText('x'.repeat(2000)).filter({ visible: true })).toBeVisible();
+  await expectNoHorizontalScroll(page);
+  // At 390 the run opens as a sheet outside `main`: nothing in it may stick out sideways either.
+  const sticking = await page.getByTestId('detail-panel').evaluate((panel) => {
+    const edge = panel.getBoundingClientRect().right + 1;
+    return [...panel.querySelectorAll('*')].filter((el) => el.getBoundingClientRect().right > edge).map((el) => el.tagName);
+  });
+  expect(sticking).toEqual([]);
 });
 
 test('Cài đặt hệ thống at 390: every tab and the history dialog fit the window (Review Focus 4)', async ({ page }) => {

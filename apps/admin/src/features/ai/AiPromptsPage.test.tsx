@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import vi from '../../../messages/vi.json';
 import { problem, tokenResponse } from '../../auth/test-support';
 import { renderApp } from '../staff/test-utils';
-import { GUARD, URL, example, promptRoutes, promptView } from './prompt-test-support';
+import { GUARD, URL, evalRoutes, evalRun, example, promptRoutes, promptView } from './prompt-test-support';
 
 const t = vi.ai.prompts;
 const DRAFT_KEY = 'wordmet-admin.draft.me-1.ai-prompt:generate_cloze';
@@ -294,5 +294,92 @@ describe('AiPromptsPage (A/82)', () => {
   it('a 403 shows the forbidden text', async () => {
     renderApp('/ai/prompts', promptRoutes({ [URL.prompt()]: () => problem(403, 'forbidden') }));
     expect(await screen.findByText(vi.errors.forbidden)).toBeInTheDocument();
+  });
+});
+
+describe('AiPromptsPage [Chạy bộ ví dụ với bản này] (A/82 → A/83)', () => {
+  const evalButton = () => screen.getByRole('button', { name: vi.ai.eval.fromPrompt.button });
+  const runRoutes = () => ({
+    ...evalRoutes(),
+    ...promptRoutes(),
+    [URL.startRun]: () => Response.json({ run_id: 'aaaaaaaa-0000-4000-8000-000000000001', status: 'queued' }, { status: 202 }),
+    [URL.run()]: () => Response.json(evalRun({ prompt_revision: null })),
+  });
+
+  it('a clean prompt: sends the editor content as the draft with an Idempotency-Key and opens the run without asking "Rời trang?"', async () => {
+    const r = await openPage(runRoutes());
+    await userEvent.click(evalButton());
+    await waitFor(() => expect(r.router.state.location.pathname).toBe('/ai/eval/runs/aaaaaaaa-0000-4000-8000-000000000001'));
+    expect(screen.queryByText(vi.leave.title)).not.toBeInTheDocument();
+    const sent = r.calls.filter((c) => c.method === 'POST' && c.path === '/v1/admin/ai/eval/runs');
+    expect(sent[0].body).toEqual({ operation: 'generate_cloze', prompt: { instructions: 'Write one short sentence.', examples: [example()] } });
+    expect(sent[0].headers['Idempotency-Key']).toBeTruthy();
+    await waitFor(() => expect(r.count('GET', '/v1/admin/ai/test-quota')).toBeGreaterThanOrEqual(2));
+  });
+
+  it('an unsaved prompt: the run uses the unsaved text, and leaving asks "Rời trang?"; [Ở lại] keeps the text and links the run', async () => {
+    const r = await openPage(runRoutes());
+    await retype('Unsaved draft text.');
+    await userEvent.click(evalButton());
+    expect(await screen.findByText(vi.leave.title)).toBeInTheDocument();
+    const sent = r.calls.filter((c) => c.method === 'POST' && c.path === '/v1/admin/ai/eval/runs');
+    expect((sent[0].body as { prompt: { instructions: string } }).prompt.instructions).toBe('Unsaved draft text.');
+    await userEvent.click(screen.getByRole('button', { name: vi.leave.stay }));
+    expect(instructions()).toHaveValue('Unsaved draft text.');
+    expect(screen.getByRole('link', { name: vi.ai.eval.fromPrompt.open })).toHaveAttribute('href', '/ai/eval/runs/aaaaaaaa-0000-4000-8000-000000000001?op=generate_cloze');
+  });
+
+  it('an unsaved prompt, [Rời trang] to the run it started: the draft is kept, so coming back offers "Khôi phục"; any other leave still drops it', async () => {
+    const r = await openPage(runRoutes());
+    await retype('Unsaved draft text.');
+    await userEvent.click(evalButton());
+    await screen.findByText(vi.leave.title);
+    await userEvent.click(screen.getByRole('button', { name: vi.leave.leave }));
+    await waitFor(() => expect(r.router.state.location.pathname).toBe('/ai/eval/runs/aaaaaaaa-0000-4000-8000-000000000001'));
+    expect(JSON.parse(sessionStorage.getItem(DRAFT_KEY)!)).toMatchObject({ instructions: 'Unsaved draft text.' });
+
+    await act(async () => {
+      await r.router.navigate('/ai/prompts');
+    });
+    await screen.findByLabelText(t.instructions);
+    expect(instructions()).toHaveValue('Write one short sentence.');
+    expect(screen.getByText(vi.draft.message)).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: vi.draft.restore }));
+    expect(instructions()).toHaveValue('Unsaved draft text.');
+
+    // Not an exemption for the page: leaving by a menu link now still drops the draft.
+    await userEvent.click(screen.getAllByRole('link', { name: vi.nav.aiStatus })[0]);
+    await userEvent.click(await screen.findByRole('button', { name: vi.leave.leave }));
+    await waitFor(() => expect(r.router.state.location.pathname).toBe('/ai/status'));
+    expect(sessionStorage.getItem(DRAFT_KEY)).toBeNull();
+  });
+
+  it('a network error, then an edit: [Thử lại] is gone and the next press sends the new text with a new key', async () => {
+    let n = 0;
+    const r = await openPage({
+      ...runRoutes(),
+      [URL.startRun]: () => {
+        n += 1;
+        if (n === 1) throw new TypeError('Failed to fetch');
+        return Response.json({ run_id: 'aaaaaaaa-0000-4000-8000-000000000001', status: 'queued' }, { status: 202 });
+      },
+    });
+    await userEvent.click(evalButton());
+    expect(await screen.findByRole('button', { name: vi.common.retry })).toBeInTheDocument();
+    await retype('Edited after the error.');
+    expect(screen.queryByRole('button', { name: vi.common.retry })).not.toBeInTheDocument();
+    await userEvent.click(evalButton());
+    await screen.findByText(vi.leave.title);
+    const sent = r.calls.filter((c) => c.method === 'POST' && c.path === '/v1/admin/ai/eval/runs');
+    expect(sent).toHaveLength(2);
+    expect((sent[1].body as { prompt: { instructions: string } }).prompt.instructions).toBe('Edited after the error.');
+    expect(sent[1].headers['Idempotency-Key']).not.toBe(sent[0].headers['Idempotency-Key']);
+  });
+
+  it('409 model-not-set → the copy and a link to Thao tác; nothing navigates', async () => {
+    const r = await openPage({ ...runRoutes(), [URL.startRun]: () => problem(409, 'model-not-set') });
+    await userEvent.click(evalButton());
+    expect(await screen.findByText(vi.errors['model-not-set'])).toBeInTheDocument();
+    expect(r.router.state.location.pathname).toBe('/ai/prompts');
   });
 });

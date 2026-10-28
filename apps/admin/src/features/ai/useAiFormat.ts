@@ -7,12 +7,19 @@ export function useAiFormat() {
   const tag = locale === 'en' ? 'en-US' : 'vi-VN';
   const date = new Intl.DateTimeFormat(tag, { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: ADMIN_ZONE });
   const time = new Intl.DateTimeFormat(tag, { hour: '2-digit', minute: '2-digit', timeZone: ADMIN_ZONE, hour12: locale === 'en' });
+  const dayMonth = new Intl.DateTimeFormat(tag, { day: '2-digit', month: '2-digit', timeZone: ADMIN_ZONE });
   const number = new Intl.NumberFormat(tag);
   const usd = new Intl.NumberFormat(tag, { style: 'currency', currency: 'USD', minimumFractionDigits: 2, maximumFractionDigits: 4 });
   const vnd = new Intl.NumberFormat(tag, { style: 'currency', currency: 'VND', maximumFractionDigits: 0 });
   const price = new Intl.NumberFormat(tag, { minimumFractionDigits: 2, maximumFractionDigits: 4 });
   return {
     date: (at: string) => date.format(new Date(at)),
+    /** "25/10" ("10/25" in English): vi-VN writes a lone day and month with a dash, so the parts are joined here. */
+    dayMonth: (at: string) => {
+      const parts = dayMonth.formatToParts(new Date(at));
+      const of = (type: string) => parts.find((p) => p.type === type)?.value ?? '';
+      return locale === 'en' ? `${of('month')}/${of('day')}` : `${of('day')}/${of('month')}`;
+    },
     dateTime: (at: string) => `${date.format(new Date(at))} ${time.format(new Date(at))}`,
     /** "15:00" (vi), "3:00 PM" (en). */
     time: (at: Date) => time.format(at),

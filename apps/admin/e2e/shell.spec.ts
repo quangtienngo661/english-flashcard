@@ -56,11 +56,11 @@ test.describe('shell (vi)', () => {
 
   test('Task 12a: an unavailable menu item opens "Tính năng chưa có" with its purpose and planned step; axe is clean', async ({ page }) => {
     await signedInAs(page, 'admin', {});
-    await page.goto('/ai/costs');
-    await expect(page.getByRole('heading', { level: 1 })).toHaveText(vi.nav.aiCosts);
+    await page.goto('/dashboard');
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText(vi.nav.dashboard);
     await expect(page.getByText(vi.comingSoon.title)).toBeVisible();
-    await expect(page.getByText(vi.comingSoon.purpose.aiCosts)).toBeVisible();
-    await expect(page.getByText('Dự kiến: Bước 6')).toBeVisible();
+    await expect(page.getByText(vi.comingSoon.purpose.dashboard)).toBeVisible();
+    await expect(page.getByText('Dự kiến: chưa xếp bước')).toBeVisible();
     expect(await seriousViolations(page)).toEqual([]);
   });
 

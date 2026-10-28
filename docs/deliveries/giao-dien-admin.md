@@ -205,6 +205,67 @@ Khác với khung / copy doc (có chủ ý):
   "Không đọc được bộ ví dụ. [Chạy thử] sẽ dùng các ví dụ trong prompt.", "Mẫu {n}", bốn trạng thái), khối "Bản mới nhất" (tiêu đề, [Chép vào ô sửa], [Ẩn bản mới]) và Lịch sử
   (tiêu đề, "Bản {revision}", [Xem], hộp xem).
 
+# Đợt giao diện admin — M1b as-built (28/10/2026)
+
+Nhánh `feat/giao-dien-admin-m1b`, một PR vào `dev`. Ba màn AI đo xong: Bộ ví dụ (`/ai/eval`, có `new` và `runs/:id`), Chi phí (`/ai/costs`), Các lần gọi
+(`/ai/calls`); chỉ admin (`settings.manage`). Đã chạy trên stack thật với model giả, **chưa gọi AI thật** (D3 Bước 7): cách làm lần đầu nằm ở test flow, mục M1b.
+
+## Đã làm (Task 18–20)
+
+18. Bộ ví dụ: danh sách ví dụ theo thao tác (tối đa 100; thêm, sửa, xóa), [Chạy bộ ví dụ], danh sách lần chạy, chi tiết một lần chạy trong khung bên phải (tự cập nhật
+    tới "Xong" hoặc "Lỗi"), hook đọc lại trạng thái dùng chung với Lô nhập và Publish: `747357e` feat(admin): add the ai example set and runs.
+    - `b733410` fix: chi tiết lần chạy có kết quả từng ví dụ (AD16) và ngừng đọc lại khi mã lần chạy không có (404).
+19. Chi phí (khoảng ngày, nhóm theo ngày / thao tác / model / mục đích / kết quả, dòng tổng) và Các lần gọi (tìm theo `operation_id`, nội dung yêu cầu và phản hồi
+    còn lưu): `5525dc6` feat(admin): add the ai costs and calls pages; `96c43be` fix: các test "Sắp có" chuyển sang `/dashboard`, sửa lỗi lint.
+20. e2e, test flow và cổng: gộp `origin/dev` (M2–M5, AD18, docker bootstrap; hai bên cùng sửa `a11y.spec.ts` và `nav.test.ts`, giữ đủ mục của cả hai),
+    `e2e-real/m1b.real.spec.ts`, mục test flow M1b, mục này, AD16 trong decision record.
+
+## Ảnh chụp (stack thật, 28/10/2026)
+
+Khung Figma đối chiếu (file `7HcPAKLrWu32C27qYMJUOA`; node id theo `docs/mockups/2026-10-22/figma-node-ids.md`). Ảnh nằm ở `docs/deliveries/giao-dien-admin/m1b/`.
+Dữ liệu: DB mới, model giả `fake:ok` chọn cho `generate_cloze`, ba ví dụ, ba lần chạy xong.
+
+| Màn | Khung Figma | Desktop 1440×900 | Phone 390×844 |
+|---|---|---|---|
+| Bộ ví dụ (danh sách, ô chạy, lần chạy) | A/83 `400:5124` | [eval-desktop.png](giao-dien-admin/m1b/eval-desktop.png) | [eval-mobile.png](giao-dien-admin/m1b/eval-mobile.png) |
+| Một lần chạy xong, có kết quả từng ví dụ (AD16) | A/83 `400:5124` | [eval-run-desktop.png](giao-dien-admin/m1b/eval-run-desktop.png) | [eval-run-mobile.png](giao-dien-admin/m1b/eval-run-mobile.png) |
+| Chi phí (nhóm theo thao tác) | A/85 `400:5685` | [costs-desktop.png](giao-dien-admin/m1b/costs-desktop.png) | [costs-mobile.png](giao-dien-admin/m1b/costs-mobile.png) |
+| Các lần gọi theo mã thao tác của một ví dụ trong lần chạy | A/86 `400:6197` | [calls-desktop.png](giao-dien-admin/m1b/calls-desktop.png) | [calls-mobile.png](giao-dien-admin/m1b/calls-mobile.png) |
+| Nội dung một lần gọi (hộp thoại) | A/86 `400:6197` | [calls-content-desktop.png](giao-dien-admin/m1b/calls-content-desktop.png) | [calls-content-mobile.png](giao-dien-admin/m1b/calls-content-mobile.png) |
+
+Ảnh là màn thật, chưa đặt cạnh khung Figma từng điểm một; chủ dự án so với Figma khi duyệt.
+
+Khác với khung / design (có chủ ý):
+- **Kết quả từng ví dụ ở chi tiết lần chạy (AD16):** thêm ngoài design §6.5 và bản chữ A/83; chủ dự án đã nói "giữ" (27/10/2026). Xem decision record.
+- Sửa ví dụ là hộp thoại mở bằng state, không có route `:id` (design chỉ liệt kê `new` và `runs/:id`).
+- Đường dẫn lần chạy mang theo `?op=` (`/ai/eval/runs/:id?op=generate_cloze`) để màn phía sau hiện đúng thao tác của lần chạy.
+- **Sau review cuối (quyết định của controller):** (1) [Chạy bộ ví dụ với bản này] khi Prompt còn chữ chưa lưu: [Rời trang] để mở lần chạy **giữ** bản nháp đã lưu tạm
+  (trước đó xóa mất ngay lúc vừa dùng), nên quay lại Prompt vẫn được mời [Khôi phục]; chỉ đúng đích là lần chạy vừa bắt đầu được miễn, rời sang trang khác vẫn xóa
+  (`useDirtyForm` nay báo đích đến cho `onLeave`). (2) Trang `/ai/eval` chỉ có một nút chính [Chạy bộ ví dụ]; [Thêm ví dụ] là nút phụ.
+  Mã lần chạy không phải UUID (`/ai/eval/runs/abc`) nói "không tìm thấy" và không gọi API, không đọc lại.
+
+## Kiểm đã chạy
+
+- Stack thật (API cổng 3400, admin preview 5223, DB riêng `english_learning_admin_m1b` xóa sau khi chạy, `JOB_QUEUE_PREFIX=wordmet-admin-m1b`, `AI_FAKE_ENABLED=true`, không key nào):
+  `CI=1 pnpm test:e2e:real` 26/26 (admin 8 + M0 2 + M1a 2 + M1b 4 + M2 1 + M3 3 + M4 3 + M5 3). M1b: thêm ví dụ (word, part_of_speech, level, meaning_vi), [Chạy bộ ví dụ]
+  tới "Xong" và thấy kết quả của ví dụ, Chi phí nhóm theo thao tác có dòng `generate_cloze`, Các lần gọi tìm `eval-<run_id>-<example_id>` thấy lần gọi mục đích "bộ ví dụ"
+  và mở được nội dung yêu cầu / phản hồi.
+- `pnpm --filter admin test` 779/779 (78 file, `--maxWorkers=3`); lint và typecheck sạch; `pnpm --filter admin test:e2e` (cổng 5193) 257 passed, 67 skipped
+  (test chỉ chạy desktop hoặc chỉ mobile), gồm axe và "không lòi ngang ở 390" cho `/ai/eval`, `/ai/eval/new`, `/ai/eval/runs/:id`, `/ai/costs`, `/ai/calls`.
+- Chưa kiểm: CI trên PR; gọi AI thật bằng key (test flow M1b); đầu ra của model thật có dài và lạ hơn mẫu giả hay không.
+
+## Câu chữ tự viết (không có trong copy doc §8; chủ dự án duyệt lại khi cần)
+
+- Bộ ví dụ (`ai.eval.*`, vi và en): trừ các chữ copy doc đã có (Ví dụ theo thao tác tối đa 100, [Thêm ví dụ], [Chạy bộ ví dụ], Đang chờ / Đang chạy / Xong / Lỗi, Tiến độ, Hợp lệ,
+  Thời gian trung bình, Chi phí, Model, Bản prompt, "Bản nháp", "theo tỷ giá hôm nay", "Mỗi thao tác tối đa 100 ví dụ.", "Chưa có worker nhận lần chạy này."), mọi chữ còn lại là
+  tự viết: `examplesHint`, `empty`, `emptyHint`, tiêu đề cột, hộp xóa ("Xóa ví dụ này?" và nội dung), ba toast, `form.fieldsHint`, `form.noteHint`, `run.note`,
+  `run.quota` ("Còn {remaining}/{limit} lần chạy trong giờ này (dùng chung với Chạy thử ở Prompt)"), `run.needExample`, `run.rateLimited`, `run.wait`, `runs.empty` / `emptyHint`,
+  `detail.queued`, `detail.running`, `detail.failed`, `detail.failedNoReason`, `detail.background`, `detail.unknownCost`, và khối "Chạy bộ ví dụ với bản này" ở Prompt (`fromPrompt.*`).
+- Kết quả từng ví dụ (AD16): `detail.results` "Kết quả từng ví dụ", `detail.deletedExample`, `detail.rawOutput` "Xem đầu ra gốc", `detail.notFound`, `detail.skipped`, tiêu đề cột
+  `detail.cols.*` (Ví dụ, Trạng thái, Lý do, Đầu ra, Thời gian, Chi phí).
+- Chi phí (`ai.costs.*`): `filters.apply` "Xem", `errors.required` "Chọn ngày.", `errors.fromAfterTo`, `errors.tooLong` "Khoảng ngày tối đa 366 ngày.", `empty`, `total` "Tổng".
+- Các lần gọi (`ai.calls.*`): `search.placeholder`, `hint`, `forId`, `tokensInOut`, `tokensExtra`, `costUnknown`, `revision`, `view`, `viewFor`, `content.title` / `request` / `response`.
+
 # Đợt giao diện admin — M2 as-built (27/10/2026)
 
 Nhánh `feat/giao-dien-admin-m2`, một PR vào `dev`. Màn Cài đặt hệ thống `/settings` (A/70a–A/70f) đã thay "Tính năng chưa có" (chỉ admin, `settings.manage`).
