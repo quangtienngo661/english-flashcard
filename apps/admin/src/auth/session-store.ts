@@ -22,9 +22,12 @@ export type Me = {
   timezone: string;
   staff_role: 'admin' | 'editor' | null;
   permissions: Permission[];
+  /** Bước 8: how this session signed in. A Google session never reaches a staff route (design §5.7). */
+  auth_method?: 'password' | 'google';
+  sign_in_methods?: Array<'password' | 'google'>;
 };
 
-export type Notice = 'no-access' | 'expired' | 'rate-limited' | 'logout-failed';
+export type Notice = 'no-access' | 'password-required' | 'expired' | 'rate-limited' | 'logout-failed';
 
 /** FE38: set while a user-initiated sign-out has not reached the server, so a reload does not quietly resume the session. */
 const LOGOUT_PENDING_KEY = 'wordmet-admin-logout-pending';
@@ -173,7 +176,10 @@ export class SessionStore {
     if (!res.ok) return;
     const me = (await res.json()) as Me;
     const next = gate(me);
-    if (next === 'app') this.set({ status: 'signed-in', me });
+    // The cookie is shared with the learner app (design §5.7): a Google sign-in there can become this tab's session at the next
+    // refresh. Staff routes refuse it (403 password-login-required), so the gate sends the person back to the password sign-in (B8E44).
+    if (me.staff_role !== null && me.auth_method === 'google') await this.logout('password-required');
+    else if (next === 'app') this.set({ status: 'signed-in', me });
     else if (next === 'change-password') this.set({ status: 'change-password', me });
     else await this.logout('no-access');
   }
@@ -190,6 +196,8 @@ export class SessionStore {
         else if (refreshed === 'failed') await this.logout('expired');
       } else if (slug === 'password-change-required') {
         await this.recheck();
+      } else if (slug === 'password-login-required') {
+        await this.logout('password-required');
       }
     }
     return res;

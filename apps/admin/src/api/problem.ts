@@ -34,8 +34,10 @@ export class NetworkError extends Error {
  * body-parser mappings in `problem-details.filter.ts`), checked 14/10/2026, extended 27/10/2026 for the admin UI round (design §4.5) and 28/10/2026 with `run-active` / `run-not-active` (stopping and deleting an eval run). Each has a vi and en message.
  */
 export const KNOWN_ERROR_SLUGS = [
+  'account-deleting',
   'batch-filter-unavailable',
   'batch-not-revertable',
+  'confirm-email-mismatch',
   'csrf-header-required',
   'email-already-verified',
   'email-taken',
@@ -52,6 +54,7 @@ export const KNOWN_ERROR_SLUGS = [
   'invalid-otp',
   'invalid-token',
   'job-not-active',
+  'last-admin',
   'level-source-required',
   'lock-rule',
   'mail-unavailable',
@@ -64,6 +67,7 @@ export const KNOWN_ERROR_SLUGS = [
   'nothing-to-publish',
   'operation-settings-conflict',
   'password-change-required',
+  'password-login-required',
   'payload-too-large',
   'profile-incomplete',
   'prompt-revision-conflict',
@@ -71,6 +75,7 @@ export const KNOWN_ERROR_SLUGS = [
   'provider-unavailable',
   'publish-incomplete',
   'rate-limited',
+  'renewal-not-cancelled',
   'replacement-exists',
   'replacement-waiting',
   'report-not-open',
@@ -79,6 +84,7 @@ export const KNOWN_ERROR_SLUGS = [
   'revision-rejected',
   'run-active',
   'run-not-active',
+  'self-delete',
   'sense-entry-mismatch',
   'sense-exists',
   'sense-retired',

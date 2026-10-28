@@ -59,6 +59,13 @@ describe('LoginPage', () => {
     expect(await screen.findByText(vi.notice.expired)).toBeInTheDocument();
   });
 
+  it('B8E44: notice password-required says to sign in again with the password', async () => {
+    const { store } = renderAccount(<LoginPage />, { path: '/login', routes: { ...editorRoutes, 'POST /v1/auth/logout': noContent } });
+    await waitFor(() => expect(store.state.status).toBe('signed-out'));
+    await store.logout('password-required');
+    expect(await screen.findByText('Đăng nhập lại bằng mật khẩu để vào trang quản trị')).toBeInTheDocument();
+  });
+
   it('wrong credentials show the invalid-credentials message and stay on the form', async () => {
     renderAccount(<LoginPage />, {
       path: '/login',

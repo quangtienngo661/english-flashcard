@@ -19,7 +19,7 @@ import { useRetained } from '../../ui/use-retained';
 import { UserDetail } from './UserDetail';
 import { codePoints, fullName, listUsers, MAX_SEARCH, MIN_SEARCH, normalizeSearch, STATUS_TONE, type AdminUser, type UserStatus } from './users-api';
 
-const STATUSES: UserStatus[] = ['active', 'locked'];
+const STATUSES: UserStatus[] = ['active', 'locked', 'deleting'];
 const SEARCH_DELAY_MS = 300;
 const FILTERS = {
   q: { default: '', valid: (v: string) => codePoints(v) >= MIN_SEARCH && codePoints(v) <= MAX_SEARCH && v === normalizeSearch(v) },

@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState, type ReactNode } from 'react';
-import { Link } from 'react-router';
+import { Link, useNavigate } from 'react-router';
 import { useFormatter, useTranslations } from 'use-intl';
 import { ApiError } from '../../api/problem';
 import { useErrorDetails, type ErrorDetails } from '../../api/use-error-message';
@@ -15,6 +15,7 @@ import { PanelBody, PanelFooter, PanelHead } from '../../ui/DetailPanel';
 import { ListState } from '../../ui/ListState';
 import { showToast } from '../../ui/Toast';
 import { EditUserDialog } from './EditUserDialog';
+import { DeleteUserDialog } from './DeleteUserDialog';
 import { LockDialog } from './LockDialog';
 import { ResetPasswordDialog } from './ResetPasswordDialog';
 import { getUser, STATUS_TONE, unlockUser, UUID, type AdminUserDetail } from './users-api';
@@ -45,6 +46,8 @@ export function UserDetail({ id, listSearch }: { id: string; listSearch: string 
   const [locking, setLocking] = useState(false);
   const [editing, setEditing] = useState(false);
   const [resetting, setResetting] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const navigate = useNavigate();
   const [unlockError, setUnlockError] = useState<ErrorDetails | null>(null);
   // An id that is no UUID cannot exist (the API would answer 400): same as a 404, and the API is not asked.
   const query = useQuery({ queryKey: userKey(id), queryFn: () => getUser(api, id), enabled: UUID.test(id) });
@@ -91,8 +94,12 @@ export function UserDetail({ id, listSearch }: { id: string; listSearch: string 
     birth = format.dateTime(new Date(Date.UTC(y!, m! - 1, d!)), { timeZone: 'UTC', day: 'numeric', month: 'numeric', year: 'numeric' });
   }
   const isLocked = user.status === 'locked';
+  // Bước 8: while a deletion is under way nothing else is offered but finishing it (design §6.2, B8E43).
+  const isDeleting = user.status === 'deleting';
   // Locking is refused for yourself and for an admin (409 `lock-rule`); the screen does not offer it.
-  const canLock = canManage && !isLocked && user.id !== meId && user.staff_role !== 'admin';
+  const canLock = canManage && !isLocked && !isDeleting && user.id !== meId && user.staff_role !== 'admin';
+  // An admin does not delete themselves (409 `self-delete`); the last admin is refused by the API (409 `last-admin`), whose text the dialog shows.
+  const canDelete = canManage && user.id !== meId;
   const none = <span className="text-muted">—</span>;
 
   return (
@@ -108,6 +115,7 @@ export function UserDetail({ id, listSearch }: { id: string; listSearch: string 
       />
       <PanelBody>
         {unlockError && <Banner variant="error" code={unlockError.code}>{unlockError.message}</Banner>}
+        {isDeleting && <Banner variant="info">{t('users.detail.deletingLine')}</Banner>}
         {isLocked && (
           <section className="flex flex-col gap-1 rounded-panel bg-danger-soft px-4 py-3 text-ui text-ink">
             <p className="font-semibold">
@@ -131,6 +139,11 @@ export function UserDetail({ id, listSearch }: { id: string; listSearch: string 
           </Row>
           <Row label={t('users.edit.timezone')}>{user.timezone}</Row>
           <Row label={t('users.detail.role')}>{t(`users.roles.${user.staff_role ?? 'learner'}`)}</Row>
+          <Row label={t('users.detail.signIn')}>
+            {(user.sign_in_methods ?? []).length > 0
+              ? (user.sign_in_methods ?? []).map((m) => t(m === 'google' ? 'users.detail.methodGoogle' : 'users.detail.methodPassword')).join(' · ')
+              : none}
+          </Row>
           <Row label={t('users.cols.verified')}>{t(user.email_verified ? 'users.verified.yes' : 'users.verified.no')}</Row>
           <Row label={t('users.cols.created')}>{dateTime(user.created_at)}</Row>
           <Row label={t('users.cols.lastSeen')}>{user.last_seen_at ? dateTime(user.last_seen_at) : none}</Row>
@@ -138,13 +151,17 @@ export function UserDetail({ id, listSearch }: { id: string; listSearch: string 
       </PanelBody>
       {canManage && (
         <PanelFooter>
-          <Button variant="secondary" onPress={() => setEditing(true)}>
-            {t('users.detail.edit')}
-          </Button>
-          <Button variant="secondary" onPress={() => setResetting(true)}>
-            {t('users.detail.resetPassword')}
-          </Button>
-          {isLocked ? (
+          {!isDeleting && (
+            <>
+              <Button variant="secondary" onPress={() => setEditing(true)}>
+                {t('users.detail.edit')}
+              </Button>
+              <Button variant="secondary" onPress={() => setResetting(true)}>
+                {t('users.detail.resetPassword')}
+              </Button>
+            </>
+          )}
+          {isDeleting ? null : isLocked ? (
             <Button variant="secondary" isPending={unlock.isPending} onPress={() => unlock.mutate()}>
               {t('users.detail.unlock')}
             </Button>
@@ -153,6 +170,11 @@ export function UserDetail({ id, listSearch }: { id: string; listSearch: string 
               {t('users.detail.lock')}
             </Button>
           ) : null}
+          {canDelete && (
+            <Button variant="danger" onPress={() => setDeleting(true)}>
+              {t('users.detail.deleteAction')}
+            </Button>
+          )}
         </PanelFooter>
       )}
       {editing && (
@@ -174,6 +196,24 @@ export function UserDetail({ id, listSearch }: { id: string; listSearch: string 
             saved(result);
             setResetting(false);
             showToast(t('users.reset.done', { email: result.email }));
+          }}
+        />
+      )}
+      {deleting && (
+        <DeleteUserDialog
+          user={user}
+          onClose={() => setDeleting(false)}
+          onDone={(outcome) => {
+            setDeleting(false);
+            void queryClient.invalidateQueries({ queryKey: ['users'] });
+            if (outcome === 'deleted') {
+              queryClient.removeQueries({ queryKey: userKey(id) });
+              showToast(t('users.detail.deleted', { email: user.email }));
+              void navigate(`/users${listSearch}`);
+            } else {
+              void queryClient.invalidateQueries({ queryKey: userKey(id) });
+              showToast(t('users.detail.deletePending', { email: user.email }));
+            }
           }}
         />
       )}

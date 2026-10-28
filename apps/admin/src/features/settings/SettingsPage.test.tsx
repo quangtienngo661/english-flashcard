@@ -240,3 +240,33 @@ describe('SettingsPage (A/70a–A/70f, design §6.7)', () => {
     expect(screen.queryByText(vi.draft.message)).toBeNull();
   });
 });
+
+describe('Bước 8 settings (design §11)', () => {
+  it('the "Tài khoản" tab edits the unverified clean-up days and the plans tab edits the retention years, with the Luật Kế toán note', async () => {
+    const view = VIEW();
+    view.bounds.identity.unverified_cleanup_days = { min: 1, max: 365 };
+    view.bounds.entitlements.transaction_retention_years = { min: 5, max: 30 };
+    view.values.identity.unverified_cleanup_days = 7;
+    view.values.entitlements.transaction_retention_years = 10;
+    const calls: Call[] = [];
+    let answer: Response | null = problem(400, 'validation-failed', { violations: ['values.entitlements.transaction_retention_years: Too big'] });
+    renderApp('/settings?tab=identity', { [GET]: () => Response.json(view), [PUT]: (c) => { calls.push(c); return answer ?? Response.json({ ...view, version: 4 }); } });
+    expect(await screen.findByRole('textbox', { name: s.fields.identity.unverified_cleanup_days })).toHaveValue('7');
+    expect(screen.getByText('unverified_cleanup_days · 1–365 ngày · mặc định 10')).toBeInTheDocument();
+    await userEvent.click(tab(s.tabs.entitlements));
+    expect(await screen.findByRole('textbox', { name: s.fields.entitlements.transaction_retention_years })).toHaveValue('10');
+    expect(screen.getByText(/transaction_retention_years · 5–30 năm · Luật Kế toán: tối thiểu 5–10 năm tùy loại chứng từ · mặc định/)).toBeInTheDocument();
+    await setNumber(s.fields.entitlements.transaction_retention_years, '31');
+    await userEvent.click(screen.getByRole('button', { name: s.save }));
+    expect((await screen.findAllByText(s.outOfRange)).length).toBeGreaterThan(0);
+    expect(screen.getByRole('textbox', { name: s.fields.entitlements.transaction_retention_years })).toHaveAttribute('aria-invalid', 'true');
+    answer = null;
+    calls.length = 0;
+    await setNumber(s.fields.entitlements.transaction_retention_years, '12');
+    await userEvent.click(tab(s.tabs.identity));
+    await setNumber(s.fields.identity.unverified_cleanup_days, '3');
+    await userEvent.click(screen.getByRole('button', { name: s.save }));
+    await waitFor(() => expect(calls).toHaveLength(1));
+    expect(calls[0].body).toMatchObject({ values: { entitlements: { transaction_retention_years: 12 }, identity: { unverified_cleanup_days: 3 } } });
+  });
+});

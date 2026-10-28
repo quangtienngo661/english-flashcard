@@ -1,7 +1,7 @@
 import type { ApiClient } from '../../api/client';
 import type { UserRef } from '../../api/user-ref';
 
-export type UserStatus = 'active' | 'locked';
+export type UserStatus = 'active' | 'locked' | 'deleting';
 export type UserStaffRole = 'admin' | 'editor';
 
 /** One row of `GET /v1/admin/users` (`AdminUserRow` in `apps/api/src/identity/staff/staff.service.ts`). */
@@ -16,6 +16,8 @@ export type AdminUser = {
   status: UserStatus;
   created_at: string;
   last_seen_at: string | null;
+  /** Bước 8: how the account can sign in. */
+  sign_in_methods?: Array<'password' | 'google'>;
 };
 
 /** `GET /v1/admin/users/:id` and the body of lock / unlock (`AdminUserDetail`). */
@@ -29,6 +31,8 @@ export type AdminUserDetail = AdminUser & {
   lock_reason: string | null;
   /** AD18. */
   timezone: string;
+  /** Bước 8: the learner has a plan that renews; deleting the account switches the renewal off first (D31). */
+  auto_renewing?: boolean;
 };
 
 export type UserFilters = { q: string; status: string };
@@ -80,7 +84,15 @@ export function resetUserPassword(api: ApiClient, id: string, body: { password?:
   return api.post(`/v1/admin/users/${id}/password`, body);
 }
 
-export const STATUS_TONE: Record<UserStatus, 'success' | 'danger'> = { active: 'success', locked: 'danger' };
+/**
+ * Bước 8 (D17): the admin types the account's email again. 204 = gone; 202 `{ status: 'pending' }` = left `deleting`, a job finishes it.
+ * No `Idempotency-Key`: deleting an account that is already deleting just runs the second step again (B8E43).
+ */
+export function deleteUser(api: ApiClient, id: string, confirmEmail: string): Promise<{ status: 'pending' } | undefined> {
+  return api.post(`/v1/admin/users/${id}/delete`, { confirm_email: confirmEmail });
+}
+
+export const STATUS_TONE: Record<UserStatus, 'success' | 'danger' | 'warning'> = { active: 'success', locked: 'danger', deleting: 'warning' };
 
 /** "Nguyễn Lan": the family name first, as the API searches it. */
 export const fullName = (u: { given_name: string | null; family_name: string | null }) =>

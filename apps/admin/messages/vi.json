@@ -20,6 +20,12 @@
     "idempotency-key-abandoned": "Yêu cầu trước đã bị bỏ dở, hãy bấm gửi lại",
     "invalid-credentials": "Email hoặc mật khẩu không đúng",
     "invalid-current-password": "Mật khẩu hiện tại không đúng",
+    "account-deleting": "Tài khoản này đang được xóa, chưa sửa được.",
+    "confirm-email-mismatch": "Email gõ lại chưa khớp với email của tài khoản.",
+    "last-admin": "Đây là admin cuối cùng nên chưa xóa được.",
+    "password-login-required": "Cần đăng nhập bằng mật khẩu để vào trang quản trị.",
+    "renewal-not-cancelled": "Chưa tắt được gia hạn gói ở nhà cung cấp thanh toán, nên chưa xóa tài khoản. Thử lại sau.",
+    "self-delete": "Admin không tự xóa chính mình.",
     "invalid-otp": "Mã xác minh không đúng hoặc đã hết hạn",
     "invalid-token": "Phiên hoặc liên kết không hợp lệ",
     "job-not-active": "Lô này đã kết thúc.",
@@ -72,7 +78,8 @@
   },
   "notice": {
     "expired": "Phiên đăng nhập đã hết hạn",
-    "logoutFailed": "Chưa đăng xuất được khỏi máy chủ."
+    "logoutFailed": "Chưa đăng xuất được khỏi máy chủ.",
+    "passwordRequired": "Đăng nhập lại bằng mật khẩu để vào trang quản trị"
   },
   "common": {
     "retry": "Thử lại",
@@ -82,7 +89,7 @@
     "loading": "Đang tải…",
     "close": "Đóng",
     "system": "Hệ thống",
-    "unknownUser": "Không rõ người dùng",
+    "unknownUser": "Người dùng đã xóa",
     "unsavedChanges": "(có thay đổi chưa lưu)"
   },
   "shell": {
@@ -931,10 +938,10 @@
     "search": "Tìm theo email, họ hoặc tên (từ 2 ký tự)",
     "searchHint": "Không phân biệt hoa thường; có phân biệt dấu.",
     "searchShort": "Gõ từ 2 ký tự",
-    "filters": { "status": "Trạng thái", "all": "Tất cả", "active": "Đang hoạt động", "locked": "Đang khóa" },
+    "filters": { "status": "Trạng thái", "all": "Tất cả", "active": "Đang hoạt động", "locked": "Đang khóa", "deleting": "Đang xóa" },
     "cols": { "email": "Email", "name": "Họ tên", "role": "Vai trò", "verified": "Email đã xác minh", "status": "Trạng thái", "created": "Ngày tạo", "lastSeen": "Lần cuối vào" },
     "roles": { "admin": "admin", "editor": "editor", "learner": "người học" },
-    "statuses": { "active": "Đang hoạt động", "locked": "Đang khóa" },
+    "statuses": { "active": "Đang hoạt động", "locked": "Đang khóa", "deleting": "Đang xóa" },
     "verified": { "yes": "Đã xác minh", "no": "Chưa xác minh" },
     "footer": "Mới nhất trước · 20 người mỗi trang",
     "empty": "Chưa có người dùng nào.",
@@ -959,7 +966,22 @@
       "unlocked": "Đã mở khóa {email}.",
       "locked": "Đã khóa {email}.",
       "edit": "Sửa",
-      "resetPassword": "Đặt lại mật khẩu"
+      "resetPassword": "Đặt lại mật khẩu",
+      "signIn": "Đăng nhập bằng",
+      "methodPassword": "Mật khẩu",
+      "methodGoogle": "Google",
+      "deleteAction": "Xóa tài khoản",
+      "deleted": "Đã xóa tài khoản {email}.",
+      "deletePending": "Đang hoàn tất việc xóa {email}.",
+      "deletingLine": "Tài khoản đang được xóa. Các thao tác khác tạm khóa; bấm Xóa tài khoản để chạy lại nếu việc xóa bị kẹt."
+    },
+    "delete": {
+      "title": "Xóa tài khoản {email}?",
+      "body": "Mọi dữ liệu học, từ riêng, câu tự viết và gói của người này bị xóa vĩnh viễn. Hồ sơ thanh toán còn giữ không kèm tên. Không khôi phục được.",
+      "renewing": "Gói tự gia hạn sẽ được tắt",
+      "typeEmail": "Gõ lại email để xác nhận",
+      "confirm": "Xóa vĩnh viễn",
+      "keep": "Giữ lại"
     },
     "lock": {
       "title": "Khóa tài khoản {email}?",
@@ -1276,7 +1298,8 @@
       "practice": "Luyện tập",
       "entitlements": "Gói và lượt",
       "content": "Nội dung",
-      "ai": "AI"
+      "ai": "AI",
+      "identity": "Tài khoản"
     },
     "save": "Lưu thay đổi",
     "saved": "Đã lưu",
@@ -1301,6 +1324,9 @@
       "renewal_notice_days_before": "không gửi",
       "ai_cap_alert_percent": "không tô vàng"
     },
+    "notes": {
+      "transaction_retention_years": "Luật Kế toán: tối thiểu 5–10 năm tùy loại chứng từ"
+    },
     "zeroMeaning": {
       "ai_prefetch_count": "tắt",
       "content_retention_days": "không lưu"
@@ -1320,6 +1346,7 @@
       "seconds": "giây",
       "sessions": "phiên",
       "uses": "lượt",
+      "years": "năm",
       "times": "lần"
     },
     "fields": {
@@ -1363,7 +1390,8 @@
         "ai_cap_alert_percent": "Tô vàng khi dùng tới",
         "ads_enabled": "Bật quảng cáo",
         "ads_interstitial_per_day": "Quảng cáo toàn màn mỗi ngày",
-        "ads_min_interval_minutes": "Khoảng cách giữa hai quảng cáo"
+        "ads_min_interval_minutes": "Khoảng cách giữa hai quảng cáo",
+        "transaction_retention_years": "Giữ hồ sơ thanh toán sau khi xóa tài khoản"
       },
       "content": {
         "private_words_per_user": "Số từ riêng mỗi người",
@@ -1375,6 +1403,9 @@
         "daily_provider_calls_cap": "Trần lời gọi nhà cung cấp mỗi ngày",
         "content_retention_days": "Giữ nội dung lời gọi",
         "usd_vnd_rate": "Tỷ giá USD → VND"
+      },
+      "identity": {
+        "unverified_cleanup_days": "Tự xóa tài khoản chưa xác nhận email sau"
       }
     },
     "aiUsage": {

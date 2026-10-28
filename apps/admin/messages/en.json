@@ -20,6 +20,12 @@
     "idempotency-key-abandoned": "The previous request was abandoned, please submit again",
     "invalid-credentials": "Wrong email or password",
     "invalid-current-password": "The current password is wrong",
+    "account-deleting": "This account is being deleted and cannot be changed.",
+    "confirm-email-mismatch": "The email you typed does not match the account.",
+    "last-admin": "This is the last admin and cannot be deleted.",
+    "password-login-required": "Sign in with a password to use the admin site.",
+    "renewal-not-cancelled": "Could not switch off the plan renewal at the payment provider, so the account was not deleted. Try again later.",
+    "self-delete": "An admin cannot delete their own account.",
     "invalid-otp": "The code is wrong or has expired",
     "invalid-token": "The session or link is not valid",
     "job-not-active": "This job has already ended.",
@@ -72,7 +78,8 @@
   },
   "notice": {
     "expired": "Your session has expired",
-    "logoutFailed": "Signing out on the server failed."
+    "logoutFailed": "Signing out on the server failed.",
+    "passwordRequired": "Sign in again with your password to use the admin site"
   },
   "common": {
     "retry": "Retry",
@@ -82,7 +89,7 @@
     "loading": "Loading…",
     "close": "Close",
     "system": "System",
-    "unknownUser": "Unknown user",
+    "unknownUser": "Deleted user",
     "unsavedChanges": "(unsaved changes)"
   },
   "shell": {
@@ -931,10 +938,10 @@
     "search": "Search by email, family or given name (2+ characters)",
     "searchHint": "Not case-sensitive; accents matter.",
     "searchShort": "Type at least 2 characters",
-    "filters": { "status": "Status", "all": "All", "active": "Active", "locked": "Locked" },
+    "filters": { "status": "Status", "all": "All", "active": "Active", "locked": "Locked", "deleting": "Deleting" },
     "cols": { "email": "Email", "name": "Name", "role": "Role", "verified": "Email verified", "status": "Status", "created": "Created", "lastSeen": "Last seen" },
     "roles": { "admin": "admin", "editor": "editor", "learner": "learner" },
-    "statuses": { "active": "Active", "locked": "Locked" },
+    "statuses": { "active": "Active", "locked": "Locked", "deleting": "Deleting" },
     "verified": { "yes": "Verified", "no": "Not verified" },
     "footer": "Newest first · 20 people per page",
     "empty": "No users yet.",
@@ -959,7 +966,22 @@
       "unlocked": "Unlocked {email}.",
       "locked": "Locked {email}.",
       "edit": "Edit",
-      "resetPassword": "Reset password"
+      "resetPassword": "Reset password",
+      "signIn": "Signs in with",
+      "methodPassword": "Password",
+      "methodGoogle": "Google",
+      "deleteAction": "Delete account",
+      "deleted": "Deleted the account {email}.",
+      "deletePending": "Finishing the deletion of {email}.",
+      "deletingLine": "This account is being deleted. Other actions are off; press Delete account to run it again if the deletion is stuck."
+    },
+    "delete": {
+      "title": "Delete the account {email}?",
+      "body": "All of this person's learning data, private words, own sentences and plans are deleted for good. Payment records stay, without the name. This cannot be undone.",
+      "renewing": "The renewing plan will be switched off",
+      "typeEmail": "Type the email again to confirm",
+      "confirm": "Delete permanently",
+      "keep": "Keep"
     },
     "lock": {
       "title": "Lock the account of {email}?",
@@ -1276,7 +1298,8 @@
       "practice": "Practice",
       "entitlements": "Plans and quotas",
       "content": "Content",
-      "ai": "AI"
+      "ai": "AI",
+      "identity": "Accounts"
     },
     "save": "Save changes",
     "saved": "Saved",
@@ -1301,6 +1324,9 @@
       "renewal_notice_days_before": "not sent",
       "ai_cap_alert_percent": "no yellow alert"
     },
+    "notes": {
+      "transaction_retention_years": "Accounting law: at least 5–10 years depending on the document"
+    },
     "zeroMeaning": {
       "ai_prefetch_count": "off",
       "content_retention_days": "not kept"
@@ -1320,6 +1346,7 @@
       "seconds": "seconds",
       "sessions": "sessions",
       "uses": "uses",
+      "years": "years",
       "times": "times"
     },
     "fields": {
@@ -1363,7 +1390,8 @@
         "ai_cap_alert_percent": "Turn yellow at",
         "ads_enabled": "Ads on",
         "ads_interstitial_per_day": "Full-screen ads per day",
-        "ads_min_interval_minutes": "Gap between two ads"
+        "ads_min_interval_minutes": "Gap between two ads",
+        "transaction_retention_years": "Keep payment records after an account is deleted"
       },
       "content": {
         "private_words_per_user": "Private words per person",
@@ -1375,6 +1403,9 @@
         "daily_provider_calls_cap": "Provider calls cap per day",
         "content_retention_days": "Keep call content for",
         "usd_vnd_rate": "USD → VND rate"
+      },
+      "identity": {
+        "unverified_cleanup_days": "Delete accounts that never verified their email after"
       }
     },
     "aiUsage": {

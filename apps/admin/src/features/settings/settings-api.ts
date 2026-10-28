@@ -1,7 +1,7 @@
 import type { ApiClient } from '../../api/client';
 
-export type Section = 'reminders' | 'learning' | 'practice' | 'entitlements' | 'content' | 'ai';
-export const SECTIONS: Section[] = ['reminders', 'learning', 'practice', 'entitlements', 'content', 'ai'];
+export type Section = 'reminders' | 'learning' | 'practice' | 'entitlements' | 'content' | 'ai' | 'identity';
+export const SECTIONS: Section[] = ['reminders', 'learning', 'practice', 'entitlements', 'content', 'ai', 'identity'];
 
 export type SettingValue = boolean | number | string | null;
 export type Values = Record<Section, Record<string, SettingValue>>;
@@ -24,10 +24,10 @@ export type SettingsView = {
   bounds: Record<Section, Record<string, Bound>>;
 };
 
-export type Unit = 'days' | 'hours' | 'minutes' | 'months' | 'percent' | 'chars' | 'seconds' | 'sessions' | 'uses' | 'times';
+export type Unit = 'days' | 'hours' | 'minutes' | 'months' | 'years' | 'percent' | 'chars' | 'seconds' | 'sessions' | 'uses' | 'times';
 export type FieldSpec = { key: string; kind: 'bool' | 'int' | 'time'; unit?: Unit };
 
-/** The 41 keys per tab, in the order of the copy doc §8.2. */
+/** The 43 keys per tab, in the order of the copy doc §8.2. */
 export const SETTINGS_LAYOUT: Record<Section, FieldSpec[]> = {
   reminders: [
     { key: 'enabled', kind: 'bool' },
@@ -70,6 +70,7 @@ export const SETTINGS_LAYOUT: Record<Section, FieldSpec[]> = {
     { key: 'ads_enabled', kind: 'bool' },
     { key: 'ads_interstitial_per_day', kind: 'int', unit: 'times' },
     { key: 'ads_min_interval_minutes', kind: 'int', unit: 'minutes' },
+    { key: 'transaction_retention_years', kind: 'int', unit: 'years' },
   ],
   content: [
     { key: 'private_words_per_user', kind: 'int' },
@@ -82,6 +83,7 @@ export const SETTINGS_LAYOUT: Record<Section, FieldSpec[]> = {
     { key: 'content_retention_days', kind: 'int', unit: 'days' },
     { key: 'usd_vnd_rate', kind: 'int' },
   ],
+  identity: [{ key: 'unverified_cleanup_days', kind: 'int', unit: 'days' }],
 };
 
 /** A field's DOM id and its name in errors: `<section>.<key>` (the API key without the `values.` prefix). */

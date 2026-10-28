@@ -54,6 +54,7 @@ export function LoginPage() {
     <AuthCard title={t('account.login.title')} subtitle={t('account.login.subtitle')}>
       <form onSubmit={submit} className="flex flex-col gap-4" noValidate>
         {notice === 'no-access' && <Banner variant="error">{t('errors.noAccess')}</Banner>}
+        {notice === 'password-required' && <Banner variant="info">{t('notice.passwordRequired')}</Banner>}
         {notice === 'expired' && <Banner variant="info">{t('notice.expired')}</Banner>}
         {notice === 'logout-failed' && (
           <Banner
