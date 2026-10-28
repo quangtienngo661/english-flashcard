@@ -9,6 +9,7 @@ import { GroupsController } from './groups/groups.controller.js';
 import { GroupsService } from './groups/groups.service.js';
 import { ItemsController } from './items/items.controller.js';
 import { ItemsService } from './items/items.service.js';
+import { LearningEntryUsageProbe } from './entry-usage.probe.js';
 import { LearningService } from './learning.service.js';
 import { MyWordsDeleteController } from './my-words/my-words-delete.controller.js';
 import { PracticeReadsService } from './practice/practice-reads.service.js';
@@ -29,7 +30,7 @@ import { ReviewsService } from './reviews/reviews.service.js';
   ],
   providers: [
     BacklogService, GroupsService, ItemsService, QueueService, QuickAddService, ReviewsService, PracticeReadsService,
-    PracticeReviewService, LearningService, IdempotencyInterceptor,
+    PracticeReviewService, LearningService, IdempotencyInterceptor, LearningEntryUsageProbe,
   ],
   exports: [LearningService],
 })

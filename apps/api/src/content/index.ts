@@ -14,6 +14,7 @@ export type { CandidateSense, LemmaMeanings, PracticeSense } from './practice/pr
 export { maskExample, type MaskedExample, type MaskTarget } from './practice/mask-example.js';
 export { ContentService } from './content.service.js';
 export { BATCH_SCOPE, type BatchScope } from './batch-scope.port.js';
+export type { EntryUsageModule, EntryUsageProbe, EntryUsageReason, EntryUsageScope } from './catalog/entry-usage.js';
 export { entriesExportQuery, sensesExportQuery, type EntriesExportFilter, type SenseFilter } from './catalog/sense-filters.js';
 export type { EntryExportRow, ExportRow, ScopeRecord } from './catalog/admin-catalog.queries.js';
 export { normalizeText, normalizeLemma, splitHeadword } from './catalog/normalize.js';

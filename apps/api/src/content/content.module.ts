@@ -5,6 +5,8 @@ import { AdminCatalogController } from './catalog/admin-catalog.controller.js';
 import { AdminCatalogQueries } from './catalog/admin-catalog.queries.js';
 import { AdminEntriesController, EntryFunctionWordController } from './catalog/admin-entries.controller.js';
 import { EntriesService } from './catalog/entries.service.js';
+import { EntryDeleteService } from './catalog/entry-delete.service.js';
+import { EntryUsageRegistry } from './catalog/entry-usage.js';
 import { LevelsService } from './catalog/levels.service.js';
 import { ContentService } from './content.service.js';
 import { InflectionsService } from './inflections/inflections.service.js';
@@ -46,7 +48,7 @@ import { WordFormsService } from './word-forms/word-forms.service.js';
   ],
   providers: [ContentService, SourcesService, TopicsService, LearnerContentGuard, LearnerContentService, EntriesService, LevelsService, SensesService, PublishService, AdminCatalogQueries, InflectionsService,
     PrivateWordsService, SentencesService, WordsService, WordFormsService, AiLookupService, IdempotencyInterceptor,
-    TopicSuggestionQueries, TopicSuggestionsService],
+    TopicSuggestionQueries, TopicSuggestionsService, EntryDeleteService, EntryUsageRegistry],
   exports: [ContentService],
 })
 export class ContentModule {}
