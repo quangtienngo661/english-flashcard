@@ -13,6 +13,7 @@ import { IdentityCleanupService } from './maintenance/identity-cleanup.service.j
 import { IdentityService } from './profile/identity.service.js';
 import { ProfileController } from './profile/profile.controller.js';
 import { AccessTokenService } from './sessions/access-token.service.js';
+import { AccountStatusReader, PrismaAccountStatusReader } from './sessions/account-status.reader.js';
 import { AuthGuard } from './sessions/auth.guard.js';
 import { SessionService } from './sessions/session.service.js';
 import { SessionsController } from './sessions/sessions.controller.js';
@@ -25,7 +26,8 @@ import { StaffService } from './staff/staff.service.js';
   imports: [MailModule],
   controllers: [SessionsController, OtpController, AuthController, PasswordController, ProfileController, StaffController],
   providers: [
-    PasswordHasher, OtpService, AuthService, PasswordService, IdentityService, AccessTokenService, SessionService, StaffService, PermissionGuard, { provide: APP_GUARD, useClass: AuthGuard },
+    PasswordHasher, OtpService, AuthService, PasswordService, IdentityService, AccessTokenService, SessionService, StaffService, PermissionGuard,
+    { provide: AccountStatusReader, useClass: PrismaAccountStatusReader }, { provide: APP_GUARD, useClass: AuthGuard },
     { provide: ROLE_PERMISSIONS_TOKEN, useValue: ROLE_PERMISSIONS },
     IdentityCleanupService,
   ],

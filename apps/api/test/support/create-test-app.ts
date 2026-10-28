@@ -23,9 +23,21 @@ import { ROLE_PERMISSIONS, type Permission, type StaffRole } from '../../src/ide
 import { FakeMailer } from '../../src/common/mail/fake-mailer.js';
 import { MailDispatcher } from '../../src/common/mail/mail-dispatcher.service.js';
 import { Mailer } from '../../src/common/mail/mailer.js';
+import { AccountStatusReader, type AccountState } from '../../src/identity/sessions/account-status.reader.js';
 import { ROLE_PERMISSIONS_TOKEN } from '../../src/identity/staff/role-permissions.token.js';
 import { InFlightInterceptor } from './in-flight.interceptor.js';
 import { testConfig } from './test-config.js';
+
+/** Stands in for the one-read-per-request account check: every caller is an active password session unless a test sets `state`. */
+export class FakeAccountStatusReader extends AccountStatusReader {
+  state: AccountState | null | ((userId: string, chainId: string) => AccountState | null) = {
+    status: 'active', authMethod: 'password', revoked: false,
+  };
+
+  async read(userId: string, chainId: string): Promise<AccountState | null> {
+    return typeof this.state === 'function' ? this.state(userId, chainId) : this.state;
+  }
+}
 
 /** Holds the `providers` option; global, so a port no production module provides (injected with @Optional()) reaches every module. */
 class TestProvidersModule {}
@@ -38,6 +50,7 @@ export type TestApp = {
   rolePermissions: Record<StaffRole, readonly Permission[]>;
   logs: LogEntry[];
   mailer: FakeMailer;
+  accountStatus: FakeAccountStatusReader;
   drainMail(): Promise<void>;
   onClose(hook: () => Promise<void>): void;
   close(): Promise<void>;
@@ -71,6 +84,7 @@ export async function createTestApp(opts?: {
   const logs: LogEntry[] = [];
   const sink: LogSink = { write: (entry) => { logs.push(entry); } };
   const mailer = new FakeMailer();
+  const accountStatus = new FakeAccountStatusReader();
   const rolePermissions = structuredClone(opts?.rolePermissions ?? ROLE_PERMISSIONS);
   let handlerRegistry: JobHandlerRegistry;
   const extra = opts?.providers ?? [];
@@ -91,6 +105,7 @@ export async function createTestApp(opts?: {
     .overrideProvider(Clock).useValue(clock)
     .overrideProvider(LOG_SINK).useValue(sink)
     .overrideProvider(Mailer).useValue(mailer)
+    .overrideProvider(AccountStatusReader).useValue(accountStatus)
     .overrideProvider(ROLE_PERMISSIONS_TOKEN).useValue(rolePermissions);
   for (const { provide, useValue } of extra) builder = builder.overrideProvider(provide).useValue(useValue);
   const moduleRef = await builder.compile();
@@ -116,6 +131,7 @@ export async function createTestApp(opts?: {
     rolePermissions,
     logs,
     mailer,
+    accountStatus,
     drainMail: () => dispatcher.drain(),
     onClose: (hook) => { hooks.push(hook); },
     async close() {
