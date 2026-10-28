@@ -13,7 +13,9 @@ import type { SessionState } from './session/session-store';
 import { deviceTimezone, timezoneToSync } from './timezone-sync';
 
 // The page a learner opens before choosing a language (the end of sign-up).
-const NO_LANGUAGE_PAGES = /\/app\/welcome$/;
+const NO_LANGUAGE_PAGES = /\/app\/(welcome|complete-profile)$/;
+// AD18: a missing birth date or consent is asked before anything else, the language included.
+const PROFILE_PAGE = /\/app\/complete-profile$/;
 
 /**
  * The page being opened: the router's path (during a client-side move the address bar still shows the old page), with the
@@ -70,6 +72,9 @@ function redirectFor(
   if (!state.me.email_verified) return `/${locale}/app/verify-email`;
   const fixed = prefixFix(here, state.me.native_language);
   if (fixed) return fixed;
+  if ((state.me.birth_date === null || state.me.terms_accepted_at === null) && !PROFILE_PAGE.test(pathname)) {
+    return `/${locale}/app/complete-profile?next=${encodeURIComponent(here)}`;
+  }
   if (state.me.native_language === null && !NO_LANGUAGE_PAGES.test(pathname)) {
     return `/${locale}/app/welcome?next=${encodeURIComponent(here)}`;
   }

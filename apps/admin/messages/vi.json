@@ -535,6 +535,135 @@
       "content": { "title": "Nội dung lần gọi", "request": "Yêu cầu", "response": "Phản hồi" }
     }
   },
+  "entitlements": {
+    "aiToday": "Lượt AI hôm nay: {used}/{cap}",
+    "aiTodayError": "Chưa xem được lượt AI hôm nay.",
+    "filters": {
+      "learner": "Người học (email)",
+      "grantedBy": "Người cấp (email)",
+      "emailPlaceholder": "Email đầy đủ",
+      "active": "Còn hiệu lực",
+      "activeAll": "Tất cả",
+      "activeYes": "Còn hiệu lực",
+      "activeNo": "Đã hết hiệu lực",
+      "expiring": "Sắp hết hạn trong … ngày",
+      "expiringHint": "Từ 1 đến 365 ngày",
+      "apply": "Lọc"
+    },
+    "cols": {
+      "learner": "Người học",
+      "kind": "Loại",
+      "limits": "Con số",
+      "from": "Từ ngày",
+      "to": "Tới ngày",
+      "grantedBy": "Người cấp",
+      "reason": "Lý do",
+      "status": "Trạng thái",
+      "actions": "Thao tác"
+    },
+    "kinds": { "plan": "Gói Pro", "limits": "Con số riêng" },
+    "limitLines": {
+      "practice_sessions_per_day": "{n} phiên luyện mỗi ngày",
+      "ai_practice_per_cycle": "{n} lượt câu AI mỗi tháng",
+      "ai_lookup_per_cycle": "{n} lượt tra AI mỗi tháng"
+    },
+    "statuses": {
+      "active": "Đang hiệu lực",
+      "scheduled": "Chưa bắt đầu",
+      "revoked": "Đã thu hồi",
+      "expired": "Đã hết hạn",
+      "replaced": "Bị thay thế"
+    },
+    "actions": {
+      "editDates": "Sửa ngày",
+      "revoke": "Thu hồi",
+      "editDatesFor": "Sửa ngày lần cấp của {email}",
+      "revokeFor": "Thu hồi lần cấp của {email}"
+    },
+    "revokedNote": "Thu hồi: {reason}",
+    "empty": "Chưa cấp gói hay con số riêng cho ai.",
+    "emptyFiltered": "Không có lần cấp nào khớp bộ lọc. Đổi email hoặc số ngày rồi xem lại.",
+    "footer": "Mới nhất trước · 20 lần cấp mỗi trang · ngày theo múi giờ Asia/Ho_Chi_Minh",
+    "revoke": {
+      "title": "Thu hồi lần cấp của {email}?",
+      "body": "Lần cấp dừng có hiệu lực ngay. Muốn cấp lại thì cấp một lần mới.",
+      "summary": "{kind} · {status} từ {date}",
+      "reason": "Lý do thu hồi (1–300 ký tự)",
+      "reasonInvalid": "Hãy nhập lý do, tối đa 300 ký tự.",
+      "keep": "Giữ nguyên",
+      "confirm": "Thu hồi",
+      "done": "Đã thu hồi lần cấp của {email}."
+    },
+    "editDates": {
+      "title": "Sửa ngày lần cấp của {email}",
+      "summary": "{kind} · {status} từ {date}",
+      "from": "Từ ngày",
+      "fromLocked": "Lần cấp đã bắt đầu nên không đổi được ngày bắt đầu.",
+      "fromHint": "Chỉ sửa được khi lần cấp chưa bắt đầu.",
+      "to": "Tới ngày",
+      "reason": "Lý do (1–300 ký tự)",
+      "reasonInvalid": "Hãy nhập lý do, tối đa 300 ký tự.",
+      "hint": "Dời ra hay rút ngắn đều được, miễn ngày mới vẫn ở tương lai. Lượt AI không đếm lại.",
+      "noChange": "Chưa đổi ngày nào.",
+      "dateRequired": "Hãy chọn ngày.",
+      "lastChange": "Lần sửa trước: {date} · {email} · {change} · {reason}",
+      "changeFrom": "từ {old} → {new}",
+      "changeTo": "tới {old} → {new}",
+      "keep": "Hủy",
+      "confirm": "Lưu ngày mới",
+      "done": "Đã lưu ngày mới cho {email}."
+    },
+    "new": {
+      "open": "Cấp mới",
+      "title": "Cấp gói hoặc con số riêng",
+      "email": "Người học (tìm theo email)",
+      "emailPlaceholder": "Email đầy đủ của người học",
+      "check": "Kiểm",
+      "checking": "Đang kiểm…",
+      "confirmed": "Đã xác nhận tài khoản {email}.",
+      "notFound": "Không có tài khoản với email này.",
+      "retryAt": "Thử lại lúc {time}.",
+      "lookupFailed": "Chưa kiểm được email này. Hãy thử lại.",
+      "emailRequired": "Hãy nhập email rồi kiểm.",
+      "emailShort": "Nhập ít nhất 3 ký tự của email.",
+      "kind": "Loại",
+      "practiceSessions": "Phiên luyện mỗi ngày (0–200)",
+      "aiPractice": "Lượt câu AI mỗi tháng (0–5.000)",
+      "aiLookup": "Lượt tra AI mỗi tháng (0–5.000)",
+      "limitInvalid": "Nhập số nguyên trong khoảng cho phép.",
+      "limitsRequired": "Hãy nhập ít nhất một con số.",
+      "from": "Từ ngày",
+      "fromHint": "Để trống thì bắt đầu ngay bây giờ.",
+      "fromPast": "Ngày bắt đầu không được ở quá khứ.",
+      "to": "Tới ngày",
+      "toHint": "Ngày cuối cùng còn hiệu lực.",
+      "toRequired": "Hãy chọn ngày kết thúc.",
+      "toBeforeFrom": "Ngày kết thúc phải sau hoặc bằng ngày bắt đầu.",
+      "reason": "Lý do (1–300 ký tự)",
+      "reasonInvalid": "Hãy nhập lý do, tối đa 300 ký tự.",
+      "note": "Cấp gói Pro bắt đầu ngay sẽ thay lần cấp gói đang có. Lượt AI mới tính theo chu kỳ tháng từ ngày bắt đầu.",
+      "submit": "Cấp",
+      "done": "Đã cấp cho {email}.",
+      "understood": "Đã hiểu",
+      "notSupported": "Đã cấp. Chưa tắt được tự gia hạn ở cổng thanh toán; người học vẫn có thể bị trừ tiền kỳ sau.",
+      "confirm": {
+        "title": "Cấp gói Pro cho {email}?",
+        "intro": "Người này đang trả tiền cho gói Pro và đang tự gia hạn. Cấp gói sẽ:",
+        "turnOff": "tắt tự gia hạn của gói trả tiền, không hoàn tiền;",
+        "keepPaid": "phần kỳ đã trả còn lại vẫn là Pro;",
+        "replace": "thu hồi lần cấp gói đang có (nếu có) và đếm lượt AI lại từ hôm nay.",
+        "keep": "Giữ nguyên",
+        "ok": "Cấp và tắt tự gia hạn"
+      }
+    },
+    "refusal": {
+      "self-grant": "Bạn không cấp được cho chính mình.",
+      "target-is-admin": "Editor không cấp được cho tài khoản admin.",
+      "target-is-staff": "Editor không cấp được cho tài khoản staff.",
+      "ai-limits-admin-only": "Con số lượt AI chỉ admin đặt được.",
+      "target-has-paid-subscription": "Người này đang trả tiền cho gói Pro và đang tự gia hạn."
+    }
+  },
   "transactions": {
     "intro": "Mua, gia hạn, đổi kỳ, hoàn tiền, dùng thử và lần đội Wordmet cấp gói của mọi người học, mới nhất trước.",
     "filters": {
@@ -596,6 +725,197 @@
       "txId": "Mã giao dịch của cổng",
       "readOnly": "Chỉ xem. Hoàn tiền làm ở cổng thanh toán; sự kiện hoàn tiền của cổng tự cập nhật dòng này.",
       "close": "Đóng"
+    }
+  },
+  "reportReasons": {
+    "add": "Thêm lý do",
+    "cols": {
+      "position": "Thứ tự",
+      "code": "Mã",
+      "labelVi": "Tên tiếng Việt",
+      "labelEn": "Tên tiếng Anh",
+      "appliesTo": "Áp cho",
+      "noteRequired": "Bắt buộc ghi chú",
+      "refundable": "Có trả lượt",
+      "active": "Đang dùng",
+      "updatedBy": "Sửa lần cuối bởi",
+      "actions": "Thao tác"
+    },
+    "appliesTo": { "ai": "Câu AI", "non_ai": "Câu thường", "all": "Cả hai" },
+    "yes": "Có",
+    "no": "Không",
+    "edit": "Sửa",
+    "editFor": "Sửa lý do {code}",
+    "activeFor": "Đang dùng: {code}",
+    "note": "Lý do đã tắt không hiện cho người học; báo lỗi cũ giữ tên lúc gửi.",
+    "empty": "Chưa có lý do báo lỗi nào.",
+    "emptyHint": "Thêm lý do để người học có thể chọn khi báo lỗi.",
+    "newTitle": "Thêm lý do báo lỗi",
+    "editTitle": "Sửa lý do báo lỗi",
+    "form": {
+      "code": "Mã",
+      "codeHint": "Bắt đầu bằng chữ, 2–40 ký tự a–z, 0–9, _",
+      "codeInvalid": "Mã phải bắt đầu bằng chữ, dài 2–40 ký tự, chỉ gồm a–z, 0–9, _.",
+      "labelVi": "Tên tiếng Việt",
+      "labelEn": "Tên tiếng Anh",
+      "labelHint": "1–100 ký tự",
+      "labelInvalid": "Nhập tên từ 1 đến 100 ký tự.",
+      "hintVi": "Gợi ý trong ô ghi chú (tiếng Việt)",
+      "hintEn": "Gợi ý trong ô ghi chú (tiếng Anh)",
+      "hintHint": "Không bắt buộc, tối đa 200 ký tự",
+      "appliesTo": "Áp cho",
+      "noteRequired": "Bắt buộc ghi chú",
+      "refundable": "Có trả lượt",
+      "refundableHint": "Chỉ có tác dụng với câu AI",
+      "position": "Thứ tự",
+      "positionHint": "Từ 0 đến 10.000; số nhỏ hiện trước",
+      "positionInvalid": "Nhập số nguyên từ 0 đến 10.000.",
+      "save": "Lưu"
+    }
+  },
+  "reports": {
+    "filters": {
+      "status": "Trạng thái",
+      "reason": "Lý do",
+      "source": "Nguồn câu",
+      "allStatuses": "Tất cả trạng thái",
+      "allReasons": "Tất cả lý do",
+      "allSources": "Mọi nguồn"
+    },
+    "statuses": {
+      "open": "Chưa xử lý",
+      "no_error": "Không có lỗi",
+      "fixed": "Đã sửa",
+      "confirmed": "Đã xác nhận lỗi"
+    },
+    "sources": { "rule": "Câu thường", "ai": "Câu AI" },
+    "types": {
+      "mcq_definition": "Trắc nghiệm",
+      "true_false_definition": "Đúng / Sai",
+      "type_word": "Gõ từ",
+      "cloze": "Điền chỗ trống",
+      "meaning_in_sentence": "Nghĩa trong câu",
+      "mcq_sentence": "Trắc nghiệm trong câu"
+    },
+    "cols": {
+      "word": "Từ",
+      "type": "Kiểu câu",
+      "reason": "Lý do",
+      "source": "Nguồn",
+      "note": "Ghi chú",
+      "sentAt": "Ngày gửi",
+      "status": "Trạng thái",
+      "resolvedBy": "Người xử lý"
+    },
+    "empty": "Không còn báo lỗi chưa xử lý.",
+    "emptyFiltered": "Không có báo lỗi nào khớp bộ lọc.",
+    "detail": {
+      "title": "Báo lỗi · {word}",
+      "titleUnknown": "Báo lỗi",
+      "notFound": "Không tìm thấy báo lỗi này.",
+      "backToList": "Về danh sách báo lỗi",
+      "question": "Câu hỏi",
+      "prompt": "Đề",
+      "meaning": "Nghĩa",
+      "sentence": "Câu",
+      "options": "Các lựa chọn",
+      "correctAnswer": "Đáp án đúng",
+      "correctMark": "Đáp án đúng",
+      "learnerPicked": "Người học chọn",
+      "unclearOption": "Không rõ lựa chọn nào",
+      "learnerAnswer": "Câu trả lời của người học",
+      "noAnswer": "Chưa trả lời",
+      "triedAnswers": "Đã thử",
+      "hints": "Gợi ý đã xem",
+      "noHints": "Không xem gợi ý nào",
+      "true": "Đúng",
+      "false": "Sai",
+      "reason": "Lý do",
+      "note": "Ghi chú của người học",
+      "noNote": "Không có ghi chú",
+      "ai": "Thông tin AI",
+      "operationId": "Mã thao tác",
+      "callId": "Mã lời gọi",
+      "model": "Model",
+      "promptRevision": "Bản prompt",
+      "openCall": "Xem lần gọi này",
+      "resolved": "Đã xử lý",
+      "resolvedLine": "{status} · {who} · {time}",
+      "refunded": "Đã trả lại 1 lượt câu AI",
+      "refundPending": "Chưa trả được, hệ thống thử lại mỗi giờ",
+      "notRefunded": "Không trả lượt",
+      "fixHint": "Sửa nội dung ở Nghĩa",
+      "fixLink": "Mở nghĩa của từ “{word}”"
+    },
+    "actions": {
+      "noError": "Không có lỗi",
+      "fixed": "Đã sửa",
+      "confirmed": "Xác nhận lỗi",
+      "refundLine": "Xác nhận lỗi sẽ trả lại 1 lượt câu AI cho người học."
+    }
+  },
+  "users": {
+    "create": "Tạo người dùng",
+    "edit": {
+      "title": "Sửa {email}",
+      "emailHint": "Email mới được tính là đã xác minh; email cũ nhận thư báo.",
+      "emailInvalid": "Nhập email hợp lệ",
+      "emailTaken": "Email này đã có tài khoản khác.",
+      "nameInvalid": "Từ 1 đến 50 ký tự.",
+      "tooYoung": "Người dùng phải từ 13 tuổi.",
+      "timezone": "Múi giờ",
+      "timezoneHint": "Tên múi giờ IANA, ví dụ Asia/Ho_Chi_Minh.",
+      "timezoneInvalid": "Nhập múi giờ",
+      "save": "Lưu",
+      "saved": "Đã lưu {email}."
+    },
+    "reset": {
+      "title": "Đặt lại mật khẩu cho {email}",
+      "body": "Mật khẩu mới được gửi qua email. Người dùng bị đăng xuất khỏi mọi thiết bị.",
+      "mustChange": "Bắt đổi mật khẩu ở lần đăng nhập tới",
+      "confirm": "Đặt lại mật khẩu",
+      "done": "Đã đặt lại mật khẩu cho {email}."
+    },
+    "search": "Tìm theo email, họ hoặc tên (từ 2 ký tự)",
+    "searchHint": "Không phân biệt hoa thường; có phân biệt dấu.",
+    "searchShort": "Gõ từ 2 ký tự",
+    "filters": { "status": "Trạng thái", "all": "Tất cả", "active": "Đang hoạt động", "locked": "Đang khóa" },
+    "cols": { "email": "Email", "name": "Họ tên", "role": "Vai trò", "verified": "Email đã xác minh", "status": "Trạng thái", "created": "Ngày tạo", "lastSeen": "Lần cuối vào" },
+    "roles": { "admin": "admin", "editor": "editor", "learner": "người học" },
+    "statuses": { "active": "Đang hoạt động", "locked": "Đang khóa" },
+    "verified": { "yes": "Đã xác minh", "no": "Chưa xác minh" },
+    "footer": "Mới nhất trước · 20 người mỗi trang",
+    "empty": "Chưa có người dùng nào.",
+    "emptySearch": "Không có ai khớp “{q}”. Thử tìm theo email.",
+    "emptyFiltered": "Không có người dùng nào ở trạng thái này.",
+    "detail": {
+      "titleUnknown": "Người dùng",
+      "notFound": "Không tìm thấy người dùng này.",
+      "backToList": "Về danh sách",
+      "email": "Email",
+      "givenName": "Tên",
+      "familyName": "Họ",
+      "birthDate": "Ngày sinh",
+      "terms": "Đồng ý điều khoản",
+      "termsValue": "{time} · bản {version}",
+      "role": "Vai trò",
+      "status": "Trạng thái",
+      "lockedLine": "Đang khóa từ {time} · bởi {who}",
+      "lockReason": "Lý do: {reason}",
+      "lock": "Khóa tài khoản",
+      "unlock": "Mở khóa",
+      "unlocked": "Đã mở khóa {email}.",
+      "locked": "Đã khóa {email}.",
+      "edit": "Sửa",
+      "resetPassword": "Đặt lại mật khẩu"
+    },
+    "lock": {
+      "title": "Khóa tài khoản {email}?",
+      "body": "Người này bị đăng xuất khỏi mọi thiết bị và không đăng nhập được tới khi mở khóa.",
+      "reason": "Lý do (1–500 ký tự, một dòng)",
+      "reasonInvalid": "Nhập lý do từ 1 đến 500 ký tự, trên một dòng.",
+      "confirm": "Khóa tài khoản",
+      "keep": "Giữ nguyên"
     }
   },
   "staff": {
@@ -660,7 +980,9 @@
       "doneBody": "Đã tạo tài khoản và gửi mật khẩu tới {email}. Nếu editor không nhận được thư, họ dùng “Quên mật khẩu” ở trang đăng nhập.",
       "close": "Đóng",
       "emailTaken": "Email này đã có tài khoản. Dùng “Tìm theo email” ở trên rồi cấp vai trò.",
-      "mailUnavailable": "Hiện chưa gửi được email nên chưa tạo tài khoản. Vui lòng thử lại sau ít phút."
+      "mailUnavailable": "Hiện chưa gửi được email nên chưa tạo tài khoản. Vui lòng thử lại sau ít phút.",
+      "emailTakenUser": "Email này đã có tài khoản.",
+      "doneBodyLearner": "Đã tạo tài khoản và gửi mật khẩu tới {email}. Lần đầu đăng nhập, người học sẽ được hỏi ngày sinh và đồng ý điều khoản."
     }
   },
   "navGroups": {
@@ -831,6 +1153,47 @@
     "confirmAllTitle": "Publish toàn bộ catalog?",
     "confirmAllBody": "Bạn chưa chọn bộ lọc nào, nên job này sẽ publish mọi sense đủ điều kiện trong toàn bộ catalog. Chỉ tiếp tục nếu đó là điều bạn muốn.",
     "confirmAllSubmit": "Publish tất cả"
+  },
+  "refunds": {
+    "filters": {
+      "resolver": "Email người xử lý",
+      "resolverPlaceholder": "minh@example.com",
+      "from": "Từ ngày",
+      "to": "Đến ngày",
+      "apply": "Lọc"
+    },
+    "cols": {
+      "report": "Báo lỗi",
+      "user": "Người học",
+      "resolver": "Người xử lý",
+      "role": "Vai trò",
+      "refunded": "Trả lượt",
+      "at": "Thời điểm"
+    },
+    "reportLink": "Xem báo lỗi",
+    "selfResolved": "Tự xử lý báo lỗi của mình",
+    "refunded": { "true": "Đã trả", "false": "Không trả", "null": "Đang thử lại" },
+    "empty": "Chưa có lần xác nhận lỗi nào trong khoảng này.",
+    "note": "Không thu hồi được lượt đã trả."
+  },
+  "unknownForms": {
+    "intro": "Dạng AI đã dùng mà bảng dạng chia chưa có. Có thể lẫn từ đồng nghĩa, cụm nhiều chữ, lỗi chính tả.",
+    "cols": {
+      "lemma": "Từ gốc",
+      "form": "Dạng AI dùng",
+      "rejected": "Số lần bị loại",
+      "first": "Lần đầu",
+      "last": "Lần gần nhất"
+    },
+    "accept": "Nhận dạng này",
+    "acceptFor": "Nhận dạng “{form}” của “{lemma}”",
+    "ignore": "Bỏ qua",
+    "ignoreFor": "Bỏ qua dạng “{form}” của “{lemma}”",
+    "accepted": "Đã thêm “{form}” vào dạng chia của “{lemma}”.",
+    "undo": "Hoàn tác",
+    "undone": "Đã gỡ “{form}” khỏi dạng chia của “{lemma}”.",
+    "empty": "Chưa có dạng chia nào cần xem.",
+    "emptyHint": "Khi AI dùng một dạng bảng chưa biết, dạng đó hiện ở đây."
   },
   "settings": {
     "tabsLabel": "Nhóm cài đặt",

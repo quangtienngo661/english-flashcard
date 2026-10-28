@@ -11,7 +11,7 @@ describe('profile HTTP routing (unit, isolated persistence)', () => {
   let token: string;
   let row: { id: string; email: string; emailVerifiedAt: Date | null; nativeLanguage: string | null;
     timezone: string; staffRole: string | null; mustChangePassword: boolean; givenName: string | null;
-    familyName: string | null; birthDate: Date | null } | null;
+    familyName: string | null; birthDate: Date | null; termsAcceptedAt: Date | null } | null;
   let userId: string;
   const prisma = { user: { findUnique: vi.fn(), update: vi.fn() }, $disconnect: async () => {} };
   const hit = vi.spyOn(RateLimiter.prototype, 'hit');
@@ -25,7 +25,7 @@ describe('profile HTTP routing (unit, isolated persistence)', () => {
   beforeEach(async () => {
     userId = randomUUID();
     row = { id: userId, email: 'a@example.com', emailVerifiedAt: null, nativeLanguage: null,
-      timezone: 'Asia/Saigon', staffRole: null, mustChangePassword: false, givenName: null, familyName: null, birthDate: null };
+      timezone: 'Asia/Saigon', staffRole: null, mustChangePassword: false, givenName: null, familyName: null, birthDate: null, termsAcceptedAt: null };
     prisma.user.findUnique.mockReset().mockImplementation(async () => row && { ...row });
     prisma.user.update.mockReset().mockImplementation(async ({ data }) => {
       if (!row) throw { code: 'P2025' };
@@ -44,7 +44,7 @@ describe('profile HTTP routing (unit, isolated persistence)', () => {
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ id: userId, email: row!.email, email_verified: false, native_language: null,
       timezone: row!.timezone, staff_role: null, permissions: [], must_change_password: false,
-      given_name: null, family_name: null, birth_date: null });
+      given_name: null, family_name: null, birth_date: null, terms_accepted_at: null });
     row!.emailVerifiedAt = ctx.clock.now();
     for (const staffRole of ['admin', 'editor']) {
       row!.staffRole = staffRole;
@@ -52,7 +52,7 @@ describe('profile HTTP routing (unit, isolated persistence)', () => {
       expect(profile.status).toBe(200);
       expect(profile.body).toMatchObject({ email_verified: true, staff_role: staffRole, permissions: [
         ...(staffRole === 'admin' ? ['roles.manage'] : []), 'content.edit', 'content.publish', 'content.import', 'taxonomy.manage',
-        ...(staffRole === 'admin' ? ['settings.manage'] : []), 'entitlements.grant',
+        ...(staffRole === 'admin' ? ['settings.manage'] : []), 'entitlements.grant', 'users.read',
       ] });
     }
     expect(hit).not.toHaveBeenCalled();
@@ -64,7 +64,7 @@ describe('profile HTTP routing (unit, isolated persistence)', () => {
       expect(res.status).toBe(200);
       expect(res.body).toEqual({ id: userId, email: before.email, email_verified: false, native_language: language,
         timezone: before.timezone, staff_role: null, permissions: [], must_change_password: false,
-        given_name: null, family_name: null, birth_date: null });
+        given_name: null, family_name: null, birth_date: null, terms_accepted_at: null });
     }
     expect((await patch({ timezone: 'Asia/Saigon' })).status).toBe(200);
     const alias = await patch({ timezone: 'asia/ho_chi_minh' });

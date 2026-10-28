@@ -15,6 +15,8 @@ export type Me = {
   given_name: string | null;
   family_name: string | null;
   birth_date: string | null;
+  /** AD18: null until the user accepts the terms (an account made by an admin, or an older one). */
+  terms_accepted_at: string | null;
 };
 
 export type RegisterBody = {

@@ -29,7 +29,7 @@ export function setStaffRole(api: ApiClient, id: string, role: StaffRole | null)
 /** Spec §7.4. No `password` key means the API generates one and mails it; the response never carries a password. */
 export function createStaffAccount(
   api: ApiClient,
-  body: { email: string; staff_role: StaffRole; password?: string; must_change_password: boolean; timezone: string },
+  body: { email: string; staff_role: StaffRole | null; password?: string; must_change_password: boolean; timezone: string },
 ): Promise<StaffUser> {
   return api.post('/v1/admin/users', body);
 }

@@ -258,8 +258,8 @@ describe('Stat and Banner', () => {
     expect(within(container).getByText('7').className).toContain('text-danger');
   });
 
-  it('Banner info, error and offline use the B fills', () => {
-    const expected = { info: 'bg-primary-soft', error: 'bg-danger-soft', offline: 'bg-accent-soft' } as const;
+  it('Banner info, error, offline and warning use the B fills', () => {
+    const expected = { info: 'bg-primary-soft', error: 'bg-danger-soft', offline: 'bg-accent-soft', warning: 'bg-accent-soft' } as const;
     for (const [variant, bg] of Object.entries(expected)) {
       const { unmount } = wrap(<Banner variant={variant as keyof typeof expected}>Note</Banner>);
       expect(screen.getByText('Note').parentElement!.className, variant).toContain(bg);

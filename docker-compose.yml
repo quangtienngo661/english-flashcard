@@ -1,29 +1,126 @@
+# Two ways to use this file:
+#   docker compose up -d                  just Postgres, Redis and Mailpit; you run the apps on the host (apps/api `pnpm run:dev`, ...).
+#   pnpm bootstrap                        the whole stack in containers (profile `app`): API + worker, admin, learner web.
+# Settings come from the root .env (copy .env.example, or let `pnpm bootstrap` create it); ENV_FILE points at another file.
+# Nothing secret is written here.
+
+# Fixed so every checkout and worktree shares the same containers and volumes (COMPOSE_PROJECT_NAME overrides it).
+name: english-learning
+
 services:
   postgres:
     image: postgres:17
     environment:
-      POSTGRES_DB: english_learning
-      POSTGRES_USER: dev
-      POSTGRES_PASSWORD: dev
+      POSTGRES_DB: ${POSTGRES_DB:-english_learning}
+      POSTGRES_USER: ${POSTGRES_USER:-dev}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-dev}
     ports:
-      - '127.0.0.1:5434:5432'
+      - '127.0.0.1:${POSTGRES_PORT:-5434}:5432'
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}']
+      interval: 5s
+      timeout: 3s
+      retries: 20
 
   mailpit:
     image: axllent/mailpit
     ports:
-      - '127.0.0.1:1025:1025'
-      - '127.0.0.1:8025:8025'
+      - '127.0.0.1:${MAILPIT_SMTP_PORT:-1025}:1025'
+      - '127.0.0.1:${MAILPIT_UI_PORT:-8025}:8025'
 
   redis:
     image: redis:7.4-alpine
     command: redis-server --maxmemory-policy noeviction --appendonly yes
     ports:
       # 6379 may be taken by other local projects, like 5432/5433 were for Postgres.
-      - '127.0.0.1:6380:6379'
+      - '127.0.0.1:${REDIS_PORT:-6380}:6379'
     volumes:
       - redis_data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  # ---- the apps (profile `app`) ---------------------------------------------------------------------------------------
+  api:
+    profiles: [app]
+    build:
+      context: .
+      target: api
+    env_file: ${ENV_FILE:-.env}
+    environment:
+      # Inside the compose network the services are reached by name, not through the host ports above.
+      PORT: '3000'
+      DATABASE_URL: postgresql://${POSTGRES_USER:-dev}:${POSTGRES_PASSWORD:-dev}@postgres:5432/${POSTGRES_DB:-english_learning}
+      REDIS_URL: redis://redis:6379
+      SMTP_HOST: mailpit
+      SMTP_PORT: '1025'
+      # Required since the Bước 0-3 fixes; an older .env may lack it, so fall back instead of refusing to start.
+      TERMS_VERSION: ${TERMS_VERSION:-2026-10-20}
+      # What the browser sees: the apps on this machine's ports.
+      JWT_ISSUER: http://localhost:${API_PORT:-3000}
+      PROBLEM_TYPE_BASE: http://localhost:${API_PORT:-3000}/problems/
+      ADMIN_APP_URL: http://localhost:${ADMIN_PORT:-5173}
+      LEARNER_APP_URL: http://localhost:${WEB_PORT:-3001}
+      CORS_ORIGINS: http://localhost:${API_PORT:-3000},http://localhost:${ADMIN_PORT:-5173},http://localhost:${WEB_PORT:-3001},http://127.0.0.1:${ADMIN_PORT:-5173}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      mailpit:
+        condition: service_started
+    ports:
+      - '127.0.0.1:${API_PORT:-3000}:3000'
+    healthcheck:
+      test: ['CMD', 'node', '-e', "fetch('http://127.0.0.1:3000/v1/health').then((r) => process.exit(r.ok ? 0 : 1), () => process.exit(1))"]
+      interval: 5s
+      timeout: 3s
+      retries: 60
+      # It migrates and compiles before listening, which takes a minute or two on the first start.
+      start_period: 240s
+
+  admin:
+    profiles: [app]
+    build:
+      context: .
+      target: admin
+      args:
+        VITE_API_BASE_URL: http://localhost:${API_PORT:-3000}
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - '127.0.0.1:${ADMIN_PORT:-5173}:80'
+    healthcheck:
+      test: ['CMD', 'wget', '-q', '-O', '/dev/null', 'http://127.0.0.1/']
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+  web:
+    profiles: [app]
+    build:
+      context: .
+      target: web
+      args:
+        NEXT_PUBLIC_API_BASE_URL: http://localhost:${API_PORT:-3000}
+        NEXT_PUBLIC_SITE_URL: http://localhost:${WEB_PORT:-3001}
+        NEXT_PUBLIC_LEARNER_APP: 'on'
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - '127.0.0.1:${WEB_PORT:-3001}:3001'
+    healthcheck:
+      test: ['CMD', 'node', '-e', "fetch('http://127.0.0.1:3001/vi/app').then((r) => process.exit(r.status < 500 ? 0 : 1), () => process.exit(1))"]
+      interval: 5s
+      timeout: 5s
+      retries: 24
+      start_period: 20s
 
 volumes:
   postgres_data:

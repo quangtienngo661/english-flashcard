@@ -2,7 +2,7 @@ import { expect, test, type Page } from '@playwright/test';
 import en from '../messages/en.json' with { type: 'json' };
 import vi from '../messages/vi.json' with { type: 'json' };
 import { seriousViolations } from './support/axe';
-import { mockApi, problem, signedInAs, type MockHandler } from './support/mock-api';
+import { mockApi, problem, signedInAs, type MockHandler, type MockRequest } from './support/mock-api';
 import { contentMocks, SENSE_ID } from './support/content';
 import { settingsMocks } from './support/settings';
 
@@ -99,7 +99,50 @@ const evalRun = {
   status: 'finished', total: 1, done: 1, valid_count: 1, avg_latency_ms: 700, cost_usd: '0.01000000', cost_unknown_count: 0, error: null, started_by: 'u9',
   started_by_user: { id: 'u9', email: 'lan@wordmet.com', system: false }, created_at: at, started_at: at, finished_at: at,
 };
-const pages = ['/uploads', '/uploads/b1', '/uploads/new', '/publish-jobs', `/publish-jobs/${JOB}`, '/sources', '/sources/new', '/export', '/ai/costs', '/ai/costs?group_by=operation', '/ai/calls', '/ai/calls?operation_id=op-1', '/transactions', '/ai/status', '/ai/models', '/ai/models/new', '/ai/models/m1', '/ai/operations', '/ai/prompts', '/ai/eval', '/ai/eval/new', '/ai/eval/runs/r1', '/settings', '/settings?tab=entitlements', '/words', '/senses', `/senses/${SENSE_ID}`, '/topics'];
+const RID = '5b1f0000-0000-4000-8000-0000000000a1';
+const reportRow = {
+  id: RID, sense_id: 's1', reason: 'wrong_meaning', reason_label: 'Nghĩa sai', note: 'Nghĩa không khớp', status: 'open',
+  question_snapshot: {
+    type: 'mcq_definition',
+    prompt: { kind: 'mcq', meaning: 'a computer that serves', meaning_language: 'en', context_label: null, options: ['máy chủ', 'bộ nhớ', 'bộ nhớ đệm', 'ổ đĩa'] },
+    correct: { lemma: 'server', meaning: 'máy chủ', definition_en: null, option_index: 0 },
+    hints_shown: { level1: null, level2: null, level3: null },
+    learner: { answer: 'ổ đĩa', option_index: 3, answers_tried: [], result: 'wrong', hint_level: 0 },
+  },
+  created_at: at, resolved_at: null, resolved_by: null, resolved_by_role: null, resolved_by_user: null,
+  refundable: true, question_source: 'ai', ai_operation_id: 'op-1', call_operation_id: 'call-1', model: 'gpt-x', prompt_revision: 3, ai_charged: true, refunded: null,
+};
+const reasonRow = {
+  code: 'wrong_meaning', label_vi: 'Nghĩa sai', label_en: 'Wrong meaning', detail_hint_vi: null, detail_hint_en: null, applies_to: 'all', note_required: false,
+  refundable: true, active: true, position: 10, updated_at: at, updated_by_user: { id: 'admin-1', email: 'admin@wordmet.com', system: false },
+};
+Object.assign(mocks, {
+  'GET /v1/admin/practice/report-reasons': () => ({ json: { items: [reasonRow] } }),
+  'GET /v1/admin/practice/reports': () => ({ json: { items: [reportRow], next_page_token: null } }),
+  [`GET /v1/admin/practice/reports/${RID}`]: () => ({ json: reportRow }),
+  'GET /v1/admin/practice/refunds': () => ({ json: { items: [{
+    report_id: RID, user_id: 'u-lan', user: { id: 'u-lan', email: 'lan@example.com', system: false }, resolved_by: 'u-minh', resolved_by_role: 'editor',
+    resolved_by_user: { id: 'u-minh', email: 'minh@example.com', system: false }, self_resolved: false, refunded: true, resolved_at: at,
+  }], next_page_token: null } }),
+  'GET /v1/admin/practice/unknown-forms': () => ({ json: { items: [{ id: 'f-1', lemma_key: 'go', form: 'went', rejected_count: 3, first_seen_at: at, last_seen_at: at }], next_page_token: null } }),
+});
+
+const UID = '6b1f0000-0000-4000-8000-00000000e42a';
+const userRow = { id: UID, email: 'lan@example.com', given_name: 'Lan', family_name: 'Nguyễn', email_verified: true, staff_role: null, status: 'locked', created_at: at, last_seen_at: at };
+const grantRow = {
+  id: '9a000000-0000-4000-8000-000000000001', user_id: UID, kind: 'plan', plan: 'pro', limits: null, starts_at: at, ends_at: '2099-11-21T17:00:00.000Z', reason: 'Giải IELTS tháng 10',
+  granted_by: 'a1', granted_by_role: 'admin', revoked_at: null, revoked_by: null, revoke_reason: null, paid_renewal_action: null, created_at: at,
+  user: { id: UID, email: 'lan@example.com' }, granted_by_user: { id: 'a1', email: 'admin@wordmet.com' }, revoked_by_user: null, status: 'active', last_change: null,
+};
+Object.assign(mocks, {
+  // The staff page asks the same path with `?email=` and expects one user, the Người dùng list asks for a page.
+  'GET /v1/admin/users': (req: MockRequest) => ({ json: req.query.has('email') ? staffRow : { items: [userRow], next_page_token: null } }),
+  [`GET /v1/admin/users/${UID}`]: () => ({ json: { ...userRow, birth_date: '2008-05-14', terms_accepted_at: at, terms_version: '2026-10-01', locked_at: at, locked_by: { id: 'a1', email: 'admin@wordmet.com' }, lock_reason: 'Spam' } }),
+  'GET /v1/admin/entitlements/grants': () => ({ json: { items: [grantRow], next_page_token: null } }),
+  'GET /v1/admin/entitlements/ai-usage': () => ({ json: { date: '2026-10-27', used: 812, confirmed: 800, reserved: 12, cap: 1000, alert_percent: 80, alert_reached: false, enabled: true } }),
+});
+
+const pages = ['/uploads', '/uploads/b1', '/uploads/new', '/publish-jobs', `/publish-jobs/${JOB}`, '/sources', '/sources/new', '/export', '/ai/costs', '/ai/costs?group_by=operation', '/ai/calls', '/ai/calls?operation_id=op-1', '/transactions', '/ai/status', '/ai/models', '/ai/models/new', '/ai/models/m1', '/ai/operations', '/ai/prompts', '/ai/eval', '/ai/eval/new', '/ai/eval/runs/r1', '/settings', '/settings?tab=entitlements', '/words', '/senses', `/senses/${SENSE_ID}`, '/topics', '/reports', `/reports/${RID}`, '/report-reasons', '/report-reasons/new', '/refunds', '/unknown-forms', '/users', `/users/${UID}`, '/entitlements', '/entitlements/new'];
 
 for (const [lang, copy] of [['vi', vi], ['en', en]] as const) {
   test.describe(`axe (${lang})`, () => {
@@ -115,7 +158,7 @@ for (const [lang, copy] of [['vi', vi], ['en', en]] as const) {
     });
 
     test('every signed-in screen, its panels and dialogs', async ({ page }) => {
-      test.setTimeout(90_000); // one test walks every screen; each added screen adds seconds under parallel load
+      test.setTimeout(150_000); // one test walks every screen; each added screen adds seconds under parallel load
       await signedInAs(page, 'admin', mocks);
       for (const path of pages) {
         await page.goto(path);
@@ -144,6 +187,8 @@ async function waitForContent(page: Page, path: string) {
   else if (path === '/uploads/b1') await expect(page.getByTestId('detail-panel').getByRole('heading', { level: 2, name: batch.file_name })).toBeVisible();
   else if (path === '/ai/eval/runs/r1') await expect(page.getByTestId('detail-panel').getByRole('heading', { level: 2 })).toContainText(/Lần chạy|Run/);
   else if (path.startsWith('/publish-jobs/')) await expect(page.getByTestId('detail-panel').getByRole('heading', { level: 2 })).toContainText('a3f2c1');
+  else if (path.startsWith('/users/')) await expect(page.getByTestId('detail-panel').getByRole('heading', { level: 2 })).toBeVisible();
+  else if (path.startsWith('/reports/')) await expect(page.getByTestId('detail-panel').getByRole('heading', { level: 2 })).toBeVisible();
   else if (path === '/ai/operations') await expect(page.getByRole('group', { name: /lookup_word/ })).toBeVisible();
   else if (path === '/ai/prompts') {
     await expect(page.getByText(/17\/20/)).toBeVisible();

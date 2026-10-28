@@ -127,6 +127,57 @@ Làm một lần khi muốn thử AI thật; việc này tốn tiền nhà cung 
 10. **Editor.** Đăng nhập bằng Minh → menu không có Cài đặt hệ thống; gõ `/settings` → "Bạn không có quyền xem trang này.".
 11. **Hẹp 390px và tiếng Anh.** Mọi tab và hộp lịch sử không cuộn ngang; đổi EN → nhãn, dòng phụ và toast đều tiếng Anh.
 
+## M3 — Báo lỗi
+
+Chuẩn bị: stack thật với `AI_FAKE_ENABLED=true` (không có khóa OpenAI / Anthropic). Chạy `pnpm test:e2e:real` một lần thì bộ test tự dựng dữ liệu (xem dưới);
+muốn tự bấm thì làm theo các bước dưới bằng tài khoản Lan (người học), Minh (editor), admin trong `.state.json`.
+
+Dữ liệu cần có (bộ test `m3.real.spec.ts` dựng bằng chính API, không ghi thẳng DB): 3 từ riêng đã publish; Lan là Pro; một lý do báo lỗi riêng có trả lượt; Lan có một câu
+điền chỗ trống do AI sinh đã trả lời và báo lỗi bằng lý do đó; một dạng chia (`<từ>ment`) mà AI đã dùng nhưng bảng chưa có.
+
+1. **Minh xác nhận lỗi.** Đăng nhập Minh → menu "Báo lỗi". → Danh sách mặc định lọc "Chưa xử lý". Mở ô "Lý do", chọn lý do riêng → còn đúng một dòng (nguồn "Câu AI").
+   Bấm tên từ → panel bên phải hiện câu hỏi, câu trả lời của Lan, ghi chú của Lan, "Thông tin AI", dòng "Xác nhận lỗi sẽ trả lại 1 lượt câu AI cho người học." và ba nút.
+   Bấm [Xác nhận lỗi] → panel đổi sang dòng "Đã xử lý" kèm "Đã trả lại 1 lượt câu AI", hai nút biến mất. Đóng panel → danh sách (đã lọc) không còn dòng đó.
+   Kiểm thêm: số lượt AI của Lan (`GET /v1/me/entitlements`, `pools.ai_practice.remaining`) tăng đúng 1. Khung Figma A/73, A/73e, A/74, A/74c.
+2. **Admin xem Trả lượt.** Đăng nhập admin → menu "Trả lượt". Gõ email Minh vào "Email người xử lý" → [Lọc]. → Có dòng của báo lỗi vừa xử lý: người học là email Lan, người xử lý
+   là email Minh, vai trò "editor", "Đã trả". Bấm "Xem báo lỗi" → mở đúng báo lỗi đó. Dưới bảng có dòng "Không thu hồi được lượt đã trả." (A/76).
+3. **Admin thêm rồi tắt một lý do.** Menu "Lý do báo lỗi" → [Thêm lý do] → nhập mã (ví dụ `thu_m3`), tên tiếng Việt, tên tiếng Anh → [Lưu]. → Hộp đóng, bảng có dòng mới,
+   công tắc "Đang dùng" bật. Tắt công tắc → tải lại trang vẫn tắt (và người học không còn thấy lý do này khi báo lỗi). Bấm "Sửa" ở một dòng → hộp "Sửa lý do báo lỗi" (A/75, A/75b).
+   Thử nhập mã đã có → lỗi hiện ngay dưới ô mã.
+4. **Minh nhận một dạng chia.** Đăng nhập Minh → menu "Dạng chia chưa biết" (A/77). → Có dòng `<từ>` / `<từ>ment` với số lần bị loại. Bấm [Nhận dạng này] → toast
+   "Đã thêm “…” vào dạng chia của “…”." có nút [Hoàn tác], dòng biến khỏi danh sách. Bấm [Hoàn tác] → toast "Đã gỡ “…” khỏi dạng chia của “…”.".
+   (Chưa kiểm bằng test thật: sau Hoàn tác dòng có quay lại danh sách hay không; xem bằng mắt.) Khi bảng trống: "Chưa có dạng chia nào cần xem." (A/77b).
+5. **Editor không thấy màn của admin.** Minh gõ thẳng `/refunds` hoặc `/report-reasons` → "Bạn không có quyền xem trang này." và menu của Minh không có hai mục đó; Minh vẫn có
+   "Báo lỗi" và "Dạng chia chưa biết".
+6. **Phone 390.** Mở bốn màn ở chiều rộng 390 (hoặc xem ảnh trong `docs/deliveries/giao-dien-admin/m3/`) → không cuộn ngang, bảng thành thẻ.
+
+Khi một báo lỗi đang mở ở bên phải, bảng bên trái chỉ còn ba cột Từ, Lý do, Trạng thái; đóng panel thì đủ 8 cột.
+
+## M4 — Người học (Người dùng, Cấp gói và lượt)
+
+Chuẩn bị như M3. `pnpm test:e2e:real` chạy `m4.real.spec.ts` bằng ba tài khoản do admin tạo qua API: Minh (editor), Lan và Khoa (người học). Muốn tự bấm thì đăng nhập
+bằng admin hoặc Minh trong `.state.json`. Khung Figma: A/71 `386:1698`, A/71e `387:1767`, A/72 `387:1965`, A/72b `387:2293`, A/78 `394:2657`, A/78b `394:3168`,
+A/78c `394:3719`, A/78d `414:3533`, A/79 `394:3994`, A/79b `414:3823`, A/79e `394:4288`.
+
+1. **Admin khóa rồi mở khóa Khoa.** Đăng nhập admin → menu "Người dùng". Gõ email Khoa vào ô tìm (một ký tự thì chỉ báo "Gõ từ 2 ký tự", chưa gửi gì) → còn đúng một dòng.
+   Bấm email → panel bên phải hiện email, họ tên, ngày sinh, "Đồng ý điều khoản", vai trò, trạng thái. Bấm [Khóa tài khoản] → hộp hỏi lý do (1 dòng, tối đa 500 ký tự) → [Khóa tài khoản].
+   → Panel đổi sang "Đang khóa từ … · bởi <email admin>" và "Lý do: …", nút thành [Mở khóa]. Khoa đăng nhập thử thì bị từ chối. Bấm [Mở khóa] → dòng khóa biến mất, nút lại là [Khóa tài khoản],
+   và Khoa đăng nhập lại được. (A/71, A/72, A/72b.) Nút khóa không có với chính bạn và với tài khoản admin.
+2. **Editor không vào được "Người dùng".** Đăng nhập Minh → menu không có "Người dùng"; gõ thẳng `/users` → "Bạn không có quyền xem trang này." (A/71e).
+3. **Minh cấp gói Pro cho Lan, sửa ngày, thu hồi.** Đăng nhập Minh → menu "Cấp gói và lượt" → [Cấp mới]. Gõ email Lan → [Kiểm] (hoặc rời ô) → "Đã xác nhận tài khoản …". Loại mặc định "Gói Pro";
+   chọn "Tới ngày" (ngày D: Lan còn Pro hết ngày D), gõ lý do → [Cấp]. → Toast "Đã cấp cho …", hộp đóng, danh sách có dòng mới "Đang hiệu lực" với Minh là người cấp.
+   Lọc "Người học (email)" bằng email Lan → [Lọc]. Bấm "Sửa ngày" ở dòng đó → ô "Từ ngày" không sửa được (đã bắt đầu), đổi "Tới ngày" + lý do → [Lưu ngày mới]. Mở "Sửa ngày" lần nữa
+   → có dòng "Lần sửa trước: … · email Minh · tới … → … · lý do". Bấm "Thu hồi" → lý do → [Thu hồi] → dòng thành "Đã thu hồi", ghi "Thu hồi: lý do", hết nút thao tác. (A/78, A/78b, A/78d, A/79.)
+4. **Cấp Pro hai lần.** Đăng nhập admin → [Cấp mới] cho Lan, "Tới ngày" xa, lý do "lần một" → [Cấp]; làm lại với lý do "lần hai". Lọc theo Lan → dòng "lần một" có nhãn "Bị thay thế"
+   và không còn nút thao tác, dòng "lần hai" là "Đang hiệu lực". Với admin, hộp có thêm ba ô con số riêng (phiên luyện mỗi ngày, lượt câu AI, lượt tra AI); Minh chỉ thấy ô phiên luyện.
+5. **Từ chối trước khi cấp.** Minh gõ email của admin → [Kiểm] → "Editor không cấp được cho tài khoản admin." và [Cấp] tắt (A/79e). Email không có tài khoản → "Không có tài khoản với email này.".
+   Người đang trả tiền cho Pro và tự gia hạn (không dựng được trên stack thật này, chỉ kiểm bằng test mock): [Cấp] ra hộp "Cấp gói Pro cho … ?" với [Giữ nguyên] / [Cấp và tắt tự gia hạn] (A/79b).
+6. **Lọc và trống.** Ở "Cấp gói và lượt" lọc email của người chưa từng được cấp → "Không có lần cấp nào khớp bộ lọc. Đổi email hoặc số ngày rồi xem lại." (A/78c). Admin thấy thêm dòng
+   "Lượt AI hôm nay: x/y"; editor thì không.
+7. **Phone 390.** Hai màn và các hộp ở 390 không cuộn ngang, bảng thành thẻ; email dài và lý do 300 ký tự xuống dòng gọn (ảnh trong `docs/deliveries/giao-dien-admin/m4/`).
+
+Ngày "Tới ngày" là ngày cuối còn hiệu lực (hết ngày D mới hết hạn); danh sách hiện lại đúng ngày D.
+
 ## M5 — Nội dung (Từ, Nghĩa, Chủ đề)
 
 Đăng nhập bằng Minh (editor) — editor làm được mọi thao tác ở đây. Khung Figma A/87 `395:2999`, A/88 `395:3514`, A/88b `395:4038`, A/89 `395:4326`.
@@ -150,3 +201,4 @@ Làm một lần khi muốn thử AI thật; việc này tốn tiền nhà cung 
 8. **Chủ đề.** Menu → Chủ đề. [Thêm chủ đề]: gõ mã có chữ hoa (`Du_Lich`) → chữ đỏ về luật mã; gõ một mã đã có → "Đã có chủ đề mã này."; mã mới → dòng mới
    "Đang dùng". [Sửa tên] (không sửa được mã), [Lưu trữ] → "Đã lưu trữ", [Dùng lại] → "Đang dùng". Không có nút xóa.
 9. **Hẹp 390px và tiếng Anh.** Bốn màn hiện dạng thẻ, ô chọn nằm trên mỗi thẻ, không cuộn ngang; đổi EN → mọi chữ tiếng Anh.
+

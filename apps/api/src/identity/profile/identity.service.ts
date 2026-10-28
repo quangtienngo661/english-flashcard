@@ -1,5 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { Clock } from '../../common/clock/clock.js';
+import { APP_CONFIG, type AppConfig } from '../../common/config/app-config.js';
 import { normalizeEmail } from '../../common/email/normalize-email.js';
 import { AppLogger } from '../../common/logging/app-logger.js';
 import { dateString, dateValue, localDate } from '../../common/time/local-date.js';
@@ -25,11 +26,13 @@ export interface Profile {
   given_name: string | null;
   family_name: string | null;
   birth_date: string | null;
+  /** AD18: null until the user accepts the terms; the learner app asks first (with a missing birth date). */
+  terms_accepted_at: string | null;
 }
 
 const profileSelect = {
   id: true, email: true, emailVerifiedAt: true, nativeLanguage: true, timezone: true, staffRole: true,
-  mustChangePassword: true, givenName: true, familyName: true, birthDate: true,
+  mustChangePassword: true, givenName: true, familyName: true, birthDate: true, termsAcceptedAt: true,
 } satisfies Prisma.UserSelect;
 type ProfileRow = Prisma.UserGetPayload<{ select: typeof profileSelect }>;
 
@@ -47,6 +50,7 @@ function toProfile(row: ProfileRow): Profile {
     given_name: row.givenName,
     family_name: row.familyName,
     birth_date: row.birthDate === null ? null : dateString(row.birthDate),
+    terms_accepted_at: row.termsAcceptedAt?.toISOString() ?? null,
   };
 }
 
@@ -64,6 +68,7 @@ export class IdentityService {
     @Inject(PRISMA_CLIENT) private readonly prisma: PrismaClient,
     @Inject(Clock) private readonly clock: Clock,
     @Inject(AppLogger) private readonly logger: AppLogger,
+    @Inject(APP_CONFIG) private readonly config?: AppConfig,
   ) {}
 
   /** A caller inside a transaction that holds a lock passes its `tx`, so the read needs no second connection. */
@@ -127,7 +132,7 @@ export class IdentityService {
     }
     if (body.birth_date !== undefined) await this.assertBirthDate(userId, body.birth_date, timezone);
     if (body.native_language === undefined && timezone === undefined && body.given_name === undefined
-      && body.family_name === undefined && body.birth_date === undefined) return this.getProfile(userId);
+      && body.family_name === undefined && body.birth_date === undefined && body.accept_terms === undefined) return this.getProfile(userId);
     try {
       // One partial update changes only profile fields and returns the stored profile.
       const row = await this.prisma.user.update({
@@ -138,11 +143,14 @@ export class IdentityService {
           ...(body.given_name !== undefined ? { givenName: body.given_name } : {}),
           ...(body.family_name !== undefined ? { familyName: body.family_name } : {}),
           ...(body.birth_date !== undefined ? { birthDate: dateValue(body.birth_date) } : {}),
+          // AD18: accepting records the current terms version, as sign-up does.
+          ...(body.accept_terms ? { termsAcceptedAt: this.clock.now(), termsVersion: this.config!.termsVersion } : {}),
         },
         select: profileSelect,
       });
       // The date itself is personal data: the log names the user only.
       if (body.birth_date !== undefined) this.logger.info('profile_birth_date_changed', { user_id: userId });
+      if (body.accept_terms) this.logger.info('terms_accepted', { user_id: userId, terms_version: this.config!.termsVersion });
       return toProfile(row);
     } catch (error) {
       // Also handles deletion concurrent with PATCH without turning it into a 500.

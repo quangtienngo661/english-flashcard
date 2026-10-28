@@ -11,7 +11,7 @@ export const ME_ADMIN = makeMe({
   id: 'me-1',
   email: 'admin@wordmet.com',
   staff_role: 'admin',
-  permissions: ['content.edit', 'content.import', 'content.publish', 'taxonomy.manage', 'roles.manage', 'settings.manage', 'entitlements.grant'],
+  permissions: ['content.edit', 'content.import', 'content.publish', 'taxonomy.manage', 'roles.manage', 'settings.manage', 'entitlements.grant', 'users.read'],
 });
 
 export type StaffRow = { id: string; email: string; email_verified: boolean; staff_role: 'admin' | 'editor' | null };

@@ -535,6 +535,135 @@
       "content": { "title": "Call content", "request": "Request", "response": "Response" }
     }
   },
+  "entitlements": {
+    "aiToday": "AI uses today: {used}/{cap}",
+    "aiTodayError": "Could not load today's AI uses.",
+    "filters": {
+      "learner": "Learner (email)",
+      "grantedBy": "Granted by (email)",
+      "emailPlaceholder": "Full email address",
+      "active": "Still in effect",
+      "activeAll": "All",
+      "activeYes": "Still in effect",
+      "activeNo": "No longer in effect",
+      "expiring": "Expiring within … days",
+      "expiringHint": "1 to 365 days",
+      "apply": "Filter"
+    },
+    "cols": {
+      "learner": "Learner",
+      "kind": "Type",
+      "limits": "Numbers",
+      "from": "From",
+      "to": "Until",
+      "grantedBy": "Granted by",
+      "reason": "Reason",
+      "status": "Status",
+      "actions": "Actions"
+    },
+    "kinds": { "plan": "Pro plan", "limits": "Custom numbers" },
+    "limitLines": {
+      "practice_sessions_per_day": "{n} practice sessions a day",
+      "ai_practice_per_cycle": "{n} AI question uses a month",
+      "ai_lookup_per_cycle": "{n} AI lookup uses a month"
+    },
+    "statuses": {
+      "active": "Active",
+      "scheduled": "Not started",
+      "revoked": "Revoked",
+      "expired": "Expired",
+      "replaced": "Replaced"
+    },
+    "actions": {
+      "editDates": "Edit dates",
+      "revoke": "Revoke",
+      "editDatesFor": "Edit dates of the grant for {email}",
+      "revokeFor": "Revoke the grant for {email}"
+    },
+    "revokedNote": "Revoked: {reason}",
+    "empty": "No plan or custom numbers granted to anyone yet.",
+    "emptyFiltered": "No grant matches the filters. Change the emails or the number of days and look again.",
+    "footer": "Newest first · 20 grants per page · dates in Asia/Ho_Chi_Minh time",
+    "revoke": {
+      "title": "Revoke the grant for {email}?",
+      "body": "The grant stops at once. To give it back, make a new grant.",
+      "summary": "{kind} · {status} from {date}",
+      "reason": "Reason for revoking (1–300 characters)",
+      "reasonInvalid": "Enter a reason of at most 300 characters.",
+      "keep": "Keep it",
+      "confirm": "Revoke",
+      "done": "Revoked the grant for {email}."
+    },
+    "editDates": {
+      "title": "Edit dates of the grant for {email}",
+      "summary": "{kind} · {status} from {date}",
+      "from": "From",
+      "fromLocked": "This grant has started, so its start date cannot change.",
+      "fromHint": "Can only be changed before the grant starts.",
+      "to": "Until",
+      "reason": "Reason (1–300 characters)",
+      "reasonInvalid": "Enter a reason of at most 300 characters.",
+      "hint": "Moving it later or earlier both work, as long as the new date is still in the future. AI uses are not counted again.",
+      "noChange": "No date has changed.",
+      "dateRequired": "Pick a date.",
+      "lastChange": "Last edit: {date} · {email} · {change} · {reason}",
+      "changeFrom": "from {old} → {new}",
+      "changeTo": "until {old} → {new}",
+      "keep": "Cancel",
+      "confirm": "Save new dates",
+      "done": "Saved the new dates for {email}."
+    },
+    "new": {
+      "open": "New grant",
+      "title": "Grant a plan or custom numbers",
+      "email": "Learner (find by email)",
+      "emailPlaceholder": "The learner's full email address",
+      "check": "Check",
+      "checking": "Checking…",
+      "confirmed": "Confirmed account {email}.",
+      "notFound": "No account has this email.",
+      "retryAt": "Try again at {time}.",
+      "lookupFailed": "Could not check this email. Try again.",
+      "emailRequired": "Enter an email, then check it.",
+      "emailShort": "Enter at least 3 characters of the email.",
+      "kind": "Type",
+      "practiceSessions": "Practice sessions per day (0–200)",
+      "aiPractice": "AI question uses per month (0–5,000)",
+      "aiLookup": "AI lookup uses per month (0–5,000)",
+      "limitInvalid": "Enter a whole number within the allowed range.",
+      "limitsRequired": "Enter at least one number.",
+      "from": "From",
+      "fromHint": "Leave empty to start right now.",
+      "fromPast": "The start day cannot be in the past.",
+      "to": "Until",
+      "toHint": "The last day it stays in effect.",
+      "toRequired": "Pick the last day.",
+      "toBeforeFrom": "The last day must be on or after the start day.",
+      "reason": "Reason (1–300 characters)",
+      "reasonInvalid": "Enter a reason, at most 300 characters.",
+      "note": "A Pro grant that starts now replaces the Pro grant already in place. New AI uses count by monthly cycle from the start day.",
+      "submit": "Grant",
+      "done": "Granted to {email}.",
+      "understood": "Got it",
+      "notSupported": "Granted. Auto-renewal could not be turned off at the payment provider; the learner may still be charged next period.",
+      "confirm": {
+        "title": "Grant Pro to {email}?",
+        "intro": "This person pays for Pro and renews automatically. Granting will:",
+        "turnOff": "turn off auto-renewal of the paid plan, with no refund;",
+        "keepPaid": "the rest of the period already paid stays Pro;",
+        "replace": "revoke the grant already in place (if any) and count AI uses again from today.",
+        "keep": "Keep as is",
+        "ok": "Grant and turn off auto-renewal"
+      }
+    },
+    "refusal": {
+      "self-grant": "You cannot grant to yourself.",
+      "target-is-admin": "An editor cannot grant to an admin account.",
+      "target-is-staff": "An editor cannot grant to a staff account.",
+      "ai-limits-admin-only": "Only an admin can set AI use numbers.",
+      "target-has-paid-subscription": "This person pays for Pro and renews automatically."
+    }
+  },
   "transactions": {
     "intro": "Purchases, renewals, billing changes, refunds, trials and plans granted by the Wordmet team, for every learner, newest first.",
     "filters": {
@@ -596,6 +725,197 @@
       "txId": "Provider transaction ID",
       "readOnly": "Read only. Refunds are made at the payment provider; its refund event updates this row.",
       "close": "Close"
+    }
+  },
+  "reportReasons": {
+    "add": "Add reason",
+    "cols": {
+      "position": "Order",
+      "code": "Code",
+      "labelVi": "Vietnamese name",
+      "labelEn": "English name",
+      "appliesTo": "Applies to",
+      "noteRequired": "Note required",
+      "refundable": "Refunds a unit",
+      "active": "In use",
+      "updatedBy": "Last edited by",
+      "actions": "Actions"
+    },
+    "appliesTo": { "ai": "AI questions", "non_ai": "Regular questions", "all": "Both" },
+    "yes": "Yes",
+    "no": "No",
+    "edit": "Edit",
+    "editFor": "Edit reason {code}",
+    "activeFor": "In use: {code}",
+    "note": "A turned-off reason is no longer shown to learners; older reports keep the name they were sent with.",
+    "empty": "There are no report reasons yet.",
+    "emptyHint": "Add a reason so learners can pick it when reporting a problem.",
+    "newTitle": "Add a report reason",
+    "editTitle": "Edit a report reason",
+    "form": {
+      "code": "Code",
+      "codeHint": "Starts with a letter, 2–40 characters of a–z, 0–9, _",
+      "codeInvalid": "The code must start with a letter and be 2–40 characters of a–z, 0–9, _.",
+      "labelVi": "Vietnamese name",
+      "labelEn": "English name",
+      "labelHint": "1–100 characters",
+      "labelInvalid": "Enter a name of 1 to 100 characters.",
+      "hintVi": "Hint in the note box (Vietnamese)",
+      "hintEn": "Hint in the note box (English)",
+      "hintHint": "Optional, up to 200 characters",
+      "appliesTo": "Applies to",
+      "noteRequired": "Note required",
+      "refundable": "Refunds a unit",
+      "refundableHint": "Only has an effect on AI questions",
+      "position": "Order",
+      "positionHint": "From 0 to 10,000; smaller shows first",
+      "positionInvalid": "Enter a whole number from 0 to 10,000.",
+      "save": "Save"
+    }
+  },
+  "reports": {
+    "filters": {
+      "status": "Status",
+      "reason": "Reason",
+      "source": "Question source",
+      "allStatuses": "All statuses",
+      "allReasons": "All reasons",
+      "allSources": "Any source"
+    },
+    "statuses": {
+      "open": "Open",
+      "no_error": "No error",
+      "fixed": "Fixed",
+      "confirmed": "Error confirmed"
+    },
+    "sources": { "rule": "Rule question", "ai": "AI question" },
+    "types": {
+      "mcq_definition": "Multiple choice",
+      "true_false_definition": "True / False",
+      "type_word": "Type the word",
+      "cloze": "Fill in the blank",
+      "meaning_in_sentence": "Meaning in a sentence",
+      "mcq_sentence": "Multiple choice in a sentence"
+    },
+    "cols": {
+      "word": "Word",
+      "type": "Question type",
+      "reason": "Reason",
+      "source": "Source",
+      "note": "Note",
+      "sentAt": "Sent",
+      "status": "Status",
+      "resolvedBy": "Handled by"
+    },
+    "empty": "No open reports left.",
+    "emptyFiltered": "No reports match the filters.",
+    "detail": {
+      "title": "Report · {word}",
+      "titleUnknown": "Report",
+      "notFound": "This report was not found.",
+      "backToList": "Back to the reports",
+      "question": "Question",
+      "prompt": "Prompt",
+      "meaning": "Meaning",
+      "sentence": "Sentence",
+      "options": "Options",
+      "correctAnswer": "Correct answer",
+      "correctMark": "Correct answer",
+      "learnerPicked": "Learner chose",
+      "unclearOption": "Cannot tell which option",
+      "learnerAnswer": "Learner's answer",
+      "noAnswer": "No answer",
+      "triedAnswers": "Tried",
+      "hints": "Hints seen",
+      "noHints": "No hint was used",
+      "true": "True",
+      "false": "False",
+      "reason": "Reason",
+      "note": "Learner's note",
+      "noNote": "No note",
+      "ai": "AI details",
+      "operationId": "Operation ID",
+      "callId": "Call ID",
+      "model": "Model",
+      "promptRevision": "Prompt revision",
+      "openCall": "View this call",
+      "resolved": "Handled",
+      "resolvedLine": "{status} · {who} · {time}",
+      "refunded": "1 AI question unit given back",
+      "refundPending": "Not refunded yet, the system retries every hour",
+      "notRefunded": "No unit refunded",
+      "fixHint": "Edit the content under Senses",
+      "fixLink": "Open the senses of “{word}”"
+    },
+    "actions": {
+      "noError": "No error",
+      "fixed": "Fixed",
+      "confirmed": "Confirm error",
+      "refundLine": "Confirming the error gives the learner back 1 AI question unit."
+    }
+  },
+  "users": {
+    "create": "Create user",
+    "edit": {
+      "title": "Edit {email}",
+      "emailHint": "A new email counts as verified; the old address gets a notice.",
+      "emailInvalid": "Enter a valid email",
+      "emailTaken": "Another account already uses this email.",
+      "nameInvalid": "1 to 50 characters.",
+      "tooYoung": "The user must be at least 13.",
+      "timezone": "Time zone",
+      "timezoneHint": "An IANA zone name, e.g. Asia/Ho_Chi_Minh.",
+      "timezoneInvalid": "Enter a time zone",
+      "save": "Save",
+      "saved": "Saved {email}."
+    },
+    "reset": {
+      "title": "Reset the password of {email}",
+      "body": "The new password is sent by email. The user is signed out everywhere.",
+      "mustChange": "Ask for a new password at the next sign-in",
+      "confirm": "Reset password",
+      "done": "Password reset for {email}."
+    },
+    "search": "Search by email, family or given name (2+ characters)",
+    "searchHint": "Not case-sensitive; accents matter.",
+    "searchShort": "Type at least 2 characters",
+    "filters": { "status": "Status", "all": "All", "active": "Active", "locked": "Locked" },
+    "cols": { "email": "Email", "name": "Name", "role": "Role", "verified": "Email verified", "status": "Status", "created": "Created", "lastSeen": "Last seen" },
+    "roles": { "admin": "admin", "editor": "editor", "learner": "learner" },
+    "statuses": { "active": "Active", "locked": "Locked" },
+    "verified": { "yes": "Verified", "no": "Not verified" },
+    "footer": "Newest first · 20 people per page",
+    "empty": "No users yet.",
+    "emptySearch": "Nobody matches “{q}”. Try searching by email.",
+    "emptyFiltered": "No user has this status.",
+    "detail": {
+      "titleUnknown": "User",
+      "notFound": "This user was not found.",
+      "backToList": "Back to the list",
+      "email": "Email",
+      "givenName": "Given name",
+      "familyName": "Family name",
+      "birthDate": "Date of birth",
+      "terms": "Accepted the terms",
+      "termsValue": "{time} · version {version}",
+      "role": "Role",
+      "status": "Status",
+      "lockedLine": "Locked since {time} · by {who}",
+      "lockReason": "Reason: {reason}",
+      "lock": "Lock account",
+      "unlock": "Unlock",
+      "unlocked": "Unlocked {email}.",
+      "locked": "Locked {email}.",
+      "edit": "Edit",
+      "resetPassword": "Reset password"
+    },
+    "lock": {
+      "title": "Lock the account of {email}?",
+      "body": "This person is signed out of every device and cannot sign in until the account is unlocked.",
+      "reason": "Reason (1–500 characters, one line)",
+      "reasonInvalid": "Enter a reason of 1 to 500 characters, on one line.",
+      "confirm": "Lock account",
+      "keep": "Keep as is"
     }
   },
   "staff": {
@@ -660,7 +980,9 @@
       "doneBody": "The account was created and the password sent to {email}. If the editor does not get the mail, they can use “Forgot password” on the login page.",
       "close": "Close",
       "emailTaken": "This email already has an account. Use “Find by email” above and grant a role.",
-      "mailUnavailable": "The email cannot be sent right now, so no account was created. Please try again in a few minutes."
+      "mailUnavailable": "The email cannot be sent right now, so no account was created. Please try again in a few minutes.",
+      "emailTakenUser": "This email already has an account.",
+      "doneBodyLearner": "The account was created and the password was sent to {email}. On first sign-in the learner is asked for a birth date and to accept the terms."
     }
   },
   "navGroups": {
@@ -831,6 +1153,47 @@
     "confirmAllTitle": "Publish the whole catalog?",
     "confirmAllBody": "You have not chosen any filter, so this job will publish every eligible sense in the whole catalog. Continue only if that is what you want.",
     "confirmAllSubmit": "Publish everything"
+  },
+  "refunds": {
+    "filters": {
+      "resolver": "Resolver email",
+      "resolverPlaceholder": "minh@example.com",
+      "from": "From date",
+      "to": "To date",
+      "apply": "Filter"
+    },
+    "cols": {
+      "report": "Report",
+      "user": "Learner",
+      "resolver": "Resolved by",
+      "role": "Role",
+      "refunded": "Unit given back",
+      "at": "Time"
+    },
+    "reportLink": "View report",
+    "selfResolved": "Resolved their own report",
+    "refunded": { "true": "Given back", "false": "Not given back", "null": "Retrying" },
+    "empty": "No confirmed errors in this range yet.",
+    "note": "A unit that was given back cannot be taken back."
+  },
+  "unknownForms": {
+    "intro": "Forms the AI used that the word-form table does not have yet. They can include synonyms, multi-word phrases and typos.",
+    "cols": {
+      "lemma": "Base word",
+      "form": "Form the AI used",
+      "rejected": "Times rejected",
+      "first": "First seen",
+      "last": "Last seen"
+    },
+    "accept": "Accept this form",
+    "acceptFor": "Accept “{form}” for “{lemma}”",
+    "ignore": "Ignore",
+    "ignoreFor": "Ignore “{form}” for “{lemma}”",
+    "accepted": "Added “{form}” to the forms of “{lemma}”.",
+    "undo": "Undo",
+    "undone": "Removed “{form}” from the forms of “{lemma}”.",
+    "empty": "No forms to review yet.",
+    "emptyHint": "When the AI uses a form the table does not know, it shows up here."
   },
   "settings": {
     "tabsLabel": "Setting groups",

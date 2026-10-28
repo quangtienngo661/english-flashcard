@@ -256,6 +256,178 @@ Khác khung Figma, có chủ ý: nhãn nằm **trên** ô số (component `Numbe
   "Người dùng đã xóa" (người đổi không còn email); `common.unsavedChanges` "(có thay đổi chưa lưu)" cho dấu chấm trên tab. Bản tiếng Anh của mọi khóa
   `settings.*` do Claude viết.
 
+---
+
+# Đợt giao diện admin — M3 as-built (27/10/2026)
+
+Nhánh `feat/giao-dien-admin-m3`. Bốn màn mới (Báo lỗi, Lý do báo lỗi, Trả lượt, Dạng chia chưa biết); mục menu tương ứng đã bật.
+
+## Đã làm (Task 26–30)
+
+1. Task 26 — Báo lỗi: danh sách có lọc trạng thái / lý do / nguồn câu (lọc nằm trong URL, mặc định "Chưa xử lý"), panel chi tiết (câu hỏi, đáp án, người học chọn gì,
+   thông tin AI, ba nút xử lý, dòng trả lượt): `c2f2c7a`; người xử lý hiện bằng email (`userLabel`): `ce3732e`.
+2. Task 27 — Lý do báo lỗi (chỉ admin): bảng theo thứ tự của API, công tắc "Đang dùng" gửi `PATCH { active }`, hộp thêm / sửa lý do: `e9d49eb`.
+3. Task 28 — Trả lượt (chỉ admin): lọc theo email người xử lý và khoảng ngày (ranh giới ngày giờ Việt Nam), liên kết sang báo lỗi: `10c4c44`.
+4. Task 29 — Dạng chia chưa biết: [Nhận dạng này] kèm toast có [Hoàn tác], [Bỏ qua]: `f3d7630`; báo lỗi khi hoàn tác thất bại và giữ thông báo `word-form-exists`: `f8e4c1d`.
+5. Task 30 — a11y (axe, VI/EN, 1440/390) và kiểm không cuộn ngang ở 390 (ghi chú 300 ký tự) cho bốn màn; e2e stack thật `m3.real.spec.ts` với
+   `support/ai-report.ts` (dựng một báo lỗi câu AI và một dạng chia chưa biết bằng chính API); ảnh chụp; hai tài liệu này: commit
+   `test(admin): add the m3 real-stack checks and the m3 delivery record`.
+
+Cách dựng dữ liệu thật (`seedAiReport`, không ghi thẳng DB): chọn model `fake:ok` cho `generate_cloze` → nguồn mới + CSV 3 từ riêng của lần chạy, publish bằng job
+→ Lan lên Pro → một lý do riêng của lần chạy (`e2e_<mã>`, có trả lượt) → nhóm 1 từ + phiên `cloze` → `next` → trả lời → báo lỗi. Dạng chia chưa biết: đổi
+`generate_cloze` sang `fake:bad-form`, mở phiên cho từ thứ hai (model trả dạng `<từ>ment`, bị loại, dạng được ghi vào bảng), rồi đổi lại `fake:ok`.
+
+## Ảnh chụp (stack thật, 27/10/2026)
+
+Ảnh ở `docs/deliveries/giao-dien-admin/m3/`; desktop 1440×900 là một màn hình, phone 390×844 là cả trang. Node Figma: A/73 `391:2300`, A/73e `389:2436`, A/74 `389:2667`,
+A/74c `389:3417`, A/75 `393:2300`, A/75b `393:2876`, A/76 `393:3535`, A/77 `393:3990`, A/77b `393:4368`.
+
+| Màn | Desktop | Phone |
+|---|---|---|
+| A/73 Báo lỗi · danh sách (admin) | [a73-reports-list-desktop.png](giao-dien-admin/m3/a73-reports-list-desktop.png) | [a73-reports-list-mobile.png](giao-dien-admin/m3/a73-reports-list-mobile.png) |
+| A/73e Báo lỗi như Minh (editor) thấy, lọc một lý do không còn báo lỗi chưa xử lý | [a73e-reports-editor-empty-desktop.png](giao-dien-admin/m3/a73e-reports-editor-empty-desktop.png) | [a73e-reports-editor-empty-mobile.png](giao-dien-admin/m3/a73e-reports-editor-empty-mobile.png) |
+| A/74 Chi tiết báo lỗi câu AI, chưa xử lý | [a74-report-ai-open-desktop.png](giao-dien-admin/m3/a74-report-ai-open-desktop.png) | [a74-report-ai-open-mobile.png](giao-dien-admin/m3/a74-report-ai-open-mobile.png) |
+| A/74c Chi tiết báo lỗi đã xử lý (Minh xác nhận, đã trả lượt) | [a74c-report-resolved-desktop.png](giao-dien-admin/m3/a74c-report-resolved-desktop.png) | [a74c-report-resolved-mobile.png](giao-dien-admin/m3/a74c-report-resolved-mobile.png) |
+| A/75 Lý do báo lỗi | [a75-report-reasons-desktop.png](giao-dien-admin/m3/a75-report-reasons-desktop.png) | [a75-report-reasons-mobile.png](giao-dien-admin/m3/a75-report-reasons-mobile.png) |
+| A/75b Sửa lý do (hộp thoại) | [a75b-reason-edit-dialog-desktop.png](giao-dien-admin/m3/a75b-reason-edit-dialog-desktop.png) | [a75b-reason-edit-dialog-mobile.png](giao-dien-admin/m3/a75b-reason-edit-dialog-mobile.png) |
+| A/76 Trả lượt | [a76-refunds-desktop.png](giao-dien-admin/m3/a76-refunds-desktop.png) | [a76-refunds-mobile.png](giao-dien-admin/m3/a76-refunds-mobile.png) |
+| A/77 Dạng chia chưa biết | [a77-unknown-forms-desktop.png](giao-dien-admin/m3/a77-unknown-forms-desktop.png) | [a77-unknown-forms-mobile.png](giao-dien-admin/m3/a77-unknown-forms-mobile.png) |
+| A/77b Dạng chia chưa biết · trống (*) | [a77b-unknown-forms-empty-desktop.png](giao-dien-admin/m3/a77b-unknown-forms-empty-desktop.png) | [a77b-unknown-forms-empty-mobile.png](giao-dien-admin/m3/a77b-unknown-forms-empty-mobile.png) |
+
+(*) Trên DB dùng chung danh sách thật không bao giờ trống, nên riêng khung này câu trả lời của danh sách được thay bằng danh sách rỗng khi chụp.
+
+Khác biệt nhìn thấy ở ảnh thật (chưa mở Figma để so từng điểm):
+- Đã sửa sau khi chụp lần đầu: ở 1440 khi panel báo lỗi đang mở, bảng 8 cột bị ép và cột Từ / Lý do / Người xử lý xuống dòng từng chữ cái. Giờ khi có panel mở bảng chỉ giữ
+  ba cột Từ, Lý do, Trạng thái (phần còn lại đã nằm trong panel); không mở panel thì đủ 8 cột. Ảnh A/74 và A/74c desktop chụp lại sau sửa; ở 1280 panel là tờ phủ lên
+  và không ô nào xuống dòng từng chữ (đã kiểm bằng script). Thẻ ở 390 không đổi. Commit `fix(admin): show fewer report columns beside the open report`.
+- Ô ngày của Trả lượt hiện `mm/dd/yyyy` theo ngôn ngữ của trình duyệt chụp (Chrome en-US), không theo ngôn ngữ của app.
+- A/75b: ảnh phone là cả trang, hộp thoại nằm trên đầu trang còn bảng phía sau vẫn hiện (là cách chụp fullPage, không phải lỗi hộp thoại).
+- Khung A/74c có thêm lỗi 409 (báo lỗi đã xử lý); ảnh thật chụp báo lỗi đã xử lý thành công, không có lỗi 409 (đã có trong test mock e2e).
+
+## Kiểm đã chạy
+
+- Stack thật (API + worker cổng 3200, `AI_FAKE_ENABLED=true`, DB `english_learning_admin_m3`, admin preview 5283): `pnpm test:e2e:real` **13/13** (8 test cũ + 2 M0 + 3 M3), chạy cả bộ.
+  M3: Minh lọc theo lý do riêng, mở báo lỗi AI, bấm [Xác nhận lỗi] → "Đã trả lại 1 lượt câu AI" và số lượt AI của Lan tăng đúng 1 (đọc `GET /v1/me/entitlements`);
+  admin thấy dòng Trả lượt có email Lan và Minh (vai trò `editor`, "Đã trả"), thêm lý do mới rồi tắt, tải lại vẫn tắt; Minh nhận dạng chia vừa bị loại → toast → [Hoàn tác] → toast "Đã gỡ …".
+- `pnpm --filter admin test:e2e` (cổng 5391, mock): **165 passed, 55 skipped** (bốn màn thêm vào a11y và kiểm không cuộn ngang ở 390).
+- Unit, lint, typecheck: số ở báo lỗi của Task 30 (`.superpowers/sdd/2026-10-27-giao-dien-admin/task-30-report.md`).
+- Chưa kiểm: CI trên PR; sau [Hoàn tác] dòng có quay lại danh sách thật hay không (test thật chỉ kiểm toast); lần chạy đầy đủ từ đầu với phiên mới (khi lặp đã dùng `E2E_REUSE_STATE`; lần đầu 10/10 cũ + M3 đã chạy trước khi sửa lỗi session id của seed).
+- Cách chạy `grantAdmin` tại máy: worktree này không có `.env`, nên đặt `E2E_API_DIR` = `apps/api` của worktree `giao-dien-admin` (có `dist/cli/admin-grant.js` đã build và `.env`; CLI tự nạp
+  `.env` đó, người chạy không đọc nó) và ghi đè `DATABASE_URL` (trỏ DB `english_learning_admin_m3` của stack đang chạy), `JOB_QUEUE_PREFIX=wordmet-admin-m3`, `AI_FAKE_ENABLED=true` bằng biến môi trường
+  (`process.loadEnvFile` không đè biến đã có). Nếu không đè `DATABASE_URL`, CLI sẽ cấp quyền admin vào DB của `.env` kia thay vì DB của stack.
+
+## Câu chữ tự viết (không có trong copy doc §8.4–8.7; chủ dự án duyệt lại khi cần)
+
+- Báo lỗi (Task 26): bộ lọc "Tất cả trạng thái", "Tất cả lý do", "Mọi nguồn"; `emptyFiltered` "Không có báo lỗi nào khớp bộ lọc."; tên kiểu câu "Trắc nghiệm", "Đúng / Sai",
+  "Gõ từ", "Điền chỗ trống", "Nghĩa trong câu", "Trắc nghiệm trong câu"; chi tiết "Báo lỗi · {word}", "Báo lỗi", "Về danh sách báo lỗi", "Câu hỏi", "Nghĩa", "Câu",
+  "Các lựa chọn", "Đáp án đúng" (dấu), "Chưa trả lời", "Đã thử", "Không xem gợi ý nào", "Đúng", "Sai", "Ghi chú của người học", "Không có ghi chú", "Xem lần gọi này",
+  "Đã xử lý", "{status} · {who} · {time}", "Mở nghĩa của từ “{word}”"; `common.systemUser` "Hệ thống".
+- Lý do báo lỗi (Task 27): "Thêm lý do", "Sửa lần cuối bởi", "Thao tác", "Có" / "Không", "Sửa", "Sửa lý do {code}", "Đang dùng: {code}" (chỉ cho trình đọc màn hình),
+  "Chưa có lý do báo lỗi nào.", "Thêm lý do để người học có thể chọn khi báo lỗi.", "Thêm lý do báo lỗi", "Sửa lý do báo lỗi", gợi ý và lỗi ô mã / tên / thứ tự
+  ("Bắt đầu bằng chữ, 2–40 ký tự a–z, 0–9, _", "Mã phải bắt đầu bằng chữ, dài 2–40 ký tự, chỉ gồm a–z, 0–9, _.", "1–100 ký tự", "Nhập tên từ 1 đến 100 ký tự.",
+  "Gợi ý trong ô ghi chú (tiếng Việt / tiếng Anh)", "Không bắt buộc, tối đa 200 ký tự", "Chỉ có tác dụng với câu AI", "Từ 0 đến 10.000; số nhỏ hiện trước",
+  "Nhập số nguyên từ 0 đến 10.000."), "Lưu". Mặc định hộp thêm: "Cả hai", hai ô tick tắt, thứ tự 0 (API không có mặc định).
+- Trả lượt (Task 28): "Email người xử lý", "Lọc", "Xem báo lỗi", ô gợi ý "minh@example.com".
+- Dạng chia chưa biết (Task 29): `acceptFor` / `ignoreFor` (nhãn cho trình đọc màn hình) và `undone` "Đã gỡ “{form}” khỏi dạng chia của “{lemma}”."
+
+## Sau khi viết mục này
+
+- Helper `support/sign-in.ts` chờ hết 429 của đăng nhập (CI từng hỏng một lần khi cả bộ stack thật vượt `auth.login.ip`, 20 lần mỗi phút): commit `2b40fd5`.
+- Sửa sau review cuối ở `e87dcb4`: vòng lặp tải lại ở "Dạng chia chưa biết" khi một trang lỗi; mã báo lỗi không phải UUID → "không tìm thấy"; dải thông báo xử lý cũ còn sót;
+  nút ở mỗi dòng là nút phụ; bộ lọc Trả lượt giữ đúng sau khi bấm Back.
+- Hai lần merge `origin/dev`: lần một (M2 + M5), lần hai (M1a): M3 chuyển sang dùng `userLabel(ref, t)` của M1a, nên người dùng không có email giờ hiện "Không rõ người dùng".
+- PR #155 đã merge vào `dev` ở `9c46d2a`.
+
+---
+
+# Đợt giao diện admin — M4 as-built (27/10/2026)
+
+Nhánh `feat/giao-dien-admin-m4`. Hai màn mới ở nhóm "Người học": Người dùng (chỉ admin) và Cấp gói và lượt; hai mục menu đã bật.
+
+## Đã làm (Task 33–36)
+
+1. Task 33 — Người dùng: danh sách có ô tìm (từ 2 ký tự, chờ 300 ms) và lọc trạng thái nằm trong URL, [Tải thêm]; panel chi tiết (email, tên, ngày sinh, điều khoản, vai trò,
+   dòng khóa); [Khóa tài khoản] hỏi lý do một dòng, [Mở khóa] làm ngay: `c32e1f1`.
+2. Task 34 — Cấp gói và lượt: danh sách có bốn bộ lọc trong URL, khối "Lượt AI hôm nay" (chỉ ai có `settings.manage`), năm nhãn trạng thái, hộp Thu hồi và hộp Sửa ngày
+   (hiện "Lần sửa trước"), năm câu từ chối riêng cho `grant-not-allowed`: `5d58556`.
+3. Task 35 — Cấp mới: hộp có ô email + [Kiểm] (tra người học trước khi cấp), Gói Pro hoặc Con số riêng (ô lượt AI chỉ admin thấy), hộp xác nhận tắt tự gia hạn cho người đang trả
+   tiền (A/79b), dải cảnh báo khi cổng thanh toán chưa tắt được tự gia hạn: `1334e65`; giữ cảnh báo đó và bỏ lần tra khi bấm Hủy: `c1dc7d8`.
+4. Task 36 — a11y (axe, VI/EN, 1440/390) và kiểm không cuộn ngang ở 390 (email dài, lý do 300 ký tự) cho bốn đường dẫn `/users`, `/users/:id`, `/entitlements`,
+   `/entitlements/new`; e2e stack thật `m4.real.spec.ts`; ảnh chụp; hai tài liệu này: commit `test(admin): add the m4 real-stack checks and the m4 delivery record`.
+   Một sửa nhìn thấy khi chụp: cột email của bảng cấp gói bị cắt giữa tên miền ("…@example.c / om"); giờ email xuống dòng trước dấu `@` (`BreakableEmail`):
+   `fix(admin): wrap grant emails before the @ instead of inside the domain`.
+
+Ngày "Tới ngày": ngày D tính trọn (còn hiệu lực hết ngày D, API nhận 00:00 ngày D+1) — chủ dự án chốt 27/10/2026, AD17.
+
+## Ảnh chụp (stack thật, 27/10/2026)
+
+Ảnh ở `docs/deliveries/giao-dien-admin/m4/`; desktop 1440×900 là một màn hình, phone 390×844 là cả trang. Node Figma: A/71 `386:1698`, A/71e `387:1767`, A/72 `387:1965`,
+A/72b `387:2293`, A/78 `394:2657`, A/78b `394:3168`, A/78c `394:3719`, A/78d `414:3533`, A/79 `394:3994`, A/79b `414:3823`, A/79e `394:4288`.
+
+| Màn | Desktop | Phone |
+|---|---|---|
+| A/71 Người dùng · danh sách (admin) | [a71-users-list-desktop.png](giao-dien-admin/m4/a71-users-list-desktop.png) | [a71-users-list-mobile.png](giao-dien-admin/m4/a71-users-list-mobile.png) |
+| A/71e Người dùng như Minh (editor) thấy: không có quyền | [a71e-users-editor-no-access-desktop.png](giao-dien-admin/m4/a71e-users-editor-no-access-desktop.png) | [a71e-users-editor-no-access-mobile.png](giao-dien-admin/m4/a71e-users-editor-no-access-mobile.png) |
+| A/72 Chi tiết người dùng · đang khóa (Khoa) | [a72-user-locked-desktop.png](giao-dien-admin/m4/a72-user-locked-desktop.png) | [a72-user-locked-mobile.png](giao-dien-admin/m4/a72-user-locked-mobile.png) |
+| A/72b Khóa tài khoản (hộp thoại, Lan) | [a72b-lock-dialog-desktop.png](giao-dien-admin/m4/a72b-lock-dialog-desktop.png) | [a72b-lock-dialog-mobile.png](giao-dien-admin/m4/a72b-lock-dialog-mobile.png) |
+| A/78 Cấp gói và lượt · danh sách (lọc Lan: đang hiệu lực, bị thay thế, đã thu hồi) | [a78-grants-list-desktop.png](giao-dien-admin/m4/a78-grants-list-desktop.png) | [a78-grants-list-mobile.png](giao-dien-admin/m4/a78-grants-list-mobile.png) |
+| A/78b Thu hồi (hộp thoại) | [a78b-revoke-dialog-desktop.png](giao-dien-admin/m4/a78b-revoke-dialog-desktop.png) | [a78b-revoke-dialog-mobile.png](giao-dien-admin/m4/a78b-revoke-dialog-mobile.png) |
+| A/78c Cấp gói và lượt · không có dòng khớp bộ lọc (*) | [a78c-grants-empty-desktop.png](giao-dien-admin/m4/a78c-grants-empty-desktop.png) | [a78c-grants-empty-mobile.png](giao-dien-admin/m4/a78c-grants-empty-mobile.png) |
+| A/78d Sửa ngày lần cấp (hộp thoại) | [a78d-edit-dates-dialog-desktop.png](giao-dien-admin/m4/a78d-edit-dates-dialog-desktop.png) | [a78d-edit-dates-dialog-mobile.png](giao-dien-admin/m4/a78d-edit-dates-dialog-mobile.png) |
+| A/79 Cấp mới (admin) | [a79-new-grant-desktop.png](giao-dien-admin/m4/a79-new-grant-desktop.png) | [a79-new-grant-mobile.png](giao-dien-admin/m4/a79-new-grant-mobile.png) |
+| A/79b Cấp Pro cho người đang trả tiền (**) | [a79b-paid-confirm-desktop.png](giao-dien-admin/m4/a79b-paid-confirm-desktop.png) | [a79b-paid-confirm-mobile.png](giao-dien-admin/m4/a79b-paid-confirm-mobile.png) |
+| A/79e Cấp mới như Minh (editor): email của admin bị từ chối | [a79e-new-grant-editor-refused-desktop.png](giao-dien-admin/m4/a79e-new-grant-editor-refused-desktop.png) | [a79e-new-grant-editor-refused-mobile.png](giao-dien-admin/m4/a79e-new-grant-editor-refused-mobile.png) |
+
+(*) Trên DB dùng chung danh sách không lọc không bao giờ trống, nên khung này chụp bằng bộ lọc email của Khoa (chưa từng được cấp); khung "chưa cấp cho ai" không lọc
+(có nút [Cấp mới] thứ hai) chỉ được kiểm bằng test đơn vị.
+(**) Stack thật không dựng được người đang trả tiền cho Pro, nên riêng khung này câu trả lời 409 của lần [Cấp] được trình duyệt giả lập; hộp xác nhận là của app thật.
+Khoa bị khóa bằng API trước khi chụp A/72 và mở khóa lại sau đó.
+
+Khác biệt nhìn thấy ở ảnh thật (chưa mở Figma để so từng điểm):
+- Ô ngày trong hộp Cấp mới hiện `mm/dd/yyyy`: là ô ngày gốc của Chrome chụp, theo ngôn ngữ của trình duyệt chứ không theo ngôn ngữ của app (như ô ngày của Trả lượt ở M3); các ngày ở bảng hiện `d/m/yyyy`.
+- Ở 1440 khi panel người dùng đang mở, bảng chỉ giữ ba cột Email, Vai trò, Trạng thái (phần còn lại nằm trong panel).
+- Ảnh phone của hộp thoại là cả trang: hộp nằm trên đầu, danh sách phía sau vẫn hiện (cách chụp fullPage, như M3). Ảnh phone A/72 có panel ở trên và danh sách bên dưới.
+- Dòng "Đang khóa từ … · bởi …" là khối nền đỏ nhạt ở đầu panel; [Mở khóa] / [Khóa tài khoản] nằm ở chân panel.
+- Khối "Lượt AI hôm nay" chỉ admin thấy; ảnh của Minh (A/79e) không có.
+
+## Kiểm đã chạy
+
+- Stack thật (API + worker cổng 3200, `AI_FAKE_ENABLED=true`, DB `english_learning_admin_m3`, admin preview 5283): `pnpm test:e2e:real` **22/22**, chạy cả bộ từ đầu (phiên mới, không `E2E_REUSE_STATE`).
+  M4: admin tìm Khoa theo email, khóa kèm lý do (API từ chối đăng nhập), mở khóa rồi Khoa đăng nhập lại được; Minh tra Lan, cấp Pro, đổi "Tới ngày" (sau khi tải lại, hộp Sửa ngày
+  nêu "Lần sửa trước: … email Minh … lý do"), thu hồi ("Đã thu hồi", "Thu hồi: lý do", hết nút thao tác); admin cấp Pro bắt đầu ngay cho Lan hai lần → dòng lần một "Bị thay thế" và hết nút,
+  dòng lần hai "Đang hiệu lực" (rủi ro R3: hai mốc thời gian bằng nhau trên Postgres thật, nên API trả `replaced`). Lan và Khoa do admin tạo bằng API; mỗi dòng tìm theo lý do của lần chạy
+  nên DB dùng lại vẫn chạy được.
+- `pnpm --filter admin test:e2e` (cổng 5391, mock): **236 passed, 64 skipped**. Bốn đường dẫn mới nằm trong a11y (VI/EN) và một kiểm không cuộn ngang ở 390.
+  Màn "Nhân viên" gọi cùng `GET /v1/admin/users?email=` nên mock dùng chung của a11y phân biệt theo tham số `email`.
+- Unit (`vitest run --maxWorkers=2`): **72 file, 713 test passed**; lint và typecheck sạch.
+- Chưa kiểm: CI trên PR; hộp A/79b và dải `not_supported` trên stack thật (cần người đang trả tiền và cổng thanh toán).
+
+## Câu chữ tự viết (không có trong copy doc §8.3 và §8.8; chủ dự án duyệt lại khi cần)
+
+- Người dùng (Task 33): `empty` "Chưa có người dùng nào.", `emptyFiltered` "Không có người dùng nào ở trạng thái này."; "Người dùng", "Về danh sách"; nhãn "Tên", "Họ", "Ngày sinh",
+  "Đồng ý điều khoản", "Vai trò", "Trạng thái"; vai trò "admin / editor / người học"; "Đã xác minh" / "Chưa xác minh"; toast "Đã mở khóa {email}." và "Đã khóa {email}.";
+  lỗi lý do khóa "Nhập lý do từ 1 đến 500 ký tự, trên một dòng.". Toàn bộ bản tiếng Anh.
+- Cấp gói và lượt (Task 34): lỗi khối lượt AI ("Chưa xem được lượt AI hôm nay."), gợi ý ô email và "Từ 1 đến 365 ngày", "Đã hết hiệu lực"; các dòng con số ("{n} phiên luyện mỗi ngày",
+  "{n} lượt câu AI mỗi tháng", "{n} lượt tra AI mỗi tháng"); "Thu hồi: {reason}"; `emptyFiltered`; dòng chân trang; hộp Thu hồi (tiêu đề, "Lần cấp dừng có hiệu lực ngay. Muốn cấp lại thì cấp một lần mới.",
+  nhãn và lỗi lý do, [Giữ nguyên], "Đã thu hồi lần cấp của {email}."); hộp Sửa ngày (ghi chú "đã bắt đầu nên không đổi được", gợi ý, "Chưa đổi ngày nào.", "Hãy chọn ngày.", "từ {old} → {new}",
+  "tới {old} → {new}", "Đã lưu ngày mới cho {email}."); năm câu từ chối (`self-grant`, `target-is-admin`, `target-is-staff`, `ai-limits-admin-only`, `target-has-paid-subscription`).
+- Cấp mới (Task 35): "Cấp gói hoặc con số riêng", nhãn và gợi ý ô email, [Kiểm] / "Đang kiểm…", "Đã xác nhận tài khoản {email}.", "Thử lại lúc {time}.", "Chưa kiểm được email này. Hãy thử lại.",
+  "Hãy nhập email rồi kiểm.", "Loại", ba nhãn con số, các lỗi con số / ngày ("Ngày bắt đầu không được ở quá khứ.", "Hãy chọn ngày kết thúc.", "Ngày kết thúc phải sau hoặc bằng ngày bắt đầu."),
+  [Cấp], "Đã cấp cho {email}.", [Đã hiểu]. Dải cảnh báo `not_supported` dùng kiểu mới `warning` của `Banner` (thêm ở Task 35), không phải toast.
+
+## Sau review cuối
+
+- Test khóa đăng nhập trên stack thật nay đòi đúng 403 và `type` kết thúc `account-locked` (429 của `auth.login.ip` thì chờ `Retry-After` rồi hỏi lại một lần), không còn chỉ "khác 200".
+- [Lọc] ở Cấp gói và lượt là nút phụ (`secondary`), để [Cấp mới] là nút chính duy nhất; Người dùng không có nút Lọc. Hoàn tiền (M3) vẫn để [Lọc] là nút chính vì trang đó không có nút chính nào khác. Ảnh a78 chụp lại trên stack thật.
+- Mở và đóng [Cấp mới] giữ chuỗi bộ lọc trên URL (`/entitlements/new?...` rồi quay lại `/entitlements?...`).
+- Ô email của [Cấp mới] không gửi tra cứu khi dưới 3 ký tự (API đòi tối thiểu 3); hiện gợi ý "Nhập ít nhất 3 ký tự của email." (chữ mới, có cả bản tiếng Anh).
+- Enter trong ô email khi chưa xác nhận thì chạy tra cứu (nút [Cấp] đang tắt nên trình duyệt không tự gửi form).
+- Sửa ngày: đổi "Từ ngày" của lần cấp chưa bắt đầu sang hôm nay gửi thời điểm hiện tại thay vì 00:00 (API từ chối mốc cũ hơn 5 phút).
+- Khối "Lượt AI hôm nay" có [Thử lại] khi lỗi.
+- `STATUS_TONE` và `fullName` chuyển sang `users-api.ts`, hết import vòng giữa `UsersPage` và `UserDetail`.
+
+---
+
 # Đợt giao diện admin — M5 as-built (27/10/2026)
 
 Nhánh `feat/giao-dien-admin-m5`, một PR vào `dev`. Bốn màn Nội dung thay "Tính năng chưa có": Từ `/words` (A/87), Nghĩa `/senses` (A/88), Chi tiết nghĩa
@@ -321,3 +493,20 @@ Khung Figma file `7HcPAKLrWu32C27qYMJUOA`: A/87 `395:2999`, A/88 `395:3514`, A/8
 
 `words.*`, `senses.*`, `topics.*`: mọi dòng phụ, toast, hộp thoại sửa (trình độ, cách viết khác, từ chức năng), kết quả dán danh sách, lý do lỗi hàng loạt, hỏi lại khi
 gỡ / ngừng dùng, câu không tìm thấy nghĩa, gợi ý mã chủ đề; `list.selectAll` "Chọn tất cả trên trang". Bản tiếng Anh do Claude viết.
+
+# AD18 — admin tạo / sửa người dùng — as-built (28/10/2026)
+
+Thêm sau M4 theo yêu cầu trực tiếp của chủ dự án; quyết định ở AD18 trong file decisions. Nhánh `feat/admin-user-mutate`, một PR vào `dev`.
+
+- **API (`apps/api`):** `POST /v1/admin/users` nhận `staff_role: null` (người học; thư gửi link app người học); `PATCH /v1/admin/users/:id` (email, tên, ngày sinh 13+,
+  múi giờ; email trùng → 409 `email-taken`; email đổi thì thư báo tới email cũ); `POST /v1/admin/users/:id/password` (gõ hoặc sinh, mọi phiên bị đăng xuất, mật khẩu chỉ
+  đi qua thư); quyền `users.read` cho `GET /v1/admin/users` và `/:id` (admin và editor); chi tiết trả thêm `timezone`; `PATCH /v1/me` nhận `accept_terms: true`;
+  `GET /v1/me` trả thêm `terms_accepted_at`. Unit: `staff-user-edit.service.spec.ts`, `accept-terms.spec.ts`, các spec controller và route.
+- **Admin (`apps/admin`):** màn Người dùng có [Tạo người dùng] (hộp tạo tài khoản dùng chung, mặc định "người học"), [Sửa] và [Đặt lại mật khẩu] trong chi tiết; editor
+  thấy menu và màn nhưng không có nút nào. Unit: `UserEdit.test.tsx`.
+- **App người học (`apps/web`):** `/app/complete-profile` hỏi ngày sinh (13+) và/hoặc ô đồng ý điều khoản, rồi về `?next`; `RequireSession` chuyển về đó trước cả màn chọn ngôn ngữ.
+- **Đã chạy thật** (API + worker + Postgres + Mailpit): tạo người học → thư → đăng nhập; `PATCH /v1/me` dưới 13 tuổi → 400 `age-below-minimum`, hợp lệ → 200; sửa email → thư báo
+  email cũ, người học vẫn đăng nhập; email trùng → 409; đặt lại mật khẩu → đăng nhập được với mật khẩu trong thư, `must_change_password` true; editor: GET 200, PATCH / POST 403.
+- **Chưa kiểm:** các hộp trên giao diện thật trong trình duyệt (chỉ có unit test); `pnpm smoke:*` và e2e `admin-e2e-real` chưa chạy cho thay đổi này.
+- **Chưa làm:** xóa người dùng (Bước 8).
+

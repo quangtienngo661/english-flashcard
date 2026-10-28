@@ -105,6 +105,45 @@ describe('staff HTTP schemas and wiring (unit, isolated persistence)', () => {
     expect(unlock).toHaveBeenCalledExactlyOnceWith(userId, target);
     expect(hit).toHaveBeenCalledTimes(3); expect(hit).toHaveBeenCalledWith('user.write', userId);
   });
+  it('AD18: editors may read users (list and detail) but every write is 403 before the service', async () => {
+    prisma.sessionChain.findUnique.mockResolvedValue({ userId, revokedAt: null, user: { staffRole: 'editor' } });
+    const staff = ctx.app.get(StaffService);
+    const create = vi.spyOn(staff, 'createAccount').mockClear();
+    const update = vi.spyOn(staff, 'updateUser').mockClear();
+    const reset = vi.spyOn(staff, 'resetPassword').mockClear();
+    const target = randomUUID();
+    expect((await ctx.http().get('/v1/admin/users').set(auth())).status).toBe(200);
+    expect((await ctx.http().get(`/v1/admin/users/${target}`).set(auth())).status).toBe(200);
+    expect((await ctx.http().get('/v1/admin/staff').set(auth())).status).toBe(403);
+    expect((await ctx.http().post('/v1/admin/users').set(auth()).send({ email: 'x@example.com', staff_role: null,
+      must_change_password: true, timezone: 'UTC' })).status).toBe(403);
+    expect((await ctx.http().patch(`/v1/admin/users/${target}`).set(auth()).send({ given_name: 'Mai' })).status).toBe(403);
+    expect((await ctx.http().post(`/v1/admin/users/${target}/password`).set(auth()).send({ must_change_password: true })).status)
+      .toBe(403);
+    expect(create).not.toHaveBeenCalled(); expect(update).not.toHaveBeenCalled(); expect(reset).not.toHaveBeenCalled();
+  });
+  it('AD18: create takes a null role; edit and reset pass actor, id and parsed body, are rate limited; bad bodies are 400', async () => {
+    const staff = ctx.app.get(StaffService);
+    const create = vi.spyOn(staff, 'createAccount').mockClear().mockResolvedValue({ id: userId } as never);
+    const update = vi.spyOn(staff, 'updateUser').mockClear().mockResolvedValue({ id: userId } as never);
+    const reset = vi.spyOn(staff, 'resetPassword').mockClear().mockResolvedValue({ id: userId } as never);
+    const target = randomUUID();
+    expect((await ctx.http().post('/v1/admin/users').set(auth()).send({ email: 'x@example.com', staff_role: null,
+      must_change_password: false, timezone: 'UTC' })).status).toBe(201);
+    expect(create.mock.calls[0][1]).toMatchObject({ staff_role: null });
+    const patched = await ctx.http().patch(`/v1/admin/users/${target}`).set(auth()).send({ given_name: '  Mai ', birth_date: '2000-01-01' });
+    expect(patched.status).toBe(200);
+    expect(update).toHaveBeenCalledWith(userId, target, { given_name: 'Mai', birth_date: '2000-01-01' }, expect.anything());
+    const posted = await ctx.http().post(`/v1/admin/users/${target}/password`).set(auth()).send({ must_change_password: true });
+    expect(posted.status).toBe(200);
+    expect(reset).toHaveBeenCalledWith(userId, target, { must_change_password: true }, expect.anything());
+    expect(hit).toHaveBeenCalledWith('user.write', userId);
+    for (const body of [{}, { staff_role: 'admin' }, { birth_date: '2000-13-40' }]) {
+      expect((await ctx.http().patch(`/v1/admin/users/${target}`).set(auth()).send(body)).status).toBe(400);
+    }
+    expect((await ctx.http().post(`/v1/admin/users/${target}/password`).set(auth()).send({})).status).toBe(400);
+    expect(update).toHaveBeenCalledOnce(); expect(reset).toHaveBeenCalledOnce();
+  });
   it('N4: a missing, blank, overlong or control-character reason, or a bad id, is 400 before the service', async () => {
     const staff = ctx.app.get(StaffService);
     const lock = vi.spyOn(staff, 'lockUser').mockClear().mockResolvedValue({} as never);

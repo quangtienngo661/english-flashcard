@@ -33,12 +33,17 @@ describe('listRoutes (unit, isolated persistence)', () => {
 
   it('B2#66: discovery finds staff routes, permission overrides, route aliases and undeclared admin routes', () => {
     const routes = listRoutes(ctx.app);
+    // AD18: list and detail moved to users.read (editors read users).
+    expect(routes.filter(({ permissions }) => permissions?.includes('users.read'))).toEqual([
+      { method: 'GET', path: '/v1/admin/users', permissions: ['users.read'] },
+      { method: 'GET', path: '/v1/admin/users/:id', permissions: ['users.read'] },
+    ]);
     expect(routes.filter(({ permissions }) => permissions?.includes('roles.manage'))).toEqual([
       { method: 'GET', path: '/v1/admin/staff', permissions: ['roles.manage'] },
-      { method: 'GET', path: '/v1/admin/users', permissions: ['roles.manage'] },
       { method: 'POST', path: '/v1/admin/users', permissions: ['roles.manage'] },
-      { method: 'GET', path: '/v1/admin/users/:id', permissions: ['roles.manage'] },
+      { method: 'PATCH', path: '/v1/admin/users/:id', permissions: ['roles.manage'] },
       { method: 'POST', path: '/v1/admin/users/:id/lock', permissions: ['roles.manage'] },
+      { method: 'POST', path: '/v1/admin/users/:id/password', permissions: ['roles.manage'] },
       { method: 'PUT', path: '/v1/admin/users/:id/staff-role', permissions: ['roles.manage'] },
       { method: 'POST', path: '/v1/admin/users/:id/unlock', permissions: ['roles.manage'] },
     ]);

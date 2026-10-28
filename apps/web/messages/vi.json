@@ -357,8 +357,7 @@
         "bodyNoEmail": "Nhập email bạn đã đăng ký và mã 6 số trong thư. Mã có hiệu lực 10 phút.",
         "loginBody": "Bạn cần xác nhận email trước khi vào app. Mã đã được gửi tới {email}.",
         "wrongCode": "Mã hoặc mật khẩu không đúng, hoặc mã đã hết hạn. Nếu email đã được xác nhận, hãy đăng nhập.",
-        "locked": "Bạn đã nhập sai mã quá nhiều lần. Thử lại sau {time}, hoặc dùng Quên mật khẩu ở trang đăng nhập.",
-        "otherEmail": "Gõ nhầm email? Đăng ký bằng email khác"
+        "locked": "Bạn đã nhập sai mã quá nhiều lần. Thử lại sau {time}, hoặc dùng Quên mật khẩu ở trang đăng nhập."
       },
       "forgot": {
         "title": "Quên mật khẩu",
@@ -372,6 +371,11 @@
         "newPassword": "Mật khẩu mới",
         "hint": "Đổi xong, mọi thiết bị khác sẽ bị đăng xuất.",
         "submit": "Đổi mật khẩu"
+      },
+      "complete": {
+        "title": "Bổ sung thông tin tài khoản",
+        "body": "Trước khi học tiếp, Wordmet cần ngày sinh của bạn và việc bạn đồng ý với điều khoản.",
+        "submit": "Tiếp tục"
       },
       "welcome": {
         "title": "Bạn đọc nghĩa của từ bằng ngôn ngữ nào?",

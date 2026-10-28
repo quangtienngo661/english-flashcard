@@ -12,15 +12,21 @@ import { AiModelsPage } from '../features/ai/AiModelsPage';
 import { AiOperationsPage } from '../features/ai/AiOperationsPage';
 import { AiPromptsPage } from '../features/ai/AiPromptsPage';
 import { AiStatusPage } from '../features/ai/AiStatusPage';
+import { GrantsPage } from '../features/entitlements/GrantsPage';
 import { ExportPage } from '../features/export/ExportPage';
+import { ReportReasonsPage } from '../features/reports/ReportReasonsPage';
+import { RefundsPage } from '../features/reports/RefundsPage';
+import { ReportsPage } from '../features/reports/ReportsPage';
 import { PublishJobsPage } from '../features/publish-jobs/PublishJobsPage';
 import { SenseDetail } from '../features/senses/SenseDetail';
 import { SensesPage } from '../features/senses/SensesPage';
 import { SettingsPage } from '../features/settings/SettingsPage';
 import { SourcesPage } from '../features/sources/SourcesPage';
 import { StaffPage } from '../features/staff/StaffPage';
+import { UsersPage } from '../features/users/UsersPage';
 import { TopicsPage } from '../features/topics/TopicsPage';
 import { TransactionsPage } from '../features/transactions/TransactionsPage';
+import { UnknownFormsPage } from '../features/unknown-forms/UnknownFormsPage';
 import { WordsPage } from '../features/words/WordsPage';
 import { homePath, NAV } from './nav';
 import { RequireSession } from './RequireSession';
@@ -57,6 +63,21 @@ export const appRoutes: RouteObject[] = createRoutesFromElements(
         </Route>
         <Route path="export" element={<ExportPage />} />
         <Route path="sources" element={<SourcesPage />}>
+          <Route path="new" element={null} />
+        </Route>
+        <Route path="reports" element={<ReportsPage />}>
+          <Route path=":id" element={null} />
+        </Route>
+        <Route path="report-reasons" element={<ReportReasonsPage />}>
+          <Route path="new" element={null} />
+          <Route path=":code" element={null} />
+        </Route>
+        <Route path="refunds" element={<RefundsPage />} />
+        <Route path="unknown-forms" element={<UnknownFormsPage />} />
+        <Route path="users" element={<UsersPage />}>
+          <Route path=":id" element={null} />
+        </Route>
+        <Route path="entitlements" element={<GrantsPage />}>
           <Route path="new" element={null} />
         </Route>
         <Route path="transactions" element={<TransactionsPage />} />
