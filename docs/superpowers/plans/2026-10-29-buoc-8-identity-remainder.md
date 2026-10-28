@@ -1,12 +1,12 @@
 # Bước 8 — Google sign-in and account deletion — Implementation Plan
 
 > **Status 29/10/2026:** written after the owner approved the design ("Duyệt, viết plan"); revised after the independent plan review
-> [`../reviews/2026-10-29-buoc-8-plan-review.md`](../reviews/2026-10-29-buoc-8-plan-review.md) (P1–P25, table "Plan review fixes" below). Two owner questions
-> (Q1 admin deletion of a renewing learner, Q2 timing of the real Google run) are open; the tasks they touch say so. Execution method is already chosen (D4b): parallel sessions, one branch and one PR per milestone, a coordinating session, Claude reviews each PR and
-> runs the real checks.
+> [`../reviews/2026-10-29-buoc-8-plan-review.md`](../reviews/2026-10-29-buoc-8-plan-review.md) (P1–P25, table "Plan review fixes" below). The two owner questions of that
+> review are answered: **D31** (admin deletion of a renewing learner: record the cancel locally once the provider accepted it) and **D32** (real Google sign-in twice: right after M3,
+> and at the end). **D33** replaces the parallel-sessions method of D4b: execution is sequential in one session, one branch per milestone chained on the previous one, commits stay local, push and PRs only when the owner says so.
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement
-> this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans (inline, one session, D33) to implement this plan task-by-task. Steps use checkbox
+> (`- [ ]`) syntax for tracking.
 
 **Goal:** Learners sign in with Google and delete their own account; admins delete accounts; unverified accounts are cleaned up; learners can cancel
 auto-renewal; every module erases or anonymises its own rows of a deleted user, and the API refuses locked, deleting and logged-out sessions on every request.
@@ -50,9 +50,14 @@ are from `9e35eb5`; read the code again on `origin/dev` when a task starts.
 - **Anonymous id:** one `randomUUID()` per deletion run, never stored next to the real id.
 - **Logs** never carry passwords, tokens, codes, emails (SR10); log user ids only.
 - **Copy:** every new screen string in vi and en, keys equal in both files (`apps/web/messages`, `apps/admin/messages`); vi text as quoted in the design.
-- **Branches:** one per milestone `feat/buoc-8-m<N>` from `origin/dev`; PR into `dev`; CI green; scan for secrets before every push. Order: M1 → (M2 ∥ M3 ∥ M4) →
-  M5 (after M2–M4) and M6 (after M1, M2) → M7. Merge M2 before M3 and M4; Task 21 (M3) needs Task 14 (M2) merged. Rebase on `dev` before opening each PR. Lines several
-  milestones share (rate-limit rules, mail templates, env keys) are added once in M1 (Task 5).
+- **Branches and order (D33):** sequential, one session. `feat/buoc-8-m1` from `origin/dev`; `m2` from `m1`; `m3` from `m2`; `m4` from `m3`; `m5` from `m4`; `m6` from `m5`; `m7` from `m6`
+  (nothing is merged into `dev` yet). Code branches carry no documents of the doc branch `docs/buoc-8-brainstorm` (its own PR). Order: M1 → M2 → M3 → **stop point D32 round 1** → M4 → M5 → M6 → M7;
+  M4 does not depend on Google, so it may run while the owner does round 1, but **M5 does not start before round 1 has a result**. Commits stay local; no push, no PR until the
+  owner says so. Then push each branch and open PRs into `dev` in order; a later PR merges only after the earlier one merged and CI is green (rebase on `dev` if needed). Before each commit
+  the session runs on the machine the steps of `.github/workflows/ci.yml` for the app touched: api = `db:setup` on a fresh DB, drift check
+  (`prisma migrate diff --from-config-datasource --to-schema prisma --exit-code --script`), lint, typecheck, build, test; web = lint, typecheck, test, `test:e2e`; admin = lint, typecheck,
+  test, `test:e2e`, plus `test:e2e:real` when admin or an API it uses is touched. Scan for secrets before every push. Lines several milestones share (rate-limit rules, mail templates,
+  env keys) are added once in M1 (Task 5).
 - **Tests:** API tests are unit tests with a fake Prisma (no DB in CI, D38). Behaviour that needs a real DB (cascades, the `entries_clear_form_kind` trigger, FK
   RESTRICT, `jsonb_set`, `ON CONFLICT`, advisory locks, races) is proven in `pnpm smoke:buoc-8` (Task 32); a unit test only proves which statements run and in which
   order.
@@ -84,12 +89,12 @@ code (web transport resends every 401, `session-store.ts:305-323`; `invalid-curr
 | P2 | 6, 10, 13, 16, 32 | Erasers take `checks: 'normal' \| 'skip'`; replay skips the renewing check |
 | P3 | 14, 26 | Wrong password at deletion → 400 `invalid-current-password`, never 401 |
 | P4 | 13, 15 | Cleanup rechecks its conditions under the lock (`'skipped'`) |
-| P5 | 14, 22 | Fake adapter applies `cancel_scheduled` before returning; the real-provider gap is **Q1** (open) |
+| P5 | 10, 14, 22 | Fake adapter applies `cancel_scheduled` before returning; the real-provider gap is closed by **D31** (record the cancel locally once the adapter accepted) |
 | P6 | 6, 12, 13 | `IdentitySettingsReader.transactionRetentionYears()` for the mail |
 | P7, P8 | Global Constraints, 19, 21 | `toLearnerApp` absolute redirects, `safeNext` by URL parsing, `signed_in` via `searchParams`, absolute `start_url` |
 | P9 | 22, 26, 27 | No snapshot change; the web uses `sources[]` |
 | P10 | Global Constraints, 1, 7, 9, 13, 15, 32 | Unit tests prove statements; DB-only behaviour and races proven in the smoke; smoke cases added |
-| P11 | 33 | Cross-site fake Google in the browser pass; timing of the real run is **Q2** (open) |
+| P11 | 33, stop point | Cross-site fake Google in the browser pass; real Google twice (**D32**: after M3 and at M7) |
 | P12 | Global Constraints, 5, 14, 17, 19 | Shared lines (limits, mail templates, env keys) in M1 Task 5; merge M2 first; `list-routes.spec.ts` in Task 14 |
 | P13 | 19 | Existing Google identity with another `sub` → `google-failed`, no 500 |
 | P14 | 12 | Boot test for the registry |
@@ -103,8 +108,8 @@ code (web transport resends every 401, `session-store.ts:305-323`; `invalid-curr
 | P24 | 19 | Four more callback tests |
 | P25 | 1, 5, 11, 13–17, 28 | CI drift command, file create/modify, parameter order, CLI unchanged, reuse `grace-cipher`, root `.env.example`, evidence lines |
 
-**Open (owner, rule D1):** **Q1** what an admin deletion of a learner with auto-renewal does between "the provider accepted the cancel" and "its `cancel_scheduled`
-arrived" (Task 14, 32); **Q2** when the owner runs real Google sign-in (Task 33). Both are in the review file with context and options.
+**Decided (owner, rule D1; decision record D31–D33):** **D31** (was Q1) after the provider accepted the cancel, Entitlements writes `cancel_at_period_end = true` itself and the admin
+deletion goes on at once (Task 10, 14, 22, 32); **D32** (was Q2) real Google sign-in runs twice, after M3 (stop point below) and at M7 (Task 33); **D33** sequential execution.
 
 ---
 
@@ -205,7 +210,7 @@ keeps 409 `email-taken` and adds the extension `reason: 'account-deleting'` (des
 
 ---
 
-## M2 — API account deletion (`feat/buoc-8-m2`, after M1)
+## M2 — API account deletion (`feat/buoc-8-m2`, from `feat/buoc-8-m1`)
 
 ### Task 6: Ports, registry and the "every column has an owner" test
 
@@ -283,11 +288,15 @@ senses (`ContentService.privateSenseIdsOf` from Task 7, read before Content eras
 - Precondition: `renewing(tx, userId)` = any `isAutoRenewing`; `turnOffRenewalForAdminDelete(userId)` reuses the `turnOffPaidRenewals` logic of
   `grants.service.ts:384-396` (extract a shared function), returns `'none'` when nothing renews.
 - Event applier: an event ignored as `unknown-user` is stored with `app_user_id = null`, `user_id = null`, `payload = '{}'`, `raw_payload = null` (plan review P22).
-- `turnOffRenewalForAdminDelete`: see Q1 (Task 14) for what happens after the adapter accepted.
+- `turnOffRenewalForAdminDelete(userId)` (D31): for each auto-renewing subscription call the adapter's `cancelAtPeriodEnd` **outside any lock**, within `BILLING_ADAPTER_TIMEOUT_MS`;
+  for each call that **returned successfully in time**, then under `entitlements.user:<id>` set `subscriptions.cancel_at_period_end = true` itself (log
+  `subscription_cancel_recorded_locally`, subscription id only) so the eraser's `renewing` check passes at once; the `cancel_scheduled` event arriving later finds the flag already set and changes
+  nothing. Timeout, error or an adapter without `cancelAtPeriodEnd` → `'not_supported'` (Task 14 answers 409 `renewal-not-cancelled`), and nothing is written for that subscription.
 
 - [ ] **Step 1: Failing tests:** each table above; a `grace` subscription makes `renewing` true; anonymised usage rows keep `(pool, operation_id)` unique for the anon
-  id; `checks: 'skip'` erases a renewing subscription; `turnOffRenewalForAdminDelete` → `'not_supported'` when the adapter has no `cancelAtPeriodEnd`; unknown-user
-  event stored with null ids and empty payloads.
+  id; `checks: 'skip'` erases a renewing subscription; `turnOffRenewalForAdminDelete` → `'not_supported'` when the adapter has no `cancelAtPeriodEnd`, times out or errors, and
+  then writes no flag (D31); adapter success in time → `cancel_at_period_end = true` written under the `entitlements.user` lock and `'turned_off'` returned, and the later `cancel_scheduled`
+  event changes nothing; unknown-user event stored with null ids and empty payloads.
 - [ ] **Step 2–4.** **Step 5: Commit** `feat(api): erase a deleted learner's plans and anonymise usage and transactions`.
 
 ### Task 11: AI eraser
@@ -355,14 +364,15 @@ transaction (CLI, smoke B6#24). Eraser `{ module: 'ai', erase: (tx, userId) => d
   `apps/web/src/app-shell/session/session-store.ts:305-323`; plan review P3); lockout active → the response password change gives today; no password → 403
   `reauth-required` (Task 21 adds the Google proof). Then `delete({ by: 'self', mode: 'normal', res })` → 204 / 202 `{ status: 'pending' }`.
 - `POST /v1/admin/users/:id/delete` body `{ confirm_email }`, `@RequirePermission('roles.manage')`, `user.write`. Before Tx A, if `precondition().renewing`, call
-  `turnOffRenewalForAdminDelete`; `'not_supported'` → 409 `renewal-not-cancelled`. What happens between "the adapter accepted" and "the provider's `cancel_scheduled`
-  arrived" is **open: Q1 of the plan review**. Until the owner answers, implement only the above and keep B8A4's 204 for a renewing learner out of the tests. Then
-  `delete({ by: 'admin', mode: 'normal', actorId, res })`.
+  `turnOffRenewalForAdminDelete`; `'not_supported'` → 409 `renewal-not-cancelled`, nothing deleted. **D31:** when the adapter accepted in time, Task 10 has already written
+  `cancel_at_period_end = true` itself, so `delete({ by: 'admin', mode: 'normal', actorId, res })` goes on at once and the route answers 204 without waiting for `cancel_scheduled`
+  (B8A4 holds for a renewing learner too).
 - `GET /v1/admin/users/:id` adds `auto_renewing: boolean` (through `registry.precondition().renewing(prisma, id)`) for the admin dialog (Task 29).
 
 - [ ] **Step 1: Failing tests:** Review Focus 3 (`" Lan@Gmail.com "` accepted, `lan@gmail.co` → mismatch); wrong password → 400 `invalid-current-password` and one
   failed-login count; 6th request in an hour → 429; editor → 403 on the admin route (B8E31); admin route on a `deleting` account reruns Tx B (B8E43);
-  `renewal-not-cancelled` leaves the account untouched (B8E47); `list-routes.spec.ts` lists the new `roles.manage` route.
+  `renewal-not-cancelled` leaves the account untouched (B8E47); a renewing learner whose adapter call succeeded → 204 in the same request, no 202 (D31); `list-routes.spec.ts` lists the new
+  `roles.manage` route.
 - [ ] **Step 2–4.** **Step 5: Commit** `feat(api): let learners and admins delete accounts`.
 
 ### Task 15: Deletion and retention jobs
@@ -403,7 +413,7 @@ that ended `'pending'`, so the operator runs it again (recorded in `deploy-check
 
 ---
 
-## M3 — API Google sign-in (`feat/buoc-8-m3`, after M1; Task 21 after Task 14)
+## M3 — API Google sign-in (`feat/buoc-8-m3`, from `feat/buoc-8-m2`)
 
 ### Task 17: Configuration and sealed cookies
 
@@ -495,7 +505,16 @@ locale=…&ticket=<sealed { userId }, 120 s>'` (Task 17); the callback with `int
 
 ---
 
-## M4 — API cancel auto-renewal (`feat/buoc-8-m4`, after M1)
+### Stop point D32, round 1 (after M3, before M5)
+
+The owner does design §5.1 (OAuth client "Web", `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` into `apps/api/.env`, `GOOGLE_REDIRECT_URI` = `http://localhost:3000/v1/auth/google/callback`,
+`OAUTH_COOKIE_KEY`) and opens `{API}/v1/auth/google/start?intent=login&locale=vi&next=/vi/app` in the browser. Checks: the `refresh_token` cookie is still there after Google sends the
+browser back; `/v1/auth/refresh` succeeds straight after; Google accepted PKCE S256 (the callback did not fail with `google-failed`). Failure → stop, tell the owner, apply the fallback of design §19
+(one-time code exchanged by `fetch`) to M3 before M5. M4 may run while waiting; M5 may not start.
+
+---
+
+## M4 — API cancel auto-renewal (`feat/buoc-8-m4`, from `feat/buoc-8-m3`)
 
 ### Task 22: Cancel endpoint and the fake provider event
 
@@ -506,7 +525,7 @@ locale=…&ticket=<sealed { userId }, 120 s>'` (Task 17); the callback with `int
 `POST /v1/me/subscriptions/:id/cancel` (`Idempotency-Key`, `user.write`): not the caller's or not `isAutoRenewing` → 409 `subscription-not-cancellable`; adapter
 without `cancelAtPeriodEnd` → 409 `cancel-in-store`; adapter timeout/error → 503; success → 202 `{ status: 'requested' }`. Fake adapter `cancelAtPeriodEnd` also stores **and applies** a `cancel_scheduled` event through the normal inbox and applier
 **before it returns**, so `subscriptions.cancel_at_period_end` is true when the call ends (deterministic for CI and the smoke; plan review P5). A real provider sends the
-event later; see Q1.
+event later; the learner route just answers 202 and the page refetches, while the admin deletion route records the flag itself once the adapter accepted (D31, Task 10).
 
 - [ ] **Step 1: Failing tests:** cancel a `grace` subscription (D28); second cancel after the flag → 409 (B8E36); adapter timeout → 503, flag unchanged (B8E37); fake
   applied exactly one `cancel_scheduled` before returning.
@@ -514,7 +533,7 @@ event later; see Q1.
 
 ---
 
-## M5 — Learner web (`feat/buoc-8-m5`, after M2–M4)
+## M5 — Learner web (`feat/buoc-8-m5`, from `feat/buoc-8-m4`, after the D32 round 1 result)
 
 ### Task 23: "Tiếp tục với Google" and the return
 
@@ -582,7 +601,7 @@ messages.
 
 ---
 
-## M6 — Admin (`feat/buoc-8-m6`, after M1, M2)
+## M6 — Admin (`feat/buoc-8-m6`, from `feat/buoc-8-m5`)
 
 ### Task 28: Google sessions, new error slugs, "Người dùng đã xóa"
 
@@ -628,7 +647,7 @@ tùy loại chứng từ".
 
 ---
 
-## M7 — Smoke, documents, real runs (`feat/buoc-8-m7`, last)
+## M7 — Smoke, documents, real runs (`feat/buoc-8-m7`, from `feat/buoc-8-m6`, last)
 
 ### Task 32: `pnpm smoke:buoc-8`
 
@@ -644,7 +663,8 @@ private words, **asserted under 120 s** (B8E49). Added after the plan review (P1
 `identity.staff_role` (like FE29, `scripts/smoke-buoc-0-3-fixes.mjs:277-310`) → one 409 `last-admin` (B8E40); a renewal re-enabled between Tx A and Tx B → `pending`,
 then done after cancel (B8E52); a confirmed report of the deleted learner keeps `refunded = false` (B8E27); re-registration gets a trial again (B8E28); Mailpit has the
 "đã xóa" mail and `deleted_accounts.by = 'admin'` for the admin case (B8A3, B8A4); extra users are inserted with psql (`sqlUsers` of the 0–3 fixes smoke) so the
-script stays under `auth.register.ip` (5 an hour). Cases that depend on Q1 (admin deleting a renewing learner) follow the owner's answer.
+script stays under `auth.register.ip` (5 an hour). D31 case: an admin deletes a learner who is auto-renewing on the fake provider → 204 in the same request, subscription rows gone,
+`cancel_at_period_end` was recorded locally before Tx B (log `subscription_cancel_recorded_locally`), and the "đã xóa" mail is in Mailpit.
 
 - [ ] **Step 1:** Write the script; **Step 2:** run twice, each on a fresh DB, output saved to `docs/deliveries/buoc-8-smoke-output.txt`; **Step 3: Commit**
   `test(api): add the bước 8 smoke`.
@@ -659,8 +679,7 @@ script stays under `auth.register.ip` (5 an hour). Cases that depend on Q1 (admi
   outside-DB list, log retention, mobile Google and Apple, real provider cancel).
 - [ ] **Step 3:** Run `smoke:buoc-0-3-fixes`, `smoke:buoc-4`, `smoke:buoc-5` (both fetchState modes), `smoke:buoc-6`, `smoke:buoc-7`, `smoke:buoc-8`; Claude's browser
   pass on the Docker stack with screenshots, with the fake Google page served from a cross-site host (`127.0.0.1` while the web runs on `localhost`) so the redirect
-  chain is cross-site like real Google (plan review P11); the owner's real Google sign-in (B8A8), result recorded. **When** the owner runs real Google is open (Q2 of
-  the plan review). Note the `ASSUMPTION`s of design §19 (cookie after the redirect,
-  PKCE with a Web client) as confirmed or not.
+  chain is cross-site like real Google (plan review P11); the owner's **second** real Google sign-in (B8A8, D32; the first was the stop point after M3), result recorded. Note the
+  `ASSUMPTION`s of design §19 (cookie after the redirect, PKCE with a Web client) as confirmed or not, with the result of round 1.
 - [ ] **Step 4:** `CLAUDE.md`: Bước 8 section (one line to `docs/deliveries/buoc-8.md`), phase line, `.env` variables; `buoc-8.md` as-built.
 - [ ] **Step 5: Commit** `docs(buoc-8): record the as-built, test flow and deploy items`.

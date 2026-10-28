@@ -5,8 +5,10 @@ Bước 8 = đăng nhập Google + xóa tài khoản (cộng dọn tài khoản 
 [`../superpowers/specs/2026-10-28-buoc-8-identity-remainder-design.md`](../superpowers/specs/2026-10-28-buoc-8-identity-remainder-design.md); quyết định D1–D30
 [`../superpowers/decisions/2026-10-28-buoc-8-identity-remainder-decisions.md`](../superpowers/decisions/2026-10-28-buoc-8-identity-remainder-decisions.md).
 
-Thứ tự: M1 → (M2, M3, M4 song song; merge M2 trước) → (M5, M6 song song) → M7. Plan đã sửa theo review plan 29/10/2026
-([`../superpowers/reviews/2026-10-29-buoc-8-plan-review.md`](../superpowers/reviews/2026-10-29-buoc-8-plan-review.md)). Mỗi mốc một nhánh `feat/buoc-8-m<N>`, một PR vào `dev`.
+Thứ tự (D33, 29/10/2026): **tuần tự** trong một phiên, M1 → M2 → M3 → **điểm dừng D32 lần 1** (chủ dự án đăng nhập Google thật) → M4 → M5 → M6 → M7. Plan đã sửa theo review plan 29/10/2026
+([`../superpowers/reviews/2026-10-29-buoc-8-plan-review.md`](../superpowers/reviews/2026-10-29-buoc-8-plan-review.md)) và D31–D33. Mỗi mốc một nhánh `feat/buoc-8-m<N>` tách từ nhánh
+trước (chưa merge gì vào `dev`); commit trên máy, push và PR vào `dev` (theo thứ tự) chỉ khi chủ dự án bảo. D31: admin xóa người đang tự gia hạn → app tắt gia hạn ở nhà cung cấp, ghi
+`cancel_at_period_end` tại chỗ, xóa ngay. D32: Google thật hai lần (sau M3 và ở cuối).
 
 **M1 — API nền**
 1. Thêm cột và bảng mới: trạng thái "đang xóa", ảnh đại diện, danh tính Google, cách đăng nhập của phiên, danh sách tài khoản đã xóa.
@@ -36,7 +38,7 @@ Thứ tự: M1 → (M2, M3, M4 song song; merge M2 trước) → (M5, M6 song so
 21. Xác nhận lại bằng Google trước khi xóa tài khoản chỉ có Google.
 
 **M4 — API hủy gói**
-22. Route hủy gia hạn; nhà cung cấp giả báo lại sự kiện hủy ngay (thông tin gói đã có sẵn ngày gia hạn).
+22. Route hủy gia hạn; nhà cung cấp giả báo lại sự kiện hủy ngay (thông tin gói đã có sẵn ngày gia hạn). (Phần tắt gia hạn khi admin xóa — D31 — nằm ở việc 10 và 14.)
 
 **M5 — Web người học**
 23. Nút "Tiếp tục với Google" và xử lý khi quay về.

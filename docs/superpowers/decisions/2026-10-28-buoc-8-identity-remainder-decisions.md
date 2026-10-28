@@ -43,6 +43,9 @@ lại và vòng chốt: [`../reviews/2026-10-28-buoc-8-qa-log.md`](../reviews/20
 | D28 | Gói `grace` / `on_hold` khi xóa (sau review) | Tính là "đang tự gia hạn": phải hủy gói trước | Chủ dự án |
 | D29 | Đăng xuất có hiệu lực ngay (sau review, tùy chọn) | Có: guard kiểm cả chuỗi phiên đã thu hồi | Chủ dự án |
 | D30 | Vết cấp gói của người bị xóa (sau review, tùy chọn) | Xóa theo ER16 | Chủ dự án |
+| D31 | Admin xóa người đang tự gia hạn, giữa lúc nhà cung cấp nhận lệnh tắt và lúc sự kiện `cancel_scheduled` về (sau review plan, Q1) | Nhà cung cấp trả thành công trong hạn → Wordmet tự ghi `cancel_at_period_end = true`, xóa ngay | Chủ dự án |
+| D32 | Lúc chạy Google thật (sau review plan, Q2) | Hai lần: sau M3 (trước M5) và lần cuối ở M7 cho B8A8 | Chủ dự án |
+| D33 | Cách thực thi (thay D4b, 29/10/2026) | Tuần tự trong một phiên, nhánh nối tiếp; commit local, push và PR sau khi chủ dự án bảo | Chủ dự án |
 
 ---
 
@@ -87,7 +90,7 @@ Thử Google thật cần chủ dự án tạo project và OAuth client "Web" tr
 | (c) Google thật làm việc riêng sau Bước 8 | Bước 8 xong sớm hơn; rủi ro dồn về sau |
 | ✅ Khác: "đăng nhập Google thật ngay đợt này luôn" | Luồng thật được kiểm trong đợt; chủ dự án phải tạo OAuth client trước khi chạy "Xong khi". CI vẫn dùng Google giả |
 
-4b: implement như các đợt trước (phiên song song + phiên điều phối, Claude tự review và chạy kiểm thật): **có**.
+4b: implement như các đợt trước (phiên song song + phiên điều phối, Claude tự review và chạy kiểm thật): **có**. *(29/10/2026: phần "phiên song song + phiên điều phối" được D33 thay bằng thực thi tuần tự trong một phiên.)*
 
 ## D5 — Nút Google ở trang admin (câu 5)
 
@@ -390,6 +393,52 @@ Chủ dự án trả lời "27b" (Claude hiểu là (b) ở cả hai câu nhỏ)
 |---|---|
 | ✅ (a) xóa theo ER16 | Đúng "xóa"; mất vết editor đã cấp gói cho người đó |
 | (b) giữ, thay mã người bằng mã ẩn danh | Còn vết cấp gói; thêm một bảng giữ lại |
+
+---
+
+Các quyết định D31–D33 đến từ review plan ([`../reviews/2026-10-29-buoc-8-plan-review.md`](../reviews/2026-10-29-buoc-8-plan-review.md), mục "Câu cần chủ dự án quyết", P5 và P11)
+và từ lệnh thực thi ngày 29/10/2026. D31, D32: chủ dự án trả lời trước, Claude đồng ý (luật D1). D33: do chủ dự án chọn; Claude không đề xuất.
+
+## D31 — Admin xóa người đang tự gia hạn (Q1 của review plan, P5)
+
+Design §7.1 (Đề xuất): app tắt gia hạn ở nhà cung cấp trước Tx A rồi mới xóa. Nhưng Wordmet chỉ biết gói đã tắt gia hạn khi nhà cung cấp gửi lại sự kiện `cancel_scheduled`,
+và bộ xóa Entitlements (B8E52) không cho xóa khi gói còn ghi "đang tự gia hạn". Ví dụ: Lan nhờ admin xóa qua thư; admin bấm lúc 10:00; nhà cung cấp nhận lệnh tắt nhưng tới
+10:03 mới gửi sự kiện. Hiện chỉ có nhà cung cấp giả; B8A4 đang ghi "như B8A3", tức 204.
+
+| Phương án | Trade-off |
+|---|---|
+| (a) chấp nhận: admin thấy "đang hoàn tất", Lan ở `deleting`, việc thử lại xóa xong 10 phút tới một giờ sau khi sự kiện về | Không thêm code; nếu sự kiện không bao giờ về thì kẹt, chỉ có log cảnh báo |
+| ✅ (b) khi nhà cung cấp đã nhận lệnh, Wordmet tự ghi `cancel_at_period_end = true` cho gói đó rồi xóa ngay (sự kiện về sau là lặp, không đổi gì) | Admin được 204 ngay; Wordmet ghi trạng thái trước khi nhà cung cấp xác nhận, nên cần điều kiện chặt (xem dưới) |
+| (c) chặn như người học: admin đợi sự kiện về rồi bấm lại | Không đổi trạng thái sớm; admin phải bấm hai lần, và không biết lúc nào sự kiện về |
+
+Chủ dự án chọn (b). Claude đồng ý và thêm điều kiện: chỉ tự ghi khi lời gọi bộ nối **trả về thành công trong thời hạn** `BILLING_ADAPTER_TIMEOUT_MS`; hết giờ, lỗi hoặc không hỗ trợ
+vẫn là 409 `renewal-not-cancelled` và không xóa gì; ghi dưới khóa `entitlements.user`, log `subscription_cancel_recorded_locally` (chỉ id); bộ nối giả vẫn phát `cancel_scheduled`
+và áp đồng bộ trước khi `cancelAtPeriodEnd` trả về (Task 22). Không đổi D11 cho người học tự xóa (vẫn phải tự hủy gói).
+
+## D32 — Lúc chạy Google thật (Q2 của review plan, P11)
+
+D4 chốt có đăng nhập Google thật trong "Xong khi"; plan cũ để nó ở Task 33, sau khi web người học (M5) đã làm xong. Hai giả định (trình duyệt giữ cookie phiên sau khi Google chuyển về;
+Google nhận PKCE với client "Web") chỉ biết được ở lần chạy thật; nếu sai thì phải sửa cả API (M3) lẫn web (M5).
+
+| Phương án | Trade-off |
+|---|---|
+| (a) làm sớm một lần: chủ dự án làm §5.1 và đăng nhập thử ngay sau M3, trước M5 (mở thẳng `/v1/auth/google/start` trên trình duyệt, chưa có nút) | Biết sớm giả định đúng hay sai; chủ dự án phải làm §5.1 sớm hơn |
+| (b) giữ ở cuối như plan (Task 33) | Không đổi lịch; nếu sai thì làm lại một phần M3, M5 |
+| ✅ (c) cả hai: một lần sớm, một lần cuối cho B8A8 | Rủi ro đến sớm và lần cuối kiểm đường người học thật; chủ dự án đăng nhập hai lần |
+
+Chủ dự án chọn (c); Claude đồng ý. Lần 1 kiểm: cookie `refresh_token` còn sau khi Google chuyển về, `/v1/auth/refresh` ngay sau đó thành công, Google nhận PKCE S256. Nếu lần 1 thất bại:
+dừng, báo chủ dự án, áp phương án dự phòng của design §19 vào M3 trước khi làm M5.
+
+## D33 — Cách thực thi (thay phần "phiên song song + phiên điều phối" của D4b)
+
+Lệnh ngày 29/10/2026 của chủ dự án: thực thi trong một phiên, không mở phiên song song; commit trên máy, chưa push, chưa mở PR cho tới khi chủ dự án bảo.
+
+| Phương án | Trade-off |
+|---|---|
+| (a) như D4b: phiên song song, một nhánh và một PR mỗi milestone, một phiên điều phối | Nhanh hơn khi M2, M3, M4 chạy cùng lúc; ba nhánh cùng sửa vài file chung (review plan P12) và cần điều phối |
+| ✅ (b) tuần tự trong một phiên: M1 → M2 → M3 → (điểm dừng D32) → M4 → M5 → M6 → M7, mỗi milestone một nhánh tách từ nhánh trước; PR về sau, theo thứ tự | Không xung đột file chung; chậm hơn; nhánh sau chứa nhánh trước nên PR sau chỉ merge khi PR trước đã merge |
+
+Chủ dự án chọn (b) trong lệnh thực thi. Hệ quả: nhánh code không chứa commit tài liệu (nhánh `docs/buoc-8-brainstorm` có PR riêng); CI chưa chạy nên phiên tự chạy đúng các bước của `ci.yml` trên máy trước mỗi commit milestone.
 
 ---
 

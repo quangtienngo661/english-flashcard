@@ -79,7 +79,7 @@ xóa (đợt giao diện người học), và nút hủy gói người học cò
 
 | # | Chốt |
 |---|---|
-| D2, D3, D4 | API + web người học + admin; một design, một plan; đăng nhập Google **thật** trong "Xong khi" (CI dùng Google giả); implement bằng phiên song song + phiên điều phối |
+| D2, D3, D4 | API + web người học + admin; một design, một plan; đăng nhập Google **thật** trong "Xong khi" (CI dùng Google giả); implement tuần tự trong một phiên (D33 thay "phiên song song + phiên điều phối" của D4b); Google thật chạy hai lần: sau M3 và ở cuối (D32) |
 | D5 | Nút Google chỉ ở web người học; phiên tạo bằng Google không dùng cho route admin |
 | D6 | Người mới bấm Google → màn "Bổ sung thông tin" sẵn có (+ ô tên khi Google không trả tên); tài khoản chỉ được tạo khi đã điền ngày sinh (từ 13 tuổi) và đồng ý |
 | D7 | Tên và link ảnh đại diện lấy **một lần** khi tạo tài khoản bằng Google |
@@ -300,7 +300,8 @@ Chỗ code hỏi lại nhà cung cấp khi gói quá hạn (`billing-jobs.servic
 
 Admin xóa người học đang có gói tự gia hạn (**Đề xuất**, khác D11 vốn chỉ nói người học tự xóa): app tắt gia hạn **trước** Tx A, ngoài mọi khóa, như khi cấp Pro
 (`grants.service.ts:384-396`); bộ nối trả lỗi, hết giờ hoặc không hỗ trợ (`not_supported`) → 409 `renewal-not-cancelled`, **không** xóa (người đó sẽ tiếp tục bị trừ tiền nếu
-xóa). Hộp xác nhận nói rõ. Lý do: admin xóa theo yêu cầu của người không vào được app, nên người đó không tự hủy gói được.
+xóa). Hộp xác nhận nói rõ. **Chốt D31 (29/10/2026):** khi bộ nối trả **thành công trong thời hạn** `BILLING_ADAPTER_TIMEOUT_MS`, Entitlements tự ghi `subscriptions.cancel_at_period_end = true`
+cho gói đó (dưới khóa `entitlements.user`, log `subscription_cancel_recorded_locally` chỉ mang id) rồi xóa ngay (204), không đợi `cancel_scheduled`; sự kiện đó tới sau là lặp, không đổi gì. Lý do: admin xóa theo yêu cầu của người không vào được app, nên người đó không tự hủy gói được.
 
 ### 7.2 Thứ tự (SR11, IR18, D23)
 
@@ -417,8 +418,9 @@ Việc định kỳ `billing.transactions-expire` (mỗi giờ như các việc 
 - Gọi `cancelAtPeriodEnd` của bộ nối (`billing-adapter.ts:40`), không giữ khóa khi gọi (R6 Bước 5), timeout như `turnOffPaidRenewals` (`grants.service.ts:384-396`). Bộ nối
   không hỗ trợ (sau này: gói mua qua App Store / Google Play) → 409 `cancel-in-store`.
 - Thành công → 202. `subscriptions.cancel_at_period_end` đổi khi nhà cung cấp báo lại sự kiện `cancel_scheduled` (`subscription-machine.ts:164-169`), như mọi thay đổi khác.
-- Bộ nối giả hiện chỉ ghi cờ ở bảng của nó (`fake-billing.adapter.ts:61-66`). Bước 8 cho nó phát thêm một sự kiện `cancel_scheduled` qua đường webhook giả, để luồng chạy
-  thử được từ đầu tới cuối.
+- Bộ nối giả hiện chỉ ghi cờ ở bảng của nó (`fake-billing.adapter.ts:61-66`). Bước 8 cho nó phát thêm một sự kiện `cancel_scheduled` qua đường webhook giả và áp nó
+  **đồng bộ trước khi** `cancelAtPeriodEnd` trả về, để CI và smoke tất định và luồng chạy thử được từ đầu tới cuối. Nhà cung cấp thật gửi sự kiện sau vài giây tới vài phút; riêng đường
+  admin xóa không đợi sự kiện đó (D31, §7.1).
 
 ### 8.2 Màn (trang Gói của người học)
 
@@ -613,7 +615,11 @@ Theo khuôn của `identity/mailer/templates.ts` (chữ thường, vi rồi en t
   đã đổi) và `smoke:buoc-7` để chắc không hỏng bước cũ.
 - **Test có sẵn bị ảnh hưởng** (review R13): `auth.guard.spec.ts` và 24 file controller spec dựng app với Prisma giả (thay `AccountStatusReader` bằng bản giả trong `createTestApp`,
   §6.1); `ai.service.spec.ts:93-107`.
-- **Google thật** (D4): chủ dự án làm §5.1; Claude chạy app trên máy, chủ dự án đăng nhập bằng Gmail của mình một lần (B8A8). Kết quả ghi vào `docs/deliveries/buoc-8.md`.
+- **Google thật** (D4, D32): chủ dự án làm §5.1; chủ dự án đăng nhập bằng Gmail của mình **hai lần**. Lần 1 ngay sau M3, trước M5: mở thẳng `{API}/v1/auth/google/start?intent=login&locale=vi&next=/vi/app`
+  trên trình duyệt, kiểm cookie `refresh_token` còn sau khi Google chuyển về, `/v1/auth/refresh` ngay sau đó thành công, Google nhận PKCE S256 (hai `ASSUMPTION` của §19). Thất bại → dừng và áp phương án dự phòng
+  của §19 vào M3 trước khi làm web. Lần 2 ở M7 cho B8A8. Kết quả cả hai lần ghi vào `docs/deliveries/buoc-8.md`.
+- **Thực thi (D33):** tuần tự trong một phiên, mỗi milestone một nhánh nối tiếp, commit local; phiên tự chạy trên máy đúng các bước của `ci.yml` cho app bị đụng tới trước mỗi commit. CI trên PR chạy khi mở PR sau.
+- **Trình duyệt:** trang Google giả chạy ở host khác site (`127.0.0.1` khi web chạy ở `localhost`) để chuỗi chuyển trang khác site như Google thật (review plan P11).
 - **Claude chạy thật** trên stack Docker: các luồng web và admin trong trình duyệt, chụp màn.
 
 ## 18. Ảnh hưởng tới các bước sau và việc trước ra mắt
@@ -632,7 +638,7 @@ Ghi vào `docs/deliveries/deploy-checklist.md`:
 ## 19. Rủi ro và việc còn mở
 
 - **Cookie qua chuyển trang từ Google** (`ASSUMPTION` ở §5.4): nếu trình duyệt không gửi `refresh_token` ngay sau callback, phương án dự phòng là callback đưa về web kèm
-  một mã dùng một lần (60 giây) để web đổi lấy phiên bằng `fetch`. Biết được ở lần chạy thật đầu tiên.
+  một mã dùng một lần (60 giây) để web đổi lấy phiên bằng `fetch`. Biết được ở lần chạy thật đầu tiên, **ngay sau M3 và trước khi làm web** (D32).
 - **Xóa trong một transaction**: người học rất nhiều dữ liệu làm request lâu. Đã có timeout riêng 120 giây và xóa hàng loạt (§7.2, §7.3); chưa đo (B8E49 đo ở smoke). Nếu vẫn
   quá: chuyển sang worker (D23 phương án b).
 - **PKCE với client Web có secret** (`ASSUMPTION`, §5.3) và **scheduler chạy ở cả hai process** (`CHƯA KIỂM`, §7.2): biết ở lần chạy thật.
