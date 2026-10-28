@@ -1,0 +1,20 @@
+# Keep the build context small and never ship host output, secrets or other checkouts into an image.
+.git
+.claude
+.github
+docs
+**/node_modules
+**/dist
+**/.next
+**/.open-next
+**/.wrangler
+**/.docker-out
+**/test-results
+**/playwright-report
+**/coverage
+**/*.log
+.env
+.env.*
+!.env.example
+**/*.pem
+**/*.key
