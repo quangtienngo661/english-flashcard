@@ -329,6 +329,31 @@ describe('AiPromptsPage [Chạy bộ ví dụ với bản này] (A/82 → A/83)'
     expect(screen.getByRole('link', { name: vi.ai.eval.fromPrompt.open })).toHaveAttribute('href', '/ai/eval/runs/r1?op=generate_cloze');
   });
 
+  it('an unsaved prompt, [Rời trang] to the run it started: the draft is kept, so coming back offers "Khôi phục"; any other leave still drops it', async () => {
+    const r = await openPage(runRoutes());
+    await retype('Unsaved draft text.');
+    await userEvent.click(evalButton());
+    await screen.findByText(vi.leave.title);
+    await userEvent.click(screen.getByRole('button', { name: vi.leave.leave }));
+    await waitFor(() => expect(r.router.state.location.pathname).toBe('/ai/eval/runs/r1'));
+    expect(JSON.parse(sessionStorage.getItem(DRAFT_KEY)!)).toMatchObject({ instructions: 'Unsaved draft text.' });
+
+    await act(async () => {
+      await r.router.navigate('/ai/prompts');
+    });
+    await screen.findByLabelText(t.instructions);
+    expect(instructions()).toHaveValue('Write one short sentence.');
+    expect(screen.getByText(vi.draft.message)).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: vi.draft.restore }));
+    expect(instructions()).toHaveValue('Unsaved draft text.');
+
+    // Not an exemption for the page: leaving by a menu link now still drops the draft.
+    await userEvent.click(screen.getAllByRole('link', { name: vi.nav.aiStatus })[0]);
+    await userEvent.click(await screen.findByRole('button', { name: vi.leave.leave }));
+    await waitFor(() => expect(r.router.state.location.pathname).toBe('/ai/status'));
+    expect(sessionStorage.getItem(DRAFT_KEY)).toBeNull();
+  });
+
   it('a network error, then an edit: [Thử lại] is gone and the next press sends the new text with a new key', async () => {
     let n = 0;
     const r = await openPage({
