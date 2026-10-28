@@ -396,6 +396,35 @@
       "examples": "Examples ({count}/100)",
       "examplesHint": "Up to 100 examples per operation. Test runs on the Prompt page and [Run example set] use these examples.",
       "add": "Add example",
+      "bulk": {
+        "add": "Bulk import",
+        "title": "Import many examples",
+        "hint": "One example per line, up to {max} per import. The first line names the columns: {fields}, and an optional note column. Pasting from a spreadsheet works too. A wrong line is skipped; the right lines are still imported.",
+        "filePrompt": "Drop a file here",
+        "fileHint": "CSV, TSV or JSON Lines, up to 2 MB",
+        "choose": "Choose file",
+        "change": "Choose another file",
+        "fileTooLarge": "The file is larger than 2 MB.",
+        "fileLoaded": "Its content is in the box below.",
+        "paste": "Or paste the content",
+        "readable": "{count} lines read",
+        "unreadable": "{count} lines could not be read",
+        "submit": "Import {count} examples",
+        "added": "{count} examples added.",
+        "skipped": "{count} lines skipped. Fix them and import those lines again:",
+        "line": "Line {line}",
+        "noRoom": "The example set has room for {room} more, you are importing {sent}.",
+        "problems": {
+          "empty": "There are no lines to import.",
+          "columns": "Unknown columns: {names}. Valid columns: {fields}.",
+          "tooMany": "{count} lines; at most {max} per import."
+        },
+        "reasons": {
+          "bad-json": "not valid JSON",
+          "not-object": "not a JSON object",
+          "columns": "more cells than columns"
+        }
+      },
       "empty": "This operation has no examples yet.",
       "emptyHint": "Add examples to test the prompt and run the example set.",
       "examplesFailed": "Could not read the example set.",
@@ -425,7 +454,7 @@
         "noteHint": "Optional, up to 500 characters.",
         "submitAdd": "Add example",
         "submitSave": "Save",
-        "tooMany": "Each operation can have at most 100 examples."
+        "tooMany": "Each operation can have at most 1,000 examples."
       },
       "run": {
         "title": "Run example set",

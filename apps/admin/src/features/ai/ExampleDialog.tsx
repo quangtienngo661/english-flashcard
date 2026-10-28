@@ -18,7 +18,7 @@ import { fieldText, fieldValue } from './prompt-form';
 /** The API's limit (`ai.constants.ts` EVAL_NOTE_MAX). */
 const NOTE_MAX = 500;
 const NOTE_FIELD = 'example-note';
-const TOO_MANY = 'operation: at most 100 examples';
+const TOO_MANY = 'operation: at most 1000 examples';
 const inputId = (field: string) => `example-input-${field}`;
 
 type Props = {
@@ -32,7 +32,7 @@ type Props = {
 
 /**
  * A/83 add / edit an example: a box per input field of the operation (empty → null, a JSON list or object as that value), plus a note.
- * Mounted only while open, so a closed dialog keeps nothing. The 101st example of an operation is refused by the API (design §6.5).
+ * Mounted only while open, so a closed dialog keeps nothing. The 1001st example of an operation is refused by the API (design §6.5).
  */
 export function ExampleDialog({ op, inputFields, example, onClose }: Props) {
   const t = useTranslations();

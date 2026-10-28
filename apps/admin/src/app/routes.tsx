@@ -92,6 +92,7 @@ export const appRoutes: RouteObject[] = createRoutesFromElements(
         <Route path="ai/prompts" element={<AiPromptsPage />} />
         <Route path="ai/eval" element={<AiEvalPage />}>
           <Route path="new" element={null} />
+          <Route path="bulk" element={null} />
           <Route path="runs/:id" element={null} />
         </Route>
         <Route path="ai/costs" element={<AiCostsPage />} />
