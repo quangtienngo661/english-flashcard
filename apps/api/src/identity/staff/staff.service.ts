@@ -1,7 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
 import type { Response } from 'express';
-import { dateString } from '../../common/time/local-date.js';
+import { dateString, dateValue, localDate } from '../../common/time/local-date.js';
 import { Clock } from '../../common/clock/clock.js';
 import { APP_CONFIG, type AppConfig } from '../../common/config/app-config.js';
 import { PRISMA_CLIENT } from '../../common/db/prisma.module.js';
@@ -15,12 +15,13 @@ import { checkPasswordPolicy } from '../auth/password-policy.js';
 import type { StaffRole } from '../identity.types.js';
 import { MailBudget } from '../../common/mail/mail-budget.service.js';
 import { MailDispatcher, sendPrepared } from '../../common/mail/mail-dispatcher.service.js';
-import { staffAccountMail } from '../mailer/templates.js';
+import { adminPasswordResetMail, emailChangedNoticeMail, learnerAccountMail, staffAccountMail } from '../mailer/templates.js';
+import { isOldEnough, MIN_AGE } from '../profile/person.js';
 import { canonicalTimeZone } from '../profile/timezone.js';
 import { SessionService } from '../sessions/session.service.js';
 import { withUserLock } from '../user-lock.js';
 import { generatePassword } from './password-generator.js';
-import { idParam, type CreateAccountBody } from './staff.schemas.js';
+import { idParam, type CreateAccountBody, type ResetPasswordBody, type UpdateUserBody } from './staff.schemas.js';
 
 export type StaffUserView = {
   id: string; email: string; email_verified: boolean; staff_role: StaffRole | null;
@@ -32,6 +33,8 @@ export type AdminUserRow = {
 };
 export type AdminUserDetail = AdminUserRow & {
   birth_date: string | null; terms_accepted_at: string | null; terms_version: string | null; locked_at: string | null;
+  /** AD18: shown and edited on the admin's user detail. */
+  timezone: string;
   locked_by: { id: string; email: string | null } | null; lock_reason: string | null;
 };
 /** Microsecond UTC text of created_at: the cursor must not lose the digits a JS Date cannot hold. */
@@ -42,7 +45,7 @@ type AdminListRow = {
 };
 const adminDetailSelect = {
   id: true, email: true, givenName: true, familyName: true, emailVerifiedAt: true, staffRole: true, status: true,
-  createdAt: true, lastSeenAt: true, birthDate: true, termsAcceptedAt: true, termsVersion: true, lockedAt: true,
+  createdAt: true, lastSeenAt: true, birthDate: true, termsAcceptedAt: true, termsVersion: true, lockedAt: true, timezone: true,
   lockedBy: true, lockReason: true,
 } satisfies Prisma.UserSelect;
 function toAdminRow(row: Omit<AdminListRow, 'cursor_at'>): AdminUserRow {
@@ -77,6 +80,17 @@ function lockRule(): ProblemDetailsException {
 }
 export function staffUserNotFound(): ProblemDetailsException {
   return new ProblemDetailsException({ status: 404, title: 'Not found', type: 'not-found' });
+}
+
+/** Sign-up rule (design Bước 0–3 fixes §8.1): not after today, at least 13. */
+function assertBirthDate(birthDate: string, today: string): void {
+  if (birthDate > today) {
+    throw new ProblemDetailsException({ status: 400, title: 'Validation failed', type: 'validation-failed',
+      extensions: { violations: ['birth_date'] } });
+  }
+  if (!isOldEnough(birthDate, today, MIN_AGE)) {
+    throw new ProblemDetailsException({ status: 400, title: 'Age below minimum', type: 'age-below-minimum' });
+  }
 }
 
 @Injectable()
@@ -125,11 +139,77 @@ export class StaffService {
       }
       throw error;
     }
-    this.dispatcher.afterResponse(res, [sendPrepared(
-      staffAccountMail(email, password, this.config.adminAppUrl, body.must_change_password))]);
+    this.dispatcher.afterResponse(res, [sendPrepared(body.staff_role === null
+      ? learnerAccountMail(email, password, this.config.learnerAppUrl, body.must_change_password)
+      : staffAccountMail(email, password, this.config.adminAppUrl, body.must_change_password))]);
     this.logger.info('staff_account_created', { actor_id: actorId, target_id: userId,
       staff_role: body.staff_role, must_change: body.must_change_password });
     return toView(row);
+  }
+
+  /**
+   * AD18: the admin edits names, birth date, timezone and email. A new email counts as verified (as on create) and the old
+   * address gets a notice; sessions stay. Birth date follows the sign-up rule in the user's (new) zone.
+   */
+  async updateUser(actorId: string, targetId: string, body: UpdateUserBody, res: Response): Promise<AdminUserDetail> {
+    const timezone = body.timezone === undefined ? undefined : canonicalTimeZone(body.timezone);
+    const email = body.email === undefined ? undefined : normalizeEmail(body.email);
+    if (timezone === null || email === null) throw invalidInput();
+    const notice = await this.prisma.$transaction(async (tx) => {
+      await withUserLock(tx, targetId);
+      const target = await tx.user.findUnique({ where: { id: targetId }, select: { email: true, timezone: true } });
+      if (!target) throw staffUserNotFound();
+      if (body.birth_date !== undefined) assertBirthDate(body.birth_date, localDate(timezone ?? target.timezone, this.clock.now()));
+      const emailChanged = email !== undefined && email !== target.email;
+      if (emailChanged) await this.budget.assertAvailable();
+      try {
+        await tx.user.update({ where: { id: targetId }, data: {
+          ...(body.given_name !== undefined ? { givenName: body.given_name } : {}),
+          ...(body.family_name !== undefined ? { familyName: body.family_name } : {}),
+          ...(body.birth_date !== undefined ? { birthDate: dateValue(body.birth_date) } : {}),
+          ...(timezone !== undefined ? { timezone } : {}),
+          ...(emailChanged ? { email, emailVerifiedAt: this.clock.now() } : {}),
+        }, select: { id: true } });
+      } catch (error) {
+        if (error !== null && typeof error === 'object' && 'code' in error && error.code === 'P2002') {
+          throw new ProblemDetailsException({ status: 409, title: 'Email taken', type: 'email-taken' });
+        }
+        throw error;
+      }
+      return emailChanged ? emailChangedNoticeMail(target.email, email!) : null;
+    }, transactionOptions);
+    if (notice) this.dispatcher.afterResponse(res, [sendPrepared(notice)]);
+    // Values may be personal data: field names only.
+    this.logger.info('account_updated', { actor_id: actorId, target_id: targetId,
+      fields: Object.keys(body).filter((key) => key !== 'email' || notice !== null) });
+    return this.getUserDetail(targetId);
+  }
+
+  /** AD18: typed or generated; the password leaves only through the mail. Every session is revoked. */
+  async resetPassword(actorId: string, targetId: string, body: ResetPasswordBody, res: Response): Promise<AdminUserDetail> {
+    if (body.password !== undefined) {
+      const violations = checkPasswordPolicy(body.password);
+      if (violations.length > 0) throw new ProblemDetailsException({ status: 400, title: 'Validation failed',
+        type: 'validation-failed', extensions: { violations } });
+    }
+    await this.budget.assertAvailable();
+    const password = body.password ?? generatePassword();
+    const hash = await this.hasher.hash(password);
+    const mail = await this.prisma.$transaction(async (tx) => {
+      await withUserLock(tx, targetId);
+      const target = await tx.user.findUnique({ where: { id: targetId }, select: { email: true, staffRole: true } });
+      if (!target) throw staffUserNotFound();
+      const now = this.clock.now();
+      await tx.passwordCredential.upsert({ where: { userId: targetId }, update: { hash, updatedAt: now },
+        create: { userId: targetId, hash, updatedAt: now } });
+      await tx.user.update({ where: { id: targetId }, data: { mustChangePassword: body.must_change_password }, select: { id: true } });
+      await this.sessions.revokeAllForUser(tx, targetId, 'admin_password_reset');
+      const url = target.staffRole === null ? this.config.learnerAppUrl : this.config.adminAppUrl;
+      return adminPasswordResetMail(target.email, password, url, body.must_change_password);
+    }, transactionOptions);
+    this.dispatcher.afterResponse(res, [sendPrepared(mail)]);
+    this.logger.info('account_password_reset', { actor_id: actorId, target_id: targetId, must_change: body.must_change_password });
+    return this.getUserDetail(targetId);
   }
 
   async findByEmail(email: string): Promise<StaffUserView | null> {
@@ -181,7 +261,7 @@ export class StaffService {
         email_verified_at: row.emailVerifiedAt, staff_role: row.staffRole, status: row.status,
         created_at: row.createdAt, last_seen_at: row.lastSeenAt }),
       birth_date: row.birthDate === null ? null : dateString(row.birthDate),
-      terms_accepted_at: row.termsAcceptedAt?.toISOString() ?? null, terms_version: row.termsVersion,
+      terms_accepted_at: row.termsAcceptedAt?.toISOString() ?? null, terms_version: row.termsVersion, timezone: row.timezone,
       locked_at: row.lockedAt?.toISOString() ?? null,
       locked_by: row.lockedBy === null ? null : { id: row.lockedBy, email: locker?.email ?? null },
       lock_reason: row.lockReason,

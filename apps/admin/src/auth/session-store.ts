@@ -9,7 +9,8 @@ export type Permission =
   | 'content.import'
   | 'taxonomy.manage'
   | 'settings.manage'
-  | 'entitlements.grant';
+  | 'entitlements.grant'
+  | 'users.read';
 
 export type Me = {
   id: string;

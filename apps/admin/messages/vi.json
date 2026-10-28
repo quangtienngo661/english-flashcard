@@ -712,6 +712,27 @@
     }
   },
   "users": {
+    "create": "Tạo người dùng",
+    "edit": {
+      "title": "Sửa {email}",
+      "emailHint": "Email mới được tính là đã xác minh; email cũ nhận thư báo.",
+      "emailInvalid": "Nhập email hợp lệ",
+      "emailTaken": "Email này đã có tài khoản khác.",
+      "nameInvalid": "Từ 1 đến 50 ký tự.",
+      "tooYoung": "Người dùng phải từ 13 tuổi.",
+      "timezone": "Múi giờ",
+      "timezoneHint": "Tên múi giờ IANA, ví dụ Asia/Ho_Chi_Minh.",
+      "timezoneInvalid": "Nhập múi giờ",
+      "save": "Lưu",
+      "saved": "Đã lưu {email}."
+    },
+    "reset": {
+      "title": "Đặt lại mật khẩu cho {email}",
+      "body": "Mật khẩu mới được gửi qua email. Người dùng bị đăng xuất khỏi mọi thiết bị.",
+      "mustChange": "Bắt đổi mật khẩu ở lần đăng nhập tới",
+      "confirm": "Đặt lại mật khẩu",
+      "done": "Đã đặt lại mật khẩu cho {email}."
+    },
     "search": "Tìm theo email, họ hoặc tên (từ 2 ký tự)",
     "searchHint": "Không phân biệt hoa thường; có phân biệt dấu.",
     "searchShort": "Gõ từ 2 ký tự",
@@ -741,7 +762,9 @@
       "lock": "Khóa tài khoản",
       "unlock": "Mở khóa",
       "unlocked": "Đã mở khóa {email}.",
-      "locked": "Đã khóa {email}."
+      "locked": "Đã khóa {email}.",
+      "edit": "Sửa",
+      "resetPassword": "Đặt lại mật khẩu"
     },
     "lock": {
       "title": "Khóa tài khoản {email}?",
@@ -814,7 +837,9 @@
       "doneBody": "Đã tạo tài khoản và gửi mật khẩu tới {email}. Nếu editor không nhận được thư, họ dùng “Quên mật khẩu” ở trang đăng nhập.",
       "close": "Đóng",
       "emailTaken": "Email này đã có tài khoản. Dùng “Tìm theo email” ở trên rồi cấp vai trò.",
-      "mailUnavailable": "Hiện chưa gửi được email nên chưa tạo tài khoản. Vui lòng thử lại sau ít phút."
+      "mailUnavailable": "Hiện chưa gửi được email nên chưa tạo tài khoản. Vui lòng thử lại sau ít phút.",
+      "emailTakenUser": "Email này đã có tài khoản.",
+      "doneBodyLearner": "Đã tạo tài khoản và gửi mật khẩu tới {email}. Lần đầu đăng nhập, người học sẽ được hỏi ngày sinh và đồng ý điều khoản."
     }
   },
   "navGroups": {

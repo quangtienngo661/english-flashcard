@@ -373,6 +373,11 @@
         "hint": "Đổi xong, mọi thiết bị khác sẽ bị đăng xuất.",
         "submit": "Đổi mật khẩu"
       },
+      "complete": {
+        "title": "Bổ sung thông tin tài khoản",
+        "body": "Trước khi học tiếp, Wordmet cần ngày sinh của bạn và việc bạn đồng ý với điều khoản.",
+        "submit": "Tiếp tục"
+      },
       "welcome": {
         "title": "Bạn đọc nghĩa của từ bằng ngôn ngữ nào?",
         "body": "Giao diện cũng dùng ngôn ngữ này. Đổi lại được trong Cài đặt.",

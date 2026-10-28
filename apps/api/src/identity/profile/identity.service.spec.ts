@@ -12,7 +12,7 @@ describe('IdentityService (unit, isolated persistence)', () => {
   const row = {
     id: 'user', email: 'a@example.com', emailVerifiedAt: null as Date | null,
     nativeLanguage: null as string | null, timezone: 'Asia/Ho_Chi_Minh', staffRole: null as string | null,
-    givenName: null as string | null, familyName: null as string | null, birthDate: null as Date | null,
+    givenName: null as string | null, familyName: null as string | null, birthDate: null as Date | null, termsAcceptedAt: null as Date | null,
   };
   let identity: IdentityService;
   beforeEach(() => {
@@ -45,10 +45,10 @@ describe('IdentityService (unit, isolated persistence)', () => {
     prisma.user.findUnique.mockResolvedValue({ ...row, staffRole });
     expect(await identity.getProfile(row.id)).toEqual({
       id: row.id, email: row.email, email_verified: false, native_language: null,
-      timezone: row.timezone, staff_role: staffRole, given_name: null, family_name: null, birth_date: null,
+      timezone: row.timezone, staff_role: staffRole, given_name: null, family_name: null, birth_date: null, terms_accepted_at: null,
       permissions: staffRole === null ? [] : [
         ...(staffRole === 'admin' ? ['roles.manage'] : []), 'content.edit', 'content.publish', 'content.import', 'taxonomy.manage',
-        ...(staffRole === 'admin' ? ['settings.manage'] : []), 'entitlements.grant',
+        ...(staffRole === 'admin' ? ['settings.manage'] : []), 'entitlements.grant', 'users.read',
       ],
     });
     expect(prisma.user.findUnique.mock.calls[0][0].where).toEqual({ id: row.id });
@@ -76,7 +76,7 @@ describe('IdentityService (unit, isolated persistence)', () => {
   it('B1#24/C2: update stores and returns the canonical spelling of the timezone, not the one sent', async () => {
     const profile = await identity.updateProfile(row.id, { native_language: 'vi', timezone: 'asia/ho_chi_minh' });
     expect(profile).toEqual({ id: row.id, email: row.email, email_verified: false, native_language: 'vi',
-      timezone: 'Asia/Saigon', staff_role: null, permissions: [], given_name: null, family_name: null, birth_date: null });
+      timezone: 'Asia/Saigon', staff_role: null, permissions: [], given_name: null, family_name: null, birth_date: null, terms_accepted_at: null });
     expect(prisma.user.update.mock.calls[0][0]).toMatchObject({ where: { id: row.id },
       data: { nativeLanguage: 'vi', timezone: 'Asia/Saigon' } });
   });

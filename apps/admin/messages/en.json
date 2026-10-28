@@ -712,6 +712,27 @@
     }
   },
   "users": {
+    "create": "Create user",
+    "edit": {
+      "title": "Edit {email}",
+      "emailHint": "A new email counts as verified; the old address gets a notice.",
+      "emailInvalid": "Enter a valid email",
+      "emailTaken": "Another account already uses this email.",
+      "nameInvalid": "1 to 50 characters.",
+      "tooYoung": "The user must be at least 13.",
+      "timezone": "Time zone",
+      "timezoneHint": "An IANA zone name, e.g. Asia/Ho_Chi_Minh.",
+      "timezoneInvalid": "Enter a time zone",
+      "save": "Save",
+      "saved": "Saved {email}."
+    },
+    "reset": {
+      "title": "Reset the password of {email}",
+      "body": "The new password is sent by email. The user is signed out everywhere.",
+      "mustChange": "Ask for a new password at the next sign-in",
+      "confirm": "Reset password",
+      "done": "Password reset for {email}."
+    },
     "search": "Search by email, family or given name (2+ characters)",
     "searchHint": "Not case-sensitive; accents matter.",
     "searchShort": "Type at least 2 characters",
@@ -741,7 +762,9 @@
       "lock": "Lock account",
       "unlock": "Unlock",
       "unlocked": "Unlocked {email}.",
-      "locked": "Locked {email}."
+      "locked": "Locked {email}.",
+      "edit": "Edit",
+      "resetPassword": "Reset password"
     },
     "lock": {
       "title": "Lock the account of {email}?",
@@ -814,7 +837,9 @@
       "doneBody": "The account was created and the password sent to {email}. If the editor does not get the mail, they can use “Forgot password” on the login page.",
       "close": "Close",
       "emailTaken": "This email already has an account. Use “Find by email” above and grant a role.",
-      "mailUnavailable": "The email cannot be sent right now, so no account was created. Please try again in a few minutes."
+      "mailUnavailable": "The email cannot be sent right now, so no account was created. Please try again in a few minutes.",
+      "emailTakenUser": "This email already has an account.",
+      "doneBodyLearner": "The account was created and the password was sent to {email}. On first sign-in the learner is asked for a birth date and to accept the terms."
     }
   },
   "navGroups": {

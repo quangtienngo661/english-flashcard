@@ -14,7 +14,7 @@ function profile(overrides: Partial<Profile> = {}): Profile {
   return {
     id: USER, email: 'lan@example.test', email_verified: true, native_language: 'vi', timezone: 'Asia/Ho_Chi_Minh',
     staff_role: null, permissions: [], must_change_password: false,
-    given_name: null, family_name: null, birth_date: null, ...overrides,
+    given_name: null, family_name: null, birth_date: null, terms_accepted_at: null, ...overrides,
   };
 }
 

@@ -27,6 +27,8 @@ export type AdminUserDetail = AdminUser & {
   locked_at: string | null;
   locked_by: UserRef | null;
   lock_reason: string | null;
+  /** AD18. */
+  timezone: string;
 };
 
 export type UserFilters = { q: string; status: string };
@@ -64,6 +66,18 @@ export function lockUser(api: ApiClient, id: string, reason: string): Promise<Ad
 
 export function unlockUser(api: ApiClient, id: string): Promise<AdminUserDetail> {
   return api.post(`/v1/admin/users/${id}/unlock`);
+}
+
+/** AD18: what the admin may change; every key optional, at least one sent. */
+export type UserChanges = Partial<{ email: string; given_name: string; family_name: string | null; birth_date: string; timezone: string }>;
+
+export function updateUser(api: ApiClient, id: string, changes: UserChanges): Promise<AdminUserDetail> {
+  return api.patch(`/v1/admin/users/${id}`, changes);
+}
+
+/** AD18: no `password` key means the API generates one; it reaches the user only by mail. Every session is signed out. */
+export function resetUserPassword(api: ApiClient, id: string, body: { password?: string; must_change_password: boolean }): Promise<AdminUserDetail> {
+  return api.post(`/v1/admin/users/${id}/password`, body);
 }
 
 export const STATUS_TONE: Record<UserStatus, 'success' | 'danger'> = { active: 'success', locked: 'danger' };

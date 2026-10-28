@@ -79,8 +79,8 @@ export async function mockApi(page: Page, handlers: Record<string, MockHandler>)
 }
 
 export const PERMISSIONS = {
-  editor: ['content.edit', 'content.import', 'content.publish', 'taxonomy.manage', 'entitlements.grant'],
-  admin: ['content.edit', 'content.import', 'content.publish', 'taxonomy.manage', 'roles.manage', 'settings.manage', 'entitlements.grant'],
+  editor: ['content.edit', 'content.import', 'content.publish', 'taxonomy.manage', 'entitlements.grant', 'users.read'],
+  admin: ['content.edit', 'content.import', 'content.publish', 'taxonomy.manage', 'roles.manage', 'settings.manage', 'entitlements.grant', 'users.read'],
 } as const;
 
 export function meBody(role: 'admin' | 'editor', over: Record<string, unknown> = {}) {

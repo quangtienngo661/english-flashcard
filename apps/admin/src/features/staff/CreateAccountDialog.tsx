@@ -18,16 +18,18 @@ import { createStaffAccount, type StaffRole } from './staff-api';
 const RATE_LIMIT_FALLBACK_SECONDS = 10;
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-type Props = { onClose: () => void; onCreated: () => void };
+/** AD18: from the Users screen the dialog also makes learners (`staff_role: null`), its default there. */
+type Props = { onClose: () => void; onCreated: () => void; allowLearner?: boolean };
+type Role = StaffRole | 'learner';
 
 /** Admin creates a staff account (spec §6.2): form → confirmation repeating the email → "created". Never shows a password. */
-export function CreateAccountDialog({ onClose, onCreated }: Props) {
+export function CreateAccountDialog({ onClose, onCreated, allowLearner = false }: Props) {
   const t = useTranslations();
   const api = useApi();
   const errorDetails = useErrorDetails();
   const [step, setStep] = useState<'form' | 'confirm' | 'done'>('form');
   const [email, setEmail] = useState('');
-  const [role, setRole] = useState<StaffRole>('editor');
+  const [role, setRole] = useState<Role>(allowLearner ? 'learner' : 'editor');
   const [generate, setGenerate] = useState(true);
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -41,7 +43,7 @@ export function CreateAccountDialog({ onClose, onCreated }: Props) {
     mutationFn: () =>
       createStaffAccount(api, {
         email: email.trim(),
-        staff_role: role,
+        staff_role: role === 'learner' ? null : role,
         ...(generate ? {} : { password }),
         must_change_password: mustChange,
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
@@ -74,7 +76,7 @@ export function CreateAccountDialog({ onClose, onCreated }: Props) {
         return;
       }
       setStep('form');
-      if (e instanceof ApiError && e.problem.slug === 'email-taken') setEmailError(t('staff.create.emailTaken'));
+      if (e instanceof ApiError && e.problem.slug === 'email-taken') setEmailError(t(allowLearner ? 'staff.create.emailTakenUser' : 'staff.create.emailTaken'));
       else setBanner(errorDetails(e));
     } finally {
       busy.current = false;
@@ -89,7 +91,7 @@ export function CreateAccountDialog({ onClose, onCreated }: Props) {
         title={t('staff.create.doneTitle')}
         actions={<Button onPress={onClose}>{t('staff.create.close')}</Button>}
       >
-        <p className="break-words text-ui text-muted">{t('staff.create.doneBody', { email: email.trim() })}</p>
+        <p className="break-words text-ui text-muted">{t(role === 'learner' ? 'staff.create.doneBodyLearner' : 'staff.create.doneBody', { email: email.trim() })}</p>
       </Dialog>
     );
   }
@@ -113,7 +115,7 @@ export function CreateAccountDialog({ onClose, onCreated }: Props) {
         }
       >
         <p className="break-words text-ui text-muted">
-          {t('staff.create.confirmBody', { role, email: email.trim() })}
+          {t('staff.create.confirmBody', { role: role === 'learner' ? t('users.roles.learner') : role, email: email.trim() })}
           {mustChange ? ` ${t('staff.create.confirmMustChange')}` : ''}
         </p>
       </Dialog>
@@ -151,8 +153,9 @@ export function CreateAccountDialog({ onClose, onCreated }: Props) {
       <Select
         label={t('staff.create.role')}
         value={role}
-        onChange={(id) => setRole(id as StaffRole)}
+        onChange={(id) => setRole(id as Role)}
         items={[
+          ...(allowLearner ? [{ id: 'learner', label: t('users.roles.learner') }] : []),
           { id: 'editor', label: 'editor' },
           { id: 'admin', label: 'admin' },
         ]}

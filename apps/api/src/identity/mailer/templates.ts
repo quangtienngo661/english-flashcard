@@ -39,6 +39,37 @@ export function staffAccountMail(to: string, password: string, adminAppUrl: stri
   };
 }
 
+/** AD18: a learner created by an admin; the link is the learner app. */
+export function learnerAccountMail(to: string, password: string, learnerAppUrl: string, mustChange: boolean): MailMessage {
+  const viNote = mustChange ? '\nBạn sẽ được yêu cầu đổi mật khẩu ở lần đăng nhập đầu tiên.' : '';
+  const enNote = mustChange ? '\nYou will be asked to change your password the first time you sign in.' : '';
+  return {
+    to,
+    subject: 'Tài khoản Wordmet của bạn / Your Wordmet account',
+    text: `Một tài khoản Wordmet đã được tạo cho bạn.\nTrang đăng nhập: ${learnerAppUrl}\nEmail: ${to}\nMật khẩu / Password: ${password}${viNote}\n\nA Wordmet account has been created for you.\nSign in at: ${learnerAppUrl}\nEmail: ${to}\nPassword: ${password}${enNote}`,
+  };
+}
+
+/** AD18: an admin set a new password; every session was signed out. */
+export function adminPasswordResetMail(to: string, password: string, appUrl: string, mustChange: boolean): MailMessage {
+  const viNote = mustChange ? '\nBạn sẽ được yêu cầu đổi mật khẩu ở lần đăng nhập tới.' : '';
+  const enNote = mustChange ? '\nYou will be asked to change your password the next time you sign in.' : '';
+  return {
+    to,
+    subject: 'Mật khẩu Wordmet đã được đặt lại / Your Wordmet password was reset',
+    text: `Quản trị viên đã đặt lại mật khẩu của bạn và đăng xuất bạn khỏi mọi thiết bị.\nTrang đăng nhập: ${appUrl}\nMật khẩu mới / New password: ${password}${viNote}\n\nAn administrator reset your password and signed you out everywhere.\nSign in at: ${appUrl}\nNew password: ${password}${enNote}`,
+  };
+}
+
+/** AD18: sent to the old address when an admin changes a user's email. */
+export function emailChangedNoticeMail(oldEmail: string, newEmail: string): MailMessage {
+  return {
+    to: oldEmail,
+    subject: 'Email tài khoản Wordmet đã đổi / Your Wordmet email was changed',
+    text: `Quản trị viên đã đổi email đăng nhập của tài khoản Wordmet này thành ${newEmail}. Nếu bạn không yêu cầu, hãy liên hệ hỗ trợ.\n\nAn administrator changed the sign-in email of this Wordmet account to ${newEmail}. If you did not ask for this, contact support.`,
+  };
+}
+
 export function otpLockedMail(to: string, purpose: OtpPurpose): MailMessage {
   const vi = purpose === 'verify_email' ? 'Xác minh email' : 'Đặt lại mật khẩu';
   const en = purpose === 'verify_email' ? 'Email verification' : 'Password reset';
