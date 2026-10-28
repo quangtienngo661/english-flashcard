@@ -48,6 +48,7 @@ export const KNOWN_ERROR_SLUGS = [
   'invalid-current-password',
   'invalid-otp',
   'invalid-token',
+  'job-not-active',
   'level-source-required',
   'lock-rule',
   'mail-unavailable',

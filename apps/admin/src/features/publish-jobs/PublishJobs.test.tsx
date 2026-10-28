@@ -244,3 +244,134 @@ describe('publish job panel', () => {
     expect(await blob.text()).toBe('sense_id,outcome\n1,published\n');
   });
 });
+
+describe('publish job stop', () => {
+  const GET = `GET /v1/admin/content/senses/publish-jobs/${ID}`;
+  const LIST_PATH = '/v1/admin/content/senses/publish-jobs?page_size=20';
+  const DETAIL_PATH = `/v1/admin/content/senses/publish-jobs/${ID}`;
+  const OTHER_ID = 'b7c9d0aa-0000-4000-8000-000000000002';
+  const stopped = (over: Record<string, unknown> = {}) => job({
+    status: 'failed', cancelled: true, finished_at: '2026-10-14T10:16:00.000Z',
+    counters: { processed: 480, pending: 770, published: 480, already_published: 0, refused: 0 }, ...over,
+  });
+  const panel = () => within(screen.getByTestId('detail-panel'));
+  const loaded = async () => within(await screen.findByTestId('detail-panel'));
+  const stopButton = async () => (await loaded()).findByRole('button', { name: t.stop });
+  const dialogName = t.stopTitle.replace('{id}', 'a3f2c1');
+  const confirm = async () => {
+    await userEvent.click(await stopButton());
+    return screen.findByRole('dialog', { name: dialogName });
+  };
+  const cancels = (calls: Call[]) => calls.filter((c) => c.method === 'POST' && c.path === `${DETAIL_PATH}/cancel`);
+  /** One job on the server: running until the cancel arrives, then stopped. */
+  function server(cancel?: () => Response) {
+    let done = false;
+    return {
+      [JOBS]: () => json({ items: [done ? stopped() : job()], next_page_token: null }),
+      [GET]: () => json(done ? stopped() : job()),
+      [`POST ${DETAIL_PATH}/cancel`]: async () => {
+        await new Promise((resolve) => setTimeout(resolve, 100)); // slow enough for a second click to land while it is pending
+        if (cancel) return cancel();
+        done = true;
+        return json(stopped());
+      },
+    };
+  }
+
+  it.each(['queued', 'running'])('a %s job offers [Dừng lô]', async (status) => {
+    renderApp(`/publish-jobs/${ID}`, {
+      [JOBS]: () => json({ items: [job({ status })], next_page_token: null }),
+      [GET]: () => json(job({ status, counters: {} })),
+    });
+    expect(await stopButton()).toBeInTheDocument();
+  });
+
+  it.each([
+    ['succeeded', {}],
+    ['partial', {}],
+    ['failed', { cancelled: false }],
+    ['failed', { cancelled: true }],
+  ])('a finished job (%s %j) has no [Dừng lô]', async (status, over) => {
+    renderApp(`/publish-jobs/${ID}`, {
+      [JOBS]: () => json({ items: [job({ status, ...over })], next_page_token: null }),
+      [GET]: () => json(job({ status, finished_at: '2026-10-14T10:16:00.000Z', ...over })),
+    });
+    expect(await (await loaded()).findByRole('button', { name: t.report })).toBeInTheDocument(); // the panel has loaded
+    expect(panel().queryByRole('button', { name: t.stop })).toBeNull();
+  });
+
+  it('the dialog says the published senses stay and the job cannot be resumed; [Không dừng] sends nothing', async () => {
+    const r = renderApp(`/publish-jobs/${ID}`, server());
+    const dialog = await confirm();
+    expect(within(dialog).getByText(t.stopBody)).toBeInTheDocument();
+
+    await userEvent.click(within(dialog).getByRole('button', { name: t.stopKeep }));
+
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: dialogName })).toBeNull());
+    expect(cancels(r.calls)).toHaveLength(0);
+    expect(await stopButton()).toBeInTheDocument();
+  });
+
+  it('confirming posts once (a double click too), without an Idempotency-Key; the panel and the list then read "Đã dừng", with a toast', async () => {
+    const r = renderApp(`/publish-jobs/${ID}`, server());
+    const dialog = await confirm();
+    const listCalls = r.count('GET', LIST_PATH);
+
+    await userEvent.dblClick(within(dialog).getByRole('button', { name: t.stop }));
+
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: dialogName })).toBeNull());
+    expect(cancels(r.calls)).toHaveLength(1);
+    expect(cancels(r.calls)[0].headers['Idempotency-Key']).toBeUndefined();
+    expect(await panel().findByText(vi.status.cancelled)).toBeInTheDocument();
+    expect(panel().queryByText(vi.status.failed)).toBeNull();
+    expect(panel().queryByRole('button', { name: t.stop })).toBeNull();
+    expect(panel().getByText(t.stoppedNotice.replace('{done}', '480').replace('{total}', '1.250'))).toBeInTheDocument();
+    expect(await screen.findByText(t.stopped.replace('{id}', 'a3f2c1'))).toBeInTheDocument();
+    await waitFor(() => expect(r.count('GET', LIST_PATH)).toBeGreaterThan(listCalls));
+    expect(within(screen.getByRole('table')).getByText(vi.status.cancelled)).toBeInTheDocument();
+  });
+
+  it('job-not-active: the job had just ended, so say so, refresh the panel and the list, and offer no stop any more', async () => {
+    let ended = false;
+    const r = renderApp(`/publish-jobs/${ID}`, {
+      [JOBS]: () => json({ items: [job({ status: ended ? 'succeeded' : 'running' })], next_page_token: null }),
+      [GET]: () => json(job({ status: ended ? 'succeeded' : 'running', counters: { processed: 1250, pending: 0, published: 1250, already_published: 0, refused: 0 } })),
+      [`POST ${DETAIL_PATH}/cancel`]: () => {
+        ended = true;
+        return problem(409, 'job-not-active');
+      },
+    });
+    const dialog = await confirm();
+    const detailCalls = r.count('GET', DETAIL_PATH);
+    const listCalls = r.count('GET', LIST_PATH);
+
+    await userEvent.click(within(dialog).getByRole('button', { name: t.stop }));
+
+    expect(await panel().findByText(vi.errors['job-not-active'])).toBeInTheDocument();
+    await waitFor(() => expect(r.count('GET', DETAIL_PATH)).toBeGreaterThan(detailCalls));
+    await waitFor(() => expect(r.count('GET', LIST_PATH)).toBeGreaterThan(listCalls));
+    await waitFor(() => expect(panel().queryByRole('button', { name: t.stop })).toBeNull());
+    expect(panel().getByText(vi.status.succeeded)).toBeInTheDocument();
+    expect(screen.queryByText(t.stopped.replace('{id}', 'a3f2c1'))).toBeNull(); // not announced as stopped
+  });
+
+  it('any other failure keeps the job running on screen, shows the error and lets the button be pressed again', async () => {
+    renderApp(`/publish-jobs/${ID}`, server(() => problem(500, '')));
+    const dialog = await confirm();
+
+    await userEvent.click(within(dialog).getByRole('button', { name: t.stop }));
+
+    expect(await panel().findByText(vi.errors.generic)).toBeInTheDocument();
+    expect(await stopButton()).toBeEnabled();
+    expect(panel().getByText(vi.status.running)).toBeInTheDocument();
+  });
+
+  it('a stopped job reads "Đã dừng" in the list; a real failure still reads "Thất bại"', async () => {
+    renderApp('/publish-jobs', {
+      [JOBS]: () => json({ items: [stopped(), job({ id: OTHER_ID, status: 'failed', cancelled: false, filter: { level: 'A1' } })], next_page_token: null }),
+    });
+    const table = await screen.findByRole('table');
+    expect(await within(table).findByText(vi.status.cancelled)).toBeInTheDocument();
+    expect(within(table).getByText(vi.status.failed)).toBeInTheDocument();
+  });
+});
