@@ -47,6 +47,8 @@
     "resolve-status-not-allowed": "This report cannot be handled this way. Reload the page.",
     "retryIn": "Try again in {seconds} s",
     "revision-rejected": "This revision was rejected, so it cannot be published. Edit it to make a new one.",
+    "run-active": "The run is still active. Stop it before deleting.",
+    "run-not-active": "This run has already ended.",
     "same_as_current": "The new password must differ from the current one",
     "sense-entry-mismatch": "This sense does not belong to the selected word. Reload the page.",
     "sense-exists": "This word already has a sense with that context label. Edit the existing sense instead of adding a new one.",
@@ -444,7 +446,22 @@
       "toast": {
         "added": "Example added.",
         "saved": "Example saved.",
-        "deleted": "Example deleted."
+        "deleted": "Example deleted.",
+        "stopped": "Run stopped.",
+        "runDeleted": "Run deleted."
+      },
+      "stop": {
+        "button": "Stop run",
+        "title": "Stop this run?",
+        "body": "Examples not yet run will not call the AI. Calls already sent are still charged, and a stopped run cannot be resumed. Results of the examples already run are kept.",
+        "confirm": "Stop run",
+        "keep": "Let it run"
+      },
+      "removeRun": {
+        "button": "Delete run",
+        "title": "Delete this run?",
+        "body": "The per-example results of this run are lost. The cost already incurred stays in the Costs report.",
+        "confirm": "Delete run"
       },
       "form": {
         "addTitle": "Add example",
@@ -483,7 +500,8 @@
         "queued": "Queued",
         "running": "Running",
         "finished": "Done",
-        "failed": "Failed"
+        "failed": "Failed",
+        "cancelled": "Stopped"
       },
       "detail": {
         "title": "Run {time}",
@@ -505,6 +523,7 @@
         "running": "Running: {done}/{total} examples. The page updates by itself.",
         "failed": "Failed: {error}",
         "failedNoReason": "The run failed.",
+        "cancelled": "The run was stopped. Results of the examples already run are kept.",
         "background": "Closing the page does not stop the run; open it again to see its progress.",
         "results": "Result per example",
         "deletedExample": "Deleted example",

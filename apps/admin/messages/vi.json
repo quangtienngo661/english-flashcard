@@ -47,6 +47,8 @@
     "resolve-status-not-allowed": "Không xử lý được báo lỗi này. Tải lại trang.",
     "retryIn": "Thử lại sau {seconds} giây",
     "revision-rejected": "Bản này đã bị từ chối nên không publish được. Hãy sửa để tạo bản mới.",
+    "run-active": "Lần chạy đang chạy, hãy dừng trước khi xóa.",
+    "run-not-active": "Lần chạy này đã kết thúc.",
     "same_as_current": "Mật khẩu mới phải khác mật khẩu hiện tại",
     "sense-entry-mismatch": "Nghĩa này không thuộc từ đang chọn. Tải lại trang.",
     "sense-exists": "Từ này đã có nghĩa với nhãn ngữ cảnh đó. Hãy sửa nghĩa đã có thay vì thêm mới.",
@@ -444,7 +446,22 @@
       "toast": {
         "added": "Đã thêm ví dụ.",
         "saved": "Đã lưu ví dụ.",
-        "deleted": "Đã xóa ví dụ."
+        "deleted": "Đã xóa ví dụ.",
+        "stopped": "Đã dừng lần chạy.",
+        "runDeleted": "Đã xóa lần chạy."
+      },
+      "stop": {
+        "button": "Dừng lần chạy",
+        "title": "Dừng lần chạy này?",
+        "body": "Các ví dụ chưa chạy sẽ không gọi AI nữa. Lời gọi đã gửi vẫn bị tính phí, và lần chạy đã dừng không chạy tiếp được. Kết quả các ví dụ đã chạy vẫn được giữ.",
+        "confirm": "Dừng lần chạy",
+        "keep": "Để chạy tiếp"
+      },
+      "removeRun": {
+        "button": "Xóa lần chạy",
+        "title": "Xóa lần chạy này?",
+        "body": "Kết quả từng ví dụ của lần chạy này sẽ mất. Chi phí đã tính vẫn nằm trong báo cáo Chi phí.",
+        "confirm": "Xóa lần chạy"
       },
       "form": {
         "addTitle": "Thêm ví dụ",
@@ -483,7 +500,8 @@
         "queued": "Đang chờ",
         "running": "Đang chạy",
         "finished": "Xong",
-        "failed": "Lỗi"
+        "failed": "Lỗi",
+        "cancelled": "Đã dừng"
       },
       "detail": {
         "title": "Lần chạy {time}",
@@ -505,6 +523,7 @@
         "running": "Đang chạy: {done}/{total} ví dụ. Trang tự cập nhật.",
         "failed": "Lỗi: {error}",
         "failedNoReason": "Lần chạy bị lỗi.",
+        "cancelled": "Lần chạy đã dừng. Kết quả các ví dụ đã chạy vẫn được giữ.",
         "background": "Đóng trang thì lần chạy vẫn chạy tiếp; mở lại để xem tiến độ.",
         "results": "Kết quả từng ví dụ",
         "deletedExample": "Ví dụ đã xóa",

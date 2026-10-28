@@ -29,7 +29,7 @@ export class NetworkError extends Error {
 
 /**
  * Every problem `type` slug thrown in `apps/api/src` (grep `type: '` over ProblemDetailsException, plus the
- * body-parser mappings in `problem-details.filter.ts`), checked 14/10/2026, extended 27/10/2026 for the admin UI round (design §4.5). Each has a vi and en message.
+ * body-parser mappings in `problem-details.filter.ts`), checked 14/10/2026, extended 27/10/2026 for the admin UI round (design §4.5) and 28/10/2026 with `run-active` / `run-not-active` (stopping and deleting an eval run). Each has a vi and en message.
  */
 export const KNOWN_ERROR_SLUGS = [
   'batch-filter-unavailable',
@@ -73,6 +73,8 @@ export const KNOWN_ERROR_SLUGS = [
   'report-reason-exists',
   'resolve-status-not-allowed',
   'revision-rejected',
+  'run-active',
+  'run-not-active',
   'sense-entry-mismatch',
   'sense-exists',
   'sense-retired',

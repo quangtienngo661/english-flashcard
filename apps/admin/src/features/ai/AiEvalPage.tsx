@@ -114,7 +114,7 @@ export function AiEvalPage() {
         </Link>
       ),
     },
-    { key: 'status', header: t('ai.eval.runs.cols.status'), card: 'field', cell: (r) => <RunStatusBadge status={r.status} /> },
+    { key: 'status', header: t('ai.eval.runs.cols.status'), card: 'field', cell: (r) => <RunStatusBadge status={r.status} error={r.error} /> },
     { key: 'progress', header: t('ai.eval.runs.cols.progress'), className: 'tabular-nums', card: 'field', cell: (r) => `${format.number(r.done)}/${format.number(r.total)}` },
     { key: 'valid', header: t('ai.eval.runs.cols.valid'), className: 'tabular-nums', card: 'field', cell: (r) => format.number(r.valid_count) },
     { key: 'prompt', header: t('ai.eval.runs.cols.prompt'), card: 'field', cell: (r) => promptLabel(r) },
@@ -204,7 +204,7 @@ export function AiEvalPage() {
           onExited={() => focusRowLink(runHref(shownRunId))}
           focusKey={shownRunId}
         >
-          <EvalRunPanel key={shownRunId} id={shownRunId} onDone={() => void queryClient.invalidateQueries({ queryKey: aiKeys.runs(op) })} />
+          <EvalRunPanel key={shownRunId} id={shownRunId} onDone={() => void queryClient.invalidateQueries({ queryKey: aiKeys.runs(op) })} onDeleted={back} />
         </DetailPanel>
       )}
       <ConfirmDialog

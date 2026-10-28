@@ -209,4 +209,22 @@ describe('AiEvalPage runs (A/83)', () => {
     expect(rows[1]).toHaveTextContent(t.detail.revision.replace('{revision}', '3'));
     expect(rows[1]).toHaveTextContent('minh@wordmet.com');
   });
+
+  it('a stopped run (failed, error "cancelled") reads "Đã dừng" in the list; a run that really failed keeps "Lỗi"', async () => {
+    await openPage({
+      [URL.runs()]: () => Response.json({
+        items: [
+          evalRun({ id: 'aaaaaaaa-0000-4000-8000-000000000002', status: 'failed', error: 'cancelled' }),
+          evalRun({ id: 'aaaaaaaa-0000-4000-8000-000000000001', status: 'failed', error: 'stalled' }),
+        ],
+        next_page_token: null,
+      }),
+    });
+    const section = await screen.findByRole('region', { name: t.runs.title });
+    const rows = await within(section).findAllByRole('row');
+    expect(rows[1]).toHaveTextContent(t.status.cancelled);
+    expect(rows[1]).not.toHaveTextContent(t.status.failed);
+    expect(rows[2]).toHaveTextContent(t.status.failed);
+    expect(rows[2]).not.toHaveTextContent(t.status.cancelled);
+  });
 });

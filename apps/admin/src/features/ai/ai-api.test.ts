@@ -1,8 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { ApiClient } from '../../api/client';
 import {
-  AI_OPERATION_ORDER, createExample, createModel, deleteExample, deleteModel, effortChoicesFor, getCosts, getPrompt, getRun, getStatus, getTestQuota,
-  isRunDone, listCalls, listExamples, listModels, listOperations, listRevisions, listRuns, refreshModel, runTest, saveOperation, savePrompt,
+  AI_OPERATION_ORDER, cancelRun, createExample, createModel, deleteExample, deleteModel, deleteRun, effortChoicesFor, getCosts, getPrompt, getRun, getStatus, getTestQuota,
+  isRunCancelled, isRunDone, listCalls, listExamples, listModels, listOperations, listRevisions, listRuns, refreshModel, runTest, saveOperation, savePrompt,
   sortByOperationOrder, startRun, updateExample, updateModel, type AiModel,
 } from './ai-api';
 
@@ -81,8 +81,23 @@ describe('eval example set and runs (A/83)', () => {
     ]);
   });
 
+  it('a run is stopped with a POST to /cancel and a finished one deleted with a DELETE, both by id and without a body or a key', async () => {
+    const { api, mock } = fakeApi();
+    await cancelRun(api, 'r1');
+    await deleteRun(api, 'r1');
+    expect(mock.post).toHaveBeenCalledExactlyOnceWith('/v1/admin/ai/eval/runs/r1/cancel');
+    expect(mock.delete).toHaveBeenCalledExactlyOnceWith('/v1/admin/ai/eval/runs/r1');
+  });
+
   it('a run ends at finished or failed, not at queued or running', () => {
     expect(['queued', 'running', 'finished', 'failed'].map(isRunDone)).toEqual([false, false, true, true]);
+  });
+
+  it('a stopped run is a failed one whose error is "cancelled"; a finished run or another error is not', () => {
+    expect(isRunCancelled({ status: 'failed', error: 'cancelled' })).toBe(true);
+    expect(isRunCancelled({ status: 'failed', error: 'stalled' })).toBe(false);
+    expect(isRunCancelled({ status: 'failed', error: null })).toBe(false);
+    expect(isRunCancelled({ status: 'finished', error: 'cancelled' })).toBe(false);
   });
 });
 
