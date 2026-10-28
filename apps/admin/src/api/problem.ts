@@ -8,6 +8,8 @@ export type Problem = {
   violations?: string[];
   /** Top-level extension member of some problems (e.g. `grant-not-allowed`): the API spreads extensions into the body. */
   reason?: string;
+  /** Top-level extension member of `entry-in-use`: why the word cannot be deleted (a list of codes). */
+  reasons?: string[];
 };
 
 export class ApiError extends Error {
@@ -37,6 +39,7 @@ export const KNOWN_ERROR_SLUGS = [
   'csrf-header-required',
   'email-already-verified',
   'email-taken',
+  'entry-in-use',
   'export-too-large',
   'file-invalid',
   'file-too-large',
@@ -116,6 +119,7 @@ export async function toApiError(res: Response): Promise<ApiError> {
   if (typeof body.operation_id === 'string') problem.operation_id = body.operation_id;
   if (Array.isArray(body.violations)) problem.violations = body.violations.filter((v): v is string => typeof v === 'string');
   if (typeof body.reason === 'string') problem.reason = body.reason;
+  if (Array.isArray(body.reasons)) problem.reasons = body.reasons.filter((r): r is string => typeof r === 'string');
   const retry = Number.parseInt(res.headers.get('retry-after') ?? '', 10);
   return new ApiError(problem, Number.isFinite(retry) && retry >= 0 ? retry : null);
 }

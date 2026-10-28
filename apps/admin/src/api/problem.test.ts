@@ -51,6 +51,18 @@ describe('problem mapping', () => {
     expect(dropped.problem.reason).toBeUndefined();
   });
 
+  it('entry-in-use: the top-level reasons list is kept (strings only); a non-list is dropped; the slug has its own message', async () => {
+    const kept = await toApiError(problemResponse(409, {
+      type: 'http://x/problems/entry-in-use', status: 409, title: 'e', reasons: ['published-sense', 7, 'learner-data'],
+    }));
+    expect(kept.problem.slug).toBe('entry-in-use');
+    expect(kept.problem.reasons).toEqual(['published-sense', 'learner-data']);
+    expect(errorMessageKey(kept.problem)).toBe('errors.entry-in-use');
+    const dropped = await toApiError(problemResponse(409, { type: 'http://x/problems/entry-in-use', status: 409, title: 'e', reasons: 'published-sense' }));
+    expect(dropped.problem.reasons).toBeUndefined();
+    expect(KNOWN_ERROR_SLUGS).toContain('entry-in-use');
+  });
+
   it('a non-problem body still becomes an ApiError with the status and the generic message', async () => {
     const err = await toApiError(new Response('<html>bad gateway</html>', { status: 502 }));
     expect(err.problem.status).toBe(502);
