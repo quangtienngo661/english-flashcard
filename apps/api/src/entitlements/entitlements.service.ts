@@ -6,13 +6,16 @@ import { localDate, nextLocalMidnight } from '../common/time/local-date.js';
 import type { Prisma, PrismaClient } from '../generated/prisma/client.js';
 import { IdentityService } from '../identity/profile/identity.service.js';
 import { SettingsService, type AppSettings } from '../settings/index.js';
-import { AI_USAGE_DEFAULT_DAYS, alertReached, type AiUsageDaysView, type AiUsageView } from './api/ai-usage.js';
+import {
+  AI_USAGE_DEFAULT_DAYS, AI_USAGE_PRO_LEARNER_CAP, alertReached, type AiUsageDaysView, type AiUsageProView, type AiUsageView,
+} from './api/ai-usage.js';
 import { AI_DAY_ZONE } from './entitlements.constants.js';
 import type { AiPool, LimitKey, Pool, SubscriptionStatus } from './entitlements.types.js';
 import type { Refusal } from './refusal.js';
 import { aiDay, cycleAt } from './rules/cycle.js';
 import { planNumbers } from './plan-numbers.js';
 import { effectiveStatus, resolve, type Resolved } from './rules/plan-rules.js';
+import { proUsageSpread } from './rules/pro-usage.js';
 import { SourcesRepository } from './sources/sources.repository.js';
 import { UsageLedgerService, type ReserveResult } from './usage/usage-ledger.service.js';
 import { UsageQueries } from './usage/usage.queries.js';
@@ -208,6 +211,40 @@ export class EntitlementsService {
       return { date, ai_practice: practice, ai_lookup: lookup, total: practice + lookup, learners: learners.find((row) => row.date === date)?.learners ?? 0 };
     });
     return { from: range.from, to: range.to, today, days, refunds, days_at_cap: days.filter((day) => day.total >= today.cap).length };
+  }
+
+  /**
+   * How much of their AI limit the learners who have the Pro plan now have used in their current cycle (the AI dashboard, owner
+   * 28/10/2026). Candidates are loaded in one query and resolved with the same `resolve` as `snapshot`, so a custom limits grant
+   * counts as it does for the learner; every learner has their own cycle, so the uses of all of them are counted in one grouped
+   * query that carries each cycle. At most `AI_USAGE_PRO_LEARNER_CAP` learners (lowest user id first): beyond it `truncated`.
+   */
+  async aiUsagePro(): Promise<AiUsageProView> {
+    const { entitlements } = await this.settings.get();
+    const now = this.clock.now();
+    const numbers = planNumbers(entitlements);
+    const candidates = await this.sources.proCandidates(this.prisma, now, AI_USAGE_PRO_LEARNER_CAP + 1);
+    const ids = candidates.slice(0, AI_USAGE_PRO_LEARNER_CAP);
+    const sources = ids.length === 0 ? new Map() : await this.sources.loadMany(this.prisma, ids, now);
+
+    const pro: Array<{ userId: string; limits: Record<AiPool, number>; cycle: { start: Date; end: Date } | null }> = [];
+    for (const userId of ids) {
+      const { subscriptions, grants } = sources.get(userId) ?? { subscriptions: [], grants: [] };
+      const resolved = resolve({ subscriptions, grants, numbers, graceDays: entitlements.graceDays, now });
+      if (resolved.plan !== 'pro') continue;
+      pro.push({
+        userId, limits: { ai_practice: resolved.limits.ai_practice, ai_lookup: resolved.limits.ai_lookup },
+        cycle: resolved.anchor ? cycleAt(resolved.anchor, now) : null,
+      });
+    }
+    // No cycle (a Pro source without an anchor) means nothing was counted, as in `snapshot`.
+    const windows = pro.flatMap(({ userId, cycle }) => (cycle ? [{ userId, ...cycle }] : []));
+    const used = windows.length === 0 ? new Map() : await this.usage.aiUsedMany(this.prisma, windows, now);
+    const none = { ai_practice: 0, ai_lookup: 0 };
+    return {
+      ...proUsageSpread(pro.map(({ userId, limits }) => ({ limits, used: used.get(userId) ?? none }))),
+      truncated: candidates.length > AI_USAGE_PRO_LEARNER_CAP,
+    };
   }
 
   private async resolve(db: Db, userId: string, settings: AppSettings['entitlements'], now: Date): Promise<Resolved> {

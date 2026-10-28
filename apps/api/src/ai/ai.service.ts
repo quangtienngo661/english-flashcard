@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { Inject, Injectable } from '@nestjs/common';
 import { Clock } from '../common/clock/clock.js';
 import { PRISMA_CLIENT } from '../common/db/prisma.module.js';
-import type { PrismaClient } from '../generated/prisma/client.js';
+import { Prisma, type PrismaClient } from '../generated/prisma/client.js';
 import { OPERATION_ID_PATTERN } from './ai.constants.js';
 import type { AiOperation, AiReadiness, AiResult } from './ai.types.js';
 import { ReadinessService } from './runner/readiness.service.js';
@@ -46,6 +46,26 @@ export class AiService {
       this.prisma.$executeRaw`DELETE FROM ai_operations WHERE user_id = ${userId}::uuid`,
       this.prisma.$executeRaw`UPDATE ai_calls SET user_id = NULL WHERE user_id = ${userId}::uuid`,
     ]);
+  }
+
+  /**
+   * Per operation, over learner calls whose first valid answer was recorded in `[start, end)` (the AI dashboard): `first_answers` =
+   * operation ids with a succeeded call (not a `#2` id); `second_tries` = those that have a call under `<id>#2`. Practice sends `#2`
+   * only after its own rules rejected a valid first answer (D11), so `second_tries` counts first-try rejections that were asked
+   * again. A rejection whose second call never reached a provider (AI switched off, cap reached or queue busy in between) has no
+   * `#2` row and is not counted. Totals only: no id or user leaves this method.
+   */
+  secondTries(range: { start: Date; end: Date }): Promise<Array<{ operation: AiOperation; first_answers: number; second_tries: number }>> {
+    return this.prisma.$queryRaw<Array<{ operation: AiOperation; first_answers: number; second_tries: number }>>(Prisma.sql`
+      SELECT f.operation, count(*)::int AS first_answers,
+        (count(*) FILTER (WHERE EXISTS (
+          SELECT 1 FROM ai_calls r WHERE r.operation_id = f.operation_id || '#2' AND r.purpose = 'learner')))::int AS second_tries
+      FROM (
+        SELECT DISTINCT operation, operation_id FROM ai_calls
+        WHERE purpose = 'learner' AND outcome = 'succeeded' AND operation_id NOT LIKE '%#2'
+          AND created_at >= ${range.start} AND created_at < ${range.end}
+      ) f
+      GROUP BY f.operation ORDER BY f.operation`);
   }
 
   /** One test call with the current selection and prompt (plan choice 23; the CLI's `--purpose test`). */

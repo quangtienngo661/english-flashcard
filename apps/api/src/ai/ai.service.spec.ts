@@ -10,7 +10,7 @@ const ADMIN = '00000000-0000-4000-8000-0000000000a1';
 const NOW = new Date('2026-10-20T05:00:00.000Z');
 const DATA = { word: 'borrow' };
 
-function setup(readiness: ReadinessCheck = { ready: true, selection: {} as never }) {
+function setup(readiness: ReadinessCheck = { ready: true, selection: {} as never }, rows: unknown[] = []) {
   const executed: ExecuteInput[] = [];
   const report: RunReport = { result: { status: 'in_progress', operation_id: 'q1' }, calls: [], rawOutput: null };
   const runner = {
@@ -27,15 +27,20 @@ function setup(readiness: ReadinessCheck = { ready: true, selection: {} as never
     }),
   } as unknown as ReadinessService;
   const statements: Array<{ sql: string; values: unknown[] }> = [];
+  const queries: Array<{ sql: string; values: unknown[] }> = [];
   const prisma = {
     $executeRaw: vi.fn((strings: TemplateStringsArray, ...values: unknown[]) => {
       statements.push({ sql: strings.join('?').replace(/\s+/g, ' ').trim(), values });
       return { statement: statements.length };
     }),
+    $queryRaw: vi.fn(async (statement: { sql: string; values: unknown[] }) => {
+      queries.push({ sql: statement.sql.replace(/\s+/g, ' ').trim(), values: statement.values });
+      return rows;
+    }),
     $transaction: vi.fn(async (ops: unknown[]) => ops),
   } as unknown as PrismaClient;
   const service = new AiService(runner, readinessService, prisma, new FakeClock(NOW));
-  return { service, executed, report, checks, statements, prisma };
+  return { service, executed, report, checks, statements, queries, prisma };
 }
 
 describe('AiService.run', () => {
@@ -98,5 +103,29 @@ describe('AiService.deleteUserData', () => {
     expect(statements.some((statement) => /DELETE FROM ai_calls\b/.test(statement.sql))).toBe(false);
     expect(prisma.$transaction).toHaveBeenCalledTimes(1);
     expect(prisma.$transaction).toHaveBeenCalledWith([{ statement: 1 }, { statement: 2 }, { statement: 3 }]);
+  });
+});
+
+describe('AiService.secondTries', () => {
+  const range = { start: new Date('2026-09-20T17:00:00.000Z'), end: new Date('2026-10-20T17:00:00.000Z') };
+
+  it('returns the rows of one query bounded by the range; zero rows is an empty list', async () => {
+    const rows = [{ operation: 'generate_cloze', first_answers: 24, second_tries: 3 }];
+    const { service, queries } = setup(undefined, rows);
+    await expect(service.secondTries(range)).resolves.toEqual(rows);
+    expect(queries).toHaveLength(1);
+    expect(queries[0].values).toEqual([range.start, range.end]);
+    const empty = setup();
+    await expect(empty.service.secondTries(range)).resolves.toEqual([]);
+  });
+
+  it('counts learner calls only: first answers are the succeeded calls whose id does not end in #2; a second try is a learner call under <id>#2', async () => {
+    const { service, queries } = setup();
+    await service.secondTries(range);
+    const { sql } = queries[0];
+    expect(sql).toContain("purpose = 'learner' AND outcome = 'succeeded' AND operation_id NOT LIKE '%#2'");
+    expect(sql).toContain("r.operation_id = f.operation_id || '#2' AND r.purpose = 'learner'");
+    expect(sql).toContain('SELECT DISTINCT operation, operation_id FROM ai_calls');
+    expect(sql).toContain('created_at >= ? AND created_at < ?');
   });
 });

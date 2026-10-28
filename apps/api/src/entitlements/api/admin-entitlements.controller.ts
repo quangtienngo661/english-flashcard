@@ -43,6 +43,13 @@ export class AdminEntitlementsController {
     return this.entitlements.aiUsageDays(query);
   }
 
+  /** How much of their AI limit the Pro learners have used this cycle (counts only, no learner), for the same dashboard. */
+  @Get('ai-usage/pro')
+  @RequirePermission('ai.view')
+  aiUsagePro() {
+    return this.entitlements.aiUsagePro();
+  }
+
   @Get('ai-usage')
   @RequirePermission('settings.manage')
   aiUsage(@Query({ schema: aiUsageQuery }) query: z.infer<typeof aiUsageQuery>) {

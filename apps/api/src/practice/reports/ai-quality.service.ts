@@ -1,4 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
+import { AiService } from '../../ai/index.js';
 import { PRISMA_CLIENT } from '../../common/db/prisma.module.js';
 import { dayRange } from '../../common/time/day-range.js';
 import { Prisma, type PrismaClient } from '../../generated/prisma/client.js';
@@ -20,17 +21,30 @@ export type AiQualityReport = {
   ai_report_reasons: Array<{ reason: string; label_vi: string; label_en: string; count: number }>;
   unknown_forms: { new_forms: number; rejected_seen: number };
   word_checks: Array<{ verdict: string; count: number }>;
+  /**
+   * Per AI question type: `first_answers` = AI answers that came back valid on the first try; `second_tries` = those that Practice's
+   * rules rejected and the AI was asked again. A type with no answer in the range has no row.
+   */
+  ai_second_tries: Array<{ type: string; first_answers: number; second_tries: number }>;
+};
+
+/** The AI operation behind each AI question type (the generator's table, read the other way). */
+const TYPE_OF_OPERATION: Record<string, string> = {
+  generate_cloze: 'cloze', generate_meaning_question: 'meaning_in_sentence', generate_sentence_mcq: 'mcq_sentence',
 };
 
 /** Practice's part of the AI dashboard (owner 28/10/2026): totals only, no sentence and no learner. */
 @Injectable()
 export class AiQualityService {
-  constructor(@Inject(PRISMA_CLIENT) private readonly prisma: PrismaClient) {}
+  constructor(
+    @Inject(PRISMA_CLIENT) private readonly prisma: PrismaClient,
+    @Inject(AiService) private readonly ai: AiService,
+  ) {}
 
   async report(query: { from?: string; to?: string }, now: Date): Promise<AiQualityReport> {
     const range = dayRange(query, REPORT_ZONE, now, DEFAULT_DAYS);
     const within = (column: string) => Prisma.sql`${Prisma.raw(column)} >= ${range.start} AND ${Prisma.raw(column)} < ${range.end}`;
-    const [questions, aiRequests, aiSessions, reports, reasons, [forms], wordChecks] = await Promise.all([
+    const [questions, aiRequests, aiSessions, reports, reasons, [forms], wordChecks, secondTries] = await Promise.all([
       this.prisma.$queryRaw<AiQualityReport['questions']>(Prisma.sql`
         SELECT q.source, q.type, count(*)::int AS asked,
           (count(*) FILTER (WHERE i.result IN ('correct', 'wrong')))::int AS answered,
@@ -62,10 +76,14 @@ export class AiQualityService {
         FROM practice_unknown_forms`),
       this.prisma.$queryRaw<AiQualityReport['word_checks']>(Prisma.sql`
         SELECT verdict, count(*)::int AS count FROM practice_word_checks WHERE ${within('checked_at')} GROUP BY 1 ORDER BY 1`),
+      this.ai.secondTries({ start: range.start, end: range.end }),
     ]);
     return {
       from: range.from, to: range.to, questions, ai_requests: aiRequests, ai_sessions: aiSessions, reports,
       ai_report_reasons: reasons, unknown_forms: forms ?? { new_forms: 0, rejected_seen: 0 }, word_checks: wordChecks,
+      ai_second_tries: secondTries.flatMap(({ operation, first_answers, second_tries }) => (
+        TYPE_OF_OPERATION[operation] ? [{ type: TYPE_OF_OPERATION[operation], first_answers, second_tries }] : []
+      )),
     };
   }
 }
