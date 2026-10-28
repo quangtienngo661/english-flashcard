@@ -494,3 +494,19 @@ Khung Figma file `7HcPAKLrWu32C27qYMJUOA`: A/87 `395:2999`, A/88 `395:3514`, A/8
 `words.*`, `senses.*`, `topics.*`: mọi dòng phụ, toast, hộp thoại sửa (trình độ, cách viết khác, từ chức năng), kết quả dán danh sách, lý do lỗi hàng loạt, hỏi lại khi
 gỡ / ngừng dùng, câu không tìm thấy nghĩa, gợi ý mã chủ đề; `list.selectAll` "Chọn tất cả trên trang". Bản tiếng Anh do Claude viết.
 
+# AD18 — admin tạo / sửa người dùng — as-built (28/10/2026)
+
+Thêm sau M4 theo yêu cầu trực tiếp của chủ dự án; quyết định ở AD18 trong file decisions. Nhánh `feat/admin-user-mutate`, một PR vào `dev`.
+
+- **API (`apps/api`):** `POST /v1/admin/users` nhận `staff_role: null` (người học; thư gửi link app người học); `PATCH /v1/admin/users/:id` (email, tên, ngày sinh 13+,
+  múi giờ; email trùng → 409 `email-taken`; email đổi thì thư báo tới email cũ); `POST /v1/admin/users/:id/password` (gõ hoặc sinh, mọi phiên bị đăng xuất, mật khẩu chỉ
+  đi qua thư); quyền `users.read` cho `GET /v1/admin/users` và `/:id` (admin và editor); chi tiết trả thêm `timezone`; `PATCH /v1/me` nhận `accept_terms: true`;
+  `GET /v1/me` trả thêm `terms_accepted_at`. Unit: `staff-user-edit.service.spec.ts`, `accept-terms.spec.ts`, các spec controller và route.
+- **Admin (`apps/admin`):** màn Người dùng có [Tạo người dùng] (hộp tạo tài khoản dùng chung, mặc định "người học"), [Sửa] và [Đặt lại mật khẩu] trong chi tiết; editor
+  thấy menu và màn nhưng không có nút nào. Unit: `UserEdit.test.tsx`.
+- **App người học (`apps/web`):** `/app/complete-profile` hỏi ngày sinh (13+) và/hoặc ô đồng ý điều khoản, rồi về `?next`; `RequireSession` chuyển về đó trước cả màn chọn ngôn ngữ.
+- **Đã chạy thật** (API + worker + Postgres + Mailpit): tạo người học → thư → đăng nhập; `PATCH /v1/me` dưới 13 tuổi → 400 `age-below-minimum`, hợp lệ → 200; sửa email → thư báo
+  email cũ, người học vẫn đăng nhập; email trùng → 409; đặt lại mật khẩu → đăng nhập được với mật khẩu trong thư, `must_change_password` true; editor: GET 200, PATCH / POST 403.
+- **Chưa kiểm:** các hộp trên giao diện thật trong trình duyệt (chỉ có unit test); `pnpm smoke:*` và e2e `admin-e2e-real` chưa chạy cho thay đổi này.
+- **Chưa làm:** xóa người dùng (Bước 8).
+

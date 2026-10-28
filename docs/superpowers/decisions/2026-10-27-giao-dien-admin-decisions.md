@@ -28,6 +28,7 @@ API từng khung: [`../../preparation/giao-dien-admin-facts/`](../../preparation
 | AD14 | Editor không đọc được lý do báo lỗi | `content.edit` được đọc danh sách lý do; báo lỗi mang cờ `refundable` | Chủ dự án (đề xuất của Claude) |
 | AD15 | Thời điểm làm việc API | 9 task API làm ở một phiên riêng, song song với các milestone màn | Chủ dự án (đề xuất của Claude) |
 | AD17 | "Tới ngày" khi cấp / sửa ngày lần cấp | Ngày D tính trọn: còn hiệu lực hết ngày D (giờ Việt Nam); API nhận 00:00 ngày D+1 | Chủ dự án (giữ cách màn M4 đã làm) |
+| AD18 | Admin tạo / sửa người dùng (thêm sau M4, 28/10/2026) | `POST /v1/admin/users` nhận thêm vai trò người học; admin sửa email, tên, ngày sinh, múi giờ và đặt lại mật khẩu; editor chỉ đọc; ngày sinh và điều khoản do người học tự bổ sung ở lần đăng nhập đầu | Chủ dự án (6 câu + 4 câu, đề xuất của Claude được duyệt) |
 
 ## AD0 — Luật hỏi đợt này (câu 1)
 
@@ -236,3 +237,25 @@ API coi `ends_at` là mốc đã hết hạn (`endsAt <= now` là hết hạn, `
 |---|---|
 | ✅ (a) Ngày D tính trọn: còn hiệu lực hết ngày D, API nhận 00:00 ngày D+1 (+07:00); màn hiện lại ngày của `ends_at − 1ms` | Khớp cách đọc "tới ngày 30"; cùng quy ước với bộ lọc Giao dịch |
 | (b) Ngày D là mốc hết hạn: API nhận 00:00 ngày D | Khớp nguyên nghĩa `ends_at` của API; cấp "tới ngày 30" thì ngày 30 đã hết hiệu lực |
+
+## AD18 — Admin tạo / sửa người dùng (28/10/2026, thêm sau M4; chủ dự án yêu cầu "làm trực tiếp")
+
+Trước đợt này admin chỉ tạo được tài khoản nhân sự (`admin`, `editor`); không có cách nào tạo hay sửa một người học. Chủ dự án trả lời trước, Claude đề xuất sau.
+
+| Câu | Phương án đã đưa ra | Chốt |
+|---|---|---|
+| 1. Route | ✅ (a) mở rộng `POST /v1/admin/users` nhận vai trò người học (`staff_role: null`); (b) route riêng | (a) |
+| 2. Mật khẩu | (a) admin gõ; (b) hệ thống sinh rồi gửi mail; ✅ (c) admin chọn một trong hai như hộp nhân sự | (c) |
+| 3. Bắt đổi mật khẩu lần đầu | có / không / ✅ để admin chọn | để admin chọn |
+| 4. Ngày sinh, điều khoản | (a) admin nhập ngày sinh; ✅ (b) để trống, người học tự bổ sung ở lần đăng nhập đầu; (c) để trống luôn | (b) |
+| 5. Email đã xác minh ngay | ✅ có (như tài khoản nhân sự); không (phải nhập OTP) | có |
+| 6. Ai tạo | admin / editor → **đổi sau câu 9: chỉ admin** | admin |
+| 7. Sửa những gì | (a) tên, ngày sinh, múi giờ; (b) thêm đổi email; ✅ (c) thêm đặt lại mật khẩu | (c) |
+| 8. Xóa | (a) xóa thật; (b) xóa mềm; (c) không cần; ✅ để Bước 8 làm | Bước 8 |
+| 9. Editor làm gì | tạo / sửa / xóa → ✅ **chỉ admin sửa, editor chỉ đọc** (chủ dự án nhầm ở câu 6) | editor đọc |
+| 10. Màn hỏi ngày sinh, điều khoản | (a) chỉ người học do admin tạo; ✅ (b) mọi tài khoản thiếu ngày sinh hoặc chưa đồng ý, kể cả cũ | (b) |
+
+Đề xuất kỹ thuật được duyệt cùng: đặt lại mật khẩu đăng xuất mọi thiết bị (như quên mật khẩu); email mới do admin sửa coi là đã xác minh, không đăng xuất, thư báo
+tới email cũ; quyền mới `users.read` cho danh sách và chi tiết (admin và editor), mọi thao tác ghi vẫn `roles.manage`; `PATCH /v1/me` nhận `accept_terms: true`;
+`GET /v1/me` trả thêm `terms_accepted_at`; chi tiết người dùng của admin trả thêm `timezone`; màn người học `/app/complete-profile` chỉ nằm ở app người học
+(nhân sự vào app admin không bị hỏi). Bị bỏ: route riêng cho người học (thêm route mà dữ liệu và luật giống hệt); admin nhập ngày sinh hộ (không biết thật).
