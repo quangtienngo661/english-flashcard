@@ -39,11 +39,11 @@ function setup(opts: { linked?: boolean; subOwner?: string | null; subStatus?: s
   );
   return { service, fake, prisma };
 }
-const ticket = (userId = LAN, at = clock.now()) => sealJson({ userId } satisfies ReauthTicket, 120, KEY, at);
+const ticket = (userId = LAN, at = clock.now()) => sealJson({ userId } satisfies ReauthTicket, 120, KEY, 'reauth-ticket', at);
 
 async function trip(s: ReturnType<typeof setup>, account: Partial<FakeAccount> = {}, userId = LAN) {
   const started = await s.service.start({ intent: 'reauth', locale: 'vi', ticket: ticket(userId) });
-  const saved = openJson<OAuthState>(started.oauthCookie!, KEY, clock.now())!;
+  const saved = openJson<OAuthState>(started.oauthCookie!, KEY, 'oauth-state', clock.now())!;
   const back = new URL(s.fake.issueCode({
     account: { email: 'lan@gmail.com', sub: 'sub-lan', ...account }, state: saved.state, nonce: saved.nonce,
     codeChallenge: s256(saved.codeVerifier), redirectUri: REDIRECT,
@@ -59,8 +59,8 @@ describe('Google reauth before deleting (D25)', () => {
     expect(url.searchParams.get('intent')).toBe('reauth');
     expect(url.searchParams.get('locale')).toBe('en');
     const t = url.searchParams.get('ticket')!;
-    expect(openJson<ReauthTicket>(t, KEY, clock.now())).toEqual({ userId: LAN });
-    expect(openJson<ReauthTicket>(t, KEY, new Date(clock.now().getTime() + 121_000))).toBeNull();
+    expect(openJson<ReauthTicket>(t, KEY, 'reauth-ticket', clock.now())).toEqual({ userId: LAN });
+    expect(openJson<ReauthTicket>(t, KEY, 'reauth-ticket', new Date(clock.now().getTime() + 121_000))).toBeNull();
   });
 
   it('a user with no Google identity cannot start a reauth (404); Google off is 409 google-unavailable', async () => {
@@ -93,7 +93,7 @@ describe('Google reauth before deleting (D25)', () => {
     const result = await s.service.callback({ code: x.code, state: x.state, oauthCookie: x.cookie }, res);
     expect(result.location).toBe(`${WEB}/vi/app/settings/delete-account?reauth=ok`);
     expect(s.service.reauthUserOf(result.reauthCookie)).toBe(LAN);
-    expect(openJson(result.reauthCookie, KEY, new Date(clock.now().getTime() + 301_000))).toBeNull();
+    expect(openJson(result.reauthCookie, KEY, 'reauth-proof', new Date(clock.now().getTime() + 301_000))).toBeNull();
     expect(result.session).toBeUndefined();
   });
 
@@ -117,9 +117,14 @@ describe('Google reauth before deleting (D25)', () => {
       .toBe(`${WEB}/vi/app/settings/delete-account?reauth=failed`);
   });
 
+  it('final review C1: the 2-minute start ticket is not the proof; only the callback\'s cookie is', () => {
+    const s = setup();
+    expect(s.service.reauthUserOf(ticket())).toBeNull();
+  });
+
   it('B8E19: no cookie, a tampered one or an expired one names nobody', () => {
     const s = setup();
-    const old = sealJson({ userId: LAN }, 300, KEY, new Date(clock.now().getTime() - 301_000));
+    const old = sealJson({ userId: LAN }, 300, KEY, 'reauth-proof', new Date(clock.now().getTime() - 301_000));
     for (const bad of [undefined, 'garbage', old]) expect(s.service.reauthUserOf(bad)).toBeNull();
   });
 });

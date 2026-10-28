@@ -20,7 +20,7 @@ const config: AppConfig = {
   google: { mode: 'fake', clientId: null, clientSecret: null, redirectUri: 'http://localhost:3000/cb', apiOrigin: 'http://localhost:3000', cookieKey: KEY },
 };
 const ticket = (over: Partial<SignupTicket> = {}) => sealJson(
-  { sub: 'sub-1', email: 'minh@gmail.com', givenName: 'Minh', familyName: 'Trần', picture: 'https://p/1.png', locale: 'vi', next: '/vi/app', ...over }, 900, KEY, clock.now());
+  { sub: 'sub-1', email: 'minh@gmail.com', givenName: 'Minh', familyName: 'Trần', picture: 'https://p/1.png', locale: 'vi', next: '/vi/app', ...over }, 900, KEY, 'signup', clock.now());
 const body = (over: Record<string, unknown> = {}) => googleCompleteSchema.parse({ birth_date: '2000-05-01', accept_terms: true, timezone: 'Asia/Saigon', ...over });
 
 type Existing = { id: string; status: string; emailVerifiedAt: Date | null } | null;
@@ -68,7 +68,7 @@ describe('GoogleAuthService.completeInfo', () => {
 
   it('B8E8: a missing, expired or tampered cookie → 401 invalid-token', () => {
     const s = setup();
-    const expired = sealJson({ sub: 's', email: 'a@b.c', locale: 'vi', next: '/vi/app' }, 900, KEY, new Date(clock.now().getTime() - 901_000));
+    const expired = sealJson({ sub: 's', email: 'a@b.c', locale: 'vi', next: '/vi/app' }, 900, KEY, 'signup', new Date(clock.now().getTime() - 901_000));
     for (const bad of [undefined, '', 'garbage', expired]) {
       expect(() => s.service.completeInfo(bad)).toThrowError(expect.objectContaining({ status: 401, problemType: 'invalid-token' }));
     }
@@ -134,6 +134,14 @@ describe('GoogleAuthService.complete', () => {
     s = setup();
     s.prisma.$transaction.mockRejectedValueOnce(Object.assign(new Error('unique'), { code: 'P2002' }));
     await expect(s.service.complete(ticket(), body(), s.res)).rejects.toMatchObject({ status: 409, problemType: 'email-taken' });
+  });
+
+  it('final review I1: the unverified account was deleted between the two reads → 409 email-taken, never a new user under the deleted id', async () => {
+    s = setup({ id: randomUUID(), status: 'active', emailVerifiedAt: null });
+    s.tx.user.findUnique.mockResolvedValue(null as never);
+    await expect(s.service.complete(ticket(), body(), s.res)).rejects.toMatchObject({ status: 409, problemType: 'email-taken' });
+    expect(s.tx.user.create).not.toHaveBeenCalled();
+    expect(s.tx.userIdentity.create).not.toHaveBeenCalled();
   });
 
   it('a picture that is not an http(s) URL is dropped', async () => {

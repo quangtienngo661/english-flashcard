@@ -98,7 +98,7 @@ export class GoogleAuthService {
     let loginHint: string | undefined;
     let ticketUserId: string | undefined;
     if (reauth) {
-      const ticket = typeof input.ticket === 'string' ? openJson<ReauthTicket>(input.ticket, google.cookieKey, this.clock.now()) : null;
+      const ticket = typeof input.ticket === 'string' ? openJson<ReauthTicket>(input.ticket, google.cookieKey, 'reauth-ticket', this.clock.now()) : null;
       const identity = ticket
         ? await this.prisma.userIdentity.findFirst({ where: { userId: ticket.userId, provider: 'google' }, select: { subject: true } }) : null;
       if (!ticket || !identity) return { location: deletePage('failed'), oauthCookie: null };
@@ -112,7 +112,7 @@ export class GoogleAuthService {
       ...(ticketUserId ? { ticketUserId } : {}),
     };
     return {
-      oauthCookie: sealJson(state, OAUTH_COOKIE_TTL_S, google.cookieKey, this.clock.now()),
+      oauthCookie: sealJson(state, OAUTH_COOKIE_TTL_S, google.cookieKey, 'oauth-state', this.clock.now()),
       location: this.google.authorizeUrl({
         state: state.state, nonce: state.nonce, codeChallenge: s256(state.codeVerifier), prompt: 'select_account', loginHint,
       }),
@@ -130,7 +130,7 @@ export class GoogleAuthService {
     const url = new URL('/v1/auth/google/start', google.apiOrigin);
     url.search = new URLSearchParams({
       intent: 'reauth', locale: parseLocale(localeInput),
-      ticket: sealJson({ userId } satisfies ReauthTicket, REAUTH_TICKET_TTL_S, google.cookieKey, this.clock.now()),
+      ticket: sealJson({ userId } satisfies ReauthTicket, REAUTH_TICKET_TTL_S, google.cookieKey, 'reauth-ticket', this.clock.now()),
     }).toString();
     return url.toString();
   }
@@ -138,13 +138,13 @@ export class GoogleAuthService {
   /** The user a valid `google_reauth` cookie names, or null (none, tampered or past five minutes: B8E19). */
   reauthUserOf(cookie: string | undefined): string | null {
     const key = this.config.google.cookieKey;
-    return key ? openJson<ReauthTicket>(cookie, key, this.clock.now())?.userId ?? null : null;
+    return key ? openJson<ReauthTicket>(cookie, key, 'reauth-proof', this.clock.now())?.userId ?? null : null;
   }
 
   /** `error`: Google sent the browser back with `error=…` (the person pressed cancel). */
   async callback(input: { code?: unknown; state?: unknown; error?: unknown; oauthCookie?: string }, res: Response): Promise<CallbackResult> {
     const key = this.config.google.cookieKey;
-    const saved = key ? openJson<OAuthState>(input.oauthCookie, key, this.clock.now()) : null;
+    const saved = key ? openJson<OAuthState>(input.oauthCookie, key, 'oauth-state', this.clock.now()) : null;
     const locale = saved?.locale ?? 'vi';
     const fail = (error: string): CallbackResult => this.fail(locale, error, saved?.intent);
     if (!saved || typeof input.state !== 'string' || input.state !== saved.state || typeof input.code !== 'string' || input.code === '' || input.error !== undefined) {
@@ -176,7 +176,7 @@ export class GoogleAuthService {
     }
     return {
       ...back('ok'),
-      reauthCookie: sealJson({ userId: bySub.userId } satisfies ReauthTicket, REAUTH_COOKIE_TTL_S, this.config.google.cookieKey!, this.clock.now()),
+      reauthCookie: sealJson({ userId: bySub.userId } satisfies ReauthTicket, REAUTH_COOKIE_TTL_S, this.config.google.cookieKey!, 'reauth-proof', this.clock.now()),
     };
   }
 
@@ -209,7 +209,7 @@ export class GoogleAuthService {
     };
     return {
       location: this.web(`/${locale}/app/google/complete`),
-      signupCookie: sealJson(ticket, SIGNUP_COOKIE_TTL_S, key, this.clock.now()),
+      signupCookie: sealJson(ticket, SIGNUP_COOKIE_TTL_S, key, 'signup', this.clock.now()),
     };
   }
 
@@ -253,6 +253,8 @@ export class GoogleAuthService {
         };
         const existing = await tx.user.findUnique({ where: { email: ticket.email }, select: { id: true, status: true, emailVerifiedAt: true } });
         if (!existing) {
+          // The unverified account we read outside was deleted meanwhile (clean-up or an admin): its id is in `deleted_accounts`, so a new user must not take it (final review I1).
+          if (known) throw emailTaken();
           await tx.user.create({ data: { id: userId, email: ticket.email, ...profile, createdAt: now, updatedAt: now } });
         } else {
           // Someone created the account between our two reads, or verified it meanwhile (B8E10).
@@ -284,7 +286,7 @@ export class GoogleAuthService {
 
   private openTicket(cookie: string | undefined): SignupTicket {
     const key = this.config.google.cookieKey;
-    const ticket = key ? openJson<SignupTicket>(cookie, key, this.clock.now()) : null;
+    const ticket = key ? openJson<SignupTicket>(cookie, key, 'signup', this.clock.now()) : null;
     if (!ticket) throw new ProblemDetailsException({ status: 401, title: 'Invalid token', type: 'invalid-token' });
     return ticket;
   }

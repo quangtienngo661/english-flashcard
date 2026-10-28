@@ -57,7 +57,7 @@ function setup(over: { byEmail?: Partial<UserRow> | null; bySub?: { userId: stri
 /** start → the saved state → the code the fake page would issue for `account`. */
 async function approve(s: ReturnType<typeof setup>, account: Partial<FakeAccount> = {}, next?: string) {
   const started = await s.service.start({ locale: 'vi', next });
-  const saved = openJson<OAuthState>(started.oauthCookie!, KEY, clock.now())!;
+  const saved = openJson<OAuthState>(started.oauthCookie!, KEY, 'oauth-state', clock.now())!;
   const url = new URL(s.fake.issueCode({
     account: { email: 'lan@gmail.com', sub: 'sub-1', ...account }, state: saved.state, nonce: saved.nonce,
     codeChallenge: s256(saved.codeVerifier), redirectUri: REDIRECT,
@@ -69,7 +69,7 @@ describe('GoogleAuthService.start', () => {
   it('seals state, nonce and the PKCE verifier in the cookie, sends the challenge to Google, and keeps a safe next', async () => {
     const s = setup();
     const started = await s.service.start({ locale: 'en', next: '/en/app/word?id=1#x' });
-    const saved = openJson<OAuthState>(started.oauthCookie!, KEY, clock.now())!;
+    const saved = openJson<OAuthState>(started.oauthCookie!, KEY, 'oauth-state', clock.now())!;
     expect(saved).toMatchObject({ intent: 'login', locale: 'en', next: '/en/app/word?id=1#x' });
     const url = new URL(started.location);
     expect(url.searchParams.get('state')).toBe(saved.state);
@@ -79,7 +79,7 @@ describe('GoogleAuthService.start', () => {
   });
 
   it('a bad next falls back to /{locale}/app', async () => {
-    const saved = openJson<OAuthState>((await setup().service.start({ locale: 'vi', next: '//evil.example' })).oauthCookie!, KEY, clock.now())!;
+    const saved = openJson<OAuthState>((await setup().service.start({ locale: 'vi', next: '//evil.example' })).oauthCookie!, KEY, 'oauth-state', clock.now())!;
     expect(saved.next).toBe('/vi/app');
   });
 
@@ -195,7 +195,7 @@ describe('GoogleAuthService.callback', () => {
       const result = await call(await approve(s, { sub: 'new-sub', email: 'Minh@Gmail.com', givenName: 'Minh', picture: 'https://p/1.png' }, '/vi/app/groups'));
       expect(result.location).toBe(`${WEB}/vi/app/google/complete`);
       expect(result.session).toBeUndefined();
-      const ticket = openJson<SignupTicket>(result.signupCookie, KEY, clock.now())!;
+      const ticket = openJson<SignupTicket>(result.signupCookie, KEY, 'signup', clock.now())!;
       expect(ticket).toMatchObject({ sub: 'new-sub', email: 'minh@gmail.com', givenName: 'Minh', picture: 'https://p/1.png', locale: 'vi', next: '/vi/app/groups' });
       expect(s.prisma.$transaction).not.toHaveBeenCalled();
       expect(s.prisma.user.create).not.toHaveBeenCalled();
