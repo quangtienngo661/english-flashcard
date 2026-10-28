@@ -1,10 +1,10 @@
 # Bước 8 — Identity còn lại: đăng nhập Google và xóa tài khoản — Design (28/10/2026)
 
-> **Trạng thái 28/10/2026:** đã review độc lập và sửa theo review (§0b). Chờ chủ dự án trả lời câu 26–30 (vòng 2 ở nhật ký hỏi đáp) và duyệt. Chỉ là tài liệu; chưa có code.
+> **Trạng thái 29/10/2026:** đã review độc lập và sửa theo review (§0b); mọi câu đã chốt (D1–D30; câu 26 để sau). Chờ chủ dự án duyệt design. Chỉ là tài liệu; chưa có code.
 > **Nhánh:** `docs/buoc-8-brainstorm` (cắt từ `dev` @ `9e35eb5`).
 > **Nguồn quyết định:** câu hỏi [`../reviews/2026-10-28-buoc-8-questions.md`](../reviews/2026-10-28-buoc-8-questions.md), nhật ký hỏi đáp
 > [`../reviews/2026-10-28-buoc-8-qa-log.md`](../reviews/2026-10-28-buoc-8-qa-log.md), decision record
-> [`../decisions/2026-10-28-buoc-8-identity-remainder-decisions.md`](../decisions/2026-10-28-buoc-8-identity-remainder-decisions.md) (D1–D25).
+> [`../decisions/2026-10-28-buoc-8-identity-remainder-decisions.md`](../decisions/2026-10-28-buoc-8-identity-remainder-decisions.md) (D1–D30).
 > **Bằng chứng code:** [`BUOC_8_CODE_FACTS_2026-10-28.md`](../../preparation/BUOC_8_CODE_FACTS_2026-10-28.md) (`dev` @ `9e35eb5`). Số dòng trong design này là của
 > commit đó; plan phải đọc lại code trên `dev` lúc viết.
 > **Research:** [`TRIAL_AND_RETENTION_AFTER_DELETION_RESEARCH_2026-10-28.md`](../../preparation/TRIAL_AND_RETENTION_AFTER_DELETION_RESEARCH_2026-10-28.md) (D12, D15);
@@ -45,10 +45,10 @@ Review: [`../reviews/2026-10-28-buoc-8-design-review.md`](../reviews/2026-10-28-
 | # | Sửa ở đâu | Tóm tắt |
 |---|---|---|
 | R1 | 7.2, 7.4, B8E24, M1 | Bộ xóa chạy lại được khi hàng `users` đã mất; việc quét lại `identity.deletion-sweep` trong 24 giờ sau khi xóa bắt các hàng ghi muộn |
-| R2 | 5.4, 5.4b, M10 | Email không phải Gmail và không `hd`: hỏi mật khẩu Wordmet trước khi gắn (Đề xuất; **chờ chốt câu 26**) |
+| R2 | 5.4, 18, 19, M10 | Chủ dự án **để sau** (câu 26): Bước 8 giữ K8; rủi ro ghi ở §18, §19 để xem lại trước khi ra mắt |
 | R3 | 7.5, 18, M17 | Thủ tục xuất / nạp danh sách đã xóa quanh lần khôi phục; nơi lưu ngoài DB chốt ở Deploy |
 | R4 | 6.2, M2, M3, M15 | Bảng "đường nào làm gì với `deleting`" |
-| R5 | 7.3, M21 | Bỏ luật `cloze_source='own'`; ngoại lệ D14 do `report-not-available` bảo đảm; báo lỗi về từ riêng xóa hẳn (câu 27a). **Chờ chốt câu 27b**: câu trả lời trong bản chụp |
+| R5 | 7.3, M21 | Bỏ luật `cloze_source='own'`; ngoại lệ D14 do `report-not-available` bảo đảm; báo lỗi về từ riêng xóa hẳn (câu 27a); câu trả lời trong bản chụp để trống (câu 27b) |
 | R6 | 0, 5.4, 5.5, B8E6, B8E10 | Tài khoản chưa xác minh đi màn D6; hoàn tất dùng lại `id` |
 | R7 | 7.1, 8.1, M8, M9, M20 | Một vị từ "đang tự gia hạn" dùng chung, gồm cả `grace`, `on_hold` (chủ dự án chốt câu 28); admin xóa: tắt gia hạn trước, lỗi thì không xóa |
 | R8 | 7.2, M4 | Xóa nhân sự: khóa `identity.staff_role` trước; đếm admin bỏ người `deleting` |
@@ -98,6 +98,11 @@ xóa (đợt giao diện người học), và nút hủy gói người học cò
 | D22 | Web đi tới Google bằng chuyển trang qua API |
 | D23 | Xóa trong request; lỗi thì "đang xóa" và việc định kỳ thử lại |
 | D24 | Đọc `users.status` mỗi request, chặn cả `locked` và `deleting` |
+| D26 | Tự liên kết Google khi email không do Google quản lý: **để sau**, giữ K8, rủi ro ở §19 |
+| D27 | Báo lỗi về từ riêng của người học: xóa hẳn; báo lỗi còn lại: để trống câu trả lời trong bản chụp |
+| D28 | Gói `grace` / `on_hold` cũng phải hủy trước khi xóa |
+| D29 | Guard kiểm cả chuỗi phiên đã thu hồi: đăng xuất có hiệu lực ngay |
+| D30 | Lần cấp gói của người bị xóa: xóa (ER16) |
 
 ## 3. Phạm vi
 
@@ -186,8 +191,7 @@ Plan viết lại bước này thành hướng dẫn có ảnh ở `docs/deliver
 | Tình huống | Làm gì |
 |---|---|
 | Có danh tính `(google, sub)` | Lấy người dùng đó. `locked` → `error=account-locked`; `deleting` → `error=google-failed` (như mọi đăng nhập của tài khoản đang xóa, IE11) |
-| Không có danh tính; có người dùng cùng email **đã xác minh**, `active`; email là `@gmail.com` hoặc token có `hd` | Gắn danh tính vào người đó (K8), gửi thư "Google đã được liên kết" (IR22) |
-| Như dòng trên nhưng email **không** phải `@gmail.com` và token không có `hd` | Google tự ghi mình không phải nơi quản lý email đó (`verify-google-id-token`): **không** tự gắn. Cookie `google_link` (mã hóa: `sub`, `user_id`, hạn 10 phút), 302 tới `/{locale}/app/google/link` để hỏi mật khẩu Wordmet một lần (§5.4b). Tài khoản không có mật khẩu → `error=google-link-needs-password`. **Đề xuất, chờ chốt câu 26 vòng 2** |
+| Không có danh tính; có người dùng cùng email **đã xác minh**, `active` | Gắn danh tính vào người đó (K8), gửi thư "Google đã được liên kết" (IR22). Với email không phải `@gmail.com` và token không có `hd`, Google ghi mình không phải nơi quản lý email đó; rủi ro này **để sau** (câu 26 vòng 2), xem §19 |
 | Có người dùng cùng email đã xác minh nhưng `locked` / `deleting` | `account-locked` / `google-failed`; **không** gắn danh tính (M11) |
 | Không có danh tính; có người dùng cùng email **chưa xác minh** | Coi như chưa có (review R6): đi như dòng dưới; tài khoản cũ xử lý lúc hoàn tất (§5.5) |
 | Không có ai | Người mới: cookie `google_signup` (mã hóa: `sub`, email, `given_name`, `family_name`, `picture`, `locale`, `next`, hạn 15 phút; `SameSite=Lax`, `path=/v1/auth/google`), 302 tới `/{locale}/app/google/complete`. **Không ghi gì vào DB** (D6) |
@@ -198,15 +202,6 @@ Plan viết lại bước này thành hướng dẫn có ảnh ở `docs/deliver
 
 `ASSUMPTION` (kiểm trong lần đăng nhập thật của D4): trình duyệt nhận cookie `refresh_token` (`SameSite=Strict`) đặt ở phản hồi của một chuyển trang bắt đầu từ Google, và
 gửi nó ở lần gọi `/v1/auth/refresh` ngay sau đó từ web (cùng site).
-
-### 5.4b Liên kết cần mật khẩu: `GET` / `POST /v1/auth/google/link` (Đề xuất, chờ chốt câu 26)
-
-Ví dụ (nhật ký hỏi đáp, câu 26): Tuấn từng giữ hộp thư `ketoan@congty.vn` và có tài khoản Google bằng email đó; nay hộp thư là của Lan, Lan có tài khoản Wordmet. Tuấn bấm
-Google: không được tự gắn, phải nhập mật khẩu Wordmet của Lan.
-- `GET` (cookie `google_link`) trả `{ email }` để màn hiện "Nhập mật khẩu Wordmet của {email} để liên kết Google". Trang ở nhóm route `(auth)`.
-- `POST { password }` (cookie + header `X-CSRF-Protection: 1`, giới hạn `auth.login.ip`): kiểm mật khẩu bằng đúng đường của đăng nhập (`decideCredential`), nên sai mật khẩu
-  tính vào bộ đếm 10 lần và khóa 15 phút (IR6), và tài khoản `locked` / `deleting` bị từ chối như đăng nhập. Đúng → gắn danh tính, thư IR22, chuỗi phiên Google, cookie
-  `refresh_token`, xóa `google_link`. Phiếu hết hạn → "Phiên liên kết đã hết hạn" + nút Google lại.
 
 ### 5.5 Hoàn tất đăng ký: `POST /v1/auth/google/complete` (D6, D7)
 
@@ -350,7 +345,7 @@ scope = 'private' AND owner_user_id = $1`, không gọi `deletePrivateEntryConte
 
 | Module | Xóa | Giữ (với mã ẩn danh hoặc như cũ) | Nguồn |
 |---|---|---|---|
-| Practice | `practice_session_items`, `practice_questions`, `practice_sessions`, `practice_ai_requests`, `practice_word_checks` của người đó | `practice_reports`: `user_id` = mã ẩn danh, `note` = null. Ngoại lệ D14 (câu làm từ câu người học tự viết) không có hàng nào để xóa: những câu đó không báo lỗi được (409 `report-not-available`, `reports.service.ts:106`); giữ một test cho điều đó (review R5). **Xóa hẳn** báo lỗi có `sense_id` là nghĩa riêng của người học (câu 27a vòng 2: như `deleteForSenses` khi xóa một từ riêng, `private-senses-cleanup.provider.ts:42`; bản chụp của chúng chứa từ và nghĩa người học tự viết). Câu trả lời trong bản chụp (`learner.answer`, `answers_tried`, `snapshot.ts`): **chờ chốt câu 27b** (Claude đề xuất giữ; chủ dự án trả lời xóa). `resolved_by` của nhân sự: id trơ | D14, Bước 4 §15, Bước 7 §19 |
+| Practice | `practice_session_items`, `practice_questions`, `practice_sessions`, `practice_ai_requests`, `practice_word_checks` của người đó | `practice_reports`: `user_id` = mã ẩn danh, `note` = null. Ngoại lệ D14 (câu làm từ câu người học tự viết) không có hàng nào để xóa: những câu đó không báo lỗi được (409 `report-not-available`, `reports.service.ts:106`); giữ một test cho điều đó (review R5). **Xóa hẳn** báo lỗi có `sense_id` là nghĩa riêng của người học (câu 27a vòng 2: như `deleteForSenses` khi xóa một từ riêng, `private-senses-cleanup.provider.ts:42`; bản chụp của chúng chứa từ và nghĩa người học tự viết). Báo lỗi giữ lại: để trống câu trả lời trong bản chụp (`learner.answer`, `answers_tried`, `snapshot.ts`), như ghi chú (câu 27b vòng 2). `resolved_by` của nhân sự: id trơ | D14, Bước 4 §15, Bước 7 §19 |
 | Learning | `learning_groups`, `learning_items`, `learning_log` | — | SR11 |
 | Content | Từ riêng (`entries.owner_user_id`, xóa qua `deletePrivateEntryContent`, cascade nghĩa, bản sửa, câu), `context_sentences` của người đó | `sense_revisions.created_by` / `reviewed_by` / `published_by`, `senses.state_changed_by`, `word_form_additions.added_by` của nhân sự: giữ id trơ | D18 |
 | Notifications | `reminder_prefs`, `reminder_deliveries` | — | SR11 |
@@ -447,9 +442,6 @@ Trang nằm trong nhóm route `(auth)` (bọc `AuthGate`, như đăng nhập, đ
 sẽ chuyển Minh đi (review R11). Dùng lại thành phần của `CompleteProfile.tsx` (ngày sinh, ô đồng ý), thêm ô họ / tên khi API báo phiếu thiếu tên (`GET /v1/auth/google/complete` trả `{ email, needs_name }`,
 **Đề xuất**). Nút "Tạo tài khoản". Dưới 13 tuổi: câu đã có của đăng ký, rồi về trang đăng nhập. Phiếu hết hạn: "Phiên đăng ký đã hết hạn" + nút Google lại.
 
-Màn `/[locale]/app/google/link` (nhóm `(auth)`, chờ chốt câu 26): "Email {email} đã có tài khoản Wordmet. Nhập mật khẩu Wordmet để liên kết Google.", ô mật khẩu,
-nút "Liên kết", link "Quên mật khẩu".
-
 ### 9.3 Cài đặt
 
 - Dòng chỉ đọc "Đăng nhập bằng: Mật khẩu · Google" (từ `GET /v1/me`, thêm `sign_in_methods: ['password','google']`; D8).
@@ -512,7 +504,6 @@ Không đổi cấu trúc các bảng module khác: cột `user_id` bắt buộc
 | `GET /v1/auth/google/start` | Công khai | §5.3 |
 | `GET /v1/auth/google/callback` | Google | §5.4 |
 | `GET /v1/auth/google/complete`, `POST /v1/auth/google/complete` | Cookie `google_signup` | §5.5, §9.2 |
-| `GET /v1/auth/google/link`, `POST /v1/auth/google/link` | Cookie `google_link` | §5.4b (chờ câu 26) |
 | `POST /v1/auth/google/reauth` | Người học đã đăng nhập | §5.9 |
 | `POST /v1/me/account/delete` | Người học (không vai trò) | §7 |
 | `POST /v1/admin/users/{id}/delete` | `roles.manage` | §7, §10 |
@@ -523,7 +514,7 @@ Không đổi cấu trúc các bảng module khác: cột `user_id` bắt buộc
 Xóa thành công trả 204; việc xóa chưa xong (Tx B lỗi, hoặc tài khoản đã `deleting`) trả 202 với thân `{ "status": "pending" }` (thành công, không phải Problem Details).
 
 Lỗi mới (Problem Details): `google-failed`, `google-unavailable`, `google-email-unverified`, `password-login-required`, `staff-account`, `subscription-renewing`,
-`confirm-email-mismatch`, `reauth-required`, `self-delete`, `last-admin`, `account-deleting`, `renewal-not-cancelled`, `google-link-needs-password`, `subscription-not-cancellable`, `cancel-in-store`. Admin và web thêm các mã này vào danh sách lỗi đã biết
+`confirm-email-mismatch`, `reauth-required`, `self-delete`, `last-admin`, `account-deleting`, `renewal-not-cancelled`, `subscription-not-cancellable`, `cancel-in-store`. Admin và web thêm các mã này vào danh sách lỗi đã biết
 (`apps/admin/src/api/problem.ts`, chỗ tương ứng ở web).
 
 ## 14. Thư mới (D13, IR22)
@@ -592,7 +583,7 @@ Theo khuôn của `identity/mailer/templates.ts` (chữ thường, vi rồi en t
 | B8E54 | Lan bấm xóa hai lần, cả hai request qua guard trước khi Tx A đầu commit | Request sau thấy `deleting` trong Tx A: trả 202, không chạy Tx B song song (M24) |
 | B8E56 | Lan đăng xuất trên laptop; tab khác trên laptop đó còn access token | Request kế tiếp của tab đó → 401, về trang đăng nhập (câu 29) |
 | B8E57 | Gói của Lan ở `grace` (thẻ hết tiền), Lan bấm xóa | 409 `subscription-renewing`; màn chỉ tới nút "Hủy gói", nút này hiện ở cả `grace` và `on_hold` (câu 28) |
-| B8E58 | Tuấn (từng giữ `ketoan@congty.vn`) bấm Google; Lan đang giữ hộp thư đó và có tài khoản Wordmet | Không tự gắn; màn hỏi mật khẩu Wordmet; Tuấn không biết mật khẩu → không vào được; sai 10 lần thì khóa đăng nhập mật khẩu 15 phút (IR6) (câu 26, M10) |
+| B8E58 | Tuấn (từng giữ `ketoan@congty.vn`, có tài khoản Google bằng email đó) bấm Google; Lan đang giữ hộp thư và có tài khoản Wordmet | Theo K8, Google của Tuấn được gắn vào tài khoản Lan. **Rủi ro đã biết, để sau** (câu 26, §19); test ghi lại hành vi này để khi đổi luật thì thấy |
 | B8E59 | Lan xóa tài khoản khi có báo lỗi câu AI về từ riêng `standup` | Báo lỗi đó bị xóa hẳn; báo lỗi về từ trong kho chung giữ, bỏ tên, xóa ghi chú (câu 27a, D14) |
 | B8E55 | Câu điền từ làm từ câu Lan tự viết | Không báo lỗi được (409 `report-not-available`, đã có); test giữ điều này để ngoại lệ D14 luôn đúng |
 
@@ -630,6 +621,7 @@ Ghi vào `docs/deliveries/deploy-checklist.md`:
 - Google Auth Platform: chuyển sang "In production", xin xác minh thương hiệu (trang chủ có link chính sách riêng tư cùng domain; `LEGAL_PAGES_RESEARCH_2026-10-11.md`), thêm
   địa chỉ quay về production. Khi đã xác minh, có thể bật `auth_time` để siết bước xác nhận Google (D25).
 - Chính sách riêng tư: ảnh Google, hồ sơ thanh toán N năm, thời hạn backup, những gì còn giữ sau khi xóa (§7.3). Luật sư xác nhận N (D15) và cách giữ báo lỗi.
+- Xem lại câu 26 (tự liên kết Google với email không do Google quản lý, §19) trước khi mở cho người dùng thật.
 - Backup: thời hạn (D21); thủ tục xuất danh sách đã xóa trước khi khôi phục và `accounts:replay-deletions --from` sau khi khôi phục (§7.5); nơi lưu danh sách ngoài DB; thời hạn
   giữ log (log mang `user_id`).
 - App điện thoại: Google Sign-In qua thư viện Android/iOS và một endpoint nhận ID token; Sign in with Apple trước khi ra iOS (Apple 4.8); trang web xin xóa cho Google Play (D20);
@@ -647,6 +639,9 @@ Ghi vào `docs/deliveries/deploy-checklist.md`:
 - **Danh sách đã xóa khi DB mất hẳn** cần nơi lưu ngoài DB; còn mở tới Deploy (§7.5).
 - **Mã giao dịch nhà cung cấp** vẫn tra ngược ra người mua trên trang của nhà cung cấp; dòng giữ lại là "bỏ tên", không phải ẩn danh tuyệt đối (research §2.4).
 - **Xác nhận Google yếu hơn mật khẩu** khi trình duyệt đang đăng nhập Google sẵn (D25).
+- **Tự liên kết với email không do Google quản lý** (câu 26, để sau): một người từng giữ hộp thư công ty (`ketoan@congty.vn`) và đã tạo tài khoản Google bằng email đó có thể vào
+  tài khoản Wordmet của người đang giữ hộp thư, vì Google chỉ xác minh email đó một lần lúc tạo tài khoản Google (`verify-google-id-token`: "Google is not authoritative" khi
+  email không phải `@gmail.com` và không có `hd`). Google không có API hay sự kiện nào báo hộp thư đổi chủ. Bước 8 chấp nhận; xem lại trước khi ra mắt.
 
 ## 20. Tài liệu cần cập nhật sau khi duyệt
 

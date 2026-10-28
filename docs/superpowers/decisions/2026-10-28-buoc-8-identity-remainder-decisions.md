@@ -38,6 +38,11 @@ lại và vòng chốt: [`../reviews/2026-10-28-buoc-8-qa-log.md`](../reviews/20
 | D23 | Việc xóa chạy ở đâu | Trong request; lỗi thì để "đang xóa", việc định kỳ thử lại | Chủ dự án |
 | D24 | Chặn "đang xóa" | Đọc DB mỗi request, áp cho cả tài khoản bị khóa | Chủ dự án |
 | D25 | Tài khoản chỉ có Google xác nhận xóa | Giữ D12 cũ: một lần chọn lại tài khoản Google là đủ | Chủ dự án |
+| D26 | Tự liên kết Google khi email không do Google quản lý (sau review) | **Để sau**: Bước 8 giữ K8; rủi ro ghi lại, xem trước khi ra mắt | Chủ dự án |
+| D27 | Báo lỗi về từ riêng; câu trả lời trong bản chụp (sau review) | Báo lỗi về từ riêng xóa hẳn; báo lỗi còn lại để trống câu trả lời | Chủ dự án (27b khác đề xuất của Claude) |
+| D28 | Gói `grace` / `on_hold` khi xóa (sau review) | Tính là "đang tự gia hạn": phải hủy gói trước | Chủ dự án |
+| D29 | Đăng xuất có hiệu lực ngay (sau review, tùy chọn) | Có: guard kiểm cả chuỗi phiên đã thu hồi | Chủ dự án |
+| D30 | Vết cấp gói của người bị xóa (sau review, tùy chọn) | Xóa theo ER16 | Chủ dự án |
 
 ---
 
@@ -325,6 +330,69 @@ Hỏi không kèm đề xuất (luật D1).
 
 ---
 
+Các quyết định D26–D30 đến từ review độc lập ([`../reviews/2026-10-28-buoc-8-design-review.md`](../reviews/2026-10-28-buoc-8-design-review.md)), hỏi ở vòng 2 của nhật ký
+hỏi đáp (câu 26–30), theo luật D1.
+
+## D26 — Tự liên kết Google khi email không do Google quản lý (câu 26, review R2)
+
+Trang Google `verify-google-id-token`: email không có đuôi `@gmail.com` và token không có `hd` thì Google "not authoritative", nên khuyên hỏi mật khẩu hoặc cách khác. Ví dụ
+(đã sửa ở vòng 2): Tuấn từng giữ `ketoan@congty.vn` và tạo tài khoản Google bằng email đó; nay hộp thư là của Lan; Tuấn bấm Google thì theo K8 vào tài khoản Lan. Chủ dự án hỏi
+thêm: có webhook báo không (không: RISC chỉ có bảy sự kiện bảo mật, không có đổi email), có tra được tài khoản Google còn tồn tại không (không có API; và tài khoản của Tuấn vẫn
+còn, chỉ hộp thư đổi chủ).
+
+| Phương án | Trade-off |
+|---|---|
+| (a) giữ K8 | Không thêm bước; còn lỗ "người giữ hộp thư cũ" |
+| (b) chỉ tự liên kết với Gmail hoặc `hd`; email khác hỏi mật khẩu Wordmet một lần | Đóng lỗ; thêm một màn cho nhóm hiếm |
+| (c) như (b) nhưng bằng mã qua email | Đóng lỗ; mở lại D12 cũ |
+| ✅ Khác: **để sau** | Bước 8 giữ (a) và ghi rủi ro; chủ dự án thấy (b) "chưa hợp lý", chưa có hướng khác |
+
+Chủ dự án để trống lần đầu ("tạm để đó, hoặc Claude đề xuất"); Claude đề xuất (b); chủ dự án không đồng ý và để sau.
+
+## D27 — Báo lỗi về từ riêng và câu trả lời trong bản chụp (câu 27, review R5)
+
+Review: ngoại lệ của D14 (câu làm từ câu tự viết) không có hàng nào vì những câu đó không báo lỗi được; bản chụp của báo lỗi câu AI về từ riêng giữ chính từ và nghĩa người học
+tự viết; hôm nay xóa một từ riêng thì báo lỗi của nó bị xóa theo.
+
+27a:
+
+| Phương án | Trade-off |
+|---|---|
+| (a) giữ như D14 | Staff còn ví dụ; giữ chữ người học tự viết |
+| ✅ (b) xóa hẳn | Giống khi xóa một từ riêng; staff mất ví dụ đó |
+
+27b:
+
+| Phương án | Trade-off |
+|---|---|
+| (a) giữ câu trả lời trong bản chụp | Staff sửa được luật chấm từ báo lỗi "chấm sai" (đề xuất của Claude) |
+| ✅ (b) để trống | Không còn chữ người học gõ; báo lỗi "chấm sai" khó dùng hơn |
+
+Chủ dự án trả lời "27b" (Claude hiểu là (b) ở cả hai câu nhỏ); Claude đồng ý 27a, đề xuất khác ở 27b; chủ dự án không đổi, nên giữ (b).
+
+## D28 — Gói `grace` / `on_hold` khi xóa (câu 28, review R7)
+
+| Phương án | Trade-off |
+|---|---|
+| ✅ (a) tính là "đang tự gia hạn": hủy gói trước | Không bị trừ tiền sau khi xóa; thêm một bước cho người đang trừ tiền lỗi |
+| (b) không tính: xóa ngay | Nhanh; lần thử trừ tiền sau có thể thành công cho tài khoản không còn |
+
+## D29 — Đăng xuất có hiệu lực ngay (câu 29, review R13, tùy chọn)
+
+| Phương án | Trade-off |
+|---|---|
+| (a) chỉ kiểm trạng thái tài khoản | Như design trước; đăng xuất trễ tối đa 15 phút (IR13) |
+| ✅ (b) kiểm cả chuỗi phiên đã thu hồi | Cùng một lần đọc; đăng xuất, đổi mật khẩu có hiệu lực ngay |
+
+## D30 — Vết cấp gói của người bị xóa (câu 30, review R17, tùy chọn)
+
+| Phương án | Trade-off |
+|---|---|
+| ✅ (a) xóa theo ER16 | Đúng "xóa"; mất vết editor đã cấp gói cho người đó |
+| (b) giữ, thay mã người bằng mã ẩn danh | Còn vết cấp gói; thêm một bảng giữ lại |
+
+---
+
 ## Đề xuất kỹ thuật duyệt cùng design
 
 Các đề xuất dưới đây nằm trong design và được duyệt cùng design (chưa duyệt lúc viết file này). Chọn, bỏ và lý do ghi ở design §21.
@@ -337,4 +405,4 @@ Các đề xuất dưới đây nằm trong design và được duyệt cùng de
 - Admin xóa người học đang có gói tự gia hạn: app tự tắt gia hạn như khi cấp Pro (khác D11, vốn chỉ nói người học tự xóa).
 - Thêm sau review độc lập (28/10/2026, design §0b): bộ xóa idempotent + quét lại 24 giờ cho hàng ghi muộn; port điều kiện của Entitlements và port đọc cài đặt thay cho
   import ngược; guard đọc một hàng chuỗi phiên nối người dùng; tài khoản chưa xác minh trùng email Google đi màn D6 và dùng lại `id` lúc hoàn tất; mốc dọn tài khoản chưa xác minh
-  là `terms_accepted_at`. Năm câu mới (26–30) chờ chủ dự án ở vòng 2 của nhật ký hỏi đáp; khi chốt sẽ thêm D26–D30 vào file này.
+  là `terms_accepted_at`. Năm câu mới (26–30) đã chốt ở vòng 2 (D26–D30 ở trên).
