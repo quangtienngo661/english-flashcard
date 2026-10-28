@@ -113,7 +113,7 @@ export function UserDetail({ id, listSearch }: { id: string; listSearch: string 
           </div>
         }
       />
-      <PanelBody>
+      <PanelBody focusable>
         {unlockError && <Banner variant="error" code={unlockError.code}>{unlockError.message}</Banner>}
         {isDeleting && <Banner variant="info">{t('users.detail.deletingLine')}</Banner>}
         {isLocked && (
