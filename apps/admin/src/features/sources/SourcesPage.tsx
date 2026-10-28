@@ -9,28 +9,70 @@ import { PageActions } from '../../app/shell-slots';
 import { Banner } from '../../ui/Banner';
 import { Button } from '../../ui/Button';
 import { Checkbox } from '../../ui/Checkbox';
+import { ConfirmDialog } from '../../ui/ConfirmDialog';
 import { DataList, type Column } from '../../ui/DataList';
 import { Dialog } from '../../ui/Dialog';
 import { TextField } from '../../ui/TextField';
+import { showToast } from '../../ui/Toast';
 import { useCountdown } from '../account/useCountdown';
-import { createSource, listSources, type SourceView } from '../content/content-api';
+import { createSource, deleteSource, listSources, type SourceView } from '../content/content-api';
+import { SourceEditDialog } from './SourceEditDialog';
 
 export function SourcesPage() {
   const t = useTranslations();
   const api = useApi();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const errorDetails = useErrorDetails();
   const list = useQuery({ queryKey: ['sources'], queryFn: () => listSources(api) });
   const rows = list.data ?? [];
   // `/sources/new` keeps the list and opens the form over it (UB9).
   const isNew = useMatch('/sources/new') !== null;
   const [formPending, setFormPending] = useState(false);
+  const [editing, setEditing] = useState<SourceView | null>(null);
+  const [deleting, setDeleting] = useState<SourceView | null>(null);
+  const [problem, setProblem] = useState<ErrorDetails | null>(null);
+  const remove = useMutation({
+    mutationFn: (source: SourceView) => deleteSource(api, source.id),
+    onMutate: () => setProblem(null),
+    onSuccess: async (_, source) => {
+      setDeleting(null);
+      await queryClient.invalidateQueries({ queryKey: ['sources'] });
+      showToast(t('sources.toast.deleted', { name: source.name }));
+    },
+    onError: (e) => {
+      setDeleting(null);
+      setProblem(errorDetails(e));
+      // Deleted from another tab: the list still shows it until it is reloaded.
+      if (e instanceof ApiError && e.problem.status === 404) void queryClient.invalidateQueries({ queryKey: ['sources'] });
+    },
+  });
 
   const columns: Column<SourceView>[] = [
     // Shares, not fixed widths, so a wide screen spreads the columns out instead of piling them on the right (owner, Checkpoint A).
-    { key: 'name', header: t('sources.list.name'), className: 'w-2/5', cell: (s) => s.name },
-    { key: 'version', header: t('sources.list.version'), className: 'w-1/5', cell: (s) => s.version || '—' },
-    { key: 'license', header: t('sources.list.license'), className: 'w-1/5', cell: (s) => s.license || '—' },
-    { key: 'priority', header: t('sources.list.priority'), className: 'w-1/5 tabular-nums', cell: (s) => s.display_priority },
+    { key: 'name', header: t('sources.list.name'), className: 'w-1/3', cell: (s) => s.name },
+    { key: 'version', header: t('sources.list.version'), className: 'w-1/6', cell: (s) => s.version || '—' },
+    { key: 'license', header: t('sources.list.license'), className: 'w-1/4', cell: (s) => s.license || '—' },
+    { key: 'priority', header: t('sources.list.priority'), className: 'w-1/12 tabular-nums', cell: (s) => s.display_priority },
+    {
+      key: 'actions',
+      header: t('sources.list.actions'),
+      card: 'action',
+      // The owner's source is built in: the API refuses to change or delete it, so the row says so instead of offering buttons.
+      cell: (s) =>
+        s.kind === 'owner' ? (
+          <span className="text-xs text-muted">{t('sources.ownerNote')}</span>
+        ) : (
+          <span className="flex flex-wrap gap-1">
+            <Button variant="ghost" aria-label={t('sources.editFor', { name: s.name })} onPress={() => setEditing(s)}>
+              {t('sources.edit')}
+            </Button>
+            <Button variant="ghost" className="text-danger" aria-label={t('sources.deleteFor', { name: s.name })} onPress={() => setDeleting(s)}>
+              {t('sources.delete')}
+            </Button>
+          </span>
+        ),
+    },
   ];
 
   return (
@@ -38,6 +80,7 @@ export function SourcesPage() {
       <PageActions>
         <Button onPress={() => void navigate('/sources/new')}>{t('sources.register')}</Button>
       </PageActions>
+      {problem && <Banner variant="error" code={problem.code}>{problem.message}</Banner>}
       <DataList
         rows={rows}
         rowKey={(s) => s.id}
@@ -56,6 +99,18 @@ export function SourcesPage() {
       >
         <SourceForm onPendingChange={setFormPending} />
       </Dialog>
+      {editing && <SourceEditDialog key={editing.id} source={editing} onClose={() => setEditing(null)} />}
+      <ConfirmDialog
+        isOpen={deleting !== null}
+        title={t('sources.deleteTitle', { name: deleting?.name ?? '' })}
+        confirmLabel={t('sources.deleteConfirm')}
+        tone="danger"
+        isPending={remove.isPending}
+        onConfirm={() => deleting && remove.mutate(deleting)}
+        onCancel={() => setDeleting(null)}
+      >
+        {t('sources.deleteBody')}
+      </ConfirmDialog>
     </div>
   );
 }

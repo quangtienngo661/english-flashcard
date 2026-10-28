@@ -85,6 +85,16 @@ export function createSource(api: ApiClient, body: NewSource): Promise<SourceVie
   return api.post(SOURCES, body);
 }
 
+/** Only the keys that changed; `kind` is not editable, and the API refuses an empty body and the owner's source. */
+export function updateSource(api: ApiClient, id: string, body: Partial<NewSource>): Promise<SourceView> {
+  return api.patch(`${SOURCES}/${encodeURIComponent(id)}`, body);
+}
+
+/** The API refuses a source that a level or an import batch still refers to (`source-in-use`) and the owner's (`source-protected`). */
+export function deleteSource(api: ApiClient, id: string): Promise<void> {
+  return api.delete<void>(`${SOURCES}/${encodeURIComponent(id)}`);
+}
+
 export function listUploads(api: ApiClient, pageToken?: string): Promise<Page<UploadListItem>> {
   return api.get(`${UPLOADS}${pageQuery(pageToken)}`);
 }
