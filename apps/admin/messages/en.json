@@ -21,6 +21,7 @@
     "invalid-current-password": "The current password is wrong",
     "invalid-otp": "The code is wrong or has expired",
     "invalid-token": "The session or link is not valid",
+    "job-not-active": "This job has already ended.",
     "level-source-required": "The file has a level column, choose a level source",
     "lock-rule": "You cannot lock yourself or an admin.",
     "mail-unavailable": "The email cannot be sent right now, so no account was created. Please try again in a few minutes.",
@@ -1075,6 +1076,7 @@
     "succeeded": "Done",
     "partial": "Partial",
     "failed": "Failed",
+    "cancelled": "Stopped",
     "reverted": "Reverted"
   },
   "sources": {
@@ -1216,7 +1218,13 @@
     "queuedLong": "The job has waited {seconds} s. Is the worker running? Check the worker process, then reload the page.",
     "confirmAllTitle": "Publish the whole catalog?",
     "confirmAllBody": "You have not chosen any filter, so this job will publish every eligible sense in the whole catalog. Continue only if that is what you want.",
-    "confirmAllSubmit": "Publish everything"
+    "confirmAllSubmit": "Publish everything",
+    "stop": "Stop job",
+    "stopTitle": "Stop publish job #{id}?",
+    "stopBody": "Senses already published stay published. The job stops before the next sense and cannot be resumed; to publish the rest, create a new publish job.",
+    "stopKeep": "Keep running",
+    "stopped": "Stopped publish job #{id}",
+    "stoppedNotice": "The job stopped after {done} / {total} senses. Senses already published stay published; the rest were not published."
   },
   "refunds": {
     "filters": {

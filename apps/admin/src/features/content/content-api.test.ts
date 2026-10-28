@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { createApiClient } from '../../api/client';
 import {
+  cancelPublishJob,
   createPublishJob,
   createSource,
   createUpload,
@@ -129,5 +130,14 @@ describe('content-api', () => {
       '/v1/admin/content/senses/publish-jobs/j1',
       '/v1/admin/content/senses/publish-jobs/j1/report.csv',
     ]);
+  });
+
+  it('cancelPublishJob: POST .../publish-jobs/:id/cancel, no body and no Idempotency-Key, returns the job', async () => {
+    const { api, seen } = setup(() => Response.json({ id: 'j1', status: 'failed', cancelled: true }));
+    expect(await cancelPublishJob(api, 'j1')).toEqual({ id: 'j1', status: 'failed', cancelled: true });
+    expect(seen[0].path).toBe('/v1/admin/content/senses/publish-jobs/j1/cancel');
+    expect(seen[0].init.method).toBe('POST');
+    expect(seen[0].init.body).toBeUndefined();
+    expect((seen[0].init.headers as Record<string, string>)['Idempotency-Key']).toBeUndefined();
   });
 });

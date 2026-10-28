@@ -16,7 +16,9 @@ import type { PrismaClient } from '../../generated/prisma/client.js';
 import { RequirePermission } from '../../identity/staff/require-permission.decorator.js';
 import { BackgroundJobsService } from '../jobs/background-jobs.service.js';
 import { JobQueueService } from '../jobs/job-queue.service.js';
+import { CANCELLED_SUMMARY } from '../jobs/job-types.js';
 import { toCsv } from '../upload/csv-writer.js';
+import { PublishJobsService } from './publish-jobs.service.js';
 
 const uuid = z.uuid().transform((value) => value.toLowerCase());
 const jobParams = z.strictObject({ id: uuid });
@@ -30,6 +32,8 @@ const listQuery = z.strictObject({
 });
 const cursorSchema = z.strictObject({ created_at: z.iso.datetime(), id: uuid });
 const queryBinding = createHash('sha256').update(JSON.stringify({ route: 'publish-jobs', filters: {} })).digest('hex');
+// A stopped job is stored as `failed` + this summary; `cancelled` lets a client tell it from a real failure.
+const isCancelled = (job: { status: string; errorSummary: string | null }) => job.status === 'failed' && job.errorSummary === CANCELLED_SUMMARY;
 
 @Controller('admin/content/senses/publish-jobs')
 @RequirePermission('content.publish')
@@ -40,6 +44,7 @@ export class PublishJobsController {
     @Inject(BATCH_SCOPE) private readonly batchScope: BatchScope,
     @Inject(BackgroundJobsService) private readonly jobs: BackgroundJobsService,
     @Inject(JobQueueService) private readonly queue: JobQueueService,
+    @Inject(PublishJobsService) private readonly publishJobs: PublishJobsService,
   ) {}
 
   @Post()
@@ -97,12 +102,12 @@ export class PublishJobsController {
       ] } : {},
       orderBy: [{ job: { createdAt: 'desc' } }, { id: 'asc' }], take: query.page_size + 1,
       select: { id: true, filter: true, snapshotCount: true, notReadyCount: true, counters: true,
-        job: { select: { status: true, createdAt: true, startedAt: true, finishedAt: true } } },
+        job: { select: { status: true, errorSummary: true, createdAt: true, startedAt: true, finishedAt: true } } },
     });
     const items = rows.slice(0, query.page_size);
     const last = items.at(-1);
     return {
-      items: items.map((job) => ({ id: job.id, status: job.job.status, filter: job.filter,
+      items: items.map((job) => ({ id: job.id, status: job.job.status, cancelled: isCancelled(job.job), filter: job.filter,
         snapshot_count: job.snapshotCount, not_ready_count: job.notReadyCount, counters: job.counters,
         created_at: job.job.createdAt.toISOString(), started_at: job.job.startedAt?.toISOString() ?? null,
         finished_at: job.job.finishedAt?.toISOString() ?? null })),
@@ -124,14 +129,27 @@ export class PublishJobsController {
   }
 
   @Get(':id')
-  async get(@Param({ schema: jobParams }) params: z.infer<typeof jobParams>) {
-    const job = await this.prisma.publishJob.findUnique({ where: { id: params.id }, select: {
+  get(@Param({ schema: jobParams }) params: z.infer<typeof jobParams>) {
+    return this.detail(params.id);
+  }
+
+  // Not Idempotent on purpose: a second cancel of the same job must answer 409 job-not-active, not replay the first 200.
+  @Post(':id/cancel')
+  @HttpCode(200)
+  @RateLimit('user.write')
+  async cancel(@Param({ schema: jobParams }) params: z.infer<typeof jobParams>, @CurrentUser() user: RequestUser) {
+    await this.publishJobs.cancel(params.id, user.userId);
+    return this.detail(params.id);
+  }
+
+  private async detail(id: string) {
+    const job = await this.prisma.publishJob.findUnique({ where: { id }, select: {
       id: true, snapshotCount: true, notReadyCount: true, counters: true,
-      job: { select: { status: true, createdAt: true, startedAt: true, finishedAt: true } },
+      job: { select: { status: true, errorSummary: true, createdAt: true, startedAt: true, finishedAt: true } },
     } });
     if (!job) throw new ProblemDetailsException({ status: 404, title: 'Not found', type: 'not-found' });
-    return { id: job.id, status: job.job.status, snapshot_count: job.snapshotCount, not_ready_count: job.notReadyCount,
-      counters: job.counters, created_at: job.job.createdAt.toISOString(),
+    return { id: job.id, status: job.job.status, cancelled: isCancelled(job.job), snapshot_count: job.snapshotCount,
+      not_ready_count: job.notReadyCount, counters: job.counters, created_at: job.job.createdAt.toISOString(),
       started_at: job.job.startedAt?.toISOString() ?? null, finished_at: job.job.finishedAt?.toISOString() ?? null,
     };
   }

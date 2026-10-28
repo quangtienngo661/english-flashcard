@@ -59,6 +59,8 @@ export type PublishJobCounters = { processed?: number; pending?: number; publish
 export type PublishJobView = {
   id: string;
   status: JobStatus;
+  /** A job staff stopped: the API stores it as `failed`, and this tells it from a real failure. */
+  cancelled?: boolean;
   snapshot_count: number;
   not_ready_count: number;
   counters: PublishJobCounters;
@@ -150,6 +152,11 @@ export function listPublishJobs(api: ApiClient, pageToken?: string): Promise<Pag
 
 export function getPublishJob(api: ApiClient, id: string): Promise<PublishJobView> {
   return api.get(`${JOBS}/${id}`);
+}
+
+/** Stops a queued or running job; the senses it already published stay. 409 `job-not-active` when it has already ended. */
+export function cancelPublishJob(api: ApiClient, id: string): Promise<PublishJobView> {
+  return api.post(`${JOBS}/${id}/cancel`);
 }
 
 export function downloadPublishReport(api: ApiClient, id: string): Promise<Blob> {

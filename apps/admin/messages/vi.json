@@ -21,6 +21,7 @@
     "invalid-current-password": "Mật khẩu hiện tại không đúng",
     "invalid-otp": "Mã xác minh không đúng hoặc đã hết hạn",
     "invalid-token": "Phiên hoặc liên kết không hợp lệ",
+    "job-not-active": "Lô này đã kết thúc.",
     "level-source-required": "File có cột level, hãy chọn nguồn level",
     "lock-rule": "Không khóa được chính bạn hoặc một admin.",
     "mail-unavailable": "Hiện chưa gửi được email nên chưa tạo tài khoản. Vui lòng thử lại sau ít phút.",
@@ -1075,6 +1076,7 @@
     "succeeded": "Hoàn tất",
     "partial": "Một phần",
     "failed": "Thất bại",
+    "cancelled": "Đã dừng",
     "reverted": "Đã hoàn tác"
   },
   "sources": {
@@ -1216,7 +1218,13 @@
     "queuedLong": "Job đã chờ {seconds} giây. Worker có đang chạy không? Kiểm tra tiến trình worker rồi tải lại trang.",
     "confirmAllTitle": "Publish toàn bộ catalog?",
     "confirmAllBody": "Bạn chưa chọn bộ lọc nào, nên job này sẽ publish mọi sense đủ điều kiện trong toàn bộ catalog. Chỉ tiếp tục nếu đó là điều bạn muốn.",
-    "confirmAllSubmit": "Publish tất cả"
+    "confirmAllSubmit": "Publish tất cả",
+    "stop": "Dừng lô",
+    "stopTitle": "Dừng publish job #{id}?",
+    "stopBody": "Các sense đã publish vẫn giữ nguyên. Lô dừng trước sense tiếp theo và không chạy tiếp được; muốn publish phần còn lại, tạo publish job mới.",
+    "stopKeep": "Không dừng",
+    "stopped": "Đã dừng publish job #{id}",
+    "stoppedNotice": "Lô đã dừng sau {done} / {total} sense. Các sense đã publish vẫn giữ nguyên; phần còn lại chưa được publish."
   },
   "refunds": {
     "filters": {
