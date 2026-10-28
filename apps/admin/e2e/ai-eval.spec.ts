@@ -13,7 +13,7 @@ const exampleRow = (id: string, word: string, over: Record<string, unknown> = {}
   created_by: 'u9', created_by_user: LAN, created_at: at, updated_at: at, ...over,
 });
 const run = (over: Record<string, unknown> = {}) => ({
-  id: 'r1', operation: 'generate_cloze', provider: 'openai', model: 'gpt-x', effort: null, thinking: null, max_output_tokens: null, prompt_revision: 3,
+  id: 'aaaaaaaa-0000-4000-8000-000000000001', operation: 'generate_cloze', provider: 'openai', model: 'gpt-x', effort: null, thinking: null, max_output_tokens: null, prompt_revision: 3,
   status: 'finished', total: 2, done: 2, valid_count: 2, avg_latency_ms: 700, cost_usd: '0.01000000', cost_unknown_count: 0, error: null,
   started_by: 'u9', started_by_user: LAN, created_at: at, started_at: at, finished_at: at, draft: null, heartbeat_at: null, items: [], ...over,
 });
@@ -55,9 +55,9 @@ test.describe('Bộ ví dụ (A/83)', () => {
       'GET /v1/admin/ai/test-quota': () => ({ json: { limit: 20, remaining, resets_at: at } }),
       'POST /v1/admin/ai/eval/runs': () => {
         remaining -= 1;
-        return { status: 202, json: { run_id: 'r1', status: 'queued' } };
+        return { status: 202, json: { run_id: 'aaaaaaaa-0000-4000-8000-000000000001', status: 'queued' } };
       },
-      'GET /v1/admin/ai/eval/runs/r1': () => {
+      'GET /v1/admin/ai/eval/runs/aaaaaaaa-0000-4000-8000-000000000001': () => {
         reads += 1;
         return { json: reads === 1 ? run({ status: 'running', done: 1, valid_count: 1 }) : run() };
       },
@@ -81,7 +81,7 @@ test.describe('Bộ ví dụ (A/83)', () => {
     await expect(page.getByRole('heading', { level: 2, name: t.examples.replace('{count}', '2') })).toBeVisible();
 
     await page.getByRole('button', { name: t.run.start }).click();
-    await expect(page).toHaveURL(/\/ai\/eval\/runs\/r1$/);
+    await expect(page).toHaveURL(/\/ai\/eval\/runs\/aaaaaaaa-0000-4000-8000-000000000001$/);
     const panel = page.getByTestId('detail-panel');
     await expect(panel.getByText(t.status.running, { exact: true })).toBeVisible();
     await expect(panel.getByText(t.status.finished, { exact: true })).toBeVisible({ timeout: 5000 });
@@ -99,15 +99,15 @@ test.describe('Bộ ví dụ (A/83)', () => {
     await signedInAs(page, 'admin', evalMocks({
       'POST /v1/admin/ai/eval/runs': () => {
         n += 1;
-        return n === 1 ? { abort: true } : { status: 202, json: { run_id: 'r1', status: 'queued' } };
+        return n === 1 ? { abort: true } : { status: 202, json: { run_id: 'aaaaaaaa-0000-4000-8000-000000000001', status: 'queued' } };
       },
-      'GET /v1/admin/ai/eval/runs/r1': () => ({ json: run() }),
+      'GET /v1/admin/ai/eval/runs/aaaaaaaa-0000-4000-8000-000000000001': () => ({ json: run() }),
     }));
     await page.goto('/ai/eval');
     await page.getByRole('button', { name: t.run.start }).click();
     await expect(page.getByText(vi.offline.message)).toBeVisible();
     await page.getByRole('button', { name: vi.common.retry }).click();
-    await expect(page).toHaveURL(/\/ai\/eval\/runs\/r1$/);
+    await expect(page).toHaveURL(/\/ai\/eval\/runs\/aaaaaaaa-0000-4000-8000-000000000001$/);
     const keys = requests(page, 'POST', '/v1/admin/ai/eval/runs').map((r) => r.headers['idempotency-key']);
     expect(keys).toHaveLength(2);
     expect(keys[0]).toBe(keys[1]);
@@ -136,12 +136,12 @@ test.describe('Bộ ví dụ (A/83)', () => {
     await signedInAs(page, 'admin', evalMocks({
       'GET /v1/admin/ai/prompts/generate_cloze': () => ({ json: prompt }),
       'GET /v1/admin/ai/prompts/generate_cloze/revisions': () => ({ json: { items: [], next_page_token: null } }),
-      'POST /v1/admin/ai/eval/runs': () => ({ status: 202, json: { run_id: 'r1', status: 'queued' } }),
-      'GET /v1/admin/ai/eval/runs/r1': () => ({ json: run({ prompt_revision: null }) }),
+      'POST /v1/admin/ai/eval/runs': () => ({ status: 202, json: { run_id: 'aaaaaaaa-0000-4000-8000-000000000001', status: 'queued' } }),
+      'GET /v1/admin/ai/eval/runs/aaaaaaaa-0000-4000-8000-000000000001': () => ({ json: run({ prompt_revision: null }) }),
     }));
     await page.goto('/ai/prompts');
     await page.getByRole('button', { name: t.fromPrompt.button }).click();
-    await expect(page).toHaveURL(/\/ai\/eval\/runs\/r1\?op=generate_cloze$/);
+    await expect(page).toHaveURL(/\/ai\/eval\/runs\/aaaaaaaa-0000-4000-8000-000000000001\?op=generate_cloze$/);
     await expect(page.getByText(vi.leave.title)).toHaveCount(0);
     await expect(page.getByTestId('detail-panel')).toContainText(t.detail.draft);
     expect(requests(page, 'POST', '/v1/admin/ai/eval/runs')[0].body).toEqual({

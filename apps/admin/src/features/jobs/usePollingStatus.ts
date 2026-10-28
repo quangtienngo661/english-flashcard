@@ -15,15 +15,18 @@ export const isTerminal = (status: string | undefined): boolean => status === 's
  * `refetchInterval` as a function ends polling by returning `false`. A hidden tab is not polled (TanStack's default
  * `refetchIntervalInBackground: false`); showing it again refetches at once because the data is stale; a 404 (unknown id) also ends it. `done` says which
  * status ends polling: batch and publish jobs by default; another resource (an eval run ends at `finished`) passes its own.
+ * `enabled: false` asks the API nothing (an id that cannot exist).
  */
 export function usePollingStatus<T extends { status: string }>(
   key: readonly unknown[],
   fetcher: () => Promise<T>,
   done: (status: string) => boolean = isTerminal,
+  enabled = true,
 ): UseQueryResult<T> {
   return useQuery({
     queryKey: key,
     queryFn: fetcher,
+    enabled,
     refetchInterval: (query) => {
       // An unknown id stays unknown: reading it again every 2 s would only repeat the 404.
       const { error } = query.state;

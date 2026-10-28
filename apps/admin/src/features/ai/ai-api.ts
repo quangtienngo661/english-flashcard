@@ -276,6 +276,8 @@ export function listRuns(api: ApiClient, operation: AiOperation, pageToken?: str
   if (pageToken) query.set('page_token', pageToken);
   return api.get<{ items: EvalRun[]; next_page_token: string | null }>(`${base}/eval/runs?${query.toString()}`);
 }
+/** A run id that does not look like this cannot exist (the API answers 400): the panel says "not found" without asking. */
+export const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 export const getRun = (api: ApiClient, id: string) => api.get<EvalRunDetail>(`${base}/eval/runs/${id}`);
 
 /** `from` and `to` are `YYYY-MM-DD` Vietnam days, both inclusive; the API refuses `from > to` and more than 366 days with a 400. */

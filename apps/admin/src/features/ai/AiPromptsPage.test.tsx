@@ -302,14 +302,14 @@ describe('AiPromptsPage [Chạy bộ ví dụ với bản này] (A/82 → A/83)'
   const runRoutes = () => ({
     ...evalRoutes(),
     ...promptRoutes(),
-    [URL.startRun]: () => Response.json({ run_id: 'r1', status: 'queued' }, { status: 202 }),
+    [URL.startRun]: () => Response.json({ run_id: 'aaaaaaaa-0000-4000-8000-000000000001', status: 'queued' }, { status: 202 }),
     [URL.run()]: () => Response.json(evalRun({ prompt_revision: null })),
   });
 
   it('a clean prompt: sends the editor content as the draft with an Idempotency-Key and opens the run without asking "Rời trang?"', async () => {
     const r = await openPage(runRoutes());
     await userEvent.click(evalButton());
-    await waitFor(() => expect(r.router.state.location.pathname).toBe('/ai/eval/runs/r1'));
+    await waitFor(() => expect(r.router.state.location.pathname).toBe('/ai/eval/runs/aaaaaaaa-0000-4000-8000-000000000001'));
     expect(screen.queryByText(vi.leave.title)).not.toBeInTheDocument();
     const sent = r.calls.filter((c) => c.method === 'POST' && c.path === '/v1/admin/ai/eval/runs');
     expect(sent[0].body).toEqual({ operation: 'generate_cloze', prompt: { instructions: 'Write one short sentence.', examples: [example()] } });
@@ -326,7 +326,7 @@ describe('AiPromptsPage [Chạy bộ ví dụ với bản này] (A/82 → A/83)'
     expect((sent[0].body as { prompt: { instructions: string } }).prompt.instructions).toBe('Unsaved draft text.');
     await userEvent.click(screen.getByRole('button', { name: vi.leave.stay }));
     expect(instructions()).toHaveValue('Unsaved draft text.');
-    expect(screen.getByRole('link', { name: vi.ai.eval.fromPrompt.open })).toHaveAttribute('href', '/ai/eval/runs/r1?op=generate_cloze');
+    expect(screen.getByRole('link', { name: vi.ai.eval.fromPrompt.open })).toHaveAttribute('href', '/ai/eval/runs/aaaaaaaa-0000-4000-8000-000000000001?op=generate_cloze');
   });
 
   it('an unsaved prompt, [Rời trang] to the run it started: the draft is kept, so coming back offers "Khôi phục"; any other leave still drops it', async () => {
@@ -335,7 +335,7 @@ describe('AiPromptsPage [Chạy bộ ví dụ với bản này] (A/82 → A/83)'
     await userEvent.click(evalButton());
     await screen.findByText(vi.leave.title);
     await userEvent.click(screen.getByRole('button', { name: vi.leave.leave }));
-    await waitFor(() => expect(r.router.state.location.pathname).toBe('/ai/eval/runs/r1'));
+    await waitFor(() => expect(r.router.state.location.pathname).toBe('/ai/eval/runs/aaaaaaaa-0000-4000-8000-000000000001'));
     expect(JSON.parse(sessionStorage.getItem(DRAFT_KEY)!)).toMatchObject({ instructions: 'Unsaved draft text.' });
 
     await act(async () => {
@@ -361,7 +361,7 @@ describe('AiPromptsPage [Chạy bộ ví dụ với bản này] (A/82 → A/83)'
       [URL.startRun]: () => {
         n += 1;
         if (n === 1) throw new TypeError('Failed to fetch');
-        return Response.json({ run_id: 'r1', status: 'queued' }, { status: 202 });
+        return Response.json({ run_id: 'aaaaaaaa-0000-4000-8000-000000000001', status: 'queued' }, { status: 202 });
       },
     });
     await userEvent.click(evalButton());

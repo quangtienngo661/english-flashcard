@@ -16,7 +16,7 @@ import { getSettings } from '../settings/settings-api';
 import { useNow } from '../jobs/useNow';
 import { usePollingStatus, useQueuedTooLong } from '../jobs/usePollingStatus';
 import {
-  aiKeys, getRun, getTestQuota, isRunDone, listExamples, startRun, type AiOperation, type EvalRun, type EvalRunItem, type EvalRunStatus, type StartRunBody,
+  UUID, aiKeys, getRun, getTestQuota, isRunDone, listExamples, startRun, type AiOperation, type EvalRun, type EvalRunItem, type EvalRunStatus, type StartRunBody,
   type TestStatus,
 } from './ai-api';
 import { exampleSummary } from './prompt-form';
@@ -141,7 +141,8 @@ export function EvalRunPanel({ id, onDone }: { id: string; onDone?: () => void }
   const api = useApi();
   const format = useAiFormat();
   const promptLabel = usePromptLabel();
-  const query = usePollingStatus(aiKeys.run(id), () => getRun(api, id), isRunDone);
+  const validId = UUID.test(id);
+  const query = usePollingStatus(aiKeys.run(id), () => getRun(api, id), isRunDone, validId);
   const operation = query.data?.operation ?? 'generate_cloze';
   // Same key as the page's list: the input of each result is looked up there by `example_id`.
   const examples = useQuery({ queryKey: aiKeys.examples(operation), queryFn: () => listExamples(api, operation), enabled: query.data !== undefined });
@@ -164,7 +165,7 @@ export function EvalRunPanel({ id, onDone }: { id: string; onDone?: () => void }
       <>
         <PanelHead title={t('nav.aiEval')} />
         <PanelBody>
-          {query.error instanceof ApiError && query.error.problem.status === 404 ? (
+          {!validId || (query.error instanceof ApiError && query.error.problem.status === 404) ? (
             <Banner variant="error">{t('ai.eval.detail.notFound')}</Banner>
           ) : (
             <ListState state={query.isPending ? 'loading' : 'error'} onRetry={() => void query.refetch()} />

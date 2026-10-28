@@ -413,7 +413,7 @@ test('Bộ ví dụ at 390 fits the window with a long example input, a long not
   await page.setViewportSize({ width: 390, height: 844 });
   const lan = { id: 'u9', email: `${'a'.repeat(120)}@example.com`, system: false };
   const run = {
-    id: 'r1', operation: 'generate_cloze', provider: 'openai', model: 'm'.repeat(100), effort: null, thinking: null, max_output_tokens: null, prompt_revision: 3,
+    id: 'aaaaaaaa-0000-4000-8000-000000000001', operation: 'generate_cloze', provider: 'openai', model: 'm'.repeat(100), effort: null, thinking: null, max_output_tokens: null, prompt_revision: 3,
     status: 'failed', total: 100, done: 37, valid_count: 30, avg_latency_ms: 812, cost_usd: '12.34560000', cost_unknown_count: 3, error: 'e'.repeat(300),
     started_by: 'u9', started_by_user: lan, created_at: at, started_at: at, finished_at: at,
   };
@@ -426,7 +426,7 @@ test('Bộ ví dụ at 390 fits the window with a long example input, a long not
       created_by: 'u9', created_by_user: lan, created_at: at, updated_at: at,
     }] } }),
     'GET /v1/admin/ai/eval/runs': () => ({ json: { items: [run], next_page_token: null } }),
-    'GET /v1/admin/ai/eval/runs/r1': () => ({ json: { ...run, draft: null, heartbeat_at: null, items: [
+    'GET /v1/admin/ai/eval/runs/aaaaaaaa-0000-4000-8000-000000000001': () => ({ json: { ...run, draft: null, heartbeat_at: null, items: [
       { example_id: 'e1', status: 'succeeded', reason: null, output: { sentence: 's'.repeat(600), accepted_answers: ['a'.repeat(200)] }, raw_output: 'x'.repeat(2000), latency_ms: 812, cost_usd: '0.00100000' },
       { example_id: 'gone', status: 'permanent_failure', reason: 'r'.repeat(200), output: null, raw_output: 'y'.repeat(2000), latency_ms: 300, cost_usd: null },
     ] } }),
@@ -434,7 +434,7 @@ test('Bộ ví dụ at 390 fits the window with a long example input, a long not
   await page.goto('/ai/eval');
   await expect(page.getByText('w'.repeat(200), { exact: false }).first()).toBeAttached();
   await expectNoHorizontalScroll(page);
-  await page.goto('/ai/eval/runs/r1');
+  await page.goto('/ai/eval/runs/aaaaaaaa-0000-4000-8000-000000000001');
   await expect(page.getByTestId('detail-panel').getByText('e'.repeat(300), { exact: false })).toBeVisible();
   for (const summary of await page.getByTestId('detail-panel').getByText(vi.ai.eval.detail.rawOutput).all()) {
     if (await summary.isVisible()) await summary.click();

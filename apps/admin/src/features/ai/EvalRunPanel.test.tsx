@@ -8,7 +8,7 @@ import type { EvalRunDetail } from './ai-api';
 import { URL, evalExample, evalRoutes, evalRun } from './prompt-test-support';
 
 const t = vi.ai.eval;
-const PATH = '/ai/eval/runs/r1';
+const PATH = '/ai/eval/runs/aaaaaaaa-0000-4000-8000-000000000001';
 const panel = async () => {
   const heading = await screen.findByRole('heading', { level: 2, name: /^Lần chạy / }, { timeout: 3000 });
   return heading.closest('[data-testid="detail-panel"]') as HTMLElement ?? document.body;
@@ -55,9 +55,9 @@ describe('EvalRunPanel (A/83)', () => {
     expect(await screen.findByText(t.detail.running.replace('{done}', '12').replace('{total}', '20'))).toBeInTheDocument();
     await act(async () => { await vitest.advanceTimersByTimeAsync(2000); });
     await waitFor(() => expect(field(t.detail.progress)).toHaveTextContent('20/20'));
-    expect(r.count('GET', '/v1/admin/ai/eval/runs/r1')).toBe(3);
+    expect(r.count('GET', '/v1/admin/ai/eval/runs/aaaaaaaa-0000-4000-8000-000000000001')).toBe(3);
     await act(async () => { await vitest.advanceTimersByTimeAsync(10_000); });
-    expect(r.count('GET', '/v1/admin/ai/eval/runs/r1')).toBe(3);
+    expect(r.count('GET', '/v1/admin/ai/eval/runs/aaaaaaaa-0000-4000-8000-000000000001')).toBe(3);
   });
 
   it('§6.5: queued for 31 s → "Chưa có worker nhận lần chạy này."', async () => {
@@ -79,7 +79,7 @@ describe('EvalRunPanel (A/83)', () => {
     const r = renderApp(PATH, evalRoutes({ [URL.run()]: () => problem(404, 'not-found') }));
     expect(await screen.findByText(t.detail.notFound)).toBeInTheDocument();
     await act(async () => { await vitest.advanceTimersByTimeAsync(10_000); });
-    expect(r.count('GET', '/v1/admin/ai/eval/runs/r1')).toBe(1);
+    expect(r.count('GET', '/v1/admin/ai/eval/runs/aaaaaaaa-0000-4000-8000-000000000001')).toBe(1);
   });
 
   it('an id that is no UUID cannot exist: it says not found, and the API is neither asked nor polled', async () => {

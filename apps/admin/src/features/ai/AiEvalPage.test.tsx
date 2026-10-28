@@ -113,12 +113,12 @@ describe('AiEvalPage runs (A/83)', () => {
   it('[Chạy bộ ví dụ] sends prompt "current" with an Idempotency-Key, opens the run and reads the quota again', async () => {
     const r = await openPage({
       [URL.examples()]: examplesReply(evalExample('e1', 'go')),
-      [URL.startRun]: () => Response.json({ run_id: 'r1', status: 'queued' }, { status: 202 }),
+      [URL.startRun]: () => Response.json({ run_id: 'aaaaaaaa-0000-4000-8000-000000000001', status: 'queued' }, { status: 202 }),
       [URL.run()]: () => Response.json(evalRun({ status: 'queued', done: 0, created_at: new Date().toISOString() })),
     });
     expect(await screen.findByText(t.run.quota.replace('{remaining}', '17').replace('{limit}', '20'))).toBeInTheDocument();
     await userEvent.click(runButton());
-    await waitFor(() => expect(r.router.state.location.pathname).toBe('/ai/eval/runs/r1'));
+    await waitFor(() => expect(r.router.state.location.pathname).toBe('/ai/eval/runs/aaaaaaaa-0000-4000-8000-000000000001'));
     const sent = posts(r.calls, '/v1/admin/ai/eval/runs');
     expect(sent[0].body).toEqual({ operation: 'generate_cloze', prompt: 'current' });
     expect(sent[0].headers['Idempotency-Key']).toMatch(/^[0-9a-f-]{36}$/);
@@ -129,14 +129,14 @@ describe('AiEvalPage runs (A/83)', () => {
     let n = 0;
     const r = await openPage({
       [URL.examples()]: examplesReply(evalExample('e1', 'go')),
-      [URL.startRun]: () => Response.json({ run_id: `r${++n}`, status: 'queued' }, { status: 202 }),
+      [URL.startRun]: () => Response.json({ run_id: `aaaaaaaa-0000-4000-8000-00000000000${++n}`, status: 'queued' }, { status: 202 }),
       [URL.run()]: () => Response.json(evalRun()),
-      [URL.run('r2')]: () => Response.json(evalRun({ id: 'r2' })),
+      [URL.run('aaaaaaaa-0000-4000-8000-000000000002')]: () => Response.json(evalRun({ id: 'aaaaaaaa-0000-4000-8000-000000000002' })),
     });
     await userEvent.click(runButton());
-    await waitFor(() => expect(r.router.state.location.pathname).toBe('/ai/eval/runs/r1'));
+    await waitFor(() => expect(r.router.state.location.pathname).toBe('/ai/eval/runs/aaaaaaaa-0000-4000-8000-000000000001'));
     await userEvent.click(runButton());
-    await waitFor(() => expect(r.router.state.location.pathname).toBe('/ai/eval/runs/r2'));
+    await waitFor(() => expect(r.router.state.location.pathname).toBe('/ai/eval/runs/aaaaaaaa-0000-4000-8000-000000000002'));
     const keys = posts(r.calls, '/v1/admin/ai/eval/runs').map((c) => c.headers['Idempotency-Key']);
     expect(new Set(keys).size).toBe(2);
   });
@@ -160,14 +160,14 @@ describe('AiEvalPage runs (A/83)', () => {
       [URL.startRun]: () => {
         n += 1;
         if (n === 1) throw new TypeError('Failed to fetch');
-        return Response.json({ run_id: 'r1', status: 'queued' }, { status: 202 });
+        return Response.json({ run_id: 'aaaaaaaa-0000-4000-8000-000000000001', status: 'queued' }, { status: 202 });
       },
       [URL.run()]: () => Response.json(evalRun()),
     });
     await userEvent.click(runButton());
     expect(await screen.findByText(vi.offline.message)).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: vi.common.retry }));
-    await waitFor(() => expect(r.router.state.location.pathname).toBe('/ai/eval/runs/r1'));
+    await waitFor(() => expect(r.router.state.location.pathname).toBe('/ai/eval/runs/aaaaaaaa-0000-4000-8000-000000000001'));
     const keys = posts(r.calls, '/v1/admin/ai/eval/runs').map((c) => c.headers['Idempotency-Key']);
     expect(keys).toHaveLength(2);
     expect(keys[0]).toBe(keys[1]);
@@ -192,8 +192,8 @@ describe('AiEvalPage runs (A/83)', () => {
     await openPage({
       [URL.runs()]: () => Response.json({
         items: [
-          evalRun({ id: 'r2', prompt_revision: null, status: 'running', done: 12 }),
-          evalRun({ id: 'r1', started_by_user: { id: 'u8', email: 'minh@wordmet.com', system: false } }),
+          evalRun({ id: 'aaaaaaaa-0000-4000-8000-000000000002', prompt_revision: null, status: 'running', done: 12 }),
+          evalRun({ id: 'aaaaaaaa-0000-4000-8000-000000000001', started_by_user: { id: 'u8', email: 'minh@wordmet.com', system: false } }),
         ],
         next_page_token: null,
       }),
