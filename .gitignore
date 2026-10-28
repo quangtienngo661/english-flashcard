@@ -10,3 +10,16 @@ coverage/
 *.pem
 *.key
 .verify-b25-accounts.md
+
+# Local-only artifacts, not for the remote (owner 28/10/2026).
+/.archify/
+/docs/archify/
+/.sync-backup-*/
+/docs/*.pdf
+/apps/web/e2e-audit/
+# Audit and mockup captures: files already on dev stay tracked, new captures stay local.
+/docs/audit/**/*.png
+/docs/audit/**/*.webm
+/docs/audit/**/.done
+/docs/mockups/2026-10-18/
+/docs/mockups/2026-10-20/
