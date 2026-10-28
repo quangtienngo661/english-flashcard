@@ -1,68 +1,68 @@
-# Bước 8 smoke — 29/10/2026, branch feat/buoc-8-m7, API + worker on the compiled dist, GOOGLE_FAKE_ENABLED, BILLING_FAKE_ENABLED, AI_FAKE_ENABLED, JOB_QUEUE_PREFIX=wordmet-b8-smoke
+# Bước 8 smoke — 29/10/2026, branch feat/buoc-8-m7 (after the final review fixes), API + worker on the compiled dist, GOOGLE_FAKE_ENABLED, BILLING_FAKE_ENABLED, AI_FAKE_ENABLED, JOB_QUEUE_PREFIX=wordmet-b8-smoke
 # Each run starts on a freshly created and migrated database english_learning_smoke_b8 (script: apps/api/scripts/smoke-buoc-8.mjs)
 
 ===== RUN 1 =====
 
-[1] 22:40:11Z setup: API reachable; admins and learners (psql, signed in through the API)
+[1] 23:32:22Z setup: API reachable; admins and learners (psql, signed in through the API)
     ok — database english_learning_smoke_b8; 2 admins, 1 editor, 10 learners signed in
 
-[2] 22:40:15Z B8A1 B8E1: Google, a new person: the fake page, the sign-up ticket, completion, a Google session
-    ok — ticket → 9b5b4ad7-f525-4afe-9ab5-bfd86b7f6faf: auth_method google, sign_in_methods [google], names and avatar from Google, identity row, no password
+[2] 23:32:25Z B8A1 B8E1: Google, a new person: the fake page, the sign-up ticket, completion, a Google session
+    ok — ticket → fb444c51-affa-4676-84a6-f4c713c8ce54: auth_method google, sign_in_methods [google], names and avatar from Google, identity row, no password
     ok — Google without a first name: needs_name true; completing without one → 400; with one → 200
 
-[3] 22:40:18Z B8E9 B8E8: Google sign-up: under 13 stores nothing; the same ticket cannot be reused; no cookie → 401
+[3] 23:32:29Z B8E9 B8E8: Google sign-up: under 13 stores nothing; the same ticket cannot be reused; no cookie → 401
     ok — under 13 → 400 age-below-minimum, no row, ticket cookie cleared; GET complete without a cookie → 401
 
-[4] 22:40:20Z B8E6: an unverified account with the same email: the Google sign-up reuses its id, drops the password and the old sessions
+[4] 23:32:31Z B8E6: an unverified account with the same email: the Google sign-up reuses its id, drops the password and the old sessions
     ok — same id, verified, no password; Google identity linked
 
-[5] 22:40:22Z K8 B8E5 B8E58: an existing verified account takes the Google identity: link mail, Google session, cookie survives the redirect chain, refresh works
+[5] 23:32:33Z K8 B8E5 B8E58: an existing verified account takes the Google identity: link mail, Google session, cookie survives the redirect chain, refresh works
     ok — callback → web with signed_in=google (query and fragment kept), refresh_token cookie, /refresh 200, mail "Google linked"; same sub again OK; another sub for the same email → google-failed (P13)
 
-[6] 22:40:25Z D5 B8E11 B8E3 B8E1: a Google session never reaches an admin route; a locked account is refused; an unverified Google email is refused
+[6] 23:32:37Z D5 B8E11 B8E3 B8E1: a Google session never reaches an admin route; a locked account is refused; an unverified Google email is refused
     ok — Google session on an admin route → 403 password-login-required; locked → account-locked; email_verified=false → google-email-unverified; forged callback → google-failed
 
-[7] 22:40:29Z B8A2 B8E18 B8E26: delete with a password: wrong password counted and 400; right password 204; every module erased; the mail; sign-in impossible
+[7] 23:32:41Z B8A2 B8E18 B8E26: delete with a password: wrong password counted and 400; right password 204; every module erased; the mail; sign-in impossible
     ok — before: rows in 8 of 53 user columns
     ok — wrong password 400 (counted once); right → 204; 53 user columns checked, none points at the user; usage row kept under an anon id; private word gone; one "đã xóa" mail; login and old token refused
 
-[8] 22:41:31Z B8A5 B8E19 B8E20: delete a Google-only account: reauth required, wrong Google account refused, the right one deletes
+[8] 23:33:45Z B8A5 B8E19 B8E20: delete a Google-only account: reauth required, wrong Google account refused, the right one deletes
     ok — no proof → 403 reauth-required; another Google account → reauth=wrong-account; the right one → cookie → 204; identity gone
 
-[9] 22:41:34Z B8A6 B8E57 D31: a renewing plan blocks a learner; "Hủy gói" (fake provider confirms at once); then the learner deletes
+[9] 23:33:47Z B8A6 B8E57 D31: a renewing plan blocks a learner; "Hủy gói" (fake provider confirms at once); then the learner deletes
     ok — delete → 409 subscription-renewing; cancel → 202, flag true on return; again → 409; delete → 204; plan rows gone, transaction kept anonymised
 
-[10] 22:42:07Z B8A3 B8A4 D31 B8E31 B8E47: admin deletes a renewing learner in one request (the provider is told, the flag is recorded); editor 403; wrong email 400
+[10] 23:34:21Z B8A3 B8A4 D31 B8E31 B8E47: admin deletes a renewing learner in one request (the provider is told, the flag is recorded); editor 403; wrong email 400
     ok — editor 403; wrong email 400; self 409 self-delete; renewing learner → 204 in the same request; by = admin; "đã xóa" mail sent
 
-[11] 22:42:11Z B8E40: two admins delete each other at once while the staff-role lock is held: exactly one 204 and one 409 last-admin
+[11] 23:34:24Z B8E40: two admins delete each other at once while the staff-role lock is held: exactly one 204 and one 409 last-admin
     ok — 204/409: one admin was deleted, the other kept (1 admin(s) left)
 
-[12] 22:42:15Z B8E22 M14: a deletion left deleting for 11 minutes is finished by the retry job, with exactly one mail; a cleanup one with none
+[12] 23:34:29Z B8E22 M14: a deletion left deleting for 11 minutes is finished by the retry job, with exactly one mail; a cleanup one with none
     ok — 1 mail(s) in all; self → one "đã xóa" mail; cleanup → none; deleted_accounts.by keeps who started it
 
-[13] 22:42:31Z B8E52: a renewal switched on again before Tx B: the deletion stays pending, then finishes after the cancel
+[13] 23:34:44Z B8E52: a renewal switched on again before Tx B: the deletion stays pending, then finishes after the cancel
     ok — retry with a renewing subscription → still deleting (no erase); after cancel_at_period_end → deleted
 
-[14] 22:42:46Z P4 B8E24 B8E32 D19: unverified clean-up: setting 1 day; an old unverified and an old locked-unverified go; a verified, a fresh one and a staff one stay; no mail
+[14] 23:34:56Z P4 B8E24 B8E32 D19: unverified clean-up: setting 1 day; an old unverified and an old locked-unverified go; a verified, a fresh one and a staff one stay; no mail
     ok — old unverified + old locked-unverified deleted (by cleanup, no mail); verified, fresh unverified and staff kept
 
-[15] 22:42:59Z B8E53 P2 D21: replay after a restore: the users row comes back (restored subscription row says renewing); replay deletes it, no mail, no conditions
+[15] 23:35:08Z B8E53 P2 D21: replay after a restore: the users row comes back (restored subscription row says renewing); replay deletes it, no mail, no conditions
     ok — replay: replayed 1, without a users row 10, pending 0; the restored user and its renewing subscription are gone, no mail
 
-[16] 22:43:15Z M1 R1 B8E25: rows a late request writes after the deletion are removed by the sweep; a late webhook leaves no id
+[16] 23:35:20Z M1 R1 B8E25: rows a late request writes after the deletion are removed by the sweep; a late webhook leaves no id
     ok — late ai_operations row removed by the sweep; a late webhook is ignored with no app_user_id, user_id or payload
 
-[17] 22:44:22Z B8E27 D14 D27: a report: kept under an anon id with no note and no learner answer; a report on a private word is deleted; the AI refund flag is untouched
+[17] 23:36:24Z B8E27 D14 D27: a report: kept under an anon id with no note and no learner answer; a report on a private word is deleted; the AI refund flag is untouched
     ok — the report stays under an anon id, note null, learner.answer null, result and refunded unchanged
 
-[18] 22:44:26Z B8E28: a person who deleted and registers again with the same email gets a trial again (trial history is not kept)
+[18] 23:36:27Z B8E28: a person who deleted and registers again with the same email gets a trial again (trial history is not kept)
     ok — trial_history gone with the account; the same email registers again and is trial-eligible
 
-[19] 22:44:29Z B8E49: a big learner (50 000 log rows, 2 000 private words) is deleted in under 120 s
-    ok — deleted in 0.3 s (< 120 s)
+[19] 23:36:31Z B8E49: a big learner (50 000 log rows, 2 000 private words) is deleted in under 120 s
+    ok — deleted in 0.2 s (< 120 s)
 
-== Bước 8 smoke: 19/19 steps in 263 s ==
+== Bước 8 smoke: 19/19 steps in 253 s ==
 PASS  setup
 PASS  B8A1 B8E1
 PASS  B8E9 B8E8
@@ -85,66 +85,66 @@ PASS  B8E49
 
 ===== RUN 2 =====
 
-[1] 22:45:14Z setup: API reachable; admins and learners (psql, signed in through the API)
+[1] 23:36:54Z setup: API reachable; admins and learners (psql, signed in through the API)
     ok — database english_learning_smoke_b8; 2 admins, 1 editor, 10 learners signed in
 
-[2] 22:45:20Z B8A1 B8E1: Google, a new person: the fake page, the sign-up ticket, completion, a Google session
-    ok — ticket → 1e242e95-3c2c-4c09-904c-7e9ab2bd0f66: auth_method google, sign_in_methods [google], names and avatar from Google, identity row, no password
+[2] 23:36:58Z B8A1 B8E1: Google, a new person: the fake page, the sign-up ticket, completion, a Google session
+    ok — ticket → e1d47201-6af6-47f5-adf9-87eb803e1f43: auth_method google, sign_in_methods [google], names and avatar from Google, identity row, no password
     ok — Google without a first name: needs_name true; completing without one → 400; with one → 200
 
-[3] 22:45:24Z B8E9 B8E8: Google sign-up: under 13 stores nothing; the same ticket cannot be reused; no cookie → 401
+[3] 23:37:01Z B8E9 B8E8: Google sign-up: under 13 stores nothing; the same ticket cannot be reused; no cookie → 401
     ok — under 13 → 400 age-below-minimum, no row, ticket cookie cleared; GET complete without a cookie → 401
 
-[4] 22:45:27Z B8E6: an unverified account with the same email: the Google sign-up reuses its id, drops the password and the old sessions
+[4] 23:37:03Z B8E6: an unverified account with the same email: the Google sign-up reuses its id, drops the password and the old sessions
     ok — same id, verified, no password; Google identity linked
 
-[5] 22:45:31Z K8 B8E5 B8E58: an existing verified account takes the Google identity: link mail, Google session, cookie survives the redirect chain, refresh works
+[5] 23:37:05Z K8 B8E5 B8E58: an existing verified account takes the Google identity: link mail, Google session, cookie survives the redirect chain, refresh works
     ok — callback → web with signed_in=google (query and fragment kept), refresh_token cookie, /refresh 200, mail "Google linked"; same sub again OK; another sub for the same email → google-failed (P13)
 
-[6] 22:45:35Z D5 B8E11 B8E3 B8E1: a Google session never reaches an admin route; a locked account is refused; an unverified Google email is refused
+[6] 23:37:09Z D5 B8E11 B8E3 B8E1: a Google session never reaches an admin route; a locked account is refused; an unverified Google email is refused
     ok — Google session on an admin route → 403 password-login-required; locked → account-locked; email_verified=false → google-email-unverified; forged callback → google-failed
 
-[7] 22:45:39Z B8A2 B8E18 B8E26: delete with a password: wrong password counted and 400; right password 204; every module erased; the mail; sign-in impossible
+[7] 23:37:12Z B8A2 B8E18 B8E26: delete with a password: wrong password counted and 400; right password 204; every module erased; the mail; sign-in impossible
     ok — before: rows in 8 of 53 user columns
     ok — wrong password 400 (counted once); right → 204; 53 user columns checked, none points at the user; usage row kept under an anon id; private word gone; one "đã xóa" mail; login and old token refused
 
-[8] 22:47:17Z B8A5 B8E19 B8E20: delete a Google-only account: reauth required, wrong Google account refused, the right one deletes
+[8] 23:38:16Z B8A5 B8E19 B8E20: delete a Google-only account: reauth required, wrong Google account refused, the right one deletes
     ok — no proof → 403 reauth-required; another Google account → reauth=wrong-account; the right one → cookie → 204; identity gone
 
-[9] 22:47:22Z B8A6 B8E57 D31: a renewing plan blocks a learner; "Hủy gói" (fake provider confirms at once); then the learner deletes
+[9] 23:38:19Z B8A6 B8E57 D31: a renewing plan blocks a learner; "Hủy gói" (fake provider confirms at once); then the learner deletes
     ok — delete → 409 subscription-renewing; cancel → 202, flag true on return; again → 409; delete → 204; plan rows gone, transaction kept anonymised
 
-[10] 22:48:12Z B8A3 B8A4 D31 B8E31 B8E47: admin deletes a renewing learner in one request (the provider is told, the flag is recorded); editor 403; wrong email 400
+[10] 23:38:52Z B8A3 B8A4 D31 B8E31 B8E47: admin deletes a renewing learner in one request (the provider is told, the flag is recorded); editor 403; wrong email 400
     ok — editor 403; wrong email 400; self 409 self-delete; renewing learner → 204 in the same request; by = admin; "đã xóa" mail sent
 
-[11] 22:48:18Z B8E40: two admins delete each other at once while the staff-role lock is held: exactly one 204 and one 409 last-admin
-    ok — 204/409: one admin was deleted, the other kept (1 admin(s) left)
+[11] 23:38:56Z B8E40: two admins delete each other at once while the staff-role lock is held: exactly one 204 and one 409 last-admin
+    ok — 409/204: one admin was deleted, the other kept (1 admin(s) left)
 
-[12] 22:48:25Z B8E22 M14: a deletion left deleting for 11 minutes is finished by the retry job, with exactly one mail; a cleanup one with none
+[12] 23:39:00Z B8E22 M14: a deletion left deleting for 11 minutes is finished by the retry job, with exactly one mail; a cleanup one with none
     ok — 1 mail(s) in all; self → one "đã xóa" mail; cleanup → none; deleted_accounts.by keeps who started it
 
-[13] 22:48:55Z B8E52: a renewal switched on again before Tx B: the deletion stays pending, then finishes after the cancel
+[13] 23:39:16Z B8E52: a renewal switched on again before Tx B: the deletion stays pending, then finishes after the cancel
     ok — retry with a renewing subscription → still deleting (no erase); after cancel_at_period_end → deleted
 
-[14] 22:49:22Z P4 B8E24 B8E32 D19: unverified clean-up: setting 1 day; an old unverified and an old locked-unverified go; a verified, a fresh one and a staff one stay; no mail
+[14] 23:39:28Z P4 B8E24 B8E32 D19: unverified clean-up: setting 1 day; an old unverified and an old locked-unverified go; a verified, a fresh one and a staff one stay; no mail
     ok — old unverified + old locked-unverified deleted (by cleanup, no mail); verified, fresh unverified and staff kept
 
-[15] 22:49:45Z B8E53 P2 D21: replay after a restore: the users row comes back (restored subscription row says renewing); replay deletes it, no mail, no conditions
+[15] 23:39:40Z B8E53 P2 D21: replay after a restore: the users row comes back (restored subscription row says renewing); replay deletes it, no mail, no conditions
     ok — replay: replayed 1, without a users row 10, pending 0; the restored user and its renewing subscription are gone, no mail
 
-[16] 22:50:08Z M1 R1 B8E25: rows a late request writes after the deletion are removed by the sweep; a late webhook leaves no id
+[16] 23:39:52Z M1 R1 B8E25: rows a late request writes after the deletion are removed by the sweep; a late webhook leaves no id
     ok — late ai_operations row removed by the sweep; a late webhook is ignored with no app_user_id, user_id or payload
 
-[17] 22:51:52Z B8E27 D14 D27: a report: kept under an anon id with no note and no learner answer; a report on a private word is deleted; the AI refund flag is untouched
+[17] 23:40:56Z B8E27 D14 D27: a report: kept under an anon id with no note and no learner answer; a report on a private word is deleted; the AI refund flag is untouched
     ok — the report stays under an anon id, note null, learner.answer null, result and refunded unchanged
 
-[18] 22:51:57Z B8E28: a person who deleted and registers again with the same email gets a trial again (trial history is not kept)
+[18] 23:41:00Z B8E28: a person who deleted and registers again with the same email gets a trial again (trial history is not kept)
     ok — trial_history gone with the account; the same email registers again and is trial-eligible
 
-[19] 22:52:03Z B8E49: a big learner (50 000 log rows, 2 000 private words) is deleted in under 120 s
-    ok — deleted in 0.5 s (< 120 s)
+[19] 23:41:03Z B8E49: a big learner (50 000 log rows, 2 000 private words) is deleted in under 120 s
+    ok — deleted in 0.2 s (< 120 s)
 
-== Bước 8 smoke: 19/19 steps in 418 s ==
+== Bước 8 smoke: 19/19 steps in 253 s ==
 PASS  setup
 PASS  B8A1 B8E1
 PASS  B8E9 B8E8
