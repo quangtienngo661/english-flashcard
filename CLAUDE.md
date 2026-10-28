@@ -299,7 +299,7 @@ the owner's Windows machine); the executing-plans ledger is `docs/deliveries/gia
 transaction history: API `billing_transactions`, `/v1/me/transactions`, `/v1/admin/transactions`, learner `/app/settings/transactions`, admin `/transactions`)
 merged (PR #127); M5a (Task 41–45, practice with AI questions) merged (PR #128); M5b (Task 46–48: AI lookup in Thêm từ, edit before saving, the
 learner's own word page with [Sửa] [Xóa từ]) is the last PR of the round (26/10/2026); as-built of every milestone and the round's close-out (CSP fallback D20,
-Worker over the Free plan when the app is on) at the end of `docs/deliveries/giao-dien-nguoi-hoc.md`. Owner 23/10/2026: no more stops for image or Figma
+Worker size when the app is on; the "over the Free plan" note there is stale, see `deploy-checklist.md`, corrected 26/10/2026) at the end of `docs/deliveries/giao-dien-nguoi-hoc.md`. Owner 23/10/2026: no more stops for image or Figma
 approval ("cứ triển khai mà làm"). Still left after the round: the owner's own pass through the test flow (D4); admin screens other than "Giao dịch"
 show "Sắp có" and have no design or plan yet.
 Improvement ideas to weigh **after** the learner UI for Bước 3–7 is done (owner 23/10/2026; not decided): `docs/preparation/IMPROVEMENT_IDEAS_2026-10-23.md` (product C1–C10, overall assessment, how the project is run P1–P5).
