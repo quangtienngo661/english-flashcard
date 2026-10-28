@@ -18,6 +18,7 @@ import { JobReconcilerService } from './jobs/job-reconciler.service.js';
 import { JobRunnerService } from './jobs/job-runner.service.js';
 import { PublishJobHandler } from './publish/publish-job.handler.js';
 import { PublishJobsController } from './publish/publish-jobs.controller.js';
+import { PublishJobsService } from './publish/publish-jobs.service.js';
 import { MulterExceptionFilter } from './upload/multer-exception.filter.js';
 import { UploadsController } from './upload/uploads.controller.js';
 import { UploadsReadController } from './upload/uploads-read.controller.js';
@@ -41,7 +42,7 @@ import { UploadsService } from './upload/uploads.service.js';
     BackgroundJobsService, JobQueueService, JobHandlerRegistry, JobRunnerService, JobReconcilerService,
     UploadsService, MulterExceptionFilter, IdempotencyInterceptor,
     ImportRowProcessor, ImportBatchHandler, ImportFileCleanupService,
-    ExportService, PublishJobHandler, InflectionsBackfillHandler,
+    ExportService, PublishJobHandler, PublishJobsService, InflectionsBackfillHandler,
   ],
   exports: [BackgroundJobsService, JobQueueService, JobHandlerRegistry, JobRunnerService, JobReconcilerService],
 })

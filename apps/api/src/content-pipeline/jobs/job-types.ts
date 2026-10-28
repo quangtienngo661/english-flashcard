@@ -2,6 +2,12 @@ import type { Prisma } from '../../generated/prisma/client.js';
 
 export type JobQueueName = 'content-import' | 'content-publish' | 'content-inflections';
 
+/**
+ * `error_summary` of a job staff stopped. The status CHECK has no `cancelled`, so a stopped job is `failed` with this
+ * summary; real failures read `<Name>: <message>` or a fixed phrase, so none can equal it.
+ */
+export const CANCELLED_SUMMARY = 'cancelled';
+
 export class LeaseLostError extends Error {
   constructor(jobId: string) {
     super(`Lease lost for job ${jobId}`);
