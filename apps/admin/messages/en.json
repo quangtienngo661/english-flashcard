@@ -766,6 +766,11 @@
         "rows": { "shape": "Shape", "rule": "Rules", "expected": "Expected" },
         "devRegressions": "Dev examples that passed before and fail now ({count})",
         "heldOutRegressions": "Held-out: {count, plural, one {# example} other {# examples}} passed before and fail now",
+        "judgeRow": "Judge {name} revision {revision} · {criterion}",
+        "judgeUnmatched": "{name}: only one run has scores of revision {revision}.",
+        "judgeBoth": "Score both with {name}",
+        "judgeRunning": "Scoring. The comparison updates when it is done.",
+        "judgeStopped": "The scoring pass stopped: {error}",
         "noRegressions": "No example passed before and fails now.",
         "criteria": { "shape": "shape", "rule": "rules", "expected": "expected" }
       }

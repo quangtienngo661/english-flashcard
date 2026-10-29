@@ -23,6 +23,12 @@ const PASS_ERRORS: readonly string[] = ['admin-usd-cap', 'stalled', 'run-failed'
 const linkClass =
   'inline-flex min-h-control w-fit items-center whitespace-nowrap rounded-control px-4 text-ui font-medium text-primary outline-none hover:bg-primary-soft focus-visible:ring-2 focus-visible:ring-primary pointer-coarse:min-h-control-touch';
 
+/** The sentence for the `error` of a stopped pass; a code with no sentence is shown as it is. */
+export function usePassErrorText() {
+  const t = useTranslations();
+  return (code: string) => (PASS_ERRORS.includes(code) ? t(`ai.eval.detail.judge.errors.${code}`) : code);
+}
+
 export const isPassActive = (pass: Pick<JudgePass, 'status'>): boolean => pass.status === 'queued' || pass.status === 'running';
 
 /**
@@ -78,6 +84,7 @@ export function JudgeSection({ run, passes, stats, candidates, hasItems }: Secti
   const api = useApi();
   const queryClient = useQueryClient();
   const format = useAiFormat();
+  const errorText = usePassErrorText();
   const choice = useJudgeChoice(candidates);
   const [started, setStarted] = useState(0);
   const action = useSubmitAction(
@@ -91,7 +98,6 @@ export function JudgeSection({ run, passes, stats, candidates, hasItems }: Secti
   );
   if (candidates.length === 0 && passes.length === 0 && stats.length === 0) return null;
 
-  const errorText = (code: string) => (PASS_ERRORS.includes(code) ? t(`ai.eval.detail.judge.errors.${code}`) : code);
   const canStart = isRunDone(run.status) && candidates.length > 0;
   const sameProvider = run.provider === 'anthropic' && choice.judge?.latest.model?.provider === 'anthropic';
   const labelJudge = passes[0]?.judge.id ?? choice.judge?.id ?? candidates[0]?.id ?? null;

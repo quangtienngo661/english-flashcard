@@ -766,6 +766,11 @@
         "rows": { "shape": "Khuôn", "rule": "Luật", "expected": "Mong đợi" },
         "devRegressions": "Ví dụ dev trước đạt, nay trượt ({count})",
         "heldOutRegressions": "Held-out: {count} ví dụ trước đạt, nay trượt",
+        "judgeRow": "Judge {name} bản {revision} · {criterion}",
+        "judgeUnmatched": "{name}: chỉ một lần chạy có điểm của bản {revision}.",
+        "judgeBoth": "Chấm cả hai bằng {name}",
+        "judgeRunning": "Đang chấm. So sánh sẽ tự cập nhật khi xong.",
+        "judgeStopped": "Lượt chấm đã dừng: {error}",
         "noRegressions": "Không có ví dụ nào trước đạt, nay trượt.",
         "criteria": { "shape": "khuôn", "rule": "luật", "expected": "mong đợi" }
       }
