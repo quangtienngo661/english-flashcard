@@ -205,7 +205,7 @@ describe('StaffService.createAccount timezone (unit, isolated persistence)', () 
 describe('StaffService.lockUser / unlockUser (unit, isolated persistence)', () => {
   const clock = new FakeClock(new Date('2026-10-20T12:00:00Z'));
   const actorId = randomUUID(); const targetId = randomUUID();
-  const tx = { $executeRaw: vi.fn(), user: { findUnique: vi.fn(), update: vi.fn() }, otpCode: { updateMany: vi.fn() } };
+  const tx = { $executeRaw: vi.fn(), user: { findUnique: vi.fn(), update: vi.fn(), updateMany: vi.fn() }, otpCode: { updateMany: vi.fn() } };
   const prisma = { $transaction: vi.fn(), user: { findUnique: vi.fn() } };
   const sessions = { revokeAllForUser: vi.fn() };
   const logs: LogEntry[] = [];
@@ -225,6 +225,7 @@ describe('StaffService.lockUser / unlockUser (unit, isolated persistence)', () =
     tx.$executeRaw.mockResolvedValue(1);
     tx.user.findUnique.mockImplementation(async () => ({ ...stored }));
     tx.user.update.mockImplementation(async ({ data }) => { stored = { ...stored, ...data }; return { ...stored }; });
+    tx.user.updateMany.mockImplementation(async ({ data }) => { stored = { ...stored, ...data }; return { count: 1 }; });
     tx.otpCode.updateMany.mockResolvedValue({ count: 2 });
     prisma.user.findUnique.mockImplementation(async ({ where }) => (where.id === targetId ? { ...stored }
       : where.id === actorId ? { email: 'admin@example.com' } : null));
@@ -234,7 +235,8 @@ describe('StaffService.lockUser / unlockUser (unit, isolated persistence)', () =
       sessions as unknown as SessionService);
   });
   const nothingWritten = () => {
-    expect(tx.user.update).not.toHaveBeenCalled(); expect(sessions.revokeAllForUser).not.toHaveBeenCalled();
+    expect(tx.user.update).not.toHaveBeenCalled(); expect(tx.user.updateMany).not.toHaveBeenCalled();
+    expect(sessions.revokeAllForUser).not.toHaveBeenCalled();
     expect(tx.otpCode.updateMany).not.toHaveBeenCalled();
   };
 
@@ -246,8 +248,8 @@ describe('StaffService.lockUser / unlockUser (unit, isolated persistence)', () =
     expect(values).toEqual([`identity.user:${targetId}`]);
     expect(tx.$executeRaw.mock.invocationCallOrder[0]).toBeLessThan(tx.user.findUnique.mock.invocationCallOrder[0]);
     expect(prisma.$transaction).toHaveBeenCalledWith(expect.any(Function), { timeout: 10_000, maxWait: 5_000 });
-    expect(tx.user.update).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ where: { id: targetId },
-      data: { status: 'locked', lockedAt: clock.now(), lockedBy: actorId, lockReason: reason } }));
+    expect(tx.user.updateMany).toHaveBeenCalledExactlyOnceWith({ where: { id: targetId, OR: [{ staffRole: null }, { staffRole: { not: 'admin' } }] },
+      data: { status: 'locked', lockedAt: clock.now(), lockedBy: actorId, lockReason: reason } });
     expect(sessions.revokeAllForUser).toHaveBeenCalledExactlyOnceWith(tx, targetId, 'locked');
     expect(tx.otpCode.updateMany).toHaveBeenCalledExactlyOnceWith({
       where: { userId: targetId, consumedAt: null, invalidatedAt: null }, data: { invalidatedAt: clock.now() } });
