@@ -2077,7 +2077,9 @@
       "calls": "Learner AI calls / daily limit",
       "cost": "AI cost today",
       "units": "Learner AI units / system limit",
-      "notReady": "Operations not ready"
+      "notReady": "Operations not ready",
+      "adminUsd": "Admin USD today / cap",
+      "adminUsdReached": "USD cap reached: test runs, evals and judge calls are blocked until midnight."
     },
     "health": {
       "title": "Operational status",
@@ -2129,7 +2131,7 @@
     },
     "usage": {
       "title": "Usage limits",
-      "hint": "Learner AI units per day, measured against the current system limit.",
+      "hint": "Learner AI units per day, each day measured against that day’s own limit.",
       "total": "Total AI units used",
       "daysAtCap": "Days at the limit",
       "refunds": "Units refunded",
@@ -2137,6 +2139,9 @@
       "chart": "AI units per day",
       "practice": "AI practice questions",
       "lookup": "AI word lookups",
+      "dayCap": "Limit that day",
+      "atCap": "At the limit",
+      "yes": "Yes",
       "pro": {
         "title": "How much of their limit Pro learners have used",
         "hint": "Counted in each learner’s current cycle, whatever period is selected. Each learner is placed by the pool they have used the most of: AI practice questions or AI word lookups.",
@@ -2175,6 +2180,7 @@
       "open": "Open",
       "fixed": "Fixed",
       "noError": "No error found",
+      "confirmed": "Confirmed",
       "refunded": "Refunded",
       "date": "Date",
       "learners": "Learners"

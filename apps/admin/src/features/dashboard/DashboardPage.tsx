@@ -117,6 +117,10 @@ function Body({ ai, quality, usage, usagePro }: { ai: AiDashboard; quality: AiQu
   ).sort((a, b) => b[1] - a[1]);
   const requests = quality.ai_requests.reduce((sum, row) => sum + row.count, 0);
   const failedRequests = failures.reduce((sum, [, n]) => sum + n, 0);
+  // The gateway stops test, eval and judge calls once today's spend is at the cap or over it (B20), so "at" already counts as reached.
+  const adminSpent = Number(ai.today.admin_cost_usd);
+  const adminCap = ai.today.admin_usd_cap;
+  const adminReached = adminCap !== null && adminSpent >= adminCap;
 
   // AI next to non-AI questions over the range: shares of answered (correct) and of asked (hint, skip).
   const totalsOf = (source: string) => quality.questions.filter((row) => row.source === source)
@@ -181,6 +185,7 @@ function Body({ ai, quality, usage, usagePro }: { ai: AiDashboard; quality: AiQu
     { key: 'open', header: t('dashboard.cols.open'), className: numeric, card: 'field', cell: (r) => format.number(r.open) },
     { key: 'fixed', header: t('dashboard.cols.fixed'), className: numeric, card: 'field', cell: (r) => format.number(r.fixed) },
     { key: 'noError', header: t('dashboard.cols.noError'), className: numeric, card: 'field', cell: (r) => format.number(r.no_error) },
+    { key: 'confirmed', header: t('dashboard.cols.confirmed'), className: numeric, card: 'field', cell: (r) => format.number(r.confirmed) },
     { key: 'refunded', header: t('dashboard.cols.refunded'), className: numeric, card: 'field', cell: (r) => format.number(r.refunded) },
   ];
 
@@ -197,7 +202,7 @@ function Body({ ai, quality, usage, usagePro }: { ai: AiDashboard; quality: AiQu
 
       <div className="grid gap-6 shell:grid-cols-2">
         <Card icon="◷" title={t('dashboard.today.title')} wide>
-          <div className="grid gap-3 shell:grid-cols-4">
+          <div className="grid gap-3 shell:grid-cols-3">
             <Meter
               label={t('dashboard.today.calls')}
               value={ai.today.calls}
@@ -211,9 +216,17 @@ function Body({ ai, quality, usage, usagePro }: { ai: AiDashboard; quality: AiQu
               display={`${format.number(usage.today.used)} / ${format.number(usage.today.cap)}`}
               alert={usage.today.alert_reached}
             />
+            <Meter
+              label={t('dashboard.today.adminUsd')}
+              value={adminSpent}
+              max={adminCap}
+              display={adminCap === null ? format.usd(ai.today.admin_cost_usd) : `${format.usd(ai.today.admin_cost_usd)} / ${format.usd(String(adminCap))}`}
+              alert={adminReached}
+            />
             <Stat label={t('dashboard.today.cost')} value={format.vnd(ai.today.cost_vnd)} />
             <Stat label={t('dashboard.today.notReady')} value={`${notReady} / ${ai.operations.length}`} tone={notReady > 0 ? 'danger' : 'neutral'} />
           </div>
+          {adminReached && <Banner variant="warning">{t('dashboard.today.adminUsdReached')}</Banner>}
         </Card>
 
         <Card icon="♥" title={t('dashboard.health.title')} hint={t('dashboard.health.hint')} wide>
@@ -417,6 +430,8 @@ function Body({ ai, quality, usage, usagePro }: { ai: AiDashboard; quality: AiQu
                 { key: 'practice', header: t('dashboard.usage.practice'), className: numeric, card: 'field', cell: (r) => format.number(r.ai_practice) },
                 { key: 'lookup', header: t('dashboard.usage.lookup'), className: numeric, card: 'field', cell: (r) => format.number(r.ai_lookup) },
                 { key: 'learners', header: t('dashboard.cols.learners'), className: numeric, card: 'field', cell: (r) => format.number(r.learners) },
+                { key: 'cap', header: t('dashboard.usage.dayCap'), className: numeric, card: 'field', cell: (r) => format.number(r.cap) },
+                { key: 'atCap', header: t('dashboard.usage.atCap'), card: 'field', cell: (r) => (r.at_cap ? t('dashboard.usage.yes') : '—') },
               ]}
               state="ready"
               emptyText={t('dashboard.empty')}

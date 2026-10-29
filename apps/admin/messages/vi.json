@@ -2077,7 +2077,9 @@
       "calls": "Lời gọi AI của người học / giới hạn ngày",
       "cost": "Chi phí AI hôm nay",
       "units": "Lượt AI của người học / giới hạn hệ thống",
-      "notReady": "Thao tác chưa sẵn sàng"
+      "notReady": "Thao tác chưa sẵn sàng",
+      "adminUsd": "USD việc của admin hôm nay / trần",
+      "adminUsdReached": "Đã chạm trần USD: chạy thử, eval và judge bị chặn tới 0 giờ."
     },
     "health": {
       "title": "Tình trạng vận hành",
@@ -2129,7 +2131,7 @@
     },
     "usage": {
       "title": "Hạn mức sử dụng",
-      "hint": "Lượt AI của người học theo ngày, đối chiếu với giới hạn hệ thống hiện hành.",
+      "hint": "Lượt AI của người học theo ngày, mỗi ngày đối chiếu với giới hạn của chính ngày đó.",
       "total": "Tổng lượt AI đã dùng",
       "daysAtCap": "Số ngày đạt giới hạn",
       "refunds": "Lượt đã hoàn lại",
@@ -2137,6 +2139,9 @@
       "chart": "Lượt AI theo ngày",
       "practice": "Câu hỏi AI khi luyện tập",
       "lookup": "Tra cứu từ bằng AI",
+      "dayCap": "Giới hạn ngày đó",
+      "atCap": "Đạt giới hạn",
+      "yes": "Có",
       "pro": {
         "title": "Người dùng gói Pro đã dùng bao nhiêu hạn mức",
         "hint": "Tính theo chu kỳ hiện tại của từng người, không phụ thuộc khoảng thời gian đã chọn. Mỗi người được xếp theo loại có tỉ lệ đã dùng cao hơn: câu hỏi AI khi luyện tập hoặc tra cứu từ bằng AI.",
@@ -2175,6 +2180,7 @@
       "open": "Chưa xử lý",
       "fixed": "Đã sửa",
       "noError": "Không có lỗi",
+      "confirmed": "Đã xác nhận",
       "refunded": "Đã hoàn lượt",
       "date": "Ngày",
       "learners": "Người học"

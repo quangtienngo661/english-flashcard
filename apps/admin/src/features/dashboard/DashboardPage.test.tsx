@@ -27,7 +27,10 @@ const totals = (calls: number, cost_vnd: number) => ({
 });
 const aiReply = (over: Partial<AiDashboard> = {}): AiDashboard => ({
   from: back(29), to: TODAY, ai_enabled: true,
-  today: { calls: 3, cap: 500, failed_calls: 1, failed_cost_usd: '0.00000000', cost_usd: '0.01000000', cost_vnd: 1240, admin_cost_usd: '0.00000000', admin_usd_cap: 2 },
+  today: {
+    calls: 2, cap: 500, failed_calls: 1, failed_cost_usd: '0.00000000', cost_usd: '0.01000000', cost_vnd: 1240, admin_cost_usd: '0.42000000',
+    admin_usd_cap: 2,
+  },
   operations: AI_OPERATION_ORDER.map((operation) => ({
     operation, ready: operation !== 'translate_sentence', reason: operation === 'translate_sentence' ? 'model-not-set' : null,
     model: null, last_error: null,
@@ -38,6 +41,9 @@ const aiReply = (over: Partial<AiDashboard> = {}): AiDashboard => ({
   by_model: [{ key: 'anthropic/claude-haiku-5-5', ...totals(14, 82) }],
   by_purpose: [{ key: 'learner', ...totals(10, 66) }],
   learner_health: [{ operation: 'generate_cloze', calls: 4, failed: 1, p50_ms: 3766, p95_ms: 4946, outcomes: { succeeded: 3, timeout: 1 } }],
+  latest_evals: [],
+  judge_scores: [],
+  judge_revisions: [],
   ...over,
 });
 const qualityReply = (over: Partial<AiQuality> = {}): AiQuality => ({
@@ -51,7 +57,7 @@ const qualityReply = (over: Partial<AiQuality> = {}): AiQuality => ({
     { type: 'cloze', state: 'failed', failure: 'rejected', count: 2 },
   ],
   ai_sessions: [{ stopped: null, count: 5 }, { stopped: 'quota-exhausted', count: 1 }],
-  reports: [{ source: 'ai', total: 3, open: 1, no_error: 1, fixed: 1, refunded: 1 }],
+  reports: [{ source: 'ai', total: 3, open: 1, no_error: 1, fixed: 0, confirmed: 1, refunded: 1 }],
   ai_report_reasons: [{ reason: 'wrong_answer', label_vi: 'Đáp án sai', label_en: 'Wrong answer', count: 3 }],
   unknown_forms: { new_forms: 2, rejected_seen: 4 },
   word_checks: [{ verdict: 'not_recognized', count: 1 }],
@@ -59,6 +65,8 @@ const qualityReply = (over: Partial<AiQuality> = {}): AiQuality => ({
     { type: 'cloze', first_answers: 24, second_tries: 3 },
     { type: 'meaning_in_sentence', first_answers: 10, second_tries: 0 },
   ],
+  real_judge_scores: [],
+  real_judge_latest: [],
   ...over,
 });
 const proReply = (over: Partial<AiUsagePro> = {}): AiUsagePro => ({
@@ -72,7 +80,7 @@ const proReply = (over: Partial<AiUsagePro> = {}): AiUsagePro => ({
 const usageReply = (over: Partial<AiUsageDays> = {}): AiUsageDays => ({
   from: back(29), to: TODAY,
   today: { date: TODAY, used: 10, cap: 1000, alert_percent: 75, alert_reached: false, enabled: true },
-  days: [{ date: TODAY, ai_practice: 8, ai_lookup: 2, total: 10, learners: 1 }],
+  days: [{ date: TODAY, ai_practice: 8, ai_lookup: 2, total: 10, learners: 1, cap: 1000, at_cap: false }],
   refunds: 1, days_at_cap: 0,
   ...over,
 });
@@ -89,9 +97,42 @@ describe('DashboardPage (/dashboard, ai.view)', () => {
     renderApp('/dashboard', routes());
     expect(await screen.findByRole('heading', { level: 1, name: 'Dashboard' })).toBeInTheDocument();
     expect(await screen.findByRole('heading', { level: 2, name: t.today.title })).toBeInTheDocument();
-    expect(within(tile(t.today.calls)).getByText('3 / 500')).toBeInTheDocument();
+    expect(within(tile(t.today.calls)).getByText('2 / 500')).toBeInTheDocument();
     expect(within(tile(t.today.units)).getByText('10 / 1.000')).toBeInTheDocument();
     expect(within(tile(t.today.notReady)).getByText('1 / 6')).toBeInTheDocument();
+  });
+
+  it('today: admin USD (test runs, evals, judge) is a meter against its own cap; below the cap there is no warning', async () => {
+    renderApp('/dashboard', routes());
+    await screen.findByRole('heading', { level: 2, name: t.today.title });
+    const meter = screen.getByRole('meter', { name: t.today.adminUsd });
+    expect(meter).toHaveAttribute('aria-valuenow', '0.42');
+    expect(meter).toHaveAttribute('aria-valuemax', '2');
+    expect(within(tile(t.today.adminUsd)).getByText(/^0,42\s?US\$ \/ 2,00\s?US\$$/)).toBeInTheDocument();
+    expect(screen.queryByText(t.today.adminUsdReached)).not.toBeInTheDocument();
+  });
+
+  it('today: admin USD exactly at the cap → the cap is reached (the gateway blocks at ≥, B20)', async () => {
+    const today = { ...aiReply().today, admin_cost_usd: '2.00000000', admin_usd_cap: 2 };
+    renderApp('/dashboard', routes(urls(), { ai: aiReply({ today }) }));
+    expect(await screen.findByText(t.today.adminUsdReached)).toBeInTheDocument();
+    expect(screen.getByRole('meter', { name: t.today.adminUsd })).toHaveAttribute('aria-valuenow', '2');
+  });
+
+  it('today: admin USD just under the cap (1,99 of 2) → no warning', async () => {
+    const today = { ...aiReply().today, admin_cost_usd: '1.99000000', admin_usd_cap: 2 };
+    renderApp('/dashboard', routes(urls(), { ai: aiReply({ today }) }));
+    await screen.findByRole('heading', { level: 2, name: t.today.title });
+    expect(screen.queryByText(t.today.adminUsdReached)).not.toBeInTheDocument();
+  });
+
+  it('today: no admin USD cap → the figure alone, no "/", and never the reached warning', async () => {
+    const today = { ...aiReply().today, admin_cost_usd: '500.00000000', admin_usd_cap: null };
+    renderApp('/dashboard', routes(urls(), { ai: aiReply({ today }) }));
+    await screen.findByRole('heading', { level: 2, name: t.today.title });
+    const box = tile(t.today.adminUsd);
+    expect(within(box).getByText(/^500,00\s?US\$$/)).toBeInTheDocument();
+    expect(screen.queryByText(t.today.adminUsdReached)).not.toBeInTheDocument();
   });
 
   it('health: failed share and p50/p95 per operation; an operation without calls shows dashes and its reason', async () => {
@@ -162,6 +203,49 @@ describe('DashboardPage (/dashboard, ai.view)', () => {
     expect(within(list).getAllByRole('listitem').map((item) => item.textContent)).toEqual(counts.map(([label, n]) => `${label}${n}`));
     expect(within(card).queryByText(t.usage.pro.truncated)).not.toBeInTheDocument();
     expect(within(card).queryByText(/không có hạn mức AI/)).not.toBeInTheDocument();
+  });
+
+  it('usage: each day is read against its own cap; the hint says so and the table shows the cap and "Có" for the day at its cap', async () => {
+    const usage = usageReply({
+      days: [
+        { date: back(1), ai_practice: 3, ai_lookup: 0, total: 3, learners: 1, cap: 3, at_cap: true },
+        { date: TODAY, ai_practice: 4, ai_lookup: 0, total: 4, learners: 2, cap: 1000, at_cap: false },
+      ],
+      days_at_cap: 1,
+    });
+    renderApp('/dashboard', routes(urls(), { usage }));
+    const card = (await screen.findByRole('heading', { level: 2, name: t.usage.title })).closest('section') as HTMLElement;
+    expect(within(card).getByText('Lượt AI của người học theo ngày, mỗi ngày đối chiếu với giới hạn của chính ngày đó.')).toBeInTheDocument();
+    expect(within(tile(t.usage.daysAtCap)).getByText('1')).toBeInTheDocument();
+    const dayRows = within(card).getAllByRole('row', { hidden: true });
+    const header = within(dayRows[0]).getAllByRole('columnheader', { hidden: true }).map((h) => h.textContent);
+    expect(header).toEqual([t.cols.date, t.usage.practice, t.usage.lookup, t.cols.learners, t.usage.dayCap, t.usage.atCap]);
+    const cells = (row: HTMLElement) => within(row).getAllByRole('cell', { hidden: true }).map((c) => c.textContent);
+    expect(cells(dayRows[1]).slice(4)).toEqual(['3', t.usage.yes]);
+    expect(cells(dayRows[2]).slice(4)).toEqual(['1.000', '—']);
+  });
+
+  it('usage: a day with the AI off all day (cap 0, no use) is at its cap, as the API says', async () => {
+    const usage = usageReply({ days: [{ date: back(2), ai_practice: 0, ai_lookup: 0, total: 0, learners: 0, cap: 0, at_cap: true }, usageReply().days[0]], days_at_cap: 1 });
+    renderApp('/dashboard', routes(urls(), { usage }));
+    const card = (await screen.findByRole('heading', { level: 2, name: t.usage.title })).closest('section') as HTMLElement;
+    expect(within(tile(t.usage.daysAtCap)).getByText('1')).toBeInTheDocument();
+    // A day with no use is not in the table (as before); the count above still includes it.
+    expect(within(card).getAllByRole('row', { hidden: true })).toHaveLength(2);
+  });
+
+  it('quality: the report table has a column for confirmed AI errors, next to fixed and no error', async () => {
+    const reports = [{ source: 'ai', total: 10, open: 1, no_error: 2, fixed: 3, confirmed: 4, refunded: 5 }];
+    renderApp('/dashboard', routes(urls(), { quality: qualityReply({ reports }) }));
+    const card = (await screen.findByRole('heading', { level: 2, name: t.quality.title })).closest('section') as HTMLElement;
+    const table = within(card).getByRole('heading', { level: 3, name: t.quality.reports, hidden: true }).nextElementSibling as HTMLElement;
+    const header = within(table).getAllByRole('columnheader', { hidden: true }).map((h) => h.textContent);
+    expect(header).toContain(t.cols.confirmed);
+    const body = within(table).getAllByRole('row', { hidden: true })[1];
+    const cells = within(body).getAllByRole('cell', { hidden: true }).map((c) => c.textContent);
+    expect(cells[header.indexOf(t.cols.confirmed)]).toBe('4');
+    expect(cells[header.indexOf(t.cols.fixed)]).toBe('3');
+    expect(cells[header.indexOf(t.cols.refunded)]).toBe('5');
   });
 
   it('usage: no Pro learner → the empty state, no list', async () => {
