@@ -1,0 +1,397 @@
+# Smoke của đợt sửa defect review Bước 1–8 (29/10/2026)
+# Chạy trên bản gộp cục bộ của PR #185, #186, #187 (commit 3fbefd1), API + worker thật build từ bản gộp đó, cổng 3300, AI giả, DB riêng mỗi lần.
+
+################ pnpm smoke buoc-0-3-fixes ################
+health 200
+
+[1] 08:30:21Z setup: API reachable; admin and learners (psql, signed in through the API); a content source
+    ok — database english_learning_smoke_fixes; admin smokefx-admin-398ff80a@example.com; 14 learners signed in; source e3f88782-3b50-4776-b3ae-4757f19de90a
+
+[2] 08:30:24Z M2: FE1 age, FE5 terms, register Lan with names, PATCH /v1/me birth_date
+    ok — FE1 12-year-old → 400 age-below-minimum; FE5 accept_terms false → 400 validation-failed; no user created
+    ok — Lan registered (9335265b-5007-4293-8f58-f5cf271d2892), verified through the Mailpit OTP; GET /v1/me shows given_name Lan, family_name Nguyen, birth_date 2000-05-17
+    ok — PATCH /v1/me birth_date: 12-year-old → 400 age-below-minimum, future → 400 validation-failed (unchanged); 1999-01-01 → 200, stored
+
+[3] 08:30:26Z C2: FE32 time zones: "+07:00" refused, "asia/ho_chi_minh" stored as Asia/Saigon
+    ok — PATCH "+07:00" → 400 validation-failed; PATCH "asia/ho_chi_minh" → 200, GET /v1/me timezone Asia/Saigon
+
+[4] 08:30:26Z C1 FE26: 10 learners create a group at once
+    ok — FE26 10 learners × POST /v1/groups at once → 10 × 201
+
+[5] 08:30:26Z C1 FE27: one learner creates 10 groups at once, 10 keys
+    ok — FE27 one learner, 10 keys at once → 10 × 201, 10 distinct groups
+
+[6] 08:30:26Z C1 FE29: same key twice while the first request waits on the Learning lock
+    ok — FE29 same key twice while the first waits on the Learning lock → second 409 Retry-After: 2; first 201 after 2017 ms; a third call replays it
+
+[7] 08:30:29Z C1 B0E1: a key left in_progress past its lease
+    ok — B0E1 key left in_progress 1 h ago → 409 idempotency-key-abandoned
+
+[8] 08:30:29Z C1 key reuse: same key + different body
+    ok — same key + different body → 400
+
+[9] 08:30:30Z C1 rate limit: the 31st user.write in a minute
+    ok — rate limit: 30 × PATCH /v1/me → 200, the 31st → 429 with Retry-After: 30
+
+[10] 08:30:30Z N4/N5: lock Lan: refresh 401, login 403 account-locked; FE11 lock self 409; search q; unlock
+    ok — refresh before the lock → 200 (control); after: refresh → 401, login with the right password → 403 account-locked
+    ok — FE11 admin locks self → 409
+    ok — list ?q=lan finds Lan (locked); ?q=a → 400 validation-failed
+    ok — unlock → login 200
+
+[11] 08:30:31Z T1: reject revision 2 → publish it refused revision-rejected; FE19 quick publish → revision 3
+    ok — publish of rejected revision 2 → refused revision-rejected; quick publish {revision: 2} → revision 3 published
+
+[12] 08:30:32Z T2: import A (go), import C (went form_of go), revert A → go kept entry-in-use
+    ok — revert of A keeps zfgtdwfwj (entry-in-use: zfwtindbw is its past form)
+
+[13] 08:30:34Z T3: FE17 re-upload of an unchanged file after a hand edit → row unchanged, live content still the edit
+    ok — re-upload of F → row unchanged (no create/update); live example is still the hand edit
+
+[14] 08:30:36Z T4: round-2 rejected.csv re-uploaded as it is → accepted
+    ok — round-2 rejected.csv re-uploaded → batch partial, the row rejected only for its bad pos; one _row/_error pair
+
+[15] C3: covered by unit test (no API step)
+
+[16] 08:30:38Z T5: user B's private word never appears in A's /v1/lookup (control: A's own does)
+    ok — A's lookup never shows B's private word; A's own private word shows for A (control), B's for B
+
+Summary (17s):
+  setup: PASS
+  M2: PASS
+  C2: PASS
+  C1 FE26: PASS
+  C1 FE27: PASS
+  C1 FE29: PASS
+  C1 B0E1: PASS
+  C1 key reuse: PASS
+  C1 rate limit: PASS
+  N4/N5: PASS
+  T1: PASS
+  T2: PASS
+  T3: PASS
+  T4: PASS
+  C3: covered by unit test (no API step)
+  T5: PASS
+
+ALL STEPS MATCHED
+smoke exit code: 0
+
+################ pnpm smoke buoc-7 ################
+health 200
+
+[1] 08:33:36Z Wait for the API
+    ok — reachable at http://localhost:3300; database english_learning_smoke_b7; children run with AI_FAKE_ENABLED=true, JOB_QUEUE_PREFIX=wordmet-b7-smoke, no key
+
+[2] 08:33:36Z Accounts: admin (CLI grant), editor (created by the admin), learners L1, L2, L3 (vi)
+    ok — admin smoke7-admin-4f2236a4@example.com; editor smoke7-editor-4f2236a4@example.com; learners smoke7-l1-4f2236a4@example.com, smoke7-l2-4f2236a4@example.com, smoke7-l3-4f2236a4@example.com (native_language vi)
+
+[3] 08:33:42Z AI setup (design §18, R6): fake provider on; the new operations seeded without a model; fake:ok chosen for five operations
+    ok — five operations were model-not-set; generate_cloze prompt at revision 2; six fake models added; fake:ok chosen, all five ready; ai_prefetch_count 2
+
+[4] 08:33:42Z Content: import 36 verbs (gloss, short definition, example, inflections) in 12 topic/level buckets and publish
+    ok — batch 7af9f402-77d8-43e5-a547-c16f0d0d5a5a: 36 created, published by job eb39055d-d505-42a0-98f6-b6627cacddab; a learner sees them
+
+[5] 08:33:49Z Entitlements: L1 Pro with 87 AI practice units and 200 sessions a day; L2 stays Free; L3 Pro with 3 units
+    ok — L1 pro, ai_practice 87/87, ai_lookup 100; L2 free (no AI); L3 pro, ai_practice 3
+
+[6] 08:33:49Z Groups: one per bucket (bulk add by topic and level), plus an empty one for a saved AI suggestion
+    ok — L1: G1, G4, G5, G6, G7, GR1, GR2, GR3, GR5, G57, G117, G9; L2: GL2; L3: GL3
+
+[7] 08:33:51Z AC1 (B7E45, B7E7): Pro learner, 87 units, "gõ từ + điền từ AI", 10 questions, prepare after opening and after each question
+    ok — ai_planned 5, marked positions 2,4,6,8,10; every AI question made by prepare before next; 5 cloze (AI) + 5 typing, all right; 82 units left; 5 confirmed use rows
+
+[8] 08:34:08Z AC2 (B7E59, B7E15): the same session again, stopped at question 4 and abandoned; the next session reuses the unseen AI questions at 0 units
+    ok — session 2: 4 AI questions made (2 shown, 2 unseen), 4 units; abandoned by session 3, which marked both unseen words, reused their questions (0 units) and made 3 new ones; 75 units left
+
+[9] 08:34:27Z AC3 (B7E2): L3 has 3 units left; a session that needs 5 is refused, one that needs 3 opens
+    ok — count 5 → 403 ai-quota-insufficient (remaining 3, needed 5, resets_at 2026-11-29T08:33:49.663Z), no usage row; count 3 → opens (ai_planned 3), still 3 units
+
+[10] 08:34:28Z AC4 (B7E49, B7E10, B7E30): AI fails (fake:refuse) twice in a mixed session, no prepare → typing for those words, one ai-fallback notice, no unit
+    ok — positions 2 and 4 fell back to typing on the same word; notices [null,"ai-fallback",null,null]; both requests failed/ai-failed with the unit released; 75 units left
+
+[11] 08:34:37Z AC4 with prepare (B7E113, §6.4, §6.6): prepare fails both AI words; next switches type at once, calls AI no more, shows ai-fallback once
+    ok — prepare: {"prepared":0,"already_ready":0,"failed":2}; both AI words asked as typing at once, no further AI call (2 calls, all from prepare)
+    ok — typing on both words, no further AI call; notices [{"k":1,"marked":false,"notice":null,"ai_reason":null},{"k":2,"marked":true,"notice":"ai-fallback","ai_reason":"ai-failed"},{"k":3,"marked":false,"notice":null,"ai_reason":null},{"k":4,"marked":true,"notice":null,"ai_reason":null}]
+
+[12] 08:34:44Z AC5 (B7E48, B7E31): AI-only session, AI times out (fake:slow) → ai_unavailable; next again → same, no AI call; retry_ai once AI is back (fake:503-then-ok) → AI question
+    ok — timeout after 10177 ms → ai_unavailable/ai-failed (unit released); again → same, no new call; retry_ai with fake:503-then-ok → cloze (calls provider-error,succeeded), 1 unit; cloze wrong → try_again, skip → wrong/skipped
+
+[13] 08:35:02Z AC6 (B7E34, B7E96, B7E97): fake:bad-form → rejected twice (#2), the form is recorded; staff accept it → the next AI question passes
+    ok — first request rejected (reason ai-failed) after 9656db5a-caa0-4452-8dc0-22b302e8315c and #2; "zqerhzhtment" recorded twice and listed; editor accepted it (again → 409); list hides it; retry → cloze accepted "zqerhzhtment", one call, 1 unit
+
+[14] 08:35:09Z AC7 (B7E50–B7E56, B7E18, B7E124, plan choice 6): the three AI types and cloze from a saved sentence: hints, grading, translation
+    ok — mcq_sentence: hint 1 = definition, hint 2/3 → 409, right option "zqygnuqx", translation; meaning_in_sentence: highlight, 4 meanings, right = meaning, translation; cloze: hints d…/definition/meaning, another word → try_again, "Z…." → correct; saved-sentence cloze: no unit, not reportable, translation null; history shows option and translation; 3 units
+
+[15] 08:35:15Z AC8 (B7E70, B7E73, B7E76, B7E84): L1 reports the AI cloze; the editor confirms; the unit comes back; the admin sees it in refunds
+    ok — 7 reasons for ai, 4 for non_ai; report eda84992-c5bf-4b6a-b7ec-fb735309cc50 open with label "Có hơn một đáp án đúng"; staff row has op id, model fake:ok, prompt_revision 2; fixed → 409; confirmed by the editor → refunded, 70 → 71 units, one credit row; again → 409 report-not-open; L1 sees refunded true; admin refunds row (self_resolved false); editor → 403
+
+[16] 08:35:16Z AC9 (B7E19, B7E21, B7E93): AI lookup of an unknown word; the same key again; saved as a private word with 2 examples
+    ok — "rizzepvy": suggestion noun / "nghĩa giả", no catalog sense; 1 lookup unit; same key → same body, no call, no unit; 3 examples → 400; saved with 2 examples, draft_source ai_suggestion, ai_suggested true
+
+[17] 08:35:20Z AC10 (B7E91, B7E92): AI lookup of a catalog lemma, then of the word L1 just saved
+    ok — "zqeyablr" → catalog_senses [8b594668-bbfe-4593-ac33-624825a8af67]; "rizzepvy" → catalog_senses has L1's private sense; 2 units
+
+[18] 08:35:21Z Plan choices 3–4: a lemma-only edit keeps "AI gợi ý"; an examples edit publishes a new revision and drops it
+    ok — lemma edit → ai_suggested true; examples edit → new revision (draft_source user), ai_suggested false, 1 example
+
+[19] 08:35:21Z AC11 (B7E1, B7E22, đợt cải thiện A C3): Free cloze own opens; AI practice and lookup stay gated
+    ok — cloze own opens (đợt cải thiện A C3); cloze ai, meaning_in_sentence, AI lookup → 403 entitlement-required; no AI usage row; typing alone still opens
+
+[20] 08:35:22Z AC12 (B7E71, B7E72, B7E78): the admin adds, edits and turns off a report reason; L1 sees each list
+    ok — "smoke_4f2236a4" added (same code → 409, editor → 403) and listed for ai; no note → 400; renamed + moved to non_ai → lists follow; on an AI question → 400; turned off → gone from both lists, report → 400
+
+[21] 08:35:23Z Review Focus 1 (B7E16, B7E111, B7E112): five next calls at once on one AI slot → one item, one request, one unit
+    ok — 5 parallel replies {"question":1,"preparing":4}, all naming one item; 1 item, 1 request (ready), usage use:confirmed; a later next returns the same item
+
+[22] 08:35:26Z Review Focus 2 (B7E32, B7E114, B7E65): a generation stuck past the stale time is taken over with the same request id and input; one unit
+    ok — request fcb6348e-809e-4b3f-ad99-f3bc95c24d62: stuck generating with a reserved unit; current → item null, preparing true, no call; after back-dating (3 min) the next call took it over with the same id and stored input → cloze in 2887 ms; the first run's late timeout left it ready; 1 item, usage use:confirmed, calls timeout + succeeded
+
+[23] 08:35:41Z Review Focus 3 (B7E115, CR23, B7E23): a private word deleted between prepare and next leaves no question, request or check of it
+    (network error on POST /v1/practice/sessions/892b4ced-a83a-42b7-a519-ef53cb4081e4/next: ECONNRESET; retrying)
+    ok — prepare made P3's question (word check ok, no unit for the check) and the other word's; DELETE /v1/my-words → P3's question, request, check and items gone (psql); next asks the other word
+
+[24] 08:35:50Z Review Focus 4 (B7E75, B7E118): confirming an AI question that was given for free gives no credit
+    ok — report af8a258c-1c2b-4bbd-a8fb-f3d1ac412711 snapshots ai_charged false; confirmed → refunded false, no credit row, 67 units unchanged
+
+[25] 08:35:52Z Review Focus 5 (B7E79, B7E80, §7.8): staff see a private word in an AI option only as a mask; the asked private word only with consent
+    ok — mcq_sentence option P5 → staff see "[từ riêng của người học]" (also as the chosen answer); meaning_in_sentence option → "[nghĩa của từ riêng]"; P5 asked: no consent → 400, with consent → staff see P5
+
+[26] 08:35:59Z B7E57: a catalog sense revised after its AI question was made ahead → that question is not reused; a new one is made
+    (429 on POST /v1/practice/sessions/c2b4c8c6-162b-4aa4-bc77-8dc07c3461b9/finish; waiting 1s)
+    ok — unseen question 60209863-5fa6-42be-aeac-d611ccf95352 made on revision 1f7eec85-e726-4fb6-8958-d762373ee193; after quick-publish (live 6dddacb2-1a64-4368-a3cb-abfbc6ba8a0f) the next session made a new question (1 unit) and never asked the old one
+
+[27] 08:36:05Z B7E60 and §12.1: the hourly job keeps an unseen AI question from yesterday, deletes one past history_months, and requests older than 7 days
+    ok — back-dated 1 day → kept; back-dated 6 months + 1 day → deleted; request back-dated 8 days → deleted, a recent one kept
+
+[28] 08:36:14Z B7E117: an operation with no model → a session with its type is 503 ai-unavailable model-not-set and nothing is created
+    (network error on GET /v1/admin/ai/operations: ECONNRESET; retrying)
+    ok — 503 ai-unavailable, reason model-not-set, no session row; typing alone opens
+
+[29] 08:36:16Z B7E98, B7E58, B7E23 (fake:not-recognized): an unrecognised private word falls back with notice word-not-recognized, and has no AI type until edited
+    ok — not_recognized → typing with notice word-not-recognized (sense_id), no unit held, verdict stored; cloze only → 409 practice-no-words; after a meaning edit the word is checked again (ok) and gets an AI cloze, 1 unit
+
+[30] 08:36:23Z B7E98 with prepare (§6.5 A, §6.6 last row): the check rejects the word during prepare; next switches type with notice word-not-recognized
+    ok — prepare: {"prepared":0,"already_ready":0,"failed":1}, request failed/word-not-recognized; next asks P10 as typing at once, with notice word-not-recognized and sense_id
+
+Smoke Bước 7 passed in 168s (30 steps).
+smoke exit code: 0
+
+################ pnpm smoke buoc-8 ################
+health 200
+
+[1] 08:36:39Z setup: API reachable; admins and learners (psql, signed in through the API)
+    ok — database english_learning_smoke_b8; 2 admins, 1 editor, 10 learners signed in
+
+[2] 08:36:42Z B8A1 B8E1: Google, a new person: the fake page, the sign-up ticket, completion, a Google session
+    ok — ticket → 3e02a92d-e1b8-4a67-a52c-bb522f3ae100: auth_method google, sign_in_methods [google], names and avatar from Google, identity row, no password
+    ok — Google without a first name: needs_name true; completing without one → 400; with one → 200
+
+[3] 08:36:46Z B8E9 B8E8: Google sign-up: under 13 stores nothing; the same ticket cannot be reused; no cookie → 401
+    ok — under 13 → 400 age-below-minimum, no row, ticket cookie cleared; GET complete without a cookie → 401
+
+[4] 08:36:48Z B8E6: an unverified account with the same email: the Google sign-up reuses its id, drops the password and the old sessions
+    ok — same id, verified, no password; Google identity linked
+
+[5] 08:36:50Z K8 B8E5 B8E58: an existing verified account takes the Google identity: link mail, Google session, cookie survives the redirect chain, refresh works
+    ok — callback → web with signed_in=google (query and fragment kept), refresh_token cookie, /refresh 200, mail "Google linked"; same sub again OK; another sub for the same email → google-failed (P13)
+
+[6] 08:36:54Z D5 B8E11 B8E3 B8E1: a Google session never reaches an admin route; a locked account is refused; an unverified Google email is refused
+    ok — Google session on an admin route → 403 password-login-required; locked → account-locked; email_verified=false → google-email-unverified; forged callback → google-failed
+
+[7] 08:36:57Z B8A2 B8E18 B8E26: delete with a password: wrong password counted and 400; right password 204; every module erased; the mail; sign-in impossible
+    ok — before: rows in 8 of 53 user columns
+    ok — wrong password 400 (counted once); right → 204; 53 user columns checked, none points at the user; usage row kept under an anon id; private word gone; one "đã xóa" mail; login and old token refused
+
+[8] 08:38:00Z B8A5 B8E19 B8E20: delete a Google-only account: reauth required, wrong Google account refused, the right one deletes
+    ok — no proof → 403 reauth-required; another Google account → reauth=wrong-account; the right one → cookie → 204; identity gone
+
+[9] 08:38:03Z B8A6 B8E57 D31: a renewing plan blocks a learner; "Hủy gói" (fake provider confirms at once); then the learner deletes
+    ok — delete → 409 subscription-renewing; cancel → 202, flag true on return; again → 409; delete → 204; plan rows gone, transaction kept anonymised
+
+[10] 08:38:36Z B8A3 B8A4 D31 B8E31 B8E47: admin deletes a renewing learner in one request (the provider is told, the flag is recorded); editor 403; wrong email 400
+    ok — editor 403; wrong email 400; self 409 self-delete; renewing learner → 204 in the same request; by = admin; "đã xóa" mail sent
+
+[11] 08:38:40Z B8E40: two admins delete each other at once while the staff-role lock is held: exactly one 204 and one 409 last-admin
+    ok — 409/204: one admin was deleted, the other kept (1 admin(s) left)
+    ok — final review M6: last_admin false with two admins, true for the survivor
+
+[12] 08:38:45Z B8E22 M14: a deletion left deleting for 11 minutes is finished by the retry job, with exactly one mail; a cleanup one with none
+    ok — 1 mail(s) in all; self → one "đã xóa" mail; cleanup → none; deleted_accounts.by keeps who started it
+
+[13] 08:38:58Z B8E52: a renewal switched on again before Tx B: the deletion stays pending, then finishes after the cancel
+    ok — retry with a renewing subscription → still deleting (no erase); after cancel_at_period_end → deleted
+
+[14] 08:39:09Z P4 B8E24 B8E32 D19: unverified clean-up: setting 1 day; an old unverified and an old locked-unverified go; a verified, a fresh one and a staff one stay; no mail
+    ok — old unverified + old locked-unverified deleted (by cleanup, no mail); verified, fresh unverified and staff kept
+
+[15] 08:39:19Z B8E53 P2 D21: replay after a restore: the users row comes back (restored subscription row says renewing); replay deletes it, no mail, no conditions
+    ok — replay: replayed 1, without a users row 10, pending 0; the restored user and its renewing subscription are gone, no mail
+
+[16] 08:39:30Z M1 R1 B8E25: rows a late request writes after the deletion are removed by the sweep; a late webhook leaves no id
+    ok — late ai_operations row removed by the sweep; a late webhook is ignored with no app_user_id, user_id or payload
+
+[17] 08:40:28Z B8E27 D14 D27: a report: kept under an anon id with no note and no learner answer; a report on a private word is deleted; the AI refund flag is untouched
+    ok — the report stays under an anon id, note null, learner.answer null, result and refunded unchanged
+
+[18] 08:40:31Z B8E28: a person who deleted and registers again with the same email gets a trial again (trial history is not kept)
+    ok — trial_history gone with the account; the same email registers again and is trial-eligible
+
+[19] 08:40:34Z B8E49: a big learner (50 000 log rows, 2 000 private words) is deleted in under 120 s
+    ok — deleted in 0.2 s (< 120 s)
+
+[20] 08:40:38Z final review M4 M8: an admin deleting an unverified account sends it no mail; the Google routes answer a rate limit with a redirect back to the app
+    ok — no mail to the unverified address; 25 of 45 Google start calls were sent back to the login page (google-busy), none got a 429 page
+
+== Bước 8 smoke: 20/20 steps in 244 s ==
+PASS  setup
+PASS  B8A1 B8E1
+PASS  B8E9 B8E8
+PASS  B8E6
+PASS  K8 B8E5 B8E58
+PASS  D5 B8E11 B8E3 B8E1
+PASS  B8A2 B8E18 B8E26
+PASS  B8A5 B8E19 B8E20
+PASS  B8A6 B8E57 D31
+PASS  B8A3 B8A4 D31 B8E31 B8E47
+PASS  B8E40
+PASS  B8E22 M14
+PASS  B8E52
+PASS  P4 B8E24 B8E32 D19
+PASS  B8E53 P2 D21
+PASS  M1 R1 B8E25
+PASS  B8E27 D14 D27
+PASS  B8E28
+PASS  B8E49
+PASS  final review M4 M8
+smoke exit code: 0
+
+################ pnpm smoke buoc-5-fetchState-ON ################
+health 200
+
+[1] 08:40:56Z Wait for the API
+    ok — reachable at http://localhost:3300; database english_learning_smoke_b5; fetchState mode ON (BILLING_FAKE_FETCH_STATE=true)
+
+[2] 08:40:56Z Accounts: admin (CLI grant), two editors (created by the admin), learner P (registered, verified)
+    ok — admin smoke5-admin-f67c8eff@example.com; editors smoke5-editor1-f67c8eff@example.com, smoke5-editor2-f67c8eff@example.com; learner P smoke5-learner-f67c8eff@example.com (ffc656b6-b1ef-4d94-a8e9-5568315651cd)
+
+[3] 08:41:00Z B5#1: a new learner reads GET /v1/me/entitlements
+    ok — plan free; practice 3/day; AI pools 0; ai.practice and ai.lookup not allowed; ads.show false; trial_eligible true
+
+[4] 08:41:00Z Practice material for P: a group with two private words
+    ok — group a2b25d25-d782-413f-a158-f0421ea1ae47 with zsyqifty, ztvnyshy
+
+[5] 08:41:01Z B5#3: open and abandon five sessions without answering → none is counted
+    ok — five sessions opened (each closes the previous); usage_records has 0 sessions today; used 0
+
+[6] 08:41:02Z B5#2: three sessions answered → the fourth is 403 quota-exhausted with resets_at
+    ok — 3 counted; 4th → 403 quota-exhausted, resets_at 2026-10-29T17:00:00.000Z (next Vietnam midnight)
+
+[7] 08:41:02Z B5#23: admin sets free_practice_sessions_per_day = 5 → the 4th and 5th open today; the 6th is refused
+    ok — limit 5: sessions 4 and 5 opened and counted, the 6th → 403; limit back to 3
+
+[8] 08:41:03Z B5E73: 10 rounds of "start a session" racing "first answer of the open session" (Free, 2 counted)
+    (waiting 60 s so the rounds have the user.write budget)
+    ok — 10 rounds: exactly one of the two won each time (start 0×, answer 10×); never more than 3 counted
+
+[9] 08:42:19Z B5#4: fake subscription_started with a 7-day trial → plan trial, trial_history row, trial-started email
+    ok — plan trial; trial_history 1 row; email "Bạn đã bắt đầu dùng thử Wordmet Pro"
+
+[10] 08:42:25Z B5#5: trial_ends_at − 2 days reached, job → the trial reminder email, exactly once
+    ok — one reminder email after the first run; still one after a second run
+
+[11] 08:42:33Z B5#6: fake renewed after the trial → plan pro, cycle anchor = the renewed period start, AI 300/100
+    ok — plan pro; quota_anchor_at 2026-10-29T08:42:33Z; ai_practice 300, ai_lookup 100 (resets 2026-11-29T08:42:33.913Z)
+
+[12] 08:42:36Z B5#7: renewal_failed; +3 days still Pro (grace); +8 days not Pro (on_hold)
+    ok — grace: Pro at +3 days; free at +8 days; the job wrote on_hold
+
+[13] 08:42:45Z B5#8: fake renewed while on_hold → Pro again at once
+    ok — renewed → active, plan pro
+
+[14] 08:42:47Z B5#9: the same event sent twice → one row, applied once
+    (network error on the webhook: ECONNRESET; retrying)
+    ok — event 145538c4-479b-4d0c-9b11-81698f361016: one row, applied; second send acked (200) and changed nothing
+
+[15] 08:42:52Z B5#10: an old expired after a newer renewed → stale, still Pro
+    ok — expired (1 hour old) → stale; plan pro
+
+[16] 08:42:54Z B5#11: cancel_scheduled, then past the period end → Pro until the end, then free
+    ok — Pro while cancel_at_period_end; free past the end; the job wrote expired
+
+[17] 08:43:02Z B5#12: refunded, then refund_reversed (the current transaction) → Pro lost, then back
+    ok — refunded → revoked (free); refund_reversed → active (pro)
+
+[18] 08:43:10Z B5#13: plan_change_scheduled (year → month), then plan_change_canceled → pending_interval appears and goes; Pro throughout
+    ok — pending_interval month after scheduled, null after canceled; plan pro all along
+
+[19] 08:43:17Z B5#28: a trial for an account that already used one (D30) → free in the trial, endTrialNow called; renewed → pro
+    ok — trialing with trial_denied → plan free; fake end_trial_called_at set; not checked (SMOKE_API_LOG not set); renewed → pro
+
+[20] 08:43:22Z B5#29: an active subscription past its period with no event (D31) → Pro 3 days over; on_hold 11 days over
+    (network error on GET /v1/admin/entitlements/users/0e06add5-c9ae-4ae6-ad19-ee7703e81e29: ECONNRESET; retrying)
+    ok — 3 days over: still Pro after the job; 11 days over: free, the job wrote on_hold
+
+[21] 08:43:34Z B5#30: expired, then renewed for a new period (R2) → pro again
+    ok — expired → free; renewed → active, pro
+
+[22] 08:43:42Z B5#33: a partial refund of the current period's transaction (D34) → Pro lost at once
+    ok — refunded (amount 1) → revoked, plan free
+
+[23] 08:43:47Z B5#14 / B5E1: ten parallel reserves for the last unit → exactly one reserved
+    ok — 10 calls: 1 reserved, 9 quota-exhausted; one reserved row in usage_records (Free + 1 AI unit, B5E32)
+
+[24] 08:43:52Z B5#15: a reservation never confirmed, +3 minutes → the unit is back
+    ok — remaining 0 while reserved; 1 once expires_at passed
+
+[25] 08:43:52Z B5#20: admin sets "AI practice: 0" for a Pro user → reserve refused plan-required
+    ok — plan pro + ai_practice_per_cycle 0 → reserve refused, reason plan-required (HTTP 403 entitlement-required)
+
+[26] 08:43:56Z B5#22: refund one confirmed unit → remaining +1; a second refund changes nothing
+    (network error on GET /v1/admin/entitlements/users/df6dc7da-ea6c-4811-b499-aa6c43994506: ECONNRESET; retrying)
+    (network error on GET /v1/admin/entitlements/users/df6dc7da-ea6c-4811-b499-aa6c43994506: ECONNRESET; retrying)
+    ok — remaining 299 → 300 after the refund → 300 after a second one
+
+[27] 08:44:09Z B5E11: ten learners, one unit left in the system cap, ten parallel reserves → exactly one reserved
+    ok — cap 2 (used 1): 1 reserved, 9 ai-unavailable across 10 learners
+
+[28] 08:44:19Z B5#16: ai_daily_cap = 2, three learners reserve → two pass, the third is ai-unavailable; ai-usage alert_reached
+    (network error on GET /v1/admin/entitlements/ai-usage: ECONNRESET; retrying)
+    ok — reserved, reserved, ai-unavailable (retry after 29732s); ai-usage used 2/2, alert_reached true (no email, D36)
+
+[29] 08:44:29Z B5#17: ai_enabled off → reserve ai-unavailable; a practice session without AI still opens
+    ok — switch off: reserve → ai-unavailable with no Retry-After; P opened a session; switch back on, cap 1000
+
+[30] 08:44:32Z B5#18: admin grants "Pro until a date" to a Free learner → pro at once; listed; revoked → free at once
+    ok — grant c254290b-b1c0-4021-bfbf-f64d0d5bb0dc: pro, in the list; revoked → free
+
+[31] 08:44:33Z B5#19: an editor grants to another editor / to themselves / sets AI units → 409 grant-not-allowed with the reason
+    ok — target-is-staff, self-grant, ai-limits-admin-only
+
+[32] 08:44:33Z B5#21: filter the grant history by granted_by = editor and expiring_within_days = 7
+    ok — 1 row(s): the editor's 5-day grant; not the editor's 30-day one, not the admin's
+
+[33] 08:44:34Z B5#32: an editor revokes a grant carrying AI units (D33) → 409 ai-limits-admin-only
+    ok — 409 grant-not-allowed, reason ai-limits-admin-only
+
+[34] 08:44:34Z B5#31: admin grants Pro to someone paying through an auto-renewing fake subscription (D32)
+    (network error on GET /v1/admin/entitlements/users/679b6f39-2300-41fa-8fd4-d229c3f94840: ECONNRESET; retrying)
+    ok — without confirmation → 409 target-has-paid-subscription; with it → 201, paid_renewal_action turned_off, fake cancel_called_at set; new anchor 2026-10-29T08:44:43.386Z → ai_practice used 0 of 300
+
+[35] 08:44:43Z B5#35: admin moves the running Pro grant's ends_at one month later (D38)
+    ok — ends_at 2026-11-28T08:44:43.343Z → 2026-12-28T08:44:43.343Z; AI cycle unchanged (resets 2026-11-29T08:44:43.386Z); one row in changes
+
+[36] 08:44:44Z B5#24: private_words_per_user lowered below what P has (rows made with SQL, R13) → old words kept, new ones refused
+    ok — P owns 1002 private words; limit 1000 → a new one is 409 private-word-limit-reached, the 1002 stay; limit back to 10000
+
+[37] 08:44:46Z B5#25: ads_enabled on → Free shows ads with the frequency; Pro and trial do not
+    ok — Free: show, 3 a day, 10 minutes apart; Pro: no; trial: no; switch back off
+
+[38] 08:44:48Z B5#26: webhook with a wrong signature → 400, no event row
+    ok — 400; 0 rows for that event id
+
+[39] 08:44:49Z B5#27: an editor reads GET /v1/admin/entitlements/ai-usage → 403 forbidden
+    ok — 403 forbidden
+
+ALL CHECKS PASSED in 232621ms (run id f67c8eff; fetchState ON)
+smoke exit code: 0
