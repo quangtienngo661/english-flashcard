@@ -114,3 +114,211 @@ Smoke Bước 6 passed in 161s (32 steps).
     ok — prepare: {"prepared":0,"already_ready":0,"failed":1}, request failed/word-not-recognized; next asks P10 as typing at once, with notice word-not-recognized and sense_id
 
 Smoke Bước 7 passed in 161s (30 steps).
+
+================================================================================
+M2 — config lifecycle. API at 9a8da14 (smoke commit; apps/api tree is the same at the PR head), 30/10/2026.
+Stack: API + worker from `node scripts/run-dev.mjs` on :3450, AI_FAKE_ENABLED=true, no key, JOB_QUEUE_PREFIX=wordmet-nb-smoke,
+database english_learning_smoke_nb dropped and created again before each run; SMOKE_IGNORE_ENV_FILE=1 (see nhom-b-open-items.md OI-1).
+`partM1()` now works on drafts and never publishes; `partM2()` walks the config lifecycle (steps M2.0–M2.12).
+================================================================================
+
+--- pnpm smoke:nhom-b, run 1 ---
+
+
+[1] 20:47:13Z Wait for the API
+    ok — reachable at http://localhost:3450; database english_learning_smoke_nb; children run with AI_FAKE_ENABLED=true, JOB_QUEUE_PREFIX=wordmet-nb-smoke, no key
+
+[2] 20:47:13Z Admin (registered, then granted by the CLI)
+    ok — admin smokenb-admin-f64e5a1d@example.com (babc4ae1-0a49-4fc3-a3cf-2f3e474376e1)
+
+[3] 20:47:18Z AI setup: fake provider on, fake:ok and fake:bad-form added (no model is chosen: the operations have none until a config is published)
+    ok — providers: fake only; models fake:ok and fake:bad-form
+
+[4] 20:47:18Z Content: import 4 catalog verbs (past -ed, third person -s) and publish
+    ok — batch 8131792b-8b1f-4196-b459-292f44762397: 4 created and published; nqwoefhy is not in the catalog
+
+[5] 20:47:20Z M1.1 forms of the catalog (B2): the three forms of W1 by part of speech and unspecified; null for a word the catalog lacks
+    ok — zqvmegmm: zqvmegmm, zqvmegmms, zqvmegmmed; unspecified the same; nqwoefhy → null
+
+[6] 20:47:20Z M1.2 B2, B3, E10: an example without expected → 422; W1, W2, N, W3, W4 land held-out, dev, dev, dev, held-out; a held-out one lists only { id, split }
+    ok — splits held_out, dev, dev, dev, held_out; the list shows only { id, split } for zqvmegmm and zqtakmhk
+
+[7] 20:47:21Z M1.3 B1, B37: freezing is refused without expected / held-out; version 1 has 3 dev + 2 held-out; two admins at once never share a version
+    ok — version 1: 3 dev, 2 held-out; stray example refused with its id; a held version 2 → 409 eval-set-conflict; two parallel freezes (201, 409) → versions 2, 1
+
+[8] 20:47:26Z M1.4 B3, B8, B9: a generate_cloze draft on fake:ok runs on version 1 and on the working set; rule and expected results; held-out only as numbers
+    ok — version run complete (5 items, held-out only as stats.held_out.total 2); zqwyhkse/zqlqyxrr rule pass, nqwoefhy skipped/not-in-catalog (B8), expected pass; GET run lists no zqvmegmm/zqtakmhk
+
+[9] 20:47:27Z M1.5 D11, B10: fake:bad-form fails the rules and the expected answers; the comparison lists the dev regressions and counts the held-out ones; the working set cannot be compared
+    ok — bad-form: zqwyhkse/zqlqyxrr rule fail unknown-form:<w>ment, expected fail; regressions dev nqwoefhy, zqlqyxrr, zqwyhkse, held-out 2; set mismatch → 409; a run against itself → none
+
+[10] 20:47:28Z M1.6 B6, R7: the calls page shows the content of a dev example and hides the content of a held-out one
+    ok — eval-<run>-zqwyhkse: content shown; eval-<run>-zqvmegmm: held_out true, content null
+
+[11] 20:47:28Z M1.7 B7, Review focus 3: a draft test takes dev examples only; a held-out id is refused
+    ok — 3 items (zqwyhkse, nqwoefhy, zqlqyxrr); example_ids with a held-out id → 400
+
+[12] 20:47:28Z M1.8 B4: revealing a held-out example moves it to dev, shows its calls, counts on its versions; revealing a deleted one reads its snapshot
+    ok — zqvmegmm → dev with revealed_at, its calls show content, version 1 revealed_count 1; again → 409; zqtakmhk deleted then revealed from its snapshot (deleted true), revealed_count 2
+
+[13] 20:47:28Z M1.9 B5: editing a dev example changes neither the frozen version nor an earlier run
+    ok — zqwyhkse: the working example now accepts only zqwyhkse; version 1 and the finished run still hold zqwyhkse, zqwyhkseed, zqwyhkses
+
+[14] 20:47:28Z M1.10 B9: a check_private_word draft on fake:ok runs one example (bulk, dev) of the working set: rule not applicable, expected pass
+    ok — rule not_applicable, expected pass
+
+[15] 20:47:29Z M1.11 Review focus 5, D8.2: a bulk row whose expected is plain text is rejected by line, a bad split too; the good row is stored
+    ok — row 1 → expected: must be an object; row 2 → split: dev or held_out; row 3 stored
+
+[16] 20:47:29Z M1.12 the two drafts of this part are deleted (204); no draft is left and the live configs have no model
+    (429 on DELETE /v1/admin/ai/configs/check_private_word/draft; waiting 31s)
+    ok — drafts deleted; generate_cloze and check_private_word live configs: no model, live_version 0
+
+[17] 20:48:00Z M2.0 a second admin (created with POST /v1/admin/users) will send the requests that race or are timed: its write budget is fresh, so no 429 wait can serialize them
+    ok — admin smokenb-admin2-f64e5a1d@example.com (2150b640-567d-4817-970c-f0654f9fc34e)
+
+[18] 20:48:00Z M2.1 fresh state: for the six operations live.number = ai_prompts.revision, no model, nothing before it, live_version 0, no draft; no config event; both old PUTs → 404
+    ok — generate_cloze=2, lookup_word=1, translate_sentence=1, generate_meaning_question=1, generate_sentence_mcq=1, check_private_word=1; live_version 0, no draft, no event; PUT prompts → 404 about:blank; PUT operations → 404 about:blank
+
+[19] 20:48:02Z M2.2 B29, D37: the first model by hand — a fake:ok draft, a complete run on the newest frozen set, a publish check without a baseline, publish with baseline null → 200, the learner call carries the new number
+    ok — config 4 (fake:ok) made live with run 77e23655-40c3-4141-9e67-7c8e4301c253 on version 2, no baseline needed; learner call prompt_revision 4
+
+[20] 20:48:06Z M2.3 B23, B36: a second draft → 409 draft-exists with the first; a few-shot answer that is no form of a catalog word → 422 few-shot-invalid naming only that example (a good one saves)
+    ok — draft f01ba923-f716-452a-99c1-22c667549fa3: 2nd create → draft-exists (same id); zqvmegmmment at index 2 → few-shot-invalid unknown-form:zqvmegmmment, draft untouched; zqvmegmm saves (version 1)
+
+[21] 20:48:06Z M2.4 B24, E19: two saves of the draft at once with the same expected_version → 200 and 409 draft-version-conflict
+    ok — version 1 → 2; statuses 200, 409; the draft keeps the winner's note "race a"
+
+[22] 20:48:06Z M2.5 B26: a draft whose run is queued or running cannot be deleted (409 draft-busy); cancel the run, then the delete is 204
+    ok — run 49f34e33-91da-4079-be37-cd64c9c6778d was running → 409 draft-busy; cancelled (failed / cancelled) → delete 204
+
+[23] 20:48:07Z M2.6 B27, B25: a fake:two-blanks draft cannot publish without a run (409 eval-required); saving it again makes its run stale; the live config's first candidate run is its baseline
+    ok — no run → eval-required (baseline = run 77e23655-40c3-4141-9e67-7c8e4301c253 of config 4); run at version 1 went stale after the save; run at version 2 → no blocker, 3 warnings
+
+[24] 20:48:17Z M2.7 B28: a new frozen set S2 → the draft alone is baseline-required (409); with the live config run on S2 → no blocker and a rate-drop shape warning
+    ok — S2 = version 3 (6 items); the draft's run on S2 alone → baseline-required; with run dc001c53-e1d9-4430-b1f9-6a924b23f412 of the live config → no blocker; warnings: rate-drop:shape, dev-regressed, held-out-failures-up
+
+[25] 20:48:18Z M2.8 B30: publish without acknowledging the warnings → 409 publish-warnings listing them; a wrong baseline or candidate run id → 409 publish-stale
+    ok — 3 warnings listed in the 409; wrong baseline → publish-stale; wrong candidate → publish-stale; the live config did not move
+
+[26] 20:48:18Z M2.9 B31, E19: two identical acknowledged publishes at once → 200 and 409 publish-stale, one new publish event
+    ok — statuses 200, 409; publish events 1 → 2; config 6 (fake:two-blanks) live, config 4 before it; the event keeps both run ids and 3 warnings
+
+[27] 20:48:20Z M2.10 B33, B34: runs a publish names are evidence (409 run-is-evidence); the models of the live and the previous config cannot be deleted nor lose their price (409 model-in-use); an unused model goes
+    ok — candidate, baseline and the first run → run-is-evidence, an ordinary run deletes (204); fake:two-blanks and fake:ok → model-in-use on delete, fake:two-blanks also on price null; fake:slow (named by no config) deletes (204)
+
+[28] 20:48:20Z M2.11 B32: a stale rollback → 409 publish-stale; rollback → fake:ok live again with nothing before it; again → 409 no-previous; the learner call carries its number; history lists rollback, publish, publish; a retired config keeps its model
+    (429 on POST /v1/admin/ai/configs/generate_cloze/rollback; waiting 39s)
+    ok — stale → publish-stale; rolled back to config 4, previous null; again → no-previous; learner prompt_revision 4; history rollback, publish, publish; fake:two-blanks (retired config) still model-in-use
+
+[29] 20:49:05Z M2.12 B48, D38: turning the operation off needs no run (model null, the fake:ok config stays before it, status model-not-set, the learner call is unavailable); a rollback turns it on again
+    ok — off without a run (ai_eval_runs stays at 9); status ready false / model-not-set; learner call unavailable / model-not-set; newest event publish with no run ids; rollback → config 4 (fake:ok), learner call succeeded
+
+Smoke nhóm B passed in 123s (29 steps).
+
+--- pnpm smoke:nhom-b, run 2 (fresh database) ---
+
+
+[1] 20:49:50Z Wait for the API
+    ok — reachable at http://localhost:3450; database english_learning_smoke_nb; children run with AI_FAKE_ENABLED=true, JOB_QUEUE_PREFIX=wordmet-nb-smoke, no key
+
+[2] 20:49:50Z Admin (registered, then granted by the CLI)
+    ok — admin smokenb-admin-2c0ec567@example.com (75a6e370-749a-4543-9e0f-447e9c8c498a)
+
+[3] 20:49:57Z AI setup: fake provider on, fake:ok and fake:bad-form added (no model is chosen: the operations have none until a config is published)
+    ok — providers: fake only; models fake:ok and fake:bad-form
+
+[4] 20:49:57Z Content: import 4 catalog verbs (past -ed, third person -s) and publish
+    ok — batch 60ac46ec-dde5-4738-a841-af6612da4f8f: 4 created and published; nqndlkah is not in the catalog
+
+[5] 20:50:00Z M1.1 forms of the catalog (B2): the three forms of W1 by part of speech and unspecified; null for a word the catalog lacks
+    ok — zqqycgpn: zqqycgpn, zqqycgpns, zqqycgpned; unspecified the same; nqndlkah → null
+
+[6] 20:50:00Z M1.2 B2, B3, E10: an example without expected → 422; W1, W2, N, W3, W4 land held-out, dev, dev, dev, held-out; a held-out one lists only { id, split }
+    ok — splits held_out, dev, dev, dev, held_out; the list shows only { id, split } for zqqycgpn and zqqhitrg
+
+[7] 20:50:01Z M1.3 B1, B37: freezing is refused without expected / held-out; version 1 has 3 dev + 2 held-out; two admins at once never share a version
+    ok — version 1: 3 dev, 2 held-out; stray example refused with its id; a held version 2 → 409 eval-set-conflict; two parallel freezes (201, 201) → versions 3, 2, 1
+
+[8] 20:50:08Z M1.4 B3, B8, B9: a generate_cloze draft on fake:ok runs on version 1 and on the working set; rule and expected results; held-out only as numbers
+    ok — version run complete (5 items, held-out only as stats.held_out.total 2); zqvmoqiq/zqtnlurt rule pass, nqndlkah skipped/not-in-catalog (B8), expected pass; GET run lists no zqqycgpn/zqqhitrg
+
+[9] 20:50:09Z M1.5 D11, B10: fake:bad-form fails the rules and the expected answers; the comparison lists the dev regressions and counts the held-out ones; the working set cannot be compared
+    ok — bad-form: zqvmoqiq/zqtnlurt rule fail unknown-form:<w>ment, expected fail; regressions dev nqndlkah, zqtnlurt, zqvmoqiq, held-out 2; set mismatch → 409; a run against itself → none
+
+[10] 20:50:10Z M1.6 B6, R7: the calls page shows the content of a dev example and hides the content of a held-out one
+    ok — eval-<run>-zqvmoqiq: content shown; eval-<run>-zqqycgpn: held_out true, content null
+
+[11] 20:50:10Z M1.7 B7, Review focus 3: a draft test takes dev examples only; a held-out id is refused
+    ok — 3 items (zqvmoqiq, nqndlkah, zqtnlurt); example_ids with a held-out id → 400
+
+[12] 20:50:10Z M1.8 B4: revealing a held-out example moves it to dev, shows its calls, counts on its versions; revealing a deleted one reads its snapshot
+    ok — zqqycgpn → dev with revealed_at, its calls show content, version 1 revealed_count 1; again → 409; zqqhitrg deleted then revealed from its snapshot (deleted true), revealed_count 2
+
+[13] 20:50:11Z M1.9 B5: editing a dev example changes neither the frozen version nor an earlier run
+    ok — zqvmoqiq: the working example now accepts only zqvmoqiq; version 1 and the finished run still hold zqvmoqiq, zqvmoqiqed, zqvmoqiqs
+
+[14] 20:50:11Z M1.10 B9: a check_private_word draft on fake:ok runs one example (bulk, dev) of the working set: rule not applicable, expected pass
+    ok — rule not_applicable, expected pass
+
+[15] 20:50:12Z M1.11 Review focus 5, D8.2: a bulk row whose expected is plain text is rejected by line, a bad split too; the good row is stored
+    ok — row 1 → expected: must be an object; row 2 → split: dev or held_out; row 3 stored
+
+[16] 20:50:12Z M1.12 the two drafts of this part are deleted (204); no draft is left and the live configs have no model
+    ok — drafts deleted; generate_cloze and check_private_word live configs: no model, live_version 0
+
+[17] 20:50:13Z M2.0 a second admin (created with POST /v1/admin/users) will send the requests that race or are timed: its write budget is fresh, so no 429 wait can serialize them
+    ok — admin smokenb-admin2-2c0ec567@example.com (7fe62c49-12d2-4655-8ee1-38e0f95232d5)
+
+[18] 20:50:13Z M2.1 fresh state: for the six operations live.number = ai_prompts.revision, no model, nothing before it, live_version 0, no draft; no config event; both old PUTs → 404
+    ok — generate_cloze=2, lookup_word=1, translate_sentence=1, generate_meaning_question=1, generate_sentence_mcq=1, check_private_word=1; live_version 0, no draft, no event; PUT prompts → 404 about:blank; PUT operations → 404 about:blank
+
+[19] 20:50:18Z M2.2 B29, D37: the first model by hand — a fake:ok draft, a complete run on the newest frozen set, a publish check without a baseline, publish with baseline null → 200, the learner call carries the new number
+    ok — config 4 (fake:ok) made live with run 663dbfa5-2bf0-4b41-bbae-80bd742a78b7 on version 3, no baseline needed; learner call prompt_revision 4
+
+[20] 20:50:37Z M2.3 B23, B36: a second draft → 409 draft-exists with the first; a few-shot answer that is no form of a catalog word → 422 few-shot-invalid naming only that example (a good one saves)
+    (network error on POST /v1/admin/ai/configs/generate_cloze/draft: ECONNRESET; retrying)
+    (429 on POST /v1/admin/ai/configs/generate_cloze/draft; waiting 22s)
+    ok — draft 3cae5935-16fa-47f7-ace9-21e871931c02: 2nd create → draft-exists (same id); zqqycgpnment at index 2 → few-shot-invalid unknown-form:zqqycgpnment, draft untouched; zqqycgpn saves (version 1)
+
+[21] 20:51:00Z M2.4 B24, E19: two saves of the draft at once with the same expected_version → 200 and 409 draft-version-conflict
+    ok — version 1 → 2; statuses 200, 409; the draft keeps the winner's note "race a"
+
+[22] 20:51:01Z M2.5 B26: a draft whose run is queued or running cannot be deleted (409 draft-busy); cancel the run, then the delete is 204
+    ok — run 681efeb6-8c09-4013-a04b-6f1966e5717f was queued → 409 draft-busy; cancelled (failed / cancelled) → delete 204
+
+[23] 20:51:01Z M2.6 B27, B25: a fake:two-blanks draft cannot publish without a run (409 eval-required); saving it again makes its run stale; the live config's first candidate run is its baseline
+    ok — no run → eval-required (baseline = run 663dbfa5-2bf0-4b41-bbae-80bd742a78b7 of config 4); run at version 1 went stale after the save; run at version 2 → no blocker, 3 warnings
+
+[24] 20:51:11Z M2.7 B28: a new frozen set S2 → the draft alone is baseline-required (409); with the live config run on S2 → no blocker and a rate-drop shape warning
+    ok — S2 = version 4 (6 items); the draft's run on S2 alone → baseline-required; with run df6ce305-f9bf-4b53-823a-d124be4f1790 of the live config → no blocker; warnings: rate-drop:shape, dev-regressed, held-out-failures-up
+
+[25] 20:51:12Z M2.8 B30: publish without acknowledging the warnings → 409 publish-warnings listing them; a wrong baseline or candidate run id → 409 publish-stale
+    ok — 3 warnings listed in the 409; wrong baseline → publish-stale; wrong candidate → publish-stale; the live config did not move
+
+[26] 20:51:13Z M2.9 B31, E19: two identical acknowledged publishes at once → 200 and 409 publish-stale, one new publish event
+    ok — statuses 200, 409; publish events 1 → 2; config 6 (fake:two-blanks) live, config 4 before it; the event keeps both run ids and 3 warnings
+
+[27] 20:51:15Z M2.10 B33, B34: runs a publish names are evidence (409 run-is-evidence); the models of the live and the previous config cannot be deleted nor lose their price (409 model-in-use); an unused model goes
+    ok — candidate, baseline and the first run → run-is-evidence, an ordinary run deletes (204); fake:two-blanks and fake:ok → model-in-use on delete, fake:two-blanks also on price null; fake:slow (named by no config) deletes (204)
+
+[28] 20:51:15Z M2.11 B32: a stale rollback → 409 publish-stale; rollback → fake:ok live again with nothing before it; again → 409 no-previous; the learner call carries its number; history lists rollback, publish, publish; a retired config keeps its model
+    ok — stale → publish-stale; rolled back to config 4, previous null; again → no-previous; learner prompt_revision 4; history rollback, publish, publish; fake:two-blanks (retired config) still model-in-use
+
+[29] 20:51:19Z M2.12 B48, D38: turning the operation off needs no run (model null, the fake:ok config stays before it, status model-not-set, the learner call is unavailable); a rollback turns it on again
+    (429 on PUT /v1/admin/ai/configs/generate_cloze/draft; waiting 40s)
+    ok — off without a run (ai_eval_runs stays at 9); status ready false / model-not-set; learner call unavailable / model-not-set; newest event publish with no run ids; rollback → config 4 (fake:ok), learner call succeeded
+
+Smoke nhóm B passed in 138s (29 steps).
+
+--- API log of a smoke run (both runs): no prompt text, no few-shot output ---
+`Lan will`: 0 matches; `accepted_answers`: 0 matches; control: 49 `"event":"ai_call"` lines in each log (the grep sees log content); 0 Nest ERROR/WARN lines.
+
+--- old smokes and learner:setup through the config lifecycle (M2-T10, API at ddb5a89, each on a fresh database, API and worker restarted) ---
+[smoke:buoc-6, english_learning_smoke_b6, JOB_QUEUE_PREFIX=wordmet-b6-smoke]
+Smoke Bước 6 passed in 215s (32 steps).
+[smoke:buoc-7, english_learning_smoke_b7, JOB_QUEUE_PREFIX=wordmet-b7-smoke]
+Smoke Bước 7 passed in 277s (30 steps).
+[pnpm learner:setup, english_learning_smoke_ls]
+run 1: exit 0 in 3m13s; 303 senses published; published now: generate_cloze #3, lookup_word #2, translate_sentence #2, generate_meaning_question #2, generate_sentence_mcq #2, check_private_word #2; all six operations ready on fake:ok.
+run 2: exit 0 in 1.8 s; "published now: none (all already on fake:ok)"; status and configs byte-identical to run 1.
