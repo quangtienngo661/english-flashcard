@@ -19,7 +19,7 @@ import { Select } from '../../ui/Select';
 import { showToast } from '../../ui/Toast';
 import { useRetained } from '../../ui/use-retained';
 import {
-  AI_OPERATION_ORDER, aiKeys, deleteExample, getTestQuota, listExamples, listOperations, listRuns, type AiOperation, type EvalExample, type EvalRun,
+  AI_OPERATION_ORDER, aiKeys, deleteExample, getTestQuota, isDevExample, listExamples, listOperations, listRuns, type AiOperation, type EvalExample, type EvalRun,
 } from './ai-api';
 import { EvalRunPanel, RunStatusBadge, StartRunFailure, usePromptLabel, useStartRun } from './EvalRunPanel';
 import { BulkExamplesDialog } from './BulkExamplesDialog';
@@ -82,7 +82,7 @@ export function AiEvalPage() {
   });
 
   const inputFields = operations.data?.items.find((setting) => setting.operation === op)?.input_fields;
-  const set = examples.data?.items ?? [];
+  const set = (examples.data?.items ?? []).filter(isDevExample);
   const items = AI_OPERATION_ORDER.map((id) => ({ id, label: `${t(`ai.operations.names.${id}`)} (${id})` }));
   const back = () => void navigate(`/ai/eval${search}`);
 

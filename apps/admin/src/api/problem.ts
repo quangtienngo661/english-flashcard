@@ -42,6 +42,7 @@ export const KNOWN_ERROR_SLUGS = [
   'email-already-verified',
   'email-taken',
   'entry-in-use',
+  'expected-invalid',
   'export-too-large',
   'file-invalid',
   'file-too-large',

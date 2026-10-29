@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 import vi from '../../../messages/vi.json';
 import { problem, type Call } from '../../auth/test-support';
 import { renderApp } from '../staff/test-utils';
-import { URL, evalExample, evalRoutes, evalRun } from './prompt-test-support';
+import { URL, evalExample, evalRoutes, evalRun, operationsFor } from './prompt-test-support';
 
 const t = vi.ai.eval;
 const posts = (calls: Call[], path: string) => calls.filter((c) => c.method === 'POST' && c.path === path);
@@ -38,6 +38,7 @@ describe('AiEvalPage examples (A/83)', () => {
     let items = [evalExample('e1', 'go')];
     const r = await openPage({
       [URL.examples()]: () => Response.json({ items }),
+      [URL.forms('run', 'verb')]: () => Response.json({ forms: ['run', 'ran', 'running', 'runs'] }),
       [URL.addExample]: (call: Call) => {
         const added = { ...evalExample('e2', 'run'), ...(call.body as object) };
         items = [...items, added];
@@ -48,7 +49,8 @@ describe('AiEvalPage examples (A/83)', () => {
     const dialog = await screen.findByRole('dialog', { name: t.form.addTitle });
     expect(r.router.state.location.pathname).toBe('/ai/eval/new');
     expect(within(dialog).getAllByRole('textbox').map((box) => box.getAttribute('id'))).toEqual([
-      'example-input-word', 'example-input-part_of_speech', 'example-input-level', 'example-input-meaning_vi', 'example-input-context_label', 'example-note',
+      'example-input-word', 'example-input-part_of_speech', 'example-input-level', 'example-input-meaning_vi', 'example-input-context_label',
+      'example-expected-forms', 'example-note',
     ]);
     await userEvent.type(within(dialog).getByLabelText('word'), 'run');
     await userEvent.type(within(dialog).getByLabelText('part_of_speech'), 'verb');
@@ -59,6 +61,7 @@ describe('AiEvalPage examples (A/83)', () => {
       operation: 'generate_cloze',
       input: { word: 'run', part_of_speech: 'verb', level: null, meaning_vi: null, context_label: null },
       note: 'motion',
+      expected: { forms: ['run', 'ran', 'running', 'runs'] },
     });
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
     expect(await screen.findByRole('heading', { level: 2, name: t.examples.replace('{count}', '2') })).toBeInTheDocument();
@@ -93,7 +96,7 @@ describe('AiEvalPage examples (A/83)', () => {
     await userEvent.click(within(dialog).getByRole('button', { name: t.form.submitSave }));
     expect(await screen.findByText(t.toast.saved)).toBeInTheDocument();
     const patch = r.calls.find((c) => c.method === 'PATCH');
-    expect(patch?.body).toEqual({ input: { word: 'went', part_of_speech: 'verb', level: 'A1', meaning_vi: 'đi', context_label: null }, note: null });
+    expect(patch?.body).toEqual({ input: { word: 'went', part_of_speech: 'verb', level: 'A1', meaning_vi: 'đi', context_label: null }, note: null, expected: { forms: ['go'] } });
   });
 
   it('[Xóa] asks first, then DELETEs and toasts', async () => {
@@ -106,6 +109,185 @@ describe('AiEvalPage examples (A/83)', () => {
     await userEvent.click(within(dialog).getByRole('button', { name: t.deleteConfirm }));
     expect(await screen.findByText(t.toast.deleted)).toBeInTheDocument();
     expect(r.count('DELETE', '/v1/admin/ai/eval/examples/e1')).toBe(1);
+  });
+});
+
+describe('AiEvalPage example dialog: the expected answer (nhóm B M1)', () => {
+  const DEPLOY_FORMS = ['deploy', 'deployed', 'deploying', 'deploys'];
+  const formsBox = (dialog: HTMLElement) => within(dialog).getByRole('textbox', { name: t.form.expected.forms.label });
+  const formsRequests = (calls: Call[]) => calls.filter((c) => c.path.startsWith('/v1/admin/ai/eval/examples/forms'));
+  async function openAdd(over = {}) {
+    const r = await openPage(over);
+    await userEvent.click((await screen.findAllByRole('button', { name: t.add }))[0]);
+    const dialog = await screen.findByRole('dialog', { name: t.form.addTitle });
+    return { r, dialog };
+  }
+  const added = (call: Call) => ({ ...evalExample('e9', 'deploy'), ...(call.body as object) });
+  const addedBody = (calls: Call[]) => posts(calls, '/v1/admin/ai/eval/examples')[0].body as Record<string, unknown>;
+
+  it('leaving the word and the part of speech fills the forms of the catalog; the admin removes two and the POST carries the rest', async () => {
+    const { r, dialog } = await openAdd({
+      [URL.forms('deploy', 'verb')]: () => Response.json({ forms: DEPLOY_FORMS }),
+      [URL.addExample]: (call: Call) => Response.json(added(call), { status: 201 }),
+    });
+    expect(within(dialog).getByText(t.form.expected.title)).toBeInTheDocument();
+    expect(formsBox(dialog)).toHaveValue('');
+    await userEvent.type(within(dialog).getByLabelText('word'), 'deploy');
+    await userEvent.type(within(dialog).getByLabelText('part_of_speech'), 'verb');
+    await userEvent.tab();
+    await waitFor(() => expect(formsBox(dialog)).toHaveValue('deploy, deployed, deploying, deploys'));
+    expect(within(dialog).getByText(t.form.expected.forms.filled.replace('{count}', '4'))).toBeInTheDocument();
+    expect(within(dialog).getByText(t.form.expected.forms.hint)).toBeInTheDocument();
+
+    await userEvent.clear(formsBox(dialog));
+    await userEvent.type(formsBox(dialog), 'deploy, deployed');
+    await userEvent.click(within(dialog).getByRole('button', { name: t.form.submitAdd }));
+    expect(await screen.findByText(t.toast.added)).toBeInTheDocument();
+    expect(addedBody(r.calls).expected).toEqual({ forms: ['deploy', 'deployed'] });
+  });
+
+  it('forms the admin typed are not replaced when the part of speech is set later; no request is made without a part of speech', async () => {
+    const { r, dialog } = await openAdd({ [URL.forms('deploy', 'verb')]: () => Response.json({ forms: DEPLOY_FORMS }) });
+    await userEvent.type(within(dialog).getByLabelText('word'), 'deploy');
+    await userEvent.tab();
+    expect(formsRequests(r.calls)).toHaveLength(0);
+    await userEvent.type(formsBox(dialog), 'mine');
+    await userEvent.type(within(dialog).getByLabelText('part_of_speech'), 'verb');
+    await userEvent.tab();
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(formsBox(dialog)).toHaveValue('mine');
+    expect(formsRequests(r.calls)).toHaveLength(0);
+  });
+
+  it('a word the catalog does not know ({ forms: null }) says so and leaves the box empty to type in', async () => {
+    const { dialog } = await openAdd({ [URL.forms('lit', 'adjective')]: () => Response.json({ forms: null }) });
+    await userEvent.type(within(dialog).getByLabelText('word'), 'lit');
+    await userEvent.type(within(dialog).getByLabelText('part_of_speech'), 'adjective');
+    await userEvent.tab();
+    expect(await within(dialog).findByText(t.form.expected.forms.notFound)).toBeInTheDocument();
+    expect(formsBox(dialog)).toHaveValue('');
+  });
+
+  it('422 expected-invalid: the violation lands under "Các dạng được nhận" and the box is focused; nothing else is flagged', async () => {
+    const { dialog } = await openAdd({ [URL.addExample]: () => problem(422, 'expected-invalid', { violations: ['expected.forms: at least one form'] }) });
+    await userEvent.type(within(dialog).getByLabelText('word'), 'go');
+    await userEvent.click(within(dialog).getByRole('button', { name: t.form.submitAdd }));
+    expect(await within(dialog).findByText('at least one form')).toBeInTheDocument();
+    await waitFor(() => expect(formsBox(dialog)).toHaveAttribute('aria-invalid', 'true'));
+    await waitFor(() => expect(formsBox(dialog)).toHaveFocus());
+    expect(within(dialog).getByLabelText('word')).not.toHaveAttribute('aria-invalid', 'true');
+  });
+
+  it('a violation that names no box ("expected: required for …") goes under the first box of the section', async () => {
+    const { dialog } = await openAdd({ [URL.addExample]: () => problem(422, 'expected-invalid', { violations: ['expected: required for generate_cloze'] }) });
+    await userEvent.type(within(dialog).getByLabelText('word'), 'go');
+    await userEvent.click(within(dialog).getByRole('button', { name: t.form.submitAdd }));
+    expect(await within(dialog).findByText('required for generate_cloze')).toBeInTheDocument();
+    expect(formsBox(dialog)).toHaveAttribute('aria-invalid', 'true');
+  });
+
+  it('a new example that lands in the hidden held-out part is not echoed: the toast says it went there', async () => {
+    const { dialog } = await openAdd({ [URL.addExample]: () => Response.json({ id: 'h9', split: 'held_out' }, { status: 201 }) });
+    await userEvent.type(within(dialog).getByLabelText('word'), 'go');
+    await userEvent.type(formsBox(dialog), 'go');
+    await userEvent.click(within(dialog).getByRole('button', { name: t.form.submitAdd }));
+    expect(await screen.findByText(t.toast.addedHeldOut)).toBeInTheDocument();
+    expect(screen.queryByText(t.toast.added)).not.toBeInTheDocument();
+  });
+
+  const OTHER_OPERATIONS = ['lookup_word', 'translate_sentence', 'check_private_word'];
+  const otherRoutes = Object.fromEntries(OTHER_OPERATIONS.flatMap((op) => [
+    [URL.examples(op), () => Response.json({ items: [] })],
+    [URL.runs(op), () => Response.json({ items: [], next_page_token: null })],
+    [URL.sets(op), () => Response.json({ items: [] })],
+  ]));
+  async function openOp(op: string, over = {}) {
+    const r = renderApp(`/ai/eval?op=${op}`, evalRoutes({
+      [URL.operations]: operationsFor({ lookup_word: ['text', 'context_sentence'], translate_sentence: ['text'], check_private_word: ['word', 'part_of_speech', 'meaning_vi'] }),
+      ...otherRoutes,
+      [URL.addExample]: (call: Call) => Response.json(added(call), { status: 201 }),
+      ...over,
+    }));
+    await userEvent.click((await screen.findAllByRole('button', { name: t.add }))[0]);
+    return { r, dialog: await screen.findByRole('dialog', { name: t.form.addTitle }) };
+  }
+
+  it('lookup_word asks for "Lemma" and "Từ loại" and sends them as the expected answer', async () => {
+    const { r, dialog } = await openOp('lookup_word');
+    expect(within(dialog).getByText(t.form.expected.title)).toBeInTheDocument();
+    expect(within(dialog).queryByRole('textbox', { name: t.form.expected.forms.label })).not.toBeInTheDocument();
+    await userEvent.type(within(dialog).getByLabelText('text'), 'ran');
+    await userEvent.type(within(dialog).getByLabelText(t.form.expected.lemma), 'run');
+    await userEvent.type(within(dialog).getByLabelText(t.form.expected.partOfSpeech), 'verb');
+    await userEvent.click(within(dialog).getByRole('button', { name: t.form.submitAdd }));
+    await screen.findByText(t.toast.added);
+    expect(addedBody(r.calls)).toEqual({
+      operation: 'lookup_word', input: { text: 'ran', context_sentence: null }, note: null, expected: { lemma: 'run', part_of_speech: 'verb' },
+    });
+  });
+
+  it('a lookup violation on the part of speech lands under "Từ loại", not under "Lemma"', async () => {
+    const { dialog } = await openOp('lookup_word', {
+      [URL.addExample]: () => problem(422, 'expected-invalid', { violations: ['expected.part_of_speech: not a part of speech'] }),
+    });
+    await userEvent.type(within(dialog).getByLabelText('text'), 'ran');
+    await userEvent.type(within(dialog).getByLabelText(t.form.expected.lemma), 'run');
+    await userEvent.type(within(dialog).getByLabelText(t.form.expected.partOfSpeech), 'vrb');
+    await userEvent.click(within(dialog).getByRole('button', { name: t.form.submitAdd }));
+    expect(await within(dialog).findByText('not a part of speech')).toBeInTheDocument();
+    expect(within(dialog).getByLabelText(t.form.expected.partOfSpeech)).toHaveAttribute('aria-invalid', 'true');
+    expect(within(dialog).getByLabelText(t.form.expected.lemma)).not.toHaveAttribute('aria-invalid', 'true');
+  });
+
+  it('check_private_word asks for a "Kết luận" (ok or not_recognized)', async () => {
+    const { r, dialog } = await openOp('check_private_word');
+    await userEvent.type(within(dialog).getByLabelText('word'), 'blorf');
+    await userEvent.click(within(dialog).getByRole('button', { name: new RegExp(`${t.form.expected.verdict}$`) }));
+    await userEvent.click(await screen.findByRole('option', { name: 'not_recognized' }));
+    await userEvent.click(within(dialog).getByRole('button', { name: t.form.submitAdd }));
+    await screen.findByText(t.toast.added);
+    expect(addedBody(r.calls).expected).toEqual({ verdict: 'not_recognized' });
+  });
+
+  it('translate_sentence has no expected answer: no section, and no "expected" in the POST', async () => {
+    const { r, dialog } = await openOp('translate_sentence');
+    expect(within(dialog).queryByText(t.form.expected.title)).not.toBeInTheDocument();
+    await userEvent.type(within(dialog).getByLabelText('text'), 'Hello');
+    await userEvent.click(within(dialog).getByRole('button', { name: t.form.submitAdd }));
+    await screen.findByText(t.toast.added);
+    expect(addedBody(r.calls)).toEqual({ operation: 'translate_sentence', input: { text: 'Hello' }, note: null });
+  });
+
+  it('[Sửa] shows the stored forms and leaving the word does not replace them', async () => {
+    const stored = { ...evalExample('e1', 'go'), expected: { forms: ['go', 'goes'] } };
+    const r = await openPage({ [URL.examples()]: examplesReply(stored) });
+    await userEvent.click((await screen.findAllByRole('button', { name: t.editFor.replace('{summary}', 'go · verb') }))[0]);
+    const dialog = await screen.findByRole('dialog', { name: t.form.editTitle });
+    expect(formsBox(dialog)).toHaveValue('go, goes');
+    await userEvent.clear(within(dialog).getByLabelText('word'));
+    await userEvent.type(within(dialog).getByLabelText('word'), 'went');
+    await userEvent.tab();
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(formsBox(dialog)).toHaveValue('go, goes');
+    expect(formsRequests(r.calls)).toHaveLength(0);
+  });
+
+  it('[Sửa] on an example with no expected answer yet (migrated): leaving the word fills the forms, and saving PATCHes them', async () => {
+    const migrated = { ...evalExample('e1', 'go'), expected: null };
+    const r = await openPage({
+      [URL.examples()]: examplesReply(migrated),
+      [URL.forms('go', 'verb')]: () => Response.json({ forms: ['go', 'goes', 'going', 'went', 'gone'] }),
+      [URL.example('e1')]: (call: Call) => Response.json({ ...migrated, ...(call.body as object) }),
+    });
+    await userEvent.click((await screen.findAllByRole('button', { name: t.editFor.replace('{summary}', 'go · verb') }))[0]);
+    const dialog = await screen.findByRole('dialog', { name: t.form.editTitle });
+    expect(formsBox(dialog)).toHaveValue('');
+    await userEvent.click(within(dialog).getByLabelText('word'));
+    await userEvent.tab();
+    await waitFor(() => expect(formsBox(dialog)).toHaveValue('go, goes, going, went, gone'));
+    await userEvent.click(within(dialog).getByRole('button', { name: t.form.submitSave }));
+    await screen.findByText(t.toast.saved);
+    expect(r.calls.find((c) => c.method === 'PATCH')?.body).toMatchObject({ expected: { forms: ['go', 'goes', 'going', 'went', 'gone'] } });
   });
 });
 

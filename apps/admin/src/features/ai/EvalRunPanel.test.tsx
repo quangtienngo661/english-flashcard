@@ -5,7 +5,7 @@ import vi from '../../../messages/vi.json';
 import { problem } from '../../auth/test-support';
 import { renderApp } from '../staff/test-utils';
 import type { EvalRunDetail } from './ai-api';
-import { URL, evalExample, evalRoutes, evalRun } from './prompt-test-support';
+import { URL, evalExample, evalRoutes, evalRun, runItem } from './prompt-test-support';
 
 const t = vi.ai.eval;
 const PATH = '/ai/eval/runs/aaaaaaaa-0000-4000-8000-000000000001';
@@ -92,7 +92,7 @@ describe('EvalRunPanel (A/83)', () => {
 
   it('when the example set cannot be read, the example column shows "—", not "Ví dụ đã xóa"', async () => {
     const items: EvalRunDetail['items'] = [
-      { example_id: 'e1', status: 'succeeded', reason: null, output: { sentence: 'I ___ home.' }, raw_output: null, latency_ms: 700, cost_usd: null },
+      runItem({ example_id: 'e1', status: 'succeeded', reason: null, output: { sentence: 'I ___ home.' }, raw_output: null, latency_ms: 700, cost_usd: null }),
     ];
     renderApp(PATH, evalRoutes({
       [URL.examples()]: () => problem(500, ''),
@@ -117,8 +117,8 @@ describe('EvalRunPanel (A/83)', () => {
 
   it('per-example results: input looked up in the set, status, reason, output; the raw output behind [Xem đầu ra gốc]; a deleted example says so', async () => {
     const items: EvalRunDetail['items'] = [
-      { example_id: 'e1', status: 'succeeded', reason: null, output: { sentence: 'I ___ home.' }, raw_output: '{"sentence":"I ___ home."}', latency_ms: 700, cost_usd: '0.00100000' },
-      { example_id: 'gone', status: 'permanent_failure', reason: 'invalid-shape', output: null, raw_output: 'not json at all', latency_ms: 300, cost_usd: null },
+      runItem({ example_id: 'e1', status: 'succeeded', reason: null, output: { sentence: 'I ___ home.' }, raw_output: '{"sentence":"I ___ home."}', latency_ms: 700, cost_usd: '0.00100000' }),
+      runItem({ example_id: 'gone', status: 'permanent_failure', reason: 'invalid-shape', output: null, raw_output: 'not json at all', latency_ms: 300, cost_usd: null }),
     ];
     renderApp(PATH, evalRoutes({
       [URL.examples()]: () => Response.json({ items: [evalExample('e1', 'go')] }),

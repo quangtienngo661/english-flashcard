@@ -11,7 +11,7 @@ const callsUrl = (id: string) => `GET /v1/admin/ai/calls?operation_id=${encodeUR
 const call = (over: Partial<AiCall> = {}): AiCall => ({
   id: 'c1', attempt: 1, purpose: 'learner', operation: 'generate_cloze', provider: 'openai', model: 'gpt-x', effort: null, thinking: null, max_output_tokens: null,
   prompt_revision: 3, outcome: 'timeout', http_status: null, provider_error_code: null, latency_ms: 10000, input_tokens: 120, cached_input_tokens: 20,
-  output_tokens: 0, reasoning_tokens: 0, cost_usd: '0.00010000', cost_known: true, created_at: '2026-10-25T02:12:00.000Z',
+  output_tokens: 0, reasoning_tokens: 0, cost_usd: '0.00010000', cost_known: true, created_at: '2026-10-25T02:12:00.000Z', held_out: false,
   content: { request: { messages: ['hi'] }, response: '{"sentence":"I ___ home."}', expires_at: '2026-10-25T10:00:00.000Z' }, ...over,
 });
 const reply = (...items: AiCall[]) => () => Response.json({ items });

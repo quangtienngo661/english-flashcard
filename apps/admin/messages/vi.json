@@ -11,6 +11,7 @@
     "email-already-verified": "Email này đã được xác minh",
     "email-taken": "Email đã được dùng",
     "entry-in-use": "Từ này đang được dùng nên chưa xóa được.",
+    "expected-invalid": "Ô mong đợi chưa hợp lệ.",
     "export-too-large": "Quá nhiều dòng để xuất, hãy thu hẹp bộ lọc",
     "file-invalid": "File không hợp lệ",
     "file-too-large": "File quá lớn (tối đa 10 MB)",
@@ -456,6 +457,7 @@
       "deleteConfirm": "Xóa ví dụ",
       "toast": {
         "added": "Đã thêm ví dụ.",
+        "addedHeldOut": "Đã thêm ví dụ. Ví dụ này vào phần held-out nên được ẩn.",
         "saved": "Đã lưu ví dụ.",
         "deleted": "Đã xóa ví dụ.",
         "stopped": "Đã dừng lần chạy.",
@@ -482,7 +484,20 @@
         "noteHint": "Không bắt buộc, tối đa 500 ký tự.",
         "submitAdd": "Thêm ví dụ",
         "submitSave": "Lưu",
-        "tooMany": "Mỗi thao tác tối đa 1.000 ví dụ."
+        "tooMany": "Mỗi thao tác tối đa 1.000 ví dụ.",
+        "expected": {
+          "title": "Ô mong đợi",
+          "forms": {
+            "label": "Các dạng được nhận",
+            "hint": "Cách nhau bằng dấu phẩy. Bỏ dạng bạn không muốn câu dùng.",
+            "filled": "Đã điền {count} dạng từ kho.",
+            "notFound": "Không thấy từ này trong kho. Gõ các dạng được nhận, cách nhau bằng dấu phẩy."
+          },
+          "lemma": "Lemma",
+          "partOfSpeech": "Từ loại",
+          "verdict": "Kết luận",
+          "verdictPlaceholder": "Chọn kết luận"
+        }
       },
       "run": {
         "title": "Chạy bộ ví dụ",

@@ -19,7 +19,7 @@ import { getSettings } from '../settings/settings-api';
 import { useNow } from '../jobs/useNow';
 import { usePollingStatus, useQueuedTooLong } from '../jobs/usePollingStatus';
 import {
-  UUID, aiKeys, cancelRun, deleteRun, getRun, getTestQuota, isRunCancelled, isRunDone, listExamples, startRun, type AiOperation, type EvalRun, type EvalRunItem,
+  UUID, aiKeys, cancelRun, deleteRun, getRun, getTestQuota, isDevExample, isRunCancelled, isRunDone, listExamples, startRun, type AiOperation, type EvalRun, type EvalRunItem,
   type EvalRunStatus, type StartRunBody, type TestStatus,
 } from './ai-api';
 import { exampleSummary } from './prompt-form';
@@ -27,7 +27,7 @@ import { useAiFormat } from './useAiFormat';
 
 const TONE = { queued: 'neutral', running: 'primary', finished: 'success', failed: 'danger' } as const;
 const NEED_EXAMPLE = 'examples: at least one example is needed';
-const ITEM_STATUSES: TestStatus[] = ['succeeded', 'transient_failure', 'permanent_failure', 'unavailable'];
+const ITEM_STATUSES: readonly string[] = ['succeeded', 'transient_failure', 'permanent_failure', 'unavailable'] satisfies TestStatus[];
 const codeBlock = 'block whitespace-pre-wrap wrap-anywhere rounded-inner bg-canvas p-2 font-mono text-xs text-ink';
 const linkClass =
   'inline-flex min-h-control w-fit items-center whitespace-nowrap rounded-control px-4 text-ui font-medium text-primary outline-none hover:bg-primary-soft focus-visible:ring-2 focus-visible:ring-primary pointer-coarse:min-h-control-touch';
@@ -238,7 +238,7 @@ export function EvalRunPanel({ id, onDone, onDeleted }: { id: string; onDone?: (
     [t('ai.eval.detail.startedBy'), userLabel(run.started_by_user, t)],
   ];
 
-  const inputs = new Map((examples.data?.items ?? []).map((example) => [example.id, example.input]));
+  const inputs = new Map((examples.data?.items ?? []).filter(isDevExample).map((example) => [example.id, example.input]));
   const results = run.items.map((item, index) => ({ ...item, index }));
   const resultColumns: Column<EvalRunItem & { index: number }>[] = [
     {

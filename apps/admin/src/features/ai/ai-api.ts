@@ -125,22 +125,77 @@ export type TestResult = {
 };
 export type TestQuota = { limit: number; remaining: number; resets_at: string };
 
+export type EvalSplit = 'dev' | 'held_out';
+export type EvalSource = 'manual' | 'import' | 'report' | 'real_judge';
+
+/** A dev example, or a held-out one the admin opened. `expected` is `null` on an example made before the expected answer existed. */
 export type EvalExample = {
   id: string;
   operation: AiOperation;
   input: Record<string, unknown>;
   note: string | null;
+  split: 'dev';
+  expected: Record<string, unknown> | null;
+  source: EvalSource;
+  source_ref: string | null;
+  revealed_at: string | null;
   created_by: string;
   created_by_user: UserRef;
   created_at: string;
   updated_at: string;
 };
+/** A held-out example before it is opened: its id and its part, nothing else (design §5.1, R7). */
+export type HeldOutExample = { id: string; split: 'held_out' };
+export type ExampleRow = EvalExample | HeldOutExample;
+export const isDevExample = (row: ExampleRow): row is EvalExample => row.split === 'dev';
 
-export type EvalExampleBody = { operation: AiOperation; input: Record<string, unknown>; note: string | null };
+/** `POST …/eval/examples/{id}/reveal`: the example is a dev one from now on; `deleted` = it only exists in a frozen version. */
+export type RevealedExample = {
+  id: string;
+  operation: AiOperation;
+  split: 'dev';
+  input: Record<string, unknown>;
+  expected: Record<string, unknown> | null;
+  note: string | null;
+  revealed_at: string;
+  deleted: boolean;
+};
+
+/** `expected` is left out for an operation with no expected answer (the API refuses one). */
+export type EvalExampleBody = { operation: AiOperation; input: Record<string, unknown>; note: string | null; expected?: Record<string, unknown> | null };
 /** `POST …/eval/examples/bulk`: the valid rows are stored, the invalid ones come back by their position in `rows` (1-based). */
-export type BulkExamplesBody = { operation: AiOperation; rows: Array<{ input: Record<string, unknown>; note: string | null }> };
+export type BulkExamplesBody = {
+  operation: AiOperation;
+  rows: Array<{ input: Record<string, unknown>; note: string | null; expected?: unknown; split?: string }>;
+};
 export type BulkExamplesResult = { total: number; valid: number; created: number; invalid: Array<{ row: number; violations: string[] }> };
-export type EvalExamplePatch = { input?: Record<string, unknown>; note?: string | null };
+export type EvalExamplePatch = { input?: Record<string, unknown>; note?: string | null; expected?: Record<string, unknown> | null };
+
+/** One frozen version of an operation's example set (`GET …/eval/sets`). */
+export type EvalSet = {
+  id: string;
+  operation: AiOperation;
+  version: number;
+  held_out_ratio: number;
+  frozen_by: string;
+  frozen_by_user: UserRef;
+  frozen_at: string;
+  dev_count: number;
+  held_out_count: number;
+  /** Held-out examples somebody opened after the version was frozen. */
+  revealed_count: number;
+};
+/** `input` and `expected` are `null` for a held-out item nobody opened. */
+export type EvalSetItem = {
+  example_id: string;
+  position: number;
+  split: EvalSplit;
+  revealed_at: string | null;
+  in_working_set: boolean;
+  input: Record<string, unknown> | null;
+  expected: Record<string, unknown> | null;
+};
+export type EvalSetDetail = EvalSet & { items: EvalSetItem[] };
 
 export type EvalRunStatus = 'queued' | 'running' | 'finished' | 'failed';
 /** A run of the example set (`GET …/eval/runs`): the model choice and prompt revision are those stored when it was created. */
@@ -158,6 +213,13 @@ export type EvalRun = {
   total: number;
   done: number;
   valid_count: number;
+  /** The frozen version this run took its examples from; `null` = the working set (a quick try that cannot be compared). */
+  set_id: string | null;
+  set_version: number | null;
+  /** A run made before versions existed. */
+  legacy: boolean;
+  /** Finished, and every example has a result. */
+  complete: boolean;
   avg_latency_ms: number | null;
   cost_usd: string | null;
   cost_unknown_count: number;
@@ -168,22 +230,62 @@ export type EvalRun = {
   started_at: string | null;
   finished_at: string | null;
 };
+export type RuleStatus = 'pass' | 'fail' | 'skipped' | 'not_applicable';
+/** What Practice's rules said about an output (`not-in-catalog`: the word is not in the catalog; `no-rules`: no rules are registered). */
+export type RuleResult = { status: RuleStatus; problems: string[]; reason: 'not-in-catalog' | 'no-rules' | null };
+export type ExpectedResult = 'pass' | 'fail';
+export type EvalRunItemStatus = TestStatus | 'skipped' | 'pending' | 'in_progress';
+/** One example of a run (`GET …/eval/runs/{id}/items`, dev only): the snapshot taken when the run was made, and its results. */
 export type EvalRunItem = {
   example_id: string;
-  status: TestStatus | 'skipped';
+  position: number;
+  split: EvalSplit;
+  /** `null` on an item migrated from an old run whose example was deleted. */
+  input: Record<string, unknown> | null;
+  expected: Record<string, unknown> | null;
+  status: EvalRunItemStatus;
   reason: string | null;
   output: Record<string, unknown> | null;
   raw_output: string | null;
+  rule: RuleResult | null;
+  expected_result: ExpectedResult | null;
   latency_ms: number | null;
   cost_usd: string | null;
 };
-/** `GET …/eval/runs/{id}` adds the draft, the worker's heartbeat and the per-example results. */
+/** Counts of one part (dev or held-out) of a run; the held-out part is only ever shown as these numbers. */
+export type SplitStats = {
+  total: number;
+  pending: number;
+  skipped: number;
+  shape_pass: number;
+  shape_fail: number;
+  shape_transient: number;
+  rule_pass: number;
+  rule_fail: number;
+  rule_skipped: number;
+  rule_not_applicable: number;
+  expected_pass: number;
+  expected_fail: number;
+  expected_none: number;
+  failing: number;
+};
+export type RunStats = { dev: SplitStats; held_out: SplitStats };
+export type RegressionCriterion = 'shape' | 'rule' | 'expected';
+/** `GET …/eval/runs/compare?a=&b=` (two runs of the same version): `a` is "trước", `b` is "nay". */
+export type RunComparison = {
+  a: EvalRun;
+  b: EvalRun;
+  stats: { a: RunStats; b: RunStats };
+  regressions: { dev: Array<{ example_id: string; input: Record<string, unknown> | null; failed: RegressionCriterion[] }>; held_out: number };
+};
+/** `GET …/eval/runs/{id}` adds the draft, the worker's heartbeat and the dev results (kept for v1; the admin reads `…/items`). */
 export type EvalRunDetail = EvalRun & {
   draft: { instructions: string; examples: PromptExample[] } | null;
   heartbeat_at: string | null;
   items: EvalRunItem[];
 };
-export type StartRunBody = { operation: AiOperation; prompt: 'current' | { instructions: string; examples: PromptExample[] } };
+/** `set_id`: a frozen version of the operation; left out, the run takes the working set. */
+export type StartRunBody = { operation: AiOperation; prompt: 'current' | { instructions: string; examples: PromptExample[] }; set_id?: string };
 
 /** A run is over once it is `finished` or `failed`; the job rule of `usePollingStatus` does not know `finished`. */
 export const isRunDone = (status: string): boolean => status === 'finished' || status === 'failed';
@@ -224,6 +326,8 @@ export type AiCall = {
   cost_usd: string | null;
   cost_known: boolean;
   created_at: string;
+  /** A call made for a held-out example: its content is never shown (`content` is `null`). */
+  held_out: boolean;
   content: { request: unknown; response: unknown; expires_at: string } | null;
 };
 
@@ -237,7 +341,14 @@ export const aiKeys = {
   testQuota: () => ['ai', 'test-quota'] as const,
   examples: (op: AiOperation) => ['ai', 'eval-examples', op] as const,
   runs: (op: AiOperation) => ['ai', 'eval-runs', op] as const,
+  /** Under `runs(op)`, so one invalidation of the operation's runs reads these again too. */
+  runsOfSet: (op: AiOperation, setId: string) => ['ai', 'eval-runs', op, 'set', setId] as const,
   run: (id: string) => ['ai', 'eval-run', id] as const,
+  runItems: (id: string) => ['ai', 'eval-run-items', id] as const,
+  compare: (a: string, b: string) => ['ai', 'eval-compare', a, b] as const,
+  sets: (op: AiOperation) => ['ai', 'eval-sets', op] as const,
+  set: (id: string) => ['ai', 'eval-set', id] as const,
+  forms: (word: string, partOfSpeech: string) => ['ai', 'eval-forms', word, partOfSpeech] as const,
   costs: (from: string, to: string, groupBy: CostGroup) => ['ai', 'costs', from, to, groupBy] as const,
   calls: (operationId: string) => ['ai', 'calls', operationId] as const,
 };
@@ -269,27 +380,46 @@ export const savePrompt = (api: ApiClient, op: AiOperation, body: SavePromptBody
 export const runTest = (api: ApiClient, op: AiOperation, body: TestBody) => api.post<TestResult>(`${base}/prompts/${op}/test`, body);
 export const getTestQuota = (api: ApiClient) => api.get<TestQuota>(`${base}/test-quota`);
 
+/** Dev examples in full; a held-out one that was not opened is only `{ id, split: 'held_out' }`. */
 export const listExamples = (api: ApiClient, operation: AiOperation) =>
-  api.get<{ items: EvalExample[] }>(`${base}/eval/examples?operation=${operation}`);
-export const createExample = (api: ApiClient, body: EvalExampleBody) => api.post<EvalExample>(`${base}/eval/examples`, body);
+  api.get<{ items: ExampleRow[] }>(`${base}/eval/examples?operation=${operation}`);
+/** The catalog forms of a word to fill the expected answer in; `{ forms: null }` when the catalog does not know the word. */
+export const getForms = (api: ApiClient, word: string, partOfSpeech: string) =>
+  api.get<{ forms: string[] | null }>(`${base}/eval/examples/forms?${new URLSearchParams({ word, part_of_speech: partOfSpeech }).toString()}`);
+/** A held-out example becomes a dev one and frozen versions record that it was seen (409 `example-not-held-out` when it is not held-out). */
+export const revealExample = (api: ApiClient, id: string) => api.post<RevealedExample>(`${base}/eval/examples/${id}/reveal`);
+/** A dev example comes back in full; one that landed in the hidden held-out part only as `{ id, split: 'held_out' }`. */
+export const createExample = (api: ApiClient, body: EvalExampleBody) => api.post<ExampleRow>(`${base}/eval/examples`, body);
 export const createExamples = (api: ApiClient, body: BulkExamplesBody) => api.post<BulkExamplesResult>(`${base}/eval/examples/bulk`, body);
 export const updateExample = (api: ApiClient, id: string, body: EvalExamplePatch) => api.patch<EvalExample>(`${base}/eval/examples/${id}`, body);
 export const deleteExample = (api: ApiClient, id: string) => api.delete<void>(`${base}/eval/examples/${id}`);
 /** Needs an `Idempotency-Key` (send through `useSubmitAction`); a replay returns the same run. Uses one `ai.test` slot. */
 export const startRun = (api: ApiClient, body: StartRunBody, idempotencyKey: string) =>
   api.post<{ run_id: string; status: 'queued' }>(`${base}/eval/runs`, body, { idempotencyKey });
-export function listRuns(api: ApiClient, operation: AiOperation, pageToken?: string) {
+export function listRuns(api: ApiClient, operation: AiOperation, pageToken?: string, setId?: string) {
   const query = new URLSearchParams({ operation, page_size: String(RUNS_PAGE_SIZE) });
   if (pageToken) query.set('page_token', pageToken);
+  if (setId) query.set('set_id', setId);
   return api.get<{ items: EvalRun[]; next_page_token: string | null }>(`${base}/eval/runs?${query.toString()}`);
 }
 /** A run id that does not look like this cannot exist (the API answers 400): the panel says "not found" without asking. */
 export const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 export const getRun = (api: ApiClient, id: string) => api.get<EvalRunDetail>(`${base}/eval/runs/${id}`);
+/** The dev results of a run and the statistics of both parts; held-out examples are only counted. */
+export const listRunItems = (api: ApiClient, id: string) => api.get<{ items: EvalRunItem[]; stats: RunStats }>(`${base}/eval/runs/${id}/items`);
+/** Two runs of the same version; 409 `eval-set-mismatch` otherwise. */
+export const getRunComparison = (api: ApiClient, a: string, b: string) =>
+  api.get<RunComparison>(`${base}/eval/runs/compare?${new URLSearchParams({ a, b }).toString()}`);
 /** A queued or running run becomes `failed` with `error: 'cancelled'` ("Đã dừng"); 409 `run-not-active` when it already ended. */
 export const cancelRun = (api: ApiClient, id: string) => api.post<EvalRunDetail>(`${base}/eval/runs/${id}/cancel`);
 /** Only a finished or failed run (409 `run-active` otherwise); its costs stay in the cost report. */
 export const deleteRun = (api: ApiClient, id: string) => api.delete<void>(`${base}/eval/runs/${id}`);
+
+/** "Chốt phiên bản": snapshots the working set as the next version. 422 `eval-set-incomplete`, 409 `eval-set-conflict`. */
+export const freezeSet = (api: ApiClient, operation: AiOperation) => api.post<EvalSet>(`${base}/eval/sets`, { operation });
+/** Newest first. */
+export const listSets = (api: ApiClient, operation: AiOperation) => api.get<{ items: EvalSet[] }>(`${base}/eval/sets?operation=${operation}`);
+export const getSet = (api: ApiClient, id: string) => api.get<EvalSetDetail>(`${base}/eval/sets/${id}`);
 
 /** `from` and `to` are `YYYY-MM-DD` Vietnam days, both inclusive; the API refuses `from > to` and more than 366 days with a 400. */
 export const getCosts = (api: ApiClient, from: string, to: string, groupBy: CostGroup) =>
