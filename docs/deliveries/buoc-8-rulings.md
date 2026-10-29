@@ -28,6 +28,7 @@ nếu sai thì tốn gì. Các mục này **không** nằm trong D1–D33; chủ
 | R19 | 33 | Chạy smoke 6 và 7 bằng cách **đổi tên tạm** `apps/api/.env` thành `.env.hold-b8` rồi đổi lại ngay khi xong (script `trap`), thay vì đọc hay sửa file | Hai smoke dừng khi file môi trường cục bộ có khóa AI (`OPENAI_API_KEY`; chủ dự án đã gọi AI thật ngày 28/10); cùng cách đã dùng ở các phiên trước | Nếu tiến trình bị giết giữa chừng, file có thể còn ở tên `.env.hold-b8` — đổi lại thành `.env` |
 
 | R20 | 33 | Review cuối nhánh bởi một reviewer độc lập (file `../superpowers/reviews/2026-10-29-buoc-8-final-review.md`): **1 Critical, 3 Important** đã sửa theo TDD (test đỏ rồi xanh), **8 Minor** để lại | Đúng quy trình thực thi plan: Critical/Important vào một đợt sửa, Minor ghi lại, không sửa | Xem mục "Review cuối" bên dưới |
+| R21 | 33 | Chủ dự án quyết 8 Minor của review cuối (29/10/2026, trả lời "theo đề xuất"): **sửa** M4, M6, M8 trong một PR riêng `fix/buoc-8-minors` (PR #181, cắt từ đỉnh chuỗi m7, vào `dev`, cần #173–#179 merge trước); **để lại và ghi vào `deploy-checklist.md`** M3, M1; **bỏ** M2, M5, M7 | Chủ dự án chọn theo đề xuất của Claude. M8 là cái duy nhất người dùng thật có thể gặp (một lớp học hoặc văn phòng dùng chung một địa chỉ mạng); M4 là thư gửi nhầm tới địa chỉ chưa ai xác nhận; M6 là design §10 nói ẩn nút. M3 chỉ có ý nghĩa khi có nhà cung cấp thanh toán thật; M1 chỉ khi khôi phục sau sự cố | Xem bảng "Quyết định về 8 Minor" bên dưới |
 
 ## Review cuối (29/10/2026)
 
@@ -40,15 +41,15 @@ nếu sai thì tốn gì. Các mục này **không** nằm trong D1–D33; chủ
 | I2 | Tài khoản kẹt `deleting` vì gói tự gia hạn lại (B8E52) không bao giờ xong: retry hỏng mỗi giờ, nút admin bỏ qua bước tắt gia hạn | Admin xóa chạy bước tắt gia hạn (D31) cả khi đích đang `deleting` | m2 |
 | I3 | Web: người chỉ có Google, bằng chứng 5 phút hết hạn → nút Google vẫn bị khóa (`?reauth=ok` còn trong địa chỉ) | Sau `reauth-required` bằng chứng coi là hết hạn: nút Google mở lại, nút đỏ tắt | m5 |
 
-Để lại (Minor, **không sửa**, chủ dự án quyết):
-- M1 — `accounts:replay-deletions` không hoàn tất tài khoản khôi phục đang `deleting` với `by=self` (`account-deletion.service.ts:94-96` bỏ qua `mode`); retry hàng giờ xử lý nốt nhưng với `checks: normal`.
-- M2 — `next` bị mất ở đường đăng ký Google mới (vé có `next` nhưng `GoogleComplete.tsx` luôn về `/{locale}/app`).
-- M3 — Tắt gia hạn D31 từng phần: một gói tắt được, gói kia quá hạn → 409 "chưa xóa" nhưng gói đầu đã bị hủy; và tắt gia hạn xảy ra trước kiểm admin cuối.
-- M4 — Admin xóa tài khoản chưa xác nhận email vẫn gửi thư "đã xóa" tới địa chỉ chưa ai xác nhận.
-- M5 — `?signed_in=google` bất kỳ trên địa chỉ nào cũng xóa cờ `logout-pending` của FE38.
-- M6 — Nút "Xóa tài khoản" vẫn hiện cho admin cuối cùng (API chặn bằng `last-admin`; design §10 nói ẩn).
-- M7 — Sweep hàng ghi muộn xử lý cả các lần xóa `by=cleanup` trong 24 giờ (tốn, vô hại).
-- M8 — 429 ở `/start` hoặc `/callback` hiện JSON thô thay vì quay về app (20 lần/phút/IP; nhiều người sau cùng một NAT).
+Tám Minor (mô tả của reviewer; quyết định ở cuối mỗi dòng, R21):
+- M1 — `accounts:replay-deletions` không hoàn tất tài khoản khôi phục đang `deleting` với `by=self` (`account-deletion.service.ts:94-96` bỏ qua `mode`); retry hàng giờ xử lý nốt nhưng với `checks: normal`. → **Để lại**, ghi vào deploy-checklist (khi viết quy trình backup và khôi phục).
+- M2 — `next` bị mất ở đường đăng ký Google mới (vé có `next` nhưng `GoogleComplete.tsx` luôn về `/{locale}/app`). → **Bỏ** (chỉ tiện lợi; làm trong đợt trau chuốt sau nếu cần).
+- M3 — Tắt gia hạn D31 từng phần: một gói tắt được, gói kia quá hạn → 409 "chưa xóa" nhưng gói đầu đã bị hủy; và tắt gia hạn xảy ra trước kiểm admin cuối. → **Để lại**, ghi vào deploy-checklist (sửa trước khi nối nhà cung cấp thanh toán thật).
+- M4 — Admin xóa tài khoản chưa xác nhận email vẫn gửi thư "đã xóa" tới địa chỉ chưa ai xác nhận. → **Đã sửa** ở PR #181: không gửi thư tới địa chỉ chưa xác nhận (test đỏ rồi xanh; smoke bước "final review M4 M8").
+- M5 — `?signed_in=google` bất kỳ trên địa chỉ nào cũng xóa cờ `logout-pending` của FE38. → **Bỏ** (vô hại).
+- M6 — Nút "Xóa tài khoản" vẫn hiện cho admin cuối cùng (API chặn bằng `last-admin`; design §10 nói ẩn). → **Đã sửa** ở PR #181: `GET /v1/admin/users/:id` thêm `last_admin`, admin ẩn nút khi đúng (test đỏ rồi xanh; smoke bước B8E40).
+- M7 — Sweep hàng ghi muộn xử lý cả các lần xóa `by=cleanup` trong 24 giờ (tốn, vô hại). → **Bỏ** (tốn một chút, đúng kết quả).
+- M8 — 429 ở `/start` hoặc `/callback` hiện JSON thô thay vì quay về app (20 lần/phút/IP; nhiều người sau cùng một NAT). → **Đã sửa** ở PR #181: `/start` và `/callback` quay về trang đăng nhập (hoặc trang xóa) với `?error=google-busy` thay vì JSON 429; web có câu báo mới (test đỏ rồi xanh; smoke bước "final review M4 M8").
 
 Reviewer **không đánh giá được** (cần Deploy hoặc Google thật): cookie sau chuyển trang từ Google và PKCE (N2); `jwtVerify` chưa có `clockTolerance` (thêm vài giây nếu lần chạy thật báo `google-failed` ngẫu nhiên); Google giả là lối vào mọi tài khoản đã xác nhận nếu bật ở môi trường nào nối được ra internet (đã thêm vào `deploy-checklist.md`); yêu cầu xóa kéo dài tới 120 s so với giới hạn của reverse proxy; thứ tự khóa hàng trong các lệnh xóa hàng loạt; `google-round1-account.mjs` không có chốt tên database (chỉ dùng cho DB cục bộ).
 

@@ -87,4 +87,4 @@ của §19 (mã dùng một lần 60 giây) vào M3 trước khi dựa vào nút
 
 ## C. Smoke tự động (không cần anh/chị làm)
 
-`docs/deliveries/buoc-8-smoke-output.txt` là kết quả hai lần `pnpm smoke:buoc-8` (DB mới mỗi lần; 19/19 bước mỗi lần). Chạy lại: xem đầu `apps/api/scripts/smoke-buoc-8.mjs`.
+`docs/deliveries/buoc-8-smoke-output.txt` là kết quả hai lần `pnpm smoke:buoc-8` (DB mới mỗi lần; 20/20 bước mỗi lần, trên code có cả PR #181). Chạy lại: xem đầu `apps/api/scripts/smoke-buoc-8.mjs`.

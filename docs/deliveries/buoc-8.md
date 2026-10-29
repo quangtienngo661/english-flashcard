@@ -78,6 +78,7 @@ Việc cần làm trước ra mắt: mục "Bước 8" của [`deploy-checklist.
 | 6 | `feat/buoc-8-m6` (PR #178) | admin: xóa người dùng, phiên Google, hai cài đặt mới; sửa a11y chi tiết người dùng (R17) | 31716aa, f46126c |
 | 7 | `feat/buoc-8-m7` (PR #179) | `pnpm smoke:buoc-8` + kết quả | 46f4f94, 69a86a0, 4288674 |
 | 8 | `docs/buoc-8-as-built` (PR #180) | tài liệu này, test flow, rulings, deploy checklist, CLAUDE.md | — |
+| 9 | `fix/buoc-8-minors` (PR #181, cắt từ đỉnh m7, vào `dev`) | 3 trong 8 Minor của review cuối (R21): M4 thư tới địa chỉ chưa xác nhận, M6 nút xóa admin cuối, M8 giới hạn tốc độ của Google quay về app; thêm 2 kiểm vào smoke | xem `git log` |
 
 ## Đã có (những gì chạy được)
 
@@ -107,7 +108,8 @@ Việc cần làm trước ra mắt: mục "Bước 8" của [`deploy-checklist.
 | admin e2e trên stack thật (`e2e-real`, gồm ca admin xóa người học) | **27** ca xanh |
 | admin e2e mock | 265 xanh, 67 bỏ qua; **2 đỏ** (axe `scrollable-region-focusable` ở chi tiết người dùng, mobile VI/EN) → sửa ở R17; chạy lại `a11y.spec.ts` mobile: **6/6 xanh**. Chưa chạy lại cả bộ mock sau sửa |
 | `pnpm smoke:buoc-8` lần 1 và 2 (mỗi lần trên DB mới), chạy trên code **sau** các sửa của review cuối | **19/19 bước** mỗi lần; `buoc-8-smoke-output.txt`; log API và worker không có dòng ERROR. (Trước các sửa, cũng 19/19 hai lần.) |
-| Review cuối nhánh (reviewer độc lập, đọc code, không chạy) | 1 Critical + 3 Important đã sửa bằng TDD; 8 Minor để lại; chi tiết ở `buoc-8-rulings.md` mục "Review cuối" và `../superpowers/reviews/2026-10-29-buoc-8-final-review.md` |
+| Quyết định về 8 Minor (R21) và PR #181 | Sửa M4, M6, M8 (mỗi cái test đỏ rồi xanh); để lại M3, M1 trong deploy-checklist; bỏ M2, M5, M7. Sau PR này: API 3134 unit, web 723, admin 905 (khi chạy toàn bộ, 2 ca đỏ ngẫu nhiên do timeout 5 s, xanh khi chạy riêng; chạy toàn bộ trên code chưa sửa cũng đỏ ngẫu nhiên 5 ca khác nhau, nên là nhiễu do tải máy, chưa tìm ra gốc); `pnpm smoke:buoc-8` 20/20 bước (bước M6 trong B8E40, thêm bước "final review M4 M8"); lint, typecheck và build xanh ở cả ba app |
+| Review cuối nhánh (reviewer độc lập, đọc code, không chạy) | 1 Critical + 3 Important đã sửa bằng TDD; 8 Minor (3 đã sửa ở PR #181, xem R21); chi tiết ở `buoc-8-rulings.md` mục "Review cuối" và `../superpowers/reviews/2026-10-29-buoc-8-final-review.md` |
 | `smoke:buoc-0-3-fixes`, `smoke:buoc-4` | đều qua trên DB mới (`ALL STEPS MATCHED`; `ALL CHECKS PASSED`, 20 phiên, 43 câu trả lời) |
 | `smoke:buoc-5` cả hai chế độ fetchState (ON, OFF), mỗi chế độ trên DB mới | đều qua (`ALL CHECKS PASSED`: 431 s ON, 253 s OFF) |
 | `smoke:buoc-6` | qua, 32 bước (API chạy không có khóa AI; smoke 6 và 7 từ chối chạy khi file môi trường cục bộ của API có `OPENAI_API_KEY`, nên file đó được tạm đổi tên lúc chạy và trả lại ngay sau) |
