@@ -264,6 +264,11 @@ export class StaffService {
     };
   }
 
+  /** True when no other admin would be left (the rule the delete and `setStaffRole` apply under their lock); only a hint for the screen. */
+  async isLastAdmin(id: string): Promise<boolean> {
+    return (await this.prisma.user.count({ where: { staffRole: 'admin', status: { not: 'deleting' }, id: { not: id } } })) === 0;
+  }
+
   async getUserDetail(id: string): Promise<AdminUserDetail> {
     const row = await this.prisma.user.findUnique({ where: { id }, select: adminDetailSelect });
     if (!row) throw staffUserNotFound();
