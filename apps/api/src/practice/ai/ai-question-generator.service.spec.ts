@@ -31,6 +31,8 @@ type Options = {
   confirm?: 'confirmed' | 'released' | 'not-found'; gone?: boolean; wordCheck?: { contentKey: string; verdict: WordVerdict };
   /** Content reads beyond practiceSenses fail: proves a rerun does not pick again. */
   noPicks?: boolean;
+  /** The gateway throws instead of returning a result (B7-3). */
+  gatewayThrows?: boolean;
 };
 type AiQuestionGeneratorDeps = { isReady: (op: string) => Promise<{ ready: true } | { ready: false; reason: 'model-not-set'; retry_after_seconds?: number }> };
 
@@ -66,6 +68,7 @@ function setup(options: Options = {}) {
     run: async (op: string, data: unknown, o: { operationId: string }) => {
       runs.push({ op, id: o.operationId, data });
       calls.push(`run:${o.operationId.replace(request.id, '')}`);
+      if (options.gatewayThrows && !o.operationId.endsWith(':wc')) throw new Error('gateway down');
       if (o.operationId.endsWith(':wc')) return options.results?.wc ?? succeeded({ verdict: 'ok' });
       if (o.operationId.endsWith('#2')) return options.results?.second ?? succeeded(goodCloze);
       return options.results?.first ?? succeeded(goodCloze);
@@ -174,6 +177,13 @@ describe('AiQuestionGenerator (design §6.5 B–H)', () => {
     const t = setup({ results: { first: succeeded(badCloze), second: succeeded(badCloze) } });
     expect(await t.run()).toEqual({ state: 'failed', failure: 'rejected' });
     expect(t.calls).toEqual(['saveInput', 'reserve', 'run:', 'run:#2', 'release', 'failed:rejected']);
+  });
+
+  it('B7-3: the gateway throws → the unit is released, the request failed ai-failed, the error logged, nothing rethrown', async () => {
+    const t = setup({ gatewayThrows: true });
+    expect(await t.run()).toEqual({ state: 'failed', failure: 'ai-failed' });
+    expect(t.calls).toEqual(['saveInput', 'reserve', 'run:', 'release', 'failed:ai-failed']);
+    expect(t.logs.some((entry) => entry.event === 'ai_question_exception' && entry.level === 'error')).toBe(true);
   });
 
   it('B7E11: in_progress → preparing, the unit stays held', async () => {
