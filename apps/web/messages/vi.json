@@ -972,6 +972,7 @@
       "cancel-in-store": "Gói này mua qua cửa hàng ứng dụng, hãy hủy trong phần quản lý gói của cửa hàng đó.",
       "confirm-email-mismatch": "Email bạn gõ chưa khớp với email của tài khoản.",
       "google-email-unverified": "Google chưa xác minh email này, nên chưa đăng nhập được. Hãy xác minh email ở Google rồi thử lại.",
+      "google-busy": "Có quá nhiều lượt đăng nhập bằng Google từ mạng này. Đợi một phút rồi thử lại, hoặc dùng email và mật khẩu.",
       "google-failed": "Đăng nhập bằng Google chưa thành công. Hãy thử lại.",
       "google-unavailable": "Đăng nhập bằng Google đang tạm thời không dùng được. Hãy dùng email và mật khẩu.",
       "provider-unavailable": "Nhà cung cấp thanh toán chưa trả lời. Hãy thử lại sau ít phút.",

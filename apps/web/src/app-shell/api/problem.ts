@@ -46,6 +46,7 @@ export const KNOWN_ERROR_SLUGS = [
   'email-taken',
   'entitlement-required',
   'forbidden',
+  'google-busy',
   'google-email-unverified',
   'google-failed',
   'google-unavailable',

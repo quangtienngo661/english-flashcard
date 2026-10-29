@@ -87,6 +87,18 @@ export class GoogleAuthService {
     return { location: this.web(`/${locale}/app/login`, { error }) };
   }
 
+  /**
+   * Where the browser goes when the Google routes are rate limited (final review M8): a 429 JSON page is a dead end for someone who
+   * only pressed a button, and many people behind one Wi-Fi share an address. The language and trip kind come from the query on
+   * `start`, or from the sealed state cookie on `callback`.
+   */
+  busy(input: { locale?: unknown; intent?: unknown; oauthCookie?: string }): CallbackResult {
+    const key = this.config.google.cookieKey;
+    const saved = key ? openJson<OAuthState>(input.oauthCookie, key, 'oauth-state', this.clock.now()) : null;
+    if (saved) return this.fail(saved.locale, 'google-busy', saved.intent);
+    return this.fail(parseLocale(input.locale), 'google-busy', input.intent === 'reauth' ? 'reauth' : 'login');
+  }
+
   async start(input: { locale?: unknown; next?: unknown; intent?: unknown; ticket?: unknown }): Promise<StartResult> {
     const locale = parseLocale(input.locale);
     const { google } = this.config;
