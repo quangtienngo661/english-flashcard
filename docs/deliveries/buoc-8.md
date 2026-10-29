@@ -124,7 +124,7 @@ một người thành công, dọn tài khoản chưa xác nhận đúng đối 
 - **Google thật, lần 1 và lần 2 (D32)** — chủ dự án chưa báo kết quả. Hai `ASSUMPTION` (cookie `refresh_token` còn sau chuyển trang từ Google; PKCE S256 với client Web có secret) **chưa được xác nhận**; Google giả chỉ chứng minh logic phía API và chuỗi chuyển trang. Task 23 (nút Google ở web) làm tạm trước kết quả này (R13). Hướng dẫn: `buoc-8-test-flow.md` mục B.
 - **Kiểm trên trình duyệt thật trên stack Docker có chụp màn** (design §17): chưa làm (R16). Web và admin được kiểm bằng unit và e2e (mock, và real cho admin).
 - **Chưa đo ở môi trường thật:** scheduler chạy ở cả API và worker; kích thước pool kết nối khi nhiều người xóa cùng lúc; nơi lưu danh sách đã xóa ngoài DB. Đã đưa vào `deploy-checklist.md`.
-- **Chưa có dev → main PR**, và các PR của Bước 8 **chưa merge** (chủ dự án 29/10/2026).
+- **Chưa có dev → main PR** (chỉ mở khi chủ dự án bảo). Các PR #172–#181 của Bước 8 **đã merge vào `dev`** ngày 29/10/2026 theo lệnh của chủ dự án, mỗi PR có CI xanh trước khi merge; `dev` ở aacd0f4 sau #181. CI không chạy lại trên `dev` sau merge (chỉ chạy trên PR).
 
 ## Kết quả kiểm tay của chủ dự án
 
