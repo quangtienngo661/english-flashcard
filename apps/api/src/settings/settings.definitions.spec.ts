@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  applyPatch, changedFields, crossFieldViolations, SETTINGS_DEFAULTS, settingsValuesPatchSchema, toApiValues, withDefaults,
+  applyPatch, changedFields, crossFieldViolations, SETTINGS_BOUNDS, SETTINGS_DEFAULTS, settingsValuesPatchSchema, toApiValues, withDefaults,
 } from './settings.definitions.js';
 
 const ENTITLEMENT_DEFAULTS_API = {
@@ -13,7 +13,7 @@ const ENTITLEMENT_DEFAULTS_API = {
 
 const AI_DEFAULTS_API = {
   call_timeout_seconds: 10, max_concurrent_calls: 50, daily_provider_calls_cap: 3000, content_retention_days: 7,
-  usd_vnd_rate: 26100,
+  usd_vnd_rate: 26100, eval_held_out_ratio: 0.3,
 };
 
 const issues = (input: unknown) => {
@@ -259,9 +259,9 @@ describe('settings definitions', () => {
     expect(toApiValues(values).reminders).not.toHaveProperty('weekly_max');
   });
 
-  it('ai defaults are 10, 50, 3000, 7, 26100', () => {
+  it('ai defaults are 10, 50, 3000, 7, 26100, 0.3', () => {
     expect(toApiValues(SETTINGS_DEFAULTS).ai).toEqual(AI_DEFAULTS_API);
-    expect(Object.values(toApiValues(SETTINGS_DEFAULTS).ai)).toEqual([10, 50, 3000, 7, 26100]);
+    expect(Object.values(toApiValues(SETTINGS_DEFAULTS).ai)).toEqual([10, 50, 3000, 7, 26100, 0.3]);
   });
 
   it('withDefaults fills the ai group for JSON stored before Bước 6 and keeps a stored null cap', () => {
@@ -273,9 +273,10 @@ describe('settings definitions', () => {
     expect(withDefaults({ ai: { usdVndRate: 25000 } }).ai).toEqual({ ...SETTINGS_DEFAULTS.ai, usdVndRate: 25000 });
   });
 
-  it('toApiValues names the five keys in snake_case', () => {
+  it('toApiValues names the six keys in snake_case', () => {
     expect(Object.keys(toApiValues(SETTINGS_DEFAULTS).ai)).toEqual([
       'call_timeout_seconds', 'max_concurrent_calls', 'daily_provider_calls_cap', 'content_retention_days', 'usd_vnd_rate',
+      'eval_held_out_ratio',
     ]);
   });
 
@@ -292,6 +293,18 @@ describe('settings definitions', () => {
       expect(issues({ ai: { [key]: min + 0.5 } }), `${key}=${min + 0.5}`).toEqual([`ai.${key}`]);
     }
     expect(issues({ ai: { other: 1 } })).toEqual(['ai']);
+  });
+
+  it('M1-T2: eval_held_out_ratio is 0.1–0.5 with at most two decimals, default 0.3', () => {
+    expect(issues({ ai: { eval_held_out_ratio: 0.1 } })).toEqual([]);
+    expect(issues({ ai: { eval_held_out_ratio: 0.5 } })).toEqual([]);
+    expect(issues({ ai: { eval_held_out_ratio: 0.33 } })).toEqual([]);
+    for (const value of [0.09, 0.51, 0.333]) expect(issues({ ai: { eval_held_out_ratio: value } }), String(value)).toEqual(['ai.eval_held_out_ratio']);
+    expect(SETTINGS_DEFAULTS.ai.evalHeldOutRatio).toBe(0.3);
+    expect(toApiValues(SETTINGS_DEFAULTS).ai.eval_held_out_ratio).toBe(0.3);
+    expect(withDefaults({ ai: { usdVndRate: 25000 } }).ai.evalHeldOutRatio).toBe(0.3);
+    expect(applyPatch(SETTINGS_DEFAULTS, { ai: { eval_held_out_ratio: 0.25 } }).ai.evalHeldOutRatio).toBe(0.25);
+    expect(SETTINGS_BOUNDS.ai.eval_held_out_ratio).toEqual({ min: 0.1, max: 0.5 });
   });
 
   it('accepts null only for daily_provider_calls_cap', () => {
