@@ -113,3 +113,24 @@ Plan: [`../superpowers/plans/2026-10-29-nhom-b.md`](../superpowers/plans/2026-10
 1. Smoke cuối và các smoke cũ trên DB mới.
 2. Ghi as-built.
 3. Lần chạy thật của chủ dự án (5 USD, hai model judge Anthropic, 30 nhãn).
+
+---
+
+# Nhóm B — as-built
+
+## M1 — Bộ ví dụ (golden set): as-built 30/10/2026
+
+**Nhánh / PR:** `feat/nhom-b-m1-golden-set`, 22 commit từ `docs/nhom-b-design`; PR "[nhóm B 1/6]" vào `docs/nhom-b-design` (merge đầu tiên của đợt, rồi PR #191 docs).
+**Đã làm:** tất cả 19 task của M1 (T1–T19). API: kiểu và hàm thuần (chia dev/held-out, ô mong đợi, thống kê lần chạy, so hai lần chạy), setting `ai.eval_held_out_ratio` (30%),
+bảng `ai_eval_sets` / `ai_eval_set_items` / `ai_eval_run_items` và migration chuyển dữ liệu cũ (ví dụ cũ vào dev, lần chạy cũ đánh dấu `legacy`), job eval ghi kết quả luật + ô mong đợi
+theo từng ví dụ, cổng luật `EvalRules` (Practice đăng ký, `ai` không import Practice), tra dạng từ theo lemma ở Content, API ví dụ che held-out, chốt phiên bản, mở held-out (chuyển sang dev),
+chạy trên phiên bản đã chốt, so hai lần chạy, che held-out ở trang Các lần gọi và nút chạy thử. Admin: hộp thoại ví dụ có ô mong đợi (điền sẵn dạng từ từ kho), trang eval có hàng held-out ẩn + [Chốt phiên bản]
++ danh sách phiên bản, nhập hàng loạt có cột `expected` và `split`, chạy trên phiên bản, cột Luật / Mong đợi, màn so hai lần chạy, ô "Tỉ lệ ví dụ held-out" ở Cài đặt, trang Các lần gọi ẩn nội dung held-out.
+**Kiểm:** api: drift sạch, `oxlint` (chỉ cảnh báo có từ trước), `tsc` sạch, 256 file / 3332 unit test pass; admin: `eslint`, `tsc`, 84 file / 1009 test pass, `build` (VITE_API_BASE_URL=https://admin-api.wordmet.com), `build:e2e`, e2e giả lập 277 pass + 67 skip (skip chỉ-desktop có từ trước), `test:e2e:real` pass trên API + worker thật. Lưu ý: `vitest` admin với số worker mặc định có thể rớt 1–5 test đầu mỗi file khi máy đang bận (hết hạn 1 s của `findBy`, cũng xảy ra ở baseline); chạy `--maxWorkers=3` thì xanh.
+**Smoke:** `pnpm smoke:nhom-b` (15 bước) pass hai lần, mỗi lần trên DB mới; `smoke:buoc-6` (32 bước) và `smoke:buoc-7` (30 bước) pass trên DB mới; output ở [`nhom-b-smoke-output.txt`](nhom-b-smoke-output.txt) (mục M1). Smoke phải chạy với
+`SMOKE_IGNORE_ENV_FILE=1` khi `apps/api/.env` có key thật (xem `nhom-b-open-items.md`, OI-1).
+**e2e thật:** `m1b.real.spec.ts` viết lại: hạt giống ví dụ held-out bằng bulk, thêm ví dụ qua hộp thoại (gõ dạng được nhận), chốt phiên bản, chạy phiên bản đó, Chi phí, và trang Các lần gọi (nội dung ví dụ dev hiện; nội dung held-out ẩn).
+Chạy trên API + worker thật (:3200, fake AI, Postgres mới): m1b 5/5 hai lần liên tiếp trên cùng DB (lần hai chốt phiên bản 2), cả bộ `e2e-real` 28 spec pass.
+**Quyết định đã tự chốt (ruling):** ví dụ held-out chỉ trả `{id, split}` khi tạo/liệt kê (không lộ nội dung); `GET …/runs/:id` chỉ trả dòng dev có kết quả; một lần chạy rỗng hoặc có dòng `in_progress` không tính là "đủ" (không làm bằng chứng publish);
+migration chuyển dữ liệu dùng `ON CONFLICT DO NOTHING`; admin: thêm prop `onBlur` cho `TextField`, toast riêng khi ví dụ mới vào held-out, thêm slug lỗi `eval-set-*`/`expected-invalid`, danh sách so sánh gồm cả lần chạy chưa xong (20 lần gần nhất).
+**Chưa kiểm / còn lại:** bản dịch tiếng Anh các chuỗi mới do agent tự dịch (chủ dự án nên đọc lại vi: `toast.addedHeldOut`, `freeze.rowMissing`, `compare.*`); `build` production chưa chạy trên CI thật (chỉ chạy cục bộ); chưa có gì chạy với model AI thật (đúng thiết kế, D30).
