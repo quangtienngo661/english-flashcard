@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Agreement } from './agreement.js';
-import { gateTally, judgeComparison, judgeStatsRows, judgeTally, type RunJudgeScore } from './judge-stats.js';
+import { gateTally, judgeComparison, judgeStatsRows, judgeTally, toScoreView, type RunJudgeScore } from './judge-stats.js';
 
 const J = { judgeId: 'J', judgeName: 'Chỉ một đáp án', criterion: 'single_answer', problem: null, reason: null } as const;
 const score = (itemId: string, split: 'dev' | 'held_out', revisionId: string, revision: number, verdict: RunJudgeScore['verdict']): RunJudgeScore => ({
@@ -73,5 +73,16 @@ describe('judgeComparison (B11: only a revision that scored both runs is compare
   it('a revision that only scored the later run is "scored b"', () => {
     expect(judgeComparison([], B).judge_unmatched).toEqual([{ judge_id: 'J', judge_name: 'Chỉ một đáp án', judge_revision_id: 'R2', revision: 2, scored: 'b' }]);
     expect(judgeComparison([], []).judge).toEqual([]);
+  });
+});
+
+describe('toScoreView (M3-T11)', () => {
+  it('keeps the judge, the criterion, the verdict and why, and drops the item id and the split', () => {
+    expect(toScoreView({
+      itemId: 'i1', split: 'dev', judgeId: 'J', judgeName: 'Chỉ một đáp án', judgeRevisionId: 'R2', revision: 2, criterion: 'single_answer',
+      verdict: 'fail_major', problem: null, reason: 'beat fits too',
+    })).toEqual({
+      judge_id: 'J', judge_name: 'Chỉ một đáp án', judge_revision_id: 'R2', revision: 2, criterion: 'single_answer', verdict: 'fail_major', problem: null, reason: 'beat fits too',
+    });
   });
 });

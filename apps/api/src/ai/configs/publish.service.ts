@@ -219,7 +219,8 @@ export class PublishService {
   /** The newest complete run ("xong trọn", design §5.3) of a config at a version on a set, with its items; null when there is none. */
   private async completeRun(configId: string, configVersion: number, setId: string): Promise<{ id: string; items: RunItemResult[] } | null> {
     const runs = await this.prisma.aiEvalRun.findMany({
-      where: { configId, configVersion, setId, status: 'finished' }, orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      // A run "deleted" while it held labels is hidden and answers 404, so it is no evidence either (nhóm B M3).
+      where: { configId, configVersion, setId, status: 'finished', hiddenAt: null }, orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
     });
     if (runs.length === 0) return null;
     const rows = await this.prisma.aiEvalRunItem.findMany({ where: { runId: { in: runs.map((run) => run.id) } }, orderBy: [{ position: 'asc' }, { id: 'asc' }] });

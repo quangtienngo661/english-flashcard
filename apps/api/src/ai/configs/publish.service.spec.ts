@@ -23,7 +23,7 @@ const config = (over: Partial<Cfg> = {}): Cfg => ({
   status: 'published', createdFrom: null, note: null, createdBy: ADMIN, createdAt: NOW, publishedBy: ADMIN, publishedAt: NOW, ...over,
 });
 
-type Run = { id: string; configId: string; configVersion: number; setId: string; status: string; createdAt: Date };
+type Run = { id: string; configId: string; configVersion: number; setId: string; status: string; createdAt: Date; hiddenAt?: Date | null };
 type Item = { runId: string; exampleId: string; position: number; split: string; status: string; rule: unknown; expectedResult: string | null };
 const run = (configId: string, configVersion: number, over: Partial<Run> = {}): Run => ({
   id: randomUUID(), configId, configVersion, setId: SET, status: 'finished', createdAt: NOW, ...over,
@@ -80,8 +80,9 @@ function setup(opts: Setup = {}) {
       findMany: vi.fn(async ({ where }: { where: { id: { in: string[] } } }) => configs.filter((r) => where.id.in.includes(r.id)).map(withModel)),
     },
     aiEvalRun: {
-      findMany: vi.fn(async ({ where }: { where: { configId: string; configVersion: number; setId: string; status: string } }) =>
-        runs.filter((r) => r.configId === where.configId && r.configVersion === where.configVersion && r.setId === where.setId && r.status === where.status)
+      findMany: vi.fn(async ({ where }: { where: { configId: string; configVersion: number; setId: string; status: string; hiddenAt?: null } }) =>
+        runs.filter((r) => r.configId === where.configId && r.configVersion === where.configVersion && r.setId === where.setId && r.status === where.status
+          && (where.hiddenAt === undefined || (r.hiddenAt ?? null) === where.hiddenAt))
           .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime() || (a.id < b.id ? 1 : -1))),
     },
     aiEvalRunItem: {
@@ -161,6 +162,29 @@ describe('PublishService.check (design §6.3)', () => {
     ctx.runs.push(older, newer, elsewhere);
     ctx.items.push(...goodItems(older.id), ...goodItems(newer.id), ...goodItems(elsewhere.id));
     expect((await ctx.service.check(OP)).candidate_run_id).toBe(newer.id);
+  });
+
+  it('M3-T11: a hidden run ("deleted" with labels) is no candidate: the run before it is, and with none left the blocker is eval-required', async () => {
+    const ctx = setup();
+    const before = run(ctx.draft.id, 1, { createdAt: new Date(NOW.getTime() - 1000) });
+    const newest = run(ctx.draft.id, 1, { hiddenAt: NOW });
+    ctx.runs.push(before, newest);
+    ctx.items.push(...goodItems(before.id), ...goodItems(newest.id));
+    expect((await ctx.service.check(OP)).candidate_run_id).toBe(before.id);
+    before.hiddenAt = NOW;
+    expect(await ctx.service.check(OP)).toMatchObject({ candidate_run_id: null, blockers: expect.arrayContaining(['eval-required']) });
+    expect(ctx.prisma.aiEvalRun.findMany).toHaveBeenCalledWith(expect.objectContaining({ where: expect.objectContaining({ hiddenAt: null }) }));
+  });
+
+  it('M3-T11: a hidden run is no baseline either → baseline-required, and a run the check named never answers 404 afterwards', async () => {
+    const ctx = setup();
+    const candidate = run(ctx.draft.id, ctx.draft.version);
+    const baseline = run(ctx.live.id, ctx.live.version, { hiddenAt: NOW });
+    ctx.runs.push(candidate, baseline);
+    ctx.items.push(...goodItems(candidate.id), ...goodItems(baseline.id));
+    expect(await ctx.service.check(OP)).toMatchObject({ candidate_run_id: candidate.id, baseline: { required: true, run_id: null }, blockers: ['baseline-required'] });
+    baseline.hiddenAt = null;
+    expect(await ctx.service.check(OP)).toMatchObject({ baseline: { required: true, run_id: baseline.id }, blockers: [] });
   });
 
   it('both runs present → the warnings of the gate, no blocker', async () => {

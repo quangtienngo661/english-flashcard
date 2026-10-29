@@ -27,6 +27,12 @@ export type LabelView = {
   subject_kind: SubjectKind; subject_id: string; criterion: string; verdict: JudgeVerdict | null; labeled_by_user: UserRef | null; labeled_at: string | null;
 };
 
+/** One score of an output as the API shows it: which judge revision, which criterion, the verdict or why there is none. */
+export type ScoreView = {
+  judge_id: string; judge_name: string; judge_revision_id: string; revision: number; criterion: string; verdict: JudgeVerdict | null;
+  problem: string | null; reason: string | null;
+};
+
 /** What the gateway returns for the `judge` operation: parallel arrays, one entry per answered criterion. */
 export type JudgeAnswer = { codes: string[]; verdicts: string[]; reasons: string[] };
 

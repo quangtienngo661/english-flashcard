@@ -1,7 +1,7 @@
 import type { Tally } from '../configs/configs.types.js';
 import type { EvalSplit } from '../eval/eval.types.js';
 import type { Agreement } from './agreement.js';
-import type { JudgeTally, JudgeVerdict } from './judge.types.js';
+import type { JudgeTally, JudgeVerdict, ScoreView } from './judge.types.js';
 
 /** One judge score of one run item, with the item's split (what the run stats are built from). */
 export type RunJudgeScore = {
@@ -24,6 +24,12 @@ export type JudgeStatsRow = RevisionKey & { criterion: string; dev: JudgeTally; 
 
 export type JudgeComparisonRow = RevisionKey & { criterion: string; a: SplitTallies; b: SplitTallies };
 export type JudgeUnmatched = RevisionKey & { scored: 'a' | 'b' };
+
+/** A score as an item shows it: the item id and the split stay out (the item already says both). */
+export const toScoreView = (score: RunJudgeScore): ScoreView => ({
+  judge_id: score.judgeId, judge_name: score.judgeName, judge_revision_id: score.judgeRevisionId, revision: score.revision, criterion: score.criterion,
+  verdict: score.verdict, problem: score.problem, reason: score.reason,
+});
 
 export function judgeTally(verdicts: Array<JudgeVerdict | null>): JudgeTally {
   const tally: JudgeTally = { pass: 0, fail_major: 0, fail_minor: 0, unjudged: 0 };
