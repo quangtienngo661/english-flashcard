@@ -14,6 +14,10 @@ import { EvalSetsService } from '../eval/eval-sets.service.js';
 const idParams = z.strictObject({ id: z.uuid().transform((value) => value.toLowerCase()) });
 const examplesQuery = z.strictObject({ operation: z.enum(AI_OPERATIONS) });
 const freezeBody = z.strictObject({ operation: z.enum(AI_OPERATIONS) });
+const compareQuery = z.strictObject({
+  a: z.uuid().transform((value) => value.toLowerCase()),
+  b: z.uuid().transform((value) => value.toLowerCase()),
+});
 const formsQuery = z.strictObject({ word: z.string().min(1).max(WORD_MAX), part_of_speech: z.enum([...AI_VALID_POS, AI_POS_UNSET]) });
 const runsQuery = z.strictObject({
   operation: z.enum(AI_OPERATIONS),
@@ -112,6 +116,12 @@ export class AdminAiEvalController {
   @Get('runs')
   listRuns(@Query({ schema: runsQuery }) query: z.infer<typeof runsQuery>) {
     return this.runs.list(query.operation, query.page_size, query.page_token, query.set_id);
+  }
+
+  /** Two runs on the same frozen version; declared before `runs/:id` so `compare` is not read as an id. */
+  @Get('runs/compare')
+  compareRuns(@Query({ schema: compareQuery }) query: z.infer<typeof compareQuery>) {
+    return this.runs.compare(query.a, query.b);
   }
 
   @Get('runs/:id')

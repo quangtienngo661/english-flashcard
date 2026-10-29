@@ -36,7 +36,7 @@ function setup() {
     },
     aiEvalRun: {
       create: vi.fn(),
-      findUnique: vi.fn(async (): Promise<Record<string, unknown> | null> => null),
+      findUnique: vi.fn(async (_args?: unknown): Promise<Record<string, unknown> | null> => null),
       findMany: vi.fn(async (): Promise<Array<Record<string, unknown>>> => []),
       updateMany: vi.fn(async (): Promise<{ count: number }> => ({ count: 0 })),
       deleteMany: vi.fn(async (): Promise<{ count: number }> => ({ count: 0 })),
@@ -327,6 +327,69 @@ describe('EvalRunsService.create on a frozen version (design §5.3, B8)', () => 
   it('a set_id that is not a uuid → 400', async () => {
     const ctx = setup();
     expect((await problemOf(ctx.service.create(ADMIN, { operation: 'generate_cloze', prompt: 'current', set_id: 'x' }))).status).toBe(400);
+  });
+});
+
+describe('EvalRunsService.compare (B10, D20)', () => {
+  const [A, B] = [randomUUID(), randomUUID()];
+  const IN_X1 = { word: 'x1' };
+  const pass = { status: 'pass', problems: [], reason: null };
+  const fail = { status: 'fail', problems: ['reveals-word'], reason: null };
+  const row = (id: string, over: Record<string, unknown> = {}) => ({ ...runRow(ADMIN, id), status: 'finished', setId: 'S1', ...over });
+  const itemOf = (runId: string, exampleId: string, position: number, over: Record<string, unknown> = {}) =>
+    itemRow(exampleId, position, { runId, status: 'succeeded', rule: pass, expectedResult: 'pass', input: exampleId === 'x1' ? IN_X1 : { word: exampleId }, ...over });
+
+  function compareCtx(runs: Record<string, Record<string, unknown> | null>, items: Record<string, Array<Record<string, unknown>>>) {
+    const ctx = setup();
+    ctx.prisma.aiEvalRun.findUnique.mockImplementation(async (args: unknown) => runs[(args as { where: { id: string } }).where.id] ?? null);
+    ctx.prisma.aiEvalRunItem.findMany.mockImplementation(async (args: unknown) => items[(args as { where: { runId: string } }).where.runId] ?? []);
+    ctx.prisma.aiEvalSet.findMany.mockResolvedValue([{ id: 'S1', version: 1 }]);
+    return ctx;
+  }
+
+  const aItems = [
+    itemOf(A, 'x1', 0), itemOf(A, 'x2', 1), itemOf(A, 'x3', 2, { status: 'permanent_failure', rule: null, expectedResult: null }),
+    itemOf(A, 'x4', 3), itemOf(A, 'h1', 4, { split: 'held_out' }), itemOf(A, 'h2', 5, { split: 'held_out' }),
+  ];
+  const bItems = [
+    itemOf(B, 'x1', 0, { rule: fail }), itemOf(B, 'x2', 1), itemOf(B, 'x3', 2), itemOf(B, 'x4', 3, { status: 'pending', rule: null, expectedResult: null }),
+    itemOf(B, 'h1', 4, { split: 'held_out', expectedResult: 'fail' }), itemOf(B, 'h2', 5, { split: 'held_out' }),
+  ];
+
+  it('the dev examples that passed before and do not now, with the later run input; held-out only as a count', async () => {
+    const ctx = compareCtx({ [A]: row(A), [B]: row(B) }, { [A]: aItems, [B]: bItems });
+    const view = await ctx.service.compare(A, B);
+    expect(view.regressions).toEqual({ dev: [{ example_id: 'x1', input: IN_X1, failed: ['rule'] }], held_out: 1 });
+    expect(JSON.stringify(view)).not.toContain('"h1"');
+    expect(view.a).toMatchObject({ id: A, set_id: 'S1', set_version: 1 });
+    expect(view.b).toMatchObject({ id: B });
+    expect(view.stats.a.dev).toMatchObject({ total: 4, failing: 1 });
+    expect(view.stats.b.held_out).toMatchObject({ total: 2, expected_fail: 1, failing: 1 });
+  });
+
+  it('different versions → 409 eval-set-mismatch', async () => {
+    const ctx = compareCtx({ [A]: row(A), [B]: row(B, { setId: 'S2' }) }, {});
+    expect(await problemOf(ctx.service.compare(A, B))).toMatchObject({ status: 409, type: 'eval-set-mismatch' });
+  });
+
+  it('a run on the working set (no version) on either side → 409 eval-set-mismatch', async () => {
+    const ctx = compareCtx({ [A]: row(A, { setId: null }), [B]: row(B) }, {});
+    expect(await problemOf(ctx.service.compare(A, B))).toMatchObject({ status: 409, type: 'eval-set-mismatch' });
+    expect(await problemOf(ctx.service.compare(B, A))).toMatchObject({ status: 409, type: 'eval-set-mismatch' });
+    const both = compareCtx({ [A]: row(A, { setId: null }), [B]: row(B, { setId: null }) }, {});
+    expect(await problemOf(both.service.compare(A, B))).toMatchObject({ status: 409, type: 'eval-set-mismatch' });
+  });
+
+  it('a missing run on either side → 404 not-found', async () => {
+    const ctx = compareCtx({ [A]: row(A) }, {});
+    expect(await problemOf(ctx.service.compare(A, B))).toMatchObject({ status: 404, type: 'not-found' });
+    expect(await problemOf(ctx.service.compare(B, A))).toMatchObject({ status: 404, type: 'not-found' });
+  });
+
+  it('a run compared with itself has no regression', async () => {
+    const ctx = compareCtx({ [A]: row(A) }, { [A]: aItems });
+    const view = await ctx.service.compare(A, A);
+    expect(view.regressions).toEqual({ dev: [], held_out: 0 });
   });
 });
 

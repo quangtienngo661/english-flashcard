@@ -18,7 +18,7 @@ import { SelectionReader } from '../runner/selection.js';
 import { EvalQueue } from './eval-queue.service.js';
 import type { EvalRunStatus } from './eval-runs.repository.js';
 import type { EvalSplit, ExpectedResult, RuleResult, RunItemStatus } from './eval.types.js';
-import { isComplete, runStats, type RunItemResult } from './run-stats.js';
+import { compareRuns, isComplete, runStats, type RunItemResult } from './run-stats.js';
 
 /** Body of `POST /v1/admin/ai/eval/runs` (design §10): the prompt in use, or a draft checked by the save rules. */
 export const createRunSchema = z.strictObject({
@@ -178,11 +178,41 @@ export class EvalRunsService {
     const run = await this.prisma.aiEvalRun.findUnique({ where: { id }, select: { id: true } });
     if (!run) throw problem(404, 'not-found', 'Not found');
     const rows = await this.prisma.aiEvalRunItem.findMany({ where: { runId: id }, orderBy: [{ position: 'asc' }, { id: 'asc' }] });
-    const results: RunItemResult[] = rows.map((row) => ({
-      exampleId: row.exampleId, position: row.position, split: row.split as EvalSplit, status: row.status as RunItemStatus,
-      rule: row.rule as RuleResult | null, expectedResult: row.expectedResult as ExpectedResult | null,
-    }));
+    const { results } = await this.resultsOf(id, rows);
     return { items: rows.filter((row) => row.split === 'dev' && row.status !== 'pending').map(itemView), stats: runStats(results) };
+  }
+
+  /**
+   * Two runs on the same frozen version (D20): both summaries, both statistics, and the dev examples that passed in `a` ("trước") and do not
+   * in `b` ("nay"), each with `b`'s input. A held-out regression is only counted (R7). A run on the working set cannot be compared (B10).
+   */
+  async compare(a: string, b: string) {
+    const [rowA, rowB] = await Promise.all([this.prisma.aiEvalRun.findUnique({ where: { id: a } }), this.prisma.aiEvalRun.findUnique({ where: { id: b } })]);
+    if (!rowA || !rowB) throw problem(404, 'not-found', 'Not found');
+    if (rowA.setId === null || rowA.setId !== rowB.setId) throw problem(409, 'eval-set-mismatch', 'The runs are not on the same set version');
+    const [itemsA, itemsB] = await Promise.all([this.resultsOf(a), this.resultsOf(b)]);
+    const compared = compareRuns(itemsA.results, itemsB.results);
+    const [emails, extras] = await Promise.all([this.identity.emailsOf([rowA.startedBy, rowB.startedBy]), this.extras([rowA, rowB])]);
+    return {
+      a: summary(rowA, extras.get(rowA.id)!, emails),
+      b: summary(rowB, extras.get(rowB.id)!, emails),
+      stats: { a: compared.a, b: compared.b },
+      regressions: {
+        dev: compared.regressions.dev.map(({ exampleId, failed }) => ({ example_id: exampleId, input: itemsB.inputs.get(exampleId) ?? null, failed })),
+        held_out: compared.regressions.held_out,
+      },
+    };
+  }
+
+  private async resultsOf(runId: string, loaded?: ItemRecord[]): Promise<{ results: RunItemResult[]; inputs: Map<string, unknown> }> {
+    const rows = loaded ?? await this.prisma.aiEvalRunItem.findMany({ where: { runId }, orderBy: [{ position: 'asc' }, { id: 'asc' }] });
+    return {
+      results: rows.map((row) => ({
+        exampleId: row.exampleId, position: row.position, split: row.split as EvalSplit, status: row.status as RunItemStatus,
+        rule: row.rule as RuleResult | null, expectedResult: row.expectedResult as ExpectedResult | null,
+      })),
+      inputs: new Map(rows.map((row) => [row.exampleId, row.input])),
+    };
   }
 
   /** The examples a new run takes: the items of a frozen version, or the working set; a version of another operation is refused. */

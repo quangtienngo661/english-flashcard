@@ -24,7 +24,7 @@ describe('admin ai eval HTTP (unit, mocked services)', () => {
   const hit = vi.spyOn(RateLimiter.prototype, 'hit');
   let examples: Record<'list' | 'create' | 'createMany' | 'update' | 'remove' | 'forms' | 'reveal', ReturnType<typeof vi.spyOn>>;
   let sets: Record<'freeze' | 'list' | 'get', ReturnType<typeof vi.spyOn>>;
-  let runs: Record<'list' | 'get' | 'cancel' | 'remove' | 'items', ReturnType<typeof vi.spyOn>>;
+  let runs: Record<'list' | 'get' | 'cancel' | 'remove' | 'items' | 'compare', ReturnType<typeof vi.spyOn>>;
   const auth = () => ({ Authorization: `Bearer ${token}` });
   const id = randomUUID();
   const http = () => ctx.http();
@@ -42,7 +42,7 @@ describe('admin ai eval HTTP (unit, mocked services)', () => {
     const ss = ctx.app.get(EvalSetsService);
     sets = { freeze: vi.spyOn(ss, 'freeze'), list: vi.spyOn(ss, 'list'), get: vi.spyOn(ss, 'get') };
     runs = { list: vi.spyOn(rs, 'list'), get: vi.spyOn(rs, 'get'), cancel: vi.spyOn(rs, 'cancel'), remove: vi.spyOn(rs, 'remove'),
-      items: vi.spyOn(rs, 'items') };
+      items: vi.spyOn(rs, 'items'), compare: vi.spyOn(rs, 'compare') };
   });
   beforeEach(async () => {
     actorId = randomUUID(); role = 'admin';
@@ -56,7 +56,7 @@ describe('admin ai eval HTTP (unit, mocked services)', () => {
     sets.freeze.mockReset().mockResolvedValue({ id }); sets.list.mockReset().mockResolvedValue({ items: [] }); sets.get.mockReset().mockResolvedValue({ id, items: [] });
     runs.list.mockReset().mockResolvedValue({ items: [], next_page_token: null }); runs.get.mockReset().mockResolvedValue({ id });
     runs.cancel.mockReset().mockResolvedValue({ id, status: 'failed', error: 'cancelled' }); runs.remove.mockReset().mockResolvedValue(undefined);
-    runs.items.mockReset().mockResolvedValue({ items: [], stats: {} });
+    runs.items.mockReset().mockResolvedValue({ items: [], stats: {} }); runs.compare.mockReset().mockResolvedValue({ regressions: {} });
     hit.mockReset().mockResolvedValue(undefined);
   });
   afterAll(async () => { await ctx?.close(); vi.restoreAllMocks(); });
@@ -67,7 +67,7 @@ describe('admin ai eval HTTP (unit, mocked services)', () => {
       'DELETE /v1/admin/ai/eval/examples/:id', 'DELETE /v1/admin/ai/eval/runs/:id', 'GET /v1/admin/ai/eval/examples',
       'GET /v1/admin/ai/eval/examples/forms', 'GET /v1/admin/ai/eval/sets', 'GET /v1/admin/ai/eval/sets/:id', 'POST /v1/admin/ai/eval/sets',
       'POST /v1/admin/ai/eval/examples/:id/reveal',
-      'GET /v1/admin/ai/eval/runs', 'GET /v1/admin/ai/eval/runs/:id', 'GET /v1/admin/ai/eval/runs/:id/items', 'PATCH /v1/admin/ai/eval/examples/:id',
+      'GET /v1/admin/ai/eval/runs', 'GET /v1/admin/ai/eval/runs/:id', 'GET /v1/admin/ai/eval/runs/:id/items', 'GET /v1/admin/ai/eval/runs/compare', 'PATCH /v1/admin/ai/eval/examples/:id',
       'POST /v1/admin/ai/eval/examples', 'POST /v1/admin/ai/eval/examples/bulk', 'POST /v1/admin/ai/eval/runs',
       'POST /v1/admin/ai/eval/runs/:id/cancel',
     ].sort());
@@ -140,6 +140,15 @@ describe('admin ai eval HTTP (unit, mocked services)', () => {
     expect((await http().get('/v1/admin/ai/eval/runs').set(auth()).query({ operation: 'generate_cloze', set_id: set })).status).toBe(200);
     expect(runs.list).toHaveBeenCalledWith('generate_cloze', 20, undefined, set);
     expect((await http().get('/v1/admin/ai/eval/runs').set(auth()).query({ operation: 'generate_cloze', set_id: 'nope' })).status).toBe(400);
+  });
+
+  it('B10: GET /runs/compare is not read as a run id; it needs two uuids', async () => {
+    const [a, b] = [randomUUID(), randomUUID()];
+    expect((await http().get('/v1/admin/ai/eval/runs/compare').set(auth()).query({ a, b })).status).toBe(200);
+    expect(runs.compare).toHaveBeenCalledWith(a, b);
+    expect(runs.get).not.toHaveBeenCalled();
+    expect((await http().get('/v1/admin/ai/eval/runs/compare').set(auth()).query({ a })).status).toBe(400);
+    expect((await http().get('/v1/admin/ai/eval/runs/compare').set(auth()).query({ a, b: 'x' })).status).toBe(400);
   });
 
   it('an editor gets 403 on the bulk route', async () => {
