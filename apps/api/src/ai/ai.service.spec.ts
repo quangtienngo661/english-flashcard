@@ -268,3 +268,35 @@ describe('AiService.secondTries', () => {
     expect(sql).toContain('created_at >= ? AND created_at < ?');
   });
 });
+
+describe('AiService.realJudgeScores (M5-T5, design §8.3)', () => {
+  const START = new Date('2026-09-20T17:00:00.000Z');
+  const END = new Date('2026-10-20T17:00:00.000Z');
+
+  it('asks for the scores of real questions of real passes made in [start, end), and binds exactly those two instants', async () => {
+    const { service, queries } = setup(undefined, []);
+    await service.realJudgeScores({ start: START, end: END });
+    expect(queries).toHaveLength(1);
+    expect(queries[0].sql).toContain("s.subject_kind = 'real_question'");
+    expect(queries[0].sql).toContain("p.kind = 'real'");
+    expect(queries[0].sql).toContain('s.created_at >= ? AND s.created_at < ?');
+    expect(queries[0].values).toEqual([START, END]);
+  });
+
+  it('a row becomes a score; a pass that is not finished is passFinished false, a null verdict stays null', async () => {
+    const at = new Date('2026-10-19T03:00:00Z');
+    const { service } = setup(undefined, [
+      { subject_id: 'q1', pass_id: 'P1', pass_finished: true, judge_revision_id: 'jr1', criterion: 'one_answer', verdict: 'pass', created_at: at },
+      { subject_id: 'q2', pass_id: 'P3', pass_finished: false, judge_revision_id: 'jr1', criterion: 'one_answer', verdict: null, created_at: at },
+    ]);
+    expect(await service.realJudgeScores({ start: START, end: END })).toEqual([
+      { subjectId: 'q1', passId: 'P1', passFinished: true, judgeRevisionId: 'jr1', criterion: 'one_answer', verdict: 'pass', scoredAt: at },
+      { subjectId: 'q2', passId: 'P3', passFinished: false, judgeRevisionId: 'jr1', criterion: 'one_answer', verdict: null, scoredAt: at },
+    ]);
+  });
+
+  it('no score → []', async () => {
+    const { service } = setup(undefined, []);
+    expect(await service.realJudgeScores({ start: START, end: END })).toEqual([]);
+  });
+});

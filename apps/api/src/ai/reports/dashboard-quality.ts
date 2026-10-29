@@ -43,3 +43,33 @@ export type LatestEvalView = {
     judge: Array<{ judge_revision_id: string; criterion: string; dev: VerdictCounts; held_out: VerdictCounts }>;
   } | null;
 };
+
+/**
+ * The judge's scores of one operation, from one source, for one (config number, model) pair, one judge revision and one criterion (R12: never by
+ * number alone). `config_number` / `model` are null for a real question whose `ai_meta` did not say. `first_scored_at` is where the admin draws
+ * the point on the time axis.
+ */
+export type JudgeScoreGroup = {
+  operation: AiOperation;
+  source: 'eval' | 'real';
+  config_number: number | null;
+  model: string | null;
+  judge_revision_id: string;
+  criterion: string;
+  counts: VerdictCounts;
+  first_scored_at: string;
+};
+
+/**
+ * One score of a real question, as `ai` hands it to Practice (which knows the question's `ai_meta`): `subjectId` is the question id, `passFinished`
+ * whether the pass that made the score has finished.
+ */
+export type RealJudgeScore = {
+  subjectId: string;
+  passId: string;
+  passFinished: boolean;
+  judgeRevisionId: string;
+  criterion: string;
+  verdict: JudgeVerdict | null;
+  scoredAt: Date;
+};

@@ -1,15 +1,18 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { PRISMA_CLIENT } from '../../common/db/prisma.module.js';
 import { Prisma, type PrismaClient } from '../../generated/prisma/client.js';
-import { AI_OPERATIONS } from '../ai.types.js';
+import { AI_OPERATIONS, type AiOperation } from '../ai.types.js';
 import type { EvalSplit, ExpectedResult, RuleResult, RunItemStatus } from '../eval/eval.types.js';
 import { EvalSetsService } from '../eval/eval-sets.service.js';
 import { isComplete, runStats, type RunItemResult } from '../eval/run-stats.js';
 import { JudgeAgreement } from '../judge/agreement.service.js';
 import type { JudgeCriterion, JudgeVerdict } from '../judge/judge.types.js';
-import { countVerdicts, type DashboardJudgeRevision, type LatestEvalView, type VerdictCounts } from './dashboard-quality.js';
+import { countVerdicts, type DashboardJudgeRevision, type JudgeScoreGroup, type LatestEvalView, type VerdictCounts } from './dashboard-quality.js';
 
 type RevisionRow = { id: string; judge_id: string; judge_name: string; revision: number; saved_at: Date; criteria: unknown };
+type GroupRow = VerdictCounts & {
+  operation: AiOperation; config_number: number; model: string; judge_revision_id: string; criterion: string; first_scored_at: Date;
+};
 type RunJudgeRow = { judge_revision_id: string; criterion: string; split: EvalSplit; verdict: JudgeVerdict | null; n: number };
 
 /** How many finished runs of the live config are looked through for one that is complete. */
@@ -82,6 +85,38 @@ export class DashboardQualityService {
     const counts = (list: RunJudgeRow[]): VerdictCounts => countVerdicts(list.map(({ verdict, n }) => ({ verdict, n })));
     return [...groups.values()].map((group) => ({
       judge_revision_id: group.judge_revision_id, criterion: group.criterion, dev: counts(group.rows.dev), held_out: counts(group.rows.held_out),
+    }));
+  }
+
+  /**
+   * The judge's scores of eval outputs, grouped by operation, (config number, model), judge revision and criterion (design §8.3, R12). Only runs
+   * on the operation's newest frozen set count, and of those only runs of a config at its current version (an older draft version, a deleted
+   * draft and a draft prompt of the Prompt page are left out) or runs made before configs existed (numbered by their prompt revision). Hidden
+   * items and hidden runs are left out (Review focus 2).
+   */
+  async evalJudgeGroups(): Promise<JudgeScoreGroup[]> {
+    const setIds = (await Promise.all(AI_OPERATIONS.map((operation) => this.sets.latest(operation)))).flatMap((set) => (set ? [set.id] : []));
+    if (setIds.length === 0) return [];
+    const rows = await this.prisma.$queryRaw<GroupRow[]>(Prisma.sql`
+      SELECT r.operation, COALESCE(c.number, r.prompt_revision) AS config_number, r.model, s.judge_revision_id::text AS judge_revision_id, s.criterion,
+        (count(*) FILTER (WHERE s.verdict = 'pass'))::int AS pass,
+        (count(*) FILTER (WHERE s.verdict = 'fail_major'))::int AS fail_major,
+        (count(*) FILTER (WHERE s.verdict = 'fail_minor'))::int AS fail_minor,
+        (count(*) FILTER (WHERE s.verdict IS NULL))::int AS unscored,
+        min(s.created_at) AS first_scored_at
+      FROM ai_judge_scores s
+      JOIN ai_eval_run_items i ON i.id = s.subject_id
+      JOIN ai_eval_runs r ON r.id = i.run_id
+      LEFT JOIN ai_configs c ON c.id = r.config_id
+      WHERE s.subject_kind = 'eval_item' AND NOT i.hidden AND r.hidden_at IS NULL
+        AND r.set_id = ANY(${setIds}::uuid[])
+        AND ((c.id IS NOT NULL AND c.version = r.config_version) OR (r.config_id IS NULL AND r.prompt_revision IS NOT NULL))
+      GROUP BY r.operation, COALESCE(c.number, r.prompt_revision), r.model, s.judge_revision_id, s.criterion
+      ORDER BY first_scored_at, config_number, r.operation, r.model, s.judge_revision_id, s.criterion`);
+    return rows.map((row) => ({
+      operation: row.operation, source: 'eval', config_number: row.config_number, model: row.model, judge_revision_id: row.judge_revision_id,
+      criterion: row.criterion, counts: { pass: row.pass, fail_major: row.fail_major, fail_minor: row.fail_minor, unscored: row.unscored },
+      first_scored_at: row.first_scored_at.toISOString(),
     }));
   }
 

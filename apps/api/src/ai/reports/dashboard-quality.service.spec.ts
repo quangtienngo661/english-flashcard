@@ -222,3 +222,58 @@ describe('DashboardQualityService.latestEvals (M5-T4, design §8.2)', () => {
     expect(JSON.stringify(cloze)).not.toMatch(/"e[123]"|exampleId|example_id|input|output/);
   });
 });
+
+// ---- M5-T5: judge groups from eval -----------------------------------------------------------------------------------------------------
+
+const GROUP_ROW = {
+  operation: 'generate_cloze', config_number: 4, model: 'fake:ok', judge_revision_id: 'jr1', criterion: 'one_answer',
+  pass: 3, fail_major: 1, fail_minor: 0, unscored: 0, first_scored_at: new Date('2026-11-02T03:00:00Z'),
+};
+
+describe('DashboardQualityService.evalJudgeGroups (M5-T5, design §8.3)', () => {
+  it('Review focus 1, 2: only scores of items that are not hidden, of runs on the newest frozen set, of a config at its current version or of a run from before M2', async () => {
+    const { service, statements, sets } = setup(() => [GROUP_ROW]);
+    sets.latest.mockImplementation(async (operation: string) => (operation === 'generate_cloze' ? { id: 'S2', version: 2 } : null));
+    const groups = await service.evalJudgeGroups();
+    expect(statements).toHaveLength(1);
+    expect(statements[0].values).toEqual([['S2']]);
+    expect(statements[0].sql).toContain("s.subject_kind = 'eval_item'");
+    expect(statements[0].sql).toContain('NOT i.hidden');
+    expect(statements[0].sql).toContain('r.hidden_at IS NULL');
+    expect(statements[0].sql).toContain('c.version = r.config_version');
+    expect(statements[0].sql).toContain('r.prompt_revision IS NOT NULL');
+    expect(statements[0].sql).toContain('r.set_id = ANY(');
+    expect(groups).toHaveLength(1);
+  });
+
+  it('a row becomes a group: source eval, the number, the model, the revision, the criterion, its counts and when it was first scored', async () => {
+    const { service, sets } = setup(() => [GROUP_ROW]);
+    sets.latest.mockImplementation(async (operation: string) => (operation === 'generate_cloze' ? { id: 'S2', version: 2 } : null));
+    expect(await service.evalJudgeGroups()).toEqual([{
+      operation: 'generate_cloze', source: 'eval', config_number: 4, model: 'fake:ok', judge_revision_id: 'jr1', criterion: 'one_answer',
+      counts: { pass: 3, fail_major: 1, fail_minor: 0, unscored: 0 }, first_scored_at: '2026-11-02T03:00:00.000Z',
+    }]);
+  });
+
+  it('every operation with a frozen set is asked for, its newest set only, in one statement', async () => {
+    const { service, statements, sets } = setup(() => []);
+    sets.latest.mockImplementation(async (operation: string) => ({ generate_cloze: { id: 'S2', version: 2 }, lookup_word: { id: 'S5', version: 1 } } as Record<string, { id: string; version: number }>)[operation] ?? null);
+    await service.evalJudgeGroups();
+    expect(statements).toHaveLength(1);
+    expect(statements[0].values).toEqual([['S2', 'S5']]);
+  });
+
+  it('no frozen set at all → [] and no statement', async () => {
+    const { service, statements } = setup(() => [GROUP_ROW]);
+    expect(await service.evalJudgeGroups()).toEqual([]);
+    expect(statements).toEqual([]);
+  });
+
+  it('the groups are ordered by when they were first scored, then by number (the order the statement asks for)', async () => {
+    const { service, statements, sets } = setup(() => []);
+    sets.latest.mockImplementation(async () => ({ id: 'S2', version: 2 }));
+    await service.evalJudgeGroups();
+    expect(statements[0].sql).toContain('GROUP BY r.operation, COALESCE(c.number, r.prompt_revision), r.model, s.judge_revision_id, s.criterion');
+    expect(statements[0].sql).toContain('ORDER BY first_scored_at, config_number');
+  });
+});

@@ -13,3 +13,4 @@ export type { ExpectedForms } from './eval/expected.js';
 export type { RuleResult } from './eval/eval.types.js';
 export type { JudgeCriterion, JudgeSubject, JudgeVerdict } from './judge/judge.types.js';
 export type { RealJudgeTarget, RealPassItem, RealPassView } from './judge/real-passes.reader.js';
+export { countVerdicts, type JudgeScoreGroup, type RealJudgeScore, type VerdictCounts } from './reports/dashboard-quality.js';
