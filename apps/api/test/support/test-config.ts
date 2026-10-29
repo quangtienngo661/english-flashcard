@@ -48,6 +48,7 @@ export function testConfig(overrides?: Partial<AppConfig>): AppConfig {
     reminders: { tickSeconds: 1, runScheduler: false, retryBackoffMs: 10 },
     billing: { production: false, fakeEnabled: false, fakeSecret: null, fakeFetchState: true },
     ai: { openaiApiKey: null, anthropicApiKey: null, fakeEnabled: false },
+    google: { mode: 'off', clientId: null, clientSecret: null, redirectUri: null, apiOrigin: null, cookieKey: randomBytes(32) },
     limits,
     ...overrides,
   };
