@@ -15,7 +15,7 @@ import { StaffService } from './staff.service.js';
 
 describe('StaffService (unit, isolated persistence)', () => {
   const tx = { $executeRaw: vi.fn(), user: { findUnique: vi.fn(), count: vi.fn(), update: vi.fn() } };
-  const prisma = { $transaction: vi.fn(), user: { findUnique: vi.fn(), findMany: vi.fn() } };
+  const prisma = { $transaction: vi.fn(), user: { findUnique: vi.fn(), findMany: vi.fn(), count: vi.fn() } };
   const write = vi.fn();
   const target = { id: randomUUID(), email: 'a@example.com', emailVerifiedAt: new Date(), staffRole: 'admin' as string | null,
     givenName: null as string | null, familyName: null as string | null };
@@ -38,6 +38,13 @@ describe('StaffService (unit, isolated persistence)', () => {
     expect(tx.$executeRaw.mock.invocationCallOrder[0]).toBeLessThan(tx.user.findUnique.mock.invocationCallOrder[0]);
     expect(prisma.$transaction).toHaveBeenCalledWith(expect.any(Function), { timeout: 10_000, maxWait: 5_000 });
   };
+  it('final review M6: isLastAdmin counts the other admins that are not deleting (the same rule as the delete itself); none → true', async () => {
+    prisma.user.count.mockResolvedValue(0);
+    await expect(staff.isLastAdmin(target.id)).resolves.toBe(true);
+    expect(prisma.user.count).toHaveBeenCalledWith({ where: { staffRole: 'admin', status: { not: 'deleting' }, id: { not: target.id } } });
+    prisma.user.count.mockResolvedValue(1);
+    await expect(staff.isLastAdmin(target.id)).resolves.toBe(false);
+  });
   it('B1#27: changes role under the staff lock, then logs ids after commit with operation_id', async () => {
     write.mockImplementation(() => { expect(committed).toBe(true); });
     const result = await runWithOperationId('operation', () => staff.setStaffRole('actor', target.id, 'editor'));

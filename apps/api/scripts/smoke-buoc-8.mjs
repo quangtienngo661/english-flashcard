@@ -454,6 +454,9 @@ async function main() {
 
   await step('B8E40', 'two admins delete each other at once while the staff-role lock is held: exactly one 204 and one 409 last-admin', async () => {
     check(Number(psql(`SELECT count(*) FROM users WHERE staff_role = 'admin' AND status <> 'deleting'`)) === 2, 'this step needs exactly two admins: start from a fresh smoke database');
+    // Final review M6: with two admins the screen is told neither is the last one.
+    const before = await want(api('GET', `/v1/admin/users/${S.admin2.id}`, { token: S.admin.token }), 200, 'admin detail (two admins)');
+    check(before.last_admin === false, `last_admin with two admins: ${before.last_admin}`);
     const lockKey = 'identity.staff_role';
     const holder = psqlBackground(`SELECT pg_advisory_lock(hashtextextended('${lockKey}', 0));`);
     await waitFor(() => psql(`SELECT count(*) FROM pg_locks WHERE locktype = 'advisory' AND granted AND database = (SELECT oid FROM pg_database WHERE datname = current_database())`), (n) => Number(n) >= 1, 'psql to hold the staff-role lock', 20_000);
@@ -473,6 +476,9 @@ async function main() {
     // The surviving admin carries on as the operator of the rest of the smoke.
     const survivor = userExists(S.admin.id) ? S.admin : S.admin2;
     S.op = await signIn(survivor);
+    const after = await want(api('GET', `/v1/admin/users/${survivor.id}`, { token: S.op.token }), 200, 'admin detail (one admin)');
+    check(after.last_admin === true, `last_admin for the only admin left: ${after.last_admin}`);
+    ok('final review M6: last_admin false with two admins, true for the survivor');
   });
 
   await step('B8E22 M14', 'a deletion left deleting for 11 minutes is finished by the retry job, with exactly one mail; a cleanup one with none', async () => {
@@ -607,6 +613,28 @@ async function main() {
     check(seconds < 120, `the deletion took ${seconds}s (limit 120 s)`);
     check(psql(`SELECT count(*) FROM learning_log WHERE user_id = '${u.id}'`) === '0' && psql(`SELECT count(*) FROM entries WHERE owner_user_id = '${u.id}'`) === '0', 'rows remain');
     ok(`deleted in ${seconds.toFixed(1)} s (< 120 s)`);
+  });
+
+  await step('final review M4 M8', 'an admin deleting an unverified account sends it no mail; the Google routes answer a rate limit with a redirect back to the app', async () => {
+    const [unverified] = await sqlUsers(['unver'], { verified: false });
+    const deleted = await api('POST', `/v1/admin/users/${unverified.id}/delete`, { token: S.op.token, body: { confirm_email: unverified.email } });
+    check(deleted.status === 204 && !userExists(unverified.id), `admin delete of an unverified account: ${brief(deleted)}`);
+    await sleep(2_000);
+    check(!(await mailsTo(unverified.email)).some(isDeletedMail), 'a "đã xóa" mail went to an address nobody confirmed (M4)');
+
+    resetLimits();
+    const url = `${BASE}/v1/auth/google/start?${new URLSearchParams({ locale: 'en' })}`;
+    const seen = [];
+    // 20 a minute are allowed; 45 calls are over the limit even if the minute rolls over in the middle.
+    for (let i = 0; i < 45; i += 1) {
+      const res = await send(url, { redirect: 'manual' });
+      seen.push({ status: res.status, location: res.headers.get('location') ?? '' });
+    }
+    check(seen.every((r) => r.status === 302), `a non-302 answer: ${JSON.stringify(seen.find((r) => r.status !== 302))}`);
+    const busy = seen.filter((r) => r.location === `${LEARNER}/en/app/login?error=google-busy`);
+    check(busy.length >= 5 && seen[0].location.includes('/v1/dev/google/authorize'), `busy redirects ${busy.length}; first ${seen[0].location}`);
+    resetLimits();
+    ok(`no mail to the unverified address; ${busy.length} of 45 Google start calls were sent back to the login page (google-busy), none got a 429 page`);
   });
 
   console.log(`\n== Bước 8 smoke: ${results.filter((r) => r.status === 'PASS').length}/${results.length} steps in ${Math.round((Date.now() - started) / 1000)} s ==`);

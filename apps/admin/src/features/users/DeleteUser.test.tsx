@@ -48,6 +48,15 @@ describe('users: delete an account (Bước 8)', { timeout: 20_000 }, () => {
     expect(screen.queryByRole('button', { name: t.detail.deleteAction })).not.toBeInTheDocument();
   });
 
+  it('final review M6: the button is hidden when the API says this admin is the last one, and shown for another admin', async () => {
+    const first = renderApp(`/users/${LAN_ID}`, { [LIST]: () => json(page([user()])), [ONE]: () => json(detail({ staff_role: 'admin', last_admin: true })) });
+    expect(await screen.findByText('Asia/Saigon')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: t.detail.deleteAction })).not.toBeInTheDocument();
+    first.unmount();
+    renderApp(`/users/${LAN_ID}`, { [LIST]: () => json(page([user()])), [ONE]: () => json(detail({ staff_role: 'admin', last_admin: false })) });
+    expect(await screen.findByRole('button', { name: t.detail.deleteAction })).toBeInTheDocument();
+  });
+
   it('the dialog names the person, the confirm button waits for the typed email, 204 closes it, says so and goes back to the list', async () => {
     const r = renderApp(`/users/${LAN_ID}`, {
       [LIST]: () => json(page([user()])), [ONE]: () => json(detail()), [DELETE]: () => new Response(null, { status: 204 }),

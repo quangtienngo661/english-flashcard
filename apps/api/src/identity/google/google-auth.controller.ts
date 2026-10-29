@@ -3,6 +3,7 @@ import type { CookieOptions, Request, Response } from 'express';
 import { Clock } from '../../common/clock/clock.js';
 import { APP_CONFIG, type AppConfig } from '../../common/config/app-config.js';
 import { RateLimit } from '../../common/rate-limit/rate-limit.decorator.js';
+import { RateLimiter } from '../../common/rate-limit/rate-limiter.service.js';
 import { ProblemDetailsException } from '../../common/problem-details/problem-details.exception.js';
 import { Public } from '../sessions/public.decorator.js';
 import { googleCompleteSchema, reauthSchema, type GoogleCompleteBody, type ReauthBody } from './google.schemas.js';
@@ -24,12 +25,31 @@ export class GoogleAuthController {
     @Inject(GoogleAuthService) private readonly google: GoogleAuthService,
     @Inject(APP_CONFIG) private readonly config: AppConfig,
     @Inject(Clock) private readonly clock: Clock,
+    @Inject(RateLimiter) private readonly limiter: RateLimiter,
   ) {}
+
+  /**
+   * `start` and `callback` are page navigations, so a rate limit sends the browser back to the app instead of showing a 429 JSON page
+   * (final review M8). Any other failure still propagates.
+   */
+  private async limited(req: Request): Promise<boolean> {
+    if (!req.ip) return false;
+    try {
+      await this.limiter.hit('auth.google.ip', req.ip);
+      return false;
+    } catch (error) {
+      if (error instanceof ProblemDetailsException && error.getStatus() === 429) return true;
+      throw error;
+    }
+  }
 
   @Get('start')
   @Public()
-  @RateLimit('auth.google.ip')
-  async start(@Query() query: Record<string, unknown>, @Res() res: Response): Promise<void> {
+  async start(@Query() query: Record<string, unknown>, @Req() req: Request, @Res() res: Response): Promise<void> {
+    if (await this.limited(req)) {
+      res.redirect(302, this.google.busy({ locale: query.locale, intent: query.intent }).location);
+      return;
+    }
     const result = await this.google.start({ locale: query.locale, next: query.next, intent: query.intent, ticket: query.ticket });
     if (result.oauthCookie) res.cookie(OAUTH_COOKIE, result.oauthCookie, { ...GOOGLE_COOKIE_OPTIONS, maxAge: OAUTH_COOKIE_TTL_S * 1000 });
     res.redirect(302, result.location);
@@ -37,9 +57,13 @@ export class GoogleAuthController {
 
   @Get('callback')
   @Public()
-  @RateLimit('auth.google.ip')
   async callback(@Query() query: Record<string, unknown>, @Req() req: Request, @Res() res: Response): Promise<void> {
     const cookie: unknown = req.cookies?.[OAUTH_COOKIE];
+    if (await this.limited(req)) {
+      res.clearCookie(OAUTH_COOKIE, GOOGLE_COOKIE_OPTIONS);
+      res.redirect(302, this.google.busy({ oauthCookie: typeof cookie === 'string' ? cookie : undefined }).location);
+      return;
+    }
     const result = await this.google.callback(
       { code: query.code, state: query.state, error: query.error, oauthCookie: typeof cookie === 'string' ? cookie : undefined }, res,
     );

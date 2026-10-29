@@ -40,8 +40,12 @@ export class StaffController {
   @RequirePermission('users.read')
   async getUser(@Param({ schema: staffUserParamsSchema }) params: StaffUserParams) {
     const detail = await this.staff.getUserDetail(params.id);
-    // The delete dialog says "auto-renewing plans will be switched off" (design §10).
-    return { ...detail, auto_renewing: await this.deletionPorts.precondition().renewing(this.prisma, params.id) };
+    // The delete dialog says "auto-renewing plans will be switched off" (design §10); the button hides for the last admin (final review M6).
+    return {
+      ...detail,
+      auto_renewing: await this.deletionPorts.precondition().renewing(this.prisma, params.id),
+      last_admin: detail.staff_role === 'admin' ? await this.staff.isLastAdmin(params.id) : false,
+    };
   }
 
   @Get('staff')

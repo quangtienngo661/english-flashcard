@@ -33,6 +33,8 @@ export type AdminUserDetail = AdminUser & {
   timezone: string;
   /** Bước 8: the learner has a plan that renews; deleting the account switches the renewal off first (D31). */
   auto_renewing?: boolean;
+  /** Bước 8: this is the only admin left, so the API would refuse the delete (409 `last-admin`); the button is hidden. */
+  last_admin?: boolean;
 };
 
 export type UserFilters = { q: string; status: string };

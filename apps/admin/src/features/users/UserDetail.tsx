@@ -98,8 +98,8 @@ export function UserDetail({ id, listSearch }: { id: string; listSearch: string 
   const isDeleting = user.status === 'deleting';
   // Locking is refused for yourself and for an admin (409 `lock-rule`); the screen does not offer it.
   const canLock = canManage && !isLocked && !isDeleting && user.id !== meId && user.staff_role !== 'admin';
-  // An admin does not delete themselves (409 `self-delete`); the last admin is refused by the API (409 `last-admin`), whose text the dialog shows.
-  const canDelete = canManage && user.id !== meId;
+  // An admin does not delete themselves (409 `self-delete`) and the last admin cannot be deleted (409 `last-admin`, still the API's word if two admins race).
+  const canDelete = canManage && user.id !== meId && user.last_admin !== true;
   const none = <span className="text-muted">—</span>;
 
   return (

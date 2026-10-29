@@ -4,6 +4,7 @@ import { createTestApp, type TestApp } from '../../../test/support/create-test-a
 import type { AppConfig } from '../../common/config/app-config.js';
 import { PRISMA_CLIENT, PrismaModule } from '../../common/db/prisma.module.js';
 import { RateLimiter } from '../../common/rate-limit/rate-limiter.service.js';
+import { ProblemDetailsException } from '../../common/problem-details/problem-details.exception.js';
 
 const REDIRECT = 'http://localhost:3000/v1/auth/google/callback';
 const google = (mode: 'fake' | 'off'): AppConfig['google'] => ({
@@ -63,6 +64,33 @@ describe('Google routes over HTTP (fake Google, new person)', () => {
     const res = await ctx.http().get('/v1/auth/google/callback').query({ code: 'x', state: 'y' });
     expect(res.status).toBe(302);
     expect(res.headers.location).toBe('http://localhost:3001/vi/app/login?error=google-failed');
+  });
+
+  const tooMany = () => new ProblemDetailsException({ status: 429, title: 'Too many requests', type: 'rate-limited', retryAfterSeconds: 30 });
+
+  it('final review M8: a rate-limited start goes back to the app (login, or the delete page for a reauth trip), never a JSON page', async () => {
+    const hit = vi.mocked(RateLimiter.prototype.hit);
+    hit.mockRejectedValueOnce(tooMany());
+    const login = await ctx.http().get('/v1/auth/google/start').query({ locale: 'en' });
+    expect(login.status).toBe(302);
+    expect(login.headers.location).toBe('http://localhost:3001/en/app/login?error=google-busy');
+    expect(login.headers['set-cookie']).toBeUndefined();
+    hit.mockRejectedValueOnce(tooMany());
+    const reauth = await ctx.http().get('/v1/auth/google/start').query({ locale: 'vi', intent: 'reauth', ticket: 'x' });
+    expect(reauth.headers.location).toBe('http://localhost:3001/vi/app/settings/delete-account?reauth=failed');
+    expect(hit).toHaveBeenCalledWith('auth.google.ip', expect.any(String));
+  });
+
+  it('final review M8: a rate-limited callback goes back to the login page in the language the trip began with; any other failure stays an error', async () => {
+    const hit = vi.mocked(RateLimiter.prototype.hit);
+    const start = await ctx.http().get('/v1/auth/google/start').query({ locale: 'en' });
+    const oauth = cookieOf(start, 'google_oauth')!.split(';')[0];
+    hit.mockRejectedValueOnce(tooMany());
+    const res = await ctx.http().get('/v1/auth/google/callback').query({ code: 'x', state: 'y' }).set('Cookie', oauth);
+    expect(res.status).toBe(302);
+    expect(res.headers.location).toBe('http://localhost:3001/en/app/login?error=google-busy');
+    hit.mockRejectedValueOnce(new Error('db down'));
+    expect((await ctx.http().get('/v1/auth/google/start')).status).toBe(500);
   });
 
   it('complete: GET and POST answer 401 without the ticket; POST also needs the X-CSRF-Protection header (403 without it)', async () => {

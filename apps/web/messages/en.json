@@ -972,6 +972,7 @@
       "cancel-in-store": "This plan was bought in an app store: cancel it in that store's subscription settings.",
       "confirm-email-mismatch": "The email you typed does not match this account's email.",
       "google-email-unverified": "Google has not verified this email address yet. Verify it with Google and try again.",
+      "google-busy": "Too many Google sign-ins from this network. Wait a minute and try again, or use your email and password.",
       "google-failed": "Signing in with Google did not work. Try again.",
       "google-unavailable": "Google sign-in is not available right now. Use your email and password.",
       "provider-unavailable": "The payment provider did not answer. Try again in a few minutes.",

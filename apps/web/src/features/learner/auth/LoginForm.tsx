@@ -19,7 +19,7 @@ import type { AppLocale } from '@/i18n/routing';
 import { AuthCard, FormError, GoogleButton } from './AuthCard';
 
 /** `?error=` slugs the Google trip comes back with (design §9.1); `account-locked` has its own box. */
-const GOOGLE_ERRORS = ['google-failed', 'google-unavailable', 'google-email-unverified'] as const;
+const GOOGLE_ERRORS = ['google-failed', 'google-unavailable', 'google-busy', 'google-email-unverified'] as const;
 
 const NOTICE_KEY: Record<Notice, 'expired' | 'rateLimited' | 'logoutFailed'> = {
   expired: 'expired',

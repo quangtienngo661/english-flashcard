@@ -219,6 +219,14 @@ describe('AccountDeletionService (unit double: statements and order)', () => {
     expect(s.retentionYears).toHaveBeenCalledTimes(1);
   });
 
+  it('final review M4: an address nobody confirmed gets no "deleted" mail (an admin deleting a not-yet-verified account)', async () => {
+    const s = setup({ emailVerifiedAt: null });
+    expect(await call(s.service, { by: 'admin', actorId: 'admin-1', res: s.res })).toBe('done');
+    expect(s.deleted).toHaveLength(1);
+    expect(s.afterResponse).not.toHaveBeenCalled();
+    expect(s.runNow).not.toHaveBeenCalled();
+  });
+
   it('B8E35: a failing settings read (the mail) still returns done', async () => {
     const s = setup();
     s.retentionYears.mockRejectedValue(new Error('settings down'));
