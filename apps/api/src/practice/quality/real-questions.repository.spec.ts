@@ -11,6 +11,7 @@ function setup(rows: unknown[] = []) {
       calls.push({ sql: norm(statement.sql), values: statement.values });
       return rows;
     }),
+    practiceQuestion: { findMany: vi.fn(async (_args: unknown) => rows) },
   };
   return { repo: new RealQuestionsRepository(prisma as never), calls, prisma };
 }
@@ -84,5 +85,20 @@ describe('RealQuestionsRepository.pairs', () => {
     await repo.pairs({ since: SINCE, operation: 'generate_cloze', userIds: null });
     expect(calls[0]!.sql).toContain("q.ai_meta->>'model' IS NOT NULL");
     expect(calls[0]!.sql).not.toContain('q.user_id = ANY(');
+  });
+});
+
+describe('RealQuestionsRepository.questions (M4-T6)', () => {
+  it('the time and the meta of the questions that still exist, by id; the learner is not selected', async () => {
+    const created = new Date('2026-11-07T01:00:00.000Z');
+    const { repo, prisma } = setup([{ id: 'q1', createdAt: created, aiMeta: { model: 'fake:ok' } }]);
+    await expect(repo.questions(['q1', 'q2', 'q1'])).resolves.toEqual(new Map([['q1', { createdAt: created, aiMeta: { model: 'fake:ok' } }]]));
+    expect(prisma.practiceQuestion.findMany).toHaveBeenCalledExactlyOnceWith({ where: { id: { in: ['q1', 'q2'] } }, select: { id: true, createdAt: true, aiMeta: true } });
+  });
+
+  it('no ids → no query', async () => {
+    const { repo, prisma } = setup();
+    await expect(repo.questions([])).resolves.toEqual(new Map());
+    expect(prisma.practiceQuestion.findMany).not.toHaveBeenCalled();
   });
 });

@@ -42,6 +42,7 @@ const WINDOW = (): RealQuestionRow[] => [
 function setup(init: {
   rows?: RealQuestionRow[]; limit?: number; retention?: number; staff?: string[]; judgeOperations?: string[]; judgeActive?: boolean; target?: unknown;
   contents?: Record<string, string | null>; judged?: string[]; cost?: number | null; pairs?: unknown[]; usdCap?: number | null;
+  passList?: unknown; passDetail?: unknown; existing?: Map<string, unknown>;
 } = {}) {
   const settings = { ...SETTINGS_DEFAULTS, ai: { ...SETTINGS_DEFAULTS.ai, realJudgeLimit: init.limit ?? 3, contentRetentionDays: init.retention ?? 7, adminDailyUsdCap: init.usdCap === undefined ? 2 : init.usdCap } };
   const contents = init.contents ?? { r1: OUT('word-q1'), 'r5#2': OUT('word-q5'), r7: 'nope' };
@@ -52,14 +53,20 @@ function setup(init: {
     judgedSubjects: vi.fn(async (_revisionId: string, ids: string[]) => new Set(ids.filter((id) => (init.judged ?? ['q4']).includes(id)))),
     callContents: vi.fn(async (ids: string[]) => new Map(ids.filter((id) => id in contents).map((id) => [id, { request: {}, response: contents[id]! }]))),
     startJudgePass: vi.fn(async (_args: unknown) => ({ passId: 'pass-1' })),
+    realJudgePasses: vi.fn(async (_size: number, _token?: string): Promise<unknown> => init.passList ?? { items: [], next_page_token: null }),
+    realJudgePass: vi.fn(async (_id: string): Promise<unknown> => (init.passDetail === undefined ? null : init.passDetail)),
   };
-  const identity = { staffUserIds: vi.fn(async (): Promise<string[]> => init.staff ?? ['e1']) };
+  const identity = {
+    staffUserIds: vi.fn(async (): Promise<string[]> => init.staff ?? ['e1']),
+    emailsOf: vi.fn(async (ids: string[]) => new Map(ids.filter((id) => id === 'a1').map((id) => [id, 'admin@x.test']))),
+  };
   const content = {
     practiceCandidates: vi.fn(async (_viewer: string, ids: string[], _language: string) => new Map(ids.filter((id) => id === 'sense-mate').map((id) => [id, { lemma: 'beat', scope: 'catalog' }]))),
   };
   const repo = {
     window: vi.fn(async (_args: unknown) => init.rows ?? WINDOW()),
     pairs: vi.fn(async (_args: unknown) => init.pairs ?? [{ config_number: 4, model: 'fake:ok', questions: 7 }]),
+    questions: vi.fn(async (_ids: string[]) => init.existing ?? new Map()),
   };
   const service = new RealJudgeService(
     ai as never, identity as never, content as never, { get: async () => settings } as never, repo as never, new FakeClock(NOW),
@@ -243,5 +250,77 @@ describe('RealJudgeService.start (B40, Review focus 2 and 3)', () => {
     const refusal = new ProblemDetailsException({ status: 409, type: 'judge-pass-running', title: 'running' });
     ai.startJudgePass.mockRejectedValueOnce(refusal);
     await expect(service.start(ADMIN, FILTERS)).rejects.toBe(refusal);
+  });
+});
+
+const PASS_VIEW = {
+  id: 'p1', judge: { id: JUDGE, name: 'Chỉ một đáp án' }, revision: 2, revision_id: R2, criteria: [{ code: 'single_answer', question: 'Q' }], judge_model: null,
+  status: 'finished', error: null, total: 2, judged: 2, cost_usd: '0.00080000', filters: { operation: 'generate_cloze' }, started_by: 'a1',
+  created_at: NOW.toISOString(), finished_at: NOW.toISOString(),
+};
+const ITEM = (id: string, verdict: string | null) => ({
+  subject_id: id, input: DATA(id), output: { sentence: 'x' }, context: { session_words: [] },
+  scores: [{ criterion: 'single_answer', verdict, problem: null, reason: verdict === 'fail_major' ? 'Từ "beat" cũng điền vừa.' : null }], labels: [],
+});
+
+describe('RealJudgeService.passes and passItems (design §7.1 "Kết quả")', () => {
+  it('the passes with the address of whoever started each, from one lookup', async () => {
+    const { service, ai, identity } = setup({ passList: { items: [PASS_VIEW], next_page_token: 'next' } });
+    const page = await service.passes(20);
+    expect(ai.realJudgePasses).toHaveBeenCalledExactlyOnceWith(20, undefined);
+    expect(identity.emailsOf).toHaveBeenCalledExactlyOnceWith(['a1']);
+    expect(page).toEqual({ items: [{ ...PASS_VIEW, started_by_user: { id: 'a1', email: 'admin@x.test', system: false } }], next_page_token: 'next' });
+    await service.passes(5, 'tok');
+    expect(ai.realJudgePasses).toHaveBeenLastCalledWith(5, 'tok');
+  });
+
+  it('a pass that is unknown or not a real pass → 404 not-found', async () => {
+    expect(await problemOf(setup({ passDetail: null }).service.passItems('nope'))).toMatchObject({ status: 404, type: 'not-found' });
+  });
+
+  it('Review focus 5: a failed question still there can be added to the examples; one deleted since is listed from its snapshot, last, without the button', async () => {
+    const created = new Date('2026-11-07T01:00:00.000Z');
+    const { service, repo } = setup({
+      passDetail: { pass: PASS_VIEW, items: [ITEM('q2', 'pass'), ITEM('q1', 'fail_major')] },
+      // A leak guard: whatever else the repository knows about a question, the learner's id must not reach the response.
+      existing: new Map([['q1', { createdAt: created, aiMeta: { operation: 'generate_cloze', provider: 'fake', model: 'fake:ok', prompt_revision: 4, call_operation_id: 'r1' }, userId: 'u-1' }]]),
+    });
+    const result = await service.passItems('p1');
+    expect(repo.questions).toHaveBeenCalledExactlyOnceWith(['q2', 'q1']);
+    expect(result.pass).toEqual({ ...PASS_VIEW, started_by_user: { id: 'a1', email: 'admin@x.test', system: false } });
+    expect(result.items).toHaveLength(2);
+    expect(result.items[0]).toEqual({
+      question_id: 'q1', input: DATA('q1'), output: { sentence: 'x' }, context: { session_words: [] }, created_at: created.toISOString(),
+      scores: [{ criterion: 'single_answer', verdict: 'fail_major', problem: null, reason: 'Từ "beat" cũng điền vừa.' }], labels: [],
+      config_number: 4, model: 'fake:ok', provider: 'fake', failed: true, can_add_to_examples: true,
+    });
+    expect(result.items[1]).toEqual({
+      question_id: 'q2', input: DATA('q2'), output: { sentence: 'x' }, context: { session_words: [] }, created_at: null,
+      scores: [{ criterion: 'single_answer', verdict: 'pass', problem: null, reason: null }], labels: [],
+      config_number: null, model: null, provider: null, failed: false, can_add_to_examples: false,
+    });
+    expect(JSON.stringify(result)).not.toContain('u-1');
+  });
+
+  it('a failed question whose row is gone cannot be added; a question that passed, or has no verdict, is not failed', async () => {
+    const { service } = setup({ passDetail: { pass: PASS_VIEW, items: [ITEM('q1', 'fail_major'), ITEM('q2', null)] } });
+    const { items } = await service.passItems('p1');
+    expect(items.map((item) => [item.question_id, item.failed, item.can_add_to_examples])).toEqual([['q1', true, false], ['q2', false, false]]);
+  });
+
+  it('items are newest question first, gone questions after them in the order of the pass', async () => {
+    const at = (day: number) => new Date(`2026-11-0${day}T01:00:00.000Z`);
+    const meta = { operation: 'generate_cloze' };
+    const { service } = setup({
+      passDetail: { pass: PASS_VIEW, items: [ITEM('a', 'pass'), ITEM('b', 'pass'), ITEM('c', 'pass'), ITEM('d', 'pass')] },
+      existing: new Map([['a', { createdAt: at(2), aiMeta: meta }], ['c', { createdAt: at(5), aiMeta: meta }], ['d', { createdAt: at(3), aiMeta: meta }]]),
+    });
+    expect((await service.passItems('p1')).items.map((item) => item.question_id)).toEqual(['c', 'd', 'a', 'b']);
+  });
+
+  it('a pass with no items asks nothing of the questions table', async () => {
+    const { service, repo } = setup({ passDetail: { pass: PASS_VIEW, items: [] } });
+    expect((await service.passItems('p1')).items).toEqual([]);
+    expect(repo.questions).not.toHaveBeenCalled();
   });
 });

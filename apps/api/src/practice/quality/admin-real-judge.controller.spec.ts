@@ -16,6 +16,7 @@ describe('admin real-question judge HTTP (unit, mocked service)', () => {
   const hit = vi.spyOn(RateLimiter.prototype, 'hit');
   const passThrough = vi.spyOn(IdempotencyInterceptor.prototype, 'intercept');
   let estimate: ReturnType<typeof vi.spyOn>; let start: ReturnType<typeof vi.spyOn>;
+  let passes: ReturnType<typeof vi.spyOn>; let passItems: ReturnType<typeof vi.spyOn>;
   const auth = () => ({ Authorization: `Bearer ${token}` });
   const http = () => ctx.http();
   const judgeId = randomUUID();
@@ -26,21 +27,25 @@ describe('admin real-question judge HTTP (unit, mocked service)', () => {
     ctx = await createTestApp({ databaseUrl: 'unused' });
     const service = ctx.app.get(RealJudgeService);
     estimate = vi.spyOn(service, 'estimate'); start = vi.spyOn(service, 'start');
+    passes = vi.spyOn(service, 'passes'); passItems = vi.spyOn(service, 'passItems');
   });
   beforeEach(async () => {
     actorId = randomUUID(); role = 'admin';
     token = await ctx.app.get(AccessTokenService).sign({ userId: actorId, sessionChainId: randomUUID() });
     prisma.sessionChain.findUnique.mockReset().mockImplementation(async () => ({ userId: actorId, revokedAt: null, user: { staffRole: role } }));
     estimate.mockReset().mockResolvedValue({ selected: 2 }); start.mockReset().mockResolvedValue({ pass_id: 'p1', selected: 2, skipped: {} });
+    passes.mockReset().mockResolvedValue({ items: [], next_page_token: null }); passItems.mockReset().mockResolvedValue({ pass: {}, items: [] });
     hit.mockReset().mockResolvedValue(undefined);
     passThrough.mockReset().mockImplementation((_context, next) => next.handle());
   });
   afterAll(async () => { await ctx?.close(); vi.restoreAllMocks(); });
 
-  it('D19: both routes need settings.manage', () => {
-    expect(listRoutes(ctx.app).filter(({ path }) => path === '/v1/admin/practice/real-judge' || path === '/v1/admin/practice/real-judge/estimate')).toEqual([
+  it('D19: every route needs settings.manage', () => {
+    expect(listRoutes(ctx.app).filter(({ path }) => path.startsWith('/v1/admin/practice/real-judge'))).toEqual([
       { method: 'POST', path: '/v1/admin/practice/real-judge', permissions: ['settings.manage'] },
       { method: 'GET', path: '/v1/admin/practice/real-judge/estimate', permissions: ['settings.manage'] },
+      { method: 'GET', path: '/v1/admin/practice/real-judge/passes', permissions: ['settings.manage'] },
+      { method: 'GET', path: '/v1/admin/practice/real-judge/passes/:id/items', permissions: ['settings.manage'] },
     ]);
   });
 
@@ -53,6 +58,10 @@ describe('admin real-question judge HTTP (unit, mocked service)', () => {
     expect(post.status).toBe(403);
     expect(estimate).not.toHaveBeenCalled();
     expect(start).not.toHaveBeenCalled();
+    expect((await http().get('/v1/admin/practice/real-judge/passes').set(auth())).status).toBe(403);
+    expect((await http().get(`/v1/admin/practice/real-judge/passes/${randomUUID()}/items`).set(auth())).status).toBe(403);
+    expect(passes).not.toHaveBeenCalled();
+    expect(passItems).not.toHaveBeenCalled();
   });
 
   it('an admin asks for an estimate: the filters reach the service in one shape, defaults filled in', async () => {
@@ -99,5 +108,24 @@ describe('admin real-question judge HTTP (unit, mocked service)', () => {
     ];
     for (const body of bad) expect((await http().post('/v1/admin/practice/real-judge').set(auth()).set('Idempotency-Key', 'k').send(body)).status, JSON.stringify(body)).toBe(400);
     expect(start).not.toHaveBeenCalled();
+  });
+
+  it('an admin lists the passes with a page size and a token, and reads the items of one by id', async () => {
+    expect((await http().get('/v1/admin/practice/real-judge/passes').set(auth())).status).toBe(200);
+    expect(passes).toHaveBeenLastCalledWith(20, undefined);
+    expect((await http().get('/v1/admin/practice/real-judge/passes').set(auth()).query({ page_size: '5', page_token: 'abc' })).status).toBe(200);
+    expect(passes).toHaveBeenLastCalledWith(5, 'abc');
+    const id = randomUUID();
+    expect((await http().get(`/v1/admin/practice/real-judge/passes/${id.toUpperCase()}/items`).set(auth())).status).toBe(200);
+    expect(passItems).toHaveBeenCalledExactlyOnceWith(id);
+  });
+
+  it('a bad page size or stray key on the list, and a bad pass id → 400 before the service', async () => {
+    for (const query of [{ page_size: '0' }, { page_size: '101' }, { page_size: 'x' }, { other: '1' }]) {
+      expect((await http().get('/v1/admin/practice/real-judge/passes').set(auth()).query(query)).status, JSON.stringify(query)).toBe(400);
+    }
+    expect((await http().get('/v1/admin/practice/real-judge/passes/nope/items').set(auth())).status).toBe(400);
+    expect(passes).not.toHaveBeenCalled();
+    expect(passItems).not.toHaveBeenCalled();
   });
 });

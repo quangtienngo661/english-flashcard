@@ -1,5 +1,7 @@
 // Types and request schemas of the real-question judge (nhóm B M4, design §7.1).
 import { z } from 'zod';
+import type { RealPassItem, RealPassView } from '../../ai/index.js';
+import type { UserRef } from '../../common/user-ref.js';
 import { PRACTICE_AI_OPERATIONS, type PracticeAiOperation } from './real-questions.js';
 
 /** The pair (config number, model id) a question was made with: the number is `ai_meta.prompt_revision`, the config number since M2 (design §6.5). */
@@ -57,4 +59,26 @@ export type RealJudgeEstimate = {
   reason: 'retention-off' | 'no-staff' | null;
   retention_days: number;
   pairs: Array<{ config_number: number | null; model: string; questions: number }>;
+};
+
+/** Query of `GET …/real-judge/passes`. */
+export const realPassesQuerySchema = z.strictObject({
+  page_size: z.coerce.number().int().min(1).max(100).default(20),
+  page_token: z.string().optional(),
+});
+
+export type RealPassWithStarter = RealPassView & { started_by_user: UserRef };
+
+/**
+ * One question of a pass as the admin sees it. The scores and the snapshot are the pass's own; `created_at` and the config pair come from the
+ * question while it still exists. No learner id anywhere (D3, R6). `can_add_to_examples` = it failed and its question row is still there.
+ */
+export type RealPassItemView = Omit<RealPassItem, 'subject_id'> & {
+  question_id: string;
+  created_at: string | null;
+  config_number: number | null;
+  model: string | null;
+  provider: string | null;
+  failed: boolean;
+  can_add_to_examples: boolean;
 };

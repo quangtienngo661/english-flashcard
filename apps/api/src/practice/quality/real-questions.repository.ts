@@ -54,6 +54,14 @@ export class RealQuestionsRepository {
     }));
   }
 
+  /** The time and the meta of the questions that still exist (a deleted learner's or an old question is absent); nothing that names the learner is read. */
+  async questions(ids: string[]): Promise<Map<string, { createdAt: Date; aiMeta: unknown }>> {
+    const unique = [...new Set(ids)];
+    if (unique.length === 0) return new Map();
+    const rows = await this.prisma.practiceQuestion.findMany({ where: { id: { in: unique } }, select: { id: true, createdAt: true, aiMeta: true } });
+    return new Map(rows.map((row) => [row.id, { createdAt: row.createdAt, aiMeta: row.aiMeta }]));
+  }
+
   /** The (config number, model) pairs the window's questions were made with, most questions first. */
   async pairs(args: { since: Date; operation: PracticeAiOperation; userIds: string[] | null }): Promise<Array<{ config_number: number | null; model: string; questions: number }>> {
     const where = [...conditions(args), Prisma.sql`q.ai_meta->>'model' IS NOT NULL`];

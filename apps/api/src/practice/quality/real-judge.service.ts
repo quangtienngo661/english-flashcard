@@ -1,13 +1,14 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { AiService, type JudgeSubject, type RealJudgeTarget } from '../../ai/index.js';
+import { AiService, type JudgeSubject, type RealJudgeTarget, type RealPassView } from '../../ai/index.js';
 import { Clock } from '../../common/clock/clock.js';
 import { ProblemDetailsException } from '../../common/problem-details/problem-details.exception.js';
+import { userRef } from '../../common/user-ref.js';
 import { ContentService } from '../../content/index.js';
 import { IdentityService } from '../../identity/profile/identity.service.js';
 import { SettingsService } from '../../settings/index.js';
-import type { RealJudgeEstimate, RealJudgeFilters, Skipped } from './real-judge.types.js';
+import type { RealJudgeEstimate, RealJudgeFilters, RealPassItemView, RealPassWithStarter, Skipped } from './real-judge.types.js';
 import { RealQuestionsRepository } from './real-questions.repository.js';
-import { metaOf, parseOutput, sessionWords, touchesPrivateWord, type RealQuestionRow } from './real-questions.js';
+import { isFailing, metaOf, parseOutput, sessionWords, touchesPrivateWord, type RealQuestionRow } from './real-questions.js';
 
 const DAY_MS = 86_400_000;
 /** `judgedSubjects` asks the database with an `IN` list: a window of tens of thousands of questions is asked in slices. */
@@ -82,6 +83,40 @@ export class RealJudgeService {
       },
     });
     return { pass_id: passId, selected: subjects.length, skipped: s.skipped };
+  }
+
+  /** The passes, newest first, each with the address of whoever started it (one lookup for the page). */
+  async passes(pageSize: number, pageToken?: string): Promise<{ items: RealPassWithStarter[]; next_page_token: string | null }> {
+    const page = await this.ai.realJudgePasses(pageSize, pageToken);
+    return { items: await this.withStarters(page.items), next_page_token: page.next_page_token };
+  }
+
+  /**
+   * One pass with its questions, newest question first; a question deleted since (account deletion, `history_months`) is listed from the pass's snapshot,
+   * after the others and in the pass's order, and cannot be added to the examples (Review focus 5).
+   */
+  async passItems(passId: string): Promise<{ pass: RealPassWithStarter; items: RealPassItemView[] }> {
+    const found = await this.ai.realJudgePass(passId);
+    if (!found) throw notFound();
+    const [pass] = await this.withStarters([found.pass]);
+    const existing = found.items.length === 0 ? new Map<string, { createdAt: Date; aiMeta: unknown }>() : await this.questions.questions(found.items.map((item) => item.subject_id));
+    const items = found.items.map(({ subject_id, ...item }): RealPassItemView => {
+      const question = existing.get(subject_id);
+      const failed = isFailing(item.scores);
+      const meta = metaOf(question?.aiMeta ?? null);
+      return {
+        ...item, question_id: subject_id, created_at: question?.createdAt.toISOString() ?? null, config_number: meta.config_number, model: meta.model,
+        provider: meta.provider, failed, can_add_to_examples: failed && question !== undefined,
+      };
+    });
+    // `sort` is stable: a gone question (no date) keeps the pass's order, after every question that still has one.
+    items.sort((a, b) => (a.created_at === null ? (b.created_at === null ? 0 : 1) : b.created_at === null ? -1 : a.created_at < b.created_at ? 1 : a.created_at > b.created_at ? -1 : 0));
+    return { pass: pass!, items };
+  }
+
+  private async withStarters(passes: RealPassView[]): Promise<RealPassWithStarter[]> {
+    const emails = await this.identity.emailsOf(passes.map((pass) => pass.started_by));
+    return passes.map((pass) => ({ ...pass, started_by_user: userRef(pass.started_by, emails) }));
   }
 
   private async select(f: RealJudgeFilters): Promise<Selection> {
