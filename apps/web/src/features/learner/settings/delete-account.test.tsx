@@ -49,6 +49,13 @@ describe('DeleteAccountPage (design §9.4)', () => {
     expect(screen.getByText('Báo lỗi bạn đã gửi, không kèm tên')).toBeInTheDocument();
   });
 
+  it('B8-7: the used-quota rows stay (anonymised), so "usage" is listed as kept and the deleted list names only the plans', async () => {
+    renderApp(<DeleteAccountPage />, { routes: routes() });
+    expect(await screen.findByText('Gói của bạn')).toBeInTheDocument();
+    expect(screen.getByText('Số lượt đã dùng, không kèm tên bạn')).toBeInTheDocument();
+    expect(screen.queryByText('Gói và lượt dùng của bạn')).not.toBeInTheDocument();
+  });
+
   it.each(['active', 'grace', 'on_hold', 'trialing'])('a %s auto-renewing plan blocks the form and links to the plans page', async (status) => {
     renderApp(<DeleteAccountPage />, { routes: routes([{ ...SUB, status }]) });
     expect(await screen.findByText('Bạn đang có gói tự gia hạn. Hủy gói trước khi xóa tài khoản.')).toBeInTheDocument();
