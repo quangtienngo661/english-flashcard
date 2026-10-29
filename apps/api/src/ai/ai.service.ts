@@ -12,6 +12,7 @@ import { JudgePassesService } from './judge/judge-passes.service.js';
 import { JudgeScoresReader } from './judge/judge-scores.reader.js';
 import type { JudgeSubject } from './judge/judge.types.js';
 import { JudgesService } from './judge/judges.service.js';
+import { ReportsService } from './reports/reports.service.js';
 import { ReadinessService } from './runner/readiness.service.js';
 import { RunnerService, type RunReport } from './runner/runner.service.js';
 
@@ -31,6 +32,7 @@ export class AiService {
     @Inject(JudgePassesService) private readonly judgePasses: JudgePassesService,
     @Inject(JudgesService) private readonly judges: JudgesService,
     @Inject(JudgeScoresReader) private readonly judgeScores: JudgeScoresReader,
+    @Inject(ReportsService) private readonly reports: ReportsService,
   ) {}
 
   /** Practice hands its rules and catalog forms to eval runs here (nhóm B design §5.2); `ai` never imports Practice or Content. */
@@ -71,6 +73,14 @@ export class AiService {
   /** Which of these subjects the judge revision has already judged completely (contract §4). */
   judgedSubjects(judgeRevisionId: string, subjectIds: string[]): Promise<Set<string>> {
     return this.judgeScores.judgedSubjects(judgeRevisionId, subjectIds);
+  }
+
+  /**
+   * The request and response of the newest succeeded learner attempt of each operation id whose content is still kept (7 days by default, contract §4).
+   * An id with no such call, or whose content expired, is absent from the map.
+   */
+  callContents(operationIds: string[]): Promise<Map<string, { request: unknown; response: string | null }>> {
+    return this.reports.callContents(operationIds, this.clock.now());
   }
 
   async isReady(op: AiOperation): Promise<AiReadiness> {

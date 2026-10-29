@@ -85,6 +85,12 @@ export type DashboardReport = {
 /** The operation id of an eval call: `eval-<run id>-<example id>` (eval-job.ts). */
 const EVAL_OPERATION_ID = /^eval-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}-([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/;
 
+/** The operation id of a judge call: `judge-<pass id>-<pass item id>` (judge-job.ts); the capture is the pass item. */
+const JUDGE_OPERATION_ID = /^judge-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}-([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/;
+
+/** Where the output a judge call looked at came from: an eval run item (and its example), or a real question. */
+type JudgeSource = { kind: 'real' } | { kind: 'eval'; exampleId: string };
+
 const invalid = (violations: string[]) => new ProblemDetailsException({
   status: 400, type: 'validation-failed', title: 'Validation failed', extensions: { violations },
 });
@@ -226,6 +232,48 @@ export class ReportsService {
     };
   }
 
+  /** The pass items of judge calls, with where each came from; an item that is gone is absent. */
+  private async judgeSources(passItemIds: string[]): Promise<Map<string, JudgeSource>> {
+    const sources = new Map<string, JudgeSource>();
+    const ids = [...new Set(passItemIds)];
+    if (ids.length === 0) return sources;
+    const items = await this.prisma.aiJudgePassItem.findMany({ where: { id: { in: ids } }, select: { id: true, subjectKind: true, subjectId: true } });
+    const runItemIds = items.filter((item) => item.subjectKind === 'eval_item').map((item) => item.subjectId);
+    const runItems = runItemIds.length > 0 ? await this.prisma.aiEvalRunItem.findMany({ where: { id: { in: runItemIds } }, select: { id: true, exampleId: true } }) : [];
+    const exampleOf = new Map(runItems.map((item) => [item.id, item.exampleId]));
+    for (const item of items) {
+      if (item.subjectKind === 'real_question') sources.set(item.id, { kind: 'real' });
+      else {
+        const exampleId = exampleOf.get(item.subjectId);
+        if (exampleId !== undefined) sources.set(item.id, { kind: 'eval', exampleId });
+      }
+    }
+    return sources;
+  }
+
+  /**
+   * The request and response of the newest succeeded learner attempt of each operation id whose content is still kept (contract §4: what Practice
+   * copied into an eval example, and what a real-question judge needs). An id with none is absent; nothing else about the call leaves here.
+   */
+  async callContents(operationIds: string[], now: Date): Promise<Map<string, { request: unknown; response: string | null }>> {
+    const result = new Map<string, { request: unknown; response: string | null }>();
+    const ids = [...new Set(operationIds)];
+    if (ids.length === 0) return result;
+    const calls = await this.prisma.aiCall.findMany({
+      where: { operationId: { in: ids }, purpose: 'learner', outcome: 'succeeded' }, orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      select: { id: true, operationId: true },
+    });
+    if (calls.length === 0) return result;
+    const contents = await this.prisma.aiCallContent.findMany({ where: { callId: { in: calls.map((call) => call.id) }, expiresAt: { gt: now } } });
+    const byCall = new Map(contents.map((content) => [content.callId, content]));
+    // Newest first: the first call of an id that still has its content is the answer.
+    for (const call of calls) {
+      const content = byCall.get(call.id);
+      if (content && !result.has(call.operationId)) result.set(call.operationId, { request: content.request, response: content.response });
+    }
+    return result;
+  }
+
   /** Every call of one operation id, oldest first, with its content while it is kept (design §12.1 #17). */
   async calls(operationId: string, now: Date) {
     const rows = await this.prisma.aiCall.findMany({ where: { operationId }, orderBy: [{ createdAt: 'asc' }, { id: 'asc' }] });
@@ -234,14 +282,24 @@ export class ReportsService {
       where: { callId: { in: rows.map((row) => row.id) }, expiresAt: { gt: now } },
     });
     const byCall = new Map(contents.map((content) => [content.callId, content]));
-    // An eval call of an example that is still held-out shows no content (design §5.1, R7).
+    // An eval call of an example that is still held-out shows no content (design §5.1, R7); nor does a judge call that looked at its output.
     const evalExample = (row: { purpose: string; operationId: string }) => (row.purpose === 'eval' ? EVAL_OPERATION_ID.exec(row.operationId)?.[1] : undefined);
-    const evalIds = rows.flatMap((row) => evalExample(row) ?? []);
+    const judgeItem = (row: { purpose: string; operationId: string }) => (row.purpose === 'judge' ? JUDGE_OPERATION_ID.exec(row.operationId)?.[1] : undefined);
+    const sources = await this.judgeSources(rows.flatMap((row) => judgeItem(row) ?? []));
+    const judgeExamples = [...new Set(rows.flatMap((row) => judgeItem(row) ?? []))].flatMap((item) => {
+      const source = sources.get(item);
+      return source?.kind === 'eval' ? [source.exampleId] : [];
+    });
+    const evalIds = [...rows.flatMap((row) => evalExample(row) ?? []), ...judgeExamples];
     const hidden = evalIds.length > 0 ? await this.heldOut.hiddenIds(evalIds) : new Set<string>();
     return {
       items: rows.map((row) => {
         const exampleId = evalExample(row);
-        const heldOut = exampleId !== undefined && hidden.has(exampleId);
+        const item = judgeItem(row);
+        const source = item === undefined ? undefined : sources.get(item);
+        // A judge call whose output cannot be traced (its run was deleted, and the items with it) is hidden too: nothing says it was not held-out.
+        const heldOut = (exampleId !== undefined && hidden.has(exampleId))
+          || (item !== undefined && (source === undefined || (source.kind === 'eval' && hidden.has(source.exampleId))));
         const content = heldOut ? undefined : byCall.get(row.id);
         return {
           id: row.id, attempt: row.attempt, purpose: row.purpose, operation: row.operation, provider: row.provider, model: row.model,

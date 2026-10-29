@@ -47,6 +47,9 @@ type Setup = {
   contents?: Array<{ callId: string; request: unknown; response: string | null; expiresAt: Date }>;
   /** Example ids the held-out reader reports as still hidden. */
   hidden?: string[];
+  /** Items of judge passes (nhóm B M3) and the eval run items they point at. */
+  passItems?: Array<{ id: string; subjectKind: string; subjectId: string }>;
+  runItems?: Array<{ id: string; exampleId: string }>;
 };
 
 function setup(input: Setup = {}) {
@@ -67,11 +70,27 @@ function setup(input: Setup = {}) {
         },
       }))),
     },
-    aiCall: { findMany: vi.fn(async () => input.calls ?? []) },
+    // `calls` ignores its filter (the old tests name an id the rows do not carry); a query with a purpose is the by-purpose one and is filtered.
+    aiCall: {
+      findMany: vi.fn(async (args?: { where?: { operationId?: string | { in: string[] }; purpose?: string; outcome?: string } }) => {
+        const where = args?.where;
+        if (where?.purpose === undefined) return input.calls ?? [];
+        const ids = typeof where.operationId === 'string' ? [where.operationId] : where.operationId?.in;
+        // Newest first, as the query asks.
+        return (input.calls ?? []).filter((row) => (ids === undefined || ids.includes(row.operationId as string)) && row.purpose === where.purpose && row.outcome === where.outcome)
+          .sort((a, b) => (b.createdAt as Date).getTime() - (a.createdAt as Date).getTime());
+      }),
+    },
+    aiJudgePassItem: {
+      findMany: vi.fn(async (args: { where: { id: { in: string[] } } }) => (input.passItems ?? []).filter((row) => args.where.id.in.includes(row.id))),
+    },
+    aiEvalRunItem: {
+      findMany: vi.fn(async (args: { where: { id: { in: string[] } } }) => (input.runItems ?? []).filter((row) => args.where.id.in.includes(row.id))),
+    },
     aiCallContent: {
-      findMany: vi.fn(async (args: unknown) => {
+      findMany: vi.fn(async (args: { where: { callId: { in: string[] }; expiresAt: { gt: Date } } }) => {
         contentArgs.push(args);
-        return input.contents ?? [];
+        return (input.contents ?? []).filter((row) => args.where.callId.in.includes(row.callId) && row.expiresAt > args.where.expiresAt.gt);
       }),
     },
     $queryRaw: vi.fn(async (first: TemplateStringsArray | { sql: string; values: unknown[] }, ...rest: unknown[]) => {
@@ -335,7 +354,99 @@ describe('ReportsService.calls', () => {
     });
   });
 
+  describe('M3-T13, B6, R7: a judge call of a held-out example shows no content either', () => {
+    const PASS = '44444444-4444-4444-8444-444444444444';
+    const [PI1, PI2, PI3, PI4] = ['a', 'b', 'c', 'd'].map((c) => `${c.repeat(8)}-${c.repeat(4)}-4${c.repeat(3)}-8${c.repeat(3)}-${c.repeat(12)}`);
+    const [RI1, RI2] = ['e', 'f'].map((c) => `${c.repeat(8)}-${c.repeat(4)}-4${c.repeat(3)}-8${c.repeat(3)}-${c.repeat(12)}`);
+    const [EX_HELD, EX_DEV] = ['22222222-2222-4222-8222-222222222222', '33333333-3333-4333-8333-333333333333'];
+    const judgeCall = (id: string, passItem: string) => call(id, { purpose: 'judge', operation: 'judge', operationId: `judge-${PASS}-${passItem}` });
+    const contents = (...ids: string[]) => ids.map((callId) => ({ callId, request: { data: { input: 'secret' } }, response: '{"codes":[]}', expiresAt: daysFromNow(7) }));
+    const world = {
+      passItems: [
+        { id: PI1, subjectKind: 'eval_item', subjectId: RI1 }, { id: PI2, subjectKind: 'eval_item', subjectId: RI2 },
+        { id: PI3, subjectKind: 'real_question', subjectId: '55555555-5555-4555-8555-555555555555' },
+      ],
+      runItems: [{ id: RI1, exampleId: EX_HELD }, { id: RI2, exampleId: EX_DEV }], hidden: [EX_HELD],
+    };
+
+    it('a judge call of a pass item whose run item is held-out has held_out true and no content; one of a dev item keeps its content', async () => {
+      const { service } = setup({ ...world, calls: [judgeCall('j1', PI1), judgeCall('j2', PI2)], contents: contents('j1', 'j2') });
+      const { items } = await service.calls('x', NOW);
+      expect(items.map((item) => [item.id, item.held_out, item.content === null])).toEqual([['j1', true, true], ['j2', false, false]]);
+    });
+
+    it('a judge call of a real question is shown (it is not an example)', async () => {
+      const { service } = setup({ ...world, calls: [judgeCall('j3', PI3)], contents: contents('j3') });
+      expect((await service.calls('x', NOW)).items[0]).toMatchObject({ held_out: false, content: { response: '{"codes":[]}' } });
+    });
+
+    it('hiddenIds is asked once, with the example ids only (those of eval calls and of the run items of judge calls), never a pass item or run item id', async () => {
+      const { service, heldOut } = setup({
+        ...world, hidden: [],
+        calls: [judgeCall('j1', PI1), judgeCall('j2', PI2), judgeCall('j3', PI3), call('c9', { purpose: 'eval', operationId: `eval-${PASS}-${EX_DEV}` })],
+        contents: contents('j1', 'j2', 'j3', 'c9'),
+      });
+      await service.calls('x', NOW);
+      expect(heldOut.hiddenIds).toHaveBeenCalledExactlyOnceWith([EX_DEV, EX_HELD, EX_DEV]);
+    });
+
+    it('fail closed: a judge call whose pass item or run item is gone (the run was deleted) cannot be traced to an example, so it shows no content', async () => {
+      const { service } = setup({
+        ...world, calls: [judgeCall('j4', PI4), judgeCall('j1', PI1)], contents: contents('j4', 'j1'), runItems: [],
+      });
+      expect((await service.calls('x', NOW)).items.map((item) => [item.held_out, item.content])).toEqual([[true, null], [true, null]]);
+    });
+
+    it('a call that only looks like a judge one is not hidden: a learner call, or a judge id that is not judge-<pass>-<item>', async () => {
+      const { service, heldOut } = setup({
+        ...world,
+        calls: [call('c1', { purpose: 'learner', operationId: `judge-${PASS}-${PI1}` }), call('c2', { purpose: 'judge', operationId: 'judge-abc' })],
+        contents: contents('c1', 'c2'),
+      });
+      expect((await service.calls('x', NOW)).items.map((item) => item.held_out)).toEqual([false, false]);
+      expect(heldOut.hiddenIds).not.toHaveBeenCalled();
+    });
+  });
+
   it('an unknown id → items []', async () => {
     await expect(setup().service.calls('nothing', NOW)).resolves.toEqual({ items: [] });
+  });
+});
+
+describe('ReportsService.callContents (contract §4, M4)', () => {
+  const call = (id: string, operationId: string, attempt: 1 | 2, over: Record<string, unknown> = {}) => ({
+    id, operationId, attempt, purpose: 'learner', outcome: 'succeeded', createdAt: new Date(NOW.getTime() + attempt * 1000), ...over,
+  });
+  const content = (callId: string, response: string, expiresAt = daysFromNow(7)) => ({ callId, request: { data: callId }, response, expiresAt });
+
+  it('per id the content of its newest succeeded learner attempt that is still kept; an id with none is absent', async () => {
+    const { service } = setup({
+      calls: [
+        call('a1', 'op1', 1, { outcome: 'timeout' }), call('a2', 'op1', 2),
+        call('b1', 'op2', 1),
+        call('e1', 'eval-R-E', 1, { purpose: 'eval' }),
+      ],
+      contents: [content('a1', 'timed out'), content('a2', 'op1 second'), content('b1', 'op2 first', daysFromNow(-1)), content('e1', 'eval')],
+    });
+    const result = await service.callContents(['op1', 'op2', 'eval-R-E', 'nothing'], NOW);
+    expect(result).toEqual(new Map([['op1', { request: { data: 'a2' }, response: 'op1 second' }]]));
+  });
+
+  it('two succeeded attempts of one id: the newer one answers', async () => {
+    const { service } = setup({
+      calls: [call('a1', 'op1', 1), call('a2', 'op1', 2)], contents: [content('a1', 'first'), content('a2', 'second')],
+    });
+    expect((await service.callContents(['op1'], NOW)).get('op1')).toEqual({ request: { data: 'a2' }, response: 'second' });
+  });
+
+  it('a call without a stored response gives a null response (the content row exists, the text does not)', async () => {
+    const { service } = setup({ calls: [call('a1', 'op1', 1)], contents: [{ callId: 'a1', request: {}, response: null, expiresAt: daysFromNow(7) }] });
+    expect((await service.callContents(['op1'], NOW)).get('op1')).toEqual({ request: {}, response: null });
+  });
+
+  it('no id → an empty map and no query', async () => {
+    const { service, contentArgs } = setup();
+    await expect(service.callContents([], NOW)).resolves.toEqual(new Map());
+    expect(contentArgs).toEqual([]);
   });
 });

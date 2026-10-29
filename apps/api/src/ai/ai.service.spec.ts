@@ -46,11 +46,12 @@ function setup(readiness: ReadinessCheck = { ready: true, selection: {} as never
   const judgePasses = { createReal: vi.fn(async (_args: unknown) => ({ passId: 'pass-1' })) };
   const judges = { latestRevision: vi.fn(async (_id: string): Promise<{ id: string; revision: number } | null> => ({ id: 'rev-2', revision: 2 })) };
   const judgeScores = { judgedSubjects: vi.fn(async (_revision: string, ids: string[]) => new Set(ids.slice(0, 1))) };
+  const reports = { callContents: vi.fn(async (_ids: string[], _now: Date) => new Map([['op1', { request: { a: 1 }, response: 'r' }]])) };
   const service = new AiService(
     runner, readinessService, prisma, new FakeClock(NOW), rules, examples as never, live as never, judgePasses as never, judges as never,
-    judgeScores as never,
+    judgeScores as never, reports as never,
   );
-  return { service, executed, report, checks, statements, queries, prisma, rules, examples, live, judgePasses, judges, judgeScores };
+  return { service, executed, report, checks, statements, queries, prisma, rules, examples, live, judgePasses, judges, judgeScores, reports };
 }
 
 describe('AiService.run', () => {
@@ -122,6 +123,12 @@ describe('AiService judge functions (contract §4, M3-T8)', () => {
     expect(judges.latestRevision).toHaveBeenCalledExactlyOnceWith('J');
     judges.latestRevision.mockResolvedValueOnce(null);
     await expect(service.latestJudgeRevision('nope')).resolves.toBeNull();
+  });
+
+  it('callContents asks the reports for the kept content of those operation ids as of now (contract §4)', async () => {
+    const { service, reports } = setup();
+    await expect(service.callContents(['op1', 'op2'])).resolves.toEqual(new Map([['op1', { request: { a: 1 }, response: 'r' }]]));
+    expect(reports.callContents).toHaveBeenCalledExactlyOnceWith(['op1', 'op2'], NOW);
   });
 
   it('judgedSubjects asks the scores reader about that revision and those subjects', async () => {
