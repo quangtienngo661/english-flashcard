@@ -348,6 +348,8 @@ export const aiKeys = {
   compare: (a: string, b: string) => ['ai', 'eval-compare', a, b] as const,
   sets: (op: AiOperation) => ['ai', 'eval-sets', op] as const,
   set: (id: string) => ['ai', 'eval-set', id] as const,
+  /** Every opened version, for one invalidation after an example is revealed. */
+  anySet: () => ['ai', 'eval-set'] as const,
   forms: (word: string, partOfSpeech: string) => ['ai', 'eval-forms', word, partOfSpeech] as const,
   costs: (from: string, to: string, groupBy: CostGroup) => ['ai', 'costs', from, to, groupBy] as const,
   calls: (operationId: string) => ['ai', 'calls', operationId] as const,

@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 import vi from '../../../messages/vi.json';
 import { problem, type Call } from '../../auth/test-support';
 import { renderApp } from '../staff/test-utils';
-import { URL, evalExample, evalRoutes, evalRun, operationsFor } from './prompt-test-support';
+import { URL, evalExample, evalRoutes, evalRun, evalSet, example, heldOutExample, operationsFor, setDetail, setItem } from './prompt-test-support';
 
 const t = vi.ai.eval;
 const posts = (calls: Call[], path: string) => calls.filter((c) => c.method === 'POST' && c.path === path);
@@ -291,6 +291,208 @@ describe('AiEvalPage example dialog: the expected answer (nhóm B M1)', () => {
   });
 });
 
+describe('AiEvalPage held-out rows, reveal, freeze and versions (nhóm B M1)', () => {
+  const MIXED = [evalExample('e1', 'go'), evalExample('e2', 'run'), evalExample('e3', 'come'), heldOutExample('e4'), heldOutExample('e5')];
+  const mixedReply = () => Response.json({ items: MIXED });
+  const SETS = 'GET /v1/admin/ai/eval/sets?operation=generate_cloze';
+  const FREEZE = 'POST /v1/admin/ai/eval/sets';
+
+  it('shows "3 dev · 2 held-out"; a held-out row hides its content and offers [Mở ví dụ held-out] and [Xóa], never [Sửa]', async () => {
+    await openPage({ [URL.examples()]: mixedReply });
+    expect(await screen.findByText('3 dev · 2 held-out')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 2, name: t.examples.replace('{count}', '5') })).toBeInTheDocument();
+    expect(screen.getByText(t.examplesHint)).toBeInTheDocument();
+    const section = screen.getByRole('region', { name: t.examples.replace('{count}', '5') });
+    expect(within(section).getAllByRole('columnheader').map((h) => h.textContent)).toContain(t.cols.split);
+    const rows = within(section).getAllByRole('row').slice(1);
+    expect(rows).toHaveLength(5);
+    const heldOut = rows.filter((row) => within(row).queryByText(t.heldOutHidden));
+    expect(heldOut).toHaveLength(2);
+    for (const row of heldOut) {
+      expect(row).toHaveTextContent(t.split.heldOut);
+      expect(within(row).getByRole('button', { name: t.reveal.button })).toBeInTheDocument();
+      expect(within(row).getByRole('button', { name: t.delete })).toBeInTheDocument();
+      expect(within(row).queryByRole('button', { name: /^Sửa/ })).not.toBeInTheDocument();
+    }
+    expect(rows.filter((row) => within(row).queryByRole('button', { name: /^Sửa ví dụ / }))).toHaveLength(3);
+  });
+
+  it('[Mở ví dụ held-out] asks first (Hủy sends nothing); [Mở ví dụ] POSTs /reveal, toasts and reads the examples again', async () => {
+    let revealed = false;
+    const r = await openPage({
+      [URL.examples()]: () => Response.json({ items: revealed ? [...MIXED.slice(0, 3), evalExample('e4', 'rise'), MIXED[4]] : MIXED }),
+      [URL.reveal('e4')]: () => {
+        revealed = true;
+        return Response.json({ id: 'e4', operation: 'generate_cloze', split: 'dev', input: {}, expected: null, note: null, revealed_at: '2026-10-15T02:12:00.000Z', deleted: false });
+      },
+    });
+    await userEvent.click((await screen.findAllByRole('button', { name: t.reveal.button }))[0]);
+    let dialog = await screen.findByRole('dialog', { name: t.reveal.title });
+    expect(dialog).toHaveTextContent(t.reveal.body);
+    await userEvent.click(within(dialog).getByRole('button', { name: vi.common.cancel }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    expect(r.count('POST', '/v1/admin/ai/eval/examples/e4/reveal')).toBe(0);
+
+    await userEvent.click((await screen.findAllByRole('button', { name: t.reveal.button }))[0]);
+    dialog = await screen.findByRole('dialog', { name: t.reveal.title });
+    await userEvent.click(within(dialog).getByRole('button', { name: t.reveal.confirm }));
+    expect(await screen.findByText(t.toast.revealed)).toBeInTheDocument();
+    expect(r.count('POST', '/v1/admin/ai/eval/examples/e4/reveal')).toBe(1);
+    expect(await screen.findByText('4 dev · 1 held-out')).toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: t.editFor.replace('{summary}', 'rise · verb') }).length).toBeGreaterThan(0);
+  });
+
+  it('opening an example that is no longer held-out (409 example-not-held-out) says so inside the question and reads the list again', async () => {
+    const r = await openPage({ [URL.examples()]: mixedReply, [URL.reveal('e4')]: () => problem(409, 'example-not-held-out') });
+    await userEvent.click((await screen.findAllByRole('button', { name: t.reveal.button }))[0]);
+    const dialog = await screen.findByRole('dialog', { name: t.reveal.title });
+    await userEvent.click(within(dialog).getByRole('button', { name: t.reveal.confirm }));
+    expect(await within(dialog).findByText(vi.errors['example-not-held-out'])).toBeInTheDocument();
+    await waitFor(() => expect(r.count('GET', '/v1/admin/ai/eval/examples?operation=generate_cloze')).toBeGreaterThanOrEqual(2));
+  });
+
+  it('[Xóa] on a held-out row asks and DELETEs it like any example', async () => {
+    const r = await openPage({ [URL.examples()]: mixedReply, [URL.example('e4', 'DELETE')]: () => new Response(null, { status: 204 }) });
+    const heldOutRow = (await screen.findAllByRole('row')).filter((row) => within(row).queryByText(t.heldOutHidden))[0];
+    await userEvent.click(within(heldOutRow).getByRole('button', { name: t.delete }));
+    await userEvent.click(within(await screen.findByRole('dialog', { name: t.deleteTitle })).getByRole('button', { name: t.deleteConfirm }));
+    expect(await screen.findByText(t.toast.deleted)).toBeInTheDocument();
+    expect(r.count('DELETE', '/v1/admin/ai/eval/examples/e4')).toBe(1);
+  });
+
+  // The button waits for the examples and the versions: the question names the next version and the counts.
+  async function pressFreeze() {
+    const button = (await screen.findAllByRole('button', { name: t.freeze.button }))[0];
+    await waitFor(() => expect(button).toBeEnabled());
+    await userEvent.click(button);
+  }
+
+  const V1 = evalSet({ id: 'S1', version: 1, dev_count: 7, held_out_count: 3 });
+
+  it('[Chốt phiên bản] names the next version and the counts; confirming POSTs the operation, toasts and reads the versions again', async () => {
+    let sets = [V1];
+    const r = await openPage({
+      [URL.examples()]: mixedReply,
+      [SETS]: () => Response.json({ items: sets }),
+      [FREEZE]: () => {
+        sets = [evalSet({ id: 'S2', version: 2, dev_count: 3, held_out_count: 2 }), V1];
+        return Response.json(sets[0], { status: 201 });
+      },
+    });
+    await screen.findByText('3 dev · 2 held-out');
+    await pressFreeze();
+    const dialog = await screen.findByRole('dialog', { name: t.freeze.title.replace('{version}', '2') });
+    expect(dialog).toHaveTextContent(t.freeze.body.replace('{dev}', '3').replace('{heldOut}', '2').replace('{version}', '2'));
+    await userEvent.click(within(dialog).getByRole('button', { name: t.freeze.confirm }));
+    expect(await screen.findByText(t.toast.frozen.replace('{version}', '2'))).toBeInTheDocument();
+    expect(posts(r.calls, '/v1/admin/ai/eval/sets')[0].body).toEqual({ operation: 'generate_cloze' });
+    const versions = screen.getByRole('region', { name: t.sets.title });
+    expect((await within(versions).findAllByRole('button', { name: t.sets.version.replace('{version}', '2') })).length).toBeGreaterThan(0);
+    expect(r.count('GET', '/v1/admin/ai/eval/sets?operation=generate_cloze')).toBe(2);
+  });
+
+  it('with no version yet the first one is "Chốt phiên bản 1" and the list says "Chưa có phiên bản nào."', async () => {
+    await openPage({ [URL.examples()]: mixedReply });
+    expect(await screen.findByText(t.sets.empty)).toBeInTheDocument();
+    await pressFreeze();
+    expect(await screen.findByRole('dialog', { name: t.freeze.title.replace('{version}', '1') })).toBeInTheDocument();
+  });
+
+  it('422 eval-set-incomplete: "Chưa chốt được phiên bản." with how many examples lack an expected answer and that no held-out exists', async () => {
+    await openPage({
+      [URL.examples()]: mixedReply,
+      [FREEZE]: () => problem(422, 'eval-set-incomplete', { missing_expected: ['e1'], no_held_out: true }),
+    });
+    await screen.findByText('3 dev · 2 held-out');
+    await pressFreeze();
+    await userEvent.click(within(await screen.findByRole('dialog')).getByRole('button', { name: t.freeze.confirm }));
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveTextContent(t.freeze.incomplete);
+    expect(within(alert).getByText(t.freeze.missingExpected.replace('{count}', '1'))).toBeInTheDocument();
+    expect(within(alert).getByText(t.freeze.noHeldOut)).toBeInTheDocument();
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+  });
+
+  it('422 with only missing expected answers names only that; the rows concerned are marked until they get one', async () => {
+    const lacking = { ...evalExample('e1', 'go'), expected: null };
+    await openPage({
+      [URL.examples()]: () => Response.json({ items: [lacking, evalExample('e2', 'run'), heldOutExample('e4')] }),
+      [FREEZE]: () => problem(422, 'eval-set-incomplete', { missing_expected: ['e1'], no_held_out: false }),
+    });
+    await screen.findByText('2 dev · 1 held-out');
+    await pressFreeze();
+    await userEvent.click(within(await screen.findByRole('dialog')).getByRole('button', { name: t.freeze.confirm }));
+    const alert = await screen.findByRole('alert');
+    expect(within(alert).getByText(t.freeze.missingExpected.replace('{count}', '1'))).toBeInTheDocument();
+    expect(within(alert).queryByText(t.freeze.noHeldOut)).not.toBeInTheDocument();
+    const rows = screen.getAllByRole('row');
+    expect(rows.filter((row) => within(row).queryByText(t.freeze.rowMissing))).toHaveLength(1);
+    expect(rows.find((row) => within(row).queryByText(t.freeze.rowMissing))).toHaveTextContent('go · verb');
+  });
+
+  it('409 eval-set-conflict: the conflict sentence, and the versions are read again', async () => {
+    const r = await openPage({ [URL.examples()]: mixedReply, [FREEZE]: () => problem(409, 'eval-set-conflict') });
+    await screen.findByText('3 dev · 2 held-out');
+    await pressFreeze();
+    await userEvent.click(within(await screen.findByRole('dialog')).getByRole('button', { name: t.freeze.confirm }));
+    expect(await screen.findByText(vi.errors['eval-set-conflict'])).toBeInTheDocument();
+    await waitFor(() => expect(r.count('GET', '/v1/admin/ai/eval/sets?operation=generate_cloze')).toBe(2));
+  });
+
+  it('a version row: "Phiên bản 1", its counts and "1 ví dụ held-out đã bị xem"; a version nobody looked into has no such line', async () => {
+    await openPage({
+      [SETS]: () => Response.json({ items: [evalSet({ id: 'S2', version: 2, revealed_count: 0 }), evalSet({ id: 'S1', version: 1, revealed_count: 1 })] }),
+    });
+    const versions = await screen.findByRole('region', { name: t.sets.title });
+    const [two, one] = (await within(versions).findAllByRole('row')).slice(1);
+    expect(one).toHaveTextContent(t.sets.version.replace('{version}', '1'));
+    expect(one).toHaveTextContent('7 dev · 3 held-out');
+    expect(one).toHaveTextContent(t.sets.revealed.replace('{count}', '1'));
+    expect(two).toHaveTextContent('7 dev · 3 held-out');
+    expect(two).not.toHaveTextContent('đã bị xem');
+  });
+
+  it('a version opens its items: a deleted hidden held-out item can be opened from there, a seen one shows its input and "Đã bị xem"', async () => {
+    let seen = false;
+    const items = () => [
+      setItem({ example_id: 'e1', position: 0 }),
+      setItem({
+        example_id: 'e9', position: 1, split: 'held_out', in_working_set: false, revealed_at: seen ? '2026-10-16T02:00:00.000Z' : null,
+        input: seen ? example('fall').input : null, expected: seen ? { forms: ['fall'] } : null,
+      }),
+      setItem({ example_id: 'e8', position: 2, split: 'held_out', revealed_at: '2026-10-16T01:00:00.000Z', input: example('rise').input, expected: { forms: ['rise'] } }),
+    ];
+    const r = await openPage({
+      [SETS]: () => Response.json({ items: [evalSet({ id: 'S1', version: 1, revealed_count: 1 })] }),
+      [URL.set('S1')]: () => Response.json({ ...setDetail({ id: 'S1', version: 1, revealed_count: 1 }, items()) }),
+      [URL.reveal('e9')]: () => {
+        seen = true;
+        return Response.json({ id: 'e9', operation: 'generate_cloze', split: 'dev', input: example('fall').input, expected: { forms: ['fall'] }, note: null, revealed_at: '2026-10-16T02:00:00.000Z', deleted: true });
+      },
+    });
+    await userEvent.click((await screen.findAllByRole('button', { name: t.sets.version.replace('{version}', '1') }))[0]);
+    const dialog = await screen.findByRole('dialog', { name: t.sets.version.replace('{version}', '1') });
+    const rows = await within(dialog).findAllByRole('listitem');
+    expect(rows).toHaveLength(3);
+    expect(rows[0]).toHaveTextContent('go · verb');
+    expect(rows[1]).toHaveTextContent(t.heldOutHidden);
+    expect(rows[1]).toHaveTextContent(t.sets.deleted);
+    expect(rows[2]).toHaveTextContent('rise · verb');
+    expect(rows[2]).toHaveTextContent(t.sets.seen);
+    expect(rows[2]).not.toHaveTextContent(t.heldOutHidden);
+    expect(within(rows[0]).queryByRole('button', { name: t.reveal.button })).not.toBeInTheDocument();
+    expect(within(rows[2]).queryByRole('button', { name: t.reveal.button })).not.toBeInTheDocument();
+
+    await userEvent.click(within(rows[1]).getByRole('button', { name: t.reveal.button }));
+    const ask = await screen.findByRole('dialog', { name: t.reveal.title });
+    await userEvent.click(within(ask).getByRole('button', { name: t.reveal.confirm }));
+    expect(await screen.findByText(t.toast.revealedDeleted)).toBeInTheDocument();
+    expect(r.count('POST', '/v1/admin/ai/eval/examples/e9/reveal')).toBe(1);
+    await waitFor(() => expect(within(dialog).getAllByRole('listitem')[1]).toHaveTextContent('fall · verb'));
+    expect(within(dialog).getAllByRole('listitem')[1]).toHaveTextContent(t.sets.seen);
+  });
+});
+
 describe('AiEvalPage runs (A/83)', () => {
   it('[Chạy bộ ví dụ] sends prompt "current" with an Idempotency-Key, opens the run and reads the quota again', async () => {
     const r = await openPage({
@@ -362,6 +564,7 @@ describe('AiEvalPage runs (A/83)', () => {
       },
       [URL.examples('lookup_word')]: () => Response.json({ items: [] }),
       [URL.runs('lookup_word')]: () => Response.json({ items: [], next_page_token: null }),
+      [URL.sets('lookup_word')]: () => Response.json({ items: [] }),
     });
     await userEvent.click(runButton());
     expect(await screen.findByRole('button', { name: vi.common.retry })).toBeInTheDocument();

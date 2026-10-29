@@ -11,6 +11,11 @@
     "email-already-verified": "Email này đã được xác minh",
     "email-taken": "Email đã được dùng",
     "entry-in-use": "Từ này đang được dùng nên chưa xóa được.",
+    "eval-set-conflict": "Một admin khác vừa chốt phiên bản. Danh sách phiên bản đã được tải lại.",
+    "eval-set-incomplete": "Chưa chốt được phiên bản.",
+    "eval-set-mismatch": "Hai lần chạy không cùng phiên bản bộ ví dụ nên không so được.",
+    "example-held-out": "Ví dụ held-out không sửa được khi chưa mở.",
+    "example-not-held-out": "Ví dụ này không còn là held-out. Danh sách đã được tải lại.",
     "expected-invalid": "Ô mong đợi chưa hợp lệ.",
     "export-too-large": "Quá nhiều dòng để xuất, hãy thu hẹp bộ lọc",
     "file-invalid": "File không hợp lệ",
@@ -408,7 +413,35 @@
     "eval": {
       "operation": "Thao tác",
       "examples": "Ví dụ ({count}/1.000)",
-      "examplesHint": "Mỗi thao tác tối đa 1.000 ví dụ. Chạy thử ở Prompt và [Chạy bộ ví dụ] dùng các ví dụ này.",
+      "examplesHint": "Mỗi thao tác tối đa 1.000 ví dụ. Ví dụ mới tự vào dev hoặc held-out để giữ tỉ lệ held-out; ví dụ held-out bị ẩn cho tới khi bạn mở. Chạy thử ở Prompt chỉ dùng ví dụ dev.",
+      "counts": "{dev} dev · {heldOut} held-out",
+      "heldOutHidden": "Ví dụ held-out: nội dung được ẩn",
+      "split": { "dev": "dev", "heldOut": "held-out" },
+      "reveal": {
+        "button": "Mở ví dụ held-out",
+        "title": "Mở ví dụ held-out?",
+        "body": "Sau khi mở, ví dụ này chuyển sang dev và không còn là đề thi. Các phiên bản đã chốt vẫn giữ nó ở phần held-out và ghi là đã bị xem.",
+        "confirm": "Mở ví dụ"
+      },
+      "freeze": {
+        "button": "Chốt phiên bản",
+        "title": "Chốt phiên bản {version}?",
+        "body": "Bộ đang soạn ({dev} dev, {heldOut} held-out) được chụp lại thành phiên bản {version}. Sửa ví dụ sau đó không đổi phiên bản này.",
+        "confirm": "Chốt phiên bản",
+        "incomplete": "Chưa chốt được phiên bản.",
+        "missingExpected": "{count} ví dụ chưa có ô mong đợi.",
+        "noHeldOut": "Bộ chưa có ví dụ held-out nào.",
+        "rowMissing": "Chưa có ô mong đợi"
+      },
+      "sets": {
+        "title": "Phiên bản đã chốt",
+        "empty": "Chưa có phiên bản nào.",
+        "version": "Phiên bản {version}",
+        "revealed": "{count} ví dụ held-out đã bị xem",
+        "deleted": "Đã xóa khỏi bộ đang soạn",
+        "seen": "Đã bị xem",
+        "cols": { "version": "Phiên bản", "frozenAt": "Chốt lúc", "counts": "Số ví dụ", "seen": "Held-out đã bị xem" }
+      },
       "add": "Thêm ví dụ",
       "bulk": {
         "add": "Nhập hàng loạt",
@@ -444,6 +477,7 @@
       "examplesFailed": "Không đọc được bộ ví dụ.",
       "cols": {
         "input": "Đầu vào",
+        "split": "Phần",
         "note": "Ghi chú",
         "createdBy": "Người thêm",
         "actions": "Hành động"
@@ -458,6 +492,9 @@
       "toast": {
         "added": "Đã thêm ví dụ.",
         "addedHeldOut": "Đã thêm ví dụ. Ví dụ này vào phần held-out nên được ẩn.",
+        "revealed": "Đã mở ví dụ. Ví dụ đã chuyển sang dev.",
+        "revealedDeleted": "Đã mở ví dụ. Ví dụ đã bị xóa khỏi bộ đang soạn nên chỉ còn trong các phiên bản đã chốt.",
+        "frozen": "Đã chốt phiên bản {version}.",
         "saved": "Đã lưu ví dụ.",
         "deleted": "Đã xóa ví dụ.",
         "stopped": "Đã dừng lần chạy.",

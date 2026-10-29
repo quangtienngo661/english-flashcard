@@ -11,6 +11,11 @@
     "email-already-verified": "This email is already verified",
     "email-taken": "This email is already in use",
     "entry-in-use": "This word is in use and cannot be deleted yet.",
+    "eval-set-conflict": "Another admin has just frozen a version. The list of versions was reloaded.",
+    "eval-set-incomplete": "The version could not be frozen.",
+    "eval-set-mismatch": "The two runs are not on the same version of the example set, so they cannot be compared.",
+    "example-held-out": "A held-out example cannot be edited until it is opened.",
+    "example-not-held-out": "This example is no longer held-out. The list was reloaded.",
     "expected-invalid": "The expected answer is not valid.",
     "export-too-large": "Too many rows to export, narrow the filters",
     "file-invalid": "The file is not valid",
@@ -408,7 +413,35 @@
     "eval": {
       "operation": "Operation",
       "examples": "Examples ({count}/1,000)",
-      "examplesHint": "Up to 1,000 examples per operation. Test runs on the Prompt page and [Run example set] use these examples.",
+      "examplesHint": "Up to 1,000 examples per operation. A new example goes into dev or held-out to keep the held-out share; held-out examples stay hidden until you open them. Test runs on the Prompt page use dev examples only.",
+      "counts": "{dev} dev · {heldOut} held-out",
+      "heldOutHidden": "Held-out example: content hidden",
+      "split": { "dev": "dev", "heldOut": "held-out" },
+      "reveal": {
+        "button": "Open held-out example",
+        "title": "Open this held-out example?",
+        "body": "Once opened, this example moves to dev and is no longer part of the exam. Frozen versions keep it in their held-out part and record that it was seen.",
+        "confirm": "Open example"
+      },
+      "freeze": {
+        "button": "Freeze version",
+        "title": "Freeze version {version}?",
+        "body": "The set being edited ({dev} dev, {heldOut} held-out) is saved as version {version}. Editing examples afterwards does not change this version.",
+        "confirm": "Freeze version",
+        "incomplete": "The version could not be frozen.",
+        "missingExpected": "{count, plural, one {# example has} other {# examples have}} no expected answer.",
+        "noHeldOut": "The set has no held-out example.",
+        "rowMissing": "No expected answer yet"
+      },
+      "sets": {
+        "title": "Frozen versions",
+        "empty": "No version yet.",
+        "version": "Version {version}",
+        "revealed": "{count, plural, one {# held-out example was} other {# held-out examples were}} seen",
+        "deleted": "Deleted from the set being edited",
+        "seen": "Seen",
+        "cols": { "version": "Version", "frozenAt": "Frozen at", "counts": "Examples", "seen": "Held-out seen" }
+      },
       "add": "Add example",
       "bulk": {
         "add": "Bulk import",
@@ -444,6 +477,7 @@
       "examplesFailed": "Could not read the example set.",
       "cols": {
         "input": "Input",
+        "split": "Part",
         "note": "Note",
         "createdBy": "Added by",
         "actions": "Actions"
@@ -458,6 +492,9 @@
       "toast": {
         "added": "Example added.",
         "addedHeldOut": "Example added. It went into the held-out part, so it is hidden.",
+        "revealed": "Example opened. It moved to dev.",
+        "revealedDeleted": "Example opened. It was deleted from the set being edited, so it only remains in frozen versions.",
+        "frozen": "Version {version} frozen.",
         "saved": "Example saved.",
         "deleted": "Example deleted.",
         "stopped": "Run stopped.",
