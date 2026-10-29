@@ -13,7 +13,7 @@ private words; quick-add of words encountered elsewhere; word groups, flashcards
 schedule; non-AI definition quizzes; AI-generated fill-in-the-blank practice graded by rule; tier-based
 entitlements and quotas.
 
-**Current phase (28/10/2026): Bước 0, 1 (Identity core), 2 (Content + Pipeline), 2.5 (admin web, `apps/admin`), 3 (Learning +
+**Current phase (29/10/2026): Bước 8 (Google sign-in, account deletion, cancel plan; API, web, admin) is built on branches `feat/buoc-8-m1`…`m7` and **not merged yet** (PRs into `dev` open, owner reviews; real Google not yet tried, see the section "Bước 8" below). Before that (28/10/2026): Bước 0, 1 (Identity core), 2 (Content + Pipeline), 2.5 (admin web, `apps/admin`), 3 (Learning +
 the Content pieces deferred from Bước 2, system part only), 4 (Practice, API only), 5 (Entitlements, API only), 6 (AI Integration,
 API only) and 7 (Practice AI + Content AI, API only) implemented; the learner web UI for Bước 3–7 (`apps/web` `/vi/app`, `/en/app`) is built
 (section "Giao diện người học" below), blocked on production until Deploy; the admin UI round (24 screens in `apps/admin`) is built (section "Đợt giao diện admin" below).** Real code is
@@ -58,7 +58,7 @@ under `apps/api` and `apps/admin`. Historical implementation branches:
   `generate_sentence_mcq`, `check_private_word`) are seeded with **no model** (`model_ref NULL`), like Bước 6's: an admin chooses a model for
   each (and for `generate_cloze`, `lookup_word`) before learners get AI questions or lookups. **No real AI call yet** as of 21/10/2026 (D3 Bước 7). Its learner and admin UI came in later rounds (sections below).
 
-**Next (21/10/2026):** in the fixed build order, Bước 8 (Identity remainder: Google login, account deletion) comes next; design Bước 7
+**Next (21/10/2026; Bước 8 has since been built, 29/10/2026):** in the fixed build order, Bước 8 (Identity remainder: Google login, account deletion) came next; design Bước 7
 §19 lists what account deletion must also remove. A first real AI call with the owner's own keys is worth doing early (design Bước 6 §19,
 Bước 7 §20: AI question quality and the rule rejection rate are not measured yet). *(Update 28/10/2026: the learner UI for Bước 3–7 and the admin UI (24 screens, `docs/deliveries/giao-dien-admin.md`) are built; the work still open, and the first real AI call the owner reported on 28/10/2026, are in
 `docs/preparation/IMPROVEMENT_PLAN_2026-10-28.md`.)* **Deploy** (hosting, durable Postgres/Redis, real SMTP, secrets, backup; design 2.5 §14) moved to **when the whole app is
@@ -313,7 +313,10 @@ group B of the AI work (`docs/preparation/IMPROVEMENT_PLAN_2026-10-28.md` §4), 
 
 ## Bước 8 — plan & as-built
 
-`docs/deliveries/buoc-8.md` (plan tóm tắt 29/10/2026; Google sign-in + account deletion). Design, decisions (D1–D30), review and plan: `docs/superpowers/{specs,decisions,reviews,plans}/2026-10-2{8,9}-buoc-8-*`.
+`docs/deliveries/buoc-8.md` (plan tóm tắt and as-built 29/10/2026; Google sign-in + account deletion + "Hủy gói"; API, web, admin). Design, decisions (D1–D33), review and plan: `docs/superpowers/{specs,decisions,reviews,plans}/2026-10-2{8,9}-buoc-8-*`.
+Seven chained branches `feat/buoc-8-m1`…`m7` (PRs into `dev` in that order, after `docs/buoc-8-brainstorm`; **not merged**, owner 29/10/2026), then the docs branch `docs/buoc-8-as-built`. API 3129 unit, web 722, admin 904; an independent final review found 1 Critical + 3 Important (fixed) and 8 Minor (R21 in `docs/deliveries/buoc-8-rulings.md`: M4, M6, M8 fixed in PR #181 `fix/buoc-8-minors`, M3 and M1 in `deploy-checklist.md`, M2, M5, M7 dropped); `pnpm smoke:buoc-8` passed twice on fresh DBs
+(`docs/deliveries/buoc-8-smoke-output.txt`). **Not yet done:** real Google sign-in rounds 1 and 2 (D32; two `ASSUMPTION`s in design §19 unconfirmed; web Task 23 was made provisionally, ruling R13) and the browser pass with screenshots. Owner test flow (fake Google first, then real):
+`docs/deliveries/buoc-8-test-flow.md`; every decision made while building: `docs/deliveries/buoc-8-rulings.md`; before launch: section "Bước 8" of `docs/deliveries/deploy-checklist.md`. Every local API environment file also needs `OAUTH_COOKIE_KEY` and `GOOGLE_REDIRECT_URI` when Google (real or `GOOGLE_FAKE_ENABLED=true`) is on.
 
 ## Đợt cải thiện nhóm A — plan & as-built
 

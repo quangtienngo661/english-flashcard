@@ -115,3 +115,37 @@ Thông thường site nhỏ không cố chặn hết bot; chỉ bảo vệ chỗ
 - [ ] **Dọn tài khoản chưa từng xác nhận email sau N ngày.** Nguồn: A5 đợt cải thiện nhóm A (design `../superpowers/specs/2026-10-26-dot-cai-thien-a-design.md` §4),
   làm cùng phần xoá tài khoản của Bước 8. Vì sao: từ đợt này tài khoản chưa xác nhận không vào được app nhưng vẫn nằm trong DB và giữ chỗ email;
   `identity-cleanup.service.ts` chỉ xoá OTP và chuỗi phiên hết hạn.
+
+## Bước 8 — đăng nhập Google và xóa tài khoản (design Bước 8 §18, §19; 29/10/2026)
+
+- [ ] **Google Auth Platform: chuyển từ "Testing" sang "In production" và xin xác minh thương hiệu.** Nguồn: design Bước 8 §18. Vì sao: ở Testing chỉ tối đa 100 test
+  user đăng nhập được và token hết hạn sau 7 ngày. Việc: trang chủ có link chính sách riêng tư cùng domain (`docs/preparation/LEGAL_PAGES_RESEARCH_2026-10-11.md`), thêm địa chỉ quay
+  về production (`https://api.<domain>/v1/auth/google/callback`) vào OAuth client, đặt `GOOGLE_REDIRECT_URI` đúng địa chỉ đó. Khi đã xác minh có thể bật `auth_time` để siết bước xác nhận Google (D25).
+- [ ] **Đặt secret production: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `OAUTH_COOKIE_KEY` (khóa riêng, sinh bằng `node scripts/gen-secret.mjs`) và KHÔNG đặt `GOOGLE_FAKE_ENABLED`.**
+  Vì sao: API từ chối khởi động nếu Google giả bật cùng `BILLING_PRODUCTION`, nhưng đừng dựa vào đó. `TERMS_VERSION` cũng bắt buộc (đợt sửa Bước 0–3).
+- [ ] **`GOOGLE_FAKE_ENABLED` không bao giờ bật ở môi trường nào nối được ra internet (staging, demo, preview), không chỉ production.** Nguồn: review cuối Bước 8. Vì sao: Google giả cho ai cũng tự cấp ID token "đã xác minh"
+  cho bất kỳ email nào, nên qua tự liên kết (K8) nó là lối vào mọi tài khoản đã xác nhận, không chỉ là chuyện thanh toán giả. Lớp chặn duy nhất trong code là từ chối khởi động khi cùng bật `BILLING_PRODUCTION`.
+- [ ] **Thời gian một yêu cầu xóa tài khoản có thể kéo dài tới 120 giây** (Tx B). Kiểm giới hạn thời gian của reverse proxy/hosting (nhiều nơi cắt ở 60–100 giây); bị cắt thì dữ liệu vẫn an toàn (đã commit hoặc còn `deleting` để retry) nhưng web hiện lỗi mạng.
+- [ ] **Trước khi nối nhà cung cấp thanh toán thật: sửa việc tắt gia hạn từng phần khi admin xóa người học (review cuối M3).** Nguồn: `buoc-8-rulings.md` R21. Vì sao: người học có hai gói tự gia hạn, gói đầu tắt được, gói sau quá hạn thì admin nhận 409 "chưa xóa" nhưng gói đầu đã bị hủy; và bước tắt gia hạn chạy trước khi kiểm "admin cuối". Hiện chỉ có nhà cung cấp giả nên chưa ai gặp.
+- [ ] **Khi viết quy trình backup và khôi phục: `accounts:replay-deletions` với tài khoản đang `deleting` do người dùng tự xóa (review cuối M1).** Nguồn: `buoc-8-rulings.md` R21. Vì sao: lệnh chạy lại không hoàn tất riêng loại xóa "tự xóa" (code bỏ qua `mode` ở `account-deletion.service.ts:94-96`); việc thử lại chạy mỗi giờ sẽ xử lý nốt nhưng với kiểm tra bình thường. Chỉ gặp sau khôi phục sau sự cố.
+- [ ] **Hai lần chạy Google thật (D32) và hai giả định kỹ thuật.** Nguồn: design §19. Lần 1 (cookie `refresh_token` còn sau chuyển trang từ Google; `/v1/auth/refresh` ngay sau đó
+  thành công; Google nhận PKCE S256) và lần 2 (cả luồng) làm theo `docs/deliveries/buoc-8-test-flow.md` mục B. **Chưa ai chạy tới 29/10/2026.** Thất bại → áp phương án dự phòng
+  của design §19 (mã dùng một lần 60 giây) rồi mới mở Google cho người dùng.
+- [ ] **Chính sách riêng tư (cần luật sư).** Nguồn: design §18, D15. Ghi: ảnh đại diện lấy từ Google; hồ sơ thanh toán giữ N năm sau khi xóa tài khoản (mặc định 10, cài đặt
+  `entitlements.transaction_retention_years`; luật sư xác nhận N, vì Luật Kế toán nêu 5–10 năm tùy loại chứng từ); thời hạn backup; những gì còn giữ sau khi xóa (design §7.3:
+  hàng ẩn danh của sổ lượt, giao dịch, báo lỗi đã bỏ ghi chú); cách giữ báo lỗi.
+- [ ] **Xem lại câu 26 trước khi mở cho người dùng thật: tự liên kết Google với email không do Google quản lý.** Nguồn: design §19. Vì sao: người từng giữ hộp thư công ty đã tạo
+  tài khoản Google bằng email đó có thể vào tài khoản Wordmet của người đang giữ hộp thư, vì Google chỉ xác minh email một lần lúc tạo tài khoản Google. Bước 8 chấp nhận.
+- [ ] **Backup và danh sách tài khoản đã xóa (D21).** Nguồn: design §7.5. `deleted_accounts` nằm trong chính DB nên khôi phục backup cũ làm mất danh sách. Thủ tục (trong `apps/api`):
+  (1) trước khi khôi phục, nếu DB đang chạy còn đọc được: `pnpm accounts:export-deletions --out deleted-accounts.jsonl` (giữ file ngoài DB); (2) khôi phục backup; (3) **trước khi mở app**:
+  `pnpm accounts:replay-deletions --from deleted-accounts.jsonl` (thoát mã 2 và in `pending <id>` khi còn tài khoản chưa xóa xong). Lệnh xóa lại mọi tài khoản trong file mà bảng `users` vẫn còn hàng, bỏ qua điều kiện "gói đang gia hạn / admin cuối",
+  không gửi thư; in `replayed N, without a users row M, pending K` — **K > 0 nghĩa là một vài tài khoản chưa xóa xong, chạy lại lệnh**. Còn mở: nơi lưu danh sách **ngoài DB**
+  (cho trường hợp mất cả DB) và thời hạn backup — chốt cùng cách backup. Thời hạn giữ log cũng phải ghi (log mang `user_id`).
+- [ ] **Kích thước pool kết nối DB.** Nguồn: Bước 8 R6/R8 (`docs/deliveries/buoc-8-rulings.md`). Vì sao: Tx B của xóa tài khoản giữ một kết nối tới 120 giây và bộ xóa của Entitlements đọc
+  cài đặt qua client dùng chung trong lúc đó; kiểm nhiều người xóa cùng lúc không làm cạn pool. Cũng xem lại: thông điệp lỗi trong log `account_deletion_failed` có thể nêu giá trị từ lỗi DB.
+- [ ] **Scheduler chạy ở cả API và worker.** Nguồn: design §19 (`CHƯA KIỂM` trong production). Các việc Bước 8 (thử lại xóa, quét hàng ghi muộn, dọn chưa xác nhận, xóa giao dịch quá hạn)
+  được viết để chạy lặp vô hại; kiểm lại trên môi trường thật là chúng không chạy đồng thời gây xung đột.
+- [ ] **App điện thoại.** Nguồn: design §18. Google Sign-In qua thư viện Android/iOS và một endpoint nhận ID token; Sign in with Apple trước khi ra iOS (Apple 4.8); trang web xin xóa tài khoản
+  cho Google Play (D20); gói mua qua store thì "Hủy gói" chuyển người dùng sang trang quản lý gói của store (web đã có thông báo `cancel-in-store`).
+- [ ] **Nhà cung cấp thanh toán thật.** Nguồn: design §18, D12, D31. Hỗ trợ `cancelAtPeriodEnd`; adapter phải trả lời trong hằng `BILLING_ADAPTER_TIMEOUT_MS` (`entitlements.constants.ts`) khi admin xóa người đang gia hạn
+  (không kịp → 409 `renewal-not-cancelled`, không xóa gì); xem lại chống dùng thử lại ở phía họ.
