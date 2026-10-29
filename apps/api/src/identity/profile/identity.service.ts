@@ -133,6 +133,12 @@ export class IdentityService {
     return new Map(rows.map((row) => [row.id, row.email]));
   }
 
+  /** Ids of the users that hold a staff role now, any account status, ordered by id (nhóm B D35: the "test accounts" of the real-question judge). */
+  async staffUserIds(): Promise<string[]> {
+    const rows = await this.prisma.user.findMany({ where: { staffRole: { not: null } }, select: { id: true }, orderBy: { id: 'asc' } });
+    return rows.map((row) => row.id);
+  }
+
   /** The id of the account with this address (normalized as at sign-up), or null; any status. */
   async findUserIdByEmail(email: string): Promise<string | null> {
     const normalized = normalizeEmail(email);
