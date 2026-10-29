@@ -13,7 +13,7 @@ const ENTITLEMENT_DEFAULTS_API = {
 
 const AI_DEFAULTS_API = {
   call_timeout_seconds: 10, max_concurrent_calls: 50, daily_provider_calls_cap: 3000, content_retention_days: 7,
-  usd_vnd_rate: 26100, eval_held_out_ratio: 0.3,
+  usd_vnd_rate: 26100, eval_held_out_ratio: 0.3, admin_daily_usd_cap: 2, judge_label_min: 30, judge_agreement_min: 0.85,
 };
 
 const issues = (input: unknown) => {
@@ -259,9 +259,9 @@ describe('settings definitions', () => {
     expect(toApiValues(values).reminders).not.toHaveProperty('weekly_max');
   });
 
-  it('ai defaults are 10, 50, 3000, 7, 26100, 0.3', () => {
+  it('ai defaults are 10, 50, 3000, 7, 26100, 0.3, 2, 30, 0.85', () => {
     expect(toApiValues(SETTINGS_DEFAULTS).ai).toEqual(AI_DEFAULTS_API);
-    expect(Object.values(toApiValues(SETTINGS_DEFAULTS).ai)).toEqual([10, 50, 3000, 7, 26100, 0.3]);
+    expect(Object.values(toApiValues(SETTINGS_DEFAULTS).ai)).toEqual([10, 50, 3000, 7, 26100, 0.3, 2, 30, 0.85]);
   });
 
   it('withDefaults fills the ai group for JSON stored before Bước 6 and keeps a stored null cap', () => {
@@ -273,10 +273,10 @@ describe('settings definitions', () => {
     expect(withDefaults({ ai: { usdVndRate: 25000 } }).ai).toEqual({ ...SETTINGS_DEFAULTS.ai, usdVndRate: 25000 });
   });
 
-  it('toApiValues names the six keys in snake_case', () => {
+  it('toApiValues names the nine keys in snake_case', () => {
     expect(Object.keys(toApiValues(SETTINGS_DEFAULTS).ai)).toEqual([
       'call_timeout_seconds', 'max_concurrent_calls', 'daily_provider_calls_cap', 'content_retention_days', 'usd_vnd_rate',
-      'eval_held_out_ratio',
+      'eval_held_out_ratio', 'admin_daily_usd_cap', 'judge_label_min', 'judge_agreement_min',
     ]);
   });
 
@@ -307,9 +307,32 @@ describe('settings definitions', () => {
     expect(SETTINGS_BOUNDS.ai.eval_held_out_ratio).toEqual({ min: 0.1, max: 0.5 });
   });
 
-  it('accepts null only for daily_provider_calls_cap', () => {
+  it('M3-T2: admin_daily_usd_cap is 0–1000 in cents or null, default 2', () => {
+    for (const value of [0, 2, 1000, null, 0.01]) expect(issues({ ai: { admin_daily_usd_cap: value } }), String(value)).toEqual([]);
+    for (const value of [-0.01, 1000.01, 1.234]) expect(issues({ ai: { admin_daily_usd_cap: value } }), String(value)).toEqual(['ai.admin_daily_usd_cap']);
+    expect(SETTINGS_DEFAULTS.ai.adminDailyUsdCap).toBe(2);
+    expect(toApiValues(SETTINGS_DEFAULTS).ai.admin_daily_usd_cap).toBe(2);
+    expect(applyPatch(SETTINGS_DEFAULTS, { ai: { admin_daily_usd_cap: null } }).ai.adminDailyUsdCap).toBeNull();
+    expect(withDefaults({ ai: { adminDailyUsdCap: null } }).ai.adminDailyUsdCap).toBeNull();
+    expect(withDefaults({ ai: { usdVndRate: 25000 } }).ai.adminDailyUsdCap).toBe(2);
+    expect(SETTINGS_BOUNDS.ai.admin_daily_usd_cap).toEqual({ min: 0, max: 1000, nullable: true });
+  });
+
+  it('M3-T2: judge_label_min is a whole number 10–1000 (default 30); judge_agreement_min is 0.5–1 with two decimals (default 0.85)', () => {
+    for (const value of [10, 1000]) expect(issues({ ai: { judge_label_min: value } }), String(value)).toEqual([]);
+    for (const value of [9, 1001, 30.5]) expect(issues({ ai: { judge_label_min: value } }), String(value)).toEqual(['ai.judge_label_min']);
+    for (const value of [0.5, 1, 0.85]) expect(issues({ ai: { judge_agreement_min: value } }), String(value)).toEqual([]);
+    for (const value of [0.49, 1.01, 0.855]) expect(issues({ ai: { judge_agreement_min: value } }), String(value)).toEqual(['ai.judge_agreement_min']);
+    expect(issues({ ai: { judge_label_min: null } })).toEqual(['ai.judge_label_min']);
+    expect(issues({ ai: { judge_agreement_min: null } })).toEqual(['ai.judge_agreement_min']);
+    expect(SETTINGS_DEFAULTS.ai).toMatchObject({ judgeLabelMin: 30, judgeAgreementMin: 0.85 });
+    expect(withDefaults({ ai: { usdVndRate: 25000 } }).ai.judgeLabelMin).toBe(30);
+    expect(applyPatch(SETTINGS_DEFAULTS, { ai: { judge_label_min: 50, judge_agreement_min: 0.9 } }).ai).toMatchObject({ judgeLabelMin: 50, judgeAgreementMin: 0.9 });
+  });
+
+  it('accepts null only for daily_provider_calls_cap and admin_daily_usd_cap', () => {
     for (const key of Object.keys(AI_DEFAULTS_API)) {
-      expect(issues({ ai: { [key]: null } }), key).toEqual(key === 'daily_provider_calls_cap' ? [] : [`ai.${key}`]);
+      expect(issues({ ai: { [key]: null } }), key).toEqual(key === 'daily_provider_calls_cap' || key === 'admin_daily_usd_cap' ? [] : [`ai.${key}`]);
     }
     const patched = applyPatch(SETTINGS_DEFAULTS, { ai: { daily_provider_calls_cap: null } });
     expect(patched.ai.dailyProviderCallsCap).toBeNull();

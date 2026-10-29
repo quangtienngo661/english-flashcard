@@ -46,6 +46,10 @@ export type AppSettings = {
     contentRetentionDays: number; usdVndRate: number;
     /** Nhóm B (design §5.1, E10): the held-out share of a working eval set, 0.1–0.5, at most two decimals. */
     evalHeldOutRatio: number;
+    /** Nhóm B (design §5.5, B20): what admin calls (tests, evals, judge passes) may spend a day in USD, two decimals; `null` = no cap, 0 blocks all. */
+    adminDailyUsdCap: number | null;
+    /** Nhóm B (design §5.4, D15): labels a judge revision needs, and the share of them it must agree with, to count as calibrated. */
+    judgeLabelMin: number; judgeAgreementMin: number;
   };
 };
 
@@ -65,7 +69,8 @@ export const SETTINGS_DEFAULTS: AppSettings = {
   },
   identity: { unverifiedCleanupDays: 7 },
   content: { privateWordsPerUser: 10000, sentencesPerSense: 20 },
-  ai: { callTimeoutSeconds: 10, maxConcurrentCalls: 50, dailyProviderCallsCap: 3000, contentRetentionDays: 7, usdVndRate: 26100, evalHeldOutRatio: 0.3 },
+  ai: { callTimeoutSeconds: 10, maxConcurrentCalls: 50, dailyProviderCallsCap: 3000, contentRetentionDays: 7, usdVndRate: 26100, evalHeldOutRatio: 0.3,
+    adminDailyUsdCap: 2, judgeLabelMin: 30, judgeAgreementMin: 0.85 },
 };
 
 /** Bounds are `ASSUMPTION` in design §9 (Bước 4: design 5.4); the admin page shows them next to each field. */
@@ -124,6 +129,9 @@ export const SETTINGS_BOUNDS = {
     content_retention_days: { min: 0, max: 30 },
     usd_vnd_rate: { min: 10000, max: 100000 },
     eval_held_out_ratio: { min: 0.1, max: 0.5 },
+    admin_daily_usd_cap: { min: 0, max: 1000, nullable: true },
+    judge_label_min: { min: 10, max: 1000 },
+    judge_agreement_min: { min: 0.5, max: 1 },
   },
 } as const;
 
@@ -196,6 +204,9 @@ export const settingsValuesPatchSchema = z.strictObject({
     content_retention_days: intIn(b.ai.content_retention_days).optional(),
     usd_vnd_rate: intIn(b.ai.usd_vnd_rate).optional(),
     eval_held_out_ratio: ratioIn(b.ai.eval_held_out_ratio).optional(),
+    admin_daily_usd_cap: ratioIn(b.ai.admin_daily_usd_cap).nullable().optional(),
+    judge_label_min: intIn(b.ai.judge_label_min).optional(),
+    judge_agreement_min: ratioIn(b.ai.judge_agreement_min).optional(),
   }).optional(),
 });
 export type SettingsValuesPatch = z.infer<typeof settingsValuesPatchSchema>;
@@ -246,6 +257,9 @@ const FIELDS = [
   ['ai', 'content_retention_days', 'contentRetentionDays'],
   ['ai', 'usd_vnd_rate', 'usdVndRate'],
   ['ai', 'eval_held_out_ratio', 'evalHeldOutRatio'],
+  ['ai', 'admin_daily_usd_cap', 'adminDailyUsdCap'],
+  ['ai', 'judge_label_min', 'judgeLabelMin'],
+  ['ai', 'judge_agreement_min', 'judgeAgreementMin'],
 ] as const;
 
 type Section = keyof AppSettings;
