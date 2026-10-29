@@ -41,7 +41,7 @@ describe('StaffService.listUsers / getUserDetail (unit, isolated persistence)', 
     expect(sqlOf().sql).toContain('ORDER BY created_at DESC, id DESC');
     expect(first.items.map((item) => item.email)).toEqual(['u3@example.com', 'u2@example.com']);
     expect(first.items[0]).toEqual({ id: row(3).id, email: 'u3@example.com', given_name: null, family_name: null, email_verified: true,
-      staff_role: null, status: 'active', created_at: '2026-10-01T00:00:00.503Z', last_seen_at: null });
+      staff_role: null, status: 'active', created_at: '2026-10-01T00:00:00.503Z', last_seen_at: null, sign_in_methods: [] });
     expect(first.next_page_token).toEqual(expect.any(String));
     prisma.$queryRaw.mockResolvedValue([row(1)]);
     const second = await staff.listUsers({ pageSize: 2, pageToken: first.next_page_token! });
@@ -91,12 +91,12 @@ describe('StaffService.listUsers / getUserDetail (unit, isolated persistence)', 
       .mockResolvedValueOnce({ id, email: 'a@example.com', givenName: 'Lan', familyName: 'Nguyen', emailVerifiedAt: new Date(), staffRole: null,
         status: 'locked', createdAt: new Date('2026-10-01T00:00:00.000Z'), lastSeenAt: null, birthDate: new Date('2000-02-29T00:00:00.000Z'),
         termsAcceptedAt: new Date('2026-10-01T00:00:00.000Z'), termsVersion: 'v1', lockedAt: new Date('2026-10-02T00:00:00.000Z'),
-        lockedBy: lockerId, lockReason: 'spam' })
+        lockedBy: lockerId, lockReason: 'spam', passwordCredential: { userId: id }, identities: [] })
       .mockResolvedValueOnce({ email: 'admin@example.com' });
     expect(await staff.getUserDetail(id)).toEqual({ id, email: 'a@example.com', given_name: 'Lan', family_name: 'Nguyen', email_verified: true,
       staff_role: null, status: 'locked', created_at: '2026-10-01T00:00:00.000Z', last_seen_at: null, birth_date: '2000-02-29',
       terms_accepted_at: '2026-10-01T00:00:00.000Z', terms_version: 'v1', locked_at: '2026-10-02T00:00:00.000Z',
-      locked_by: { id: lockerId, email: 'admin@example.com' }, lock_reason: 'spam' });
+      locked_by: { id: lockerId, email: 'admin@example.com' }, lock_reason: 'spam', sign_in_methods: ['password'] });
   });
   it('detail of an unknown id is 404', async () => {
     prisma.user.findUnique.mockResolvedValue(null);

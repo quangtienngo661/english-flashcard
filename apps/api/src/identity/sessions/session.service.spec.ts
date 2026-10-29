@@ -27,7 +27,7 @@ function setup() {
   const clock = new FakeClock(new Date('2026-10-07T12:00:00Z'));
   const chain: SessionChain & { user: { status: string; emailVerifiedAt: Date | null } } = {
     id: randomUUID(), userId: randomUUID(), clientType: 'mobile', deviceLabel: null,
-    createdAt: clock.now(), lastUsedAt: clock.now(), revokedAt: null, revokeReason: null,
+    createdAt: clock.now(), lastUsedAt: clock.now(), revokedAt: null, revokeReason: null, authMethod: 'password',
     user: { status: 'active', emailVerifiedAt: clock.now() },
   };
   const original = newRefreshToken();
@@ -340,6 +340,7 @@ describe('SessionService transaction invariants', () => {
     const session = await s.service.startChain(tx, { userId: s.chain.userId, client: 'mobile', deviceLabel: 'Phone' });
     expect(createChain).toHaveBeenCalledWith({ data: {
       userId: s.chain.userId, clientType: 'mobile', deviceLabel: 'Phone', createdAt: s.clock.now(), lastUsedAt: s.clock.now(),
+      authMethod: 'password',
     } });
     expect(s.userUpdate).toHaveBeenCalledWith({ where: { id: s.chain.userId }, data: { lastSeenAt: s.clock.now() } });
     expect(findMany).toHaveBeenCalledWith({
@@ -363,6 +364,35 @@ describe('SessionService transaction invariants', () => {
     } else expect(s.chainUpdateMany).not.toHaveBeenCalled();
     expect(s.transaction).not.toHaveBeenCalled();
     expect(s.lock).not.toHaveBeenCalled();
+  });
+
+  it('B8 (D5): startChain stores the sign-in method; Google only when asked', async () => {
+    const s = setup();
+    const createChain = vi.fn(async () => s.chain);
+    const tx = {
+      ...s.tx, sessionChain: { create: createChain, findMany: vi.fn(async () => []), updateMany: s.chainUpdateMany },
+    } as unknown as Prisma.TransactionClient;
+    await s.service.startChain(tx, { userId: s.chain.userId, client: 'web', authMethod: 'google' });
+    expect(createChain).toHaveBeenCalledWith({ data: expect.objectContaining({ authMethod: 'google' }) });
+  });
+
+  it('B8 (D24, IE11): refresh of a chain whose user is deleting → 401 and the chain is revoked with reason account-deleted', async () => {
+    const s = setup();
+    s.chain.user.status = 'deleting';
+    await expect(s.service.refresh(s.original.token, 'mobile')).rejects.toMatchObject({ status: 401, problemType: 'invalid-token' });
+    expect(s.chainUpdateMany).toHaveBeenCalledExactlyOnceWith({
+      where: { id: s.chain.id, revokedAt: null }, data: { revokedAt: s.clock.now(), revokeReason: 'account-deleted' },
+    });
+    expect(s.updateMany).not.toHaveBeenCalled(); expect(s.create).not.toHaveBeenCalled(); expect(s.sign).not.toHaveBeenCalled();
+  });
+
+  it('B8 Review Focus 5: a refresh inside the grace window of a chain Tx A just revoked is refused (regression guard)', async () => {
+    const s = setup();
+    grace(s);
+    s.chain.revokedAt = s.clock.now();
+    s.chain.user.status = 'deleting';
+    await expect(s.service.refresh(s.original.token, 'mobile')).rejects.toMatchObject({ status: 401, problemType: 'invalid-token' });
+    expect(s.sign).not.toHaveBeenCalled();
   });
 
   it.each(['rotated', 'revoked', 'path_mismatch'] as const)(

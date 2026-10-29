@@ -79,3 +79,21 @@ export function otpLockedMail(to: string, purpose: OtpPurpose): MailMessage {
     text: `${vi} đã bị khóa trong 24 giờ do quá nhiều lần nhập mã sai. Đăng nhập bằng mật khẩu vẫn hoạt động.\n\n${en} has been locked for 24 hours after too many incorrect codes. Password login still works.`,
   };
 }
+
+/** Bước 8 (D13, D15): sent once when an account has been deleted; says what is kept. */
+export function accountDeletedMail(to: string, retentionYears: number): MailMessage {
+  return {
+    to,
+    subject: 'Tài khoản Wordmet đã được xóa / Your Wordmet account was deleted',
+    text: `Tài khoản Wordmet của bạn đã được xóa. Hồ sơ thanh toán được giữ ${retentionYears} năm theo quy định, không kèm tên bạn.\n\nYour Wordmet account has been deleted. Payment records are kept for ${retentionYears} years as the law requires, without your name.`,
+  };
+}
+
+/** IR22: sent when a Google account is linked to an existing account by its email address. */
+export function googleLinkedMail(to: string): MailMessage {
+  return {
+    to,
+    subject: 'Tài khoản Google đã được liên kết / A Google account was linked',
+    text: 'Tài khoản Google đã được liên kết với tài khoản Wordmet của bạn. Không phải bạn? Đổi mật khẩu ngay.\n\nA Google account has been linked to your Wordmet account. Not you? Change your password now.',
+  };
+}

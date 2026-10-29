@@ -75,6 +75,7 @@ export class AuthService {
           return { userId, mail: true };
         }
         const user = await tx.user.findUnique({ where: { id: userId } });
+        if (user?.status === 'deleting') throw this.emailTaken('account-deleting');
         if (!user || user.emailVerifiedAt !== null || user.status !== 'active') throw this.emailTaken();
         const updated = await tx.user.updateMany({
           where: { id: userId, emailVerifiedAt: null, status: 'active' },
@@ -192,8 +193,9 @@ export class AuthService {
   private invalidOtp(): ProblemDetailsException {
     return new ProblemDetailsException({ status: 400, title: 'Invalid OTP', type: 'invalid-otp' });
   }
-  private emailTaken(): ProblemDetailsException {
-    return new ProblemDetailsException({ status: 409, title: 'Email taken', type: 'email-taken' });
+  private emailTaken(reason?: 'account-deleting'): ProblemDetailsException {
+    return new ProblemDetailsException({ status: 409, title: 'Email taken', type: 'email-taken',
+      ...(reason ? { extensions: { reason } } : {}) });
   }
   private validationFailed(extensions?: Record<string, unknown>): ProblemDetailsException {
     return new ProblemDetailsException({ status: 400, title: 'Validation failed', type: 'validation-failed', extensions });

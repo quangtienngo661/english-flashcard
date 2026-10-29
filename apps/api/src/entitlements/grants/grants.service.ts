@@ -55,6 +55,7 @@ const transactionOptions = { timeout: 10_000, maxWait: 5_000 };
 const DAY_MS = 86_400_000;
 const LIVE_STATUSES = new Set(['trialing', 'active', 'grace']);
 
+const accountDeleting = () => new ProblemDetailsException({ status: 409, title: 'Account deleting', type: 'account-deleting' });
 const notFound = () => new ProblemDetailsException({ status: 404, title: 'Not found', type: 'not-found' });
 const invalid = () => new ProblemDetailsException({ status: 400, title: 'Validation failed', type: 'validation-failed' });
 const forbidden = () => new ProblemDetailsException({ status: 403, title: 'Forbidden', type: 'forbidden' });
@@ -132,6 +133,7 @@ export class GrantsService {
     const now = this.clock.now();
     const target = await this.identity.getProfile(body.user_id);
     if (!target) throw notFound();
+    if ((await this.identity.accountStatus(target.id)) === 'deleting') throw accountDeleting();
     const actorRole = await this.roleOf(actorId);
     const refusal = grantRefusal({
       action: 'create', actorId, actorRole, targetId: target.id, targetRole: target.staff_role,
@@ -366,6 +368,7 @@ export class GrantsService {
   private async context(actorId: string, grantId: string) {
     const grant = await this.prisma.entitlementGrant.findUnique({ where: { id: grantId } });
     if (!grant) throw notFound();
+    if ((await this.identity.accountStatus(grant.userId)) === 'deleting') throw accountDeleting();
     const actorRole = await this.roleOf(actorId);
     const targetRole = (await this.identity.getProfile(grant.userId))?.staff_role ?? null;
     return { grant, actorRole, targetRole };

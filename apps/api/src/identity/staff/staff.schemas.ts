@@ -10,7 +10,7 @@ const searchText = z.string().transform((value) => value.normalize('NFC').trim()
 export const adminUsersQuerySchema = z.strictObject({
   email: z.string().max(320).refine(noNul, 'Email cannot contain NUL').optional(),
   q: searchText.optional(),
-  status: z.enum(['active', 'locked']).optional(),
+  status: z.enum(['active', 'locked', 'deleting']).optional(),
   page_size: z.coerce.number().int().min(1).max(100).default(20),
   page_token: z.string().optional(),
 }).refine((query) => query.email === undefined || (query.q === undefined && query.status === undefined && query.page_token === undefined

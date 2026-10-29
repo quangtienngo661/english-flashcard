@@ -30,7 +30,8 @@ describe('StaffService learner create / updateUser / resetPassword (unit, isolat
   const config = testConfig();
   type Stored = { id: string; email: string; givenName: string | null; familyName: string | null; emailVerifiedAt: Date | null;
     staffRole: string | null; status: string; createdAt: Date; lastSeenAt: Date | null; birthDate: Date | null; timezone: string;
-    termsAcceptedAt: Date | null; termsVersion: string | null; lockedAt: Date | null; lockedBy: string | null; lockReason: string | null };
+    termsAcceptedAt: Date | null; termsVersion: string | null; lockedAt: Date | null; lockedBy: string | null; lockReason: string | null;
+    passwordCredential: { userId: string } | null; identities: Array<{ provider: string }> };
   let stored: Stored;
   let staff: StaffService;
   const mailsSent = async () => Promise.all(dispatcher.afterResponse.mock.calls.flatMap((call) => call[1]).map((job) => job()));
@@ -38,7 +39,7 @@ describe('StaffService learner create / updateUser / resetPassword (unit, isolat
     vi.resetAllMocks(); logs.length = 0;
     stored = { id: targetId, email: 'lan@example.com', givenName: 'Lan', familyName: null, emailVerifiedAt: clock.now(), staffRole: null,
       status: 'active', createdAt: clock.now(), lastSeenAt: null, birthDate: null, timezone: 'Asia/Saigon', termsAcceptedAt: null,
-      termsVersion: null, lockedAt: null, lockedBy: null, lockReason: null };
+      termsVersion: null, lockedAt: null, lockedBy: null, lockReason: null, passwordCredential: null, identities: [] };
     tx.$executeRaw.mockResolvedValue(1);
     tx.user.create.mockImplementation(async ({ data }) => ({ id: data.id, email: data.email, emailVerifiedAt: data.emailVerifiedAt,
       staffRole: data.staffRole, givenName: data.givenName ?? null, familyName: data.familyName ?? null, status: 'active' }));

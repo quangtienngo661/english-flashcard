@@ -20,7 +20,9 @@ export type RateLimitRuleName =
   | 'learning.review'
   | 'practice.answer'
   | 'ai.test'
-  | 'entitlements.lookup';
+  | 'entitlements.lookup'
+  | 'auth.google.ip'
+  | 'auth.delete.user';
 
 export interface RateLimitRuleConfig {
   by: 'user' | 'ip' | 'email' | 'chain';
@@ -128,6 +130,9 @@ export const DEFAULT_LIMITS: Record<RateLimitRuleName, RateLimitRuleConfig> = {
   'ai.test': { by: 'user', max: 20, windowSeconds: 3600 },
   // Staff look a learner up by email before a grant (design §5.2): 60 an hour, per staff account.
   'entitlements.lookup': { by: 'user', max: 60, windowSeconds: 3600 },
+  // Bước 8: Google start, callback and complete (design §5), and the account deletion check against password guessing (design §7.2).
+  'auth.google.ip': { by: 'ip', max: 20, windowSeconds: 60 },
+  'auth.delete.user': { by: 'user', max: 5, windowSeconds: 3600 },
 };
 
 const nonEmpty = z.string().trim().min(1);

@@ -29,7 +29,8 @@ export type StaffUserView = {
 };
 export type AdminUserRow = {
   id: string; email: string; given_name: string | null; family_name: string | null; email_verified: boolean;
-  staff_role: StaffRole | null; status: 'active' | 'locked'; created_at: string; last_seen_at: string | null;
+  staff_role: StaffRole | null; status: 'active' | 'locked' | 'deleting'; created_at: string; last_seen_at: string | null;
+  sign_in_methods: Array<'password' | 'google'>;
 };
 export type AdminUserDetail = AdminUserRow & {
   birth_date: string | null; terms_accepted_at: string | null; terms_version: string | null; locked_at: string | null;
@@ -42,19 +43,23 @@ const CURSOR_AT = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}Z$/;
 type AdminListRow = {
   id: string; email: string; given_name: string | null; family_name: string | null; email_verified_at: Date | null;
   staff_role: string | null; status: string; created_at: Date; cursor_at: string; last_seen_at: Date | null;
+  has_password?: boolean; has_google?: boolean;
 };
 const adminDetailSelect = {
   id: true, email: true, givenName: true, familyName: true, emailVerifiedAt: true, staffRole: true, status: true,
   createdAt: true, lastSeenAt: true, birthDate: true, termsAcceptedAt: true, termsVersion: true, lockedAt: true, timezone: true,
-  lockedBy: true, lockReason: true,
+  lockedBy: true, lockReason: true, passwordCredential: { select: { userId: true } }, identities: { select: { provider: true } },
 } satisfies Prisma.UserSelect;
+function signInMethods(hasPassword: boolean | undefined, hasGoogle: boolean | undefined): Array<'password' | 'google'> {
+  return [...(hasPassword ? ['password' as const] : []), ...(hasGoogle ? ['google' as const] : [])];
+}
 function toAdminRow(row: Omit<AdminListRow, 'cursor_at'>): AdminUserRow {
   return {
     id: row.id, email: row.email, given_name: row.given_name, family_name: row.family_name,
     email_verified: row.email_verified_at !== null, staff_role: row.staff_role as StaffRole | null,
-    // Cast once: Bước 8 adds 'deleting'; a new status must not be reported as active.
-    status: row.status as 'active' | 'locked', created_at: row.created_at.toISOString(),
-    last_seen_at: row.last_seen_at?.toISOString() ?? null,
+    // Cast once: a new status must not be reported as active.
+    status: row.status as AdminUserRow['status'], created_at: row.created_at.toISOString(),
+    last_seen_at: row.last_seen_at?.toISOString() ?? null, sign_in_methods: signInMethods(row.has_password, row.has_google),
   };
 }
 const staffSelect = {
@@ -74,6 +79,10 @@ function invalidInput(): ProblemDetailsException {
 }
 function roleRule(): ProblemDetailsException {
   return new ProblemDetailsException({ status: 409, title: 'Staff role rule', type: 'staff-role-rule' });
+}
+/** Design §6.2: nobody edits an account while its deletion is under way. */
+function accountDeleting(): ProblemDetailsException {
+  return new ProblemDetailsException({ status: 409, title: 'Account deleting', type: 'account-deleting' });
 }
 function lockRule(): ProblemDetailsException {
   return new ProblemDetailsException({ status: 409, title: 'Lock rule', type: 'lock-rule' });
@@ -157,8 +166,9 @@ export class StaffService {
     if (timezone === null || email === null) throw invalidInput();
     const notice = await this.prisma.$transaction(async (tx) => {
       await withUserLock(tx, targetId);
-      const target = await tx.user.findUnique({ where: { id: targetId }, select: { email: true, timezone: true } });
+      const target = await tx.user.findUnique({ where: { id: targetId }, select: { email: true, timezone: true, status: true } });
       if (!target) throw staffUserNotFound();
+      if (target.status === 'deleting') throw accountDeleting();
       if (body.birth_date !== undefined) assertBirthDate(body.birth_date, localDate(timezone ?? target.timezone, this.clock.now()));
       const emailChanged = email !== undefined && email !== target.email;
       if (emailChanged) await this.budget.assertAvailable();
@@ -197,8 +207,9 @@ export class StaffService {
     const hash = await this.hasher.hash(password);
     const mail = await this.prisma.$transaction(async (tx) => {
       await withUserLock(tx, targetId);
-      const target = await tx.user.findUnique({ where: { id: targetId }, select: { email: true, staffRole: true } });
+      const target = await tx.user.findUnique({ where: { id: targetId }, select: { email: true, staffRole: true, status: true } });
       if (!target) throw staffUserNotFound();
+      if (target.status === 'deleting') throw accountDeleting();
       const now = this.clock.now();
       await tx.passwordCredential.upsert({ where: { userId: targetId }, update: { hash, updatedAt: now },
         create: { userId: targetId, hash, updatedAt: now } });
@@ -219,7 +230,7 @@ export class StaffService {
     return row ? toView(row) : null;
   }
 
-  async listUsers(query: { q?: string; status?: 'active' | 'locked'; pageSize: number; pageToken?: string }):
+  async listUsers(query: { q?: string; status?: 'active' | 'locked' | 'deleting'; pageSize: number; pageToken?: string }):
     Promise<{ items: AdminUserRow[]; next_page_token: string | null }> {
     const binding = JSON.stringify([query.q ?? null, query.status ?? null]);
     let cursor: { at: string; id: string } | undefined;
@@ -239,7 +250,9 @@ export class StaffService {
       : Prisma.sql`AND (created_at, id) < (${cursor.at}::timestamptz, ${cursor.id}::uuid)`;
     const rows = await this.prisma.$queryRaw<AdminListRow[]>(Prisma.sql`
       SELECT id, email, given_name, family_name, email_verified_at, staff_role, status, created_at, last_seen_at,
-        to_char(created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS cursor_at
+        to_char(created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS cursor_at,
+        EXISTS (SELECT 1 FROM password_credentials pc WHERE pc.user_id = users.id) AS has_password,
+        EXISTS (SELECT 1 FROM user_identities ui WHERE ui.user_id = users.id) AS has_google
       FROM users WHERE TRUE ${search} ${status} ${after}
       ORDER BY created_at DESC, id DESC LIMIT ${query.pageSize + 1}`);
     const page = rows.slice(0, query.pageSize);
@@ -259,7 +272,8 @@ export class StaffService {
     return {
       ...toAdminRow({ id: row.id, email: row.email, given_name: row.givenName, family_name: row.familyName,
         email_verified_at: row.emailVerifiedAt, staff_role: row.staffRole, status: row.status,
-        created_at: row.createdAt, last_seen_at: row.lastSeenAt }),
+        created_at: row.createdAt, last_seen_at: row.lastSeenAt,
+        has_password: row.passwordCredential !== null, has_google: row.identities.length > 0 }),
       birth_date: row.birthDate === null ? null : dateString(row.birthDate),
       terms_accepted_at: row.termsAcceptedAt?.toISOString() ?? null, terms_version: row.termsVersion, timezone: row.timezone,
       locked_at: row.lockedAt?.toISOString() ?? null,
@@ -277,6 +291,7 @@ export class StaffService {
       await withUserLock(tx, targetId);
       const target = await tx.user.findUnique({ where: { id: targetId }, select: { staffRole: true, status: true } });
       if (!target) throw staffUserNotFound();
+      if (target.status === 'deleting') throw accountDeleting();
       if (targetId === actorId || target.staffRole === 'admin') throw lockRule();
       if (target.status === 'locked') return false;
       const now = this.clock.now();
@@ -298,6 +313,7 @@ export class StaffService {
       await withUserLock(tx, targetId);
       const target = await tx.user.findUnique({ where: { id: targetId }, select: { status: true } });
       if (!target) throw staffUserNotFound();
+      if (target.status === 'deleting') throw accountDeleting();
       if (target.status === 'active') return false;
       await tx.user.update({ where: { id: targetId }, data: {
         status: 'active', lockedAt: null, lockedBy: null, lockReason: null,
@@ -332,8 +348,9 @@ export class StaffService {
       await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended('identity.staff_role', 0))`;
       const target = await tx.user.findUnique({ where: { id: targetId }, select: staffSelect });
       if (!target) throw staffUserNotFound();
+      if (target.status === 'deleting') throw accountDeleting();
       if (role !== null && (target.emailVerifiedAt === null || target.status === 'locked')) throw roleRule();
-      if (target.staffRole === 'admin' && role !== 'admin' && await tx.user.count({ where: { staffRole: 'admin' } }) <= 1) {
+      if (target.staffRole === 'admin' && role !== 'admin' && await tx.user.count({ where: { staffRole: 'admin', status: { not: 'deleting' } } }) <= 1) {
         throw roleRule();
       }
       // Expected denials above do not write state; exceptions can safely roll back.

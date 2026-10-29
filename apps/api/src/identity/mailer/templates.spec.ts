@@ -1,6 +1,23 @@
 import { describe, expect, it } from 'vitest';
 import { FakeMailer } from '../../common/mail/fake-mailer.js';
-import { otpMail, otpLockedMail, passwordChangedMail, passwordResetMail, staffAccountMail } from './templates.js';
+import { accountDeletedMail, googleLinkedMail, otpMail, otpLockedMail, passwordChangedMail, passwordResetMail, staffAccountMail } from './templates.js';
+
+describe('Bước 8 mail templates', () => {
+  it('account deleted: vi and en lines, the retention years, sent to the address', () => {
+    const message = accountDeletedMail('a@example.com', 10);
+    expect(message.to).toBe('a@example.com');
+    expect(message.text).toContain('đã được xóa');
+    expect(message.text).toContain('has been deleted');
+    expect(message.text).toContain('10 năm');
+    expect(message.text).toContain('10 years');
+  });
+  it('google linked: vi and en lines and the change-password hint (IR22)', () => {
+    const message = googleLinkedMail('a@example.com');
+    expect(message.to).toBe('a@example.com');
+    expect(message.text).toContain('Đổi mật khẩu ngay');
+    expect(message.text).toContain('Change your password now');
+  });
+});
 
 describe('Mail templates and FakeMailer', () => {
   it.each(['verify_email', 'reset_password'] as const)('B1#4/B1#5: %s OTP mail is bilingual and preserves leading zeroes', async (purpose) => {

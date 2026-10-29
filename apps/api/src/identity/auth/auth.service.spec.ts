@@ -149,6 +149,13 @@ describe('registration and login (unit, isolated persistence)', () => {
     expect(tx.passwordCredential.upsert).not.toHaveBeenCalled(); expect(sessions.startChain).not.toHaveBeenCalled();
     expect(res.listenerCount('close')).toBe(0); expect(otp.issueInTx).not.toHaveBeenCalled();
   });
+  it('B8 (design §6.2): the email of a deleting account → 409 email-taken with reason account-deleting', async () => {
+    tx.user.findUnique.mockResolvedValue({ ...user, emailVerifiedAt: clock.now(), status: 'deleting' });
+    await expect(auth.register(body, res)).rejects.toMatchObject({
+      status: 409, problemType: 'email-taken', extensions: { reason: 'account-deleting' },
+    });
+    expect(tx.user.create).not.toHaveBeenCalled(); expect(tx.user.updateMany).not.toHaveBeenCalled();
+  });
   it.each(['reread', 'conditional write'])('A13-2d: verification commits between the read and the lock -> 409, password unchanged (%s)', async (guard) => {
     const events: string[] = [];
     tx.user.findUnique.mockImplementation(async ({ where }) => {
