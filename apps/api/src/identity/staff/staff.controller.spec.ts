@@ -12,7 +12,7 @@ describe('staff HTTP schemas and wiring (unit, isolated persistence)', () => {
   let ctx: TestApp; let token: string; let userId: string;
   const prisma = { sessionChain: { findUnique: vi.fn() }, $disconnect: async () => {} };
   const hit = vi.spyOn(RateLimiter.prototype, 'hit');
-  let renewing: ReturnType<typeof vi.spyOn>;
+  let renewing: ReturnType<typeof vi.spyOn>; let isLast: ReturnType<typeof vi.spyOn>;
   let find: ReturnType<typeof vi.spyOn>; let listUsers: ReturnType<typeof vi.spyOn>; let detail: ReturnType<typeof vi.spyOn>; let list: ReturnType<typeof vi.spyOn>; let set: ReturnType<typeof vi.spyOn>;
   const auth = () => ({ Authorization: `Bearer ${token}` });
   const put = (id: string, body: object) => ctx.http().put(`/v1/admin/users/${id}/staff-role`).set(auth()).send(body);
@@ -22,6 +22,7 @@ describe('staff HTTP schemas and wiring (unit, isolated persistence)', () => {
     ctx = await createTestApp({ databaseUrl: 'unused' });
     const staff = ctx.app.get(StaffService);
     renewing = vi.spyOn(ctx.app.get(AccountDeletionRegistry).precondition(), 'renewing');
+    isLast = vi.spyOn(staff, 'isLastAdmin');
     find = vi.spyOn(staff, 'findByEmail'); listUsers = vi.spyOn(staff, 'listUsers'); detail = vi.spyOn(staff, 'getUserDetail'); list = vi.spyOn(staff, 'listStaff'); set = vi.spyOn(staff, 'setStaffRole');
   });
   beforeEach(async () => {
@@ -33,6 +34,7 @@ describe('staff HTTP schemas and wiring (unit, isolated persistence)', () => {
     listUsers.mockReset().mockResolvedValue({ items: [], next_page_token: null }); detail.mockReset().mockResolvedValue(view);
     set.mockReset().mockResolvedValue(view); hit.mockReset().mockResolvedValue(undefined);
     renewing.mockReset().mockResolvedValue(false);
+    isLast.mockReset().mockResolvedValue(false);
   });
   afterAll(async () => { await ctx?.close(); vi.restoreAllMocks(); });
   it('B1#27: valid routes bind schemas, pass the actor and limit only PUT', async () => {
@@ -90,6 +92,17 @@ describe('staff HTTP schemas and wiring (unit, isolated persistence)', () => {
     expect((await ctx.http().get(`/v1/admin/users/${userId}`).set(auth())).status).toBe(200);
     expect(detail).toHaveBeenCalledWith(userId);
     expect((await ctx.http().get('/v1/admin/users/not-a-uuid').set(auth())).status).toBe(400);
+  });
+  it('final review M6: the user detail says last_admin for an admin nobody else backs up; anyone who is not an admin is never asked', async () => {
+    isLast.mockResolvedValue(true);
+    const admin = await ctx.http().get(`/v1/admin/users/${userId}`).set(auth());
+    expect(admin.body.last_admin).toBe(true);
+    expect(isLast).toHaveBeenCalledWith(userId);
+    isLast.mockClear();
+    detail.mockResolvedValueOnce({ id: userId, email: 'a@example.com', email_verified: true, staff_role: null } as never);
+    const learner = await ctx.http().get(`/v1/admin/users/${userId}`).set(auth());
+    expect(learner.body.last_admin).toBe(false);
+    expect(isLast).not.toHaveBeenCalled();
   });
   it('B8: the user detail carries auto_renewing for the delete dialog', async () => {
     renewing.mockResolvedValue(true);
