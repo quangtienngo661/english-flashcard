@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { describe, expect, it, vi } from 'vitest';
 import { FakeClock } from '../../common/clock/clock.js';
 import { ProblemDetailsException } from '../../common/problem-details/problem-details.exception.js';
+import type { RunJudgeScore } from '../judge/judge-stats.js';
 import { PublishService } from './publish.service.js';
 
 const ADMIN = '11111111-1111-4111-8111-111111111111';
@@ -96,8 +97,9 @@ function setup(opts: Setup = {}) {
   const configsService = { get: vi.fn(async (op: string) => ({ operation: op, live_version: pointer.version, live: { id: pointer.configId }, draft: configs.some((c) => c.status === 'draft') ? { id: draft.id } : null })) };
   const sets = { latest: vi.fn(async () => (opts.withSet === false ? null : { id: SET, version: 2 })) };
   const identity = { emailsOf: vi.fn(async (ids: string[]) => new Map(ids.filter((id) => id === ADMIN).map((id) => [id, 'admin@x.test']))) };
-  const service = new PublishService(prisma as never, configsService as never, sets as never, identity as never, new FakeClock(NOW));
-  return { service, prisma, tx, live, previous, draft, configs, pointer, runs, items, events, order, configsService, sets };
+  const judgeScores = { byRun: vi.fn(async (_runId: string): Promise<RunJudgeScore[]> => []) };
+  const service = new PublishService(prisma as never, configsService as never, sets as never, identity as never, new FakeClock(NOW), judgeScores as never);
+  return { service, prisma, tx, live, previous, draft, configs, pointer, runs, items, events, order, configsService, sets, judgeScores };
 }
 
 async function problemOf(promise: Promise<unknown>) {
@@ -185,6 +187,36 @@ describe('PublishService.check (design §6.3)', () => {
     expect(await ctx.service.check(OP)).toMatchObject({ candidate_run_id: candidate.id, baseline: { required: true, run_id: null }, blockers: ['baseline-required'] });
     baseline.hiddenAt = null;
     expect(await ctx.service.check(OP)).toMatchObject({ baseline: { required: true, run_id: baseline.id }, blockers: [] });
+  });
+
+  it('M3-T12: the judge scores of both runs are read and a judge-rate-drop joins the warnings (after the shape ones)', async () => {
+    const ctx = setup();
+    const { candidate, baseline } = withBothRuns(ctx);
+    const score = (verdict: RunJudgeScore['verdict'], index: number): RunJudgeScore => ({
+      itemId: `i${index}`, split: 'dev', judgeId: 'J', judgeName: 'Chỉ một đáp án', judgeRevisionId: 'R2', revision: 2, criterion: 'single_answer', verdict, problem: null, reason: null,
+    });
+    ctx.judgeScores.byRun.mockImplementation(async (runId: string) => Array.from({ length: 20 }, (_, index) => score(runId === candidate.id && index < 4 ? 'fail_minor' : 'pass', index)));
+    const view = await ctx.service.check(OP);
+    expect(ctx.judgeScores.byRun.mock.calls.map(([id]) => id).sort()).toEqual([baseline.id, candidate.id].sort());
+    expect(view.warnings).toEqual([{
+      code: 'judge-rate-drop', judge_id: 'J', judge_name: 'Chỉ một đáp án', judge_revision_id: 'R2', revision: 2, criterion: 'single_answer',
+      before: { passed: 20, counted: 20 }, after: { passed: 16, counted: 20 },
+    }]);
+  });
+
+  it('M3-T12: with no baseline run (a live config without a model) no judge score is read and there is no warning', async () => {
+    const ctx = setup({ liveModel: null });
+    const candidate = run(ctx.draft.id, ctx.draft.version);
+    ctx.runs.push(candidate);
+    ctx.items.push(...goodItems(candidate.id));
+    expect(await ctx.service.check(OP)).toMatchObject({ candidate_run_id: candidate.id, baseline: { required: false, run_id: null }, warnings: [] });
+    expect(ctx.judgeScores.byRun).not.toHaveBeenCalled();
+  });
+
+  it('M3-T12 (D38): a turn-off reads no run and no judge score and keeps warnings empty', async () => {
+    const ctx = setup({ draftModel: null });
+    expect(await ctx.service.check(OP)).toMatchObject({ turn_off: true, warnings: [] });
+    expect(ctx.judgeScores.byRun).not.toHaveBeenCalled();
   });
 
   it('both runs present → the warnings of the gate, no blocker', async () => {

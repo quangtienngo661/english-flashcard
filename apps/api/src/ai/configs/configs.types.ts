@@ -10,9 +10,11 @@ export type ConfigStatus = (typeof CONFIG_STATUSES)[number];
 /** Items of a run that passed, out of the items that were judged (a criterion nothing judged has `counted: 0`). */
 export type Tally = { passed: number; counted: number };
 
-/** What a publish warns about (design §6.3 step 3); M3 adds the judge criteria. */
+/** What a publish warns about (design §6.3 step 3). */
 export type PublishWarning =
   | { code: 'rate-drop'; criterion: 'shape' | 'rule' | 'expected'; before: Tally; after: Tally }
+  // A judge criterion judged by the same revision in both runs (nhóm B M3): `before` is the baseline, `after` the candidate.
+  | { code: 'judge-rate-drop'; judge_id: string; judge_name: string; judge_revision_id: string; revision: number; criterion: string; before: Tally; after: Tally }
   | { code: 'dev-regressed'; example_ids: string[] }
   | { code: 'held-out-failures-up'; before: number; after: number };
 
