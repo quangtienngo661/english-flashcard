@@ -13,7 +13,7 @@ const itemParams = z.strictObject({ id: z.uuid().transform((value) => value.toLo
 export const answerBody = z.union([
   z.strictObject({ choice: z.int().min(0).max(3) }),
   z.strictObject({ is_true: z.boolean() }),
-  z.strictObject({ text: z.string().refine((text) => answerLength(text) >= 1 && answerLength(text) <= ANSWER_MAX) }),
+  z.strictObject({ text: z.string().refine((text) => !text.includes('\0') && answerLength(text) >= 1 && answerLength(text) <= ANSWER_MAX) }),
 ]);
 const hintBody = z.strictObject({ level: z.union([z.literal(1), z.literal(2), z.literal(3)]) });
 
