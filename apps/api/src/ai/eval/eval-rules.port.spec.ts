@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { RuleResult } from './eval.types.js';
-import { RULE_OPERATIONS, ruleResultFor, type EvalRules } from './eval-rules.port.js';
+import { EvalRulesRegistry, RULE_OPERATIONS, ruleResultFor, type EvalRules } from './eval-rules.port.js';
 
 const IN = { word: 'deploy' };
 const OUT = { sentence: 'We ___ it.', accepted_answers: ['deploy'] };
@@ -35,5 +35,17 @@ describe('ruleResultFor', () => {
 
   it('design §5.2: the rule operations are cloze, meaning question and sentence choice', () => {
     expect([...RULE_OPERATIONS]).toEqual(['generate_cloze', 'generate_meaning_question', 'generate_sentence_mcq']);
+  });
+});
+
+describe('EvalRulesRegistry', () => {
+  it('E2: nothing is registered at first; the last registration wins (like the entry usage probes)', () => {
+    const registry = new EvalRulesRegistry();
+    expect(registry.get()).toBeNull();
+    const [first, second] = [stubRules(), stubRules()];
+    registry.register(first);
+    expect(registry.get()).toBe(first);
+    registry.register(second);
+    expect(registry.get()).toBe(second);
   });
 });

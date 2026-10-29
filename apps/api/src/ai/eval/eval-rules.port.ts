@@ -1,3 +1,4 @@
+import { Injectable } from '@nestjs/common';
 import type { AiOperation } from '../ai.types.js';
 import type { RuleResult } from './eval.types.js';
 import type { ExpectedForms } from './expected.js';
@@ -15,6 +16,20 @@ export type EvalRules = {
 
 /** The operations that have Practice rules; the other three are `not_applicable` (design §5.2). */
 export const RULE_OPERATIONS = ['generate_cloze', 'generate_meaning_question', 'generate_sentence_mcq'] as const;
+
+/** Other modules register their rules when they start (as `EntryUsageRegistry` does); the last registration wins. */
+@Injectable()
+export class EvalRulesRegistry {
+  private rules: EvalRules | null = null;
+
+  register(rules: EvalRules): void {
+    this.rules = rules;
+  }
+
+  get(): EvalRules | null {
+    return this.rules;
+  }
+}
 
 const NOT_APPLICABLE: RuleResult = { status: 'not_applicable', problems: [], reason: null };
 

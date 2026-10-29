@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { FakeClock } from '../common/clock/clock.js';
 import type { PrismaClient } from '../generated/prisma/client.js';
 import { AiService } from './ai.service.js';
+import { EvalRulesRegistry, type EvalRules } from './eval/eval-rules.port.js';
 import type { ReadinessCheck, ReadinessService } from './runner/readiness.service.js';
 import type { ExecuteInput, RunnerService, RunReport } from './runner/runner.service.js';
 
@@ -39,8 +40,9 @@ function setup(readiness: ReadinessCheck = { ready: true, selection: {} as never
     }),
     $transaction: vi.fn(async (ops: unknown[]) => ops),
   } as unknown as PrismaClient;
-  const service = new AiService(runner, readinessService, prisma, new FakeClock(NOW));
-  return { service, executed, report, checks, statements, queries, prisma };
+  const rules = new EvalRulesRegistry();
+  const service = new AiService(runner, readinessService, prisma, new FakeClock(NOW), rules);
+  return { service, executed, report, checks, statements, queries, prisma, rules };
 }
 
 describe('AiService.run', () => {
@@ -61,6 +63,16 @@ describe('AiService.run', () => {
     await expect(service.run('generate_cloze', DATA, { operationId, userId: USER, purpose: 'learner', deadlineMs: 4_000 }))
       .resolves.toBe(report.result);
     expect(executed).toEqual([{ purpose: 'learner', operation: 'generate_cloze', data: DATA, operationId, userId: USER, deadlineMs: 4_000 }]);
+  });
+});
+
+describe('AiService.registerEvalRules', () => {
+  it('E2, contract §4: the rules a module registers are what the eval job reads from the registry', () => {
+    const { service, rules } = setup();
+    expect(rules.get()).toBeNull();
+    const stub = { check: vi.fn(), formsOf: vi.fn(), matchesExpected: vi.fn() } as unknown as EvalRules;
+    service.registerEvalRules(stub);
+    expect(rules.get()).toBe(stub);
   });
 });
 

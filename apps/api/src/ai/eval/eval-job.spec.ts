@@ -5,6 +5,7 @@ import type { AiResult } from '../ai.types.js';
 import type { StoredPrompt } from '../prompts/prompts.repository.js';
 import type { ExecuteInput, RunReport } from '../runner/runner.service.js';
 import { EvalJob } from './eval-job.js';
+import { EvalRulesRegistry, type EvalRules } from './eval-rules.port.js';
 import type { EvalRunItemRow, EvalRunRow, ItemResult } from './eval-runs.repository.js';
 
 const NOW = new Date('2026-10-20T03:00:00Z');
@@ -84,13 +85,24 @@ const succeeded = (input: ExecuteInput): RunReport => ({
   rawOutput: '{"sentence":"Lan will ___ it."}',
 });
 
-function setup(row = runRow(), items = pendingItems([EX1, EX2, EX3])) {
+function stubRules(over: Partial<EvalRules> = {}): EvalRules {
+  return {
+    check: vi.fn(async () => ({ status: 'pass' as const, problems: [], reason: null })),
+    formsOf: vi.fn(async () => null),
+    matchesExpected: vi.fn(() => true),
+    ...over,
+  };
+}
+
+function setup(row = runRow(), items = pendingItems([EX1, EX2, EX3]), rules: EvalRules | null = null) {
   const repo = memoryRepository(row, items);
   const runner = { execute: vi.fn(async (input: ExecuteInput) => succeeded(input)) };
   const prompts = { atRevision: vi.fn(async () => PROMPT) };
   const logger = { warn: vi.fn(), info: vi.fn(), error: vi.fn() } as unknown as AppLogger;
-  const job = new EvalJob(new FakeClock(NOW), repo as never, runner as never, prompts as never, logger);
-  return { job, repo, runner, prompts };
+  const registry = new EvalRulesRegistry();
+  if (rules) registry.register(rules);
+  const job = new EvalJob(new FakeClock(NOW), repo as never, runner as never, prompts as never, registry, logger);
+  return { job, repo, runner, prompts, rules };
 }
 
 const callIds = (ctx: ReturnType<typeof setup>) => ctx.runner.execute.mock.calls.map(([input]) => (input as { callOperationId: string }).callOperationId);
@@ -312,7 +324,77 @@ describe('EvalJob.run', () => {
     expect(ctx.repo.completeItem).toHaveBeenCalledTimes(3);
     expect(ctx.repo.completeItem).toHaveBeenCalledWith(itemId(EX2), {
       status: 'succeeded', reason: null, output: { sentence: 'Lan will ___ it.', accepted_answers: ['x'], translation_vi: 'y' },
-      raw_output: '{"sentence":"Lan will ___ it."}', latency_ms: 100, cost_usd: '0.00010000', rule: null, expected_result: null,
+      raw_output: '{"sentence":"Lan will ___ it."}', latency_ms: 100, cost_usd: '0.00010000',
+      rule: { status: 'skipped', problems: [], reason: 'no-rules' }, expected_result: null,
     }, NOW);
+  });
+});
+
+describe('EvalJob.run with the registered rules (E2, D11)', () => {
+  const STORED_SKIPPED = { status: 'skipped', problems: [], reason: 'no-rules' };
+
+  it('B9: a succeeded cloze gets the rule result and the expected result, from one runner call', async () => {
+    const rules = stubRules();
+    const items = pendingItems([EX1]);
+    items[0]!.expected = { forms: ['x'] };
+    const ctx = setup(runRow({ total: 1 }), items, rules);
+    await ctx.job.run(RUN);
+    expect(ctx.runner.execute).toHaveBeenCalledTimes(1);
+    expect(rules.check).toHaveBeenCalledExactlyOnceWith('generate_cloze', INPUT(EX1), expect.objectContaining({ accepted_answers: ['x'] }));
+    expect(rules.matchesExpected).toHaveBeenCalledExactlyOnceWith('generate_cloze', expect.objectContaining({ accepted_answers: ['x'] }), { forms: ['x'] });
+    expect(ctx.repo.items[0]).toMatchObject({ rule: { status: 'pass', problems: [], reason: null }, expectedResult: 'pass' });
+  });
+
+  it('D11: a failing rule is stored as it is, and nothing is asked of the provider again', async () => {
+    const rules = stubRules({
+      check: vi.fn(async () => ({ status: 'fail' as const, problems: ['unknown-form:deployment'], reason: null })),
+      matchesExpected: vi.fn(() => false),
+    });
+    const items = pendingItems([EX1]);
+    items[0]!.expected = { forms: ['go'] };
+    const ctx = setup(runRow({ total: 1 }), items, rules);
+    await ctx.job.run(RUN);
+    expect(ctx.runner.execute).toHaveBeenCalledTimes(1);
+    expect(ctx.repo.items[0]).toMatchObject({ status: 'succeeded', rule: { status: 'fail', problems: ['unknown-form:deployment'] }, expectedResult: 'fail' });
+  });
+
+  it('a call that did not succeed → no rule, no expected result, the rules are not asked', async () => {
+    const rules = stubRules();
+    const ctx = setup(runRow({ total: 1 }), pendingItems([EX1]), rules);
+    ctx.runner.execute.mockImplementation(async (input: ExecuteInput) => {
+      const result: AiResult = { status: 'transient_failure', operation_id: (input as { callOperationId: string }).callOperationId, reason: 'timeout' };
+      return { result, calls: [{ attempt: 1, outcome: 'timeout', latency_ms: 10, cost_usd: null, http_status: null }], rawOutput: null };
+    });
+    await ctx.job.run(RUN);
+    expect(ctx.repo.items[0]).toMatchObject({ status: 'transient_failure', rule: null, expectedResult: null });
+    expect(rules.check).not.toHaveBeenCalled();
+    expect(rules.matchesExpected).not.toHaveBeenCalled();
+  });
+
+  it('lookup_word: the rule is not applicable, the expected answer is compared by the job itself', async () => {
+    const rules = stubRules();
+    const items = pendingItems([EX1]);
+    items[0]!.expected = { lemma: 'run', part_of_speech: 'verb' };
+    const ctx = setup(runRow({ operation: 'lookup_word', total: 1 }), items, rules);
+    ctx.runner.execute.mockImplementation(async (input: ExecuteInput) => ({
+      ...succeeded(input), result: { ...succeeded(input).result, result: { lemma: 'Run', part_of_speech: 'verb', meaning_vi: 'chạy' } } as AiResult,
+    }));
+    await ctx.job.run(RUN);
+    expect(rules.check).not.toHaveBeenCalled();
+    expect(ctx.repo.items[0]).toMatchObject({ rule: { status: 'not_applicable', problems: [], reason: null }, expectedResult: 'pass' });
+  });
+
+  it('Review focus 4: an example without an expected answer gets no expected result', async () => {
+    const ctx = setup(runRow({ total: 1 }), pendingItems([EX1]), stubRules());
+    await ctx.job.run(RUN);
+    expect(ctx.repo.items[0]).toMatchObject({ rule: { status: 'pass' }, expectedResult: null });
+  });
+
+  it('B9: no rules registered → the cloze rule is skipped for no-rules and the forms cannot be checked', async () => {
+    const items = pendingItems([EX1]);
+    items[0]!.expected = { forms: ['x'] };
+    const ctx = setup(runRow({ total: 1 }), items, null);
+    await ctx.job.run(RUN);
+    expect(ctx.repo.items[0]).toMatchObject({ rule: STORED_SKIPPED, expectedResult: null });
   });
 });

@@ -5,6 +5,7 @@ import { PRISMA_CLIENT } from '../common/db/prisma.module.js';
 import { Prisma, type PrismaClient } from '../generated/prisma/client.js';
 import { OPERATION_ID_PATTERN } from './ai.constants.js';
 import type { AiOperation, AiReadiness, AiResult } from './ai.types.js';
+import { EvalRulesRegistry, type EvalRules } from './eval/eval-rules.port.js';
 import { ReadinessService } from './runner/readiness.service.js';
 import { RunnerService, type RunReport } from './runner/runner.service.js';
 
@@ -18,7 +19,13 @@ export class AiService {
     @Inject(ReadinessService) private readonly readiness: ReadinessService,
     @Inject(PRISMA_CLIENT) private readonly prisma: PrismaClient,
     @Inject(Clock) private readonly clock: Clock,
+    @Inject(EvalRulesRegistry) private readonly evalRules: EvalRulesRegistry,
   ) {}
+
+  /** Practice hands its rules and catalog forms to eval runs here (nhóm B design §5.2); `ai` never imports Practice or Content. */
+  registerEvalRules(rules: EvalRules): void {
+    this.evalRules.register(rules);
+  }
 
   async isReady(op: AiOperation): Promise<AiReadiness> {
     const check = await this.readiness.check(op, 'learner', this.clock.now());

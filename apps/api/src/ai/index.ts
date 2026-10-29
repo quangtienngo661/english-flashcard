@@ -8,3 +8,6 @@ export {
   type PermanentReason, type TransientReason, type UnavailableReason,
 } from './ai.types.js';
 export type { CallSummary, RunReport } from './runner/runner.service.js';
+export type { EvalRules } from './eval/eval-rules.port.js';
+export type { ExpectedForms } from './eval/expected.js';
+export type { RuleResult } from './eval/eval.types.js';

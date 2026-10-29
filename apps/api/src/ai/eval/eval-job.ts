@@ -6,7 +6,9 @@ import { PromptsRepository } from '../prompts/prompts.repository.js';
 import type { Price } from '../runner/cost.js';
 import { RunnerService, type RunReport } from '../runner/runner.service.js';
 import type { Selection } from '../runner/selection.js';
+import { EvalRulesRegistry, ruleResultFor } from './eval-rules.port.js';
 import { EvalRunsRepository, type EvalRunItemRow, type EvalRunRow, type ItemResult } from './eval-runs.repository.js';
+import { expectedResultFor } from './expected.js';
 
 /** An error whose message is safe to store (it carries no content). */
 class EvalRunError extends Error {}
@@ -58,6 +60,7 @@ export class EvalJob {
     @Inject(EvalRunsRepository) private readonly runs: EvalRunsRepository,
     @Inject(RunnerService) private readonly runner: RunnerService,
     @Inject(PromptsRepository) private readonly prompts: PromptsRepository,
+    @Inject(EvalRulesRegistry) private readonly rules: EvalRulesRegistry,
     @Inject(AppLogger) private readonly logger: AppLogger,
   ) {}
 
@@ -73,7 +76,7 @@ export class EvalJob {
         // A run cancelled (or closed as stalled) meanwhile is no longer `running`: no further paid call, nothing written.
         if (!stopped && !(await this.runs.isRunning(run.id))) stopped = true;
         if (stopped) return;
-        const result = item.input === null ? SKIPPED : toResult(await this.execute(run, item, selection, prompt));
+        const result = item.input === null ? SKIPPED : await this.withRules(run, item.input, item.expected, toResult(await this.execute(run, item, selection, prompt)));
         await this.runs.completeItem(item.id, result, this.clock.now());
       });
       // `finish` is guarded by `status = 'running'` as well; skipping it just spares a statement.
@@ -83,6 +86,17 @@ export class EvalJob {
       this.logger.warn('ai_eval_run_failed', { run_id: run.id, error: message });
       await this.runs.fail(run.id, message, this.clock.now());
     }
+  }
+
+  /** Practice's rules and the expected answer, once, on a succeeded result only; never a second provider call (D11). */
+  private async withRules(run: EvalRunRow, input: Record<string, unknown>, expected: Record<string, unknown> | null, result: ItemResult): Promise<ItemResult> {
+    if (result.status !== 'succeeded' || !result.output) return result;
+    const rules = this.rules.get();
+    return {
+      ...result,
+      rule: await ruleResultFor(rules, run.operation, input, result.output),
+      expected_result: expectedResultFor(rules, run.operation, result.output, expected),
+    };
   }
 
   private execute(run: EvalRunRow, item: EvalRunItemRow, selection: Selection, prompt: Awaited<ReturnType<EvalJob['prompt']>>): Promise<RunReport> {
