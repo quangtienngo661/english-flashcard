@@ -24,7 +24,7 @@ describe('admin ai eval HTTP (unit, mocked services)', () => {
   const hit = vi.spyOn(RateLimiter.prototype, 'hit');
   let examples: Record<'list' | 'create' | 'createMany' | 'update' | 'remove' | 'forms' | 'reveal', ReturnType<typeof vi.spyOn>>;
   let sets: Record<'freeze' | 'list' | 'get', ReturnType<typeof vi.spyOn>>;
-  let runs: Record<'list' | 'get' | 'cancel' | 'remove', ReturnType<typeof vi.spyOn>>;
+  let runs: Record<'list' | 'get' | 'cancel' | 'remove' | 'items', ReturnType<typeof vi.spyOn>>;
   const auth = () => ({ Authorization: `Bearer ${token}` });
   const id = randomUUID();
   const http = () => ctx.http();
@@ -41,7 +41,8 @@ describe('admin ai eval HTTP (unit, mocked services)', () => {
     };
     const ss = ctx.app.get(EvalSetsService);
     sets = { freeze: vi.spyOn(ss, 'freeze'), list: vi.spyOn(ss, 'list'), get: vi.spyOn(ss, 'get') };
-    runs = { list: vi.spyOn(rs, 'list'), get: vi.spyOn(rs, 'get'), cancel: vi.spyOn(rs, 'cancel'), remove: vi.spyOn(rs, 'remove') };
+    runs = { list: vi.spyOn(rs, 'list'), get: vi.spyOn(rs, 'get'), cancel: vi.spyOn(rs, 'cancel'), remove: vi.spyOn(rs, 'remove'),
+      items: vi.spyOn(rs, 'items') };
   });
   beforeEach(async () => {
     actorId = randomUUID(); role = 'admin';
@@ -55,6 +56,7 @@ describe('admin ai eval HTTP (unit, mocked services)', () => {
     sets.freeze.mockReset().mockResolvedValue({ id }); sets.list.mockReset().mockResolvedValue({ items: [] }); sets.get.mockReset().mockResolvedValue({ id, items: [] });
     runs.list.mockReset().mockResolvedValue({ items: [], next_page_token: null }); runs.get.mockReset().mockResolvedValue({ id });
     runs.cancel.mockReset().mockResolvedValue({ id, status: 'failed', error: 'cancelled' }); runs.remove.mockReset().mockResolvedValue(undefined);
+    runs.items.mockReset().mockResolvedValue({ items: [], stats: {} });
     hit.mockReset().mockResolvedValue(undefined);
   });
   afterAll(async () => { await ctx?.close(); vi.restoreAllMocks(); });
@@ -65,7 +67,7 @@ describe('admin ai eval HTTP (unit, mocked services)', () => {
       'DELETE /v1/admin/ai/eval/examples/:id', 'DELETE /v1/admin/ai/eval/runs/:id', 'GET /v1/admin/ai/eval/examples',
       'GET /v1/admin/ai/eval/examples/forms', 'GET /v1/admin/ai/eval/sets', 'GET /v1/admin/ai/eval/sets/:id', 'POST /v1/admin/ai/eval/sets',
       'POST /v1/admin/ai/eval/examples/:id/reveal',
-      'GET /v1/admin/ai/eval/runs', 'GET /v1/admin/ai/eval/runs/:id', 'PATCH /v1/admin/ai/eval/examples/:id',
+      'GET /v1/admin/ai/eval/runs', 'GET /v1/admin/ai/eval/runs/:id', 'GET /v1/admin/ai/eval/runs/:id/items', 'PATCH /v1/admin/ai/eval/examples/:id',
       'POST /v1/admin/ai/eval/examples', 'POST /v1/admin/ai/eval/examples/bulk', 'POST /v1/admin/ai/eval/runs',
       'POST /v1/admin/ai/eval/runs/:id/cancel',
     ].sort());
@@ -131,6 +133,15 @@ describe('admin ai eval HTTP (unit, mocked services)', () => {
     expect((await http().post('/v1/admin/ai/eval/sets').set(auth()).send({ operation: 'nope' })).status).toBe(400);
   });
 
+  it('B3: GET /runs/:id/items reaches items with the lower-cased id; set_id narrows the list of runs', async () => {
+    expect((await http().get(`/v1/admin/ai/eval/runs/${id.toUpperCase()}/items`).set(auth())).status).toBe(200);
+    expect(runs.items).toHaveBeenCalledWith(id);
+    const set = randomUUID();
+    expect((await http().get('/v1/admin/ai/eval/runs').set(auth()).query({ operation: 'generate_cloze', set_id: set })).status).toBe(200);
+    expect(runs.list).toHaveBeenCalledWith('generate_cloze', 20, undefined, set);
+    expect((await http().get('/v1/admin/ai/eval/runs').set(auth()).query({ operation: 'generate_cloze', set_id: 'nope' })).status).toBe(400);
+  });
+
   it('an editor gets 403 on the bulk route', async () => {
     role = 'editor';
     const res = await http().post('/v1/admin/ai/eval/examples/bulk').set(auth()).send({ operation: 'generate_cloze', rows: [{ input: {} }] });
@@ -156,7 +167,7 @@ describe('admin ai eval HTTP (unit, mocked services)', () => {
   it('run reads: list with paging, get by id', async () => {
     const list = await http().get('/v1/admin/ai/eval/runs').set(auth()).query({ operation: 'generate_cloze', page_size: '5' });
     expect(list.status).toBe(200);
-    expect(runs.list).toHaveBeenCalledWith('generate_cloze', 5, undefined);
+    expect(runs.list).toHaveBeenCalledWith('generate_cloze', 5, undefined, undefined);
     expect((await http().get(`/v1/admin/ai/eval/runs/${id}`).set(auth())).status).toBe(200);
     expect(runs.get).toHaveBeenCalledWith(id);
   });

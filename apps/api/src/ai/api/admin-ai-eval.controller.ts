@@ -19,6 +19,7 @@ const runsQuery = z.strictObject({
   operation: z.enum(AI_OPERATIONS),
   page_size: z.coerce.number().int().min(1).max(100).default(20),
   page_token: z.string().optional(),
+  set_id: z.uuid().transform((value) => value.toLowerCase()).optional(),
 });
 
 /**
@@ -110,12 +111,18 @@ export class AdminAiEvalController {
 
   @Get('runs')
   listRuns(@Query({ schema: runsQuery }) query: z.infer<typeof runsQuery>) {
-    return this.runs.list(query.operation, query.page_size, query.page_token);
+    return this.runs.list(query.operation, query.page_size, query.page_token, query.set_id);
   }
 
   @Get('runs/:id')
   getRun(@Param({ schema: idParams }) params: z.infer<typeof idParams>) {
     return this.runs.get(params.id);
+  }
+
+  /** The dev items with a result and the statistics of the whole run (held-out as numbers only). */
+  @Get('runs/:id/items')
+  getRunItems(@Param({ schema: idParams }) params: z.infer<typeof idParams>) {
+    return this.runs.items(params.id);
   }
 
   /** 200, not 201: nothing is created. A run that is not queued or running → 409 `run-not-active`. */

@@ -42,9 +42,14 @@ function setup() {
       deleteMany: vi.fn(async (): Promise<{ count: number }> => ({ count: 0 })),
     },
     aiEvalRunItem: {
-      findMany: vi.fn(async (): Promise<Array<Record<string, unknown>>> => []),
-      groupBy: vi.fn(async (): Promise<Array<{ runId: string; _count: { _all: number } }>> => []),
+      findMany: vi.fn(async (_args?: unknown): Promise<Array<Record<string, unknown>>> => []),
+      groupBy: vi.fn(async (_args?: unknown): Promise<Array<{ runId: string; status: string; _count: { _all: number } }>> => []),
     },
+    aiEvalSet: {
+      findUnique: vi.fn(async (_args?: unknown): Promise<Record<string, unknown> | null> => null),
+      findMany: vi.fn(async (_args?: unknown): Promise<Array<{ id: string; version: number }>> => []),
+    },
+    aiEvalSetItem: { findMany: vi.fn(async (_args?: unknown): Promise<Array<Record<string, unknown>>> => []) },
     aiCall: { deleteMany: vi.fn(async () => ({ count: 0 })) },
     $executeRaw: vi.fn(async () => 0),
     $transaction: vi.fn(async (work: (client: typeof tx) => Promise<unknown>) => work(tx)),
@@ -201,24 +206,143 @@ describe('EvalRunsService.get', () => {
     const ctx = setup();
     const id = randomUUID();
     ctx.prisma.aiEvalRun.findUnique.mockResolvedValue(runRow(ADMIN, id));
-    ctx.prisma.aiEvalRunItem.groupBy.mockResolvedValue([{ runId: id, _count: { _all: 1 } }]);
+    ctx.prisma.aiEvalRunItem.groupBy.mockResolvedValue([
+      { runId: id, status: 'succeeded', _count: { _all: 1 } }, { runId: id, status: 'pending', _count: { _all: 1 } },
+    ]);
     ctx.prisma.aiEvalRunItem.findMany.mockResolvedValue([
       itemRow(EX1, 0, { status: 'succeeded', output: { sentence: 'x' }, rawOutput: '{}', latencyMs: 40, costUsd: { toFixed: () => '0.00000300' } }),
-      itemRow(EX2, 1, { status: 'pending' }),
     ]);
     const run = await ctx.service.get(id);
-    expect(ctx.prisma.aiEvalRunItem.findMany).toHaveBeenCalledWith({ where: { runId: id, split: 'dev' }, orderBy: [{ position: 'asc' }, { id: 'asc' }] });
+    expect(ctx.prisma.aiEvalRunItem.findMany).toHaveBeenCalledWith({
+      where: { runId: id, split: 'dev', status: { not: 'pending' } }, orderBy: [{ position: 'asc' }, { id: 'asc' }],
+    });
     expect(run.done).toBe(1);
     expect(run.items).toEqual([
       {
         example_id: EX1, position: 0, split: 'dev', input: IN1, expected: null, status: 'succeeded', reason: null, output: { sentence: 'x' },
         raw_output: '{}', rule: null, expected_result: null, latency_ms: 40, cost_usd: '0.00000300',
       },
-      {
-        example_id: EX2, position: 1, split: 'dev', input: IN2, expected: null, status: 'pending', reason: null, output: null,
-        raw_output: null, rule: null, expected_result: null, latency_ms: null, cost_usd: null,
-      },
     ]);
+  });
+
+  it('B3: get lists dev items that have a result only; the held-out ones are not asked for', async () => {
+    const ctx = setup();
+    ctx.prisma.aiEvalRun.findUnique.mockResolvedValue(runRow(ADMIN));
+    await ctx.service.get(randomUUID());
+    const { where } = ctx.prisma.aiEvalRunItem.findMany.mock.calls[0]![0] as { where: Record<string, unknown> };
+    expect(where).toMatchObject({ split: 'dev', status: { not: 'pending' } });
+  });
+
+  it('design §5.3: a finished run with no pending item is complete; its set version, legacy flag and set id are in the summary', async () => {
+    const ctx = setup();
+    const id = randomUUID();
+    ctx.prisma.aiEvalRun.findUnique.mockResolvedValue({ ...runRow(ADMIN, id), status: 'finished', setId: 'S1' });
+    ctx.prisma.aiEvalRunItem.groupBy.mockResolvedValue([
+      { runId: id, status: 'succeeded', _count: { _all: 2 } }, { runId: id, status: 'transient_failure', _count: { _all: 1 } },
+    ]);
+    ctx.prisma.aiEvalSet.findMany.mockResolvedValue([{ id: 'S1', version: 1 }]);
+    const run = await ctx.service.get(id);
+    expect(run).toMatchObject({ complete: true, set_id: 'S1', set_version: 1, legacy: false, done: 3 });
+  });
+
+  it('design §5.3: a run on the working set has no set; one that still has a pending item is not complete', async () => {
+    const ctx = setup();
+    const id = randomUUID();
+    ctx.prisma.aiEvalRun.findUnique.mockResolvedValue({ ...runRow(ADMIN, id), status: 'finished' });
+    ctx.prisma.aiEvalRunItem.groupBy.mockResolvedValue([
+      { runId: id, status: 'succeeded', _count: { _all: 1 } }, { runId: id, status: 'pending', _count: { _all: 1 } },
+    ]);
+    const run = await ctx.service.get(id);
+    expect(run).toMatchObject({ complete: false, set_id: null, set_version: null });
+  });
+
+  it('a legacy run is flagged', async () => {
+    const ctx = setup();
+    ctx.prisma.aiEvalRun.findUnique.mockResolvedValue({ ...runRow(ADMIN), legacy: true });
+    expect(await ctx.service.get(randomUUID())).toMatchObject({ legacy: true, set_id: null });
+  });
+});
+
+describe('EvalRunsService.items (B3, R7)', () => {
+  it('lists the dev items that have a result in position order, and the statistics of every item', async () => {
+    const ctx = setup();
+    const id = randomUUID();
+    ctx.prisma.aiEvalRun.findUnique.mockResolvedValue(runRow(ADMIN, id));
+    ctx.prisma.aiEvalRunItem.findMany.mockResolvedValue([
+      itemRow('d1', 0, { status: 'succeeded', rule: { status: 'pass', problems: [], reason: null }, expectedResult: 'pass' }),
+      itemRow('d2', 1, { status: 'pending' }),
+      itemRow('h1', 2, { split: 'held_out', status: 'succeeded', rule: { status: 'pass', problems: [], reason: null }, expectedResult: 'fail' }),
+    ]);
+    const answer = await ctx.service.items(id);
+    expect(answer.items.map((item) => item.example_id)).toEqual(['d1']);
+    expect(answer.stats.held_out).toMatchObject({ total: 1, expected_fail: 1, failing: 1 });
+    expect(answer.stats.dev).toMatchObject({ total: 2, pending: 1, shape_pass: 1, rule_pass: 1, expected_pass: 1, failing: 0 });
+    expect(JSON.stringify(answer)).not.toContain('h1');
+  });
+
+  it('an unknown run → 404', async () => {
+    expect(await problemOf(setup().service.items(randomUUID()))).toMatchObject({ status: 404, type: 'not-found' });
+  });
+});
+
+describe('EvalRunsService.create on a frozen version (design §5.3, B8)', () => {
+  const S1 = randomUUID();
+  const setItem = (exampleId: string, position: number, split: string, input: unknown, expected: unknown) => ({ exampleId, position, split, input, expected });
+
+  it('copies the items of the version, with one held-out among them, and stores the set id', async () => {
+    const ctx = setup();
+    ctx.prisma.aiEvalSet.findUnique.mockResolvedValue({ id: S1, operation: 'generate_cloze', version: 1 });
+    ctx.prisma.aiEvalSetItem.findMany.mockResolvedValue([
+      setItem(EX1, 0, 'held_out', IN1, { forms: ['one'] }), setItem(EX2, 1, 'dev', IN2, { forms: ['two'] }),
+    ]);
+    await ctx.service.create(ADMIN, { operation: 'generate_cloze', prompt: 'current', set_id: S1 });
+    expect(ctx.prisma.aiEvalSetItem.findMany).toHaveBeenCalledWith({ where: { setId: S1 }, orderBy: [{ position: 'asc' }, { id: 'asc' }] });
+    expect(ctx.prisma.aiEvalExample.findMany).not.toHaveBeenCalled();
+    expect(ctx.created[0]).toMatchObject({ setId: S1, total: 2 });
+    expect(ctx.tx.aiEvalRunItem.createMany).toHaveBeenCalledExactlyOnceWith({ data: [
+      { runId: ctx.created[0]!.id, exampleId: EX1, position: 0, split: 'held_out', input: IN1, expected: { forms: ['one'] } },
+      { runId: ctx.created[0]!.id, exampleId: EX2, position: 1, split: 'dev', input: IN2, expected: { forms: ['two'] } },
+    ] });
+  });
+
+  it('a version of another operation, or a version that does not exist → 400 set_id: not a version of <op>, no row', async () => {
+    const ctx = setup();
+    ctx.prisma.aiEvalSet.findUnique.mockResolvedValue({ id: S1, operation: 'lookup_word', version: 1 });
+    expect(await problemOf(ctx.service.create(ADMIN, { operation: 'generate_cloze', prompt: 'current', set_id: S1 })))
+      .toMatchObject({ status: 400, violations: ['set_id: not a version of generate_cloze'] });
+    ctx.prisma.aiEvalSet.findUnique.mockResolvedValue(null);
+    expect(await problemOf(ctx.service.create(ADMIN, { operation: 'generate_cloze', prompt: 'current', set_id: S1 })))
+      .toMatchObject({ status: 400, violations: ['set_id: not a version of generate_cloze'] });
+    expect(ctx.created).toHaveLength(0);
+    expect(ctx.limiter.hit).not.toHaveBeenCalled();
+  });
+
+  it('without set_id the run takes the working set and stores no set', async () => {
+    const ctx = setup();
+    await ctx.service.create(ADMIN, { operation: 'generate_cloze', prompt: 'current' });
+    expect(ctx.created[0]).toMatchObject({ setId: null });
+    expect(ctx.prisma.aiEvalSet.findUnique).not.toHaveBeenCalled();
+  });
+
+  it('a set_id that is not a uuid → 400', async () => {
+    const ctx = setup();
+    expect((await problemOf(ctx.service.create(ADMIN, { operation: 'generate_cloze', prompt: 'current', set_id: 'x' }))).status).toBe(400);
+  });
+});
+
+describe('EvalRunsService.list by set', () => {
+  it('B8: set_id narrows the runs and is part of the page token binding', async () => {
+    const ctx = setup();
+    const S1 = randomUUID();
+    ctx.prisma.aiEvalRun.findMany.mockResolvedValueOnce([]);
+    await ctx.service.list('generate_cloze', 20, undefined, S1);
+    expect(ctx.prisma.aiEvalRun.findMany).toHaveBeenCalledWith(expect.objectContaining({ where: { operation: 'generate_cloze', setId: S1 } }));
+    ctx.prisma.aiEvalRun.findMany.mockResolvedValueOnce([runRow(ADMIN), runRow(ADMIN)]);
+    const { next_page_token: token } = await ctx.service.list('generate_cloze', 1, undefined, S1);
+    expect(token).not.toBeNull();
+    await expect(ctx.service.list('generate_cloze', 1, token!)).rejects.toBeInstanceOf(ProblemDetailsException);
+    ctx.prisma.aiEvalRun.findMany.mockResolvedValueOnce([]);
+    await expect(ctx.service.list('generate_cloze', 1, token!, S1)).resolves.toMatchObject({ items: [] });
   });
 });
 
@@ -231,6 +355,7 @@ function itemRow(exampleId: string, position: number, over: Record<string, unkno
 
 function runRow(startedBy: string, id: string = randomUUID()) {
   return {
+    setId: null, legacy: false,
     id, operation: 'generate_cloze', provider: 'fake', model: 'fake:ok', effort: null, thinking: 'disabled', maxOutputTokens: 4096,
     promptRevision: 4, draft: null, status: 'done', total: 2, validCount: 2, avgLatencyMs: 5, costUsd: null,
     costUnknownCount: 0, error: null, startedBy, createdAt: new Date('2026-10-01T00:00:00Z'), startedAt: null, finishedAt: null,
@@ -334,10 +459,12 @@ describe('EvalRunsService started_by_user', () => {
     const ctx = setup();
     const [a, b] = [randomUUID(), randomUUID()];
     ctx.prisma.aiEvalRun.findMany.mockResolvedValueOnce([runRow(ADMIN, a), runRow(ADMIN, b)]);
-    ctx.prisma.aiEvalRunItem.groupBy.mockResolvedValueOnce([{ runId: a, _count: { _all: 2 } }]);
+    ctx.prisma.aiEvalRunItem.groupBy.mockResolvedValueOnce([
+      { runId: a, status: 'succeeded', _count: { _all: 2 } }, { runId: b, status: 'pending', _count: { _all: 2 } },
+    ]);
     const { items } = await ctx.service.list('generate_cloze', 20, undefined);
     expect(ctx.prisma.aiEvalRunItem.groupBy).toHaveBeenCalledExactlyOnceWith({
-      by: ['runId'], where: { runId: { in: [a, b] }, status: { not: 'pending' } }, _count: { _all: true },
+      by: ['runId', 'status'], where: { runId: { in: [a, b] } }, _count: { _all: true },
     });
     expect(items.map((item) => item.done)).toEqual([2, 0]);
   });
