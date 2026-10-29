@@ -406,8 +406,8 @@
     },
     "eval": {
       "operation": "Operation",
-      "examples": "Examples ({count}/100)",
-      "examplesHint": "Up to 100 examples per operation. Test runs on the Prompt page and [Run example set] use these examples.",
+      "examples": "Examples ({count}/1,000)",
+      "examplesHint": "Up to 1,000 examples per operation. Test runs on the Prompt page and [Run example set] use these examples.",
       "add": "Add example",
       "bulk": {
         "add": "Bulk import",

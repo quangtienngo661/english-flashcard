@@ -1,12 +1,12 @@
 'use client';
 
 import { useLocale, useTranslations } from 'next-intl';
-import { useSearchParams } from 'next/navigation';
 import { useState, type FormEvent } from 'react';
 import { createApiClient } from '@/app-shell/api/client';
 import { ApiError } from '@/app-shell/api/problem';
 import { useErrorMessage } from '@/app-shell/api/use-error-message';
 import { hardReplace } from '@/app-shell/navigate';
+import { clearPendingEmail, readPendingEmail } from '@/app-shell/session/pending-email';
 import { useSession } from '@/app-shell/session/session-context';
 import { useSubmitOnce } from '@/app-shell/use-submit-once';
 import { Button } from '@/app-ui/Button';
@@ -18,12 +18,14 @@ export function ResetPasswordForm() {
   const t = useTranslations('App.auth');
   const errorText = useErrorMessage();
   const locale = useLocale();
-  const params = useSearchParams();
   const { store } = useSession();
   const [code, setCode] = useState('');
   const [password, setPassword] = useState('');
   const [errors, setErrors] = useState<{ code?: string; password?: PasswordRule[]; form?: string }>({});
-  const email = params.get('email') ?? '';
+  // Written by the forgot-password page; absent when this page is opened on its own, then the learner types it (UW-1).
+  const [pendingEmail] = useState(readPendingEmail);
+  const [typedEmail, setTypedEmail] = useState('');
+  const email = pendingEmail ?? typedEmail.trim();
 
   const { submit, busy } = useSubmitOnce(async () => {
     await createApiClient({ send: store!.send }).post('/v1/auth/password/reset', {
@@ -31,6 +33,7 @@ export function ResetPasswordForm() {
       code: code.replace(/\s/g, ''),
       new_password: password,
     });
+    clearPendingEmail();
     hardReplace(`/${locale}/app/login?reset=1`);
   });
 
@@ -50,6 +53,9 @@ export function ResetPasswordForm() {
   return (
     <AuthCard title={t('reset.title')} onBack={() => hardReplace(`/${locale}/app/forgot-password`)}>
       <form onSubmit={onSubmit} noValidate className="flex flex-col gap-4">
+        {pendingEmail === null && (
+          <TextField label={t('email')} type="email" value={typedEmail} onChange={setTypedEmail} autoComplete="email" spellCheck={false} />
+        )}
         <TextField label={t('reset.code')} value={code} onChange={setCode} inputMode="numeric" autoComplete="one-time-code" error={errors.code} />
         <TextField
           label={t('reset.newPassword')}
@@ -61,7 +67,7 @@ export function ResetPasswordForm() {
         />
         <PasswordRules rules={errors.password ?? []} />
         <FormError message={errors.form ?? null} />
-        <Button type="submit" variant="sticker" size="lg" isPending={busy} isDisabled={!store || !code || !password}>
+        <Button type="submit" variant="sticker" size="lg" isPending={busy} isDisabled={!store || !email || !code || !password}>
           {t('reset.submit')}
         </Button>
       </form>

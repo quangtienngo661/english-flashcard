@@ -454,13 +454,14 @@
       "deleted": {
         "learning": "Dữ liệu học: nhóm, lịch ôn, lịch sử trả lời",
         "privateWords": "Từ riêng và câu bạn tự viết",
-        "plans": "Gói và lượt dùng của bạn",
+        "plans": "Gói của bạn",
         "sessions": "Mọi phiên đăng nhập"
       },
       "kept": {
         "payments": "Hồ sơ thanh toán {years, number} năm, không kèm tên bạn",
         "paymentsNoYears": "Hồ sơ thanh toán theo thời hạn luật định, không kèm tên bạn",
         "reports": "Báo lỗi bạn đã gửi, không kèm tên",
+        "usage": "Số lượt đã dùng, không kèm tên bạn",
         "totals": "Số liệu tổng hợp, không nhận ra bạn"
       },
       "blocked": "Bạn đang có gói tự gia hạn. Hủy gói trước khi xóa tài khoản.",
@@ -722,8 +723,8 @@
       "newGroup": "Nhóm mới “{name}”",
       "addAll": "Thêm cả {count, number} từ",
       "addSelected": "Thêm {count, number} từ đã chọn",
-      "result": "Đã thêm {added} từ vào nhóm “{name}”.",
-      "resultSkipped": "{already} từ đã có trong nhóm, {full} từ không vừa vì nhóm đã đầy, {missing} từ không còn.",
+      "result": "Đã thêm {added, number} từ vào nhóm “{name}”.",
+      "resultSkipped": "{already, number} từ đã có trong nhóm, {full, number} từ không vừa vì nhóm đã đầy, {missing, number} từ không còn.",
       "notFound": "Không tìm thấy chủ đề này.",
       "back": "Quay lại",
       "none": "Chưa có từ nào cho chủ đề và trình độ này."
@@ -895,8 +896,8 @@
       "bulkNewDeck": "Nhóm mới: {name}",
       "bulkNote": "Các từ chưa học vào ngăn Mới.",
       "bulkSubmit": "Thêm cả loạt",
-      "bulkResult": "Đã thêm {added} từ vào nhóm “{name}”.",
-      "bulkSkipped": "{already} từ đã có trong nhóm, {function} từ chức năng bỏ qua, {full} từ không vừa vì nhóm đã đầy.",
+      "bulkResult": "Đã thêm {added, number} từ vào nhóm “{name}”.",
+      "bulkSkipped": "{already, number} từ đã có trong nhóm, {function, number} từ chức năng bỏ qua, {full, number} từ không vừa vì nhóm đã đầy.",
       "pickDeck": "Chọn {group}",
       "ai": {
         "button": "Tra bằng AI",

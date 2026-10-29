@@ -6,9 +6,13 @@ import { AuthGate } from './AuthGate';
 
 const hardReplace = vi.fn();
 vi.mock('@/app-shell/navigate', () => ({ hardReplace: (path: string) => hardReplace(path), isLeaving: () => false }));
-vi.mock('next/navigation', () => ({ usePathname: () => '/vi/app/login', useRouter: () => ({ replace: vi.fn(), push: vi.fn() }) }));
+let pathname = '/vi/app/login';
+vi.mock('next/navigation', () => ({ usePathname: () => pathname, useRouter: () => ({ replace: vi.fn(), push: vi.fn() }) }));
 
-beforeEach(() => hardReplace.mockReset());
+beforeEach(() => {
+  hardReplace.mockReset();
+  pathname = '/vi/app/login';
+});
 
 describe('AuthGate', () => {
   it('a learner already signed in when the page opens goes on into the app', async () => {
@@ -19,6 +23,22 @@ describe('AuthGate', () => {
     );
     await waitFor(() => expect(hardReplace).toHaveBeenCalledWith('/vi/app'));
   });
+
+  it.each(['/vi/app/forgot-password', '/en/app/reset-password'])(
+    'B8-2: %s stays open for a learner who is signed in (a Google-only account sets a password there)',
+    async (path) => {
+      pathname = path;
+      const { store } = renderApp(
+        <AuthGate>
+          <p>form</p>
+        </AuthGate>,
+      );
+      // The session must be known before "no redirect" means anything; the sign-in page redirects at this same moment (first test).
+      await waitFor(() => expect(store.state.status).toBe('signed-in'));
+      expect(screen.getByText('form')).toBeInTheDocument();
+      expect(hardReplace).not.toHaveBeenCalled();
+    },
+  );
 
   it('registering on this page stays signed out and lets the form choose where to go', async () => {
     const { store } = renderApp(

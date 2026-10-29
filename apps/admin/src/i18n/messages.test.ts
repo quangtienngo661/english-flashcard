@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import en from '../../messages/en.json';
 import vi from '../../messages/vi.json';
+import { BULK_MAX } from '../features/ai/bulk-examples';
 
 function values(node: unknown, path = ''): Array<[string, string]> {
   if (typeof node === 'string') return [[path, node]];
@@ -19,5 +20,13 @@ describe('message copy (Web Interface Guidelines, typography)', () => {
 
   it('vi: the price hint writes the ceiling without a thousands dot', () => {
     expect(vi.ai.models.form.priceHint.startsWith('Từ 0 đến 1000,')).toBe(true);
+  });
+
+  it('UA-1: both languages state the limit the API enforces for examples per operation', () => {
+    expect(BULK_MAX).toBe(1000);
+    expect(en.ai.eval.examples).toBe('Examples ({count}/1,000)');
+    expect(en.ai.eval.examplesHint.startsWith('Up to 1,000 examples per operation.')).toBe(true);
+    expect(vi.ai.eval.examples).toBe('Ví dụ ({count}/1.000)');
+    expect(vi.ai.eval.examplesHint.startsWith('Mỗi thao tác tối đa 1.000 ví dụ.')).toBe(true);
   });
 });

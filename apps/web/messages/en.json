@@ -454,13 +454,14 @@
       "deleted": {
         "learning": "Learning data: groups, review schedule, answer history",
         "privateWords": "Your own words and sentences",
-        "plans": "Your plans and usage",
+        "plans": "Your plans",
         "sessions": "Every sign-in session"
       },
       "kept": {
         "payments": "Payment records for {years, number} years, without your name",
         "paymentsNoYears": "Payment records for the legal period, without your name",
         "reports": "Error reports you sent, without your name",
+        "usage": "Quota you used, without your name",
         "totals": "Totals that do not identify you"
       },
       "blocked": "You have a plan that renews. Cancel it before deleting your account.",
@@ -723,7 +724,7 @@
       "addAll": "Add all {count, plural, one {# word} other {# words}}",
       "addSelected": "Add {count, plural, one {# selected word} other {# selected words}}",
       "result": "{added, plural, one {# word} other {# words}} added to “{name}”.",
-      "resultSkipped": "{already} already in the deck, {full} didn’t fit because the deck is full, {missing} no longer available.",
+      "resultSkipped": "{already, number} already in the deck, {full, number} didn’t fit because the deck is full, {missing, number} no longer available.",
       "notFound": "This topic doesn’t exist.",
       "back": "Back",
       "none": "No words for this topic and level yet."
@@ -895,8 +896,8 @@
       "bulkNewDeck": "New deck: {name}",
       "bulkNote": "Words not learned yet go to the New stage.",
       "bulkSubmit": "Add them all",
-      "bulkResult": "Added {added} words to “{name}”.",
-      "bulkSkipped": "{already} already in the deck, {function} function words skipped, {full} did not fit because the deck is full.",
+      "bulkResult": "Added {added, number} words to “{name}”.",
+      "bulkSkipped": "{already, number} already in the deck, {function, number} function words skipped, {full, number} did not fit because the deck is full.",
       "pickDeck": "Choose {group}",
       "ai": {
         "button": "Look up with AI",

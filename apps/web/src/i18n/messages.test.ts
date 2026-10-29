@@ -19,7 +19,7 @@ const flatEn = flatten(en as Tree);
 // Audit 26/10/2026 #9: next-intl prints a plain `{count}` as "262962"; `{count, number}` follows the locale ("262.962",
 // "262,962"). Every placeholder that carries a number in the app copy is declared as one.
 const NUMERIC = new Set(['count', 'total', 'used', 'limit', 'remaining', 'waiting', 'groups', 'words', 'shown', 'done', 'n', 'needed',
-  'target', 'left', 'opened', 'max', 'days', 'seconds']);
+  'target', 'left', 'opened', 'max', 'days', 'seconds', 'added', 'already', 'full', 'missing', 'function']);
 /** Keys whose `{groups}` is a list of deck names, not a number. */
 const TEXT_ARGS = new Set(['topic.learning']);
 

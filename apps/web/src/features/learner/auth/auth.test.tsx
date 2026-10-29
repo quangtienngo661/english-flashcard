@@ -403,16 +403,17 @@ describe('WelcomeLanguage (K/06)', () => {
 });
 
 describe('Forgot and reset password (K/04, K/05)', () => {
-  it('asks for a reset code, then opens the reset screen for that email', async () => {
+  it('UW-1: asks for a reset code, then opens the reset screen; the email travels in session storage, never in the URL', async () => {
     const { calls } = renderApp(<ForgotPasswordForm />, { routes: { ...signedOut, 'POST /v1/auth/otp': () => Response.json({}, { status: 202 }) } });
     await userEvent.type(screen.getByRole('textbox', { name: 'Email' }), 'lan@example.com');
     await userEvent.click(screen.getByRole('button', { name: 'Gửi mã' }));
-    await waitFor(() => expect(hardReplace).toHaveBeenCalledWith('/vi/app/reset-password?email=lan%40example.com'));
+    await waitFor(() => expect(hardReplace).toHaveBeenCalledWith('/vi/app/reset-password'));
+    expect(readPendingEmail()).toBe('lan@example.com');
     expect(calls.find((c) => c.path === '/v1/auth/otp')!.body).toEqual({ purpose: 'reset_password', email: 'lan@example.com' });
   });
 
-  it('sets the new password, then sends the learner to sign in', async () => {
-    search = new URLSearchParams({ email: 'lan@example.com' });
+  it('UW-1: sets the new password for the pending email, then sends the learner to sign in and forgets the email', async () => {
+    writePendingEmail('lan@example.com');
     const { calls } = renderApp(<ResetPasswordForm />, {
       routes: { ...signedOut, 'POST /v1/auth/password/reset': () => new Response(null, { status: 204 }) },
     });
@@ -423,6 +424,26 @@ describe('Forgot and reset password (K/04, K/05)', () => {
     expect(calls.find((c) => c.path === '/v1/auth/password/reset')!.body).toEqual({
       email: 'lan@example.com', code: '481205', new_password: 'Bb2@bbbb',
     });
+    expect(readPendingEmail()).toBeNull();
+  });
+
+  it('UW-1: opened without a pending email (another tab, storage blocked), the page asks for the email', async () => {
+    const { calls } = renderApp(<ResetPasswordForm />, {
+      routes: { ...signedOut, 'POST /v1/auth/password/reset': () => new Response(null, { status: 204 }) },
+    });
+    await userEvent.type(screen.getByRole('textbox', { name: 'Email' }), 'lan@example.com');
+    await userEvent.type(screen.getByRole('textbox', { name: 'Mã 6 số trong email' }), '481205');
+    await userEvent.type(screen.getByLabelText('Mật khẩu mới'), 'Bb2@bbbb');
+    await userEvent.click(screen.getByRole('button', { name: 'Đổi mật khẩu' }));
+    await waitFor(() => expect(hardReplace).toHaveBeenCalledWith('/vi/app/login?reset=1'));
+    expect(calls.find((c) => c.path === '/v1/auth/password/reset')!.body).toMatchObject({ email: 'lan@example.com' });
+  });
+
+  it('UW-1: with a pending email the page does not ask for it again', async () => {
+    writePendingEmail('lan@example.com');
+    renderApp(<ResetPasswordForm />, { routes: signedOut });
+    expect(await screen.findByRole('textbox', { name: 'Mã 6 số trong email' })).toBeInTheDocument();
+    expect(screen.queryByRole('textbox', { name: 'Email' })).not.toBeInTheDocument();
   });
 });
 
