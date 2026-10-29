@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { AI_OPERATIONS, type AiResult, type AiService, type RunReport } from '../ai/index.js';
-import { AI_FAKE_CALL_USAGE, parseAiFakeCallArgs, runAiFakeCalls } from './ai-fake-call-args.js';
+import { AI_FAKE_CALL_USAGE, fakeCallRefusal, parseAiFakeCallArgs, runAiFakeCalls } from './ai-fake-call-args.js';
 
 const USER = '00000000-0000-4000-8000-000000000001';
 const DATA = '{"word":"borrow"}';
@@ -136,5 +136,24 @@ describe('runAiFakeCalls', () => {
     await runAiFakeCalls(ai as unknown as AiService, args, (line) => lines.push(line));
     expect(ai.deleteUserData).toHaveBeenCalledWith(USER);
     expect(lines.map((line) => JSON.parse(line))).toEqual([{ kind: 'ai_fake_call', deleted_for: USER }]);
+  });
+});
+
+describe('fakeCallRefusal (B6-2)', () => {
+  const keys = { openaiApiKey: null, anthropicApiKey: null };
+
+  it('runs only with the fake provider on and no real key', () => {
+    expect(fakeCallRefusal({ fakeEnabled: true, ...keys })).toBeNull();
+  });
+
+  it('refuses without AI_FAKE_ENABLED', () => {
+    expect(fakeCallRefusal({ fakeEnabled: false, ...keys })).toBe('ai:fake-call runs only with AI_FAKE_ENABLED=true');
+  });
+
+  it.each([
+    ['OPENAI_API_KEY', { openaiApiKey: 'sk-test', anthropicApiKey: null }],
+    ['ANTHROPIC_API_KEY', { openaiApiKey: null, anthropicApiKey: 'sk-test' }],
+  ])('refuses when %s is set: the model chosen in the database could be a real one', (name, real) => {
+    expect(fakeCallRefusal({ fakeEnabled: true, ...real })).toBe(`ai:fake-call refuses to run while ${name} is set (it could call a real provider)`);
   });
 });
