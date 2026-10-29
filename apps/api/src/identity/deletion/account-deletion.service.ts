@@ -128,7 +128,7 @@ export class AccountDeletionService {
         await tx.$executeRaw`SET LOCAL statement_timeout = '120s'`;
         await withUserLock(tx, userId);
         // Read again: another run (retry, request) may have finished already (B8E29).
-        const user = await tx.user.findUnique({ where: { id: userId }, select: { email: true, status: true, deletingBy: true } });
+        const user = await tx.user.findUnique({ where: { id: userId }, select: { email: true, status: true, deletingBy: true, emailVerifiedAt: true } });
         if (!user) return null;
         if (user.status !== 'deleting') return 'not-deleting' as const;
         const by = (user.deletingBy ?? input.by) as DeletionBy;
@@ -138,10 +138,11 @@ export class AccountDeletionService {
         await deleteIdempotencyKeysOf(tx, userId);
         await tx.deletedAccount.createMany({ data: [{ userId, deletedAt: this.clock.now(), by }], skipDuplicates: true });
         await tx.user.delete({ where: { id: userId } });
-        return { email: user.email, by };
+        return { email: user.email, by, verified: user.emailVerifiedAt !== null };
       }, TX_B);
       if (done === 'not-deleting') return 'skipped';
-      if (done !== null && input.mode !== 'replay' && done.by !== 'cleanup') await this.sendDeletedMail(input, done.email);
+      // An address nobody confirmed may belong to a stranger: no mail to it (final review M4).
+      if (done !== null && done.verified && input.mode !== 'replay' && done.by !== 'cleanup') await this.sendDeletedMail(input, done.email);
       this.logger.info('account_deleted', { user_id: userId, by: done?.by ?? input.by });
       return 'done';
     } catch (error) {
