@@ -21,7 +21,7 @@ function runRow(over: Partial<EvalRunRow> = {}): EvalRunRow {
     id: RUN, operation: 'generate_cloze', provider: 'fake', model: 'fake:ok', effort: null, thinking: null, maxOutputTokens: null,
     promptRevision: 3, draft: null, status: 'queued', total: 3, startedBy: ADMIN,
     startedAt: null, heartbeatAt: null, finishedAt: null, error: null, validCount: 0, avgLatencyMs: null, costUsd: null,
-    costUnknownCount: 0, setId: null, priceInput: 1, priceCachedInput: null, priceOutput: 2, legacy: false, ...over,
+    costUnknownCount: 0, setId: null, priceInput: 1, priceCachedInput: null, priceOutput: 2, legacy: false, configId: null, configVersion: null, ...over,
   };
 }
 
@@ -45,6 +45,7 @@ function memoryRepository(row: EvalRunRow, items: EvalRunItemRow[]) {
       return structuredClone(row);
     }),
     isRunning: vi.fn(async (id: string) => row.id === id && row.status === 'running'),
+    configOf: vi.fn(async (_id: string): Promise<{ number: number; version: number; instructions: string; examples: unknown[] } | null> => null),
     pendingItems: vi.fn(async (id: string) =>
       items.filter((item) => item.runId === id && item.status === 'pending').sort((a, b) => a.position - b.position).map((item) => structuredClone(item))),
     completeItem: vi.fn(async (id: string, result: ItemResult, now: Date) => {
@@ -327,6 +328,45 @@ describe('EvalJob.run', () => {
       raw_output: '{"sentence":"Lan will ___ it."}', latency_ms: 100, cost_usd: '0.00010000',
       rule: { status: 'skipped', problems: [], reason: 'no-rules' }, expected_result: null,
     }, NOW);
+  });
+});
+
+describe('EvalJob.run on a config (M2-T4, design §6.5)', () => {
+  const CONFIG = '55555555-5555-4555-8555-555555555555';
+  const configRun = (over: Partial<EvalRunRow> = {}) => runRow({ promptRevision: null, configId: CONFIG, configVersion: 2, ...over });
+  const stored = { number: 4, version: 2, instructions: 'Config text.', examples: [] as unknown[] };
+
+  it('a config at the version the run tried → the prompt is the config text and the revision is the config number', async () => {
+    const ctx = setup(configRun());
+    ctx.repo.configOf.mockResolvedValue(stored);
+    await ctx.job.run(RUN);
+    expect(ctx.repo.configOf).toHaveBeenCalledExactlyOnceWith(CONFIG);
+    expect(ctx.prompts.atRevision).not.toHaveBeenCalled();
+    expect(ctx.runner.execute).toHaveBeenCalledTimes(3);
+    expect(ctx.runner.execute.mock.calls[0]![0]).toMatchObject({ prompt: { instructions: 'Config text.', examples: [], revision: 4 } });
+    expect(ctx.repo.row.status).toBe('finished');
+  });
+
+  it('Review focus 1: the draft saved again while the run was queued (version 3 ≠ 2) → failed config-changed, no provider call', async () => {
+    const ctx = setup(configRun());
+    ctx.repo.configOf.mockResolvedValue({ ...stored, version: 3 });
+    await ctx.job.run(RUN);
+    expect(ctx.repo.row).toMatchObject({ status: 'failed', error: 'config-changed' });
+    expect(ctx.runner.execute).not.toHaveBeenCalled();
+    expect(ctx.repo.completeItem).not.toHaveBeenCalled();
+  });
+
+  it('the draft deleted meanwhile → failed config-deleted, no provider call', async () => {
+    const ctx = setup(configRun());
+    await ctx.job.run(RUN);
+    expect(ctx.repo.row).toMatchObject({ status: 'failed', error: 'config-deleted' });
+    expect(ctx.runner.execute).not.toHaveBeenCalled();
+  });
+
+  it('a prompt run never reads a config', async () => {
+    const ctx = setup();
+    await ctx.job.run(RUN);
+    expect(ctx.repo.configOf).not.toHaveBeenCalled();
   });
 });
 

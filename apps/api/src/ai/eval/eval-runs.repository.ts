@@ -38,7 +38,13 @@ export type EvalRunRow = {
   priceOutput: number | null;
   /** Made before nhóm B. */
   legacy: boolean;
+  /** The config this run tried and the version of it (M2); both null for a run of a prompt revision or a Prompt-page draft. */
+  configId: string | null;
+  configVersion: number | null;
 };
+
+/** What a config run needs from its config row: the text, and the version it must still have. */
+export type ConfigPrompt = { number: number; version: number; instructions: string; examples: PromptExample[] };
 
 /** One example's snapshot and result inside a run (`ai_eval_run_items`). */
 export type EvalRunItemRow = {
@@ -78,6 +84,7 @@ type Raw = {
   started_by: string; started_at: Date | null; heartbeat_at: Date | null; finished_at: Date | null; error: string | null;
   valid_count: number; avg_latency_ms: number | null; cost_usd: DecimalLike | null; cost_unknown_count: number;
   set_id: string | null; price_input: DecimalLike | null; price_cached_input: DecimalLike | null; price_output: DecimalLike | null; legacy: boolean;
+  config_id: string | null; config_version: number | null;
 };
 
 type RawItem = {
@@ -96,7 +103,7 @@ const toRow = (raw: Raw): EvalRunRow => ({
   finishedAt: raw.finished_at, error: raw.error, validCount: raw.valid_count, avgLatencyMs: raw.avg_latency_ms,
   costUsd: raw.cost_usd === null ? null : raw.cost_usd.toString(), costUnknownCount: raw.cost_unknown_count,
   setId: raw.set_id, priceInput: toNumber(raw.price_input), priceCachedInput: toNumber(raw.price_cached_input), priceOutput: toNumber(raw.price_output),
-  legacy: raw.legacy,
+  legacy: raw.legacy, configId: raw.config_id, configVersion: raw.config_version,
 });
 
 const toItemRow = (raw: RawItem): EvalRunItemRow => ({
@@ -132,6 +139,12 @@ export class EvalRunsRepository {
     const rows = await this.prisma.$queryRaw<Array<{ one: number }>>`
       SELECT 1 AS one FROM ai_eval_runs WHERE id = ${id}::uuid AND status = 'running'`;
     return rows.length > 0;
+  }
+
+  /** The config row a config run tried; null when it was deleted since (a draft that was removed). */
+  async configOf(id: string): Promise<ConfigPrompt | null> {
+    const row = await this.prisma.aiConfig.findUnique({ where: { id }, select: { number: true, version: true, instructions: true, examples: true } });
+    return row ? { number: row.number, version: row.version, instructions: row.instructions, examples: row.examples as PromptExample[] } : null;
   }
 
   /** The examples of the run that have no result yet, in position order (B6E93: a resumed run skips the finished ones). */
