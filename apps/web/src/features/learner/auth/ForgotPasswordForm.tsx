@@ -6,6 +6,7 @@ import { useState, type FormEvent } from 'react';
 import { createApiClient } from '@/app-shell/api/client';
 import { useErrorMessage } from '@/app-shell/api/use-error-message';
 import { hardReplace } from '@/app-shell/navigate';
+import { writePendingEmail } from '@/app-shell/session/pending-email';
 import { useSession } from '@/app-shell/session/session-context';
 import { useSubmitOnce } from '@/app-shell/use-submit-once';
 import { Button } from '@/app-ui/Button';
@@ -24,7 +25,9 @@ export function ForgotPasswordForm() {
 
   const { submit, busy } = useSubmitOnce(async () => {
     await createApiClient({ send: store!.send }).post('/v1/auth/otp', { purpose: 'reset_password', email: email.trim() });
-    hardReplace(`/${locale}/app/reset-password?email=${encodeURIComponent(email.trim())}`);
+    // Session storage, not the URL: the address would sit in the browser history and in request logs (UW-1).
+    writePendingEmail(email.trim());
+    hardReplace(`/${locale}/app/reset-password`);
   });
 
   async function onSubmit(event: FormEvent) {
