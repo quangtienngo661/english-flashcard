@@ -115,14 +115,16 @@ export class AiQuestionGenerator {
     }
 
     // F. The call, and one rewrite under `#2` when Practice's rules reject the first answer.
-    let callId = request.id;
-    let result = await this.ai.run(op, stored.data, { operationId: callId, userId, purpose: 'learner' });
-    let passed = result.status === 'succeeded' && await this.check(stored, sense, result.result);
-    if (result.status === 'succeeded' && !passed) {
-      callId = `${request.id}#2`;
-      result = await this.ai.run(op, stored.data, { operationId: callId, userId, purpose: 'learner' });
-      passed = result.status === 'succeeded' && await this.check(stored, sense, result.result);
+    let called: Awaited<ReturnType<AiQuestionGenerator['callAi']>>;
+    try {
+      called = await this.callAi(request.id, op, stored, sense, userId);
+    } catch (error) {
+      // B7-3: the unit goes back and the slot fails now, as in the lookup (a request left generating blocks the learner ~2 minutes).
+      await this.entitlements.release(userId, POOL, request.id);
+      this.logger.error('ai_question_exception', error, { ai_request: request.id, ai_op: op });
+      return this.fail(request, 'ai-failed', { reason: 'exception' });
     }
+    const { callId, result, passed } = called;
     // B7E11: still running elsewhere; the unit stays held.
     if (result.status === 'in_progress') return { state: 'preparing' };
     if (result.status !== 'succeeded' || !passed) {
@@ -148,6 +150,19 @@ export class AiQuestionGenerator {
     // B7E12: the question is still given; it is simply free.
     else this.logger.warn('ai_confirm_not_charged', { ai_request: request.id, ai_op: op, ai_state: confirmed.state });
     return { state: 'ready', questionId: written.questionId };
+  }
+
+  /** F: the call, and one rewrite under `#2` when Practice's rules reject the first answer. */
+  private async callAi(requestId: string, op: AiOperation, stored: StoredAiInput, sense: PracticeSense, userId: string) {
+    let callId = requestId;
+    let result = await this.ai.run(op, stored.data, { operationId: callId, userId, purpose: 'learner' });
+    let passed = result.status === 'succeeded' && await this.check(stored, sense, result.result);
+    if (result.status === 'succeeded' && !passed) {
+      callId = `${requestId}#2`;
+      result = await this.ai.run(op, stored.data, { operationId: callId, userId, purpose: 'learner' });
+      passed = result.status === 'succeeded' && await this.check(stored, sense, result.result);
+    }
+    return { callId, result, passed };
   }
 
   private async fail(request: AiRequestRow, failure: AiFailure, options: FailOptions): Promise<GenerateOutcome> {
