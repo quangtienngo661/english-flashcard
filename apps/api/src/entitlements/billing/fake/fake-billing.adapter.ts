@@ -1,4 +1,5 @@
-import { Inject, Injectable, type OnModuleInit } from '@nestjs/common';
+import { Inject, Injectable, Optional, type OnModuleInit } from '@nestjs/common';
+import { randomUUID } from 'node:crypto';
 import { Clock } from '../../../common/clock/clock.js';
 import { APP_CONFIG, type AppConfig } from '../../../common/config/app-config.js';
 import { PRISMA_CLIENT } from '../../../common/db/prisma.module.js';
@@ -6,6 +7,7 @@ import type { Prisma, PrismaClient } from '../../../generated/prisma/client.js';
 import type { Interval, SubscriptionStatus } from '../../entitlements.types.js';
 import { BillingAdapter, type BillingRequest, type ParsedEvent } from '../billing-adapter.js';
 import { BillingAdapterRegistry } from '../billing-adapter.registry.js';
+import { BILLING_APPLY_PORT, BillingInbox, type BillingApplyPort } from '../billing-inbox.service.js';
 import { eventFromJson, type FetchedState, type NormalizedEvent } from '../billing.types.js';
 import { fakeParse, fakeReadRequest, fakeVerifySignature } from './fake-wire.js';
 
@@ -26,6 +28,8 @@ export class FakeBillingAdapter extends BillingAdapter implements OnModuleInit {
     @Inject(PRISMA_CLIENT) private readonly prisma: PrismaClient,
     @Inject(Clock) private readonly clock: Clock,
     @Inject(BillingAdapterRegistry) private readonly registry: BillingAdapterRegistry,
+    @Optional() @Inject(BillingInbox) private readonly inbox?: BillingInbox,
+    @Optional() @Inject(BILLING_APPLY_PORT) private readonly applier?: BillingApplyPort,
   ) {
     super();
     this.fetchState = config.billing.fakeFetchState ? (id) => this.readState(id) : undefined;
@@ -58,11 +62,32 @@ export class FakeBillingAdapter extends BillingAdapter implements OnModuleInit {
     });
   }
 
+  /**
+   * Stamps the provider's own row and, like a real provider confirming the cancel, sends Wordmet a `cancel_scheduled` event. The event is
+   * stored and **applied before this returns**, so `subscriptions.cancel_at_period_end` is true when the call ends: CI and the smoke stay
+   * deterministic (Bước 8 plan review P5). A real provider's webhook arrives seconds or minutes later.
+   */
   async cancelAtPeriodEnd(externalSubscriptionId: string): Promise<void> {
     await this.prisma.fakeBillingSubscription.updateMany({
       where: { externalSubscriptionId },
       data: { cancelCalledAt: this.clock.now(), cancelAtPeriodEnd: true },
     });
+    if (!this.inbox || !this.applier) return;
+    const subscription = await this.prisma.subscription.findFirst({
+      where: { provider: this.provider, externalSubscriptionId }, select: { userId: true, environment: true },
+    });
+    if (subscription === null) return;
+    const occurredAt = this.clock.now();
+    const event: NormalizedEvent = {
+      type: 'cancel_scheduled', provider: this.provider, environment: subscription.environment as NormalizedEvent['environment'],
+      externalEventId: `fake-cancel-${randomUUID()}`, externalSubscriptionId, appUserId: subscription.userId, occurredAt,
+    };
+    await this.track(subscription.userId, event);
+    const ids = await this.inbox.store(this.provider, [{
+      externalEventId: event.externalEventId, type: event.type, environment: event.environment, externalSubscriptionId,
+      appUserId: subscription.userId, occurredAt, transactionId: null, event, missing: [], raw: { source: 'fake cancelAtPeriodEnd' },
+    }]);
+    await this.applier.applyMany(ids);
   }
 
   private async readState(externalSubscriptionId: string): Promise<FetchedState | null> {
