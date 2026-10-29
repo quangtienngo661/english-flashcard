@@ -311,6 +311,10 @@ eval examples (limit per operation now 1000), edit and delete for sources, eval 
 plan: `docs/superpowers/{specs,decisions,plans}/2026-10-27-giao-dien-admin*.md`; owner's test flow `docs/deliveries/giao-dien-admin-test-flow.md`. Not done: the dashboard's two missing numbers,
 group B of the AI work (`docs/preparation/IMPROVEMENT_PLAN_2026-10-28.md` §4), Bước 8, Deploy.
 
+## Bước 8 — plan & as-built
+
+`docs/deliveries/buoc-8.md` (plan tóm tắt 29/10/2026; Google sign-in + account deletion). Design, decisions (D1–D30), review and plan: `docs/superpowers/{specs,decisions,reviews,plans}/2026-10-2{8,9}-buoc-8-*`.
+
 ## Đợt cải thiện nhóm A — plan & as-built
 
 `docs/deliveries/dot-cai-thien-a.md` (plan tóm tắt 26/10/2026). Design, decisions (A0–A14) and plan: `docs/superpowers/{specs,decisions,plans}/2026-10-26-dot-cai-thien-a*.md`;
