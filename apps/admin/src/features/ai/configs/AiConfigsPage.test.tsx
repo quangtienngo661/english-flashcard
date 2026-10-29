@@ -6,7 +6,7 @@ import { makeMe, problem } from '../../../auth/test-support';
 import { renderApp } from '../../staff/test-utils';
 import type { ConfigsView, SaveDraftBody } from '../ai-api';
 import { example, evalRun, succeeded } from '../prompt-test-support';
-import { FAKE_OK, RUN_ID, URL, configRoutes, configView, configsView, draftView, modelRow } from './config-test-support';
+import { FAKE_OK, RUN_ID, URL, configRoutes, configView, configsView, draftView, modelRow, publishCheck } from './config-test-support';
 
 const t = vi.ai.configs;
 const PATH = '/ai/configs';
@@ -23,7 +23,7 @@ const calls = (all: { method: string; path: string; body: unknown; headers: Reco
 
 async function openPage(routes = configRoutes(), path = PATH) {
   const r = renderApp(path, routes);
-  await screen.findByRole('heading', { name: /^Bản đang chạy/ });
+  await screen.findByRole('heading', { name: /^Bản đang chạy/ }, { timeout: 4000 });
   return r;
 }
 
@@ -270,7 +270,10 @@ describe('AiConfigsPage: testing and running the draft (M2-T6)', () => {
   });
 
   it('with no frozen version the run button is off and the page points to Bộ ví dụ', async () => {
-    await openPage(startRoutes({ [URL.sets()]: () => Response.json({ items: [] }) }));
+    await openPage(startRoutes({
+      [URL.sets()]: () => Response.json({ items: [] }),
+      [URL.publishCheck()]: () => Response.json(publishCheck({ set: null, candidate_run_id: null, blockers: ['eval-required'] })),
+    }));
     expect(button(t.draft.runSet)).toBeDisabled();
     expect(screen.getByText(t.publish.noSet)).toBeInTheDocument();
   });

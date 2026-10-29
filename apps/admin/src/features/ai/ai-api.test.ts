@@ -2,8 +2,8 @@ import { describe, expect, it, vi } from 'vitest';
 import type { ApiClient } from '../../api/client';
 import {
   AI_OPERATION_ORDER, aiKeys, cancelRun, createDraft, createExample, createModel, deleteDraft, deleteExample, deleteModel, deleteRun, effortChoicesFor, freezeSet, getCosts, getForms, getPrompt,
-  getConfigs, getRun, getRunComparison, getSet, getStatus, getTestQuota, isDevExample, isRunCancelled, isRunDone, listCalls, listExamples, listModels, listOperations,
-  listRevisions, listRunItems, listRuns, listSets, refreshModel, revealExample, runTest, saveOperation, savePrompt, saveDraft, sortByOperationOrder, startRun, testDraft, updateExample,
+  getConfigs, getPublishCheck, getRun, getRunComparison, getSet, getStatus, getTestQuota, isDevExample, isRunCancelled, isRunDone, listCalls, listExamples, listModels, listOperations,
+  listConfigHistory, listRevisions, listRunItems, listRuns, listSets, publishDraft, refreshModel, revealExample, rollbackToPrevious, runTest, saveOperation, savePrompt, saveDraft, sortByOperationOrder, startRun, testDraft, updateExample,
   updateModel, type AiModel, type ExampleRow,
 } from './ai-api';
 
@@ -187,6 +187,33 @@ describe('config lifecycle api (nhóm B M2)', () => {
     await startRun(api, { operation: 'generate_cloze', config: 'draft', set_id: 'S2' }, 'key-3');
     expect(mock.post).toHaveBeenCalledWith('/v1/admin/ai/eval/runs', { operation: 'generate_cloze', config: 'draft', set_id: 'S2' }, { idempotencyKey: 'key-3' });
     expect(aiKeys.configs('lookup_word')).toEqual(['ai', 'configs', 'lookup_word']);
+  });
+});
+
+describe('config publish api (nhóm B M2)', () => {
+  it('the publish check and the history are GETs (the history is paged), publish and rollback are POSTs with their bodies', async () => {
+    const { api, mock } = fakeApi();
+    await getPublishCheck(api, 'generate_cloze');
+    await listConfigHistory(api, 'lookup_word');
+    await listConfigHistory(api, 'lookup_word', 'tok+/=');
+    const body = { expected_version: 2, candidate_run_id: 'RC', baseline_run_id: null, acknowledge_warnings: false };
+    await publishDraft(api, 'generate_cloze', body);
+    await rollbackToPrevious(api, 'generate_cloze', { expected_live_version: 5 });
+    expect(mock.get.mock.calls.map((c) => c[0])).toEqual([
+      '/v1/admin/ai/configs/generate_cloze/publish-check',
+      '/v1/admin/ai/configs/lookup_word/history?page_size=20',
+      '/v1/admin/ai/configs/lookup_word/history?page_size=20&page_token=tok%2B%2F%3D',
+    ]);
+    expect(mock.post.mock.calls).toEqual([
+      ['/v1/admin/ai/configs/generate_cloze/publish', body],
+      ['/v1/admin/ai/configs/generate_cloze/rollback', { expected_live_version: 5 }],
+    ]);
+  });
+
+  it('the keys of the publish check and the history start with ai and differ from the configs key', () => {
+    const keys = [aiKeys.configs('generate_cloze'), aiKeys.publishCheck('generate_cloze'), aiKeys.configHistory('generate_cloze')];
+    expect(new Set(keys.map((key) => JSON.stringify(key))).size).toBe(3);
+    expect(keys.every((key) => key[0] === 'ai')).toBe(true);
   });
 });
 

@@ -453,7 +453,44 @@
         "noModelToTest": "Nháp chưa có model. Chọn model và lưu nháp trước khi chạy thử."
       },
       "publish": {
-        "noSet": "Chưa có phiên bản chốt. Chốt một phiên bản ở trang Bộ ví dụ."
+        "title": "Publish nháp",
+        "set": "Phiên bản bộ ví dụ {version}",
+        "noSet": "Chưa có phiên bản chốt. Chốt một phiên bản ở trang Bộ ví dụ.",
+        "evalRequired": "Nháp chưa có lần chạy trọn trên phiên bản {version}.",
+        "baselineRequired": "Bản đang chạy chưa có lần chạy trọn trên phiên bản {version}.",
+        "runLive": "Chạy bản đang chạy trên phiên bản {version}",
+        "rateDrop": "Tỉ lệ đạt {criterion} giảm từ {before}% xuống {after}%.",
+        "criteria": {
+          "shape": "khuôn",
+          "rule": "luật",
+          "expected": "mong đợi"
+        },
+        "devRegressed": "{count} ví dụ dev trước đạt, nay trượt.",
+        "heldOutUp": "Số ví dụ held-out trượt tăng từ {before} lên {after}.",
+        "acknowledge": "Tôi đã đọc cảnh báo và vẫn publish",
+        "submit": "Publish",
+        "done": "Đã publish cấu hình {number}. Áp từ lần gọi sau.",
+        "stale": "Dữ liệu đã đổi. Xem lại trước khi publish.",
+        "saveFirst": "Lưu nháp trước khi publish.",
+        "noBaseline": "Bản đang chạy chưa có model: publish này không so với bản nào.",
+        "turnOffNote": "Nháp không có model: publish sẽ tắt AI của thao tác này, không cần lần chạy.",
+        "turnOffDialog": "Tắt AI của thao tác này? Người học sẽ nhận câu không AI.",
+        "turnOffConfirm": "Tắt AI",
+        "turnedOff": "Đã tắt AI của thao tác này (cấu hình {number}). Quay về bản trước để bật lại."
+      },
+      "rollback": {
+        "button": "Quay về cấu hình {number}",
+        "confirm": "Quay về cấu hình {number}? Người học dùng cấu hình {number} từ lần gọi sau; nháp đang có giữ nguyên.",
+        "go": "Quay về",
+        "done": "Đã quay về cấu hình {number}."
+      },
+      "history": {
+        "title": "Lịch sử publish",
+        "publish": "Publish cấu hình {number} (thay cấu hình {from})",
+        "rollback": "Quay về cấu hình {number}",
+        "turnOff": "Tắt AI: cấu hình {number} (thay cấu hình {from})",
+        "fromHere": "Tạo nháp từ bản này",
+        "empty": "Chưa có lần publish nào."
       },
       "oldPrompts": "Lịch sử prompt trước khi có cấu hình",
       "oldPromptsNote": "Các bản prompt đã lưu trước khi có cấu hình. Có nháp thì chép được vào nháp."

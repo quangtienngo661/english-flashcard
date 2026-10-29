@@ -453,7 +453,44 @@
         "noModelToTest": "The draft has no model. Choose a model and save the draft before a test run."
       },
       "publish": {
-        "noSet": "There is no frozen version. Freeze one on the example-set page."
+        "title": "Publish the draft",
+        "set": "Example-set version {version}",
+        "noSet": "There is no frozen version. Freeze one on the example-set page.",
+        "evalRequired": "The draft has no complete run on version {version}.",
+        "baselineRequired": "The live config has no complete run on version {version}.",
+        "runLive": "Run the live config on version {version}",
+        "rateDrop": "The pass rate on {criterion} dropped from {before}% to {after}%.",
+        "criteria": {
+          "shape": "shape",
+          "rule": "rules",
+          "expected": "expected answer"
+        },
+        "devRegressed": "{count} dev examples passed before and fail now.",
+        "heldOutUp": "Held-out failures rose from {before} to {after}.",
+        "acknowledge": "I read the warnings and still want to publish",
+        "submit": "Publish",
+        "done": "Published config {number}. It applies from the next call.",
+        "stale": "The data changed. Review it before publishing.",
+        "saveFirst": "Save the draft before publishing.",
+        "noBaseline": "The live config has no model: this publish is not compared with anything.",
+        "turnOffNote": "The draft has no model: publishing it turns AI off for this operation, no run needed.",
+        "turnOffDialog": "Turn AI off for this operation? Learners will get non-AI questions.",
+        "turnOffConfirm": "Turn AI off",
+        "turnedOff": "AI is off for this operation (config {number}). Roll back to turn it on again."
+      },
+      "rollback": {
+        "button": "Roll back to config {number}",
+        "confirm": "Roll back to config {number}? Learners use config {number} from the next call; the draft you have stays as it is.",
+        "go": "Roll back",
+        "done": "Rolled back to config {number}."
+      },
+      "history": {
+        "title": "Publish history",
+        "publish": "Published config {number} (replacing config {from})",
+        "rollback": "Rolled back to config {number}",
+        "turnOff": "AI turned off: config {number} (replacing config {from})",
+        "fromHere": "Create a draft from this one",
+        "empty": "Nothing has been published yet."
       },
       "oldPrompts": "Prompt history from before configs",
       "oldPromptsNote": "Prompt revisions saved before configs existed. With a draft open you can copy one into it."

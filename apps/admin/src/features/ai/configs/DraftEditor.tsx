@@ -1,7 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
-import { Link, useNavigate } from 'react-router';
 import { useTranslations } from 'use-intl';
 import { useFocusFirstError, violationsToFields } from '../../../api/field-errors';
 import { ApiError } from '../../../api/problem';
@@ -17,9 +16,8 @@ import { TextArea } from '../../../ui/TextArea';
 import { TextField } from '../../../ui/TextField';
 import { showToast } from '../../../ui/Toast';
 import {
-  aiKeys, deleteDraft, getConfigs, saveDraft, testDraft, type AiModel, type AiOperation, type ConfigsView, type ConfigView, type EvalSet, type PromptRevision,
+  aiKeys, deleteDraft, getConfigs, saveDraft, testDraft, type AiModel, type AiOperation, type ConfigsView, type ConfigView, type PromptRevision,
 } from '../ai-api';
-import { StartRunFailure, useStartRun } from '../EvalRunPanel';
 import { modelChoices } from '../model-choices';
 import { thinkingViolationKey } from '../operation-violations';
 import { RevisionContent } from '../PromptHistory';
@@ -46,8 +44,6 @@ const VIOLATION_COPY: Record<string, string> = {
 };
 const THINKING_COPY = { cannotTurnOff: 'thinkingCannotOff', needsLowEffort: 'thinkingNeedsEffort' } as const;
 const textBlock = 'whitespace-pre-wrap wrap-anywhere rounded-inner bg-canvas p-3 text-ui text-ink';
-const linkClass =
-  'inline-flex min-h-control w-fit items-center whitespace-nowrap rounded-control px-4 text-ui font-medium text-primary outline-none hover:bg-primary-soft focus-visible:ring-2 focus-visible:ring-primary pointer-coarse:min-h-control-touch';
 
 type Props = {
   op: AiOperation;
@@ -56,20 +52,19 @@ type Props = {
   inputFields: string[];
   guard: string;
   models: AiModel[];
-  /** The newest frozen version of the operation's example set: what [Chạy bộ ví dụ với nháp] runs; null when none was frozen yet. */
-  newestSet: EvalSet | null;
   /** The page's history list copies a revision into the form through this. */
   copyRef: { current: ((revision: PromptRevision) => void) | null };
+  /** Told whether the form has edits that are not saved, so the panel below can keep its run and its publish off. */
+  onDirtyChange: (dirty: boolean) => void;
 };
 
 /**
  * The draft of an operation's config (nhóm B design §6.2): prompt, examples, model, effort, thinking, token limit and a note, saved to the
  * server with `expected_version`. A test run and a run of the example set work on the saved draft, so both wait for a save.
  */
-export function DraftEditor({ op, initial, inputFields, guard, models, newestSet, copyRef }: Props) {
+export function DraftEditor({ op, initial, inputFields, guard, models, copyRef, onDirtyChange }: Props) {
   const t = useTranslations();
   const api = useApi();
-  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const errorDetails = useErrorDetails();
   /** The draft the editor builds on: what [Lưu nháp] sends the version of, and what "unsaved" compares with. */
@@ -88,6 +83,8 @@ export function DraftEditor({ op, initial, inputFields, guard, models, newestSet
 
   const dirty = !sameConfigForm(form, base);
   useDirtyForm(dirty);
+  useEffect(() => onDirtyChange(dirty), [dirty, onDirtyChange]);
+  useEffect(() => () => onDirtyChange(false), [onDirtyChange]);
   useFocusFirstError(errors, [ID.note, ID.model, ID.effort, ID.thinking, ID.tokens, ...fieldOrder(form)]);
 
   const model = models.find((m) => m.id === form.model_ref);
@@ -122,6 +119,8 @@ export function DraftEditor({ op, initial, inputFields, guard, models, newestSet
 
   function saved(result: ConfigView) {
     queryClient.setQueryData<ConfigsView>(aiKeys.configs(op), (old) => old && { ...old, draft: result });
+    // What a publish needs is read for one saved version of the draft.
+    void queryClient.invalidateQueries({ queryKey: aiKeys.publishCheck(op) });
     setServer(result);
     setForm(toConfigForm(result, inputFields));
     setErrors({});
@@ -230,8 +229,6 @@ export function DraftEditor({ op, initial, inputFields, guard, models, newestSet
     },
   });
 
-  // The run takes the saved draft, so the same press a second time is a second run: the fingerprint moves with the draft and the version.
-  const start = useStartRun(op, `draft:${server.id}:${server.version}:${newestSet?.id ?? 'none'}`, (id) => void navigate(`/ai/eval/runs/${id}?op=${op}`));
   const sendTest = (exampleIds: string[]) => testDraft(api, op, exampleIds.length > 0 ? { example_ids: exampleIds } : {});
 
   return (
@@ -422,27 +419,6 @@ export function DraftEditor({ op, initial, inputFields, guard, models, newestSet
 
       {dirty && <p className="text-ui text-ink">{t('ai.configs.draft.saveFirst')}</p>}
       <TestRunPanel op={op} send={sendTest} note={t('ai.configs.draft.testNote')} isDisabled={dirty} />
-
-      <section aria-labelledby="config-run-set" className="flex flex-col gap-3 rounded-panel border-2 border-border p-4">
-        <h3 id="config-run-set" className="text-lg font-bold text-ink">{t('ai.eval.run.title')}</h3>
-        {newestSet ? (
-          <p className="text-ui text-muted">{t('ai.configs.draft.runSetNote', { version: newestSet.version })}</p>
-        ) : (
-          <Banner variant="info" action={<Link to={`/ai/eval?op=${op}`} className={linkClass}>{t('nav.aiEval')}</Link>}>
-            {t('ai.configs.publish.noSet')}
-          </Banner>
-        )}
-        <Button
-          variant="secondary"
-          className="self-start"
-          isPending={start.pending}
-          isDisabled={dirty || !newestSet || start.waitSeconds > 0}
-          onPress={() => newestSet && start.start({ config: 'draft', set_id: newestSet.id })}
-        >
-          {start.waitSeconds > 0 ? t('ai.eval.run.wait', { seconds: start.waitSeconds }) : t('ai.configs.draft.runSet')}
-        </Button>
-        <StartRunFailure action={start} />
-      </section>
 
       <ConfirmDialog
         isOpen={deleting}

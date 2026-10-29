@@ -1,6 +1,6 @@
 // Test-only fixtures for the "Cấu hình" page (nhóm B M2) tests; not imported by the app.
 import type { Route } from '../../../auth/test-support';
-import type { AiModel, ConfigView, ConfigsView } from '../ai-api';
+import type { AiModel, ConfigEvent, ConfigView, ConfigsView, PublishCheck } from '../ai-api';
 import { AT, CLOZE_FIELDS, GUARD, SYSTEM, URL as PROMPT_URL, evalSet, example, quota, revision } from '../prompt-test-support';
 
 export const LAN = { id: 'u9', email: 'lan@wordmet.com', system: false };
@@ -28,6 +28,17 @@ export const modelRow = (id: string, provider: AiModel['provider'], model_id: st
 });
 export const FAKE_OK = modelRow('M1', 'fake', 'fake:ok', { lifecycle: 'active' });
 
+/** What `publish-check` says about the draft 4 (saved at version 0) on the newest version S2: a complete run of each side, nothing to warn about. */
+export const publishCheck = (over: Partial<PublishCheck> = {}): PublishCheck => ({
+  operation: 'generate_cloze', draft: { id: 'C4', number: 4, version: 0 }, turn_off: false, set: { id: 'S2', version: 2 }, candidate_run_id: 'RC',
+  baseline: { required: true, run_id: 'RB' }, blockers: [], warnings: [], ...over,
+});
+
+export const configEvent = (over: Partial<ConfigEvent> = {}): ConfigEvent => ({
+  id: 'ev1', kind: 'publish', at: AT, actor_user: LAN, config: { id: 'C4', number: 4, model_id: 'fake:ok' },
+  from_config: { id: 'C3', number: 3, model_id: 'fake:ok' }, candidate_run_id: 'RC', baseline_run_id: 'RB', warnings: [], ...over,
+});
+
 export const URL = {
   ...PROMPT_URL,
   configs: (op = 'generate_cloze') => `GET /v1/admin/ai/configs/${op}`,
@@ -35,6 +46,10 @@ export const URL = {
   saveDraft: (op = 'generate_cloze') => `PUT /v1/admin/ai/configs/${op}/draft`,
   deleteDraft: (op = 'generate_cloze') => `DELETE /v1/admin/ai/configs/${op}/draft`,
   testDraft: (op = 'generate_cloze') => `POST /v1/admin/ai/configs/${op}/draft/test`,
+  publishCheck: (op = 'generate_cloze') => `GET /v1/admin/ai/configs/${op}/publish-check`,
+  publish: (op = 'generate_cloze') => `POST /v1/admin/ai/configs/${op}/publish`,
+  rollback: (op = 'generate_cloze') => `POST /v1/admin/ai/configs/${op}/rollback`,
+  history: (op = 'generate_cloze') => `GET /v1/admin/ai/configs/${op}/history?page_size=20`,
   models: 'GET /v1/admin/ai/models',
 };
 
@@ -47,6 +62,8 @@ export function configRoutes(over: Record<string, Route> = {}, op = 'generate_cl
     [URL.configs(op)]: () => Response.json(configsView()),
     [URL.models]: () => Response.json({ items: [FAKE_OK] }),
     [URL.sets(op)]: TWO_SETS,
+    [URL.publishCheck(op)]: () => Response.json(publishCheck({ operation: op as PublishCheck['operation'] })),
+    [URL.history(op)]: () => Response.json({ items: [], next_page_token: null }),
     [URL.examples(op)]: () => Response.json({ items: [] }),
     [URL.quota]: () => Response.json(quota()),
     [URL.revisions(op)]: () => Response.json({ items: [revision(2), revision(1)], next_page_token: null }),

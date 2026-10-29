@@ -15,7 +15,9 @@ import {
 } from '../ai-api';
 import { PromptHistory, RevisionContent } from '../PromptHistory';
 import { useAiFormat } from '../useAiFormat';
+import { ConfigHistory } from './ConfigHistory';
 import { DraftEditor } from './DraftEditor';
+import { PublishPanel, RollbackControl } from './PublishPanel';
 
 const FILTERS = { op: { default: 'generate_cloze', valid: (value: string) => (AI_OPERATION_ORDER as readonly string[]).includes(value) } };
 
@@ -64,12 +66,15 @@ function ConfigsBody({ op, view, models, newestSet }: BodyProps) {
   const errorDetails = useErrorDetails();
   const format = useAiFormat();
   const [problem, setProblem] = useState<ErrorDetails | null>(null);
+  /** The draft form has edits that are not saved (told by the editor): the panel under it then keeps its run and its publish off. */
+  const [draftDirty, setDraftDirty] = useState(false);
   /** The editor puts a revision of the old prompt history into its form through this. */
   const copyRef = useRef<((revision: PromptRevision) => void) | null>(null);
   const { live, draft } = view;
 
+  /** A copy of the live config, or of `fromConfigId` (a row of the publish history). */
   const create = useMutation({
-    mutationFn: () => createDraft(api, op, {}),
+    mutationFn: (fromConfigId?: string) => createDraft(api, op, fromConfigId ? { from_config_id: fromConfigId } : {}),
     onMutate: () => setProblem(null),
     onSuccess: (created) => queryClient.setQueryData<ConfigsView>(aiKeys.configs(op), (old) => old && { ...old, draft: created }),
     onError: (e) => {
@@ -101,7 +106,10 @@ function ConfigsBody({ op, view, models, newestSet }: BodyProps) {
               </span>
             )}
           </span>
-          {!draft && <Button onPress={() => create.mutate()} isPending={create.isPending}>{t('ai.configs.draft.create')}</Button>}
+          <span className="flex flex-wrap items-center gap-2">
+            <RollbackControl op={op} view={view} onProblem={setProblem} />
+            {!draft && <Button onPress={() => create.mutate(undefined)} isPending={create.isPending}>{t('ai.configs.draft.create')}</Button>}
+          </span>
         </div>
         {problem && <Banner variant="error" code={problem.code}>{problem.message}</Banner>}
         {live.model ? (
@@ -127,16 +135,19 @@ function ConfigsBody({ op, view, models, newestSet }: BodyProps) {
       {draft && (
         // Keyed by the draft: a deleted draft followed by a new one is a new editor, never the old one's text.
         <DraftEditor
-          key={draft.id}
+          key={`editor-${draft.id}`}
           op={op}
           initial={draft}
           inputFields={view.input_fields}
           guard={view.guard}
           models={models}
-          newestSet={newestSet}
           copyRef={copyRef}
+          onDirtyChange={setDraftDirty}
         />
       )}
+      {draft && <PublishPanel key={`publish-${draft.id}`} op={op} newestSet={newestSet} dirty={draftDirty} />}
+
+      <ConfigHistory op={op} hasDraft={draft !== null} onCreateFrom={(configId) => create.mutate(configId)} creating={create.isPending} />
 
       <PromptHistory
         op={op}

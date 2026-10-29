@@ -148,6 +148,40 @@ export type ConfigsView = {
   draft: ConfigView | null;
   previous: ConfigView | null;
 };
+/** Items of a run that passed, out of those that were judged (`counted` is 0 when nothing was judged on that criterion). */
+export type Tally = { passed: number; counted: number };
+/** What a publish warns about (design §6.3): warnings never block; held-out examples are only ever counted. */
+export type PublishWarning =
+  | { code: 'rate-drop'; criterion: 'shape' | 'rule' | 'expected'; before: Tally; after: Tally }
+  | { code: 'dev-regressed'; example_ids: string[] }
+  | { code: 'held-out-failures-up'; before: number; after: number };
+/** `GET …/configs/{op}/publish-check`: what a publish of the saved draft needs and would warn about. */
+export type PublishCheck = {
+  operation: AiOperation;
+  draft: { id: string; number: number; version: number };
+  /** The draft has no model: publishing turns the operation off, with no run (D38). */
+  turn_off: boolean;
+  /** The newest frozen version of the example set; `null` when none was frozen. */
+  set: { id: string; version: number } | null;
+  candidate_run_id: string | null;
+  baseline: { required: boolean; run_id: string | null };
+  blockers: Array<'eval-required' | 'baseline-required'>;
+  warnings: PublishWarning[];
+};
+export type PublishBody = { expected_version: number; candidate_run_id: string | null; baseline_run_id: string | null; acknowledge_warnings: boolean };
+type ConfigRef = { id: string; number: number; model_id: string | null };
+/** One publish or rollback of an operation (`GET …/configs/{op}/history`). */
+export type ConfigEvent = {
+  id: string;
+  kind: 'publish' | 'rollback';
+  at: string;
+  actor_user: UserRef;
+  config: ConfigRef;
+  from_config: ConfigRef | null;
+  candidate_run_id: string | null;
+  baseline_run_id: string | null;
+  warnings: PublishWarning[];
+};
 export type SaveDraftBody = {
   expected_version: number;
   instructions: string;
@@ -403,6 +437,8 @@ export const aiKeys = {
   operations: () => ['ai', 'operations'] as const,
   prompt: (op: AiOperation) => ['ai', 'prompt', op] as const,
   configs: (op: AiOperation) => ['ai', 'configs', op] as const,
+  publishCheck: (op: AiOperation) => ['ai', 'publish-check', op] as const,
+  configHistory: (op: AiOperation) => ['ai', 'config-history', op] as const,
   revisions: (op: AiOperation) => ['ai', 'revisions', op] as const,
   testQuota: () => ['ai', 'test-quota'] as const,
   examples: (op: AiOperation) => ['ai', 'eval-examples', op] as const,
@@ -423,6 +459,7 @@ export const aiKeys = {
 
 const base = '/v1/admin/ai';
 const REVISIONS_PAGE_SIZE = 20;
+const HISTORY_PAGE_SIZE = 20;
 const RUNS_PAGE_SIZE = 20;
 
 export const getStatus = (api: ApiClient) => api.get<AiStatus>(`${base}/status`);
@@ -455,6 +492,17 @@ export const createDraft = (api: ApiClient, op: AiOperation, body: { from_config
 export const saveDraft = (api: ApiClient, op: AiOperation, body: SaveDraftBody) => api.put<ConfigView>(`${base}/configs/${op}/draft`, body);
 /** 409 `draft-busy` while a run of the draft is queued or running. */
 export const deleteDraft = (api: ApiClient, op: AiOperation) => api.delete<void>(`${base}/configs/${op}/draft`);
+export const getPublishCheck = (api: ApiClient, op: AiOperation) => api.get<PublishCheck>(`${base}/configs/${op}/publish-check`);
+/** Makes the draft live; answers the configs as they are now. 409 `publish-stale`, `publish-warnings`, `eval-required`, `baseline-required`, `draft-version-conflict`. */
+export const publishDraft = (api: ApiClient, op: AiOperation, body: PublishBody) => api.post<ConfigsView>(`${base}/configs/${op}/publish`, body);
+/** Puts the config before the live one back; `expected_live_version` keeps a stale page from undoing a newer publish (409 `publish-stale`, `no-previous`). */
+export const rollbackToPrevious = (api: ApiClient, op: AiOperation, body: { expected_live_version: number }) =>
+  api.post<ConfigsView>(`${base}/configs/${op}/rollback`, body);
+export function listConfigHistory(api: ApiClient, op: AiOperation, pageToken?: string) {
+  const query = new URLSearchParams({ page_size: String(HISTORY_PAGE_SIZE) });
+  if (pageToken) query.set('page_token', pageToken);
+  return api.get<{ items: ConfigEvent[]; next_page_token: string | null }>(`${base}/configs/${op}/history?${query.toString()}`);
+}
 /** Runs the saved draft at once on up to five dev inputs; never re-sent automatically (an AI call and one `ai.test` slot). */
 export const testDraft = (api: ApiClient, op: AiOperation, body: { example_ids?: string[] }) => api.post<TestResult>(`${base}/configs/${op}/draft/test`, body);
 
