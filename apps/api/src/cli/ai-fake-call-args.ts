@@ -15,6 +15,14 @@ const CALL_FLAGS = new Set(['--user', '--data', '--operation-id', '--parallel', 
 const DELETE_FLAGS = new Set(['--user']);
 const uuid = z.uuid();
 
+/** `ai:fake-call` uses the model chosen in the database: with a real key set that could be a real provider and cost money (B6-2). */
+export function fakeCallRefusal(ai: { fakeEnabled: boolean; openaiApiKey: string | null; anthropicApiKey: string | null }): string | null {
+  if (!ai.fakeEnabled) return 'ai:fake-call runs only with AI_FAKE_ENABLED=true';
+  if (ai.openaiApiKey !== null) return 'ai:fake-call refuses to run while OPENAI_API_KEY is set (it could call a real provider)';
+  if (ai.anthropicApiKey !== null) return 'ai:fake-call refuses to run while ANTHROPIC_API_KEY is set (it could call a real provider)';
+  return null;
+}
+
 export type AiFakeCallArgs =
   | {
     ok: true; action: 'call'; operation: AiOperation; user: string; data: unknown; purpose: (typeof PURPOSES)[number];
