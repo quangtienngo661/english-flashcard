@@ -3,7 +3,9 @@ import { z } from 'zod';
 import { RateLimit } from '../../common/rate-limit/rate-limit.decorator.js';
 import type { RequestWithUser } from '../../common/request-user/request-user.js';
 import { RequirePermission } from '../../identity/staff/require-permission.decorator.js';
+import { JudgeAgreement } from '../judge/agreement.service.js';
 import { JudgePassesService } from '../judge/judge-passes.service.js';
+import { LabelsService, putLabelSchema } from '../judge/labels.service.js';
 import { cloneJudgeSchema, JudgesService, judgeBodySchema, saveJudgeSchema } from '../judge/judges.service.js';
 
 const idParams = z.strictObject({ id: z.uuid().transform((value) => value.toLowerCase()) });
@@ -18,6 +20,8 @@ export class AdminAiJudgesController {
   constructor(
     @Inject(JudgesService) private readonly judges: JudgesService,
     @Inject(JudgePassesService) private readonly passes: JudgePassesService,
+    @Inject(LabelsService) private readonly labels: LabelsService,
+    @Inject(JudgeAgreement) private readonly agreement: JudgeAgreement,
   ) {}
 
   @Get('judges')
@@ -57,6 +61,19 @@ export class AdminAiJudgesController {
   @Get('judges/:id/revisions')
   revisions(@Param({ schema: idParams }) params: z.infer<typeof idParams>) {
     return this.judges.revisions(params.id);
+  }
+
+  /** How far each revision of the judge agrees with the owner's labels, per criterion (D15). */
+  @Get('judges/:id/agreement')
+  agreementOf(@Param({ schema: idParams }) params: z.infer<typeof idParams>) {
+    return this.agreement.forJudge(params.id);
+  }
+
+  /** Puts or takes back the owner's verdict on one criterion of one output (D16). 200 either way: the answer is the label as it stands. */
+  @Put('labels')
+  @RateLimit('user.write')
+  putLabel(@Body({ schema: putLabelSchema }) body: z.infer<typeof putLabelSchema>, @Req() req: RequestWithUser) {
+    return this.labels.put(req.user!.userId, body);
   }
 
   /** A judge pass: its status, counts and cost (the page polls it while the pass runs). */
