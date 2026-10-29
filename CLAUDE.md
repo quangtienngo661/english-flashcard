@@ -356,10 +356,11 @@ Các điểm dưới đây phát sinh khi rà quyền của `admin`/`editor` (b�
 
 ## Landing (apps/web) - as-built (08-09/10/2026)
 
-- Stack: Next `16.3.8` (App Router), next-intl `4.14.9`, `@opennextjs/cloudflare` `1.20.7`, wrangler `4.145.0`.
+- Stack: Next `16.4.3` (App Router), next-intl `4.14.9`, `@opennextjs/cloudflare` `1.20.13`, wrangler `4.153.0` (`apps/web`; `apps/admin` keeps wrangler `4.145.0`).
 - Cloudflare Workers (`wordmet-web`) + D1 waitlist (`wordmet-waitlist`, binding `DB`); local data in `.wrangler/state`.
 - Windows Worker build/e2e/static checks: `pnpm cf:docker` in a `node:24.11.0-bookworm` Linux container; WSL planned later.
-- Keep Next and `eslint-config-next` pinned to `16.3.8` until OpenNext supports Next `16.4`.
+- Next and `eslint-config-next` were held at `16.3.8` because OpenNext 1.20.7–1.20.9 broke Next `16.4` on the Worker; raised to `16.4.3`
+  on 29/10/2026 (OpenNext `1.20.12`+ accepts Next `>=16.4.1`) to fix GHSA-2464-fhr4-w9xw, GHSA-673q-mjm6-r5xr (critical) and GHSA-p3m5-59mp-jv5r.
 - Tooling: Node `24.11.0`, pnpm `11.6.0`, Vitest `4.1.11`, Playwright `1.63.0`.
 - Design: `docs/superpowers/specs/2026-10-08-landing-deploy-design.md`.
 - Plan: `docs/superpowers/plans/2026-10-08-landing-deploy.md`.
