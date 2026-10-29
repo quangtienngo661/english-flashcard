@@ -76,4 +76,7 @@ export const ACCOUNT_DATA_MAP: Record<string, Disposition> = {
   'ai_eval_examples.created_by': 'keep-id',
   'ai_eval_runs.started_by': 'keep-id',
   'ai_eval_sets.frozen_by': 'keep-id',
+  'ai_configs.created_by': 'keep-id',
+  'ai_configs.published_by': 'keep-id',
+  'ai_config_events.actor_id': 'keep-id',
 };

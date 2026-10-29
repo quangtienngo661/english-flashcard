@@ -48,7 +48,7 @@ function fakePrisma() {
       findUnique: vi.fn(async ({ where }: { where: Parameters<typeof find>[0] }) => find(where)),
       create: vi.fn(async ({ data }: { data: Record<string, unknown> }) => {
         if (find({ provider_modelId: { provider: data.provider as string, modelId: data.modelId as string } })) throw p2002();
-        const row = { id: randomUUID(), note: null, priceInput: null, priceCachedInput: null, priceOutput: null, ...decimals(data) } as unknown as Row;
+        const row = { id: randomUUID(), note: null, hidden: false, priceInput: null, priceCachedInput: null, priceOutput: null, ...decimals(data) } as unknown as Row;
         models.push(row);
         return row;
       }),
@@ -232,6 +232,31 @@ describe('ModelsService', () => {
     const view = await service.update(added.id, { price_output: 3, note: null });
     expect(view).toMatchObject({ price: { input: '1.0000', cached_input: null, output: '3.0000' }, note: null });
     expect((await service.update(added.id, { price_input: null })).price).toBeNull();
+  });
+
+  it('D40: a new model is not hidden; update({ hidden }) stores the admin flag and the view shows it', async () => {
+    const added = await service.add(ACTOR, { provider: 'openai', model_id: 'gpt-6-luna' });
+    expect((await service.list()).items[0]).toMatchObject({ hidden: false });
+    const view = await service.update(added.id, { hidden: true });
+    expect(view.hidden).toBe(true);
+    expect(prisma.models[0]!.hidden).toBe(true);
+    expect((await service.update(added.id, { hidden: false })).hidden).toBe(false);
+  });
+
+  it('D40: update without hidden leaves the flag alone; a non-boolean → 400', async () => {
+    const added = await service.add(ACTOR, { provider: 'openai', model_id: 'gpt-6-luna' });
+    await service.update(added.id, { hidden: true });
+    expect((await service.update(added.id, { note: 'n' })).hidden).toBe(true);
+    expect(await problem(service.update(added.id, { hidden: 'yes' as never }))).toMatchObject({ status: 400, type: 'validation-failed' });
+  });
+
+  it('D40: the provider refresh never writes the hidden flag (the admin owns it)', async () => {
+    const added = await service.add(ACTOR, { provider: 'openai', model_id: 'gpt-6-luna' });
+    await service.update(added.id, { hidden: true });
+    await service.refresh(added.id);
+    const data = prisma.aiModel.update.mock.calls.at(-1)![0].data as Record<string, unknown>;
+    expect(data).not.toHaveProperty('hidden');
+    expect(prisma.models[0]!.hidden).toBe(true);
   });
 
   it('list estimates per call and per 1 000 calls in VND when priced', async () => {

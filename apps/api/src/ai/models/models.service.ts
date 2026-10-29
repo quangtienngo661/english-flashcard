@@ -26,8 +26,8 @@ export const addModelSchema = z.strictObject({
 });
 export type AddModelBody = z.input<typeof addModelSchema>;
 
-/** Body of `PATCH /v1/admin/ai/models/{id}`: prices and note only, each nullable. */
-export const patchModelSchema = z.strictObject({ price_input: price, price_cached_input: price, price_output: price, note });
+/** Body of `PATCH /v1/admin/ai/models/{id}`: prices and note (each nullable) and the admin's `hidden` flag (D40). */
+export const patchModelSchema = z.strictObject({ price_input: price, price_cached_input: price, price_output: price, note, hidden: z.boolean().optional() });
 export type PatchModelBody = z.input<typeof patchModelSchema>;
 
 export type ModelView = {
@@ -43,6 +43,8 @@ export type ModelView = {
   price: { input: string; cached_input: string | null; output: string } | null;
   note: string | null;
   info_checked_at: string;
+  /** Admin flag: pickers hide the model (D40). */
+  hidden: boolean;
   used_by: AiOperation[];
   estimate: CostEstimate | null;
 };
@@ -51,7 +53,7 @@ type Decimalish = { toFixed(digits: number): string } | null;
 type ModelRow = {
   id: string; provider: string; modelId: string; shutdownAt: Date | null; lifecycle: string | null; effortLevels: string[];
   thinkingOff: string | null; structuredOutputs: boolean | null; maxOutputTokens: number | null; priceInput: Decimalish;
-  priceCachedInput: Decimalish; priceOutput: Decimalish; note: string | null; infoCheckedAt: Date;
+  priceCachedInput: Decimalish; priceOutput: Decimalish; note: string | null; infoCheckedAt: Date; hidden: boolean;
 };
 
 const problem = (status: number, type: string, title: string) => new ProblemDetailsException({ status, type, title });
@@ -123,6 +125,7 @@ export class ModelsService {
       ...(input.price_cached_input !== undefined ? { priceCachedInput: input.price_cached_input } : {}),
       ...(input.price_output !== undefined ? { priceOutput: input.price_output } : {}),
       ...(input.note !== undefined ? { note: input.note } : {}),
+      ...(input.hidden !== undefined ? { hidden: input.hidden } : {}),
     };
     try {
       return (await this.views([await this.prisma.aiModel.update({ where: { id }, data })]))[0];
@@ -208,6 +211,7 @@ export class ModelsService {
           : null,
         note: row.note,
         info_checked_at: row.infoCheckedAt.toISOString(),
+        hidden: row.hidden,
         used_by: AI_OPERATIONS.filter((op) => choices.some((choice) => choice.operation === op && choice.modelRef === row.id)),
         estimate: estimateCost(price, maxCall, settings.ai.usdVndRate),
       };
