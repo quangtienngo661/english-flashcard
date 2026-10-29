@@ -27,7 +27,7 @@ const totals = (calls: number, cost_vnd: number) => ({
 });
 const aiReply = (over: Partial<AiDashboard> = {}): AiDashboard => ({
   from: back(29), to: TODAY, ai_enabled: true,
-  today: { calls: 3, cap: 500, failed_calls: 1, failed_cost_usd: '0.00000000', cost_usd: '0.01000000', cost_vnd: 1240 },
+  today: { calls: 3, cap: 500, failed_calls: 1, failed_cost_usd: '0.00000000', cost_usd: '0.01000000', cost_vnd: 1240, admin_cost_usd: '0.00000000', admin_usd_cap: 2 },
   operations: AI_OPERATION_ORDER.map((operation) => ({
     operation, ready: operation !== 'translate_sentence', reason: operation === 'translate_sentence' ? 'model-not-set' : null,
     model: null, last_error: null,

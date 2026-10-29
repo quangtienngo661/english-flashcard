@@ -253,6 +253,7 @@
       "model-not-set": "No model chosen",
       "provider-not-configured": "Provider has no key",
       "daily-call-cap": "Daily call cap reached",
+      "admin-usd-cap": "Admin USD cap reached",
       "provider-quota": "Provider quota used up"
     },
     "providers": {
@@ -262,8 +263,10 @@
     },
     "status": {
       "today": {
-        "calls": "Calls today: {calls}/{cap}",
-        "callsNoCap": "Calls today: {calls}",
+        "calls": "Learner calls today: {calls}/{cap}",
+        "callsNoCap": "Learner calls today: {calls}",
+        "adminSpend": "Admin work today (test runs, example set, judge): {spent} / {cap}",
+        "adminSpendNoCap": "Admin work today (test runs, example set, judge): {spent}, no cap",
         "failed": "Failed: {count} ({cost})",
         "cost": "Cost today: {usd} · {vnd}",
         "providers": "Providers with a key: {names}",
@@ -1832,7 +1835,7 @@
     "ms": "{ms} ms",
     "today": {
       "title": "Today at a glance",
-      "calls": "AI calls / daily limit",
+      "calls": "Learner AI calls / daily limit",
       "cost": "AI cost today",
       "units": "Learner AI units / system limit",
       "notReady": "Operations not ready"

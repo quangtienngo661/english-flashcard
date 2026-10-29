@@ -9,7 +9,7 @@ const OPERATIONS = ['generate_cloze', 'lookup_word', 'translate_sentence', 'gene
 export const dashboardMocks: Record<string, MockHandler> = {
   'GET /v1/admin/ai/dashboard': ({ query }) => ({ json: {
     from: query.get('from'), to: query.get('to'), ai_enabled: true,
-    today: { calls: 14, cap: 500, failed_calls: 0, failed_cost_usd: '0.00000000', cost_usd: '0.00315870', cost_vnd: 82 },
+    today: { calls: 14, cap: 500, failed_calls: 0, failed_cost_usd: '0.00000000', cost_usd: '0.00315870', cost_vnd: 82, admin_cost_usd: '0.00000000', admin_usd_cap: 2 },
     operations: OPERATIONS.map((operation) => ({
       operation, ready: operation !== 'translate_sentence', reason: operation === 'translate_sentence' ? 'model-not-set' : null,
       model: operation === 'translate_sentence' ? null : { provider: 'anthropic', model_id: 'claude-haiku-5-5' }, last_error: null,

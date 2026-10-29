@@ -301,14 +301,14 @@ test('Tình trạng at 390 fits the window with six operations, a warning and a 
           last_error: i === 1 ? { at, outcome: 'provider-unavailable-timeout', http_status: 504, purpose: 'test' } : null,
           model_warning: i === 0 ? { shutdown_at: '2026-11-30T00:00:00.000Z', lifecycle: 'deprecated' } : null,
         })),
-        today: { calls: 1240, cap: 3000, failed_calls: 12, failed_cost_usd: '0.0400', cost_usd: '2.3100', cost_vnd: 60291 },
+        today: { calls: 1240, cap: 3000, failed_calls: 12, failed_cost_usd: '0.0400', cost_usd: '2.3100', cost_vnd: 60291, admin_cost_usd: '1.50000000', admin_usd_cap: 2 },
         ai_enabled: true,
         providers: { openai: true, anthropic: true, fake: true },
       },
     }),
   });
   await page.goto('/ai/status');
-  await expect(page.getByText('Lời gọi hôm nay: 1.240/3.000')).toBeVisible();
+  await expect(page.getByText('Lời gọi của người học hôm nay: 1.240/3.000')).toBeVisible();
   await expectNoHorizontalScroll(page);
 });
 

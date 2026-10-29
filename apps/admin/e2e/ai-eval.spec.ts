@@ -18,7 +18,7 @@ const run = (over: Record<string, unknown> = {}) => ({
 function evalMocks(over: Record<string, MockHandler> = {}): Record<string, MockHandler> {
   return {
     ...settingsMocks,
-    'GET /v1/admin/ai/status': () => ({ json: { operations: [], today: { calls: 0, cap: null, failed_calls: 0, failed_cost_usd: '0', cost_usd: '0', cost_vnd: 0 }, ai_enabled: true, providers: { openai: true, anthropic: false, fake: true } } }),
+    'GET /v1/admin/ai/status': () => ({ json: { operations: [], today: { calls: 0, cap: null, failed_calls: 0, failed_cost_usd: '0', cost_usd: '0', cost_vnd: 0, admin_cost_usd: '0', admin_usd_cap: null }, ai_enabled: true, providers: { openai: true, anthropic: false, fake: true } } }),
     'GET /v1/admin/ai/operations': () => ({ json: { items: [{ operation: 'generate_cloze', model: null, effort: null, thinking: null, max_output_tokens: null, version: 1, input_fields: FIELDS, estimate: null }] } }),
     'GET /v1/admin/ai/test-quota': () => ({ json: { limit: 20, remaining: 17, resets_at: at } }),
     'GET /v1/admin/ai/eval/examples': () => ({ json: { items: [devExample('e1', 'go')] } }),

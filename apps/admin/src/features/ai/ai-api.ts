@@ -17,7 +17,7 @@ export type CostEstimate = {
   max_call_vnd: number | null;
 };
 
-export type UnavailableReason = 'ai-disabled' | 'model-not-set' | 'provider-not-configured' | 'daily-call-cap' | 'provider-quota';
+export type UnavailableReason = 'ai-disabled' | 'model-not-set' | 'provider-not-configured' | 'daily-call-cap' | 'admin-usd-cap' | 'provider-quota';
 
 /** `GET /v1/admin/ai/status`. `thinking` here is `disabled | between_tools`, unlike the operations API's `off`. */
 export type AiStatus = {
@@ -32,7 +32,11 @@ export type AiStatus = {
     last_error: { at: string; outcome: string; http_status: number | null; purpose: AiPurpose } | null;
     model_warning: { shutdown_at: string | null; lifecycle: string | null } | null;
   }>;
-  today: { calls: number; cap: number | null; failed_calls: number; failed_cost_usd: string; cost_usd: string; cost_vnd: number };
+  /** `calls` counts learner calls (what `cap` limits); `admin_cost_usd` is what test, eval and judge calls cost today, against `admin_usd_cap`. */
+  today: {
+    calls: number; cap: number | null; failed_calls: number; failed_cost_usd: string; cost_usd: string; cost_vnd: number;
+    admin_cost_usd: string; admin_usd_cap: number | null;
+  };
   ai_enabled: boolean;
   providers: Record<AiProvider, boolean>;
 };

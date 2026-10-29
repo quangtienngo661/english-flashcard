@@ -9,7 +9,7 @@ const status = (over: Record<string, unknown> = {}) => ({
     operation, ready: false, reason: 'model-not-set', model: null, effort: null, thinking: null, max_output_tokens: null,
     last_error: null, model_warning: null,
   })),
-  today: { calls: 0, cap: 3000, failed_calls: 0, failed_cost_usd: '0.0000', cost_usd: '0.0000', cost_vnd: 0 },
+  today: { calls: 0, cap: 3000, failed_calls: 0, failed_cost_usd: '0.0000', cost_usd: '0.0000', cost_vnd: 0, admin_cost_usd: '0.00000000', admin_usd_cap: 2 },
   ai_enabled: true,
   providers: { openai: false, anthropic: false, fake: true },
   ...over,
@@ -32,7 +32,7 @@ test.describe('Tình trạng (A/84)', () => {
     await openNavIfCollapsed(page);
     await page.getByRole('navigation', { name: vi.shell.mainNav }).getByRole('link', { name: vi.nav.aiStatus }).click();
     await expect(page.getByRole('heading', { level: 1, name: vi.nav.aiStatus })).toBeVisible();
-    await expect(page.getByText('Lời gọi hôm nay: 0/3.000')).toBeVisible();
+    await expect(page.getByText('Lời gọi của người học hôm nay: 0/3.000')).toBeVisible();
     await expect(page.getByText('Chưa chọn model').filter({ visible: true })).toHaveCount(6);
     expect(await seriousViolations(page)).toEqual([]);
 

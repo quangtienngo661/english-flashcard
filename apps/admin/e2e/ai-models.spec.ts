@@ -10,7 +10,7 @@ const model = (over: Record<string, unknown> = {}) => ({
   used_by: [], estimate: { per_call_usd: '0.0065', per_call_vnd: 169, per_day_1000_vnd: 169000, max_call_usd: null, max_call_vnd: null }, ...over,
 });
 const status = (providers = { openai: true, anthropic: false, fake: true }) => ({
-  operations: [], today: { calls: 0, cap: null, failed_calls: 0, failed_cost_usd: '0', cost_usd: '0', cost_vnd: 0 }, ai_enabled: true, providers,
+  operations: [], today: { calls: 0, cap: null, failed_calls: 0, failed_cost_usd: '0', cost_usd: '0', cost_vnd: 0, admin_cost_usd: '0', admin_usd_cap: null }, ai_enabled: true, providers,
 });
 const t = vi.ai.models;
 

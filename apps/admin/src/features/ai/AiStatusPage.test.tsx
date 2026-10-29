@@ -18,7 +18,9 @@ const idleOps = (over: Partial<AiStatus['operations'][number]> = {}): AiStatus['
   }));
 const status = (over: Partial<AiStatus> = {}): AiStatus => ({
   operations: idleOps(),
-  today: { calls: 1240, cap: 3000, failed_calls: 12, failed_cost_usd: '0.0400', cost_usd: '2.3100', cost_vnd: 60291 },
+  today: {
+    calls: 1240, cap: 3000, failed_calls: 12, failed_cost_usd: '0.0400', cost_usd: '2.3100', cost_vnd: 60291, admin_cost_usd: '1.50000000', admin_usd_cap: 2,
+  },
   ai_enabled: true,
   providers: { openai: true, anthropic: true, fake: false },
   ...over,
@@ -51,11 +53,21 @@ describe('AiStatusPage (A/84, A/84b)', () => {
 
   it('the today block: calls over cap, failures with their cost, cost in US$ and ₫, providers with a key, system switch on', async () => {
     renderApp('/ai/status', { [STATUS]: reply(status()) });
-    expect(await screen.findByText('Lời gọi hôm nay: 1.240/3.000')).toBeInTheDocument();
+    expect(await screen.findByText('Lời gọi của người học hôm nay: 1.240/3.000')).toBeInTheDocument();
     expect(screen.getByText(/^Lỗi: 12 \(0,04\s*US\$\)$/)).toBeInTheDocument();
     expect(screen.getByText(/^Chi phí hôm nay: 2,31\s*US\$ · 60\.291\s*₫$/)).toBeInTheDocument();
     expect(screen.getByText('Nhà cung cấp có key: OpenAI · Anthropic')).toBeInTheDocument();
     expect(screen.getByText('AI toàn hệ thống: Đang bật')).toBeInTheDocument();
+  });
+
+  it('admin spend today: US$ spent over the US$ cap, or "không có trần" when the cap is null', async () => {
+    renderApp('/ai/status', { [STATUS]: reply(status()) });
+    expect(await screen.findByText(/^Việc của admin hôm nay \(chạy thử, bộ ví dụ, judge\): 1,50\s*US\$ \/ 2,00\s*US\$$/)).toBeInTheDocument();
+  });
+
+  it('admin_usd_cap null: the spend alone with "không có trần"', async () => {
+    renderApp('/ai/status', { [STATUS]: reply(status({ today: { ...status().today, admin_usd_cap: null } })) });
+    expect(await screen.findByText(/^Việc của admin hôm nay \(chạy thử, bộ ví dụ, judge\): 1,50\s*US\$, không có trần$/)).toBeInTheDocument();
   });
 
   it('ai_enabled false: every row says "AI đang tắt" and the head links to the AI tab of the settings', async () => {
@@ -70,9 +82,9 @@ describe('AiStatusPage (A/84, A/84b)', () => {
     }
   });
 
-  it('today.cap null: "Lời gọi hôm nay: 1.240" with no "/…"', async () => {
+  it('today.cap null: "Lời gọi của người học hôm nay: 1.240" with no "/…"', async () => {
     renderApp('/ai/status', { [STATUS]: reply(status({ today: { ...status().today, cap: null } })) });
-    expect(await screen.findByText('Lời gọi hôm nay: 1.240')).toBeInTheDocument();
+    expect(await screen.findByText('Lời gọi của người học hôm nay: 1.240')).toBeInTheDocument();
   });
 
   it('a ready operation shows "Sẵn sàng" and its model; no reason, no [Chọn model]', async () => {
@@ -123,6 +135,7 @@ describe('AiStatusPage (A/84, A/84b)', () => {
     ['model-not-set', 'Chưa chọn model'],
     ['provider-not-configured', 'Nhà cung cấp chưa có key'],
     ['daily-call-cap', 'Chạm trần lời gọi'],
+    ['admin-usd-cap', 'Chạm trần USD việc admin'],
   ] as const)('reason %s reads "%s"', async (reason, text) => {
     renderApp('/ai/status', { [STATUS]: reply(status({ operations: idleOps({ reason }) })) });
     await screen.findAllByText('generate_cloze');

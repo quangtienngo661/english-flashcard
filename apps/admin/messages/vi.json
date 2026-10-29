@@ -253,6 +253,7 @@
       "model-not-set": "Chưa chọn model",
       "provider-not-configured": "Nhà cung cấp chưa có key",
       "daily-call-cap": "Chạm trần lời gọi",
+      "admin-usd-cap": "Chạm trần USD việc admin",
       "provider-quota": "Nhà cung cấp hết hạn mức"
     },
     "providers": {
@@ -262,8 +263,10 @@
     },
     "status": {
       "today": {
-        "calls": "Lời gọi hôm nay: {calls}/{cap}",
-        "callsNoCap": "Lời gọi hôm nay: {calls}",
+        "calls": "Lời gọi của người học hôm nay: {calls}/{cap}",
+        "callsNoCap": "Lời gọi của người học hôm nay: {calls}",
+        "adminSpend": "Việc của admin hôm nay (chạy thử, bộ ví dụ, judge): {spent} / {cap}",
+        "adminSpendNoCap": "Việc của admin hôm nay (chạy thử, bộ ví dụ, judge): {spent}, không có trần",
         "failed": "Lỗi: {count} ({cost})",
         "cost": "Chi phí hôm nay: {usd} · {vnd}",
         "providers": "Nhà cung cấp có key: {names}",
@@ -1832,7 +1835,7 @@
     "ms": "{ms} ms",
     "today": {
       "title": "Tổng quan hôm nay",
-      "calls": "Lượt gọi AI / giới hạn ngày",
+      "calls": "Lời gọi AI của người học / giới hạn ngày",
       "cost": "Chi phí AI hôm nay",
       "units": "Lượt AI của người học / giới hạn hệ thống",
       "notReady": "Thao tác chưa sẵn sàng"
