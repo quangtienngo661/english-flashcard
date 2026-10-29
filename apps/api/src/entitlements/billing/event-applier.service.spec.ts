@@ -72,10 +72,13 @@ class FakeDb {
         this.calls.push(`event:${data.status ?? 'update'}`);
         Object.assign(this.events.get(where.id)!, data);
       },
-      findFirst: async ({ where }: { where: Partial<EventRow> }) => {
-        const found = [...this.events.values()].find((e) => e.status === 'applied' && e.provider === where.provider
-          && e.environment === where.environment && e.type === where.type && e.transactionId === where.transactionId);
-        return found ? { id: found.id } : null;
+      findFirst: async ({ where, orderBy }: { where: Partial<EventRow> & { occurredAt?: { gt: Date } }; orderBy?: { occurredAt: 'desc' } }) => {
+        const found = [...this.events.values()]
+          .filter((e) => e.status === 'applied' && e.provider === where.provider
+            && e.environment === where.environment && e.type === where.type && e.transactionId === where.transactionId
+            && (where.occurredAt === undefined || e.occurredAt.getTime() > where.occurredAt.gt.getTime()))
+          .sort((a, b) => (orderBy ? b.occurredAt.getTime() - a.occurredAt.getTime() : 0))[0];
+        return found ? { id: found.id, occurredAt: found.occurredAt } : null;
       },
     },
     subscription: {
@@ -395,6 +398,45 @@ describe('BillingEventApplier.apply (design §9.2 step 4, §9.4)', () => {
     expect(await applier.apply(again)).toBe('ignored');
     expect(db.events.get(again)!.error).toBe('duplicate-transaction');
     expect(sub).toEqual(before);
+  });
+
+  describe('B5-3: a refund the provider reversed can be made again', () => {
+    const refundAt = (iso: string) => ({ occurredAt: iso, transactionId: 'tx-0', amount: null });
+
+    it('refunded, refund_reversed, refunded again on the same transaction → the second refund applies and revokes again', async () => {
+      const { db, applier } = setup();
+      const sub = addSub(db, { currentTransactionId: 'tx-0' });
+      expect(await applier.apply(addEvent(db, 'refunded', refundAt('2026-11-15T10:00:00.000Z')))).toBe('applied');
+      expect(sub.status).toBe('revoked');
+      expect(await applier.apply(addEvent(db, 'refund_reversed', { occurredAt: '2026-11-15T10:05:00.000Z', transactionId: 'tx-0' }))).toBe('applied');
+      expect(sub.status).toBe('active');
+      const again = addEvent(db, 'refunded', refundAt('2026-11-15T10:10:00.000Z'));
+      expect(await applier.apply(again)).toBe('applied');
+      expect(sub.status).toBe('revoked');
+      expect(db.events.get(again)!.error).toBeNull();
+    });
+
+    it('a repeat of the first refund (older than the reversal, new event id) is still a duplicate', async () => {
+      const { db, applier } = setup();
+      const sub = addSub(db, { currentTransactionId: 'tx-0' });
+      await applier.apply(addEvent(db, 'refunded', refundAt('2026-11-15T10:00:00.000Z')));
+      await applier.apply(addEvent(db, 'refund_reversed', { occurredAt: '2026-11-15T10:05:00.000Z', transactionId: 'tx-0' }));
+      const repeat = addEvent(db, 'refunded', refundAt('2026-11-15T10:00:00.000Z'));
+      expect(await applier.apply(repeat)).toBe('ignored');
+      expect(db.events.get(repeat)!.error).toBe('duplicate-transaction');
+      expect(sub.status).toBe('active');
+    });
+
+    it('a repeat of the second refund (after the reversal) is a duplicate', async () => {
+      const { db, applier } = setup();
+      addSub(db, { currentTransactionId: 'tx-0' });
+      await applier.apply(addEvent(db, 'refunded', refundAt('2026-11-15T10:00:00.000Z')));
+      await applier.apply(addEvent(db, 'refund_reversed', { occurredAt: '2026-11-15T10:05:00.000Z', transactionId: 'tx-0' }));
+      await applier.apply(addEvent(db, 'refunded', refundAt('2026-11-15T10:10:00.000Z')));
+      const repeat = addEvent(db, 'refunded', refundAt('2026-11-15T10:10:00.000Z'));
+      expect(await applier.apply(repeat)).toBe('ignored');
+      expect(db.events.get(repeat)!.error).toBe('duplicate-transaction');
+    });
   });
 
   it('GI1: an applied event is recorded as a transaction inside the same transaction, with the written subscription', async () => {
