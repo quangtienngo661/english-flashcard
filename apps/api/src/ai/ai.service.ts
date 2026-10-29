@@ -40,7 +40,14 @@ export class AiService {
   }
 
   /** Account deletion (Bước 8; design §12.2, R14): the content, then the replay rows, then the ledger's link to the user. */
-  async deleteUserData(userId: string): Promise<void> {
+  async deleteUserData(userId: string, tx?: Prisma.TransactionClient): Promise<void> {
+    if (tx) {
+      // Inside the account deletion's transaction, in the same order.
+      await tx.$executeRaw`DELETE FROM ai_call_contents c USING ai_calls a WHERE c.call_id = a.id AND a.user_id = ${userId}::uuid`;
+      await tx.$executeRaw`DELETE FROM ai_operations WHERE user_id = ${userId}::uuid`;
+      await tx.$executeRaw`UPDATE ai_calls SET user_id = NULL WHERE user_id = ${userId}::uuid`;
+      return;
+    }
     await this.prisma.$transaction([
       this.prisma.$executeRaw`DELETE FROM ai_call_contents c USING ai_calls a WHERE c.call_id = a.id AND a.user_id = ${userId}::uuid`,
       this.prisma.$executeRaw`DELETE FROM ai_operations WHERE user_id = ${userId}::uuid`,

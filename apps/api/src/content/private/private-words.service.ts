@@ -226,6 +226,12 @@ export class PrivateWordsService {
     return { senseIds };
   }
 
+  /** The ids of the owner's private senses: Practice reads them before the account eraser deletes the entries (design §7.3, D27a). */
+  async privateSenseIdsOf(tx: Tx, ownerId: string): Promise<string[]> {
+    const rows = await tx.sense.findMany({ where: { entry: { scope: 'private', ownerUserId: ownerId } }, select: { id: true } });
+    return rows.map(({ id }) => id);
+  }
+
   /**
    * Catalog senses that are published and open, plus the viewer's own private senses. A caller inside an open transaction
    * passes its `tx` as `db` (Bước 7 plan choice 5).

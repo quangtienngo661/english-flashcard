@@ -49,6 +49,7 @@ describe('listRoutes (unit, isolated persistence)', () => {
       { method: 'GET', path: '/v1/admin/staff', permissions: ['roles.manage'] },
       { method: 'POST', path: '/v1/admin/users', permissions: ['roles.manage'] },
       { method: 'PATCH', path: '/v1/admin/users/:id', permissions: ['roles.manage'] },
+      { method: 'POST', path: '/v1/admin/users/:id/delete', permissions: ['roles.manage'] },
       { method: 'POST', path: '/v1/admin/users/:id/lock', permissions: ['roles.manage'] },
       { method: 'POST', path: '/v1/admin/users/:id/password', permissions: ['roles.manage'] },
       { method: 'PUT', path: '/v1/admin/users/:id/staff-role', permissions: ['roles.manage'] },

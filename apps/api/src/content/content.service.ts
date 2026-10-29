@@ -191,6 +191,10 @@ export class ContentService {
     return this.privateWords.deletePrivateEntryContent(tx, ownerId, entryId);
   }
 
+  privateSenseIdsOf(tx: Prisma.TransactionClient, userId: string): Promise<string[]> {
+    return this.privateWords.privateSenseIdsOf(tx, userId);
+  }
+
   addSentence(tx: Prisma.TransactionClient, input: { userId: string; senseId: string; text: string }): Promise<Sentence> {
     return this.sentences.addSentence(tx, input);
   }

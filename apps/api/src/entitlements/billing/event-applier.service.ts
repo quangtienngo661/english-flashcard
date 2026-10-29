@@ -3,7 +3,7 @@ import { Clock } from '../../common/clock/clock.js';
 import { APP_CONFIG, type AppConfig } from '../../common/config/app-config.js';
 import { PRISMA_CLIENT } from '../../common/db/prisma.module.js';
 import { AppLogger } from '../../common/logging/app-logger.js';
-import type { Prisma, PrismaClient } from '../../generated/prisma/client.js';
+import { Prisma, type PrismaClient } from '../../generated/prisma/client.js';
 import { IdentityService } from '../../identity/profile/identity.service.js';
 import { SettingsService } from '../../settings/index.js';
 import { BILLING_MAX_ATTEMPTS } from '../entitlements.constants.js';
@@ -86,7 +86,10 @@ export class BillingEventApplier implements BillingApplyPort {
       SELECT id FROM billing_events WHERE id = ${row.id}::uuid AND status IN ('pending', 'failed') FOR UPDATE SKIP LOCKED`;
     if (claimed.length === 0) return none;
 
-    const finish = async (status: 'applied' | 'stale' | 'ignored', data: { error?: string; userId?: string; subscriptionId?: string } = {}) => {
+    const finish = async (
+      status: 'applied' | 'stale' | 'ignored',
+      data: { error?: string; userId?: string | null; subscriptionId?: string; appUserId?: null; payload?: object; rawPayload?: typeof Prisma.DbNull } = {},
+    ) => {
       await tx.billingEvent.update({ where: { id: row.id }, data: { status, processedAt: now, error: data.error ?? null, ...data } });
     };
 
@@ -97,7 +100,9 @@ export class BillingEventApplier implements BillingApplyPort {
       return { ...none, outcome: 'ignored' };
     }
     if (row.appUserId === null || !known) {
-      await finish('ignored', { error: 'unknown-user' });
+      // A user who is gone (account deleted, B8E25): keep no id, payload or raw payload that could name them.
+      const scrub = row.appUserId === null ? {} : { appUserId: null, userId: null, payload: {}, rawPayload: Prisma.DbNull };
+      await finish('ignored', { error: 'unknown-user', ...scrub });
       this.logger.warn('billing_event_unknown_user', { event_id: row.id, provider: row.provider });
       return { ...none, outcome: 'ignored' };
     }

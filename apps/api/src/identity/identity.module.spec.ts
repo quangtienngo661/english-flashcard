@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { testConfig } from '../../test/support/test-config.js';
 import { CommonModule } from '../common/common.module.js';
 import { PRISMA_CLIENT, PrismaModule } from '../common/db/prisma.module.js';
+import { AccountDeletionRegistry } from './deletion/account-eraser.js';
 import { IdentityModule } from './identity.module.js';
 import { ROLE_PERMISSIONS, type Permission, type StaffRole } from './identity.types.js';
 import { IdentityService } from './profile/identity.service.js';
@@ -34,7 +35,7 @@ describe('IdentityModule exports', () => {
       expect(await consumer.identity.getProfile(userId)).toMatchObject({ id: userId, native_language: null });
       expect(await consumer.identity.isEmailVerified(userId)).toBe(false);
       expect(consumer.rolePermissions).toEqual(ROLE_PERMISSIONS);
-      expect(Reflect.getMetadata('exports', IdentityModule)).toEqual([IdentityService, ROLE_PERMISSIONS_TOKEN]);
+      expect(Reflect.getMetadata('exports', IdentityModule)).toEqual([IdentityService, ROLE_PERMISSIONS_TOKEN, AccountDeletionRegistry]);
     } finally { await moduleRef.close(); }
   });
 });

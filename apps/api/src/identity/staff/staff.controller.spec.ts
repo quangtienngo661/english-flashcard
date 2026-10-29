@@ -4,12 +4,15 @@ import { PRISMA_CLIENT, PrismaModule } from '../../common/db/prisma.module.js';
 import { RateLimiter } from '../../common/rate-limit/rate-limiter.service.js';
 import { createTestApp, type TestApp } from '../../../test/support/create-test-app.js';
 import { AccessTokenService } from '../sessions/access-token.service.js';
+import { AccountDeletionRegistry } from '../deletion/account-eraser.js';
+import { AccountDeletionRequests } from '../deletion/account-deletion-requests.service.js';
 import { StaffService } from './staff.service.js';
 
 describe('staff HTTP schemas and wiring (unit, isolated persistence)', () => {
   let ctx: TestApp; let token: string; let userId: string;
   const prisma = { sessionChain: { findUnique: vi.fn() }, $disconnect: async () => {} };
   const hit = vi.spyOn(RateLimiter.prototype, 'hit');
+  let renewing: ReturnType<typeof vi.spyOn>;
   let find: ReturnType<typeof vi.spyOn>; let listUsers: ReturnType<typeof vi.spyOn>; let detail: ReturnType<typeof vi.spyOn>; let list: ReturnType<typeof vi.spyOn>; let set: ReturnType<typeof vi.spyOn>;
   const auth = () => ({ Authorization: `Bearer ${token}` });
   const put = (id: string, body: object) => ctx.http().put(`/v1/admin/users/${id}/staff-role`).set(auth()).send(body);
@@ -18,6 +21,7 @@ describe('staff HTTP schemas and wiring (unit, isolated persistence)', () => {
       providers: [{ provide: PRISMA_CLIENT, useValue: prisma }], exports: [PRISMA_CLIENT] });
     ctx = await createTestApp({ databaseUrl: 'unused' });
     const staff = ctx.app.get(StaffService);
+    renewing = vi.spyOn(ctx.app.get(AccountDeletionRegistry).precondition(), 'renewing');
     find = vi.spyOn(staff, 'findByEmail'); listUsers = vi.spyOn(staff, 'listUsers'); detail = vi.spyOn(staff, 'getUserDetail'); list = vi.spyOn(staff, 'listStaff'); set = vi.spyOn(staff, 'setStaffRole');
   });
   beforeEach(async () => {
@@ -28,6 +32,7 @@ describe('staff HTTP schemas and wiring (unit, isolated persistence)', () => {
     find.mockReset().mockResolvedValue(view); list.mockReset().mockResolvedValue({ items: [view], next_page_token: null });
     listUsers.mockReset().mockResolvedValue({ items: [], next_page_token: null }); detail.mockReset().mockResolvedValue(view);
     set.mockReset().mockResolvedValue(view); hit.mockReset().mockResolvedValue(undefined);
+    renewing.mockReset().mockResolvedValue(false);
   });
   afterAll(async () => { await ctx?.close(); vi.restoreAllMocks(); });
   it('B1#27: valid routes bind schemas, pass the actor and limit only PUT', async () => {
@@ -85,6 +90,36 @@ describe('staff HTTP schemas and wiring (unit, isolated persistence)', () => {
     expect((await ctx.http().get(`/v1/admin/users/${userId}`).set(auth())).status).toBe(200);
     expect(detail).toHaveBeenCalledWith(userId);
     expect((await ctx.http().get('/v1/admin/users/not-a-uuid').set(auth())).status).toBe(400);
+  });
+  it('B8: the user detail carries auto_renewing for the delete dialog', async () => {
+    renewing.mockResolvedValue(true);
+    const res = await ctx.http().get(`/v1/admin/users/${userId}`).set(auth());
+    expect(res.status).toBe(200);
+    expect(res.body.auto_renewing).toBe(true);
+    expect(renewing).toHaveBeenCalledWith(expect.anything(), userId);
+  });
+  it('B8: POST /users/:id/delete answers 204 when gone and 202 { status: pending } otherwise, passes the actor, the id and the body, charges user.write', async () => {
+    const requests = ctx.app.get(AccountDeletionRequests);
+    const del = vi.spyOn(requests, 'deleteByAdmin').mockClear().mockResolvedValue('done');
+    const target = randomUUID();
+    const done = await ctx.http().post(`/v1/admin/users/${target}/delete`).set(auth()).send({ confirm_email: 'a@example.com' });
+    expect(done.status).toBe(204); expect(done.text).toBe('');
+    expect(del).toHaveBeenCalledWith(userId, target, { confirm_email: 'a@example.com' }, expect.anything());
+    expect(hit).toHaveBeenCalledWith('user.write', userId);
+    del.mockResolvedValue('pending');
+    const pending = await ctx.http().post(`/v1/admin/users/${target}/delete`).set(auth()).send({ confirm_email: 'a@example.com' });
+    expect(pending.status).toBe(202); expect(pending.body).toEqual({ status: 'pending' });
+    for (const body of [{}, { confirm_email: 5 }, { confirm_email: 'a@example.com', extra: 1 }]) {
+      expect((await ctx.http().post(`/v1/admin/users/${target}/delete`).set(auth()).send(body)).status).toBe(400);
+    }
+    expect((await ctx.http().post('/v1/admin/users/not-a-uuid/delete').set(auth()).send({ confirm_email: 'a@b.c' })).status).toBe(400);
+  });
+  it('B8E31: an editor gets 403 on the delete route before the service', async () => {
+    const del = vi.spyOn(ctx.app.get(AccountDeletionRequests), 'deleteByAdmin').mockClear();
+    prisma.sessionChain.findUnique.mockResolvedValue({ userId, revokedAt: null, user: { staffRole: 'editor' } });
+    const res = await ctx.http().post(`/v1/admin/users/${randomUUID()}/delete`).set(auth()).send({ confirm_email: 'a@example.com' });
+    expect(res.status).toBe(403);
+    expect(del).not.toHaveBeenCalled();
   });
   it('B1#27: missing email lookup returns 404', async () => {
     find.mockResolvedValue(null);

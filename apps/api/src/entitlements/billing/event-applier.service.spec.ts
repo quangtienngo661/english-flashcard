@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
+import { Prisma } from '../../generated/prisma/client.js';
 import { FakeClock } from '../../common/clock/clock.js';
 import { AppLogger, type LogEntry } from '../../common/logging/app-logger.js';
 import { testConfig } from '../../../test/support/test-config.js';
@@ -331,6 +332,24 @@ describe('BillingEventApplier.apply (design §9.2 step 4, §9.4)', () => {
     expect(db.events.get(id)).toMatchObject({ status: 'ignored', error: 'unknown-user', processedAt: NOW });
     expect(db.subs).toHaveLength(0);
     expect(logs).toContainEqual(expect.objectContaining({ event: 'billing_event_unknown_user', event_id: id }));
+  });
+
+  it('B8E25: an event for a user who is gone is ignored and keeps no id, payload or raw payload', async () => {
+    const { db, applier } = setup({ profile: false });
+    const id = addEvent(db, 'subscription_started', paidStart, { userId: 'ffffffff-ffff-4fff-8fff-ffffffffffff' } as Partial<EventRow>);
+    Object.assign(db.events.get(id)!, { rawPayload: { buyer_email: 'lan@example.com' } });
+    expect(db.events.get(id)!.appUserId).not.toBeNull();
+    expect(await applier.apply(id)).toBe('ignored');
+    expect(db.events.get(id)).toMatchObject({ status: 'ignored', error: 'unknown-user', appUserId: null, userId: null, payload: {} });
+    expect((db.events.get(id) as unknown as { rawPayload: unknown }).rawPayload).toBe(Prisma.DbNull);
+  });
+
+  it('B5E45: an event with no app_user_id keeps its stored payloads (nothing names a person)', async () => {
+    const { db, applier } = setup({ profile: true });
+    const id = addEvent(db, 'subscription_started', paidStart, { appUserId: null } as Partial<EventRow>);
+    const before = structuredClone(db.events.get(id)!.payload);
+    await applier.apply(id);
+    expect(db.events.get(id)!.payload).toEqual(before);
   });
 
   it('B5E72: production ignores a sandbox event', async () => {
