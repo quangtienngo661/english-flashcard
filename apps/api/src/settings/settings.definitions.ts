@@ -50,6 +50,8 @@ export type AppSettings = {
     adminDailyUsdCap: number | null;
     /** Nhóm B (design §5.4, D15): labels a judge revision needs, and the share of them it must agree with, to count as calibrated. */
     judgeLabelMin: number; judgeAgreementMin: number;
+    /** Nhóm B (design §7.1, D26): the most real AI questions one judge run takes, newest first. */
+    realJudgeLimit: number;
   };
 };
 
@@ -70,7 +72,7 @@ export const SETTINGS_DEFAULTS: AppSettings = {
   identity: { unverifiedCleanupDays: 7 },
   content: { privateWordsPerUser: 10000, sentencesPerSense: 20 },
   ai: { callTimeoutSeconds: 10, maxConcurrentCalls: 50, dailyProviderCallsCap: 3000, contentRetentionDays: 7, usdVndRate: 26100, evalHeldOutRatio: 0.3,
-    adminDailyUsdCap: 2, judgeLabelMin: 30, judgeAgreementMin: 0.85 },
+    adminDailyUsdCap: 2, judgeLabelMin: 30, judgeAgreementMin: 0.85, realJudgeLimit: 200 },
 };
 
 /** Bounds are `ASSUMPTION` in design §9 (Bước 4: design 5.4); the admin page shows them next to each field. */
@@ -132,6 +134,7 @@ export const SETTINGS_BOUNDS = {
     admin_daily_usd_cap: { min: 0, max: 1000, nullable: true },
     judge_label_min: { min: 10, max: 1000 },
     judge_agreement_min: { min: 0.5, max: 1 },
+    real_judge_limit: { min: 1, max: 500 },
   },
 } as const;
 
@@ -207,6 +210,7 @@ export const settingsValuesPatchSchema = z.strictObject({
     admin_daily_usd_cap: ratioIn(b.ai.admin_daily_usd_cap).nullable().optional(),
     judge_label_min: intIn(b.ai.judge_label_min).optional(),
     judge_agreement_min: ratioIn(b.ai.judge_agreement_min).optional(),
+    real_judge_limit: intIn(b.ai.real_judge_limit).optional(),
   }).optional(),
 });
 export type SettingsValuesPatch = z.infer<typeof settingsValuesPatchSchema>;
@@ -260,6 +264,7 @@ const FIELDS = [
   ['ai', 'admin_daily_usd_cap', 'adminDailyUsdCap'],
   ['ai', 'judge_label_min', 'judgeLabelMin'],
   ['ai', 'judge_agreement_min', 'judgeAgreementMin'],
+  ['ai', 'real_judge_limit', 'realJudgeLimit'],
 ] as const;
 
 type Section = keyof AppSettings;
