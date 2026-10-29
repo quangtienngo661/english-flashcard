@@ -19,7 +19,7 @@ Chủ dự án chốt 29/10/2026: **một plan** (`2026-10-29-nhom-b.md`), làm 
 
 Cột "Plan" ở các bảng dưới dùng tên P của design; M tương ứng theo bảng trên.
 
-Hai câu chờ chủ dự án (design §0): **Q-R1** chạm P3 (cổng publish khi bản đang chạy chưa có model) và smoke; **Q-R3** chạm P6 (lần học gồm những gì).
+Bốn câu thêm sau review (design §0) đã chốt 30/10/2026 (D37–D40): Q-R1, Q-R1b chạm P3 (M2), Q1 chạm P3 và P2 (M2, M3), Q-R3 chạm P6 (M6). Không còn câu chờ.
 
 ## 2. Kiểu (TypeScript, `apps/api`)
 
@@ -90,9 +90,11 @@ chỉ lấy ví dụ dev nằm ở `PromptsService.test` (M1-T11, M2 `draft/test
 | Tên | Ở đâu | Ai dùng |
 |---|---|---|
 | `PublishWarning`, `publishWarnings`, `gateTallies` | `src/ai/configs/publish-check.ts` | M3 thêm tiêu chí judge vào so sánh |
-| `baselineRequirement(live: { modelRef: string \| null }): 'required' \| 'not-required'` | `src/ai/configs/publish-check.ts` | M2-T14 (chờ Q-R1) |
+| `baselineRequirement(live: { modelRef: string \| null }): 'required' \| 'not-required'` (D37: bản đang chạy không có model → `'not-required'`) | `src/ai/configs/publish-check.ts` | M2-T5; M3-T12 giữ nguyên |
 | `ai_live_configs.last_number` (bộ đếm số cấu hình, không dùng lại số sau khi xóa nháp) | `ai.prisma` | chỉ M2 |
-| Helper script publish theo đường thật | `apps/api/scripts/ai-config-publish.mjs` (+ bản TS cho e2e-real) | mọi smoke sau M2 |
+| Helper script publish theo đường thật: `ensureFrozenSet`, `publishModel`, `rollbackConfig`, `turnOff` (D38: publish nháp không model, không lần chạy) | `apps/api/scripts/ai-config-publish.mjs` (+ bản TS cho e2e-real, ba hàm đầu) | mọi smoke sau M2 |
+| `PublishCheckView.turn_off` (nháp không có model, D38); `publish` nhận `candidate_run_id: null` | `src/ai/configs/**` | M3-T12, M3-T17 (cổng và màn publish giữ nhánh này) |
+| `modelChoices(models: AiModel[], selectedId: string \| null): AiModel[]` — bỏ model `lifecycle = 'retired'` trừ model đang chọn (D40, B50) | `apps/admin/src/features/ai/model-choices.ts` | M3-T15 (trang Judge) |
 | Lần chạy theo cấu hình: `POST …/eval/runs` nhận `config`, `prompt` vẫn nhận (thêm, không đổi); lần chạy xếp hàng trước khi nháp bị sửa thì `failed` + `config-changed` | `src/ai/eval/**` | M3, M5 |
 | Rollback nhận `expected_live_version`, lệch thì `publish-stale` | `src/ai/configs/**` | — |
 

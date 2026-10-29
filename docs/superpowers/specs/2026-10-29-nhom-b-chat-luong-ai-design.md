@@ -237,7 +237,7 @@ Cấu hình = `instructions` + `examples` (few-shot) + `model_ref` + `effort` + 
 và `version` (tăng mỗi lần sửa nháp). Gateway đọc cấu hình mà `ai_live_configs` trỏ tới, mỗi lần gọi, không cache (như nay, F3).
 
 **Chuyển dữ liệu:** migration tạo cho mỗi thao tác một cấu hình `published` từ prompt hiện tại + cài đặt hiện tại, `number` = `revision` hiện tại của prompt, và trỏ
-`ai_live_configs` vào đó. Thao tác chưa chọn model vẫn chưa chọn model (xem Q-R1). Trước P3, prompt và model đổi riêng (ở B1, prompt bản 3 chạy cả Haiku lẫn Sonnet), nên mọi
+`ai_live_configs` vào đó. Thao tác chưa chọn model vẫn chưa chọn model (lần chọn đầu theo D37). Trước P3, prompt và model đổi riêng (ở B1, prompt bản 3 chạy cả Haiku lẫn Sonnet), nên mọi
 màn nhóm số liệu theo **cặp (số cấu hình, model)**, không theo số cấu hình một mình (R12).
 
 **Model và cấu hình (R12, D40):** `ai_configs.model_ref` và `ai_judge_revisions.model_ref` có FK `RESTRICT`: model đã từng nằm trong **bất kỳ** cấu hình (kể cả `retired`)
