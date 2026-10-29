@@ -10,6 +10,7 @@ import { AI_OPERATIONS } from '../ai.types.js';
 import { bulkExamplesSchema, createExampleSchema, EvalExamplesService, patchExampleSchema } from '../eval/eval-examples.service.js';
 import { createRunSchema, EvalRunsService } from '../eval/eval-runs.service.js';
 import { EvalSetsService } from '../eval/eval-sets.service.js';
+import { createPassSchema, JudgePassesService } from '../judge/judge-passes.service.js';
 
 const idParams = z.strictObject({ id: z.uuid().transform((value) => value.toLowerCase()) });
 const examplesQuery = z.strictObject({ operation: z.enum(AI_OPERATIONS) });
@@ -37,6 +38,7 @@ export class AdminAiEvalController {
     @Inject(EvalExamplesService) private readonly examples: EvalExamplesService,
     @Inject(EvalRunsService) private readonly runs: EvalRunsService,
     @Inject(EvalSetsService) private readonly sets: EvalSetsService,
+    @Inject(JudgePassesService) private readonly judgePasses: JudgePassesService,
   ) {}
 
   @Get('examples')
@@ -133,6 +135,22 @@ export class AdminAiEvalController {
   @Get('runs/:id/items')
   getRunItems(@Param({ schema: idParams }) params: z.infer<typeof idParams>) {
     return this.runs.items(params.id);
+  }
+
+  /**
+   * "Chấm bằng judge" on a finished run (nhóm B M3, B16): it only inserts the pass and asks the queue, so it is `@Idempotent()` like `POST /runs`
+   * (no provider is called inside the idempotency transaction). Judge passes do not count against `ai.test`.
+   */
+  @Post('runs/:id/judge-passes')
+  @HttpCode(202)
+  @Idempotent()
+  @UseInterceptors(IdempotencyInterceptor)
+  createJudgePass(
+    @Param({ schema: idParams }) params: z.infer<typeof idParams>,
+    @Body({ schema: createPassSchema }) body: z.infer<typeof createPassSchema>,
+    @Req() req: RequestWithUser,
+  ) {
+    return this.judgePasses.createForRun(req.user!.userId, params.id, body);
   }
 
   /** 200, not 201: nothing is created. A run that is not queued or running → 409 `run-not-active`. */

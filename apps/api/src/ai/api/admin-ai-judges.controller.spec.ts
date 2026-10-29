@@ -5,6 +5,7 @@ import { listRoutes } from '../../../test/support/list-routes.js';
 import { PRISMA_CLIENT, PrismaModule } from '../../common/db/prisma.module.js';
 import { RateLimiter } from '../../common/rate-limit/rate-limiter.service.js';
 import { AccessTokenService } from '../../identity/sessions/access-token.service.js';
+import { JudgePassesService } from '../judge/judge-passes.service.js';
 import { JudgesService } from '../judge/judges.service.js';
 
 describe('admin ai judges HTTP (unit, mocked service)', () => {
@@ -12,6 +13,7 @@ describe('admin ai judges HTTP (unit, mocked service)', () => {
   const prisma = { sessionChain: { findUnique: vi.fn() }, $disconnect: async () => {} };
   const hit = vi.spyOn(RateLimiter.prototype, 'hit');
   let service: Record<'list' | 'create' | 'save' | 'clone' | 'revisions', ReturnType<typeof vi.spyOn>>;
+  let passGet: ReturnType<typeof vi.spyOn>;
   const auth = () => ({ Authorization: `Bearer ${token}` });
   const http = () => ctx.http();
   const JUDGE = randomUUID();
@@ -29,6 +31,7 @@ describe('admin ai judges HTTP (unit, mocked service)', () => {
       list: vi.spyOn(judges, 'list'), create: vi.spyOn(judges, 'create'), save: vi.spyOn(judges, 'save'), clone: vi.spyOn(judges, 'clone'),
       revisions: vi.spyOn(judges, 'revisions'),
     };
+    passGet = vi.spyOn(ctx.app.get(JudgePassesService), 'get');
   });
   beforeEach(async () => {
     actorId = randomUUID(); role = 'admin';
@@ -39,6 +42,7 @@ describe('admin ai judges HTTP (unit, mocked service)', () => {
     service.save.mockReset().mockResolvedValue({ id: 'j' });
     service.clone.mockReset().mockResolvedValue({ id: 'c' });
     service.revisions.mockReset().mockResolvedValue({ items: [] });
+    passGet.mockReset().mockResolvedValue({ id: 'p' });
     hit.mockReset().mockResolvedValue(undefined);
   });
   afterAll(async () => { await ctx?.close(); vi.restoreAllMocks(); });
@@ -50,6 +54,19 @@ describe('admin ai judges HTTP (unit, mocked service)', () => {
       'PUT /v1/admin/ai/judges/:id',
     ].sort());
     for (const route of routes) expect(route.permissions, `${route.method} ${route.path}`).toEqual(['settings.manage']);
+  });
+
+  it('GET /judge-passes/:id needs settings.manage, reads without a rate rule and passes the lower-cased id', async () => {
+    const route = listRoutes(ctx.app).find(({ path }) => path === '/v1/admin/ai/judge-passes/:id');
+    expect(route?.method).toBe('GET');
+    expect(route?.permissions).toEqual(['settings.manage']);
+    expect((await http().get(`/v1/admin/ai/judge-passes/${JUDGE.toUpperCase()}`).set(auth())).status).toBe(200);
+    expect(passGet).toHaveBeenCalledExactlyOnceWith(JUDGE);
+    expect(hit).not.toHaveBeenCalled();
+    expect((await http().get('/v1/admin/ai/judge-passes/not-a-uuid').set(auth())).status).toBe(400);
+    role = 'editor';
+    expect((await http().get(`/v1/admin/ai/judge-passes/${JUDGE}`).set(auth())).status).toBe(403);
+    expect(passGet).toHaveBeenCalledTimes(1);
   });
 
   it('an editor gets 403 on the five routes and nothing runs', async () => {

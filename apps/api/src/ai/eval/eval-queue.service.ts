@@ -56,6 +56,21 @@ export class EvalQueue implements OnApplicationBootstrap, OnModuleDestroy {
     }
   }
 
+  /**
+   * A judge pass is a job named `judge` on the same queue (nhóm B M3, B19); its job id is the pass id, so a pass is never queued twice. False (and a
+   * warn) on any error: the pass stays `queued` and the hourly job asks again (B41).
+   */
+  async enqueueJudgePass(passId: string): Promise<boolean> {
+    try {
+      const queue = await this.queue();
+      await queue.add('judge', { passId }, { jobId: `judge-${passId}`, attempts: 1, removeOnComplete: true, removeOnFail: true });
+      return true;
+    } catch (error) {
+      this.logger.warn('ai_judge_enqueue_failed', { pass_id: passId, error });
+      return false;
+    }
+  }
+
   private async queue(): Promise<Queue> {
     if (this.closing) throw new Error('Eval queue is closing');
     if (!this.producerConnection) {

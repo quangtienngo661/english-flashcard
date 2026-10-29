@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { RateLimit } from '../../common/rate-limit/rate-limit.decorator.js';
 import type { RequestWithUser } from '../../common/request-user/request-user.js';
 import { RequirePermission } from '../../identity/staff/require-permission.decorator.js';
+import { JudgePassesService } from '../judge/judge-passes.service.js';
 import { cloneJudgeSchema, JudgesService, judgeBodySchema, saveJudgeSchema } from '../judge/judges.service.js';
 
 const idParams = z.strictObject({ id: z.uuid().transform((value) => value.toLowerCase()) });
@@ -14,7 +15,10 @@ const idParams = z.strictObject({ id: z.uuid().transform((value) => value.toLowe
 @Controller('admin/ai')
 @RequirePermission('settings.manage')
 export class AdminAiJudgesController {
-  constructor(@Inject(JudgesService) private readonly judges: JudgesService) {}
+  constructor(
+    @Inject(JudgesService) private readonly judges: JudgesService,
+    @Inject(JudgePassesService) private readonly passes: JudgePassesService,
+  ) {}
 
   @Get('judges')
   list() {
@@ -53,5 +57,11 @@ export class AdminAiJudgesController {
   @Get('judges/:id/revisions')
   revisions(@Param({ schema: idParams }) params: z.infer<typeof idParams>) {
     return this.judges.revisions(params.id);
+  }
+
+  /** A judge pass: its status, counts and cost (the page polls it while the pass runs). */
+  @Get('judge-passes/:id')
+  pass(@Param({ schema: idParams }) params: z.infer<typeof idParams>) {
+    return this.passes.get(params.id);
   }
 }
