@@ -34,6 +34,7 @@ export const ACCOUNT_DATA_MAP: Record<string, Disposition> = {
   'learning_groups.user_id': 'erase',
   'learning_items.user_id': 'erase',
   'learning_log.user_id': 'erase',
+  'learning_activity_days.user_id': 'erase',
   // Content: private words and sentences go; staff audit stays
   'entries.owner_user_id': 'erase',
   'context_sentences.user_id': 'erase',

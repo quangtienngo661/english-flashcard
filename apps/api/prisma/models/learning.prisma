@@ -76,3 +76,13 @@ model LearningLogEntry {
   @@index([userId, itemId])
   @@map("learning_log")
 }
+
+// One row per learner per local day with a "lần học" (D39); erased with the account, kept when a private word is deleted. Written beside every
+// learning_log write and every final practice answer, with INSERT ... ON CONFLICT DO NOTHING. user_id is a plain UUID.
+model LearningActivityDay {
+  userId    String   @map("user_id") @db.Uuid
+  localDate DateTime @map("local_date") @db.Date
+
+  @@id([userId, localDate])
+  @@map("learning_activity_days")
+}
