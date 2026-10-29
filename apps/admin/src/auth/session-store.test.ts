@@ -865,3 +865,51 @@ describe('SessionStore: API unavailable (FE35-FE37)', () => {
     expect(store.state).toEqual({ status: 'signed-out', notice: 'rate-limited' });
   });
 });
+
+describe('SessionStore with a Google session (Bước 8, design §5.7, B8E44)', () => {
+  beforeEach(() => sessionStorage.clear());
+
+  it('/v1/me says the session was opened with Google → the gate signs the staff member out with the password notice', async () => {
+    const { store, count } = newStore({
+      'POST /v1/auth/refresh': () => tokenResponse('tok-g'),
+      'GET /v1/me': ok(makeMe({ auth_method: 'google', sign_in_methods: ['password', 'google'] })),
+      'POST /v1/auth/logout': noContent,
+    });
+    await store.bootstrap();
+    expect(store.state).toEqual({ status: 'signed-out', notice: 'password-required' });
+    expect(count('POST', '/v1/auth/logout')).toBe(1);
+    expect(store.hasAccessToken).toBe(false);
+  });
+
+  it('a password session of the same staff member enters as before', async () => {
+    const { store } = newStore({
+      'POST /v1/auth/refresh': () => tokenResponse('tok-1'),
+      'GET /v1/me': ok(makeMe({ auth_method: 'password', sign_in_methods: ['password', 'google'] })),
+    });
+    await store.bootstrap();
+    expect(store.state.status).toBe('signed-in');
+  });
+
+  it('a non-staff Google session is turned away like any learner (no-access)', async () => {
+    const { store } = newStore({
+      'POST /v1/auth/refresh': () => tokenResponse('tok-g'),
+      'GET /v1/me': ok(makeMe({ staff_role: null, permissions: [], auth_method: 'google' })),
+      'POST /v1/auth/logout': noContent,
+    });
+    await store.bootstrap();
+    expect(store.state).toEqual({ status: 'signed-out', notice: 'no-access' });
+  });
+
+  it('403 password-login-required on any call signs out with the same notice', async () => {
+    const { store } = newStore({
+      'POST /v1/auth/login': () => tokenResponse('tok-1'),
+      'GET /v1/me': ok(makeMe()),
+      'GET /v1/admin/users': () => problem(403, 'password-login-required'),
+      'POST /v1/auth/logout': noContent,
+    });
+    await store.login('a@example.com', 'pw');
+    const api = createApiClient({ send: store.send });
+    await expect(api.get('/v1/admin/users')).rejects.toBeInstanceOf(ApiError);
+    expect(store.state).toEqual({ status: 'signed-out', notice: 'password-required' });
+  });
+});

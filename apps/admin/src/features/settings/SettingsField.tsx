@@ -40,6 +40,7 @@ function useHint() {
       if (spec.key in ZERO) range += `, ${t('hint.zero', { meaning: t(`zeroMeaning.${spec.key as keyof typeof ZERO}`) })}`;
       parts.push(range);
     }
+    if (spec.key in NOTE) parts.push(t(`notes.${spec.key as keyof typeof NOTE}`));
     parts.push(t('hint.default', { value: shown(spec, defaultValue) }));
     return parts.join(' · ');
   };
@@ -47,6 +48,7 @@ function useHint() {
 
 const CROSS = { stop_after_days: 1, default_questions_per_session: 1, pro_practice_sessions_per_day: 1 } as const;
 const EMPTY = { renewal_notice_days_before: 1, ai_cap_alert_percent: 1 } as const;
+const NOTE = { transaction_retention_years: 1 } as const;
 const ZERO = { ai_prefetch_count: 1, content_retention_days: 1 } as const;
 
 /** One setting: a switch, the send-time select or a number field, with its hint and error. */

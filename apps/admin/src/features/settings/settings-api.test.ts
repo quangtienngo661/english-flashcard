@@ -8,13 +8,14 @@ const values = (): Values => ({
   entitlements: { ai_cap_alert_percent: 75 },
   content: {},
   ai: {},
+  identity: {},
 });
 
 describe('settings-api', () => {
-  it('the layout has the 41 keys of the copy doc, each once', () => {
-    expect(FIELD_ORDER).toHaveLength(41);
-    expect(new Set(FIELD_ORDER).size).toBe(41);
-    expect(SECTIONS.map((s) => SETTINGS_LAYOUT[s].length)).toEqual([5, 5, 9, 15, 2, 5]);
+  it('the layout has the 43 keys (41 of the copy doc, two of Bước 8), each once', () => {
+    expect(FIELD_ORDER).toHaveLength(43);
+    expect(new Set(FIELD_ORDER).size).toBe(43);
+    expect(SECTIONS.map((s) => SETTINGS_LAYOUT[s].length)).toEqual([5, 5, 9, 16, 2, 5, 1]);
   });
 
   it('changedValues keeps only changed keys; a value set back to the server value is not a change', () => {
