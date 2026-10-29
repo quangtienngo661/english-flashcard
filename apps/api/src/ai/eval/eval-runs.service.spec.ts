@@ -4,6 +4,7 @@ import { FakeClock } from '../../common/clock/clock.js';
 import { ProblemDetailsException } from '../../common/problem-details/problem-details.exception.js';
 import type { Selection } from '../runner/selection.js';
 import { AI_SYSTEM_ACTOR_ID } from '../ai.constants.js';
+import { AdminSpend } from '../runner/admin-spend.service.js';
 import { EvalRunsService } from './eval-runs.service.js';
 
 const ADMIN = '11111111-1111-4111-8111-111111111111';
@@ -24,7 +25,16 @@ const LIVE_CONFIG = {
   maxOutputTokens: 4096, status: 'published', model: LIVE_MODEL,
 };
 
+/** The real AdminSpend over a stub ledger and settings: the cap and the day's spend are the test's to set (nhóm B M3). */
+function spendOf(state: { spent: number; cap: number | null }) {
+  return new AdminSpend(
+    { get: async () => ({ ai: { adminDailyUsdCap: state.cap } }) } as never,
+    { adminSpentToday: async () => state.spent } as never,
+  );
+}
+
 function setup() {
+  const spend = { spent: 0, cap: 2 as number | null };
   const created: Array<Record<string, unknown>> = [];
   // The run and its items are written through the transaction client, never through the shared one.
   const tx = {
@@ -75,9 +85,9 @@ function setup() {
   const limiter = { hit: vi.fn(async (): Promise<void> => undefined) };
   const service = new EvalRunsService(
     prisma as never, selections as never, registry as never, queue as never, { emailsOf } as never,
-    limiter as never, new FakeClock(NOW),
+    limiter as never, new FakeClock(NOW), spendOf(spend),
   );
-  return { service, prisma, tx, created, selections, registry, queue, emailsOf, limiter, live: LIVE_CONFIG };
+  return { service, prisma, tx, created, selections, registry, queue, emailsOf, limiter, live: LIVE_CONFIG, spend };
 }
 
 async function problemOf(promise: Promise<unknown>) {
@@ -128,10 +138,44 @@ describe('EvalRunsService.create', () => {
     ] });
   });
 
-  it('E1: a model with no price leaves the three price columns null', async () => {
-    ctx.prisma.aiConfig.findUnique.mockResolvedValue({ ...LIVE_CONFIG, model: { ...LIVE_MODEL, priceInput: null, priceOutput: null } });
+  it('B22: a model without its output price (or its input price) → 409 model-price-missing: no row, nothing enqueued, no ai.test use', async () => {
+    for (const missing of [{ priceOutput: null }, { priceInput: null }, { priceInput: null, priceOutput: null }]) {
+      ctx.prisma.aiConfig.findUnique.mockResolvedValueOnce({ ...LIVE_CONFIG, model: { ...LIVE_MODEL, ...missing } });
+      expect(await problemOf(ctx.service.create(ADMIN, { operation: 'generate_cloze', prompt: 'current' }))).toMatchObject({ status: 409, type: 'model-price-missing' });
+    }
+    expect(ctx.created).toHaveLength(0);
+    expect(ctx.tx.aiEvalRun.create).not.toHaveBeenCalled();
+    expect(ctx.queue.enqueue).not.toHaveBeenCalled();
+    expect(ctx.limiter.hit).not.toHaveBeenCalled();
+  });
+
+  it('B22 comes before the cap: an unpriced model with the cap reached is still model-price-missing', async () => {
+    ctx.spend.spent = 5;
+    ctx.prisma.aiConfig.findUnique.mockResolvedValue({ ...LIVE_CONFIG, model: { ...LIVE_MODEL, priceOutput: null } });
+    expect(await problemOf(ctx.service.create(ADMIN, { operation: 'generate_cloze', prompt: 'current' }))).toMatchObject({ status: 409, type: 'model-price-missing' });
+  });
+
+  it('B20: the usd cap reached → 409 admin-usd-cap: no row, nothing enqueued, no ai.test use', async () => {
+    ctx.spend.spent = 2;
+    expect(await problemOf(ctx.service.create(ADMIN, { operation: 'generate_cloze', prompt: 'current' }))).toMatchObject({ status: 409, type: 'admin-usd-cap' });
+    expect(ctx.created).toHaveLength(0);
+    expect(ctx.queue.enqueue).not.toHaveBeenCalled();
+    expect(ctx.limiter.hit).not.toHaveBeenCalled();
+  });
+
+  it('no cap (null) with 50 USD spent today → the run is created; 1.99 of 2 → created', async () => {
+    ctx.spend.cap = null;
+    ctx.spend.spent = 50;
     await ctx.service.create(ADMIN, { operation: 'generate_cloze', prompt: 'current' });
-    expect(ctx.created[0]).toMatchObject({ priceInput: null, priceCachedInput: null, priceOutput: null });
+    ctx.spend.cap = 2;
+    ctx.spend.spent = 1.99;
+    await ctx.service.create(ADMIN, { operation: 'generate_cloze', prompt: 'current' });
+    expect(ctx.created).toHaveLength(2);
+  });
+
+  it('a model whose cached-input price is empty still has a price (the cached rate falls back to the input rate)', async () => {
+    await ctx.service.create(ADMIN, { operation: 'generate_cloze', prompt: 'current' });
+    expect(ctx.created[0]).toMatchObject({ priceInput: 1, priceCachedInput: null, priceOutput: 2 });
   });
 
   it('the row stores the draft and no revision', async () => {

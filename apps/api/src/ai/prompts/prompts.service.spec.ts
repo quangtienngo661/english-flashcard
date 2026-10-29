@@ -1,9 +1,11 @@
 import { describe, expect, it, vi } from 'vitest';
+import { FakeClock } from '../../common/clock/clock.js';
 import { ProblemDetailsException } from '../../common/problem-details/problem-details.exception.js';
 import type { PrismaClient } from '../../generated/prisma/client.js';
 import { AiAdapter, type AdapterOutcome, type ModelDescription } from '../adapters/ai-adapter.js';
 import { AiAdapterRegistry } from '../adapters/ai-adapter.registry.js';
 import type { AiProviderName } from '../ai.types.js';
+import { AdminSpend } from '../runner/admin-spend.service.js';
 import type { ExecuteInput, RunnerService, RunReport } from '../runner/runner.service.js';
 import type { Selection, SelectionReader } from '../runner/selection.js';
 import { INITIAL_PROMPTS } from './initial-prompts.js';
@@ -104,9 +106,21 @@ const selection: Selection = {
   maxOutputTokens: 1_200, price: { input: 0.1, cachedInput: null, output: 0.5 },
 };
 
-type Setup = { examples?: ExampleRow[]; selection?: Selection | null; registered?: AiProviderName[]; report?: (input: ExecuteInput) => RunReport };
+/** The real AdminSpend over a stub ledger and settings: the cap and the day's spend are the test's to set (nhóm B M3). */
+function spendOf(state: { spent: number; cap: number | null }) {
+  return new AdminSpend(
+    { get: async () => ({ ai: { adminDailyUsdCap: state.cap } }) } as never,
+    { adminSpentToday: async () => state.spent } as never,
+  );
+}
+
+type Setup = {
+  examples?: ExampleRow[]; selection?: Selection | null; registered?: AiProviderName[]; report?: (input: ExecuteInput) => RunReport;
+  spent?: number;
+};
 
 function setup(input: Setup = {}) {
+  const spend = { spent: input.spent ?? 0, cap: 2 as number | null };
   const memory = memoryPrisma(input.examples);
   const executed: ExecuteInput[] = [];
   const runner = {
@@ -128,9 +142,9 @@ function setup(input: Setup = {}) {
   const service = new PromptsService(
     memory.prisma, repository, runner,
     { load: async () => (input.selection === undefined ? selection : input.selection) } as unknown as SelectionReader, registry,
-    { emailsOf } as unknown as IdentityService, limiter as never,
+    { emailsOf } as unknown as IdentityService, limiter as never, spendOf(spend), new FakeClock(NOW),
   );
-  return { service, repository, executed, emailsOf, limiter, live, ...memory };
+  return { service, repository, executed, emailsOf, limiter, live, spend, ...memory };
 }
 
 async function problem(promise: Promise<unknown>): Promise<{ status: number; type: string; violations?: string[] }> {
@@ -245,6 +259,20 @@ describe('PromptsService.test', () => {
     limiter.hit.mockImplementation(async () => { expect(executed).toHaveLength(0); });
     await service.test(ADMIN, OP, draft);
     expect(limiter.hit).toHaveBeenCalledExactlyOnceWith('ai.test', ADMIN);
+  });
+
+  it('E14: a model without its prices → 409 model-price-missing: no provider call and no ai.test use', async () => {
+    const { service, limiter, executed } = setup({ examples: [eval_('e1', 1)], selection: { ...selection, price: null } });
+    expect(await problem(service.test(ADMIN, OP, draft))).toMatchObject({ status: 409, type: 'model-price-missing' });
+    expect(executed).toHaveLength(0);
+    expect(limiter.hit).not.toHaveBeenCalled();
+  });
+
+  it('B20: the usd cap reached → 409 admin-usd-cap, no provider call and no ai.test use', async () => {
+    const { service, limiter, executed } = setup({ examples: [eval_('e1', 1)], spent: 2 });
+    expect(await problem(service.test(ADMIN, OP, draft))).toMatchObject({ status: 409, type: 'admin-usd-cap' });
+    expect(executed).toHaveLength(0);
+    expect(limiter.hit).not.toHaveBeenCalled();
   });
 
   it('over the ai.test limit → the 429 from the limiter and no provider call', async () => {

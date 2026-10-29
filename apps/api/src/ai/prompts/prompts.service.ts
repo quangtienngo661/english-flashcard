@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { Inject, Injectable } from '@nestjs/common';
 import { z } from 'zod';
+import { Clock } from '../../common/clock/clock.js';
 import { PRISMA_CLIENT } from '../../common/db/prisma.module.js';
 import { RateLimiter } from '../../common/rate-limit/rate-limiter.service.js';
 import { userRef, type UserRef } from '../../common/user-ref.js';
@@ -12,6 +13,7 @@ import { AiAdapterRegistry } from '../adapters/ai-adapter.registry.js';
 import { AI_SYSTEM_ACTOR_ID, TEST_EXAMPLES_MAX } from '../ai.constants.js';
 import type { AiOperation } from '../ai.types.js';
 import { OPERATIONS } from '../operations/operations.js';
+import { AdminSpend } from '../runner/admin-spend.service.js';
 import { RunnerService } from '../runner/runner.service.js';
 import { SelectionReader } from '../runner/selection.js';
 import { PROMPT_GUARD, promptViolations, type PromptExample } from './prompt-rules.js';
@@ -59,6 +61,8 @@ export class PromptsService {
     @Inject(AiAdapterRegistry) private readonly registry: AiAdapterRegistry,
     @Inject(IdentityService) private readonly identity: IdentityService,
     @Inject(RateLimiter) private readonly limiter: RateLimiter,
+    @Inject(AdminSpend) private readonly spend: AdminSpend,
+    @Inject(Clock) private readonly clock: Clock,
   ) {}
 
   /** The prompt in use: the live config's text, `revision` = its number, updated when and by whom it was published (nhóm B M2). */
@@ -114,6 +118,8 @@ export class PromptsService {
     if (violations.length > 0) throw invalid(violations);
     const inputs = await testInputs(this.prisma, op, body);
     const prompt = { instructions: body.instructions, examples: body.examples as PromptExample[], revision: null };
+    // An unpriced model (E14) or today's usd cap (B20) refuses before the slot is used.
+    await this.spend.assertCanStart(selection.price, this.clock.now());
     // Counted only now: a test refused above (no model, bad draft, no example) costs nothing; the provider is called after.
     await this.limiter.hit('ai.test', actorId);
     const items = await Promise.all(inputs.map(async (input): Promise<TestItem> => toTestItem(input, await this.runner.execute({

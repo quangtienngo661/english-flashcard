@@ -36,6 +36,9 @@ function toResult(report: RunReport): ItemResult {
   };
 }
 
+/** The runner stopped before a provider attempt because admin spend reached today's cap (nhóm B M3). */
+const isAdminCap = (report: RunReport): boolean => report.result.status === 'unavailable' && report.result.reason === 'admin-usd-cap';
+
 const SKIPPED: ItemResult = {
   status: 'skipped', reason: 'example-deleted', output: null, raw_output: null, latency_ms: null, cost_usd: null, rule: null, expected_result: null,
 };
@@ -72,15 +75,24 @@ export class EvalJob {
       const prompt = await this.prompt(run);
       const selection = this.selection(run);
       let stopped = false;
+      let capped = false;
       await inPool(pending, EVAL_JOB_CONCURRENCY, async (item) => {
         // A run cancelled (or closed as stalled) meanwhile is no longer `running`: no further paid call, nothing written.
         if (!stopped && !(await this.runs.isRunning(run.id))) stopped = true;
         if (stopped) return;
-        const result = item.input === null ? SKIPPED : await this.withRules(run, item.input, item.expected, toResult(await this.execute(run, item, selection, prompt)));
+        const report = item.input === null ? null : await this.execute(run, item, selection, prompt);
+        // Today's admin usd cap (B18): this item is not written, so it stays pending; no further call starts. Items already written stay.
+        if (report && isAdminCap(report)) {
+          stopped = true;
+          capped = true;
+          return;
+        }
+        const result = report === null ? SKIPPED : await this.withRules(run, item.input!, item.expected, toResult(report));
         await this.runs.completeItem(item.id, result, this.clock.now());
       });
+      if (capped) await this.runs.fail(run.id, 'admin-usd-cap', this.clock.now());
       // `finish` is guarded by `status = 'running'` as well; skipping it just spares a statement.
-      if (!stopped) await this.runs.finish(run.id, this.clock.now());
+      else if (!stopped) await this.runs.finish(run.id, this.clock.now());
     } catch (error) {
       const message = oneLine(error);
       this.logger.warn('ai_eval_run_failed', { run_id: run.id, error: message });

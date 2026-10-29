@@ -102,9 +102,9 @@ export class ModelsService {
     const key = { provider: input.provider, modelId: input.model_id };
     if (await this.prisma.aiModel.findUnique({ where: { provider_modelId: key } })) throw modelExists();
     const info = await this.describe(input.provider, input.model_id);
-    // The fake costs nothing: its prices are forced to 0 (design §6.1).
+    // A fake model keeps the prices it is added with, each defaulting to 0, so a smoke can reach the usd cap (nhóm B E15; the fake exists only while AI_FAKE_ENABLED).
     const prices = input.provider === 'fake'
-      ? { priceInput: 0, priceCachedInput: 0, priceOutput: 0 }
+      ? { priceInput: input.price_input ?? 0, priceCachedInput: input.price_cached_input ?? 0, priceOutput: input.price_output ?? 0 }
       : { priceInput: input.price_input ?? null, priceCachedInput: input.price_cached_input ?? null, priceOutput: input.price_output ?? null };
     try {
       const row = await this.prisma.aiModel.create({ data: {

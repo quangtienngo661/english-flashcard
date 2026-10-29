@@ -176,8 +176,16 @@ describe('ModelsService', () => {
       .toMatchObject({ status: 409, type: 'model-exists' });
   });
 
-  it('fake:ok → prices 0', async () => {
-    const view = await service.add(ACTOR, { provider: 'fake', model_id: 'fake:ok', price_input: 3, price_output: 9 });
+  it('E15: a fake model keeps the prices it is added with, each defaulting to 0 (so a smoke can reach the usd cap)', async () => {
+    await service.add(ACTOR, { provider: 'fake', model_id: 'fake:ok', price_input: 1000, price_output: 1000 });
+    expect(prisma.aiModel.create.mock.calls[0]![0].data).toMatchObject({ priceInput: 1000, priceOutput: 1000, priceCachedInput: 0 });
+    const second = await service.add(ACTOR, { provider: 'fake', model_id: 'fake:slow', price_input: 1, price_cached_input: 0.5, price_output: 2 });
+    expect(second.price).toEqual({ input: '1.0000', cached_input: '0.5000', output: '2.0000' });
+  });
+
+  it('E15: a fake model added without prices costs 0, and it is priced (not unpriced)', async () => {
+    const view = await service.add(ACTOR, { provider: 'fake', model_id: 'fake:bad-form' });
+    expect(prisma.aiModel.create.mock.calls[0]![0].data).toMatchObject({ priceInput: 0, priceOutput: 0, priceCachedInput: 0 });
     expect(view.price).toEqual({ input: '0.0000', cached_input: '0.0000', output: '0.0000' });
   });
 

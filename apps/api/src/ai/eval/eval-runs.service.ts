@@ -13,6 +13,7 @@ import { AiAdapterRegistry } from '../adapters/ai-adapter.registry.js';
 import { AI_SYSTEM_ACTOR_ID } from '../ai.constants.js';
 import { AI_OPERATIONS, type AiOperation } from '../ai.types.js';
 import { promptViolations } from '../prompts/prompt-rules.js';
+import { AdminSpend } from '../runner/admin-spend.service.js';
 import { SelectionReader, toSelection, type ModelRow, type Selection } from '../runner/selection.js';
 import { EvalQueue } from './eval-queue.service.js';
 import type { EvalRunStatus } from './eval-runs.repository.js';
@@ -89,6 +90,7 @@ export class EvalRunsService {
     @Inject(IdentityService) private readonly identity: IdentityService,
     @Inject(RateLimiter) private readonly limiter: RateLimiter,
     @Inject(Clock) private readonly clock: Clock,
+    @Inject(AdminSpend) private readonly spend: AdminSpend,
   ) {}
 
   async create(actorId: string, body: CreateRunBody): Promise<{ run_id: string; status: 'queued' }> {
@@ -114,6 +116,8 @@ export class EvalRunsService {
       draft = prompt!;
     }
     const examples = await this.examplesOf(operation, parsed.data.set_id);
+    // A model without both prices cannot be costed (B22) and the day's usd cap may be reached (B20): both refuse before anything is used or written.
+    await this.spend.assertCanStart(selection.price, this.clock.now());
     // The run counts against `ai.test` only now: a request refused above (no model, bad draft, no example) costs nothing.
     await this.limiter.hit('ai.test', actorId);
     // The resolved selection and price are stored (plan choice 10, E1): a later change of the operation's choice or of the model's
