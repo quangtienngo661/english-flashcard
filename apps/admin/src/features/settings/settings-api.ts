@@ -25,9 +25,10 @@ export type SettingsView = {
 };
 
 export type Unit = 'days' | 'hours' | 'minutes' | 'months' | 'years' | 'percent' | 'chars' | 'seconds' | 'sessions' | 'uses' | 'times';
-export type FieldSpec = { key: string; kind: 'bool' | 'int' | 'time'; unit?: Unit };
+/** `ratio`: a number between 0 and 1 with up to two decimals, shown as a percent in its hint. */
+export type FieldSpec = { key: string; kind: 'bool' | 'int' | 'time' | 'ratio'; unit?: Unit };
 
-/** The 43 keys per tab, in the order of the copy doc §8.2. */
+/** The 44 keys per tab, in the order of the copy doc §8.2. */
 export const SETTINGS_LAYOUT: Record<Section, FieldSpec[]> = {
   reminders: [
     { key: 'enabled', kind: 'bool' },
@@ -82,6 +83,7 @@ export const SETTINGS_LAYOUT: Record<Section, FieldSpec[]> = {
     { key: 'daily_provider_calls_cap', kind: 'int' },
     { key: 'content_retention_days', kind: 'int', unit: 'days' },
     { key: 'usd_vnd_rate', kind: 'int' },
+    { key: 'eval_held_out_ratio', kind: 'ratio' },
   ],
   identity: [{ key: 'unverified_cleanup_days', kind: 'int', unit: 'days' }],
 };
@@ -130,7 +132,8 @@ export function applyPatch(values: Values, patch: unknown): Values {
       const ok =
         (kind === 'bool' && typeof value === 'boolean') ||
         (kind === 'time' && typeof value === 'string') ||
-        (kind === 'int' && (value === null || Number.isInteger(value)));
+        (kind === 'int' && (value === null || Number.isInteger(value))) ||
+        (kind === 'ratio' && typeof value === 'number' && Number.isFinite(value));
       if (ok) next[section][key] = value as SettingValue;
     }
   }

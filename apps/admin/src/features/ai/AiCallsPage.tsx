@@ -7,6 +7,7 @@ import { useApi } from '../../auth/session-context';
 import { Banner } from '../../ui/Banner';
 import { Button } from '../../ui/Button';
 import { DataList, type Column } from '../../ui/DataList';
+import { Badge } from '../../ui/Badge';
 import { Dialog } from '../../ui/Dialog';
 import { TextField } from '../../ui/TextField';
 import { aiKeys, listCalls, type AiCall } from './ai-api';
@@ -96,7 +97,13 @@ export function AiCallsPage() {
     {
       key: 'content', header: t('ai.calls.cols.content'), className: 'wrap-anywhere', card: 'field',
       cell: (r) =>
-        r.content ? (
+        // A call made for a held-out example is never shown, whatever is stored for it (nhóm B design §5.1, R7).
+        r.held_out ? (
+          <span className="flex flex-col items-start gap-1">
+            <Badge tone="warning">{t('ai.calls.heldOut')}</Badge>
+            <span>{t('ai.calls.hiddenContent')}</span>
+          </span>
+        ) : r.content ? (
           <span className="flex flex-col items-start">
             <span>{t('ai.calls.untilDate', { date: format.dayMonth(r.content.expires_at) })}</span>
             <Button variant="ghost" aria-label={t('ai.calls.viewFor', { attempt: r.attempt })} onPress={() => setOpen(r)}>

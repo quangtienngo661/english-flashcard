@@ -1,6 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 import en from '../messages/en.json' with { type: 'json' };
 import vi from '../messages/vi.json' with { type: 'json' };
+import { devExample, evalSet, heldOutExample, runItem, runStats } from './support/ai-eval';
 import { seriousViolations } from './support/axe';
 import { mockApi, problem, signedInAs, type MockHandler, type MockRequest } from './support/mock-api';
 import { contentMocks, SENSE_ID } from './support/content';
@@ -69,10 +70,15 @@ const mocks: Record<string, MockHandler> = {
     revision: 3, instructions: 'Write one short sentence.', examples: [], saved_by: 'sys', saved_at: at, saved_by_user: { id: 'sys', email: null, system: true },
   }], next_page_token: null } }),
   'GET /v1/admin/ai/test-quota': () => ({ json: { limit: 20, remaining: 17, resets_at: at } }),
-  'GET /v1/admin/ai/eval/examples': () => ({ json: { items: [{
-    id: 'e1', operation: 'generate_cloze', input: { word: 'bank', part_of_speech: 'noun', level: 'A2', meaning_vi: 'bờ sông', context_label: null }, note: 'river',
-    created_by: 'u9', created_by_user: { id: 'u9', email: 'lan@wordmet.com', system: false }, created_at: at, updated_at: at,
-  }] } }),
+  'GET /v1/admin/ai/eval/examples': () => ({ json: { items: [
+    devExample('e1', 'bank', { input: { word: 'bank', part_of_speech: 'noun', level: 'A2', meaning_vi: 'bờ sông', context_label: null }, note: 'river', expected: { forms: ['bank', 'banks'] } }),
+    heldOutExample('e2'),
+  ] } }),
+  'GET /v1/admin/ai/eval/sets': () => ({ json: { items: [evalSet({ id: 'S2', version: 2 }), evalSet({ id: 'S1', version: 1, revealed_count: 1 })] } }),
+  'GET /v1/admin/ai/eval/runs/aaaaaaaa-0000-4000-8000-000000000001/items': () => ({ json: {
+    items: [runItem({ rule: { status: 'fail', problems: ['unknown-form:banking'], reason: null } })],
+    stats: runStats({ total: 1, shape_pass: 1, rule_fail: 1, expected_pass: 1 }, { total: 1, shape_pass: 1, rule_pass: 1, expected_pass: 1 }),
+  } }),
   'GET /v1/admin/ai/costs': () => ({ json: {
     items: [{ key: '2026-10-15', calls: 10, input_tokens: 1200, cached_input_tokens: 300, output_tokens: 800, reasoning_tokens: 50, cost_usd: '0.01230000', cost_vnd: 321, unknown_cost_calls: 2 }],
     total: { calls: 10, input_tokens: 1200, cached_input_tokens: 300, output_tokens: 800, reasoning_tokens: 50, cost_usd: '0.01230000', cost_vnd: 321, unknown_cost_calls: 2 },
@@ -80,10 +86,14 @@ const mocks: Record<string, MockHandler> = {
   'GET /v1/admin/ai/calls': () => ({ json: { items: [{
     id: 'c1', attempt: 1, purpose: 'learner', operation: 'generate_cloze', provider: 'openai', model: 'gpt-x', effort: null, thinking: null, max_output_tokens: null,
     prompt_revision: 3, outcome: 'timeout', http_status: null, provider_error_code: null, latency_ms: 10000, input_tokens: 120, cached_input_tokens: 20,
-    output_tokens: 0, reasoning_tokens: 0, cost_usd: '0.00010000', cost_known: true, created_at: at,
+    output_tokens: 0, reasoning_tokens: 0, cost_usd: '0.00010000', cost_known: true, created_at: at, held_out: false,
     content: { request: { messages: ['hi'] }, response: '{}', expires_at: '2026-10-15T10:00:00.000Z' },
+  }, {
+    id: 'c2', attempt: 1, purpose: 'eval', operation: 'generate_cloze', provider: 'openai', model: 'gpt-x', effort: null, thinking: null, max_output_tokens: null,
+    prompt_revision: 3, outcome: 'succeeded', http_status: 200, provider_error_code: null, latency_ms: 800, input_tokens: 120, cached_input_tokens: 20,
+    output_tokens: 40, reasoning_tokens: 0, cost_usd: '0.00020000', cost_known: true, created_at: at, held_out: true, content: null,
   }] } }),
-  'GET /v1/admin/ai/eval/runs': () => ({ json: { items: [evalRun], next_page_token: null } }),
+  'GET /v1/admin/ai/eval/runs': (req) => ({ json: { items: req.query.get('set_id') ? [evalRun, { ...evalRun, id: 'aaaaaaaa-0000-4000-8000-000000000002', model: 'gpt-y' }] : [evalRun], next_page_token: null } }),
   'GET /v1/admin/ai/eval/runs/aaaaaaaa-0000-4000-8000-000000000001': () => ({ json: { ...evalRun, draft: null, heartbeat_at: null, items: [] } }),
   ...settingsMocks,
   ...contentMocks,
@@ -96,7 +106,7 @@ const mocks: Record<string, MockHandler> = {
 
 const evalRun = {
   id: 'aaaaaaaa-0000-4000-8000-000000000001', operation: 'generate_cloze', provider: 'openai', model: 'gpt-x', effort: null, thinking: null, max_output_tokens: null, prompt_revision: null,
-  status: 'finished', total: 1, done: 1, valid_count: 1, avg_latency_ms: 700, cost_usd: '0.01000000', cost_unknown_count: 0, error: null, started_by: 'u9',
+  status: 'finished', total: 1, done: 1, valid_count: 1, set_id: 'S1', set_version: 1, legacy: false, complete: true, avg_latency_ms: 700, cost_usd: '0.01000000', cost_unknown_count: 0, error: null, started_by: 'u9',
   started_by_user: { id: 'u9', email: 'lan@wordmet.com', system: false }, created_at: at, started_at: at, finished_at: at,
 };
 const RID = '5b1f0000-0000-4000-8000-0000000000a1';

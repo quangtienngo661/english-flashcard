@@ -18,10 +18,15 @@ type Props = {
 function useHint() {
   const t = useTranslations('settings');
   const format = useFormatter();
+  /** 0.3 → "30%": a ratio is stored as a fraction and read as a percent. */
+  const percent = (fraction: number) => `${format.number(Math.round(fraction * 100))}%`;
   const shown = (spec: FieldSpec, value: SettingValue) => {
     if (value === null) return t('hint.empty');
     if (typeof value === 'boolean') return value ? t('hint.on') : t('hint.off');
-    if (typeof value === 'number') return spec.unit === 'percent' ? `${format.number(value)}%` : format.number(value);
+    if (typeof value === 'number') {
+      if (spec.kind === 'ratio') return percent(value);
+      return spec.unit === 'percent' ? `${format.number(value)}%` : format.number(value);
+    }
     return value;
   };
   return (spec: FieldSpec, bound: Bound | undefined, defaultValue: SettingValue) => {
@@ -30,7 +35,9 @@ function useHint() {
     else if (bound) {
       const n = (v: number | string) => (typeof v === 'number' ? format.number(v) : v);
       const unit = spec.unit === undefined ? '' : spec.unit === 'percent' ? '%' : ` ${t(`units.${spec.unit}`)}`;
-      let range = `${n(bound.min)}–${n(bound.max)}${unit}`;
+      let range = spec.kind === 'ratio' && typeof bound.min === 'number' && typeof bound.max === 'number'
+        ? `${percent(bound.min)}–${percent(bound.max)}`
+        : `${n(bound.min)}–${n(bound.max)}${unit}`;
       if (bound.step_minutes) range += `, ${t('hint.step', { minutes: bound.step_minutes })}`;
       if (spec.key in CROSS) range += ` ${t(`cross.${spec.key as keyof typeof CROSS}`)}`;
       if (bound.nullable) {
@@ -88,7 +95,7 @@ export function SettingsField({ section, spec, value, defaultValue, bound, error
         isNullable={bound?.nullable === true}
         minValue={typeof bound?.min === 'number' ? bound.min : undefined}
         maxValue={typeof bound?.max === 'number' ? bound.max : undefined}
-        step={1}
+        step={spec.kind === 'ratio' ? 0.01 : 1}
       />
     </div>
   );

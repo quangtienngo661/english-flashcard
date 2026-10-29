@@ -16,7 +16,7 @@ const costs = (key = '2026-10-15') => ({
 const aiCall = (over: Record<string, unknown> = {}) => ({
   id: 'c1', attempt: 1, purpose: 'learner', operation: 'generate_cloze', provider: 'openai', model: 'gpt-x', effort: null, thinking: null, max_output_tokens: null,
   prompt_revision: 3, outcome: 'timeout', http_status: null, provider_error_code: null, latency_ms: 10000, input_tokens: 120, cached_input_tokens: 20,
-  output_tokens: 0, reasoning_tokens: 0, cost_usd: '0.00010000', cost_known: true, created_at: at,
+  output_tokens: 0, reasoning_tokens: 0, cost_usd: '0.00010000', cost_known: true, created_at: at, held_out: false,
   content: { request: { messages: ['hi'] }, response: '{"sentence":"I ___ home."}', expires_at: '2026-10-25T10:00:00.000Z' }, ...over,
 });
 const uploads: Record<string, MockHandler> = { 'GET /v1/admin/content/uploads': () => ({ json: { items: [], next_page_token: null } }) };
@@ -90,6 +90,18 @@ test.describe('Các lần gọi (A/86)', () => {
     expect(await seriousViolations(page)).toEqual([]);
     await dialog.getByRole('button', { name: vi.common.close }).click();
     await expect(dialog).toBeHidden();
+  });
+
+  test('a call made for a held-out example shows the badge and "Nội dung được ẩn", with no [Xem]; axe clean', async ({ page }) => {
+    await signedInAs(page, 'admin', {
+      'GET /v1/admin/ai/calls': () => ({ json: { items: [aiCall({ purpose: 'eval', held_out: true, content: null }), aiCall({ id: 'c2', attempt: 2, purpose: 'eval' })] } }),
+    });
+    await page.goto('/ai/calls?operation_id=eval-run-example');
+    await expect(page.getByText(k.heldOut, { exact: true }).filter({ visible: true })).toBeVisible();
+    await expect(page.getByText(k.hiddenContent).filter({ visible: true })).toBeVisible();
+    await expect(page.getByRole('button', { name: /Xem nội dung/ }).filter({ visible: true })).toHaveCount(1);
+    await expect(page.getByRole('button', { name: k.viewFor.replace('{attempt}', '1') })).toHaveCount(0);
+    expect(await seriousViolations(page)).toEqual([]);
   });
 
   test('searching a new id updates the URL; an unknown id says so', async ({ page }) => {

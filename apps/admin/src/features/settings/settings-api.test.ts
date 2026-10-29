@@ -12,10 +12,11 @@ const values = (): Values => ({
 });
 
 describe('settings-api', () => {
-  it('the layout has the 43 keys (41 of the copy doc, two of Bước 8), each once', () => {
-    expect(FIELD_ORDER).toHaveLength(43);
-    expect(new Set(FIELD_ORDER).size).toBe(43);
-    expect(SECTIONS.map((s) => SETTINGS_LAYOUT[s].length)).toEqual([5, 5, 9, 16, 2, 5, 1]);
+  it('the layout has the 44 keys (41 of the copy doc, two of Bước 8, one of nhóm B), each once', () => {
+    expect(FIELD_ORDER).toHaveLength(44);
+    expect(new Set(FIELD_ORDER).size).toBe(44);
+    expect(SECTIONS.map((s) => SETTINGS_LAYOUT[s].length)).toEqual([5, 5, 9, 16, 2, 6, 1]);
+    expect(SETTINGS_LAYOUT.ai.at(-1)).toEqual({ key: 'eval_held_out_ratio', kind: 'ratio' });
   });
 
   it('changedValues keeps only changed keys; a value set back to the server value is not a change', () => {
@@ -46,6 +47,13 @@ describe('settings-api', () => {
     expect(next.learning.reviews_per_group_per_day).toBeNull();
     expect(next.practice.max_questions_per_session).toBe(20);
     expect(applyPatch(values(), 'garbage')).toEqual(values());
+  });
+
+  it('applyPatch keeps a kept draft of the held-out share only when it is a number', () => {
+    expect(applyPatch(values(), { ai: { eval_held_out_ratio: 0.25 } }).ai.eval_held_out_ratio).toBe(0.25);
+    expect(applyPatch(values(), { ai: { eval_held_out_ratio: '0.25' } }).ai.eval_held_out_ratio).toBeUndefined();
+    expect(applyPatch(values(), { ai: { eval_held_out_ratio: Number.NaN } }).ai.eval_held_out_ratio).toBeUndefined();
+    expect(applyPatch(values(), { ai: { eval_held_out_ratio: null } }).ai.eval_held_out_ratio).toBeUndefined();
   });
 
   it('timeOptions steps the send_time bound by 15 minutes', () => {

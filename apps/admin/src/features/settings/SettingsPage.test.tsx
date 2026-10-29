@@ -16,7 +16,7 @@ function values(): Values {
   const out = {} as Values;
   for (const section of SECTIONS) {
     out[section] = {};
-    for (const { key, kind } of SETTINGS_LAYOUT[section]) out[section][key] = kind === 'bool' ? true : kind === 'time' ? '20:00' : 10;
+    for (const { key, kind } of SETTINGS_LAYOUT[section]) out[section][key] = kind === 'bool' ? true : kind === 'time' ? '20:00' : kind === 'ratio' ? 0.3 : 10;
   }
   out.practice.max_questions_per_session = 20;
   out.entitlements.renewal_notice_days_before = 5;
@@ -29,6 +29,7 @@ function bounds() {
     for (const { key, kind } of SETTINGS_LAYOUT[section]) {
       if (kind === 'time') out[section][key] = { min: '06:00', max: '22:00', step_minutes: 15 };
       else if (kind === 'int') out[section][key] = { min: 1, max: 1000 };
+      else if (kind === 'ratio') out[section][key] = { min: 0.1, max: 0.5 };
     }
   }
   out.entitlements.renewal_notice_days_before = { min: 1, max: 30, nullable: true };
@@ -268,5 +269,32 @@ describe('Bước 8 settings (design §11)', () => {
     await userEvent.click(screen.getByRole('button', { name: s.save }));
     await waitFor(() => expect(calls).toHaveLength(1));
     expect(calls[0].body).toMatchObject({ values: { entitlements: { transaction_retention_years: 12 }, identity: { unverified_cleanup_days: 3 } } });
+  });
+});
+
+describe('nhóm B settings (design §5.1)', () => {
+  it('the AI tab edits the held-out share: the hint gives the range and the default as percents, and 0,25 is sent as 0.25', async () => {
+    const calls: Call[] = [];
+    renderApp('/settings?tab=ai', { [GET]: () => Response.json(VIEW()), [PUT]: (c) => { calls.push(c); return Response.json({ ...VIEW(4) }); } });
+    const box = await screen.findByRole('textbox', { name: s.fields.ai.eval_held_out_ratio });
+    expect(box).toHaveValue('0,3');
+    expect(screen.getByText('eval_held_out_ratio · 10%–50% · mặc định 30%')).toBeInTheDocument();
+    await setNumber(s.fields.ai.eval_held_out_ratio, '0,25');
+    await userEvent.click(screen.getByRole('button', { name: s.save }));
+    await waitFor(() => expect(calls).toHaveLength(1));
+    expect(calls[0].body).toEqual({ version: 3, values: { ai: { eval_held_out_ratio: 0.25 } } });
+  });
+
+  it('a value outside the bounds is refused by the API and flagged on the field', async () => {
+    const view = VIEW();
+    renderApp('/settings?tab=ai', {
+      [GET]: () => Response.json(view),
+      [PUT]: () => problem(400, 'validation-failed', { violations: ['values.ai.eval_held_out_ratio: Too big'] }),
+    });
+    await screen.findByRole('textbox', { name: s.fields.ai.eval_held_out_ratio });
+    await setNumber(s.fields.ai.eval_held_out_ratio, '0,9');
+    await userEvent.click(screen.getByRole('button', { name: s.save }));
+    expect((await screen.findAllByText(s.outOfRange)).length).toBeGreaterThan(0);
+    expect(screen.getByRole('textbox', { name: s.fields.ai.eval_held_out_ratio })).toHaveAttribute('aria-invalid', 'true');
   });
 });

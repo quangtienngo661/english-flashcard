@@ -38,6 +38,22 @@ test.describe('Cài đặt hệ thống (A/70a–A/70f)', () => {
     expect(put.headers['idempotency-key']).toBeTruthy();
   });
 
+  test('nhóm B: the AI tab shows the held-out share as a percent in its hint, and 0,25 is saved as 0.25', async ({ page }) => {
+    await signedInAs(page, 'admin', {
+      ...settingsMocks,
+      'PUT /v1/admin/settings': () => ({ json: { version: 2, values: settingsView().values } }),
+    });
+    await page.goto('/settings?tab=ai');
+    const box = page.getByRole('textbox', { name: s.fields.ai.eval_held_out_ratio });
+    await expect(box).toHaveValue('0,3');
+    await expect(page.getByText('eval_held_out_ratio · 10%–50% · mặc định 30%')).toBeVisible();
+    await box.fill('0,25');
+    await box.blur();
+    await page.getByRole('button', { name: s.save }).click();
+    await expect(page.getByText(s.saved)).toBeVisible();
+    expect(requests(page, 'PUT', '/v1/admin/settings')[0].body).toEqual({ version: 1, values: { ai: { eval_held_out_ratio: 0.25 } } });
+  });
+
   test('a 400 on a field of another tab opens that tab and focuses the field', async ({ page }) => {
     await signedInAs(page, 'admin', {
       ...settingsMocks,

@@ -76,6 +76,31 @@ describe('AiCallsPage (A/86)', () => {
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
   });
 
+  it('nhóm B M1: a call made for a held-out example shows "held-out" and "Nội dung được ẩn", with no [Xem]', async () => {
+    renderApp(`/ai/calls?operation_id=${OP}`, { [callsUrl(OP)]: reply(call({ purpose: 'eval', held_out: true, content: null })) });
+    await screen.findAllByText(t.heldOut);
+    const [row] = screen.getAllByRole('row').slice(1);
+    expect(row).toHaveTextContent(t.heldOut);
+    expect(row).toHaveTextContent(t.hiddenContent);
+    expect(row).not.toHaveTextContent(t.noContent);
+    expect(within(row).queryByRole('button', { name: /Xem/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: t.viewFor.replace('{attempt}', '1') })).not.toBeInTheDocument();
+  });
+
+  it('nhóm B M1: held-out wins over a stored content: no [Xem] and no content either way', async () => {
+    renderApp(`/ai/calls?operation_id=${OP}`, { [callsUrl(OP)]: reply(call({ purpose: 'eval', held_out: true })) });
+    await screen.findAllByText(t.hiddenContent);
+    expect(screen.queryByRole('button', { name: /Xem/ })).not.toBeInTheDocument();
+    expect(screen.queryByText('Còn tới 25/10')).not.toBeInTheDocument();
+  });
+
+  it('nhóm B M1: a call that is not held-out and has no content still reads "Không còn nội dung", with no badge', async () => {
+    renderApp(`/ai/calls?operation_id=${OP}`, { [callsUrl(OP)]: reply(call({ purpose: 'eval', held_out: false, content: null })) });
+    await screen.findAllByText(t.noContent);
+    expect(screen.queryByText(t.heldOut)).not.toBeInTheDocument();
+    expect(screen.queryByText(t.hiddenContent)).not.toBeInTheDocument();
+  });
+
   it('an unknown cost shows "Chưa có giá"', async () => {
     renderApp(`/ai/calls?operation_id=${OP}`, { [callsUrl(OP)]: reply(call({ cost_usd: null, cost_known: false })) });
     expect(await screen.findAllByText(t.costUnknown)).not.toHaveLength(0);

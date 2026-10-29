@@ -681,6 +681,8 @@
       "revision": "Prompt bản {revision}",
       "untilDate": "Còn tới {date}",
       "noContent": "Không còn nội dung",
+      "heldOut": "held-out",
+      "hiddenContent": "Nội dung được ẩn",
       "view": "Xem",
       "viewFor": "Xem nội dung lần thử {attempt}",
       "content": { "title": "Nội dung lần gọi", "request": "Yêu cầu", "response": "Phản hồi" }
@@ -1494,7 +1496,8 @@
         "max_concurrent_calls": "Số lời gọi cùng lúc",
         "daily_provider_calls_cap": "Trần lời gọi nhà cung cấp mỗi ngày",
         "content_retention_days": "Giữ nội dung lời gọi",
-        "usd_vnd_rate": "Tỷ giá USD → VND"
+        "usd_vnd_rate": "Tỷ giá USD → VND",
+        "eval_held_out_ratio": "Tỉ lệ ví dụ held-out"
       },
       "identity": {
         "unverified_cleanup_days": "Tự xóa tài khoản chưa xác nhận email sau"

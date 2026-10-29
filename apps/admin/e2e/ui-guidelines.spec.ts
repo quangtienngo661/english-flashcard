@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test';
 import en from '../messages/en.json' with { type: 'json' };
 import vi from '../messages/vi.json' with { type: 'json' };
+import { devExample, evalSet, heldOutExample, runItem, runStats } from './support/ai-eval';
 import { signedInAs } from './support/mock-api';
 import { contentMocks, SENSE_ID, tick } from './support/content';
 import { expectNoHorizontalScroll } from './support/overflow';
@@ -416,22 +417,30 @@ test('Bộ ví dụ at 390 fits the window with a long example input, a long not
   const lan = { id: 'u9', email: `${'a'.repeat(120)}@example.com`, system: false };
   const run = {
     id: 'aaaaaaaa-0000-4000-8000-000000000001', operation: 'generate_cloze', provider: 'openai', model: 'm'.repeat(100), effort: null, thinking: null, max_output_tokens: null, prompt_revision: 3,
-    status: 'failed', total: 100, done: 37, valid_count: 30, avg_latency_ms: 812, cost_usd: '12.34560000', cost_unknown_count: 3, error: 'e'.repeat(300),
+    status: 'failed', total: 100, done: 37, valid_count: 30, set_id: null, set_version: null, legacy: false, complete: false, avg_latency_ms: 812, cost_usd: '12.34560000', cost_unknown_count: 3, error: 'e'.repeat(300),
     started_by: 'u9', started_by_user: lan, created_at: at, started_at: at, finished_at: at,
   };
   await signedInAs(page, 'admin', {
     ...settingsMocks,
     'GET /v1/admin/ai/operations': () => ({ json: { items: [{ operation: 'generate_cloze', model: null, effort: null, thinking: null, max_output_tokens: null, version: 1, input_fields: ['word', 'meaning_vi'], estimate: null }] } }),
     'GET /v1/admin/ai/test-quota': () => ({ json: { limit: 20, remaining: 17, resets_at: at } }),
-    'GET /v1/admin/ai/eval/examples': () => ({ json: { items: [{
-      id: 'e1', operation: 'generate_cloze', input: { word: 'w'.repeat(200), meaning_vi: 'nghĩa '.repeat(60) }, note: 'n'.repeat(500),
-      created_by: 'u9', created_by_user: lan, created_at: at, updated_at: at,
-    }] } }),
-    'GET /v1/admin/ai/eval/runs': () => ({ json: { items: [run], next_page_token: null } }),
-    'GET /v1/admin/ai/eval/runs/aaaaaaaa-0000-4000-8000-000000000001': () => ({ json: { ...run, draft: null, heartbeat_at: null, items: [
-      { example_id: 'e1', status: 'succeeded', reason: null, output: { sentence: 's'.repeat(600), accepted_answers: ['a'.repeat(200)] }, raw_output: 'x'.repeat(2000), latency_ms: 812, cost_usd: '0.00100000' },
-      { example_id: 'gone', status: 'permanent_failure', reason: 'r'.repeat(200), output: null, raw_output: 'y'.repeat(2000), latency_ms: 300, cost_usd: null },
+    'GET /v1/admin/ai/eval/examples': () => ({ json: { items: [
+      devExample('e1', 'w', { input: { word: 'w'.repeat(200), meaning_vi: 'nghĩa '.repeat(60) }, note: 'n'.repeat(500), created_by_user: lan }),
+      heldOutExample('e2'),
     ] } }),
+    'GET /v1/admin/ai/eval/sets': () => ({ json: { items: [evalSet({ frozen_by_user: lan, revealed_count: 12345 })] } }),
+    'GET /v1/admin/ai/eval/runs': () => ({ json: { items: [run], next_page_token: null } }),
+    'GET /v1/admin/ai/eval/runs/aaaaaaaa-0000-4000-8000-000000000001': () => ({ json: { ...run, draft: null, heartbeat_at: null, items: [] } }),
+    'GET /v1/admin/ai/eval/runs/aaaaaaaa-0000-4000-8000-000000000001/items': () => ({ json: {
+      items: [
+        runItem({
+          example_id: 'e1', output: { sentence: 's'.repeat(600), accepted_answers: ['a'.repeat(200)] }, raw_output: 'x'.repeat(2000), latency_ms: 812, cost_usd: '0.00100000',
+          rule: { status: 'fail', problems: ['unknown-form:' + 'p'.repeat(150)], reason: null },
+        }),
+        runItem({ example_id: 'gone', position: 1, input: null, status: 'permanent_failure', reason: 'r'.repeat(200), output: null, raw_output: 'y'.repeat(2000), rule: null, expected_result: null, latency_ms: 300 }),
+      ],
+      stats: runStats({ total: 2, shape_pass: 1, shape_fail: 1, rule_fail: 1, expected_pass: 1, failing: 2 }, { total: 3, shape_pass: 3, rule_pass: 3, expected_pass: 3 }),
+    } }),
   });
   await page.goto('/ai/eval');
   await expect(page.getByText('w'.repeat(200), { exact: false }).first()).toBeAttached();

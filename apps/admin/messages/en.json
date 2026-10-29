@@ -681,6 +681,8 @@
       "revision": "Prompt revision {revision}",
       "untilDate": "Kept until {date}",
       "noContent": "Content no longer available",
+      "heldOut": "held-out",
+      "hiddenContent": "Content hidden",
       "view": "View",
       "viewFor": "View the content of attempt {attempt}",
       "content": { "title": "Call content", "request": "Request", "response": "Response" }
@@ -1494,7 +1496,8 @@
         "max_concurrent_calls": "Concurrent calls",
         "daily_provider_calls_cap": "Provider calls cap per day",
         "content_retention_days": "Keep call content for",
-        "usd_vnd_rate": "USD → VND rate"
+        "usd_vnd_rate": "USD → VND rate",
+        "eval_held_out_ratio": "Held-out share of the example set"
       },
       "identity": {
         "unverified_cleanup_days": "Delete accounts that never verified their email after"
