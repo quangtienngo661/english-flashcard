@@ -6,11 +6,12 @@
 // psql. No real provider is called.
 //
 // Shape: `setup()` makes the first admin, the fake models and one catalog verb import (it chooses no model: since M2 a model comes from a config,
-// `partM1()` through drafts it never publishes, `partM2()` through publishes); each milestone adds one `partM<n>()`
-// (contract §7). The `ai.test` limit is 20 uses per hour per user and every eval run and prompt test uses one, so `setup()`, `partM1()` and
+// `partM1()` through drafts it never publishes, `partM2()` through publishes, `partM3()` through the judge and its passes); each milestone adds one
+// `partM<n>()` (contract §7). The `ai.test` limit is 20 uses per hour per user and every eval run and prompt test uses one, so `setup()`, `partM1()` and
 // `partM2()` run as the first admin (M1 uses 5 of the 20, M2 uses 6) and every later part as a new admin made with `POST /v1/admin/users`
 // (staff_role admin: no registration spent). The steps of `partM2()` that race two requests or time one against a running eval run send them as
 // a second admin with a fresh `user.write` budget (30 a minute per user): a 429 wait would otherwise serialize the race or outlast the run.
+// `partM3()` runs as a third admin (it starts 5 eval runs) and sets `ai.admin_daily_usd_cap` to null for good: a part after it is never capped.
 // A failing step is reported and the run goes on with the next one; the exit code is 0 only when every step matched.
 import { execFile, execFileSync } from 'node:child_process';
 import { randomInt, randomUUID } from 'node:crypto';
@@ -772,11 +773,453 @@ async function partM2() {
   });
 }
 
+// =====================================================================================================================
+// M3 — judge (design K2, plan M3-T20): the seeded judge, its revisions and clone, judge passes on eval runs, labels and agreement, the judge
+// criteria in the publish gate, the daily USD cap of admin work, and what deleting a labelled run hides. The part acts as a third admin (a
+// fresh `ai.test` budget: it starts 5 runs of the 20 an hour) and ends with `ai.admin_daily_usd_cap` null, so later parts are never capped.
+// A fake model costs 100 input + 50 output tokens a call (`FAKE_USAGE`): at 1000 / 1000 USD per 1M tokens that is 0.15 USD a call.
+async function partM3() {
+  const op = 'generate_cloze';
+  const ai = '/v1/admin/ai';
+  const T = {};
+  const outer = { admin: S.admin, adminId: S.adminId };
+
+  const listJudges = async () => (await want(asAdmin('GET', `${ai}/judges`), 200, 'GET judges')).items;
+  const getJudge = async (id) => {
+    const found = (await listJudges()).find((judge) => judge.id === id);
+    check(found, `judge ${id} is not listed`);
+    return found;
+  };
+  /** The body that saves `view` as it is except for `changes`; `expected_revision` is the revision the view shows. */
+  const judgeBody = (view, changes = {}) => ({
+    expected_revision: view.latest.revision, name: view.name, operations: view.operations, active: view.active, criteria: view.latest.criteria,
+    instructions: view.latest.instructions, examples: view.latest.examples, model_ref: view.latest.model?.id ?? null, effort: view.latest.effort,
+    thinking: view.latest.thinking, max_output_tokens: view.latest.max_output_tokens, ...changes,
+  });
+  const putJudge = (view, changes) => asAdmin('PUT', `${ai}/judges/${view.id}`, { body: judgeBody(view, changes) });
+  const saveJudge = (view, changes) => want(putJudge(view, changes), 200, `save judge ${view.name}`);
+  const startPass = (runId, judgeId) => asAdmin('POST', `${ai}/eval/runs/${runId}/judge-passes`, { idem: true, body: { judge_id: judgeId } });
+  const passDone = (id, timeoutMs = 60_000) => waitFor(() => want(asAdmin('GET', `${ai}/judge-passes/${id}`), 200, 'GET judge pass'),
+    (pass) => pass.status === 'finished' || pass.status === 'failed', `judge pass ${id} ending`, timeoutMs);
+  const runDone = (id) => waitFor(() => want(asAdmin('GET', `${ai}/eval/runs/${id}`), 200, 'GET run'),
+    (row) => row.status === 'finished' || row.status === 'failed', `run ${id} ending`, 60_000);
+  const statusOf = () => want(asAdmin('GET', `${ai}/status`), 200, 'AI status');
+  const agreementOf = (judgeId) => want(asAdmin('GET', `${ai}/judges/${judgeId}/agreement`), 200, 'GET agreement');
+  const putLabel = (itemId, verdict, criterion = 'single_answer') => asAdmin('PUT', `${ai}/labels`, { body: { subject_kind: 'eval_item', subject_id: itemId, criterion, verdict } });
+  /** `PUT /v1/admin/settings` for the `ai` section (an idempotent write at the current version); returns the `ai` values as saved. */
+  async function setAi(patch) {
+    const current = await want(asAdmin('GET', '/v1/admin/settings'), 200, 'GET settings');
+    const saved = await want(asAdmin('PUT', '/v1/admin/settings', { idem: true, body: { version: current.version, values: { ai: patch } } }), 200, `PUT settings ${j(patch)}`);
+    for (const [key, value] of Object.entries(patch)) check(saved.values.ai[key] === value, `setting ai.${key} is ${j(saved.values.ai[key])} after saving ${j(value)}`);
+    return saved.values.ai;
+  }
+  /** A cap that lets one more 0.15 USD call start and blocks every call after it: today's admin spend rounded up to the cent, plus 0.10. */
+  const capAboveSpent = async () => (Math.ceil(Number((await statusOf()).today.admin_cost_usd) * 100 - 1e-6) + 10) / 100;
+  const vnDayStart = `(date_trunc('day', now() AT TIME ZONE '${TIMEZONE}') AT TIME ZONE '${TIMEZONE}')`;
+  const callsToday = (where) => count(`SELECT count(*) FROM ai_calls WHERE created_at >= ${vnDayStart} AND ${where}`);
+  const judgeCalls = () => count(`SELECT count(*) FROM ai_calls WHERE purpose = 'judge'`);
+  const itemSql = (runId, where = 'true') => `SELECT id FROM ai_eval_run_items WHERE run_id = '${runId}' AND ${where} ORDER BY position`;
+  const ids = (sql) => psql(sql).split(/\r?\n/).filter(Boolean);
+  const judgeable = (runId) => count(`SELECT count(*) FROM ai_eval_run_items WHERE run_id = '${runId}' AND input IS NOT NULL AND output IS NOT NULL`);
+  /** The three-key tally the API gives for a split. */
+  const tally = (pass, failMajor = 0, failMinor = 0, unjudged = 0) => ({ pass, fail_major: failMajor, fail_minor: failMinor, unjudged });
+
+  try {
+    await step('M3.0 a third admin (POST /v1/admin/users) acts for this part, so its ai.test budget is fresh; the judge settings start at their contract defaults', async () => {
+      const email = `smokenb-admin3-${run}@example.com`;
+      await want(asAdmin('POST', '/v1/admin/users', { body: { email, staff_role: 'admin', password: PASSWORD, must_change_password: false, timezone: TIMEZONE } }), 201, `create ${email}`);
+      S.admin = { email, token: await loginToken(email) };
+      const me = await want(asAdmin('GET', '/v1/me'), 200, 'third admin profile');
+      check(me.id !== outer.adminId, 'the third admin is the first admin');
+      S.adminId = me.id;
+      const { values } = await want(asAdmin('GET', '/v1/admin/settings'), 200, 'GET settings');
+      check(j([values.ai.admin_daily_usd_cap, values.ai.judge_label_min, values.ai.judge_agreement_min]) === j([2, 30, 0.85]), `ai settings ${j(values.ai)}`);
+      T.dailyCap = values.ai.daily_provider_calls_cap;
+      ok(`admin ${email} (${me.id}); admin_daily_usd_cap 2, judge_label_min 30, judge_agreement_min 0.85; daily_provider_calls_cap ${T.dailyCap}`);
+    });
+
+    await step('M3.1 the seeded judge "Chỉ một đáp án" (one judge, revision 1, no model, criterion single_answer); without a model a pass and a run with it are refused (409 model-not-set) and the refused run makes nothing', async () => {
+      const list = await listJudges();
+      check(list.length === 1, `judges ${j(list.map((judge) => judge.name))}`);
+      const seeded = list[0];
+      check(seeded.name === 'Chỉ một đáp án' && j(seeded.operations) === j([op]) && seeded.active === true && seeded.latest.revision === 1 && seeded.latest.model === null
+        && j(seeded.latest.criteria.map((criterion) => criterion.code)) === j(['single_answer']),
+      `seeded judge ${j({ name: seeded.name, operations: seeded.operations, active: seeded.active, revision: seeded.latest.revision, model: seeded.latest.model, criteria: seeded.latest.criteria })}`);
+      T.J = seeded.id;
+      T.name = seeded.name;
+      T.set = (await listSets(op)).reduce((a, b) => (b.version > a.version ? b : a));
+      const earlier = (await want(asAdmin('GET', `${ai}/eval/runs?operation=${op}&page_size=10`), 200, 'list runs')).items.find((row) => row.status === 'finished' || row.status === 'failed');
+      check(earlier, 'no earlier run to start a pass on');
+      await wantProblem(startPass(earlier.id, T.J), 409, 'model-not-set', 'a pass with the model-less judge');
+      const runsBefore = count('SELECT count(*) FROM ai_eval_runs');
+      await wantProblem(startRun({ operation: op, config: 'live', set_id: T.set.id, judge_id: T.J }), 409, 'model-not-set', 'a run with the model-less judge');
+      check(count('SELECT count(*) FROM ai_eval_runs') === runsBefore && count('SELECT count(*) FROM ai_judge_passes') === 0, 'a refused request left a run or a pass behind');
+      await wantProblem(asAdmin('GET', `${ai}/judges/${randomUUID()}/revisions`), 404, 'not-found', 'revisions of an unknown judge');
+      ok(`judge ${T.J}: revision 1, operations [${op}], no model; the pass on run ${earlier.id} and the run with the judge → 409 model-not-set, ai_eval_runs stays at ${runsBefore}, no pass; unknown judge → 404`);
+    });
+
+    await step('M3.2 B12, E4, Review focus 4: openai → 422 judge-provider, no criteria → 400; fake:ok → revision 2; stale expected_revision → 409 judge-revision-conflict; a new name alone adds no revision; clone → revision 1; two saves at once → 200 + 409', async () => {
+      const seeded = await getJudge(T.J);
+      const openai = randomUUID();
+      psql(`INSERT INTO ai_models (id, provider, model_id, info_checked_at, created_by) VALUES ('${openai}', 'openai', 'gpt-smoke-nb', now(), '${S.adminId}')`);
+      try {
+        await wantProblem(putJudge(seeded, { model_ref: openai }), 422, 'judge-provider', 'save with an openai model');
+      } finally {
+        psql(`DELETE FROM ai_models WHERE id = '${openai}'`);
+      }
+      const noCriteria = await wantProblem(putJudge(seeded, { criteria: [] }), 400, 'validation-failed', 'save without criteria');
+      check(Array.isArray(noCriteria.violations) && noCriteria.violations.length > 0, `violations ${j(noCriteria.violations)}`);
+      check((await getJudge(T.J)).latest.revision === 1, 'a refused save added a revision');
+      const fakeOk = await addModel('fake:ok');
+      const saved = await saveJudge(seeded, { model_ref: fakeOk.id });
+      check(saved.latest.revision === 2 && saved.latest.model?.model_id === 'fake:ok' && saved.latest.model.provider === 'fake', `saved ${j({ revision: saved.latest.revision, model: saved.latest.model })}`);
+      await wantProblem(putJudge(seeded, { model_ref: fakeOk.id, instructions: `${seeded.latest.instructions}\n\nStale.` }), 409, 'judge-revision-conflict', 'save with the stale revision 1');
+      const renamed = await saveJudge(saved, { name: `${saved.name} (renamed)` });
+      check(renamed.latest.revision === 2 && renamed.latest.id === saved.latest.id && renamed.name === `${saved.name} (renamed)`, `renamed ${j({ revision: renamed.latest.revision, name: renamed.name })}`);
+      const restored = await saveJudge(renamed, { name: seeded.name });
+      check(restored.name === T.name && restored.latest.revision === 2 && restored.latest.id === saved.latest.id, `restored ${j({ name: restored.name, revision: restored.latest.revision })}`);
+      const revisions = (await want(asAdmin('GET', `${ai}/judges/${T.J}/revisions`), 200, 'revisions')).items;
+      check(j(revisions.map((revision) => revision.revision)) === j([2, 1]) && revisions[0].model?.model_id === 'fake:ok' && revisions[1].model === null, `revisions ${j(revisions.map((r) => [r.revision, r.model?.model_id ?? null]))}`);
+      const clone = await want(asAdmin('POST', `${ai}/judges/${T.J}/clone`, { body: { name: 'Smoke clone' } }), 201, 'clone the judge');
+      check(clone.id !== T.J && clone.name === 'Smoke clone' && clone.active === true && j(clone.operations) === j([op]) && clone.latest.revision === 1
+        && j(clone.latest.criteria) === j(restored.latest.criteria) && clone.latest.model?.model_id === 'fake:ok', `clone ${j({ id: clone.id, name: clone.name, revision: clone.latest.revision, model: clone.latest.model })}`);
+      T.clone = clone.id;
+      const both = await Promise.all(['a', 'b'].map((tag) => putJudge(clone, { instructions: `${clone.latest.instructions}\n\nSmoke race ${tag}.` })));
+      const statuses = both.map((res) => res.status).sort();
+      check(j(statuses) === j([200, 409]), `statuses ${statuses.join(', ')}: ${both.map((res) => res.text.slice(0, 200)).join(' / ')}`);
+      check(String(both.find((res) => res.status === 409).json?.type).endsWith('judge-revision-conflict'), `409 type ${both.find((res) => res.status === 409).json?.type}`);
+      const after = await getJudge(T.clone);
+      check(after.latest.revision === 2 && after.latest.instructions === both.find((res) => res.status === 200).json.latest.instructions, `clone after the race ${j({ revision: after.latest.revision })}`);
+      ok(`openai → judge-provider (the row is deleted again), criteria [] → 400; fake:ok → revision 2; stale revision 1 → judge-revision-conflict; rename and rename back kept revision 2 (id ${saved.latest.id}); clone ${T.clone} at revision 1 with the same criteria, then two saves at once → ${statuses.join(', ')}, revision 2`);
+    });
+
+    await step('M3.3 D14, D3, B6, R7: a live run on the newest frozen set with judge_id → 202 + judge_pass_id; the pass judges every output; dev items carry a pass score, held-out only tallies; a judge call carries exactly { target_operation, input, output, criteria, context }', async () => {
+      const created = await want(startRun({ operation: op, config: 'live', set_id: T.set.id, judge_id: T.J }), 202, 'start a run with a judge');
+      check(typeof created.judge_pass_id === 'string', `response ${j(created)}`);
+      T.p1 = created.judge_pass_id;
+      T.r1 = await runDone(created.run_id);
+      check(T.r1.status === 'finished' && T.r1.complete === true && T.r1.set_id === T.set.id, `run ${j({ status: T.r1.status, complete: T.r1.complete, set_id: T.r1.set_id })}`);
+      const pass = await passDone(T.p1);
+      T.n1 = judgeable(T.r1.id);
+      T.held1 = ids(itemSql(T.r1.id, `split = 'held_out'`));
+      check(pass.status === 'finished' && pass.error === null && pass.kind === 'eval_run' && pass.eval_run_id === T.r1.id && pass.total === T.n1 && pass.judged === T.n1 && pass.unjudged === 0
+        && pass.judge.id === T.J && pass.judge_revision.revision === 2 && pass.judge_revision.model?.model_id === 'fake:ok' && T.held1.length >= 1, `pass ${j(pass)}`);
+      const raw = await asAdmin('GET', `${ai}/eval/runs/${T.r1.id}/items`);
+      check(raw.status === 200, `GET items ${raw.status}`);
+      const { items, stats, passes, judge_stats: judgeStats } = raw.json;
+      check(items.length === stats.dev.total && items.length + T.held1.length === T.n1 && items.length >= 3, `dev items ${items.length}, held-out ${T.held1.length}, judged ${T.n1}`);
+      for (const item of items) {
+        const mine = item.scores.filter((score) => score.revision === 2);
+        check(mine.length === 1 && mine[0].criterion === 'single_answer' && mine[0].verdict === 'pass' && mine[0].problem === null && mine[0].reason === 'fake judge' && item.labels.length === 0,
+          `item ${item.item_id} ${j({ scores: item.scores, labels: item.labels })}`);
+      }
+      check(judgeStats.length === 1 && judgeStats[0].revision === 2 && judgeStats[0].criterion === 'single_answer' && judgeStats[0].judge_name === T.name && judgeStats[0].calibrated === false
+        && j(judgeStats[0].dev) === j(tally(items.length)) && j(judgeStats[0].held_out) === j(tally(T.held1.length)), `judge_stats ${j(judgeStats)}`);
+      check(passes.length === 1 && passes[0].id === T.p1 && passes[0].status === 'finished', `passes ${j(passes.map((p) => [p.id, p.status]))}`);
+      const heldExamples = ids(`SELECT example_id FROM ai_eval_run_items WHERE run_id = '${T.r1.id}' AND split = 'held_out'`);
+      check(items.every((item) => raw.text.includes(item.item_id)), 'control: the response does not list a dev item id');
+      for (const hidden of [...T.held1, ...heldExamples]) check(!raw.text.includes(hidden), `the items response names the held-out id ${hidden}`);
+      const passItem = (subject) => psql(`SELECT id FROM ai_judge_pass_items WHERE pass_id = '${T.p1}' AND subject_id = '${subject}'`);
+      const devCalls = await callsOf(`judge-${T.p1}-${passItem(items[0].item_id)}`);
+      check(devCalls.length === 1 && devCalls[0].purpose === 'judge' && devCalls[0].operation === 'judge' && devCalls[0].held_out === false && devCalls[0].content?.request, `dev judge call ${j(devCalls)}`);
+      const sent = devCalls[0].content.request;
+      check(j(Object.keys(sent.data).sort()) === j(['context', 'criteria', 'input', 'output', 'target_operation']) && sent.data.target_operation === op && sent.data.context === null
+        && j(sent.data.input) === j(items[0].input) && j(sent.data.output) === j(items[0].output) && j(sent.data.criteria.map((c) => c.code)) === j(['single_answer']), `request.data ${j(sent.data)}`);
+      const wire = JSON.stringify(sent);
+      check(wire.includes(items[0].input.word), 'control: the request does not hold the word it asks about');
+      for (const secret of [T.r1.id, T.p1, 'fake:ok']) check(!wire.includes(secret), `the judge request names ${secret}`);
+      const heldCalls = await callsOf(`judge-${T.p1}-${passItem(T.held1[0])}`);
+      check(heldCalls.length === 1 && heldCalls[0].purpose === 'judge' && heldCalls[0].held_out === true && heldCalls[0].content === null, `held-out judge call ${j(heldCalls)}`);
+      T.judgeCalls = judgeCalls();
+      check(T.judgeCalls === T.n1, `judge calls ${T.judgeCalls} vs ${T.n1} outputs`);
+      ok(`run ${T.r1.id} finished (${T.n1} outputs: ${items.length} dev, ${T.held1.length} held-out); pass ${T.p1} judged ${pass.judged}/${pass.total}; every dev item has single_answer pass; judge_stats dev ${j(judgeStats[0].dev)}, held-out ${j(judgeStats[0].held_out)} with no held-out id in the response; the dev call sends only [context, criteria, input, output, target_operation] and names no run, pass or model; the held-out call: held_out true, content null`);
+    });
+
+    await step('M3.4 B16: one queued or running pass per judge revision — a queued pass of the clone makes a start 409 judge-pass-running', async () => {
+      const clone = await getJudge(T.clone);
+      const queued = randomUUID();
+      const passesBefore = count('SELECT count(*) FROM ai_judge_passes');
+      psql(`INSERT INTO ai_judge_passes (id, judge_revision_id, kind, operation, eval_run_id, status, started_by)
+        VALUES ('${queued}', '${clone.latest.id}', 'eval_run', '${op}', '${T.r1.id}', 'queued', '${S.adminId}')`);
+      try {
+        await wantProblem(startPass(T.r1.id, T.clone), 409, 'judge-pass-running', 'a second pass of the clone revision');
+        check(count('SELECT count(*) FROM ai_judge_passes') === passesBefore + 1, 'the refused start inserted a pass');
+      } finally {
+        psql(`DELETE FROM ai_judge_passes WHERE id = '${queued}'`);
+      }
+      ok(`a queued pass of revision ${clone.latest.revision} of the clone → 409 judge-pass-running, nothing inserted; the row is deleted again`);
+    });
+
+    await step('M3.5 B15: a second pass of the same judge revision on the same run judges nothing (202, finished, total 0) and makes no judge call', async () => {
+      const calls = judgeCalls();
+      const again = await want(startPass(T.r1.id, T.J), 202, 'the same pass again');
+      check(again.status === 'finished' && again.total === 0 && again.judged === 0 && again.id !== T.p1 && again.eval_run_id === T.r1.id, `pass ${j(again)}`);
+      check(judgeCalls() === calls, `judge calls ${calls} → ${judgeCalls()}`);
+      ok(`pass ${again.id}: finished, total 0; judge calls stay at ${calls}`);
+    });
+
+    await step('M3.6 D15, D16, B17, R7: labels on two dev items (pass, fail_major) → 200; a held-out output → 409 example-held-out; a label can be taken back; agreement revision 2 = labeled 2, agree 1, not calibrated', async () => {
+      const { items } = await runItems(T.r1.id);
+      T.devItems = items.map((item) => item.item_id);
+      const first = await want(putLabel(T.devItems[0], 'pass'), 200, 'label pass');
+      check(first.verdict === 'pass' && first.criterion === 'single_answer' && first.subject_kind === 'eval_item' && first.subject_id === T.devItems[0] && first.labeled_by_user?.id === S.adminId && first.labeled_at, `label ${j(first)}`);
+      await want(putLabel(T.devItems[1], 'fail_major'), 200, 'label fail_major');
+      await wantProblem(putLabel(T.held1[0], 'pass'), 409, 'example-held-out', 'label a held-out output');
+      check(count(`SELECT count(*) FROM ai_labels WHERE subject_id = '${T.held1[0]}'`) === 0, 'a held-out output got a label');
+      await wantProblem(putLabel(randomUUID(), 'pass'), 404, 'not-found', 'label an unknown output');
+      await want(putLabel(T.devItems[2], 'fail_minor'), 200, 'a third label');
+      const back = await want(putLabel(T.devItems[2], null), 200, 'take the third label back');
+      check(back.verdict === null && back.labeled_by_user === null && back.labeled_at === null, `taken back ${j(back)}`);
+      const shown = (await runItems(T.r1.id)).items;
+      check(shown[0].labels.length === 1 && shown[0].labels[0].verdict === 'pass' && shown[1].labels.length === 1 && shown[1].labels[0].verdict === 'fail_major' && shown[2].labels.length === 0,
+        `labels on the items ${j(shown.slice(0, 3).map((item) => item.labels.map((l) => l.verdict)))}`);
+      const view = await agreementOf(T.J);
+      check(view.label_min === 30 && view.agreement_min === 0.85, `limits ${view.label_min} ${view.agreement_min}`);
+      const row = view.items.find((entry) => entry.revision === 2 && entry.criterion === 'single_answer');
+      check(j({ labeled: row.labeled, agree: row.agree, agree_exact: row.agree_exact, rate: row.rate, exact_rate: row.exact_rate, calibrated: row.calibrated })
+        === j({ labeled: 2, agree: 1, agree_exact: 1, rate: 0.5, exact_rate: 0.5, calibrated: false }), `agreement revision 2 ${j(row)}`);
+      const old = view.items.find((entry) => entry.revision === 1);
+      check(old.labeled === 0 && old.rate === null && old.calibrated === false, `agreement revision 1 ${j(old)}`);
+      ok('labels pass + fail_major kept, the held-out output → example-held-out, an unknown output → 404, a label put and taken back; agreement revision 2: labeled 2, agree 1 (rate 0.5), calibrated false (30 labels needed); revision 1: labeled 0');
+    });
+
+    await step('M3.7 B11, B16: a second live run R2 without a judge → compare R1 / R2 lists judge_unmatched; two judge passes started at once never judge an output twice; then the comparison holds one judge row', async () => {
+      T.r2 = await runAndWait({ operation: op, config: 'live', set_id: T.set.id });
+      check(T.r2.status === 'finished' && T.r2.complete === true && T.r2.set_id === T.set.id, `R2 ${j({ status: T.r2.status, complete: T.r2.complete })}`);
+      T.n2 = judgeable(T.r2.id);
+      T.held2 = ids(itemSql(T.r2.id, `split = 'held_out'`));
+      const compareUrl = `${ai}/eval/runs/compare?a=${T.r1.id}&b=${T.r2.id}`;
+      const unmatched = await want(asAdmin('GET', compareUrl), 200, 'compare R1 and R2');
+      check(j(unmatched.judge) === '[]' && unmatched.judge_unmatched.length === 1 && unmatched.judge_unmatched[0].revision === 2 && unmatched.judge_unmatched[0].scored === 'a'
+        && unmatched.judge_unmatched[0].judge_name === T.name, `unmatched ${j({ judge: unmatched.judge, judge_unmatched: unmatched.judge_unmatched })}`);
+      const calls = judgeCalls();
+      const both = await Promise.all([1, 2].map(() => startPass(T.r2.id, T.J)));
+      const accepted = both.filter((res) => res.status === 202).map((res) => res.json);
+      check(accepted.length >= 1 && both.every((res) => res.status === 202 || (res.status === 409 && String(res.json?.type).endsWith('judge-pass-running'))), `starts ${both.map((r) => `${r.status} ${r.json?.type ?? ''}`).join(' | ')}`);
+      const working = accepted.filter((pass) => pass.total > 0);
+      check(working.length === 1 && working[0].total === T.n2 && accepted.filter((pass) => pass.total === 0).length === accepted.length - 1, `accepted passes ${j(accepted.map((p) => [p.total, p.status]))}`);
+      T.p2 = working[0].id;
+      const pass = await passDone(T.p2);
+      check(pass.status === 'finished' && pass.judged === T.n2 && pass.total === T.n2, `pass ${j(pass)}`);
+      check(judgeCalls() === calls + T.n2, `judge calls ${calls} + ${T.n2} expected, found ${judgeCalls()}`);
+      const res = await asAdmin('GET', compareUrl);
+      check(res.status === 200, `compare ${res.status}`);
+      const compared = res.json;
+      const devN = T.n1 - T.held1.length;
+      check(compared.judge.length === 1 && j(compared.judge_unmatched) === '[]', `compare judge ${j(compared.judge)} unmatched ${j(compared.judge_unmatched)}`);
+      const row = compared.judge[0];
+      check(row.revision === 2 && row.criterion === 'single_answer' && j(row.a.dev) === j(tally(devN)) && j(row.b.dev) === j(tally(devN))
+        && j(row.a.held_out) === j(tally(T.held1.length)) && j(row.b.held_out) === j(tally(T.held2.length)), `judge row ${j(row)}`);
+      for (const hidden of [...T.held1, ...T.held2]) check(!res.text.includes(hidden), `the comparison names the held-out id ${hidden}`);
+      ok(`compare before the pass: judge [], judge_unmatched revision 2 scored a; two starts at once → ${both.map((r) => r.status).join(' + ')} (one working pass of ${T.n2}, judge calls ${calls} → ${calls + T.n2}); after it one judge row (dev ${j(row.a.dev)}, held-out as numbers only)`);
+    });
+
+    await step('M3.8 design §6.3 step 3: a fake:bad-form draft judged by J on the same set → the publish check warns judge-rate-drop (revision 2, single_answer, 0 passed); publish without acknowledging → 409 publish-warnings with it; the draft goes', async () => {
+      await createDraft(op);
+      await setDraftModel(op, 'fake:bad-form');
+      const created = await want(startRun({ operation: op, config: 'draft', set_id: T.set.id, judge_id: T.J }), 202, 'run the bad-form draft with a judge');
+      T.r3 = await runDone(created.run_id);
+      check(T.r3.status === 'finished' && T.r3.complete === true && T.r3.set_id === T.set.id, `R3 ${j({ status: T.r3.status, complete: T.r3.complete })}`);
+      const pass = await passDone(created.judge_pass_id);
+      T.n3 = judgeable(T.r3.id);
+      check(pass.status === 'finished' && pass.total === T.n3 && pass.judged === T.n3, `pass ${j(pass)}`);
+      const pc = await checkOf(op);
+      check(pc.candidate_run_id === T.r3.id && pc.baseline.run_id === T.r2.id, `candidate ${pc.candidate_run_id}, baseline ${pc.baseline.run_id}`);
+      const drop = pc.warnings.find((warning) => warning.code === 'judge-rate-drop');
+      check(drop && drop.revision === 2 && drop.criterion === 'single_answer' && drop.judge_name === T.name && j(drop.before) === j({ passed: T.n2, counted: T.n2 }) && j(drop.after) === j({ passed: 0, counted: T.n3 }),
+        `warnings ${j(pc.warnings.map((w) => [w.code, w.criterion ?? null]))}, judge drop ${j(drop)}`);
+      const refused = await wantProblem(publishDraft(op, publishBody(pc)), 409, 'publish-warnings', 'publish without acknowledging');
+      check(refused.warnings.some((warning) => warning.code === 'judge-rate-drop'), `the 409 lists ${j(refused.warnings.map((w) => w.code))}`);
+      await want(asAdmin('DELETE', `/v1/admin/ai/configs/${op}/draft`), 204, 'delete the draft');
+      check((await configsOf(op)).draft === null, 'the draft is still there');
+      ok(`R3 (bad-form, ${T.n3} outputs) judged; judge-rate-drop revision 2 single_answer ${j(drop.before)} → ${j(drop.after)}; all warnings: ${pc.warnings.map((w) => w.code).join(', ')}; publish without acknowledging → publish-warnings; draft deleted (R3 stays)`);
+    });
+
+    await step('M3.8b D15, B17: calibrated follows judge_label_min and judge_agreement_min — ten labels over R1 and R3, the judge agrees with all but one; 30 labels needed by default; 10 and 0.85 → calibrated; 10 and 0.95 → not', async () => {
+      const r1 = await runItems(T.r1.id);
+      const r3 = await runItems(T.r3.id);
+      const labeled = r1.items.length + r3.items.length;
+      check(labeled >= 10, `only ${labeled} labelable outputs; judge_label_min cannot go under 10`);
+      check(r3.items.every((item) => item.scores.some((score) => score.revision === 2 && score.verdict === 'fail_major' && score.reason === 'fake judge')), `R3 scores ${j(r3.items.map((i) => i.scores.map((s) => s.verdict)))}`);
+      for (const item of r1.items.slice(2)) await want(putLabel(item.item_id, 'pass'), 200, 'label R1 pass');
+      for (const item of r3.items) await want(putLabel(item.item_id, 'fail_major'), 200, 'label R3 fail_major');
+      const measure = async () => {
+        const view = await agreementOf(T.J);
+        return { view, row: view.items.find((entry) => entry.revision === 2 && entry.criterion === 'single_answer') };
+      };
+      const expected = { labeled, agree: labeled - 1, agree_exact: labeled - 1, rate: (labeled - 1) / labeled };
+      const at = (row) => ({ labeled: row.labeled, agree: row.agree, agree_exact: row.agree_exact, rate: row.rate });
+      let { view, row } = await measure();
+      check(j(at(row)) === j(expected) && row.calibrated === false && view.label_min === 30, `defaults ${j(row)}`);
+      try {
+        await setAi({ judge_label_min: 10 });
+        ({ view, row } = await measure());
+        check(j(at(row)) === j(expected) && row.calibrated === true && view.label_min === 10, `label_min 10 ${j(row)}`);
+        const stat = (await runItems(T.r1.id)).judge_stats.find((entry) => entry.revision === 2 && entry.criterion === 'single_answer');
+        check(stat.calibrated === true, `judge_stats ${j(stat)}`);
+        await setAi({ judge_agreement_min: 0.95 });
+        ({ view, row } = await measure());
+        check(row.calibrated === false && view.agreement_min === 0.95 && row.rate === expected.rate, `agreement_min 0.95 ${j(row)}`);
+        check((await runItems(T.r1.id)).judge_stats.find((entry) => entry.revision === 2).calibrated === false, 'judge_stats still calibrated at 0.95');
+      } finally {
+        await setAi({ judge_label_min: 30, judge_agreement_min: 0.85 });
+      }
+      ({ view, row } = await measure());
+      check(row.calibrated === false && view.label_min === 30 && view.agreement_min === 0.85, `restored ${j(row)}`);
+      ok(`${labeled} labels (R1 ${r1.items.length}, R3 ${r3.items.length}), agree ${expected.agree} (rate ${expected.rate}): 30 / 0.85 → calibrated false; 10 / 0.85 → true (also in judge_stats); 10 / 0.95 → false; limits back to 30 / 0.85`);
+    });
+
+    await step('M3.9 B21: the daily call cap counts learner calls only — cap = learner calls today + 1 although admin calls today are far more: one learner call succeeds, the next is unavailable / daily-call-cap; the cap goes back', async () => {
+      const before = await statusOf();
+      const learner = callsToday(`purpose = 'learner'`);
+      const admin = callsToday(`purpose IN ('test', 'eval', 'judge')`);
+      check(before.today.calls === learner && admin > learner && callsToday('true') === learner + admin, `status.today.calls ${before.today.calls}, learner calls ${learner}, admin calls ${admin}, all ${callsToday('true')}`);
+      await setAi({ daily_provider_calls_cap: learner + 1 });
+      try {
+        const first = learnerCall();
+        const second = learnerCall();
+        check(first.status === 'succeeded', `first learner call ${j(first)}`);
+        check(second.status === 'unavailable' && second.reason === 'daily-call-cap', `second learner call ${j(second)}`);
+      } finally {
+        await setAi({ daily_provider_calls_cap: T.dailyCap });
+      }
+      const after = await statusOf();
+      check(after.today.calls === learner + 1 && after.today.cap === T.dailyCap, `status after ${j(after.today)}`);
+      ok(`learner calls ${learner}, admin calls ${admin} (status.today.calls = ${before.today.calls}); cap ${learner + 1}: one succeeded, the next unavailable / daily-call-cap; cap back to ${T.dailyCap}, calls ${after.today.calls}`);
+    });
+
+    await step('M3.10 E15, B19, B20: fake:not-recognized priced 1000/1000 → the clone judged with it stops at the cap (failed / admin-usd-cap, 1..3 of N judged), R1 stays finished and complete; a new run and a draft test → 409 admin-usd-cap', async () => {
+      const priced = await want(asAdmin('POST', `${ai}/models`, { body: { provider: 'fake', model_id: 'fake:not-recognized', price_input: 1000, price_output: 1000 } }), 201, 'add fake:not-recognized');
+      check(priced.price?.input === '1000.0000' && priced.price?.output === '1000.0000', `price ${j(priced.price)}`);
+      S.models.set('fake:not-recognized', priced);
+      const saved = await saveJudge(await getJudge(T.clone), { model_ref: priced.id });
+      check(saved.latest.revision === 3 && saved.latest.model?.model_id === 'fake:not-recognized', `clone ${j({ revision: saved.latest.revision, model: saved.latest.model })}`);
+      const cap = await capAboveSpent();
+      await setAi({ admin_daily_usd_cap: cap });
+      const callsBefore = judgeCalls();
+      const started = await want(startPass(T.r1.id, T.clone), 202, 'pass of the priced clone');
+      const pass = await passDone(started.id);
+      check(started.total === T.n1 && pass.status === 'failed' && pass.error === 'admin-usd-cap' && pass.judged >= 1 && pass.judged <= 3 && pass.judged < pass.total, `pass ${j(pass)}`);
+      check(judgeCalls() === callsBefore + pass.judged && pass.cost_usd === (pass.judged * 0.15).toFixed(8), `calls ${callsBefore} → ${judgeCalls()}, cost ${pass.cost_usd} for ${pass.judged} judged`);
+      const r1 = await want(asAdmin('GET', `${ai}/eval/runs/${T.r1.id}`), 200, 'GET R1');
+      check(r1.status === 'finished' && r1.complete === true && r1.error === null, `R1 ${j({ status: r1.status, complete: r1.complete, error: r1.error })}`);
+      const runsBefore = count('SELECT count(*) FROM ai_eval_runs');
+      await wantProblem(startRun({ operation: op, config: 'live', set_id: T.set.id }), 409, 'admin-usd-cap', 'a run at the cap');
+      check(count('SELECT count(*) FROM ai_eval_runs') === runsBefore, 'a run refused at the cap was stored');
+      await createDraft(op);
+      await wantProblem(asAdmin('POST', `/v1/admin/ai/configs/${op}/draft/test`, { body: {} }), 409, 'admin-usd-cap', 'a draft test at the cap');
+      ok(`cap ${cap} USD (today's admin spend rounded up to the cent, plus 0.10): the clone's pass on R1 ended failed / admin-usd-cap after ${pass.judged} of ${pass.total} (cost ${pass.cost_usd}); R1 still finished and complete; POST runs and draft/test → 409 admin-usd-cap; a new draft is kept for M3.12`);
+    });
+
+    await step('M3.11 B18, E15: with no cap and fake:ok priced 1000/1000 a live run costs 0.15 a call and finishes; with the cap at spent + 0.10 the next run stops (failed / admin-usd-cap, complete false, 1..3 of N done)', async () => {
+      await setAi({ admin_daily_usd_cap: null });
+      const okModel = S.models.get('fake:ok');
+      await want(asAdmin('PATCH', `${ai}/models/${okModel.id}`, { body: { price_input: 1000, price_output: 1000 } }), 200, 'price fake:ok');
+      try {
+        const free = await runAndWait({ operation: op, config: 'live', set_id: T.set.id });
+        check(free.status === 'finished' && free.complete === true && free.cost_usd === (free.total * 0.15).toFixed(8) && free.cost_unknown_count === 0, `uncapped run ${j({ status: free.status, total: free.total, cost_usd: free.cost_usd })}`);
+        const cap = await capAboveSpent();
+        await setAi({ admin_daily_usd_cap: cap });
+        const stopped = await runAndWait({ operation: op, config: 'live', set_id: T.set.id });
+        check(stopped.status === 'failed' && stopped.error === 'admin-usd-cap' && stopped.complete === false && stopped.done >= 1 && stopped.done <= 3 && stopped.done < stopped.total,
+          `capped run ${j({ status: stopped.status, error: stopped.error, complete: stopped.complete, done: stopped.done, total: stopped.total })}`);
+        ok(`no cap: run ${free.id} finished, cost ${free.cost_usd} (${free.total} calls × 0.15); cap ${cap}: run ${stopped.id} failed / admin-usd-cap with ${stopped.done} of ${stopped.total} done, not complete`);
+      } finally {
+        await want(asAdmin('PATCH', `${ai}/models/${okModel.id}`, { body: { price_input: 0, price_output: 0 } }), 200, 'price fake:ok back to 0');
+      }
+    });
+
+    await step('M3.12 B22, E14: with the cap at 0 an unpriced model is still refused first — pass, draft test and run on fake:refuse (no input price) → 409 model-price-missing; a priced model at cap 0 → admin-usd-cap; cap back to null', async () => {
+      await setAi({ admin_daily_usd_cap: 0 });
+      try {
+        const refuse = await addModel('fake:refuse');
+        const unpriced = await want(asAdmin('PATCH', `${ai}/models/${refuse.id}`, { body: { price_input: null } }), 200, 'clear the input price of fake:refuse');
+        check(unpriced.price === null, `price ${j(unpriced.price)}`);
+        await saveJudge(await getJudge(T.clone), { model_ref: refuse.id });
+        const callsBefore = judgeCalls();
+        await wantProblem(startPass(T.r1.id, T.clone), 409, 'model-price-missing', 'a pass with an unpriced judge model');
+        check(judgeCalls() === callsBefore, 'a refused pass made a judge call');
+        const { draft } = await configsOf(op);
+        check(draft, 'the draft of M3.10 is gone');
+        const withRefuse = await saveDraft(op, draft, { model_ref: refuse.id });
+        await wantProblem(asAdmin('POST', `/v1/admin/ai/configs/${op}/draft/test`, { body: {} }), 409, 'model-price-missing', 'a draft test on an unpriced model');
+        const runsBefore = count('SELECT count(*) FROM ai_eval_runs');
+        await wantProblem(startRun({ operation: op, config: 'draft', set_id: T.set.id }), 409, 'model-price-missing', 'a run of an unpriced draft');
+        check(count('SELECT count(*) FROM ai_eval_runs') === runsBefore, 'a refused run was stored');
+        const priced = await saveDraft(op, withRefuse, { model_ref: S.models.get('fake:ok').id });
+        await wantProblem(asAdmin('POST', `/v1/admin/ai/configs/${op}/draft/test`, { body: {} }), 409, 'admin-usd-cap', 'a draft test on a priced model at cap 0');
+        check(priced.model?.model_id === 'fake:ok', `draft model ${j(priced.model)}`);
+      } finally {
+        await setAi({ admin_daily_usd_cap: null });
+      }
+      await want(asAdmin('DELETE', `/v1/admin/ai/configs/${op}/draft`), 204, 'delete the draft');
+      ok('cap 0: pass, draft test and run with fake:refuse (price_input null) → model-price-missing and nothing stored or called; the same draft on fake:ok (price 0) → admin-usd-cap; cap null again; draft deleted');
+    });
+
+    await step('M3.13 B34: a model named by any revision of a judge cannot be deleted (409 model-in-use) — fake:not-recognized only by an older clone revision, fake:refuse by the newest; an unused model goes (204)', async () => {
+      const models = (await want(asAdmin('GET', `${ai}/models?provider=fake`), 200, 'list models')).items;
+      const idOf = (modelId) => models.find((row) => row.model_id === modelId)?.id;
+      const clone = await getJudge(T.clone);
+      check(clone.latest.revision === 4 && clone.latest.model?.model_id === 'fake:refuse', `clone ${j({ revision: clone.latest.revision, model: clone.latest.model })}`);
+      for (const modelId of ['fake:not-recognized', 'fake:refuse']) {
+        check(idOf(modelId), `model ${modelId} is not listed`);
+        await wantProblem(asAdmin('DELETE', `${ai}/models/${idOf(modelId)}`), 409, 'model-in-use', `delete ${modelId}`);
+      }
+      const spare = await want(asAdmin('POST', `${ai}/models`, { body: { provider: 'fake', model_id: 'fake:truncated' } }), 201, 'add fake:truncated');
+      await want(asAdmin('DELETE', `${ai}/models/${spare.id}`), 204, 'delete an unused model (control)');
+      ok('fake:not-recognized (clone revision 3) and fake:refuse (clone revision 4) → model-in-use; an unused fake:truncated deleted (204)');
+    });
+
+    await step('M3.14 D16, B3: deleting a labelled run hides it (204; 404 everywhere, off the list; labels, scores and agreement stay); deleting an unlabelled run removes its items, passes and scores', async () => {
+      const agreementBefore = await agreementOf(T.J);
+      const itemIds = ids(itemSql(T.r1.id));
+      const itemList = itemIds.map((id) => `'${id}'`).join(',');
+      const labelsBefore = count(`SELECT count(*) FROM ai_labels WHERE subject_id IN (${itemList})`);
+      const scoresBefore = count(`SELECT count(*) FROM ai_judge_scores WHERE subject_id IN (${itemList})`);
+      check(labelsBefore >= 5 && scoresBefore >= itemIds.length, `labels ${labelsBefore}, scores ${scoresBefore} on ${itemIds.length} items`);
+      await want(asAdmin('DELETE', `${ai}/eval/runs/${T.r1.id}`), 204, 'delete the labelled run');
+      for (const path of [`${ai}/eval/runs/${T.r1.id}`, `${ai}/eval/runs/${T.r1.id}/items`, `${ai}/eval/runs/compare?a=${T.r1.id}&b=${T.r3.id}`]) {
+        await wantProblem(asAdmin('GET', path), 404, 'not-found', `GET ${path}`);
+      }
+      await wantProblem(startPass(T.r1.id, T.J), 404, 'not-found', 'a pass on the hidden run');
+      await wantProblem(putLabel(itemIds[0], 'pass'), 404, 'not-found', 'a label on a hidden item');
+      const listed = (await want(asAdmin('GET', `${ai}/eval/runs?operation=${op}&page_size=100`), 200, 'list runs')).items.map((row) => row.id);
+      check(!listed.includes(T.r1.id) && listed.includes(T.r2.id) && listed.includes(T.r3.id), `listed runs ${j(listed)}`);
+      check(psql(`SELECT (hidden_at IS NOT NULL)::text FROM ai_eval_runs WHERE id = '${T.r1.id}'`) === 'true'
+        && count(`SELECT count(*) FROM ai_eval_run_items WHERE run_id = '${T.r1.id}' AND hidden`) === itemIds.length, 'the run or its items are not hidden');
+      check(count(`SELECT count(*) FROM ai_labels WHERE subject_id IN (${itemList})`) === labelsBefore && count(`SELECT count(*) FROM ai_judge_scores WHERE subject_id IN (${itemList})`) === scoresBefore, 'labels or scores changed');
+      check(j((await agreementOf(T.J)).items) === j(agreementBefore.items), 'the agreement changed after hiding the run');
+      const r2Items = ids(itemSql(T.r2.id));
+      const r2List = r2Items.map((id) => `'${id}'`).join(',');
+      check(r2Items.length === T.n2 && count(`SELECT count(*) FROM ai_judge_scores WHERE subject_id IN (${r2List})`) === T.n2 && count(`SELECT count(*) FROM ai_judge_passes WHERE eval_run_id = '${T.r2.id}'`) >= 1
+        && count(`SELECT count(*) FROM ai_labels WHERE subject_id IN (${r2List})`) === 0, 'R2 is not an unlabelled, judged run');
+      await want(asAdmin('DELETE', `${ai}/eval/runs/${T.r2.id}`), 204, 'delete the unlabelled run');
+      check(count(`SELECT count(*) FROM ai_eval_runs WHERE id = '${T.r2.id}'`) === 0 && count(`SELECT count(*) FROM ai_eval_run_items WHERE run_id = '${T.r2.id}'`) === 0
+        && count(`SELECT count(*) FROM ai_judge_passes WHERE eval_run_id = '${T.r2.id}'`) === 0 && count(`SELECT count(*) FROM ai_judge_scores WHERE subject_id IN (${r2List})`) === 0, 'something of R2 is left');
+      await wantProblem(asAdmin('GET', `${ai}/eval/runs/${T.r2.id}`), 404, 'not-found', 'GET the deleted run');
+      ok(`R1 (${labelsBefore} labels, ${scoresBefore} scores): 204, 404 on the run, its items, a comparison, a new pass and a new label, off the list; labels, scores and the agreement unchanged; R2 (${T.n2} scores, no label): 204 and no run, item, pass or score left`);
+    });
+
+    await step('M3.15 GET status: today.admin_usd_cap null (the part leaves the cap off), admin_cost_usd = what test, eval and judge calls cost today, calls = learner calls, cap = the learner cap', async () => {
+      const status = await statusOf();
+      const adminSpent = Number(psql(`SELECT coalesce(sum(cost_usd), 0) FROM ai_calls WHERE created_at >= ${vnDayStart} AND purpose IN ('test', 'eval', 'judge')`));
+      const learner = callsToday(`purpose = 'learner'`);
+      check(status.today.admin_usd_cap === null && Number(status.today.admin_cost_usd) > 0 && Math.abs(Number(status.today.admin_cost_usd) - adminSpent) < 1e-6, `admin ${j({ cap: status.today.admin_usd_cap, cost: status.today.admin_cost_usd })}, ledger ${adminSpent}`);
+      check(status.today.calls === learner && status.today.cap === T.dailyCap && Number(status.today.cost_usd) >= Number(status.today.admin_cost_usd), `today ${j(status.today)}, learner calls ${learner}`);
+      ok(`admin_usd_cap null, admin_cost_usd ${status.today.admin_cost_usd} (ledger ${adminSpent}), calls ${status.today.calls} = learner calls, cap ${status.today.cap}`);
+    });
+  } finally {
+    S.admin = outer.admin;
+    S.adminId = outer.adminId;
+  }
+}
+
 async function main() {
   const started = Date.now();
   await setup();
   await partM1();
   await partM2();
+  await partM3();
 
   const seconds = Math.round((Date.now() - started) / 1000);
   if (failures.length > 0) {
