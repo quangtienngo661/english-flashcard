@@ -1,10 +1,10 @@
-import type { AiOperation, AiProviderName } from '../ai.types.js';
+import type { AiProviderName, GatewayOperation } from '../ai.types.js';
 import type { Price } from './cost.js';
 import { resolveMaxOutputTokens } from './run-rules.js';
 
 /** What one run uses (design §6.3), resolved from an operation's config and its model. */
 export type Selection = {
-  operation: AiOperation;
+  operation: GatewayOperation;
   /** Null for a selection rebuilt from an eval run row. */
   modelRef: string | null;
   provider: AiProviderName;
@@ -34,7 +34,7 @@ type SettingRow = { effort: string | null; thinking: string | null; maxOutputTok
 const toNumber = (value: DecimalLike | null): number | null => (value === null ? null : Number(value.toString()));
 
 /** `'off'` becomes the model's own way of turning thinking off; a price needs both the input and the output price. */
-export function toSelection(operation: AiOperation, setting: SettingRow, model: ModelRow): Selection {
+export function toSelection(operation: GatewayOperation, setting: SettingRow, model: ModelRow): Selection {
   const provider = model.provider as AiProviderName;
   const input = toNumber(model.priceInput);
   const output = toNumber(model.priceOutput);

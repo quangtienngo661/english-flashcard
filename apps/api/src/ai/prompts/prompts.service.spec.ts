@@ -114,7 +114,7 @@ function setup(input: Setup = {}) {
       executed.push(run);
       return input.report?.(run) ?? {
         result: { status: 'succeeded', operation_id: 'test', result: OUTPUT, meta: {} as never },
-        calls: [{ attempt: 1, outcome: 'succeeded', latency_ms: 120, cost_usd: '0.00003500', http_status: null }],
+        calls: [{ attempt: 1, outcome: 'succeeded', latency_ms: 120, cost_usd: '0.00003500', http_status: null, call_id: 'C1' }],
         rawOutput: JSON.stringify(OUTPUT),
       } satisfies RunReport;
     }),
@@ -228,7 +228,7 @@ describe('PromptsService.test', () => {
     expect(result.items[0]).toEqual({
       input: { ...INPUT, word: 'e1' }, status: 'succeeded', reason: null, output: OUTPUT, raw_output: JSON.stringify(OUTPUT),
       latency_ms: 120, cost_usd: '0.00003500',
-      calls: [{ attempt: 1, outcome: 'succeeded', latency_ms: 120, cost_usd: '0.00003500', http_status: null }],
+      calls: [{ attempt: 1, outcome: 'succeeded', latency_ms: 120, cost_usd: '0.00003500', http_status: null, call_id: 'C1' }],
     });
     expect(rows().prompts).toEqual(before);
     for (const run of executed) {
@@ -273,7 +273,7 @@ describe('PromptsService.test', () => {
       examples: [eval_('e1', 1)],
       report: () => ({
         result: { status: 'transient_failure', operation_id: 'test', reason: 'truncated' },
-        calls: [{ attempt: 1, outcome: 'truncated', latency_ms: 900, cost_usd: '0.00060000', http_status: null }],
+        calls: [{ attempt: 1, outcome: 'truncated', latency_ms: 900, cost_usd: '0.00060000', http_status: null, call_id: 'C1' }],
         rawOutput: '{"sentence":"Can',
       }),
     });
@@ -286,13 +286,13 @@ describe('PromptsService.test', () => {
       {
         result: { status: 'succeeded', operation_id: 't', result: OUTPUT, meta: {} as never }, rawOutput: '{}',
         calls: [
-          { attempt: 1, outcome: 'provider-error', latency_ms: 300, cost_usd: '0.00001000', http_status: 503 },
-          { attempt: 2, outcome: 'succeeded', latency_ms: 700, cost_usd: '0.00003500', http_status: null },
+          { attempt: 1, outcome: 'provider-error', latency_ms: 300, cost_usd: '0.00001000', http_status: 503, call_id: 'C1' },
+          { attempt: 2, outcome: 'succeeded', latency_ms: 700, cost_usd: '0.00003500', http_status: null, call_id: 'C1' },
         ],
       },
       {
         result: { status: 'transient_failure', operation_id: 't', reason: 'timeout' }, rawOutput: null,
-        calls: [{ attempt: 1, outcome: 'timeout', latency_ms: 10_000, cost_usd: null, http_status: null }],
+        calls: [{ attempt: 1, outcome: 'timeout', latency_ms: 10_000, cost_usd: null, http_status: null, call_id: 'C1' }],
       },
     ];
     let index = 0;

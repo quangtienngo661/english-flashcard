@@ -747,8 +747,73 @@ describe('RunnerService.execute — test and eval', () => {
     const report = await runner.execute(adminTest({ purpose: 'eval', selection: { ...selectionOf('fake', 'fake:503-then-ok'), modelRef: null } }));
     expect(adapter.requests[0].model).toBe('fake:503-then-ok');
     expect(report.calls.map((call) => [call.attempt, call.outcome])).toEqual([[1, 'provider-error'], [2, 'succeeded']]);
-    expect(report.calls[0]).toEqual({ attempt: 1, outcome: 'provider-error', latency_ms: expect.any(Number), cost_usd: null, http_status: 503 });
+    expect(report.calls[0]).toEqual({
+      attempt: 1, outcome: 'provider-error', latency_ms: expect.any(Number), cost_usd: null, http_status: 503, call_id: 'call-1',
+    });
     expect(report.calls[1].cost_usd).toBe('0.00003500');
+  });
+});
+
+describe('RunnerService.execute — judge (nhóm B M3, design §5.4)', () => {
+  const JUDGE_ANSWER = JSON.stringify({ codes: ['single_answer'], verdicts: ['pass'], reasons: ['only borrow fits'] });
+  const JUDGE_DATA = {
+    target_operation: 'generate_cloze',
+    input: DATA,
+    output: { sentence: 'Can I ___ your pen?', accepted_answers: ['borrow'], translation_vi: 'Mình mượn bút nhé?' },
+    criteria: [{ code: 'single_answer', question: 'Is the given word the only answer?' }],
+    context: null,
+  };
+  const judgeSelection = (): Selection => ({ ...selectionOf('fake'), operation: 'judge' });
+  const judgeRun = (overrides: Partial<Extract<ExecuteInput, { purpose: 'judge' }>> = {}): ExecuteInput => ({
+    purpose: 'judge', operation: 'judge', data: JUDGE_DATA, actorId: ADMIN, callOperationId: 'judge-P-I', selection: judgeSelection(),
+    prompt: { instructions: 'J', examples: [], revision: 2 }, ...overrides,
+  });
+
+  it('runs on the selection and prompt it brings: the ledger and the adapter see the judge, the live config is never read', async () => {
+    const { runner, records, adapter, liveLoads, readinessChecks, operations } = setup({ steps: [() => ok(JUDGE_ANSWER)] });
+    const report = await runner.execute(judgeRun());
+    expect(report.result).toEqual({
+      status: 'succeeded', operation_id: 'judge-P-I',
+      result: { codes: ['single_answer'], verdicts: ['pass'], reasons: ['only borrow fits'] },
+      meta: { operation: 'judge', provider: 'fake', model: 'fake:ok', effort: 'low', prompt_revision: 2, schema_version: 1, replayed: false },
+    });
+    expect(records[0]!.call).toMatchObject({
+      purpose: 'judge', operation: 'judge', operationId: 'judge-P-I', aiOperationId: null, userId: ADMIN, promptRevision: 2,
+    });
+    expect(adapter.requests[0]!.schema.name).toBe('judge_v1');
+    expect(adapter.requests[0]!.data).toEqual(JUDGE_DATA);
+    expect(adapter.requests[0]!.instructions).toContain('J');
+    expect(liveLoads).toEqual([]);
+    expect(readinessChecks).toEqual([]);
+    expect(operations.calls).toEqual([]);
+  });
+
+  it('call_id of the call summary is the id the ledger returned', async () => {
+    const { runner } = setup({ steps: [() => fail('server', 503), () => ok(JUDGE_ANSWER)] });
+    const report = await runner.execute(judgeRun());
+    expect(report.calls.map((call) => [call.attempt, call.call_id])).toEqual([[1, 'call-1'], [2, 'call-2']]);
+  });
+
+  it('criteria [] → permanent_failure bad-input, the adapter is not called and nothing is recorded', async () => {
+    const { runner, adapter, records } = setup();
+    const report = await runner.execute(judgeRun({ data: { ...JUDGE_DATA, criteria: [] } }));
+    expect(report.result).toEqual({ status: 'permanent_failure', operation_id: 'judge-P-I', reason: 'bad-input' });
+    expect(adapter.requests).toHaveLength(0);
+    expect(records).toHaveLength(0);
+  });
+
+  it('an answer outside the judge shape is an invalid-shape failure recorded on the judge operation', async () => {
+    const { runner, records } = setup({ steps: [() => ok(GOOD)] });
+    const report = await runner.execute(judgeRun());
+    expect(report.result).toEqual({ status: 'transient_failure', operation_id: 'judge-P-I', reason: 'invalid-shape' });
+    expect(records.map((entry) => [entry.call.operation, entry.call.outcome])).toEqual([['judge', 'invalid-shape']]);
+  });
+
+  it('a provider that is not registered → provider-not-configured', async () => {
+    const { runner, adapter } = setup({ registered: ['fake'] });
+    const report = await runner.execute(judgeRun({ selection: { ...judgeSelection(), provider: 'anthropic', modelId: 'claude-x' } }));
+    expect(report.result).toEqual({ status: 'unavailable', operation_id: 'judge-P-I', reason: 'provider-not-configured' });
+    expect(adapter.requests).toHaveLength(0);
   });
 });
 

@@ -85,7 +85,7 @@ function setup(init: { lastNumber?: number } = {}) {
   const rules = new EvalRulesRegistry();
   const report: RunReport = {
     result: { status: 'succeeded', operation_id: 't', result: EXAMPLE.output, meta: {} as never },
-    calls: [{ attempt: 1, outcome: 'succeeded', latency_ms: 100, cost_usd: '0.00010000', http_status: null }], rawOutput: '{}',
+    calls: [{ attempt: 1, outcome: 'succeeded', latency_ms: 100, cost_usd: '0.00010000', http_status: null, call_id: 'C1' }], rawOutput: '{}',
   };
   const runner = { execute: vi.fn(async (_input: unknown) => report) };
   const limiter = { hit: vi.fn(async (): Promise<void> => undefined) };

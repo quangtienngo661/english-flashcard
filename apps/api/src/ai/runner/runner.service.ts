@@ -7,9 +7,9 @@ import { SettingsService } from '../../settings/index.js';
 import type { AdapterOutcome, AdapterRequest } from '../adapters/ai-adapter.js';
 import { AiAdapterRegistry } from '../adapters/ai-adapter.registry.js';
 import { AI_SCHEMA_VERSION, MIN_RETRY_BUDGET_MS, RESULT_TTL_MS } from '../ai.constants.js';
-import type { AiMeta, AiOperation, AiResult, CallOutcome } from '../ai.types.js';
+import type { AiMeta, AiOperation, AiPurpose, AiResult, CallOutcome, GatewayOperation } from '../ai.types.js';
 import { LiveConfigReader } from '../configs/live-config.reader.js';
-import { OPERATIONS, parseOutput, type OutputCheck } from '../operations/operations.js';
+import { GATEWAY_DEFINITIONS, OPERATIONS, parseOutput, type OutputCheck } from '../operations/operations.js';
 import { assembleInstructions, type PromptExample } from '../prompts/prompt-rules.js';
 import { CallLedger } from './call-ledger.service.js';
 import { CallQueue, ConcurrencyLimit } from './call-queue.js';
@@ -32,10 +32,22 @@ export type ExecuteInput =
       callOperationId: string;
       selection?: Selection;
       prompt?: Prompt;
+    }
+  // A judge has no live config: its revision brings both (nhóm B M3, E3).
+  | {
+      purpose: 'judge';
+      operation: 'judge';
+      data: unknown;
+      actorId: string;
+      callOperationId: string;
+      selection: Selection;
+      prompt: Prompt;
     };
 
 export type CallSummary = {
   attempt: 1 | 2; outcome: CallOutcome; latency_ms: number; cost_usd: string | null; http_status: number | null;
+  /** The `ai_calls` row of this attempt, so a judge score can name its call. */
+  call_id: string;
 };
 
 export type RunReport = { result: AiResult; calls: CallSummary[]; rawOutput: string | null };
@@ -47,11 +59,11 @@ type Calls =
   | { kind: 'answered'; outcome: AdapterOutcome; check: OutputCheck | null };
 
 type CallContext = {
-  operation: AiOperation;
+  operation: GatewayOperation;
   data: unknown;
   selection: Selection;
   prompt: Prompt;
-  purpose: 'learner' | 'test' | 'eval';
+  purpose: AiPurpose;
   callOperationId: string;
   aiOperationId: string | null;
   userId: string;
@@ -175,17 +187,17 @@ export class RunnerService {
     return { result, calls: summaries, rawOutput };
   }
 
-  private async admin(input: Extract<ExecuteInput, { purpose: 'test' | 'eval' }>): Promise<RunReport> {
+  private async admin(input: Extract<ExecuteInput, { purpose: 'test' | 'eval' | 'judge' }>): Promise<RunReport> {
     const { operation, data, callOperationId } = input;
     const only = (result: AiResult): RunReport => ({ result, calls: [], rawOutput: null });
-    if (!OPERATIONS[operation].validateInput(data).ok) {
+    if (!GATEWAY_DEFINITIONS[operation].validateInput(data).ok) {
       return only({ status: 'permanent_failure', operation_id: callOperationId, reason: 'bad-input' });
     }
     const { ai } = await this.settings.get();
     this.limit.value = ai.maxConcurrentCalls;
     const deadline = performance.now() + ai.callTimeoutSeconds * 1000;
     // The live config is read once, and only for what the caller did not bring (a config run brings both).
-    const live = input.selection && input.prompt ? null : await this.liveConfigs.load(operation);
+    const live = input.purpose === 'judge' || (input.selection && input.prompt) ? null : await this.liveConfigs.load(input.operation);
     const selection = input.selection ?? live?.selection ?? null;
     if (!selection) return only({ status: 'unavailable', operation_id: callOperationId, reason: 'model-not-set' });
     if (!this.registry.get(selection.provider)) {
@@ -210,7 +222,7 @@ export class RunnerService {
       if (context.deadline - performance.now() < MIN_RETRY_BUDGET_MS) return { kind: 'busy' };
       const { selection, prompt, operation } = context;
       const instructions = assembleInstructions(prompt.instructions, prompt.examples);
-      const schema = OPERATIONS[operation].outputSchema;
+      const schema = GATEWAY_DEFINITIONS[operation].outputSchema;
       for (const attempt of [1, 2] as const) {
         const leftMs = Math.floor(context.deadline - performance.now());
         if (leftMs < 1) return { kind: 'out-of-time' };
@@ -226,7 +238,7 @@ export class RunnerService {
         onText(text);
         const usage = outcome.kind === 'error' ? null : outcome.usage;
         const recorded = callOutcome(outcome, check === null || check.ok ? 'ok' : 'invalid');
-        await this.ledger.record({
+        const callId = await this.ledger.record({
           operationId: context.callOperationId, aiOperationId: context.aiOperationId, attempt, purpose: context.purpose, operation,
           provider: selection.provider, model: selection.modelId, effort: selection.effort, thinking: selection.thinking,
           maxOutputTokens: selection.maxOutputTokens, promptRevision: prompt.revision, outcome: recorded,
@@ -242,7 +254,7 @@ export class RunnerService {
         }, context.retentionDays, this.clock.now());
         summaries.push({
           attempt, outcome: recorded, latency_ms: latencyMs, cost_usd: callCost(usage, selection.price).costUsd,
-          http_status: outcome.kind === 'error' ? outcome.httpStatus : null,
+          http_status: outcome.kind === 'error' ? outcome.httpStatus : null, call_id: callId,
         });
         if (outcome.kind === 'error' && outcome.error === 'provider_quota') {
           this.logger.warn('ai_provider_quota', { provider: selection.provider, model: selection.modelId });

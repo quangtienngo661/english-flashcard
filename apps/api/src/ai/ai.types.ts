@@ -5,10 +5,14 @@ export const AI_OPERATIONS = [
 ] as const;
 export type AiOperation = (typeof AI_OPERATIONS)[number];
 
+/** What the gateway can run: the six learner-facing operations and the judge (nhóm B M3, E3). `AiOperation` stays the six. */
+export const GATEWAY_OPERATIONS = [...AI_OPERATIONS, 'judge'] as const;
+export type GatewayOperation = (typeof GATEWAY_OPERATIONS)[number];
+
 export const AI_PROVIDERS = ['openai', 'anthropic', 'fake'] as const;
 export type AiProviderName = (typeof AI_PROVIDERS)[number];
 
-export type AiPurpose = 'learner' | 'test' | 'eval';
+export type AiPurpose = 'learner' | 'test' | 'eval' | 'judge';
 
 export type TransientReason = 'timeout' | 'connection' | 'rate-limited' | 'provider-error' | 'invalid-shape' | 'truncated' | 'busy';
 export type PermanentReason = 'refused' | 'bad-input' | 'model-rejected' | 'auth-failed' | 'input-mismatch';
@@ -20,7 +24,7 @@ export type CallOutcome =
   | 'refused' | 'model-rejected' | 'auth-failed' | 'provider-quota';
 
 export type AiMeta = {
-  operation: AiOperation;
+  operation: GatewayOperation;
   provider: AiProviderName;
   model: string;
   effort: string | null;

@@ -11,6 +11,9 @@ const FAKE_USAGE: Usage = { inputTokens: 100, cachedInputTokens: 0, outputTokens
 
 type Data = Record<string, unknown>;
 
+const judgeCodes = (data: Data): string[] =>
+  (Array.isArray(data.criteria) ? (data.criteria as Array<{ code: unknown }>) : []).map((criterion) => String(criterion.code));
+
 /** A valid answer for the operation whose output schema is `<operation>_v1`, built from `data`. */
 function okValue(schemaName: string, data: Data): Record<string, unknown> {
   switch (schemaName) {
@@ -35,6 +38,13 @@ function okValue(schemaName: string, data: Data): Record<string, unknown> {
       };
     case 'check_private_word_v1':
       return { verdict: 'ok' };
+    case 'judge_v1': {
+      // E13: the fake judge fails an output whose answers end in `ment` (the mark of `fake:bad-form`), else passes it.
+      const answers = (data.output as Data | undefined)?.accepted_answers;
+      const marked = Array.isArray(answers) && answers.some((answer) => typeof answer === 'string' && answer.endsWith('ment'));
+      const codes = judgeCodes(data);
+      return { codes, verdicts: codes.map(() => (marked ? 'fail_major' : 'pass')), reasons: codes.map(() => 'fake judge') };
+    }
     default:
       return {};
   }
@@ -53,6 +63,11 @@ function badFormValue(schemaName: string, data: Data): Record<string, unknown> {
       return { ...value, distractors: [...(value.distractors as string[]).slice(0, 2), 'outsider'] };
     case 'generate_meaning_question_v1':
       return { ...value, word_in_sentence: `${String(data.word)}zz` };
+    case 'judge_v1': {
+      // The failing judge M4 needs: every criterion fails whatever the output.
+      const codes = judgeCodes(data);
+      return { codes, verdicts: codes.map(() => 'fail_major'), reasons: codes.map(() => 'fake: another word fits') };
+    }
     default:
       return value;
   }

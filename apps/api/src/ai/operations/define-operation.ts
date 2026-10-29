@@ -1,5 +1,5 @@
 import type { z } from 'zod';
-import type { AiOperation } from '../ai.types.js';
+import type { GatewayOperation } from '../ai.types.js';
 import { STRING, STRING_LIST, toViolations } from './text-rules.js';
 
 export type OutputProblem =
@@ -8,7 +8,7 @@ export type OutputProblem =
 export type OutputCheck = { ok: true; value: Record<string, unknown> } | { ok: false; problem: OutputProblem };
 
 export type OperationDefinition = {
-  name: AiOperation;
+  name: GatewayOperation;
   inputFields: readonly string[];
   validateInput(data: unknown): { ok: true } | { ok: false; violations: string[] };
   outputSchema: { name: string; schema: Record<string, unknown> };
@@ -18,7 +18,7 @@ export type OperationDefinition = {
 
 /** What each operation file declares; `define` adds the shared steps of §5.4. */
 export type OperationSpec = {
-  name: AiOperation;
+  name: GatewayOperation;
   input: z.ZodObject;
   /** Output fields: a string or a list of strings; the schema may narrow a string to an enum. */
   output: Record<string, typeof STRING | typeof STRING_LIST>;

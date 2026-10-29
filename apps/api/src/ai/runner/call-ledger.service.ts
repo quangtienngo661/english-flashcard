@@ -6,7 +6,7 @@ import { localDate, zonedMidnight } from '../../common/time/local-date.js';
 import type { Prisma, PrismaClient } from '../../generated/prisma/client.js';
 import type { Usage } from '../adapters/ai-adapter.js';
 import { AI_DAY_ZONE } from '../ai.constants.js';
-import type { AiOperation, AiProviderName, AiPurpose, CallOutcome } from '../ai.types.js';
+import type { AiProviderName, AiPurpose, CallOutcome, GatewayOperation } from '../ai.types.js';
 import { callCost, type Price } from './cost.js';
 
 export type CallRecord = {
@@ -14,7 +14,7 @@ export type CallRecord = {
   aiOperationId: string | null;
   attempt: 1 | 2;
   purpose: AiPurpose;
-  operation: AiOperation;
+  operation: GatewayOperation;
   provider: AiProviderName;
   model: string;
   effort: string | null;
