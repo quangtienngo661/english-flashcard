@@ -54,7 +54,7 @@ test.describe('Cấu hình (nhóm B M2)', () => {
     await expect(page.getByRole('heading', { level: 1, name: vi.nav.aiConfigs })).toBeVisible();
     await expect(page.getByRole('heading', { name: t.live.title.replace('{number}', '3') })).toBeVisible();
 
-    await page.getByRole('button', { name: t.draft.create }).click();
+    await page.getByRole('button', { name: t.draft.create, exact: true }).click();
     await expect(page.getByRole('heading', { name: t.draft.title.replace('{number}', '4').replace('{version}', '0') })).toBeVisible();
     await page.getByRole('button', { name: /Model$/ }).click();
     await page.getByRole('option', { name: 'Fake · fake:ok' }).click();
