@@ -30,8 +30,17 @@ export function RevisionContent({ instructions, examples }: { instructions: stri
   );
 }
 
+type HistoryProps = {
+  op: AiOperation;
+  /** Without it a revision can only be read (the configs page offers it while a draft is open). */
+  onCopy?: (revision: PromptRevision) => void;
+  /** Heading and sentence under it, when the list is not "Lịch sử" of the Prompt page. */
+  title?: string;
+  note?: string;
+};
+
 /** A/82 "Lịch sử": every saved revision, newest first; [Xem] opens one read-only with [Chép vào ô sửa]. */
-export function PromptHistory({ op, onCopy }: { op: AiOperation; onCopy: (revision: PromptRevision) => void }) {
+export function PromptHistory({ op, onCopy, title, note }: HistoryProps) {
   const t = useTranslations();
   const api = useApi();
   const format = useAiFormat();
@@ -46,8 +55,8 @@ export function PromptHistory({ op, onCopy }: { op: AiOperation; onCopy: (revisi
 
   return (
     <section aria-labelledby="prompt-history" className="flex flex-col gap-3">
-      <h2 id="prompt-history" className="text-lg font-bold text-ink">{t('ai.prompts.history.title')}</h2>
-      <p className="text-ui text-muted">{t('ai.prompts.history.note')}</p>
+      <h2 id="prompt-history" className="text-lg font-bold text-ink">{title ?? t('ai.prompts.history.title')}</h2>
+      <p className="text-ui text-muted">{note ?? t('ai.prompts.history.note')}</p>
       {list.isError ? (
         <ListState state="error" onRetry={() => void list.refetch()} />
       ) : !list.data ? (
@@ -55,7 +64,7 @@ export function PromptHistory({ op, onCopy }: { op: AiOperation; onCopy: (revisi
       ) : rows.length === 0 ? (
         <p className="text-ui text-muted">{t('ai.prompts.history.empty')}</p>
       ) : (
-        <ul aria-label={t('ai.prompts.history.title')} className="flex flex-col divide-y-2 divide-border rounded-panel border-2 border-border">
+        <ul aria-label={title ?? t('ai.prompts.history.title')} className="flex flex-col divide-y-2 divide-border rounded-panel border-2 border-border">
           {rows.map((row) => (
             <li key={row.revision} className="flex flex-wrap items-center justify-between gap-2 px-4 py-2">
               <span className="flex min-w-0 flex-col">
@@ -84,14 +93,16 @@ export function PromptHistory({ op, onCopy }: { op: AiOperation; onCopy: (revisi
         actions={
           <>
             <Button variant="secondary" onPress={() => setOpen(null)}>{t('common.close')}</Button>
-            <Button
-              onPress={() => {
-                if (open) onCopy(open);
-                setOpen(null);
-              }}
-            >
-              {t('ai.prompts.copyToEditor')}
-            </Button>
+            {onCopy && (
+              <Button
+                onPress={() => {
+                  if (open) onCopy(open);
+                  setOpen(null);
+                }}
+              >
+                {t('ai.prompts.copyToEditor')}
+              </Button>
+            )}
           </>
         }
       >

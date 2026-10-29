@@ -4,7 +4,7 @@ import { sameDraft, switchModel, toBody, toDraft } from './operation-draft';
 
 const model = (over: Partial<AiModel>): AiModel => ({
   id: 'm1', provider: 'openai', model_id: 'gpt-x', shutdown_at: null, lifecycle: null, effort_choices: [], thinking_off_available: false,
-  structured_outputs: true, max_output_tokens: null, price: null, note: null, info_checked_at: '2026-10-15T02:12:00.000Z', used_by: [], estimate: null, ...over,
+  structured_outputs: true, max_output_tokens: null, price: null, note: null, info_checked_at: '2026-10-15T02:12:00.000Z', used_by: [], estimate: null, hidden: false, ...over,
 });
 const setting: AiOperationSetting = {
   operation: 'lookup_word', model: { id: 'm1', provider: 'openai', model_id: 'gpt-x' }, effort: 'high', thinking: 'off', max_output_tokens: 800,

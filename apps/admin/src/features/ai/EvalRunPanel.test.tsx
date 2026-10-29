@@ -1,4 +1,4 @@
-import { act, screen, waitFor, within } from '@testing-library/react';
+import { act, cleanup, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi as vitest } from 'vitest';
 import vi from '../../../messages/vi.json';
@@ -30,6 +30,29 @@ describe('EvalRunPanel (A/83)', () => {
     expect(field(t.detail.model)).toHaveTextContent('OpenAI · gpt-test');
     expect(field(t.detail.prompt)).toHaveTextContent(t.detail.revision.replace('{revision}', '3'));
     expect(field(t.detail.startedBy)).toHaveTextContent('lan@wordmet.com');
+  });
+
+  it('a run of a config reads "Cấu hình 4" (it has no prompt revision); a run of a draft that was deleted since says so', async () => {
+    renderApp(PATH, evalRoutes({
+      [URL.run()]: () => Response.json(evalRun({ prompt_revision: null, config_id: 'C4', config_version: 1, config_number: 4 })),
+    }));
+    await panel();
+    expect(await screen.findByText(t.detail.config.replace('{number}', '4'), { selector: 'dd' })).toBeInTheDocument();
+    cleanup();
+    renderApp(PATH, evalRoutes({
+      [URL.run()]: () => Response.json(evalRun({ prompt_revision: null, config_id: 'C9', config_version: 1, config_number: null })),
+    }));
+    await panel();
+    expect(await screen.findByText(t.detail.configGone, { selector: 'dd' })).toBeInTheDocument();
+  });
+
+  it('a run that ended with "config-changed" says the draft was saved again after it was made', async () => {
+    renderApp(PATH, evalRoutes({
+      [URL.run()]: () => Response.json(evalRun({ status: 'failed', error: 'config-changed', prompt_revision: null, config_id: 'C4', config_version: 1, config_number: 4 })),
+    }));
+    await panel();
+    expect(await screen.findByText(t.detail.configChanged)).toBeInTheDocument();
+    expect(screen.queryByText(t.detail.failed.replace('{error}', 'config-changed'))).not.toBeInTheDocument();
   });
 
   it('a draft run reads "Bản nháp"; without the settings only US$ is shown; calls without a price are counted', async () => {

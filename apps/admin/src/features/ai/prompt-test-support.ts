@@ -74,7 +74,7 @@ export const runItem = (over: Partial<EvalRunItem> = {}): EvalRunItem => ({
 /** One eval run (A/83) as `GET …/eval/runs/{id}` answers it; the list rows are the same without `draft`, `heartbeat_at`, `items`. */
 export const evalRun = (over: Partial<EvalRunDetail> = {}): EvalRunDetail => ({
   id: RUN_ID, operation: 'generate_cloze', provider: 'openai', model: 'gpt-test', effort: null, thinking: null, max_output_tokens: null,
-  prompt_revision: 3, status: 'finished', total: 20, done: 20, valid_count: 18, set_id: null, set_version: null, legacy: false, complete: true,
+  prompt_revision: 3, config_id: null, config_version: null, config_number: null, status: 'finished', total: 20, done: 20, valid_count: 18, set_id: null, set_version: null, legacy: false, complete: true,
   avg_latency_ms: 812, cost_usd: '0.01000000', cost_unknown_count: 0,
   error: null, started_by: 'u9', started_by_user: { id: 'u9', email: 'lan@wordmet.com', system: false }, created_at: AT, started_at: AT,
   finished_at: AT, draft: null, heartbeat_at: null, items: [], ...over,

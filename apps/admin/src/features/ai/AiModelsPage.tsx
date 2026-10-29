@@ -6,13 +6,15 @@ import { ApiError } from '../../api/problem';
 import { useErrorDetails, type ErrorDetails } from '../../api/use-error-message';
 import { PageActions } from '../../app/shell-slots';
 import { useApi } from '../../auth/session-context';
+import { Badge } from '../../ui/Badge';
 import { Banner } from '../../ui/Banner';
 import { Button } from '../../ui/Button';
+import { Checkbox } from '../../ui/Checkbox';
 import { ConfirmDialog } from '../../ui/ConfirmDialog';
 import { DataList, type Column } from '../../ui/DataList';
 import { ListState } from '../../ui/ListState';
 import { showToast } from '../../ui/Toast';
-import { aiKeys, deleteModel, listModels, refreshModel, type AiModel } from './ai-api';
+import { aiKeys, deleteModel, listModels, refreshModel, updateModel, type AiModel } from './ai-api';
 import { ModelDialog } from './ModelDialog';
 import { useAiFormat } from './useAiFormat';
 
@@ -40,6 +42,14 @@ export function AiModelsPage() {
       await queryClient.invalidateQueries({ queryKey: aiKeys.models() });
       showToast(t('ai.models.toast.refreshed', { model: model.model_id }));
     },
+    onError: (e) => setProblem(errorDetails(e)),
+  });
+  // D40: the flag only changes what the pickers offer; the reply is the model as it is now, so the row is updated from it at once.
+  const hide = useMutation({
+    mutationFn: ({ model, hidden }: { model: AiModel; hidden: boolean }) => updateModel(api, model.id, { hidden }),
+    onMutate: () => setProblem(null),
+    onSuccess: (updated) =>
+      queryClient.setQueryData<{ items: AiModel[] }>(aiKeys.models(), (old) => old && { items: old.items.map((m) => (m.id === updated.id ? updated : m)) }),
     onError: (e) => setProblem(errorDetails(e)),
   });
   const remove = useMutation({
@@ -77,6 +87,7 @@ export function AiModelsPage() {
         <span className="flex flex-col">
           <span className="font-semibold">{`${t(`ai.providers.${m.provider}`)} · ${m.model_id}`}</span>
           {m.note && <span className="text-xs font-normal text-muted">{m.note}</span>}
+          {m.hidden && <Badge tone="neutral">{t('ai.models.hiddenBadge')}</Badge>}
         </span>
       ),
     },
@@ -125,6 +136,9 @@ export function AiModelsPage() {
           <Button variant="ghost" className="text-danger" aria-label={t('ai.models.deleteFor', { model: m.model_id })} onPress={() => setDeleting(m)}>
             {t('ai.models.delete')}
           </Button>
+          <Checkbox isSelected={m.hidden} isDisabled={hide.isPending && hide.variables?.model.id === m.id} onChange={(hidden) => hide.mutate({ model: m, hidden })}>
+            {t('ai.models.hide')}
+          </Checkbox>
         </span>
       ),
     },

@@ -13,6 +13,8 @@ export type Problem = {
   /** Top-level extension members of `eval-set-incomplete`: the examples with no expected answer, and whether no example is held-out. */
   missing_expected?: string[];
   no_held_out?: boolean;
+  /** Top-level extension member of `few-shot-invalid`: the few-shot examples (by position) that broke the rules, with what was wrong. */
+  examples?: Array<{ index: number; problems: string[] }>;
 };
 
 export class ApiError extends Error {
@@ -34,17 +36,22 @@ export class NetworkError extends Error {
 
 /**
  * Every problem `type` slug thrown in `apps/api/src` (grep `type: '` over ProblemDetailsException, plus the
- * body-parser mappings in `problem-details.filter.ts`), checked 14/10/2026, extended 27/10/2026 for the admin UI round (design §4.5) and 28/10/2026 with `run-active` / `run-not-active` (stopping and deleting an eval run). Each has a vi and en message.
+ * body-parser mappings in `problem-details.filter.ts`), checked 14/10/2026, extended 27/10/2026 for the admin UI round (design §4.5) , 28/10/2026 with `run-active` / `run-not-active` (stopping and deleting an eval run) and 30/10/2026 with the config lifecycle slugs of nhóm B M2. Each has a vi and en message.
  */
 export const KNOWN_ERROR_SLUGS = [
   'account-deleting',
+  'baseline-required',
   'batch-filter-unavailable',
   'batch-not-revertable',
   'confirm-email-mismatch',
   'csrf-header-required',
+  'draft-busy',
+  'draft-exists',
+  'draft-version-conflict',
   'email-already-verified',
   'email-taken',
   'entry-in-use',
+  'eval-required',
   'eval-set-conflict',
   'eval-set-incomplete',
   'eval-set-mismatch',
@@ -52,6 +59,7 @@ export const KNOWN_ERROR_SLUGS = [
   'example-not-held-out',
   'expected-invalid',
   'export-too-large',
+  'few-shot-invalid',
   'file-invalid',
   'file-too-large',
   'forbidden',
@@ -72,6 +80,7 @@ export const KNOWN_ERROR_SLUGS = [
   'model-not-found',
   'model-not-set',
   'model-not-supported',
+  'no-previous',
   'not-found',
   'nothing-to-publish',
   'operation-settings-conflict',
@@ -83,6 +92,8 @@ export const KNOWN_ERROR_SLUGS = [
   'provider-not-configured',
   'provider-unavailable',
   'publish-incomplete',
+  'publish-stale',
+  'publish-warnings',
   'rate-limited',
   'renewal-not-cancelled',
   'replacement-exists',
@@ -92,6 +103,7 @@ export const KNOWN_ERROR_SLUGS = [
   'resolve-status-not-allowed',
   'revision-rejected',
   'run-active',
+  'run-is-evidence',
   'run-not-active',
   'self-delete',
   'sense-entry-mismatch',
@@ -142,6 +154,14 @@ export async function toApiError(res: Response): Promise<ApiError> {
   if (Array.isArray(body.reasons)) problem.reasons = body.reasons.filter((r): r is string => typeof r === 'string');
   if (Array.isArray(body.missing_expected)) problem.missing_expected = body.missing_expected.filter((id): id is string => typeof id === 'string');
   if (typeof body.no_held_out === 'boolean') problem.no_held_out = body.no_held_out;
+  if (Array.isArray(body.examples)) {
+    problem.examples = body.examples.flatMap((entry): Array<{ index: number; problems: string[] }> => {
+      if (entry === null || typeof entry !== 'object') return [];
+      const { index, problems } = entry as Record<string, unknown>;
+      if (typeof index !== 'number' || !Array.isArray(problems)) return [];
+      return [{ index, problems: problems.filter((p): p is string => typeof p === 'string') }];
+    });
+  }
   const retry = Number.parseInt(res.headers.get('retry-after') ?? '', 10);
   return new ApiError(problem, Number.isFinite(retry) && retry >= 0 ? retry : null);
 }

@@ -1,9 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { ApiClient } from '../../api/client';
 import {
-  AI_OPERATION_ORDER, aiKeys, cancelRun, createExample, createModel, deleteExample, deleteModel, deleteRun, effortChoicesFor, freezeSet, getCosts, getForms, getPrompt,
-  getRun, getRunComparison, getSet, getStatus, getTestQuota, isDevExample, isRunCancelled, isRunDone, listCalls, listExamples, listModels, listOperations,
-  listRevisions, listRunItems, listRuns, listSets, refreshModel, revealExample, runTest, saveOperation, savePrompt, sortByOperationOrder, startRun, updateExample,
+  AI_OPERATION_ORDER, aiKeys, cancelRun, createDraft, createExample, createModel, deleteDraft, deleteExample, deleteModel, deleteRun, effortChoicesFor, freezeSet, getCosts, getForms, getPrompt,
+  getConfigs, getRun, getRunComparison, getSet, getStatus, getTestQuota, isDevExample, isRunCancelled, isRunDone, listCalls, listExamples, listModels, listOperations,
+  listRevisions, listRunItems, listRuns, listSets, refreshModel, revealExample, runTest, saveOperation, savePrompt, saveDraft, sortByOperationOrder, startRun, testDraft, updateExample,
   updateModel, type AiModel, type ExampleRow,
 } from './ai-api';
 
@@ -157,6 +157,36 @@ describe('golden set api (nhóm B M1)', () => {
     const keys = [aiKeys.sets('generate_cloze'), aiKeys.set('S1'), aiKeys.runItems('R1'), aiKeys.forms('deploy', 'verb'), aiKeys.compare('A', 'B')];
     expect(new Set(keys.map((key) => JSON.stringify(key))).size).toBe(5);
     expect(keys.every((key) => key[0] === 'ai')).toBe(true);
+  });
+});
+
+describe('config lifecycle api (nhóm B M2)', () => {
+  it('the configs of an operation are one GET; the draft is created, saved, deleted and test-run under /draft', async () => {
+    const { api, mock } = fakeApi();
+    await getConfigs(api, 'generate_cloze');
+    await createDraft(api, 'generate_cloze', {});
+    await createDraft(api, 'lookup_word', { from_config_id: 'C1' });
+    const body = {
+      expected_version: 0, instructions: 'x', examples: [], model_ref: null, effort: null, thinking: null, max_output_tokens: null, note: null,
+    };
+    await saveDraft(api, 'generate_cloze', body);
+    await deleteDraft(api, 'generate_cloze');
+    await testDraft(api, 'generate_cloze', { example_ids: ['e1'] });
+    expect(mock.get).toHaveBeenCalledExactlyOnceWith('/v1/admin/ai/configs/generate_cloze');
+    expect(mock.post.mock.calls).toEqual([
+      ['/v1/admin/ai/configs/generate_cloze/draft', {}],
+      ['/v1/admin/ai/configs/lookup_word/draft', { from_config_id: 'C1' }],
+      ['/v1/admin/ai/configs/generate_cloze/draft/test', { example_ids: ['e1'] }],
+    ]);
+    expect(mock.put).toHaveBeenCalledExactlyOnceWith('/v1/admin/ai/configs/generate_cloze/draft', body);
+    expect(mock.delete).toHaveBeenCalledExactlyOnceWith('/v1/admin/ai/configs/generate_cloze/draft');
+  });
+
+  it('a run of a config is started with config instead of prompt, and the key of the configs read starts with ai', async () => {
+    const { api, mock } = fakeApi();
+    await startRun(api, { operation: 'generate_cloze', config: 'draft', set_id: 'S2' }, 'key-3');
+    expect(mock.post).toHaveBeenCalledWith('/v1/admin/ai/eval/runs', { operation: 'generate_cloze', config: 'draft', set_id: 'S2' }, { idempotencyKey: 'key-3' });
+    expect(aiKeys.configs('lookup_word')).toEqual(['ai', 'configs', 'lookup_word']);
   });
 });
 

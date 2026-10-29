@@ -17,7 +17,7 @@ const EDITOR = makeMe({
 
 const model = (over: Partial<AiModel> = {}): AiModel => ({
   id: 'm1', provider: 'openai', model_id: 'gpt-x', shutdown_at: null, lifecycle: null, effort_choices: ['low', 'high'], thinking_off_available: true,
-  structured_outputs: true, max_output_tokens: 4000, price: null, note: null, info_checked_at: '2026-10-15T02:12:00.000Z', used_by: [], estimate: null, ...over,
+  structured_outputs: true, max_output_tokens: 4000, price: null, note: null, info_checked_at: '2026-10-15T02:12:00.000Z', used_by: [], estimate: null, hidden: false, ...over,
 });
 const m1 = model();
 const m2 = model({ id: 'm2', provider: 'anthropic', model_id: 'claude-x', effort_choices: ['low'], thinking_off_available: false });

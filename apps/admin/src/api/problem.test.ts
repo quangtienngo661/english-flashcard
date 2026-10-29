@@ -84,6 +84,27 @@ describe('problem mapping', () => {
     }
   });
 
+  it('the config lifecycle slugs each have a message of their own', () => {
+    for (const slug of [
+      'run-is-evidence', 'draft-exists', 'draft-busy', 'draft-version-conflict', 'eval-required', 'baseline-required', 'publish-stale',
+      'publish-warnings', 'no-previous', 'few-shot-invalid',
+    ]) {
+      expect(KNOWN_ERROR_SLUGS).toContain(slug);
+      expect(errorMessageKey(problem({ slug, status: 409 }))).toBe(`errors.${slug}`);
+    }
+  });
+
+  it('few-shot-invalid: the examples that broke the rules are kept with their position and problems; other shapes are dropped', async () => {
+    const kept = await toApiError(problemResponse(422, {
+      type: 'http://x/problems/few-shot-invalid', status: 422, title: 'f',
+      examples: [{ index: 1, problems: ['not-a-form', 7] }, { index: 'x', problems: [] }, { problems: ['p'] }, 'bad'],
+    }));
+    expect(kept.problem.slug).toBe('few-shot-invalid');
+    expect(kept.problem.examples).toEqual([{ index: 1, problems: ['not-a-form'] }]);
+    const dropped = await toApiError(problemResponse(422, { type: 'http://x/problems/few-shot-invalid', status: 422, title: 'f', examples: 'nope' }));
+    expect(dropped.problem.examples).toBeUndefined();
+  });
+
   it('a non-problem body still becomes an ApiError with the status and the generic message', async () => {
     const err = await toApiError(new Response('<html>bad gateway</html>', { status: 502 }));
     expect(err.problem.status).toBe(502);

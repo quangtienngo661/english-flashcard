@@ -18,7 +18,7 @@ const EDITOR = makeMe({
 const model = (over: Partial<AiModel> = {}): AiModel => ({
   id: 'm1', provider: 'openai', model_id: 'gpt-test', shutdown_at: null, lifecycle: null, effort_choices: [], thinking_off_available: false,
   structured_outputs: true, max_output_tokens: null, price: { input: '2.5000', cached_input: null, output: '10.0000' }, note: null,
-  info_checked_at: '2026-10-15T02:12:00.000Z', used_by: [],
+  info_checked_at: '2026-10-15T02:12:00.000Z', used_by: [], hidden: false,
   estimate: { per_call_usd: '0.0065', per_call_vnd: 169, per_day_1000_vnd: 169000, max_call_usd: null, max_call_vnd: null }, ...over,
 });
 const status = (providers: AiStatus['providers']): AiStatus => ({
@@ -221,6 +221,42 @@ describe('edit price', () => {
     renderApp('/ai/models/nope', { [LIST]: items(model()) });
     await screen.findAllByText(/gpt-test/);
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+  });
+});
+
+describe('hide a model from the pickers (D40)', () => {
+  const PATCH = 'PATCH /v1/admin/ai/models/m1';
+  const hideBox = (row: HTMLElement) => within(row).getByRole('checkbox', { name: t.hide });
+
+  it('checking "Ẩn khỏi ô chọn model" PATCHes { hidden: true } and the row then shows "Đã ẩn"; unchecking PATCHes { hidden: false }', async () => {
+    let hidden = false;
+    const r = renderApp('/ai/models', {
+      [LIST]: () => Response.json({ items: [model({ hidden }), model({ id: 'm2', model_id: 'gpt-other' })] }),
+      [PATCH]: (call) => {
+        hidden = (call.body as { hidden: boolean }).hidden;
+        return Response.json(model({ hidden }));
+      },
+    });
+    await screen.findAllByText(/gpt-test/);
+    const row = () => screen.getAllByRole('row').slice(1)[0]!;
+    expect(hideBox(row())).not.toBeChecked();
+    expect(within(row()).queryByText(t.hiddenBadge)).not.toBeInTheDocument();
+    await userEvent.click(hideBox(row()));
+    expect(await within(row()).findByText(t.hiddenBadge)).toBeInTheDocument();
+    expect(hideBox(row())).toBeChecked();
+    expect(writes(r.calls, 'PATCH').map((c) => c.body)).toEqual([{ hidden: true }]);
+    expect(within(screen.getAllByRole('row')[2]!).queryByText(t.hiddenBadge)).not.toBeInTheDocument();
+    await userEvent.click(hideBox(row()));
+    await waitFor(() => expect(within(row()).queryByText(t.hiddenBadge)).not.toBeInTheDocument());
+    expect(writes(r.calls, 'PATCH').map((c) => c.body)).toEqual([{ hidden: true }, { hidden: false }]);
+  });
+
+  it('a failed PATCH shows its sentence above the list and leaves the box as the server has it', async () => {
+    renderApp('/ai/models', { [LIST]: items(model()), [PATCH]: () => problem(404, 'model-not-found') });
+    await screen.findAllByText(/gpt-test/);
+    await userEvent.click(hideBox(screen.getAllByRole('row')[1]!));
+    expect(await screen.findByText(vi.errors['model-not-found'])).toBeInTheDocument();
+    expect(hideBox(screen.getAllByRole('row')[1]!)).not.toBeChecked();
   });
 });
 

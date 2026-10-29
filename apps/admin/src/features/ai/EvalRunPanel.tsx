@@ -40,11 +40,16 @@ export function RunStatusBadge({ status, error }: { status: EvalRunStatus; error
   return <Badge tone={TONE[status] ?? 'neutral'}>{TONE[status] ? t(`ai.eval.status.${status}`) : status}</Badge>;
 }
 
-/** "Bản số 3", or "Bản nháp" for a run of an unsaved draft from the Prompt page. */
+/**
+ * "Cấu hình 4" for a run of a config (`config_number` is null once its draft was deleted: "Cấu hình đã xóa"), "Bản số 3" for a run from before configs,
+ * "Bản nháp" for a run of an unsaved draft text.
+ */
 export function usePromptLabel() {
   const t = useTranslations();
-  return (run: Pick<EvalRun, 'prompt_revision'>) =>
-    run.prompt_revision === null ? t('ai.eval.detail.draft') : t('ai.eval.detail.revision', { revision: run.prompt_revision });
+  return (run: Pick<EvalRun, 'prompt_revision' | 'config_id' | 'config_number'>) => {
+    if (run.config_id !== null) return run.config_number === null ? t('ai.eval.detail.configGone') : t('ai.eval.detail.config', { number: run.config_number });
+    return run.prompt_revision === null ? t('ai.eval.detail.draft') : t('ai.eval.detail.revision', { revision: run.prompt_revision });
+  };
 }
 
 /** "Phiên bản 3", "Bộ đang soạn" or "Trước khi có phiên bản": which set of examples a run took. */
@@ -333,6 +338,7 @@ export function EvalRunPanel({ id, onDone, onDeleted }: { id: string; onDone?: (
   if (run.status === 'queued') notice = { variant: 'info', text: t(tooLong ? 'ai.eval.detail.queuedLong' : 'ai.eval.detail.queued') };
   else if (run.status === 'running') notice = { variant: 'info', text: t('ai.eval.detail.running', { done: run.done, total: run.total }) };
   else if (isRunCancelled(run)) notice = { variant: 'info', text: t('ai.eval.detail.cancelled') };
+  else if (run.status === 'failed' && run.error === 'config-changed') notice = { variant: 'error', text: t('ai.eval.detail.configChanged') };
   else if (run.status === 'failed') {
     notice = { variant: 'error', text: run.error ? t('ai.eval.detail.failed', { error: run.error }) : t('ai.eval.detail.failedNoReason') };
   }
