@@ -3,6 +3,7 @@ import type { CallHandler, ExecutionContext } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { firstValueFrom, of } from 'rxjs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { AppLogger, type LogEntry } from '../logging/app-logger.js';
 import type { PrismaClient } from '../../generated/prisma/client.js';
 import { IdempotencyInterceptor } from './idempotency.interceptor.js';
 import { Idempotent } from './idempotent.decorator.js';
@@ -18,11 +19,13 @@ class Controller {
   plain() {}
 }
 
+const logs: LogEntry[] = [];
+
 function call(
   handler: () => void,
   request: Record<string, unknown>,
 ) {
-  const interceptor = new IdempotencyInterceptor({} as PrismaClient, new Reflector());
+  const interceptor = new IdempotencyInterceptor({} as PrismaClient, new Reflector(), new AppLogger({ write: (entry) => logs.push(entry) }));
   const response = { statusCode: 201, setHeader: vi.fn() };
   const context = {
     getHandler: () => handler,
@@ -34,7 +37,7 @@ function call(
 
 const base = { headers: { 'idempotency-key': 'k1' }, user: { userId: 'u1' }, path: '/v1/sample' };
 
-beforeEach(() => run.mockReset().mockResolvedValue({ kind: 'proceed', status: 201, body: {} } as never));
+beforeEach(() => { logs.length = 0; run.mockReset().mockResolvedValue({ kind: 'proceed', status: 201, body: {} } as never); });
 const hashOf = (request: Record<string, unknown>) => {
   run.mockResolvedValue({ kind: 'replay', status: 201, body: {} } as never);
   return call(Controller.prototype.plain, request)().then(() => run.mock.calls.at(-1)![1].payloadHash);
@@ -52,10 +55,17 @@ describe('IdempotencyInterceptor', () => {
 
   it('@Idempotent({ timeoutSeconds }) reaches the service as leaseSeconds; the default is 30', async () => {
     await hashOf(base).catch(() => undefined);
-    expect(run.mock.calls[0][3]).toEqual({ leaseSeconds: 30 });
+    expect(run.mock.calls[0][3]).toEqual({ leaseSeconds: 30, onReleaseFailed: expect.any(Function) });
     run.mockResolvedValue({ kind: 'replay', status: 201, body: {} } as never);
     await call(Controller.prototype.custom, base)();
-    expect(run.mock.calls[1][3]).toEqual({ leaseSeconds: 7 });
+    expect(run.mock.calls[1][3]).toEqual({ leaseSeconds: 7, onReleaseFailed: expect.any(Function) });
+  });
+
+  it('B1-9: a failed release is logged with the endpoint and the error name, never the key', async () => {
+    await call(Controller.prototype.plain, base)();
+    const options = run.mock.calls[0][3] as { onReleaseFailed: (error: unknown) => void };
+    options.onReleaseFailed(Object.assign(new Error('connection lost for k1'), { code: 'ECONNRESET' }));
+    expect(logs).toEqual([{ level: 'error', event: 'idempotency_release_failed', endpoint: '/v1/sample', error: { name: 'Error', code: 'ECONNRESET' } }]);
   });
 
   it('a JSON-only body keeps the pre-multipart digest, pinned to a fixed value', async () => {

@@ -69,6 +69,21 @@ describe('PermissionGuard', () => {
     prisma.sessionChain.findUnique.mockResolvedValue({ userId: 'user', revokedAt: null, authMethod: 'password', user: { staffRole: 'admin' } });
     expect(await guard.canActivate(context)).toBe(true);
   });
+  it('B25#26 (D21): a staff account that must change its password gets 403 password-change-required; changed, it passes', async () => {
+    const chain = (mustChangePassword: boolean, staffRole: string | null) =>
+      ({ userId: 'user', revokedAt: null, authMethod: 'password', user: { staffRole, mustChangePassword } });
+    prisma.sessionChain.findUnique.mockResolvedValue(chain(true, 'admin'));
+    await expect(guard.canActivate(context)).rejects.toMatchObject({ status: 403, problemType: 'password-change-required' });
+    prisma.sessionChain.findUnique.mockResolvedValue(chain(true, 'editor'));
+    rolePermissions.editor = ['roles.manage'];
+    await expect(guard.canActivate(context)).rejects.toMatchObject({ status: 403, problemType: 'password-change-required' });
+    prisma.sessionChain.findUnique.mockResolvedValue(chain(false, 'editor'));
+    expect(await guard.canActivate(context)).toBe(true);
+  });
+  it('B25#26: a learner whose flag is set is still plain forbidden, not told to change a password', async () => {
+    prisma.sessionChain.findUnique.mockResolvedValue({ userId: 'user', revokedAt: null, authMethod: 'password', user: { staffRole: null, mustChangePassword: true } });
+    await expect(guard.canActivate(context)).rejects.toMatchObject({ status: 403, problemType: 'forbidden' });
+  });
   it('B1#26: no authenticated user is forbidden without persistence access', async () => {
     request.user = undefined;
     await expect(guard.canActivate(context)).rejects.toMatchObject({ status: 403, problemType: 'forbidden' });

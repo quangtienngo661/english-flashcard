@@ -192,6 +192,12 @@ describe('password change and reset (unit, isolated persistence)', () => {
     expect(tx.passwordCredential.upsert).not.toHaveBeenCalled(); expect(tx.user.update).not.toHaveBeenCalled();
     expect(sessions.revokeAllForUser).not.toHaveBeenCalled(); expect(res.listenerCount('close')).toBe(0);
   });
+  it('B1-6: an unknown email costs the same hashing as a known one, so the response time does not reveal accounts', async () => {
+    prisma.user.findUnique.mockResolvedValue(null);
+    await expect(service.reset(reset, res)).rejects.toMatchObject({ status: 400, problemType: 'invalid-otp' });
+    expect(hasher.hash).toHaveBeenCalledExactlyOnceWith(reset.new_password);
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
   it('B1#10/B1#34: reset schedules the 21st failure notice after commit BEFORE throwing generic 400 and sends it once after close', async () => {
     const notice = otpLockedMail(account.email, 'reset_password');
     otp.checkInTx.mockResolvedValue({ kind: 'locked', lockedUntil: new Date(clock.now().getTime() + 86_400_000), notice });

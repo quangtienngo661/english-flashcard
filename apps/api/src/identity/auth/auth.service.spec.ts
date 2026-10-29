@@ -173,6 +173,8 @@ describe('registration and login (unit, isolated persistence)', () => {
   });
   it.each([
     [{ email: 'invalid' }, undefined],
+    [{ email: 'lan@localhost' }, undefined],
+    [{ email: 'lan@example..com' }, undefined],
     [{ password: 'abc' }, ['min_length', 'uppercase', 'digit', 'special']],
     [{ timezone: 'Mars/Base' }, undefined],
     [{ timezone: '+07:00' }, undefined],

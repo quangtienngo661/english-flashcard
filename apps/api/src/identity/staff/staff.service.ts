@@ -5,7 +5,7 @@ import { dateString, dateValue, localDate } from '../../common/time/local-date.j
 import { Clock } from '../../common/clock/clock.js';
 import { APP_CONFIG, type AppConfig } from '../../common/config/app-config.js';
 import { PRISMA_CLIENT } from '../../common/db/prisma.module.js';
-import { normalizeEmail } from '../../common/email/normalize-email.js';
+import { isValidEmailSyntax, normalizeEmail } from '../../common/email/normalize-email.js';
 import { AppLogger } from '../../common/logging/app-logger.js';
 import { decodeBoundToken, decodePageToken, encodeBoundToken, encodePageToken } from '../../common/pagination/page-token.util.js';
 import { ProblemDetailsException } from '../../common/problem-details/problem-details.exception.js';
@@ -119,7 +119,7 @@ export class StaffService {
   async createAccount(actorId: string, body: CreateAccountBody, res: Response): Promise<StaffUserView> {
     const email = normalizeEmail(body.email);
     const timezone = canonicalTimeZone(body.timezone);
-    if (!email || timezone === null) throw invalidInput();
+    if (!email || !isValidEmailSyntax(email) || timezone === null) throw invalidInput();
     if (body.password !== undefined) {
       const violations = checkPasswordPolicy(body.password);
       if (violations.length > 0) throw new ProblemDetailsException({ status: 400, title: 'Validation failed',
@@ -163,7 +163,7 @@ export class StaffService {
   async updateUser(actorId: string, targetId: string, body: UpdateUserBody, res: Response): Promise<AdminUserDetail> {
     const timezone = body.timezone === undefined ? undefined : canonicalTimeZone(body.timezone);
     const email = body.email === undefined ? undefined : normalizeEmail(body.email);
-    if (timezone === null || email === null) throw invalidInput();
+    if (timezone === null || email === null || (email !== undefined && !isValidEmailSyntax(email))) throw invalidInput();
     const notice = await this.prisma.$transaction(async (tx) => {
       await withUserLock(tx, targetId);
       const target = await tx.user.findUnique({ where: { id: targetId }, select: { email: true, timezone: true, status: true } });
@@ -300,9 +300,13 @@ export class StaffService {
       if (targetId === actorId || target.staffRole === 'admin') throw lockRule();
       if (target.status === 'locked') return false;
       const now = this.clock.now();
-      await tx.user.update({ where: { id: targetId }, data: {
-        status: 'locked', lockedAt: now, lockedBy: actorId, lockReason: reason,
-      }, select: { id: true } });
+      // Conditional write (B1-3): a promotion to admin runs under the staff-role lock, not this user lock, so the role is
+      // re-checked on the row as it is now (Postgres re-evaluates the WHERE after waiting for a concurrent update).
+      const { count } = await tx.user.updateMany({
+        where: { id: targetId, OR: [{ staffRole: null }, { staffRole: { not: 'admin' } }] },
+        data: { status: 'locked', lockedAt: now, lockedBy: actorId, lockReason: reason },
+      });
+      if (count === 0) throw lockRule();
       await this.sessions.revokeAllForUser(tx, targetId, 'locked');
       await tx.otpCode.updateMany({ where: { userId: targetId, consumedAt: null, invalidatedAt: null }, data: { invalidatedAt: now } });
       return true;
@@ -358,21 +362,33 @@ export class StaffService {
       if (target.staffRole === 'admin' && role !== 'admin' && await tx.user.count({ where: { staffRole: 'admin', status: { not: 'deleting' } } }) <= 1) {
         throw roleRule();
       }
-      // Expected denials above do not write state; exceptions can safely roll back.
-      return tx.user.update({ where: { id: targetId }, data: { staffRole: role }, select: staffSelect });
+      // Expected denials above do not write state; exceptions can safely roll back. A promotion also checks the status as it
+      // is now: a lock holds the user lock, not this one (B1-3), so it may have landed after the read above.
+      const { count } = await tx.user.updateMany({
+        where: { id: targetId, ...(role !== null ? { status: { notIn: ['locked', 'deleting'] } } : {}) },
+        data: { staffRole: role },
+      });
+      if (count === 0) throw roleRule();
+      return tx.user.findUniqueOrThrow({ where: { id: targetId }, select: staffSelect });
     }, transactionOptions);
     this.logger.info('staff_role_changed', { actor_id: actorId, target_id: targetId, staff_role: role });
     return toView(row);
   }
 
-  async grantAdminByEmail(email: string): Promise<'granted' | 'not_found' | 'unverified'> {
+  async grantAdminByEmail(email: string): Promise<'granted' | 'not_found' | 'unverified' | 'locked' | 'deleting'> {
     const normalized = normalizeEmail(email);
     const outcome = await this.prisma.$transaction(async (tx) => {
       await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended('identity.staff_role', 0))`;
       const target = normalized ? await tx.user.findUnique({ where: { email: normalized }, select: staffSelect }) : null;
       if (!target) return { kind: 'not_found' } as const;
       if (target.emailVerifiedAt === null) return { kind: 'unverified' } as const;
-      await tx.user.update({ where: { id: target.id }, data: { staffRole: 'admin' }, select: staffSelect });
+      // The same rules as setStaffRole: a locked account is never promoted, a deleting one is never edited (B1-4).
+      if (target.status === 'deleting') return { kind: 'deleting' } as const;
+      if (target.status === 'locked') return { kind: 'locked' } as const;
+      const { count } = await tx.user.updateMany({
+        where: { id: target.id, status: { notIn: ['locked', 'deleting'] } }, data: { staffRole: 'admin' },
+      });
+      if (count === 0) return { kind: 'locked' } as const;
       return { kind: 'granted', targetId: target.id } as const;
     }, transactionOptions);
     if (outcome.kind === 'granted') {

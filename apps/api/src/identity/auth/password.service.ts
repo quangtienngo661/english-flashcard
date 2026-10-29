@@ -98,9 +98,10 @@ export class PasswordService {
     this.assertPolicy(body.new_password);
     const email = normalizeEmail(body.email);
     if (!email) throw this.invalidOtp();
+    // Hash before the lookup: an unknown email must cost the same time as a known one (B1-6).
+    const hash = await this.hasher.hash(body.new_password);
     const account = await this.prisma.user.findUnique({ where: { email } });
     if (!account) throw this.invalidOtp();
-    const hash = await this.hasher.hash(body.new_password);
     const outcome = await this.prisma.$transaction(async (tx): Promise<ResetOutcome> => {
       await withUserLock(tx, account.id);
       const current = await tx.user.findUnique({ where: { id: account.id } });

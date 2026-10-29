@@ -4,7 +4,7 @@ import type { Response } from 'express';
 import { Clock } from '../../common/clock/clock.js';
 import { APP_CONFIG, type AppConfig } from '../../common/config/app-config.js';
 import { PRISMA_CLIENT } from '../../common/db/prisma.module.js';
-import { normalizeEmail } from '../../common/email/normalize-email.js';
+import { isValidEmailSyntax, normalizeEmail } from '../../common/email/normalize-email.js';
 import { AppLogger } from '../../common/logging/app-logger.js';
 import { ProblemDetailsException } from '../../common/problem-details/problem-details.exception.js';
 import type { PrismaClient } from '../../generated/prisma/client.js';
@@ -40,7 +40,7 @@ export class AuthService {
 
   async register(body: RegisterBody, res: Response): Promise<{ email: string }> {
     const email = normalizeEmail(body.email);
-    if (!email) throw this.validationFailed();
+    if (!email || !isValidEmailSyntax(email)) throw this.validationFailed();
     const violations = checkPasswordPolicy(body.password);
     if (violations.length > 0) throw this.validationFailed({ violations });
     const timezone = canonicalTimeZone(body.timezone);
