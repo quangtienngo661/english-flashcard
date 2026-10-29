@@ -1,8 +1,8 @@
 # Đợt cải thiện, nhóm B (chất lượng AI) — Design (29/10/2026)
 
 > **Trạng thái 29/10/2026:** chủ dự án chốt mọi câu trong chat ("ok, các câu hỏi chốt hết", rồi N1–N3). Bản này đã sửa theo review độc lập
-> [`../reviews/2026-10-29-nhom-b-design-review.md`](../reviews/2026-10-29-nhom-b-design-review.md) (R1–R22; cách xử lý từng mục ở cuối file review). **Còn hai câu chờ chủ dự
-> án (§0)**, sau đó chờ chủ dự án đọc lại. Chưa có code, chưa có plan.
+> [`../reviews/2026-10-29-nhom-b-design-review.md`](../reviews/2026-10-29-nhom-b-design-review.md) (R1–R22; cách xử lý từng mục ở cuối file review). Bốn câu hỏi thêm sau review
+> đã chốt 30/10/2026 (§0). Plan: [`../plans/2026-10-29-nhom-b.md`](../plans/2026-10-29-nhom-b.md). Chưa có code.
 > **Nguồn quyết định:** câu hỏi và trả lời [`../reviews/2026-10-29-nhom-b-questions.md`](../reviews/2026-10-29-nhom-b-questions.md) (mục "Kết quả chốt"); decision
 > record [`../decisions/2026-10-29-nhom-b-chat-luong-ai-decisions.md`](../decisions/2026-10-29-nhom-b-chat-luong-ai-decisions.md) (D1–D36 và các câu nhóm B
 > ngày 26/10); danh sách gốc [`../../preparation/IMPROVEMENT_PLAN_2026-10-28.md`](../../preparation/IMPROVEMENT_PLAN_2026-10-28.md) §4 (B1–B11).
@@ -14,17 +14,16 @@
 Ví dụ xuyên suốt: **Lan**, người học tiếng Việt, đang luyện `rhythm` (B2, âm nhạc). Câu AI "The drummer kept a steady ___" có `beat` cũng điền vừa: lỗi chính
 B1 tìm ra (E1). Bạn (chủ dự án) là `admin` duy nhất.
 
-## 0. Hai câu chờ chủ dự án (từ review)
+## 0. Bốn câu hỏi thêm sau review (đã chốt 30/10/2026)
 
-Theo luật repo, chủ dự án trả lời trước, Claude đề xuất sau. Design viết sao cho hai câu này chỉ đổi đúng chỗ được trỏ tới.
+Chủ dự án bảo Claude đề xuất trước cả bốn ("các câu trên bạn đề xuất đi"), rồi chốt ("ok"). Chi tiết ở decision record D37–D40.
 
-- **Q-R1 — Cổng publish khi bản đang chạy chưa có model (R1, §6.3 bước 2).** Trên DB mới (production lúc launch, smoke), cả 6 thao tác chưa có model. Lần đầu chọn model
-  cho `generate_cloze` là publish một nháp có model, mà D21.5 bắt "bản đang chạy chưa eval thì eval nó trước"; bản không có model thì không eval được, và hai `PUT` cũ đã bỏ
-  (§6.6). Cổng xử lý trường hợp này thế nào?
-- **Q-R3 — "Lần học" của D7/D30 gồm những gì (R3, §10).** Bối cảnh lúc hỏi N3 có một chỗ sai: trả lời câu luyện tập **không** ghi `learning_log`; Practice chỉ ghi khi người
-  học bấm "Cần ôn tập" / "Đã biết" (`practice/answers/answers.service.ts:154`, `learning/practice/practice-review.service.ts:74`). Người chỉ luyện tập sẽ bị tính "đã ngừng".
-  Dữ liệu có: `learning_log` (ôn thẻ, thêm / bỏ từ, hai nút trên; giữ mãi); câu luyện tập đã trả lời (`practice_session_items.answered_at`, giữ 6 tháng); hoặc một bảng
-  mới ghi mỗi ngày người học có học (chỉ có số từ lúc thêm).
+| Câu | Bối cảnh | Chốt | Ở đâu |
+|---|---|---|---|
+| Q-R1 (D37) | Trên DB mới cả 6 thao tác chưa có model; cổng đòi eval bản đang chạy làm mốc, mà bản không model thì không eval được (R1) | Bản đang chạy **không có model** thì không cần mốc; nháp vẫn phải có lần eval trọn trên phiên bản chốt có held-out; không có cảnh báo so sánh | §6.3 bước 2, B29 |
+| Q-R1b (D38) | Sau vòng đời cấu hình, không còn cách tắt AI của riêng một thao tác đã có model (nháp không model thì không eval được) | Cho **publish một nháp không có model mà không cần eval**; admin web hỏi xác nhận; ghi vào lịch sử; rollback bật lại | §6.3b, B48 |
+| Q-R3 (D39) | Trả lời câu luyện tập không ghi `learning_log` (chỉ hai nút "Cần ôn tập" / "Đã biết" ghi), nên người chỉ luyện tập bị tính "đã ngừng" (R3) | Bảng mới `learning_activity_days` ghi "người học có học ngày đó", gồm ôn, thêm / bỏ từ và trả lời câu luyện tập | §4, §10 |
+| Q1 (D40) | Design §4 đặt FK `RESTRICT` (model từng dùng không bao giờ xóa được) nhưng §6.1 chỉ liệt kê bốn chỗ chặn (plan review P12) | Giữ chặn xóa (`RESTRICT`); model không muốn thấy thì đánh dấu `retired` (cột `lifecycle` đã có); ô chọn model ẩn model `retired` | §6.1, B49, B50 |
 
 ## 1. Mục tiêu và phạm vi
 
@@ -64,7 +63,7 @@ viện biểu đồ (D28); bỏ câu làm sẵn bằng bản cũ (D34).
 | D15–D17 | 30 nhãn, 85%, khớp theo đạt / không đạt (số phụ: khớp cả mức); chưa hiệu chỉnh vẫn hiện kèm nhãn; gắn nhãn ở bảng kết quả và màn riêng; đổi judge thì điểm cũ giữ, chấm lại được, biểu đồ đánh dấu chỗ đổi |
 | D18 | Trần riêng 2 USD / ngày cho test + eval + judge; không cho chạy eval với model chưa nhập giá; trần lời gọi của người học chỉ đếm lời gọi của người học |
 | D19 | Mọi việc mới chỉ `admin` |
-| D20, D21 | So hai lần chạy chỉ khi cùng phiên bản; publish cần lần eval trọn của chính cấu hình đó trên một phiên bản đã chốt (có held-out), so với lần gần nhất của bản đang chạy trên cùng phiên bản; bản đang chạy chưa có thì eval nó trước (ngoại lệ chờ Q-R1) |
+| D20, D21 | So hai lần chạy chỉ khi cùng phiên bản; publish cần lần eval trọn của chính cấu hình đó trên một phiên bản đã chốt (có held-out), so với lần gần nhất của bản đang chạy trên cùng phiên bản; bản đang chạy chưa có thì eval nó trước; bản đang chạy không có model thì không cần mốc (D37); tắt một thao tác không cần eval (D38) |
 | D22–D24 | Một cấu hình gồm prompt + model + effort + thinking + token; một bản nháp mỗi thao tác, lưu trên server; rollback về bản publish ngay trước, không cần eval |
 | D25, D34 | Câu đã làm sẵn bằng bản cũ vẫn dùng (kể cả câu giữ tới 6 tháng) |
 | D26, D35 | Chấm câu AI thật 7 ngày: tối đa N = 200 mỗi lần, ước tính chi phí trước; lọc thao tác, bản cấu hình, model, chỉ tài khoản test (= tài khoản `admin` / `editor`) |
@@ -72,7 +71,8 @@ viện biểu đồ (D28); bỏ câu làm sẵn bằng bản cũ (D34).
 | D28, D29 | Biểu đồ tự vẽ; thêm 4 phần dashboard |
 | D30, D31 | Chủ dự án tự chạy lần chạy thật 5 USD; Claude làm hết, chủ dự án review |
 | D33 | Giữ luật chấm của Practice |
-| D36 | "Đang học" = có lần học trong N ngày gần nhất (N = 7); D7/D30 theo nhóm đăng ký cùng tuần ("lần học" chờ Q-R3) |
+| D36, D39 | "Đang học" = có lần học trong N ngày gần nhất (N = 7); D7/D30 theo nhóm đăng ký cùng tuần; lần học ghi ở bảng `learning_activity_days` (gồm câu luyện tập) |
+| D40 | Model từng dùng không xóa được; ẩn bằng `retired` |
 
 **Quyết định cũ bị đổi:**
 - D15 Bước 6 (lưu prompt là chạy ngay) và cách lưu cài đặt thao tác (lưu là chạy ngay): thay bằng vòng đời cấu hình (§6).
@@ -101,7 +101,7 @@ Tên P1–P6 dưới đây giữ để dẫn chiếu; thứ tự làm là M1–M
 | P2 | K2 | P3 | `src/ai/judge/**` (mới), `src/ai/operations/judge.ts` (mới), `src/ai/runner/{readiness,call-ledger,runner.service}.ts`, `src/ai/eval/**` (lượt chấm), `src/ai/configs/publish-check*` (thêm so tiêu chí judge), `src/ai/models/models.service.ts` (giá `fake` khi bật fake); admin `features/ai/judges/**` (mới), nhãn trong `EvalRunPanel` |
 | P4 | K4 | P2 | `src/practice/quality/**` (mới), `src/practice/reports/**` (nút đưa vào bộ ví dụ), `src/identity/**` (`staffUserIds`), `src/ai/judge/**` (lượt chấm câu thật); admin `features/ai/real-questions/**` (mới), `features/reports/ReportDetail*` |
 | P5 | K5 | P4 | `src/ai/reports/**`, `src/practice/reports/ai-quality*`, `src/entitlements/**` (`days_at_cap`), `src/settings/**` (đọc lịch sử một setting); admin `features/dashboard/**` (trừ file `retention*`) |
-| P6 | K6 | P5 | `src/learning/**` (đếm lần học), `src/identity/**` (`registrations`), (theo Q-R3 có thể thêm `src/practice/**` cung cấp số câu đã trả lời qua port); admin `features/dashboard/retention*` (mới) |
+| P6 | K6 | P5 | `src/learning/**` (bảng `learning_activity_days`, ghi và đếm), `src/practice/answers/**` (gọi Learning ghi lần học khi trả lời), `src/identity/**` (`registrations`, danh sách xóa tài khoản); admin `features/dashboard/retention*` (mới) |
 
 - Mỗi milestone một nhánh từ `origin/dev` sau khi milestone trước đã merge, có thể nhiều PR; PR vào `dev`.
 - Làm tuần tự nên migration Prisma không trùng thứ tự, và các file nhiều milestone cùng thêm dòng (`src/settings/settings.definitions.ts`, trang Cài đặt, `ai.module.ts`,
@@ -129,6 +129,7 @@ Mọi bảng mới thuộc module `ai` (`prisma/models/ai.prisma`) trừ khi ghi
 | `ai_labels` (mới) | nhãn người: `subject_kind`, `subject_id`, `criterion`, `verdict`, `labeled_by/at`; unique `(subject_kind, subject_id, criterion)` | P2 |
 | `ai_calls` | `purpose` thêm `judge` (CHECK `ai_calls_purpose_check`); `prompt_revision` từ P3 mang số cấu hình (§6.5) | P2, P3 |
 | `ai_prompts`, `ai_prompt_revisions`, `ai_operation_settings`, `ai_operation_setting_changes` | sau P3 chỉ còn để đọc lịch sử; gateway không đọc; FK `ai_operation_settings.model_ref` bỏ trong migration P3 (để model cũ xóa được) | P3 |
+| `learning_activity_days` (mới, `learning.prisma`) | `user_id`, `local_date`; PK `(user_id, local_date)`; ghi kiểu upsert; xóa khi xóa tài khoản (D39) | P6 |
 | settings `ai.*` | thêm `admin_daily_usd_cap` (2), `eval_held_out_ratio` (0,3), `judge_label_min` (30), `judge_agreement_min` (0,85), `real_judge_limit` (200); `learning.active_window_days` (7) | P1, P2, P4, P6 |
 
 **Vì sao chụp ảnh:** hiện một lần chạy chỉ giữ `example_id` và đọc đầu vào khi job chạy (F6), nên sửa ví dụ sau đó làm lần chạy cũ đổi nghĩa. So hai lần chạy (D20) và nối
@@ -239,8 +240,9 @@ và `version` (tăng mỗi lần sửa nháp). Gateway đọc cấu hình mà `a
 `ai_live_configs` vào đó. Thao tác chưa chọn model vẫn chưa chọn model (xem Q-R1). Trước P3, prompt và model đổi riêng (ở B1, prompt bản 3 chạy cả Haiku lẫn Sonnet), nên mọi
 màn nhóm số liệu theo **cặp (số cấu hình, model)**, không theo số cấu hình một mình (R12).
 
-**Model và cấu hình (R12):** `ai_configs.model_ref` và `ai_judge_revisions.model_ref` có FK `RESTRICT`. Xóa model: 409 nếu nó nằm trong một nháp, bản đang chạy, bản
-`previous_config_id`, hay bản mới nhất của một judge đang `active`. Bỏ giá của model đang nằm trong nháp hay bản đang chạy: 409.
+**Model và cấu hình (R12, D40):** `ai_configs.model_ref` và `ai_judge_revisions.model_ref` có FK `RESTRICT`: model đã từng nằm trong **bất kỳ** cấu hình (kể cả `retired`)
+hay bản judge nào thì không xóa được (409 `model-in-use`). Model không muốn thấy nữa thì đánh dấu `lifecycle = 'retired'`; ô chọn model ở trang Cấu hình và trang Judge ẩn
+model `retired`, trừ model đang được chọn ở chính nháp / judge đó (hiện nay không ô nào lọc `retired`). Bỏ giá của model đang nằm trong nháp hay bản đang chạy: 409.
 
 ### 6.2 Nháp (D23)
 
@@ -257,13 +259,19 @@ màn nhóm số liệu theo **cặp (số cấu hình, model)**, không theo s�
 Publish nháp *C* (`version` *v*) của thao tác *op* khi bản đang chạy là *L*:
 1. *S* = phiên bản chốt **mới nhất** có held-out của *op* (R11). Phải có một lần chạy **xong trọn** (§5.3) của *C* trên *S* với `config_version` = *v*.
 2. Phải có một lần chạy xong trọn của *L* trên *S*; chưa có thì `publish-check` báo `baseline-required` và màn đưa nút chạy *L* (21.5). Lấy lần gần nhất (21.4).
-   *L* chưa có model: **chờ Q-R1**.
+   *L* chưa có model (D37): không cần mốc; không có cảnh báo so sánh; bước 1 vẫn bắt buộc.
 3. So *C* với *L* trên *S* (§5.3): cảnh báo nếu tỉ lệ đạt của một tiêu chí (khuôn, luật, mong đợi; tiêu chí judge chỉ khi cả hai có điểm của cùng bản judge) giảm quá 5 điểm
    %, hoặc có ví dụ dev trước đạt nay trượt, hoặc số ví dụ held-out trượt tăng. Cảnh báo không chặn.
 4. Request `publish` gửi `expected_version` (*v*), `candidate_run_id`, `baseline_run_id` (đúng hai lần chạy `publish-check` đã dùng) và `acknowledge_warnings` khi có cảnh báo.
    Lệch bất kỳ cái nào → 409, màn tải lại `publish-check`.
 5. Một transaction, kiểm `version` của con trỏ: *C* → `published`, *L* → `retired`, `ai_live_configs.config_id` = *C*, `previous_config_id` = *L*; ghi `ai_config_events` (id hai
    lần chạy, cảnh báo đã bỏ qua). Không còn nháp sau publish.
+
+### 6.3b Tắt một thao tác (D38)
+
+Nháp có `model_ref` NULL được publish **không cần** lần eval nào (bỏ bước 1–3 của §6.3); vẫn gửi `expected_version` và kiểm `version` của con trỏ (bước 4–5). Admin web hỏi
+"Tắt AI của thao tác này? Người học sẽ nhận câu không AI." trước khi gửi. Ghi `ai_config_events` như mọi publish; rollback về bản trước để bật lại. Người học nhận câu không AI
+như khi AI lỗi (luật dự phòng hiện có của Practice; tra từ AI báo không có).
 
 ### 6.4 Rollback (D24)
 
@@ -341,10 +349,10 @@ phụ (`reveal`) là `POST`.
 
 ## 10. K6 — D7/D30 (P6, D36)
 
-- **Lần học:** **chờ Q-R3.** Hiện design chỉ chắc phần `learning_log` (ôn thẻ, thêm / bỏ từ, hai nút "Cần ôn tập" / "Đã biết"), module Learning xuất hàm đếm theo ngày.
-  Nếu Q-R3 gồm câu luyện tập đã trả lời: Learning không import được Practice (Practice import Learning), nên Practice cung cấp số đếm qua một port đăng ký lúc khởi động (cùng kiểu
-  §5.2), hoặc endpoint đặt ở Practice và gộp hai nguồn.
-- **Ngày của một lần học:** `local_date` của người học (ngày theo múi giờ người đó). Nhóm đăng ký theo tuần giờ VN, tuần bắt đầu thứ Hai.
+- **Lần học (D39):** một dòng `learning_activity_days(user_id, local_date)`, ghi kiểu upsert (một dòng mỗi người mỗi ngày) bởi `LearningService.recordActivity(userId,
+  localDate)` ở mọi chỗ Learning đang ghi `learning_log` (ôn, thêm / bỏ từ, hai nút "Cần ôn tập" / "Đã biết") và khi Practice nhận một câu trả lời (Practice đã import
+  Learning, nên gọi thẳng). Bảng chỉ có số từ lúc thêm; hiện chưa có người học thật nên không mất gì. Xóa tài khoản xóa các dòng của người đó; xóa từ riêng thì không.
+- **Ngày của một lần học:** `local_date` của người học (ngày theo múi giờ người đó), cùng cách tính ngày với `learning_log`. Nhóm đăng ký theo tuần giờ VN, tuần bắt đầu thứ Hai.
 - **Đang học** (vào ngày *d*): có lần học trong cửa sổ [*d* − *N* + 1, *d*] (*N* = `learning.active_window_days` = 7, tính cả ngày *d*). **Đã ngừng:** đã có ít nhất một lần
   học, nhưng không có lần học nào trong cửa sổ đó.
 - **D7 / D30** của một nhóm: % người trong nhóm còn "đang học" ở ngày đăng ký + 7 / + 30. Nhóm chưa tới ngày đó thì để trống.
@@ -386,7 +394,7 @@ Lan không còn đang học.
 | B26 | Xóa nháp khi lần chạy của nó đang `queued` / `running` | 409 |
 | B27 | Publish khi nháp chưa có lần chạy trọn trên *S* | 409 `eval-required` |
 | B28 | Publish khi bản đang chạy chưa có lần chạy trên *S* | 409 `baseline-required`; màn đưa nút chạy bản đang chạy |
-| B29 | Bản đang chạy chưa có model | theo Q-R1 |
+| B29 | Bản đang chạy chưa có model, nháp có model và lần chạy trọn | publish được, không cần mốc, không cảnh báo so sánh (D37) |
 | B30 | Publish có cảnh báo, không gửi `acknowledge_warnings`, hoặc gửi id lần chạy khác `publish-check` | 409 kèm cảnh báo / lý do |
 | B31 | Hai admin publish cùng lúc | một người thành công; người kia 409 theo `version` của con trỏ |
 | B32 | Rollback khi không có `previous_config_id` | 409 `no-previous` |
@@ -405,6 +413,10 @@ Lan không còn đang học.
 | B45 | Người đăng ký chưa từng học | không "đang học", không "đã ngừng"; vẫn tính vào mẫu số của nhóm |
 | B46 | Nhóm đăng ký tuần này, chưa tới ngày +7 | D7 để trống |
 | B47 | Người học được cấp `editor` sau khi đăng ký | bị loại khỏi D7/D30 và tính là tài khoản test, cả cho quá khứ |
+| B48 | Publish nháp không có model, không có lần chạy nào | được (D38); người học nhận câu không AI; rollback bật lại bản trước |
+| B49 | Xóa model chỉ nằm trong một cấu hình `retired` | 409 `model-in-use` (D40) |
+| B50 | Model `retired` | không hiện trong ô chọn model, trừ khi đang là model của chính nháp / judge đó |
+| B51 | Lan trả lời 3 câu luyện tập và ôn 5 thẻ trong cùng một ngày | một dòng `learning_activity_days` cho ngày đó |
 
 ## 12. Kiểm thử
 
@@ -421,7 +433,7 @@ Theo `~/.claude/rules/testing-boundaries.md`: lệnh mặc định chỉ unit v�
 
 - CI xanh mỗi PR, gồm job `admin-e2e-real` (P3 sửa `chooseClozeModel`).
 - Mỗi milestone có một đoạn smoke của mình, chạy khi PR cuối của milestone merge; cuối đợt `pnpm smoke:nhom-b` trên DB mới với model `fake` (có giá, E15), theo thứ tự: chọn model lần đầu
-  (theo Q-R1) → tạo ví dụ có ô mong đợi → chốt phiên bản → eval bản đang chạy và nháp, có judge → gắn nhãn → so → publish có cảnh báo (kèm hai publish song song) → rollback →
+  (D37) → tạo ví dụ có ô mong đợi → chốt phiên bản → eval bản đang chạy và nháp, có judge → gắn nhãn → so → publish có cảnh báo (kèm hai publish song song) → rollback →
   chạm trần USD → chấm câu thật của một tài khoản `editor` → đưa vào bộ ví dụ → đọc dashboard và D7/D30. Output lưu `docs/deliveries/nhom-b-smoke-output.txt`.
 - Các smoke cũ vẫn qua sau khi sửa: `smoke:buoc-6`, `smoke:buoc-7`, và `learner:setup` chạy được.
 - Chủ dự án tự chạy một lần thật với key của mình, ngân sách 5 USD (D30): eval `generate_cloze` trên phiên bản chốt có held-out; judge "Chỉ một đáp án" bằng **hai** model
@@ -438,8 +450,9 @@ Theo `~/.claude/rules/testing-boundaries.md`: lệnh mặc định chỉ unit v�
 - **Luật trong eval tra theo `(word, part_of_speech)`:** một từ có nhiều mục cùng từ loại (hiếm) thì gộp mọi dạng; từ ngoài kho bỏ qua luật.
 - **Tiêu chí "trỏ đúng nghĩa"** của `generate_meaning_question` chưa ai kiểm cho tới khi có judge cho thao tác đó (D7, D1).
 - **Mục nhiều chữ** (`bus stop`): chưa kiểm câu điền từ có một hay hai chỗ trống (T3).
-- **D7/D30:** tài khoản đã xóa mất `learning_log`; xóa từ riêng xóa luôn `learning_log` của từ đó (`learning/quick-add/quick-add.service.ts:94`), nên số của quá khứ có thể đổi;
-  phần "lần học" chờ Q-R3.
+- **D7/D30:** chỉ có số từ lúc có bảng `learning_activity_days` (D39); tài khoản đã xóa không còn dòng nào, nên nhóm cũ thiếu người.
+- **Model không xóa được** khi đã từng nằm trong một cấu hình hay judge (D40): danh sách model chỉ dài thêm; dùng `retired` để ẩn.
+- **Tắt một thao tác không qua eval** (D38): một cú bấm nhầm tắt AI của thao tác đó tới khi rollback (có hộp hỏi).
 - **Làm tuần tự:** sáu milestone nối tiếp (§3), nên thời gian tới lúc xong dài hơn cách chia nhiều phiên song song.
 - **Ước tính chi phí chấm câu thật** dựa trên các lượt trước; lượt đầu không ước tính được.
 - `ASSUMPTION` từ review: cách `prisma migrate deploy` xử lý migration đến trễ thứ tự (tránh bằng luật đặt tên ở §3).

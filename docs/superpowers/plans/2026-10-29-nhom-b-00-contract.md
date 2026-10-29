@@ -47,7 +47,7 @@ Hai câu chờ chủ dự án (design §0): **Q-R1** chạm P3 (cổng publish k
 | `AiEvalExample` → `ai_eval_examples` | P1 sửa | thêm `split`, `expected` Json?, `source`, `sourceRef` `source_ref`?, `revealedAt` `revealed_at`? |
 | `AiEvalSet` → `ai_eval_sets` | P1 | `operation`, `version`, `heldOutRatio` `held_out_ratio`, `frozenBy`, `frozenAt` |
 | `AiEvalSetItem` → `ai_eval_set_items` | P1 | `setId`, `exampleId`, `split`, `input`, `expected`, `revealedAt`? |
-| `AiEvalRun` → `ai_eval_runs` | P1 sửa, P3 sửa | P1: `setId`?, `priceInput`?, `priceOutput`?, bỏ `items`; P3: `configId`?, `configVersion`? (thay `promptRevision` / `draft` cho lần chạy mới) |
+| `AiEvalRun` → `ai_eval_runs` | P1 sửa, P3 sửa, P2 sửa | P1: `setId`?, `priceInput`?, `priceOutput`?, bỏ `items`; P3: `configId`?, `configVersion`? (thay `promptRevision` / `draft` cho lần chạy mới); P2: `hiddenAt` `hidden_at`? (lần chạy có nhãn bị "xóa" thì ẩn; cổng publish và dashboard bỏ qua) |
 | `AiEvalRunItem` → `ai_eval_run_items` | P1 | `runId`, `exampleId`, `split`, `input`, `expected`?, `status`, `reason`?, `output`?, `rawOutput`?, `rule` Json?, `expectedResult` (`pass` / `fail` / NULL), `latencyMs`?, `costUsd`?, `hidden` (ẩn khi "xóa" lần chạy có nhãn) |
 | `AiConfig` → `ai_configs` | P3 | design §4 |
 | `AiLiveConfig` → `ai_live_configs` | P3 | `operation` PK, `configId`, `previousConfigId`?, `version` |
@@ -82,19 +82,27 @@ Hai câu chờ chủ dự án (design §0): **Q-R1** chạm P3 (cổng publish k
 | `AiEvalRunItem.input` **nullable** (kết quả cũ không còn ví dụ); `ai_eval_runs.legacy`, `price_cached_input`; `position` trên set item và run item | `ai.prisma` | mọi milestone đọc kết quả chạy |
 | Mã lỗi riêng M1: `expected-invalid` (422), `example-held-out` (409), `eval-set-conflict` (409, B37) | `src/ai/eval/**` | — |
 
-Thêm từ plan M1 / M2: `EvalRulesRegistry.get()` và `ruleResultFor` (M1-T4, M1-T1, M2 dùng cho kiểm ví dụ mẫu); `RunItemResult`, `itemPasses` trong `run-stats.ts`; chạy thử
-chỉ lấy ví dụ dev nằm ở `PromptsService.test` (M1-T10, M2 `draft/test` dùng lại).
+Thêm từ plan M1 / M2: `EvalRulesRegistry.get()` và `ruleResultFor` (M1-T5, M1-T1, M2 dùng cho kiểm ví dụ mẫu); `RunItemResult`, `itemPasses` trong `run-stats.ts`; chạy thử
+chỉ lấy ví dụ dev nằm ở `PromptsService.test` (M1-T11, M2 `draft/test` dùng lại).
 
 ### 4c. Tên M2 tạo ra mà milestone sau dùng
 
 | Tên | Ở đâu | Ai dùng |
 |---|---|---|
 | `PublishWarning`, `publishWarnings`, `gateTallies` | `src/ai/configs/publish-check.ts` | M3 thêm tiêu chí judge vào so sánh |
-| `baselineRequirement(live: { modelRef: string \| null }): 'required' \| 'not-required'` | `src/ai/configs/publish-check.ts` | M2-T13 (chờ Q-R1) |
+| `baselineRequirement(live: { modelRef: string \| null }): 'required' \| 'not-required'` | `src/ai/configs/publish-check.ts` | M2-T14 (chờ Q-R1) |
 | `ai_live_configs.last_number` (bộ đếm số cấu hình, không dùng lại số sau khi xóa nháp) | `ai.prisma` | chỉ M2 |
 | Helper script publish theo đường thật | `apps/api/scripts/ai-config-publish.mjs` (+ bản TS cho e2e-real) | mọi smoke sau M2 |
 | Lần chạy theo cấu hình: `POST …/eval/runs` nhận `config`, `prompt` vẫn nhận (thêm, không đổi); lần chạy xếp hàng trước khi nháp bị sửa thì `failed` + `config-changed` | `src/ai/eval/**` | M3, M5 |
 | Rollback nhận `expected_live_version`, lệch thì `publish-stale` | `src/ai/configs/**` | — |
+
+### 4d. Tên M3 tạo ra mà milestone sau dùng (thêm 29/10/2026 khi sửa plan theo review P2–P4)
+
+| Tên | Ở đâu | Ai dùng |
+|---|---|---|
+| `JudgeAgreement.forRevisions(revisionIds: string[]): Promise<Map<string, Agreement>>` (khóa `${revisionId}\|${criterion}`) | `src/ai/judge/agreement.service.ts` | M5 (hiệu chỉnh trên dashboard) |
+| `StatusReport.today`: `calls` chỉ đếm lời gọi `learner`; thêm `admin_cost_usd: string`, `admin_usd_cap: number \| null` | `src/ai/reports/reports.service.ts` | M5 (chỉ đọc) |
+| Judge giả chấm "không đạt": `fake:bad-form` trả `fail_major` cho mọi tiêu chí | `src/ai/adapters/fake/fake.adapter.ts` | M4 (smoke câu thật) |
 
 ## 5. Setting (thêm vào `src/settings/settings.definitions.ts`; tên API snake_case như các setting hiện có)
 

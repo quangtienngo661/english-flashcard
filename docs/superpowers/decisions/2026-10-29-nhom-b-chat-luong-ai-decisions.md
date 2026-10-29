@@ -54,6 +54,10 @@ D*n* ứng với câu *n* của file câu hỏi 29/10.
 | D34 (N1) | Câu làm sẵn bằng bản cũ, giữ tới 6 tháng | Vẫn dùng | Chủ dự án |
 | D35 (N2) | Tài khoản test | Mọi tài khoản `admin` / `editor` | Chủ dự án |
 | D36 (N3) | D7/D30 | "Đang học" = có lần học trong N ngày gần nhất (mặc định 7); D7/D30 = % người đăng ký cùng tuần còn đang học ở ngày 7 / 30 | Chủ dự án (ý) + cụ thể hóa của Claude |
+| D37 (Q-R1) | Cổng publish khi bản đang chạy chưa có model | Không cần mốc; nháp vẫn phải có lần eval trọn | Chủ dự án (đề xuất của Claude, chủ dự án nhờ đề xuất trước) |
+| D38 (Q-R1b) | Tắt AI của một thao tác | Publish nháp không model, không cần eval, có hộp hỏi | Chủ dự án (đề xuất của Claude, chủ dự án nhờ đề xuất trước) |
+| D39 (Q-R3) | "Lần học" của D7/D30 | Bảng mới `learning_activity_days`, gồm trả lời câu luyện tập | Chủ dự án (đề xuất của Claude, chủ dự án nhờ đề xuất trước) |
+| D40 (Q1) | Model đã từng dùng có xóa được không | Không xóa được (FK `RESTRICT`); ẩn bằng `retired` | Chủ dự án (đề xuất của Claude, chủ dự án nhờ đề xuất trước) |
 
 ## D1 — Cách brainstorm khi B1 mới làm một phần (câu 1)
 
@@ -392,6 +396,45 @@ cảnh sai, phần "lần học gồm những gì" được hỏi lại (Q-R3 �
 
 Hoạt động tính theo **lần học** (`learning_log`, chủ dự án chốt), không theo mở app: dùng dữ liệu có sẵn, tính được cả quá khứ; người mở app mà không học bị coi là không
 hoạt động. Tài khoản đã xóa mất `learning_log`, nên nhóm cũ thiếu người.
+
+## D37–D40 — Bốn câu sau review design và review plan (Q-R1, Q-R1b, Q-R3, Q1)
+
+Bối cảnh: Q-R1, Q-R3 đến từ review design (R1, R3); Q-R1b lộ ra khi viết plan M2; Q1 từ review plan (P12). Claude hỏi theo luật "chủ dự án trả lời trước", giải thích lại khi
+chủ dự án hỏi "là sao"; chủ dự án ghi "các câu trên bạn đề xuất đi" (chat 29/10/2026), Claude đề xuất, chủ dự án "ok" (30/10/2026).
+
+**D37 — Q-R1, cổng publish khi bản đang chạy chưa có model.** Trên DB mới cả 6 thao tác chưa có model; cổng đòi eval bản đang chạy làm mốc, mà bản đó không eval được, và hai
+`PUT` cũ đã bỏ, nên không bao giờ publish được.
+
+| Phương án | Trade-off |
+|---|---|
+| ✅ (a) Bản đang chạy không có model thì bỏ bước so sánh; nháp vẫn phải có lần eval trọn trên phiên bản chốt có held-out | Giữ luật "publish nào cũng có eval"; lần publish đầu không có cảnh báo so sánh |
+| (b) Giữ một đường riêng chọn model lần đầu, không qua cổng | Thêm một đường vòng qua cổng |
+| (c) Khác | — |
+
+**D38 — Q-R1b, tắt AI của một thao tác đã có model.**
+
+| Phương án | Trade-off |
+|---|---|
+| ✅ (a) Publish nháp không có model mà không cần eval; hộp hỏi; ghi lịch sử; rollback bật lại | Thêm một ngoại lệ cho cổng; tắt không làm câu tệ đi (người học nhận câu không AI như khi AI lỗi) |
+| (b) Chỉ tắt bằng rollback về bản không model, hoặc công tắc AI chung | Không tắt được thao tác chưa từng có bản không model trước đó |
+| (c) Khác | — |
+
+**D39 — Q-R3, "lần học" của D7/D30.** Sửa bối cảnh N3: trả lời câu luyện tập không ghi `learning_log`.
+
+| Phương án | Trade-off |
+|---|---|
+| (a) Chỉ `learning_log` | Người chỉ luyện tập bị tính "đã ngừng" |
+| (b) `learning_log` + câu luyện tập đã trả lời (giữ 6 tháng) | Nhóm đăng ký cũ hơn 6 tháng mất phần luyện tập |
+| ✅ (c) Bảng mới ghi "người học có học ngày đó", gồm câu luyện tập | Chỉ có số từ lúc thêm bảng (chưa có người học thật nên không mất gì); thêm một lệnh ghi nhỏ mỗi lần trả lời; bảng vào danh sách xóa tài khoản |
+
+**D40 — Q1, model đã từng dùng có xóa được không.** Design §4 đặt FK `RESTRICT` cho `model_ref` của cấu hình và judge; §6.1 chỉ liệt kê bốn chỗ chặn.
+
+| Phương án | Trade-off |
+|---|---|
+| ✅ Giữ chặn xóa (`RESTRICT`), sửa §6.1 cho khớp; ẩn bằng `lifecycle = 'retired'`; ô chọn model ẩn model `retired` | Lịch sử và rollback luôn trỏ đúng model; danh sách model chỉ dài thêm. Claude kiểm 30/10: hiện không ô chọn nào lọc `retired` (`apps/admin/src/features/ai/**`), nên thêm bộ lọc |
+| Cho xóa model chỉ còn nằm trong cấu hình `retired` / bản judge cũ | Lịch sử mất tên model |
+
+Review plan Q1 đưa các hướng a / b / c trong file review; bảng trên tóm theo hai hướng Claude trình bày khi đề xuất.
 
 ## Các câu nhóm B ngày 26/10
 
