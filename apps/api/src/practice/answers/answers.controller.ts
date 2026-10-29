@@ -10,7 +10,7 @@ import { AnswersService } from './answers.service.js';
 
 const itemParams = z.strictObject({ id: z.uuid().transform((value) => value.toLowerCase()) });
 // Empty or over ANSWER_MAX code points after NFC + trim → 400 and nothing stored (PRC12).
-const answerBody = z.union([
+export const answerBody = z.union([
   z.strictObject({ choice: z.int().min(0).max(3) }),
   z.strictObject({ is_true: z.boolean() }),
   z.strictObject({ text: z.string().refine((text) => answerLength(text) >= 1 && answerLength(text) <= ANSWER_MAX) }),
