@@ -14,7 +14,7 @@ import { Button } from '@/app-ui/Button';
 import { Checkbox } from '@/app-ui/Checkbox';
 import { DateOfBirthField } from '@/app-ui/DateOfBirthField';
 import { TextField } from '@/app-ui/TextField';
-import { AuthCard, FormError, GoogleSoon, passwordViolations, PasswordRules, type PasswordRule } from './AuthCard';
+import { AuthCard, FormError, GoogleButton, passwordViolations, PasswordRules, type PasswordRule } from './AuthCard';
 
 /** K/01, K/01b: sign-up. The button stays off until the consent box is ticked and the birth date is 13+. */
 export function RegisterForm({ today }: { today?: string }) {
@@ -58,7 +58,9 @@ export function RegisterForm({ today }: { today?: string }) {
     } catch (error) {
       const slug = error instanceof ApiError ? error.problem.slug : '';
       const rules = passwordViolations(error);
-      if (slug === 'email-taken') setErrors({ email: errorText(error) });
+      // A deleting account still holds the address (design §6.2): say so instead of the "already registered" hint.
+      if (slug === 'email-taken' && error instanceof ApiError && error.problem.extensions?.reason === 'account-deleting') setErrors({ email: t('register.accountDeleting') });
+      else if (slug === 'email-taken') setErrors({ email: errorText(error) });
       else if (slug === 'age-below-minimum') setErrors({ age: true });
       else if (rules.length) setErrors({ password: rules });
       else setErrors({ form: errorText(error) });
@@ -137,7 +139,7 @@ export function RegisterForm({ today }: { today?: string }) {
           {t('register.submit')}
         </Button>
         <p className="text-center text-caption text-muted">{t('or')}</p>
-        <GoogleSoon />
+        <GoogleButton next={`/${locale}/app`} />
         <p className="text-ui text-muted">
           {t('register.haveAccount')}{' '}
           <Link href={`/${locale}/app/login`} className="font-semibold text-primary underline underline-offset-2">

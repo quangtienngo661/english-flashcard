@@ -31,6 +31,8 @@ export type AppConfig = {
   practice: { max_questions_per_session: number; default_questions_per_session: number };
   reminders: { send_time: string };
   learning: { backlog_after_days: number; groups_per_user: number };
+  /** Bước 8: how long payment records are kept after an account is deleted. */
+  account?: { transaction_retention_years: number };
   plans: {
     free: { practice_sessions_per_day: number };
     trial: { ai_practice_per_cycle: number; ai_lookup_per_cycle: number };

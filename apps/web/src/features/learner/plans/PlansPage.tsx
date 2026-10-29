@@ -13,6 +13,7 @@ import { ErrorState, FullScreenSpinner } from '@/app-ui/States';
 import { cn } from '@/lib/cn';
 import { CompareTable } from './CompareTable';
 import { PlanCard } from './PlanCard';
+import { SubscriptionRows } from './SubscriptionRows';
 
 type Source = Entitlements['sources'][number];
 /** "tới hết 31/12/2026": an end at the first instant of 1/1 is the last day before it. */
@@ -109,6 +110,7 @@ export function PlansPage() {
             )}
           </PlanCard>
         </div>
+        <SubscriptionRows sources={entitlements.data.sources} />
         <button
           type="button"
           aria-expanded={compare}

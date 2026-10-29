@@ -16,7 +16,10 @@ import { useSubmitOnce } from '@/app-shell/use-submit-once';
 import { Button } from '@/app-ui/Button';
 import { TextField } from '@/app-ui/TextField';
 import type { AppLocale } from '@/i18n/routing';
-import { AuthCard, FormError, GoogleSoon } from './AuthCard';
+import { AuthCard, FormError, GoogleButton } from './AuthCard';
+
+/** `?error=` slugs the Google trip comes back with (design §9.1); `account-locked` has its own box. */
+const GOOGLE_ERRORS = ['google-failed', 'google-unavailable', 'google-email-unverified'] as const;
 
 const NOTICE_KEY: Record<Notice, 'expired' | 'rateLimited' | 'logoutFailed'> = {
   expired: 'expired',
@@ -27,6 +30,7 @@ const NOTICE_KEY: Record<Notice, 'expired' | 'rateLimited' | 'logoutFailed'> = {
 /** K/02, K/93: sign-in, then back to `?next` (E1, E2). Says why the session ended (E3, E4) and when the account is locked (E8). */
 export function LoginForm() {
   const t = useTranslations('App.auth');
+  const tErrors = useTranslations('App.errors');
   const errorText = useErrorMessage();
   const locale = useLocale() as AppLocale;
   const params = useSearchParams();
@@ -34,7 +38,8 @@ export function LoginForm() {
   const { state, store } = useSession();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [locked, setLocked] = useState(false);
+  const returned = params.get('error');
+  const [locked, setLocked] = useState(returned === 'account-locked');
   const [error, setError] = useState<string | null>(null);
 
   const { submit, busy } = useSubmitOnce(async () => {
@@ -101,11 +106,11 @@ export function LoginForm() {
         <Link href={`/${locale}/app/forgot-password`} className="-mt-2 w-fit text-caption font-semibold text-primary underline underline-offset-2">
           {t('login.forgot')}
         </Link>
-        <FormError message={error} />
+        <FormError message={error ?? (GOOGLE_ERRORS.find((slug) => slug === returned) ? tErrors(returned as (typeof GOOGLE_ERRORS)[number]) : null)} />
         <Button type="submit" variant="sticker" size="lg" isPending={busy} isDisabled={!store}>
           {t('login.submit')}
         </Button>
-        <GoogleSoon />
+        <GoogleButton next={safeNext(params.get('next'), locale)} />
         <p className="text-ui text-muted">
           {t('login.noAccount')}{' '}
           <Link href={`/${locale}/app/register`} className="font-semibold text-primary underline underline-offset-2">

@@ -305,7 +305,7 @@
       "back": "Quay lại",
       "email": "Email",
       "password": "Mật khẩu",
-      "google": "Đăng nhập bằng Google",
+      "google": "Tiếp tục với Google",
       "or": "Hoặc",
       "register": {
         "title": "Tạo tài khoản",
@@ -321,7 +321,8 @@
         "submit": "Tạo tài khoản",
         "haveAccount": "Đã có tài khoản?",
         "login": "Đăng nhập",
-        "givenNameRequired": "Nhập tên của bạn."
+        "givenNameRequired": "Nhập tên của bạn.",
+        "accountDeleting": "Tài khoản này đang được xóa, thử lại sau."
       },
       "passwordRules": {
         "min_length": "Cần ít nhất 8 ký tự.",
@@ -371,6 +372,14 @@
         "newPassword": "Mật khẩu mới",
         "hint": "Đổi xong, mọi thiết bị khác sẽ bị đăng xuất.",
         "submit": "Đổi mật khẩu"
+      },
+      "googleComplete": {
+        "title": "Hoàn tất đăng ký",
+        "intro": "Bạn sắp tạo tài khoản Wordmet bằng {email}. Còn vài thông tin nữa.",
+        "submit": "Tạo tài khoản",
+        "expiredTitle": "Phiên đăng ký đã hết hạn",
+        "expiredBody": "Bạn cần chọn lại tài khoản Google để tiếp tục.",
+        "toLogin": "Về trang đăng nhập"
       },
       "complete": {
         "title": "Bổ sung thông tin tài khoản",
@@ -428,8 +437,47 @@
       "logout": "Đăng xuất",
       "logoutHint": "Thoát khỏi thiết bị này",
       "deleteAccount": "Xóa tài khoản",
+      "signInMethods": "Đăng nhập bằng",
+      "methodPassword": "Mật khẩu",
+      "methodGoogle": "Google",
+      "setPassword": "Đặt mật khẩu",
+      "setPasswordHint": "Tài khoản này chỉ đăng nhập bằng Google. Đặt mật khẩu để đăng nhập cả bằng email.",
+      "deleteAccountStaff": "Liên hệ admin để xóa tài khoản",
       "transactions": "Lịch sử giao dịch",
       "saved": "Đã lưu thay đổi."
+    },
+    "deleteAccount": {
+      "title": "Xóa tài khoản",
+      "back": "Cài đặt",
+      "deletedTitle": "Những gì bị xóa",
+      "keptTitle": "Những gì còn được giữ",
+      "deleted": {
+        "learning": "Dữ liệu học: nhóm, lịch ôn, lịch sử trả lời",
+        "privateWords": "Từ riêng và câu bạn tự viết",
+        "plans": "Gói và lượt dùng của bạn",
+        "sessions": "Mọi phiên đăng nhập"
+      },
+      "kept": {
+        "payments": "Hồ sơ thanh toán {years, number} năm, không kèm tên bạn",
+        "paymentsNoYears": "Hồ sơ thanh toán theo thời hạn luật định, không kèm tên bạn",
+        "reports": "Báo lỗi bạn đã gửi, không kèm tên",
+        "totals": "Số liệu tổng hợp, không nhận ra bạn"
+      },
+      "blocked": "Bạn đang có gói tự gia hạn. Hủy gói trước khi xóa tài khoản.",
+      "blockedLink": "Đến trang Gói",
+      "understand": "Tôi hiểu dữ liệu sẽ mất và không khôi phục được",
+      "typeEmail": "Gõ lại email của bạn",
+      "password": "Mật khẩu",
+      "confirmWithGoogle": "Xác nhận bằng Google",
+      "googleConfirmed": "Đã xác nhận bằng Google",
+      "wrongAccount": "Đây không phải tài khoản Google của bạn. Chọn lại đúng tài khoản.",
+      "googleFailed": "Chưa xác nhận được bằng Google. Thử lại.",
+      "submit": "Xóa vĩnh viễn",
+      "doneTitle": "Tài khoản của bạn đã được xóa.",
+      "doneBody": "Cảm ơn bạn đã học cùng Wordmet. Thư xác nhận đã gửi tới email của bạn.",
+      "pendingTitle": "Tài khoản đang được xóa",
+      "pendingBody": "Việc xóa đang hoàn tất, có thể mất tới một giờ. Bạn không cần làm gì thêm.",
+      "toLogin": "Về trang đăng nhập"
     },
     "transactions": {
       "title": "Lịch sử giao dịch",
@@ -921,6 +969,16 @@
       "idempotency-key-abandoned": "Lần bấm trước bị dừng giữa chừng. Bấm lại.",
       "invalid-credentials": "Email hoặc mật khẩu chưa đúng.",
       "invalid-current-password": "Mật khẩu hiện tại chưa đúng.",
+      "cancel-in-store": "Gói này mua qua cửa hàng ứng dụng, hãy hủy trong phần quản lý gói của cửa hàng đó.",
+      "confirm-email-mismatch": "Email bạn gõ chưa khớp với email của tài khoản.",
+      "google-email-unverified": "Google chưa xác minh email này, nên chưa đăng nhập được. Hãy xác minh email ở Google rồi thử lại.",
+      "google-failed": "Đăng nhập bằng Google chưa thành công. Hãy thử lại.",
+      "google-unavailable": "Đăng nhập bằng Google đang tạm thời không dùng được. Hãy dùng email và mật khẩu.",
+      "provider-unavailable": "Nhà cung cấp thanh toán chưa trả lời. Hãy thử lại sau ít phút.",
+      "reauth-required": "Hãy xác nhận lại bằng tài khoản Google của bạn trước khi xóa.",
+      "staff-account": "Tài khoản nhân sự không tự xóa được. Hãy nhờ admin xóa.",
+      "subscription-not-cancellable": "Gói này không còn tự gia hạn nên không cần hủy.",
+      "subscription-renewing": "Bạn còn gói đang tự gia hạn. Hãy hủy gói trước khi xóa tài khoản.",
       "invalid-otp": "Mã xác minh chưa đúng hoặc đã hết hạn.",
       "invalid-token": "Bạn cần đăng nhập lại.",
       "mail-unavailable": "Chưa gửi được email. Thử lại sau ít phút.",
@@ -1364,6 +1422,20 @@
       }
     },
     "plans": {
+      "subscriptions": {
+        "title": "Gói đang đăng ký",
+        "renewsOn": "Gia hạn ngày {date}",
+        "renews": "Gói đang tự gia hạn",
+        "endsOn": "Gói kết thúc ngày {date}",
+        "ends": "Gói đã hủy gia hạn",
+        "cancel": "Hủy gói",
+        "dialogTitle": "Hủy gói?",
+        "dialogBody": "Gói vẫn dùng tới hết {date}, sau đó không gia hạn. Không hoàn tiền cho thời gian còn lại.",
+        "dialogBodyNoDate": "Gói vẫn dùng tới hết kỳ đã trả tiền, sau đó không gia hạn. Không hoàn tiền cho thời gian còn lại.",
+        "keep": "Giữ gói",
+        "confirm": "Hủy gia hạn",
+        "requested": "Đã gửi yêu cầu hủy gia hạn"
+      },
       "eyebrow": "Gói học",
       "title": "Học đều mỗi ngày, lên Pro khi cần",
       "titlePro": "Bạn đang dùng gói Pro",

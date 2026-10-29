@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 // Copied from apps/admin/src/auth/session-store.test.ts; staff-gate cases replaced by learner cases.
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createApiClient } from '@/app-shell/api/client';
 import { ApiError, NetworkError } from '@/app-shell/api/problem';
 import { SessionStore } from './session-store';
@@ -897,5 +897,46 @@ describe('SessionStore: API unavailable (FE35-FE37)', () => {
     const store = new SessionStore({ baseUrl: BASE, fetch: f.fetch, channel: null, wait: async () => {} });
     await store.bootstrap();
     expect(store.state).toEqual({ status: 'signed-out', notice: 'rate-limited' });
+  });
+});
+
+describe('SessionStore back from Google (?signed_in=google, B8E45, plan review P21)', () => {
+  beforeEach(() => {
+    sessionStorage.clear();
+    window.history.replaceState(null, '', '/vi/app/word?id=1&signed_in=google#x');
+  });
+  afterEach(() => window.history.replaceState(null, '', '/'));
+
+  const routes = (): Record<string, Route> => ({ 'POST /v1/auth/refresh': () => tokenResponse('tok-g'), 'GET /v1/me': ok(makeMe({ auth_method: 'google' })) });
+
+  it('clears the sign-out flag, refreshes with the cookie, broadcasts login and removes the parameter (keeping the rest of the address)', async () => {
+    sessionStorage.setItem(PENDING_KEY, '1');
+    const hub = channelHub();
+    const other = hub.create();
+    const heard: unknown[] = [];
+    other.addEventListener('message', (event) => heard.push(event.data));
+    const { store, calls } = newStore(routes(), hub.create());
+    await store.bootstrap();
+    expect(store.state).toMatchObject({ status: 'signed-in' });
+    expect(calls.filter((c) => c.path === '/v1/auth/refresh')).toHaveLength(1);
+    expect(sessionStorage.getItem(PENDING_KEY)).toBeNull();
+    expect(heard).toContainEqual({ type: 'login' });
+    expect(window.location.pathname + window.location.search + window.location.hash).toBe('/vi/app/word?id=1#x');
+  });
+
+  it('without the parameter the flag still keeps a signed-out tab signed out (FE38 holds)', async () => {
+    window.history.replaceState(null, '', '/vi/app');
+    sessionStorage.setItem(PENDING_KEY, '1');
+    const { store, calls } = newStore(routes());
+    await store.bootstrap();
+    expect(store.state).toEqual({ status: 'signed-out', notice: 'logout-failed' });
+    expect(calls.filter((c) => c.path === '/v1/auth/refresh')).toHaveLength(0);
+  });
+
+  it('a different value of signed_in is ignored and left in the address', async () => {
+    window.history.replaceState(null, '', '/vi/app?signed_in=other');
+    const { store } = newStore(routes());
+    await store.bootstrap();
+    expect(window.location.search).toBe('?signed_in=other');
   });
 });

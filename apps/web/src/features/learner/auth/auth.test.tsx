@@ -425,3 +425,71 @@ describe('Forgot and reset password (K/04, K/05)', () => {
     });
   });
 });
+
+describe('Google on the sign-in and sign-up pages (Bước 8)', () => {
+  const FLAG = 'wordmet-web-logout-pending';
+  let assign: ReturnType<typeof vi.fn>;
+  beforeEach(() => {
+    assign = vi.fn();
+    Object.defineProperty(window, 'location', { configurable: true, value: { ...window.location, assign, href: 'http://localhost/vi/app/login', search: '' } });
+  });
+
+  it('B8E46: the login page button goes to the API with the locale and the page to return to (query kept, encoded)', async () => {
+    search = new URLSearchParams({ next: '/vi/app/word?id=1' });
+    renderApp(<LoginForm />, { routes: signedOut });
+    await userEvent.click(screen.getByRole('button', { name: 'Tiếp tục với Google' }));
+    const target = new URL(assign.mock.calls[0][0] as string);
+    expect(target.origin + target.pathname).toBe('http://localhost:3000/v1/auth/google/start');
+    expect(Object.fromEntries(target.searchParams)).toEqual({ intent: 'login', locale: 'vi', next: '/vi/app/word?id=1' });
+  });
+
+  it('a next that is not under /app is replaced by the home page; the sign-up page returns to /app', async () => {
+    search = new URLSearchParams({ next: '//evil.example' });
+    const login = renderApp(<LoginForm />, { routes: signedOut });
+    await userEvent.click(screen.getByRole('button', { name: 'Tiếp tục với Google' }));
+    expect(new URL(assign.mock.calls[0][0] as string).searchParams.get('next')).toBe('/vi/app');
+    login.unmount();
+    renderApp(<RegisterForm today={TODAY} />, { routes: signedOut });
+    await userEvent.click(screen.getByRole('button', { name: 'Tiếp tục với Google' }));
+    expect(new URL(assign.mock.calls[1][0] as string).searchParams.get('next')).toBe('/vi/app');
+  });
+
+  it('P21: pressing the button leaves the sign-out flag alone, and so does a return with ?error=', async () => {
+    sessionStorage.setItem(FLAG, '1');
+    search = new URLSearchParams({ error: 'google-failed' });
+    renderApp(<LoginForm />, { routes: signedOut });
+    expect(sessionStorage.getItem(FLAG)).toBe('1');
+    await userEvent.click(screen.getByRole('button', { name: 'Tiếp tục với Google' }));
+    expect(sessionStorage.getItem(FLAG)).toBe('1');
+  });
+
+  it.each([
+    ['google-failed', 'Đăng nhập bằng Google chưa thành công. Hãy thử lại.'],
+    ['google-unavailable', 'Đăng nhập bằng Google đang tạm thời không dùng được. Hãy dùng email và mật khẩu.'],
+    ['google-email-unverified', 'Google chưa xác minh email này, nên chưa đăng nhập được. Hãy xác minh email ở Google rồi thử lại.'],
+  ])('?error=%s shows its text', async (slug, text) => {
+    search = new URLSearchParams({ error: slug });
+    renderApp(<LoginForm />, { routes: signedOut });
+    expect(await screen.findByText(text)).toBeInTheDocument();
+  });
+
+  it('?error=account-locked shows the locked box, and an unknown error code shows nothing', async () => {
+    search = new URLSearchParams({ error: 'account-locked' });
+    const locked = renderApp(<LoginForm />, { routes: signedOut });
+    expect(await screen.findByText('Tài khoản đang bị khóa')).toBeInTheDocument();
+    locked.unmount();
+    search = new URLSearchParams({ error: 'something-else' });
+    renderApp(<LoginForm />, { routes: signedOut });
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
+  it('register 409 email-taken with reason account-deleting → "Tài khoản này đang được xóa, thử lại sau."', async () => {
+    renderApp(<RegisterForm today={TODAY} />, {
+      routes: { ...signedOut, 'POST /v1/auth/register': () => problem(409, 'email-taken', { reason: 'account-deleting' }) },
+    });
+    await fillRegister();
+    await userEvent.click(screen.getByRole('checkbox'));
+    await userEvent.click(screen.getByRole('button', { name: 'Tạo tài khoản' }));
+    expect(await screen.findByText('Tài khoản này đang được xóa, thử lại sau.')).toBeInTheDocument();
+  });
+});

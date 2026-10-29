@@ -8,6 +8,7 @@ describe('appConfigView (design §8.7)', () => {
       practice: { max_questions_per_session: 20, default_questions_per_session: 10 },
       reminders: { send_time: '20:00' },
       learning: { backlog_after_days: 60, groups_per_user: 100 },
+      account: { transaction_retention_years: 10 },
       plans: {
         free: { practice_sessions_per_day: 3 },
         trial: { ai_practice_per_cycle: 300, ai_lookup_per_cycle: 100 },

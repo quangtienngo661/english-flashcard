@@ -5,6 +5,8 @@ export type AppConfigView = {
   practice: { max_questions_per_session: number; default_questions_per_session: number };
   reminders: { send_time: string };
   learning: { backlog_after_days: number; groups_per_user: number };
+  /** Bước 8: the delete-account screen says how long payment records are kept (D15). */
+  account: { transaction_retention_years: number };
   plans: {
     free: { practice_sessions_per_day: number };
     trial: { ai_practice_per_cycle: number; ai_lookup_per_cycle: number };
@@ -21,6 +23,7 @@ export function appConfigView(s: AppSettings): AppConfigView {
     },
     reminders: { send_time: s.reminders.sendTime },
     learning: { backlog_after_days: s.learning.backlogAfterDays, groups_per_user: s.learning.groupsPerUser },
+    account: { transaction_retention_years: e.transactionRetentionYears },
     plans: {
       free: { practice_sessions_per_day: e.freePracticeSessionsPerDay },
       trial: { ai_practice_per_cycle: e.trialAiPracticePerCycle, ai_lookup_per_cycle: e.trialAiLookupPerCycle },

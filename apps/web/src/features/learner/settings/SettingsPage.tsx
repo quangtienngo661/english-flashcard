@@ -1,6 +1,6 @@
 'use client';
 
-import { ChevronRight, Lock } from 'lucide-react';
+import { ChevronRight } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -74,6 +74,7 @@ export function SettingsPage() {
   }
 
   const account = `/${locale}/app/settings/account`;
+  const methods = me.sign_in_methods ?? ['password'];
 
   return (
     <AppShell variant="sub" back={{ href: `/${locale}/app`, label: tCommon('back') }}>
@@ -173,7 +174,26 @@ export function SettingsPage() {
               </Button>
             }
           />
-          <Row title={t('deleteAccount')} action={<ComingSoon />} />
+          <Row title={t('signInMethods')} detail={methods.map((m) => t(m === 'google' ? 'methodGoogle' : 'methodPassword')).join(' · ')} />
+          {/* A Google-only account has no password: the way to get one is "forgot password" (IR7). */}
+          {!methods.includes('password') && (
+            <Row
+              title={t('setPassword')}
+              detail={t('setPasswordHint')}
+              href={`/${locale}/app/forgot-password`}
+              action={<ChevronRight aria-hidden className="size-5 shrink-0 text-muted" />}
+            />
+          )}
+          {/* Staff do not delete themselves: an admin does it for them (D18). */}
+          {me.staff_role !== null ? (
+            <Row title={t('deleteAccount')} detail={t('deleteAccountStaff')} />
+          ) : (
+            <Row
+              title={t('deleteAccount')}
+              href={`/${locale}/app/settings/delete-account`}
+              action={<ChevronRight aria-hidden className="size-5 shrink-0 text-muted" />}
+            />
+          )}
         </Section>
         {/* M/90: on phones sign-out is the last, full-width button. */}
         <Button variant="quiet" size="lg" className="w-full md:hidden" onPress={() => void store?.logout()}>
@@ -213,16 +233,6 @@ function Choice<T extends string>(props: { label: string; value: T; options: Arr
         </Dialog>
       )}
     </>
-  );
-}
-
-function ComingSoon() {
-  const t = useTranslations('App.common');
-  return (
-    <span className="flex items-center gap-1 rounded-full bg-neutral-soft px-2 py-0.5 text-caption font-semibold text-muted">
-      <Lock aria-hidden className="size-3" />
-      {t('comingSoon')}
-    </span>
   );
 }
 
