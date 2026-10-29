@@ -8,9 +8,9 @@ import { SettingsService } from '../../settings/index.js';
 import { AiAdapterRegistry } from '../adapters/ai-adapter.registry.js';
 import type { AiOperation, AiProviderName } from '../ai.types.js';
 import { OPERATIONS } from '../operations/operations.js';
-import { estimateCost, type CostEstimate } from '../runner/cost.js';
-import { resolveMaxOutputTokens } from '../runner/run-rules.js';
+import type { CostEstimate } from '../runner/cost.js';
 import { selectionViolations } from './model-rules.js';
+import { operationEstimate } from './operation-estimate.js';
 
 /** Body of `PUT /v1/admin/ai/operations/{op}` (design §6.3); every key is required, `null` = default / off / no limit. */
 export const putOperationSchema = z.strictObject({
@@ -119,12 +119,6 @@ export class OperationSettingsService {
     const operation = row.operation as AiOperation;
     const model = row.model;
     const provider = model?.provider as AiProviderName | undefined;
-    const price = model && model.priceInput !== null && model.priceOutput !== null
-      ? {
-          input: Number(model.priceInput), output: Number(model.priceOutput),
-          cachedInput: model.priceCachedInput !== null ? Number(model.priceCachedInput) : null,
-        }
-      : null;
     return {
       operation,
       model: model && provider ? { id: model.id, provider, model_id: model.modelId } : null,
@@ -133,10 +127,7 @@ export class OperationSettingsService {
       max_output_tokens: row.maxOutputTokens,
       version: row.version,
       input_fields: [...OPERATIONS[operation].inputFields],
-      // The dearest call: the operation's limit, else for Anthropic the model's maximum or 16 000 (D25, D28).
-      estimate: provider
-        ? estimateCost(price, resolveMaxOutputTokens(provider, row.maxOutputTokens, model?.maxOutputTokens ?? null), usdVndRate)
-        : null,
+      estimate: operationEstimate(model, row.maxOutputTokens, usdVndRate),
     };
   }
 }

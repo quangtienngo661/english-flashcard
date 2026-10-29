@@ -13,10 +13,11 @@ import { AiAdapterRegistry } from '../adapters/ai-adapter.registry.js';
 import { AI_SYSTEM_ACTOR_ID, TEST_EXAMPLES_MAX } from '../ai.constants.js';
 import type { AiOperation } from '../ai.types.js';
 import { OPERATIONS } from '../operations/operations.js';
-import { RunnerService, type CallSummary } from '../runner/runner.service.js';
+import { RunnerService } from '../runner/runner.service.js';
 import { SelectionReader } from '../runner/selection.js';
 import { PROMPT_GUARD, promptViolations, type PromptExample } from './prompt-rules.js';
 import { PromptsRepository } from './prompts.repository.js';
+import { testInputs, toTestItem, type TestItem } from './test-inputs.js';
 
 /** Body of `PUT /v1/admin/ai/prompts/{op}` (design §7.3); the content rules run in the service so every error has a path. */
 export const savePromptSchema = z.strictObject({
@@ -48,16 +49,7 @@ export type PromptView = {
 
 export type PromptRevisionView = { revision: number; instructions: string; examples: PromptExample[]; saved_by: string; saved_at: string; saved_by_user: UserRef };
 
-export type TestItem = {
-  input: unknown;
-  status: string;
-  reason: string | null;
-  output: Record<string, unknown> | null;
-  raw_output: string | null;
-  latency_ms: number;
-  cost_usd: string | null;
-  calls: CallSummary[];
-};
+export type { TestItem };
 
 const invalid = (violations: string[]) => new ProblemDetailsException({
   status: 400, type: 'validation-failed', title: 'Validation failed', extensions: { violations },
@@ -66,15 +58,6 @@ const conflict = () => new ProblemDetailsException({ status: 409, type: 'prompt-
 const isUniqueViolation = (error: unknown) => error !== null && typeof error === 'object' && 'code' in error && error.code === 'P2002';
 
 const SYSTEM_IDS: ReadonlySet<string> = new Set([AI_SYSTEM_ACTOR_ID]);
-
-const USD_SCALE = 1e8;
-
-/** Sum of the calls' costs; unknown when any call's cost is (or when no call was made). */
-function totalCost(calls: CallSummary[]): string | null {
-  if (calls.length === 0 || calls.some((call) => call.cost_usd === null)) return null;
-  const units = calls.reduce((sum, call) => sum + Math.round(Number(call.cost_usd) * USD_SCALE), 0);
-  return (units / USD_SCALE).toFixed(8);
-}
 
 /** The admin side of prompts (design §7.3–7.4, §12.1 #9–#12). */
 @Injectable()
@@ -164,48 +147,13 @@ export class PromptsService {
     }
     const violations = promptViolations(op, body);
     if (violations.length > 0) throw invalid(violations);
-    const inputs = await this.inputs(op, body);
+    const inputs = await testInputs(this.prisma, op, body);
     const prompt = { instructions: body.instructions, examples: body.examples as PromptExample[], revision: null };
     // Counted only now: a test refused above (no model, bad draft, no example) costs nothing; the provider is called after.
     await this.limiter.hit('ai.test', actorId);
-    const items = await Promise.all(inputs.map(async (input): Promise<TestItem> => {
-      const report = await this.runner.execute({
-        purpose: 'test', operation: op, data: input, actorId, callOperationId: `test-${randomUUID()}`, selection, prompt,
-      });
-      const { result } = report;
-      return {
-        input,
-        status: result.status,
-        reason: 'reason' in result ? result.reason : null,
-        output: result.status === 'succeeded' ? result.result : null,
-        raw_output: report.rawOutput,
-        latency_ms: report.calls.reduce((sum, call) => sum + call.latency_ms, 0),
-        cost_usd: totalCost(report.calls),
-        calls: report.calls,
-      };
-    }));
+    const items = await Promise.all(inputs.map(async (input): Promise<TestItem> => toTestItem(input, await this.runner.execute({
+      purpose: 'test', operation: op, data: input, actorId, callOperationId: `test-${randomUUID()}`, selection, prompt,
+    }))));
     return { items };
-  }
-
-  /**
-   * `example_ids` → those examples; else the first five dev examples of the example set; else the draft's own examples (design §7.4).
-   * A held-out example is never computed here: its input must not reach anyone through a test (design §5.1, R7).
-   */
-  private async inputs(op: AiOperation, body: TestPromptBody): Promise<unknown[]> {
-    if (body.example_ids !== undefined) {
-      const ids = [...new Set(body.example_ids)];
-      const rows = await this.prisma.aiEvalExample.findMany({ where: { id: { in: ids } } });
-      if (ids.length === 0 || rows.length !== ids.length || rows.some((row) => row.operation !== op || row.split !== 'dev')) {
-        throw invalid([`example_ids: every id must be a dev example of ${op}`]);
-      }
-      return rows.map((row) => row.input);
-    }
-    const stored = await this.prisma.aiEvalExample.findMany({
-      where: { operation: op, split: 'dev' }, orderBy: [{ createdAt: 'asc' }, { id: 'asc' }], take: TEST_EXAMPLES_MAX,
-    });
-    if (stored.length > 0) return stored.map((row) => row.input);
-    const own = (body.examples as PromptExample[]).slice(0, TEST_EXAMPLES_MAX).map((example) => example.input);
-    if (own.length === 0) throw invalid(['examples: at least one example is needed']);
-    return own;
   }
 }
