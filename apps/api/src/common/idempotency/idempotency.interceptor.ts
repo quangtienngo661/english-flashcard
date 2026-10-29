@@ -13,6 +13,7 @@ import type { Response } from 'express';
 import type {} from 'multer';
 import type { PrismaClient } from '../../generated/prisma/client.js';
 import { PRISMA_CLIENT } from '../db/prisma.module.js';
+import { AppLogger } from '../logging/app-logger.js';
 import { ProblemDetailsException } from '../problem-details/problem-details.exception.js';
 import type { RequestWithUser } from '../request-user/request-user.js';
 import { IDEMPOTENT_KEY, type IdempotentOptions } from './idempotent.decorator.js';
@@ -23,6 +24,7 @@ export class IdempotencyInterceptor implements NestInterceptor {
   constructor(
     @Inject(PRISMA_CLIENT) private readonly prisma: PrismaClient,
     private readonly reflector: Reflector,
+    @Inject(AppLogger) private readonly logger: AppLogger,
   ) {}
 
   intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
@@ -62,7 +64,11 @@ export class IdempotencyInterceptor implements NestInterceptor {
           const body = await firstValueFrom(next.handle());
           return { status: response.statusCode, body };
         },
-        { leaseSeconds: timeoutSeconds },
+        {
+          leaseSeconds: timeoutSeconds,
+          // The key stays in_progress until its lease runs out: worth a line, without the key (it is the client's secret-ish token).
+          onReleaseFailed: (error) => this.logger.error('idempotency_release_failed', error, { endpoint: request.path }),
+        },
       ).then((result) => {
         if (result.kind === 'conflict') {
           response.setHeader('Retry-After', String(result.retryAfterSeconds));

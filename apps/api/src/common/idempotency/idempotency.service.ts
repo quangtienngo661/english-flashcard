@@ -23,7 +23,7 @@ export async function runIdempotent<T>(
   prisma: PrismaClient,
   params: { key: string; userId: string; endpoint: string; payloadHash: string },
   handler: () => Promise<{ status: number; body: T }>,
-  options?: { leaseSeconds?: number; now?: () => Date },
+  options?: { leaseSeconds?: number; now?: () => Date; onReleaseFailed?: (error: unknown) => void },
 ): Promise<RunIdempotentResult<T>> {
   const { key, userId, endpoint, payloadHash } = params;
   const leaseSeconds = options?.leaseSeconds ?? 30;
@@ -73,7 +73,7 @@ export async function runIdempotent<T>(
   } catch (error) {
     // The handler's error is what the client must see; if releasing the key fails too, the row stays in_progress and a
     // retry past the lease is told the key was abandoned.
-    await prisma.idempotencyKey.deleteMany({ where: claimed }).catch(() => undefined);
+    await prisma.idempotencyKey.deleteMany({ where: claimed }).catch((releaseError: unknown) => options?.onReleaseFailed?.(releaseError));
     throw error;
   }
 

@@ -192,7 +192,7 @@ describe('runIdempotent: claim, run, finish (C1)', () => {
     expect(fake.rows()).toEqual([expect.objectContaining({ status: 'in_progress' })]);
   });
 
-  it('B1-9: a failed release is reported to onReleaseFailed (the key stays in_progress), and the handler's error still wins', async () => {
+  it('B1-9: a failed release is reported to onReleaseFailed (the key stays in_progress), and the error of the handler still wins', async () => {
     const fake = fakePrisma();
     const failure = new Error('handler failed');
     const releaseFailure = new Error('release failed');
