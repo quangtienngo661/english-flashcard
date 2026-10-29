@@ -79,4 +79,8 @@ export const ACCOUNT_DATA_MAP: Record<string, Disposition> = {
   'ai_configs.created_by': 'keep-id',
   'ai_configs.published_by': 'keep-id',
   'ai_config_events.actor_id': 'keep-id',
+  'ai_judges.created_by': 'keep-id',
+  'ai_judge_revisions.saved_by': 'keep-id',
+  'ai_judge_passes.started_by': 'keep-id',
+  'ai_labels.labeled_by': 'keep-id',
 };

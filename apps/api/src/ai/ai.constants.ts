@@ -21,6 +21,8 @@ export const DEFAULT_MAX_OUTPUT_TOKENS = {
   generate_cloze: 1200, lookup_word: 1200, translate_sentence: 800,
   // Bước 7 design §15 (ASSUMPTION).
   generate_meaning_question: 1200, generate_sentence_mcq: 1200, check_private_word: 300,
+  // Nhóm B M3: the `judge` gateway operation (one verdict and one short reason per criterion).
+  judge: 1000,
 } as const;
 /** Upper bound of the token setting when the model's maximum is unknown (design §6.3). */
 export const MAX_OUTPUT_TOKENS_UPPER = 128_000;
@@ -57,6 +59,13 @@ export const MODEL_NOTE_MAX = 500;
 export const EVAL_NOTE_MAX = 500;
 /** The note an admin may leave on a config draft (nhóm B M2). */
 export const CONFIG_NOTE_MAX = 500;
+/** Judge limits (nhóm B design §5.4): its name, its criteria (code, question), a reason it gives, the session words handed to it. */
+export const JUDGE_NAME_MAX = 100;
+export const JUDGE_CRITERIA_MAX = 10;
+export const JUDGE_CODE_PATTERN = /^[a-z][a-z0-9_]{0,39}$/;
+export const JUDGE_QUESTION_MAX = 500;
+export const JUDGE_REASON_MAX = 1000;
+export const JUDGE_SESSION_WORDS_MAX = 50;
 export const PRICE_MAX = 1000;
 
 // Copies of Content's constants (R17: `ai` never imports Content; `ai.constants.spec.ts` compares them).
