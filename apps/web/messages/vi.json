@@ -722,8 +722,8 @@
       "newGroup": "Nhóm mới “{name}”",
       "addAll": "Thêm cả {count, number} từ",
       "addSelected": "Thêm {count, number} từ đã chọn",
-      "result": "Đã thêm {added} từ vào nhóm “{name}”.",
-      "resultSkipped": "{already} từ đã có trong nhóm, {full} từ không vừa vì nhóm đã đầy, {missing} từ không còn.",
+      "result": "Đã thêm {added, number} từ vào nhóm “{name}”.",
+      "resultSkipped": "{already, number} từ đã có trong nhóm, {full, number} từ không vừa vì nhóm đã đầy, {missing, number} từ không còn.",
       "notFound": "Không tìm thấy chủ đề này.",
       "back": "Quay lại",
       "none": "Chưa có từ nào cho chủ đề và trình độ này."
@@ -895,8 +895,8 @@
       "bulkNewDeck": "Nhóm mới: {name}",
       "bulkNote": "Các từ chưa học vào ngăn Mới.",
       "bulkSubmit": "Thêm cả loạt",
-      "bulkResult": "Đã thêm {added} từ vào nhóm “{name}”.",
-      "bulkSkipped": "{already} từ đã có trong nhóm, {function} từ chức năng bỏ qua, {full} từ không vừa vì nhóm đã đầy.",
+      "bulkResult": "Đã thêm {added, number} từ vào nhóm “{name}”.",
+      "bulkSkipped": "{already, number} từ đã có trong nhóm, {function, number} từ chức năng bỏ qua, {full, number} từ không vừa vì nhóm đã đầy.",
       "pickDeck": "Chọn {group}",
       "ai": {
         "button": "Tra bằng AI",
