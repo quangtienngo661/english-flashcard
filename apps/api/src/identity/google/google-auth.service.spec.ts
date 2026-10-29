@@ -189,6 +189,12 @@ describe('GoogleAuthService.callback', () => {
     expect((await call(await approve(s))).location).toBe(`${WEB}/vi/app/login?error=google-failed`);
   });
 
+  it('B6-3: the failed-sign-in log keeps the database error code instead of redacting it', async () => {
+    s.prisma.$transaction.mockRejectedValueOnce(Object.assign(new Error('unique'), { code: 'P2002' }));
+    await call(await approve(s));
+    expect(s.logs.find((l) => l.event === 'google_sign_in_failed')).toMatchObject({ user_id: USER, db_error: 'P2002' });
+  });
+
   it('a new person (no account, or one that never verified) gets a sealed google_signup ticket and no row is written (D6)', async () => {
     for (const byEmail of [null, { emailVerifiedAt: null }]) {
       s = setup({ byEmail });
