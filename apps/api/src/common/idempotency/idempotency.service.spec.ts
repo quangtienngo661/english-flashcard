@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { Prisma, type PrismaClient } from '../../generated/prisma/client.js';
 import { runIdempotent } from './idempotency.service.js';
 
@@ -190,6 +190,24 @@ describe('runIdempotent: claim, run, finish (C1)', () => {
     await expect(runIdempotent(fake.prisma, params, async () => { throw failure; }, { now: () => t0 })).rejects.toBe(failure);
     expect(fake.events).toEqual(['tx1:create', 'tx1:commit', 'deleteMany']);
     expect(fake.rows()).toEqual([expect.objectContaining({ status: 'in_progress' })]);
+  });
+
+  it('B1-9: a failed release is reported to onReleaseFailed (the key stays in_progress), and the handler's error still wins', async () => {
+    const fake = fakePrisma();
+    const failure = new Error('handler failed');
+    const releaseFailure = new Error('release failed');
+    fake.failNext.deleteMany = releaseFailure;
+    const onReleaseFailed = vi.fn();
+
+    await expect(runIdempotent(fake.prisma, params, async () => { throw failure; }, { now: () => t0, onReleaseFailed })).rejects.toBe(failure);
+    expect(onReleaseFailed).toHaveBeenCalledExactlyOnceWith(releaseFailure);
+  });
+
+  it('B1-9: a release that works does not report anything', async () => {
+    const fake = fakePrisma();
+    const onReleaseFailed = vi.fn();
+    await expect(runIdempotent(fake.prisma, params, async () => { throw new Error('handler failed'); }, { now: () => t0, onReleaseFailed })).rejects.toThrow('handler failed');
+    expect(onReleaseFailed).not.toHaveBeenCalled();
   });
 
   it('FE31: the finish write fails → the error propagates and the row stays in_progress', async () => {
