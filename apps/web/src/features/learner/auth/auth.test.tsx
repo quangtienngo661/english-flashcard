@@ -466,6 +466,7 @@ describe('Google on the sign-in and sign-up pages (Bước 8)', () => {
   it.each([
     ['google-failed', 'Đăng nhập bằng Google chưa thành công. Hãy thử lại.'],
     ['google-unavailable', 'Đăng nhập bằng Google đang tạm thời không dùng được. Hãy dùng email và mật khẩu.'],
+    ['google-busy', 'Có quá nhiều lượt đăng nhập bằng Google từ mạng này. Đợi một phút rồi thử lại, hoặc dùng email và mật khẩu.'],
     ['google-email-unverified', 'Google chưa xác minh email này, nên chưa đăng nhập được. Hãy xác minh email ở Google rồi thử lại.'],
   ])('?error=%s shows its text', async (slug, text) => {
     search = new URLSearchParams({ error: slug });
