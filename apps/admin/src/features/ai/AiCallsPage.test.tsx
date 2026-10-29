@@ -40,6 +40,14 @@ describe('AiCallsPage (A/86)', () => {
     expect(r.calls.filter((c) => c.path.startsWith('/v1/admin/ai/calls'))).toHaveLength(1);
   });
 
+  it('a judge call has its own purpose and operation names: "judge" and "Judge chấm điểm"', async () => {
+    renderApp(`/ai/calls?operation_id=${OP}`, { [callsUrl(OP)]: reply(call({ purpose: 'judge', operation: 'judge', prompt_revision: null })) });
+    expect(await screen.findAllByText('timeout')).not.toHaveLength(0);
+    const row = screen.getAllByRole('row')[1];
+    expect(row).toHaveTextContent('judge');
+    expect(row).toHaveTextContent('Judge chấm điểm');
+  });
+
   it('[Tìm] writes the code to the URL (trimmed) and loads it', async () => {
     const r = renderApp('/ai/calls', { [callsUrl(OP)]: reply(call()) });
     await screen.findByText(t.hint);

@@ -54,8 +54,9 @@ export const succeeded = (word: string): TestResult['items'][number] => ({
 
 /** One result of a run (`GET …/eval/runs/{id}/items`): the example's snapshot and what the model, the rules and the expected answer said. */
 export const runItem = (over: Partial<EvalRunItem> = {}): EvalRunItem => ({
-  example_id: 'e1', position: 0, split: 'dev', input: example('go').input, expected: { forms: ['go'] }, status: 'succeeded', reason: null,
-  output: { sentence: 'I ___ home.' }, raw_output: null, rule: { status: 'pass', problems: [], reason: null }, expected_result: 'pass', latency_ms: 700, cost_usd: null, ...over,
+  item_id: 'i1', example_id: 'e1', position: 0, split: 'dev', input: example('go').input, expected: { forms: ['go'] }, status: 'succeeded', reason: null,
+  output: { sentence: 'I ___ home.' }, raw_output: null, rule: { status: 'pass', problems: [], reason: null }, expected_result: 'pass', latency_ms: 700, cost_usd: null,
+  scores: [], labels: [], ...over,
 });
 
 /** One eval run (A/83) as `GET …/eval/runs/{id}` answers it; the list rows are the same without `draft`, `heartbeat_at`, `items`. */

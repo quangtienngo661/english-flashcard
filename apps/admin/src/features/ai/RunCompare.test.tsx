@@ -29,7 +29,7 @@ const comparison = (over: Partial<RunComparison> = {}): RunComparison => ({
     b: runStats({ total: 3, shape_pass: 3, rule_pass: 1, rule_fail: 1, expected_pass: 2, expected_fail: 1 }, { total: 2, shape_pass: 1, shape_fail: 1, rule_pass: 1, rule_fail: 1, expected_pass: 1 }),
   },
   regressions: { dev: [{ example_id: 'x1', input: { word: 'go', part_of_speech: 'verb' }, failed: ['rule'] }], held_out: 1 },
-  ...over,
+  judge: [], judge_unmatched: [], ...over,
 });
 
 const routes = (over = {}) => evalRoutes({

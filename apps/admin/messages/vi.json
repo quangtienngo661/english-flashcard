@@ -232,7 +232,8 @@
         "translate_sentence": "Dịch câu",
         "generate_meaning_question": "Sinh câu hỏi nghĩa",
         "generate_sentence_mcq": "Sinh câu chọn đáp án",
-        "check_private_word": "Kiểm từ riêng"
+        "check_private_word": "Kiểm từ riêng",
+        "judge": "Judge chấm điểm"
       },
       "row": {
         "model": "Model",
@@ -291,7 +292,8 @@
       "purposes": {
         "learner": "người học",
         "test": "chạy thử",
-        "eval": "bộ ví dụ"
+        "eval": "bộ ví dụ",
+        "judge": "judge"
       },
       "shutdown": "Ngừng ngày {date}",
       "lifecycle": "Vòng đời: {lifecycle}",
@@ -448,6 +450,7 @@
         "baselineRequired": "Bản đang chạy chưa có lần chạy trọn trên phiên bản {version}.",
         "runLive": "Chạy bản đang chạy trên phiên bản {version}",
         "rateDrop": "Tỉ lệ đạt {criterion} giảm từ {before}% xuống {after}%.",
+        "judgeRateDrop": "Tỉ lệ đạt judge {name} bản {revision} ({criterion}) giảm từ {before}% xuống {after}%.",
         "criteria": {
           "shape": "khuôn",
           "rule": "luật",
@@ -1487,7 +1490,8 @@
       "ai_cap_alert_percent": "không tô vàng"
     },
     "notes": {
-      "transaction_retention_years": "Luật Kế toán: tối thiểu 5–10 năm tùy loại chứng từ"
+      "transaction_retention_years": "Luật Kế toán: tối thiểu 5–10 năm tùy loại chứng từ",
+      "admin_daily_usd_cap": "Chạy thử, bộ ví dụ và judge dừng khi đã tiêu tới trần. Để trống: không trần. 0: chặn hết."
     },
     "zeroMeaning": {
       "ai_prefetch_count": "tắt",
@@ -1565,7 +1569,10 @@
         "daily_provider_calls_cap": "Trần lời gọi nhà cung cấp mỗi ngày",
         "content_retention_days": "Giữ nội dung lời gọi",
         "usd_vnd_rate": "Tỷ giá USD → VND",
-        "eval_held_out_ratio": "Tỉ lệ ví dụ held-out"
+        "eval_held_out_ratio": "Tỉ lệ ví dụ held-out",
+        "admin_daily_usd_cap": "Trần USD việc admin mỗi ngày",
+        "judge_label_min": "Số nhãn tối thiểu để tin judge",
+        "judge_agreement_min": "Độ khớp tối thiểu với nhãn"
       },
       "identity": {
         "unverified_cleanup_days": "Tự xóa tài khoản chưa xác nhận email sau"

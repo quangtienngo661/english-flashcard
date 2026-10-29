@@ -232,7 +232,8 @@
         "translate_sentence": "Translate sentence",
         "generate_meaning_question": "Generate meaning question",
         "generate_sentence_mcq": "Generate sentence choice",
-        "check_private_word": "Check private word"
+        "check_private_word": "Check private word",
+        "judge": "Judge scoring"
       },
       "row": {
         "model": "Model",
@@ -291,7 +292,8 @@
       "purposes": {
         "learner": "learner",
         "test": "test run",
-        "eval": "example set"
+        "eval": "example set",
+        "judge": "judge"
       },
       "shutdown": "Shuts down {date}",
       "lifecycle": "Lifecycle: {lifecycle}",
@@ -448,6 +450,7 @@
         "baselineRequired": "The live config has no complete run on version {version}.",
         "runLive": "Run the live config on version {version}",
         "rateDrop": "The pass rate on {criterion} dropped from {before}% to {after}%.",
+        "judgeRateDrop": "The pass rate of judge {name} revision {revision} ({criterion}) dropped from {before}% to {after}%.",
         "criteria": {
           "shape": "shape",
           "rule": "rules",
@@ -1487,7 +1490,8 @@
       "ai_cap_alert_percent": "no yellow alert"
     },
     "notes": {
-      "transaction_retention_years": "Accounting law: at least 5–10 years depending on the document"
+      "transaction_retention_years": "Accounting law: at least 5–10 years depending on the document",
+      "admin_daily_usd_cap": "Test runs, example-set runs and the judge stop once this much is spent. Empty: no cap. 0: block everything."
     },
     "zeroMeaning": {
       "ai_prefetch_count": "off",
@@ -1565,7 +1569,10 @@
         "daily_provider_calls_cap": "Provider calls cap per day",
         "content_retention_days": "Keep call content for",
         "usd_vnd_rate": "USD → VND rate",
-        "eval_held_out_ratio": "Held-out share of the example set"
+        "eval_held_out_ratio": "Held-out share of the example set",
+        "admin_daily_usd_cap": "Admin USD cap per day",
+        "judge_label_min": "Labels needed to trust a judge",
+        "judge_agreement_min": "Minimum agreement with the labels"
       },
       "identity": {
         "unverified_cleanup_days": "Delete accounts that never verified their email after"

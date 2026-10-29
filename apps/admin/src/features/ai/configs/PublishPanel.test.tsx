@@ -102,6 +102,16 @@ describe('PublishPanel: what a publish needs (M2-T7)', () => {
     expect(screen.getByText(t.publish.heldOutUp.replace('{before}', '1').replace('{after}', '3'))).toBeInTheDocument();
   });
 
+  it('a judge rate drop names the judge, its revision and the criterion, with one decimal', async () => {
+    await openPage(pageRoutes(publishCheck({
+      warnings: [{
+        code: 'judge-rate-drop', judge_id: 'J', judge_name: 'Chỉ một đáp án', judge_revision_id: 'JR2', revision: 2, criterion: 'single_answer',
+        before: { passed: 20, counted: 20 }, after: { passed: 18, counted: 20 },
+      }],
+    })));
+    expect(await screen.findByText('Tỉ lệ đạt judge Chỉ một đáp án bản 2 (single_answer) giảm từ 100% xuống 90%.')).toBeInTheDocument();
+  });
+
   it('no warning: no checkbox, "Publish" is on and sends acknowledge_warnings false', async () => {
     const r = await openPage(pageRoutes(publishCheck(), { [URL.publish()]: () => Response.json(afterPublish()) }));
     await waitFor(() => expect(button(t.publish.submit)).toBeEnabled());
