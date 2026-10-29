@@ -421,6 +421,7 @@ test('Bộ ví dụ at 390 fits the window with a long example input, a long not
         runItem({ example_id: 'gone', position: 1, input: null, status: 'permanent_failure', reason: 'r'.repeat(200), output: null, raw_output: 'y'.repeat(2000), rule: null, expected_result: null, latency_ms: 300 }),
       ],
       stats: runStats({ total: 2, shape_pass: 1, shape_fail: 1, rule_fail: 1, expected_pass: 1, failing: 2 }, { total: 3, shape_pass: 3, rule_pass: 3, expected_pass: 3 }),
+      passes: [], judge_stats: [],
     } }),
   });
   await page.goto('/ai/eval');

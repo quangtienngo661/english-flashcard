@@ -11,6 +11,7 @@ import { useApi } from '../../auth/session-context';
 import { Badge } from '../../ui/Badge';
 import { Banner } from '../../ui/Banner';
 import { Button } from '../../ui/Button';
+import { Checkbox } from '../../ui/Checkbox';
 import { ConfirmDialog } from '../../ui/ConfirmDialog';
 import { DataList, type Column } from '../../ui/DataList';
 import { DetailPanel } from '../../ui/DetailPanel';
@@ -24,6 +25,7 @@ import {
   type EvalExample, type EvalRun, type EvalSet, type ExampleRow,
 } from './ai-api';
 import { EvalRunPanel, RunStatusBadge, StartRunFailure, usePromptLabel, useSetLabel, useStartRun } from './EvalRunPanel';
+import { useJudgeChoice, useRunJudges } from './EvalRunJudge';
 import { BulkExamplesDialog } from './BulkExamplesDialog';
 import { EvalSetDialog } from './EvalSetDialog';
 import { ExampleDialog } from './ExampleDialog';
@@ -105,7 +107,13 @@ export function AiEvalPage() {
   const chosen = pick?.op === op && (pick.id === WORKING_SET || versionRows.some((version) => version.id === pick.id)) ? pick.id : null;
   const runSet = chosen ?? newest?.id ?? WORKING_SET;
   // The fingerprint keeps a failed press and its [Thử lại] to the set it was made for.
-  const start = useStartRun(op, runSet, (id) => void navigate(runHref(id)));
+  // "Chấm bằng judge": only when an active judge scores this operation. Ticked, the run asks for a pass of the chosen judge when it finishes.
+  const judges = useRunJudges(op);
+  const judgeChoice = useJudgeChoice(judges.candidates);
+  const [judgeOn, setJudgeOn] = useState(false);
+  const judgeId = judgeOn && judges.candidates.length > 0 ? (judgeChoice.judge?.id ?? null) : null;
+  const judgeWanted = judgeOn && judges.candidates.length > 0;
+  const start = useStartRun(op, `${runSet}:${judgeId ?? ''}`, (id) => void navigate(runHref(id)));
   const nextVersion = Math.max(0, ...versionRows.map((version) => version.version)) + 1;
   const freeze = useMutation({
     mutationFn: () => freezeSet(api, op),
@@ -303,12 +311,26 @@ export function AiEvalPage() {
             onChange={(id) => setPick({ op, id })}
           />
         </div>
+        {judges.candidates.length > 0 && (
+          <div className="flex w-full max-w-md flex-col gap-3">
+            <Checkbox isSelected={judgeOn} onChange={setJudgeOn}>{t('ai.eval.run.judge')}</Checkbox>
+            {judgeOn && (
+              <Select
+                label={t('ai.eval.run.judgeSelect')}
+                items={judgeChoice.items}
+                disabledIds={judgeChoice.disabledIds}
+                value={judgeChoice.value}
+                onChange={judgeChoice.choose}
+              />
+            )}
+          </div>
+        )}
         <div className="flex flex-wrap items-center gap-3">
           {/* Until the versions are read the select cannot say which one a run would take. */}
           <Button
             isPending={start.pending}
-            isDisabled={start.waitSeconds > 0 || sets.isPending}
-            onPress={() => start.start({ prompt: 'current', ...(runSet === WORKING_SET ? {} : { set_id: runSet }) })}
+            isDisabled={start.waitSeconds > 0 || sets.isPending || (judgeWanted && judgeId === null)}
+            onPress={() => start.start({ prompt: 'current', ...(runSet === WORKING_SET ? {} : { set_id: runSet }), ...(judgeId === null ? {} : { judge_id: judgeId }) })}
           >
             {start.waitSeconds > 0 ? t('ai.eval.run.wait', { seconds: start.waitSeconds }) : t('ai.eval.run.start')}
           </Button>

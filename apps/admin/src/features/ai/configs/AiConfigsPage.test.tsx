@@ -246,7 +246,7 @@ describe('AiConfigsPage: testing and running the draft (M2-T6)', () => {
     [URL.configs()]: withDraft(),
     [URL.startRun]: () => Response.json(START, { status: 202 }),
     [URL.run(RUN_ID)]: () => Response.json(evalRun({ status: 'queued', done: 0, created_at: new Date().toISOString() })),
-    [URL.runItems(RUN_ID)]: () => Response.json({ items: [], stats: { dev: {}, held_out: {} } }),
+    [URL.runItems(RUN_ID)]: () => Response.json({ items: [], stats: { dev: {}, held_out: {} }, passes: [], judge_stats: [] }),
     ...over,
   });
 

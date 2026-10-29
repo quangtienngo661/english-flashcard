@@ -628,6 +628,9 @@
       "run": {
         "title": "Run example set",
         "start": "Run example set",
+        "judge": "Score with a judge",
+        "judgeSelect": "Judge",
+        "judgeNoModel": "{name} (no model chosen)",
         "note": "Runs the whole set with the current prompt. Each run calls the AI for every example and uses one run.",
         "quota": "{remaining}/{limit} runs left this hour (shared with Test run on the Configs page)",
         "quotaFailed": "Could not read the runs left.",
@@ -706,6 +709,45 @@
           "notApplicable": "Not applicable"
         },
         "expectedResult": { "pass": "Pass", "fail": "Fail" },
+        "judge": {
+          "title": "Judge",
+          "pass": "{name} revision {revision} · {status} · {judged}/{total} · {cost}",
+          "noTotal": "—",
+          "noCost": "—",
+          "statuses": {
+            "queued": "Waiting",
+            "running": "Scoring",
+            "finished": "Done",
+            "failed": "Stopped"
+          },
+          "errors": {
+            "admin-usd-cap": "Stopped because today's admin USD cap is spent.",
+            "stalled": "Stopped because the worker did not answer.",
+            "run-failed": "Not scored because the run did not finish.",
+            "model-price-missing": "The judge's model has no price."
+          },
+          "start": "Score with a judge",
+          "select": "Judge",
+          "sameProvider": "The model that wrote the sentences and the judge are both Anthropic: the judge may be lenient with a style of its own family.",
+          "stats": "Judge {name} revision {revision} · {criterion}: dev pass {pass}/{scored} (major {major}, minor {minor}) · held-out pass {hpass}/{hscored} · {unjudged} could not be scored",
+          "calibrated": "Calibrated",
+          "uncalibrated": "Not calibrated",
+          "verdicts": {
+            "pass": "Pass",
+            "fail_major": "Major fail",
+            "fail_minor": "Minor fail",
+            "unjudged": "Could not be scored"
+          },
+          "score": "{criterion}: {verdict}",
+          "scoreOf": "{criterion}: {verdict} · {name} revision {revision}",
+          "labelNone": "Not labelled",
+          "labelFor": "Label · {example} · {criterion}",
+          "cols": {
+            "judge": "Judge",
+            "label": "Label"
+          },
+          "labelQueue": "Label one by one"
+        },
         "stats": {
           "dev": "Dev: shape {shapePass}/{shapeDone} · rules {rulePass}/{ruleJudged} ({ruleSkipped} skipped) · expected {expectedPass}/{expectedJudged}",
           "heldOut": "Held-out (totals only): shape {shapePass}/{shapeDone} · rules {rulePass}/{ruleJudged} ({ruleSkipped} skipped) · expected {expectedPass}/{expectedJudged}",

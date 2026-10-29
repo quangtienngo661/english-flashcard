@@ -31,12 +31,12 @@ export const runStats = (dev: Record<string, number> = {}, heldOut: Record<strin
 
 /** One example of a run as `GET …/eval/runs/:id/items` sends it (dev only). */
 export const runItem = (over: Record<string, unknown> = {}) => ({
-  example_id: 'e1', position: 0, split: 'dev', input: clozeInput('go'), expected: { forms: ['go'] }, status: 'succeeded', reason: null,
-  output: { sentence: 'I ___ home.' }, raw_output: null, rule: { status: 'pass', problems: [], reason: null }, expected_result: 'pass', latency_ms: 700, cost_usd: null, ...over,
+  item_id: 'i1', example_id: 'e1', position: 0, split: 'dev', input: clozeInput('go'), expected: { forms: ['go'] }, status: 'succeeded', reason: null,
+  output: { sentence: 'I ___ home.' }, raw_output: null, rule: { status: 'pass', problems: [], reason: null }, expected_result: 'pass', latency_ms: 700, cost_usd: null, scores: [], labels: [], ...over,
 });
 
 /** `GET /v1/admin/ai/eval/sets` with no version yet. */
 export const noSets: MockHandler = () => ({ json: { items: [] } });
 
 /** `GET …/eval/runs/:id/items` of a run with no result yet. */
-export const noRunItems: MockHandler = () => ({ json: { items: [], stats: runStats() } });
+export const noRunItems: MockHandler = () => ({ json: { items: [], stats: runStats(), passes: [], judge_stats: [] } });

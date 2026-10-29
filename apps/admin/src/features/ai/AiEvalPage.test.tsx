@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 import vi from '../../../messages/vi.json';
 import { problem, type Call } from '../../auth/test-support';
 import { renderApp } from '../staff/test-utils';
+import { judgeOnFake, judgeView } from './judges/judge-test-support';
 import { URL, evalExample, evalRoutes, evalRun, evalSet, example, heldOutExample, operationsFor, setDetail, setItem } from './prompt-test-support';
 
 const t = vi.ai.eval;
@@ -714,5 +715,70 @@ describe('AiEvalPage runs on a version (nhóm B M1)', () => {
     expect(rows[0]).toHaveTextContent(t.set.version.replace('{version}', '1'));
     expect(rows[1]).toHaveTextContent(t.set.workingShort);
     expect(rows[2]).toHaveTextContent(t.set.legacy);
+  });
+});
+
+describe('AiEvalPage runs with a judge (nhóm B M3-T16)', () => {
+  const START = { run_id: 'aaaaaaaa-0000-4000-8000-000000000001', status: 'queued' };
+  const startRoute = () => ({
+    [URL.startRun]: () => Response.json({ ...START, judge_pass_id: 'P1' }, { status: 202 }),
+    [URL.run()]: () => Response.json(evalRun({ status: 'queued', done: 0, created_at: new Date().toISOString() })),
+  });
+  const judges = (...items: ReturnType<typeof judgeView>[]) => ({ [URL.judges]: () => Response.json({ items }) });
+  const tick = () => screen.getByRole('checkbox', { name: t.run.judge });
+  const judgeSelect = () => screen.getByRole('button', { name: /Judge$/ });
+
+  it('a judge that scores this operation: ticking "Chấm bằng judge" and picking it posts the run with judge_id', async () => {
+    const r = await openPage({ ...judges(judgeOnFake()), ...startRoute() });
+    expect(screen.queryByRole('button', { name: /Judge$/ })).not.toBeInTheDocument();
+    await userEvent.click(await screen.findByRole('checkbox', { name: t.run.judge }));
+    await userEvent.click(judgeSelect());
+    await userEvent.click(await screen.findByRole('option', { name: 'Chỉ một đáp án' }));
+    await userEvent.click(runButton());
+    await waitFor(() => expect(posts(r.calls, '/v1/admin/ai/eval/runs')).toHaveLength(1));
+    expect(posts(r.calls, '/v1/admin/ai/eval/runs')[0].body).toEqual({ operation: 'generate_cloze', prompt: 'current', judge_id: 'J1' });
+  });
+
+  it('not ticked: the run goes without a judge', async () => {
+    const r = await openPage({ ...judges(judgeOnFake()), ...startRoute() });
+    expect(await screen.findByRole('checkbox', { name: t.run.judge })).not.toBeChecked();
+    await userEvent.click(runButton());
+    await waitFor(() => expect(posts(r.calls, '/v1/admin/ai/eval/runs')).toHaveLength(1));
+    expect(posts(r.calls, '/v1/admin/ai/eval/runs')[0].body).toEqual({ operation: 'generate_cloze', prompt: 'current' });
+  });
+
+  it('a judge with no model is listed disabled "(chưa chọn model)"; with nothing else to pick the run button stays off while ticked', async () => {
+    await openPage({ ...judges(judgeView()), ...startRoute() });
+    await userEvent.click(await screen.findByRole('checkbox', { name: t.run.judge }));
+    expect(runButton()).toBeDisabled();
+    await userEvent.click(judgeSelect());
+    expect(await screen.findByRole('option', { name: 'Chỉ một đáp án (chưa chọn model)' })).toHaveAttribute('aria-disabled', 'true');
+    await userEvent.keyboard('{Escape}');
+    await userEvent.click(tick());
+    expect(runButton()).toBeEnabled();
+  });
+
+  it('only active judges that score the operation are offered; with none, the page has no judge box at all', async () => {
+    await openPage({
+      ...judges(
+        judgeOnFake({ active: false }), judgeOnFake({ id: 'J2', name: 'Chỉ tra từ', operations: ['lookup_word'] }),
+      ),
+      ...startRoute(),
+    });
+    await screen.findByRole('button', { name: t.run.start });
+    expect(screen.queryByRole('checkbox', { name: t.run.judge })).not.toBeInTheDocument();
+  });
+
+  it('a failed list of judges is not an error of the page: the run goes on without the judge box', async () => {
+    await openPage({ [URL.judges]: () => problem(500, 'internal-error'), ...startRoute() });
+    expect(runButton()).toBeEnabled();
+    expect(screen.queryByRole('checkbox', { name: t.run.judge })).not.toBeInTheDocument();
+  });
+
+  it.each(['admin-usd-cap', 'model-price-missing', 'judge-pass-running'])('409 %s when starting a run with a judge reads its own sentence', async (slug) => {
+    await openPage({ ...judges(judgeOnFake()), [URL.startRun]: () => problem(409, slug) });
+    await userEvent.click(await screen.findByRole('checkbox', { name: t.run.judge }));
+    await userEvent.click(runButton());
+    expect(await screen.findByText(vi.errors[slug as 'admin-usd-cap'])).toBeInTheDocument();
   });
 });

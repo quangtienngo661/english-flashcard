@@ -59,7 +59,7 @@ test.describe('Bộ ví dụ (A/83)', () => {
         return { json: reads === 1 ? run({ status: 'running', done: 1, valid_count: 1, ...onVersion }) : run(onVersion) };
       },
       [`GET /v1/admin/ai/eval/runs/${EVAL_RUN_ID}/items`]: () => ({
-        json: { items: [runItem()], stats: runStats({ total: 1, shape_pass: 1, rule_pass: 1, expected_pass: 1 }) },
+        json: { items: [runItem()], stats: runStats({ total: 1, shape_pass: 1, rule_pass: 1, expected_pass: 1 }), passes: [], judge_stats: [] },
       }),
     }));
     await page.goto('/ai/status');
@@ -184,6 +184,7 @@ test.describe('Bộ ví dụ (A/83)', () => {
         json: {
           items: [runItem({ rule: { status: 'fail', problems: ['unknown-form:deployment'], reason: null }, expected_result: 'fail' })],
           stats: runStats({ total: 1, shape_pass: 1, rule_fail: 1, expected_fail: 1, failing: 1 }, { total: 2, shape_pass: 2, rule_pass: 1, rule_skipped: 1 }),
+          passes: [], judge_stats: [],
         },
       }),
       'GET /v1/admin/ai/eval/runs/compare': () => ({

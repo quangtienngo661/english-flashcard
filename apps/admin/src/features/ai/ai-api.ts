@@ -561,6 +561,8 @@ export const aiKeys = {
   judgeRevisions: (id: string) => ['ai', 'judge-revisions', id] as const,
   judgeAgreement: (id: string) => ['ai', 'judge-agreement', id] as const,
   judgePass: (id: string) => ['ai', 'judge-pass', id] as const,
+  /** Every judge's agreement, for one invalidation after a label changes. */
+  anyJudgeAgreement: () => ['ai', 'judge-agreement'] as const,
 };
 
 const base = '/v1/admin/ai';

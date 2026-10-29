@@ -90,6 +90,7 @@ const mocks: Record<string, MockHandler> = {
   'GET /v1/admin/ai/eval/runs/aaaaaaaa-0000-4000-8000-000000000001/items': () => ({ json: {
     items: [runItem({ rule: { status: 'fail', problems: ['unknown-form:banking'], reason: null } })],
     stats: runStats({ total: 1, shape_pass: 1, rule_fail: 1, expected_pass: 1 }, { total: 1, shape_pass: 1, rule_pass: 1, expected_pass: 1 }),
+    passes: [], judge_stats: [],
   } }),
   'GET /v1/admin/ai/costs': () => ({ json: {
     items: [{ key: '2026-10-15', calls: 10, input_tokens: 1200, cached_input_tokens: 300, output_tokens: 800, reasoning_tokens: 50, cost_usd: '0.01230000', cost_vnd: 321, unknown_cost_calls: 2 }],

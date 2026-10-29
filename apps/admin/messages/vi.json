@@ -628,6 +628,9 @@
       "run": {
         "title": "Chạy bộ ví dụ",
         "start": "Chạy bộ ví dụ",
+        "judge": "Chấm bằng judge",
+        "judgeSelect": "Judge",
+        "judgeNoModel": "{name} (chưa chọn model)",
         "note": "Chạy cả bộ với prompt hiện tại. Mỗi lần chạy gọi AI thật cho từng ví dụ và tốn một lượt.",
         "quota": "Còn {remaining}/{limit} lần chạy trong giờ này (dùng chung với Chạy thử ở Cấu hình)",
         "quotaFailed": "Không đọc được số lần chạy còn lại.",
@@ -706,6 +709,45 @@
           "notApplicable": "Không áp dụng"
         },
         "expectedResult": { "pass": "Đạt", "fail": "Không đạt" },
+        "judge": {
+          "title": "Judge",
+          "pass": "{name} bản {revision} · {status} · {judged}/{total} · {cost}",
+          "noTotal": "—",
+          "noCost": "—",
+          "statuses": {
+            "queued": "Đang chờ",
+            "running": "Đang chấm",
+            "finished": "Đã xong",
+            "failed": "Dừng"
+          },
+          "errors": {
+            "admin-usd-cap": "Dừng vì đã tiêu tới trần USD việc admin hôm nay.",
+            "stalled": "Dừng vì worker không phản hồi.",
+            "run-failed": "Không chấm vì lần chạy không xong.",
+            "model-price-missing": "Model của judge chưa có giá."
+          },
+          "start": "Chấm bằng judge",
+          "select": "Judge",
+          "sameProvider": "Model viết câu và judge cùng là Anthropic: judge có thể dễ dãi với văn phong cùng họ.",
+          "stats": "Judge {name} bản {revision} · {criterion}: dev đạt {pass}/{scored} (nặng {major}, nhẹ {minor}) · held-out đạt {hpass}/{hscored} · {unjudged} không chấm được",
+          "calibrated": "Đã hiệu chỉnh",
+          "uncalibrated": "Chưa hiệu chỉnh",
+          "verdicts": {
+            "pass": "Đạt",
+            "fail_major": "Không đạt nặng",
+            "fail_minor": "Không đạt nhẹ",
+            "unjudged": "Không chấm được"
+          },
+          "score": "{criterion}: {verdict}",
+          "scoreOf": "{criterion}: {verdict} · {name} bản {revision}",
+          "labelNone": "Chưa gắn",
+          "labelFor": "Nhãn · {example} · {criterion}",
+          "cols": {
+            "judge": "Judge",
+            "label": "Nhãn"
+          },
+          "labelQueue": "Gắn nhãn lần lượt"
+        },
         "stats": {
           "dev": "Dev: khuôn {shapePass}/{shapeDone} · luật {rulePass}/{ruleJudged} ({ruleSkipped} bỏ qua) · mong đợi {expectedPass}/{expectedJudged}",
           "heldOut": "Held-out (chỉ số tổng): khuôn {shapePass}/{shapeDone} · luật {rulePass}/{ruleJudged} ({ruleSkipped} bỏ qua) · mong đợi {expectedPass}/{expectedJudged}",

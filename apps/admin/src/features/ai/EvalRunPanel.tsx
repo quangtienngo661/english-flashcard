@@ -17,11 +17,12 @@ import { showToast } from '../../ui/Toast';
 import { useSubmitAction } from '../content/useSubmitAction';
 import { getSettings } from '../settings/settings-api';
 import { useNow } from '../jobs/useNow';
-import { usePollingStatus, useQueuedTooLong } from '../jobs/usePollingStatus';
+import { POLL_INTERVAL_MS, usePollingStatus, useQueuedTooLong } from '../jobs/usePollingStatus';
 import {
   UUID, aiKeys, cancelRun, deleteRun, getRun, getTestQuota, isRunCancelled, isRunDone, listRunItems, startRun, type AiOperation, type EvalRun, type EvalRunItem,
   type EvalRunStatus, type SplitStats, type StartRunBody, type TestStatus,
 } from './ai-api';
+import { JudgeSection, criteriaOf, isPassActive, useJudgeColumns, useRunJudges } from './EvalRunJudge';
 import { exampleSummary } from './prompt-form';
 import { RunCompare } from './RunCompare';
 import { useAiFormat } from './useAiFormat';
@@ -168,7 +169,17 @@ export function EvalRunPanel({ id, onDone, onDeleted }: { id: string; onDone?: (
   const operation = query.data?.operation ?? 'generate_cloze';
   const run = query.data;
   // The dev results and the totals of both parts. Each result carries the snapshot of its example, so the example list is not read.
-  const itemsQuery = useQuery({ queryKey: aiKeys.runItems(id), queryFn: () => listRunItems(api, id), enabled: validId && run !== undefined });
+  const itemsQuery = useQuery({
+    queryKey: aiKeys.runItems(id),
+    queryFn: () => listRunItems(api, id),
+    enabled: validId && run !== undefined,
+    // A judge pass is queued or running: its scores arrive while the panel is open (nhóm B M3).
+    refetchInterval: (q) => (q.state.data?.passes.some(isPassActive) ? POLL_INTERVAL_MS : false),
+  });
+  const judges = useRunJudges(operation);
+  const items = itemsQuery.data?.items ?? [];
+  const criteria = criteriaOf(judges.candidates, items);
+  const judgeUi = useJudgeColumns(id, criteria, items);
   // Same key as the settings page: an admin who just changed the rate sees the new ₫ here.
   const settings = useQuery({ queryKey: ['settings'], queryFn: () => getSettings(api) });
   const now = useNow(1000, run?.status === 'queued');
@@ -262,7 +273,6 @@ export function EvalRunPanel({ id, onDone, onDeleted }: { id: string; onDone?: (
     [t('ai.eval.detail.startedBy'), userLabel(run.started_by_user, t)],
   ];
 
-  const items = itemsQuery.data?.items ?? [];
   const stats = itemsQuery.data?.stats;
   const none = t('ai.eval.detail.none');
   const ruleText = (item: EvalRunItem): string => {
@@ -331,6 +341,9 @@ export function EvalRunPanel({ id, onDone, onDeleted }: { id: string; onDone?: (
     },
   ];
 
+  // The judge's verdicts and the owner's labels sit before the timing columns.
+  const at = resultColumns.findIndex((column) => column.key === 'latency');
+  resultColumns.splice(at, 0, ...judgeUi.columns);
   const live = run.status === 'queued' || run.status === 'running';
   let notice: { variant: 'info' | 'error'; text: string } | null = null;
   if (run.status === 'queued') notice = { variant: 'info', text: t(tooLong ? 'ai.eval.detail.queuedLong' : 'ai.eval.detail.queued') };
@@ -362,6 +375,7 @@ export function EvalRunPanel({ id, onDone, onDeleted }: { id: string; onDone?: (
             </div>
           ))}
         </dl>
+        <JudgeSection run={run} passes={itemsQuery.data?.passes ?? []} stats={itemsQuery.data?.judge_stats ?? []} candidates={judges.candidates} hasItems={items.length > 0} />
         {(showResults || itemsQuery.isError) && (
           <section aria-labelledby="eval-run-results" className="flex min-w-0 flex-col gap-2">
             <h3 id="eval-run-results" className="text-ui font-semibold text-ink">{t('ai.eval.detail.results')}</h3>
@@ -374,6 +388,7 @@ export function EvalRunPanel({ id, onDone, onDeleted }: { id: string; onDone?: (
                 {stats.held_out.total > 0 && <p className="text-muted">{t('ai.eval.detail.stats.heldOutHidden')}</p>}
               </div>
             )}
+            {judgeUi.error && <Banner variant="error" code={judgeUi.error.code}>{judgeUi.error.message}</Banner>}
             {items.length > 0 && <DataList rows={items} rowKey={(item) => String(item.position)} columns={resultColumns} state="ready" />}
           </section>
         )}
