@@ -11,6 +11,7 @@ import type { AiMeta, AiOperation, AiPurpose, AiResult, CallOutcome, GatewayOper
 import { LiveConfigReader } from '../configs/live-config.reader.js';
 import { GATEWAY_DEFINITIONS, OPERATIONS, parseOutput, type OutputCheck } from '../operations/operations.js';
 import { assembleInstructions, type PromptExample } from '../prompts/prompt-rules.js';
+import { AdminSpend } from './admin-spend.service.js';
 import { CallLedger } from './call-ledger.service.js';
 import { CallQueue, ConcurrencyLimit } from './call-queue.js';
 import { callCost } from './cost.js';
@@ -56,6 +57,8 @@ export type RunReport = { result: AiResult; calls: CallSummary[]; rawOutput: str
 type Calls =
   | { kind: 'busy' }
   | { kind: 'out-of-time' }
+  /** An admin call stopped before a provider attempt: today's usd cap is reached (nhóm B M3, E7). */
+  | { kind: 'admin-cap' }
   | { kind: 'answered'; outcome: AdapterOutcome; check: OutputCheck | null };
 
 type CallContext = {
@@ -90,6 +93,7 @@ export class RunnerService {
     @Inject(CallQueue) private readonly queue: CallQueue,
     @Inject(ConcurrencyLimit) private readonly limit: ConcurrencyLimit,
     @Inject(AppLogger) private readonly logger: AppLogger,
+    @Inject(AdminSpend) private readonly spend: AdminSpend,
   ) {}
 
   execute(input: ExecuteInput): Promise<RunReport> {
@@ -226,6 +230,8 @@ export class RunnerService {
       for (const attempt of [1, 2] as const) {
         const leftMs = Math.floor(context.deadline - performance.now());
         if (leftMs < 1) return { kind: 'out-of-time' };
+        // Before every attempt, so a retry never spends past the cap either; a learner call is never asked (B21).
+        if (context.purpose !== 'learner' && (await this.spend.reached(this.clock.now()))) return { kind: 'admin-cap' };
         const request: AdapterRequest = {
           model: selection.modelId, instructions, data: context.data, schema, effort: selection.effort, thinking: selection.thinking,
           maxOutputTokens: selection.maxOutputTokens, timeoutMs: leftMs,
@@ -280,6 +286,7 @@ export class RunnerService {
   private toResult(calls: Calls, operationId: string, selection: Selection, prompt: Prompt): AiResult {
     if (calls.kind === 'busy') return { status: 'transient_failure', operation_id: operationId, reason: 'busy' };
     if (calls.kind === 'out-of-time') return { status: 'transient_failure', operation_id: operationId, reason: 'timeout' };
+    if (calls.kind === 'admin-cap') return { status: 'unavailable', operation_id: operationId, reason: 'admin-usd-cap' };
     if (calls.outcome.kind === 'ok' && calls.check?.ok) {
       const meta: AiMeta = {
         operation: selection.operation, provider: selection.provider, model: selection.modelId, effort: selection.effort,

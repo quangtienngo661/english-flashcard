@@ -16,7 +16,10 @@ export type AiPurpose = 'learner' | 'test' | 'eval' | 'judge';
 
 export type TransientReason = 'timeout' | 'connection' | 'rate-limited' | 'provider-error' | 'invalid-shape' | 'truncated' | 'busy';
 export type PermanentReason = 'refused' | 'bad-input' | 'model-rejected' | 'auth-failed' | 'input-mismatch';
-export type UnavailableReason = 'ai-disabled' | 'model-not-set' | 'provider-not-configured' | 'provider-quota' | 'daily-call-cap';
+export type UnavailableReason =
+  | 'ai-disabled' | 'model-not-set' | 'provider-not-configured' | 'provider-quota' | 'daily-call-cap'
+  // An admin test, eval run or judge pass reached today's usd cap (nhóm B M3, B20); a learner never sees it.
+  | 'admin-usd-cap';
 
 /** `ai_calls.outcome`: `succeeded` or the call's own reason (plan choice 2). */
 export type CallOutcome =

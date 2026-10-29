@@ -41,10 +41,19 @@ export class CallLedger {
     @Inject(AppLogger) private readonly logger: AppLogger,
   ) {}
 
-  /** Provider calls since 00:00 in Vietnam, every purpose and outcome (D24). */
+  /** Learner provider calls since 00:00 in Vietnam, every outcome: what the daily cap limits (D24; nhóm B M3, B21). */
   countToday(now: Date): Promise<number> {
     const since = zonedMidnight(AI_DAY_ZONE, localDate(AI_DAY_ZONE, now));
-    return this.prisma.aiCall.count({ where: { createdAt: { gte: since } } });
+    return this.prisma.aiCall.count({ where: { createdAt: { gte: since }, purpose: 'learner' } });
+  }
+
+  /** What admin work (test, eval, judge) cost since 00:00 in Vietnam, in USD; calls of unknown cost add nothing (nhóm B M3, B20). */
+  async adminSpentToday(now: Date): Promise<number> {
+    const since = zonedMidnight(AI_DAY_ZONE, localDate(AI_DAY_ZONE, now));
+    const [row] = await this.prisma.$queryRaw<Array<{ spent: string }>>`
+      SELECT coalesce(sum(cost_usd), 0)::numeric(20, 8)::text AS spent FROM ai_calls
+      WHERE created_at >= ${since} AND purpose IN ('test', 'eval', 'judge')`;
+    return Number(row!.spent);
   }
 
   /** One `ai_calls` row, and its content when `retentionDays > 0`, in one short transaction (after the call, never during it). */

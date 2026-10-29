@@ -73,6 +73,17 @@ function setup(input: Setup = {}) {
   return { readiness, counted, loads };
 }
 
+describe('ReadinessService.check and the learner cap (nhóm B M3, B21)', () => {
+  it('cap 3 with 2 learner calls today (the ledger counts learner calls only) → ready; with 3 → daily-call-cap', async () => {
+    const { readiness, counted } = setup({ cap: 3, count: 2 });
+    await expect(readiness.check('generate_cloze', 'learner', NOW)).resolves.toMatchObject({ ready: true });
+    expect(counted).toEqual([NOW]);
+    await expect(setup({ cap: 3, count: 3 }).readiness.check('generate_cloze', 'learner', NOW)).resolves.toEqual({
+      ready: false, reason: 'daily-call-cap', retry_after_seconds: 25_200,
+    });
+  });
+});
+
 describe('ReadinessService.check reads the live config once (nhóm B M2)', () => {
   it('one load per check, and the ready answer carries the prompt of that same read', async () => {
     const { readiness, loads } = setup();

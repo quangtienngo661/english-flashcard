@@ -30,6 +30,7 @@ import { OperationSettingsService } from './models/operation-settings.service.js
 import { PromptsRepository } from './prompts/prompts.repository.js';
 import { PromptsService } from './prompts/prompts.service.js';
 import { ReportsService } from './reports/reports.service.js';
+import { AdminSpend } from './runner/admin-spend.service.js';
 import { CallLedger } from './runner/call-ledger.service.js';
 import { CallQueue, ConcurrencyLimit } from './runner/call-queue.js';
 import { OperationsRepository } from './runner/operations.repository.js';
@@ -46,7 +47,7 @@ import { SelectionReader } from './runner/selection.js';
   ],
   providers: [
     AiAdapterRegistry, AdaptersRegistrar, PromptsRepository, ModelsService, OperationSettingsService, SelectionReader, CallLedger,
-    ReadinessService, OperationsRepository, ConcurrencyLimit,
+    ReadinessService, OperationsRepository, ConcurrencyLimit, AdminSpend,
     // One queue per process (design §8.4); its limit is the one the runner read last.
     { provide: CallQueue, useFactory: (limit: ConcurrencyLimit) => new CallQueue(() => limit.value), inject: [ConcurrencyLimit] },
     RunnerService, AiService, PromptsService, ReportsService,

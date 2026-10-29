@@ -22,6 +22,7 @@ function setup() {
   const calls: Array<Record<string, unknown>> = [];
   const contents: Array<Record<string, unknown>> = [];
   const counts: unknown[] = [];
+  const raws: Array<{ sql: string; values: unknown[] }> = [];
   const prisma = {
     aiCall: {
       create: vi.fn((args: { data: Record<string, unknown> }) => {
@@ -40,10 +41,14 @@ function setup() {
       }),
     },
     $transaction: vi.fn(async (ops: unknown[]) => ops),
+    $queryRaw: vi.fn(async (strings: TemplateStringsArray, ...values: unknown[]) => {
+      raws.push({ sql: strings.join('?').replace(/\s+/g, ' ').trim(), values });
+      return [{ spent: '1.50000000' }];
+    }),
   } as unknown as PrismaClient;
   const entries: LogEntry[] = [];
   const logger = new AppLogger({ write: (entry) => entries.push(entry) });
-  return { ledger: new CallLedger(prisma, logger), prisma, calls, contents, counts, entries };
+  return { ledger: new CallLedger(prisma, logger), prisma, calls, contents, counts, raws, entries };
 }
 
 const content = { request: { instructions: SECRET_INSTRUCTIONS, data: SECRET_DATA }, response: SECRET_RESPONSE };
@@ -122,19 +127,37 @@ describe('CallLedger.countToday', () => {
   it('B6E69: at 2026-10-20T23:30Z countToday counts from 2026-10-20T17:00Z', async () => {
     const { ledger, counts } = setup();
     await expect(ledger.countToday(new Date('2026-10-20T23:30:00.000Z'))).resolves.toBe(7);
-    expect(counts).toEqual([{ where: { createdAt: { gte: new Date('2026-10-20T17:00:00.000Z') } } }]);
+    expect(counts).toEqual([{ where: { createdAt: { gte: new Date('2026-10-20T17:00:00.000Z') }, purpose: 'learner' } }]);
   });
 
   it('at 16:59:59 Z still counts from the previous 17:00 Z', async () => {
     const { ledger, counts } = setup();
     await ledger.countToday(new Date('2026-10-20T16:59:59.000Z'));
-    expect(counts).toEqual([{ where: { createdAt: { gte: new Date('2026-10-19T17:00:00.000Z') } } }]);
+    expect(counts).toEqual([{ where: { createdAt: { gte: new Date('2026-10-19T17:00:00.000Z') }, purpose: 'learner' } }]);
   });
 
-  it('B6E89: countToday has no purpose filter (a test call counts)', async () => {
+  it('B21 (nhóm B M3): countToday counts learner calls only, whatever their outcome: an admin test, eval or judge call never uses up the learners\' cap', async () => {
     const { ledger, counts } = setup();
     await ledger.countToday(NOW);
-    expect(JSON.stringify(counts[0])).not.toContain('purpose');
+    expect(counts[0]).toEqual({ where: { createdAt: { gte: new Date('2026-10-19T17:00:00.000Z') }, purpose: 'learner' } });
     expect(JSON.stringify(counts[0])).not.toContain('outcome');
+  });
+});
+
+describe('CallLedger.adminSpentToday (nhóm B M3, B20)', () => {
+  it('sums cost_usd of test, eval and judge calls since 00:00 in Vietnam, and returns it as a number', async () => {
+    const { ledger, raws } = setup();
+    await expect(ledger.adminSpentToday(new Date('2026-10-20T23:30:00.000Z'))).resolves.toBe(1.5);
+    expect(raws).toHaveLength(1);
+    expect(raws[0]!.sql).toContain("purpose IN ('test', 'eval', 'judge')");
+    expect(raws[0]!.sql).toContain('coalesce(sum(cost_usd), 0)');
+    expect(raws[0]!.sql).toContain('created_at >= ?');
+    expect(raws[0]!.values).toEqual([new Date('2026-10-20T17:00:00.000Z')]);
+  });
+
+  it('16:59:59 Z is still the day that began at the previous 17:00 Z', async () => {
+    const { ledger, raws } = setup();
+    await ledger.adminSpentToday(new Date('2026-10-20T16:59:59.000Z'));
+    expect(raws[0]!.values).toEqual([new Date('2026-10-19T17:00:00.000Z')]);
   });
 });

@@ -40,7 +40,7 @@ type Setup = {
   registered?: AiProviderName[];
   aiEnabled?: boolean;
   lastErrors?: Array<{ operation: string; created_at: Date; outcome: string; http_status: number | null; purpose: string }>;
-  today?: { failed_calls: number; failed_cost_usd: string; cost_usd: string };
+  today?: { failed_calls: number; failed_cost_usd: string; cost_usd: string; admin_cost_usd: string };
   grouped?: Array<Record<string, unknown>>;
   total?: Record<string, unknown>;
   calls?: Array<Record<string, unknown>>;
@@ -88,7 +88,7 @@ function setup(input: Setup = {}) {
           unknown_cost_calls: 0,
         }];
       }
-      return [input.today ?? { failed_calls: 0, failed_cost_usd: '0.00000000', cost_usd: '0.00000000' }];
+      return [input.today ?? { failed_calls: 0, failed_cost_usd: '0.00000000', cost_usd: '0.00000000', admin_cost_usd: '0.00000000' }];
     }),
   } as unknown as PrismaClient;
   const registry = new AiAdapterRegistry();
@@ -159,7 +159,7 @@ describe('ReportsService.status', () => {
     const at = new Date('2026-10-20T04:00:00.000Z');
     const { service } = setup({
       lastErrors: [{ operation: 'lookup_word', created_at: at, outcome: 'invalid-shape', http_status: null, purpose: 'learner' }],
-      today: { failed_calls: 1, failed_cost_usd: '0.00003500', cost_usd: '0.00010500' },
+      today: { failed_calls: 1, failed_cost_usd: '0.00003500', cost_usd: '0.00010500', admin_cost_usd: '0.00000000' },
     });
     const report = await service.status(NOW);
     expect(report.operations[1].last_error).toEqual({ at: at.toISOString(), outcome: 'invalid-shape', http_status: null, purpose: 'learner' });
@@ -191,9 +191,10 @@ describe('ReportsService.status', () => {
   });
 
   it('today: calls from the ledger, the cap, costs and VND at usd_vnd_rate', async () => {
-    const { service } = setup({ today: { failed_calls: 3, failed_cost_usd: '0.01000000', cost_usd: '1.28120000' } });
+    const { service } = setup({ today: { failed_calls: 3, failed_cost_usd: '0.01000000', cost_usd: '1.28120000', admin_cost_usd: '1.50000000' } });
     expect((await service.status(NOW)).today).toEqual({
       calls: 42, cap: 3_000, failed_calls: 3, failed_cost_usd: '0.01000000', cost_usd: '1.28120000', cost_vnd: 33_439,
+      admin_cost_usd: '1.50000000', admin_usd_cap: 2,
     });
   });
 

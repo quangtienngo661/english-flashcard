@@ -56,7 +56,11 @@ export type StatusReport = {
     last_error: { at: string; outcome: CallOutcome; http_status: number | null; purpose: AiPurpose } | null;
     model_warning: { shutdown_at: string | null; lifecycle: string | null } | null;
   }>;
-  today: { calls: number; cap: number | null; failed_calls: number; failed_cost_usd: string; cost_usd: string; cost_vnd: number };
+  /** `calls` counts learner calls (what the daily cap limits); `admin_cost_usd` is what test, eval and judge calls cost today (nhóm B M3). */
+  today: {
+    calls: number; cap: number | null; failed_calls: number; failed_cost_usd: string; cost_usd: string; cost_vnd: number;
+    admin_cost_usd: string; admin_usd_cap: number | null;
+  };
   ai_enabled: boolean;
   providers: Record<AiProviderName, boolean>;
 };
@@ -104,10 +108,11 @@ export class ReportsService {
       this.prisma.aiLiveConfig.findMany({ include: { config: { include: { model: true } } } }),
       Promise.all(AI_OPERATIONS.map((op) => this.readiness.check(op, 'learner', now))),
       this.ledger.countToday(now),
-      this.prisma.$queryRaw<Array<{ failed_calls: number; failed_cost_usd: string; cost_usd: string }>>`
+      this.prisma.$queryRaw<Array<{ failed_calls: number; failed_cost_usd: string; cost_usd: string; admin_cost_usd: string }>>`
         SELECT (count(*) FILTER (WHERE outcome <> 'succeeded'))::int AS failed_calls,
           coalesce(sum(cost_usd) FILTER (WHERE outcome <> 'succeeded'), 0)::numeric(20, 8)::text AS failed_cost_usd,
-          coalesce(sum(cost_usd), 0)::numeric(20, 8)::text AS cost_usd
+          coalesce(sum(cost_usd), 0)::numeric(20, 8)::text AS cost_usd,
+          coalesce(sum(cost_usd) FILTER (WHERE purpose IN ('test', 'eval', 'judge')), 0)::numeric(20, 8)::text AS admin_cost_usd
         FROM ai_calls WHERE created_at >= ${since}`,
       // A reason that made no provider call (busy, in_progress, ai-disabled, …) has no ai_calls row, so it never shows here.
       this.prisma.$queryRaw<Array<{ operation: string; created_at: Date; outcome: CallOutcome; http_status: number | null; purpose: AiPurpose }>>`
@@ -143,6 +148,7 @@ export class ReportsService {
       today: {
         calls, cap: settings.ai.dailyProviderCallsCap, failed_calls: today.failed_calls, failed_cost_usd: today.failed_cost_usd,
         cost_usd: today.cost_usd, cost_vnd: Math.round(Number(today.cost_usd) * settings.ai.usdVndRate),
+        admin_cost_usd: today.admin_cost_usd, admin_usd_cap: settings.ai.adminDailyUsdCap,
       },
       ai_enabled: settings.entitlements.aiEnabled,
       providers: Object.fromEntries(AI_PROVIDERS.map((provider) => [provider, registered.has(provider)])) as Record<AiProviderName, boolean>,
