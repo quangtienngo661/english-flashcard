@@ -454,13 +454,14 @@
       "deleted": {
         "learning": "Learning data: groups, review schedule, answer history",
         "privateWords": "Your own words and sentences",
-        "plans": "Your plans and usage",
+        "plans": "Your plans",
         "sessions": "Every sign-in session"
       },
       "kept": {
         "payments": "Payment records for {years, number} years, without your name",
         "paymentsNoYears": "Payment records for the legal period, without your name",
         "reports": "Error reports you sent, without your name",
+        "usage": "Quota you used, without your name",
         "totals": "Totals that do not identify you"
       },
       "blocked": "You have a plan that renews. Cancel it before deleting your account.",

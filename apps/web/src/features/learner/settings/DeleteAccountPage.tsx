@@ -77,6 +77,7 @@ function Lists({ years }: { years: number | undefined }) {
         <ul className="flex list-disc flex-col gap-1 pl-5 text-ui text-ink">
           <li>{years === undefined ? t('kept.paymentsNoYears') : t('kept.payments', { years })}</li>
           <li>{t('kept.reports')}</li>
+          <li>{t('kept.usage')}</li>
           <li>{t('kept.totals')}</li>
         </ul>
       </section>
