@@ -57,7 +57,7 @@ D*n* ứng với câu *n* của file câu hỏi 29/10.
 | D37 (Q-R1) | Cổng publish khi bản đang chạy chưa có model | Không cần mốc; nháp vẫn phải có lần eval trọn | Chủ dự án (đề xuất của Claude, chủ dự án nhờ đề xuất trước) |
 | D38 (Q-R1b) | Tắt AI của một thao tác | Publish nháp không model, không cần eval, có hộp hỏi | Chủ dự án (đề xuất của Claude, chủ dự án nhờ đề xuất trước) |
 | D39 (Q-R3) | "Lần học" của D7/D30 | Bảng mới `learning_activity_days`, gồm trả lời câu luyện tập | Chủ dự án (đề xuất của Claude, chủ dự án nhờ đề xuất trước) |
-| D40 (Q1) | Model đã từng dùng có xóa được không | Không xóa được (FK `RESTRICT`); ẩn bằng `retired` | Chủ dự án (đề xuất của Claude, chủ dự án nhờ đề xuất trước) |
+| D40 (Q1) | Model đã từng dùng có xóa được không | Không xóa được (FK `RESTRICT`); admin ẩn bằng cờ `hidden` (vòng 2) | Chủ dự án (đề xuất của Claude, chủ dự án nhờ đề xuất trước; vòng 2 chủ dự án chọn (b)) |
 
 ## D1 — Cách brainstorm khi B1 mới làm một phần (câu 1)
 
@@ -435,6 +435,16 @@ chủ dự án hỏi "là sao"; chủ dự án ghi "các câu trên bạn đề 
 | Cho xóa model chỉ còn nằm trong cấu hình `retired` / bản judge cũ | Lịch sử mất tên model |
 
 Review plan Q1 đưa các hướng a / b / c trong file review; bảng trên tóm theo hai hướng Claude trình bày khi đề xuất.
+
+**Vòng 2 (30/10/2026).** Khi viết plan, Claude kiểm lại: cột `lifecycle` do nhà cung cấp ghi lúc thêm và lúc làm mới model mỗi 24 giờ
+(`models.service.ts:75-77`, `ai-maintenance.ts:56`), admin không đặt được, và chỉ Anthropic báo `retired`. Phương án ✅ ở vòng 1 dựa trên giả định sai, nên hỏi lại:
+
+| Phương án | Trade-off |
+|---|---|
+| (a) Chỉ lọc model nhà cung cấp báo `retired` | Không thêm việc; model OpenAI và `fake` không bao giờ ẩn được |
+| ✅ (b) Thêm cột `ai_models.hidden` do admin bật bằng nút "Ẩn khỏi ô chọn model" trên trang Models; ô chọn ẩn model bị ẩn hoặc `retired` | Làm được điều D40 hứa với mọi nhà cung cấp; thêm một cột và một nút (gộp vào M2-T1, M2-T6) |
+
+Claude đề xuất (b); chủ dự án chọn "Thêm nút ẩn (b)". Vẫn giữ chặn xóa (`RESTRICT`).
 
 ## Các câu nhóm B ngày 26/10
 

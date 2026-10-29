@@ -23,7 +23,7 @@ Chủ dự án bảo Claude đề xuất trước cả bốn ("các câu trên b
 | Q-R1 (D37) | Trên DB mới cả 6 thao tác chưa có model; cổng đòi eval bản đang chạy làm mốc, mà bản không model thì không eval được (R1) | Bản đang chạy **không có model** thì không cần mốc; nháp vẫn phải có lần eval trọn trên phiên bản chốt có held-out; không có cảnh báo so sánh | §6.3 bước 2, B29 |
 | Q-R1b (D38) | Sau vòng đời cấu hình, không còn cách tắt AI của riêng một thao tác đã có model (nháp không model thì không eval được) | Cho **publish một nháp không có model mà không cần eval**; admin web hỏi xác nhận; ghi vào lịch sử; rollback bật lại | §6.3b, B48 |
 | Q-R3 (D39) | Trả lời câu luyện tập không ghi `learning_log` (chỉ hai nút "Cần ôn tập" / "Đã biết" ghi), nên người chỉ luyện tập bị tính "đã ngừng" (R3) | Bảng mới `learning_activity_days` ghi "người học có học ngày đó", gồm ôn, thêm / bỏ từ và trả lời câu luyện tập | §4, §10 |
-| Q1 (D40) | Design §4 đặt FK `RESTRICT` (model từng dùng không bao giờ xóa được) nhưng §6.1 chỉ liệt kê bốn chỗ chặn (plan review P12) | Giữ chặn xóa (`RESTRICT`); model không muốn thấy thì đánh dấu `retired` (cột `lifecycle` đã có); ô chọn model ẩn model `retired` | §6.1, B49, B50 |
+| Q1 (D40) | Design §4 đặt FK `RESTRICT` (model từng dùng không bao giờ xóa được) nhưng §6.1 chỉ liệt kê bốn chỗ chặn (plan review P12) | Giữ chặn xóa (`RESTRICT`); model không muốn thấy thì admin bật cờ ẩn (`ai_models.hidden`, sửa lần hai 30/10/2026: `lifecycle` do nhà cung cấp ghi); ô chọn model ẩn model bị ẩn hoặc `retired` | §4, §6.1, B49, B50 |
 
 ## 1. Mục tiêu và phạm vi
 
@@ -72,7 +72,7 @@ viện biểu đồ (D28); bỏ câu làm sẵn bằng bản cũ (D34).
 | D30, D31 | Chủ dự án tự chạy lần chạy thật 5 USD; Claude làm hết, chủ dự án review |
 | D33 | Giữ luật chấm của Practice |
 | D36, D39 | "Đang học" = có lần học trong N ngày gần nhất (N = 7); D7/D30 theo nhóm đăng ký cùng tuần; lần học ghi ở bảng `learning_activity_days` (gồm câu luyện tập) |
-| D40 | Model từng dùng không xóa được; ẩn bằng `retired` |
+| D40 | Model từng dùng không xóa được; admin ẩn bằng nút "Ẩn khỏi ô chọn model" |
 
 **Quyết định cũ bị đổi:**
 - D15 Bước 6 (lưu prompt là chạy ngay) và cách lưu cài đặt thao tác (lưu là chạy ngay): thay bằng vòng đời cấu hình (§6).
@@ -119,6 +119,7 @@ Mọi bảng mới thuộc module `ai` (`prisma/models/ai.prisma`) trừ khi ghi
 | `ai_eval_runs` | thêm `set_id`? (null = bộ đang soạn); `price_input`, `price_output` lúc tạo; `items` Json chuyển sang bảng. P3 thêm `config_id`, `config_version` (thay `prompt_revision` / `draft`) | P1, P3 |
 | `ai_eval_run_items` (mới) | `run_id`, `example_id`, `split`, ảnh chụp `input` và `expected`, `status`, `reason`, `output`, `raw_output`, `rule` (`pass` / `fail` / `skipped` / `not_applicable` + vấn đề), `expected_result`, `latency_ms`, `cost_usd` | P1 |
 | `ai_configs` (mới) | `operation`, `number`, `version` (tăng mỗi lần sửa nháp), `instructions`, `examples`, `model_ref` (FK `ai_models` RESTRICT), `effort`, `thinking`, `max_output_tokens`, `status` (`draft` / `published` / `retired`), `created_from` (cấu hình gốc), `created_by/at`, `published_by/at`, `note`; partial unique một `draft` mỗi thao tác | P3 |
+| `ai_models` | thêm `hidden` boolean mặc định `false` (cờ admin, D40); `PATCH` model nhận `hidden` | P3 |
 | `ai_live_configs` (mới) | con trỏ "bản đang chạy" (26/10 câu 18): `operation` PK, `config_id`, `previous_config_id`?, `version` | P3 |
 | `ai_config_events` (mới) | append-only: `publish` / `rollback`, ai, lúc nào, id hai lần chạy dùng làm bằng chứng, cảnh báo đã bỏ qua | P3 |
 | `ai_judges` (mới) | `name`, `operations`, `active` | P2 |
@@ -241,8 +242,10 @@ và `version` (tăng mỗi lần sửa nháp). Gateway đọc cấu hình mà `a
 màn nhóm số liệu theo **cặp (số cấu hình, model)**, không theo số cấu hình một mình (R12).
 
 **Model và cấu hình (R12, D40):** `ai_configs.model_ref` và `ai_judge_revisions.model_ref` có FK `RESTRICT`: model đã từng nằm trong **bất kỳ** cấu hình (kể cả `retired`)
-hay bản judge nào thì không xóa được (409 `model-in-use`). Model không muốn thấy nữa thì đánh dấu `lifecycle = 'retired'`; ô chọn model ở trang Cấu hình và trang Judge ẩn
-model `retired`, trừ model đang được chọn ở chính nháp / judge đó (hiện nay không ô nào lọc `retired`). Bỏ giá của model đang nằm trong nháp hay bản đang chạy: 409.
+hay bản judge nào thì không xóa được (409 `model-in-use`). Model không muốn thấy nữa thì admin bật **"Ẩn khỏi ô chọn model"** trên trang Models (cột mới
+`ai_models.hidden`, do admin giữ; job làm mới thông tin model không ghi cột này). Ô chọn model ở trang Cấu hình và trang Judge ẩn model `hidden` hoặc model nhà cung cấp
+báo `lifecycle = 'retired'`, trừ model đang được chọn ở chính nháp / judge đó. (Cột `lifecycle` do nhà cung cấp ghi và bị làm mới mỗi 24 giờ, `models.service.ts:75-77`,
+`ai-maintenance.ts:56`, nên admin không tự đặt được.) Bỏ giá của model đang nằm trong nháp hay bản đang chạy: 409.
 
 ### 6.2 Nháp (D23)
 
@@ -415,7 +418,7 @@ Lan không còn đang học.
 | B47 | Người học được cấp `editor` sau khi đăng ký | bị loại khỏi D7/D30 và tính là tài khoản test, cả cho quá khứ |
 | B48 | Publish nháp không có model, không có lần chạy nào | được (D38); người học nhận câu không AI; rollback bật lại bản trước |
 | B49 | Xóa model chỉ nằm trong một cấu hình `retired` | 409 `model-in-use` (D40) |
-| B50 | Model `retired` | không hiện trong ô chọn model, trừ khi đang là model của chính nháp / judge đó |
+| B50 | Model bị admin ẩn, hoặc nhà cung cấp báo `retired` | không hiện trong ô chọn model, trừ khi đang là model của chính nháp / judge đó; trang Models vẫn hiện, có nhãn "Đã ẩn" |
 | B51 | Lan trả lời 3 câu luyện tập và ôn 5 thẻ trong cùng một ngày | một dòng `learning_activity_days` cho ngày đó |
 
 ## 12. Kiểm thử
@@ -451,7 +454,7 @@ Theo `~/.claude/rules/testing-boundaries.md`: lệnh mặc định chỉ unit v�
 - **Tiêu chí "trỏ đúng nghĩa"** của `generate_meaning_question` chưa ai kiểm cho tới khi có judge cho thao tác đó (D7, D1).
 - **Mục nhiều chữ** (`bus stop`): chưa kiểm câu điền từ có một hay hai chỗ trống (T3).
 - **D7/D30:** chỉ có số từ lúc có bảng `learning_activity_days` (D39); tài khoản đã xóa không còn dòng nào, nên nhóm cũ thiếu người.
-- **Model không xóa được** khi đã từng nằm trong một cấu hình hay judge (D40): danh sách model chỉ dài thêm; dùng `retired` để ẩn.
+- **Model không xóa được** khi đã từng nằm trong một cấu hình hay judge (D40): danh sách ở trang Models chỉ dài thêm; ô chọn model thì gọn nhờ cờ ẩn.
 - **Tắt một thao tác không qua eval** (D38): một cú bấm nhầm tắt AI của thao tác đó tới khi rollback (có hộp hỏi).
 - **Làm tuần tự:** sáu milestone nối tiếp (§3), nên thời gian tới lúc xong dài hơn cách chia nhiều phiên song song.
 - **Ước tính chi phí chấm câu thật** dựa trên các lượt trước; lượt đầu không ước tính được.

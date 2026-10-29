@@ -94,7 +94,7 @@ chỉ lấy ví dụ dev nằm ở `PromptsService.test` (M1-T11, M2 `draft/test
 | `ai_live_configs.last_number` (bộ đếm số cấu hình, không dùng lại số sau khi xóa nháp) | `ai.prisma` | chỉ M2 |
 | Helper script publish theo đường thật: `ensureFrozenSet`, `publishModel`, `rollbackConfig`, `turnOff` (D38: publish nháp không model, không lần chạy) | `apps/api/scripts/ai-config-publish.mjs` (+ bản TS cho e2e-real, ba hàm đầu) | mọi smoke sau M2 |
 | `PublishCheckView.turn_off` (nháp không có model, D38); `publish` nhận `candidate_run_id: null` | `src/ai/configs/**` | M3-T12, M3-T17 (cổng và màn publish giữ nhánh này) |
-| `modelChoices(models: AiModel[], selectedId: string \| null): AiModel[]` — bỏ model `lifecycle = 'retired'` trừ model đang chọn (D40, B50) | `apps/admin/src/features/ai/model-choices.ts` | M3-T15 (trang Judge) |
+| `modelChoices(models: AiModel[], selectedId: string \| null): AiModel[]` — bỏ model `hidden` (cờ admin, M2-T1) hoặc `lifecycle = 'retired'`, trừ model đang chọn (D40, B50) | `apps/admin/src/features/ai/model-choices.ts` | M3-T15 (trang Judge) |
 | Lần chạy theo cấu hình: `POST …/eval/runs` nhận `config`, `prompt` vẫn nhận (thêm, không đổi); lần chạy xếp hàng trước khi nháp bị sửa thì `failed` + `config-changed` | `src/ai/eval/**` | M3, M5 |
 | Rollback nhận `expected_live_version`, lệch thì `publish-stale` | `src/ai/configs/**` | — |
 

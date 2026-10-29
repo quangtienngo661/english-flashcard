@@ -28,12 +28,12 @@ Plan: [`../superpowers/plans/2026-10-29-nhom-b.md`](../superpowers/plans/2026-10
 
 ## M2 — Vòng đời cấu hình
 
-1. Bảng cấu hình, con trỏ bản đang chạy, sự kiện publish / rollback.
+1. Bảng cấu hình, con trỏ bản đang chạy, sự kiện publish / rollback; cờ ẩn của model (D40).
 2. Luật cổng publish dạng hàm thuần (bản đang chạy chưa có model thì không cần mốc, D37).
 3. Nháp: đọc, tạo, lưu (chặn ví dụ mẫu lệch), xóa, chạy thử.
 4. Chạy eval theo cấu hình.
 5. Kiểm trước publish, publish, tắt AI một thao tác (D38), rollback, lịch sử.
-6. Admin: trang "Cấu hình" — bản đang chạy và nháp; ô chọn model ẩn model `retired` (D40).
+6. Admin: trang "Cấu hình" — bản đang chạy và nháp; ô chọn model ẩn model bị ẩn hoặc `retired`; nút "Ẩn khỏi ô chọn model" trên trang Models (D40).
 7. Admin: trang "Cấu hình" — publish, hộp hỏi khi tắt AI, rollback, lịch sử.
 8. Chuyển gateway sang đọc cấu hình đang chạy (migration chép prompt và cài đặt hiện có).
 9. Endpoint cũ đọc cấu hình đang chạy; chặn xóa model đã từng dùng; bỏ hai `PUT`.
