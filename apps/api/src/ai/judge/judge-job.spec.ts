@@ -93,6 +93,24 @@ describe('JudgeJob.run (D3, B13, B19)', () => {
     expect((ctx.runner.execute.mock.calls[0]![0] as { data: { context: unknown } }).data.context).toEqual({ session_words: ['alpha', 'beta'] });
   });
 
+  it('M4, D3: a real pass names its operation in the pass row; the data are those five fields and the JSON names no model, provider, config, run or operation id', async () => {
+    const input = { word: 'beat', part_of_speech: 'verb', level: 'B1', meaning_vi: 'đánh', context_label: null, other_meanings_vi: ['a', 'b', 'c'] };
+    const output = { sentence: 'We ___ them.', word_in_sentence: 'beat', translation_vi: 'x' };
+    const context = { session_words: ['go'] };
+    const ctx = setup({
+      pass: { id: PASS, judgeRevisionId: R2, operation: 'generate_meaning_question', startedBy: ADMIN },
+      items: [itemRow(I1, 0, { subjectKind: 'real_question', input, output, context })],
+    });
+    await ctx.job.run(PASS);
+    const sent = ctx.runner.execute.mock.calls[0]![0] as Extract<ExecuteInput, { purpose: 'judge' }>;
+    expect(sent.data).toEqual({ target_operation: 'generate_meaning_question', input, output, criteria: CRITERIA, context });
+    const text = JSON.stringify(sent.data);
+    for (const secret of [SECRET_MODEL, 'provider', 'config', 'run', 'operation_id']) expect(text).not.toContain(secret);
+    expect(ctx.repo.writeScores).toHaveBeenCalledWith(
+      { id: PASS, judgeRevisionId: R2 }, { id: I1, subjectKind: 'real_question', subjectId: `subject-${I1}` }, expect.any(Array), 'C1', '0.00010000', NOW,
+    );
+  });
+
   it("each item's scores are written with the rows of scoresFromOutput, the last call's id and the summed known cost; then the pass finishes", async () => {
     const ctx = setup({ items: [itemRow(I1, 0), itemRow(I2, 1)] });
     await ctx.job.run(PASS);
