@@ -101,7 +101,7 @@ export class ReportsService {
     const since = zonedMidnight(AI_DAY_ZONE, localDate(AI_DAY_ZONE, now));
     const [settings, rows, checks, calls, [today], lastErrors] = await Promise.all([
       this.settings.get(),
-      this.prisma.aiOperationSetting.findMany({ include: { model: true } }),
+      this.prisma.aiLiveConfig.findMany({ include: { config: { include: { model: true } } } }),
       Promise.all(AI_OPERATIONS.map((op) => this.readiness.check(op, 'learner', now))),
       this.ledger.countToday(now),
       this.prisma.$queryRaw<Array<{ failed_calls: number; failed_cost_usd: string; cost_usd: string }>>`
@@ -116,7 +116,8 @@ export class ReportsService {
     ]);
     const warnBefore = now.getTime() + MODEL_SHUTDOWN_WARNING_DAYS * DAY_MS;
     const operations = AI_OPERATIONS.map((operation, index) => {
-      const row = rows.find((item) => item.operation === operation);
+      // What the operation runs now: the live config (a draft's model is not "used").
+      const row = rows.find((item) => item.operation === operation)?.config;
       const model = row?.model ?? null;
       const selection = row && model ? toSelection(operation, row, model) : null;
       const check = checks[index];

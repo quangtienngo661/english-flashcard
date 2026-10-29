@@ -29,14 +29,14 @@ model AiModel {
   createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz
   updatedAt         DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
 
-  operationSettings AiOperationSetting[]
   configs           AiConfig[]
 
   @@unique([provider, modelId])
   @@map("ai_models")
 }
 
-// The choice of one operation (design §6.3): three rows seeded by the migration; model_ref null = the operation is off (D9).
+// The choice of one operation (design §6.3): history only since nhóm B M2 (the gateway reads the live config); no foreign key to ai_models any more,
+// so a model that only an old choice names can be deleted. model_ref null = the operation was off (D9).
 model AiOperationSetting {
   // One of the six operations (CHECK). Read-only history since nhóm B M2: the gateway reads ai_live_configs.
   operation       String    @id
@@ -49,8 +49,6 @@ model AiOperationSetting {
   version         Int       @default(0)
   updatedBy       String?   @map("updated_by") @db.Uuid
   updatedAt       DateTime  @default(now()) @map("updated_at") @db.Timestamptz
-
-  model AiModel? @relation(fields: [modelRef], references: [id], onDelete: Restrict)
 
   @@map("ai_operation_settings")
 }

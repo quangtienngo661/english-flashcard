@@ -1,5 +1,4 @@
 import { describe, expect, it, vi } from 'vitest';
-import { FakeClock } from '../../common/clock/clock.js';
 import { ProblemDetailsException } from '../../common/problem-details/problem-details.exception.js';
 import type { PrismaClient } from '../../generated/prisma/client.js';
 import { AiAdapter, type AdapterOutcome, type ModelDescription } from '../adapters/ai-adapter.js';
@@ -63,6 +62,7 @@ function memoryPrisma(examples: ExampleRow[] = []) {
         return { count: 1 };
       }),
     },
+    aiLiveConfig: { findUnique: vi.fn(async (_args?: unknown): Promise<Record<string, unknown> | null> => null) },
     aiPromptRevision: {
       create: vi.fn(async ({ data }: { data: Omit<RevisionRow, 'id'> }) => {
         const row = { ...data, id: `rev-${nextId++}` };
@@ -126,7 +126,7 @@ function setup(input: Setup = {}) {
   const emailsOf = vi.fn(async (ids: string[]) => new Map(ids.filter((id) => id === ADMIN).map((id) => [id, 'admin@x.test'])));
   const limiter = { hit: vi.fn(async (): Promise<void> => undefined) };
   const service = new PromptsService(
-    memory.prisma, new FakeClock(NOW), repository, runner,
+    memory.prisma, repository, runner,
     { load: async () => (input.selection === undefined ? selection : input.selection) } as unknown as SelectionReader, registry,
     { emailsOf } as unknown as IdentityService, limiter as never,
   );
@@ -151,99 +151,52 @@ const eval_ = (id: string, minute: number, operation: string = OP, split = 'dev'
   id, operation, input: { ...INPUT, word: id }, createdAt: new Date(NOW.getTime() + minute * 60_000), split,
 });
 
-describe('PromptsService.get', () => {
-  it('returns the prompt in use with its revision and the operation’s input fields', async () => {
-    const { service } = setup();
-    await expect(service.get(OP)).resolves.toEqual({
-      operation: OP, instructions: INITIAL_PROMPTS[OP].instructions, examples: INITIAL_PROMPTS[OP].examples, revision: 1,
-      input_fields: ['word', 'part_of_speech', 'level', 'meaning_vi', 'context_label'], updated_at: '2026-10-20T00:00:00.000Z',
-      updated_by: SEED_ACTOR, updated_by_user: { id: SEED_ACTOR, email: null, system: true }, guard: PROMPT_GUARD,
+describe('PromptsService.get (nhóm B M2: the prompt of the live config)', () => {
+  it('returns the live config text as the prompt in use: revision = its number, updated by whoever published it', async () => {
+    const { service, client } = setup();
+    client.aiLiveConfig.findUnique.mockResolvedValue({
+      operation: OP,
+      config: { number: 4, instructions: 'Live text.', examples: [], publishedBy: ADMIN, publishedAt: new Date('2026-10-30T01:00:00Z'), createdBy: SEED_ACTOR, createdAt: new Date('2026-10-20T00:00:00Z') },
     });
+    await expect(service.get(OP)).resolves.toEqual({
+      operation: OP, instructions: 'Live text.', examples: [], revision: 4,
+      input_fields: ['word', 'part_of_speech', 'level', 'meaning_vi', 'context_label'], updated_at: '2026-10-30T01:00:00.000Z',
+      updated_by: ADMIN, updated_by_user: { id: ADMIN, email: 'admin@x.test', system: false }, guard: PROMPT_GUARD,
+    });
+    expect(client.aiLiveConfig.findUnique).toHaveBeenCalledWith({ where: { operation: OP }, include: { config: true } });
   });
 
-  it('PUT response carries updated_by_user with the actor email and the guard', async () => {
-    const { service } = setup();
-    const saved = await service.save(ADMIN, OP, { expected_revision: 1, instructions: 'New text.', examples: [] });
-    expect(saved.updated_by_user).toEqual({ id: ADMIN, email: 'admin@x.test', system: false });
-    expect(saved.guard).toBe(PROMPT_GUARD);
+  it('a config never published (migrated seed) falls back to its creator and creation time', async () => {
+    const { service, client } = setup();
+    client.aiLiveConfig.findUnique.mockResolvedValue({
+      operation: OP,
+      config: { number: 2, instructions: 'Seed.', examples: [], publishedBy: null, publishedAt: null, createdBy: SEED_ACTOR, createdAt: new Date('2026-10-20T00:00:00Z') },
+    });
+    expect(await service.get(OP)).toMatchObject({ revision: 2, updated_at: '2026-10-20T00:00:00.000Z', updated_by: SEED_ACTOR, updated_by_user: { system: true } });
+  });
+
+  it('an operation with no live config → 404', async () => {
+    const { service, client } = setup();
+    client.aiLiveConfig.findUnique.mockResolvedValue(null);
+    await expect(service.get(OP)).rejects.toMatchObject({ status: 404 });
   });
 });
 
-describe('PromptsService.save', () => {
-  it('B6E57/B6#14: save with an old expected_revision → 409, nothing written', async () => {
-    const { service, rows } = setup();
-    const before = structuredClone(rows());
-    expect(await problem(service.save(ADMIN, OP, { expected_revision: 0, instructions: 'New.', examples: [] })))
-      .toMatchObject({ status: 409, type: expect.stringContaining('prompt-revision-conflict') });
-    expect(rows()).toEqual(before);
-  });
-
-  it.each([
-    ['blank instructions', { instructions: '   ', examples: [] }, 'instructions: Must not be blank'],
-    ['8 001 characters', { instructions: 'x'.repeat(8_001), examples: [] }, 'instructions: Expected at most 8000 characters'],
-    ['11 examples', { instructions: 'Ok.', examples: Array.from({ length: 11 }, () => EXAMPLE) }, 'examples: Expected at most 10 examples'],
-  ])('B6E58: %s → 400 with the path', async (_name, body, violation) => {
-    const { service, rows } = setup();
-    const result = await problem(service.save(ADMIN, OP, { expected_revision: 1, ...body }));
-    expect(result).toMatchObject({ status: 400, type: expect.stringContaining('validation-failed') });
-    expect(result.violations).toContain(violation);
-    expect(rows().revisions).toHaveLength(1);
-  });
-
-  it('B6E59/B6#15: an example without meaning_vi or with two blanks → 400 with the paths', async () => {
-    const { meaning_vi: _drop, ...noMeaning } = INPUT;
-    const { service } = setup();
-    const result = await problem(service.save(ADMIN, OP, {
-      expected_revision: 1, instructions: 'Ok.',
-      examples: [{ input: noMeaning, output: OUTPUT }, { input: INPUT, output: { ...OUTPUT, sentence: 'I ___ and ___.' } }],
-    }));
-    expect(result.status).toBe(400);
-    expect(result.violations?.some((violation) => violation.startsWith('examples[0].input.meaning_vi'))).toBe(true);
-    expect(result.violations).toContain('examples[1].output: blank-count');
-  });
-
-  it('B6E60: save → revision + 1 and one revision row in the same transaction', async () => {
-    const { service, rows, client } = setup();
-    const saved = await service.save(ADMIN, OP, { expected_revision: 1, instructions: 'New text.', examples: [EXAMPLE] });
-    expect(saved).toMatchObject({ revision: 2, instructions: 'New text.', updated_by: ADMIN, updated_at: NOW.toISOString() });
-    expect(rows().revisions.map((row) => [row.revision, row.instructions, row.savedBy])).toEqual([
-      [1, INITIAL_PROMPTS[OP].instructions, SEED_ACTOR], [2, 'New text.', ADMIN],
-    ]);
-    expect(client.$transaction).toHaveBeenCalledTimes(1);
-    expect(client.aiPrompt.updateMany).toHaveBeenCalledWith(expect.objectContaining({ where: { operation: OP, revision: 1 } }));
-  });
-
-  it('nhóm B M2: PromptsRepository.current is the live config prompt, whatever ai_prompts holds; atRevision still reads the saved revisions', async () => {
+describe('PromptsRepository', () => {
+  it('nhóm B M2: current is the live config prompt, whatever ai_prompts holds; atRevision still reads the saved revisions', async () => {
     const { repository, live } = setup();
     await expect(repository.current(OP)).resolves.toEqual({ instructions: 'Live text.', examples: [], revision: 7 });
     expect(live.load).toHaveBeenCalledExactlyOnceWith(OP);
     await expect(repository.atRevision(OP, 1)).resolves.toMatchObject({ revision: 1 });
   });
-
-  it('B6E61: saving the text of revision 1 again → a new revision 3, history kept', async () => {
-    const { service, rows } = setup();
-    await service.save(ADMIN, OP, { expected_revision: 1, instructions: 'Wrong text.', examples: [] });
-    const first = rows().revisions[0];
-    const saved = await service.save(ADMIN, OP, {
-      expected_revision: 2, instructions: first.instructions, examples: first.examples as unknown[],
-    });
-    expect(saved.revision).toBe(3);
-    expect(rows().revisions.map((row) => row.revision)).toEqual([1, 2, 3]);
-  });
-
-  it('a conditional update that matches nothing (another save won) → 409, nothing written', async () => {
-    const { service, client, rows } = setup();
-    client.aiPrompt.updateMany.mockResolvedValueOnce({ count: 0 });
-    expect((await problem(service.save(ADMIN, OP, { expected_revision: 1, instructions: 'New.', examples: [] }))).status).toBe(409);
-    expect(rows().revisions).toHaveLength(1);
-  });
 });
 
 describe('PromptsService.revisions', () => {
   it('revisions are newest first and paginate', async () => {
-    const { service, emailsOf } = setup();
-    await service.save(ADMIN, OP, { expected_revision: 1, instructions: 'Two.', examples: [] });
-    await service.save(ADMIN, OP, { expected_revision: 2, instructions: 'Three.', examples: [] });
+    const { service, emailsOf, client } = setup();
+    // The revisions saved before nhóm B M2 are history now: nothing writes new ones.
+    await client.aiPromptRevision.create({ data: { operation: OP, revision: 2, instructions: 'Two.', examples: [], savedBy: ADMIN, savedAt: NOW } });
+    await client.aiPromptRevision.create({ data: { operation: OP, revision: 3, instructions: 'Three.', examples: [], savedBy: ADMIN, savedAt: NOW } });
     emailsOf.mockClear();
     const first = await service.revisions(OP, 2);
     expect(emailsOf).toHaveBeenCalledTimes(1);

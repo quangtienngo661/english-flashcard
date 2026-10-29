@@ -120,6 +120,11 @@ export class ModelsService {
   async update(id: string, patch: PatchModelBody): Promise<ModelView> {
     const input = parse(patchModelSchema, patch);
     if (!await this.prisma.aiModel.findUnique({ where: { id } })) throw notFound();
+    // The price of a model that the draft or the live config names cannot be cleared (design §6.1, B34): its calls could not be costed.
+    if ((input.price_input === null || input.price_output === null)
+      && await this.prisma.aiConfig.findFirst({ where: { modelRef: id, status: { in: ['draft', 'published'] } }, select: { id: true } })) {
+      throw modelInUse();
+    }
     const data = {
       ...(input.price_input !== undefined ? { priceInput: input.price_input } : {}),
       ...(input.price_cached_input !== undefined ? { priceCachedInput: input.price_cached_input } : {}),
@@ -155,11 +160,12 @@ export class ModelsService {
 
   async remove(id: string): Promise<void> {
     if (!await this.prisma.aiModel.findUnique({ where: { id } })) throw notFound();
-    if ((await this.prisma.aiOperationSetting.findMany({ where: { modelRef: id } })).length > 0) throw modelInUse();
+    // Any config that ever named the model keeps it (D40, B34, B49): a retired one too, as the foreign key does.
+    if (await this.prisma.aiConfig.findFirst({ where: { modelRef: id }, select: { id: true } })) throw modelInUse();
     try {
       await this.prisma.aiModel.delete({ where: { id } });
     } catch (error) {
-      // A choice saved between the check and the delete: the foreign key refuses (ON DELETE RESTRICT).
+      // A config saved between the check and the delete: the foreign key refuses (ON DELETE RESTRICT).
       if (prismaCode(error) === 'P2003') throw modelInUse();
       if (prismaCode(error) === 'P2025') throw notFound();
       throw error;
@@ -185,10 +191,11 @@ export class ModelsService {
 
   private async views(rows: ModelRow[]): Promise<ModelView[]> {
     if (rows.length === 0) return [];
-    const [settings, choices] = await Promise.all([
+    const [settings, live] = await Promise.all([
       this.settings.get(),
-      this.prisma.aiOperationSetting.findMany({ where: { modelRef: { in: rows.map((row) => row.id) } } }),
+      this.prisma.aiLiveConfig.findMany({ select: { operation: true, config: { select: { modelRef: true } } } }),
     ]);
+    const choices = live.map((row) => ({ operation: row.operation, modelRef: row.config.modelRef }));
     return rows.map((row) => {
       const provider = row.provider as AiProviderName;
       const price: Price | null = row.priceInput !== null && row.priceOutput !== null

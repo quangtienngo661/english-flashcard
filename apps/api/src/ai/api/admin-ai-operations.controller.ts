@@ -1,14 +1,11 @@
-import { Body, Controller, Get, Inject, Param, Put, Req } from '@nestjs/common';
-import { z } from 'zod';
-import { RateLimit } from '../../common/rate-limit/rate-limit.decorator.js';
-import type { RequestWithUser } from '../../common/request-user/request-user.js';
+import { Controller, Get, Inject } from '@nestjs/common';
 import { RequirePermission } from '../../identity/staff/require-permission.decorator.js';
-import { AI_OPERATIONS } from '../ai.types.js';
-import { OperationSettingsService, putOperationSchema } from '../models/operation-settings.service.js';
+import { OperationSettingsService } from '../models/operation-settings.service.js';
 
-const operationParams = z.strictObject({ op: z.enum(AI_OPERATIONS) });
-
-/** Per-operation choices (design §12.1 #7–#8); a PUT is guarded by `expected_version`, not by an Idempotency-Key. */
+/**
+ * What each operation runs with (design §12.1 #7). It is read only: a model, effort or limit is changed by publishing a config
+ * (`/v1/admin/ai/configs`), so `PUT /operations/:op` answers 404 (nhóm B design §6.6).
+ */
 @Controller('admin/ai/operations')
 @RequirePermission('settings.manage')
 export class AdminAiOperationsController {
@@ -17,15 +14,5 @@ export class AdminAiOperationsController {
   @Get()
   list() {
     return this.operations.list();
-  }
-
-  @Put(':op')
-  @RateLimit('user.write')
-  put(
-    @Param({ schema: operationParams }) params: z.infer<typeof operationParams>,
-    @Body({ schema: putOperationSchema }) body: z.infer<typeof putOperationSchema>,
-    @Req() req: RequestWithUser,
-  ) {
-    return this.operations.put(req.user!.userId, params.op, body);
   }
 }

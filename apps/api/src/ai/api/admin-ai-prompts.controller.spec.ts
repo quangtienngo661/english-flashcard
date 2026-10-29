@@ -13,11 +13,10 @@ describe('admin ai prompts HTTP (unit, mocked service)', () => {
   let ctx: TestApp; let token: string; let actorId: string; let role: 'admin' | 'editor' | null;
   const prisma = { sessionChain: { findUnique: vi.fn() }, $disconnect: async () => {} };
   const hit = vi.spyOn(RateLimiter.prototype, 'hit');
-  let get: ReturnType<typeof vi.spyOn>; let save: ReturnType<typeof vi.spyOn>;
+  let get: ReturnType<typeof vi.spyOn>;
   let revisions: ReturnType<typeof vi.spyOn>; let test: ReturnType<typeof vi.spyOn>;
   const auth = () => ({ Authorization: `Bearer ${token}` });
   const http = () => ctx.http();
-  const saveBody = { expected_revision: 1, instructions: 'New.', examples: [] };
   const exampleId = randomUUID();
 
   beforeAll(async () => {
@@ -25,7 +24,7 @@ describe('admin ai prompts HTTP (unit, mocked service)', () => {
       providers: [{ provide: PRISMA_CLIENT, useValue: prisma }], exports: [PRISMA_CLIENT] });
     ctx = await createTestApp({ databaseUrl: 'unused' });
     const prompts = ctx.app.get(PromptsService);
-    get = vi.spyOn(prompts, 'get'); save = vi.spyOn(prompts, 'save');
+    get = vi.spyOn(prompts, 'get');
     revisions = vi.spyOn(prompts, 'revisions'); test = vi.spyOn(prompts, 'test');
   });
   beforeEach(async () => {
@@ -33,7 +32,6 @@ describe('admin ai prompts HTTP (unit, mocked service)', () => {
     token = await ctx.app.get(AccessTokenService).sign({ userId: actorId, sessionChainId: randomUUID() });
     prisma.sessionChain.findUnique.mockReset().mockImplementation(async () => ({ userId: actorId, revokedAt: null, user: { staffRole: role } }));
     get.mockReset().mockResolvedValue({ operation: 'generate_cloze', revision: 1 });
-    save.mockReset().mockResolvedValue({ operation: 'generate_cloze', revision: 2 });
     revisions.mockReset().mockResolvedValue({ items: [], next_page_token: null });
     test.mockReset().mockResolvedValue({ items: [] });
     hit.mockReset().mockResolvedValue(undefined);
@@ -44,7 +42,6 @@ describe('admin ai prompts HTTP (unit, mocked service)', () => {
     const routes = listRoutes(ctx.app).filter(({ path }) => path.startsWith('/v1/admin/ai/prompts'));
     expect(routes.map(({ method, path }) => `${method} ${path}`).sort()).toEqual([
       'GET /v1/admin/ai/prompts/:op', 'GET /v1/admin/ai/prompts/:op/revisions', 'POST /v1/admin/ai/prompts/:op/test',
-      'PUT /v1/admin/ai/prompts/:op',
     ]);
     for (const route of routes) expect(route.permissions).toEqual(['settings.manage']);
   });
@@ -55,11 +52,9 @@ describe('admin ai prompts HTTP (unit, mocked service)', () => {
     expect(hit).not.toHaveBeenCalled();
   });
 
-  it('PUT carries user.write and passes the actor, the operation and the body', async () => {
-    const res = await http().put('/v1/admin/ai/prompts/generate_cloze').set(auth()).send(saveBody);
-    expect(res.status).toBe(200);
-    expect(save).toHaveBeenCalledWith(actorId, 'generate_cloze', saveBody);
-    expect(hit).toHaveBeenCalledWith('user.write', actorId);
+  it('design §6.6: PUT of a prompt is gone → 404 (the text changes by publishing a config)', async () => {
+    const res = await http().put('/v1/admin/ai/prompts/generate_cloze').set(auth()).send({ expected_revision: 1, instructions: 'New.', examples: [] });
+    expect(res.status).toBe(404);
   });
 
   it('GET revisions defaults page_size to 20 and passes the page token', async () => {
@@ -80,8 +75,6 @@ describe('admin ai prompts HTTP (unit, mocked service)', () => {
   it('an unknown operation, a bad body or bad paging → 400 validation-failed before the service', async () => {
     for (const request of [
       () => http().get('/v1/admin/ai/prompts/summarize').set(auth()),
-      () => http().put('/v1/admin/ai/prompts/generate_cloze').set(auth()).send({ ...saveBody, expected_revision: undefined }),
-      () => http().put('/v1/admin/ai/prompts/generate_cloze').set(auth()).send({ ...saveBody, extra: 1 }),
       () => http().post('/v1/admin/ai/prompts/generate_cloze/test').set(auth()).send({ instructions: 'x', examples: [], example_ids: ['nope'] }),
       () => http().post('/v1/admin/ai/prompts/generate_cloze/test').set(auth())
         .send({ instructions: 'x', examples: [], example_ids: Array.from({ length: 6 }, () => randomUUID()) }),
@@ -93,17 +86,16 @@ describe('admin ai prompts HTTP (unit, mocked service)', () => {
       expect(res.body.type).toBe(`${PROBLEM}validation-failed`);
     }
     expect(get).not.toHaveBeenCalled();
-    expect(save).not.toHaveBeenCalled();
     expect(test).not.toHaveBeenCalled();
     expect(revisions).not.toHaveBeenCalled();
   });
 
   it('an editor gets 403 forbidden', async () => {
     role = 'editor';
-    expect((await http().put('/v1/admin/ai/prompts/generate_cloze').set(auth()).send(saveBody)).status).toBe(403);
+    expect((await http().get('/v1/admin/ai/prompts/generate_cloze').set(auth())).status).toBe(403);
     expect((await http().post('/v1/admin/ai/prompts/generate_cloze/test').set(auth()).send({ instructions: 'x', examples: [] })).status)
       .toBe(403);
-    expect(save).not.toHaveBeenCalled();
+    expect(get).not.toHaveBeenCalled();
     expect(test).not.toHaveBeenCalled();
   });
 });

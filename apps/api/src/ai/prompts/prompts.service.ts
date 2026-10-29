@@ -1,13 +1,12 @@
 import { randomUUID } from 'node:crypto';
 import { Inject, Injectable } from '@nestjs/common';
 import { z } from 'zod';
-import { Clock } from '../../common/clock/clock.js';
 import { PRISMA_CLIENT } from '../../common/db/prisma.module.js';
 import { RateLimiter } from '../../common/rate-limit/rate-limiter.service.js';
 import { userRef, type UserRef } from '../../common/user-ref.js';
 import { decodePageToken, encodePageToken } from '../../common/pagination/page-token.util.js';
 import { ProblemDetailsException } from '../../common/problem-details/problem-details.exception.js';
-import type { Prisma, PrismaClient } from '../../generated/prisma/client.js';
+import type { PrismaClient } from '../../generated/prisma/client.js';
 import { IdentityService } from '../../identity/profile/identity.service.js';
 import { AiAdapterRegistry } from '../adapters/ai-adapter.registry.js';
 import { AI_SYSTEM_ACTOR_ID, TEST_EXAMPLES_MAX } from '../ai.constants.js';
@@ -18,14 +17,6 @@ import { SelectionReader } from '../runner/selection.js';
 import { PROMPT_GUARD, promptViolations, type PromptExample } from './prompt-rules.js';
 import { PromptsRepository } from './prompts.repository.js';
 import { testInputs, toTestItem, type TestItem } from './test-inputs.js';
-
-/** Body of `PUT /v1/admin/ai/prompts/{op}` (design §7.3); the content rules run in the service so every error has a path. */
-export const savePromptSchema = z.strictObject({
-  expected_revision: z.number().int().min(0),
-  instructions: z.string(),
-  examples: z.array(z.unknown()),
-});
-export type SavePromptBody = z.infer<typeof savePromptSchema>;
 
 /** Body of `POST /v1/admin/ai/prompts/{op}/test` (design §7.4). */
 export const testPromptSchema = z.strictObject({
@@ -54,8 +45,6 @@ export type { TestItem };
 const invalid = (violations: string[]) => new ProblemDetailsException({
   status: 400, type: 'validation-failed', title: 'Validation failed', extensions: { violations },
 });
-const conflict = () => new ProblemDetailsException({ status: 409, type: 'prompt-revision-conflict', title: 'Prompt changed' });
-const isUniqueViolation = (error: unknown) => error !== null && typeof error === 'object' && 'code' in error && error.code === 'P2002';
 
 const SYSTEM_IDS: ReadonlySet<string> = new Set([AI_SYSTEM_ACTOR_ID]);
 
@@ -64,7 +53,6 @@ const SYSTEM_IDS: ReadonlySet<string> = new Set([AI_SYSTEM_ACTOR_ID]);
 export class PromptsService {
   constructor(
     @Inject(PRISMA_CLIENT) private readonly prisma: PrismaClient,
-    @Inject(Clock) private readonly clock: Clock,
     @Inject(PromptsRepository) private readonly prompts: PromptsRepository,
     @Inject(RunnerService) private readonly runner: RunnerService,
     @Inject(SelectionReader) private readonly selections: SelectionReader,
@@ -73,41 +61,18 @@ export class PromptsService {
     @Inject(RateLimiter) private readonly limiter: RateLimiter,
   ) {}
 
+  /** The prompt in use: the live config's text, `revision` = its number, updated when and by whom it was published (nhóm B M2). */
   async get(op: AiOperation): Promise<PromptView> {
-    const row = await this.prisma.aiPrompt.findUniqueOrThrow({ where: { operation: op } });
-    const emails = await this.identity.emailsOf([row.updatedBy]);
+    const live = await this.prisma.aiLiveConfig.findUnique({ where: { operation: op }, include: { config: true } });
+    if (!live) throw new ProblemDetailsException({ status: 404, type: 'not-found', title: 'Not found' });
+    const { config } = live;
+    const updatedBy = config.publishedBy ?? config.createdBy;
+    const emails = await this.identity.emailsOf([updatedBy]);
     return {
-      operation: op, instructions: row.instructions, examples: row.examples as PromptExample[], revision: row.revision,
-      input_fields: [...OPERATIONS[op].inputFields], updated_at: row.updatedAt.toISOString(), updated_by: row.updatedBy,
-      updated_by_user: userRef(row.updatedBy, emails, SYSTEM_IDS), guard: PROMPT_GUARD,
+      operation: op, instructions: config.instructions, examples: config.examples as PromptExample[], revision: config.number,
+      input_fields: [...OPERATIONS[op].inputFields], updated_at: (config.publishedAt ?? config.createdAt).toISOString(), updated_by: updatedBy,
+      updated_by_user: userRef(updatedBy, emails, SYSTEM_IDS), guard: PROMPT_GUARD,
     };
-  }
-
-  /** Checks in the design's order: the revision, then the content; the prompt and its revision row change together. */
-  async save(actorId: string, op: AiOperation, body: SavePromptBody): Promise<PromptView> {
-    const now = this.clock.now();
-    try {
-      await this.prisma.$transaction(async (tx) => {
-        const row = await tx.aiPrompt.findUnique({ where: { operation: op } });
-        if (!row || row.revision !== body.expected_revision) throw conflict();
-        const violations = promptViolations(op, body);
-        if (violations.length > 0) throw invalid(violations);
-        const examples = body.examples as Prisma.InputJsonArray;
-        const { count } = await tx.aiPrompt.updateMany({
-          where: { operation: op, revision: body.expected_revision },
-          data: { instructions: body.instructions, examples, revision: { increment: 1 }, updatedBy: actorId, updatedAt: now },
-        });
-        if (count === 0) throw conflict();
-        await tx.aiPromptRevision.create({ data: {
-          operation: op, revision: body.expected_revision + 1, instructions: body.instructions, examples, savedBy: actorId, savedAt: now,
-        } });
-      });
-    } catch (error) {
-      // Two saves of the same revision race on (operation, revision): the loser saw it too late.
-      if (isUniqueViolation(error)) throw conflict();
-      throw error;
-    }
-    return this.get(op);
   }
 
   async revisions(

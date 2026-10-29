@@ -1,10 +1,9 @@
-import { Body, Controller, Get, HttpCode, Inject, Param, Post, Put, Query, Req } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Inject, Param, Post, Query, Req } from '@nestjs/common';
 import { z } from 'zod';
-import { RateLimit } from '../../common/rate-limit/rate-limit.decorator.js';
 import type { RequestWithUser } from '../../common/request-user/request-user.js';
 import { RequirePermission } from '../../identity/staff/require-permission.decorator.js';
 import { AI_OPERATIONS } from '../ai.types.js';
-import { PromptsService, savePromptSchema, testPromptSchema } from '../prompts/prompts.service.js';
+import { PromptsService, testPromptSchema } from '../prompts/prompts.service.js';
 
 const operationParams = z.strictObject({ op: z.enum(AI_OPERATIONS) });
 const revisionsQuery = z.strictObject({
@@ -13,8 +12,9 @@ const revisionsQuery = z.strictObject({
 });
 
 /**
- * Prompts (design §12.1 #9–#12). A save is guarded by `expected_revision`; a test run calls providers in the request, so it has
- * its own rate rule and no `@Idempotent()` (design §4.4: no provider call from an idempotent handler).
+ * Prompts (design §12.1 #9–#12). The text in use is the live config's and changes by publishing a config, so `PUT /prompts/:op` is
+ * gone (nhóm B design §6.6); a test run calls providers in the request, so it takes an `ai.test` slot itself and has no `@Idempotent()`
+ * (design §4.4: no provider call from an idempotent handler).
  */
 @Controller('admin/ai/prompts')
 @RequirePermission('settings.manage')
@@ -24,16 +24,6 @@ export class AdminAiPromptsController {
   @Get(':op')
   get(@Param({ schema: operationParams }) params: z.infer<typeof operationParams>) {
     return this.prompts.get(params.op);
-  }
-
-  @Put(':op')
-  @RateLimit('user.write')
-  save(
-    @Param({ schema: operationParams }) params: z.infer<typeof operationParams>,
-    @Body({ schema: savePromptSchema }) body: z.infer<typeof savePromptSchema>,
-    @Req() req: RequestWithUser,
-  ) {
-    return this.prompts.save(req.user!.userId, params.op, body);
   }
 
   @Get(':op/revisions')
