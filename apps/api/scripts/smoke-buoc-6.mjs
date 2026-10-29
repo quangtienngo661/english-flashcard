@@ -19,7 +19,8 @@ const PASSWORD = 'Smoke-Test-Pass-9!';
 const QUEUE_PREFIX = 'wordmet-b6-smoke';
 const run = randomUUID().slice(0, 8);
 
-const fileEnv = existsSync('.env') ? parseEnv(readFileSync('.env', 'utf8')) : {};
+// SMOKE_IGNORE_ENV_FILE=1: the API under test was started from exported variables, not from an env file that may hold real keys.
+const fileEnv = !process.env.SMOKE_IGNORE_ENV_FILE && existsSync('.env') ? parseEnv(readFileSync('.env', 'utf8')) : {};
 if (!process.env.DATABASE_URL && fileEnv.DATABASE_URL) process.env.DATABASE_URL = fileEnv.DATABASE_URL;
 if (!process.env.DATABASE_URL) throw new Error('DATABASE_URL is not set (env or .env).');
 // The CLIs read .env, and a variable in their environment wins; the smoke sets both below, so it only refuses a .env that
