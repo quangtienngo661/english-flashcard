@@ -162,6 +162,8 @@ export class ModelsService {
     if (!await this.prisma.aiModel.findUnique({ where: { id } })) throw notFound();
     // Any config that ever named the model keeps it (D40, B34, B49): a retired one too, as the foreign key does.
     if (await this.prisma.aiConfig.findFirst({ where: { modelRef: id }, select: { id: true } })) throw modelInUse();
+    // So does any revision of any judge, the latest or not (nhóm B M3).
+    if (await this.prisma.aiJudgeRevision.findFirst({ where: { modelRef: id }, select: { id: true } })) throw modelInUse();
     try {
       await this.prisma.aiModel.delete({ where: { id } });
     } catch (error) {
