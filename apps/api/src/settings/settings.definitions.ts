@@ -302,6 +302,14 @@ export function crossFieldViolations(values: AppSettings): string[] {
   ];
 }
 
+const FIELD_OF_KEY = new Map(FIELDS.map(([section, apiKey, field]) => [`${section}.${apiKey}`, [section, field] as const]));
+
+/** One value by the key history rows name it with (`<section>.<api_key>`); `undefined` for a key no setting has. */
+export function apiValueOf(values: AppSettings, key: string): AnyValue | undefined {
+  const target = FIELD_OF_KEY.get(key);
+  return target ? read(values, target[0], target[1]) : undefined;
+}
+
 export function changedFields(before: AppSettings, after: AppSettings): Array<{ key: string; oldValue: AnyValue; newValue: AnyValue }> {
   return FIELDS.flatMap(([section, apiKey, field]) => {
     const oldValue = read(before, section, field);
