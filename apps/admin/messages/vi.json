@@ -628,6 +628,20 @@
           "heldOutHidden": "Ví dụ held-out không được liệt kê."
         }
       },
+      "compare": {
+        "title": "So sánh",
+        "select": "So với lần chạy (trước)",
+        "choose": "Chọn lần chạy",
+        "option": "{time} · {model}",
+        "workingSet": "Lần chạy trên bộ đang soạn không so được.",
+        "noOther": "Chưa có lần chạy nào khác trên phiên bản này để so.",
+        "cols": { "criterion": "Tiêu chí", "devBefore": "Dev (trước)", "devNow": "Dev (nay)", "heldOutBefore": "Held-out (trước)", "heldOutNow": "Held-out (nay)" },
+        "rows": { "shape": "Khuôn", "rule": "Luật", "expected": "Mong đợi" },
+        "devRegressions": "Ví dụ dev trước đạt, nay trượt ({count})",
+        "heldOutRegressions": "Held-out: {count} ví dụ trước đạt, nay trượt",
+        "noRegressions": "Không có ví dụ nào trước đạt, nay trượt.",
+        "criteria": { "shape": "khuôn", "rule": "luật", "expected": "mong đợi" }
+      },
       "fromPrompt": {
         "title": "Chạy bộ ví dụ",
         "button": "Chạy bộ ví dụ với bản này",

@@ -628,6 +628,20 @@
           "heldOutHidden": "Held-out examples are not listed."
         }
       },
+      "compare": {
+        "title": "Compare",
+        "select": "Compare with run (before)",
+        "choose": "Choose a run",
+        "option": "{time} · {model}",
+        "workingSet": "A run on the set being edited cannot be compared.",
+        "noOther": "No other run on this version to compare with yet.",
+        "cols": { "criterion": "Criterion", "devBefore": "Dev (before)", "devNow": "Dev (now)", "heldOutBefore": "Held-out (before)", "heldOutNow": "Held-out (now)" },
+        "rows": { "shape": "Shape", "rule": "Rules", "expected": "Expected" },
+        "devRegressions": "Dev examples that passed before and fail now ({count})",
+        "heldOutRegressions": "Held-out: {count, plural, one {# example} other {# examples}} passed before and fail now",
+        "noRegressions": "No example passed before and fails now.",
+        "criteria": { "shape": "shape", "rule": "rules", "expected": "expected" }
+      },
       "fromPrompt": {
         "title": "Run example set",
         "button": "Run example set with this version",

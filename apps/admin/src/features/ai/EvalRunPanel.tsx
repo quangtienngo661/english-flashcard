@@ -23,6 +23,7 @@ import {
   type EvalRunStatus, type SplitStats, type StartRunBody, type TestStatus,
 } from './ai-api';
 import { exampleSummary } from './prompt-form';
+import { RunCompare } from './RunCompare';
 import { useAiFormat } from './useAiFormat';
 
 const TONE = { queued: 'neutral', running: 'primary', finished: 'success', failed: 'danger' } as const;
@@ -372,6 +373,7 @@ export function EvalRunPanel({ id, onDone, onDeleted }: { id: string; onDone?: (
             {items.length > 0 && <DataList rows={items} rowKey={(item) => String(item.position)} columns={resultColumns} state="ready" />}
           </section>
         )}
+        <RunCompare run={run} />
       </PanelBody>
       {/* Gone for the moment between a delete and the panel closing. */}
       {!remove.isSuccess && (live || isRunDone(run.status)) && (
