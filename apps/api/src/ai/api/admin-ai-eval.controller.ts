@@ -5,12 +5,14 @@ import { Idempotent } from '../../common/idempotency/idempotent.decorator.js';
 import { RateLimit } from '../../common/rate-limit/rate-limit.decorator.js';
 import type { RequestWithUser } from '../../common/request-user/request-user.js';
 import { RequirePermission } from '../../identity/staff/require-permission.decorator.js';
+import { AI_POS_UNSET, AI_VALID_POS, WORD_MAX } from '../ai.constants.js';
 import { AI_OPERATIONS } from '../ai.types.js';
 import { bulkExamplesSchema, createExampleSchema, EvalExamplesService, patchExampleSchema } from '../eval/eval-examples.service.js';
 import { createRunSchema, EvalRunsService } from '../eval/eval-runs.service.js';
 
 const idParams = z.strictObject({ id: z.uuid().transform((value) => value.toLowerCase()) });
 const examplesQuery = z.strictObject({ operation: z.enum(AI_OPERATIONS) });
+const formsQuery = z.strictObject({ word: z.string().min(1).max(WORD_MAX), part_of_speech: z.enum([...AI_VALID_POS, AI_POS_UNSET]) });
 const runsQuery = z.strictObject({
   operation: z.enum(AI_OPERATIONS),
   page_size: z.coerce.number().int().min(1).max(100).default(20),
@@ -32,6 +34,12 @@ export class AdminAiEvalController {
   @Get('examples')
   listExamples(@Query({ schema: examplesQuery }) query: z.infer<typeof examplesQuery>) {
     return this.examples.list(query.operation);
+  }
+
+  /** The catalog forms of a word, to fill the expected answer in; `{ forms: null }` when the catalog does not know the word. */
+  @Get('examples/forms')
+  exampleForms(@Query({ schema: formsQuery }) query: z.infer<typeof formsQuery>) {
+    return this.examples.forms(query.word, query.part_of_speech);
   }
 
   @Post('examples')

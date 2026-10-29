@@ -21,7 +21,7 @@ describe('admin ai eval HTTP (unit, mocked services)', () => {
   let ctx: TestApp; let token: string; let actorId: string; let role: 'admin' | 'editor' | null;
   const prisma = { sessionChain: { findUnique: vi.fn() }, $disconnect: async () => {} };
   const hit = vi.spyOn(RateLimiter.prototype, 'hit');
-  let examples: Record<'list' | 'create' | 'createMany' | 'update' | 'remove', ReturnType<typeof vi.spyOn>>;
+  let examples: Record<'list' | 'create' | 'createMany' | 'update' | 'remove' | 'forms', ReturnType<typeof vi.spyOn>>;
   let runs: Record<'list' | 'get' | 'cancel' | 'remove', ReturnType<typeof vi.spyOn>>;
   const auth = () => ({ Authorization: `Bearer ${token}` });
   const id = randomUUID();
@@ -35,6 +35,7 @@ describe('admin ai eval HTTP (unit, mocked services)', () => {
     const rs = ctx.app.get(EvalRunsService);
     examples = {
       list: vi.spyOn(ex, 'list'), create: vi.spyOn(ex, 'create'), createMany: vi.spyOn(ex, 'createMany'), update: vi.spyOn(ex, 'update'), remove: vi.spyOn(ex, 'remove'),
+      forms: vi.spyOn(ex, 'forms'),
     };
     runs = { list: vi.spyOn(rs, 'list'), get: vi.spyOn(rs, 'get'), cancel: vi.spyOn(rs, 'cancel'), remove: vi.spyOn(rs, 'remove') };
   });
@@ -45,6 +46,7 @@ describe('admin ai eval HTTP (unit, mocked services)', () => {
     examples.list.mockReset().mockResolvedValue({ items: [] }); examples.create.mockReset().mockResolvedValue({ id });
     examples.createMany.mockReset().mockResolvedValue({ total: 1, valid: 1, created: 1, invalid: [] });
     examples.update.mockReset().mockResolvedValue({ id }); examples.remove.mockReset().mockResolvedValue(undefined);
+    examples.forms.mockReset().mockResolvedValue({ forms: ['deploy', 'deployed'] });
     runs.list.mockReset().mockResolvedValue({ items: [], next_page_token: null }); runs.get.mockReset().mockResolvedValue({ id });
     runs.cancel.mockReset().mockResolvedValue({ id, status: 'failed', error: 'cancelled' }); runs.remove.mockReset().mockResolvedValue(undefined);
     hit.mockReset().mockResolvedValue(undefined);
@@ -55,6 +57,7 @@ describe('admin ai eval HTTP (unit, mocked services)', () => {
     const routes = listRoutes(ctx.app).filter(({ path }) => path.startsWith('/v1/admin/ai/eval'));
     expect(routes.map(({ method, path }) => `${method} ${path}`).sort()).toEqual([
       'DELETE /v1/admin/ai/eval/examples/:id', 'DELETE /v1/admin/ai/eval/runs/:id', 'GET /v1/admin/ai/eval/examples',
+      'GET /v1/admin/ai/eval/examples/forms',
       'GET /v1/admin/ai/eval/runs', 'GET /v1/admin/ai/eval/runs/:id', 'PATCH /v1/admin/ai/eval/examples/:id',
       'POST /v1/admin/ai/eval/examples', 'POST /v1/admin/ai/eval/examples/bulk', 'POST /v1/admin/ai/eval/runs',
       'POST /v1/admin/ai/eval/runs/:id/cancel',
@@ -85,6 +88,19 @@ describe('admin ai eval HTTP (unit, mocked services)', () => {
     const big = { operation: 'translate_sentence', input: { sentence: 'x'.repeat(150_000) } };
     expect((await http().post('/v1/admin/ai/eval/examples').set(auth()).send(big)).status).toBe(413);
     expect(examples.create).not.toHaveBeenCalled();
+  });
+
+  it('B2: GET /examples/forms passes the word and the part of speech; a part of speech outside the list → 400; no write limit', async () => {
+    const res = await http().get('/v1/admin/ai/eval/examples/forms').set(auth()).query({ word: 'deploy', part_of_speech: 'verb' });
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ forms: ['deploy', 'deployed'] });
+    expect(examples.forms).toHaveBeenCalledWith('deploy', 'verb');
+    expect((await http().get('/v1/admin/ai/eval/examples/forms').set(auth()).query({ word: 'deploy', part_of_speech: 'unspecified' })).status).toBe(200);
+    expect((await http().get('/v1/admin/ai/eval/examples/forms').set(auth()).query({ word: 'deploy', part_of_speech: 'gerund' })).status).toBe(400);
+    expect((await http().get('/v1/admin/ai/eval/examples/forms').set(auth()).query({ word: '', part_of_speech: 'verb' })).status).toBe(400);
+    expect((await http().get('/v1/admin/ai/eval/examples/forms').set(auth()).query({ word: 'x'.repeat(101), part_of_speech: 'verb' })).status).toBe(400);
+    expect(examples.forms).toHaveBeenCalledTimes(2);
+    expect(hit).not.toHaveBeenCalled();
   });
 
   it('an editor gets 403 on the bulk route', async () => {

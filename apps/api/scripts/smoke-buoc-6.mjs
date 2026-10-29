@@ -423,7 +423,7 @@ async function main() {
   // ------------------------------------------------------------------------------------------------------------------
   step('B6#17 and B6E74: three eval examples, one run in the worker; the same Idempotency-Key again');
   for (const word of [letters(6), letters(7), letters(8)]) {
-    await want(api('POST', '/v1/admin/ai/eval/examples', { token: admin, body: { operation: 'generate_cloze', input: clozeData(word) } }),
+    await want(api('POST', '/v1/admin/ai/eval/examples', { token: admin, body: { operation: 'generate_cloze', input: clozeData(word), expected: { forms: [word] } } }),
       201, 'add eval example');
   }
   const runKey = randomUUID();

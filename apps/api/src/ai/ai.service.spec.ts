@@ -41,8 +41,9 @@ function setup(readiness: ReadinessCheck = { ready: true, selection: {} as never
     $transaction: vi.fn(async (ops: unknown[]) => ops),
   } as unknown as PrismaClient;
   const rules = new EvalRulesRegistry();
-  const service = new AiService(runner, readinessService, prisma, new FakeClock(NOW), rules);
-  return { service, executed, report, checks, statements, queries, prisma, rules };
+  const examples = { createFromSource: vi.fn(async () => ({ id: 'example-1' })) };
+  const service = new AiService(runner, readinessService, prisma, new FakeClock(NOW), rules, examples as never);
+  return { service, executed, report, checks, statements, queries, prisma, rules, examples };
 }
 
 describe('AiService.run', () => {
@@ -73,6 +74,27 @@ describe('AiService.registerEvalRules', () => {
     const stub = { check: vi.fn(), formsOf: vi.fn(), matchesExpected: vi.fn() } as unknown as EvalRules;
     service.registerEvalRules(stub);
     expect(rules.get()).toBe(stub);
+  });
+});
+
+describe('AiService.createEvalExample', () => {
+  it('contract §4, D27.3: hands the example to the eval example set as a dev example with its source, and returns its id', async () => {
+    const { service, examples } = setup();
+    const args = {
+      operation: 'generate_cloze' as const, input: { word: 'deploy' }, expected: { forms: ['deploy'] }, note: 'from a report', source: 'report' as const,
+      sourceRef: 'r-1', actorId: ADMIN,
+    };
+    await expect(service.createEvalExample(args)).resolves.toEqual({ id: 'example-1' });
+    expect(examples.createFromSource).toHaveBeenCalledExactlyOnceWith(args);
+  });
+
+  it('a refusal of the example set (an expected answer is missing) reaches the caller', async () => {
+    const { service, examples } = setup();
+    const refusal = new Error('expected-invalid');
+    examples.createFromSource.mockRejectedValueOnce(refusal);
+    await expect(service.createEvalExample({
+      operation: 'generate_cloze', input: {}, expected: null, note: null, source: 'report', sourceRef: null, actorId: ADMIN,
+    })).rejects.toBe(refusal);
   });
 });
 
