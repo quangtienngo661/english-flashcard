@@ -1,0 +1,15 @@
+{"input":{"word":"deploy","part_of_speech":"verb","level":"B2","meaning_vi":"triển khai (phần mềm)","context_label":"IT"},"note":"Từ gần nghĩa release, launch, push dễ điền vừa"}
+{"input":{"word":"big","part_of_speech":"adjective","level":"A1","meaning_vi":"to, lớn","context_label":null},"note":"Nhiều từ đồng nghĩa (large, huge); câu phải chỉ ra đúng big"}
+{"input":{"word":"go","part_of_speech":"verb","level":"A1","meaning_vi":"đi","context_label":null},"note":"Bất quy tắc: went, gone; accepted_answers phải là dạng đúng"}
+{"input":{"word":"bank","part_of_speech":"noun","level":"B1","meaning_vi":"bờ sông","context_label":null},"note":"Nhiều nghĩa: phải là bờ sông, không phải ngân hàng"}
+{"input":{"word":"run","part_of_speech":"verb","level":"B1","meaning_vi":"điều hành, quản lý","context_label":"kinh doanh"},"note":"Nhiều nghĩa: run a company, không phải chạy bộ; manage cũng điền vừa"}
+{"input":{"word":"happy","part_of_speech":"adjective","level":"A1","meaning_vi":"vui, hạnh phúc","context_label":null},"note":"glad, pleased dễ điền vừa"}
+{"input":{"word":"rhythm","part_of_speech":"noun","level":"B2","meaning_vi":"nhịp điệu","context_label":"âm nhạc"},"note":"Từ đã thử thật 28/10 bằng lookup_word"}
+{"input":{"word":"child","part_of_speech":"noun","level":"A1","meaning_vi":"đứa trẻ","context_label":null},"note":"Số nhiều bất quy tắc: children"}
+{"input":{"word":"although","part_of_speech":"conjunction","level":"B1","meaning_vi":"mặc dù","context_label":null},"note":"Từ nối: though, even though cũng điền vừa"}
+{"input":{"word":"take off","part_of_speech":"phrasal verb","level":"B1","meaning_vi":"cất cánh","context_label":"máy bay"},"note":"Cụm hai chữ: một chỗ trống hay hai; took off"}
+{"input":{"word":"cheap","part_of_speech":"adjective","level":"A2","meaning_vi":"rẻ","context_label":null},"note":"Câu không được lộ đáp án bằng từ trái nghĩa quá rõ hay chính từ đó"}
+{"input":{"word":"subtle","part_of_speech":"adjective","level":"C1","meaning_vi":"tinh tế, khó nhận ra","context_label":null},"note":"Level cao: câu có thể dùng từ khó hơn cần; slight cũng điền vừa"}
+{"input":{"word":"book","part_of_speech":"verb","level":"A2","meaning_vi":"đặt trước (vé, phòng)","context_label":"du lịch"},"note":"Từ loại động từ, không phải danh từ quyển sách; reserve cũng điền vừa"}
+{"input":{"word":"lit","part_of_speech":"adjective","level":null,"meaning_vi":"rất tuyệt, sôi động","context_label":"tiếng lóng"},"note":"Không có level (kiểu từ người học tự thêm); nghĩa lóng, không phải quá khứ của light"}
+{"input":{"word":"fast","part_of_speech":"adverb","level":"A1","meaning_vi":"nhanh","context_label":null},"note":"quickly cũng điền vừa; dạng so sánh faster"}
