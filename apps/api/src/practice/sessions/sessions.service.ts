@@ -60,8 +60,12 @@ type Advance =
   | { state: 'none' }
   /** A slot waits for an AI request: `fresh` = created now, run it; else run it only after taking it over as stale. */
   | { state: 'pending'; requestId: string; fresh: boolean }
-  | { state: 'preparing' }
+  | { state: 'preparing'; notice?: Notice }
   | { state: 'ai_unavailable'; reason: PublicAiReason; ai?: AiNotice };
+
+/** A notice set or voided in this call travels with a slot that is not a question (B7E64). */
+const withNotice = (slot: Advance, notice: Notice | undefined): Advance =>
+  notice !== undefined && slot.state === 'preparing' ? { ...slot, notice } : slot;
 
 const notFound = () => new ProblemDetailsException({ status: 404, title: 'Not found', type: 'not-found' });
 const sessionClosed = () => new ProblemDetailsException({ status: 409, title: 'Session closed', type: 'session-closed' });
@@ -420,7 +424,7 @@ export class SessionsService {
       // Design §6.5 A: the slot decided earlier is read before any planning, so a second call never plans again (B7E111).
       if (session.pendingAiRequestId !== null) {
         const slot = await this.pendingSlot(tx, learner, session, items, usable, build, retryAi);
-        if (slot) return slot.state === 'question' ? { ...slot, notice: slot.notice ?? notice } : slot;
+        if (slot) return slot.state === 'question' ? { ...slot, notice: slot.notice ?? notice } : withNotice(slot, notice);
       }
       if (!build && notice === undefined) return { state: 'none' };
     }
@@ -457,8 +461,8 @@ export class SessionsService {
       if (aiTypes.length > 0 && session.aiStopped === null && this.wantsAi(session, senseId, round, budget,
         session.targetCount - answered, ruleTypes.length)) {
         const slot = await this.aiSlot(tx, learner, session, items, senseId, round, aiTypes, retryAi,
-          (previous?.question.type as QuestionType | undefined) ?? null);
-        if (slot) return slot.state === 'question' ? { ...slot, notice } : slot;
+          (previous?.question.type as QuestionType | undefined) ?? null, build);
+        if (slot) return slot.state === 'question' ? { ...slot, notice } : withNotice(slot, notice);
         // B7E47: the word no longer takes an AI type; a rule type if chosen, else the word is skipped.
       } else if (ruleTypes.length === 0 && session.aiStopped !== null) {
         return { state: 'ai_unavailable', reason: publicReason(session.aiStopped as AiFailure) };
@@ -509,7 +513,8 @@ export class SessionsService {
    * when the word cannot take an AI type now.
    */
   private async aiSlot(tx: Prisma.TransactionClient, learner: Learner, session: PracticeSession, items: ItemWithQuestion[],
-    senseId: string, round: number, aiTypes: QuestionType[], retryAi: boolean, previousType: QuestionType | null): Promise<Advance | null> {
+    senseId: string, round: number, aiTypes: QuestionType[], retryAi: boolean, previousType: QuestionType | null,
+    build: boolean): Promise<Advance | null> {
     const { userId, nativeLanguage } = learner;
     const point = (requestId: string) =>
       tx.practiceSession.update({ where: { id: session.id }, data: { pendingAiRequestId: requestId } });
@@ -528,7 +533,7 @@ export class SessionsService {
       const asked = items.some((item) => item.questionId === existing.questionId);
       if (existing.state === 'generating' || !asked) {
         await point(existing.id);
-        if (existing.state === 'generating') return { state: 'pending', requestId: existing.id, fresh: false };
+        if (existing.state === 'generating') return build ? { state: 'pending', requestId: existing.id, fresh: false } : { state: 'preparing' };
         return this.attach(tx, session, items, existing.id, existing.questionId!, senseId, round);
       }
     }
@@ -541,8 +546,10 @@ export class SessionsService {
     const other = await tx.practiceAiRequest.findFirst({ where: { userId, senseId, state: 'generating' } });
     if (other) {
       await point(other.id);
-      return { state: 'pending', requestId: other.id, fresh: false };
+      return build ? { state: 'pending', requestId: other.id, fresh: false } : { state: 'preparing' };
     }
+    // current never starts an AI request: nobody would run it (B7E65). The app calls next, which makes and runs it.
+    if (!build) return { state: 'preparing' };
     const request = await this.aiRequests.create(tx, {
       userId, sessionId: session.id, senseId, type: chooseType(available, previousType, Math.random), round,
     });
