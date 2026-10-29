@@ -13,6 +13,7 @@ import { UnknownFormsRepository } from './ai/unknown-forms.repository.js';
 import { WordChecksRepository } from './ai/word-checks.repository.js';
 import { AnswersController } from './answers/answers.controller.js';
 import { AnswersService } from './answers/answers.service.js';
+import { PracticeEvalRules } from './eval-rules/practice-eval-rules.js';
 import { PracticeEntryUsageProbe } from './entry-usage.probe.js';
 import { PracticeAccountEraser } from './maintenance/account-eraser.provider.js';
 import { HistoryController } from './history/history.controller.js';
@@ -45,7 +46,7 @@ import { PracticeStats } from './weak/practice-stats.js';
   providers: [
     IdempotencyInterceptor, QuestionBuilder, PracticeStats, SessionsService, AnswersService, PracticeReviewsService, HistoryService,
     ReportsService, ReportReasonsService, PracticeCleanupService, AiRequestsRepository, WordChecksRepository, UnknownFormsRepository,
-    AiQuestionGenerator, AiSessionPlanner, UnknownFormsAdminService, AiQualityService, PracticeEntryUsageProbe, PracticeAccountEraser,
+    AiQuestionGenerator, AiSessionPlanner, UnknownFormsAdminService, AiQualityService, PracticeEntryUsageProbe, PracticeEvalRules, PracticeAccountEraser,
   ],
 })
 export class PracticeModule {}

@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { Prisma, PrismaClient } from '../../generated/prisma/client.js';
 import {
-  practiceCandidates, practiceLemmaMeanings, practiceOtherSenses, practiceRandomMeanings, practiceSenses,
+  catalogPracticeSensesByLemma, practiceCandidates, practiceLemmaMeanings, practiceOtherSenses, practiceRandomMeanings, practiceSenses,
 } from './practice-senses.js';
 
 const userId = '00000000-0000-4000-8000-000000000001';
@@ -129,5 +129,54 @@ describe('practiceLemmaMeanings — scoped so the lemma indexes can be used (T6)
     expect(text).toMatch(/\bs\.state = 'open'/);
     expect(text).toContain('lower(e.lemma) = ANY');
     expect(values).toContainEqual(['quick']);
+  });
+});
+
+describe('catalogPracticeSensesByLemma — catalog senses of a lemma for eval rules (nhóm B M1-T6)', () => {
+  const senseRow = (patch: Record<string, unknown> = {}) => ({
+    ...ROW, pos: 'verb', level: 'B2', live_revision_id: 'r1', extra_forms: [], context_label: null, examples: [], variants: [], accepted_forms: [], ...patch,
+  });
+
+  it('Review focus 1: the lemma is trimmed and compared in lower case on catalog entries only; open senses with a live revision', async () => {
+    const client = clientWith();
+    await catalogPracticeSensesByLemma(client as unknown as PrismaClient, ' Deploy ', 'verb', 'vi');
+    const { text, values } = statement(client);
+    expect(text).toContain("e.scope = 'catalog'");
+    expect(text).toContain('lower(e.lemma) = lower(?)');
+    expect(text).toContain('e.pos = ?');
+    expect(text).toContain("s.state = 'open'");
+    expect(text).toContain('s.live_revision_id IS NOT NULL');
+    expect(text).toMatch(/ORDER BY e\.pos, s\.created_at, s\.id$/);
+    expect(values).toContain('Deploy');
+    expect(values).toContain('verb');
+    expect(values).not.toContain(' Deploy ');
+  });
+
+  it('a null part of speech takes every part of speech of the lemma', async () => {
+    const client = clientWith();
+    await catalogPracticeSensesByLemma(client as unknown as PrismaClient, 'run', null, 'vi');
+    const { text, values } = statement(client);
+    expect(text).not.toContain('e.pos = ?');
+    expect(values).toContain('run');
+  });
+
+  it('it is no viewer query: private entries are never read', async () => {
+    const client = clientWith();
+    await catalogPracticeSensesByLemma(client as unknown as PrismaClient, 'run', null, 'vi');
+    expect(statement(client).text).not.toContain('owner_user_id');
+  });
+
+  it('a blank lemma reads nothing', async () => {
+    const client = clientWith();
+    expect(await catalogPracticeSensesByLemma(client as unknown as PrismaClient, '   ', null, 'vi')).toEqual([]);
+    expect(client.$queryRaw).not.toHaveBeenCalled();
+  });
+
+  it('a returned row maps to the object practiceSenses builds for it, in the query order', async () => {
+    const rows = [senseRow(), senseRow({ sense_id: 'other', pos: 'noun', lemma: 'deploy' })];
+    const list = await catalogPracticeSensesByLemma(clientWith(rows) as unknown as PrismaClient, 'deploy', null, 'vi');
+    const one = (await practiceSenses(clientWith([senseRow()]) as unknown as PrismaClient, userId, [senseId], 'vi')).get(senseId);
+    expect(list.map((sense) => sense.sense_id)).toEqual([senseId, 'other']);
+    expect(list[0]).toEqual(one);
   });
 });
