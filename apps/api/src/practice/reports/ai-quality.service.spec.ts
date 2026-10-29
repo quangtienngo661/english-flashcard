@@ -44,6 +44,15 @@ describe('AiQualityService.report', () => {
     expect(reasons).toContain("r.question_source = 'ai'");
   });
 
+  it('F11: reports are counted by every status the admin can give one, `confirmed` (a confirmed AI error) included', async () => {
+    const row = { source: 'ai', total: 4, open: 1, no_error: 1, fixed: 0, confirmed: 2, refunded: 1 };
+    const { service, statements } = setup((sql) => (sql.includes('FROM practice_reports WHERE') ? [row] : []));
+    const report = await service.report({}, NOW);
+    const sql = statements.map((statement) => statement.sql).find((text) => text.includes('FROM practice_reports WHERE'));
+    expect(sql).toContain("(count(*) FILTER (WHERE status = 'confirmed'))::int AS confirmed");
+    expect(report.reports).toEqual([row]);
+  });
+
   it('second tries: the AI gateway is asked for the same range, and its operations become the three AI question types', async () => {
     const { service, ai } = setup(() => [], [
       { operation: 'generate_cloze', first_answers: 24, second_tries: 3 },
