@@ -8,9 +8,9 @@ import type { AdapterOutcome, AdapterRequest } from '../adapters/ai-adapter.js';
 import { AiAdapterRegistry } from '../adapters/ai-adapter.registry.js';
 import { AI_SCHEMA_VERSION, MIN_RETRY_BUDGET_MS, RESULT_TTL_MS } from '../ai.constants.js';
 import type { AiMeta, AiOperation, AiResult, CallOutcome } from '../ai.types.js';
+import { LiveConfigReader } from '../configs/live-config.reader.js';
 import { OPERATIONS, parseOutput, type OutputCheck } from '../operations/operations.js';
 import { assembleInstructions, type PromptExample } from '../prompts/prompt-rules.js';
-import { PromptsRepository } from '../prompts/prompts.repository.js';
 import { CallLedger } from './call-ledger.service.js';
 import { CallQueue, ConcurrencyLimit } from './call-queue.js';
 import { callCost } from './cost.js';
@@ -18,7 +18,7 @@ import { fingerprint } from './fingerprint.js';
 import { OperationsRepository, type OperationRow } from './operations.repository.js';
 import { ReadinessService } from './readiness.service.js';
 import { callOutcome, classify, decideExisting, decideRetry, drawJitterMs } from './run-rules.js';
-import { SelectionReader, type Selection } from './selection.js';
+import type { Selection } from './selection.js';
 
 type Prompt = { instructions: string; examples: PromptExample[]; revision: number | null };
 
@@ -72,8 +72,7 @@ export class RunnerService {
     @Inject(Clock) private readonly clock: Clock,
     @Inject(OperationsRepository) private readonly operations: OperationsRepository,
     @Inject(ReadinessService) private readonly readiness: ReadinessService,
-    @Inject(SelectionReader) private readonly selections: SelectionReader,
-    @Inject(PromptsRepository) private readonly prompts: PromptsRepository,
+    @Inject(LiveConfigReader) private readonly liveConfigs: LiveConfigReader,
     @Inject(AiAdapterRegistry) private readonly registry: AiAdapterRegistry,
     @Inject(CallLedger) private readonly ledger: CallLedger,
     @Inject(CallQueue) private readonly queue: CallQueue,
@@ -134,7 +133,7 @@ export class RunnerService {
         status: 'unavailable', operation_id: operationId, reason, ...(retry_after_seconds === undefined ? {} : { retry_after_seconds }),
       });
     }
-    const prompt = await this.prompts.current(operation);
+    const { prompt } = ready;
 
     // (4) Claim the id unless step 1 reclaimed it; a caller that claimed first wins.
     if (!rowId) {
@@ -185,12 +184,14 @@ export class RunnerService {
     const { ai } = await this.settings.get();
     this.limit.value = ai.maxConcurrentCalls;
     const deadline = performance.now() + ai.callTimeoutSeconds * 1000;
-    const selection = input.selection ?? await this.selections.load(operation);
+    // The live config is read once, and only for what the caller did not bring (a config run brings both).
+    const live = input.selection && input.prompt ? null : await this.liveConfigs.load(operation);
+    const selection = input.selection ?? live?.selection ?? null;
     if (!selection) return only({ status: 'unavailable', operation_id: callOperationId, reason: 'model-not-set' });
     if (!this.registry.get(selection.provider)) {
       return only({ status: 'unavailable', operation_id: callOperationId, reason: 'provider-not-configured' });
     }
-    const prompt = input.prompt ?? await this.prompts.current(operation);
+    const prompt = input.prompt ?? live!.prompt;
     const summaries: CallSummary[] = [];
     let rawOutput: string | null = null;
     const calls = await this.callProvider({

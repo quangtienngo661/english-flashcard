@@ -2,12 +2,13 @@ import { Inject, Injectable } from '@nestjs/common';
 import { SettingsService } from '../../settings/index.js';
 import { AiAdapterRegistry } from '../adapters/ai-adapter.registry.js';
 import type { AiOperation, AiPurpose, UnavailableReason } from '../ai.types.js';
+import { LiveConfigReader, type LiveConfig } from '../configs/live-config.reader.js';
 import { CallLedger } from './call-ledger.service.js';
 import { secondsToNextAiDay } from './run-rules.js';
-import { SelectionReader, type Selection } from './selection.js';
+import type { Selection } from './selection.js';
 
 export type ReadinessCheck =
-  | { ready: true; selection: Selection }
+  | { ready: true; selection: Selection; prompt: LiveConfig['prompt'] }
   | { ready: false; reason: UnavailableReason; retry_after_seconds?: number };
 
 /**
@@ -18,7 +19,7 @@ export type ReadinessCheck =
 export class ReadinessService {
   constructor(
     @Inject(SettingsService) private readonly settings: SettingsService,
-    @Inject(SelectionReader) private readonly selections: SelectionReader,
+    @Inject(LiveConfigReader) private readonly liveConfigs: LiveConfigReader,
     @Inject(AiAdapterRegistry) private readonly registry: AiAdapterRegistry,
     @Inject(CallLedger) private readonly ledger: CallLedger,
   ) {}
@@ -27,7 +28,8 @@ export class ReadinessService {
     const learner = purpose === 'learner';
     const settings = learner ? await this.settings.get() : null;
     if (settings && !settings.entitlements.aiEnabled) return { ready: false, reason: 'ai-disabled' };
-    const selection = await this.selections.load(operation);
+    // One read of the live config: the learner's call runs the very prompt and model this check saw (a publish between two reads cannot split them).
+    const { selection, prompt } = await this.liveConfigs.load(operation);
     if (!selection) return { ready: false, reason: 'model-not-set' };
     if (!this.registry.get(selection.provider)) return { ready: false, reason: 'provider-not-configured' };
     const cap = settings?.ai.dailyProviderCallsCap ?? null;
@@ -35,6 +37,6 @@ export class ReadinessService {
     if (cap !== null && (await this.ledger.countToday(now)) >= cap) {
       return { ready: false, reason: 'daily-call-cap', retry_after_seconds: secondsToNextAiDay(now) };
     }
-    return { ready: true, selection };
+    return { ready: true, selection, prompt };
   }
 }

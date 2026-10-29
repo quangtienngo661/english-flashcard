@@ -1,5 +1,4 @@
 import { describe, expect, it, vi } from 'vitest';
-import type { PrismaClient } from '../../generated/prisma/client.js';
 import { SelectionReader, toSelection, type ModelRow } from './selection.js';
 
 const MODEL_REF = '00000000-0000-4000-8000-0000000000b1';
@@ -56,22 +55,21 @@ describe('toSelection (design §6.3)', () => {
   });
 });
 
-describe('SelectionReader', () => {
-  function reader(row: unknown) {
-    const findUnique = vi.fn(async () => row);
-    const prisma = { aiOperationSetting: { findUnique } } as unknown as PrismaClient;
-    return { reader: new SelectionReader(prisma), findUnique };
+describe('SelectionReader (nhóm B M2: the selection of the live config)', () => {
+  function reader(selection: ReturnType<typeof toSelection> | null) {
+    const load = vi.fn(async (_op: string) => ({ configId: 'c', number: 3, prompt: { instructions: 'x', examples: [], revision: 3 }, selection }));
+    return { reader: new SelectionReader({ load } as never), load };
   }
 
-  it('no model chosen → null', async () => {
-    const { reader: selections } = reader({ ...setting(), model: null });
+  it('no model in the live config → null', async () => {
+    const { reader: selections } = reader(null);
     await expect(selections.load('generate_cloze')).resolves.toBeNull();
   });
 
-  it('reads the operation row with its model', async () => {
-    const { reader: selections, findUnique } = reader({ ...setting(), model: model() });
-    const selection = await selections.load('lookup_word');
-    expect(selection?.modelId).toBe('claude-haiku-5-5');
-    expect(findUnique).toHaveBeenCalledWith({ where: { operation: 'lookup_word' }, include: { model: true } });
+  it('asks the live config reader once and returns its selection as it is', async () => {
+    const chosen = toSelection('lookup_word', setting(), model());
+    const { reader: selections, load } = reader(chosen);
+    await expect(selections.load('lookup_word')).resolves.toBe(chosen);
+    expect(load).toHaveBeenCalledExactlyOnceWith('lookup_word');
   });
 });

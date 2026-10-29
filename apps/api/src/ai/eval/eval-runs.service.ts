@@ -13,7 +13,6 @@ import { AiAdapterRegistry } from '../adapters/ai-adapter.registry.js';
 import { AI_SYSTEM_ACTOR_ID } from '../ai.constants.js';
 import { AI_OPERATIONS, type AiOperation } from '../ai.types.js';
 import { promptViolations } from '../prompts/prompt-rules.js';
-import { PromptsRepository } from '../prompts/prompts.repository.js';
 import { SelectionReader, toSelection, type ModelRow, type Selection } from '../runner/selection.js';
 import { EvalQueue } from './eval-queue.service.js';
 import type { EvalRunStatus } from './eval-runs.repository.js';
@@ -86,7 +85,6 @@ export class EvalRunsService {
     @Inject(PRISMA_CLIENT) private readonly prisma: PrismaClient,
     @Inject(SelectionReader) private readonly selections: SelectionReader,
     @Inject(AiAdapterRegistry) private readonly registry: AiAdapterRegistry,
-    @Inject(PromptsRepository) private readonly prompts: PromptsRepository,
     @Inject(EvalQueue) private readonly queue: EvalQueue,
     @Inject(IdentityService) private readonly identity: IdentityService,
     @Inject(RateLimiter) private readonly limiter: RateLimiter,
@@ -96,23 +94,24 @@ export class EvalRunsService {
   async create(actorId: string, body: CreateRunBody): Promise<{ run_id: string; status: 'queued' }> {
     const parsed = createRunSchema.safeParse(body);
     if (!parsed.success) throw invalid(parsed.error.issues.map((issue) => `${issue.path.join('.')}: ${issue.message}`));
-    const { operation, prompt, config } = parsed.data;
-    if ((prompt === undefined) === (config === undefined)) throw invalid(['prompt: send exactly one of prompt and config']);
-    // A config run uses the config's own model and settings; a prompt run uses the operation's current choice (until M2-T8).
+    const { operation } = parsed.data;
+    // `prompt: 'current'` is the old way to say "the live config" (an old client keeps working, Review focus 4).
+    const config = parsed.data.prompt === 'current' ? 'live' : parsed.data.config;
+    const prompt = parsed.data.prompt === 'current' ? undefined : parsed.data.prompt;
+    if ((parsed.data.prompt === undefined) === (parsed.data.config === undefined)) throw invalid(['prompt: send exactly one of prompt and config']);
+    // A config run uses the config's own model and settings; a run of a draft text (`prompt: {…}`) uses the live config's model.
     const tried = config === undefined ? null : await this.configToRun(operation, config);
     const selection: Selection | null = tried ? tried.selection : await this.selections.load(operation);
     if (!selection) throw problem(409, 'model-not-set', 'Model not set');
     if (!this.registry.get(selection.provider)) throw problem(409, 'provider-not-configured', 'Provider not configured');
     let promptRevision: number | null = null;
     let draft: { instructions: string; examples: unknown[] } | null = null;
-    if (tried) {
-      // The run names the config and its version; no prompt revision and no draft text (the CHECK allows exactly one of the three).
-    } else if (prompt === 'current') {
-      promptRevision = (await this.prompts.current(operation)).revision;
-    } else {
+    if (!tried) {
+      // The run names the config and its version (no prompt revision, no draft text: the CHECK allows exactly one of the three); only a
+      // legacy draft text from the Prompt page is stored as `draft`, never usable as evidence for a publish.
       const violations = promptViolations(operation, prompt!);
       if (violations.length) throw invalid(violations.map((violation) => `prompt.${violation}`));
-      draft = prompt as { instructions: string; examples: unknown[] };
+      draft = prompt!;
     }
     const examples = await this.examplesOf(operation, parsed.data.set_id);
     // The run counts against `ai.test` only now: a request refused above (no model, bad draft, no example) costs nothing.

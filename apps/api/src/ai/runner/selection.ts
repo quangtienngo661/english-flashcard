@@ -1,66 +1,18 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { PRISMA_CLIENT } from '../../common/db/prisma.module.js';
-import type { PrismaClient } from '../../generated/prisma/client.js';
-import type { AiOperation, AiProviderName } from '../ai.types.js';
-import type { Price } from './cost.js';
-import { resolveMaxOutputTokens } from './run-rules.js';
+import type { AiOperation } from '../ai.types.js';
+import { LiveConfigReader } from '../configs/live-config.reader.js';
+import type { Selection } from './to-selection.js';
 
-/** What one run uses (design §6.3), resolved from the operation's choice and its model. */
-export type Selection = {
-  operation: AiOperation;
-  /** Null for a selection rebuilt from an eval run row. */
-  modelRef: string | null;
-  provider: AiProviderName;
-  modelId: string;
-  effort: string | null;
-  thinking: 'disabled' | 'between_tools' | null;
-  maxOutputTokens: number | null;
-  price: Price | null;
-};
+// The shape of a selection and how a config becomes one live in `to-selection.ts` (so the live config reader can use it without a cycle).
+export { toSelection, type ModelRow, type Selection } from './to-selection.js';
 
-/** Prisma returns `Decimal` for prices; anything whose string is a number fits. */
-type DecimalLike = { toString(): string };
-
-export type ModelRow = {
-  id: string;
-  provider: string;
-  modelId: string;
-  thinkingOff: string | null;
-  maxOutputTokens: number | null;
-  priceInput: DecimalLike | null;
-  priceCachedInput: DecimalLike | null;
-  priceOutput: DecimalLike | null;
-};
-
-type SettingRow = { effort: string | null; thinking: string | null; maxOutputTokens: number | null };
-
-const toNumber = (value: DecimalLike | null): number | null => (value === null ? null : Number(value.toString()));
-
-/** `'off'` becomes the model's own way of turning thinking off; a price needs both the input and the output price. */
-export function toSelection(operation: AiOperation, setting: SettingRow, model: ModelRow): Selection {
-  const provider = model.provider as AiProviderName;
-  const input = toNumber(model.priceInput);
-  const output = toNumber(model.priceOutput);
-  return {
-    operation,
-    modelRef: model.id,
-    provider,
-    modelId: model.modelId,
-    effort: setting.effort,
-    thinking: setting.thinking === 'off' ? (model.thinkingOff as Selection['thinking']) : null,
-    maxOutputTokens: resolveMaxOutputTokens(provider, setting.maxOutputTokens, model.maxOutputTokens),
-    price: input === null || output === null ? null : { input, cachedInput: toNumber(model.priceCachedInput), output },
-  };
-}
-
+/** The model and settings the operation runs with right now: those of its live config (nhóm B M2). */
 @Injectable()
 export class SelectionReader {
-  constructor(@Inject(PRISMA_CLIENT) private readonly prisma: PrismaClient) {}
+  constructor(@Inject(LiveConfigReader) private readonly live: LiveConfigReader) {}
 
-  /** Null when the operation has no model (D9). */
+  /** Null when the live config has no model (D9). */
   async load(operation: AiOperation): Promise<Selection | null> {
-    const row = await this.prisma.aiOperationSetting.findUnique({ where: { operation }, include: { model: true } });
-    if (!row?.model) return null;
-    return toSelection(operation, row, row.model);
+    return (await this.live.load(operation)).selection;
   }
 }

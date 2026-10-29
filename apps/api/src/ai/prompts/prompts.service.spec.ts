@@ -121,7 +121,8 @@ function setup(input: Setup = {}) {
   } as unknown as RunnerService;
   const registry = new AiAdapterRegistry();
   for (const provider of input.registered ?? ['fake']) registry.register(new StubAdapter(provider));
-  const repository = new PromptsRepository(memory.prisma);
+  const live = { load: vi.fn(async (_op: string) => ({ configId: 'c9', number: 7, prompt: { instructions: 'Live text.', examples: [], revision: 7 }, selection: null })) };
+  const repository = new PromptsRepository(memory.prisma, live as never);
   const emailsOf = vi.fn(async (ids: string[]) => new Map(ids.filter((id) => id === ADMIN).map((id) => [id, 'admin@x.test'])));
   const limiter = { hit: vi.fn(async (): Promise<void> => undefined) };
   const service = new PromptsService(
@@ -129,7 +130,7 @@ function setup(input: Setup = {}) {
     { load: async () => (input.selection === undefined ? selection : input.selection) } as unknown as SelectionReader, registry,
     { emailsOf } as unknown as IdentityService, limiter as never,
   );
-  return { service, repository, executed, emailsOf, limiter, ...memory };
+  return { service, repository, executed, emailsOf, limiter, live, ...memory };
 }
 
 async function problem(promise: Promise<unknown>): Promise<{ status: number; type: string; violations?: string[] }> {
@@ -212,10 +213,11 @@ describe('PromptsService.save', () => {
     expect(client.aiPrompt.updateMany).toHaveBeenCalledWith(expect.objectContaining({ where: { operation: OP, revision: 1 } }));
   });
 
-  it('B6E60: after a save, PromptsRepository.current returns the new text and revision (the next learner call uses it)', async () => {
-    const { service, repository } = setup();
-    await service.save(ADMIN, OP, { expected_revision: 1, instructions: 'New text.', examples: [] });
-    await expect(repository.current(OP)).resolves.toEqual({ instructions: 'New text.', examples: [], revision: 2 });
+  it('nhóm B M2: PromptsRepository.current is the live config prompt, whatever ai_prompts holds; atRevision still reads the saved revisions', async () => {
+    const { repository, live } = setup();
+    await expect(repository.current(OP)).resolves.toEqual({ instructions: 'Live text.', examples: [], revision: 7 });
+    expect(live.load).toHaveBeenCalledExactlyOnceWith(OP);
+    await expect(repository.atRevision(OP, 1)).resolves.toMatchObject({ revision: 1 });
   });
 
   it('B6E61: saving the text of revision 1 again → a new revision 3, history kept', async () => {

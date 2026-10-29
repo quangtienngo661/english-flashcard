@@ -14,6 +14,7 @@ import { AdminAiOperationsController } from './api/admin-ai-operations.controlle
 import { AdminAiPromptsController } from './api/admin-ai-prompts.controller.js';
 import { AdminAiReportsController } from './api/admin-ai-reports.controller.js';
 import { ConfigsService } from './configs/configs.service.js';
+import { LiveConfigReader } from './configs/live-config.reader.js';
 import { PublishService } from './configs/publish.service.js';
 import { EvalExamplesService } from './eval/eval-examples.service.js';
 import { EvalJob } from './eval/eval-job.js';
@@ -49,7 +50,7 @@ import { SelectionReader } from './runner/selection.js';
     // One queue per process (design §8.4); its limit is the one the runner read last.
     { provide: CallQueue, useFactory: (limit: ConcurrencyLimit) => new CallQueue(() => limit.value), inject: [ConcurrencyLimit] },
     RunnerService, AiService, PromptsService, ReportsService,
-    EvalExamplesService, EvalRunsService, EvalRunsRepository, EvalJob, EvalQueue, EvalRulesRegistry, EvalSetsService, HeldOutReader, ConfigsService, PublishService, IdempotencyInterceptor, AiMaintenance, AiAccountEraser,
+    EvalExamplesService, EvalRunsService, EvalRunsRepository, EvalJob, EvalQueue, EvalRulesRegistry, EvalSetsService, HeldOutReader, ConfigsService, PublishService, LiveConfigReader, IdempotencyInterceptor, AiMaintenance, AiAccountEraser,
   ],
   exports: [AiService],
 })

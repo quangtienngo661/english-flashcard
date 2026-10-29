@@ -68,7 +68,7 @@ model AiOperationSettingChange {
   @@map("ai_operation_setting_changes")
 }
 
-// The prompt in use for one operation (design §7.3).
+// The prompt in use for one operation (design §7.3). History only since nhóm B M2: the gateway reads the live config.
 model AiPrompt {
   operation    String   @id
   instructions String

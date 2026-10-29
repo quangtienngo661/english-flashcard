@@ -11,7 +11,7 @@ const ADMIN = '00000000-0000-4000-8000-0000000000a1';
 const NOW = new Date('2026-10-20T05:00:00.000Z');
 const DATA = { word: 'borrow' };
 
-function setup(readiness: ReadinessCheck = { ready: true, selection: {} as never }, rows: unknown[] = []) {
+function setup(readiness: ReadinessCheck = { ready: true, selection: {} as never, prompt: {} as never }, rows: unknown[] = []) {
   const executed: ExecuteInput[] = [];
   const report: RunReport = { result: { status: 'in_progress', operation_id: 'q1' }, calls: [], rawOutput: null };
   const runner = {
@@ -42,8 +42,9 @@ function setup(readiness: ReadinessCheck = { ready: true, selection: {} as never
   } as unknown as PrismaClient;
   const rules = new EvalRulesRegistry();
   const examples = { createFromSource: vi.fn(async () => ({ id: 'example-1' })) };
-  const service = new AiService(runner, readinessService, prisma, new FakeClock(NOW), rules, examples as never);
-  return { service, executed, report, checks, statements, queries, prisma, rules, examples };
+  const live = { find: vi.fn(async (_op: string): Promise<unknown> => ({ configId: 'c', number: 7, prompt: {}, selection: { modelId: 'fake:ok' } })) };
+  const service = new AiService(runner, readinessService, prisma, new FakeClock(NOW), rules, examples as never, live as never);
+  return { service, executed, report, checks, statements, queries, prisma, rules, examples, live };
 }
 
 describe('AiService.run', () => {
@@ -95,6 +96,26 @@ describe('AiService.createEvalExample', () => {
     await expect(service.createEvalExample({
       operation: 'generate_cloze', input: {}, expected: null, note: null, source: 'report', sourceRef: null, actorId: ADMIN,
     })).rejects.toBe(refusal);
+  });
+});
+
+describe('AiService.liveConfigNumber (contract §4)', () => {
+  it('the number of the live config and the id of its model', async () => {
+    const { service, live } = setup();
+    await expect(service.liveConfigNumber('generate_cloze')).resolves.toEqual({ number: 7, model: 'fake:ok' });
+    expect(live.find).toHaveBeenCalledWith('generate_cloze');
+  });
+
+  it('a live config without a model → model null', async () => {
+    const { service, live } = setup();
+    live.find.mockResolvedValue({ configId: 'c', number: 2, prompt: {}, selection: null });
+    await expect(service.liveConfigNumber('generate_cloze')).resolves.toEqual({ number: 2, model: null });
+  });
+
+  it('an operation without a live config → null', async () => {
+    const { service, live } = setup();
+    live.find.mockResolvedValue(null);
+    await expect(service.liveConfigNumber('generate_cloze')).resolves.toBeNull();
   });
 });
 

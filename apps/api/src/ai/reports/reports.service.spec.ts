@@ -122,7 +122,7 @@ describe('ReportsService.status', () => {
   it('ready and reason per operation from readiness', async () => {
     const { service } = setup({
       readiness: {
-        generate_cloze: { ready: true, selection: {} as never },
+        generate_cloze: { ready: true, selection: {} as never, prompt: {} as never },
         lookup_word: { ready: false, reason: 'model-not-set' },
         translate_sentence: { ready: false, reason: 'ai-disabled' },
       },
