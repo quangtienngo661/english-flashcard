@@ -234,7 +234,6 @@ model AiEvalRun {
   // Exactly one of prompt_revision and draft is set (CHECK).
   promptRevision   Int?      @map("prompt_revision")
   draft            Json?
-  exampleIds       String[]  @map("example_ids") @db.Uuid
   // null = the working set (a quick try, not comparable, not evidence for a publish).
   setId            String?   @map("set_id") @db.Uuid
   // USD per million tokens of the model when the run was made (design §4), so the cost never depends on a later price edit.
@@ -250,7 +249,6 @@ model AiEvalRun {
   avgLatencyMs     Int?      @map("avg_latency_ms")
   costUsd          Decimal?  @map("cost_usd") @db.Decimal(14, 8)
   costUnknownCount Int       @default(0) @map("cost_unknown_count")
-  items            Json      @default("[]")
   error            String?
   startedBy        String    @map("started_by") @db.Uuid
   createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz

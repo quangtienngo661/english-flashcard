@@ -9,29 +9,45 @@ import { EvalRunsService } from './eval-runs.service.js';
 const ADMIN = '11111111-1111-4111-8111-111111111111';
 const SELECTION: Selection = {
   operation: 'generate_cloze', modelRef: randomUUID(), provider: 'fake', modelId: 'fake:ok', effort: null, thinking: 'disabled',
-  maxOutputTokens: 4096, price: null,
+  maxOutputTokens: 4096, price: { input: 1, cachedInput: null, output: 2 },
 };
 const NOW = new Date('2026-10-28T03:00:00Z');
 const [EX1, EX2] = [randomUUID(), randomUUID()];
 const EXAMPLE_INPUT = { word: 'deploy', part_of_speech: 'verb', level: 'B1', meaning_vi: 'triển khai', context_label: null };
+const IN1 = { word: 'one' };
+const IN2 = { word: 'two' };
 
 function setup() {
   const created: Array<Record<string, unknown>> = [];
-  const prisma = {
-    aiEvalExample: { findMany: vi.fn(async () => [{ id: EX1 }, { id: EX2 }]) },
+  // The run and its items are written through the transaction client, never through the shared one.
+  const tx = {
     aiEvalRun: {
       create: vi.fn(async ({ data }: { data: Record<string, unknown> }) => {
         const row = { id: randomUUID(), ...data };
         created.push(row);
         return row;
       }),
+    },
+    aiEvalRunItem: { createMany: vi.fn(async (_args: { data: Array<Record<string, unknown>> }) => ({ count: 0 })) },
+  };
+  const prisma = {
+    aiEvalExample: {
+      findMany: vi.fn(async () => [{ id: EX1, split: 'dev', input: IN1, expected: null }, { id: EX2, split: 'dev', input: IN2, expected: null }]),
+    },
+    aiEvalRun: {
+      create: vi.fn(),
       findUnique: vi.fn(async (): Promise<Record<string, unknown> | null> => null),
       findMany: vi.fn(async (): Promise<Array<Record<string, unknown>>> => []),
       updateMany: vi.fn(async (): Promise<{ count: number }> => ({ count: 0 })),
       deleteMany: vi.fn(async (): Promise<{ count: number }> => ({ count: 0 })),
     },
+    aiEvalRunItem: {
+      findMany: vi.fn(async (): Promise<Array<Record<string, unknown>>> => []),
+      groupBy: vi.fn(async (): Promise<Array<{ runId: string; _count: { _all: number } }>> => []),
+    },
     aiCall: { deleteMany: vi.fn(async () => ({ count: 0 })) },
     $executeRaw: vi.fn(async () => 0),
+    $transaction: vi.fn(async (work: (client: typeof tx) => Promise<unknown>) => work(tx)),
   };
   const selections = { load: vi.fn(async (): Promise<Selection | null> => SELECTION) };
   const registry = { get: vi.fn((provider: string) => (provider === 'fake' ? {} : undefined)) };
@@ -43,7 +59,7 @@ function setup() {
     prisma as never, selections as never, registry as never, prompts as never, queue as never, { emailsOf } as never,
     limiter as never, new FakeClock(NOW),
   );
-  return { service, prisma, created, selections, registry, prompts, queue, emailsOf, limiter };
+  return { service, prisma, tx, created, selections, registry, prompts, queue, emailsOf, limiter };
 }
 
 async function problemOf(promise: Promise<unknown>) {
@@ -57,19 +73,47 @@ describe('EvalRunsService.create', () => {
   let ctx: ReturnType<typeof setup>;
   beforeEach(() => { ctx = setup(); });
 
-  it('the row stores the resolved selection, the current revision, the example ids and their number; enqueued; 202 body', async () => {
+  it('E1: the row stores the resolved selection, the current revision, the price and the number of examples; enqueued; 202 body', async () => {
     const answer = await ctx.service.create(ADMIN, { operation: 'generate_cloze', prompt: 'current' });
     expect(ctx.created).toHaveLength(1);
     expect(ctx.created[0]).toMatchObject({
       operation: 'generate_cloze', provider: 'fake', model: 'fake:ok', effort: null, thinking: 'disabled', maxOutputTokens: 4096,
-      promptRevision: 4, exampleIds: [EX1, EX2], status: 'queued', total: 2, startedBy: ADMIN,
+      promptRevision: 4, priceInput: 1, priceCachedInput: null, priceOutput: 2, status: 'queued', total: 2, startedBy: ADMIN,
     });
     expect(ctx.created[0]).not.toHaveProperty('draft');
+    expect(ctx.created[0]).not.toHaveProperty('exampleIds');
     expect(ctx.prisma.aiEvalExample.findMany).toHaveBeenCalledWith({
-      where: { operation: 'generate_cloze' }, orderBy: [{ createdAt: 'asc' }, { id: 'asc' }], select: { id: true },
+      where: { operation: 'generate_cloze' }, orderBy: [{ createdAt: 'asc' }, { id: 'asc' }], select: { id: true, split: true, input: true, expected: true },
     });
     expect(ctx.queue.enqueue).toHaveBeenCalledWith(ctx.created[0]!.id);
     expect(answer).toEqual({ run_id: ctx.created[0]!.id, status: 'queued' });
+  });
+
+  it('E1: each example becomes an item row with its snapshot, in position order, written with the run in one transaction', async () => {
+    await ctx.service.create(ADMIN, { operation: 'generate_cloze', prompt: 'current' });
+    const runId = ctx.created[0]!.id;
+    expect(ctx.prisma.$transaction).toHaveBeenCalledTimes(1);
+    expect(ctx.prisma.aiEvalRun.create).not.toHaveBeenCalled();
+    expect(ctx.tx.aiEvalRunItem.createMany).toHaveBeenCalledExactlyOnceWith({ data: [
+      { runId, exampleId: EX1, position: 0, split: 'dev', input: IN1 },
+      { runId, exampleId: EX2, position: 1, split: 'dev', input: IN2 },
+    ] });
+    expect(ctx.tx.aiEvalRun.create.mock.invocationCallOrder[0]!).toBeLessThan(ctx.tx.aiEvalRunItem.createMany.mock.invocationCallOrder[0]!);
+    expect(ctx.queue.enqueue.mock.invocationCallOrder[0]!).toBeGreaterThan(ctx.tx.aiEvalRunItem.createMany.mock.invocationCallOrder[0]!);
+  });
+
+  it('E1: the expected answer and the split of an example are copied into its item row', async () => {
+    ctx.prisma.aiEvalExample.findMany.mockResolvedValue([{ id: EX1, split: 'held_out', input: IN1, expected: { forms: ['go'] } } as never]);
+    await ctx.service.create(ADMIN, { operation: 'generate_cloze', prompt: 'current' });
+    expect(ctx.tx.aiEvalRunItem.createMany).toHaveBeenCalledExactlyOnceWith({ data: [
+      { runId: ctx.created[0]!.id, exampleId: EX1, position: 0, split: 'held_out', input: IN1, expected: { forms: ['go'] } },
+    ] });
+  });
+
+  it('E1: a model with no price leaves the three price columns null', async () => {
+    ctx.selections.load.mockResolvedValue({ ...SELECTION, price: null });
+    await ctx.service.create(ADMIN, { operation: 'generate_cloze', prompt: 'current' });
+    expect(ctx.created[0]).toMatchObject({ priceInput: null, priceCachedInput: null, priceOutput: null });
   });
 
   it('the row stores the draft and no revision', async () => {
@@ -116,7 +160,7 @@ describe('EvalRunsService.create', () => {
   it('a run counts one ai.test use, taken once the request is accepted and before the row is made', async () => {
     await ctx.service.create(ADMIN, { operation: 'generate_cloze', prompt: 'current' });
     expect(ctx.limiter.hit).toHaveBeenCalledExactlyOnceWith('ai.test', ADMIN);
-    expect(ctx.limiter.hit.mock.invocationCallOrder[0]!).toBeLessThan(ctx.prisma.aiEvalRun.create.mock.invocationCallOrder[0]!);
+    expect(ctx.limiter.hit.mock.invocationCallOrder[0]!).toBeLessThan(ctx.tx.aiEvalRun.create.mock.invocationCallOrder[0]!);
   });
 
   it('over the ai.test limit → the 429 from the limiter, no row, nothing enqueued', async () => {
@@ -152,12 +196,43 @@ describe('EvalRunsService.get', () => {
     const problem = await problemOf(ctx.service.get(randomUUID()));
     expect(problem).toMatchObject({ status: 404, type: 'not-found' });
   });
+
+  it('E1: items come from the item rows in position order, with the old keys kept and done counting the rows no longer pending', async () => {
+    const ctx = setup();
+    const id = randomUUID();
+    ctx.prisma.aiEvalRun.findUnique.mockResolvedValue(runRow(ADMIN, id));
+    ctx.prisma.aiEvalRunItem.groupBy.mockResolvedValue([{ runId: id, _count: { _all: 1 } }]);
+    ctx.prisma.aiEvalRunItem.findMany.mockResolvedValue([
+      itemRow(EX1, 0, { status: 'succeeded', output: { sentence: 'x' }, rawOutput: '{}', latencyMs: 40, costUsd: { toFixed: () => '0.00000300' } }),
+      itemRow(EX2, 1, { status: 'pending' }),
+    ]);
+    const run = await ctx.service.get(id);
+    expect(ctx.prisma.aiEvalRunItem.findMany).toHaveBeenCalledWith({ where: { runId: id, split: 'dev' }, orderBy: [{ position: 'asc' }, { id: 'asc' }] });
+    expect(run.done).toBe(1);
+    expect(run.items).toEqual([
+      {
+        example_id: EX1, position: 0, split: 'dev', input: IN1, expected: null, status: 'succeeded', reason: null, output: { sentence: 'x' },
+        raw_output: '{}', rule: null, expected_result: null, latency_ms: 40, cost_usd: '0.00000300',
+      },
+      {
+        example_id: EX2, position: 1, split: 'dev', input: IN2, expected: null, status: 'pending', reason: null, output: null,
+        raw_output: null, rule: null, expected_result: null, latency_ms: null, cost_usd: null,
+      },
+    ]);
+  });
 });
+
+function itemRow(exampleId: string, position: number, over: Record<string, unknown> = {}) {
+  return {
+    id: `item-${position}`, runId: 'run', exampleId, position, split: 'dev', input: position === 0 ? IN1 : IN2, expected: null, status: 'pending',
+    reason: null, output: null, rawOutput: null, rule: null, expectedResult: null, latencyMs: null, costUsd: null, hidden: false, ...over,
+  };
+}
 
 function runRow(startedBy: string, id: string = randomUUID()) {
   return {
     id, operation: 'generate_cloze', provider: 'fake', model: 'fake:ok', effort: null, thinking: 'disabled', maxOutputTokens: 4096,
-    promptRevision: 4, draft: null, status: 'done', total: 2, items: [], validCount: 2, avgLatencyMs: 5, costUsd: null,
+    promptRevision: 4, draft: null, status: 'done', total: 2, validCount: 2, avgLatencyMs: 5, costUsd: null,
     costUnknownCount: 0, error: null, startedBy, createdAt: new Date('2026-10-01T00:00:00Z'), startedAt: null, finishedAt: null,
     heartbeatAt: null,
   };
@@ -178,6 +253,7 @@ describe('EvalRunsService.cancel', () => {
     expect(run).toMatchObject({ id, status: 'failed', error: 'cancelled', finished_at: NOW.toISOString(), started_by_user: { email: 'admin@x.test' } });
     expect(run).toHaveProperty('items');
     expect(run).toHaveProperty('draft');
+    expect(ctx.prisma.aiEvalRunItem.findMany).toHaveBeenCalledTimes(1);
   });
 
   it('a run that finished a moment earlier (the guarded UPDATE changes no row) → 409 run-not-active and nothing is overwritten', async () => {
@@ -252,6 +328,18 @@ describe('EvalRunsService started_by_user', () => {
     expect(run.started_by).toBe(ADMIN);
     expect(run.started_by_user).toEqual({ id: ADMIN, email: 'admin@x.test', system: false });
     expect(ctx.emailsOf).toHaveBeenCalledTimes(1);
+  });
+
+  it('E1: list counts the done items of the whole page in one grouped query', async () => {
+    const ctx = setup();
+    const [a, b] = [randomUUID(), randomUUID()];
+    ctx.prisma.aiEvalRun.findMany.mockResolvedValueOnce([runRow(ADMIN, a), runRow(ADMIN, b)]);
+    ctx.prisma.aiEvalRunItem.groupBy.mockResolvedValueOnce([{ runId: a, _count: { _all: 2 } }]);
+    const { items } = await ctx.service.list('generate_cloze', 20, undefined);
+    expect(ctx.prisma.aiEvalRunItem.groupBy).toHaveBeenCalledExactlyOnceWith({
+      by: ['runId'], where: { runId: { in: [a, b] }, status: { not: 'pending' } }, _count: { _all: true },
+    });
+    expect(items.map((item) => item.done)).toEqual([2, 0]);
   });
 
   it('list: one emailsOf call for the page; system actor and unknown user', async () => {
