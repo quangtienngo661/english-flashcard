@@ -9,6 +9,7 @@ import type { CallLedger } from '../runner/call-ledger.service.js';
 import type { ReadinessCheck, ReadinessService } from '../runner/readiness.service.js';
 import type { ModelRow } from '../runner/selection.js';
 import type { HeldOutReader } from '../eval/held-out.js';
+import type { DashboardQualityService } from './dashboard-quality.service.js';
 import { ReportsService } from './reports.service.js';
 
 const NOW = new Date('2026-10-20T05:00:00.000Z');
@@ -124,6 +125,7 @@ function setup(input: Setup = {}) {
   const heldOut = { hiddenIds: vi.fn(async (ids: string[]) => new Set(ids.filter((id) => (input.hidden ?? []).includes(id)))) };
   const service = new ReportsService(
     prisma, { get: async () => settings } as unknown as SettingsService, readiness, registry, ledger, heldOut as unknown as HeldOutReader,
+    {} as unknown as DashboardQualityService,
   );
   return { service, statements, counted, contentArgs, heldOut };
 }

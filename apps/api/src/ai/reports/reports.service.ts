@@ -12,6 +12,8 @@ import { AI_OPERATIONS, AI_PROVIDERS, type AiOperation, type AiPurpose, type AiP
 import { CallLedger } from '../runner/call-ledger.service.js';
 import { ReadinessService } from '../runner/readiness.service.js';
 import { toSelection } from '../runner/selection.js';
+import type { DashboardJudgeRevision, JudgeScoreGroup, LatestEvalView } from './dashboard-quality.js';
+import { DashboardQualityService } from './dashboard-quality.service.js';
 
 export const COST_GROUPS = ['day', 'operation', 'model', 'purpose', 'outcome'] as const;
 export type CostGroup = (typeof COST_GROUPS)[number];
@@ -80,6 +82,10 @@ export type DashboardReport = {
   by_model: Array<CostTotals & { key: string }>;
   by_purpose: Array<CostTotals & { key: string }>;
   learner_health: Array<{ operation: string; calls: number; failed: number; p50_ms: number; p95_ms: number; outcomes: Record<string, number> }>;
+  /** Nhóm B M5 (design §8): the latest complete eval of each live config, the judge's scores from eval grouped by config and model, and each judge revision's calibration. */
+  latest_evals: LatestEvalView[];
+  judge_scores: JudgeScoreGroup[];
+  judge_revisions: DashboardJudgeRevision[];
 };
 
 /** The operation id of an eval call: `eval-<run id>-<example id>` (eval-job.ts). */
@@ -105,6 +111,7 @@ export class ReportsService {
     @Inject(AiAdapterRegistry) private readonly registry: AiAdapterRegistry,
     @Inject(CallLedger) private readonly ledger: CallLedger,
     @Inject(HeldOutReader) private readonly heldOut: HeldOutReader,
+    @Inject(DashboardQualityService) private readonly quality: DashboardQualityService,
   ) {}
 
   async status(now: Date): Promise<StatusReport> {
@@ -186,13 +193,14 @@ export class ReportsService {
 
   /**
    * The AI dashboard (owner 28/10/2026, `ai.view`): only totals, never the content of a call. Health counts learner calls only;
-   * cost counts every purpose, as the costs report does. Days with no call are listed as zero.
+   * cost counts every purpose, as the costs report does. Days with no call are listed as zero. The eval and judge blocks (nhóm B M5) are
+   * read by `DashboardQualityService`; they do not depend on the range (the latest eval, the newest frozen set).
    */
   async dashboard(query: { from?: string; to?: string }, now: Date): Promise<DashboardReport> {
     const range = dayRange(query, AI_DAY_ZONE, now, DASHBOARD_DEFAULT_DAYS);
     const costsOf = (group_by: CostGroup) => this.costs({ from: range.from, to: range.to, group_by }, now);
     const learnerOnly = Prisma.sql`purpose = 'learner' AND created_at >= ${range.start} AND created_at < ${range.end}`;
-    const [status, byDay, byOperation, byModel, byPurpose, health, outcomes, learnerDays] = await Promise.all([
+    const [status, byDay, byOperation, byModel, byPurpose, health, outcomes, learnerDays, latestEvals, judgeScores, judgeRevisions] = await Promise.all([
       this.status(now), costsOf('day'), costsOf('operation'), costsOf('model'), costsOf('purpose'),
       this.prisma.$queryRaw<Array<{ operation: string; calls: number; failed: number; p50_ms: number; p95_ms: number }>>(Prisma.sql`
         SELECT operation, count(*)::int AS calls, (count(*) FILTER (WHERE outcome <> 'succeeded'))::int AS failed,
@@ -204,6 +212,7 @@ export class ReportsService {
       this.prisma.$queryRaw<Array<{ key: string; calls: number; failed: number }>>(Prisma.sql`
         SELECT ${GROUP_KEYS.day} AS key, count(*)::int AS calls, (count(*) FILTER (WHERE outcome <> 'succeeded'))::int AS failed
         FROM ai_calls WHERE ${learnerOnly} GROUP BY 1 ORDER BY 1`),
+      this.quality.latestEvals(), this.quality.evalJudgeGroups(), this.quality.judgeRevisions(),
     ]);
     const costByDay = new Map(byDay.items.map((item) => [item.key, item]));
     const learnerByDay = new Map(learnerDays.map((row) => [row.key, row]));
@@ -229,6 +238,9 @@ export class ReportsService {
         ...row,
         outcomes: Object.fromEntries(outcomes.filter((item) => item.operation === row.operation).map((item) => [item.outcome, item.calls])),
       })),
+      latest_evals: latestEvals,
+      judge_scores: judgeScores,
+      judge_revisions: judgeRevisions,
     };
   }
 
