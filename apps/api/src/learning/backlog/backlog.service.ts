@@ -9,6 +9,7 @@ import { Prisma, type PrismaClient } from '../../generated/prisma/client.js';
 import { IdentityService } from '../../identity/profile/identity.service.js';
 import { SettingsService } from '../../settings/index.js';
 import { GroupsService } from '../groups/groups.service.js';
+import { recordActivityIn } from '../activity/record-activity.js';
 import { lockItems, withLearnerLock } from '../learning-lock.js';
 import { relearn } from '../schedule/schedule.js';
 
@@ -89,6 +90,8 @@ export class BacklogService {
         userId, itemId: item.id, senseId: item.senseId, kind: 'relearn', levelBefore: item.level, levelAfter: next.level,
         dueBefore: item.dueDate, dueAfter: dateValue(next.dueDate), localDate: dateValue(today), at,
       })) });
+      // Last write (nhóm B D39): only when at least one item was relearned.
+      if (items.length > 0) await recordActivityIn(tx, userId, today);
       return { relearned: items.length };
     }, transactionOptions);
   }

@@ -5,6 +5,7 @@ import { dateString, dateValue, daysBetween, localDate } from '../../common/time
 import type { Prisma } from '../../generated/prisma/client.js';
 import { IdentityService } from '../../identity/profile/identity.service.js';
 import { SettingsService } from '../../settings/index.js';
+import { recordActivityIn } from '../activity/record-activity.js';
 import { applyAnswer, type Answer } from '../schedule/schedule.js';
 
 export type PracticeReviewInput = { senseId: string; action: Answer; reviewId: string };
@@ -43,6 +44,7 @@ export class PracticeReviewService {
     const at = this.clock.now();
     const today = localDate(profile.timezone, at);
     const outcomes: PracticeReviewOutcome[] = [];
+    let wroteLog = false;
     for (const { senseId, action, reviewId } of inputs) {
       const stored = await tx.learningLogEntry.findFirst({ where: { userId, reviewId } });
       if (stored) {
@@ -78,11 +80,14 @@ export class PracticeReviewService {
         daysSinceLast: item.lastReviewedAt ? daysBetween(localDate(profile.timezone, item.lastReviewedAt), today) : null,
         reviewId, section: result.section, origin: 'practice', localDate: dateValue(today), at,
       } });
+      wroteLog = true;
       outcomes.push({
         senseId, outcome: 'applied', item_id: item.id, level: result.next.level, due_date: result.next.dueDate,
         priority: result.next.priority,
       });
     }
+    // One "lần học" for the call (nhóm B D39), and only when a log row was written: a stored replay or a refusal adds none.
+    if (wroteLog) await recordActivityIn(tx, userId, today);
     return outcomes;
   }
 }

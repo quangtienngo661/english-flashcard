@@ -39,3 +39,44 @@ describe('GroupsService.create', () => {
     expect(settingsService.get).toHaveBeenCalledWith();
   });
 });
+
+// nhóm B M6 (D39): deleting a group writes one activity day, only when it removed an item from learning.
+function deleting(removable: number) {
+  const events: string[] = [];
+  const tx = {
+    $executeRaw: vi.fn(async () => 0),
+    $queryRaw: vi.fn(async () => []),
+    learningGroup: { findFirst: vi.fn(async () => ({ id: 'g1' })), delete: vi.fn(async () => { events.push('group'); }) },
+    groupItem: { findMany: vi.fn(async () => []) },
+    learningItem: {
+      findMany: vi.fn(async () => Array.from({ length: removable }, (_, index) => (
+        { id: `i${index}`, senseId: `s${index}`, level: 2, dueDate: new Date('2026-10-20T00:00:00Z') }))),
+      deleteMany: vi.fn(async () => { events.push('items'); }),
+    },
+    learningLogEntry: { createMany: vi.fn(async (_args: { data: unknown[] }) => { events.push('log'); }) },
+    learningActivityDay: { createMany: vi.fn(async () => { events.push('activity'); return { count: 1 }; }) },
+  };
+  const prisma = { $transaction: vi.fn(async (fn: (t: typeof tx) => unknown) => fn(tx)) } as unknown as PrismaClient;
+  const identity = { getProfile: vi.fn(async () => ({ timezone: 'Asia/Ho_Chi_Minh' })) } as unknown as IdentityService;
+  const service = new GroupsService(prisma, new FakeClock(new Date('2026-10-19T17:01:00Z')), identity, {} as SettingsService);
+  return { service, tx, events };
+}
+
+describe('GroupsService.delete — records a learning activity day (nhóm B M6, D39)', () => {
+  it("a group with two removable items writes the log rows, then one activity statement with the learner's date", async () => {
+    const { service, tx, events } = deleting(2);
+    await service.delete('u1', 'g1');
+    expect(tx.learningLogEntry.createMany.mock.calls[0][0].data).toHaveLength(2);
+    expect(tx.learningActivityDay.createMany).toHaveBeenCalledExactlyOnceWith({
+      data: [{ userId: 'u1', localDate: new Date('2026-10-20T00:00:00.000Z') }], skipDuplicates: true,
+    });
+    expect(events).toEqual(['group', 'items', 'log', 'activity']);
+  });
+
+  it('a group with no removable item (every word is in another group, or it is empty) writes none', async () => {
+    const { service, tx, events } = deleting(0);
+    await service.delete('u1', 'g1');
+    expect(tx.learningActivityDay.createMany).not.toHaveBeenCalled();
+    expect(events).toEqual(['group', 'items', 'log']);
+  });
+});

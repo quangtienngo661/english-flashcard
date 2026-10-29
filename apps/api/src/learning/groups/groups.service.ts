@@ -6,6 +6,7 @@ import { dateValue, localDate } from '../../common/time/local-date.js';
 import type { Prisma, PrismaClient } from '../../generated/prisma/client.js';
 import { IdentityService } from '../../identity/profile/identity.service.js';
 import { SettingsService } from '../../settings/index.js';
+import { recordActivityIn } from '../activity/record-activity.js';
 import { lockItems, withLearnerLock } from '../learning-lock.js';
 
 const transactionOptions = { timeout: 10_000, maxWait: 5_000 };
@@ -109,13 +110,16 @@ export class GroupsService {
         where: removableWhere(id), select: { id: true, senseId: true, level: true, dueDate: true },
       });
       const at = this.clock.now();
-      const today = dateValue(localDate(profile.timezone, at));
+      const day = localDate(profile.timezone, at);
+      const today = dateValue(day);
       await tx.learningGroup.delete({ where: { id } });
       await tx.learningItem.deleteMany({ where: { id: { in: removable.map((item) => item.id) } } });
       await tx.learningLogEntry.createMany({ data: removable.map((item) => ({
         userId, itemId: item.id, senseId: item.senseId, groupId: id, kind: 'item_removed',
         levelBefore: item.level, dueBefore: item.dueDate, localDate: today, at,
       })) });
+      // Last write (nhóm B D39): only when the delete removed a word from learning.
+      if (removable.length > 0) await recordActivityIn(tx, userId, day);
     }, transactionOptions);
   }
 
