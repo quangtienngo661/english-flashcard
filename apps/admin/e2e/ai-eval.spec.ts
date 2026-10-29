@@ -196,6 +196,7 @@ test.describe('Bộ ví dụ (A/83)', () => {
             b: runStats({ total: 1, shape_pass: 1, rule_fail: 1, expected_fail: 1 }, { total: 2, shape_pass: 2, rule_pass: 1, rule_fail: 1 }),
           },
           regressions: { dev: [{ example_id: 'e1', input: clozeInput('go'), failed: ['rule', 'expected'] }], held_out: 1 },
+          judge: [], judge_unmatched: [],
         },
       }),
     }));
