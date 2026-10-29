@@ -8,6 +8,7 @@ import { AI_OPERATIONS, type AiOperation, type AiProviderName } from '../ai.type
 import type { CallLedger } from '../runner/call-ledger.service.js';
 import type { ReadinessCheck, ReadinessService } from '../runner/readiness.service.js';
 import type { ModelRow } from '../runner/selection.js';
+import type { HeldOutReader } from '../eval/held-out.js';
 import { ReportsService } from './reports.service.js';
 
 const NOW = new Date('2026-10-20T05:00:00.000Z');
@@ -44,6 +45,8 @@ type Setup = {
   total?: Record<string, unknown>;
   calls?: Array<Record<string, unknown>>;
   contents?: Array<{ callId: string; request: unknown; response: string | null; expiresAt: Date }>;
+  /** Example ids the held-out reader reports as still hidden. */
+  hidden?: string[];
 };
 
 function setup(input: Setup = {}) {
@@ -96,8 +99,11 @@ function setup(input: Setup = {}) {
       return 42;
     }),
   } as unknown as CallLedger;
-  const service = new ReportsService(prisma, { get: async () => settings } as unknown as SettingsService, readiness, registry, ledger);
-  return { service, statements, counted, contentArgs };
+  const heldOut = { hiddenIds: vi.fn(async (ids: string[]) => new Set(ids.filter((id) => (input.hidden ?? []).includes(id)))) };
+  const service = new ReportsService(
+    prisma, { get: async () => settings } as unknown as SettingsService, readiness, registry, ledger, heldOut as unknown as HeldOutReader,
+  );
+  return { service, statements, counted, contentArgs, heldOut };
 }
 
 async function problemStatus(promise: Promise<unknown>): Promise<number> {
@@ -263,11 +269,11 @@ describe('ReportsService.costs', () => {
 });
 
 describe('ReportsService.calls', () => {
-  const call = (id: string) => ({
-    id, attempt: 1, purpose: 'learner', operation: 'generate_cloze', provider: 'fake', model: 'fake:ok', effort: null, thinking: null,
+  const call = (id: string, over: Record<string, unknown> = {}) => ({
+    id, operationId: 'q1', attempt: 1, purpose: 'learner', operation: 'generate_cloze', provider: 'fake', model: 'fake:ok', effort: null, thinking: null,
     maxOutputTokens: 1_200, promptRevision: 1, outcome: 'succeeded', httpStatus: null, providerErrorCode: null, latencyMs: 12,
     inputTokens: 100, cachedInputTokens: 0, outputTokens: 50, reasoningTokens: 0, costUsd: { toFixed: () => '0.00003500' },
-    costKnown: true, createdAt: NOW,
+    costKnown: true, createdAt: NOW, ...over,
   });
 
   it('B6#22/B6E65: content present while not expired, null after', async () => {
@@ -285,6 +291,44 @@ describe('ReportsService.calls', () => {
     });
     expect(items[1].content).toBeNull();
     expect(contentArgs).toEqual([{ where: { callId: { in: ['c1', 'c2'] }, expiresAt: { gt: NOW } } }]);
+  });
+
+  describe('B6, R7: held-out examples do not show on the calls page', () => {
+    const RUN = '11111111-1111-4111-8111-111111111111';
+    const [E1, E2] = ['22222222-2222-4222-8222-222222222222', '33333333-3333-4333-8333-333333333333'];
+    const contents = (...ids: string[]) => ids.map((callId) => ({ callId, request: { input: 'secret' }, response: '{"x":1}', expiresAt: daysFromNow(7) }));
+
+    it('the call of a hidden example has held_out true and no content; another eval call keeps its content', async () => {
+      const { service, heldOut } = setup({
+        calls: [
+          call('c1', { purpose: 'eval', operationId: `eval-${RUN}-${E1}` }), call('c2', { purpose: 'eval', operationId: `eval-${RUN}-${E2}` }),
+          call('c3', { purpose: 'learner', operationId: 'q9' }),
+        ],
+        contents: contents('c1', 'c2', 'c3'), hidden: [E1],
+      });
+      const { items } = await service.calls('whatever', NOW);
+      expect(items.map((item) => [item.id, item.held_out, item.content === null])).toEqual([['c1', true, true], ['c2', false, false], ['c3', false, false]]);
+      expect(heldOut.hiddenIds).toHaveBeenCalledExactlyOnceWith([E1, E2]);
+    });
+
+    it('a learner call whose operation id looks like an eval one is not hidden, and no id is asked for it', async () => {
+      const { service, heldOut } = setup({
+        calls: [call('c1', { purpose: 'learner', operationId: `eval-${RUN}-${E1}` })], contents: contents('c1'), hidden: [E1],
+      });
+      const { items } = await service.calls('x', NOW);
+      expect(items[0]).toMatchObject({ held_out: false, content: { response: '{"x":1}' } });
+      expect(heldOut.hiddenIds).not.toHaveBeenCalled();
+    });
+
+    it('an eval call whose id is not eval-<run>-<example> (a test call) is not hidden', async () => {
+      const { service } = setup({ calls: [call('c1', { purpose: 'test', operationId: 'test-abc' }), call('c2', { purpose: 'eval', operationId: 'eval-abc' })], contents: contents('c1', 'c2') });
+      expect((await service.calls('x', NOW)).items.map((item) => item.held_out)).toEqual([false, false]);
+    });
+
+    it('a revealed example (no longer hidden) shows its content again', async () => {
+      const { service } = setup({ calls: [call('c1', { purpose: 'eval', operationId: `eval-${RUN}-${E1}` })], contents: contents('c1'), hidden: [] });
+      expect((await service.calls('x', NOW)).items[0]).toMatchObject({ held_out: false, content: { response: '{"x":1}' } });
+    });
   });
 
   it('an unknown id → items []', async () => {

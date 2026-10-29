@@ -5,6 +5,7 @@ import { dayRange, daysOf } from '../../common/time/day-range.js';
 import { addDays, daysBetween, localDate, zonedMidnight } from '../../common/time/local-date.js';
 import { Prisma, type PrismaClient } from '../../generated/prisma/client.js';
 import { SettingsService } from '../../settings/index.js';
+import { HeldOutReader } from '../eval/held-out.js';
 import { AiAdapterRegistry } from '../adapters/ai-adapter.registry.js';
 import { AI_DAY_ZONE, MODEL_SHUTDOWN_WARNING_DAYS } from '../ai.constants.js';
 import { AI_OPERATIONS, AI_PROVIDERS, type AiOperation, type AiPurpose, type AiProviderName, type CallOutcome, type UnavailableReason } from '../ai.types.js';
@@ -77,6 +78,9 @@ export type DashboardReport = {
   learner_health: Array<{ operation: string; calls: number; failed: number; p50_ms: number; p95_ms: number; outcomes: Record<string, number> }>;
 };
 
+/** The operation id of an eval call: `eval-<run id>-<example id>` (eval-job.ts). */
+const EVAL_OPERATION_ID = /^eval-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}-([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/;
+
 const invalid = (violations: string[]) => new ProblemDetailsException({
   status: 400, type: 'validation-failed', title: 'Validation failed', extensions: { violations },
 });
@@ -90,6 +94,7 @@ export class ReportsService {
     @Inject(ReadinessService) private readonly readiness: ReadinessService,
     @Inject(AiAdapterRegistry) private readonly registry: AiAdapterRegistry,
     @Inject(CallLedger) private readonly ledger: CallLedger,
+    @Inject(HeldOutReader) private readonly heldOut: HeldOutReader,
   ) {}
 
   async status(now: Date): Promise<StatusReport> {
@@ -222,16 +227,22 @@ export class ReportsService {
       where: { callId: { in: rows.map((row) => row.id) }, expiresAt: { gt: now } },
     });
     const byCall = new Map(contents.map((content) => [content.callId, content]));
+    // An eval call of an example that is still held-out shows no content (design §5.1, R7).
+    const evalExample = (row: { purpose: string; operationId: string }) => (row.purpose === 'eval' ? EVAL_OPERATION_ID.exec(row.operationId)?.[1] : undefined);
+    const evalIds = rows.flatMap((row) => evalExample(row) ?? []);
+    const hidden = evalIds.length > 0 ? await this.heldOut.hiddenIds(evalIds) : new Set<string>();
     return {
       items: rows.map((row) => {
-        const content = byCall.get(row.id);
+        const exampleId = evalExample(row);
+        const heldOut = exampleId !== undefined && hidden.has(exampleId);
+        const content = heldOut ? undefined : byCall.get(row.id);
         return {
           id: row.id, attempt: row.attempt, purpose: row.purpose, operation: row.operation, provider: row.provider, model: row.model,
           effort: row.effort, thinking: row.thinking, max_output_tokens: row.maxOutputTokens, prompt_revision: row.promptRevision,
           outcome: row.outcome, http_status: row.httpStatus, provider_error_code: row.providerErrorCode, latency_ms: row.latencyMs,
           input_tokens: row.inputTokens, cached_input_tokens: row.cachedInputTokens, output_tokens: row.outputTokens,
           reasoning_tokens: row.reasoningTokens, cost_usd: row.costUsd === null ? null : row.costUsd.toFixed(8), cost_known: row.costKnown,
-          created_at: row.createdAt.toISOString(),
+          created_at: row.createdAt.toISOString(), held_out: heldOut,
           content: content
             ? { request: content.request, response: content.response, expires_at: content.expiresAt.toISOString() }
             : null,

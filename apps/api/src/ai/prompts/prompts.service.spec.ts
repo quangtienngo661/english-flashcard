@@ -35,7 +35,7 @@ class StubAdapter extends AiAdapter {
 
 type PromptRow = { operation: string; instructions: string; examples: unknown; revision: number; updatedBy: string; updatedAt: Date };
 type RevisionRow = { id: string; operation: string; revision: number; instructions: string; examples: unknown; savedBy: string; savedAt: Date };
-type ExampleRow = { id: string; operation: string; input: unknown; createdAt: Date };
+type ExampleRow = { id: string; operation: string; input: unknown; createdAt: Date; split: string };
 
 /** A tiny in-memory Prisma for the three tables the service reads and writes; a transaction rolls back on a throw. */
 function memoryPrisma(examples: ExampleRow[] = []) {
@@ -79,8 +79,9 @@ function memoryPrisma(examples: ExampleRow[] = []) {
         .slice(0, take)),
     },
     aiEvalExample: {
-      findMany: vi.fn(async ({ where, take }: { where: { operation?: string; id?: { in: string[] } }; take?: number }) => examples
-        .filter((row) => (where.operation === undefined || row.operation === where.operation) && (!where.id || where.id.in.includes(row.id)))
+      findMany: vi.fn(async ({ where, take }: { where: { operation?: string; split?: string; id?: { in: string[] } }; take?: number }) => examples
+        .filter((row) => (where.operation === undefined || row.operation === where.operation) && (where.split === undefined || row.split === where.split)
+          && (!where.id || where.id.in.includes(row.id)))
         .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime())
         .slice(0, take ?? examples.length)),
     },
@@ -145,8 +146,8 @@ async function problem(promise: Promise<unknown>): Promise<{ status: number; typ
   throw new Error('expected a problem');
 }
 
-const eval_ = (id: string, minute: number, operation: string = OP): ExampleRow => ({
-  id, operation, input: { ...INPUT, word: id }, createdAt: new Date(NOW.getTime() + minute * 60_000),
+const eval_ = (id: string, minute: number, operation: string = OP, split = 'dev'): ExampleRow => ({
+  id, operation, input: { ...INPUT, word: id }, createdAt: new Date(NOW.getTime() + minute * 60_000), split,
 });
 
 describe('PromptsService.get', () => {
@@ -365,6 +366,27 @@ describe('PromptsService.test', () => {
     const result = await problem(none.service.test(ADMIN, OP, { instructions: 'Ok.', examples: [] }));
     expect(result).toMatchObject({ status: 400, violations: ['examples: at least one example is needed'] });
     expect(none.executed).toEqual([]);
+  });
+
+  it('B7, R7: the default inputs are dev examples only, and the query says so', async () => {
+    const { service, executed, client } = setup({ examples: [eval_('h1', 1, OP, 'held_out'), eval_('e2', 2), eval_('e3', 3)] });
+    await service.test(ADMIN, OP, draft);
+    expect(executed.map((run) => (run.data as { word: string }).word)).toEqual(['e2', 'e3']);
+    expect(client.aiEvalExample.findMany).toHaveBeenCalledWith(expect.objectContaining({ where: { operation: OP, split: 'dev' }, take: 5 }));
+  });
+
+  it('B7, R7: only held-out examples in the set → the draft\'s own examples are used, nothing hidden is computed', async () => {
+    const { service, executed } = setup({ examples: [eval_('h1', 1, OP, 'held_out')] });
+    await service.test(ADMIN, OP, { instructions: 'Ok.', examples: [EXAMPLE] });
+    expect(executed.map((run) => (run.data as { word: string }).word)).toEqual(['borrow']);
+  });
+
+  it('Review focus 3: a held-out id in example_ids → 400 naming dev examples, nothing computed, no ai.test run used', async () => {
+    const { service, executed, limiter } = setup({ examples: [eval_('e1', 1), eval_('h1', 2, OP, 'held_out')] });
+    const result = await problem(service.test(ADMIN, OP, { ...draft, example_ids: ['e1', 'h1'] }));
+    expect(result).toMatchObject({ status: 400, violations: [`example_ids: every id must be a dev example of ${OP}`] });
+    expect(executed).toEqual([]);
+    expect(limiter.hit).not.toHaveBeenCalled();
   });
 
   it('example_ids of another operation or unknown → 400', async () => {
