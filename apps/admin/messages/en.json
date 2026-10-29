@@ -2129,6 +2129,56 @@
       "sessions": "Sessions with AI questions, by reason AI stopped",
       "notStopped": "AI ran normally"
     },
+    "evals": {
+      "title": "Latest eval",
+      "hint": "The latest complete run of the live config, on the newest version of the example set. Held-out shows totals only.",
+      "run": "Config {number} · {model} · version {version} · {date}",
+      "noSet": "No frozen version of the example set yet.",
+      "noModel": "The live config has no model yet.",
+      "noRun": "No complete run of the live config on version {version} yet.",
+      "split": "Split",
+      "dev": "Dev",
+      "heldOut": "Held-out",
+      "shape": "Shape",
+      "rule": "Rules",
+      "expected": "Expected",
+      "judge": "Judge {name} rev. {revision} · {criterion}"
+    },
+    "judge": {
+      "title": "Judge scores by config",
+      "hint": "By operation and (config number, model) pair: from evals on the newest example-set version and from real questions in the selected period. A dashed line marks where the judge revision changes.",
+      "chart": "{judge} · {criterion} · {operation}",
+      "column": "{source} · config {number} · {model}",
+      "axisConfig": "Config {number}",
+      "sources": {
+        "eval": "Eval",
+        "real": "Real questions"
+      },
+      "marker": "Judge rev. {revision}",
+      "calibrated": "Calibrated",
+      "uncalibrated": "Not calibrated",
+      "agreement": "{agree}/{labeled} labels agree",
+      "pass": "Pass",
+      "failMajor": "Major fail",
+      "failMinor": "Minor fail",
+      "unscored": "Could not score",
+      "cols": {
+        "group": "Group",
+        "revision": "Judge revision",
+        "calibration": "Calibration"
+      },
+      "empty": "No judge scores yet."
+    },
+    "real": {
+      "title": "Real AI question checks",
+      "hint": "The latest finished judge pass over real questions of each operation, in the selected period.",
+      "cols": {
+        "judge": "Judge",
+        "criterion": "Criterion",
+        "scoredAt": "Scored at"
+      },
+      "empty": "No judge pass over real questions has finished in this period."
+    },
     "usage": {
       "title": "Usage limits",
       "hint": "Learner AI units per day, each day measured against that day’s own limit.",

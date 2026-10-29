@@ -2129,6 +2129,56 @@
       "sessions": "Phiên có câu hỏi AI, theo nguyên nhân AI dừng",
       "notStopped": "AI hoạt động bình thường"
     },
+    "evals": {
+      "title": "Eval gần nhất",
+      "hint": "Lần chạy xong trọn gần nhất của cấu hình đang chạy, trên phiên bản bộ ví dụ mới nhất. Held-out chỉ có số tổng.",
+      "run": "Cấu hình {number} · {model} · phiên bản {version} · {date}",
+      "noSet": "Chưa có phiên bản bộ ví dụ đã chốt.",
+      "noModel": "Cấu hình đang chạy chưa có model.",
+      "noRun": "Chưa có lần chạy xong trọn của cấu hình đang chạy trên phiên bản {version}.",
+      "split": "Phần",
+      "dev": "Dev",
+      "heldOut": "Held-out",
+      "shape": "Khuôn",
+      "rule": "Luật",
+      "expected": "Mong đợi",
+      "judge": "Judge {name} bản {revision} · {criterion}"
+    },
+    "judge": {
+      "title": "Điểm judge theo cấu hình",
+      "hint": "Theo thao tác và cặp (số cấu hình, model): từ eval trên phiên bản bộ ví dụ mới nhất và từ câu thật trong khoảng đã chọn. Vạch đứt là chỗ đổi bản judge.",
+      "chart": "{judge} · {criterion} · {operation}",
+      "column": "{source} · cấu hình {number} · {model}",
+      "axisConfig": "Cấu hình {number}",
+      "sources": {
+        "eval": "Eval",
+        "real": "Câu thật"
+      },
+      "marker": "Bản judge {revision}",
+      "calibrated": "Đã hiệu chỉnh",
+      "uncalibrated": "Chưa hiệu chỉnh",
+      "agreement": "{agree}/{labeled} nhãn khớp",
+      "pass": "Đạt",
+      "failMajor": "Lỗi nặng",
+      "failMinor": "Lỗi nhẹ",
+      "unscored": "Không chấm được",
+      "cols": {
+        "group": "Nhóm",
+        "revision": "Bản judge",
+        "calibration": "Hiệu chỉnh"
+      },
+      "empty": "Chưa có điểm judge nào."
+    },
+    "real": {
+      "title": "Chấm câu AI thật",
+      "hint": "Lượt chấm câu thật đã xong gần nhất của mỗi thao tác, trong khoảng đã chọn.",
+      "cols": {
+        "judge": "Judge",
+        "criterion": "Tiêu chí",
+        "scoredAt": "Lúc chấm"
+      },
+      "empty": "Chưa có lượt chấm câu thật nào xong trong khoảng này."
+    },
     "usage": {
       "title": "Hạn mức sử dụng",
       "hint": "Lượt AI của người học theo ngày, mỗi ngày đối chiếu với giới hạn của chính ngày đó.",

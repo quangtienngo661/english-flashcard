@@ -144,6 +144,145 @@ export function ColumnChart({ label, series, days, formatValue, formatDay }: Col
   );
 }
 
+type ShareColumn = {
+  key: string;
+  /** The whole name of the column: its screen-reader name and the head of its tooltip. */
+  label: string;
+  /** Short lines written under the column when `label` is too long for it; the label itself when absent. */
+  axis?: string[];
+  /** Shares of the series, in series order, each between 0 and 1: a column stacks them from the baseline. */
+  values: number[];
+  /** One more line of the tooltip and of the screen-reader name, for the counts the shares come from. */
+  note?: string;
+};
+
+const SHARE_TOP = 18;
+const LINE = 14;
+/** About how wide a character of the 12px axis text is; labels are cut to what their column can hold, the whole text stays in the tooltip. */
+const CHAR = 6.5;
+
+const fit = (text: string, maxChars: number): string => (text.length <= maxChars ? text : `${text.slice(0, Math.max(1, maxChars - 1))}…`);
+
+/**
+ * Stacked shares per group on a fixed 0–1 axis (one column per group, its label under it), with a dashed line and a label at the left edge of
+ * each marked column. Same legend, keyboard focus, screen-reader name and tooltip as `ColumnChart`.
+ */
+export function ShareColumns({ label, series, columns, markers, formatValue }: {
+  label: string;
+  series: Series[];
+  columns: ShareColumn[];
+  markers: Array<{ index: number; label: string }>;
+  formatValue: (value: number) => string;
+}) {
+  const [ref, width] = useWidth<HTMLDivElement>();
+  const [active, setActive] = useState<number | null>(null);
+  const top = markers.length > 0 ? SHARE_TOP : 4;
+  const plot = width - AXIS;
+  const band = plot / Math.max(1, columns.length);
+  const bar = Math.max(2, Math.min(40, band - 8));
+  const y = (value: number) => top + HEIGHT - value * HEIGHT;
+  const ticks = [0, 0.5, 1];
+  const axisOf = (column: ShareColumn) => column.axis ?? [column.label];
+  const lines = Math.max(1, ...columns.map((column) => axisOf(column).length));
+  const maxChars = Math.max(3, Math.floor((band - 4) / CHAR));
+  // Narrow columns would write over each other: then only the first, middle and last carry their label.
+  const labelled = band >= 36 ? columns.map((_, index) => index)
+    : [0, Math.floor((columns.length - 1) / 2), columns.length - 1].filter((v, i, all) => all.indexOf(v) === i && columns[v]);
+  const shown = active === null ? null : columns[active];
+  const nameOf = (column: ShareColumn) =>
+    `${column.label}: ${series.map((s, i) => `${s.label} ${formatValue(column.values[i] ?? 0)}`).join(', ')}${column.note ? `, ${column.note}` : ''}`;
+
+  return (
+    <div className="flex flex-col gap-2">
+      <Legend series={series} />
+      <div ref={ref} className="relative w-full">
+        <svg role="group" aria-label={label} width={width} height={top + HEIGHT + 12 + lines * LINE} className="block overflow-visible">
+          {ticks.map((tick) => (
+            <g key={tick}>
+              <line x1={AXIS} x2={width} y1={y(tick)} y2={y(tick)} className="stroke-border" strokeWidth={1} />
+              <text x={AXIS - 6} y={y(tick)} dy="0.32em" textAnchor="end" className="fill-muted text-xs tabular-nums">{formatValue(tick)}</text>
+            </g>
+          ))}
+          {columns.map((column, index) => {
+            const x = AXIS + index * band + (band - bar) / 2;
+            let base = 0;
+            return (
+              <g key={column.key} className={active !== null && active !== index ? 'opacity-50' : undefined}>
+                {column.values.map((value, s) => {
+                  if (value <= 0) return null;
+                  const barTop = y(base + value);
+                  // 2px surface gap between stacked segments; the first segment sits on the baseline.
+                  const height = Math.max(1, y(base) - barTop - (base > 0 ? 2 : 0));
+                  base += value;
+                  return <rect key={s} x={x} y={barTop} width={bar} height={height} rx={Math.min(4, bar / 2)} className={series[s].fill} />;
+                })}
+                <rect
+                  x={AXIS + index * band}
+                  y={top}
+                  width={band}
+                  height={HEIGHT}
+                  role="img"
+                  className="fill-transparent outline-none"
+                  tabIndex={0}
+                  aria-label={nameOf(column)}
+                  onPointerEnter={() => setActive(index)}
+                  onPointerLeave={() => setActive(null)}
+                  onFocus={() => setActive(index)}
+                  onBlur={() => setActive(null)}
+                />
+              </g>
+            );
+          })}
+          {markers.map((marker, k) => {
+            const x = AXIS + marker.index * band;
+            const before = k > 0 ? AXIS + markers[k - 1].index * band : AXIS;
+            const after = k < markers.length - 1 ? AXIS + markers[k + 1].index * band : width;
+            // The label sits right of its line when it fits before the next marker, otherwise left of it, never past the chart's edges.
+            const right = after - x - 8;
+            const left = x - before - 8;
+            const onRight = right >= marker.label.length * CHAR || right >= left;
+            return (
+              <g key={marker.index}>
+                <line x1={x} x2={x} y1={top} y2={top + HEIGHT} className="stroke-border" strokeWidth={1.5} strokeDasharray="4 3" />
+                <text x={onRight ? x + 4 : x - 4} y={top - 6} textAnchor={onRight ? 'start' : 'end'} className="fill-muted text-xs">
+                  {fit(marker.label, Math.floor((onRight ? right : left) / CHAR))}
+                </text>
+              </g>
+            );
+          })}
+          {labelled.map((index) => (
+            <text key={columns[index].key} x={AXIS + index * band + band / 2} y={top + HEIGHT + 16} textAnchor="middle" className="fill-muted text-xs">
+              {axisOf(columns[index]).map((line, n) => (
+                <tspan key={n} x={AXIS + index * band + band / 2} dy={n === 0 ? 0 : LINE}>{fit(line, maxChars)}</tspan>
+              ))}
+            </text>
+          ))}
+        </svg>
+        {shown && active !== null && (
+          <div
+            role="status"
+            className="pointer-events-none absolute top-0 z-10 flex w-60 max-w-full -translate-x-1/2 flex-col gap-1 rounded-control border-2 border-border bg-surface px-3 py-2 text-xs text-muted shadow-menu"
+            // raw-ok: the tooltip follows the hovered column, a position only known at run time.
+            style={{ left: Math.min(Math.max(AXIS + active * band + band / 2, 124), Math.max(124, width - 124)) }}
+          >
+            <span className="wrap-anywhere font-semibold text-ink">{shown.label}</span>
+            {series.map((s, i) => (
+              <span key={s.label} className="flex items-center justify-between gap-3">
+                <span className="flex items-center gap-1.5">
+                  <span aria-hidden="true" className={`h-0.5 w-3 ${s.swatch}`} />
+                  {s.label}
+                </span>
+                <span className="font-semibold tabular-nums text-ink">{formatValue(shown.values[i] ?? 0)}</span>
+              </span>
+            ))}
+            {shown.note && <span className="wrap-anywhere">{shown.note}</span>}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 type BarRow = { key: string; label: ReactNode; values: number[]; display: string[] };
 
 /** Horizontal bars, one row per category (one bar per series), the value written at the tip. */

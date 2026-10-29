@@ -4,6 +4,7 @@ import vi from '../messages/vi.json' with { type: 'json' };
 import { requestCount, signedInAs } from './support/mock-api';
 import { seriousViolations } from './support/axe';
 import { dashboardMocks } from './support/dashboard-mocks';
+import { expectNoHorizontalScroll } from './support/overflow';
 
 const emptyUploads = {
   json: { items: [{ id: 'b1', status: 'succeeded', file_name: 'one.csv', row_count: 3, created_at: '2026-10-14T09:30:00.000Z' }], next_page_token: null },
@@ -60,12 +61,19 @@ test.describe('shell (vi)', () => {
     await page.goto('/dashboard');
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(vi.nav.dashboard);
     for (const title of [vi.dashboard.today.title, vi.dashboard.health.title, vi.dashboard.cost.title, vi.dashboard.quality.title,
-      vi.dashboard.impact.title, vi.dashboard.usage.title]) {
+      vi.dashboard.impact.title, vi.dashboard.evals.title, vi.dashboard.judge.title, vi.dashboard.real.title, vi.dashboard.usage.title]) {
       await expect(page.getByRole('heading', { level: 2, name: title })).toBeVisible();
     }
     await expect(page.getByRole('group', { name: vi.dashboard.cost.chart })).toBeVisible();
     await expect(page.getByRole('list', { name: vi.dashboard.quality.retry.title })).toBeVisible();
     await expect(page.getByRole('list', { name: vi.dashboard.usage.pro.chart })).toBeVisible();
+    // The judge chart of the mock: two judge revisions, so one dashed marker, and a column for each of the three groups.
+    const judge = page.getByRole('group', { name: `Chỉ một đáp án · single_answer · ${vi.ai.operations.names.generate_cloze}` });
+    await expect(judge).toBeVisible();
+    await expect(judge.getByText(vi.dashboard.judge.marker.replace('{revision}', '2'))).toBeVisible();
+    await expect(judge.getByRole('img')).toHaveCount(3);
+    await expect(page.getByText(vi.dashboard.today.adminUsd)).toBeVisible();
+    await expectNoHorizontalScroll(page);
     expect(await seriousViolations(page)).toEqual([]);
   });
 

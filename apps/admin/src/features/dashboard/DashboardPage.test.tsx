@@ -3,10 +3,12 @@ import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import vi from '../../../messages/vi.json';
 import { makeMe, problem } from '../../auth/test-support';
-import { AI_OPERATION_ORDER } from '../ai/ai-api';
+import { AI_OPERATION_ORDER, type AiOperation } from '../ai/ai-api';
 import { todayInAdminZone } from '../ai/cost-range';
 import { renderApp } from '../staff/test-utils';
-import type { AiDashboard, AiQuality, AiUsageDays, AiUsagePro } from './dashboard-api';
+import type {
+  AiDashboard, AiQuality, AiUsageDays, AiUsagePro, DashboardJudgeRevision, JudgeScoreGroup, LatestEval, SplitStats, VerdictCounts,
+} from './dashboard-api';
 
 const t = vi.dashboard;
 const PRO_URL = 'GET /v1/admin/entitlements/ai-usage/pro';
@@ -307,5 +309,203 @@ describe('DashboardPage (/dashboard, ai.view)', () => {
   it('a 403 from the Pro spread alone → the forbidden banner too', async () => {
     renderApp('/dashboard', { ...routes(), [PRO_URL]: () => problem(403, 'forbidden') });
     expect(await screen.findByText(vi.errors.forbidden)).toBeInTheDocument();
+  });
+});
+
+const split = (over: Partial<SplitStats> = {}): SplitStats => ({
+  total: 0, pending: 0, skipped: 0, shape_pass: 0, shape_fail: 0, shape_transient: 0, rule_pass: 0, rule_fail: 0, rule_skipped: 0, rule_not_applicable: 0,
+  expected_pass: 0, expected_fail: 0, expected_none: 0, failing: 0, ...over,
+});
+const verdicts = (over: Partial<VerdictCounts> = {}): VerdictCounts => ({ pass: 0, fail_major: 0, fail_minor: 0, unscored: 0, ...over });
+const revisionOf = (id: string, n: number, agree: number, calibrated: boolean): DashboardJudgeRevision => ({
+  id, judge_id: 'judge-1', judge_name: 'Chỉ một đáp án', revision: n, saved_at: '2026-10-28T00:00:00.000Z',
+  criteria: [{ code: 'single_answer', labeled: 20, agree, calibrated }],
+});
+const REV1 = revisionOf('rev-1', 1, 19, true);
+const REV2 = revisionOf('rev-2', 2, 10, false);
+const RUN: NonNullable<LatestEval['run']> = {
+  id: 'run-1', created_at: '2026-10-29T03:00:00.000Z', model: 'fake:ok',
+  stats: {
+    dev: split({ total: 10, shape_pass: 9, shape_fail: 1, rule_pass: 7, rule_fail: 1, expected_pass: 4, expected_fail: 2 }),
+    held_out: split({ total: 3, shape_pass: 2 }),
+  },
+  judge: [{ judge_revision_id: 'rev-1', criterion: 'single_answer', dev: verdicts({ pass: 8, fail_major: 1, unscored: 1 }), held_out: verdicts({ pass: 1, fail_major: 1 }) }],
+};
+const evalOf = (operation: AiOperation, over: Partial<LatestEval> = {}): LatestEval => ({
+  operation, set: { id: 'set-1', version: 2 }, live: { config_id: 'cfg-1', number: 7, model: 'fake:ok' }, run: null, ...over,
+});
+const groupOf = (over: Partial<JudgeScoreGroup> = {}): JudgeScoreGroup => ({
+  operation: 'generate_cloze', source: 'eval', config_number: 7, model: 'fake:ok', judge_revision_id: 'rev-1', criterion: 'single_answer',
+  counts: verdicts({ pass: 8, fail_major: 1 }), first_scored_at: '2026-10-29T10:00:00.000Z', ...over,
+});
+const CLOZE = vi.ai.operations.names.generate_cloze;
+const CHART = `Chỉ một đáp án · single_answer · ${CLOZE}`;
+const cellsOf = (row: HTMLElement) => within(row).getAllByRole('cell', { hidden: true }).map((cell) => cell.textContent);
+const headsOf = (table: HTMLElement) => within(table).getAllByRole('columnheader', { hidden: true }).map((cell) => cell.textContent);
+const blockOf = (title: string) => screen.getByRole('heading', { level: 3, name: title, hidden: true }).parentElement as HTMLElement;
+
+describe('DashboardPage quality cards (nhóm B M5: latest eval, judge scores, real-question checks)', () => {
+  it('latest eval: the live config, its set version and date, then dev and held-out as ratios of what was counted', async () => {
+    const ai = aiReply({ latest_evals: [evalOf('generate_cloze', { run: RUN })], judge_revisions: [REV1] });
+    renderApp('/dashboard', routes(urls(), { ai }));
+    const card = (await screen.findByRole('heading', { level: 2, name: t.evals.title })).closest('section') as HTMLElement;
+    expect(within(card).getByText(/^Cấu hình 7 · fake:ok · phiên bản 2 · 29\/10\/2026$/)).toBeInTheDocument();
+    const table = within(blockOf(CLOZE)).getByRole('table', { hidden: true });
+    expect(headsOf(table)).toEqual([t.evals.split, t.evals.shape, t.evals.rule, t.evals.expected, 'Judge Chỉ một đáp án bản 1 · single_answer']);
+    const rows = within(table).getAllByRole('row', { hidden: true });
+    // Dev: shape 9 of 10, rules 7 of 8, expected 4 of 6, judge 8 of the 9 that got a verdict (the unscored one is not counted).
+    expect(cellsOf(rows[1])).toEqual([t.evals.dev, '9/10', '7/8', '4/6', '8/9']);
+    // Held-out: shape 2 of 3; no rule or expected result counted, a dash and not 0/0; judge 1 of 2.
+    expect(cellsOf(rows[2])).toEqual([t.evals.heldOut, '2/3', '—', '—', '1/2']);
+  });
+
+  it('latest eval: pending and skipped examples are not part of what the shape was counted over', async () => {
+    const run = { ...RUN, stats: { ...RUN.stats, dev: split({ total: 10, pending: 2, skipped: 1, shape_pass: 6, shape_fail: 1 }) }, judge: [] };
+    renderApp('/dashboard', routes(urls(), { ai: aiReply({ latest_evals: [evalOf('generate_cloze', { run })] }) }));
+    await screen.findByRole('heading', { level: 2, name: t.evals.title });
+    const rows = within(within(blockOf(CLOZE)).getByRole('table', { hidden: true })).getAllByRole('row', { hidden: true });
+    expect(cellsOf(rows[1]).slice(0, 2)).toEqual([t.evals.dev, '6/7']);
+  });
+
+  it('latest eval: without a frozen set, without a model, or without a complete run on the set, each operation says which', async () => {
+    const latest_evals = [
+      evalOf('generate_cloze', { run: RUN }),
+      evalOf('lookup_word', { set: null }),
+      evalOf('translate_sentence', { live: { config_id: 'cfg-2', number: 1, model: null } }),
+      evalOf('generate_meaning_question'),
+    ];
+    renderApp('/dashboard', routes(urls(), { ai: aiReply({ latest_evals, judge_revisions: [REV1] }) }));
+    const card = (await screen.findByRole('heading', { level: 2, name: t.evals.title })).closest('section') as HTMLElement;
+    expect(within(blockOf(vi.ai.operations.names.lookup_word)).getByText(t.evals.noSet)).toBeInTheDocument();
+    expect(within(blockOf(vi.ai.operations.names.translate_sentence)).getByText(t.evals.noModel)).toBeInTheDocument();
+    expect(within(blockOf(vi.ai.operations.names.generate_meaning_question)).getByText('Chưa có lần chạy xong trọn của cấu hình đang chạy trên phiên bản 2.')).toBeInTheDocument();
+    // The operations without a run have no table; the one with a run keeps its own.
+    expect(within(card).getAllByRole('table', { hidden: true })).toHaveLength(1);
+  });
+
+  it('judge scores: a revision change draws one marker, and the table twin says which revision is calibrated, with its label counts', async () => {
+    const ai = aiReply({
+      judge_scores: [
+        groupOf({ judge_revision_id: 'rev-1', config_number: 7, first_scored_at: '2026-10-29T10:00:00.000Z' }),
+        groupOf({ judge_revision_id: 'rev-2', config_number: 8, first_scored_at: '2026-10-29T11:00:00.000Z' }),
+      ],
+      judge_revisions: [REV1, REV2],
+    });
+    renderApp('/dashboard', routes(urls(), { ai }));
+    await screen.findByRole('heading', { level: 2, name: t.judge.title });
+    const chart = screen.getByRole('group', { name: CHART });
+    expect(within(chart).getAllByText('Bản judge 2')).toHaveLength(1);
+    expect(within(chart).queryByText('Bản judge 1')).not.toBeInTheDocument();
+    expect(chart.querySelectorAll('line[stroke-dasharray]')).toHaveLength(1);
+    const rows = within(within(blockOf(CHART)).getByRole('table', { hidden: true })).getAllByRole('row', { hidden: true });
+    expect(rows).toHaveLength(3);
+    expect(cellsOf(rows[1]).at(-1)).toContain(t.judge.calibrated);
+    expect(cellsOf(rows[1]).at(-1)).toContain('19/20 nhãn khớp');
+    expect(cellsOf(rows[2]).at(-1)).toContain(t.judge.uncalibrated);
+    expect(cellsOf(rows[2]).at(-1)).toContain('10/20 nhãn khớp');
+  });
+
+  it('judge scores: the chart says before the table which revision is calibrated', async () => {
+    const ai = aiReply({ judge_scores: [groupOf({ judge_revision_id: 'rev-2' })], judge_revisions: [REV1, REV2] });
+    renderApp('/dashboard', routes(urls(), { ai }));
+    await screen.findByRole('heading', { level: 2, name: t.judge.title });
+    const caption = blockOf(CHART).querySelector('ul') as HTMLElement;
+    expect([...caption.querySelectorAll('li')].map((item) => item.textContent)).toEqual([`Bản judge 2${t.judge.uncalibrated}10/20 nhãn khớp`]);
+  });
+
+  it('judge scores: columns follow the time the groups were first scored; a real group is named by source, config and model', async () => {
+    const ai = aiReply({
+      judge_scores: [groupOf({ first_scored_at: '2026-10-29T10:00:00.000Z', counts: verdicts({ pass: 8, fail_major: 1, unscored: 1 }) })],
+      judge_revisions: [REV1],
+    });
+    const real = [
+      groupOf({ source: 'real', config_number: 7, first_scored_at: '2026-10-29T09:00:00.000Z', counts: verdicts({ pass: 1, fail_minor: 1 }) }),
+      groupOf({ source: 'real', config_number: null, model: null, first_scored_at: '2026-10-29T12:00:00.000Z', counts: verdicts({ unscored: 3 }) }),
+    ];
+    renderApp('/dashboard', routes(urls(), { ai, quality: qualityReply({ real_judge_scores: real }) }));
+    await screen.findByRole('heading', { level: 2, name: t.judge.title });
+    const chart = screen.getByRole('group', { name: CHART });
+    const labels = [...chart.querySelectorAll('rect[tabindex="0"]')].map((column) => column.getAttribute('aria-label'));
+    expect(labels).toHaveLength(3);
+    expect(labels[0]).toMatch(/^Câu thật · cấu hình 7 · fake:ok: /);
+    expect(labels[1]).toMatch(/^Eval · cấu hình 7 · fake:ok: /);
+    expect(labels[2]).toMatch(/^Câu thật · cấu hình — · —: /);
+    // The shares are of the scored answers; the counts behind them, the unscored ones included, are in the name.
+    expect(labels[0]).toMatch(/Đạt 50\s?%, Lỗi nặng 0\s?%, Lỗi nhẹ 50\s?%, Đạt 1, Lỗi nặng 0, Lỗi nhẹ 1, Không chấm được 0$/);
+    expect(labels[1]).toMatch(/Đạt 88,9\s?%, Lỗi nặng 11,1\s?%, Lỗi nhẹ 0\s?%, Đạt 8, Lỗi nặng 1, Lỗi nhẹ 0, Không chấm được 1$/);
+    // Nothing was scored in the last group: no share to draw, and the name says so with its count.
+    expect(labels[2]).toMatch(/Đạt 0\s?%, Lỗi nặng 0\s?%, Lỗi nhẹ 0\s?%, Đạt 0, Lỗi nặng 0, Lỗi nhẹ 0, Không chấm được 3$/);
+    expect(chart.querySelectorAll('rect.fill-primary, rect.fill-danger, rect.fill-accent-deep')).toHaveLength(4);
+  });
+
+  it('judge scores: a column takes keyboard focus and shows its whole name and counts in a tooltip', async () => {
+    const ai = aiReply({ judge_scores: [groupOf()], judge_revisions: [REV1] });
+    renderApp('/dashboard', routes(urls(), { ai }));
+    await screen.findByRole('heading', { level: 2, name: t.judge.title });
+    const chart = screen.getByRole('group', { name: CHART });
+    (chart.querySelector('rect[tabindex="0"]') as SVGRectElement).focus();
+    const tip = await screen.findByRole('status');
+    expect(tip).toHaveTextContent('Eval · cấu hình 7 · fake:ok');
+    expect(tip).toHaveTextContent('Đạt 8, Lỗi nặng 1, Lỗi nhẹ 0, Không chấm được 0');
+  });
+
+  it('judge scores: a group of a judge revision the page was not told about is left out, and with no group there is the empty text', async () => {
+    const ai = aiReply({ judge_scores: [groupOf({ judge_revision_id: 'unknown' })], judge_revisions: [REV1] });
+    renderApp('/dashboard', routes(urls(), { ai }));
+    const card = (await screen.findByRole('heading', { level: 2, name: t.judge.title })).closest('section') as HTMLElement;
+    expect(within(card).getByText(t.judge.empty)).toBeInTheDocument();
+    expect(within(card).queryByRole('group')).not.toBeInTheDocument();
+  });
+
+  it('judge scores: two config numbers with different models are two columns, not one (R12)', async () => {
+    const ai = aiReply({
+      judge_scores: [groupOf({ model: 'a:x' }), groupOf({ model: 'b:y', counts: verdicts({ pass: 1 }) })],
+      judge_revisions: [REV1],
+    });
+    renderApp('/dashboard', routes(urls(), { ai }));
+    await screen.findByRole('heading', { level: 2, name: t.judge.title });
+    const chart = screen.getByRole('group', { name: CHART });
+    expect([...chart.querySelectorAll('rect[tabindex="0"]')].map((column) => column.getAttribute('aria-label')?.split(':').slice(0, 2).join(':')))
+      .toEqual(['Eval · cấu hình 7 · a:x', 'Eval · cấu hình 7 · b:y']);
+  });
+
+  it('real checks: the latest finished pass of an operation shows its counts under their columns', async () => {
+    const quality = qualityReply({
+      real_judge_latest: [{
+        operation: 'generate_cloze', pass_id: 'pass-1', judge_revision_id: 'rev-1', criterion: 'single_answer',
+        counts: verdicts({ pass: 2, fail_minor: 1 }), scored_at: '2026-10-29T03:15:00.000Z',
+      }],
+    });
+    renderApp('/dashboard', routes(urls(), { ai: aiReply({ judge_revisions: [REV1] }), quality }));
+    const card = (await screen.findByRole('heading', { level: 2, name: t.real.title })).closest('section') as HTMLElement;
+    const table = within(card).getByRole('table');
+    expect(headsOf(table)).toEqual([
+      t.cols.operation, t.real.cols.judge, t.real.cols.criterion, t.judge.pass, t.judge.failMajor, t.judge.failMinor, t.judge.unscored, t.real.cols.scoredAt,
+    ]);
+    const [operation, judge, criterion, pass, major, minor, unscored, at] = cellsOf(within(table).getAllByRole('row')[1]);
+    expect([operation, judge, criterion, pass, major, minor, unscored]).toEqual([CLOZE, 'Chỉ một đáp án · Bản judge 1', 'single_answer', '2', '0', '1', '0']);
+    expect(at).toContain('29/10/2026');
+  });
+
+  it('real checks: no finished pass in the range → the empty text, no table', async () => {
+    renderApp('/dashboard', routes());
+    const card = (await screen.findByRole('heading', { level: 2, name: t.real.title })).closest('section') as HTMLElement;
+    expect(within(card).getByText(t.real.empty)).toBeInTheDocument();
+    expect(within(card).queryByRole('table')).not.toBeInTheDocument();
+  });
+
+  it('an editor with ai.view sees the three quality cards', async () => {
+    renderApp('/dashboard', routes(), EDITOR);
+    for (const title of [t.evals.title, t.judge.title, t.real.title]) {
+      expect(await screen.findByRole('heading', { level: 2, name: title })).toBeInTheDocument();
+    }
+  });
+
+  it('the three cards sit after "impact" and before "usage"', async () => {
+    renderApp('/dashboard', routes());
+    await screen.findByRole('heading', { level: 2, name: t.usage.title });
+    // The card's round icon is part of its heading's text; the title follows it.
+    const order = screen.getAllByRole('heading', { level: 2 }).map((heading) => heading.textContent?.slice(1));
+    expect(order.slice(order.indexOf(t.impact.title), order.indexOf(t.usage.title) + 1)).toEqual([t.impact.title, t.evals.title, t.judge.title, t.real.title, t.usage.title]);
   });
 });

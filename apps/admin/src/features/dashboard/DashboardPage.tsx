@@ -1,5 +1,4 @@
 import { useQuery } from '@tanstack/react-query';
-import type { ReactNode } from 'react';
 import { useLocale, useTranslations } from 'use-intl';
 import { ApiError } from '../../api/problem';
 import { useUrlFilters } from '../../api/use-url-filters';
@@ -12,11 +11,13 @@ import { Stat } from '../../ui/Stat';
 import { sortByOperationOrder, type AiOperation, type CostTotals } from '../ai/ai-api';
 import { todayInAdminZone } from '../ai/cost-range';
 import { useAiFormat } from '../ai/useAiFormat';
+import { Card, SubTitle } from './Card';
 import { BarList, ColumnChart, Meter, SERIES, TableView } from './charts';
 import {
   dashboardKeys, getAiDashboard, getAiQuality, getAiUsageDays, getAiUsagePro, share, type AiDashboard, type AiQuality, type AiUsageDays,
   type AiUsagePro,
 } from './dashboard-api';
+import { JudgeScoresCard, LatestEvalCard, RealJudgeCard } from './QualityCards';
 
 const RANGES = ['7', '30', '90'] as const;
 const FILTERS = { days: { default: '30', valid: (value: string) => (RANGES as readonly string[]).includes(value) } };
@@ -72,26 +73,6 @@ export function DashboardPage() {
       )}
     </div>
   );
-}
-
-/** One question of the dashboard on its own card: title, one line of scope, then charts and figures. */
-function Card({ icon, title, hint, children, wide }: { icon: string; title: string; hint?: string; children: ReactNode; wide?: boolean }) {
-  return (
-    <section className={`flex min-w-0 flex-col gap-4 rounded-panel border-2 border-border bg-surface p-5 ${wide ? 'shell:col-span-2' : ''}`}>
-      <div className="flex flex-col gap-1">
-        <h2 className="flex items-center gap-2 text-lg font-extrabold tracking-tight text-ink">
-          <span aria-hidden="true" className="grid size-7 place-items-center rounded-control bg-primary-soft text-sm">{icon}</span>
-          {title}
-        </h2>
-        {hint && <p className="text-ui text-muted">{hint}</p>}
-      </div>
-      {children}
-    </section>
-  );
-}
-
-function SubTitle({ children }: { children: ReactNode }) {
-  return <h3 className="text-ui font-bold text-ink">{children}</h3>;
 }
 
 const tiles = 'grid gap-3 grid-cols-2';
@@ -384,6 +365,12 @@ function Body({ ai, quality, usage, usagePro }: { ai: AiDashboard; quality: AiQu
           </div>
         </Card>
 
+        <LatestEvalCard evals={ai.latest_evals} revisions={ai.judge_revisions} />
+
+        <JudgeScoresCard groups={[...ai.judge_scores, ...quality.real_judge_scores]} revisions={ai.judge_revisions} />
+
+        <RealJudgeCard rows={quality.real_judge_latest} revisions={ai.judge_revisions} />
+
         <Card icon="▤" title={t('dashboard.usage.title')} hint={t('dashboard.usage.hint')} wide>
           <div className="grid gap-3 grid-cols-2 shell:grid-cols-4">
             <Stat label={t('dashboard.usage.total')} value={format.number(usage.days.reduce((sum, d) => sum + d.total, 0))} />
@@ -430,7 +417,7 @@ function Body({ ai, quality, usage, usagePro }: { ai: AiDashboard; quality: AiQu
                 { key: 'practice', header: t('dashboard.usage.practice'), className: numeric, card: 'field', cell: (r) => format.number(r.ai_practice) },
                 { key: 'lookup', header: t('dashboard.usage.lookup'), className: numeric, card: 'field', cell: (r) => format.number(r.ai_lookup) },
                 { key: 'learners', header: t('dashboard.cols.learners'), className: numeric, card: 'field', cell: (r) => format.number(r.learners) },
-                { key: 'cap', header: t('dashboard.usage.dayCap'), className: numeric, card: 'field', cell: (r) => format.number(r.cap) },
+                { key: 'cap', header: t('dashboard.usage.dayCap'), card: 'field', cell: (r) => format.number(r.cap) },
                 { key: 'atCap', header: t('dashboard.usage.atCap'), card: 'field', cell: (r) => (r.at_cap ? t('dashboard.usage.yes') : '—') },
               ]}
               state="ready"
