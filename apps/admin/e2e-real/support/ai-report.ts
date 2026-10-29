@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import type { RealState } from '../global-setup';
+import { publishModel, rollbackConfig } from './ai-config';
 import { API, apiCall, loginToken } from './api';
 
 /**
@@ -34,17 +35,12 @@ async function waitFor<T>(read: () => Promise<T>, done: (value: T) => boolean, w
 
 const letters = (n: number) => Array.from({ length: n }, () => String.fromCharCode(97 + Math.floor(Math.random() * 26))).join('');
 
-/** Puts `modelId` on `generate_cloze`, adding the fake model first when the admin has not yet. */
+/**
+ * Puts `modelId` on `generate_cloze` by publishing a config (the model is added first when the admin has not yet): a draft, a run of it on the frozen
+ * example set, the publish. It changes nothing when that model is already live.
+ */
 export async function chooseClozeModel(adminToken: string, modelId: string): Promise<void> {
-  const listed = await apiCall<{ items: Array<{ id: string; model_id: string }> }>('GET', '/v1/admin/ai/models', adminToken);
-  const model = listed.items.find((m) => m.model_id === modelId)
-    ?? (await apiCall<{ id: string }>('POST', '/v1/admin/ai/models', adminToken, { provider: 'fake', model_id: modelId }));
-  const operations = await apiCall<{ items: Array<{ operation: string; version: number }> }>('GET', '/v1/admin/ai/operations', adminToken);
-  const current = operations.items.find((o) => o.operation === 'generate_cloze');
-  if (!current) throw new Error('operation generate_cloze is not listed');
-  await apiCall('PUT', '/v1/admin/ai/operations/generate_cloze', adminToken, {
-    expected_version: current.version, model_ref: model.id, effort: null, thinking: null, max_output_tokens: null,
-  });
+  await publishModel(adminToken, { op: 'generate_cloze', modelId });
 }
 
 /** Uploads `csv` as a new batch of a new source and publishes that batch by job (an own batch, not flow 3's reverted one). */
@@ -141,7 +137,8 @@ export async function seedAiReport(state: RealState): Promise<AiReportSeed> {
     const failed = await apiCall<{ state: string }>('POST', `/v1/practice/sessions/${badSession}/next`, lanToken);
     if (failed.state === 'question') throw new Error('fake:bad-form produced a question; no unknown form was recorded');
   } finally {
-    await chooseClozeModel(adminToken, 'fake:ok');
+    // The config before `fake:bad-form` is the `fake:ok` one made live above: going back needs no run.
+    await rollbackConfig(adminToken, 'generate_cloze');
   }
 
   return { reportId: report.id, reason, reasonLabel, lemma, unknownLemma, unknownForm: `${unknownLemma}ment` };
