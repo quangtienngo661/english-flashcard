@@ -7,12 +7,15 @@ import { userLabel } from '../../api/user-ref';
 import { useSubmitAction } from '../content/useSubmitAction';
 import { useApi } from '../../auth/session-context';
 import { useCan } from '../../auth/use-can';
+import { useErrorMessage } from '../../api/use-error-message';
 import { useDateTime } from '../../i18n/use-date-time';
 import { Badge } from '../../ui/Badge';
 import { Banner } from '../../ui/Banner';
 import { Button } from '../../ui/Button';
 import { PanelBody, PanelFooter, PanelHead } from '../../ui/DetailPanel';
 import { ListState } from '../../ui/ListState';
+import { AddToExamplesDialog, useNotEligibleText } from '../ai/real-questions/AddToExamplesDialog';
+import { getSourcePreview, realKeys, type SourceRef } from '../ai/real-questions/real-questions-api';
 import { STATUS_TONE, useTypeLabel } from './ReportsPage';
 import { getReport, reportWord, resolveReport, type Report, type ResolveStatus } from './reports-api';
 
@@ -80,8 +83,19 @@ export function ReportDetail({ id, listSearch }: { id: string; listSearch: strin
   const api = useApi();
   const dateTime = useDateTime();
   const typeLabel = useTypeLabel();
-  const canSeeCalls = useCan('settings.manage');
+  const errorMessage = useErrorMessage();
+  const notEligibleText = useNotEligibleText();
+  // `settings.manage`: the AI calls page and the example-set preview both need it (`content.edit` is enough to read a report, an editor would get 403).
+  const canManage = useCan('settings.manage');
   const query = useQuery({ queryKey: reportKey(id), queryFn: () => getReport(api, id), enabled: UUID.test(id) });
+  // "Đưa vào bộ ví dụ" (nhóm B M4, B43): asked only by an admin, for a confirmed AI report; an editor never sends this request.
+  const source: SourceRef = { report_id: id };
+  const preview = useQuery({
+    queryKey: realKeys.source(source),
+    queryFn: () => getSourcePreview(api, source),
+    enabled: canManage && query.data?.status === 'confirmed' && query.data.question_source === 'ai',
+  });
+  const [adding, setAdding] = useState(false);
   const noError = useResolve(id, 'no_error');
   const fixed = useResolve(id, 'fixed');
   const confirmed = useResolve(id, 'confirmed');
@@ -217,7 +231,7 @@ export function ReportDetail({ id, listSearch }: { id: string; listSearch: strin
               <Row label={t('reports.detail.operationId')}>{report.ai_operation_id ?? '—'}</Row>
               <Row label={t('reports.detail.callId')}>
                 {callId ?? '—'}
-                {callId && canSeeCalls && (
+                {callId && canManage && (
                   <Link
                     to={`/ai/calls?operation_id=${encodeURIComponent(callId)}`}
                     className="ml-3 rounded-control text-primary outline-none hover:underline focus-visible:ring-2 focus-visible:ring-primary"
@@ -247,6 +261,14 @@ export function ReportDetail({ id, listSearch }: { id: string; listSearch: strin
                 {report.refunded === true ? t('reports.detail.refunded') : report.refunded === null ? t('reports.detail.refundPending') : t('reports.detail.notRefunded')}
               </p>
             )}
+            {preview.data && (
+              <div>
+                <Button variant="secondary" onPress={() => setAdding(true)}>{t('ai.real.add.button')}</Button>
+              </div>
+            )}
+            {preview.isError && (
+              <p className="text-ui text-muted">{notEligibleText(preview.error instanceof ApiError ? preview.error.problem : null) ?? errorMessage(preview.error)}</p>
+            )}
             {report.status === 'fixed' && (
               <p className="flex flex-col gap-1 text-ui text-ink">
                 <span>{t('reports.detail.fixHint')}</span>
@@ -261,6 +283,7 @@ export function ReportDetail({ id, listSearch }: { id: string; listSearch: strin
           </section>
         )}
       </PanelBody>
+      {adding && preview.data && <AddToExamplesDialog source={source} preview={preview.data} onClose={() => setAdding(false)} />}
       {isOpen && (
         <PanelFooter>
           <div className="flex w-full flex-col gap-3">

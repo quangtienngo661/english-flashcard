@@ -56,6 +56,7 @@
     "model-not-supported": "Model này chưa dùng được với Wordmet.",
     "no-previous": "Chưa có cấu hình nào trước đó để quay về.",
     "not-found": "Không tìm thấy",
+    "nothing-to-judge": "Không có câu nào để chấm theo bộ lọc này.",
     "nothing-to-publish": "Không có mục nào đủ điều kiện publish",
     "operation-settings-conflict": "Có người vừa đổi thao tác này. Tải lại để xem bản mới.",
     "password-change-required": "Bạn phải đổi mật khẩu trước khi tiếp tục",
@@ -83,6 +84,7 @@
     "sense-exists": "Từ này đã có nghĩa với nhãn ngữ cảnh đó. Hãy sửa nghĩa đã có thay vì thêm mới.",
     "sense-retired": "Nghĩa này đã retire nên không sửa được.",
     "source-exists": "Nguồn dữ liệu này đã tồn tại",
+    "source-not-eligible": "Câu này không đưa vào bộ ví dụ được.",
     "source-in-use": "Nguồn này đang được dùng (mức độ của từ hoặc lô nhập) nên không xóa được.",
     "source-incomplete": "Nguồn level cần có phiên bản và license",
     "source-protected": "Nguồn có sẵn của hệ thống không sửa hoặc xóa được.",
@@ -857,6 +859,25 @@
         "need": "Cần ít nhất {min} nhãn và khớp từ {ratio}.",
         "noRate": "—",
         "close": "Đóng"
+      }
+    },
+    "real": {
+      "add": {
+        "button": "Đưa vào bộ ví dụ",
+        "title": "Đưa vào bộ ví dụ",
+        "body": "Ví dụ mới vào bộ đang soạn của {operation}, phần dev.",
+        "word": "{word} · {pos}",
+        "rebuilt": "Nội dung gốc đã quá 7 ngày nên không còn. Đầu vào sẽ được dựng lại từ nội dung hiện tại của nghĩa trong kho: phương án nhiễu và nghĩa khác được chọn mới, nghĩa có thể đã sửa so với lúc tạo câu.",
+        "confirm": "Thêm vào bộ ví dụ",
+        "added": "Đã thêm vào bộ ví dụ (dev).",
+        "openEval": "Mở Bộ ví dụ",
+        "notEligible": {
+          "private-word": "Câu có từ riêng của người học nên không đưa vào bộ ví dụ.",
+          "sense-gone": "Nghĩa của câu này không còn trong kho nên không dựng lại được đầu vào.",
+          "no-input": "Kho không đủ nghĩa hoặc từ để dựng lại phương án nhiễu.",
+          "report-not-confirmed": "Chỉ báo lỗi đã xác nhận mới đưa vào bộ ví dụ được.",
+          "not-ai": "Chỉ câu do AI tạo mới đưa vào bộ ví dụ được."
+        }
       }
     },
     "costs": {

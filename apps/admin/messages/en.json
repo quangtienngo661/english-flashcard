@@ -56,6 +56,7 @@
     "model-not-supported": "This model cannot be used with Wordmet yet.",
     "no-previous": "There is no earlier config to go back to.",
     "not-found": "Not found",
+    "nothing-to-judge": "There is no question to judge with these filters.",
     "nothing-to-publish": "Nothing is eligible to publish",
     "operation-settings-conflict": "Someone just changed this operation. Reload to see the latest version.",
     "password-change-required": "You must change your password before continuing",
@@ -83,6 +84,7 @@
     "sense-exists": "This word already has a sense with that context label. Edit the existing sense instead of adding a new one.",
     "sense-retired": "This sense is retired and cannot be edited.",
     "source-exists": "This data source already exists",
+    "source-not-eligible": "This question cannot be added to the example set.",
     "source-in-use": "This source is in use (word levels or import batches), so it cannot be deleted.",
     "source-incomplete": "A level source needs a version and a license",
     "source-protected": "A built-in source cannot be edited or deleted.",
@@ -857,6 +859,25 @@
         "need": "Needs at least {min} labels and agreement from {ratio}.",
         "noRate": "—",
         "close": "Close"
+      }
+    },
+    "real": {
+      "add": {
+        "button": "Add to the example set",
+        "title": "Add to the example set",
+        "body": "The new example goes into the working set of {operation}, as a dev example.",
+        "word": "{word} · {pos}",
+        "rebuilt": "The original content is older than 7 days and no longer kept. The input will be rebuilt from the sense's current content in the catalog: distractors and other meanings are chosen again, and the sense may have been edited since the question was made.",
+        "confirm": "Add to the example set",
+        "added": "Added to the example set (dev).",
+        "openEval": "Open Example sets",
+        "notEligible": {
+          "private-word": "This question has a learner's private word, so it is not added to the example set.",
+          "sense-gone": "This question's sense is no longer in the catalog, so its input cannot be rebuilt.",
+          "no-input": "The catalog does not have enough senses or words to rebuild the distractors.",
+          "report-not-confirmed": "Only a confirmed report can be added to the example set.",
+          "not-ai": "Only a question made by the AI can be added to the example set."
+        }
       }
     },
     "costs": {
