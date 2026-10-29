@@ -102,3 +102,45 @@ describe('RealQuestionsRepository.questions (M4-T6)', () => {
     expect(prisma.practiceQuestion.findMany).not.toHaveBeenCalled();
   });
 });
+
+describe('RealQuestionsRepository.source (M4-T7)', () => {
+  const ROW = {
+    sense_id: 's1', owner_id: 'u1', ai_meta: { operation: 'generate_cloze' }, question_source: 'ai', report_status: 'confirmed', snapshot: { prompt: {} },
+    answer_key: { kind: 'type_word' }, ai_input: { type: 'cloze' },
+  };
+  const MAPPED = {
+    senseId: 's1', ownerId: 'u1', aiMeta: { operation: 'generate_cloze' }, questionSource: 'ai', reportStatus: 'confirmed', snapshot: { prompt: {} },
+    answerKey: { kind: 'type_word' }, aiInput: { type: 'cloze' },
+  };
+
+  it('a report: its question by the request id and its request by id, either of them may be gone; the owner is the report\'s learner', async () => {
+    const { repo, calls } = setup([ROW]);
+    await expect(repo.source({ report_id: 'rep1' })).resolves.toEqual(MAPPED);
+    const { sql, values } = calls[0]!;
+    expect(sql).toContain('FROM practice_reports rep');
+    expect(sql).toContain('LEFT JOIN practice_questions q ON q.ai_request_id = rep.ai_operation_id');
+    expect(sql).toContain('LEFT JOIN practice_ai_requests r ON r.id::text = rep.ai_operation_id');
+    expect(sql).toContain('rep.user_id::text AS owner_id');
+    expect(sql).toContain('rep.status AS report_status');
+    expect(sql).toContain('WHERE rep.id = ');
+    expect(values).toEqual(['rep1']);
+  });
+
+  it('a question: its request by the request id, no report; the owner is the question\'s learner', async () => {
+    const { repo, calls } = setup([{ ...ROW, report_status: null, snapshot: null }]);
+    await expect(repo.source({ question_id: 'q1' })).resolves.toEqual({ ...MAPPED, reportStatus: null, snapshot: null });
+    const { sql, values } = calls[0]!;
+    expect(sql).toContain('FROM practice_questions q');
+    expect(sql).toContain('LEFT JOIN practice_ai_requests r ON r.id::text = q.ai_request_id');
+    expect(sql).toContain('q.user_id::text AS owner_id');
+    expect(sql).toContain('WHERE q.id = ');
+    expect(sql).not.toContain('practice_reports');
+    expect(values).toEqual(['q1']);
+  });
+
+  it('a report whose question row and request are gone comes back with no answer key and no input; an unknown id gives null', async () => {
+    const { repo } = setup([{ ...ROW, answer_key: null, ai_input: null }]);
+    await expect(repo.source({ report_id: 'rep1' })).resolves.toMatchObject({ answerKey: null, aiInput: null });
+    await expect(setup([]).repo.source({ report_id: 'nope' })).resolves.toBeNull();
+  });
+});

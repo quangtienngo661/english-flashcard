@@ -82,3 +82,38 @@ export type RealPassItemView = Omit<RealPassItem, 'subject_id'> & {
   failed: boolean;
   can_add_to_examples: boolean;
 };
+
+/** The report or the question an example is made from: exactly one of the two ids. */
+export type SourceRef = { report_id: string } | { question_id: string };
+
+/** What the dialog shows before anything is added. `input` is null when it has to be rebuilt; `expected` is the machine's guess for the person to correct. */
+export type SourcePreview = {
+  operation: PracticeAiOperation;
+  source: 'report' | 'real_judge';
+  source_ref: string;
+  word: string;
+  part_of_speech: string;
+  input: Record<string, unknown> | null;
+  rebuilt: boolean;
+  expected: { forms: string[] } | null;
+};
+
+const lowerUuid = z.uuid().transform((value) => value.toLowerCase());
+const exactlyOne = (value: { report_id?: string; question_id?: string }) => (value.report_id === undefined) !== (value.question_id === undefined);
+const oneIdIssue = { message: 'send exactly one of report_id and question_id', path: ['report_id'] };
+const refOf = (value: { report_id?: string; question_id?: string }): SourceRef => (value.report_id !== undefined ? { report_id: value.report_id } : { question_id: value.question_id! });
+
+/** Query of `GET …/eval-examples/from-source`. */
+export const sourceQuerySchema = z.strictObject({ report_id: lowerUuid.optional(), question_id: lowerUuid.optional() })
+  .refine(exactlyOne, oneIdIssue).transform(refOf);
+
+/** Body of `POST …/eval-examples/from-source`: the machine's expected answer, as the person corrected it, and a note. */
+export const addFromSourceBodySchema = z.strictObject({
+  report_id: lowerUuid.optional(),
+  question_id: lowerUuid.optional(),
+  expected: z.record(z.string(), z.unknown()).nullable().optional(),
+  note: z.string().trim().max(500).nullable().optional(),
+}).refine(exactlyOne, oneIdIssue).transform((body) => ({
+  ...refOf(body), expected: body.expected ?? null, note: body.note === undefined || body.note === '' ? null : body.note,
+}));
+export type AddFromSourceBody = z.output<typeof addFromSourceBodySchema>;

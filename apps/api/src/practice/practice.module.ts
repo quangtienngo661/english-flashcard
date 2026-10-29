@@ -31,7 +31,9 @@ import { ReportsService } from './reports/reports.service.js';
 import { UnknownFormsAdminService } from './reports/unknown-forms-admin.service.js';
 import { PracticeReviewsController } from './reviews/practice-reviews.controller.js';
 import { PracticeReviewsService } from './reviews/practice-reviews.service.js';
+import { AdminExampleSourceController } from './quality/admin-example-source.controller.js';
 import { AdminRealJudgeController } from './quality/admin-real-judge.controller.js';
+import { ExampleSourceService } from './quality/example-source.service.js';
 import { RealJudgeService } from './quality/real-judge.service.js';
 import { RealQuestionsRepository } from './quality/real-questions.repository.js';
 import { QuestionBuilder } from './questions/question-builder.service.js';
@@ -45,13 +47,13 @@ import { PracticeStats } from './weak/practice-stats.js';
   controllers: [
     SessionsController, AnswersController, PracticeReviewsController, HistoryController, ReportsController, AdminReportsController,
     ReportReasonsController, AdminReportReasonsController, MyReportsController, AdminUnknownFormsController, AdminAiQualityController,
-    AdminRealJudgeController,
+    AdminRealJudgeController, AdminExampleSourceController,
   ],
   providers: [
     IdempotencyInterceptor, QuestionBuilder, PracticeStats, SessionsService, AnswersService, PracticeReviewsService, HistoryService,
     ReportsService, ReportReasonsService, PracticeCleanupService, AiRequestsRepository, WordChecksRepository, UnknownFormsRepository,
     AiQuestionGenerator, AiSessionPlanner, UnknownFormsAdminService, AiQualityService, PracticeEntryUsageProbe, PracticeEvalRules, PracticeAccountEraser,
-    RealQuestionsRepository, RealJudgeService,
+    RealQuestionsRepository, RealJudgeService, ExampleSourceService,
   ],
 })
 export class PracticeModule {}
