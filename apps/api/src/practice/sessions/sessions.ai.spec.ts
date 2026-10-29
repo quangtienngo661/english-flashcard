@@ -356,6 +356,17 @@ describe('current with AI slots (design §6.8)', () => {
     expect(t.generator.run).not.toHaveBeenCalled();
   });
 
+  it('B7E64, B7E65: a pending notice with the next word AI → preparing true, the notice kept, no request made, no pointer set', async () => {
+    const t = setup({ types: ['cloze'], clozeSource: 'ai', senseIds: ['s1'], aiSenseIds: ['s1'], aiPlanned: 1 });
+    t.session.pendingNotice = 'word-not-found';
+    expect(await t.service.current(learner)).toEqual({
+      session: expect.anything(), item: null, notice: 'word-not-found', preparing: true,
+    });
+    expect(t.requests).toHaveLength(0);
+    expect(t.session.pendingAiRequestId).toBeNull();
+    expect(t.generator.run).not.toHaveBeenCalled();
+  });
+
   it('a ready slot is attached by current (G) and returned', async () => {
     const t = setup({ types: ['cloze'], clozeSource: 'ai', senseIds: ['s1'], aiSenseIds: ['s1'], aiPlanned: 1 });
     const q = t.question({ senseId: 's1', type: 'cloze', source: 'ai', aiCharged: true });

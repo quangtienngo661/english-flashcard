@@ -320,7 +320,7 @@ export class GoogleAuthService {
       }, transactionOptions);
     } catch (error) {
       // A concurrent sign-in linked the same identity first (unique violation): the person can just try again.
-      this.logger.warn('google_sign_in_failed', { user_id: userId, code: (error as { code?: string } | null)?.code });
+      this.logger.warn('google_sign_in_failed', { user_id: userId, db_error: (error as { code?: string } | null)?.code });
       return this.fail(locale, 'google-failed');
     }
     if (outcome.kind === 'refused') return this.fail(locale, outcome.error);
