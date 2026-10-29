@@ -45,14 +45,16 @@ describe('latestRealPasses (M5-T8, design §8.4)', () => {
     expect(latestRealPasses(rows).map((row) => row.operation)).toEqual(['generate_cloze', 'generate_meaning_question', 'generate_sentence_mcq']);
   });
 
-  it('one row per criterion of the pass, each with its own counts; a score with no verdict is unscored', () => {
+  it('one row per criterion of the pass, ordered by criterion code whatever the order of the scores; each with its own counts; a score with no verdict is unscored', () => {
     const rows = [
       score('P1', '10:00', 'pass'), score('P1', '10:00', 'fail_minor', { criterion: 'natural' }), score('P1', '10:01', null, { criterion: 'natural' }),
     ];
-    expect(latestRealPasses(rows).map((row) => [row.criterion, row.counts, row.scored_at])).toEqual([
-      ['one_answer', { pass: 1, fail_major: 0, fail_minor: 0, unscored: 0 }, '2026-10-19T10:00:00.000Z'],
+    const expected = [
       ['natural', { pass: 0, fail_major: 0, fail_minor: 1, unscored: 1 }, '2026-10-19T10:01:00.000Z'],
-    ]);
+      ['one_answer', { pass: 1, fail_major: 0, fail_minor: 0, unscored: 0 }, '2026-10-19T10:00:00.000Z'],
+    ];
+    expect(latestRealPasses(rows).map((row) => [row.criterion, row.counts, row.scored_at])).toEqual(expected);
+    expect(latestRealPasses([...rows].reverse()).map((row) => [row.criterion, row.counts, row.scored_at])).toEqual(expected);
   });
 
   it('two passes scored at the same instant → the one with the greater id is shown (the answer does not depend on the order of the rows)', () => {

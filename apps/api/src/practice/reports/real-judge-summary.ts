@@ -51,7 +51,8 @@ export function realScoreGroups(rows: ScoredQuestion[]): JudgeScoreGroup[] {
 /**
  * Per operation, the finished pass whose newest score of that operation is newest (a pass still running is not a "latest pass"; a tie goes to
  * the greater pass id, so the answer does not depend on the order of the rows). One row per criterion of that pass, with the counts over that
- * pass's scores of the operation and the time of the newest of them. Operations in `AI_OPERATIONS` order.
+ * pass's scores of the operation and the time of the newest of them, ordered by judge revision then criterion code (scores written together share
+ * one timestamp, so their own order is not stable). Operations in `AI_OPERATIONS` order.
  */
 export function latestRealPasses(rows: ScoredQuestion[]): RealLatestRow[] {
   return AI_OPERATIONS.flatMap((operation) => {
@@ -64,6 +65,6 @@ export function latestRealPasses(rows: ScoredQuestion[]): RealLatestRow[] {
     return [...groupBy(latest.own, (row) => JSON.stringify([row.judgeRevisionId, row.criterion])).values()].map((group) => ({
       operation, pass_id: latest.passId, judge_revision_id: group[0].judgeRevisionId, criterion: group[0].criterion, counts: count(group),
       scored_at: new Date(newest(group)).toISOString(),
-    }));
+    })).sort((a, b) => compare(a.judge_revision_id, b.judge_revision_id) || compare(a.criterion, b.criterion));
   });
 }
