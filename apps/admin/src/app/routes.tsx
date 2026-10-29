@@ -1,4 +1,4 @@
-import { createRoutesFromElements, Navigate, Route, type RouteObject } from 'react-router';
+import { createRoutesFromElements, Navigate, Route, useLocation, type RouteObject } from 'react-router';
 import { useSession } from '../auth/session-context';
 import { ChangePasswordPage } from '../features/account/ChangePasswordPage';
 import { ForgotPasswordPage } from '../features/account/ForgotPasswordPage';
@@ -11,8 +11,6 @@ import { AiCostsPage } from '../features/ai/AiCostsPage';
 import { DashboardPage } from '../features/dashboard/DashboardPage';
 import { AiEvalPage } from '../features/ai/AiEvalPage';
 import { AiModelsPage } from '../features/ai/AiModelsPage';
-import { AiOperationsPage } from '../features/ai/AiOperationsPage';
-import { AiPromptsPage } from '../features/ai/AiPromptsPage';
 import { AiStatusPage } from '../features/ai/AiStatusPage';
 import { GrantsPage } from '../features/entitlements/GrantsPage';
 import { ExportPage } from '../features/export/ExportPage';
@@ -39,6 +37,12 @@ function Home() {
   const { state } = useSession();
   if (state.status !== 'signed-in') return null;
   return <Navigate to={homePath(state.me.permissions)} replace />;
+}
+
+/** `/ai/operations` and `/ai/prompts` (pages that no longer exist) → `/ai/configs`, keeping the query (`?op=`). */
+function ToConfigs() {
+  const { search } = useLocation();
+  return <Navigate to={{ pathname: '/ai/configs', search }} replace />;
 }
 
 /** Route objects, not `<Routes>`: a data router is what lets the shell block navigation (`useBlocker`). */
@@ -90,8 +94,9 @@ export const appRoutes: RouteObject[] = createRoutesFromElements(
           <Route path=":id" element={null} />
         </Route>
         <Route path="ai/configs" element={<AiConfigsPage />} />
-        <Route path="ai/operations" element={<AiOperationsPage />} />
-        <Route path="ai/prompts" element={<AiPromptsPage />} />
+        {/* The Thao tác and Prompt pages became "Cấu hình": old links and bookmarks keep the operation (`?op=`). */}
+        <Route path="ai/operations" element={<ToConfigs />} />
+        <Route path="ai/prompts" element={<ToConfigs />} />
         <Route path="ai/eval" element={<AiEvalPage />}>
           <Route path="new" element={null} />
           <Route path="bulk" element={null} />

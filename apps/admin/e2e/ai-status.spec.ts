@@ -23,7 +23,7 @@ async function openNavIfCollapsed(page: Page) {
 test.describe('Tình trạng (A/84)', () => {
   test.use({ locale: 'vi-VN' });
 
-  test('admin: menu → six "Chưa sẵn sàng · Chưa chọn model" rows → [Chọn model] opens Thao tác; axe clean', async ({ page }) => {
+  test('admin: menu → six "Chưa sẵn sàng · Chưa chọn model" rows → [Chọn model] opens Cấu hình of that operation; axe clean', async ({ page }) => {
     await signedInAs(page, 'admin', {
       'GET /v1/admin/content/uploads': () => uploads,
       'GET /v1/admin/ai/status': () => ({ json: status() }),
@@ -37,7 +37,7 @@ test.describe('Tình trạng (A/84)', () => {
     expect(await seriousViolations(page)).toEqual([]);
 
     await page.getByRole('link', { name: /Chọn model/ }).filter({ visible: true }).first().click();
-    await expect(page).toHaveURL(/\/ai\/operations$/);
+    await expect(page).toHaveURL(/\/ai\/configs\?op=generate_cloze$/);
   });
 
   test('AI off: the head says so and links to the settings AI tab', async ({ page }) => {

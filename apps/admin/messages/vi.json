@@ -47,7 +47,7 @@
     "model-exists": "Model đã có.",
     "model-in-use": "Model đang được thao tác dùng, chưa xóa được.",
     "model-not-found": "Nhà cung cấp không có model này. Kiểm lại tên model.",
-    "model-not-set": "Thao tác này chưa có model. Chọn model ở Thao tác.",
+    "model-not-set": "Thao tác này chưa có model. Chọn model ở Cấu hình.",
     "model-not-supported": "Model này chưa dùng được với Wordmet.",
     "no-previous": "Chưa có cấu hình nào trước đó để quay về.",
     "not-found": "Không tìm thấy",
@@ -138,8 +138,6 @@
     "transactions": "Giao dịch",
     "aiStatus": "Tình trạng",
     "aiModels": "Model",
-    "aiOperations": "Thao tác",
-    "aiPrompts": "Prompt",
     "aiConfigs": "Cấu hình",
     "aiEval": "Bộ ví dụ",
     "aiCosts": "Chi phí",
@@ -247,13 +245,7 @@
         "thinkingOff": "Tắt",
         "thinkingCannotOff": "Model này không tắt được thinking.",
         "thinkingNeedsEffort": "Tắt thinking cần effort high trở xuống.",
-        "maxTokens": "Số token đầu ra tối đa",
-        "note": "Chọn “Không có model” là tắt thao tác. Áp từ lần gọi sau.",
-        "save": "Lưu",
-        "saveFor": "Lưu {operation}",
-        "saved": "Đã lưu. Áp từ lần gọi sau.",
-        "reload": "Tải lại",
-        "rowLabel": "{name} ({operation})"
+        "maxTokens": "Số token đầu ra tối đa"
       }
     },
     "reasons": {
@@ -357,7 +349,6 @@
       }
     },
     "prompts": {
-      "operation": "Thao tác",
       "instructions": "Lời dặn",
       "instructionsHint": "Tối đa 8.000 ký tự.",
       "inputFields": "Dữ liệu prompt nhận: {fields}",
@@ -370,12 +361,6 @@
       "remove": "Xóa",
       "removeExample": "Xóa ví dụ {n}",
       "guard": "Câu chặn cố định (không sửa được)",
-      "revision": "Bản số {revision}",
-      "updated": "Lưu lần cuối {at} · {by}",
-      "save": "Lưu",
-      "saved": "Đã lưu bản số {revision}.",
-      "loadNewer": "Tải bản mới",
-      "newerTitle": "Bản mới nhất: bản số {revision}",
       "hideNewer": "Ẩn bản mới",
       "copyToEditor": "Chép vào ô sửa",
       "errors": {
@@ -397,7 +382,7 @@
         "note": "Chạy bản đang sửa, chưa cần lưu. Mỗi lần chạy gọi AI thật và tốn một lượt.",
         "needExample": "Cần ít nhất một ví dụ để chạy thử.",
         "rateLimited": "Đã dùng hết {limit} lần chạy thử trong giờ này. Thử lại lúc {time}.",
-        "openOperations": "Mở Thao tác",
+        "openConfigs": "Mở Cấu hình",
         "results": "Kết quả chạy thử",
         "sample": "Mẫu {n}",
         "input": "Đầu vào",
@@ -498,7 +483,7 @@
     "eval": {
       "operation": "Thao tác",
       "examples": "Ví dụ ({count}/1.000)",
-      "examplesHint": "Mỗi thao tác tối đa 1.000 ví dụ. Ví dụ mới tự vào dev hoặc held-out để giữ tỉ lệ held-out; ví dụ held-out bị ẩn cho tới khi bạn mở. Chạy thử ở Prompt chỉ dùng ví dụ dev.",
+      "examplesHint": "Mỗi thao tác tối đa 1.000 ví dụ. Ví dụ mới tự vào dev hoặc held-out để giữ tỉ lệ held-out; ví dụ held-out bị ẩn cho tới khi bạn mở. Chạy thử ở Cấu hình chỉ dùng ví dụ dev.",
       "counts": "{dev} dev · {heldOut} held-out",
       "heldOutHidden": "Ví dụ held-out: nội dung được ẩn",
       "split": { "dev": "dev", "heldOut": "held-out" },
@@ -632,7 +617,7 @@
         "title": "Chạy bộ ví dụ",
         "start": "Chạy bộ ví dụ",
         "note": "Chạy cả bộ với prompt hiện tại. Mỗi lần chạy gọi AI thật cho từng ví dụ và tốn một lượt.",
-        "quota": "Còn {remaining}/{limit} lần chạy trong giờ này (dùng chung với Chạy thử ở Prompt)",
+        "quota": "Còn {remaining}/{limit} lần chạy trong giờ này (dùng chung với Chạy thử ở Cấu hình)",
         "quotaFailed": "Không đọc được số lần chạy còn lại.",
         "needExample": "Bộ ví dụ của thao tác này chưa có ví dụ nào. Thêm ví dụ rồi chạy lại.",
         "rateLimited": "Đã dùng hết {limit} lần chạy trong giờ này. Thử lại lúc {time}.",
@@ -729,13 +714,6 @@
         "heldOutRegressions": "Held-out: {count} ví dụ trước đạt, nay trượt",
         "noRegressions": "Không có ví dụ nào trước đạt, nay trượt.",
         "criteria": { "shape": "khuôn", "rule": "luật", "expected": "mong đợi" }
-      },
-      "fromPrompt": {
-        "title": "Chạy bộ ví dụ",
-        "button": "Chạy bộ ví dụ với bản này",
-        "note": "Chạy cả Bộ ví dụ với bản đang sửa, chưa cần lưu. Kết quả mở ở màn Bộ ví dụ.",
-        "started": "Đã bắt đầu lần chạy.",
-        "open": "Xem lần chạy"
       }
     },
     "costs": {
@@ -1266,8 +1244,7 @@
       "users": "Danh sách người dùng, trạng thái tài khoản, khóa hoặc mở khóa.",
       "entitlements": "Cấp, thu hồi quyền và lượt AI cho người học, kèm lý do và hạn.",
       "aiModels": "Thêm model của OpenAI và Anthropic, bật hoặc tắt từng model.",
-      "aiOperations": "Chọn model, effort, thinking và số token tối đa cho từng thao tác AI.",
-      "aiPrompts": "Soạn prompt cho từng thao tác, xem lịch sử bản sửa và chạy thử.",
+      "aiConfigs": "Soạn nháp cấu hình của từng thao tác AI (lời dặn, model, effort), chạy thử, so với bản đang chạy rồi publish hoặc quay về.",
       "aiEval": "Bộ ví dụ đã duyệt và kết quả chạy trước khi bật AI cho người học.",
       "aiCosts": "Nhật ký từng lời gọi AI, tổng theo ngày và theo model, đối soát hóa đơn.",
       "aiCalls": "Từng lần gọi AI: thao tác, model, thời gian, kết quả và chi phí.",

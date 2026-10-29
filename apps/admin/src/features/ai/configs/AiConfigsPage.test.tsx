@@ -67,9 +67,15 @@ describe('AiConfigsPage: the live config and creating a draft (M2-T6)', () => {
     expect(r2.count('GET', '/v1/admin/ai/configs/generate_cloze')).toBe(1);
   });
 
-  it('an editor gets the API 403 and the page shows the forbidden banner', async () => {
-    renderApp(PATH, configRoutes({ [URL.configs()]: () => problem(403, 'forbidden') }), EDITOR);
-    expect(await screen.findByText(vi.errors.forbidden)).toBeInTheDocument();
+  it('an editor gets the no-access view (the menu entry needs settings.manage) and the API is not called', async () => {
+    const r = renderApp(PATH, configRoutes(), EDITOR);
+    expect(await screen.findByText(vi.noAccess.title, undefined, { timeout: 4000 })).toBeInTheDocument();
+    expect(r.count('GET', '/v1/admin/ai/configs/generate_cloze')).toBe(0);
+  });
+
+  it('403 on the configs read (the permission was taken away meanwhile) shows the forbidden text, not the generic error', async () => {
+    renderApp(PATH, configRoutes({ [URL.configs()]: () => problem(403, 'forbidden') }));
+    expect(await screen.findByText(vi.errors.forbidden, undefined, { timeout: 4000 })).toBeInTheDocument();
   });
 
   it('409 draft-exists reads the configs again, so the draft somebody else made appears', async () => {
@@ -309,7 +315,7 @@ describe('AiConfigsPage: testing and running the draft (M2-T6)', () => {
     await openPage(configRoutes({ [URL.configs()]: withDraft(), [URL.testDraft()]: () => problem(409, 'model-not-set') }));
     await userEvent.click(button(vi.ai.prompts.test.run));
     expect(await screen.findByText(t.draft.noModelToTest)).toBeInTheDocument();
-    expect(screen.queryByRole('link', { name: vi.ai.prompts.test.openOperations })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: vi.ai.prompts.test.openConfigs })).not.toBeInTheDocument();
   });
 });
 

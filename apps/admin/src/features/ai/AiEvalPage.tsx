@@ -315,7 +315,7 @@ export function AiEvalPage() {
           {quota.data && <span className="text-ui text-muted">{t('ai.eval.run.quota', { remaining: quota.data.remaining, limit: quota.data.limit })}</span>}
           {quota.isError && <span className="text-ui text-danger">{t('ai.eval.run.quotaFailed')}</span>}
         </div>
-        <StartRunFailure action={start} />
+        <StartRunFailure action={start} op={op} />
       </section>
 
       <section aria-labelledby="eval-runs" className="flex flex-col gap-3">

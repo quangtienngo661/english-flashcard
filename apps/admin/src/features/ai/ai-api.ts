@@ -83,27 +83,9 @@ export type AiOperationSetting = {
   input_fields: string[];
   estimate: CostEstimate | null;
 };
-export type SaveOperationBody = {
-  expected_version: number;
-  model_ref: string | null;
-  effort: string | null;
-  thinking: 'off' | null;
-  max_output_tokens: number | null;
-};
 
 export type PromptExample = { input: Record<string, unknown>; output: Record<string, unknown> };
 
-export type PromptView = {
-  operation: AiOperation;
-  instructions: string;
-  examples: PromptExample[];
-  revision: number;
-  input_fields: string[];
-  updated_at: string;
-  updated_by: string;
-  updated_by_user: UserRef;
-  guard: string;
-};
 export type PromptRevision = {
   revision: number;
   instructions: string;
@@ -112,7 +94,6 @@ export type PromptRevision = {
   saved_at: string;
   saved_by_user: UserRef;
 };
-export type SavePromptBody = { expected_revision: number; instructions: string; examples: PromptExample[] };
 
 export type ConfigStatus = 'draft' | 'published' | 'retired';
 /** One config of an operation (`GET …/configs/{op}`): prompt, model and its settings as one versioned unit (nhóm B design §6.1). */
@@ -192,7 +173,6 @@ export type SaveDraftBody = {
   max_output_tokens: number | null;
   note: string | null;
 };
-export type TestBody = { instructions: string; examples: PromptExample[]; example_ids?: string[] };
 
 /** One provider call of a test sample (API `CallSummary`); `outcome` is a `CallOutcome` such as `succeeded`, `timeout`, `invalid-shape`. */
 export type TestCall = { attempt: 1 | 2; outcome: string; latency_ms: number; cost_usd: string | null; http_status: number | null };
@@ -435,7 +415,6 @@ export const aiKeys = {
   status: () => ['ai', 'status'] as const,
   models: () => ['ai', 'models'] as const,
   operations: () => ['ai', 'operations'] as const,
-  prompt: (op: AiOperation) => ['ai', 'prompt', op] as const,
   configs: (op: AiOperation) => ['ai', 'configs', op] as const,
   publishCheck: (op: AiOperation) => ['ai', 'publish-check', op] as const,
   configHistory: (op: AiOperation) => ['ai', 'config-history', op] as const,
@@ -471,18 +450,13 @@ export const refreshModel = (api: ApiClient, id: string) => api.post<AiModel>(`$
 export const deleteModel = (api: ApiClient, id: string) => api.delete<void>(`${base}/models/${id}`);
 
 export const listOperations = (api: ApiClient) => api.get<{ items: AiOperationSetting[] }>(`${base}/operations`);
-export const saveOperation = (api: ApiClient, op: AiOperation, body: SaveOperationBody) =>
-  api.put<AiOperationSetting>(`${base}/operations/${op}`, body);
 
-export const getPrompt = (api: ApiClient, op: AiOperation) => api.get<PromptView>(`${base}/prompts/${op}`);
+/** The prompt revisions saved before configs existed (read only: the save endpoints are gone). */
 export function listRevisions(api: ApiClient, op: AiOperation, pageToken?: string) {
   const query = new URLSearchParams({ page_size: String(REVISIONS_PAGE_SIZE) });
   if (pageToken) query.set('page_token', pageToken);
   return api.get<{ items: PromptRevision[]; next_page_token: string | null }>(`${base}/prompts/${op}/revisions?${query.toString()}`);
 }
-export const savePrompt = (api: ApiClient, op: AiOperation, body: SavePromptBody) => api.put<PromptView>(`${base}/prompts/${op}`, body);
-/** Never re-sent automatically: every run costs a provider call and a quota slot. */
-export const runTest = (api: ApiClient, op: AiOperation, body: TestBody) => api.post<TestResult>(`${base}/prompts/${op}/test`, body);
 export const getTestQuota = (api: ApiClient) => api.get<TestQuota>(`${base}/test-quota`);
 
 export const getConfigs = (api: ApiClient, op: AiOperation) => api.get<ConfigsView>(`${base}/configs/${op}`);
@@ -557,10 +531,4 @@ export const listCalls = (api: ApiClient, operationId: string) =>
 /** The API lists operations a→z; the screens show them in the copy deck's order. */
 export function sortByOperationOrder<T extends { operation: AiOperation }>(rows: T[]): T[] {
   return [...rows].sort((a, b) => AI_OPERATION_ORDER.indexOf(a.operation) - AI_OPERATION_ORDER.indexOf(b.operation));
-}
-
-/** Effort levels offered for the setting's current model (besides "Mặc định"); none when it has no model or the model is unknown. */
-export function effortChoicesFor(setting: Pick<AiOperationSetting, 'model'>, models: AiModel[]): string[] {
-  if (!setting.model) return [];
-  return models.find((model) => model.id === setting.model?.id)?.effort_choices ?? [];
 }

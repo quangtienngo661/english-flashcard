@@ -47,7 +47,7 @@
     "model-exists": "This model is already added.",
     "model-in-use": "An operation still uses this model, so it cannot be deleted yet.",
     "model-not-found": "The provider has no such model. Check the model name.",
-    "model-not-set": "This operation has no model yet. Choose one under Operations.",
+    "model-not-set": "This operation has no model yet. Choose one under Configs.",
     "model-not-supported": "This model cannot be used with Wordmet yet.",
     "no-previous": "There is no earlier config to go back to.",
     "not-found": "Not found",
@@ -138,8 +138,6 @@
     "transactions": "Transactions",
     "aiStatus": "Status",
     "aiModels": "Models",
-    "aiOperations": "Operations",
-    "aiPrompts": "Prompts",
     "aiConfigs": "Configs",
     "aiEval": "Example sets",
     "aiCosts": "Costs",
@@ -247,13 +245,7 @@
         "thinkingOff": "Off",
         "thinkingCannotOff": "This model cannot turn thinking off.",
         "thinkingNeedsEffort": "Turning thinking off needs effort high or below.",
-        "maxTokens": "Maximum output tokens",
-        "note": "Choosing “No model” turns the operation off. Applies from the next call.",
-        "save": "Save",
-        "saveFor": "Save {operation}",
-        "saved": "Saved. Applies from the next call.",
-        "reload": "Reload",
-        "rowLabel": "{name} ({operation})"
+        "maxTokens": "Maximum output tokens"
       }
     },
     "reasons": {
@@ -357,7 +349,6 @@
       }
     },
     "prompts": {
-      "operation": "Operation",
       "instructions": "Instructions",
       "instructionsHint": "Up to 8,000 characters.",
       "inputFields": "Data the prompt receives: {fields}",
@@ -370,12 +361,6 @@
       "remove": "Remove",
       "removeExample": "Remove example {n}",
       "guard": "Fixed guard sentence (cannot be edited)",
-      "revision": "Revision {revision}",
-      "updated": "Last saved {at} · {by}",
-      "save": "Save",
-      "saved": "Saved revision {revision}.",
-      "loadNewer": "Load the newer revision",
-      "newerTitle": "Newest: revision {revision}",
       "hideNewer": "Hide the newer revision",
       "copyToEditor": "Copy into the editor",
       "errors": {
@@ -397,7 +382,7 @@
         "note": "Runs the version you are editing, no need to save. Each run makes a real AI call and uses one run.",
         "needExample": "At least one example is needed for a test run.",
         "rateLimited": "All {limit} test runs of this hour are used. Try again at {time}.",
-        "openOperations": "Open Operations",
+        "openConfigs": "Open Configs",
         "results": "Test run results",
         "sample": "Sample {n}",
         "input": "Input",
@@ -498,7 +483,7 @@
     "eval": {
       "operation": "Operation",
       "examples": "Examples ({count}/1,000)",
-      "examplesHint": "Up to 1,000 examples per operation. A new example goes into dev or held-out to keep the held-out share; held-out examples stay hidden until you open them. Test runs on the Prompt page use dev examples only.",
+      "examplesHint": "Up to 1,000 examples per operation. A new example goes into dev or held-out to keep the held-out share; held-out examples stay hidden until you open them. Test runs on the Configs page use dev examples only.",
       "counts": "{dev} dev · {heldOut} held-out",
       "heldOutHidden": "Held-out example: content hidden",
       "split": { "dev": "dev", "heldOut": "held-out" },
@@ -632,7 +617,7 @@
         "title": "Run example set",
         "start": "Run example set",
         "note": "Runs the whole set with the current prompt. Each run calls the AI for every example and uses one run.",
-        "quota": "{remaining}/{limit} runs left this hour (shared with Test run on the Prompt page)",
+        "quota": "{remaining}/{limit} runs left this hour (shared with Test run on the Configs page)",
         "quotaFailed": "Could not read the runs left.",
         "needExample": "This operation’s example set has no examples. Add an example, then run again.",
         "rateLimited": "All {limit} runs this hour are used. Try again at {time}.",
@@ -729,13 +714,6 @@
         "heldOutRegressions": "Held-out: {count, plural, one {# example} other {# examples}} passed before and fail now",
         "noRegressions": "No example passed before and fails now.",
         "criteria": { "shape": "shape", "rule": "rules", "expected": "expected" }
-      },
-      "fromPrompt": {
-        "title": "Run example set",
-        "button": "Run example set with this version",
-        "note": "Runs the whole example set with the text being edited, without saving. The result opens on the Example sets page.",
-        "started": "The run has started.",
-        "open": "View run"
       }
     },
     "costs": {
@@ -1266,8 +1244,7 @@
       "users": "User list, account status, lock or unlock.",
       "entitlements": "Grant and revoke access and AI uses for learners, with a reason and an expiry.",
       "aiModels": "Add OpenAI and Anthropic models and turn each one on or off.",
-      "aiOperations": "Choose the model, effort, thinking and maximum tokens for each AI operation.",
-      "aiPrompts": "Write the prompt for each operation, see its revision history and run a test.",
+      "aiConfigs": "Draft the config of each AI operation (instructions, model, effort), test it, compare it with the live one, then publish or roll back.",
       "aiEval": "Approved example sets and their run results before AI is enabled for learners.",
       "aiCosts": "Log of every AI call, totals per day and per model, invoice reconciliation.",
       "aiCalls": "Every AI call: operation, model, time, result and cost.",

@@ -62,11 +62,11 @@ export function useSetLabel() {
 }
 
 /**
- * [Chạy bộ ví dụ] from this page (`{ prompt: 'current', set_id }`) or from the Prompt page (`{ prompt: draft }`, the working set): `POST …/eval/runs` through `useSubmitAction`, so a
+ * [Chạy bộ ví dụ] from this page (`{ prompt: 'current', set_id }`) or from Cấu hình (`{ config: 'draft' | 'live', set_id }`): `POST …/eval/runs` through `useSubmitAction`, so a
  * network error keeps the `Idempotency-Key` and [Thử lại] cannot start a second run (design §6.5). A started run moves to a fresh key:
  * the next press is a new run. Every attempt uses an `ai.test` slot, so the quota line is read again afterwards, failures included.
  */
-export function useStartRun(op: AiOperation, fingerprint: string, onStarted: (runId: string) => void, onProblem?: (problem: Problem) => void) {
+export function useStartRun(op: AiOperation, fingerprint: string, onStarted: (runId: string) => void) {
   const api = useApi();
   const queryClient = useQueryClient();
   const body = useRef<Omit<StartRunBody, 'operation'>>({ prompt: 'current' });
@@ -83,7 +83,6 @@ export function useStartRun(op: AiOperation, fingerprint: string, onStarted: (ru
       } catch (e) {
         if (e instanceof ApiError) {
           if (e.problem.status === 429 && e.retryAfterSeconds !== null) setRetryAt(new Date(Date.now() + e.retryAfterSeconds * 1000));
-          onProblem?.(e.problem);
         }
         throw e;
       } finally {
@@ -114,12 +113,12 @@ export function useStartRun(op: AiOperation, fingerprint: string, onStarted: (ru
 
 type StartFailureProps = {
   action: ReturnType<typeof useStartRun>;
-  /** Violations of a draft (`prompt.instructions: …`) that the caller placed on its boxes; the rest are listed in the banner. */
-  rest?: string[];
+  /** The operation whose config page a "model not chosen" failure links to; left out where that page is the one on screen. */
+  op?: AiOperation;
 };
 
-/** The banner for a failed start: model not chosen (link to Thao tác), empty set, hourly limit, offline with [Thử lại], else the API text. */
-export function StartRunFailure({ action, rest }: StartFailureProps) {
+/** The banner for a failed start: model not chosen (link to Cấu hình), empty set, hourly limit, offline with [Thử lại], else the API text. */
+export function StartRunFailure({ action, op }: StartFailureProps) {
   const t = useTranslations();
   const api = useApi();
   const format = useAiFormat();
@@ -127,13 +126,12 @@ export function StartRunFailure({ action, rest }: StartFailureProps) {
   if (!action.error) return null;
   const problem: Problem | null = action.problem;
   let message = action.error.message;
-  let toOperations = false;
-  if (problem?.slug === 'model-not-set') toOperations = true;
-  else if (problem?.status === 429 && action.retryAt) {
+  const toConfigs = op !== undefined && problem?.slug === 'model-not-set';
+  if (problem?.status === 429 && action.retryAt) {
     message = t('ai.eval.run.rateLimited', { limit: quota.data?.limit ?? 20, time: format.time(action.retryAt) });
   } else if (problem?.slug === 'validation-failed') {
     const violations = problem.violations ?? [];
-    message = violations.includes(NEED_EXAMPLE) ? t('ai.eval.run.needExample') : [t('errors.validation-failed'), ...(rest ?? violations)].join(' ');
+    message = violations.includes(NEED_EXAMPLE) ? t('ai.eval.run.needExample') : [t('errors.validation-failed'), ...violations].join(' ');
   }
   return (
     <Banner
@@ -142,8 +140,8 @@ export function StartRunFailure({ action, rest }: StartFailureProps) {
       action={
         action.canRetry ? (
           <Button variant="secondary" onPress={() => void action.submit()}>{t('common.retry')}</Button>
-        ) : toOperations ? (
-          <Link to="/ai/operations" className={linkClass}>{t('ai.prompts.test.openOperations')}</Link>
+        ) : toConfigs ? (
+          <Link to={`/ai/configs?op=${op}`} className={linkClass}>{t('ai.prompts.test.openConfigs')}</Link>
         ) : undefined
       }
     >

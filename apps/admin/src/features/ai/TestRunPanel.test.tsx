@@ -4,45 +4,43 @@ import { afterEach, beforeEach, describe, expect, it, vi as vitest } from 'vites
 import vi from '../../../messages/vi.json';
 import { problem, rateLimited } from '../../auth/test-support';
 import { renderApp } from '../staff/test-utils';
-import { URL, evalExample, example, heldOutExample, promptRoutes, promptView, quota, succeeded } from './prompt-test-support';
+import { URL, configRoutes, configsView, draftView } from './configs/config-test-support';
+import { evalExample, heldOutExample, quota, succeeded } from './prompt-test-support';
 
 const t = vi.ai.prompts.test;
 const runButton = () => screen.getByRole('button', { name: t.run });
-const posts = (calls: { method: string; path: string; body: unknown }[]) => calls.filter((c) => c.method === 'POST' && c.path.endsWith('/test'));
+const posts = (calls: { method: string; path: string; body: unknown }[]) => calls.filter((c) => c.method === 'POST' && c.path.endsWith('/draft/test'));
 const quotaLine = (remaining: number) => t.quota.replace('{remaining}', String(remaining)).replace('{limit}', '20');
 
-async function openPage(over: Parameters<typeof promptRoutes>[0] = {}) {
-  const r = renderApp('/ai/prompts', promptRoutes(over));
-  await screen.findByRole('button', { name: t.run });
+/** The "Chạy thử" panel sits in the draft editor of the configs page: it tests the saved draft. */
+async function openPage(over: Parameters<typeof configRoutes>[0] = {}) {
+  const r = renderApp('/ai/configs', configRoutes({ [URL.configs()]: () => Response.json(configsView({ draft: draftView() })), ...over }));
+  await screen.findByRole('button', { name: t.run }, { timeout: 4000 });
   return r;
 }
 
 beforeEach(() => sessionStorage.clear());
 afterEach(() => vitest.useRealTimers());
 
-describe('Chạy thử on the Prompt page (A/82)', () => {
-  it('reads the quota on open and again after a run; sends the text on screen (unsaved) and no example_ids when none is chosen', async () => {
+describe('Chạy thử on the configs page (A/82, M2-T6)', () => {
+  it('reads the quota on open and again after a run; sends no example_ids when none is chosen (the saved draft is what runs)', async () => {
     let remaining = 17;
     const r = await openPage({
       [URL.quota]: () => Response.json(quota(remaining)),
-      [URL.test()]: () => {
+      [URL.testDraft()]: () => {
         remaining -= 1;
         return Response.json({ items: [succeeded('go')] });
       },
     });
     expect(await screen.findByText(quotaLine(17))).toBeInTheDocument();
-    const box = screen.getByLabelText(vi.ai.prompts.instructions);
-    await userEvent.clear(box);
-    await userEvent.click(box);
-    await userEvent.paste('Unsaved draft.');
     await userEvent.click(runButton());
     expect(await screen.findByText('They ___ (go) out.', { exact: false })).toBeInTheDocument();
     expect(await screen.findByText(quotaLine(16))).toBeInTheDocument();
-    expect(posts(r.calls)[0].body).toEqual({ instructions: 'Unsaved draft.', examples: [example()] });
+    expect(posts(r.calls)[0]!.body).toEqual({});
     expect(r.count('GET', '/v1/admin/ai/test-quota')).toBe(2);
   });
 
-  it('§6.4 "Chạy với:": the prompt\'s own examples when the example set is empty', async () => {
+  it('§6.4 "Chạy với:": the draft\'s own examples when the example set is empty', async () => {
     await openPage();
     expect(await screen.findByText(t.withPrompt)).toBeInTheDocument();
   });
@@ -51,7 +49,7 @@ describe('Chạy thử on the Prompt page (A/82)', () => {
     const set = ['a', 'b', 'c', 'd', 'e', 'f', 'g'].map((w, i) => evalExample(`00000000-0000-4000-8000-00000000000${i}`, `word-${w}`));
     const r = await openPage({
       [URL.examples()]: () => Response.json({ items: set }),
-      [URL.test()]: () => Response.json({ items: [succeeded('word-a')] }),
+      [URL.testDraft()]: () => Response.json({ items: [succeeded('word-a')] }),
     });
     expect(await screen.findByText(t.withFirst.replace('{count}', '5'))).toBeInTheDocument();
     for (const w of ['a', 'c', 'd', 'e', 'f']) await userEvent.click(screen.getByRole('checkbox', { name: new RegExp(`word-${w}`) }));
@@ -60,14 +58,14 @@ describe('Chạy thử on the Prompt page (A/82)', () => {
     await userEvent.click(screen.getByRole('checkbox', { name: /word-f/ }));
     expect(screen.getByText(t.withSelected.replace('{count}', '4'))).toBeInTheDocument();
     await userEvent.click(runButton());
-    await screen.findByText(vi.ai.prompts.test.sample.replace('{n}', '1'));
-    expect((posts(r.calls)[0].body as { example_ids: string[] }).example_ids).toEqual([set[0].id, set[2].id, set[3].id, set[4].id]);
+    await screen.findByText(t.sample.replace('{n}', '1'));
+    expect((posts(r.calls)[0]!.body as { example_ids: string[] }).example_ids).toEqual([set[0]!.id, set[2]!.id, set[3]!.id, set[4]!.id]);
   });
 
   it('nhóm B M1: only dev examples are offered; a held-out id in the list is neither a checkbox nor counted in "Chạy với"', async () => {
     const r = await openPage({
       [URL.examples()]: () => Response.json({ items: [evalExample('00000000-0000-4000-8000-000000000001', 'word-a'), heldOutExample('00000000-0000-4000-8000-000000000002')] }),
-      [URL.test()]: () => Response.json({ items: [succeeded('word-a')] }),
+      [URL.testDraft()]: () => Response.json({ items: [succeeded('word-a')] }),
     });
     const group = await screen.findByRole('group', { name: t.pick });
     expect(within(group).getAllByRole('checkbox')).toHaveLength(1);
@@ -75,7 +73,7 @@ describe('Chạy thử on the Prompt page (A/82)', () => {
     expect(await screen.findByText(t.withFirst.replace('{count}', '1'))).toBeInTheDocument();
     await userEvent.click(runButton());
     await screen.findByText(t.sample.replace('{n}', '1'));
-    expect(posts(r.calls)[0].body).toEqual({ instructions: 'Write one short sentence.', examples: [example()] });
+    expect(posts(r.calls)[0]!.body).toEqual({});
   });
 
   it('nhóm B M1: a list with nothing but held-out examples reads as an empty set to pick from', async () => {
@@ -84,17 +82,17 @@ describe('Chạy thử on the Prompt page (A/82)', () => {
     expect(screen.getByText(t.withPrompt)).toBeInTheDocument();
   });
 
-  it('§6.4: 409 model-not-set → the copy and a link to Thao tác', async () => {
-    await openPage({ [URL.test()]: () => problem(409, 'model-not-set') });
+  it('§6.4: 409 model-not-set → says the draft has no model, with no link (the model box is on the same page)', async () => {
+    await openPage({ [URL.testDraft()]: () => problem(409, 'model-not-set') });
     await userEvent.click(runButton());
-    expect(await screen.findByText(vi.errors['model-not-set'])).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: t.openOperations })).toHaveAttribute('href', '/ai/operations');
+    expect(await screen.findByText(vi.ai.configs.draft.noModelToTest)).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: t.openConfigs })).not.toBeInTheDocument();
   });
 
   it('§6.4: 429 → "Đã dùng hết 20 lần chạy thử trong giờ này. Thử lại lúc 15:00." from Retry-After; the quota is read again; the button stays usable', async () => {
     vitest.useFakeTimers({ toFake: ['Date'] });
     vitest.setSystemTime(new Date('2026-10-27T07:30:00.000Z')); // 14:30 in Asia/Ho_Chi_Minh
-    const r = await openPage({ [URL.test()]: () => rateLimited(1800) });
+    const r = await openPage({ [URL.testDraft()]: () => rateLimited(1800) });
     await screen.findByText(quotaLine(17));
     await userEvent.click(runButton());
     expect(await screen.findByText('Đã dùng hết 20 lần chạy thử trong giờ này. Thử lại lúc 15:00.')).toBeInTheDocument();
@@ -107,7 +105,7 @@ describe('Chạy thử on the Prompt page (A/82)', () => {
       ...succeeded('come'), status: 'transient_failure' as const, reason: 'invalid-shape', output: null,
       calls: [{ attempt: 1 as const, outcome: 'invalid-shape', latency_ms: 500, cost_usd: null, http_status: 200 }],
     };
-    await openPage({ [URL.test()]: () => Response.json({ items: [succeeded('go'), failed, succeeded('run')] }) });
+    await openPage({ [URL.testDraft()]: () => Response.json({ items: [succeeded('go'), failed, succeeded('run')] }) });
     await userEvent.click(runButton());
     const second = await screen.findByRole('group', { name: t.sample.replace('{n}', '2') });
     expect(within(second).getByText(t.statuses.transient_failure)).toBeInTheDocument();
@@ -122,7 +120,7 @@ describe('Chạy thử on the Prompt page (A/82)', () => {
 
   it('Review Focus 2: a network error on [Chạy thử] says so and is not sent again; the quota is read again', async () => {
     const r = await openPage({
-      [URL.test()]: () => {
+      [URL.testDraft()]: () => {
         throw new TypeError('Failed to fetch');
       },
     });
@@ -147,7 +145,7 @@ describe('Chạy thử on the Prompt page (A/82)', () => {
   it('a double press sends one request', async () => {
     let release: () => void = () => {};
     const r = await openPage({
-      [URL.test()]: () => new Promise<Response>((resolve) => {
+      [URL.testDraft()]: () => new Promise<Response>((resolve) => {
         release = () => resolve(Response.json({ items: [succeeded('go')] }));
       }),
     });
@@ -159,10 +157,20 @@ describe('Chạy thử on the Prompt page (A/82)', () => {
 
   it('400 "examples: at least one example is needed" → "Cần ít nhất một ví dụ để chạy thử."', async () => {
     await openPage({
-      [URL.prompt()]: () => Response.json(promptView({ examples: [] })),
-      [URL.test()]: () => problem(400, 'validation-failed', { violations: ['examples: at least one example is needed'] }),
+      [URL.configs()]: () => Response.json(configsView({ draft: draftView({ examples: [] }) })),
+      [URL.testDraft()]: () => problem(400, 'validation-failed', { violations: ['examples: at least one example is needed'] }),
     });
     await userEvent.click(runButton());
     expect(await screen.findByText(t.needExample)).toBeInTheDocument();
+  });
+
+  it('the sentence under the title says the saved draft runs, and the button follows the page when the draft has unsaved edits', async () => {
+    await openPage();
+    expect(screen.getByText(vi.ai.configs.draft.testNote)).toBeInTheDocument();
+    const box = screen.getByLabelText(vi.ai.prompts.instructions);
+    await userEvent.clear(box);
+    await userEvent.click(box);
+    await userEvent.paste('Unsaved.');
+    expect(runButton()).toBeDisabled();
   });
 });
