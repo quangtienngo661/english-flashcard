@@ -11,7 +11,7 @@ describe('StaffService with a deleting account and sign-in methods (unit, isolat
   const clock = new FakeClock(new Date('2026-10-29T12:00:00Z'));
   const actorId = randomUUID();
   const targetId = randomUUID();
-  const tx = { $executeRaw: vi.fn(), user: { findUnique: vi.fn(), update: vi.fn(), count: vi.fn() }, otpCode: { updateMany: vi.fn() } };
+  const tx = { $executeRaw: vi.fn(), user: { findUnique: vi.fn(), update: vi.fn(), updateMany: vi.fn(), count: vi.fn() }, otpCode: { updateMany: vi.fn() } };
   const prisma = { $transaction: vi.fn(), $queryRaw: vi.fn(), user: { findUnique: vi.fn() } };
   const sessions = { revokeAllForUser: vi.fn() };
   const budget = { assertAvailable: vi.fn() };
@@ -46,6 +46,22 @@ describe('StaffService with a deleting account and sign-in methods (unit, isolat
   ])('B8 (design §6.2): %s on a deleting account → 409 account-deleting, nothing written', async (_name, run) => {
     await expect(run()).rejects.toMatchObject({ status: 409, problemType: 'account-deleting' });
     nothingWritten();
+  });
+
+  it('B1-3: locking writes only a row that is still not an admin; a promotion that landed first refuses the lock', async () => {
+    stored.status = 'active';
+    tx.user.updateMany.mockResolvedValue({ count: 1 });
+    await staff.lockUser(actorId, targetId, 'spam');
+    expect(tx.user.updateMany).toHaveBeenCalledWith({
+      where: { id: targetId, OR: [{ staffRole: null }, { staffRole: { not: 'admin' } }] },
+      data: { status: 'locked', lockedAt: clock.now(), lockedBy: actorId, lockReason: 'spam' },
+    });
+    expect(sessions.revokeAllForUser).toHaveBeenCalledOnce();
+
+    sessions.revokeAllForUser.mockClear();
+    tx.user.updateMany.mockResolvedValue({ count: 0 });
+    await expect(staff.lockUser(actorId, targetId, 'spam')).rejects.toMatchObject({ status: 409, problemType: 'lock-rule' });
+    expect(sessions.revokeAllForUser).not.toHaveBeenCalled();
   });
 
   it('B8 (P16): the last-admin count ignores admins that are deleting', async () => {
