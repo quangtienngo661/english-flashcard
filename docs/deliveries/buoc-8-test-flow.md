@@ -47,7 +47,7 @@ Dọn sau khi thử: xóa các tài khoản thử bằng chính luồng A6/A9.
 1. Vào <https://console.cloud.google.com/>, tạo **project** mới (tên tùy ý, ví dụ `wordmet-dev`).
 2. Menu **APIs & Services → OAuth consent screen** (hoặc **Google Auth Platform**): chọn **External**, trạng thái **Testing**. Điền tên app, email hỗ trợ, email liên hệ.
 3. Mục **Scopes** (Data Access): thêm `openid`, `email`, `profile`.
-4. Mục **Audience → Test users**: thêm Gmail của anh/chị (và Gmail thử khác nếu muốn; tối đa 100). Chỉ các Gmail này đăng nhập được khi app còn ở Testing.
+4. Mục **Audience → Test users**: thêm Gmail của anh/chị (tùy chọn, dự phòng). Với đúng ba scope `openid`, `email`, `profile`, trang Publishing status của Google Cloud Help (đọc 29/10/2026) nói người dùng **không cần** nằm trong danh sách này, không thấy cảnh báo "chưa xác minh" và authorization không hết hạn sau 7 ngày; ngoại lệ đó cũng áp dụng cho Sign in with Google. Giới hạn 100 test user chỉ còn ý nghĩa nếu app xin thêm scope khác. Chưa ai thử với một Gmail ngoài danh sách (xem B2.6d).
 5. **Clients → Create client**: loại **Web application**; ở **Authorized redirect URIs** thêm đúng `http://localhost:3000/v1/auth/google/callback` (từng ký tự, không dấu `/` cuối).
 6. Lưu; chép **Client ID** và **Client secret** vào `apps/api/.env`:
    ```
@@ -69,11 +69,11 @@ node scripts/google-round1-account.mjs you@gmail.com
 ```
 
 1. Mở trình duyệt, vào `http://localhost:3000/v1/auth/google/start?intent=login&locale=vi&next=/vi/app`.
-2. Chọn đúng Gmail đã thêm ở bước B1.4, bấm tiếp tục khi Google báo "app chưa được xác minh" (bình thường ở chế độ Testing).
+2. Chọn Gmail của anh/chị. Theo Google sẽ **không** có cảnh báo "app chưa được xác minh" với ba scope cơ bản; nếu vẫn hiện thì bấm tiếp tục và ghi lại (trái với tài liệu của Google). Nếu Google báo `access_denied` (403) thì thêm Gmail vào Test users ở B1.4, thử lại và ghi lại.
 3. Kết quả đúng: trình duyệt về `http://localhost:3001/vi/app…` (hoặc màn hoàn tất đăng ký nếu Gmail đó chưa có tài khoản).
 4. Mở DevTools → Application → Cookies → `localhost:3000`: có cookie **`refresh_token`** (SameSite=Strict, HttpOnly).
 5. Trong tab Console của trang web: `fetch('http://localhost:3000/v1/auth/refresh',{method:'POST',credentials:'include',headers:{'X-CSRF-Protection':'1'}}).then(r=>r.status)` → **200**.
-6. Ghi lại: (a) cookie `refresh_token` còn sau khi Google chuyển về? (b) `/v1/auth/refresh` ngay sau đó → 200? (c) Google không báo lỗi PKCE?
+6. Ghi lại: (a) cookie `refresh_token` còn sau khi Google chuyển về? (b) `/v1/auth/refresh` ngay sau đó → 200? (c) Google không báo lỗi PKCE? (d) Nếu có Gmail thứ hai **không** nằm trong Test users: có đăng nhập được không, và có cảnh báo không (Google nói được, không cảnh báo)?
 
 Đây là hai `ASSUMPTION` của design §19: *cookie qua chuyển trang từ Google* và *PKCE S256 với client Web có secret*. Nếu (a) hoặc (b) sai → dừng và áp phương án dự phòng
 của §19 (mã dùng một lần 60 giây) vào M3 trước khi dựa vào nút Google ở web. Nếu (c) sai → báo lại để bỏ PKCE khỏi lời gọi tới Google.

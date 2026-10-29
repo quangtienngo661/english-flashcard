@@ -81,7 +81,7 @@ Web người học đang có nút "Đăng nhập bằng Google · Sắp có" và
 
 ## D4 — Google thật và cách implement (câu 4)
 
-Thử Google thật cần chủ dự án tạo project và OAuth client "Web" trên Google Cloud (không tốn tiền; `localhost` được làm địa chỉ quay về; chế độ "Testing" tối đa 100 test user).
+Thử Google thật cần chủ dự án tạo project và OAuth client "Web" trên Google Cloud (không tốn tiền; `localhost` được làm địa chỉ quay về; chế độ "Testing" tối đa 100 test user; sửa 29/10/2026: với đúng ba scope `openid`, `email`, `profile` Google không bắt người dùng nằm trong danh sách đó, xem Google Cloud Help, Publishing status).
 
 | Phương án | Trade-off |
 |---|---|
