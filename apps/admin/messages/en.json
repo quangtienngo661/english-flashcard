@@ -446,7 +446,7 @@
       "bulk": {
         "add": "Bulk import",
         "title": "Import many examples",
-        "hint": "One example per line, up to {max} per import. The first line names the columns: {fields}, and an optional note column. Pasting from a spreadsheet works too. A wrong line is skipped; the right lines are still imported.",
+        "hint": "One example per line, up to {max} per import. The first line names the columns: {fields}; the expected column (JSON, for example {example}) is required for an operation with an expected answer; the split column (dev or held_out) and the note column are optional. Pasting from a spreadsheet works too. A wrong line is skipped; the right lines are still imported.",
         "filePrompt": "Drop a file here",
         "fileHint": "CSV, TSV or JSON Lines, up to 2 MB",
         "choose": "Choose file",

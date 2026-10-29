@@ -19,7 +19,7 @@ async function openBulk(over = {}) {
 // Pasting through `user.type` would read `{` and `[` as key commands; a change event sets the text as the browser does on paste.
 const paste = (dialog: HTMLElement, text: string) => fireEvent.change(within(dialog).getByRole('textbox'), { target: { value: text } });
 const bodyOf = (calls: Call[]) => calls.filter((c) => c.method === 'POST' && c.path === '/v1/admin/ai/eval/examples/bulk')[0]?.body as {
-  operation: string; rows: Array<{ input: Record<string, unknown>; note: string | null }>;
+  operation: string; rows: Array<{ input: Record<string, unknown>; note: string | null; expected?: unknown; split?: string }>;
 };
 
 describe('BulkExamplesDialog (/ai/eval/bulk)', () => {
@@ -99,6 +99,50 @@ describe('BulkExamplesDialog (/ai/eval/bulk)', () => {
     await userEvent.click(await within(dialog).findByRole('button', { name: count(t.submit, 1) }));
     expect(await within(dialog).findByText(t.noRoom.replace('{room}', '2').replace('{sent}', '5'))).toBeInTheDocument();
     expect((within(dialog).getByRole('textbox') as HTMLTextAreaElement).value).toContain('a,b');
+  });
+
+  it('nhóm B M1: the hint names the expected column with an example, and the split column', async () => {
+    const { dialog } = await openBulk();
+    expect(dialog).toHaveTextContent('expected (JSON, ví dụ {"forms": ["deploy"]})');
+    expect(dialog).toHaveTextContent('cột split (dev hoặc held_out)');
+    expect(within(dialog).getByRole('textbox')).toHaveAttribute('placeholder', 'word,part_of_speech,level,meaning_vi,context_label,expected,split,note');
+  });
+
+  it('nhóm B M1: the rows are sent with their expected answer and split; a row without them is sent as before', async () => {
+    const { r, dialog } = await openBulk({ [BULK]: () => Response.json({ total: 3, valid: 3, created: 3, invalid: [] }) });
+    paste(dialog, 'word,expected,split\ndeploy,"{""forms"":[""deploy"",""deployed""]}",held_out\nrun,"{""forms"":[""run""]}",\ngo,,');
+    await userEvent.click(await within(dialog).findByRole('button', { name: count(t.submit, 3) }));
+    await screen.findByText(count(t.added, 3));
+    expect(bodyOf(r.calls).rows).toEqual([
+      { input: { word: 'deploy' }, note: null, expected: { forms: ['deploy', 'deployed'] }, split: 'held_out' },
+      { input: { word: 'run' }, note: null, expected: { forms: ['run'] } },
+      { input: { word: 'go' }, note: null, expected: null },
+    ]);
+  });
+
+  it('nhóm B M1: a plain-text expected cell is not refused here; the API names that line ("expected: must be an object") and the others go in', async () => {
+    const { dialog } = await openBulk({
+      [BULK]: () => Response.json({ total: 2, valid: 1, created: 1, invalid: [{ row: 2, violations: ['expected: must be an object'] }] }),
+    });
+    paste(dialog, 'word,expected\ndeploy,"{""forms"":[""deploy""]}"\nrun,"run, ran"');
+    expect(await within(dialog).findByText(count(t.readable, 2))).toBeInTheDocument();
+    await userEvent.click(within(dialog).getByRole('button', { name: count(t.submit, 2) }));
+    expect(await screen.findByText(count(t.added, 1))).toBeInTheDocument();
+    expect(screen.getAllByRole('listitem').map((li) => li.textContent)).toEqual([`${t.line.replace('{line}', '3')}expected: must be an object`]);
+  });
+
+  it('nhóm B M1: JSON Lines with expected and split', async () => {
+    const { r, dialog } = await openBulk({ [BULK]: () => Response.json({ total: 1, valid: 1, created: 1, invalid: [] }) });
+    paste(dialog, '{"word":"run","expected":{"forms":["run"]},"split":"dev"}');
+    await userEvent.click(await within(dialog).findByRole('button', { name: count(t.submit, 1) }));
+    await screen.findByText(count(t.added, 1));
+    expect(bodyOf(r.calls).rows).toEqual([{ input: { word: 'run' }, note: null, expected: { forms: ['run'] }, split: 'dev' }]);
+  });
+
+  it('nhóm B M1: the unknown-column message lists expected and split among the valid columns', async () => {
+    const { dialog } = await openBulk();
+    paste(dialog, 'word,expectd\ndeploy,x');
+    expect(await within(dialog).findByRole('alert')).toHaveTextContent('word, part_of_speech, level, meaning_vi, context_label, expected, split, note');
   });
 
   it('a file over 2 MB is refused before it is read', async () => {

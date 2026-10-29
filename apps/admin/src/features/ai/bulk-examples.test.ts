@@ -66,6 +66,64 @@ describe('parseExamples: JSON Lines', () => {
   });
 });
 
+describe('parseExamples: expected and split (nhóm B M1)', () => {
+  const FORMS = '"{""forms"":[""deploy""]}"';
+
+  it('CSV: an expected cell holding a JSON object is that object and a split cell is kept; neither is part of the input', () => {
+    const parsed = parseExamples(`word,meaning_vi,expected,split\ndeploy,x,${FORMS},held_out`, FIELDS);
+    expect(parsed.problem).toBeNull();
+    expect(parsed.errors).toEqual([]);
+    expect(parsed.rows).toEqual([{ line: 2, input: { word: 'deploy', meaning_vi: 'x' }, note: null, expected: { forms: ['deploy'] }, split: 'held_out' }]);
+  });
+
+  it('CSV: an empty split cell leaves split out of the row; an empty expected cell is null', () => {
+    const parsed = parseExamples(`word,expected,split\ndeploy,${FORMS},\nrun,,dev`, FIELDS);
+    expect(parsed.rows[0]).toEqual({ line: 2, input: { word: 'deploy' }, note: null, expected: { forms: ['deploy'] } });
+    expect('split' in parsed.rows[0]!).toBe(false);
+    expect(parsed.rows[1]).toEqual({ line: 3, input: { word: 'run' }, note: null, expected: null, split: 'dev' });
+  });
+
+  it('CSV: an expected cell that is plain text stays text and is no local error: only that row will be refused, by the API', () => {
+    const parsed = parseExamples('word,expected\ndeploy,"deploy, deployed"\nrun,"{""forms"":[""run""]}"', FIELDS);
+    expect(parsed.errors).toEqual([]);
+    expect(parsed.rows.map((row) => row.expected)).toEqual(['deploy, deployed', { forms: ['run'] }]);
+  });
+
+  it('CSV without those columns: the rows carry no expected and no split key', () => {
+    const parsed = parseExamples('word,meaning_vi\ndeploy,x', FIELDS);
+    expect('expected' in parsed.rows[0]!).toBe(false);
+    expect('split' in parsed.rows[0]!).toBe(false);
+  });
+
+  it('the header names expected and split are columns; any other unknown name is still a problem', () => {
+    expect(parseExamples('word,expected,split,note\ndeploy,,,', FIELDS).problem).toBeNull();
+    expect(parseExamples('word,expectd\ndeploy,x', FIELDS)).toMatchObject({ rows: [], problem: { kind: 'columns', names: ['expectd'] } });
+  });
+
+  it('TSV (a copy from a spreadsheet) reads the two columns as well', () => {
+    const parsed = parseExamples('word\texpected\tsplit\ndeploy\t{"forms":["deploy"]}\theld_out', FIELDS);
+    expect(parsed.rows).toEqual([{ line: 2, input: { word: 'deploy' }, note: null, expected: { forms: ['deploy'] }, split: 'held_out' }]);
+  });
+
+  it('JSON Lines, flat: expected and split are row fields and never copied into the input', () => {
+    const parsed = parseExamples('{"word":"run","expected":{"forms":["run"]},"split":"dev","note":" n "}', FIELDS);
+    expect(parsed.rows).toEqual([{ line: 1, input: { word: 'run' }, note: 'n', expected: { forms: ['run'] }, split: 'dev' }]);
+  });
+
+  it('JSON Lines, nested: {"input", "note", "expected", "split"}', () => {
+    const parsed = parseExamples('{"input":{"word":"run"},"expected":{"forms":["run","ran"]},"split":"held_out"}\n{"input":{"word":"go"}}', FIELDS);
+    expect(parsed.rows).toEqual([
+      { line: 1, input: { word: 'run' }, note: null, expected: { forms: ['run', 'ran'] }, split: 'held_out' },
+      { line: 2, input: { word: 'go' }, note: null },
+    ]);
+  });
+
+  it('JSON Lines: a split that is not a string is passed on as text, for the API to refuse; an empty one is left out', () => {
+    const parsed = parseExamples('{"word":"a","split":5}\n{"word":"b","split":""}\n{"word":"c","split":null}', FIELDS);
+    expect(parsed.rows.map((row) => row.split)).toEqual(['5', undefined, undefined]);
+  });
+});
+
 describe('parseExamples: limits', () => {
   it('nothing but whitespace, or a header only → empty', () => {
     expect(parseExamples('  \n ', FIELDS).problem).toEqual({ kind: 'empty' });

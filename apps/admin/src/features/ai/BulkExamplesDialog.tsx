@@ -12,10 +12,12 @@ import { FileDrop } from '../../ui/FileDrop';
 import { TextArea } from '../../ui/TextArea';
 import { showToast } from '../../ui/Toast';
 import { aiKeys, createExamples, type AiOperation, type BulkExamplesResult } from './ai-api';
-import { BULK_MAX, parseExamples } from './bulk-examples';
+import { BULK_MAX, EXTRA_COLUMNS, parseExamples } from './bulk-examples';
 
 const FILE_MAX_BYTES = 2 * 1024 * 1024;
 const FILE_TYPES = ['.csv', '.tsv', '.txt', '.jsonl', 'text/csv', 'text/plain'];
+/** Shown in the hint (an argument, so its braces are not read as message syntax). */
+const EXPECTED_EXAMPLE = '{"forms": ["deploy"]}';
 const ROOM = /^operation: room for (\d+) more examples, (\d+) valid rows sent$/;
 
 type Props = {
@@ -64,7 +66,10 @@ export function BulkExamplesDialog({ op, inputFields, onClose }: Props) {
     setPending(true);
     setBanner(null);
     try {
-      const result: BulkExamplesResult = await createExamples(api, { operation: op, rows: parsed.rows.map(({ input, note }) => ({ input, note })) });
+      const result: BulkExamplesResult = await createExamples(api, {
+        operation: op,
+        rows: parsed.rows.map(({ input, note, expected, split }) => ({ input, note, ...(expected !== undefined ? { expected } : {}), ...(split ? { split } : {}) })),
+      });
       await queryClient.invalidateQueries({ queryKey: aiKeys.examples(op) });
       const issues: Issue[] = [
         ...parsed.errors.map((error) => ({ line: error.line, reason: t(`ai.eval.bulk.reasons.${error.reason}`) })),
@@ -89,9 +94,10 @@ export function BulkExamplesDialog({ op, inputFields, onClose }: Props) {
   }
 
   const problem = parsed?.problem ?? null;
+  const columnNames = [...inputFields, ...EXTRA_COLUMNS];
   const problemText = !problem ? null
     : problem.kind === 'empty' ? t('ai.eval.bulk.problems.empty')
-      : problem.kind === 'columns' ? t('ai.eval.bulk.problems.columns', { names: problem.names.join(', '), fields: [...inputFields, 'note'].join(', ') })
+      : problem.kind === 'columns' ? t('ai.eval.bulk.problems.columns', { names: problem.names.join(', '), fields: columnNames.join(', ') })
         : t('ai.eval.bulk.problems.tooMany', { count: number(problem.count), max: number(BULK_MAX) });
   const readable = parsed?.rows.length ?? 0;
   const unreadable = parsed?.errors.length ?? 0;
@@ -130,7 +136,7 @@ export function BulkExamplesDialog({ op, inputFields, onClose }: Props) {
           className="flex min-w-0 flex-col gap-4"
         >
           {banner && <Banner variant="error" code={banner.code}>{banner.message}</Banner>}
-          <p className="text-ui text-muted wrap-anywhere">{t('ai.eval.bulk.hint', { fields: inputFields.join(', '), max: number(BULK_MAX) })}</p>
+          <p className="text-ui text-muted wrap-anywhere">{t('ai.eval.bulk.hint', { fields: inputFields.join(', '), max: number(BULK_MAX), example: EXPECTED_EXAMPLE })}</p>
           <FileDrop
             fileName={file?.error ? undefined : file?.name}
             detail={file?.detail}
@@ -145,7 +151,7 @@ export function BulkExamplesDialog({ op, inputFields, onClose }: Props) {
           <TextArea
             id="bulk-text"
             label={t('ai.eval.bulk.paste')}
-            placeholder={[...inputFields, 'note'].join(',')}
+            placeholder={columnNames.join(',')}
             value={text}
             onChange={(value) => { setText(value); setFile(null); }}
             isDisabled={pending}

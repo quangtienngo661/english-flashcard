@@ -446,7 +446,7 @@
       "bulk": {
         "add": "Nhập hàng loạt",
         "title": "Nhập nhiều ví dụ",
-        "hint": "Mỗi dòng là một ví dụ, tối đa {max} dòng mỗi lần. Dòng đầu là tên cột: {fields}, và cột note (không bắt buộc). Dán từ bảng tính cũng được. Dòng nào sai thì bị bỏ qua, các dòng đúng vẫn được nhập.",
+        "hint": "Mỗi dòng là một ví dụ, tối đa {max} dòng mỗi lần. Dòng đầu là tên cột: {fields}; cột expected (JSON, ví dụ {example}), bắt buộc với thao tác có ô mong đợi; cột split (dev hoặc held_out) và cột note không bắt buộc. Dán từ bảng tính cũng được. Dòng nào sai thì bị bỏ qua, các dòng đúng vẫn được nhập.",
         "filePrompt": "Kéo file vào đây",
         "fileHint": "CSV, TSV hoặc JSON Lines, tối đa 2 MB",
         "choose": "Chọn file",
