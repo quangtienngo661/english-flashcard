@@ -886,7 +886,10 @@ async function main() {
     check(created.code === code && created.active === true, `created ${j(created)}`);
     await wantProblem(api('POST', '/v1/admin/practice/report-reasons', { as: admin, idem: true, body: {
       code, label_vi: 'x', label_en: 'x', applies_to: 'ai', note_required: false, refundable: false, position: 9 } }), 409, 'report-reason-exists', 'same code');
-    await wantProblem(api('GET', '/v1/admin/practice/report-reasons', { as: editor }), 403, 'forbidden', 'editor on reasons');
+    // Editors read the list since the admin round (4c2bfc3, 28/10/2026); writes stay with the admin.
+    await want(api('GET', '/v1/admin/practice/report-reasons', { as: editor }), 200, 'editor reads reasons');
+    await wantProblem(api('POST', '/v1/admin/practice/report-reasons', { as: editor, idem: true, body: {
+      code: `${code}x`, label_vi: 'x', label_en: 'x', applies_to: 'ai', note_required: false, refundable: false, position: 9 } }), 403, 'forbidden', 'editor adds a reason');
     let ai = await list('ai');
     // Position 8 lands after the seed reasons but before "other", which 939cf0e moved to position 1000 (always last).
     check(ai.at(-2)?.code === code && ai.at(-2).label === 'Lý do thử' && ai.at(-2).note_required === true && ai.at(-1)?.code === 'other',
