@@ -154,7 +154,7 @@ Web người học                API (Identity)                              Go
 ### 5.1 Việc của chủ dự án trên Google Cloud (trước "Xong khi", D4)
 
 1. Tạo project trên Google Cloud, mở Google Auth Platform, màn đồng ý ở chế độ **Testing**, loại "External", scope `openid`, `email`, `profile`.
-2. Thêm Gmail của anh/chị (và Gmail thử khác nếu muốn) vào danh sách test user (tối đa 100).
+2. (Tùy chọn, dự phòng) Thêm Gmail của anh/chị vào danh sách test user. Sửa 29/10/2026: với đúng ba scope `openid`, `email`, `profile`, Google không bắt người dùng nằm trong danh sách này (Google Cloud Help, Publishing status; chưa thử với Gmail ngoài danh sách); giới hạn 100 chỉ còn ý nghĩa khi xin thêm scope khác.
 3. Tạo OAuth client loại **Web application**, địa chỉ quay về `http://localhost:3000/v1/auth/google/callback`.
 4. Chép client id và secret vào `apps/api/.env`: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`. Không tốn tiền.
 
