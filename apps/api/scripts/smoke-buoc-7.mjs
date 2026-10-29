@@ -4,8 +4,11 @@
 // (`english_learning_smoke_b7`), then `pnpm smoke:buoc-7`. Needs DATABASE_URL (env, else .env), Mailpit, and
 // `docker compose -p english-learning` for psql. No real provider is called (D3).
 //
-// Before any learner step the admin adds the fake models and chooses `fake:ok` for the five operations Bước 7 uses (design §18,
-// R6); a step that needs another scenario switches `generate_cloze` and switches back. The API has no fake clock: "time passes"
+// Before any learner step the admin adds the fake models and a second admin publishes `fake:ok` for the five operations Bước 7 uses
+// (design §18, R6); a step that needs another scenario publishes another model for `generate_cloze` and goes back. Since nhóm B M2 a model
+// is chosen by publishing a config (`ai-config-publish.mjs`: draft, run on a frozen set, publish; a rollback goes back with no run). Each
+// publish is an eval run and `ai.test` allows 20 an hour per user, so the second admin, made by the first, publishes (15 runs here); the
+// first admin keeps its own budget. The API has no fake clock: "time passes"
 // means back-dating columns with psql, then `pnpm maintenance:run`. Prompts never name the asked word for the AI types (the fake's
 // sentences are fixed), so the script reads an item's sense from practice_session_items and works the right answer out from its
 // own data. A failing step is reported and the run goes on with the next one; the exit code is 0 only when every step matched.
@@ -13,6 +16,7 @@ import { execFileSync } from 'node:child_process';
 import { createHash, randomInt, randomUUID } from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
 import { parseEnv } from 'node:util';
+import { publishModel, rollbackConfig, turnOff } from './ai-config-publish.mjs';
 
 const BASE = process.env.SMOKE_BASE_URL ?? 'http://localhost:3000';
 const MAILPIT = process.env.SMOKE_MAILPIT_URL ?? 'http://localhost:8025';
@@ -302,7 +306,7 @@ const unseenAi = (userId) => rows(`SELECT q.id, q.sense_id FROM practice_questio
 
 async function main() {
   const started = Date.now();
-  let admin; let editor; let L1; let L2; let L3;
+  let admin; let editor; let publisher; let L1; let L2; let L3;
   const groups = {};
   const items = {};
 
@@ -331,15 +335,13 @@ async function main() {
     models.set(modelId, view);
     return view;
   }
-  async function choose(op, modelId) {
-    const model = modelId === null ? null : await addModel(modelId);
-    const list = await want(api('GET', '/v1/admin/ai/operations', { as: admin }), 200, 'GET operations');
-    const current = list.items.find((row) => row.operation === op);
-    check(current, `operation ${op} is not listed`);
-    await want(api('PUT', `/v1/admin/ai/operations/${op}`, { as: admin, body: {
-      expected_version: current.version, model_ref: model?.id ?? null, effort: null, thinking: null, max_output_tokens: null,
-    } }), 200, `choose ${modelId} for ${op}`);
-  }
+  const asPublisher = (method, path, { body, idem } = {}) => api(method, path, { as: publisher, body, idem });
+  /** Makes `modelId` the model of `op` by publishing a config (one eval run); a no-op when the live config already has it. */
+  const choose = (op, modelId) => publishModel(asPublisher, { op, modelId });
+  /** Goes back to the config before the live one: no run, so a `finally` that undoes one publish costs no `ai.test` hit. */
+  const back = (op) => rollbackConfig(asPublisher, op);
+  /** Turns `op` off by publishing a draft without a model (D38, no run); `back` turns it on again. */
+  const off = (op) => turnOff(asPublisher, op);
   const opStatus = async (op) => (await want(api('GET', '/v1/admin/ai/status', { as: admin }), 200, 'AI status')).operations
     .find((row) => row.operation === op);
   const settings = async () => want(api('GET', '/v1/admin/settings', { as: admin }), 200, 'GET settings');
@@ -364,7 +366,7 @@ async function main() {
     ok(`reachable at ${BASE}; database ${DB_NAME}; children run with AI_FAKE_ENABLED=true, JOB_QUEUE_PREFIX=${QUEUE_PREFIX}, no key`);
   }, { fatal: true });
 
-  await step('Accounts: admin (CLI grant), editor (created by the admin), learners L1, L2, L3 (vi)', async () => {
+  await step('Accounts: admin (CLI grant), editor and a second admin that publishes configs (created by the admin), learners L1, L2, L3 (vi)', async () => {
     const adminEmail = `smoke7-admin-${run}@example.com`;
     admin = await registerVerified(adminEmail);
     execFileSync(process.execPath, [built('dist/cli/admin-grant.js'), adminEmail], { stdio: 'pipe', env: CHILD_ENV });
@@ -374,13 +376,17 @@ async function main() {
       email: editorEmail, staff_role: 'editor', password: PASSWORD, must_change_password: false, timezone: TIMEZONE } }), 201, 'create editor');
     editor = { email: editorEmail, token: await loginToken(editorEmail) };
     editor.id = (await want(api('GET', '/v1/me', { as: editor }), 200, 'editor profile')).id;
+    const publisherEmail = `smoke7-publisher-${run}@example.com`;
+    await want(api('POST', '/v1/admin/users', { as: admin, body: {
+      email: publisherEmail, staff_role: 'admin', password: PASSWORD, must_change_password: false, timezone: TIMEZONE } }), 201, 'create publisher');
+    publisher = { email: publisherEmail, token: await loginToken(publisherEmail) };
     L1 = await registerLearner(`smoke7-l1-${run}@example.com`);
     L2 = await registerLearner(`smoke7-l2-${run}@example.com`);
     L3 = await registerLearner(`smoke7-l3-${run}@example.com`);
-    ok(`admin ${adminEmail}; editor ${editorEmail}; learners ${L1.email}, ${L2.email}, ${L3.email} (native_language vi)`);
+    ok(`admin ${adminEmail}; editor ${editorEmail}; publisher (admin) ${publisherEmail}; learners ${L1.email}, ${L2.email}, ${L3.email} (native_language vi)`);
   }, { fatal: true });
 
-  await step('AI setup (design §18, R6): fake provider on; the new operations seeded without a model; fake:ok chosen for five operations', async () => {
+  await step('AI setup (design §18, R6): fake provider on; the new operations seeded without a model; fake:ok published for five operations', async () => {
     const status = await want(api('GET', '/v1/admin/ai/status', { as: admin }), 200, 'AI status');
     check(status.providers.fake === true && status.providers.openai === false && status.providers.anthropic === false,
       `providers ${j(status.providers)}: start the API with AI_FAKE_ENABLED=true and no key`);
@@ -396,7 +402,7 @@ async function main() {
     for (const op of ops) check((await opStatus(op)).ready === true, `${op} not ready after choosing fake:ok`);
     const practice = (await settings()).values.practice;
     check(practice.ai_prefetch_count === 2, `practice.ai_prefetch_count ${practice.ai_prefetch_count}, expected the default 2`);
-    ok(`five operations were model-not-set; generate_cloze prompt at revision 2; six fake models added; fake:ok chosen, all five ready; ai_prefetch_count 2`);
+    ok(`five operations were model-not-set; generate_cloze prompt at revision 2; six fake models added; fake:ok published for each, all five ready; ai_prefetch_count 2`);
   }, { fatal: true });
 
   await step(`Content: import ${words.length} verbs (gloss, short definition, example, inflections) in ${Object.keys(BUCKETS).length} topic/level buckets and publish`, async () => {
@@ -584,7 +590,7 @@ async function main() {
       check(await aiLeft(L1) === before, 'units were spent');
       ok(`positions 2 and 4 fell back to typing on the same word; notices ${j(notices)}; both requests failed/ai-failed with the unit released; ${before} units left`);
     } finally {
-      await choose('generate_cloze', 'fake:ok');
+      await back('generate_cloze');
     }
   });
 
@@ -615,7 +621,7 @@ async function main() {
           psql(`SELECT ai_notice_shown FROM practice_sessions WHERE id = '${session.id}'`)}; requests ${j(requestsOf(session.id).map((r) => `${r.state}/${r.failure}`))}`);
       ok(`typing on both words, no further AI call; notices ${j(notices)}`);
     } finally {
-      await choose('generate_cloze', 'fake:ok');
+      await back('generate_cloze');
     }
   });
 
@@ -686,7 +692,7 @@ async function main() {
       await finish(L1, session.id);
       ok(`first request rejected (reason ${first.reason}) after ${rejected.id} and #2; "${form}" recorded twice and listed; editor accepted it (again → 409); list hides it; retry → cloze accepted "${form}", one call, 1 unit`);
     } finally {
-      await choose('generate_cloze', 'fake:ok');
+      await back('generate_cloze');
     }
   });
 
@@ -928,7 +934,7 @@ async function main() {
       const tally = states.reduce((acc, s) => ({ ...acc, [s]: (acc[s] ?? 0) + 1 }), {});
       ok(`5 parallel replies ${j(tally)}, all naming one item; 1 item, 1 request (ready), usage use:confirmed; a later next returns the same item`);
     } finally {
-      await choose('generate_cloze', 'fake:ok');
+      await back('generate_cloze');
     }
   });
 
@@ -952,7 +958,7 @@ async function main() {
       const input = psql(`SELECT ai_input::text FROM practice_ai_requests WHERE id = '${requestId}'`);
       const current = await want(api('GET', '/v1/practice/sessions/current', { as: L1 }), 200, 'current while generating');
       check(current.item === null && current.preparing === true && outcomesOf(requestId) === '', `current (B7E65) ${j(current)}`);
-      await choose('generate_cloze', 'fake:ok');
+      await back('generate_cloze');
       psql(`UPDATE practice_ai_requests SET updated_at = now() - interval '3 minutes' WHERE id = '${requestId}'`);
       psql(`UPDATE ai_operations SET deadline_at = now() - interval '1 minute' WHERE operation_id = '${requestId}'`);
       const second = await next(L1, session.id);
@@ -1118,7 +1124,7 @@ async function main() {
   });
 
   await step('B7E117: an operation with no model → a session with its type is 503 ai-unavailable model-not-set and nothing is created', async () => {
-    await choose('generate_meaning_question', null);
+    await off('generate_meaning_question');
     try {
       const sessions = () => count(`SELECT count(*) FROM practice_sessions WHERE user_id = '${L1.id}'`);
       const before = sessions();
@@ -1129,7 +1135,7 @@ async function main() {
       await finish(L1, plain.id);
       ok('503 ai-unavailable, reason model-not-set, no session row; typing alone opens');
     } finally {
-      await choose('generate_meaning_question', 'fake:ok');
+      await back('generate_meaning_question');
     }
   });
 
@@ -1162,7 +1168,7 @@ async function main() {
       await want(api('PATCH', `/v1/my-words/${entryId}`, { as: L1, idem: true, body: { senses: [{ sense_id: P9.senseId, meaning: edited }] } }),
         204, 'edit P9');
       P9.meaning = edited;
-      await choose('check_private_word', 'fake:ok');
+      await back('check_private_word');
       const again = await start(L1, { source: 'group', group_id: group.id, types: ['cloze'], count: 1 });
       const shown2 = await next(L1, again.id);
       check(shown2.state === 'question' && shown2.item.type === 'cloze' && verdict() === 'ok', `after the edit ${j(shown2)}, verdict ${verdict()}`);
@@ -1197,7 +1203,7 @@ async function main() {
       await finish(L1, session.id);
       ok(`prepare: ${j(made)}, request failed/word-not-recognized; next asks P10 as typing at once, with notice word-not-recognized and sense_id`);
     } finally {
-      await choose('check_private_word', 'fake:ok');
+      await back('check_private_word');
     }
   });
 

@@ -4,12 +4,15 @@
 //   pnpm learner:setup -- --admin <email> --learner <email> [--plan pro|trial] [--transactions]
 // It makes sure both accounts exist and are verified (OTP from Mailpit), the admin is admin (dist/cli/admin-grant.js), the learner
 // has native_language vi; creates the five topics and the level source, imports and publishes fixtures/learner-sample.csv; adds the
-// fake model fake:ok and chooses it for every AI operation; then grants Pro or starts a fake trial. Safe to run again: what exists is
-// kept. Local test accounts only: both use the fixed password below.
+// fake model fake:ok and publishes it as the model of every AI operation (a config draft, one eval run on a frozen set of the
+// operation's seeded few-shot examples, then the publish: ai-config-publish.mjs; the sample must be in the catalog first, because the
+// few-shot examples use its word "deploy"); then grants Pro or starts a fake trial. Safe to run again: what exists is kept, and an
+// operation that already has fake:ok gets no new config. Local test accounts only: both use the fixed password below.
 import { execFileSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
 import { parseEnv } from 'node:util';
+import { publishModel } from './ai-config-publish.mjs';
 import { sendFakeEvent } from './billing-fake-event.mjs';
 
 const BASE = process.env.API_BASE_URL ?? 'http://localhost:3000';
@@ -26,7 +29,7 @@ const TOPICS = [
   { code: 'daily-life', names: { vi: 'Đời sống hằng ngày', en: 'Daily life' } },
   { code: 'travel', names: { vi: 'Du lịch', en: 'Travel' } },
 ];
-// src/ai/ai.types.ts AI_OPERATIONS: the five smoke-buoc-7 chooses plus translate_sentence (plan Task 11: six operations).
+// src/ai/ai.types.ts AI_OPERATIONS: the five smoke-buoc-7 publishes a model for plus translate_sentence (plan Task 11: six operations).
 const AI_OPERATIONS = ['generate_cloze', 'lookup_word', 'translate_sentence', 'generate_meaning_question', 'generate_sentence_mcq',
   'check_private_word'];
 const DAY = 24 * 3_600_000;
@@ -314,28 +317,20 @@ async function main() {
   }
   summary.senses = published.length;
 
-  step('Fake AI model fake:ok, chosen for every AI operation');
-  let model = (await want(api('GET', '/v1/admin/ai/models?provider=fake', { as: admin }), 200, 'models')).items
-    .find((row) => row.model_id === 'fake:ok');
-  if (!model) {
-    const res = await api('POST', '/v1/admin/ai/models', { as: admin, body: { provider: 'fake', model_id: 'fake:ok' } });
-    check(res.status === 201 || res.status === 409, `add fake:ok: ${res.status} ${res.text}`);
-    model = res.status === 201 ? res.json : (await want(api('GET', '/v1/admin/ai/models?provider=fake', { as: admin }), 200, 'models'))
-      .items.find((row) => row.model_id === 'fake:ok');
-  }
-  check(model, 'fake:ok is not in the model list');
-  const operations = (await want(api('GET', '/v1/admin/ai/operations', { as: admin }), 200, 'operations')).items;
+  step('Fake AI model fake:ok, published for every AI operation');
+  // A model is chosen by publishing a config (nhóm B M2). Each publish is one eval run (`ai.test` allows 20 an hour per user), so a first
+  // run spends six; an operation that already has fake:ok is skipped, so a second run spends none and makes no config.
+  const asAdmin = (method, path, { body, idem } = {}) => api(method, path, { as: admin, body, idem });
+  const publishedNow = [];
   const chosen = [];
   for (const op of AI_OPERATIONS) {
-    const current = operations.find((row) => row.operation === op);
-    if (!current) { console.log(`    note — operation ${op} is not listed by the API; skipped`); continue; }
-    if (current.model?.id !== model.id) {
-      await want(api('PUT', `/v1/admin/ai/operations/${op}`, { as: admin, body: {
-        expected_version: current.version, model_ref: model.id, effort: null, thinking: null, max_output_tokens: null } }), 200, `choose fake:ok for ${op}`);
-    }
+    const before = await want(asAdmin('GET', `/v1/admin/ai/configs/${op}`), 200, `${op}: configs`);
+    const live = await publishModel(asAdmin, { op, modelId: 'fake:ok' });
+    check(live.model?.model_id === 'fake:ok', `${op}: live config has ${live.model?.model_id ?? 'no model'} after the publish`);
+    if (live.id !== before.live.id) publishedNow.push(`${op} #${live.number}`);
     chosen.push(op);
   }
-  ok(`fake:ok ${model.id} chosen for ${chosen.join(', ')}`);
+  ok(`fake:ok on ${chosen.join(', ')}; published now: ${publishedNow.join(', ') || 'none (all already on fake:ok)'}`);
 
   const entitlements = () => want(api('GET', '/v1/me/entitlements', { as: learner }), 200, 'GET /v1/me/entitlements');
   if (flags.plan === 'pro') {
