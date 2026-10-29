@@ -32,6 +32,7 @@ import { JudgePassesService } from './judge/judge-passes.service.js';
 import { JudgeScoresReader } from './judge/judge-scores.reader.js';
 import { JudgesService } from './judge/judges.service.js';
 import { LabelsService } from './judge/labels.service.js';
+import { RealPassesReader } from './judge/real-passes.reader.js';
 import { AiMaintenance } from './maintenance/ai-maintenance.js';
 import { ModelsService } from './models/models.service.js';
 import { OperationSettingsService } from './models/operation-settings.service.js';
@@ -60,7 +61,7 @@ import { SelectionReader } from './runner/selection.js';
     { provide: CallQueue, useFactory: (limit: ConcurrencyLimit) => new CallQueue(() => limit.value), inject: [ConcurrencyLimit] },
     RunnerService, AiService, PromptsService, ReportsService,
     EvalExamplesService, EvalRunsService, EvalRunsRepository, EvalJob, EvalQueue, EvalRulesRegistry, EvalSetsService, HeldOutReader, ConfigsService, PublishService, LiveConfigReader, IdempotencyInterceptor, AiMaintenance, AiAccountEraser,
-    JudgesService, JudgePassesService, JudgePassesRepository, JudgeScoresReader, JudgeJob, LabelsService, JudgeAgreement,
+    JudgesService, JudgePassesService, JudgePassesRepository, JudgeScoresReader, JudgeJob, LabelsService, JudgeAgreement, RealPassesReader,
   ],
   exports: [AiService],
 })
