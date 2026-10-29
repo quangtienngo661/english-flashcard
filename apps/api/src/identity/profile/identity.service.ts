@@ -224,4 +224,21 @@ export class IdentityService {
       after = page[page.length - 1].id;
     }
   }
+
+  /**
+   * Accounts created in [`from`, `to`), oldest first, for the D7/D30 cohorts (nhóm B design §10, contract §4). An account being
+   * deleted is left out (it is about to have no data); `staff` is the role as it is now, so a later grant removes the past too (B47).
+   * Reads ids, dates and two flags only.
+   */
+  async registrations(from: Date, to: Date):
+    Promise<Array<{ userId: string; createdAt: Date; emailVerified: boolean; staff: boolean }>> {
+    const rows = await this.prisma.user.findMany({
+      where: { createdAt: { gte: from, lt: to }, deletingSince: null },
+      select: { id: true, createdAt: true, emailVerifiedAt: true, staffRole: true },
+      orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+    });
+    return rows.map((row) => ({
+      userId: row.id, createdAt: row.createdAt, emailVerified: row.emailVerifiedAt !== null, staff: row.staffRole !== null,
+    }));
+  }
 }
