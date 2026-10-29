@@ -13,6 +13,7 @@ import { RateLimiter } from '../../common/rate-limit/rate-limiter.service.js';
 import { AccessTokenService } from '../../identity/sessions/access-token.service.js';
 import { EvalExamplesService } from '../eval/eval-examples.service.js';
 import { EvalRunsService } from '../eval/eval-runs.service.js';
+import { EvalSetsService } from '../eval/eval-sets.service.js';
 import { AdminAiEvalController } from './admin-ai-eval.controller.js';
 
 const PROBLEM = 'https://api.example.com/problems/';
@@ -21,7 +22,8 @@ describe('admin ai eval HTTP (unit, mocked services)', () => {
   let ctx: TestApp; let token: string; let actorId: string; let role: 'admin' | 'editor' | null;
   const prisma = { sessionChain: { findUnique: vi.fn() }, $disconnect: async () => {} };
   const hit = vi.spyOn(RateLimiter.prototype, 'hit');
-  let examples: Record<'list' | 'create' | 'createMany' | 'update' | 'remove' | 'forms', ReturnType<typeof vi.spyOn>>;
+  let examples: Record<'list' | 'create' | 'createMany' | 'update' | 'remove' | 'forms' | 'reveal', ReturnType<typeof vi.spyOn>>;
+  let sets: Record<'freeze' | 'list' | 'get', ReturnType<typeof vi.spyOn>>;
   let runs: Record<'list' | 'get' | 'cancel' | 'remove', ReturnType<typeof vi.spyOn>>;
   const auth = () => ({ Authorization: `Bearer ${token}` });
   const id = randomUUID();
@@ -35,8 +37,10 @@ describe('admin ai eval HTTP (unit, mocked services)', () => {
     const rs = ctx.app.get(EvalRunsService);
     examples = {
       list: vi.spyOn(ex, 'list'), create: vi.spyOn(ex, 'create'), createMany: vi.spyOn(ex, 'createMany'), update: vi.spyOn(ex, 'update'), remove: vi.spyOn(ex, 'remove'),
-      forms: vi.spyOn(ex, 'forms'),
+      forms: vi.spyOn(ex, 'forms'), reveal: vi.spyOn(ex, 'reveal'),
     };
+    const ss = ctx.app.get(EvalSetsService);
+    sets = { freeze: vi.spyOn(ss, 'freeze'), list: vi.spyOn(ss, 'list'), get: vi.spyOn(ss, 'get') };
     runs = { list: vi.spyOn(rs, 'list'), get: vi.spyOn(rs, 'get'), cancel: vi.spyOn(rs, 'cancel'), remove: vi.spyOn(rs, 'remove') };
   });
   beforeEach(async () => {
@@ -47,6 +51,8 @@ describe('admin ai eval HTTP (unit, mocked services)', () => {
     examples.createMany.mockReset().mockResolvedValue({ total: 1, valid: 1, created: 1, invalid: [] });
     examples.update.mockReset().mockResolvedValue({ id }); examples.remove.mockReset().mockResolvedValue(undefined);
     examples.forms.mockReset().mockResolvedValue({ forms: ['deploy', 'deployed'] });
+    examples.reveal.mockReset().mockResolvedValue({ id });
+    sets.freeze.mockReset().mockResolvedValue({ id }); sets.list.mockReset().mockResolvedValue({ items: [] }); sets.get.mockReset().mockResolvedValue({ id, items: [] });
     runs.list.mockReset().mockResolvedValue({ items: [], next_page_token: null }); runs.get.mockReset().mockResolvedValue({ id });
     runs.cancel.mockReset().mockResolvedValue({ id, status: 'failed', error: 'cancelled' }); runs.remove.mockReset().mockResolvedValue(undefined);
     hit.mockReset().mockResolvedValue(undefined);
@@ -57,11 +63,12 @@ describe('admin ai eval HTTP (unit, mocked services)', () => {
     const routes = listRoutes(ctx.app).filter(({ path }) => path.startsWith('/v1/admin/ai/eval'));
     expect(routes.map(({ method, path }) => `${method} ${path}`).sort()).toEqual([
       'DELETE /v1/admin/ai/eval/examples/:id', 'DELETE /v1/admin/ai/eval/runs/:id', 'GET /v1/admin/ai/eval/examples',
-      'GET /v1/admin/ai/eval/examples/forms',
+      'GET /v1/admin/ai/eval/examples/forms', 'GET /v1/admin/ai/eval/sets', 'GET /v1/admin/ai/eval/sets/:id', 'POST /v1/admin/ai/eval/sets',
+      'POST /v1/admin/ai/eval/examples/:id/reveal',
       'GET /v1/admin/ai/eval/runs', 'GET /v1/admin/ai/eval/runs/:id', 'PATCH /v1/admin/ai/eval/examples/:id',
       'POST /v1/admin/ai/eval/examples', 'POST /v1/admin/ai/eval/examples/bulk', 'POST /v1/admin/ai/eval/runs',
       'POST /v1/admin/ai/eval/runs/:id/cancel',
-    ]);
+    ].sort());
     for (const route of routes) expect(route.permissions, `${route.method} ${route.path}`).toEqual(['settings.manage']);
   });
 
@@ -101,6 +108,27 @@ describe('admin ai eval HTTP (unit, mocked services)', () => {
     expect((await http().get('/v1/admin/ai/eval/examples/forms').set(auth()).query({ word: 'x'.repeat(101), part_of_speech: 'verb' })).status).toBe(400);
     expect(examples.forms).toHaveBeenCalledTimes(2);
     expect(hit).not.toHaveBeenCalled();
+  });
+
+  it('D10: POST /examples/:id/reveal is a 200 write that reaches the service with the lower-cased id', async () => {
+    const res = await http().post(`/v1/admin/ai/eval/examples/${id.toUpperCase()}/reveal`).set(auth());
+    expect(res.status).toBe(200);
+    expect(examples.reveal).toHaveBeenCalledWith(id);
+    expect(hit).toHaveBeenCalledWith('user.write', actorId);
+  });
+
+  it('D9: POST /sets freezes the operation (201, a write); GET /sets and GET /sets/:id are reads', async () => {
+    const created = await http().post('/v1/admin/ai/eval/sets').set(auth()).send({ operation: 'generate_cloze' });
+    expect(created.status).toBe(201);
+    expect(sets.freeze).toHaveBeenCalledWith(actorId, 'generate_cloze');
+    expect(hit).toHaveBeenCalledWith('user.write', actorId);
+    hit.mockClear();
+    expect((await http().get('/v1/admin/ai/eval/sets').set(auth()).query({ operation: 'lookup_word' })).status).toBe(200);
+    expect(sets.list).toHaveBeenCalledWith('lookup_word');
+    expect((await http().get(`/v1/admin/ai/eval/sets/${id}`).set(auth())).status).toBe(200);
+    expect(sets.get).toHaveBeenCalledWith(id);
+    expect(hit).not.toHaveBeenCalled();
+    expect((await http().post('/v1/admin/ai/eval/sets').set(auth()).send({ operation: 'nope' })).status).toBe(400);
   });
 
   it('an editor gets 403 on the bulk route', async () => {

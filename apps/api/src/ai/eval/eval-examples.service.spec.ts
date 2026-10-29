@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { FakeClock } from '../../common/clock/clock.js';
 import { ProblemDetailsException } from '../../common/problem-details/problem-details.exception.js';
 import { EVAL_EXAMPLES_PER_OPERATION_MAX, EVAL_NOTE_MAX } from '../ai.constants.js';
 import { EvalExamplesService } from './eval-examples.service.js';
@@ -8,6 +9,7 @@ import { EvalRulesRegistry, type EvalRules } from './eval-rules.port.js';
 const ADMIN = '11111111-1111-4111-8111-111111111111';
 const INPUT = { word: 'deploy', part_of_speech: 'verb', level: 'B1', meaning_vi: 'triển khai', context_label: null };
 const FORMS = { forms: ['deploy', 'deployed'] };
+const NOW = new Date('2026-10-30T03:00:00Z');
 
 type Row = {
   id: string; operation: string; input: unknown; note: string | null; createdBy: string; createdAt: Date; updatedAt: Date;
@@ -23,9 +25,12 @@ type Where = { operation?: string; split?: string };
 const matches = (row: Row, where: Where) => (where.operation === undefined || row.operation === where.operation)
   && (where.split === undefined || row.split === where.split);
 
+type SetItemRow = { exampleId: string; split: string; input: unknown; expected: unknown; revealedAt: Date | null; set: { operation: string; version: number } };
+
 function fakePrisma() {
   const rows: Row[] = [];
-  return {
+  const setItems: SetItemRow[] = [];
+  const prisma = {
     rows,
     aiEvalExample: {
       findMany: vi.fn(async ({ where }: { where: Where }) => rows.filter((row) => matches(row, where))),
@@ -50,8 +55,27 @@ function fakePrisma() {
         if (index >= 0) rows.splice(index, 1);
         return { count: index >= 0 ? 1 : 0 };
       }),
+      updateMany: vi.fn(async ({ where, data }: { where: { id: string; split: string }; data: Partial<Row> }) => {
+        const row = rows.find((r) => r.id === where.id && r.split === where.split);
+        if (row) Object.assign(row, data);
+        return { count: row ? 1 : 0 };
+      }),
     },
+    setItems,
+    aiEvalSetItem: {
+      findFirst: vi.fn(async ({ where }: { where: { exampleId: string; split?: string } }) => {
+        const matching = setItems.filter((item) => item.exampleId === where.exampleId && (where.split === undefined || item.split === where.split));
+        return [...matching].sort((a, b) => b.set.version - a.set.version)[0] ?? null;
+      }),
+      updateMany: vi.fn(async ({ where, data }: { where: { exampleId: string; split: string; revealedAt: null }; data: { revealedAt: Date } }) => {
+        const hit = setItems.filter((item) => item.exampleId === where.exampleId && item.split === where.split && item.revealedAt === where.revealedAt);
+        for (const item of hit) item.revealedAt = data.revealedAt;
+        return { count: hit.length };
+      }),
+    },
+    $transaction: vi.fn(async (work: (client: unknown) => Promise<unknown>) => work(prisma)),
   };
+  return prisma;
 }
 
 async function problemOf(promise: Promise<unknown>) {
@@ -73,7 +97,7 @@ describe('EvalExamplesService', () => {
     emailsOf = vi.fn(async (ids: string[]) => new Map(ids.filter((id) => id === ADMIN).map((id) => [id, 'admin@x.test'])));
     registry = new EvalRulesRegistry();
     const settings = { get: vi.fn(async () => ({ ai: { evalHeldOutRatio: 0.3 } })) };
-    service = new EvalExamplesService(prisma as never, { emailsOf } as never, settings as never, registry);
+    service = new EvalExamplesService(prisma as never, { emailsOf } as never, settings as never, registry, new FakeClock(NOW));
   });
 
   /** A dev example is made by putting a held-out one first: the empty set always starts with held-out. */
@@ -369,6 +393,51 @@ describe('EvalExamplesService', () => {
       expect(await service.forms('deploy', 'verb')).toEqual({ forms: null });
       registry.register(stub(null));
       expect(await service.forms('lit', 'adjective')).toEqual({ forms: null });
+    });
+  });
+
+  describe('reveal (D10, R7)', () => {
+    const gone = (version: number, over: Partial<SetItemRow> = {}): SetItemRow => ({
+      exampleId: 'g1', split: 'held_out', input: { word: `v${version}` }, expected: { forms: [`v${version}`] }, revealedAt: null,
+      set: { operation: 'generate_cloze', version }, ...over,
+    });
+
+    it('a held-out example becomes a dev example with the reveal time, its set items get the time, and it is shown', async () => {
+      seed({ id: 'h1', split: 'held_out', note: 'why', input: { word: 'secret' }, expected: { forms: ['secret'] } });
+      const answer = await service.reveal('h1');
+      expect(prisma.aiEvalExample.updateMany).toHaveBeenCalledExactlyOnceWith({ where: { id: 'h1', split: 'held_out' }, data: { split: 'dev', revealedAt: NOW } });
+      expect(prisma.aiEvalSetItem.updateMany).toHaveBeenCalledExactlyOnceWith({
+        where: { exampleId: 'h1', split: 'held_out', revealedAt: null }, data: { revealedAt: NOW },
+      });
+      expect(answer).toEqual({
+        id: 'h1', operation: 'generate_cloze', split: 'dev', input: { word: 'secret' }, expected: { forms: ['secret'] }, note: 'why',
+        revealed_at: NOW.toISOString(), deleted: false,
+      });
+      expect(prisma.rows[0]).toMatchObject({ split: 'dev', revealedAt: NOW });
+    });
+
+    it('B4: a dev example → 409 example-not-held-out, nothing written', async () => {
+      seed({ id: 'd1', split: 'dev' });
+      expect(await problemOf(service.reveal('d1'))).toMatchObject({ status: 409, type: 'example-not-held-out' });
+      expect(prisma.aiEvalExample.updateMany).not.toHaveBeenCalled();
+      expect(prisma.aiEvalSetItem.updateMany).not.toHaveBeenCalled();
+    });
+
+    it('an example gone from the working set is opened from its latest held-out set item: deleted true, no note', async () => {
+      prisma.setItems.push(gone(1), gone(2));
+      const answer = await service.reveal('g1');
+      expect(answer).toEqual({
+        id: 'g1', operation: 'generate_cloze', split: 'dev', input: { word: 'v2' }, expected: { forms: ['v2'] }, note: null,
+        revealed_at: NOW.toISOString(), deleted: true,
+      });
+      expect(prisma.setItems.map((item) => item.revealedAt)).toEqual([NOW, NOW]);
+      expect(prisma.aiEvalExample.updateMany).not.toHaveBeenCalled();
+    });
+
+    it('a gone example whose set items are all dev → 409; one that is nowhere → 404', async () => {
+      prisma.setItems.push(gone(1, { split: 'dev' }));
+      expect(await problemOf(service.reveal('g1'))).toMatchObject({ status: 409, type: 'example-not-held-out' });
+      expect(await problemOf(service.reveal('nope'))).toMatchObject({ status: 404, type: 'not-found' });
     });
   });
 

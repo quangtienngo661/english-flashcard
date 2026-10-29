@@ -18,6 +18,8 @@ import { EvalQueue } from './eval/eval-queue.service.js';
 import { EvalRulesRegistry } from './eval/eval-rules.port.js';
 import { EvalRunsRepository } from './eval/eval-runs.repository.js';
 import { EvalRunsService } from './eval/eval-runs.service.js';
+import { EvalSetsService } from './eval/eval-sets.service.js';
+import { HeldOutReader } from './eval/held-out.js';
 import { AiMaintenance } from './maintenance/ai-maintenance.js';
 import { ModelsService } from './models/models.service.js';
 import { OperationSettingsService } from './models/operation-settings.service.js';
@@ -44,7 +46,7 @@ import { SelectionReader } from './runner/selection.js';
     // One queue per process (design §8.4); its limit is the one the runner read last.
     { provide: CallQueue, useFactory: (limit: ConcurrencyLimit) => new CallQueue(() => limit.value), inject: [ConcurrencyLimit] },
     RunnerService, AiService, PromptsService, ReportsService,
-    EvalExamplesService, EvalRunsService, EvalRunsRepository, EvalJob, EvalQueue, EvalRulesRegistry, IdempotencyInterceptor, AiMaintenance, AiAccountEraser,
+    EvalExamplesService, EvalRunsService, EvalRunsRepository, EvalJob, EvalQueue, EvalRulesRegistry, EvalSetsService, HeldOutReader, IdempotencyInterceptor, AiMaintenance, AiAccountEraser,
   ],
   exports: [AiService],
 })

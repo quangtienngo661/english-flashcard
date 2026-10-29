@@ -1,5 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { z } from 'zod';
+import { Clock } from '../../common/clock/clock.js';
 import { PRISMA_CLIENT } from '../../common/db/prisma.module.js';
 import { userRef, type UserRef } from '../../common/user-ref.js';
 import { ProblemDetailsException } from '../../common/problem-details/problem-details.exception.js';
@@ -50,6 +51,11 @@ export type ExampleView = {
 /** A held-out example before it is revealed: nothing but its id (design §5.1, R7). */
 export type HeldOutExampleView = { id: string; split: 'held_out' };
 
+/** A held-out example after it was opened: from then on it is a dev example (D10). `deleted` = it only exists in a frozen version. */
+export type RevealedExample = {
+  id: string; operation: AiOperation; split: 'dev'; input: unknown; expected: unknown; note: string | null; revealed_at: string; deleted: boolean;
+};
+
 /** An example made by another module or by a report (contract §4): always a dev example, with where it came from. */
 export type ExampleFromSource = {
   operation: AiOperation; input: Record<string, unknown>; expected: Record<string, unknown> | null; note: string | null;
@@ -78,6 +84,7 @@ const expectedInvalid = (violations: string[]) => new ProblemDetailsException({
 });
 const notFound = () => new ProblemDetailsException({ status: 404, type: 'not-found', title: 'Not found' });
 const heldOut = () => new ProblemDetailsException({ status: 409, type: 'example-held-out', title: 'A held-out example cannot be edited' });
+const notHeldOut = () => new ProblemDetailsException({ status: 409, type: 'example-not-held-out', title: 'The example is not held-out' });
 
 function parse<T extends z.ZodType>(schema: T, body: unknown): z.output<T> {
   const result = schema.safeParse(body);
@@ -108,6 +115,7 @@ export class EvalExamplesService {
     @Inject(IdentityService) private readonly identity: IdentityService,
     @Inject(SettingsService) private readonly settings: SettingsService,
     @Inject(EvalRulesRegistry) private readonly rules: EvalRulesRegistry,
+    @Inject(Clock) private readonly clock: Clock,
   ) {}
 
   async list(op: AiOperation): Promise<{ items: Array<ExampleView | HeldOutExampleView> }> {
@@ -235,6 +243,39 @@ export class EvalExamplesService {
   async remove(id: string): Promise<void> {
     const { count } = await this.prisma.aiEvalExample.deleteMany({ where: { id } });
     if (count === 0) throw notFound();
+  }
+
+  /**
+   * Opens a held-out example (the admin web asks first): it becomes a dev example, and every frozen snapshot of it records the moment, so
+   * its set version says "1 held-out example was seen". An example already deleted from the working set is read from its latest held-out
+   * snapshot.
+   */
+  async reveal(id: string): Promise<RevealedExample> {
+    const now = this.clock.now();
+    const row = await this.prisma.aiEvalExample.findUnique({ where: { id } });
+    if (row) {
+      if (row.split !== 'held_out') throw notHeldOut();
+      await this.prisma.$transaction(async (tx) => {
+        await tx.aiEvalExample.updateMany({ where: { id, split: 'held_out' }, data: { split: 'dev', revealedAt: now } });
+        await tx.aiEvalSetItem.updateMany({ where: { exampleId: id, split: 'held_out', revealedAt: null }, data: { revealedAt: now } });
+      });
+      return {
+        id, operation: row.operation as AiOperation, split: 'dev', input: row.input, expected: row.expected, note: row.note,
+        revealed_at: now.toISOString(), deleted: false,
+      };
+    }
+    const snapshot = await this.prisma.aiEvalSetItem.findFirst({
+      where: { exampleId: id, split: 'held_out' }, orderBy: { set: { version: 'desc' } }, include: { set: { select: { operation: true } } },
+    });
+    if (!snapshot) {
+      const anySnapshot = await this.prisma.aiEvalSetItem.findFirst({ where: { exampleId: id }, select: { id: true } });
+      throw anySnapshot ? notHeldOut() : notFound();
+    }
+    await this.prisma.aiEvalSetItem.updateMany({ where: { exampleId: id, split: 'held_out', revealedAt: null }, data: { revealedAt: now } });
+    return {
+      id, operation: snapshot.set.operation as AiOperation, split: 'dev', input: snapshot.input, expected: snapshot.expected, note: null,
+      revealed_at: now.toISOString(), deleted: true,
+    };
   }
 
   /** The catalog forms of a word, to fill the expected answer in (design §5.1); `null` without rules or when the catalog lacks the word. */
