@@ -13,6 +13,8 @@ const SELECTION: Selection = {
   maxOutputTokens: 4096, price: { input: 1, cachedInput: null, output: 2 },
 };
 const NOW = new Date('2026-10-28T03:00:00Z');
+const JUDGE = '66666666-6666-4666-8666-666666666666';
+const JUDGE_REVISION = '77777777-7777-4777-8777-777777777777';
 const [EX1, EX2] = [randomUUID(), randomUUID()];
 const EXAMPLE_INPUT = { word: 'deploy', part_of_speech: 'verb', level: 'B1', meaning_vi: 'triển khai', context_label: null };
 const IN1 = { word: 'one' };
@@ -33,6 +35,8 @@ function spendOf(state: { spent: number; cap: number | null }) {
   );
 }
 
+const JUDGE_PASS = '88888888-8888-4888-8888-888888888888';
+
 function setup() {
   const spend = { spent: 0, cap: 2 as number | null };
   const created: Array<Record<string, unknown>> = [];
@@ -46,6 +50,7 @@ function setup() {
       }),
     },
     aiEvalRunItem: { createMany: vi.fn(async (_args: { data: Array<Record<string, unknown>> }) => ({ count: 0 })) },
+    aiJudgePass: { create: vi.fn(async ({ data }: { data: Record<string, unknown> }) => ({ id: JUDGE_PASS, ...data })) },
   };
   const prisma = {
     aiEvalExample: {
@@ -75,6 +80,7 @@ function setup() {
     aiLiveConfig: { findUnique: vi.fn(async (_args?: unknown): Promise<Record<string, unknown> | null> => ({ operation: 'generate_cloze', configId: LIVE_CONFIG.id, version: 7 })) },
     aiConfigEvent: { findFirst: vi.fn(async (_args?: unknown): Promise<Record<string, unknown> | null> => null) },
     aiCall: { deleteMany: vi.fn(async () => ({ count: 0 })) },
+    aiJudgePass: { updateMany: vi.fn(async (_args?: unknown) => ({ count: 0 })) },
     $executeRaw: vi.fn(async () => 0),
     $transaction: vi.fn(async (work: (client: typeof tx) => Promise<unknown>) => work(tx)),
   };
@@ -83,11 +89,16 @@ function setup() {
   const queue = { enqueue: vi.fn(async () => true) };
   const emailsOf = vi.fn(async (ids: string[]) => new Map(ids.filter((id) => id === ADMIN).map((id) => [id, 'admin@x.test'])));
   const limiter = { hit: vi.fn(async (): Promise<void> => undefined) };
+  const judgePasses = {
+    startable: vi.fn(async (_judge: string, _op: string, _now: Date) => ({
+      judgeId: JUDGE, judgeRevisionId: JUDGE_REVISION, revision: 2, operation: 'generate_cloze', selection: SELECTION,
+    })),
+  };
   const service = new EvalRunsService(
     prisma as never, selections as never, registry as never, queue as never, { emailsOf } as never,
-    limiter as never, new FakeClock(NOW), spendOf(spend),
+    limiter as never, new FakeClock(NOW), spendOf(spend), judgePasses as never,
   );
-  return { service, prisma, tx, created, selections, registry, queue, emailsOf, limiter, live: LIVE_CONFIG, spend };
+  return { service, prisma, tx, created, selections, registry, queue, emailsOf, limiter, live: LIVE_CONFIG, spend, judgePasses };
 }
 
 async function problemOf(promise: Promise<unknown>) {
@@ -104,6 +115,8 @@ describe('EvalRunsService.create', () => {
   it('E1, Review focus 4: prompt "current" is the live config: the row names it and its version, stores the resolved selection, the price and the number of examples; enqueued; 202 body', async () => {
     const answer = await ctx.service.create(ADMIN, { operation: 'generate_cloze', prompt: 'current' });
     expect(ctx.created).toHaveLength(1);
+    expect(ctx.judgePasses.startable).not.toHaveBeenCalled();
+    expect(ctx.tx.aiJudgePass.create).not.toHaveBeenCalled();
     expect(ctx.created[0]).toMatchObject({
       operation: 'generate_cloze', provider: 'fake', model: 'fake:ok', effort: null, thinking: 'disabled', maxOutputTokens: 4096,
       configId: LIVE_CONFIG.id, configVersion: 0, promptRevision: null, priceInput: 1, priceCachedInput: null, priceOutput: 2, status: 'queued', total: 2, startedBy: ADMIN,
@@ -114,7 +127,38 @@ describe('EvalRunsService.create', () => {
       where: { operation: 'generate_cloze' }, orderBy: [{ createdAt: 'asc' }, { id: 'asc' }], select: { id: true, split: true, input: true, expected: true },
     });
     expect(ctx.queue.enqueue).toHaveBeenCalledWith(ctx.created[0]!.id);
-    expect(answer).toEqual({ run_id: ctx.created[0]!.id, status: 'queued' });
+    expect(answer).toEqual({ run_id: ctx.created[0]!.id, status: 'queued', judge_pass_id: null });
+  });
+
+  it('D14, B19: with judge_id the run row and a waiting pass (queued, no snapshot yet) are made in one transaction; the answer names the pass', async () => {
+    const answer = await ctx.service.create(ADMIN, { operation: 'generate_cloze', prompt: 'current', judge_id: JUDGE });
+    const runId = ctx.created[0]!.id;
+    expect(ctx.judgePasses.startable).toHaveBeenCalledExactlyOnceWith(JUDGE, 'generate_cloze', NOW);
+    expect(ctx.prisma.$transaction).toHaveBeenCalledTimes(1);
+    expect(ctx.tx.aiJudgePass.create).toHaveBeenCalledExactlyOnceWith({ data: {
+      judgeRevisionId: JUDGE_REVISION, kind: 'eval_run', operation: 'generate_cloze', evalRunId: runId, status: 'queued', total: null, startedBy: ADMIN,
+    } });
+    expect(ctx.tx.aiEvalRun.create.mock.invocationCallOrder[0]!).toBeLessThan(ctx.tx.aiJudgePass.create.mock.invocationCallOrder[0]!);
+    expect(answer).toEqual({ run_id: runId, status: 'queued', judge_pass_id: JUDGE_PASS });
+    expect(ctx.queue.enqueue).toHaveBeenCalledExactlyOnceWith(runId);
+  });
+
+  it('a judge that cannot start (inactive, wrong operation, no model, unpriced, cap, already running) → its problem, no run row, no ai.test use, nothing enqueued', async () => {
+    ctx.judgePasses.startable.mockRejectedValue(new ProblemDetailsException({ status: 409, type: 'judge-pass-running', title: 'running' }));
+    expect(await problemOf(ctx.service.create(ADMIN, { operation: 'generate_cloze', prompt: 'current', judge_id: JUDGE }))).toMatchObject({ status: 409, type: 'judge-pass-running' });
+    expect(ctx.created).toHaveLength(0);
+    expect(ctx.limiter.hit).not.toHaveBeenCalled();
+    expect(ctx.queue.enqueue).not.toHaveBeenCalled();
+  });
+
+  it('the unique index of B16 losing a race → 409 judge-pass-running and the run is not enqueued', async () => {
+    ctx.tx.aiJudgePass.create.mockRejectedValueOnce(Object.assign(new Error('unique'), { code: 'P2002' }));
+    expect(await problemOf(ctx.service.create(ADMIN, { operation: 'generate_cloze', prompt: 'current', judge_id: JUDGE }))).toMatchObject({ status: 409, type: 'judge-pass-running' });
+    expect(ctx.queue.enqueue).not.toHaveBeenCalled();
+  });
+
+  it('judge_id must be a uuid', async () => {
+    expect((await problemOf(ctx.service.create(ADMIN, { operation: 'generate_cloze', prompt: 'current', judge_id: 'nope' }))).violations[0]).toMatch(/^judge_id: /);
   });
 
   it('E1: each example becomes an item row with its snapshot, in position order, written with the run in one transaction', async () => {
@@ -597,6 +641,25 @@ describe('EvalRunsService.cancel', () => {
     expect(run).toHaveProperty('items');
     expect(run).toHaveProperty('draft');
     expect(ctx.prisma.aiEvalRunItem.findMany).toHaveBeenCalledTimes(1);
+  });
+
+  it('B19: cancelling also fails the passes that wait for the run (queued) with run-failed, so none starts after it', async () => {
+    const ctx = setup();
+    const id = randomUUID();
+    ctx.prisma.aiEvalRun.updateMany.mockResolvedValue({ count: 1 });
+    ctx.prisma.aiEvalRun.findUnique.mockResolvedValue({ ...runRow(ADMIN, id), status: 'failed', error: 'cancelled', finishedAt: NOW });
+    await ctx.service.cancel(id);
+    expect(ctx.prisma.aiJudgePass.updateMany).toHaveBeenCalledExactlyOnceWith({
+      where: { evalRunId: id, status: 'queued' }, data: { status: 'failed', error: 'run-failed', finishedAt: NOW },
+    });
+  });
+
+  it('a run that cannot be cancelled leaves its passes alone', async () => {
+    const ctx = setup();
+    const id = randomUUID();
+    ctx.prisma.aiEvalRun.findUnique.mockResolvedValue({ ...runRow(ADMIN, id), status: 'finished' });
+    await problemOf(ctx.service.cancel(id));
+    expect(ctx.prisma.aiJudgePass.updateMany).not.toHaveBeenCalled();
   });
 
   it('a run that finished a moment earlier (the guarded UPDATE changes no row) → 409 run-not-active and nothing is overwritten', async () => {

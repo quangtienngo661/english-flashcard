@@ -13,6 +13,7 @@ import { AiAdapterRegistry } from '../adapters/ai-adapter.registry.js';
 import { AI_SYSTEM_ACTOR_ID } from '../ai.constants.js';
 import { AI_OPERATIONS, type AiOperation } from '../ai.types.js';
 import { promptViolations } from '../prompts/prompt-rules.js';
+import { JudgePassesService } from '../judge/judge-passes.service.js';
 import { AdminSpend } from '../runner/admin-spend.service.js';
 import { SelectionReader, toSelection, type ModelRow, type Selection } from '../runner/selection.js';
 import { EvalQueue } from './eval-queue.service.js';
@@ -29,6 +30,8 @@ export const createRunSchema = z.strictObject({
   config: z.enum(['live', 'draft']).optional(),
   /** A frozen version of the operation's set (design §5.3); without it the run takes the working set, a quick try that cannot be compared. */
   set_id: z.uuid().transform((value) => value.toLowerCase()).optional(),
+  /** "Chấm bằng judge" (D14): a judge pass waits for the run and starts when the run finishes (nhóm B M3). */
+  judge_id: z.uuid().transform((value) => value.toLowerCase()).optional(),
 });
 export type CreateRunBody = z.input<typeof createRunSchema>;
 
@@ -91,9 +94,10 @@ export class EvalRunsService {
     @Inject(RateLimiter) private readonly limiter: RateLimiter,
     @Inject(Clock) private readonly clock: Clock,
     @Inject(AdminSpend) private readonly spend: AdminSpend,
+    @Inject(JudgePassesService) private readonly judgePasses: JudgePassesService,
   ) {}
 
-  async create(actorId: string, body: CreateRunBody): Promise<{ run_id: string; status: 'queued' }> {
+  async create(actorId: string, body: CreateRunBody): Promise<{ run_id: string; status: 'queued'; judge_pass_id: string | null }> {
     const parsed = createRunSchema.safeParse(body);
     if (!parsed.success) throw invalid(parsed.error.issues.map((issue) => `${issue.path.join('.')}: ${issue.message}`));
     const { operation } = parsed.data;
@@ -118,10 +122,13 @@ export class EvalRunsService {
     const examples = await this.examplesOf(operation, parsed.data.set_id);
     // A model without both prices cannot be costed (B22) and the day's usd cap may be reached (B20): both refuse before anything is used or written.
     await this.spend.assertCanStart(selection.price, this.clock.now());
+    // The judge, if asked for, must be able to start too (inactive, other operation, no model, unpriced, cap, a pass already going): then nothing is made.
+    const judge = parsed.data.judge_id === undefined ? null : await this.judgePasses.startable(parsed.data.judge_id, operation, this.clock.now());
     // The run counts against `ai.test` only now: a request refused above (no model, bad draft, no example) costs nothing.
     await this.limiter.hit('ai.test', actorId);
     // The resolved selection and price are stored (plan choice 10, E1): a later change of the operation's choice or of the model's
     // price does not change this run. Each example is copied into an item row, so editing or deleting it later changes nothing either.
+    let judgePassId: string | null = null;
     const row = await this.prisma.$transaction(async (tx) => {
       const run = await tx.aiEvalRun.create({ data: {
         operation, provider: selection.provider, model: selection.modelId, effort: selection.effort, thinking: selection.thinking,
@@ -136,11 +143,23 @@ export class EvalRunsService {
         // A Json column takes no plain null: the key is left out and the column stays SQL NULL.
         ...(example.expected === null ? {} : { expected: example.expected as Prisma.InputJsonValue }),
       })) });
+      if (judge) {
+        // The waiting pass: queued with no snapshot (`total` NULL); it takes its snapshot when the run finishes (B19). The unique index (B16) is the last word.
+        const pass = await tx.aiJudgePass.create({ data: {
+          judgeRevisionId: judge.judgeRevisionId, kind: 'eval_run', operation, evalRunId: run.id, status: 'queued', total: null, startedBy: actorId,
+        } });
+        judgePassId = pass.id;
+      }
       return run;
+    }).catch((error: unknown) => {
+      if (error !== null && typeof error === 'object' && 'code' in error && error.code === 'P2002') {
+        throw problem(409, 'judge-pass-running', 'A judge pass of this revision is already queued or running');
+      }
+      throw error;
     });
     // Redis down: the row stays queued and the hourly job enqueues it again (B6E91); `enqueue` logs the failure.
     await this.queue.enqueue(row.id);
-    return { run_id: row.id, status: 'queued' };
+    return { run_id: row.id, status: 'queued', judge_pass_id: judgePassId };
   }
 
   async list(op: AiOperation, pageSize: number, pageToken: string | undefined, setId?: string) {
@@ -291,6 +310,8 @@ export class EvalRunsService {
       data: { status: 'failed', error: 'cancelled', finishedAt: this.clock.now() },
     });
     if (count === 0) throw await this.refusal(id, 'run-not-active', 'Run is not active');
+    // The passes that wait for this run will never get their outputs (B19). If the process stops here, the hourly job finds the run failed and does the same.
+    await this.prisma.aiJudgePass.updateMany({ where: { evalRunId: id, status: 'queued' }, data: { status: 'failed', error: 'run-failed', finishedAt: this.clock.now() } });
     return this.get(id);
   }
 

@@ -14,7 +14,7 @@ import { expectedResultFor } from './expected.js';
 class EvalRunError extends Error {}
 
 /** Only names and codes are stored: a driver message may echo the data (design §10, ≤ 240 characters). */
-function oneLine(error: unknown): string {
+export function oneLine(error: unknown): string {
   if (error instanceof EvalRunError) return error.message.slice(0, 240);
   const name = error instanceof Error ? error.name : 'Error';
   const code = error !== null && typeof error === 'object' && 'code' in error && typeof error.code === 'string' ? ` ${error.code}` : '';
@@ -44,7 +44,7 @@ const SKIPPED: ItemResult = {
 };
 
 /** Runs `items` through `task` with at most `limit` at once. */
-async function inPool<T>(items: T[], limit: number, task: (item: T) => Promise<void>): Promise<void> {
+export async function inPool<T>(items: T[], limit: number, task: (item: T) => Promise<void>): Promise<void> {
   const queue = [...items];
   await Promise.all(Array.from({ length: Math.min(limit, queue.length) }, async () => {
     for (let item = queue.shift(); item !== undefined; item = queue.shift()) await task(item);

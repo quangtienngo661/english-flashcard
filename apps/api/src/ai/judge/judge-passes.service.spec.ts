@@ -92,7 +92,7 @@ function setup(init: { model?: Dict | null; spend?: { spent: number; cap: number
   const queue = { enqueueJudgePass: vi.fn(async (id: string) => { state.enqueued.push(id); return true; }) };
   const identity = { emailsOf: vi.fn(async (ids: string[]) => new Map(ids.filter((id) => id === ADMIN).map((id) => [id, 'admin@x.test']))) };
   const service = new JudgePassesService(
-    new JudgePassesRepository(prisma as never), new JudgeScoresReader(prisma as never), spend, registry, queue as never, identity as never, new FakeClock(NOW),
+    new JudgePassesRepository(prisma as never, new JudgeScoresReader(prisma as never)), new JudgeScoresReader(prisma as never), spend, registry, queue as never, identity as never, new FakeClock(NOW),
   );
   return { service, prisma, tx, state, queue, spendState };
 }

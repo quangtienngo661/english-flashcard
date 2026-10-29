@@ -1,9 +1,11 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { PRISMA_CLIENT } from '../../common/db/prisma.module.js';
-import type { Prisma, PrismaClient } from '../../generated/prisma/client.js';
+import { Prisma, type PrismaClient } from '../../generated/prisma/client.js';
 import type { AiOperation } from '../ai.types.js';
+import type { PromptExample } from '../prompts/prompt-rules.js';
 import type { ModelRow } from '../runner/to-selection.js';
-import type { JudgePassKind, JudgePassStatus, SubjectKind } from './judge.types.js';
+import { JudgeScoresReader } from './judge-scores.reader.js';
+import type { JudgeCriterion, JudgePassKind, JudgePassStatus, ScoreRow, SubjectKind } from './judge.types.js';
 
 /** A pass to insert. `status` is `queued`, or `finished` when there is nothing to judge (then `total` is 0). */
 export type NewPass = {
@@ -34,6 +36,21 @@ export type JudgeAndRevision = {
   revision: { id: string; revision: number; effort: string | null; thinking: string | null; maxOutputTokens: number | null; model: ModelRow | null };
 };
 
+/** A pass the worker has taken: what the job needs besides its items and its revision. */
+export type PassToRun = { id: string; judgeRevisionId: string; operation: AiOperation; startedBy: string };
+
+/** The revision a pass runs: its criteria and text, its settings and its model (null only if the model is gone, which the foreign key forbids). */
+export type RevisionToRun = {
+  id: string; revision: number; criteria: JudgeCriterion[]; instructions: string; examples: PromptExample[]; effort: string | null;
+  thinking: string | null; maxOutputTokens: number | null; model: ModelRow | null;
+};
+
+/** One snapshot item still to judge. */
+export type PassItemRow = {
+  id: string; position: number; subjectKind: SubjectKind; subjectId: string; input: Record<string, unknown>; output: Record<string, unknown>;
+  context: { session_words: string[] } | null;
+};
+
 export type RunToJudge = { id: string; operation: string; status: string; hiddenAt: Date | null };
 export type RunItemToJudge = { id: string; input: unknown; output: unknown };
 
@@ -47,10 +64,13 @@ export type PassRow = {
 
 const ACTIVE: JudgePassStatus[] = ['queued', 'running'];
 
-/** What passes and the things they read are stored as (`ai_judge_passes`, `ai_judge_pass_items`); the job's own statements join this class in M3-T9. */
+/** What passes and the things they read are stored as (`ai_judge_passes`, `ai_judge_pass_items`, `ai_judge_scores`), the job's statements included. */
 @Injectable()
 export class JudgePassesRepository {
-  constructor(@Inject(PRISMA_CLIENT) private readonly prisma: PrismaClient) {}
+  constructor(
+    @Inject(PRISMA_CLIENT) private readonly prisma: PrismaClient,
+    @Inject(JudgeScoresReader) private readonly scores: JudgeScoresReader,
+  ) {}
 
   /** The pass and its items in one transaction; the partial unique index of B16 reaches the caller as P2002. Returns the pass id. */
   async create(pass: NewPass, items: NewPassItem[], now: Date): Promise<string> {
@@ -122,5 +142,127 @@ export class JudgePassesRepository {
     const rows = await this.prisma.aiJudgeScore.groupBy({ by: ['passId', 'subjectId'], where: { passId: { in: passIds }, verdict: null } });
     for (const { passId } of rows) counts.set(passId, (counts.get(passId) ?? 0) + 1);
     return counts;
+  }
+
+  /**
+   * The worker takes a queued (or already running) pass that has its snapshot: it becomes `running` with a heartbeat. Null for any other pass,
+   * so a second delivery of the job, a cancelled pass or one still waiting for its run does nothing.
+   */
+  async start(passId: string, now: Date): Promise<PassToRun | null> {
+    const [row] = await this.prisma.$queryRaw<Array<{ id: string; judge_revision_id: string; operation: AiOperation; started_by: string }>>`
+      UPDATE ai_judge_passes SET status = 'running', started_at = COALESCE(started_at, ${now}), heartbeat_at = ${now}
+      WHERE id = ${passId}::uuid AND status IN ('queued', 'running') AND total IS NOT NULL
+      RETURNING id, judge_revision_id, operation, started_by`;
+    return row ? { id: row.id, judgeRevisionId: row.judge_revision_id, operation: row.operation, startedBy: row.started_by } : null;
+  }
+
+  async revisionOf(revisionId: string): Promise<RevisionToRun | null> {
+    const row = await this.prisma.aiJudgeRevision.findUnique({ where: { id: revisionId }, include: { model: true } });
+    if (!row) return null;
+    return {
+      id: row.id, revision: row.revision, criteria: row.criteria as JudgeCriterion[], instructions: row.instructions, examples: row.examples as PromptExample[],
+      effort: row.effort, thinking: row.thinking, maxOutputTokens: row.maxOutputTokens, model: row.model as ModelRow | null,
+    };
+  }
+
+  /** The snapshot items that have no score yet, in position order (a resumed pass skips the finished ones). */
+  async pendingItems(passId: string): Promise<PassItemRow[]> {
+    const rows = await this.prisma.aiJudgePassItem.findMany({ where: { passId, done: false }, orderBy: [{ position: 'asc' }, { id: 'asc' }] });
+    return rows.map((row) => ({
+      id: row.id, position: row.position, subjectKind: row.subjectKind as SubjectKind, subjectId: row.subjectId, input: row.input as Record<string, unknown>,
+      output: row.output as Record<string, unknown>, context: row.context as { session_words: string[] } | null,
+    }));
+  }
+
+  /** True only while the pass is `running`; the job asks before each paid call, so a cancelled pass costs no more. */
+  async isRunning(passId: string): Promise<boolean> {
+    const rows = await this.prisma.$queryRaw<Array<{ one: number }>>`SELECT 1 AS one FROM ai_judge_passes WHERE id = ${passId}::uuid AND status = 'running'`;
+    return rows.length > 0;
+  }
+
+  /**
+   * One statement, so an item is never half written: the scores of its criteria, the item `done`, the pass's `judged + 1`, its cost and heartbeat,
+   * all only while the pass is `running`. A subject is scored once per revision and criterion: an existing score is overwritten only when it has no
+   * verdict ("không chấm được"), so asking again pays for what is missing and never changes a verdict (B15).
+   */
+  async writeScores(
+    pass: { id: string; judgeRevisionId: string },
+    item: { id: string; subjectKind: SubjectKind; subjectId: string },
+    rows: ScoreRow[],
+    callId: string | null,
+    costUsd: string | null,
+    now: Date,
+  ): Promise<void> {
+    const values = Prisma.join(rows.map((row) => Prisma.sql`(${row.criterion}::text, ${row.verdict}::text, ${row.problem}::text, ${row.reason}::text)`));
+    await this.prisma.$executeRaw(Prisma.sql`
+      WITH live AS (
+        SELECT id FROM ai_judge_passes WHERE id = ${pass.id}::uuid AND status = 'running'
+      ), scored AS (
+        INSERT INTO ai_judge_scores (judge_revision_id, subject_kind, subject_id, criterion, verdict, problem, reason, pass_id, call_id, created_at)
+        SELECT ${pass.judgeRevisionId}::uuid, ${item.subjectKind}, ${item.subjectId}::uuid, v.criterion, v.verdict, v.problem, v.reason,
+          live.id, ${callId}::uuid, ${now}
+        FROM live, (VALUES ${values}) AS v(criterion, verdict, problem, reason)
+        ON CONFLICT (judge_revision_id, subject_kind, subject_id, criterion) DO UPDATE
+          SET verdict = EXCLUDED.verdict, problem = EXCLUDED.problem, reason = EXCLUDED.reason, pass_id = EXCLUDED.pass_id,
+            call_id = EXCLUDED.call_id, created_at = EXCLUDED.created_at
+          WHERE ai_judge_scores.verdict IS NULL
+        RETURNING 1
+      ), marked AS (
+        UPDATE ai_judge_pass_items SET done = true WHERE id = ${item.id}::uuid AND pass_id IN (SELECT id FROM live) RETURNING 1
+      )
+      UPDATE ai_judge_passes SET judged = judged + 1, cost_usd = COALESCE(cost_usd, 0) + COALESCE(${costUsd}::numeric, 0), heartbeat_at = ${now}
+      WHERE id IN (SELECT id FROM live)`);
+  }
+
+  async finish(passId: string, now: Date): Promise<void> {
+    await this.prisma.$executeRaw`
+      UPDATE ai_judge_passes SET status = 'finished', finished_at = ${now}, heartbeat_at = ${now} WHERE id = ${passId}::uuid AND status = 'running'`;
+  }
+
+  /** The error is a code or a name, never a message that could echo content (as `ai_eval_runs.error`). */
+  async fail(passId: string, error: string, now: Date): Promise<void> {
+    await this.prisma.$executeRaw`
+      UPDATE ai_judge_passes SET status = 'failed', error = ${error}, finished_at = ${now}
+      WHERE id = ${passId}::uuid AND status IN ('queued', 'running')`;
+  }
+
+  /**
+   * A run has ended (or the hourly job found it ended): its waiting passes (made with the run, `total` NULL) take their snapshot now. Run
+   * `finished` → each waiting pass gets the run's judgeable outputs its revision has not judged, or ends at once when there are none; the ids of the
+   * run's passes that now wait for the worker come back. Run `failed` → its queued passes fail with `run-failed`, nothing comes back. Any other
+   * state, or a run that is gone → nothing. Two callers at once are safe: the snapshot is claimed by the `total IS NULL` guard in a transaction.
+   */
+  async release(runId: string, now: Date): Promise<string[]> {
+    const run = await this.prisma.aiEvalRun.findUnique({ where: { id: runId }, select: { status: true } });
+    if (!run) return [];
+    if (run.status === 'failed') {
+      await this.prisma.aiJudgePass.updateMany({ where: { evalRunId: runId, status: 'queued' }, data: { status: 'failed', error: 'run-failed', finishedAt: now } });
+      return [];
+    }
+    if (run.status !== 'finished') return [];
+    const waiting = await this.prisma.aiJudgePass.findMany({ where: { evalRunId: runId, status: 'queued', total: null }, select: { id: true, judgeRevisionId: true } });
+    if (waiting.length > 0) {
+      const items = (await this.runItems(runId)).filter((item) => item.input !== null && item.output !== null);
+      for (const pass of waiting) {
+        const judged = await this.scores.judgedSubjects(pass.judgeRevisionId, items.map((item) => item.id));
+        const subjects = items.filter((item) => !judged.has(item.id));
+        await this.snapshot(pass.id, subjects, now);
+      }
+    }
+    const queued = await this.prisma.aiJudgePass.findMany({ where: { evalRunId: runId, status: 'queued', total: { gt: 0 } }, select: { id: true }, orderBy: { createdAt: 'asc' } });
+    return queued.map((pass) => pass.id);
+  }
+
+  private async snapshot(passId: string, subjects: RunItemToJudge[], now: Date): Promise<void> {
+    await this.prisma.$transaction(async (tx) => {
+      const claimed = await tx.aiJudgePass.updateMany({
+        where: { id: passId, status: 'queued', total: null },
+        data: subjects.length === 0 ? { total: 0, status: 'finished', startedAt: now, finishedAt: now } : { total: subjects.length },
+      });
+      if (claimed.count === 0 || subjects.length === 0) return;
+      await tx.aiJudgePassItem.createMany({ data: subjects.map((item, position) => ({
+        passId, position, subjectKind: 'eval_item', subjectId: item.id, input: item.input as Prisma.InputJsonObject, output: item.output as Prisma.InputJsonObject,
+      })) });
+    });
   }
 }
