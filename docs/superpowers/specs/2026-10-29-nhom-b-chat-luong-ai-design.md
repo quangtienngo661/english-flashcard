@@ -56,7 +56,7 @@ viện biểu đồ (D28); bỏ câu làm sẵn bằng bản cũ (D34).
 |---|---|
 | D1 | Design phần không phụ thuộc B1 + judge "chỉ một đáp án" cho `generate_cloze` |
 | D3 | Model sinh câu Anthropic hoặc OpenAI; judge **chỉ** Anthropic; judge không thấy tên model, nhà cung cấp, bản cấu hình, mã lần chạy; cảnh báo khi cùng Anthropic; hiệu chỉnh đầu so hai judge Anthropic |
-| D5 | Một design, nhiều plan, nhiều phiên có phiên điều phối (§3; mức song song bị giới hạn bởi file chung, E12) |
+| D5 | Câu 5: một design, nhiều plan, nhiều phiên; **đổi 29/10/2026 (chủ dự án): một plan, làm tuần tự** (§3, E12) |
 | D7, D8 | Ô mong đợi bắt buộc cho `generate_cloze`, `generate_meaning_question`, `lookup_word`, `check_private_word`; file nhập hàng loạt có ô mong đợi và dev / held-out |
 | D9, D10 | "Chốt phiên bản" bằng tay; held-out 30%; xem đầu vào hoặc đầu ra của ví dụ held-out (sau hộp hỏi) thì nó sang dev |
 | D11 | Eval chạy luật Practice ở lần đầu, không viết lại `#2` |
@@ -85,12 +85,14 @@ viện biểu đồ (D28); bỏ câu làm sẵn bằng bản cũ (D34).
 ## 3. Chia plan và phiên (D5)
 
 Review (R9) cho thấy K2 và K3 cùng sửa phần lõi của `ai` (`runner.service.ts`, `eval-runs.service.ts`, `eval-job.ts`, `selection.ts`, `readiness.service.ts`,
-`reports.service.ts`, `ai-api.ts`, màn eval), nên không chạy song song được mà không đụng nhau. Chuỗi chính chạy nối tiếp; D7/D30 chạy song song ở một phiên riêng (E12).
+`reports.service.ts`, `ai-api.ts`, màn eval), nên không chạy song song được mà không đụng nhau. **Chủ dự án chốt (29/10/2026): gộp thành một plan, làm tuần tự** theo
+milestone (E12). Plan: [`../plans/2026-10-29-nhom-b.md`](../plans/2026-10-29-nhom-b.md).
 
 ```
-Phiên A (chuỗi chính):  P1 Golden set ──> P3 Vòng đời ──> P2 Judge ──> P4 Câu thật ──> P5 Dashboard
-Phiên B (song song):    P6 D7/D30 ───────────────────────────────────────────────────────┘ (một khối riêng trên trang dashboard)
+M1 Golden set (P1) ──> M2 Vòng đời (P3) ──> M3 Judge (P2) ──> M4 Câu thật (P4) ──> M5 Dashboard (P5) ──> M6 D7/D30 (P6)
 ```
+
+Tên P1–P6 dưới đây giữ để dẫn chiếu; thứ tự làm là M1–M6.
 
 | Plan | Khối | Sau | File chính |
 |---|---|---|---|
@@ -99,12 +101,11 @@ Phiên B (song song):    P6 D7/D30 ───────────────
 | P2 | K2 | P3 | `src/ai/judge/**` (mới), `src/ai/operations/judge.ts` (mới), `src/ai/runner/{readiness,call-ledger,runner.service}.ts`, `src/ai/eval/**` (lượt chấm), `src/ai/configs/publish-check*` (thêm so tiêu chí judge), `src/ai/models/models.service.ts` (giá `fake` khi bật fake); admin `features/ai/judges/**` (mới), nhãn trong `EvalRunPanel` |
 | P4 | K4 | P2 | `src/practice/quality/**` (mới), `src/practice/reports/**` (nút đưa vào bộ ví dụ), `src/identity/**` (`staffUserIds`), `src/ai/judge/**` (lượt chấm câu thật); admin `features/ai/real-questions/**` (mới), `features/reports/ReportDetail*` |
 | P5 | K5 | P4 | `src/ai/reports/**`, `src/practice/reports/ai-quality*`, `src/entitlements/**` (`days_at_cap`), `src/settings/**` (đọc lịch sử một setting); admin `features/dashboard/**` (trừ file `retention*`) |
-| P6 | K6 | — | `src/learning/**` (đếm lần học), `src/identity/**` (`registrations`), (theo Q-R3 có thể thêm `src/practice/**` cung cấp số câu đã trả lời qua port); admin `features/dashboard/retention*` (mới) |
+| P6 | K6 | P5 | `src/learning/**` (đếm lần học), `src/identity/**` (`registrations`), (theo Q-R3 có thể thêm `src/practice/**` cung cấp số câu đã trả lời qua port); admin `features/dashboard/retention*` (mới) |
 
-- Mỗi plan một nhánh từ `origin/dev`, có thể nhiều PR; PR vào `dev`. Phiên điều phối giữ thứ tự merge theo sơ đồ.
-- File nhiều plan cùng thêm dòng: `src/settings/settings.definitions.ts` và trang Cài đặt (P1, P2, P4, P6), `src/ai/ai.module.ts`, `apps/admin/src/app/nav.ts`, `messages`
-  của admin. Mỗi plan chỉ thêm dòng của mình; phiên B (P6) rebase lên `dev` mới trước khi merge.
-- Migration Prisma: chuỗi chính nối tiếp nên không trùng; P6 có migration thì phiên B sinh tên migration **sau khi** rebase, không đổi tên migration đã merge.
+- Mỗi milestone một nhánh từ `origin/dev` sau khi milestone trước đã merge, có thể nhiều PR; PR vào `dev`.
+- Làm tuần tự nên migration Prisma không trùng thứ tự, và các file nhiều milestone cùng thêm dòng (`src/settings/settings.definitions.ts`, trang Cài đặt, `ai.module.ts`,
+  `apps/admin/src/app/nav.ts`, `messages` của admin) không xung đột.
 
 ## 4. Mô hình dữ liệu
 
@@ -419,7 +420,7 @@ Theo `~/.claude/rules/testing-boundaries.md`: lệnh mặc định chỉ unit v�
 ## 13. Xong khi
 
 - CI xanh mỗi PR, gồm job `admin-e2e-real` (P3 sửa `chooseClozeModel`).
-- Mỗi plan có một đoạn smoke của mình, chạy khi PR cuối của plan merge; cuối đợt `pnpm smoke:nhom-b` trên DB mới với model `fake` (có giá, E15), theo thứ tự: chọn model lần đầu
+- Mỗi milestone có một đoạn smoke của mình, chạy khi PR cuối của milestone merge; cuối đợt `pnpm smoke:nhom-b` trên DB mới với model `fake` (có giá, E15), theo thứ tự: chọn model lần đầu
   (theo Q-R1) → tạo ví dụ có ô mong đợi → chốt phiên bản → eval bản đang chạy và nháp, có judge → gắn nhãn → so → publish có cảnh báo (kèm hai publish song song) → rollback →
   chạm trần USD → chấm câu thật của một tài khoản `editor` → đưa vào bộ ví dụ → đọc dashboard và D7/D30. Output lưu `docs/deliveries/nhom-b-smoke-output.txt`.
 - Các smoke cũ vẫn qua sau khi sửa: `smoke:buoc-6`, `smoke:buoc-7`, và `learner:setup` chạy được.
@@ -439,7 +440,7 @@ Theo `~/.claude/rules/testing-boundaries.md`: lệnh mặc định chỉ unit v�
 - **Mục nhiều chữ** (`bus stop`): chưa kiểm câu điền từ có một hay hai chỗ trống (T3).
 - **D7/D30:** tài khoản đã xóa mất `learning_log`; xóa từ riêng xóa luôn `learning_log` của từ đó (`learning/quick-add/quick-add.service.ts:94`), nên số của quá khứ có thể đổi;
   phần "lần học" chờ Q-R3.
-- **Chuỗi plan dài:** chỉ P6 chạy song song (§3); P1 → P3 → P2 → P4 → P5 nối tiếp.
+- **Làm tuần tự:** sáu milestone nối tiếp (§3), nên thời gian tới lúc xong dài hơn cách chia nhiều phiên song song.
 - **Ước tính chi phí chấm câu thật** dựa trên các lượt trước; lượt đầu không ước tính được.
 - `ASSUMPTION` từ review: cách `prisma migrate deploy` xử lý migration đến trễ thứ tự (tránh bằng luật đặt tên ở §3).
 - Comment cũ trong code (F12) sửa khi chạm tới file đó.
@@ -459,7 +460,7 @@ Theo `~/.claude/rules/testing-boundaries.md`: lệnh mặc định chỉ unit v�
 | E9 | D7/D30 tính lúc đọc | Bảng tổng hợp theo ngày | Đủ nhanh với số người học hiện tại (`ASSUMPTION`) |
 | E10 | Luật chia held-out giữ tỉ lệ của bộ đang soạn | Tung ngẫu nhiên từng ví dụ | Bộ nhỏ không bị kẹt không có held-out (R21) |
 | E11 | Ví dụ có sẵn khi migrate vào `dev`, `expected` NULL; kết quả cũ chuyển sang bảng | Chia lại 30% | Các ví dụ đó đã bị đọc (D10) |
-| E12 | Chuỗi P1 → P3 → P2 → P4 → P5 nối tiếp, P6 song song ở phiên riêng | P2 và P3 song song; P6 chạy sau cùng (D32) | P2, P3 sửa chung lõi `ai` (R9); P6 không đụng file chung nên không cần chờ |
+| E12 | Một plan, làm tuần tự M1–M6 (P1 → P3 → P2 → P4 → P5 → P6); **chủ dự án chốt 29/10/2026** | Nhiều plan, P2 và P3 song song (D5) | P2, P3 sửa chung lõi `ai` (R9); P6 vẫn sau cùng như D32 |
 | E13 | Judge nhận model `fake` khi `AI_FAKE_ENABLED=true` | Chỉ `anthropic` | Smoke chạy không cần key |
 | E14 | Chặn cả `test` với model chưa nhập giá | Chỉ chặn eval (đúng câu chữ D18) | Trần USD phải đếm được mọi việc của admin |
 | E15 | Model `fake` được nhập giá khi `AI_FAKE_ENABLED=true` | Giá `fake` luôn 0 | Smoke chạm được trần USD |

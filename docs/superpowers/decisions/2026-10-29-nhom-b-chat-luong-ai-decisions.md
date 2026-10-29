@@ -430,7 +430,7 @@ Design §15, E1–E19 (Claude đề xuất lúc viết design và lúc sửa the
 | E9 | D7/D30 tính lúc đọc |
 | E10 | Chia held-out giữ tỉ lệ |
 | E11 | Ví dụ có sẵn vào `dev` khi migrate |
-| E12 | Chuỗi P1 → P3 → P2 → P4 → P5, P6 song song (đổi thứ tự "P6 chạy sau cùng" của D32 và mức song song của D5) |
+| E12 | Một plan, làm tuần tự M1–M6 (P1 → P3 → P2 → P4 → P5 → P6). Chủ dự án chốt trong chat 29/10/2026 ("gộp lại thành một plan đi, mình sẽ cho làm tuần tự"), thay D5 (nhiều plan, nhiều phiên song song); P6 vẫn sau cùng như D32 |
 | E13 | Judge nhận `fake` khi bật fake |
 | E14 | Chặn cả `test` với model chưa nhập giá (rộng hơn câu chữ D18) |
 | E15 | `fake` được nhập giá khi bật fake |
