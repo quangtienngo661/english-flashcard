@@ -173,7 +173,7 @@ khác (đã chốt 26/10).
 | Phương án | Trade-off |
 |---|---|
 | ✅ Chỉ "chỉ một đáp án" (cho `generate_cloze`; dùng cho `generate_meaning_question`, `generate_sentence_mcq` khi B1 của chúng thấy cùng lỗi); judge khác thêm trên UI khi B1 thấy lỗi thật | B1: lỗi này 10–12/14, CEFR 1/28, lộ đáp án và sai nghĩa 0/28; tiêu chí chưa có judge chỉ kiểm bằng mắt |
-| Giữ nhiều ứng viên ngay | Tốn tiền mỗi lần eval cho tiêu chí chưa thấy lỗi |
+| Đánh dấu giữ các ứng viên khác trong danh sách | Câu 12 đưa danh sách để đánh dấu giữ / bỏ / thêm; không ứng viên nào khác được đánh dấu giữ |
 
 ## D13 — Một lời gọi judge chấm mấy tiêu chí (câu 13)
 
@@ -271,7 +271,7 @@ Trade-off: `editor` không giúp được việc gắn nhãn.
 
 | Ý | Phương án | Trade-off |
 |---|---|---|
-| 24.1 | ✅ (a) chỉ về bản publish ngay trước · (b) chọn bản bất kỳ từng publish | (a) đơn giản; muốn về xa hơn thì rollback nhiều lần hoặc publish lại |
+| 24.1 | ✅ (a) chỉ về bản publish ngay trước · (b) chọn bản bất kỳ từng publish | (a) đơn giản; muốn về xa hơn thì tạo nháp từ bản cũ rồi publish qua cổng (design §6.4; sửa theo review R13, R22) |
 | 24.2 | ✅ (a) không cần eval · (b) cảnh báo nếu chưa có eval với model hiện tại | Chủ dự án không trả lời riêng ý này; Claude đề xuất lúc chốt: (a), vì rollback quay cả cụm gồm model (D22) về bản đã qua cổng publish |
 
 ## D25 — Câu tạo sẵn bằng bản cũ (câu 25)
@@ -377,7 +377,11 @@ Bối cảnh: bộ lọc "chỉ tài khoản test" của D26 cần một khái n
 
 ## D36 — D7/D30 (N3)
 
-Bối cảnh: không có bảng hoạt động theo ngày; `learning_log` ghi mỗi lần ôn, luyện, thêm, bỏ từ và giữ mãi; `users.last_seen_at` chỉ giữ lần cuối.
+Bối cảnh (như đã nêu lúc hỏi): không có bảng hoạt động theo ngày; `learning_log` ghi mỗi lần ôn, luyện, thêm, bỏ từ và giữ mãi; `users.last_seen_at` chỉ giữ lần cuối.
+
+**Sửa bối cảnh (review R3, R22, 29/10/2026):** câu "`learning_log` ghi mỗi lần … luyện" **sai**. Trả lời câu luyện tập không ghi `learning_log`; Practice chỉ ghi khi người học
+bấm "Cần ôn tập" / "Đã biết" (`practice/answers/answers.service.ts:154`, `learning/practice/practice-review.service.ts:74`). Vì chủ dự án chốt "tính theo lần học" trên bối
+cảnh sai, phần "lần học gồm những gì" được hỏi lại (Q-R3 ở design §0); phần còn lại của D36 giữ.
 
 | Phương án | Trade-off |
 |---|---|
@@ -410,16 +414,27 @@ Nguồn: [`../reviews/2026-10-26-dot-cai-thien-questions.md`](../reviews/2026-10
 
 ## Đề xuất kỹ thuật duyệt cùng design
 
-Design §15, E1–E9 (Claude đề xuất lúc viết design 29/10/2026; chờ chủ dự án đọc lại design):
+Design §15, E1–E19 (Claude đề xuất lúc viết design và lúc sửa theo review độc lập, 29/10/2026; chờ chủ dự án đọc lại design). Bảng đầy đủ (chọn, bỏ, vì sao) nằm ở design
+§15; tóm tắt:
 
-| # | Chọn | Bỏ | Vì sao |
-|---|---|---|---|
-| E1 | Ảnh chụp ví dụ ở phiên bản chốt và ở từng kết quả chạy; kết quả chạy thành bảng | Giữ `items` Json, đọc đầu vào lúc chạy | So lần chạy và nối điểm, nhãn cần chữ cố định |
-| E2 | Port `EvalRuleCheck` do Practice cung cấp, tra kho theo `(word, part_of_speech)` | `sense_id` bắt buộc trong ví dụ; viết lại luật trong `ai` | Giữ R17, một nơi giữ luật |
-| E3 | Thao tác gateway `judge` chung + bảng judge do admin tạo | Mỗi judge một thao tác trong code | Thêm judge không cần deploy |
-| E4 | Judge lưu là bản mới, không publish | Judge cùng vòng đời cấu hình | Judge không phục vụ người học |
-| E5 | `ai_configs` + con trỏ `ai_live_configs`; số cấu hình nối số revision prompt | Thêm trạng thái vào bảng cũ | Một cụm một số; sẵn cho canary |
-| E6 | Bỏ hai `PUT` cũ | Cho chúng ghi vào nháp | Tránh API đổi nghĩa ngầm |
-| E7 | Kiểm trần USD trước mỗi lời gọi, chạm thì dừng | Ước tính, chặn trước khi bắt đầu | Giữ kết quả đã có |
-| E8 | Chấm câu thật đặt ở Practice | Đặt ở `ai` | Dữ liệu thuộc Practice / Identity |
-| E9 | D7/D30 tính lúc đọc từ `learning_log` | Bảng tổng hợp theo ngày | Đủ nhanh lúc này (`ASSUMPTION`) |
+| # | Chọn |
+|---|---|
+| E1 | Ảnh chụp ví dụ ở phiên bản chốt, kết quả chạy, đối tượng chấm; kết quả chạy thành bảng |
+| E2 | Port luật do Practice đăng ký vào `AiService` lúc `onModuleInit` (`check`, `formsOf`, `matchesExpected`) |
+| E3 | Thao tác gateway `judge`, đầu ra ba mảng chuỗi; judge do admin tạo |
+| E4 | Judge lưu là bản mới, không publish; có nhân bản |
+| E5 | `ai_configs` có `version` + con trỏ; số cấu hình nối số prompt; số liệu theo cặp (số cấu hình, model) |
+| E6 | Bỏ hai `PUT`; hai `GET` đọc cấu hình đang chạy |
+| E7 | Trần USD mềm, kiểm trước mỗi lần gửi |
+| E8 | Practice chọn câu thật, `ai` chạy lượt chấm |
+| E9 | D7/D30 tính lúc đọc |
+| E10 | Chia held-out giữ tỉ lệ |
+| E11 | Ví dụ có sẵn vào `dev` khi migrate |
+| E12 | Chuỗi P1 → P3 → P2 → P4 → P5, P6 song song (đổi thứ tự "P6 chạy sau cùng" của D32 và mức song song của D5) |
+| E13 | Judge nhận `fake` khi bật fake |
+| E14 | Chặn cả `test` với model chưa nhập giá (rộng hơn câu chữ D18) |
+| E15 | `fake` được nhập giá khi bật fake |
+| E16 | Script và e2e đổi model qua đường thật |
+| E17 | Dựng lại đầu vào sau 7 ngày từ nội dung nghĩa |
+| E18 | D7/D30 loại staff và chưa xác nhận email; quyền `ai.view` |
+| E19 | Khóa song song kiểm trong smoke |

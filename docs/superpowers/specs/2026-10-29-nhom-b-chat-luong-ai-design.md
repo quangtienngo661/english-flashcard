@@ -1,17 +1,30 @@
 # Đợt cải thiện, nhóm B (chất lượng AI) — Design (29/10/2026)
 
-> **Trạng thái 29/10/2026:** chủ dự án chốt mọi câu trong chat ("ok, các câu hỏi chốt hết", rồi N1–N3); bản viết này **chờ chủ dự án đọc lại**. Chưa có code, chưa
-> có plan.
+> **Trạng thái 29/10/2026:** chủ dự án chốt mọi câu trong chat ("ok, các câu hỏi chốt hết", rồi N1–N3). Bản này đã sửa theo review độc lập
+> [`../reviews/2026-10-29-nhom-b-design-review.md`](../reviews/2026-10-29-nhom-b-design-review.md) (R1–R22; cách xử lý từng mục ở cuối file review). **Còn hai câu chờ chủ dự
+> án (§0)**, sau đó chờ chủ dự án đọc lại. Chưa có code, chưa có plan.
 > **Nguồn quyết định:** câu hỏi và trả lời [`../reviews/2026-10-29-nhom-b-questions.md`](../reviews/2026-10-29-nhom-b-questions.md) (mục "Kết quả chốt"); decision
 > record [`../decisions/2026-10-29-nhom-b-chat-luong-ai-decisions.md`](../decisions/2026-10-29-nhom-b-chat-luong-ai-decisions.md) (D1–D36 và các câu nhóm B
 > ngày 26/10); danh sách gốc [`../../preparation/IMPROVEMENT_PLAN_2026-10-28.md`](../../preparation/IMPROVEMENT_PLAN_2026-10-28.md) §4 (B1–B11).
-> **Code đọc trên:** `fix/web-next-16-4` @ `3016b1b` (`apps/api`, `apps/admin` giống `dev` sau PR #182); mọi `path:line` và mã F1–F12 ở
-> [`../../preparation/NHOM_B_CODE_FACTS_2026-10-29.md`](../../preparation/NHOM_B_CODE_FACTS_2026-10-29.md).
+> **Code đọc trên:** `origin/dev` @ `9b5288f`; mọi `path:line` và mã F1–F12 ở
+> [`../../preparation/NHOM_B_CODE_FACTS_2026-10-29.md`](../../preparation/NHOM_B_CODE_FACTS_2026-10-29.md); các `path:line` thêm từ review ghi ở mục R tương ứng.
 > **Số đo B1:** [`../../preparation/b1-eval/generate_cloze-2026-10-29-error-analysis.md`](../../preparation/b1-eval/generate_cloze-2026-10-29-error-analysis.md)
 > (14 ví dụ × 2 model, mẫu nhỏ, sẽ chạy lại).
 
 Ví dụ xuyên suốt: **Lan**, người học tiếng Việt, đang luyện `rhythm` (B2, âm nhạc). Câu AI "The drummer kept a steady ___" có `beat` cũng điền vừa: lỗi chính
 B1 tìm ra (E1). Bạn (chủ dự án) là `admin` duy nhất.
+
+## 0. Hai câu chờ chủ dự án (từ review)
+
+Theo luật repo, chủ dự án trả lời trước, Claude đề xuất sau. Design viết sao cho hai câu này chỉ đổi đúng chỗ được trỏ tới.
+
+- **Q-R1 — Cổng publish khi bản đang chạy chưa có model (R1, §6.3 bước 2).** Trên DB mới (production lúc launch, smoke), cả 6 thao tác chưa có model. Lần đầu chọn model
+  cho `generate_cloze` là publish một nháp có model, mà D21.5 bắt "bản đang chạy chưa eval thì eval nó trước"; bản không có model thì không eval được, và hai `PUT` cũ đã bỏ
+  (§6.6). Cổng xử lý trường hợp này thế nào?
+- **Q-R3 — "Lần học" của D7/D30 gồm những gì (R3, §10).** Bối cảnh lúc hỏi N3 có một chỗ sai: trả lời câu luyện tập **không** ghi `learning_log`; Practice chỉ ghi khi người
+  học bấm "Cần ôn tập" / "Đã biết" (`practice/answers/answers.service.ts:154`, `learning/practice/practice-review.service.ts:74`). Người chỉ luyện tập sẽ bị tính "đã ngừng".
+  Dữ liệu có: `learning_log` (ôn thẻ, thêm / bỏ từ, hai nút trên; giữ mãi); câu luyện tập đã trả lời (`practice_session_items.answered_at`, giữ 6 tháng); hoặc một bảng
+  mới ghi mỗi ngày người học có học (chỉ có số từ lúc thêm).
 
 ## 1. Mục tiêu và phạm vi
 
@@ -31,7 +44,8 @@ judge chấm, so với bản đang chạy, rồi mới publish; tệ thì rollba
 thêm thử `effort` / `thinking` (T4), và chạy B1 cho 5 thao tác còn lại (D1, D2). Kết quả B1 của 5 thao tác đó quyết định judge nào thêm cho chúng, ở một lượt hỏi đáp sau.
 
 **Không làm trong đợt này:** canary; online eval chạy theo lịch; judge trong `prepare` (mốc 3%); cảnh báo qua email; Postman (D4); `also_fits` (D33); judge cho 5 thao
-tác còn lại (D1); cụm động từ (T3, D32); thư viện biểu đồ (D28); bỏ câu làm sẵn bằng bản cũ (D34).
+tác còn lại (D1), gồm tiêu chí "trỏ đúng nghĩa" của `generate_meaning_question` (D7, code không kiểm được, chờ judge sau B1 của thao tác đó); cụm động từ (T3, D32); thư
+viện biểu đồ (D28); bỏ câu làm sẵn bằng bản cũ (D34).
 
 ## 2. Quyết định (tóm tắt)
 
@@ -41,16 +55,16 @@ tác còn lại (D1); cụm động từ (T3, D32); thư viện biểu đồ (D2
 | # | Chọn |
 |---|---|
 | D1 | Design phần không phụ thuộc B1 + judge "chỉ một đáp án" cho `generate_cloze` |
-| D3 | Model sinh câu Anthropic hoặc OpenAI; judge **chỉ** Anthropic; judge không thấy tên model, nhà cung cấp, bản cấu hình, mã lần chạy; cảnh báo khi cùng Anthropic |
-| D5 | Một design, nhiều plan, chạy song song nhiều phiên có phiên điều phối (§3) |
+| D3 | Model sinh câu Anthropic hoặc OpenAI; judge **chỉ** Anthropic; judge không thấy tên model, nhà cung cấp, bản cấu hình, mã lần chạy; cảnh báo khi cùng Anthropic; hiệu chỉnh đầu so hai judge Anthropic |
+| D5 | Một design, nhiều plan, nhiều phiên có phiên điều phối (§3; mức song song bị giới hạn bởi file chung, E12) |
 | D7, D8 | Ô mong đợi bắt buộc cho `generate_cloze`, `generate_meaning_question`, `lookup_word`, `check_private_word`; file nhập hàng loạt có ô mong đợi và dev / held-out |
 | D9, D10 | "Chốt phiên bản" bằng tay; held-out 30%; xem đầu vào hoặc đầu ra của ví dụ held-out (sau hộp hỏi) thì nó sang dev |
 | D11 | Eval chạy luật Practice ở lần đầu, không viết lại `#2` |
 | D12–D14 | Lúc đầu một judge "chỉ một đáp án"; một lời gọi judge chấm bao nhiêu tiêu chí là do cấu hình; judge chạy khi bật ô lúc chạy eval hoặc bấm nút trên lần chạy đã xong |
-| D15–D17 | 30 nhãn, 85%, khớp theo đạt / không đạt (số phụ: khớp cả mức); chưa hiệu chỉnh vẫn hiện kèm nhãn; gắn nhãn ở bảng kết quả và màn riêng; đổi judge thì điểm cũ giữ, chấm lại được |
-| D18 | Trần riêng 2 USD / ngày cho test + eval + judge; không cho chạy với model chưa nhập giá; trần lời gọi của người học chỉ đếm lời gọi của người học |
+| D15–D17 | 30 nhãn, 85%, khớp theo đạt / không đạt (số phụ: khớp cả mức); chưa hiệu chỉnh vẫn hiện kèm nhãn; gắn nhãn ở bảng kết quả và màn riêng; đổi judge thì điểm cũ giữ, chấm lại được, biểu đồ đánh dấu chỗ đổi |
+| D18 | Trần riêng 2 USD / ngày cho test + eval + judge; không cho chạy eval với model chưa nhập giá; trần lời gọi của người học chỉ đếm lời gọi của người học |
 | D19 | Mọi việc mới chỉ `admin` |
-| D20, D21 | So hai lần chạy chỉ khi cùng phiên bản; publish cần lần eval trọn của chính cấu hình đó trên một phiên bản đã chốt (có held-out), so với lần gần nhất của bản đang chạy trên cùng phiên bản; bản đang chạy chưa có thì eval nó trước |
+| D20, D21 | So hai lần chạy chỉ khi cùng phiên bản; publish cần lần eval trọn của chính cấu hình đó trên một phiên bản đã chốt (có held-out), so với lần gần nhất của bản đang chạy trên cùng phiên bản; bản đang chạy chưa có thì eval nó trước (ngoại lệ chờ Q-R1) |
 | D22–D24 | Một cấu hình gồm prompt + model + effort + thinking + token; một bản nháp mỗi thao tác, lưu trên server; rollback về bản publish ngay trước, không cần eval |
 | D25, D34 | Câu đã làm sẵn bằng bản cũ vẫn dùng (kể cả câu giữ tới 6 tháng) |
 | D26, D35 | Chấm câu AI thật 7 ngày: tối đa N = 200 mỗi lần, ước tính chi phí trước; lọc thao tác, bản cấu hình, model, chỉ tài khoản test (= tài khoản `admin` / `editor`) |
@@ -58,7 +72,7 @@ tác còn lại (D1); cụm động từ (T3, D32); thư viện biểu đồ (D2
 | D28, D29 | Biểu đồ tự vẽ; thêm 4 phần dashboard |
 | D30, D31 | Chủ dự án tự chạy lần chạy thật 5 USD; Claude làm hết, chủ dự án review |
 | D33 | Giữ luật chấm của Practice |
-| D36 | "Đang học" = có lần học trong N ngày gần nhất (N = 7); D7/D30 theo nhóm đăng ký cùng tuần |
+| D36 | "Đang học" = có lần học trong N ngày gần nhất (N = 7); D7/D30 theo nhóm đăng ký cùng tuần ("lần học" chờ Q-R3) |
 
 **Quyết định cũ bị đổi:**
 - D15 Bước 6 (lưu prompt là chạy ngay) và cách lưu cài đặt thao tác (lưu là chạy ngay): thay bằng vòng đời cấu hình (§6).
@@ -66,270 +80,351 @@ tác còn lại (D1); cụm động từ (T3, D32); thư viện biểu đồ (D2
 - D24 Bước 6 (một trần lời gọi đếm mọi mục đích): trần lời gọi chỉ đếm lời gọi của người học; việc của admin có trần USD riêng (§5.5).
 - 26/10 câu 19 (judge khác nhà cung cấp): judge chỉ Anthropic, có cảnh báo (D3).
 - 26/10 câu 21 (held-out 20%): 30% (D10). 26/10 câu 24 (thư viện biểu đồ): tự vẽ (D28).
-- Quy ước `/v1` chỉ thêm, không đổi (SR7–SR14): hai `PUT` lưu prompt và lưu thao tác bị bỏ (§6.6). Đây là API chỉ admin web gọi.
+- Quy ước `/v1` chỉ thêm, không đổi (SR7–SR14): hai `PUT` lưu prompt và lưu thao tác bị bỏ (§6.6); các script và test trong repo gọi chúng được sửa cùng PR.
 
 ## 3. Chia plan và phiên (D5)
 
+Review (R9) cho thấy K2 và K3 cùng sửa phần lõi của `ai` (`runner.service.ts`, `eval-runs.service.ts`, `eval-job.ts`, `selection.ts`, `readiness.service.ts`,
+`reports.service.ts`, `ai-api.ts`, màn eval), nên không chạy song song được mà không đụng nhau. Chuỗi chính chạy nối tiếp; D7/D30 chạy song song ở một phiên riêng (E12).
+
 ```
-P1 Golden set ──┬──> P2 Judge ──────┬──> P4 Câu thật ──> P5 Dashboard
-                └──> P3 Vòng đời ───┘                         ▲
-P6 D7/D30 (độc lập, chạy sau cùng theo D32) ─────────────────┘ (chỉ thêm một khối vào trang dashboard)
+Phiên A (chuỗi chính):  P1 Golden set ──> P3 Vòng đời ──> P2 Judge ──> P4 Câu thật ──> P5 Dashboard
+Phiên B (song song):    P6 D7/D30 ───────────────────────────────────────────────────────┘ (một khối riêng trên trang dashboard)
 ```
 
-| Plan | Khối | Phụ thuộc | File chính (để hai phiên không đụng nhau) |
+| Plan | Khối | Sau | File chính |
 |---|---|---|---|
-| P1 | K1 | — | `apps/api/src/ai/eval/**`, `prisma/models/ai.prisma` (bảng eval), `src/practice/ai/eval-checks*` (mới); admin `features/ai/AiEvalPage*`, `bulk-examples.ts`, `ExampleDialog`, `EvalRunPanel` |
-| P2 | K2 | P1 | `src/ai/judge/**` (mới), `src/ai/runner/{readiness,call-ledger}*`, settings `ai.*`; admin `features/ai/judges/**` (mới), phần nhãn trong `EvalRunPanel` |
-| P3 | K3 | P1 | `src/ai/configs/**` (mới), `src/ai/prompts/**`, `src/ai/models/operation-settings*`, `src/ai/runner/selection.ts`; admin `features/ai/AiPromptsPage*`, `AiOperationsPage*` (gộp thành trang Cấu hình) |
-| P4 | K4 | P2 | `src/practice/quality/**` (mới), `src/practice/reports/**` (nút đưa vào bộ ví dụ); admin `features/ai/real-questions/**` (mới), `features/reports/ReportDetail*` |
-| P5 | K5 | P2, P3, P4 | `src/ai/reports/**`, `src/practice/reports/ai-quality*`, `src/entitlements/**` (`days_at_cap`); admin `features/dashboard/**` |
-| P6 | K6 | — | `src/learning/**` (truy vấn hoạt động), endpoint mới; admin một khối mới trong `features/dashboard/` (riêng file `retention*`) |
+| P1 | K1 | — | `apps/api/src/ai/eval/**`, `src/ai/ai.service.ts` (đăng ký port), `prisma/models/ai.prisma` (bảng eval), `src/practice/eval-rules/**` (mới), `src/content/**` (tra mục kho theo `(lemma, pos)`), `src/ai/reports/reports.service.ts` (che held-out ở trang Các lần gọi), `src/ai/prompts/prompts.service.ts` (chạy thử chỉ lấy ví dụ dev); admin `features/ai/AiEvalPage*`, `bulk-examples.ts`, `ExampleDialog`, `EvalRunPanel`, `AiCallsPage` |
+| P3 | K3 | P1 | `src/ai/configs/**` (mới), `src/ai/prompts/**`, `src/ai/models/**`, `src/ai/runner/{selection,runner.service}.ts`, `src/ai/eval/**` (lần chạy theo cấu hình), `src/ai/reports/**` (Tình trạng đọc cấu hình); `scripts/smoke-buoc-6.mjs`, `scripts/smoke-buoc-7.mjs`, `scripts/learner-test-setup.mjs`; admin `features/ai/AiPromptsPage*`, `AiOperationsPage*` (gộp thành trang Cấu hình), `apps/admin/e2e-real/support/ai-report.ts` |
+| P2 | K2 | P3 | `src/ai/judge/**` (mới), `src/ai/operations/judge.ts` (mới), `src/ai/runner/{readiness,call-ledger,runner.service}.ts`, `src/ai/eval/**` (lượt chấm), `src/ai/configs/publish-check*` (thêm so tiêu chí judge), `src/ai/models/models.service.ts` (giá `fake` khi bật fake); admin `features/ai/judges/**` (mới), nhãn trong `EvalRunPanel` |
+| P4 | K4 | P2 | `src/practice/quality/**` (mới), `src/practice/reports/**` (nút đưa vào bộ ví dụ), `src/identity/**` (`staffUserIds`), `src/ai/judge/**` (lượt chấm câu thật); admin `features/ai/real-questions/**` (mới), `features/reports/ReportDetail*` |
+| P5 | K5 | P4 | `src/ai/reports/**`, `src/practice/reports/ai-quality*`, `src/entitlements/**` (`days_at_cap`), `src/settings/**` (đọc lịch sử một setting); admin `features/dashboard/**` (trừ file `retention*`) |
+| P6 | K6 | — | `src/learning/**` (đếm lần học), `src/identity/**` (`registrations`), (theo Q-R3 có thể thêm `src/practice/**` cung cấp số câu đã trả lời qua port); admin `features/dashboard/retention*` (mới) |
 
-- P2 và P3 chạy song song sau P1. Cả hai cùng thêm migration Prisma: mỗi plan một file migration riêng; phiên merge sau rebase lên `dev` và sinh lại migration nếu
-  trùng thứ tự. `ai.prisma` bị hai plan sửa ở các model khác nhau.
-- Mỗi plan một nhánh từ `origin/dev`, có thể nhiều PR; PR vào `dev`. Phiên điều phối giữ thứ tự merge theo sơ đồ trên.
-- `src/ai/ai.module.ts`, `apps/admin/src/app/nav.ts`, `messages` của admin bị nhiều plan sửa: mỗi plan chỉ thêm dòng của mình; xung đột gộp lúc merge.
+- Mỗi plan một nhánh từ `origin/dev`, có thể nhiều PR; PR vào `dev`. Phiên điều phối giữ thứ tự merge theo sơ đồ.
+- File nhiều plan cùng thêm dòng: `src/settings/settings.definitions.ts` và trang Cài đặt (P1, P2, P4, P6), `src/ai/ai.module.ts`, `apps/admin/src/app/nav.ts`, `messages`
+  của admin. Mỗi plan chỉ thêm dòng của mình; phiên B (P6) rebase lên `dev` mới trước khi merge.
+- Migration Prisma: chuỗi chính nối tiếp nên không trùng; P6 có migration thì phiên B sinh tên migration **sau khi** rebase, không đổi tên migration đã merge.
 
 ## 4. Mô hình dữ liệu
 
-Mọi bảng mới thuộc module `ai` (`prisma/models/ai.prisma`) trừ khi ghi khác; không `@relation` ra ngoài module (D3 Bước 0).
+Mọi bảng mới thuộc module `ai` (`prisma/models/ai.prisma`) trừ khi ghi khác; không `@relation` ra ngoài module (D3 Bước 0). FK chỉ trong module.
 
 | Bảng | Thay đổi | Plan |
 |---|---|---|
-| `ai_eval_examples` | thêm `split` (`dev` / `held_out`), `expected` Json?, `source` (`manual` / `import` / `report` / `real_judge`), `source_ref` Text?, `revealed_at` (lúc ví dụ held-out bị xem) | P1 |
+| `ai_eval_examples` | thêm `split` (`dev` / `held_out`), `expected` Json?, `source` (`manual` / `import` / `report` / `real_judge`), `source_ref` Text?, `revealed_at` | P1 |
 | `ai_eval_sets` (mới) | phiên bản đã chốt: `operation`, `version` (tăng theo thao tác), `held_out_ratio`, `frozen_by`, `frozen_at`; unique `(operation, version)` | P1 |
 | `ai_eval_set_items` (mới) | ảnh chụp lúc chốt: `set_id`, `example_id`, `split`, `input`, `expected` | P1 |
-| `ai_eval_runs` | thêm `set_id`? (null = chạy trên bộ đang soạn, không dùng để so hay publish), `config_id`? (P3), `judge` (bật / tắt lúc tạo), giá model lúc tạo; `items` Json chuyển sang bảng | P1 (P3 thêm `config_id`) |
-| `ai_eval_run_items` (mới) | `run_id`, `example_id`, `split`, ảnh chụp `input` và `expected`, `status`, `output`, `raw_output`, `rule` (kết quả luật Practice), `expected_result`, `latency_ms`, `cost_usd` | P1 |
-| `ai_judges` (mới) | `name`, `operations` (thao tác được chấm), `active` | P2 |
-| `ai_judge_revisions` (mới) | append-only: `judge_id`, `revision`, `criteria` Json (`[{code, question, severity_hint}]`), `instructions`, `examples`, `model_ref`, `effort`, `thinking`, `max_output_tokens`, `saved_by/at` | P2 |
-| `ai_judge_scores` (mới) | `judge_revision_id`, `subject_kind` (`eval_item` / `real_question`), `subject_id`, `criterion`, `verdict` (`pass` / `fail_major` / `fail_minor`), `reason`, `call_id`, `created_at`; unique `(judge_revision_id, subject_kind, subject_id, criterion)` | P2 |
+| `ai_eval_runs` | thêm `set_id`? (null = bộ đang soạn); `price_input`, `price_output` lúc tạo; `items` Json chuyển sang bảng. P3 thêm `config_id`, `config_version` (thay `prompt_revision` / `draft`) | P1, P3 |
+| `ai_eval_run_items` (mới) | `run_id`, `example_id`, `split`, ảnh chụp `input` và `expected`, `status`, `reason`, `output`, `raw_output`, `rule` (`pass` / `fail` / `skipped` / `not_applicable` + vấn đề), `expected_result`, `latency_ms`, `cost_usd` | P1 |
+| `ai_configs` (mới) | `operation`, `number`, `version` (tăng mỗi lần sửa nháp), `instructions`, `examples`, `model_ref` (FK `ai_models` RESTRICT), `effort`, `thinking`, `max_output_tokens`, `status` (`draft` / `published` / `retired`), `created_from` (cấu hình gốc), `created_by/at`, `published_by/at`, `note`; partial unique một `draft` mỗi thao tác | P3 |
+| `ai_live_configs` (mới) | con trỏ "bản đang chạy" (26/10 câu 18): `operation` PK, `config_id`, `previous_config_id`?, `version` | P3 |
+| `ai_config_events` (mới) | append-only: `publish` / `rollback`, ai, lúc nào, id hai lần chạy dùng làm bằng chứng, cảnh báo đã bỏ qua | P3 |
+| `ai_judges` (mới) | `name`, `operations`, `active` | P2 |
+| `ai_judge_revisions` (mới) | append-only: `judge_id`, `revision`, `criteria` Json (`[{code, question}]`), `instructions`, `examples`, `model_ref` (FK RESTRICT), `effort`, `thinking`, `max_output_tokens`, `saved_by/at` | P2 |
+| `ai_judge_passes` (mới) | một lượt chấm: `judge_revision_id`, `kind` (`eval_run` / `real`), `eval_run_id`?, `filters` Json? (câu thật), `limit`?, `status` (`queued` / `running` / `finished` / `failed`), `error`, `total`, `judged`, `cost_usd`, `started_by`, thời gian, `heartbeat_at` | P2 (P4 thêm `real`) |
+| `ai_judge_pass_items` (mới) | ảnh chụp đối tượng chấm: `pass_id`, `subject_kind` (`eval_item` / `real_question`), `subject_id`, `input`, `output`, `context`? | P2 |
+| `ai_judge_scores` (mới) | `judge_revision_id`, `subject_kind`, `subject_id`, `criterion`, `verdict` (`pass` / `fail_major` / `fail_minor`, NULL = không chấm được), `problem`?, `reason`, `pass_id`, `call_id`, `created_at`; unique `(judge_revision_id, subject_kind, subject_id, criterion)` | P2 |
 | `ai_labels` (mới) | nhãn người: `subject_kind`, `subject_id`, `criterion`, `verdict`, `labeled_by/at`; unique `(subject_kind, subject_id, criterion)` | P2 |
-| `ai_configs` (mới) | `operation`, `number`, `instructions`, `examples`, `model_ref`, `effort`, `thinking`, `max_output_tokens`, `status` (`draft` / `published` / `retired`), `created_by/at`, `published_by/at`, `note`; partial unique một `draft` mỗi thao tác (D23) | P3 |
-| `ai_live_configs` (mới) | con trỏ "bản đang chạy" (26/10 câu 18): `operation` PK, `config_id`, `previous_config_id`, `version` | P3 |
-| `ai_config_events` (mới) | append-only: publish, rollback, ai, lúc nào, cảnh báo đã bỏ qua | P3 |
-| `practice_real_judge_runs` (mới, `practice.prisma`) | `filters`, `limit`, `status`, `judged`, `cost_usd`, `started_by`, thời gian | P4 |
-| `ai_calls` | `purpose` thêm `judge`; `prompt_revision` từ P3 mang số cấu hình (§6.5) | P2, P3 |
-| `ai_prompts`, `ai_prompt_revisions`, `ai_operation_settings`, `ai_operation_setting_changes` | sau P3 chỉ còn để đọc lịch sử; gateway không đọc nữa | P3 |
-| settings `ai.*` | thêm `admin_daily_usd_cap` (2), `judge_label_min` (30), `judge_agreement_min` (0.85), `real_judge_limit` (200), `eval_held_out_ratio` (0.3); `learning.active_window_days` (7) | P1, P2, P4, P6 |
+| `ai_calls` | `purpose` thêm `judge` (CHECK `ai_calls_purpose_check`); `prompt_revision` từ P3 mang số cấu hình (§6.5) | P2, P3 |
+| `ai_prompts`, `ai_prompt_revisions`, `ai_operation_settings`, `ai_operation_setting_changes` | sau P3 chỉ còn để đọc lịch sử; gateway không đọc; FK `ai_operation_settings.model_ref` bỏ trong migration P3 (để model cũ xóa được) | P3 |
+| settings `ai.*` | thêm `admin_daily_usd_cap` (2), `eval_held_out_ratio` (0,3), `judge_label_min` (30), `judge_agreement_min` (0,85), `real_judge_limit` (200); `learning.active_window_days` (7) | P1, P2, P4, P6 |
 
-**Vì sao chụp ảnh ví dụ lúc chốt và lúc chạy:** hiện một lần chạy chỉ giữ `example_id` và đọc đầu vào khi job chạy (F6), nên sửa ví dụ sau đó làm lần chạy cũ đổi
-nghĩa. So hai lần chạy (D20) chỉ đúng khi cả hai chấm trên cùng chữ.
+**Vì sao chụp ảnh:** hiện một lần chạy chỉ giữ `example_id` và đọc đầu vào khi job chạy (F6), nên sửa ví dụ sau đó làm lần chạy cũ đổi nghĩa. So hai lần chạy (D20) và nối
+điểm judge, nhãn người cần chữ cố định. Lượt chấm câu thật chụp đầu vào lúc bắt đầu, nên nội dung hết hạn 7 ngày giữa chừng cũng không sao.
+
+**Dữ liệu có sẵn khi P1 migrate (R14):** mọi ví dụ đang có (14 ví dụ B1 đã bị đọc) thành `split = 'dev'`, `source = 'manual'`, `expected` NULL; "Chốt phiên bản" trả 422 liệt
+kê ví dụ thiếu `expected`. Kết quả của các lần chạy cũ chuyển sang `ai_eval_run_items` với `input` lấy từ ví dụ nếu còn, không thì NULL; các lần chạy cũ có `set_id` NULL nên
+không so được, màn ghi "trước khi có phiên bản".
 
 ## 5. K1 + K2 — Eval, luật code, judge, nhãn, trần (P1, P2)
 
 ### 5.1 Bộ ví dụ (D7–D10)
 
-- **Ô mong đợi** (`expected`), bắt buộc với 4 thao tác (D7, D8); máy kiểm trong module `ai`, không gọi AI:
+- **Ô mong đợi** (`expected`), bắt buộc với 4 thao tác (D7, D8):
 
-| Thao tác | `expected` | Đạt khi |
-|---|---|---|
-| `generate_cloze` | `{"forms": [...]}`: các dạng được nhận cho ví dụ này | mọi `accepted_answers` nằm trong `forms` |
-| `generate_meaning_question` | `{"forms": [...]}` | `word_in_sentence` nằm trong `forms` |
-| `lookup_word` | `{"lemma", "part_of_speech"}` | khớp cả hai |
-| `check_private_word` | `{"verdict"}` | khớp |
+| Thao tác | `expected` | Đạt khi | Ai kiểm |
+|---|---|---|---|
+| `generate_cloze` | `{"forms": [...]}`: các dạng được nhận cho ví dụ này | mọi `accepted_answers` (đã chuẩn hóa) nằm trong `forms` | port Practice (§5.2) |
+| `generate_meaning_question` | `{"forms": [...]}` | `word_in_sentence` nằm trong `forms` | port Practice |
+| `lookup_word` | `{"lemma", "part_of_speech"}` | khớp cả hai (bỏ khoảng trắng hai đầu, chữ thường) | `ai` |
+| `check_private_word` | `{"verdict"}` | khớp | `ai` |
 
-  `forms` được điền sẵn từ kho từ (mọi dạng của mục có cùng lemma và từ loại) khi tạo ví dụ; người soạn bỏ bớt dạng không muốn nhận. Ví dụ `deploy`: bỏ `deploying`
-  nếu muốn câu dùng dạng gốc. Lỗi E2 ("will ___" nhận `deployed`) chỉ bắt được khi người soạn bỏ dạng đó; phần còn lại để judge.
-- **Dev / held-out:** ví dụ mới vào theo tỉ lệ `eval_held_out_ratio` (30%) bằng cách chọn ngẫu nhiên lúc tạo; file nhập hàng loạt có cột `split` thì theo file (D8.2).
-  Ví dụ held-out trả về API danh sách **không có** `input`, `expected`, `note`, chỉ `id`, `split`. Xem một ví dụ held-out (trang chi tiết, hoặc kết quả của nó trong
-  một lần chạy) cần `reveal: true`; API khi đó chuyển nó sang `dev`, ghi `revealed_at` (D10). Admin web hiện hộp hỏi trước khi gửi.
-- **Chốt phiên bản (D9):** nút "Chốt phiên bản" chụp bộ đang soạn thành `ai_eval_sets` version *n*. Bộ chốt không đổi nữa; ví dụ sửa sau đó chỉ vào bản kế tiếp.
+  `forms` được điền sẵn khi tạo ví dụ, bằng hàm `formsOf(word, part_of_speech)` của port (mọi dạng của mục kho có cùng lemma và từ loại); người soạn bỏ bớt dạng không muốn
+  nhận (ví dụ bỏ `deploying` nếu muốn câu dùng dạng gốc). Lỗi E2 ("will ___" nhận `deployed`) chỉ bắt được khi người soạn bỏ dạng đó; phần còn lại để judge. Tiêu chí "trỏ
+  đúng nghĩa" của `generate_meaning_question` (D7) code không kiểm được: chờ judge sau B1 của thao tác đó (§1).
+- **Dev / held-out (D10, R21):** ví dụ mới vào `held_out` khi tỉ lệ held-out của bộ đang soạn đang **dưới** `eval_held_out_ratio` (30%), ngược lại vào `dev`; nhập hàng loạt
+  không có cột `split` thì áp luật này lần lượt từng dòng; có cột thì theo file (D8.2). Không có thao tác chuyển một ví dụ `dev` sang `held_out`.
+- **Che held-out (R7).** Đầu vào, đầu ra, `expected`, `note`, lý do judge của ví dụ held-out không hiện ở bất cứ đâu khi chưa mở:
+  - danh sách ví dụ: chỉ `id`, `split`;
+  - kết quả lần chạy, màn so sánh, cảnh báo publish: chỉ số tổng của phần held-out, không liệt kê ví dụ;
+  - trang **Các lần gọi**: lời gọi eval / judge của ví dụ held-out trả `content: null` kèm nhãn "held-out";
+  - **chạy thử** (≤ 5 ví dụ): chỉ lấy ví dụ `dev`;
+  - màn **Gắn nhãn**: bỏ qua ví dụ held-out.
+- **Mở ví dụ held-out:** `POST …/examples/:id/reveal` (admin web hiện hộp hỏi trước). Ví dụ sang `dev`, ghi `revealed_at`; phiên bản đã chốt giữ ảnh chụp cũ, màn của phiên
+  bản ghi "1 ví dụ held-out đã bị xem". Ví dụ đã xóa khỏi bộ đang soạn mà còn trong phiên bản chốt: mở được ảnh chụp, ghi `revealed_at` lên dòng `ai_eval_set_items`.
+- **Chốt phiên bản (D9):** chụp bộ đang soạn thành `ai_eval_sets` version *n*. Bộ chốt không đổi nữa. 422 nếu thiếu `expected` (4 thao tác) hoặc không có ví dụ held-out nào.
 - **Nhập hàng loạt:** admin web đọc thêm cột `expected` (JSON trong một ô CSV, hoặc field trong JSONL) và `split`; API `bulk` nhận `{input, note?, expected, split?}`.
 
 ### 5.2 Luật Practice trong eval (D11)
 
-Luật nằm ở Practice và cần dạng từ từ Content (F5); `ai` không được import Content (R17). Cách làm (đề xuất kỹ thuật):
-- `ai` khai báo một port `EvalRuleCheck` (token + interface: `check(operation, input, output) → {status: 'pass' | 'fail' | 'skipped', problems[]}`); Practice cung cấp
-  implementation khi module khởi động, như cách Practice đã dùng `AiService`.
-- Practice tìm mục trong kho theo `(word, part_of_speech)` của đầu vào, dựng `PracticeSense` rồi gọi đúng `checkCloze` / `checkMeaning` / `checkMcq` đang dùng cho người học.
-  Không có mục khớp (ví dụ từ lóng `lit`) → `skipped`, lần chạy ghi rõ số ví dụ bị bỏ qua luật.
-- Chỉ chạy lần đầu; không gọi `#2` (D11). Kết quả lưu ở `ai_eval_run_items.rule`.
+Luật nằm ở Practice và cần dạng từ từ Content (F5); `ai` không được import Content hay Practice (R17 Bước 6), và Practice, Content đều import `AiModule` (vòng nếu `ai` inject
+provider của Practice). Cách làm (E2, R17):
+- `AiService` có hàm `registerEvalRules(rules)`; Practice gọi nó trong `onModuleInit` của một provider (tiền lệ: `ContentService.registerEntryUsageProbe` và
+  `PracticeEntryUsageProbe.onModuleInit`). Worker dựng cả `AppModule`, và Worker eval chỉ bắt đầu ở `onApplicationBootstrap`, sau mọi `onModuleInit`.
+- Port gồm: `check(operation, input, output)` → `pass` / `fail` (+ vấn đề) / `skipped` (+ lý do); `formsOf(word, part_of_speech)` → danh sách dạng hoặc `null`;
+  `matchesExpected(operation, output, expected)` (chuẩn hóa bằng `normalizeAnswer` của Practice, để `ai` không tự chuẩn hóa).
+- Practice tìm mục **trong kho** (không xét từ riêng của ai) qua một hàm mới của Content tra theo `(lemma, pos)`; `part_of_speech = "unspecified"` thì gộp mọi mục cùng lemma.
+  Dựng `PracticeSense` rồi gọi đúng `checkCloze` / `checkMeaning` / `checkMcq` đang dùng cho người học.
+- Không có mục khớp (ví dụ từ lóng `lit`) → `skipped` (`not-in-catalog`). Port chưa đăng ký (unit test của `ai`) → `skipped` (`no-rules`). Thao tác không có luật Practice
+  (`lookup_word`, `translate_sentence`, `check_private_word`) → `not_applicable`.
+- Chỉ chạy lần đầu; không gọi `#2` (D11).
 
 ### 5.3 Lần chạy và so sánh (D20)
 
-- Tạo lần chạy: chọn bộ (một phiên bản đã chốt, hoặc bộ đang soạn), cấu hình (nháp hoặc bản đang chạy; P3), ô "Chấm bằng judge" (D14). Lần chạy trên bộ đang soạn chỉ để
-  thử nhanh: không so được, không dùng cho publish.
-- Mỗi ví dụ có bốn kết quả: khuôn (như hiện nay), luật, ô mong đợi, judge (nếu bật). Ví dụ held-out: kết quả từng ví dụ bị che, chỉ có số tổng, trừ khi admin mở (D10).
-- **So hai lần chạy:** chỉ khi cùng `set_id` (D20). Màn so hiện tỉ lệ đạt của từng tiêu chí ở hai lần, chia dev / held-out, và danh sách ví dụ "trước đạt, nay trượt".
+- Tạo lần chạy: chọn bộ (một phiên bản đã chốt, hoặc bộ đang soạn), cấu hình (P1: bản đang chạy hoặc prompt nháp như hiện nay; từ P3: nháp hoặc bản đang chạy, ghi
+  `config_id` + `config_version`), ô "Chấm bằng judge" (D14, từ P2). Lần chạy trên bộ đang soạn chỉ để thử nhanh: không so được, không dùng cho publish.
+- Mỗi ví dụ có bốn kết quả: khuôn (như hiện nay), luật, ô mong đợi, judge (nếu có lượt chấm).
+- **Xong trọn (R11):** lần chạy `finished` và mọi ví dụ có kết quả khuôn (không `skipped`). Ví dụ lỗi tạm thời (timeout, nhà cung cấp lỗi) tính là **không đạt** khuôn, màn ghi số.
+  Lần chạy bị hủy, `stalled` hay chạm trần là `failed`, không trọn.
+- **So hai lần chạy:** chỉ khi cùng `set_id` (D20). Màn so hiện tỉ lệ đạt của khuôn, luật, mong đợi ở hai lần, chia dev / held-out, và danh sách ví dụ **dev** "trước đạt, nay
+  trượt" (held-out chỉ số). Tiêu chí judge chỉ so khi cả hai lần chạy có điểm của **cùng** một bản judge; không thì màn đưa nút "chấm cả hai bằng bản judge X".
+- Lần chạy đã dùng làm bằng chứng publish (§6.3) không xóa được (409).
 
 ### 5.4 Judge (D3, D12–D17)
 
-- **Judge là một cấu hình trên UI:** tên, thao tác được chấm, danh sách tiêu chí (mỗi tiêu chí một câu hỏi), prompt, model, effort, token. Một judge chấm mọi tiêu chí
-  của nó trong **một** lời gọi; muốn tách thì tạo nhiều judge (D13). Lưu là thêm một bản (`ai_judge_revisions`); judge không phục vụ người học nên không cần vòng đời
-  publish, bản mới nhất là bản dùng.
-- **Một thao tác gateway mới `judge`** (định nghĩa trong code như 6 thao tác hiện có): đầu vào `{target_operation, input, output, criteria, context?}`, đầu ra
-  `{results: [{code, verdict, reason}]}`, `verdict` ∈ `pass` / `fail_major` / `fail_minor`. Gateway kiểm khuôn như mọi thao tác; `context` chỉ có khi chấm câu thật (§7.1).
-- **Giấu tên (D3):** dữ liệu gửi judge chỉ gồm đầu vào của ví dụ và đầu ra AI. Không có model, nhà cung cấp, số cấu hình, mã lần chạy, `operation_id`.
-- **Chỉ Anthropic (D3):** lưu judge với model không phải `anthropic` (hay `fake` khi chạy thử) → 422. Màn kết quả hiện cảnh báo khi model sinh câu cũng là Anthropic.
-- **Judge có sẵn (D12):** migration tạo judge "Chỉ một đáp án" cho `generate_cloze`, một tiêu chí, **chưa chọn model** (như các thao tác Bước 6, 7). Prompt khởi đầu ghi
-  rõ mức (D33): `fail_major` khi từ khác điền vừa tự nhiên và là từ rất thông dụng ở level đó, hoặc là một từ khác trong danh sách đang luyện (chỉ có khi chấm câu thật);
-  `fail_minor` khi chỉ từ đồng nghĩa hiếm hoặc biến thể gần (`though` cho `although`). Lý do một câu.
-- **Khi nào chạy (D14):** ô bật lúc tạo lần chạy, hoặc nút "Chấm bằng judge" trên lần chạy đã xong; chọn judge nào. Chấm lại bằng bản judge mới (D17): cùng nút, điểm cũ giữ,
-  mỗi điểm ghi bản judge.
-- **Nhãn người (D16):** gắn ở cột cạnh đầu ra trên bảng kết quả, và ở màn "Gắn nhãn" (lần lượt từng đầu ra, phím `1` đạt / `2` nặng / `3` nhẹ). Nhãn gắn theo đầu ra,
-  dùng chung cho mọi bản judge.
-- **Độ khớp (D15):** với mỗi (bản judge, tiêu chí): số đầu ra có cả nhãn và điểm; khớp = cùng đạt hoặc cùng không đạt; số phụ = khớp cả mức. Đủ `judge_label_min` nhãn
-  và khớp ≥ `judge_agreement_min` → "đã hiệu chỉnh"; chưa đủ → điểm vẫn hiện, gắn "chưa hiệu chỉnh".
+- **Judge là một cấu hình trên UI:** tên, thao tác được chấm, danh sách tiêu chí (mỗi tiêu chí một câu hỏi có `code`), prompt, model, effort, token. Một judge chấm mọi tiêu chí
+  của nó trong **một** lời gọi; muốn tách thì tạo nhiều judge (D13). Lưu là thêm một bản (`ai_judge_revisions`); judge không phục vụ người học nên không có vòng đời publish,
+  bản mới nhất là bản dùng (E4). Nút "Nhân bản judge" tạo judge mới cùng tiêu chí, để so hai model judge trên cùng bộ nhãn (D3: hiệu chỉnh đầu so hai judge Anthropic).
+- **Thao tác gateway `judge` (E3, R5).** Kiểu `GatewayOperation` = 6 thao tác + `judge`, dùng cho runner và sổ chi phí (`ai_calls.operation` không có CHECK); kiểu
+  `AiOperation` giữ 6 thao tác cho cấu hình, bộ ví dụ, trang Tình trạng. `judge` không có cấu hình thao tác, không có bộ ví dụ, không hiện ở trang Tình trạng.
+  - Đầu vào: `{target_operation, input, output, criteria: [{code, question}], context?}`.
+  - Đầu ra: ba mảng chuỗi cùng độ dài `{codes, verdicts, reasons}`, vừa khung `define-operation` (chỉ nhận chuỗi và mảng chuỗi). Gateway kiểm: ba mảng cùng độ dài,
+    `verdicts` ∈ `pass` / `fail_major` / `fail_minor`. Dịch vụ judge kiểm thêm, vì nó biết tiêu chí đã gửi: mỗi `code` gửi đi có đúng một kết quả; thiếu hay thừa thì tiêu
+    chí đó "không chấm được" (`verdict` NULL, `problem`).
+- **Giấu tên (D3):** dữ liệu gửi judge chỉ gồm đầu vào, đầu ra, tiêu chí và `context` (câu thật). Không có model, nhà cung cấp, số cấu hình, mã lần chạy, `operation_id`.
+- **Chỉ Anthropic (D3):** lưu judge với model không phải `anthropic` → 422; `fake` được nhận khi `AI_FAKE_ENABLED=true` (E13). Màn kết quả cảnh báo khi model sinh câu cũng Anthropic.
+- **Judge có sẵn (D12):** migration tạo judge "Chỉ một đáp án" cho `generate_cloze`, một tiêu chí, **chưa chọn model**. Prompt khởi đầu ghi rõ mức (D33): `fail_major` khi từ
+  khác điền vừa tự nhiên và là từ rất thông dụng ở level đó, hoặc là một từ khác trong danh sách đang luyện (chỉ có khi chấm câu thật); `fail_minor` khi chỉ từ đồng nghĩa hiếm
+  hoặc biến thể gần (`though` cho `although`). Lý do một câu.
+- **Lượt chấm (D14, D17):** ô bật lúc tạo lần chạy, hoặc nút "Chấm bằng judge" trên lần chạy đã xong; chọn judge. Mỗi lần là một `ai_judge_passes`, chạy trong worker `ai-eval`.
+  Trạng thái lượt chấm tách khỏi trạng thái lần chạy: lượt chấm hỏng hay chạm trần không làm lần chạy `failed`. Bấm lại với cùng bản judge chỉ chấm đầu ra chưa có điểm hoặc
+  "không chấm được" (không trả tiền hai lần). Chấm bằng bản judge mới: điểm cũ giữ, mỗi điểm ghi bản judge. Mỗi bản judge một lượt chạy mỗi lúc (409 nếu đang có).
+- **Nhãn người (D16):** cột cạnh đầu ra trên bảng kết quả (chỉ ví dụ dev), và màn "Gắn nhãn" (lần lượt từng đầu ra dev hoặc câu thật, phím `1` đạt / `2` nặng / `3` nhẹ). Nhãn
+  gắn theo đầu ra, dùng chung cho mọi bản judge; xóa lần chạy không xóa nhãn (nhãn nằm trên `ai_eval_run_items` được giữ; lần chạy có nhãn thì "xóa" chỉ ẩn).
+- **Độ khớp (D15):** với mỗi (bản judge, tiêu chí): đầu ra có cả nhãn và điểm (bỏ "không chấm được"); khớp = cùng đạt hoặc cùng không đạt; số phụ = khớp cả mức. Đủ
+  `judge_label_min` nhãn và khớp ≥ `judge_agreement_min` → "đã hiệu chỉnh"; chưa đủ → điểm vẫn hiện, gắn "chưa hiệu chỉnh".
 
-### 5.5 Trần chi phí (D18)
+### 5.5 Trần chi phí (D18, R10)
 
-- Trần lời gọi mỗi ngày (`ai.daily_provider_calls_cap`) chỉ đếm `purpose = learner` (F1 nay đếm mọi mục đích).
-- Trần mới `ai.admin_daily_usd_cap` (2 USD): tổng `cost_usd` của `test`, `eval`, `judge` từ 0 giờ (giờ VN). Kiểm trước mỗi lời gọi trả tiền của các mục đích đó; chạm trần thì
-  lần chạy dừng, trạng thái `failed`, `error = 'admin-usd-cap'`, ví dụ đã chấm giữ nguyên. Tạo lần chạy khi đã chạm trần → 409.
-- Model chưa nhập đủ giá (`price_input` hoặc `price_output` trống) không được dùng cho test, eval, judge (409 `model-price-missing`), vì không đếm được USD. Model `fake` có
-  giá 0 khi seed cho smoke.
+- Trần lời gọi mỗi ngày (`ai.daily_provider_calls_cap`) chỉ đếm `purpose = learner` (nay đếm mọi mục đích, F1). Số "lời gọi hôm nay" trên trang Tình trạng và dashboard đổi
+  theo: hiện lời gọi của người học so với trần, và USD của admin hôm nay so với trần USD.
+- Trần mới `ai.admin_daily_usd_cap` (2 USD; `null` = không trần, `0` = chặn hết): tổng `cost_usd` của `test`, `eval`, `judge` từ 0 giờ (giờ VN). Chặn khi **đã tiêu ≥ trần**.
+  Kiểm trước **mỗi** lần gửi tới nhà cung cấp, kể cả lần thử lại thứ hai trong cùng lời gọi. Đây là trần mềm: các lời gọi đang chạy song song (tối đa `EVAL_JOB_CONCURRENCY`
+  = 3 mỗi job, cộng chạy thử ở process API) chưa có dòng `ai_calls`, nên có thể vượt tối đa khoảng (số lời gọi đang bay) × (giá một lời gọi).
+- Chạm trần giữa chừng: lần chạy (hay lượt chấm) dừng, `failed`, `error = 'admin-usd-cap'`, kết quả đã có giữ nguyên. Tạo lần chạy / lượt chấm / chạy thử khi đã chạm trần → 409.
+- Model chưa nhập đủ giá (`price_input` hoặc `price_output` trống) không được dùng cho test, eval, judge (409 `model-price-missing`; chặn cả test là E14). Model `fake` có giá 0;
+  khi `AI_FAKE_ENABLED=true`, model `fake` được nhập giá để smoke chạm được trần (E15).
 - Giới hạn `ai.test` 20 lần / giờ giữ nguyên.
 
 ## 6. K3 — Vòng đời cấu hình (P3)
 
 ### 6.1 Một cấu hình
 
-Cấu hình = `instructions` + `examples` (few-shot) + `model_ref` + `effort` + `thinking` + `max_output_tokens` của một thao tác, có `number` tăng dần. Gateway đọc cấu hình
-mà `ai_live_configs` trỏ tới, mỗi lần gọi (như nay đọc `ai_prompts` + `ai_operation_settings`, không cache, F3).
+Cấu hình = `instructions` + `examples` (few-shot) + `model_ref` + `effort` + `thinking` + `max_output_tokens` của một thao tác, có `number` (tăng theo thao tác khi tạo nháp)
+và `version` (tăng mỗi lần sửa nháp). Gateway đọc cấu hình mà `ai_live_configs` trỏ tới, mỗi lần gọi, không cache (như nay, F3).
 
-**Chuyển dữ liệu:** migration tạo cho mỗi thao tác một cấu hình `published` từ prompt hiện tại + cài đặt hiện tại, `number` = `revision` hiện tại của prompt (để các số
-`prompt_revision` cũ trong `ai_calls` và `practice_questions.ai_meta` vẫn đúng nghĩa), và trỏ `ai_live_configs` vào đó. Thao tác chưa chọn model vẫn chưa chọn model.
+**Chuyển dữ liệu:** migration tạo cho mỗi thao tác một cấu hình `published` từ prompt hiện tại + cài đặt hiện tại, `number` = `revision` hiện tại của prompt, và trỏ
+`ai_live_configs` vào đó. Thao tác chưa chọn model vẫn chưa chọn model (xem Q-R1). Trước P3, prompt và model đổi riêng (ở B1, prompt bản 3 chạy cả Haiku lẫn Sonnet), nên mọi
+màn nhóm số liệu theo **cặp (số cấu hình, model)**, không theo số cấu hình một mình (R12).
+
+**Model và cấu hình (R12):** `ai_configs.model_ref` và `ai_judge_revisions.model_ref` có FK `RESTRICT`. Xóa model: 409 nếu nó nằm trong một nháp, bản đang chạy, bản
+`previous_config_id`, hay bản mới nhất của một judge đang `active`. Bỏ giá của model đang nằm trong nháp hay bản đang chạy: 409.
 
 ### 6.2 Nháp (D23)
 
-Mỗi thao tác tối đa một nháp, lưu trên server, admin khác thấy. Tạo nháp = chép bản đang chạy. Sửa nháp có `expected_version` như hiện nay. Nháp chạy được test (≤ 5 ví dụ)
-và eval; người học không bao giờ dùng nháp.
-
-**T2 — chặn ví dụ mẫu lệch:** khi lưu nháp, mỗi ví dụ few-shot đi qua cùng luật Practice của §5.2 (ví dụ T1: đầu vào `instantaneous`, đáp án `brush` → `brush` không
-phải dạng của `instantaneous` → lỗi). Lưu bị từ chối (422, liệt kê ví dụ hỏng); từ không có trong kho thì bỏ qua luật.
+- Mỗi thao tác tối đa một nháp, lưu trên server, admin khác thấy. `POST …/:op/draft` nhận `from_config_id` (mặc định bản đang chạy; cho phép một bản `retired` cũ, R13).
+- Sửa nháp gửi `expected_version`; sai thì 409. Mỗi lần sửa tăng `version`, nên mọi lần chạy cũ của nháp hết dùng được cho publish (R2).
+- Nháp chạy được test (≤ 5 ví dụ dev) và eval; người học không bao giờ dùng nháp.
+- Xóa nháp khi nó có lần chạy `queued` / `running`: 409 (hủy lần chạy trước).
+- **T2 — chặn ví dụ mẫu lệch:** khi **lưu** nháp (không phải lúc tạo), mỗi ví dụ few-shot đi qua `check` của port (§5.2). Ví dụ T1: đầu vào `instantaneous`, đáp án `brush` →
+  `brush` không phải dạng của `instantaneous` → 422, chỉ ví dụ hỏng. Từ ngoài kho thì bỏ qua. Bản đang chạy có ví dụ hỏng (T1 chưa sửa) vẫn tạo nháp được; lưu thì bị chặn
+  tới khi sửa.
 
 ### 6.3 Publish (D21, 26/10 câu 17)
 
-Publish nháp *C* của thao tác *op* khi bản đang chạy là *L*:
-1. Phải có một lần chạy **xong trọn** của *C* trên một phiên bản đã chốt *S* (gồm cả held-out). Lần chạy bị hủy, dừng giữa chừng hoặc chạm trần không tính (21.3).
-2. Phải có một lần chạy xong trọn của *L* trên cùng *S*; chưa có thì màn yêu cầu chạy *L* trước (21.5). Lấy lần gần nhất (21.4).
-3. So *C* với *L* trên *S*: cảnh báo nếu tỉ lệ đạt của một tiêu chí (khuôn, luật, mong đợi, mỗi tiêu chí judge có trên cả hai) giảm quá 5 điểm %, hoặc có ví dụ trước đạt
-   nay trượt. Cảnh báo không chặn: admin xác nhận rồi publish; cảnh báo đã bỏ qua ghi vào `ai_config_events`.
-4. Publish: *C* thành `published`, *L* thành `retired`, `ai_live_configs` trỏ *C*, `previous_config_id` = *L*. Một transaction, kiểm `version` của con trỏ.
+Publish nháp *C* (`version` *v*) của thao tác *op* khi bản đang chạy là *L*:
+1. *S* = phiên bản chốt **mới nhất** có held-out của *op* (R11). Phải có một lần chạy **xong trọn** (§5.3) của *C* trên *S* với `config_version` = *v*.
+2. Phải có một lần chạy xong trọn của *L* trên *S*; chưa có thì `publish-check` báo `baseline-required` và màn đưa nút chạy *L* (21.5). Lấy lần gần nhất (21.4).
+   *L* chưa có model: **chờ Q-R1**.
+3. So *C* với *L* trên *S* (§5.3): cảnh báo nếu tỉ lệ đạt của một tiêu chí (khuôn, luật, mong đợi; tiêu chí judge chỉ khi cả hai có điểm của cùng bản judge) giảm quá 5 điểm
+   %, hoặc có ví dụ dev trước đạt nay trượt, hoặc số ví dụ held-out trượt tăng. Cảnh báo không chặn.
+4. Request `publish` gửi `expected_version` (*v*), `candidate_run_id`, `baseline_run_id` (đúng hai lần chạy `publish-check` đã dùng) và `acknowledge_warnings` khi có cảnh báo.
+   Lệch bất kỳ cái nào → 409, màn tải lại `publish-check`.
+5. Một transaction, kiểm `version` của con trỏ: *C* → `published`, *L* → `retired`, `ai_live_configs.config_id` = *C*, `previous_config_id` = *L*; ghi `ai_config_events` (id hai
+   lần chạy, cảnh báo đã bỏ qua). Không còn nháp sau publish.
 
 ### 6.4 Rollback (D24)
 
-Chỉ về `previous_config_id`; không cần eval (24.2). Sau rollback, `previous_config_id` trống, nên không rollback hai lần liên tiếp; muốn về xa hơn thì tạo nháp từ bản
-cũ và publish lại (qua cổng).
+Chỉ về `previous_config_id`; không cần eval (24.2). Một transaction: bản đang chạy → `retired`, bản trước → `published`, con trỏ trỏ bản trước, `previous_config_id` = NULL; nháp
+đang có giữ nguyên; ghi `ai_config_events`. Không rollback hai lần liên tiếp (409 `no-previous`). Muốn về xa hơn: tạo nháp `from_config_id` = bản cũ rồi publish qua cổng.
 
 ### 6.5 Câu đã làm sẵn và số cấu hình (D25, D34)
 
 Không đổi cách dùng lại câu làm sẵn (`unseen-questions.ts`). `ai_calls.prompt_revision` và `practice_questions.ai_meta.prompt_revision` mang `number` của cấu hình từ P3;
 tên cột giữ nguyên, nghĩa ghi trong comment của schema.
 
-### 6.6 API bị bỏ
+### 6.6 API bị bỏ hoặc đổi nguồn (R4)
 
-`PUT /v1/admin/ai/prompts/:op` và `PUT /v1/admin/ai/operations/:op` bị bỏ (trả 404 sau P3), thay bằng các endpoint cấu hình (§9). Chỉ admin web gọi hai endpoint này;
-admin web đổi cùng PR. Các `GET` lịch sử giữ để đọc lịch sử cũ.
+- `PUT /v1/admin/ai/prompts/:op` và `PUT /v1/admin/ai/operations/:op` bị bỏ (404 sau P3), thay bằng các endpoint cấu hình (§9).
+- `GET /v1/admin/ai/operations` và `GET /v1/admin/ai/prompts/:op` giữ khuôn trả về nhưng đọc **cấu hình đang chạy**; `GET …/prompts/:op/revisions` giữ để đọc lịch sử cũ.
+  Trang Tình trạng và `used_by` của model đọc cấu hình.
+- Trong repo có bốn chỗ gọi hai `PUT`: job CI `admin-e2e-real` (`apps/admin/e2e-real/support/ai-report.ts`, `chooseClozeModel`), `scripts/smoke-buoc-6.mjs`,
+  `scripts/smoke-buoc-7.mjs`, `scripts/learner-test-setup.mjs`. P3 sửa cả bốn trong cùng PR, đi đúng đường thật: thêm ví dụ, chốt phiên bản, eval nháp (model `fake`, nhanh), publish
+  (E16). Không làm đường tắt chỉ cho test.
 
 ## 7. K4 — Câu thật (P4)
 
 ### 7.1 Chấm câu AI 7 ngày qua (D26, D35)
 
-- Thuộc module Practice (dữ liệu là của Practice); Practice gọi thao tác `judge` qua `AiService`.
-- **Nguồn:** `practice_questions` có `source = 'ai'`, tạo trong `content_retention_days` (7) ngày, còn nội dung gốc trong `ai_call_contents` (nối qua
-  `ai_meta.call_operation_id`, F7). Câu về **từ riêng** của người học không bao giờ được chấm (26/10 câu 21).
-- **Lọc** (cả bốn, D26): thao tác, số cấu hình, model, "chỉ tài khoản test" = người học có `staff_role` (`admin` / `editor`, D35; Practice hỏi `IdentityService`).
-- **Mỗi lần bấm:** tối đa `real_judge_limit` (200) câu, mới nhất trước, chưa được bản judge đó chấm. Trước khi chạy, màn hiện số câu và chi phí ước tính (số câu × chi phí
-  trung bình mỗi lời gọi của bản judge đó trong các lần trước; chưa có lần nào thì "chưa ước tính được"). Chạy trong worker, tính vào trần USD của admin (§5.5).
-- `context` gửi judge: các từ khác trong cùng phiên luyện (để D33 phân mức). Không có tên model hay số cấu hình.
+- **Ai làm gì (R8, E8):** Practice chọn câu và dựng đầu vào chấm (dữ liệu là của Practice); `ai` chạy lượt chấm (lời gọi `judge`, trần USD, worker `ai-eval`, lưu điểm). Practice
+  gọi `AiService.startJudgePass({judge_id, kind: 'real', filters, subjects})`; `subjects` là ảnh chụp (`subject_id` = id câu, `input`, `output`, `context`).
+- **Nguồn:** `practice_questions` có `source = 'ai'`, tạo trong `content_retention_days` (7) ngày; đầu vào từ `practice_ai_requests.ai_input.data`, đầu ra gốc lấy qua
+  `AiService.callContents(operationIds)` (nối bằng `ai_meta.call_operation_id`, F7). `content_retention_days = 0` → không có nguồn; màn ghi lý do.
+- **Không bao giờ chấm (R6):** câu về từ riêng; câu có bất kỳ phương án nhiễu hay nghĩa sai nào lấy từ từ riêng (`mcq_sentence`, `meaning_in_sentence`); màn ghi số câu bỏ qua
+  vì lý do này. `context` chỉ gồm các từ **trong kho** của cùng phiên. Vì vậy ảnh chụp và lý do của judge không chứa dữ liệu riêng của người học.
+- **Lọc** (cả bốn, D26): thao tác, cặp (số cấu hình, model), "chỉ tài khoản test" = người học có `staff_role` (D35) lấy qua `IdentityService.staffUserIds()` (mới), vai trò **hiện
+  tại** (cấp hay bỏ `editor` thì kết quả lọc đổi theo, cả với câu cũ).
+- **Mỗi lần bấm:** tối đa `real_judge_limit` (200) câu, mới nhất trước, chưa được bản judge đó chấm (Practice hỏi `AiService.judgedSubjects(revisionId, ids)`). Trước khi chạy, màn
+  hiện số câu và chi phí ước tính (số câu × chi phí trung bình mỗi lời gọi của bản judge đó ở các lượt trước; chưa có lượt nào thì "chưa ước tính được"). Mỗi bản judge một lượt
+  chạy mỗi lúc. Lượt treo được dọn như `stalled` của eval.
 - **Kết quả:** trang riêng (từng câu, điểm, lý do, nút gắn nhãn, nút "Đưa vào bộ ví dụ") và số tổng trên dashboard (§8).
 
 ### 7.2 Đưa vào bộ ví dụ (D27)
 
-- **Nút ở:** trang chi tiết báo lỗi đã `confirmed` của câu AI; mỗi dòng "không đạt" ở §7.1. Chỉ `admin` thấy (D19; báo lỗi do cả `editor` xử lý được, F10).
-- **Đầu vào:** lấy nguyên `practice_ai_requests.ai_input.data` khi còn (7 ngày); quá 7 ngày thì dựng lại từ nội dung của nghĩa (`sense_id`), khi đó phương án nhiễu và nghĩa
-  khác là chọn mới, không giống hệt câu gốc (ghi rõ trên hộp thoại).
-- **Ô mong đợi:** máy điền sẵn (`forms` từ kho từ), người bấm sửa. **Split:** luôn `dev`. `source` = `report` / `real_judge`, `source_ref` = mã báo lỗi hoặc mã câu.
-- Câu về từ riêng: không có nút.
+- **Nút ở:** trang chi tiết báo lỗi đã `confirmed` của câu AI; mỗi dòng "không đạt" ở §7.1. Chỉ `admin` thấy (D19; báo lỗi do cả `editor` xử lý được, F10). Không có nút cho câu
+  thuộc diện "không bao giờ chấm" ở §7.1.
+- **Endpoint ở Practice** (dữ liệu là của Practice / Content): `POST /v1/admin/practice/eval-examples/from-source` (`settings.manage`), gọi `AiService.createEvalExample({operation,
+  input, expected, note, source, source_ref, split: 'dev'})`.
+- **Đầu vào:** lấy nguyên `practice_ai_requests.ai_input.data` khi còn (7 ngày); quá 7 ngày thì dựng lại từ nội dung hiện tại của nghĩa trong kho (E17): phương án nhiễu và nghĩa
+  khác là chọn mới, nghĩa có thể đã sửa; hộp thoại ghi rõ.
+- **Ô mong đợi:** máy điền sẵn (`forms` qua port), người bấm sửa. **Split:** luôn `dev`.
 
 ## 8. K5 — Dashboard (P5, D28, D29)
 
 Thêm vào trang `/dashboard` (quyền `ai.view`, biểu đồ tự vẽ):
-1. **Số ngày chạm trần**: so mỗi ngày với trần **của chính ngày đó**, đọc từ `app_setting_changes` (key `entitlements.ai_daily_cap`, F2); hiện nay so với trần hiện tại.
+1. **Số ngày chạm trần**: so mỗi ngày với trần **của chính ngày đó** (giá trị cuối ngày), đọc lịch sử `entitlements.ai_daily_cap` qua `SettingsService` (F2); hiện nay so với trần
+   hiện tại.
 2. **Eval gần nhất mỗi thao tác**: lần chạy xong trọn gần nhất của bản đang chạy trên phiên bản đã chốt mới nhất; tỉ lệ đạt khuôn, luật, mong đợi, judge; dev và held-out.
-3. **Điểm judge theo thao tác và số cấu hình**, từ eval và từ câu thật, kèm "đã / chưa hiệu chỉnh".
-4. **Câu thật 7 ngày**: lần chấm gần nhất, tỉ lệ `pass` / `fail_major` / `fail_minor` theo thao tác.
+3. **Điểm judge theo thao tác và cặp (số cấu hình, model)**, từ eval và từ câu thật, kèm "đã / chưa hiệu chỉnh"; biểu đồ đánh dấu chỗ đổi bản judge (D17).
+4. **Câu thật 7 ngày**: lượt chấm gần nhất, tỉ lệ `pass` / `fail_major` / `fail_minor` theo thao tác.
 
 Kèm sửa: báo cáo `ai-quality` đếm thêm báo lỗi `confirmed` (F11 nay bỏ sót).
 
 ## 9. API (tóm tắt; chi tiết ở plan)
 
-Mọi endpoint mới cần `settings.manage` (D19), trừ phần dashboard (`ai.view`). Lỗi theo Problem Details; tạo lần chạy có `Idempotency-Key`.
+Mọi endpoint mới cần `settings.manage` (D19), trừ phần đọc dashboard (`ai.view`). Lỗi theo Problem Details; tạo lần chạy, lượt chấm có `Idempotency-Key`. Thao tác có tác dụng
+phụ (`reveal`) là `POST`.
 
 | Plan | Endpoint |
 |---|---|
-| P1 | `POST /v1/admin/ai/eval/sets` (chốt phiên bản), `GET …/sets?operation`; `GET …/examples/:id?reveal=true`; `bulk` nhận `expected`, `split`; `POST …/runs` nhận `set_id`, `judge`; `GET …/runs/:id/items?reveal=<example_id>`; `GET …/runs/compare?a=&b=` |
-| P2 | `GET/POST /v1/admin/ai/judges`, `PUT …/judges/:id` (thêm bản), `GET …/judges/:id/revisions`; `POST …/eval/runs/:id/judge`; `PUT /v1/admin/ai/labels` (một hoặc nhiều nhãn); `GET …/judges/:id/agreement` |
-| P3 | `GET /v1/admin/ai/configs/:op` (đang chạy, nháp, trước đó), `POST …/:op/draft`, `PUT …/:op/draft`, `DELETE …/:op/draft`, `POST …/:op/draft/test`, `GET …/:op/publish-check`, `POST …/:op/publish`, `POST …/:op/rollback`, `GET …/:op/history` |
-| P4 | `POST /v1/admin/practice/real-judge-runs` (lọc, `limit`), `GET …/real-judge-runs`, `GET …/:id/items`, `GET …/real-judge-runs/estimate`; `POST /v1/admin/ai/eval/examples/from-source` (`report_id` hoặc `question_id`) |
+| P1 | `POST /v1/admin/ai/eval/sets` (chốt phiên bản), `GET …/sets?operation`; `POST …/examples/:id/reveal`; `GET …/examples/forms?word&part_of_speech`; `bulk` nhận `expected`, `split`; `POST …/runs` nhận `set_id`; `GET …/runs/:id/items`; `GET …/runs/compare?a=&b=` |
+| P3 | `GET /v1/admin/ai/configs/:op` (đang chạy, nháp, trước đó), `POST …/:op/draft` (`from_config_id?`), `PUT …/:op/draft`, `DELETE …/:op/draft`, `POST …/:op/draft/test`, `GET …/:op/publish-check`, `POST …/:op/publish`, `POST …/:op/rollback`, `GET …/:op/history`; `POST …/eval/runs` nhận `config: 'live' \| 'draft'` |
+| P2 | `GET/POST /v1/admin/ai/judges`, `PUT …/judges/:id` (thêm bản), `POST …/judges/:id/clone`, `GET …/judges/:id/revisions`; `POST …/eval/runs/:id/judge-passes`, `GET …/judge-passes/:id`; `PUT /v1/admin/ai/labels`; `GET …/judges/:id/agreement` |
+| P4 | `POST /v1/admin/practice/real-judge` (lọc, `judge_id`), `GET …/real-judge/estimate`, `GET …/real-judge/passes`, `GET …/real-judge/passes/:id/items`; `POST /v1/admin/practice/eval-examples/from-source` (`report_id` hoặc `question_id`) |
 | P5 | mở rộng `GET /v1/admin/ai/dashboard`, `…/practice/ai-quality`, `…/entitlements/ai-usage/days` (thêm field, không đổi field cũ) |
-| P6 | `GET /v1/admin/learning/retention?from&to` (`ai.view`) |
+| P6 | `GET /v1/admin/learning/retention?from&to` (`ai.view`, E18) |
+
+**Hàm mới giữa các module (R8):** `AiService.registerEvalRules`, `startJudgePass`, `judgedSubjects`, `callContents`, `createEvalExample`; `ContentService` tra mục kho theo
+`(lemma, pos)`; `IdentityService.staffUserIds()`, `IdentityService.registrations(from, to)` (P6). Không module nào đọc bảng của module khác.
 
 ## 10. K6 — D7/D30 (P6, D36)
 
-- **Lần học** = một dòng `learning_log` (ôn, luyện, thêm, bỏ từ). Module Learning xuất một hàm đếm theo ngày; Identity cho ngày đăng ký (`users.created_at`).
-- **Đang học** (vào ngày *d*): có lần học trong `learning.active_window_days` (*N* = 7) ngày tính tới *d*. **Đã ngừng:** đã có ít nhất một lần học, nhưng *N* ngày liền gần
-  nhất không có.
-- **D7 / D30** của một nhóm (người đăng ký cùng tuần, tuần theo giờ VN): % người trong nhóm còn "đang học" ở ngày đăng ký + 7 / + 30. Nhóm chưa tới ngày đó thì để trống.
-- **Không tính:** tài khoản `admin` / `editor` (là tài khoản test, D35); tài khoản đã xóa (không còn dữ liệu).
+- **Lần học:** **chờ Q-R3.** Hiện design chỉ chắc phần `learning_log` (ôn thẻ, thêm / bỏ từ, hai nút "Cần ôn tập" / "Đã biết"), module Learning xuất hàm đếm theo ngày.
+  Nếu Q-R3 gồm câu luyện tập đã trả lời: Learning không import được Practice (Practice import Learning), nên Practice cung cấp số đếm qua một port đăng ký lúc khởi động (cùng kiểu
+  §5.2), hoặc endpoint đặt ở Practice và gộp hai nguồn.
+- **Ngày của một lần học:** `local_date` của người học (ngày theo múi giờ người đó). Nhóm đăng ký theo tuần giờ VN, tuần bắt đầu thứ Hai.
+- **Đang học** (vào ngày *d*): có lần học trong cửa sổ [*d* − *N* + 1, *d*] (*N* = `learning.active_window_days` = 7, tính cả ngày *d*). **Đã ngừng:** đã có ít nhất một lần
+  học, nhưng không có lần học nào trong cửa sổ đó.
+- **D7 / D30** của một nhóm: % người trong nhóm còn "đang học" ở ngày đăng ký + 7 / + 30. Nhóm chưa tới ngày đó thì để trống.
+- **Không tính (E18):** tài khoản `admin` / `editor` (vai trò hiện tại; là tài khoản test, D35); tài khoản chưa xác nhận email; tài khoản đã xóa (không còn dữ liệu).
 - **Dashboard:** số đang học và đã ngừng hôm nay; bảng nhóm theo tuần với D7, D30 và số người.
 
-Ví dụ: Lan đăng ký 1/11, học 3/11, 5/11, 6/11 rồi nghỉ. Ngày 8/11 (D7) Lan vẫn "đang học" (lần học cuối 6/11, trong 7 ngày). Từ 13/11 Lan "đã ngừng". D30 (1/12) Lan
-không còn đang học.
+Ví dụ: Lan đăng ký 1/11, học 3/11, 5/11, 6/11 rồi nghỉ. Ngày 8/11 (D7) Lan vẫn "đang học" (lần học cuối 6/11, trong cửa sổ 2/11–8/11). Từ 13/11 Lan "đã ngừng". D30 (1/12)
+Lan không còn đang học.
 
 ## 11. When → Then
 
 | # | When | Then |
 |---|---|---|
-| B1 | Chốt phiên bản khi bộ đang soạn không có ví dụ held-out nào | 422: phiên bản để publish cần held-out |
+| B1 | Chốt phiên bản khi bộ đang soạn không có ví dụ held-out nào, hoặc có ví dụ thiếu `expected` | 422, liệt kê lý do / ví dụ |
 | B2 | Ví dụ thiếu `expected` cho một trong 4 thao tác (tạo, sửa, nhập) | 422 theo ví dụ / số dòng |
-| B3 | Admin mở ví dụ held-out không gửi `reveal: true` | 409 `held-out-hidden`; không đổi gì |
-| B4 | Mở ví dụ held-out với `reveal: true` | ví dụ sang `dev`, `revealed_at` ghi; phiên bản đã chốt giữ ảnh chụp cũ, màn ghi "1 ví dụ held-out đã bị xem" |
+| B3 | Đọc ví dụ held-out (danh sách, chi tiết, kết quả lần chạy, so sánh) | chỉ `id`, `split`, số tổng; không lộ đầu vào, đầu ra, lý do |
+| B4 | `POST …/examples/:id/reveal` | ví dụ sang `dev`, `revealed_at` ghi; phiên bản đã chốt giữ ảnh chụp, màn ghi "1 ví dụ held-out đã bị xem" |
 | B5 | Sửa ví dụ đã nằm trong một phiên bản chốt | bộ đang soạn đổi; phiên bản chốt và lần chạy cũ không đổi |
-| B6 | Luật Practice không tìm thấy mục `(word, part_of_speech)` trong kho | `rule = skipped`; tỉ lệ luật tính trên ví dụ không bị bỏ qua, màn ghi số bị bỏ qua |
-| B7 | So hai lần chạy khác `set_id`, hoặc một lần chạy trên bộ đang soạn | 409 `eval-set-mismatch` |
-| B8 | Lưu judge với model `openai` | 422 `judge-provider`; `anthropic` và `fake` được nhận |
-| B9 | Judge trả `verdict` ngoài ba giá trị, hay thiếu tiêu chí | gateway coi là sai khuôn như mọi thao tác; điểm của đầu ra đó là "không chấm được", không tính vào độ khớp |
-| B10 | Tiêu chí có 29 nhãn, khớp 100% | "chưa hiệu chỉnh" (chưa đủ 30) |
-| B11 | Lần chạy chạm trần USD ở ví dụ 40/100 | dừng, `failed` + `admin-usd-cap`, 39 ví dụ đã chấm giữ; không dùng được cho publish |
-| B12 | Trần lời gọi của người học: admin vừa chạy eval 3000 lời gọi | Lan vẫn có câu AI (chỉ lời gọi `learner` được đếm) |
-| B13 | Chạy eval với model chưa nhập giá | 409 `model-price-missing` |
-| B14 | Tạo nháp khi đã có nháp | 409; trả nháp hiện có |
-| B15 | Hai admin cùng sửa nháp | người lưu sau nhận 409 theo `expected_version` |
-| B16 | Publish khi nháp chưa có lần chạy trọn trên phiên bản chốt | 409 `eval-required` |
-| B17 | Publish khi bản đang chạy chưa có lần chạy trên cùng phiên bản | 409 `baseline-required`; màn đưa nút chạy bản đang chạy |
-| B18 | Publish có cảnh báo, admin không gửi `acknowledge_warnings` | 409 kèm danh sách cảnh báo; gửi lại có `acknowledge_warnings: true` thì publish |
-| B19 | Rollback khi không có `previous_config_id` | 409 `no-previous` |
-| B20 | Hai admin publish cùng lúc | một người thành công; người kia 409 theo `version` của con trỏ |
-| B21 | Lan có câu `rhythm` làm sẵn bằng cấu hình 3, admin publish cấu hình 4 | Lan vẫn nhận câu cấu hình 3 (D34); điểm của nó tính cho cấu hình 3 |
-| B22 | Chấm câu thật khi đã quá 7 ngày, nội dung gốc đã xóa | câu đó không nằm trong nguồn |
-| B23 | Chấm câu thật, lọc "chỉ tài khoản test", không có tài khoản staff nào luyện | 0 câu; không gọi AI |
-| B24 | Bấm "Đưa vào bộ ví dụ" trên báo lỗi 10 ngày tuổi | đầu vào dựng lại từ nội dung nghĩa; hộp thoại ghi phương án nhiễu khác câu gốc |
-| B25 | Báo lỗi về từ riêng | không có nút |
-| B26 | `editor` mở báo lỗi đã xác nhận | không thấy nút "Đưa vào bộ ví dụ" |
-| B27 | Ngày chạm trần khi trần đổi trong ngày | dùng giá trị trần cuối ngày đó (lần đổi cuối trước 24 giờ) |
-| B28 | Người đăng ký chưa từng học | không "đang học", không "đã ngừng"; vẫn tính vào mẫu số của nhóm |
-| B29 | Nhóm đăng ký tuần này, chưa tới ngày +7 | D7 để trống |
-| B30 | Ví dụ few-shot của nháp có đáp án không phải dạng của từ (T1) | lưu nháp 422, chỉ ví dụ hỏng |
+| B6 | Trang Các lần gọi mở lời gọi eval / judge của ví dụ held-out | `content: null`, nhãn "held-out" |
+| B7 | Chạy thử khi bộ có cả dev và held-out | chỉ lấy ví dụ dev |
+| B8 | Luật Practice không tìm thấy mục `(word, part_of_speech)` trong kho | `rule = skipped` (`not-in-catalog`); tỉ lệ luật tính trên ví dụ không bị bỏ qua, màn ghi số bị bỏ qua |
+| B9 | Thao tác không có luật Practice | `rule = not_applicable`, khác `skipped` |
+| B10 | So hai lần chạy khác `set_id`, hoặc một lần chạy trên bộ đang soạn | 409 `eval-set-mismatch` |
+| B11 | So tiêu chí judge khi hai lần chạy được chấm bằng hai bản judge khác nhau | không so tiêu chí đó; màn đưa nút chấm cả hai bằng một bản |
+| B12 | Lưu judge với model `openai` | 422 `judge-provider`; `anthropic` được nhận; `fake` chỉ khi `AI_FAKE_ENABLED=true` |
+| B13 | Judge trả ba mảng lệch độ dài hay `verdict` lạ | gateway coi là sai khuôn; mọi tiêu chí của đầu ra đó "không chấm được" |
+| B14 | Judge trả thiếu một `code` đã gửi | tiêu chí đó "không chấm được"; tiêu chí khác giữ điểm |
+| B15 | Bấm chấm lần hai cùng bản judge trên cùng lần chạy | chỉ chấm đầu ra chưa có điểm hoặc "không chấm được"; không trả tiền hai lần |
+| B16 | Hai lượt chấm cùng bản judge cùng lúc | lượt sau 409 |
+| B17 | Tiêu chí có 29 nhãn, khớp 100% | "chưa hiệu chỉnh" (chưa đủ 30) |
+| B18 | Lần chạy chạm trần USD ở ví dụ 40/100 | dừng, `failed` + `admin-usd-cap`, 39 ví dụ giữ; không trọn nên không dùng cho publish |
+| B19 | Lượt chấm judge trên lần chạy đã xong chạm trần | chỉ lượt chấm `failed`; lần chạy vẫn `finished` |
+| B20 | Đã tiêu đúng 2,00 USD, trần 2,00 | lời gọi admin tiếp theo bị chặn |
+| B21 | Trần lời gọi của người học: admin vừa chạy eval 3000 lời gọi | Lan vẫn có câu AI (chỉ lời gọi `learner` được đếm) |
+| B22 | Chạy eval / test / judge với model chưa nhập giá | 409 `model-price-missing` |
+| B23 | Tạo nháp khi đã có nháp | 409; trả nháp hiện có |
+| B24 | Hai admin cùng sửa nháp | người lưu sau 409 theo `expected_version` |
+| B25 | Sửa nháp sau khi eval rồi publish | `publish-check` báo `eval-required` (lần chạy cũ mang `config_version` cũ) |
+| B26 | Xóa nháp khi lần chạy của nó đang `queued` / `running` | 409 |
+| B27 | Publish khi nháp chưa có lần chạy trọn trên *S* | 409 `eval-required` |
+| B28 | Publish khi bản đang chạy chưa có lần chạy trên *S* | 409 `baseline-required`; màn đưa nút chạy bản đang chạy |
+| B29 | Bản đang chạy chưa có model | theo Q-R1 |
+| B30 | Publish có cảnh báo, không gửi `acknowledge_warnings`, hoặc gửi id lần chạy khác `publish-check` | 409 kèm cảnh báo / lý do |
+| B31 | Hai admin publish cùng lúc | một người thành công; người kia 409 theo `version` của con trỏ |
+| B32 | Rollback khi không có `previous_config_id` | 409 `no-previous` |
+| B33 | Xóa lần chạy đã làm bằng chứng publish | 409 |
+| B34 | Xóa model nằm trong nháp, bản đang chạy, bản trước, hoặc judge đang dùng | 409 |
+| B35 | Lan có câu `rhythm` làm sẵn bằng cấu hình 3, admin publish cấu hình 4 | Lan vẫn nhận câu cấu hình 3 (D34); điểm của nó tính cho cấu hình 3 |
+| B36 | Ví dụ few-shot của nháp có đáp án không phải dạng của từ (T1) | lưu nháp 422, chỉ ví dụ hỏng; tạo nháp vẫn được |
+| B37 | Hai admin bấm "Chốt phiên bản" cùng lúc | một thành công; người kia 409 (unique `(operation, version)`) |
+| B38 | Chấm câu thật khi nội dung gốc đã quá 7 ngày, hoặc `content_retention_days = 0` | câu đó không nằm trong nguồn; màn ghi lý do |
+| B39 | Câu MCQ có một phương án là từ riêng của Lan | không được chấm, không có nút đưa vào bộ ví dụ; tính vào số "bỏ qua vì có từ riêng" |
+| B40 | Chấm câu thật, lọc "chỉ tài khoản test", không có tài khoản staff nào luyện | 0 câu; không gọi AI |
+| B41 | Lượt chấm câu thật chết giữa chừng | sau 15 phút không heartbeat → `failed` + `stalled`, như eval |
+| B42 | Bấm "Đưa vào bộ ví dụ" trên báo lỗi 10 ngày tuổi | đầu vào dựng lại từ nội dung nghĩa; hộp thoại ghi phương án nhiễu khác câu gốc |
+| B43 | `editor` mở báo lỗi đã xác nhận | không thấy nút "Đưa vào bộ ví dụ" |
+| B44 | Trần lượt AI đổi trong ngày | ngày đó so với giá trị cuối ngày; trước lần lưu đầu tiên dùng giá trị mặc định |
+| B45 | Người đăng ký chưa từng học | không "đang học", không "đã ngừng"; vẫn tính vào mẫu số của nhóm |
+| B46 | Nhóm đăng ký tuần này, chưa tới ngày +7 | D7 để trống |
+| B47 | Người học được cấp `editor` sau khi đăng ký | bị loại khỏi D7/D30 và tính là tài khoản test, cả cho quá khứ |
 
 ## 12. Kiểm thử
 
 Theo `~/.claude/rules/testing-boundaries.md`: lệnh mặc định chỉ unit và component.
-- Hàm thuần có test biên: kiểm `expected` theo từng thao tác; chia held-out theo tỉ lệ; so hai lần chạy (tỉ lệ, "trước đạt nay trượt", ngưỡng 5 điểm % đúng tại cạnh);
-  độ khớp và trạng thái hiệu chỉnh (29 / 30 nhãn, 84,9% / 85%); trần USD (đúng tại cạnh 2,00); cửa sổ "đang học" (ngày *N* và *N*+1); D7/D30 với nhóm chưa đủ ngày.
-- Service: publish và rollback (mọi 409 ở §11), ảnh chụp phiên bản, đổi cách đếm trần lời gọi.
+- Hàm thuần có test biên: kiểm `expected` theo từng thao tác; chia held-out theo tỉ lệ (bộ 0, 1, đúng 30%); "xong trọn"; so hai lần chạy (tỉ lệ, "trước đạt nay trượt", ngưỡng 5
+  điểm % đúng tại cạnh, hai bản judge khác nhau); kiểm đầu ra judge theo tiêu chí đã gửi; độ khớp và hiệu chỉnh (29 / 30 nhãn, 84,9% / 85%); trần USD (1,99 / 2,00, `null`, `0`);
+  cửa sổ "đang học" (ngày *d* − 6 và *d* − 7); D7/D30 với nhóm chưa đủ ngày.
+- Service (Prisma giả): luật publish và rollback, mọi 409 ở §11, ảnh chụp phiên bản, đổi cách đếm trần lời gọi, job eval dừng ở trần.
+- Khóa thật (B24, B31, B37): chạy trong smoke bằng hai request song song (E19); không thêm lệnh Testcontainers mới.
 - Admin web: behavioural test theo role và chữ hiển thị (hộp hỏi held-out, cảnh báo publish, gắn nhãn bằng phím).
 - Fake provider trả đầu ra cho thao tác `judge` để smoke chạy không cần key.
 
 ## 13. Xong khi
 
-- CI xanh mỗi PR.
-- `pnpm smoke:nhom-b` trên DB mới với model `fake`: tạo ví dụ có ô mong đợi → chốt phiên bản → chạy eval bản đang chạy và nháp, có judge → gắn nhãn → so → publish có cảnh
-  báo → rollback → chạm trần USD (đặt trần thấp) → chấm câu thật của một tài khoản `editor` → đưa vào bộ ví dụ → đọc dashboard và D7/D30.
-- Chủ dự án tự chạy một lần thật với key của mình, ngân sách 5 USD (D30): eval `generate_cloze` trên phiên bản chốt có held-out, judge "Chỉ một đáp án" bằng model Anthropic,
-  gắn 30 nhãn, xem độ khớp.
+- CI xanh mỗi PR, gồm job `admin-e2e-real` (P3 sửa `chooseClozeModel`).
+- Mỗi plan có một đoạn smoke của mình, chạy khi PR cuối của plan merge; cuối đợt `pnpm smoke:nhom-b` trên DB mới với model `fake` (có giá, E15), theo thứ tự: chọn model lần đầu
+  (theo Q-R1) → tạo ví dụ có ô mong đợi → chốt phiên bản → eval bản đang chạy và nháp, có judge → gắn nhãn → so → publish có cảnh báo (kèm hai publish song song) → rollback →
+  chạm trần USD → chấm câu thật của một tài khoản `editor` → đưa vào bộ ví dụ → đọc dashboard và D7/D30. Output lưu `docs/deliveries/nhom-b-smoke-output.txt`.
+- Các smoke cũ vẫn qua sau khi sửa: `smoke:buoc-6`, `smoke:buoc-7`, và `learner:setup` chạy được.
+- Chủ dự án tự chạy một lần thật với key của mình, ngân sách 5 USD (D30): eval `generate_cloze` trên phiên bản chốt có held-out; judge "Chỉ một đáp án" bằng **hai** model
+  Anthropic (judge gốc và bản nhân bản, D3); gắn 30 nhãn; xem độ khớp của từng judge.
 
 ## 14. Rủi ro và chỗ chưa kiểm
 
@@ -338,23 +433,37 @@ Theo `~/.claude/rules/testing-boundaries.md`: lệnh mặc định chỉ unit v�
   bạn là chỗ phát hiện.
 - **Câu cũ còn lâu:** sau launch, publish để chữa lỗi nặng thì câu lỗi đã làm sẵn còn tới người học tới 6 tháng (D34).
 - **Tài khoản test = staff:** tài khoản người học riêng muốn được tính phải được cấp `editor`, và khi đó vào được trang admin (D35).
+- **Trần USD mềm:** có thể vượt vài lời gọi khi chạy song song (§5.5).
 - **Luật trong eval tra theo `(word, part_of_speech)`:** một từ có nhiều mục cùng từ loại (hiếm) thì gộp mọi dạng; từ ngoài kho bỏ qua luật.
+- **Tiêu chí "trỏ đúng nghĩa"** của `generate_meaning_question` chưa ai kiểm cho tới khi có judge cho thao tác đó (D7, D1).
 - **Mục nhiều chữ** (`bus stop`): chưa kiểm câu điền từ có một hay hai chỗ trống (T3).
-- **D7/D30:** tài khoản đã xóa mất `learning_log`, nhóm cũ thiếu người; mở app mà không học không được tính.
-- **Bỏ hai `PUT`** là ngoại lệ của quy ước chỉ thêm (§6.6); nếu có công cụ ngoài admin web gọi chúng thì vỡ (hiện không có, theo code facts §11).
-- **Ước tính chi phí chấm câu thật** dựa trên các lần trước; lần đầu không ước tính được.
+- **D7/D30:** tài khoản đã xóa mất `learning_log`; xóa từ riêng xóa luôn `learning_log` của từ đó (`learning/quick-add/quick-add.service.ts:94`), nên số của quá khứ có thể đổi;
+  phần "lần học" chờ Q-R3.
+- **Chuỗi plan dài:** chỉ P6 chạy song song (§3); P1 → P3 → P2 → P4 → P5 nối tiếp.
+- **Ước tính chi phí chấm câu thật** dựa trên các lượt trước; lượt đầu không ước tính được.
+- `ASSUMPTION` từ review: cách `prisma migrate deploy` xử lý migration đến trễ thứ tự (tránh bằng luật đặt tên ở §3).
 - Comment cũ trong code (F12) sửa khi chạm tới file đó.
 
 ## 15. Đề xuất kỹ thuật (duyệt cùng design)
 
 | # | Chọn | Bỏ | Vì sao |
 |---|---|---|---|
-| E1 | Ảnh chụp ví dụ ở phiên bản chốt và ở từng kết quả chạy; kết quả chạy thành bảng | Giữ `items` Json và đọc đầu vào lúc chạy | So hai lần chạy và nối điểm judge, nhãn cần chữ cố định (F6) |
-| E2 | Port `EvalRuleCheck` do Practice cung cấp, tra kho theo `(word, part_of_speech)` | Thêm `sense_id` bắt buộc vào ví dụ; viết lại luật trong `ai` | Giữ R17; ví dụ vẫn viết bằng chữ như B1; một nơi giữ luật |
-| E3 | Thao tác gateway `judge` chung + bảng `ai_judges` / `ai_judge_revisions` cho cấu hình do admin tạo | Mỗi judge một thao tác trong code | Admin thêm judge trên UI không cần deploy (26/10 câu 19, D13) |
-| E4 | Judge lưu là bản mới, không publish | Cho judge cùng vòng đời cấu hình | Judge không phục vụ người học; điểm đã ghi bản judge (D17) |
-| E5 | Bảng `ai_configs` + con trỏ `ai_live_configs`; số cấu hình nối tiếp số revision prompt | Thêm trạng thái vào `ai_prompts` và `ai_operation_settings` | Một cụm có một số (D22); con trỏ sẵn cho canary sau |
-| E6 | Bỏ hai `PUT` cũ | Giữ chúng ghi vào nháp | Một API làm hai việc khác cũ sẽ đánh lừa |
-| E7 | Trần USD kiểm trước mỗi lời gọi, chạm trần thì dừng lần chạy | Ước tính và chặn trước khi bắt đầu | Chi phí thật mỗi câu dao động; dừng giữa chừng vẫn giữ kết quả đã có |
-| E8 | Chấm câu thật đặt ở Practice | Đặt ở `ai` | Dữ liệu câu, phiên, từ riêng và tài khoản là của Practice / Identity |
-| E9 | D7/D30 tính lúc đọc từ `learning_log` | Bảng tổng hợp theo ngày | Đủ nhanh với số người học hiện tại (`ASSUMPTION`); thêm bảng khi chậm |
+| E1 | Ảnh chụp ví dụ ở phiên bản chốt, ở từng kết quả chạy và ở từng đối tượng chấm; kết quả chạy thành bảng | Giữ `items` Json và đọc đầu vào lúc chạy | So lần chạy và nối điểm, nhãn cần chữ cố định (F6) |
+| E2 | Port luật do Practice đăng ký vào `AiService` lúc `onModuleInit`, gồm `check`, `formsOf`, `matchesExpected`; tra kho theo `(lemma, pos)` | `sense_id` bắt buộc trong ví dụ; viết lại luật trong `ai`; inject provider của Practice vào `ai` | Giữ R17 Bước 6, tránh vòng import; ví dụ vẫn viết bằng chữ như B1 |
+| E3 | Thao tác gateway `judge` (kiểu `GatewayOperation`), đầu ra ba mảng chuỗi; bảng judge do admin tạo | Mỗi judge một thao tác trong code; đầu ra mảng object | Thêm judge không cần deploy; vừa khung `define-operation` mà không cần nhà cung cấp hỗ trợ object lồng |
+| E4 | Judge lưu là bản mới, không publish; có nút nhân bản | Judge cùng vòng đời cấu hình | Judge không phục vụ người học |
+| E5 | `ai_configs` có `version` + con trỏ `ai_live_configs`; số cấu hình nối số revision prompt; số liệu nhóm theo cặp (số cấu hình, model) | Thêm trạng thái vào bảng cũ; đánh số lại từ đầu | Một cụm một số; số cũ vẫn đúng nghĩa cho phần prompt |
+| E6 | Bỏ hai `PUT` cũ; hai `GET` đọc cấu hình đang chạy | Cho `PUT` ghi vào nháp | Tránh API đổi nghĩa ngầm |
+| E7 | Kiểm trần USD trước mỗi lần gửi nhà cung cấp, trần mềm | Ước tính, chặn trước khi bắt đầu | Giữ kết quả đã có; vượt tối đa vài lời gọi |
+| E8 | Practice chọn câu thật và dựng đầu vào; `ai` chạy lượt chấm và lưu điểm | Đặt cả hai ở một module | Mỗi module chỉ đọc bảng của mình; dùng lại worker `ai-eval` |
+| E9 | D7/D30 tính lúc đọc | Bảng tổng hợp theo ngày | Đủ nhanh với số người học hiện tại (`ASSUMPTION`) |
+| E10 | Luật chia held-out giữ tỉ lệ của bộ đang soạn | Tung ngẫu nhiên từng ví dụ | Bộ nhỏ không bị kẹt không có held-out (R21) |
+| E11 | Ví dụ có sẵn khi migrate vào `dev`, `expected` NULL; kết quả cũ chuyển sang bảng | Chia lại 30% | Các ví dụ đó đã bị đọc (D10) |
+| E12 | Chuỗi P1 → P3 → P2 → P4 → P5 nối tiếp, P6 song song ở phiên riêng | P2 và P3 song song; P6 chạy sau cùng (D32) | P2, P3 sửa chung lõi `ai` (R9); P6 không đụng file chung nên không cần chờ |
+| E13 | Judge nhận model `fake` khi `AI_FAKE_ENABLED=true` | Chỉ `anthropic` | Smoke chạy không cần key |
+| E14 | Chặn cả `test` với model chưa nhập giá | Chỉ chặn eval (đúng câu chữ D18) | Trần USD phải đếm được mọi việc của admin |
+| E15 | Model `fake` được nhập giá khi `AI_FAKE_ENABLED=true` | Giá `fake` luôn 0 | Smoke chạm được trần USD |
+| E16 | Script và e2e đổi model qua đường nháp → eval → publish | Một endpoint tắt chỉ cho test | Không có cửa sau trên API thật |
+| E17 | Dựng lại đầu vào từ nội dung nghĩa khi báo lỗi quá 7 ngày | Không cho đưa vào bộ ví dụ sau 7 ngày | Báo lỗi được xử lý muộn vẫn dùng được |
+| E18 | D7/D30 loại tài khoản staff và chưa xác nhận email; endpoint dùng `ai.view` | Tính mọi tài khoản; chỉ `admin` | Tài khoản test làm sai số; số đọc được như các phần khác của dashboard |
+| E19 | Khóa song song kiểm bằng hai request trong smoke | Thêm lệnh Testcontainers mới | Repo chỉ có `test:scale`; smoke đã là cổng "Xong khi" |
