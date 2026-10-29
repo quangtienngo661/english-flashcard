@@ -8,6 +8,7 @@ import type { PrismaClient } from '../../generated/prisma/client.js';
 import { IdentityService } from '../../identity/profile/identity.service.js';
 import { LearningService } from '../../learning/index.js';
 import { ChannelChooser } from '../provider/channel-chooser.js';
+import { NotSentError } from '../provider/notification-provider.js';
 import { classifyMailError } from '../../common/mail/mail-error.js';
 import {
   ReminderQueueService, type ReminderSendAttempt, type ReminderSendData,
@@ -64,7 +65,10 @@ export class ReminderSendService implements OnModuleInit {
     try {
       outcome = await provider.send(userId, { kind, language });
     } catch (error) {
-      const errorKind = classifyMailError(error);
+      // A NotSentError means the mailer was never called (B3-3): certainly not delivered, like a 4xx.
+      const notSent = error instanceof NotSentError;
+      const errorKind = notSent ? 'transient' : classifyMailError(error);
+      const cause = notSent ? error.original : error;
       if (errorKind === 'unknown') {
         // The server may already have the message: keep `sending` so nothing retries it (D37, M9).
         this.logger.warn('reminder_outcome_unknown', { user_id: userId, local_date: localDate, kind, error });
@@ -73,11 +77,12 @@ export class ReminderSendService implements OnModuleInit {
       if (errorKind === 'permanent' || attempt.lastAttempt) {
         // Close the day so later ticks and retries stop (M7); a permanent error costs one attempt only.
         await this.prisma.reminderDelivery.update({ where: key, data: { state: 'failed' } });
-        this.logger.warn('reminder_failed', { user_id: userId, local_date: localDate, kind, reason: errorKind, error });
+        this.logger.warn('reminder_failed', { user_id: userId, local_date: localDate, kind, reason: errorKind, error: cause });
         if (errorKind === 'permanent') throw new UnrecoverableError('Permanent SMTP error');
         throw error;
       }
-      // Certainly not delivered: free the day for BullMQ's retry.
+      // Certainly not delivered: free the day for BullMQ's retry, and leave a line so a flapping SMTP server is visible (B3-4).
+      this.logger.warn('reminder_retry', { user_id: userId, local_date: localDate, kind, error: cause });
       await this.prisma.reminderDelivery.delete({ where: key });
       throw error;
     }

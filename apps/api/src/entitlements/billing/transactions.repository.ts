@@ -78,6 +78,11 @@ export class TransactionsRepository {
           providerTransactionId: event.transactionId,
         });
         await tx.billingTransaction.updateMany({ where: original, data: { status: 'refunded' } });
+        // The insert above skipped a refund row that already exists: one the provider reversed is a refund again (B5-3).
+        await tx.billingTransaction.updateMany({
+          where: { provider: ctx.provider, environment: event.environment, providerTransactionId: event.transactionId, kind: 'refund', status: 'reversed' },
+          data: { status: 'succeeded', occurredAt: event.occurredAt, ...money(event.amount, event.currency) },
+        });
         return;
       }
       case 'refund_reversed': {

@@ -110,6 +110,20 @@ describe('TransactionsRepository.recordFromEvent (design §8.9)', () => {
     expect(tx.rows.map((r) => [r.kind, r.status])).toEqual([['renewal', 'succeeded'], ['refund', 'reversed']]);
   });
 
+  it('B5-3/UW-2: refunded, reversed, refunded again → the refund row is succeeded again with the new amount and time, the original refunded', async () => {
+    const tx = new FakeTx();
+    const refund = (iso: string, amount: number) => ({ ...common, type: 'refunded', occurredAt: at(iso), transactionId: 'tx-2', amount,
+      currency: 'VND' }) as NormalizedEvent;
+    await record(tx, renewed('tx-2'));
+    await record(tx, refund('2026-10-16T00:00:00Z', 50000));
+    await record(tx, { ...common, type: 'refund_reversed', occurredAt: at('2026-10-17T00:00:00Z'), transactionId: 'tx-2' } as NormalizedEvent);
+    await record(tx, refund('2026-10-18T00:00:00Z', 99000));
+    expect(tx.rows.map((r) => [r.kind, r.status, r.amountMinor, r.occurredAt])).toEqual([
+      ['renewal', 'refunded', 99000n, at('2026-10-15T02:12:00Z')],
+      ['refund', 'succeeded', 99000n, at('2026-10-18T00:00:00Z')],
+    ]);
+  });
+
   it('a refund for a transaction the table does not know still records the refund (no plan interval, period from the event)', async () => {
     const tx = new FakeTx();
     await record(tx, { ...common, type: 'refunded', occurredAt: at('2026-10-16T00:00:00Z'), transactionId: 'tx-old', amount: 99000,

@@ -126,8 +126,20 @@ export class BillingEventApplier implements BillingApplyPort {
       this.transactions.recordFromEvent(tx, event, { userId, subscriptionId, provider: row.provider });
 
     if (row.kind === 'additive') {
+      // A refund the provider reversed can be made again (B5-3): a refund newer than the last applied reversal of this
+      // transaction only repeats a refund made after that reversal. One older than the reversal is the one it undid.
+      const reversal = row.type === 'refunded'
+        ? await tx.billingEvent.findFirst({
+          where: { provider: row.provider, environment: row.environment, type: 'refund_reversed', transactionId: row.transactionId, status: 'applied' },
+          orderBy: { occurredAt: 'desc' }, select: { occurredAt: true },
+        })
+        : null;
+      const afterReversal = reversal !== null && row.occurredAt.getTime() > reversal.occurredAt.getTime();
       const duplicate = await tx.billingEvent.findFirst({
-        where: { provider: row.provider, environment: row.environment, type: row.type, transactionId: row.transactionId, status: 'applied' },
+        where: {
+          provider: row.provider, environment: row.environment, type: row.type, transactionId: row.transactionId, status: 'applied',
+          ...(afterReversal ? { occurredAt: { gt: reversal.occurredAt } } : {}),
+        },
         select: { id: true },
       });
       if (duplicate !== null) {
