@@ -28,7 +28,7 @@ describe('settings definitions', () => {
       reminders: { enabled: true, send_time: '20:00', min_gap_days: 2, inactive_after_days: 7, stop_after_days: 60 },
       learning: {
         new_per_group_per_day: 20, reviews_per_group_per_day: 100, backlog_after_days: 60, groups_per_user: 100,
-        items_per_group: 2000,
+        items_per_group: 2000, active_window_days: 7,
       },
       practice: {
         max_questions_per_session: 20, default_questions_per_session: 10, history_months: 6, true_false_true_percent: 50,
@@ -51,6 +51,20 @@ describe('settings definitions', () => {
     expect(issues({ entitlements: { transaction_retention_years: 30 } })).toEqual([]);
     expect(issues({ entitlements: { transaction_retention_years: 4 } })).toEqual(['entitlements.transaction_retention_years']);
     expect(issues({ entitlements: { transaction_retention_years: 31 } })).toEqual(['entitlements.transaction_retention_years']);
+  });
+
+  it('nhóm B D39 (M6): active_window_days is 1–60, whole days, default 7, filled in for JSON stored before it, and its change is in the history diff', () => {
+    expect(issues({ learning: { active_window_days: 1 } })).toEqual([]);
+    expect(issues({ learning: { active_window_days: 60 } })).toEqual([]);
+    for (const bad of [0, 61, 7.5]) expect(issues({ learning: { active_window_days: bad } }), String(bad)).toEqual(['learning.active_window_days']);
+    expect(issues({ learning: { active_window_days: null } })).toEqual(['learning.active_window_days']);
+    expect(SETTINGS_BOUNDS.learning.active_window_days).toEqual({ min: 1, max: 60 });
+    expect(SETTINGS_DEFAULTS.learning.activeWindowDays).toBe(7);
+    expect(withDefaults({ learning: { backlogAfterDays: 90 } }).learning.activeWindowDays).toBe(7);
+    expect(withDefaults({ learning: { activeWindowDays: 14 } }).learning.activeWindowDays).toBe(14);
+    const next = applyPatch(SETTINGS_DEFAULTS, { learning: { active_window_days: 14 } });
+    expect(next.learning.activeWindowDays).toBe(14);
+    expect(changedFields(SETTINGS_DEFAULTS, next)).toEqual([{ key: 'learning.active_window_days', oldValue: 7, newValue: 14 }]);
   });
 
   it('Bước 8: a change to the identity group is recorded in the history diff', () => {
