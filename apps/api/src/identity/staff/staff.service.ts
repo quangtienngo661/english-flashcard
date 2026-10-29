@@ -5,7 +5,7 @@ import { dateString, dateValue, localDate } from '../../common/time/local-date.j
 import { Clock } from '../../common/clock/clock.js';
 import { APP_CONFIG, type AppConfig } from '../../common/config/app-config.js';
 import { PRISMA_CLIENT } from '../../common/db/prisma.module.js';
-import { normalizeEmail } from '../../common/email/normalize-email.js';
+import { isValidEmailSyntax, normalizeEmail } from '../../common/email/normalize-email.js';
 import { AppLogger } from '../../common/logging/app-logger.js';
 import { decodeBoundToken, decodePageToken, encodeBoundToken, encodePageToken } from '../../common/pagination/page-token.util.js';
 import { ProblemDetailsException } from '../../common/problem-details/problem-details.exception.js';
@@ -119,7 +119,7 @@ export class StaffService {
   async createAccount(actorId: string, body: CreateAccountBody, res: Response): Promise<StaffUserView> {
     const email = normalizeEmail(body.email);
     const timezone = canonicalTimeZone(body.timezone);
-    if (!email || timezone === null) throw invalidInput();
+    if (!email || !isValidEmailSyntax(email) || timezone === null) throw invalidInput();
     if (body.password !== undefined) {
       const violations = checkPasswordPolicy(body.password);
       if (violations.length > 0) throw new ProblemDetailsException({ status: 400, title: 'Validation failed',
@@ -163,7 +163,7 @@ export class StaffService {
   async updateUser(actorId: string, targetId: string, body: UpdateUserBody, res: Response): Promise<AdminUserDetail> {
     const timezone = body.timezone === undefined ? undefined : canonicalTimeZone(body.timezone);
     const email = body.email === undefined ? undefined : normalizeEmail(body.email);
-    if (timezone === null || email === null) throw invalidInput();
+    if (timezone === null || email === null || (email !== undefined && !isValidEmailSyntax(email))) throw invalidInput();
     const notice = await this.prisma.$transaction(async (tx) => {
       await withUserLock(tx, targetId);
       const target = await tx.user.findUnique({ where: { id: targetId }, select: { email: true, timezone: true, status: true } });
