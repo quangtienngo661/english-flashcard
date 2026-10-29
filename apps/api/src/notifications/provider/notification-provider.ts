@@ -11,3 +11,11 @@ export abstract class NotificationProvider {
   abstract readonly channel: 'email' | 'push';
   abstract send(userId: string, message: { kind: ReminderKind; language: ReminderLanguage }): Promise<NotificationOutcome>;
 }
+
+/** The send failed before the message was handed to the mail server (a database read, the budget): certainly not delivered. */
+export class NotSentError extends Error {
+  constructor(readonly original: unknown) {
+    super('Reminder not sent');
+    this.name = 'NotSentError';
+  }
+}
