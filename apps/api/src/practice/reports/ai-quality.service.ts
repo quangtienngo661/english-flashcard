@@ -17,7 +17,8 @@ export type AiQualityReport = {
   ai_requests: Array<{ type: string; state: string; failure: string | null; count: number }>;
   /** Sessions that planned AI questions, by why AI stopped in them (`null` = it never stopped). */
   ai_sessions: Array<{ stopped: string | null; count: number }>;
-  reports: Array<{ source: string; total: number; open: number; no_error: number; fixed: number; refunded: number }>;
+  /** By source and status: `confirmed` is a confirmed AI error (F11, counted since nhóm B M5); `refunded` counts reports whose AI unit was given back. */
+  reports: Array<{ source: string; total: number; open: number; no_error: number; fixed: number; confirmed: number; refunded: number }>;
   ai_report_reasons: Array<{ reason: string; label_vi: string; label_en: string; count: number }>;
   unknown_forms: { new_forms: number; rejected_seen: number };
   word_checks: Array<{ verdict: string; count: number }>;
@@ -64,6 +65,7 @@ export class AiQualityService {
           (count(*) FILTER (WHERE status = 'open'))::int AS open,
           (count(*) FILTER (WHERE status = 'no_error'))::int AS no_error,
           (count(*) FILTER (WHERE status = 'fixed'))::int AS fixed,
+          (count(*) FILTER (WHERE status = 'confirmed'))::int AS confirmed,
           (count(*) FILTER (WHERE refunded))::int AS refunded
         FROM practice_reports WHERE ${within('created_at')} GROUP BY 1 ORDER BY 1`),
       this.prisma.$queryRaw<AiQualityReport['ai_report_reasons']>(Prisma.sql`
