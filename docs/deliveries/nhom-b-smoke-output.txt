@@ -1,0 +1,116 @@
+# Smoke output of the nhóm B round (docs/superpowers/plans/2026-10-29-nhom-b.md). One section per milestone; C-T1 replaces the file with the final run.
+
+================================================================================
+M1 — golden set. API at 873598a (apps/api tree is the same at the PR head), 30/10/2026.
+Stack: API + worker from `node scripts/run-dev.mjs` on :3100, AI_FAKE_ENABLED=true, no key, JOB_QUEUE_PREFIX=wordmet-nb-smoke,
+database english_learning_smoke_nb dropped and created again between the two runs; SMOKE_IGNORE_ENV_FILE=1 (see nhom-b-open-items.md OI-1).
+================================================================================
+
+--- pnpm smoke:nhom-b, run 1 ---
+
+[1] 18:51:33Z Wait for the API
+    ok — reachable at http://localhost:3100; database english_learning_smoke_nb; children run with AI_FAKE_ENABLED=true, JOB_QUEUE_PREFIX=wordmet-nb-smoke, no key
+
+[2] 18:51:34Z Admin (registered, then granted by the CLI)
+    ok — admin smokenb-admin-1de2fc4e@example.com (e1f46207-c71a-4e34-9a7e-0f90dab5ad7a)
+
+[3] 18:51:38Z AI setup: fake provider on, fake:ok and fake:bad-form added, fake:ok chosen for generate_cloze and check_private_word
+    ok — providers: fake only; models fake:ok and fake:bad-form; generate_cloze and check_private_word on fake:ok
+
+[4] 18:51:38Z Content: import 4 catalog verbs (past -ed, third person -s) and publish
+    ok — batch 7469bc69-f5d8-428f-9844-1f3c74747f77: 4 created and published; nqhccdms is not in the catalog
+
+[5] 18:51:40Z M1.1 forms of the catalog (B2): the three forms of W1 by part of speech and unspecified; null for a word the catalog lacks
+    ok — zqkemfor: zqkemfor, zqkemfors, zqkemfored; unspecified the same; nqhccdms → null
+
+[6] 18:51:40Z M1.2 B2, B3, E10: an example without expected → 422; W1, W2, N, W3, W4 land held-out, dev, dev, dev, held-out; a held-out one lists only { id, split }
+    ok — splits held_out, dev, dev, dev, held_out; the list shows only { id, split } for zqkemfor and zqgrgsbb
+
+[7] 18:51:41Z M1.3 B1, B37: freezing is refused without expected / held-out; version 1 has 3 dev + 2 held-out; two admins at once never share a version
+    ok — version 1: 3 dev, 2 held-out; stray example refused with its id; a held version 2 → 409 eval-set-conflict; two parallel freezes (201, 409) → versions 2, 1
+
+[8] 18:51:46Z M1.4 B3, B8, B9: runs with fake:ok on version 1 and on the working set; rule and expected results; held-out only as numbers
+    ok — version run complete (5 items, held-out only as stats.held_out.total 2); zqlshhtd/zqcxaxgh rule pass, nqhccdms skipped/not-in-catalog (B8), expected pass; GET run lists no zqkemfor/zqgrgsbb
+
+[9] 18:51:47Z M1.5 D11, B10: fake:bad-form fails the rules and the expected answers; the comparison lists the dev regressions and counts the held-out ones; the working set cannot be compared
+    ok — bad-form: zqlshhtd/zqcxaxgh rule fail unknown-form:<w>ment, expected fail; regressions dev nqhccdms, zqcxaxgh, zqlshhtd, held-out 2; set mismatch → 409; a run against itself → none
+
+[10] 18:51:48Z M1.6 B6, R7: the calls page shows the content of a dev example and hides the content of a held-out one
+    ok — eval-<run>-zqlshhtd: content shown; eval-<run>-zqkemfor: held_out true, content null
+
+[11] 18:51:48Z M1.7 B7, Review focus 3: a prompt test takes dev examples only; a held-out id is refused
+    ok — 3 items (zqlshhtd, nqhccdms, zqcxaxgh); example_ids with a held-out id → 400
+
+[12] 18:51:48Z M1.8 B4: revealing a held-out example moves it to dev, shows its calls, counts on its versions; revealing a deleted one reads its snapshot
+    ok — zqkemfor → dev with revealed_at, its calls show content, version 1 revealed_count 1; again → 409; zqgrgsbb deleted then revealed from its snapshot (deleted true), revealed_count 2
+
+[13] 18:51:48Z M1.9 B5: editing a dev example changes neither the frozen version nor an earlier run
+    ok — zqlshhtd: the working example now accepts only zqlshhtd; version 1 and the finished run still hold zqlshhtd, zqlshhtded, zqlshhtds
+
+[14] 18:51:48Z M1.10 B9: a check_private_word example (bulk, dev) runs on the working set: rule not applicable, expected pass
+    ok — rule not_applicable, expected pass
+
+[15] 18:51:48Z M1.11 Review focus 5, D8.2: a bulk row whose expected is plain text is rejected by line, a bad split too; the good row is stored
+    ok — row 1 → expected: must be an object; row 2 → split: dev or held_out; row 3 stored
+
+Smoke nhóm B passed in 15s (15 steps).
+
+--- pnpm smoke:nhom-b, run 2 (database dropped and created again) ---
+
+[1] 18:52:12Z Wait for the API
+    ok — reachable at http://localhost:3100; database english_learning_smoke_nb; children run with AI_FAKE_ENABLED=true, JOB_QUEUE_PREFIX=wordmet-nb-smoke, no key
+
+[2] 18:52:12Z Admin (registered, then granted by the CLI)
+    ok — admin smokenb-admin-ae5597cd@example.com (46081ecd-20d3-4e06-acc6-3ab70992c76d)
+
+[3] 18:52:17Z AI setup: fake provider on, fake:ok and fake:bad-form added, fake:ok chosen for generate_cloze and check_private_word
+    ok — providers: fake only; models fake:ok and fake:bad-form; generate_cloze and check_private_word on fake:ok
+
+[4] 18:52:17Z Content: import 4 catalog verbs (past -ed, third person -s) and publish
+    ok — batch e6e1daf6-23b2-4fa0-830a-59fc09079663: 4 created and published; nqxbuvdc is not in the catalog
+
+[5] 18:52:19Z M1.1 forms of the catalog (B2): the three forms of W1 by part of speech and unspecified; null for a word the catalog lacks
+    ok — zqtpsxrb: zqtpsxrb, zqtpsxrbs, zqtpsxrbed; unspecified the same; nqxbuvdc → null
+
+[6] 18:52:19Z M1.2 B2, B3, E10: an example without expected → 422; W1, W2, N, W3, W4 land held-out, dev, dev, dev, held-out; a held-out one lists only { id, split }
+    ok — splits held_out, dev, dev, dev, held_out; the list shows only { id, split } for zqtpsxrb and zqmongly
+
+[7] 18:52:20Z M1.3 B1, B37: freezing is refused without expected / held-out; version 1 has 3 dev + 2 held-out; two admins at once never share a version
+    ok — version 1: 3 dev, 2 held-out; stray example refused with its id; a held version 2 → 409 eval-set-conflict; two parallel freezes (201, 409) → versions 2, 1
+
+[8] 18:52:26Z M1.4 B3, B8, B9: runs with fake:ok on version 1 and on the working set; rule and expected results; held-out only as numbers
+    ok — version run complete (5 items, held-out only as stats.held_out.total 2); zqysqhem/zqqaszno rule pass, nqxbuvdc skipped/not-in-catalog (B8), expected pass; GET run lists no zqtpsxrb/zqmongly
+
+[9] 18:52:26Z M1.5 D11, B10: fake:bad-form fails the rules and the expected answers; the comparison lists the dev regressions and counts the held-out ones; the working set cannot be compared
+    ok — bad-form: zqysqhem/zqqaszno rule fail unknown-form:<w>ment, expected fail; regressions dev nqxbuvdc, zqqaszno, zqysqhem, held-out 2; set mismatch → 409; a run against itself → none
+
+[10] 18:52:27Z M1.6 B6, R7: the calls page shows the content of a dev example and hides the content of a held-out one
+    ok — eval-<run>-zqysqhem: content shown; eval-<run>-zqtpsxrb: held_out true, content null
+
+[11] 18:52:27Z M1.7 B7, Review focus 3: a prompt test takes dev examples only; a held-out id is refused
+    ok — 3 items (zqysqhem, nqxbuvdc, zqqaszno); example_ids with a held-out id → 400
+
+[12] 18:52:27Z M1.8 B4: revealing a held-out example moves it to dev, shows its calls, counts on its versions; revealing a deleted one reads its snapshot
+    ok — zqtpsxrb → dev with revealed_at, its calls show content, version 1 revealed_count 1; again → 409; zqmongly deleted then revealed from its snapshot (deleted true), revealed_count 2
+
+[13] 18:52:27Z M1.9 B5: editing a dev example changes neither the frozen version nor an earlier run
+    ok — zqysqhem: the working example now accepts only zqysqhem; version 1 and the finished run still hold zqysqhem, zqysqhemed, zqysqhems
+
+[14] 18:52:27Z M1.10 B9: a check_private_word example (bulk, dev) runs on the working set: rule not applicable, expected pass
+    ok — rule not_applicable, expected pass
+
+[15] 18:52:28Z M1.11 Review focus 5, D8.2: a bulk row whose expected is plain text is rejected by line, a bad split too; the good row is stored
+    ok — row 1 → expected: must be an object; row 2 → split: dev or held_out; row 3 stored
+
+Smoke nhóm B passed in 15s (15 steps).
+
+--- old smokes on a fresh database each (API and worker restarted), last lines ---
+[smoke:buoc-6, english_learning_smoke_b6, JOB_QUEUE_PREFIX=wordmet-b6-smoke]
+    ok — 8 model groups; calls and tokens match ai_calls; fake cost 0 (fake/fake:429-then-ok 2, fake/fake:503-then-ok 2, fake/fake:ok 20, fake/fake:quota 1, fake/fake:refuse 1, fake/fake:slow 3, fake/fake:truncated 1, fake/fake:two-blanks 1)
+
+Smoke Bước 6 passed in 161s (32 steps).
+
+[smoke:buoc-7, english_learning_smoke_b7, JOB_QUEUE_PREFIX=wordmet-b7-smoke]
+    ok — prepare: {"prepared":0,"already_ready":0,"failed":1}, request failed/word-not-recognized; next asks P10 as typing at once, with notice word-not-recognized and sense_id
+
+Smoke Bước 7 passed in 161s (30 steps).
