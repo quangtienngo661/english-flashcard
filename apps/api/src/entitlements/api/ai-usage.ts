@@ -9,10 +9,13 @@ export type AiUsageView = {
 /** Days shown when the AI dashboard is opened without a range. */
 export const AI_USAGE_DEFAULT_DAYS = 30;
 
-/** AI units per cap day for the AI dashboard; `refunds` = units given back in the range. */
+/**
+ * AI units per cap day for the AI dashboard; `refunds` = units given back in the range. `cap` is the day's own cap (the value at the end of that
+ * day, nhóm B B44), `at_cap` = `total >= cap`, and `days_at_cap` counts the days with `at_cap`.
+ */
 export type AiUsageDaysView = {
   from: string; to: string; today: AiUsageView;
-  days: Array<{ date: string; ai_practice: number; ai_lookup: number; total: number; learners: number }>;
+  days: Array<{ date: string; ai_practice: number; ai_lookup: number; total: number; learners: number; cap: number; at_cap: boolean }>;
   refunds: number; days_at_cap: number;
 };
 

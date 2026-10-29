@@ -2,7 +2,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import { Clock } from '../common/clock/clock.js';
 import { PRISMA_CLIENT } from '../common/db/prisma.module.js';
 import { dayRange, daysOf } from '../common/time/day-range.js';
-import { localDate, nextLocalMidnight } from '../common/time/local-date.js';
+import { addDays, localDate, nextLocalMidnight, zonedMidnight } from '../common/time/local-date.js';
 import type { Prisma, PrismaClient } from '../generated/prisma/client.js';
 import { IdentityService } from '../identity/profile/identity.service.js';
 import { SettingsService, type AppSettings } from '../settings/index.js';
@@ -196,21 +196,28 @@ export class EntitlementsService {
   }
 
   /**
-   * AI units used per cap day (the AI dashboard, owner 28/10/2026). `days_at_cap` compares each day with today's cap: an earlier
-   * cap is not kept, so a day before a cap change is measured against the current one.
+   * AI units used per cap day (the AI dashboard, owner 28/10/2026). Each day is measured against its own cap, the value the
+   * `entitlements.ai_daily_cap` setting had at the end of that day (nhóm B design §8.1, B44): `days_at_cap` counts the days whose
+   * total reached that day's cap, and a day whose cap was 0 is at cap whatever was used.
    */
   async aiUsageDays(query: { from?: string; to?: string }): Promise<AiUsageDaysView> {
     const now = this.clock.now();
     const range = dayRange(query, AI_DAY_ZONE, now, AI_USAGE_DEFAULT_DAYS);
-    const [today, { pools, learners }, refunds] = await Promise.all([
+    const dates = daysOf(range);
+    const [today, { pools, learners }, refunds, caps] = await Promise.all([
       this.aiUsage(), this.usage.aiDays(this.prisma, range.from, range.to), this.usage.aiCredits(this.prisma, range.start, range.end),
+      this.settings.valuesAt('entitlements.ai_daily_cap', dates.map((date) => zonedMidnight(AI_DAY_ZONE, addDays(date, 1)))),
     ]);
-    const days = daysOf(range).map((date) => {
+    const days = dates.map((date, index) => {
       const used = (pool: AiPool) => pools.find((row) => row.date === date && row.pool === pool)?.used ?? 0;
       const [practice, lookup] = [used('ai_practice'), used('ai_lookup')];
-      return { date, ai_practice: practice, ai_lookup: lookup, total: practice + lookup, learners: learners.find((row) => row.date === date)?.learners ?? 0 };
+      const [total, cap] = [practice + lookup, Number(caps[index])];
+      return {
+        date, ai_practice: practice, ai_lookup: lookup, total, learners: learners.find((row) => row.date === date)?.learners ?? 0,
+        cap, at_cap: total >= cap,
+      };
     });
-    return { from: range.from, to: range.to, today, days, refunds, days_at_cap: days.filter((day) => day.total >= today.cap).length };
+    return { from: range.from, to: range.to, today, days, refunds, days_at_cap: days.filter((day) => day.at_cap).length };
   }
 
   /**
