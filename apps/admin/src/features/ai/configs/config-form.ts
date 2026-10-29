@@ -45,7 +45,11 @@ export function toDraftBody(form: ConfigForm, expectedVersion: number): { ok: tr
  * Picks a model. An effort or "Tắt" the new model does not offer goes back to the default (design §6.3); `droppedEffort` names the level that went,
  * for the hint under the field. No model clears both.
  */
-export function switchConfigModel(form: ConfigForm, modelId: string | null, models: AiModel[]): { form: ConfigForm; droppedEffort: string | null } {
+export function switchConfigModel<F extends { model_ref: string | null; effort: string | null; thinking: 'off' | null }>(
+  form: F,
+  modelId: string | null,
+  models: AiModel[],
+): { form: F; droppedEffort: string | null } {
   const model = modelId === null ? undefined : models.find((m) => m.id === modelId);
   const keepsEffort = form.effort !== null && (model?.effort_choices.includes(form.effort) ?? false);
   return {

@@ -2,6 +2,7 @@ import { screen, waitFor } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import vi from '../../messages/vi.json';
 import { configRoutes } from '../features/ai/configs/config-test-support';
+import { judgeRoutes } from '../features/ai/judges/judge-test-support';
 import { LIST_URL, renderApp, row } from '../features/staff/test-utils';
 import { NAV } from './nav';
 
@@ -29,6 +30,12 @@ describe('routes', () => {
     const r = renderApp(old, { ...handlers, ...configRoutes() });
     await waitFor(() => expect(r.router.state.location.pathname).toBe('/ai/configs'));
     expect(r.router.state.location.search).toBe('');
+  });
+
+  it('/ai/judges opens the Judge page, titled "Judge"', async () => {
+    renderApp('/ai/judges', { ...handlers, ...judgeRoutes() });
+    expect(await screen.findByRole('heading', { level: 1, name: vi.nav.aiJudges }, { timeout: 5000 })).toBeInTheDocument();
+    expect((await screen.findAllByText('Chỉ một đáp án · bản 1', undefined, { timeout: 5000 })).length).toBeGreaterThan(0);
   });
 
   it('every unavailable path renders ComingSoonPage', { timeout: 60_000 }, async () => {
