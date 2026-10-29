@@ -433,6 +433,13 @@
         "noHeldOut": "The set has no held-out example.",
         "rowMissing": "No expected answer yet"
       },
+      "set": {
+        "label": "Example set to run",
+        "version": "Version {version}",
+        "working": "Set being edited (quick try only, cannot be compared)",
+        "workingShort": "Set being edited",
+        "legacy": "Before versions existed"
+      },
       "sets": {
         "title": "Frozen versions",
         "empty": "No version yet.",
@@ -555,6 +562,7 @@
           "status": "Status",
           "progress": "Progress",
           "valid": "Valid",
+          "set": "Set",
           "prompt": "Prompt revision",
           "startedBy": "Started by"
         }
@@ -575,6 +583,7 @@
         "model": "Model",
         "prompt": "Prompt revision",
         "startedBy": "Started by",
+        "set": "Set",
         "draft": "Draft",
         "revision": "Revision {revision}",
         "latency": "{ms} ms",
@@ -598,8 +607,25 @@
           "status": "Status",
           "reason": "Reason",
           "output": "Output",
+          "rule": "Rules",
+          "expected": "Expected",
           "latency": "Time",
           "cost": "Cost"
+        },
+        "rule": {
+          "pass": "Pass",
+          "fail": "Fail: {problems}",
+          "skippedNotInCatalog": "Skipped: not in the catalog",
+          "skippedNoRules": "Skipped: no rules yet",
+          "skipped": "Skipped",
+          "notApplicable": "Not applicable"
+        },
+        "expectedResult": { "pass": "Pass", "fail": "Fail" },
+        "stats": {
+          "dev": "Dev: shape {shapePass}/{shapeDone} · rules {rulePass}/{ruleJudged} ({ruleSkipped} skipped) · expected {expectedPass}/{expectedJudged}",
+          "heldOut": "Held-out (totals only): shape {shapePass}/{shapeDone} · rules {rulePass}/{ruleJudged} ({ruleSkipped} skipped) · expected {expectedPass}/{expectedJudged}",
+          "transient": "{count, plural, one {# example failed} other {# examples failed}} temporarily and count as failing the shape.",
+          "heldOutHidden": "Held-out examples are not listed."
         }
       },
       "fromPrompt": {

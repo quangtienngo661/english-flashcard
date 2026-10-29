@@ -369,7 +369,7 @@ function EvalDraftRun({ op, fingerprint, prepare, showViolations, startedRunPath
     const body = prepare();
     if (!body) return;
     setRunHref(null);
-    start.start(body);
+    start.start({ prompt: body });
   }
 
   return (

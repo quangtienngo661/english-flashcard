@@ -23,7 +23,7 @@ import {
   AI_OPERATION_ORDER, aiKeys, deleteExample, freezeSet, getTestQuota, isDevExample, listExamples, listOperations, listRuns, listSets, type AiOperation,
   type EvalExample, type EvalRun, type EvalSet, type ExampleRow,
 } from './ai-api';
-import { EvalRunPanel, RunStatusBadge, StartRunFailure, usePromptLabel, useStartRun } from './EvalRunPanel';
+import { EvalRunPanel, RunStatusBadge, StartRunFailure, usePromptLabel, useSetLabel, useStartRun } from './EvalRunPanel';
 import { BulkExamplesDialog } from './BulkExamplesDialog';
 import { EvalSetDialog } from './EvalSetDialog';
 import { ExampleDialog } from './ExampleDialog';
@@ -34,6 +34,9 @@ import { useAiFormat } from './useAiFormat';
 const FILTERS = { op: { default: 'generate_cloze', valid: (value: string) => (AI_OPERATION_ORDER as readonly string[]).includes(value) } };
 
 const isForbidden = (error: unknown) => error instanceof ApiError && error.problem.slug === 'forbidden';
+
+/** The value of the run select that stands for the working set (every other value is the id of a frozen version). */
+const WORKING_SET = 'working';
 
 /** Why "Chốt phiên bản" was refused (422 `eval-set-incomplete`): which examples lack an expected answer, and whether no example is held-out. */
 type Incomplete = { missing: ReadonlySet<string>; noHeldOut: boolean };
@@ -53,6 +56,7 @@ export function AiEvalPage() {
   const errorDetails = useErrorDetails();
   const format = useAiFormat();
   const promptLabel = usePromptLabel();
+  const setLabel = useSetLabel();
   const [filters, setFilters] = useUrlFilters(FILTERS);
   const op = filters.op as AiOperation;
   const isNew = useMatch('/ai/eval/new') !== null;
@@ -65,6 +69,8 @@ export function AiEvalPage() {
   const [freezing, setFreezing] = useState(false);
   const [openSet, setOpenSet] = useState<EvalSet | null>(null);
   const [incomplete, setIncomplete] = useState<Incomplete | null>(null);
+  /** What the admin chose in the run select, for the operation it was chosen on; nothing chosen = the newest version. */
+  const [pick, setPick] = useState<{ op: AiOperation; id: string } | null>(null);
   const [problem, setProblem] = useState<ErrorDetails | null>(null);
 
   const examples = useQuery({ queryKey: aiKeys.examples(op), queryFn: () => listExamples(api, op) });
@@ -79,7 +85,6 @@ export function AiEvalPage() {
   });
   const runRows = runs.data?.pages.flatMap((page) => page.items) ?? [];
   const runHref = (id: string) => `/ai/eval/runs/${id}${search}`;
-  const start = useStartRun(op, '', (id) => void navigate(runHref(id)));
 
   const remove = useMutation({
     mutationFn: (example: ExampleRow) => deleteExample(api, example.id),
@@ -96,6 +101,11 @@ export function AiEvalPage() {
   });
 
   const versionRows = sets.data?.items ?? [];
+  const newest = versionRows.reduce<EvalSet | null>((best, version) => (best === null || version.version > best.version ? version : best), null);
+  const chosen = pick?.op === op && (pick.id === WORKING_SET || versionRows.some((version) => version.id === pick.id)) ? pick.id : null;
+  const runSet = chosen ?? newest?.id ?? WORKING_SET;
+  // The fingerprint keeps a failed press and its [Thử lại] to the set it was made for.
+  const start = useStartRun(op, runSet, (id) => void navigate(runHref(id)));
   const nextVersion = Math.max(0, ...versionRows.map((version) => version.version)) + 1;
   const freeze = useMutation({
     mutationFn: () => freezeSet(api, op),
@@ -105,6 +115,7 @@ export function AiEvalPage() {
     },
     onSuccess: async (created) => {
       setFreezing(false);
+      setPick(null);
       await queryClient.invalidateQueries({ queryKey: aiKeys.sets(op) });
       showToast(t('ai.eval.toast.frozen', { version: created.version }));
     },
@@ -204,6 +215,7 @@ export function AiEvalPage() {
     { key: 'status', header: t('ai.eval.runs.cols.status'), card: 'field', cell: (r) => <RunStatusBadge status={r.status} error={r.error} /> },
     { key: 'progress', header: t('ai.eval.runs.cols.progress'), className: 'tabular-nums', card: 'field', cell: (r) => `${format.number(r.done)}/${format.number(r.total)}` },
     { key: 'valid', header: t('ai.eval.runs.cols.valid'), className: 'tabular-nums', card: 'field', cell: (r) => format.number(r.valid_count) },
+    { key: 'set', header: t('ai.eval.runs.cols.set'), card: 'field', cell: (r) => setLabel(r) },
     { key: 'prompt', header: t('ai.eval.runs.cols.prompt'), card: 'field', cell: (r) => promptLabel(r) },
     { key: 'startedBy', header: t('ai.eval.runs.cols.startedBy'), className: 'wrap-anywhere', card: 'field', cell: (r) => userLabel(r.started_by_user, t) },
   ];
@@ -280,8 +292,24 @@ export function AiEvalPage() {
       <section aria-labelledby="eval-run" className="flex flex-col gap-3 rounded-panel border-2 border-border p-4">
         <h2 id="eval-run" className="text-lg font-bold text-ink">{t('ai.eval.run.title')}</h2>
         <p className="text-ui text-muted">{t('ai.eval.run.note')}</p>
+        <div className="w-full max-w-md">
+          <Select
+            label={t('ai.eval.set.label')}
+            items={[
+              ...versionRows.map((version) => ({ id: version.id, label: t('ai.eval.set.version', { version: version.version }) })),
+              { id: WORKING_SET, label: t('ai.eval.set.working') },
+            ]}
+            value={runSet}
+            onChange={(id) => setPick({ op, id })}
+          />
+        </div>
         <div className="flex flex-wrap items-center gap-3">
-          <Button isPending={start.pending} isDisabled={start.waitSeconds > 0} onPress={() => start.start('current')}>
+          {/* Until the versions are read the select cannot say which one a run would take. */}
+          <Button
+            isPending={start.pending}
+            isDisabled={start.waitSeconds > 0 || sets.isPending}
+            onPress={() => start.start({ prompt: 'current', ...(runSet === WORKING_SET ? {} : { set_id: runSet }) })}
+          >
             {start.waitSeconds > 0 ? t('ai.eval.run.wait', { seconds: start.waitSeconds }) : t('ai.eval.run.start')}
           </Button>
           {quota.data && <span className="text-ui text-muted">{t('ai.eval.run.quota', { remaining: quota.data.remaining, limit: quota.data.limit })}</span>}

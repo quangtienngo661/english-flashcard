@@ -19,8 +19,8 @@ import { getSettings } from '../settings/settings-api';
 import { useNow } from '../jobs/useNow';
 import { usePollingStatus, useQueuedTooLong } from '../jobs/usePollingStatus';
 import {
-  UUID, aiKeys, cancelRun, deleteRun, getRun, getTestQuota, isDevExample, isRunCancelled, isRunDone, listExamples, startRun, type AiOperation, type EvalRun, type EvalRunItem,
-  type EvalRunStatus, type StartRunBody, type TestStatus,
+  UUID, aiKeys, cancelRun, deleteRun, getRun, getTestQuota, isRunCancelled, isRunDone, listRunItems, startRun, type AiOperation, type EvalRun, type EvalRunItem,
+  type EvalRunStatus, type SplitStats, type StartRunBody, type TestStatus,
 } from './ai-api';
 import { exampleSummary } from './prompt-form';
 import { useAiFormat } from './useAiFormat';
@@ -46,15 +46,24 @@ export function usePromptLabel() {
     run.prompt_revision === null ? t('ai.eval.detail.draft') : t('ai.eval.detail.revision', { revision: run.prompt_revision });
 }
 
+/** "Phiên bản 3", "Bộ đang soạn" or "Trước khi có phiên bản": which set of examples a run took. */
+export function useSetLabel() {
+  const t = useTranslations();
+  return (run: Pick<EvalRun, 'set_version' | 'legacy'>) => {
+    if (run.legacy) return t('ai.eval.set.legacy');
+    return run.set_version === null ? t('ai.eval.set.workingShort') : t('ai.eval.set.version', { version: run.set_version });
+  };
+}
+
 /**
- * [Chạy bộ ví dụ] from this page (`'current'`) or from the Prompt page (a draft): `POST …/eval/runs` through `useSubmitAction`, so a
+ * [Chạy bộ ví dụ] from this page (`{ prompt: 'current', set_id }`) or from the Prompt page (`{ prompt: draft }`, the working set): `POST …/eval/runs` through `useSubmitAction`, so a
  * network error keeps the `Idempotency-Key` and [Thử lại] cannot start a second run (design §6.5). A started run moves to a fresh key:
  * the next press is a new run. Every attempt uses an `ai.test` slot, so the quota line is read again afterwards, failures included.
  */
 export function useStartRun(op: AiOperation, fingerprint: string, onStarted: (runId: string) => void, onProblem?: (problem: Problem) => void) {
   const api = useApi();
   const queryClient = useQueryClient();
-  const prompt = useRef<StartRunBody['prompt']>('current');
+  const body = useRef<Omit<StartRunBody, 'operation'>>({ prompt: 'current' });
   const [started, setStarted] = useState(0);
   const keyName = `eval-run:${op}:${started}:${fingerprint}`;
   /** What the last press sent: once the editor or the operation changes, its failure (and [Thử lại], which would resend it) is gone. */
@@ -64,7 +73,7 @@ export function useStartRun(op: AiOperation, fingerprint: string, onStarted: (ru
   const action = useSubmitAction(
     async (key) => {
       try {
-        return await startRun(api, { operation: op, prompt: prompt.current }, key);
+        return await startRun(api, { operation: op, ...body.current }, key);
       } catch (e) {
         if (e instanceof ApiError) {
           if (e.problem.status === 429 && e.retryAfterSeconds !== null) setRetryAt(new Date(Date.now() + e.retryAfterSeconds * 1000));
@@ -89,8 +98,8 @@ export function useStartRun(op: AiOperation, fingerprint: string, onStarted: (ru
     problem: stale ? null : action.problem,
     canRetry: !stale && action.canRetry,
     retryAt,
-    start(next: StartRunBody['prompt']) {
-      prompt.current = next;
+    start(next: Omit<StartRunBody, 'operation'>) {
+      body.current = next;
       setSent(keyName);
       void action.submit();
     },
@@ -149,14 +158,15 @@ export function EvalRunPanel({ id, onDone, onDeleted }: { id: string; onDone?: (
   const errorDetails = useErrorDetails();
   const format = useAiFormat();
   const promptLabel = usePromptLabel();
+  const setLabel = useSetLabel();
   const validId = UUID.test(id);
   const query = usePollingStatus(aiKeys.run(id), () => getRun(api, id), isRunDone, validId);
   const operation = query.data?.operation ?? 'generate_cloze';
-  // Same key as the page's list: the input of each result is looked up there by `example_id`.
-  const examples = useQuery({ queryKey: aiKeys.examples(operation), queryFn: () => listExamples(api, operation), enabled: query.data !== undefined });
+  const run = query.data;
+  // The dev results and the totals of both parts. Each result carries the snapshot of its example, so the example list is not read.
+  const itemsQuery = useQuery({ queryKey: aiKeys.runItems(id), queryFn: () => listRunItems(api, id), enabled: validId && run !== undefined });
   // Same key as the settings page: an admin who just changed the rate sees the new ₫ here.
   const settings = useQuery({ queryKey: ['settings'], queryFn: () => getSettings(api) });
-  const run = query.data;
   const now = useNow(1000, run?.status === 'queued');
   const tooLong = useQueuedTooLong(run?.status ?? 'running', run?.created_at ?? '', now);
 
@@ -205,6 +215,15 @@ export function EvalRunPanel({ id, onDone, onDeleted }: { id: string; onDone?: (
     seen.current = status;
   }, [run?.status, onDone]);
 
+  // The results are read again whenever the run moves on (`done`) or changes state (its last example finished, it ended).
+  const progress = run ? `${run.done}/${run.status}` : null;
+  const lastProgress = useRef<string | null>(null);
+  useEffect(() => {
+    if (progress === null) return;
+    if (lastProgress.current !== null && lastProgress.current !== progress) void queryClient.invalidateQueries({ queryKey: aiKeys.runItems(id) });
+    lastProgress.current = progress;
+  }, [progress, id, queryClient]);
+
   if (!run) {
     return (
       <>
@@ -234,37 +253,51 @@ export function EvalRunPanel({ id, onDone, onDeleted }: { id: string; onDone?: (
     [t('ai.eval.detail.avgLatency'), run.avg_latency_ms === null ? t('ai.eval.detail.none') : t('ai.eval.detail.latency', { ms: format.number(Math.round(run.avg_latency_ms)) })],
     [t('ai.eval.detail.cost'), cost, run.cost_unknown_count > 0 ? t('ai.eval.detail.unknownCost', { count: run.cost_unknown_count }) : undefined],
     [t('ai.eval.detail.model'), model],
+    [t('ai.eval.detail.set'), setLabel(run)],
     [t('ai.eval.detail.prompt'), promptLabel(run)],
     [t('ai.eval.detail.startedBy'), userLabel(run.started_by_user, t)],
   ];
 
-  const inputs = new Map((examples.data?.items ?? []).filter(isDevExample).map((example) => [example.id, example.input]));
-  const results = run.items.map((item, index) => ({ ...item, index }));
-  const resultColumns: Column<EvalRunItem & { index: number }>[] = [
-    {
-      key: 'example', header: t('ai.eval.detail.cols.example'), className: 'wrap-anywhere',
-      cell: (item) => {
-        const input = inputs.get(item.example_id);
-        if (input) return exampleSummary(input);
-        // Only a set that was read can say an example is gone; while it loads, or if it failed, the input is just unknown.
-        return examples.isSuccess ? t('ai.eval.detail.deletedExample') : t('ai.eval.detail.none');
-      },
-    },
+  const items = itemsQuery.data?.items ?? [];
+  const stats = itemsQuery.data?.stats;
+  const none = t('ai.eval.detail.none');
+  const ruleText = (item: EvalRunItem): string => {
+    const rule = item.rule;
+    if (!rule) return none;
+    if (rule.status === 'pass') return t('ai.eval.detail.rule.pass');
+    if (rule.status === 'fail') return t('ai.eval.detail.rule.fail', { problems: rule.problems.join(', ') });
+    if (rule.status === 'not_applicable') return t('ai.eval.detail.rule.notApplicable');
+    if (rule.reason === 'not-in-catalog') return t('ai.eval.detail.rule.skippedNotInCatalog');
+    return t(rule.reason === 'no-rules' ? 'ai.eval.detail.rule.skippedNoRules' : 'ai.eval.detail.rule.skipped');
+  };
+  const statsLine = (part: 'dev' | 'heldOut', counts: SplitStats) =>
+    t(`ai.eval.detail.stats.${part}`, {
+      shapePass: counts.shape_pass, shapeDone: counts.total - counts.pending - counts.skipped, rulePass: counts.rule_pass,
+      ruleJudged: counts.rule_pass + counts.rule_fail, ruleSkipped: counts.rule_skipped, expectedPass: counts.expected_pass,
+      expectedJudged: counts.expected_pass + counts.expected_fail,
+    });
+  const tried = (counts: SplitStats) => counts.total - counts.pending - counts.skipped;
+  const transient = stats ? stats.dev.shape_transient + stats.held_out.shape_transient : 0;
+  const showResults = itemsQuery.data !== undefined && (items.length > 0 || (stats !== undefined && tried(stats.dev) + tried(stats.held_out) > 0));
+  const resultColumns: Column<EvalRunItem>[] = [
+    // `input` is null on an item migrated from an old run whose example was deleted before the snapshots existed.
+    { key: 'example', header: t('ai.eval.detail.cols.example'), className: 'wrap-anywhere', cell: (item) => (item.input ? exampleSummary(item.input) : t('ai.eval.detail.deletedExample')) },
     {
       key: 'status', header: t('ai.eval.detail.cols.status'), card: 'field',
       cell: (item) => (
         <span className={item.status === 'succeeded' ? 'text-ink' : 'font-semibold text-danger'}>
           {item.status === 'skipped' ? t('ai.eval.detail.skipped')
-            : ITEM_STATUSES.includes(item.status) ? t(`ai.prompts.test.statuses.${item.status}`) : item.status}
+            : item.status === 'in_progress' ? t('ai.eval.status.running')
+              : ITEM_STATUSES.includes(item.status) ? t(`ai.prompts.test.statuses.${item.status}`) : item.status}
         </span>
       ),
     },
-    { key: 'reason', header: t('ai.eval.detail.cols.reason'), className: 'wrap-anywhere', card: 'field', cell: (item) => item.reason ?? t('ai.eval.detail.none') },
+    { key: 'reason', header: t('ai.eval.detail.cols.reason'), className: 'wrap-anywhere', card: 'field', cell: (item) => item.reason ?? none },
     {
       key: 'output', header: t('ai.eval.detail.cols.output'), className: 'min-w-0', card: 'field',
       cell: (item) => (
         <span className="flex min-w-0 flex-col gap-1">
-          {item.output ? <code className={codeBlock}>{JSON.stringify(item.output)}</code> : <span>{t('ai.eval.detail.none')}</span>}
+          {item.output ? <code className={codeBlock}>{JSON.stringify(item.output)}</code> : <span>{none}</span>}
           {item.raw_output !== null && (
             <details className="min-w-0">
               <summary className="cursor-pointer text-xs font-medium text-primary">{t('ai.eval.detail.rawOutput')}</summary>
@@ -275,12 +308,22 @@ export function EvalRunPanel({ id, onDone, onDeleted }: { id: string; onDone?: (
       ),
     },
     {
+      key: 'rule', header: t('ai.eval.detail.cols.rule'), className: 'wrap-anywhere', card: 'field',
+      cell: (item) => <span className={item.rule?.status === 'fail' ? 'font-semibold text-danger' : 'text-ink'}>{ruleText(item)}</span>,
+    },
+    {
+      key: 'expected', header: t('ai.eval.detail.cols.expected'), className: 'whitespace-nowrap', card: 'field',
+      cell: (item) => (item.expected_result === null ? none : (
+        <span className={item.expected_result === 'fail' ? 'font-semibold text-danger' : 'text-ink'}>{t(`ai.eval.detail.expectedResult.${item.expected_result}`)}</span>
+      )),
+    },
+    {
       key: 'latency', header: t('ai.eval.detail.cols.latency'), className: 'whitespace-nowrap tabular-nums', card: 'field',
-      cell: (item) => (item.latency_ms === null ? t('ai.eval.detail.none') : t('ai.eval.detail.latency', { ms: format.number(item.latency_ms) })),
+      cell: (item) => (item.latency_ms === null ? none : t('ai.eval.detail.latency', { ms: format.number(item.latency_ms) })),
     },
     {
       key: 'cost', header: t('ai.eval.detail.cols.cost'), className: 'whitespace-nowrap tabular-nums', card: 'field',
-      cell: (item) => (item.cost_usd === null ? t('ai.eval.detail.none') : format.usd(item.cost_usd)),
+      cell: (item) => (item.cost_usd === null ? none : format.usd(item.cost_usd)),
     },
   ];
 
@@ -314,10 +357,19 @@ export function EvalRunPanel({ id, onDone, onDeleted }: { id: string; onDone?: (
             </div>
           ))}
         </dl>
-        {results.length > 0 && (
+        {(showResults || itemsQuery.isError) && (
           <section aria-labelledby="eval-run-results" className="flex min-w-0 flex-col gap-2">
             <h3 id="eval-run-results" className="text-ui font-semibold text-ink">{t('ai.eval.detail.results')}</h3>
-            <DataList rows={results} rowKey={(item) => String(item.index)} columns={resultColumns} state="ready" />
+            {itemsQuery.isError && !itemsQuery.data && <ListState state="error" onRetry={() => void itemsQuery.refetch()} />}
+            {showResults && stats && (
+              <div className="flex flex-col gap-1 text-ui text-ink">
+                <p>{statsLine('dev', stats.dev)}</p>
+                {stats.held_out.total > 0 && <p>{statsLine('heldOut', stats.held_out)}</p>}
+                {transient > 0 && <p>{t('ai.eval.detail.stats.transient', { count: transient })}</p>}
+                {stats.held_out.total > 0 && <p className="text-muted">{t('ai.eval.detail.stats.heldOutHidden')}</p>}
+              </div>
+            )}
+            {items.length > 0 && <DataList rows={items} rowKey={(item) => String(item.position)} columns={resultColumns} state="ready" />}
           </section>
         )}
       </PanelBody>

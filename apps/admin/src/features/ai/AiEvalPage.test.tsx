@@ -13,7 +13,9 @@ const runButton = () => screen.getByRole('button', { name: t.run.start });
 
 async function openPage(over = {}, path = '/ai/eval') {
   const r = renderApp(path, evalRoutes(over));
-  await screen.findByRole('button', { name: t.run.start });
+  // The run button waits for the list of versions (it names the version the run takes).
+  const button = await screen.findByRole('button', { name: t.run.start });
+  await waitFor(() => expect(button).toBeEnabled());
   return r;
 }
 
@@ -611,5 +613,106 @@ describe('AiEvalPage runs (A/83)', () => {
     expect(rows[1]).not.toHaveTextContent(t.status.failed);
     expect(rows[2]).toHaveTextContent(t.status.failed);
     expect(rows[2]).not.toHaveTextContent(t.status.cancelled);
+  });
+});
+
+describe('AiEvalPage runs on a version (nhóm B M1)', () => {
+  const S1 = evalSet({ id: 'S1', version: 1 });
+  const S2 = evalSet({ id: 'S2', version: 2 });
+  const START = { run_id: 'aaaaaaaa-0000-4000-8000-000000000001', status: 'queued' };
+  const setSelect = () => screen.getByRole('button', { name: new RegExp(`${t.set.label}$`) });
+  const versionsReply = () => Response.json({ items: [S2, S1] });
+  const startRoute = () => ({
+    [URL.startRun]: () => Response.json(START, { status: 202 }),
+    [URL.run()]: () => Response.json(evalRun({ status: 'queued', done: 0, created_at: new Date().toISOString() })),
+  });
+
+  it('the run select defaults to the newest version and [Chạy bộ ví dụ] sends its set_id', async () => {
+    const r = await openPage({ [URL.sets()]: versionsReply, ...startRoute() });
+    await waitFor(() => expect(setSelect()).toHaveTextContent(t.set.version.replace('{version}', '2')));
+    await userEvent.click(runButton());
+    await waitFor(() => expect(r.router.state.location.pathname).toBe(`/ai/eval/runs/${START.run_id}`));
+    expect(posts(r.calls, '/v1/admin/ai/eval/runs')[0].body).toEqual({ operation: 'generate_cloze', prompt: 'current', set_id: 'S2' });
+  });
+
+  it('an older version can be chosen; its id is sent', async () => {
+    const r = await openPage({ [URL.sets()]: versionsReply, ...startRoute() });
+    await waitFor(() => expect(setSelect()).toHaveTextContent(t.set.version.replace('{version}', '2')));
+    await userEvent.click(setSelect());
+    const options = await screen.findAllByRole('option');
+    expect(options.map((option) => option.textContent)).toEqual([
+      t.set.version.replace('{version}', '2'), t.set.version.replace('{version}', '1'), t.set.working,
+    ]);
+    await userEvent.click(screen.getByRole('option', { name: t.set.version.replace('{version}', '1') }));
+    await userEvent.click(runButton());
+    await waitFor(() => expect(posts(r.calls, '/v1/admin/ai/eval/runs')).toHaveLength(1));
+    expect(posts(r.calls, '/v1/admin/ai/eval/runs')[0].body).toEqual({ operation: 'generate_cloze', prompt: 'current', set_id: 'S1' });
+  });
+
+  it('"Bộ đang soạn (chỉ để thử nhanh, không so được)" runs the working set: no set_id', async () => {
+    const r = await openPage({ [URL.sets()]: versionsReply, ...startRoute() });
+    await waitFor(() => expect(setSelect()).toHaveTextContent(t.set.version.replace('{version}', '2')));
+    await userEvent.click(setSelect());
+    await userEvent.click(await screen.findByRole('option', { name: t.set.working }));
+    await userEvent.click(runButton());
+    await waitFor(() => expect(posts(r.calls, '/v1/admin/ai/eval/runs')).toHaveLength(1));
+    expect(posts(r.calls, '/v1/admin/ai/eval/runs')[0].body).toEqual({ operation: 'generate_cloze', prompt: 'current' });
+  });
+
+  it('with no version the select offers only the working set, and the run goes without set_id', async () => {
+    const r = await openPage(startRoute());
+    expect(setSelect()).toHaveTextContent(t.set.working);
+    await userEvent.click(runButton());
+    await waitFor(() => expect(posts(r.calls, '/v1/admin/ai/eval/runs')).toHaveLength(1));
+    expect(posts(r.calls, '/v1/admin/ai/eval/runs')[0].body).toEqual({ operation: 'generate_cloze', prompt: 'current' });
+  });
+
+  it('the run button waits for the versions, so a run never starts on the working set by mistake', async () => {
+    let release: () => void = () => {};
+    renderApp('/ai/eval', evalRoutes({
+      [URL.sets()]: () => new Promise<Response>((resolve) => {
+        release = () => resolve(versionsReply());
+      }),
+    }));
+    const button = await screen.findByRole('button', { name: t.run.start });
+    expect(button).toBeDisabled();
+    release();
+    await waitFor(() => expect(button).toBeEnabled());
+  });
+
+  it('after a network error, choosing another version takes [Thử lại] away (it would send the old one)', async () => {
+    await openPage({
+      [URL.sets()]: versionsReply,
+      [URL.startRun]: () => {
+        throw new TypeError('Failed to fetch');
+      },
+    });
+    await waitFor(() => expect(setSelect()).toHaveTextContent(t.set.version.replace('{version}', '2')));
+    await userEvent.click(runButton());
+    expect(await screen.findByRole('button', { name: vi.common.retry })).toBeInTheDocument();
+    await userEvent.click(setSelect());
+    await userEvent.click(await screen.findByRole('option', { name: t.set.version.replace('{version}', '1') }));
+    await waitFor(() => expect(screen.queryByRole('button', { name: vi.common.retry })).not.toBeInTheDocument());
+  });
+
+  it('the runs list names the version of each run: "Phiên bản 1", "Bộ đang soạn", "Trước khi có phiên bản"', async () => {
+    await openPage({
+      [URL.runs()]: () => Response.json({
+        items: [
+          evalRun({ id: 'aaaaaaaa-0000-4000-8000-000000000003', set_id: 'S1', set_version: 1 }),
+          evalRun({ id: 'aaaaaaaa-0000-4000-8000-000000000002' }),
+          evalRun({ id: 'aaaaaaaa-0000-4000-8000-000000000001', legacy: true }),
+        ],
+        next_page_token: null,
+      }),
+    });
+    const section = await screen.findByRole('region', { name: t.runs.title });
+    const headers = await within(section).findAllByRole('columnheader');
+    expect(headers.map((h) => h.textContent)).toContain(t.runs.cols.set);
+    const rows = within(section).getAllByRole('row').slice(1);
+    expect(rows).toHaveLength(3);
+    expect(rows[0]).toHaveTextContent(t.set.version.replace('{version}', '1'));
+    expect(rows[1]).toHaveTextContent(t.set.workingShort);
+    expect(rows[2]).toHaveTextContent(t.set.legacy);
   });
 });

@@ -433,6 +433,13 @@
         "noHeldOut": "Bộ chưa có ví dụ held-out nào.",
         "rowMissing": "Chưa có ô mong đợi"
       },
+      "set": {
+        "label": "Bộ chạy",
+        "version": "Phiên bản {version}",
+        "working": "Bộ đang soạn (chỉ để thử nhanh, không so được)",
+        "workingShort": "Bộ đang soạn",
+        "legacy": "Trước khi có phiên bản"
+      },
       "sets": {
         "title": "Phiên bản đã chốt",
         "empty": "Chưa có phiên bản nào.",
@@ -555,6 +562,7 @@
           "status": "Trạng thái",
           "progress": "Tiến độ",
           "valid": "Hợp lệ",
+          "set": "Bộ",
           "prompt": "Bản prompt",
           "startedBy": "Người chạy"
         }
@@ -575,6 +583,7 @@
         "model": "Model",
         "prompt": "Bản prompt",
         "startedBy": "Người chạy",
+        "set": "Bộ",
         "draft": "Bản nháp",
         "revision": "Bản số {revision}",
         "latency": "{ms} ms",
@@ -598,8 +607,25 @@
           "status": "Trạng thái",
           "reason": "Lý do",
           "output": "Đầu ra",
+          "rule": "Luật",
+          "expected": "Mong đợi",
           "latency": "Thời gian",
           "cost": "Chi phí"
+        },
+        "rule": {
+          "pass": "Đạt",
+          "fail": "Không đạt: {problems}",
+          "skippedNotInCatalog": "Bỏ qua: không có trong kho",
+          "skippedNoRules": "Bỏ qua: chưa có luật",
+          "skipped": "Bỏ qua",
+          "notApplicable": "Không áp dụng"
+        },
+        "expectedResult": { "pass": "Đạt", "fail": "Không đạt" },
+        "stats": {
+          "dev": "Dev: khuôn {shapePass}/{shapeDone} · luật {rulePass}/{ruleJudged} ({ruleSkipped} bỏ qua) · mong đợi {expectedPass}/{expectedJudged}",
+          "heldOut": "Held-out (chỉ số tổng): khuôn {shapePass}/{shapeDone} · luật {rulePass}/{ruleJudged} ({ruleSkipped} bỏ qua) · mong đợi {expectedPass}/{expectedJudged}",
+          "transient": "{count} ví dụ lỗi tạm thời, tính là không đạt khuôn.",
+          "heldOutHidden": "Ví dụ held-out không được liệt kê."
         }
       },
       "fromPrompt": {
