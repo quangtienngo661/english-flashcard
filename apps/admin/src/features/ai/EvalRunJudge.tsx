@@ -171,20 +171,16 @@ export function JudgeSection({ run, passes, stats, candidates, hasItems }: Secti
 }
 
 /**
- * The "Judge" and "Nhãn" columns of the results table, and what went wrong with the last label. A label is written as it is chosen (`PUT …/labels`)
- * and the cached results are patched from the answer, so the select shows it at once. Only dev outputs are listed, so held-out ones are never labelled here.
+ * Puts or takes back (`verdict: null`) the owner's label on one criterion of one dev output of a run, and patches the cached results of the run from
+ * the answer, so whatever shows the label shows it at once. The labels are what every judge revision's agreement is measured against, so those are read again.
  */
-export function useJudgeColumns(runId: string, criteria: string[], items: EvalRunItem[]) {
-  const t = useTranslations();
+export function useLabelMutation(runId: string) {
   const api = useApi();
   const queryClient = useQueryClient();
-  const errorDetails = useErrorDetails();
-  const [error, setError] = useState<ErrorDetails | null>(null);
   type Data = Awaited<ReturnType<typeof listRunItems>>;
-  const label = useMutation({
-    mutationFn: (v: { item: EvalRunItem; criterion: string; verdict: JudgeVerdict | null }) =>
-      putLabel(api, { subject_kind: 'eval_item', subject_id: v.item.item_id, criterion: v.criterion, verdict: v.verdict }),
-    onMutate: () => setError(null),
+  return useMutation({
+    mutationFn: (v: { subjectId: string; criterion: string; verdict: JudgeVerdict | null }) =>
+      putLabel(api, { subject_kind: 'eval_item', subject_id: v.subjectId, criterion: v.criterion, verdict: v.verdict }),
     onSuccess: (saved) => {
       queryClient.setQueryData<Data>(
         aiKeys.runItems(runId),
@@ -195,11 +191,20 @@ export function useJudgeColumns(runId: string, criteria: string[], items: EvalRu
             : { ...item, labels: [...item.labels.filter((existing) => existing.criterion !== saved.criterion), ...(saved.verdict === null ? [] : [saved])] })),
         },
       );
-      // The labels are what the agreement of every judge revision is measured against.
       void queryClient.invalidateQueries({ queryKey: aiKeys.anyJudgeAgreement() });
     },
-    onError: (e) => setError(errorDetails(e)),
   });
+}
+
+/**
+ * The "Judge" and "Nhãn" columns of the results table, and what went wrong with the last label. A label is written as it is chosen (`PUT …/labels`).
+ * Only dev outputs are listed, so held-out ones are never labelled here.
+ */
+export function useJudgeColumns(runId: string, criteria: string[], items: EvalRunItem[]) {
+  const t = useTranslations();
+  const errorDetails = useErrorDetails();
+  const label = useLabelMutation(runId);
+  const error: ErrorDetails | null = label.isError ? errorDetails(label.error) : null;
 
   if (criteria.length === 0) return { columns: [] as Column<EvalRunItem>[], error };
   const revisions = new Set(items.flatMap((item) => item.scores.map((score) => score.judge_revision_id)));
@@ -242,7 +247,7 @@ export function useJudgeColumns(runId: string, criteria: string[], items: EvalRu
               label={t('ai.eval.detail.judge.labelFor', { example: item.input ? exampleSummary(item.input) : t('ai.eval.detail.deletedExample'), criterion })}
               items={choices}
               value={item.labels.find((existing) => existing.criterion === criterion)?.verdict ?? NONE}
-              onChange={(value) => label.mutate({ item, criterion, verdict: value === NONE ? null : (value as JudgeVerdict) })}
+              onChange={(value) => label.mutate({ subjectId: item.item_id, criterion, verdict: value === NONE ? null : (value as JudgeVerdict) })}
               isDisabled={label.isPending}
             />
           ))}

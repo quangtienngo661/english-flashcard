@@ -38,6 +38,12 @@ describe('routes', () => {
     expect((await screen.findAllByText('Chỉ một đáp án · bản 1', undefined, { timeout: 5000 })).length).toBeGreaterThan(0);
   });
 
+  it('/ai/judges/label opens the label screen under the Judge title', async () => {
+    renderApp('/ai/judges/label', { ...handlers, ...judgeRoutes() });
+    expect(await screen.findByRole('heading', { level: 1, name: vi.nav.aiJudges }, { timeout: 5000 })).toBeInTheDocument();
+    expect(await screen.findByText(vi.ai.judges.label.missing, undefined, { timeout: 5000 })).toBeInTheDocument();
+  });
+
   it('every unavailable path renders ComingSoonPage', { timeout: 60_000 }, async () => {
     for (const entry of NAV.filter((n) => !n.available)) {
       const { unmount } = renderApp(entry.path, handlers);

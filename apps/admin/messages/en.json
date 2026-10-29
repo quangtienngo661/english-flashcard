@@ -831,6 +831,24 @@
         "confirm": "Clone",
         "done": "Created judge {name}."
       },
+      "label": {
+        "title": "Label · {judge}",
+        "progress": "{index}/{total}",
+        "input": "Input",
+        "output": "Output",
+        "criterion": "Criterion",
+        "pass": "Pass (1)",
+        "major": "Major fail (2)",
+        "minor": "Minor fail (3)",
+        "skip": "Skip",
+        "previous": "Previous",
+        "hint": "Keys 1, 2, 3 label the output. A label is shared by every judge revision. Held-out examples are not here.",
+        "labelled": "Labelled: {verdict}",
+        "end": "Went through all {total} outputs.",
+        "backToRun": "Back to the run",
+        "empty": "The run has no dev output to label.",
+        "missing": "Open this screen from a run on the Example sets page, with the “Label one by one” link."
+      },
       "agreementPanel": {
         "title": "Agreement with the labels · {name}",
         "row": "Revision {revision} · {criterion}: {labeled} labels · agree pass/fail {rate} · agree on level {exact}",

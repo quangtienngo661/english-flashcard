@@ -831,6 +831,24 @@
         "confirm": "Nhân bản",
         "done": "Đã tạo judge {name}."
       },
+      "label": {
+        "title": "Gắn nhãn · {judge}",
+        "progress": "{index}/{total}",
+        "input": "Đầu vào",
+        "output": "Đầu ra",
+        "criterion": "Tiêu chí",
+        "pass": "Đạt (1)",
+        "major": "Không đạt nặng (2)",
+        "minor": "Không đạt nhẹ (3)",
+        "skip": "Bỏ qua",
+        "previous": "Trước",
+        "hint": "Phím 1, 2, 3 để gắn nhãn. Nhãn dùng chung cho mọi bản judge. Ví dụ held-out không có ở đây.",
+        "labelled": "Đã gắn: {verdict}",
+        "end": "Đã đi hết {total} đầu ra.",
+        "backToRun": "Quay lại lần chạy",
+        "empty": "Lần chạy không có đầu ra dev nào để gắn nhãn.",
+        "missing": "Mở màn này từ một lần chạy ở Bộ ví dụ, bằng liên kết “Gắn nhãn lần lượt”."
+      },
       "agreementPanel": {
         "title": "Độ khớp với nhãn · {name}",
         "row": "Bản {revision} · {criterion}: {labeled} nhãn · khớp đạt/không đạt {rate} · khớp cả mức {exact}",
