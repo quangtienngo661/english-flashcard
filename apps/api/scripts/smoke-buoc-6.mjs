@@ -577,7 +577,7 @@ async function main() {
 
   // ------------------------------------------------------------------------------------------------------------------
   step('B6#28: the daily provider-call cap');
-  const todaySql = `SELECT count(*) FROM ai_calls WHERE (created_at AT TIME ZONE '${TIMEZONE}')::date = (now() AT TIME ZONE '${TIMEZONE}')::date`;
+  const todaySql = `SELECT count(*) FROM ai_calls WHERE (created_at AT TIME ZONE '${TIMEZONE}')::date = (now() AT TIME ZONE '${TIMEZONE}')::date AND purpose = 'learner'`;
   const today = count(todaySql);
   await settings('ai', { daily_provider_calls_cap: today + 2 });
   const capped = [call('generate_cloze', clozeData()), call('generate_cloze', clozeData()), call('generate_cloze', clozeData())];
