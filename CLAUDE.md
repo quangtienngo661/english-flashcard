@@ -324,6 +324,10 @@ Seven chained branches `feat/buoc-8-m1`…`m7` (PR #173–#179, after `docs/buoc
 questions and answers `docs/superpowers/reviews/2026-10-26-dot-cai-thien-questions.md`; code facts `docs/preparation/DOT_CAI_THIEN_A_CODE_FACTS_2026-10-26.md`. Group B
 (real AI call by Postman, eval, judge, prompt lifecycle) gets its own design after the first real AI call.
 
+## Nhóm B (chất lượng AI) — plan & as-built
+
+`docs/deliveries/nhom-b.md` (plan tóm tắt 29–30/10/2026, as-built per milestone M1–M6 và báo cáo cuối 31/10/2026; PR #191 docs, #192–#197 và PR 6/6). Việc cần chủ dự án xem: `docs/deliveries/nhom-b-open-items.md`; smoke cuối: `docs/deliveries/nhom-b-smoke-output.txt`; chạy thật với model thật (C-T3) là việc của chủ dự án.
+
 ## Việc phải phân tích khi tới bước tương ứng (ghi 12/10/2026, từ brainstorm Bước 2)
 
 Các điểm dưới đây phát sinh khi rà quyền của `admin`/`editor` (bảng D6) với các spec Bước 3–8. Chưa chốt, **không chặn Bước 2**;
