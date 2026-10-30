@@ -368,10 +368,12 @@ async function partM1() {
     version1 = await want(asAdmin('POST', '/v1/admin/ai/eval/sets', { body: { operation: 'generate_cloze' } }), 201, 'freeze');
     check(version1.version === 1 && version1.dev_count === 3 && version1.held_out_count === 2 && version1.revealed_count === 0, `version ${j(version1)}`);
 
-    // B37: another transaction holds version 2 for 3 s, so the API's insert waits for it and then meets the unique index.
+    // B37: another transaction holds version 2 for 8 s, so the API's insert waits for it and then meets the unique index. The request goes out only once
+    // the holder is seen sleeping inside its transaction (a fixed pause lost the race when `docker compose exec` started slowly on a busy machine).
     const holder = psqlLater(`BEGIN; INSERT INTO ai_eval_sets (operation, version, held_out_ratio, frozen_by) VALUES ('generate_cloze', 2, 0.3, '${S.adminId}');
-      SELECT pg_sleep(3); COMMIT;`);
-    await sleep(500);
+      SELECT pg_sleep(8); COMMIT;`);
+    await waitFor(() => count(`SELECT count(*) FROM pg_stat_activity WHERE state = 'active' AND pid <> pg_backend_pid() AND query LIKE '%pg_sleep(8)%'`),
+      (holding) => holding > 0, 'the holder of version 2 sleeping in its transaction', 20_000, 100);
     await wantProblem(asAdmin('POST', '/v1/admin/ai/eval/sets', { body: { operation: 'generate_cloze' } }), 409, 'eval-set-conflict', 'freeze against a held version');
     await holder;
     psql(`DELETE FROM ai_eval_sets WHERE operation = 'generate_cloze' AND version = 2`);
