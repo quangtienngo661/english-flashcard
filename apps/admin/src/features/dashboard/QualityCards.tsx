@@ -1,11 +1,11 @@
 import { useLocale, useTranslations } from 'use-intl';
 import { Badge } from '../../ui/Badge';
 import { DataList, type Column } from '../../ui/DataList';
-import { sortByOperationOrder, type AiOperation } from '../ai/ai-api';
+import { sortByOperationOrder, type AiOperation, type SplitStats } from '../ai/ai-api';
 import { useAiFormat } from '../ai/useAiFormat';
 import { Card, SubTitle } from './Card';
 import { SERIES, ShareColumns, TableView } from './charts';
-import type { DashboardJudgeRevision, JudgeScoreGroup, LatestEval, RealJudgeLatest, SplitStats, VerdictCounts } from './dashboard-api';
+import type { DashboardJudgeRevision, JudgeScoreGroup, LatestEval, RealJudgeLatest, VerdictCounts } from './dashboard-api';
 import { judgeCharts, scoredOf, type JudgeChart, type JudgeColumn } from './quality';
 
 /** Only for a cell that has a space the table must not break at; a number or a header may wrap, or a wide table is clipped at 1024 px. */

@@ -1,26 +1,8 @@
 import type { ApiClient } from '../../api/client';
-import type { AiOperation, AiStatus, CostTotals } from '../ai/ai-api';
+import type { AiOperation, AiStatus, CostTotals, SplitStats } from '../ai/ai-api';
 
 /** How many judge scores got each verdict; a score with no verdict ("không chấm được") is `unscored`. */
 export type VerdictCounts = { pass: number; fail_major: number; fail_minor: number; unscored: number };
-
-/** The API's `SplitStats` of one half (dev or held-out) of an eval run: counts only. */
-export type SplitStats = {
-  total: number;
-  pending: number;
-  skipped: number;
-  shape_pass: number;
-  shape_fail: number;
-  shape_transient: number;
-  rule_pass: number;
-  rule_fail: number;
-  rule_skipped: number;
-  rule_not_applicable: number;
-  expected_pass: number;
-  expected_fail: number;
-  expected_none: number;
-  failing: number;
-};
 
 /**
  * The latest complete eval of an operation's live config on the newest frozen set (design §8.2). `run` is null when there is none (or no
@@ -79,11 +61,7 @@ export type AiDashboard = {
   from: string;
   to: string;
   ai_enabled: boolean;
-  /**
-   * `calls` counts learner calls (what the daily cap limits); `admin_cost_usd` / `admin_usd_cap` are what test, eval and judge calls cost
-   * today and their cap (nhóm B M3-T5). ASSUMPTION: `features/ai/ai-api.ts` gets the same two fields in M3; the intersection then adds nothing.
-   */
-  today: AiStatus['today'] & { admin_cost_usd: string; admin_usd_cap: number | null };
+  today: AiStatus['today'];
   operations: Array<Pick<AiStatus['operations'][number], 'operation' | 'ready' | 'reason' | 'model' | 'last_error'>>;
   total: CostTotals;
   days: Array<{ date: string; calls: number; cost_usd: string; cost_vnd: number; learner_calls: number; learner_failed: number }>;

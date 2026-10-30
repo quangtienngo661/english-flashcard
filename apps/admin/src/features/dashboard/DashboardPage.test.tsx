@@ -3,11 +3,11 @@ import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import vi from '../../../messages/vi.json';
 import { makeMe, problem } from '../../auth/test-support';
-import { AI_OPERATION_ORDER, type AiOperation } from '../ai/ai-api';
+import { AI_OPERATION_ORDER, type AiOperation, type SplitStats } from '../ai/ai-api';
 import { todayInAdminZone } from '../ai/cost-range';
 import { renderApp } from '../staff/test-utils';
 import type {
-  AiDashboard, AiQuality, AiUsageDays, AiUsagePro, DashboardJudgeRevision, JudgeScoreGroup, LatestEval, SplitStats, VerdictCounts,
+  AiDashboard, AiQuality, AiUsageDays, AiUsagePro, DashboardJudgeRevision, JudgeScoreGroup, LatestEval, VerdictCounts,
 } from './dashboard-api';
 
 const t = vi.dashboard;
