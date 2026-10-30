@@ -3,7 +3,10 @@ import type { MockHandler } from './mock-api';
 /** `GET /v1/admin/settings` as the API returns it with the code defaults (`settings.definitions.ts`). */
 const DEFAULTS = {
   reminders: { enabled: true, send_time: '20:00', min_gap_days: 2, inactive_after_days: 7, stop_after_days: 60 },
-  learning: { new_per_group_per_day: 20, reviews_per_group_per_day: 100, backlog_after_days: 60, groups_per_user: 100, items_per_group: 2000 },
+  learning: {
+    new_per_group_per_day: 20, reviews_per_group_per_day: 100, backlog_after_days: 60, groups_per_user: 100, items_per_group: 2000,
+    active_window_days: 7,
+  },
   practice: {
     max_questions_per_session: 20, default_questions_per_session: 10, history_months: 6, true_false_true_percent: 50,
     idle_session_close_hours: 24, reports_per_hour: 20, hint_definition_max_chars: 200, type_word_max_retries: null, ai_prefetch_count: 2,
@@ -27,6 +30,7 @@ const BOUNDS = {
   learning: {
     new_per_group_per_day: { min: 1, max: 100 }, reviews_per_group_per_day: { min: 10, max: 500, nullable: true },
     backlog_after_days: { min: 30, max: 365 }, groups_per_user: { min: 10, max: 1000 }, items_per_group: { min: 100, max: 10000 },
+    active_window_days: { min: 1, max: 60 },
   },
   practice: {
     max_questions_per_session: { min: 5, max: 100 }, default_questions_per_session: { min: 1, max: 100 }, history_months: { min: 3, max: 24 },

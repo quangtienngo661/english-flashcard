@@ -12,10 +12,12 @@ const values = (): Values => ({
 });
 
 describe('settings-api', () => {
-  it('the layout has the 48 keys (41 of the copy doc, two of Bước 8, five of nhóm B), each once', () => {
-    expect(FIELD_ORDER).toHaveLength(48);
-    expect(new Set(FIELD_ORDER).size).toBe(48);
-    expect(SECTIONS.map((s) => SETTINGS_LAYOUT[s].length)).toEqual([5, 5, 9, 16, 2, 10, 1]);
+  it('the layout has the 49 keys (41 of the copy doc, two of Bước 8, six of nhóm B), each once', () => {
+    expect(FIELD_ORDER).toHaveLength(49);
+    expect(new Set(FIELD_ORDER).size).toBe(49);
+    expect(SECTIONS.map((s) => SETTINGS_LAYOUT[s].length)).toEqual([5, 6, 9, 16, 2, 10, 1]);
+    // The window of "đang học" (D39) is the last field of the learning tab, in days.
+    expect(SETTINGS_LAYOUT.learning.at(-1)).toEqual({ key: 'active_window_days', kind: 'int', unit: 'days' });
     expect(SETTINGS_LAYOUT.ai.slice(-5)).toEqual([
       { key: 'eval_held_out_ratio', kind: 'ratio' },
       { key: 'admin_daily_usd_cap', kind: 'usd' },

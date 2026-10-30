@@ -9,6 +9,7 @@ import { renderApp } from '../staff/test-utils';
 import type {
   AiDashboard, AiQuality, AiUsageDays, AiUsagePro, DashboardJudgeRevision, JudgeScoreGroup, LatestEval, VerdictCounts,
 } from './dashboard-api';
+import type { Retention } from './retention-api';
 
 const t = vi.dashboard;
 const PRO_URL = 'GET /v1/admin/entitlements/ai-usage/pro';
@@ -18,6 +19,7 @@ const urls = (from = back(29), to = TODAY) => ({
   ai: `GET /v1/admin/ai/dashboard?from=${from}&to=${to}`,
   quality: `GET /v1/admin/practice/ai-quality?from=${from}&to=${to}`,
   usage: `GET /v1/admin/entitlements/ai-usage/days?from=${from}&to=${to}`,
+  retention: `GET /v1/admin/learning/retention?from=${from}&to=${to}`,
 });
 const EDITOR = makeMe({
   id: 'me-2', email: 'editor@wordmet.com', staff_role: 'editor',
@@ -86,10 +88,16 @@ const usageReply = (over: Partial<AiUsageDays> = {}): AiUsageDays => ({
   refunds: 1, days_at_cap: 0,
   ...over,
 });
-const routes = (u = urls(), replies: { ai?: AiDashboard; quality?: AiQuality; usage?: AiUsageDays; pro?: AiUsagePro } = {}) => ({
+const retentionReply = (over: Partial<Retention> = {}): Retention => ({
+  from: back(34), to: TODAY, window_days: 7, today: { date: TODAY, active: 12, stopped: 3 },
+  cohorts: [{ week_start: '2026-10-26', size: 5, d7: 3, d30: 1 }, { week_start: '2026-11-02', size: 0, d7: null, d30: null }],
+  ...over,
+});
+const routes = (u = urls(), replies: { ai?: AiDashboard; quality?: AiQuality; usage?: AiUsageDays; pro?: AiUsagePro; retention?: Retention } = {}) => ({
   [u.ai]: () => Response.json(replies.ai ?? aiReply()),
   [u.quality]: () => Response.json(replies.quality ?? qualityReply()),
   [u.usage]: () => Response.json(replies.usage ?? usageReply()),
+  [u.retention]: () => Response.json(replies.retention ?? retentionReply()),
   [PRO_URL]: () => Response.json(replies.pro ?? proReply()),
 });
 const tile = (label: string) => screen.getByText(label).parentElement as HTMLElement;
@@ -285,6 +293,7 @@ describe('DashboardPage (/dashboard, ai.view)', () => {
     await user.click(await screen.findByRole('option', { name: '7 ngày gần nhất' }));
     await waitFor(() => expect(r.count('GET', urls(back(6)).ai.slice(4))).toBe(1));
     expect(r.count('GET', urls(back(6)).usage.slice(4))).toBe(1);
+    expect(r.count('GET', urls(back(6)).retention.slice(4))).toBe(1);
     // The Pro spread is of the current cycle, not of the range: it is not asked again.
     expect(r.count('GET', PRO_URL.slice(4))).toBe(1);
   });
@@ -309,6 +318,50 @@ describe('DashboardPage (/dashboard, ai.view)', () => {
   it('a 403 from the Pro spread alone → the forbidden banner too', async () => {
     renderApp('/dashboard', { ...routes(), [PRO_URL]: () => problem(403, 'forbidden') });
     expect(await screen.findByText(vi.errors.forbidden)).toBeInTheDocument();
+  });
+
+  it('a 403 from the retention read alone → the forbidden banner too', async () => {
+    const u = urls();
+    renderApp('/dashboard', { ...routes(), [u.retention]: () => problem(403, 'forbidden') });
+    expect(await screen.findByText(vi.errors.forbidden)).toBeInTheDocument();
+  });
+});
+
+describe('DashboardPage — learners still learning and D7 / D30 (nhóm B M6)', () => {
+  it('asks for the retention with the same 30-day range as the other three reads', async () => {
+    const r = renderApp('/dashboard', routes());
+    await screen.findByRole('heading', { level: 2, name: t.retention.title });
+    expect(r.count('GET', urls().retention.slice(4))).toBe(1);
+    expect(urls().retention).toBe(`GET /v1/admin/learning/retention?from=${back(29)}&to=${TODAY}`);
+  });
+
+  it('shows the card with the two tiles and one row per week from the API', async () => {
+    renderApp('/dashboard', routes());
+    const card = (await screen.findByRole('heading', { level: 2, name: t.retention.title })).closest('section') as HTMLElement;
+    expect(within(tile(t.retention.active)).getByText('12')).toBeInTheDocument();
+    expect(within(tile(t.retention.stopped)).getByText('3')).toBeInTheDocument();
+    const rows = within(within(card).getByRole('table', { hidden: true })).getAllByRole('row', { hidden: true }).slice(1);
+    expect(rows.map((row) => within(row).getAllByRole('cell', { hidden: true }).map((cell) => cell.textContent?.replace(/\s/g, '')))).toEqual([
+      ['Từ26/10', '5', '60%(3/5)', '20%(1/5)'], ['Từ02/11', '0', '—', '—'],
+    ]);
+  });
+
+  it('the card is the last one of the page, after the usage limits', async () => {
+    renderApp('/dashboard', routes());
+    await screen.findByRole('heading', { level: 2, name: t.retention.title });
+    const order = screen.getAllByRole('heading', { level: 2 }).map((heading) => heading.textContent?.slice(1));
+    expect(order.slice(-2)).toEqual([t.usage.title, t.retention.title]);
+  });
+
+  it('an editor with ai.view sees the card too', async () => {
+    renderApp('/dashboard', routes(), EDITOR);
+    expect(await screen.findByRole('heading', { level: 2, name: 'Người học có quay lại không' })).toBeInTheDocument();
+  });
+
+  it('the window of the API is what the hint says, and a week the API starts earlier than the range is shown as sent', async () => {
+    renderApp('/dashboard', routes(urls(), { retention: retentionReply({ window_days: 14, from: back(40) }) }));
+    await screen.findByRole('heading', { level: 2, name: t.retention.title });
+    expect(screen.getByText(/trong 14 ngày gần nhất/)).toBeInTheDocument();
   });
 });
 

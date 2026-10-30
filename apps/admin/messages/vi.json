@@ -1759,7 +1759,8 @@
         "reviews_per_group_per_day": "Từ ôn mỗi nhóm mỗi ngày",
         "backlog_after_days": "Quá hạn bao lâu thì vào danh sách cân nhắc",
         "groups_per_user": "Số nhóm mỗi người",
-        "items_per_group": "Số từ mỗi nhóm"
+        "items_per_group": "Số từ mỗi nhóm",
+        "active_window_days": "Số ngày gần nhất tính là “đang học” (D7/D30)"
       },
       "practice": {
         "max_questions_per_session": "Số câu tối đa mỗi phiên",
@@ -2206,6 +2207,22 @@
         "noLimit": "{count} người dùng gói Pro không có hạn mức AI nên không nằm trong các nhóm trên.",
         "truncated": "Có nhiều người dùng gói Pro hơn số hệ thống tính trong một lần, nên các con số chỉ phản ánh một phần."
       }
+    },
+    "retention": {
+      "title": "Người học có quay lại không",
+      "hint": "“Đang học” = có ít nhất một lần học (ôn thẻ, thêm hoặc bỏ từ, trả lời câu luyện tập) trong {days} ngày gần nhất. Không tính tài khoản admin, editor và tài khoản chưa xác nhận email. Chỉ có số từ ngày bắt đầu ghi lần học.",
+      "active": "Đang học hôm nay",
+      "stopped": "Đã ngừng",
+      "cohorts": "Theo tuần đăng ký (giờ Việt Nam, tuần bắt đầu thứ Hai)",
+      "cols": {
+        "week": "Tuần đăng ký",
+        "size": "Số người",
+        "d7": "D7",
+        "d30": "D30"
+      },
+      "weekOf": "Từ {date}",
+      "rate": "{percent} ({count}/{size})",
+      "blank": "“—”: nhóm chưa tới ngày +7 / +30, hoặc không có ai đăng ký."
     },
     "cols": {
       "operation": "Thao tác",

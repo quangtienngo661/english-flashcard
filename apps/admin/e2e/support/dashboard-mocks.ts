@@ -23,7 +23,7 @@ const judgeGroup = (source: 'eval' | 'real', revision: 0 | 1, number: number, fi
   operation: 'generate_cloze', source, config_number: number, model: 'claude-haiku-5-5', judge_revision_id: JUDGE_REVISIONS[revision].id,
   criterion: 'single_answer', counts: verdicts(counts), first_scored_at: firstScoredAt,
 });
-/** The four reads of `/dashboard`, answered with the numbers of the first real AI run (28/10/2026); the range is echoed back. */
+/** The five reads of `/dashboard`, answered with the numbers of the first real AI run (28/10/2026); the range is echoed back. */
 export const dashboardMocks: Record<string, MockHandler> = {
   'GET /v1/admin/ai/dashboard': ({ query }) => ({ json: {
     from: query.get('from'), to: query.get('to'), ai_enabled: true,
@@ -81,6 +81,15 @@ export const dashboardMocks: Record<string, MockHandler> = {
     buckets: [
       { key: '0', learners: 1 }, { key: '1-49', learners: 0 }, { key: '50-79', learners: 0 }, { key: '80-99', learners: 0 },
       { key: '100', learners: 0 },
+    ],
+  } }),
+  // Learners still learning (nhóm B M6): three weeks, the last one empty ("—", never 0 %); the API sends the Monday of its first week as `from`.
+  'GET /v1/admin/learning/retention': ({ query }) => ({ json: {
+    from: query.get('from'), to: query.get('to'), window_days: 7, today: { date: query.get('to'), active: 12, stopped: 3 },
+    cohorts: [
+      { week_start: '2026-10-19', size: 5, d7: 3, d30: 1 },
+      { week_start: '2026-10-26', size: 4, d7: 2, d30: null },
+      { week_start: '2026-11-02', size: 0, d7: null, d30: null },
     ],
   } }),
   'GET /v1/admin/entitlements/ai-usage/days': ({ query }) => ({ json: {
