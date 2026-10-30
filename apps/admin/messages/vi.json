@@ -849,8 +849,10 @@
         "labelled": "Đã gắn: {verdict}",
         "end": "Đã đi hết {total} đầu ra.",
         "backToRun": "Quay lại lần chạy",
+        "backToPass": "Quay lại lượt chấm",
         "empty": "Lần chạy không có đầu ra dev nào để gắn nhãn.",
-        "missing": "Mở màn này từ một lần chạy ở Bộ ví dụ, bằng liên kết “Gắn nhãn lần lượt”."
+        "emptyPass": "Lượt chấm không có câu nào để gắn nhãn.",
+        "missing": "Mở màn này từ một lần chạy ở Bộ ví dụ hoặc một lượt chấm ở Câu AI thật, bằng liên kết “Gắn nhãn lần lượt”."
       },
       "agreementPanel": {
         "title": "Độ khớp với nhãn · {name}",

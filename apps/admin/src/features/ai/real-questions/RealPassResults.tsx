@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
+import { Link } from 'react-router';
 import { useTranslations } from 'use-intl';
 import { ApiError } from '../../../api/problem';
 import { useErrorDetails, useErrorMessage } from '../../../api/use-error-message';
@@ -25,6 +26,8 @@ import {
 const NONE = '__none';
 const VERDICTS: JudgeVerdict[] = ['pass', 'fail_major', 'fail_minor'];
 export const PASS_TONE: Record<JudgePassStatus, 'neutral' | 'primary' | 'success' | 'danger'> = { queued: 'neutral', running: 'primary', finished: 'success', failed: 'danger' };
+const linkClass =
+  'inline-flex min-h-control w-fit items-center whitespace-nowrap rounded-control px-4 text-ui font-medium text-primary outline-none hover:bg-primary-soft focus-visible:ring-2 focus-visible:ring-primary pointer-coarse:min-h-control-touch';
 const codeBlock = 'block whitespace-pre-wrap wrap-anywhere rounded-inner bg-canvas p-2 font-mono text-xs text-ink';
 
 /** The pair a pass was filtered by, from its `filters` (read by key; anything of another shape counts as "no filter"). */
@@ -50,8 +53,8 @@ export function useRealLabelMutation(passId: string) {
   const queryClient = useQueryClient();
   type Data = Awaited<ReturnType<typeof getRealPass>>;
   return useMutation({
-    mutationFn: (v: { questionId: string; criterion: string; verdict: JudgeVerdict | null }) =>
-      putLabel(api, { subject_kind: 'real_question', subject_id: v.questionId, criterion: v.criterion, verdict: v.verdict }),
+    mutationFn: (v: { subjectId: string; criterion: string; verdict: JudgeVerdict | null }) =>
+      putLabel(api, { subject_kind: 'real_question', subject_id: v.subjectId, criterion: v.criterion, verdict: v.verdict }),
     onSuccess: (saved) => {
       queryClient.setQueryData<Data>(
         realKeys.pass(passId),
@@ -188,7 +191,7 @@ export function RealPassResults({ id }: { id: string }) {
               label={t('ai.eval.detail.judge.labelFor', { example: exampleSummary(item.input), criterion: criterion.code })}
               items={choices}
               value={item.labels.find((existing) => existing.criterion === criterion.code)?.verdict ?? NONE}
-              onChange={(value) => label.mutate({ questionId: item.question_id, criterion: criterion.code, verdict: value === NONE ? null : (value as JudgeVerdict) })}
+              onChange={(value) => label.mutate({ subjectId: item.question_id, criterion: criterion.code, verdict: value === NONE ? null : (value as JudgeVerdict) })}
               isDisabled={label.isPending}
             />
           ))}
@@ -235,6 +238,9 @@ export function RealPassResults({ id }: { id: string }) {
         )}
         <section aria-labelledby="real-pass-results" className="flex min-w-0 flex-col gap-2">
           <h3 id="real-pass-results" className="text-ui font-semibold text-ink">{t('ai.real.results.section')}</h3>
+          {items.length > 0 && pass.criteria.length > 0 && (
+            <Link to={`/ai/judges/label?pass=${pass.id}`} className={linkClass}>{t('ai.eval.detail.judge.labelQueue')}</Link>
+          )}
           {sameProvider && <p className="text-ui text-muted">{t('ai.eval.detail.judge.sameProvider')}</p>}
           {label.isError && <Banner variant="error" code={errorDetails(label.error).code}>{errorDetails(label.error).message}</Banner>}
           {asked !== null && preview.isError && <Banner variant="error">{notEligibleText(previewProblem) ?? errorMessage(preview.error)}</Banner>}

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { runItem } from '../prompt-test-support';
-import { firstOpen, labelTasks, outputCount } from './label-queue';
+import { realItem } from '../real-questions/real-test-support';
+import { firstOpen, labelTasks, outputCount, realLabelTasks } from './label-queue';
 import { label } from './judge-test-support';
 
 const criteria = [{ code: 'single_answer', question: 'Only one?' }, { code: 'natural', question: 'Natural?' }];
@@ -44,6 +45,21 @@ describe('label-queue', () => {
     expect(firstOpen(tasks, [label({ subject_id: 'd1', criterion: 'natural' })])).toBe(0);
     expect(firstOpen(tasks, [label({ subject_id: 'd1', criterion: 'single_answer', verdict: null })])).toBe(0);
     expect(firstOpen(tasks, [label({ subject_id: 'zz', criterion: 'single_answer' })])).toBe(0);
+  });
+
+  it('real questions: a task per question and criterion, in the order of the questions and then of the criteria, by question id', () => {
+    const questions = [realItem({ question_id: 'q1' }), realItem({ question_id: 'q2' })];
+    expect(realLabelTasks(questions, criteria.slice(0, 1))).toEqual([{ subjectId: 'q1', criterion: 'single_answer' }, { subjectId: 'q2', criterion: 'single_answer' }]);
+    expect(realLabelTasks(questions, criteria)).toEqual([
+      { subjectId: 'q1', criterion: 'single_answer' }, { subjectId: 'q1', criterion: 'natural' },
+      { subjectId: 'q2', criterion: 'single_answer' }, { subjectId: 'q2', criterion: 'natural' },
+    ]);
+  });
+
+  it('real questions: no question or no criterion is no task; a question deleted since still is one (its snapshot is what the judge saw)', () => {
+    expect(realLabelTasks([], criteria)).toEqual([]);
+    expect(realLabelTasks([realItem()], [])).toEqual([]);
+    expect(realLabelTasks([realItem({ question_id: 'gone', created_at: null, can_add_to_examples: false })], criteria.slice(0, 1))).toEqual([{ subjectId: 'gone', criterion: 'single_answer' }]);
   });
 
   it('the outputs to label are counted once, whatever the number of criteria', () => {

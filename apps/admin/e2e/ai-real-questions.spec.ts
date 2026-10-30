@@ -118,6 +118,28 @@ test.describe('Câu AI thật (nhóm B M4)', () => {
     expect(await seriousViolations(page)).toEqual([]);
   });
 
+  test('from a pass: "Gắn nhãn lần lượt" → key 1 labels the first question and the progress advances', async ({ page }) => {
+    await signedInAs(page, 'admin', realReads({
+      'PUT /v1/admin/ai/labels': (req) => ({ json: { subject_kind: 'real_question', ...(req.body as object), labeled_by_user: null, labeled_at: null } }),
+    }));
+    await page.goto(`/ai/real-questions?pass=${REAL_PASS_ID}`);
+    await page.getByTestId('detail-panel').getByRole('link', { name: vi.ai.eval.detail.judge.labelQueue }).click();
+    await expect(page).toHaveURL(new RegExp(`/ai/judges/label\\?pass=${REAL_PASS_ID}$`));
+    await expect(page.getByRole('heading', { level: 2, name: 'Gắn nhãn · Chỉ một đáp án' })).toBeVisible();
+    await expect(page.getByText('1/2', { exact: true })).toBeVisible();
+    await expect(page.getByText('I ___ home.')).toBeVisible();
+    // The judge's own verdict and reason are never on the screen.
+    await expect(page.getByText('come fits too')).toHaveCount(0);
+    expect(await seriousViolations(page)).toEqual([]);
+    await page.keyboard.press('1');
+    await expect(page.getByText('2/2', { exact: true })).toBeVisible();
+    expect(requests(page, 'PUT', '/v1/admin/ai/labels')[0]!.body).toEqual({ subject_kind: 'real_question', subject_id: 'q1', criterion: 'single_answer', verdict: 'pass' });
+    await page.keyboard.press('3');
+    await expect(page.getByText(vi.ai.judges.label.end.replace('{total}', '2'))).toBeVisible();
+    expect(requests(page, 'PUT', '/v1/admin/ai/labels')[1]!.body).toMatchObject({ subject_id: 'q2', verdict: 'fail_minor' });
+    await expect(page.getByRole('link', { name: vi.ai.judges.label.backToPass })).toHaveAttribute('href', `/ai/real-questions?pass=${REAL_PASS_ID}`);
+  });
+
   test('an editor does not see the entry and /ai/real-questions shows no access', async ({ page }) => {
     await signedInAs(page, 'editor', { 'GET /v1/admin/content/uploads': () => ({ json: { items: [], next_page_token: null } }) });
     await page.goto('/ai/real-questions');

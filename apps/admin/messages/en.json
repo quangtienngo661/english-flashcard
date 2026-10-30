@@ -849,8 +849,10 @@
         "labelled": "Labelled: {verdict}",
         "end": "Went through all {total} outputs.",
         "backToRun": "Back to the run",
+        "backToPass": "Back to the pass",
         "empty": "The run has no dev output to label.",
-        "missing": "Open this screen from a run on the Example sets page, with the “Label one by one” link."
+        "emptyPass": "The pass has no question to label.",
+        "missing": "Open this screen from a run on the Example sets page or a pass on the Real AI questions page, with the “Label one by one” link."
       },
       "agreementPanel": {
         "title": "Agreement with the labels · {name}",

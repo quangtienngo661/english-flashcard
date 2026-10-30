@@ -1,4 +1,5 @@
 import type { EvalRunItem, JudgeCriterion, LabelView } from '../ai-api';
+import type { RealPassItem } from '../real-questions/real-questions-api';
 
 /** One question to answer about one output: this criterion of this run item. */
 export type LabelTask = { subjectId: string; criterion: string };
@@ -11,6 +12,14 @@ export function labelTasks(items: EvalRunItem[], criteria: JudgeCriterion[]): La
   return items
     .filter((item) => item.split === 'dev' && item.status === 'succeeded' && item.output !== null && item.input !== null)
     .flatMap((item) => criteria.map((criterion) => ({ subjectId: item.item_id, criterion: criterion.code })));
+}
+
+/**
+ * The tasks of a pass over real questions, question by question and criterion by criterion; `subjectId` is the question's id. A question deleted since is
+ * still a task: the snapshot the judge saw is what the owner reads, and a label on it is as good as any other.
+ */
+export function realLabelTasks(items: RealPassItem[], criteria: JudgeCriterion[]): LabelTask[] {
+  return items.flatMap((item) => criteria.map((criterion) => ({ subjectId: item.question_id, criterion: criterion.code })));
 }
 
 /** Where the screen opens: the first task with no label, or the first one when everything is labelled (or there is nothing to label). */

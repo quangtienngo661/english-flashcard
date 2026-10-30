@@ -2,9 +2,10 @@ import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it } from 'vitest';
 import vi from '../../../../messages/vi.json';
-import { makeMe, problem } from '../../../auth/test-support';
+import { makeMe, problem, type Call } from '../../../auth/test-support';
 import { renderApp } from '../../staff/test-utils';
 import { RUN_ID, URL, evalRun, runItem, runStats } from '../prompt-test-support';
+import { PASS_ID, RURL, realItem, realPass } from '../real-questions/real-test-support';
 import { JURL, judgeOnFake, judgeRevision, judgeView, label, score } from './judge-test-support';
 
 const t = vi.ai.judges.label;
@@ -162,5 +163,109 @@ describe('LabelQueuePage (nhóm B M3-T18)', () => {
     await screen.findByRole('heading', { level: 2, name: /^Gắn nhãn · / }, { timeout: 4000 });
     expect(position()).toHaveTextContent('2/2');
     expect(within(document.body).getByText('natural')).toBeInTheDocument();
+  });
+});
+
+// Nhóm B M4-T10: the same screen over the real questions of a pass (`?pass=<id>`), keyed by the question id.
+describe('LabelQueuePage over a real-question pass (nhóm B M4-T10)', () => {
+  const REAL_PATH = `/ai/judges/label?pass=${PASS_ID}`;
+  const questions = () => [
+    realItem({ question_id: 'q1', scores: [{ criterion: 'single_answer', verdict: 'fail_major', problem: null, reason: 'come fits too' }] }),
+    realItem({
+      question_id: 'q2', input: { word: 'run', part_of_speech: 'verb' }, output: { sentence: 'They ___ daily.', accepted_answers: ['run', 'runs'], translation_vi: 'Họ chạy mỗi ngày.' },
+      scores: [{ criterion: 'single_answer', verdict: 'pass', problem: null, reason: 'Only run fits.' }],
+    }),
+  ];
+  const passRoutes = (list = questions(), pass = realPass(), over: Record<string, (c: Call) => Response | Promise<Response>> = {}) => ({
+    [RURL.pass()]: () => Response.json({ pass, items: list }),
+    ...over,
+  }) as Record<string, never>;
+  async function openReal(routesOver: Record<string, never> = passRoutes(), path = REAL_PATH) {
+    const r = renderApp(path, routesOver);
+    await screen.findByRole('heading', { level: 2, name: /^Gắn nhãn · / }, { timeout: 4000 });
+    return r;
+  }
+  const saved = (call: { body: { subject_id: string; criterion: string; verdict: 'pass' | 'fail_major' | 'fail_minor' } }) =>
+    Response.json({ subject_kind: 'real_question', ...call.body, labeled_by_user: null, labeled_at: null });
+
+  it('opens at "1/2" with the judge\'s name in the title, the snapshot of the first question and the question of its criterion', async () => {
+    await openReal();
+    expect(screen.getByRole('heading', { level: 2, name: 'Gắn nhãn · Chỉ một đáp án' })).toBeInTheDocument();
+    expect(position()).toHaveTextContent('1/2');
+    expect(screen.getByText('I ___ home.')).toBeInTheDocument();
+    expect(screen.getByText('verb', { selector: 'dd' })).toBeInTheDocument();
+    expect(screen.getByText('Tôi về nhà.')).toBeInTheDocument();
+    expect(screen.getByText('Is the given word the only answer that fits?')).toBeInTheDocument();
+    expect(screen.getByText(t.hint)).toBeInTheDocument();
+  });
+
+  it('never shows what the judge said about the question before the owner labels it', async () => {
+    await openReal();
+    expect(screen.queryByText('come fits too')).not.toBeInTheDocument();
+    expect(screen.queryByText('Only run fits.')).not.toBeInTheDocument();
+    expect(screen.queryByText(/^Đã gắn:/)).not.toBeInTheDocument();
+  });
+
+  it('key 2 PUTs "Không đạt nặng" for the real question and moves on to "2/2"', async () => {
+    const r = await openReal(passRoutes(questions(), realPass(), { [JURL.label]: saved as never }));
+    await userEvent.keyboard('2');
+    await waitFor(() => expect(putCalls(r.calls)).toHaveLength(1));
+    expect(putCalls(r.calls)[0]!.body).toEqual({ subject_kind: 'real_question', subject_id: 'q1', criterion: 'single_answer', verdict: 'fail_major' });
+    await waitFor(() => expect(position()).toHaveTextContent('2/2'));
+    expect(screen.getByText('They ___ daily.')).toBeInTheDocument();
+  });
+
+  it('opens at the first question with no label; "Trước" goes back and shows the label given', async () => {
+    const list = questions();
+    list[0] = { ...list[0]!, labels: [{ criterion: 'single_answer', verdict: 'pass' }] };
+    await openReal(passRoutes(list));
+    expect(position()).toHaveTextContent('2/2');
+    await userEvent.click(screen.getByRole('button', { name: 'Trước' }));
+    expect(position()).toHaveTextContent('1/2');
+    expect(await screen.findByText('Đã gắn: Đạt')).toBeInTheDocument();
+  });
+
+  it('after the last one: "Đã đi hết 2 đầu ra." and a link back to the pass', async () => {
+    await openReal(passRoutes(questions(), realPass(), { [JURL.label]: saved as never }));
+    await userEvent.keyboard('1');
+    await waitFor(() => expect(position()).toHaveTextContent('2/2'));
+    await userEvent.keyboard('3');
+    expect(await screen.findByText('Đã đi hết 2 đầu ra.')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: t.backToPass })).toHaveAttribute('href', `/ai/real-questions?pass=${PASS_ID}`);
+  });
+
+  it('the tasks follow the pass\'s criteria, in their order', async () => {
+    const two = realPass({ criteria: CRITERIA });
+    await openReal(passRoutes(questions(), two));
+    expect(position()).toHaveTextContent('1/4');
+    await userEvent.click(screen.getByRole('button', { name: 'Bỏ qua' }));
+    expect(position()).toHaveTextContent('2/4');
+    expect(screen.getByText('Is the sentence natural English?')).toBeInTheDocument();
+  });
+
+  it('a pass with no question has nothing to label', async () => {
+    renderApp(REAL_PATH, passRoutes([]));
+    expect(await screen.findByText(t.emptyPass, undefined, { timeout: 4000 })).toBeInTheDocument();
+  });
+
+  it('a failed label stays on the question and says why', async () => {
+    await openReal(passRoutes(questions(), realPass(), { [JURL.label]: () => problem(409, 'example-held-out') as never }));
+    await userEvent.keyboard('1');
+    expect(await screen.findByText(vi.errors['example-held-out'])).toBeInTheDocument();
+    expect(position()).toHaveTextContent('1/2');
+  });
+
+  it('an unknown pass says where this screen is opened from; an address that is no UUID asks nothing', async () => {
+    renderApp(REAL_PATH, { [RURL.pass()]: () => problem(404, 'not-found') as never });
+    expect(await screen.findByText(t.missing, undefined, { timeout: 4000 })).toBeInTheDocument();
+    const r = renderApp('/ai/judges/label?pass=nope', passRoutes());
+    expect((await screen.findAllByText(t.missing, undefined, { timeout: 4000 })).length).toBeGreaterThan(0);
+    expect(r.calls.filter((c) => c.path.includes('/passes/nope'))).toHaveLength(0);
+  });
+
+  it('an editor has no access and nothing is read', async () => {
+    const r = renderApp(REAL_PATH, passRoutes(), EDITOR);
+    expect(await screen.findByText(vi.noAccess.title, undefined, { timeout: 4000 })).toBeInTheDocument();
+    expect(r.calls.filter((c) => c.path.includes('/real-judge'))).toHaveLength(0);
   });
 });

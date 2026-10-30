@@ -191,6 +191,17 @@ describe('RealPassResults (nhóm B M4-T9)', { timeout: 20_000 }, () => {
     expect(r.calls.filter((c) => c.path.includes('/passes/not-a-uuid'))).toHaveLength(0);
   });
 
+  it('"Gắn nhãn lần lượt" links to the label screen of the pass; a pass with no question has no link', async () => {
+    await open(withPass());
+    expect(await (await panel()).findByRole('link', { name: vi.ai.eval.detail.judge.labelQueue })).toHaveAttribute('href', `/ai/judges/label?pass=${PASS_ID}`);
+  });
+
+  it('a pass with no question has no "Gắn nhãn lần lượt" link', async () => {
+    await open(withPass([]));
+    await (await panel()).findByText(t.results.empty);
+    expect(screen.queryByRole('link', { name: vi.ai.eval.detail.judge.labelQueue })).toBeNull();
+  });
+
   it('a failed read offers "Thử lại"', async () => {
     let n = 0;
     await open({
