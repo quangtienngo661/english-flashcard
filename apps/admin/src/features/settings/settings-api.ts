@@ -31,7 +31,7 @@ export type Unit = 'days' | 'hours' | 'minutes' | 'months' | 'years' | 'percent'
  */
 export type FieldSpec = { key: string; kind: 'bool' | 'int' | 'time' | 'ratio' | 'usd'; unit?: Unit };
 
-/** The 47 keys per tab, in the order of the copy doc §8.2. */
+/** The 48 keys per tab, in the order of the copy doc §8.2. */
 export const SETTINGS_LAYOUT: Record<Section, FieldSpec[]> = {
   reminders: [
     { key: 'enabled', kind: 'bool' },
@@ -90,6 +90,7 @@ export const SETTINGS_LAYOUT: Record<Section, FieldSpec[]> = {
     { key: 'admin_daily_usd_cap', kind: 'usd' },
     { key: 'judge_label_min', kind: 'int' },
     { key: 'judge_agreement_min', kind: 'ratio' },
+    { key: 'real_judge_limit', kind: 'int' },
   ],
   identity: [{ key: 'unverified_cleanup_days', kind: 'int', unit: 'days' }],
 };

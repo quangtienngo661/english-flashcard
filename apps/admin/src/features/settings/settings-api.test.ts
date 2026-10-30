@@ -12,15 +12,16 @@ const values = (): Values => ({
 });
 
 describe('settings-api', () => {
-  it('the layout has the 47 keys (41 of the copy doc, two of Bước 8, four of nhóm B), each once', () => {
-    expect(FIELD_ORDER).toHaveLength(47);
-    expect(new Set(FIELD_ORDER).size).toBe(47);
-    expect(SECTIONS.map((s) => SETTINGS_LAYOUT[s].length)).toEqual([5, 5, 9, 16, 2, 9, 1]);
-    expect(SETTINGS_LAYOUT.ai.slice(-4)).toEqual([
+  it('the layout has the 48 keys (41 of the copy doc, two of Bước 8, five of nhóm B), each once', () => {
+    expect(FIELD_ORDER).toHaveLength(48);
+    expect(new Set(FIELD_ORDER).size).toBe(48);
+    expect(SECTIONS.map((s) => SETTINGS_LAYOUT[s].length)).toEqual([5, 5, 9, 16, 2, 10, 1]);
+    expect(SETTINGS_LAYOUT.ai.slice(-5)).toEqual([
       { key: 'eval_held_out_ratio', kind: 'ratio' },
       { key: 'admin_daily_usd_cap', kind: 'usd' },
       { key: 'judge_label_min', kind: 'int' },
       { key: 'judge_agreement_min', kind: 'ratio' },
+      { key: 'real_judge_limit', kind: 'int' },
     ]);
   });
 

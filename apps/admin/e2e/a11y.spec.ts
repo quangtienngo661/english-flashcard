@@ -4,6 +4,7 @@ import vi from '../messages/vi.json' with { type: 'json' };
 import { cfgCheck, cfgConfig, cfgDraft, cfgView } from './support/ai-configs';
 import { devExample, evalSet, heldOutExample, runItem, runStats } from './support/ai-eval';
 import { judgeAgreement, judgeOnFake, judgePass, judgeRevision, score, tally } from './support/ai-judges';
+import { REAL_PASS_ID, realEstimate, realItems, realPass, realPreview } from './support/ai-real';
 import { seriousViolations } from './support/axe';
 import { mockApi, problem, signedInAs, type MockHandler, type MockRequest } from './support/mock-api';
 import { contentMocks, SENSE_ID } from './support/content';
@@ -95,6 +96,10 @@ const mocks: Record<string, MockHandler> = {
     judge_stats: [{ judge_id: 'J1', judge_name: 'Chỉ một đáp án', judge_revision_id: 'JR2', revision: 2, criterion: 'single_answer', dev: tally({ fail_minor: 1 }), held_out: tally({ pass: 1 }), calibrated: false }],
   } }),
   'GET /v1/admin/ai/judges': () => ({ json: { items: [judgeOnFake()] } }),
+  'GET /v1/admin/practice/real-judge/estimate': () => ({ json: realEstimate() }),
+  'GET /v1/admin/practice/real-judge/passes': () => ({ json: { items: [realPass()], next_page_token: null } }),
+  [`GET /v1/admin/practice/real-judge/passes/${REAL_PASS_ID}/items`]: () => ({ json: { pass: realPass(), items: realItems() } }),
+  'GET /v1/admin/practice/eval-examples/from-source': () => ({ json: realPreview() }),
   'GET /v1/admin/ai/judges/J1/revisions': () => ({ json: { items: [judgeOnFake().latest, judgeRevision()] } }),
   'GET /v1/admin/ai/judges/J1/agreement': () => ({ json: judgeAgreement() }),
   'GET /v1/admin/ai/costs': () => ({ json: {
@@ -171,7 +176,7 @@ Object.assign(mocks, {
   'GET /v1/admin/entitlements/ai-usage': () => ({ json: { date: '2026-10-27', used: 812, confirmed: 800, reserved: 12, cap: 1000, alert_percent: 80, alert_reached: false, enabled: true } }),
 });
 
-const pages = ['/uploads', '/uploads/b1', '/uploads/new', '/publish-jobs', `/publish-jobs/${JOB}`, '/sources', '/sources/new', '/export', '/ai/costs', '/ai/costs?group_by=operation', '/ai/calls', '/ai/calls?operation_id=op-1', '/transactions', '/ai/status', '/ai/models', '/ai/models/new', '/ai/models/m1', '/ai/configs', '/ai/eval', '/ai/eval/new', '/ai/eval/runs/aaaaaaaa-0000-4000-8000-000000000001', '/ai/judges', '/ai/judges/label?run=aaaaaaaa-0000-4000-8000-000000000001&judge=J1', '/settings', '/settings?tab=entitlements', '/words', '/senses', `/senses/${SENSE_ID}`, '/topics', '/reports', `/reports/${RID}`, '/report-reasons', '/report-reasons/new', '/refunds', '/unknown-forms', '/users', `/users/${UID}`, '/entitlements', '/entitlements/new'];
+const pages = ['/uploads', '/uploads/b1', '/uploads/new', '/publish-jobs', `/publish-jobs/${JOB}`, '/sources', '/sources/new', '/export', '/ai/costs', '/ai/costs?group_by=operation', '/ai/calls', '/ai/calls?operation_id=op-1', '/transactions', '/ai/status', '/ai/models', '/ai/models/new', '/ai/models/m1', '/ai/configs', '/ai/eval', '/ai/eval/new', '/ai/eval/runs/aaaaaaaa-0000-4000-8000-000000000001', '/ai/real-questions', `/ai/real-questions?pass=${REAL_PASS_ID}`, '/ai/judges', '/ai/judges/label?run=aaaaaaaa-0000-4000-8000-000000000001&judge=J1', '/settings', '/settings?tab=entitlements', '/words', '/senses', `/senses/${SENSE_ID}`, '/topics', '/reports', `/reports/${RID}`, '/report-reasons', '/report-reasons/new', '/refunds', '/unknown-forms', '/users', `/users/${UID}`, '/entitlements', '/entitlements/new'];
 
 for (const [lang, copy] of [['vi', vi], ['en', en]] as const) {
   test.describe(`axe (${lang})`, () => {
@@ -229,6 +234,8 @@ async function waitForContent(page: Page, path: string) {
     await expect(page.getByRole('checkbox', { name: /^(Tôi đã đọc cảnh báo và vẫn publish|I read the warnings and still want to publish)$/ })).toBeVisible();
     await expect(page.getByRole('list', { name: /^(Lịch sử publish|Publish history)$/ })).toBeVisible();
   }
+  else if (path === '/ai/real-questions') await expect(page.getByRole('main').getByText(/Sẽ chấm 3 câu|Will judge 3 questions/)).toBeVisible();
+  else if (path.startsWith('/ai/real-questions?pass=')) await expect(page.getByTestId('detail-panel').getByText('come fits too').filter({ visible: true })).toBeVisible();
   else if (path === '/ai/judges') await expect(page.getByRole('main').getByText(/Chỉ một đáp án · (bản|revision) 2/).filter({ visible: true })).toBeVisible();
   else if (path.startsWith('/ai/judges/label')) await expect(page.getByRole('main').getByRole('heading', { level: 2 })).toContainText(/Gắn nhãn|Label/);
   else if (path === '/export' || path === '/ai/calls') await expect(page.getByRole('main')).toBeVisible();

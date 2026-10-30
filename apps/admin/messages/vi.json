@@ -147,6 +147,7 @@
     "aiModels": "Model",
     "aiConfigs": "Cấu hình",
     "aiEval": "Bộ ví dụ",
+    "aiRealQuestions": "Câu AI thật",
     "aiJudges": "Judge",
     "aiCosts": "Chi phí",
     "aiCalls": "Các lần gọi",
@@ -862,8 +863,78 @@
       }
     },
     "real": {
+      "note": "Judge chấm các câu AI mà người học đã gặp gần đây, trong thời gian hệ thống còn giữ nội dung lời gọi AI. Câu có từ riêng của người học không bao giờ được chấm.",
+      "noJudge": "Chưa có judge nào đang bật cho các thao tác này. Thêm hoặc bật một judge ở trang Judge.",
+      "noJudgeLink": "Mở trang Judge",
+      "pick": "Chọn câu để chấm",
+      "fields": {
+        "judge": "Judge",
+        "operation": "Thao tác",
+        "pair": "Cấu hình · model",
+        "testOnly": "Chỉ tài khoản test (admin, editor)"
+      },
+      "pairAll": "Tất cả",
+      "pairOption": "Cấu hình {number} · {model} ({count} câu)",
+      "pairOptionNoConfig": "Trước khi có cấu hình · {model} ({count} câu)",
+      "estimate": {
+        "selected": "Sẽ chấm {selected} câu (tối đa {limit}), mới nhất trước.",
+        "remaining": "Còn {remaining} câu chưa chấm sau lượt này.",
+        "skippedPrivate": "Bỏ qua {count} câu có từ riêng của người học.",
+        "skippedNoContent": "Bỏ qua {count} câu đã hết hạn giữ nội dung.",
+        "skippedJudged": "Bỏ qua {count} câu bản judge này đã chấm.",
+        "cost": "Chi phí ước tính: {usd} USD",
+        "costUnknown": "Chi phí ước tính: chưa ước tính được (bản judge này chưa chấm lần nào).",
+        "cap": "Trần chi phí việc admin mỗi ngày: {cap} USD.",
+        "retentionOff": "Không có câu nào để chấm: hệ thống đang không giữ nội dung lời gọi AI (số ngày giữ nội dung = 0).",
+        "noStaff": "Chưa có tài khoản admin hay editor nào.",
+        "empty": "Không có câu nào khớp bộ lọc."
+      },
+      "start": "Chấm {count} câu",
+      "passes": {
+        "title": "Các lượt chấm",
+        "empty": "Chưa có lượt chấm nào.",
+        "emptyHint": "Chọn câu ở trên rồi bấm [Chấm … câu].",
+        "pass": "{time} · {judge} bản {revision} · {operation} · {judged}/{total} · {cost} USD",
+        "passNoCost": "{time} · {judge} bản {revision} · {operation} · {judged}/{total}",
+        "cols": {
+          "pass": "Lượt chấm",
+          "status": "Trạng thái"
+        }
+      },
+      "results": {
+        "title": "Lượt chấm · {time}",
+        "titleUnknown": "Lượt chấm",
+        "notFound": "Không tìm thấy lượt chấm này.",
+        "judge": "Judge",
+        "operation": "Thao tác",
+        "filters": "Bộ lọc",
+        "startedBy": "Người chạy",
+        "cost": "Chi phí",
+        "judgeLine": "{name} bản {revision} · {model}",
+        "judgeNoModel": "{name} bản {revision}",
+        "allPairs": "Mọi cấu hình",
+        "pair": "Cấu hình {number} · {model}",
+        "testOnly": "Chỉ tài khoản test",
+        "queued": "Đang chờ worker nhận lượt chấm.",
+        "running": "Đang chấm {judged}/{total} câu.",
+        "failedNoReason": "Lượt chấm dừng, không có lý do.",
+        "section": "Kết quả",
+        "empty": "Lượt chấm không có câu nào.",
+        "cols": {
+          "question": "Câu",
+          "pair": "Cấu hình · model",
+          "score": "Điểm",
+          "reason": "Lý do",
+          "label": "Nhãn",
+          "actions": "Hành động"
+        },
+        "pending": "Chưa chấm",
+        "deleted": "Câu đã bị xóa, chỉ còn ảnh chụp lúc chấm.",
+        "none": "—"
+      },
       "add": {
         "button": "Đưa vào bộ ví dụ",
+        "buttonFor": "Đưa vào bộ ví dụ · {question}",
         "title": "Đưa vào bộ ví dụ",
         "body": "Ví dụ mới vào bộ đang soạn của {operation}, phần dev.",
         "word": "{word} · {pos}",
@@ -1730,7 +1801,8 @@
         "eval_held_out_ratio": "Tỉ lệ ví dụ held-out",
         "admin_daily_usd_cap": "Trần USD việc admin mỗi ngày",
         "judge_label_min": "Số nhãn tối thiểu để tin judge",
-        "judge_agreement_min": "Độ khớp tối thiểu với nhãn"
+        "judge_agreement_min": "Độ khớp tối thiểu với nhãn",
+        "real_judge_limit": "Số câu tối đa mỗi lượt chấm câu thật"
       },
       "identity": {
         "unverified_cleanup_days": "Tự xóa tài khoản chưa xác nhận email sau"

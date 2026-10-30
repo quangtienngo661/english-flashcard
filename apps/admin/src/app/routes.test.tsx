@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import vi from '../../messages/vi.json';
 import { configRoutes } from '../features/ai/configs/config-test-support';
 import { judgeRoutes } from '../features/ai/judges/judge-test-support';
+import { realRoutes } from '../features/ai/real-questions/real-test-support';
 import { LIST_URL, renderApp, row } from '../features/staff/test-utils';
 import { NAV } from './nav';
 
@@ -42,6 +43,12 @@ describe('routes', () => {
     renderApp('/ai/judges/label', { ...handlers, ...judgeRoutes() });
     expect(await screen.findByRole('heading', { level: 1, name: vi.nav.aiJudges }, { timeout: 5000 })).toBeInTheDocument();
     expect(await screen.findByText(vi.ai.judges.label.missing, undefined, { timeout: 5000 })).toBeInTheDocument();
+  });
+
+  it('/ai/real-questions opens the real questions page, titled "Câu AI thật"', async () => {
+    renderApp('/ai/real-questions', { ...handlers, ...realRoutes() });
+    expect(await screen.findByRole('heading', { level: 1, name: vi.nav.aiRealQuestions }, { timeout: 5000 })).toBeInTheDocument();
+    expect(await screen.findByText(vi.ai.real.estimate.selected.replace('{selected}', '3').replace('{limit}', '200'), undefined, { timeout: 5000 })).toBeInTheDocument();
   });
 
   it('every unavailable path renders ComingSoonPage', { timeout: 60_000 }, async () => {

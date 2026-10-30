@@ -147,6 +147,7 @@
     "aiModels": "Models",
     "aiConfigs": "Configs",
     "aiEval": "Example sets",
+    "aiRealQuestions": "Real AI questions",
     "aiJudges": "Judge",
     "aiCosts": "Costs",
     "aiCalls": "Calls",
@@ -862,8 +863,78 @@
       }
     },
     "real": {
+      "note": "The judge scores the AI questions learners met recently, while the system still keeps the content of AI calls. A question with a learner's private word is never judged.",
+      "noJudge": "No judge is switched on for these operations. Add or switch on a judge on the Judge page.",
+      "noJudgeLink": "Open the Judge page",
+      "pick": "Choose the questions to judge",
+      "fields": {
+        "judge": "Judge",
+        "operation": "Operation",
+        "pair": "Config · model",
+        "testOnly": "Test accounts only (admin, editor)"
+      },
+      "pairAll": "All",
+      "pairOption": "Config {number} · {model} ({count} questions)",
+      "pairOptionNoConfig": "Before configs · {model} ({count} questions)",
+      "estimate": {
+        "selected": "Will judge {selected} questions (at most {limit}), newest first.",
+        "remaining": "{remaining} questions will still be unjudged after this pass.",
+        "skippedPrivate": "Skipping {count} questions with a learner's private word.",
+        "skippedNoContent": "Skipping {count} questions whose content is no longer kept.",
+        "skippedJudged": "Skipping {count} questions this judge revision already judged.",
+        "cost": "Estimated cost: {usd} USD",
+        "costUnknown": "Estimated cost: cannot be estimated yet (this judge revision has not judged anything).",
+        "cap": "Admin cost cap per day: {cap} USD.",
+        "retentionOff": "There is nothing to judge: the system is not keeping the content of AI calls (days kept = 0).",
+        "noStaff": "There is no admin or editor account yet.",
+        "empty": "No question matches the filters."
+      },
+      "start": "Judge {count} questions",
+      "passes": {
+        "title": "Judge passes",
+        "empty": "No pass yet.",
+        "emptyHint": "Choose the questions above, then press [Judge … questions].",
+        "pass": "{time} · {judge} revision {revision} · {operation} · {judged}/{total} · {cost} USD",
+        "passNoCost": "{time} · {judge} revision {revision} · {operation} · {judged}/{total}",
+        "cols": {
+          "pass": "Pass",
+          "status": "Status"
+        }
+      },
+      "results": {
+        "title": "Judge pass · {time}",
+        "titleUnknown": "Judge pass",
+        "notFound": "This pass was not found.",
+        "judge": "Judge",
+        "operation": "Operation",
+        "filters": "Filters",
+        "startedBy": "Started by",
+        "cost": "Cost",
+        "judgeLine": "{name} revision {revision} · {model}",
+        "judgeNoModel": "{name} revision {revision}",
+        "allPairs": "Every config",
+        "pair": "Config {number} · {model}",
+        "testOnly": "Test accounts only",
+        "queued": "Waiting for the worker to pick the pass up.",
+        "running": "Judging {judged}/{total} questions.",
+        "failedNoReason": "The pass stopped with no reason.",
+        "section": "Results",
+        "empty": "The pass has no question.",
+        "cols": {
+          "question": "Question",
+          "pair": "Config · model",
+          "score": "Score",
+          "reason": "Reason",
+          "label": "Label",
+          "actions": "Actions"
+        },
+        "pending": "Not judged yet",
+        "deleted": "The question was deleted; only the snapshot taken when it was judged is left.",
+        "none": "—"
+      },
       "add": {
         "button": "Add to the example set",
+        "buttonFor": "Add to the example set · {question}",
         "title": "Add to the example set",
         "body": "The new example goes into the working set of {operation}, as a dev example.",
         "word": "{word} · {pos}",
@@ -1730,7 +1801,8 @@
         "eval_held_out_ratio": "Held-out share of the example set",
         "admin_daily_usd_cap": "Admin USD cap per day",
         "judge_label_min": "Labels needed to trust a judge",
-        "judge_agreement_min": "Minimum agreement with the labels"
+        "judge_agreement_min": "Minimum agreement with the labels",
+        "real_judge_limit": "Most real questions per judge pass"
       },
       "identity": {
         "unverified_cleanup_days": "Delete accounts that never verified their email after"
