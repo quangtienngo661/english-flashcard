@@ -209,13 +209,13 @@ Một đợt, sáu milestone, mỗi milestone một nhánh nối tiếp và mộ
 | M3 judge | [#194](https://github.com/quangtienngo661/english-flashcard/pull/194) | `feat/nhom-b-m3-judge` (25) | api 3677, admin 1138 | 46 bước ×2; + cũ |
 | M4 câu AI thật | [#195](https://github.com/quangtienngo661/english-flashcard/pull/195) | `feat/nhom-b-m4-real-questions` (14) | api 3800, admin 1216 | 67 bước ×2; + cũ |
 | M5 dashboard | [#197](https://github.com/quangtienngo661/english-flashcard/pull/197) | `feat/nhom-b-m5-dashboard` (16) | api 3867, admin 1246 | 78 bước ×2; + cũ |
-| M6 D7/D30 + đóng đợt | PR 6/6 | `feat/nhom-b-m6-retention` | api 3937, admin 1262 | 89 bước ×2; + cũ |
+| M6 D7/D30 + đóng đợt | [#198](https://github.com/quangtienngo661/english-flashcard/pull/198) | `feat/nhom-b-m6-retention` | api 3937, admin 1262 | 89 bước ×2; + cũ |
 
 Docs (design, decisions, plan): [#191](https://github.com/quangtienngo661/english-flashcard/pull/191). Tất cả smoke đều pass; CI (`api`, `admin`, `admin-e2e-real`, `web`) xanh ở #191–#195 và #197 lần kiểm gần nhất. Hai lần chạy mỗi milestone trên DB mới; log API/worker không lộ nội dung (có đối chứng).
 
 ### 2. Thứ tự merge và việc phải làm khi merge
 
-Merge đúng thứ tự **#191 → #192 → #193 → #194 → #195 → #197 → PR 6/6**. Mỗi PR đang trỏ vào nhánh của PR trước: sau khi một PR merge vào `dev`, đổi base của PR kế tiếp sang `dev` (GitHub tự đổi nếu nhánh base bị xóa), chờ CI chạy lại và chỉ merge khi xanh. Không cần rebase: nhánh sau đã chứa nhánh trước (M2 và M3 chứa thêm hai merge commit nhận bản sửa e2e đăng nhập của M1). Cẩn thận: đừng force-push.
+Merge đúng thứ tự **#191 → #192 → #193 → #194 → #195 → #197 → #198**. Mỗi PR đang trỏ vào nhánh của PR trước: sau khi một PR merge vào `dev`, đổi base của PR kế tiếp sang `dev` (GitHub tự đổi nếu nhánh base bị xóa), chờ CI chạy lại và chỉ merge khi xanh. Không cần rebase: nhánh sau đã chứa nhánh trước (M2 và M3 chứa thêm hai merge commit nhận bản sửa e2e đăng nhập của M1). Cẩn thận: đừng force-push.
 
 ### 3. Việc cần chủ dự án xem (từ gấp tới không gấp; chi tiết ở `nhom-b-open-items.md`)
 

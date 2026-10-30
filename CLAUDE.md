@@ -326,7 +326,7 @@ questions and answers `docs/superpowers/reviews/2026-10-26-dot-cai-thien-questio
 
 ## Nhóm B (chất lượng AI) — plan & as-built
 
-`docs/deliveries/nhom-b.md` (plan tóm tắt 29–30/10/2026, as-built per milestone M1–M6 và báo cáo cuối 31/10/2026; PR #191 docs, #192–#197 và PR 6/6). Việc cần chủ dự án xem: `docs/deliveries/nhom-b-open-items.md`; smoke cuối: `docs/deliveries/nhom-b-smoke-output.txt`; chạy thật với model thật (C-T3) là việc của chủ dự án.
+`docs/deliveries/nhom-b.md` (plan tóm tắt 29–30/10/2026, as-built per milestone M1–M6 và báo cáo cuối 31/10/2026; PR #191 docs, #192–#195, #197 và #198). Việc cần chủ dự án xem: `docs/deliveries/nhom-b-open-items.md`; smoke cuối: `docs/deliveries/nhom-b-smoke-output.txt`; chạy thật với model thật (C-T3) là việc của chủ dự án.
 
 ## Việc phải phân tích khi tới bước tương ứng (ghi 12/10/2026, từ brainstorm Bước 2)
 
