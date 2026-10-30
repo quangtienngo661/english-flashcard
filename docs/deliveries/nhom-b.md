@@ -135,6 +135,18 @@ Chạy trên API + worker thật (:3200, fake AI, Postgres mới): m1b 5/5 hai l
 migration chuyển dữ liệu dùng `ON CONFLICT DO NOTHING`; admin: thêm prop `onBlur` cho `TextField`, toast riêng khi ví dụ mới vào held-out, thêm slug lỗi `eval-set-*`/`expected-invalid`, danh sách so sánh gồm cả lần chạy chưa xong (20 lần gần nhất).
 **Chưa kiểm / còn lại:** bản dịch tiếng Anh các chuỗi mới do agent tự dịch (chủ dự án nên đọc lại vi: `toast.addedHeldOut`, `freeze.rowMissing`, `compare.*`); `build` production chưa chạy trên CI thật (chỉ chạy cục bộ); chưa có gì chạy với model AI thật (đúng thiết kế, D30).
 
+## M2 — Vòng đời cấu hình: as-built 30/10/2026
+
+**Nhánh / PR:** `feat/nhom-b-m2-configs`, 16 commit từ `feat/nhom-b-m1-golden-set`; PR "[nhóm B 2/6]" vào nhánh M1 (merge sau M1).
+**Đã làm:** 13 task của M2 (T1–T13). API: bảng `ai_configs` / `ai_live_configs` / `ai_config_events` (+ cờ `hidden` của model, migration chép dữ liệu từ `ai_prompts` + `ai_operation_settings`, bỏ FK `model_ref`), luật cổng publish là hàm thuần,
+bản nháp ở server (đọc, tạo, lưu có kiểm few-shot, xóa, chạy thử), chạy bộ ví dụ trên bản nháp hoặc cấu hình đang chạy, publish có kiểm cổng (baseline, cảnh báo, tắt AI không cần chạy, D37/D38), rollback, lịch sử; gateway đọc cấu hình đang chạy ở mọi lời gọi
+(không cache); các API cũ đọc cấu hình đang chạy; hai `PUT` cũ (model / prompt của thao tác) bị bỏ; model đang được cấu hình dùng thì không xóa được. Scripts (`ai-config-publish.mjs`, smoke Bước 6/7, `learner:setup`) đi qua đường publish thật.
+Admin: một trang "Cấu hình" (`/ai/configs`) thay cho "Thao tác" và "Prompt" (bản đang chạy + bản nháp, chọn model, chạy bộ ví dụ với nháp, publish có xác nhận, rollback, lịch sử), nút "Ẩn khỏi ô chọn model" ở trang Model, `/ai/operations` và `/ai/prompts` chuyển hướng sang trang mới.
+**Kiểm:** api (cuối M2): drift sạch, `oxlint` (chỉ cảnh báo cũ), `tsc` sạch, 262 file / 3431 test pass; admin: `eslint`, `tsc`, 86 file / 1040 test pass (`--maxWorkers=3`), `build` (VITE_API_BASE_URL=https://admin-api.wordmet.com), e2e giả lập 268 pass + 66 skip (skip chỉ-viewport có từ trước), `test:e2e:real` 28 pass trên API + worker thật, DB mới.
+**Smoke:** `pnpm smoke:nhom-b` (29 bước: phần M1 chạy trên bản nháp + phần M2 mười hai bước) pass hai lần, mỗi lần trên DB mới; `smoke:buoc-6` (32 bước), `smoke:buoc-7` (30 bước) và `pnpm learner:setup` (hai lần liên tiếp, lần hai không đổi gì) pass trên DB mới; log API sạch (không có prompt hay few-shot). Output: [`nhom-b-smoke-output.txt`](nhom-b-smoke-output.txt) (mục M2).
+**Quyết định đã tự chốt (ruling):** smoke có thêm một admin thứ hai cho các bước đua nhau (giới hạn `user.write` 30/phút); PATCH xóa giá chỉ bị chặn với model đang dùng bởi nháp / bản đang chạy (cấu hình đã thay thế là `retired` nên không chặn); nút "Chạy bộ ví dụ với nháp" chỉ một nút (ở khung Publish); Publish và chạy bị khóa khi form có chỉnh sửa chưa lưu (nếu không sẽ publish bản đã lưu, không phải bản trên màn hình); 409 `draft-version-conflict` giữ chữ của admin và cho "Tải bản mới" so cạnh nhau; một lần chạy của cấu hình hiện "Cấu hình N"; đã bỏ các hàm/chuỗi mồ côi của hai trang cũ.
+**Chưa kiểm / còn lại:** chưa xem ảnh chụp màn hình (chỉ axe + kiểm không tràn trong e2e giả lập); chưa gọi model thật; bản dịch tiếng Anh các chuỗi mới do agent tự dịch; `pnpm learner:setup` trên DB đang có model THẬT chạy sẽ gọi model thật để chạy baseline trước khi chuyển sang `fake:ok` (xem OI-3); một lần chạy admin thử đầy đủ dùng ~5 trong 20 lượt `ai.test` mỗi giờ.
+
 ## M3 — Judge: as-built 30/10/2026
 
 **Nhánh / PR:** `feat/nhom-b-m3-judge`, 24 commit từ `feat/nhom-b-m2-configs`; PR "[nhóm B 3/6]" vào nhánh M2 (merge sau M2).

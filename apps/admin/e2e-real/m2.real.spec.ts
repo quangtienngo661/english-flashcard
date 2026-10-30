@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import vi from '../messages/vi.json' with { type: 'json' };
 import type { RealState } from './global-setup';
 import { STATE_FILE } from './global-setup';
+import { signIn } from './support/sign-in';
 
 /** M2 on the real stack (design §7): one field changed on two tabs, one save; the history shows both rows with the admin's email. */
 const s = vi.settings;
@@ -19,11 +20,8 @@ async function setNumber(page: Page, label: string): Promise<number> {
 test('the admin changes a field on Nhắc học and one on AI, saves once, and the history lists both with their email', async ({ page }) => {
   // Read here, not at load: admin.real.spec.ts changes the admin password and writes it back to the state file.
   const state: RealState = JSON.parse(readFileSync(STATE_FILE, 'utf8'));
-  await page.goto('/login');
-  await page.getByLabel(vi.account.login.email).fill(state.admin.email);
-  await page.getByLabel(vi.account.login.password, { exact: true }).fill(state.admin.password);
-  await page.getByRole('button', { name: vi.account.login.submit }).click();
-  await expect(page).toHaveURL(/\/uploads$/);
+  // The shared helper waits out a 429 of `auth.login.ip` (20 a minute): the suite signs in more often than that around this spec.
+  await signIn(page, state.admin.email, state.admin.password);
 
   await page.goto('/settings');
   await expect(page.getByRole('heading', { level: 1, name: vi.nav.settings })).toBeVisible();
