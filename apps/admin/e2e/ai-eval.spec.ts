@@ -18,7 +18,7 @@ const run = (over: Record<string, unknown> = {}) => ({
 function evalMocks(over: Record<string, MockHandler> = {}): Record<string, MockHandler> {
   return {
     ...settingsMocks,
-    'GET /v1/admin/ai/status': () => ({ json: { operations: [], today: { calls: 0, cap: null, failed_calls: 0, failed_cost_usd: '0', cost_usd: '0', cost_vnd: 0 }, ai_enabled: true, providers: { openai: true, anthropic: false, fake: true } } }),
+    'GET /v1/admin/ai/status': () => ({ json: { operations: [], today: { calls: 0, cap: null, failed_calls: 0, failed_cost_usd: '0', cost_usd: '0', cost_vnd: 0, admin_cost_usd: '0', admin_usd_cap: null }, ai_enabled: true, providers: { openai: true, anthropic: false, fake: true } } }),
     'GET /v1/admin/ai/operations': () => ({ json: { items: [{ operation: 'generate_cloze', model: null, effort: null, thinking: null, max_output_tokens: null, version: 1, input_fields: FIELDS, estimate: null }] } }),
     'GET /v1/admin/ai/test-quota': () => ({ json: { limit: 20, remaining: 17, resets_at: at } }),
     'GET /v1/admin/ai/eval/examples': () => ({ json: { items: [devExample('e1', 'go')] } }),
@@ -59,7 +59,7 @@ test.describe('Bộ ví dụ (A/83)', () => {
         return { json: reads === 1 ? run({ status: 'running', done: 1, valid_count: 1, ...onVersion }) : run(onVersion) };
       },
       [`GET /v1/admin/ai/eval/runs/${EVAL_RUN_ID}/items`]: () => ({
-        json: { items: [runItem()], stats: runStats({ total: 1, shape_pass: 1, rule_pass: 1, expected_pass: 1 }) },
+        json: { items: [runItem()], stats: runStats({ total: 1, shape_pass: 1, rule_pass: 1, expected_pass: 1 }), passes: [], judge_stats: [] },
       }),
     }));
     await page.goto('/ai/status');
@@ -184,6 +184,7 @@ test.describe('Bộ ví dụ (A/83)', () => {
         json: {
           items: [runItem({ rule: { status: 'fail', problems: ['unknown-form:deployment'], reason: null }, expected_result: 'fail' })],
           stats: runStats({ total: 1, shape_pass: 1, rule_fail: 1, expected_fail: 1, failing: 1 }, { total: 2, shape_pass: 2, rule_pass: 1, rule_skipped: 1 }),
+          passes: [], judge_stats: [],
         },
       }),
       'GET /v1/admin/ai/eval/runs/compare': () => ({
@@ -195,6 +196,7 @@ test.describe('Bộ ví dụ (A/83)', () => {
             b: runStats({ total: 1, shape_pass: 1, rule_fail: 1, expected_fail: 1 }, { total: 2, shape_pass: 2, rule_pass: 1, rule_fail: 1 }),
           },
           regressions: { dev: [{ example_id: 'e1', input: clozeInput('go'), failed: ['rule', 'expected'] }], held_out: 1 },
+          judge: [], judge_unmatched: [],
         },
       }),
     }));

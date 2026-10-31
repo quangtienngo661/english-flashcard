@@ -10,6 +10,8 @@ import { AiConfigsPage } from '../features/ai/configs/AiConfigsPage';
 import { AiCostsPage } from '../features/ai/AiCostsPage';
 import { DashboardPage } from '../features/dashboard/DashboardPage';
 import { AiEvalPage } from '../features/ai/AiEvalPage';
+import { AiJudgesPage } from '../features/ai/judges/AiJudgesPage';
+import { LabelQueuePage } from '../features/ai/judges/LabelQueuePage';
 import { AiModelsPage } from '../features/ai/AiModelsPage';
 import { AiStatusPage } from '../features/ai/AiStatusPage';
 import { GrantsPage } from '../features/entitlements/GrantsPage';
@@ -102,6 +104,8 @@ export const appRoutes: RouteObject[] = createRoutesFromElements(
           <Route path="bulk" element={null} />
           <Route path="runs/:id" element={null} />
         </Route>
+        <Route path="ai/judges" element={<AiJudgesPage />} />
+        <Route path="ai/judges/label" element={<LabelQueuePage />} />
         <Route path="ai/costs" element={<AiCostsPage />} />
         <Route path="ai/calls" element={<AiCallsPage />} />
         <Route path="settings" element={<SettingsPage />} />

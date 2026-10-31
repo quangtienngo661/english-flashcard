@@ -44,7 +44,12 @@
     "level-source-required": "File có cột level, hãy chọn nguồn level",
     "lock-rule": "Không khóa được chính bạn hoặc một admin.",
     "mail-unavailable": "Hiện chưa gửi được email nên chưa tạo tài khoản. Vui lòng thử lại sau ít phút.",
+    "admin-usd-cap": "Đã tiêu tới trần USD việc admin hôm nay. Chờ sang ngày mới hoặc nâng trần ở Cài đặt.",
+    "judge-pass-running": "Bản judge này đang chấm ở một lượt khác.",
+    "judge-provider": "Judge chỉ dùng model Anthropic.",
+    "judge-revision-conflict": "Judge vừa được người khác sửa.",
     "model-exists": "Model đã có.",
+    "model-price-missing": "Model chưa nhập giá. Nhập giá ở trang Model rồi chạy lại.",
     "model-in-use": "Model đang được thao tác dùng, chưa xóa được.",
     "model-not-found": "Nhà cung cấp không có model này. Kiểm lại tên model.",
     "model-not-set": "Thao tác này chưa có model. Chọn model ở Cấu hình.",
@@ -140,6 +145,7 @@
     "aiModels": "Model",
     "aiConfigs": "Cấu hình",
     "aiEval": "Bộ ví dụ",
+    "aiJudges": "Judge",
     "aiCosts": "Chi phí",
     "aiCalls": "Các lần gọi",
     "settings": "Cài đặt hệ thống",
@@ -232,7 +238,8 @@
         "translate_sentence": "Dịch câu",
         "generate_meaning_question": "Sinh câu hỏi nghĩa",
         "generate_sentence_mcq": "Sinh câu chọn đáp án",
-        "check_private_word": "Kiểm từ riêng"
+        "check_private_word": "Kiểm từ riêng",
+        "judge": "Judge chấm điểm"
       },
       "row": {
         "model": "Model",
@@ -253,6 +260,7 @@
       "model-not-set": "Chưa chọn model",
       "provider-not-configured": "Nhà cung cấp chưa có key",
       "daily-call-cap": "Chạm trần lời gọi",
+      "admin-usd-cap": "Chạm trần USD việc admin",
       "provider-quota": "Nhà cung cấp hết hạn mức"
     },
     "providers": {
@@ -262,8 +270,10 @@
     },
     "status": {
       "today": {
-        "calls": "Lời gọi hôm nay: {calls}/{cap}",
-        "callsNoCap": "Lời gọi hôm nay: {calls}",
+        "calls": "Lời gọi của người học hôm nay: {calls}/{cap}",
+        "callsNoCap": "Lời gọi của người học hôm nay: {calls}",
+        "adminSpend": "Việc của admin hôm nay (chạy thử, bộ ví dụ, judge): {spent} / {cap}",
+        "adminSpendNoCap": "Việc của admin hôm nay (chạy thử, bộ ví dụ, judge): {spent}, không có trần",
         "failed": "Lỗi: {count} ({cost})",
         "cost": "Chi phí hôm nay: {usd} · {vnd}",
         "providers": "Nhà cung cấp có key: {names}",
@@ -288,7 +298,8 @@
       "purposes": {
         "learner": "người học",
         "test": "chạy thử",
-        "eval": "bộ ví dụ"
+        "eval": "bộ ví dụ",
+        "judge": "judge"
       },
       "shutdown": "Ngừng ngày {date}",
       "lifecycle": "Vòng đời: {lifecycle}",
@@ -445,6 +456,7 @@
         "baselineRequired": "Bản đang chạy chưa có lần chạy trọn trên phiên bản {version}.",
         "runLive": "Chạy bản đang chạy trên phiên bản {version}",
         "rateDrop": "Tỉ lệ đạt {criterion} giảm từ {before}% xuống {after}%.",
+        "judgeRateDrop": "Tỉ lệ đạt judge {name} bản {revision} ({criterion}) giảm từ {before}% xuống {after}%.",
         "criteria": {
           "shape": "khuôn",
           "rule": "luật",
@@ -616,6 +628,9 @@
       "run": {
         "title": "Chạy bộ ví dụ",
         "start": "Chạy bộ ví dụ",
+        "judge": "Chấm bằng judge",
+        "judgeSelect": "Judge",
+        "judgeNoModel": "{name} (chưa chọn model)",
         "note": "Chạy cả bộ với prompt hiện tại. Mỗi lần chạy gọi AI thật cho từng ví dụ và tốn một lượt.",
         "quota": "Còn {remaining}/{limit} lần chạy trong giờ này (dùng chung với Chạy thử ở Cấu hình)",
         "quotaFailed": "Không đọc được số lần chạy còn lại.",
@@ -694,6 +709,45 @@
           "notApplicable": "Không áp dụng"
         },
         "expectedResult": { "pass": "Đạt", "fail": "Không đạt" },
+        "judge": {
+          "title": "Judge",
+          "pass": "{name} bản {revision} · {status} · {judged}/{total} · {cost}",
+          "noTotal": "—",
+          "noCost": "—",
+          "statuses": {
+            "queued": "Đang chờ",
+            "running": "Đang chấm",
+            "finished": "Đã xong",
+            "failed": "Dừng"
+          },
+          "errors": {
+            "admin-usd-cap": "Dừng vì đã tiêu tới trần USD việc admin hôm nay.",
+            "stalled": "Dừng vì worker không phản hồi.",
+            "run-failed": "Không chấm vì lần chạy không xong.",
+            "model-price-missing": "Model của judge chưa có giá."
+          },
+          "start": "Chấm bằng judge",
+          "select": "Judge",
+          "sameProvider": "Model viết câu và judge cùng là Anthropic: judge có thể dễ dãi với văn phong cùng họ.",
+          "stats": "Judge {name} bản {revision} · {criterion}: dev đạt {pass}/{scored} (nặng {major}, nhẹ {minor}) · held-out đạt {hpass}/{hscored} · {unjudged} không chấm được",
+          "calibrated": "Đã hiệu chỉnh",
+          "uncalibrated": "Chưa hiệu chỉnh",
+          "verdicts": {
+            "pass": "Đạt",
+            "fail_major": "Không đạt nặng",
+            "fail_minor": "Không đạt nhẹ",
+            "unjudged": "Không chấm được"
+          },
+          "score": "{criterion}: {verdict}",
+          "scoreOf": "{criterion}: {verdict} · {name} bản {revision}",
+          "labelNone": "Chưa gắn",
+          "labelFor": "Nhãn · {example} · {criterion}",
+          "cols": {
+            "judge": "Judge",
+            "label": "Nhãn"
+          },
+          "labelQueue": "Gắn nhãn lần lượt"
+        },
         "stats": {
           "dev": "Dev: khuôn {shapePass}/{shapeDone} · luật {rulePass}/{ruleJudged} ({ruleSkipped} bỏ qua) · mong đợi {expectedPass}/{expectedJudged}",
           "heldOut": "Held-out (chỉ số tổng): khuôn {shapePass}/{shapeDone} · luật {rulePass}/{ruleJudged} ({ruleSkipped} bỏ qua) · mong đợi {expectedPass}/{expectedJudged}",
@@ -712,8 +766,97 @@
         "rows": { "shape": "Khuôn", "rule": "Luật", "expected": "Mong đợi" },
         "devRegressions": "Ví dụ dev trước đạt, nay trượt ({count})",
         "heldOutRegressions": "Held-out: {count} ví dụ trước đạt, nay trượt",
+        "judgeRow": "Judge {name} bản {revision} · {criterion}",
+        "judgeUnmatched": "{name}: chỉ một lần chạy có điểm của bản {revision}.",
+        "judgeBoth": "Chấm cả hai bằng {name}",
+        "judgeRunning": "Đang chấm. So sánh sẽ tự cập nhật khi xong.",
+        "judgeStopped": "Lượt chấm đã dừng: {error}",
         "noRegressions": "Không có ví dụ nào trước đạt, nay trượt.",
         "criteria": { "shape": "khuôn", "rule": "luật", "expected": "mong đợi" }
+      }
+    },
+    "judges": {
+      "add": "Thêm judge",
+      "empty": "Chưa có judge nào",
+      "emptyHint": "Thêm judge đầu tiên để chấm đầu ra của AI.",
+      "cols": {
+        "judge": "Judge",
+        "operations": "Thao tác được chấm",
+        "model": "Model",
+        "state": "Trạng thái",
+        "actions": "Hành động"
+      },
+      "name": "{name} · bản {revision}",
+      "noModel": "Chưa chọn model",
+      "active": "Đang dùng",
+      "inactive": "Đã tắt",
+      "edit": "Sửa",
+      "editFor": "Sửa {name}",
+      "clone": "Nhân bản judge",
+      "cloneFor": "Nhân bản judge {name}",
+      "agreement": "Độ khớp",
+      "agreementFor": "Độ khớp của {name}",
+      "editor": {
+        "title": "Judge {name}",
+        "titleNew": "Thêm judge",
+        "name": "Tên",
+        "operations": "Thao tác được chấm",
+        "criteria": "Tiêu chí",
+        "criterion": "Tiêu chí {n}",
+        "code": "Mã",
+        "question": "Câu hỏi",
+        "addCriterion": "Thêm tiêu chí",
+        "removeCriterion": "Xóa tiêu chí {n}",
+        "instructions": "Hướng dẫn",
+        "examples": "Ví dụ mẫu",
+        "model": "Model",
+        "modelHint": "Judge chỉ dùng model Anthropic và không được biết model nào viết câu.",
+        "active": "Đang dùng",
+        "save": "Lưu bản mới",
+        "create": "Tạo judge",
+        "saved": "Đã lưu bản {revision}.",
+        "savedSame": "Đã lưu (không đổi bản).",
+        "created": "Đã tạo judge {name}.",
+        "reload": "Tải bản mới",
+        "reloadNote": "Tải bản mới thay các ô bằng bản đó; chỗ bạn đang sửa sẽ mất.",
+        "close": "Đóng",
+        "history": "Các bản",
+        "revision": "Bản {revision} · {date} · {email} · {model}",
+        "historyFailed": "Chưa tải được các bản."
+      },
+      "cloneDialog": {
+        "title": "Nhân bản judge",
+        "name": "Tên",
+        "defaultName": "{name} (bản sao)",
+        "confirm": "Nhân bản",
+        "done": "Đã tạo judge {name}."
+      },
+      "label": {
+        "title": "Gắn nhãn · {judge}",
+        "progress": "{index}/{total}",
+        "input": "Đầu vào",
+        "output": "Đầu ra",
+        "criterion": "Tiêu chí",
+        "pass": "Đạt (1)",
+        "major": "Không đạt nặng (2)",
+        "minor": "Không đạt nhẹ (3)",
+        "skip": "Bỏ qua",
+        "previous": "Trước",
+        "hint": "Phím 1, 2, 3 để gắn nhãn. Nhãn dùng chung cho mọi bản judge. Ví dụ held-out không có ở đây.",
+        "labelled": "Đã gắn: {verdict}",
+        "end": "Đã đi hết {total} đầu ra.",
+        "backToRun": "Quay lại lần chạy",
+        "empty": "Lần chạy không có đầu ra dev nào để gắn nhãn.",
+        "missing": "Mở màn này từ một lần chạy ở Bộ ví dụ, bằng liên kết “Gắn nhãn lần lượt”."
+      },
+      "agreementPanel": {
+        "title": "Độ khớp với nhãn · {name}",
+        "row": "Bản {revision} · {criterion}: {labeled} nhãn · khớp đạt/không đạt {rate} · khớp cả mức {exact}",
+        "calibrated": "Đã hiệu chỉnh",
+        "uncalibrated": "Chưa hiệu chỉnh",
+        "need": "Cần ít nhất {min} nhãn và khớp từ {ratio}.",
+        "noRate": "—",
+        "close": "Đóng"
       }
     },
     "costs": {
@@ -1484,7 +1627,8 @@
       "ai_cap_alert_percent": "không tô vàng"
     },
     "notes": {
-      "transaction_retention_years": "Luật Kế toán: tối thiểu 5–10 năm tùy loại chứng từ"
+      "transaction_retention_years": "Luật Kế toán: tối thiểu 5–10 năm tùy loại chứng từ",
+      "admin_daily_usd_cap": "Chạy thử, bộ ví dụ và judge dừng khi đã tiêu tới trần. Để trống: không trần. 0: chặn hết."
     },
     "zeroMeaning": {
       "ai_prefetch_count": "tắt",
@@ -1562,7 +1706,10 @@
         "daily_provider_calls_cap": "Trần lời gọi nhà cung cấp mỗi ngày",
         "content_retention_days": "Giữ nội dung lời gọi",
         "usd_vnd_rate": "Tỷ giá USD → VND",
-        "eval_held_out_ratio": "Tỉ lệ ví dụ held-out"
+        "eval_held_out_ratio": "Tỉ lệ ví dụ held-out",
+        "admin_daily_usd_cap": "Trần USD việc admin mỗi ngày",
+        "judge_label_min": "Số nhãn tối thiểu để tin judge",
+        "judge_agreement_min": "Độ khớp tối thiểu với nhãn"
       },
       "identity": {
         "unverified_cleanup_days": "Tự xóa tài khoản chưa xác nhận email sau"
@@ -1832,7 +1979,7 @@
     "ms": "{ms} ms",
     "today": {
       "title": "Tổng quan hôm nay",
-      "calls": "Lượt gọi AI / giới hạn ngày",
+      "calls": "Lời gọi AI của người học / giới hạn ngày",
       "cost": "Chi phí AI hôm nay",
       "units": "Lượt AI của người học / giới hạn hệ thống",
       "notReady": "Thao tác chưa sẵn sàng"

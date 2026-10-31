@@ -198,3 +198,44 @@ describe('FakeAiAdapter.describeModel', () => {
     expect(await new FakeAiAdapter().describeModel('fake:nope', new AbortController().signal)).toEqual({ kind: 'not-found' });
   });
 });
+
+describe('FakeAiAdapter — the judge operation (nhóm B M3, E13)', () => {
+  const judgeRequest = (model: string, accepted: string[], codes = ['single_answer']): AdapterRequest => request(model, {
+    data: {
+      target_operation: 'generate_cloze', input: CLOZE_DATA, output: { sentence: 'We ___ it.', accepted_answers: accepted, translation_vi: 'x' },
+      criteria: codes.map((code) => ({ code, question: 'Q' })), context: null,
+    },
+    schema: { name: 'judge_v1', schema: { type: 'object' } },
+  });
+
+  it('fake:ok passes an output whose answers do not end in ment, and the answer passes the gateway rules', async () => {
+    const text = okText(await call(new FakeAiAdapter(), judgeRequest('fake:ok', ['deploy'])));
+    expect(text).toEqual({ codes: ['single_answer'], verdicts: ['pass'], reasons: ['fake judge'] });
+    expect(parseOutput('judge', JSON.stringify(text))).toEqual({ ok: true, value: { codes: ['single_answer'], verdicts: ['pass'], reasons: ['fake judge'] } });
+  });
+
+  it('fake:ok fails every criterion of an output whose answer ends in ment (the mark of fake:bad-form)', async () => {
+    const text = okText(await call(new FakeAiAdapter(), judgeRequest('fake:ok', ['deployment'], ['single_answer', 'natural'])));
+    expect(text).toEqual({
+      codes: ['single_answer', 'natural'], verdicts: ['fail_major', 'fail_major'], reasons: ['fake judge', 'fake judge'],
+    });
+    expect(parseOutput('judge', JSON.stringify(text)).ok).toBe(true);
+  });
+
+  it('fake:bad-form fails every criterion whatever the output', async () => {
+    const text = okText(await call(new FakeAiAdapter(), judgeRequest('fake:bad-form', ['deploy'], ['single_answer', 'natural'])));
+    expect(text).toEqual({
+      codes: ['single_answer', 'natural'], verdicts: ['fail_major', 'fail_major'],
+      reasons: ['fake: another word fits', 'fake: another word fits'],
+    });
+    expect(parseOutput('judge', JSON.stringify(text)).ok).toBe(true);
+  });
+
+  it('an output without accepted_answers (another operation) passes', async () => {
+    const outcome = await call(new FakeAiAdapter(), request('fake:ok', {
+      data: { target_operation: 'translate_sentence', input: { sentence: 'Hi' }, output: { translation_vi: 'Chào' }, criteria: [{ code: 'natural', question: 'Q' }], context: null },
+      schema: { name: 'judge_v1', schema: { type: 'object' } },
+    }));
+    expect(okText(outcome)).toEqual({ codes: ['natural'], verdicts: ['pass'], reasons: ['fake judge'] });
+  });
+});

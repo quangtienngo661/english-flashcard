@@ -15,7 +15,9 @@ const STATUS: StatusReport = {
     operation: 'generate_cloze', ready: true, reason: null, model: { provider: 'fake', model_id: 'fake:ok' }, effort: 'low', thinking: null,
     max_output_tokens: 1_200, last_error: null, model_warning: null,
   }],
-  today: { calls: 3, cap: 500, failed_calls: 1, failed_cost_usd: '0.00000000', cost_usd: '0.00100000', cost_vnd: 26 },
+  today: {
+    calls: 3, cap: 500, failed_calls: 1, failed_cost_usd: '0.00000000', cost_usd: '0.00100000', cost_vnd: 26, admin_cost_usd: '0.00000000', admin_usd_cap: 2,
+  },
   ai_enabled: true,
   providers: { openai: false, anthropic: true, fake: true } as StatusReport['providers'],
 };

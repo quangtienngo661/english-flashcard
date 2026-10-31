@@ -8,6 +8,11 @@ import type { AiOperation, AiReadiness, AiResult } from './ai.types.js';
 import { LiveConfigReader } from './configs/live-config.reader.js';
 import { EvalExamplesService, type ExampleFromSource } from './eval/eval-examples.service.js';
 import { EvalRulesRegistry, type EvalRules } from './eval/eval-rules.port.js';
+import { JudgePassesService } from './judge/judge-passes.service.js';
+import { JudgeScoresReader } from './judge/judge-scores.reader.js';
+import type { JudgeSubject } from './judge/judge.types.js';
+import { JudgesService } from './judge/judges.service.js';
+import { ReportsService } from './reports/reports.service.js';
 import { ReadinessService } from './runner/readiness.service.js';
 import { RunnerService, type RunReport } from './runner/runner.service.js';
 
@@ -24,6 +29,10 @@ export class AiService {
     @Inject(EvalRulesRegistry) private readonly evalRules: EvalRulesRegistry,
     @Inject(EvalExamplesService) private readonly evalExamples: EvalExamplesService,
     @Inject(LiveConfigReader) private readonly liveConfigs: LiveConfigReader,
+    @Inject(JudgePassesService) private readonly judgePasses: JudgePassesService,
+    @Inject(JudgesService) private readonly judges: JudgesService,
+    @Inject(JudgeScoresReader) private readonly judgeScores: JudgeScoresReader,
+    @Inject(ReportsService) private readonly reports: ReportsService,
   ) {}
 
   /** Practice hands its rules and catalog forms to eval runs here (nhóm B design §5.2); `ai` never imports Practice or Content. */
@@ -46,6 +55,32 @@ export class AiService {
   async liveConfigNumber(op: AiOperation): Promise<{ number: number; model: string | null } | null> {
     const live = await this.liveConfigs.find(op);
     return live ? { number: live.number, model: live.selection?.modelId ?? null } : null;
+  }
+
+  /**
+   * Starts a judge pass over real questions a caller chose (contract §4, M4): `filters.operation` names the one operation the judge scores. Subjects the
+   * judge's newest revision has already judged are left out; the pass is queued for the worker, and no provider is called here.
+   */
+  startJudgePass(args: { judgeId: string; kind: 'real'; filters: Record<string, unknown>; subjects: JudgeSubject[]; actorId: string }): Promise<{ passId: string }> {
+    return this.judgePasses.createReal(args);
+  }
+
+  /** The newest revision of a judge (the one a pass would use now), or null for an unknown judge (contract §4). */
+  latestJudgeRevision(judgeId: string): Promise<{ id: string; revision: number } | null> {
+    return this.judges.latestRevision(judgeId);
+  }
+
+  /** Which of these subjects the judge revision has already judged completely (contract §4). */
+  judgedSubjects(judgeRevisionId: string, subjectIds: string[]): Promise<Set<string>> {
+    return this.judgeScores.judgedSubjects(judgeRevisionId, subjectIds);
+  }
+
+  /**
+   * The request and response of the newest succeeded learner attempt of each operation id whose content is still kept (7 days by default, contract §4).
+   * An id with no such call, or whose content expired, is absent from the map.
+   */
+  callContents(operationIds: string[]): Promise<Map<string, { request: unknown; response: string | null }>> {
+    return this.reports.callContents(operationIds, this.clock.now());
   }
 
   async isReady(op: AiOperation): Promise<AiReadiness> {

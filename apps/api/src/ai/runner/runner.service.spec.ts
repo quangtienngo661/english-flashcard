@@ -10,6 +10,7 @@ import type { LiveConfigReader } from '../configs/live-config.reader.js';
 import type { StoredPrompt } from '../prompts/prompts.repository.js';
 import { PROMPT_GUARD } from '../prompts/prompt-rules.js';
 import { CallQueue, ConcurrencyLimit } from './call-queue.js';
+import type { AdminSpend } from './admin-spend.service.js';
 import type { CallLedger, CallRecord } from './call-ledger.service.js';
 import { fingerprint } from './fingerprint.js';
 import type { OperationsRepository } from './operations.repository.js';
@@ -161,6 +162,8 @@ type Setup = {
   operations?: MemoryOperations;
   queue?: CallQueue;
   prompt?: StoredPrompt;
+  /** Is the admin usd cap reached? A function gets the number of the check (1, 2, …). `'throws'`: the stub fails when asked. */
+  spendReached?: boolean | 'throws' | ((check: number) => boolean);
 };
 
 function setup(input: Setup = {}) {
@@ -187,6 +190,14 @@ function setup(input: Setup = {}) {
   const operations = input.operations ?? new MemoryOperations();
   const clock = new FakeClock(START);
   const limit = new ConcurrencyLimit();
+  const spendChecks: Date[] = [];
+  const spend = {
+    reached: vi.fn(async (now: Date) => {
+      spendChecks.push(now);
+      if (input.spendReached === 'throws') throw new Error('the learner path never asks AdminSpend');
+      return typeof input.spendReached === 'function' ? input.spendReached(spendChecks.length) : (input.spendReached ?? false);
+    }),
+  } as unknown as AdminSpend;
   const runner = new RunnerService(
     { get: async () => settings } as unknown as SettingsService,
     clock,
@@ -209,9 +220,10 @@ function setup(input: Setup = {}) {
     input.queue ?? new CallQueue(() => limit.value),
     limit,
     new AppLogger({ write: (entry) => entries.push(entry) }),
+    spend,
   );
   return {
-    runner, adapter, operations, records, entries, clock, limit, readinessChecks, liveLoads,
+    runner, adapter, operations, records, entries, clock, limit, readinessChecks, liveLoads, spendChecks,
     setSettings: (next: Partial<AppSettings['ai']>) => { settings = { ...settings, ai: { ...settings.ai, ...next } }; },
     setReadiness: (next: ReadinessCheck) => { readiness = next; },
     setPrompt: (next: StoredPrompt) => { prompt = next; },
@@ -747,8 +759,124 @@ describe('RunnerService.execute — test and eval', () => {
     const report = await runner.execute(adminTest({ purpose: 'eval', selection: { ...selectionOf('fake', 'fake:503-then-ok'), modelRef: null } }));
     expect(adapter.requests[0].model).toBe('fake:503-then-ok');
     expect(report.calls.map((call) => [call.attempt, call.outcome])).toEqual([[1, 'provider-error'], [2, 'succeeded']]);
-    expect(report.calls[0]).toEqual({ attempt: 1, outcome: 'provider-error', latency_ms: expect.any(Number), cost_usd: null, http_status: 503 });
+    expect(report.calls[0]).toEqual({
+      attempt: 1, outcome: 'provider-error', latency_ms: expect.any(Number), cost_usd: null, http_status: 503, call_id: 'call-1',
+    });
     expect(report.calls[1].cost_usd).toBe('0.00003500');
+  });
+});
+
+describe('RunnerService.execute — judge (nhóm B M3, design §5.4)', () => {
+  const JUDGE_ANSWER = JSON.stringify({ codes: ['single_answer'], verdicts: ['pass'], reasons: ['only borrow fits'] });
+  const JUDGE_DATA = {
+    target_operation: 'generate_cloze',
+    input: DATA,
+    output: { sentence: 'Can I ___ your pen?', accepted_answers: ['borrow'], translation_vi: 'Mình mượn bút nhé?' },
+    criteria: [{ code: 'single_answer', question: 'Is the given word the only answer?' }],
+    context: null,
+  };
+  const judgeSelection = (): Selection => ({ ...selectionOf('fake'), operation: 'judge' });
+  const judgeRun = (overrides: Partial<Extract<ExecuteInput, { purpose: 'judge' }>> = {}): ExecuteInput => ({
+    purpose: 'judge', operation: 'judge', data: JUDGE_DATA, actorId: ADMIN, callOperationId: 'judge-P-I', selection: judgeSelection(),
+    prompt: { instructions: 'J', examples: [], revision: 2 }, ...overrides,
+  });
+
+  it('runs on the selection and prompt it brings: the ledger and the adapter see the judge, the live config is never read', async () => {
+    const { runner, records, adapter, liveLoads, readinessChecks, operations } = setup({ steps: [() => ok(JUDGE_ANSWER)] });
+    const report = await runner.execute(judgeRun());
+    expect(report.result).toEqual({
+      status: 'succeeded', operation_id: 'judge-P-I',
+      result: { codes: ['single_answer'], verdicts: ['pass'], reasons: ['only borrow fits'] },
+      meta: { operation: 'judge', provider: 'fake', model: 'fake:ok', effort: 'low', prompt_revision: 2, schema_version: 1, replayed: false },
+    });
+    expect(records[0]!.call).toMatchObject({
+      purpose: 'judge', operation: 'judge', operationId: 'judge-P-I', aiOperationId: null, userId: ADMIN, promptRevision: 2,
+    });
+    expect(adapter.requests[0]!.schema.name).toBe('judge_v1');
+    expect(adapter.requests[0]!.data).toEqual(JUDGE_DATA);
+    expect(adapter.requests[0]!.instructions).toContain('J');
+    expect(liveLoads).toEqual([]);
+    expect(readinessChecks).toEqual([]);
+    expect(operations.calls).toEqual([]);
+  });
+
+  it('call_id of the call summary is the id the ledger returned', async () => {
+    const { runner } = setup({ steps: [() => fail('server', 503), () => ok(JUDGE_ANSWER)] });
+    const report = await runner.execute(judgeRun());
+    expect(report.calls.map((call) => [call.attempt, call.call_id])).toEqual([[1, 'call-1'], [2, 'call-2']]);
+  });
+
+  it('criteria [] → permanent_failure bad-input, the adapter is not called and nothing is recorded', async () => {
+    const { runner, adapter, records } = setup();
+    const report = await runner.execute(judgeRun({ data: { ...JUDGE_DATA, criteria: [] } }));
+    expect(report.result).toEqual({ status: 'permanent_failure', operation_id: 'judge-P-I', reason: 'bad-input' });
+    expect(adapter.requests).toHaveLength(0);
+    expect(records).toHaveLength(0);
+  });
+
+  it('an answer outside the judge shape is an invalid-shape failure recorded on the judge operation', async () => {
+    const { runner, records } = setup({ steps: [() => ok(GOOD)] });
+    const report = await runner.execute(judgeRun());
+    expect(report.result).toEqual({ status: 'transient_failure', operation_id: 'judge-P-I', reason: 'invalid-shape' });
+    expect(records.map((entry) => [entry.call.operation, entry.call.outcome])).toEqual([['judge', 'invalid-shape']]);
+  });
+
+  it('a provider that is not registered → provider-not-configured', async () => {
+    const { runner, adapter } = setup({ registered: ['fake'] });
+    const report = await runner.execute(judgeRun({ selection: { ...judgeSelection(), provider: 'anthropic', modelId: 'claude-x' } }));
+    expect(report.result).toEqual({ status: 'unavailable', operation_id: 'judge-P-I', reason: 'provider-not-configured' });
+    expect(adapter.requests).toHaveLength(0);
+  });
+});
+
+describe('RunnerService — the admin usd cap (nhóm B M3, E7, B20)', () => {
+  it('an eval call whose cap is reached after attempt 1 makes no second provider call and records once (Review focus 5)', async () => {
+    const { runner, adapter, records, spendChecks } = setup({
+      steps: [() => fail('rate_limited', 429, 1_000), () => ok()], spendReached: (check) => check >= 2,
+    });
+    const report = await runner.execute(adminTest({ purpose: 'eval' }));
+    expect(report.result).toEqual({ status: 'unavailable', operation_id: 'test-1', reason: 'admin-usd-cap' });
+    expect(adapter.requests).toHaveLength(1);
+    expect(records).toHaveLength(1);
+    expect(spendChecks).toHaveLength(2);
+    expect(report.calls.map((call) => call.attempt)).toEqual([1]);
+  });
+
+  it('reached from the start: the adapter is never called and nothing is recorded', async () => {
+    const { runner, adapter, records } = setup({ spendReached: true });
+    const report = await runner.execute(adminTest({ purpose: 'eval' }));
+    expect(report.result).toEqual({ status: 'unavailable', operation_id: 'test-1', reason: 'admin-usd-cap' });
+    expect(adapter.requests).toHaveLength(0);
+    expect(records).toHaveLength(0);
+  });
+
+  it('a test call is checked too, and a judge call', async () => {
+    const test = setup({ spendReached: true });
+    expect((await test.runner.execute(adminTest())).result).toMatchObject({ status: 'unavailable', reason: 'admin-usd-cap' });
+    expect(test.adapter.requests).toHaveLength(0);
+    const judge = setup({ spendReached: true });
+    const report = await judge.runner.execute({
+      purpose: 'judge', operation: 'judge', actorId: ADMIN, callOperationId: 'judge-P-I', selection: { ...selectionOf('fake'), operation: 'judge' },
+      prompt: { instructions: 'J', examples: [], revision: 1 },
+      data: { target_operation: OP, input: DATA, output: { sentence: 'x ___', accepted_answers: ['a'], translation_vi: 'y' }, criteria: [{ code: 'single_answer', question: 'Q' }], context: null },
+    });
+    expect(report.result).toEqual({ status: 'unavailable', operation_id: 'judge-P-I', reason: 'admin-usd-cap' });
+    expect(judge.adapter.requests).toHaveLength(0);
+  });
+
+  it('with room under the cap an eval call runs once per attempt as before, and the check runs before each attempt', async () => {
+    const { runner, adapter, spendChecks } = setup({ steps: [() => fail('server', 503), () => ok()], spendReached: false });
+    const report = await runner.execute(adminTest({ purpose: 'eval' }));
+    expect(report.result.status).toBe('succeeded');
+    expect(adapter.requests).toHaveLength(2);
+    expect(spendChecks).toHaveLength(2);
+  });
+
+  it('a learner call never asks AdminSpend: a stub that throws changes nothing', async () => {
+    const { runner, spendChecks } = setup({ spendReached: 'throws' });
+    const report = await runner.execute(learner());
+    expect(report.result.status).toBe('succeeded');
+    expect(spendChecks).toEqual([]);
   });
 });
 

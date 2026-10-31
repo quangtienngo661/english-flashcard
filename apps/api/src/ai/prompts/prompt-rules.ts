@@ -1,6 +1,6 @@
 import { PROMPT_EXAMPLES_MAX, PROMPT_INSTRUCTIONS_MAX } from '../ai.constants.js';
-import type { AiOperation } from '../ai.types.js';
-import { OPERATIONS } from '../operations/operations.js';
+import type { GatewayOperation } from '../ai.types.js';
+import { GATEWAY_DEFINITIONS } from '../operations/operations.js';
 import { codePoints } from '../operations/text-rules.js';
 
 export type PromptExample = { input: Record<string, unknown>; output: Record<string, unknown> };
@@ -15,14 +15,14 @@ const isStrictExample = (value: unknown): value is PromptExample => {
 };
 
 /** The save rules of a prompt (design §7.3), in order; `[]` = it can be saved. */
-export function promptViolations(op: AiOperation, body: { instructions: string; examples: unknown[] }): string[] {
+export function promptViolations(op: GatewayOperation, body: { instructions: string; examples: unknown[] }): string[] {
   const violations: string[] = [];
   if (!body.instructions.trim()) violations.push('instructions: Must not be blank');
   else if (codePoints(body.instructions) > PROMPT_INSTRUCTIONS_MAX) {
     violations.push(`instructions: Expected at most ${PROMPT_INSTRUCTIONS_MAX} characters`);
   }
   if (body.examples.length > PROMPT_EXAMPLES_MAX) violations.push(`examples: Expected at most ${PROMPT_EXAMPLES_MAX} examples`);
-  const operation = OPERATIONS[op];
+  const operation = GATEWAY_DEFINITIONS[op];
   body.examples.forEach((example, index) => {
     if (!isStrictExample(example)) {
       violations.push(`examples[${index}]: Expected an object with exactly input and output`);

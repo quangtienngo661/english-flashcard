@@ -16,7 +16,7 @@ function values(): Values {
   const out = {} as Values;
   for (const section of SECTIONS) {
     out[section] = {};
-    for (const { key, kind } of SETTINGS_LAYOUT[section]) out[section][key] = kind === 'bool' ? true : kind === 'time' ? '20:00' : kind === 'ratio' ? 0.3 : 10;
+    for (const { key, kind } of SETTINGS_LAYOUT[section]) out[section][key] = kind === 'bool' ? true : kind === 'time' ? '20:00' : kind === 'ratio' ? 0.3 : kind === 'usd' ? 2 : 10;
   }
   out.practice.max_questions_per_session = 20;
   out.entitlements.renewal_notice_days_before = 5;
@@ -30,6 +30,7 @@ function bounds() {
       if (kind === 'time') out[section][key] = { min: '06:00', max: '22:00', step_minutes: 15 };
       else if (kind === 'int') out[section][key] = { min: 1, max: 1000 };
       else if (kind === 'ratio') out[section][key] = { min: 0.1, max: 0.5 };
+      else if (kind === 'usd') out[section][key] = { min: 0, max: 1000, nullable: true };
     }
   }
   out.entitlements.renewal_notice_days_before = { min: 1, max: 30, nullable: true };
@@ -283,6 +284,28 @@ describe('nhóm B settings (design §5.1)', () => {
     await userEvent.click(screen.getByRole('button', { name: s.save }));
     await waitFor(() => expect(calls).toHaveLength(1));
     expect(calls[0].body).toEqual({ version: 3, values: { ai: { eval_held_out_ratio: 0.25 } } });
+  });
+
+  it('the AI tab has the admin USD cap and the two judge calibration limits', async () => {
+    renderApp('/settings?tab=ai', { [GET]: () => Response.json(VIEW()) });
+    expect(await screen.findByRole('textbox', { name: 'Trần USD việc admin mỗi ngày' })).toHaveValue('2');
+    expect(screen.getByRole('textbox', { name: 'Số nhãn tối thiểu để tin judge' })).toBeInTheDocument();
+    expect(screen.getByRole('textbox', { name: 'Độ khớp tối thiểu với nhãn' })).toBeInTheDocument();
+    expect(screen.getByText('admin_daily_usd_cap · 0–1.000 hoặc để trống = không giới hạn · Chạy thử, bộ ví dụ và judge dừng khi đã tiêu tới trần. Để trống: không trần. 0: chặn hết. · mặc định 2')).toBeInTheDocument();
+  });
+
+  it('1,5 in the admin USD cap is sent as 1.5 and an emptied field as null', async () => {
+    const calls: Call[] = [];
+    renderApp('/settings?tab=ai', { [GET]: () => Response.json(VIEW()), [PUT]: (c) => { calls.push(c); return Response.json({ ...VIEW(4) }); } });
+    await screen.findByRole('textbox', { name: 'Trần USD việc admin mỗi ngày' });
+    await setNumber('Trần USD việc admin mỗi ngày', '1,5');
+    await userEvent.click(screen.getByRole('button', { name: s.save }));
+    await waitFor(() => expect(calls).toHaveLength(1));
+    expect(calls[0].body).toEqual({ version: 3, values: { ai: { admin_daily_usd_cap: 1.5 } } });
+    await setNumber('Trần USD việc admin mỗi ngày', '');
+    await userEvent.click(screen.getByRole('button', { name: s.save }));
+    await waitFor(() => expect(calls).toHaveLength(2));
+    expect(calls[1].body).toMatchObject({ values: { ai: { admin_daily_usd_cap: null } } });
   });
 
   it('a value outside the bounds is refused by the API and flagged on the field', async () => {

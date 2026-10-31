@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { describe, expect, it, vi } from 'vitest';
 import { FakeClock } from '../../common/clock/clock.js';
 import { ProblemDetailsException } from '../../common/problem-details/problem-details.exception.js';
+import type { RunJudgeScore } from '../judge/judge-stats.js';
 import { PublishService } from './publish.service.js';
 
 const ADMIN = '11111111-1111-4111-8111-111111111111';
@@ -23,7 +24,7 @@ const config = (over: Partial<Cfg> = {}): Cfg => ({
   status: 'published', createdFrom: null, note: null, createdBy: ADMIN, createdAt: NOW, publishedBy: ADMIN, publishedAt: NOW, ...over,
 });
 
-type Run = { id: string; configId: string; configVersion: number; setId: string; status: string; createdAt: Date };
+type Run = { id: string; configId: string; configVersion: number; setId: string; status: string; createdAt: Date; hiddenAt?: Date | null };
 type Item = { runId: string; exampleId: string; position: number; split: string; status: string; rule: unknown; expectedResult: string | null };
 const run = (configId: string, configVersion: number, over: Partial<Run> = {}): Run => ({
   id: randomUUID(), configId, configVersion, setId: SET, status: 'finished', createdAt: NOW, ...over,
@@ -80,8 +81,9 @@ function setup(opts: Setup = {}) {
       findMany: vi.fn(async ({ where }: { where: { id: { in: string[] } } }) => configs.filter((r) => where.id.in.includes(r.id)).map(withModel)),
     },
     aiEvalRun: {
-      findMany: vi.fn(async ({ where }: { where: { configId: string; configVersion: number; setId: string; status: string } }) =>
-        runs.filter((r) => r.configId === where.configId && r.configVersion === where.configVersion && r.setId === where.setId && r.status === where.status)
+      findMany: vi.fn(async ({ where }: { where: { configId: string; configVersion: number; setId: string; status: string; hiddenAt?: null } }) =>
+        runs.filter((r) => r.configId === where.configId && r.configVersion === where.configVersion && r.setId === where.setId && r.status === where.status
+          && (where.hiddenAt === undefined || (r.hiddenAt ?? null) === where.hiddenAt))
           .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime() || (a.id < b.id ? 1 : -1))),
     },
     aiEvalRunItem: {
@@ -95,8 +97,9 @@ function setup(opts: Setup = {}) {
   const configsService = { get: vi.fn(async (op: string) => ({ operation: op, live_version: pointer.version, live: { id: pointer.configId }, draft: configs.some((c) => c.status === 'draft') ? { id: draft.id } : null })) };
   const sets = { latest: vi.fn(async () => (opts.withSet === false ? null : { id: SET, version: 2 })) };
   const identity = { emailsOf: vi.fn(async (ids: string[]) => new Map(ids.filter((id) => id === ADMIN).map((id) => [id, 'admin@x.test']))) };
-  const service = new PublishService(prisma as never, configsService as never, sets as never, identity as never, new FakeClock(NOW));
-  return { service, prisma, tx, live, previous, draft, configs, pointer, runs, items, events, order, configsService, sets };
+  const judgeScores = { byRun: vi.fn(async (_runId: string): Promise<RunJudgeScore[]> => []) };
+  const service = new PublishService(prisma as never, configsService as never, sets as never, identity as never, new FakeClock(NOW), judgeScores as never);
+  return { service, prisma, tx, live, previous, draft, configs, pointer, runs, items, events, order, configsService, sets, judgeScores };
 }
 
 async function problemOf(promise: Promise<unknown>) {
@@ -161,6 +164,59 @@ describe('PublishService.check (design §6.3)', () => {
     ctx.runs.push(older, newer, elsewhere);
     ctx.items.push(...goodItems(older.id), ...goodItems(newer.id), ...goodItems(elsewhere.id));
     expect((await ctx.service.check(OP)).candidate_run_id).toBe(newer.id);
+  });
+
+  it('M3-T11: a hidden run ("deleted" with labels) is no candidate: the run before it is, and with none left the blocker is eval-required', async () => {
+    const ctx = setup();
+    const before = run(ctx.draft.id, 1, { createdAt: new Date(NOW.getTime() - 1000) });
+    const newest = run(ctx.draft.id, 1, { hiddenAt: NOW });
+    ctx.runs.push(before, newest);
+    ctx.items.push(...goodItems(before.id), ...goodItems(newest.id));
+    expect((await ctx.service.check(OP)).candidate_run_id).toBe(before.id);
+    before.hiddenAt = NOW;
+    expect(await ctx.service.check(OP)).toMatchObject({ candidate_run_id: null, blockers: expect.arrayContaining(['eval-required']) });
+    expect(ctx.prisma.aiEvalRun.findMany).toHaveBeenCalledWith(expect.objectContaining({ where: expect.objectContaining({ hiddenAt: null }) }));
+  });
+
+  it('M3-T11: a hidden run is no baseline either → baseline-required, and a run the check named never answers 404 afterwards', async () => {
+    const ctx = setup();
+    const candidate = run(ctx.draft.id, ctx.draft.version);
+    const baseline = run(ctx.live.id, ctx.live.version, { hiddenAt: NOW });
+    ctx.runs.push(candidate, baseline);
+    ctx.items.push(...goodItems(candidate.id), ...goodItems(baseline.id));
+    expect(await ctx.service.check(OP)).toMatchObject({ candidate_run_id: candidate.id, baseline: { required: true, run_id: null }, blockers: ['baseline-required'] });
+    baseline.hiddenAt = null;
+    expect(await ctx.service.check(OP)).toMatchObject({ baseline: { required: true, run_id: baseline.id }, blockers: [] });
+  });
+
+  it('M3-T12: the judge scores of both runs are read and a judge-rate-drop joins the warnings (after the shape ones)', async () => {
+    const ctx = setup();
+    const { candidate, baseline } = withBothRuns(ctx);
+    const score = (verdict: RunJudgeScore['verdict'], index: number): RunJudgeScore => ({
+      itemId: `i${index}`, split: 'dev', judgeId: 'J', judgeName: 'Chỉ một đáp án', judgeRevisionId: 'R2', revision: 2, criterion: 'single_answer', verdict, problem: null, reason: null,
+    });
+    ctx.judgeScores.byRun.mockImplementation(async (runId: string) => Array.from({ length: 20 }, (_, index) => score(runId === candidate.id && index < 4 ? 'fail_minor' : 'pass', index)));
+    const view = await ctx.service.check(OP);
+    expect(ctx.judgeScores.byRun.mock.calls.map(([id]) => id).sort()).toEqual([baseline.id, candidate.id].sort());
+    expect(view.warnings).toEqual([{
+      code: 'judge-rate-drop', judge_id: 'J', judge_name: 'Chỉ một đáp án', judge_revision_id: 'R2', revision: 2, criterion: 'single_answer',
+      before: { passed: 20, counted: 20 }, after: { passed: 16, counted: 20 },
+    }]);
+  });
+
+  it('M3-T12: with no baseline run (a live config without a model) no judge score is read and there is no warning', async () => {
+    const ctx = setup({ liveModel: null });
+    const candidate = run(ctx.draft.id, ctx.draft.version);
+    ctx.runs.push(candidate);
+    ctx.items.push(...goodItems(candidate.id));
+    expect(await ctx.service.check(OP)).toMatchObject({ candidate_run_id: candidate.id, baseline: { required: false, run_id: null }, warnings: [] });
+    expect(ctx.judgeScores.byRun).not.toHaveBeenCalled();
+  });
+
+  it('M3-T12 (D38): a turn-off reads no run and no judge score and keeps warnings empty', async () => {
+    const ctx = setup({ draftModel: null });
+    expect(await ctx.service.check(OP)).toMatchObject({ turn_off: true, warnings: [] });
+    expect(ctx.judgeScores.byRun).not.toHaveBeenCalled();
   });
 
   it('both runs present → the warnings of the gate, no blocker', async () => {

@@ -11,6 +11,7 @@ import { IdentityService } from '../../identity/profile/identity.service.js';
 import { AI_SYSTEM_ACTOR_ID } from '../ai.constants.js';
 import type { AiOperation } from '../ai.types.js';
 import { EvalSetsService } from '../eval/eval-sets.service.js';
+import { JudgeScoresReader } from '../judge/judge-scores.reader.js';
 import type { EvalSplit, ExpectedResult, RuleResult, RunItemStatus } from '../eval/eval.types.js';
 import { isComplete, type RunItemResult } from '../eval/run-stats.js';
 import { ConfigsService } from './configs.service.js';
@@ -77,6 +78,7 @@ export class PublishService {
     @Inject(EvalSetsService) private readonly sets: EvalSetsService,
     @Inject(IdentityService) private readonly identity: IdentityService,
     @Inject(Clock) private readonly clock: Clock,
+    @Inject(JudgeScoresReader) private readonly judgeScores: JudgeScoresReader,
   ) {}
 
   /**
@@ -106,8 +108,14 @@ export class PublishService {
     if (required && !baseline) blockers.push('baseline-required');
     return {
       ...base, turn_off: false, set, candidate_run_id: candidate?.id ?? null, baseline: { required, run_id: baseline?.id ?? null }, blockers,
-      warnings: candidate && baseline ? publishWarnings(candidate.items, baseline.items) : [],
+      warnings: candidate && baseline ? await this.warningsOf(candidate, baseline) : [],
     };
+  }
+
+  /** The gate's warnings, the judge criteria included: the judge scores of both runs are read only when both runs exist (no baseline, no judge read). */
+  private async warningsOf(candidate: { id: string; items: RunItemResult[] }, baseline: { id: string; items: RunItemResult[] }): Promise<PublishWarning[]> {
+    const [judgeCandidate, judgeBaseline] = await Promise.all([this.judgeScores.byRun(candidate.id), this.judgeScores.byRun(baseline.id)]);
+    return publishWarnings(candidate.items, baseline.items, { candidate: judgeCandidate, baseline: judgeBaseline });
   }
 
   /**
@@ -219,7 +227,8 @@ export class PublishService {
   /** The newest complete run ("xong trọn", design §5.3) of a config at a version on a set, with its items; null when there is none. */
   private async completeRun(configId: string, configVersion: number, setId: string): Promise<{ id: string; items: RunItemResult[] } | null> {
     const runs = await this.prisma.aiEvalRun.findMany({
-      where: { configId, configVersion, setId, status: 'finished' }, orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      // A run "deleted" while it held labels is hidden and answers 404, so it is no evidence either (nhóm B M3).
+      where: { configId, configVersion, setId, status: 'finished', hiddenAt: null }, orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
     });
     if (runs.length === 0) return null;
     const rows = await this.prisma.aiEvalRunItem.findMany({ where: { runId: { in: runs.map((run) => run.id) } }, orderBy: [{ position: 'asc' }, { id: 'asc' }] });

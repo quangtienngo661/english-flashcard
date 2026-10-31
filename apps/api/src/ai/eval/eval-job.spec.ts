@@ -82,7 +82,7 @@ const succeeded = (input: ExecuteInput): RunReport => ({
     result: { sentence: 'Lan will ___ it.', accepted_answers: ['x'], translation_vi: 'y' },
     meta: { operation: 'generate_cloze', provider: 'fake', model: 'fake:ok', effort: null, prompt_revision: 3, schema_version: 1, replayed: false },
   },
-  calls: [{ attempt: 1, outcome: 'succeeded', latency_ms: 100, cost_usd: '0.00010000', http_status: null }],
+  calls: [{ attempt: 1, outcome: 'succeeded', latency_ms: 100, cost_usd: '0.00010000', http_status: null, call_id: 'C1' }],
   rawOutput: '{"sentence":"Lan will ___ it."}',
 });
 
@@ -164,7 +164,7 @@ describe('EvalJob.run', () => {
       const id = (input as { callOperationId: string }).callOperationId;
       if (!id.endsWith(EX2)) return succeeded(input);
       const result: AiResult = { status: 'transient_failure', operation_id: id, reason: 'rate-limited' };
-      return { result, calls: [{ attempt: 1, outcome: 'rate-limited', latency_ms: 40, cost_usd: null, http_status: 429 }], rawOutput: null };
+      return { result, calls: [{ attempt: 1, outcome: 'rate-limited', latency_ms: 40, cost_usd: null, http_status: 429, call_id: 'C1' }], rawOutput: null };
     });
     await ctx.job.run(RUN);
     expect(ctx.repo.row.status).toBe('finished');
@@ -178,12 +178,42 @@ describe('EvalJob.run', () => {
     ctx.runner.execute.mockImplementation(async (input: ExecuteInput) => ({
       ...succeeded(input),
       calls: [
-        { attempt: 1, outcome: 'provider-error', latency_ms: 30, cost_usd: null, http_status: 503 },
-        { attempt: 2, outcome: 'succeeded', latency_ms: 70, cost_usd: '0.00010000', http_status: null },
+        { attempt: 1, outcome: 'provider-error', latency_ms: 30, cost_usd: null, http_status: 503, call_id: 'C1' },
+        { attempt: 2, outcome: 'succeeded', latency_ms: 70, cost_usd: '0.00010000', http_status: null, call_id: 'C1' },
       ],
     }));
     await ctx.job.run(RUN);
     expect(ctx.repo.items[0]).toMatchObject({ latencyMs: 100, costUsd: null });
+  });
+
+  it('B18: the first admin-usd-cap stops the run: that item stays pending, no further call starts, the run fails with admin-usd-cap, finish is not called', async () => {
+    ctx = setup(runRow({ total: 5 }), pendingItems([EX1, EX2, EX3, EX4, EX5]));
+    let calls = 0;
+    ctx.runner.execute.mockImplementation(async (input: ExecuteInput) => {
+      calls += 1;
+      if (calls <= 2) return succeeded(input);
+      const result: AiResult = { status: 'unavailable', operation_id: (input as { callOperationId: string }).callOperationId, reason: 'admin-usd-cap' };
+      return { result, calls: [], rawOutput: null };
+    });
+    await ctx.job.run(RUN);
+    expect(ctx.runner.execute).toHaveBeenCalledTimes(3);
+    expect(ctx.repo.completeItem).toHaveBeenCalledTimes(2);
+    expect(ctx.repo.fail).toHaveBeenCalledExactlyOnceWith(RUN, 'admin-usd-cap', NOW);
+    expect(ctx.repo.finish).not.toHaveBeenCalled();
+    expect(ctx.repo.items.map((item) => item.status)).toEqual(['succeeded', 'succeeded', 'pending', 'pending', 'pending']);
+    expect(ctx.repo.row).toMatchObject({ status: 'failed', error: 'admin-usd-cap' });
+  });
+
+  it('B18: a cap that stops an item after its first attempt (calls were made) still leaves that item pending', async () => {
+    ctx = setup(runRow({ total: 1 }), pendingItems([EX1]));
+    ctx.runner.execute.mockImplementation(async (input: ExecuteInput) => ({
+      result: { status: 'unavailable', operation_id: (input as { callOperationId: string }).callOperationId, reason: 'admin-usd-cap' } as AiResult,
+      calls: [{ attempt: 1, outcome: 'rate-limited', latency_ms: 40, cost_usd: null, http_status: 429, call_id: 'C1' }], rawOutput: null,
+    }));
+    await ctx.job.run(RUN);
+    expect(ctx.repo.completeItem).not.toHaveBeenCalled();
+    expect(ctx.repo.items[0]!.status).toBe('pending');
+    expect(ctx.repo.row).toMatchObject({ status: 'failed', error: 'admin-usd-cap' });
   });
 
   it('B6E93: an item already completed is not run again, and the summary counts it', async () => {
@@ -403,7 +433,7 @@ describe('EvalJob.run with the registered rules (E2, D11)', () => {
     const ctx = setup(runRow({ total: 1 }), pendingItems([EX1]), rules);
     ctx.runner.execute.mockImplementation(async (input: ExecuteInput) => {
       const result: AiResult = { status: 'transient_failure', operation_id: (input as { callOperationId: string }).callOperationId, reason: 'timeout' };
-      return { result, calls: [{ attempt: 1, outcome: 'timeout', latency_ms: 10, cost_usd: null, http_status: null }], rawOutput: null };
+      return { result, calls: [{ attempt: 1, outcome: 'timeout', latency_ms: 10, cost_usd: null, http_status: null, call_id: 'C1' }], rawOutput: null };
     });
     await ctx.job.run(RUN);
     expect(ctx.repo.items[0]).toMatchObject({ status: 'transient_failure', rule: null, expectedResult: null });

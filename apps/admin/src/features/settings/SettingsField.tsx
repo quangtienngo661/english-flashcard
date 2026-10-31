@@ -25,6 +25,7 @@ function useHint() {
     if (typeof value === 'boolean') return value ? t('hint.on') : t('hint.off');
     if (typeof value === 'number') {
       if (spec.kind === 'ratio') return percent(value);
+      if (spec.kind === 'usd') return format.number(value, { maximumFractionDigits: 2 });
       return spec.unit === 'percent' ? `${format.number(value)}%` : format.number(value);
     }
     return value;
@@ -55,7 +56,7 @@ function useHint() {
 
 const CROSS = { stop_after_days: 1, default_questions_per_session: 1, pro_practice_sessions_per_day: 1 } as const;
 const EMPTY = { renewal_notice_days_before: 1, ai_cap_alert_percent: 1 } as const;
-const NOTE = { transaction_retention_years: 1 } as const;
+const NOTE = { transaction_retention_years: 1, admin_daily_usd_cap: 1 } as const;
 const ZERO = { ai_prefetch_count: 1, content_retention_days: 1 } as const;
 
 /** One setting: a switch, the send-time select or a number field, with its hint and error. */
@@ -95,7 +96,7 @@ export function SettingsField({ section, spec, value, defaultValue, bound, error
         isNullable={bound?.nullable === true}
         minValue={typeof bound?.min === 'number' ? bound.min : undefined}
         maxValue={typeof bound?.max === 'number' ? bound.max : undefined}
-        step={spec.kind === 'ratio' ? 0.01 : 1}
+        step={spec.kind === 'ratio' || spec.kind === 'usd' ? 0.01 : 1}
       />
     </div>
   );

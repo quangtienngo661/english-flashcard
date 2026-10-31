@@ -38,11 +38,13 @@ function fakePrisma() {
   const models: Row[] = [];
   // The configs that name a model (nhóm B M2): `published` = live, `draft`, `retired` = the previous or an older one.
   const configs: Array<{ operation: string; modelRef: string | null; status: string }> = [];
+  // The judge revisions that name a model (nhóm B M3): any revision of any judge keeps its model.
+  const judgeRevisions: Array<{ judgeId: string; revision: number; modelRef: string | null }> = [];
   const find = (where: { id?: string; provider_modelId?: { provider: string; modelId: string } }) => models.find((row) =>
     where.id ? row.id === where.id
       : row.provider === where.provider_modelId?.provider && row.modelId === where.provider_modelId?.modelId) ?? null;
   return {
-    models, configs,
+    models, configs, judgeRevisions,
     aiModel: {
       findMany: vi.fn(async ({ where }: { where?: { provider?: string } } = {}) =>
         models.filter((row) => !where?.provider || row.provider === where.provider)),
@@ -62,13 +64,16 @@ function fakePrisma() {
       delete: vi.fn(async ({ where }: { where: { id: string } }) => {
         const index = models.findIndex((row) => row.id === where.id);
         if (index < 0) throw p2025();
-        if (configs.some((config) => config.modelRef === where.id)) throw p2003();
+        if (configs.some((config) => config.modelRef === where.id) || judgeRevisions.some((row) => row.modelRef === where.id)) throw p2003();
         return models.splice(index, 1)[0];
       }),
     },
     aiConfig: {
       findFirst: vi.fn(async ({ where }: { where: { modelRef: string; status?: { in: string[] } } }) =>
         configs.find((c) => c.modelRef === where.modelRef && (where.status === undefined || where.status.in.includes(c.status))) ?? null),
+    },
+    aiJudgeRevision: {
+      findFirst: vi.fn(async ({ where }: { where: { modelRef: string } }) => judgeRevisions.find((row) => row.modelRef === where.modelRef) ?? null),
     },
     aiLiveConfig: {
       findMany: vi.fn(async (_args?: unknown) => configs.filter((c) => c.status === 'published').map((c) => ({ operation: c.operation, config: { modelRef: c.modelRef } }))),
@@ -176,8 +181,16 @@ describe('ModelsService', () => {
       .toMatchObject({ status: 409, type: 'model-exists' });
   });
 
-  it('fake:ok → prices 0', async () => {
-    const view = await service.add(ACTOR, { provider: 'fake', model_id: 'fake:ok', price_input: 3, price_output: 9 });
+  it('E15: a fake model keeps the prices it is added with, each defaulting to 0 (so a smoke can reach the usd cap)', async () => {
+    await service.add(ACTOR, { provider: 'fake', model_id: 'fake:ok', price_input: 1000, price_output: 1000 });
+    expect(prisma.aiModel.create.mock.calls[0]![0].data).toMatchObject({ priceInput: 1000, priceOutput: 1000, priceCachedInput: 0 });
+    const second = await service.add(ACTOR, { provider: 'fake', model_id: 'fake:slow', price_input: 1, price_cached_input: 0.5, price_output: 2 });
+    expect(second.price).toEqual({ input: '1.0000', cached_input: '0.5000', output: '2.0000' });
+  });
+
+  it('E15: a fake model added without prices costs 0, and it is priced (not unpriced)', async () => {
+    const view = await service.add(ACTOR, { provider: 'fake', model_id: 'fake:bad-form' });
+    expect(prisma.aiModel.create.mock.calls[0]![0].data).toMatchObject({ priceInput: 0, priceOutput: 0, priceCachedInput: 0 });
     expect(view.price).toEqual({ input: '0.0000', cached_input: '0.0000', output: '0.0000' });
   });
 
@@ -207,6 +220,29 @@ describe('ModelsService', () => {
     prisma.configs.push({ operation: 'generate_cloze', modelRef: added.id, status });
     expect(await problem(service.remove(added.id))).toMatchObject({ status: 409, type: 'model-in-use' });
     expect(prisma.aiModel.delete).not.toHaveBeenCalled();
+  });
+
+  it('B34, D40, B49: delete a model that only an old judge revision names (the latest revision uses another model) → 409 model-in-use', async () => {
+    const added = await service.add(ACTOR, { provider: 'anthropic', model_id: 'claude-haiku-5-5' });
+    prisma.judgeRevisions.push({ judgeId: 'J', revision: 1, modelRef: added.id }, { judgeId: 'J', revision: 2, modelRef: randomUUID() });
+    expect(await problem(service.remove(added.id))).toMatchObject({ status: 409, type: 'model-in-use' });
+    expect(prisma.aiModel.delete).not.toHaveBeenCalled();
+    expect(prisma.models).toHaveLength(1);
+  });
+
+  it('a judge revision saved between the check and the delete → the foreign key catches it → 409 model-in-use', async () => {
+    const added = await service.add(ACTOR, { provider: 'anthropic', model_id: 'claude-haiku-5-5' });
+    prisma.judgeRevisions.push({ judgeId: 'J', revision: 1, modelRef: added.id });
+    prisma.aiJudgeRevision.findFirst.mockResolvedValueOnce(null);
+    expect(await problem(service.remove(added.id))).toMatchObject({ status: 409, type: 'model-in-use' });
+    expect(prisma.models).toHaveLength(1);
+  });
+
+  it('a model no judge and no config names is deleted', async () => {
+    const added = await service.add(ACTOR, { provider: 'anthropic', model_id: 'claude-haiku-5-5' });
+    prisma.judgeRevisions.push({ judgeId: 'J', revision: 1, modelRef: randomUUID() });
+    await service.remove(added.id);
+    expect(prisma.models).toHaveLength(0);
   });
 
   it('B6E38: a config saved between the check and the delete → the foreign key catches it → 409 model-in-use', async () => {

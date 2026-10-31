@@ -5,6 +5,7 @@ import {
   getConfigs, getPublishCheck, getRun, getRunComparison, getSet, getStatus, getTestQuota, isDevExample, isRunCancelled, isRunDone, listCalls, listExamples, listModels, listOperations,
   listConfigHistory, listRevisions, listRunItems, listRuns, listSets, publishDraft, refreshModel, revealExample, rollbackToPrevious, saveDraft, sortByOperationOrder, startRun, testDraft, updateExample,
   updateModel, type ExampleRow,
+  cloneJudge, createJudge, getJudgeAgreement, getJudgePass, listJudgeRevisions, listJudges, putLabel, saveJudge, startJudgePass,
 } from './ai-api';
 
 function fakeApi() {
@@ -228,5 +229,44 @@ describe('ai reports api (A/85, A/86)', () => {
       '/v1/admin/ai/costs?from=2026-10-01&to=2026-10-27&group_by=operation',
       '/v1/admin/ai/calls?operation_id=a+b%2F1',
     ]);
+  });
+});
+
+describe('judge api (nhóm B M3)', () => {
+  const body = {
+    name: 'Chỉ một đáp án', operations: ['generate_cloze' as const], active: true, criteria: [{ code: 'single_answer', question: 'Only one answer?' }],
+    instructions: 'Judge it.', examples: [], model_ref: null, effort: null, thinking: null, max_output_tokens: null,
+  };
+
+  it('a judge pass on a run is a POST with the Idempotency-Key, and its reads are plain GETs', async () => {
+    const { api, mock } = fakeApi();
+    await startJudgePass(api, 'R1', { judge_id: 'J' }, 'k');
+    expect(mock.post).toHaveBeenCalledExactlyOnceWith('/v1/admin/ai/eval/runs/R1/judge-passes', { judge_id: 'J' }, { idempotencyKey: 'k' });
+    await getJudgePass(api, 'P1');
+    await listJudges(api);
+    await listJudgeRevisions(api, 'J');
+    await getJudgeAgreement(api, 'J');
+    expect(mock.get.mock.calls.map((c) => c[0])).toEqual([
+      '/v1/admin/ai/judge-passes/P1', '/v1/admin/ai/judges', '/v1/admin/ai/judges/J/revisions', '/v1/admin/ai/judges/J/agreement',
+    ]);
+  });
+
+  it('judges are created with POST, saved with PUT (the revision the page showed), cloned by name; a label is a PUT', async () => {
+    const { api, mock } = fakeApi();
+    await createJudge(api, body);
+    await saveJudge(api, 'J', { ...body, expected_revision: 1 });
+    await cloneJudge(api, 'J', { name: 'Chỉ một đáp án (bản sao)' });
+    await putLabel(api, { subject_kind: 'eval_item', subject_id: 'i1', criterion: 'single_answer', verdict: 'pass' });
+    expect(mock.post.mock.calls).toEqual([['/v1/admin/ai/judges', body], ['/v1/admin/ai/judges/J/clone', { name: 'Chỉ một đáp án (bản sao)' }]]);
+    expect(mock.put.mock.calls).toEqual([
+      ['/v1/admin/ai/judges/J', { ...body, expected_revision: 1 }],
+      ['/v1/admin/ai/labels', { subject_kind: 'eval_item', subject_id: 'i1', criterion: 'single_answer', verdict: 'pass' }],
+    ]);
+  });
+
+  it('the keys of the judges, their revisions, agreement and passes are distinct and start with ai', () => {
+    const all = [aiKeys.judges(), aiKeys.judgeRevisions('J'), aiKeys.judgeAgreement('J'), aiKeys.judgePass('P')];
+    expect(new Set(all.map((key) => JSON.stringify(key))).size).toBe(4);
+    expect(all.every((key) => key[0] === 'ai')).toBe(true);
   });
 });

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { OPERATIONS, parseOutput } from './operations.js';
+import { GATEWAY_DEFINITIONS, OPERATIONS, parseOutput } from './operations.js';
 
 const cloze = OPERATIONS.generate_cloze;
 const lookup = OPERATIONS.lookup_word;
@@ -405,5 +405,97 @@ describe('check_private_word output (design §15)', () => {
 
   it('parseOutput goes through the new definitions', () => {
     expect(parseOutput('check_private_word', '{"verdict":"OK"}')).toEqual({ ok: true, value: { verdict: 'ok' } });
+  });
+});
+
+describe('judge operation (nhóm B M3, design §5.4)', () => {
+  const judge = GATEWAY_DEFINITIONS.judge;
+  const JUDGE_IN = {
+    target_operation: 'generate_cloze', input: CLOZE_IN, output: CLOZE_OUT,
+    criteria: [{ code: 'single_answer', question: 'Is the word the only answer?' }], context: null,
+  };
+  const judgeIn = (patch: Record<string, unknown>) => judge.validateInput({ ...JUDGE_IN, ...patch });
+  const judgeOut = (patch: Record<string, unknown>) =>
+    judge.checkOutput({ codes: ['single_answer'], verdicts: ['pass'], reasons: ['ok'], ...patch });
+
+  it('the six operations stay the six; the gateway adds judge', () => {
+    expect(Object.keys(OPERATIONS)).toHaveLength(6);
+    expect(Object.keys(GATEWAY_DEFINITIONS)).toEqual([...Object.keys(OPERATIONS), 'judge']);
+    expect(judge.name).toBe('judge');
+    expect(judge.outputSchema.name).toBe('judge_v1');
+    expect(judge.defaultMaxOutputTokens).toBe(1000);
+  });
+
+  it('a verdict in another case or with spaces is a pass, not a shape failure (Review focus 2)', () => {
+    expect(judge.checkOutput({ codes: ['single_answer'], verdicts: [' PASS '], reasons: [' ok '] }))
+      .toEqual({ ok: true, value: { codes: ['single_answer'], verdicts: ['pass'], reasons: ['ok'] } });
+    expect(judgeOut({ verdicts: ['Fail_Major'] })).toEqual({
+      ok: true, value: { codes: ['single_answer'], verdicts: ['fail_major'], reasons: ['ok'] },
+    });
+  });
+
+  it('B13: lists of different length → shape; a verdict outside the three → verdict; three empty lists → empty', () => {
+    expect(problem(judge.checkOutput({ codes: ['a', 'b'], verdicts: ['pass'], reasons: ['x', 'y'] }))).toBe('shape');
+    expect(problem(judge.checkOutput({ codes: ['a'], verdicts: ['pass'], reasons: [] }))).toBe('shape');
+    expect(problem(judgeOut({ verdicts: ['maybe'] }))).toBe('verdict');
+    expect(problem(judge.checkOutput({ codes: [], verdicts: [], reasons: [] }))).toBe('empty');
+  });
+
+  it('a missing or extra key, or a string where a list belongs → shape', () => {
+    expect(problem(judge.checkOutput({ codes: ['a'], verdicts: ['pass'] }))).toBe('shape');
+    expect(problem(judge.checkOutput({ codes: ['a'], verdicts: ['pass'], reasons: ['r'], extra: [] }))).toBe('shape');
+    expect(problem(judge.checkOutput({ codes: 'a', verdicts: ['pass'], reasons: ['r'] }))).toBe('shape');
+  });
+
+  it('a reason of 1000 code points is kept; 1001 → too-long (counted in code points, not UTF-16 units)', () => {
+    expect(judgeOut({ reasons: [x(1000)] }).ok).toBe(true);
+    expect(problem(judgeOut({ reasons: [x(1001)] }))).toBe('too-long');
+    expect(judgeOut({ reasons: ['😀'.repeat(1000)] }).ok).toBe(true);
+    expect(problem(judgeOut({ reasons: ['😀'.repeat(1001)] }))).toBe('too-long');
+  });
+
+  it('control characters are dropped from every string', () => {
+    expect(judgeOut({ codes: ['single\u0000_answer'], reasons: ['a\u0007b'] })).toEqual({
+      ok: true, value: { codes: ['single_answer'], verdicts: ['pass'], reasons: ['ab'] },
+    });
+  });
+
+  it('parseOutput reads judge text through the gateway definitions', () => {
+    expect(parseOutput('judge', '{"codes":["single_answer"],"verdicts":["FAIL_MINOR"],"reasons":["r"]}'))
+      .toEqual({ ok: true, value: { codes: ['single_answer'], verdicts: ['fail_minor'], reasons: ['r'] } });
+    expect(parseOutput('judge', 'nope')).toEqual({ ok: false, problem: 'not-json' });
+  });
+
+  it('input: the declared fields are accepted, with or without context', () => {
+    expect(judge.validateInput(JUDGE_IN)).toEqual({ ok: true });
+    expect(judgeIn({ context: { session_words: ['borrow', 'lend'] } })).toEqual({ ok: true });
+    expect(judgeIn({ context: { session_words: [] } })).toEqual({ ok: true });
+  });
+
+  it('input: criteria [] → exactly one violation starting criteria:', () => {
+    expect(violations(judgeIn({ criteria: [] }))).toEqual([expect.stringMatching(/^criteria: /)]);
+  });
+
+  it('input: 10 criteria are accepted, 11 are not; a code outside the pattern is named by its index', () => {
+    const many = (n: number) => Array.from({ length: n }, (_, index) => ({ code: `c${index}`, question: 'Q' }));
+    expect(judgeIn({ criteria: many(10) })).toEqual({ ok: true });
+    expect(violations(judgeIn({ criteria: many(11) }))).toEqual([expect.stringMatching(/^criteria: /)]);
+    expect(violations(judgeIn({ criteria: [{ code: 'Single Answer', question: 'Q' }] })))
+      .toEqual([expect.stringMatching(/^criteria\.0\.code: /)]);
+  });
+
+  it("input: target_operation 'judge' → exactly one violation starting target_operation:", () => {
+    expect(violations(judgeIn({ target_operation: 'judge' }))).toEqual([expect.stringMatching(/^target_operation: /)]);
+  });
+
+  it('input: nothing beyond the declared fields reaches a judge (a model in context is named)', () => {
+    expect(violations(judgeIn({ context: { session_words: ['x'], model: 'y' } }))).toEqual(['context.model: Unrecognized key']);
+    expect(violations(judgeIn({ model: 'claude' }))).toEqual(['model: Unrecognized key']);
+  });
+
+  it('input: 50 session words are accepted, 51 are not', () => {
+    const words = (n: number) => Array.from({ length: n }, (_, index) => `w${index}`);
+    expect(judgeIn({ context: { session_words: words(50) } })).toEqual({ ok: true });
+    expect(violations(judgeIn({ context: { session_words: words(51) } }))).toEqual([expect.stringMatching(/^context\.session_words: /)]);
   });
 });

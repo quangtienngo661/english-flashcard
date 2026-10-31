@@ -11,7 +11,7 @@ import { Button } from '../../ui/Button';
 import { DataList, type Column } from '../../ui/DataList';
 import { Select } from '../../ui/Select';
 import { TextField } from '../../ui/TextField';
-import { aiKeys, COST_GROUPS, getCosts, type AiOperation, type AiPurpose, type CostGroup, type CostTotals } from './ai-api';
+import { aiKeys, COST_GROUPS, getCosts, type AiPurpose, type GatewayOperation, type CostGroup, type CostTotals } from './ai-api';
 import { isDay, rangeProblem, todayInAdminZone, type RangeProblem } from './cost-range';
 import { useAiFormat } from './useAiFormat';
 
@@ -22,8 +22,8 @@ const FILTERS = {
 };
 const FROM_ID = 'costs-from';
 const TO_ID = 'costs-to';
-const OPERATIONS = ['generate_cloze', 'lookup_word', 'translate_sentence', 'generate_meaning_question', 'generate_sentence_mcq', 'check_private_word'];
-const PURPOSES = ['learner', 'test', 'eval'];
+const OPERATIONS = ['generate_cloze', 'lookup_word', 'translate_sentence', 'generate_meaning_question', 'generate_sentence_mcq', 'check_private_word', 'judge'];
+const PURPOSES = ['learner', 'test', 'eval', 'judge'];
 
 type Row = CostTotals & { key: string; isTotal: boolean };
 type Fields = { from?: string; to?: string };
@@ -89,7 +89,7 @@ export function AiCostsPage() {
     if (groupBy === 'operation' && OPERATIONS.includes(key)) {
       return (
         <span className="flex flex-col">
-          <span className="font-semibold">{t(`ai.operations.names.${key as AiOperation}`)}</span>
+          <span className="font-semibold">{t(`ai.operations.names.${key as GatewayOperation}`)}</span>
           <code className="text-xs text-muted">{key}</code>
         </span>
       );

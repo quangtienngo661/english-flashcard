@@ -30,6 +30,7 @@ model AiModel {
   updatedAt         DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
 
   configs           AiConfig[]
+  judgeRevisions    AiJudgeRevision[]
 
   @@unique([provider, modelId])
   @@map("ai_models")
@@ -123,7 +124,7 @@ model AiCall {
   aiOperationId     String?   @map("ai_operation_id") @db.Uuid
   // 1 | 2 (CHECK).
   attempt           Int
-  // learner | test | eval (CHECK).
+  // learner | test | eval | judge (CHECK; judge since nhóm B M3).
   purpose           String
   operation         String
   provider          String
@@ -260,9 +261,12 @@ model AiEvalRun {
   // The config this run tried (nhóm B M2): no foreign key, a deleted draft keeps its runs. Both set together (CHECK).
   configId         String?   @map("config_id") @db.Uuid
   configVersion    Int?      @map("config_version")
+  // Set when a run that holds human labels is "deleted" (nhóm B M3): the run and its items stay, hidden.
+  hiddenAt         DateTime? @map("hidden_at") @db.Timestamptz
 
   set      AiEvalSet?      @relation(fields: [setId], references: [id], onDelete: Restrict)
   runItems AiEvalRunItem[]
+  judgePasses AiJudgePass[]
   candidateOf AiConfigEvent[] @relation("EventCandidateRun")
   baselineOf  AiConfigEvent[] @relation("EventBaselineRun")
 
@@ -375,4 +379,141 @@ model AiConfigEvent {
 
   @@index([operation, at])
   @@map("ai_config_events")
+}
+
+// A judge: an AI reviewer of the outputs of one or more operations (nhóm B design §4, §5.4). `operations` is a non-empty subset of the six
+// (CHECK `ai_judges_operations_check` in the migration). What it asks and how it is tuned lives in its revisions.
+model AiJudge {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name       String
+  operations String[]
+  active     Boolean  @default(true)
+  createdBy  String   @map("created_by") @db.Uuid
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  revisions AiJudgeRevision[]
+
+  @@map("ai_judges")
+}
+
+// One saved version of a judge. A new revision exists only when a field here changes, so scores and calibration keep applying to the revision
+// that made them. `model_ref` null = no model chosen yet (the seeded judge). CHECKs on thinking and max_output_tokens are in the migration.
+model AiJudgeRevision {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  judgeId         String   @map("judge_id") @db.Uuid
+  revision        Int
+  // [{ code, question }]
+  criteria        Json
+  instructions    String
+  examples        Json
+  modelRef        String?  @map("model_ref") @db.Uuid
+  effort          String?
+  // 'off' (CHECK) or null.
+  thinking        String?
+  // > 0 (CHECK); null = the operation default.
+  maxOutputTokens Int?     @map("max_output_tokens")
+  savedBy         String   @map("saved_by") @db.Uuid
+  savedAt         DateTime @default(now()) @map("saved_at") @db.Timestamptz
+
+  judge  AiJudge        @relation(fields: [judgeId], references: [id], onDelete: Restrict)
+  model  AiModel?       @relation(fields: [modelRef], references: [id], onDelete: Restrict)
+  passes AiJudgePass[]
+  scores AiJudgeScore[]
+
+  @@unique([judgeId, revision])
+  @@map("ai_judge_revisions")
+}
+
+// One pass of a judge revision over a set of outputs: the eval run it is attached to, or the real questions a filter picked.
+// The partial unique index `ai_judge_passes_one_active_key` (one queued or running pass per revision) and the CHECKs are in the migration.
+model AiJudgePass {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  judgeRevisionId String    @map("judge_revision_id") @db.Uuid
+  // eval_run | real (CHECK); (kind = 'eval_run') = (eval_run_id IS NOT NULL) (CHECK).
+  kind            String
+  // The operation whose outputs are judged (CHECK: one of the six).
+  operation       String
+  evalRunId       String?   @map("eval_run_id") @db.Uuid
+  filters         Json?
+  limit           Int?
+  // queued | running | finished | failed (CHECK).
+  status          String
+  error           String?
+  // null until the pass takes its snapshot of subjects.
+  total           Int?
+  judged          Int       @default(0)
+  costUsd         Decimal?  @map("cost_usd") @db.Decimal(14, 8)
+  startedBy       String    @map("started_by") @db.Uuid
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  startedAt       DateTime? @map("started_at") @db.Timestamptz
+  finishedAt      DateTime? @map("finished_at") @db.Timestamptz
+  heartbeatAt     DateTime? @map("heartbeat_at") @db.Timestamptz
+
+  revision AiJudgeRevision  @relation(fields: [judgeRevisionId], references: [id], onDelete: Restrict)
+  evalRun  AiEvalRun?       @relation(fields: [evalRunId], references: [id], onDelete: Cascade)
+  items    AiJudgePassItem[]
+  scores   AiJudgeScore[]
+
+  @@index([evalRunId])
+  @@index([status, heartbeatAt])
+  @@map("ai_judge_passes")
+}
+
+// The snapshot of one subject when its pass started: what the judge sees stays the same however long the pass takes.
+model AiJudgePassItem {
+  id          String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  passId      String  @map("pass_id") @db.Uuid
+  position    Int
+  // eval_item | real_question (CHECK).
+  subjectKind String  @map("subject_kind")
+  subjectId   String  @map("subject_id") @db.Uuid
+  input       Json
+  output      Json
+  context     Json?
+  done        Boolean @default(false)
+
+  pass AiJudgePass @relation(fields: [passId], references: [id], onDelete: Cascade)
+
+  @@unique([passId, subjectKind, subjectId])
+  @@map("ai_judge_pass_items")
+}
+
+// One verdict of one judge revision on one criterion of one subject. A subject is judged once per revision and criterion.
+model AiJudgeScore {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  judgeRevisionId String   @map("judge_revision_id") @db.Uuid
+  // eval_item | real_question (CHECK).
+  subjectKind     String   @map("subject_kind")
+  subjectId       String   @map("subject_id") @db.Uuid
+  criterion       String
+  // pass | fail_major | fail_minor, or null = "không chấm được" (CHECK); `problem` says why.
+  verdict         String?
+  problem         String?
+  reason          String?
+  passId          String   @map("pass_id") @db.Uuid
+  // The ai_calls row of the judge call; no foreign key (calls are kept for good, but a score must not depend on them).
+  callId          String?  @map("call_id") @db.Uuid
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  revision AiJudgeRevision @relation(fields: [judgeRevisionId], references: [id], onDelete: Restrict)
+  pass     AiJudgePass     @relation(fields: [passId], references: [id], onDelete: Cascade)
+
+  @@unique([judgeRevisionId, subjectKind, subjectId, criterion])
+  @@index([subjectKind, subjectId])
+  @@map("ai_judge_scores")
+}
+
+// The owner's own verdict on one criterion of one subject (the "Gắn nhãn" screen); what a judge's agreement is measured against.
+model AiLabel {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  subjectKind String   @map("subject_kind")
+  subjectId   String   @map("subject_id") @db.Uuid
+  criterion   String
+  // pass | fail_major | fail_minor (CHECK).
+  verdict     String
+  labeledBy   String   @map("labeled_by") @db.Uuid
+  labeledAt   DateTime @default(now()) @map("labeled_at") @db.Timestamptz
+
+  @@unique([subjectKind, subjectId, criterion])
+  @@map("ai_labels")
 }

@@ -5,7 +5,8 @@ import vi from '../../../messages/vi.json';
 import { problem } from '../../auth/test-support';
 import { renderApp } from '../staff/test-utils';
 import type { EvalRunDetail } from './ai-api';
-import { URL, evalRoutes, evalRun, runItem, runStats } from './prompt-test-support';
+import { JURL, judgeOnFake, judgeRevision, judgeView, label, pass, score, statsRow, tally } from './judges/judge-test-support';
+import { RUN_ID, URL, evalRoutes, evalRun, runItem, runStats } from './prompt-test-support';
 
 const t = vi.ai.eval;
 const PATH = '/ai/eval/runs/aaaaaaaa-0000-4000-8000-000000000001';
@@ -129,6 +130,7 @@ describe('EvalRunPanel (A/83)', () => {
       [URL.runItems()]: () => Response.json({
         items: [runItem({ example_id: 'e1', input: { word: 'go', part_of_speech: 'verb' } })],
         stats: runStats({ total: 1, shape_pass: 1, rule_pass: 1, expected_pass: 1 }),
+        passes: [], judge_stats: [],
       }),
     }));
     const scope = within(await panel());
@@ -140,7 +142,7 @@ describe('EvalRunPanel (A/83)', () => {
   it('an item migrated from an old run whose example is gone has no input: it reads "Ví dụ đã xóa"', async () => {
     renderApp(PATH, evalRoutes({
       [URL.run()]: () => Response.json(evalRun()),
-      [URL.runItems()]: () => Response.json({ items: [runItem({ input: null, rule: null, expected_result: null })], stats: runStats({ total: 1, shape_pass: 1, expected_none: 1 }) }),
+      [URL.runItems()]: () => Response.json({ items: [runItem({ input: null, rule: null, expected_result: null })], stats: runStats({ total: 1, shape_pass: 1, expected_none: 1 }), passes: [], judge_stats: [] }),
     }));
     const results = await within(await panel()).findByRole('region', { name: t.detail.results });
     expect(within(results).getAllByRole('row')[1]).toHaveTextContent(t.detail.deletedExample);
@@ -156,7 +158,7 @@ describe('EvalRunPanel (A/83)', () => {
     ];
     renderApp(PATH, evalRoutes({
       [URL.run()]: () => Response.json(evalRun({ status: 'running', done: 2 })),
-      [URL.runItems()]: () => Response.json({ items, stats: runStats({ total: 2, shape_pass: 1, shape_fail: 1, rule_pass: 1, expected_pass: 1, expected_none: 0 }) }),
+      [URL.runItems()]: () => Response.json({ items, stats: runStats({ total: 2, shape_pass: 1, shape_fail: 1, rule_pass: 1, expected_pass: 1, expected_none: 0 }), passes: [], judge_stats: [] }),
     }));
     const scope = within(await panel());
     const results = await scope.findByRole('region', { name: t.detail.results });
@@ -191,6 +193,8 @@ describe('EvalRunPanel (A/83)', () => {
       },
       { total: 2, shape_pass: 2, rule_pass: 1, rule_skipped: 1, expected_pass: 1, expected_fail: 1 },
     ),
+    passes: [],
+    judge_stats: [],
   };
 
   it('rule and expected result per example, and the totals of dev and of held-out', async () => {
@@ -220,7 +224,7 @@ describe('EvalRunPanel (A/83)', () => {
   ] as const)('the rule cell of %j reads "%s"', async (rule, text) => {
     renderApp(PATH, evalRoutes({
       [URL.run()]: () => Response.json(evalRun()),
-      [URL.runItems()]: () => Response.json({ items: [runItem({ rule: { ...rule, problems: [...rule.problems] }, expected_result: 'fail' })], stats: runStats({ total: 1, shape_pass: 1 }) }),
+      [URL.runItems()]: () => Response.json({ items: [runItem({ rule: { ...rule, problems: [...rule.problems] }, expected_result: 'fail' })], stats: runStats({ total: 1, shape_pass: 1 }), passes: [], judge_stats: [] }),
     }));
     const results = await within(await panel()).findByRole('region', { name: t.detail.results });
     await waitFor(() => expect(within(results).getAllByRole('row')).toHaveLength(2));
@@ -232,7 +236,7 @@ describe('EvalRunPanel (A/83)', () => {
   it('a run with no held-out example shows no held-out line and no transient-failure line', async () => {
     renderApp(PATH, evalRoutes({
       [URL.run()]: () => Response.json(evalRun()),
-      [URL.runItems()]: () => Response.json({ items: [runItem()], stats: runStats({ total: 1, shape_pass: 1, rule_pass: 1, expected_pass: 1 }) }),
+      [URL.runItems()]: () => Response.json({ items: [runItem()], stats: runStats({ total: 1, shape_pass: 1, rule_pass: 1, expected_pass: 1 }), passes: [], judge_stats: [] }),
     }));
     const results = await within(await panel()).findByRole('region', { name: t.detail.results });
     expect(await within(results).findByText('Dev: khuôn 1/1 · luật 1/1 (0 bỏ qua) · mong đợi 1/1')).toBeInTheDocument();
@@ -427,5 +431,235 @@ describe('EvalRunPanel stop and delete', () => {
     await userEvent.click(within(dialog).getByRole('button', { name: t.removeRun.confirm }));
     expect(await screen.findByText(vi.errors['not-found'])).toBeInTheDocument();
     await waitFor(() => expect(r.count('GET', LIST_PATH)).toBeGreaterThanOrEqual(2));
+  });
+});
+
+describe('EvalRunPanel judge (nhóm B M3-T16)', () => {
+  const RUN_PATH = '/v1/admin/ai/eval/runs/aaaaaaaa-0000-4000-8000-000000000001';
+  const on = { set_id: 'S1', set_version: 3 };
+  const twoItems = () => [
+    runItem({ item_id: 'i1', example_id: 'd1', position: 0, scores: [score({ verdict: 'fail_major', reason: 'beat fits too' })] }),
+    runItem({
+      item_id: 'i2', example_id: 'd2', position: 1, input: { word: 'come', part_of_speech: 'verb' }, scores: [score({ verdict: 'pass', reason: 'Only come fits.' })],
+      labels: [label({ subject_id: 'i2', verdict: 'fail_minor' })],
+    }),
+  ];
+  const itemsWith = (over: Record<string, unknown> = {}) => () => Response.json({
+    items: twoItems(), stats: runStats({ total: 2, shape_pass: 2 }), passes: [], judge_stats: [], ...over,
+  });
+  const judgeRoute = (judge = judgeOnFake()) => ({ [URL.judges]: () => Response.json({ items: [judge] }) });
+  const judgePanel = async () => within(await screen.findByRole('region', { name: t.detail.judge.title }));
+  const tableOf = async () => within(await within(await panel()).findByRole('table'));
+
+  it('a dev item shows what the judge said, level and reason, per criterion', async () => {
+    renderApp(PATH, evalRoutes({ [URL.run()]: () => Response.json(evalRun(on)), [URL.runItems()]: itemsWith(), ...judgeRoute() }));
+    const table = await tableOf();
+    await waitFor(() => expect(table.getAllByRole('row')).toHaveLength(3));
+    const [, first, second] = table.getAllByRole('row');
+    expect(first).toHaveTextContent('single_answer: Không đạt nặng');
+    expect(first).toHaveTextContent('beat fits too');
+    expect(second).toHaveTextContent('single_answer: Đạt');
+    expect(table.getAllByRole('columnheader').map((h) => h.textContent)).toEqual(expect.arrayContaining(['Judge', 'Nhãn']));
+  });
+
+  it('an output the judge could not score reads "Không chấm được" with the problem under it, and no verdict', async () => {
+    const items = [runItem({ item_id: 'i1', scores: [score({ verdict: null, problem: 'duplicate', reason: null })] })];
+    renderApp(PATH, evalRoutes({ [URL.run()]: () => Response.json(evalRun(on)), [URL.runItems()]: itemsWith({ items }), ...judgeRoute() }));
+    const table = await tableOf();
+    await waitFor(() => expect(table.getAllByRole('row')).toHaveLength(2));
+    expect(table.getAllByRole('row')[1]).toHaveTextContent('single_answer: Không chấm được');
+    expect(table.getAllByRole('row')[1]).toHaveTextContent('duplicate');
+  });
+
+  it('choosing "Đạt" in "Nhãn" PUTs the label of that output and criterion; a label already there shows as chosen', async () => {
+    const r = renderApp(PATH, evalRoutes({
+      [URL.run()]: () => Response.json(evalRun(on)), [URL.runItems()]: itemsWith(), ...judgeRoute(),
+      [JURL.label]: (call: { body: unknown }) => Response.json(label({ subject_id: 'i1', verdict: (call.body as { verdict: 'pass' }).verdict })),
+    }));
+    const table = await tableOf();
+    await waitFor(() => expect(table.getAllByRole('row')).toHaveLength(3));
+    const rows = table.getAllByRole('row');
+    expect(within(rows[2]!).getByRole('button', { name: /Không đạt nhẹ.*Nhãn/ })).toBeInTheDocument();
+    await userEvent.click(within(rows[1]!).getByRole('button', { name: /Chưa gắn.*Nhãn/ }));
+    await userEvent.click(await screen.findByRole('option', { name: 'Đạt' }));
+    await waitFor(() => expect(r.calls.filter((c) => c.method === 'PUT' && c.path === '/v1/admin/ai/labels')).toHaveLength(1));
+    expect(r.calls.find((c) => c.method === 'PUT')!.body).toEqual({ subject_kind: 'eval_item', subject_id: 'i1', criterion: 'single_answer', verdict: 'pass' });
+    expect(await within(rows[1]!).findByRole('button', { name: /Đạt.*Nhãn/ })).toBeInTheDocument();
+  });
+
+  it('"Chưa gắn" takes a label back: verdict null', async () => {
+    const r = renderApp(PATH, evalRoutes({
+      [URL.run()]: () => Response.json(evalRun(on)), [URL.runItems()]: itemsWith(), ...judgeRoute(),
+      [JURL.label]: () => Response.json(label({ subject_id: 'i2', verdict: null, labeled_by_user: null, labeled_at: null })),
+    }));
+    const table = await tableOf();
+    await waitFor(() => expect(table.getAllByRole('row')).toHaveLength(3));
+    await userEvent.click(within(table.getAllByRole('row')[2]!).getByRole('button', { name: /Không đạt nhẹ.*Nhãn/ }));
+    await userEvent.click(await screen.findByRole('option', { name: 'Chưa gắn' }));
+    await waitFor(() => expect(r.calls.filter((c) => c.method === 'PUT')).toHaveLength(1));
+    expect(r.calls.find((c) => c.method === 'PUT')!.body).toEqual({ subject_kind: 'eval_item', subject_id: 'i2', criterion: 'single_answer', verdict: null });
+    expect(await within(table.getAllByRole('row')[2]!).findByRole('button', { name: /Chưa gắn.*Nhãn/ })).toBeInTheDocument();
+  });
+
+  it('a failed label says so above the table', async () => {
+    renderApp(PATH, evalRoutes({
+      [URL.run()]: () => Response.json(evalRun(on)), [URL.runItems()]: itemsWith(), ...judgeRoute(),
+      [JURL.label]: () => problem(409, 'example-held-out'),
+    }));
+    const table = await tableOf();
+    await waitFor(() => expect(table.getAllByRole('row')).toHaveLength(3));
+    await userEvent.click(within(table.getAllByRole('row')[1]!).getByRole('button', { name: /Chưa gắn.*Nhãn/ }));
+    await userEvent.click(await screen.findByRole('option', { name: 'Đạt' }));
+    expect(await screen.findByText(vi.errors['example-held-out'])).toBeInTheDocument();
+  });
+
+  it('the stats line of a judge revision: dev passes of those judged with the levels of the failures, held-out as totals, unjudged, and "Chưa hiệu chỉnh"', async () => {
+    renderApp(PATH, evalRoutes({
+      [URL.run()]: () => Response.json(evalRun(on)),
+      [URL.runItems()]: itemsWith({ judge_stats: [statsRow({ dev: tally({ pass: 1, fail_major: 1 }), held_out: tally({ pass: 1 }) })] }),
+      ...judgeRoute(),
+    }));
+    const scope = await judgePanel();
+    expect(await scope.findByText('Judge Chỉ một đáp án bản 2 · single_answer: dev đạt 1/2 (nặng 1, nhẹ 0) · held-out đạt 1/1 · 0 không chấm được')).toBeInTheDocument();
+    expect(scope.getByText('Chưa hiệu chỉnh')).toBeInTheDocument();
+  });
+
+  it('a calibrated revision says "Đã hiệu chỉnh"; unjudged counts add dev and held-out', async () => {
+    renderApp(PATH, evalRoutes({
+      [URL.run()]: () => Response.json(evalRun(on)),
+      [URL.runItems()]: itemsWith({ judge_stats: [statsRow({ dev: tally({ pass: 3, fail_minor: 1, unjudged: 2 }), held_out: tally({ unjudged: 1 }), calibrated: true })] }),
+      ...judgeRoute(),
+    }));
+    const scope = await judgePanel();
+    expect(await scope.findByText('Judge Chỉ một đáp án bản 2 · single_answer: dev đạt 3/4 (nặng 0, nhẹ 1) · held-out đạt 0/0 · 3 không chấm được')).toBeInTheDocument();
+    expect(scope.getByText('Đã hiệu chỉnh')).toBeInTheDocument();
+  });
+
+  it('a pass shows its judge, revision, status, count and cost; one stopped by the cap says why', async () => {
+    const passes = [
+      pass({ id: 'P2', status: 'failed', error: 'admin-usd-cap', judged: 3, total: 10, cost_usd: '0.01000000' }),
+      pass({ id: 'P1', status: 'finished', judged: 2, total: 2, cost_usd: null }),
+    ];
+    renderApp(PATH, evalRoutes({ [URL.run()]: () => Response.json(evalRun(on)), [URL.runItems()]: itemsWith({ passes }), ...judgeRoute() }));
+    const scope = await judgePanel();
+    expect(await scope.findByText(/^Chỉ một đáp án bản 2 · Dừng · 3\/10 · 0,01\s*US\$$/)).toBeInTheDocument();
+    expect(scope.getByText('Dừng vì đã tiêu tới trần USD việc admin hôm nay.')).toBeInTheDocument();
+    expect(scope.getByText('Chỉ một đáp án bản 2 · Đã xong · 2/2 · —')).toBeInTheDocument();
+  });
+
+  it.each([
+    ['stalled', 'Dừng vì worker không phản hồi.'],
+    ['run-failed', 'Không chấm vì lần chạy không xong.'],
+    ['model-price-missing', 'Model của judge chưa có giá.'],
+  ])('a pass that ended with "%s" reads "%s"', async (error, text) => {
+    renderApp(PATH, evalRoutes({
+      [URL.run()]: () => Response.json(evalRun(on)),
+      [URL.runItems()]: itemsWith({ passes: [pass({ status: 'failed', error, total: null, judged: 0 })] }),
+      ...judgeRoute(),
+    }));
+    expect(await (await judgePanel()).findByText(text)).toBeInTheDocument();
+  });
+
+  it('a pass waiting for its run has no total yet: "0/—"', async () => {
+    renderApp(PATH, evalRoutes({
+      [URL.run()]: () => Response.json(evalRun({ status: 'running', done: 1 })),
+      [URL.runItems()]: itemsWith({ passes: [pass({ status: 'queued', total: null, judged: 0, cost_usd: null })] }),
+      ...judgeRoute(),
+    }));
+    expect(await (await judgePanel()).findByText('Chỉ một đáp án bản 2 · Đang chờ · 0/— · —')).toBeInTheDocument();
+  });
+
+  it('[Chấm bằng judge] posts a pass with the Idempotency-Key and reads the results again; it is not offered while the run goes', async () => {
+    const r = renderApp(PATH, evalRoutes({
+      [URL.run()]: () => Response.json(evalRun(on)), [URL.runItems()]: itemsWith(), ...judgeRoute(),
+      [JURL.judgePass(RUN_ID)]: () => Response.json(pass({ status: 'queued', judged: 0 }), { status: 202 }),
+    }));
+    const scope = await judgePanel();
+    await userEvent.click(await scope.findByRole('button', { name: t.detail.judge.start }));
+    await waitFor(() => expect(r.calls.filter((c) => c.method === 'POST' && c.path === `${RUN_PATH}/judge-passes`)).toHaveLength(1));
+    const sent = r.calls.find((c) => c.method === 'POST' && c.path === `${RUN_PATH}/judge-passes`)!;
+    expect(sent.body).toEqual({ judge_id: 'J1' });
+    expect(sent.headers['Idempotency-Key']).toMatch(/^[0-9a-f-]{36}$/);
+    await waitFor(() => expect(r.count('GET', `${RUN_PATH}/items`)).toBe(2));
+    cleanup();
+    renderApp(PATH, evalRoutes({ [URL.run()]: () => Response.json(evalRun({ status: 'running', done: 3 })), [URL.runItems()]: itemsWith(), ...judgeRoute() }));
+    const live = await judgePanel();
+    expect(live.queryByRole('button', { name: t.detail.judge.start })).not.toBeInTheDocument();
+  });
+
+  it.each(['judge-pass-running', 'admin-usd-cap', 'model-price-missing'])('409 %s on a pass shows its own sentence', async (slug) => {
+    renderApp(PATH, evalRoutes({
+      [URL.run()]: () => Response.json(evalRun(on)), [URL.runItems()]: itemsWith(), ...judgeRoute(),
+      [JURL.judgePass(RUN_ID)]: () => problem(409, slug),
+    }));
+    const scope = await judgePanel();
+    await userEvent.click(await scope.findByRole('button', { name: t.detail.judge.start }));
+    expect(await scope.findByText(vi.errors[slug as 'admin-usd-cap'])).toBeInTheDocument();
+  });
+
+  it('a judge with no model cannot be picked: the pass button stays off', async () => {
+    renderApp(PATH, evalRoutes({ [URL.run()]: () => Response.json(evalRun(on)), [URL.runItems()]: itemsWith(), ...judgeRoute(judgeView()) }));
+    const scope = await judgePanel();
+    expect(await scope.findByRole('button', { name: t.detail.judge.start })).toBeDisabled();
+  });
+
+  it('the run and the judge both on Anthropic: the warning about a lenient judge; with the fake provider it is not shown', async () => {
+    const anthropic = judgeOnFake({ latest: judgeRevision({ id: 'JR2', revision: 2, model: { id: 'M9', provider: 'anthropic', model_id: 'claude-x' } }) });
+    renderApp(PATH, evalRoutes({
+      [URL.run()]: () => Response.json(evalRun({ ...on, provider: 'anthropic', model: 'claude-y' })), [URL.runItems()]: itemsWith(), ...judgeRoute(anthropic),
+    }));
+    expect(await (await judgePanel()).findByText(t.detail.judge.sameProvider)).toBeInTheDocument();
+    cleanup();
+    renderApp(PATH, evalRoutes({
+      [URL.run()]: () => Response.json(evalRun({ ...on, provider: 'anthropic', model: 'claude-y' })), [URL.runItems()]: itemsWith(), ...judgeRoute(judgeOnFake()),
+    }));
+    const scope = await judgePanel();
+    await scope.findByRole('button', { name: t.detail.judge.start });
+    expect(scope.queryByText(t.detail.judge.sameProvider)).not.toBeInTheDocument();
+  });
+
+  it('"Gắn nhãn lần lượt" opens the label screen for this run and the judge of the newest pass', async () => {
+    renderApp(PATH, evalRoutes({
+      [URL.run()]: () => Response.json(evalRun(on)), [URL.runItems()]: itemsWith({ passes: [pass()] }), ...judgeRoute(),
+    }));
+    expect(await (await judgePanel()).findByRole('link', { name: t.detail.judge.labelQueue })).toHaveAttribute('href', `/ai/judges/label?run=${RUN_ID}&judge=J1`);
+  });
+
+  it('the results are read again every 2 s while a pass is queued or running, and no longer once it ends', async () => {
+    vitest.useFakeTimers({ shouldAdvanceTime: true });
+    let n = 0;
+    const r = renderApp(PATH, evalRoutes({
+      [URL.run()]: () => Response.json(evalRun(on)),
+      [URL.runItems()]: () => Response.json({
+        items: twoItems(), stats: runStats({ total: 2, shape_pass: 2 }), judge_stats: [],
+        passes: [pass({ status: n++ < 2 ? 'running' : 'finished', judged: n })],
+      }),
+      ...judgeRoute(),
+    }));
+    await judgePanel();
+    await waitFor(() => expect(r.count('GET', `${RUN_PATH}/items`)).toBe(1));
+    await act(async () => { await vitest.advanceTimersByTimeAsync(2000); });
+    await waitFor(() => expect(r.count('GET', `${RUN_PATH}/items`)).toBe(2));
+    await act(async () => { await vitest.advanceTimersByTimeAsync(2000); });
+    await waitFor(() => expect(r.count('GET', `${RUN_PATH}/items`)).toBe(3));
+    await act(async () => { await vitest.advanceTimersByTimeAsync(10_000); });
+    expect(r.count('GET', `${RUN_PATH}/items`)).toBe(3);
+  });
+
+  it('an operation with no judge and no score shows no Judge section and no extra columns', async () => {
+    const plain = [runItem({ item_id: 'i1' }), runItem({ item_id: 'i2', position: 1, example_id: 'd2' })];
+    renderApp(PATH, evalRoutes({ [URL.run()]: () => Response.json(evalRun(on)), [URL.runItems()]: itemsWith({ items: plain }) }));
+    const results = await within(await panel()).findByRole('region', { name: t.detail.results });
+    await waitFor(() => expect(within(results).getAllByRole('row')).toHaveLength(3));
+    expect(screen.queryByRole('region', { name: t.detail.judge.title })).not.toBeInTheDocument();
+    expect(within(results).queryByRole('columnheader', { name: 'Nhãn' })).not.toBeInTheDocument();
+  });
+
+  it('scores of a judge that was switched off since still show, with the label select, even with no active judge', async () => {
+    renderApp(PATH, evalRoutes({ [URL.run()]: () => Response.json(evalRun(on)), [URL.runItems()]: itemsWith(), ...judgeRoute(judgeOnFake({ active: false })) }));
+    const table = await tableOf();
+    await waitFor(() => expect(table.getAllByRole('row')).toHaveLength(3));
+    expect(table.getAllByRole('row')[1]).toHaveTextContent('single_answer: Không đạt nặng');
+    expect(screen.queryByRole('region', { name: t.detail.judge.title })).not.toBeInTheDocument();
   });
 });

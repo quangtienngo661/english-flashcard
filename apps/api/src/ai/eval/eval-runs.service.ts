@@ -13,6 +13,12 @@ import { AiAdapterRegistry } from '../adapters/ai-adapter.registry.js';
 import { AI_SYSTEM_ACTOR_ID } from '../ai.constants.js';
 import { AI_OPERATIONS, type AiOperation } from '../ai.types.js';
 import { promptViolations } from '../prompts/prompt-rules.js';
+import { JudgeAgreement } from '../judge/agreement.service.js';
+import { JudgePassesService, type JudgePassView } from '../judge/judge-passes.service.js';
+import { JudgeScoresReader } from '../judge/judge-scores.reader.js';
+import { judgeComparison, judgeStatsRows, toScoreView, type JudgeStatsRow } from '../judge/judge-stats.js';
+import type { LabelView, ScoreView } from '../judge/judge.types.js';
+import { AdminSpend } from '../runner/admin-spend.service.js';
 import { SelectionReader, toSelection, type ModelRow, type Selection } from '../runner/selection.js';
 import { EvalQueue } from './eval-queue.service.js';
 import type { EvalRunStatus } from './eval-runs.repository.js';
@@ -28,6 +34,8 @@ export const createRunSchema = z.strictObject({
   config: z.enum(['live', 'draft']).optional(),
   /** A frozen version of the operation's set (design §5.3); without it the run takes the working set, a quick try that cannot be compared. */
   set_id: z.uuid().transform((value) => value.toLowerCase()).optional(),
+  /** "Chấm bằng judge" (D14): a judge pass waits for the run and starts when the run finishes (nhóm B M3). */
+  judge_id: z.uuid().transform((value) => value.toLowerCase()).optional(),
 });
 export type CreateRunBody = z.input<typeof createRunSchema>;
 
@@ -56,6 +64,8 @@ function itemView(row: ItemRecord) {
   };
 }
 export type RunItemView = ReturnType<typeof itemView>;
+/** A dev item of `GET …/items`: its id (what a label or a score hangs on), the scores of every judge revision on it and its labels (nhóm B M3). */
+export type RunItemWithJudge = RunItemView & { item_id: string; scores: ScoreView[]; labels: LabelView[] };
 
 const cursorSchema = z.strictObject({ created_at: z.iso.datetime(), id: z.string() });
 
@@ -89,9 +99,13 @@ export class EvalRunsService {
     @Inject(IdentityService) private readonly identity: IdentityService,
     @Inject(RateLimiter) private readonly limiter: RateLimiter,
     @Inject(Clock) private readonly clock: Clock,
+    @Inject(AdminSpend) private readonly spend: AdminSpend,
+    @Inject(JudgePassesService) private readonly judgePasses: JudgePassesService,
+    @Inject(JudgeScoresReader) private readonly judgeScores: JudgeScoresReader,
+    @Inject(JudgeAgreement) private readonly agreement: JudgeAgreement,
   ) {}
 
-  async create(actorId: string, body: CreateRunBody): Promise<{ run_id: string; status: 'queued' }> {
+  async create(actorId: string, body: CreateRunBody): Promise<{ run_id: string; status: 'queued'; judge_pass_id: string | null }> {
     const parsed = createRunSchema.safeParse(body);
     if (!parsed.success) throw invalid(parsed.error.issues.map((issue) => `${issue.path.join('.')}: ${issue.message}`));
     const { operation } = parsed.data;
@@ -114,10 +128,15 @@ export class EvalRunsService {
       draft = prompt!;
     }
     const examples = await this.examplesOf(operation, parsed.data.set_id);
+    // A model without both prices cannot be costed (B22) and the day's usd cap may be reached (B20): both refuse before anything is used or written.
+    await this.spend.assertCanStart(selection.price, this.clock.now());
+    // The judge, if asked for, must be able to start too (inactive, other operation, no model, unpriced, cap, a pass already going): then nothing is made.
+    const judge = parsed.data.judge_id === undefined ? null : await this.judgePasses.startable(parsed.data.judge_id, operation, this.clock.now());
     // The run counts against `ai.test` only now: a request refused above (no model, bad draft, no example) costs nothing.
     await this.limiter.hit('ai.test', actorId);
     // The resolved selection and price are stored (plan choice 10, E1): a later change of the operation's choice or of the model's
     // price does not change this run. Each example is copied into an item row, so editing or deleting it later changes nothing either.
+    let judgePassId: string | null = null;
     const row = await this.prisma.$transaction(async (tx) => {
       const run = await tx.aiEvalRun.create({ data: {
         operation, provider: selection.provider, model: selection.modelId, effort: selection.effort, thinking: selection.thinking,
@@ -132,11 +151,23 @@ export class EvalRunsService {
         // A Json column takes no plain null: the key is left out and the column stays SQL NULL.
         ...(example.expected === null ? {} : { expected: example.expected as Prisma.InputJsonValue }),
       })) });
+      if (judge) {
+        // The waiting pass: queued with no snapshot (`total` NULL); it takes its snapshot when the run finishes (B19). The unique index (B16) is the last word.
+        const pass = await tx.aiJudgePass.create({ data: {
+          judgeRevisionId: judge.judgeRevisionId, kind: 'eval_run', operation, evalRunId: run.id, status: 'queued', total: null, startedBy: actorId,
+        } });
+        judgePassId = pass.id;
+      }
       return run;
+    }).catch((error: unknown) => {
+      if (error !== null && typeof error === 'object' && 'code' in error && error.code === 'P2002') {
+        throw problem(409, 'judge-pass-running', 'A judge pass of this revision is already queued or running');
+      }
+      throw error;
     });
     // Redis down: the row stays queued and the hourly job enqueues it again (B6E91); `enqueue` logs the failure.
     await this.queue.enqueue(row.id);
-    return { run_id: row.id, status: 'queued' };
+    return { run_id: row.id, status: 'queued', judge_pass_id: judgePassId };
   }
 
   async list(op: AiOperation, pageSize: number, pageToken: string | undefined, setId?: string) {
@@ -150,6 +181,8 @@ export class EvalRunsService {
     const rows = await this.prisma.aiEvalRun.findMany({
       where: {
         operation: op,
+        // A run that was "deleted" while it held labels stays in the database, hidden (nhóm B M3).
+        hiddenAt: null,
         ...(setId ? { setId } : {}),
         ...(cursor ? { OR: [
           { createdAt: { lt: new Date(cursor.created_at) } },
@@ -171,7 +204,7 @@ export class EvalRunsService {
 
   async get(id: string) {
     const row = await this.prisma.aiEvalRun.findUnique({ where: { id } });
-    if (!row) throw problem(404, 'not-found', 'Not found');
+    if (!row || row.hiddenAt) throw problem(404, 'not-found', 'Not found');
     const emails = await this.identity.emailsOf([row.startedBy]);
     const extras = await this.extras([row]);
     // Dev items that have a result: a held-out example's input, expected answer and output never leave the API (design §5.1, R7).
@@ -181,13 +214,32 @@ export class EvalRunsService {
     return { ...summary(row, extras.get(row.id)!, emails), draft: row.draft, heartbeat_at: row.heartbeatAt?.toISOString() ?? null, items: items.map(itemView) };
   }
 
-  /** The dev items with a result, and the statistics of every item split by dev and held-out (held-out only as numbers, B3). */
-  async items(id: string): Promise<{ items: RunItemView[]; stats: ReturnType<typeof runStats> }> {
-    const run = await this.prisma.aiEvalRun.findUnique({ where: { id }, select: { id: true } });
-    if (!run) throw problem(404, 'not-found', 'Not found');
+  /**
+   * The dev items with a result, the statistics of every item split by dev and held-out, and the judge side (nhóm B M3): per dev item its scores and
+   * labels; the passes of the run, newest first; one row per judge revision and criterion over every item. Held-out items appear only as numbers
+   * (B3, R7): their scores, reasons and ids never leave here.
+   */
+  async items(id: string): Promise<{
+    items: RunItemWithJudge[]; stats: ReturnType<typeof runStats>; passes: JudgePassView[]; judge_stats: JudgeStatsRow[];
+  }> {
+    const run = await this.prisma.aiEvalRun.findUnique({ where: { id }, select: { id: true, hiddenAt: true } });
+    if (!run || run.hiddenAt) throw problem(404, 'not-found', 'Not found');
     const rows = await this.prisma.aiEvalRunItem.findMany({ where: { runId: id }, orderBy: [{ position: 'asc' }, { id: 'asc' }] });
     const { results } = await this.resultsOf(id, rows);
-    return { items: rows.filter((row) => row.split === 'dev' && row.status !== 'pending').map(itemView), stats: runStats(results) };
+    const shown = rows.filter((row) => row.split === 'dev' && row.status !== 'pending');
+    const [scores, labels, passRows] = await Promise.all([
+      this.judgeScores.byRun(id), this.judgeScores.labelsOf('eval_item', shown.map((row) => row.id)),
+      this.prisma.aiJudgePass.findMany({ where: { evalRunId: id }, orderBy: [{ createdAt: 'desc' }, { id: 'desc' }], select: { id: true } }),
+    ]);
+    const [calibration, passes] = await Promise.all([
+      this.agreement.forRevisions([...new Set(scores.map((score) => score.judgeRevisionId))]), this.judgePasses.views(passRows.map((pass) => pass.id)),
+    ]);
+    return {
+      items: shown.map((row) => ({
+        ...itemView(row), item_id: row.id, scores: scores.filter((score) => score.itemId === row.id).map(toScoreView), labels: labels.get(row.id) ?? [],
+      })),
+      stats: runStats(results), passes, judge_stats: judgeStatsRows(scores, calibration),
+    };
   }
 
   /**
@@ -196,10 +248,12 @@ export class EvalRunsService {
    */
   async compare(a: string, b: string) {
     const [rowA, rowB] = await Promise.all([this.prisma.aiEvalRun.findUnique({ where: { id: a } }), this.prisma.aiEvalRun.findUnique({ where: { id: b } })]);
-    if (!rowA || !rowB) throw problem(404, 'not-found', 'Not found');
+    if (!rowA || !rowB || rowA.hiddenAt || rowB.hiddenAt) throw problem(404, 'not-found', 'Not found');
     if (rowA.setId === null || rowA.setId !== rowB.setId) throw problem(409, 'eval-set-mismatch', 'The runs are not on the same set version');
-    const [itemsA, itemsB] = await Promise.all([this.resultsOf(a), this.resultsOf(b)]);
+    const [itemsA, itemsB, scoresA, scoresB] = await Promise.all([this.resultsOf(a), this.resultsOf(b), this.judgeScores.byRun(a), this.judgeScores.byRun(b)]);
     const compared = compareRuns(itemsA.results, itemsB.results);
+    // Judge columns only through the revisions that scored both runs; the others are named apart (B11).
+    const judge = judgeComparison(scoresA, scoresB);
     const [emails, extras] = await Promise.all([this.identity.emailsOf([rowA.startedBy, rowB.startedBy]), this.extras([rowA, rowB])]);
     return {
       a: summary(rowA, extras.get(rowA.id)!, emails),
@@ -209,6 +263,8 @@ export class EvalRunsService {
         dev: compared.regressions.dev.map(({ exampleId, failed }) => ({ example_id: exampleId, input: itemsB.inputs.get(exampleId) ?? null, failed })),
         held_out: compared.regressions.held_out,
       },
+      judge: judge.judge,
+      judge_unmatched: judge.judge_unmatched,
     };
   }
 
@@ -287,14 +343,30 @@ export class EvalRunsService {
       data: { status: 'failed', error: 'cancelled', finishedAt: this.clock.now() },
     });
     if (count === 0) throw await this.refusal(id, 'run-not-active', 'Run is not active');
+    // The passes that wait for this run will never get their outputs (B19). If the process stops here, the hourly job finds the run failed and does the same.
+    await this.prisma.aiJudgePass.updateMany({ where: { evalRunId: id, status: 'queued' }, data: { status: 'failed', error: 'run-failed', finishedAt: this.clock.now() } });
     return this.get(id);
   }
 
-  /** Deletes a finished or failed run (its item rows go with it). `ai_calls` is not touched: the costs report reads it, not the runs. */
+  /**
+   * Deletes a finished or failed run (its item rows go with it). `ai_calls` is not touched: the costs report reads it, not the runs. A run whose
+   * outputs carry a label is only hidden (D16): the labels, the scores and the agreement they feed keep counting. A judge pass still queued or
+   * running reads the run's items, so it blocks both.
+   */
   async remove(id: string): Promise<void> {
     // A run that a publish or rollback names as its evidence stays (B33); the foreign key is the last word if an event lands meanwhile.
     const evidence = problem(409, 'run-is-evidence', 'The run is evidence of a publish');
     if (await this.prisma.aiConfigEvent.findFirst({ where: { OR: [{ candidateRunId: id }, { baselineRunId: id }] }, select: { id: true } })) throw evidence;
+    if (await this.prisma.aiJudgePass.findFirst({ where: { evalRunId: id, status: { in: ['queued', 'running'] } }, select: { id: true } })) {
+      throw problem(409, 'judge-pass-running', 'A judge pass of this run is still queued or running');
+    }
+    const items = await this.prisma.aiEvalRunItem.findMany({ where: { runId: id }, select: { id: true } });
+    if (items.length > 0 && await this.prisma.aiLabel.count({ where: { subjectKind: 'eval_item', subjectId: { in: items.map((item) => item.id) } } }) > 0) {
+      const hidden = await this.prisma.aiEvalRun.updateMany({ where: { id, status: { in: ['finished', 'failed'] }, hiddenAt: null }, data: { hiddenAt: this.clock.now() } });
+      if (hidden.count === 0) throw await this.refusal(id, 'run-active', 'Run is still active');
+      await this.prisma.aiEvalRunItem.updateMany({ where: { runId: id }, data: { hidden: true } });
+      return;
+    }
     let count: number;
     try {
       ({ count } = await this.prisma.aiEvalRun.deleteMany({ where: { id, status: { in: ['finished', 'failed'] } } }));
@@ -307,7 +379,7 @@ export class EvalRunsService {
 
   /** The guarded statement changed no row: the run is gone (404) or in the other state (409). */
   private async refusal(id: string, type: string, title: string): Promise<ProblemDetailsException> {
-    const row = await this.prisma.aiEvalRun.findUnique({ where: { id }, select: { id: true } });
-    return row ? problem(409, type, title) : problem(404, 'not-found', 'Not found');
+    const row = await this.prisma.aiEvalRun.findUnique({ where: { id }, select: { id: true, hiddenAt: true } });
+    return row && !row.hiddenAt ? problem(409, type, title) : problem(404, 'not-found', 'Not found');
   }
 }

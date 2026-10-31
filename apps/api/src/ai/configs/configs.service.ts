@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { Inject, Injectable } from '@nestjs/common';
 import { z } from 'zod';
+import { Clock } from '../../common/clock/clock.js';
 import { PRISMA_CLIENT } from '../../common/db/prisma.module.js';
 import { RateLimiter } from '../../common/rate-limit/rate-limiter.service.js';
 import { ProblemDetailsException } from '../../common/problem-details/problem-details.exception.js';
@@ -17,6 +18,7 @@ import { operationEstimate } from '../models/operation-estimate.js';
 import { OPERATIONS } from '../operations/operations.js';
 import { PROMPT_GUARD, promptViolations, type PromptExample } from '../prompts/prompt-rules.js';
 import { testInputs, toTestItem, type TestItem } from '../prompts/test-inputs.js';
+import { AdminSpend } from '../runner/admin-spend.service.js';
 import { RunnerService } from '../runner/runner.service.js';
 import { toSelection } from '../runner/selection.js';
 import type { ConfigStatus, ConfigsView, ConfigView } from './configs.types.js';
@@ -81,6 +83,8 @@ export class ConfigsService {
     @Inject(EvalRulesRegistry) private readonly rules: EvalRulesRegistry,
     @Inject(RunnerService) private readonly runner: RunnerService,
     @Inject(RateLimiter) private readonly limiter: RateLimiter,
+    @Inject(AdminSpend) private readonly spend: AdminSpend,
+    @Inject(Clock) private readonly clock: Clock,
   ) {}
 
   /** The live config, the draft and the previous config; 404 for an operation with no live pointer (only before the switch-over). */
@@ -196,6 +200,8 @@ export class ConfigsService {
     const inputs = await testInputs(this.prisma, op, { example_ids: input.example_ids, examples: draft.examples as unknown[] });
     const selection = toSelection(op, draft, draft.model);
     const prompt = { instructions: draft.instructions, examples: draft.examples as PromptExample[], revision: draft.number };
+    // An unpriced model (E14) or today's usd cap (B20) refuses before the slot is used.
+    await this.spend.assertCanStart(selection.price, this.clock.now());
     // Counted only now: a test refused above (no draft, no model, bad example id, no example) costs nothing; the provider is called after.
     await this.limiter.hit('ai.test', actorId);
     const items = await Promise.all(inputs.map(async (data): Promise<TestItem> => toTestItem(data, await this.runner.execute({

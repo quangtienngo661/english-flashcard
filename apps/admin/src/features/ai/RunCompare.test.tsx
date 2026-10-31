@@ -5,6 +5,7 @@ import vi from '../../../messages/vi.json';
 import { problem, type Call } from '../../auth/test-support';
 import { renderApp } from '../staff/test-utils';
 import type { RunComparison } from './ai-api';
+import { JURL, judgeRevision, judgeView, pass, tally } from './judges/judge-test-support';
 import { URL, evalRoutes, evalRun, runStats } from './prompt-test-support';
 
 const t = vi.ai.eval.compare;
@@ -29,7 +30,7 @@ const comparison = (over: Partial<RunComparison> = {}): RunComparison => ({
     b: runStats({ total: 3, shape_pass: 3, rule_pass: 1, rule_fail: 1, expected_pass: 2, expected_fail: 1 }, { total: 2, shape_pass: 1, shape_fail: 1, rule_pass: 1, rule_fail: 1, expected_pass: 1 }),
   },
   regressions: { dev: [{ example_id: 'x1', input: { word: 'go', part_of_speech: 'verb' }, failed: ['rule'] }], held_out: 1 },
-  ...over,
+  judge: [], judge_unmatched: [], ...over,
 });
 
 const routes = (over = {}) => evalRoutes({
@@ -176,5 +177,104 @@ describe('RunCompare in the run panel (nhóm B M1, D20)', () => {
     renderApp(PATH, routes({ [URL.runsOfSet('S1')]: () => problem(500, 'internal-error') }));
     const scope = await region();
     expect(await scope.findByRole('button', { name: vi.common.retry })).toBeInTheDocument();
+  });
+});
+
+describe('RunCompare judge rows (nhóm B M3-T17)', () => {
+  const row = (over: Record<string, unknown> = {}) => ({
+    judge_id: 'J1', judge_name: 'Chỉ một đáp án', judge_revision_id: 'JR2', revision: 2, criterion: 'single_answer',
+    a: { dev: tally({ pass: 9, fail_major: 1 }), held_out: tally({ pass: 3 }) }, b: { dev: tally({ pass: 8, fail_major: 1, fail_minor: 1 }), held_out: tally({ pass: 2, fail_minor: 1 }) },
+    ...over,
+  });
+  const unmatched = (scored: 'a' | 'b', over: Record<string, unknown> = {}) => ({
+    judge_id: 'J1', judge_name: 'Chỉ một đáp án', judge_revision_id: 'JR2', revision: 2, scored, ...over,
+  });
+  const judgePass = (runId: string) => `POST /v1/admin/ai/eval/runs/${runId}/judge-passes`;
+  const judgesRoute = (revision = 2) => ({
+    [URL.judges]: () => Response.json({ items: [judgeView({ latest: judgeRevision({ id: 'JR2', revision, model: { id: 'M1', provider: 'fake', model_id: 'fake:ok' } }) })] }),
+  });
+
+  async function openComparison(extra: Partial<RunComparison>, over = {}) {
+    const r = renderApp(PATH, routes({ [URL.compare(BEFORE, OPEN)]: () => Response.json(comparison(extra)), ...judgesRoute(), ...over }));
+    const scope = await region();
+    await waitFor(() => expect(select(scope)).toBeEnabled());
+    await userEvent.click(select(scope));
+    await userEvent.click(await screen.findByRole('option', { name: /gpt-before/ }));
+    await scope.findByRole('table');
+    return { r, scope };
+  }
+
+  it('a judge row per revision and criterion: the four percents, judged = pass + fail, "—" when nothing was judged', async () => {
+    const { scope } = await openComparison({
+      judge: [
+        row() as never,
+        row({ criterion: 'natural', a: { dev: tally(), held_out: tally({ unjudged: 2 }) }, b: { dev: tally({ unjudged: 1 }), held_out: tally() } }) as never,
+      ],
+    });
+    const table = scope.getByRole('table');
+    const cells = (name: string) => within(within(table).getByRole('row', { name: new RegExp(`^${escape(name)}`) })).getAllByRole('cell').map((cell) => cell.textContent);
+    expect(cells('Judge Chỉ một đáp án bản 2 · single_answer')).toEqual(['90%', '80%', '100%', '67%']);
+    expect(cells('Judge Chỉ một đáp án bản 2 · natural')).toEqual(['—', '—', '—', '—']);
+    expect(within(table).getByRole('rowheader', { name: 'Judge Chỉ một đáp án bản 2 · single_answer' })).toBeInTheDocument();
+  });
+
+  it('with no judge row there is no judge line in the table', async () => {
+    const { scope } = await openComparison({ judge: [] });
+    expect(within(scope.getByRole('table')).queryByRole('rowheader', { name: /^Judge/ })).not.toBeInTheDocument();
+  });
+
+  it('a revision that scored only one run says so, and "Chấm cả hai bằng …" posts one pass on the run that lacks scores', async () => {
+    const { r, scope } = await openComparison({ judge_unmatched: [unmatched('a') as never] }, {
+      [judgePass(OPEN)]: () => Response.json(pass({ status: 'queued', judged: 0 }), { status: 202 }),
+    });
+    expect(scope.getByText('Chỉ một đáp án: chỉ một lần chạy có điểm của bản 2.')).toBeInTheDocument();
+    await userEvent.click(scope.getByRole('button', { name: 'Chấm cả hai bằng Chỉ một đáp án' }));
+    await waitFor(() => expect(r.calls.filter((c) => c.method === 'POST' && c.path.endsWith('/judge-passes'))).toHaveLength(1));
+    const sent = r.calls.find((c) => c.method === 'POST' && c.path.endsWith('/judge-passes'))!;
+    expect(sent.path).toBe(`/v1/admin/ai/eval/runs/${OPEN}/judge-passes`);
+    expect(sent.body).toEqual({ judge_id: 'J1' });
+    expect(sent.headers['Idempotency-Key']).toMatch(/^[0-9a-f-]{36}$/);
+  });
+
+  it('when only the earlier run lacks the scores, the pass goes to the earlier run', async () => {
+    const { r, scope } = await openComparison({ judge_unmatched: [unmatched('b') as never] }, {
+      [judgePass(BEFORE)]: () => Response.json(pass({ status: 'queued', judged: 0 }), { status: 202 }),
+    });
+    await userEvent.click(scope.getByRole('button', { name: 'Chấm cả hai bằng Chỉ một đáp án' }));
+    await waitFor(() => expect(r.calls.filter((c) => c.method === 'POST' && c.path.endsWith('/judge-passes'))).toHaveLength(1));
+    expect(r.calls.find((c) => c.method === 'POST' && c.path.endsWith('/judge-passes'))!.path).toBe(`/v1/admin/ai/eval/runs/${BEFORE}/judge-passes`);
+  });
+
+  it('when the judge has a newer revision than the one that scored, both runs get a pass (each judges only what it lacks)', async () => {
+    const { r, scope } = await openComparison({ judge_unmatched: [unmatched('a', { revision: 1, judge_revision_id: 'JR1' }) as never] }, {
+      ...judgesRoute(2),
+      [judgePass(OPEN)]: () => Response.json(pass({ id: 'P1', status: 'queued' }), { status: 202 }),
+      [judgePass(BEFORE)]: () => Response.json(pass({ id: 'P2', status: 'queued' }), { status: 202 }),
+    });
+    await userEvent.click(scope.getByRole('button', { name: 'Chấm cả hai bằng Chỉ một đáp án' }));
+    await waitFor(() => expect(r.calls.filter((c) => c.method === 'POST' && c.path.endsWith('/judge-passes'))).toHaveLength(2));
+    expect(r.calls.filter((c) => c.method === 'POST' && c.path.endsWith('/judge-passes')).map((c) => c.path).sort()).toEqual([
+      `/v1/admin/ai/eval/runs/${OPEN}/judge-passes`, `/v1/admin/ai/eval/runs/${BEFORE}/judge-passes`,
+    ]);
+  });
+
+  it('while the passes run the button says so; when they end the comparison is read again', async () => {
+    let status: 'running' | 'finished' = 'running';
+    const { r, scope } = await openComparison({ judge_unmatched: [unmatched('a') as never] }, {
+      [judgePass(OPEN)]: () => Response.json(pass({ id: 'P1', status: 'queued' }), { status: 202 }),
+      [JURL.passById('P1')]: () => Response.json(pass({ id: 'P1', status })),
+    });
+    await userEvent.click(scope.getByRole('button', { name: 'Chấm cả hai bằng Chỉ một đáp án' }));
+    expect(await scope.findByText('Đang chấm. So sánh sẽ tự cập nhật khi xong.')).toBeInTheDocument();
+    expect(r.count('GET', `/v1/admin/ai/eval/runs/compare?a=${BEFORE}&b=${OPEN}`)).toBe(1);
+    status = 'finished';
+    await waitFor(() => expect(r.count('GET', `/v1/admin/ai/eval/runs/compare?a=${BEFORE}&b=${OPEN}`)).toBe(2), { timeout: 5000 });
+    await waitFor(() => expect(scope.queryByText('Đang chấm. So sánh sẽ tự cập nhật khi xong.')).not.toBeInTheDocument());
+  });
+
+  it('a refused pass shows why: 409 admin-usd-cap', async () => {
+    const { scope } = await openComparison({ judge_unmatched: [unmatched('a') as never] }, { [judgePass(OPEN)]: () => problem(409, 'admin-usd-cap') });
+    await userEvent.click(scope.getByRole('button', { name: 'Chấm cả hai bằng Chỉ một đáp án' }));
+    expect(await scope.findByText(vi.errors['admin-usd-cap'])).toBeInTheDocument();
   });
 });

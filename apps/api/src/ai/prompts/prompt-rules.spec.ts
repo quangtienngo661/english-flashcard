@@ -42,6 +42,15 @@ describe('promptViolations', () => {
   it('a valid body → []', () => {
     expect(promptViolations('generate_cloze', { instructions: 'Write a sentence.', examples: [CLOZE_EXAMPLE] })).toEqual([]);
   });
+
+  it('a judge example is an input of the judge and its answer lists (nhóm B M3)', () => {
+    const input = { target_operation: 'generate_cloze', input: CLOZE_EXAMPLE.input, output: CLOZE_EXAMPLE.output, criteria: [{ code: 'single_answer', question: 'Q' }], context: null };
+    expect(promptViolations('judge', { instructions: 'x', examples: [{ input, output: { codes: ['a'], verdicts: ['pass'], reasons: ['r'] } }] })).toEqual([]);
+    expect(promptViolations('judge', { instructions: 'x', examples: [{ input, output: { codes: ['a'], verdicts: ['maybe'], reasons: ['r'] } }] }))
+      .toEqual(['examples[0].output: verdict']);
+    expect(promptViolations('judge', { instructions: 'x', examples: [{ input: { ...input, criteria: [] }, output: { codes: ['a'], verdicts: ['pass'], reasons: ['r'] } }] }))
+      .toEqual([expect.stringMatching(/^examples\[0\]\.input\.criteria: /)]);
+  });
 });
 
 describe('assembleInstructions', () => {

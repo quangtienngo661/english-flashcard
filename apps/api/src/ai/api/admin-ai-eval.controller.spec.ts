@@ -14,6 +14,7 @@ import { AccessTokenService } from '../../identity/sessions/access-token.service
 import { EvalExamplesService } from '../eval/eval-examples.service.js';
 import { EvalRunsService } from '../eval/eval-runs.service.js';
 import { EvalSetsService } from '../eval/eval-sets.service.js';
+import { JudgePassesService } from '../judge/judge-passes.service.js';
 import { AdminAiEvalController } from './admin-ai-eval.controller.js';
 
 const PROBLEM = 'https://api.example.com/problems/';
@@ -25,6 +26,7 @@ describe('admin ai eval HTTP (unit, mocked services)', () => {
   let examples: Record<'list' | 'create' | 'createMany' | 'update' | 'remove' | 'forms' | 'reveal', ReturnType<typeof vi.spyOn>>;
   let sets: Record<'freeze' | 'list' | 'get', ReturnType<typeof vi.spyOn>>;
   let runs: Record<'list' | 'get' | 'cancel' | 'remove' | 'items' | 'compare', ReturnType<typeof vi.spyOn>>;
+  let passes: Record<'createForRun', ReturnType<typeof vi.spyOn>>;
   const auth = () => ({ Authorization: `Bearer ${token}` });
   const id = randomUUID();
   const http = () => ctx.http();
@@ -41,6 +43,7 @@ describe('admin ai eval HTTP (unit, mocked services)', () => {
     };
     const ss = ctx.app.get(EvalSetsService);
     sets = { freeze: vi.spyOn(ss, 'freeze'), list: vi.spyOn(ss, 'list'), get: vi.spyOn(ss, 'get') };
+    passes = { createForRun: vi.spyOn(ctx.app.get(JudgePassesService), 'createForRun') };
     runs = { list: vi.spyOn(rs, 'list'), get: vi.spyOn(rs, 'get'), cancel: vi.spyOn(rs, 'cancel'), remove: vi.spyOn(rs, 'remove'),
       items: vi.spyOn(rs, 'items'), compare: vi.spyOn(rs, 'compare') };
   });
@@ -57,6 +60,7 @@ describe('admin ai eval HTTP (unit, mocked services)', () => {
     runs.list.mockReset().mockResolvedValue({ items: [], next_page_token: null }); runs.get.mockReset().mockResolvedValue({ id });
     runs.cancel.mockReset().mockResolvedValue({ id, status: 'failed', error: 'cancelled' }); runs.remove.mockReset().mockResolvedValue(undefined);
     runs.items.mockReset().mockResolvedValue({ items: [], stats: {} }); runs.compare.mockReset().mockResolvedValue({ regressions: {} });
+    passes.createForRun.mockReset().mockResolvedValue({ id: 'pass', status: 'queued' });
     hit.mockReset().mockResolvedValue(undefined);
   });
   afterAll(async () => { await ctx?.close(); vi.restoreAllMocks(); });
@@ -69,7 +73,7 @@ describe('admin ai eval HTTP (unit, mocked services)', () => {
       'POST /v1/admin/ai/eval/examples/:id/reveal',
       'GET /v1/admin/ai/eval/runs', 'GET /v1/admin/ai/eval/runs/:id', 'GET /v1/admin/ai/eval/runs/:id/items', 'GET /v1/admin/ai/eval/runs/compare', 'PATCH /v1/admin/ai/eval/examples/:id',
       'POST /v1/admin/ai/eval/examples', 'POST /v1/admin/ai/eval/examples/bulk', 'POST /v1/admin/ai/eval/runs',
-      'POST /v1/admin/ai/eval/runs/:id/cancel',
+      'POST /v1/admin/ai/eval/runs/:id/cancel', 'POST /v1/admin/ai/eval/runs/:id/judge-passes',
     ].sort());
     for (const route of routes) expect(route.permissions, `${route.method} ${route.path}`).toEqual(['settings.manage']);
   });
@@ -80,6 +84,34 @@ describe('admin ai eval HTTP (unit, mocked services)', () => {
     expect(reflector.get(IDEMPOTENT_KEY, handler)).toBeDefined();
     expect(reflector.get(INTERCEPTORS_METADATA, handler)).toContain(IdempotencyInterceptor);
     expect(reflector.get(RATE_LIMIT_KEY, handler)).toBeUndefined();
+  });
+
+  it('B16: POST /runs/:id/judge-passes carries the idempotent metadata and the interceptor, and no rate rule of its own', () => {
+    const handler = AdminAiEvalController.prototype.createJudgePass;
+    const reflector = new Reflector();
+    expect(reflector.get(IDEMPOTENT_KEY, handler)).toBeDefined();
+    expect(reflector.get(INTERCEPTORS_METADATA, handler)).toContain(IdempotencyInterceptor);
+    expect(reflector.get(RATE_LIMIT_KEY, handler)).toBeUndefined();
+  });
+
+  it('POST /runs/:id/judge-passes without Idempotency-Key → the 400 of @Idempotent(), and nothing runs', async () => {
+    const missing = await http().post(`/v1/admin/ai/eval/runs/${id}/judge-passes`).set(auth()).send({ judge_id: randomUUID() });
+    expect(missing.status).toBe(400);
+    expect(passes.createForRun).not.toHaveBeenCalled();
+  });
+
+  it('createJudgePass hands the actor, the run id and the body to the judge passes and answers what they answer (202 is the handler status)', async () => {
+    const judge = randomUUID();
+    const answer = await ctx.app.get(AdminAiEvalController).createJudgePass({ id }, { judge_id: judge }, { user: { userId: actorId } } as never);
+    expect(answer).toEqual({ id: 'pass', status: 'queued' });
+    expect(passes.createForRun).toHaveBeenCalledExactlyOnceWith(actorId, id, { judge_id: judge });
+    expect(Reflect.getMetadata('__httpCode__', AdminAiEvalController.prototype.createJudgePass)).toBe(202);
+  });
+
+  it('an editor gets 403 on judge-passes', async () => {
+    role = 'editor';
+    expect((await http().post(`/v1/admin/ai/eval/runs/${id}/judge-passes`).set(auth()).set('Idempotency-Key', randomUUID()).send({ judge_id: randomUUID() })).status).toBe(403);
+    expect(passes.createForRun).not.toHaveBeenCalled();
   });
 
   it('POST /examples/bulk: 200, user.write, the service gets the rows; a body far over 100 kB (1000 rows) is read', async () => {

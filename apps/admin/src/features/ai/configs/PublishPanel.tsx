@@ -33,6 +33,11 @@ function useWarningText() {
         criterion: t(`ai.configs.publish.criteria.${warning.criterion}`), before: rate(warning.before), after: rate(warning.after),
       });
     }
+    if (warning.code === 'judge-rate-drop') {
+      return t('ai.configs.publish.judgeRateDrop', {
+        name: warning.judge_name, revision: warning.revision, criterion: warning.criterion, before: rate(warning.before), after: rate(warning.after),
+      });
+    }
     if (warning.code === 'dev-regressed') return t('ai.configs.publish.devRegressed', { count: warning.example_ids.length });
     return t('ai.configs.publish.heldOutUp', { before: warning.before, after: warning.after });
   };

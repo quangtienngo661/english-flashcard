@@ -87,7 +87,7 @@ test.describe('Cấu hình (nhóm B M2)', () => {
     await signedInAs(page, 'admin', configReads({
       [CONFIGS]: () => ({ json: cfgView({ draft: cfgDraft(4) }) }),
       'GET /v1/admin/ai/configs/generate_cloze/publish-check': () => ({ json: cfgCheck() }),
-      'GET /v1/admin/ai/status': () => ({ json: { operations: [], today: { calls: 0, cap: null, failed_calls: 0, failed_cost_usd: '0', cost_usd: '0', cost_vnd: 0 }, ai_enabled: true, providers: { openai: true, anthropic: false, fake: true } } }),
+      'GET /v1/admin/ai/status': () => ({ json: { operations: [], today: { calls: 0, cap: null, failed_calls: 0, failed_cost_usd: '0', cost_usd: '0', cost_vnd: 0, admin_cost_usd: '0', admin_usd_cap: null }, ai_enabled: true, providers: { openai: true, anthropic: false, fake: true } } }),
     }));
     await page.goto('/ai/configs');
     await instructions(page).fill('Unsaved change.');

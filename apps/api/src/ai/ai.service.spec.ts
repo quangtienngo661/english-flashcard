@@ -43,8 +43,15 @@ function setup(readiness: ReadinessCheck = { ready: true, selection: {} as never
   const rules = new EvalRulesRegistry();
   const examples = { createFromSource: vi.fn(async () => ({ id: 'example-1' })) };
   const live = { find: vi.fn(async (_op: string): Promise<unknown> => ({ configId: 'c', number: 7, prompt: {}, selection: { modelId: 'fake:ok' } })) };
-  const service = new AiService(runner, readinessService, prisma, new FakeClock(NOW), rules, examples as never, live as never);
-  return { service, executed, report, checks, statements, queries, prisma, rules, examples, live };
+  const judgePasses = { createReal: vi.fn(async (_args: unknown) => ({ passId: 'pass-1' })) };
+  const judges = { latestRevision: vi.fn(async (_id: string): Promise<{ id: string; revision: number } | null> => ({ id: 'rev-2', revision: 2 })) };
+  const judgeScores = { judgedSubjects: vi.fn(async (_revision: string, ids: string[]) => new Set(ids.slice(0, 1))) };
+  const reports = { callContents: vi.fn(async (_ids: string[], _now: Date) => new Map([['op1', { request: { a: 1 }, response: 'r' }]])) };
+  const service = new AiService(
+    runner, readinessService, prisma, new FakeClock(NOW), rules, examples as never, live as never, judgePasses as never, judges as never,
+    judgeScores as never, reports as never,
+  );
+  return { service, executed, report, checks, statements, queries, prisma, rules, examples, live, judgePasses, judges, judgeScores, reports };
 }
 
 describe('AiService.run', () => {
@@ -96,6 +103,38 @@ describe('AiService.createEvalExample', () => {
     await expect(service.createEvalExample({
       operation: 'generate_cloze', input: {}, expected: null, note: null, source: 'report', sourceRef: null, actorId: ADMIN,
     })).rejects.toBe(refusal);
+  });
+});
+
+describe('AiService judge functions (contract §4, M3-T8)', () => {
+  it('startJudgePass hands the arguments to the judge passes and answers its pass id', async () => {
+    const { service, judgePasses } = setup();
+    const args = {
+      judgeId: 'J', kind: 'real' as const, filters: { operation: 'generate_cloze', limit: 200 }, actorId: ADMIN,
+      subjects: [{ subjectId: 'S1', input: { word: 'a' }, output: { sentence: 'b' }, context: { session_words: ['c'] } }],
+    };
+    await expect(service.startJudgePass(args)).resolves.toEqual({ passId: 'pass-1' });
+    expect(judgePasses.createReal).toHaveBeenCalledExactlyOnceWith(args);
+  });
+
+  it('latestJudgeRevision answers the newest revision of the judge, or null for an unknown one', async () => {
+    const { service, judges } = setup();
+    await expect(service.latestJudgeRevision('J')).resolves.toEqual({ id: 'rev-2', revision: 2 });
+    expect(judges.latestRevision).toHaveBeenCalledExactlyOnceWith('J');
+    judges.latestRevision.mockResolvedValueOnce(null);
+    await expect(service.latestJudgeRevision('nope')).resolves.toBeNull();
+  });
+
+  it('callContents asks the reports for the kept content of those operation ids as of now (contract §4)', async () => {
+    const { service, reports } = setup();
+    await expect(service.callContents(['op1', 'op2'])).resolves.toEqual(new Map([['op1', { request: { a: 1 }, response: 'r' }]]));
+    expect(reports.callContents).toHaveBeenCalledExactlyOnceWith(['op1', 'op2'], NOW);
+  });
+
+  it('judgedSubjects asks the scores reader about that revision and those subjects', async () => {
+    const { service, judgeScores } = setup();
+    await expect(service.judgedSubjects('rev-2', ['s1', 's2'])).resolves.toEqual(new Set(['s1']));
+    expect(judgeScores.judgedSubjects).toHaveBeenCalledExactlyOnceWith('rev-2', ['s1', 's2']);
   });
 });
 

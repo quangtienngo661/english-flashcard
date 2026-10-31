@@ -54,8 +54,9 @@ export const succeeded = (word: string): TestResult['items'][number] => ({
 
 /** One result of a run (`GET …/eval/runs/{id}/items`): the example's snapshot and what the model, the rules and the expected answer said. */
 export const runItem = (over: Partial<EvalRunItem> = {}): EvalRunItem => ({
-  example_id: 'e1', position: 0, split: 'dev', input: example('go').input, expected: { forms: ['go'] }, status: 'succeeded', reason: null,
-  output: { sentence: 'I ___ home.' }, raw_output: null, rule: { status: 'pass', problems: [], reason: null }, expected_result: 'pass', latency_ms: 700, cost_usd: null, ...over,
+  item_id: 'i1', example_id: 'e1', position: 0, split: 'dev', input: example('go').input, expected: { forms: ['go'] }, status: 'succeeded', reason: null,
+  output: { sentence: 'I ___ home.' }, raw_output: null, rule: { status: 'pass', problems: [], reason: null }, expected_result: 'pass', latency_ms: 700, cost_usd: null,
+  scores: [], labels: [], ...over,
 });
 
 /** One eval run (A/83) as `GET …/eval/runs/{id}` answers it; the list rows are the same without `draft`, `heartbeat_at`, `items`. */
@@ -99,11 +100,12 @@ export const URL = {
   cancelRun: (id = RUN_ID) => `POST /v1/admin/ai/eval/runs/${id}/cancel`,
   deleteRun: (id = RUN_ID) => `DELETE /v1/admin/ai/eval/runs/${id}`,
   operations: 'GET /v1/admin/ai/operations',
+  judges: 'GET /v1/admin/ai/judges',
   settings: 'GET /v1/admin/settings',
 };
 
 /** The answer of `GET …/eval/runs/{id}/items` for a run with no result yet. */
-export const noItems = () => Response.json({ items: [], stats: runStats() });
+export const noItems = () => Response.json({ items: [], stats: runStats(), passes: [], judge_stats: [] });
 
 /** Every read the Bộ ví dụ page makes, answered (no runs, no examples, no versions); `over` replaces or adds routes. */
 export function evalRoutes(over: Record<string, Route> = {}): Record<string, Route> {
@@ -115,6 +117,8 @@ export function evalRoutes(over: Record<string, Route> = {}): Record<string, Rou
     [URL.quota]: () => Response.json(quota()),
     [URL.operations]: operationsReply,
     [URL.settings]: () => Response.json({ version: 1, values: { ai: { usd_vnd_rate: 26100 } }, defaults: {}, bounds: {} }),
+    // No judge unless a test brings one: the judge parts of the run form and panel stay out of the way.
+    [URL.judges]: () => Response.json({ items: [] }),
     ...over,
   };
 }

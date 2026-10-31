@@ -44,7 +44,12 @@
     "level-source-required": "The file has a level column, choose a level source",
     "lock-rule": "You cannot lock yourself or an admin.",
     "mail-unavailable": "The email cannot be sent right now, so no account was created. Please try again in a few minutes.",
+    "admin-usd-cap": "Today's admin USD cap is spent. Wait for the next day or raise the cap in Settings.",
+    "judge-pass-running": "This judge revision is already scoring in another pass.",
+    "judge-provider": "A judge uses Anthropic models only.",
+    "judge-revision-conflict": "Someone else just changed this judge.",
     "model-exists": "This model is already added.",
+    "model-price-missing": "The model has no price yet. Enter its price on the Model page and run again.",
     "model-in-use": "An operation still uses this model, so it cannot be deleted yet.",
     "model-not-found": "The provider has no such model. Check the model name.",
     "model-not-set": "This operation has no model yet. Choose one under Configs.",
@@ -140,6 +145,7 @@
     "aiModels": "Models",
     "aiConfigs": "Configs",
     "aiEval": "Example sets",
+    "aiJudges": "Judge",
     "aiCosts": "Costs",
     "aiCalls": "Calls",
     "settings": "System settings",
@@ -232,7 +238,8 @@
         "translate_sentence": "Translate sentence",
         "generate_meaning_question": "Generate meaning question",
         "generate_sentence_mcq": "Generate sentence choice",
-        "check_private_word": "Check private word"
+        "check_private_word": "Check private word",
+        "judge": "Judge scoring"
       },
       "row": {
         "model": "Model",
@@ -253,6 +260,7 @@
       "model-not-set": "No model chosen",
       "provider-not-configured": "Provider has no key",
       "daily-call-cap": "Daily call cap reached",
+      "admin-usd-cap": "Admin USD cap reached",
       "provider-quota": "Provider quota used up"
     },
     "providers": {
@@ -262,8 +270,10 @@
     },
     "status": {
       "today": {
-        "calls": "Calls today: {calls}/{cap}",
-        "callsNoCap": "Calls today: {calls}",
+        "calls": "Learner calls today: {calls}/{cap}",
+        "callsNoCap": "Learner calls today: {calls}",
+        "adminSpend": "Admin work today (test runs, example set, judge): {spent} / {cap}",
+        "adminSpendNoCap": "Admin work today (test runs, example set, judge): {spent}, no cap",
         "failed": "Failed: {count} ({cost})",
         "cost": "Cost today: {usd} · {vnd}",
         "providers": "Providers with a key: {names}",
@@ -288,7 +298,8 @@
       "purposes": {
         "learner": "learner",
         "test": "test run",
-        "eval": "example set"
+        "eval": "example set",
+        "judge": "judge"
       },
       "shutdown": "Shuts down {date}",
       "lifecycle": "Lifecycle: {lifecycle}",
@@ -445,6 +456,7 @@
         "baselineRequired": "The live config has no complete run on version {version}.",
         "runLive": "Run the live config on version {version}",
         "rateDrop": "The pass rate on {criterion} dropped from {before}% to {after}%.",
+        "judgeRateDrop": "The pass rate of judge {name} revision {revision} ({criterion}) dropped from {before}% to {after}%.",
         "criteria": {
           "shape": "shape",
           "rule": "rules",
@@ -616,6 +628,9 @@
       "run": {
         "title": "Run example set",
         "start": "Run example set",
+        "judge": "Score with a judge",
+        "judgeSelect": "Judge",
+        "judgeNoModel": "{name} (no model chosen)",
         "note": "Runs the whole set with the current prompt. Each run calls the AI for every example and uses one run.",
         "quota": "{remaining}/{limit} runs left this hour (shared with Test run on the Configs page)",
         "quotaFailed": "Could not read the runs left.",
@@ -694,6 +709,45 @@
           "notApplicable": "Not applicable"
         },
         "expectedResult": { "pass": "Pass", "fail": "Fail" },
+        "judge": {
+          "title": "Judge",
+          "pass": "{name} revision {revision} · {status} · {judged}/{total} · {cost}",
+          "noTotal": "—",
+          "noCost": "—",
+          "statuses": {
+            "queued": "Waiting",
+            "running": "Scoring",
+            "finished": "Done",
+            "failed": "Stopped"
+          },
+          "errors": {
+            "admin-usd-cap": "Stopped because today's admin USD cap is spent.",
+            "stalled": "Stopped because the worker did not answer.",
+            "run-failed": "Not scored because the run did not finish.",
+            "model-price-missing": "The judge's model has no price."
+          },
+          "start": "Score with a judge",
+          "select": "Judge",
+          "sameProvider": "The model that wrote the sentences and the judge are both Anthropic: the judge may be lenient with a style of its own family.",
+          "stats": "Judge {name} revision {revision} · {criterion}: dev pass {pass}/{scored} (major {major}, minor {minor}) · held-out pass {hpass}/{hscored} · {unjudged} could not be scored",
+          "calibrated": "Calibrated",
+          "uncalibrated": "Not calibrated",
+          "verdicts": {
+            "pass": "Pass",
+            "fail_major": "Major fail",
+            "fail_minor": "Minor fail",
+            "unjudged": "Could not be scored"
+          },
+          "score": "{criterion}: {verdict}",
+          "scoreOf": "{criterion}: {verdict} · {name} revision {revision}",
+          "labelNone": "Not labelled",
+          "labelFor": "Label · {example} · {criterion}",
+          "cols": {
+            "judge": "Judge",
+            "label": "Label"
+          },
+          "labelQueue": "Label one by one"
+        },
         "stats": {
           "dev": "Dev: shape {shapePass}/{shapeDone} · rules {rulePass}/{ruleJudged} ({ruleSkipped} skipped) · expected {expectedPass}/{expectedJudged}",
           "heldOut": "Held-out (totals only): shape {shapePass}/{shapeDone} · rules {rulePass}/{ruleJudged} ({ruleSkipped} skipped) · expected {expectedPass}/{expectedJudged}",
@@ -712,8 +766,97 @@
         "rows": { "shape": "Shape", "rule": "Rules", "expected": "Expected" },
         "devRegressions": "Dev examples that passed before and fail now ({count})",
         "heldOutRegressions": "Held-out: {count, plural, one {# example} other {# examples}} passed before and fail now",
+        "judgeRow": "Judge {name} revision {revision} · {criterion}",
+        "judgeUnmatched": "{name}: only one run has scores of revision {revision}.",
+        "judgeBoth": "Score both with {name}",
+        "judgeRunning": "Scoring. The comparison updates when it is done.",
+        "judgeStopped": "The scoring pass stopped: {error}",
         "noRegressions": "No example passed before and fails now.",
         "criteria": { "shape": "shape", "rule": "rules", "expected": "expected" }
+      }
+    },
+    "judges": {
+      "add": "Add judge",
+      "empty": "No judge yet",
+      "emptyHint": "Add the first judge to score what the AI writes.",
+      "cols": {
+        "judge": "Judge",
+        "operations": "Operations it scores",
+        "model": "Model",
+        "state": "Status",
+        "actions": "Actions"
+      },
+      "name": "{name} · revision {revision}",
+      "noModel": "No model chosen",
+      "active": "In use",
+      "inactive": "Off",
+      "edit": "Edit",
+      "editFor": "Edit {name}",
+      "clone": "Clone judge",
+      "cloneFor": "Clone judge {name}",
+      "agreement": "Agreement",
+      "agreementFor": "Agreement of {name}",
+      "editor": {
+        "title": "Judge {name}",
+        "titleNew": "Add judge",
+        "name": "Name",
+        "operations": "Operations it scores",
+        "criteria": "Criteria",
+        "criterion": "Criterion {n}",
+        "code": "Code",
+        "question": "Question",
+        "addCriterion": "Add criterion",
+        "removeCriterion": "Remove criterion {n}",
+        "instructions": "Instructions",
+        "examples": "Sample examples",
+        "model": "Model",
+        "modelHint": "A judge uses Anthropic models only and is not told which model wrote the output.",
+        "active": "In use",
+        "save": "Save as new revision",
+        "create": "Create judge",
+        "saved": "Saved revision {revision}.",
+        "savedSame": "Saved (revision unchanged).",
+        "created": "Created judge {name}.",
+        "reload": "Load the new revision",
+        "reloadNote": "Loading the new revision replaces the fields with it; what you were editing is lost.",
+        "close": "Close",
+        "history": "Revisions",
+        "revision": "Revision {revision} · {date} · {email} · {model}",
+        "historyFailed": "Could not load the revisions."
+      },
+      "cloneDialog": {
+        "title": "Clone judge",
+        "name": "Name",
+        "defaultName": "{name} (copy)",
+        "confirm": "Clone",
+        "done": "Created judge {name}."
+      },
+      "label": {
+        "title": "Label · {judge}",
+        "progress": "{index}/{total}",
+        "input": "Input",
+        "output": "Output",
+        "criterion": "Criterion",
+        "pass": "Pass (1)",
+        "major": "Major fail (2)",
+        "minor": "Minor fail (3)",
+        "skip": "Skip",
+        "previous": "Previous",
+        "hint": "Keys 1, 2, 3 label the output. A label is shared by every judge revision. Held-out examples are not here.",
+        "labelled": "Labelled: {verdict}",
+        "end": "Went through all {total} outputs.",
+        "backToRun": "Back to the run",
+        "empty": "The run has no dev output to label.",
+        "missing": "Open this screen from a run on the Example sets page, with the “Label one by one” link."
+      },
+      "agreementPanel": {
+        "title": "Agreement with the labels · {name}",
+        "row": "Revision {revision} · {criterion}: {labeled} labels · agree pass/fail {rate} · agree on level {exact}",
+        "calibrated": "Calibrated",
+        "uncalibrated": "Not calibrated",
+        "need": "Needs at least {min} labels and agreement from {ratio}.",
+        "noRate": "—",
+        "close": "Close"
       }
     },
     "costs": {
@@ -1484,7 +1627,8 @@
       "ai_cap_alert_percent": "no yellow alert"
     },
     "notes": {
-      "transaction_retention_years": "Accounting law: at least 5–10 years depending on the document"
+      "transaction_retention_years": "Accounting law: at least 5–10 years depending on the document",
+      "admin_daily_usd_cap": "Test runs, example-set runs and the judge stop once this much is spent. Empty: no cap. 0: block everything."
     },
     "zeroMeaning": {
       "ai_prefetch_count": "off",
@@ -1562,7 +1706,10 @@
         "daily_provider_calls_cap": "Provider calls cap per day",
         "content_retention_days": "Keep call content for",
         "usd_vnd_rate": "USD → VND rate",
-        "eval_held_out_ratio": "Held-out share of the example set"
+        "eval_held_out_ratio": "Held-out share of the example set",
+        "admin_daily_usd_cap": "Admin USD cap per day",
+        "judge_label_min": "Labels needed to trust a judge",
+        "judge_agreement_min": "Minimum agreement with the labels"
       },
       "identity": {
         "unverified_cleanup_days": "Delete accounts that never verified their email after"
@@ -1832,7 +1979,7 @@
     "ms": "{ms} ms",
     "today": {
       "title": "Today at a glance",
-      "calls": "AI calls / daily limit",
+      "calls": "Learner AI calls / daily limit",
       "cost": "AI cost today",
       "units": "Learner AI units / system limit",
       "notReady": "Operations not ready"

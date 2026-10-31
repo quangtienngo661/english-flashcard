@@ -4,6 +4,7 @@ import { FakeClock } from '../../common/clock/clock.js';
 import { ProblemDetailsException } from '../../common/problem-details/problem-details.exception.js';
 import type { Selection } from '../runner/selection.js';
 import { AI_SYSTEM_ACTOR_ID } from '../ai.constants.js';
+import { AdminSpend } from '../runner/admin-spend.service.js';
 import { EvalRunsService } from './eval-runs.service.js';
 
 const ADMIN = '11111111-1111-4111-8111-111111111111';
@@ -12,6 +13,8 @@ const SELECTION: Selection = {
   maxOutputTokens: 4096, price: { input: 1, cachedInput: null, output: 2 },
 };
 const NOW = new Date('2026-10-28T03:00:00Z');
+const JUDGE = '66666666-6666-4666-8666-666666666666';
+const JUDGE_REVISION = '77777777-7777-4777-8777-777777777777';
 const [EX1, EX2] = [randomUUID(), randomUUID()];
 const EXAMPLE_INPUT = { word: 'deploy', part_of_speech: 'verb', level: 'B1', meaning_vi: 'triển khai', context_label: null };
 const IN1 = { word: 'one' };
@@ -24,7 +27,18 @@ const LIVE_CONFIG = {
   maxOutputTokens: 4096, status: 'published', model: LIVE_MODEL,
 };
 
+/** The real AdminSpend over a stub ledger and settings: the cap and the day's spend are the test's to set (nhóm B M3). */
+function spendOf(state: { spent: number; cap: number | null }) {
+  return new AdminSpend(
+    { get: async () => ({ ai: { adminDailyUsdCap: state.cap } }) } as never,
+    { adminSpentToday: async () => state.spent } as never,
+  );
+}
+
+const JUDGE_PASS = '88888888-8888-4888-8888-888888888888';
+
 function setup() {
+  const spend = { spent: 0, cap: 2 as number | null };
   const created: Array<Record<string, unknown>> = [];
   // The run and its items are written through the transaction client, never through the shared one.
   const tx = {
@@ -36,6 +50,7 @@ function setup() {
       }),
     },
     aiEvalRunItem: { createMany: vi.fn(async (_args: { data: Array<Record<string, unknown>> }) => ({ count: 0 })) },
+    aiJudgePass: { create: vi.fn(async ({ data }: { data: Record<string, unknown> }) => ({ id: JUDGE_PASS, ...data })) },
   };
   const prisma = {
     aiEvalExample: {
@@ -49,6 +64,7 @@ function setup() {
       deleteMany: vi.fn(async (): Promise<{ count: number }> => ({ count: 0 })),
     },
     aiEvalRunItem: {
+      updateMany: vi.fn(async (_args?: unknown) => ({ count: 0 })),
       findMany: vi.fn(async (_args?: unknown): Promise<Array<Record<string, unknown>>> => []),
       groupBy: vi.fn(async (_args?: unknown): Promise<Array<{ runId: string; status: string; _count: { _all: number } }>> => []),
     },
@@ -65,6 +81,12 @@ function setup() {
     aiLiveConfig: { findUnique: vi.fn(async (_args?: unknown): Promise<Record<string, unknown> | null> => ({ operation: 'generate_cloze', configId: LIVE_CONFIG.id, version: 7 })) },
     aiConfigEvent: { findFirst: vi.fn(async (_args?: unknown): Promise<Record<string, unknown> | null> => null) },
     aiCall: { deleteMany: vi.fn(async () => ({ count: 0 })) },
+    aiJudgePass: {
+      updateMany: vi.fn(async (_args?: unknown) => ({ count: 0 })),
+      findFirst: vi.fn(async (_args?: unknown): Promise<Record<string, unknown> | null> => null),
+      findMany: vi.fn(async (_args?: unknown): Promise<Array<{ id: string }>> => []),
+    },
+    aiLabel: { count: vi.fn(async (_args?: unknown) => 0) },
     $executeRaw: vi.fn(async () => 0),
     $transaction: vi.fn(async (work: (client: typeof tx) => Promise<unknown>) => work(tx)),
   };
@@ -73,11 +95,22 @@ function setup() {
   const queue = { enqueue: vi.fn(async () => true) };
   const emailsOf = vi.fn(async (ids: string[]) => new Map(ids.filter((id) => id === ADMIN).map((id) => [id, 'admin@x.test'])));
   const limiter = { hit: vi.fn(async (): Promise<void> => undefined) };
+  const judgeScores = {
+    byRun: vi.fn(async (_runId: string): Promise<Array<Record<string, unknown>>> => []),
+    labelsOf: vi.fn(async (_kind: string, _ids: string[]): Promise<Map<string, unknown[]>> => new Map()),
+  };
+  const agreement = { forRevisions: vi.fn(async (_ids: string[]): Promise<Map<string, unknown>> => new Map()) };
+  const judgePasses = {
+    views: vi.fn(async (_ids: string[]): Promise<unknown[]> => []),
+    startable: vi.fn(async (_judge: string, _op: string, _now: Date) => ({
+      judgeId: JUDGE, judgeRevisionId: JUDGE_REVISION, revision: 2, operation: 'generate_cloze', selection: SELECTION,
+    })),
+  };
   const service = new EvalRunsService(
     prisma as never, selections as never, registry as never, queue as never, { emailsOf } as never,
-    limiter as never, new FakeClock(NOW),
+    limiter as never, new FakeClock(NOW), spendOf(spend), judgePasses as never, judgeScores as never, agreement as never,
   );
-  return { service, prisma, tx, created, selections, registry, queue, emailsOf, limiter, live: LIVE_CONFIG };
+  return { service, prisma, tx, created, selections, registry, queue, emailsOf, limiter, live: LIVE_CONFIG, spend, judgePasses, judgeScores, agreement };
 }
 
 async function problemOf(promise: Promise<unknown>) {
@@ -94,6 +127,8 @@ describe('EvalRunsService.create', () => {
   it('E1, Review focus 4: prompt "current" is the live config: the row names it and its version, stores the resolved selection, the price and the number of examples; enqueued; 202 body', async () => {
     const answer = await ctx.service.create(ADMIN, { operation: 'generate_cloze', prompt: 'current' });
     expect(ctx.created).toHaveLength(1);
+    expect(ctx.judgePasses.startable).not.toHaveBeenCalled();
+    expect(ctx.tx.aiJudgePass.create).not.toHaveBeenCalled();
     expect(ctx.created[0]).toMatchObject({
       operation: 'generate_cloze', provider: 'fake', model: 'fake:ok', effort: null, thinking: 'disabled', maxOutputTokens: 4096,
       configId: LIVE_CONFIG.id, configVersion: 0, promptRevision: null, priceInput: 1, priceCachedInput: null, priceOutput: 2, status: 'queued', total: 2, startedBy: ADMIN,
@@ -104,7 +139,38 @@ describe('EvalRunsService.create', () => {
       where: { operation: 'generate_cloze' }, orderBy: [{ createdAt: 'asc' }, { id: 'asc' }], select: { id: true, split: true, input: true, expected: true },
     });
     expect(ctx.queue.enqueue).toHaveBeenCalledWith(ctx.created[0]!.id);
-    expect(answer).toEqual({ run_id: ctx.created[0]!.id, status: 'queued' });
+    expect(answer).toEqual({ run_id: ctx.created[0]!.id, status: 'queued', judge_pass_id: null });
+  });
+
+  it('D14, B19: with judge_id the run row and a waiting pass (queued, no snapshot yet) are made in one transaction; the answer names the pass', async () => {
+    const answer = await ctx.service.create(ADMIN, { operation: 'generate_cloze', prompt: 'current', judge_id: JUDGE });
+    const runId = ctx.created[0]!.id;
+    expect(ctx.judgePasses.startable).toHaveBeenCalledExactlyOnceWith(JUDGE, 'generate_cloze', NOW);
+    expect(ctx.prisma.$transaction).toHaveBeenCalledTimes(1);
+    expect(ctx.tx.aiJudgePass.create).toHaveBeenCalledExactlyOnceWith({ data: {
+      judgeRevisionId: JUDGE_REVISION, kind: 'eval_run', operation: 'generate_cloze', evalRunId: runId, status: 'queued', total: null, startedBy: ADMIN,
+    } });
+    expect(ctx.tx.aiEvalRun.create.mock.invocationCallOrder[0]!).toBeLessThan(ctx.tx.aiJudgePass.create.mock.invocationCallOrder[0]!);
+    expect(answer).toEqual({ run_id: runId, status: 'queued', judge_pass_id: JUDGE_PASS });
+    expect(ctx.queue.enqueue).toHaveBeenCalledExactlyOnceWith(runId);
+  });
+
+  it('a judge that cannot start (inactive, wrong operation, no model, unpriced, cap, already running) → its problem, no run row, no ai.test use, nothing enqueued', async () => {
+    ctx.judgePasses.startable.mockRejectedValue(new ProblemDetailsException({ status: 409, type: 'judge-pass-running', title: 'running' }));
+    expect(await problemOf(ctx.service.create(ADMIN, { operation: 'generate_cloze', prompt: 'current', judge_id: JUDGE }))).toMatchObject({ status: 409, type: 'judge-pass-running' });
+    expect(ctx.created).toHaveLength(0);
+    expect(ctx.limiter.hit).not.toHaveBeenCalled();
+    expect(ctx.queue.enqueue).not.toHaveBeenCalled();
+  });
+
+  it('the unique index of B16 losing a race → 409 judge-pass-running and the run is not enqueued', async () => {
+    ctx.tx.aiJudgePass.create.mockRejectedValueOnce(Object.assign(new Error('unique'), { code: 'P2002' }));
+    expect(await problemOf(ctx.service.create(ADMIN, { operation: 'generate_cloze', prompt: 'current', judge_id: JUDGE }))).toMatchObject({ status: 409, type: 'judge-pass-running' });
+    expect(ctx.queue.enqueue).not.toHaveBeenCalled();
+  });
+
+  it('judge_id must be a uuid', async () => {
+    expect((await problemOf(ctx.service.create(ADMIN, { operation: 'generate_cloze', prompt: 'current', judge_id: 'nope' }))).violations[0]).toMatch(/^judge_id: /);
   });
 
   it('E1: each example becomes an item row with its snapshot, in position order, written with the run in one transaction', async () => {
@@ -128,10 +194,44 @@ describe('EvalRunsService.create', () => {
     ] });
   });
 
-  it('E1: a model with no price leaves the three price columns null', async () => {
-    ctx.prisma.aiConfig.findUnique.mockResolvedValue({ ...LIVE_CONFIG, model: { ...LIVE_MODEL, priceInput: null, priceOutput: null } });
+  it('B22: a model without its output price (or its input price) → 409 model-price-missing: no row, nothing enqueued, no ai.test use', async () => {
+    for (const missing of [{ priceOutput: null }, { priceInput: null }, { priceInput: null, priceOutput: null }]) {
+      ctx.prisma.aiConfig.findUnique.mockResolvedValueOnce({ ...LIVE_CONFIG, model: { ...LIVE_MODEL, ...missing } });
+      expect(await problemOf(ctx.service.create(ADMIN, { operation: 'generate_cloze', prompt: 'current' }))).toMatchObject({ status: 409, type: 'model-price-missing' });
+    }
+    expect(ctx.created).toHaveLength(0);
+    expect(ctx.tx.aiEvalRun.create).not.toHaveBeenCalled();
+    expect(ctx.queue.enqueue).not.toHaveBeenCalled();
+    expect(ctx.limiter.hit).not.toHaveBeenCalled();
+  });
+
+  it('B22 comes before the cap: an unpriced model with the cap reached is still model-price-missing', async () => {
+    ctx.spend.spent = 5;
+    ctx.prisma.aiConfig.findUnique.mockResolvedValue({ ...LIVE_CONFIG, model: { ...LIVE_MODEL, priceOutput: null } });
+    expect(await problemOf(ctx.service.create(ADMIN, { operation: 'generate_cloze', prompt: 'current' }))).toMatchObject({ status: 409, type: 'model-price-missing' });
+  });
+
+  it('B20: the usd cap reached → 409 admin-usd-cap: no row, nothing enqueued, no ai.test use', async () => {
+    ctx.spend.spent = 2;
+    expect(await problemOf(ctx.service.create(ADMIN, { operation: 'generate_cloze', prompt: 'current' }))).toMatchObject({ status: 409, type: 'admin-usd-cap' });
+    expect(ctx.created).toHaveLength(0);
+    expect(ctx.queue.enqueue).not.toHaveBeenCalled();
+    expect(ctx.limiter.hit).not.toHaveBeenCalled();
+  });
+
+  it('no cap (null) with 50 USD spent today → the run is created; 1.99 of 2 → created', async () => {
+    ctx.spend.cap = null;
+    ctx.spend.spent = 50;
     await ctx.service.create(ADMIN, { operation: 'generate_cloze', prompt: 'current' });
-    expect(ctx.created[0]).toMatchObject({ priceInput: null, priceCachedInput: null, priceOutput: null });
+    ctx.spend.cap = 2;
+    ctx.spend.spent = 1.99;
+    await ctx.service.create(ADMIN, { operation: 'generate_cloze', prompt: 'current' });
+    expect(ctx.created).toHaveLength(2);
+  });
+
+  it('a model whose cached-input price is empty still has a price (the cached rate falls back to the input rate)', async () => {
+    await ctx.service.create(ADMIN, { operation: 'generate_cloze', prompt: 'current' });
+    expect(ctx.created[0]).toMatchObject({ priceInput: 1, priceCachedInput: null, priceOutput: 2 });
   });
 
   it('the row stores the draft and no revision', async () => {
@@ -273,6 +373,34 @@ describe('EvalRunsService.get', () => {
     const ctx = setup();
     ctx.prisma.aiEvalRun.findUnique.mockResolvedValue({ ...runRow(ADMIN), legacy: true });
     expect(await ctx.service.get(randomUUID())).toMatchObject({ legacy: true, set_id: null });
+  });
+});
+
+describe('a hidden run (a run with labels that was "deleted", M3-T11)', () => {
+  const hidden = (id: string) => ({ ...runRow(ADMIN, id), status: 'finished', setId: 'S1', hiddenAt: NOW });
+
+  it('get, items and compare answer 404 for it, as for a run that is not there', async () => {
+    const ctx = setup();
+    const [a, b] = [randomUUID(), randomUUID()];
+    ctx.prisma.aiEvalRun.findUnique.mockImplementation(async (args: unknown) => {
+      const id = (args as { where: { id: string } }).where.id;
+      return id === a ? hidden(a) : { ...runRow(ADMIN, b), status: 'finished', setId: 'S1' };
+    });
+    expect(await problemOf(ctx.service.get(a))).toMatchObject({ status: 404, type: 'not-found' });
+    expect(await problemOf(ctx.service.items(a))).toMatchObject({ status: 404, type: 'not-found' });
+    expect(await problemOf(ctx.service.compare(a, b))).toMatchObject({ status: 404, type: 'not-found' });
+    expect(await problemOf(ctx.service.compare(b, a))).toMatchObject({ status: 404, type: 'not-found' });
+    expect(ctx.prisma.aiEvalRunItem.findMany).not.toHaveBeenCalled();
+  });
+
+  it('delete of it answers 404 too', async () => {
+    const ctx = setup();
+    const id = randomUUID();
+    ctx.prisma.aiLabel.count.mockResolvedValue(1);
+    ctx.prisma.aiEvalRunItem.findMany.mockResolvedValue([{ id: 'i1' }]);
+    ctx.prisma.aiEvalRun.findUnique.mockResolvedValue(hidden(id));
+    expect(await problemOf(ctx.service.remove(id))).toMatchObject({ status: 404, type: 'not-found' });
+    expect(ctx.prisma.aiEvalRun.deleteMany).not.toHaveBeenCalled();
   });
 });
 
@@ -510,7 +638,7 @@ describe('EvalRunsService.list by set', () => {
     const S1 = randomUUID();
     ctx.prisma.aiEvalRun.findMany.mockResolvedValueOnce([]);
     await ctx.service.list('generate_cloze', 20, undefined, S1);
-    expect(ctx.prisma.aiEvalRun.findMany).toHaveBeenCalledWith(expect.objectContaining({ where: { operation: 'generate_cloze', setId: S1 } }));
+    expect(ctx.prisma.aiEvalRun.findMany).toHaveBeenCalledWith(expect.objectContaining({ where: { operation: 'generate_cloze', hiddenAt: null, setId: S1 } }));
     ctx.prisma.aiEvalRun.findMany.mockResolvedValueOnce([runRow(ADMIN), runRow(ADMIN)]);
     const { next_page_token: token } = await ctx.service.list('generate_cloze', 1, undefined, S1);
     expect(token).not.toBeNull();
@@ -553,6 +681,25 @@ describe('EvalRunsService.cancel', () => {
     expect(run).toHaveProperty('items');
     expect(run).toHaveProperty('draft');
     expect(ctx.prisma.aiEvalRunItem.findMany).toHaveBeenCalledTimes(1);
+  });
+
+  it('B19: cancelling also fails the passes that wait for the run (queued) with run-failed, so none starts after it', async () => {
+    const ctx = setup();
+    const id = randomUUID();
+    ctx.prisma.aiEvalRun.updateMany.mockResolvedValue({ count: 1 });
+    ctx.prisma.aiEvalRun.findUnique.mockResolvedValue({ ...runRow(ADMIN, id), status: 'failed', error: 'cancelled', finishedAt: NOW });
+    await ctx.service.cancel(id);
+    expect(ctx.prisma.aiJudgePass.updateMany).toHaveBeenCalledExactlyOnceWith({
+      where: { evalRunId: id, status: 'queued' }, data: { status: 'failed', error: 'run-failed', finishedAt: NOW },
+    });
+  });
+
+  it('a run that cannot be cancelled leaves its passes alone', async () => {
+    const ctx = setup();
+    const id = randomUUID();
+    ctx.prisma.aiEvalRun.findUnique.mockResolvedValue({ ...runRow(ADMIN, id), status: 'finished' });
+    await problemOf(ctx.service.cancel(id));
+    expect(ctx.prisma.aiJudgePass.updateMany).not.toHaveBeenCalled();
   });
 
   it('a run that finished a moment earlier (the guarded UPDATE changes no row) → 409 run-not-active and nothing is overwritten', async () => {
@@ -669,5 +816,175 @@ describe('EvalRunsService started_by_user', () => {
       { id: AI_SYSTEM_ACTOR_ID, email: null, system: true },
       { id: unknown, email: null, system: false },
     ]);
+  });
+});
+
+describe('EvalRunsService.items — judge scores, labels and passes (M3-T11, B3, B11)', () => {
+  const RUN = randomUUID();
+  const R2 = '33333333-3333-4333-8333-333333333332';
+  const score = (itemId: string, split: 'dev' | 'held_out', verdict: string | null, reason: string | null) => ({
+    itemId, split, judgeId: 'J', judgeName: 'Chỉ một đáp án', judgeRevisionId: R2, revision: 2, criterion: 'single_answer', verdict, problem: null, reason,
+  });
+  const label = { subject_kind: 'eval_item', subject_id: 'i1', criterion: 'single_answer', verdict: 'pass', labeled_by_user: { id: ADMIN, email: 'admin@x.test', system: false }, labeled_at: NOW.toISOString() };
+
+  function ready() {
+    const ctx = setup();
+    ctx.prisma.aiEvalRun.findUnique.mockResolvedValue(runRow(ADMIN, RUN));
+    ctx.prisma.aiEvalRunItem.findMany.mockResolvedValue([
+      itemRow('d1', 0, { id: 'i1', status: 'succeeded', output: { sentence: 'x' } }),
+      itemRow('d2', 1, { id: 'i2', status: 'pending' }),
+      itemRow('h1', 2, { id: 'i3', split: 'held_out', status: 'succeeded', output: { sentence: 'y' } }),
+    ]);
+    ctx.judgeScores.byRun.mockResolvedValue([
+      score('i1', 'dev', 'fail_major', 'beat fits too'), score('i3', 'held_out', 'pass', 'SECRET held-out reason'),
+    ]);
+    ctx.judgeScores.labelsOf.mockResolvedValue(new Map([['i1', [label]]]));
+    return ctx;
+  }
+
+  it('each dev item has its item id, the scores of every judge revision on it and its labels', async () => {
+    const ctx = ready();
+    const answer = await ctx.service.items(RUN);
+    expect(answer.items).toHaveLength(1);
+    expect(answer.items[0]).toMatchObject({
+      item_id: 'i1', example_id: 'd1',
+      scores: [{ judge_id: 'J', judge_name: 'Chỉ một đáp án', judge_revision_id: R2, revision: 2, criterion: 'single_answer', verdict: 'fail_major', problem: null, reason: 'beat fits too' }],
+      labels: [label],
+    });
+    expect(ctx.judgeScores.labelsOf).toHaveBeenCalledExactlyOnceWith('eval_item', ['i1']);
+  });
+
+  it('R7: the held-out part of the judge statistics is a tally; no held-out reason, item id or score appears anywhere in the answer', async () => {
+    const ctx = ready();
+    const answer = await ctx.service.items(RUN);
+    expect(answer.judge_stats).toEqual([{
+      judge_id: 'J', judge_name: 'Chỉ một đáp án', judge_revision_id: R2, revision: 2, criterion: 'single_answer',
+      dev: { pass: 0, fail_major: 1, fail_minor: 0, unjudged: 0 }, held_out: { pass: 1, fail_major: 0, fail_minor: 0, unjudged: 0 }, calibrated: false,
+    }]);
+    const text = JSON.stringify(answer);
+    expect(text).not.toContain('SECRET');
+    expect(text).not.toContain('i3');
+    expect(text).not.toContain('"h1"');
+  });
+
+  it('calibrated comes from the agreement of that revision and criterion', async () => {
+    const ctx = ready();
+    ctx.agreement.forRevisions.mockResolvedValue(new Map([[`${R2}|single_answer`, { calibrated: true }]]));
+    expect((await ctx.service.items(RUN)).judge_stats[0]).toMatchObject({ calibrated: true });
+    expect(ctx.agreement.forRevisions).toHaveBeenCalledWith([R2]);
+  });
+
+  it('the passes of the run, newest first, are the views of the ids in that order', async () => {
+    const ctx = ready();
+    ctx.prisma.aiJudgePass.findMany.mockResolvedValue([{ id: 'p-new' }, { id: 'p-old' }]);
+    ctx.judgePasses.views.mockResolvedValue([{ id: 'p-new' }, { id: 'p-old' }]);
+    const answer = await ctx.service.items(RUN);
+    expect(ctx.prisma.aiJudgePass.findMany).toHaveBeenCalledExactlyOnceWith({ where: { evalRunId: RUN }, orderBy: [{ createdAt: 'desc' }, { id: 'desc' }], select: { id: true } });
+    expect(ctx.judgePasses.views).toHaveBeenCalledExactlyOnceWith(['p-new', 'p-old']);
+    expect(answer.passes).toEqual([{ id: 'p-new' }, { id: 'p-old' }]);
+  });
+
+  it('a run nobody judged has empty scores, labels, passes and statistics', async () => {
+    const ctx = ready();
+    ctx.judgeScores.byRun.mockResolvedValue([]);
+    ctx.judgeScores.labelsOf.mockResolvedValue(new Map());
+    const answer = await ctx.service.items(RUN);
+    expect(answer.items[0]).toMatchObject({ scores: [], labels: [] });
+    expect(answer.judge_stats).toEqual([]);
+    expect(answer.passes).toEqual([]);
+  });
+});
+
+describe('EvalRunsService.compare — judge columns (M3-T11, B11)', () => {
+  const [A, B] = [randomUUID(), randomUUID()];
+  const R1 = '33333333-3333-4333-8333-333333333331';
+  const R2 = '33333333-3333-4333-8333-333333333332';
+  const score = (itemId: string, revisionId: string, revision: number, verdict: string) => ({
+    itemId, split: 'dev', judgeId: 'J', judgeName: 'Chỉ một đáp án', judgeRevisionId: revisionId, revision, criterion: 'single_answer', verdict, problem: null, reason: null,
+  });
+  const row = (id: string) => ({ ...runRow(ADMIN, id), status: 'finished', setId: 'S1' });
+
+  function ctxWith(scoresA: unknown[], scoresB: unknown[]) {
+    const ctx = setup();
+    ctx.prisma.aiEvalRun.findUnique.mockImplementation(async (args: unknown) => ((args as { where: { id: string } }).where.id === A ? row(A) : row(B)));
+    ctx.prisma.aiEvalSet.findMany.mockResolvedValue([{ id: 'S1', version: 1 }]);
+    ctx.judgeScores.byRun.mockImplementation(async (runId: string) => (runId === A ? scoresA : scoresB) as never);
+    return ctx;
+  }
+
+  it('R1 on run a only → no comparison row, and R1 is listed as scored on a', async () => {
+    const ctx = ctxWith([score('d1', R1, 1, 'pass')], [score('d1', R2, 2, 'pass')]);
+    const view = await ctx.service.compare(A, B);
+    expect(view.judge).toEqual([]);
+    // Newest revision first, as everywhere else.
+    expect(view.judge_unmatched).toEqual([
+      { judge_id: 'J', judge_name: 'Chỉ một đáp án', judge_revision_id: R2, revision: 2, scored: 'b' },
+      { judge_id: 'J', judge_name: 'Chỉ một đáp án', judge_revision_id: R1, revision: 1, scored: 'a' },
+    ]);
+  });
+
+  it('a revision that scored both runs is compared criterion by criterion, dev and held-out as tallies', async () => {
+    const ctx = ctxWith([score('d1', R2, 2, 'pass')], [score('d1', R2, 2, 'fail_major')]);
+    const view = await ctx.service.compare(A, B);
+    expect(view.judge_unmatched).toEqual([]);
+    expect(view.judge).toEqual([{
+      judge_id: 'J', judge_name: 'Chỉ một đáp án', judge_revision_id: R2, revision: 2, criterion: 'single_answer',
+      a: { dev: { pass: 1, fail_major: 0, fail_minor: 0, unjudged: 0 }, held_out: { pass: 0, fail_major: 0, fail_minor: 0, unjudged: 0 } },
+      b: { dev: { pass: 0, fail_major: 1, fail_minor: 0, unjudged: 0 }, held_out: { pass: 0, fail_major: 0, fail_minor: 0, unjudged: 0 } },
+    }]);
+  });
+});
+
+describe('EvalRunsService.remove — labels and judge passes (M3-T11, D16, B16)', () => {
+  const ENDED = ['finished', 'failed'];
+
+  it('a run whose items carry a label is hidden, not deleted: the run gets hiddenAt, its items hidden, nothing is deleted, the answer is nothing', async () => {
+    const ctx = setup();
+    const id = randomUUID();
+    ctx.prisma.aiEvalRunItem.findMany.mockResolvedValue([{ id: 'i1' }, { id: 'i2' }]);
+    ctx.prisma.aiLabel.count.mockResolvedValue(1);
+    ctx.prisma.aiEvalRun.updateMany.mockResolvedValue({ count: 1 });
+    await expect(ctx.service.remove(id)).resolves.toBeUndefined();
+    expect(ctx.prisma.aiLabel.count).toHaveBeenCalledExactlyOnceWith({ where: { subjectKind: 'eval_item', subjectId: { in: ['i1', 'i2'] } } });
+    expect(ctx.prisma.aiEvalRun.updateMany).toHaveBeenCalledExactlyOnceWith({ where: { id, status: { in: ENDED }, hiddenAt: null }, data: { hiddenAt: NOW } });
+    expect(ctx.prisma.aiEvalRunItem.updateMany).toHaveBeenCalledExactlyOnceWith({ where: { runId: id }, data: { hidden: true } });
+    expect(ctx.prisma.aiEvalRun.deleteMany).not.toHaveBeenCalled();
+  });
+
+  it('a queued or running run with labels is still refused 409 run-active (the guarded statement changes nothing)', async () => {
+    const ctx = setup();
+    const id = randomUUID();
+    ctx.prisma.aiEvalRunItem.findMany.mockResolvedValue([{ id: 'i1' }]);
+    ctx.prisma.aiLabel.count.mockResolvedValue(1);
+    ctx.prisma.aiEvalRun.findUnique.mockResolvedValue({ ...runRow(ADMIN, id), status: 'running' });
+    expect(await problemOf(ctx.service.remove(id))).toMatchObject({ status: 409, type: 'run-active' });
+    expect(ctx.prisma.aiEvalRunItem.updateMany).not.toHaveBeenCalled();
+  });
+
+  it('a run without a label is deleted as before, and the labels are asked about its items only', async () => {
+    const ctx = setup();
+    const id = randomUUID();
+    ctx.prisma.aiEvalRunItem.findMany.mockResolvedValue([{ id: 'i1' }]);
+    ctx.prisma.aiEvalRun.deleteMany.mockResolvedValue({ count: 1 });
+    await ctx.service.remove(id);
+    expect(ctx.prisma.aiEvalRun.deleteMany).toHaveBeenCalledExactlyOnceWith({ where: { id, status: { in: ENDED } } });
+    expect(ctx.prisma.aiEvalRun.updateMany).not.toHaveBeenCalled();
+  });
+
+  it('a queued or running judge pass of the run → 409 judge-pass-running and nothing is hidden or deleted', async () => {
+    const ctx = setup();
+    const id = randomUUID();
+    ctx.prisma.aiJudgePass.findFirst.mockResolvedValue({ id: 'p1' });
+    expect(await problemOf(ctx.service.remove(id))).toMatchObject({ status: 409, type: 'judge-pass-running' });
+    expect(ctx.prisma.aiJudgePass.findFirst).toHaveBeenCalledExactlyOnceWith({ where: { evalRunId: id, status: { in: ['queued', 'running'] } }, select: { id: true } });
+    expect(ctx.prisma.aiEvalRun.deleteMany).not.toHaveBeenCalled();
+    expect(ctx.prisma.aiEvalRun.updateMany).not.toHaveBeenCalled();
+  });
+
+  it('the evidence check still comes first: a run that is evidence is 409 run-is-evidence even with a running pass', async () => {
+    const ctx = setup();
+    ctx.prisma.aiConfigEvent.findFirst.mockResolvedValue({ id: 'event' });
+    ctx.prisma.aiJudgePass.findFirst.mockResolvedValue({ id: 'p1' });
+    expect(await problemOf(ctx.service.remove(randomUUID()))).toMatchObject({ type: 'run-is-evidence' });
   });
 });

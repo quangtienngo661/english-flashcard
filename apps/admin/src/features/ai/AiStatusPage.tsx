@@ -101,6 +101,11 @@ export function AiStatusPage() {
             ? t('ai.status.today.callsNoCap', { calls: format.number(today.calls) })
             : t('ai.status.today.calls', { calls: format.number(today.calls), cap: format.number(today.cap) })}
         </p>
+        <p>
+          {today.admin_usd_cap === null
+            ? t('ai.status.today.adminSpendNoCap', { spent: format.usd(today.admin_cost_usd) })
+            : t('ai.status.today.adminSpend', { spent: format.usd(today.admin_cost_usd), cap: format.usd(String(today.admin_usd_cap)) })}
+        </p>
         <p>{t('ai.status.today.failed', { count: format.number(today.failed_calls), cost: format.usd(today.failed_cost_usd) })}</p>
         <p>{t('ai.status.today.cost', { usd: format.usd(today.cost_usd), vnd: format.vnd(today.cost_vnd) })}</p>
         <p>{keyed.length > 0 ? t('ai.status.today.providers', { names: keyed.join(' · ') }) : t('ai.status.today.noProvider')}</p>

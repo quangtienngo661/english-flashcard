@@ -7,7 +7,9 @@ export const AI_OPERATION_ORDER = [
 ] as const;
 export type AiOperation = (typeof AI_OPERATION_ORDER)[number];
 export type AiProvider = 'openai' | 'anthropic' | 'fake';
-export type AiPurpose = 'learner' | 'test' | 'eval';
+export type AiPurpose = 'learner' | 'test' | 'eval' | 'judge';
+/** The six operations plus the gateway's own `judge`, which only the cost ledger and the calls page know. */
+export type GatewayOperation = AiOperation | 'judge';
 
 export type CostEstimate = {
   per_call_usd: string;
@@ -17,7 +19,7 @@ export type CostEstimate = {
   max_call_vnd: number | null;
 };
 
-export type UnavailableReason = 'ai-disabled' | 'model-not-set' | 'provider-not-configured' | 'daily-call-cap' | 'provider-quota';
+export type UnavailableReason = 'ai-disabled' | 'model-not-set' | 'provider-not-configured' | 'daily-call-cap' | 'admin-usd-cap' | 'provider-quota';
 
 /** `GET /v1/admin/ai/status`. `thinking` here is `disabled | between_tools`, unlike the operations API's `off`. */
 export type AiStatus = {
@@ -32,7 +34,11 @@ export type AiStatus = {
     last_error: { at: string; outcome: string; http_status: number | null; purpose: AiPurpose } | null;
     model_warning: { shutdown_at: string | null; lifecycle: string | null } | null;
   }>;
-  today: { calls: number; cap: number | null; failed_calls: number; failed_cost_usd: string; cost_usd: string; cost_vnd: number };
+  /** `calls` counts learner calls (what `cap` limits); `admin_cost_usd` is what test, eval and judge calls cost today, against `admin_usd_cap`. */
+  today: {
+    calls: number; cap: number | null; failed_calls: number; failed_cost_usd: string; cost_usd: string; cost_vnd: number;
+    admin_cost_usd: string; admin_usd_cap: number | null;
+  };
   ai_enabled: boolean;
   providers: Record<AiProvider, boolean>;
 };
@@ -134,6 +140,8 @@ export type Tally = { passed: number; counted: number };
 /** What a publish warns about (design §6.3): warnings never block; held-out examples are only ever counted. */
 export type PublishWarning =
   | { code: 'rate-drop'; criterion: 'shape' | 'rule' | 'expected'; before: Tally; after: Tally }
+  /** A judge criterion that the same judge revision scored in both runs. */
+  | { code: 'judge-rate-drop'; judge_id: string; judge_name: string; judge_revision_id: string; revision: number; criterion: string; before: Tally; after: Tally }
   | { code: 'dev-regressed'; example_ids: string[] }
   | { code: 'held-out-failures-up'; before: number; after: number };
 /** `GET …/configs/{op}/publish-check`: what a publish of the saved draft needs and would warn about. */
@@ -308,6 +316,8 @@ export type ExpectedResult = 'pass' | 'fail';
 export type EvalRunItemStatus = TestStatus | 'skipped' | 'pending' | 'in_progress';
 /** One example of a run (`GET …/eval/runs/{id}/items`, dev only): the snapshot taken when the run was made, and its results. */
 export type EvalRunItem = {
+  /** What a score and a label hang on (the run item's own id, not the example's). */
+  item_id: string;
   example_id: string;
   position: number;
   split: EvalSplit;
@@ -322,6 +332,9 @@ export type EvalRunItem = {
   expected_result: ExpectedResult | null;
   latency_ms: number | null;
   cost_usd: string | null;
+  /** What every judge revision said about this output, and the owner's labels (nhóm B M3). */
+  scores: ScoreView[];
+  labels: LabelView[];
 };
 /** Counts of one part (dev or held-out) of a run; the held-out part is only ever shown as these numbers. */
 export type SplitStats = {
@@ -348,12 +361,120 @@ export type RunComparison = {
   b: EvalRun;
   stats: { a: RunStats; b: RunStats };
   regressions: { dev: Array<{ example_id: string; input: Record<string, unknown> | null; failed: RegressionCriterion[] }>; held_out: number };
+  /** Judge rows only for revisions that scored both runs; the others are in `judge_unmatched` (design §5.3). */
+  judge: JudgeComparisonRow[];
+  judge_unmatched: JudgeUnmatched[];
 };
+export type JudgeVerdict = 'pass' | 'fail_major' | 'fail_minor';
+/** One question a judge answers about an output; `code` is what its answer and the owner's labels are keyed by. */
+export type JudgeCriterion = { code: string; question: string };
+/** One saved version of a judge (`GET …/judges/{id}/revisions`, newest first). */
+export type JudgeRevision = {
+  id: string;
+  revision: number;
+  criteria: JudgeCriterion[];
+  instructions: string;
+  examples: PromptExample[];
+  model: { id: string; provider: AiProvider; model_id: string } | null;
+  effort: string | null;
+  thinking: 'off' | null;
+  max_output_tokens: number | null;
+  saved_by_user: UserRef;
+  saved_at: string;
+};
+/** A judge with its newest revision, the one in use (`GET …/judges`). */
+export type Judge = { id: string; name: string; operations: AiOperation[]; active: boolean; created_at: string; latest: JudgeRevision };
+/** `POST …/judges`: every key is required. */
+export type JudgeBody = {
+  name: string;
+  operations: AiOperation[];
+  active: boolean;
+  criteria: JudgeCriterion[];
+  instructions: string;
+  examples: PromptExample[];
+  model_ref: string | null;
+  effort: string | null;
+  thinking: 'off' | null;
+  max_output_tokens: number | null;
+};
+/** `PUT …/judges/{id}`: `expected_revision` is the revision the page was showing (409 `judge-revision-conflict` otherwise). */
+export type SaveJudgeBody = JudgeBody & { expected_revision: number };
+export type JudgePassStatus = 'queued' | 'running' | 'finished' | 'failed';
+/** One pass of one judge revision over a run's outputs (`GET …/judge-passes/{id}`, and `passes` of `…/runs/{id}/items`). */
+export type JudgePass = {
+  id: string;
+  kind: 'eval_run' | 'real';
+  operation: AiOperation;
+  eval_run_id: string | null;
+  judge: { id: string; name: string };
+  judge_revision: { id: string; revision: number; model: { provider: string; model_id: string } | null };
+  status: JudgePassStatus;
+  /** `admin-usd-cap`, `stalled`, `run-failed` or another reason the pass stopped. */
+  error: string | null;
+  /** `null` while the pass waits for its run to finish: it takes its snapshot then. */
+  total: number | null;
+  judged: number;
+  /** Outputs whose score has no verdict ("không chấm được"). */
+  unjudged: number;
+  cost_usd: string | null;
+  started_by_user: UserRef;
+  created_at: string;
+  started_at: string | null;
+  finished_at: string | null;
+};
+/** Outputs by what the judge said; `unjudged` = "không chấm được". */
+export type JudgeTally = { pass: number; fail_major: number; fail_minor: number; unjudged: number };
+type JudgeRevisionKey = { judge_id: string; judge_name: string; judge_revision_id: string; revision: number };
+/** One judge revision on one criterion over a run: dev and held-out apart (held-out is only ever these numbers). */
+export type JudgeStatsRow = JudgeRevisionKey & { criterion: string; dev: JudgeTally; held_out: JudgeTally; calibrated: boolean };
+export type JudgeComparisonRow = JudgeRevisionKey & { criterion: string; a: { dev: JudgeTally; held_out: JudgeTally }; b: { dev: JudgeTally; held_out: JudgeTally } };
+/** A judge revision that scored only one of the two runs (`scored` says which). */
+export type JudgeUnmatched = JudgeRevisionKey & { scored: 'a' | 'b' };
+/** What one judge revision said about one criterion of one output: `verdict` is `null` ("không chấm được") with `problem` saying why. */
+export type ScoreView = {
+  judge_id: string;
+  judge_name: string;
+  judge_revision_id: string;
+  revision: number;
+  criterion: string;
+  verdict: JudgeVerdict | null;
+  problem: string | null;
+  reason: string | null;
+};
+export type LabelSubject = 'eval_item' | 'real_question';
+/** The owner's verdict on one criterion of one output; it is shared by every judge revision. `verdict: null` is a label taken back. */
+export type LabelView = {
+  subject_kind: LabelSubject;
+  subject_id: string;
+  criterion: string;
+  verdict: JudgeVerdict | null;
+  labeled_by_user: UserRef | null;
+  labeled_at: string | null;
+};
+export type PutLabelBody = { subject_kind: LabelSubject; subject_id: string; criterion: string; verdict: JudgeVerdict | null };
+/** `GET …/judges/{id}/agreement`: every revision x criterion with how far it agrees with the labels, and the two limits of "đã hiệu chỉnh". */
+export type JudgeAgreementView = {
+  label_min: number;
+  agreement_min: number;
+  items: Array<{
+    judge_revision_id: string;
+    revision: number;
+    criterion: string;
+    labeled: number;
+    agree: number;
+    agree_exact: number;
+    /** `null` while nothing is labelled. */
+    rate: number | null;
+    exact_rate: number | null;
+    calibrated: boolean;
+  }>;
+};
+
 /** `GET …/eval/runs/{id}` adds the draft, the worker's heartbeat and the dev results (kept for v1; the admin reads `…/items`). */
 export type EvalRunDetail = EvalRun & {
   draft: { instructions: string; examples: PromptExample[] } | null;
   heartbeat_at: string | null;
-  items: EvalRunItem[];
+  items: Array<Omit<EvalRunItem, 'item_id' | 'scores' | 'labels'>>;
 };
 /**
  * Exactly one of `prompt` and `config`. `config` runs the live config or the saved draft; `prompt: 'current'` is the old way to say "the live config".
@@ -364,6 +485,8 @@ export type StartRunBody = {
   prompt?: 'current' | { instructions: string; examples: PromptExample[] };
   config?: 'live' | 'draft';
   set_id?: string;
+  /** "Chấm bằng judge": a pass of this judge's newest revision starts when the run finishes. */
+  judge_id?: string;
 };
 
 /** A run is over once it is `finished` or `failed`; the job rule of `usePollingStatus` does not know `finished`. */
@@ -387,7 +510,7 @@ export type AiCall = {
   id: string;
   attempt: number;
   purpose: AiPurpose;
-  operation: AiOperation;
+  operation: GatewayOperation;
   provider: AiProvider;
   model: string;
   effort: string | null;
@@ -434,6 +557,12 @@ export const aiKeys = {
   forms: (word: string, partOfSpeech: string) => ['ai', 'eval-forms', word, partOfSpeech] as const,
   costs: (from: string, to: string, groupBy: CostGroup) => ['ai', 'costs', from, to, groupBy] as const,
   calls: (operationId: string) => ['ai', 'calls', operationId] as const,
+  judges: () => ['ai', 'judges'] as const,
+  judgeRevisions: (id: string) => ['ai', 'judge-revisions', id] as const,
+  judgeAgreement: (id: string) => ['ai', 'judge-agreement', id] as const,
+  judgePass: (id: string) => ['ai', 'judge-pass', id] as const,
+  /** Every judge's agreement, for one invalidation after a label changes. */
+  anyJudgeAgreement: () => ['ai', 'judge-agreement'] as const,
 };
 
 const base = '/v1/admin/ai';
@@ -495,7 +624,7 @@ export const updateExample = (api: ApiClient, id: string, body: EvalExamplePatch
 export const deleteExample = (api: ApiClient, id: string) => api.delete<void>(`${base}/eval/examples/${id}`);
 /** Needs an `Idempotency-Key` (send through `useSubmitAction`); a replay returns the same run. Uses one `ai.test` slot. */
 export const startRun = (api: ApiClient, body: StartRunBody, idempotencyKey: string) =>
-  api.post<{ run_id: string; status: 'queued' }>(`${base}/eval/runs`, body, { idempotencyKey });
+  api.post<{ run_id: string; status: 'queued'; judge_pass_id: string | null }>(`${base}/eval/runs`, body, { idempotencyKey });
 export function listRuns(api: ApiClient, operation: AiOperation, pageToken?: string, setId?: string) {
   const query = new URLSearchParams({ operation, page_size: String(RUNS_PAGE_SIZE) });
   if (pageToken) query.set('page_token', pageToken);
@@ -506,7 +635,8 @@ export function listRuns(api: ApiClient, operation: AiOperation, pageToken?: str
 export const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 export const getRun = (api: ApiClient, id: string) => api.get<EvalRunDetail>(`${base}/eval/runs/${id}`);
 /** The dev results of a run and the statistics of both parts; held-out examples are only counted. */
-export const listRunItems = (api: ApiClient, id: string) => api.get<{ items: EvalRunItem[]; stats: RunStats }>(`${base}/eval/runs/${id}/items`);
+export const listRunItems = (api: ApiClient, id: string) =>
+  api.get<{ items: EvalRunItem[]; stats: RunStats; passes: JudgePass[]; judge_stats: JudgeStatsRow[] }>(`${base}/eval/runs/${id}/items`);
 /** Two runs of the same version; 409 `eval-set-mismatch` otherwise. */
 export const getRunComparison = (api: ApiClient, a: string, b: string) =>
   api.get<RunComparison>(`${base}/eval/runs/compare?${new URLSearchParams({ a, b }).toString()}`);
@@ -520,6 +650,26 @@ export const freezeSet = (api: ApiClient, operation: AiOperation) => api.post<Ev
 /** Newest first. */
 export const listSets = (api: ApiClient, operation: AiOperation) => api.get<{ items: EvalSet[] }>(`${base}/eval/sets?operation=${operation}`);
 export const getSet = (api: ApiClient, id: string) => api.get<EvalSetDetail>(`${base}/eval/sets/${id}`);
+
+export const listJudges = (api: ApiClient) => api.get<{ items: Judge[] }>(`${base}/judges`);
+/** 422 `judge-provider` (an Anthropic model only; `fake` while the fake provider is on), 400 `validation-failed`. */
+export const createJudge = (api: ApiClient, body: JudgeBody) => api.post<Judge>(`${base}/judges`, body);
+/** Adds a revision when a revision field changed. 409 `judge-revision-conflict`, 422 `judge-provider`. */
+export const saveJudge = (api: ApiClient, id: string, body: SaveJudgeBody) => api.put<Judge>(`${base}/judges/${id}`, body);
+/** A new judge with the same criteria and newest revision, to try another model on them. */
+export const cloneJudge = (api: ApiClient, id: string, body: { name: string }) => api.post<Judge>(`${base}/judges/${id}/clone`, body);
+/** Newest first. */
+export const listJudgeRevisions = (api: ApiClient, id: string) => api.get<{ items: JudgeRevision[] }>(`${base}/judges/${id}/revisions`);
+export const getJudgeAgreement = (api: ApiClient, id: string) => api.get<JudgeAgreementView>(`${base}/judges/${id}/agreement`);
+/**
+ * "Chấm bằng judge" on a finished or failed run. Needs an `Idempotency-Key`; answers 202 with the pass. 409 `judge-pass-running`, `admin-usd-cap`,
+ * `model-price-missing`, `model-not-set`, `run-active`.
+ */
+export const startJudgePass = (api: ApiClient, runId: string, body: { judge_id: string }, idempotencyKey: string) =>
+  api.post<JudgePass>(`${base}/eval/runs/${runId}/judge-passes`, body, { idempotencyKey });
+export const getJudgePass = (api: ApiClient, id: string) => api.get<JudgePass>(`${base}/judge-passes/${id}`);
+/** Puts or takes back (`verdict: null`) a label; answers the label as it stands. 409 `example-held-out`. */
+export const putLabel = (api: ApiClient, body: PutLabelBody) => api.put<LabelView>(`${base}/labels`, body);
 
 /** `from` and `to` are `YYYY-MM-DD` Vietnam days, both inclusive; the API refuses `from > to` and more than 366 days with a 400. */
 export const getCosts = (api: ApiClient, from: string, to: string, groupBy: CostGroup) =>

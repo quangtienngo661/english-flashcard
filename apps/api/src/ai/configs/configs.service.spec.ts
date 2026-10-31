@@ -1,8 +1,10 @@
 import { randomUUID } from 'node:crypto';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { FakeClock } from '../../common/clock/clock.js';
 import { ProblemDetailsException } from '../../common/problem-details/problem-details.exception.js';
 import { AiAdapterRegistry } from '../adapters/ai-adapter.registry.js';
 import { EvalRulesRegistry, type EvalRules } from '../eval/eval-rules.port.js';
+import { AdminSpend } from '../runner/admin-spend.service.js';
 import type { RunReport } from '../runner/runner.service.js';
 import { ConfigsService } from './configs.service.js';
 
@@ -11,6 +13,7 @@ const OP = 'generate_cloze';
 const NOW = new Date('2026-10-30T03:00:00Z');
 const MODEL_ID = '22222222-2222-4222-8222-222222222222';
 const OTHER_MODEL_ID = '33333333-3333-4333-8333-333333333333';
+const UNPRICED_MODEL_ID = '55555555-5555-4555-8555-555555555555';
 const EXAMPLE = {
   input: { word: 'deploy', part_of_speech: 'verb', level: 'B1', meaning_vi: 'triển khai', context_label: null },
   output: { sentence: 'We will ___ it.', accepted_answers: ['deploy'], translation_vi: 'Chúng tôi sẽ triển khai.' },
@@ -30,13 +33,23 @@ const model = (id: string, over: Record<string, unknown> = {}) => ({
 });
 const p2002 = () => Object.assign(new Error('unique'), { code: 'P2002' });
 
+/** The real AdminSpend over a stub ledger and settings: the cap and the day's spend are the test's to set (nhóm B M3). */
+function spendOf(state: { spent: number; cap: number | null }) {
+  return new AdminSpend(
+    { get: async () => ({ ai: { adminDailyUsdCap: state.cap } }) } as never,
+    { adminSpentToday: async () => state.spent } as never,
+  );
+}
+
 function setup(init: { lastNumber?: number } = {}) {
+  const spend = { spent: 0, cap: 2 as number | null };
   const live = config({ id: randomUUID(), number: 3 });
   const retired = config({ number: 2, status: 'retired' });
   const otherOperation = config({ operation: 'lookup_word', number: 1 });
   const configs: Cfg[] = [live, retired, otherOperation];
   const pointer = { operation: OP, configId: live.id, previousConfigId: retired.id, version: 4, lastNumber: init.lastNumber ?? 3 };
-  const models = new Map([[MODEL_ID, model(MODEL_ID)], [OTHER_MODEL_ID, model(OTHER_MODEL_ID, { provider: 'openai', modelId: 'gpt-x', effortLevels: [] })]]);
+  const models = new Map([[MODEL_ID, model(MODEL_ID)], [OTHER_MODEL_ID, model(OTHER_MODEL_ID, { provider: 'openai', modelId: 'gpt-x', effortLevels: [] })],
+    [UNPRICED_MODEL_ID, model(UNPRICED_MODEL_ID, { priceInput: null, priceCachedInput: null, priceOutput: null })]]);
   const runs: Array<{ configId: string; status: string }> = [];
   const examples: Array<{ id: string; operation: string; split: string; input: unknown }> = [{ id: 'dev1', operation: OP, split: 'dev', input: EXAMPLE.input }];
   const withModel = (row: Cfg | undefined | null) => (row ? { ...row, model: row.modelRef ? models.get(row.modelRef) ?? null : null } : null);
@@ -85,12 +98,12 @@ function setup(init: { lastNumber?: number } = {}) {
   const rules = new EvalRulesRegistry();
   const report: RunReport = {
     result: { status: 'succeeded', operation_id: 't', result: EXAMPLE.output, meta: {} as never },
-    calls: [{ attempt: 1, outcome: 'succeeded', latency_ms: 100, cost_usd: '0.00010000', http_status: null }], rawOutput: '{}',
+    calls: [{ attempt: 1, outcome: 'succeeded', latency_ms: 100, cost_usd: '0.00010000', http_status: null, call_id: 'C1' }], rawOutput: '{}',
   };
   const runner = { execute: vi.fn(async (_input: unknown) => report) };
   const limiter = { hit: vi.fn(async (): Promise<void> => undefined) };
-  const service = new ConfigsService(prisma as never, identity as never, settings as never, registry, rules, runner as never, limiter as never);
-  return { service, prisma, configs, live, retired, otherOperation, pointer, runs, examples, rules, runner, limiter, registry };
+  const service = new ConfigsService(prisma as never, identity as never, settings as never, registry, rules, runner as never, limiter as never, spendOf(spend), new FakeClock(NOW));
+  return { service, prisma, configs, live, retired, otherOperation, pointer, runs, examples, rules, runner, limiter, registry, spend };
 }
 
 async function problemOf(promise: Promise<unknown>) {
@@ -268,6 +281,26 @@ describe('ConfigsService.testDraft', () => {
     expect(await problemOf(service.testDraft(ADMIN, OP, { example_ids: ['44444444-4444-4444-8444-444444444444'] }))).toMatchObject({ status: 400 });
     expect(runner.execute).not.toHaveBeenCalled();
     expect(limiter.hit).not.toHaveBeenCalled();
+  });
+
+  it('E14: a draft whose model has no price → 409 model-price-missing: the runner is not called and no ai.test slot is used', async () => {
+    const { service, runner, limiter } = setup();
+    await service.createDraft(ADMIN, OP, {});
+    await service.saveDraft(ADMIN, OP, saveBody({ model_ref: UNPRICED_MODEL_ID }));
+    expect(await problemOf(service.testDraft(ADMIN, OP, {}))).toMatchObject({ status: 409, type: 'model-price-missing' });
+    expect(runner.execute).not.toHaveBeenCalled();
+    expect(limiter.hit).not.toHaveBeenCalled();
+  });
+
+  it('B20: the usd cap reached → 409 admin-usd-cap before the slot and before the runner; with room it runs', async () => {
+    const { service, runner, limiter, spend } = setup();
+    await service.createDraft(ADMIN, OP, {});
+    spend.spent = 2;
+    expect(await problemOf(service.testDraft(ADMIN, OP, {}))).toMatchObject({ status: 409, type: 'admin-usd-cap' });
+    expect(runner.execute).not.toHaveBeenCalled();
+    expect(limiter.hit).not.toHaveBeenCalled();
+    spend.spent = 1.99;
+    expect((await service.testDraft(ADMIN, OP, {})).items).toHaveLength(1);
   });
 
   it('no draft → 404; a draft without a model → 409 model-not-set and the slot is not used', async () => {

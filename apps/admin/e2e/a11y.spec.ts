@@ -3,6 +3,7 @@ import en from '../messages/en.json' with { type: 'json' };
 import vi from '../messages/vi.json' with { type: 'json' };
 import { cfgCheck, cfgConfig, cfgDraft, cfgView } from './support/ai-configs';
 import { devExample, evalSet, heldOutExample, runItem, runStats } from './support/ai-eval';
+import { judgeAgreement, judgeOnFake, judgePass, judgeRevision, score, tally } from './support/ai-judges';
 import { seriousViolations } from './support/axe';
 import { mockApi, problem, signedInAs, type MockHandler, type MockRequest } from './support/mock-api';
 import { contentMocks, SENSE_ID } from './support/content';
@@ -42,7 +43,7 @@ const mocks: Record<string, MockHandler> = {
       max_output_tokens: null, last_error: i === 1 ? { at, outcome: 'timeout', http_status: 504, purpose: 'test' } : null,
       model_warning: i === 0 ? { shutdown_at: '2026-11-30T00:00:00.000Z', lifecycle: 'deprecated' } : null,
     })),
-    today: { calls: 1240, cap: 3000, failed_calls: 12, failed_cost_usd: '0.0400', cost_usd: '2.3100', cost_vnd: 60291 },
+    today: { calls: 1240, cap: 3000, failed_calls: 12, failed_cost_usd: '0.0400', cost_usd: '2.3100', cost_vnd: 60291, admin_cost_usd: '1.50000000', admin_usd_cap: 2 },
     ai_enabled: true,
     providers: { openai: true, anthropic: false, fake: true },
   } }),
@@ -88,9 +89,14 @@ const mocks: Record<string, MockHandler> = {
   ] } }),
   'GET /v1/admin/ai/eval/sets': () => ({ json: { items: [evalSet({ id: 'S2', version: 2 }), evalSet({ id: 'S1', version: 1, revealed_count: 1 })] } }),
   'GET /v1/admin/ai/eval/runs/aaaaaaaa-0000-4000-8000-000000000001/items': () => ({ json: {
-    items: [runItem({ rule: { status: 'fail', problems: ['unknown-form:banking'], reason: null } })],
+    items: [runItem({ rule: { status: 'fail', problems: ['unknown-form:banking'], reason: null }, scores: [score({ verdict: 'fail_minor', reason: 'though fits too' })] })],
     stats: runStats({ total: 1, shape_pass: 1, rule_fail: 1, expected_pass: 1 }, { total: 1, shape_pass: 1, rule_pass: 1, expected_pass: 1 }),
+    passes: [judgePass({ total: 1, judged: 1 })],
+    judge_stats: [{ judge_id: 'J1', judge_name: 'Chỉ một đáp án', judge_revision_id: 'JR2', revision: 2, criterion: 'single_answer', dev: tally({ fail_minor: 1 }), held_out: tally({ pass: 1 }), calibrated: false }],
   } }),
+  'GET /v1/admin/ai/judges': () => ({ json: { items: [judgeOnFake()] } }),
+  'GET /v1/admin/ai/judges/J1/revisions': () => ({ json: { items: [judgeOnFake().latest, judgeRevision()] } }),
+  'GET /v1/admin/ai/judges/J1/agreement': () => ({ json: judgeAgreement() }),
   'GET /v1/admin/ai/costs': () => ({ json: {
     items: [{ key: '2026-10-15', calls: 10, input_tokens: 1200, cached_input_tokens: 300, output_tokens: 800, reasoning_tokens: 50, cost_usd: '0.01230000', cost_vnd: 321, unknown_cost_calls: 2 }],
     total: { calls: 10, input_tokens: 1200, cached_input_tokens: 300, output_tokens: 800, reasoning_tokens: 50, cost_usd: '0.01230000', cost_vnd: 321, unknown_cost_calls: 2 },
@@ -165,7 +171,7 @@ Object.assign(mocks, {
   'GET /v1/admin/entitlements/ai-usage': () => ({ json: { date: '2026-10-27', used: 812, confirmed: 800, reserved: 12, cap: 1000, alert_percent: 80, alert_reached: false, enabled: true } }),
 });
 
-const pages = ['/uploads', '/uploads/b1', '/uploads/new', '/publish-jobs', `/publish-jobs/${JOB}`, '/sources', '/sources/new', '/export', '/ai/costs', '/ai/costs?group_by=operation', '/ai/calls', '/ai/calls?operation_id=op-1', '/transactions', '/ai/status', '/ai/models', '/ai/models/new', '/ai/models/m1', '/ai/configs', '/ai/eval', '/ai/eval/new', '/ai/eval/runs/aaaaaaaa-0000-4000-8000-000000000001', '/settings', '/settings?tab=entitlements', '/words', '/senses', `/senses/${SENSE_ID}`, '/topics', '/reports', `/reports/${RID}`, '/report-reasons', '/report-reasons/new', '/refunds', '/unknown-forms', '/users', `/users/${UID}`, '/entitlements', '/entitlements/new'];
+const pages = ['/uploads', '/uploads/b1', '/uploads/new', '/publish-jobs', `/publish-jobs/${JOB}`, '/sources', '/sources/new', '/export', '/ai/costs', '/ai/costs?group_by=operation', '/ai/calls', '/ai/calls?operation_id=op-1', '/transactions', '/ai/status', '/ai/models', '/ai/models/new', '/ai/models/m1', '/ai/configs', '/ai/eval', '/ai/eval/new', '/ai/eval/runs/aaaaaaaa-0000-4000-8000-000000000001', '/ai/judges', '/ai/judges/label?run=aaaaaaaa-0000-4000-8000-000000000001&judge=J1', '/settings', '/settings?tab=entitlements', '/words', '/senses', `/senses/${SENSE_ID}`, '/topics', '/reports', `/reports/${RID}`, '/report-reasons', '/report-reasons/new', '/refunds', '/unknown-forms', '/users', `/users/${UID}`, '/entitlements', '/entitlements/new'];
 
 for (const [lang, copy] of [['vi', vi], ['en', en]] as const) {
   test.describe(`axe (${lang})`, () => {
@@ -208,7 +214,11 @@ for (const [lang, copy] of [['vi', vi], ['en', en]] as const) {
 async function waitForContent(page: Page, path: string) {
   if (path.endsWith('/new') || path === '/ai/models/m1') await expect(page.getByRole('dialog')).toBeVisible();
   else if (path === '/uploads/b1') await expect(page.getByTestId('detail-panel').getByRole('heading', { level: 2, name: batch.file_name })).toBeVisible();
-  else if (path === '/ai/eval/runs/aaaaaaaa-0000-4000-8000-000000000001') await expect(page.getByTestId('detail-panel').getByRole('heading', { level: 2 })).toContainText(/Lần chạy|Run/);
+  else if (path === '/ai/eval/runs/aaaaaaaa-0000-4000-8000-000000000001') {
+    await expect(page.getByTestId('detail-panel').getByRole('heading', { level: 2 })).toContainText(/Lần chạy|Run/);
+    // The judge section and its columns come with the results: scan them too.
+    await expect(page.getByTestId('detail-panel').getByText(/Chưa hiệu chỉnh|Not calibrated/)).toBeVisible();
+  }
   else if (path.startsWith('/publish-jobs/')) await expect(page.getByTestId('detail-panel').getByRole('heading', { level: 2 })).toContainText('a3f2c1');
   else if (path.startsWith('/users/')) await expect(page.getByTestId('detail-panel').getByRole('heading', { level: 2 })).toBeVisible();
   else if (path.startsWith('/reports/')) await expect(page.getByTestId('detail-panel').getByRole('heading', { level: 2 })).toBeVisible();
@@ -219,6 +229,8 @@ async function waitForContent(page: Page, path: string) {
     await expect(page.getByRole('checkbox', { name: /^(Tôi đã đọc cảnh báo và vẫn publish|I read the warnings and still want to publish)$/ })).toBeVisible();
     await expect(page.getByRole('list', { name: /^(Lịch sử publish|Publish history)$/ })).toBeVisible();
   }
+  else if (path === '/ai/judges') await expect(page.getByRole('main').getByText(/Chỉ một đáp án · (bản|revision) 2/).filter({ visible: true })).toBeVisible();
+  else if (path.startsWith('/ai/judges/label')) await expect(page.getByRole('main').getByRole('heading', { level: 2 })).toContainText(/Gắn nhãn|Label/);
   else if (path === '/export' || path === '/ai/calls') await expect(page.getByRole('main')).toBeVisible();
   else if (path.startsWith('/senses/')) await expect(page.getByRole('heading', { level: 2, name: 'deploy · verb' })).toBeVisible();
   else if (path.startsWith('/settings')) await expect(page.getByRole('tabpanel').getByRole('heading', { level: 2 })).toBeVisible();

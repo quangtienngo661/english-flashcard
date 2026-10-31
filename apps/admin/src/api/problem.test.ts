@@ -94,6 +94,13 @@ describe('problem mapping', () => {
     }
   });
 
+  it('the judge and cap slugs each have a message of their own', () => {
+    for (const slug of ['judge-provider', 'judge-revision-conflict', 'judge-pass-running', 'admin-usd-cap', 'model-price-missing']) {
+      expect(KNOWN_ERROR_SLUGS).toContain(slug);
+      expect(errorMessageKey(problem({ slug, status: 409 }))).toBe(`errors.${slug}`);
+    }
+  });
+
   it('few-shot-invalid: the examples that broke the rules are kept with their position and problems; other shapes are dropped', async () => {
     const kept = await toApiError(problemResponse(422, {
       type: 'http://x/problems/few-shot-invalid', status: 422, title: 'f',

@@ -40,6 +40,7 @@ export class NetworkError extends Error {
  */
 export const KNOWN_ERROR_SLUGS = [
   'account-deleting',
+  'admin-usd-cap',
   'baseline-required',
   'batch-filter-unavailable',
   'batch-not-revertable',
@@ -71,6 +72,9 @@ export const KNOWN_ERROR_SLUGS = [
   'invalid-otp',
   'invalid-token',
   'job-not-active',
+  'judge-pass-running',
+  'judge-provider',
+  'judge-revision-conflict',
   'last-admin',
   'level-source-required',
   'lock-rule',
@@ -80,6 +84,7 @@ export const KNOWN_ERROR_SLUGS = [
   'model-not-found',
   'model-not-set',
   'model-not-supported',
+  'model-price-missing',
   'no-previous',
   'not-found',
   'nothing-to-publish',
