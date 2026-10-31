@@ -187,18 +187,21 @@ export class PromptsService {
     return { items };
   }
 
-  /** `example_ids` → those examples; else the first five of the example set; else the draft's own examples (design §7.4). */
+  /**
+   * `example_ids` → those examples; else the first five dev examples of the example set; else the draft's own examples (design §7.4).
+   * A held-out example is never computed here: its input must not reach anyone through a test (design §5.1, R7).
+   */
   private async inputs(op: AiOperation, body: TestPromptBody): Promise<unknown[]> {
     if (body.example_ids !== undefined) {
       const ids = [...new Set(body.example_ids)];
       const rows = await this.prisma.aiEvalExample.findMany({ where: { id: { in: ids } } });
-      if (ids.length === 0 || rows.length !== ids.length || rows.some((row) => row.operation !== op)) {
-        throw invalid([`example_ids: every id must be an example of ${op}`]);
+      if (ids.length === 0 || rows.length !== ids.length || rows.some((row) => row.operation !== op || row.split !== 'dev')) {
+        throw invalid([`example_ids: every id must be a dev example of ${op}`]);
       }
       return rows.map((row) => row.input);
     }
     const stored = await this.prisma.aiEvalExample.findMany({
-      where: { operation: op }, orderBy: [{ createdAt: 'asc' }, { id: 'asc' }], take: TEST_EXAMPLES_MAX,
+      where: { operation: op, split: 'dev' }, orderBy: [{ createdAt: 'asc' }, { id: 'asc' }], take: TEST_EXAMPLES_MAX,
     });
     if (stored.length > 0) return stored.map((row) => row.input);
     const own = (body.examples as PromptExample[]).slice(0, TEST_EXAMPLES_MAX).map((example) => example.input);

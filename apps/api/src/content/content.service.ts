@@ -16,7 +16,7 @@ import { SentencesService, type Sentence } from './sentences/sentences.service.j
 import { WordFormsService, type WordFormAdded } from './word-forms/word-forms.service.js';
 import { WordsService, type WordSense } from './words/words.service.js';
 import {
-  practiceCandidates, practiceLemmaMeanings, practiceOtherSenses, practiceRandomMeanings, practiceSenses, type CandidateSense,
+  catalogPracticeSensesByLemma, practiceCandidates, practiceLemmaMeanings, practiceOtherSenses, practiceRandomMeanings, practiceSenses, type CandidateSense,
   type LemmaMeanings, type PracticeSense,
 } from './practice/practice-senses.js';
 import { InflectionsService, type EntryByForm, type InflectionInput, type InflectionSource } from './inflections/inflections.service.js';
@@ -220,6 +220,11 @@ export class ContentService {
   practiceSenses(viewerId: string, senseIds: string[], nativeLanguage: 'vi' | 'en', db?: Prisma.TransactionClient | PrismaClient):
     Promise<Map<string, PracticeSense>> {
     return practiceSenses(db ?? this.prisma, viewerId, senseIds, nativeLanguage);
+  }
+
+  /** The open catalog senses of a lemma (`pos` null = any part of speech); Practice's eval rules use it, nobody's private word is read. */
+  catalogPracticeSensesByLemma(lemma: string, pos: string | null, nativeLanguage: 'vi' | 'en'): Promise<PracticeSense[]> {
+    return catalogPracticeSensesByLemma(this.prisma, lemma, pos, nativeLanguage);
   }
 
   /** Distractor and true/false candidates: visible senses only, light enough for thousands of ids. */

@@ -6,6 +6,8 @@ type Props = {
   label: string;
   value: string;
   onChange: (value: string) => void;
+  /** Focus left the field (after the last `onChange`). */
+  onBlur?: () => void;
   type?: 'text' | 'email' | 'password' | 'url' | 'date';
   name?: string;
   autoComplete?: string;

@@ -10,6 +10,9 @@ export type Problem = {
   reason?: string;
   /** Top-level extension member of `entry-in-use`: why the word cannot be deleted (a list of codes). */
   reasons?: string[];
+  /** Top-level extension members of `eval-set-incomplete`: the examples with no expected answer, and whether no example is held-out. */
+  missing_expected?: string[];
+  no_held_out?: boolean;
 };
 
 export class ApiError extends Error {
@@ -42,6 +45,12 @@ export const KNOWN_ERROR_SLUGS = [
   'email-already-verified',
   'email-taken',
   'entry-in-use',
+  'eval-set-conflict',
+  'eval-set-incomplete',
+  'eval-set-mismatch',
+  'example-held-out',
+  'example-not-held-out',
+  'expected-invalid',
   'export-too-large',
   'file-invalid',
   'file-too-large',
@@ -131,6 +140,8 @@ export async function toApiError(res: Response): Promise<ApiError> {
   if (Array.isArray(body.violations)) problem.violations = body.violations.filter((v): v is string => typeof v === 'string');
   if (typeof body.reason === 'string') problem.reason = body.reason;
   if (Array.isArray(body.reasons)) problem.reasons = body.reasons.filter((r): r is string => typeof r === 'string');
+  if (Array.isArray(body.missing_expected)) problem.missing_expected = body.missing_expected.filter((id): id is string => typeof id === 'string');
+  if (typeof body.no_held_out === 'boolean') problem.no_held_out = body.no_held_out;
   const retry = Number.parseInt(res.headers.get('retry-after') ?? '', 10);
   return new ApiError(problem, Number.isFinite(retry) && retry >= 0 ? retry : null);
 }

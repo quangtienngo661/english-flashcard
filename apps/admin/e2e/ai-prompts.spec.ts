@@ -1,6 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 import vi from '../messages/vi.json' with { type: 'json' };
 import { seriousViolations } from './support/axe';
+import { devExample } from './support/ai-eval';
 import { problem, requests, signedInAs, type MockHandler } from './support/mock-api';
 import { expectNoHorizontalScroll } from './support/overflow';
 
@@ -119,9 +120,7 @@ test.describe('Prompt (A/82)', () => {
     const longExample = { input: { ...example.input, word }, output: { sentence: 's'.repeat(400) } };
     await signedInAs(page, 'admin', promptMocks({
       'GET /v1/admin/ai/prompts/generate_cloze': () => ({ json: prompt({ instructions: long, examples: [longExample], updated_by_user: { id: 'u1', email: `${'a'.repeat(120)}@example.com`, system: false } }) }),
-      'GET /v1/admin/ai/eval/examples': () => ({ json: { items: [{
-        id: 'e1', operation: 'generate_cloze', input: longExample.input, note: 'n'.repeat(300), created_by: 'u9', created_by_user: SYSTEM, created_at: at, updated_at: at,
-      }] } }),
+      'GET /v1/admin/ai/eval/examples': () => ({ json: { items: [devExample('e1', 'w', { input: longExample.input, note: 'n'.repeat(300), created_by_user: SYSTEM })] } }),
       'POST /v1/admin/ai/prompts/generate_cloze/test': () => ({ json: { items: [{
         input: longExample.input, status: 'permanent_failure', reason: 'r'.repeat(200), output: null, raw_output: 'x'.repeat(2000), latency_ms: 1, cost_usd: null, calls: [],
       }] } }),

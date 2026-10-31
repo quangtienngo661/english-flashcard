@@ -11,7 +11,7 @@ const callsUrl = (id: string) => `GET /v1/admin/ai/calls?operation_id=${encodeUR
 const call = (over: Partial<AiCall> = {}): AiCall => ({
   id: 'c1', attempt: 1, purpose: 'learner', operation: 'generate_cloze', provider: 'openai', model: 'gpt-x', effort: null, thinking: null, max_output_tokens: null,
   prompt_revision: 3, outcome: 'timeout', http_status: null, provider_error_code: null, latency_ms: 10000, input_tokens: 120, cached_input_tokens: 20,
-  output_tokens: 0, reasoning_tokens: 0, cost_usd: '0.00010000', cost_known: true, created_at: '2026-10-25T02:12:00.000Z',
+  output_tokens: 0, reasoning_tokens: 0, cost_usd: '0.00010000', cost_known: true, created_at: '2026-10-25T02:12:00.000Z', held_out: false,
   content: { request: { messages: ['hi'] }, response: '{"sentence":"I ___ home."}', expires_at: '2026-10-25T10:00:00.000Z' }, ...over,
 });
 const reply = (...items: AiCall[]) => () => Response.json({ items });
@@ -74,6 +74,31 @@ describe('AiCallsPage (A/86)', () => {
     expect(dialog.textContent).toContain('"sentence": "I ___ home."');
     await userEvent.click(within(dialog).getByRole('button', { name: vi.common.close }));
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+  });
+
+  it('nhóm B M1: a call made for a held-out example shows "held-out" and "Nội dung được ẩn", with no [Xem]', async () => {
+    renderApp(`/ai/calls?operation_id=${OP}`, { [callsUrl(OP)]: reply(call({ purpose: 'eval', held_out: true, content: null })) });
+    await screen.findAllByText(t.heldOut);
+    const [row] = screen.getAllByRole('row').slice(1);
+    expect(row).toHaveTextContent(t.heldOut);
+    expect(row).toHaveTextContent(t.hiddenContent);
+    expect(row).not.toHaveTextContent(t.noContent);
+    expect(within(row).queryByRole('button', { name: /Xem/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: t.viewFor.replace('{attempt}', '1') })).not.toBeInTheDocument();
+  });
+
+  it('nhóm B M1: held-out wins over a stored content: no [Xem] and no content either way', async () => {
+    renderApp(`/ai/calls?operation_id=${OP}`, { [callsUrl(OP)]: reply(call({ purpose: 'eval', held_out: true })) });
+    await screen.findAllByText(t.hiddenContent);
+    expect(screen.queryByRole('button', { name: /Xem/ })).not.toBeInTheDocument();
+    expect(screen.queryByText('Còn tới 25/10')).not.toBeInTheDocument();
+  });
+
+  it('nhóm B M1: a call that is not held-out and has no content still reads "Không còn nội dung", with no badge', async () => {
+    renderApp(`/ai/calls?operation_id=${OP}`, { [callsUrl(OP)]: reply(call({ purpose: 'eval', held_out: false, content: null })) });
+    await screen.findAllByText(t.noContent);
+    expect(screen.queryByText(t.heldOut)).not.toBeInTheDocument();
+    expect(screen.queryByText(t.hiddenContent)).not.toBeInTheDocument();
   });
 
   it('an unknown cost shows "Chưa có giá"', async () => {

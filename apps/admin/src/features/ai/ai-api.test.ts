@@ -1,9 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { ApiClient } from '../../api/client';
 import {
-  AI_OPERATION_ORDER, cancelRun, createExample, createModel, deleteExample, deleteModel, deleteRun, effortChoicesFor, getCosts, getPrompt, getRun, getStatus, getTestQuota,
-  isRunCancelled, isRunDone, listCalls, listExamples, listModels, listOperations, listRevisions, listRuns, refreshModel, runTest, saveOperation, savePrompt,
-  sortByOperationOrder, startRun, updateExample, updateModel, type AiModel,
+  AI_OPERATION_ORDER, aiKeys, cancelRun, createExample, createModel, deleteExample, deleteModel, deleteRun, effortChoicesFor, freezeSet, getCosts, getForms, getPrompt,
+  getRun, getRunComparison, getSet, getStatus, getTestQuota, isDevExample, isRunCancelled, isRunDone, listCalls, listExamples, listModels, listOperations,
+  listRevisions, listRunItems, listRuns, listSets, refreshModel, revealExample, runTest, saveOperation, savePrompt, sortByOperationOrder, startRun, updateExample,
+  updateModel, type AiModel, type ExampleRow,
 } from './ai-api';
 
 function fakeApi() {
@@ -98,6 +99,64 @@ describe('eval example set and runs (A/83)', () => {
     expect(isRunCancelled({ status: 'failed', error: 'stalled' })).toBe(false);
     expect(isRunCancelled({ status: 'failed', error: null })).toBe(false);
     expect(isRunCancelled({ status: 'finished', error: 'cancelled' })).toBe(false);
+  });
+});
+
+describe('golden set api (nhóm B M1)', () => {
+  it('forms of a word: GET with word and part_of_speech, both encoded', async () => {
+    const { api, mock } = fakeApi();
+    await getForms(api, 'deploy', 'verb');
+    await getForms(api, 'ice cream', 'noun');
+    expect(mock.get.mock.calls.map((c) => c[0])).toEqual([
+      '/v1/admin/ai/eval/examples/forms?word=deploy&part_of_speech=verb',
+      '/v1/admin/ai/eval/examples/forms?word=ice+cream&part_of_speech=noun',
+    ]);
+  });
+
+  it('a held-out example is opened with a POST to /reveal, without a body', async () => {
+    const { api, mock } = fakeApi();
+    await revealExample(api, 'e1');
+    expect(mock.post).toHaveBeenCalledExactlyOnceWith('/v1/admin/ai/eval/examples/e1/reveal');
+  });
+
+  it('versions: freeze POSTs the operation, list and one version are GETs', async () => {
+    const { api, mock } = fakeApi();
+    await freezeSet(api, 'generate_cloze');
+    await listSets(api, 'lookup_word');
+    await getSet(api, 'S1');
+    expect(mock.post).toHaveBeenCalledExactlyOnceWith('/v1/admin/ai/eval/sets', { operation: 'generate_cloze' });
+    expect(mock.get.mock.calls.map((c) => c[0])).toEqual(['/v1/admin/ai/eval/sets?operation=lookup_word', '/v1/admin/ai/eval/sets/S1']);
+  });
+
+  it('run items and the comparison of two runs are GETs; listRuns can be limited to one version, after the page token', async () => {
+    const { api, mock } = fakeApi();
+    await listRunItems(api, 'R1');
+    await getRunComparison(api, 'A', 'B');
+    await listRuns(api, 'generate_cloze', undefined, 'S1');
+    await listRuns(api, 'generate_cloze', 'tok', 'S1');
+    expect(mock.get.mock.calls.map((c) => c[0])).toEqual([
+      '/v1/admin/ai/eval/runs/R1/items',
+      '/v1/admin/ai/eval/runs/compare?a=A&b=B',
+      '/v1/admin/ai/eval/runs?operation=generate_cloze&page_size=20&set_id=S1',
+      '/v1/admin/ai/eval/runs?operation=generate_cloze&page_size=20&page_token=tok&set_id=S1',
+    ]);
+  });
+
+  it('a run is started on a version with set_id, which is part of the body', async () => {
+    const { api, mock } = fakeApi();
+    await startRun(api, { operation: 'generate_cloze', prompt: 'current', set_id: 'S2' }, 'key-2');
+    expect(mock.post).toHaveBeenCalledWith('/v1/admin/ai/eval/runs', { operation: 'generate_cloze', prompt: 'current', set_id: 'S2' }, { idempotencyKey: 'key-2' });
+  });
+
+  it('only a dev row of the example list can be read or edited', () => {
+    const rows = [{ id: 'e1', split: 'dev' }, { id: 'e2', split: 'held_out' }] as unknown as ExampleRow[];
+    expect(rows.filter(isDevExample).map((row) => row.id)).toEqual(['e1']);
+  });
+
+  it('query keys of the new reads are distinct and start with ai', () => {
+    const keys = [aiKeys.sets('generate_cloze'), aiKeys.set('S1'), aiKeys.runItems('R1'), aiKeys.forms('deploy', 'verb'), aiKeys.compare('A', 'B')];
+    expect(new Set(keys.map((key) => JSON.stringify(key))).size).toBe(5);
+    expect(keys.every((key) => key[0] === 'ai')).toBe(true);
   });
 });
 

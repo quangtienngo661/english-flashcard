@@ -170,12 +170,56 @@ model AiEvalExample {
   operation String
   input     Json
   note      String?
+  // dev | held_out (CHECK). Nhóm B design §5.1: held-out examples stay hidden until revealed.
+  split      String    @default("dev")
+  // The expected answer by operation (design §5.1); null for translate_sentence, generate_sentence_mcq and examples from before nhóm B.
+  expected   Json?
+  // manual | import | report | real_judge (CHECK).
+  source     String    @default("manual")
+  sourceRef  String?   @map("source_ref")
+  revealedAt DateTime? @map("revealed_at") @db.Timestamptz
   createdBy String   @map("created_by") @db.Uuid
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
   updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
 
   @@index([operation])
+  @@index([operation, split])
   @@map("ai_eval_examples")
+}
+
+// A frozen version of one operation's example set (nhóm B design §5.1 "Chốt phiên bản"); never changes after it is made.
+model AiEvalSet {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  operation    String
+  version      Int
+  heldOutRatio Decimal  @map("held_out_ratio") @db.Decimal(3, 2)
+  frozenBy     String   @map("frozen_by") @db.Uuid
+  frozenAt     DateTime @default(now()) @map("frozen_at") @db.Timestamptz
+
+  items AiEvalSetItem[]
+  runs  AiEvalRun[]
+
+  @@unique([operation, version])
+  @@map("ai_eval_sets")
+}
+
+// The snapshot of one example when its set was frozen. `example_id` has no foreign key: the example may be deleted from the working set later.
+model AiEvalSetItem {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  setId      String    @map("set_id") @db.Uuid
+  exampleId  String    @map("example_id") @db.Uuid
+  position   Int
+  // dev | held_out (CHECK).
+  split      String
+  input      Json
+  expected   Json?
+  revealedAt DateTime? @map("revealed_at") @db.Timestamptz
+
+  set AiEvalSet @relation(fields: [setId], references: [id], onDelete: Cascade)
+
+  @@unique([setId, exampleId])
+  @@index([exampleId])
+  @@map("ai_eval_set_items")
 }
 
 // One run of the example set (design §10). It stores the resolved request and the examples taken at creation (plan choice 10).
@@ -190,7 +234,14 @@ model AiEvalRun {
   // Exactly one of prompt_revision and draft is set (CHECK).
   promptRevision   Int?      @map("prompt_revision")
   draft            Json?
-  exampleIds       String[]  @map("example_ids") @db.Uuid
+  // null = the working set (a quick try, not comparable, not evidence for a publish).
+  setId            String?   @map("set_id") @db.Uuid
+  // USD per million tokens of the model when the run was made (design §4), so the cost never depends on a later price edit.
+  priceInput       Decimal?  @map("price_input") @db.Decimal(12, 4)
+  priceCachedInput Decimal?  @map("price_cached_input") @db.Decimal(12, 4)
+  priceOutput      Decimal?  @map("price_output") @db.Decimal(12, 4)
+  // true = made before nhóm B: it has no set and cannot be compared.
+  legacy           Boolean   @default(false)
   // queued | running | finished | failed (CHECK).
   status           String
   total            Int
@@ -198,7 +249,6 @@ model AiEvalRun {
   avgLatencyMs     Int?      @map("avg_latency_ms")
   costUsd          Decimal?  @map("cost_usd") @db.Decimal(14, 8)
   costUnknownCount Int       @default(0) @map("cost_unknown_count")
-  items            Json      @default("[]")
   error            String?
   startedBy        String    @map("started_by") @db.Uuid
   createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz
@@ -206,7 +256,43 @@ model AiEvalRun {
   finishedAt       DateTime? @map("finished_at") @db.Timestamptz
   heartbeatAt      DateTime? @map("heartbeat_at") @db.Timestamptz
 
+  set      AiEvalSet?      @relation(fields: [setId], references: [id], onDelete: Restrict)
+  runItems AiEvalRunItem[]
+
   @@index([operation, createdAt])
   @@index([status, heartbeatAt])
+  @@index([setId])
   @@map("ai_eval_runs")
+}
+
+// The snapshot and the result of one example in one run (nhóm B design §4). `example_id` has no foreign key (the example may be gone).
+model AiEvalRunItem {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  runId          String   @map("run_id") @db.Uuid
+  exampleId      String   @map("example_id") @db.Uuid
+  position       Int
+  // dev | held_out (CHECK).
+  split          String
+  // null only for a result migrated from before nhóm B whose example was already deleted.
+  input          Json?
+  expected       Json?
+  // pending | succeeded | transient_failure | permanent_failure | unavailable | in_progress | skipped (CHECK).
+  status         String   @default("pending")
+  reason         String?
+  output         Json?
+  rawOutput      String?  @map("raw_output")
+  // { status: pass | fail | skipped | not_applicable, problems, reason } from Practice's rules.
+  rule           Json?
+  // pass | fail | null (CHECK).
+  expectedResult String?  @map("expected_result")
+  latencyMs      Int?     @map("latency_ms")
+  costUsd        Decimal? @map("cost_usd") @db.Decimal(14, 8)
+  // Hidden when a run that holds human labels is "deleted" (used from M3).
+  hidden         Boolean  @default(false)
+
+  run AiEvalRun @relation(fields: [runId], references: [id], onDelete: Cascade)
+
+  @@unique([runId, exampleId])
+  @@index([runId, status])
+  @@map("ai_eval_run_items")
 }

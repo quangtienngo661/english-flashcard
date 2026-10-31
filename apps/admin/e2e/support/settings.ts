@@ -15,7 +15,7 @@ const DEFAULTS = {
     ads_interstitial_per_day: 3, ads_min_interval_minutes: 10,
   },
   content: { private_words_per_user: 10000, sentences_per_sense: 20 },
-  ai: { call_timeout_seconds: 10, max_concurrent_calls: 50, daily_provider_calls_cap: 3000, content_retention_days: 7, usd_vnd_rate: 26100 },
+  ai: { call_timeout_seconds: 10, max_concurrent_calls: 50, daily_provider_calls_cap: 3000, content_retention_days: 7, usd_vnd_rate: 26100, eval_held_out_ratio: 0.3 },
 };
 const BOUNDS = {
   reminders: {
@@ -45,6 +45,7 @@ const BOUNDS = {
     call_timeout_seconds: { min: 3, max: 30 }, max_concurrent_calls: { min: 1, max: 500 },
     daily_provider_calls_cap: { min: 0, max: 1000000, nullable: true }, content_retention_days: { min: 0, max: 30 },
     usd_vnd_rate: { min: 10000, max: 100000 },
+    eval_held_out_ratio: { min: 0.1, max: 0.5 },
   },
 };
 

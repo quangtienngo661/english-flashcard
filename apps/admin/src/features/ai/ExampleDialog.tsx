@@ -10,16 +10,22 @@ import { useApi } from '../../auth/session-context';
 import { Banner } from '../../ui/Banner';
 import { Button } from '../../ui/Button';
 import { Dialog } from '../../ui/Dialog';
+import { Select } from '../../ui/Select';
 import { TextField } from '../../ui/TextField';
 import { showToast } from '../../ui/Toast';
-import { aiKeys, createExample, updateExample, type AiOperation, type EvalExample } from './ai-api';
+import { aiKeys, createExample, getForms, updateExample, type AiOperation, type EvalExample } from './ai-api';
+import { expectedFields, expectedFromFields, fieldsFromExpected, type ExpectedField } from './expected-form';
 import { fieldText, fieldValue } from './prompt-form';
 
 /** The API's limit (`ai.constants.ts` EVAL_NOTE_MAX). */
 const NOTE_MAX = 500;
 const NOTE_FIELD = 'example-note';
 const TOO_MANY = 'operation: at most 1000 examples';
+const VERDICTS = ['ok', 'not_recognized'];
 const inputId = (field: string) => `example-input-${field}`;
+const expectedId = (field: ExpectedField) => `example-expected-${field}`;
+
+type FillNote = { kind: 'filled'; count: number } | { kind: 'not-found' } | null;
 
 type Props = {
   op: AiOperation;
@@ -31,8 +37,9 @@ type Props = {
 };
 
 /**
- * A/83 add / edit an example: a box per input field of the operation (empty → null, a JSON list or object as that value), plus a note.
- * Mounted only while open, so a closed dialog keeps nothing. The 1001st example of an operation is refused by the API (design §6.5).
+ * A/83 add / edit an example: a box per input field of the operation (empty → null, a JSON list or object as that value), the expected
+ * answer of the operation (nhóm B design §5.1) and a note. Mounted only while open, so a closed dialog keeps nothing. The 1001st
+ * example of an operation is refused by the API (design §6.5).
  */
 export function ExampleDialog({ op, inputFields, example, onClose }: Props) {
   const t = useTranslations();
@@ -44,17 +51,56 @@ export function ExampleDialog({ op, inputFields, example, onClose }: Props) {
   const fields = [...inputFields, ...Object.keys(example?.input ?? {}).filter((key) => !inputFields.includes(key))];
   const initial = Object.fromEntries(fields.map((field) => [field, fieldText(example?.input[field])]));
   const initialNote = example?.note ?? '';
+  const expectedKeys = expectedFields(op);
+  const initialExpected = fieldsFromExpected(op, example?.expected ?? null);
   const [input, setInput] = useState<Record<string, string>>(initial);
   const [note, setNote] = useState(initialNote);
+  const [expected, setExpected] = useState<Record<string, string>>(initialExpected);
+  /** Forms the admin typed or kept from a saved example are never replaced by the catalog's (design §5.1: only a box not edited is filled). */
+  const [formsEdited, setFormsEdited] = useState((initialExpected.forms ?? '') !== '');
+  const [fillNote, setFillNote] = useState<FillNote>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [banner, setBanner] = useState<ErrorDetails | null>(null);
   const [pending, setPending] = useState(false);
   const busy = useRef(false);
+  const lookup = useRef(0);
 
-  const isDirty = note !== initialNote || fields.some((field) => input[field] !== initial[field]);
+  const isDirty = note !== initialNote || fields.some((field) => input[field] !== initial[field]) || expectedKeys.some((key) => expected[key] !== initialExpected[key]);
   const requestClose = useDialogDirtyClose(isDirty, onClose);
-  const order = [...fields.map(inputId), NOTE_FIELD];
+  const order = [...fields.map(inputId), ...expectedKeys.map(expectedId), NOTE_FIELD];
   useFocusFirstError(errors, order);
+
+  /** Leaving `word` or `part_of_speech` with both set: the catalog's forms go into a box the admin did not edit. A failed lookup stays silent (the box is typed by hand). */
+  async function fillForms() {
+    if (!expectedKeys.includes('forms') || formsEdited) return;
+    const word = (input.word ?? '').trim();
+    const partOfSpeech = (input.part_of_speech ?? '').trim();
+    if (word === '' || partOfSpeech === '') return;
+    const mine = ++lookup.current;
+    try {
+      const { forms } = await getForms(api, word, partOfSpeech);
+      if (mine !== lookup.current) return;
+      if (forms && forms.length > 0) {
+        setExpected((prev) => ({ ...prev, forms: forms.join(', ') }));
+        setFillNote({ kind: 'filled', count: forms.length });
+      } else {
+        setExpected((prev) => ({ ...prev, forms: '' }));
+        setFillNote({ kind: 'not-found' });
+      }
+    } catch {
+      if (mine === lookup.current) setFillNote(null);
+    }
+  }
+
+  function boxOfViolation(path: string): string | null {
+    if (path === 'note') return NOTE_FIELD;
+    const inputField = /^input\.([A-Za-z_]+)/.exec(path)?.[1];
+    if (inputField) return fields.includes(inputField) ? inputId(inputField) : null;
+    const match = /^expected(?:\.([A-Za-z_]+))?/.exec(path);
+    if (!match || expectedKeys.length === 0) return null;
+    const key = expectedKeys.find((candidate) => candidate === match[1]) ?? expectedKeys[0];
+    return expectedId(key);
+  }
 
   async function submit() {
     if (busy.current) return;
@@ -64,24 +110,26 @@ export function ExampleDialog({ op, inputFields, example, onClose }: Props) {
     });
     const value = Object.fromEntries(fields.map((field) => [field, fieldValue(input[field])]));
     const noteValue = note.trim() === '' ? null : note.trim();
+    const answer = expectedFromFields(op, expected);
+    const body = { input: value, note: noteValue, ...(answer ? { expected: answer } : {}) };
     busy.current = true;
     setPending(true);
     try {
-      if (isNew) await createExample(api, { operation: op, input: value, note: noteValue });
-      else await updateExample(api, example.id, { input: value, note: noteValue });
+      let toast = 'ai.eval.toast.saved';
+      if (isNew) {
+        const created = await createExample(api, { operation: op, ...body });
+        toast = created.split === 'held_out' ? 'ai.eval.toast.addedHeldOut' : 'ai.eval.toast.added';
+      } else await updateExample(api, example.id, body);
       await queryClient.invalidateQueries({ queryKey: aiKeys.examples(op) });
-      showToast(t(isNew ? 'ai.eval.toast.added' : 'ai.eval.toast.saved'));
+      showToast(t(toast));
       requestClose.release();
       onClose();
     } catch (e) {
-      const violations = e instanceof ApiError && e.problem.slug === 'validation-failed' ? (e.problem.violations ?? []) : null;
+      const problem = e instanceof ApiError ? e.problem : null;
+      const violations = problem && (problem.slug === 'validation-failed' || problem.slug === 'expected-invalid') ? (problem.violations ?? []) : null;
       if (violations?.includes(TOO_MANY)) setBanner({ message: t('ai.eval.form.tooMany'), code: null });
       else if (violations) {
-        const mapped = violationsToFields(violations, (path) => {
-          if (path === 'note') return NOTE_FIELD;
-          const field = /^input\.([A-Za-z_]+)/.exec(path)?.[1];
-          return field && fields.includes(field) ? inputId(field) : null;
-        });
+        const mapped = violationsToFields(violations, boxOfViolation);
         setErrors(mapped.fields);
         if (mapped.form.length > 0) setBanner({ message: [t('errors.validation-failed'), ...mapped.form].join(' '), code: null });
       } else setBanner(errorDetails(e));
@@ -90,6 +138,14 @@ export function ExampleDialog({ op, inputFields, example, onClose }: Props) {
       setPending(false);
     }
   }
+
+  function setBox(key: ExpectedField, text: string) {
+    setExpected((prev) => ({ ...prev, [key]: text }));
+  }
+
+  const fillText = fillNote === null ? null
+    : fillNote.kind === 'filled' ? t('ai.eval.form.expected.forms.filled', { count: fillNote.count })
+    : t('ai.eval.form.expected.forms.notFound');
 
   return (
     <Dialog
@@ -117,6 +173,7 @@ export function ExampleDialog({ op, inputFields, example, onClose }: Props) {
               label={field}
               value={input[field]}
               onChange={(text) => setInput((prev) => ({ ...prev, [field]: text }))}
+              onBlur={field === 'word' || field === 'part_of_speech' ? () => void fillForms() : undefined}
               error={errors[inputId(field)]}
               isDisabled={pending}
               autoComplete="off"
@@ -124,6 +181,69 @@ export function ExampleDialog({ op, inputFields, example, onClose }: Props) {
             />
           ))}
         </div>
+        {expectedKeys.length > 0 && (
+          <fieldset className="flex min-w-0 flex-col gap-3 rounded-inner border-2 border-border p-4">
+            <legend className="px-1 text-ui font-semibold text-ink">{t('ai.eval.form.expected.title')}</legend>
+            {expectedKeys.includes('forms') && (
+              <>
+                <TextField
+                  id={expectedId('forms')}
+                  label={t('ai.eval.form.expected.forms.label')}
+                  description={t('ai.eval.form.expected.forms.hint')}
+                  value={expected.forms ?? ''}
+                  onChange={(text) => {
+                    setFormsEdited(true);
+                    setFillNote(null);
+                    setBox('forms', text);
+                  }}
+                  error={errors[expectedId('forms')]}
+                  isDisabled={pending}
+                  autoComplete="off"
+                  spellCheck={false}
+                />
+                <p role="status" className="text-ui text-muted empty:hidden">{fillText}</p>
+              </>
+            )}
+            {expectedKeys.includes('lemma') && (
+              <TextField
+                id={expectedId('lemma')}
+                label={t('ai.eval.form.expected.lemma')}
+                value={expected.lemma ?? ''}
+                onChange={(text) => setBox('lemma', text)}
+                error={errors[expectedId('lemma')]}
+                isDisabled={pending}
+                autoComplete="off"
+                spellCheck={false}
+              />
+            )}
+            {expectedKeys.includes('part_of_speech') && (
+              <TextField
+                id={expectedId('part_of_speech')}
+                label={t('ai.eval.form.expected.partOfSpeech')}
+                value={expected.part_of_speech ?? ''}
+                onChange={(text) => setBox('part_of_speech', text)}
+                error={errors[expectedId('part_of_speech')]}
+                isDisabled={pending}
+                autoComplete="off"
+                spellCheck={false}
+              />
+            )}
+            {expectedKeys.includes('verdict') && (
+              <div className="max-w-sm">
+                <Select
+                  id={expectedId('verdict')}
+                  label={t('ai.eval.form.expected.verdict')}
+                  placeholder={t('ai.eval.form.expected.verdictPlaceholder')}
+                  items={VERDICTS.map((verdict) => ({ id: verdict, label: verdict }))}
+                  value={expected.verdict ?? ''}
+                  onChange={(verdict) => setBox('verdict', verdict)}
+                  error={errors[expectedId('verdict')]}
+                  isDisabled={pending}
+                />
+              </div>
+            )}
+          </fieldset>
+        )}
         <TextField
           id={NOTE_FIELD}
           label={t('ai.eval.form.note')}

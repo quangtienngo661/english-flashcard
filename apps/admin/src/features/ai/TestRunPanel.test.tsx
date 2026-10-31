@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi as vitest } from 'vites
 import vi from '../../../messages/vi.json';
 import { problem, rateLimited } from '../../auth/test-support';
 import { renderApp } from '../staff/test-utils';
-import { URL, evalExample, example, promptRoutes, promptView, quota, succeeded } from './prompt-test-support';
+import { URL, evalExample, example, heldOutExample, promptRoutes, promptView, quota, succeeded } from './prompt-test-support';
 
 const t = vi.ai.prompts.test;
 const runButton = () => screen.getByRole('button', { name: t.run });
@@ -62,6 +62,26 @@ describe('Chạy thử on the Prompt page (A/82)', () => {
     await userEvent.click(runButton());
     await screen.findByText(vi.ai.prompts.test.sample.replace('{n}', '1'));
     expect((posts(r.calls)[0].body as { example_ids: string[] }).example_ids).toEqual([set[0].id, set[2].id, set[3].id, set[4].id]);
+  });
+
+  it('nhóm B M1: only dev examples are offered; a held-out id in the list is neither a checkbox nor counted in "Chạy với"', async () => {
+    const r = await openPage({
+      [URL.examples()]: () => Response.json({ items: [evalExample('00000000-0000-4000-8000-000000000001', 'word-a'), heldOutExample('00000000-0000-4000-8000-000000000002')] }),
+      [URL.test()]: () => Response.json({ items: [succeeded('word-a')] }),
+    });
+    const group = await screen.findByRole('group', { name: t.pick });
+    expect(within(group).getAllByRole('checkbox')).toHaveLength(1);
+    expect(within(group).getByRole('checkbox', { name: /word-a/ })).toBeInTheDocument();
+    expect(await screen.findByText(t.withFirst.replace('{count}', '1'))).toBeInTheDocument();
+    await userEvent.click(runButton());
+    await screen.findByText(t.sample.replace('{n}', '1'));
+    expect(posts(r.calls)[0].body).toEqual({ instructions: 'Write one short sentence.', examples: [example()] });
+  });
+
+  it('nhóm B M1: a list with nothing but held-out examples reads as an empty set to pick from', async () => {
+    await openPage({ [URL.examples()]: () => Response.json({ items: [heldOutExample('00000000-0000-4000-8000-000000000002')] }) });
+    expect(await screen.findByText(t.pickEmpty)).toBeInTheDocument();
+    expect(screen.getByText(t.withPrompt)).toBeInTheDocument();
   });
 
   it('§6.4: 409 model-not-set → the copy and a link to Thao tác', async () => {

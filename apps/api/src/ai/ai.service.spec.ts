@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { FakeClock } from '../common/clock/clock.js';
 import type { PrismaClient } from '../generated/prisma/client.js';
 import { AiService } from './ai.service.js';
+import { EvalRulesRegistry, type EvalRules } from './eval/eval-rules.port.js';
 import type { ReadinessCheck, ReadinessService } from './runner/readiness.service.js';
 import type { ExecuteInput, RunnerService, RunReport } from './runner/runner.service.js';
 
@@ -39,8 +40,10 @@ function setup(readiness: ReadinessCheck = { ready: true, selection: {} as never
     }),
     $transaction: vi.fn(async (ops: unknown[]) => ops),
   } as unknown as PrismaClient;
-  const service = new AiService(runner, readinessService, prisma, new FakeClock(NOW));
-  return { service, executed, report, checks, statements, queries, prisma };
+  const rules = new EvalRulesRegistry();
+  const examples = { createFromSource: vi.fn(async () => ({ id: 'example-1' })) };
+  const service = new AiService(runner, readinessService, prisma, new FakeClock(NOW), rules, examples as never);
+  return { service, executed, report, checks, statements, queries, prisma, rules, examples };
 }
 
 describe('AiService.run', () => {
@@ -61,6 +64,37 @@ describe('AiService.run', () => {
     await expect(service.run('generate_cloze', DATA, { operationId, userId: USER, purpose: 'learner', deadlineMs: 4_000 }))
       .resolves.toBe(report.result);
     expect(executed).toEqual([{ purpose: 'learner', operation: 'generate_cloze', data: DATA, operationId, userId: USER, deadlineMs: 4_000 }]);
+  });
+});
+
+describe('AiService.registerEvalRules', () => {
+  it('E2, contract §4: the rules a module registers are what the eval job reads from the registry', () => {
+    const { service, rules } = setup();
+    expect(rules.get()).toBeNull();
+    const stub = { check: vi.fn(), formsOf: vi.fn(), matchesExpected: vi.fn() } as unknown as EvalRules;
+    service.registerEvalRules(stub);
+    expect(rules.get()).toBe(stub);
+  });
+});
+
+describe('AiService.createEvalExample', () => {
+  it('contract §4, D27.3: hands the example to the eval example set as a dev example with its source, and returns its id', async () => {
+    const { service, examples } = setup();
+    const args = {
+      operation: 'generate_cloze' as const, input: { word: 'deploy' }, expected: { forms: ['deploy'] }, note: 'from a report', source: 'report' as const,
+      sourceRef: 'r-1', actorId: ADMIN,
+    };
+    await expect(service.createEvalExample(args)).resolves.toEqual({ id: 'example-1' });
+    expect(examples.createFromSource).toHaveBeenCalledExactlyOnceWith(args);
+  });
+
+  it('a refusal of the example set (an expected answer is missing) reaches the caller', async () => {
+    const { service, examples } = setup();
+    const refusal = new Error('expected-invalid');
+    examples.createFromSource.mockRejectedValueOnce(refusal);
+    await expect(service.createEvalExample({
+      operation: 'generate_cloze', input: {}, expected: null, note: null, source: 'report', sourceRef: null, actorId: ADMIN,
+    })).rejects.toBe(refusal);
   });
 });
 

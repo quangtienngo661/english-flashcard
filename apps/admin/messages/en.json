@@ -11,6 +11,12 @@
     "email-already-verified": "This email is already verified",
     "email-taken": "This email is already in use",
     "entry-in-use": "This word is in use and cannot be deleted yet.",
+    "eval-set-conflict": "Another admin has just frozen a version. The list of versions was reloaded.",
+    "eval-set-incomplete": "The version could not be frozen.",
+    "eval-set-mismatch": "The two runs are not on the same version of the example set, so they cannot be compared.",
+    "example-held-out": "A held-out example cannot be edited until it is opened.",
+    "example-not-held-out": "This example is no longer held-out. The list was reloaded.",
+    "expected-invalid": "The expected answer is not valid.",
     "export-too-large": "Too many rows to export, narrow the filters",
     "file-invalid": "The file is not valid",
     "file-too-large": "The file is too large (10 MB maximum)",
@@ -407,12 +413,47 @@
     "eval": {
       "operation": "Operation",
       "examples": "Examples ({count}/1,000)",
-      "examplesHint": "Up to 1,000 examples per operation. Test runs on the Prompt page and [Run example set] use these examples.",
+      "examplesHint": "Up to 1,000 examples per operation. A new example goes into dev or held-out to keep the held-out share; held-out examples stay hidden until you open them. Test runs on the Prompt page use dev examples only.",
+      "counts": "{dev} dev · {heldOut} held-out",
+      "heldOutHidden": "Held-out example: content hidden",
+      "split": { "dev": "dev", "heldOut": "held-out" },
+      "reveal": {
+        "button": "Open held-out example",
+        "title": "Open this held-out example?",
+        "body": "Once opened, this example moves to dev and is no longer part of the exam. Frozen versions keep it in their held-out part and record that it was seen.",
+        "confirm": "Open example"
+      },
+      "freeze": {
+        "button": "Freeze version",
+        "title": "Freeze version {version}?",
+        "body": "The set being edited ({dev} dev, {heldOut} held-out) is saved as version {version}. Editing examples afterwards does not change this version.",
+        "confirm": "Freeze version",
+        "incomplete": "The version could not be frozen.",
+        "missingExpected": "{count, plural, one {# example has} other {# examples have}} no expected answer.",
+        "noHeldOut": "The set has no held-out example.",
+        "rowMissing": "No expected answer yet"
+      },
+      "set": {
+        "label": "Example set to run",
+        "version": "Version {version}",
+        "working": "Set being edited (quick try only, cannot be compared)",
+        "workingShort": "Set being edited",
+        "legacy": "Before versions existed"
+      },
+      "sets": {
+        "title": "Frozen versions",
+        "empty": "No version yet.",
+        "version": "Version {version}",
+        "revealed": "{count, plural, one {# held-out example was} other {# held-out examples were}} seen",
+        "deleted": "Deleted from the set being edited",
+        "seen": "Seen",
+        "cols": { "version": "Version", "frozenAt": "Frozen at", "counts": "Examples", "seen": "Held-out seen" }
+      },
       "add": "Add example",
       "bulk": {
         "add": "Bulk import",
         "title": "Import many examples",
-        "hint": "One example per line, up to {max} per import. The first line names the columns: {fields}, and an optional note column. Pasting from a spreadsheet works too. A wrong line is skipped; the right lines are still imported.",
+        "hint": "One example per line, up to {max} per import. The first line names the columns: {fields}; the expected column (JSON, for example {example}) is required for an operation with an expected answer; the split column (dev or held_out) and the note column are optional. Pasting from a spreadsheet works too. A wrong line is skipped; the right lines are still imported.",
         "filePrompt": "Drop a file here",
         "fileHint": "CSV, TSV or JSON Lines, up to 2 MB",
         "choose": "Choose file",
@@ -443,6 +484,7 @@
       "examplesFailed": "Could not read the example set.",
       "cols": {
         "input": "Input",
+        "split": "Part",
         "note": "Note",
         "createdBy": "Added by",
         "actions": "Actions"
@@ -456,6 +498,10 @@
       "deleteConfirm": "Delete example",
       "toast": {
         "added": "Example added.",
+        "addedHeldOut": "Example added. It went into the held-out part, so it is hidden.",
+        "revealed": "Example opened. It moved to dev.",
+        "revealedDeleted": "Example opened. It was deleted from the set being edited, so it only remains in frozen versions.",
+        "frozen": "Version {version} frozen.",
         "saved": "Example saved.",
         "deleted": "Example deleted.",
         "stopped": "Run stopped.",
@@ -482,7 +528,20 @@
         "noteHint": "Optional, up to 500 characters.",
         "submitAdd": "Add example",
         "submitSave": "Save",
-        "tooMany": "Each operation can have at most 1,000 examples."
+        "tooMany": "Each operation can have at most 1,000 examples.",
+        "expected": {
+          "title": "Expected answer",
+          "forms": {
+            "label": "Accepted forms",
+            "hint": "Separated by commas. Remove the forms you do not want the sentence to use.",
+            "filled": "{count} forms filled in from the catalog.",
+            "notFound": "This word is not in the catalog. Type the accepted forms, separated by commas."
+          },
+          "lemma": "Lemma",
+          "partOfSpeech": "Part of speech",
+          "verdict": "Verdict",
+          "verdictPlaceholder": "Choose a verdict"
+        }
       },
       "run": {
         "title": "Run example set",
@@ -503,6 +562,7 @@
           "status": "Status",
           "progress": "Progress",
           "valid": "Valid",
+          "set": "Set",
           "prompt": "Prompt revision",
           "startedBy": "Started by"
         }
@@ -523,6 +583,7 @@
         "model": "Model",
         "prompt": "Prompt revision",
         "startedBy": "Started by",
+        "set": "Set",
         "draft": "Draft",
         "revision": "Revision {revision}",
         "latency": "{ms} ms",
@@ -546,9 +607,40 @@
           "status": "Status",
           "reason": "Reason",
           "output": "Output",
+          "rule": "Rules",
+          "expected": "Expected",
           "latency": "Time",
           "cost": "Cost"
+        },
+        "rule": {
+          "pass": "Pass",
+          "fail": "Fail: {problems}",
+          "skippedNotInCatalog": "Skipped: not in the catalog",
+          "skippedNoRules": "Skipped: no rules yet",
+          "skipped": "Skipped",
+          "notApplicable": "Not applicable"
+        },
+        "expectedResult": { "pass": "Pass", "fail": "Fail" },
+        "stats": {
+          "dev": "Dev: shape {shapePass}/{shapeDone} · rules {rulePass}/{ruleJudged} ({ruleSkipped} skipped) · expected {expectedPass}/{expectedJudged}",
+          "heldOut": "Held-out (totals only): shape {shapePass}/{shapeDone} · rules {rulePass}/{ruleJudged} ({ruleSkipped} skipped) · expected {expectedPass}/{expectedJudged}",
+          "transient": "{count, plural, one {# example failed} other {# examples failed}} temporarily and count as failing the shape.",
+          "heldOutHidden": "Held-out examples are not listed."
         }
+      },
+      "compare": {
+        "title": "Compare",
+        "select": "Compare with run (before)",
+        "choose": "Choose a run",
+        "option": "{time} · {model}",
+        "workingSet": "A run on the set being edited cannot be compared.",
+        "noOther": "No other run on this version to compare with yet.",
+        "cols": { "criterion": "Criterion", "devBefore": "Dev (before)", "devNow": "Dev (now)", "heldOutBefore": "Held-out (before)", "heldOutNow": "Held-out (now)" },
+        "rows": { "shape": "Shape", "rule": "Rules", "expected": "Expected" },
+        "devRegressions": "Dev examples that passed before and fail now ({count})",
+        "heldOutRegressions": "Held-out: {count, plural, one {# example} other {# examples}} passed before and fail now",
+        "noRegressions": "No example passed before and fails now.",
+        "criteria": { "shape": "shape", "rule": "rules", "expected": "expected" }
       },
       "fromPrompt": {
         "title": "Run example set",
@@ -589,6 +681,8 @@
       "revision": "Prompt revision {revision}",
       "untilDate": "Kept until {date}",
       "noContent": "Content no longer available",
+      "heldOut": "held-out",
+      "hiddenContent": "Content hidden",
       "view": "View",
       "viewFor": "View the content of attempt {attempt}",
       "content": { "title": "Call content", "request": "Request", "response": "Response" }
@@ -1402,7 +1496,8 @@
         "max_concurrent_calls": "Concurrent calls",
         "daily_provider_calls_cap": "Provider calls cap per day",
         "content_retention_days": "Keep call content for",
-        "usd_vnd_rate": "USD → VND rate"
+        "usd_vnd_rate": "USD → VND rate",
+        "eval_held_out_ratio": "Held-out share of the example set"
       },
       "identity": {
         "unverified_cleanup_days": "Delete accounts that never verified their email after"

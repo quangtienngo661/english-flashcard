@@ -1,21 +1,13 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { PRISMA_CLIENT } from '../../common/db/prisma.module.js';
 import type { PrismaClient } from '../../generated/prisma/client.js';
-import type { AiOperation, AiProviderName, AiResult } from '../ai.types.js';
+import type { AiOperation, AiProviderName } from '../ai.types.js';
 import type { PromptExample } from '../prompts/prompt-rules.js';
-
-/** One example's result inside `ai_eval_runs.items`; `skipped` = the example was deleted since the run was created. */
-export type EvalItem = {
-  example_id: string;
-  status: AiResult['status'] | 'skipped';
-  reason: string | null;
-  output: Record<string, unknown> | null;
-  raw_output: string | null;
-  latency_ms: number | null;
-  cost_usd: string | null;
-};
+import type { EvalSplit, ExpectedResult, RuleResult, RunItemStatus } from './eval.types.js';
 
 export type EvalRunStatus = 'queued' | 'running' | 'finished' | 'failed';
+
+type DecimalLike = { toString(): string };
 
 export type EvalRunRow = {
   id: string;
@@ -27,10 +19,8 @@ export type EvalRunRow = {
   maxOutputTokens: number | null;
   promptRevision: number | null;
   draft: { instructions: string; examples: PromptExample[] } | null;
-  exampleIds: string[];
   status: EvalRunStatus;
   total: number;
-  items: EvalItem[];
   startedBy: string;
   startedAt: Date | null;
   heartbeatAt: Date | null;
@@ -40,27 +30,89 @@ export type EvalRunRow = {
   avgLatencyMs: number | null;
   costUsd: string | null;
   costUnknownCount: number;
+  /** null = the working set (a quick try). */
+  setId: string | null;
+  /** USD per million tokens when the run was created; null when the model had no price. */
+  priceInput: number | null;
+  priceCachedInput: number | null;
+  priceOutput: number | null;
+  /** Made before nhóm B. */
+  legacy: boolean;
+};
+
+/** One example's snapshot and result inside a run (`ai_eval_run_items`). */
+export type EvalRunItemRow = {
+  id: string;
+  runId: string;
+  exampleId: string;
+  position: number;
+  split: EvalSplit;
+  /** null only for a result migrated from before nhóm B whose example was already deleted. */
+  input: Record<string, unknown> | null;
+  expected: Record<string, unknown> | null;
+  status: RunItemStatus;
+  reason: string | null;
+  output: Record<string, unknown> | null;
+  rawOutput: string | null;
+  rule: RuleResult | null;
+  expectedResult: ExpectedResult | null;
+  latencyMs: number | null;
+  costUsd: string | null;
+};
+
+/** What the job writes for one item once it is done (never `pending`). */
+export type ItemResult = {
+  status: Exclude<RunItemStatus, 'pending'>;
+  reason: string | null;
+  output: Record<string, unknown> | null;
+  raw_output: string | null;
+  latency_ms: number | null;
+  cost_usd: string | null;
+  rule: RuleResult | null;
+  expected_result: ExpectedResult | null;
 };
 
 type Raw = {
   id: string; operation: string; provider: string; model: string; effort: string | null; thinking: string | null;
-  max_output_tokens: number | null; prompt_revision: number | null; draft: unknown; example_ids: string[]; status: string; total: number;
-  items: unknown; started_by: string; started_at: Date | null; heartbeat_at: Date | null; finished_at: Date | null; error: string | null;
-  valid_count: number; avg_latency_ms: number | null; cost_usd: { toString(): string } | null; cost_unknown_count: number;
+  max_output_tokens: number | null; prompt_revision: number | null; draft: unknown; status: string; total: number;
+  started_by: string; started_at: Date | null; heartbeat_at: Date | null; finished_at: Date | null; error: string | null;
+  valid_count: number; avg_latency_ms: number | null; cost_usd: DecimalLike | null; cost_unknown_count: number;
+  set_id: string | null; price_input: DecimalLike | null; price_cached_input: DecimalLike | null; price_output: DecimalLike | null; legacy: boolean;
 };
+
+type RawItem = {
+  id: string; run_id: string; example_id: string; position: number; split: string; input: unknown; expected: unknown; status: string;
+  reason: string | null; output: unknown; raw_output: string | null; rule: unknown; expected_result: string | null; latency_ms: number | null;
+  cost_usd: DecimalLike | null;
+};
+
+const toNumber = (value: DecimalLike | null): number | null => (value === null ? null : Number(value.toString()));
 
 const toRow = (raw: Raw): EvalRunRow => ({
   id: raw.id, operation: raw.operation as AiOperation, provider: raw.provider as AiProviderName, model: raw.model, effort: raw.effort,
   thinking: raw.thinking as EvalRunRow['thinking'], maxOutputTokens: raw.max_output_tokens, promptRevision: raw.prompt_revision,
-  draft: raw.draft as EvalRunRow['draft'], exampleIds: raw.example_ids, status: raw.status as EvalRunStatus, total: raw.total,
-  items: raw.items as EvalItem[], startedBy: raw.started_by, startedAt: raw.started_at, heartbeatAt: raw.heartbeat_at,
+  draft: raw.draft as EvalRunRow['draft'], status: raw.status as EvalRunStatus, total: raw.total,
+  startedBy: raw.started_by, startedAt: raw.started_at, heartbeatAt: raw.heartbeat_at,
   finishedAt: raw.finished_at, error: raw.error, validCount: raw.valid_count, avgLatencyMs: raw.avg_latency_ms,
   costUsd: raw.cost_usd === null ? null : raw.cost_usd.toString(), costUnknownCount: raw.cost_unknown_count,
+  setId: raw.set_id, priceInput: toNumber(raw.price_input), priceCachedInput: toNumber(raw.price_cached_input), priceOutput: toNumber(raw.price_output),
+  legacy: raw.legacy,
 });
 
+const toItemRow = (raw: RawItem): EvalRunItemRow => ({
+  id: raw.id, runId: raw.run_id, exampleId: raw.example_id, position: raw.position, split: raw.split as EvalSplit,
+  input: raw.input as EvalRunItemRow['input'], expected: raw.expected as EvalRunItemRow['expected'], status: raw.status as RunItemStatus,
+  reason: raw.reason, output: raw.output as EvalRunItemRow['output'], rawOutput: raw.raw_output, rule: raw.rule as RuleResult | null,
+  expectedResult: raw.expected_result as ExpectedResult | null, latencyMs: raw.latency_ms,
+  costUsd: raw.cost_usd === null ? null : raw.cost_usd.toString(),
+});
+
+/** SQL NULL, not the JSON `null`, for an absent Json value. */
+const jsonOrNull = (value: unknown): string | null => (value === null || value === undefined ? null : JSON.stringify(value));
+
 /**
- * The job's writes to `ai_eval_runs` (design §10). Each is one conditional statement on the shared client, so no transaction is
- * open while a provider is called (R9) and a finished or failed run is never written again.
+ * The job's writes to `ai_eval_runs` and `ai_eval_run_items` (design §10). Each is one conditional statement on the shared client,
+ * so no transaction is open while a provider is called (R9) and a finished or failed run is never written again.
  */
 @Injectable()
 export class EvalRunsRepository {
@@ -82,11 +134,24 @@ export class EvalRunsRepository {
     return rows.length > 0;
   }
 
-  /** Each example is written as soon as it is done (B6E92): a later run of the job skips it (B6E93). */
-  async appendItem(id: string, item: EvalItem, now: Date): Promise<void> {
+  /** The examples of the run that have no result yet, in position order (B6E93: a resumed run skips the finished ones). */
+  async pendingItems(runId: string): Promise<EvalRunItemRow[]> {
+    const rows = await this.prisma.$queryRaw<RawItem[]>`
+      SELECT * FROM ai_eval_run_items WHERE run_id = ${runId}::uuid AND status = 'pending' ORDER BY position, id`;
+    return rows.map(toItemRow);
+  }
+
+  /** Each example is written as soon as it is done (B6E92), only while it is pending and its run is running. */
+  async completeItem(itemId: string, result: ItemResult, now: Date): Promise<void> {
     await this.prisma.$executeRaw`
-      UPDATE ai_eval_runs SET items = items || ${JSON.stringify([item])}::jsonb, heartbeat_at = ${now}
-      WHERE id = ${id}::uuid AND status = 'running'`;
+      WITH written AS (
+        UPDATE ai_eval_run_items i SET status = ${result.status}, reason = ${result.reason}, output = ${jsonOrNull(result.output)}::jsonb,
+          raw_output = ${result.raw_output}, rule = ${jsonOrNull(result.rule)}::jsonb, expected_result = ${result.expected_result},
+          latency_ms = ${result.latency_ms}, cost_usd = ${result.cost_usd}::numeric
+        FROM ai_eval_runs r
+        WHERE i.id = ${itemId}::uuid AND i.status = 'pending' AND r.id = i.run_id AND r.status = 'running'
+        RETURNING i.run_id)
+      UPDATE ai_eval_runs SET heartbeat_at = ${now} WHERE id IN (SELECT run_id FROM written)`;
   }
 
   /** The summary is computed from every stored item, so a resumed run counts the earlier part too. */
@@ -95,11 +160,11 @@ export class EvalRunsRepository {
       UPDATE ai_eval_runs r SET status = 'finished', finished_at = ${now}, heartbeat_at = ${now},
         valid_count = s.valid_count, avg_latency_ms = s.avg_latency_ms, cost_usd = s.cost_usd, cost_unknown_count = s.cost_unknown_count
       FROM (
-        SELECT count(*) FILTER (WHERE i->>'status' = 'succeeded')::int AS valid_count,
-          round(avg((i->>'latency_ms')::numeric))::int AS avg_latency_ms,
-          COALESCE(sum((i->>'cost_usd')::numeric), 0) AS cost_usd,
-          count(*) FILTER (WHERE i->>'status' <> 'skipped' AND i->>'cost_usd' IS NULL)::int AS cost_unknown_count
-        FROM ai_eval_runs, jsonb_array_elements(items) AS i WHERE id = ${id}::uuid
+        SELECT count(*) FILTER (WHERE status = 'succeeded')::int AS valid_count,
+          round(avg(latency_ms))::int AS avg_latency_ms,
+          COALESCE(sum(cost_usd), 0) AS cost_usd,
+          count(*) FILTER (WHERE status NOT IN ('skipped', 'pending') AND cost_usd IS NULL)::int AS cost_unknown_count
+        FROM ai_eval_run_items WHERE run_id = ${id}::uuid
       ) s
       WHERE r.id = ${id}::uuid AND r.status = 'running'`;
   }

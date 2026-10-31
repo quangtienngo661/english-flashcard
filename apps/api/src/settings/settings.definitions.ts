@@ -44,6 +44,8 @@ export type AppSettings = {
     /** `null` = no cap. */
     dailyProviderCallsCap: number | null;
     contentRetentionDays: number; usdVndRate: number;
+    /** Nhóm B (design §5.1, E10): the held-out share of a working eval set, 0.1–0.5, at most two decimals. */
+    evalHeldOutRatio: number;
   };
 };
 
@@ -63,7 +65,7 @@ export const SETTINGS_DEFAULTS: AppSettings = {
   },
   identity: { unverifiedCleanupDays: 7 },
   content: { privateWordsPerUser: 10000, sentencesPerSense: 20 },
-  ai: { callTimeoutSeconds: 10, maxConcurrentCalls: 50, dailyProviderCallsCap: 3000, contentRetentionDays: 7, usdVndRate: 26100 },
+  ai: { callTimeoutSeconds: 10, maxConcurrentCalls: 50, dailyProviderCallsCap: 3000, contentRetentionDays: 7, usdVndRate: 26100, evalHeldOutRatio: 0.3 },
 };
 
 /** Bounds are `ASSUMPTION` in design §9 (Bước 4: design 5.4); the admin page shows them next to each field. */
@@ -121,11 +123,15 @@ export const SETTINGS_BOUNDS = {
     daily_provider_calls_cap: { min: 0, max: 1000000, nullable: true },
     content_retention_days: { min: 0, max: 30 },
     usd_vnd_rate: { min: 10000, max: 100000 },
+    eval_held_out_ratio: { min: 0.1, max: 0.5 },
   },
 } as const;
 
 const b = SETTINGS_BOUNDS;
 const intIn = (bounds: { min: number; max: number }) => z.number().int().min(bounds.min).max(bounds.max);
+/** A number inside the bounds with at most two decimals (M1-T2; M3's `judge_agreement_min` reuses it). */
+export const ratioIn = (bounds: { min: number; max: number }) => z.number().min(bounds.min).max(bounds.max)
+  .refine((value) => Math.abs(value * 100 - Math.round(value * 100)) < 1e-9, 'Expected at most two decimals');
 const minutes = (hhmm: string) => Number(hhmm.slice(0, 2)) * 60 + Number(hhmm.slice(3, 5));
 const sendTime = z.string().refine((value) => /^([01]\d|2[0-3]):[0-5]\d$/.test(value)
   && minutes(value) % b.reminders.send_time.step_minutes === 0
@@ -189,6 +195,7 @@ export const settingsValuesPatchSchema = z.strictObject({
     daily_provider_calls_cap: intIn(b.ai.daily_provider_calls_cap).nullable().optional(),
     content_retention_days: intIn(b.ai.content_retention_days).optional(),
     usd_vnd_rate: intIn(b.ai.usd_vnd_rate).optional(),
+    eval_held_out_ratio: ratioIn(b.ai.eval_held_out_ratio).optional(),
   }).optional(),
 });
 export type SettingsValuesPatch = z.infer<typeof settingsValuesPatchSchema>;
@@ -238,6 +245,7 @@ const FIELDS = [
   ['ai', 'daily_provider_calls_cap', 'dailyProviderCallsCap'],
   ['ai', 'content_retention_days', 'contentRetentionDays'],
   ['ai', 'usd_vnd_rate', 'usdVndRate'],
+  ['ai', 'eval_held_out_ratio', 'evalHeldOutRatio'],
 ] as const;
 
 type Section = keyof AppSettings;

@@ -66,19 +66,17 @@ export async function practiceCandidates(prisma: Prisma.TransactionClient | Pris
   return new Map(rows.map((row) => [row.sense_id, candidate(row, nativeLanguage)]));
 }
 
-/** Everything one question needs: visible senses only, one statement. */
-export async function practiceSenses(prisma: Prisma.TransactionClient | PrismaClient, viewerId: string, senseIds: string[], nativeLanguage: NativeLanguage):
-  Promise<Map<string, PracticeSense>> {
-  if (senseIds.length === 0) return new Map();
-  const rows = await prisma.$queryRaw<SenseRow[]>`
-    SELECT ${columns}, s.context_label, r.examples, r.accepted_forms, e.pos, displayed.level,
+/** The full select of a practice sense (columns, joins, displayed level); the caller adds WHERE and ORDER BY. */
+const senseSelect = Prisma.sql`SELECT ${columns}, s.context_label, r.examples, r.accepted_forms, e.pos, displayed.level,
       s.live_revision_id::text AS live_revision_id,
       COALESCE((SELECT jsonb_agg(jsonb_build_object('text', v.text, 'accepted', v.accepted_as_answer) ORDER BY v.text COLLATE "C")
         FROM entry_variants v WHERE v.entry_id = e.id), '[]'::jsonb) AS variants,
       COALESCE((SELECT array_agg(w.form ORDER BY w.form COLLATE "C")
         FROM word_form_additions w WHERE w.lemma_key = lower(e.lemma)), '{}'::text[]) AS extra_forms
-    FROM ${from} LEFT JOIN LATERAL (${displayedLevel}) displayed ON true WHERE ${where(viewerId, senseIds)}`;
-  return new Map(rows.map((row) => [row.sense_id, {
+    FROM ${from} LEFT JOIN LATERAL (${displayedLevel}) displayed ON true`;
+
+function practiceSense(row: SenseRow, nativeLanguage: NativeLanguage): PracticeSense {
+  return {
     ...candidate(row, nativeLanguage),
     // Private labels (p2, p3, …) only keep the live-sense index unique; they are never shown (as cardContent).
     context_label: row.scope === 'private' ? null : row.context_label,
@@ -90,7 +88,30 @@ export async function practiceSenses(prisma: Prisma.TransactionClient | PrismaCl
     level: row.level,
     live_revision_id: row.live_revision_id,
     extra_forms: row.extra_forms,
-  }]));
+  };
+}
+
+/** Everything one question needs: visible senses only, one statement. */
+export async function practiceSenses(prisma: Prisma.TransactionClient | PrismaClient, viewerId: string, senseIds: string[], nativeLanguage: NativeLanguage):
+  Promise<Map<string, PracticeSense>> {
+  if (senseIds.length === 0) return new Map();
+  const rows = await prisma.$queryRaw<SenseRow[]>`${senseSelect} WHERE ${where(viewerId, senseIds)}`;
+  return new Map(rows.map((row) => [row.sense_id, practiceSense(row, nativeLanguage)]));
+}
+
+/**
+ * The open catalog senses of a lemma, for eval rules (nhóm B design §5.2): no viewer, so no private entry. The lemma is trimmed and
+ * compared in lower case (`entries_catalog_lower_lemma_idx`); `pos` null takes every part of speech.
+ */
+export async function catalogPracticeSensesByLemma(prisma: Prisma.TransactionClient | PrismaClient, lemma: string, pos: string | null,
+  nativeLanguage: NativeLanguage): Promise<PracticeSense[]> {
+  const key = lemma.trim();
+  if (!key) return [];
+  const rows = await prisma.$queryRaw<SenseRow[]>`${senseSelect}
+    WHERE e.scope = 'catalog' AND lower(e.lemma) = lower(${key}) ${pos === null ? Prisma.empty : Prisma.sql`AND e.pos = ${pos}`}
+      AND s.state = 'open' AND s.live_revision_id IS NOT NULL
+    ORDER BY e.pos, s.created_at, s.id`;
+  return rows.map((row) => practiceSense(row, nativeLanguage));
 }
 
 /** The other senses of the same entry the viewer can see (wrong meanings of design §7.4, D17 step 1): one statement. */

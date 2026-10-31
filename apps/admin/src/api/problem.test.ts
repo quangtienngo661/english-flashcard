@@ -63,6 +63,27 @@ describe('problem mapping', () => {
     expect(KNOWN_ERROR_SLUGS).toContain('entry-in-use');
   });
 
+  it('eval-set-incomplete: missing_expected (strings only) and no_held_out (a boolean) are kept; other shapes are dropped', async () => {
+    const kept = await toApiError(problemResponse(422, {
+      type: 'http://x/problems/eval-set-incomplete', status: 422, title: 'e', missing_expected: ['e1', 4, 'e2'], no_held_out: true,
+    }));
+    expect(kept.problem.slug).toBe('eval-set-incomplete');
+    expect(kept.problem.missing_expected).toEqual(['e1', 'e2']);
+    expect(kept.problem.no_held_out).toBe(true);
+    expect(errorMessageKey(kept.problem)).toBe('errors.eval-set-incomplete');
+    const dropped = await toApiError(problemResponse(422, {
+      type: 'http://x/problems/eval-set-incomplete', status: 422, title: 'e', missing_expected: 'e1', no_held_out: 'yes',
+    }));
+    expect(dropped.problem.missing_expected).toBeUndefined();
+    expect(dropped.problem.no_held_out).toBeUndefined();
+  });
+
+  it('the golden-set slugs each have a message of their own', () => {
+    for (const slug of ['eval-set-conflict', 'eval-set-incomplete', 'eval-set-mismatch', 'example-held-out', 'example-not-held-out', 'expected-invalid']) {
+      expect(errorMessageKey(problem({ slug, status: 409 }))).toBe(`errors.${slug}`);
+    }
+  });
+
   it('a non-problem body still becomes an ApiError with the status and the generic message', async () => {
     const err = await toApiError(new Response('<html>bad gateway</html>', { status: 502 }));
     expect(err.problem.status).toBe(502);

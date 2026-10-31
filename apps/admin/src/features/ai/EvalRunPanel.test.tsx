@@ -5,7 +5,7 @@ import vi from '../../../messages/vi.json';
 import { problem } from '../../auth/test-support';
 import { renderApp } from '../staff/test-utils';
 import type { EvalRunDetail } from './ai-api';
-import { URL, evalExample, evalRoutes, evalRun } from './prompt-test-support';
+import { URL, evalRoutes, evalRun, runItem, runStats } from './prompt-test-support';
 
 const t = vi.ai.eval;
 const PATH = '/ai/eval/runs/aaaaaaaa-0000-4000-8000-000000000001';
@@ -90,22 +90,6 @@ describe('EvalRunPanel (A/83)', () => {
     expect(r.calls.filter((c) => c.path.startsWith('/v1/admin/ai/eval/runs/'))).toHaveLength(0);
   });
 
-  it('when the example set cannot be read, the example column shows "—", not "Ví dụ đã xóa"', async () => {
-    const items: EvalRunDetail['items'] = [
-      { example_id: 'e1', status: 'succeeded', reason: null, output: { sentence: 'I ___ home.' }, raw_output: null, latency_ms: 700, cost_usd: null },
-    ];
-    renderApp(PATH, evalRoutes({
-      [URL.examples()]: () => problem(500, ''),
-      [URL.run()]: () => Response.json(evalRun({ items })),
-    }));
-    const scope = within(await panel());
-    const results = await scope.findByRole('region', { name: t.detail.results });
-    const row = within(results).getAllByRole('row')[1];
-    expect(row).toHaveTextContent('{"sentence":"I ___ home."}');
-    await waitFor(() => expect(row.querySelector('td')).toHaveTextContent(t.detail.none));
-    expect(results).not.toHaveTextContent(t.detail.deletedExample);
-  });
-
   it('a run stopped by an admin (failed, error "cancelled") reads "Đã dừng" and its own sentence, not "Lỗi: cancelled"; a real failure keeps "Lỗi"', async () => {
     renderApp(PATH, evalRoutes({ [URL.run()]: () => Response.json(evalRun({ status: 'failed', done: 3, error: 'cancelled' })) }));
     const scope = within(await panel());
@@ -115,25 +99,52 @@ describe('EvalRunPanel (A/83)', () => {
     expect(scope.queryByText(t.detail.failed.replace('{error}', 'cancelled'))).not.toBeInTheDocument();
   });
 
-  it('per-example results: input looked up in the set, status, reason, output; the raw output behind [Xem đầu ra gốc]; a deleted example says so', async () => {
-    const items: EvalRunDetail['items'] = [
-      { example_id: 'e1', status: 'succeeded', reason: null, output: { sentence: 'I ___ home.' }, raw_output: '{"sentence":"I ___ home."}', latency_ms: 700, cost_usd: '0.00100000' },
-      { example_id: 'gone', status: 'permanent_failure', reason: 'invalid-shape', output: null, raw_output: 'not json at all', latency_ms: 300, cost_usd: null },
+  it('the results come from the run itself: the input of each example is its snapshot, whatever the example list says', async () => {
+    renderApp(PATH, evalRoutes({
+      [URL.examples()]: () => problem(500, 'internal-error'),
+      [URL.run()]: () => Response.json(evalRun()),
+      [URL.runItems()]: () => Response.json({
+        items: [runItem({ example_id: 'e1', input: { word: 'go', part_of_speech: 'verb' } })],
+        stats: runStats({ total: 1, shape_pass: 1, rule_pass: 1, expected_pass: 1 }),
+      }),
+    }));
+    const scope = within(await panel());
+    const results = await scope.findByRole('region', { name: t.detail.results });
+    await waitFor(() => expect(within(results).getAllByRole('row')[1]).toHaveTextContent('go · verb'));
+    expect(results).not.toHaveTextContent(t.detail.deletedExample);
+  });
+
+  it('an item migrated from an old run whose example is gone has no input: it reads "Ví dụ đã xóa"', async () => {
+    renderApp(PATH, evalRoutes({
+      [URL.run()]: () => Response.json(evalRun()),
+      [URL.runItems()]: () => Response.json({ items: [runItem({ input: null, rule: null, expected_result: null })], stats: runStats({ total: 1, shape_pass: 1, expected_none: 1 }) }),
+    }));
+    const results = await within(await panel()).findByRole('region', { name: t.detail.results });
+    expect(within(results).getAllByRole('row')[1]).toHaveTextContent(t.detail.deletedExample);
+  });
+
+  it('per-example results: status, reason, output, rule and expected result; the raw output behind [Xem đầu ra gốc]', async () => {
+    const items = [
+      runItem({ example_id: 'e1', position: 0, output: { sentence: 'I ___ home.' }, raw_output: '{"sentence":"I ___ home."}', latency_ms: 700, cost_usd: '0.00100000' }),
+      runItem({
+        example_id: 'e2', position: 1, input: { word: 'come', part_of_speech: 'verb' }, status: 'permanent_failure', reason: 'invalid-shape', output: null,
+        raw_output: 'not json at all', rule: null, expected_result: null, latency_ms: 300, cost_usd: null,
+      }),
     ];
     renderApp(PATH, evalRoutes({
-      [URL.examples()]: () => Response.json({ items: [evalExample('e1', 'go')] }),
-      [URL.run()]: () => Response.json(evalRun({ status: 'running', done: 2, items })),
+      [URL.run()]: () => Response.json(evalRun({ status: 'running', done: 2 })),
+      [URL.runItems()]: () => Response.json({ items, stats: runStats({ total: 2, shape_pass: 1, shape_fail: 1, rule_pass: 1, expected_pass: 1, expected_none: 0 }) }),
     }));
     const scope = within(await panel());
     const results = await scope.findByRole('region', { name: t.detail.results });
     await waitFor(() => expect(within(results).getAllByRole('row')[1]).toHaveTextContent('go · verb'));
     const [, first, second] = within(results).getAllByRole('row');
     expect(within(results).getAllByRole('columnheader').map((h) => h.textContent)).toEqual([
-      t.detail.cols.example, t.detail.cols.status, t.detail.cols.reason, t.detail.cols.output, t.detail.cols.latency, t.detail.cols.cost,
+      t.detail.cols.example, t.detail.cols.status, t.detail.cols.reason, t.detail.cols.output, t.detail.cols.rule, t.detail.cols.expected, t.detail.cols.latency, t.detail.cols.cost,
     ]);
     expect(first).toHaveTextContent(vi.ai.prompts.test.statuses.succeeded);
     expect(first).toHaveTextContent('{"sentence":"I ___ home."}');
-    expect(second).toHaveTextContent(t.detail.deletedExample);
+    expect(second).toHaveTextContent('come · verb');
     expect(second).toHaveTextContent(vi.ai.prompts.test.statuses.permanent_failure);
     expect(second).toHaveTextContent('invalid-shape');
     const details = within(second).getByText(t.detail.rawOutput).closest('details') as HTMLDetailsElement;
@@ -141,6 +152,108 @@ describe('EvalRunPanel (A/83)', () => {
     await userEvent.click(within(second).getByText(t.detail.rawOutput));
     expect(details.open).toBe(true);
     expect(within(details).getByText('not json at all')).toBeInTheDocument();
+  });
+
+  const SET_RUN = { set_id: 'S1', set_version: 3 };
+  const STATS_RUN = {
+    items: [
+      runItem({ example_id: 'd1', position: 0, rule: { status: 'fail', problems: ['unknown-form:deployment'], reason: null }, expected_result: 'pass' }),
+      runItem({ example_id: 'd2', position: 1, input: { word: 'lit', part_of_speech: 'adjective' }, rule: { status: 'skipped', problems: [], reason: 'not-in-catalog' }, expected_result: 'pass' }),
+      runItem({ example_id: 'd3', position: 2, input: { word: 'run', part_of_speech: 'verb' }, status: 'transient_failure', reason: 'timeout', output: null, rule: null, expected_result: null }),
+    ],
+    stats: runStats(
+      {
+        total: 3, shape_pass: 2, shape_fail: 1, shape_transient: 1, rule_pass: 0, rule_fail: 1, rule_skipped: 1, rule_not_applicable: 0,
+        expected_pass: 2, expected_fail: 0, expected_none: 0, failing: 2,
+      },
+      { total: 2, shape_pass: 2, rule_pass: 1, rule_skipped: 1, expected_pass: 1, expected_fail: 1 },
+    ),
+  };
+
+  it('rule and expected result per example, and the totals of dev and of held-out', async () => {
+    renderApp(PATH, evalRoutes({
+      [URL.run()]: () => Response.json(evalRun({ ...SET_RUN, total: 5, done: 5 })),
+      [URL.runItems()]: () => Response.json(STATS_RUN),
+    }));
+    const scope = within(await panel());
+    const results = await scope.findByRole('region', { name: t.detail.results });
+    await waitFor(() => expect(within(results).getAllByRole('row')).toHaveLength(4));
+    const [, first, second, third] = within(results).getAllByRole('row');
+    expect(first).toHaveTextContent('Không đạt: unknown-form:deployment');
+    expect(first).toHaveTextContent(t.detail.expectedResult.pass);
+    expect(second).toHaveTextContent('Bỏ qua: không có trong kho');
+    expect(third).toHaveTextContent(t.detail.none);
+    expect(within(results).getByText('Dev: khuôn 2/3 · luật 0/1 (1 bỏ qua) · mong đợi 2/2')).toBeInTheDocument();
+    expect(within(results).getByText('Held-out (chỉ số tổng): khuôn 2/2 · luật 1/1 (1 bỏ qua) · mong đợi 1/2')).toBeInTheDocument();
+    expect(within(results).getByText('1 ví dụ lỗi tạm thời, tính là không đạt khuôn.')).toBeInTheDocument();
+    expect(within(results).getByText(t.detail.stats.heldOutHidden)).toBeInTheDocument();
+  });
+
+  it.each([
+    [{ status: 'pass', problems: [], reason: null }, 'Đạt'],
+    [{ status: 'skipped', problems: [], reason: 'no-rules' }, 'Bỏ qua: chưa có luật'],
+    [{ status: 'not_applicable', problems: [], reason: null }, 'Không áp dụng'],
+    [{ status: 'fail', problems: ['a', 'b'], reason: null }, 'Không đạt: a, b'],
+  ] as const)('the rule cell of %j reads "%s"', async (rule, text) => {
+    renderApp(PATH, evalRoutes({
+      [URL.run()]: () => Response.json(evalRun()),
+      [URL.runItems()]: () => Response.json({ items: [runItem({ rule: { ...rule, problems: [...rule.problems] }, expected_result: 'fail' })], stats: runStats({ total: 1, shape_pass: 1 }) }),
+    }));
+    const results = await within(await panel()).findByRole('region', { name: t.detail.results });
+    await waitFor(() => expect(within(results).getAllByRole('row')).toHaveLength(2));
+    const row = within(results).getAllByRole('row')[1];
+    expect(row).toHaveTextContent(text);
+    expect(row).toHaveTextContent(t.detail.expectedResult.fail);
+  });
+
+  it('a run with no held-out example shows no held-out line and no transient-failure line', async () => {
+    renderApp(PATH, evalRoutes({
+      [URL.run()]: () => Response.json(evalRun()),
+      [URL.runItems()]: () => Response.json({ items: [runItem()], stats: runStats({ total: 1, shape_pass: 1, rule_pass: 1, expected_pass: 1 }) }),
+    }));
+    const results = await within(await panel()).findByRole('region', { name: t.detail.results });
+    expect(await within(results).findByText('Dev: khuôn 1/1 · luật 1/1 (0 bỏ qua) · mong đợi 1/1')).toBeInTheDocument();
+    expect(within(results).queryByText(/Held-out/)).not.toBeInTheDocument();
+    expect(within(results).queryByText(/lỗi tạm thời/)).not.toBeInTheDocument();
+  });
+
+  it('the line "Bộ" names the version the run took its examples from, "Bộ đang soạn" or "Trước khi có phiên bản"', async () => {
+    renderApp(PATH, evalRoutes({ [URL.run()]: () => Response.json(evalRun({ ...SET_RUN })) }));
+    await panel();
+    expect(await screen.findByText(t.set.version.replace('{version}', '3'), { selector: 'dd' })).toBeInTheDocument();
+  });
+
+  it.each([
+    [{ set_id: null, set_version: null, legacy: false }, 'working'],
+    [{ set_id: null, set_version: null, legacy: true }, 'legacy'],
+  ] as const)('the line "Bộ" of %j', async (over, key) => {
+    renderApp(PATH, evalRoutes({ [URL.run()]: () => Response.json(evalRun({ ...over })) }));
+    await panel();
+    const text = key === 'working' ? t.set.workingShort : t.set.legacy;
+    expect(await screen.findByText(text, { selector: 'dd' })).toBeInTheDocument();
+  });
+
+  it('the results are read again when the run moves on (done changes) and once more when it ends', async () => {
+    vitest.useFakeTimers({ shouldAdvanceTime: true });
+    const replies: Partial<EvalRunDetail>[] = [{ status: 'running', done: 4 }, { status: 'running', done: 12 }, { status: 'finished', done: 20 }];
+    let n = 0;
+    const r = renderApp(PATH, evalRoutes({ [URL.run()]: () => Response.json(evalRun(replies[Math.min(n++, replies.length - 1)])) }));
+    const ITEMS = '/v1/admin/ai/eval/runs/aaaaaaaa-0000-4000-8000-000000000001/items';
+    await panel();
+    await waitFor(() => expect(r.count('GET', ITEMS)).toBe(1));
+    await act(async () => { await vitest.advanceTimersByTimeAsync(2000); });
+    await waitFor(() => expect(r.count('GET', ITEMS)).toBe(2));
+    await act(async () => { await vitest.advanceTimersByTimeAsync(2000); });
+    await waitFor(() => expect(r.count('GET', ITEMS)).toBe(3));
+    await act(async () => { await vitest.advanceTimersByTimeAsync(10_000); });
+    expect(r.count('GET', ITEMS)).toBe(3);
+  });
+
+  it('results that cannot be read say so with [Thử lại]; the rest of the panel stays', async () => {
+    renderApp(PATH, evalRoutes({ [URL.run()]: () => Response.json(evalRun()), [URL.runItems()]: () => problem(500, 'internal-error') }));
+    const scope = within(await panel());
+    expect(await scope.findByRole('button', { name: vi.common.retry })).toBeInTheDocument();
+    expect(field(t.detail.progress)).toHaveTextContent('20/20');
   });
 });
 

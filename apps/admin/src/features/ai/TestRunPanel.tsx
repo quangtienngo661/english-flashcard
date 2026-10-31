@@ -9,7 +9,7 @@ import { Banner } from '../../ui/Banner';
 import { Button } from '../../ui/Button';
 import { Checkbox } from '../../ui/Checkbox';
 import {
-  aiKeys, getTestQuota, listExamples, runTest, type AiOperation, type PromptExample, type TestResult, type TestStatus,
+  aiKeys, getTestQuota, isDevExample, listExamples, runTest, type AiOperation, type PromptExample, type TestResult, type TestStatus,
 } from './ai-api';
 import { useAiFormat } from './useAiFormat';
 
@@ -48,14 +48,15 @@ export function TestRunPanel({ op, prepare, showViolations }: Props) {
   const errorDetails = useErrorDetails();
   const format = useAiFormat();
   const quota = useQuery({ queryKey: aiKeys.testQuota(), queryFn: () => getTestQuota(api) });
-  const examples = useQuery({ queryKey: aiKeys.examples(op), queryFn: () => listExamples(api, op) });
+  // A prompt test takes dev examples only (design §5.1): a held-out example is neither listed nor counted.
+  const examples = useQuery({ queryKey: aiKeys.examples(op), queryFn: () => listExamples(api, op), select: (reply) => reply.items.filter(isDevExample) });
   const [chosen, setChosen] = useState<ReadonlySet<string>>(new Set());
   const [result, setResult] = useState<TestResult | null>(null);
   const [failure, setFailure] = useState<Failure | null>(null);
   const [pending, setPending] = useState(false);
   const busy = useRef(false);
 
-  const set = examples.data?.items ?? [];
+  const set = examples.data ?? [];
   const chosenIds = set.filter((example) => chosen.has(example.id)).map((example) => example.id);
   const runsWith =
     chosenIds.length > 0 ? t('ai.prompts.test.withSelected', { count: chosenIds.length })

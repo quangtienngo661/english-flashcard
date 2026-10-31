@@ -31,7 +31,7 @@ function setup(rows: { health?: unknown[]; outcomes?: unknown[]; learnerDays?: u
       return rows.learnerDays ?? [];
     }),
   } as unknown as PrismaClient;
-  const service = new ReportsService(prisma, {} as never, {} as never, {} as never, {} as never);
+  const service = new ReportsService(prisma, {} as never, {} as never, {} as never, {} as never, {} as never);
   vi.spyOn(service, 'status').mockResolvedValue(STATUS);
   const costs = vi.spyOn(service, 'costs').mockImplementation(async (query) => ({
     items: query.group_by === 'day' ? [{ key: '2026-10-19', ...totals(5, '0.00200000', 52) }] : [{ key: query.group_by, ...totals(5, '0.00200000', 52) }],
