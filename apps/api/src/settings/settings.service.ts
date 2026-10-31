@@ -6,9 +6,10 @@ import { ProblemDetailsException } from '../common/problem-details/problem-detai
 import { Prisma, type PrismaClient } from '../generated/prisma/client.js';
 import { IdentityService } from '../identity/profile/identity.service.js';
 import {
-  applyPatch, changedFields, crossFieldViolations, withDefaults,
+  apiValueOf, applyPatch, changedFields, crossFieldViolations, SETTINGS_DEFAULTS, withDefaults,
   type AppSettings, type SettingsValuesPatch,
 } from './settings.definitions.js';
+import { settingValueAt } from './setting-history.js';
 
 const GLOBAL_KEY = 'global';
 const transactionOptions = { timeout: 10_000, maxWait: 5_000 };
@@ -81,6 +82,22 @@ export class SettingsService {
       if (isUniqueViolation(error)) throw versionConflict();
       throw error;
     }
+  }
+
+  /**
+   * The value setting `key` (`<section>.<api_key>`) had at each instant, in the order of `instants`: the AI dashboard measures every day
+   * against the cap of that day (nhóm B design §8.1, B44). One read of the key's history and one of the current values for all instants.
+   */
+  async valuesAt(key: string, instants: Date[]): Promise<unknown[]> {
+    if (apiValueOf(SETTINGS_DEFAULTS, key) === undefined) throw new Error(`Unknown setting key ${key}`);
+    const [changes, { values }] = await Promise.all([
+      this.prisma.appSettingChange.findMany({
+        where: { key }, orderBy: [{ changedAt: 'asc' }, { id: 'asc' }], select: { oldValue: true, newValue: true, changedAt: true },
+      }),
+      this.current(),
+    ]);
+    const current = apiValueOf(values, key);
+    return instants.map((instant) => settingValueAt(changes, current, instant));
   }
 
   async history(pageSize: number, pageToken?: string): Promise<{ items: SettingChangeView[]; next_page_token: string | null }> {

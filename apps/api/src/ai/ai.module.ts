@@ -38,6 +38,7 @@ import { ModelsService } from './models/models.service.js';
 import { OperationSettingsService } from './models/operation-settings.service.js';
 import { PromptsRepository } from './prompts/prompts.repository.js';
 import { PromptsService } from './prompts/prompts.service.js';
+import { DashboardQualityService } from './reports/dashboard-quality.service.js';
 import { ReportsService } from './reports/reports.service.js';
 import { AdminSpend } from './runner/admin-spend.service.js';
 import { CallLedger } from './runner/call-ledger.service.js';
@@ -59,7 +60,7 @@ import { SelectionReader } from './runner/selection.js';
     ReadinessService, OperationsRepository, ConcurrencyLimit, AdminSpend,
     // One queue per process (design §8.4); its limit is the one the runner read last.
     { provide: CallQueue, useFactory: (limit: ConcurrencyLimit) => new CallQueue(() => limit.value), inject: [ConcurrencyLimit] },
-    RunnerService, AiService, PromptsService, ReportsService,
+    RunnerService, AiService, PromptsService, ReportsService, DashboardQualityService,
     EvalExamplesService, EvalRunsService, EvalRunsRepository, EvalJob, EvalQueue, EvalRulesRegistry, EvalSetsService, HeldOutReader, ConfigsService, PublishService, LiveConfigReader, IdempotencyInterceptor, AiMaintenance, AiAccountEraser,
     JudgesService, JudgePassesService, JudgePassesRepository, JudgeScoresReader, JudgeJob, LabelsService, JudgeAgreement, RealPassesReader,
   ],

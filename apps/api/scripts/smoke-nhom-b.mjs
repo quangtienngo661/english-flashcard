@@ -14,6 +14,7 @@
 // a second admin with a fresh `user.write` budget (30 a minute per user): a 429 wait would otherwise serialize the race or outlast the run.
 // `partM3()` runs as a third admin (it starts 5 eval runs) and sets `ai.admin_daily_usd_cap` to null for good: a part after it is never capped.
 // `partM4()` runs as a fourth admin (a real-judge pass spends no `ai.test` hit) and lets a fifth, the publisher, publish three configs.
+// `partM5()` runs as a sixth admin (its eval runs spend its own `ai.test` hits) and reads the dashboard against psql.
 // A failing step is reported and the run goes on with the next one; the exit code is 0 only when every step matched.
 import { execFile, execFileSync } from 'node:child_process';
 import { randomInt, randomUUID } from 'node:crypto';
@@ -1921,6 +1922,454 @@ async function partM4() {
   }
 }
 
+// =====================================================================================================================
+// M5 — dashboard (design K5, plan M5-T11, design §13 "đọc dashboard"): every block the three dashboard endpoints gained in M5 is read after the
+// real flows of M1–M4 and compared with what psql says, never with something the step itself wrote into the read under test. The part acts as a sixth
+// admin A6 (its two eval runs and the extra runs of M5.5 spend its own `ai.test` hits). It uses what `partM4()` left: the seeded judge J on
+// `fake:bad-form` (every verdict `fail_major`), `S.editor` (E, an editor with AI questions it never reported), `S.learner` (L), the live configs on
+// `fake:ok`, the newest frozen set of generate_cloze and the finished real passes. It changes some settings (the admin USD cap to null, the judge
+// calibration limits, `entitlements.ai_daily_cap` twice) and puts them back; the older history rows it inserts for M5.8 are deleted again, the labels
+// it makes in M5.5 too. It leaves behind: J with one more revision (its max_output_tokens changed), a few more finished eval runs on the live cloze
+// config (each judged by that revision), one more confirmed AI report of E, the settings as it found them (the USD cap null), `S.editor` an editor.
+async function partM5() {
+  const op = 'generate_cloze';
+  const ai = '/v1/admin/ai';
+  const DASHBOARD = `${ai}/dashboard`;
+  const QUALITY = '/v1/admin/practice/ai-quality';
+  const DAYS = '/v1/admin/entitlements/ai-usage/days';
+  const T = {};
+  const outer = { admin: S.admin, adminId: S.adminId };
+
+  const canon = (value) => (Array.isArray(value) ? `[${value.map(canon).join(',')}]`
+    : value !== null && typeof value === 'object'
+      ? `{${Object.keys(value).sort().map((key) => `${JSON.stringify(key)}:${canon(value[key])}`).join(',')}}` : JSON.stringify(value));
+  const rows = (sql) => psql(sql).split(/\r?\n/).filter(Boolean).map((line) => line.split('|'));
+  /** A timestamptz as the API prints it (ISO, milliseconds, UTC). */
+  const iso = (column) => `to_char(${column} AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')`;
+  const vnDate = (offset = 0) => new Date(Date.now() + 7 * 3_600_000 + offset * 86_400_000).toISOString().slice(0, 10);
+  const zero = () => ({ pass: 0, fail_major: 0, fail_minor: 0, unscored: 0 });
+  const add = (counts, verdict, n) => { counts[verdict === 'null' || verdict === null ? 'unscored' : verdict] += n; return counts; };
+  const byKey = (list) => [...list].sort((a, b) => (canon(a) < canon(b) ? -1 : canon(a) > canon(b) ? 1 : 0));
+
+  const dashboard = (as = S.admin) => want(api('GET', DASHBOARD, { as }), 200, 'GET dashboard');
+  const quality = (as = S.admin) => want(api('GET', QUALITY, { as }), 200, 'GET ai-quality');
+  const daysOf = (from, to, as = S.admin) => want(api('GET', `${DAYS}?from=${from}&to=${to}`, { as }), 200, `GET ai-usage/days ${from}..${to}`);
+  const getSettings = () => want(asAdmin('GET', '/v1/admin/settings'), 200, 'GET settings');
+  const putValues = async (values) => {
+    const current = await getSettings();
+    return want(asAdmin('PUT', '/v1/admin/settings', { idem: true, body: { version: current.version, values } }), 200, `PUT settings ${j(values)}`);
+  };
+
+  // Judges (as the helpers of partM3 and partM4, which are local to those parts).
+  const listJudges = async () => (await want(asAdmin('GET', `${ai}/judges`), 200, 'GET judges')).items;
+  const getJudge = async (id) => {
+    const found = (await listJudges()).find((judge) => judge.id === id);
+    check(found, `judge ${id} is not listed`);
+    return found;
+  };
+  const saveJudge = (view, changes) => want(asAdmin('PUT', `${ai}/judges/${view.id}`, { body: {
+    expected_revision: view.latest.revision, name: view.name, operations: view.operations, active: view.active, criteria: view.latest.criteria,
+    instructions: view.latest.instructions, examples: view.latest.examples, model_ref: view.latest.model?.id ?? null, effort: view.latest.effort,
+    thinking: view.latest.thinking, max_output_tokens: view.latest.max_output_tokens, ...changes } }), 200, `save judge ${view.name}`);
+  const passDone = (id) => waitFor(() => want(asAdmin('GET', `${ai}/judge-passes/${id}`), 200, 'GET judge pass'),
+    (pass) => pass.status === 'finished' || pass.status === 'failed', `judge pass ${id} ending`, 60_000);
+  /** A judge pass of the judge's newest revision over a finished run; resolves with the finished pass. */
+  async function judgeRun(runId) {
+    const started = await want(asAdmin('POST', `${ai}/eval/runs/${runId}/judge-passes`, { idem: true, body: { judge_id: T.J } }), 202, `judge run ${runId}`);
+    const pass = await passDone(started.id);
+    check(pass.status === 'finished' && pass.error === null && pass.judged === pass.total && pass.total > 0, `judge pass ${j({ status: pass.status, error: pass.error, total: pass.total, judged: pass.judged })}`);
+    return pass;
+  }
+  const liveRun = async () => {
+    const done = await runAndWait({ operation: op, set_id: T.S.id, config: 'live' });
+    check(done.status === 'finished' && done.complete === true && done.set_id === T.S.id, `live run ${j({ status: done.status, complete: done.complete, set_id: done.set_id, error: done.error })}`);
+    return done;
+  };
+
+  // What psql says: the scores of eval items grouped like the dashboard groups them, by judge revision, criterion and split.
+  const runCounts = (runId) => rows(`SELECT s.judge_revision_id, s.criterion, i.split, coalesce(s.verdict, 'null'), count(*) FROM ai_judge_scores s
+    JOIN ai_eval_run_items i ON i.id = s.subject_id WHERE s.subject_kind = 'eval_item' AND i.run_id = '${runId}' GROUP BY 1, 2, 3, 4 ORDER BY 1, 2, 3, 4`)
+    .map(([revision, criterion, split, verdict, n]) => ({ revision, criterion, split, verdict, n: Number(n) }));
+  const judgeOfRun = (runId) => {
+    const found = new Map();
+    for (const row of runCounts(runId)) {
+      const key = `${row.revision}|${row.criterion}`;
+      const entry = found.get(key) ?? { judge_revision_id: row.revision, criterion: row.criterion, dev: zero(), held_out: zero() };
+      add(entry[row.split], row.verdict, row.n);
+      found.set(key, entry);
+    }
+    return [...found.values()];
+  };
+  /** The eval groups of the dashboard computed run by run: runs on an operation's newest frozen set, not hidden, of a config at its current version or from before M2. */
+  function evalGroupsByPsql() {
+    const sets = rows('SELECT DISTINCT ON (operation) id FROM ai_eval_sets ORDER BY operation, version DESC').map(([id]) => id);
+    if (sets.length === 0) return { groups: [], hiddenScores: 0 };
+    const runs = rows(`SELECT r.id, r.operation, r.model, coalesce(c.number, r.prompt_revision), (r.hidden_at IS NOT NULL),
+      (c.id IS NOT NULL AND c.version = r.config_version), (r.config_id IS NULL AND r.prompt_revision IS NOT NULL)
+      FROM ai_eval_runs r LEFT JOIN ai_configs c ON c.id = r.config_id WHERE r.set_id IN (${sets.map((id) => `'${id}'`).join(',')})`);
+    const groups = new Map();
+    let hiddenScores = 0;
+    for (const [id, operation, model, number, hidden, current, preM2] of runs) {
+      const scores = rows(`SELECT s.judge_revision_id, s.criterion, coalesce(s.verdict, 'null'), count(*), ${iso('min(s.created_at)')} FROM ai_judge_scores s
+        JOIN ai_eval_run_items i ON i.id = s.subject_id WHERE s.subject_kind = 'eval_item' AND i.run_id = '${id}' AND NOT i.hidden GROUP BY 1, 2, 3`);
+      if (hidden === 't') {
+        hiddenScores += count(`SELECT count(*) FROM ai_judge_scores s JOIN ai_eval_run_items i ON i.id = s.subject_id WHERE s.subject_kind = 'eval_item' AND i.run_id = '${id}'`);
+        continue;
+      }
+      if (current !== 't' && preM2 !== 't') continue;
+      for (const [revision, criterion, verdict, n, first] of scores) {
+        const key = [operation, Number(number), model, revision, criterion].join('|');
+        const entry = groups.get(key) ?? { operation, source: 'eval', config_number: Number(number), model, judge_revision_id: revision, criterion, counts: zero(), first_scored_at: first };
+        add(entry.counts, verdict, Number(n));
+        if (first < entry.first_scored_at) entry.first_scored_at = first;
+        groups.set(key, entry);
+      }
+    }
+    return { groups: [...groups.values()], hiddenScores };
+  }
+  /** The D15 rule recomputed from ai_labels × ai_judge_scores and the two settings (`settings` is the answer of GET /v1/admin/settings). */
+  function revisionsByPsql(settings) {
+    const revisions = rows(`SELECT r.id, r.judge_id, j.name, r.revision, ${iso('r.saved_at')} FROM ai_judge_revisions r JOIN ai_judges j ON j.id = r.judge_id
+      WHERE EXISTS (SELECT 1 FROM ai_judge_scores s WHERE s.judge_revision_id = r.id) ORDER BY j.name, r.revision`);
+    const pairs = new Map(rows(`SELECT s.judge_revision_id, s.criterion, count(*), count(*) FILTER (WHERE (l.verdict = 'pass') = (s.verdict = 'pass')) FROM ai_judge_scores s
+      JOIN ai_labels l ON l.subject_kind = s.subject_kind AND l.subject_id = s.subject_id AND l.criterion = s.criterion WHERE s.verdict IS NOT NULL GROUP BY 1, 2`)
+      .map(([revision, criterion, labeled, agree]) => [`${revision}|${criterion}`, { labeled: Number(labeled), agree: Number(agree) }]));
+    const codes = rows(`SELECT r.id, c.item->>'code' FROM ai_judge_revisions r, jsonb_array_elements(r.criteria) WITH ORDINALITY AS c(item, ord) ORDER BY r.id, c.ord`);
+    return revisions.map(([id, judgeId, name, revision, savedAt]) => ({
+      id, judge_id: judgeId, judge_name: name, revision: Number(revision), saved_at: savedAt,
+      criteria: codes.filter(([revisionId]) => revisionId === id).map(([, code]) => {
+        const { labeled, agree } = pairs.get(`${id}|${code}`) ?? { labeled: 0, agree: 0 };
+        return { code, labeled, agree, calibrated: labeled > 0 && labeled >= settings.values.ai.judge_label_min && agree * 100 >= Math.round(settings.values.ai.judge_agreement_min * 100) * labeled };
+      }),
+    }));
+  }
+  /** The real-question scores of finished or unfinished real passes grouped as the report groups them, and the latest finished pass with its rows. */
+  function realByPsql() {
+    const scores = rows(`SELECT coalesce(q.ai_meta->>'operation', ''), coalesce(q.ai_meta->>'prompt_revision', ''), coalesce(q.ai_meta->>'model', ''), s.judge_revision_id, s.criterion,
+      coalesce(s.verdict, 'null'), count(*), ${iso('min(s.created_at)')} FROM ai_judge_scores s JOIN ai_judge_passes p ON p.id = s.pass_id JOIN practice_questions q ON q.id = s.subject_id
+      WHERE s.subject_kind = 'real_question' AND p.kind = 'real' GROUP BY 1, 2, 3, 4, 5, 6`);
+    const groups = new Map();
+    for (const [operation, number, model, revision, criterion, verdict, n, first] of scores) {
+      const key = [operation, number, model, revision, criterion].join('|');
+      const entry = groups.get(key) ?? { operation, source: 'real', config_number: number === '' ? null : Number(number), model: model === '' ? null : model, judge_revision_id: revision, criterion, counts: zero(), first_scored_at: first };
+      add(entry.counts, verdict, Number(n));
+      if (first < entry.first_scored_at) entry.first_scored_at = first;
+      groups.set(key, entry);
+    }
+    const [latest] = rows(`SELECT p.id FROM ai_judge_passes p JOIN ai_judge_scores s ON s.pass_id = p.id JOIN practice_questions q ON q.id = s.subject_id
+      WHERE p.kind = 'real' AND p.status = 'finished' AND s.subject_kind = 'real_question' AND q.ai_meta->>'operation' = '${op}'
+      GROUP BY p.id ORDER BY max(s.created_at) DESC, p.id DESC LIMIT 1`);
+    const latestRows = new Map();
+    if (latest) {
+      for (const [revision, criterion, verdict, n, newest] of rows(`SELECT s.judge_revision_id, s.criterion, coalesce(s.verdict, 'null'), count(*), ${iso('max(s.created_at)')} FROM ai_judge_scores s
+        JOIN practice_questions q ON q.id = s.subject_id WHERE s.pass_id = '${latest[0]}' AND s.subject_kind = 'real_question' AND q.ai_meta->>'operation' = '${op}' GROUP BY 1, 2, 3`)) {
+        const key = `${revision}|${criterion}`;
+        const entry = latestRows.get(key) ?? { operation: op, pass_id: latest[0], judge_revision_id: revision, criterion, counts: zero(), scored_at: newest };
+        add(entry.counts, verdict, Number(n));
+        if (newest > entry.scored_at) entry.scored_at = newest;
+        latestRows.set(key, entry);
+      }
+    }
+    return { groups: [...groups.values()], latestPass: latest?.[0] ?? null, latest: [...latestRows.values()].sort((a, b) => (a.judge_revision_id + a.criterion < b.judge_revision_id + b.criterion ? -1 : 1)) };
+  }
+
+  try {
+    await step('M5.0 a sixth admin A6 acts for this part; the settings C0 are read (admin USD cap, entitlements.ai_daily_cap, judge limits) and the admin cap is set to null; J is the seeded judge on fake:bad-form, the live cloze config is on fake:ok', async () => {
+      const email = `smokenb-admin6-${run}@example.com`;
+      await want(asAdmin('POST', '/v1/admin/users', { body: { email, staff_role: 'admin', password: PASSWORD, must_change_password: false, timezone: TIMEZONE } }), 201, `create ${email}`);
+      S.admin = { email, token: await loginToken(email) };
+      const me = await want(asAdmin('GET', '/v1/me'), 200, 'A6 profile');
+      check(me.id !== outer.adminId, 'A6 is the first admin');
+      S.adminId = me.id;
+      const { values } = await getSettings();
+      T.C0 = { adminCap: values.ai.admin_daily_usd_cap, dailyCap: values.entitlements.ai_daily_cap, labelMin: values.ai.judge_label_min, agreementMin: values.ai.judge_agreement_min };
+      check(Number.isInteger(T.C0.dailyCap) && T.C0.dailyCap > 4, `entitlements.ai_daily_cap is ${T.C0.dailyCap}: M5.7 needs a cap above 4`);
+      if (T.C0.adminCap !== null) await putValues({ ai: { admin_daily_usd_cap: null } });
+      check((await getSettings()).values.ai.admin_daily_usd_cap === null, 'the admin USD cap is not null');
+      const seeded = (await listJudges()).find((judge) => judge.name === 'Chỉ một đáp án');
+      check(seeded && j(seeded.operations) === j([op]) && seeded.active === true && seeded.latest.model?.model_id === 'fake:bad-form' && j(seeded.latest.criteria.map((c) => c.code)) === j(['single_answer']),
+        `seeded judge ${j(seeded && { operations: seeded.operations, active: seeded.active, model: seeded.latest.model })}`);
+      T.J = seeded.id;
+      T.rev0 = seeded.latest.revision;
+      T.liveConfig = psql(`SELECT config_id FROM ai_live_configs WHERE operation = '${op}'`);
+      const cfg = await want(asAdmin('GET', `${ai}/configs/${op}`), 200, 'GET configs');
+      check(cfg.live.model?.model_id === 'fake:ok' && Number.isInteger(cfg.live.number) && cfg.live.id === T.liveConfig, `live cloze config ${j({ id: cfg.live.id, number: cfg.live.number, model: cfg.live.model })} vs psql ${T.liveConfig}`);
+      T.liveNumber = cfg.live.number;
+      const sets = await listSets(op);
+      T.S = sets.reduce((a, b) => (b.version > a.version ? b : a));
+      check(T.S.id === psql(`SELECT id FROM ai_eval_sets WHERE operation = '${op}' ORDER BY version DESC LIMIT 1`), 'the newest set is not the one psql names');
+      ok(`A6 ${email} (${me.id}); C0 = ${j(T.C0)}, admin USD cap now null; judge ${T.J} at revision ${T.rev0} on fake:bad-form; live cloze config ${T.liveNumber} (${T.liveConfig}) on fake:ok; newest frozen set v${T.S.version} (${T.S.id})`);
+    });
+
+    await step('M5.1 permissions: the editor gets 200 from the three endpoints and sees the new keys (latest_evals, judge_scores, judge_revisions, real_judge_scores, real_judge_latest, reports[].confirmed, days[].cap); the learner gets 403 from each; the admin controls', async () => {
+      const paths = [['dashboard', DASHBOARD], ['ai-quality', QUALITY], ['ai-usage/days', `${DAYS}?from=${vnDate(-4)}&to=${vnDate(0)}`]];
+      const seen = [];
+      for (const [name, path] of paths) {
+        const editor = await want(api('GET', path, { as: S.editor }), 200, `editor ${name}`);
+        await wantProblem(api('GET', path, { as: S.learner }), 403, 'forbidden', `learner ${name}`);
+        const admin = await want(api('GET', path, { as: S.admin }), 200, `admin ${name} (control)`);
+        check(Object.keys(editor).join() === Object.keys(admin).join(), `${name}: the editor's keys differ from the admin's`);
+        seen.push([name, editor]);
+      }
+      const [dash, report, usage] = seen.map(([, body]) => body);
+      check(Array.isArray(dash.latest_evals) && dash.latest_evals.length === OPERATIONS.length && Array.isArray(dash.judge_scores) && Array.isArray(dash.judge_revisions)
+        && j(dash.latest_evals.map((entry) => entry.operation)) === j(OPERATIONS), `dashboard keys ${j(Object.keys(dash))}`);
+      check(Array.isArray(report.real_judge_scores) && Array.isArray(report.real_judge_latest) && report.reports.length >= 1 && report.reports.every((row) => Number.isInteger(row.confirmed)), `ai-quality ${j({ keys: Object.keys(report), reports: report.reports })}`);
+      check(usage.days.length === 5 && usage.days.every((day) => Number.isInteger(day.cap) && typeof day.at_cap === 'boolean') && Number.isInteger(usage.days_at_cap), `ai-usage/days ${j(usage.days[0])}`);
+      ok(`editor 200 on dashboard, ai-quality, ai-usage/days with latest_evals (${dash.latest_evals.length}), judge_scores, judge_revisions, real_judge_scores, real_judge_latest, reports[].confirmed, days[].cap / at_cap; learner 403 forbidden on all three; the admin's keys are the editor's`);
+    });
+
+    await step('M5.2 design §5.5: today.calls = the learner calls since Vietnam midnight (psql), today.admin_cost_usd = the cost of test, eval and judge calls since then (psql numeric(20,8)), admin_usd_cap null; the status report says the same', async () => {
+      const since = `${vnDate(0)}T00:00:00+07:00`;
+      const learnerCalls = () => count(`SELECT count(*) FROM ai_calls WHERE purpose = 'learner' AND created_at >= '${since}'`);
+      const adminCost = () => psql(`SELECT coalesce(sum(cost_usd) FILTER (WHERE purpose IN ('test', 'eval', 'judge')), 0)::numeric(20,8)::text FROM ai_calls WHERE created_at >= '${since}'`);
+      const calls = learnerCalls();
+      const cost = adminCost();
+      const dash = await dashboard();
+      const status = await want(asAdmin('GET', `${ai}/status`), 200, 'AI status');
+      check(learnerCalls() === calls && adminCost() === cost, 'a call was made while the part read the two numbers');
+      check(dash.today.calls === calls && dash.today.admin_cost_usd === cost && dash.today.admin_usd_cap === null, `today ${j(dash.today)} vs psql calls ${calls}, admin cost ${cost}`);
+      check(canon(status.today) === canon(dash.today), `status.today ${j(status.today)} differs from the dashboard's`);
+      check(calls > 0 && Number(cost) > 0, `controls: ${calls} learner calls, admin cost ${cost}: the two numbers would prove nothing`);
+      T.calls0 = calls;
+      ok(`today.calls ${calls} = psql learner calls since ${since}; admin_cost_usd ${cost} = psql sum of test + eval + judge costs; admin_usd_cap null; GET status says the same`);
+    });
+
+    await step('M5.3 design §8.2: a live run of the newest set → latest_evals names it (set, live config, stats = GET run items, keys, no judge yet) and today.calls does not move (B21); a draft run of the same set leaves the live run the latest eval', async () => {
+      const run1 = await liveRun();
+      T.run1 = run1;
+      const entry = (await dashboard()).latest_evals.find((e) => e.operation === op);
+      check(entry.set && entry.set.id === T.S.id && entry.set.version === T.S.version && canon(Object.keys(entry.set)) === canon(['id', 'version']), `set ${j(entry.set)}`);
+      check(canon(entry.live) === canon({ config_id: T.liveConfig, number: T.liveNumber, model: 'fake:ok' }), `live ${j(entry.live)}`);
+      check(entry.run && entry.run.id === run1.id && j(Object.keys(entry.run)) === j(['id', 'created_at', 'model', 'stats', 'judge']), `run ${j(entry.run && Object.keys(entry.run))}`);
+      const [[created, model, setId]] = rows(`SELECT ${iso('created_at')}, model, set_id FROM ai_eval_runs WHERE id = '${run1.id}'`);
+      check(entry.run.created_at === created && entry.run.model === model && model === 'fake:ok' && setId === T.S.id, `created_at ${entry.run.created_at} vs ${created}, model ${entry.run.model}`);
+      const { stats } = await runItems(run1.id);
+      check(canon(entry.run.stats) === canon(stats), `stats ${j(entry.run.stats)} vs GET items ${j(stats)}`);
+      const counts = rows(`SELECT split, count(*), count(*) FILTER (WHERE status = 'succeeded') FROM ai_eval_run_items WHERE run_id = '${run1.id}' GROUP BY 1 ORDER BY 1`);
+      const [dev, heldOut] = ['dev', 'held_out'].map((name) => counts.find(([split]) => split === name)?.slice(1).map(Number) ?? [0, 0]);
+      check(entry.run.stats.dev.total === dev[0] && entry.run.stats.dev.shape_pass === dev[1] && entry.run.stats.held_out.total === heldOut[0] && entry.run.stats.held_out.shape_pass === heldOut[1]
+        && dev[0] >= 3 && heldOut[0] >= 1, `psql dev ${j(dev)}, held-out ${j(heldOut)} vs stats ${j({ dev: entry.run.stats.dev.total, held: entry.run.stats.held_out.total })}`);
+      check(j(entry.run.judge) === '[]', `a run nobody judged has judge ${j(entry.run.judge)}`);
+      T.devPerRun = dev[0];
+      const after = await dashboard();
+      check(after.today.calls === T.calls0 && count(`SELECT count(*) FROM ai_calls WHERE purpose = 'learner' AND created_at >= '${vnDate(0)}T00:00:00+07:00'`) === T.calls0, `today.calls moved from ${T.calls0} to ${after.today.calls} by an eval run`);
+      // A draft of the live config, run on the same set, is not "the live config's" eval.
+      const existing = (await configsOf(op)).draft;
+      T.madeDraft = !existing;
+      let draft = existing ?? await createDraft(op);
+      if (!draft.model) draft = await setDraftModel(op, 'fake:ok');
+      const draftRun = await runAndWait({ operation: op, set_id: T.S.id, config: 'draft' });
+      check(draftRun.status === 'finished' && draftRun.complete === true && psql(`SELECT config_id FROM ai_eval_runs WHERE id = '${draftRun.id}'`) === draft.id && draft.id !== T.liveConfig, `draft run ${j({ status: draftRun.status, config: draft.id })}`);
+      const still = (await dashboard()).latest_evals.find((e) => e.operation === op);
+      check(still.run?.id === run1.id && still.live.config_id === T.liveConfig, `with a newer draft run the latest eval is ${still.run?.id}, expected the live run ${run1.id}`);
+      if (T.madeDraft) await want(asAdmin('DELETE', `${ai}/configs/${op}/draft`), 204, 'delete the draft this step made');
+      ok(`run ${run1.id} on set v${T.S.version}: latest_evals has it with live config ${T.liveNumber}, stats = GET items (${dev[0]} dev, ${heldOut[0]} held-out, only counts), keys id, created_at, model, stats, judge, judge []; today.calls stays ${T.calls0}; the draft run ${draftRun.id} (config ${draft.id}) does not replace it${T.madeDraft ? '; the draft deleted again' : ''}`);
+    });
+
+    await step('M5.4 design §8.3, D17: J judges the run → run.judge = psql counts by split and verdict; a new revision (max_output_tokens changed) judges it again → judge_scores has the live pair (number, fake:ok) for each revision, every group = psql, no hidden run counted; judge_revisions lists both with the D15 rule from psql', async () => {
+      const view = await getJudge(T.J);
+      check(view.latest.revision === T.rev0, `J is at revision ${view.latest.revision}, expected ${T.rev0}`);
+      T.rev0Id = view.latest.id;
+      const pass1 = await judgeRun(T.run1.id);
+      const first = (await dashboard()).latest_evals.find((e) => e.operation === op);
+      const expected1 = judgeOfRun(T.run1.id);
+      check(first.run.id === T.run1.id && expected1.length === 1 && expected1[0].judge_revision_id === T.rev0Id && canon(first.run.judge) === canon(expected1), `run.judge ${j(first.run.judge)} vs psql ${j(expected1)}`);
+      check(expected1[0].dev.fail_major === T.devPerRun && expected1[0].held_out.fail_major >= 1 && expected1[0].held_out.pass === 0, `the bad-form judge should fail every output: ${j(expected1)}`);
+      const saved = await saveJudge(view, { max_output_tokens: (view.latest.max_output_tokens ?? 700) + 1 });
+      check(saved.latest.revision === T.rev0 + 1 && saved.latest.id !== T.rev0Id, `new revision ${j({ revision: saved.latest.revision, id: saved.latest.id })}`);
+      T.rev1Id = saved.latest.id;
+      const pass2 = await judgeRun(T.run1.id);
+      const dash = await dashboard();
+      const psqlGroups = evalGroupsByPsql();
+      const live = (list) => list.filter((g) => g.operation === op && g.config_number === T.liveNumber && g.model === 'fake:ok');
+      for (const revisionId of [T.rev0Id, T.rev1Id]) {
+        const api = live(dash.judge_scores).filter((g) => g.judge_revision_id === revisionId);
+        const mine = live(psqlGroups.groups).filter((g) => g.judge_revision_id === revisionId);
+        check(api.length === 1 && api[0].criterion === 'single_answer' && api[0].source === 'eval' && canon(api) === canon(mine), `group of revision ${revisionId}: ${j(api)} vs psql ${j(mine)}`);
+        const total = expected1[0].dev.fail_major + expected1[0].held_out.fail_major;
+        check(canon(api[0].counts) === canon({ ...zero(), fail_major: total }) && api[0].config_number === T.liveNumber, `counts ${j(api[0].counts)} vs ${total} outputs of the live run`);
+      }
+      check(canon(byKey(dash.judge_scores)) === canon(byKey(psqlGroups.groups)), `all groups ${j(dash.judge_scores.length)} vs psql ${j(psqlGroups.groups.length)}`);
+      check(psqlGroups.hiddenScores > 0, 'control: no judge score sits on a hidden run, so "hidden runs are left out" proves nothing');
+      check(dash.judge_scores.every((g, k) => k === 0 || dash.judge_scores[k - 1].first_scored_at <= g.first_scored_at), 'judge_scores are not ordered by first_scored_at');
+      const settings = await getSettings();
+      const expectedRevisions = revisionsByPsql(settings);
+      check(canon(dash.judge_revisions) === canon(expectedRevisions), `judge_revisions ${j(dash.judge_revisions.map((r) => [r.judge_name, r.revision]))} vs psql ${j(expectedRevisions.map((r) => [r.judge_name, r.revision]))}`);
+      const mine = dash.judge_revisions.filter((r) => r.judge_id === T.J);
+      check(mine.some((r) => r.id === T.rev0Id) && mine.some((r) => r.id === T.rev1Id) && j(mine.map((r) => r.revision)) === j([...mine.map((r) => r.revision)].sort((a, b) => a - b)), `J's revisions ${j(mine.map((r) => r.revision))}`);
+      ok(`pass ${pass1.id} → run.judge = psql (dev fail_major ${expected1[0].dev.fail_major}, held-out fail_major ${expected1[0].held_out.fail_major}, as counts); revision ${saved.latest.revision} judged the run again (pass ${pass2.id}); the live pair has one group per revision (${dash.judge_scores.length} groups in all) = psql, ${psqlGroups.hiddenScores} scores of hidden runs left out; judge_revisions lists ${dash.judge_revisions.length} revisions (J: ${mine.map((r) => r.revision).join(', ')}) = psql incl. the D15 rule`);
+    });
+
+    await step('M5.5 D15: ten owner labels over the dev items of several live runs → with judge_label_min 10 and judge_agreement_min 0.5 the newest revision is calibrated (6 of 10 agree), the older one by what psql counts; the newest run is the latest eval; labels and limits are put back', async () => {
+      const wanted = 10;
+      const extra = Math.max(0, Math.ceil(wanted / T.devPerRun) - 1);
+      check(extra <= 6, `${T.devPerRun} dev items per run need ${extra} more runs`);
+      const runs = [T.run1];
+      for (let k = 0; k < extra; k += 1) {
+        const made = await liveRun();
+        await judgeRun(made.id);
+        runs.push(made);
+      }
+      const items = runs.flatMap((r) => rows(`SELECT id FROM ai_eval_run_items WHERE run_id = '${r.id}' AND split = 'dev' ORDER BY position, id`).map(([id]) => id)).slice(0, wanted);
+      check(items.length === wanted, `${items.length} dev items for ${wanted} labels`);
+      T.labelled = items;
+      await putValues({ ai: { judge_label_min: 10, judge_agreement_min: 0.5 } });
+      try {
+        for (const [k, id] of items.entries()) {
+          await want(asAdmin('PUT', `${ai}/labels`, { body: { subject_kind: 'eval_item', subject_id: id, criterion: 'single_answer', verdict: k < 6 ? 'fail_major' : 'pass' } }), 200, `label ${id}`);
+        }
+        check(count(`SELECT count(*) FROM ai_labels WHERE subject_kind = 'eval_item' AND labeled_by = '${S.adminId}'`) === wanted, 'the ten labels are not in ai_labels');
+        const settings = await getSettings();
+        const expected = revisionsByPsql(settings);
+        const dash = await dashboard();
+        check(canon(dash.judge_revisions) === canon(expected), `judge_revisions ${j(dash.judge_revisions.filter((r) => r.judge_id === T.J).map((r) => [r.revision, r.criteria]))} vs psql ${j(expected.filter((r) => r.judge_id === T.J).map((r) => [r.revision, r.criteria]))}`);
+        const newest = dash.judge_revisions.find((r) => r.id === T.rev1Id);
+        check(canon(newest.criteria) === canon([{ code: 'single_answer', labeled: 10, agree: 6, calibrated: true }]), `newest revision ${j(newest.criteria)}`);
+        // The older revision judged run 1 only: its pairs are the labelled items of run 1, and the first six labels (fail_major) agree with its fail_major.
+        const older = dash.judge_revisions.find((r) => r.id === T.rev0Id);
+        const onRun1 = new Set(rows(`SELECT id FROM ai_eval_run_items WHERE run_id = '${T.run1.id}'`).map(([id]) => id));
+        const olderPairs = items.filter((id) => onRun1.has(id)).length;
+        const olderAgree = items.slice(0, 6).filter((id) => onRun1.has(id)).length;
+        check(older.criteria[0].labeled === olderPairs && older.criteria[0].agree === olderAgree
+          && older.criteria[0].calibrated === (olderPairs >= 10 && older.criteria[0].agree * 100 >= 50 * olderPairs), `older revision ${j(older.criteria)} with ${olderPairs} labelled items on run 1, ${olderAgree} agreeing`);
+        // The newest complete run is the latest eval, and its judge counts are the newest revision's alone.
+        const latest = dash.latest_evals.find((e) => e.operation === op);
+        const lastRun = runs[runs.length - 1];
+        check(latest.run.id === lastRun.id && canon(latest.run.judge) === canon(judgeOfRun(lastRun.id)), `latest run ${latest.run.id} vs ${lastRun.id}`);
+        check(dash.judge_scores.length === evalGroupsByPsql().groups.length && canon(byKey(dash.judge_scores)) === canon(byKey(evalGroupsByPsql().groups)), 'the groups changed against psql after the extra runs');
+        T.calibrated = { newest: newest.criteria[0], older: older.criteria[0], runs: runs.length };
+      } finally {
+        psql(`DELETE FROM ai_labels WHERE labeled_by = '${S.adminId}'`);
+        await putValues({ ai: { judge_label_min: T.C0.labelMin, judge_agreement_min: T.C0.agreementMin } });
+      }
+      const settings = await getSettings();
+      const back = await dashboard();
+      check(canon(back.judge_revisions) === canon(revisionsByPsql(settings)) && back.judge_revisions.filter((r) => r.id === T.rev1Id)[0].criteria[0].calibrated === false, 'the labels did not go away');
+      ok(`${T.calibrated.runs} live runs (${T.devPerRun} dev items each, each judged by the newest revision), 10 labels (6 fail_major, 4 pass) → revision ${T.rev0 + 1}: labeled 10, agree 6, calibrated true; revision ${T.rev0}: labeled ${T.calibrated.older.labeled}, agree ${T.calibrated.older.agree}, calibrated ${T.calibrated.older.calibrated} (psql: the D15 rule); the last run is the latest eval; labels deleted and limits back to ${T.C0.labelMin} / ${T.C0.agreementMin}: calibrated false again`);
+    });
+
+    await step('M5.6 design §8.4: the finished real passes of partM4 → real_judge_latest names the finished pass with the newest score and its counts per criterion, real_judge_scores holds a group per (ai_meta number, model, revision, criterion) = psql join; nothing for an operation no pass judged', async () => {
+      const finished = count(`SELECT count(DISTINCT p.id) FROM ai_judge_passes p JOIN ai_judge_scores s ON s.pass_id = p.id WHERE p.kind = 'real' AND p.status = 'finished' AND s.subject_kind = 'real_question' AND s.created_at >= '${vnDate(0)}T00:00:00+07:00'`);
+      check(finished >= 1, "M4's part left no finished real pass with a score today");
+      const mine = realByPsql();
+      const report = await quality();
+      check(mine.latestPass !== null && mine.latest.length >= 1, 'psql names no latest finished pass');
+      check(canon(report.real_judge_latest) === canon(mine.latest), `real_judge_latest ${j(report.real_judge_latest)} vs psql ${j(mine.latest)}`);
+      check(report.real_judge_latest.every((row) => row.operation === op && row.pass_id === mine.latestPass), 'a latest row is of another operation or pass');
+      check(canon(byKey(report.real_judge_scores)) === canon(byKey(mine.groups)), `real_judge_scores ${j(report.real_judge_scores)} vs psql ${j(mine.groups)}`);
+      check(report.real_judge_scores.length >= 2 && report.real_judge_scores.every((g) => g.source === 'real' && g.operation === op && g.config_number === T.liveNumber && g.model === 'fake:ok'), `groups ${j(report.real_judge_scores.map((g) => [g.operation, g.config_number, g.model, g.judge_revision_id, g.counts]))}`);
+      const total = report.real_judge_scores.reduce((sum, g) => sum + g.counts.pass + g.counts.fail_major + g.counts.fail_minor + g.counts.unscored, 0);
+      check(total === count(`SELECT count(*) FROM ai_judge_scores s JOIN practice_questions q ON q.id = s.subject_id WHERE s.subject_kind = 'real_question'`), `the groups hold ${total} scores`);
+      check(report.real_judge_scores.every((g, k) => k === 0 || report.real_judge_scores[k - 1].first_scored_at <= g.first_scored_at), 'real_judge_scores are not ordered by first_scored_at');
+      check(report.real_judge_latest.length > 0 && !report.real_judge_latest.some((row) => row.operation !== op), 'an operation without a real pass has a row');
+      T.latestRealPass = mine.latestPass;
+      ok(`${finished} finished real pass(es) with a score today; latest = pass ${mine.latestPass} (${report.real_judge_latest.map((row) => `${row.criterion}: ${j(row.counts)}`).join('; ')}) = psql; ${report.real_judge_scores.length} groups of (${T.liveNumber}, fake:ok, revision, criterion) with ${total} scores = psql join; no row for the other operations`);
+    });
+
+    await step('M5.7 F11: an AI cloze of E (asked, not reported, not about its private word) is reported (ai_more_than_one_answer) and confirmed → the ai row of reports: confirmed +1, total +1, open unchanged; every count = psql', async () => {
+      const since = vnDate(-29);
+      const sqlRow = () => rows(`SELECT count(*), count(*) FILTER (WHERE status = 'open'), count(*) FILTER (WHERE status = 'no_error'), count(*) FILTER (WHERE status = 'fixed'),
+        count(*) FILTER (WHERE status = 'confirmed'), count(*) FILTER (WHERE refunded) FROM practice_reports WHERE question_source = 'ai' AND created_at >= '${since}T00:00:00+07:00'`)[0].map(Number);
+      const aiRow = (report) => report.reports.find((row) => row.source === 'ai');
+      const before = aiRow(await quality());
+      const [total0, open0, noError0, fixed0, confirmed0, refunded0] = sqlRow();
+      check(canon([before.total, before.open, before.no_error, before.fixed, before.confirmed, before.refunded]) === canon([total0, open0, noError0, fixed0, confirmed0, refunded0]), `before: ${j(before)} vs psql ${j([total0, open0, noError0, fixed0, confirmed0, refunded0])}`);
+      const [candidate] = rows(`SELECT i.id FROM practice_session_items i JOIN practice_questions q ON q.id = i.question_id
+        WHERE q.user_id = '${S.editor.id}' AND q.source = 'ai' AND q.ai_meta->>'operation' = '${op}' AND coalesce(q.answer_key->>'asked_private', 'false') = 'false'
+        AND NOT EXISTS (SELECT 1 FROM practice_reports r WHERE r.item_id = i.id) ORDER BY i.asked_at LIMIT 1`);
+      check(candidate, 'E has no AI cloze that it has not reported');
+      const created = await want(api('POST', `/v1/practice/items/${candidate[0]}/report`, { as: S.editor, body: { reason: 'ai_more_than_one_answer', note: 'smoke M5: another word fits' } }), 201, 'E reports');
+      const mid = aiRow(await quality());
+      check(mid.total === total0 + 1 && mid.open === open0 + 1 && mid.confirmed === confirmed0, `after the report ${j(mid)}`);
+      const resolved = await want(asAdmin('POST', `/v1/admin/practice/reports/${created.id}/resolve`, { idem: true, body: { status: 'confirmed' } }), 200, 'confirm');
+      check(resolved.status === 'confirmed' && resolved.resolved_by === S.adminId, `resolve ${j(resolved)}`);
+      const after = aiRow(await quality());
+      const [total1, open1, noError1, fixed1, confirmed1, refunded1] = sqlRow();
+      check(after.total === before.total + 1 && after.confirmed === before.confirmed + 1 && after.open === before.open && after.no_error === before.no_error && after.fixed === before.fixed, `ai row ${j(before)} → ${j(after)}`);
+      check(canon([after.total, after.open, after.no_error, after.fixed, after.confirmed, after.refunded]) === canon([total1, open1, noError1, fixed1, confirmed1, refunded1]), `after: ${j(after)} vs psql ${j([total1, open1, noError1, fixed1, confirmed1, refunded1])}`);
+      check(j(Object.keys(after)) === j(['source', 'total', 'open', 'no_error', 'fixed', 'confirmed', 'refunded']), `row keys ${j(Object.keys(after))}`);
+      ok(`report ${created.id} on item ${candidate[0]}: ai row ${j(before)} → report (total +1, open +1) → confirmed (open back, confirmed +1) = ${j(after)} = psql`);
+    });
+
+    await step('M5.8 design §8.1, B44: two older changes of entitlements.ai_daily_cap (C0 → 3 at noon of today − 3, 3 → C0 at noon of today − 1) and uses on three days are inserted; a real PUT of the cap to 4 → today\'s cap is 4, back to C0; each day is measured against its own cap', async () => {
+      const day = (offset) => vnDate(offset);
+      const noon = (offset) => `${day(offset)}T12:00:00+07:00`;
+      const [d4, d3, d2, d1, d0] = [-4, -3, -2, -1, 0].map(day);
+      const seedChangeIds = [randomUUID(), randomUUID()];
+      const seedUses = { [d3]: 3, [d2]: 2, [d1]: 3 };
+      psql(`INSERT INTO app_setting_changes (id, key, old_value, new_value, changed_by, changed_at) VALUES
+        ('${seedChangeIds[0]}', 'entitlements.ai_daily_cap', '${T.C0.dailyCap}'::jsonb, '3'::jsonb, '${S.adminId}', '${noon(-3)}'),
+        ('${seedChangeIds[1]}', 'entitlements.ai_daily_cap', '3'::jsonb, '${T.C0.dailyCap}'::jsonb, '${S.adminId}', '${noon(-1)}')`);
+      let n = 0;
+      const values = Object.entries(seedUses).flatMap(([date, uses]) => Array.from({ length: uses }, () => {
+        n += 1;
+        return `('${S.learner.id}', 'ai_lookup', 'smoke-m5-${run}-${n}', 'use', 'confirmed', '${date}', '${date}T05:00:00Z')`;
+      }));
+      psql(`INSERT INTO usage_records (user_id, pool, operation_id, kind, status, system_date, confirmed_at) VALUES ${values.join(',')}`);
+      try {
+        const todayUsed = count(`SELECT count(*) FROM usage_records WHERE pool IN ('ai_practice', 'ai_lookup') AND kind = 'use' AND status = 'confirmed' AND system_date = '${d0}'`);
+        check(todayUsed < T.C0.dailyCap, `today's AI uses ${todayUsed} reach the cap ${T.C0.dailyCap}`);
+        await putValues({ entitlements: { ai_daily_cap: 4 } });
+        const withFour = await daysOf(d4, d0);
+        const todayRow = withFour.days.find((entry) => entry.date === d0);
+        check(todayRow.cap === 4 && todayRow.at_cap === (todayUsed >= 4) && todayRow.total === todayUsed && withFour.today.cap === 4, `today with cap 4: ${j(todayRow)}, today ${j(withFour.today)}`);
+        await putValues({ entitlements: { ai_daily_cap: T.C0.dailyCap } });
+        const view = await daysOf(d4, d0);
+        const total = (date) => count(`SELECT count(*) FROM usage_records WHERE pool IN ('ai_practice', 'ai_lookup') AND kind = 'use' AND status = 'confirmed' AND system_date = '${date}'`);
+        check(j(view.days.map((entry) => entry.date)) === j([d4, d3, d2, d1, d0]), `days ${j(view.days.map((entry) => entry.date))}`);
+        check(j(view.days.map((entry) => entry.total)) === j([0, 3, 2, 3, todayUsed]) && j(view.days.map((entry) => entry.total)) === j([d4, d3, d2, d1, d0].map(total)), `totals ${j(view.days.map((entry) => entry.total))}`);
+        check(j(view.days.map((entry) => entry.cap)) === j([T.C0.dailyCap, 3, 3, T.C0.dailyCap, T.C0.dailyCap]), `caps ${j(view.days.map((entry) => entry.cap))}`);
+        check(j(view.days.map((entry) => entry.at_cap)) === j([false, true, false, false, false]) && view.days_at_cap === 1 && view.today.cap === T.C0.dailyCap, `at_cap ${j(view.days.map((entry) => entry.at_cap))}, days_at_cap ${view.days_at_cap}`);
+        const againstToday = view.days.filter((entry) => entry.total >= T.C0.dailyCap).length;
+        check(againstToday === 0, `control: against C0 every day would count ${againstToday}`);
+        const chain = rows(`SELECT old_value, new_value FROM app_setting_changes WHERE key = 'entitlements.ai_daily_cap' AND changed_at >= '${noon(-3)}' ORDER BY changed_at, id`);
+        check(canon(chain.slice(0, 2)) === canon([[String(T.C0.dailyCap), '3'], ['3', String(T.C0.dailyCap)]]) && canon(chain.slice(-2)) === canon([[String(T.C0.dailyCap), '4'], ['4', String(T.C0.dailyCap)]]), `history ${j(chain)}`);
+        ok(`caps by day ${view.days.map((entry) => entry.cap).join(', ')}; totals ${view.days.map((entry) => entry.total).join(', ')} (= psql); at_cap ${j(view.days.map((entry) => entry.at_cap))}, days_at_cap 1 (against ${T.C0.dailyCap} for every day: ${againstToday}); a real PUT to 4 made today's cap 4 (at_cap ${todayRow.at_cap}), back to ${T.C0.dailyCap}`);
+      } finally {
+        psql(`DELETE FROM app_setting_changes WHERE id IN (${seedChangeIds.map((id) => `'${id}'`).join(',')})`);
+        psql(`DELETE FROM usage_records WHERE operation_id LIKE 'smoke-m5-${run}-%'`);
+      }
+    });
+
+    await step('M5.9 R7: no example id, run item id, question id, pass item id, user id, email, example word or question text in the three responses, and the held-out examples of the newest set appear only as counts (controls: the set id, the live run, the judge name, the real pass)', async () => {
+      const dash = await dashboard();
+      const report = await quality();
+      const usage = await daysOf(vnDate(-4), vnDate(0));
+      const text = j([dash, report, usage]);
+      const heldOut = rows(`SELECT example_id FROM ai_eval_set_items WHERE set_id = '${T.S.id}' AND split = 'held_out'`).map(([id]) => id);
+      check(heldOut.length >= 1, 'control: the newest set has no held-out example');
+      const ids = (sql) => rows(sql).map(([id]) => id);
+      const secrets = [
+        ...ids('SELECT id FROM ai_eval_examples'), ...ids('SELECT example_id FROM ai_eval_set_items'), ...ids('SELECT id FROM ai_eval_run_items'), ...ids('SELECT id FROM practice_questions'),
+        ...ids('SELECT id FROM ai_judge_pass_items'), ...ids('SELECT id FROM practice_session_items'), ...ids('SELECT id FROM users'), ...ids('SELECT email FROM users WHERE email IS NOT NULL'),
+        ...ids(`SELECT lemma FROM entries WHERE scope = 'private'`), ...WORDS, N, 'Lan will ___', 'nghĩa thử', ...heldOut,
+      ];
+      check(secrets.length > 50 && secrets.includes(heldOut[0]) && secrets.includes(S.learner.id), `control: only ${secrets.length} private values searched`);
+      for (const secret of secrets) check(!text.includes(secret), `a response names ${secret}`);
+      const held = dash.latest_evals.find((e) => e.operation === op).run.stats.held_out;
+      check(held.total >= 1 && Number.isInteger(held.shape_pass), `held-out stats ${j(held)}`);
+      const latestRun = dash.latest_evals.find((e) => e.operation === op).run.id;
+      for (const present of [T.S.id, T.liveConfig, 'Chỉ một đáp án', T.latestRealPass, latestRun]) check(text.includes(present), `control: the responses do not hold ${present}`);
+      ok(`${secrets.length} private values (${heldOut.length} held-out example ids of set v${T.S.version}, all example, item, question and user ids, emails, words, a question sentence) searched in ${text.length} characters of the three responses: none found; held-out only as counts (${held.total} outputs); the controls are there`);
+    });
+
+    await step('M5.10 the part\'s end state: the admin cap and the judge limits as C0, entitlements.ai_daily_cap as C0, no queued or running pass or run, E an editor, the seeded history and usage rows gone', async () => {
+      await putValues({ ai: { admin_daily_usd_cap: T.C0.adminCap } });
+      const { values } = await getSettings();
+      check(canon([values.ai.admin_daily_usd_cap, values.ai.judge_label_min, values.ai.judge_agreement_min, values.entitlements.ai_daily_cap]) === canon([T.C0.adminCap, T.C0.labelMin, T.C0.agreementMin, T.C0.dailyCap]), `settings ${j(values.ai)} ${j(values.entitlements.ai_daily_cap)}`);
+      check(count(`SELECT count(*) FROM ai_judge_passes WHERE status IN ('queued', 'running')`) === 0 && count(`SELECT count(*) FROM ai_eval_runs WHERE status IN ('queued', 'running')`) === 0, 'a pass or a run is still active');
+      check(count(`SELECT count(*) FROM usage_records WHERE operation_id LIKE 'smoke-m5-${run}-%'`) === 0 && count(`SELECT count(*) FROM ai_labels WHERE labeled_by = '${S.adminId}'`) === 0, 'seeded rows are still there');
+      const detail = await want(asAdmin('GET', `/v1/admin/users/${S.editor.id}`), 200, 'GET E');
+      check(detail.staff_role === 'editor', `E is ${detail.staff_role}`);
+      ok(`admin USD cap ${j(T.C0.adminCap)}, judge limits ${T.C0.labelMin} / ${T.C0.agreementMin}, ai_daily_cap ${T.C0.dailyCap}; no active pass or run; seeded rows deleted; E editor`);
+    });
+  } finally {
+    S.admin = outer.admin;
+    S.adminId = outer.adminId;
+  }
+}
+
 async function main() {
   const started = Date.now();
   await setup();
@@ -1928,6 +2377,7 @@ async function main() {
   await partM2();
   await partM3();
   await partM4();
+  await partM5();
 
   const seconds = Math.round((Date.now() - started) / 1000);
   if (failures.length > 0) {

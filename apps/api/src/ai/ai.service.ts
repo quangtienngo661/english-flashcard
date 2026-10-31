@@ -10,9 +10,10 @@ import { EvalExamplesService, type ExampleFromSource } from './eval/eval-example
 import { EvalRulesRegistry, type EvalRules } from './eval/eval-rules.port.js';
 import { JudgePassesService } from './judge/judge-passes.service.js';
 import { JudgeScoresReader } from './judge/judge-scores.reader.js';
-import type { JudgeSubject } from './judge/judge.types.js';
+import type { JudgeSubject, JudgeVerdict } from './judge/judge.types.js';
 import { JudgesService } from './judge/judges.service.js';
 import { RealPassesReader, type RealJudgeTarget, type RealPassItem, type RealPassView } from './judge/real-passes.reader.js';
+import type { RealJudgeScore } from './reports/dashboard-quality.js';
 import { ReportsService } from './reports/reports.service.js';
 import { ReadinessService } from './runner/readiness.service.js';
 import { RunnerService, type RunReport } from './runner/runner.service.js';
@@ -158,6 +159,26 @@ export class AiService {
           AND created_at >= ${range.start} AND created_at < ${range.end}
       ) f
       GROUP BY f.operation ORDER BY f.operation`);
+  }
+
+  /**
+   * The judge's scores of real questions made in `[start, end)` by passes of `kind: 'real'` (the AI dashboard, nhóm B M5): which question, which
+   * pass and whether it finished, which judge revision and criterion, the verdict or null. Practice maps the question ids to what it knows of them
+   * (`ai_meta`) and turns them into totals; no question text leaves here.
+   */
+  async realJudgeScores(range: { start: Date; end: Date }): Promise<RealJudgeScore[]> {
+    const rows = await this.prisma.$queryRaw<Array<{
+      subject_id: string; pass_id: string; pass_finished: boolean; judge_revision_id: string; criterion: string; verdict: JudgeVerdict | null; created_at: Date;
+    }>>(Prisma.sql`
+      SELECT s.subject_id::text AS subject_id, s.pass_id::text AS pass_id, (p.status = 'finished') AS pass_finished,
+        s.judge_revision_id::text AS judge_revision_id, s.criterion, s.verdict, s.created_at
+      FROM ai_judge_scores s JOIN ai_judge_passes p ON p.id = s.pass_id
+      WHERE s.subject_kind = 'real_question' AND p.kind = 'real' AND s.created_at >= ${range.start} AND s.created_at < ${range.end}
+      ORDER BY s.created_at, s.id`);
+    return rows.map((row) => ({
+      subjectId: row.subject_id, passId: row.pass_id, passFinished: row.pass_finished, judgeRevisionId: row.judge_revision_id,
+      criterion: row.criterion, verdict: row.verdict, scoredAt: row.created_at,
+    }));
   }
 
   /** One test call with the current selection and prompt (plan choice 23; the CLI's `--purpose test`). */

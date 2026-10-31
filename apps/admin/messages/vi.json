@@ -2077,7 +2077,9 @@
       "calls": "Lời gọi AI của người học / giới hạn ngày",
       "cost": "Chi phí AI hôm nay",
       "units": "Lượt AI của người học / giới hạn hệ thống",
-      "notReady": "Thao tác chưa sẵn sàng"
+      "notReady": "Thao tác chưa sẵn sàng",
+      "adminUsd": "USD việc của admin hôm nay / trần",
+      "adminUsdReached": "Đã chạm trần USD: chạy thử, eval và judge bị chặn tới 0 giờ."
     },
     "health": {
       "title": "Tình trạng vận hành",
@@ -2127,9 +2129,59 @@
       "sessions": "Phiên có câu hỏi AI, theo nguyên nhân AI dừng",
       "notStopped": "AI hoạt động bình thường"
     },
+    "evals": {
+      "title": "Eval gần nhất",
+      "hint": "Lần chạy xong trọn gần nhất của cấu hình đang chạy, trên phiên bản bộ ví dụ mới nhất. Held-out chỉ có số tổng.",
+      "run": "Cấu hình {number} · {model} · phiên bản {version} · {date}",
+      "noSet": "Chưa có phiên bản bộ ví dụ đã chốt.",
+      "noModel": "Cấu hình đang chạy chưa có model.",
+      "noRun": "Chưa có lần chạy xong trọn của cấu hình đang chạy trên phiên bản {version}.",
+      "split": "Phần",
+      "dev": "Dev",
+      "heldOut": "Held-out",
+      "shape": "Khuôn",
+      "rule": "Luật",
+      "expected": "Mong đợi",
+      "judge": "Judge {name} bản {revision} · {criterion}"
+    },
+    "judge": {
+      "title": "Điểm judge theo cấu hình",
+      "hint": "Theo thao tác và cặp (số cấu hình, model): từ eval trên phiên bản bộ ví dụ mới nhất và từ câu thật trong khoảng đã chọn. Vạch đứt là chỗ đổi bản judge.",
+      "chart": "{judge} · {criterion} · {operation}",
+      "column": "{source} · cấu hình {number} · {model}",
+      "axisConfig": "Cấu hình {number}",
+      "sources": {
+        "eval": "Eval",
+        "real": "Câu thật"
+      },
+      "marker": "Bản judge {revision}",
+      "calibrated": "Đã hiệu chỉnh",
+      "uncalibrated": "Chưa hiệu chỉnh",
+      "agreement": "{agree}/{labeled} nhãn khớp",
+      "pass": "Đạt",
+      "failMajor": "Lỗi nặng",
+      "failMinor": "Lỗi nhẹ",
+      "unscored": "Không chấm được",
+      "cols": {
+        "group": "Nhóm",
+        "revision": "Bản judge",
+        "calibration": "Hiệu chỉnh"
+      },
+      "empty": "Chưa có điểm judge nào."
+    },
+    "real": {
+      "title": "Chấm câu AI thật",
+      "hint": "Lượt chấm câu thật đã xong gần nhất của mỗi thao tác, trong khoảng đã chọn.",
+      "cols": {
+        "judge": "Judge",
+        "criterion": "Tiêu chí",
+        "scoredAt": "Lúc chấm"
+      },
+      "empty": "Chưa có lượt chấm câu thật nào xong trong khoảng này."
+    },
     "usage": {
       "title": "Hạn mức sử dụng",
-      "hint": "Lượt AI của người học theo ngày, đối chiếu với giới hạn hệ thống hiện hành.",
+      "hint": "Lượt AI của người học theo ngày, mỗi ngày đối chiếu với giới hạn của chính ngày đó.",
       "total": "Tổng lượt AI đã dùng",
       "daysAtCap": "Số ngày đạt giới hạn",
       "refunds": "Lượt đã hoàn lại",
@@ -2137,6 +2189,9 @@
       "chart": "Lượt AI theo ngày",
       "practice": "Câu hỏi AI khi luyện tập",
       "lookup": "Tra cứu từ bằng AI",
+      "dayCap": "Giới hạn ngày đó",
+      "atCap": "Đạt giới hạn",
+      "yes": "Có",
       "pro": {
         "title": "Người dùng gói Pro đã dùng bao nhiêu hạn mức",
         "hint": "Tính theo chu kỳ hiện tại của từng người, không phụ thuộc khoảng thời gian đã chọn. Mỗi người được xếp theo loại có tỉ lệ đã dùng cao hơn: câu hỏi AI khi luyện tập hoặc tra cứu từ bằng AI.",
@@ -2175,6 +2230,7 @@
       "open": "Chưa xử lý",
       "fixed": "Đã sửa",
       "noError": "Không có lỗi",
+      "confirmed": "Đã xác nhận",
       "refunded": "Đã hoàn lượt",
       "date": "Ngày",
       "learners": "Người học"

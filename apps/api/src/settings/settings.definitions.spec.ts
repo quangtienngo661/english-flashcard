@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  applyPatch, changedFields, crossFieldViolations, SETTINGS_BOUNDS, SETTINGS_DEFAULTS, settingsValuesPatchSchema, toApiValues, withDefaults,
+  apiValueOf, applyPatch, changedFields, crossFieldViolations, SETTINGS_BOUNDS, SETTINGS_DEFAULTS, settingsValuesPatchSchema, toApiValues, withDefaults,
 } from './settings.definitions.js';
 
 const ENTITLEMENT_DEFAULTS_API = {
@@ -363,5 +363,25 @@ describe('settings definitions', () => {
   it('changedFields reports ai.max_concurrent_calls 50 → 1', () => {
     const next = applyPatch(SETTINGS_DEFAULTS, { ai: { max_concurrent_calls: 1 } });
     expect(changedFields(SETTINGS_DEFAULTS, next)).toEqual([{ key: 'ai.max_concurrent_calls', oldValue: 50, newValue: 1 }]);
+  });
+});
+
+describe('apiValueOf (M5-T1)', () => {
+  it('reads a value by the key the history rows name it with', () => {
+    expect(apiValueOf(SETTINGS_DEFAULTS, 'entitlements.ai_daily_cap')).toBe(1000);
+    expect(apiValueOf(SETTINGS_DEFAULTS, 'reminders.send_time')).toBe('20:00');
+    expect(apiValueOf(SETTINGS_DEFAULTS, 'entitlements.ads_enabled')).toBe(false);
+    expect(apiValueOf(SETTINGS_DEFAULTS, 'entitlements.renewal_notice_days_before')).toBeNull();
+    const patched = applyPatch(SETTINGS_DEFAULTS, { entitlements: { ai_daily_cap: 5 } });
+    expect(apiValueOf(patched, 'entitlements.ai_daily_cap')).toBe(5);
+  });
+
+  it('every key toApiValues lists is readable, and an unknown key is undefined (not a property of the object)', () => {
+    for (const [section, fields] of Object.entries(toApiValues(SETTINGS_DEFAULTS))) {
+      for (const [apiKey, value] of Object.entries(fields)) expect(apiValueOf(SETTINGS_DEFAULTS, `${section}.${apiKey}`), `${section}.${apiKey}`).toBe(value);
+    }
+    for (const key of ['entitlements.nope', 'nope.ai_daily_cap', 'entitlements', 'constructor', '__proto__', 'entitlements.constructor', '']) {
+      expect(apiValueOf(SETTINGS_DEFAULTS, key), key).toBeUndefined();
+    }
   });
 });

@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { ProblemDetailsException } from '../../common/problem-details/problem-details.exception.js';
 import type { PrismaClient } from '../../generated/prisma/client.js';
+import type { DashboardJudgeRevision, JudgeScoreGroup, LatestEvalView } from './dashboard-quality.js';
 import { ReportsService, type CostTotals, type StatusReport } from './reports.service.js';
 
 // 20/10/2026 12:00 in Vietnam.
@@ -22,6 +23,16 @@ const STATUS: StatusReport = {
   providers: { openai: false, anthropic: true, fake: true } as StatusReport['providers'],
 };
 
+const LATEST_EVAL = { operation: 'generate_cloze', set: null, live: null, run: null } as LatestEvalView;
+const GROUP = {
+  operation: 'generate_cloze', source: 'eval', config_number: 4, model: 'fake:ok', judge_revision_id: 'jr1', criterion: 'one_answer',
+  counts: { pass: 3, fail_major: 1, fail_minor: 0, unscored: 0 }, first_scored_at: '2026-11-02T03:00:00.000Z',
+} as JudgeScoreGroup;
+const REVISION = {
+  id: 'jr1', judge_id: 'j1', judge_name: 'Chỉ một đáp án', revision: 1, saved_at: '2026-11-02T03:00:00.000Z',
+  criteria: [{ code: 'one_answer', labeled: 30, agree: 26, calibrated: true }],
+} as DashboardJudgeRevision;
+
 function setup(rows: { health?: unknown[]; outcomes?: unknown[]; learnerDays?: unknown[] } = {}) {
   const statements: string[] = [];
   const prisma = {
@@ -33,13 +44,16 @@ function setup(rows: { health?: unknown[]; outcomes?: unknown[]; learnerDays?: u
       return rows.learnerDays ?? [];
     }),
   } as unknown as PrismaClient;
-  const service = new ReportsService(prisma, {} as never, {} as never, {} as never, {} as never, {} as never);
+  const quality = {
+    latestEvals: vi.fn(async () => [LATEST_EVAL]), evalJudgeGroups: vi.fn(async () => [GROUP]), judgeRevisions: vi.fn(async () => [REVISION]),
+  };
+  const service = new ReportsService(prisma, {} as never, {} as never, {} as never, {} as never, {} as never, quality as never);
   vi.spyOn(service, 'status').mockResolvedValue(STATUS);
   const costs = vi.spyOn(service, 'costs').mockImplementation(async (query) => ({
     items: query.group_by === 'day' ? [{ key: '2026-10-19', ...totals(5, '0.00200000', 52) }] : [{ key: query.group_by, ...totals(5, '0.00200000', 52) }],
     total: totals(5, '0.00200000', 52),
   }));
-  return { service, statements, costs };
+  return { service, statements, costs, quality };
 }
 
 describe('ReportsService.dashboard', () => {
@@ -85,12 +99,35 @@ describe('ReportsService.dashboard', () => {
     ]);
   });
 
+  it('M5-T6: the eval, judge-group and judge-revision blocks come from the quality service, each read once, unchanged', async () => {
+    const { service, quality } = setup();
+    const report = await service.dashboard({}, NOW);
+    expect(report.latest_evals).toEqual([LATEST_EVAL]);
+    expect(report.judge_scores).toEqual([GROUP]);
+    expect(report.judge_revisions).toEqual([REVISION]);
+    expect(quality.latestEvals).toHaveBeenCalledTimes(1);
+    expect(quality.evalJudgeGroups).toHaveBeenCalledTimes(1);
+    expect(quality.judgeRevisions).toHaveBeenCalledTimes(1);
+  });
+
+  it('M5-T6: the fields that were there keep their names (additive only)', async () => {
+    const { service } = setup();
+    const report = await service.dashboard({}, NOW);
+    expect(Object.keys(report)).toEqual([
+      'from', 'to', 'ai_enabled', 'today', 'operations', 'total', 'days', 'by_operation', 'by_model', 'by_purpose', 'learner_health',
+      'latest_evals', 'judge_scores', 'judge_revisions',
+    ]);
+  });
+
   it('a reversed range → 400 before any query', async () => {
-    const { service, statements, costs } = setup();
+    const { service, statements, costs, quality } = setup();
     const error = await service.dashboard({ from: '2026-10-21', to: '2026-10-20' }, NOW).catch((e: unknown) => e);
     expect(error).toBeInstanceOf(ProblemDetailsException);
     expect((error as ProblemDetailsException).getStatus()).toBe(400);
     expect(statements).toHaveLength(0);
     expect(costs).not.toHaveBeenCalled();
+    expect(quality.latestEvals).not.toHaveBeenCalled();
+    expect(quality.evalJudgeGroups).not.toHaveBeenCalled();
+    expect(quality.judgeRevisions).not.toHaveBeenCalled();
   });
 });

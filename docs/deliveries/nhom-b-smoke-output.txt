@@ -1089,3 +1089,526 @@ Smoke Bước 7 passed in 220s (30 steps).
 [pnpm learner:setup --admin ls-admin-m4@example.com --learner ls-learner-m4@example.com, english_learning_smoke_ls]
 run 1: exit 0 in 77 s; fake:ok published on all six operations.
 run 2: exit 0 in 2 s; "published now: none (all already on fake:ok)".
+
+================================================================================
+M5 — quality dashboard. API at 3726232 (smoke commit; apps/api tree is the same at the PR head), 30/10/2026.
+Stack: API + worker from `node scripts/run-dev.mjs` on :3750 (a snapshot copy of dist and scripts kept outside the repo), AI_FAKE_ENABLED=true, no key,
+JOB_QUEUE_PREFIX=wordmet-nb-smoke, database english_learning_smoke_nb dropped and created again before each run; SMOKE_IGNORE_ENV_FILE=1 (see nhom-b-open-items.md OI-1).
+`partM5()` adds steps M5.0–M5.10: every dashboard block is compared with psql or with another endpoint (latest evals, judge scores, judge revisions with calibration,
+real-question scores, confirmed AI reports, per-day caps), plus a leak and held-out check.
+================================================================================
+
+--- pnpm smoke:nhom-b, run 1 ---
+
+
+[1] 01:27:36Z Wait for the API
+    ok — reachable at http://localhost:3750; database english_learning_smoke_nb; children run with AI_FAKE_ENABLED=true, JOB_QUEUE_PREFIX=wordmet-nb-smoke, no key
+
+[2] 01:27:36Z Admin (registered, then granted by the CLI)
+    ok — admin smokenb-admin-67a7e19d@example.com (97c4d7af-83ce-4b3e-877a-77ff117492b9)
+
+[3] 01:27:44Z AI setup: fake provider on, fake:ok and fake:bad-form added (no model is chosen: the operations have none until a config is published)
+    ok — providers: fake only; models fake:ok and fake:bad-form
+
+[4] 01:27:44Z Content: import 4 catalog verbs (past -ed, third person -s) and publish
+    ok — batch f6df9958-55e3-4972-9650-dcbf451eab92: 4 created and published; nqvvntdu is not in the catalog
+
+[5] 01:27:47Z M1.1 forms of the catalog (B2): the three forms of W1 by part of speech and unspecified; null for a word the catalog lacks
+    ok — zqsrtcan: zqsrtcan, zqsrtcans, zqsrtcaned; unspecified the same; nqvvntdu → null
+
+[6] 01:27:47Z M1.2 B2, B3, E10: an example without expected → 422; W1, W2, N, W3, W4 land held-out, dev, dev, dev, held-out; a held-out one lists only { id, split }
+    ok — splits held_out, dev, dev, dev, held_out; the list shows only { id, split } for zqsrtcan and zqnbegqb
+
+[7] 01:27:48Z M1.3 B1, B37: freezing is refused without expected / held-out; version 1 has 3 dev + 2 held-out; two admins at once never share a version
+    ok — version 1: 3 dev, 2 held-out; stray example refused with its id; a held version 2 → 409 eval-set-conflict; two parallel freezes (201, 201) → versions 3, 2, 1
+
+[8] 01:27:59Z M1.4 B3, B8, B9: a generate_cloze draft on fake:ok runs on version 1 and on the working set; rule and expected results; held-out only as numbers
+    ok — version run complete (5 items, held-out only as stats.held_out.total 2); zqbrtskz/zqcpkdvn rule pass, nqvvntdu skipped/not-in-catalog (B8), expected pass; GET run lists no zqsrtcan/zqnbegqb
+
+[9] 01:28:00Z M1.5 D11, B10: fake:bad-form fails the rules and the expected answers; the comparison lists the dev regressions and counts the held-out ones; the working set cannot be compared
+    ok — bad-form: zqbrtskz/zqcpkdvn rule fail unknown-form:<w>ment, expected fail; regressions dev nqvvntdu, zqbrtskz, zqcpkdvn, held-out 2; set mismatch → 409; a run against itself → none
+
+[10] 01:28:01Z M1.6 B6, R7: the calls page shows the content of a dev example and hides the content of a held-out one
+    ok — eval-<run>-zqbrtskz: content shown; eval-<run>-zqsrtcan: held_out true, content null
+
+[11] 01:28:01Z M1.7 B7, Review focus 3: a draft test takes dev examples only; a held-out id is refused
+    ok — 3 items (zqbrtskz, nqvvntdu, zqcpkdvn); example_ids with a held-out id → 400
+
+[12] 01:28:01Z M1.8 B4: revealing a held-out example moves it to dev, shows its calls, counts on its versions; revealing a deleted one reads its snapshot
+    ok — zqsrtcan → dev with revealed_at, its calls show content, version 1 revealed_count 1; again → 409; zqnbegqb deleted then revealed from its snapshot (deleted true), revealed_count 2
+
+[13] 01:28:01Z M1.9 B5: editing a dev example changes neither the frozen version nor an earlier run
+    ok — zqbrtskz: the working example now accepts only zqbrtskz; version 1 and the finished run still hold zqbrtskz, zqbrtskzed, zqbrtskzs
+
+[14] 01:28:01Z M1.10 B9: a check_private_word draft on fake:ok runs one example (bulk, dev) of the working set: rule not applicable, expected pass
+    ok — rule not_applicable, expected pass
+
+[15] 01:28:02Z M1.11 Review focus 5, D8.2: a bulk row whose expected is plain text is rejected by line, a bad split too; the good row is stored
+    ok — row 1 → expected: must be an object; row 2 → split: dev or held_out; row 3 stored
+
+[16] 01:28:02Z M1.12 the two drafts of this part are deleted (204); no draft is left and the live configs have no model
+    ok — drafts deleted; generate_cloze and check_private_word live configs: no model, live_version 0
+
+[17] 01:28:02Z M2.0 a second admin (created with POST /v1/admin/users) will send the requests that race or are timed: its write budget is fresh, so no 429 wait can serialize them
+    ok — admin smokenb-admin2-67a7e19d@example.com (84343e5a-8c4d-42ba-85c3-b126c2f80819)
+
+[18] 01:28:02Z M2.1 fresh state: for the six operations live.number = ai_prompts.revision, no model, nothing before it, live_version 0, no draft; no config event; both old PUTs → 404
+    ok — generate_cloze=2, lookup_word=1, translate_sentence=1, generate_meaning_question=1, generate_sentence_mcq=1, check_private_word=1; live_version 0, no draft, no event; PUT prompts → 404 about:blank; PUT operations → 404 about:blank
+
+[19] 01:28:04Z M2.2 B29, D37: the first model by hand — a fake:ok draft, a complete run on the newest frozen set, a publish check without a baseline, publish with baseline null → 200, the learner call carries the new number
+    ok — config 4 (fake:ok) made live with run 39f8e16b-727e-4484-a866-419c6c1e5599 on version 3, no baseline needed; learner call prompt_revision 4
+
+[20] 01:28:12Z M2.3 B23, B36: a second draft → 409 draft-exists with the first; a few-shot answer that is no form of a catalog word → 422 few-shot-invalid naming only that example (a good one saves)
+    (network error on POST /v1/admin/ai/configs/generate_cloze/draft: ECONNRESET; retrying)
+    ok — draft bcc9dc99-fe46-4b46-8063-0bf2955ba51d: 2nd create → draft-exists (same id); zqsrtcanment at index 2 → few-shot-invalid unknown-form:zqsrtcanment, draft untouched; zqsrtcan saves (version 1)
+
+[21] 01:28:13Z M2.4 B24, E19: two saves of the draft at once with the same expected_version → 200 and 409 draft-version-conflict
+    ok — version 1 → 2; statuses 200, 409; the draft keeps the winner's note "race a"
+
+[22] 01:28:13Z M2.5 B26: a draft whose run is queued or running cannot be deleted (409 draft-busy); cancel the run, then the delete is 204
+    ok — run 5138c907-81fa-4de9-9cf8-2bd2a078d375 was running → 409 draft-busy; cancelled (failed / cancelled) → delete 204
+
+[23] 01:28:13Z M2.6 B27, B25: a fake:two-blanks draft cannot publish without a run (409 eval-required); saving it again makes its run stale; the live config's first candidate run is its baseline
+    ok — no run → eval-required (baseline = run 39f8e16b-727e-4484-a866-419c6c1e5599 of config 4); run at version 1 went stale after the save; run at version 2 → no blocker, 3 warnings
+
+[24] 01:28:24Z M2.7 B28: a new frozen set S2 → the draft alone is baseline-required (409); with the live config run on S2 → no blocker and a rate-drop shape warning
+    (429 on POST /v1/admin/ai/configs/generate_cloze/publish; waiting 36s)
+    ok — S2 = version 4 (6 items); the draft's run on S2 alone → baseline-required; with run 09a56423-b5c9-4fc9-a230-ef1ffaf47efc of the live config → no blocker; warnings: rate-drop:shape, dev-regressed, held-out-failures-up
+
+[25] 01:29:01Z M2.8 B30: publish without acknowledging the warnings → 409 publish-warnings listing them; a wrong baseline or candidate run id → 409 publish-stale
+    ok — 3 warnings listed in the 409; wrong baseline → publish-stale; wrong candidate → publish-stale; the live config did not move
+
+[26] 01:29:01Z M2.9 B31, E19: two identical acknowledged publishes at once → 200 and 409 publish-stale, one new publish event
+    ok — statuses 200, 409; publish events 1 → 2; config 6 (fake:two-blanks) live, config 4 before it; the event keeps both run ids and 3 warnings
+
+[27] 01:29:04Z M2.10 B33, B34: runs a publish names are evidence (409 run-is-evidence); the models of the live and the previous config cannot be deleted nor lose their price (409 model-in-use); an unused model goes
+    ok — candidate, baseline and the first run → run-is-evidence, an ordinary run deletes (204); fake:two-blanks and fake:ok → model-in-use on delete, fake:two-blanks also on price null; fake:slow (named by no config) deletes (204)
+
+[28] 01:29:04Z M2.11 B32: a stale rollback → 409 publish-stale; rollback → fake:ok live again with nothing before it; again → 409 no-previous; the learner call carries its number; history lists rollback, publish, publish; a retired config keeps its model
+    (network error on GET /v1/admin/ai/configs/generate_cloze/history: ECONNRESET; retrying)
+    ok — stale → publish-stale; rolled back to config 4, previous null; again → no-previous; learner prompt_revision 4; history rollback, publish, publish; fake:two-blanks (retired config) still model-in-use
+
+[29] 01:29:11Z M2.12 B48, D38: turning the operation off needs no run (model null, the fake:ok config stays before it, status model-not-set, the learner call is unavailable); a rollback turns it on again
+    (network error on GET /v1/admin/ai/configs/generate_cloze: ECONNRESET; retrying)
+    ok — off without a run (ai_eval_runs stays at 9); status ready false / model-not-set; learner call unavailable / model-not-set; newest event publish with no run ids; rollback → config 4 (fake:ok), learner call succeeded
+
+[30] 01:29:27Z M3.0 a third admin (POST /v1/admin/users) acts for this part, so its ai.test budget is fresh; the judge settings start at their contract defaults
+    (network error on POST /v1/admin/users: ECONNRESET; retrying)
+    ok — admin smokenb-admin3-67a7e19d@example.com (9e49762d-7b8d-4f1e-ae14-0d1573864e21); admin_daily_usd_cap 2, judge_label_min 30, judge_agreement_min 0.85; daily_provider_calls_cap 3000
+
+[31] 01:29:28Z M3.1 the seeded judge "Chỉ một đáp án" (one judge, revision 1, no model, criterion single_answer); without a model a pass and a run with it are refused (409 model-not-set) and the refused run makes nothing
+    ok — judge 7dc63579-eca1-4bef-aab1-076d048e330a: revision 1, operations [generate_cloze], no model; the pass on run 09a56423-b5c9-4fc9-a230-ef1ffaf47efc and the run with the judge → 409 model-not-set, ai_eval_runs stays at 9, no pass; unknown judge → 404
+
+[32] 01:29:30Z M3.2 B12, E4, Review focus 4: openai → 422 judge-provider, no criteria → 400; fake:ok → revision 2; stale expected_revision → 409 judge-revision-conflict; a new name alone adds no revision; clone → revision 1; two saves at once → 200 + 409
+    ok — openai → judge-provider (the row is deleted again), criteria [] → 400; fake:ok → revision 2; stale revision 1 → judge-revision-conflict; rename and rename back kept revision 2 (id c9347110-1027-4c5d-85c7-f83858178a90); clone 428bc23e-8469-4f6c-ae38-b1e1e8252ae7 at revision 1 with the same criteria, then two saves at once → 200, 409, revision 2
+
+[33] 01:29:32Z M3.3 D14, D3, B6, R7: a live run on the newest frozen set with judge_id → 202 + judge_pass_id; the pass judges every output; dev items carry a pass score, held-out only tallies; a judge call carries exactly { target_operation, input, output, criteria, context }
+    ok — run c31ec7b6-0274-4e18-a88a-1794ed48278e finished (6 outputs: 5 dev, 1 held-out); pass 362da4a6-e377-4c79-adb2-eb4e27ed5a5c judged 6/6; every dev item has single_answer pass; judge_stats dev {"pass":5,"fail_major":0,"fail_minor":0,"unjudged":0}, held-out {"pass":1,"fail_major":0,"fail_minor":0,"unjudged":0} with no held-out id in the response; the dev call sends only [context, criteria, input, output, target_operation] and names no run, pass or model; the held-out call: held_out true, content null
+
+[34] 01:29:36Z M3.4 B16: one queued or running pass per judge revision — a queued pass of the clone makes a start 409 judge-pass-running
+    ok — a queued pass of revision 2 of the clone → 409 judge-pass-running, nothing inserted; the row is deleted again
+
+[35] 01:29:38Z M3.5 B15: a second pass of the same judge revision on the same run judges nothing (202, finished, total 0) and makes no judge call
+    ok — pass 6ecd6251-5db7-45a1-8d01-bfb2af61c7af: finished, total 0; judge calls stay at 6
+
+[36] 01:29:40Z M3.6 D15, D16, B17, R7: labels on two dev items (pass, fail_major) → 200; a held-out output → 409 example-held-out; a label can be taken back; agreement revision 2 = labeled 2, agree 1, not calibrated
+    ok — labels pass + fail_major kept, the held-out output → example-held-out, an unknown output → 404, a label put and taken back; agreement revision 2: labeled 2, agree 1 (rate 0.5), calibrated false (30 labels needed); revision 1: labeled 0
+
+[37] 01:29:41Z M3.7 B11, B16: a second live run R2 without a judge → compare R1 / R2 lists judge_unmatched; two judge passes started at once never judge an output twice; then the comparison holds one judge row
+    ok — compare before the pass: judge [], judge_unmatched revision 2 scored a; two starts at once → 409 + 202 (one working pass of 6, judge calls 6 → 12); after it one judge row (dev {"pass":5,"fail_major":0,"fail_minor":0,"unjudged":0}, held-out as numbers only)
+
+[38] 01:29:45Z M3.8 design §6.3 step 3: a fake:bad-form draft judged by J on the same set → the publish check warns judge-rate-drop (revision 2, single_answer, 0 passed); publish without acknowledging → 409 publish-warnings with it; the draft goes
+    ok — R3 (bad-form, 6 outputs) judged; judge-rate-drop revision 2 single_answer {"passed":6,"counted":6} → {"passed":0,"counted":6}; all warnings: rate-drop, rate-drop, judge-rate-drop, dev-regressed, held-out-failures-up; publish without acknowledging → publish-warnings; draft deleted (R3 stays)
+
+[39] 01:29:46Z M3.8b D15, B17: calibrated follows judge_label_min and judge_agreement_min — ten labels over R1 and R3, the judge agrees with all but one; 30 labels needed by default; 10 and 0.85 → calibrated; 10 and 0.95 → not
+    ok — 10 labels (R1 5, R3 5), agree 9 (rate 0.9): 30 / 0.85 → calibrated false; 10 / 0.85 → true (also in judge_stats); 10 / 0.95 → false; limits back to 30 / 0.85
+
+[40] 01:29:47Z M3.9 B21: the daily call cap counts learner calls only — cap = learner calls today + 1 although admin calls today are far more: one learner call succeeds, the next is unavailable / daily-call-cap; the cap goes back
+    (429 on PUT /v1/admin/settings; waiting 11s)
+    ok — learner calls 3, admin calls 85 (status.today.calls = 3); cap 4: one succeeded, the next unavailable / daily-call-cap; cap back to 3000, calls 4
+
+[41] 01:30:10Z M3.10 E15, B19, B20: fake:not-recognized priced 1000/1000 → the clone judged with it stops at the cap (failed / admin-usd-cap, 1..3 of N judged), R1 stays finished and complete; a new run and a draft test → 409 admin-usd-cap
+    ok — cap 0.1 USD (today's admin spend rounded up to the cent, plus 0.10): the clone's pass on R1 ended failed / admin-usd-cap after 1 of 6 (cost 0.15000000); R1 still finished and complete; POST runs and draft/test → 409 admin-usd-cap; a new draft is kept for M3.12
+
+[42] 01:30:13Z M3.11 B18, E15: with no cap and fake:ok priced 1000/1000 a live run costs 0.15 a call and finishes; with the cap at spent + 0.10 the next run stops (failed / admin-usd-cap, complete false, 1..3 of N done)
+    ok — no cap: run a3016f5f-ba45-4c7f-9b40-e44cb08483d3 finished, cost 0.90000000 (6 calls × 0.15); cap 1.15: run 666968c1-721c-4f3e-b42a-53b75eeabbde failed / admin-usd-cap with 3 of 6 done, not complete
+
+[43] 01:30:14Z M3.12 B22, E14: with the cap at 0 an unpriced model is still refused first — pass, draft test and run on fake:refuse (no input price) → 409 model-price-missing; a priced model at cap 0 → admin-usd-cap; cap back to null
+    ok — cap 0: pass, draft test and run with fake:refuse (price_input null) → model-price-missing and nothing stored or called; the same draft on fake:ok (price 0) → admin-usd-cap; cap null again; draft deleted
+
+[44] 01:30:16Z M3.13 B34: a model named by any revision of a judge cannot be deleted (409 model-in-use) — fake:not-recognized only by an older clone revision, fake:refuse by the newest; an unused model goes (204)
+    ok — fake:not-recognized (clone revision 3) and fake:refuse (clone revision 4) → model-in-use; an unused fake:truncated deleted (204)
+
+[45] 01:30:17Z M3.14 D16, B3: deleting a labelled run hides it (204; 404 everywhere, off the list; labels, scores and agreement stay); deleting an unlabelled run removes its items, passes and scores
+    ok — R1 (5 labels, 7 scores): 204, 404 on the run, its items, a comparison, a new pass and a new label, off the list; labels, scores and the agreement unchanged; R2 (6 scores, no label): 204 and no run, item, pass or score left
+
+[46] 01:30:25Z M3.15 GET status: today.admin_usd_cap null (the part leaves the cap off), admin_cost_usd = what test, eval and judge calls cost today, calls = learner calls, cap = the learner cap
+    ok — admin_usd_cap null, admin_cost_usd 1.50000000 (ledger 1.5), calls 4 = learner calls, cap 3000
+
+[47] 01:30:26Z M4.0 a fourth admin A4 (POST /v1/admin/users) acts for this part and settings start at their defaults (real_judge_limit 200, content_retention_days 7, no admin cap); the judge J is the seeded one at revision 2 on fake:ok
+    ok — A4 smokenb-admin4-67a7e19d@example.com (d72f5ac7-b213-45f2-888a-85553e179c9a); real_judge_limit 200, content_retention_days 7, admin_daily_usd_cap null; judge 7dc63579-eca1-4bef-aab1-076d048e330a "Chỉ một đáp án" revision 2 on fake:ok, operations [generate_cloze]
+
+[48] 01:30:26Z M4.1 an editor E and a learner L (POST /v1/admin/users, staff_role editor / null), native language vi, Pro with 40 AI units and 200 sessions a day; the publisher admin is made too
+    ok — smokenb-editor-67a7e19d@example.com (3d08ce88-3a53-48f9-a845-029fe930eaec) editor; smokenb-learner-67a7e19d@example.com (428928bb-c73d-4b15-b460-ba7761405b8f) learner; publisher smokenb-publisher-67a7e19d@example.com; both Pro with 40 AI units
+
+[49] 01:30:27Z M4.2 fake:ok is live for the four practice operations (the publisher publishes the three that are not); fake:bad-form is priced 1000 / 1000 and saved as the model of J (revision 3); the judge calls so far are counted
+    ok — live generate_cloze=10, generate_meaning_question=2, generate_sentence_mcq=2, check_private_word=3 (all fake:ok, ready); fake:bad-form priced 1000/1000 (before: {"input":"0.0000","cached_input":"0.0000","output":"0.0000"}); judge 7dc63579-eca1-4bef-aab1-076d048e330a revision 3 (0b523499-ed3f-4728-867a-e6b3c9fe8ee6) on fake:bad-form; judge calls so far 19
+
+[50] 01:30:31Z M4.3 E (editor) and L (learner) practise real AI questions: E AI cloze on W1, W2, W3 and its private word P (prepare first) and one MCQ sentence on W1 with mates W2, W3, P; L AI cloze on W1, W2; psql counts 6 cloze and 1 MCQ question
+    ok — E (3d08ce88-3a53-48f9-a845-029fe930eaec) practised zqsrtcan, zqbrtskz, zqcpkdvn, zpsknyaz (P is zpsknyaz, sense 64295cd5-1846-4153-bf67-2b6edffaa3f0) and the MCQ on zqsrtcan with options ["zqbrtskz","zqcpkdvn","zqsrtcan","zpsknyaz"]; L (428928bb-c73d-4b15-b460-ba7761405b8f) practised zqsrtcan, zqbrtskz; 6 cloze + 1 MCQ questions, 7 ready requests
+
+[51] 01:30:41Z M4.4 B38: content_retention_days = 0 → the estimate says retention-off with nothing selected, the start is 409 nothing-to-judge (retention-off) and calls no judge; 7 again
+    ok — retention 0 → reason retention-off, selected 0, retention_days 0, no pairs; POST → 409 nothing-to-judge reason retention-off; no judge call, no pass; retention 7 → selected 5 again
+
+[52] 01:30:43Z M4.5 estimate: all accounts → 5 questions selected (E 3, L 2), P's skipped as private, no cost yet; one pair (live number, fake:ok, 6 questions); only test accounts → E's 3
+    ok — all: selected 5, skipped private_word 1, estimate_usd null, pairs [{10, fake:ok, 6}]; test accounts only: selected 3, pairs 4 questions (E's four, P's included in the pair count and skipped by the rule)
+
+[53] 01:30:44Z M4.6 B40, D35, B47: E loses its staff role → the test-account estimate selects nothing (reason null: the other staff practised nothing), the start is 409 nothing-to-judge (empty) and calls no judge; E an editor again → 3 selected (the role as it is now)
+    ok — E without a role: test-account estimate selected 0 / reason null, POST → 409 nothing-to-judge reason empty, judge calls and passes unchanged, all accounts still 5; E an editor again: selected 3, private_word 1
+
+[54] 01:30:46Z M4.7 B16: a running real pass of the judge's revision → a start is 409 judge-pass-running and inserts nothing; the row is deleted again
+    ok — a running real pass of revision 3 → 409 judge-pass-running, real passes stay at 1 while it exists; deleted again
+
+[55] 01:30:49Z M4.8 the test-account pass: POST → 201 { pass_id, selected 3, skipped }; the real worker judges it; the items are E's three questions with their verdicts, reasons, context and no learner id; P reaches no judge row and no judge call
+    (network error on GET /v1/admin/ai/calls: ECONNRESET; retrying)
+    ok — pass 6bfb8ef7-c336-462c-a634-94063ecd5f35 finished: 3 of 3 judged by revision 3 (fake:bad-form), cost 0.45000000 = ledger 0.45000000; items = E's three questions, newest first, each fail_major "fake: another word fits", config 10 / fake:ok, session_words the other two of W1-W3; filters {"limit":200,"since":"2026-10-23T01:30:49.212Z","config":null,"operation":"generate_cloze","test_accounts_only":true}; no learner id in the response; zpsknyaz in no ai_judge_pass_items row and no judge call (W1 found there: control); the judge request holds exactly [context, criteria, input, output, target_operation]; judge calls 19 → 22; test-account estimate now selected 0, already_judged 3
+
+[56] 01:31:00Z M4.9 all accounts: the estimate prices the 2 questions left at the revision's average cost (psql) and shows already_judged 3; the pass over L's questions judges them with session_words the other of W1, W2; one pass per question (5 in all), none of P
+    ok — estimate_usd 0.3 = 2 × 0.15; pass 5347cb3d-211a-4097-93c4-3792a9688278 finished 2 of 2 (cost 0.30000000); L's questions with session_words [["zqbrtskz"],["zqsrtcan"]]; 5 fail_major scores of revision 3, none for P's question or the MCQ; estimate now selected 0, already_judged 5
+
+[57] 01:31:04Z M4.9b D16: an owner's label on a real question (PUT /v1/admin/ai/labels, subject_kind real_question) shows on the pass items; a question that is no pass item (P's, the MCQ one) cannot be labelled (404); the label can be taken back
+    ok — question d623f1fc-cf5d-4274-b773-90222722c926: label pass → 200 and listed on the pass items (judge's own verdict stays fail_major); P's question and the MCQ question → 404 not-found (no pass item), one label in ai_labels; taken back → verdict null, none left
+
+[58] 01:31:06Z M4.10 B39, D27: from a failed real question → preview { source real_judge, rebuilt false, input = the pass snapshot, expected forms } and add → a dev example with source real_judge; the same key again adds nothing; the MCQ, P's cloze and a rule question → 409 source-not-eligible
+    ok — question 00fe779f-652b-4275-ac95-46fe50c98ecd (zqcpkdvn): preview source real_judge, rebuilt false, input = snapshot, forms ["zqcpkdvn","zqcpkdvns","zqcpkdvned"]; added as dev example 1568fcf7-755e-40bc-a5bc-c04ef41c83f1 (source real_judge, source_ref = the question); the same Idempotency-Key → the same id, one row; the MCQ question → private-word; P's cloze question → private-word; a rule question → not-ai; examples 14 → 15
+
+[59] 01:31:10Z M4.11 D27, B43: L reports its AI cloze (ai_more_than_one_answer) → preview 409 report-not-confirmed; E (editor) confirms it; E gets 403 on both from-source routes; the admin previews { source report, rebuilt false, input = the request's } and adds it
+    ok — report e0671794-8af8-485c-9f99-2624754c76ca (zqsrtcan, L): open → 409 report-not-confirmed; confirmed by E; E → 403 forbidden on GET and POST from-source; admin preview source report, rebuilt false, input = the request's ai_input; added as dev example 2946b740-2798-4925-958a-503d96f7da70 (source report, source_ref = the report)
+
+[60] 01:31:12Z M4.12 B42, E17: the request of that report is gone (what the hourly cleanup does after 7 days) → preview rebuilt true with no input; the add rebuilds { word, part_of_speech, level, meaning_vi, context_label } from the catalog sense
+    ok — request e6445147-403d-4360-93b3-85e21556aaf3 deleted (the question row stays): preview rebuilt true, input null; added as dev example d56f9c91-cff0-445d-80a1-eaaaa2fec843 with input {"word":"zqsrtcan","level":"B1","meaning_vi":"nghĩa thử 1","context_label":null,"part_of_speech":"verb"} = the sense now = what the AI was sent
+
+[61] 01:31:15Z M4.13 B41: a running real pass with a heartbeat 16 minutes old → pnpm maintenance:run closes it failed / stalled; a running pass with a fresh heartbeat (another judge) is left running (control); both rows deleted
+    (network error on GET /v1/admin/practice/real-judge/passes: ECONNRESET; retrying)
+    ok — maintenance:run: the pass with the 16-minute-old heartbeat → failed / stalled with finished_at; the pass with a fresh heartbeat stays running; both deleted
+
+[62] 01:31:23Z M4.14 permissions and validation (status, type, body): E and L get 403 on every route; unknown judge / pass → 404; an operation the judge does not score, an inactive judge, bad queries and page tokens → 400; a bad config pair is refused
+    ok — E → 403 forbidden on GET real-judge/estimate, POST real-judge, GET real-judge/passes, GET real-judge/passes/6bfb8ef7-c336-462c-a634-94063ecd5f35/items, GET eval-examples/from-source, POST eval-examples/from-source (L on three of them); A4 gets 200 on the reads; unknown judge / pass / question / report → 404; the eval-run pass → 404; bad ids, both or no ids, an unknown field, page_size 0 and 101, a bad token → 400; an operation the judge does not score → 400 ["operation: not judged by this judge"]; an inactive judge → 400 ["judge_id: judge is not active"] (active again, revision 3); pages of one: 5347cb3d-211a-4097-93c4-3792a9688278 then 6bfb8ef7-c336-462c-a634-94063ecd5f35
+
+[63] 01:31:24Z M4.15 Review focus 1 in the real flow: J also scoring generate_sentence_mcq → the estimate for it selects nothing and counts P's MCQ question as private, the start is 409 nothing-to-judge (empty) with that count; the operations are restored
+    ok — operations [generate_cloze, generate_sentence_mcq] added no revision; the MCQ estimate: selected 0, skipped private_word 1 (its candidates held P), one pair with 1 question; POST → 409 nothing-to-judge reason empty; no pass, no judge call; operations back to [generate_cloze]
+
+[64] 01:31:27Z M4.16 one pass per revision, the pair filter, the setting and newest first: a new revision 4 judges every question again (E 3, L 1: the reported one has no request left, so no content); the pair filter narrows; ai.real_judge_limit 2 → 2 selected, 2 left; the pass takes the 2 newest
+    (429 on PUT /v1/admin/settings; waiting 33s)
+    ok — revision 4: selected 4, skipped private_word 1 and no_content 1 (the reported question, request gone), no price yet; the live pair → 4, another number or model → 0 and POST → 409 empty; limit 0, 501 and 2.5 → 400 and nothing stored; limit 2 → selected 2, remaining 2; pass b0157467-295e-48df-9f06-5b1c0646235a judged the two newest questions ["29e47bbe-2e72-436f-8a1d-5416431662cd","00fe779f-652b-4275-ac95-46fe50c98ecd"] (psql order), the same Idempotency-Key again → the same pass, one row; then selected 2 at 0.3 USD, already_judged 2; limit back to 200
+
+[65] 01:32:03Z M4.17 no_content in the real flow: the kept content of one call expires → that question is skipped as no_content (the request-gone one already is), the rest still selected; the expiry is put back
+    ok — call bee8a5a1-778b-4ca2-8ec9-a15744639a46 (the oldest question): content expired → selected 1, skipped no_content 2 (this one and the question whose request is gone), already_judged 2; expiry restored → selected 2, no_content 1
+
+[66] 01:32:05Z M4.18 M3's refusals pass through the real-judge start: cap 0 → 409 admin-usd-cap (the estimate shows admin_usd_cap 0); a judge on a model without a price → 409 model-price-missing; nothing is inserted; the cap is back to null
+    ok — cap 0: estimate admin_usd_cap 0 and POST → 409 admin-usd-cap; judge "Smoke clone" (fake:refuse, no input price) → 409 model-price-missing; real passes stay at 3; cap null again
+
+[67] 01:32:07Z M4.19 the part's end state: fake:bad-form priced as before, E an editor, no queued or running pass, the settings back to their defaults, J on fake:bad-form at revision 4 with its operations as before
+    ok — fake:bad-form price {"input":"0.0000","cached_input":"0.0000","output":"0.0000"} (as before); E editor; no queued or running pass; settings 200 / 7 / null; J 7dc63579-eca1-4bef-aab1-076d048e330a revision 4 on fake:bad-form; 3 finished real passes (b0157467-295e-48df-9f06-5b1c0646235a, 5347cb3d-211a-4097-93c4-3792a9688278, 6bfb8ef7-c336-462c-a634-94063ecd5f35); 3 examples with a source (1 real_judge, 2 report); E 3d08ce88-3a53-48f9-a845-029fe930eaec and L 428928bb-c73d-4b15-b460-ba7761405b8f with tokens in S.editor and S.learner
+
+[68] 01:32:08Z M5.0 a sixth admin A6 acts for this part; the settings C0 are read (admin USD cap, entitlements.ai_daily_cap, judge limits) and the admin cap is set to null; J is the seeded judge on fake:bad-form, the live cloze config is on fake:ok
+    ok — A6 smokenb-admin6-67a7e19d@example.com (5eaaaf2c-429d-4b04-b6af-0c2d45c3c0ef); C0 = {"adminCap":null,"dailyCap":1000,"labelMin":30,"agreementMin":0.85}, admin USD cap now null; judge 7dc63579-eca1-4bef-aab1-076d048e330a at revision 4 on fake:bad-form; live cloze config 10 (39ee4f59-ccca-4420-9b48-e3d237053995) on fake:ok; newest frozen set v4 (f2df69b5-3931-4d4b-9715-099ba75cf039)
+
+[69] 01:32:09Z M5.1 permissions: the editor gets 200 from the three endpoints and sees the new keys (latest_evals, judge_scores, judge_revisions, real_judge_scores, real_judge_latest, reports[].confirmed, days[].cap); the learner gets 403 from each; the admin controls
+    ok — editor 200 on dashboard, ai-quality, ai-usage/days with latest_evals (6), judge_scores, judge_revisions, real_judge_scores, real_judge_latest, reports[].confirmed, days[].cap / at_cap; learner 403 forbidden on all three; the admin's keys are the editor's
+
+[70] 01:32:09Z M5.2 design §5.5: today.calls = the learner calls since Vietnam midnight (psql), today.admin_cost_usd = the cost of test, eval and judge calls since then (psql numeric(20,8)), admin_usd_cap null; the status report says the same
+    ok — today.calls 12 = psql learner calls since 2026-10-30T00:00:00+07:00; admin_cost_usd 2.55000000 = psql sum of test + eval + judge costs; admin_usd_cap null; GET status says the same
+
+[71] 01:32:11Z M5.3 design §8.2: a live run of the newest set → latest_evals names it (set, live config, stats = GET run items, keys, no judge yet) and today.calls does not move (B21); a draft run of the same set leaves the live run the latest eval
+    ok — run 959b9a3b-f775-4806-b49c-1a53ff571fca on set v4: latest_evals has it with live config 10, stats = GET items (5 dev, 1 held-out, only counts), keys id, created_at, model, stats, judge, judge []; today.calls stays 12; the draft run 804545c2-27fc-4236-8cbc-865c7d736dc5 (config e75355de-06de-4574-946f-767caa4cfe60) does not replace it; the draft deleted again
+
+[72] 01:32:14Z M5.4 design §8.3, D17: J judges the run → run.judge = psql counts by split and verdict; a new revision (max_output_tokens changed) judges it again → judge_scores has the live pair (number, fake:ok) for each revision, every group = psql, no hidden run counted; judge_revisions lists both with the D15 rule from psql
+    (network error on GET /v1/admin/settings: ECONNRESET; retrying)
+    ok — pass a0ef18eb-7c64-4e55-a712-e5893acf860f → run.judge = psql (dev fail_major 5, held-out fail_major 1, as counts); revision 5 judged the run again (pass 662da738-6fa9-48fc-8c7c-984626871f87); the live pair has one group per revision (2 groups in all) = psql, 7 scores of hidden runs left out; judge_revisions lists 5 revisions (J: 2, 3, 4, 5) = psql incl. the D15 rule
+
+[73] 01:32:26Z M5.5 D15: ten owner labels over the dev items of several live runs → with judge_label_min 10 and judge_agreement_min 0.5 the newest revision is calibrated (6 of 10 agree), the older one by what psql counts; the newest run is the latest eval; labels and limits are put back
+    (network error on GET /v1/admin/settings: ECONNRESET; retrying)
+    ok — 2 live runs (5 dev items each, each judged by the newest revision), 10 labels (6 fail_major, 4 pass) → revision 5: labeled 10, agree 6, calibrated true; revision 4: labeled 5, agree 5, calibrated false (psql: the D15 rule); the last run is the latest eval; labels deleted and limits back to 30 / 0.85: calibrated false again
+
+[74] 01:32:50Z M5.6 design §8.4: the finished real passes of partM4 → real_judge_latest names the finished pass with the newest score and its counts per criterion, real_judge_scores holds a group per (ai_meta number, model, revision, criterion) = psql join; nothing for an operation no pass judged
+    ok — 3 finished real pass(es) with a score today; latest = pass b0157467-295e-48df-9f06-5b1c0646235a (single_answer: {"pass":0,"fail_major":2,"fail_minor":0,"unscored":0}) = psql; 2 groups of (10, fake:ok, revision, criterion) with 7 scores = psql join; no row for the other operations
+
+[75] 01:32:53Z M5.7 F11: an AI cloze of E (asked, not reported, not about its private word) is reported (ai_more_than_one_answer) and confirmed → the ai row of reports: confirmed +1, total +1, open unchanged; every count = psql
+    ok — report 60902506-be1c-460f-a162-67f9ebb39236 on item f2c44a37-b728-41f7-a5ab-bdb86cc61cad: ai row {"source":"ai","total":1,"open":0,"no_error":0,"fixed":0,"confirmed":1,"refunded":1} → report (total +1, open +1) → confirmed (open back, confirmed +1) = {"source":"ai","total":2,"open":0,"no_error":0,"fixed":0,"confirmed":2,"refunded":2} = psql
+
+[76] 01:32:55Z M5.8 design §8.1, B44: two older changes of entitlements.ai_daily_cap (C0 → 3 at noon of today − 3, 3 → C0 at noon of today − 1) and uses on three days are inserted; a real PUT of the cap to 4 → today's cap is 4, back to C0; each day is measured against its own cap
+    ok — caps by day 1000, 3, 3, 1000, 1000; totals 0, 3, 2, 3, 7 (= psql); at_cap [false,true,false,false,false], days_at_cap 1 (against 1000 for every day: 0); a real PUT to 4 made today's cap 4 (at_cap true), back to 1000
+
+[77] 01:33:01Z M5.9 R7: no example id, run item id, question id, pass item id, user id, email, example word or question text in the three responses, and the held-out examples of the newest set appear only as counts (controls: the set id, the live run, the judge name, the real pass)
+    ok — 229 private values (1 held-out example ids of set v4, all example, item, question and user ids, emails, words, a question sentence) searched in 15430 characters of the three responses: none found; held-out only as counts (1 outputs); the controls are there
+
+[78] 01:33:06Z M5.10 the part's end state: the admin cap and the judge limits as C0, entitlements.ai_daily_cap as C0, no queued or running pass or run, E an editor, the seeded history and usage rows gone
+    ok — admin USD cap null, judge limits 30 / 0.85, ai_daily_cap 1000; no active pass or run; seeded rows deleted; E editor
+
+Smoke nhóm B passed in 332s (78 steps).
+exit=0
+
+--- pnpm smoke:nhom-b, run 2 (fresh database) ---
+
+
+[1] 01:34:39Z Wait for the API
+    ok — reachable at http://localhost:3750; database english_learning_smoke_nb; children run with AI_FAKE_ENABLED=true, JOB_QUEUE_PREFIX=wordmet-nb-smoke, no key
+
+[2] 01:34:39Z Admin (registered, then granted by the CLI)
+    ok — admin smokenb-admin-898359be@example.com (8f5ad708-fcaf-4fbc-a0a3-1111d55b17c0)
+
+[3] 01:34:44Z AI setup: fake provider on, fake:ok and fake:bad-form added (no model is chosen: the operations have none until a config is published)
+    ok — providers: fake only; models fake:ok and fake:bad-form
+
+[4] 01:34:44Z Content: import 4 catalog verbs (past -ed, third person -s) and publish
+    ok — batch bf591f5e-acdd-4c6b-a074-f7bb249dd14f: 4 created and published; nqjtexbv is not in the catalog
+
+[5] 01:34:46Z M1.1 forms of the catalog (B2): the three forms of W1 by part of speech and unspecified; null for a word the catalog lacks
+    ok — zqoeexgd: zqoeexgd, zqoeexgds, zqoeexgded; unspecified the same; nqjtexbv → null
+
+[6] 01:34:46Z M1.2 B2, B3, E10: an example without expected → 422; W1, W2, N, W3, W4 land held-out, dev, dev, dev, held-out; a held-out one lists only { id, split }
+    ok — splits held_out, dev, dev, dev, held_out; the list shows only { id, split } for zqoeexgd and zqbbfvar
+
+[7] 01:34:46Z M1.3 B1, B37: freezing is refused without expected / held-out; version 1 has 3 dev + 2 held-out; two admins at once never share a version
+    ok — version 1: 3 dev, 2 held-out; stray example refused with its id; a held version 2 → 409 eval-set-conflict; two parallel freezes (201, 201) → versions 3, 2, 1
+
+[8] 01:34:57Z M1.4 B3, B8, B9: a generate_cloze draft on fake:ok runs on version 1 and on the working set; rule and expected results; held-out only as numbers
+    ok — version run complete (5 items, held-out only as stats.held_out.total 2); zqrfuzhf/zqkkvguj rule pass, nqjtexbv skipped/not-in-catalog (B8), expected pass; GET run lists no zqoeexgd/zqbbfvar
+
+[9] 01:34:58Z M1.5 D11, B10: fake:bad-form fails the rules and the expected answers; the comparison lists the dev regressions and counts the held-out ones; the working set cannot be compared
+    ok — bad-form: zqrfuzhf/zqkkvguj rule fail unknown-form:<w>ment, expected fail; regressions dev nqjtexbv, zqkkvguj, zqrfuzhf, held-out 2; set mismatch → 409; a run against itself → none
+
+[10] 01:34:58Z M1.6 B6, R7: the calls page shows the content of a dev example and hides the content of a held-out one
+    ok — eval-<run>-zqrfuzhf: content shown; eval-<run>-zqoeexgd: held_out true, content null
+
+[11] 01:34:58Z M1.7 B7, Review focus 3: a draft test takes dev examples only; a held-out id is refused
+    ok — 3 items (zqrfuzhf, nqjtexbv, zqkkvguj); example_ids with a held-out id → 400
+
+[12] 01:34:58Z M1.8 B4: revealing a held-out example moves it to dev, shows its calls, counts on its versions; revealing a deleted one reads its snapshot
+    ok — zqoeexgd → dev with revealed_at, its calls show content, version 1 revealed_count 1; again → 409; zqbbfvar deleted then revealed from its snapshot (deleted true), revealed_count 2
+
+[13] 01:34:58Z M1.9 B5: editing a dev example changes neither the frozen version nor an earlier run
+    ok — zqrfuzhf: the working example now accepts only zqrfuzhf; version 1 and the finished run still hold zqrfuzhf, zqrfuzhfed, zqrfuzhfs
+
+[14] 01:34:59Z M1.10 B9: a check_private_word draft on fake:ok runs one example (bulk, dev) of the working set: rule not applicable, expected pass
+    ok — rule not_applicable, expected pass
+
+[15] 01:34:59Z M1.11 Review focus 5, D8.2: a bulk row whose expected is plain text is rejected by line, a bad split too; the good row is stored
+    ok — row 1 → expected: must be an object; row 2 → split: dev or held_out; row 3 stored
+
+[16] 01:34:59Z M1.12 the two drafts of this part are deleted (204); no draft is left and the live configs have no model
+    (429 on DELETE /v1/admin/ai/configs/check_private_word/draft; waiting 1s)
+    ok — drafts deleted; generate_cloze and check_private_word live configs: no model, live_version 0
+
+[17] 01:35:00Z M2.0 a second admin (created with POST /v1/admin/users) will send the requests that race or are timed: its write budget is fresh, so no 429 wait can serialize them
+    ok — admin smokenb-admin2-898359be@example.com (eff82c00-cf45-46f8-9400-972ac21bb4cf)
+
+[18] 01:35:00Z M2.1 fresh state: for the six operations live.number = ai_prompts.revision, no model, nothing before it, live_version 0, no draft; no config event; both old PUTs → 404
+    ok — generate_cloze=2, lookup_word=1, translate_sentence=1, generate_meaning_question=1, generate_sentence_mcq=1, check_private_word=1; live_version 0, no draft, no event; PUT prompts → 404 about:blank; PUT operations → 404 about:blank
+
+[19] 01:35:02Z M2.2 B29, D37: the first model by hand — a fake:ok draft, a complete run on the newest frozen set, a publish check without a baseline, publish with baseline null → 200, the learner call carries the new number
+    ok — config 4 (fake:ok) made live with run 42231ea2-9aa4-4f8d-9ac3-2a85a726213e on version 3, no baseline needed; learner call prompt_revision 4
+
+[20] 01:35:07Z M2.3 B23, B36: a second draft → 409 draft-exists with the first; a few-shot answer that is no form of a catalog word → 422 few-shot-invalid naming only that example (a good one saves)
+    ok — draft c51b5b80-090d-4bd2-bf87-38472b00bf1a: 2nd create → draft-exists (same id); zqoeexgdment at index 2 → few-shot-invalid unknown-form:zqoeexgdment, draft untouched; zqoeexgd saves (version 1)
+
+[21] 01:35:08Z M2.4 B24, E19: two saves of the draft at once with the same expected_version → 200 and 409 draft-version-conflict
+    ok — version 1 → 2; statuses 200, 409; the draft keeps the winner's note "race b"
+
+[22] 01:35:08Z M2.5 B26: a draft whose run is queued or running cannot be deleted (409 draft-busy); cancel the run, then the delete is 204
+    ok — run 3d0838e9-96ba-4d67-8915-f713326ac9ee was running → 409 draft-busy; cancelled (failed / cancelled) → delete 204
+
+[23] 01:35:08Z M2.6 B27, B25: a fake:two-blanks draft cannot publish without a run (409 eval-required); saving it again makes its run stale; the live config's first candidate run is its baseline
+    ok — no run → eval-required (baseline = run 42231ea2-9aa4-4f8d-9ac3-2a85a726213e of config 4); run at version 1 went stale after the save; run at version 2 → no blocker, 3 warnings
+
+[24] 01:35:18Z M2.7 B28: a new frozen set S2 → the draft alone is baseline-required (409); with the live config run on S2 → no blocker and a rate-drop shape warning
+    ok — S2 = version 4 (6 items); the draft's run on S2 alone → baseline-required; with run f7737083-5a5b-4c3a-b2cf-f29b95aa7725 of the live config → no blocker; warnings: rate-drop:shape, dev-regressed, held-out-failures-up
+
+[25] 01:35:19Z M2.8 B30: publish without acknowledging the warnings → 409 publish-warnings listing them; a wrong baseline or candidate run id → 409 publish-stale
+    ok — 3 warnings listed in the 409; wrong baseline → publish-stale; wrong candidate → publish-stale; the live config did not move
+
+[26] 01:35:19Z M2.9 B31, E19: two identical acknowledged publishes at once → 200 and 409 publish-stale, one new publish event
+    ok — statuses 200, 409; publish events 1 → 2; config 6 (fake:two-blanks) live, config 4 before it; the event keeps both run ids and 3 warnings
+
+[27] 01:35:22Z M2.10 B33, B34: runs a publish names are evidence (409 run-is-evidence); the models of the live and the previous config cannot be deleted nor lose their price (409 model-in-use); an unused model goes
+    ok — candidate, baseline and the first run → run-is-evidence, an ordinary run deletes (204); fake:two-blanks and fake:ok → model-in-use on delete, fake:two-blanks also on price null; fake:slow (named by no config) deletes (204)
+
+[28] 01:35:22Z M2.11 B32: a stale rollback → 409 publish-stale; rollback → fake:ok live again with nothing before it; again → 409 no-previous; the learner call carries its number; history lists rollback, publish, publish; a retired config keeps its model
+    (429 on POST /v1/admin/ai/configs/generate_cloze/rollback; waiting 38s)
+    ok — stale → publish-stale; rolled back to config 4, previous null; again → no-previous; learner prompt_revision 4; history rollback, publish, publish; fake:two-blanks (retired config) still model-in-use
+
+[29] 01:36:04Z M2.12 B48, D38: turning the operation off needs no run (model null, the fake:ok config stays before it, status model-not-set, the learner call is unavailable); a rollback turns it on again
+    ok — off without a run (ai_eval_runs stays at 9); status ready false / model-not-set; learner call unavailable / model-not-set; newest event publish with no run ids; rollback → config 4 (fake:ok), learner call succeeded
+
+[30] 01:36:15Z M3.0 a third admin (POST /v1/admin/users) acts for this part, so its ai.test budget is fresh; the judge settings start at their contract defaults
+    ok — admin smokenb-admin3-898359be@example.com (17f3411a-2ec3-4027-8d58-cd19e05e7a1b); admin_daily_usd_cap 2, judge_label_min 30, judge_agreement_min 0.85; daily_provider_calls_cap 3000
+
+[31] 01:36:15Z M3.1 the seeded judge "Chỉ một đáp án" (one judge, revision 1, no model, criterion single_answer); without a model a pass and a run with it are refused (409 model-not-set) and the refused run makes nothing
+    ok — judge ee7342eb-ba79-4479-83e9-97f2ecc36d7d: revision 1, operations [generate_cloze], no model; the pass on run f7737083-5a5b-4c3a-b2cf-f29b95aa7725 and the run with the judge → 409 model-not-set, ai_eval_runs stays at 9, no pass; unknown judge → 404
+
+[32] 01:36:17Z M3.2 B12, E4, Review focus 4: openai → 422 judge-provider, no criteria → 400; fake:ok → revision 2; stale expected_revision → 409 judge-revision-conflict; a new name alone adds no revision; clone → revision 1; two saves at once → 200 + 409
+    ok — openai → judge-provider (the row is deleted again), criteria [] → 400; fake:ok → revision 2; stale revision 1 → judge-revision-conflict; rename and rename back kept revision 2 (id 49acc485-7288-4c88-91eb-8b8fde6e9b48); clone 699fbb05-23c6-4fd8-8b71-dd595f2a34ad at revision 1 with the same criteria, then two saves at once → 200, 409, revision 2
+
+[33] 01:36:18Z M3.3 D14, D3, B6, R7: a live run on the newest frozen set with judge_id → 202 + judge_pass_id; the pass judges every output; dev items carry a pass score, held-out only tallies; a judge call carries exactly { target_operation, input, output, criteria, context }
+    ok — run 4079bf4c-194d-40ac-a209-7581f46f9ddf finished (6 outputs: 5 dev, 1 held-out); pass 67cfd1d1-374b-4522-894b-e393173f50ed judged 6/6; every dev item has single_answer pass; judge_stats dev {"pass":5,"fail_major":0,"fail_minor":0,"unjudged":0}, held-out {"pass":1,"fail_major":0,"fail_minor":0,"unjudged":0} with no held-out id in the response; the dev call sends only [context, criteria, input, output, target_operation] and names no run, pass or model; the held-out call: held_out true, content null
+
+[34] 01:36:22Z M3.4 B16: one queued or running pass per judge revision — a queued pass of the clone makes a start 409 judge-pass-running
+    ok — a queued pass of revision 2 of the clone → 409 judge-pass-running, nothing inserted; the row is deleted again
+
+[35] 01:36:24Z M3.5 B15: a second pass of the same judge revision on the same run judges nothing (202, finished, total 0) and makes no judge call
+    ok — pass b8ae294f-974f-475b-8d7a-5e764c2c40f2: finished, total 0; judge calls stay at 6
+
+[36] 01:36:26Z M3.6 D15, D16, B17, R7: labels on two dev items (pass, fail_major) → 200; a held-out output → 409 example-held-out; a label can be taken back; agreement revision 2 = labeled 2, agree 1, not calibrated
+    ok — labels pass + fail_major kept, the held-out output → example-held-out, an unknown output → 404, a label put and taken back; agreement revision 2: labeled 2, agree 1 (rate 0.5), calibrated false (30 labels needed); revision 1: labeled 0
+
+[37] 01:36:26Z M3.7 B11, B16: a second live run R2 without a judge → compare R1 / R2 lists judge_unmatched; two judge passes started at once never judge an output twice; then the comparison holds one judge row
+    ok — compare before the pass: judge [], judge_unmatched revision 2 scored a; two starts at once → 202 + 409 (one working pass of 6, judge calls 6 → 12); after it one judge row (dev {"pass":5,"fail_major":0,"fail_minor":0,"unjudged":0}, held-out as numbers only)
+
+[38] 01:36:30Z M3.8 design §6.3 step 3: a fake:bad-form draft judged by J on the same set → the publish check warns judge-rate-drop (revision 2, single_answer, 0 passed); publish without acknowledging → 409 publish-warnings with it; the draft goes
+    ok — R3 (bad-form, 6 outputs) judged; judge-rate-drop revision 2 single_answer {"passed":6,"counted":6} → {"passed":0,"counted":6}; all warnings: rate-drop, rate-drop, judge-rate-drop, dev-regressed, held-out-failures-up; publish without acknowledging → publish-warnings; draft deleted (R3 stays)
+
+[39] 01:36:31Z M3.8b D15, B17: calibrated follows judge_label_min and judge_agreement_min — ten labels over R1 and R3, the judge agrees with all but one; 30 labels needed by default; 10 and 0.85 → calibrated; 10 and 0.95 → not
+    ok — 10 labels (R1 5, R3 5), agree 9 (rate 0.9): 30 / 0.85 → calibrated false; 10 / 0.85 → true (also in judge_stats); 10 / 0.95 → false; limits back to 30 / 0.85
+
+[40] 01:36:32Z M3.9 B21: the daily call cap counts learner calls only — cap = learner calls today + 1 although admin calls today are far more: one learner call succeeds, the next is unavailable / daily-call-cap; the cap goes back
+    (429 on PUT /v1/admin/settings; waiting 26s)
+    ok — learner calls 3, admin calls 85 (status.today.calls = 3); cap 4: one succeeded, the next unavailable / daily-call-cap; cap back to 3000, calls 4
+
+[41] 01:37:12Z M3.10 E15, B19, B20: fake:not-recognized priced 1000/1000 → the clone judged with it stops at the cap (failed / admin-usd-cap, 1..3 of N judged), R1 stays finished and complete; a new run and a draft test → 409 admin-usd-cap
+    ok — cap 0.1 USD (today's admin spend rounded up to the cent, plus 0.10): the clone's pass on R1 ended failed / admin-usd-cap after 1 of 6 (cost 0.15000000); R1 still finished and complete; POST runs and draft/test → 409 admin-usd-cap; a new draft is kept for M3.12
+
+[42] 01:37:17Z M3.11 B18, E15: with no cap and fake:ok priced 1000/1000 a live run costs 0.15 a call and finishes; with the cap at spent + 0.10 the next run stops (failed / admin-usd-cap, complete false, 1..3 of N done)
+    ok — no cap: run b745f460-4759-46a0-9f0b-aa3df464baad finished, cost 0.90000000 (6 calls × 0.15); cap 1.15: run b995ae61-a5a9-48d5-b6c4-73660b07d500 failed / admin-usd-cap with 3 of 6 done, not complete
+
+[43] 01:37:18Z M3.12 B22, E14: with the cap at 0 an unpriced model is still refused first — pass, draft test and run on fake:refuse (no input price) → 409 model-price-missing; a priced model at cap 0 → admin-usd-cap; cap back to null
+    ok — cap 0: pass, draft test and run with fake:refuse (price_input null) → model-price-missing and nothing stored or called; the same draft on fake:ok (price 0) → admin-usd-cap; cap null again; draft deleted
+
+[44] 01:37:21Z M3.13 B34: a model named by any revision of a judge cannot be deleted (409 model-in-use) — fake:not-recognized only by an older clone revision, fake:refuse by the newest; an unused model goes (204)
+    ok — fake:not-recognized (clone revision 3) and fake:refuse (clone revision 4) → model-in-use; an unused fake:truncated deleted (204)
+
+[45] 01:37:21Z M3.14 D16, B3: deleting a labelled run hides it (204; 404 everywhere, off the list; labels, scores and agreement stay); deleting an unlabelled run removes its items, passes and scores
+    ok — R1 (5 labels, 7 scores): 204, 404 on the run, its items, a comparison, a new pass and a new label, off the list; labels, scores and the agreement unchanged; R2 (6 scores, no label): 204 and no run, item, pass or score left
+
+[46] 01:37:32Z M3.15 GET status: today.admin_usd_cap null (the part leaves the cap off), admin_cost_usd = what test, eval and judge calls cost today, calls = learner calls, cap = the learner cap
+    ok — admin_usd_cap null, admin_cost_usd 1.50000000 (ledger 1.5), calls 4 = learner calls, cap 3000
+
+[47] 01:37:34Z M4.0 a fourth admin A4 (POST /v1/admin/users) acts for this part and settings start at their defaults (real_judge_limit 200, content_retention_days 7, no admin cap); the judge J is the seeded one at revision 2 on fake:ok
+    ok — A4 smokenb-admin4-898359be@example.com (0e6f5ac8-e86d-4f26-a50f-366ca2d4d0e1); real_judge_limit 200, content_retention_days 7, admin_daily_usd_cap null; judge ee7342eb-ba79-4479-83e9-97f2ecc36d7d "Chỉ một đáp án" revision 2 on fake:ok, operations [generate_cloze]
+
+[48] 01:37:34Z M4.1 an editor E and a learner L (POST /v1/admin/users, staff_role editor / null), native language vi, Pro with 40 AI units and 200 sessions a day; the publisher admin is made too
+    ok — smokenb-editor-898359be@example.com (27ffc3d5-5262-4b47-aeeb-cd2a6b1f9b5c) editor; smokenb-learner-898359be@example.com (ca52ce84-17b4-420a-a4f2-11d3557fe75a) learner; publisher smokenb-publisher-898359be@example.com; both Pro with 40 AI units
+
+[49] 01:37:35Z M4.2 fake:ok is live for the four practice operations (the publisher publishes the three that are not); fake:bad-form is priced 1000 / 1000 and saved as the model of J (revision 3); the judge calls so far are counted
+    ok — live generate_cloze=10, generate_meaning_question=2, generate_sentence_mcq=2, check_private_word=3 (all fake:ok, ready); fake:bad-form priced 1000/1000 (before: {"input":"0.0000","cached_input":"0.0000","output":"0.0000"}); judge ee7342eb-ba79-4479-83e9-97f2ecc36d7d revision 3 (911309b7-3734-41d3-8f3b-44668a160e8d) on fake:bad-form; judge calls so far 19
+
+[50] 01:37:40Z M4.3 E (editor) and L (learner) practise real AI questions: E AI cloze on W1, W2, W3 and its private word P (prepare first) and one MCQ sentence on W1 with mates W2, W3, P; L AI cloze on W1, W2; psql counts 6 cloze and 1 MCQ question
+    ok — E (27ffc3d5-5262-4b47-aeeb-cd2a6b1f9b5c) practised zqoeexgd, zqrfuzhf, zqkkvguj, zpuyprrj (P is zpuyprrj, sense 9105dc81-6bde-4cad-b307-1159d4d5e5bd) and the MCQ on zqoeexgd with options ["zqoeexgd","zqrfuzhf","zpuyprrj","zqkkvguj"]; L (ca52ce84-17b4-420a-a4f2-11d3557fe75a) practised zqoeexgd, zqrfuzhf; 6 cloze + 1 MCQ questions, 7 ready requests
+
+[51] 01:37:56Z M4.4 B38: content_retention_days = 0 → the estimate says retention-off with nothing selected, the start is 409 nothing-to-judge (retention-off) and calls no judge; 7 again
+    ok — retention 0 → reason retention-off, selected 0, retention_days 0, no pairs; POST → 409 nothing-to-judge reason retention-off; no judge call, no pass; retention 7 → selected 5 again
+
+[52] 01:37:59Z M4.5 estimate: all accounts → 5 questions selected (E 3, L 2), P's skipped as private, no cost yet; one pair (live number, fake:ok, 6 questions); only test accounts → E's 3
+    ok — all: selected 5, skipped private_word 1, estimate_usd null, pairs [{10, fake:ok, 6}]; test accounts only: selected 3, pairs 4 questions (E's four, P's included in the pair count and skipped by the rule)
+
+[53] 01:38:00Z M4.6 B40, D35, B47: E loses its staff role → the test-account estimate selects nothing (reason null: the other staff practised nothing), the start is 409 nothing-to-judge (empty) and calls no judge; E an editor again → 3 selected (the role as it is now)
+    ok — E without a role: test-account estimate selected 0 / reason null, POST → 409 nothing-to-judge reason empty, judge calls and passes unchanged, all accounts still 5; E an editor again: selected 3, private_word 1
+
+[54] 01:38:04Z M4.7 B16: a running real pass of the judge's revision → a start is 409 judge-pass-running and inserts nothing; the row is deleted again
+    ok — a running real pass of revision 3 → 409 judge-pass-running, real passes stay at 1 while it exists; deleted again
+
+[55] 01:38:08Z M4.8 the test-account pass: POST → 201 { pass_id, selected 3, skipped }; the real worker judges it; the items are E's three questions with their verdicts, reasons, context and no learner id; P reaches no judge row and no judge call
+    (network error on GET /v1/admin/ai/calls: ECONNRESET; retrying)
+    ok — pass 3303a565-1b66-4047-8910-dddf37853c98 finished: 3 of 3 judged by revision 3 (fake:bad-form), cost 0.45000000 = ledger 0.45000000; items = E's three questions, newest first, each fail_major "fake: another word fits", config 10 / fake:ok, session_words the other two of W1-W3; filters {"limit":200,"since":"2026-10-23T01:38:08.607Z","config":null,"operation":"generate_cloze","test_accounts_only":true}; no learner id in the response; zpuyprrj in no ai_judge_pass_items row and no judge call (W1 found there: control); the judge request holds exactly [context, criteria, input, output, target_operation]; judge calls 19 → 22; test-account estimate now selected 0, already_judged 3
+
+[56] 01:38:25Z M4.9 all accounts: the estimate prices the 2 questions left at the revision's average cost (psql) and shows already_judged 3; the pass over L's questions judges them with session_words the other of W1, W2; one pass per question (5 in all), none of P
+    ok — estimate_usd 0.3 = 2 × 0.15; pass 1e0219ea-01ec-4ae5-8290-e8cf4f48ffbe finished 2 of 2 (cost 0.30000000); L's questions with session_words [["zqrfuzhf"],["zqoeexgd"]]; 5 fail_major scores of revision 3, none for P's question or the MCQ; estimate now selected 0, already_judged 5
+
+[57] 01:38:32Z M4.9b D16: an owner's label on a real question (PUT /v1/admin/ai/labels, subject_kind real_question) shows on the pass items; a question that is no pass item (P's, the MCQ one) cannot be labelled (404); the label can be taken back
+    (network error on GET /v1/admin/practice/real-judge/passes/3303a565-1b66-4047-8910-dddf37853c98/items: ECONNRESET; retrying)
+    ok — question af5cfa8b-6306-4d54-a56b-1bc2ec987231: label pass → 200 and listed on the pass items (judge's own verdict stays fail_major); P's question and the MCQ question → 404 not-found (no pass item), one label in ai_labels; taken back → verdict null, none left
+
+[58] 01:38:35Z M4.10 B39, D27: from a failed real question → preview { source real_judge, rebuilt false, input = the pass snapshot, expected forms } and add → a dev example with source real_judge; the same key again adds nothing; the MCQ, P's cloze and a rule question → 409 source-not-eligible
+    ok — question 100fafac-cc4f-4bd4-a32e-bdcce9f24a15 (zqkkvguj): preview source real_judge, rebuilt false, input = snapshot, forms ["zqkkvguj","zqkkvgujs","zqkkvgujed"]; added as dev example c530cb42-6ea4-4cda-8dca-c181714416d5 (source real_judge, source_ref = the question); the same Idempotency-Key → the same id, one row; the MCQ question → private-word; P's cloze question → private-word; a rule question → not-ai; examples 14 → 15
+
+[59] 01:38:42Z M4.11 D27, B43: L reports its AI cloze (ai_more_than_one_answer) → preview 409 report-not-confirmed; E (editor) confirms it; E gets 403 on both from-source routes; the admin previews { source report, rebuilt false, input = the request's } and adds it
+    ok — report 672b0dfa-6d7b-43eb-8d27-17c84b574ece (zqoeexgd, L): open → 409 report-not-confirmed; confirmed by E; E → 403 forbidden on GET and POST from-source; admin preview source report, rebuilt false, input = the request's ai_input; added as dev example 18a4672d-a6d4-4b03-86de-8c51ca56a03e (source report, source_ref = the report)
+
+[60] 01:38:45Z M4.12 B42, E17: the request of that report is gone (what the hourly cleanup does after 7 days) → preview rebuilt true with no input; the add rebuilds { word, part_of_speech, level, meaning_vi, context_label } from the catalog sense
+    (network error on GET /v1/admin/practice/eval-examples/from-source: ECONNRESET; retrying)
+    ok — request 5672e6f2-c9b1-4e04-ad90-adb5dd3eb164 deleted (the question row stays): preview rebuilt true, input null; added as dev example 0bf14adb-7e2a-4966-93e1-660b9ab385aa with input {"word":"zqoeexgd","level":"B1","meaning_vi":"nghĩa thử 1","context_label":null,"part_of_speech":"verb"} = the sense now = what the AI was sent
+
+[61] 01:38:53Z M4.13 B41: a running real pass with a heartbeat 16 minutes old → pnpm maintenance:run closes it failed / stalled; a running pass with a fresh heartbeat (another judge) is left running (control); both rows deleted
+    (network error on GET /v1/admin/practice/real-judge/passes: ECONNRESET; retrying)
+    ok — maintenance:run: the pass with the 16-minute-old heartbeat → failed / stalled with finished_at; the pass with a fresh heartbeat stays running; both deleted
+
+[62] 01:39:07Z M4.14 permissions and validation (status, type, body): E and L get 403 on every route; unknown judge / pass → 404; an operation the judge does not score, an inactive judge, bad queries and page tokens → 400; a bad config pair is refused
+    ok — E → 403 forbidden on GET real-judge/estimate, POST real-judge, GET real-judge/passes, GET real-judge/passes/3303a565-1b66-4047-8910-dddf37853c98/items, GET eval-examples/from-source, POST eval-examples/from-source (L on three of them); A4 gets 200 on the reads; unknown judge / pass / question / report → 404; the eval-run pass → 404; bad ids, both or no ids, an unknown field, page_size 0 and 101, a bad token → 400; an operation the judge does not score → 400 ["operation: not judged by this judge"]; an inactive judge → 400 ["judge_id: judge is not active"] (active again, revision 3); pages of one: 1e0219ea-01ec-4ae5-8290-e8cf4f48ffbe then 3303a565-1b66-4047-8910-dddf37853c98
+
+[63] 01:39:09Z M4.15 Review focus 1 in the real flow: J also scoring generate_sentence_mcq → the estimate for it selects nothing and counts P's MCQ question as private, the start is 409 nothing-to-judge (empty) with that count; the operations are restored
+    ok — operations [generate_cloze, generate_sentence_mcq] added no revision; the MCQ estimate: selected 0, skipped private_word 1 (its candidates held P), one pair with 1 question; POST → 409 nothing-to-judge reason empty; no pass, no judge call; operations back to [generate_cloze]
+
+[64] 01:39:12Z M4.16 one pass per revision, the pair filter, the setting and newest first: a new revision 4 judges every question again (E 3, L 1: the reported one has no request left, so no content); the pair filter narrows; ai.real_judge_limit 2 → 2 selected, 2 left; the pass takes the 2 newest
+    ok — revision 4: selected 4, skipped private_word 1 and no_content 1 (the reported question, request gone), no price yet; the live pair → 4, another number or model → 0 and POST → 409 empty; limit 0, 501 and 2.5 → 400 and nothing stored; limit 2 → selected 2, remaining 2; pass b2849380-249a-4a55-8065-2a841cd3d848 judged the two newest questions ["9f6db5f7-ed29-4af1-bd71-397ee798eaa3","100fafac-cc4f-4bd4-a32e-bdcce9f24a15"] (psql order), the same Idempotency-Key again → the same pass, one row; then selected 2 at 0.3 USD, already_judged 2; limit back to 200
+
+[65] 01:39:18Z M4.17 no_content in the real flow: the kept content of one call expires → that question is skipped as no_content (the request-gone one already is), the rest still selected; the expiry is put back
+    ok — call 30960aec-351c-4da6-94fe-5a01640a90a8 (the oldest question): content expired → selected 1, skipped no_content 2 (this one and the question whose request is gone), already_judged 2; expiry restored → selected 2, no_content 1
+
+[66] 01:39:22Z M4.18 M3's refusals pass through the real-judge start: cap 0 → 409 admin-usd-cap (the estimate shows admin_usd_cap 0); a judge on a model without a price → 409 model-price-missing; nothing is inserted; the cap is back to null
+    ok — cap 0: estimate admin_usd_cap 0 and POST → 409 admin-usd-cap; judge "Smoke clone" (fake:refuse, no input price) → 409 model-price-missing; real passes stay at 3; cap null again
+
+[67] 01:39:24Z M4.19 the part's end state: fake:bad-form priced as before, E an editor, no queued or running pass, the settings back to their defaults, J on fake:bad-form at revision 4 with its operations as before
+    ok — fake:bad-form price {"input":"0.0000","cached_input":"0.0000","output":"0.0000"} (as before); E editor; no queued or running pass; settings 200 / 7 / null; J ee7342eb-ba79-4479-83e9-97f2ecc36d7d revision 4 on fake:bad-form; 3 finished real passes (b2849380-249a-4a55-8065-2a841cd3d848, 1e0219ea-01ec-4ae5-8290-e8cf4f48ffbe, 3303a565-1b66-4047-8910-dddf37853c98); 3 examples with a source (1 real_judge, 2 report); E 27ffc3d5-5262-4b47-aeeb-cd2a6b1f9b5c and L ca52ce84-17b4-420a-a4f2-11d3557fe75a with tokens in S.editor and S.learner
+
+[68] 01:39:26Z M5.0 a sixth admin A6 acts for this part; the settings C0 are read (admin USD cap, entitlements.ai_daily_cap, judge limits) and the admin cap is set to null; J is the seeded judge on fake:bad-form, the live cloze config is on fake:ok
+    ok — A6 smokenb-admin6-898359be@example.com (909c1cff-e9ab-4d54-b988-7857d4da91b4); C0 = {"adminCap":null,"dailyCap":1000,"labelMin":30,"agreementMin":0.85}, admin USD cap now null; judge ee7342eb-ba79-4479-83e9-97f2ecc36d7d at revision 4 on fake:bad-form; live cloze config 10 (50ca7023-93cb-4814-a4fe-ebd3628d1c01) on fake:ok; newest frozen set v4 (3341a793-779e-4945-b369-517c9fde64a1)
+
+[69] 01:39:28Z M5.1 permissions: the editor gets 200 from the three endpoints and sees the new keys (latest_evals, judge_scores, judge_revisions, real_judge_scores, real_judge_latest, reports[].confirmed, days[].cap); the learner gets 403 from each; the admin controls
+    ok — editor 200 on dashboard, ai-quality, ai-usage/days with latest_evals (6), judge_scores, judge_revisions, real_judge_scores, real_judge_latest, reports[].confirmed, days[].cap / at_cap; learner 403 forbidden on all three; the admin's keys are the editor's
+
+[70] 01:39:29Z M5.2 design §5.5: today.calls = the learner calls since Vietnam midnight (psql), today.admin_cost_usd = the cost of test, eval and judge calls since then (psql numeric(20,8)), admin_usd_cap null; the status report says the same
+    ok — today.calls 12 = psql learner calls since 2026-10-30T00:00:00+07:00; admin_cost_usd 2.55000000 = psql sum of test + eval + judge costs; admin_usd_cap null; GET status says the same
+
+[71] 01:39:32Z M5.3 design §8.2: a live run of the newest set → latest_evals names it (set, live config, stats = GET run items, keys, no judge yet) and today.calls does not move (B21); a draft run of the same set leaves the live run the latest eval
+    ok — run 4f26784c-a580-44d3-a69e-3b8421ad042f on set v4: latest_evals has it with live config 10, stats = GET items (5 dev, 1 held-out, only counts), keys id, created_at, model, stats, judge, judge []; today.calls stays 12; the draft run b73f555a-7c89-473d-91bf-70505b0fc2f2 (config d3c41994-f7c0-4d1c-8ee5-8fa64235cbe6) does not replace it; the draft deleted again
+
+[72] 01:39:37Z M5.4 design §8.3, D17: J judges the run → run.judge = psql counts by split and verdict; a new revision (max_output_tokens changed) judges it again → judge_scores has the live pair (number, fake:ok) for each revision, every group = psql, no hidden run counted; judge_revisions lists both with the D15 rule from psql
+    (network error on GET /v1/admin/settings: ECONNRESET; retrying)
+    ok — pass bf09a969-08cd-4339-bb89-cc012f150da3 → run.judge = psql (dev fail_major 5, held-out fail_major 1, as counts); revision 5 judged the run again (pass bfaeff45-8fcf-41b0-9c8c-fed4165f7543); the live pair has one group per revision (2 groups in all) = psql, 7 scores of hidden runs left out; judge_revisions lists 5 revisions (J: 2, 3, 4, 5) = psql incl. the D15 rule
+
+[73] 01:39:55Z M5.5 D15: ten owner labels over the dev items of several live runs → with judge_label_min 10 and judge_agreement_min 0.5 the newest revision is calibrated (6 of 10 agree), the older one by what psql counts; the newest run is the latest eval; labels and limits are put back
+    (network error on GET /v1/admin/settings: ECONNRESET; retrying)
+    ok — 2 live runs (5 dev items each, each judged by the newest revision), 10 labels (6 fail_major, 4 pass) → revision 5: labeled 10, agree 6, calibrated true; revision 4: labeled 5, agree 5, calibrated false (psql: the D15 rule); the last run is the latest eval; labels deleted and limits back to 30 / 0.85: calibrated false again
+
+[74] 01:40:27Z M5.6 design §8.4: the finished real passes of partM4 → real_judge_latest names the finished pass with the newest score and its counts per criterion, real_judge_scores holds a group per (ai_meta number, model, revision, criterion) = psql join; nothing for an operation no pass judged
+    ok — 3 finished real pass(es) with a score today; latest = pass b2849380-249a-4a55-8065-2a841cd3d848 (single_answer: {"pass":0,"fail_major":2,"fail_minor":0,"unscored":0}) = psql; 2 groups of (10, fake:ok, revision, criterion) with 7 scores = psql join; no row for the other operations
+
+[75] 01:40:30Z M5.7 F11: an AI cloze of E (asked, not reported, not about its private word) is reported (ai_more_than_one_answer) and confirmed → the ai row of reports: confirmed +1, total +1, open unchanged; every count = psql
+    ok — report 573e4c4b-5a3d-4f77-8810-dd159ad43a29 on item 72c55c4b-5daf-4c72-82d0-ba407eb4333a: ai row {"source":"ai","total":1,"open":0,"no_error":0,"fixed":0,"confirmed":1,"refunded":1} → report (total +1, open +1) → confirmed (open back, confirmed +1) = {"source":"ai","total":2,"open":0,"no_error":0,"fixed":0,"confirmed":2,"refunded":2} = psql
+
+[76] 01:40:32Z M5.8 design §8.1, B44: two older changes of entitlements.ai_daily_cap (C0 → 3 at noon of today − 3, 3 → C0 at noon of today − 1) and uses on three days are inserted; a real PUT of the cap to 4 → today's cap is 4, back to C0; each day is measured against its own cap
+    ok — caps by day 1000, 3, 3, 1000, 1000; totals 0, 3, 2, 3, 7 (= psql); at_cap [false,true,false,false,false], days_at_cap 1 (against 1000 for every day: 0); a real PUT to 4 made today's cap 4 (at_cap true), back to 1000
+
+[77] 01:40:39Z M5.9 R7: no example id, run item id, question id, pass item id, user id, email, example word or question text in the three responses, and the held-out examples of the newest set appear only as counts (controls: the set id, the live run, the judge name, the real pass)
+    ok — 229 private values (1 held-out example ids of set v4, all example, item, question and user ids, emails, words, a question sentence) searched in 15430 characters of the three responses: none found; held-out only as counts (1 outputs); the controls are there
+
+[78] 01:40:46Z M5.10 the part's end state: the admin cap and the judge limits as C0, entitlements.ai_daily_cap as C0, no queued or running pass or run, E an editor, the seeded history and usage rows gone
+    (network error on GET /v1/admin/settings: ECONNRESET; retrying)
+    ok — admin USD cap null, judge limits 30 / 0.85, ai_daily_cap 1000; no active pass or run; seeded rows deleted; E editor
+
+Smoke nhóm B passed in 370s (78 steps).
+exit=0
+
+--- API + worker logs of both runs: no secrets and no learner content ---
+Patterns searched (0 hits in both runs): the smoke password, `Bearer `, `eyJ`, "Lan will", "nghĩa thử", "another word fits", `smokenb-`, the not-in-catalog word, the 5 catalog words and the editor's private word.
+Controls (must be found): "Nest application successfully started" 1 / 1; `eval-` 108 / 108; `judge-` 46 / 46; the not-in-catalog word in the smoke output 5 / 5.
+M5.9 searched 229 private values (example ids incl. held-out, run-item ids, question ids, pass-item ids, session-item ids, user ids, emails, words, sentences) in 15,430 characters of the three dashboard responses: none found; controls (set id, live config id, judge name, real pass id, latest run id) were found.
+
+--- old smokes and learner:setup on the M5 API (30–31/10/2026, API and worker restarted, each on a fresh database) ---
+[smoke:buoc-6, english_learning_smoke_b6, JOB_QUEUE_PREFIX=wordmet-b6-smoke]
+Smoke Bước 6 passed in 220s (32 steps).
+[smoke:buoc-7, english_learning_smoke_b7, JOB_QUEUE_PREFIX=wordmet-b7-smoke]
+Smoke Bước 7 passed in 250s (30 steps).
+[pnpm learner:setup --admin ls-admin-m5@example.com --learner ls-learner-m5@example.com, english_learning_smoke_ls]
+run 1: exit 0 in 83 s; fake:ok published on all six operations.
+run 2: exit 0 in 5 s; "published now: none (all already on fake:ok)".
