@@ -527,11 +527,11 @@ describe('AiEvalPage runs (A/83)', () => {
     expect(new Set(keys).size).toBe(2);
   });
 
-  it('§6.5: 409 model-not-set → the Prompt copy and a link to Thao tác', async () => {
+  it('§6.5: 409 model-not-set → the copy and a link to Cấu hình of that operation', async () => {
     await openPage({ [URL.startRun]: () => problem(409, 'model-not-set') });
     await userEvent.click(runButton());
     expect(await screen.findByText(vi.errors['model-not-set'])).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: vi.ai.prompts.test.openOperations })).toHaveAttribute('href', '/ai/operations');
+    expect(screen.getByRole('link', { name: vi.ai.prompts.test.openConfigs })).toHaveAttribute('href', '/ai/configs?op=generate_cloze');
   });
 
   it('an empty set → "needs an example" copy', async () => {

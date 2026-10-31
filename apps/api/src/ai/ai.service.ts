@@ -5,6 +5,7 @@ import { PRISMA_CLIENT } from '../common/db/prisma.module.js';
 import { Prisma, type PrismaClient } from '../generated/prisma/client.js';
 import { OPERATION_ID_PATTERN } from './ai.constants.js';
 import type { AiOperation, AiReadiness, AiResult } from './ai.types.js';
+import { LiveConfigReader } from './configs/live-config.reader.js';
 import { EvalExamplesService, type ExampleFromSource } from './eval/eval-examples.service.js';
 import { EvalRulesRegistry, type EvalRules } from './eval/eval-rules.port.js';
 import { ReadinessService } from './runner/readiness.service.js';
@@ -22,6 +23,7 @@ export class AiService {
     @Inject(Clock) private readonly clock: Clock,
     @Inject(EvalRulesRegistry) private readonly evalRules: EvalRulesRegistry,
     @Inject(EvalExamplesService) private readonly evalExamples: EvalExamplesService,
+    @Inject(LiveConfigReader) private readonly liveConfigs: LiveConfigReader,
   ) {}
 
   /** Practice hands its rules and catalog forms to eval runs here (nhóm B design §5.2); `ai` never imports Practice or Content. */
@@ -35,6 +37,15 @@ export class AiService {
    */
   createEvalExample(args: ExampleFromSource): Promise<{ id: string }> {
     return this.evalExamples.createFromSource(args);
+  }
+
+  /**
+   * The number of the config an operation runs now and the model's id, for a caller that records which config made something (contract §4).
+   * `null` when the operation has no live config (a deployment before the switch-over).
+   */
+  async liveConfigNumber(op: AiOperation): Promise<{ number: number; model: string | null } | null> {
+    const live = await this.liveConfigs.find(op);
+    return live ? { number: live.number, model: live.selection?.modelId ?? null } : null;
   }
 
   async isReady(op: AiOperation): Promise<AiReadiness> {

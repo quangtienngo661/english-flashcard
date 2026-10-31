@@ -13,8 +13,7 @@ import { AiAdapterRegistry } from '../adapters/ai-adapter.registry.js';
 import { AI_SYSTEM_ACTOR_ID } from '../ai.constants.js';
 import { AI_OPERATIONS, type AiOperation } from '../ai.types.js';
 import { promptViolations } from '../prompts/prompt-rules.js';
-import { PromptsRepository } from '../prompts/prompts.repository.js';
-import { SelectionReader } from '../runner/selection.js';
+import { SelectionReader, toSelection, type ModelRow, type Selection } from '../runner/selection.js';
 import { EvalQueue } from './eval-queue.service.js';
 import type { EvalRunStatus } from './eval-runs.repository.js';
 import type { EvalSplit, ExpectedResult, RuleResult, RunItemStatus } from './eval.types.js';
@@ -23,7 +22,10 @@ import { compareRuns, isComplete, runStats, type RunItemResult } from './run-sta
 /** Body of `POST /v1/admin/ai/eval/runs` (design §10): the prompt in use, or a draft checked by the save rules. */
 export const createRunSchema = z.strictObject({
   operation: z.enum(AI_OPERATIONS),
-  prompt: z.union([z.literal('current'), z.strictObject({ instructions: z.string(), examples: z.array(z.unknown()) })]),
+  /** Exactly one of `prompt` and `config` (checked by `create`: the error then names both). */
+  prompt: z.union([z.literal('current'), z.strictObject({ instructions: z.string(), examples: z.array(z.unknown()) })]).optional(),
+  /** The live config, or the draft of the operation (M2). */
+  config: z.enum(['live', 'draft']).optional(),
   /** A frozen version of the operation's set (design §5.3); without it the run takes the working set, a quick try that cannot be compared. */
   set_id: z.uuid().transform((value) => value.toLowerCase()).optional(),
 });
@@ -34,11 +36,11 @@ type RunRecord = {
   maxOutputTokens: number | null; promptRevision: number | null; draft: unknown; status: string; total: number;
   validCount: number; avgLatencyMs: number | null; costUsd: { toFixed(digits: number): string } | null; costUnknownCount: number;
   error: string | null; startedBy: string; createdAt: Date; startedAt: Date | null; finishedAt: Date | null;
-  setId: string | null; legacy: boolean;
+  setId: string | null; legacy: boolean; configId: string | null; configVersion: number | null;
 };
 
 /** What the summary of a run needs besides its own row: how many items have a result, whether it is complete, which version it ran. */
-type RunExtras = { done: number; complete: boolean; setVersion: number | null };
+type RunExtras = { done: number; complete: boolean; setVersion: number | null; configNumber: number | null };
 
 type ItemRecord = {
   exampleId: string; position: number; split: string; input: unknown; expected: unknown; status: string; reason: string | null; output: unknown;
@@ -69,7 +71,7 @@ function summary(row: RunRecord, extras: RunExtras, emails: ReadonlyMap<string, 
     id: row.id, operation: row.operation as AiOperation, provider: row.provider, model: row.model, effort: row.effort,
     thinking: row.thinking, max_output_tokens: row.maxOutputTokens, prompt_revision: row.promptRevision, status: row.status,
     total: row.total, done: extras.done, valid_count: row.validCount, set_id: row.setId, set_version: extras.setVersion, legacy: row.legacy,
-    complete: extras.complete,
+    complete: extras.complete, config_id: row.configId, config_version: row.configVersion, config_number: extras.configNumber,
     avg_latency_ms: row.avgLatencyMs, cost_usd: row.costUsd?.toFixed(8) ?? null, cost_unknown_count: row.costUnknownCount,
     error: row.error, started_by: row.startedBy, started_by_user: userRef(row.startedBy, emails, SYSTEM_IDS), created_at: row.createdAt.toISOString(),
     started_at: row.startedAt?.toISOString() ?? null, finished_at: row.finishedAt?.toISOString() ?? null,
@@ -83,7 +85,6 @@ export class EvalRunsService {
     @Inject(PRISMA_CLIENT) private readonly prisma: PrismaClient,
     @Inject(SelectionReader) private readonly selections: SelectionReader,
     @Inject(AiAdapterRegistry) private readonly registry: AiAdapterRegistry,
-    @Inject(PromptsRepository) private readonly prompts: PromptsRepository,
     @Inject(EvalQueue) private readonly queue: EvalQueue,
     @Inject(IdentityService) private readonly identity: IdentityService,
     @Inject(RateLimiter) private readonly limiter: RateLimiter,
@@ -93,18 +94,24 @@ export class EvalRunsService {
   async create(actorId: string, body: CreateRunBody): Promise<{ run_id: string; status: 'queued' }> {
     const parsed = createRunSchema.safeParse(body);
     if (!parsed.success) throw invalid(parsed.error.issues.map((issue) => `${issue.path.join('.')}: ${issue.message}`));
-    const { operation, prompt } = parsed.data;
-    const selection = await this.selections.load(operation);
+    const { operation } = parsed.data;
+    // `prompt: 'current'` is the old way to say "the live config" (an old client keeps working, Review focus 4).
+    const config = parsed.data.prompt === 'current' ? 'live' : parsed.data.config;
+    const prompt = parsed.data.prompt === 'current' ? undefined : parsed.data.prompt;
+    if ((parsed.data.prompt === undefined) === (parsed.data.config === undefined)) throw invalid(['prompt: send exactly one of prompt and config']);
+    // A config run uses the config's own model and settings; a run of a draft text (`prompt: {…}`) uses the live config's model.
+    const tried = config === undefined ? null : await this.configToRun(operation, config);
+    const selection: Selection | null = tried ? tried.selection : await this.selections.load(operation);
     if (!selection) throw problem(409, 'model-not-set', 'Model not set');
     if (!this.registry.get(selection.provider)) throw problem(409, 'provider-not-configured', 'Provider not configured');
     let promptRevision: number | null = null;
     let draft: { instructions: string; examples: unknown[] } | null = null;
-    if (prompt === 'current') {
-      promptRevision = (await this.prompts.current(operation)).revision;
-    } else {
-      const violations = promptViolations(operation, prompt);
+    if (!tried) {
+      // The run names the config and its version (no prompt revision, no draft text: the CHECK allows exactly one of the three); only a
+      // legacy draft text from the Prompt page is stored as `draft`, never usable as evidence for a publish.
+      const violations = promptViolations(operation, prompt!);
       if (violations.length) throw invalid(violations.map((violation) => `prompt.${violation}`));
-      draft = prompt;
+      draft = prompt!;
     }
     const examples = await this.examplesOf(operation, parsed.data.set_id);
     // The run counts against `ai.test` only now: a request refused above (no model, bad draft, no example) costs nothing.
@@ -117,6 +124,7 @@ export class EvalRunsService {
         maxOutputTokens: selection.maxOutputTokens, promptRevision,
         ...(draft ? { draft: draft as Prisma.InputJsonValue } : {}),
         priceInput: selection.price?.input ?? null, priceCachedInput: selection.price?.cachedInput ?? null, priceOutput: selection.price?.output ?? null,
+        configId: tried?.id ?? null, configVersion: tried?.version ?? null,
         setId: parsed.data.set_id ?? null, status: 'queued', total: examples.length, startedBy: actorId,
       } });
       await tx.aiEvalRunItem.createMany({ data: examples.map((example) => ({
@@ -232,6 +240,19 @@ export class EvalRunsService {
     return examples.map((example, position) => ({ ...example, position }));
   }
 
+  /** The config a run of `config` kind tries: the live one or the draft, with the selection its model gives. */
+  private async configToRun(op: AiOperation, which: 'live' | 'draft'): Promise<{ id: string; version: number; selection: Selection | null }> {
+    let row;
+    if (which === 'draft') {
+      row = await this.prisma.aiConfig.findFirst({ where: { operation: op, status: 'draft' }, include: { model: true } });
+    } else {
+      const live = await this.prisma.aiLiveConfig.findUnique({ where: { operation: op } });
+      row = live ? await this.prisma.aiConfig.findUnique({ where: { id: live.configId }, include: { model: true } }) : null;
+    }
+    if (!row) throw problem(404, 'not-found', 'Not found');
+    return { id: row.id, version: row.version, selection: row.model ? toSelection(op, row, row.model as ModelRow) : null };
+  }
+
   /** Per run of a page: items with a result, whether the run is complete (R11), the version it ran. Two grouped queries, whatever the page size. */
   private async extras(rows: RunRecord[]): Promise<Map<string, RunExtras>> {
     const result = new Map<string, RunExtras>();
@@ -240,12 +261,16 @@ export class EvalRunsService {
     const setIds = [...new Set(rows.flatMap((row) => (row.setId ? [row.setId] : [])))];
     const sets = setIds.length > 0 ? await this.prisma.aiEvalSet.findMany({ where: { id: { in: setIds } }, select: { id: true, version: true } }) : [];
     const versions = new Map(sets.map((set) => [set.id, set.version]));
+    const configIds = [...new Set(rows.flatMap((row) => (row.configId ? [row.configId] : [])))];
+    const configs = configIds.length > 0 ? await this.prisma.aiConfig.findMany({ where: { id: { in: configIds } }, select: { id: true, number: true } }) : [];
+    const numbers = new Map(configs.map((config) => [config.id, config.number]));
     for (const row of rows) {
       const own = groups.filter((group) => group.runId === row.id);
       result.set(row.id, {
         done: own.filter((group) => group.status !== 'pending').reduce((sum, group) => sum + group._count._all, 0),
         complete: isComplete(row.status as EvalRunStatus, own.map((group) => ({ status: group.status as RunItemStatus }))),
         setVersion: row.setId ? (versions.get(row.setId) ?? null) : null,
+        configNumber: row.configId ? (numbers.get(row.configId) ?? null) : null,
       });
     }
     return result;
@@ -267,7 +292,16 @@ export class EvalRunsService {
 
   /** Deletes a finished or failed run (its item rows go with it). `ai_calls` is not touched: the costs report reads it, not the runs. */
   async remove(id: string): Promise<void> {
-    const { count } = await this.prisma.aiEvalRun.deleteMany({ where: { id, status: { in: ['finished', 'failed'] } } });
+    // A run that a publish or rollback names as its evidence stays (B33); the foreign key is the last word if an event lands meanwhile.
+    const evidence = problem(409, 'run-is-evidence', 'The run is evidence of a publish');
+    if (await this.prisma.aiConfigEvent.findFirst({ where: { OR: [{ candidateRunId: id }, { baselineRunId: id }] }, select: { id: true } })) throw evidence;
+    let count: number;
+    try {
+      ({ count } = await this.prisma.aiEvalRun.deleteMany({ where: { id, status: { in: ['finished', 'failed'] } } }));
+    } catch (error) {
+      if (error !== null && typeof error === 'object' && 'code' in error && error.code === 'P2003') throw evidence;
+      throw error;
+    }
     if (count === 0) throw await this.refusal(id, 'run-active', 'Run is still active');
   }
 

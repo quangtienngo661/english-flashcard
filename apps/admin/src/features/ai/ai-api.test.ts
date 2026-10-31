@@ -1,10 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { ApiClient } from '../../api/client';
 import {
-  AI_OPERATION_ORDER, aiKeys, cancelRun, createExample, createModel, deleteExample, deleteModel, deleteRun, effortChoicesFor, freezeSet, getCosts, getForms, getPrompt,
-  getRun, getRunComparison, getSet, getStatus, getTestQuota, isDevExample, isRunCancelled, isRunDone, listCalls, listExamples, listModels, listOperations,
-  listRevisions, listRunItems, listRuns, listSets, refreshModel, revealExample, runTest, saveOperation, savePrompt, sortByOperationOrder, startRun, updateExample,
-  updateModel, type AiModel, type ExampleRow,
+  AI_OPERATION_ORDER, aiKeys, cancelRun, createDraft, createExample, createModel, deleteDraft, deleteExample, deleteModel, deleteRun, freezeSet, getCosts, getForms,
+  getConfigs, getPublishCheck, getRun, getRunComparison, getSet, getStatus, getTestQuota, isDevExample, isRunCancelled, isRunDone, listCalls, listExamples, listModels, listOperations,
+  listConfigHistory, listRevisions, listRunItems, listRuns, listSets, publishDraft, refreshModel, revealExample, rollbackToPrevious, saveDraft, sortByOperationOrder, startRun, testDraft, updateExample,
+  updateModel, type ExampleRow,
 } from './ai-api';
 
 function fakeApi() {
@@ -18,10 +18,10 @@ function fakeApi() {
 describe('ai api paths and methods', () => {
   it('reads', async () => {
     const { api, mock } = fakeApi();
-    await getStatus(api); await listModels(api); await listOperations(api); await getPrompt(api, 'lookup_word'); await getTestQuota(api);
+    await getStatus(api); await listModels(api); await listOperations(api); await getTestQuota(api);
     await listExamples(api, 'generate_cloze');
     expect(mock.get.mock.calls.map((c) => c[0])).toEqual([
-      '/v1/admin/ai/status', '/v1/admin/ai/models', '/v1/admin/ai/operations', '/v1/admin/ai/prompts/lookup_word',
+      '/v1/admin/ai/status', '/v1/admin/ai/models', '/v1/admin/ai/operations',
       '/v1/admin/ai/test-quota', '/v1/admin/ai/eval/examples?operation=generate_cloze',
     ]);
   });
@@ -41,18 +41,10 @@ describe('ai api paths and methods', () => {
     await updateModel(api, 'm1', { note: 'n' });
     await refreshModel(api, 'm1');
     await deleteModel(api, 'm1');
-    const op = { expected_version: 0, model_ref: 'm1', effort: null, thinking: null, max_output_tokens: 1200 };
-    await saveOperation(api, 'lookup_word', op);
-    const prompt = { expected_revision: 1, instructions: 'x', examples: [] };
-    await savePrompt(api, 'lookup_word', prompt);
-    const test = { instructions: 'x', examples: [], example_ids: ['e1'] };
-    await runTest(api, 'lookup_word', test);
-    expect(mock.post.mock.calls).toEqual([
-      ['/v1/admin/ai/models', model], ['/v1/admin/ai/models/m1/refresh'], ['/v1/admin/ai/prompts/lookup_word/test', test],
-    ]);
+    expect(mock.post.mock.calls).toEqual([['/v1/admin/ai/models', model], ['/v1/admin/ai/models/m1/refresh']]);
     expect(mock.patch).toHaveBeenCalledWith('/v1/admin/ai/models/m1', { note: 'n' });
     expect(mock.delete).toHaveBeenCalledWith('/v1/admin/ai/models/m1');
-    expect(mock.put.mock.calls).toEqual([['/v1/admin/ai/operations/lookup_word', op], ['/v1/admin/ai/prompts/lookup_word', prompt]]);
+    expect(mock.put).not.toHaveBeenCalled();
   });
 });
 
@@ -160,6 +152,63 @@ describe('golden set api (nhóm B M1)', () => {
   });
 });
 
+describe('config lifecycle api (nhóm B M2)', () => {
+  it('the configs of an operation are one GET; the draft is created, saved, deleted and test-run under /draft', async () => {
+    const { api, mock } = fakeApi();
+    await getConfigs(api, 'generate_cloze');
+    await createDraft(api, 'generate_cloze', {});
+    await createDraft(api, 'lookup_word', { from_config_id: 'C1' });
+    const body = {
+      expected_version: 0, instructions: 'x', examples: [], model_ref: null, effort: null, thinking: null, max_output_tokens: null, note: null,
+    };
+    await saveDraft(api, 'generate_cloze', body);
+    await deleteDraft(api, 'generate_cloze');
+    await testDraft(api, 'generate_cloze', { example_ids: ['e1'] });
+    expect(mock.get).toHaveBeenCalledExactlyOnceWith('/v1/admin/ai/configs/generate_cloze');
+    expect(mock.post.mock.calls).toEqual([
+      ['/v1/admin/ai/configs/generate_cloze/draft', {}],
+      ['/v1/admin/ai/configs/lookup_word/draft', { from_config_id: 'C1' }],
+      ['/v1/admin/ai/configs/generate_cloze/draft/test', { example_ids: ['e1'] }],
+    ]);
+    expect(mock.put).toHaveBeenCalledExactlyOnceWith('/v1/admin/ai/configs/generate_cloze/draft', body);
+    expect(mock.delete).toHaveBeenCalledExactlyOnceWith('/v1/admin/ai/configs/generate_cloze/draft');
+  });
+
+  it('a run of a config is started with config instead of prompt, and the key of the configs read starts with ai', async () => {
+    const { api, mock } = fakeApi();
+    await startRun(api, { operation: 'generate_cloze', config: 'draft', set_id: 'S2' }, 'key-3');
+    expect(mock.post).toHaveBeenCalledWith('/v1/admin/ai/eval/runs', { operation: 'generate_cloze', config: 'draft', set_id: 'S2' }, { idempotencyKey: 'key-3' });
+    expect(aiKeys.configs('lookup_word')).toEqual(['ai', 'configs', 'lookup_word']);
+  });
+});
+
+describe('config publish api (nhóm B M2)', () => {
+  it('the publish check and the history are GETs (the history is paged), publish and rollback are POSTs with their bodies', async () => {
+    const { api, mock } = fakeApi();
+    await getPublishCheck(api, 'generate_cloze');
+    await listConfigHistory(api, 'lookup_word');
+    await listConfigHistory(api, 'lookup_word', 'tok+/=');
+    const body = { expected_version: 2, candidate_run_id: 'RC', baseline_run_id: null, acknowledge_warnings: false };
+    await publishDraft(api, 'generate_cloze', body);
+    await rollbackToPrevious(api, 'generate_cloze', { expected_live_version: 5 });
+    expect(mock.get.mock.calls.map((c) => c[0])).toEqual([
+      '/v1/admin/ai/configs/generate_cloze/publish-check',
+      '/v1/admin/ai/configs/lookup_word/history?page_size=20',
+      '/v1/admin/ai/configs/lookup_word/history?page_size=20&page_token=tok%2B%2F%3D',
+    ]);
+    expect(mock.post.mock.calls).toEqual([
+      ['/v1/admin/ai/configs/generate_cloze/publish', body],
+      ['/v1/admin/ai/configs/generate_cloze/rollback', { expected_live_version: 5 }],
+    ]);
+  });
+
+  it('the keys of the publish check and the history start with ai and differ from the configs key', () => {
+    const keys = [aiKeys.configs('generate_cloze'), aiKeys.publishCheck('generate_cloze'), aiKeys.configHistory('generate_cloze')];
+    expect(new Set(keys.map((key) => JSON.stringify(key))).size).toBe(3);
+    expect(keys.every((key) => key[0] === 'ai')).toBe(true);
+  });
+});
+
 describe('sortByOperationOrder', () => {
   it('puts generate_cloze first though the API returns a→z, without mutating the input', () => {
     const apiOrder = [...AI_OPERATION_ORDER].sort().map((operation) => ({ operation }));
@@ -167,17 +216,6 @@ describe('sortByOperationOrder', () => {
     const sorted = sortByOperationOrder(apiOrder);
     expect(sorted.map((row) => row.operation)).toEqual([...AI_OPERATION_ORDER]);
     expect(apiOrder[0].operation).toBe('check_private_word');
-  });
-});
-
-describe('effortChoicesFor', () => {
-  const models = [{ id: 'm1', effort_choices: ['low', 'high'] }, { id: 'm2', effort_choices: [] }] as unknown as AiModel[];
-  it("returns the choices of the setting's model", () => {
-    expect(effortChoicesFor({ model: { id: 'm1', provider: 'openai', model_id: 'x' } }, models)).toEqual(['low', 'high']);
-  });
-  it('is empty without a model or with an unknown one', () => {
-    expect(effortChoicesFor({ model: null }, models)).toEqual([]);
-    expect(effortChoicesFor({ model: { id: 'zz', provider: 'openai', model_id: 'x' } }, models)).toEqual([]);
   });
 });
 

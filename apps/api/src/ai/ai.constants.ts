@@ -55,6 +55,8 @@ export const ESTIMATE_DAILY_CALLS = 1000;
 /** Admin text and price limits (plan choice 22). */
 export const MODEL_NOTE_MAX = 500;
 export const EVAL_NOTE_MAX = 500;
+/** The note an admin may leave on a config draft (nhóm B M2). */
+export const CONFIG_NOTE_MAX = 500;
 export const PRICE_MAX = 1000;
 
 // Copies of Content's constants (R17: `ai` never imports Content; `ai.constants.spec.ts` compares them).

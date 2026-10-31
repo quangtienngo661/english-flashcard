@@ -103,9 +103,10 @@ describe('EvalRunsRepository.start', () => {
       prompt_revision: 3, draft: null, status: 'running', total: 3, started_by: ITEM, started_at: null, heartbeat_at: null, finished_at: null,
       error: null, valid_count: 0, avg_latency_ms: null, cost_usd: null, cost_unknown_count: 0, set_id: null, legacy: false,
       price_input: { toString: () => '1.0000' }, price_cached_input: null, price_output: { toString: () => '2.0000' },
+      config_id: '55555555-5555-4555-8555-555555555555', config_version: 2,
     }]);
     const row = await repository.start(RUN, new Date());
-    expect(row).toMatchObject({ setId: null, legacy: false, priceInput: 1, priceCachedInput: null, priceOutput: 2 });
+    expect(row).toMatchObject({ setId: null, legacy: false, priceInput: 1, priceCachedInput: null, priceOutput: 2, configId: '55555555-5555-4555-8555-555555555555', configVersion: 2 });
     expect(row).not.toHaveProperty('items');
     expect(row).not.toHaveProperty('exampleIds');
   });

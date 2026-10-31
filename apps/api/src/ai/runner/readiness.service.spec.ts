@@ -3,9 +3,10 @@ import { SETTINGS_DEFAULTS, type AppSettings, type SettingsService } from '../..
 import { AiAdapter, type AdapterOutcome, type ModelDescription } from '../adapters/ai-adapter.js';
 import { AiAdapterRegistry } from '../adapters/ai-adapter.registry.js';
 import type { AiOperation, AiProviderName } from '../ai.types.js';
+import type { LiveConfigReader } from '../configs/live-config.reader.js';
 import type { CallLedger } from './call-ledger.service.js';
 import { ReadinessService } from './readiness.service.js';
-import type { Selection, SelectionReader } from './selection.js';
+import type { Selection } from './selection.js';
 
 // 2026-10-20T10:00Z is 17:00 in Vietnam: 7 h (25 200 s) until the next Vietnam midnight.
 const NOW = new Date('2026-10-20T10:00:00.000Z');
@@ -21,6 +22,8 @@ class StubAdapter extends AiAdapter {
     throw new Error('readiness never calls a provider');
   }
 }
+
+const PROMPT = { instructions: 'Write one sentence.', examples: [], revision: 3 };
 
 const selectionOf = (operation: AiOperation, provider: AiProviderName): Selection => ({
   operation, modelRef: '00000000-0000-4000-8000-0000000000b1', provider, modelId: `${provider}-model`, effort: null, thinking: null,
@@ -43,6 +46,7 @@ function setup(input: Setup = {}) {
   };
   const registry = new AiAdapterRegistry();
   for (const provider of input.providers ?? ['openai', 'anthropic', 'fake']) registry.register(new StubAdapter(provider));
+  const loads: AiOperation[] = [];
   const selections = {
     generate_cloze: selectionOf('generate_cloze', 'openai'),
     lookup_word: selectionOf('lookup_word', 'anthropic'),
@@ -52,7 +56,12 @@ function setup(input: Setup = {}) {
   const counted: Date[] = [];
   const readiness = new ReadinessService(
     { get: async () => settings } as unknown as SettingsService,
-    { load: async (op: AiOperation) => selections[op] } as unknown as SelectionReader,
+    {
+      load: async (op: AiOperation) => {
+        loads.push(op);
+        return { configId: 'c1', number: 3, prompt: PROMPT, selection: selections[op] };
+      },
+    } as unknown as LiveConfigReader,
     registry,
     {
       countToday: async (now: Date) => {
@@ -61,8 +70,22 @@ function setup(input: Setup = {}) {
       },
     } as unknown as CallLedger,
   );
-  return { readiness, counted };
+  return { readiness, counted, loads };
 }
+
+describe('ReadinessService.check reads the live config once (nhóm B M2)', () => {
+  it('one load per check, and the ready answer carries the prompt of that same read', async () => {
+    const { readiness, loads } = setup();
+    await expect(readiness.check('lookup_word', 'learner', NOW)).resolves.toMatchObject({ ready: true, prompt: PROMPT });
+    expect(loads).toEqual(['lookup_word']);
+  });
+
+  it('an admin check reads it once too', async () => {
+    const { readiness, loads } = setup();
+    await readiness.check('generate_cloze', 'test', NOW);
+    expect(loads).toEqual(['generate_cloze']);
+  });
+});
 
 describe('ReadinessService.check', () => {
   it('B6E29: switch off → ai-disabled', async () => {
@@ -86,7 +109,7 @@ describe('ReadinessService.check', () => {
       ready: false, reason: 'provider-not-configured',
     });
     await expect(readiness.check('lookup_word', 'learner', NOW)).resolves.toEqual({
-      ready: true, selection: selectionOf('lookup_word', 'anthropic'),
+      ready: true, selection: selectionOf('lookup_word', 'anthropic'), prompt: PROMPT,
     });
   });
 
@@ -117,7 +140,7 @@ describe('ReadinessService.check', () => {
   it.each(['test', 'eval'] as const)('B6E31/B6E89: purpose %s ignores the switch and the cap', async (purpose) => {
     const { readiness, counted } = setup({ aiEnabled: false, cap: 3_000, count: 5_000 });
     await expect(readiness.check('generate_cloze', purpose, NOW)).resolves.toEqual({
-      ready: true, selection: selectionOf('generate_cloze', 'openai'),
+      ready: true, selection: selectionOf('generate_cloze', 'openai'), prompt: PROMPT,
     });
     expect(counted).toEqual([]);
   });

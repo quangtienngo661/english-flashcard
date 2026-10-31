@@ -7,10 +7,15 @@
 // The API has no fake clock: "time passes" means back-dating columns with psql, then `pnpm maintenance:run` (design §17 item 2).
 // Learner calls go through `pnpm ai:fake-call` (dist/cli/ai-fake-call.js); every fake scenario gets its own data, because the
 // `*-then-ok` scenarios count calls per data (plan choice 16). Exit code 0 only when every step matched.
+//
+// Since nhóm B M2 a model is chosen by publishing a config (draft, run on a frozen set, publish: `ai-config-publish.mjs`); the two `PUT`s
+// that chose one directly answer 404. Each publish is an eval run and `ai.test` allows 20 an hour per user, so a second admin, made by the
+// first, publishes; the first admin keeps its own prompt tests and runs.
 import { execFileSync } from 'node:child_process';
 import { randomInt, randomUUID } from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
 import { parseEnv } from 'node:util';
+import { publishModel } from './ai-config-publish.mjs';
 
 const BASE = process.env.SMOKE_BASE_URL ?? 'http://localhost:3000';
 const MAILPIT = process.env.SMOKE_MAILPIT_URL ?? 'http://localhost:8025';
@@ -199,7 +204,7 @@ async function main() {
   ok(`reachable at ${BASE}; database ${DB_NAME}; children run with AI_FAKE_ENABLED=true, JOB_QUEUE_PREFIX=${QUEUE_PREFIX}, no key`);
 
   // ------------------------------------------------------------------------------------------------------------------
-  step('Accounts: admin (CLI grant), one editor (created by the admin)');
+  step('Accounts: admin (CLI grant), one editor and a second admin that publishes configs (both created by the admin)');
   const adminEmail = `smoke6-admin-${run}@example.com`;
   await registerVerified(adminEmail);
   execFileSync(process.execPath, [built('dist/cli/admin-grant.js'), adminEmail], { stdio: 'pipe', env: CHILD_ENV });
@@ -208,7 +213,11 @@ async function main() {
   await want(api('POST', '/v1/admin/users', { token: admin, body: {
     email: editorEmail, staff_role: 'editor', password: PASSWORD, must_change_password: false, timezone: TIMEZONE } }), 201, 'create editor');
   const editor = await login(editorEmail);
-  ok(`admin ${adminEmail}; editor ${editorEmail}; learner uuid ${LEARNER}`);
+  const publisherEmail = `smoke6-publisher-${run}@example.com`;
+  await want(api('POST', '/v1/admin/users', { token: admin, body: {
+    email: publisherEmail, staff_role: 'admin', password: PASSWORD, must_change_password: false, timezone: TIMEZONE } }), 201, 'create publisher');
+  const publisher = await login(publisherEmail);
+  ok(`admin ${adminEmail}; editor ${editorEmail}; publisher (admin) ${publisherEmail}; learner uuid ${LEARNER}`);
 
   const status = () => want(api('GET', '/v1/admin/ai/status', { token: admin }), 200, 'GET status');
   const opStatus = async (op) => (await status()).operations.find((row) => row.operation === op);
@@ -229,13 +238,9 @@ async function main() {
     const list = await want(api('GET', '/v1/admin/ai/operations', { token: admin }), 200, 'GET operations');
     return list.items.find((row) => row.operation === op);
   }
-  async function choose(op, modelId, maxOutputTokens = null) {
-    const model = modelId === null ? null : await addModel(modelId);
-    const current = await operation(op);
-    return want(api('PUT', `/v1/admin/ai/operations/${op}`, { token: admin, body: {
-      expected_version: current.version, model_ref: model?.id ?? null, effort: null, thinking: null, max_output_tokens: maxOutputTokens,
-    } }), 200, `choose ${modelId} for ${op}`);
-  }
+  const asPublisher = (method, path, { body, idem } = {}) => api(method, path, { token: publisher, body, idem });
+  /** Makes `modelId` the model of `op` by publishing a config; returns the new live config (14 publishes in this smoke, under `ai.test`'s 20). */
+  const choose = (op, modelId, maxOutputTokens = null) => publishModel(asPublisher, { op, modelId, maxOutputTokens });
   const prompt = (op) => want(api('GET', `/v1/admin/ai/prompts/${op}`, { token: admin }), 200, `GET prompt ${op}`);
 
   // ------------------------------------------------------------------------------------------------------------------
@@ -265,18 +270,20 @@ async function main() {
   ok(`three operations model-not-set; prompts seeded (${JSON.stringify(seededRevisions)}); operations at version 0; ai:fake-call → unavailable/model-not-set`);
 
   // ------------------------------------------------------------------------------------------------------------------
-  step('B6#2: add fake:ok (price 0), choose it for generate_cloze, call');
+  step('B6#2: add fake:ok (price 0), publish it for generate_cloze, call');
   const fakeOk = await addModel('fake:ok');
   check(fakeOk.price?.input !== undefined && Number(fakeOk.price.input) === 0 && Number(fakeOk.price.output) === 0,
     `fake:ok price ${JSON.stringify(fakeOk.price)}`);
-  await choose('generate_cloze', 'fake:ok');
+  const published = await choose('generate_cloze', 'fake:ok');
+  check(published.number === clozeRevision + 1 && published.status === 'published' && published.model?.model_id === 'fake:ok',
+    `published ${JSON.stringify({ number: published.number, status: published.status, model: published.model })}, the seeded prompt is revision ${clozeRevision}`);
   const okData = clozeData();
   const okCall = call('generate_cloze', okData);
   check(okCall.result.status === 'succeeded', `result ${JSON.stringify(okCall.result)}`);
   check(okCall.result.result.sentence.split('___').length === 2, `sentence ${okCall.result.result.sentence}`);
-  check(okCall.result.meta.prompt_revision === clozeRevision && okCall.result.meta.replayed === false, `meta ${JSON.stringify(okCall.result.meta)}`);
+  check(okCall.result.meta.prompt_revision === published.number && okCall.result.meta.replayed === false, `meta ${JSON.stringify(okCall.result.meta)}`);
   check(callsFor(okCall.operationId) === 1, `ai_calls rows ${callsFor(okCall.operationId)}`);
-  ok(`succeeded "${okCall.result.result.sentence}"; prompt_revision ${clozeRevision}; one ai_calls row; price 0`);
+  ok(`succeeded "${okCall.result.result.sentence}"; config ${published.number} published (seeded prompt was ${clozeRevision}) and prompt_revision ${published.number}; one ai_calls row; price 0`);
 
   // ------------------------------------------------------------------------------------------------------------------
   step('B6#3: the same operation id and data again');
@@ -358,8 +365,8 @@ async function main() {
 
   // ------------------------------------------------------------------------------------------------------------------
   step('B6#11: max_concurrent_calls 1, fake:slow --parallel 2');
-  await settings('ai', { max_concurrent_calls: 1 });
   await choose('generate_cloze', 'fake:slow');
+  await settings('ai', { max_concurrent_calls: 1 });
   const pair = aiFakeCall('generate_cloze', { data: clozeData(), parallel: 2 });
   const reasons = pair.map((line) => line.result.reason).sort();
   check(pair.length === 2 && reasons[0] === 'busy' && reasons[1] === 'timeout', `results ${JSON.stringify(pair.map((line) => line.result))}`);
@@ -380,53 +387,61 @@ async function main() {
   ok('fake:nope → 422 model-not-found; "fake/../x" → 400 validation-failed on model_id; nothing saved');
 
   // ------------------------------------------------------------------------------------------------------------------
-  step('B6#13: delete the model in use');
+  step('B6#13: delete the model in use (the live config names it)');
   await choose('generate_cloze', 'fake:ok');
   await wantProblem(api('DELETE', `/v1/admin/ai/models/${fakeOk.id}`, { token: admin }), 409, 'model-in-use', 'delete fake:ok');
   ok('DELETE fake:ok (chosen for generate_cloze) → 409 model-in-use');
 
   // ------------------------------------------------------------------------------------------------------------------
-  step('B6#14: save the seeded prompt twice with the seeded revision as expected_revision');
-  const saved = await want(api('PUT', '/v1/admin/ai/prompts/generate_cloze', { token: admin, body: {
-    expected_revision: clozeRevision, instructions: seededCloze.instructions, examples: seededCloze.examples } }), 200, 'save prompt');
-  check(saved.revision === clozeRevision + 1, `revision ${saved.revision}`);
-  await wantProblem(api('PUT', '/v1/admin/ai/prompts/generate_cloze', { token: admin, body: {
-    expected_revision: clozeRevision, instructions: seededCloze.instructions, examples: seededCloze.examples } }), 409, 'prompt-revision-conflict',
-  'save prompt again');
-  const revisions = await want(api('GET', '/v1/admin/ai/prompts/generate_cloze/revisions', { token: admin }), 200, 'revisions');
-  check(revisions.items.length === clozeRevision + 1 && revisions.items[0].revision === clozeRevision + 1, `revisions ${JSON.stringify(revisions.items.map((r) => r.revision))}`);
-  ok(`first save → revision ${clozeRevision + 1} (the seeded examples pass the save rules); second → 409 prompt-revision-conflict; ${clozeRevision + 1} revisions`);
+  step('B6#14: save a draft twice with the same expected_version');
+  const revisionNumbers = async () => (await want(api('GET', '/v1/admin/ai/prompts/generate_cloze/revisions', { token: admin }), 200, 'revisions'))
+    .items.map((row) => row.revision);
+  const revisionsBefore = await revisionNumbers();
+  const draftConfig = await want(api('POST', '/v1/admin/ai/configs/generate_cloze/draft', { token: admin, body: {} }), 201, 'create draft');
+  const saveDraft = (version, examples = seededCloze.examples) => api('PUT', '/v1/admin/ai/configs/generate_cloze/draft', { token: admin, body: {
+    expected_version: version, instructions: seededCloze.instructions, examples, model_ref: draftConfig.model.id, effort: null, thinking: null,
+    max_output_tokens: null, note: 'scripted: B6#14' } });
+  const saved = await want(saveDraft(draftConfig.version), 200, 'save draft');
+  check(saved.version === draftConfig.version + 1 && saved.status === 'draft', `saved ${JSON.stringify({ version: saved.version, status: saved.status })}`);
+  await wantProblem(saveDraft(draftConfig.version), 409, 'draft-version-conflict', 'save the draft again');
+  check(JSON.stringify(await revisionNumbers()) === JSON.stringify(revisionsBefore), 'a draft save changed the prompt revisions');
+  ok(`draft ${draftConfig.number} created at version ${draftConfig.version}; first save → version ${saved.version} (the seeded examples pass the save rules); second → 409 draft-version-conflict; prompt revisions unchanged (${revisionsBefore.length})`);
 
   // ------------------------------------------------------------------------------------------------------------------
-  step('B6#15: save a prompt with an example of the wrong shape');
+  step('B6#15: save a draft with an example of the wrong shape');
   const twoBlanks = structuredClone(seededCloze.examples);
   twoBlanks[0].output = { ...twoBlanks[0].output, sentence: 'Lan will ___ it ___.' };
-  const badSave = await wantProblem(api('PUT', '/v1/admin/ai/prompts/generate_cloze', { token: admin, body: {
-    expected_revision: clozeRevision + 1, instructions: seededCloze.instructions, examples: twoBlanks } }), 400, 'validation-failed', 'save a bad example');
+  const badSave = await wantProblem(saveDraft(saved.version, twoBlanks), 400, 'validation-failed', 'save a bad example');
   const violations = JSON.stringify(badSave.extensions?.violations ?? badSave.violations ?? []);
   check(violations.includes('examples.0') || violations.includes('examples[0]'), `violations ${violations}`);
-  check((await prompt('generate_cloze')).revision === clozeRevision + 1, 'a refused save changed the revision');
-  ok(`400 validation-failed with a path to the example: ${violations}`);
+  const untouched = (await want(api('GET', '/v1/admin/ai/configs/generate_cloze', { token: admin }), 200, 'configs')).draft;
+  check(untouched?.version === saved.version, 'a refused save changed the draft');
+  await want(api('DELETE', '/v1/admin/ai/configs/generate_cloze/draft', { token: admin }), 204, 'delete the draft');
+  ok(`400 validation-failed with a path to the example: ${violations}; the draft stayed at version ${saved.version}, then deleted`);
 
   // ------------------------------------------------------------------------------------------------------------------
   step('B6#16: test a draft prompt');
   const draft = `${seededCloze.instructions}\nKeep the sentence short.`;
   const testCallsBefore = count(`SELECT count(*) FROM ai_calls WHERE purpose = 'test'`);
+  const beforeTest = await prompt('generate_cloze');
   const tested = await want(api('POST', '/v1/admin/ai/prompts/generate_cloze/test', { token: admin, body: {
     instructions: draft, examples: seededCloze.examples } }), 200, 'prompt test');
   check(tested.items.length >= 1 && tested.items.every((item) => item.status === 'succeeded' && item.output), `items ${JSON.stringify(tested.items)}`);
   const afterTest = await prompt('generate_cloze');
-  check(afterTest.revision === clozeRevision + 1 && afterTest.instructions === seededCloze.instructions, 'a test changed the stored prompt');
+  check(afterTest.revision === beforeTest.revision && afterTest.instructions === seededCloze.instructions, 'a test changed the stored prompt');
   const testCalls = count(`SELECT count(*) FROM ai_calls WHERE purpose = 'test'`) - testCallsBefore;
   check(testCalls === tested.items.length, `test calls ${testCalls}, items ${tested.items.length}`);
-  ok(`${tested.items.length} item(s), each with its output; ai_prompts unchanged (revision ${clozeRevision + 1}); ${testCalls} ai_calls row(s) with purpose test`);
+  ok(`${tested.items.length} item(s), each with its output; the live prompt unchanged (revision ${beforeTest.revision}); ${testCalls} ai_calls row(s) with purpose test`);
 
   // ------------------------------------------------------------------------------------------------------------------
-  step('B6#17 and B6E74: three eval examples, one run in the worker; the same Idempotency-Key again');
+  step('B6#17 and B6E74: three more eval examples, one run of the live config in the worker; the same Idempotency-Key again');
   for (const word of [letters(6), letters(7), letters(8)]) {
     await want(api('POST', '/v1/admin/ai/eval/examples', { token: admin, body: { operation: 'generate_cloze', input: clozeData(word), expected: { forms: [word] } } }),
       201, 'add eval example');
   }
+  // Two examples come from the publish helper (the seeded few-shot examples of generate_cloze), three are added here: the working set has five.
+  const exampleTotal = count(`SELECT count(*) FROM ai_eval_examples WHERE operation = 'generate_cloze'`);
+  check(exampleTotal === 5, `${exampleTotal} generate_cloze examples, expected 2 + 3`);
   const runKey = randomUUID();
   const created = await want(api('POST', '/v1/admin/ai/eval/runs', { token: admin, key: runKey, body: {
     operation: 'generate_cloze', prompt: 'current' } }), 202, 'start eval run');
@@ -436,10 +451,10 @@ async function main() {
   check(replay.run_id === created.run_id, `replayed run ${replay.run_id} ≠ ${created.run_id}`);
   const finished = await waitFor(() => want(api('GET', `/v1/admin/ai/eval/runs/${created.run_id}`, { token: admin }), 200, 'GET run'),
     (row) => row.status === 'finished' || row.status === 'failed', `run ${created.run_id} finishing`, 60_000);
-  check(finished.status === 'finished' && finished.total === 3 && finished.done === 3 && finished.valid_count === 3,
-    `run ${JSON.stringify(finished)}`);
+  check(finished.status === 'finished' && finished.total === exampleTotal && finished.done === exampleTotal && finished.valid_count === exampleTotal
+    && finished.config_id !== null && finished.config_version !== null, `run ${JSON.stringify(finished)}`);
   check(finished.avg_latency_ms !== null && finished.cost_usd !== null && Number(finished.cost_usd) === 0, `run ${JSON.stringify(finished)}`);
-  ok(`run ${created.run_id} finished: total 3, valid 3, avg ${finished.avg_latency_ms} ms, cost ${finished.cost_usd}; same key → same run_id`);
+  ok(`run ${created.run_id} finished (config ${finished.config_number}): total ${exampleTotal}, valid ${exampleTotal}, avg ${finished.avg_latency_ms} ms, cost ${finished.cost_usd}; same key → same run_id`);
 
   // ------------------------------------------------------------------------------------------------------------------
   step('B6#18: a word of 150 characters');
@@ -503,9 +518,7 @@ async function main() {
     ['DELETE', `/v1/admin/ai/models/${fakeOk.id}`],
     ['POST', `/v1/admin/ai/models/${fakeOk.id}/refresh`],
     ['GET', '/v1/admin/ai/operations'],
-    ['PUT', '/v1/admin/ai/operations/generate_cloze', { expected_version: 0, model_ref: null, effort: null, thinking: null, max_output_tokens: null }],
     ['GET', '/v1/admin/ai/prompts/generate_cloze'],
-    ['PUT', '/v1/admin/ai/prompts/generate_cloze', { expected_revision: 2, instructions: 'x', examples: [] }],
     ['POST', '/v1/admin/ai/prompts/generate_cloze/test', { instructions: 'x', examples: [] }],
     ['GET', '/v1/admin/ai/prompts/generate_cloze/revisions'],
     ['GET', '/v1/admin/ai/eval/examples?operation=generate_cloze'],
@@ -517,14 +530,29 @@ async function main() {
     ['GET', `/v1/admin/ai/eval/runs/${created.run_id}`],
     ['GET', '/v1/admin/ai/costs'],
     ['GET', `/v1/admin/ai/calls?operation_id=${okCall.operationId}`],
+    // The nine routes of the config lifecycle (nhóm B design §6, §9 row P3).
+    ['GET', '/v1/admin/ai/configs/generate_cloze'],
+    ['POST', '/v1/admin/ai/configs/generate_cloze/draft', {}],
+    ['PUT', '/v1/admin/ai/configs/generate_cloze/draft', { expected_version: 0, instructions: 'x', examples: [], model_ref: null, effort: null, thinking: null,
+      max_output_tokens: null, note: null }],
+    ['DELETE', '/v1/admin/ai/configs/generate_cloze/draft'],
+    ['POST', '/v1/admin/ai/configs/generate_cloze/draft/test', {}],
+    ['GET', '/v1/admin/ai/configs/generate_cloze/publish-check'],
+    ['POST', '/v1/admin/ai/configs/generate_cloze/publish', { expected_version: 0, candidate_run_id: null, baseline_run_id: null, acknowledge_warnings: false }],
+    ['POST', '/v1/admin/ai/configs/generate_cloze/rollback', { expected_live_version: 0 }],
+    ['GET', '/v1/admin/ai/configs/generate_cloze/history'],
   ];
-  check(routes.length === 21, `${routes.length} routes listed`);
+  check(routes.length === 28, `${routes.length} routes listed`);
   for (const [method, path, body] of routes) {
     await wantProblem(api(method, path, { token: editor, body, idem: method === 'POST' && path.endsWith('/runs') }), 403, 'forbidden',
       `editor ${method} ${path}`);
   }
   check((await operation('generate_cloze')).model?.model_id === 'fake:ok', 'an editor request changed the operation');
-  ok('403 forbidden on all 21 routes; nothing changed');
+  // The two saves of Bước 6 are gone (design §6.6): the admin finds no such route.
+  for (const path of ['/v1/admin/ai/operations/generate_cloze', '/v1/admin/ai/prompts/generate_cloze']) {
+    await want(api('PUT', path, { token: admin, body: {} }), 404, `admin PUT ${path}`);
+  }
+  ok('403 forbidden on all 28 routes; nothing changed; PUT /operations/generate_cloze and PUT /prompts/generate_cloze → 404 for the admin');
 
   // ------------------------------------------------------------------------------------------------------------------
   step('B6#27: fake:slow, two calls at once with one operation id');
@@ -591,7 +619,7 @@ async function main() {
   maintenance();
   const recovered = await waitFor(() => want(api('GET', `/v1/admin/ai/eval/runs/${stalled.run_id}`, { token: admin }), 200, 'GET run'),
     (row) => row.status === 'finished' || row.status === 'failed', `run ${stalled.run_id} finishing`, 60_000);
-  check(recovered.status === 'finished' && recovered.total === 3, `run ${JSON.stringify(recovered)}`);
+  check(recovered.status === 'finished' && recovered.total === exampleTotal, `run ${JSON.stringify(recovered)}`);
   ok(`202 queued with Redis stopped; still queued after Redis is back; after back-dating 11 minutes and maintenance:run → finished (${recovered.total} items)`);
 
   // ------------------------------------------------------------------------------------------------------------------

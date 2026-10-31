@@ -17,6 +17,13 @@ const EXAMPLE_INPUT = { word: 'deploy', part_of_speech: 'verb', level: 'B1', mea
 const IN1 = { word: 'one' };
 const IN2 = { word: 'two' };
 
+/** The live config every run of "the current prompt" now resolves to (nhóm B M2). */
+const LIVE_MODEL = { id: randomUUID(), provider: 'fake', modelId: 'fake:ok', thinkingOff: 'disabled', maxOutputTokens: 4096, priceInput: 1, priceCachedInput: null, priceOutput: 2 };
+const LIVE_CONFIG = {
+  id: randomUUID(), operation: 'generate_cloze', number: 4, version: 0, instructions: 'x', examples: [], modelRef: LIVE_MODEL.id, effort: null, thinking: 'off',
+  maxOutputTokens: 4096, status: 'published', model: LIVE_MODEL,
+};
+
 function setup() {
   const created: Array<Record<string, unknown>> = [];
   // The run and its items are written through the transaction client, never through the shared one.
@@ -50,21 +57,27 @@ function setup() {
       findMany: vi.fn(async (_args?: unknown): Promise<Array<{ id: string; version: number }>> => []),
     },
     aiEvalSetItem: { findMany: vi.fn(async (_args?: unknown): Promise<Array<Record<string, unknown>>> => []) },
+    aiConfig: {
+      findFirst: vi.fn(async (_args?: unknown): Promise<Record<string, unknown> | null> => null),
+      findUnique: vi.fn(async (_args?: unknown): Promise<Record<string, unknown> | null> => LIVE_CONFIG),
+      findMany: vi.fn(async (_args?: unknown): Promise<Array<{ id: string; number: number }>> => []),
+    },
+    aiLiveConfig: { findUnique: vi.fn(async (_args?: unknown): Promise<Record<string, unknown> | null> => ({ operation: 'generate_cloze', configId: LIVE_CONFIG.id, version: 7 })) },
+    aiConfigEvent: { findFirst: vi.fn(async (_args?: unknown): Promise<Record<string, unknown> | null> => null) },
     aiCall: { deleteMany: vi.fn(async () => ({ count: 0 })) },
     $executeRaw: vi.fn(async () => 0),
     $transaction: vi.fn(async (work: (client: typeof tx) => Promise<unknown>) => work(tx)),
   };
   const selections = { load: vi.fn(async (): Promise<Selection | null> => SELECTION) };
   const registry = { get: vi.fn((provider: string) => (provider === 'fake' ? {} : undefined)) };
-  const prompts = { current: vi.fn(async () => ({ instructions: 'x', examples: [], revision: 4 })) };
   const queue = { enqueue: vi.fn(async () => true) };
   const emailsOf = vi.fn(async (ids: string[]) => new Map(ids.filter((id) => id === ADMIN).map((id) => [id, 'admin@x.test'])));
   const limiter = { hit: vi.fn(async (): Promise<void> => undefined) };
   const service = new EvalRunsService(
-    prisma as never, selections as never, registry as never, prompts as never, queue as never, { emailsOf } as never,
+    prisma as never, selections as never, registry as never, queue as never, { emailsOf } as never,
     limiter as never, new FakeClock(NOW),
   );
-  return { service, prisma, tx, created, selections, registry, prompts, queue, emailsOf, limiter };
+  return { service, prisma, tx, created, selections, registry, queue, emailsOf, limiter, live: LIVE_CONFIG };
 }
 
 async function problemOf(promise: Promise<unknown>) {
@@ -78,12 +91,12 @@ describe('EvalRunsService.create', () => {
   let ctx: ReturnType<typeof setup>;
   beforeEach(() => { ctx = setup(); });
 
-  it('E1: the row stores the resolved selection, the current revision, the price and the number of examples; enqueued; 202 body', async () => {
+  it('E1, Review focus 4: prompt "current" is the live config: the row names it and its version, stores the resolved selection, the price and the number of examples; enqueued; 202 body', async () => {
     const answer = await ctx.service.create(ADMIN, { operation: 'generate_cloze', prompt: 'current' });
     expect(ctx.created).toHaveLength(1);
     expect(ctx.created[0]).toMatchObject({
       operation: 'generate_cloze', provider: 'fake', model: 'fake:ok', effort: null, thinking: 'disabled', maxOutputTokens: 4096,
-      promptRevision: 4, priceInput: 1, priceCachedInput: null, priceOutput: 2, status: 'queued', total: 2, startedBy: ADMIN,
+      configId: LIVE_CONFIG.id, configVersion: 0, promptRevision: null, priceInput: 1, priceCachedInput: null, priceOutput: 2, status: 'queued', total: 2, startedBy: ADMIN,
     });
     expect(ctx.created[0]).not.toHaveProperty('draft');
     expect(ctx.created[0]).not.toHaveProperty('exampleIds');
@@ -116,7 +129,7 @@ describe('EvalRunsService.create', () => {
   });
 
   it('E1: a model with no price leaves the three price columns null', async () => {
-    ctx.selections.load.mockResolvedValue({ ...SELECTION, price: null });
+    ctx.prisma.aiConfig.findUnique.mockResolvedValue({ ...LIVE_CONFIG, model: { ...LIVE_MODEL, priceInput: null, priceOutput: null } });
     await ctx.service.create(ADMIN, { operation: 'generate_cloze', prompt: 'current' });
     expect(ctx.created[0]).toMatchObject({ priceInput: null, priceCachedInput: null, priceOutput: null });
   });
@@ -126,12 +139,12 @@ describe('EvalRunsService.create', () => {
       sentence: 'We ___ on Friday.', accepted_answers: ['deploy'], translation_vi: 'Chúng tôi triển khai vào thứ Sáu.',
     } }] };
     await ctx.service.create(ADMIN, { operation: 'generate_cloze', prompt: draft });
-    expect(ctx.created[0]).toMatchObject({ draft, promptRevision: null });
-    expect(ctx.prompts.current).not.toHaveBeenCalled();
+    expect(ctx.created[0]).toMatchObject({ draft, promptRevision: null, configId: null, configVersion: null });
+    expect(ctx.prisma.aiLiveConfig.findUnique).not.toHaveBeenCalled();
   });
 
-  it('B6E73: no model → 409 model-not-set, no row', async () => {
-    ctx.selections.load.mockResolvedValue(null);
+  it('B6E73: no model in the live config → 409 model-not-set, no row', async () => {
+    ctx.prisma.aiConfig.findUnique.mockResolvedValue({ ...LIVE_CONFIG, modelRef: null, model: null });
     const problem = await problemOf(ctx.service.create(ADMIN, { operation: 'generate_cloze', prompt: 'current' }));
     expect(problem).toMatchObject({ status: 409, type: 'model-not-set' });
     expect(ctx.created).toHaveLength(0);
@@ -139,7 +152,7 @@ describe('EvalRunsService.create', () => {
   });
 
   it('provider not registered → 409 provider-not-configured, no row', async () => {
-    ctx.selections.load.mockResolvedValue({ ...SELECTION, provider: 'openai' });
+    ctx.prisma.aiConfig.findUnique.mockResolvedValue({ ...LIVE_CONFIG, model: { ...LIVE_MODEL, provider: 'openai' } });
     const problem = await problemOf(ctx.service.create(ADMIN, { operation: 'generate_cloze', prompt: 'current' }));
     expect(problem).toMatchObject({ status: 409, type: 'provider-not-configured' });
     expect(ctx.created).toHaveLength(0);
@@ -177,9 +190,9 @@ describe('EvalRunsService.create', () => {
   });
 
   it('a request that is refused (no model, no provider, bad draft, no example) does not use up an ai.test run', async () => {
-    ctx.selections.load.mockResolvedValueOnce(null);
+    ctx.prisma.aiConfig.findUnique.mockResolvedValueOnce({ ...LIVE_CONFIG, modelRef: null, model: null });
     await problemOf(ctx.service.create(ADMIN, { operation: 'generate_cloze', prompt: 'current' }));
-    ctx.selections.load.mockResolvedValueOnce({ ...SELECTION, provider: 'openai' });
+    ctx.prisma.aiConfig.findUnique.mockResolvedValueOnce({ ...LIVE_CONFIG, model: { ...LIVE_MODEL, provider: 'openai' } });
     await problemOf(ctx.service.create(ADMIN, { operation: 'generate_cloze', prompt: 'current' }));
     await problemOf(ctx.service.create(ADMIN, { operation: 'generate_cloze', prompt: { instructions: '   ', examples: [] } }));
     ctx.prisma.aiEvalExample.findMany.mockResolvedValueOnce([]);
@@ -393,6 +406,104 @@ describe('EvalRunsService.compare (B10, D20)', () => {
   });
 });
 
+describe('EvalRunsService.create on a config (M2-T4)', () => {
+  const DRAFT = randomUUID();
+  const LIVE = randomUUID();
+  const MODEL = { id: randomUUID(), provider: 'fake', modelId: 'fake:ok', effortLevels: [], thinkingOff: null, maxOutputTokens: 4096, priceInput: 1, priceCachedInput: null, priceOutput: 2 };
+  const cfg = (id: string, over: Record<string, unknown> = {}) => ({
+    id, operation: 'generate_cloze', number: 4, version: 2, instructions: 'Config text.', examples: [], modelRef: MODEL.id, effort: 'low', thinking: null,
+    maxOutputTokens: 900, status: 'draft', model: MODEL, ...over,
+  });
+
+  it('config "draft" stores the draft id and version, the draft model as the selection, and no prompt revision, no draft text', async () => {
+    const ctx = setup();
+    ctx.prisma.aiConfig.findFirst.mockResolvedValue(cfg(DRAFT));
+    await ctx.service.create(ADMIN, { operation: 'generate_cloze', config: 'draft' });
+    expect(ctx.prisma.aiConfig.findFirst).toHaveBeenCalledWith({ where: { operation: 'generate_cloze', status: 'draft' }, include: { model: true } });
+    expect(ctx.created[0]).toMatchObject({
+      configId: DRAFT, configVersion: 2, promptRevision: null, provider: 'fake', model: 'fake:ok', effort: 'low', maxOutputTokens: 900,
+      priceInput: 1, priceOutput: 2, status: 'queued', total: 2,
+    });
+    expect(ctx.created[0]).not.toHaveProperty('draft');
+    expect(ctx.selections.load).not.toHaveBeenCalled();
+    expect(ctx.queue.enqueue).toHaveBeenCalledWith(ctx.created[0]!.id);
+  });
+
+  it('with a set_id the items of that version are copied and the set id is stored next to the config', async () => {
+    const ctx = setup();
+    const S1 = randomUUID();
+    ctx.prisma.aiConfig.findFirst.mockResolvedValue(cfg(DRAFT));
+    ctx.prisma.aiEvalSet.findUnique.mockResolvedValue({ id: S1, operation: 'generate_cloze', version: 1 });
+    ctx.prisma.aiEvalSetItem.findMany.mockResolvedValue([{ exampleId: EX1, position: 0, split: 'dev', input: IN1, expected: null }]);
+    await ctx.service.create(ADMIN, { operation: 'generate_cloze', config: 'draft', set_id: S1 });
+    expect(ctx.created[0]).toMatchObject({ setId: S1, configId: DRAFT, configVersion: 2, total: 1 });
+  });
+
+  it('config "live" runs the live config: the pointer, then that config with its model', async () => {
+    const ctx = setup();
+    ctx.prisma.aiLiveConfig.findUnique.mockResolvedValue({ operation: 'generate_cloze', configId: LIVE, version: 7 });
+    ctx.prisma.aiConfig.findUnique.mockResolvedValue(cfg(LIVE, { status: 'published', version: 0, number: 3 }));
+    await ctx.service.create(ADMIN, { operation: 'generate_cloze', config: 'live' });
+    expect(ctx.prisma.aiConfig.findUnique).toHaveBeenCalledWith({ where: { id: LIVE }, include: { model: true } });
+    expect(ctx.created[0]).toMatchObject({ configId: LIVE, configVersion: 0, promptRevision: null });
+  });
+
+  it('prompt and config together, or neither → 400, no row', async () => {
+    const ctx = setup();
+    const both = await problemOf(ctx.service.create(ADMIN, { operation: 'generate_cloze', prompt: 'current', config: 'draft' }));
+    expect(both).toMatchObject({ status: 400, type: 'validation-failed' });
+    expect((await problemOf(ctx.service.create(ADMIN, { operation: 'generate_cloze' }))).status).toBe(400);
+    expect(ctx.created).toHaveLength(0);
+    expect(ctx.limiter.hit).not.toHaveBeenCalled();
+  });
+
+  it('no draft → 404; a config without a model → 409 model-not-set; its provider not registered → 409 provider-not-configured; none costs a slot', async () => {
+    const ctx = setup();
+    expect(await problemOf(ctx.service.create(ADMIN, { operation: 'generate_cloze', config: 'draft' }))).toMatchObject({ status: 404, type: 'not-found' });
+    ctx.prisma.aiConfig.findFirst.mockResolvedValue(cfg(DRAFT, { modelRef: null, model: null }));
+    expect(await problemOf(ctx.service.create(ADMIN, { operation: 'generate_cloze', config: 'draft' }))).toMatchObject({ status: 409, type: 'model-not-set' });
+    ctx.prisma.aiConfig.findFirst.mockResolvedValue(cfg(DRAFT, { model: { ...MODEL, provider: 'openai' } }));
+    expect(await problemOf(ctx.service.create(ADMIN, { operation: 'generate_cloze', config: 'draft' }))).toMatchObject({ status: 409, type: 'provider-not-configured' });
+    expect(ctx.created).toHaveLength(0);
+    expect(ctx.limiter.hit).not.toHaveBeenCalled();
+  });
+
+  it('a legacy draft text (prompt: {instructions, examples}) is stored as a draft, with no config, on the live model', async () => {
+    const ctx = setup();
+    await ctx.service.create(ADMIN, { operation: 'generate_cloze', prompt: { instructions: 'Draft.', examples: [] } });
+    expect(ctx.created[0]).toMatchObject({ configId: null, configVersion: null, promptRevision: null, draft: { instructions: 'Draft.', examples: [] }, model: 'fake:ok' });
+  });
+
+  it('prompt "current" together with config → 400 (exactly one of the two)', async () => {
+    const ctx = setup();
+    expect((await problemOf(ctx.service.create(ADMIN, { operation: 'generate_cloze', prompt: 'current', config: 'draft' }))).status).toBe(400);
+  });
+});
+
+describe('EvalRunsService views of a config run (M2-T4)', () => {
+  it('the summary carries the config id, its version and its number; a deleted draft has number null', async () => {
+    const ctx = setup();
+    const draftId = randomUUID();
+    const goneId = randomUUID();
+    ctx.prisma.aiEvalRun.findMany.mockResolvedValueOnce([
+      { ...runRow(ADMIN), configId: draftId, configVersion: 2 }, { ...runRow(ADMIN), configId: goneId, configVersion: 1 }, runRow(ADMIN),
+    ]);
+    ctx.prisma.aiConfig.findMany.mockResolvedValueOnce([{ id: draftId, number: 4 }]);
+    const { items } = await ctx.service.list('generate_cloze', 20, undefined);
+    expect(items.map((item) => [item.config_id, item.config_version, item.config_number])).toEqual([[draftId, 2, 4], [goneId, 1, null], [null, null, null]]);
+    expect(ctx.prisma.aiConfig.findMany).toHaveBeenCalledTimes(1);
+  });
+
+  it('get carries the same three fields', async () => {
+    const ctx = setup();
+    const id = randomUUID();
+    const draftId = randomUUID();
+    ctx.prisma.aiEvalRun.findUnique.mockResolvedValue({ ...runRow(ADMIN, id), configId: draftId, configVersion: 3 });
+    ctx.prisma.aiConfig.findMany.mockResolvedValue([{ id: draftId, number: 6 }]);
+    expect(await ctx.service.get(id)).toMatchObject({ config_id: draftId, config_version: 3, config_number: 6 });
+  });
+});
+
 describe('EvalRunsService.list by set', () => {
   it('B8: set_id narrows the runs and is part of the page token binding', async () => {
     const ctx = setup();
@@ -418,7 +529,7 @@ function itemRow(exampleId: string, position: number, over: Record<string, unkno
 
 function runRow(startedBy: string, id: string = randomUUID()) {
   return {
-    setId: null, legacy: false,
+    setId: null, legacy: false, configId: null, configVersion: null,
     id, operation: 'generate_cloze', provider: 'fake', model: 'fake:ok', effort: null, thinking: 'disabled', maxOutputTokens: 4096,
     promptRevision: 4, draft: null, status: 'done', total: 2, validCount: 2, avgLatencyMs: 5, costUsd: null,
     costUnknownCount: 0, error: null, startedBy, createdAt: new Date('2026-10-01T00:00:00Z'), startedAt: null, finishedAt: null,
@@ -497,6 +608,21 @@ describe('EvalRunsService.remove', () => {
   it('an unknown id → 404 not-found', async () => {
     const ctx = setup();
     expect(await problemOf(ctx.service.remove(randomUUID()))).toMatchObject({ status: 404, type: 'not-found' });
+  });
+
+  it('B33: a run named by a publish or rollback event is evidence → 409 run-is-evidence, checked before the delete', async () => {
+    const ctx = setup();
+    const id = randomUUID();
+    ctx.prisma.aiConfigEvent.findFirst.mockResolvedValue({ id: 'event' });
+    expect(await problemOf(ctx.service.remove(id))).toMatchObject({ status: 409, type: 'run-is-evidence' });
+    expect(ctx.prisma.aiConfigEvent.findFirst).toHaveBeenCalledWith({ where: { OR: [{ candidateRunId: id }, { baselineRunId: id }] }, select: { id: true } });
+    expect(ctx.prisma.aiEvalRun.deleteMany).not.toHaveBeenCalled();
+  });
+
+  it('B33: the foreign key catching an event written between the check and the delete → the same 409', async () => {
+    const ctx = setup();
+    ctx.prisma.aiEvalRun.deleteMany.mockRejectedValue(Object.assign(new Error('fk'), { code: 'P2003' }));
+    expect(await problemOf(ctx.service.remove(randomUUID()))).toMatchObject({ status: 409, type: 'run-is-evidence' });
   });
 
   it('deleting a run leaves ai_calls alone: the costs report reads ai_calls, so the money stays on the books', async () => {

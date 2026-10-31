@@ -1,5 +1,5 @@
-// AI Integration (Bước 6, design §11). Every user/actor id is a plain UUID: no relation crosses a module boundary. The only foreign
-// key is inside the module (ai_operation_settings.model_ref → ai_models.id, ON DELETE RESTRICT).
+// AI Integration (Bước 6, design §11; nhóm B). Every user/actor id is a plain UUID: no relation crosses a module boundary. The foreign
+// keys are all inside the module (a model named by a choice, a config or a judge revision is never deleted: ON DELETE RESTRICT).
 // CHECKs on the enum columns live in the migration (as practice.prisma, entitlements.prisma).
 
 // One model an admin added (design §6.1). Unknown information is null; unknown effort levels are stored as [] (plan choice 9).
@@ -21,21 +21,24 @@ model AiModel {
   priceCachedInput  Decimal?  @map("price_cached_input") @db.Decimal(12, 4)
   priceOutput       Decimal?  @map("price_output") @db.Decimal(12, 4)
   note              String?
+  // Set by an admin ("Ẩn khỏi ô chọn model", D40); the provider refresh never writes it. Pickers skip a hidden model.
+  hidden            Boolean   @default(false)
   // Always written from Clock (no database default).
   infoCheckedAt     DateTime  @map("info_checked_at") @db.Timestamptz
   createdBy         String    @map("created_by") @db.Uuid
   createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz
   updatedAt         DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
 
-  operationSettings AiOperationSetting[]
+  configs           AiConfig[]
 
   @@unique([provider, modelId])
   @@map("ai_models")
 }
 
-// The choice of one operation (design §6.3): three rows seeded by the migration; model_ref null = the operation is off (D9).
+// The choice of one operation (design §6.3): history only since nhóm B M2 (the gateway reads the live config); no foreign key to ai_models any more,
+// so a model that only an old choice names can be deleted. model_ref null = the operation was off (D9).
 model AiOperationSetting {
-  // generate_cloze | lookup_word | translate_sentence (CHECK).
+  // One of the six operations (CHECK). Read-only history since nhóm B M2: the gateway reads ai_live_configs.
   operation       String    @id
   modelRef        String?   @map("model_ref") @db.Uuid
   effort          String?
@@ -46,8 +49,6 @@ model AiOperationSetting {
   version         Int       @default(0)
   updatedBy       String?   @map("updated_by") @db.Uuid
   updatedAt       DateTime  @default(now()) @map("updated_at") @db.Timestamptz
-
-  model AiModel? @relation(fields: [modelRef], references: [id], onDelete: Restrict)
 
   @@map("ai_operation_settings")
 }
@@ -65,7 +66,7 @@ model AiOperationSettingChange {
   @@map("ai_operation_setting_changes")
 }
 
-// The prompt in use for one operation (design §7.3).
+// The prompt in use for one operation (design §7.3). History only since nhóm B M2: the gateway reads the live config.
 model AiPrompt {
   operation    String   @id
   instructions String
@@ -130,6 +131,7 @@ model AiCall {
   effort            String?
   thinking          String?
   maxOutputTokens   Int?      @map("max_output_tokens")
+  // The config number since nhóm B M2 (the prompt revision before).
   promptRevision    Int?      @map("prompt_revision")
   // succeeded or the call's own reason (CHECK, plan choice 2).
   outcome           String
@@ -231,7 +233,7 @@ model AiEvalRun {
   effort           String?
   thinking         String?
   maxOutputTokens  Int?      @map("max_output_tokens")
-  // Exactly one of prompt_revision and draft is set (CHECK).
+  // Exactly one of prompt_revision, draft and config_id is set (CHECK; config_id since nhóm B M2).
   promptRevision   Int?      @map("prompt_revision")
   draft            Json?
   // null = the working set (a quick try, not comparable, not evidence for a publish).
@@ -255,13 +257,19 @@ model AiEvalRun {
   startedAt        DateTime? @map("started_at") @db.Timestamptz
   finishedAt       DateTime? @map("finished_at") @db.Timestamptz
   heartbeatAt      DateTime? @map("heartbeat_at") @db.Timestamptz
+  // The config this run tried (nhóm B M2): no foreign key, a deleted draft keeps its runs. Both set together (CHECK).
+  configId         String?   @map("config_id") @db.Uuid
+  configVersion    Int?      @map("config_version")
 
   set      AiEvalSet?      @relation(fields: [setId], references: [id], onDelete: Restrict)
   runItems AiEvalRunItem[]
+  candidateOf AiConfigEvent[] @relation("EventCandidateRun")
+  baselineOf  AiConfigEvent[] @relation("EventBaselineRun")
 
   @@index([operation, createdAt])
   @@index([status, heartbeatAt])
   @@index([setId])
+  @@index([configId, setId, createdAt])
   @@map("ai_eval_runs")
 }
 
@@ -295,4 +303,76 @@ model AiEvalRunItem {
   @@unique([runId, exampleId])
   @@index([runId, status])
   @@map("ai_eval_run_items")
+}
+
+// One config of an operation (nhóm B design §4, §6): prompt + model + effort + thinking + tokens as one versioned unit.
+// draft | published | retired (CHECK). The partial unique index `ai_configs_one_draft_key` (one draft per operation) and the CHECKs are in the migration.
+model AiConfig {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  operation       String
+  // Handed out by ai_live_configs.last_number, never twice.
+  number          Int
+  // 0 on creation, +1 on each save of the draft.
+  version         Int       @default(0)
+  instructions    String
+  examples        Json
+  modelRef        String?   @map("model_ref") @db.Uuid
+  effort          String?
+  // 'off' | null (CHECK): how the operations API already names it.
+  thinking        String?
+  maxOutputTokens Int?      @map("max_output_tokens")
+  status          String
+  // The config this one was copied from (no foreign key).
+  createdFrom     String?   @map("created_from") @db.Uuid
+  note            String?
+  createdBy       String    @map("created_by") @db.Uuid
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  publishedBy     String?   @map("published_by") @db.Uuid
+  publishedAt     DateTime? @map("published_at") @db.Timestamptz
+
+  model       AiModel?        @relation(fields: [modelRef], references: [id], onDelete: Restrict)
+  live        AiLiveConfig[]  @relation("LiveConfig")
+  previousOf  AiLiveConfig[]  @relation("PreviousConfig")
+  events      AiConfigEvent[] @relation("EventConfig")
+  eventsFrom  AiConfigEvent[] @relation("EventFromConfig")
+
+  @@unique([operation, number])
+  @@map("ai_configs")
+}
+
+// The pointer "which config runs now" of each operation (26/10 câu 18). `last_number` is the counter of draft numbers.
+model AiLiveConfig {
+  operation        String  @id
+  configId         String  @map("config_id") @db.Uuid
+  previousConfigId String? @map("previous_config_id") @db.Uuid
+  version          Int     @default(0)
+  lastNumber       Int     @map("last_number")
+
+  config   AiConfig  @relation("LiveConfig", fields: [configId], references: [id], onDelete: Restrict)
+  previous AiConfig? @relation("PreviousConfig", fields: [previousConfigId], references: [id], onDelete: Restrict)
+
+  @@map("ai_live_configs")
+}
+
+// Append-only history of publishes and rollbacks. publish | rollback (CHECK). The two run ids are the evidence of a publish:
+// a run named here cannot be deleted (foreign key RESTRICT).
+model AiConfigEvent {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  operation      String
+  kind           String
+  configId       String   @map("config_id") @db.Uuid
+  fromConfigId   String?  @map("from_config_id") @db.Uuid
+  candidateRunId String?  @map("candidate_run_id") @db.Uuid
+  baselineRunId  String?  @map("baseline_run_id") @db.Uuid
+  warnings       Json     @default("[]")
+  actorId        String   @map("actor_id") @db.Uuid
+  at             DateTime @default(now()) @db.Timestamptz
+
+  config     AiConfig   @relation("EventConfig", fields: [configId], references: [id], onDelete: Restrict)
+  fromConfig AiConfig?  @relation("EventFromConfig", fields: [fromConfigId], references: [id], onDelete: Restrict)
+  candidate  AiEvalRun? @relation("EventCandidateRun", fields: [candidateRunId], references: [id], onDelete: Restrict)
+  baseline   AiEvalRun? @relation("EventBaselineRun", fields: [baselineRunId], references: [id], onDelete: Restrict)
+
+  @@index([operation, at])
+  @@map("ai_config_events")
 }

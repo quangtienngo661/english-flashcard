@@ -6,7 +6,8 @@ import { AiAdapter, type AdapterOutcome, type AdapterRequest, type ModelDescript
 import { AiAdapterRegistry } from '../adapters/ai-adapter.registry.js';
 import { ABANDON_GRACE_MS, RESULT_TTL_MS } from '../ai.constants.js';
 import type { AiOperation, AiProviderName } from '../ai.types.js';
-import type { PromptsRepository, StoredPrompt } from '../prompts/prompts.repository.js';
+import type { LiveConfigReader } from '../configs/live-config.reader.js';
+import type { StoredPrompt } from '../prompts/prompts.repository.js';
 import { PROMPT_GUARD } from '../prompts/prompt-rules.js';
 import { CallQueue, ConcurrencyLimit } from './call-queue.js';
 import type { CallLedger, CallRecord } from './call-ledger.service.js';
@@ -15,7 +16,7 @@ import type { OperationsRepository } from './operations.repository.js';
 import type { ReadinessCheck, ReadinessService } from './readiness.service.js';
 import type { RunOutcome } from './run-rules.js';
 import { RunnerService, type ExecuteInput } from './runner.service.js';
-import type { Selection, SelectionReader } from './selection.js';
+import type { Selection } from './selection.js';
 
 const USER = '00000000-0000-4000-8000-000000000001';
 const OTHER_USER = '00000000-0000-4000-8000-000000000002';
@@ -172,8 +173,9 @@ function setup(input: Setup = {}) {
   let settings: AppSettings = { ...SETTINGS_DEFAULTS, ai: { ...SETTINGS_DEFAULTS.ai, ...input.ai } };
   const selection = input.selection === undefined ? selectionOf(provider) : input.selection;
   const readinessChecks: Array<{ op: AiOperation; purpose: string }> = [];
-  let readiness: ReadinessCheck = input.readiness ?? (selection ? { ready: true, selection } : { ready: false, reason: 'model-not-set' });
   let prompt: StoredPrompt = input.prompt ?? { instructions: 'Write one sentence.', examples: [], revision: 3 };
+  let readiness: ReadinessCheck = input.readiness ?? (selection ? { ready: true, selection, prompt } : { ready: false, reason: 'model-not-set' });
+  const liveLoads: AiOperation[] = [];
   const records: Array<{ call: CallRecord; content: { request: unknown; response: string | null }; retention: number }> = [];
   const ledger = {
     record: vi.fn(async (call: CallRecord, content: { request: unknown; response: string | null }, retention: number) => {
@@ -192,11 +194,16 @@ function setup(input: Setup = {}) {
     {
       check: async (op: AiOperation, purpose: string) => {
         readinessChecks.push({ op, purpose });
-        return readiness;
+        // The ready answer carries the prompt of the same read as its selection.
+        return readiness.ready ? { ...readiness, prompt } : readiness;
       },
     } as unknown as ReadinessService,
-    { load: async () => selection } as unknown as SelectionReader,
-    { current: async () => prompt } as unknown as PromptsRepository,
+    {
+      load: async (op: AiOperation) => {
+        liveLoads.push(op);
+        return { configId: 'c1', number: prompt.revision, prompt, selection };
+      },
+    } as unknown as LiveConfigReader,
     registry,
     ledger,
     input.queue ?? new CallQueue(() => limit.value),
@@ -204,7 +211,7 @@ function setup(input: Setup = {}) {
     new AppLogger({ write: (entry) => entries.push(entry) }),
   );
   return {
-    runner, adapter, operations, records, entries, clock, limit, readinessChecks,
+    runner, adapter, operations, records, entries, clock, limit, readinessChecks, liveLoads,
     setSettings: (next: Partial<AppSettings['ai']>) => { settings = { ...settings, ai: { ...settings.ai, ...next } }; },
     setReadiness: (next: ReadinessCheck) => { readiness = next; },
     setPrompt: (next: StoredPrompt) => { prompt = next; },
@@ -217,6 +224,37 @@ const learner = (overrides: Partial<Extract<ExecuteInput, { purpose: 'learner' }
 
 const adminTest = (overrides: Partial<Extract<ExecuteInput, { purpose: 'test' | 'eval' }>> = {}): ExecuteInput => ({
   purpose: 'test', operation: OP, data: DATA, actorId: ADMIN, callOperationId: 'test-1', ...overrides,
+});
+
+describe('RunnerService reads the live config (nhóm B M2, design §6.5)', () => {
+  it('a learner call uses the prompt of its readiness read: the ledger and the meta carry the config number, the adapter gets the config text', async () => {
+    const { runner, records, adapter, liveLoads } = setup({ prompt: { instructions: 'X', examples: [], revision: 7 } });
+    const report = await runner.execute(learner());
+    expect(report.result).toMatchObject({ status: 'succeeded', meta: { prompt_revision: 7 } });
+    expect(records[0]!.call).toMatchObject({ promptRevision: 7 });
+    expect(adapter.requests[0]!.instructions).toContain('X');
+    expect(liveLoads).toEqual([]);
+  });
+
+  it('an admin test without a selection or prompt of its own reads the live config once, for both', async () => {
+    const { runner, liveLoads, records } = setup({ prompt: { instructions: 'Live text.', examples: [], revision: 5 } });
+    await runner.execute(adminTest());
+    expect(liveLoads).toEqual([OP]);
+    expect(records[0]!.call).toMatchObject({ promptRevision: 5 });
+  });
+
+  it('a config run brings its own selection and prompt: the live config is not read at all', async () => {
+    const { runner, liveLoads, records } = setup();
+    await runner.execute(adminTest({ selection: selectionOf('fake'), prompt: { instructions: 'Draft.', examples: [], revision: 9 } }));
+    expect(liveLoads).toEqual([]);
+    expect(records[0]!.call).toMatchObject({ promptRevision: 9 });
+  });
+
+  it('a draft text without a selection takes the live selection (one read)', async () => {
+    const { runner, liveLoads } = setup();
+    await runner.execute(adminTest({ prompt: { instructions: 'Draft.', examples: [], revision: null } }));
+    expect(liveLoads).toEqual([OP]);
+  });
 });
 
 describe('RunnerService.execute — learner', () => {
@@ -566,11 +604,11 @@ describe('RunnerService.execute — learner', () => {
   });
 
   it('B6E40: meta.model is the model read at the start', async () => {
-    const readiness: ReadinessCheck = { ready: true, selection: selectionOf('fake', 'fake:first') };
+    const readiness: ReadinessCheck = { ready: true, selection: selectionOf('fake', 'fake:first'), prompt: { instructions: 'P', examples: [], revision: 3 } };
     const { runner, setReadiness } = setup({
       readiness,
       steps: [() => {
-        setReadiness({ ready: true, selection: selectionOf('fake', 'fake:second') });
+        setReadiness({ ready: true, selection: selectionOf('fake', 'fake:second'), prompt: { instructions: 'P', examples: [], revision: 3 } });
         return ok();
       }],
     });

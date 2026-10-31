@@ -28,7 +28,7 @@ const rowOf = (op: string) => screen.getAllByText(op)[0].closest('tr, [data-test
 const bodyRows = () => screen.getAllByRole('row').slice(1).map((r) => r.textContent ?? '');
 
 describe('AiStatusPage (A/84, A/84b)', () => {
-  it('a fresh database: six rows in the copy deck order, each "Chưa sẵn sàng · Chưa chọn model" with [Chọn model] to /ai/operations', async () => {
+  it('a fresh database: six rows in the copy deck order, each "Chưa sẵn sàng · Chưa chọn model" with [Chọn model] to Cấu hình of that operation', async () => {
     renderApp('/ai/status', { [STATUS]: reply(status()) });
     expect(await screen.findByRole('heading', { level: 1, name: 'Tình trạng' })).toBeInTheDocument();
     await screen.findAllByText('generate_cloze');
@@ -36,7 +36,7 @@ describe('AiStatusPage (A/84, A/84b)', () => {
       const row = rowOf(op);
       expect(within(row).getByText('Chưa sẵn sàng')).toBeInTheDocument();
       expect(within(row).getByText('Chưa chọn model')).toBeInTheDocument();
-      expect(within(row).getByRole('link', { name: /Chọn model/ })).toHaveAttribute('href', '/ai/operations');
+      expect(within(row).getByRole('link', { name: /Chọn model/ })).toHaveAttribute('href', `/ai/configs?op=${op}`);
     }
     expect(bodyRows()).toHaveLength(6);
   });

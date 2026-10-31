@@ -58,10 +58,13 @@ function setup(input: Setup = {}) {
   const models: Partial<Record<AiOperation, Model | null>> = { generate_cloze: model(), ...input.models };
   const contentArgs: unknown[] = [];
   const prisma = {
-    aiOperationSetting: {
-      findMany: vi.fn(async () => AI_OPERATIONS.map((operation) => ({
-        operation, effort: operation === 'generate_cloze' ? 'low' : null, thinking: null, maxOutputTokens: 1_200,
-        modelRef: models[operation]?.id ?? null, model: models[operation],
+    aiLiveConfig: {
+      findMany: vi.fn(async (_args?: unknown) => AI_OPERATIONS.map((operation) => ({
+        operation,
+        config: {
+          effort: operation === 'generate_cloze' ? 'low' : null, thinking: null, maxOutputTokens: 1_200, modelRef: models[operation]?.id ?? null,
+          model: models[operation],
+        },
       }))),
     },
     aiCall: { findMany: vi.fn(async () => input.calls ?? []) },
@@ -122,7 +125,7 @@ describe('ReportsService.status', () => {
   it('ready and reason per operation from readiness', async () => {
     const { service } = setup({
       readiness: {
-        generate_cloze: { ready: true, selection: {} as never },
+        generate_cloze: { ready: true, selection: {} as never, prompt: {} as never },
         lookup_word: { ready: false, reason: 'model-not-set' },
         translate_sentence: { ready: false, reason: 'ai-disabled' },
       },

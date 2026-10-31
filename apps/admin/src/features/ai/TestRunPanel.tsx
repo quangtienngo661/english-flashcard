@@ -1,6 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRef, useState } from 'react';
-import { Link } from 'react-router';
 import { useTranslations } from 'use-intl';
 import { ApiError, NetworkError } from '../../api/problem';
 import { useErrorDetails } from '../../api/use-error-message';
@@ -9,7 +8,7 @@ import { Banner } from '../../ui/Banner';
 import { Button } from '../../ui/Button';
 import { Checkbox } from '../../ui/Checkbox';
 import {
-  aiKeys, getTestQuota, isDevExample, listExamples, runTest, type AiOperation, type PromptExample, type TestResult, type TestStatus,
+  aiKeys, getTestQuota, isDevExample, listExamples, type AiOperation, type TestResult, type TestStatus,
 } from './ai-api';
 import { useAiFormat } from './useAiFormat';
 
@@ -17,11 +16,9 @@ import { useAiFormat } from './useAiFormat';
 const TEST_MAX = 5;
 const NEED_EXAMPLE = 'examples: at least one example is needed';
 const STATUSES: TestStatus[] = ['succeeded', 'transient_failure', 'permanent_failure', 'unavailable'];
-const linkClass =
-  'inline-flex min-h-control w-fit items-center whitespace-nowrap rounded-control px-4 text-ui font-medium text-primary outline-none hover:bg-primary-soft focus-visible:ring-2 focus-visible:ring-primary pointer-coarse:min-h-control-touch';
 const block = 'whitespace-pre-wrap wrap-anywhere rounded-inner bg-canvas p-3 font-mono text-xs text-ink';
 
-type Failure = { message: string; code?: string | null; toOperations?: boolean; offline?: boolean };
+type Failure = { message: string; code?: string | null; offline?: boolean };
 
 /** "go · verb": the first two text values of an example's input, so the admin can tell examples apart. */
 function summary(input: Record<string, unknown>): string {
@@ -31,17 +28,19 @@ function summary(input: Record<string, unknown>): string {
 
 type Props = {
   op: AiOperation;
-  /** The editor's content as a body, or null when it cannot be sent (the editor then marks its boxes). Clears the editor's old errors. */
-  prepare: () => { instructions: string; examples: PromptExample[] } | null;
-  /** Puts a 400's violations on the editor's boxes; returns those that fit no box. */
-  showViolations: (violations: string[]) => string[];
+  /** Runs the saved draft on the chosen example ids (none = the API's own choice) and returns the samples. */
+  send: (exampleIds: string[]) => Promise<TestResult>;
+  /** Replaces the sentence under the title. */
+  note?: string;
+  /** The run button is off (the draft has unsaved edits, so a run would not be of what is on screen). */
+  isDisabled?: boolean;
 };
 
 /**
- * A/82 [Chạy thử]: runs the unsaved editor content at once on up to five inputs. Never re-sent automatically (each run is an AI
+ * A/82 [Chạy thử]: runs the saved draft of a config at once on up to five inputs. Never re-sent automatically (each run is an AI
  * call and one `ai.test` slot, design §4.6); the quota line is read on open and after every run, failed ones included.
  */
-export function TestRunPanel({ op, prepare, showViolations }: Props) {
+export function TestRunPanel({ op, send, note, isDisabled }: Props) {
   const t = useTranslations();
   const api = useApi();
   const queryClient = useQueryClient();
@@ -75,7 +74,8 @@ export function TestRunPanel({ op, prepare, showViolations }: Props) {
 
   function describe(e: unknown): Failure {
     if (e instanceof NetworkError) return { message: t('offline.message'), offline: true };
-    if (e instanceof ApiError && e.problem.slug === 'model-not-set') return { message: t('errors.model-not-set'), toOperations: true };
+    // The draft is on the same page: no link, the model box is right above.
+    if (e instanceof ApiError && e.problem.slug === 'model-not-set') return { message: t('ai.configs.draft.noModelToTest') };
     if (e instanceof ApiError && e.problem.status === 429) {
       const at = e.retryAfterSeconds !== null ? new Date(Date.now() + e.retryAfterSeconds * 1000)
         : quota.data ? new Date(quota.data.resets_at) : null;
@@ -84,22 +84,19 @@ export function TestRunPanel({ op, prepare, showViolations }: Props) {
     if (e instanceof ApiError && e.problem.slug === 'validation-failed') {
       const violations = e.problem.violations ?? [];
       if (violations.includes(NEED_EXAMPLE)) return { message: t('ai.prompts.test.needExample') };
-      const rest = showViolations(violations);
-      return { message: [t('errors.validation-failed'), ...rest].join(' ') };
+      return { message: [t('errors.validation-failed'), ...violations].join(' ') };
     }
     return errorDetails(e);
   }
 
   async function run() {
     if (busy.current) return;
-    const body = prepare();
-    if (!body) return;
     busy.current = true;
     setPending(true);
     setFailure(null);
     setResult(null);
     try {
-      setResult(await runTest(api, op, chosenIds.length > 0 ? { ...body, example_ids: chosenIds } : body));
+      setResult(await send(chosenIds));
     } catch (e) {
       setFailure(describe(e));
     } finally {
@@ -113,7 +110,7 @@ export function TestRunPanel({ op, prepare, showViolations }: Props) {
   return (
     <section aria-labelledby="prompt-test" className="flex flex-col gap-3 rounded-panel border-2 border-border p-4">
       <h2 id="prompt-test" className="text-lg font-bold text-ink">{t('ai.prompts.test.title')}</h2>
-      <p className="text-ui text-muted">{t('ai.prompts.test.note')}</p>
+      <p className="text-ui text-muted">{note ?? t('ai.prompts.test.note')}</p>
       {examples.data && (
         set.length === 0 ? (
           <p className="text-ui text-muted">{t('ai.prompts.test.pickEmpty')}</p>
@@ -137,7 +134,7 @@ export function TestRunPanel({ op, prepare, showViolations }: Props) {
         )
       )}
       <div className="flex flex-wrap items-center gap-3">
-        <Button variant="secondary" onPress={() => void run()} isPending={pending}>{t('ai.prompts.test.run')}</Button>
+        <Button variant="secondary" onPress={() => void run()} isPending={pending} isDisabled={isDisabled}>{t('ai.prompts.test.run')}</Button>
         {runsWith && <span className="text-ui text-ink">{runsWith}</span>}
       </div>
       {quota.data && (
@@ -146,11 +143,7 @@ export function TestRunPanel({ op, prepare, showViolations }: Props) {
       {quota.isError && <p className="text-ui text-danger">{t('ai.prompts.test.quotaFailed')}</p>}
       {examples.isError && <p className="text-ui text-danger">{t('ai.prompts.test.examplesFailed')}</p>}
       {failure && (
-        <Banner
-          variant={failure.offline ? 'offline' : 'error'}
-          code={failure.code}
-          action={failure.toOperations ? <Link to="/ai/operations" className={linkClass}>{t('ai.prompts.test.openOperations')}</Link> : undefined}
-        >
+        <Banner variant={failure.offline ? 'offline' : 'error'} code={failure.code}>
           {failure.message}
         </Banner>
       )}

@@ -36,19 +36,20 @@ const decimals = (data: Record<string, unknown>) => Object.fromEntries(Object.en
 /** In-memory `ai_models` and `ai_operation_settings` with the calls the service makes. */
 function fakePrisma() {
   const models: Row[] = [];
-  const settings: Array<{ operation: string; modelRef: string | null }> = [];
+  // The configs that name a model (nhóm B M2): `published` = live, `draft`, `retired` = the previous or an older one.
+  const configs: Array<{ operation: string; modelRef: string | null; status: string }> = [];
   const find = (where: { id?: string; provider_modelId?: { provider: string; modelId: string } }) => models.find((row) =>
     where.id ? row.id === where.id
       : row.provider === where.provider_modelId?.provider && row.modelId === where.provider_modelId?.modelId) ?? null;
   return {
-    models, settings,
+    models, configs,
     aiModel: {
       findMany: vi.fn(async ({ where }: { where?: { provider?: string } } = {}) =>
         models.filter((row) => !where?.provider || row.provider === where.provider)),
       findUnique: vi.fn(async ({ where }: { where: Parameters<typeof find>[0] }) => find(where)),
       create: vi.fn(async ({ data }: { data: Record<string, unknown> }) => {
         if (find({ provider_modelId: { provider: data.provider as string, modelId: data.modelId as string } })) throw p2002();
-        const row = { id: randomUUID(), note: null, priceInput: null, priceCachedInput: null, priceOutput: null, ...decimals(data) } as unknown as Row;
+        const row = { id: randomUUID(), note: null, hidden: false, priceInput: null, priceCachedInput: null, priceOutput: null, ...decimals(data) } as unknown as Row;
         models.push(row);
         return row;
       }),
@@ -61,15 +62,16 @@ function fakePrisma() {
       delete: vi.fn(async ({ where }: { where: { id: string } }) => {
         const index = models.findIndex((row) => row.id === where.id);
         if (index < 0) throw p2025();
-        if (settings.some((setting) => setting.modelRef === where.id)) throw p2003();
+        if (configs.some((config) => config.modelRef === where.id)) throw p2003();
         return models.splice(index, 1)[0];
       }),
     },
-    aiOperationSetting: {
-      findMany: vi.fn(async ({ where }: { where?: { modelRef?: { in: string[] } | string } } = {}) => settings.filter((s) => {
-        const ref = where?.modelRef;
-        return ref === undefined || (typeof ref === 'string' ? s.modelRef === ref : s.modelRef !== null && ref.in.includes(s.modelRef));
-      })),
+    aiConfig: {
+      findFirst: vi.fn(async ({ where }: { where: { modelRef: string; status?: { in: string[] } } }) =>
+        configs.find((c) => c.modelRef === where.modelRef && (where.status === undefined || where.status.in.includes(c.status))) ?? null),
+    },
+    aiLiveConfig: {
+      findMany: vi.fn(async (_args?: unknown) => configs.filter((c) => c.status === 'published').map((c) => ({ operation: c.operation, config: { modelRef: c.modelRef } }))),
     },
   };
 }
@@ -200,12 +202,17 @@ describe('ModelsService', () => {
     expect(await problem(service.refresh(added.id))).toMatchObject({ status: 422, type: 'model-not-found' });
   });
 
-  it('B6E38/B6#13: delete a model in use → 409 model-in-use (also when the foreign key catches a late choice)', async () => {
+  it.each(['published', 'draft', 'retired'])('B34, B49, D40: delete a model named by a %s config → 409 model-in-use, even a retired one', async (status) => {
     const added = await service.add(ACTOR, { provider: 'openai', model_id: 'gpt-6-luna' });
-    prisma.settings.push({ operation: 'generate_cloze', modelRef: added.id });
+    prisma.configs.push({ operation: 'generate_cloze', modelRef: added.id, status });
     expect(await problem(service.remove(added.id))).toMatchObject({ status: 409, type: 'model-in-use' });
     expect(prisma.aiModel.delete).not.toHaveBeenCalled();
-    prisma.aiOperationSetting.findMany.mockResolvedValueOnce([]);
+  });
+
+  it('B6E38: a config saved between the check and the delete → the foreign key catches it → 409 model-in-use', async () => {
+    const added = await service.add(ACTOR, { provider: 'openai', model_id: 'gpt-6-luna' });
+    prisma.configs.push({ operation: 'generate_cloze', modelRef: added.id, status: 'draft' });
+    prisma.aiConfig.findFirst.mockResolvedValueOnce(null);
     expect(await problem(service.remove(added.id))).toMatchObject({ status: 409, type: 'model-in-use' });
     expect(prisma.models).toHaveLength(1);
   });
@@ -234,6 +241,31 @@ describe('ModelsService', () => {
     expect((await service.update(added.id, { price_input: null })).price).toBeNull();
   });
 
+  it('D40: a new model is not hidden; update({ hidden }) stores the admin flag and the view shows it', async () => {
+    const added = await service.add(ACTOR, { provider: 'openai', model_id: 'gpt-6-luna' });
+    expect((await service.list()).items[0]).toMatchObject({ hidden: false });
+    const view = await service.update(added.id, { hidden: true });
+    expect(view.hidden).toBe(true);
+    expect(prisma.models[0]!.hidden).toBe(true);
+    expect((await service.update(added.id, { hidden: false })).hidden).toBe(false);
+  });
+
+  it('D40: update without hidden leaves the flag alone; a non-boolean → 400', async () => {
+    const added = await service.add(ACTOR, { provider: 'openai', model_id: 'gpt-6-luna' });
+    await service.update(added.id, { hidden: true });
+    expect((await service.update(added.id, { note: 'n' })).hidden).toBe(true);
+    expect(await problem(service.update(added.id, { hidden: 'yes' as never }))).toMatchObject({ status: 400, type: 'validation-failed' });
+  });
+
+  it('D40: the provider refresh never writes the hidden flag (the admin owns it)', async () => {
+    const added = await service.add(ACTOR, { provider: 'openai', model_id: 'gpt-6-luna' });
+    await service.update(added.id, { hidden: true });
+    await service.refresh(added.id);
+    const data = prisma.aiModel.update.mock.calls.at(-1)![0].data as Record<string, unknown>;
+    expect(data).not.toHaveProperty('hidden');
+    expect(prisma.models[0]!.hidden).toBe(true);
+  });
+
   it('list estimates per call and per 1 000 calls in VND when priced', async () => {
     await service.add(ACTOR, { provider: 'openai', model_id: 'gpt-6-luna', price_input: 0.1, price_output: 0.5 });
     openai.description = { kind: 'found', info: { ...INFO, maxOutputTokens: null } };
@@ -254,9 +286,32 @@ describe('ModelsService', () => {
     expect((await service.list('anthropic')).items.map((item) => item.model_id)).toEqual(['claude-sonnet-5-5', 'claude-unknown-max']);
   });
 
-  it('list names the operations that use each model', async () => {
+  it('list names the operations whose live config uses each model; a draft or retired config does not count', async () => {
     const added = await service.add(ACTOR, { provider: 'openai', model_id: 'gpt-6-luna' });
-    prisma.settings.push({ operation: 'lookup_word', modelRef: added.id }, { operation: 'generate_cloze', modelRef: added.id });
+    prisma.configs.push(
+      { operation: 'lookup_word', modelRef: added.id, status: 'published' }, { operation: 'generate_cloze', modelRef: added.id, status: 'published' },
+      { operation: 'translate_sentence', modelRef: added.id, status: 'draft' }, { operation: 'generate_sentence_mcq', modelRef: added.id, status: 'retired' },
+    );
     expect((await service.list()).items[0].used_by).toEqual(['generate_cloze', 'lookup_word']);
+  });
+
+  it('B34: a price cannot be cleared while the model is in the draft or the live config; a retired config does not hold it', async () => {
+    const added = await service.add(ACTOR, { provider: 'openai', model_id: 'gpt-6-luna', price_input: 1, price_output: 2 });
+    prisma.configs.push({ operation: 'generate_cloze', modelRef: added.id, status: 'retired' });
+    expect((await service.update(added.id, { price_input: null })).price).toBeNull();
+    await service.update(added.id, { price_input: 1 });
+    for (const status of ['published', 'draft']) {
+      prisma.configs.length = 0;
+      prisma.configs.push({ operation: 'generate_cloze', modelRef: added.id, status });
+      expect(await problem(service.update(added.id, { price_input: null }))).toMatchObject({ status: 409, type: 'model-in-use' });
+      expect(await problem(service.update(added.id, { price_output: null }))).toMatchObject({ status: 409, type: 'model-in-use' });
+    }
+  });
+
+  it('B34: changing a price, or clearing the cached price, while the model is live is fine', async () => {
+    const added = await service.add(ACTOR, { provider: 'openai', model_id: 'gpt-6-luna', price_input: 1, price_output: 2 });
+    prisma.configs.push({ operation: 'generate_cloze', modelRef: added.id, status: 'published' });
+    expect((await service.update(added.id, { price_input: 3 })).price?.input).toBe('3.0000');
+    expect((await service.update(added.id, { price_cached_input: null, note: 'n' })).note).toBe('n');
   });
 });

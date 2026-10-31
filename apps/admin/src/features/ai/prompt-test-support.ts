@@ -1,7 +1,7 @@
 // Test-only fixtures for the Prompt page (A/82) tests; not imported by the app.
 import type { Route } from '../../auth/test-support';
 import type {
-  AiOperationSetting, EvalExample, EvalRunDetail, EvalRunItem, EvalSet, EvalSetDetail, EvalSetItem, HeldOutExample, PromptRevision, PromptView, RunStats, SplitStats,
+  AiOperationSetting, EvalExample, EvalRunDetail, EvalRunItem, EvalSet, EvalSetDetail, EvalSetItem, HeldOutExample, PromptRevision, RunStats, SplitStats,
   TestQuota, TestResult,
 } from './ai-api';
 
@@ -14,19 +14,6 @@ export const RUN_ID = 'aaaaaaaa-0000-4000-8000-000000000001';
 export const example = (word = 'go') => ({
   input: { word, part_of_speech: 'verb', level: 'A1', meaning_vi: 'đi', context_label: null },
   output: { sentence: 'I ___ home.', accepted_answers: [word], translation_vi: 'Tôi về nhà.' },
-});
-
-export const promptView = (over: Partial<PromptView> = {}): PromptView => ({
-  operation: 'generate_cloze',
-  instructions: 'Write one short sentence.',
-  examples: [example()],
-  revision: 3,
-  input_fields: CLOZE_FIELDS,
-  updated_at: AT,
-  updated_by: 'sys',
-  updated_by_user: SYSTEM,
-  guard: GUARD,
-  ...over,
 });
 
 export const revision = (n: number, over: Partial<PromptRevision> = {}): PromptRevision => ({
@@ -74,7 +61,7 @@ export const runItem = (over: Partial<EvalRunItem> = {}): EvalRunItem => ({
 /** One eval run (A/83) as `GET …/eval/runs/{id}` answers it; the list rows are the same without `draft`, `heartbeat_at`, `items`. */
 export const evalRun = (over: Partial<EvalRunDetail> = {}): EvalRunDetail => ({
   id: RUN_ID, operation: 'generate_cloze', provider: 'openai', model: 'gpt-test', effort: null, thinking: null, max_output_tokens: null,
-  prompt_revision: 3, status: 'finished', total: 20, done: 20, valid_count: 18, set_id: null, set_version: null, legacy: false, complete: true,
+  prompt_revision: 3, config_id: null, config_version: null, config_number: null, status: 'finished', total: 20, done: 20, valid_count: 18, set_id: null, set_version: null, legacy: false, complete: true,
   avg_latency_ms: 812, cost_usd: '0.01000000', cost_unknown_count: 0,
   error: null, started_by: 'u9', started_by_user: { id: 'u9', email: 'lan@wordmet.com', system: false }, created_at: AT, started_at: AT,
   finished_at: AT, draft: null, heartbeat_at: null, items: [], ...over,
@@ -93,10 +80,7 @@ export const operationsFor = (fields: Record<string, string[]>) => () => Respons
 });
 
 export const URL = {
-  prompt: (op = 'generate_cloze') => `GET /v1/admin/ai/prompts/${op}`,
-  save: (op = 'generate_cloze') => `PUT /v1/admin/ai/prompts/${op}`,
   revisions: (op = 'generate_cloze') => `GET /v1/admin/ai/prompts/${op}/revisions?page_size=20`,
-  test: (op = 'generate_cloze') => `POST /v1/admin/ai/prompts/${op}/test`,
   quota: 'GET /v1/admin/ai/test-quota',
   examples: (op = 'generate_cloze') => `GET /v1/admin/ai/eval/examples?operation=${op}`,
   addExample: 'POST /v1/admin/ai/eval/examples',
@@ -131,17 +115,6 @@ export function evalRoutes(over: Record<string, Route> = {}): Record<string, Rou
     [URL.quota]: () => Response.json(quota()),
     [URL.operations]: operationsReply,
     [URL.settings]: () => Response.json({ version: 1, values: { ai: { usd_vnd_rate: 26100 } }, defaults: {}, bounds: {} }),
-    ...over,
-  };
-}
-
-/** Every read the page makes for `op`, answered; `over` replaces or adds routes. */
-export function promptRoutes(over: Record<string, Route> = {}, op = 'generate_cloze'): Record<string, Route> {
-  return {
-    [URL.prompt(op)]: () => Response.json(promptView({ operation: op as PromptView['operation'] })),
-    [URL.revisions(op)]: () => Response.json({ items: [revision(3, { saved_by: 'sys', saved_by_user: SYSTEM })], next_page_token: null }),
-    [URL.quota]: () => Response.json(quota()),
-    [URL.examples(op)]: () => Response.json({ items: [] }),
     ...over,
   };
 }

@@ -56,7 +56,7 @@ export function AiStatusPage() {
           {r.reason && <span>{t(`ai.reasons.${r.reason}`)}</span>}
           {r.model && <span className={r.reason ? 'text-xs text-muted' : ''}>{`${t(`ai.providers.${r.model.provider}`)} · ${r.model.model_id}`}</span>}
           {r.reason === 'model-not-set' && (
-            <Link to="/ai/operations" className={linkClass} aria-label={t('ai.status.chooseModelFor', { operation: t(`ai.operations.names.${r.operation}`) })}>
+            <Link to={`/ai/configs?op=${r.operation}`} className={linkClass} aria-label={t('ai.status.chooseModelFor', { operation: t(`ai.operations.names.${r.operation}`) })}>
               {t('ai.status.chooseModel')}
             </Link>
           )}

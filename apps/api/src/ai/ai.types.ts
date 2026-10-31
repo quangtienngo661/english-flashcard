@@ -24,6 +24,7 @@ export type AiMeta = {
   provider: AiProviderName;
   model: string;
   effort: string | null;
+  /** The number of the config the call ran (the prompt revision before nhóm B M2). */
   prompt_revision: number | null;
   schema_version: 1;
   replayed: boolean;

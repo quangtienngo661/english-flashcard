@@ -107,6 +107,14 @@ export class EvalJob {
   }
 
   private async prompt(run: EvalRunRow) {
+    if (run.configId !== null) {
+      // The config is read once, before any call: a draft saved again since the run was queued must not run its newer text under the
+      // older version number (Review focus 1), and a draft deleted since has nothing to run.
+      const config = await this.runs.configOf(run.configId);
+      if (!config) throw new EvalRunError('config-deleted');
+      if (config.version !== run.configVersion) throw new EvalRunError('config-changed');
+      return { instructions: config.instructions, examples: config.examples, revision: config.number };
+    }
     if (run.draft) return { ...run.draft, revision: null };
     const stored = await this.prompts.atRevision(run.operation, run.promptRevision as number);
     if (!stored) throw new EvalRunError(`prompt revision ${run.promptRevision} not found`);

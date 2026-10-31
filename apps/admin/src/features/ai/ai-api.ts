@@ -52,6 +52,8 @@ export type AiModel = {
   info_checked_at: string;
   used_by: AiOperation[];
   estimate: CostEstimate | null;
+  /** The admin's own flag (D40): pickers leave the model out, the model keeps working where it is already chosen. */
+  hidden: boolean;
 };
 
 /** Prices are numbers 0-1000 (up to 4 decimals) or null/omitted; a `fake` model is forced to 0. */
@@ -63,7 +65,13 @@ export type AddModelBody = {
   price_output?: number | null;
   note?: string | null;
 };
-export type UpdateModelBody = { price_input?: number | null; price_cached_input?: number | null; price_output?: number | null; note?: string | null };
+export type UpdateModelBody = {
+  price_input?: number | null;
+  price_cached_input?: number | null;
+  price_output?: number | null;
+  note?: string | null;
+  hidden?: boolean;
+};
 
 export type AiOperationSetting = {
   operation: AiOperation;
@@ -75,27 +83,9 @@ export type AiOperationSetting = {
   input_fields: string[];
   estimate: CostEstimate | null;
 };
-export type SaveOperationBody = {
-  expected_version: number;
-  model_ref: string | null;
-  effort: string | null;
-  thinking: 'off' | null;
-  max_output_tokens: number | null;
-};
 
 export type PromptExample = { input: Record<string, unknown>; output: Record<string, unknown> };
 
-export type PromptView = {
-  operation: AiOperation;
-  instructions: string;
-  examples: PromptExample[];
-  revision: number;
-  input_fields: string[];
-  updated_at: string;
-  updated_by: string;
-  updated_by_user: UserRef;
-  guard: string;
-};
 export type PromptRevision = {
   revision: number;
   instructions: string;
@@ -104,8 +94,85 @@ export type PromptRevision = {
   saved_at: string;
   saved_by_user: UserRef;
 };
-export type SavePromptBody = { expected_revision: number; instructions: string; examples: PromptExample[] };
-export type TestBody = { instructions: string; examples: PromptExample[]; example_ids?: string[] };
+
+export type ConfigStatus = 'draft' | 'published' | 'retired';
+/** One config of an operation (`GET …/configs/{op}`): prompt, model and its settings as one versioned unit (nhóm B design §6.1). */
+export type ConfigView = {
+  id: string;
+  operation: AiOperation;
+  number: number;
+  /** +1 on each save of a draft; what `expected_version` is checked against. */
+  version: number;
+  status: ConfigStatus;
+  instructions: string;
+  examples: PromptExample[];
+  model: { id: string; provider: AiProvider; model_id: string } | null;
+  effort: string | null;
+  thinking: 'off' | null;
+  max_output_tokens: number | null;
+  note: string | null;
+  created_from: string | null;
+  created_by_user: UserRef;
+  created_at: string;
+  published_by_user: UserRef | null;
+  published_at: string | null;
+  estimate: CostEstimate | null;
+};
+/** The live config, the draft being prepared and the config before the live one (the rollback target). */
+export type ConfigsView = {
+  operation: AiOperation;
+  input_fields: string[];
+  guard: string;
+  /** +1 on each publish or rollback: what a rollback sends as `expected_live_version`. */
+  live_version: number;
+  live: ConfigView;
+  draft: ConfigView | null;
+  previous: ConfigView | null;
+};
+/** Items of a run that passed, out of those that were judged (`counted` is 0 when nothing was judged on that criterion). */
+export type Tally = { passed: number; counted: number };
+/** What a publish warns about (design §6.3): warnings never block; held-out examples are only ever counted. */
+export type PublishWarning =
+  | { code: 'rate-drop'; criterion: 'shape' | 'rule' | 'expected'; before: Tally; after: Tally }
+  | { code: 'dev-regressed'; example_ids: string[] }
+  | { code: 'held-out-failures-up'; before: number; after: number };
+/** `GET …/configs/{op}/publish-check`: what a publish of the saved draft needs and would warn about. */
+export type PublishCheck = {
+  operation: AiOperation;
+  draft: { id: string; number: number; version: number };
+  /** The draft has no model: publishing turns the operation off, with no run (D38). */
+  turn_off: boolean;
+  /** The newest frozen version of the example set; `null` when none was frozen. */
+  set: { id: string; version: number } | null;
+  candidate_run_id: string | null;
+  baseline: { required: boolean; run_id: string | null };
+  blockers: Array<'eval-required' | 'baseline-required'>;
+  warnings: PublishWarning[];
+};
+export type PublishBody = { expected_version: number; candidate_run_id: string | null; baseline_run_id: string | null; acknowledge_warnings: boolean };
+type ConfigRef = { id: string; number: number; model_id: string | null };
+/** One publish or rollback of an operation (`GET …/configs/{op}/history`). */
+export type ConfigEvent = {
+  id: string;
+  kind: 'publish' | 'rollback';
+  at: string;
+  actor_user: UserRef;
+  config: ConfigRef;
+  from_config: ConfigRef | null;
+  candidate_run_id: string | null;
+  baseline_run_id: string | null;
+  warnings: PublishWarning[];
+};
+export type SaveDraftBody = {
+  expected_version: number;
+  instructions: string;
+  examples: PromptExample[];
+  model_ref: string | null;
+  effort: string | null;
+  thinking: 'off' | null;
+  max_output_tokens: number | null;
+  note: string | null;
+};
 
 /** One provider call of a test sample (API `CallSummary`); `outcome` is a `CallOutcome` such as `succeeded`, `timeout`, `invalid-shape`. */
 export type TestCall = { attempt: 1 | 2; outcome: string; latency_ms: number; cost_usd: string | null; http_status: number | null };
@@ -209,6 +276,10 @@ export type EvalRun = {
   max_output_tokens: number | null;
   /** `null`: the run used a draft from the Prompt page ("Bản nháp"). */
   prompt_revision: number | null;
+  /** The config the run tried (and the version of it): `null` on a run of an unsaved draft text or from before configs. `config_number` is `null` once the draft was deleted. */
+  config_id: string | null;
+  config_version: number | null;
+  config_number: number | null;
   status: EvalRunStatus;
   total: number;
   done: number;
@@ -284,8 +355,16 @@ export type EvalRunDetail = EvalRun & {
   heartbeat_at: string | null;
   items: EvalRunItem[];
 };
-/** `set_id`: a frozen version of the operation; left out, the run takes the working set. */
-export type StartRunBody = { operation: AiOperation; prompt: 'current' | { instructions: string; examples: PromptExample[] }; set_id?: string };
+/**
+ * Exactly one of `prompt` and `config`. `config` runs the live config or the saved draft; `prompt: 'current'` is the old way to say "the live config".
+ * `set_id`: a frozen version of the operation; left out, the run takes the working set.
+ */
+export type StartRunBody = {
+  operation: AiOperation;
+  prompt?: 'current' | { instructions: string; examples: PromptExample[] };
+  config?: 'live' | 'draft';
+  set_id?: string;
+};
 
 /** A run is over once it is `finished` or `failed`; the job rule of `usePollingStatus` does not know `finished`. */
 export const isRunDone = (status: string): boolean => status === 'finished' || status === 'failed';
@@ -336,7 +415,9 @@ export const aiKeys = {
   status: () => ['ai', 'status'] as const,
   models: () => ['ai', 'models'] as const,
   operations: () => ['ai', 'operations'] as const,
-  prompt: (op: AiOperation) => ['ai', 'prompt', op] as const,
+  configs: (op: AiOperation) => ['ai', 'configs', op] as const,
+  publishCheck: (op: AiOperation) => ['ai', 'publish-check', op] as const,
+  configHistory: (op: AiOperation) => ['ai', 'config-history', op] as const,
   revisions: (op: AiOperation) => ['ai', 'revisions', op] as const,
   testQuota: () => ['ai', 'test-quota'] as const,
   examples: (op: AiOperation) => ['ai', 'eval-examples', op] as const,
@@ -357,6 +438,7 @@ export const aiKeys = {
 
 const base = '/v1/admin/ai';
 const REVISIONS_PAGE_SIZE = 20;
+const HISTORY_PAGE_SIZE = 20;
 const RUNS_PAGE_SIZE = 20;
 
 export const getStatus = (api: ApiClient) => api.get<AiStatus>(`${base}/status`);
@@ -368,19 +450,35 @@ export const refreshModel = (api: ApiClient, id: string) => api.post<AiModel>(`$
 export const deleteModel = (api: ApiClient, id: string) => api.delete<void>(`${base}/models/${id}`);
 
 export const listOperations = (api: ApiClient) => api.get<{ items: AiOperationSetting[] }>(`${base}/operations`);
-export const saveOperation = (api: ApiClient, op: AiOperation, body: SaveOperationBody) =>
-  api.put<AiOperationSetting>(`${base}/operations/${op}`, body);
 
-export const getPrompt = (api: ApiClient, op: AiOperation) => api.get<PromptView>(`${base}/prompts/${op}`);
+/** The prompt revisions saved before configs existed (read only: the save endpoints are gone). */
 export function listRevisions(api: ApiClient, op: AiOperation, pageToken?: string) {
   const query = new URLSearchParams({ page_size: String(REVISIONS_PAGE_SIZE) });
   if (pageToken) query.set('page_token', pageToken);
   return api.get<{ items: PromptRevision[]; next_page_token: string | null }>(`${base}/prompts/${op}/revisions?${query.toString()}`);
 }
-export const savePrompt = (api: ApiClient, op: AiOperation, body: SavePromptBody) => api.put<PromptView>(`${base}/prompts/${op}`, body);
-/** Never re-sent automatically: every run costs a provider call and a quota slot. */
-export const runTest = (api: ApiClient, op: AiOperation, body: TestBody) => api.post<TestResult>(`${base}/prompts/${op}/test`, body);
 export const getTestQuota = (api: ApiClient) => api.get<TestQuota>(`${base}/test-quota`);
+
+export const getConfigs = (api: ApiClient, op: AiOperation) => api.get<ConfigsView>(`${base}/configs/${op}`);
+/** Copies the live config, or `from_config_id` (a published or retired one); 409 `draft-exists` when the operation already has a draft. */
+export const createDraft = (api: ApiClient, op: AiOperation, body: { from_config_id?: string }) => api.post<ConfigView>(`${base}/configs/${op}/draft`, body);
+/** 409 `draft-version-conflict`, 422 `few-shot-invalid`, 400 `validation-failed`. */
+export const saveDraft = (api: ApiClient, op: AiOperation, body: SaveDraftBody) => api.put<ConfigView>(`${base}/configs/${op}/draft`, body);
+/** 409 `draft-busy` while a run of the draft is queued or running. */
+export const deleteDraft = (api: ApiClient, op: AiOperation) => api.delete<void>(`${base}/configs/${op}/draft`);
+export const getPublishCheck = (api: ApiClient, op: AiOperation) => api.get<PublishCheck>(`${base}/configs/${op}/publish-check`);
+/** Makes the draft live; answers the configs as they are now. 409 `publish-stale`, `publish-warnings`, `eval-required`, `baseline-required`, `draft-version-conflict`. */
+export const publishDraft = (api: ApiClient, op: AiOperation, body: PublishBody) => api.post<ConfigsView>(`${base}/configs/${op}/publish`, body);
+/** Puts the config before the live one back; `expected_live_version` keeps a stale page from undoing a newer publish (409 `publish-stale`, `no-previous`). */
+export const rollbackToPrevious = (api: ApiClient, op: AiOperation, body: { expected_live_version: number }) =>
+  api.post<ConfigsView>(`${base}/configs/${op}/rollback`, body);
+export function listConfigHistory(api: ApiClient, op: AiOperation, pageToken?: string) {
+  const query = new URLSearchParams({ page_size: String(HISTORY_PAGE_SIZE) });
+  if (pageToken) query.set('page_token', pageToken);
+  return api.get<{ items: ConfigEvent[]; next_page_token: string | null }>(`${base}/configs/${op}/history?${query.toString()}`);
+}
+/** Runs the saved draft at once on up to five dev inputs; never re-sent automatically (an AI call and one `ai.test` slot). */
+export const testDraft = (api: ApiClient, op: AiOperation, body: { example_ids?: string[] }) => api.post<TestResult>(`${base}/configs/${op}/draft/test`, body);
 
 /** Dev examples in full; a held-out one that was not opened is only `{ id, split: 'held_out' }`. */
 export const listExamples = (api: ApiClient, operation: AiOperation) =>
@@ -433,10 +531,4 @@ export const listCalls = (api: ApiClient, operationId: string) =>
 /** The API lists operations a→z; the screens show them in the copy deck's order. */
 export function sortByOperationOrder<T extends { operation: AiOperation }>(rows: T[]): T[] {
   return [...rows].sort((a, b) => AI_OPERATION_ORDER.indexOf(a.operation) - AI_OPERATION_ORDER.indexOf(b.operation));
-}
-
-/** Effort levels offered for the setting's current model (besides "Mặc định"); none when it has no model or the model is unknown. */
-export function effortChoicesFor(setting: Pick<AiOperationSetting, 'model'>, models: AiModel[]): string[] {
-  if (!setting.model) return [];
-  return models.find((model) => model.id === setting.model?.id)?.effort_choices ?? [];
 }

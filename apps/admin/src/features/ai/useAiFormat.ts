@@ -12,6 +12,7 @@ export function useAiFormat() {
   const usd = new Intl.NumberFormat(tag, { style: 'currency', currency: 'USD', minimumFractionDigits: 2, maximumFractionDigits: 4 });
   const vnd = new Intl.NumberFormat(tag, { style: 'currency', currency: 'VND', maximumFractionDigits: 0 });
   const price = new Intl.NumberFormat(tag, { minimumFractionDigits: 2, maximumFractionDigits: 4 });
+  const percent = new Intl.NumberFormat(tag, { maximumFractionDigits: 1 });
   return {
     date: (at: string) => date.format(new Date(at)),
     /** "25/10" ("10/25" in English): vi-VN writes a lone day and month with a dash, so the parts are joined here. */
@@ -28,5 +29,7 @@ export function useAiFormat() {
     vnd: (amount: number) => vnd.format(amount),
     /** A per-million-token price as the API sends it ("2.5000"): "2,50". */
     price: (amount: string) => price.format(Number(amount)),
+    /** A rate that is already in percent, with at most one decimal and no unit: 90 → "90", 85.714 → "85,7". */
+    percent: (value: number) => percent.format(value),
   };
 }
