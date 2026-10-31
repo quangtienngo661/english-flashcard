@@ -501,6 +501,14 @@
       "examplesHint": "Up to 1,000 examples per operation. A new example goes into dev or held-out to keep the held-out share; held-out examples stay hidden until you open them. Test runs on the Configs page use dev examples only.",
       "counts": "{dev} dev · {heldOut} held-out",
       "heldOutHidden": "Held-out example: content hidden",
+      "list": {
+        "sort": "Sort by",
+        "sorts": { "oldest": "Oldest first", "newest": "Newest first", "az": "A → Z", "za": "Z → A", "devFirst": "Dev first", "heldOutFirst": "Held-out first" },
+        "pages": "Example list pages",
+        "page": "Page {page} of {pages}",
+        "previous": "Previous page",
+        "next": "Next page"
+      },
       "split": { "dev": "dev", "heldOut": "held-out" },
       "reveal": {
         "button": "Open held-out example",
