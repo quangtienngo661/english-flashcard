@@ -83,12 +83,12 @@ trước khi bán phải có màn ghi nguồn dữ liệu cho người dùng (`G
 Đợt cải thiện nhóm A: design [`2026-10-26-dot-cai-thien-a-design.md`](../superpowers/specs/2026-10-26-dot-cai-thien-a-design.md), câu hỏi và trả lời
 [`2026-10-26-dot-cai-thien-questions.md`](../superpowers/reviews/2026-10-26-dot-cai-thien-questions.md), tóm tắt [`dot-cai-thien-a.md`](../deliveries/dot-cai-thien-a.md).
 
-| # | Mục | Trạng thái (26/10/2026) | Đã làm thế nào |
+| # | Mục | Trạng thái (26/10/2026; đợt đóng 31/10/2026, as-built ở [`dot-cai-thien-a.md`](../deliveries/dot-cai-thien-a.md)) | Đã làm thế nào |
 |---|---|---|---|
 | C1 | Nút loa | ✅ merge vào `dev`, PR #136 | Giọng của máy (`speechSynthesis`); hai nút UK · US ở từ, một nút US ở câu; câu đã lưu chỉ đọc bằng giọng trên máy. Chưa kiểm giọng `en-GB` trên Chrome / Edge thật |
 | C2 | Kết quả luyện gợi ý cập nhật lịch ôn | ✅ merge, PR #134 (gộp vào C16) | Trả lời sai thì nút chính (Enter) là Cần ôn lại; D16 Bước 3 giữ |
 | C3 | Điền từ từ câu đã lưu | ✅ merge, PR #134 | Mọi gói, kể cả Miễn phí (đổi D11 Bước 7); công tắc riêng trong Tùy chỉnh phiên, luôn hiện |
-| C13 | Xác nhận email | ⏳ PR #137 mở, chờ CI | **Đổi so với ý gốc**: bắt buộc nhập mã trước khi có phiên (đăng ký không cấp phiên; nhập mã kèm mật khẩu; đăng ký lại vào email chưa xác nhận thì thay dữ liệu) |
+| C13 | Xác nhận email | ✅ merge, PR #137 (sửa thêm #140, #158) | **Đổi so với ý gốc**: bắt buộc nhập mã trước khi có phiên (đăng ký không cấp phiên; nhập mã kèm mật khẩu; đăng ký lại vào email chưa xác nhận thì thay dữ liệu). #140: mã bị khoá thì trỏ sang Quên mật khẩu; #158: bỏ link "Gõ nhầm email" (chủ dự án 28/10) |
 | C14 | Thêm từ trong trang nhóm | ✅ merge, PR #135 | Nút Thêm từ mở tấm Thêm từ khoá nhóm, nhãn "Đã có trong nhóm", thêm cả loạt qua trang Chọn từ theo chủ đề |
 | C15 | Chữ ở Tùy chỉnh phiên | ✅ merge, PR #134 (một phần) | Bỏ "trước" ở 5 lựa chọn; phần `priority_oldest` còn lại thành C15b |
 | C16 | Bỏ nút "Câu tiếp" | ✅ merge, PR #134 | Hai nút: Cần ôn lại + nút chính đổi chữ theo trường hợp |
