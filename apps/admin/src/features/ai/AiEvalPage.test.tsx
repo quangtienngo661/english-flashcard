@@ -782,3 +782,50 @@ describe('AiEvalPage runs with a judge (nhóm B M3-T16)', () => {
     expect(await screen.findByText(vi.errors[slug as 'admin-usd-cap'])).toBeInTheDocument();
   });
 });
+
+describe('AiEvalPage example list: pages and sorting', () => {
+  const many = Array.from({ length: 25 }, (_, i) => evalExample(`e${i + 1}`, `w${String(i + 1).padStart(2, '0')}`));
+  const listed = () => screen.getAllByRole('row').map((row) => within(row).queryByText(/^w\d\d · verb$/)?.textContent).filter(Boolean);
+  const sortSelect = () => screen.getByRole('button', { name: new RegExp(`${t.list.sort}$`) });
+
+  it('shows 20 examples a page with "Trang 1/2"; [Trang sau] shows the last 5, [Trang trước] goes back', async () => {
+    await openPage({ [URL.examples()]: () => Response.json({ items: many }) });
+    await waitFor(() => expect(listed()).toHaveLength(20));
+    expect(listed()[0]).toBe('w01 · verb');
+    expect(screen.getByText(t.list.page.replace('{page}', '1').replace('{pages}', '2'))).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: t.list.previous })).toBeDisabled();
+    await userEvent.click(screen.getByRole('button', { name: t.list.next }));
+    expect(listed()).toEqual(['w21 · verb', 'w22 · verb', 'w23 · verb', 'w24 · verb', 'w25 · verb']);
+    expect(screen.getByRole('button', { name: t.list.next })).toBeDisabled();
+    await userEvent.click(screen.getByRole('button', { name: t.list.previous }));
+    expect(listed()[0]).toBe('w01 · verb');
+  });
+
+  it('20 examples or fewer: no page buttons', async () => {
+    await openPage({ [URL.examples()]: () => Response.json({ items: many.slice(0, 20) }) });
+    await waitFor(() => expect(listed()).toHaveLength(20));
+    expect(screen.queryByRole('button', { name: t.list.next })).not.toBeInTheDocument();
+  });
+
+  it('choosing "Từ Z → A" sorts every example and goes back to page 1', async () => {
+    await openPage({ [URL.examples()]: () => Response.json({ items: many }) });
+    await waitFor(() => expect(listed()).toHaveLength(20));
+    await userEvent.click(screen.getByRole('button', { name: t.list.next }));
+    await userEvent.click(sortSelect());
+    await userEvent.click(await screen.findByRole('option', { name: t.list.sorts.za }));
+    await waitFor(() => expect(listed()[0]).toBe('w25 · verb'));
+    expect(listed()).toHaveLength(20);
+    expect(screen.getByText(t.list.page.replace('{page}', '1').replace('{pages}', '2'))).toBeInTheDocument();
+  });
+
+  it('"Held-out trước" puts the hidden held-out rows on top', async () => {
+    await openPage({ [URL.examples()]: () => Response.json({ items: [evalExample('e1', 'go'), heldOutExample('h1')] }) });
+    await screen.findAllByText('go · verb');
+    await userEvent.click(sortSelect());
+    await userEvent.click(await screen.findByRole('option', { name: t.list.sorts.heldOutFirst }));
+    await waitFor(() => {
+      const rows = screen.getAllByRole('row').slice(1);
+      expect(rows[0]).toHaveTextContent(t.heldOutHidden);
+    });
+  });
+});

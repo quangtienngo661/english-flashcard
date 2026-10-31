@@ -501,6 +501,14 @@
       "examplesHint": "Mỗi thao tác tối đa 1.000 ví dụ. Ví dụ mới tự vào dev hoặc held-out để giữ tỉ lệ held-out; ví dụ held-out bị ẩn cho tới khi bạn mở. Chạy thử ở Cấu hình chỉ dùng ví dụ dev.",
       "counts": "{dev} dev · {heldOut} held-out",
       "heldOutHidden": "Ví dụ held-out: nội dung được ẩn",
+      "list": {
+        "sort": "Sắp xếp",
+        "sorts": { "oldest": "Cũ nhất trước", "newest": "Mới nhất trước", "az": "Từ A → Z", "za": "Từ Z → A", "devFirst": "Dev trước", "heldOutFirst": "Held-out trước" },
+        "pages": "Phân trang bộ ví dụ",
+        "page": "Trang {page}/{pages}",
+        "previous": "Trang trước",
+        "next": "Trang sau"
+      },
       "split": { "dev": "dev", "heldOut": "held-out" },
       "reveal": {
         "button": "Mở ví dụ held-out",

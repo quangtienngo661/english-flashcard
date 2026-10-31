@@ -29,6 +29,7 @@ import { useJudgeChoice, useRunJudges } from './EvalRunJudge';
 import { BulkExamplesDialog } from './BulkExamplesDialog';
 import { EvalSetDialog } from './EvalSetDialog';
 import { ExampleDialog } from './ExampleDialog';
+import { EXAMPLE_SORTS, pageCount, pageOf, sortExamples, type ExampleSort } from './example-list';
 import { exampleSummary } from './prompt-form';
 import { RevealExampleDialog } from './RevealExampleDialog';
 import { useAiFormat } from './useAiFormat';
@@ -74,6 +75,8 @@ export function AiEvalPage() {
   /** What the admin chose in the run select, for the operation it was chosen on; nothing chosen = the newest version. */
   const [pick, setPick] = useState<{ op: AiOperation; id: string } | null>(null);
   const [problem, setProblem] = useState<ErrorDetails | null>(null);
+  // The list's order and page; another operation starts again on page 1 (the order is kept).
+  const [listView, setListView] = useState<{ op: AiOperation; sort: ExampleSort; page: number }>({ op, sort: 'oldest', page: 1 });
 
   const examples = useQuery({ queryKey: aiKeys.examples(op), queryFn: () => listExamples(api, op) });
   const sets = useQuery({ queryKey: aiKeys.sets(op), queryFn: () => listSets(api, op) });
@@ -143,6 +146,10 @@ export function AiEvalPage() {
   const rows = examples.data?.items ?? [];
   const devCount = rows.filter(isDevExample).length;
   const heldOutCount = rows.length - devCount;
+  const sorted = sortExamples(rows, listView.sort);
+  const pages = pageCount(sorted.length);
+  const page = listView.op === op ? Math.min(listView.page, pages) : 1;
+  const goTo = (next: number) => setListView({ op, sort: listView.sort, page: next });
   const items = AI_OPERATION_ORDER.map((id) => ({ id, label: `${t(`ai.operations.names.${id}`)} (${id})` }));
   const back = () => void navigate(`/ai/eval${search}`);
 
@@ -236,7 +243,7 @@ export function AiEvalPage() {
   } else {
     examplesBody = (
       <DataList
-        rows={rows}
+        rows={pageOf(sorted, page)}
         rowKey={(e) => e.id}
         columns={exampleColumns}
         state={examples.isPending ? 'loading' : 'ready'}
@@ -289,7 +296,25 @@ export function AiEvalPage() {
         <h2 id="eval-examples" className="text-lg font-bold text-ink">{t('ai.eval.examples', { count: rows.length })}</h2>
         <p className="text-ui text-muted">{t('ai.eval.examplesHint')}</p>
         {examples.data && <p className="text-ui font-medium text-ink">{t('ai.eval.counts', { dev: devCount, heldOut: heldOutCount })}</p>}
+        {rows.length > 1 && (
+          <div className="w-full max-w-xs">
+            <Select
+              id="eval-examples-sort"
+              label={t('ai.eval.list.sort')}
+              items={EXAMPLE_SORTS.map((id) => ({ id, label: t(`ai.eval.list.sorts.${id}`) }))}
+              value={listView.sort}
+              onChange={(sort) => setListView({ op, sort: sort as ExampleSort, page: 1 })}
+            />
+          </div>
+        )}
         {examplesBody}
+        {pages > 1 && (
+          <nav aria-label={t('ai.eval.list.pages')} className="flex flex-wrap items-center gap-3">
+            <Button variant="secondary" isDisabled={page <= 1} onPress={() => goTo(page - 1)}>{t('ai.eval.list.previous')}</Button>
+            <span className="text-ui text-muted tabular-nums">{t('ai.eval.list.page', { page, pages })}</span>
+            <Button variant="secondary" isDisabled={page >= pages} onPress={() => goTo(page + 1)}>{t('ai.eval.list.next')}</Button>
+          </nav>
+        )}
       </section>
 
       <section aria-labelledby="eval-sets" className="flex flex-col gap-3">
