@@ -18,6 +18,7 @@ export class LearningAccountEraser implements AccountDataEraser, OnModuleInit {
     await withLearnerLock(tx, userId);
     // group_items cascade from the groups and the items.
     await tx.learningLogEntry.deleteMany({ where: { userId } });
+    await tx.learningActivityDay.deleteMany({ where: { userId } });
     await tx.learningItem.deleteMany({ where: { userId } });
     await tx.learningGroup.deleteMany({ where: { userId } });
   }

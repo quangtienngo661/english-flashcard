@@ -242,3 +242,36 @@ describe('IdentityService.updateProfile birth_date (design §8.1, GA1–GA7)', (
     expect((await identity.updateProfile('user', { birth_date: '1990-01-01' }))?.birth_date).toBe('1990-01-01');
   });
 });
+
+describe('IdentityService.registrations (nhóm B M6, contract §4: the people the D7/D30 cohorts are made of)', () => {
+  const make = (rows: unknown[]) => {
+    const findMany = vi.fn().mockResolvedValue(rows);
+    return { findMany, service: new IdentityService({ user: { findMany } } as unknown as PrismaClient, new FakeClock(), silentLogger) };
+  };
+  const from = new Date('2026-10-25T17:00:00Z');
+  const to = new Date('2026-11-01T17:00:00Z');
+
+  it('maps a verified learner, an editor and an unverified account, oldest first, with the role as it is now', async () => {
+    const { service, findMany } = make([
+      { id: 'l1', createdAt: new Date('2026-10-26T01:00:00Z'), emailVerifiedAt: new Date('2026-10-26T01:05:00Z'), staffRole: null },
+      { id: 'e1', createdAt: new Date('2026-10-27T01:00:00Z'), emailVerifiedAt: new Date('2026-10-27T01:05:00Z'), staffRole: 'editor' },
+      { id: 'u1', createdAt: new Date('2026-10-28T01:00:00Z'), emailVerifiedAt: null, staffRole: null },
+    ]);
+    expect(await service.registrations(from, to)).toEqual([
+      { userId: 'l1', createdAt: new Date('2026-10-26T01:00:00Z'), emailVerified: true, staff: false },
+      { userId: 'e1', createdAt: new Date('2026-10-27T01:00:00Z'), emailVerified: true, staff: true },
+      { userId: 'u1', createdAt: new Date('2026-10-28T01:00:00Z'), emailVerified: false, staff: false },
+    ]);
+    expect(findMany).toHaveBeenCalledExactlyOnceWith({
+      where: { createdAt: { gte: from, lt: to }, deletingSince: null },
+      select: { id: true, createdAt: true, emailVerifiedAt: true, staffRole: true },
+      orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+    });
+  });
+
+  it('an admin is staff too, and no row gives an empty list', async () => {
+    const admin = make([{ id: 'a1', createdAt: new Date('2026-10-26T01:00:00Z'), emailVerifiedAt: new Date('2026-10-26T01:05:00Z'), staffRole: 'admin' }]);
+    expect((await admin.service.registrations(from, to))[0]).toMatchObject({ userId: 'a1', staff: true });
+    expect(await make([]).service.registrations(from, to)).toEqual([]);
+  });
+});

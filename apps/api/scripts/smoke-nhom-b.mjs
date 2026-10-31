@@ -15,6 +15,8 @@
 // `partM3()` runs as a third admin (it starts 5 eval runs) and sets `ai.admin_daily_usd_cap` to null for good: a part after it is never capped.
 // `partM4()` runs as a fourth admin (a real-judge pass spends no `ai.test` hit) and lets a fifth, the publisher, publish three configs.
 // `partM5()` runs as a sixth admin (its eval runs spend its own `ai.test` hits) and reads the dashboard against psql.
+// `partM6()` runs as a seventh admin and reads the D7/D30 report against psql; past registrations and learning days are SEEDED WITH PSQL (labelled
+// `smokenb-m6-<label>-<run>@example.com`), because the API stamps every date with the clock.
 // A failing step is reported and the run goes on with the next one; the exit code is 0 only when every step matched.
 import { execFile, execFileSync } from 'node:child_process';
 import { randomInt, randomUUID } from 'node:crypto';
@@ -2370,6 +2372,277 @@ async function partM5() {
   }
 }
 
+// =====================================================================================================================
+// M6 — D7/D30 (design K6, plan M6-T8, design §13 "đọc dashboard và D7/D30"): the learning writes of a real learner produce `learning_activity_days`
+// rows, and `GET /v1/admin/learning/retention` is read against what psql says. The API stamps `users.created_at` and every activity date with the
+// clock, so two past registration weeks A and B (A = the Monday 49 days before this week's Monday, B = A + 7) are SEEDED WITH PSQL: users
+// `smokenb-m6-<label>-<run>@example.com` (no password, they never sign in) with a given `created_at`, and rows of `learning_activity_days`. Every
+// other account of the smoke database was made today, so those two weeks hold only the seeded accounts. The part acts as a seventh admin A7 and
+// uses `S.editor` (E, `ai.view`) for the 200 and a fresh learner L6 for the 403 and the real write paths. It sets `learning.active_window_days` to
+// 60 and back to 7 through `PUT /v1/admin/settings`. It leaves behind: the setting at 7, the seeded users a1–a5, e1, u1 and their rows (b1 is
+// deleted in M6.8), L6 with its group, three finished practice answers and one more, `S.editor` an editor. The Vietnam day is read once at the start:
+// a run that crosses 00:00 Vietnam time inside this part fails its date steps and is run again.
+async function partM6() {
+  const RET = '/v1/admin/learning/retention';
+  const T = { texts: [] };
+  const outer = { admin: S.admin, adminId: S.adminId };
+
+  const addDays = (day, n) => new Date(Date.parse(`${day}T00:00:00Z`) + n * 86_400_000).toISOString().slice(0, 10);
+  const mondayOf = (day) => addDays(day, -((new Date(`${day}T00:00:00Z`).getUTCDay() + 6) % 7));
+  const vn = (day, hhmm) => `${day} ${hhmm}:00+07`;
+  const rows = (sql) => psql(sql).split(/\r?\n/).filter(Boolean).map((line) => line.split('|'));
+  const canon = (value) => (Array.isArray(value) ? `[${value.map(canon).join(',')}]`
+    : value !== null && typeof value === 'object'
+      ? `{${Object.keys(value).sort().map((key) => `${JSON.stringify(key)}:${canon(value[key])}`).join(',')}}` : JSON.stringify(value));
+
+  /** The retention read: every body that comes back with 200 is kept for the counts-only step (M6.9). */
+  const retentionRaw = (query, as = S.admin) => api('GET', `${RET}${query}`, { as });
+  const retention = async (query, as = S.admin) => {
+    const res = await retentionRaw(query, as);
+    if (res.status !== 200) throw new Error(`GET ${RET}${query}: expected 200, got ${res.status}\n${res.text}`);
+    T.texts.push(res.text);
+    return res.json;
+  };
+  const getSettings = () => want(asAdmin('GET', '/v1/admin/settings'), 200, 'GET settings');
+  const setWindow = async (days) => {
+    const current = await getSettings();
+    const saved = await want(asAdmin('PUT', '/v1/admin/settings', { idem: true, body: { version: current.version, values: { learning: { active_window_days: days } } } }), 200, `PUT window ${days}`);
+    check(saved.values.learning.active_window_days === days, `window is ${saved.values.learning.active_window_days} after saving ${days}`);
+  };
+  async function makeAccount(email, staffRole) {
+    await want(asAdmin('POST', '/v1/admin/users', { body: { email, staff_role: staffRole, password: PASSWORD, must_change_password: false, timezone: TIMEZONE } }), 201, `create ${email}`);
+    const actor = { email, token: await loginToken(email) };
+    actor.id = (await want(api('GET', '/v1/me', { as: actor }), 200, `${email} profile`)).id;
+    return actor;
+  }
+  /** A seeded user: no password, a past `created_at` (a Vietnam wall time), labelled by its e-mail. */
+  function seedUser(label, createdAt, { staffRole = null, verified = true } = {}) {
+    const email = `smokenb-m6-${label}-${run}@example.com`;
+    const id = psql(`WITH u AS (INSERT INTO users (email, timezone, email_verified_at, staff_role, status, given_name, birth_date, created_at, terms_accepted_at, terms_version)
+      VALUES ('${email}', '${TIMEZONE}', ${verified ? 'now()' : 'NULL'}, ${staffRole ? `'${staffRole}'` : 'NULL'}, 'active', 'SeedM6', DATE '1999-01-01',
+      TIMESTAMPTZ '${createdAt}', now(), 'smoke') RETURNING id) SELECT id FROM u`);
+    check(/^[0-9a-f-]{36}$/.test(id), `seed ${label}: ${id}`);
+    return { label, email, id };
+  }
+  const seedDays = (user, days) => {
+    if (days.length > 0) psql(`INSERT INTO learning_activity_days (user_id, local_date) VALUES ${days.map((day) => `('${user.id}', DATE '${day}')`).join(', ')}`);
+  };
+  const activityRows = (userId) => rows(`SELECT local_date FROM learning_activity_days WHERE user_id = '${userId}' ORDER BY local_date`).map(([day]) => day);
+  /** Today's two numbers as psql says them for a window of n days: learners (no staff role now) with a row in [T − n + 1, T] / with rows but none there. */
+  const todayByPsql = (n) => {
+    const start = addDays(T.T, 1 - n);
+    return {
+      active: count(`SELECT count(DISTINCT a.user_id) FROM learning_activity_days a JOIN users u ON u.id = a.user_id
+        WHERE u.staff_role IS NULL AND a.local_date BETWEEN DATE '${start}' AND DATE '${T.T}'`),
+      stopped: count(`SELECT count(*) FROM (SELECT a.user_id FROM learning_activity_days a JOIN users u ON u.id = a.user_id
+        WHERE u.staff_role IS NULL GROUP BY a.user_id HAVING max(a.local_date) < DATE '${start}') x`),
+    };
+  };
+  const RANGE_AB = () => `?from=${addDays(T.A, 2)}&to=${addDays(T.B, 6)}`;
+  const WEEKS = (a, b) => canon([{ week_start: T.A, ...a }, { week_start: T.B, ...b }]);
+
+  try {
+    await step('M6.0 a seventh admin A7 (POST /v1/admin/users) acts for this part; today T in Vietnam, its Monday M0, the seeded weeks A = M0 − 49 and B = A + 7', async () => {
+      const email = `smokenb-admin7-${run}@example.com`;
+      await want(asAdmin('POST', '/v1/admin/users', { body: { email, staff_role: 'admin', password: PASSWORD, must_change_password: false, timezone: TIMEZONE } }), 201, `create ${email}`);
+      S.admin = { email, token: await loginToken(email) };
+      const me = await want(api('GET', '/v1/me', { as: S.admin }), 200, 'A7 profile');
+      check(me.id !== outer.adminId, 'A7 is the first admin');
+      S.adminId = me.id;
+      T.T = new Date(Date.now() + 7 * 3_600_000).toISOString().slice(0, 10);
+      T.M0 = mondayOf(T.T);
+      T.A = addDays(T.M0, -49);
+      T.B = addDays(T.A, 7);
+      check(new Date(`${T.A}T00:00:00Z`).getUTCDay() === 1 && new Date(`${T.B}T00:00:00Z`).getUTCDay() === 1, `A ${T.A} or B ${T.B} is not a Monday`);
+      const old = count(`SELECT count(*) FROM users WHERE created_at < TIMESTAMPTZ '${vn(T.M0, '00:00')}'`);
+      check(old === 0, `${old} accounts of the smoke database were made before this week: the seeded weeks would not be alone (fresh database needed)`);
+      ok(`A7 ${email} (${me.id}); T ${T.T}, M0 ${T.M0}, A ${T.A}, B ${T.B}; no account older than this week`);
+    });
+
+    await step('M6.1 setting and access: active_window_days 7 with bound 1–60; E (ai.view) reads the report (keys exactly from, to, window_days, today, cohorts); a reversed range is 400', async () => {
+      const { values, defaults, bounds } = await getSettings();
+      check(values.learning.active_window_days === 7 && defaults.learning.active_window_days === 7, `values ${values.learning.active_window_days}, default ${defaults.learning.active_window_days}`);
+      check(canon(bounds.learning.active_window_days) === canon({ min: 1, max: 60 }), `bound ${j(bounds.learning.active_window_days)}`);
+      const view = await retention(`?from=${T.T}&to=${T.T}`, S.editor);
+      check(j(Object.keys(view).sort()) === j(['cohorts', 'from', 'to', 'today', 'window_days']), `keys ${j(Object.keys(view))}`);
+      check(view.window_days === 7 && view.from === T.M0 && view.to === T.T && view.today.date === T.T && view.cohorts.length === 1, `view ${j(view)}`);
+      await wantProblem(retentionRaw(`?from=${addDays(T.T, 1)}&to=${T.T}`, S.editor), 400, 'validation-failed', 'from after to');
+      ok(`window 7 (default 7, bound 1–60); E got 200 with keys ${j(Object.keys(view))}, from ${view.from} (the Monday of T), one cohort; from T + 1 to T is 400 validation-failed`);
+    });
+
+    await step('M6.2 B51 through the real write paths: learner L6 adds W1–W3, answers a flashcard (and replays it), answers practice questions, quick-adds and deletes private words', async () => {
+      T.L6 = await makeAccount(`smokenb-l6-${run}@example.com`, null);
+      await want(api('PATCH', '/v1/me', { as: T.L6, body: { native_language: 'vi' } }), 200, 'native_language of L6');
+      check(activityRows(T.L6.id).length === 0, 'L6 has an activity row before doing anything');
+      await wantProblem(retentionRaw(`?from=${T.T}&to=${T.T}`, T.L6), 403, 'forbidden', 'L6 reads the report');
+      const noToken = await api('GET', `${RET}?from=${T.T}&to=${T.T}`);
+      check(noToken.status === 401, `no token: ${noToken.status}`);
+      const senses = new Map(rows(`SELECT e.lemma, s.id FROM entries e JOIN senses s ON s.entry_id = e.id WHERE e.scope = 'catalog'
+        AND e.lemma IN (${[W1, W2, W3].map((w) => `'${w}'`).join(',')}) AND s.live_revision_id IS NOT NULL`));
+      check(senses.size === 3, `${senses.size} of 3 words have a live sense`);
+      const group = await want(api('POST', '/v1/groups', { as: T.L6, idem: true, body: { name: `M6 L6 ${run}` } }), 201, 'group of L6');
+      check(activityRows(T.L6.id).length === 0, 'making a group wrote an activity row');
+      for (const word of [W1, W2, W3]) {
+        const res = await api('POST', `/v1/groups/${group.id}/items`, { as: T.L6, idem: true, body: { sense_id: senses.get(word) } });
+        check(res.status === 200 || res.status === 201, `add ${word}: ${res.status} ${res.text}`);
+      }
+      check(j(activityRows(T.L6.id)) === j([T.T]), `after adding words: ${j(activityRows(T.L6.id))}`);
+      psql(`DELETE FROM learning_activity_days WHERE user_id = '${T.L6.id}'`);
+      // A flashcard review alone writes the row; its replay (same review_id) answers the same and writes nothing.
+      const { cards } = await want(api('GET', `/v1/groups/${group.id}/queue`, { as: T.L6 }), 200, 'queue of L6');
+      check(cards.length >= 1, 'the queue of L6 is empty');
+      const reviewId = randomUUID();
+      const body = { item_id: cards[0].item_id, group_id: group.id, answer: 'review', review_id: reviewId };
+      const first = await want(api('POST', '/v1/reviews', { as: T.L6, body }), 200, 'review');
+      check(j(activityRows(T.L6.id)) === j([T.T]), `after one review: ${j(activityRows(T.L6.id))}`);
+      const replay = await want(api('POST', '/v1/reviews', { as: T.L6, body }), 200, 'replayed review');
+      check(canon(replay) === canon(first), `the replay answered ${j(replay)}, not ${j(first)}`);
+      check(j(activityRows(T.L6.id)) === j([T.T]) && count(`SELECT count(*) FROM learning_log WHERE user_id = '${T.L6.id}' AND review_id = '${reviewId}'`) === 1, 'the replay doubled a row');
+      const log = rows(`SELECT kind, count(*) FROM learning_log WHERE user_id = '${T.L6.id}' GROUP BY 1 ORDER BY 1`);
+      check(j(log) === j([['item_added', '3'], ['review', '1']]), `learning_log of L6: ${j(log)}`);
+      // Practice: opening a session and showing a question write nothing; the final answers do (a practice answer alone brings the row back).
+      psql(`DELETE FROM learning_activity_days WHERE user_id = '${T.L6.id}'`);
+      const session = (await want(api('POST', '/v1/practice/sessions', { as: T.L6, idem: true, body: { source: 'group', group_id: group.id, types: ['true_false_definition'], count: 3 } }), 201, 'start session')).session;
+      let answered = 0;
+      for (let k = 0; k < 3; k += 1) {
+        const shown = await want(api('POST', `/v1/practice/sessions/${session.id}/next`, { as: T.L6 }), 200, 'next');
+        check(shown.state === 'question', `question ${k + 1}: ${j(shown)}`);
+        if (k === 0) check(activityRows(T.L6.id).length === 0, 'opening a session and showing a question wrote an activity row');
+        await want(api('POST', `/v1/practice/items/${shown.item.item_id}/answer`, { as: T.L6, idem: true, body: { is_true: true } }), 200, `answer ${k + 1}`);
+        answered += 1;
+        check(j(activityRows(T.L6.id)) === j([T.T]), `after ${answered} practice answers: ${j(activityRows(T.L6.id))}`);
+      }
+      await api('POST', `/v1/practice/sessions/${session.id}/finish`, { as: T.L6 });
+      check(count(`SELECT count(*) FROM practice_session_items WHERE user_id = '${T.L6.id}' AND result IN ('correct', 'wrong')`) === 3, 'three final answers expected');
+      // Private words: adding writes, deleting neither writes nor erases.
+      const quick = (lemma) => want(api('POST', '/v1/quick-add', { as: T.L6, idem: true, body: { group_id: group.id, new_word: { lemma, meaning: 'từ riêng thử' } } }), 201, `quick-add ${lemma}`);
+      psql(`DELETE FROM learning_activity_days WHERE user_id = '${T.L6.id}'`);
+      const p1 = await quick(`zp${letters(6)}`);
+      const p2 = await quick(`zr${letters(6)}`);
+      check(j(activityRows(T.L6.id)) === j([T.T]), `after quick-add: ${j(activityRows(T.L6.id))}`);
+      const entryOf = (sense) => psql(`SELECT entry_id FROM senses WHERE id = '${sense}'`);
+      await want(api('DELETE', `/v1/my-words/${entryOf(p1.sense_id)}`, { as: T.L6, idem: true }), 204, 'delete P1');
+      check(count(`SELECT count(*) FROM learning_log WHERE sense_id = '${p1.sense_id}'`) === 0 && j(activityRows(T.L6.id)) === j([T.T]), `after deleting P1: ${j(activityRows(T.L6.id))}`);
+      psql(`DELETE FROM learning_activity_days WHERE user_id = '${T.L6.id}'`);
+      await want(api('DELETE', `/v1/my-words/${entryOf(p2.sense_id)}`, { as: T.L6, idem: true }), 204, 'delete P2');
+      check(count(`SELECT count(*) FROM learning_log WHERE sense_id = '${p2.sense_id}'`) === 0 && activityRows(T.L6.id).length === 0, 'deleting a private word wrote an activity row');
+      ok(`L6 ${T.L6.id}: 403 on the report, 401 without a (valid) token; add words, one review, its replay and three practice answers each leave exactly one row for ${T.T} (learning_log: 3 item_added, 1 review; the replay added none; opening a session wrote none); quick-add writes it, deleting private words neither writes nor erases it`);
+    });
+
+    await step('M6.3 seed (psql): week A a1–a5, e1 (editor), u1 (unverified); week B b1', async () => {
+      const day = (n) => addDays(T.A, n);
+      T.u = {
+        a1: seedUser('a1', vn(day(0), '10:00')), a2: seedUser('a2', vn(day(2), '10:00')), a3: seedUser('a3', vn(day(4), '10:00')),
+        a4: seedUser('a4', vn(day(6), '23:30')), a5: seedUser('a5', vn(day(1), '10:00')),
+        e1: seedUser('e1', vn(day(1), '10:00'), { staffRole: 'editor' }), u1: seedUser('u1', vn(day(1), '10:00'), { verified: false }),
+        b1: seedUser('b1', vn(T.B, '00:00')),
+      };
+      seedDays(T.u.a1, [day(3), day(5), day(6)]);
+      seedDays(T.u.a2, [day(9), day(32)]);
+      seedDays(T.u.a4, [day(7)]);
+      seedDays(T.u.a5, [day(1)]);
+      seedDays(T.u.e1, [day(8)]);
+      seedDays(T.u.b1, [addDays(T.B, 7)]);
+      const seeded = count(`SELECT count(*) FROM users WHERE email LIKE 'smokenb-m6-%-${run}@example.com'`);
+      check(seeded === 8, `${seeded} seeded users`);
+      const weekA = count(`SELECT count(*) FROM users WHERE created_at >= TIMESTAMPTZ '${vn(T.A, '00:00')}' AND created_at < TIMESTAMPTZ '${vn(T.B, '00:00')}'`);
+      const weekB = count(`SELECT count(*) FROM users WHERE created_at >= TIMESTAMPTZ '${vn(T.B, '00:00')}' AND created_at < TIMESTAMPTZ '${vn(addDays(T.B, 7), '00:00')}'`);
+      check(weekA === 7 && weekB === 1, `week A holds ${weekA} users, week B ${weekB}`);
+      ok(`8 seeded users (smokenb-m6-<label>-${run}@example.com): week A ${T.A} a1 +0 (days +3 +5 +6), a2 +2 (+9 +32), a3 +4 (none), a4 Sunday 23:30 (+7), a5 +1 (+1), e1 editor (+8), u1 unverified; week B ${T.B} b1 Monday 00:00 (+7)`);
+    });
+
+    await step('M6.4 cohorts: week A size 5, D7 3 (a2 on the day itself, a4 on d − 6, not a5 on d − 7), D30 1 (a2); week B size 1, D7 1, D30 0 (a4 is Sunday 23:30 in A, b1 Monday 00:00 in B; e1 and u1 are out)', async () => {
+      const view = await retention(RANGE_AB());
+      check(view.from === T.A && view.to === addDays(T.B, 6) && view.window_days === 7, `view ${j({ from: view.from, to: view.to, window_days: view.window_days })}`);
+      check(canon(view.cohorts) === WEEKS({ size: 5, d7: 3, d30: 1 }, { size: 1, d7: 1, d30: 0 }), `cohorts ${j(view.cohorts)}`);
+      ok(`from ${view.from} (the Monday before the asked ${addDays(T.A, 2)}), to ${view.to}; cohorts ${j(view.cohorts)}`);
+    });
+
+    await step('M6.5 B46: this week\'s cohort has no D7 or D30 yet and its size is what psql counts (learners with a verified e-mail made since Monday 00:00)', async () => {
+      const view = await retention(`?from=${T.M0}&to=${T.T}`);
+      const size = count(`SELECT count(*) FROM users WHERE created_at >= TIMESTAMPTZ '${vn(T.M0, '00:00')}' AND staff_role IS NULL AND email_verified_at IS NOT NULL AND deleting_since IS NULL`);
+      check(view.cohorts.length === 1 && canon(view.cohorts[0]) === canon({ week_start: T.M0, size, d7: null, d30: null }), `cohorts ${j(view.cohorts)}, psql size ${size}`);
+      check(size >= 1, 'control: no learner made this week');
+      ok(`one cohort ${j(view.cohorts[0])}`);
+    });
+
+    await step('M6.6 B47: a1 made an editor leaves the cohort and the past with it (week A size 4, D7 2, D30 1); back to a learner, it is counted again', async () => {
+      await want(asAdmin('PUT', `/v1/admin/users/${T.u.a1.id}/staff-role`, { idem: true, body: { staff_role: 'editor' } }), 200, 'a1 becomes an editor');
+      const gone = await retention(RANGE_AB());
+      check(canon(gone.cohorts) === WEEKS({ size: 4, d7: 2, d30: 1 }, { size: 1, d7: 1, d30: 0 }), `with a1 an editor: ${j(gone.cohorts)}`);
+      await want(asAdmin('PUT', `/v1/admin/users/${T.u.a1.id}/staff-role`, { idem: true, body: { staff_role: null } }), 200, 'a1 is a learner again');
+      const back = await retention(RANGE_AB());
+      check(canon(back.cohorts) === WEEKS({ size: 5, d7: 3, d30: 1 }, { size: 1, d7: 1, d30: 0 }), `with a1 a learner again: ${j(back.cohorts)}`);
+      ok(`a1 editor: ${j(gone.cohorts[0])}; a1 learner again: ${j(back.cohorts[0])}`);
+    });
+
+    await step('M6.7 today and the window (Review focus 5): today.date T, active and stopped as psql counts them; N = 60 through PUT /v1/admin/settings gives active + 5, stopped − 5 (a1, a2, a4, a5, b1) and week A D7 4, D30 4; back to 7', async () => {
+      const seven = await retention(RANGE_AB());
+      const p7 = todayByPsql(7);
+      check(seven.today.date === T.T && seven.today.active === p7.active && seven.today.stopped === p7.stopped, `today ${j(seven.today)}, psql ${j(p7)}`);
+      check(p7.active >= 1 && p7.stopped >= 5, `control: psql sees ${j(p7)}`);
+      await setWindow(60);
+      const sixty = await retention(RANGE_AB());
+      const p60 = todayByPsql(60);
+      check(sixty.window_days === 60 && sixty.today.active === seven.today.active + 5 && sixty.today.stopped === seven.today.stopped - 5, `N = 60: ${j(sixty.today)}, before ${j(seven.today)}`);
+      check(sixty.today.active === p60.active && sixty.today.stopped === p60.stopped, `N = 60 today ${j(sixty.today)}, psql ${j(p60)}`);
+      check(canon(sixty.cohorts) === WEEKS({ size: 5, d7: 4, d30: 4 }, { size: 1, d7: 1, d30: 1 }), `N = 60 cohorts ${j(sixty.cohorts)}`);
+      await setWindow(1);
+      const one = await retention(RANGE_AB());
+      const p1 = todayByPsql(1);
+      check(one.window_days === 1 && one.today.active === p1.active && one.today.stopped === p1.stopped, `N = 1 today ${j(one.today)}, psql ${j(p1)}`);
+      // Only the day itself counts: a1 and a4 and a5 have no row on their D7, a2 and b1 do (a2 on A + 9 and b1 on B + 7 are their D7).
+      check(canon(one.cohorts) === WEEKS({ size: 5, d7: 1, d30: 1 }, { size: 1, d7: 1, d30: 0 }), `N = 1 cohorts ${j(one.cohorts)}`);
+      await setWindow(7);
+      const again = await retention(RANGE_AB());
+      check(canon(again) === canon(seven), `back to 7: ${j(again)} is not ${j(seven)}`);
+      check(activityRows(T.u.a1.id).length === 3, 'a window change touched the stored rows');
+      ok(`N 7: today ${j(seven.today)}; N 60: today ${j(sixty.today)}, week A ${j(sixty.cohorts[0])}; N 1: today ${j(one.today)}, week A ${j(one.cohorts[0])}; back to 7 the first answer again`);
+    });
+
+    await step('M6.8 deletion: POST /v1/admin/users/<b1>/delete erases b1\'s activity days and week B is empty (size 0, no rates)', async () => {
+      check(activityRows(T.u.b1.id).length === 1, 'control: b1 has no row before the deletion');
+      await want(asAdmin('POST', `/v1/admin/users/${T.u.b1.id}/delete`, { body: { confirm_email: T.u.b1.email } }), 204, 'delete b1');
+      check(count(`SELECT count(*) FROM users WHERE id = '${T.u.b1.id}'`) === 0 && activityRows(T.u.b1.id).length === 0, 'b1 or its rows remain');
+      const view = await retention(RANGE_AB());
+      check(canon(view.cohorts) === WEEKS({ size: 5, d7: 3, d30: 1 }, { size: 0, d7: null, d30: null }), `cohorts ${j(view.cohorts)}`);
+      ok(`b1 gone with its row; week B ${j(view.cohorts[1])}`);
+    });
+
+    await step('M6.9 counts only: no user id, e-mail, local part, registration instant or learning day of a person is in any retention response of the part (control: the week starts are, and the list searched is long)', async () => {
+      const users = [...Object.values(T.u), T.L6, S.editor, S.learner];
+      const secrets = [
+        ...users.flatMap((user) => [user.id, user.email, user.email.split('@')[0]]),
+        // The registration instants of a4 and b1 (UTC), and the learning days of the seeded users; A + 7 is left out: it is also the start of week B.
+        `${addDays(T.A, 6)}T16:30`, `${addDays(T.A, 6)}T17:00`,
+        ...[1, 3, 5, 6, 8, 9, 32].map((n) => addDays(T.A, n)), addDays(T.B, 7),
+      ].filter((value) => value !== undefined && value !== null);
+      check(secrets.length >= 30, `control: only ${secrets.length} secrets searched`);
+      check(T.texts.length >= 10, `control: only ${T.texts.length} responses kept`);
+      for (const text of T.texts) {
+        for (const secret of secrets) check(!text.includes(secret), `a retention response contains ${secret}: ${text.slice(0, 200)}`);
+        check(j(Object.keys(JSON.parse(text)).sort()) === j(['cohorts', 'from', 'to', 'today', 'window_days']), `keys of ${text.slice(0, 120)}`);
+      }
+      const weekA = T.texts.filter((text) => text.includes(`"week_start":"${T.A}"`)).length;
+      check(weekA >= 5, `control: the week start ${T.A} is in only ${weekA} responses`);
+      ok(`${T.texts.length} responses searched for ${secrets.length} personal strings: none; the week start ${T.A} is in ${weekA} of them (control)`);
+    });
+
+    await step('M6.10 the part\'s end state: the window setting 7, b1 deleted, the other seeded users and L6 still there, E an editor', async () => {
+      const { values } = await getSettings();
+      check(values.learning.active_window_days === 7, `window ${values.learning.active_window_days}`);
+      const left = count(`SELECT count(*) FROM users WHERE email LIKE 'smokenb-m6-%-${run}@example.com'`);
+      check(left === 7, `${left} seeded users left`);
+      const detail = await want(asAdmin('GET', `/v1/admin/users/${S.editor.id}`), 200, 'GET E');
+      check(detail.staff_role === 'editor', `E is ${detail.staff_role}`);
+      ok(`window 7; seeded users a1–a5, e1, u1 kept (b1 deleted); L6 ${T.L6.id} with ${activityRows(T.L6.id).length} activity rows now; E editor`);
+    });
+  } finally {
+    S.admin = outer.admin;
+    S.adminId = outer.adminId;
+  }
+}
+
 async function main() {
   const started = Date.now();
   await setup();
@@ -2378,6 +2651,7 @@ async function main() {
   await partM3();
   await partM4();
   await partM5();
+  await partM6();
 
   const seconds = Math.round((Date.now() - started) / 1000);
   if (failures.length > 0) {

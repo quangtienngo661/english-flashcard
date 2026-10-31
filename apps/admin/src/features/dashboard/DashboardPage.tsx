@@ -18,6 +18,8 @@ import {
   type AiUsagePro,
 } from './dashboard-api';
 import { JudgeScoresCard, LatestEvalCard, RealJudgeCard } from './QualityCards';
+import { RetentionCard } from './retention';
+import { getRetention, retentionKey, type Retention } from './retention-api';
 
 const RANGES = ['7', '30', '90'] as const;
 const FILTERS = { days: { default: '30', valid: (value: string) => (RANGES as readonly string[]).includes(value) } };
@@ -47,8 +49,10 @@ export function DashboardPage() {
   const usage = useQuery({ queryKey: dashboardKeys.usage(from, to), queryFn: () => getAiUsageDays(api, from, to) });
   // The Pro spread is of each learner's current cycle, so the selected range does not change it.
   const usagePro = useQuery({ queryKey: dashboardKeys.usagePro(), queryFn: () => getAiUsagePro(api) });
+  // Learners who keep learning (nhóm B M6): the same range; the API starts at the Monday of its first week.
+  const retention = useQuery({ queryKey: retentionKey(from, to), queryFn: () => getRetention(api, from, to) });
 
-  const queries = [ai, quality, usage, usagePro];
+  const queries = [ai, quality, usage, usagePro, retention];
   if (queries.some((q) => q.error instanceof ApiError && q.error.problem.slug === 'forbidden')) {
     return <Banner variant="error">{t('errors.forbidden')}</Banner>;
   }
@@ -69,7 +73,7 @@ export function DashboardPage() {
       ) : queries.some((q) => q.isError) ? (
         <ListState state="error" onRetry={() => queries.forEach((q) => q.isError && void q.refetch())} />
       ) : (
-        <Body ai={ai.data!} quality={quality.data!} usage={usage.data!} usagePro={usagePro.data!} />
+        <Body ai={ai.data!} quality={quality.data!} usage={usage.data!} usagePro={usagePro.data!} retention={retention.data!} />
       )}
     </div>
   );
@@ -78,7 +82,9 @@ export function DashboardPage() {
 const tiles = 'grid gap-3 grid-cols-2';
 const numeric = 'whitespace-nowrap';
 
-function Body({ ai, quality, usage, usagePro }: { ai: AiDashboard; quality: AiQuality; usage: AiUsageDays; usagePro: AiUsagePro }) {
+function Body({ ai, quality, usage, usagePro, retention }: {
+  ai: AiDashboard; quality: AiQuality; usage: AiUsageDays; usagePro: AiUsagePro; retention: Retention;
+}) {
   const t = useTranslations();
   const locale = useLocale();
   const format = useAiFormat();
@@ -425,6 +431,8 @@ function Body({ ai, quality, usage, usagePro }: { ai: AiDashboard; quality: AiQu
             />
           </TableView>
         </Card>
+
+        <RetentionCard data={retention} />
       </div>
     </>
   );

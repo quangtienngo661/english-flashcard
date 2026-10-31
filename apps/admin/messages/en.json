@@ -1759,7 +1759,8 @@
         "reviews_per_group_per_day": "Reviews per group per day",
         "backlog_after_days": "Overdue for how long before the backlog list",
         "groups_per_user": "Groups per person",
-        "items_per_group": "Words per group"
+        "items_per_group": "Words per group",
+        "active_window_days": "Most recent days that count as “still learning” (D7/D30)"
       },
       "practice": {
         "max_questions_per_session": "Maximum questions per session",
@@ -2206,6 +2207,22 @@
         "noLimit": "{count, plural, one {# Pro learner has} other {# Pro learners have}} no AI limit and {count, plural, one {is} other {are}} not in the groups above.",
         "truncated": "There are more Pro learners than one read covers, so these figures show only part of them."
       }
+    },
+    "retention": {
+      "title": "Are learners coming back?",
+      "hint": "“Still learning” = at least one learning action (reviewing cards, adding or removing words, answering practice questions) in the last {days, plural, one {# day} other {# days}}. Admin and editor accounts and accounts that have not confirmed their email are not counted. Figures only exist from the day activity started to be recorded.",
+      "active": "Still learning today",
+      "stopped": "Stopped",
+      "cohorts": "By registration week (Vietnam time, weeks start on Monday)",
+      "cols": {
+        "week": "Registration week",
+        "size": "People",
+        "d7": "D7",
+        "d30": "D30"
+      },
+      "weekOf": "From {date}",
+      "rate": "{percent} ({count}/{size})",
+      "blank": "“—”: the group has not reached day +7 / +30 yet, or nobody registered."
     },
     "cols": {
       "operation": "Operation",

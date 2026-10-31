@@ -319,6 +319,18 @@ describe('nhóm B settings (design §5.1)', () => {
     expect(calls[0].body).toEqual({ version: 3, values: { ai: { real_judge_limit: 150 } } });
   });
 
+  it('the learning tab sets the window that makes a learner "đang học" (M6, D39): 14 is sent as 14, with its range and default in the hint', async () => {
+    const calls: Call[] = [];
+    renderApp('/settings?tab=learning', { [GET]: () => Response.json(VIEW()), [PUT]: (c) => { calls.push(c); return Response.json({ ...VIEW(4) }); } });
+    const box = await screen.findByRole('textbox', { name: 'Số ngày gần nhất tính là “đang học” (D7/D30)' });
+    expect(box).toHaveValue('10');
+    expect(screen.getByText('active_window_days · 1–1.000 ngày · mặc định 10')).toBeInTheDocument();
+    await setNumber(s.fields.learning.active_window_days, '14');
+    await userEvent.click(screen.getByRole('button', { name: s.save }));
+    await waitFor(() => expect(calls).toHaveLength(1));
+    expect(calls[0].body).toEqual({ version: 3, values: { learning: { active_window_days: 14 } } });
+  });
+
   it('a value outside the bounds is refused by the API and flagged on the field', async () => {
     const view = VIEW();
     renderApp('/settings?tab=ai', {

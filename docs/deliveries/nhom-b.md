@@ -180,3 +180,57 @@ Admin: trang "Judge" (`/ai/judges`: danh sách, sửa, nhân bản, revision, đ
 **Smoke:** `pnpm smoke:nhom-b` (78 bước: 67 của M1–M4 + 11 của M5, M5.0–M5.10) pass hai lần, mỗi lần trên DB mới; `smoke:buoc-6`, `smoke:buoc-7` và `pnpm learner:setup` (hai lần) pass; log API/worker không chứa mật khẩu, token, câu, từ riêng (có đối chứng). Mỗi bước M5 so endpoint với psql hoặc với endpoint khác (kể cả 229 giá trị riêng tư được tìm trong ba phản hồi: không thấy; held-out chỉ là số đếm). Output: [`nhom-b-smoke-output.txt`](nhom-b-smoke-output.txt) (mục M5).
 **Quyết định đã tự chốt (ruling):** nhóm điểm judge của eval cũng tính cấu hình **nháp** ở phiên bản hiện tại (plan không lọc trạng thái; OI-7); lần chạy đã ẩn (`hidden_at`) hoặc mục `hidden` đều bị loại khỏi `latest_evals` và nhóm judge (hai lần ghi không nguyên tử nên kiểm cả hai); thứ tự tiêu chí của "lượt chấm gần nhất" theo revision rồi mã tiêu chí (sửa lỗi lộ ra khi chạy thật: `created_at` trùng nhau làm thứ tự đổi giữa các thao tác); `DashboardQualityService` là đối số thứ bảy của `ReportsService`; thêm chú thích hiện sẵn dưới mỗi biểu đồ judge (đã/chưa hiệu chỉnh, x/y nhãn khớp), bỏ `whitespace-nowrap` ở các bảng mới sau khi đo tràn ở 1024 px; smoke thêm M5.5 (cờ hiệu chỉnh đúng/sai theo hai setting) và M5.9 (rò rỉ + held-out) ngoài plan.
 **Chưa kiểm / còn lại:** điểm judge của câu thật và biểu đồ judge có dữ liệu thật mới chỉ chạy qua smoke (fake) và test, chưa thấy bằng mắt trên dữ liệu thật; tooltip chỉ thử bằng phím (chưa hover chuột); thẻ "hôm nay" ghi "… / trần" cả khi không có trần (nhãn cố định theo plan); smoke M5 chưa được thử "răng" bằng đột biến (chỉ kiểm bằng cách so với psql); báo cáo `real_judge_*` đọc mọi điểm trong khoảng vào bộ nhớ (ổn ở 30 ngày mặc định, nặng nếu chọn 366 ngày nhiều lượt chấm); điểm của câu đã bị xóa vẫn nằm trong `ai_judge_scores` (OI-8).
+
+## M6 — Người học có quay lại không (D7 / D30): as-built 31/10/2026
+
+**Nhánh / PR:** `feat/nhom-b-m6-retention`, 11 commit từ `feat/nhom-b-m5-dashboard`; PR "[nhóm B 6/6]" vào nhánh M5 (merge sau M5); PR này cũng mang phần đóng đợt (smoke cuối, as-built, open items, báo cáo cuối).
+**Đã làm:** 9 task của M6 (T1–T9). API: bảng `learning_activity_days` (migration `20261030150000_nhom_b_m6_learning_activity_days`, xóa theo tài khoản), setting `learning.active_window_days` (7, 1–60), hàm thuần (tuần Thứ Hai–Chủ nhật giờ Việt Nam, cohort, "đang học" / "đã ngừng"),
+ghi một "lần học" ở mọi lần ghi `learning_log` (ôn thẻ, thêm hoặc bỏ từ, "Học lại") và ở mỗi câu luyện tập có kết quả cuối (cuối transaction, `INSERT … ON CONFLICT DO NOTHING`), `IdentityService.registrations`, và báo cáo `GET /v1/admin/learning/retention` (`ai.view`, chỉ trả số đếm: không id, email, ngày cá nhân; admin / editor / tài khoản chưa xác nhận không tính).
+Admin: thẻ "Người học có quay lại không" ở dashboard (hai ô số + bảng theo tuần đăng ký, "—" khi chưa tới ngày +7 / +30 hoặc không có ai, không bao giờ "0%") và ô cài đặt "Số ngày gần nhất tính là đang học".
+**Kiểm:** api: drift sạch, `oxlint` (chỉ cảnh báo cũ), `tsc` sạch, 295 file / 3937 test pass; admin: `eslint`, `tsc`, 95 file / 1262 test pass (`--maxWorkers=3`), `build` (VITE_API_BASE_URL=https://admin-api.wordmet.com), e2e giả lập 294 pass + 68 skip, `test:e2e:real` 29 pass trên API + worker thật, DB mới; mở `/dashboard` và tab học (`/settings?tab=learning`) trên stack thật: thẻ hiện từ endpoint thật, không lỗi console, không cuộn ngang ở 375 / 390 / 1024 px.
+**Smoke:** `pnpm smoke:nhom-b` (89 bước: 78 của M1–M5 + 11 của M6, M6.0–M6.10) pass hai lần, mỗi lần trên DB mới; `smoke:buoc-6` (32 bước), `smoke:buoc-7` (30 bước) và `pnpm learner:setup` (hai lần) pass; log API/worker sạch (có đối chứng). Kiểm "răng": ba đột biến trên bản sao `dist` (ghi hoạt động thành no-op, bỏ lọc staff, ép cửa sổ về 7) làm 7 trên 89 bước đỏ, các bước trước M6 vẫn xanh (đột biến thứ ba không tách riêng được, cửa sổ do test đơn vị và hai lần chạy sạch giữ).
+**Quyết định đã tự chốt (ruling):** "Cần ôn tập" / "Đã biết" chỉ ghi hoạt động khi thật sự có dòng log mới (không ghi cho replay, `known-not-allowed`, `not-in-learning`); `ensureItems` chỉ ghi khi thật sự thêm từ; `removeFromGroup` chỉ ghi khi từ rời khỏi việc học; bảng `learning_activity_days` đọc bằng `groupBy` cho "hôm nay"; khoảng sai (đảo ngược hoặc quá 366 ngày) là 400 trước mọi truy vấn; `from` trả về luôn là thứ Hai (có thể sớm hơn `from` đã gửi); `test/support/list-routes.spec.ts` (khóa tập route `ai.view`) được thêm route mới; lỗi ghi hoạt động làm hỏng cả lần ôn / thêm / trả lời (cùng transaction, theo thiết kế).
+**Chưa kiểm / còn lại:** đồng thời giữa câu trả lời luyện tập song song với ôn thẻ song song chưa chạy thật (chỉ ôn thẻ song song); ở DB mới mọi cohort trừ tuần hiện tại đều trống nên D7/D30 khác "—" chưa thấy trên trình duyệt thật (đã có unit test, e2e giả lập và smoke seed bằng SQL); báo cáo đọc toàn bảng hoạt động cho "đã từng học" (giả định E9, ổn ở quy mô hiện nay); smoke M6 dùng ngày Việt Nam đọc một lần ở đầu phần (chạy vắt qua 00:00 giờ Việt Nam thì chạy lại).
+
+---
+
+## Tổng kết đợt nhóm B (31/10/2026)
+
+Một đợt, sáu milestone, mỗi milestone một nhánh nối tiếp và một PR; không merge PR nào. Từ Bước 8 (API 3134 unit, admin 905) tới nay: API 3937 test (+803), admin 1262 test (+357); 6 phần smoke trong `pnpm smoke:nhom-b` (89 bước) và bốn smoke cũ vẫn xanh. Mọi thứ chạy với model **fake**, chưa có lời gọi AI thật nào (D30). Chi tiết từng milestone ở các mục "as-built" ở trên; quyết định đã tự chốt và các việc cần chủ dự án xem: [`nhom-b-open-items.md`](nhom-b-open-items.md).
+
+## Báo cáo cuối (31/10/2026)
+
+### 1. Từng milestone
+
+| M | PR | Nhánh (commit) | Test thêm / tổng | Smoke |
+|---|---|---|---|---|
+| M1 golden set | [#192](https://github.com/quangtienngo661/english-flashcard/pull/192) | `feat/nhom-b-m1-golden-set` (23) | api 3332, admin 1009 | `smoke:nhom-b` 15 bước ×2; buoc-6, buoc-7 |
+| M2 vòng đời cấu hình | [#193](https://github.com/quangtienngo661/english-flashcard/pull/193) | `feat/nhom-b-m2-configs` (17) | api 3431, admin 1040 | 29 bước ×2; buoc-6, buoc-7, `learner:setup` ×2 |
+| M3 judge | [#194](https://github.com/quangtienngo661/english-flashcard/pull/194) | `feat/nhom-b-m3-judge` (25) | api 3677, admin 1138 | 46 bước ×2; + cũ |
+| M4 câu AI thật | [#195](https://github.com/quangtienngo661/english-flashcard/pull/195) | `feat/nhom-b-m4-real-questions` (14) | api 3800, admin 1216 | 67 bước ×2; + cũ |
+| M5 dashboard | [#197](https://github.com/quangtienngo661/english-flashcard/pull/197) | `feat/nhom-b-m5-dashboard` (16) | api 3867, admin 1246 | 78 bước ×2; + cũ |
+| M6 D7/D30 + đóng đợt | [#198](https://github.com/quangtienngo661/english-flashcard/pull/198) | `feat/nhom-b-m6-retention` | api 3937, admin 1262 | 89 bước ×2; + cũ |
+
+Docs (design, decisions, plan): [#191](https://github.com/quangtienngo661/english-flashcard/pull/191). Tất cả smoke đều pass; CI (`api`, `admin`, `admin-e2e-real`, `web`) xanh ở #191–#195 và #197 lần kiểm gần nhất. Hai lần chạy mỗi milestone trên DB mới; log API/worker không lộ nội dung (có đối chứng).
+
+### 2. Thứ tự merge và việc phải làm khi merge
+
+Merge đúng thứ tự **#191 → #192 → #193 → #194 → #195 → #197 → #198**. Mỗi PR đang trỏ vào nhánh của PR trước: sau khi một PR merge vào `dev`, đổi base của PR kế tiếp sang `dev` (GitHub tự đổi nếu nhánh base bị xóa), chờ CI chạy lại và chỉ merge khi xanh. Không cần rebase: nhánh sau đã chứa nhánh trước (M2 và M3 chứa thêm hai merge commit nhận bản sửa e2e đăng nhập của M1). Cẩn thận: đừng force-push.
+
+### 3. Việc cần chủ dự án xem (từ gấp tới không gấp; chi tiết ở `nhom-b-open-items.md`)
+
+1. **OI-4** đọc prompt khởi điểm của judge "Chỉ một đáp án" và **T1** sửa ví dụ mẫu lệch của prompt `generate_cloze` bản 3 (đầu vào `instantaneous`, đáp án `brush`) trên trang Cấu hình — cả hai trước lần chạy thật.
+2. **OI-8** điểm / nhãn / ảnh chụp của câu đã bị xóa vẫn còn (không có id người học): xác nhận hợp chính sách xóa tài khoản. **OI-7** điểm judge của eval có tính cấu hình nháp: giữ hay bỏ. **OI-3** `learner:setup` trên DB đang chạy model thật sẽ gọi model thật để chạy baseline.
+3. **OI-9 / OI-10** giao diện không chặn thêm trùng một nguồn vào bộ ví dụ; chưa có spec real-stack cho luồng "Câu AI thật". **OI-5** bản dịch en do agent dịch. **OI-6** trần USD là trần mềm. **OI-11 … OI-14** vặt (hai tiến trình `python` cũ ăn CPU, nhãn "… / trần", commit smoke tách riêng, bản sửa CI e2e).
+
+### 4. Chưa kiểm hoặc chỉ kiểm với model fake
+
+- Không có lời gọi nhà cung cấp thật nào: judge Anthropic, model viết câu, `judge-provider` với OpenAI thật chỉ có test đơn vị. Chất lượng câu AI và độ khớp của judge với nhãn người **chưa đo** (đó là việc của C-T3).
+- Ảnh chụp màn hình các trang mới chỉ được xem ít (axe, kiểm tràn 375 / 390 px, test hành vi); tooltip biểu đồ chỉ thử bằng phím.
+- Job khôi phục pass bị treo và các ca `no-staff`, `sense-gone`, `no-input`, câu sinh bởi lời gọi thứ hai chỉ có unit test; D7/D30 khác "—" chưa thấy trên trình duyệt thật (DB mới); smoke M5 chưa thử "răng" bằng đột biến.
+- `pnpm learner:setup` chạy không kèm `--plan pro` ở bước kiểm cuối (hai lần, lần hai không đổi gì).
+
+### 5. Việc còn lại của chủ dự án
+
+- **C-T3** (không do Claude làm): chạy thật với key của bạn, ngân sách 5 USD, `ai.admin_daily_usd_cap` đặt dưới mức đó: đóng băng một phiên bản có held-out, eval cấu hình đang chạy, cho "Chỉ một đáp án" một model Anthropic, nhân bản judge với model thứ hai, chấm bằng cả hai, **gắn 30 nhãn** ở "Gắn nhãn" (phím 1 / 2 / 3), đọc "Độ khớp" của từng judge; rồi gửi số liệu (chi phí, độ khớp, đã / chưa hiệu chỉnh) để ghi vào as-built (commit `docs(nhom-b): record the owner's real run` trên một nhánh `docs/`).
+- Đọc prompt judge (OI-4) và sửa ví dụ mẫu T1 như trên.

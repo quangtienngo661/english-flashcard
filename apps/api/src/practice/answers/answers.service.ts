@@ -141,6 +141,8 @@ export class AnswersService {
     });
     // The session's first final result spends one session of the day (design §7.4); later calls are ignored by the insert.
     await this.entitlements.recordPracticeSession(tx, item.userId, item.sessionId, date);
+    // A final result, a skip included, is a "lần học" of the learner's local day (nhóm B D39, B51); a "try again" never gets here.
+    await this.learning.recordActivity(item.userId, date, tx);
     return written;
   }
 

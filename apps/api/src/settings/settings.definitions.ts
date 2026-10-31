@@ -11,6 +11,8 @@ export type AppSettings = {
     /** Bước 5 (design §13): were `GROUPS_MAX` / `GROUP_ITEMS_MAX`. */
     groupsPerUser: number;
     itemsPerGroup: number;
+    /** Nhóm B (design §10, D39): N, the window in days that makes a learner "đang học" for D7/D30. */
+    activeWindowDays: number;
   };
   practice: {
     maxQuestionsPerSession: number; defaultQuestionsPerSession: number; historyMonths: number; trueFalseTruePercent: number;
@@ -57,7 +59,8 @@ export type AppSettings = {
 
 export const SETTINGS_DEFAULTS: AppSettings = {
   reminders: { enabled: true, sendTime: '20:00', minGapDays: 2, inactiveAfterDays: 7, stopAfterDays: 60 },
-  learning: { newPerGroupPerDay: 20, reviewsPerGroupPerDay: 100, backlogAfterDays: 60, groupsPerUser: 100, itemsPerGroup: 2000 },
+  learning: { newPerGroupPerDay: 20, reviewsPerGroupPerDay: 100, backlogAfterDays: 60, groupsPerUser: 100, itemsPerGroup: 2000,
+    activeWindowDays: 7 },
   practice: {
     maxQuestionsPerSession: 20, defaultQuestionsPerSession: 10, historyMonths: 6, trueFalseTruePercent: 50,
     idleSessionCloseHours: 24, reportsPerHour: 20, hintDefinitionMaxChars: 200, typeWordMaxRetries: null,
@@ -89,6 +92,7 @@ export const SETTINGS_BOUNDS = {
     backlog_after_days: { min: 30, max: 365 },
     groups_per_user: { min: 10, max: 1000 },
     items_per_group: { min: 100, max: 10000 },
+    active_window_days: { min: 1, max: 60 },
   },
   practice: {
     max_questions_per_session: { min: 5, max: 100 },
@@ -163,6 +167,7 @@ export const settingsValuesPatchSchema = z.strictObject({
     backlog_after_days: intIn(b.learning.backlog_after_days).optional(),
     groups_per_user: intIn(b.learning.groups_per_user).optional(),
     items_per_group: intIn(b.learning.items_per_group).optional(),
+    active_window_days: intIn(b.learning.active_window_days).optional(),
   }).optional(),
   practice: z.strictObject({
     max_questions_per_session: intIn(b.practice.max_questions_per_session).optional(),
@@ -227,6 +232,7 @@ const FIELDS = [
   ['learning', 'backlog_after_days', 'backlogAfterDays'],
   ['learning', 'groups_per_user', 'groupsPerUser'],
   ['learning', 'items_per_group', 'itemsPerGroup'],
+  ['learning', 'active_window_days', 'activeWindowDays'],
   ['practice', 'max_questions_per_session', 'maxQuestionsPerSession'],
   ['practice', 'default_questions_per_session', 'defaultQuestionsPerSession'],
   ['practice', 'history_months', 'historyMonths'],

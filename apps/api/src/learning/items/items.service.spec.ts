@@ -102,3 +102,100 @@ describe('ItemsService.bulkAdd by sense_ids (design §8.3)', () => {
     await expect(service.bulkAdd('u1', 'g1', {})).resolves.toMatchObject({ skipped_not_found: 0 });
   });
 });
+
+// nhóm B M6 (D39): the real ensureItems / deleteItem, one activity day per call that wrote at least one log row.
+function writing(at = '2026-10-19T17:01:00Z') {
+  const events: string[] = [];
+  const row = (senseId: string) => ({ id: `i-${senseId}`, userId: 'u1', senseId, level: 0, dueDate: new Date('2026-10-20T00:00:00Z') });
+  const tx = {
+    $executeRaw: vi.fn(async () => 0),
+    learningItem: {
+      findUnique: vi.fn(async () => null),
+      findFirst: vi.fn(async () => ({ id: 'i-a' })),
+      findMany: vi.fn(async () => [] as Array<ReturnType<typeof row>>),
+      createManyAndReturn: vi.fn(async () => { events.push('items'); return [] as Array<{ id: string }>; }),
+      delete: vi.fn(async () => ({ ...row('a'), level: 2 })),
+    },
+    groupItem: {
+      count: vi.fn(async () => 0), createMany: vi.fn(async () => { events.push('links'); }),
+      deleteMany: vi.fn(async () => ({ count: 1 })),
+    },
+    learningLogEntry: {
+      createMany: vi.fn(async (_args: { data: Array<{ senseId: string }> }) => { events.push('log'); }),
+      create: vi.fn(async (_args: { data: { localDate: Date } }) => { events.push('log'); }),
+    },
+    learningActivityDay: { createMany: vi.fn(async () => { events.push('activity'); return { count: 1 }; }) },
+  };
+  const prisma = { $transaction: vi.fn(async (fn: (t: typeof tx) => unknown) => fn(tx)) } as unknown as PrismaClient;
+  const content = {
+    visibleSenseIds: vi.fn(async (_viewer: string, ids: string[]) => new Set(ids)),
+  } as unknown as ContentService;
+  const service = new ItemsService(prisma, new FakeClock(new Date(at)),
+    { getProfile: vi.fn(async () => ({ timezone: 'Asia/Ho_Chi_Minh' })) } as unknown as IdentityService, content,
+    { assertOwned: vi.fn(async () => ({})) } as unknown as GroupsService,
+    { get: vi.fn(async () => SETTINGS_DEFAULTS) } as unknown as SettingsService);
+  return { service, tx, events, row };
+}
+
+describe('ItemsService — records a learning activity day (nhóm B M6, D39)', () => {
+  it('adding two new senses and one already learning writes the log rows, then ONE activity statement with the local date', async () => {
+    const { service, tx, events, row } = writing();
+    tx.learningItem.findMany
+      .mockResolvedValueOnce([]) // the senses already in this group
+      .mockResolvedValueOnce([row('a'), row('b'), row('c')]); // read back after the insert
+    tx.learningItem.createManyAndReturn.mockImplementationOnce(async () => { events.push('items'); return [{ id: 'i-a' }, { id: 'i-b' }]; });
+    await expect(service.bulkAdd('u1', 'g1', { sense_ids: ['a', 'b', 'c'] })).resolves.toMatchObject({ added: 3 });
+    expect(tx.learningLogEntry.createMany.mock.calls[0][0].data.map((entry) => entry.senseId)).toEqual(['a', 'b']);
+    expect(tx.learningActivityDay.createMany).toHaveBeenCalledExactlyOnceWith({
+      data: [{ userId: 'u1', localDate: new Date('2026-10-20T00:00:00.000Z') }], skipDuplicates: true,
+    });
+    expect(events).toEqual(['items', 'links', 'log', 'activity']);
+  });
+
+  it('adding only senses that are already learning (in another group) writes no activity statement', async () => {
+    const { service, tx, row } = writing();
+    tx.learningItem.findMany.mockResolvedValueOnce([]).mockResolvedValueOnce([row('a'), row('b')]);
+    await expect(service.bulkAdd('u1', 'g1', { sense_ids: ['a', 'b'] })).resolves.toMatchObject({ added: 2 });
+    expect(tx.learningActivityDay.createMany).not.toHaveBeenCalled();
+  });
+
+  it('adding nothing (every sense is already in the group) writes no activity statement', async () => {
+    const { service, tx, row } = writing();
+    tx.learningItem.findMany.mockResolvedValueOnce([row('a')]);
+    await expect(service.bulkAdd('u1', 'g1', { sense_ids: ['a'] })).resolves.toMatchObject({ added: 0, already_in_group: 1 });
+    expect(tx.learningActivityDay.createMany).not.toHaveBeenCalled();
+  });
+
+  it('adding one new sense through add() writes one activity statement', async () => {
+    const { service, tx, events, row } = writing();
+    tx.learningItem.findMany.mockResolvedValueOnce([row('a')]);
+    tx.learningItem.createManyAndReturn.mockImplementationOnce(async () => { events.push('items'); return [{ id: 'i-a' }]; });
+    await expect(service.add('u1', 'g1', 'a')).resolves.toMatchObject({ item_id: 'i-a', created: true });
+    expect(tx.learningActivityDay.createMany).toHaveBeenCalledOnce();
+    expect(events).toEqual(['items', 'links', 'log', 'activity']);
+  });
+
+  it('forgetting an item writes the log row, then one activity statement (the date is the learner\'s, not UTC)', async () => {
+    const { service, tx, events } = writing('2026-10-19T17:01:00Z');
+    await service.forget('u1', 'i-a');
+    expect(tx.learningLogEntry.create.mock.calls[0][0].data.localDate).toEqual(new Date('2026-10-20T00:00:00.000Z'));
+    expect(tx.learningActivityDay.createMany).toHaveBeenCalledExactlyOnceWith({
+      data: [{ userId: 'u1', localDate: new Date('2026-10-20T00:00:00.000Z') }], skipDuplicates: true,
+    });
+    expect(events).toEqual(['log', 'activity']);
+  });
+
+  it('leaving a group that another group still holds removes nothing from learning, so no log row and no activity', async () => {
+    const { service, tx } = writing();
+    tx.groupItem.count.mockResolvedValueOnce(1);
+    await expect(service.removeFromGroup('u1', 'g1', 'i-a')).resolves.toEqual({ removed_from_learning: false });
+    expect(tx.learningActivityDay.createMany).not.toHaveBeenCalled();
+  });
+
+  it('leaving the last group removes the item: one activity statement', async () => {
+    const { service, tx } = writing();
+    tx.groupItem.count.mockResolvedValueOnce(0);
+    await expect(service.removeFromGroup('u1', 'g1', 'i-a')).resolves.toEqual({ removed_from_learning: true });
+    expect(tx.learningActivityDay.createMany).toHaveBeenCalledOnce();
+  });
+});

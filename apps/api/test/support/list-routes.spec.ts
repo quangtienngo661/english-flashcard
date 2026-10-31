@@ -38,11 +38,12 @@ describe('listRoutes (unit, isolated persistence)', () => {
       { method: 'GET', path: '/v1/admin/users', permissions: ['users.read'] },
       { method: 'GET', path: '/v1/admin/users/:id', permissions: ['users.read'] },
     ]);
-    // Owner 28/10/2026: the AI dashboard's four read routes are the only ones under ai.view.
+    // Owner 28/10/2026: the AI dashboard's four read routes, and since nhóm B M6 the D7/D30 report beside them, are the only ones under ai.view.
     expect(routes.filter(({ permissions }) => permissions?.includes('ai.view'))).toEqual([
       { method: 'GET', path: '/v1/admin/ai/dashboard', permissions: ['ai.view'] },
       { method: 'GET', path: '/v1/admin/entitlements/ai-usage/days', permissions: ['ai.view'] },
       { method: 'GET', path: '/v1/admin/entitlements/ai-usage/pro', permissions: ['ai.view'] },
+      { method: 'GET', path: '/v1/admin/learning/retention', permissions: ['ai.view'] },
       { method: 'GET', path: '/v1/admin/practice/ai-quality', permissions: ['ai.view'] },
     ]);
     expect(routes.filter(({ permissions }) => permissions?.includes('roles.manage'))).toEqual([

@@ -31,7 +31,7 @@ export type Unit = 'days' | 'hours' | 'minutes' | 'months' | 'years' | 'percent'
  */
 export type FieldSpec = { key: string; kind: 'bool' | 'int' | 'time' | 'ratio' | 'usd'; unit?: Unit };
 
-/** The 48 keys per tab, in the order of the copy doc §8.2. */
+/** The 49 keys per tab, in the order of the copy doc §8.2. */
 export const SETTINGS_LAYOUT: Record<Section, FieldSpec[]> = {
   reminders: [
     { key: 'enabled', kind: 'bool' },
@@ -46,6 +46,7 @@ export const SETTINGS_LAYOUT: Record<Section, FieldSpec[]> = {
     { key: 'backlog_after_days', kind: 'int', unit: 'days' },
     { key: 'groups_per_user', kind: 'int' },
     { key: 'items_per_group', kind: 'int' },
+    { key: 'active_window_days', kind: 'int', unit: 'days' },
   ],
   practice: [
     { key: 'max_questions_per_session', kind: 'int' },

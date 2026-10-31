@@ -9,6 +9,7 @@ import type { Prisma, PrismaClient } from '../../generated/prisma/client.js';
 import { IdentityService } from '../../identity/profile/identity.service.js';
 import { GroupsService } from '../groups/groups.service.js';
 import { SettingsService } from '../../settings/index.js';
+import { recordActivityIn } from '../activity/record-activity.js';
 import { withLearnerLock } from '../learning-lock.js';
 import { newItem, sectionOf, type Section } from '../schedule/schedule.js';
 
@@ -239,10 +240,13 @@ export class ItemsService {
     const createdIds = new Set(created.map(({ id }) => id));
     const items = await tx.learningItem.findMany({ where: { userId, senseId: { in: senseIds } } });
     await tx.groupItem.createMany({ data: items.map((item) => ({ groupId, itemId: item.id, addedAt: at })), skipDuplicates: true });
-    await tx.learningLogEntry.createMany({ data: items.filter((item) => createdIds.has(item.id)).map((item) => ({
+    const added = items.filter((item) => createdIds.has(item.id));
+    await tx.learningLogEntry.createMany({ data: added.map((item) => ({
       userId, itemId: item.id, senseId: item.senseId, groupId, kind: 'item_added', levelAfter: item.level,
       dueAfter: item.dueDate, localDate: dateValue(today), at,
     })) });
+    // Last write (nhóm B D39): only when a word was really added; words the learner already had are not a lần học.
+    if (added.length > 0) await recordActivityIn(tx, userId, today);
     const bySense = new Map(items.map((item) => [item.senseId, { ...item, created: createdIds.has(item.id) }]));
     return senseIds.map((senseId) => bySense.get(senseId)!);
   }
@@ -250,10 +254,12 @@ export class ItemsService {
   private async deleteItem(tx: Prisma.TransactionClient, userId: string, itemId: string, groupId: string | null, timeZone: string) {
     const item = await tx.learningItem.delete({ where: { id: itemId } });
     const at = this.clock.now();
+    const day = localDate(timeZone, at);
     await tx.learningLogEntry.create({ data: {
       userId, itemId, senseId: item.senseId, groupId, kind: 'item_removed', levelBefore: item.level, dueBefore: item.dueDate,
-      localDate: dateValue(localDate(timeZone, at)), at,
+      localDate: dateValue(day), at,
     } });
+    await recordActivityIn(tx, userId, day);
   }
 
   private async profile(userId: string) {

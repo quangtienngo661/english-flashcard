@@ -19,6 +19,8 @@ import { QuickAddService } from './quick-add/quick-add.service.js';
 import { QueueController } from './queue/queue.controller.js';
 import { LearningAccountEraser } from './account-eraser.provider.js';
 import { QueueService } from './queue/queue.service.js';
+import { AdminRetentionController } from './retention/admin-retention.controller.js';
+import { RetentionService } from './retention/retention.service.js';
 import { ReviewsController } from './reviews/reviews.controller.js';
 import { ReviewsService } from './reviews/reviews.service.js';
 
@@ -27,11 +29,12 @@ import { ReviewsService } from './reviews/reviews.service.js';
   imports: [IdentityModule, ContentModule, SettingsModule],
   controllers: [
     BacklogController, GroupsController, ItemsController, MyWordsDeleteController, QueueController, QuickAddController,
-    ReviewsController,
+    ReviewsController, AdminRetentionController,
   ],
   providers: [
     BacklogService, GroupsService, ItemsService, QueueService, QuickAddService, ReviewsService, PracticeReadsService,
     PracticeReviewService, LearningService, IdempotencyInterceptor, LearningEntryUsageProbe, LearningAccountEraser,
+    RetentionService,
   ],
   exports: [LearningService],
 })

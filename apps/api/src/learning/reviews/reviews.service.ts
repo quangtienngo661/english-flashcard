@@ -6,6 +6,7 @@ import { dateString, dateValue, daysBetween, localDate } from '../../common/time
 import type { Prisma, PrismaClient } from '../../generated/prisma/client.js';
 import { IdentityService } from '../../identity/profile/identity.service.js';
 import { SettingsService } from '../../settings/index.js';
+import { recordActivityIn } from '../activity/record-activity.js';
 import { applyAnswer, type Answer, type Section } from '../schedule/schedule.js';
 
 const transactionOptions = { timeout: 10_000, maxWait: 5_000 };
@@ -66,6 +67,8 @@ export class ReviewsService {
           daysSinceLast: item.lastReviewedAt ? daysBetween(localDate(profile.timezone, item.lastReviewedAt), today) : null,
           reviewId: input.reviewId, section: result.section, localDate: dateValue(today), at,
         } });
+        // Last write (nhóm B D39): a replay returned above, so a replayed review never reaches this line.
+        await recordActivityIn(tx, userId, today);
         return {
           item_id: item.id, level: result.next.level, due_date: result.next.dueDate, priority: result.next.priority,
           section: result.section,

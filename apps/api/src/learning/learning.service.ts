@@ -1,5 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
+import { PRISMA_CLIENT } from '../common/db/prisma.module.js';
 import type { Prisma, PrismaClient } from '../generated/prisma/client.js';
+import { recordActivityIn } from './activity/record-activity.js';
 import {
   PracticeReadsService, type PracticeCheck, type PracticeItem, type PracticeScope,
 } from './practice/practice-reads.service.js';
@@ -16,6 +18,7 @@ export class LearningService {
     @Inject(QueueService) private readonly queue: QueueService,
     @Inject(PracticeReadsService) private readonly practice: PracticeReadsService,
     @Inject(PracticeReviewService) private readonly practiceReviews: PracticeReviewService,
+    @Inject(PRISMA_CLIENT) private readonly prisma: PrismaClient,
   ) {}
 
   /** Learners (of the given ones) with at least one card left after today's caps; `today` is each one's local date. */
@@ -50,5 +53,13 @@ export class LearningService {
   /** "Cần ôn tập" / "Đã biết" from practice, in the caller's transaction; idempotent by `reviewId`. */
   practiceReview(tx: Prisma.TransactionClient, userId: string, inputs: PracticeReviewInput[]): Promise<PracticeReviewOutcome[]> {
     return this.practiceReviews.review(tx, userId, inputs);
+  }
+
+  /**
+   * A "lần học" of the learner on their local date `localDate` (nhóm B D39, B51): one row per learner per day, however many calls.
+   * Practice calls it with its `tx` as the last write of a final answer; the shared client is the default for any other caller.
+   */
+  recordActivity(userId: string, localDate: string, db?: Prisma.TransactionClient | PrismaClient): Promise<void> {
+    return recordActivityIn(db ?? this.prisma, userId, localDate);
   }
 }

@@ -61,9 +61,19 @@ test.describe('shell (vi)', () => {
     await page.goto('/dashboard');
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(vi.nav.dashboard);
     for (const title of [vi.dashboard.today.title, vi.dashboard.health.title, vi.dashboard.cost.title, vi.dashboard.quality.title,
-      vi.dashboard.impact.title, vi.dashboard.evals.title, vi.dashboard.judge.title, vi.dashboard.real.title, vi.dashboard.usage.title]) {
+      vi.dashboard.impact.title, vi.dashboard.evals.title, vi.dashboard.judge.title, vi.dashboard.real.title, vi.dashboard.usage.title,
+      vi.dashboard.retention.title]) {
       await expect(page.getByRole('heading', { level: 2, name: title })).toBeVisible();
     }
+    // The retention card (nhóm B M6): today's two tiles, and the weeks as a table (stacked cards on a phone, so only the visible copy counts):
+    // a week with people shows its share, the empty week shows dashes, never 0 %.
+    const retention = page.getByRole('heading', { level: 2, name: vi.dashboard.retention.title }).locator('xpath=ancestor::section[1]');
+    const visible = (locator: Locator) => locator.filter({ visible: true });
+    await expect(retention.getByText(vi.dashboard.retention.active)).toBeVisible();
+    await expect(visible(retention.getByText('Từ 19/10'))).toBeVisible();
+    await expect(visible(retention.getByText(/^60\s?% \(3\/5\)$/))).toBeVisible();
+    await expect(visible(retention.getByText('—', { exact: true })).first()).toBeVisible();
+    await expect(retention.getByText(/0\s?% \(0\/0\)/)).toHaveCount(0);
     await expect(page.getByRole('group', { name: vi.dashboard.cost.chart })).toBeVisible();
     await expect(page.getByRole('list', { name: vi.dashboard.quality.retry.title })).toBeVisible();
     await expect(page.getByRole('list', { name: vi.dashboard.usage.pro.chart })).toBeVisible();
