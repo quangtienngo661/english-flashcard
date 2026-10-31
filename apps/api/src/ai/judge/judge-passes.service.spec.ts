@@ -282,6 +282,16 @@ describe('JudgePassesService.createReal (contract §4, M4)', () => {
     expect(await problemOf(ctx.service.createReal({ judgeId: JUDGE, kind: 'real', filters: { operation: 'generate_cloze' }, subjects: [S1], actorId: ADMIN })))
       .toMatchObject({ status: 409, type: 'judge-pass-running' });
   });
+
+  it('B16: a second real pass of the same revision while the first is still queued → 409 judge-pass-running; one pass, one queue message', async () => {
+    const first = await ctx.service.createReal({ judgeId: JUDGE, kind: 'real', filters: { operation: 'generate_cloze' }, subjects: [S1], actorId: ADMIN });
+    expect(ctx.state.passes).toHaveLength(1);
+    expect(ctx.state.passes[0]).toMatchObject({ id: first.passId, status: 'queued' });
+    expect(await problemOf(ctx.service.createReal({ judgeId: JUDGE, kind: 'real', filters: { operation: 'generate_cloze' }, subjects: [S2], actorId: ADMIN })))
+      .toMatchObject({ status: 409, type: 'judge-pass-running' });
+    expect(ctx.state.passes).toHaveLength(1);
+    expect(ctx.queue.enqueueJudgePass).toHaveBeenCalledExactlyOnceWith(first.passId);
+  });
 });
 
 describe('JudgePassesService.get', () => {

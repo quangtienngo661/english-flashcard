@@ -14,6 +14,7 @@ const ENTITLEMENT_DEFAULTS_API = {
 const AI_DEFAULTS_API = {
   call_timeout_seconds: 10, max_concurrent_calls: 50, daily_provider_calls_cap: 3000, content_retention_days: 7,
   usd_vnd_rate: 26100, eval_held_out_ratio: 0.3, admin_daily_usd_cap: 2, judge_label_min: 30, judge_agreement_min: 0.85,
+  real_judge_limit: 200,
 };
 
 const issues = (input: unknown) => {
@@ -259,9 +260,9 @@ describe('settings definitions', () => {
     expect(toApiValues(values).reminders).not.toHaveProperty('weekly_max');
   });
 
-  it('ai defaults are 10, 50, 3000, 7, 26100, 0.3, 2, 30, 0.85', () => {
+  it('ai defaults are 10, 50, 3000, 7, 26100, 0.3, 2, 30, 0.85, 200', () => {
     expect(toApiValues(SETTINGS_DEFAULTS).ai).toEqual(AI_DEFAULTS_API);
-    expect(Object.values(toApiValues(SETTINGS_DEFAULTS).ai)).toEqual([10, 50, 3000, 7, 26100, 0.3, 2, 30, 0.85]);
+    expect(Object.values(toApiValues(SETTINGS_DEFAULTS).ai)).toEqual([10, 50, 3000, 7, 26100, 0.3, 2, 30, 0.85, 200]);
   });
 
   it('withDefaults fills the ai group for JSON stored before Bước 6 and keeps a stored null cap', () => {
@@ -273,10 +274,10 @@ describe('settings definitions', () => {
     expect(withDefaults({ ai: { usdVndRate: 25000 } }).ai).toEqual({ ...SETTINGS_DEFAULTS.ai, usdVndRate: 25000 });
   });
 
-  it('toApiValues names the nine keys in snake_case', () => {
+  it('toApiValues names the ten keys in snake_case', () => {
     expect(Object.keys(toApiValues(SETTINGS_DEFAULTS).ai)).toEqual([
       'call_timeout_seconds', 'max_concurrent_calls', 'daily_provider_calls_cap', 'content_retention_days', 'usd_vnd_rate',
-      'eval_held_out_ratio', 'admin_daily_usd_cap', 'judge_label_min', 'judge_agreement_min',
+      'eval_held_out_ratio', 'admin_daily_usd_cap', 'judge_label_min', 'judge_agreement_min', 'real_judge_limit',
     ]);
   });
 
@@ -328,6 +329,20 @@ describe('settings definitions', () => {
     expect(SETTINGS_DEFAULTS.ai).toMatchObject({ judgeLabelMin: 30, judgeAgreementMin: 0.85 });
     expect(withDefaults({ ai: { usdVndRate: 25000 } }).ai.judgeLabelMin).toBe(30);
     expect(applyPatch(SETTINGS_DEFAULTS, { ai: { judge_label_min: 50, judge_agreement_min: 0.9 } }).ai).toMatchObject({ judgeLabelMin: 50, judgeAgreementMin: 0.9 });
+  });
+
+  it('M4-T5: real_judge_limit is a whole number 1–500 (default 200)', () => {
+    for (const value of [1, 200, 500]) expect(issues({ ai: { real_judge_limit: value } }), String(value)).toEqual([]);
+    for (const value of [0, 501, 2.5, -1]) expect(issues({ ai: { real_judge_limit: value } }), String(value)).toEqual(['ai.real_judge_limit']);
+    expect(issues({ ai: { real_judge_limit: null } })).toEqual(['ai.real_judge_limit']);
+    expect(SETTINGS_BOUNDS.ai.real_judge_limit).toEqual({ min: 1, max: 500 });
+    expect(SETTINGS_DEFAULTS.ai.realJudgeLimit).toBe(200);
+    expect(toApiValues(SETTINGS_DEFAULTS).ai.real_judge_limit).toBe(200);
+    expect(withDefaults({ ai: { usdVndRate: 25000 } }).ai.realJudgeLimit).toBe(200);
+    expect(applyPatch(SETTINGS_DEFAULTS, { ai: { real_judge_limit: 50 } }).ai.realJudgeLimit).toBe(50);
+    expect(changedFields(SETTINGS_DEFAULTS, applyPatch(SETTINGS_DEFAULTS, { ai: { real_judge_limit: 50 } }))).toEqual([
+      { key: 'ai.real_judge_limit', oldValue: 200, newValue: 50 },
+    ]);
   });
 
   it('accepts null only for daily_provider_calls_cap and admin_daily_usd_cap', () => {

@@ -12,6 +12,7 @@ import { JudgePassesService } from './judge/judge-passes.service.js';
 import { JudgeScoresReader } from './judge/judge-scores.reader.js';
 import type { JudgeSubject } from './judge/judge.types.js';
 import { JudgesService } from './judge/judges.service.js';
+import { RealPassesReader, type RealJudgeTarget, type RealPassItem, type RealPassView } from './judge/real-passes.reader.js';
 import { ReportsService } from './reports/reports.service.js';
 import { ReadinessService } from './runner/readiness.service.js';
 import { RunnerService, type RunReport } from './runner/runner.service.js';
@@ -33,6 +34,7 @@ export class AiService {
     @Inject(JudgesService) private readonly judges: JudgesService,
     @Inject(JudgeScoresReader) private readonly judgeScores: JudgeScoresReader,
     @Inject(ReportsService) private readonly reports: ReportsService,
+    @Inject(RealPassesReader) private readonly realPasses: RealPassesReader,
   ) {}
 
   /** Practice hands its rules and catalog forms to eval runs here (nhóm B design §5.2); `ai` never imports Practice or Content. */
@@ -81,6 +83,26 @@ export class AiService {
    */
   callContents(operationIds: string[]): Promise<Map<string, { request: unknown; response: string | null }>> {
     return this.reports.callContents(operationIds, this.clock.now());
+  }
+
+  /** The judge, its newest revision and what it scores, for the estimate of a real-question pass; null for an unknown judge or one with no revision (M4). */
+  realJudgeTarget(judgeId: string): Promise<RealJudgeTarget | null> {
+    return this.realPasses.target(judgeId);
+  }
+
+  /** What one judged subject cost on average over the passes of this revision; null while no pass has a cost to average (M4). */
+  judgeCostPerSubject(revisionId: string): Promise<number | null> {
+    return this.realPasses.costPerSubject(revisionId);
+  }
+
+  /** Real-question passes, newest first (M4). */
+  realJudgePasses(pageSize: number, pageToken?: string): Promise<{ items: RealPassView[]; next_page_token: string | null }> {
+    return this.realPasses.passes(pageSize, pageToken);
+  }
+
+  /** One real-question pass with its items, scores and labels; null when the pass is unknown or not a real-question pass (M4). */
+  realJudgePass(passId: string): Promise<{ pass: RealPassView; items: RealPassItem[] } | null> {
+    return this.realPasses.pass(passId);
   }
 
   async isReady(op: AiOperation): Promise<AiReadiness> {

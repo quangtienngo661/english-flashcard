@@ -47,11 +47,17 @@ function setup(readiness: ReadinessCheck = { ready: true, selection: {} as never
   const judges = { latestRevision: vi.fn(async (_id: string): Promise<{ id: string; revision: number } | null> => ({ id: 'rev-2', revision: 2 })) };
   const judgeScores = { judgedSubjects: vi.fn(async (_revision: string, ids: string[]) => new Set(ids.slice(0, 1))) };
   const reports = { callContents: vi.fn(async (_ids: string[], _now: Date) => new Map([['op1', { request: { a: 1 }, response: 'r' }]])) };
+  const realPasses = {
+    target: vi.fn(async (_judgeId: string): Promise<unknown> => ({ judgeId: 'J', revisionId: 'rev-2' })),
+    costPerSubject: vi.fn(async (_revisionId: string): Promise<number | null> => 0.0004),
+    passes: vi.fn(async (_pageSize: number, _pageToken?: string) => ({ items: [{ id: 'pass-1' }], next_page_token: null })),
+    pass: vi.fn(async (_passId: string): Promise<unknown> => ({ pass: { id: 'pass-1' }, items: [] })),
+  };
   const service = new AiService(
     runner, readinessService, prisma, new FakeClock(NOW), rules, examples as never, live as never, judgePasses as never, judges as never,
-    judgeScores as never, reports as never,
+    judgeScores as never, reports as never, realPasses as never,
   );
-  return { service, executed, report, checks, statements, queries, prisma, rules, examples, live, judgePasses, judges, judgeScores, reports };
+  return { service, executed, report, checks, statements, queries, prisma, rules, examples, live, judgePasses, judges, judgeScores, reports, realPasses };
 }
 
 describe('AiService.run', () => {
@@ -135,6 +141,30 @@ describe('AiService judge functions (contract §4, M3-T8)', () => {
     const { service, judgeScores } = setup();
     await expect(service.judgedSubjects('rev-2', ['s1', 's2'])).resolves.toEqual(new Set(['s1']));
     expect(judgeScores.judgedSubjects).toHaveBeenCalledExactlyOnceWith('rev-2', ['s1', 's2']);
+  });
+});
+
+describe('AiService real-question pass reads (M4-T1)', () => {
+  it('realJudgeTarget, judgeCostPerSubject, realJudgePasses and realJudgePass hand the same arguments to the reader and return its answer', async () => {
+    const { service, realPasses } = setup();
+    await expect(service.realJudgeTarget('J')).resolves.toEqual({ judgeId: 'J', revisionId: 'rev-2' });
+    expect(realPasses.target).toHaveBeenCalledExactlyOnceWith('J');
+    await expect(service.judgeCostPerSubject('rev-2')).resolves.toBe(0.0004);
+    expect(realPasses.costPerSubject).toHaveBeenCalledExactlyOnceWith('rev-2');
+    await expect(service.realJudgePasses(20, 'token')).resolves.toEqual({ items: [{ id: 'pass-1' }], next_page_token: null });
+    expect(realPasses.passes).toHaveBeenCalledExactlyOnceWith(20, 'token');
+    await expect(service.realJudgePass('pass-1')).resolves.toEqual({ pass: { id: 'pass-1' }, items: [] });
+    expect(realPasses.pass).toHaveBeenCalledExactlyOnceWith('pass-1');
+  });
+
+  it('a missing judge, a revision with no cost and an unknown pass come back as null', async () => {
+    const { service, realPasses } = setup();
+    realPasses.target.mockResolvedValueOnce(null);
+    realPasses.costPerSubject.mockResolvedValueOnce(null);
+    realPasses.pass.mockResolvedValueOnce(null);
+    await expect(service.realJudgeTarget('nope')).resolves.toBeNull();
+    await expect(service.judgeCostPerSubject('rev-1')).resolves.toBeNull();
+    await expect(service.realJudgePass('nope')).resolves.toBeNull();
   });
 });
 

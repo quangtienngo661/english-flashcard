@@ -101,6 +101,15 @@ describe('problem mapping', () => {
     }
   });
 
+  it('the real-question slugs (nhóm B M4) each have a message of their own, and the reason of source-not-eligible is kept', async () => {
+    for (const slug of ['nothing-to-judge', 'source-not-eligible']) {
+      expect(KNOWN_ERROR_SLUGS).toContain(slug);
+      expect(errorMessageKey(problem({ slug, status: 409 }))).toBe(`errors.${slug}`);
+    }
+    const refused = await toApiError(problemResponse(409, { type: 'http://x/problems/source-not-eligible', status: 409, title: 's', reason: 'private-word' }));
+    expect(refused.problem.reason).toBe('private-word');
+  });
+
   it('few-shot-invalid: the examples that broke the rules are kept with their position and problems; other shapes are dropped', async () => {
     const kept = await toApiError(problemResponse(422, {
       type: 'http://x/problems/few-shot-invalid', status: 422, title: 'f',

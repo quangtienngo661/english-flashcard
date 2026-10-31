@@ -30,6 +30,15 @@ describe('IdentityService (unit, isolated persistence)', () => {
     expect(findMany).toHaveBeenCalledWith({ where: { id: { in: ['u1', 'u2'] } }, select: { id: true, email: true } });
   });
 
+  it('D35: staffUserIds lists the ids of users with a staff role (any status), ordered by id; no staff gives []', async () => {
+    const findMany = vi.fn().mockResolvedValue([{ id: 'a1' }, { id: 'e1' }]);
+    const service = new IdentityService({ user: { findMany } } as unknown as PrismaClient, new FakeClock(), silentLogger);
+    expect(await service.staffUserIds()).toEqual(['a1', 'e1']);
+    expect(findMany).toHaveBeenCalledExactlyOnceWith({ where: { staffRole: { not: null } }, select: { id: true }, orderBy: { id: 'asc' } });
+    findMany.mockResolvedValueOnce([]);
+    expect(await service.staffUserIds()).toEqual([]);
+  });
+
   it('findUserIdByEmail matches the normalized address and returns null for an unknown or malformed one', async () => {
     const findUnique = vi.fn().mockImplementation(async ({ where }) => (where.email === 'lan@example.com' ? { id: 'u1' } : null));
     const service = new IdentityService({ user: { findUnique } } as unknown as PrismaClient, new FakeClock(), silentLogger);

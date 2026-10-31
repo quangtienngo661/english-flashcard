@@ -308,6 +308,17 @@ describe('nhóm B settings (design §5.1)', () => {
     expect(calls[1].body).toMatchObject({ values: { ai: { admin_daily_usd_cap: null } } });
   });
 
+  it('the AI tab sets how many real questions one judge pass takes (M4): 150 is sent as 150', async () => {
+    const calls: Call[] = [];
+    renderApp('/settings?tab=ai', { [GET]: () => Response.json(VIEW()), [PUT]: (c) => { calls.push(c); return Response.json({ ...VIEW(4) }); } });
+    expect(await screen.findByRole('textbox', { name: 'Số câu tối đa mỗi lượt chấm câu thật' })).toHaveValue('10');
+    expect(screen.getByText('real_judge_limit · 1–1.000 · mặc định 10')).toBeInTheDocument();
+    await setNumber('Số câu tối đa mỗi lượt chấm câu thật', '150');
+    await userEvent.click(screen.getByRole('button', { name: s.save }));
+    await waitFor(() => expect(calls).toHaveLength(1));
+    expect(calls[0].body).toEqual({ version: 3, values: { ai: { real_judge_limit: 150 } } });
+  });
+
   it('a value outside the bounds is refused by the API and flagged on the field', async () => {
     const view = VIEW();
     renderApp('/settings?tab=ai', {

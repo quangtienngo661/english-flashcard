@@ -56,6 +56,7 @@
     "model-not-supported": "This model cannot be used with Wordmet yet.",
     "no-previous": "There is no earlier config to go back to.",
     "not-found": "Not found",
+    "nothing-to-judge": "There is no question to judge with these filters.",
     "nothing-to-publish": "Nothing is eligible to publish",
     "operation-settings-conflict": "Someone just changed this operation. Reload to see the latest version.",
     "password-change-required": "You must change your password before continuing",
@@ -83,6 +84,7 @@
     "sense-exists": "This word already has a sense with that context label. Edit the existing sense instead of adding a new one.",
     "sense-retired": "This sense is retired and cannot be edited.",
     "source-exists": "This data source already exists",
+    "source-not-eligible": "This question cannot be added to the example set.",
     "source-in-use": "This source is in use (word levels or import batches), so it cannot be deleted.",
     "source-incomplete": "A level source needs a version and a license",
     "source-protected": "A built-in source cannot be edited or deleted.",
@@ -145,6 +147,7 @@
     "aiModels": "Models",
     "aiConfigs": "Configs",
     "aiEval": "Example sets",
+    "aiRealQuestions": "Real AI questions",
     "aiJudges": "Judge",
     "aiCosts": "Costs",
     "aiCalls": "Calls",
@@ -846,8 +849,10 @@
         "labelled": "Labelled: {verdict}",
         "end": "Went through all {total} outputs.",
         "backToRun": "Back to the run",
+        "backToPass": "Back to the pass",
         "empty": "The run has no dev output to label.",
-        "missing": "Open this screen from a run on the Example sets page, with the “Label one by one” link."
+        "emptyPass": "The pass has no question to label.",
+        "missing": "Open this screen from a run on the Example sets page or a pass on the Real AI questions page, with the “Label one by one” link."
       },
       "agreementPanel": {
         "title": "Agreement with the labels · {name}",
@@ -857,6 +862,95 @@
         "need": "Needs at least {min} labels and agreement from {ratio}.",
         "noRate": "—",
         "close": "Close"
+      }
+    },
+    "real": {
+      "note": "The judge scores the AI questions learners met recently, while the system still keeps the content of AI calls. A question with a learner's private word is never judged.",
+      "noJudge": "No judge is switched on for these operations. Add or switch on a judge on the Judge page.",
+      "noJudgeLink": "Open the Judge page",
+      "pick": "Choose the questions to judge",
+      "fields": {
+        "judge": "Judge",
+        "operation": "Operation",
+        "pair": "Config · model",
+        "testOnly": "Test accounts only (admin, editor)"
+      },
+      "pairAll": "All",
+      "pairOption": "Config {number} · {model} ({count} questions)",
+      "pairOptionNoConfig": "Before configs · {model} ({count} questions)",
+      "estimate": {
+        "selected": "Will judge {selected} questions (at most {limit}), newest first.",
+        "remaining": "{remaining} questions will still be unjudged after this pass.",
+        "skippedPrivate": "Skipping {count} questions with a learner's private word.",
+        "skippedNoContent": "Skipping {count} questions whose content is no longer kept.",
+        "skippedJudged": "Skipping {count} questions this judge revision already judged.",
+        "cost": "Estimated cost: {usd} USD",
+        "costUnknown": "Estimated cost: cannot be estimated yet (this judge revision has not judged anything).",
+        "cap": "Admin cost cap per day: {cap} USD.",
+        "retentionOff": "There is nothing to judge: the system is not keeping the content of AI calls (days kept = 0).",
+        "noStaff": "There is no admin or editor account yet.",
+        "empty": "No question matches the filters."
+      },
+      "start": "Judge {count} questions",
+      "passes": {
+        "title": "Judge passes",
+        "empty": "No pass yet.",
+        "emptyHint": "Choose the questions above, then press [Judge … questions].",
+        "pass": "{time} · {judge} revision {revision} · {operation} · {judged}/{total} · {cost} USD",
+        "passNoCost": "{time} · {judge} revision {revision} · {operation} · {judged}/{total}",
+        "cols": {
+          "pass": "Pass",
+          "status": "Status"
+        }
+      },
+      "results": {
+        "title": "Judge pass · {time}",
+        "titleUnknown": "Judge pass",
+        "notFound": "This pass was not found.",
+        "judge": "Judge",
+        "operation": "Operation",
+        "filters": "Filters",
+        "startedBy": "Started by",
+        "cost": "Cost",
+        "judgeLine": "{name} revision {revision} · {model}",
+        "judgeNoModel": "{name} revision {revision}",
+        "allPairs": "Every config",
+        "pair": "Config {number} · {model}",
+        "testOnly": "Test accounts only",
+        "queued": "Waiting for the worker to pick the pass up.",
+        "running": "Judging {judged}/{total} questions.",
+        "failedNoReason": "The pass stopped with no reason.",
+        "section": "Results",
+        "empty": "The pass has no question.",
+        "cols": {
+          "question": "Question",
+          "pair": "Config · model",
+          "score": "Score",
+          "reason": "Reason",
+          "label": "Label",
+          "actions": "Actions"
+        },
+        "pending": "Not judged yet",
+        "deleted": "The question was deleted; only the snapshot taken when it was judged is left.",
+        "none": "—"
+      },
+      "add": {
+        "button": "Add to the example set",
+        "buttonFor": "Add to the example set · {question}",
+        "title": "Add to the example set",
+        "body": "The new example goes into the working set of {operation}, as a dev example.",
+        "word": "{word} · {pos}",
+        "rebuilt": "The original content is older than 7 days and no longer kept. The input will be rebuilt from the sense's current content in the catalog: distractors and other meanings are chosen again, and the sense may have been edited since the question was made.",
+        "confirm": "Add to the example set",
+        "added": "Added to the example set (dev).",
+        "openEval": "Open Example sets",
+        "notEligible": {
+          "private-word": "This question has a learner's private word, so it is not added to the example set.",
+          "sense-gone": "This question's sense is no longer in the catalog, so its input cannot be rebuilt.",
+          "no-input": "The catalog does not have enough senses or words to rebuild the distractors.",
+          "report-not-confirmed": "Only a confirmed report can be added to the example set.",
+          "not-ai": "Only a question made by the AI can be added to the example set."
+        }
       }
     },
     "costs": {
@@ -1709,7 +1803,8 @@
         "eval_held_out_ratio": "Held-out share of the example set",
         "admin_daily_usd_cap": "Admin USD cap per day",
         "judge_label_min": "Labels needed to trust a judge",
-        "judge_agreement_min": "Minimum agreement with the labels"
+        "judge_agreement_min": "Minimum agreement with the labels",
+        "real_judge_limit": "Most real questions per judge pass"
       },
       "identity": {
         "unverified_cleanup_days": "Delete accounts that never verified their email after"

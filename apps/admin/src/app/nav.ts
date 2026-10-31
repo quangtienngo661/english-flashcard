@@ -15,7 +15,7 @@ export type NavEntry = {
   etaNote?: 'apiReady' | 'unconfirmed';
 };
 
-/** 24 items in 6 groups: the admin sidebar of the copy doc §8.0 plus Giao dịch (design §4.4); "Cấu hình" replaced Thao tác and Prompt (nhóm B M2); "Judge" is nhóm B M3. */
+/** 25 items in 6 groups: the admin sidebar of the copy doc §8.0 plus Giao dịch (design §4.4); "Cấu hình" replaced Thao tác and Prompt (nhóm B M2); "Judge" is nhóm B M3; "Câu AI thật" is nhóm B M4. */
 export const NAV: NavEntry[] = [
   { group: 'overview', path: '/dashboard', labelKey: 'nav.dashboard', needs: ['ai.view'], available: true },
   { group: 'content', path: '/words', labelKey: 'nav.words', needs: ['content.edit'], available: true },
@@ -36,6 +36,7 @@ export const NAV: NavEntry[] = [
   { group: 'ai', path: '/ai/models', labelKey: 'nav.aiModels', needs: ['settings.manage'], available: true },
   { group: 'ai', path: '/ai/configs', labelKey: 'nav.aiConfigs', needs: ['settings.manage'], available: true },
   { group: 'ai', path: '/ai/eval', labelKey: 'nav.aiEval', needs: ['settings.manage'], available: true },
+  { group: 'ai', path: '/ai/real-questions', labelKey: 'nav.aiRealQuestions', needs: ['settings.manage'], available: true },
   { group: 'ai', path: '/ai/judges', labelKey: 'nav.aiJudges', needs: ['settings.manage'], available: true },
   { group: 'ai', path: '/ai/costs', labelKey: 'nav.aiCosts', needs: ['settings.manage'], available: true },
   { group: 'ai', path: '/ai/calls', labelKey: 'nav.aiCalls', needs: ['settings.manage'], available: true },

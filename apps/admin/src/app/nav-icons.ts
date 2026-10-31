@@ -1,6 +1,7 @@
 import {
   Activity,
   BookOpen,
+  ClipboardCheck,
   CreditCard,
   Cpu,
   Database,
@@ -47,6 +48,7 @@ export const NAV_ICONS: Record<string, LucideIcon> = {
   '/ai/models': Cpu,
   '/ai/configs': SlidersHorizontal,
   '/ai/eval': FlaskConical,
+  '/ai/real-questions': ClipboardCheck,
   '/ai/judges': Gavel,
   '/ai/costs': Receipt,
   '/ai/calls': History,

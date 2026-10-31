@@ -56,6 +56,7 @@
     "model-not-supported": "Model này chưa dùng được với Wordmet.",
     "no-previous": "Chưa có cấu hình nào trước đó để quay về.",
     "not-found": "Không tìm thấy",
+    "nothing-to-judge": "Không có câu nào để chấm theo bộ lọc này.",
     "nothing-to-publish": "Không có mục nào đủ điều kiện publish",
     "operation-settings-conflict": "Có người vừa đổi thao tác này. Tải lại để xem bản mới.",
     "password-change-required": "Bạn phải đổi mật khẩu trước khi tiếp tục",
@@ -83,6 +84,7 @@
     "sense-exists": "Từ này đã có nghĩa với nhãn ngữ cảnh đó. Hãy sửa nghĩa đã có thay vì thêm mới.",
     "sense-retired": "Nghĩa này đã retire nên không sửa được.",
     "source-exists": "Nguồn dữ liệu này đã tồn tại",
+    "source-not-eligible": "Câu này không đưa vào bộ ví dụ được.",
     "source-in-use": "Nguồn này đang được dùng (mức độ của từ hoặc lô nhập) nên không xóa được.",
     "source-incomplete": "Nguồn level cần có phiên bản và license",
     "source-protected": "Nguồn có sẵn của hệ thống không sửa hoặc xóa được.",
@@ -145,6 +147,7 @@
     "aiModels": "Model",
     "aiConfigs": "Cấu hình",
     "aiEval": "Bộ ví dụ",
+    "aiRealQuestions": "Câu AI thật",
     "aiJudges": "Judge",
     "aiCosts": "Chi phí",
     "aiCalls": "Các lần gọi",
@@ -846,8 +849,10 @@
         "labelled": "Đã gắn: {verdict}",
         "end": "Đã đi hết {total} đầu ra.",
         "backToRun": "Quay lại lần chạy",
+        "backToPass": "Quay lại lượt chấm",
         "empty": "Lần chạy không có đầu ra dev nào để gắn nhãn.",
-        "missing": "Mở màn này từ một lần chạy ở Bộ ví dụ, bằng liên kết “Gắn nhãn lần lượt”."
+        "emptyPass": "Lượt chấm không có câu nào để gắn nhãn.",
+        "missing": "Mở màn này từ một lần chạy ở Bộ ví dụ hoặc một lượt chấm ở Câu AI thật, bằng liên kết “Gắn nhãn lần lượt”."
       },
       "agreementPanel": {
         "title": "Độ khớp với nhãn · {name}",
@@ -857,6 +862,95 @@
         "need": "Cần ít nhất {min} nhãn và khớp từ {ratio}.",
         "noRate": "—",
         "close": "Đóng"
+      }
+    },
+    "real": {
+      "note": "Judge chấm các câu AI mà người học đã gặp gần đây, trong thời gian hệ thống còn giữ nội dung lời gọi AI. Câu có từ riêng của người học không bao giờ được chấm.",
+      "noJudge": "Chưa có judge nào đang bật cho các thao tác này. Thêm hoặc bật một judge ở trang Judge.",
+      "noJudgeLink": "Mở trang Judge",
+      "pick": "Chọn câu để chấm",
+      "fields": {
+        "judge": "Judge",
+        "operation": "Thao tác",
+        "pair": "Cấu hình · model",
+        "testOnly": "Chỉ tài khoản test (admin, editor)"
+      },
+      "pairAll": "Tất cả",
+      "pairOption": "Cấu hình {number} · {model} ({count} câu)",
+      "pairOptionNoConfig": "Trước khi có cấu hình · {model} ({count} câu)",
+      "estimate": {
+        "selected": "Sẽ chấm {selected} câu (tối đa {limit}), mới nhất trước.",
+        "remaining": "Còn {remaining} câu chưa chấm sau lượt này.",
+        "skippedPrivate": "Bỏ qua {count} câu có từ riêng của người học.",
+        "skippedNoContent": "Bỏ qua {count} câu đã hết hạn giữ nội dung.",
+        "skippedJudged": "Bỏ qua {count} câu bản judge này đã chấm.",
+        "cost": "Chi phí ước tính: {usd} USD",
+        "costUnknown": "Chi phí ước tính: chưa ước tính được (bản judge này chưa chấm lần nào).",
+        "cap": "Trần chi phí việc admin mỗi ngày: {cap} USD.",
+        "retentionOff": "Không có câu nào để chấm: hệ thống đang không giữ nội dung lời gọi AI (số ngày giữ nội dung = 0).",
+        "noStaff": "Chưa có tài khoản admin hay editor nào.",
+        "empty": "Không có câu nào khớp bộ lọc."
+      },
+      "start": "Chấm {count} câu",
+      "passes": {
+        "title": "Các lượt chấm",
+        "empty": "Chưa có lượt chấm nào.",
+        "emptyHint": "Chọn câu ở trên rồi bấm [Chấm … câu].",
+        "pass": "{time} · {judge} bản {revision} · {operation} · {judged}/{total} · {cost} USD",
+        "passNoCost": "{time} · {judge} bản {revision} · {operation} · {judged}/{total}",
+        "cols": {
+          "pass": "Lượt chấm",
+          "status": "Trạng thái"
+        }
+      },
+      "results": {
+        "title": "Lượt chấm · {time}",
+        "titleUnknown": "Lượt chấm",
+        "notFound": "Không tìm thấy lượt chấm này.",
+        "judge": "Judge",
+        "operation": "Thao tác",
+        "filters": "Bộ lọc",
+        "startedBy": "Người chạy",
+        "cost": "Chi phí",
+        "judgeLine": "{name} bản {revision} · {model}",
+        "judgeNoModel": "{name} bản {revision}",
+        "allPairs": "Mọi cấu hình",
+        "pair": "Cấu hình {number} · {model}",
+        "testOnly": "Chỉ tài khoản test",
+        "queued": "Đang chờ worker nhận lượt chấm.",
+        "running": "Đang chấm {judged}/{total} câu.",
+        "failedNoReason": "Lượt chấm dừng, không có lý do.",
+        "section": "Kết quả",
+        "empty": "Lượt chấm không có câu nào.",
+        "cols": {
+          "question": "Câu",
+          "pair": "Cấu hình · model",
+          "score": "Điểm",
+          "reason": "Lý do",
+          "label": "Nhãn",
+          "actions": "Hành động"
+        },
+        "pending": "Chưa chấm",
+        "deleted": "Câu đã bị xóa, chỉ còn ảnh chụp lúc chấm.",
+        "none": "—"
+      },
+      "add": {
+        "button": "Đưa vào bộ ví dụ",
+        "buttonFor": "Đưa vào bộ ví dụ · {question}",
+        "title": "Đưa vào bộ ví dụ",
+        "body": "Ví dụ mới vào bộ đang soạn của {operation}, phần dev.",
+        "word": "{word} · {pos}",
+        "rebuilt": "Nội dung gốc đã quá 7 ngày nên không còn. Đầu vào sẽ được dựng lại từ nội dung hiện tại của nghĩa trong kho: phương án nhiễu và nghĩa khác được chọn mới, nghĩa có thể đã sửa so với lúc tạo câu.",
+        "confirm": "Thêm vào bộ ví dụ",
+        "added": "Đã thêm vào bộ ví dụ (dev).",
+        "openEval": "Mở Bộ ví dụ",
+        "notEligible": {
+          "private-word": "Câu có từ riêng của người học nên không đưa vào bộ ví dụ.",
+          "sense-gone": "Nghĩa của câu này không còn trong kho nên không dựng lại được đầu vào.",
+          "no-input": "Kho không đủ nghĩa hoặc từ để dựng lại phương án nhiễu.",
+          "report-not-confirmed": "Chỉ báo lỗi đã xác nhận mới đưa vào bộ ví dụ được.",
+          "not-ai": "Chỉ câu do AI tạo mới đưa vào bộ ví dụ được."
+        }
       }
     },
     "costs": {
@@ -1709,7 +1803,8 @@
         "eval_held_out_ratio": "Tỉ lệ ví dụ held-out",
         "admin_daily_usd_cap": "Trần USD việc admin mỗi ngày",
         "judge_label_min": "Số nhãn tối thiểu để tin judge",
-        "judge_agreement_min": "Độ khớp tối thiểu với nhãn"
+        "judge_agreement_min": "Độ khớp tối thiểu với nhãn",
+        "real_judge_limit": "Số câu tối đa mỗi lượt chấm câu thật"
       },
       "identity": {
         "unverified_cleanup_days": "Tự xóa tài khoản chưa xác nhận email sau"

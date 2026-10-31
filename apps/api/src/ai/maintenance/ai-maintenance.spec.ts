@@ -203,6 +203,8 @@ describe('AiMaintenance ai.judge-passes-recover (nhóm B M3, B41)', () => {
     expect(text).toContain("UPDATE ai_judge_passes SET status = 'failed', error = 'stalled', finished_at = ?");
     expect(text).toContain("WHERE status = 'running' AND heartbeat_at < ?");
     expect(text).not.toContain('scores');
+    // B41: a pass over real questions is closed like one attached to a run, so there is no condition on the pass kind.
+    expect(text).not.toContain('kind');
     expect(values).toEqual([NOW, new Date(NOW.getTime() - 15 * MINUTE)]);
   });
 

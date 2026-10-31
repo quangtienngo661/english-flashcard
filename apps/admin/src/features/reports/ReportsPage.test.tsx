@@ -237,3 +237,111 @@ describe('report detail', { timeout: 20_000 }, () => {
     expect(second!.headers['Idempotency-Key']).toBe(first!.headers['Idempotency-Key']);
   });
 });
+
+// Nhóm B M4-T8: a confirmed AI report can become a dev example, for an admin only (the endpoint needs settings.manage, an editor would get 403).
+describe('report detail: add to the example set', { timeout: 20_000 }, () => {
+  const PREVIEW = `GET /v1/admin/practice/eval-examples/from-source?report_id=${ID}`;
+  const ADD = 'POST /v1/admin/practice/eval-examples/from-source';
+  const FORMS = ['deploy', 'deployed', 'deploying', 'deploys'];
+  const sourcePreview = (over: Record<string, unknown> = {}) => ({
+    operation: 'generate_cloze', source: 'report', source_ref: ID, word: 'deploy', part_of_speech: 'verb',
+    input: { word: 'deploy', part_of_speech: 'verb', level: 'B1', meaning_vi: 'triển khai', context_label: null }, rebuilt: false, expected: { forms: FORMS }, ...over,
+  });
+  const confirmedAi = (over: Record<string, unknown> = {}) => aiReport({ status: 'confirmed', refunded: true, ...DONE, ...over });
+  const add = vi.ai.real.add;
+  const sources = (calls: Call[]) => calls.filter((c) => c.path.includes('/eval-examples/from-source'));
+
+  async function openDialog(routes: Record<string, (c: Call) => Response | Promise<Response>> = {}) {
+    const r = open({ [ONE]: () => json(confirmedAi()), [PREVIEW]: () => json(sourcePreview()), ...routes });
+    await userEvent.click(await screen.findByRole('button', { name: add.button }));
+    const dialog = await screen.findByRole('dialog', { name: add.title });
+    return { r, dialog };
+  }
+
+  it('an admin sees the button for a confirmed AI report; the dialog shows the word, the part of speech and the forms of the catalog', async () => {
+    const { r, dialog } = await openDialog();
+    expect(within(dialog).getByText('deploy · verb')).toBeInTheDocument();
+    expect(within(dialog).getByText(add.body.replace('{operation}', vi.ai.operations.names.generate_cloze))).toBeInTheDocument();
+    expect(within(dialog).getByRole('textbox', { name: vi.ai.eval.form.expected.forms.label })).toHaveValue('deploy, deployed, deploying, deploys');
+    expect(within(dialog).queryByText(add.rebuilt)).toBeNull();
+    expect(r.count('GET', `/v1/admin/practice/eval-examples/from-source?report_id=${ID}`)).toBe(1);
+  });
+
+  it('removing a form sends the corrected list with an Idempotency-Key, shows the toast with a link to the example set and closes the dialog', async () => {
+    const { r, dialog } = await openDialog({ [ADD]: () => json({ id: 'e9', operation: 'generate_cloze', rebuilt: false }, 201) });
+    const box = within(dialog).getByRole('textbox', { name: vi.ai.eval.form.expected.forms.label });
+    await userEvent.clear(box);
+    await userEvent.type(box, 'deploy, deployed, deploys');
+    await userEvent.click(within(dialog).getByRole('button', { name: add.confirm }));
+    expect(await screen.findByText(add.added)).toBeInTheDocument();
+    const [call] = r.calls.filter((c) => c.method === 'POST' && c.path.includes('/from-source'));
+    expect(call!.body).toEqual({ report_id: ID, expected: { forms: ['deploy', 'deployed', 'deploys'] }, note: null });
+    expect(call!.headers['Idempotency-Key']).toBeTruthy();
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: add.title })).toBeNull());
+    await userEvent.click(screen.getByRole('button', { name: add.openEval }));
+    await waitFor(() => expect(r.router.state.location.pathname + r.router.state.location.search).toBe('/ai/eval?op=generate_cloze'));
+  });
+
+  it('the note is optional and sent when written', async () => {
+    const { r, dialog } = await openDialog({ [ADD]: () => json({ id: 'e9', operation: 'generate_cloze', rebuilt: false }, 201) });
+    await userEvent.type(within(dialog).getByRole('textbox', { name: vi.ai.eval.form.note }), '  two answers fit  ');
+    await userEvent.click(within(dialog).getByRole('button', { name: add.confirm }));
+    await screen.findByText(add.added);
+    expect(r.calls.find((c) => c.method === 'POST' && c.path.includes('/from-source'))!.body).toMatchObject({ note: 'two answers fit' });
+  });
+
+  it('a question with no expected answer (the sentence choice) has no "Các dạng được nhận" box and sends expected null', async () => {
+    const { r, dialog } = await openDialog({
+      [PREVIEW]: () => json(sourcePreview({ operation: 'generate_sentence_mcq', expected: null })),
+      [ADD]: () => json({ id: 'e9', operation: 'generate_sentence_mcq', rebuilt: false }, 201),
+    });
+    expect(within(dialog).queryByRole('textbox', { name: vi.ai.eval.form.expected.forms.label })).toBeNull();
+    await userEvent.click(within(dialog).getByRole('button', { name: add.confirm }));
+    await screen.findByText(add.added);
+    expect(r.calls.find((c) => c.method === 'POST' && c.path.includes('/from-source'))!.body).toEqual({ report_id: ID, expected: null, note: null });
+  });
+
+  it('a rebuilt input says so in the dialog', async () => {
+    const { dialog } = await openDialog({ [PREVIEW]: () => json(sourcePreview({ input: null, rebuilt: true })) });
+    expect(within(dialog).getByText(add.rebuilt)).toBeInTheDocument();
+  });
+
+  it('422 expected-invalid: the violation lands under "Các dạng được nhận" and the dialog stays open', async () => {
+    const { dialog } = await openDialog({ [ADD]: () => problem(422, 'expected-invalid', { violations: ['expected.forms: at least one form'] }) });
+    await userEvent.clear(within(dialog).getByRole('textbox', { name: vi.ai.eval.form.expected.forms.label }));
+    await userEvent.click(within(dialog).getByRole('button', { name: add.confirm }));
+    expect(await within(dialog).findByText('at least one form')).toBeInTheDocument();
+    expect(within(dialog).getByRole('textbox', { name: vi.ai.eval.form.expected.forms.label })).toHaveAttribute('aria-invalid', 'true');
+    expect(screen.queryByText(add.added)).toBeNull();
+  });
+
+  it('409 no-input on adding says why in the dialog', async () => {
+    const { dialog } = await openDialog({ [ADD]: () => problem(409, 'source-not-eligible', { reason: 'no-input' }) });
+    await userEvent.click(within(dialog).getByRole('button', { name: add.confirm }));
+    expect(await within(dialog).findByText(add.notEligible['no-input'])).toBeInTheDocument();
+  });
+
+  it.each([['private-word'], ['sense-gone']] as const)('a preview refused with %s shows its line and no button', async (reason) => {
+    open({ [ONE]: () => json(confirmedAi()), [PREVIEW]: () => problem(409, 'source-not-eligible', { reason }) });
+    expect(await screen.findByText(add.notEligible[reason])).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: add.button })).toBeNull();
+  });
+
+  it('B43: an editor sees no button and the preview is never requested', async () => {
+    const r = open({ [ONE]: () => json(confirmedAi()) }, `/reports/${ID}`, EDITOR);
+    expect(await screen.findByText(t.detail.refunded)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: add.button })).toBeNull();
+    expect(sources(r.calls)).toHaveLength(0);
+  });
+
+  it.each([
+    ['an open report', () => aiReport()],
+    ['a report marked "Không có lỗi"', () => aiReport({ status: 'no_error', ...DONE })],
+    ['a confirmed rule question', () => confirmedAi({ question_source: 'rule' })],
+  ])('%s has no button and the preview is never requested', async (_name, make) => {
+    const r = open({ [ONE]: () => json(make()) });
+    await screen.findByRole('heading', { name: /^Báo lỗi · / });
+    expect(screen.queryByRole('button', { name: add.button })).toBeNull();
+    expect(sources(r.calls)).toHaveLength(0);
+  });
+});
