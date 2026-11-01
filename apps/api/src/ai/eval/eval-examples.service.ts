@@ -4,7 +4,7 @@ import { Clock } from '../../common/clock/clock.js';
 import { PRISMA_CLIENT } from '../../common/db/prisma.module.js';
 import { userRef, type UserRef } from '../../common/user-ref.js';
 import { ProblemDetailsException } from '../../common/problem-details/problem-details.exception.js';
-import type { Prisma, PrismaClient } from '../../generated/prisma/client.js';
+import { Prisma, type PrismaClient } from '../../generated/prisma/client.js';
 import { IdentityService } from '../../identity/profile/identity.service.js';
 import { SettingsService } from '../../settings/index.js';
 import { AI_SYSTEM_ACTOR_ID, EVAL_EXAMPLES_PER_OPERATION_MAX, EVAL_NOTE_MAX } from '../ai.constants.js';
@@ -39,6 +39,13 @@ export type BulkExamplesBody = z.input<typeof bulkExamplesSchema>;
 export type BulkExamplesResult = {
   total: number; valid: number; created: number; invalid: Array<{ row: number; violations: string[] }>;
 };
+
+export const bulkDeleteExamplesSchema = z.strictObject({
+  operation: z.enum(AI_OPERATIONS),
+  ids: z.array(z.uuid().transform((id) => id.toLowerCase())).min(1).max(1000),
+});
+export type BulkDeleteExamplesBody = z.input<typeof bulkDeleteExamplesSchema>;
+export type BulkDeleteExamplesResult = { deleted_ids: string[]; already_missing_ids: string[] };
 
 export const patchExampleSchema = z.strictObject({ input: z.unknown().optional(), note, expected: z.unknown().optional() });
 export type PatchExampleBody = z.input<typeof patchExampleSchema>;
@@ -243,6 +250,26 @@ export class EvalExamplesService {
   async remove(id: string): Promise<void> {
     const { count } = await this.prisma.aiEvalExample.deleteMany({ where: { id } });
     if (count === 0) throw notFound();
+  }
+
+  /** Delete from the working set only; frozen set/run items own independent snapshots. */
+  async removeMany(body: BulkDeleteExamplesBody): Promise<BulkDeleteExamplesResult> {
+    const parsed = parse(bulkDeleteExamplesSchema, body);
+    const ids = [...new Set(parsed.ids)];
+    return this.prisma.$transaction(async (tx) => {
+      // Lock before checking ownership: concurrent edits/deletes wait, and overlapping batches lock in the same order.
+      // Read no held-out content. Missing ids are harmless, but any existing wrong-operation id refuses the whole batch.
+      const found = await tx.$queryRaw<Array<{ id: string; operation: string }>>(Prisma.sql`
+        SELECT id, operation FROM ai_eval_examples
+        WHERE id IN (${Prisma.join(ids.map((id) => Prisma.sql`${id}::uuid`))})
+        ORDER BY id FOR UPDATE
+      `);
+      if (found.some((row) => row.operation !== parsed.operation)) throw invalid(['ids: example belongs to another operation']);
+      const existing = new Set(found.map((row) => row.id));
+      const deleted = ids.filter((id) => existing.has(id));
+      if (deleted.length > 0) await tx.aiEvalExample.deleteMany({ where: { operation: parsed.operation, id: { in: deleted } } });
+      return { deleted_ids: deleted, already_missing_ids: ids.filter((id) => !existing.has(id)) };
+    });
   }
 
   /**

@@ -8,6 +8,8 @@ import { judgeOnFake, judgeView } from './judges/judge-test-support';
 import { URL, evalExample, evalRoutes, evalRun, evalSet, example, heldOutExample, operationsFor, setDetail, setItem } from './prompt-test-support';
 
 const t = vi.ai.eval;
+const bulk = vi.ai.eval.bulkDelete;
+const list = vi.ai.eval.list;
 const posts = (calls: Call[], path: string) => calls.filter((c) => c.method === 'POST' && c.path === path);
 const examplesReply = (...items: ReturnType<typeof evalExample>[]) => () => Response.json({ items });
 const runButton = () => screen.getByRole('button', { name: t.run.start });
@@ -827,5 +829,109 @@ describe('AiEvalPage example list: pages and sorting', () => {
       const rows = screen.getAllByRole('row').slice(1);
       expect(rows[0]).toHaveTextContent(t.heldOutHidden);
     });
+  });
+});
+
+describe('AiEvalPage bulk selection', () => {
+  const DELETE_PATH = '/v1/admin/ai/eval/examples/bulk-delete';
+  const many = Array.from({ length: 25 }, (_, i) => evalExample(`e${i + 1}`, `w${String(i + 1).padStart(2, '0')}`));
+  const section = () => screen.getByRole('region', { name: t.examples.replace('{count}', '26') });
+  const selected = (count: number) => bulk.selected.replace('{count}', String(count));
+  const deleteButton = (count: number) => screen.getByRole('button', { name: bulk.button.replace('{count}', String(count)) });
+
+  it('selects this page only, preserves choices across pages and filters, confirms dev/held-out counts and sends one bulk request', async () => {
+    let items = [...many, heldOutExample('h1')];
+    const r = await openPage({
+      [URL.examples()]: () => Response.json({ items }),
+      [`POST ${DELETE_PATH}`]: (call: Call) => {
+        const { ids } = call.body as { ids: string[] };
+        items = items.filter((row) => !ids.includes(row.id));
+        return Response.json({ deleted_ids: ids.slice(0, -1), already_missing_ids: ids.slice(-1) });
+      },
+    });
+    expect(deleteButton(0)).toBeDisabled();
+    await userEvent.click(within(section()).getByRole('checkbox', { name: vi.list.selectAll }));
+    expect(screen.getByText(selected(20))).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: t.list.next }));
+    expect(within(section()).getByRole('checkbox', { name: vi.list.selectAll })).not.toBeChecked();
+    await userEvent.click(within(section()).getAllByRole('checkbox', { name: bulk.selectHeldOut.replace('{id}', 'h1') })[0]);
+    await userEvent.type(screen.getByRole('textbox', { name: list.search }), 'w25');
+    expect(screen.getByText(selected(21))).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: bulk.selectFiltered.replace('{count}', '1') }));
+    expect(screen.getByText(selected(22))).toBeInTheDocument();
+    await userEvent.click(deleteButton(22));
+    const dialog = await screen.findByRole('dialog', { name: bulk.title.replace('{count}', '22') });
+    expect(within(dialog).getByText(bulk.counts.replace('{dev}', '21').replace('{heldOut}', '1'))).toBeInTheDocument();
+    expect(within(dialog).getByText(bulk.body)).toBeInTheDocument();
+    expect(posts(r.calls, DELETE_PATH)).toHaveLength(0);
+    await userEvent.click(within(dialog).getByRole('button', { name: bulk.confirm.replace('{count}', '22') }));
+    await waitFor(() => expect(posts(r.calls, DELETE_PATH)).toHaveLength(1));
+    const call = posts(r.calls, DELETE_PATH)[0];
+    expect(call.body).toEqual({ operation: 'generate_cloze', ids: [...many.slice(0, 20).map((row) => row.id), 'h1', 'e25'] });
+    expect(call.headers['Idempotency-Key']).toBeTruthy();
+    expect(await screen.findByText(bulk.done.replace('{deleted}', '21').replace('{missing}', '1'))).toBeInTheDocument();
+    expect(screen.getByText(selected(0))).toBeInTheDocument();
+    await waitFor(() => expect(r.count('GET', '/v1/admin/ai/eval/examples?operation=generate_cloze')).toBe(2));
+    expect(r.calls.filter((call) => call.method === 'DELETE')).toHaveLength(0);
+  });
+
+  it('select all filtered targets only the search results, and cancel sends nothing', async () => {
+    const r = await openPage({ [URL.examples()]: () => Response.json({ items: [...many, heldOutExample('h1')] }) });
+    await userEvent.type(screen.getByRole('textbox', { name: list.search }), 'w2');
+    await userEvent.click(screen.getByRole('button', { name: bulk.selectFiltered.replace('{count}', '6') }));
+    expect(screen.getByText(selected(6))).toBeInTheDocument();
+    await userEvent.click(deleteButton(6));
+    const dialog = await screen.findByRole('dialog');
+    expect(within(dialog).getByText(bulk.counts.replace('{dev}', '6').replace('{heldOut}', '0'))).toBeInTheDocument();
+    await userEvent.click(within(dialog).getByRole('button', { name: vi.common.cancel }));
+    expect(posts(r.calls, DELETE_PATH)).toHaveLength(0);
+    expect(screen.getByText(selected(6))).toBeInTheDocument();
+  });
+
+  it('level and split filters exclude held-out content, and switching operation clears selection even when coming back', async () => {
+    await openPage({
+      [URL.examples()]: () => Response.json({ items: [...many, heldOutExample('h1')] }),
+      [URL.examples('lookup_word')]: () => Response.json({ items: [] }),
+      [URL.sets('lookup_word')]: () => Response.json({ items: [] }),
+      [URL.runs('lookup_word')]: () => Response.json({ items: [], next_page_token: null }),
+    });
+    await userEvent.click(within(section()).getByRole('checkbox', { name: vi.list.selectAll }));
+    await userEvent.click(screen.getByRole('button', { name: new RegExp(`${list.level}$`) }));
+    await userEvent.click(await screen.findByRole('option', { name: 'A1' }));
+    expect(screen.queryByRole('checkbox', { name: bulk.selectHeldOut.replace('{id}', 'h1') })).not.toBeInTheDocument();
+    expect(screen.getByText(selected(20))).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: new RegExp(`${list.splitFilter}$`) }));
+    await userEvent.click(await screen.findByRole('option', { name: t.split.heldOut }));
+    expect(screen.getByRole('button', { name: bulk.selectFiltered.replace('{count}', '0') })).toBeDisabled();
+    const operation = () => screen.getByRole('button', { name: new RegExp(`${t.operation}$`) });
+    await userEvent.click(operation());
+    await userEvent.click(await screen.findByRole('option', { name: `${vi.ai.operations.names.lookup_word} (lookup_word)` }));
+    expect(screen.getByText(selected(0))).toBeInTheDocument();
+    await userEvent.click(operation());
+    await userEvent.click(await screen.findByRole('option', { name: `${vi.ai.operations.names.generate_cloze} (generate_cloze)` }));
+    expect(screen.getByText(selected(0))).toBeInTheDocument();
+  });
+
+  it('a network failure keeps the selection and retries the same confirmed payload with the same Idempotency-Key', async () => {
+    let attempts = 0;
+    const r = await openPage({
+      [URL.examples()]: () => Response.json({ items: [evalExample('e1', 'go')] }),
+      [`POST ${DELETE_PATH}`]: () => {
+        attempts += 1;
+        if (attempts === 1) throw new TypeError('network failed');
+        return Response.json({ deleted_ids: ['e1'], already_missing_ids: [] });
+      },
+    });
+    await userEvent.click(screen.getByRole('checkbox', { name: vi.list.selectAll }));
+    await userEvent.click(deleteButton(1));
+    const dialog = await screen.findByRole('dialog');
+    await userEvent.click(within(dialog).getByRole('button', { name: bulk.confirm.replace('{count}', '1') }));
+    expect(await within(dialog).findByText(vi.offline.message)).toBeInTheDocument();
+    await userEvent.click(within(dialog).getByRole('button', { name: bulk.confirm.replace('{count}', '1') }));
+    await waitFor(() => expect(posts(r.calls, DELETE_PATH)).toHaveLength(2));
+    const [first, second] = posts(r.calls, DELETE_PATH);
+    expect(first.headers['Idempotency-Key']).toBe(second.headers['Idempotency-Key']);
+    expect(first.body).toEqual(second.body);
+    expect(await screen.findByText(bulk.done.replace('{deleted}', '1').replace('{missing}', '0'))).toBeInTheDocument();
   });
 });

@@ -18,6 +18,7 @@ import { DetailPanel } from '../../ui/DetailPanel';
 import { focusRowLink } from '../../ui/focus-row-link';
 import { ListState } from '../../ui/ListState';
 import { Select } from '../../ui/Select';
+import { TextField } from '../../ui/TextField';
 import { showToast } from '../../ui/Toast';
 import { useRetained } from '../../ui/use-retained';
 import {
@@ -29,7 +30,8 @@ import { useJudgeChoice, useRunJudges } from './EvalRunJudge';
 import { BulkExamplesDialog } from './BulkExamplesDialog';
 import { EvalSetDialog } from './EvalSetDialog';
 import { ExampleDialog } from './ExampleDialog';
-import { EXAMPLE_SORTS, pageCount, pageOf, sortExamples, type ExampleSort } from './example-list';
+import { EXAMPLE_LEVELS, EXAMPLE_SORTS, filterExamples, pageCount, pageOf, sortExamples, type ExampleFilters, type ExampleSort } from './example-list';
+import { bulkDeleteExamples } from './examples-workspace-api';
 import { exampleSummary } from './prompt-form';
 import { RevealExampleDialog } from './RevealExampleDialog';
 import { useAiFormat } from './useAiFormat';
@@ -43,6 +45,8 @@ const WORKING_SET = 'working';
 
 /** Why "Chốt phiên bản" was refused (422 `eval-set-incomplete`): which examples lack an expected answer, and whether no example is held-out. */
 type Incomplete = { missing: ReadonlySet<string>; noHeldOut: boolean };
+type ExampleListView = ExampleFilters & { op: AiOperation; sort: ExampleSort; page: number; selected: Set<string> };
+type BulkDeletion = { op: AiOperation; ids: string[]; key: string; dev: number; heldOut: number };
 
 /**
  * A/83 `/ai/eval?op=` (admin only): the example set of one operation (at most 1000) and its runs. `new` and `bulk` open the add dialogs over the
@@ -76,7 +80,15 @@ export function AiEvalPage() {
   const [pick, setPick] = useState<{ op: AiOperation; id: string } | null>(null);
   const [problem, setProblem] = useState<ErrorDetails | null>(null);
   // The list's order and page; another operation starts again on page 1 (the order is kept).
-  const [listView, setListView] = useState<{ op: AiOperation; sort: ExampleSort; page: number }>({ op, sort: 'oldest', page: 1 });
+  const [listView, setListView] = useState<ExampleListView>({ op, sort: 'oldest', page: 1, search: '', level: 'all', split: 'all', selected: new Set() });
+  const [bulkDeletion, setBulkDeletion] = useState<BulkDeletion | null>(null);
+  const [bulkError, setBulkError] = useState<ErrorDetails | null>(null);
+  // Reset in render so browser history and the operation picker both clear selection before the next paint.
+  if (listView.op !== op) {
+    setListView({ op, sort: listView.sort, page: 1, search: '', level: 'all', split: 'all', selected: new Set() });
+    setBulkDeletion(null);
+    setBulkError(null);
+  }
 
   const examples = useQuery({ queryKey: aiKeys.examples(op), queryFn: () => listExamples(api, op) });
   const sets = useQuery({ queryKey: aiKeys.sets(op), queryFn: () => listSets(api, op) });
@@ -94,8 +106,9 @@ export function AiEvalPage() {
   const remove = useMutation({
     mutationFn: (example: ExampleRow) => deleteExample(api, example.id),
     onMutate: () => setProblem(null),
-    onSuccess: async () => {
+    onSuccess: async (_, example) => {
       setDeleting(null);
+      setListView((current) => ({ ...current, selected: new Set([...current.selected].filter((id) => id !== example.id)) }));
       await queryClient.invalidateQueries({ queryKey: aiKeys.examples(op) });
       showToast(t('ai.eval.toast.deleted'));
     },
@@ -103,6 +116,24 @@ export function AiEvalPage() {
       setDeleting(null);
       setProblem(errorDetails(e));
     },
+  });
+
+  const bulkRemove = useMutation({
+    mutationFn: (request: BulkDeletion) => bulkDeleteExamples(api, request.op, request.ids, request.key),
+    onMutate: () => setBulkError(null),
+    onSuccess: async (result, request) => {
+      setBulkDeletion((current) => current?.key === request.key ? null : current);
+      const removed = new Set([...result.deleted_ids, ...result.already_missing_ids]);
+      setListView((current) => current.op === request.op
+        ? { ...current, selected: new Set([...current.selected].filter((id) => !removed.has(id))) }
+        : current);
+      showToast(t('ai.eval.bulkDelete.done', { deleted: result.deleted_ids.length, missing: result.already_missing_ids.length }));
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: aiKeys.examples(request.op) }),
+        queryClient.invalidateQueries({ queryKey: ['ai', 'eval-set'] }),
+      ]);
+    },
+    onError: (e) => setBulkError(errorDetails(e)),
   });
 
   const versionRows = sets.data?.items ?? [];
@@ -146,10 +177,19 @@ export function AiEvalPage() {
   const rows = examples.data?.items ?? [];
   const devCount = rows.filter(isDevExample).length;
   const heldOutCount = rows.length - devCount;
-  const sorted = sortExamples(rows, listView.sort);
+  const filtered = filterExamples(rows, listView);
+  const sorted = sortExamples(filtered, listView.sort);
   const pages = pageCount(sorted.length);
   const page = listView.op === op ? Math.min(listView.page, pages) : 1;
-  const goTo = (next: number) => setListView({ op, sort: listView.sort, page: next });
+  const goTo = (next: number) => setListView({ ...listView, page: next });
+  const changeList = (patch: Partial<ExampleFilters> & { sort?: ExampleSort }) => setListView({ ...listView, ...patch, page: 1 });
+  const selected = listView.selected;
+  const confirmBulkDelete = () => {
+    const selectedRows = rows.filter((row) => selected.has(row.id));
+    const heldOut = selectedRows.filter((row) => !isDevExample(row)).length;
+    setBulkError(null);
+    setBulkDeletion({ op, ids: [...selected], key: crypto.randomUUID(), dev: selectedRows.length - heldOut, heldOut });
+  };
   const items = AI_OPERATION_ORDER.map((id) => ({ id, label: `${t(`ai.operations.names.${id}`)} (${id})` }));
   const back = () => void navigate(`/ai/eval${search}`);
 
@@ -166,6 +206,10 @@ export function AiEvalPage() {
           </span>
         );
       },
+    },
+    {
+      key: 'level', header: t('ai.eval.list.levelColumn'), card: 'field',
+      cell: (e) => isDevExample(e) && typeof e.input.level === 'string' ? e.input.level : t('ai.eval.detail.none'),
     },
     {
       key: 'split', header: t('ai.eval.cols.split'), className: 'whitespace-nowrap', card: 'field',
@@ -249,6 +293,11 @@ export function AiEvalPage() {
         state={examples.isPending ? 'loading' : 'ready'}
         emptyText={t('ai.eval.empty')}
         emptyHint={t('ai.eval.emptyHint')}
+        selection={{
+          selected,
+          onChange: (next) => setListView({ ...listView, selected: next }),
+          label: (e) => isDevExample(e) ? t('ai.eval.bulkDelete.selectRow', { summary: exampleSummary(e.input) }) : t('ai.eval.bulkDelete.selectHeldOut', { id: e.id }),
+        }}
       />
     );
   }
@@ -296,17 +345,59 @@ export function AiEvalPage() {
         <h2 id="eval-examples" className="text-lg font-bold text-ink">{t('ai.eval.examples', { count: rows.length })}</h2>
         <p className="text-ui text-muted">{t('ai.eval.examplesHint')}</p>
         {examples.data && <p className="text-ui font-medium text-ink">{t('ai.eval.counts', { dev: devCount, heldOut: heldOutCount })}</p>}
-        {rows.length > 1 && (
-          <div className="w-full max-w-xs">
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <TextField
+            label={t('ai.eval.list.search')}
+            placeholder={t('ai.eval.list.searchPlaceholder')}
+            value={listView.search}
+            onChange={(search) => changeList({ search })}
+          />
+          <Select
+            label={t('ai.eval.list.splitFilter')}
+            value={listView.split}
+            items={[
+              { id: 'all', label: t('ai.eval.list.allSplits') },
+              { id: 'dev', label: t('ai.eval.split.dev') },
+              { id: 'held_out', label: t('ai.eval.split.heldOut') },
+            ]}
+            onChange={(split) => changeList({ split: split as ExampleFilters['split'] })}
+          />
+          <Select
+            label={t('ai.eval.list.level')}
+            value={listView.level}
+            items={[{ id: 'all', label: t('ai.eval.list.allLevels') }, ...EXAMPLE_LEVELS.map((id) => ({ id, label: id }))]}
+            onChange={(level) => changeList({ level })}
+          />
+          <div>
             <Select
               id="eval-examples-sort"
               label={t('ai.eval.list.sort')}
               items={EXAMPLE_SORTS.map((id) => ({ id, label: t(`ai.eval.list.sorts.${id}`) }))}
               value={listView.sort}
-              onChange={(sort) => setListView({ op, sort: sort as ExampleSort, page: 1 })}
+              onChange={(sort) => changeList({ sort: sort as ExampleSort })}
             />
           </div>
-        )}
+        </div>
+        <p className="text-xs text-muted">{t('ai.eval.list.filterHint')}</p>
+        <p className="text-ui text-muted">{t('ai.eval.list.filteredCount', { count: filtered.length })}</p>
+        <div className="flex flex-col gap-2 rounded-control bg-primary-soft p-3">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex flex-wrap items-center gap-3">
+              <span role="status" className="text-ui font-semibold text-ink">{t('ai.eval.bulkDelete.selected', { count: selected.size })}</span>
+              <Button variant="ghost" isDisabled={selected.size === 0} onPress={() => setListView({ ...listView, selected: new Set() })}>{t('ai.eval.bulkDelete.clear')}</Button>
+            </div>
+            <Button variant="danger" isDisabled={selected.size === 0 || bulkRemove.isPending} onPress={confirmBulkDelete}>{t('ai.eval.bulkDelete.button', { count: selected.size })}</Button>
+          </div>
+          <p className="text-xs text-muted">{t('ai.eval.bulkDelete.pageHint')}</p>
+          <Button
+            variant="ghost"
+            className="self-start"
+            isDisabled={filtered.length === 0}
+            onPress={() => setListView({ ...listView, selected: new Set([...selected, ...filtered.map((row) => row.id)]) })}
+          >
+            {t('ai.eval.bulkDelete.selectFiltered', { count: filtered.length })}
+          </Button>
+        </div>
         {examplesBody}
         {pages > 1 && (
           <nav aria-label={t('ai.eval.list.pages')} className="flex flex-wrap items-center gap-3">
@@ -413,6 +504,21 @@ export function AiEvalPage() {
         onCancel={() => setFreezing(false)}
       >
         {t('ai.eval.freeze.body', { dev: devCount, heldOut: heldOutCount, version: nextVersion })}
+      </ConfirmDialog>
+      <ConfirmDialog
+        isOpen={bulkDeletion?.op === op}
+        title={t('ai.eval.bulkDelete.title', { count: bulkDeletion?.ids.length ?? 0 })}
+        confirmLabel={t('ai.eval.bulkDelete.confirm', { count: bulkDeletion?.ids.length ?? 0 })}
+        tone="danger"
+        isPending={bulkRemove.isPending}
+        onConfirm={() => bulkDeletion && !bulkRemove.isPending && bulkRemove.mutate(bulkDeletion)}
+        onCancel={() => setBulkDeletion(null)}
+      >
+        <div className="flex flex-col gap-3">
+          <p className="font-semibold">{t('ai.eval.bulkDelete.counts', { dev: bulkDeletion?.dev ?? 0, heldOut: bulkDeletion?.heldOut ?? 0 })}</p>
+          <p>{t('ai.eval.bulkDelete.body')}</p>
+          {bulkError && <Banner variant="error" code={bulkError.code}>{bulkError.message}</Banner>}
+        </div>
       </ConfirmDialog>
       <ConfirmDialog
         isOpen={deleting !== null}

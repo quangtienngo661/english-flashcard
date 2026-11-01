@@ -503,13 +503,32 @@
       "heldOutHidden": "Held-out example: content hidden",
       "list": {
         "sort": "Sort by",
-        "sorts": { "oldest": "Oldest first", "newest": "Newest first", "az": "A → Z", "za": "Z → A", "devFirst": "Dev first", "heldOutFirst": "Held-out first" },
+        "sorts": {
+          "oldest": "Oldest first",
+          "newest": "Newest first",
+          "az": "A → Z",
+          "za": "Z → A",
+          "devFirst": "Dev first",
+          "heldOutFirst": "Held-out first"
+        },
         "pages": "Example list pages",
         "page": "Page {page} of {pages}",
         "previous": "Previous page",
-        "next": "Next page"
+        "next": "Next page",
+        "search": "Search dev examples",
+        "searchPlaceholder": "Word or meaning…",
+        "splitFilter": "Split",
+        "allSplits": "Dev & held-out",
+        "level": "Dev level",
+        "allLevels": "All levels",
+        "filterHint": "Word and level filters search dev only. Held-out content stays hidden.",
+        "filteredCount": "{count} filtered results",
+        "levelColumn": "Level"
       },
-      "split": { "dev": "dev", "heldOut": "held-out" },
+      "split": {
+        "dev": "dev",
+        "heldOut": "held-out"
+      },
       "reveal": {
         "button": "Open held-out example",
         "title": "Open this held-out example?",
@@ -540,7 +559,12 @@
         "revealed": "{count, plural, one {# held-out example was} other {# held-out examples were}} seen",
         "deleted": "Deleted from the set being edited",
         "seen": "Seen",
-        "cols": { "version": "Version", "frozenAt": "Frozen at", "counts": "Examples", "seen": "Held-out seen" }
+        "cols": {
+          "version": "Version",
+          "frozenAt": "Frozen at",
+          "counts": "Examples",
+          "seen": "Held-out seen"
+        }
       },
       "add": "Add example",
       "bulk": {
@@ -719,7 +743,10 @@
           "skipped": "Skipped",
           "notApplicable": "Not applicable"
         },
-        "expectedResult": { "pass": "Pass", "fail": "Fail" },
+        "expectedResult": {
+          "pass": "Pass",
+          "fail": "Fail"
+        },
         "judge": {
           "title": "Judge",
           "pass": "{name} revision {revision} · {status} · {judged}/{total} · {cost}",
@@ -773,8 +800,18 @@
         "option": "{time} · {model}",
         "workingSet": "A run on the set being edited cannot be compared.",
         "noOther": "No other run on this version to compare with yet.",
-        "cols": { "criterion": "Criterion", "devBefore": "Dev (before)", "devNow": "Dev (now)", "heldOutBefore": "Held-out (before)", "heldOutNow": "Held-out (now)" },
-        "rows": { "shape": "Shape", "rule": "Rules", "expected": "Expected" },
+        "cols": {
+          "criterion": "Criterion",
+          "devBefore": "Dev (before)",
+          "devNow": "Dev (now)",
+          "heldOutBefore": "Held-out (before)",
+          "heldOutNow": "Held-out (now)"
+        },
+        "rows": {
+          "shape": "Shape",
+          "rule": "Rules",
+          "expected": "Expected"
+        },
         "devRegressions": "Dev examples that passed before and fail now ({count})",
         "heldOutRegressions": "Held-out: {count, plural, one {# example} other {# examples}} passed before and fail now",
         "judgeRow": "Judge {name} revision {revision} · {criterion}",
@@ -783,7 +820,27 @@
         "judgeRunning": "Scoring. The comparison updates when it is done.",
         "judgeStopped": "The scoring pass stopped: {error}",
         "noRegressions": "No example passed before and fails now.",
-        "criteria": { "shape": "shape", "rule": "rules", "expected": "expected" }
+        "criteria": {
+          "shape": "shape",
+          "rule": "rules",
+          "expected": "expected"
+        }
+      },
+      "bulkDelete": {
+        "selected": "{count} examples selected",
+        "clear": "Clear selection",
+        "selectFiltered": "Select all {count} filtered results",
+        "pageHint": "The table header checkbox selects this page only. Selections persist across pages and filters.",
+        "selectRow": "Select example {summary}",
+        "selectHeldOut": "Select held-out example {id}",
+        "button": "Delete selected ({count})",
+        "title": "Delete {count} selected examples?",
+        "counts": "{dev} dev · {heldOut} held-out",
+        "body": "Remove from the working set. Frozen versions and previous eval results are preserved. This cannot be undone.",
+        "confirm": "Delete {count} examples",
+        "done": "Deleted {deleted} examples; {missing} examples were already missing.",
+        "retry": "Retry deleting {count} examples",
+        "retryHint": "The result could not be confirmed. Retry the same request to retrieve its saved result."
       }
     },
     "judges": {
@@ -963,11 +1020,29 @@
     },
     "costs": {
       "note": "Costs are estimated from token counts and the prices entered.",
-      "filters": { "from": "From", "to": "To", "groupBy": "Group by", "apply": "Show" },
-      "groups": { "day": "Day", "operation": "Operation", "model": "Model", "purpose": "Purpose", "outcome": "Outcome" },
+      "filters": {
+        "from": "From",
+        "to": "To",
+        "groupBy": "Group by",
+        "apply": "Show"
+      },
+      "groups": {
+        "day": "Day",
+        "operation": "Operation",
+        "model": "Model",
+        "purpose": "Purpose",
+        "outcome": "Outcome"
+      },
       "cols": {
-        "group": "Group", "calls": "Calls", "input": "Input tokens", "cached": "Cached tokens", "output": "Output tokens",
-        "reasoning": "Reasoning tokens", "usd": "Cost US$", "vnd": "Cost ₫", "unknown": "Calls without a price"
+        "group": "Group",
+        "calls": "Calls",
+        "input": "Input tokens",
+        "cached": "Cached tokens",
+        "output": "Output tokens",
+        "reasoning": "Reasoning tokens",
+        "usd": "Cost US$",
+        "vnd": "Cost ₫",
+        "unknown": "Calls without a price"
       },
       "total": "Total",
       "empty": "No calls in this date range.",
@@ -975,16 +1050,91 @@
         "required": "Pick a date.",
         "fromAfterTo": "From must be on or before To.",
         "tooLong": "The range is at most 366 days."
+      },
+      "batches": {
+        "tabsLabel": "Cost view",
+        "tab": "By batch",
+        "aggregate": "Existing aggregate report",
+        "note": "Each row is one admin run. Tokens and costs include every call, including retries. Learner usage remains in the aggregate report.",
+        "partial": "Partial · batch has not ended",
+        "unknown": "Price incomplete",
+        "knownSubtotal": "Known subtotal: {cost} · {count} calls without a price.",
+        "all": "All",
+        "operation": "Operation",
+        "kind": "Batch kind",
+        "status": "Status",
+        "empty": "No batches in this range.",
+        "open": "Batch details {id}",
+        "title": "Batch details",
+        "kinds": {
+          "test": "Quick test",
+          "eval": "Eval",
+          "judge": "Judge"
+        },
+        "statuses": {
+          "queued": "Queued",
+          "running": "Running",
+          "finished": "Finished",
+          "failed": "Failed",
+          "cancelled": "Cancelled"
+        },
+        "cols": {
+          "batch": "Batch / run",
+          "model": "Model & configuration",
+          "progress": "Progress",
+          "tokens": "Input / output tokens",
+          "cost": "Cost USD"
+        },
+        "progress": "{done}/{total} examples",
+        "calls": "{calls} calls · {retries} retries, included in totals",
+        "extraTokens": "Cached: {cached} · Reasoning: {reasoning}",
+        "fingerprint": "Fingerprint",
+        "saved": "Saved configuration snapshot",
+        "temporary": "Temporary run · draft not saved",
+        "sourceUnknown": "Snapshot source unavailable",
+        "config": "Configuration {id} · v{version}",
+        "noConfig": "No linked configuration",
+        "snapshotNote": "The snapshot keeps the content and settings used for this run. Later draft edits do not change this run.",
+        "snapshot": "Prompt & settings snapshot",
+        "noSnapshot": "This legacy batch has no snapshot.",
+        "startedBy": "Started by",
+        "createdAt": "Created",
+        "startedAt": "Started",
+        "finishedAt": "Finished",
+        "evalSource": "Open eval results",
+        "judgeSource": "Open judge pass",
+        "parent": "Open parent batch",
+        "draft": "Open source configuration",
+        "outputs": "Quick test results",
+        "output": "Output",
+        "expires": "Output retained until {date}",
+        "expired": "Output expired or was not retained.",
+        "heldOut": "Held-out content is hidden.",
+        "resultsElsewhere": "See results at the eval or judge source. This page does not display held-out inputs or outputs.",
+        "notFound": "Batch not found.",
+        "invalidId": "Invalid batch ID."
       }
     },
     "calls": {
-      "search": { "label": "Operation id (operation_id)", "submit": "Search", "placeholder": "Paste the id from an error report or a log" },
+      "search": {
+        "label": "Operation id (operation_id)",
+        "submit": "Search",
+        "placeholder": "Paste the id from an error report or a log"
+      },
       "hint": "Enter an operation id to see its calls.",
       "empty": "No calls with this id.",
       "forId": "Operation id: {id}",
       "cols": {
-        "attempt": "Attempt", "purpose": "Purpose", "operation": "Operation", "model": "Model", "outcome": "Outcome", "http": "HTTP",
-        "tokens": "Tokens", "cost": "Cost", "time": "Time", "content": "Content"
+        "attempt": "Attempt",
+        "purpose": "Purpose",
+        "operation": "Operation",
+        "model": "Model",
+        "outcome": "Outcome",
+        "http": "HTTP",
+        "tokens": "Tokens",
+        "cost": "Cost",
+        "time": "Time",
+        "content": "Content"
       },
       "tokensInOut": "{input} in · {output} out",
       "tokensExtra": "cache {cached} · reasoning {reasoning}",
@@ -996,7 +1146,65 @@
       "hiddenContent": "Content hidden",
       "view": "View",
       "viewFor": "View the content of attempt {attempt}",
-      "content": { "title": "Call content", "request": "Request", "response": "Response" }
+      "content": {
+        "title": "Call content",
+        "request": "Request",
+        "response": "Response"
+      }
+    },
+    "workspace": {
+      "intro": "Create experiments, compare runs, then choose a config to publish.",
+      "pages": "Config pages",
+      "drafts": "Drafts",
+      "history": "History",
+      "live": "Live config",
+      "expandLive": "Expand live config",
+      "collapseLive": "Collapse live config",
+      "liveNote": "This config serves learners. Draft and temporary runs do not change it.",
+      "empty": "No drafts yet. Create one from the live config to start.",
+      "name": "Draft name",
+      "unnamed": "Draft #{number}",
+      "version": "Save {version}",
+      "batch": "View batch",
+      "unknownCost": "Price incomplete",
+      "actions": "Actions for draft #{number}",
+      "menu": {
+        "edit": "Edit draft",
+        "test": "Quick test",
+        "eval": "Run eval",
+        "clone": "Clone",
+        "publish": "Publish",
+        "delete": "Delete draft"
+      },
+      "revisions": "Draft revisions",
+      "legacy": "Legacy prompt history",
+      "viewRevisions": "View revisions",
+      "emptyRevisions": "No revisions yet.",
+      "back": "Draft list",
+      "temporaryNote": "Run all unsaved content, including model and settings. Does not save the draft.",
+      "search": "Search dev examples",
+      "level": "Level",
+      "allLevels": "All levels",
+      "chosen": "Selected {count}/5",
+      "snapshot": "Run snapshot",
+      "savedTarget": "Saved draft",
+      "temporaryTarget": "Unsaved form",
+      "liveTarget": "Live config",
+      "target": "Run with",
+      "runSnapshot": "Content and model are frozen at the time of the run.",
+      "olderRuns": "Load older runs",
+      "cost": "Cost USD",
+      "model": "Model",
+      "noSelection": "No selection: the server uses up to 5 dev examples or few-shot examples.",
+      "noMatches": "No matching dev examples.",
+      "historyTabs": "History types",
+      "revisionTitle": "Draft · save {version}",
+      "savedContent": "Saved content",
+      "checkAgain": "Recheck",
+      "gone": "This draft was deleted or published. Return to the list to choose another draft.",
+      "clearSelection": "Clear selection",
+      "pickDev": "Choose dev examples",
+      "promptHistory": "Prompt history"
     }
   },
   "entitlements": {
@@ -1025,7 +1233,10 @@
       "status": "Status",
       "actions": "Actions"
     },
-    "kinds": { "plan": "Pro plan", "limits": "Custom numbers" },
+    "kinds": {
+      "plan": "Pro plan",
+      "limits": "Custom numbers"
+    },
     "limitLines": {
       "practice_sessions_per_day": "{n} practice sessions a day",
       "ai_practice_per_cycle": "{n} AI question uses a month",
@@ -1205,7 +1416,11 @@
       "updatedBy": "Last edited by",
       "actions": "Actions"
     },
-    "appliesTo": { "ai": "AI questions", "non_ai": "Regular questions", "all": "Both" },
+    "appliesTo": {
+      "ai": "AI questions",
+      "non_ai": "Regular questions",
+      "all": "Both"
+    },
     "yes": "Yes",
     "no": "No",
     "edit": "Edit",
@@ -1252,7 +1467,10 @@
       "fixed": "Fixed",
       "confirmed": "Error confirmed"
     },
-    "sources": { "rule": "Rule question", "ai": "AI question" },
+    "sources": {
+      "rule": "Rule question",
+      "ai": "AI question"
+    },
     "types": {
       "mcq_definition": "Multiple choice",
       "true_false_definition": "True / False",
@@ -1343,11 +1561,36 @@
     "search": "Search by email, family or given name (2+ characters)",
     "searchHint": "Not case-sensitive; accents matter.",
     "searchShort": "Type at least 2 characters",
-    "filters": { "status": "Status", "all": "All", "active": "Active", "locked": "Locked", "deleting": "Deleting" },
-    "cols": { "email": "Email", "name": "Name", "role": "Role", "verified": "Email verified", "status": "Status", "created": "Created", "lastSeen": "Last seen" },
-    "roles": { "admin": "admin", "editor": "editor", "learner": "learner" },
-    "statuses": { "active": "Active", "locked": "Locked", "deleting": "Deleting" },
-    "verified": { "yes": "Verified", "no": "Not verified" },
+    "filters": {
+      "status": "Status",
+      "all": "All",
+      "active": "Active",
+      "locked": "Locked",
+      "deleting": "Deleting"
+    },
+    "cols": {
+      "email": "Email",
+      "name": "Name",
+      "role": "Role",
+      "verified": "Email verified",
+      "status": "Status",
+      "created": "Created",
+      "lastSeen": "Last seen"
+    },
+    "roles": {
+      "admin": "admin",
+      "editor": "editor",
+      "learner": "learner"
+    },
+    "statuses": {
+      "active": "Active",
+      "locked": "Locked",
+      "deleting": "Deleting"
+    },
+    "verified": {
+      "yes": "Verified",
+      "no": "Not verified"
+    },
     "footer": "Newest first · 20 people per page",
     "empty": "No users yet.",
     "emptySearch": "Nobody matches “{q}”. Try searching by email.",
@@ -1671,7 +1914,11 @@
     },
     "reportLink": "View report",
     "selfResolved": "Resolved their own report",
-    "refunded": { "true": "Given back", "false": "Not given back", "null": "Retrying" },
+    "refunded": {
+      "true": "Given back",
+      "false": "Not given back",
+      "null": "Retrying"
+    },
     "empty": "No confirmed errors in this range yet.",
     "note": "A unit that was given back cannot be taken back."
   },

@@ -21,9 +21,10 @@ const stored = (over: Partial<Row> = {}): Row => ({
   split: 'dev', expected: FORMS, source: 'manual', sourceRef: null, revealedAt: null, ...over,
 });
 
-type Where = { operation?: string; split?: string };
+type Where = { operation?: string; split?: string; id?: string | { in: string[] } };
 const matches = (row: Row, where: Where) => (where.operation === undefined || row.operation === where.operation)
-  && (where.split === undefined || row.split === where.split);
+  && (where.split === undefined || row.split === where.split)
+  && (where.id === undefined || (typeof where.id === 'string' ? row.id === where.id : where.id.in.includes(row.id)));
 
 type SetItemRow = { exampleId: string; split: string; input: unknown; expected: unknown; revealedAt: Date | null; set: { operation: string; version: number } };
 
@@ -50,10 +51,10 @@ function fakePrisma() {
         Object.assign(row, data);
         return row;
       }),
-      deleteMany: vi.fn(async ({ where }: { where: { id: string } }) => {
-        const index = rows.findIndex((row) => row.id === where.id);
-        if (index >= 0) rows.splice(index, 1);
-        return { count: index >= 0 ? 1 : 0 };
+      deleteMany: vi.fn(async ({ where }: { where: Where }) => {
+        const removed = rows.filter((row) => matches(row, where));
+        for (const row of removed) rows.splice(rows.indexOf(row), 1);
+        return { count: removed.length };
       }),
       updateMany: vi.fn(async ({ where, data }: { where: { id: string; split: string }; data: Partial<Row> }) => {
         const row = rows.find((r) => r.id === where.id && r.split === where.split);
@@ -73,6 +74,7 @@ function fakePrisma() {
         return { count: hit.length };
       }),
     },
+    $queryRaw: vi.fn(async (query: { values: string[] }) => rows.filter((row) => query.values.includes(row.id)).map(({ id, operation }) => ({ id, operation }))),
     $transaction: vi.fn(async (work: (client: unknown) => Promise<unknown>) => work(prisma)),
   };
   return prisma;
@@ -283,6 +285,69 @@ describe('EvalExamplesService', () => {
     seed({ id: 'e1' });
     await service.remove('e1');
     expect(prisma.rows).toHaveLength(0);
+  });
+
+  describe('bulk delete', () => {
+    it('dedupes and normalizes ids, deletes dev and held-out, allows missing, and leaves frozen snapshots intact', async () => {
+      const [dev, held, missing, keep] = [randomUUID(), randomUUID(), randomUUID(), randomUUID()];
+      seed({ id: dev }, { id: held, split: 'held_out' }, { id: keep });
+      prisma.setItems.push({ exampleId: held, split: 'held_out', input: INPUT, expected: FORMS, revealedAt: null, set: { operation: 'generate_cloze', version: 1 } });
+      const frozen = structuredClone(prisma.setItems);
+      const result = await service.removeMany({ operation: 'generate_cloze', ids: [dev.toUpperCase(), held, dev, missing] });
+      expect(result).toEqual({ deleted_ids: [dev, held], already_missing_ids: [missing] });
+      expect(prisma.rows.map((row) => row.id)).toEqual([keep]);
+      expect(prisma.setItems).toEqual(frozen);
+      expect(prisma.aiEvalSetItem.updateMany).not.toHaveBeenCalled();
+      expect(await service.removeMany({ operation: 'generate_cloze', ids: [dev, held] }))
+        .toEqual({ deleted_ids: [], already_missing_ids: [dev, held] });
+    });
+
+    it('rejects the entire request if any existing example belongs to another operation', async () => {
+      const [own, other] = [randomUUID(), randomUUID()];
+      seed({ id: own }, { id: other, operation: 'lookup_word' });
+      expect(await problemOf(service.removeMany({ operation: 'generate_cloze', ids: [own, other] })))
+        .toMatchObject({ status: 400, type: 'validation-failed' });
+      expect(prisma.rows.map((row) => row.id)).toEqual([own, other]);
+      expect(prisma.aiEvalExample.deleteMany).not.toHaveBeenCalled();
+    });
+
+    it('checks and deletes under one transaction, locking all requested existing rows in stable id order', async () => {
+      const id = randomUUID();
+      seed({ id });
+      let inside = false;
+      prisma.$transaction.mockImplementationOnce(async (work) => {
+        inside = true;
+        try { return await work(prisma); } finally { inside = false; }
+      });
+      prisma.$queryRaw.mockImplementationOnce(async (query) => {
+        expect(inside).toBe(true);
+        expect(query).toMatchObject({ values: [id] });
+        expect((query as unknown as { sql: string }).sql).toMatch(/SELECT id, operation[\s\S]*ai_eval_examples[\s\S]*ORDER BY id[\s\S]*FOR UPDATE/);
+        return [{ id, operation: 'generate_cloze' }];
+      });
+      const del = prisma.aiEvalExample.deleteMany.getMockImplementation()!;
+      prisma.aiEvalExample.deleteMany.mockImplementationOnce(async (arg) => {
+        expect(inside).toBe(true);
+        return del(arg);
+      });
+      expect(await service.removeMany({ operation: 'generate_cloze', ids: [id] })).toEqual({ deleted_ids: [id], already_missing_ids: [] });
+      expect(prisma.$transaction).toHaveBeenCalledTimes(1);
+      expect(prisma.$queryRaw).toHaveBeenCalledTimes(1);
+    });
+
+    it.each([{ ids: [] as string[] }, { ids: ['bad'] }, { ids: Array.from({ length: 1001 }, () => randomUUID()) }])('refuses invalid ids before touching storage', async ({ ids }) => {
+      expect(await problemOf(service.removeMany({ operation: 'generate_cloze', ids }))).toMatchObject({ status: 400 });
+      expect(prisma.$transaction).not.toHaveBeenCalled();
+    });
+
+    it('accepts 1000 ids and propagates a delete failure rather than reporting success', async () => {
+      const ids = Array.from({ length: 1000 }, () => randomUUID());
+      expect(await service.removeMany({ operation: 'generate_cloze', ids })).toEqual({ deleted_ids: [], already_missing_ids: ids });
+      seed({ id: ids[0] });
+      prisma.aiEvalExample.deleteMany.mockRejectedValueOnce(new Error('database unavailable'));
+      await expect(service.removeMany({ operation: 'generate_cloze', ids })).rejects.toThrow('database unavailable');
+      expect(prisma.rows).toHaveLength(1);
+    });
   });
 
   describe('createMany', () => {

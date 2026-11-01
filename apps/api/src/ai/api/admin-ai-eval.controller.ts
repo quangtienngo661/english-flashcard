@@ -7,7 +7,7 @@ import type { RequestWithUser } from '../../common/request-user/request-user.js'
 import { RequirePermission } from '../../identity/staff/require-permission.decorator.js';
 import { AI_POS_UNSET, AI_VALID_POS, WORD_MAX } from '../ai.constants.js';
 import { AI_OPERATIONS } from '../ai.types.js';
-import { bulkExamplesSchema, createExampleSchema, EvalExamplesService, patchExampleSchema } from '../eval/eval-examples.service.js';
+import { bulkDeleteExamplesSchema, bulkExamplesSchema, createExampleSchema, EvalExamplesService, patchExampleSchema } from '../eval/eval-examples.service.js';
 import { createRunSchema, EvalRunsService } from '../eval/eval-runs.service.js';
 import { EvalSetsService } from '../eval/eval-sets.service.js';
 import { createPassSchema, JudgePassesService } from '../judge/judge-passes.service.js';
@@ -65,6 +65,15 @@ export class AdminAiEvalController {
   @RateLimit('user.write')
   createExamples(@Body({ schema: bulkExamplesSchema }) body: z.infer<typeof bulkExamplesSchema>, @Req() req: RequestWithUser) {
     return this.examples.createMany(req.user!.userId, body);
+  }
+
+  @Post('examples/bulk-delete')
+  @HttpCode(200)
+  @RateLimit('user.write')
+  @Idempotent()
+  @UseInterceptors(IdempotencyInterceptor)
+  removeExamples(@Body({ schema: bulkDeleteExamplesSchema }) body: z.infer<typeof bulkDeleteExamplesSchema>) {
+    return this.examples.removeMany(body);
   }
 
   @Patch('examples/:id')
