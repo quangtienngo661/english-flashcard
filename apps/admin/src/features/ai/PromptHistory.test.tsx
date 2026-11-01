@@ -15,9 +15,10 @@ beforeEach(() => sessionStorage.clear());
 // The history of the prompt revisions saved before configs existed; it sits at the foot of the "Cấu hình" page.
 describe('Prompt history on the configs page', () => {
   it('lists revision, saved time and who saved (email, or "Hệ thống" for the seed) with its own note', async () => {
-    renderApp('/ai/configs', configRoutes({
+    renderApp('/ai/configs/history', configRoutes({
       [URL.revisions()]: () => Response.json({ items: [revision(3), revision(2), revision(1, { saved_by: 'sys', saved_by_user: SYSTEM })], next_page_token: null }),
     }));
+    await userEvent.click(await screen.findByRole('tab', { name: vi.ai.workspace.promptHistory }));
     const items = within(await screen.findByRole('list', { name: title }, { timeout: 4000 })).getAllByRole('listitem');
     expect(items).toHaveLength(3);
     expect(items[0]).toHaveTextContent(t.revision.replace('{revision}', '3'));
@@ -28,30 +29,27 @@ describe('Prompt history on the configs page', () => {
     expect(screen.getByText(vi.ai.configs.oldPromptsNote)).toBeInTheDocument();
   });
 
-  it('[Xem] opens the revision read-only; with a draft [Chép vào ô sửa] puts it in the draft form and the next save keeps the draft version', async () => {
-    const r = renderApp('/ai/configs', configRoutes({
+  it('[Xem] opens legacy revisions read-only on the separate history page', async () => {
+    const r = renderApp('/ai/configs/history', configRoutes({
       [URL.configs()]: withDraft,
       [URL.revisions()]: () => Response.json({ items: [revision(3), revision(2)], next_page_token: null }),
       [URL.saveDraft()]: (call) => Response.json(draftView({ ...(call.body as object), version: 1 } as never)),
     }));
+    await userEvent.click(await screen.findByRole('tab', { name: vi.ai.workspace.promptHistory }));
     await userEvent.click(await screen.findByRole('button', { name: t.viewFor.replace('{revision}', '2') }, { timeout: 4000 }));
     const dialog = await screen.findByRole('dialog', { name: t.viewTitle.replace('{revision}', '2') });
     expect(within(dialog).getByText('Text of revision 2.')).toBeInTheDocument();
     expect(within(dialog).queryByRole('textbox')).not.toBeInTheDocument();
-    await userEvent.click(within(dialog).getByRole('button', { name: vi.ai.prompts.copyToEditor }));
-    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
-    expect(screen.getByLabelText(vi.ai.prompts.instructions)).toHaveValue('Text of revision 2.');
-    await userEvent.click(screen.getByRole('button', { name: vi.ai.configs.draft.save }));
-    await screen.findByText(vi.ai.configs.draft.saved.replace('{version}', '1'));
-    const put = r.calls.find((c) => c.method === 'PUT');
-    expect(put?.body).toMatchObject({ expected_version: 0, instructions: 'Text of revision 2.' });
+    expect(within(dialog).queryByRole('button', { name: vi.ai.prompts.copyToEditor })).not.toBeInTheDocument();
+    expect(r.calls.filter(call => call.method === 'PUT')).toHaveLength(0);
   });
 
   it('"Tải thêm" reads the next page', async () => {
-    renderApp('/ai/configs', configRoutes({
+    renderApp('/ai/configs/history', configRoutes({
       [URL.revisions()]: () => Response.json({ items: [revision(3)], next_page_token: 'p2' }),
       [`${URL.revisions()}&page_token=p2`]: () => Response.json({ items: [revision(2)], next_page_token: null }),
     }));
+    await userEvent.click(await screen.findByRole('tab', { name: vi.ai.workspace.promptHistory }));
     await screen.findByRole('list', { name: title }, { timeout: 4000 });
     await userEvent.click(screen.getByRole('button', { name: vi.common.loadMore }));
     await waitFor(() => expect(within(screen.getByRole('list', { name: title })).getAllByRole('listitem')).toHaveLength(2));

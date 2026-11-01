@@ -14,6 +14,7 @@ import { Select } from '../../../ui/Select';
 import { TextField } from '../../../ui/TextField';
 import { aiKeys, getRun, getTestQuota, isDevExample, listExamples, type AiModel, type AiOperation, type ConfigContent, type ConfigView, type EvalSet, type TestResult } from '../ai-api';
 import { StartRunFailure, useStartRun } from '../EvalRunPanel';
+import { useAiFormat } from '../useAiFormat';
 import { RevisionContent } from '../PromptHistory';
 import { toDraftBody, type ConfigForm } from './config-form';
 import { testDraftById } from './workspace-api';
@@ -40,6 +41,7 @@ export function WorkspaceRunner({ op, draft, form, models, newestSet, isDisabled
   const api = useApi();
   const client = useQueryClient();
   const errorDetails = useErrorDetails();
+  const format = useAiFormat();
   const examples = useQuery({ queryKey: aiKeys.examples(op), queryFn: () => listExamples(api, op) });
   const quota = useQuery({ queryKey: aiKeys.testQuota(), queryFn: () => getTestQuota(api) });
   const [search, setSearch] = useState('');
@@ -70,7 +72,12 @@ export function WorkspaceRunner({ op, draft, form, models, newestSet, isDisabled
       setQuick({ result, content: captured, model });
     } catch (e) {
       if (e instanceof ApiError && e.problem.slug === 'model-not-set') setProblem({ message: t('ai.configs.draft.noModelToTest'), code: null });
-      else setProblem(errorDetails(e));
+      else if (e instanceof ApiError && e.problem.status === 429) {
+        const at = e.retryAfterSeconds !== null ? new Date(Date.now() + e.retryAfterSeconds * 1000) : quota.data ? new Date(quota.data.resets_at) : null;
+        setProblem(at ? { message: t('ai.prompts.test.rateLimited', { limit: quota.data?.limit ?? 20, time: format.time(at) }), code: null } : errorDetails(e));
+      } else if (e instanceof ApiError && e.problem.slug === 'validation-failed' && e.problem.violations?.includes('examples: at least one example is needed')) {
+        setProblem({ message: t('ai.prompts.test.needExample'), code: null });
+      } else setProblem(errorDetails(e));
     } finally {
       busy.current = false; setPending(false); void client.invalidateQueries({ queryKey: aiKeys.testQuota() });
     }
@@ -113,6 +120,8 @@ export function WorkspaceRunner({ op, draft, form, models, newestSet, isDisabled
       <Button className="self-start" variant="secondary" onPress={() => void test()} isPending={pending} isDisabled={isDisabled || !content}>{t('ai.prompts.test.run')}</Button>
       {!content && <p role="alert" className="text-ui text-danger">{t('ai.prompts.errors.outputJson')}</p>}
       {quota.data && <p className="text-xs text-muted">{t('ai.prompts.test.quota', { remaining: quota.data.remaining, limit: quota.data.limit })}</p>}
+      {quota.isError && <p className="text-ui text-danger">{t('ai.prompts.test.quotaFailed')}</p>}
+      {examples.isError && <p className="text-ui text-danger">{t('ai.prompts.test.examplesFailed')}</p>}
       {problem && <Banner variant="error" code={problem.code}>{problem.message}</Banner>}
       {quick && <section aria-label={t('ai.workspace.snapshot')} className="flex min-w-0 flex-col gap-3 rounded-inner bg-canvas p-3">
         <h4 className="font-semibold text-ink">{t('ai.workspace.snapshot')} · {quick.model}</h4>
@@ -121,7 +130,7 @@ export function WorkspaceRunner({ op, draft, form, models, newestSet, isDisabled
         <p className="text-ui">{t('ai.workspace.cost')}: {quickRunCost(quick.result) === null ? t('ai.workspace.unknownCost') : `$${quickRunCost(quick.result)}`}</p>
         {quick.result.batch_id && <Link className="text-ui text-primary" to={`/ai/costs?batch=${quick.result.batch_id}`}>{t('ai.workspace.batch')}</Link>}
         <details><summary className="cursor-pointer text-ui text-primary">{t('ai.workspace.snapshot')}</summary><p className="text-xs">{quick.content.model_ref} · {quick.content.effort ?? '—'} · {quick.content.thinking ?? '—'} · {quick.content.max_output_tokens ?? '—'}</p><RevisionContent instructions={quick.content.instructions} examples={quick.content.examples} /></details>
-        {quick.result.items.map((item, i) => <div key={i} className="min-w-0 rounded-inner border-2 border-border p-3"><p className="text-ui">{t(`ai.prompts.test.statuses.${item.status}`)} · {item.cost_usd === null ? t('ai.workspace.unknownCost') : `$${item.cost_usd}`}</p><pre className="whitespace-pre-wrap font-mono text-xs wrap-anywhere">{JSON.stringify(item.input, null, 2)}</pre><pre className="whitespace-pre-wrap font-mono text-xs wrap-anywhere">{item.output ? JSON.stringify(item.output, null, 2) : item.raw_output ?? item.reason ?? '—'}</pre></div>)}
+        {quick.result.items.map((item, i) => <div key={i} role="group" aria-label={t('ai.prompts.test.sample', { n: i + 1 })} className="min-w-0 rounded-inner border-2 border-border p-3"><p className="text-ui font-semibold">{t('ai.prompts.test.sample', { n: i + 1 })}</p><p className="text-ui"><span>{t(`ai.prompts.test.statuses.${item.status}`)}</span> · {item.cost_usd === null ? t('ai.workspace.unknownCost') : `$${item.cost_usd}`}</p>{item.reason && <p className="text-ui text-danger">{item.reason}</p>}<pre className="whitespace-pre-wrap font-mono text-xs wrap-anywhere">{JSON.stringify(item.input, null, 2)}</pre><pre className="whitespace-pre-wrap font-mono text-xs wrap-anywhere">{item.output ? JSON.stringify(item.output, null, 2) : item.raw_output ?? item.reason ?? '—'}</pre></div>)}
       </section>}
     </section>
     <section id="eval" aria-labelledby="workspace-eval" className="flex min-w-0 flex-col gap-3 border-t-2 border-border pt-5">

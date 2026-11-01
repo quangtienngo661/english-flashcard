@@ -9,12 +9,12 @@ import { evalExample, heldOutExample, quota, succeeded } from './prompt-test-sup
 
 const t = vi.ai.prompts.test;
 const runButton = () => screen.getByRole('button', { name: t.run });
-const posts = (calls: { method: string; path: string; body: unknown }[]) => calls.filter((c) => c.method === 'POST' && c.path.endsWith('/draft/test'));
+const posts = (calls: { method: string; path: string; body: unknown }[]) => calls.filter((c) => c.method === 'POST' && c.path.endsWith('/drafts/C4/test'));
 const quotaLine = (remaining: number) => t.quota.replace('{remaining}', String(remaining)).replace('{limit}', '20');
 
 /** The "Chạy thử" panel sits in the draft editor of the configs page: it tests the saved draft. */
 async function openPage(over: Parameters<typeof configRoutes>[0] = {}) {
-  const r = renderApp('/ai/configs', configRoutes({ [URL.configs()]: () => Response.json(configsView({ draft: draftView() })), ...over }));
+  const r = renderApp('/ai/configs/drafts/C4', configRoutes({ [URL.configs()]: () => Response.json(configsView({ draft: draftView() })), ...over }));
   await screen.findByRole('button', { name: t.run }, { timeout: 4000 });
   return r;
 }
@@ -36,13 +36,13 @@ describe('Chạy thử on the configs page (A/82, M2-T6)', () => {
     await userEvent.click(runButton());
     expect(await screen.findByText('They ___ (go) out.', { exact: false })).toBeInTheDocument();
     expect(await screen.findByText(quotaLine(16))).toBeInTheDocument();
-    expect(posts(r.calls)[0]!.body).toEqual({});
+    expect(posts(r.calls)[0]!.body).toMatchObject({ snapshot: { model_ref: 'M1' } });
     expect(r.count('GET', '/v1/admin/ai/test-quota')).toBe(2);
   });
 
   it('§6.4 "Chạy với:": the draft\'s own examples when the example set is empty', async () => {
     await openPage();
-    expect(await screen.findByText(t.withPrompt)).toBeInTheDocument();
+    expect(await screen.findByText(vi.ai.workspace.noSelection)).toBeInTheDocument();
   });
 
   it('§6.4 "Chạy với:" with a set: first five, then the chosen ones; example_ids sent; at most 5 can be chosen', async () => {
@@ -51,12 +51,13 @@ describe('Chạy thử on the configs page (A/82, M2-T6)', () => {
       [URL.examples()]: () => Response.json({ items: set }),
       [URL.testDraft()]: () => Response.json({ items: [succeeded('word-a')] }),
     });
-    expect(await screen.findByText(t.withFirst.replace('{count}', '5'))).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: vi.ai.workspace.pickDev }));
     for (const w of ['a', 'c', 'd', 'e', 'f']) await userEvent.click(screen.getByRole('checkbox', { name: new RegExp(`word-${w}`) }));
-    expect(screen.getByText(t.withSelected.replace('{count}', '5'))).toBeInTheDocument();
+    expect(screen.getAllByText(vi.ai.workspace.chosen.replace('{count}', '5'))[0]).toBeInTheDocument();
     expect(screen.getByRole('checkbox', { name: /word-g/ })).toBeDisabled();
     await userEvent.click(screen.getByRole('checkbox', { name: /word-f/ }));
-    expect(screen.getByText(t.withSelected.replace('{count}', '4'))).toBeInTheDocument();
+    expect(screen.getAllByText(vi.ai.workspace.chosen.replace('{count}', '4'))[0]).toBeInTheDocument();
+    await userEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: vi.common.close }));
     await userEvent.click(runButton());
     await screen.findByText(t.sample.replace('{n}', '1'));
     expect((posts(r.calls)[0]!.body as { example_ids: string[] }).example_ids).toEqual([set[0]!.id, set[2]!.id, set[3]!.id, set[4]!.id]);
@@ -67,19 +68,22 @@ describe('Chạy thử on the configs page (A/82, M2-T6)', () => {
       [URL.examples()]: () => Response.json({ items: [evalExample('00000000-0000-4000-8000-000000000001', 'word-a'), heldOutExample('00000000-0000-4000-8000-000000000002')] }),
       [URL.testDraft()]: () => Response.json({ items: [succeeded('word-a')] }),
     });
-    const group = await screen.findByRole('group', { name: t.pick });
+    await userEvent.click(screen.getByRole('button', { name: vi.ai.workspace.pickDev }));
+    const group = await screen.findByRole('dialog', { name: t.pick });
     expect(within(group).getAllByRole('checkbox')).toHaveLength(1);
     expect(within(group).getByRole('checkbox', { name: /word-a/ })).toBeInTheDocument();
-    expect(await screen.findByText(t.withFirst.replace('{count}', '1'))).toBeInTheDocument();
+    await userEvent.click(within(group).getByRole('button', { name: vi.common.close }));
     await userEvent.click(runButton());
     await screen.findByText(t.sample.replace('{n}', '1'));
-    expect(posts(r.calls)[0]!.body).toEqual({});
+    expect(posts(r.calls)[0]!.body).toMatchObject({ snapshot: { model_ref: 'M1' } });
   });
 
   it('nhóm B M1: a list with nothing but held-out examples reads as an empty set to pick from', async () => {
     await openPage({ [URL.examples()]: () => Response.json({ items: [heldOutExample('00000000-0000-4000-8000-000000000002')] }) });
-    expect(await screen.findByText(t.pickEmpty)).toBeInTheDocument();
-    expect(screen.getByText(t.withPrompt)).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: vi.ai.workspace.pickDev }));
+    expect(await screen.findByText(vi.ai.workspace.noMatches)).toBeInTheDocument();
+    await userEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: vi.common.close }));
+    expect(screen.getByText(vi.ai.workspace.noSelection)).toBeInTheDocument();
   });
 
   it('§6.4: 409 model-not-set → says the draft has no model, with no link (the model box is on the same page)', async () => {
@@ -164,13 +168,13 @@ describe('Chạy thử on the configs page (A/82, M2-T6)', () => {
     expect(await screen.findByText(t.needExample)).toBeInTheDocument();
   });
 
-  it('the sentence under the title says the saved draft runs, and the button follows the page when the draft has unsaved edits', async () => {
+  it('temporary snapshot runs remain enabled for unsaved form content', async () => {
     await openPage();
-    expect(screen.getByText(vi.ai.configs.draft.testNote)).toBeInTheDocument();
+    expect(screen.getByText(vi.ai.workspace.temporaryNote)).toBeInTheDocument();
     const box = screen.getByLabelText(vi.ai.prompts.instructions);
     await userEvent.clear(box);
     await userEvent.click(box);
     await userEvent.paste('Unsaved.');
-    expect(runButton()).toBeDisabled();
+    expect(runButton()).toBeEnabled();
   });
 });

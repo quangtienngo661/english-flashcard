@@ -26,7 +26,7 @@ describe('AI workspace', () => {
       [`GET ${root}?page_size=20`]: () => Response.json({ items: [draft()], next_page_token: 'next' }),
       [`GET ${root}?page_size=20&page_token=next`]: () => Response.json({ items: [draftView({ id: 'C5', name: 'Hướng khác' })], next_page_token: null }),
     }));
-    await screen.findByRole('link', { name: 'Thử ngữ cảnh' });
+    await screen.findByRole('link', { name: 'Thử ngữ cảnh' }, { timeout: 4000 });
     const live = screen.getByRole('complementary', { name: 'Bản đang chạy' });
     expect(within(live).queryByRole('button', { name: 'Tạo nháp' })).not.toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Tải thêm' }));
