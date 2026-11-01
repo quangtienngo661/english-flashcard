@@ -131,7 +131,12 @@ describe('AiBatchesService list and detail', () => {
     expect(first.items).toHaveLength(1);
     expect(first.next_page_token).toEqual(expect.any(String));
     await service.list({ ...query, page_token: first.next_page_token! });
-    expect(prisma.$queryRaw.mock.calls[1]![0].sql).toContain('(b.created_at, b.id) <');
+    const nextPage = prisma.$queryRaw.mock.calls[1]![0];
+    expect(nextPage.sql).toContain('(b.created_at, b.id) <');
+    // Imported timestamps may contain microseconds that are absent from the JS Date in the token.
+    // The query boundary must resolve the immutable cursor row in PostgreSQL, not use that rounded Date.
+    expect(nextPage.sql).toContain('SELECT anchor.created_at FROM ai_batches anchor WHERE anchor.id =');
+    expect(nextPage.values).not.toContainEqual(NOW);
     for (const change of [{ kind: 'eval' }, { status: 'failed' }, { operation: 'lookup_word' }, { to: '2026-11-02' }]) {
       await expect(service.list({ ...query, ...change, page_token: first.next_page_token! } as never)).rejects.toMatchObject({ status: 400 });
     }
