@@ -23,7 +23,7 @@ export function toConfigForm(view: ConfigView, inputFields: string[]): ConfigFor
   };
 }
 
-/** The `PUT …/draft` body, or the positions whose output is not a JSON object (nothing is sent then). An empty limit or note is `null`. */
+/** The `PUT …/drafts/:id` body, or the positions whose output is not a JSON object (nothing is sent then). An empty limit or note is `null`. */
 export function toDraftBody(form: ConfigForm, expectedVersion: number): { ok: true; body: SaveDraftBody } | { ok: false; badOutputs: number[] } {
   const payload = toPayload(form);
   if (!payload.ok) return payload;

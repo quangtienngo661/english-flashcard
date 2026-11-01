@@ -1,11 +1,12 @@
 import { expect, test, type Page } from '@playwright/test';
 import en from '../messages/en.json' with { type: 'json' };
 import vi from '../messages/vi.json' with { type: 'json' };
-import { cfgCheck, cfgConfig, cfgDraft, cfgView } from './support/ai-configs';
+import { cfgCheck, cfgConfig, cfgDraft, cfgView, configReads } from './support/ai-configs';
 import { devExample, evalSet, heldOutExample, runItem, runStats } from './support/ai-eval';
 import { judgeAgreement, judgeOnFake, judgePass, judgeRevision, score, tally } from './support/ai-judges';
 import { REAL_PASS_ID, realEstimate, realItems, realPass, realPreview } from './support/ai-real';
 import { seriousViolations } from './support/axe';
+import { COST_BATCH_ID, costBatchMocks } from './support/ai-costs';
 import { mockApi, problem, signedInAs, type MockHandler, type MockRequest } from './support/mock-api';
 import { contentMocks, SENSE_ID } from './support/content';
 import { settingsMocks } from './support/settings';
@@ -29,6 +30,8 @@ const batch = {
 const job = { id: JOB, status: 'running', filter: { level: 'B1' }, snapshot_count: 1250, not_ready_count: 0, counters: { processed: 480, published: 480 }, created_at: at, started_at: at, finished_at: null };
 const staffRow = { id: 'u9', email: 'new@wordmet.com', email_verified: true, staff_role: null };
 const mocks: Record<string, MockHandler> = {
+  ...configReads(),
+  ...costBatchMocks(),
   'GET /v1/admin/content/uploads': () => ({ json: { items: [{ id: 'b1', status: 'partial', file_name: batch.file_name, row_count: 7799, created_at: at }], next_page_token: null } }),
   'GET /v1/admin/content/uploads/b1': () => ({ json: batch }),
   'GET /v1/admin/content/senses/publish-jobs': () => ({ json: { items: [job], next_page_token: null } }),
@@ -69,6 +72,14 @@ const mocks: Record<string, MockHandler> = {
     draft: cfgDraft(4, { model: { id: 'm1', provider: 'openai', model_id: 'gpt-x' }, note: 'thử lời dặn ngắn hơn' }),
   }) }),
   'GET /v1/admin/ai/configs/generate_cloze/publish-check': () => ({ json: cfgCheck({
+    warnings: [
+      { code: 'rate-drop', criterion: 'rule', before: { passed: 6, counted: 7 }, after: { passed: 1, counted: 3 } },
+      { code: 'dev-regressed', example_ids: ['e1', 'e2'] },
+      { code: 'held-out-failures-up', before: 1, after: 3 },
+    ],
+  }) }),
+  'GET /v1/admin/ai/configs/generate_cloze/drafts/C4': () => ({ json: cfgDraft(4, { model: { id: 'm1', provider: 'openai', model_id: 'gpt-x' }, note: 'thử lời dặn ngắn hơn' }) }),
+  'GET /v1/admin/ai/configs/generate_cloze/drafts/C4/publish-check': () => ({ json: cfgCheck({
     warnings: [
       { code: 'rate-drop', criterion: 'rule', before: { passed: 6, counted: 7 }, after: { passed: 1, counted: 3 } },
       { code: 'dev-regressed', example_ids: ['e1', 'e2'] },
@@ -176,7 +187,7 @@ Object.assign(mocks, {
   'GET /v1/admin/entitlements/ai-usage': () => ({ json: { date: '2026-10-27', used: 812, confirmed: 800, reserved: 12, cap: 1000, alert_percent: 80, alert_reached: false, enabled: true } }),
 });
 
-const pages = ['/uploads', '/uploads/b1', '/uploads/new', '/publish-jobs', `/publish-jobs/${JOB}`, '/sources', '/sources/new', '/export', '/ai/costs', '/ai/costs?group_by=operation', '/ai/calls', '/ai/calls?operation_id=op-1', '/transactions', '/ai/status', '/ai/models', '/ai/models/new', '/ai/models/m1', '/ai/configs', '/ai/eval', '/ai/eval/new', '/ai/eval/runs/aaaaaaaa-0000-4000-8000-000000000001', '/ai/real-questions', `/ai/real-questions?pass=${REAL_PASS_ID}`, '/ai/judges', '/ai/judges/label?run=aaaaaaaa-0000-4000-8000-000000000001&judge=J1', '/settings', '/settings?tab=entitlements', '/words', '/senses', `/senses/${SENSE_ID}`, '/topics', '/reports', `/reports/${RID}`, '/report-reasons', '/report-reasons/new', '/refunds', '/unknown-forms', '/users', `/users/${UID}`, '/entitlements', '/entitlements/new'];
+const pages = ['/uploads', '/uploads/b1', '/uploads/new', '/publish-jobs', `/publish-jobs/${JOB}`, '/sources', '/sources/new', '/export', '/ai/costs', `/ai/costs?batch=${COST_BATCH_ID}`, '/ai/costs?group_by=operation', '/ai/calls', '/ai/calls?operation_id=op-1', '/transactions', '/ai/status', '/ai/models', '/ai/models/new', '/ai/models/m1', '/ai/configs', '/ai/configs/drafts/C4', '/ai/configs/history', '/ai/eval', '/ai/eval/new', '/ai/eval/runs/aaaaaaaa-0000-4000-8000-000000000001', '/ai/real-questions', `/ai/real-questions?pass=${REAL_PASS_ID}`, '/ai/judges', '/ai/judges/label?run=aaaaaaaa-0000-4000-8000-000000000001&judge=J1', '/settings', '/settings?tab=entitlements', '/words', '/senses', `/senses/${SENSE_ID}`, '/topics', '/reports', `/reports/${RID}`, '/report-reasons', '/report-reasons/new', '/refunds', '/unknown-forms', '/users', `/users/${UID}`, '/entitlements', '/entitlements/new'];
 
 for (const [lang, copy] of [['vi', vi], ['en', en]] as const) {
   test.describe(`axe (${lang})`, () => {
@@ -212,6 +223,27 @@ for (const [lang, copy] of [['vi', vi], ['en', en]] as const) {
       await expect(page.getByText(copy.staff.toast.granted.replace('{role}', 'editor').replace('{email}', staffRow.email))).toBeVisible();
       expect(await seriousViolations(page)).toEqual([]);
     });
+
+    test('configs workspace picker and history snapshots', async ({ page }) => {
+      await signedInAs(page, 'admin', mocks);
+      await page.goto('/ai/configs/drafts/C4?op=generate_cloze');
+      await expect(page.getByLabel(copy.ai.prompts.instructions, { exact: true })).toBeVisible();
+      await page.getByRole('button', { name: copy.ai.workspace.pickDev }).click();
+      const picker = page.getByRole('dialog', { name: copy.ai.prompts.test.pick });
+      await expect(picker.getByRole('checkbox')).toHaveCount(1);
+      await picker.getByLabel(copy.ai.workspace.search).fill('bank');
+      await expect(picker.getByRole('checkbox')).toHaveCount(1);
+      expect(await seriousViolations(page)).toEqual([]);
+      await picker.getByRole('button', { name: copy.common.close }).click();
+      await page.getByRole('navigation', { name: copy.ai.workspace.pages }).getByRole('link', { name: copy.ai.workspace.history }).click();
+      await expect(page.getByRole('list', { name: copy.ai.configs.history.title })).toBeVisible();
+      expect(await seriousViolations(page)).toEqual([]);
+      await page.getByRole('tab', { name: copy.ai.workspace.promptHistory }).click();
+      await page.getByText(/Archived experiment/).click();
+      await expect(page.getByText('Archived prompt snapshot', { exact: true })).toBeVisible();
+      await expect(page.getByRole('heading', { name: copy.ai.configs.oldPrompts })).toBeVisible();
+      expect(await seriousViolations(page)).toEqual([]);
+    });
   });
 }
 
@@ -227,13 +259,14 @@ async function waitForContent(page: Page, path: string) {
   else if (path.startsWith('/publish-jobs/')) await expect(page.getByTestId('detail-panel').getByRole('heading', { level: 2 })).toContainText('a3f2c1');
   else if (path.startsWith('/users/')) await expect(page.getByTestId('detail-panel').getByRole('heading', { level: 2 })).toBeVisible();
   else if (path.startsWith('/reports/')) await expect(page.getByTestId('detail-panel').getByRole('heading', { level: 2 })).toBeVisible();
-  else if (path === '/ai/configs') {
-    await expect(page.getByText(/17\/20/)).toBeVisible();
-    await expect(page.getByText(/bank · noun/)).toBeVisible();
-    await expect(page.getByRole('button', { name: /^(Xem bản|View revision) 3$/ })).toBeVisible();
+  else if (path === '/ai/configs') await expect(page.getByRole('main').getByRole('link', { name: /^(Nháp|Draft) #4$/ })).toBeVisible();
+  else if (path === '/ai/configs/drafts/C4') {
     await expect(page.getByRole('checkbox', { name: /^(Tôi đã đọc cảnh báo và vẫn publish|I read the warnings and still want to publish)$/ })).toBeVisible();
-    await expect(page.getByRole('list', { name: /^(Lịch sử publish|Publish history)$/ })).toBeVisible();
+    await expect(page.getByRole('button', { name: /^(Chọn từ dev|Choose dev examples)$/ })).toBeVisible();
   }
+  else if (path === '/ai/configs/history') await expect(page.getByRole('list', { name: /^(Lịch sử publish|Publish history)$/ })).toBeVisible();
+  else if (path === '/ai/costs') await expect(page.getByText('fake:batch-e2e').filter({ visible: true })).toBeVisible();
+  else if (path.startsWith('/ai/costs?batch=')) await expect(page.getByTestId('detail-panel').getByText('a'.repeat(64))).toBeVisible();
   else if (path === '/ai/real-questions') await expect(page.getByRole('main').getByText(/Sẽ chấm 3 câu|Will judge 3 questions/)).toBeVisible();
   else if (path.startsWith('/ai/real-questions?pass=')) await expect(page.getByTestId('detail-panel').getByText('come fits too').filter({ visible: true })).toBeVisible();
   else if (path === '/ai/judges') await expect(page.getByRole('main').getByText(/Chỉ một đáp án · (bản|revision) 2/).filter({ visible: true })).toBeVisible();

@@ -18,6 +18,42 @@ async function openNavIfCollapsed(page: Page) {
 test.describe('Cấu hình (nhóm B M2)', () => {
   test.use({ locale: 'vi-VN' });
 
+  test('at 390 px dev picker and both history tabs render their content with no serious axe violations', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await signedInAs(page, 'admin', configReads());
+    await page.goto('/ai/configs/drafts/C4?op=generate_cloze');
+    await expect(instructions(page)).toBeVisible();
+    const live = page.getByRole('complementary', { name: vi.ai.workspace.live });
+    await expect(live.getByRole('button', { name: t.draft.create })).toHaveCount(0);
+    const expand = live.getByRole('button', { name: vi.ai.workspace.expandLive });
+    await expect(expand).toHaveAttribute('aria-expanded', 'false');
+    await page.getByRole('button', { name: vi.ai.workspace.pickDev }).click();
+    const picker = page.getByRole('dialog', { name: vi.ai.prompts.test.pick });
+    await expect(picker.getByRole('checkbox')).toHaveCount(6);
+    for (let index = 0; index < 5; index++) await picker.getByText(new RegExp(`^word${index} ·`)).click();
+    await expect(picker.getByRole('checkbox').last()).toBeDisabled();
+    await picker.getByLabel(vi.ai.workspace.search).fill('word5');
+    await expect(picker.getByRole('checkbox')).toHaveCount(1);
+    await expect(picker.getByRole('checkbox')).toBeDisabled();
+    expect(await seriousViolations(page)).toEqual([]);
+    await picker.getByRole('button', { name: vi.common.close }).click();
+    await expect(picker).toBeHidden();
+    await expect(page.getByText(vi.ai.workspace.chosen.replace('{count}', '5'), { exact: true })).toBeVisible();
+    await expectNoHorizontalScroll(page);
+    await page.getByRole('navigation', { name: vi.ai.workspace.pages }).getByRole('link', { name: vi.ai.workspace.history }).click();
+    await expect(page).toHaveURL('/ai/configs/history?op=generate_cloze');
+    await expect(page.getByRole('tab')).toHaveCount(2);
+    await expect(page.getByRole('heading', { name: t.history.title })).toBeVisible();
+    expect(await seriousViolations(page)).toEqual([]);
+    await page.getByRole('tab', { name: vi.ai.workspace.promptHistory }).click();
+    await page.getByText(/Archived experiment/).click();
+    await expect(page.getByText('Archived prompt snapshot', { exact: true })).toBeVisible();
+    await expect(page.getByText('archive-fingerprint', { exact: true })).toBeVisible();
+    await expect(page.getByRole('heading', { name: t.oldPrompts })).toBeVisible();
+    await expectNoHorizontalScroll(page);
+    expect(await seriousViolations(page)).toEqual([]);
+  });
+
   test('menu → Cấu hình; a draft with another model is saved, its check warns once, and publishing needs the acknowledgement', async ({ page }) => {
     let live: Record<string, unknown> = cfgConfig(3, { model: GPT_REF });
     let draft: Record<string, unknown> | null = null;
@@ -25,22 +61,24 @@ test.describe('Cấu hình (nhóm B M2)', () => {
     let liveVersion = 5;
     await signedInAs(page, 'admin', configReads({
       [CONFIGS]: () => ({ json: cfgView({ live, draft, previous, live_version: liveVersion }) }),
-      'POST /v1/admin/ai/configs/generate_cloze/draft': () => {
+      'GET /v1/admin/ai/configs/generate_cloze/drafts': () => ({ json: { items: draft ? [draft] : [], next_page_token: null } }),
+      'GET /v1/admin/ai/configs/generate_cloze/drafts/C4': () => ({ json: draft }),
+      'POST /v1/admin/ai/configs/generate_cloze/drafts': () => {
         draft = cfgDraft(4, { model: GPT_REF });
         return { status: 201, json: draft };
       },
-      'PUT /v1/admin/ai/configs/generate_cloze/draft': (req) => {
+      'PUT /v1/admin/ai/configs/generate_cloze/drafts/C4': (req) => {
         const body = req.body as { instructions: string; examples: unknown[]; model_ref: string | null };
         draft = { ...draft, instructions: body.instructions, examples: body.examples, model: body.model_ref === FAKE_REF.id ? FAKE_REF : GPT_REF, version: Number(draft?.version) + 1 };
         return { json: draft };
       },
-      'GET /v1/admin/ai/configs/generate_cloze/publish-check': () => ({
+      'GET /v1/admin/ai/configs/generate_cloze/drafts/C4/publish-check': () => ({
         json: cfgCheck({
           draft: { id: 'C4', number: 4, version: Number(draft?.version ?? 0) },
           warnings: [{ code: 'rate-drop', criterion: 'shape', before: { passed: 20, counted: 20 }, after: { passed: 18, counted: 20 } }],
         }),
       }),
-      'POST /v1/admin/ai/configs/generate_cloze/publish': () => {
+      'POST /v1/admin/ai/configs/generate_cloze/drafts/C4/publish': () => {
         previous = live;
         live = { ...draft, status: 'published', published_by_user: { id: 'admin-1', email: 'admin@wordmet.com', system: false }, published_at: '2026-10-15T03:00:00.000Z' };
         draft = null;
@@ -55,14 +93,15 @@ test.describe('Cấu hình (nhóm B M2)', () => {
     await expect(page.getByRole('heading', { name: t.live.title.replace('{number}', '3') })).toBeVisible();
 
     await page.getByRole('button', { name: t.draft.create, exact: true }).click();
+    await page.getByRole('dialog').getByRole('button', { name: t.draft.create, exact: true }).click();
     await expect(page.getByRole('heading', { name: t.draft.title.replace('{number}', '4').replace('{version}', '0') })).toBeVisible();
     await page.getByRole('button', { name: /Model$/ }).click();
     await page.getByRole('option', { name: 'Fake · fake:ok' }).click();
     await page.getByRole('button', { name: t.draft.save }).click();
     await expect(page.getByText(t.draft.saved.replace('{version}', '1'))).toBeVisible();
-    const saved = requests(page, 'PUT', '/v1/admin/ai/configs/generate_cloze/draft')[0]!.body;
+    const saved = requests(page, 'PUT', '/v1/admin/ai/configs/generate_cloze/drafts/C4')[0]!.body;
     expect(saved).toEqual({
-      expected_version: 0, instructions: 'Write one short sentence.', examples: [cfgExample], model_ref: 'm1', effort: null, thinking: null, max_output_tokens: null, note: null,
+      expected_version: 0, instructions: 'Write one short sentence.', examples: [cfgExample], model_ref: 'm1', effort: null, thinking: null, max_output_tokens: null, note: null, name: null,
     });
 
     // The check is read again for the saved version and lists its one warning.
@@ -75,10 +114,11 @@ test.describe('Cấu hình (nhóm B M2)', () => {
     await expect(page.getByRole('checkbox', { name: t.publish.acknowledge })).toBeChecked();
     await page.getByRole('button', { name: t.publish.submit }).click();
     await expect(page.getByText(t.publish.done.replace('{number}', '4'))).toBeVisible();
-    expect(requests(page, 'POST', '/v1/admin/ai/configs/generate_cloze/publish').map((r) => r.body)).toEqual([
+    expect(requests(page, 'POST', '/v1/admin/ai/configs/generate_cloze/drafts/C4/publish').map((r) => r.body)).toEqual([
       { expected_version: 1, candidate_run_id: 'RC', baseline_run_id: 'RB', acknowledge_warnings: true },
     ]);
     await expect(page.getByRole('heading', { name: t.live.title.replace('{number}', '4') })).toBeVisible();
+    if ((page.viewportSize()?.width ?? 0) <= 920) await page.getByRole('button', { name: vi.ai.workspace.expandLive }).click();
     await expect(page.getByRole('button', { name: t.rollback.button.replace('{number}', '3') })).toBeVisible();
     expect(await seriousViolations(page)).toEqual([]);
   });
@@ -86,17 +126,18 @@ test.describe('Cấu hình (nhóm B M2)', () => {
   test('an unsaved draft and a menu link ask "Rời trang?"; [Ở lại] keeps the text, [Rời trang] goes', async ({ page }) => {
     await signedInAs(page, 'admin', configReads({
       [CONFIGS]: () => ({ json: cfgView({ draft: cfgDraft(4) }) }),
-      'GET /v1/admin/ai/configs/generate_cloze/publish-check': () => ({ json: cfgCheck() }),
+      'GET /v1/admin/ai/configs/generate_cloze/drafts/C4': () => ({ json: cfgDraft(4) }),
+      'GET /v1/admin/ai/configs/generate_cloze/drafts/C4/publish-check': () => ({ json: cfgCheck() }),
       'GET /v1/admin/ai/status': () => ({ json: { operations: [], today: { calls: 0, cap: null, failed_calls: 0, failed_cost_usd: '0', cost_usd: '0', cost_vnd: 0, admin_cost_usd: '0', admin_usd_cap: null }, ai_enabled: true, providers: { openai: true, anthropic: false, fake: true } } }),
     }));
-    await page.goto('/ai/configs');
+    await page.goto('/ai/configs/drafts/C4');
     await instructions(page).fill('Unsaved change.');
     await openNavIfCollapsed(page);
     await nav(page).getByRole('link', { name: vi.nav.aiStatus }).click();
     const dialog = page.getByRole('alertdialog').or(page.getByRole('dialog'));
     await expect(dialog.getByText(vi.leave.title)).toBeVisible();
     await dialog.getByRole('button', { name: vi.leave.stay }).click();
-    await expect(page).toHaveURL(/\/ai\/configs$/);
+    await expect(page).toHaveURL(/\/ai\/configs\/drafts\/C4$/);
     await expect(instructions(page)).toHaveValue('Unsaved change.');
     await openNavIfCollapsed(page);
     await nav(page).getByRole('link', { name: vi.nav.aiStatus }).click();
@@ -146,7 +187,8 @@ test.describe('Cấu hình (nhóm B M2)', () => {
           }),
         }),
       }),
-      'GET /v1/admin/ai/configs/generate_cloze/publish-check': () => ({
+      'GET /v1/admin/ai/configs/generate_cloze/drafts/C4': () => ({ json: cfgDraft(4, { model: longModel, instructions: 'm'.repeat(8000), note: 'n'.repeat(500), created_by_user: { ...EVAL_LAN, email }, examples: [{ input: { ...cfgExample.input, word: 'w'.repeat(200) }, output: { sentence: 's'.repeat(400) } }] }) }),
+      'GET /v1/admin/ai/configs/generate_cloze/drafts/C4/publish-check': () => ({
         json: cfgCheck({
           warnings: [
             { code: 'rate-drop', criterion: 'expected', before: { passed: 6, counted: 7 }, after: { passed: 1, counted: 3 } },
@@ -162,11 +204,12 @@ test.describe('Cấu hình (nhóm B M2)', () => {
         },
       }),
     }));
-    await page.goto('/ai/configs');
+    await page.goto('/ai/configs/drafts/C4');
     await expect(instructions(page)).toHaveValue('m'.repeat(8000));
     await expect(page.getByText('8.000/8.000')).toBeVisible();
     await expect(page.getByText(t.publish.heldOutUp.replace('{before}', '12').replace('{after}', '345'))).toBeVisible();
-    await expect(page.getByRole('heading', { name: t.history.title })).toBeVisible();
+    await expect(page.getByRole('navigation', { name: vi.ai.workspace.pages }).getByRole('link', { name: vi.ai.workspace.history })).toBeVisible();
     await expectNoHorizontalScroll(page);
+    expect(await seriousViolations(page)).toEqual([]);
   });
 });

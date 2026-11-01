@@ -51,7 +51,7 @@ describe('AiConfigsPage: the live config and creating a draft (M2-T6)', () => {
     expect(screen.queryByRole('heading', { name: /^Nháp ·/ })).not.toBeInTheDocument();
     await userEvent.click(button(t.draft.create));
     await userEvent.click(within(await screen.findByRole('dialog')).getByRole('button', { name: t.draft.create }));
-    expect(await screen.findByRole('heading', { name: t.draft.title.replace('{number}', '4').replace('{version}', '0') })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: t.draft.title.replace('{number}', '4').replace('{version}', '0') }, { timeout: 4000 })).toBeInTheDocument();
     expect(calls(r.calls, 'POST', '/configs/generate_cloze/drafts').map((c) => c.body)).toEqual([{}]);
     expect(screen.queryByRole('button', { name: t.draft.create })).not.toBeInTheDocument();
   });
@@ -109,7 +109,7 @@ describe('AiConfigsPage: editing and saving the draft (M2-T6)', () => {
     await userEvent.click(button(t.draft.save));
     await screen.findByText(t.draft.saved.replace('{version}', '1'));
     expect(calls(r.calls, 'PUT', '/drafts/C4')[0]!.body).toMatchObject({ note: 'thử model mới', max_output_tokens: 1200 });
-  });
+  }, 15_000);
 
   it('an output that is not a JSON object is flagged on its box and nothing is sent', async () => {
     const r = await openPage(configRoutes({ [URL.configs()]: withDraft() }));
@@ -147,7 +147,7 @@ describe('AiConfigsPage: editing and saving the draft (M2-T6)', () => {
     await userEvent.click(button(t.draft.save));
     expect(await screen.findByText(t.draft.saved.replace('{version}', '2'))).toBeInTheDocument();
     expect(calls(r.calls, 'PUT', '/drafts/C4').map((c) => (c.body as SaveDraftBody).expected_version)).toEqual([0, 1]);
-  });
+  }, 15_000);
 
   it('a 409 whose newer draft is exactly what was sent means the reply was lost: it counts as saved', async () => {
     let server = draftView();

@@ -20,6 +20,8 @@ import { toDraftBody, type ConfigForm } from './config-form';
 import { testDraftById } from './workspace-api';
 
 type Props = { models: AiModel[]; op: AiOperation; draft: ConfigView; form: ConfigForm; newestSet: EvalSet | null; isDisabled?: boolean };
+const retryAt = (seconds: number) => new Date(Date.now() + seconds * 1000);
+
 type QuickRun = { result: TestResult; content: ConfigContent; model: string };
 function snapshot(form: ConfigForm, version: number): ConfigContent | null {
   const built = toDraftBody(form, version);
@@ -73,7 +75,7 @@ export function WorkspaceRunner({ op, draft, form, models, newestSet, isDisabled
     } catch (e) {
       if (e instanceof ApiError && e.problem.slug === 'model-not-set') setProblem({ message: t('ai.configs.draft.noModelToTest'), code: null });
       else if (e instanceof ApiError && e.problem.status === 429) {
-        const at = e.retryAfterSeconds !== null ? new Date(Date.now() + e.retryAfterSeconds * 1000) : quota.data ? new Date(quota.data.resets_at) : null;
+        const at = e.retryAfterSeconds !== null ? retryAt(e.retryAfterSeconds) : quota.data ? new Date(quota.data.resets_at) : null;
         setProblem(at ? { message: t('ai.prompts.test.rateLimited', { limit: quota.data?.limit ?? 20, time: format.time(at) }), code: null } : errorDetails(e));
       } else if (e instanceof ApiError && e.problem.slug === 'validation-failed' && e.problem.violations?.includes('examples: at least one example is needed')) {
         setProblem({ message: t('ai.prompts.test.needExample'), code: null });

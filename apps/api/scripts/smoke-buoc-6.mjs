@@ -397,8 +397,11 @@ async function main() {
   const revisionNumbers = async () => (await want(api('GET', '/v1/admin/ai/prompts/generate_cloze/revisions', { token: admin }), 200, 'revisions'))
     .items.map((row) => row.revision);
   const revisionsBefore = await revisionNumbers();
-  const draftConfig = await want(api('POST', '/v1/admin/ai/configs/generate_cloze/draft', { token: admin, body: {} }), 201, 'create draft');
-  const saveDraft = (version, examples = seededCloze.examples) => api('PUT', '/v1/admin/ai/configs/generate_cloze/draft', { token: admin, body: {
+  const draftsBase = '/v1/admin/ai/configs/generate_cloze/drafts';
+  const createDraft = (name) => want(api('POST', draftsBase, { token: admin, idem: true, body: { name } }), 201, 'create a named draft');
+  const draftConfig = await createDraft('scripted: B6#14');
+  const draftPath = `${draftsBase}/${draftConfig.id}`;
+  const saveDraft = (version, examples = seededCloze.examples) => api('PUT', draftPath, { token: admin, idem: true, body: {
     expected_version: version, instructions: seededCloze.instructions, examples, model_ref: draftConfig.model.id, effort: null, thinking: null,
     max_output_tokens: null, note: 'scripted: B6#14' } });
   const saved = await want(saveDraft(draftConfig.version), 200, 'save draft');
@@ -414,24 +417,35 @@ async function main() {
   const badSave = await wantProblem(saveDraft(saved.version, twoBlanks), 400, 'validation-failed', 'save a bad example');
   const violations = JSON.stringify(badSave.extensions?.violations ?? badSave.violations ?? []);
   check(violations.includes('examples.0') || violations.includes('examples[0]'), `violations ${violations}`);
-  const untouched = (await want(api('GET', '/v1/admin/ai/configs/generate_cloze', { token: admin }), 200, 'configs')).draft;
+  const untouched = await want(api('GET', draftPath, { token: admin }), 200, 'the selected draft');
   check(untouched?.version === saved.version, 'a refused save changed the draft');
-  await want(api('DELETE', '/v1/admin/ai/configs/generate_cloze/draft', { token: admin }), 204, 'delete the draft');
+  await want(api('DELETE', draftPath, { token: admin, idem: true }), 204, 'delete the draft');
   ok(`400 validation-failed with a path to the example: ${violations}; the draft stayed at version ${saved.version}, then deleted`);
 
   // ------------------------------------------------------------------------------------------------------------------
-  step('B6#16: test a draft prompt');
-  const draft = `${seededCloze.instructions}\nKeep the sentence short.`;
+  step('B6#16: test a temporary snapshot of a named draft without saving it');
+  const testDraft = await createDraft('scripted: B6#16');
+  const snapshot = {
+    instructions: `${seededCloze.instructions}\nKeep the sentence short.`, examples: seededCloze.examples, model_ref: testDraft.model.id,
+    effort: testDraft.effort, thinking: testDraft.thinking, max_output_tokens: testDraft.max_output_tokens,
+  };
   const testCallsBefore = count(`SELECT count(*) FROM ai_calls WHERE purpose = 'test'`);
   const beforeTest = await prompt('generate_cloze');
-  const tested = await want(api('POST', '/v1/admin/ai/prompts/generate_cloze/test', { token: admin, body: {
-    instructions: draft, examples: seededCloze.examples } }), 200, 'prompt test');
+  const tested = await want(api('POST', `${draftsBase}/${testDraft.id}/test`, { token: admin, body: { snapshot } }), 200, 'draft snapshot test');
   check(tested.items.length >= 1 && tested.items.every((item) => item.status === 'succeeded' && item.output), `items ${JSON.stringify(tested.items)}`);
   const afterTest = await prompt('generate_cloze');
   check(afterTest.revision === beforeTest.revision && afterTest.instructions === seededCloze.instructions, 'a test changed the stored prompt');
   const testCalls = count(`SELECT count(*) FROM ai_calls WHERE purpose = 'test'`) - testCallsBefore;
   check(testCalls === tested.items.length, `test calls ${testCalls}, items ${tested.items.length}`);
-  ok(`${tested.items.length} item(s), each with its output; the live prompt unchanged (revision ${beforeTest.revision}); ${testCalls} ai_calls row(s) with purpose test`);
+  const afterDraftTest = await want(api('GET', `${draftsBase}/${testDraft.id}`, { token: admin }), 200, 'draft after the temporary test');
+  check(afterDraftTest.version === testDraft.version && afterDraftTest.fingerprint === testDraft.fingerprint && afterDraftTest.instructions === testDraft.instructions,
+    'a temporary test saved the draft');
+  check(typeof tested.batch_id === 'string' && /^[a-f0-9]{64}$/.test(tested.fingerprint), `test batch metadata ${JSON.stringify(tested)}`);
+  const batch = await want(api('GET', `/v1/admin/ai/batches/${tested.batch_id}`, { token: admin }), 200, 'test batch');
+  check(batch.kind === 'test' && batch.config_id === testDraft.id && batch.fingerprint === tested.fingerprint && batch.items.length === tested.items.length,
+    `test batch ${JSON.stringify(batch)}`);
+  await want(api('DELETE', `${draftsBase}/${testDraft.id}`, { token: admin, idem: true }), 204, 'delete the test draft');
+  ok(`${tested.items.length} item(s); temporary test batch ${tested.batch_id}; the named draft and live prompt unchanged (revision ${beforeTest.revision}); ${testCalls} ai_calls row(s) with purpose test`);
 
   // ------------------------------------------------------------------------------------------------------------------
   step('B6#17 and B6E74: three more eval examples, one run of the live config in the worker; the same Idempotency-Key again');
@@ -444,10 +458,10 @@ async function main() {
   check(exampleTotal === 5, `${exampleTotal} generate_cloze examples, expected 2 + 3`);
   const runKey = randomUUID();
   const created = await want(api('POST', '/v1/admin/ai/eval/runs', { token: admin, key: runKey, body: {
-    operation: 'generate_cloze', prompt: 'current' } }), 202, 'start eval run');
+    operation: 'generate_cloze', target: { kind: 'live' } } }), 202, 'start eval run');
   check(created.status === 'queued' && typeof created.run_id === 'string', `run ${JSON.stringify(created)}`);
   const replay = await want(api('POST', '/v1/admin/ai/eval/runs', { token: admin, key: runKey, body: {
-    operation: 'generate_cloze', prompt: 'current' } }), 202, 'start eval run again');
+    operation: 'generate_cloze', target: { kind: 'live' } } }), 202, 'start eval run again');
   check(replay.run_id === created.run_id, `replayed run ${replay.run_id} ≠ ${created.run_id}`);
   const finished = await waitFor(() => want(api('GET', `/v1/admin/ai/eval/runs/${created.run_id}`, { token: admin }), 200, 'GET run'),
     (row) => row.status === 'finished' || row.status === 'failed', `run ${created.run_id} finishing`, 60_000);
@@ -525,26 +539,29 @@ async function main() {
     ['POST', '/v1/admin/ai/eval/examples', { operation: 'generate_cloze', input: clozeData() }],
     ['PATCH', `/v1/admin/ai/eval/examples/${anyId}`, { note: 'x' }],
     ['DELETE', `/v1/admin/ai/eval/examples/${anyId}`],
-    ['POST', '/v1/admin/ai/eval/runs', { operation: 'generate_cloze', prompt: 'current' }],
+    ['POST', '/v1/admin/ai/eval/runs', { operation: 'generate_cloze', target: { kind: 'live' } }],
     ['GET', '/v1/admin/ai/eval/runs?operation=generate_cloze'],
     ['GET', `/v1/admin/ai/eval/runs/${created.run_id}`],
     ['GET', '/v1/admin/ai/costs'],
     ['GET', `/v1/admin/ai/calls?operation_id=${okCall.operationId}`],
-    // The nine routes of the config lifecycle (nhóm B design §6, §9 row P3).
+    // Plural draft lifecycle: every action identifies its own draft, including test/check/publish and revisions.
     ['GET', '/v1/admin/ai/configs/generate_cloze'],
-    ['POST', '/v1/admin/ai/configs/generate_cloze/draft', {}],
-    ['PUT', '/v1/admin/ai/configs/generate_cloze/draft', { expected_version: 0, instructions: 'x', examples: [], model_ref: null, effort: null, thinking: null,
+    ['GET', `${draftsBase}?page_size=20`],
+    ['POST', draftsBase, {}],
+    ['GET', `${draftsBase}/${anyId}`],
+    ['GET', `${draftsBase}/${anyId}/revisions?page_size=20`],
+    ['PUT', `${draftsBase}/${anyId}`, { expected_version: 0, instructions: 'x', examples: [], model_ref: null, effort: null, thinking: null,
       max_output_tokens: null, note: null }],
-    ['DELETE', '/v1/admin/ai/configs/generate_cloze/draft'],
-    ['POST', '/v1/admin/ai/configs/generate_cloze/draft/test', {}],
-    ['GET', '/v1/admin/ai/configs/generate_cloze/publish-check'],
-    ['POST', '/v1/admin/ai/configs/generate_cloze/publish', { expected_version: 0, candidate_run_id: null, baseline_run_id: null, acknowledge_warnings: false }],
+    ['DELETE', `${draftsBase}/${anyId}`],
+    ['POST', `${draftsBase}/${anyId}/test`, {}],
+    ['GET', `${draftsBase}/${anyId}/publish-check`],
+    ['POST', `${draftsBase}/${anyId}/publish`, { expected_version: 0, candidate_run_id: null, baseline_run_id: null, acknowledge_warnings: false }],
     ['POST', '/v1/admin/ai/configs/generate_cloze/rollback', { expected_live_version: 0 }],
     ['GET', '/v1/admin/ai/configs/generate_cloze/history'],
   ];
-  check(routes.length === 28, `${routes.length} routes listed`);
+  check(routes.length === 31, `${routes.length} routes listed`);
   for (const [method, path, body] of routes) {
-    await wantProblem(api(method, path, { token: editor, body, idem: method === 'POST' && path.endsWith('/runs') }), 403, 'forbidden',
+    await wantProblem(api(method, path, { token: editor, body, idem: method !== 'GET' }), 403, 'forbidden',
       `editor ${method} ${path}`);
   }
   check((await operation('generate_cloze')).model?.model_id === 'fake:ok', 'an editor request changed the operation');
@@ -552,7 +569,7 @@ async function main() {
   for (const path of ['/v1/admin/ai/operations/generate_cloze', '/v1/admin/ai/prompts/generate_cloze']) {
     await want(api('PUT', path, { token: admin, body: {} }), 404, `admin PUT ${path}`);
   }
-  ok('403 forbidden on all 28 routes; nothing changed; PUT /operations/generate_cloze and PUT /prompts/generate_cloze → 404 for the admin');
+  ok(`403 forbidden on all ${routes.length} routes; nothing changed; PUT /operations/generate_cloze and PUT /prompts/generate_cloze → 404 for the admin`);
 
   // ------------------------------------------------------------------------------------------------------------------
   step('B6#27: fake:slow, two calls at once with one operation id');
@@ -607,7 +624,7 @@ async function main() {
   let stalled;
   try {
     stalled = await want(api('POST', '/v1/admin/ai/eval/runs', { token: admin, idem: true, body: {
-      operation: 'generate_cloze', prompt: 'current' } }), 202, 'start eval run with Redis down');
+      operation: 'generate_cloze', target: { kind: 'live' } } }), 202, 'start eval run with Redis down');
     check(stalled.status === 'queued', `run ${JSON.stringify(stalled)}`);
   } finally {
     compose('start', 'redis');

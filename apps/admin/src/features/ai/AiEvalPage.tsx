@@ -50,7 +50,7 @@ type BulkDeletion = { op: AiOperation; ids: string[]; key: string; dev: number; 
 
 /**
  * A/83 `/ai/eval?op=` (admin only): the example set of one operation (at most 1000) and its runs. `new` and `bulk` open the add dialogs over the
- * page, `runs/:id` a run beside it. [Chạy bộ ví dụ] here runs the current prompt; a draft is run from the Prompt page (design §6.5).
+ * page, `runs/:id` a run beside it. [Chạy bộ ví dụ] here runs the current prompt; a draft or temporary snapshot is run from its Configs editor.
  * Nhóm B M1: held-out examples are listed as hidden rows (opened only after a question), [Chốt phiên bản] freezes the working set, and the
  * frozen versions are listed below it.
  */

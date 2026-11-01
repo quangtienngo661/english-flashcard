@@ -374,6 +374,7 @@ test('Cấu hình at 390 fits the window with a 100-character model id, 8.000-ch
   const long = 'm'.repeat(100);
   const longModel = { id: 'm1', provider: 'anthropic', model_id: long };
   await signedInAs(page, 'admin', configReads({
+    'GET /v1/admin/ai/configs/generate_cloze/drafts/C4': () => ({ json: cfgDraft(4, { model: longModel, instructions: 'm'.repeat(8000), examples: [{ input: { word: 'w'.repeat(200) }, output: {} }], note: 'n'.repeat(500) }) }),
     'GET /v1/admin/ai/models': () => ({ json: { items: [modelRow(longModel, { effort_choices: ['low', 'high'], thinking_off_available: true, max_output_tokens: 200000 })] } }),
     'GET /v1/admin/ai/configs/generate_cloze': () => ({
       json: cfgView({
@@ -384,9 +385,9 @@ test('Cấu hình at 390 fits the window with a 100-character model id, 8.000-ch
         }),
       }),
     }),
-    'GET /v1/admin/ai/configs/generate_cloze/publish-check': () => ({ json: cfgCheck({ warnings: [{ code: 'dev-regressed', example_ids: ['e1'] }] }) }),
+    'GET /v1/admin/ai/configs/generate_cloze/drafts/C4/publish-check': () => ({ json: cfgCheck({ warnings: [{ code: 'dev-regressed', example_ids: ['e1'] }] }) }),
   }));
-  await page.goto('/ai/configs');
+  await page.goto('/ai/configs/drafts/C4');
   await expect(page.getByText('8.000/8.000')).toBeVisible();
   await expect(page.getByRole('checkbox', { name: vi.ai.configs.publish.acknowledge })).toBeVisible();
   await expectNoHorizontalScroll(page);

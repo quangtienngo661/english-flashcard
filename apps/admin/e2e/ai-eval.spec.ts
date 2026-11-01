@@ -299,20 +299,24 @@ test.describe('Bộ ví dụ (A/83)', () => {
     await expect(page.getByRole('link', { name: vi.ai.prompts.test.openConfigs })).toHaveAttribute('href', '/ai/configs?op=generate_cloze');
   });
 
-  test('Cấu hình: [Chạy bộ ví dụ với nháp] on a saved draft runs it as a config on the newest version and opens the run without asking "Rời trang?"', async ({ page }) => {
+  test('Cấu hình: [Chạy bộ ví dụ với nháp] uses the selected saved draft ID and opens its result without asking "Rời trang?"', async ({ page }) => {
     await signedInAs(page, 'admin', evalMocks({
       ...configReads(),
       'GET /v1/admin/ai/eval/sets': () => ({ json: { items: [evalSet()] } }),
       'GET /v1/admin/ai/configs/generate_cloze': () => ({ json: cfgView({ draft: cfgDraft(4) }) }),
-      'GET /v1/admin/ai/configs/generate_cloze/publish-check': () => ({ json: cfgCheck({ set: { id: 'S1', version: 1 }, candidate_run_id: null, blockers: ['eval-required'] }) }),
+      'GET /v1/admin/ai/configs/generate_cloze/drafts/C4/publish-check': () => ({ json: cfgCheck({ set: { id: 'S1', version: 1 }, candidate_run_id: null, blockers: ['eval-required'] }) }),
       'POST /v1/admin/ai/eval/runs': () => ({ status: 202, json: { run_id: EVAL_RUN_ID, status: 'queued' } }),
       [`GET /v1/admin/ai/eval/runs/${EVAL_RUN_ID}`]: () => ({ json: run({ prompt_revision: null, config_id: 'C4', config_version: 0, config_number: 4, set_id: 'S1', set_version: 1 }) }),
     }));
-    await page.goto('/ai/configs');
+    await page.goto('/ai/configs/drafts/C4?op=generate_cloze');
+    await page.getByRole('button', { name: new RegExp(vi.ai.workspace.target) }).click();
+    await page.getByRole('option', { name: vi.ai.workspace.savedTarget }).click();
     await page.getByRole('button', { name: vi.ai.configs.draft.runSet }).click();
+    await expect(page).toHaveURL('/ai/configs/drafts/C4?op=generate_cloze');
+    await page.getByRole('link', { name: `${vi.ai.configs.draft.runSet} · ${EVAL_RUN_ID}` }).click();
     await expect(page).toHaveURL(/\/ai\/eval\/runs\/aaaaaaaa-0000-4000-8000-000000000001\?op=generate_cloze$/);
     await expect(page.getByText(vi.leave.title)).toHaveCount(0);
     await expect(page.getByTestId('detail-panel')).toContainText(t.detail.config.replace('{number}', '4'));
-    expect(requests(page, 'POST', '/v1/admin/ai/eval/runs')[0].body).toEqual({ operation: 'generate_cloze', set_id: 'S1', config: 'draft' });
+    expect(requests(page, 'POST', '/v1/admin/ai/eval/runs')[0].body).toEqual({ operation: 'generate_cloze', set_id: 'S1', target: { kind: 'draft', draft_id: 'C4' } });
   });
 });

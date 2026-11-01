@@ -832,6 +832,7 @@ describe('AiEvalPage example list: pages and sorting', () => {
   });
 });
 
+// These exercise several page/filter/dialog transitions with a full 25-row table, rather than one unit action.
 describe('AiEvalPage bulk selection', () => {
   const DELETE_PATH = '/v1/admin/ai/eval/examples/bulk-delete';
   const many = Array.from({ length: 25 }, (_, i) => evalExample(`e${i + 1}`, `w${String(i + 1).padStart(2, '0')}`));
@@ -873,7 +874,7 @@ describe('AiEvalPage bulk selection', () => {
     expect(screen.getByText(selected(0))).toBeInTheDocument();
     await waitFor(() => expect(r.count('GET', '/v1/admin/ai/eval/examples?operation=generate_cloze')).toBe(2));
     expect(r.calls.filter((call) => call.method === 'DELETE')).toHaveLength(0);
-  });
+  }, 15_000);
 
   it('select all filtered targets only the search results, and cancel sends nothing', async () => {
     const r = await openPage({ [URL.examples()]: () => Response.json({ items: [...many, heldOutExample('h1')] }) });
@@ -886,7 +887,7 @@ describe('AiEvalPage bulk selection', () => {
     await userEvent.click(within(dialog).getByRole('button', { name: vi.common.cancel }));
     expect(posts(r.calls, DELETE_PATH)).toHaveLength(0);
     expect(screen.getByText(selected(6))).toBeInTheDocument();
-  });
+  }, 15_000);
 
   it('level and split filters exclude held-out content, and switching operation clears selection even when coming back', async () => {
     await openPage({
@@ -910,7 +911,7 @@ describe('AiEvalPage bulk selection', () => {
     await userEvent.click(operation());
     await userEvent.click(await screen.findByRole('option', { name: `${vi.ai.operations.names.generate_cloze} (generate_cloze)` }));
     expect(screen.getByText(selected(0))).toBeInTheDocument();
-  });
+  }, 15_000);
 
   it('a network failure keeps the selection and retries the same confirmed payload with the same Idempotency-Key', async () => {
     let attempts = 0;
@@ -933,5 +934,5 @@ describe('AiEvalPage bulk selection', () => {
     expect(first.headers['Idempotency-Key']).toBe(second.headers['Idempotency-Key']);
     expect(first.body).toEqual(second.body);
     expect(await screen.findByText(bulk.done.replace('{deleted}', '1').replace('{missing}', '0'))).toBeInTheDocument();
-  });
+  }, 15_000);
 });

@@ -1,3 +1,5 @@
+> Cập nhật 01/11/2026: quy tắc một nháp và execution theo config version được thay bởi [AI workspace](2026-11-01-ai-workspace-design.md). Các phần khác tiếp tục áp dụng.
+
 # Đợt cải thiện, nhóm B (chất lượng AI) — Design (29/10/2026)
 
 > **Trạng thái 29/10/2026:** chủ dự án chốt mọi câu trong chat ("ok, các câu hỏi chốt hết", rồi N1–N3). Bản này đã sửa theo review độc lập

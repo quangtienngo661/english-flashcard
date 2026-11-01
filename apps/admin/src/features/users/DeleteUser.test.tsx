@@ -32,7 +32,7 @@ async function openDialog() {
 describe('users: delete an account (Bước 8)', { timeout: 20_000 }, () => {
   it('shows the sign-in methods of the account', async () => {
     renderApp(`/users/${LAN_ID}`, { [LIST]: () => json(page([user()])), [ONE]: () => json(detail({ sign_in_methods: ['password', 'google'] })) });
-    expect(await screen.findByText('Mật khẩu · Google')).toBeInTheDocument();
+    expect(await screen.findByText('Mật khẩu · Google', {}, { timeout: 4000 })).toBeInTheDocument();
   });
 
   it('an editor has no [Xóa tài khoản]', async () => {

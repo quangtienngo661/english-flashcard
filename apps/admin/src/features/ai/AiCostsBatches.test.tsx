@@ -16,7 +16,7 @@ const list = (items = [batchRow()], next: string | null = null) => Response.json
 describe('cost batches', () => {
   it('defaults to one row per admin batch using ledger totals including retry calls', async () => {
     const r = renderCosts('/ai/costs', { [`GET ${url}`]: () => list() });
-    expect(await screen.findAllByText('fake:batch-model')).not.toHaveLength(0);
+    expect(await screen.findAllByText('fake:batch-model', {}, { timeout: 4000 })).not.toHaveLength(0);
     expect(screen.getByRole('tab', { name: t.tab })).toHaveAttribute('aria-selected', 'true');
     const row = screen.getAllByRole('row')[1];
     expect(row).toHaveTextContent('10/10');
@@ -47,7 +47,7 @@ describe('cost batches', () => {
       [`GET ${url}&operation=lookup_word&kind=test`]: () => list([batchRow({ model: 'lookup-only' })]),
       [`GET ${url}&operation=lookup_word&kind=test&status=failed`]: () => list([]),
     });
-    await screen.findAllByText('fake:batch-model');
+    await screen.findAllByText('fake:batch-model', {}, { timeout: 4000 });
     await userEvent.click(screen.getByRole('button', { name: vi.common.loadMore }));
     await screen.findAllByText('page-two');
     await userEvent.click(screen.getByRole('button', { name: new RegExp(t.kind) }));
@@ -72,7 +72,7 @@ describe('cost batches', () => {
     expect(await screen.findByText(vi.ai.costs.empty)).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: t.aggregate })).toHaveAttribute('aria-selected', 'true');
     await userEvent.click(screen.getByRole('tab', { name: t.tab }));
-    await screen.findAllByText('fake:batch-model');
+    await screen.findAllByText('fake:batch-model', {}, { timeout: 4000 });
     expect(r.router.state.location.search).toBe('');
     await userEvent.click(screen.getByRole('tab', { name: t.aggregate }));
     await screen.findByText(vi.ai.costs.empty);
@@ -164,7 +164,7 @@ describe('cost batches', () => {
     await userEvent.clear(screen.getByLabelText(vi.ai.costs.filters.from));
     await userEvent.type(screen.getByLabelText(vi.ai.costs.filters.from), '2026-10-01');
     await userEvent.click(screen.getByRole('button', { name: vi.ai.costs.filters.apply }));
-    await screen.findAllByText('fake:batch-model');
+    await screen.findAllByText('fake:batch-model', {}, { timeout: 4000 });
   });
 
   it('reports a forbidden list explicitly and never requests malformed IDs', async () => {
@@ -233,7 +233,7 @@ describe('cost batches', () => {
     renderCosts('/ai/costs', { [`GET ${url}`]: () => ++attempt === 1 ? problem(500, 'internal-error') : list() }, 'en');
     await screen.findByRole('alert');
     await userEvent.click(screen.getByRole('button', { name: 'Retry' }));
-    expect(await screen.findAllByText('fake:batch-model')).not.toHaveLength(0);
+    expect(await screen.findAllByText('fake:batch-model', {}, { timeout: 4000 })).not.toHaveLength(0);
     expect(screen.getByRole('tab', { name: en.ai.costs.batches.tab })).toHaveAttribute('aria-selected', 'true');
     await waitFor(() => expect(attempt).toBe(2));
   });

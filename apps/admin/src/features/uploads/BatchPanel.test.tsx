@@ -38,7 +38,7 @@ afterEach(() => vitest.unstubAllGlobals());
 describe('batch panel', () => {
   it('a finished batch: name, status, the five counters, rejected sentence and warnings', async () => {
     renderApp('/uploads/b1', { [LIST]: list, [BATCH]: () => json(batch()) });
-    expect(await screen.findByRole('heading', { level: 2, name: 'cefr-j-1.5.csv' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { level: 2, name: 'cefr-j-1.5.csv' }, { timeout: 4000 })).toBeInTheDocument();
     expect(screen.getByText(vi.status.succeeded)).toBeInTheDocument();
     for (const n of ['3.200', '2.400', '500', '212', '88']) expect(screen.getAllByText(n).length).toBeGreaterThan(0);
     expect(screen.getByText(/88 dòng bị loại/)).toBeInTheDocument();

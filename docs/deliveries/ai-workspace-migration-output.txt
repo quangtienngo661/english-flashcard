@@ -1,0 +1,28 @@
+Seeded migration: before/after configs/events/runs/labels identical (7/1/1/1), verified by exact captured result comparison before migration.
+ configs | events | runs | labels
+---------+--------+------+--------
+       7 |      1 |    1 |      1
+(1 row)
+
+ imported_current_revisions
+----------------------------
+                          7
+(1 row)
+
+ version |   instructions
+---------+------------------
+       7 | Old saved prompt
+(1 row)
+
+ purpose |  cost_usd  | linked
+---------+------------+--------
+ eval    | 0.12345678 | t
+ test    | 0.20000000 | f
+(2 rows)
+
+ prior_single_draft_index
+--------------------------
+                        0
+(1 row)
+
+INSERT 0 1

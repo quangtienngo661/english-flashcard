@@ -1,0 +1,8 @@
+01/11/2026 — follow-up runtime gate
+Docker info: named pipe dockerDesktopLinuxEngine missing.
+Default context control: docker_engine pipe also missing.
+Docker Desktop start attempted through installed CLI and executable.
+Backend log: starting services: initializing Inference manager: listening on unix://<HOME>/AppData/Local/Docker/run/dockerInference: The file cannot be accessed by the system.
+Service start control: cannot open com.docker.service on local computer.
+Scratch PostgreSQL connection control (batch agent): ECONNREFUSED at 127.0.0.1:5434.
+No owner DB migration, provider calls, Docker settings edits or file deletion performed. Real-stack/smoke gates pending. The log does not distinguish file lock from permission/system failure.
