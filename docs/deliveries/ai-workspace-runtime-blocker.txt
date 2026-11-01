@@ -6,3 +6,20 @@ Backend log: starting services: initializing Inference manager: listening on uni
 Service start control: cannot open com.docker.service on local computer.
 Scratch PostgreSQL connection control (batch agent): ECONNREFUSED at 127.0.0.1:5434.
 No owner DB migration, provider calls, Docker settings edits or file deletion performed. Real-stack/smoke gates pending. The log does not distinguish file lock from permission/system failure.
+
+RESOLVED for local startup — 01/11/2026 15:32 +07
+Owner requested starting the API for manual inspection. A normal Docker launch reproduced the socket failure. With Desktop/backend processes stopped, preserved the two affected runtime directories and let Docker recreate them:
+C:/Users/Tien Ngo/AppData/Local/Docker/run.backup-20261101-152811
+C:/Users/Tien Ngo/AppData/Local/docker-secrets-engine.backup-20261101-152837
+The second directory was checked to contain only a zero-byte engine.sock runtime object. No factory reset, settings change, volume deletion or WSL unregister performed.
+Reference for the workaround (bug report, not a guarantee): https://github.com/docker/desktop-feedback/issues/554
+Docker server version after recovery: 28.5.1.
+Before startup migration, created a pg_dump custom-format backup (2072258 bytes):
+C:/Users/Tien Ngo/AppData/Local/EnglishLearning/backups/before-ai-workspace-20261101-153028.dump
+Built API/admin images from E:/Working/Working project/english-learning-nhomb-m6 on codex/ai-workspace using the existing local runtime configuration through Compose, without printing key values.
+Migration 20261101010000_ai_workspace: finished_at IS NOT NULL = true. Counts configs/events/runs before and after: 14/9/4. Imported current revisions: 14.
+Runtime Prisma drift check: exit0, "This is an empty migration." This checks schema alignment, not concurrent query correctness.
+Container process inventory confirms dist/main.js and dist/worker.js both running. API, admin, postgres, redis and mailpit: healthy.
+GET http://localhost:3000/v1/health => HTTP200 {"status":"ok"}
+GET http://localhost:5173/ => HTTP200; expected new bundle index-66YOzHXu.js present.
+No eval, judge or provider test request was initiated for this startup. Real-stack e2e, smoke and concurrent SQL behavior remain unverified; service health is not evidence for those gates.

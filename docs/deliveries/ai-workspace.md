@@ -1,6 +1,6 @@
 # AI workspace — bàn giao 01/11/2026
 
-Trạng thái: code đã triển khai; **chưa nghiệm thu real-stack/smoke cuối vì Docker engine không khởi động được**. Không push, mở PR hay merge. Không migrate DB owner, không gọi model thật.
+Trạng thái cập nhật 15:32, 01/11/2026: code đã triển khai; Docker đã khôi phục, API + worker và admin bản mới đang chạy local. Đã backup DB local trước khi startup áp dụng migration. **Real-stack e2e và smoke cuối vẫn chưa chạy**. Không push, mở PR hay merge.
 
 Worktree chứa code: `E:/Working/Working project/english-learning-nhomb-m6`, branch `codex/ai-workspace`. Worktree native app ở `C:/Users/Tien Ngo/.codex/worktrees/ai-workspace/english-learning` vẫn detached tại base c55d3178; không chứa bản sửa này.
 
@@ -35,9 +35,9 @@ Worktree chứa code: `E:/Working/Working project/english-learning-nhomb-m6`, br
 
 ## Chưa verified và việc còn lại
 
-1. **Real-stack e2e và smoke cuối chưa chạy.** Docker backend lỗi khởi tạo dockerInference; cả engine pipe và scratch PostgreSQL không truy cập được. Xem `ai-workspace-runtime-blocker.txt`.
+1. **Real-stack e2e và smoke cuối chưa chạy.** Docker blocker đã được xử lý khi owner yêu cầu bật API: giữ lại các thư mục socket cũ bằng tên backup rồi để Docker tạo runtime mới. API health HTTP200 và admin bundle mới đã được kiểm tra. Startup không thay thế regression qua DB/worker thật. Xem phần recovery trong `ai-workspace-runtime-blocker.txt`.
 2. Các CTE/SQL và locks thêm sau migration check mới được kiểm qua unit boundaries/types; chưa có integration PostgreSQL cho bản code cuối, đặc biệt publish/freeze/remove ordering, last_run/batch aggregation và cursor batch timestamp. Test SQL shape không chứng minh execution PostgreSQL.
-3. Khi Docker hoạt động: tạo DB smoke riêng, API+worker fake, keys trống; chạy `pnpm --filter api db:setup`, drift, `pnpm --filter api smoke:nhom-b` hai lần DB mới, smoke:buoc-6/7 trên DB riêng, rồi `pnpm --filter admin test:e2e:real`. Test mới `e2e-real/ai-workspace.real.spec.ts` kiểm hai draft, temporary snapshot, save reuse, publish và costs UI.
+3. Đợt kiểm thử tiếp theo cần DB smoke riêng, API+worker fake, keys trống; chạy `pnpm --filter api db:setup`, drift, `pnpm --filter api smoke:nhom-b` hai lần DB mới, smoke:buoc-6/7 trên DB riêng, rồi `pnpm --filter admin test:e2e:real`. Test mới `e2e-real/ai-workspace.real.spec.ts` kiểm hai draft, temporary snapshot, save reuse, publish và costs UI. Không dùng DB đang chạy để thử thủ công làm DB smoke.
 4. Publish dùng SHARE table lock ngắn trên ai_eval_sets để bảo vệ latest set; có thể trì hoãn freeze của operation khác trong thời gian transaction. Không giữ lock khi gọi provider.
 5. Không đánh giá chất lượng model thật. Snapshot chỉ chứng minh nội dung đã chạy, không bảo đảm output tái lập. Lịch sử save trước migration không thể phục hồi nếu dữ liệu không còn.
 
