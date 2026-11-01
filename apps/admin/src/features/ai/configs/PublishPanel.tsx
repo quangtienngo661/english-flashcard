@@ -12,10 +12,11 @@ import { ConfirmDialog } from '../../../ui/ConfirmDialog';
 import { ListState } from '../../../ui/ListState';
 import { showToast } from '../../../ui/Toast';
 import {
-  aiKeys, getPublishCheck, publishDraft, rollbackToPrevious, type AiOperation, type ConfigsView, type EvalSet, type PublishBody, type PublishWarning, type Tally,
+  aiKeys, rollbackToPrevious, type AiOperation, type ConfigsView, type EvalSet, type PublishBody, type PublishWarning, type Tally,
 } from '../ai-api';
 import { StartRunFailure, useStartRun } from '../EvalRunPanel';
 import { useAiFormat } from '../useAiFormat';
+import { checkDraftById, publishDraftById, workspaceKeys } from './workspace-api';
 
 const linkClass =
   'inline-flex min-h-control w-fit items-center whitespace-nowrap rounded-control px-4 text-ui font-medium text-primary outline-none hover:bg-primary-soft focus-visible:ring-2 focus-visible:ring-primary pointer-coarse:min-h-control-touch';
@@ -44,19 +45,22 @@ function useWarningText() {
 }
 
 type PanelProps = {
+  draftId: string;
+  expectedVersion: number;
+  onPublished?: () => void;
   op: AiOperation;
   /** The newest frozen version as the page read it; the check's own version replaces it once the check is read. */
   newestSet: EvalSet | null;
-  /** The draft has edits that are not saved: neither a run nor a publish would be of what is on screen. */
+  /** Publishing must wait for all unsaved edits and a successful save/recheck. */
   dirty: boolean;
 };
 
 /**
  * What the saved draft still needs before it can go live (design §6.3): a complete run of it on the newest frozen version, and one of the live
  * config for the comparison, then the warnings to read and [Publish]. A draft without a model turns the operation off instead (D38, §6.3b), and a
- * live config without a model needs no baseline (D37). The run of the draft starts here, so the page has one such button.
+ * live config without a model needs no baseline (D37). Draft runs belong to the snapshot runner above this panel.
  */
-export function PublishPanel({ op, newestSet, dirty }: PanelProps) {
+export function PublishPanel({ op, newestSet, dirty, draftId, expectedVersion, onPublished }: PanelProps) {
   const t = useTranslations();
   const api = useApi();
   const navigate = useNavigate();
@@ -64,7 +68,8 @@ export function PublishPanel({ op, newestSet, dirty }: PanelProps) {
   const errorDetails = useErrorDetails();
   const warningText = useWarningText();
   // Dropped as soon as the panel goes: a later draft must not start from the check of an earlier one.
-  const check = useQuery({ queryKey: aiKeys.publishCheck(op), queryFn: () => getPublishCheck(api, op), gcTime: 0 });
+  const checkKey = [...workspaceKeys.check(op, draftId), expectedVersion];
+  const check = useQuery({ queryKey: checkKey, queryFn: () => checkDraftById(api, op, draftId), gcTime: 0 });
   const data = check.data;
   const set = data ? data.set : newestSet ? { id: newestSet.id, version: newestSet.version } : null;
   const [problem, setProblem] = useState<ErrorDetails | null>(null);
@@ -76,11 +81,10 @@ export function PublishPanel({ op, newestSet, dirty }: PanelProps) {
 
   const onStarted = (id: string) => void navigate(`/ai/eval/runs/${id}?op=${op}`);
   // The fingerprints keep a failed press (and its [Thử lại]) to the draft version and the set it was made for.
-  const startDraft = useStartRun(op, `draft:${data?.draft.id ?? ''}:${data?.draft.version ?? ''}:${set?.id ?? 'none'}`, onStarted);
   const startLive = useStartRun(op, `live:${set?.id ?? 'none'}`, onStarted);
 
   const publish = useMutation({
-    mutationFn: (args: { body: PublishBody; turnOff: boolean; number: number }) => publishDraft(api, op, args.body),
+    mutationFn: (args: { body: PublishBody; turnOff: boolean; number: number }) => publishDraftById(api, op, draftId, args.body),
     onMutate: () => setProblem(null),
     onSuccess: (result, args) => {
       setConfirmingOff(false);
@@ -89,11 +93,13 @@ export function PublishPanel({ op, newestSet, dirty }: PanelProps) {
       void queryClient.invalidateQueries({ queryKey: aiKeys.status() });
       void queryClient.invalidateQueries({ queryKey: aiKeys.operations() });
       showToast(t(args.turnOff ? 'ai.configs.publish.turnedOff' : 'ai.configs.publish.done', { number: args.number }));
+      void queryClient.invalidateQueries({ queryKey: workspaceKeys.drafts(op) });
+      onPublished?.();
     },
     onError: (e) => {
       setConfirmingOff(false);
       if (e instanceof ApiError && STALE_SLUGS.includes(e.problem.slug)) {
-        void queryClient.invalidateQueries({ queryKey: aiKeys.publishCheck(op) });
+        void queryClient.invalidateQueries({ queryKey: workspaceKeys.check(op, draftId) });
         void queryClient.invalidateQueries({ queryKey: aiKeys.configs(op) });
         setProblem(e.problem.slug === 'publish-stale' ? { message: t('ai.configs.publish.stale'), code: null } : errorDetails(e));
       } else setProblem(errorDetails(e));
@@ -102,11 +108,11 @@ export function PublishPanel({ op, newestSet, dirty }: PanelProps) {
 
   const turnOff = data?.turn_off === true;
   const warnings = data?.warnings ?? [];
-  const ready = data !== undefined && (turnOff || (data.set !== null && data.blockers.length === 0));
+  const ready = data !== undefined && !check.isFetching && !check.isError && (data.draft.id === draftId && data.draft.version === expectedVersion) && (turnOff || (data.set !== null && data.blockers.length === 0));
   const canPublish = ready && !dirty && (warnings.length === 0 || acknowledged);
 
   function submit(confirmed: boolean) {
-    if (!data) return;
+    if (!data || !canPublish) return;
     if (data.turn_off && !confirmed) {
       setConfirmingOff(true);
       return;
@@ -143,7 +149,7 @@ export function PublishPanel({ op, newestSet, dirty }: PanelProps) {
               className="self-start"
               isPending={startLive.pending}
               isDisabled={startLive.waitSeconds > 0}
-              onPress={() => startLive.start({ config: 'live', set_id: data.set!.id })}
+              onPress={() => startLive.start({ target: { kind: 'live' }, set_id: data.set!.id })}
             >
               {startLive.waitSeconds > 0 ? t('ai.eval.run.wait', { seconds: startLive.waitSeconds }) : t('ai.configs.publish.runLive', { version: data.set.version })}
             </Button>
@@ -167,31 +173,12 @@ export function PublishPanel({ op, newestSet, dirty }: PanelProps) {
   }
 
   return (
-    <section aria-labelledby="config-publish" className="flex flex-col gap-4 rounded-panel border-2 border-border p-4">
+    <section id="publish" aria-labelledby="config-publish" className="flex flex-col gap-4 rounded-panel border-2 border-border p-4">
       <h2 id="config-publish" className="text-lg font-bold text-ink">{t('ai.configs.publish.title')}</h2>
-      {!turnOff && (
-        <div className="flex flex-col gap-3">
-          {set ? (
-            <p className="text-ui text-muted">{t('ai.configs.draft.runSetNote', { version: set.version })}</p>
-          ) : (
-            <Banner variant="info" action={<Link to={`/ai/eval?op=${op}`} className={linkClass}>{t('nav.aiEval')}</Link>}>
-              {t('ai.configs.publish.noSet')}
-            </Banner>
-          )}
-          <Button
-            variant="secondary"
-            className="self-start"
-            isPending={startDraft.pending}
-            isDisabled={dirty || !set || startDraft.waitSeconds > 0}
-            onPress={() => set && startDraft.start({ config: 'draft', set_id: set.id })}
-          >
-            {startDraft.waitSeconds > 0 ? t('ai.eval.run.wait', { seconds: startDraft.waitSeconds }) : t('ai.configs.draft.runSet')}
-          </Button>
-          <StartRunFailure action={startDraft} />
-        </div>
-      )}
+      {!turnOff && !set && <Banner variant="info" action={<Link to={`/ai/eval?op=${op}`} className={linkClass}>{t('nav.aiEval')}</Link>}>{t('ai.configs.publish.noSet')}</Banner>}
       {problem && <Banner variant="error" code={problem.code}>{problem.message}</Banner>}
       {evidence}
+      <Button variant="ghost" onPress={() => void check.refetch()} isDisabled={check.isFetching}>{t('ai.workspace.checkAgain')}</Button>
       <div className="flex flex-wrap items-center gap-3">
         <Button onPress={() => submit(false)} isPending={publish.isPending && !confirmingOff} isDisabled={!canPublish}>
           {t('ai.configs.publish.submit')}

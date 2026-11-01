@@ -102,8 +102,26 @@ export type PromptRevision = {
 };
 
 export type ConfigStatus = 'draft' | 'published' | 'retired';
+export type ConfigContent = {
+  instructions: string;
+  examples: PromptExample[];
+  model_ref: string | null;
+  effort: string | null;
+  thinking: 'off' | null;
+  max_output_tokens: number | null;
+};
+export type EvalTarget = { kind: 'live' } | { kind: 'draft'; draft_id: string } | { kind: 'temporary'; draft_id: string; content: ConfigContent };
 /** One config of an operation (`GET …/configs/{op}`): prompt, model and its settings as one versioned unit (nhóm B design §6.1). */
+export type ConfigLastRun = {
+  id: string; kind: 'test' | 'eval'; status: 'queued' | 'running' | 'finished' | 'failed' | 'cancelled';
+  config_id: string; config_version: number | null; fingerprint: string | null; source_id: string | null;
+  model: string; provider: string; total: number; created_at: string; started_at: string | null; finished_at: string | null;
+};
 export type ConfigView = {
+  last_run?: ConfigLastRun | null;
+  name?: string | null;
+  fingerprint?: string | null;
+  updated_at?: string;
   id: string;
   operation: AiOperation;
   number: number;
@@ -126,6 +144,7 @@ export type ConfigView = {
 };
 /** The live config, the draft being prepared and the config before the live one (the rollback target). */
 export type ConfigsView = {
+  draft_count?: number;
   operation: AiOperation;
   input_fields: string[];
   guard: string;
@@ -172,6 +191,7 @@ export type ConfigEvent = {
   warnings: PublishWarning[];
 };
 export type SaveDraftBody = {
+  name?: string | null;
   expected_version: number;
   instructions: string;
   examples: PromptExample[];
@@ -187,6 +207,8 @@ export type TestCall = { attempt: 1 | 2; outcome: string; latency_ms: number; co
 export type TestStatus = 'succeeded' | 'transient_failure' | 'permanent_failure' | 'unavailable';
 /** `POST …/prompts/{op}/test`: one item per input (the chosen examples, else the first five of the set, else the prompt's own). */
 export type TestResult = {
+  batch_id?: string | null;
+  fingerprint?: string | null;
   items: Array<{
     input: Record<string, unknown>;
     status: TestStatus;
@@ -275,6 +297,9 @@ export type EvalSetDetail = EvalSet & { items: EvalSetItem[] };
 export type EvalRunStatus = 'queued' | 'running' | 'finished' | 'failed';
 /** A run of the example set (`GET …/eval/runs`): the model choice and prompt revision are those stored when it was created. */
 export type EvalRun = {
+  batch_id?: string | null;
+  fingerprint?: string | null;
+  snapshot?: ConfigContent | null;
   id: string;
   operation: AiOperation;
   provider: AiProvider;
@@ -481,6 +506,7 @@ export type EvalRunDetail = EvalRun & {
  * `set_id`: a frozen version of the operation; left out, the run takes the working set.
  */
 export type StartRunBody = {
+  target?: EvalTarget;
   operation: AiOperation;
   prompt?: 'current' | { instructions: string; examples: PromptExample[] };
   config?: 'live' | 'draft';
@@ -539,7 +565,6 @@ export const aiKeys = {
   models: () => ['ai', 'models'] as const,
   operations: () => ['ai', 'operations'] as const,
   configs: (op: AiOperation) => ['ai', 'configs', op] as const,
-  publishCheck: (op: AiOperation) => ['ai', 'publish-check', op] as const,
   configHistory: (op: AiOperation) => ['ai', 'config-history', op] as const,
   revisions: (op: AiOperation) => ['ai', 'revisions', op] as const,
   testQuota: () => ['ai', 'test-quota'] as const,
@@ -589,15 +614,6 @@ export function listRevisions(api: ApiClient, op: AiOperation, pageToken?: strin
 export const getTestQuota = (api: ApiClient) => api.get<TestQuota>(`${base}/test-quota`);
 
 export const getConfigs = (api: ApiClient, op: AiOperation) => api.get<ConfigsView>(`${base}/configs/${op}`);
-/** Copies the live config, or `from_config_id` (a published or retired one); 409 `draft-exists` when the operation already has a draft. */
-export const createDraft = (api: ApiClient, op: AiOperation, body: { from_config_id?: string }) => api.post<ConfigView>(`${base}/configs/${op}/draft`, body);
-/** 409 `draft-version-conflict`, 422 `few-shot-invalid`, 400 `validation-failed`. */
-export const saveDraft = (api: ApiClient, op: AiOperation, body: SaveDraftBody) => api.put<ConfigView>(`${base}/configs/${op}/draft`, body);
-/** 409 `draft-busy` while a run of the draft is queued or running. */
-export const deleteDraft = (api: ApiClient, op: AiOperation) => api.delete<void>(`${base}/configs/${op}/draft`);
-export const getPublishCheck = (api: ApiClient, op: AiOperation) => api.get<PublishCheck>(`${base}/configs/${op}/publish-check`);
-/** Makes the draft live; answers the configs as they are now. 409 `publish-stale`, `publish-warnings`, `eval-required`, `baseline-required`, `draft-version-conflict`. */
-export const publishDraft = (api: ApiClient, op: AiOperation, body: PublishBody) => api.post<ConfigsView>(`${base}/configs/${op}/publish`, body);
 /** Puts the config before the live one back; `expected_live_version` keeps a stale page from undoing a newer publish (409 `publish-stale`, `no-previous`). */
 export const rollbackToPrevious = (api: ApiClient, op: AiOperation, body: { expected_live_version: number }) =>
   api.post<ConfigsView>(`${base}/configs/${op}/rollback`, body);
@@ -606,9 +622,6 @@ export function listConfigHistory(api: ApiClient, op: AiOperation, pageToken?: s
   if (pageToken) query.set('page_token', pageToken);
   return api.get<{ items: ConfigEvent[]; next_page_token: string | null }>(`${base}/configs/${op}/history?${query.toString()}`);
 }
-/** Runs the saved draft at once on up to five dev inputs; never re-sent automatically (an AI call and one `ai.test` slot). */
-export const testDraft = (api: ApiClient, op: AiOperation, body: { example_ids?: string[] }) => api.post<TestResult>(`${base}/configs/${op}/draft/test`, body);
-
 /** Dev examples in full; a held-out one that was not opened is only `{ id, split: 'held_out' }`. */
 export const listExamples = (api: ApiClient, operation: AiOperation) =>
   api.get<{ items: ExampleRow[] }>(`${base}/eval/examples?operation=${operation}`);

@@ -1,12 +1,14 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { ApiClient } from '../../api/client';
 import {
-  AI_OPERATION_ORDER, aiKeys, cancelRun, createDraft, createExample, createModel, deleteDraft, deleteExample, deleteModel, deleteRun, freezeSet, getCosts, getForms,
-  getConfigs, getPublishCheck, getRun, getRunComparison, getSet, getStatus, getTestQuota, isDevExample, isRunCancelled, isRunDone, listCalls, listExamples, listModels, listOperations,
-  listConfigHistory, listRevisions, listRunItems, listRuns, listSets, publishDraft, refreshModel, revealExample, rollbackToPrevious, saveDraft, sortByOperationOrder, startRun, testDraft, updateExample,
+  AI_OPERATION_ORDER, aiKeys, cancelRun, createExample, createModel, deleteExample, deleteModel, deleteRun, freezeSet, getCosts, getForms,
+  getConfigs, getRun, getRunComparison, getSet, getStatus, getTestQuota, isDevExample, isRunCancelled, isRunDone, listCalls, listExamples, listModels, listOperations,
+  listConfigHistory, listRevisions, listRunItems, listRuns, listSets, refreshModel, revealExample, rollbackToPrevious, sortByOperationOrder, startRun, updateExample,
   updateModel, type ExampleRow,
   cloneJudge, createJudge, getJudgeAgreement, getJudgePass, listJudgeRevisions, listJudges, putLabel, saveJudge, startJudgePass,
 } from './ai-api';
+
+import { checkDraftById, createWorkspaceDraft, deleteDraftById, listConfigRevisions, publishDraftById, saveDraftById, testDraftById, workspaceKeys } from './configs/workspace-api';
 
 function fakeApi() {
   const mock = {
@@ -153,60 +155,71 @@ describe('golden set api (nhóm B M1)', () => {
   });
 });
 
-describe('config lifecycle api (nhóm B M2)', () => {
-  it('the configs of an operation are one GET; the draft is created, saved, deleted and test-run under /draft', async () => {
+describe('config lifecycle api', () => {
+  it('creates plural drafts and addresses every mutation by draft ID', async () => {
     const { api, mock } = fakeApi();
     await getConfigs(api, 'generate_cloze');
-    await createDraft(api, 'generate_cloze', {});
-    await createDraft(api, 'lookup_word', { from_config_id: 'C1' });
+    await createWorkspaceDraft(api, 'generate_cloze', {});
+    await createWorkspaceDraft(api, 'lookup_word', { from_config_id: 'C1' });
     const body = {
       expected_version: 0, instructions: 'x', examples: [], model_ref: null, effort: null, thinking: null, max_output_tokens: null, note: null,
     };
-    await saveDraft(api, 'generate_cloze', body);
-    await deleteDraft(api, 'generate_cloze');
-    await testDraft(api, 'generate_cloze', { example_ids: ['e1'] });
+    await saveDraftById(api, 'generate_cloze', 'C4', body);
+    await deleteDraftById(api, 'generate_cloze', 'C4');
+    await testDraftById(api, 'generate_cloze', 'C4', { example_ids: ['e1'] });
+    const key = { idempotencyKey: expect.stringMatching(/^[0-9a-f-]{36}$/) };
     expect(mock.get).toHaveBeenCalledExactlyOnceWith('/v1/admin/ai/configs/generate_cloze');
     expect(mock.post.mock.calls).toEqual([
-      ['/v1/admin/ai/configs/generate_cloze/draft', {}],
-      ['/v1/admin/ai/configs/lookup_word/draft', { from_config_id: 'C1' }],
-      ['/v1/admin/ai/configs/generate_cloze/draft/test', { example_ids: ['e1'] }],
+      ['/v1/admin/ai/configs/generate_cloze/drafts', {}, key],
+      ['/v1/admin/ai/configs/lookup_word/drafts', { from_config_id: 'C1' }, key],
+      ['/v1/admin/ai/configs/generate_cloze/drafts/C4/test', { example_ids: ['e1'] }],
     ]);
-    expect(mock.put).toHaveBeenCalledExactlyOnceWith('/v1/admin/ai/configs/generate_cloze/draft', body);
-    expect(mock.delete).toHaveBeenCalledExactlyOnceWith('/v1/admin/ai/configs/generate_cloze/draft');
+    expect(mock.put).toHaveBeenCalledExactlyOnceWith('/v1/admin/ai/configs/generate_cloze/drafts/C4', body, key);
+    expect(mock.delete).toHaveBeenCalledExactlyOnceWith('/v1/admin/ai/configs/generate_cloze/drafts/C4', key);
   });
 
-  it('a run of a config is started with config instead of prompt, and the key of the configs read starts with ai', async () => {
+  it('starts a saved config run with its explicit draft target', async () => {
     const { api, mock } = fakeApi();
-    await startRun(api, { operation: 'generate_cloze', config: 'draft', set_id: 'S2' }, 'key-3');
-    expect(mock.post).toHaveBeenCalledWith('/v1/admin/ai/eval/runs', { operation: 'generate_cloze', config: 'draft', set_id: 'S2' }, { idempotencyKey: 'key-3' });
+    await startRun(api, { operation: 'generate_cloze', target: { kind: 'draft', draft_id: 'C4' }, set_id: 'S2' }, 'key-3');
+    expect(mock.post).toHaveBeenCalledWith('/v1/admin/ai/eval/runs', { operation: 'generate_cloze', target: { kind: 'draft', draft_id: 'C4' }, set_id: 'S2' }, { idempotencyKey: 'key-3' });
     expect(aiKeys.configs('lookup_word')).toEqual(['ai', 'configs', 'lookup_word']);
   });
 });
 
-describe('config publish api (nhóm B M2)', () => {
-  it('the publish check and the history are GETs (the history is paged), publish and rollback are POSTs with their bodies', async () => {
+describe('config publish api', () => {
+  it('checks and publishes the chosen ID, while publish history and rollback are operation-wide', async () => {
     const { api, mock } = fakeApi();
-    await getPublishCheck(api, 'generate_cloze');
+    await checkDraftById(api, 'generate_cloze', 'C4');
     await listConfigHistory(api, 'lookup_word');
     await listConfigHistory(api, 'lookup_word', 'tok+/=');
     const body = { expected_version: 2, candidate_run_id: 'RC', baseline_run_id: null, acknowledge_warnings: false };
-    await publishDraft(api, 'generate_cloze', body);
+    await publishDraftById(api, 'generate_cloze', 'C4', body);
     await rollbackToPrevious(api, 'generate_cloze', { expected_live_version: 5 });
     expect(mock.get.mock.calls.map((c) => c[0])).toEqual([
-      '/v1/admin/ai/configs/generate_cloze/publish-check',
+      '/v1/admin/ai/configs/generate_cloze/drafts/C4/publish-check',
       '/v1/admin/ai/configs/lookup_word/history?page_size=20',
       '/v1/admin/ai/configs/lookup_word/history?page_size=20&page_token=tok%2B%2F%3D',
     ]);
     expect(mock.post.mock.calls).toEqual([
-      ['/v1/admin/ai/configs/generate_cloze/publish', body],
+      ['/v1/admin/ai/configs/generate_cloze/drafts/C4/publish', body, { idempotencyKey: expect.any(String) }],
       ['/v1/admin/ai/configs/generate_cloze/rollback', { expected_live_version: 5 }],
     ]);
   });
 
-  it('the keys of the publish check and the history start with ai and differ from the configs key', () => {
-    const keys = [aiKeys.configs('generate_cloze'), aiKeys.publishCheck('generate_cloze'), aiKeys.configHistory('generate_cloze')];
-    expect(new Set(keys.map((key) => JSON.stringify(key))).size).toBe(3);
+  it('binds check caches to the chosen draft and keeps history separate', () => {
+    const keys = [aiKeys.configs('generate_cloze'), workspaceKeys.check('generate_cloze', 'C4'), workspaceKeys.check('generate_cloze', 'C5'), aiKeys.configHistory('generate_cloze')];
+    expect(new Set(keys.map((key) => JSON.stringify(key))).size).toBe(4);
     expect(keys.every((key) => key[0] === 'ai')).toBe(true);
+  });
+
+  it('pages aggregate saved revisions independently of the active draft list', async () => {
+    const { api, mock } = fakeApi();
+    await listConfigRevisions(api, 'lookup_word');
+    await listConfigRevisions(api, 'lookup_word', 'tok+/=');
+    expect(mock.get.mock.calls.map(call => call[0])).toEqual([
+      '/v1/admin/ai/configs/lookup_word/revisions?page_size=20',
+      '/v1/admin/ai/configs/lookup_word/revisions?page_size=20&page_token=tok%2B%2F%3D',
+    ]);
   });
 });
 

@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
+import { Link, useNavigate } from 'react-router';
 import { useTranslations } from 'use-intl';
 import { useFocusFirstError, violationsToFields } from '../../../api/field-errors';
 import { ApiError } from '../../../api/problem';
@@ -16,16 +17,19 @@ import { TextArea } from '../../../ui/TextArea';
 import { TextField } from '../../../ui/TextField';
 import { showToast } from '../../../ui/Toast';
 import {
-  aiKeys, deleteDraft, getConfigs, saveDraft, testDraft, type AiModel, type AiOperation, type ConfigsView, type ConfigView, type PromptRevision,
+  aiKeys, type AiModel, type AiOperation, type ConfigView, type EvalSet,
 } from '../ai-api';
 import { modelChoices } from '../model-choices';
 import { thinkingViolationKey } from '../operation-violations';
 import { RevisionContent } from '../PromptHistory';
 import {
-  EXAMPLES_MAX, INSTRUCTIONS_FIELD, emptyExample, fieldOfViolation, fieldOrder, inputFieldId, outputFieldId, toForm, type FormExample,
+  EXAMPLES_MAX, INSTRUCTIONS_FIELD, emptyExample, fieldOfViolation, fieldOrder, inputFieldId, outputFieldId, type FormExample,
 } from '../prompt-form';
-import { TestRunPanel } from '../TestRunPanel';
 import { sameConfigForm, sameDraftContent, switchConfigModel, toConfigForm, toDraftBody, type ConfigForm } from './config-form';
+import { deleteDraftById, getDraftById, saveDraftById, workspaceKeys, workspacePath } from './workspace-api';
+import { WorkspaceRunner } from './WorkspaceRunner';
+import { DraftRevisionDialog } from './WorkspaceHistory';
+import { PublishPanel } from './PublishPanel';
 
 const NONE = '__none';
 const DEFAULT = '__default';
@@ -46,27 +50,27 @@ const THINKING_COPY = { cannotTurnOff: 'thinkingCannotOff', needsLowEffort: 'thi
 const textBlock = 'whitespace-pre-wrap wrap-anywhere rounded-inner bg-canvas p-3 text-ui text-ink';
 
 type Props = {
+  newestSet: EvalSet | null;
   op: AiOperation;
   /** The draft as the page read it; the editor then keeps its own copy (`server`) and never takes a newer one by itself. */
   initial: ConfigView;
   inputFields: string[];
   guard: string;
   models: AiModel[];
-  /** The page's history list copies a revision into the form through this. */
-  copyRef: { current: ((revision: PromptRevision) => void) | null };
-  /** Told whether the form has edits that are not saved, so the panel below can keep its run and its publish off. */
-  onDirtyChange: (dirty: boolean) => void;
+
 };
 
 /**
  * The draft of an operation's config (nhóm B design §6.2): prompt, examples, model, effort, thinking, token limit and a note, saved to the
- * server with `expected_version`. A test run and a run of the example set work on the saved draft, so both wait for a save.
+ * server with `expected_version`. Quick tests and temporary evals snapshot the unsaved form; publishing checks the saved draft by ID.
  */
-export function DraftEditor({ op, initial, inputFields, guard, models, copyRef, onDirtyChange }: Props) {
+export function DraftEditor({ op, initial, inputFields, guard, models, newestSet }: Props) {
   const t = useTranslations();
   const api = useApi();
   const queryClient = useQueryClient();
   const errorDetails = useErrorDetails();
+  const navigate = useNavigate();
+  const [showRevisions, setShowRevisions] = useState(false);
   /** The draft the editor builds on: what [Lưu nháp] sends the version of, and what "unsaved" compares with. */
   const [server, setServer] = useState(initial);
   const base = useMemo(() => toConfigForm(server, inputFields), [server, inputFields]);
@@ -82,9 +86,7 @@ export function DraftEditor({ op, initial, inputFields, guard, models, copyRef, 
   const busy = useRef(false);
 
   const dirty = !sameConfigForm(form, base);
-  useDirtyForm(dirty);
-  useEffect(() => onDirtyChange(dirty), [dirty, onDirtyChange]);
-  useEffect(() => () => onDirtyChange(false), [onDirtyChange]);
+  const leave = useDirtyForm(dirty);
   useFocusFirstError(errors, [ID.note, ID.model, ID.effort, ID.thinking, ID.tokens, ...fieldOrder(form)]);
 
   const model = models.find((m) => m.id === form.model_ref);
@@ -107,20 +109,13 @@ export function DraftEditor({ op, initial, inputFields, guard, models, copyRef, 
   const setExample = (index: number, next: FormExample) =>
     setForm((prev) => ({ ...prev, examples: prev.examples.map((example, i) => (i === index ? next : example)) }));
 
-  useEffect(() => {
-    copyRef.current = (revision) => {
-      setErrors({});
-      setForm((prev) => ({ ...prev, ...toForm(revision, inputFields) }));
-    };
-    return () => {
-      copyRef.current = null;
-    };
-  }, [copyRef, inputFields]);
-
   function saved(result: ConfigView) {
-    queryClient.setQueryData<ConfigsView>(aiKeys.configs(op), (old) => old && { ...old, draft: result });
-    // What a publish needs is read for one saved version of the draft.
-    void queryClient.invalidateQueries({ queryKey: aiKeys.publishCheck(op) });
+    queryClient.setQueryData(workspaceKeys.draft(op, result.id), result);
+    void queryClient.invalidateQueries({ queryKey: workspaceKeys.check(op, result.id) });
+    void queryClient.invalidateQueries({ queryKey: workspaceKeys.drafts(op) });
+    void queryClient.invalidateQueries({ queryKey: workspaceKeys.revisions(op, result.id) });
+    void queryClient.invalidateQueries({ queryKey: workspaceKeys.configRevisions(op) });
+    void queryClient.invalidateQueries({ queryKey: aiKeys.configs(op) });
     setServer(result);
     setForm(toConfigForm(result, inputFields));
     setErrors({});
@@ -134,8 +129,7 @@ export function DraftEditor({ op, initial, inputFields, guard, models, copyRef, 
   /** The reply to our own save may have been lost: if the newer draft is exactly what we sent, it did land (design §4.6). */
   async function afterConflict(sent: Parameters<typeof sameDraftContent>[1]) {
     try {
-      const fresh = await queryClient.fetchQuery({ queryKey: aiKeys.configs(op), queryFn: () => getConfigs(api, op), staleTime: 0 });
-      const draft = fresh.draft;
+      const draft = await getDraftById(api, op, server.id);
       if (draft && draft.id === server.id && draft.version === server.version + 1 && sameDraftContent(draft, sent)) saved(draft);
       else setConflict({ fresh: draft });
     } catch (e) {
@@ -170,7 +164,7 @@ export function DraftEditor({ op, initial, inputFields, guard, models, copyRef, 
     busy.current = true;
     setPending(true);
     try {
-      saved(await saveDraft(api, op, built.body));
+      saved(await saveDraftById(api, op, server.id, built.body));
     } catch (e) {
       if (e instanceof ApiError && e.problem.slug === 'draft-version-conflict') await afterConflict(built.body);
       else if (e instanceof ApiError && e.problem.slug === 'few-shot-invalid') {
@@ -198,7 +192,7 @@ export function DraftEditor({ op, initial, inputFields, guard, models, copyRef, 
     let fresh = conflict?.fresh ?? null;
     if (!fresh) {
       try {
-        fresh = (await queryClient.fetchQuery({ queryKey: aiKeys.configs(op), queryFn: () => getConfigs(api, op), staleTime: 0 })).draft;
+        fresh = await getDraftById(api, op, server.id);
       } catch (e) {
         setBanner(errorDetails(e));
         return;
@@ -212,12 +206,15 @@ export function DraftEditor({ op, initial, inputFields, guard, models, copyRef, 
   }
 
   const remove = useMutation({
-    mutationFn: () => deleteDraft(api, op),
+    mutationFn: () => deleteDraftById(api, op, server.id),
     onMutate: () => setBanner(null),
     onSuccess: () => {
       setDeleting(false);
-      queryClient.setQueryData<ConfigsView>(aiKeys.configs(op), (old) => old && { ...old, draft: null });
+      void queryClient.invalidateQueries({ queryKey: aiKeys.configs(op) });
       showToast(t('ai.configs.draft.deleted'));
+      leave.release();
+      void queryClient.invalidateQueries({ queryKey: workspaceKeys.drafts(op) });
+      void navigate(workspacePath(op));
     },
     onError: (e) => {
       setDeleting(false);
@@ -229,10 +226,9 @@ export function DraftEditor({ op, initial, inputFields, guard, models, copyRef, 
     },
   });
 
-  const sendTest = (exampleIds: string[]) => testDraft(api, op, exampleIds.length > 0 ? { example_ids: exampleIds } : {});
-
   return (
     <section aria-labelledby="config-draft" className="flex flex-col gap-6 rounded-panel border-2 border-border p-4">
+      <div className="flex flex-wrap gap-3"><Link className="text-ui font-medium text-primary" to={workspacePath(op)}>{t('ai.workspace.back')}</Link><Button variant="ghost" onPress={() => setShowRevisions(true)}>{t('ai.workspace.viewRevisions')}</Button></div>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <span className="flex min-w-0 flex-col">
           <h2 id="config-draft" className="text-lg font-bold text-ink">
@@ -256,6 +252,7 @@ export function DraftEditor({ op, initial, inputFields, guard, models, copyRef, 
 
       <div className={`grid min-w-0 gap-6 ${newer ? 'panel:grid-cols-2' : ''}`}>
         <div className="flex min-w-0 flex-col gap-6">
+          <TextField id="config-name" label={t('ai.workspace.name')} value={form.name ?? ''} onChange={name => setForm(prev => ({ ...prev, name }))} maxLength={200} isDisabled={pending} />
           <TextField
             id={ID.note}
             label={t('ai.configs.draft.note')}
@@ -417,8 +414,11 @@ export function DraftEditor({ op, initial, inputFields, guard, models, copyRef, 
         )}
       </div>
 
-      {dirty && <p className="text-ui text-ink">{t('ai.configs.draft.saveFirst')}</p>}
-      <TestRunPanel op={op} send={sendTest} note={t('ai.configs.draft.testNote')} isDisabled={dirty} />
+      <>
+        <WorkspaceRunner op={op} draft={server} form={form} models={models} newestSet={newestSet} isDisabled={pending} />
+        <PublishPanel op={op} newestSet={newestSet} dirty={dirty || pending || conflict !== null} draftId={server.id} expectedVersion={server.version} onPublished={() => { leave.release(); void navigate(workspacePath(op)); }} />
+        {showRevisions && <DraftRevisionDialog op={op} id={server.id} onClose={() => setShowRevisions(false)} />}
+      </>
 
       <ConfirmDialog
         isOpen={deleting}

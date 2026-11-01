@@ -58,7 +58,7 @@ export const TWO_SETS = () => Response.json({ items: [evalSet({ id: 'S2', versio
 
 /** Every read the page makes for `op`, answered; `over` replaces or adds routes. */
 export function configRoutes(over: Record<string, Route> = {}, op = 'generate_cloze'): Record<string, Route> {
-  return {
+  const routes: Record<string, Route> = {
     [URL.configs(op)]: () => Response.json(configsView()),
     [URL.models]: () => Response.json({ items: [FAKE_OK] }),
     [URL.sets(op)]: TWO_SETS,
@@ -69,4 +69,25 @@ export function configRoutes(over: Record<string, Route> = {}, op = 'generate_cl
     [URL.revisions(op)]: () => Response.json({ items: [revision(2), revision(1)], next_page_token: null }),
     ...over,
   };
+  // Older component fixtures still describe one draft. Expose that fixture through
+  // the workspace's ID API too; production never falls back to a singular route.
+  const root = `/v1/admin/ai/configs/${op}/drafts`;
+  const current = async (call: Parameters<Route>[0]) => (await (await routes[URL.configs(op)]!(call)).json()) as ConfigsView;
+  const legacy = (key: string): Route => call => routes[key] ? routes[key]!(call) : new Response(null, { status: 404 });
+  const added: Record<string, Route> = {
+    [`GET /v1/admin/ai/configs/${op}/revisions?page_size=20`]: () => Response.json({ items: [], next_page_token: null }),
+    [`GET ${root}?page_size=20`]: async call => { const view = await current(call); return Response.json({ items: view.draft ? [view.draft] : [], next_page_token: null }); },
+    [`POST ${root}`]: legacy(URL.createDraft(op)),
+    [`GET /v1/admin/ai/eval/runs?operation=${op}&page_size=20`]: () => Response.json({ items: [], next_page_token: null }),
+  };
+  for (const id of ['C4', 'C5', 'C6']) {
+    added[`GET ${root}/${id}`] = async call => { const view = await current(call); return view.draft?.id === id ? Response.json(view.draft) : new Response(null, { status: 404 }); };
+    added[`PUT ${root}/${id}`] = legacy(URL.saveDraft(op));
+    added[`DELETE ${root}/${id}`] = legacy(URL.deleteDraft(op));
+    added[`POST ${root}/${id}/test`] = legacy(URL.testDraft(op));
+    added[`GET ${root}/${id}/publish-check`] = legacy(URL.publishCheck(op));
+    added[`POST ${root}/${id}/publish`] = legacy(URL.publish(op));
+    added[`GET ${root}/${id}/revisions?page_size=20`] = () => Response.json({ items: [], next_page_token: null });
+  }
+  return { ...routes, ...added, ...over };
 }

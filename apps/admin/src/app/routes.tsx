@@ -96,7 +96,10 @@ export const appRoutes: RouteObject[] = createRoutesFromElements(
           <Route path="new" element={null} />
           <Route path=":id" element={null} />
         </Route>
-        <Route path="ai/configs" element={<AiConfigsPage />} />
+        <Route path="ai/configs" element={<AiConfigsPage />}>
+          <Route path="drafts/:id" element={null} />
+          <Route path="history" element={null} />
+        </Route>
         {/* The Thao tác and Prompt pages became "Cấu hình": old links and bookmarks keep the operation (`?op=`). */}
         <Route path="ai/operations" element={<ToConfigs />} />
         <Route path="ai/prompts" element={<ToConfigs />} />
