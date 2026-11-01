@@ -130,7 +130,8 @@ export class AiBatchesService {
     if (query.operation) clauses.push(Prisma.sql`b.operation = ${query.operation}`);
     if (query.kind) clauses.push(Prisma.sql`b.kind = ${query.kind}`);
     if (query.status) clauses.push(Prisma.sql`${STATUS} = ${query.status}`);
-    if (cursor) clauses.push(Prisma.sql`(b.created_at, b.id) < (${new Date(cursor.created_at)}, ${cursor.id}::uuid)`);
+    // Immutable batch rows retain the DB timestamp, including microseconds lost by JS Date serialization.
+    if (cursor) clauses.push(Prisma.sql`(b.created_at, b.id) < ((SELECT anchor.created_at FROM ai_batches anchor WHERE anchor.id = ${cursor.id}::uuid), ${cursor.id}::uuid)`);
     const rows = await this.prisma.$queryRaw<BatchRow[]>(Prisma.sql`
       SELECT ${VIEW_COLUMNS} ${SOURCE_JOINS} WHERE ${Prisma.join(clauses, ' AND ')}
       ORDER BY b.created_at DESC, b.id DESC LIMIT ${query.page_size + 1}`);
