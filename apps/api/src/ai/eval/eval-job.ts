@@ -114,11 +114,12 @@ export class EvalJob {
   private execute(run: EvalRunRow, item: EvalRunItemRow, selection: Selection, prompt: Awaited<ReturnType<EvalJob['prompt']>>): Promise<RunReport> {
     return this.runner.execute({
       purpose: 'eval', operation: run.operation, data: item.input, actorId: run.startedBy,
-      callOperationId: `eval-${run.id}-${item.exampleId}`, selection, prompt,
+      callOperationId: `eval-${run.id}-${item.exampleId}`, selection, prompt, ...(run.batchId ? { batchId: run.batchId } : {}),
     });
   }
 
   private async prompt(run: EvalRunRow) {
+    if (run.snapshot) return { instructions: run.snapshot.instructions, examples: run.snapshot.examples, revision: null };
     if (run.configId !== null) {
       // The config is read once, before any call: a draft saved again since the run was queued must not run its newer text under the
       // older version number (Review focus 1), and a draft deleted since has nothing to run.

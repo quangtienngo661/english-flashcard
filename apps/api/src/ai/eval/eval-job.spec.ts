@@ -112,6 +112,20 @@ describe('EvalJob.run', () => {
   let ctx: ReturnType<typeof setup>;
   beforeEach(() => { ctx = setup(); });
 
+  it('workspace: snapshot survives draft edits and worker restart; every call keeps batch provenance', async () => {
+    const snapshot = { instructions: 'Frozen prompt', examples: [], model_ref: null, effort: null, thinking: null, max_output_tokens: 1200 };
+    const batchId = '99999999-9999-4999-8999-999999999999';
+    ctx = setup(runRow({ configId: ADMIN, configVersion: 1, promptRevision: null, snapshot, batchId }));
+    ctx.repo.configOf.mockRejectedValue(new Error('mutable draft must never be read'));
+    await ctx.job.run(RUN);
+    expect(ctx.repo.row.status).toBe('finished');
+    expect(ctx.repo.configOf).not.toHaveBeenCalled();
+    expect(ctx.runner.execute.mock.calls[0]![0]).toMatchObject({ batchId, prompt: { instructions: 'Frozen prompt', examples: [] } });
+    const calls = ctx.runner.execute.mock.calls.length;
+    await ctx.job.run(RUN);
+    expect(ctx.runner.execute).toHaveBeenCalledTimes(calls);
+  });
+
   it('B6#17: three examples → finished with total 3, valid count, average latency, cost', async () => {
     await ctx.job.run(RUN);
     expect(ctx.repo.row).toMatchObject({ status: 'finished', total: 3, validCount: 3, avgLatencyMs: 100, costUsd: '0.00030000' });

@@ -51,9 +51,10 @@ describe('AiMaintenance', () => {
   let ctx: ReturnType<typeof setup>;
   beforeEach(() => { ctx = setup(); });
 
-  it('the five jobs are registered, in order', () => {
+  it('registers the recovery jobs independently, including synchronous test batches', () => {
     expect([...ctx.jobs.keys()]).toEqual([
       'ai.operations-expire', 'ai.contents-expire', 'ai.models-refresh', 'ai.eval-runs-recover', 'ai.judge-passes-recover',
+      'ai.test-batches-recover',
     ]);
   });
 
@@ -204,7 +205,7 @@ describe('AiMaintenance ai.judge-passes-recover (nhóm B M3, B41)', () => {
     expect(text).toContain("WHERE status = 'running' AND heartbeat_at < ?");
     expect(text).not.toContain('scores');
     // B41: a pass over real questions is closed like one attached to a run, so there is no condition on the pass kind.
-    expect(text).not.toContain('kind');
+    expect(text.split('RETURNING')[0]).not.toContain('kind');
     expect(values).toEqual([NOW, new Date(NOW.getTime() - 15 * MINUTE)]);
   });
 
@@ -216,5 +217,48 @@ describe('AiMaintenance ai.judge-passes-recover (nhóm B M3, B41)', () => {
     expect(ctx.queue.enqueueJudgePass).toHaveBeenCalledTimes(1);
     expect(ctx.logger.warn).toHaveBeenCalledWith('ai_judge_recover_failed', expect.objectContaining({ run_id: RUN }));
     expect(ctx.prisma.$executeRaw).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('AiMaintenance durable batch recovery', () => {
+  it.each([
+    ['ai.eval-runs-recover', 'ai_eval_runs', 'b.id = stalled.batch_id', "b.kind = 'eval'"],
+    ['ai.judge-passes-recover', 'ai_judge_passes', 'b.source_id = stalled.id', "b.kind = 'judge'"],
+  ])('%s persists terminal batch metadata from only the stalled sources in one statement', async (name, table, link, kind) => {
+    const ctx = setup();
+    await ctx.jobs.get(name)!(NOW);
+    expect(ctx.prisma.$executeRaw).toHaveBeenCalledTimes(1);
+    const { text, values } = sqlOf(ctx.prisma.$executeRaw.mock.calls[0]!);
+    expect(text).toContain(`WITH stalled AS ( UPDATE ${table}`);
+    expect(text).toContain("WHERE status = 'running' AND heartbeat_at < ?");
+    expect(text).toContain('RETURNING');
+    expect(text).toContain("UPDATE ai_batches b SET status = 'failed'");
+    expect(text).toContain('started_at = COALESCE(b.started_at, stalled.started_at)');
+    expect(text).toContain('finished_at = stalled.finished_at');
+    expect(text).toContain('FROM stalled WHERE');
+    expect(text).toContain(link);
+    expect(text).toContain(kind);
+    expect(values).toEqual([NOW, new Date(NOW.getTime() - 15 * MINUTE)]);
+    expect(text).not.toContain('DELETE');
+    expect(ctx.fake.describeModel).not.toHaveBeenCalled();
+  });
+
+  it('recovers abandoned running tests and tests abandoned before start after 15 minutes, without touching fresh/terminal batches or ledger data', async () => {
+    const ctx = setup();
+    const job = ctx.jobs.get('ai.test-batches-recover');
+    expect(job).toBeTypeOf('function');
+    await job!(NOW);
+    expect(ctx.prisma.$executeRaw).toHaveBeenCalledTimes(1);
+    const { text, values } = sqlOf(ctx.prisma.$executeRaw.mock.calls[0]!);
+    expect(text).toContain("UPDATE ai_batches SET status = 'failed', finished_at = ?");
+    expect(text).toContain("WHERE kind = 'test' AND status IN ('queued', 'running')");
+    expect(text).toContain('COALESCE(started_at, created_at) < ?');
+    expect(values).toEqual([NOW, new Date(NOW.getTime() - 15 * MINUTE)]);
+    expect(text).not.toContain('ai_calls');
+    expect(text).not.toContain('ai_call_contents');
+    expect(text).not.toContain('DELETE');
+    expect(ctx.queue.enqueue).not.toHaveBeenCalled();
+    expect(ctx.queue.enqueueJudgePass).not.toHaveBeenCalled();
+    expect(ctx.fake.describeModel).not.toHaveBeenCalled();
   });
 });

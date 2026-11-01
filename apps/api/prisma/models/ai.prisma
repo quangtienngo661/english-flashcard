@@ -122,6 +122,7 @@ model AiCall {
   id                String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   operationId       String    @map("operation_id")
   aiOperationId     String?   @map("ai_operation_id") @db.Uuid
+  batchId           String?   @map("batch_id") @db.Uuid
   // 1 | 2 (CHECK).
   attempt           Int
   // learner | test | eval | judge (CHECK; judge since nhóm B M3).
@@ -152,6 +153,7 @@ model AiCall {
 
   @@index([createdAt])
   @@index([operationId])
+  @@index([batchId])
   @@index([userId])
   @@map("ai_calls")
 }
@@ -261,6 +263,9 @@ model AiEvalRun {
   // The config this run tried (nhóm B M2): no foreign key, a deleted draft keeps its runs. Both set together (CHECK).
   configId         String?   @map("config_id") @db.Uuid
   configVersion    Int?      @map("config_version")
+  snapshot         Json?
+  fingerprint      String?
+  batchId          String?   @map("batch_id") @db.Uuid
   // Set when a run that holds human labels is "deleted" (nhóm B M3): the run and its items stay, hidden.
   hiddenAt         DateTime? @map("hidden_at") @db.Timestamptz
 
@@ -310,12 +315,16 @@ model AiEvalRunItem {
 }
 
 // One config of an operation (nhóm B design §4, §6): prompt + model + effort + thinking + tokens as one versioned unit.
-// draft | published | retired (CHECK). The partial unique index `ai_configs_one_draft_key` (one draft per operation) and the CHECKs are in the migration.
+// draft | published | retired (CHECK). Multiple drafts per operation; soft deletion keeps their execution and revision history.
 model AiConfig {
   id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   operation       String
   // Handed out by ai_live_configs.last_number, never twice.
   number          Int
+  name            String?
+  deletedAt       DateTime? @map("deleted_at") @db.Timestamptz
+  updatedAt       DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+  fingerprint     String?
   // 0 on creation, +1 on each save of the draft.
   version         Int       @default(0)
   instructions    String
@@ -339,6 +348,7 @@ model AiConfig {
   previousOf  AiLiveConfig[]  @relation("PreviousConfig")
   events      AiConfigEvent[] @relation("EventConfig")
   eventsFrom  AiConfigEvent[] @relation("EventFromConfig")
+  revisions   AiConfigRevision[]
 
   @@unique([operation, number])
   @@map("ai_configs")
@@ -516,4 +526,44 @@ model AiLabel {
 
   @@unique([subjectKind, subjectId, criterion])
   @@map("ai_labels")
+}
+
+// Immutable saved versions; NULL fingerprints identify migration snapshots, computed from content on read.
+model AiConfigRevision {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  configId String @map("config_id") @db.Uuid
+  version Int
+  content Json
+  fingerprint String?
+  name String?
+  note String?
+  savedBy String @map("saved_by") @db.Uuid
+  savedAt DateTime @default(now()) @map("saved_at") @db.Timestamptz
+  config AiConfig @relation(fields: [configId], references: [id], onDelete: Restrict)
+  @@unique([configId,version])
+  @@map("ai_config_revisions")
+}
+
+// Durable metadata for admin work. Expiring request/response content stays in ai_call_contents.
+model AiBatch {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  kind String
+  operation String
+  status String @default("queued")
+  configId String? @map("config_id") @db.Uuid
+  configVersion Int? @map("config_version")
+  fingerprint String?
+  snapshot Json?
+  sourceId String? @unique @map("source_id") @db.Uuid
+  parentId String? @map("parent_id") @db.Uuid
+  model String
+  provider String
+  total Int
+  actorId String @map("actor_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  startedAt DateTime? @map("started_at") @db.Timestamptz
+  finishedAt DateTime? @map("finished_at") @db.Timestamptz
+  @@index([createdAt,id])
+  @@index([configId])
+  @@map("ai_batches")
 }

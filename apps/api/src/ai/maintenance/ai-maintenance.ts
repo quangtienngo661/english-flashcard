@@ -33,6 +33,7 @@ export class AiMaintenance implements OnModuleInit {
     this.scheduler.register('ai.models-refresh', (now) => this.refreshModels(now));
     this.scheduler.register('ai.eval-runs-recover', (now) => this.recoverEvalRuns(now));
     this.scheduler.register('ai.judge-passes-recover', (now) => this.recoverJudgePasses(now));
+    this.scheduler.register('ai.test-batches-recover', (now) => this.recoverTestBatches(now));
   }
 
   /** Each model is claimed first, so two processes never describe the same model in the same hour (B6E95). */
@@ -85,8 +86,14 @@ export class AiMaintenance implements OnModuleInit {
     }
     for (const pass of queued) if (pass.total !== null) await this.queue.enqueueJudgePass(pass.id);
     await this.prisma.$executeRaw`
-      UPDATE ai_judge_passes SET status = 'failed', error = 'stalled', finished_at = ${now}
-      WHERE status = 'running' AND heartbeat_at < ${new Date(now.getTime() - EVAL_RUNNING_STALE_MS)}`;
+      WITH stalled AS (
+        UPDATE ai_judge_passes SET status = 'failed', error = 'stalled', finished_at = ${now}
+        WHERE status = 'running' AND heartbeat_at < ${new Date(now.getTime() - EVAL_RUNNING_STALE_MS)}
+        RETURNING id, started_at, finished_at, total
+      )
+      UPDATE ai_batches b SET status = 'failed', started_at = COALESCE(b.started_at, stalled.started_at),
+        finished_at = stalled.finished_at, total = COALESCE(stalled.total, b.total)
+      FROM stalled WHERE b.source_id = stalled.id AND b.kind = 'judge'`;
   }
 
   /** A run Redis never took is enqueued again (B6E91, job id = run id); a run whose worker died is closed (B6E92). */
@@ -96,7 +103,21 @@ export class AiMaintenance implements OnModuleInit {
     });
     for (const run of queued) await this.queue.enqueue(run.id);
     await this.prisma.$executeRaw`
-      UPDATE ai_eval_runs SET status = 'failed', error = 'stalled', finished_at = ${now}
-      WHERE status = 'running' AND heartbeat_at < ${new Date(now.getTime() - EVAL_RUNNING_STALE_MS)}`;
+      WITH stalled AS (
+        UPDATE ai_eval_runs SET status = 'failed', error = 'stalled', finished_at = ${now}
+        WHERE status = 'running' AND heartbeat_at < ${new Date(now.getTime() - EVAL_RUNNING_STALE_MS)}
+        RETURNING batch_id, started_at, finished_at, total
+      )
+      UPDATE ai_batches b SET status = 'failed', started_at = COALESCE(b.started_at, stalled.started_at),
+        finished_at = stalled.finished_at, total = stalled.total
+      FROM stalled WHERE b.id = stalled.batch_id AND b.kind = 'eval'`;
+  }
+
+  /** Synchronous tests cannot outlive the stale interval; also covers a process dying after batch creation but before start. */
+  private async recoverTestBatches(now: Date): Promise<void> {
+    await this.prisma.$executeRaw`
+      UPDATE ai_batches SET status = 'failed', finished_at = ${now}
+      WHERE kind = 'test' AND status IN ('queued', 'running')
+        AND COALESCE(started_at, created_at) < ${new Date(now.getTime() - EVAL_RUNNING_STALE_MS)}`;
   }
 }

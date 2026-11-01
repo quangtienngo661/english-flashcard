@@ -238,6 +238,26 @@ const adminTest = (overrides: Partial<Extract<ExecuteInput, { purpose: 'test' | 
   purpose: 'test', operation: OP, data: DATA, actorId: ADMIN, callOperationId: 'test-1', ...overrides,
 });
 
+describe('RunnerService batch accounting', () => {
+  it.each(['test', 'eval'] as const)('%s carries the batch through every retry without sending it to the provider', async (purpose) => {
+    const ctx = setup({ steps: [() => fail('server', 503), () => ok()] });
+    const batchId = '00000000-0000-4000-8000-0000000000b7';
+    const report = await ctx.runner.execute(adminTest({ purpose, batchId }));
+    expect(report.result.status).toBe('succeeded');
+    expect(ctx.records.map(({ call }) => [call.attempt, call.batchId])).toEqual([[1, batchId], [2, batchId]]);
+    expect(JSON.stringify(ctx.adapter.requests)).not.toContain(batchId);
+  });
+
+  it('judge retry attempts carry the same pass batch', async () => {
+    const ctx = setup({ steps: [() => fail('server', 503), () => ok('{"codes":["one"],"verdicts":["pass"],"reasons":["ok"]}')] });
+    const batchId = '00000000-0000-4000-8000-0000000000b7';
+    await ctx.runner.execute({ purpose: 'judge', operation: 'judge', actorId: ADMIN, callOperationId: 'judge-P-I', batchId,
+      selection: { ...selectionOf(), operation: 'judge' }, prompt: { instructions: 'Score.', examples: [], revision: 1 },
+      data: { target_operation: OP, input: DATA, output: JSON.parse(GOOD), criteria: [{ code: 'one', question: 'Good?' }], context: null } });
+    expect(ctx.records.map(({ call }) => [call.attempt, call.batchId])).toEqual([[1, batchId], [2, batchId]]);
+  });
+});
+
 describe('RunnerService reads the live config (nhóm B M2, design §6.5)', () => {
   it('a learner call uses the prompt of its readiness read: the ledger and the meta carry the config number, the adapter gets the config text', async () => {
     const { runner, records, adapter, liveLoads } = setup({ prompt: { instructions: 'X', examples: [], revision: 7 } });

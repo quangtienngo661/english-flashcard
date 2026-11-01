@@ -54,6 +54,15 @@ function setup() {
 const content = { request: { instructions: SECRET_INSTRUCTIONS, data: SECRET_DATA }, response: SECRET_RESPONSE };
 
 describe('CallLedger.record', () => {
+  it('stores the admin batch on each attempt and keeps legacy calls unbatched', async () => {
+    const { ledger, calls } = setup();
+    const batchId = '00000000-0000-4000-8000-0000000000b7';
+    await ledger.record(record({ purpose: 'eval', batchId, attempt: 1 }), content, 0, NOW);
+    await ledger.record(record({ purpose: 'eval', batchId, attempt: 2 }), content, 0, NOW);
+    await ledger.record(record(), content, 0, NOW);
+    expect(calls.map((call) => [call.attempt, call.batchId])).toEqual([[1, batchId], [2, batchId], [1, null]]);
+  });
+
   it('writes the call with its cost, tokens and created_at from now, and returns its id', async () => {
     const { ledger, calls } = setup();
     const id = await ledger.record(record(), content, 7, NOW);

@@ -24,7 +24,7 @@ const itemRow = (id: string, position: number, over: Partial<PassItemRow> = {}):
   id, position, subjectKind: 'eval_item', subjectId: `subject-${id}`, input: IN, output: OUT, context: null, ...over,
 });
 
-function setup(init: { items?: PassItemRow[]; revision?: Partial<RevisionToRun>; pass?: PassToRun | null } = {}) {
+function setup(init: { items?: PassItemRow[]; revision?: Partial<RevisionToRun>; pass?: PassToRun | null; batches?: boolean } = {}) {
   const pass: PassToRun | null = init.pass === undefined
     ? { id: PASS, judgeRevisionId: R2, operation: 'generate_cloze', startedBy: ADMIN } : init.pass;
   const revision: RevisionToRun = {
@@ -34,6 +34,7 @@ function setup(init: { items?: PassItemRow[]; revision?: Partial<RevisionToRun>;
   const items = init.items ?? [itemRow(I1, 0)];
   const repo = {
     start: vi.fn(async (_id: string, _now: Date) => pass),
+    ensureBatch: vi.fn(async (_id: string) => CONFIG),
     revisionOf: vi.fn(async (_id: string) => revision),
     pendingItems: vi.fn(async (_id: string) => items),
     isRunning: vi.fn(async (_id: string) => true),
@@ -55,8 +56,9 @@ function setup(init: { items?: PassItemRow[]; revision?: Partial<RevisionToRun>;
   });
   const runner = { execute: vi.fn(async (input: ExecuteInput) => answer(input)) };
   const logger = { warn: vi.fn(), info: vi.fn(), error: vi.fn() } as unknown as AppLogger;
-  const job = new JudgeJob(new FakeClock(NOW), repo as never, runner as never, logger);
-  return { job, repo, runner, answer };
+  const batches = { start: vi.fn(async () => {}), finish: vi.fn(async () => {}) };
+  const job = new JudgeJob(new FakeClock(NOW), repo as never, runner as never, logger, init.batches ? batches as never : undefined);
+  return { job, repo, runner, answer, batches };
 }
 
 const capReport = (input: ExecuteInput): RunReport => ({
@@ -64,6 +66,37 @@ const capReport = (input: ExecuteInput): RunReport => ({
 });
 
 describe('JudgeJob.run (D3, B13, B19)', () => {
+  it('resumed work stays in the pass batch and closes it after the pass, without attaching it to provider data', async () => {
+    const ctx = setup({ batches: true, items: [itemRow(I1, 0), itemRow(I2, 1)] });
+    await ctx.job.run(PASS);
+    await ctx.job.run(PASS);
+    expect(ctx.repo.ensureBatch).toHaveBeenCalledTimes(2);
+    expect(ctx.batches.start).toHaveBeenCalledWith(CONFIG);
+    expect(ctx.batches.finish).toHaveBeenCalledWith(CONFIG);
+    for (const [input] of ctx.runner.execute.mock.calls) {
+      expect(input).toHaveProperty('batchId', CONFIG);
+      expect(JSON.stringify(input.data)).not.toContain(CONFIG);
+    }
+  });
+
+  it('an admin cap failure closes the existing batch as failed, preserving charged attempts', async () => {
+    const ctx = setup({ batches: true });
+    ctx.runner.execute.mockImplementation(async (input) => capReport(input));
+    await ctx.job.run(PASS);
+    expect(ctx.batches.finish).toHaveBeenCalledWith(CONFIG, 'failed');
+    expect(ctx.repo.writeScores).not.toHaveBeenCalled();
+  });
+
+  it('a missing model still fails its batch and a cancelled pass does not get marked finished', async () => {
+    const missing = setup({ batches: true, revision: { model: null } });
+    await missing.job.run(PASS);
+    expect(missing.batches.finish).toHaveBeenCalledWith(CONFIG, 'failed');
+    const cancelled = setup({ batches: true });
+    cancelled.repo.isRunning.mockResolvedValue(false);
+    await cancelled.job.run(PASS);
+    expect(cancelled.batches.finish).not.toHaveBeenCalled();
+  });
+
   it('D3: the data of a call are exactly the five fields, the call id names the pass and the item, and the revision number is the prompt revision', async () => {
     const ctx = setup({ items: [itemRow(I1, 0)] });
     await ctx.job.run(PASS);

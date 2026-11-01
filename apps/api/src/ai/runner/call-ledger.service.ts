@@ -12,6 +12,7 @@ import { callCost, type Price } from './cost.js';
 export type CallRecord = {
   operationId: string;
   aiOperationId: string | null;
+  batchId?: string;
   attempt: 1 | 2;
   purpose: AiPurpose;
   operation: GatewayOperation;
@@ -71,6 +72,7 @@ export class CallLedger {
           id,
           operationId: call.operationId,
           aiOperationId: call.aiOperationId,
+          batchId: call.batchId ?? null,
           attempt: call.attempt,
           purpose: call.purpose,
           operation: call.operation,

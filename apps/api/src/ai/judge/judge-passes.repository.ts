@@ -1,7 +1,8 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Optional } from '@nestjs/common';
 import { PRISMA_CLIENT } from '../../common/db/prisma.module.js';
 import { Prisma, type PrismaClient } from '../../generated/prisma/client.js';
 import type { AiOperation } from '../ai.types.js';
+import { AiBatchesService, type BatchStatus } from '../batches/ai-batches.service.js';
 import type { PromptExample } from '../prompts/prompt-rules.js';
 import type { ModelRow } from '../runner/to-selection.js';
 import { JudgeScoresReader } from './judge-scores.reader.js';
@@ -70,11 +71,12 @@ export class JudgePassesRepository {
   constructor(
     @Inject(PRISMA_CLIENT) private readonly prisma: PrismaClient,
     @Inject(JudgeScoresReader) private readonly scores: JudgeScoresReader,
+    @Optional() @Inject(AiBatchesService) private readonly batches?: AiBatchesService,
   ) {}
 
   /** The pass and its items in one transaction; the partial unique index of B16 reaches the caller as P2002. Returns the pass id. */
   async create(pass: NewPass, items: NewPassItem[], now: Date): Promise<string> {
-    return this.prisma.$transaction(async (tx) => {
+    const id = await this.prisma.$transaction(async (tx) => {
       const row = await tx.aiJudgePass.create({
         data: {
           judgeRevisionId: pass.judgeRevisionId, kind: pass.kind, operation: pass.operation, evalRunId: pass.evalRunId,
@@ -94,6 +96,25 @@ export class JudgePassesRepository {
         })) });
       }
       return row.id;
+    });
+    await this.ensureBatch(id);
+    return id;
+  }
+
+  /** One durable batch per pass, even after a worker redelivery. No subject input/output enters the snapshot. */
+  async ensureBatch(passId: string): Promise<string | null> {
+    if (!this.batches) return null;
+    const pass = await this.prisma.aiJudgePass.findUnique({ where: { id: passId }, include: {
+      revision: { include: { model: true } }, evalRun: { select: { batchId: true } },
+    } });
+    if (!pass) return null;
+    const revision = pass.revision;
+    return this.batches.create({
+      kind: 'judge', operation: pass.operation, sourceId: pass.id, parentId: pass.evalRun?.batchId ?? null,
+      model: revision.model?.modelId ?? '', provider: revision.model?.provider ?? '', total: pass.total ?? 0,
+      actorId: pass.startedBy, status: pass.status as BatchStatus,
+      snapshot: { instructions: revision.instructions, examples: revision.examples, model_ref: revision.modelRef,
+        criteria: revision.criteria, effort: revision.effort, thinking: revision.thinking, max_output_tokens: revision.maxOutputTokens },
     });
   }
 
@@ -150,9 +171,15 @@ export class JudgePassesRepository {
    */
   async start(passId: string, now: Date): Promise<PassToRun | null> {
     const [row] = await this.prisma.$queryRaw<Array<{ id: string; judge_revision_id: string; operation: AiOperation; started_by: string }>>`
-      UPDATE ai_judge_passes SET status = 'running', started_at = COALESCE(started_at, ${now}), heartbeat_at = ${now}
-      WHERE id = ${passId}::uuid AND status IN ('queued', 'running') AND total IS NOT NULL
-      RETURNING id, judge_revision_id, operation, started_by`;
+      WITH claimed AS (
+        UPDATE ai_judge_passes SET status = 'running', started_at = COALESCE(started_at, ${now}), heartbeat_at = ${now}
+        WHERE id = ${passId}::uuid AND status IN ('queued', 'running') AND total IS NOT NULL
+        RETURNING id, judge_revision_id, operation, started_by, started_at, total
+      ), batched AS (
+        UPDATE ai_batches b SET status = 'running', started_at = COALESCE(b.started_at, claimed.started_at), total = claimed.total
+        FROM claimed WHERE b.source_id = claimed.id AND b.kind = 'judge' RETURNING b.id
+      )
+      SELECT id, judge_revision_id, operation, started_by FROM claimed`;
     return row ? { id: row.id, judgeRevisionId: row.judge_revision_id, operation: row.operation, startedBy: row.started_by } : null;
   }
 
@@ -216,14 +243,26 @@ export class JudgePassesRepository {
 
   async finish(passId: string, now: Date): Promise<void> {
     await this.prisma.$executeRaw`
-      UPDATE ai_judge_passes SET status = 'finished', finished_at = ${now}, heartbeat_at = ${now} WHERE id = ${passId}::uuid AND status = 'running'`;
+      WITH completed AS (
+        UPDATE ai_judge_passes SET status = 'finished', finished_at = ${now}, heartbeat_at = ${now} WHERE id = ${passId}::uuid AND status = 'running'
+        RETURNING id, started_at, finished_at, total
+      )
+      UPDATE ai_batches b SET status = 'finished', total = COALESCE(completed.total, b.total),
+        started_at = COALESCE(b.started_at, completed.started_at), finished_at = completed.finished_at
+      FROM completed WHERE b.source_id = completed.id AND b.kind = 'judge'`;
   }
 
   /** The error is a code or a name, never a message that could echo content (as `ai_eval_runs.error`). */
   async fail(passId: string, error: string, now: Date): Promise<void> {
     await this.prisma.$executeRaw`
-      UPDATE ai_judge_passes SET status = 'failed', error = ${error}, finished_at = ${now}
-      WHERE id = ${passId}::uuid AND status IN ('queued', 'running')`;
+      WITH completed AS (
+        UPDATE ai_judge_passes SET status = 'failed', error = ${error}, finished_at = ${now}
+        WHERE id = ${passId}::uuid AND status IN ('queued', 'running')
+        RETURNING id, started_at, finished_at, total, error
+      )
+      UPDATE ai_batches b SET status = CASE WHEN completed.error = 'cancelled' THEN 'cancelled' ELSE 'failed' END,
+        total = COALESCE(completed.total, b.total), started_at = COALESCE(b.started_at, completed.started_at), finished_at = completed.finished_at
+      FROM completed WHERE b.source_id = completed.id AND b.kind = 'judge'`;
   }
 
   /**
@@ -233,10 +272,23 @@ export class JudgePassesRepository {
    * state, or a run that is gone → nothing. Two callers at once are safe: the snapshot is claimed by the `total IS NULL` guard in a transaction.
    */
   async release(runId: string, now: Date): Promise<string[]> {
+    // Includes passes that will end with zero subjects or run-failed and therefore never reach JudgeJob.
+    if (this.batches) {
+      const passes = await this.prisma.aiJudgePass.findMany({ where: { evalRunId: runId }, select: { id: true } });
+      for (const pass of passes) await this.ensureBatch(pass.id);
+    }
     const run = await this.prisma.aiEvalRun.findUnique({ where: { id: runId }, select: { status: true } });
     if (!run) return [];
     if (run.status === 'failed') {
-      await this.prisma.aiJudgePass.updateMany({ where: { evalRunId: runId, status: 'queued' }, data: { status: 'failed', error: 'run-failed', finishedAt: now } });
+      await this.prisma.$executeRaw`
+        WITH completed AS (
+          UPDATE ai_judge_passes SET status = 'failed', error = 'run-failed', finished_at = ${now}
+          WHERE eval_run_id = ${runId}::uuid AND status = 'queued'
+          RETURNING id, started_at, finished_at, total
+        )
+        UPDATE ai_batches b SET status = 'failed', total = COALESCE(completed.total, b.total),
+          started_at = COALESCE(b.started_at, completed.started_at), finished_at = completed.finished_at
+        FROM completed WHERE b.source_id = completed.id AND b.kind = 'judge'`;
       return [];
     }
     if (run.status !== 'finished') return [];
@@ -259,7 +311,12 @@ export class JudgePassesRepository {
         where: { id: passId, status: 'queued', total: null },
         data: subjects.length === 0 ? { total: 0, status: 'finished', startedAt: now, finishedAt: now } : { total: subjects.length },
       });
-      if (claimed.count === 0 || subjects.length === 0) return;
+      if (claimed.count === 0) return;
+      // Copy the resolved total before any possible source deletion, including the no-subject terminal branch.
+      await tx.aiBatch.updateMany({ where: { sourceId: passId, kind: 'judge' }, data: {
+        total: subjects.length, ...(subjects.length === 0 ? { status: 'finished', startedAt: now, finishedAt: now } : {}),
+      } });
+      if (subjects.length === 0) return;
       await tx.aiJudgePassItem.createMany({ data: subjects.map((item, position) => ({
         passId, position, subjectKind: 'eval_item', subjectId: item.id, input: item.input as Prisma.InputJsonObject, output: item.output as Prisma.InputJsonObject,
       })) });

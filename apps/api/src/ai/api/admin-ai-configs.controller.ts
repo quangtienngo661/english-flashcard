@@ -1,5 +1,7 @@
-import { Body, Controller, Delete, Get, HttpCode, Inject, Param, Post, Put, Query, Req } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, Inject, Param, Post, Put, Query, Req, UseInterceptors } from '@nestjs/common';
 import { z } from 'zod';
+import { IdempotencyInterceptor } from '../../common/idempotency/idempotency.interceptor.js';
+import { Idempotent } from '../../common/idempotency/idempotent.decorator.js';
 import { RateLimit } from '../../common/rate-limit/rate-limit.decorator.js';
 import type { RequestWithUser } from '../../common/request-user/request-user.js';
 import { RequirePermission } from '../../identity/staff/require-permission.decorator.js';
@@ -8,6 +10,7 @@ import { ConfigsService, createDraftSchema, saveDraftSchema, testDraftSchema } f
 import { PublishService, publishSchema, rollbackSchema } from '../configs/publish.service.js';
 
 const operationParams = z.strictObject({ op: z.enum(AI_OPERATIONS) });
+const draftParams = operationParams.extend({ id: z.uuid().transform((id) => id.toLowerCase()) });
 const historyQuery = z.strictObject({
   page_size: z.coerce.number().int().min(1).max(100).default(20),
   page_token: z.string().optional(),
@@ -104,4 +107,97 @@ export class AdminAiConfigsController {
   ) {
     return this.configs.testDraft(req.user!.userId, params.op, body);
   }
+
+  @Get(':op/revisions')
+  operationRevisions(
+    @Param({ schema: operationParams }) params: z.infer<typeof operationParams>,
+    @Query({ schema: historyQuery }) query: z.infer<typeof historyQuery>,
+  ) {
+    return this.configs.operationRevisions(params.op, query.page_size, query.page_token);
+  }
+
+  @Get(':op/drafts')
+  listDrafts(
+    @Param({ schema: operationParams }) params: z.infer<typeof operationParams>,
+    @Query({ schema: historyQuery }) query: z.infer<typeof historyQuery>,
+  ) {
+    return this.configs.listDrafts(params.op, query.page_size, query.page_token);
+  }
+
+  @Post(':op/drafts')
+  @HttpCode(201)
+  @RateLimit('user.write')
+  @Idempotent()
+  @UseInterceptors(IdempotencyInterceptor)
+  createNamedDraft(
+    @Param({ schema: operationParams }) params: z.infer<typeof operationParams>,
+    @Body({ schema: createDraftSchema }) body: z.infer<typeof createDraftSchema>,
+    @Req() req: RequestWithUser,
+  ) {
+    return this.configs.createDraft(req.user!.userId, params.op, body, true);
+  }
+
+  @Get(':op/drafts/:id')
+  async getNamedDraft(@Param({ schema: draftParams }) params: z.infer<typeof draftParams>) {
+    return (await this.configs.views([await this.configs.getDraft(params.op, params.id)]))[0];
+  }
+
+  @Put(':op/drafts/:id')
+  @RateLimit('user.write')
+  @Idempotent()
+  @UseInterceptors(IdempotencyInterceptor)
+  saveNamedDraft(
+    @Param({ schema: draftParams }) params: z.infer<typeof draftParams>,
+    @Body({ schema: saveDraftSchema }) body: z.infer<typeof saveDraftSchema>,
+    @Req() req: RequestWithUser,
+  ) {
+    return this.configs.saveDraft(req.user!.userId, params.op, body, params.id);
+  }
+
+  @Delete(':op/drafts/:id')
+  @HttpCode(204)
+  @RateLimit('user.write')
+  @Idempotent()
+  @UseInterceptors(IdempotencyInterceptor)
+  async deleteNamedDraft(@Param({ schema: draftParams }) params: z.infer<typeof draftParams>): Promise<void> {
+    await this.configs.deleteDraft(params.op, params.id);
+  }
+
+  @Get(':op/drafts/:id/revisions')
+  revisions(
+    @Param({ schema: draftParams }) params: z.infer<typeof draftParams>,
+    @Query({ schema: historyQuery }) query: z.infer<typeof historyQuery>,
+  ) {
+    return this.configs.revisions(params.op, params.id, query.page_size, query.page_token);
+  }
+
+  @Get(':op/drafts/:id/publish-check')
+  checkNamedDraft(@Param({ schema: draftParams }) params: z.infer<typeof draftParams>) {
+    return this.publish.check(params.op, params.id);
+  }
+
+  @Post(':op/drafts/:id/publish')
+  @HttpCode(200)
+  @RateLimit('user.write')
+  @Idempotent()
+  @UseInterceptors(IdempotencyInterceptor)
+  publishNamedDraft(
+    @Param({ schema: draftParams }) params: z.infer<typeof draftParams>,
+    @Body({ schema: publishSchema }) body: z.infer<typeof publishSchema>,
+    @Req() req: RequestWithUser,
+  ) {
+    return this.publish.publish(req.user!.userId, params.op, body, params.id);
+  }
+
+  /** Provider work is synchronous and counted once by ai.test; responses expire through call_contents, never idempotency storage. */
+  @Post(':op/drafts/:id/test')
+  @HttpCode(200)
+  testNamedDraft(
+    @Param({ schema: draftParams }) params: z.infer<typeof draftParams>,
+    @Body({ schema: testDraftSchema }) body: z.infer<typeof testDraftSchema>,
+    @Req() req: RequestWithUser,
+  ) {
+    return this.configs.testDraft(req.user!.userId, params.op, body, params.id);
+  }
+
 }

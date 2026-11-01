@@ -6,6 +6,8 @@ import { AiAdapterRegistry } from './adapters/ai-adapter.registry.js';
 import { IdempotencyInterceptor } from '../common/idempotency/idempotency.interceptor.js';
 import { AiService } from './ai.service.js';
 import { AiAccountEraser } from './account-eraser.provider.js';
+import { AiBatchesService } from './batches/ai-batches.service.js';
+import { AdminAiBatchesController } from './api/admin-ai-batches.controller.js';
 import { AdminAiConfigsController } from './api/admin-ai-configs.controller.js';
 import { AdminAiDashboardController } from './api/admin-ai-dashboard.controller.js';
 import { AdminAiEvalController } from './api/admin-ai-eval.controller.js';
@@ -53,11 +55,11 @@ import { SelectionReader } from './runner/selection.js';
   imports: [SettingsModule, IdentityModule],
   controllers: [
     AdminAiModelsController, AdminAiOperationsController, AdminAiEvalController, AdminAiPromptsController, AdminAiReportsController,
-    AdminAiDashboardController, AdminAiConfigsController, AdminAiJudgesController,
+    AdminAiDashboardController, AdminAiConfigsController, AdminAiJudgesController, AdminAiBatchesController,
   ],
   providers: [
     AiAdapterRegistry, AdaptersRegistrar, PromptsRepository, ModelsService, OperationSettingsService, SelectionReader, CallLedger,
-    ReadinessService, OperationsRepository, ConcurrencyLimit, AdminSpend,
+    ReadinessService, OperationsRepository, ConcurrencyLimit, AdminSpend, AiBatchesService,
     // One queue per process (design §8.4); its limit is the one the runner read last.
     { provide: CallQueue, useFactory: (limit: ConcurrencyLimit) => new CallQueue(() => limit.value), inject: [ConcurrencyLimit] },
     RunnerService, AiService, PromptsService, ReportsService, DashboardQualityService,
