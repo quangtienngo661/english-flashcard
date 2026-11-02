@@ -1,0 +1,519 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI workspace — chỉnh bố cục (02/11)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  /* Tokens copied from packages/design-tokens/theme.css + apps/admin globals (light). */
+  :root {
+    --primary: #2445d6; --primary-deep: #1a32a6; --primary-soft: #eceffe; --on-primary: #fff;
+    --accent: #ffd84a; --accent-deep: #c9a21a; --accent-soft: #fff4c7;
+    --ink: #0f1a3d; --muted: #4d5577; --placeholder: #5f6688;
+    --surface: #fff; --canvas: #f1f3fd; --canvas-deep: #dde1f5; --border: #e3e6f4; --border-strong: #7d84a8;
+    --success: #1b7a46; --success-soft: #e3f4ea; --warning: #7a5200; --danger: #b8352a; --danger-soft: #fde8e5; --danger-deep: #8a2219;
+    --neutral-soft: #eef0f5;
+    --r-sm: .5rem; --r-control: .75rem; --r-inner: .875rem; --r-panel: 1rem;
+    --ui: .875rem; --control: 2.5rem;
+    --shadow-sheet: 0 .3rem 0 var(--canvas-deep);
+    --shadow-button: 0 .18rem 0 var(--primary-deep);
+    --shadow-button-secondary: 0 .18rem 0 var(--border-strong);
+    --shadow-button-danger: 0 .18rem 0 var(--danger-deep);
+    /* Proposed split colours: dev = primary family, held-out = accent family (text uses warning for AA). */
+    --dev: var(--primary); --dev-soft: var(--primary-soft);
+    --held: var(--accent-deep); --held-soft: var(--accent-soft); --held-ink: var(--warning);
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body { margin: 0; font-family: 'Lexend', ui-sans-serif, system-ui, sans-serif; color: var(--ink); background: var(--canvas); font-size: var(--ui); line-height: 1.45; }
+  ::selection { background: var(--primary-soft); color: var(--ink); }
+  button, input, select { font: inherit; color: inherit; }
+  :focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+  .tabular { font-variant-numeric: tabular-nums; }
+
+  /* ---------- Mockup chrome (outside the app) ---------- */
+  .switcher { position: sticky; top: 0; z-index: 20; display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; padding: .6rem 1rem; background: var(--ink); color: #f1f3fd; }
+  .switcher strong { font-weight: 600; margin-right: .5rem; }
+  .switcher button { border: 0; border-radius: var(--r-sm); padding: .35rem .75rem; background: transparent; color: #b9c1e0; cursor: pointer; }
+  .switcher button[aria-pressed="true"] { background: #2c3760; color: #fff; }
+  .switcher .spacer { flex: 1; }
+  .switcher label { display: inline-flex; gap: .4rem; align-items: center; color: #b9c1e0; cursor: pointer; }
+
+  /* ---------- Admin shell ---------- */
+  .shell { display: grid; grid-template-columns: 15.5rem minmax(0, 1fr); min-height: calc(100dvh - 2.8rem); }
+  .side { padding: 1.25rem 1.1rem; display: flex; flex-direction: column; gap: .2rem; }
+  .brand { display: flex; align-items: center; gap: .55rem; font-weight: 700; font-size: 1rem; margin-bottom: 1rem; }
+  .brand i { width: 2.2rem; height: 1.1rem; border-radius: 1rem; background: var(--accent); display: inline-block; }
+  .side h4 { margin: .9rem 0 .2rem; font-size: .78rem; font-weight: 500; color: var(--muted); }
+  .side a { display: block; padding: .38rem .5rem; border-radius: var(--r-sm); color: var(--ink); text-decoration: none; }
+  .side a[aria-current] { background: var(--primary-soft); color: var(--primary); font-weight: 600; }
+  .sheet { margin: .75rem .75rem .75rem 0; background: var(--surface); border-radius: 1.25rem; box-shadow: var(--shadow-sheet); padding: 1.75rem; min-width: 0; }
+
+  .page-head { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 1rem; }
+  h1 { margin: 0; font-size: 1.85rem; font-weight: 700; letter-spacing: -.01em; }
+  .lede { margin: .35rem 0 0; color: var(--muted); max-width: 68ch; }
+  .actions { display: flex; flex-wrap: wrap; gap: .5rem; }
+
+  /* Buttons (B ledges) */
+  .btn { display: inline-flex; align-items: center; gap: .4rem; min-height: var(--control); padding: 0 1rem; border-radius: var(--r-control); border: 2px solid transparent; font-weight: 600; cursor: pointer; white-space: nowrap; transition: transform 100ms, box-shadow 100ms, background-color 150ms; }
+  .btn:active:not(:disabled) { transform: translateY(.18rem); box-shadow: none; }
+  .btn-primary { background: var(--primary); color: var(--on-primary); box-shadow: var(--shadow-button); }
+  .btn-secondary { background: var(--surface); border-color: var(--border-strong); box-shadow: var(--shadow-button-secondary); }
+  .btn-danger { background: var(--danger); color: #fff; box-shadow: var(--shadow-button-danger); }
+  .btn-ghost { background: transparent; color: var(--primary); padding: 0 .6rem; min-height: 2rem; }
+  .btn-ghost:hover:not(:disabled) { background: var(--primary-soft); }
+  .btn:disabled { opacity: .45; cursor: not-allowed; box-shadow: none; }
+  .icon { width: 1.1rem; height: 1.1rem; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+
+  /* Fields */
+  .field { display: flex; flex-direction: column; gap: .35rem; min-width: 0; }
+  .field > span { font-weight: 600; }
+  .control { height: var(--control); border: 2px solid var(--border-strong); border-radius: var(--r-control); padding: 0 .75rem; background: var(--surface); width: 100%; }
+  .control::placeholder { color: var(--placeholder); }
+  .op-select { width: min(100%, 24rem); }
+
+  /* Tabs: real tab strip, shared by both pages (proposal). */
+  .tabs { display: flex; align-items: flex-end; justify-content: space-between; gap: 1rem; border-bottom: 2px solid var(--border); margin-top: 1.5rem; }
+  .tablist { display: flex; flex-wrap: wrap; gap: .25rem; }
+  .tab { position: relative; border: 0; background: none; padding: .7rem .85rem .8rem; color: var(--muted); font-weight: 500; cursor: pointer; white-space: nowrap; border-radius: var(--r-sm) var(--r-sm) 0 0; }
+  .tab:hover { color: var(--ink); background: var(--canvas); }
+  .tab[aria-selected="true"] { color: var(--primary); font-weight: 600; }
+  .tab[aria-selected="true"]::after { content: ''; position: absolute; left: .5rem; right: .5rem; bottom: -2px; height: 3px; border-radius: 3px 3px 0 0; background: var(--primary); }
+  .tab .count { margin-left: .35rem; padding: .05rem .45rem; border-radius: 1rem; background: var(--neutral-soft); color: var(--muted); font-size: .75rem; font-weight: 600; }
+  .tab[aria-selected="true"] .count { background: var(--primary-soft); color: var(--primary); }
+  .tabs .tab-action { padding-bottom: .55rem; }
+
+  /* 70/30 workspace (unchanged ratio) */
+  .workspace { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 3fr); gap: 1.75rem; align-items: start; margin-top: 1.25rem; }
+  .aside { position: sticky; top: 4rem; border: 2px solid var(--border); border-radius: var(--r-panel); overflow: hidden; }
+  .aside-head { background: var(--primary-soft); padding: 1rem; display: flex; flex-direction: column; gap: .3rem; }
+  .aside-head h2 { margin: 0; font-size: 1.05rem; }
+  .aside-body { padding: 1rem; display: flex; flex-direction: column; gap: .85rem; }
+  .muted { color: var(--muted); }
+  .xs { font-size: .75rem; }
+  .note { border-top: 2px solid var(--border); padding-top: .75rem; }
+  dl.kv { display: grid; grid-template-columns: auto 1fr; gap: .45rem 1rem; margin: 0; }
+  dl.kv dt { color: var(--muted); } dl.kv dd { margin: 0; text-align: right; }
+
+  /* Chips */
+  .chip { display: inline-flex; align-items: center; gap: .3rem; padding: .1rem .5rem; border-radius: .4rem; font-size: .75rem; font-weight: 600; white-space: nowrap; }
+  .chip::before { content: ''; width: .45rem; height: .45rem; border-radius: 50%; background: currentColor; }
+  .chip.plain::before { display: none; }
+  .chip-ok { background: var(--success-soft); color: var(--success); }
+  .chip-run { background: var(--primary-soft); color: var(--primary); }
+  .chip-idle { background: var(--neutral-soft); color: var(--muted); }
+  .chip-fail { background: var(--danger-soft); color: var(--danger); }
+  .chip-dev { background: var(--dev-soft); color: var(--dev); }
+  .chip-held { background: var(--held-soft); color: var(--held-ink); }
+  .mono { font-family: ui-monospace, 'Cascadia Mono', Consolas, monospace; font-size: .75rem; color: var(--muted); }
+
+  /* ---------- Configs: draft list ---------- */
+  .list-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: .75rem; }
+  .table { border: 2px solid var(--border); border-radius: var(--r-panel); overflow: hidden; }
+  .thead, .drow { display: grid; grid-template-columns: minmax(0, 2.3fr) minmax(0, 1fr) minmax(0, 1.7fr) 7.5rem 2.5rem; gap: 1rem; align-items: center; padding: 0 1rem; }
+  .thead { background: var(--canvas); color: var(--muted); font-size: .75rem; font-weight: 600; min-height: 2.4rem; }
+  .drow { min-height: 4.25rem; padding-top: .7rem; padding-bottom: .7rem; border-top: 2px solid var(--border); }
+  .drow:hover { background: #fafbff; }
+  .dname { display: flex; flex-direction: column; gap: .15rem; min-width: 0; }
+  .dname a { color: var(--primary); font-weight: 600; text-decoration: none; overflow-wrap: anywhere; }
+  .dname a:hover { text-decoration: underline; text-underline-offset: 3px; }
+  .dname .meta { color: var(--muted); font-size: .75rem; overflow-wrap: anywhere; }
+  .run { display: flex; flex-direction: column; gap: .2rem; min-width: 0; }
+  .run .line { display: flex; flex-wrap: wrap; gap: .4rem; align-items: center; }
+  .run a { color: var(--primary); font-size: .75rem; text-decoration: none; }
+  .run a:hover { text-decoration: underline; }
+  .kebab { width: 2.25rem; height: 2.25rem; border: 0; border-radius: var(--r-control); background: none; color: var(--primary); display: grid; place-items: center; cursor: pointer; }
+  .kebab:hover { background: var(--primary-soft); }
+
+  /* ---------- Eval page ---------- */
+  .eval-top { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 1.5rem; align-items: end; margin-top: 1.25rem; }
+  .stats { min-width: 19rem; border: 2px solid var(--border); border-radius: var(--r-panel); padding: .85rem 1rem; display: flex; flex-direction: column; gap: .6rem; }
+  .stats-row { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; }
+  .stats-total { font-size: 1.35rem; font-weight: 700; }
+  .stats-total small { font-size: .8rem; color: var(--muted); font-weight: 500; }
+  .bar { display: flex; height: .55rem; border-radius: 1rem; overflow: hidden; background: var(--neutral-soft); }
+  .bar .d { background: var(--dev); } .bar .h { background: var(--accent); }
+  .legend { display: flex; gap: 1rem; }
+  .legend span { display: inline-flex; align-items: center; gap: .4rem; font-weight: 600; }
+  .legend i { width: .6rem; height: .6rem; border-radius: 2px; display: inline-block; }
+  .hint-line { display: flex; gap: .45rem; align-items: flex-start; color: var(--muted); max-width: 72ch; margin: .75rem 0 0; }
+
+  .filters { display: grid; grid-template-columns: minmax(0, 1.4fr) repeat(3, minmax(0, 1fr)); gap: .75rem; margin-top: 1.25rem; }
+  .filter-meta { display: flex; flex-wrap: wrap; gap: .25rem .75rem; color: var(--muted); font-size: .75rem; margin-top: .5rem; }
+  .filter-meta b { color: var(--ink); font-weight: 600; }
+
+  .selbar { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem 1rem; margin-top: 1rem; padding: .5rem .5rem .5rem 1rem; border-radius: var(--r-control); background: var(--canvas); transition: background-color 150ms; min-height: 3.25rem; }
+  .selbar.on { background: var(--primary-soft); }
+  .selbar .count { font-weight: 600; }
+  .selbar .sep { width: 2px; height: 1.25rem; background: var(--border); }
+  .selbar .grow { flex: 1; }
+
+  .etable { margin-top: .75rem; border: 2px solid var(--border); border-radius: var(--r-panel); overflow: hidden; }
+  .erow { display: grid; grid-template-columns: 2.25rem minmax(0, 2.4fr) 4.5rem 6.5rem minmax(0, 1.1fr) minmax(0, 1.4fr) 7.5rem; gap: .75rem; align-items: center; padding: 0 1rem; min-height: 2.9rem; border-top: 2px solid var(--border); }
+  .erow.head { border-top: 0; background: var(--canvas); color: var(--muted); font-size: .75rem; font-weight: 600; min-height: 2.4rem; }
+  .erow.sel { background: #f6f7ff; }
+  .erow .acts { display: flex; justify-content: flex-end; }
+  .erow .acts .btn-ghost { min-height: 1.9rem; }
+  .erow .del { color: var(--danger); }
+  .erow .del:hover { background: var(--danger-soft) !important; }
+  .erow .hidden-in { color: var(--muted); font-style: italic; }
+  input[type=checkbox] { width: 1.1rem; height: 1.1rem; accent-color: var(--primary); cursor: pointer; }
+  .pager { display: flex; justify-content: space-between; align-items: center; gap: 1rem; margin-top: .75rem; }
+  .pager .nav { display: flex; gap: .5rem; align-items: center; }
+
+  .sets-row, .runs-row { display: grid; gap: 1rem; align-items: center; padding: 0 1rem; min-height: 3rem; border-top: 2px solid var(--border); }
+  .sets-row { grid-template-columns: 11rem 9.5rem minmax(0, 1fr) minmax(0, 1fr); }
+  .sets-row > span:first-child { white-space: nowrap; }
+  .runs-row { grid-template-columns: 9rem 6.5rem 5rem 4.5rem minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.2fr); }
+  .sets-row.head, .runs-row.head { border-top: 0; background: var(--canvas); color: var(--muted); font-size: .75rem; font-weight: 600; min-height: 2.4rem; }
+  .sets-row a, .runs-row a { color: var(--primary); font-weight: 600; text-decoration: none; }
+  .split { display: inline-flex; gap: .35rem; flex-wrap: wrap; }
+  .newest { font-size: .7rem; font-weight: 600; color: var(--primary); background: var(--primary-soft); border-radius: .35rem; padding: .05rem .4rem; margin-left: .4rem; }
+
+  /* Annotations (proposal notes, not part of the UI) */
+  .notes { margin-top: 2rem; padding: 1rem 1.25rem; border-radius: var(--r-panel); background: #fffdf2; border: 2px dashed var(--accent-deep); max-width: 80ch; }
+  .notes h3 { margin: 0 0 .5rem; font-size: .95rem; }
+  .notes ol { margin: 0; padding-left: 1.2rem; display: grid; gap: .35rem; }
+
+  [hidden] { display: none !important; }
+
+  @media (max-width: 1100px) {
+    .eval-top { grid-template-columns: minmax(0, 1fr); }
+    .stats { min-width: 0; }
+    .filters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+  @media (max-width: 920px) {
+    .shell { grid-template-columns: minmax(0, 1fr); }
+    .side { display: none; }
+    .sheet { margin: .75rem; padding: 1.1rem; }
+    .workspace { grid-template-columns: minmax(0, 1fr); }
+    .aside { position: static; order: -1; }
+    .thead, .erow.head, .sets-row.head, .runs-row.head { display: none; }
+    .drow { grid-template-columns: minmax(0, 1fr) auto; }
+    .drow > .c-model, .drow > .c-upd { display: none; }
+    .drow > .run { grid-column: 1 / -1; }
+    .erow { grid-template-columns: 2rem minmax(0, 1fr) auto; padding: .6rem .75rem; }
+    .erow > .c-note, .erow > .c-by, .erow > .c-level { display: none; }
+    .erow > .acts { grid-column: 2 / -1; justify-content: flex-start; }
+    .sets-row, .runs-row { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); padding: .6rem .75rem; }
+    .filters { grid-template-columns: minmax(0, 1fr); }
+    .pager { flex-direction: column; align-items: stretch; }
+    .pager .nav { justify-content: space-between; }
+    .pager .nav .btn { padding: 0 .7rem; }
+  }
+</style>
+</head>
+<body>
+<div class="switcher" role="toolbar" aria-label="Chọn màn hình mockup">
+  <strong>Mockup 02/11</strong>
+  <button type="button" data-screen="configs" aria-pressed="true">1 · Cấu hình — Các bản nháp</button>
+  <button type="button" data-screen="eval" aria-pressed="false">2 · Bộ ví dụ</button>
+  <span class="spacer"></span>
+  <label><input type="checkbox" id="toggle-notes" checked> Hiện ghi chú đề xuất</label>
+</div>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-more" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><path d="M6 4l14 8-14 8z"/></symbol>
+  <symbol id="i-chev-l" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></symbol>
+  <symbol id="i-chev-r" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></symbol>
+</svg>
+
+<div class="shell">
+  <nav class="side" aria-label="Menu chính">
+    <div class="brand"><i></i>Wordmet Admin</div>
+    <h4>Tổng quan</h4><a href="#">Dashboard</a>
+    <h4>AI</h4>
+    <a href="#">Tình trạng</a><a href="#">Model</a>
+    <a href="#" data-nav="configs" aria-current="page">Cấu hình</a>
+    <a href="#" data-nav="eval">Bộ ví dụ</a>
+    <a href="#">Câu AI thật</a><a href="#">Judge</a><a href="#">Chi phí</a><a href="#">Lần gọi</a>
+  </nav>
+
+  <main class="sheet">
+    <!-- ================= 1. CẤU HÌNH ================= -->
+    <section id="screen-configs">
+      <div class="page-head">
+        <div>
+          <h1>Cấu hình</h1>
+          <p class="lede">Tạo nhiều hướng thử nghiệm, chạy đối chiếu rồi chọn bản để publish.</p>
+        </div>
+      </div>
+      <label class="field op-select" style="margin-top:1.25rem"><span>Thao tác</span>
+        <select class="control"><option>Sinh câu điền từ (generate_cloze)</option><option>Tra từ (lookup_word)</option></select></label>
+
+      <div class="workspace">
+        <div>
+          <div class="tabs" style="margin-top:0">
+            <div class="tablist" role="tablist" aria-label="Trang cấu hình">
+              <button class="tab" role="tab" aria-selected="true">Các bản nháp<span class="count">3</span></button>
+              <button class="tab" role="tab" aria-selected="false">Lịch sử</button>
+            </div>
+            <div class="tab-action"><button class="btn btn-primary" type="button"><svg class="icon"><use href="#i-plus"/></svg>Tạo nháp</button></div>
+          </div>
+
+          <div class="table" style="margin-top:1rem" role="table" aria-label="Các bản nháp">
+            <div class="thead" role="row"><span>Nháp</span><span>Model</span><span>Lần chạy gần nhất</span><span>Cập nhật</span><span></span></div>
+
+            <div class="drow" role="row">
+              <div class="dname"><a href="#">Câu ngắn hơn, few-shot B1</a><span class="meta">#4 · Lần lưu 3 · Thử giảm độ dài câu</span></div>
+              <span class="c-model">gpt-x</span>
+              <div class="run">
+                <div class="line"><span class="chip chip-ok">Xong</span><span>Eval · 40 ví dụ</span></div>
+                <div class="line"><span class="mono" title="a91f3c0d2b">a91f3c0d</span><a href="#">Xem batch</a><a href="#">Kết quả eval</a></div>
+              </div>
+              <span class="c-upd muted tabular">15/10 09:12</span>
+              <button class="kebab" aria-label="Hành động nháp #4"><svg class="icon"><use href="#i-more"/></svg></button>
+            </div>
+
+            <div class="drow" role="row">
+              <div class="dname"><a href="#">Nháp #5</a><span class="meta">#5 · Lần lưu 1</span></div>
+              <span class="c-model">fake:ok</span>
+              <div class="run"><div class="line"><span class="chip chip-idle">Chưa chạy</span></div></div>
+              <span class="c-upd muted tabular">15/10 09:12</span>
+              <button class="kebab" aria-label="Hành động nháp #5"><svg class="icon"><use href="#i-more"/></svg></button>
+            </div>
+
+            <div class="drow" role="row">
+              <div class="dname"><a href="#">Thinking off</a><span class="meta">#6 · Lần lưu 2</span></div>
+              <span class="c-model">gpt-x</span>
+              <div class="run">
+                <div class="line"><span class="chip chip-run">Đang chạy</span><span>Chạy thử · 5 ví dụ</span></div>
+                <div class="line"><a href="#">Xem batch</a></div>
+              </div>
+              <span class="c-upd muted tabular">15/10 09:12</span>
+              <button class="kebab" aria-label="Hành động nháp #6"><svg class="icon"><use href="#i-more"/></svg></button>
+            </div>
+          </div>
+        </div>
+
+        <aside class="aside" aria-label="Bản đang chạy">
+          <div class="aside-head">
+            <h2>Bản đang chạy · cấu hình 3</h2>
+            <strong>Không có model</strong>
+          </div>
+          <div class="aside-body">
+            <div class="chip chip-idle plain" style="white-space:normal;padding:.6rem .75rem;border-radius:var(--r-control);font-weight:500;font-size:var(--ui)">
+              <svg class="icon"><use href="#i-info"/></svg>Chưa chọn model: thao tác này đang tắt.</div>
+            <p class="muted xs" style="margin:0">Publish 15/10/2026 09:12 · Hệ thống</p>
+            <details><summary style="color:var(--primary);cursor:pointer">Lời dặn và ví dụ của bản đang chạy</summary><p class="muted">…</p></details>
+            <p class="muted xs note" style="margin:0">Bản này phục vụ người học. Chạy nháp và chạy tạm không thay đổi nó.</p>
+          </div>
+        </aside>
+      </div>
+
+      <div class="notes" data-note>
+        <h3>Đổi gì ở Cấu hình (giữ layout 70/30, giữ panel bản đang chạy)</h3>
+        <ol>
+          <li>Hai link "Các bản nháp / Lịch sử" thành <b>tab thật</b> có gạch chân và số nháp. Bỏ tiêu đề "Các bản nháp" lặp lại; nút <b>Tạo nháp</b> nằm cùng hàng tab.</li>
+          <li>Danh sách nháp thành <b>bảng gọn 4 cột</b> (Nháp · Model · Lần chạy gần nhất · Cập nhật). Mỗi nháp cao ~68px thay vì ~140px, không còn 4 dòng chữ nhỏ rời rạc.</li>
+          <li>Lần chạy gần nhất có <b>chip trạng thái màu</b> (Xong / Đang chạy / Lỗi / Chưa chạy). Fingerprint rút còn 8 ký tự, đầy đủ khi rê chuột.</li>
+          <li>Ngày cập nhật rút còn "15/10 09:12", bản đầy đủ khi rê chuột. Dưới 920px: bảng thành thẻ, panel bản đang chạy lên trên như hiện tại.</li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- ================= 2. BỘ VÍ DỤ ================= -->
+    <section id="screen-eval" hidden>
+      <div class="page-head">
+        <h1>Bộ ví dụ</h1>
+        <div class="actions">
+          <button class="btn btn-secondary" type="button">Chốt phiên bản</button>
+          <button class="btn btn-secondary" type="button">Nhập hàng loạt</button>
+          <button class="btn btn-primary" type="button"><svg class="icon"><use href="#i-plus"/></svg>Thêm ví dụ</button>
+        </div>
+      </div>
+
+      <div class="eval-top">
+        <div>
+          <label class="field op-select"><span>Thao tác</span>
+            <select class="control"><option>Sinh câu điền từ (generate_cloze)</option></select></label>
+          <p class="hint-line"><svg class="icon" style="margin-top:.1rem"><use href="#i-info"/></svg>
+            Mỗi thao tác tối đa 1.000 ví dụ. Ví dụ mới tự vào dev hoặc held-out để giữ tỉ lệ; held-out bị ẩn tới khi bạn mở. Chạy thử ở Cấu hình chỉ dùng dev.</p>
+        </div>
+        <div class="stats" aria-label="Số ví dụ">
+          <div class="stats-row">
+            <span class="stats-total tabular">102 <small>/ 1.000 ví dụ</small></span>
+            <span class="muted xs tabular">30% held-out</span>
+          </div>
+          <div class="bar" aria-hidden="true"><span class="d" style="width:69.6%"></span><span class="h" style="width:30.4%"></span></div>
+          <div class="legend">
+            <span class="tabular"><i style="background:var(--dev)"></i>71 dev</span>
+            <span class="tabular"><i style="background:var(--accent)"></i>31 held-out</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="tabs">
+        <div class="tablist" role="tablist" aria-label="Trang bộ ví dụ">
+          <button class="tab" role="tab" data-etab="list" aria-selected="true">Danh sách ví dụ<span class="count">102</span></button>
+          <button class="tab" role="tab" data-etab="sets" aria-selected="false">Phiên bản đã chốt<span class="count">2</span></button>
+          <button class="tab" role="tab" data-etab="runs" aria-selected="false">Lần chạy<span class="count">4</span></button>
+        </div>
+      </div>
+
+      <!-- Tab 1: list -->
+      <div data-epanel="list">
+        <div class="filters">
+          <label class="field"><span>Tìm ví dụ dev</span><input class="control" id="f-search" placeholder="Từ hoặc nghĩa…"></label>
+          <label class="field"><span>Phần</span><select class="control" id="f-split"><option value="all">Dev & held-out</option><option value="dev">Dev</option><option value="held">Held-out</option></select></label>
+          <label class="field"><span>Trình độ dev</span><select class="control" id="f-level"><option value="all">Tất cả trình độ</option><option>A1</option><option>B1</option><option>B2</option><option>C1</option></select></label>
+          <label class="field"><span>Sắp xếp</span><select class="control"><option>Held-out trước</option><option>Dev trước</option><option>Cũ nhất trước</option><option>Mới nhất trước</option></select></label>
+        </div>
+        <div class="filter-meta"><span><b id="filtered-count">102</b> kết quả đang lọc</span><span>Bộ lọc từ và trình độ chỉ tìm trong dev.</span></div>
+
+        <div class="selbar" id="selbar" role="region" aria-label="Lựa chọn">
+          <span class="count tabular" id="sel-count" role="status">Đã chọn 0 ví dụ</span>
+          <button class="btn btn-ghost" type="button" id="sel-clear" disabled>Bỏ chọn</button>
+          <span class="sep" aria-hidden="true"></span>
+          <button class="btn btn-ghost" type="button" id="sel-filtered">Chọn toàn bộ</button>
+          <span class="grow"></span>
+          <button class="btn btn-danger" type="button" id="sel-delete" disabled><svg class="icon"><use href="#i-trash"/></svg>Xóa đã chọn</button>
+        </div>
+
+        <div class="etable" role="table" aria-label="Ví dụ">
+          <div class="erow head" role="row">
+            <input type="checkbox" id="page-all" aria-label="Chọn cả trang">
+            <span>Đầu vào</span><span class="c-level">Trình độ</span><span>Phần</span><span class="c-note">Ghi chú</span><span class="c-by">Người thêm</span><span></span>
+          </div>
+          <div id="rows"></div>
+        </div>
+        <div class="pager">
+          <span class="muted xs tabular" id="pager-range"></span>
+          <div class="nav">
+            <button class="btn btn-secondary" type="button" id="prev"><svg class="icon"><use href="#i-chev-l"/></svg>Trang trước</button>
+            <span class="muted tabular" id="pager-page"></span>
+            <button class="btn btn-secondary" type="button" id="next">Trang sau<svg class="icon"><use href="#i-chev-r"/></svg></button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab 2: frozen versions + run box on the right -->
+      <div data-epanel="sets" hidden>
+        <div class="workspace">
+          <div class="etable" style="margin-top:0" role="table" aria-label="Phiên bản đã chốt">
+            <div class="sets-row head" role="row"><span>Phiên bản</span><span>Chốt lúc</span><span>Số ví dụ</span><span>Held-out đã bị xem</span></div>
+            <div class="sets-row" role="row"><span><a href="#">Phiên bản 2</a><span class="newest">Mới nhất</span></span><span class="tabular">01/11/2026 10:40</span>
+              <span class="split"><span class="chip chip-dev plain">71 dev</span><span class="chip chip-held plain">31 held-out</span></span><span class="muted">—</span></div>
+            <div class="sets-row" role="row"><span><a href="#">Phiên bản 1</a></span><span class="tabular">28/10/2026 16:05</span>
+              <span class="split"><span class="chip chip-dev plain">49 dev</span><span class="chip chip-held plain">21 held-out</span></span><span>2 ví dụ</span></div>
+          </div>
+
+          <aside class="aside" aria-label="Chạy bộ ví dụ">
+            <div class="aside-head"><h2>Chạy bộ ví dụ</h2><span class="muted xs">Chạy cả bộ với prompt hiện tại. Mỗi ví dụ gọi AI thật một lần.</span></div>
+            <div class="aside-body">
+              <label class="field"><span>Bộ chạy</span><select class="control"><option>Phiên bản 2 (mới nhất)</option><option>Phiên bản 1</option><option>Bộ đang soạn</option></select></label>
+              <label style="display:flex;gap:.5rem;align-items:center"><input type="checkbox"> Chấm bằng judge</label>
+              <button class="btn btn-primary" type="button" style="justify-content:center"><svg class="icon"><use href="#i-play"/></svg>Chạy bộ ví dụ</button>
+              <p class="muted xs note tabular" style="margin:0">Còn 17/20 lần chạy trong giờ này, dùng chung với Chạy thử ở Cấu hình.</p>
+            </div>
+          </aside>
+        </div>
+      </div>
+
+      <!-- Tab 3: runs -->
+      <div data-epanel="runs" hidden>
+        <div class="etable" role="table" aria-label="Lần chạy" style="margin-top:1.25rem">
+          <div class="runs-row head" role="row"><span>Thời gian</span><span>Trạng thái</span><span>Tiến độ</span><span>Hợp lệ</span><span>Bộ</span><span>Prompt</span><span>Người chạy</span></div>
+          <div class="runs-row" role="row"><a href="#" class="tabular">02/11 09:14</a><span><span class="chip chip-run">Đang chạy</span></span><span class="tabular">38/102</span><span class="tabular">36</span><span>Phiên bản 2</span><span>Nháp #4 · lần lưu 3</span><span class="muted">lan@wordmet.com</span></div>
+          <div class="runs-row" role="row"><a href="#" class="tabular">01/11 15:02</a><span><span class="chip chip-ok">Xong</span></span><span class="tabular">102/102</span><span class="tabular">97</span><span>Phiên bản 2</span><span>Bản đang chạy</span><span class="muted">lan@wordmet.com</span></div>
+          <div class="runs-row" role="row"><a href="#" class="tabular">31/10 11:30</a><span><span class="chip chip-fail">Lỗi</span></span><span class="tabular">12/70</span><span class="tabular">11</span><span>Phiên bản 1</span><span>Nội dung đang sửa</span><span class="muted">admin@wordmet.com</span></div>
+          <div class="runs-row" role="row"><a href="#" class="tabular">30/10 08:47</a><span><span class="chip chip-ok">Xong</span></span><span class="tabular">70/70</span><span class="tabular">66</span><span>Phiên bản 1</span><span>Bản đang chạy</span><span class="muted">admin@wordmet.com</span></div>
+        </div>
+        <p class="muted xs" style="margin-top:.6rem">Bấm vào thời gian để mở kết quả ở panel bên phải như hiện tại.</p>
+      </div>
+
+      <div class="notes" data-note>
+        <h3>Đổi gì ở Bộ ví dụ</h3>
+        <ol>
+          <li><b>Số ví dụ lên góc phải</b>, thành một ô riêng: tổng "102 / 1.000", một thanh chia dev/held-out (tỉ lệ trong 102 ví dụ) và hai nhãn màu. <b>Dev = xanh primary</b>, <b>held-out = vàng accent</b>; chip "Phần" trong bảng dùng cùng hai màu. Đoạn giải thích rút gọn thành một dòng có icon bên trái.</li>
+          <li><b>Box đã chọn</b> chỉ còn một hàng: "Đã chọn N ví dụ" · Bỏ chọn | Chọn toàn bộ (mọi kết quả đang lọc) ……… Xóa đã chọn. Sắp xếp mặc định: Held-out trước. Bỏ dòng giải thích checkbox. Box nền xám khi chưa chọn, nền xanh nhạt khi đã chọn. Sửa luôn nút "Chọn toàn bộ" đang bị thụt lề và nằm lẻ trên một dòng riêng.</li>
+          <li><b>Ba tab như trang Cấu hình</b>: Danh sách ví dụ · Phiên bản đã chốt · Lần chạy, mỗi tab có số đếm. "Chạy bộ ví dụ" là box bên phải của tab Phiên bản đã chốt, dùng cùng tỉ lệ 70/30 với Cấu hình.</li>
+          <li>Bảng ví dụ gọn hơn (dòng ~46px thay vì ~62px), Sửa/Xóa dồn về cột phải, Xóa màu đỏ. Thanh chuyển trang có thêm "Hiển thị 1–20 / 102".</li>
+        </ol>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script>
+  // ---------- Screen switcher ----------
+  const show = (name) => {
+    for (const b of document.querySelectorAll('[data-screen]')) b.setAttribute('aria-pressed', String(b.dataset.screen === name));
+    document.getElementById('screen-configs').hidden = name !== 'configs';
+    document.getElementById('screen-eval').hidden = name !== 'eval';
+    for (const a of document.querySelectorAll('[data-nav]')) a.toggleAttribute('aria-current', a.dataset.nav === name);
+    try { localStorage.setItem('mock-screen', name); } catch {}
+  };
+  document.querySelectorAll('[data-screen]').forEach(b => b.addEventListener('click', () => show(b.dataset.screen)));
+  document.querySelectorAll('[data-nav]').forEach(a => a.addEventListener('click', e => { e.preventDefault(); show(a.dataset.nav); }));
+  const fromHash = location.hash.replace('#', '');
+  let start = 'configs'; try { start = localStorage.getItem('mock-screen') || 'configs'; } catch {}
+  show(['configs', 'eval'].includes(fromHash) ? fromHash : start);
+  document.getElementById('toggle-notes').addEventListener('change', e => document.querySelectorAll('[data-note]').forEach(n => n.hidden = !e.target.checked));
+
+  // ---------- Eval tabs ----------
+  document.querySelectorAll('[data-etab]').forEach(tab => tab.addEventListener('click', () => {
+    document.querySelectorAll('[data-etab]').forEach(t => t.setAttribute('aria-selected', String(t === tab)));
+    document.querySelectorAll('[data-epanel]').forEach(p => p.hidden = p.dataset.epanel !== tab.dataset.etab);
+  }));
+  const etab = new URLSearchParams(location.search).get('tab');
+  if (etab) document.querySelector(`[data-etab="${etab}"]`)?.click();
+
+  // ---------- Example list with selection kept across pages/filters ----------
+  const words = ['go', 'borrow', 'reluctant', 'consider', 'thorough', 'run', 'abandon', 'brief', 'cautious', 'deny', 'eager', 'fragile'];
+  const levels = ['A1', 'B1', 'B2', 'C1'];
+  const people = ['lan@wordmet.com', 'minh@wordmet.com'];
+  const all = [];
+  for (let i = 0; i < 71; i++) all.push({ id: 'd' + i, dev: true, word: words[i % words.length] + (i >= words.length ? ' ' + (Math.floor(i / words.length) + 1) : ''), pos: i % 3 ? 'verb' : 'adjective', level: levels[i % 4], note: i % 5 === 0 ? 'câu dài' : '', by: people[i % 2] });
+  for (let i = 0; i < 31; i++) all.splice(3 + i * 3, 0, { id: 'h' + i, dev: false });
+  const PAGE = 20; let page = 1; const selected = new Set();
+  const $ = (id) => document.getElementById(id);
+  const filtered = () => {
+    const q = $('f-search').value.trim().toLowerCase(), split = $('f-split').value, level = $('f-level').value;
+    // Default sort "Held-out trước": held-out rows first, then dev, each in creation order.
+    return [...all].sort((a, b) => Number(a.dev) - Number(b.dev)).filter(r => (split === 'all' || (split === 'dev') === r.dev) && (!q || (r.dev && r.word.includes(q))) && (level === 'all' || (r.dev && r.level === level)));
+  };
+  function render() {
+    const list = filtered(); const pages = Math.max(1, Math.ceil(list.length / PAGE)); page = Math.min(page, pages);
+    const slice = list.slice((page - 1) * PAGE, page * PAGE);
+    $('rows').innerHTML = slice.map(r => `
+      <div class="erow ${selected.has(r.id) ? 'sel' : ''}" role="row">
+        <input type="checkbox" data-id="${r.id}" ${selected.has(r.id) ? 'checked' : ''} aria-label="${r.dev ? 'Chọn ví dụ ' + r.word : 'Chọn ví dụ held-out'}">
+        ${r.dev ? `<span>${r.word} · ${r.pos}</span>` : `<span class="hidden-in">Nội dung held-out đang ẩn</span>`}
+        <span class="c-level">${r.dev ? r.level : '—'}</span>
+        <span>${r.dev ? '<span class="chip chip-dev">dev</span>' : '<span class="chip chip-held">held-out</span>'}</span>
+        <span class="c-note muted">${r.dev && r.note ? r.note : '—'}</span>
+        <span class="c-by muted">${r.dev ? r.by : '—'}</span>
+        <span class="acts">${r.dev ? '<button class="btn btn-ghost" type="button">Sửa</button>' : '<button class="btn btn-ghost" type="button">Mở</button>'}<button class="btn btn-ghost del" type="button">Xóa</button></span>
+      </div>`).join('');
+    $('filtered-count').textContent = list.length;
+    $('sel-filtered').disabled = list.length === 0 || list.every(r => selected.has(r.id));
+    $('sel-count').textContent = `Đã chọn ${selected.size} ví dụ`;
+    $('sel-clear').disabled = selected.size === 0;
+    $('sel-delete').disabled = selected.size === 0;
+    $('sel-delete').lastChild.textContent = selected.size ? `Xóa đã chọn (${selected.size})` : 'Xóa đã chọn';
+    $('selbar').classList.toggle('on', selected.size > 0);
+    const onPage = slice.filter(r => selected.has(r.id)).length;
+    $('page-all').checked = slice.length > 0 && onPage === slice.length;
+    $('page-all').indeterminate = onPage > 0 && onPage < slice.length;
+    $('pager-page').textContent = `Trang ${page}/${pages}`;
+    $('pager-range').textContent = list.length ? `Hiển thị ${(page - 1) * PAGE + 1}–${Math.min(page * PAGE, list.length)} / ${list.length}` : 'Không có kết quả';
+    $('prev').disabled = page <= 1; $('next').disabled = page >= pages;
+  }
+  $('rows').addEventListener('change', e => { const id = e.target.dataset.id; if (!id) return; e.target.checked ? selected.add(id) : selected.delete(id); render(); });
+  $('page-all').addEventListener('change', e => { const list = filtered().slice((page - 1) * PAGE, page * PAGE); list.forEach(r => e.target.checked ? selected.add(r.id) : selected.delete(r.id)); render(); });
+  $('sel-clear').addEventListener('click', () => { selected.clear(); render(); });
+  $('sel-filtered').addEventListener('click', () => { filtered().forEach(r => selected.add(r.id)); render(); });
+  $('prev').addEventListener('click', () => { page--; render(); });
+  $('next').addEventListener('click', () => { page++; render(); });
+  ['f-search', 'f-split', 'f-level'].forEach(id => $(id).addEventListener('input', () => { page = 1; render(); }));
+  render();
+</script>
+</body>
+</html>
