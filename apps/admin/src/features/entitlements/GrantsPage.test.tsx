@@ -122,6 +122,11 @@ describe('grants list', { timeout: 20_000 }, () => {
     expect(r.router.state.location.search).toBe('?active=false');
   });
 
+  it('Q10: with no daily cap (cap null) the summary line shows only the uses, no "/cap"', async () => {
+    renderApp('/entitlements', { [LIST]: () => json(page([grant()])), [USAGE]: () => json({ ...usage, cap: null, alert_reached: false }) });
+    expect(await screen.findByText('Lượt AI hôm nay: 812 (không giới hạn)')).toBeInTheDocument();
+  });
+
   it('review: when the AI uses of today fail to load, the error has [Thử lại] that asks again', async () => {
     let fail = true;
     const r = renderApp('/entitlements', { [LIST]: () => json(page([grant()])), [USAGE]: () => (fail ? problem(500, 'internal') : json(usage)) });
