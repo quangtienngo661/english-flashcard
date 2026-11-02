@@ -333,8 +333,8 @@
     overflow: hidden;
     opacity: 0;
     transition:
-      block-size var(--transition-duration-faq) var(--ease-standard),
-      opacity var(--transition-duration-faq) var(--ease-standard),
+      block-size var(--transition-duration-faq) var(--ease-out-strong),
+      opacity var(--transition-duration-faq) var(--ease-out-strong),
       content-visibility var(--transition-duration-faq) allow-discrete;
   }
 

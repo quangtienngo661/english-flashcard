@@ -15,6 +15,7 @@ export default async function SiteLayout({ children }: { children: ReactNode }) 
   const t = await getTranslations('Nav');
   const meta = await getTranslations('Metadata');
   const copy = await getLandingCopy();
+  const footer = await getTranslations('Footer');
 
   return (
     <>
@@ -27,7 +28,7 @@ export default async function SiteLayout({ children }: { children: ReactNode }) 
         <main id="main" tabIndex={-1}>
           {children}
         </main>
-        <SiteFooter />
+        <SiteFooter copy={{ ...copy.footer, contact: footer('contact'), copyright: footer('copyright', { year: new Date().getFullYear() }) }} />
       </ThemeProvider>
     </>
   );
