@@ -40,8 +40,8 @@ describe('messages', () => {
     expect(empty).toEqual([]);
   });
 
-  it('LP3 every rich tag is known (landing: br, link; app: b, hl, terms, privacy) and every tag is closed', () => {
-    const allowed = new Set(['br', 'link', 'b', 'hl', 'terms', 'privacy']);
+  it('LP3 every rich tag is known (landing: br; app: b, hl, terms, privacy) and every tag is closed', () => {
+    const allowed = new Set(['br', 'b', 'hl', 'terms', 'privacy']);
     const problems: string[] = [];
     for (const [key, value] of [...flatVi, ...flatEn]) {
       const opened = [...value.matchAll(/<([a-zA-Z]+)>/g)].map((m) => m[1]);

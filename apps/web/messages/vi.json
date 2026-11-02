@@ -251,42 +251,16 @@
       "faq": "Hỏi đáp"
     }
   },
-  "Waitlist": {
-    "emailLabel": "Địa chỉ Email",
-    "emailPlaceholder": "Nhập email của bạn...",
-    "submit": "Đăng ký nhận tin ra mắt",
-    "submitting": "Đang gửi đăng ký…",
-    "consent": "Tôi đồng ý với <link>Chính sách bảo mật</link>.",
-    "invalidEmail": "Vui lòng nhập địa chỉ email hợp lệ (ví dụ: ten@gmail.com).",
-    "missingConsent": "Bạn cần đồng ý với Chính sách bảo mật để tiếp tục.",
-    "error": "Chưa thể gửi đăng ký. Vui lòng kiểm tra kết nối mạng và thử lại.",
-    "success": "Đăng ký thành công! Wordmet sẽ gửi thông báo cho bạn ngay khi ra mắt."
-  },
   "Footer": {
     "privacy": "Chính sách bảo mật",
     "terms": "Điều khoản sử dụng",
     "contact": "Liên hệ",
-    "switchLanguage": "English",
     "copyright": "© {year} Wordmet"
   },
   "Legal": {
     "privacyTitle": "Chính sách bảo mật",
     "termsTitle": "Điều khoản sử dụng",
-    "draftNotice": "Đây là bản nháp. Nội dung chính thức sẽ được cập nhật trước khi Wordmet chính thức ra mắt.",
-    "privacy": {
-      "effective": "Có hiệu lực từ ngày {date}.",
-      "intro": "Trang này giải thích cách Wordmet xử lý địa chỉ email khi bạn đăng ký nhận thông báo ra mắt.",
-      "collectTitle": "Dữ liệu Wordmet thu thập",
-      "collectBody": "Địa chỉ email, ngôn ngữ bạn chọn trên trang (tiếng Việt hoặc tiếng Anh) và thời điểm đăng ký. Trang web chỉ sử dụng 1 cookie để ghi nhớ ngôn ngữ hiển thị; không sử dụng cookie quảng cáo hay công cụ theo dõi hành vi.",
-      "useTitle": "Mục đích sử dụng",
-      "useBody": "Chỉ dùng để gửi email thông báo khi Wordmet chính thức ra mắt. Wordmet cam kết không bán hoặc chia sẻ email của bạn cho bất kỳ bên thứ ba nào.",
-      "storeTitle": "Nơi lưu trữ dữ liệu",
-      "storeBody": "Dữ liệu được lưu trữ an toàn trong cơ sở dữ liệu Cloudflare D1 thuộc tài khoản Wordmet. Cloudflare đóng vai trò cung cấp hạ tầng kỹ thuật và xử lý dữ liệu theo ủy quyền của Wordmet.",
-      "deleteTitle": "Quyền yêu cầu xóa dữ liệu",
-      "deleteBody": "Bạn có thể gửi email đến <link>{email}</link> từ chính địa chỉ đã đăng ký. Wordmet sẽ xóa email của bạn khỏi danh sách trong vòng 30 ngày và gửi xác nhận.",
-      "changesTitle": "Cập nhật chính sách",
-      "changesBody": "Khi Wordmet mở tính năng tài khoản người dùng, chính sách này sẽ được cập nhật chi tiết hơn và thông báo trước cho tất cả người dùng đã đăng ký."
-    }
+    "draftNotice": "Đây là bản nháp. Nội dung chính thức sẽ được cập nhật trước khi Wordmet chính thức ra mắt."
   },
   "NotFound": {
     "title": "Không tìm thấy trang",

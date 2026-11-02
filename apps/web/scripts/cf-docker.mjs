@@ -23,7 +23,7 @@ const wranglerConfig = join(process.env.APPDATA ?? '', 'xdg.config', '.wrangler'
 
 if (flag === '--dev' || flag === '--dev-app') {
   // The repo is mounted live so edits on Windows show up; Linux node_modules and .next live in named volumes
-  // so they never overwrite the Windows install. Local D1 stays in apps/web/.wrangler (shared with the host).
+  // so they never overwrite the Windows install.
   // --dev-app: the learner app (NEXT_PUBLIC_LEARNER_APP=on) on :3001, calling the API the browser reaches at localhost:3000.
   const app = flag === '--dev-app';
   const port = app ? 3001 : 3000;
@@ -48,7 +48,7 @@ if (flag === '--dev' || flag === '--dev-app') {
       'bash', '-c',
       'set -e; corepack enable >/dev/null; corepack prepare pnpm@11.6.0 --activate >/dev/null; '
         + 'pnpm config set store-dir /pnpm-store >/dev/null; CI=1 pnpm install --frozen-lockfile; '
-        + `cd apps/web; pnpm db:migrate:local; pnpm exec next dev -H 0.0.0.0 -p ${port}`,
+        + `cd apps/web; pnpm exec next dev -H 0.0.0.0 -p ${port}`,
     ],
     { stdio: 'inherit' },
   );

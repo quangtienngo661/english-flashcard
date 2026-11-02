@@ -16,7 +16,7 @@ export default defineConfig({
     { name: 'mobile', use: { ...devices['Desktop Chrome'], viewport: { width: 390, height: 844 }, hasTouch: true } },
   ],
   webServer: {
-    command: 'pnpm cf:build && pnpm db:migrate:local && node scripts/e2e-cf.mjs && pnpm cf:dev',
+    command: 'pnpm cf:build && node scripts/e2e-cf.mjs && pnpm cf:dev',
     url: `${baseURL}/vi`,
     reuseExistingServer: !process.env.CI,
     timeout: 300_000,

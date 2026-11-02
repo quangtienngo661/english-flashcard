@@ -251,42 +251,16 @@
       "faq": "Hỏi đáp"
     }
   },
-  "Waitlist": {
-    "emailLabel": "Email address",
-    "emailPlaceholder": "Enter your email address...",
-    "submit": "Get notified at launch",
-    "submitting": "Submitting…",
-    "consent": "I agree to the <link>Privacy Policy</link>.",
-    "invalidEmail": "Please enter a valid email address (e.g. name@gmail.com).",
-    "missingConsent": "Please agree to the Privacy Policy to continue.",
-    "error": "Unable to sign up right now. Please check your connection and try again.",
-    "success": "You're on the list! We'll notify you as soon as Wordmet launches."
-  },
   "Footer": {
     "privacy": "Privacy Policy",
     "terms": "Terms of Use",
     "contact": "Contact",
-    "switchLanguage": "Tiếng Việt",
     "copyright": "© {year} Wordmet"
   },
   "Legal": {
     "privacyTitle": "Privacy Policy",
     "termsTitle": "Terms of Use",
-    "draftNotice": "This is a draft version. The official text will be published prior to Wordmet's official launch.",
-    "privacy": {
-      "effective": "Effective date: {date}.",
-      "intro": "This page explains how Wordmet handles your email address when you sign up for launch updates.",
-      "collectTitle": "Data we collect",
-      "collectBody": "Your email address, preferred page language at sign-up (Vietnamese or English), and sign-up timestamp. We use a single cookie to remember your language preference; no advertising or tracking cookies are used.",
-      "useTitle": "How we use your data",
-      "useBody": "Exclusively to send you updates about Wordmet's launch. Wordmet will never sell or share your email address with third parties.",
-      "storeTitle": "Data storage",
-      "storeBody": "Your data is stored securely in a Cloudflare D1 database under Wordmet's account. Cloudflare provides infrastructure support and processes data strictly on our behalf.",
-      "deleteTitle": "Data deletion requests",
-      "deleteBody": "You can request data removal by emailing <link>{email}</link> from your registered address. We will remove your email from our list within 30 days and send confirmation.",
-      "changesTitle": "Policy updates",
-      "changesBody": "When full user account features are introduced, this policy will be updated and communicated to registered users before taking effect."
-    }
+    "draftNotice": "This is a draft version. The official text will be published prior to Wordmet's official launch."
   },
   "NotFound": {
     "title": "Page not found",

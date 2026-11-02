@@ -40,6 +40,14 @@ describe('Landing copy', () => {
     expect(old.filter((key) => key in vi || key in en)).toEqual([]);
   });
 
+  it('L2 no waitlist is left: its namespace is gone and the legal pages no longer describe it', () => {
+    for (const messages of [vi, en]) {
+      expect('Waitlist' in messages).toBe(false);
+      expect(Object.keys(messages.Legal)).toEqual(['privacyTitle', 'termsTitle', 'draftNotice']);
+      expect(JSON.stringify(messages.Legal)).not.toMatch(/waitlist|danh sách chờ|thông báo ra mắt|launch notification/i);
+    }
+  });
+
   it('the page title is the approved one', () => {
     expect(vi.Metadata.title).toBe('Wordmet · Học từ vựng tiếng Anh, ghi nhớ và vận dụng');
   });

@@ -18,8 +18,6 @@
     "gen:og-fonts": "node scripts/gen-og-fonts.mjs",
     "cf:build": "opennextjs-cloudflare build",
     "cf:dev": "wrangler dev --port 3100",
-    "db:migrate:local": "wrangler d1 migrations apply wordmet-waitlist --local",
-    "db:migrate:remote": "wrangler d1 migrations apply wordmet-waitlist --remote",
     "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
     "cf-typegen": "wrangler types --env-interface CloudflareEnv ./cloudflare-env.d.ts",
     "cf:docker": "node scripts/cf-docker.mjs"
