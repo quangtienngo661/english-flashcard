@@ -130,6 +130,7 @@
       "lead": "Chọn một dạng để làm thử.",
       "rule": "AI chỉ biên soạn câu hỏi; đáp án chấm theo quy tắc.",
       "list": "Các dạng bài",
+    "blank": "chỗ trống",
       "free": "Miễn phí",
       "pro": "Pro",
       "aiChip": "Câu AI",
@@ -141,8 +142,8 @@
       "reveal": "Xem đáp án",
       "attempt": "Lần {n, number}",
       "answerLabel": "Câu trả lời",
-      "right": "Đúng",
-      "wrong": "Chưa đúng",
+      "right": "Đáp án đúng",
+      "wrong": "Đáp án sai",
       "items": {
         "mcq": {
           "title": "triển khai, phát hành",
