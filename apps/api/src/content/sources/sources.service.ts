@@ -47,6 +47,7 @@ const problem = (status: number, type: string, title: string) => new ProblemDeta
 const notFound = () => problem(404, 'not-found', 'Not found');
 const sourceProtected = () => problem(409, 'source-protected', 'Source is protected');
 const sourceInUse = () => problem(409, 'source-in-use', 'Source in use');
+const sourceVersionLocked = () => problem(409, 'source-version-locked', 'Source version is locked');
 
 function errorCode(error: unknown): unknown {
   return error !== null && typeof error === 'object' && 'code' in error ? error.code : undefined;
@@ -98,6 +99,7 @@ export class SourcesService {
   /** Only a third_party source can change (`kind` never does); the owner source and the built-in AGID source are protected. */
   async update(id: string, body: UpdateSourceBody): Promise<SourceView> {
     if (id === AGID_SOURCE_ID) throw sourceProtected();
+    if (body.version !== undefined && await this.versionLocked(id, body.version)) throw sourceVersionLocked();
     try {
       const row = await this.prisma.dataSource.update({
         where: { id, kind: 'third_party' },
@@ -147,6 +149,23 @@ export class SourcesService {
     const kind = await this.kindOf(id);
     if (kind === null) throw notFound();
     throw kind === 'owner' ? sourceProtected() : sourceInUse();
+  }
+
+  /**
+   * Is `version` a change to the version of a source that something refers to (a level, an import batch or a row key, the same three
+   * places `remove` checks)? Imported data belongs to the file it came from, so a new version is a new source (Q15 (d)). No row: the
+   * update that follows reports an unknown id or the owner's source.
+   */
+  private async versionLocked(id: string, version: string): Promise<boolean> {
+    const rows = await this.prisma.$queryRaw<Array<{ locked: boolean }>>`
+      SELECT ds.version <> ${version} AND (
+        EXISTS (SELECT 1 FROM entry_levels WHERE source_id = ds.id)
+        OR EXISTS (SELECT 1 FROM import_batches WHERE level_source_id = ds.id)
+        OR EXISTS (SELECT 1 FROM import_row_keys WHERE source_id = ds.id)
+      ) AS locked
+      FROM data_sources ds
+      WHERE ds.id = ${id}::uuid AND ds.kind = 'third_party'`;
+    return rows[0]?.locked === true;
   }
 
   private async kindOf(id: string): Promise<string | null> {
