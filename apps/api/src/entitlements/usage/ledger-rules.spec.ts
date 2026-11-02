@@ -69,6 +69,12 @@ describe('decideCap (design §7.3)', () => {
   it('below the cap → insert', () => {
     expect(decideCap({ capUsed: 999, cap: 1000, now: NOW })).toEqual({ action: 'insert' });
   });
+
+  it('no cap (null, owner 02/11/2026): insert however much was used; cap 0 still refuses', () => {
+    expect(decideCap({ capUsed: 0, cap: null, now: NOW })).toEqual({ action: 'insert' });
+    expect(decideCap({ capUsed: 5_000_000, cap: null, now: NOW })).toEqual({ action: 'insert' });
+    expect(decideCap({ capUsed: 0, cap: 0, now: NOW })).toMatchObject({ action: 'refuse' });
+  });
 });
 
 describe('decideConfirm (R7)', () => {

@@ -23,6 +23,11 @@ describe('alertReached (D36)', () => {
     expect(alertReached(2, 2, 75)).toBe(true);
     expect(alertReached(1, 2, 75)).toBe(false);
   });
+
+  it('no cap (null) → never reached, whatever was used', () => {
+    expect(alertReached(0, null, 75)).toBe(false);
+    expect(alertReached(5_000_000, null, 75)).toBe(false);
+  });
 });
 
 describe('entitlements read APIs (unit, mocked services)', () => {

@@ -94,6 +94,7 @@ dòng" vào **một** giao dịch cho mỗi dòng (PR10). Content sở hữu lu�
   bằng migration: `technology`, `marketing`, `business`, `food`, `daily-life`, tên tiếng Việt do trợ lý đề xuất (Công nghệ, Tiếp
   thị, Kinh doanh, Ẩm thực, Đời sống), tiếng Anh theo mã.
 - **`data_sources`**: `id`, `kind` (`third_party`/`owner`), `name`, `version`, `url`, `license`, `attribution`, `display_priority`
+  - *Ghi chú 02/11/2026 (Q15 (d)):* PR #169 thêm thao tác sửa nguồn; từ nay `version` của nguồn đã có mức độ, lô nhập hoặc khóa dòng không đổi được (409 `source-version-locked`), muốn bản mới thì tạo nguồn mới. Các ô khác vẫn sửa được.
   (số nhỏ thắng khi chọn level hiển thị), `created_at`; `UNIQUE(name, version)`; không có thao tác sửa (đổi bản = thêm
   dòng mới). Một dòng `owner` có sẵn từ migration; nguồn `owner` không cần giấy phép (PR1) và là nguồn của level biên tập.
 - **`entries`**: `id`, `language` (`en`), `lemma` (phân biệt hoa thường, đã cắt khoảng trắng, ≤ 100 ký tự), `pos`, `entry_type`

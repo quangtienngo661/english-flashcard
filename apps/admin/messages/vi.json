@@ -88,6 +88,7 @@
     "source-in-use": "Nguồn này đang được dùng (mức độ của từ hoặc lô nhập) nên không xóa được.",
     "source-incomplete": "Nguồn level cần có phiên bản và license",
     "source-protected": "Nguồn có sẵn của hệ thống không sửa hoặc xóa được.",
+    "source-version-locked": "Nguồn đã có dữ liệu nhập, không thể đổi phiên bản. Vui lòng tạo nguồn mới.",
     "staff-role-rule": "Không thể đổi vai trò này (người dùng chưa xác minh email, hoặc đây là admin cuối cùng)",
     "stale-revision": "Nghĩa này vừa được sửa. Tải lại để xem bản mới.",
     "too-many-examples": "Chỉ nhận tối đa 3 câu ví dụ. Bỏ bớt rồi lưu lại.",
@@ -1227,6 +1228,7 @@
   },
   "entitlements": {
     "aiToday": "Lượt AI hôm nay: {used}/{cap}",
+    "aiTodayNoCap": "Lượt AI hôm nay: {used} (không giới hạn)",
     "aiTodayError": "Chưa xem được lượt AI hôm nay.",
     "filters": {
       "learner": "Người học (email)",
@@ -2086,6 +2088,7 @@
     },
     "aiUsage": {
       "today": "Lượt AI hôm nay: {used}/{cap} ({percent}%)",
+      "todayNoCap": "Lượt AI hôm nay: {used} (không giới hạn)",
       "split": "Đã xác nhận {confirmed} · đang giữ chỗ {reserved}",
       "zone": "Tính theo ngày giờ Việt Nam.",
       "error": "Chưa tải được lượt AI hôm nay."
@@ -2464,6 +2467,7 @@
       "practice": "Câu hỏi AI khi luyện tập",
       "lookup": "Tra cứu từ bằng AI",
       "dayCap": "Giới hạn ngày đó",
+      "noCap": "Không giới hạn",
       "atCap": "Đạt giới hạn",
       "yes": "Có",
       "pro": {

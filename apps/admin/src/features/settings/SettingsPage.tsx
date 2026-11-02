@@ -246,11 +246,11 @@ function AiUsageBlock() {
   if (usage.isPending) return null;
   if (!usage.data) return <Banner variant="error">{t('error')}</Banner>;
   const { used, cap, confirmed, reserved, alert_reached: alert } = usage.data;
-  const percent = cap > 0 ? Math.round((used / cap) * 100) : 0;
+  const percent = cap !== null && cap > 0 ? Math.round((used / cap) * 100) : 0;
   return (
     <div role="status" className={`${panel} gap-1 ${alert ? 'bg-accent-soft' : 'bg-primary-soft'}`}>
       <p className="text-ui font-extrabold text-ink">
-        {t('today', { used: format.number(used), cap: format.number(cap), percent })}
+        {cap === null ? t('todayNoCap', { used: format.number(used) }) : t('today', { used: format.number(used), cap: format.number(cap), percent })}
       </p>
       <p className="text-xs text-ink">{t('split', { confirmed: format.number(confirmed), reserved: format.number(reserved) })}</p>
       <p className="text-xs text-ink">{t('zone')}</p>

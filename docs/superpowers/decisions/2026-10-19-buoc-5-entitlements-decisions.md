@@ -71,6 +71,8 @@ không chọn. Mục cuối ghi những chỗ Claude đề xuất trước khi c
 | D39 | Hoàn tiền tới sai thứ tự (khi implement, Q-C3) | Hoàn tiền cắt Pro → sau commit hỏi lại nhà cung cấp (`fetchState`) và theo trạng thái thật; lỗi thì job mỗi giờ hỏi lại gói bị cắt trong 3 ngày; chưa thêm luật tự sửa | Chủ dự án (hệ thống tự kiểm tra); cách làm: đề xuất của Claude, chủ dự án chốt |
 | D40 | Nâng tháng → năm khi gói đang ân hạn (khi implement, Q-C1) | Gói về `active`, xóa `grace_ends_at`, mốc lượt AI mới tại đầu kỳ năm; tiền (tính theo tỷ lệ, hoàn phần chưa dùng) do nhà cung cấp làm | Chủ dự án (rời ân hạn; chưa trả thì tính mốc mới); mốc tại đầu kỳ năm: đề xuất của Claude, chủ dự án "ok" |
 
+> *Ghi chú 02/11/2026 (Q10):* trần lượt AI chung `ai_daily_cap` (0–100.000, mặc định 1.000) nay cũng được **để trống = không giới hạn**; 0 vẫn tắt AI.
+
 ## D1 — Cách làm việc
 
 | Phương án | Trade-off |

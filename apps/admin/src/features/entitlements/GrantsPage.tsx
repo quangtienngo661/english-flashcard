@@ -265,7 +265,11 @@ function AiTodayBlock() {
   }
   return (
     <div role="status" className={`${panel} ${usage.data.alert_reached ? 'bg-accent-soft' : 'bg-primary-soft'}`}>
-      <p className="text-ui font-extrabold text-ink">{t('aiToday', { used: format.number(usage.data.used), cap: format.number(usage.data.cap) })}</p>
+      <p className="text-ui font-extrabold text-ink">
+        {usage.data.cap === null
+          ? t('aiTodayNoCap', { used: format.number(usage.data.used) })
+          : t('aiToday', { used: format.number(usage.data.used), cap: format.number(usage.data.cap) })}
+      </p>
     </div>
   );
 }

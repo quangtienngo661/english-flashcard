@@ -200,7 +200,7 @@ function Body({ ai, quality, usage, usagePro, retention }: {
               label={t('dashboard.today.units')}
               value={usage.today.used}
               max={usage.today.cap}
-              display={`${format.number(usage.today.used)} / ${format.number(usage.today.cap)}`}
+              display={usage.today.cap === null ? format.number(usage.today.used) : `${format.number(usage.today.used)} / ${format.number(usage.today.cap)}`}
               alert={usage.today.alert_reached}
             />
             <Meter
@@ -423,7 +423,7 @@ function Body({ ai, quality, usage, usagePro, retention }: {
                 { key: 'practice', header: t('dashboard.usage.practice'), className: numeric, card: 'field', cell: (r) => format.number(r.ai_practice) },
                 { key: 'lookup', header: t('dashboard.usage.lookup'), className: numeric, card: 'field', cell: (r) => format.number(r.ai_lookup) },
                 { key: 'learners', header: t('dashboard.cols.learners'), className: numeric, card: 'field', cell: (r) => format.number(r.learners) },
-                { key: 'cap', header: t('dashboard.usage.dayCap'), card: 'field', cell: (r) => format.number(r.cap) },
+                { key: 'cap', header: t('dashboard.usage.dayCap'), card: 'field', cell: (r) => (r.cap === null ? t('dashboard.usage.noCap') : format.number(r.cap)) },
                 { key: 'atCap', header: t('dashboard.usage.atCap'), card: 'field', cell: (r) => (r.at_cap ? t('dashboard.usage.yes') : '—') },
               ]}
               state="ready"

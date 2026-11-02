@@ -173,7 +173,7 @@ export class EntitlementsService {
       sources: sourceViews,
       pools,
       features: { 'ai.practice': feature('ai_practice'), 'ai.lookup': feature('ai_lookup') },
-      ai_available: { enabled: entitlements.aiEnabled, cap_reached: cap.confirmed + cap.reserved >= entitlements.aiDailyCap },
+      ai_available: { enabled: entitlements.aiEnabled, cap_reached: entitlements.aiDailyCap !== null && cap.confirmed + cap.reserved >= entitlements.aiDailyCap },
       ads: {
         show: entitlements.adsEnabled && resolved.plan === 'free',
         interstitial_per_day: entitlements.adsInterstitialPerDay, min_interval_minutes: entitlements.adsMinIntervalMinutes,
@@ -211,10 +211,11 @@ export class EntitlementsService {
     const days = dates.map((date, index) => {
       const used = (pool: AiPool) => pools.find((row) => row.date === date && row.pool === pool)?.used ?? 0;
       const [practice, lookup] = [used('ai_practice'), used('ai_lookup')];
-      const [total, cap] = [practice + lookup, Number(caps[index])];
+      // `null` = the day had no cap: Number(null) would be 0, which reads as "at cap whatever was used".
+      const [total, cap] = [practice + lookup, caps[index] === null ? null : Number(caps[index])];
       return {
         date, ai_practice: practice, ai_lookup: lookup, total, learners: learners.find((row) => row.date === date)?.learners ?? 0,
-        cap, at_cap: total >= cap,
+        cap, at_cap: cap !== null && total >= cap,
       };
     });
     return { from: range.from, to: range.to, today, days, refunds, days_at_cap: days.filter((day) => day.at_cap).length };
