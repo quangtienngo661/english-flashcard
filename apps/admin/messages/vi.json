@@ -1002,6 +1002,7 @@
   },
   "entitlements": {
     "aiToday": "Lượt AI hôm nay: {used}/{cap}",
+    "aiTodayNoCap": "Lượt AI hôm nay: {used} (không giới hạn)",
     "aiTodayError": "Chưa xem được lượt AI hôm nay.",
     "filters": {
       "learner": "Người học (email)",
@@ -1822,6 +1823,7 @@
     },
     "aiUsage": {
       "today": "Lượt AI hôm nay: {used}/{cap} ({percent}%)",
+      "todayNoCap": "Lượt AI hôm nay: {used} (không giới hạn)",
       "split": "Đã xác nhận {confirmed} · đang giữ chỗ {reserved}",
       "zone": "Tính theo ngày giờ Việt Nam.",
       "error": "Chưa tải được lượt AI hôm nay."
@@ -2200,6 +2202,7 @@
       "practice": "Câu hỏi AI khi luyện tập",
       "lookup": "Tra cứu từ bằng AI",
       "dayCap": "Giới hạn ngày đó",
+      "noCap": "Không giới hạn",
       "atCap": "Đạt giới hạn",
       "yes": "Có",
       "pro": {

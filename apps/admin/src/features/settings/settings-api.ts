@@ -175,7 +175,8 @@ export type AiUsage = {
   used: number;
   confirmed: number;
   reserved: number;
-  cap: number;
+  /** `null` = no daily cap (Q10). */
+  cap: number | null;
   alert_percent: number | null;
   alert_reached: boolean;
   enabled: boolean;

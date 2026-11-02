@@ -1002,6 +1002,7 @@
   },
   "entitlements": {
     "aiToday": "AI uses today: {used}/{cap}",
+    "aiTodayNoCap": "AI uses today: {used} (no limit)",
     "aiTodayError": "Could not load today's AI uses.",
     "filters": {
       "learner": "Learner (email)",
@@ -1822,6 +1823,7 @@
     },
     "aiUsage": {
       "today": "AI uses today: {used}/{cap} ({percent}%)",
+      "todayNoCap": "AI uses today: {used} (no limit)",
       "split": "Confirmed {confirmed} · reserved {reserved}",
       "zone": "Counted by the Vietnam day.",
       "error": "Today’s AI uses could not be loaded."
@@ -2200,6 +2202,7 @@
       "practice": "AI practice questions",
       "lookup": "AI word lookups",
       "dayCap": "Limit that day",
+      "noCap": "No limit",
       "atCap": "At the limit",
       "yes": "Yes",
       "pro": {

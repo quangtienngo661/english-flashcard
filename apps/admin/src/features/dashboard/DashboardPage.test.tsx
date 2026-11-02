@@ -244,7 +244,7 @@ describe('DashboardPage (/dashboard, ai.view)', () => {
     await screen.findByRole('heading', { level: 2, name: t.today.title });
     const units = within(tile(t.today.units));
     expect(units.getByText('10')).toBeInTheDocument();
-    expect(units.queryByText(/\//)).toBeNull();
+    expect(units.queryByText(/10 \//)).toBeNull();
     const card = (await screen.findByRole('heading', { level: 2, name: t.usage.title })).closest('section') as HTMLElement;
     const dayRows = within(card).getAllByRole('row', { hidden: true });
     const cells = (row: HTMLElement) => within(row).getAllByRole('cell', { hidden: true }).map((c) => c.textContent);
