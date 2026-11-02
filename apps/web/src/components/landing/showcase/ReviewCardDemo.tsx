@@ -57,7 +57,7 @@ export function ReviewCardDemo({ copy, app }: { copy: LandingCopy['showcase']['r
                 </span>
                 <span className="text-title-lg font-bold break-words text-ink">{copy.meaning}</span>
               </span>
-              <span className="flex flex-col gap-1 border-t border-border p-5">
+              <span className="flex flex-col gap-1 border-t border-border p-5">{/* taste-skill-ignore: the app's own flashcard divider */}
                 <span className="text-caption font-semibold text-muted">{copy.exampleLabel}</span>
                 <span className="text-ui text-ink" lang="en">
                   {copy.example}
