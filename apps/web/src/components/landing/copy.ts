@@ -21,6 +21,11 @@ export async function getLandingCopy(): Promise<LandingCopy> {
 
 export async function getAppCopy(): Promise<AppCopy> {
   const { App } = (await getMessages()) as unknown as { App: typeof vi.App };
+  return buildAppCopy(App);
+}
+
+/** Picks the reused strings out of the `App` tree; split from the getter so tests can build it from the message file. */
+export function buildAppCopy(App: typeof vi.App): AppCopy {
   const kind = App.practice.session.kind;
   return {
     kinds: {

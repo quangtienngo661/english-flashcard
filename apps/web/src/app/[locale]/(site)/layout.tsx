@@ -3,8 +3,9 @@ import { getLocale, getTranslations } from 'next-intl/server';
 import { ThemeProvider } from '@/app-shell/theme/ThemeProvider';
 import { THEME_SCRIPT } from '@/app-shell/theme/theme-script';
 import { SiteFooter } from '@/components/layout/SiteFooter';
-import { SiteHeader } from '@/components/layout/SiteHeader';
 import { SkipLink } from '@/components/layout/SkipLink';
+import { getLandingCopy } from '@/components/landing/copy';
+import { LandingHeader } from '@/components/landing/LandingHeader';
 import { JsonLd } from '@/components/seo/JsonLd';
 import type { AppLocale } from '@/i18n/routing';
 
@@ -13,6 +14,7 @@ export default async function SiteLayout({ children }: { children: ReactNode }) 
   const locale = (await getLocale()) as AppLocale;
   const t = await getTranslations('Nav');
   const meta = await getTranslations('Metadata');
+  const copy = await getLandingCopy();
 
   return (
     <>
@@ -21,7 +23,7 @@ export default async function SiteLayout({ children }: { children: ReactNode }) 
       <ThemeProvider>
         <JsonLd locale={locale} description={meta('description')} />
         <SkipLink label={t('skipToContent')} />
-        <SiteHeader />
+        <LandingHeader copy={copy.nav} locale={locale} />
         <main id="main" tabIndex={-1}>
           {children}
         </main>
