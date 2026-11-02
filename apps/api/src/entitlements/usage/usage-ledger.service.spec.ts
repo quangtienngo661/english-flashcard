@@ -136,7 +136,7 @@ describe('UsageLedgerService.reserve', () => {
   it('no cap (aiDailyCap null): a reserve goes through however many units the day has used', async () => {
     const { service, events } = setup({ entitlements: { aiDailyCap: null }, capUsed: { confirmed: 90_000, reserved: 5_000 } });
     expect(await service.reserve(USER, 'ai_practice', 'op-nocap')).toEqual({ state: 'reserved', expires_at: expect.any(String) });
-    expect(events).toContain('insert');
+    expect(events.some((event) => event.startsWith('INSERT'))).toBe(true);
   });
 
   it('B5E11/B5E12: the cap counts confirmed and reserved units of the day; reached → ai-unavailable with retry_after, nothing written', async () => {

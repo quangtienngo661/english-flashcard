@@ -125,8 +125,8 @@ describe('settings definitions', () => {
     }
   });
 
-  it('patch schema accepts null only for renewal_notice_days_before and ai_cap_alert_percent', () => {
-    const nullable = ['renewal_notice_days_before', 'ai_cap_alert_percent'];
+  it('patch schema accepts null only for renewal_notice_days_before, ai_daily_cap (Q10) and ai_cap_alert_percent', () => {
+    const nullable = ['renewal_notice_days_before', 'ai_daily_cap', 'ai_cap_alert_percent'];
     for (const key of Object.keys(ENTITLEMENT_DEFAULTS_API)) {
       expect(issues({ entitlements: { [key]: null } }), key).toEqual(nullable.includes(key) ? [] : [`entitlements.${key}`]);
     }
