@@ -274,6 +274,19 @@ describe('source edit dialog', () => {
     expect(field(dialog, `${t.form.name} *`)).toHaveValue('AGID');
   });
 
+  it('source-version-locked: the message sits on the version field, the dialog stays open with what was typed (Q15)', async () => {
+    const { dialog } = await openEdit({ [PATCH]: () => problem(409, 'source-version-locked') });
+    await userEvent.clear(field(dialog, `${t.form.version} *`));
+    await userEvent.type(field(dialog, `${t.form.version} *`), '1.6');
+    await save(dialog);
+    const message = await within(dialog).findByText(vi.errors['source-version-locked']);
+    expect(message).toBeInTheDocument();
+    expect(field(dialog, `${t.form.version} *`)).toHaveAttribute('aria-invalid', 'true');
+    expect(field(dialog, `${t.form.version} *`)).toHaveAccessibleDescription(vi.errors['source-version-locked']);
+    expect(field(dialog, `${t.form.version} *`)).toHaveValue('1.6');
+    expect(within(dialog).queryByRole('alert')).toBeNull();
+  });
+
   it('a 400 with a violation on display_priority shows on the priority field; an unmapped one joins the banner', async () => {
     const { dialog } = await openEdit({
       [PATCH]: () => problem(400, 'validation-failed', { violations: ['display_priority: Too big', 'kind: Unrecognized key'] }),

@@ -125,8 +125,8 @@ describe('settings definitions', () => {
     }
   });
 
-  it('patch schema accepts null only for renewal_notice_days_before and ai_cap_alert_percent', () => {
-    const nullable = ['renewal_notice_days_before', 'ai_cap_alert_percent'];
+  it('patch schema accepts null only for renewal_notice_days_before, ai_daily_cap (Q10) and ai_cap_alert_percent', () => {
+    const nullable = ['renewal_notice_days_before', 'ai_daily_cap', 'ai_cap_alert_percent'];
     for (const key of Object.keys(ENTITLEMENT_DEFAULTS_API)) {
       expect(issues({ entitlements: { [key]: null } }), key).toEqual(nullable.includes(key) ? [] : [`entitlements.${key}`]);
     }
@@ -365,6 +365,18 @@ describe('settings definitions', () => {
     }
     const patched = applyPatch(SETTINGS_DEFAULTS, { ai: { daily_provider_calls_cap: null } });
     expect(patched.ai.dailyProviderCallsCap).toBeNull();
+  });
+
+  it('entitlements.ai_daily_cap accepts null (no cap, owner 02/11/2026) and still 0 and 100000; 100001 and -1 are refused', () => {
+    expect(issues({ entitlements: { ai_daily_cap: null } })).toEqual([]);
+    expect(issues({ entitlements: { ai_daily_cap: 0 } })).toEqual([]);
+    expect(issues({ entitlements: { ai_daily_cap: 100000 } })).toEqual([]);
+    expect(issues({ entitlements: { ai_daily_cap: 100001 } })).toEqual(['entitlements.ai_daily_cap']);
+    expect(issues({ entitlements: { ai_daily_cap: -1 } })).toEqual(['entitlements.ai_daily_cap']);
+    const patched = applyPatch(SETTINGS_DEFAULTS, { entitlements: { ai_daily_cap: null } });
+    expect(patched.entitlements.aiDailyCap).toBeNull();
+    expect(apiValueOf(patched, 'entitlements.ai_daily_cap')).toBeNull();
+    expect(apiValueOf(SETTINGS_DEFAULTS, 'entitlements.ai_daily_cap')).toBe(1000);
   });
 
   it('accepts 0 for daily_provider_calls_cap and content_retention_days', () => {

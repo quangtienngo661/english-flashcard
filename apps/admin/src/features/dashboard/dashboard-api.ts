@@ -100,8 +100,8 @@ export type AiQuality = {
 export type AiUsageDays = {
   from: string;
   to: string;
-  today: { date: string; used: number; cap: number; alert_percent: number | null; alert_reached: boolean; enabled: boolean };
-  days: Array<{ date: string; ai_practice: number; ai_lookup: number; total: number; learners: number; cap: number; at_cap: boolean }>;
+  today: { date: string; used: number; cap: number | null; alert_percent: number | null; alert_reached: boolean; enabled: boolean };
+  days: Array<{ date: string; ai_practice: number; ai_lookup: number; total: number; learners: number; cap: number | null; at_cap: boolean }>;
   refunds: number;
   days_at_cap: number;
 };

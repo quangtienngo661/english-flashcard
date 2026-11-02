@@ -211,6 +211,17 @@ describe('SettingsPage (A/70a–A/70f, design §6.7)', () => {
     expect(within(block).getByText('Đã xác nhận 790 · đang giữ chỗ 22')).toBeInTheDocument();
   });
 
+  it('Q10: with no daily cap (cap null) the block shows only today uses, no "/cap" and no percent, and is never yellow', async () => {
+    renderApp('/settings?tab=entitlements', {
+      [GET]: () => Response.json(VIEW()),
+      [USAGE]: () => Response.json({ date: '2026-10-27', used: 812, confirmed: 790, reserved: 22, cap: null, alert_percent: 75, alert_reached: false, enabled: true }),
+    });
+    const block = (await screen.findByText('Lượt AI hôm nay: 812 (không giới hạn)')).closest('[role="status"]') as HTMLElement;
+    expect(block.className).not.toContain('bg-accent-soft');
+    expect(within(block).getByText('Đã xác nhận 790 · đang giữ chỗ 22')).toBeInTheDocument();
+    expect(within(block).queryByText(/%/)).toBeNull();
+  });
+
   it('[Lịch sử thay đổi]: key, old → new, email, time; "Tải thêm" loads the next page', async () => {
     const row = (key: string, email: string | null) => ({
       key, old_value: 2, new_value: 3, changed_by: { id: 'u9', email }, changed_at: '2026-10-27T02:12:00.000Z',

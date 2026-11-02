@@ -142,6 +142,11 @@ describe('EntitlementsService.snapshot', () => {
     expect((await below.service.snapshot(USER))?.ai_available).toEqual({ enabled: false, cap_reached: false });
   });
 
+  it('ai_available.cap_reached is false when ai_daily_cap is null (no cap), however much was used', async () => {
+    const open = setup({ entitlements: { aiDailyCap: null }, capUsed: { confirmed: 9_000, reserved: 500 } });
+    expect((await open.service.snapshot(USER))?.ai_available).toEqual({ enabled: true, cap_reached: false });
+  });
+
   it('lists the counting sources: a subscription with renews_at, a limits grant with ends_at and its limits', async () => {
     const snapshot = await setup({
       subscriptions: [proSubscription({ pendingInterval: 'year' })], grants: [limitsGrant({ ai_lookup_per_cycle: 7 })],
@@ -291,6 +296,15 @@ describe('EntitlementsService.aiUsage', () => {
     expect(usage.capUsed).toHaveBeenCalledWith(prisma, '2026-11-10', NOW);
     await service.aiUsage('2026-11-09');
     expect(usage.capUsed).toHaveBeenLastCalledWith(prisma, '2026-11-09', NOW);
+  });
+});
+
+describe('EntitlementsService.aiUsage with no cap', () => {
+  it('cap null: the view carries cap null and no alert, and the use is still counted', async () => {
+    const { service } = setup({ entitlements: { aiDailyCap: null, aiCapAlertPercent: 75 }, capUsed: { confirmed: 700, reserved: 50 } });
+    expect(await service.aiUsage()).toEqual({
+      date: '2026-11-10', used: 750, confirmed: 700, reserved: 50, cap: null, alert_percent: 75, alert_reached: false, enabled: true,
+    });
   });
 });
 

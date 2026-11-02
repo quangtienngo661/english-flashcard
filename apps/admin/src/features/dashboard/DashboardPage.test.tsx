@@ -235,6 +235,22 @@ describe('DashboardPage (/dashboard, ai.view)', () => {
     expect(cells(dayRows[2]).slice(4)).toEqual(['1.000', '—']);
   });
 
+  it('Q10: with no daily cap the units tile shows only the uses, and a day without a cap says "Không giới hạn" and is never at cap', async () => {
+    const usage = usageReply({
+      today: { date: TODAY, used: 10, cap: null, alert_percent: 75, alert_reached: false, enabled: true },
+      days: [{ date: TODAY, ai_practice: 8, ai_lookup: 2, total: 10, learners: 1, cap: null, at_cap: false }],
+    });
+    renderApp('/dashboard', routes(urls(), { usage }));
+    await screen.findByRole('heading', { level: 2, name: t.today.title });
+    const units = within(tile(t.today.units));
+    expect(units.getByText('10')).toBeInTheDocument();
+    expect(units.queryByText(/10 \//)).toBeNull();
+    const card = (await screen.findByRole('heading', { level: 2, name: t.usage.title })).closest('section') as HTMLElement;
+    const dayRows = within(card).getAllByRole('row', { hidden: true });
+    const cells = (row: HTMLElement) => within(row).getAllByRole('cell', { hidden: true }).map((c) => c.textContent);
+    expect(cells(dayRows[1]).slice(4)).toEqual(['Không giới hạn', '—']);
+  });
+
   it('usage: a day with the AI off all day (cap 0, no use) is at its cap, as the API says', async () => {
     const usage = usageReply({ days: [{ date: back(2), ai_practice: 0, ai_lookup: 0, total: 0, learners: 0, cap: 0, at_cap: true }, usageReply().days[0]], days_at_cap: 1 });
     renderApp('/dashboard', routes(urls(), { usage }));

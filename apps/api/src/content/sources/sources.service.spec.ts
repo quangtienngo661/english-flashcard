@@ -35,6 +35,7 @@ function setup() {
   const prisma = {
     dataSource: { update: vi.fn(), findUnique: vi.fn(), findMany: vi.fn() },
     $executeRaw: vi.fn(),
+    $queryRaw: vi.fn(),
   };
   return { prisma, service: new SourcesService(prisma as unknown as PrismaClient) };
 }
@@ -104,6 +105,7 @@ describe('SourcesService.update', () => {
 
   it('a (name, version) pair another source has → 409 source-exists', async () => {
     const { prisma, service } = setup();
+    prisma.$queryRaw.mockResolvedValue([{ locked: false }]);
     prisma.dataSource.update.mockRejectedValue(prismaError('P2002'));
     expect(await problem(service.update(ID, { name: 'AGID', version: '2016.01.19' }))).toEqual({ status: 409, type: 'source-exists' });
   });
@@ -113,6 +115,63 @@ describe('SourcesService.update', () => {
     const boom = new Error('connection lost');
     prisma.dataSource.update.mockRejectedValue(boom);
     await expect(service.update(ID, { name: 'x' })).rejects.toBe(boom);
+  });
+});
+
+describe('SourcesService.update: the version of a source that has data (Q15, owner 02/11/2026)', () => {
+  const sqlOf = (call: unknown[]) => ({ text: (call[0] as TemplateStringsArray).join('?').replace(/\s+/g, ' ').trim(), values: call.slice(1) });
+
+  it('one query decides: a different version is locked when entry_levels, import_batches or import_row_keys refers to the source', async () => {
+    const { prisma, service } = setup();
+    prisma.$queryRaw.mockResolvedValue([{ locked: false }]);
+    prisma.dataSource.update.mockResolvedValue({ ...row, version: '1.6' });
+    await service.update(ID, { version: '1.6' });
+    expect(prisma.$queryRaw).toHaveBeenCalledOnce();
+    const { text, values } = sqlOf(prisma.$queryRaw.mock.calls[0]!);
+    expect(text).toContain("ds.version <> ?");
+    expect(text).toContain('EXISTS (SELECT 1 FROM entry_levels WHERE source_id = ds.id)');
+    expect(text).toContain('EXISTS (SELECT 1 FROM import_batches WHERE level_source_id = ds.id)');
+    expect(text).toContain('EXISTS (SELECT 1 FROM import_row_keys WHERE source_id = ds.id)');
+    expect(text).toContain("ds.kind = 'third_party'");
+    expect(values).toEqual(['1.6', ID]);
+  });
+
+  it('a source with data and a different version → 409 source-version-locked, nothing is written', async () => {
+    const { prisma, service } = setup();
+    prisma.$queryRaw.mockResolvedValue([{ locked: true }]);
+    expect(await problem(service.update(ID, { version: '1.6' }))).toEqual({ status: 409, type: 'source-version-locked' });
+    expect(prisma.dataSource.update).not.toHaveBeenCalled();
+  });
+
+  it('the locked refusal also stops the other keys sent with the version', async () => {
+    const { prisma, service } = setup();
+    prisma.$queryRaw.mockResolvedValue([{ locked: true }]);
+    expect(await problem(service.update(ID, { version: '1.6', license: 'CC BY' }))).toEqual({ status: 409, type: 'source-version-locked' });
+    expect(prisma.dataSource.update).not.toHaveBeenCalled();
+  });
+
+  it('a source with no data, or the same version, is not locked: the update runs', async () => {
+    const { prisma, service } = setup();
+    prisma.$queryRaw.mockResolvedValue([{ locked: false }]);
+    prisma.dataSource.update.mockResolvedValue({ ...row, version: '1.6' });
+    expect((await service.update(ID, { version: '1.6' })).version).toBe('1.6');
+    expect(prisma.dataSource.update.mock.calls[0]![0].data).toEqual({ version: '1.6' });
+  });
+
+  it('no row matched the check (unknown id or the owner): the update decides, so 404 / source-protected stay as they are', async () => {
+    const { prisma, service } = setup();
+    prisma.$queryRaw.mockResolvedValue([]);
+    prisma.dataSource.update.mockRejectedValue(prismaError('P2025'));
+    prisma.dataSource.findUnique.mockResolvedValue(null);
+    expect(await problem(service.update(ID, { version: '1.6' }))).toEqual({ status: 404, type: 'not-found' });
+  });
+
+  it('no version sent: no check at all, so licence, attribution and the rest of a source with data stay editable', async () => {
+    const { prisma, service } = setup();
+    prisma.dataSource.update.mockResolvedValue(row);
+    await service.update(ID, { license: 'CC BY-SA 4.0', attribution: 'CEFR-J Project' });
+    expect(prisma.$queryRaw).not.toHaveBeenCalled();
+    expect(prisma.dataSource.update).toHaveBeenCalledOnce();
   });
 });
 

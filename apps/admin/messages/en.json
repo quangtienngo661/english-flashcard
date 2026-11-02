@@ -88,6 +88,7 @@
     "source-in-use": "This source is in use (word levels or import batches), so it cannot be deleted.",
     "source-incomplete": "A level source needs a version and a license",
     "source-protected": "A built-in source cannot be edited or deleted.",
+    "source-version-locked": "This source has imported data, so its version cannot be changed. Please create a new source.",
     "staff-role-rule": "This role cannot be changed (the user has not verified their email, or this is the last admin)",
     "stale-revision": "This sense was just edited. Reload to see the latest version.",
     "too-many-examples": "At most 3 example sentences are allowed. Remove some and save again.",
@@ -1001,6 +1002,7 @@
   },
   "entitlements": {
     "aiToday": "AI uses today: {used}/{cap}",
+    "aiTodayNoCap": "AI uses today: {used} (no limit)",
     "aiTodayError": "Could not load today's AI uses.",
     "filters": {
       "learner": "Learner (email)",
@@ -1821,6 +1823,7 @@
     },
     "aiUsage": {
       "today": "AI uses today: {used}/{cap} ({percent}%)",
+      "todayNoCap": "AI uses today: {used} (no limit)",
       "split": "Confirmed {confirmed} · reserved {reserved}",
       "zone": "Counted by the Vietnam day.",
       "error": "Today’s AI uses could not be loaded."
@@ -2199,6 +2202,7 @@
       "practice": "AI practice questions",
       "lookup": "AI word lookups",
       "dayCap": "Limit that day",
+      "noCap": "No limit",
       "atCap": "At the limit",
       "yes": "Yes",
       "pro": {

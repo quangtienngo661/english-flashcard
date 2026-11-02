@@ -3,7 +3,7 @@ import { useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import { useTranslations } from 'use-intl';
 import { useFocusFirstError, violationsToFields } from '../../api/field-errors';
-import { ApiError } from '../../api/problem';
+import { ApiError, problemSlug } from '../../api/problem';
 import { useErrorDetails, type ErrorDetails } from '../../api/use-error-message';
 import { useDialogDirtyClose } from '../../app/dirty-form';
 import { useApi } from '../../auth/session-context';
@@ -110,6 +110,11 @@ export function SourceEditDialog({ source, onClose }: { source: SourceView; onCl
     } catch (e) {
       // The source is gone (deleted from another tab): the list still shows it until it is reloaded.
       if (e instanceof ApiError && e.problem.status === 404) void queryClient.invalidateQueries({ queryKey: ['sources'] });
+      // A version change refused because the source has data: the message belongs on the version field, not in the banner.
+      if (e instanceof ApiError && problemSlug(e.problem.type) === 'source-version-locked') {
+        setErrors({ version: errorDetails(e).message });
+        return;
+      }
       const mapped = e instanceof ApiError ? violationsToFields(e.problem.violations ?? [], (path) => FIELD_OF_PATH[path] ?? null) : null;
       if (mapped && Object.keys(mapped.fields).length > 0) setErrors(mapped.fields);
       if (!mapped || Object.keys(mapped.fields).length === 0 || mapped.form.length > 0) {

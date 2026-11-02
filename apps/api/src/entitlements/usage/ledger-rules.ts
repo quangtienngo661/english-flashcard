@@ -15,7 +15,7 @@ const unexpired = (expiresAt: Date | null, now: Date) => expiresAt !== null && e
  * refuses like the switch, B5E65), the limit, what is left. `check-cap` sends the service to the global lock.
  */
 export function decideReserve(input: {
-  existing: LiveRow | null; now: Date; aiEnabled: boolean; limit: number; used: number; cycleEnd: Date | null; cap: number;
+  existing: LiveRow | null; now: Date; aiEnabled: boolean; limit: number; used: number; cycleEnd: Date | null; cap: number | null;
 }):
   | { action: 'return-existing'; state: 'reserved' | 'confirmed' }
   | { action: 'release-expired-then-continue' }
@@ -36,11 +36,11 @@ export function decideReserve(input: {
   return { action: 'check-cap' };
 }
 
-/** Step two, under the global `entitlements.ai_daily` lock: the system-wide cap of the Vietnam day. */
-export function decideCap(input: { capUsed: number; cap: number; now: Date }):
+/** Step two, under the global `entitlements.ai_daily` lock: the system-wide cap of the Vietnam day (`null` = no cap, Q10). */
+export function decideCap(input: { capUsed: number; cap: number | null; now: Date }):
   | { action: 'refuse'; refusal: Refusal }
   | { action: 'insert' } {
-  if (input.capUsed < input.cap) return { action: 'insert' };
+  if (input.cap === null || input.capUsed < input.cap) return { action: 'insert' };
   const seconds = Math.ceil((nextAiDayStart(input.now).getTime() - input.now.getTime()) / 1000);
   return { action: 'refuse', refusal: { reason: 'ai-unavailable', retry_after_seconds: seconds } };
 }

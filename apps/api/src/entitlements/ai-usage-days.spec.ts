@@ -11,7 +11,7 @@ const TODAY: AiUsageView = {
 };
 
 /** `caps`: the value `valuesAt` answers for every instant (a number), or one per instant (an array, in the order asked). */
-function setup(rows: Awaited<ReturnType<UsageQueries['aiDays']>>, refunds = 0, caps: number | number[] = 5, today: AiUsageView = TODAY) {
+function setup(rows: Awaited<ReturnType<UsageQueries['aiDays']>>, refunds = 0, caps: Array<number | null> | number | null = 5, today: AiUsageView = TODAY) {
   const usage = { aiDays: vi.fn(async () => rows), aiCredits: vi.fn(async () => refunds) };
   const settings = { valuesAt: vi.fn(async (_key: string, instants: Date[]) => instants.map((_, index) => (Array.isArray(caps) ? caps[index] : caps))) };
   const service = new EntitlementsService(
@@ -72,6 +72,16 @@ describe('EntitlementsService.aiUsageDays', () => {
     const { service } = setup({ pools: [], learners: [] }, 0, [0, 5], undefined);
     const view = await service.aiUsageDays({ from: '2026-10-19', to: '2026-10-20' });
     expect(view.days.map((day) => [day.total, day.cap, day.at_cap])).toEqual([[0, 0, true], [0, 5, false]]);
+    expect(view.days_at_cap).toBe(1);
+  });
+
+  it('a day whose cap was null (no cap) lists cap null, is never at cap and is not counted in days_at_cap (Number(null) would be 0)', async () => {
+    const { service } = setup({
+      pools: [{ date: '2026-10-19', pool: 'ai_practice', used: 40_000 }, { date: '2026-10-20', pool: 'ai_lookup', used: 5 }],
+      learners: [],
+    }, 0, [null, 5], undefined);
+    const view = await service.aiUsageDays({ from: '2026-10-19', to: '2026-10-20' });
+    expect(view.days.map((day) => [day.total, day.cap, day.at_cap])).toEqual([[40_000, null, false], [5, 5, true]]);
     expect(view.days_at_cap).toBe(1);
   });
 

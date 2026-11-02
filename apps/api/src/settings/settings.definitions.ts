@@ -29,7 +29,9 @@ export type AppSettings = {
     graceDays: number; trialReminderDaysBefore: number;
     /** `null` = no renewal notice email. */
     renewalNoticeDaysBefore: number | null;
-    aiEnabled: boolean; aiDailyCap: number;
+    aiEnabled: boolean;
+    /** `null` = no daily cap on AI units for the whole system (owner 02/11/2026, Q10); 0 still switches AI off. */
+    aiDailyCap: number | null;
     /** `null` = no alert (D36). */
     aiCapAlertPercent: number | null;
     adsEnabled: boolean; adsInterstitialPerDay: number; adsMinIntervalMinutes: number;
@@ -115,7 +117,7 @@ export const SETTINGS_BOUNDS = {
     grace_days: { min: 0, max: 16 },
     trial_reminder_days_before: { min: 1, max: 6 },
     renewal_notice_days_before: { min: 1, max: 30, nullable: true },
-    ai_daily_cap: { min: 0, max: 100000 },
+    ai_daily_cap: { min: 0, max: 100000, nullable: true },
     ai_cap_alert_percent: { min: 50, max: 95, nullable: true },
     ads_interstitial_per_day: { min: 0, max: 20 },
     ads_min_interval_minutes: { min: 1, max: 240 },
@@ -191,7 +193,7 @@ export const settingsValuesPatchSchema = z.strictObject({
     trial_reminder_days_before: intIn(b.entitlements.trial_reminder_days_before).optional(),
     renewal_notice_days_before: intIn(b.entitlements.renewal_notice_days_before).nullable().optional(),
     ai_enabled: z.boolean().optional(),
-    ai_daily_cap: intIn(b.entitlements.ai_daily_cap).optional(),
+    ai_daily_cap: intIn(b.entitlements.ai_daily_cap).nullable().optional(),
     ai_cap_alert_percent: intIn(b.entitlements.ai_cap_alert_percent).nullable().optional(),
     ads_enabled: z.boolean().optional(),
     ads_interstitial_per_day: intIn(b.entitlements.ads_interstitial_per_day).optional(),
