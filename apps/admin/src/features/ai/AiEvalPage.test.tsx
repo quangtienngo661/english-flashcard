@@ -8,17 +8,38 @@ import { judgeOnFake, judgeView } from './judges/judge-test-support';
 import { URL, evalExample, evalRoutes, evalRun, evalSet, example, heldOutExample, operationsFor, setDetail, setItem } from './prompt-test-support';
 
 const t = vi.ai.eval;
+const bulk = vi.ai.eval.bulkDelete;
+const list = vi.ai.eval.list;
 const posts = (calls: Call[], path: string) => calls.filter((c) => c.method === 'POST' && c.path === path);
 const examplesReply = (...items: ReturnType<typeof evalExample>[]) => () => Response.json({ items });
 const runButton = () => screen.getByRole('button', { name: t.run.start });
 
 async function openPage(over = {}, path = '/ai/eval') {
   const r = renderApp(path, evalRoutes(over));
-  // The run button waits for the list of versions (it names the version the run takes).
-  const button = await screen.findByRole('button', { name: t.run.start });
-  await waitFor(() => expect(button).toBeEnabled());
+  if (path.startsWith('/ai/eval/sets')) {
+    // The run button waits for the list of versions (it names the version the run takes).
+    const button = await screen.findByRole('button', { name: t.run.start });
+    await waitFor(() => expect(button).toBeEnabled());
+  } else {
+    // The tab row counts the versions once they are read.
+    const nav = await screen.findByRole('navigation', { name: t.tabs.label });
+    await within(nav).findByRole('link', { name: new RegExp(`^${t.tabs.sets} [0-9]`) });
+  }
   return r;
 }
+/** The frozen versions with the run box, and the runs list. */
+const SETS_PAGE = '/ai/eval/sets';
+const RUNS_PAGE = '/ai/eval/runs';
+const openSets = (over = {}) => openPage(over, SETS_PAGE);
+/** The count box once the examples are read: "N dev" and "M held-out". */
+async function findCounts(dev: number, heldOut: number) {
+  const stats = await screen.findByRole('region', { name: t.stats.label });
+  await within(stats).findByText(t.stats.dev.replace('{count}', String(dev)));
+  return within(stats).getByText(t.stats.heldOut.replace('{count}', String(heldOut)));
+}
+/** The tab row link of the frozen versions (its name ends with the count). */
+const setsTab = () => within(screen.getByRole('navigation', { name: t.tabs.label })).getByRole('link', { name: new RegExp(`^${t.tabs.sets}`) });
+const openRuns = (over = {}) => openPage(over, RUNS_PAGE);
 
 describe('AiEvalPage examples (A/83)', () => {
   it('lists the examples of the operation: input, note and who added it; the count is out of 100', async () => {
@@ -302,10 +323,10 @@ describe('AiEvalPage held-out rows, reveal, freeze and versions (nhóm B M1)', (
 
   it('shows "3 dev · 2 held-out"; a held-out row hides its content and offers [Mở ví dụ held-out] and [Xóa], never [Sửa]', async () => {
     await openPage({ [URL.examples()]: mixedReply });
-    expect(await screen.findByText('3 dev · 2 held-out')).toBeInTheDocument();
+    expect(await findCounts(3, 2)).toBeInTheDocument();
     expect(screen.getByRole('heading', { level: 2, name: t.examples.replace('{count}', '5') })).toBeInTheDocument();
     expect(screen.getByText(t.examplesHint)).toBeInTheDocument();
-    const section = screen.getByRole('region', { name: t.examples.replace('{count}', '5') });
+    const section = screen.getByRole('region', { name: t.tabs.list });
     expect(within(section).getAllByRole('columnheader').map((h) => h.textContent)).toContain(t.cols.split);
     const rows = within(section).getAllByRole('row').slice(1);
     expect(rows).toHaveLength(5);
@@ -341,7 +362,7 @@ describe('AiEvalPage held-out rows, reveal, freeze and versions (nhóm B M1)', (
     await userEvent.click(within(dialog).getByRole('button', { name: t.reveal.confirm }));
     expect(await screen.findByText(t.toast.revealed)).toBeInTheDocument();
     expect(r.count('POST', '/v1/admin/ai/eval/examples/e4/reveal')).toBe(1);
-    expect(await screen.findByText('4 dev · 1 held-out')).toBeInTheDocument();
+    expect(await findCounts(4, 1)).toBeInTheDocument();
     expect(screen.getAllByRole('button', { name: t.editFor.replace('{summary}', 'rise · verb') }).length).toBeGreaterThan(0);
   });
 
@@ -374,7 +395,7 @@ describe('AiEvalPage held-out rows, reveal, freeze and versions (nhóm B M1)', (
 
   it('[Chốt phiên bản] names the next version and the counts; confirming POSTs the operation, toasts and reads the versions again', async () => {
     let sets = [V1];
-    const r = await openPage({
+    const r = await openSets({
       [URL.examples()]: mixedReply,
       [SETS]: () => Response.json({ items: sets }),
       [FREEZE]: () => {
@@ -382,7 +403,7 @@ describe('AiEvalPage held-out rows, reveal, freeze and versions (nhóm B M1)', (
         return Response.json(sets[0], { status: 201 });
       },
     });
-    await screen.findByText('3 dev · 2 held-out');
+    await findCounts(3, 2);
     await pressFreeze();
     const dialog = await screen.findByRole('dialog', { name: t.freeze.title.replace('{version}', '2') });
     expect(dialog).toHaveTextContent(t.freeze.body.replace('{dev}', '3').replace('{heldOut}', '2').replace('{version}', '2'));
@@ -395,7 +416,7 @@ describe('AiEvalPage held-out rows, reveal, freeze and versions (nhóm B M1)', (
   });
 
   it('with no version yet the first one is "Chốt phiên bản 1" and the list says "Chưa có phiên bản nào."', async () => {
-    await openPage({ [URL.examples()]: mixedReply });
+    await openSets({ [URL.examples()]: mixedReply });
     expect(await screen.findByText(t.sets.empty)).toBeInTheDocument();
     await pressFreeze();
     expect(await screen.findByRole('dialog', { name: t.freeze.title.replace('{version}', '1') })).toBeInTheDocument();
@@ -406,7 +427,7 @@ describe('AiEvalPage held-out rows, reveal, freeze and versions (nhóm B M1)', (
       [URL.examples()]: mixedReply,
       [FREEZE]: () => problem(422, 'eval-set-incomplete', { missing_expected: ['e1'], no_held_out: true }),
     });
-    await screen.findByText('3 dev · 2 held-out');
+    await findCounts(3, 2);
     await pressFreeze();
     await userEvent.click(within(await screen.findByRole('dialog')).getByRole('button', { name: t.freeze.confirm }));
     const alert = await screen.findByRole('alert');
@@ -422,7 +443,7 @@ describe('AiEvalPage held-out rows, reveal, freeze and versions (nhóm B M1)', (
       [URL.examples()]: () => Response.json({ items: [lacking, evalExample('e2', 'run'), heldOutExample('e4')] }),
       [FREEZE]: () => problem(422, 'eval-set-incomplete', { missing_expected: ['e1'], no_held_out: false }),
     });
-    await screen.findByText('2 dev · 1 held-out');
+    await findCounts(2, 1);
     await pressFreeze();
     await userEvent.click(within(await screen.findByRole('dialog')).getByRole('button', { name: t.freeze.confirm }));
     const alert = await screen.findByRole('alert');
@@ -434,8 +455,8 @@ describe('AiEvalPage held-out rows, reveal, freeze and versions (nhóm B M1)', (
   });
 
   it('409 eval-set-conflict: the conflict sentence, and the versions are read again', async () => {
-    const r = await openPage({ [URL.examples()]: mixedReply, [FREEZE]: () => problem(409, 'eval-set-conflict') });
-    await screen.findByText('3 dev · 2 held-out');
+    const r = await openSets({ [URL.examples()]: mixedReply, [FREEZE]: () => problem(409, 'eval-set-conflict') });
+    await findCounts(3, 2);
     await pressFreeze();
     await userEvent.click(within(await screen.findByRole('dialog')).getByRole('button', { name: t.freeze.confirm }));
     expect(await screen.findByText(vi.errors['eval-set-conflict'])).toBeInTheDocument();
@@ -443,7 +464,7 @@ describe('AiEvalPage held-out rows, reveal, freeze and versions (nhóm B M1)', (
   });
 
   it('a version row: "Phiên bản 1", its counts and "1 ví dụ held-out đã bị xem"; a version nobody looked into has no such line', async () => {
-    await openPage({
+    await openSets({
       [SETS]: () => Response.json({ items: [evalSet({ id: 'S2', version: 2, revealed_count: 0 }), evalSet({ id: 'S1', version: 1, revealed_count: 1 })] }),
     });
     const versions = await screen.findByRole('region', { name: t.sets.title });
@@ -465,7 +486,7 @@ describe('AiEvalPage held-out rows, reveal, freeze and versions (nhóm B M1)', (
       }),
       setItem({ example_id: 'e8', position: 2, split: 'held_out', revealed_at: '2026-10-16T01:00:00.000Z', input: example('rise').input, expected: { forms: ['rise'] } }),
     ];
-    const r = await openPage({
+    const r = await openSets({
       [SETS]: () => Response.json({ items: [evalSet({ id: 'S1', version: 1, revealed_count: 1 })] }),
       [URL.set('S1')]: () => Response.json({ ...setDetail({ id: 'S1', version: 1, revealed_count: 1 }, items()) }),
       [URL.reveal('e9')]: () => {
@@ -498,7 +519,7 @@ describe('AiEvalPage held-out rows, reveal, freeze and versions (nhóm B M1)', (
 
 describe('AiEvalPage runs (A/83)', () => {
   it('[Chạy bộ ví dụ] sends prompt "current" with an Idempotency-Key, opens the run and reads the quota again', async () => {
-    const r = await openPage({
+    const r = await openSets({
       [URL.examples()]: examplesReply(evalExample('e1', 'go')),
       [URL.startRun]: () => Response.json({ run_id: 'aaaaaaaa-0000-4000-8000-000000000001', status: 'queued' }, { status: 202 }),
       [URL.run()]: () => Response.json(evalRun({ status: 'queued', done: 0, created_at: new Date().toISOString() })),
@@ -514,7 +535,7 @@ describe('AiEvalPage runs (A/83)', () => {
 
   it('a second run after the first one finished is a new submission (a new key)', async () => {
     let n = 0;
-    const r = await openPage({
+    const r = await openSets({
       [URL.examples()]: examplesReply(evalExample('e1', 'go')),
       [URL.startRun]: () => Response.json({ run_id: `aaaaaaaa-0000-4000-8000-00000000000${++n}`, status: 'queued' }, { status: 202 }),
       [URL.run()]: () => Response.json(evalRun()),
@@ -522,28 +543,30 @@ describe('AiEvalPage runs (A/83)', () => {
     });
     await userEvent.click(runButton());
     await waitFor(() => expect(r.router.state.location.pathname).toBe('/ai/eval/runs/aaaaaaaa-0000-4000-8000-000000000001'));
-    await userEvent.click(runButton());
+    // A started run opens on the runs page; the run box is back on the versions page.
+    await userEvent.click(setsTab());
+    await userEvent.click(await screen.findByRole('button', { name: t.run.start }));
     await waitFor(() => expect(r.router.state.location.pathname).toBe('/ai/eval/runs/aaaaaaaa-0000-4000-8000-000000000002'));
     const keys = posts(r.calls, '/v1/admin/ai/eval/runs').map((c) => c.headers['Idempotency-Key']);
     expect(new Set(keys).size).toBe(2);
   });
 
   it('§6.5: 409 model-not-set → the copy and a link to Cấu hình of that operation', async () => {
-    await openPage({ [URL.startRun]: () => problem(409, 'model-not-set') });
+    await openSets({ [URL.startRun]: () => problem(409, 'model-not-set') });
     await userEvent.click(runButton());
     expect(await screen.findByText(vi.errors['model-not-set'])).toBeInTheDocument();
     expect(screen.getByRole('link', { name: vi.ai.prompts.test.openConfigs })).toHaveAttribute('href', '/ai/configs?op=generate_cloze');
   });
 
   it('an empty set → "needs an example" copy', async () => {
-    await openPage({ [URL.startRun]: () => problem(400, 'validation-failed', { violations: ['examples: at least one example is needed'] }) });
+    await openSets({ [URL.startRun]: () => problem(400, 'validation-failed', { violations: ['examples: at least one example is needed'] }) });
     await userEvent.click(runButton());
     expect(await screen.findByText(t.run.needExample)).toBeInTheDocument();
   });
 
   it('§6.5: a network error on [Chạy bộ ví dụ], then [Thử lại], sends the same Idempotency-Key', async () => {
     let n = 0;
-    const r = await openPage({
+    const r = await openSets({
       [URL.startRun]: () => {
         n += 1;
         if (n === 1) throw new TypeError('Failed to fetch');
@@ -561,7 +584,7 @@ describe('AiEvalPage runs (A/83)', () => {
   });
 
   it('a network error, then another operation: [Thử lại] is gone (it would send the old operation)', async () => {
-    await openPage({
+    await openSets({
       [URL.startRun]: () => {
         throw new TypeError('Failed to fetch');
       },
@@ -577,7 +600,7 @@ describe('AiEvalPage runs (A/83)', () => {
   });
 
   it('lists the runs: status, progress, valid, prompt revision ("Bản nháp" for a draft) and who started it', async () => {
-    await openPage({
+    await openRuns({
       [URL.runs()]: () => Response.json({
         items: [
           evalRun({ id: 'aaaaaaaa-0000-4000-8000-000000000002', prompt_revision: null, status: 'running', done: 12 }),
@@ -599,7 +622,7 @@ describe('AiEvalPage runs (A/83)', () => {
   });
 
   it('a stopped run (failed, error "cancelled") reads "Đã dừng" in the list; a run that really failed keeps "Lỗi"', async () => {
-    await openPage({
+    await openRuns({
       [URL.runs()]: () => Response.json({
         items: [
           evalRun({ id: 'aaaaaaaa-0000-4000-8000-000000000002', status: 'failed', error: 'cancelled' }),
@@ -629,7 +652,7 @@ describe('AiEvalPage runs on a version (nhóm B M1)', () => {
   });
 
   it('the run select defaults to the newest version and [Chạy bộ ví dụ] sends its set_id', async () => {
-    const r = await openPage({ [URL.sets()]: versionsReply, ...startRoute() });
+    const r = await openSets({ [URL.sets()]: versionsReply, ...startRoute() });
     await waitFor(() => expect(setSelect()).toHaveTextContent(t.set.version.replace('{version}', '2')));
     await userEvent.click(runButton());
     await waitFor(() => expect(r.router.state.location.pathname).toBe(`/ai/eval/runs/${START.run_id}`));
@@ -637,7 +660,7 @@ describe('AiEvalPage runs on a version (nhóm B M1)', () => {
   });
 
   it('an older version can be chosen; its id is sent', async () => {
-    const r = await openPage({ [URL.sets()]: versionsReply, ...startRoute() });
+    const r = await openSets({ [URL.sets()]: versionsReply, ...startRoute() });
     await waitFor(() => expect(setSelect()).toHaveTextContent(t.set.version.replace('{version}', '2')));
     await userEvent.click(setSelect());
     const options = await screen.findAllByRole('option');
@@ -651,7 +674,7 @@ describe('AiEvalPage runs on a version (nhóm B M1)', () => {
   });
 
   it('"Bộ đang soạn (chỉ để thử nhanh, không so được)" runs the working set: no set_id', async () => {
-    const r = await openPage({ [URL.sets()]: versionsReply, ...startRoute() });
+    const r = await openSets({ [URL.sets()]: versionsReply, ...startRoute() });
     await waitFor(() => expect(setSelect()).toHaveTextContent(t.set.version.replace('{version}', '2')));
     await userEvent.click(setSelect());
     await userEvent.click(await screen.findByRole('option', { name: t.set.working }));
@@ -661,7 +684,7 @@ describe('AiEvalPage runs on a version (nhóm B M1)', () => {
   });
 
   it('with no version the select offers only the working set, and the run goes without set_id', async () => {
-    const r = await openPage(startRoute());
+    const r = await openSets(startRoute());
     expect(setSelect()).toHaveTextContent(t.set.working);
     await userEvent.click(runButton());
     await waitFor(() => expect(posts(r.calls, '/v1/admin/ai/eval/runs')).toHaveLength(1));
@@ -670,7 +693,7 @@ describe('AiEvalPage runs on a version (nhóm B M1)', () => {
 
   it('the run button waits for the versions, so a run never starts on the working set by mistake', async () => {
     let release: () => void = () => {};
-    renderApp('/ai/eval', evalRoutes({
+    renderApp(SETS_PAGE, evalRoutes({
       [URL.sets()]: () => new Promise<Response>((resolve) => {
         release = () => resolve(versionsReply());
       }),
@@ -682,7 +705,7 @@ describe('AiEvalPage runs on a version (nhóm B M1)', () => {
   });
 
   it('after a network error, choosing another version takes [Thử lại] away (it would send the old one)', async () => {
-    await openPage({
+    await openSets({
       [URL.sets()]: versionsReply,
       [URL.startRun]: () => {
         throw new TypeError('Failed to fetch');
@@ -697,7 +720,7 @@ describe('AiEvalPage runs on a version (nhóm B M1)', () => {
   });
 
   it('the runs list names the version of each run: "Phiên bản 1", "Bộ đang soạn", "Trước khi có phiên bản"', async () => {
-    await openPage({
+    await openRuns({
       [URL.runs()]: () => Response.json({
         items: [
           evalRun({ id: 'aaaaaaaa-0000-4000-8000-000000000003', set_id: 'S1', set_version: 1 }),
@@ -729,7 +752,7 @@ describe('AiEvalPage runs with a judge (nhóm B M3-T16)', () => {
   const judgeSelect = () => screen.getByRole('button', { name: /Judge$/ });
 
   it('a judge that scores this operation: ticking "Chấm bằng judge" and picking it posts the run with judge_id', async () => {
-    const r = await openPage({ ...judges(judgeOnFake()), ...startRoute() });
+    const r = await openSets({ ...judges(judgeOnFake()), ...startRoute() });
     expect(screen.queryByRole('button', { name: /Judge$/ })).not.toBeInTheDocument();
     await userEvent.click(await screen.findByRole('checkbox', { name: t.run.judge }));
     await userEvent.click(judgeSelect());
@@ -740,7 +763,7 @@ describe('AiEvalPage runs with a judge (nhóm B M3-T16)', () => {
   });
 
   it('not ticked: the run goes without a judge', async () => {
-    const r = await openPage({ ...judges(judgeOnFake()), ...startRoute() });
+    const r = await openSets({ ...judges(judgeOnFake()), ...startRoute() });
     expect(await screen.findByRole('checkbox', { name: t.run.judge })).not.toBeChecked();
     await userEvent.click(runButton());
     await waitFor(() => expect(posts(r.calls, '/v1/admin/ai/eval/runs')).toHaveLength(1));
@@ -748,7 +771,7 @@ describe('AiEvalPage runs with a judge (nhóm B M3-T16)', () => {
   });
 
   it('a judge with no model is listed disabled "(chưa chọn model)"; with nothing else to pick the run button stays off while ticked', async () => {
-    await openPage({ ...judges(judgeView()), ...startRoute() });
+    await openSets({ ...judges(judgeView()), ...startRoute() });
     await userEvent.click(await screen.findByRole('checkbox', { name: t.run.judge }));
     expect(runButton()).toBeDisabled();
     await userEvent.click(judgeSelect());
@@ -759,7 +782,7 @@ describe('AiEvalPage runs with a judge (nhóm B M3-T16)', () => {
   });
 
   it('only active judges that score the operation are offered; with none, the page has no judge box at all', async () => {
-    await openPage({
+    await openSets({
       ...judges(
         judgeOnFake({ active: false }), judgeOnFake({ id: 'J2', name: 'Chỉ tra từ', operations: ['lookup_word'] }),
       ),
@@ -770,13 +793,13 @@ describe('AiEvalPage runs with a judge (nhóm B M3-T16)', () => {
   });
 
   it('a failed list of judges is not an error of the page: the run goes on without the judge box', async () => {
-    await openPage({ [URL.judges]: () => problem(500, 'internal-error'), ...startRoute() });
+    await openSets({ [URL.judges]: () => problem(500, 'internal-error'), ...startRoute() });
     expect(runButton()).toBeEnabled();
     expect(screen.queryByRole('checkbox', { name: t.run.judge })).not.toBeInTheDocument();
   });
 
   it.each(['admin-usd-cap', 'model-price-missing', 'judge-pass-running'])('409 %s when starting a run with a judge reads its own sentence', async (slug) => {
-    await openPage({ ...judges(judgeOnFake()), [URL.startRun]: () => problem(409, slug) });
+    await openSets({ ...judges(judgeOnFake()), [URL.startRun]: () => problem(409, slug) });
     await userEvent.click(await screen.findByRole('checkbox', { name: t.run.judge }));
     await userEvent.click(runButton());
     expect(await screen.findByText(vi.errors[slug as 'admin-usd-cap'])).toBeInTheDocument();
@@ -827,5 +850,165 @@ describe('AiEvalPage example list: pages and sorting', () => {
       const rows = screen.getAllByRole('row').slice(1);
       expect(rows[0]).toHaveTextContent(t.heldOutHidden);
     });
+  });
+});
+
+// These exercise several page/filter/dialog transitions with a full 25-row table, rather than one unit action.
+describe('AiEvalPage bulk selection', () => {
+  const DELETE_PATH = '/v1/admin/ai/eval/examples/bulk-delete';
+  const many = Array.from({ length: 25 }, (_, i) => evalExample(`e${i + 1}`, `w${String(i + 1).padStart(2, '0')}`));
+  const section = () => screen.getByRole('region', { name: t.tabs.list });
+  const selected = (count: number) => bulk.selected.replace('{count}', String(count));
+  const deleteButton = (count: number) => screen.getByRole('button', { name: bulk.button.replace('{count}', String(count)) });
+
+  it('selects this page only, preserves choices across pages and filters, confirms dev/held-out counts and sends one bulk request', async () => {
+    let items = [...many, heldOutExample('h1')];
+    const r = await openPage({
+      [URL.examples()]: () => Response.json({ items }),
+      [`POST ${DELETE_PATH}`]: (call: Call) => {
+        const { ids } = call.body as { ids: string[] };
+        items = items.filter((row) => !ids.includes(row.id));
+        return Response.json({ deleted_ids: ids.slice(0, -1), already_missing_ids: ids.slice(-1) });
+      },
+    });
+    expect(deleteButton(0)).toBeDisabled();
+    // The default order puts held-out first; this walk needs h1 on page 2, so it lists the examples as received.
+    await userEvent.click(screen.getByRole('button', { name: new RegExp(`${list.sort}$`) }));
+    await userEvent.click(await screen.findByRole('option', { name: list.sorts.oldest }));
+    await userEvent.click(within(section()).getByRole('checkbox', { name: vi.list.selectAll }));
+    expect(screen.getByText(selected(20))).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: t.list.next }));
+    expect(within(section()).getByRole('checkbox', { name: vi.list.selectAll })).not.toBeChecked();
+    await userEvent.click(within(section()).getAllByRole('checkbox', { name: bulk.selectHeldOut.replace('{id}', 'h1') })[0]);
+    await userEvent.type(screen.getByRole('textbox', { name: list.search }), 'w25');
+    expect(screen.getByText(selected(21))).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: bulk.selectFiltered.replace('{count}', '1') }));
+    expect(screen.getByText(selected(22))).toBeInTheDocument();
+    await userEvent.click(deleteButton(22));
+    const dialog = await screen.findByRole('dialog', { name: bulk.title.replace('{count}', '22') });
+    expect(within(dialog).getByText(bulk.counts.replace('{dev}', '21').replace('{heldOut}', '1'))).toBeInTheDocument();
+    expect(within(dialog).getByText(bulk.body)).toBeInTheDocument();
+    expect(posts(r.calls, DELETE_PATH)).toHaveLength(0);
+    await userEvent.click(within(dialog).getByRole('button', { name: bulk.confirm.replace('{count}', '22') }));
+    await waitFor(() => expect(posts(r.calls, DELETE_PATH)).toHaveLength(1));
+    const call = posts(r.calls, DELETE_PATH)[0];
+    expect(call.body).toEqual({ operation: 'generate_cloze', ids: [...many.slice(0, 20).map((row) => row.id), 'h1', 'e25'] });
+    expect(call.headers['Idempotency-Key']).toBeTruthy();
+    expect(await screen.findByText(bulk.done.replace('{deleted}', '21').replace('{missing}', '1'))).toBeInTheDocument();
+    expect(screen.getByText(selected(0))).toBeInTheDocument();
+    await waitFor(() => expect(r.count('GET', '/v1/admin/ai/eval/examples?operation=generate_cloze')).toBe(2));
+    expect(r.calls.filter((call) => call.method === 'DELETE')).toHaveLength(0);
+  }, 15_000);
+
+  it('select all filtered targets only the search results, and cancel sends nothing', async () => {
+    const r = await openPage({ [URL.examples()]: () => Response.json({ items: [...many, heldOutExample('h1')] }) });
+    await userEvent.type(screen.getByRole('textbox', { name: list.search }), 'w2');
+    await userEvent.click(screen.getByRole('button', { name: bulk.selectFiltered.replace('{count}', '6') }));
+    expect(screen.getByText(selected(6))).toBeInTheDocument();
+    await userEvent.click(deleteButton(6));
+    const dialog = await screen.findByRole('dialog');
+    expect(within(dialog).getByText(bulk.counts.replace('{dev}', '6').replace('{heldOut}', '0'))).toBeInTheDocument();
+    await userEvent.click(within(dialog).getByRole('button', { name: vi.common.cancel }));
+    expect(posts(r.calls, DELETE_PATH)).toHaveLength(0);
+    expect(screen.getByText(selected(6))).toBeInTheDocument();
+  }, 15_000);
+
+  it('level and split filters exclude held-out content, and switching operation clears selection even when coming back', async () => {
+    await openPage({
+      [URL.examples()]: () => Response.json({ items: [...many, heldOutExample('h1')] }),
+      [URL.examples('lookup_word')]: () => Response.json({ items: [] }),
+      [URL.sets('lookup_word')]: () => Response.json({ items: [] }),
+      [URL.runs('lookup_word')]: () => Response.json({ items: [], next_page_token: null }),
+    });
+    await userEvent.click(within(section()).getByRole('checkbox', { name: vi.list.selectAll }));
+    await userEvent.click(screen.getByRole('button', { name: new RegExp(`${list.level}$`) }));
+    await userEvent.click(await screen.findByRole('option', { name: 'A1' }));
+    expect(screen.queryByRole('checkbox', { name: bulk.selectHeldOut.replace('{id}', 'h1') })).not.toBeInTheDocument();
+    expect(screen.getByText(selected(20))).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: new RegExp(`${list.splitFilter}$`) }));
+    await userEvent.click(await screen.findByRole('option', { name: t.split.heldOut }));
+    expect(screen.getByRole('button', { name: bulk.selectFiltered.replace('{count}', '0') })).toBeDisabled();
+    const operation = () => screen.getByRole('button', { name: new RegExp(`${t.operation}$`) });
+    await userEvent.click(operation());
+    await userEvent.click(await screen.findByRole('option', { name: `${vi.ai.operations.names.lookup_word} (lookup_word)` }));
+    expect(screen.getByText(selected(0))).toBeInTheDocument();
+    await userEvent.click(operation());
+    await userEvent.click(await screen.findByRole('option', { name: `${vi.ai.operations.names.generate_cloze} (generate_cloze)` }));
+    expect(screen.getByText(selected(0))).toBeInTheDocument();
+  }, 15_000);
+
+  it('a network failure keeps the selection and retries the same confirmed payload with the same Idempotency-Key', async () => {
+    let attempts = 0;
+    const r = await openPage({
+      [URL.examples()]: () => Response.json({ items: [evalExample('e1', 'go')] }),
+      [`POST ${DELETE_PATH}`]: () => {
+        attempts += 1;
+        if (attempts === 1) throw new TypeError('network failed');
+        return Response.json({ deleted_ids: ['e1'], already_missing_ids: [] });
+      },
+    });
+    await userEvent.click(screen.getByRole('checkbox', { name: vi.list.selectAll }));
+    await userEvent.click(deleteButton(1));
+    const dialog = await screen.findByRole('dialog');
+    await userEvent.click(within(dialog).getByRole('button', { name: bulk.confirm.replace('{count}', '1') }));
+    expect(await within(dialog).findByText(vi.offline.message)).toBeInTheDocument();
+    await userEvent.click(within(dialog).getByRole('button', { name: bulk.confirm.replace('{count}', '1') }));
+    await waitFor(() => expect(posts(r.calls, DELETE_PATH)).toHaveLength(2));
+    const [first, second] = posts(r.calls, DELETE_PATH);
+    expect(first.headers['Idempotency-Key']).toBe(second.headers['Idempotency-Key']);
+    expect(first.body).toEqual(second.body);
+    expect(await screen.findByText(bulk.done.replace('{deleted}', '1').replace('{missing}', '0'))).toBeInTheDocument();
+  }, 15_000);
+});
+
+describe('AiEvalPage layout (02/11)', () => {
+  const tabs = t.tabs;
+  const MIXED = [evalExample('e1', 'go'), evalExample('e2', 'run'), heldOutExample('h1'), evalExample('e3', 'come'), heldOutExample('h2')];
+  const listRows = () => screen.getAllByRole('row').slice(1);
+
+  it('the counts sit in their own box: "Ví dụ (5/1.000)", "3 dev" and "2 held-out"', async () => {
+    renderApp('/ai/eval', evalRoutes({ [URL.examples()]: () => Response.json({ items: MIXED }) }));
+    const stats = await screen.findByRole('region', { name: t.stats.label });
+    expect(await within(stats).findByRole('heading', { name: t.examples.replace('{count}', '5') })).toBeInTheDocument();
+    expect(within(stats).getByText(t.stats.dev.replace('{count}', '3'))).toBeInTheDocument();
+    expect(within(stats).getByText(t.stats.heldOut.replace('{count}', '2'))).toBeInTheDocument();
+  });
+
+  it('held-out rows come first by default, then dev, each in the order received', async () => {
+    renderApp('/ai/eval', evalRoutes({ [URL.examples()]: () => Response.json({ items: MIXED }) }));
+    await screen.findAllByText('go · verb');
+    expect(screen.getByRole('button', { name: new RegExp(`${t.list.sort}$`) })).toHaveTextContent(t.list.sorts.heldOutFirst);
+    const rows = listRows();
+    expect(rows.slice(0, 2).every((row) => row.textContent?.includes(t.heldOutHidden))).toBe(true);
+    expect(rows.slice(2).map((row) => within(row).getByText(/ · verb$/).textContent)).toEqual(['go · verb', 'run · verb', 'come · verb']);
+  });
+
+  it('the selection bar is one row: count, [Bỏ chọn], [Chọn toàn bộ] and [Xóa đã chọn], with no explanation', async () => {
+    renderApp('/ai/eval', evalRoutes({ [URL.examples()]: () => Response.json({ items: MIXED }) }));
+    await screen.findAllByText('go · verb');
+    await userEvent.click(screen.getByRole('button', { name: bulk.selectFiltered }));
+    expect(screen.getByText(bulk.selected.replace('{count}', '5'))).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: bulk.clear })).toBeEnabled();
+    expect(screen.getByRole('button', { name: bulk.button.replace('{count}', '5') })).toBeEnabled();
+    expect(screen.queryByText(/Checkbox đầu bảng/)).not.toBeInTheDocument();
+  });
+
+  it('three sub-pages: the list is current at /ai/eval; versions and the run box are at /ai/eval/sets; runs at /ai/eval/runs', async () => {
+    const r = renderApp('/ai/eval?op=generate_cloze', evalRoutes({ [URL.examples()]: () => Response.json({ items: MIXED }), [URL.sets()]: () => Response.json({ items: [evalSet()] }) }));
+    const nav = await screen.findByRole('navigation', { name: tabs.label });
+    expect(await within(nav).findByRole('link', { name: `${tabs.list} 5` })).toHaveAttribute('aria-current', 'page');
+    expect(screen.queryByRole('button', { name: t.run.start })).not.toBeInTheDocument();
+    expect(screen.queryByRole('table', { name: t.sets.title })).not.toBeInTheDocument();
+
+    await userEvent.click(within(nav).getByRole('link', { name: `${tabs.sets} 1` }));
+    expect(r.router.state.location).toMatchObject({ pathname: '/ai/eval/sets', search: '?op=generate_cloze' });
+    expect(await screen.findByRole('complementary', { name: t.run.title })).toContainElement(screen.getByRole('button', { name: t.run.start }));
+    expect(screen.getByRole('region', { name: t.sets.title })).toBeInTheDocument();
+    expect(screen.queryByRole('textbox', { name: t.list.search })).not.toBeInTheDocument();
+
+    await userEvent.click(within(nav).getByRole('link', { name: new RegExp(`^${tabs.runs}`) }));
+    expect(r.router.state.location.pathname).toBe('/ai/eval/runs');
+    expect(await screen.findByRole('region', { name: t.runs.title })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: t.run.start })).not.toBeInTheDocument();
   });
 });

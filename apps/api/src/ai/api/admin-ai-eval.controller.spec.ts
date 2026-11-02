@@ -21,9 +21,24 @@ const PROBLEM = 'https://api.example.com/problems/';
 
 describe('admin ai eval HTTP (unit, mocked services)', () => {
   let ctx: TestApp; let token: string; let actorId: string; let role: 'admin' | 'editor' | null;
-  const prisma = { sessionChain: { findUnique: vi.fn() }, $disconnect: async () => {} };
+  const idemRows: Array<Record<string, unknown>> = [];
+  const prisma = {
+    sessionChain: { findUnique: vi.fn() }, $disconnect: async () => {},
+    $queryRawTyped: async () => [{ locked: true }],
+    $transaction: async (work: (tx: unknown) => Promise<unknown>) => work(prisma),
+    idempotencyKey: {
+      findFirst: async ({ where }: { where: Record<string, unknown> }) => idemRows.find((row) => Object.entries(where).every(([k, v]) => row[k] === v)) ?? null,
+      create: async ({ data }: { data: Record<string, unknown> }) => { idemRows.push(data); return data; },
+      updateMany: async ({ where, data }: { where: Record<string, unknown>; data: Record<string, unknown> }) => {
+        const rows = idemRows.filter((row) => Object.entries(where).every(([k, v]) => row[k] === v));
+        rows.forEach((row) => Object.assign(row, data));
+        return { count: rows.length };
+      },
+      deleteMany: async () => { idemRows.length = 0; return { count: 1 }; },
+    },
+  };
   const hit = vi.spyOn(RateLimiter.prototype, 'hit');
-  let examples: Record<'list' | 'create' | 'createMany' | 'update' | 'remove' | 'forms' | 'reveal', ReturnType<typeof vi.spyOn>>;
+  let examples: Record<'list' | 'create' | 'createMany' | 'update' | 'remove' | 'removeMany' | 'forms' | 'reveal', ReturnType<typeof vi.spyOn>>;
   let sets: Record<'freeze' | 'list' | 'get', ReturnType<typeof vi.spyOn>>;
   let runs: Record<'list' | 'get' | 'cancel' | 'remove' | 'items' | 'compare', ReturnType<typeof vi.spyOn>>;
   let passes: Record<'createForRun', ReturnType<typeof vi.spyOn>>;
@@ -39,7 +54,7 @@ describe('admin ai eval HTTP (unit, mocked services)', () => {
     const rs = ctx.app.get(EvalRunsService);
     examples = {
       list: vi.spyOn(ex, 'list'), create: vi.spyOn(ex, 'create'), createMany: vi.spyOn(ex, 'createMany'), update: vi.spyOn(ex, 'update'), remove: vi.spyOn(ex, 'remove'),
-      forms: vi.spyOn(ex, 'forms'), reveal: vi.spyOn(ex, 'reveal'),
+      forms: vi.spyOn(ex, 'forms'), reveal: vi.spyOn(ex, 'reveal'), removeMany: vi.spyOn(ex, 'removeMany'),
     };
     const ss = ctx.app.get(EvalSetsService);
     sets = { freeze: vi.spyOn(ss, 'freeze'), list: vi.spyOn(ss, 'list'), get: vi.spyOn(ss, 'get') };
@@ -49,6 +64,8 @@ describe('admin ai eval HTTP (unit, mocked services)', () => {
   });
   beforeEach(async () => {
     actorId = randomUUID(); role = 'admin';
+    idemRows.length = 0;
+    examples.removeMany.mockReset().mockResolvedValue({ deleted_ids: [id], already_missing_ids: [] });
     token = await ctx.app.get(AccessTokenService).sign({ userId: actorId, sessionChainId: randomUUID() });
     prisma.sessionChain.findUnique.mockReset().mockImplementation(async () => ({ userId: actorId, revokedAt: null, user: { staffRole: role } }));
     examples.list.mockReset().mockResolvedValue({ items: [] }); examples.create.mockReset().mockResolvedValue({ id });
@@ -72,7 +89,7 @@ describe('admin ai eval HTTP (unit, mocked services)', () => {
       'GET /v1/admin/ai/eval/examples/forms', 'GET /v1/admin/ai/eval/sets', 'GET /v1/admin/ai/eval/sets/:id', 'POST /v1/admin/ai/eval/sets',
       'POST /v1/admin/ai/eval/examples/:id/reveal',
       'GET /v1/admin/ai/eval/runs', 'GET /v1/admin/ai/eval/runs/:id', 'GET /v1/admin/ai/eval/runs/:id/items', 'GET /v1/admin/ai/eval/runs/compare', 'PATCH /v1/admin/ai/eval/examples/:id',
-      'POST /v1/admin/ai/eval/examples', 'POST /v1/admin/ai/eval/examples/bulk', 'POST /v1/admin/ai/eval/runs',
+      'POST /v1/admin/ai/eval/examples', 'POST /v1/admin/ai/eval/examples/bulk', 'POST /v1/admin/ai/eval/examples/bulk-delete', 'POST /v1/admin/ai/eval/runs',
       'POST /v1/admin/ai/eval/runs/:id/cancel', 'POST /v1/admin/ai/eval/runs/:id/judge-passes',
     ].sort());
     for (const route of routes) expect(route.permissions, `${route.method} ${route.path}`).toEqual(['settings.manage']);
@@ -84,6 +101,46 @@ describe('admin ai eval HTTP (unit, mocked services)', () => {
     expect(reflector.get(IDEMPOTENT_KEY, handler)).toBeDefined();
     expect(reflector.get(INTERCEPTORS_METADATA, handler)).toContain(IdempotencyInterceptor);
     expect(reflector.get(RATE_LIMIT_KEY, handler)).toBeUndefined();
+  });
+
+  it('bulk-delete uses idempotency and user.write; repeats replay the result, different payload is rejected', async () => {
+    const key = randomUUID();
+    const body = { operation: 'generate_cloze', ids: [id.toUpperCase(), id] };
+    const request = (payload = body) => http().post('/v1/admin/ai/eval/examples/bulk-delete').set(auth()).set('Idempotency-Key', key).send(payload);
+    const first = await request();
+    expect(first.status).toBe(200);
+    expect(first.body).toEqual({ deleted_ids: [id], already_missing_ids: [] });
+    expect((await request()).body).toEqual(first.body);
+    expect(examples.removeMany).toHaveBeenCalledExactlyOnceWith({ operation: 'generate_cloze', ids: [id, id] });
+    expect((await request({ ...body, ids: [randomUUID()] })).status).toBe(400);
+    const handler = AdminAiEvalController.prototype.removeExamples;
+    const reflector = new Reflector();
+    expect(reflector.get(IDEMPOTENT_KEY, handler)).toBeDefined();
+    expect(reflector.get(INTERCEPTORS_METADATA, handler)).toContain(IdempotencyInterceptor);
+    expect(reflector.get(RATE_LIMIT_KEY, handler)).toEqual(['user.write']);
+  });
+
+  it('bulk-delete requires a key and rejects invalid input before the service; allows at most 1000 ids', async () => {
+    const request = (body: object, key: string = randomUUID()) => http().post('/v1/admin/ai/eval/examples/bulk-delete').set(auth()).set('Idempotency-Key', key).send(body);
+    expect((await request({ operation: 'generate_cloze', ids: [id] }, '')).status).toBe(400);
+    for (const body of [
+      { operation: 'bad', ids: [id] }, { operation: 'generate_cloze', ids: [] },
+      { operation: 'generate_cloze', ids: ['bad'] }, { operation: 'generate_cloze', ids: Array(1001).fill(id) },
+      { operation: 'generate_cloze', ids: [id], extra: true },
+    ]) expect((await request(body)).status).toBe(400);
+    expect(examples.removeMany).not.toHaveBeenCalled();
+    expect((await request({ operation: 'generate_cloze', ids: Array(1000).fill(id) })).status).toBe(200);
+  });
+
+  it('bulk-delete refuses editors and exposes a service ownership error as 400', async () => {
+    const request = () => http().post('/v1/admin/ai/eval/examples/bulk-delete').set(auth()).set('Idempotency-Key', randomUUID()).send({ operation: 'generate_cloze', ids: [id] });
+    role = 'editor';
+    expect((await request()).status).toBe(403);
+    expect(examples.removeMany).not.toHaveBeenCalled();
+    role = 'admin';
+    examples.removeMany.mockRejectedValueOnce(new ProblemDetailsException({ status: 400, type: 'validation-failed', title: 'Wrong operation' }));
+    const result = await request();
+    expect([result.status, result.body.type]).toEqual([400, `${PROBLEM}validation-failed`]);
   });
 
   it('B16: POST /runs/:id/judge-passes carries the idempotent metadata and the interceptor, and no rate rule of its own', () => {

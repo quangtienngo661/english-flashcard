@@ -504,13 +504,33 @@
       "heldOutHidden": "Ví dụ held-out: nội dung được ẩn",
       "list": {
         "sort": "Sắp xếp",
-        "sorts": { "oldest": "Cũ nhất trước", "newest": "Mới nhất trước", "az": "Từ A → Z", "za": "Từ Z → A", "devFirst": "Dev trước", "heldOutFirst": "Held-out trước" },
+        "sorts": {
+          "oldest": "Cũ nhất trước",
+          "newest": "Mới nhất trước",
+          "az": "Từ A → Z",
+          "za": "Từ Z → A",
+          "devFirst": "Dev trước",
+          "heldOutFirst": "Held-out trước"
+        },
         "pages": "Phân trang bộ ví dụ",
         "page": "Trang {page}/{pages}",
         "previous": "Trang trước",
-        "next": "Trang sau"
+        "next": "Trang sau",
+        "search": "Tìm ví dụ dev",
+        "searchPlaceholder": "Từ hoặc nghĩa…",
+        "splitFilter": "Phần",
+        "allSplits": "Dev & held-out",
+        "level": "Trình độ dev",
+        "allLevels": "Tất cả trình độ",
+        "filterHint": "Bộ lọc từ và trình độ chỉ tìm trong dev. Nội dung held-out luôn được ẩn.",
+        "filteredCount": "{count} kết quả đang lọc",
+        "levelColumn": "Trình độ",
+        "range": "Hiển thị {from}–{to} / {total}"
       },
-      "split": { "dev": "dev", "heldOut": "held-out" },
+      "split": {
+        "dev": "dev",
+        "heldOut": "held-out"
+      },
       "reveal": {
         "button": "Mở ví dụ held-out",
         "title": "Mở ví dụ held-out?",
@@ -541,7 +561,12 @@
         "revealed": "{count} ví dụ held-out đã bị xem",
         "deleted": "Đã xóa khỏi bộ đang soạn",
         "seen": "Đã bị xem",
-        "cols": { "version": "Phiên bản", "frozenAt": "Chốt lúc", "counts": "Số ví dụ", "seen": "Held-out đã bị xem" }
+        "cols": {
+          "version": "Phiên bản",
+          "frozenAt": "Chốt lúc",
+          "counts": "Số ví dụ",
+          "seen": "Held-out đã bị xem"
+        }
       },
       "add": "Thêm ví dụ",
       "bulk": {
@@ -720,7 +745,10 @@
           "skipped": "Bỏ qua",
           "notApplicable": "Không áp dụng"
         },
-        "expectedResult": { "pass": "Đạt", "fail": "Không đạt" },
+        "expectedResult": {
+          "pass": "Đạt",
+          "fail": "Không đạt"
+        },
         "judge": {
           "title": "Judge",
           "pass": "{name} bản {revision} · {status} · {judged}/{total} · {cost}",
@@ -774,8 +802,18 @@
         "option": "{time} · {model}",
         "workingSet": "Lần chạy trên bộ đang soạn không so được.",
         "noOther": "Chưa có lần chạy nào khác trên phiên bản này để so.",
-        "cols": { "criterion": "Tiêu chí", "devBefore": "Dev (trước)", "devNow": "Dev (nay)", "heldOutBefore": "Held-out (trước)", "heldOutNow": "Held-out (nay)" },
-        "rows": { "shape": "Khuôn", "rule": "Luật", "expected": "Mong đợi" },
+        "cols": {
+          "criterion": "Tiêu chí",
+          "devBefore": "Dev (trước)",
+          "devNow": "Dev (nay)",
+          "heldOutBefore": "Held-out (trước)",
+          "heldOutNow": "Held-out (nay)"
+        },
+        "rows": {
+          "shape": "Khuôn",
+          "rule": "Luật",
+          "expected": "Mong đợi"
+        },
         "devRegressions": "Ví dụ dev trước đạt, nay trượt ({count})",
         "heldOutRegressions": "Held-out: {count} ví dụ trước đạt, nay trượt",
         "judgeRow": "Judge {name} bản {revision} · {criterion}",
@@ -784,7 +822,37 @@
         "judgeRunning": "Đang chấm. So sánh sẽ tự cập nhật khi xong.",
         "judgeStopped": "Lượt chấm đã dừng: {error}",
         "noRegressions": "Không có ví dụ nào trước đạt, nay trượt.",
-        "criteria": { "shape": "khuôn", "rule": "luật", "expected": "mong đợi" }
+        "criteria": {
+          "shape": "khuôn",
+          "rule": "luật",
+          "expected": "mong đợi"
+        }
+      },
+      "bulkDelete": {
+        "selected": "Đã chọn {count} ví dụ",
+        "clear": "Bỏ chọn",
+        "selectFiltered": "Chọn toàn bộ",
+        "selectRow": "Chọn ví dụ {summary}",
+        "selectHeldOut": "Chọn ví dụ held-out {id}",
+        "button": "Xóa đã chọn ({count})",
+        "title": "Xóa {count} ví dụ đã chọn?",
+        "counts": "{dev} dev · {heldOut} held-out",
+        "body": "Xóa khỏi bộ đang soạn. Các phiên bản đã chốt và kết quả eval cũ vẫn được giữ. Không thể hoàn tác.",
+        "confirm": "Xóa {count} ví dụ",
+        "done": "Đã xóa {deleted} ví dụ; {missing} ví dụ đã không còn tồn tại.",
+        "retry": "Thử lại xóa {count} ví dụ",
+        "retryHint": "Chưa xác nhận được kết quả. Thử lại cùng yêu cầu để nhận kết quả đã lưu."
+      },
+      "tabs": {
+        "label": "Trang bộ ví dụ",
+        "list": "Danh sách ví dụ",
+        "sets": "Phiên bản đã chốt",
+        "runs": "Lần chạy"
+      },
+      "stats": {
+        "label": "Số ví dụ dev và held-out",
+        "dev": "{count} dev",
+        "heldOut": "{count} held-out"
       }
     },
     "judges": {
@@ -964,11 +1032,29 @@
     },
     "costs": {
       "note": "Chi phí là ước tính từ số token và giá đã nhập.",
-      "filters": { "from": "Từ ngày", "to": "Đến ngày", "groupBy": "Nhóm theo", "apply": "Xem" },
-      "groups": { "day": "Ngày", "operation": "Thao tác", "model": "Model", "purpose": "Mục đích", "outcome": "Kết quả" },
+      "filters": {
+        "from": "Từ ngày",
+        "to": "Đến ngày",
+        "groupBy": "Nhóm theo",
+        "apply": "Xem"
+      },
+      "groups": {
+        "day": "Ngày",
+        "operation": "Thao tác",
+        "model": "Model",
+        "purpose": "Mục đích",
+        "outcome": "Kết quả"
+      },
       "cols": {
-        "group": "Nhóm", "calls": "Lời gọi", "input": "Token đầu vào", "cached": "Token cache", "output": "Token đầu ra",
-        "reasoning": "Token suy luận", "usd": "Chi phí US$", "vnd": "Chi phí ₫", "unknown": "Lời gọi chưa có giá"
+        "group": "Nhóm",
+        "calls": "Lời gọi",
+        "input": "Token đầu vào",
+        "cached": "Token cache",
+        "output": "Token đầu ra",
+        "reasoning": "Token suy luận",
+        "usd": "Chi phí US$",
+        "vnd": "Chi phí ₫",
+        "unknown": "Lời gọi chưa có giá"
       },
       "total": "Tổng",
       "empty": "Không có lời gọi nào trong khoảng ngày này.",
@@ -976,16 +1062,91 @@
         "required": "Chọn ngày.",
         "fromAfterTo": "Từ ngày phải trước hoặc bằng Đến ngày.",
         "tooLong": "Khoảng ngày tối đa 366 ngày."
+      },
+      "batches": {
+        "tabsLabel": "Cách xem chi phí",
+        "tab": "Theo lần chạy",
+        "aggregate": "Tổng hợp hiện có",
+        "note": "Mỗi dòng là một lần chạy của admin. Token và chi phí gồm tất cả lời gọi, kể cả retry. Usage người học nằm trong báo cáo tổng hợp.",
+        "partial": "Tạm tính · batch chưa kết thúc",
+        "unknown": "Chưa đủ giá",
+        "knownSubtotal": "Phần đã biết giá: {cost} · {count} calls chưa có giá.",
+        "all": "Tất cả",
+        "operation": "Thao tác",
+        "kind": "Loại batch",
+        "status": "Trạng thái",
+        "empty": "Chưa có batch trong khoảng này.",
+        "open": "Chi tiết batch {id}",
+        "title": "Chi tiết batch",
+        "kinds": {
+          "test": "Chạy thử",
+          "eval": "Eval",
+          "judge": "Judge"
+        },
+        "statuses": {
+          "queued": "Đang chờ",
+          "running": "Đang chạy",
+          "finished": "Xong",
+          "failed": "Thất bại",
+          "cancelled": "Đã dừng"
+        },
+        "cols": {
+          "batch": "Batch / lần chạy",
+          "model": "Model & cấu hình",
+          "progress": "Tiến độ",
+          "tokens": "Token input / output",
+          "cost": "Chi phí USD"
+        },
+        "progress": "{done}/{total} ví dụ",
+        "calls": "{calls} calls · {retries} retry, đã gồm trong tổng",
+        "extraTokens": "Cached: {cached} · Reasoning: {reasoning}",
+        "fingerprint": "Fingerprint",
+        "saved": "Snapshot của bản đã lưu",
+        "temporary": "Chạy tạm · chưa lưu nháp",
+        "sourceUnknown": "Không có thông tin nguồn snapshot",
+        "config": "Cấu hình {id} · v{version}",
+        "noConfig": "Không gắn cấu hình",
+        "snapshotNote": "Snapshot giữ nội dung và settings lúc chạy. Sửa nháp sau đó không đổi lần chạy này.",
+        "snapshot": "Prompt & settings snapshot",
+        "noSnapshot": "Batch cũ không có snapshot.",
+        "startedBy": "Người chạy",
+        "createdAt": "Tạo lúc",
+        "startedAt": "Bắt đầu",
+        "finishedAt": "Kết thúc",
+        "evalSource": "Mở kết quả eval",
+        "judgeSource": "Mở lượt judge",
+        "parent": "Mở batch cha",
+        "draft": "Mở cấu hình nguồn",
+        "outputs": "Kết quả chạy thử",
+        "output": "Output",
+        "expires": "Output được giữ đến {date}",
+        "expired": "Output đã hết hạn hoặc không được lưu.",
+        "heldOut": "Nội dung held-out được ẩn.",
+        "resultsElsewhere": "Xem kết quả ở nguồn eval hoặc judge. Trang này không hiển thị input hay output held-out.",
+        "notFound": "Không tìm thấy batch.",
+        "invalidId": "Batch ID không hợp lệ."
       }
     },
     "calls": {
-      "search": { "label": "Mã thao tác (operation_id)", "submit": "Tìm", "placeholder": "Dán mã từ báo lỗi hoặc log" },
+      "search": {
+        "label": "Mã thao tác (operation_id)",
+        "submit": "Tìm",
+        "placeholder": "Dán mã từ báo lỗi hoặc log"
+      },
       "hint": "Nhập mã thao tác để xem các lần gọi của nó.",
       "empty": "Không có lời gọi nào với mã này.",
       "forId": "Mã thao tác: {id}",
       "cols": {
-        "attempt": "Lần thử", "purpose": "Mục đích", "operation": "Thao tác", "model": "Model", "outcome": "Kết quả", "http": "HTTP",
-        "tokens": "Token", "cost": "Chi phí", "time": "Thời gian", "content": "Nội dung"
+        "attempt": "Lần thử",
+        "purpose": "Mục đích",
+        "operation": "Thao tác",
+        "model": "Model",
+        "outcome": "Kết quả",
+        "http": "HTTP",
+        "tokens": "Token",
+        "cost": "Chi phí",
+        "time": "Thời gian",
+        "content": "Nội dung"
       },
       "tokensInOut": "{input} vào · {output} ra",
       "tokensExtra": "cache {cached} · suy luận {reasoning}",
@@ -997,7 +1158,72 @@
       "hiddenContent": "Nội dung được ẩn",
       "view": "Xem",
       "viewFor": "Xem nội dung lần thử {attempt}",
-      "content": { "title": "Nội dung lần gọi", "request": "Yêu cầu", "response": "Phản hồi" }
+      "content": {
+        "title": "Nội dung lần gọi",
+        "request": "Yêu cầu",
+        "response": "Phản hồi"
+      }
+    },
+    "workspace": {
+      "intro": "Tạo nhiều hướng thử nghiệm, chạy đối chiếu rồi chọn bản để publish.",
+      "pages": "Trang cấu hình",
+      "drafts": "Các bản nháp",
+      "history": "Lịch sử",
+      "live": "Bản đang chạy",
+      "expandLive": "Mở bản đang chạy",
+      "collapseLive": "Thu gọn bản đang chạy",
+      "liveNote": "Bản này phục vụ người học. Chạy nháp và chạy tạm không thay đổi nó.",
+      "empty": "Chưa có nháp. Tạo nháp từ bản đang chạy để bắt đầu.",
+      "name": "Tên nháp",
+      "unnamed": "Nháp #{number}",
+      "version": "Lần lưu {version}",
+      "batch": "Xem batch",
+      "unknownCost": "Chưa đủ giá",
+      "actions": "Hành động nháp #{number}",
+      "menu": {
+        "edit": "Sửa nháp",
+        "test": "Chạy thử",
+        "eval": "Chạy eval",
+        "clone": "Nhân bản",
+        "publish": "Publish",
+        "delete": "Xóa nháp"
+      },
+      "revisions": "Các lần lưu nháp",
+      "legacy": "Lịch sử prompt cũ",
+      "viewRevisions": "Xem revisions",
+      "emptyRevisions": "Chưa có lần lưu.",
+      "back": "Danh sách nháp",
+      "temporaryNote": "Chạy tạm toàn bộ nội dung đang sửa, gồm model và settings. Không tự lưu nháp.",
+      "search": "Tìm ví dụ dev",
+      "level": "Trình độ",
+      "allLevels": "Tất cả",
+      "chosen": "Đã chọn {count}/5",
+      "snapshot": "Snapshot của lần chạy",
+      "savedTarget": "Nháp đã lưu",
+      "temporaryTarget": "Nội dung đang sửa",
+      "liveTarget": "Bản đang chạy",
+      "target": "Chạy với",
+      "runSnapshot": "Nội dung và model được giữ ở thời điểm chạy.",
+      "olderRuns": "Tải các lần chạy cũ hơn",
+      "cost": "Chi phí USD",
+      "model": "Model",
+      "noSelection": "Không chọn: server dùng tối đa 5 ví dụ dev hoặc few-shot.",
+      "noMatches": "Không có ví dụ dev phù hợp.",
+      "historyTabs": "Các loại lịch sử",
+      "revisionTitle": "Nháp · lần lưu {version}",
+      "savedContent": "Nội dung đã lưu",
+      "checkAgain": "Kiểm tra lại",
+      "gone": "Nháp đã bị xóa hoặc publish. Quay lại danh sách để chọn nháp khác.",
+      "clearSelection": "Bỏ chọn",
+      "pickDev": "Chọn từ dev",
+      "promptHistory": "Lịch sử prompt",
+      "cols": {
+        "draft": "Nháp",
+        "model": "Model",
+        "lastRun": "Lần chạy gần nhất",
+        "updated": "Cập nhật"
+      },
+      "notRun": "Chưa chạy"
     }
   },
   "entitlements": {
@@ -1027,7 +1253,10 @@
       "status": "Trạng thái",
       "actions": "Thao tác"
     },
-    "kinds": { "plan": "Gói Pro", "limits": "Con số riêng" },
+    "kinds": {
+      "plan": "Gói Pro",
+      "limits": "Con số riêng"
+    },
     "limitLines": {
       "practice_sessions_per_day": "{n} phiên luyện mỗi ngày",
       "ai_practice_per_cycle": "{n} lượt câu AI mỗi tháng",
@@ -1207,7 +1436,11 @@
       "updatedBy": "Sửa lần cuối bởi",
       "actions": "Thao tác"
     },
-    "appliesTo": { "ai": "Câu AI", "non_ai": "Câu thường", "all": "Cả hai" },
+    "appliesTo": {
+      "ai": "Câu AI",
+      "non_ai": "Câu thường",
+      "all": "Cả hai"
+    },
     "yes": "Có",
     "no": "Không",
     "edit": "Sửa",
@@ -1254,7 +1487,10 @@
       "fixed": "Đã sửa",
       "confirmed": "Đã xác nhận lỗi"
     },
-    "sources": { "rule": "Câu thường", "ai": "Câu AI" },
+    "sources": {
+      "rule": "Câu thường",
+      "ai": "Câu AI"
+    },
     "types": {
       "mcq_definition": "Trắc nghiệm",
       "true_false_definition": "Đúng / Sai",
@@ -1345,11 +1581,36 @@
     "search": "Tìm theo email, họ hoặc tên (từ 2 ký tự)",
     "searchHint": "Không phân biệt hoa thường; có phân biệt dấu.",
     "searchShort": "Gõ từ 2 ký tự",
-    "filters": { "status": "Trạng thái", "all": "Tất cả", "active": "Đang hoạt động", "locked": "Đang khóa", "deleting": "Đang xóa" },
-    "cols": { "email": "Email", "name": "Họ tên", "role": "Vai trò", "verified": "Email đã xác minh", "status": "Trạng thái", "created": "Ngày tạo", "lastSeen": "Lần cuối vào" },
-    "roles": { "admin": "admin", "editor": "editor", "learner": "người học" },
-    "statuses": { "active": "Đang hoạt động", "locked": "Đang khóa", "deleting": "Đang xóa" },
-    "verified": { "yes": "Đã xác minh", "no": "Chưa xác minh" },
+    "filters": {
+      "status": "Trạng thái",
+      "all": "Tất cả",
+      "active": "Đang hoạt động",
+      "locked": "Đang khóa",
+      "deleting": "Đang xóa"
+    },
+    "cols": {
+      "email": "Email",
+      "name": "Họ tên",
+      "role": "Vai trò",
+      "verified": "Email đã xác minh",
+      "status": "Trạng thái",
+      "created": "Ngày tạo",
+      "lastSeen": "Lần cuối vào"
+    },
+    "roles": {
+      "admin": "admin",
+      "editor": "editor",
+      "learner": "người học"
+    },
+    "statuses": {
+      "active": "Đang hoạt động",
+      "locked": "Đang khóa",
+      "deleting": "Đang xóa"
+    },
+    "verified": {
+      "yes": "Đã xác minh",
+      "no": "Chưa xác minh"
+    },
     "footer": "Mới nhất trước · 20 người mỗi trang",
     "empty": "Chưa có người dùng nào.",
     "emptySearch": "Không có ai khớp “{q}”. Thử tìm theo email.",
@@ -1673,7 +1934,11 @@
     },
     "reportLink": "Xem báo lỗi",
     "selfResolved": "Tự xử lý báo lỗi của mình",
-    "refunded": { "true": "Đã trả", "false": "Không trả", "null": "Đang thử lại" },
+    "refunded": {
+      "true": "Đã trả",
+      "false": "Không trả",
+      "null": "Đang thử lại"
+    },
     "empty": "Chưa có lần xác nhận lỗi nào trong khoảng này.",
     "note": "Không thu hồi được lượt đã trả."
   },

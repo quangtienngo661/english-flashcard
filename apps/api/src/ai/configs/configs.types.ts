@@ -18,9 +18,19 @@ export type PublishWarning =
   | { code: 'dev-regressed'; example_ids: string[] }
   | { code: 'held-out-failures-up'; before: number; after: number };
 
+/** Latest quick-test/eval execution of a draft. `id` is the batch ID; `source_id` is the eval run ID, when present. */
+export type ConfigLastRun = {
+  id: string; config_id: string; kind: 'test' | 'eval'; status: string; config_version: number | null;
+  fingerprint: string | null; source_id: string | null; model: string; provider: string; total: number;
+  created_at: string; started_at: string | null; finished_at: string | null;
+};
+
 /** One config as the admin API shows it (design §4, §6.1). */
 export type ConfigView = {
   id: string;
+  name: string | null;
+  fingerprint: string;
+  updated_at: string;
   operation: AiOperation;
   number: number;
   version: number;
@@ -38,6 +48,7 @@ export type ConfigView = {
   published_by_user: UserRef | null;
   published_at: string | null;
   estimate: CostEstimate | null;
+  last_run?: ConfigLastRun | null;
 };
 
 /** `GET /v1/admin/ai/configs/{op}`: what runs now, the draft being prepared and the config before the live one (the rollback target). */
@@ -48,5 +59,6 @@ export type ConfigsView = {
   live_version: number;
   live: ConfigView;
   draft: ConfigView | null;
+  draft_count: number;
   previous: ConfigView | null;
 };

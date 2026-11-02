@@ -88,7 +88,7 @@ test('the admin freezes the next version of the set', async ({ page }) => {
 
 test('the admin runs the new version, the run reaches "Xong" and shows the result of each dev example', async ({ page }) => {
   await signInAsAdmin(page);
-  await page.goto(`/ai/eval?op=${OP}`);
+  await page.goto(`/ai/eval/sets?op=${OP}`);
   await page.getByRole('button', { name: vi.ai.eval.run.start }).click();
   await expect(page).toHaveURL(/\/ai\/eval\/runs\/[0-9a-f-]{36}/);
   runId = /\/runs\/([0-9a-f-]{36})/.exec(page.url())![1]!;
@@ -100,7 +100,7 @@ test('the admin runs the new version, the run reaches "Xong" and shows the resul
   // The held-out examples count in the totals but are never listed.
   await expect(panel.getByText(vi.ai.eval.detail.stats.heldOutHidden)).toBeVisible();
   await page.screenshot({ path: 'test-results/m1b-run.png' });
-  await page.goto(`/ai/eval?op=${OP}`);
+  await page.goto(`/ai/eval/runs?op=${OP}`);
   await expect(page.getByRole('row').filter({ hasText: vi.ai.eval.status.finished }).first()).toBeVisible();
 });
 

@@ -63,7 +63,7 @@ export function useSetLabel() {
 }
 
 /**
- * [Chạy bộ ví dụ] from this page (`{ prompt: 'current', set_id }`) or from Cấu hình (`{ config: 'draft' | 'live', set_id }`): `POST …/eval/runs` through `useSubmitAction`, so a
+ * [Chạy bộ ví dụ] from this page (`{ prompt: 'current', set_id }`) or from Cấu hình (`{ target, set_id }`): `POST …/eval/runs` through `useSubmitAction`, so a
  * network error keeps the `Idempotency-Key` and [Thử lại] cannot start a second run (design §6.5). A started run moves to a fresh key:
  * the next press is a new run. Every attempt uses an `ai.test` slot, so the quota line is read again afterwards, failures included.
  */

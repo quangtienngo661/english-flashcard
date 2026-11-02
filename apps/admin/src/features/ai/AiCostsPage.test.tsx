@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import vi from '../../../messages/vi.json';
 import { problem, type Call } from '../../auth/test-support';
-import { renderApp } from '../staff/test-utils';
+import { renderCosts as renderApp } from './costs-test-support';
 import type { CostsReply } from './ai-api';
 import { todayInAdminZone } from './cost-range';
 
@@ -23,7 +23,7 @@ const field = (label: string) => screen.getByLabelText(label);
 
 describe('AiCostsPage (A/85)', () => {
   it('opens on today, grouped by day: one row per group, a total row, and the estimate note', async () => {
-    const r = renderApp('/ai/costs', { [costsUrl()]: () => Response.json(reply()) });
+    const r = renderApp('/ai/costs?group_by=day', { [costsUrl()]: () => Response.json(reply()) });
     expect(await screen.findByRole('heading', { level: 1, name: 'Chi phí' })).toBeInTheDocument();
     expect(await screen.findAllByText('15/10/2026')).not.toHaveLength(0);
     expect(screen.getAllByText('16/10/2026')).not.toHaveLength(0);
@@ -38,14 +38,14 @@ describe('AiCostsPage (A/85)', () => {
   });
 
   it('has the nine columns of the copy deck', async () => {
-    renderApp('/ai/costs', { [costsUrl()]: () => Response.json(reply()) });
+    renderApp('/ai/costs?group_by=day', { [costsUrl()]: () => Response.json(reply()) });
     await screen.findAllByText('15/10/2026');
     const heads = screen.getAllByRole('columnheader').map((h) => h.textContent);
     expect(heads).toEqual([t.cols.group, t.cols.calls, t.cols.input, t.cols.cached, t.cols.output, t.cols.reasoning, t.cols.usd, t.cols.vnd, t.cols.unknown]);
   });
 
   it('offers the five group-by choices; picking one asks again and writes group_by to the URL', async () => {
-    const r = renderApp('/ai/costs', {
+    const r = renderApp('/ai/costs?group_by=day', {
       [costsUrl()]: () => Response.json(reply()),
       [costsUrl(TODAY, TODAY, 'operation')]: () => Response.json({ items: [{ key: 'generate_cloze', ...totals() }], total: totals() }),
     });
@@ -68,7 +68,7 @@ describe('AiCostsPage (A/85)', () => {
   });
 
   it('applying a range writes it to the URL and asks for it', async () => {
-    const r = renderApp('/ai/costs', {
+    const r = renderApp('/ai/costs?group_by=day', {
       [costsUrl()]: () => Response.json(reply()),
       [costsUrl('2026-09-01', '2026-10-01')]: () => Response.json(reply({ items: [{ key: '2026-09-30', ...totals() }] })),
     });
@@ -79,11 +79,11 @@ describe('AiCostsPage (A/85)', () => {
     await userEvent.type(field(t.filters.to), '2026-10-01');
     await userEvent.click(screen.getByRole('button', { name: t.filters.apply }));
     expect(await screen.findAllByText('30/09/2026')).not.toHaveLength(0);
-    expect(r.router.state.location.search).toBe('?from=2026-09-01&to=2026-10-01');
+    expect(r.router.state.location.search).toBe('?group_by=day&from=2026-09-01&to=2026-10-01');
   });
 
   it('from after to → error on the From field, and no request is sent', async () => {
-    const r = renderApp('/ai/costs', { [costsUrl()]: () => Response.json(reply()) });
+    const r = renderApp('/ai/costs?group_by=day', { [costsUrl()]: () => Response.json(reply()) });
     await screen.findAllByText('15/10/2026');
     await userEvent.clear(field(t.filters.from));
     await userEvent.type(field(t.filters.from), '2999-01-01');
@@ -95,7 +95,7 @@ describe('AiCostsPage (A/85)', () => {
   });
 
   it('a repeated failed Apply puts the focus back on the field with the error', async () => {
-    renderApp('/ai/costs', { [costsUrl()]: () => Response.json(reply()) });
+    renderApp('/ai/costs?group_by=day', { [costsUrl()]: () => Response.json(reply()) });
     await screen.findAllByText('15/10/2026');
     await userEvent.clear(field(t.filters.from));
     await userEvent.type(field(t.filters.from), '2999-01-01');
@@ -108,7 +108,7 @@ describe('AiCostsPage (A/85)', () => {
   });
 
   it('more than 366 days → error on the To field, and no request is sent', async () => {
-    const r = renderApp('/ai/costs', { [costsUrl()]: () => Response.json(reply()) });
+    const r = renderApp('/ai/costs?group_by=day', { [costsUrl()]: () => Response.json(reply()) });
     await screen.findAllByText('15/10/2026');
     await userEvent.clear(field(t.filters.from));
     await userEvent.type(field(t.filters.from), '2000-01-01');
@@ -119,13 +119,13 @@ describe('AiCostsPage (A/85)', () => {
   });
 
   it('a link with a bad range shows the field error and asks nothing', async () => {
-    const r = renderApp('/ai/costs?from=2026-10-27&to=2026-10-01', {});
+    const r = renderApp('/ai/costs?from=2026-10-27&to=2026-10-01&group_by=day', {});
     expect(await screen.findByText(t.errors.fromAfterTo)).toBeInTheDocument();
     expect(costCalls(r.calls)).toHaveLength(0);
   });
 
   it('an API 400 on the range is put on the date field it names', async () => {
-    renderApp('/ai/costs?from=2026-10-01&to=2026-10-02', {
+    renderApp('/ai/costs?from=2026-10-01&to=2026-10-02&group_by=day', {
       [costsUrl('2026-10-01', '2026-10-02')]: () => problem(400, 'validation-failed', { violations: ['to: The range must be at most 366 days'] }),
     });
     expect(await screen.findByText(t.errors.tooLong)).toBeInTheDocument();
@@ -133,17 +133,17 @@ describe('AiCostsPage (A/85)', () => {
   });
 
   it('an API 400 that names no date field goes in a banner', async () => {
-    renderApp('/ai/costs', { [costsUrl()]: () => problem(400, 'validation-failed', { violations: ['group_by: Invalid option'] }) });
+    renderApp('/ai/costs?group_by=day', { [costsUrl()]: () => problem(400, 'validation-failed', { violations: ['group_by: Invalid option'] }) });
     expect(await screen.findByText(/group_by: Invalid option/)).toBeInTheDocument();
   });
 
   it('nothing in the range → the empty text', async () => {
-    renderApp('/ai/costs', { [costsUrl()]: () => Response.json({ items: [], total: totals({ calls: 0, cost_usd: '0.00000000', cost_vnd: 0 }) }) });
+    renderApp('/ai/costs?group_by=day', { [costsUrl()]: () => Response.json({ items: [], total: totals({ calls: 0, cost_usd: '0.00000000', cost_vnd: 0 }) }) });
     expect(await screen.findByText(t.empty)).toBeInTheDocument();
   });
 
   it('403 shows the forbidden text, not the generic list error', async () => {
-    renderApp('/ai/costs', { [costsUrl()]: () => problem(403, 'forbidden') });
+    renderApp('/ai/costs?group_by=day', { [costsUrl()]: () => problem(403, 'forbidden') });
     expect(await screen.findByText(vi.errors.forbidden)).toBeInTheDocument();
   });
 });

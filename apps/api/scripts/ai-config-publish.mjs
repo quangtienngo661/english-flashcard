@@ -74,8 +74,9 @@ async function ensureModel(call, provider, modelId) {
 }
 
 /** Starts a run of the live config or the draft on a frozen set and waits for it (≤ 120 s); a failed run throws. */
-async function runConfig(call, op, config, setId) {
-  const created = await want(call('POST', '/v1/admin/ai/eval/runs', { idem: true, body: { operation: op, config, set_id: setId } }), 202,
+async function runConfig(call, op, target, setId) {
+  const config = target.kind;
+  const created = await want(call('POST', '/v1/admin/ai/eval/runs', { idem: true, body: { operation: op, target, set_id: setId } }), 202,
     `${op}: start a run of the ${config} config`);
   const deadline = Date.now() + RUN_TIMEOUT_MS;
   for (;;) {
@@ -87,31 +88,41 @@ async function runConfig(call, op, config, setId) {
   }
 }
 
-/** A draft this helper left behind (note `scripted: …`) is deleted; a draft somebody else prepared is theirs, so it stops the script. */
-async function clearScriptedDraft(call, op, configs) {
-  if (!configs.draft) return;
-  if (!String(configs.draft.note ?? '').startsWith(SCRIPTED)) {
-    throw new Error(`${op}: there is a draft of its own (number ${configs.draft.number}, note ${JSON.stringify(configs.draft.note)}). Publish or delete it, then run again.`);
+/** Read every page before deleting script-owned leftovers; unrelated owner drafts stay intact. */
+async function clearScriptedDrafts(call, op) {
+  const leftovers = [];
+  let token;
+  do {
+    const query = new URLSearchParams({ page_size: '100' });
+    if (token) query.set('page_token', token);
+    const page = await want(call('GET', `/v1/admin/ai/configs/${op}/drafts?${query}`), 200, `${op}: list drafts`);
+    leftovers.push(...page.items.filter((draft) => [draft.note, draft.name].some((value) => typeof value === 'string' && value.startsWith(SCRIPTED))));
+    token = page.next_page_token;
+  } while (token);
+  for (const draft of leftovers) {
+    const response = await call('DELETE', `/v1/admin/ai/configs/${op}/drafts/${draft.id}`, { idem: true });
+    // Another script may have cleared it already. Busy/other failures remain errors rather than touching another draft.
+    if (response.status !== 404) await want(Promise.resolve(response), 204, `${op}: delete leftover scripted draft ${draft.id}`);
   }
-  await want(call('DELETE', `/v1/admin/ai/configs/${op}/draft`), 204, `${op}: delete the leftover scripted draft`);
 }
 
 /** A new draft copied from the live config and saved with the given choice (`modelId` null = no model); returns the saved draft. */
 async function saveScriptedDraft(call, op, { modelRef, maxOutputTokens, note }) {
-  const draft = await want(call('POST', `/v1/admin/ai/configs/${op}/draft`, { body: {} }), 201, `${op}: create a draft`);
-  return want(call('PUT', `/v1/admin/ai/configs/${op}/draft`, { body: {
+  // Mark ownership at creation too, so an interrupted save leaves a recognizable scripted draft.
+  const draft = await want(call('POST', `/v1/admin/ai/configs/${op}/drafts`, { idem: true, body: { name: note } }), 201, `${op}: create a draft`);
+  return want(call('PUT', `/v1/admin/ai/configs/${op}/drafts/${draft.id}`, { idem: true, body: {
     expected_version: draft.version, instructions: draft.instructions, examples: draft.examples, model_ref: modelRef, effort: null, thinking: null,
     max_output_tokens: maxOutputTokens, note,
   } }), 200, `${op}: save the draft`);
 }
 
 /** Publishes the draft with the evidence `check` names; warnings are acknowledged. Returns the new live config. */
-async function publishDraft(call, op, check) {
+async function publishDraft(call, op, draftId, check) {
   const body = {
     expected_version: check.draft.version, candidate_run_id: check.candidate_run_id, baseline_run_id: check.baseline.run_id,
     acknowledge_warnings: check.warnings.length > 0,
   };
-  return (await want(call('POST', `/v1/admin/ai/configs/${op}/publish`, { body }), 200, `${op}: publish`)).live;
+  return (await want(call('POST', `/v1/admin/ai/configs/${op}/drafts/${draftId}/publish`, { idem: true, body }), 200, `${op}: publish`)).live;
 }
 
 /**
@@ -123,32 +134,32 @@ export async function publishModel(call, { op, modelId, maxOutputTokens = null }
   const current = await want(call('GET', `/v1/admin/ai/configs/${op}`), 200, `${op}: read the configs`);
   if (current.live.model?.id === model.id && current.live.max_output_tokens === maxOutputTokens) return current.live;
   const set = await ensureFrozenSet(call, op);
-  await clearScriptedDraft(call, op, current);
-  await saveScriptedDraft(call, op, { modelRef: model.id, maxOutputTokens, note: `${SCRIPTED} ${modelId}` });
-  await runConfig(call, op, 'draft', set.id);
-  let check = await want(call('GET', `/v1/admin/ai/configs/${op}/publish-check`), 200, `${op}: publish check`);
+  await clearScriptedDrafts(call, op);
+  const draft = await saveScriptedDraft(call, op, { modelRef: model.id, maxOutputTokens, note: `${SCRIPTED} ${modelId}` });
+  await runConfig(call, op, { kind: 'draft', draft_id: draft.id }, set.id);
+  const checkPath = `/v1/admin/ai/configs/${op}/drafts/${draft.id}/publish-check`;
+  let check = await want(call('GET', checkPath), 200, `${op}: publish check`);
   if (check.blockers.includes('baseline-required')) {
-    await runConfig(call, op, 'live', set.id);
-    check = await want(call('GET', `/v1/admin/ai/configs/${op}/publish-check`), 200, `${op}: publish check after the baseline run`);
+    await runConfig(call, op, { kind: 'live' }, set.id);
+    check = await want(call('GET', checkPath), 200, `${op}: publish check after the baseline run`);
   }
   if (check.blockers.length > 0) throw new Error(`${op}: the publish check still has blockers: ${JSON.stringify(check)}`);
-  return publishDraft(call, op, check);
+  return publishDraft(call, op, draft.id, check);
 }
 
 /** Puts the config before the live one back (no run needed); returns the live config after it. */
 export async function rollbackConfig(call, op) {
   const current = await want(call('GET', `/v1/admin/ai/configs/${op}`), 200, `${op}: read the configs`);
-  return (await want(call('POST', `/v1/admin/ai/configs/${op}/rollback`, { body: { expected_live_version: current.live_version } }), 200,
+  return (await want(call('POST', `/v1/admin/ai/configs/${op}/rollback`, { idem: true, body: { expected_live_version: current.live_version } }), 200,
     `${op}: roll back`)).live;
 }
 
 /** Turns the operation off: publishes a draft without a model, which needs no run (D38). A rollback turns it on again. */
 export async function turnOff(call, op) {
-  const current = await want(call('GET', `/v1/admin/ai/configs/${op}`), 200, `${op}: read the configs`);
-  await clearScriptedDraft(call, op, current);
-  await saveScriptedDraft(call, op, { modelRef: null, maxOutputTokens: null, note: `${SCRIPTED} off` });
-  const check = await want(call('GET', `/v1/admin/ai/configs/${op}/publish-check`), 200, `${op}: publish check`);
+  await clearScriptedDrafts(call, op);
+  const draft = await saveScriptedDraft(call, op, { modelRef: null, maxOutputTokens: null, note: `${SCRIPTED} off` });
+  const check = await want(call('GET', `/v1/admin/ai/configs/${op}/drafts/${draft.id}/publish-check`), 200, `${op}: publish check`);
   if (check.turn_off !== true || check.blockers.length > 0) throw new Error(`${op}: the publish check does not say turn off: ${JSON.stringify(check)}`);
-  return (await want(call('POST', `/v1/admin/ai/configs/${op}/publish`, { body: {
+  return (await want(call('POST', `/v1/admin/ai/configs/${op}/drafts/${draft.id}/publish`, { idem: true, body: {
     expected_version: check.draft.version, candidate_run_id: null, baseline_run_id: null, acknowledge_warnings: false } }), 200, `${op}: turn off`)).live;
 }

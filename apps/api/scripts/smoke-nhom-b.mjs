@@ -21,7 +21,7 @@
 import { execFile, execFileSync } from 'node:child_process';
 import { randomInt, randomUUID } from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
-import { parseEnv } from 'node:util';
+import { isDeepStrictEqual, parseEnv } from 'node:util';
 import { publishModel, rollbackConfig, turnOff } from './ai-config-publish.mjs';
 
 const BASE = process.env.SMOKE_BASE_URL ?? 'http://localhost:3000';
@@ -215,7 +215,7 @@ const catalogForms = (word) => sorted([word, `${word}ed`, `${word}s`]);
 
 // ---------------------------------------------------------------------------------------------------------------------
 // Shared state of the run.
-const S = { admin: null, adminId: null, admin2: null, models: new Map() };
+const S = { admin: null, adminId: null, admin2: null, models: new Map(), drafts: new Map() };
 const asAdmin = (method, path, options = {}) => api(method, path, { as: S.admin, ...options });
 const asOther = (method, path, options = {}) => api(method, path, { as: S.admin2, ...options });
 
@@ -229,25 +229,42 @@ async function addModel(modelId) {
 // (`partM1()`, never published) or through a publish (`partM2()`).
 const OPERATIONS = ['generate_cloze', 'lookup_word', 'translate_sentence', 'generate_meaning_question', 'generate_sentence_mcq', 'check_private_word'];
 const configsOf = (op) => want(asAdmin('GET', `/v1/admin/ai/configs/${op}`), 200, `GET configs of ${op}`);
-const createDraft = (op) => want(asAdmin('POST', `/v1/admin/ai/configs/${op}/draft`, { body: {} }), 201, `create the ${op} draft`);
+const draftPath = (op, id = S.drafts.get(op)) => {
+  check(id, `no selected draft id for ${op}`);
+  return `/v1/admin/ai/configs/${op}/drafts/${id}`;
+};
+async function createDraft(op, body = {}, select = true) {
+  const draft = await want(asAdmin('POST', `/v1/admin/ai/configs/${op}/drafts`, { idem: true, body }), 201, `create a ${op} draft`);
+  if (select) S.drafts.set(op, draft.id);
+  return draft;
+}
+const getDraft = (op, id) => want(asAdmin('GET', draftPath(op, id)), 200, `GET the selected ${op} draft`);
+const draftTarget = (op, id = S.drafts.get(op)) => {
+  check(id, `no selected draft id for ${op} eval`);
+  return { kind: 'draft', draft_id: id };
+};
+async function deleteDraft(op, id = S.drafts.get(op), call = asAdmin) {
+  await want(call('DELETE', draftPath(op, id), { idem: true }), 204, `delete the ${op} draft ${id}`);
+  if (S.drafts.get(op) === id) S.drafts.delete(op);
+}
 /** The body that saves `draft` as it is except for `changes`; `expected_version` is the draft's own version. */
 const draftBody = (draft, changes = {}) => ({
   expected_version: draft.version, instructions: draft.instructions, examples: draft.examples, model_ref: draft.model?.id ?? null,
   effort: draft.effort, thinking: draft.thinking, max_output_tokens: draft.max_output_tokens, note: draft.note, ...changes,
 });
-const saveDraft = (op, draft, changes) => want(asAdmin('PUT', `/v1/admin/ai/configs/${op}/draft`, { body: draftBody(draft, changes) }), 200, `save the ${op} draft`);
+const saveDraft = (op, draft, changes) => want(asAdmin('PUT', draftPath(op, draft.id), { idem: true, body: draftBody(draft, changes) }), 200, `save the ${op} draft`);
 /** Saves the draft of `op` as the server holds it now, with the model `modelId` (`null` = no model); returns the saved draft. */
 async function setDraftModel(op, modelId) {
-  const { draft } = await configsOf(op);
+  const draft = await getDraft(op);
   check(draft, `${op} has no draft`);
   return saveDraft(op, draft, { model_ref: modelId === null ? null : (await addModel(modelId)).id });
 }
-const checkOf = (op) => want(asAdmin('GET', `/v1/admin/ai/configs/${op}/publish-check`), 200, `GET publish-check of ${op}`);
+const checkOf = (op, id) => want(asAdmin('GET', `${draftPath(op, id)}/publish-check`), 200, `GET publish-check of ${op}`);
 /** What the publish check names, sent back as a publish; `changes` overrides single keys. */
 const publishBody = (pc, changes = {}) => ({
   expected_version: pc.draft.version, candidate_run_id: pc.candidate_run_id, baseline_run_id: pc.baseline.run_id, acknowledge_warnings: false, ...changes,
 });
-const publishDraft = (op, body) => asAdmin('POST', `/v1/admin/ai/configs/${op}/publish`, { body });
+const publishDraft = (op, body, id) => asAdmin('POST', `${draftPath(op, id)}/publish`, { idem: true, body });
 
 // Learner calls go through `pnpm ai:fake-call` (dist/cli/ai-fake-call.js) as smoke-buoc-6.mjs does: the gateway runs on the live config in its own
 // process. The AppLogger writes JSON lines to stdout too, so only the lines whose kind is `ai_fake_call` are read.
@@ -395,8 +412,8 @@ async function partM1() {
     check(created.status === 'draft' && created.version === 0 && created.model === null, `new draft ${j({ status: created.status, version: created.version, model: created.model })}`);
     const draft = await setDraftModel('generate_cloze', 'fake:ok');
     check(draft.version === 1 && draft.model?.model_id === 'fake:ok', `saved draft ${j({ version: draft.version, model: draft.model })}`);
-    okRun = await runAndWait({ operation: 'generate_cloze', config: 'draft', set_id: version1.id });
-    workingRun = await runAndWait({ operation: 'generate_cloze', config: 'draft' });
+    okRun = await runAndWait({ operation: 'generate_cloze', target: draftTarget('generate_cloze'), set_id: version1.id });
+    workingRun = await runAndWait({ operation: 'generate_cloze', target: draftTarget('generate_cloze') });
     check(okRun.status === 'finished' && okRun.complete === true && okRun.set_id === version1.id && okRun.set_version === 1 && okRun.total === 5, `run ${j(okRun)}`);
     check(okRun.config_id === draft.id && okRun.config_version === draft.version && okRun.config_number === draft.number && workingRun.config_id === draft.id, `config of the runs ${j({ ok: okRun.config_id, version: okRun.config_version, number: okRun.config_number, working: workingRun.config_id })}`);
     check(workingRun.status === 'finished' && workingRun.set_id === null && workingRun.set_version === null, `working run ${j(workingRun)}`);
@@ -416,7 +433,7 @@ async function partM1() {
     const badDraft = await setDraftModel('generate_cloze', 'fake:bad-form');
     check(badDraft.version === 2 && badDraft.model?.model_id === 'fake:bad-form', `bad-form draft ${j({ version: badDraft.version, model: badDraft.model })}`);
     try {
-      badRun = await runAndWait({ operation: 'generate_cloze', config: 'draft', set_id: version1.id });
+      badRun = await runAndWait({ operation: 'generate_cloze', target: draftTarget('generate_cloze'), set_id: version1.id });
     } finally {
       await setDraftModel('generate_cloze', 'fake:ok');
     }
@@ -447,9 +464,9 @@ async function partM1() {
 
   await step('M1.7 B7, Review focus 3: a draft test takes dev examples only; a held-out id is refused', async () => {
     const body = {};
-    const tested = await want(asAdmin('POST', '/v1/admin/ai/configs/generate_cloze/draft/test', { body }), 200, 'draft test');
+    const tested = await want(asAdmin('POST', `${draftPath('generate_cloze')}/test`, { body }), 200, 'draft test');
     check(tested.items.length === 3 && j(tested.items.map((item) => item.input.word).sort()) === j([W2, N, W3].sort()), `test inputs ${j(tested.items.map((i) => i.input.word))}`);
-    const refused = await wantProblem(asAdmin('POST', '/v1/admin/ai/configs/generate_cloze/draft/test', { body: { ...body, example_ids: [ids[W1]] } }), 400, 'validation-failed', 'test a held-out id');
+    const refused = await wantProblem(asAdmin('POST', `${draftPath('generate_cloze')}/test`, { body: { ...body, example_ids: [ids[W1]] } }), 400, 'validation-failed', 'test a held-out id');
     check(j(refused.violations) === j(['example_ids: every id must be a dev example of generate_cloze']), `violations ${j(refused.violations)}`);
     ok(`3 items (${[W2, N, W3].join(', ')}); example_ids with a held-out id → 400`);
   });
@@ -464,7 +481,30 @@ async function partM1() {
     const calls = await callsOf(`eval-${okRun.id}-${ids[W1]}`);
     check(calls.length >= 1 && calls[0].held_out === false && calls[0].content?.request, `calls after reveal ${j(calls)}`);
     await wantProblem(asAdmin('POST', `/v1/admin/ai/eval/examples/${ids[W1]}/reveal`), 409, 'example-not-held-out', 'reveal again');
-    await want(asAdmin('DELETE', `/v1/admin/ai/eval/examples/${ids[W4]}`), 204, 'delete W4');
+    const transientWord = `zq${letters(6)}`;
+    const added = await want(asAdmin('POST', '/v1/admin/ai/eval/examples/bulk', { body: {
+      operation: 'generate_cloze', rows: [{ input: clozeData(transientWord), expected: { forms: [transientWord] }, split: 'dev' }],
+    } }), 200, 'add a disposable dev example');
+    check(added.created === 1 && added.invalid.length === 0, `disposable example ${j(added)}`);
+    const transient = (await listExamples()).find((row) => row.split === 'dev' && row.input.word === transientWord);
+    check(transient, 'control: the disposable dev example is not listed');
+    const snapshotsOfW4 = () => psql(`SELECT jsonb_build_object(
+      'sets', (SELECT jsonb_agg(to_jsonb(s) ORDER BY s.id) FROM ai_eval_set_items s WHERE example_id = '${ids[W4]}'),
+      'runs', (SELECT jsonb_agg(to_jsonb(r) ORDER BY r.id) FROM ai_eval_run_items r WHERE example_id = '${ids[W4]}'))`);
+    check(count(`SELECT count(*) FROM ai_eval_set_items WHERE example_id = '${ids[W4]}'`) > 0
+      && count(`SELECT count(*) FROM ai_eval_run_items WHERE example_id = '${ids[W4]}'`) > 0, 'control: W4 has no frozen set/run snapshots to preserve');
+    const snapshotsBefore = snapshotsOfW4();
+    const missing = randomUUID();
+    const bulkKey = randomUUID();
+    const bulkBody = { operation: 'generate_cloze', ids: [transient.id, ids[W4], ids[W4], missing] };
+    const deleted = await want(asAdmin('POST', '/v1/admin/ai/eval/examples/bulk-delete', { key: bulkKey, body: bulkBody }), 200, 'bulk delete dev + held-out');
+    check(j(sorted(deleted.deleted_ids)) === j(sorted([transient.id, ids[W4]])) && j(deleted.already_missing_ids) === j([missing]), `bulk delete ${j(deleted)}`);
+    const replay = await want(asAdmin('POST', '/v1/admin/ai/eval/examples/bulk-delete', { key: bulkKey, body: bulkBody }), 200, 'replay the bulk delete');
+    check(j(replay) === j(deleted), `bulk replay ${j(replay)} vs ${j(deleted)}`);
+    check(!(await listExamples()).some((row) => [transient.id, ids[W4]].includes(row.id)), 'bulk-deleted rows remain in the working set');
+    check(snapshotsOfW4() === snapshotsBefore, 'bulk delete changed a frozen set or run snapshot');
+    const hiddenW4 = (await want(asAdmin('GET', `/v1/admin/ai/eval/sets/${version1.id}`), 200, 'frozen set after bulk delete')).items.find((item) => item.example_id === ids[W4]);
+    check(hiddenW4.in_working_set === false && hiddenW4.input === null && hiddenW4.expected === null && hiddenW4.revealed_at === null, `deleted held-out snapshot leaked ${j(hiddenW4)}`);
     const gone = await want(asAdmin('POST', `/v1/admin/ai/eval/examples/${ids[W4]}/reveal`), 200, 'reveal deleted W4');
     check(gone.deleted === true && gone.input.word === W4 && gone.note === null, `reveal deleted ${j(gone)}`);
     const after = (await listSets()).find((set) => set.version === 1);
@@ -497,7 +537,7 @@ async function partM1() {
       rows: [{ input: { word: 'rizz', part_of_speech: 'noun', meaning_vi: 'sức hút' }, expected: { verdict: 'ok' }, split: 'dev' }],
     } }), 200, 'bulk private word');
     check(added.created === 1 && added.invalid.length === 0, `bulk ${j(added)}`);
-    const finished = await runAndWait({ operation: 'check_private_word', config: 'draft' });
+    const finished = await runAndWait({ operation: 'check_private_word', target: draftTarget('check_private_word') });
     check(finished.status === 'finished' && finished.set_id === null && finished.config_id === draft.id, `run ${j(finished)}`);
     const { items } = await runItems(finished.id);
     check(items.length === 1 && items[0].rule.status === 'not_applicable' && items[0].expected_result === 'pass', `items ${j(items)}`);
@@ -523,7 +563,7 @@ async function partM1() {
 
   // M1 never publishes: both drafts go (204), and every live config is still without a model for partM2().
   await step('M1.12 the two drafts of this part are deleted (204); no draft is left and the live configs have no model', async () => {
-    for (const name of ['generate_cloze', 'check_private_word']) await want(asAdmin('DELETE', `/v1/admin/ai/configs/${name}/draft`), 204, `delete the ${name} draft`);
+    for (const name of ['generate_cloze', 'check_private_word']) await deleteDraft(name);
     for (const name of ['generate_cloze', 'check_private_word']) {
       const view = await configsOf(name);
       check(view.draft === null && view.live.model === null && view.live_version === 0, `${name} ${j({ draft: view.draft?.id, model: view.live.model, live_version: view.live_version })}`);
@@ -583,7 +623,7 @@ async function partM2() {
     check(draft.number === before.live.number + 2, `draft number ${draft.number}: partM1's deleted draft took ${before.live.number + 1} and a number is never handed out twice`);
     const saved = await setDraftModel(op, 'fake:ok');
     check(saved.version === 1 && saved.model?.model_id === 'fake:ok', `saved draft ${j({ version: saved.version, model: saved.model })}`);
-    const run = await runAndWait({ operation: op, config: 'draft', set_id: T.set.id });
+    const run = await runAndWait({ operation: op, target: draftTarget(op), set_id: T.set.id });
     check(run.status === 'finished' && run.complete === true && run.set_id === T.set.id && run.config_id === saved.id && run.config_version === saved.version
       && run.config_number === saved.number, `run ${j(run)}`);
     const pc = await checkOf(op);
@@ -602,33 +642,47 @@ async function partM2() {
     ok(`config ${T.first.number} (fake:ok) made live with run ${run.id} on version ${T.set.version}, no baseline needed; learner call prompt_revision ${called.meta.prompt_revision}`);
   });
 
-  await step('M2.3 B23, B36: a second draft → 409 draft-exists with the first; a few-shot answer that is no form of a catalog word → 422 few-shot-invalid naming only that example (a good one saves)', async () => {
+  await step('M2.3 workspace: two independent drafts are allowed; ambiguous legacy operations → 409 draft-selection-required; invalid few-shot saves remain 422', async () => {
     const first = await createDraft(op);
     check(first.version === 0 && first.model?.model_id === 'fake:ok' && first.created_from === T.first.id && first.number > T.first.number,
       `draft ${j({ version: first.version, model: first.model, from: first.created_from, number: first.number })}`);
-    const again = await wantProblem(asAdmin('POST', `${base}/draft`, { body: {} }), 409, 'draft-exists', 'a second draft');
-    check(again.draft?.id === first.id, `the 409 names draft ${again.draft?.id}, not ${first.id}`);
+    const sibling = await createDraft(op, { from_config_id: first.id, name: 'independent sibling' }, false);
+    check(sibling.id !== first.id && sibling.number > first.number && sibling.created_from === first.id, `sibling ${j(sibling)}`);
+    const drafts = await want(asAdmin('GET', `${base}/drafts?page_size=20`), 200, 'list both drafts');
+    check(drafts.items.some((row) => row.id === first.id) && drafts.items.some((row) => row.id === sibling.id), `drafts ${j(drafts.items.map((row) => row.id))}`);
+    const legacy = await configsOf(op);
+    check(legacy.draft === null && legacy.draft_count === 2 && legacy.live.id === T.first.id, `legacy view ${j(legacy)}`);
+    // Deliberate legacy probes: all successful work below addresses a particular draft id.
+    for (const [method, path, body] of [
+      ['POST', `${base}/draft`, {}], ['PUT', `${base}/draft`, draftBody(first)], ['DELETE', `${base}/draft`],
+      ['POST', `${base}/draft/test`, {}], ['GET', `${base}/publish-check`],
+      ['POST', `${base}/publish`, { expected_version: first.version, candidate_run_id: null, baseline_run_id: null, acknowledge_warnings: false }],
+    ]) await wantProblem(asAdmin(method, path, { body }), 409, 'draft-selection-required', `ambiguous legacy ${method} ${path}`);
     const shot = (answers) => ({
       input: clozeData(W1), output: { sentence: 'Lan will ___ it tomorrow.', accepted_answers: answers, translation_vi: 'Lan sẽ làm việc đó vào ngày mai.' } });
-    const refused = await wantProblem(asAdmin('PUT', `${base}/draft`, { body: draftBody(first, { examples: [...first.examples, shot([`${W1}ment`])] }) }),
+    const refused = await wantProblem(asAdmin('PUT', draftPath(op, first.id), { idem: true, body: draftBody(first, { examples: [...first.examples, shot([`${W1}ment`])] }) }),
       422, 'few-shot-invalid', 'save a bad few-shot example');
     check(j(refused.examples) === j([{ index: first.examples.length, problems: [`unknown-form:${W1}ment`] }]), `few-shot violations ${j(refused.examples)}`);
-    const still = (await configsOf(op)).draft;
+    const still = await getDraft(op, first.id);
     check(still.version === first.version && still.examples.length === first.examples.length, `the refused save changed the draft: ${j({ version: still.version, examples: still.examples.length })}`);
     const saved = await saveDraft(op, first, { examples: [...first.examples, shot([W1])] });
     check(saved.version === first.version + 1 && saved.examples.length === first.examples.length + 1, `good example ${j({ version: saved.version, examples: saved.examples.length })}`);
-    ok(`draft ${first.id}: 2nd create → draft-exists (same id); ${W1}ment at index ${first.examples.length} → few-shot-invalid unknown-form:${W1}ment, draft untouched; ${W1} saves (version ${saved.version})`);
+    const siblingAfter = await getDraft(op, sibling.id);
+    check(j(siblingAfter) === j(sibling), `saving one draft changed its sibling: ${j(siblingAfter)}`);
+    await deleteDraft(op, sibling.id);
+    check((await getDraft(op, first.id)).version === saved.version, 'deleting the sibling changed the selected draft');
+    ok(`two draft ids allowed, legacy ambiguity → draft-selection-required; saving ${first.id} leaves ${sibling.id} unchanged; invalid few-shot refused; sibling deleted independently`);
   });
 
   await step('M2.4 B24, E19: two saves of the draft at once with the same expected_version → 200 and 409 draft-version-conflict', async () => {
-    const { draft } = await configsOf(op);
-    const both = await Promise.all(['a', 'b'].map((tag) => asOther('PUT', `${base}/draft`, { body: draftBody(draft, { note: `race ${tag}` }) })));
+    const draft = await getDraft(op);
+    const both = await Promise.all(['a', 'b'].map((tag) => asOther('PUT', draftPath(op, draft.id), { idem: true, body: draftBody(draft, { note: `race ${tag}` }) })));
     const statuses = both.map((res) => res.status).sort();
     check(j(statuses) === j([200, 409]), `statuses ${statuses.join(', ')}: ${both.map((res) => res.text).join(' / ')}`);
     const lost = both.find((res) => res.status === 409);
     const won = both.find((res) => res.status === 200);
     check(String(lost.json?.type).endsWith('draft-version-conflict'), `409 type ${lost.json?.type}`);
-    const after = (await configsOf(op)).draft;
+    const after = await getDraft(op, draft.id);
     check(after.version === draft.version + 1 && after.note === won.json.note, `draft after ${j({ version: after.version, note: after.note })}, winner note ${won.json.note}`);
     ok(`version ${draft.version} → ${after.version}; statuses ${statuses.join(', ')}; the draft keeps the winner's note "${after.note}"`);
   });
@@ -636,19 +690,19 @@ async function partM2() {
   await step('M2.5 B26: a draft whose run is queued or running cannot be deleted (409 draft-busy); cancel the run, then the delete is 204', async () => {
     const saved = await setDraftModel(op, 'fake:slow');
     check(saved.model?.model_id === 'fake:slow', `draft model ${j(saved.model)}`);
-    const created = await want(startRun({ operation: op, config: 'draft', set_id: T.set.id }), 202, 'start a run of the slow draft');
+    const created = await want(startRun({ operation: op, target: draftTarget(op), set_id: T.set.id }), 202, 'start a run of the slow draft');
     const running = await want(asAdmin('GET', `/v1/admin/ai/eval/runs/${created.run_id}`), 200, 'GET the slow run');
     check(running.status === 'queued' || running.status === 'running', `the slow run is ${running.status}`);
-    await wantProblem(asOther('DELETE', `${base}/draft`), 409, 'draft-busy', 'delete a draft with an active run');
-    check((await configsOf(op)).draft?.id === saved.id, 'the draft was removed although a run was active');
+    await wantProblem(asOther('DELETE', draftPath(op, saved.id), { idem: true }), 409, 'draft-busy', 'delete a draft with an active run');
+    check((await getDraft(op, saved.id)).id === saved.id, 'the draft was removed although a run was active');
     const cancelled = await want(asOther('POST', `/v1/admin/ai/eval/runs/${created.run_id}/cancel`), 200, 'cancel the slow run');
     check(cancelled.status === 'failed' && cancelled.error === 'cancelled', `cancelled run ${j({ status: cancelled.status, error: cancelled.error })}`);
-    await want(asOther('DELETE', `${base}/draft`), 204, 'delete the draft after the cancel');
+    await deleteDraft(op, saved.id, asOther);
     check((await configsOf(op)).draft === null, 'the draft is still there');
     ok(`run ${created.run_id} was ${running.status} → 409 draft-busy; cancelled (failed / cancelled) → delete 204`);
   });
 
-  await step('M2.6 B27, B25: a fake:two-blanks draft cannot publish without a run (409 eval-required); saving it again makes its run stale; the live config\'s first candidate run is its baseline', async () => {
+  await step('M2.6 workspace: note-only saves reuse evidence; a temporary eval stays frozen, saving its exact content reuses candidate/batch; matching sibling content cannot borrow it', async () => {
     await createDraft(op);
     const saved = await setDraftModel(op, 'fake:two-blanks');
     await wantProblem(publishDraft(op, { expected_version: saved.version, candidate_run_id: null, baseline_run_id: null, acknowledge_warnings: false }),
@@ -656,16 +710,50 @@ async function partM2() {
     const none = await checkOf(op);
     check(j(none.blockers) === j(['eval-required']) && none.candidate_run_id === null && none.baseline.required === true && none.baseline.run_id === T.firstRun.id,
       `check without a run ${j(none)}`);
-    T.run1 = await runAndWait({ operation: op, config: 'draft', set_id: T.set.id });
+    T.run1 = await runAndWait({ operation: op, target: draftTarget(op), set_id: T.set.id });
     check(T.run1.status === 'finished' && T.run1.complete === true && T.run1.config_version === saved.version, `first run ${j(T.run1)}`);
     const resaved = await saveDraft(op, saved, { note: 'saved again' });
     check(resaved.version === saved.version + 1, `second save ${resaved.version}`);
-    const stale = await checkOf(op);
-    check(j(stale.blockers) === j(['eval-required']) && stale.candidate_run_id === null, `check after the second save ${j(stale)}`);
-    const run2 = await runAndWait({ operation: op, config: 'draft', set_id: T.set.id });
-    const ready = await checkOf(op);
-    check(j(ready.blockers) === j([]) && ready.candidate_run_id === run2.id && ready.baseline.run_id === T.firstRun.id && ready.warnings.length > 0, `check after the second run ${j(ready)}`);
-    ok(`no run → eval-required (baseline = run ${T.firstRun.id} of config ${T.first.number}); run at version ${saved.version} went stale after the save; run at version ${resaved.version} → no blocker, ${ready.warnings.length} warnings`);
+    const same = await checkOf(op);
+    check(same.candidate_run_id === T.run1.id && same.blockers.length === 0 && resaved.fingerprint === T.run1.fingerprint,
+      `note-only save lost its evidence ${j(same)}`);
+    const content = {
+      instructions: `${resaved.instructions}\nUse a concise sentence for this workspace smoke.`, examples: resaved.examples,
+      model_ref: resaved.model.id, effort: resaved.effort, thinking: resaved.thinking, max_output_tokens: resaved.max_output_tokens,
+    };
+    const sibling = await createDraft(op, { from_config_id: resaved.id, name: 'temporary eval sibling' }, false);
+    try {
+      const run2 = await runAndWait({ operation: op, target: { kind: 'temporary', draft_id: resaved.id, content }, set_id: T.set.id });
+      check(run2.status === 'finished' && run2.complete === true && run2.config_id === resaved.id && run2.config_version === resaved.version
+        && typeof run2.batch_id === 'string' && /^[a-f0-9]{64}$/.test(run2.fingerprint) && run2.fingerprint !== resaved.fingerprint, `temporary run ${j(run2)}`);
+      check(j(await getDraft(op, resaved.id)) === j(resaved), 'temporary eval changed the saved draft');
+      check(j(await getDraft(op, sibling.id)) === j(sibling), 'temporary eval changed the sibling draft');
+      const beforeSave = await checkOf(op, resaved.id);
+      check(beforeSave.candidate_run_id === T.run1.id, `unsaved temporary content replaced the saved candidate ${j(beforeSave)}`);
+      const batch = await want(asAdmin('GET', `/v1/admin/ai/batches/${run2.batch_id}`), 200, 'temporary eval batch');
+      check(batch.id === run2.batch_id && batch.kind === 'eval' && batch.source_id === run2.id && batch.config_id === resaved.id
+        && batch.fingerprint === run2.fingerprint && isDeepStrictEqual(batch.snapshot, content) && batch.items.length === 0, `batch ${j(batch)}`);
+      const runCount = count(`SELECT count(*) FROM ai_eval_runs WHERE config_id = '${resaved.id}'`);
+      const savedSame = await saveDraft(op, resaved, content);
+      check(savedSame.version === resaved.version + 1 && savedSame.fingerprint === run2.fingerprint, `saved same content ${j(savedSame)}`);
+      const ready = await checkOf(op, savedSame.id);
+      check(ready.blockers.length === 0 && ready.candidate_run_id === run2.id && ready.baseline.run_id === T.firstRun.id && ready.warnings.length > 0,
+        `temporary evidence was not reused ${j(ready)}`);
+      check(count(`SELECT count(*) FROM ai_eval_runs WHERE config_id = '${resaved.id}'`) === runCount, 'save/check created another eval run');
+      const siblingSame = await saveDraft(op, sibling, content);
+      const siblingCheck = await checkOf(op, sibling.id);
+      check(siblingSame.fingerprint === savedSame.fingerprint && siblingCheck.candidate_run_id === null && siblingCheck.blockers.includes('eval-required'),
+        `matching content borrowed another draft id's evidence ${j(siblingCheck)}`);
+      const changed = await saveDraft(op, savedSame, { instructions: `${content.instructions}\nUse one short clause.` });
+      const stale = await checkOf(op, changed.id);
+      check(changed.fingerprint !== run2.fingerprint && stale.candidate_run_id === null && stale.blockers.includes('eval-required'), `content change kept stale evidence ${j(stale)}`);
+      const restored = await saveDraft(op, changed, content);
+      check(restored.fingerprint === run2.fingerprint && (await checkOf(op, restored.id)).candidate_run_id === run2.id, 'restoring exact content did not recover its frozen candidate');
+      check(isDeepStrictEqual(await want(asAdmin('GET', `/v1/admin/ai/batches/${run2.batch_id}`), 200, 'batch after draft edits'), batch), 'draft saves changed the historical batch');
+      ok(`note-only save keeps run ${T.run1.id}; temporary run ${run2.id}/batch ${run2.batch_id} reused after exact save without another run; same fingerprint on sibling ${sibling.id} cannot borrow evidence; content changes invalidate it`);
+    } finally {
+      await deleteDraft(op, sibling.id);
+    }
   });
 
   await step('M2.7 B28: a new frozen set S2 → the draft alone is baseline-required (409); with the live config run on S2 → no blocker and a rate-drop shape warning', async () => {
@@ -675,12 +763,12 @@ async function partM2() {
     T.set2 = await want(asAdmin('POST', '/v1/admin/ai/eval/sets', { body: { operation: op } }), 201, 'freeze S2');
     check(T.set2.version > T.set.version && T.set2.held_out_count >= 1, `S2 ${j(T.set2)}`);
     const total = T.set2.dev_count + T.set2.held_out_count;
-    T.candidate = await runAndWait({ operation: op, config: 'draft', set_id: T.set2.id });
+    T.candidate = await runAndWait({ operation: op, target: draftTarget(op), set_id: T.set2.id });
     const needBase = await checkOf(op);
     check(j(needBase.blockers) === j(['baseline-required']) && needBase.candidate_run_id === T.candidate.id && needBase.baseline.required === true
       && needBase.baseline.run_id === null && needBase.set?.id === T.set2.id && needBase.warnings.length === 0, `check without a baseline ${j(needBase)}`);
     await wantProblem(publishDraft(op, publishBody(needBase)), 409, 'baseline-required', 'publish without a baseline on S2');
-    T.baseline = await runAndWait({ operation: op, config: 'live', set_id: T.set2.id });
+    T.baseline = await runAndWait({ operation: op, target: { kind: 'live' }, set_id: T.set2.id });
     check(T.baseline.status === 'finished' && T.baseline.config_id === T.first.id && T.baseline.config_version === T.first.version && T.baseline.set_id === T.set2.id,
       `baseline run ${j(T.baseline)}`);
     const ready = await checkOf(op);
@@ -707,7 +795,19 @@ async function partM2() {
     const body = publishBody(pc, { acknowledge_warnings: true });
     const events = () => count(`SELECT count(*) FROM ai_config_events WHERE operation = '${op}' AND kind = 'publish'`);
     const eventsBefore = events();
-    const both = await Promise.all([1, 2].map(() => asOther('POST', `${base}/publish`, { body })));
+    // Hold the pointer until both publishes reach its guarded UPDATE. Otherwise a fast first publish can retire the draft before
+    // the second request reads it, which legitimately returns 404 instead of exercising the intended concurrent-version conflict.
+    const holder = psqlLater(`BEGIN; SELECT operation FROM ai_live_configs WHERE operation = '${op}' FOR UPDATE; SELECT pg_sleep(8); COMMIT;`);
+    await waitFor(() => count(`SELECT count(*) FROM pg_stat_activity WHERE pid <> pg_backend_pid() AND state = 'active'
+      AND query LIKE '%FOR UPDATE; SELECT pg_sleep(8)%'`), (n) => n > 0, 'publish pointer lock acquired', 20_000, 100);
+    const pending = Promise.all([1, 2].map(() => asOther('POST', `${draftPath(op, pc.draft.id)}/publish`, { idem: true, body })));
+    try {
+      await waitFor(() => count(`SELECT count(*) FROM pg_stat_activity WHERE pid <> pg_backend_pid() AND wait_event_type = 'Lock'
+        AND query ILIKE '%UPDATE%ai_live_configs%'`), (n) => n >= 2, 'both publishes waiting at the guarded pointer update', 7_000, 100);
+    } finally {
+      await holder;
+    }
+    const both = await pending;
     const statuses = both.map((res) => res.status).sort();
     check(j(statuses) === j([200, 409]), `statuses ${statuses.join(', ')}: ${both.map((res) => res.text.slice(0, 200)).join(' / ')}`);
     check(String(both.find((res) => res.status === 409).json?.type).endsWith('publish-stale'), `409 type ${both.find((res) => res.status === 409).json?.type}`);
@@ -730,9 +830,11 @@ async function partM2() {
     for (const modelId of ['fake:two-blanks', 'fake:ok', 'fake:slow']) check(idOf(modelId), `model ${modelId} is not listed`);
     for (const modelId of ['fake:two-blanks', 'fake:ok']) await wantProblem(asAdmin('DELETE', `/v1/admin/ai/models/${idOf(modelId)}`), 409, 'model-in-use', `delete ${modelId}`);
     await wantProblem(asAdmin('PATCH', `/v1/admin/ai/models/${idOf('fake:two-blanks')}`, { body: { price_input: null } }), 409, 'model-in-use', 'clear the price of the live model');
-    await want(asAdmin('DELETE', `/v1/admin/ai/models/${idOf('fake:slow')}`), 204, 'delete fake:slow (no config names it any more)');
-    S.models.delete('fake:slow');
-    ok('candidate, baseline and the first run → run-is-evidence, an ordinary run deletes (204); fake:two-blanks and fake:ok → model-in-use on delete, fake:two-blanks also on price null; fake:slow (named by no config) deletes (204)');
+    await wantProblem(asAdmin('DELETE', `/v1/admin/ai/models/${idOf('fake:slow')}`), 409, 'model-in-use', 'delete the model retained by a soft-deleted draft');
+    const spare = await addModel('fake:truncated');
+    await want(asAdmin('DELETE', `/v1/admin/ai/models/${spare.id}`), 204, 'delete a model never used by a config (control)');
+    S.models.delete('fake:truncated');
+    ok('candidate, baseline and the first run → run-is-evidence, an ordinary run deletes (204); fake:two-blanks and fake:ok → model-in-use; soft-deleted draft retains fake:slow → model-in-use; a never-used model deletes (204)');
   });
 
   await step('M2.11 B32: a stale rollback → 409 publish-stale; rollback → fake:ok live again with nothing before it; again → 409 no-previous; the learner call carries its number; history lists rollback, publish, publish; a retired config keeps its model', async () => {
@@ -859,7 +961,7 @@ async function partM3() {
       check(earlier, 'no earlier run to start a pass on');
       await wantProblem(startPass(earlier.id, T.J), 409, 'model-not-set', 'a pass with the model-less judge');
       const runsBefore = count('SELECT count(*) FROM ai_eval_runs');
-      await wantProblem(startRun({ operation: op, config: 'live', set_id: T.set.id, judge_id: T.J }), 409, 'model-not-set', 'a run with the model-less judge');
+      await wantProblem(startRun({ operation: op, target: { kind: 'live' }, set_id: T.set.id, judge_id: T.J }), 409, 'model-not-set', 'a run with the model-less judge');
       check(count('SELECT count(*) FROM ai_eval_runs') === runsBefore && count('SELECT count(*) FROM ai_judge_passes') === 0, 'a refused request left a run or a pass behind');
       await wantProblem(asAdmin('GET', `${ai}/judges/${randomUUID()}/revisions`), 404, 'not-found', 'revisions of an unknown judge');
       ok(`judge ${T.J}: revision 1, operations [${op}], no model; the pass on run ${earlier.id} and the run with the judge → 409 model-not-set, ai_eval_runs stays at ${runsBefore}, no pass; unknown judge → 404`);
@@ -901,7 +1003,7 @@ async function partM3() {
     });
 
     await step('M3.3 D14, D3, B6, R7: a live run on the newest frozen set with judge_id → 202 + judge_pass_id; the pass judges every output; dev items carry a pass score, held-out only tallies; a judge call carries exactly { target_operation, input, output, criteria, context }', async () => {
-      const created = await want(startRun({ operation: op, config: 'live', set_id: T.set.id, judge_id: T.J }), 202, 'start a run with a judge');
+      const created = await want(startRun({ operation: op, target: { kind: 'live' }, set_id: T.set.id, judge_id: T.J }), 202, 'start a run with a judge');
       check(typeof created.judge_pass_id === 'string', `response ${j(created)}`);
       T.p1 = created.judge_pass_id;
       T.r1 = await runDone(created.run_id);
@@ -991,7 +1093,7 @@ async function partM3() {
     });
 
     await step('M3.7 B11, B16: a second live run R2 without a judge → compare R1 / R2 lists judge_unmatched; two judge passes started at once never judge an output twice; then the comparison holds one judge row', async () => {
-      T.r2 = await runAndWait({ operation: op, config: 'live', set_id: T.set.id });
+      T.r2 = await runAndWait({ operation: op, target: { kind: 'live' }, set_id: T.set.id });
       check(T.r2.status === 'finished' && T.r2.complete === true && T.r2.set_id === T.set.id, `R2 ${j({ status: T.r2.status, complete: T.r2.complete })}`);
       T.n2 = judgeable(T.r2.id);
       T.held2 = ids(itemSql(T.r2.id, `split = 'held_out'`));
@@ -1024,7 +1126,7 @@ async function partM3() {
     await step('M3.8 design §6.3 step 3: a fake:bad-form draft judged by J on the same set → the publish check warns judge-rate-drop (revision 2, single_answer, 0 passed); publish without acknowledging → 409 publish-warnings with it; the draft goes', async () => {
       await createDraft(op);
       await setDraftModel(op, 'fake:bad-form');
-      const created = await want(startRun({ operation: op, config: 'draft', set_id: T.set.id, judge_id: T.J }), 202, 'run the bad-form draft with a judge');
+      const created = await want(startRun({ operation: op, target: draftTarget(op), set_id: T.set.id, judge_id: T.J }), 202, 'run the bad-form draft with a judge');
       T.r3 = await runDone(created.run_id);
       check(T.r3.status === 'finished' && T.r3.complete === true && T.r3.set_id === T.set.id, `R3 ${j({ status: T.r3.status, complete: T.r3.complete })}`);
       const pass = await passDone(created.judge_pass_id);
@@ -1037,7 +1139,7 @@ async function partM3() {
         `warnings ${j(pc.warnings.map((w) => [w.code, w.criterion ?? null]))}, judge drop ${j(drop)}`);
       const refused = await wantProblem(publishDraft(op, publishBody(pc)), 409, 'publish-warnings', 'publish without acknowledging');
       check(refused.warnings.some((warning) => warning.code === 'judge-rate-drop'), `the 409 lists ${j(refused.warnings.map((w) => w.code))}`);
-      await want(asAdmin('DELETE', `/v1/admin/ai/configs/${op}/draft`), 204, 'delete the draft');
+      await deleteDraft(op);
       check((await configsOf(op)).draft === null, 'the draft is still there');
       ok(`R3 (bad-form, ${T.n3} outputs) judged; judge-rate-drop revision 2 single_answer ${j(drop.before)} → ${j(drop.after)}; all warnings: ${pc.warnings.map((w) => w.code).join(', ')}; publish without acknowledging → publish-warnings; draft deleted (R3 stays)`);
     });
@@ -1111,10 +1213,10 @@ async function partM3() {
       const r1 = await want(asAdmin('GET', `${ai}/eval/runs/${T.r1.id}`), 200, 'GET R1');
       check(r1.status === 'finished' && r1.complete === true && r1.error === null, `R1 ${j({ status: r1.status, complete: r1.complete, error: r1.error })}`);
       const runsBefore = count('SELECT count(*) FROM ai_eval_runs');
-      await wantProblem(startRun({ operation: op, config: 'live', set_id: T.set.id }), 409, 'admin-usd-cap', 'a run at the cap');
+      await wantProblem(startRun({ operation: op, target: { kind: 'live' }, set_id: T.set.id }), 409, 'admin-usd-cap', 'a run at the cap');
       check(count('SELECT count(*) FROM ai_eval_runs') === runsBefore, 'a run refused at the cap was stored');
       await createDraft(op);
-      await wantProblem(asAdmin('POST', `/v1/admin/ai/configs/${op}/draft/test`, { body: {} }), 409, 'admin-usd-cap', 'a draft test at the cap');
+      await wantProblem(asAdmin('POST', `${draftPath(op)}/test`, { body: {} }), 409, 'admin-usd-cap', 'a draft test at the cap');
       ok(`cap ${cap} USD (today's admin spend rounded up to the cent, plus 0.10): the clone's pass on R1 ended failed / admin-usd-cap after ${pass.judged} of ${pass.total} (cost ${pass.cost_usd}); R1 still finished and complete; POST runs and draft/test → 409 admin-usd-cap; a new draft is kept for M3.12`);
     });
 
@@ -1123,11 +1225,11 @@ async function partM3() {
       const okModel = S.models.get('fake:ok');
       await want(asAdmin('PATCH', `${ai}/models/${okModel.id}`, { body: { price_input: 1000, price_output: 1000 } }), 200, 'price fake:ok');
       try {
-        const free = await runAndWait({ operation: op, config: 'live', set_id: T.set.id });
+        const free = await runAndWait({ operation: op, target: { kind: 'live' }, set_id: T.set.id });
         check(free.status === 'finished' && free.complete === true && free.cost_usd === (free.total * 0.15).toFixed(8) && free.cost_unknown_count === 0, `uncapped run ${j({ status: free.status, total: free.total, cost_usd: free.cost_usd })}`);
         const cap = await capAboveSpent();
         await setAi({ admin_daily_usd_cap: cap });
-        const stopped = await runAndWait({ operation: op, config: 'live', set_id: T.set.id });
+        const stopped = await runAndWait({ operation: op, target: { kind: 'live' }, set_id: T.set.id });
         check(stopped.status === 'failed' && stopped.error === 'admin-usd-cap' && stopped.complete === false && stopped.done >= 1 && stopped.done <= 3 && stopped.done < stopped.total,
           `capped run ${j({ status: stopped.status, error: stopped.error, complete: stopped.complete, done: stopped.done, total: stopped.total })}`);
         ok(`no cap: run ${free.id} finished, cost ${free.cost_usd} (${free.total} calls × 0.15); cap ${cap}: run ${stopped.id} failed / admin-usd-cap with ${stopped.done} of ${stopped.total} done, not complete`);
@@ -1146,20 +1248,20 @@ async function partM3() {
         const callsBefore = judgeCalls();
         await wantProblem(startPass(T.r1.id, T.clone), 409, 'model-price-missing', 'a pass with an unpriced judge model');
         check(judgeCalls() === callsBefore, 'a refused pass made a judge call');
-        const { draft } = await configsOf(op);
+        const draft = await getDraft(op);
         check(draft, 'the draft of M3.10 is gone');
         const withRefuse = await saveDraft(op, draft, { model_ref: refuse.id });
-        await wantProblem(asAdmin('POST', `/v1/admin/ai/configs/${op}/draft/test`, { body: {} }), 409, 'model-price-missing', 'a draft test on an unpriced model');
+        await wantProblem(asAdmin('POST', `${draftPath(op)}/test`, { body: {} }), 409, 'model-price-missing', 'a draft test on an unpriced model');
         const runsBefore = count('SELECT count(*) FROM ai_eval_runs');
-        await wantProblem(startRun({ operation: op, config: 'draft', set_id: T.set.id }), 409, 'model-price-missing', 'a run of an unpriced draft');
+        await wantProblem(startRun({ operation: op, target: draftTarget(op), set_id: T.set.id }), 409, 'model-price-missing', 'a run of an unpriced draft');
         check(count('SELECT count(*) FROM ai_eval_runs') === runsBefore, 'a refused run was stored');
         const priced = await saveDraft(op, withRefuse, { model_ref: S.models.get('fake:ok').id });
-        await wantProblem(asAdmin('POST', `/v1/admin/ai/configs/${op}/draft/test`, { body: {} }), 409, 'admin-usd-cap', 'a draft test on a priced model at cap 0');
+        await wantProblem(asAdmin('POST', `${draftPath(op)}/test`, { body: {} }), 409, 'admin-usd-cap', 'a draft test on a priced model at cap 0');
         check(priced.model?.model_id === 'fake:ok', `draft model ${j(priced.model)}`);
       } finally {
         await setAi({ admin_daily_usd_cap: null });
       }
-      await want(asAdmin('DELETE', `/v1/admin/ai/configs/${op}/draft`), 204, 'delete the draft');
+      await deleteDraft(op);
       ok('cap 0: pass, draft test and run with fake:refuse (price_input null) → model-price-missing and nothing stored or called; the same draft on fake:ok (price 0) → admin-usd-cap; cap null again; draft deleted');
     });
 
@@ -1983,7 +2085,7 @@ async function partM5() {
     return pass;
   }
   const liveRun = async () => {
-    const done = await runAndWait({ operation: op, set_id: T.S.id, config: 'live' });
+    const done = await runAndWait({ operation: op, set_id: T.S.id, target: { kind: 'live' } });
     check(done.status === 'finished' && done.complete === true && done.set_id === T.S.id, `live run ${j({ status: done.status, complete: done.complete, set_id: done.set_id, error: done.error })}`);
     return done;
   };
@@ -2157,15 +2259,16 @@ async function partM5() {
       const after = await dashboard();
       check(after.today.calls === T.calls0 && count(`SELECT count(*) FROM ai_calls WHERE purpose = 'learner' AND created_at >= '${vnDate(0)}T00:00:00+07:00'`) === T.calls0, `today.calls moved from ${T.calls0} to ${after.today.calls} by an eval run`);
       // A draft of the live config, run on the same set, is not "the live config's" eval.
-      const existing = (await configsOf(op)).draft;
+      const existing = (await want(asAdmin('GET', `${ai}/configs/${op}/drafts?page_size=20`), 200, 'list drafts for the dashboard control')).items[0] ?? null;
+      if (existing) S.drafts.set(op, existing.id);
       T.madeDraft = !existing;
       let draft = existing ?? await createDraft(op);
       if (!draft.model) draft = await setDraftModel(op, 'fake:ok');
-      const draftRun = await runAndWait({ operation: op, set_id: T.S.id, config: 'draft' });
+      const draftRun = await runAndWait({ operation: op, set_id: T.S.id, target: draftTarget(op) });
       check(draftRun.status === 'finished' && draftRun.complete === true && psql(`SELECT config_id FROM ai_eval_runs WHERE id = '${draftRun.id}'`) === draft.id && draft.id !== T.liveConfig, `draft run ${j({ status: draftRun.status, config: draft.id })}`);
       const still = (await dashboard()).latest_evals.find((e) => e.operation === op);
       check(still.run?.id === run1.id && still.live.config_id === T.liveConfig, `with a newer draft run the latest eval is ${still.run?.id}, expected the live run ${run1.id}`);
-      if (T.madeDraft) await want(asAdmin('DELETE', `${ai}/configs/${op}/draft`), 204, 'delete the draft this step made');
+      if (T.madeDraft) await deleteDraft(op, draft.id);
       ok(`run ${run1.id} on set v${T.S.version}: latest_evals has it with live config ${T.liveNumber}, stats = GET items (${dev[0]} dev, ${heldOut[0]} held-out, only counts), keys id, created_at, model, stats, judge, judge []; today.calls stays ${T.calls0}; the draft run ${draftRun.id} (config ${draft.id}) does not replace it${T.madeDraft ? '; the draft deleted again' : ''}`);
     });
 

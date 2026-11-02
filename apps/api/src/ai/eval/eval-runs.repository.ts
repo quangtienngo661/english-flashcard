@@ -3,6 +3,7 @@ import { PRISMA_CLIENT } from '../../common/db/prisma.module.js';
 import type { PrismaClient } from '../../generated/prisma/client.js';
 import type { AiOperation, AiProviderName } from '../ai.types.js';
 import type { PromptExample } from '../prompts/prompt-rules.js';
+import type { ConfigContent } from '../configs/config-snapshot.js';
 import type { EvalSplit, ExpectedResult, RuleResult, RunItemStatus } from './eval.types.js';
 
 export type EvalRunStatus = 'queued' | 'running' | 'finished' | 'failed';
@@ -41,6 +42,9 @@ export type EvalRunRow = {
   /** The config this run tried and the version of it (M2); both null for a run of a prompt revision or a Prompt-page draft. */
   configId: string | null;
   configVersion: number | null;
+  snapshot?: ConfigContent | null;
+  fingerprint?: string | null;
+  batchId?: string | null;
 };
 
 /** What a config run needs from its config row: the text, and the version it must still have. */
@@ -84,7 +88,7 @@ type Raw = {
   started_by: string; started_at: Date | null; heartbeat_at: Date | null; finished_at: Date | null; error: string | null;
   valid_count: number; avg_latency_ms: number | null; cost_usd: DecimalLike | null; cost_unknown_count: number;
   set_id: string | null; price_input: DecimalLike | null; price_cached_input: DecimalLike | null; price_output: DecimalLike | null; legacy: boolean;
-  config_id: string | null; config_version: number | null;
+  config_id: string | null; config_version: number | null; snapshot?: ConfigContent | null; fingerprint?: string | null; batch_id?: string | null;
 };
 
 type RawItem = {
@@ -104,6 +108,7 @@ const toRow = (raw: Raw): EvalRunRow => ({
   costUsd: raw.cost_usd === null ? null : raw.cost_usd.toString(), costUnknownCount: raw.cost_unknown_count,
   setId: raw.set_id, priceInput: toNumber(raw.price_input), priceCachedInput: toNumber(raw.price_cached_input), priceOutput: toNumber(raw.price_output),
   legacy: raw.legacy, configId: raw.config_id, configVersion: raw.config_version,
+  snapshot: raw.snapshot ?? null, fingerprint: raw.fingerprint ?? null, batchId: raw.batch_id ?? null,
 });
 
 const toItemRow = (raw: RawItem): EvalRunItemRow => ({
@@ -128,9 +133,15 @@ export class EvalRunsRepository {
   /** Marks the run `running` (keeping a first `started_at`); null when it is finished, failed or gone. */
   async start(id: string, now: Date): Promise<EvalRunRow | null> {
     const [raw] = await this.prisma.$queryRaw<Raw[]>`
-      UPDATE ai_eval_runs SET status = 'running', started_at = COALESCE(started_at, ${now}), heartbeat_at = ${now}
-      WHERE id = ${id}::uuid AND status IN ('queued', 'running')
-      RETURNING *`;
+      WITH claimed AS (
+        UPDATE ai_eval_runs SET status = 'running', started_at = COALESCE(started_at, ${now}), heartbeat_at = ${now}
+        WHERE id = ${id}::uuid AND status IN ('queued', 'running')
+        RETURNING *
+      ), batched AS (
+        UPDATE ai_batches b SET status = 'running', started_at = COALESCE(b.started_at, claimed.started_at), total = claimed.total
+        FROM claimed WHERE b.id = claimed.batch_id AND b.kind = 'eval' RETURNING b.id
+      )
+      SELECT claimed.* FROM claimed`;
     return raw ? toRow(raw) : null;
   }
 
@@ -170,21 +181,33 @@ export class EvalRunsRepository {
   /** The summary is computed from every stored item, so a resumed run counts the earlier part too. */
   async finish(id: string, now: Date): Promise<void> {
     await this.prisma.$executeRaw`
-      UPDATE ai_eval_runs r SET status = 'finished', finished_at = ${now}, heartbeat_at = ${now},
-        valid_count = s.valid_count, avg_latency_ms = s.avg_latency_ms, cost_usd = s.cost_usd, cost_unknown_count = s.cost_unknown_count
-      FROM (
-        SELECT count(*) FILTER (WHERE status = 'succeeded')::int AS valid_count,
-          round(avg(latency_ms))::int AS avg_latency_ms,
-          COALESCE(sum(cost_usd), 0) AS cost_usd,
-          count(*) FILTER (WHERE status NOT IN ('skipped', 'pending') AND cost_usd IS NULL)::int AS cost_unknown_count
-        FROM ai_eval_run_items WHERE run_id = ${id}::uuid
-      ) s
-      WHERE r.id = ${id}::uuid AND r.status = 'running'`;
+      WITH completed AS (
+        UPDATE ai_eval_runs r SET status = 'finished', finished_at = ${now}, heartbeat_at = ${now},
+          valid_count = s.valid_count, avg_latency_ms = s.avg_latency_ms, cost_usd = s.cost_usd, cost_unknown_count = s.cost_unknown_count
+        FROM (
+          SELECT count(*) FILTER (WHERE status = 'succeeded')::int AS valid_count,
+            round(avg(latency_ms))::int AS avg_latency_ms,
+            COALESCE(sum(cost_usd), 0) AS cost_usd,
+            count(*) FILTER (WHERE status NOT IN ('skipped', 'pending') AND cost_usd IS NULL)::int AS cost_unknown_count
+          FROM ai_eval_run_items WHERE run_id = ${id}::uuid
+        ) s
+        WHERE r.id = ${id}::uuid AND r.status = 'running'
+        RETURNING r.batch_id, r.started_at, r.finished_at, r.total
+      )
+      UPDATE ai_batches b SET status = 'finished', finished_at = completed.finished_at,
+        started_at = COALESCE(b.started_at, completed.started_at), total = completed.total
+      FROM completed WHERE b.id = completed.batch_id AND b.kind = 'eval'`;
   }
 
   async fail(id: string, error: string, now: Date): Promise<void> {
     await this.prisma.$executeRaw`
-      UPDATE ai_eval_runs SET status = 'failed', error = ${error}, finished_at = ${now}
-      WHERE id = ${id}::uuid AND status = 'running'`;
+      WITH completed AS (
+        UPDATE ai_eval_runs SET status = 'failed', error = ${error}, finished_at = ${now}
+        WHERE id = ${id}::uuid AND status = 'running'
+        RETURNING batch_id, started_at, finished_at, total, error
+      )
+      UPDATE ai_batches b SET status = CASE WHEN completed.error = 'cancelled' THEN 'cancelled' ELSE 'failed' END,
+        finished_at = completed.finished_at, started_at = COALESCE(b.started_at, completed.started_at), total = completed.total
+      FROM completed WHERE b.id = completed.batch_id AND b.kind = 'eval'`;
   }
 }

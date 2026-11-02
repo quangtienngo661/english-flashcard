@@ -9,7 +9,7 @@ import { evalRun } from '../prompt-test-support';
 import { RUN_ID, URL, configRoutes, configView, configsView, draftView, publishCheck } from './config-test-support';
 
 const t = vi.ai.configs;
-const CHECK_PATH = '/v1/admin/ai/configs/generate_cloze/publish-check';
+const CHECK_PATH = '/v1/admin/ai/configs/generate_cloze/drafts/C4/publish-check';
 const button = (name: string) => screen.getByRole('button', { name });
 const calls = (all: { method: string; path: string; body: unknown; headers: Record<string, string> }[], method: string, suffix: string) =>
   all.filter((c) => c.method === method && c.path.endsWith(suffix));
@@ -21,14 +21,14 @@ const afterPublish = (): ConfigsView => configsView({
 
 function pageRoutes(check: PublishCheck, over: Parameters<typeof configRoutes>[0] = {}, view: Partial<ConfigsView> = {}) {
   return configRoutes({
-    [URL.configs()]: () => Response.json(configsView({ draft: draftView({ version: check.draft.version, number: check.draft.number }), ...view })),
+    [URL.configs()]: () => Response.json(configsView({ draft: draftView({ id: check.draft.id, version: check.draft.version, number: check.draft.number }), ...view })),
     [URL.publishCheck()]: () => Response.json(check),
     ...over,
   });
 }
 
 async function openPage(routes: ReturnType<typeof configRoutes>) {
-  const r = renderApp('/ai/configs', routes);
+  const r = renderApp('/ai/configs/drafts/C4', routes);
   await screen.findByRole('heading', { name: /^Nháp · cấu hình/ }, { timeout: 4000 });
   return r;
 }
@@ -56,8 +56,8 @@ describe('PublishPanel: what a publish needs (M2-T7)', () => {
     expect(await screen.findByText(t.publish.evalRequired.replace('{version}', '2'))).toBeInTheDocument();
     expect(button(t.publish.submit)).toBeDisabled();
     await userEvent.click(button(t.draft.runSet));
-    await waitFor(() => expect(r.router.state.location.pathname).toBe(`/ai/eval/runs/${RUN_ID}`));
-    expect(calls(r.calls, 'POST', '/eval/runs')[0]!.body).toEqual({ operation: 'generate_cloze', set_id: 'S2', config: 'draft' });
+    await waitFor(() => expect(r.calls.some(c => c.method === 'POST' && c.path === '/v1/admin/ai/eval/runs')).toBe(true));
+    expect(calls(r.calls, 'POST', '/eval/runs')[0]!.body).toEqual(expect.objectContaining({ operation: 'generate_cloze', set_id: 'S2', target: expect.objectContaining({ kind: 'temporary', draft_id: 'C4' }) }));
   });
 
   it('the live config has no complete run: it offers a run of the live config on that version, with set_id and config "live"', async () => {
@@ -68,9 +68,9 @@ describe('PublishPanel: what a publish needs (M2-T7)', () => {
     expect(await screen.findByText(t.publish.baselineRequired.replace('{version}', '2'))).toBeInTheDocument();
     expect(button(t.publish.submit)).toBeDisabled();
     await userEvent.click(button(t.publish.runLive.replace('{version}', '2')));
-    await waitFor(() => expect(r.router.state.location.pathname).toBe(`/ai/eval/runs/${RUN_ID}`));
+    await waitFor(() => expect(r.calls.some(c => c.method === 'POST' && c.path === '/v1/admin/ai/eval/runs')).toBe(true));
     const sent = calls(r.calls, 'POST', '/eval/runs');
-    expect(sent[0]!.body).toEqual({ operation: 'generate_cloze', set_id: 'S2', config: 'live' });
+    expect(sent[0]!.body).toEqual({ operation: 'generate_cloze', set_id: 'S2', target: { kind: 'live' } });
     expect(sent[0]!.headers['Idempotency-Key']).toMatch(/^[0-9a-f-]{36}$/);
   });
 
@@ -88,7 +88,7 @@ describe('PublishPanel: what a publish needs (M2-T7)', () => {
     expect(await screen.findByText(t.publish.done.replace('{number}', '4'))).toBeInTheDocument();
     expect(calls(r.calls, 'POST', '/publish')[0]!.body).toEqual({ expected_version: 2, candidate_run_id: 'RC', baseline_run_id: 'RB', acknowledge_warnings: true });
     expect(await screen.findByRole('heading', { name: t.live.title.replace('{number}', '4') })).toBeInTheDocument();
-    expect(screen.queryByRole('heading', { name: /^Nháp ·/ })).not.toBeInTheDocument();
+    await waitFor(() => expect(screen.queryByRole('heading', { name: /^Nháp ·/ })).not.toBeInTheDocument());
   });
 
   it('rates are shown with at most one decimal; a held-out rise is shown as two counts and never as examples', async () => {
@@ -138,7 +138,7 @@ describe('PublishPanel: what a publish needs (M2-T7)', () => {
     await userEvent.click(box);
     await userEvent.paste('Edited.');
     expect(button(t.publish.submit)).toBeDisabled();
-    expect(button(t.draft.runSet)).toBeDisabled();
+    expect(button(t.draft.runSet)).toBeEnabled();
     expect(screen.getByText(t.publish.saveFirst)).toBeInTheDocument();
   });
 });
@@ -159,12 +159,12 @@ describe('PublishPanel: the first model and turning an operation off (D37, D38)'
 
   it('B48: a draft without a model turns the operation off after a confirmation; [Hủy] sends nothing', async () => {
     const r = await openPage(pageRoutes(
-      publishCheck({ turn_off: true, draft: { id: 'C5', number: 5, version: 1 }, set: null, candidate_run_id: null, baseline: { required: false, run_id: null }, blockers: [], warnings: [] }),
+      publishCheck({ turn_off: true, draft: { id: 'C4', number: 5, version: 1 }, set: null, candidate_run_id: null, baseline: { required: false, run_id: null }, blockers: [], warnings: [] }),
       { [URL.publish()]: () => Response.json(afterPublish()) },
     ));
     expect(await screen.findByText(t.publish.turnOffNote)).toBeInTheDocument();
     expect(screen.queryByText(t.publish.noSet)).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: t.draft.runSet })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: t.draft.runSet })).toBeInTheDocument();
     await userEvent.click(button(t.publish.submit));
     let dialog = await screen.findByRole('dialog');
     expect(within(dialog).getByText(t.publish.turnOffDialog)).toBeInTheDocument();

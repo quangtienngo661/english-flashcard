@@ -1,0 +1,14 @@
+AI workspace costs / helper verification — 01/11/2026
+Final main-agent verification supersedes intermediate agent logs.
+
+pnpm --filter admin exec vitest run src/features/ai/configs src/features/ai/AiCostsBatches.test.tsx src/features/ai/AiCostsPage.test.tsx --maxWorkers=2
+Test Files 7 passed (7)
+Tests 95 passed (95)
+Duration 48.29s
+
+pnpm --filter admin exec vitest run scripts/ai-config-publish.test.ts --maxWorkers=1
+Test Files 1 passed (1)
+Tests 12 passed (12)
+Duration 10.41s
+
+The initial batch-source/retention tests were observed RED before implementation. Intermediate parallel runs included timeouts; the final focused commands above are GREEN. These are mocked UI/helper tests, not PostgreSQL/provider integration.

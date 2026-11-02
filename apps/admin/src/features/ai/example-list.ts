@@ -7,6 +7,22 @@ export type ExampleSort = (typeof EXAMPLE_SORTS)[number];
 
 export const EXAMPLES_PAGE_SIZE = 20;
 
+export type ExampleFilters = { search: string; level: string; split: 'all' | 'dev' | 'held_out' };
+export const EXAMPLE_LEVELS = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'] as const;
+
+/** Text and level filters apply only to dev; never inspect a held-out input, even if a caller supplies one. */
+export function filterExamples(rows: readonly ExampleRow[], filters: ExampleFilters): ExampleRow[] {
+  const search = filters.search.trim().toLowerCase();
+  return rows.filter((row) => {
+    if (filters.split !== 'all' && row.split !== filters.split) return false;
+    if (!isDevExample(row)) return search === '' && filters.level === 'all';
+    const input = row.input !== null && typeof row.input === 'object' ? row.input as Record<string, unknown> : {};
+    if (filters.level !== 'all' && input.level !== filters.level) return false;
+    const text = [input.word, input.meaning_vi, input.meaning_en, input.meaning, input.sentence].filter((v) => typeof v === 'string').join(' ').toLowerCase();
+    return search === '' || text.includes(search);
+  });
+}
+
 /**
  * The rows in the chosen order, as a new list. Held-out rows show no text, so the A → Z orders keep them last in the API's
  * order; every tie keeps the API's order too.

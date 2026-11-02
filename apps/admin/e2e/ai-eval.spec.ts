@@ -29,6 +29,15 @@ function evalMocks(over: Record<string, MockHandler> = {}): Record<string, MockH
   };
 }
 
+/** A sub-page link of the tab row (its name ends with a count). */
+const tabLink = (page: Page, name: string) => page.getByRole('navigation', { name: t.tabs.label }).getByRole('link', { name: new RegExp(`^${name}`) });
+/** The count box: "N dev" and "M held-out". */
+async function expectCounts(page: Page, dev: number, heldOut: number) {
+  const stats = page.getByRole('region', { name: t.stats.label });
+  await expect(stats.getByText(t.stats.dev.replace('{count}', String(dev)), { exact: true })).toBeVisible();
+  await expect(stats.getByText(t.stats.heldOut.replace('{count}', String(heldOut)), { exact: true })).toBeVisible();
+}
+
 async function openNavIfCollapsed(page: Page) {
   if ((page.viewportSize()?.width ?? 0) < 1024) await page.getByRole('button', { name: vi.shell.openMenu }).click();
 }
@@ -82,6 +91,7 @@ test.describe('Bộ ví dụ (A/83)', () => {
     });
     await expect(page.getByRole('heading', { level: 2, name: t.examples.replace('{count}', '2') })).toBeVisible();
 
+    await tabLink(page, t.tabs.sets).click();
     await expect(page.getByRole('button', { name: new RegExp(`${t.set.label}$`) })).toContainText(t.set.version.replace('{version}', '1'));
     await page.getByRole('button', { name: t.run.start }).click();
     await expect(page).toHaveURL(/\/ai\/eval\/runs\/aaaaaaaa-0000-4000-8000-000000000001$/);
@@ -91,11 +101,14 @@ test.describe('Bộ ví dụ (A/83)', () => {
     await expect(panel).toContainText('261');
     await expect(panel).toContainText('theo tỷ giá hôm nay');
     await expect(panel.getByText('Dev: khuôn 1/1 · luật 1/1 (0 bỏ qua) · mong đợi 1/1')).toBeVisible();
-    await expect(page.getByText(t.run.quota.replace('{remaining}', '16').replace('{limit}', '20'))).toBeVisible();
     const sent = requests(page, 'POST', '/v1/admin/ai/eval/runs');
     expect(sent.map((r) => r.body)).toEqual([{ operation: 'generate_cloze', prompt: 'current', set_id: 'S1' }]);
     expect(sent[0].headers['idempotency-key']).toBeTruthy();
     expect(await seriousViolations(page)).toEqual([]);
+    await page.keyboard.press('Escape');
+    await expect(page).toHaveURL(/\/ai\/eval\/runs$/);
+    await tabLink(page, t.tabs.sets).click();
+    await expect(page.getByText(t.run.quota.replace('{remaining}', '16').replace('{limit}', '20'))).toBeVisible();
   });
 
   test('held-out rows stay hidden; [Mở ví dụ held-out] asks first and moves the example to dev; [Chốt phiên bản] names the next version; a version shows its items; axe clean', async ({ page }) => {
@@ -124,9 +137,8 @@ test.describe('Bộ ví dụ (A/83)', () => {
       }),
     }));
     await page.goto('/ai/eval');
-    await expect(page.getByText('3 dev · 2 held-out')).toBeVisible();
+    await expectCounts(page, 3, 2);
     await expect(page.getByText(t.heldOutHidden).filter({ visible: true })).toHaveCount(2);
-    await expect(page.getByText(t.sets.revealed.replace('{count}', '1')).filter({ visible: true })).toBeVisible();
     expect(await seriousViolations(page)).toEqual([]);
 
     await page.getByRole('button', { name: t.reveal.button }).filter({ visible: true }).first().click();
@@ -135,7 +147,7 @@ test.describe('Bộ ví dụ (A/83)', () => {
     expect(await seriousViolations(page)).toEqual([]);
     await reveal.getByRole('button', { name: t.reveal.confirm }).click();
     await expect(page.getByText(t.toast.revealed)).toBeVisible();
-    await expect(page.getByText('4 dev · 1 held-out')).toBeVisible();
+    await expectCounts(page, 4, 1);
     expect(requests(page, 'POST', '/v1/admin/ai/eval/examples/e4/reveal')).toHaveLength(1);
 
     await page.getByRole('button', { name: t.freeze.button }).click();
@@ -145,6 +157,8 @@ test.describe('Bộ ví dụ (A/83)', () => {
     await freeze.getByRole('button', { name: t.freeze.confirm }).click();
     await expect(page.getByText(t.toast.frozen.replace('{version}', '2'))).toBeVisible();
     expect(requests(page, 'POST', '/v1/admin/ai/eval/sets')[0].body).toEqual({ operation: 'generate_cloze' });
+    await tabLink(page, t.tabs.sets).click();
+    await expect(page.getByText(t.sets.revealed.replace('{count}', '1')).filter({ visible: true })).toBeVisible();
     await expect(page.getByRole('button', { name: t.sets.version.replace('{version}', '2'), exact: true }).filter({ visible: true })).toBeVisible();
 
     await page.getByRole('button', { name: t.sets.version.replace('{version}', '1'), exact: true }).filter({ visible: true }).click();
@@ -254,7 +268,7 @@ test.describe('Bộ ví dụ (A/83)', () => {
     expect(await seriousViolations(page)).toEqual([]);
     await deleteDialog.getByRole('button', { name: t.removeRun.confirm }).click();
     await expect(page.getByText(t.toast.runDeleted)).toBeVisible();
-    await expect(page).toHaveURL(/\/ai\/eval$/);
+    await expect(page).toHaveURL(/\/ai\/eval\/runs$/);
     await expect(page.getByTestId('detail-panel')).toHaveCount(0);
     expect(requests(page, 'POST', `/v1/admin/ai/eval/runs/${id}/cancel`)).toHaveLength(1);
     expect(requests(page, 'DELETE', `/v1/admin/ai/eval/runs/${id}`)).toHaveLength(1);
@@ -270,7 +284,7 @@ test.describe('Bộ ví dụ (A/83)', () => {
       },
       [`GET /v1/admin/ai/eval/runs/${EVAL_RUN_ID}`]: () => ({ json: run() }),
     }));
-    await page.goto('/ai/eval');
+    await page.goto('/ai/eval/sets');
     await page.getByRole('button', { name: t.run.start }).click();
     await expect(page.getByText(vi.offline.message)).toBeVisible();
     await page.getByRole('button', { name: vi.common.retry }).click();
@@ -294,25 +308,30 @@ test.describe('Bộ ví dụ (A/83)', () => {
     await page.getByRole('alertdialog').or(page.getByRole('dialog')).getByRole('button', { name: vi.leave.discard }).click();
     await expect(page).toHaveURL(/\/ai\/eval$/);
 
+    await tabLink(page, t.tabs.sets).click();
     await page.getByRole('button', { name: t.run.start }).click();
     await expect(page.getByText(vi.errors['model-not-set'])).toBeVisible();
     await expect(page.getByRole('link', { name: vi.ai.prompts.test.openConfigs })).toHaveAttribute('href', '/ai/configs?op=generate_cloze');
   });
 
-  test('Cấu hình: [Chạy bộ ví dụ với nháp] on a saved draft runs it as a config on the newest version and opens the run without asking "Rời trang?"', async ({ page }) => {
+  test('Cấu hình: [Chạy bộ ví dụ với nháp] uses the selected saved draft ID and opens its result without asking "Rời trang?"', async ({ page }) => {
     await signedInAs(page, 'admin', evalMocks({
       ...configReads(),
       'GET /v1/admin/ai/eval/sets': () => ({ json: { items: [evalSet()] } }),
       'GET /v1/admin/ai/configs/generate_cloze': () => ({ json: cfgView({ draft: cfgDraft(4) }) }),
-      'GET /v1/admin/ai/configs/generate_cloze/publish-check': () => ({ json: cfgCheck({ set: { id: 'S1', version: 1 }, candidate_run_id: null, blockers: ['eval-required'] }) }),
+      'GET /v1/admin/ai/configs/generate_cloze/drafts/C4/publish-check': () => ({ json: cfgCheck({ set: { id: 'S1', version: 1 }, candidate_run_id: null, blockers: ['eval-required'] }) }),
       'POST /v1/admin/ai/eval/runs': () => ({ status: 202, json: { run_id: EVAL_RUN_ID, status: 'queued' } }),
       [`GET /v1/admin/ai/eval/runs/${EVAL_RUN_ID}`]: () => ({ json: run({ prompt_revision: null, config_id: 'C4', config_version: 0, config_number: 4, set_id: 'S1', set_version: 1 }) }),
     }));
-    await page.goto('/ai/configs');
+    await page.goto('/ai/configs/drafts/C4?op=generate_cloze');
+    await page.getByRole('button', { name: new RegExp(vi.ai.workspace.target) }).click();
+    await page.getByRole('option', { name: vi.ai.workspace.savedTarget }).click();
     await page.getByRole('button', { name: vi.ai.configs.draft.runSet }).click();
+    await expect(page).toHaveURL('/ai/configs/drafts/C4?op=generate_cloze');
+    await page.getByRole('link', { name: `${vi.ai.configs.draft.runSet} · ${EVAL_RUN_ID}` }).click();
     await expect(page).toHaveURL(/\/ai\/eval\/runs\/aaaaaaaa-0000-4000-8000-000000000001\?op=generate_cloze$/);
     await expect(page.getByText(vi.leave.title)).toHaveCount(0);
     await expect(page.getByTestId('detail-panel')).toContainText(t.detail.config.replace('{number}', '4'));
-    expect(requests(page, 'POST', '/v1/admin/ai/eval/runs')[0].body).toEqual({ operation: 'generate_cloze', set_id: 'S1', config: 'draft' });
+    expect(requests(page, 'POST', '/v1/admin/ai/eval/runs')[0].body).toEqual({ operation: 'generate_cloze', set_id: 'S1', target: { kind: 'draft', draft_id: 'C4' } });
   });
 });

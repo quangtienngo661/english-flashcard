@@ -44,7 +44,7 @@ describe('EvalRunsRepository writes stay guarded by status = running', () => {
     if (method === 'finish') await repository.finish(RUN, now);
     if (method === 'fail') await repository.fail(RUN, 'boom', now);
     const { text } = sqlOf(prisma.$executeRaw.mock.calls[0]!);
-    expect(text).toMatch(/WHERE (r\.)?id = \?::uuid AND (r\.)?status = 'running'$/);
+    expect(text).toMatch(/WHERE (r\.)?id = \?::uuid AND (r\.)?status = 'running'(?:\s|$)/);
   });
 
   it('E1: finish sums the run from its item rows, not from a Json column', async () => {
@@ -79,6 +79,46 @@ describe('EvalRunsRepository writes stay guarded by status = running', () => {
   });
 });
 
+describe('EvalRunsRepository batch lifecycle is atomic with its run', () => {
+  it('start updates only the batch returned by its claimed run and preserves the original start time', async () => {
+    const { repository, prisma } = setup([]);
+    await expect(repository.start(RUN, new Date('2026-11-01T01:00:00Z'))).resolves.toBeNull();
+    const { text, values } = sqlOf(prisma.$queryRaw.mock.calls[0]!);
+    expect(text).toContain('WITH claimed AS ( UPDATE ai_eval_runs');
+    expect(text).toContain("status IN ('queued', 'running')");
+    expect(text).toContain("UPDATE ai_batches b SET status = 'running'");
+    expect(text).toContain('started_at = COALESCE(b.started_at, claimed.started_at)');
+    expect(text).toContain('b.id = claimed.batch_id');
+    expect(text).toContain('SELECT claimed.* FROM claimed');
+    expect(values).toContain(RUN);
+    expect(prisma.$queryRaw).toHaveBeenCalledTimes(1);
+    expect(prisma.$executeRaw).not.toHaveBeenCalled();
+  });
+
+  it.each(['finish', 'fail'] as const)('%s persists terminal metadata from exactly the run changed, in one statement', async (method) => {
+    const { repository, prisma } = setup([]);
+    const now = new Date('2026-11-01T01:00:00Z');
+    if (method === 'finish') await repository.finish(RUN, now);
+    else await repository.fail(RUN, 'provider-error', now);
+    const { text, values } = sqlOf(prisma.$executeRaw.mock.calls[0]!);
+    expect(text).toContain('WITH completed AS ( UPDATE ai_eval_runs');
+    expect(text).toContain('RETURNING');
+    expect(text).toContain('UPDATE ai_batches b SET status =');
+    expect(text).toContain('finished_at = completed.finished_at');
+    expect(text).toContain('started_at = COALESCE(b.started_at, completed.started_at)');
+    expect(text).toContain('total = completed.total');
+    expect(text).toContain('FROM completed WHERE b.id = completed.batch_id');
+    expect(values).toContainEqual(now);
+    expect(prisma.$executeRaw).toHaveBeenCalledTimes(1);
+  });
+
+  it('fail maps cancellation to the batch cancelled status, leaving other failure reasons failed', async () => {
+    const { repository, prisma } = setup([]);
+    await repository.fail(RUN, 'cancelled', new Date());
+    expect(sqlOf(prisma.$executeRaw.mock.calls[0]!).text).toContain("CASE WHEN completed.error = 'cancelled' THEN 'cancelled' ELSE 'failed' END");
+  });
+});
+
 describe('EvalRunsRepository.pendingItems', () => {
   it('reads the pending rows of one run in position order and maps them', async () => {
     const { prisma, repository } = setup([{
@@ -104,9 +144,10 @@ describe('EvalRunsRepository.start', () => {
       error: null, valid_count: 0, avg_latency_ms: null, cost_usd: null, cost_unknown_count: 0, set_id: null, legacy: false,
       price_input: { toString: () => '1.0000' }, price_cached_input: null, price_output: { toString: () => '2.0000' },
       config_id: '55555555-5555-4555-8555-555555555555', config_version: 2,
+      snapshot: { instructions: 'Immutable', examples: [] }, fingerprint: 'hash', batch_id: RUN,
     }]);
     const row = await repository.start(RUN, new Date());
-    expect(row).toMatchObject({ setId: null, legacy: false, priceInput: 1, priceCachedInput: null, priceOutput: 2, configId: '55555555-5555-4555-8555-555555555555', configVersion: 2 });
+    expect(row).toMatchObject({ setId: null, legacy: false, priceInput: 1, priceCachedInput: null, priceOutput: 2, configId: '55555555-5555-4555-8555-555555555555', configVersion: 2, snapshot: { instructions: 'Immutable', examples: [] }, fingerprint: 'hash', batchId: RUN });
     expect(row).not.toHaveProperty('items');
     expect(row).not.toHaveProperty('exampleIds');
   });

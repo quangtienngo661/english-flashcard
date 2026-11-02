@@ -1,5 +1,5 @@
-import { createHash } from 'node:crypto';
-import { Inject, Injectable } from '@nestjs/common';
+import { createHash, randomUUID } from 'node:crypto';
+import { Inject, Injectable, Optional } from '@nestjs/common';
 import { z } from 'zod';
 import { Clock } from '../../common/clock/clock.js';
 import { PRISMA_CLIENT } from '../../common/db/prisma.module.js';
@@ -20,6 +20,8 @@ import { judgeComparison, judgeStatsRows, toScoreView, type JudgeStatsRow } from
 import type { LabelView, ScoreView } from '../judge/judge.types.js';
 import { AdminSpend } from '../runner/admin-spend.service.js';
 import { SelectionReader, toSelection, type ModelRow, type Selection } from '../runner/selection.js';
+import { ConfigsService } from '../configs/configs.service.js';
+import { configContentSchema, configFingerprint, contentOfConfig, type ConfigContent } from '../configs/config-snapshot.js';
 import { EvalQueue } from './eval-queue.service.js';
 import type { EvalRunStatus } from './eval-runs.repository.js';
 import type { EvalSplit, ExpectedResult, RuleResult, RunItemStatus } from './eval.types.js';
@@ -32,6 +34,11 @@ export const createRunSchema = z.strictObject({
   prompt: z.union([z.literal('current'), z.strictObject({ instructions: z.string(), examples: z.array(z.unknown()) })]).optional(),
   /** The live config, or the draft of the operation (M2). */
   config: z.enum(['live', 'draft']).optional(),
+  target: z.discriminatedUnion('kind', [
+    z.strictObject({ kind: z.literal('live') }),
+    z.strictObject({ kind: z.literal('draft'), draft_id: z.uuid().transform((id) => id.toLowerCase()) }),
+    z.strictObject({ kind: z.literal('temporary'), draft_id: z.uuid().transform((id) => id.toLowerCase()), content: configContentSchema }),
+  ]).optional(),
   /** A frozen version of the operation's set (design §5.3); without it the run takes the working set, a quick try that cannot be compared. */
   set_id: z.uuid().transform((value) => value.toLowerCase()).optional(),
   /** "Chấm bằng judge" (D14): a judge pass waits for the run and starts when the run finishes (nhóm B M3). */
@@ -45,6 +52,7 @@ type RunRecord = {
   validCount: number; avgLatencyMs: number | null; costUsd: { toFixed(digits: number): string } | null; costUnknownCount: number;
   error: string | null; startedBy: string; createdAt: Date; startedAt: Date | null; finishedAt: Date | null;
   setId: string | null; legacy: boolean; configId: string | null; configVersion: number | null;
+  batchId?: string | null; fingerprint?: string | null; snapshot?: unknown;
 };
 
 /** What the summary of a run needs besides its own row: how many items have a result, whether it is complete, which version it ran. */
@@ -78,6 +86,7 @@ const SYSTEM_IDS: ReadonlySet<string> = new Set([AI_SYSTEM_ACTOR_ID]);
 
 function summary(row: RunRecord, extras: RunExtras, emails: ReadonlyMap<string, string>) {
   return {
+    batch_id: row.batchId ?? null, fingerprint: row.fingerprint ?? null,
     id: row.id, operation: row.operation as AiOperation, provider: row.provider, model: row.model, effort: row.effort,
     thinking: row.thinking, max_output_tokens: row.maxOutputTokens, prompt_revision: row.promptRevision, status: row.status,
     total: row.total, done: extras.done, valid_count: row.validCount, set_id: row.setId, set_version: extras.setVersion, legacy: row.legacy,
@@ -103,22 +112,34 @@ export class EvalRunsService {
     @Inject(JudgePassesService) private readonly judgePasses: JudgePassesService,
     @Inject(JudgeScoresReader) private readonly judgeScores: JudgeScoresReader,
     @Inject(JudgeAgreement) private readonly agreement: JudgeAgreement,
+    @Optional() @Inject(ConfigsService) private readonly configs?: ConfigsService,
   ) {}
 
-  async create(actorId: string, body: CreateRunBody): Promise<{ run_id: string; status: 'queued'; judge_pass_id: string | null }> {
+  async create(actorId: string, body: CreateRunBody): Promise<{ run_id: string; status: 'queued'; judge_pass_id: string | null; batch_id: string; fingerprint: string | null }> {
     const parsed = createRunSchema.safeParse(body);
     if (!parsed.success) throw invalid(parsed.error.issues.map((issue) => `${issue.path.join('.')}: ${issue.message}`));
     const { operation } = parsed.data;
     // `prompt: 'current'` is the old way to say "the live config" (an old client keeps working, Review focus 4).
+    const target = parsed.data.target;
+    if ([parsed.data.prompt, parsed.data.config, target].filter((value) => value !== undefined).length !== 1) {
+      throw invalid(['prompt/config/target: send exactly one selector']);
+    }
     const config = parsed.data.prompt === 'current' ? 'live' : parsed.data.config;
     const prompt = parsed.data.prompt === 'current' ? undefined : parsed.data.prompt;
-    if ((parsed.data.prompt === undefined) === (parsed.data.config === undefined)) throw invalid(['prompt: send exactly one of prompt and config']);
-    // A config run uses the config's own model and settings; a run of a draft text (`prompt: {…}`) uses the live config's model.
-    const tried = config === undefined ? null : await this.configToRun(operation, config);
-    const selection: Selection | null = tried ? tried.selection : await this.selections.load(operation);
+    const tried = target
+      ? await this.configToRun(operation, target.kind === 'live' ? 'live' : 'draft', target.kind === 'live' ? undefined : target.draft_id)
+      : config === undefined ? null : await this.configToRun(operation, config);
+    let snapshot = tried?.content ?? null;
+    let selection: Selection | null = tried ? tried.selection : await this.selections.load(operation);
+    if (target?.kind === 'temporary') {
+      if (!this.configs) throw new Error('ConfigsService is required for temporary execution');
+      const prepared = await this.configs.prepare(operation, target.content);
+      snapshot = prepared.content;
+      selection = prepared.selection;
+    }
     if (!selection) throw problem(409, 'model-not-set', 'Model not set');
     if (!this.registry.get(selection.provider)) throw problem(409, 'provider-not-configured', 'Provider not configured');
-    let promptRevision: number | null = null;
+    const promptRevision: number | null = null;
     let draft: { instructions: string; examples: unknown[] } | null = null;
     if (!tried) {
       // The run names the config and its version (no prompt revision, no draft text: the CHECK allows exactly one of the three); only a
@@ -127,6 +148,8 @@ export class EvalRunsService {
       if (violations.length) throw invalid(violations.map((violation) => `prompt.${violation}`));
       draft = prompt!;
     }
+    if (!snapshot && draft) snapshot = { ...draft, model_ref: selection.modelRef, effort: selection.effort, thinking: 'off', max_output_tokens: selection.maxOutputTokens } as ConfigContent;
+    const fingerprint = snapshot ? configFingerprint(operation, snapshot) : null;
     const examples = await this.examplesOf(operation, parsed.data.set_id);
     // A model without both prices cannot be costed (B22) and the day's usd cap may be reached (B20): both refuse before anything is used or written.
     await this.spend.assertCanStart(selection.price, this.clock.now());
@@ -137,14 +160,26 @@ export class EvalRunsService {
     // The resolved selection and price are stored (plan choice 10, E1): a later change of the operation's choice or of the model's
     // price does not change this run. Each example is copied into an item row, so editing or deleting it later changes nothing either.
     let judgePassId: string | null = null;
+    const batchId = randomUUID();
     const row = await this.prisma.$transaction(async (tx) => {
+      if (tried) {
+        // Share the deletion lock. A deleted draft cannot acquire new runs after its active-run check.
+        const locked = await tx.$queryRaw<Array<{ id: string }>>`SELECT id FROM ai_configs WHERE id = ${tried.id}::uuid AND operation = ${operation} AND deleted_at IS NULL FOR UPDATE`;
+        if (!locked.length) throw problem(404, 'not-found', 'Not found');
+      }
       const run = await tx.aiEvalRun.create({ data: {
         operation, provider: selection.provider, model: selection.modelId, effort: selection.effort, thinking: selection.thinking,
         maxOutputTokens: selection.maxOutputTokens, promptRevision,
         ...(draft ? { draft: draft as Prisma.InputJsonValue } : {}),
         priceInput: selection.price?.input ?? null, priceCachedInput: selection.price?.cachedInput ?? null, priceOutput: selection.price?.output ?? null,
         configId: tried?.id ?? null, configVersion: tried?.version ?? null,
+        ...(snapshot ? { snapshot: snapshot as Prisma.InputJsonValue } : {}), fingerprint, batchId,
         setId: parsed.data.set_id ?? null, status: 'queued', total: examples.length, startedBy: actorId,
+      } });
+      await tx.aiBatch.create({ data: {
+        id: batchId, kind: 'eval', operation, configId: tried?.id ?? null, configVersion: tried?.version ?? null,
+        fingerprint, ...(snapshot ? { snapshot: snapshot as Prisma.InputJsonValue } : {}), sourceId: run.id,
+        model: selection.modelId, provider: selection.provider, total: examples.length, actorId, status: 'queued',
       } });
       await tx.aiEvalRunItem.createMany({ data: examples.map((example) => ({
         runId: run.id, exampleId: example.id, position: example.position, split: example.split, input: example.input as Prisma.InputJsonValue,
@@ -157,6 +192,15 @@ export class EvalRunsService {
           judgeRevisionId: judge.judgeRevisionId, kind: 'eval_run', operation, evalRunId: run.id, status: 'queued', total: null, startedBy: actorId,
         } });
         judgePassId = pass.id;
+        const revision = await tx.aiJudgeRevision.findUnique({ where: { id: judge.judgeRevisionId } });
+        if (!revision) throw problem(409, 'judge-revision-missing', 'Judge revision no longer exists');
+        await tx.aiBatch.create({ data: {
+          kind: 'judge', operation, sourceId: pass.id, parentId: batchId, model: judge.selection.modelId, provider: judge.selection.provider,
+          total: 0, actorId, status: 'queued', snapshot: {
+            instructions: revision.instructions, examples: revision.examples, criteria: revision.criteria, model_ref: revision.modelRef,
+            effort: revision.effort, thinking: revision.thinking, max_output_tokens: revision.maxOutputTokens,
+          } as Prisma.InputJsonValue,
+        } });
       }
       return run;
     }).catch((error: unknown) => {
@@ -167,7 +211,7 @@ export class EvalRunsService {
     });
     // Redis down: the row stays queued and the hourly job enqueues it again (B6E91); `enqueue` logs the failure.
     await this.queue.enqueue(row.id);
-    return { run_id: row.id, status: 'queued', judge_pass_id: judgePassId };
+    return { run_id: row.id, status: 'queued', judge_pass_id: judgePassId, batch_id: batchId, fingerprint };
   }
 
   async list(op: AiOperation, pageSize: number, pageToken: string | undefined, setId?: string) {
@@ -211,7 +255,7 @@ export class EvalRunsService {
     const items = await this.prisma.aiEvalRunItem.findMany({
       where: { runId: id, split: 'dev', status: { not: 'pending' } }, orderBy: [{ position: 'asc' }, { id: 'asc' }],
     });
-    return { ...summary(row, extras.get(row.id)!, emails), draft: row.draft, heartbeat_at: row.heartbeatAt?.toISOString() ?? null, items: items.map(itemView) };
+    return { ...summary(row, extras.get(row.id)!, emails), draft: row.draft, snapshot: row.snapshot ?? null, heartbeat_at: row.heartbeatAt?.toISOString() ?? null, items: items.map(itemView) };
   }
 
   /**
@@ -297,16 +341,24 @@ export class EvalRunsService {
   }
 
   /** The config a run of `config` kind tries: the live one or the draft, with the selection its model gives. */
-  private async configToRun(op: AiOperation, which: 'live' | 'draft'): Promise<{ id: string; version: number; selection: Selection | null }> {
+  private async configToRun(op: AiOperation, which: 'live' | 'draft', draftId?: string): Promise<{ id: string; version: number; content: ConfigContent; selection: Selection | null }> {
     let row;
     if (which === 'draft') {
-      row = await this.prisma.aiConfig.findFirst({ where: { operation: op, status: 'draft' }, include: { model: true } });
+      if (!draftId) {
+        const candidates = await this.prisma.aiConfig.findMany({ where: { operation: op, status: 'draft', deletedAt: null }, select: { id: true }, take: 2 });
+        if (candidates.length > 1) throw problem(409, 'draft-selection-required', 'Select a draft');
+        draftId = candidates[0]?.id;
+      }
+      row = draftId
+        ? await this.prisma.aiConfig.findUnique({ where: { id: draftId }, include: { model: true } })
+        : await this.prisma.aiConfig.findFirst({ where: { operation: op, status: 'draft', deletedAt: null }, include: { model: true } });
+      if (row && (row.operation !== op || row.status !== 'draft' || row.deletedAt)) row = null;
     } else {
       const live = await this.prisma.aiLiveConfig.findUnique({ where: { operation: op } });
       row = live ? await this.prisma.aiConfig.findUnique({ where: { id: live.configId }, include: { model: true } }) : null;
     }
-    if (!row) throw problem(404, 'not-found', 'Not found');
-    return { id: row.id, version: row.version, selection: row.model ? toSelection(op, row, row.model as ModelRow) : null };
+    if (!row || row.deletedAt) throw problem(404, 'not-found', 'Not found');
+    return { id: row.id, version: row.version, content: contentOfConfig(row), selection: row.model ? toSelection(op, row, row.model as ModelRow) : null };
   }
 
   /** Per run of a page: items with a result, whether the run is complete (R11), the version it ran. Two grouped queries, whatever the page size. */
@@ -338,13 +390,23 @@ export class EvalRunsService {
    * (`EvalRunsRepository.isRunning`), so no new provider call starts once this has committed.
    */
   async cancel(id: string) {
-    const { count } = await this.prisma.aiEvalRun.updateMany({
-      where: { id, status: { in: ['queued', 'running'] } },
-      data: { status: 'failed', error: 'cancelled', finishedAt: this.clock.now() },
+    const now = this.clock.now();
+    const count = await this.prisma.$transaction(async (tx) => {
+      const changed = await tx.aiEvalRun.updateMany({
+        where: { id, status: { in: ['queued', 'running'] } },
+        data: { status: 'failed', error: 'cancelled', finishedAt: now },
+      });
+      if (!changed.count) return 0;
+      await tx.aiBatch.updateMany({
+        where: { sourceId: id, kind: 'eval', status: { in: ['queued', 'running'] } }, data: { status: 'cancelled', finishedAt: now },
+      });
+      await tx.aiJudgePass.updateMany({ where: { evalRunId: id, status: 'queued' }, data: { status: 'failed', error: 'run-failed', finishedAt: now } });
+      await tx.$executeRaw`UPDATE ai_batches b SET status='failed', finished_at=${now}
+        FROM ai_judge_passes p WHERE b.kind='judge' AND b.source_id=p.id AND p.eval_run_id=${id}::uuid
+        AND p.status='failed' AND p.error='run-failed'`;
+      return changed.count;
     });
     if (count === 0) throw await this.refusal(id, 'run-not-active', 'Run is not active');
-    // The passes that wait for this run will never get their outputs (B19). If the process stops here, the hourly job finds the run failed and does the same.
-    await this.prisma.aiJudgePass.updateMany({ where: { evalRunId: id, status: 'queued' }, data: { status: 'failed', error: 'run-failed', finishedAt: this.clock.now() } });
     return this.get(id);
   }
 
@@ -354,27 +416,32 @@ export class EvalRunsService {
    * running reads the run's items, so it blocks both.
    */
   async remove(id: string): Promise<void> {
-    // A run that a publish or rollback names as its evidence stays (B33); the foreign key is the last word if an event lands meanwhile.
-    const evidence = problem(409, 'run-is-evidence', 'The run is evidence of a publish');
-    if (await this.prisma.aiConfigEvent.findFirst({ where: { OR: [{ candidateRunId: id }, { baselineRunId: id }] }, select: { id: true } })) throw evidence;
-    if (await this.prisma.aiJudgePass.findFirst({ where: { evalRunId: id, status: { in: ['queued', 'running'] } }, select: { id: true } })) {
-      throw problem(409, 'judge-pass-running', 'A judge pass of this run is still queued or running');
-    }
-    const items = await this.prisma.aiEvalRunItem.findMany({ where: { runId: id }, select: { id: true } });
-    if (items.length > 0 && await this.prisma.aiLabel.count({ where: { subjectKind: 'eval_item', subjectId: { in: items.map((item) => item.id) } } }) > 0) {
-      const hidden = await this.prisma.aiEvalRun.updateMany({ where: { id, status: { in: ['finished', 'failed'] }, hiddenAt: null }, data: { hiddenAt: this.clock.now() } });
-      if (hidden.count === 0) throw await this.refusal(id, 'run-active', 'Run is still active');
-      await this.prisma.aiEvalRunItem.updateMany({ where: { runId: id }, data: { hidden: true } });
-      return;
-    }
-    let count: number;
-    try {
-      ({ count } = await this.prisma.aiEvalRun.deleteMany({ where: { id, status: { in: ['finished', 'failed'] } } }));
-    } catch (error) {
-      if (error !== null && typeof error === 'object' && 'code' in error && error.code === 'P2003') throw evidence;
-      throw error;
-    }
-    if (count === 0) throw await this.refusal(id, 'run-active', 'Run is still active');
+    await this.prisma.$transaction(async (tx) => {
+      // Serialize removal with publish's evidence lock, then re-read the event under that lock.
+      const found = await tx.$queryRaw<Array<{ id: string }>>`SELECT id FROM ai_eval_runs WHERE id = ${id}::uuid FOR UPDATE`;
+      if (!found.length) throw problem(404, 'not-found', 'Not found');
+      // A run that a publish or rollback names as its evidence stays (B33); the foreign key is the last word if an event lands meanwhile.
+      const evidence = problem(409, 'run-is-evidence', 'The run is evidence of a publish');
+      if (await tx.aiConfigEvent.findFirst({ where: { OR: [{ candidateRunId: id }, { baselineRunId: id }] }, select: { id: true } })) throw evidence;
+      if (await tx.aiJudgePass.findFirst({ where: { evalRunId: id, status: { in: ['queued', 'running'] } }, select: { id: true } })) {
+        throw problem(409, 'judge-pass-running', 'A judge pass of this run is still queued or running');
+      }
+      const items = await tx.aiEvalRunItem.findMany({ where: { runId: id }, select: { id: true } });
+      if (items.length > 0 && await tx.aiLabel.count({ where: { subjectKind: 'eval_item', subjectId: { in: items.map((item) => item.id) } } }) > 0) {
+        const hidden = await tx.aiEvalRun.updateMany({ where: { id, status: { in: ['finished', 'failed'] }, hiddenAt: null }, data: { hiddenAt: this.clock.now() } });
+        if (hidden.count === 0) throw await this.refusal(id, 'run-active', 'Run is still active');
+        await tx.aiEvalRunItem.updateMany({ where: { runId: id }, data: { hidden: true } });
+        return;
+      }
+      let count: number;
+      try {
+        ({ count } = await tx.aiEvalRun.deleteMany({ where: { id, status: { in: ['finished', 'failed'] } } }));
+      } catch (error) {
+        if (error !== null && typeof error === 'object' && 'code' in error && error.code === 'P2003') throw evidence;
+        throw error;
+      }
+      if (count === 0) throw await this.refusal(id, 'run-active', 'Run is still active');
+    });
   }
 
   /** The guarded statement changed no row: the run is gone (404) or in the other state (409). */

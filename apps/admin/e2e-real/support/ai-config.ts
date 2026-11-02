@@ -19,11 +19,11 @@ const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 type Reply = { status: number; json: unknown; text: string };
 type SetRow = { id: string; version: number };
 type ConfigRow = {
-  id: string; number: number; version: number; instructions: string; examples: unknown[]; model: { id: string } | null; max_output_tokens: number | null; note: string | null;
+  id: string; number: number; version: number; instructions: string; examples: unknown[]; model: { id: string } | null; max_output_tokens: number | null; note: string | null; name?: string | null;
 };
 type ConfigsReply = { live: ConfigRow; live_version: number; draft: ConfigRow | null };
 type CheckReply = {
-  draft: { version: number }; candidate_run_id: string | null; baseline: { run_id: string | null }; blockers: string[]; warnings: unknown[];
+  draft: { version: number }; candidate_run_id: string | null; baseline: { run_id: string | null }; blockers: string[]; warnings: unknown[]; turn_off: boolean;
 };
 type SeededExample = { input: unknown; output: Record<string, unknown> };
 
@@ -98,8 +98,9 @@ async function ensureModel(token: string, modelId: string): Promise<{ id: string
 }
 
 /** Starts a run of the live config or the draft on a frozen set and waits for it (up to 120 s); a failed run throws. */
-async function runConfig(token: string, op: string, config: 'live' | 'draft', setId: string): Promise<void> {
-  const created = await want<{ run_id: string }>(call(token, 'POST', '/v1/admin/ai/eval/runs', { idem: true, body: { operation: op, config, set_id: setId } }), 202,
+async function runConfig(token: string, op: string, target: { kind: 'live' } | { kind: 'draft'; draft_id: string }, setId: string): Promise<void> {
+  const config = target.kind;
+  const created = await want<{ run_id: string }>(call(token, 'POST', '/v1/admin/ai/eval/runs', { idem: true, body: { operation: op, target, set_id: setId } }), 202,
     `${op}: start a run of the ${config} config`);
   const deadline = Date.now() + RUN_TIMEOUT_MS;
   for (;;) {
@@ -111,13 +112,30 @@ async function runConfig(token: string, op: string, config: 'live' | 'draft', se
   }
 }
 
-/** A draft this helper left behind (note `scripted: …`) is deleted; a draft somebody else prepared is theirs, so it stops the helper. */
-async function clearScriptedDraft(token: string, op: string, configs: ConfigsReply): Promise<void> {
-  if (!configs.draft) return;
-  if (!String(configs.draft.note ?? '').startsWith(SCRIPTED)) {
-    throw new Error(`${op}: there is a draft of its own (number ${configs.draft.number}, note ${JSON.stringify(configs.draft.note)}). Publish or delete it, then run again.`);
+/** Read every page before deleting script-owned leftovers; unrelated owner drafts stay intact. */
+async function clearScriptedDrafts(token: string, op: string): Promise<void> {
+  const leftovers: ConfigRow[] = [];
+  let pageToken: string | null = null;
+  do {
+    const query = new URLSearchParams({ page_size: '100' });
+    if (pageToken) query.set('page_token', pageToken);
+    const page = await want<{ items: ConfigRow[]; next_page_token: string | null }>(call(token, 'GET', `/v1/admin/ai/configs/${op}/drafts?${query}`), 200, `${op}: list drafts`);
+    leftovers.push(...page.items.filter((draft) => [draft.note, draft.name].some((value) => typeof value === 'string' && value.startsWith(SCRIPTED))));
+    pageToken = page.next_page_token;
+  } while (pageToken);
+  for (const draft of leftovers) {
+    const response = await call(token, 'DELETE', `/v1/admin/ai/configs/${op}/drafts/${draft.id}`, { idem: true });
+    if (response.status !== 404) await want(Promise.resolve(response), 204, `${op}: delete leftover scripted draft ${draft.id}`);
   }
-  await want(call(token, 'DELETE', `/v1/admin/ai/configs/${op}/draft`), 204, `${op}: delete the leftover scripted draft`);
+}
+
+/** Mark ownership at creation, so an interrupted save is still recognizable on the next run. */
+async function saveScriptedDraft(token: string, op: string, modelRef: string | null, maxOutputTokens: number | null, note: string): Promise<ConfigRow> {
+  const draft = await want<ConfigRow>(call(token, 'POST', `/v1/admin/ai/configs/${op}/drafts`, { idem: true, body: { name: note } }), 201, `${op}: create a draft`);
+  return want<ConfigRow>(call(token, 'PUT', `/v1/admin/ai/configs/${op}/drafts/${draft.id}`, { idem: true, body: {
+    expected_version: draft.version, instructions: draft.instructions, examples: draft.examples, model_ref: modelRef, effort: null, thinking: null,
+    max_output_tokens: maxOutputTokens, note,
+  } }), 200, `${op}: save the draft`);
 }
 
 /**
@@ -129,20 +147,17 @@ export async function publishModel(token: string, { op, modelId, maxOutputTokens
   const current = await want<ConfigsReply>(call(token, 'GET', `/v1/admin/ai/configs/${op}`), 200, `${op}: read the configs`);
   if (current.live.model?.id === model.id && current.live.max_output_tokens === maxOutputTokens) return current.live;
   const set = await ensureFrozenSet(token, op);
-  await clearScriptedDraft(token, op, current);
-  const draft = await want<ConfigRow>(call(token, 'POST', `/v1/admin/ai/configs/${op}/draft`, { body: {} }), 201, `${op}: create a draft`);
-  await want(call(token, 'PUT', `/v1/admin/ai/configs/${op}/draft`, { body: {
-    expected_version: draft.version, instructions: draft.instructions, examples: draft.examples, model_ref: model.id, effort: null, thinking: null,
-    max_output_tokens: maxOutputTokens, note: `${SCRIPTED} ${modelId}`,
-  } }), 200, `${op}: save the draft`);
-  await runConfig(token, op, 'draft', set.id);
-  let check = await want<CheckReply>(call(token, 'GET', `/v1/admin/ai/configs/${op}/publish-check`), 200, `${op}: publish check`);
+  await clearScriptedDrafts(token, op);
+  const draft = await saveScriptedDraft(token, op, model.id, maxOutputTokens, `${SCRIPTED} ${modelId}`);
+  await runConfig(token, op, { kind: 'draft', draft_id: draft.id }, set.id);
+  const checkPath = `/v1/admin/ai/configs/${op}/drafts/${draft.id}/publish-check`;
+  let check = await want<CheckReply>(call(token, 'GET', checkPath), 200, `${op}: publish check`);
   if (check.blockers.includes('baseline-required')) {
-    await runConfig(token, op, 'live', set.id);
-    check = await want<CheckReply>(call(token, 'GET', `/v1/admin/ai/configs/${op}/publish-check`), 200, `${op}: publish check after the baseline run`);
+    await runConfig(token, op, { kind: 'live' }, set.id);
+    check = await want<CheckReply>(call(token, 'GET', checkPath), 200, `${op}: publish check after the baseline run`);
   }
   if (check.blockers.length > 0) throw new Error(`${op}: the publish check still has blockers: ${JSON.stringify(check)}`);
-  const published = await want<{ live: ConfigRow }>(call(token, 'POST', `/v1/admin/ai/configs/${op}/publish`, { body: {
+  const published = await want<{ live: ConfigRow }>(call(token, 'POST', `/v1/admin/ai/configs/${op}/drafts/${draft.id}/publish`, { idem: true, body: {
     expected_version: check.draft.version, candidate_run_id: check.candidate_run_id, baseline_run_id: check.baseline.run_id,
     acknowledge_warnings: check.warnings.length > 0,
   } }), 200, `${op}: publish`);
@@ -152,6 +167,18 @@ export async function publishModel(token: string, { op, modelId, maxOutputTokens
 /** Puts the config before the live one back (no run needed); returns the live config after it. */
 export async function rollbackConfig(token: string, op: string): Promise<ConfigRow> {
   const current = await want<ConfigsReply>(call(token, 'GET', `/v1/admin/ai/configs/${op}`), 200, `${op}: read the configs`);
-  const rolled = await want<{ live: ConfigRow }>(call(token, 'POST', `/v1/admin/ai/configs/${op}/rollback`, { body: { expected_live_version: current.live_version } }), 200, `${op}: roll back`);
+  const rolled = await want<{ live: ConfigRow }>(call(token, 'POST', `/v1/admin/ai/configs/${op}/rollback`, { idem: true, body: { expected_live_version: current.live_version } }), 200, `${op}: roll back`);
   return rolled.live;
+}
+
+/** Turn off via a new script-owned draft; no eval or baseline is needed. */
+export async function turnOff(token: string, op: string): Promise<ConfigRow> {
+  await clearScriptedDrafts(token, op);
+  const draft = await saveScriptedDraft(token, op, null, null, `${SCRIPTED} off`);
+  const check = await want<CheckReply>(call(token, 'GET', `/v1/admin/ai/configs/${op}/drafts/${draft.id}/publish-check`), 200, `${op}: publish check`);
+  if (check.turn_off !== true || check.blockers.length > 0) throw new Error(`${op}: the publish check does not say turn off: ${JSON.stringify(check)}`);
+  const published = await want<{ live: ConfigRow }>(call(token, 'POST', `/v1/admin/ai/configs/${op}/drafts/${draft.id}/publish`, { idem: true, body: {
+    expected_version: check.draft.version, candidate_run_id: null, baseline_run_id: null, acknowledge_warnings: false,
+  } }), 200, `${op}: turn off`);
+  return published.live;
 }

@@ -1,11 +1,33 @@
 import { describe, expect, it } from 'vitest';
 import type { ExampleRow } from './ai-api';
-import { EXAMPLES_PAGE_SIZE, pageCount, pageOf, sortExamples } from './example-list';
+import { EXAMPLES_PAGE_SIZE, filterExamples, pageCount, pageOf, sortExamples } from './example-list';
 import { evalExample, heldOutExample } from './prompt-test-support';
 
 // The API's order is oldest first: e1 (go), h1 (held-out), e2 (bank), e3 (Apple), h2 (held-out).
 const ROWS: ExampleRow[] = [evalExample('e1', 'go'), heldOutExample('h1'), evalExample('e2', 'bank'), evalExample('e3', 'Apple'), heldOutExample('h2')];
 const ids = (rows: ExampleRow[]) => rows.map((row) => row.id);
+
+describe('filterExamples', () => {
+  const bank = { ...evalExample('bank', 'bank'), input: { word: 'bank', meaning_vi: 'Bờ sông', meaning_en: 'river edge', level: 'B1' } };
+  const held = { ...heldOutExample('hidden'), get input(): never { throw new Error('Held-out content must never be read'); } };
+  const rows = [evalExample('go', 'go'), bank, held];
+
+  it('searches dev word and meanings case-insensitively and combines split and level filters', () => {
+    expect(ids(filterExamples(rows, { search: ' BANK ', level: 'all', split: 'all' }))).toEqual(['bank']);
+    expect(ids(filterExamples(rows, { search: 'bờ SÔNG', level: 'B1', split: 'dev' }))).toEqual(['bank']);
+    expect(ids(filterExamples(rows, { search: 'RIVER', level: 'all', split: 'all' }))).toEqual(['bank']);
+    expect(ids(filterExamples(rows, { search: 'bank', level: 'A1', split: 'dev' }))).toEqual([]);
+    expect(ids(filterExamples(rows, { search: '', level: 'all', split: 'held_out' }))).toEqual(['hidden']);
+  });
+
+  it('held-out rows never leak text or level through search, level filters, or sorting', () => {
+    expect(ids(filterExamples(rows, { search: '', level: 'all', split: 'all' }))).toEqual(['go', 'bank', 'hidden']);
+    expect(ids(filterExamples(rows, { search: '', level: 'A1', split: 'all' }))).toEqual(['go']);
+    expect(ids(filterExamples(rows, { search: 'hidden', level: 'all', split: 'held_out' }))).toEqual([]);
+    expect(ids(filterExamples(rows, { search: '', level: 'B1', split: 'held_out' }))).toEqual([]);
+    expect(ids(sortExamples(rows, 'az'))).toEqual(['bank', 'go', 'hidden']);
+  });
+});
 
 describe('sortExamples', () => {
   it('oldest keeps the API order; newest reverses it, held-out rows included', () => {

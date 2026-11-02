@@ -5,6 +5,7 @@ import { ProblemDetailsException } from '../../common/problem-details/problem-de
 import type { Selection } from '../runner/selection.js';
 import { AI_SYSTEM_ACTOR_ID } from '../ai.constants.js';
 import { AdminSpend } from '../runner/admin-spend.service.js';
+import { configFingerprint, contentOfConfig } from '../configs/config-snapshot.js';
 import { EvalRunsService } from './eval-runs.service.js';
 
 const ADMIN = '11111111-1111-4111-8111-111111111111';
@@ -42,15 +43,20 @@ function setup() {
   const created: Array<Record<string, unknown>> = [];
   // The run and its items are written through the transaction client, never through the shared one.
   const tx = {
+    $queryRaw: vi.fn(async () => [{ id: LIVE_CONFIG.id }]),
+    $executeRaw: vi.fn(async () => 0),
     aiEvalRun: {
+      updateMany: vi.fn(async (): Promise<{count:number}> => ({ count: 0 })),
       create: vi.fn(async ({ data }: { data: Record<string, unknown> }) => {
         const row = { id: randomUUID(), ...data };
         created.push(row);
         return row;
       }),
     },
+    aiBatch: { updateMany: vi.fn(async (_args?: unknown) => ({ count: 1 })), create: vi.fn(async ({ data }: { data: Record<string, unknown> }) => ({ id: randomUUID(), ...data })) },
+    aiJudgeRevision: { findUnique: vi.fn(async () => ({ instructions: 'Judge frozen', examples: [], criteria: [{code:'shape',question:'Valid?'}], modelRef: LIVE_MODEL.id, effort: null, thinking: null, maxOutputTokens: 1000 })) },
     aiEvalRunItem: { createMany: vi.fn(async (_args: { data: Array<Record<string, unknown>> }) => ({ count: 0 })) },
-    aiJudgePass: { create: vi.fn(async ({ data }: { data: Record<string, unknown> }) => ({ id: JUDGE_PASS, ...data })) },
+    aiJudgePass: { updateMany: vi.fn(async (_args?: unknown) => ({ count: 0 })), create: vi.fn(async ({ data }: { data: Record<string, unknown> }) => ({ id: JUDGE_PASS, ...data })) },
   };
   const prisma = {
     aiEvalExample: {
@@ -60,7 +66,7 @@ function setup() {
       create: vi.fn(),
       findUnique: vi.fn(async (_args?: unknown): Promise<Record<string, unknown> | null> => null),
       findMany: vi.fn(async (): Promise<Array<Record<string, unknown>>> => []),
-      updateMany: vi.fn(async (): Promise<{ count: number }> => ({ count: 0 })),
+      updateMany: tx.aiEvalRun.updateMany,
       deleteMany: vi.fn(async (): Promise<{ count: number }> => ({ count: 0 })),
     },
     aiEvalRunItem: {
@@ -82,7 +88,7 @@ function setup() {
     aiConfigEvent: { findFirst: vi.fn(async (_args?: unknown): Promise<Record<string, unknown> | null> => null) },
     aiCall: { deleteMany: vi.fn(async () => ({ count: 0 })) },
     aiJudgePass: {
-      updateMany: vi.fn(async (_args?: unknown) => ({ count: 0 })),
+      updateMany: tx.aiJudgePass.updateMany,
       findFirst: vi.fn(async (_args?: unknown): Promise<Record<string, unknown> | null> => null),
       findMany: vi.fn(async (_args?: unknown): Promise<Array<{ id: string }>> => []),
     },
@@ -90,6 +96,10 @@ function setup() {
     $executeRaw: vi.fn(async () => 0),
     $transaction: vi.fn(async (work: (client: typeof tx) => Promise<unknown>) => work(tx)),
   };
+  Object.assign(tx, { aiConfigEvent: prisma.aiConfigEvent, aiLabel: prisma.aiLabel });
+  Object.assign(tx.aiEvalRun, { deleteMany: prisma.aiEvalRun.deleteMany });
+  Object.assign(tx.aiEvalRunItem, prisma.aiEvalRunItem);
+  Object.assign(tx.aiJudgePass, { findFirst: prisma.aiJudgePass.findFirst });
   const selections = { load: vi.fn(async (): Promise<Selection | null> => SELECTION) };
   const registry = { get: vi.fn((provider: string) => (provider === 'fake' ? {} : undefined)) };
   const queue = { enqueue: vi.fn(async () => true) };
@@ -106,11 +116,12 @@ function setup() {
       judgeId: JUDGE, judgeRevisionId: JUDGE_REVISION, revision: 2, operation: 'generate_cloze', selection: SELECTION,
     })),
   };
+  const configs = { prepare: vi.fn(async (_op: string, content: ReturnType<typeof contentOfConfig>) => ({ content, fingerprint: configFingerprint('generate_cloze', content), selection: SELECTION })) };
   const service = new EvalRunsService(
     prisma as never, selections as never, registry as never, queue as never, { emailsOf } as never,
-    limiter as never, new FakeClock(NOW), spendOf(spend), judgePasses as never, judgeScores as never, agreement as never,
+    limiter as never, new FakeClock(NOW), spendOf(spend), judgePasses as never, judgeScores as never, agreement as never, configs as never,
   );
-  return { service, prisma, tx, created, selections, registry, queue, emailsOf, limiter, live: LIVE_CONFIG, spend, judgePasses, judgeScores, agreement };
+  return { service, prisma, tx, created, selections, registry, queue, emailsOf, limiter, live: LIVE_CONFIG, spend, judgePasses, judgeScores, agreement, configs };
 }
 
 async function problemOf(promise: Promise<unknown>) {
@@ -123,6 +134,19 @@ async function problemOf(promise: Promise<unknown>) {
 describe('EvalRunsService.create', () => {
   let ctx: ReturnType<typeof setup>;
   beforeEach(() => { ctx = setup(); });
+
+  it('workspace: a live target persists immutable content and creates the batch atomically', async () => {
+    const answer = await ctx.service.create(ADMIN, { operation: 'generate_cloze', target: { kind: 'live' } });
+    expect(ctx.created[0]).toMatchObject({ snapshot: contentOfConfig(LIVE_CONFIG), fingerprint: configFingerprint('generate_cloze', contentOfConfig(LIVE_CONFIG)), batchId: expect.any(String) });
+    expect(ctx.tx.aiBatch.create).toHaveBeenCalledOnce();
+    expect(answer).toMatchObject({ batch_id: ctx.created[0]!.batchId });
+  });
+
+  it('workspace: target cannot be combined with a legacy selector', async () => {
+    const answer = await problemOf(ctx.service.create(ADMIN, { operation: 'generate_cloze', target: { kind: 'live' }, config: 'live' }));
+    expect(answer.status).toBe(400);
+    expect(ctx.created).toHaveLength(0);
+  });
 
   it('E1, Review focus 4: prompt "current" is the live config: the row names it and its version, stores the resolved selection, the price and the number of examples; enqueued; 202 body', async () => {
     const answer = await ctx.service.create(ADMIN, { operation: 'generate_cloze', prompt: 'current' });
@@ -139,7 +163,7 @@ describe('EvalRunsService.create', () => {
       where: { operation: 'generate_cloze' }, orderBy: [{ createdAt: 'asc' }, { id: 'asc' }], select: { id: true, split: true, input: true, expected: true },
     });
     expect(ctx.queue.enqueue).toHaveBeenCalledWith(ctx.created[0]!.id);
-    expect(answer).toEqual({ run_id: ctx.created[0]!.id, status: 'queued', judge_pass_id: null });
+    expect(answer).toMatchObject({ run_id: ctx.created[0]!.id, status: 'queued', judge_pass_id: null });
   });
 
   it('D14, B19: with judge_id the run row and a waiting pass (queued, no snapshot yet) are made in one transaction; the answer names the pass', async () => {
@@ -150,8 +174,10 @@ describe('EvalRunsService.create', () => {
     expect(ctx.tx.aiJudgePass.create).toHaveBeenCalledExactlyOnceWith({ data: {
       judgeRevisionId: JUDGE_REVISION, kind: 'eval_run', operation: 'generate_cloze', evalRunId: runId, status: 'queued', total: null, startedBy: ADMIN,
     } });
+    expect(ctx.tx.aiBatch.create).toHaveBeenCalledTimes(2);
+    expect(ctx.tx.aiBatch.create).toHaveBeenCalledWith({ data: expect.objectContaining({ kind: 'judge', sourceId: JUDGE_PASS, parentId: expect.any(String), snapshot: expect.objectContaining({ instructions: 'Judge frozen' }) }) });
     expect(ctx.tx.aiEvalRun.create.mock.invocationCallOrder[0]!).toBeLessThan(ctx.tx.aiJudgePass.create.mock.invocationCallOrder[0]!);
-    expect(answer).toEqual({ run_id: runId, status: 'queued', judge_pass_id: JUDGE_PASS });
+    expect(answer).toMatchObject({ run_id: runId, status: 'queued', judge_pass_id: JUDGE_PASS });
     expect(ctx.queue.enqueue).toHaveBeenCalledExactlyOnceWith(runId);
   });
 
@@ -543,11 +569,43 @@ describe('EvalRunsService.create on a config (M2-T4)', () => {
     maxOutputTokens: 900, status: 'draft', model: MODEL, ...over,
   });
 
+  it('workspace: two temporary targets keep independent content; nothing is saved and the common preparation guard runs', async () => {
+    const ctx = setup();
+    const a = cfg(DRAFT); const b = cfg(LIVE, { instructions: 'Other saved draft' });
+    ctx.prisma.aiConfig.findUnique.mockImplementation(async (args) => (args as {where:{id:string}}).where.id === DRAFT ? a : b);
+    const content = { ...contentOfConfig(a), instructions: 'Unsaved temporary prompt' };
+    await Promise.all([
+      ctx.service.create(ADMIN, { operation: 'generate_cloze', target: { kind: 'temporary', draft_id: DRAFT, content } }),
+      ctx.service.create(ADMIN, { operation: 'generate_cloze', target: { kind: 'draft', draft_id: LIVE } }),
+    ]);
+    expect(ctx.configs.prepare).toHaveBeenCalledWith('generate_cloze', content);
+    expect(ctx.created.map((row) => row.snapshot)).toEqual(expect.arrayContaining([content, contentOfConfig(b)]));
+    expect(ctx.created.map((row) => row.batchId)[0]).not.toBe(ctx.created.map((row) => row.batchId)[1]);
+    expect(a.instructions).toBe('Config text.');
+    expect(ctx.prisma.$transaction).toHaveBeenCalledTimes(2);
+  });
+
+  it('workspace: an ID from another operation or deleted draft cannot run', async () => {
+    const ctx = setup();
+    for (const over of [{ operation: 'lookup_word' }, { deletedAt: NOW }]) {
+      ctx.prisma.aiConfig.findUnique.mockResolvedValue(cfg(DRAFT, over));
+      expect(await problemOf(ctx.service.create(ADMIN, { operation: 'generate_cloze', target: { kind: 'draft', draft_id: DRAFT } }))).toMatchObject({status:404});
+    }
+    expect(ctx.created).toHaveLength(0);
+  });
+
+  it('workspace: legacy draft selector refuses ambiguity', async () => {
+    const ctx = setup();
+    ctx.prisma.aiConfig.findMany.mockResolvedValue([{ id: DRAFT, number: 1 }, { id: LIVE, number: 2 }]);
+    expect(await problemOf(ctx.service.create(ADMIN, { operation: 'generate_cloze', config: 'draft' }))).toMatchObject({status:409,type:'draft-selection-required'});
+    expect(ctx.created).toHaveLength(0);
+  });
+
   it('config "draft" stores the draft id and version, the draft model as the selection, and no prompt revision, no draft text', async () => {
     const ctx = setup();
     ctx.prisma.aiConfig.findFirst.mockResolvedValue(cfg(DRAFT));
     await ctx.service.create(ADMIN, { operation: 'generate_cloze', config: 'draft' });
-    expect(ctx.prisma.aiConfig.findFirst).toHaveBeenCalledWith({ where: { operation: 'generate_cloze', status: 'draft' }, include: { model: true } });
+    expect(ctx.prisma.aiConfig.findFirst).toHaveBeenCalledWith({ where: { operation: 'generate_cloze', status: 'draft', deletedAt: null }, include: { model: true } });
     expect(ctx.created[0]).toMatchObject({
       configId: DRAFT, configVersion: 2, promptRevision: null, provider: 'fake', model: 'fake:ok', effort: 'low', maxOutputTokens: 900,
       priceInput: 1, priceOutput: 2, status: 'queued', total: 2,
@@ -677,6 +735,7 @@ describe('EvalRunsService.cancel', () => {
     expect(ctx.prisma.aiEvalRun.updateMany).toHaveBeenCalledExactlyOnceWith({
       where: { id, status: { in: ACTIVE } }, data: { status: 'failed', error: 'cancelled', finishedAt: NOW },
     });
+    expect(ctx.tx.aiBatch.updateMany).toHaveBeenCalledWith({ where: { sourceId: id, kind: 'eval', status: { in: ACTIVE } }, data: { status: 'cancelled', finishedAt: NOW } });
     expect(run).toMatchObject({ id, status: 'failed', error: 'cancelled', finished_at: NOW.toISOString(), started_by_user: { email: 'admin@x.test' } });
     expect(run).toHaveProperty('items');
     expect(run).toHaveProperty('draft');
@@ -735,6 +794,21 @@ describe('EvalRunsService.cancel', () => {
 
 describe('EvalRunsService.remove', () => {
   const ENDED = ['finished', 'failed'];
+
+  it('workspace: deletion rechecks publish evidence after obtaining the run lock, before hiding labeled items', async () => {
+    const ctx = setup(); const id = randomUUID();
+    ctx.prisma.aiEvalRunItem.findMany.mockResolvedValue([{ id: 'labeled-item' }]);
+    ctx.prisma.aiLabel.count.mockResolvedValue(1);
+    ctx.prisma.aiEvalRun.updateMany.mockResolvedValue({ count: 1 });
+    ctx.tx.$queryRaw.mockImplementation(async () => {
+      ctx.prisma.aiConfigEvent.findFirst.mockResolvedValue({ id: 'concurrent-publish' });
+      return [{ id }];
+    });
+    expect(await problemOf(ctx.service.remove(id))).toMatchObject({ status: 409, type: 'run-is-evidence' });
+    expect(ctx.prisma.aiEvalRun.updateMany).not.toHaveBeenCalled();
+    expect(ctx.prisma.aiEvalRun.deleteMany).not.toHaveBeenCalled();
+    expect(ctx.tx.$queryRaw).toHaveBeenCalledOnce();
+  });
 
   it('a finished or failed run is deleted by one DELETE guarded by the status; the answer is nothing', async () => {
     const ctx = setup();

@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { FakeClock } from '../../common/clock/clock.js';
 import { ProblemDetailsException } from '../../common/problem-details/problem-details.exception.js';
 import type { RunJudgeScore } from '../judge/judge-stats.js';
+import { configFingerprint, contentOfConfig } from './config-snapshot.js';
 import { PublishService } from './publish.service.js';
 
 const ADMIN = '11111111-1111-4111-8111-111111111111';
@@ -17,14 +18,15 @@ const model = (id = MODEL_ID, modelId = 'fake:ok') => ({ id, provider: 'fake', m
 type Cfg = {
   id: string; operation: string; number: number; version: number; instructions: string; examples: unknown; modelRef: string | null; effort: string | null;
   thinking: string | null; maxOutputTokens: number | null; status: string; createdFrom: string | null; note: string | null; createdBy: string;
+  name: string | null; deletedAt: Date | null; updatedAt: Date; fingerprint: string | null;
   createdAt: Date; publishedBy: string | null; publishedAt: Date | null;
 };
 const config = (over: Partial<Cfg> = {}): Cfg => ({
   id: randomUUID(), operation: OP, number: 3, version: 0, instructions: 'Text.', examples: [], modelRef: MODEL_ID, effort: null, thinking: null, maxOutputTokens: null,
-  status: 'published', createdFrom: null, note: null, createdBy: ADMIN, createdAt: NOW, publishedBy: ADMIN, publishedAt: NOW, ...over,
+  status: 'published', createdFrom: null, note: null, createdBy: ADMIN, createdAt: NOW, name: null, deletedAt: null, updatedAt: NOW, fingerprint: null, publishedBy: ADMIN, publishedAt: NOW, ...over,
 });
 
-type Run = { id: string; configId: string; configVersion: number; setId: string; status: string; createdAt: Date; hiddenAt?: Date | null };
+type Run = { fingerprint?: string | null; snapshot?: unknown; id: string; configId: string; configVersion: number; setId: string; status: string; createdAt: Date; hiddenAt?: Date | null };
 type Item = { runId: string; exampleId: string; position: number; split: string; status: string; rule: unknown; expectedResult: string | null };
 const run = (configId: string, configVersion: number, over: Partial<Run> = {}): Run => ({
   id: randomUUID(), configId, configVersion, setId: SET, status: 'finished', createdAt: NOW, ...over,
@@ -49,7 +51,11 @@ function setup(opts: Setup = {}) {
   const events: Array<Record<string, unknown>> = [];
   const order: string[] = [];
   const withModel = (row: Cfg | undefined) => (row ? { ...row, model: row.modelRef ? model(row.modelRef) : null } : null);
+  let latestSet: { id: string; version: number } | null = opts.withSet === false ? null : { id: SET, version: 2 };
   const tx = {
+    $executeRaw: vi.fn(async (_sql: TemplateStringsArray) => 0),
+    $queryRaw: vi.fn(async (sql: { values: unknown[] }) => runs.filter((r) => sql.values.includes(r.id) && r.status === 'finished' && r.hiddenAt == null).map((r) => ({ id: r.id }))),
+    aiEvalSet: { findFirst: vi.fn(async (_args: unknown) => latestSet) },
     aiLiveConfig: {
       updateMany: vi.fn(async ({ where, data }: { where: { operation: string; version: number }; data: { configId: string; previousConfigId: string | null; version: { increment: number } } }) => {
         order.push('pointer');
@@ -61,8 +67,8 @@ function setup(opts: Setup = {}) {
       }),
     },
     aiConfig: {
-      updateMany: vi.fn(async ({ where, data }: { where: { id: string; status?: string; version?: number }; data: Partial<Cfg> }) => {
-        const row = configs.find((r) => r.id === where.id && (where.status === undefined || r.status === where.status) && (where.version === undefined || r.version === where.version));
+      updateMany: vi.fn(async ({ where, data }: { where: { id: string; operation?: string; deletedAt?: null; status?: string; version?: number }; data: Partial<Cfg> }) => {
+        const row = configs.find((r) => r.id === where.id && (where.operation === undefined || r.operation === where.operation) && (where.deletedAt === undefined || r.deletedAt === null) && (where.status === undefined || r.status === where.status) && (where.version === undefined || r.version === where.version));
         if (!row) return { count: 0 };
         order.push(data.status === 'published' && row.status === 'draft' ? 'draft' : 'live');
         Object.assign(row, data);
@@ -81,8 +87,8 @@ function setup(opts: Setup = {}) {
       findMany: vi.fn(async ({ where }: { where: { id: { in: string[] } } }) => configs.filter((r) => where.id.in.includes(r.id)).map(withModel)),
     },
     aiEvalRun: {
-      findMany: vi.fn(async ({ where }: { where: { configId: string; configVersion: number; setId: string; status: string; hiddenAt?: null } }) =>
-        runs.filter((r) => r.configId === where.configId && r.configVersion === where.configVersion && r.setId === where.setId && r.status === where.status
+      findMany: vi.fn(async ({ where }: { where: { configId: string; configVersion?: number; setId: string; status: string; hiddenAt?: null; OR?: Array<{ fingerprint?: string | null; configVersion?: number }> } }) =>
+        runs.filter((r) => r.configId === where.configId && (where.configVersion === undefined || r.configVersion === where.configVersion) && (!where.OR || where.OR.some((part) => (part.fingerprint === undefined || (r.fingerprint ?? null) === part.fingerprint) && (part.configVersion === undefined || r.configVersion === part.configVersion))) && r.setId === where.setId && r.status === where.status
           && (where.hiddenAt === undefined || (r.hiddenAt ?? null) === where.hiddenAt))
           .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime() || (a.id < b.id ? 1 : -1))),
     },
@@ -94,12 +100,26 @@ function setup(opts: Setup = {}) {
     },
     $transaction: vi.fn(async (work: (client: typeof tx) => Promise<unknown>) => work(tx)),
   };
-  const configsService = { get: vi.fn(async (op: string) => ({ operation: op, live_version: pointer.version, live: { id: pointer.configId }, draft: configs.some((c) => c.status === 'draft') ? { id: draft.id } : null })) };
+  const notFound = () => new ProblemDetailsException({ status: 404, type: 'not-found', title: 'Not found' });
+  const configsService = {
+    get: vi.fn(async (op: string) => ({ operation: op, live_version: pointer.version, live: { id: pointer.configId }, draft: configs.some((c) => c.status === 'draft') ? { id: draft.id } : null })),
+    getDraft: vi.fn(async (op: string, id: string) => {
+      const row = configs.find((r) => r.id === id && r.operation === op && r.status === 'draft' && r.deletedAt === null);
+      if (!row) throw notFound();
+      return withModel(row);
+    }),
+    legacyDraft: vi.fn(async (op: string) => {
+      const rows = configs.filter((r) => r.operation === op && r.status === 'draft' && r.deletedAt === null);
+      if (rows.length === 0) throw notFound();
+      if (rows.length > 1) throw new ProblemDetailsException({ status: 409, type: 'draft-selection-required', title: 'Choose a draft' });
+      return withModel(rows[0]);
+    }),
+  };
   const sets = { latest: vi.fn(async () => (opts.withSet === false ? null : { id: SET, version: 2 })) };
   const identity = { emailsOf: vi.fn(async (ids: string[]) => new Map(ids.filter((id) => id === ADMIN).map((id) => [id, 'admin@x.test']))) };
   const judgeScores = { byRun: vi.fn(async (_runId: string): Promise<RunJudgeScore[]> => []) };
   const service = new PublishService(prisma as never, configsService as never, sets as never, identity as never, new FakeClock(NOW), judgeScores as never);
-  return { service, prisma, tx, live, previous, draft, configs, pointer, runs, items, events, order, configsService, sets, judgeScores };
+  return { service, prisma, tx, live, previous, draft, configs, pointer, runs, items, events, order, configsService, sets, judgeScores, setLatest: (value: typeof latestSet) => { latestSet = value; } };
 }
 
 async function problemOf(promise: Promise<unknown>) {
@@ -261,10 +281,10 @@ const body = (over: Record<string, unknown> = {}) => ({
 });
 
 describe('PublishService.publish', () => {
-  it('no draft (published by a parallel request, or deleted) → 409 publish-stale, never 404', async () => {
+  it('no draft → 404 through the legacy draft selector', async () => {
     const ctx = setup();
     ctx.configs.splice(ctx.configs.indexOf(ctx.draft), 1);
-    expect(await problemOf(ctx.service.publish(ADMIN, OP, body()))).toMatchObject({ status: 409, type: 'publish-stale' });
+    expect(await problemOf(ctx.service.publish(ADMIN, OP, body()))).toMatchObject({ status: 404, type: 'not-found' });
     expect(ctx.events).toEqual([]);
   });
 
@@ -436,5 +456,114 @@ describe('PublishService.history', () => {
     const { items, next_page_token: next } = await ctx.service.history(OP, 2, undefined);
     expect(items).toHaveLength(2);
     expect(next).not.toBeNull();
+  });
+});
+
+
+describe('AI workspace publish evidence', () => {
+  it('metadata-only edit reuses a snapshot run of the SAME draft on the newest set', async () => {
+    const ctx = setup({ liveModel: null });
+    const fingerprint = configFingerprint(OP, contentOfConfig(ctx.draft));
+    const candidate = run(ctx.draft.id, 0, { fingerprint, snapshot: contentOfConfig(ctx.draft) });
+    ctx.runs.push(candidate); ctx.items.push(...goodItems(candidate.id));
+    ctx.draft.version = 2; ctx.draft.name = 'Renamed'; ctx.draft.note = 'Only a note';
+    expect(await ctx.service.check(OP, ctx.draft.id)).toMatchObject({ candidate_run_id: candidate.id, blockers: [] });
+    await ctx.service.publish(ADMIN, OP, body({ expected_version: 2, candidate_run_id: candidate.id }), ctx.draft.id);
+    expect(ctx.pointer.configId).toBe(ctx.draft.id);
+    expect(ctx.events[0]).toMatchObject({ candidateRunId: candidate.id });
+  });
+
+  it('changing prompt content rejects an old fingerprint even when the version happens to match', async () => {
+    const ctx = setup({ liveModel: null });
+    const candidate = run(ctx.draft.id, 1, { fingerprint: configFingerprint(OP, contentOfConfig(ctx.draft)), snapshot: contentOfConfig(ctx.draft) });
+    ctx.runs.push(candidate); ctx.items.push(...goodItems(candidate.id));
+    expect((await ctx.service.check(OP, ctx.draft.id)).candidate_run_id).toBe(candidate.id);
+    ctx.draft.instructions = 'Different content.';
+    expect((await ctx.service.check(OP, ctx.draft.id)).blockers).toContain('eval-required');
+    expect(await problemOf(ctx.service.publish(ADMIN, OP, body({ candidate_run_id: candidate.id }), ctx.draft.id))).toMatchObject({ type: 'eval-required' });
+    expect(ctx.events).toHaveLength(0);
+  });
+
+  it('identical content from another draft or older set is not evidence; legacy NULL hashes require exact version', async () => {
+    const ctx = setup({ liveModel: null });
+    const fingerprint = configFingerprint(OP, contentOfConfig(ctx.draft));
+    const clone = config({ status: 'draft', number: 5 }); ctx.configs.push(clone);
+    const other = run(clone.id, 1, { fingerprint });
+    const olderSet = run(ctx.draft.id, 1, { fingerprint, setId: OLD_SET });
+    const oldVersion = run(ctx.draft.id, 0, { fingerprint: null });
+    ctx.runs.push(other, olderSet, oldVersion);
+    ctx.items.push(...goodItems(other.id), ...goodItems(olderSet.id), ...goodItems(oldVersion.id));
+    expect((await ctx.service.check(OP, ctx.draft.id)).blockers).toContain('eval-required');
+    const legacy = run(ctx.draft.id, 1, { fingerprint: null });
+    ctx.runs.push(legacy); ctx.items.push(...goodItems(legacy.id));
+    expect((await ctx.service.check(OP, ctx.draft.id)).candidate_run_id).toBe(legacy.id);
+    expect(await problemOf(ctx.service.check(OP))).toMatchObject({ type: 'draft-selection-required' });
+    expect(await problemOf(ctx.service.publish(ADMIN, OP, body()))).toMatchObject({ type: 'draft-selection-required' });
+  });
+
+  it('snapshot baseline accepts metadata edits but still requires the live config and warning acknowledgement', async () => {
+    const ctx = setup();
+    const candidate = run(ctx.draft.id, 0, { fingerprint: configFingerprint(OP, contentOfConfig(ctx.draft)) });
+    const baseline = run(ctx.live.id, 0, { fingerprint: configFingerprint(OP, contentOfConfig(ctx.live)) });
+    ctx.live.version = 3; ctx.draft.version = 2;
+    ctx.runs.push(candidate, baseline); ctx.items.push(...goodItems(candidate.id, ['d1']), ...goodItems(baseline.id));
+    const check = await ctx.service.check(OP, ctx.draft.id);
+    expect(check).toMatchObject({ candidate_run_id: candidate.id, baseline: { required: true, run_id: baseline.id }, blockers: [] });
+    expect(check.warnings).toContainEqual({ code: 'dev-regressed', example_ids: ['d1'] });
+    expect(await problemOf(ctx.service.publish(ADMIN, OP, body({ expected_version: 2, candidate_run_id: candidate.id, baseline_run_id: baseline.id }), ctx.draft.id))).toMatchObject({ type: 'publish-warnings' });
+  });
+
+  it('ID paths reject a deleted or wrong-operation draft; deleted during transaction cannot publish', async () => {
+    const ctx = setup({ draftModel: null });
+    ctx.draft.deletedAt = NOW;
+    expect(await problemOf(ctx.service.check(OP, ctx.draft.id))).toMatchObject({ status: 404 });
+    expect(await problemOf(ctx.service.publish(ADMIN, OP, body(), ctx.draft.id))).toMatchObject({ status: 404 });
+    ctx.draft.deletedAt = null;
+    expect(await problemOf(ctx.service.check('lookup_word', ctx.draft.id))).toMatchObject({ status: 404 });
+    ctx.prisma.$transaction.mockImplementationOnce(async (work) => { ctx.draft.deletedAt = NOW; return work(ctx.tx); });
+    expect(await problemOf(ctx.service.publish(ADMIN, OP, body(), ctx.draft.id))).toMatchObject({ type: 'publish-stale' });
+    expect(ctx.events).toHaveLength(0);
+    expect(ctx.draft.status).toBe('draft');
+  });
+});
+
+
+describe('publish revalidates newest frozen set under a write barrier', () => {
+  it('a new frozen set committed after check but before transaction refuses before moving the live pointer', async () => {
+    const ctx = setup(); const { candidate, baseline } = withBothRuns(ctx);
+    ctx.prisma.$transaction.mockImplementationOnce(async (work) => { ctx.setLatest({ id: OLD_SET, version: 3 }); return work(ctx.tx); });
+    expect(await problemOf(ctx.service.publish(ADMIN, OP, body({ candidate_run_id: candidate.id, baseline_run_id: baseline.id }), ctx.draft.id))).toMatchObject({ status: 409, type: 'publish-stale' });
+    expect(ctx.pointer.configId).toBe(ctx.live.id);
+    expect(ctx.order).toEqual([]);
+    expect(ctx.events).toHaveLength(0);
+  });
+
+  it('unchanged set publishes after acquiring the table write barrier and reading latest inside the transaction', async () => {
+    const ctx = setup(); const { candidate, baseline } = withBothRuns(ctx);
+    await ctx.service.publish(ADMIN, OP, body({ candidate_run_id: candidate.id, baseline_run_id: baseline.id }), ctx.draft.id);
+    expect(ctx.tx.$executeRaw).toHaveBeenCalledTimes(1);
+    expect(ctx.tx.$executeRaw.mock.calls[0]![0].join('')).toBe('LOCK TABLE ai_eval_sets IN SHARE MODE');
+    expect(ctx.tx.aiEvalSet.findFirst).toHaveBeenCalledWith({ where: { operation: OP }, orderBy: { version: 'desc' }, select: { id: true, version: true } });
+    expect(ctx.tx.$executeRaw.mock.invocationCallOrder[0]).toBeLessThan(ctx.tx.aiEvalSet.findFirst.mock.invocationCallOrder[0]!);
+    expect(ctx.tx.aiEvalSet.findFirst.mock.invocationCallOrder[0]).toBeLessThan(ctx.tx.aiLiveConfig.updateMany.mock.invocationCallOrder[0]!);
+    expect(ctx.pointer.configId).toBe(ctx.draft.id);
+  });
+
+  it('turn-off publish takes no eval-set lock or read', async () => {
+    const ctx = setup({ draftModel: null });
+    await ctx.service.publish(ADMIN, OP, body(), ctx.draft.id);
+    expect(ctx.tx.$executeRaw).not.toHaveBeenCalled();
+    expect(ctx.tx.aiEvalSet.findFirst).not.toHaveBeenCalled();
+  });
+});
+
+
+describe('publish evidence remains available at commit', () => {
+  it.each(['candidate', 'baseline'] as const)('%s hidden after check refuses before pointer mutation', async (hidden) => {
+    const ctx = setup(); const evidence = withBothRuns(ctx);
+    ctx.prisma.$transaction.mockImplementationOnce(async (work) => { evidence[hidden].hiddenAt = NOW; return work(ctx.tx); });
+    expect(await problemOf(ctx.service.publish(ADMIN, OP, body({ candidate_run_id: evidence.candidate.id, baseline_run_id: evidence.baseline.id }), ctx.draft.id))).toMatchObject({ type: 'publish-stale' });
+    expect(ctx.pointer.configId).toBe(ctx.live.id);
+    expect(ctx.events).toHaveLength(0);
   });
 });

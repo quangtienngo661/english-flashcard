@@ -2,6 +2,7 @@ import { expect, test } from '@playwright/test';
 import { readFileSync } from 'node:fs';
 import vi from '../messages/vi.json' with { type: 'json' };
 import { loginToken } from './support/api';
+import { signIn } from './support/sign-in';
 import type { RealState } from './global-setup';
 import { STATE_FILE } from './global-setup';
 
@@ -15,11 +16,8 @@ test('the accounts made by the admin API can sign in: Minh (editor), Lan and Kho
 });
 
 test('Minh (editor) opening /staff stays there, keeps the title, sees "no access", and [Về trang chủ] leads to /uploads', async ({ page }) => {
-  await page.goto('/login');
-  await page.getByLabel(vi.account.login.email).fill(state.editor.email);
-  await page.getByLabel(vi.account.login.password, { exact: true }).fill(state.editor.password);
-  await page.getByRole('button', { name: vi.account.login.submit }).click();
-  await expect(page).toHaveURL(/\/uploads$/);
+  // The suite signs in more often than `auth.login.ip` allows in a minute: the helper waits out a 429.
+  await signIn(page, state.editor.email, state.editor.password);
 
   await page.goto('/staff');
   await expect(page).toHaveURL(/\/staff$/);

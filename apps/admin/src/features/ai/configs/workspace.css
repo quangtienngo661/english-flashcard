@@ -1,0 +1,6 @@
+.config-workspace { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 3fr); gap: 1.75rem; align-items: start; }
+.config-live { position: sticky; top: 1.25rem; }
+@media (max-width: 920px) {
+  .config-workspace { grid-template-columns: minmax(0, 1fr); }
+  .config-live { order: -1; position: static; }
+}

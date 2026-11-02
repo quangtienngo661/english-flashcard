@@ -1,0 +1,107 @@
+AI workspace verification — 2026-11-01; fake/mocked providers only.
+These phases are separate executions. Do not interpret corrected scoped reruns as a single all-green full execution.
+
+API full (before final batch cursor correction)
+ Test Files  298 passed (298)
+      Tests  4026 passed (4026)
+   Start at  14:33:30
+   Duration  614.48s (transform 11.79s, setup 0ms, import 1001.39s, tests 48.67s, environment 59ms)
+
+Admin full after route migration, before final bounded waits
+ Test Files  4 failed | 95 passed (99)
+      Tests  4 failed | 1312 passed (1316)
+   Start at  14:47:42
+   Duration  750.65s (transform 12.98s, setup 1388.06s, import 189.50s, tests 1023.09s, environment 327.42s)
+
+Admin final bulk suite with final bounded waits
+ Test Files  1 passed (1)
+      Tests  60 passed (60)
+   Start at  15:03:35
+   Duration  113.90s (transform 7.19s, setup 9.66s, import 10.21s, tests 91.43s, environment 2.30s)
+
+Admin workspace and costs focused
+ Test Files  7 passed (7)
+      Tests  95 passed (95)
+   Start at  14:31:52
+   Duration  48.29s (transform 2.14s, setup 23.34s, import 7.23s, tests 41.39s, environment 18.16s)
+
+Admin quick-test/history/workspace regression
+ Test Files  3 passed (3)
+      Tests  25 passed (25)
+   Start at  14:44:18
+   Duration  31.42s (transform 5.05s, setup 12.20s, import 8.93s, tests 19.05s, environment 11.01s)
+
+Admin costs cold-render rerun
+ Test Files  1 passed (1)
+      Tests  1 passed | 16 skipped (17)
+   Start at  14:53:07
+   Duration  31.60s (transform 2.74s, setup 18.86s, import 7.36s, tests 1.61s, environment 3.34s)
+
+Existing upload/user cold-render reruns
+ Test Files  2 passed (2)
+      Tests  2 passed | 34 skipped (36)
+   Start at  14:57:59
+   Duration  49.38s (transform 8.29s, setup 26.77s, import 13.51s, tests 3.18s, environment 5.23s)
+
+Mocked browser full before fixture correction
+  3 failed
+  68 skipped
+  299 passed (8.7m)
+
+Mocked browser corrected fixture rerun
+  1 skipped
+  3 passed (9.8s)
+
+Additional checks: admin typecheck/lint/build exit 0 (production VITE_API_BASE_URL); API typecheck/lint/build exit 0 before final cursor change, final cursor typecheck repeated separately. Script syntax node --check passed for smoke-nhom-b and smoke-buoc-6.
+Admin production build: 1301.55 kB JS chunk warning. API lint has two existing warnings.
+Migration/drift prior real scratch verification: see ai-workspace-migration-output.txt. Final SQL/locks and batch cursor DB integration not executed after Docker stopped.
+Real-stack e2e: 30 tests/11 files discovered only, not executed. Final smoke x2 and affected legacy smoke runs not executed. See ai-workspace-runtime-blocker.txt.
+
+Final cursor regression:
+RED command: pnpm --filter api exec vitest run src/ai/batches/ai-batches.service.spec.ts --maxWorkers=1
+Result: 1 failed / 15 passed; failed SQL boundary assertion before fix (7110432b).
+GREEN command: pnpm --filter api exec vitest run src/ai/batches src/ai/api/admin-ai-batches.controller.spec.ts --maxWorkers=1
+ Test Files  2 passed (2)
+      Tests  21 passed (21)
+   Start at  15:07:41
+   Duration  27.38s (transform 12.02s, setup 0ms, import 25.96s, tests 528ms, environment 0ms)
+Final API typecheck after fix: pnpm --filter api exec tsc --noEmit -p tsconfig.json; exit 0. Cursor test asserts query construction only; PostgreSQL integration pending.
+
+Admin config file rerun without code or timeout changes (15:08:59):
+Command: pnpm --filter admin exec vitest run src/features/ai/configs/AiConfigsPage.test.tsx --maxWorkers=1
+ Test Files  1 passed (1)
+      Tests  24 passed (24)
+   Start at  15:08:59
+   Duration  33.62s (transform 4.81s, setup 3.32s, import 5.88s, tests 21.73s, environment 2.39s)
+
+Admin second full run (source for bulk test loaded before its final timeout adjustment):
+Command: pnpm --filter admin exec vitest run --maxWorkers=2
+ Test Files  2 failed | 97 passed (99)
+      Tests  4 failed | 1312 passed (1316)
+   Start at  15:00:42
+   Duration  870.09s (transform 7.29s, setup 604.32s, import 108.71s, tests 735.89s, environment 255.98s)
+Failures: bulk level/split workflow exceeded original 5000ms; config note/tokens and conflict workflows exceeded 5000ms; config create heading exceeded Testing Library's default wait. Both whole affected files subsequently passed scoped (60/60 and 24/24). Config creation heading wait now 4000ms; note/tokens and conflict workflows now 15000ms. Assertions unchanged. Final full acceptance execution follows separately.
+Whole branch pattern scan: 6120 added lines inspected, positive control matched, expected schema symbol found, 0 suspect added lines. Pattern scan is not a comprehensive security audit.
+dist/index.html                     0.72 kB │ gzip:   0.39 kB
+dist/assets/index-DBBgfKCs.css     42.58 kB │ gzip:   8.34 kB
+dist/assets/index-CfbIQKiq.js   1,301.55 kB │ gzip: 375.05 kB
+
+[plugin builtin:vite-reporter]
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rolldownOptions.output.codeSplitting to improve chunking: https://rolldown.rs/reference/OutputOptions.codeSplitting
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 1.17s
+
+FINAL ADMIN FULL ACCEPTANCE — exit 0
+Command: pnpm --filter admin exec vitest run --maxWorkers=4
+ Test Files  99 passed (99)
+      Tests  1316 passed (1316)
+   Start at  15:15:43
+   Duration  313.10s (transform 9.45s, setup 414.70s, import 65.63s, tests 432.49s, environment 292.75s)
+All 99 files / 1316 tests passed in this single execution after bounded waits; no retries or removed assertions. Earlier failed runs remain recorded above.
+
+Final static checks after acceptance:
+admin typecheck: exit 0; admin lint: exit 0.
+API lint: exit 0 (existing unused Prisma import and mail spread warnings); API build: exit 0.
+Docker info recheck at 15:22: engine pipe dockerDesktopLinuxEngine still missing. Final real-stack / smoke / PostgreSQL SQL integration remain BLOCKED, not passed.

@@ -1,5 +1,5 @@
 // Fixtures of the "Cấu hình" screen for the mocked e2e specs: configs, models and the reads the page makes (nhóm B M2).
-import { EVAL_AT, EVAL_LAN, clozeInput, evalSet } from './ai-eval';
+import { EVAL_AT, EVAL_LAN, clozeInput, devExample, evalSet } from './ai-eval';
 import type { MockHandler } from './mock-api';
 
 export const CFG_FIELDS = ['word', 'part_of_speech', 'level', 'meaning_vi', 'context_label'];
@@ -18,6 +18,7 @@ export const modelRow = (ref: { id: string; provider: string; model_id: string }
 
 /** One config. The default is a live config 3 with no model; a draft is `cfgConfig(4, { id: 'C4', status: 'draft', … })`. */
 export const cfgConfig = (number: number, over: Record<string, unknown> = {}) => ({
+  name: null, fingerprint: 'config-fingerprint', updated_at: EVAL_AT,
   id: `C${number}`, operation: 'generate_cloze', number, version: 0, status: 'published', instructions: 'Write one short sentence.', examples: [cfgExample],
   model: null, effort: null, thinking: null, max_output_tokens: null, note: null, created_from: null, created_by_user: CFG_SYSTEM, created_at: EVAL_AT,
   published_by_user: CFG_SYSTEM, published_at: EVAL_AT, estimate: null, ...over,
@@ -38,9 +39,24 @@ export const cfgCheck = (over: Record<string, unknown> = {}) => ({
   baseline: { required: true, run_id: 'RB' }, blockers: [], warnings: [], ...over,
 });
 
+/** A saved snapshot remains in aggregate history after its source draft was deleted. */
+export const cfgRevision = (over: Record<string, unknown> = {}) => ({
+  id: 'REV1', operation: 'generate_cloze', config_id: 'C21', config_number: 21, config_status: 'deleted',
+  config_deleted_at: EVAL_AT,
+  name: 'Archived experiment', version: 3, note: 'Snapshot remains readable', fingerprint: 'archive-fingerprint',
+  content: { instructions: 'Archived prompt snapshot', examples: [cfgExample], model_ref: GPT_REF.id, effort: 'high', thinking: 'off', max_output_tokens: 1200 },
+  saved_by_user: EVAL_LAN, saved_at: EVAL_AT, ...over,
+});
+
 /** The reads the page makes besides the configs themselves; `over` replaces or adds handlers. */
 export function configReads(over: Record<string, MockHandler> = {}): Record<string, MockHandler> {
   return {
+    'GET /v1/admin/ai/configs/generate_cloze': () => ({ json: cfgView({ draft: cfgDraft(4, { model: GPT_REF }) }) }),
+    'GET /v1/admin/ai/configs/generate_cloze/drafts': () => ({ json: { items: [cfgDraft(4, { model: GPT_REF })], next_page_token: null } }),
+    'GET /v1/admin/ai/configs/generate_cloze/drafts/C4': () => ({ json: cfgDraft(4, { model: GPT_REF }) }),
+    'GET /v1/admin/ai/configs/generate_cloze/drafts/C4/publish-check': () => ({ json: cfgCheck() }),
+    'GET /v1/admin/ai/configs/generate_cloze/drafts/C4/revisions': () => ({ json: { items: [cfgRevision({ config_id: 'C4', config_number: 4, config_status: 'draft' })], next_page_token: null } }),
+    'GET /v1/admin/ai/configs/generate_cloze/revisions': () => ({ json: { items: [cfgRevision()], next_page_token: null } }),
     'GET /v1/admin/ai/models': () => ({ json: { items: [modelRow(FAKE_REF), modelRow(GPT_REF)] } }),
     'GET /v1/admin/ai/eval/sets': () => ({ json: { items: [evalSet({ id: 'S2', version: 2 }), evalSet()] } }),
     'GET /v1/admin/ai/configs/generate_cloze/history': () => ({ json: { items: [], next_page_token: null } }),
@@ -48,7 +64,11 @@ export function configReads(over: Record<string, MockHandler> = {}): Record<stri
       json: { items: [{ revision: 3, instructions: 'Write one short sentence.', examples: [], saved_by: 'sys', saved_at: EVAL_AT, saved_by_user: CFG_SYSTEM }], next_page_token: null },
     }),
     'GET /v1/admin/ai/test-quota': () => ({ json: { limit: 20, remaining: 17, resets_at: EVAL_AT } }),
-    'GET /v1/admin/ai/eval/examples': () => ({ json: { items: [] } }),
+    'GET /v1/admin/ai/eval/examples': () => ({ json: { items: [
+      ...Array.from({ length: 6 }, (_, index) => devExample(`E${index}`, `word${index}`, { input: { ...clozeInput(`word${index}`), level: index === 5 ? 'B2' : 'A1' } })),
+      { id: 'secret-held-out-id', split: 'held_out' },
+    ] } }),
+    'GET /v1/admin/ai/eval/runs': () => ({ json: { items: [], next_page_token: null } }),
     ...over,
   };
 }

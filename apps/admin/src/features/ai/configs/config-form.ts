@@ -3,6 +3,7 @@ import { samePrompt, toForm, toPayload, type PromptForm } from '../prompt-form';
 
 /** What the draft editor holds: the Prompt page's form plus the model and its settings as boxes (`max_output_tokens` is a text box's text). */
 export type ConfigForm = PromptForm & {
+  name?: string;
   model_ref: string | null;
   effort: string | null;
   thinking: 'off' | null;
@@ -12,6 +13,7 @@ export type ConfigForm = PromptForm & {
 
 export function toConfigForm(view: ConfigView, inputFields: string[]): ConfigForm {
   return {
+    ...(view.name !== undefined ? { name: view.name ?? '' } : {}),
     ...toForm(view, inputFields),
     model_ref: view.model?.id ?? null,
     effort: view.effort,
@@ -21,7 +23,7 @@ export function toConfigForm(view: ConfigView, inputFields: string[]): ConfigFor
   };
 }
 
-/** The `PUT …/draft` body, or the positions whose output is not a JSON object (nothing is sent then). An empty limit or note is `null`. */
+/** The `PUT …/drafts/:id` body, or the positions whose output is not a JSON object (nothing is sent then). An empty limit or note is `null`. */
 export function toDraftBody(form: ConfigForm, expectedVersion: number): { ok: true; body: SaveDraftBody } | { ok: false; badOutputs: number[] } {
   const payload = toPayload(form);
   if (!payload.ok) return payload;
@@ -29,6 +31,7 @@ export function toDraftBody(form: ConfigForm, expectedVersion: number): { ok: tr
   return {
     ok: true,
     body: {
+      ...(form.name !== undefined ? { name: form.name.trim() || null } : {}),
       expected_version: expectedVersion,
       instructions: payload.body.instructions,
       examples: payload.body.examples,
@@ -74,5 +77,6 @@ export function sameDraftContent(draft: ConfigView, sent: SaveDraftBody): boolea
     draft.thinking === sent.thinking &&
     draft.max_output_tokens === sent.max_output_tokens &&
     (draft.note ?? null) === sent.note
+    && (sent.name === undefined || (draft.name ?? null) === sent.name)
   );
 }

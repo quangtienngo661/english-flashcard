@@ -31,6 +31,7 @@ export type ExecuteInput =
       data: unknown;
       actorId: string;
       callOperationId: string;
+      batchId?: string;
       selection?: Selection;
       prompt?: Prompt;
     }
@@ -41,6 +42,7 @@ export type ExecuteInput =
       data: unknown;
       actorId: string;
       callOperationId: string;
+      batchId?: string;
       selection: Selection;
       prompt: Prompt;
     };
@@ -69,6 +71,7 @@ type CallContext = {
   purpose: AiPurpose;
   callOperationId: string;
   aiOperationId: string | null;
+  batchId?: string;
   userId: string;
   deadline: number;
   retentionDays: number;
@@ -212,6 +215,7 @@ export class RunnerService {
     let rawOutput: string | null = null;
     const calls = await this.callProvider({
       operation, data, selection, prompt, purpose: input.purpose, callOperationId, aiOperationId: null, userId: input.actorId,
+      batchId: input.batchId,
       deadline, retentionDays: ai.contentRetentionDays,
     }, summaries, (text) => { rawOutput = text; });
     return { result: this.toResult(calls, callOperationId, selection, prompt), calls: summaries, rawOutput };
@@ -246,6 +250,7 @@ export class RunnerService {
         const recorded = callOutcome(outcome, check === null || check.ok ? 'ok' : 'invalid');
         const callId = await this.ledger.record({
           operationId: context.callOperationId, aiOperationId: context.aiOperationId, attempt, purpose: context.purpose, operation,
+          batchId: context.batchId,
           provider: selection.provider, model: selection.modelId, effort: selection.effort, thinking: selection.thinking,
           maxOutputTokens: selection.maxOutputTokens, promptRevision: prompt.revision, outcome: recorded,
           httpStatus: outcome.kind === 'error' ? outcome.httpStatus : null,

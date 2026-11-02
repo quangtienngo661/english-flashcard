@@ -16,7 +16,7 @@ const rows = () => within(screen.getByRole('list', { name: t.title })).getAllByR
 
 describe('ConfigHistory (M2-T7)', () => {
   it('lists publishes, rollbacks and turn-offs, newest first, with who did it and when', async () => {
-    renderApp('/ai/configs', configRoutes({ [URL.history()]: () => Response.json({ items: EVENTS, next_page_token: null }) }));
+    renderApp('/ai/configs/history', configRoutes({ [URL.history()]: () => Response.json({ items: EVENTS, next_page_token: null }) }));
     await screen.findByRole('list', { name: t.title }, { timeout: 4000 });
     expect(rows()).toHaveLength(3);
     expect(rows()[0]).toHaveTextContent(t.turnOff.replace('{number}', '5').replace('{from}', '4'));
@@ -28,12 +28,12 @@ describe('ConfigHistory (M2-T7)', () => {
   });
 
   it('an empty history says so', async () => {
-    renderApp('/ai/configs', configRoutes());
+    renderApp('/ai/configs/history', configRoutes());
     expect(await screen.findByText(t.empty)).toBeInTheDocument();
   });
 
   it('"Tải thêm" reads the next page with its token', async () => {
-    const r = renderApp('/ai/configs', configRoutes({
+    const r = renderApp('/ai/configs/history', configRoutes({
       [URL.history()]: () => Response.json({ items: [EVENTS[0]], next_page_token: 'next-1' }),
       'GET /v1/admin/ai/configs/generate_cloze/history?page_size=20&page_token=next-1': () => Response.json({ items: [EVENTS[2]], next_page_token: null }),
     }));
@@ -46,7 +46,7 @@ describe('ConfigHistory (M2-T7)', () => {
 
   it('"Tạo nháp từ bản này" posts { from_config_id } of that row and opens the draft', async () => {
     let created = false;
-    const r = renderApp('/ai/configs', configRoutes({
+    const r = renderApp('/ai/configs/history', configRoutes({
       [URL.history()]: () => Response.json({ items: EVENTS, next_page_token: null }),
       [URL.configs()]: () => Response.json(configsView({ draft: created ? draftView({ id: 'C6', number: 6 }) : null })),
       [URL.createDraft()]: () => {
@@ -57,28 +57,28 @@ describe('ConfigHistory (M2-T7)', () => {
     await screen.findByRole('list', { name: t.title }, { timeout: 4000 });
     await userEvent.click(within(rows()[1]!).getByRole('button', { name: t.fromHere }));
     expect(await screen.findByRole('heading', { name: /^Nháp · cấu hình 6/ })).toBeInTheDocument();
-    const sent = r.calls.filter((c) => c.method === 'POST' && c.path.endsWith('/draft'));
+    const sent = r.calls.filter((c) => c.method === 'POST' && c.path.endsWith('/drafts'));
     expect(sent.map((c) => c.body)).toEqual([{ from_config_id: 'C3' }]);
-    expect(within(screen.getByRole('list', { name: t.title })).queryByRole('button', { name: t.fromHere })).not.toBeInTheDocument();
+    expect(r.router.state.location.pathname).toBe('/ai/configs/drafts/C6');
   });
 
-  it('while a draft exists no row offers "Tạo nháp từ bản này"', async () => {
-    renderApp('/ai/configs', configRoutes({
+  it('even when another draft exists each row offers "Tạo nháp từ bản này"', async () => {
+    renderApp('/ai/configs/history', configRoutes({
       [URL.history()]: () => Response.json({ items: EVENTS, next_page_token: null }),
       [URL.configs()]: () => Response.json(configsView({ draft: draftView() })),
     }));
     await screen.findByRole('list', { name: t.title }, { timeout: 4000 });
-    expect(screen.queryByRole('button', { name: t.fromHere })).not.toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: t.fromHere })).toHaveLength(3);
   });
 
-  it('409 draft-exists shows its sentence and reads the configs again', async () => {
-    const r = renderApp('/ai/configs', configRoutes({
+  it('a failed clone stays on history and shows its error', async () => {
+    const r = renderApp('/ai/configs/history', configRoutes({
       [URL.history()]: () => Response.json({ items: EVENTS, next_page_token: null }),
       [URL.createDraft()]: () => problem(409, 'draft-exists'),
     }));
     await screen.findByRole('list', { name: t.title }, { timeout: 4000 });
     await userEvent.click(within(rows()[0]!).getByRole('button', { name: t.fromHere }));
     expect(await screen.findByText(vi.errors['draft-exists'])).toBeInTheDocument();
-    await waitFor(() => expect(r.count('GET', '/v1/admin/ai/configs/generate_cloze')).toBeGreaterThanOrEqual(2));
+    expect(r.router.state.location.pathname).toBe('/ai/configs/history');
   });
 });

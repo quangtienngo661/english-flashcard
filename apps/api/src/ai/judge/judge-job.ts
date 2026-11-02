@@ -1,7 +1,8 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Optional } from '@nestjs/common';
 import { Clock } from '../../common/clock/clock.js';
 import { AppLogger } from '../../common/logging/app-logger.js';
 import { EVAL_JOB_CONCURRENCY } from '../ai.constants.js';
+import { AiBatchesService } from '../batches/ai-batches.service.js';
 import { inPool, oneLine } from '../eval/eval-job.js';
 import { RunnerService, type RunReport } from '../runner/runner.service.js';
 import { toSelection } from '../runner/to-selection.js';
@@ -33,16 +34,20 @@ export class JudgeJob {
     @Inject(JudgePassesRepository) private readonly passes: JudgePassesRepository,
     @Inject(RunnerService) private readonly runner: RunnerService,
     @Inject(AppLogger) private readonly logger: AppLogger,
+    @Optional() @Inject(AiBatchesService) private readonly batches?: AiBatchesService,
   ) {}
 
   async run(passId: string): Promise<void> {
     const pass = await this.passes.start(passId, this.clock.now());
     if (!pass) return;
+    let batchId: string | null = null;
     try {
+      batchId = this.batches ? await this.passes.ensureBatch(pass.id) : null;
+      if (batchId) await this.batches!.start(batchId);
       const revision = await this.passes.revisionOf(pass.judgeRevisionId);
-      if (!revision?.model) return await this.passes.fail(pass.id, 'model-not-set', this.clock.now());
+      if (!revision?.model) return await this.fail(pass.id, 'model-not-set', batchId);
       const selection = toSelection('judge', revision, revision.model);
-      if (selection.price === null) return await this.passes.fail(pass.id, 'model-price-missing', this.clock.now());
+      if (selection.price === null) return await this.fail(pass.id, 'model-price-missing', batchId);
       const pending = await this.passes.pendingItems(pass.id);
       let stopped = false;
       let capped = false;
@@ -50,7 +55,7 @@ export class JudgeJob {
         // A pass cancelled (or closed as stalled) meanwhile is no longer `running`: no further paid call, nothing written.
         if (!stopped && !(await this.passes.isRunning(pass.id))) stopped = true;
         if (stopped) return;
-        const report = await this.judge(pass, revision, selection, item);
+        const report = await this.judge(pass, revision, selection, item, batchId);
         // Today's admin usd cap: this item is not written (it stays to judge) and no further call starts; items already written stay (B19).
         if (isAdminCap(report)) {
           stopped = true;
@@ -66,13 +71,16 @@ export class JudgeJob {
           report.calls.at(-1)?.call_id ?? null, costOf(report), this.clock.now(),
         );
       });
-      if (capped) await this.passes.fail(pass.id, 'admin-usd-cap', this.clock.now());
+      if (capped) await this.fail(pass.id, 'admin-usd-cap', batchId);
       // `finish` is guarded by `status = 'running'` as well; skipping it just spares a statement.
-      else if (!stopped) await this.passes.finish(pass.id, this.clock.now());
+      else if (!stopped) {
+        await this.passes.finish(pass.id, this.clock.now());
+        if (batchId) await this.batches!.finish(batchId);
+      }
     } catch (error) {
       const message = oneLine(error);
       this.logger.warn('ai_judge_pass_failed', { pass_id: pass.id, error: message });
-      await this.passes.fail(pass.id, message, this.clock.now());
+      await this.fail(pass.id, message, batchId);
     }
   }
 
@@ -80,13 +88,19 @@ export class JudgeJob {
    * The data are exactly `{ target_operation, input, output, criteria, context }`: no model, provider, config number, run id or `operation_id` (D3).
    * The call id names the pass and the item, so the calls page can tell whose output a call judged (M3-T13).
    */
-  private judge(pass: PassToRun, revision: RevisionToRun, selection: ReturnType<typeof toSelection>, item: PassItemRow): Promise<RunReport> {
+  private judge(pass: PassToRun, revision: RevisionToRun, selection: ReturnType<typeof toSelection>, item: PassItemRow, batchId: string | null): Promise<RunReport> {
     const data: JudgeData = {
       target_operation: pass.operation, input: item.input, output: item.output, criteria: revision.criteria, context: item.context,
     };
     return this.runner.execute({
       purpose: 'judge', operation: 'judge', data, actorId: pass.startedBy, callOperationId: `judge-${pass.id}-${item.id}`, selection,
+      ...(batchId ? { batchId } : {}),
       prompt: { instructions: revision.instructions, examples: revision.examples, revision: revision.revision },
     });
+  }
+
+  private async fail(passId: string, error: string, batchId: string | null): Promise<void> {
+    await this.passes.fail(passId, error, this.clock.now());
+    if (batchId) await this.batches!.finish(batchId, 'failed');
   }
 }

@@ -1,5 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { JudgePassesRepository, type NewPass } from './judge-passes.repository.js';
+import { AiBatchesService } from '../batches/ai-batches.service.js';
+import { FakeClock } from '../../common/clock/clock.js';
 import type { ScoreRow } from './judge.types.js';
 
 const NOW = new Date('2026-10-30T03:00:00Z');
@@ -16,6 +18,33 @@ const ITEMS = [
   { position: 0, subjectKind: 'eval_item' as const, subjectId: 'a', input: { word: 'x' }, output: { sentence: 'y' }, context: null },
   { position: 1, subjectKind: 'real_question' as const, subjectId: 'b', input: { word: 'z' }, output: { sentence: 'w' }, context: { session_words: ['k'] } },
 ];
+
+describe('JudgePassesRepository batch integration', () => {
+  it('creates a source-idempotent batch with parent eval linkage and only configuration in its snapshot', async () => {
+    const writes: unknown[] = [];
+    const batchPrisma = { aiBatch: { upsert: vi.fn(async (args: unknown) => { writes.push(args); return { id: P2 }; }) } };
+    const batches = new AiBatchesService(batchPrisma as never, {} as never, new FakeClock(NOW));
+    const prisma = { aiJudgePass: { findUnique: vi.fn(async () => ({
+      id: P1, operation: 'generate_cloze', status: 'queued', total: null, startedBy: ADMIN,
+      evalRun: { batchId: RUN }, revision: { modelRef: R2, instructions: 'Score.', examples: [],
+        criteria: [{ code: 'one', question: 'Good?' }], effort: 'low', thinking: null, maxOutputTokens: 300,
+        model: { provider: 'fake', modelId: 'fake:ok' } },
+      items: [{ input: 'heldout input', output: 'heldout output' }],
+    })) } };
+    const repo = new JudgePassesRepository(prisma as never, {} as never, batches);
+    await expect(repo.ensureBatch(P1)).resolves.toBe(P2);
+    await expect(repo.ensureBatch(P1)).resolves.toBe(P2);
+    expect(writes).toHaveLength(2);
+    expect(writes[0]).toMatchObject({ where: { sourceId: P1 }, update: {}, create: {
+      sourceId: P1, parentId: RUN, kind: 'judge', operation: 'generate_cloze', total: 0, actorId: ADMIN,
+      snapshot: { instructions: 'Score.', examples: [], model_ref: R2, criteria: [{ code: 'one', question: 'Good?' }] },
+    } });
+    expect(JSON.stringify(writes)).not.toContain('heldout');
+    expect(prisma.aiJudgePass.findUnique).toHaveBeenCalledWith({ where: { id: P1 }, include: {
+      revision: { include: { model: true } }, evalRun: { select: { batchId: true } },
+    } });
+  });
+});
 
 function setup() {
   const tx = {
@@ -122,6 +151,40 @@ describe('JudgePassesRepository.writeScores (B15, B19)', () => {
 });
 
 describe('JudgePassesRepository.start, isRunning, finish, fail, pendingItems', () => {
+  it('start atomically copies the claimed pass total and first start time into its source batch', async () => {
+    const statements: Array<{ sql: string; values: unknown[] }> = [];
+    const repo = new JudgePassesRepository({ $queryRaw: vi.fn(async (query: unknown, ...values: unknown[]) => {
+      statements.push(textOf(query, ...values)); return [];
+    }) } as never, {} as never);
+    await expect(repo.start(P1, NOW)).resolves.toBeNull();
+    expect(statements).toHaveLength(1);
+    expect(statements[0]!.sql).toContain('WITH claimed AS ( UPDATE ai_judge_passes');
+    expect(statements[0]!.sql).toContain("UPDATE ai_batches b SET status = 'running'");
+    expect(statements[0]!.sql).toContain('total = claimed.total');
+    expect(statements[0]!.sql).toContain('started_at = COALESCE(b.started_at, claimed.started_at)');
+    expect(statements[0]!.sql).toContain("FROM claimed WHERE b.source_id = claimed.id AND b.kind = 'judge'");
+    expect(statements[0]!.sql).toContain('SELECT id, judge_revision_id, operation, started_by FROM claimed');
+  });
+
+  it.each(['finish', 'fail'] as const)('%s atomically preserves the actual pass total/status/timestamps before the source is deleted', async (method) => {
+    const statements: Array<{ sql: string; values: unknown[] }> = [];
+    const repo = new JudgePassesRepository({ $executeRaw: vi.fn(async (query: unknown, ...values: unknown[]) => {
+      statements.push(textOf(query, ...values)); return 0;
+    }) } as never, {} as never);
+    if (method === 'finish') await repo.finish(P1, NOW);
+    else await repo.fail(P1, 'cancelled', NOW);
+    expect(statements).toHaveLength(1);
+    const { sql } = statements[0]!;
+    expect(sql).toContain('WITH completed AS ( UPDATE ai_judge_passes');
+    expect(sql).toContain('RETURNING id, started_at, finished_at, total');
+    expect(sql).toContain('UPDATE ai_batches b SET status =');
+    expect(sql).toContain('total = COALESCE(completed.total, b.total)');
+    expect(sql).toContain('started_at = COALESCE(b.started_at, completed.started_at)');
+    expect(sql).toContain('finished_at = completed.finished_at');
+    expect(sql).toContain("FROM completed WHERE b.source_id = completed.id AND b.kind = 'judge'");
+    if (method === 'fail') expect(sql).toContain("CASE WHEN completed.error = 'cancelled' THEN 'cancelled' ELSE 'failed' END");
+  });
+
   it('start moves a queued or running pass that has its snapshot to running and answers what the job needs; null when no row changes', async () => {
     const statements: Array<{ sql: string; values: unknown[] }> = [];
     const rows: unknown[][] = [[{ id: P1, judge_revision_id: R2, operation: 'generate_cloze', started_by: ADMIN }], []];
@@ -187,6 +250,8 @@ function releaseSetup(runStatus: string | null, passes: MemPass[], runItems: Arr
       }),
     },
     aiJudgePassItem: { createMany: vi.fn(async ({ data }: { data: Array<Record<string, unknown>> }) => { items.push(...data); return { count: data.length }; }) },
+    aiBatch: { updateMany: vi.fn(async (_args: unknown) => ({ count: 1 })) },
+    $executeRaw: vi.fn(async (_query: unknown, ..._values: unknown[]) => 0),
     $transaction: vi.fn(async (work: (client: unknown) => Promise<unknown>) => work(prisma)),
   };
   const reader = { judgedSubjects: vi.fn(async (revision: string, _ids: string[]) => new Set(judged[revision] ?? [])) };
@@ -202,9 +267,15 @@ describe('JudgePassesRepository.release (B19, B41)', () => {
   it('a failed run: its queued passes fail with run-failed, nothing comes back and nothing is snapshotted', async () => {
     const ctx = releaseSetup('failed', [waiting(P1)], RUN_ITEMS);
     await expect(ctx.repo.release(RUN, NOW)).resolves.toEqual([]);
-    expect(ctx.prisma.aiJudgePass.updateMany).toHaveBeenCalledExactlyOnceWith({
-      where: { evalRunId: RUN, status: 'queued' }, data: { status: 'failed', error: 'run-failed', finishedAt: NOW },
-    });
+    expect(ctx.prisma.$executeRaw).toHaveBeenCalledTimes(1);
+    const { sql, values } = textOf(...ctx.prisma.$executeRaw.mock.calls[0]!);
+    expect(sql).toContain('WITH completed AS ( UPDATE ai_judge_passes');
+    expect(sql).toContain("WHERE eval_run_id = ?::uuid AND status = 'queued'");
+    expect(sql).toContain("UPDATE ai_batches b SET status = 'failed'");
+    expect(sql).toContain('total = COALESCE(completed.total, b.total)');
+    expect(sql).toContain('finished_at = completed.finished_at');
+    expect(sql).toContain("FROM completed WHERE b.source_id = completed.id AND b.kind = 'judge'");
+    expect(values).toEqual([NOW, RUN]);
     expect(ctx.items).toEqual([]);
   });
 
@@ -223,6 +294,8 @@ describe('JudgePassesRepository.release (B19, B41)', () => {
     expect(ctx.items).toEqual([{ passId: P1, position: 0, subjectKind: 'eval_item', subjectId: 'i2', input: { w: 2 }, output: { o: 2 } }]);
     expect(ctx.passes[0]).toMatchObject({ status: 'queued', total: 1 });
     expect(ctx.reader.judgedSubjects).toHaveBeenCalledWith(R2, ['i1', 'i2']);
+    expect(ctx.prisma.aiBatch.updateMany).toHaveBeenCalledExactlyOnceWith({ where: { sourceId: P1, kind: 'judge' }, data: { total: 1 } });
+    expect(ctx.prisma.$transaction).toHaveBeenCalledTimes(1);
   });
 
   it('every output already judged → the pass ends at once with total 0 and does not come back', async () => {
@@ -230,6 +303,8 @@ describe('JudgePassesRepository.release (B19, B41)', () => {
     await expect(ctx.repo.release(RUN, NOW)).resolves.toEqual([]);
     expect(ctx.passes[0]).toMatchObject({ status: 'finished', total: 0 });
     expect(ctx.items).toEqual([]);
+    expect(ctx.prisma.aiBatch.updateMany).toHaveBeenCalledExactlyOnceWith({ where: { sourceId: P1, kind: 'judge' },
+      data: { total: 0, status: 'finished', startedAt: NOW, finishedAt: NOW } });
   });
 
   it('two waiting passes of two revisions are cut apart, each by what its own revision judged', async () => {
@@ -253,5 +328,6 @@ describe('JudgePassesRepository.release (B19, B41)', () => {
     ctx.prisma.aiJudgePass.updateMany.mockResolvedValueOnce({ count: 0 });
     await ctx.repo.release(RUN, NOW);
     expect(ctx.items).toEqual([]);
+    expect(ctx.prisma.aiBatch.updateMany).not.toHaveBeenCalled();
   });
 });
