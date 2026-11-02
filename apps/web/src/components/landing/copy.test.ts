@@ -35,6 +35,11 @@ describe('Landing copy', () => {
     expect(bad).toEqual([]);
   });
 
+  it('LR11 the old landing namespaces are gone from both message files', () => {
+    const old = ['Hero', 'Cloze', 'Problem', 'Steps', 'Ai', 'Plans', 'Faq', 'FinalCta'];
+    expect(old.filter((key) => key in vi || key in en)).toEqual([]);
+  });
+
   it('the page title is the approved one', () => {
     expect(vi.Metadata.title).toBe('Wordmet · Học từ vựng tiếng Anh, ghi nhớ và vận dụng');
   });
