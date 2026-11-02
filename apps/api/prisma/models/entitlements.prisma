@@ -109,6 +109,9 @@ model BillingEvent {
 
   @@index([status, receivedAt])
   @@index([provider, environment, transactionId])
+  @@index([userId])
+  @@index([appUserId])
+  @@index([subscriptionId])
   @@map("billing_events")
 }
 
@@ -201,6 +204,8 @@ model EntitlementNotice {
 
   @@unique([kind, subjectKey, periodKey, recipientUserId])
   @@index([state, dueAt])
+  @@index([userId])
+  @@index([recipientUserId])
   @@map("entitlement_notices")
 }
 
