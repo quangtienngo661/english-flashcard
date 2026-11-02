@@ -320,7 +320,8 @@ Seven chained branches `feat/buoc-8-m1`…`m7` (PR #173–#179, after `docs/buoc
 
 ## Đợt cải thiện nhóm A — plan & as-built
 
-`docs/deliveries/dot-cai-thien-a.md` (plan tóm tắt 26/10/2026). Design, decisions (A0–A14) and plan: `docs/superpowers/{specs,decisions,plans}/2026-10-26-dot-cai-thien-a*.md`;
+`docs/deliveries/dot-cai-thien-a.md` (plan tóm tắt 26/10/2026; as-built and round closed 31/10/2026; PR #133–#137, then #140 and #158 into `dev`; smokes re-run on `dev`,
+output `docs/deliveries/dot-cai-thien-a-smoke-output.txt`; the owner's own pass `docs/deliveries/dot-cai-thien-a-checklist.md` is not done yet). Design, decisions (A0–A14) and plan: `docs/superpowers/{specs,decisions,plans}/2026-10-26-dot-cai-thien-a*.md`;
 questions and answers `docs/superpowers/reviews/2026-10-26-dot-cai-thien-questions.md`; code facts `docs/preparation/DOT_CAI_THIEN_A_CODE_FACTS_2026-10-26.md`. Group B
 (real AI call by Postman, eval, judge, prompt lifecycle) gets its own design after the first real AI call.
 

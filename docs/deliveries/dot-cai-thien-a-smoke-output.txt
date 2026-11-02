@@ -1,0 +1,599 @@
+# Đợt cải thiện nhóm A — smoke khi đóng đợt (31/10/2026, plan Task 20)
+
+Code: `dev` @ 018e1465 (sau PR #198), API build mới. Mỗi smoke trên một DB mới tạo lại (DROP + CREATE + prisma migrate deploy), API + worker từ
+`node scripts/run-dev.mjs` trên :3100, cấu hình lấy từ biến môi trường (giá trị không bí mật theo .env.example, secret sinh ngẫu nhiên), không đọc apps/api/.env,
+OPENAI_API_KEY / ANTHROPIC_API_KEY rỗng, AI_FAKE_ENABLED=true, BILLING_FAKE_ENABLED=true, SMTP_HOST=127.0.0.1, SMOKE_IGNORE_ENV_FILE=1; JOB_QUEUE_PREFIX riêng mỗi smoke.
+
+--- pnpm smoke:buoc-0-3-fixes (english_learning_smoke_fixes) ---
+
+$ node scripts/smoke-buoc-0-3-fixes.mjs
+
+[1] 06:38:40Z setup: API reachable; admin and learners (psql, signed in through the API); a content source
+    ok — database english_learning_smoke_fixes; admin smokefx-admin-d4b0181e@example.com; 14 learners signed in; source 86e9cd3c-649b-4f15-a72e-b927ea071ce5
+
+[2] 06:38:43Z M2: FE1 age, FE5 terms, register Lan with names, PATCH /v1/me birth_date
+    ok — FE1 12-year-old → 400 age-below-minimum; FE5 accept_terms false → 400 validation-failed; no user created
+    ok — Lan registered (b5006ee0-66c2-479f-b518-fffedf0049a6), verified through the Mailpit OTP; GET /v1/me shows given_name Lan, family_name Nguyen, birth_date 2000-05-17
+    ok — PATCH /v1/me birth_date: 12-year-old → 400 age-below-minimum, future → 400 validation-failed (unchanged); 1999-01-01 → 200, stored
+
+[3] 06:38:45Z C2: FE32 time zones: "+07:00" refused, "asia/ho_chi_minh" stored as Asia/Saigon
+    ok — PATCH "+07:00" → 400 validation-failed; PATCH "asia/ho_chi_minh" → 200, GET /v1/me timezone Asia/Saigon
+
+[4] 06:38:45Z C1 FE26: 10 learners create a group at once
+    ok — FE26 10 learners × POST /v1/groups at once → 10 × 201
+
+[5] 06:38:45Z C1 FE27: one learner creates 10 groups at once, 10 keys
+    ok — FE27 one learner, 10 keys at once → 10 × 201, 10 distinct groups
+
+[6] 06:38:45Z C1 FE29: same key twice while the first request waits on the Learning lock
+    ok — FE29 same key twice while the first waits on the Learning lock → second 409 Retry-After: 2; first 201 after 2185 ms; a third call replays it
+
+[7] 06:38:50Z C1 B0E1: a key left in_progress past its lease
+    ok — B0E1 key left in_progress 1 h ago → 409 idempotency-key-abandoned
+
+[8] 06:38:52Z C1 key reuse: same key + different body
+    ok — same key + different body → 400
+
+[9] 06:38:52Z C1 rate limit: the 31st user.write in a minute
+    (waiting 8s for a fresh rate-limit minute)
+    ok — rate limit: 30 × PATCH /v1/me → 200, the 31st → 429 with Retry-After: 59
+
+[10] 06:39:01Z N4/N5: lock Lan: refresh 401, login 403 account-locked; FE11 lock self 409; search q; unlock
+    ok — refresh before the lock → 200 (control); after: refresh → 401, login with the right password → 403 account-locked
+    ok — FE11 admin locks self → 409
+    ok — list ?q=lan finds Lan (locked); ?q=a → 400 validation-failed
+    ok — unlock → login 200
+
+[11] 06:39:01Z T1: reject revision 2 → publish it refused revision-rejected; FE19 quick publish → revision 3
+    ok — publish of rejected revision 2 → refused revision-rejected; quick publish {revision: 2} → revision 3 published
+
+[12] 06:39:04Z T2: import A (go), import C (went form_of go), revert A → go kept entry-in-use
+    ok — revert of A keeps zfgatzjkt (entry-in-use: zfwdphqdu is its past form)
+
+[13] 06:39:08Z T3: FE17 re-upload of an unchanged file after a hand edit → row unchanged, live content still the edit
+    ok — re-upload of F → row unchanged (no create/update); live example is still the hand edit
+
+[14] 06:39:10Z T4: round-2 rejected.csv re-uploaded as it is → accepted
+    ok — round-2 rejected.csv re-uploaded → batch partial, the row rejected only for its bad pos; one _row/_error pair
+
+[15] C3: covered by unit test (no API step)
+
+[16] 06:39:11Z T5: user B's private word never appears in A's /v1/lookup (control: A's own does)
+    ok — A's lookup never shows B's private word; A's own private word shows for A (control), B's for B
+
+Summary (32s):
+  setup: PASS
+  M2: PASS
+  C2: PASS
+  C1 FE26: PASS
+  C1 FE27: PASS
+  C1 FE29: PASS
+  C1 B0E1: PASS
+  C1 key reuse: PASS
+  C1 rate limit: PASS
+  N4/N5: PASS
+  T1: PASS
+  T2: PASS
+  T3: PASS
+  T4: PASS
+  C3: covered by unit test (no API step)
+  T5: PASS
+
+ALL STEPS MATCHED
+
+--- pnpm smoke:buoc-2 (english_learning_smoke_b2) ---
+
+$ node scripts/smoke-buoc-2.mjs
+
+[1] Wait for the API
+    ok — reachable at http://localhost:3100
+
+[2] Register admin (register → verify via Mailpit OTP → admin:grant → login)
+    ok — admin smoke-admin-39ca652c@example.com registered, verified, granted, logged in
+
+[3] Register a test data source
+    ok — source 99a37778-cd50-40c6-8e16-4a077f445775 registered
+
+[4] Upload a small CSV with one deliberately invalid row
+    ok — batch 5c2cb244-707e-441f-85a5-9b3cb578cb63: 2 created, 1 rejected, as expected
+
+[5] Download rejected.csv, fix the bad row, re-upload
+    ok — fixed row created successfully on re-upload; _row/_error columns were ignored
+
+[6] Export the unpublishable list, fill the gaps, re-upload
+    ok — smoke-39ca652c-gap filled and no longer unpublishable
+
+[7] Publish one sense by explicit list, another by publish-job filter
+    ok — published by list (gap sense) and by job 834cf224-cde8-4cb3-a727-b77edad09d7b (status: succeeded)
+
+[8] Search as a learner with native_language set
+    ok — learner smoke-learner-39ca652c@example.com registered, verified with native_language=vi
+    ok — learner sees "smoke-39ca652c-gap" with meaning "lòng can đảm"
+
+ALL CHECKS PASSED in 9646ms (run id 39ca652c)
+
+--- pnpm smoke:buoc-4 (english_learning_smoke_b4) ---
+
+$ node scripts/smoke-buoc-4.mjs
+
+[1] Wait for the API
+    ok — reachable at http://localhost:3100; database english_learning_smoke_b4
+
+[2] Register admin and learner
+    ok — admin smoke4-admin-042e109d@example.com registered, verified, granted, logged in
+    ok — learner smoke4-learner-042e109d@example.com registered, verified with native_language=vi, timezone Asia/Ho_Chi_Minh
+
+[3] Grant the learner 200 sessions a day for one day
+    ok — grant d525458b-13fd-4c77-8aba-8a722b0f7f5d: practice_sessions_per_day 200 until 2026-11-01T06:40:36.066Z
+
+[4] Import 8 verbs (gloss, short definition, example with the past form, inflections) and publish them
+    ok — batch 1fe2f3f9-4445-4c95-8214-b91847e786f9: 8 created, published by job e9fce3a8-1a8b-4f25-a81d-c78a0f1ed899; the learner sees all 8 with meaning and example
+
+[5] Build group A (W1–W7 + private words P, P2) and group B (W7, W8)
+    ok — group A 50fdad14-b74c-412b-ac69-7e030a3d165f has 9 words (2 private), group B c4f9b3be-ad84-4878-87e8-7be7e8ee96c7 has 2
+
+[6] Each source × each type (count 1, answered right): group A, all, today
+    ok — group × mcq_definition: W1 (mcq) → correct; session finished
+    ok — group × true_false_definition: W1 (true_false) → correct; session finished
+    ok — group × type_word: W1 (type_sentence) → correct after "try_again" on the base form; session finished
+    ok — all × mcq_definition: W4 (mcq) → correct; session finished
+    ok — all × true_false_definition: W3 (true_false) → correct; session finished
+    ok — all × type_word: W6 (type_sentence) → correct after "try_again" on the base form; session finished
+    ok — today × mcq_definition: W1 (mcq) → correct; session finished
+    ok — today × true_false_definition: W1 (true_false) → correct; session finished
+    ok — today × type_word: W1 (type_sentence) → correct after "try_again" on the base form; session finished
+
+[7] "Đã biết" on a right answer without hint (B4#9) and "Cần ôn tập" on another
+    ok — W1: "Đã biết" → level 1, no priority; again → same; "Cần ôn tập" after it → 409 review-already-set; W1: "Cần ôn tập" → level 1, priority, due 2026-10-31
+
+[8] Group B, typing only, 4 questions for 2 words: wrong + skip, hints, "Ôn lại" (B4#2), report, summary, review-all
+    ok — W7 (round 1): wrong → try_again (no answer shown), current shows try_again, skip → wrong, skipped
+    ok — W8 (round 1): hint 1 = short definition, hint 2 = "z" × 8 → correct, no "Đã biết"
+    ok — report 43c86002-a903-4a26-a55c-39ac570d55b6 on W8's item (stays open); a second report → 409 report-exists
+    ok — after round 1 (2 words) the session waits; "Ôn lại" → active
+    ok — W7 (round 2): wrong → try_again (no answer shown), current shows try_again, skip → wrong, skipped
+    ok — W8 (round 2): hint 1 = short definition, hint 2 = "z" × 8 → correct, no "Đã biết"
+    ok — order W7@r1, W8@r1, W7@r2, W8@r2; no word twice in a row; finished after 4
+    ok — summary: 4 asked, 2 right, 2 wrong; list = W7 (wrong) + W8 (right with hints); W7 pressed, review-all adds 1 (W8)
+
+[9] "Từ hay sai" (B4#12): W7 with 2 wrong; W8 (right only with hints) is not
+    ok — W7: wrong 2 of 2 counted, level 1
+
+[10] Each type from "Từ hay sai" and "Đang ưu tiên" (count 1, answered right)
+    ok — weak × mcq_definition: W7 → correct; finished
+    ok — weak × true_false_definition: W7 → correct; finished
+    ok — weak × type_word: W7 → correct; finished
+    ok — priority × mcq_definition: W1 → correct; finished
+    (429 on POST /v1/practice/sessions; waiting 14s)
+    ok — priority × true_false_definition: W1 → correct; finished
+    ok — priority × type_word: W1 → correct; finished
+    ok — group B, multiple choice only → 1 word (W7; W8 has no multiple choice, B4#19); true/false only → both words
+
+[11] B4#28 / B4E48 and B4#29: a private word as a chosen option is masked for staff; a private question is not reportable
+    ok — report 78d66b06-aa3c-4f2d-a852-01b5e7eee4b9: staff response (2 rows) never contains P's word or meaning, shows "[từ riêng của người học]"; resolved no_error; second resolve → 409 report-not-open; a learner → 403
+    ok — a question on a private word: reportable=false, report → 409 report-not-available
+
+[12] History by date (B4#15) and by word
+    ok — 27 rows on 2026-10-31 (newest first), 0 on 2000-01-01, 6 for W7
+
+[13] B4E8: delete a private word while its question shows → current says "word-not-found" with the next question
+    ok — P2's question 4e419159-64cc-4e23-a427-93680ffa6ab2 showing; DELETE /v1/my-words → 204; current → notice word-not-found + P's question 09643c95-4000-46ff-9339-0cd6a83cb22a
+    ok — P2's items and questions are gone (read back with psql)
+
+[14] Cleanup: back-date group B session 7 months and leave the last session idle 25 h; run maintenance:run; read back
+    ok — group B items 4 → 0, session gone; report 43c86002-a903-4a26-a55c-39ac570d55b6 = open|null; idle session → abandoned
+
+ALL CHECKS PASSED in 54540ms (run id 042e109d; 20 sessions, 43 answers)
+
+--- pnpm smoke:buoc-5, SMOKE_FETCH_STATE=false (english_learning_smoke_b5) ---
+
+$ node scripts/smoke-buoc-5.mjs
+
+[1] 06:41:47Z Wait for the API
+    ok — reachable at http://localhost:3100; database english_learning_smoke_b5; fetchState mode OFF (BILLING_FAKE_FETCH_STATE=false)
+
+[2] 06:41:47Z Accounts: admin (CLI grant), two editors (created by the admin), learner P (registered, verified)
+    ok — admin smoke5-admin-b954263d@example.com; editors smoke5-editor1-b954263d@example.com, smoke5-editor2-b954263d@example.com; learner P smoke5-learner-b954263d@example.com (9b38dcbf-59c8-4c3d-a671-385230243756)
+
+[3] 06:41:57Z B5#1: a new learner reads GET /v1/me/entitlements
+    ok — plan free; practice 3/day; AI pools 0; ai.practice and ai.lookup not allowed; ads.show false; trial_eligible true
+
+[4] 06:41:57Z Practice material for P: a group with two private words
+    ok — group 7865edda-786f-4d4d-ac6d-8ad35cda7d52 with zssotalj, zthiugzp
+
+[5] 06:41:57Z B5#3: open and abandon five sessions without answering → none is counted
+    ok — five sessions opened (each closes the previous); usage_records has 0 sessions today; used 0
+
+[6] 06:41:59Z B5#2: three sessions answered → the fourth is 403 quota-exhausted with resets_at
+    ok — 3 counted; 4th → 403 quota-exhausted, resets_at 2026-10-31T17:00:00.000Z (next Vietnam midnight)
+
+[7] 06:41:59Z B5#23: admin sets free_practice_sessions_per_day = 5 → the 4th and 5th open today; the 6th is refused
+    ok — limit 5: sessions 4 and 5 opened and counted, the 6th → 403; limit back to 3
+
+[8] 06:42:00Z B5E73: 10 rounds of "start a session" racing "first answer of the open session" (Free, 2 counted)
+    (waiting 60 s so the rounds have the user.write budget)
+    ok — 10 rounds: exactly one of the two won each time (start 0×, answer 10×); never more than 3 counted
+
+[9] 06:43:17Z B5#4: fake subscription_started with a 7-day trial → plan trial, trial_history row, trial-started email
+    ok — plan trial; trial_history 1 row; email "Bạn đã bắt đầu dùng thử Wordmet Pro"
+
+[10] 06:43:27Z B5#5: trial_ends_at − 2 days reached, job → the trial reminder email, exactly once
+    ok — one reminder email after the first run; still one after a second run
+
+[11] 06:43:43Z B5#6: fake renewed after the trial → plan pro, cycle anchor = the renewed period start, AI 300/100
+    ok — plan pro; quota_anchor_at 2026-10-31T06:43:43Z; ai_practice 300, ai_lookup 100 (resets 2026-11-30T06:43:43.535Z)
+
+[12] 06:43:46Z B5#7: renewal_failed; +3 days still Pro (grace); +8 days not Pro (on_hold)
+    ok — grace: Pro at +3 days; free at +8 days; the job wrote on_hold
+
+[13] 06:44:00Z B5#8: fake renewed while on_hold → Pro again at once
+    (network error on the webhook: ECONNRESET; retrying)
+    ok — renewed → active, plan pro
+
+[14] 06:44:03Z B5#9: the same event sent twice → one row, applied once
+    ok — event ef83a1dc-8938-45e3-988b-1a09149de146: one row, applied; second send acked (200) and changed nothing
+
+[15] 06:44:08Z B5#10: an old expired after a newer renewed → stale, still Pro
+    ok — expired (1 hour old) → stale; plan pro
+
+[16] 06:44:11Z B5#11: cancel_scheduled, then past the period end → Pro until the end, then free
+    ok — Pro while cancel_at_period_end; free past the end; the job wrote expired
+
+[17] 06:44:21Z B5#12: refunded, then refund_reversed (the current transaction) → Pro lost, then back
+    (network error on the webhook: ECONNRESET; retrying)
+    ok — refunded → revoked (free); refund_reversed → active (pro)
+
+[18] 06:44:31Z B5#13: plan_change_scheduled (year → month), then plan_change_canceled → pending_interval appears and goes; Pro throughout
+    ok — pending_interval month after scheduled, null after canceled; plan pro all along
+
+[19] 06:44:38Z B5#28: a trial for an account that already used one (D30) → free in the trial, endTrialNow called; renewed → pro
+    ok — trialing with trial_denied → plan free; fake end_trial_called_at set; trial_reuse_detected in the API log; renewed → pro
+
+[20] 06:44:44Z B5#29: an active subscription past its period with no event (D31) → Pro 3 days over; on_hold 11 days over
+    (network error on GET /v1/admin/entitlements/users/7c7866bb-6480-4305-9fad-e692830ed960: ECONNRESET; retrying)
+    ok — 3 days over: still Pro after the job; 11 days over: free, the job wrote on_hold
+
+[21] 06:45:04Z B5#30: expired, then renewed for a new period (R2) → pro again
+    (network error on the webhook: ECONNRESET; retrying)
+    ok — expired → free; renewed → active, pro
+
+[22] 06:45:12Z B5#33: a partial refund of the current period's transaction (D34) → Pro lost at once
+    ok — refunded (amount 1) → revoked, plan free
+
+[23] 06:45:18Z B5#14 / B5E1: ten parallel reserves for the last unit → exactly one reserved
+    ok — 10 calls: 1 reserved, 9 quota-exhausted; one reserved row in usage_records (Free + 1 AI unit, B5E32)
+
+[24] 06:45:24Z B5#15: a reservation never confirmed, +3 minutes → the unit is back
+    (network error on GET /v1/admin/entitlements/users/00dbb008-dd9f-4c4a-8f3c-4f183b6c5e6c: ECONNRESET; retrying)
+    ok — remaining 0 while reserved; 1 once expires_at passed
+
+[25] 06:45:25Z B5#20: admin sets "AI practice: 0" for a Pro user → reserve refused plan-required
+    ok — plan pro + ai_practice_per_cycle 0 → reserve refused, reason plan-required (HTTP 403 entitlement-required)
+
+[26] 06:45:31Z B5#22: refund one confirmed unit → remaining +1; a second refund changes nothing
+    ok — remaining 299 → 300 after the refund → 300 after a second one
+
+[27] 06:45:51Z B5E11: ten learners, one unit left in the system cap, ten parallel reserves → exactly one reserved
+    ok — cap 2 (used 1): 1 reserved, 9 ai-unavailable across 10 learners
+
+[28] 06:46:03Z B5#16: ai_daily_cap = 2, three learners reserve → two pass, the third is ai-unavailable; ai-usage alert_reached
+    ok — reserved, reserved, ai-unavailable (retry after 36821s); ai-usage used 2/2, alert_reached true (no email, D36)
+
+[29] 06:46:19Z B5#17: ai_enabled off → reserve ai-unavailable; a practice session without AI still opens
+    ok — switch off: reserve → ai-unavailable with no Retry-After; P opened a session; switch back on, cap 1000
+
+[30] 06:46:25Z B5#18: admin grants "Pro until a date" to a Free learner → pro at once; listed; revoked → free at once
+    ok — grant bd43096f-a707-46d0-8b3a-234ae22e6b59: pro, in the list; revoked → free
+
+[31] 06:46:26Z B5#19: an editor grants to another editor / to themselves / sets AI units → 409 grant-not-allowed with the reason
+    ok — target-is-staff, self-grant, ai-limits-admin-only
+
+[32] 06:46:26Z B5#21: filter the grant history by granted_by = editor and expiring_within_days = 7
+    ok — 1 row(s): the editor's 5-day grant; not the editor's 30-day one, not the admin's
+
+[33] 06:46:27Z B5#32: an editor revokes a grant carrying AI units (D33) → 409 ai-limits-admin-only
+    ok — 409 grant-not-allowed, reason ai-limits-admin-only
+
+[34] 06:46:27Z B5#31: admin grants Pro to someone paying through an auto-renewing fake subscription (D32)
+    ok — without confirmation → 409 target-has-paid-subscription; with it → 201, paid_renewal_action turned_off, fake cancel_called_at set; new anchor 2026-10-31T06:46:41.396Z → ai_practice used 0 of 300
+
+[35] 06:46:42Z B5#35: admin moves the running Pro grant's ends_at one month later (D38)
+    ok — ends_at 2026-11-30T06:46:41.332Z → 2026-12-30T06:46:41.332Z; AI cycle unchanged (resets 2026-11-30T06:46:41.396Z); one row in changes
+
+[36] 06:46:42Z B5#24: private_words_per_user lowered below what P has (rows made with SQL, R13) → old words kept, new ones refused
+    ok — P owns 1002 private words; limit 1000 → a new one is 409 private-word-limit-reached, the 1002 stay; limit back to 10000
+
+[37] 06:46:44Z B5#25: ads_enabled on → Free shows ads with the frequency; Pro and trial do not
+    ok — Free: show, 3 a day, 10 minutes apart; Pro: no; trial: no; switch back off
+
+[38] 06:46:47Z B5#26: webhook with a wrong signature → 400, no event row
+    ok — 400; 0 rows for that event id
+
+[39] 06:46:47Z B5#27: an editor reads GET /v1/admin/entitlements/ai-usage → 403 forbidden
+    ok — 403 forbidden
+
+ALL CHECKS PASSED in 300253ms (run id b954263d; fetchState OFF)
+
+--- pnpm smoke:buoc-6 (english_learning_smoke_b6, prefix wordmet-b6-smoke) ---
+
+$ node scripts/smoke-buoc-6.mjs
+
+[1] 06:47:07Z Wait for the API
+    ok — reachable at http://localhost:3100; database english_learning_smoke_b6; children run with AI_FAKE_ENABLED=true, JOB_QUEUE_PREFIX=wordmet-b6-smoke, no key
+
+[2] 06:47:07Z Accounts: admin (CLI grant), one editor and a second admin that publishes configs (both created by the admin)
+    ok — admin smoke6-admin-5c1a3a95@example.com; editor smoke6-editor-5c1a3a95@example.com; publisher (admin) smoke6-publisher-5c1a3a95@example.com; learner uuid d9a2db52-aed1-4ef9-9d04-b2d7314b79ce
+
+[3] 06:47:13Z Fake provider on, no key: GET /v1/admin/ai/status
+    ok — providers: fake true, openai false, anthropic false
+
+[4] 06:47:14Z B6#1: a fresh database, no model chosen
+    ok — three operations model-not-set; prompts seeded ({"generate_cloze":2,"lookup_word":1,"translate_sentence":1}); operations at version 0; ai:fake-call → unavailable/model-not-set
+
+[5] 06:47:19Z B6#2: add fake:ok (price 0), publish it for generate_cloze, call
+    ok — succeeded "Lan will ___ it tomorrow."; config 3 published (seeded prompt was 2) and prompt_revision 3; one ai_calls row; price 0
+
+[6] 06:47:27Z B6#3: the same operation id and data again
+    ok — replayed: true; still one ai_calls row
+
+[7] 06:47:33Z B6#5: fake:503-then-ok
+    (network error on GET /v1/admin/ai/models: ECONNRESET; retrying)
+    ok — succeeded after one quick retry; two ai_calls rows (provider-error, succeeded); 611 ms
+
+[8] 06:47:42Z B6#6: fake:429-then-ok
+    (network error on GET /v1/admin/ai/models: ECONNRESET; retrying)
+    ok — succeeded after waiting retry-after; 1360 ms; outcomes rate-limited, succeeded
+
+[9] 06:47:51Z B6#7: fake:two-blanks
+    (network error on GET /v1/admin/ai/models: ECONNRESET; retrying)
+    ok — transient_failure/invalid-shape; one ai_calls row with outcome invalid-shape
+
+[10] 06:47:59Z B6#8: fake:refuse, twice with one operation id
+    (network error on GET /v1/admin/ai/models: ECONNRESET; retrying)
+    ok — both permanent_failure/refused; one ai_calls row for the id (the second call replayed the stored failure)
+
+[11] 06:48:10Z B6#9 and B6#21: fake:quota, then the status page
+    (network error on GET /v1/admin/ai/models: ECONNRESET; retrying)
+    ok — unavailable/provider-quota; status of generate_cloze: last_error provider-quota
+
+[12] 06:48:17Z B6#4: fake:slow
+    ok — transient_failure/timeout after 10206 ms; one ai_calls row, no retry
+
+[13] 06:48:43Z B6#10: the AI switch off (entitlements.ai_enabled)
+    (network error on GET /v1/admin/ai/models: ECONNRESET; retrying)
+    ok — status ai-disabled; learner call ai-disabled (no ai_calls row); prompt test still ran (1 item(s)); switch on again
+
+[14] 06:48:50Z B6#11: max_concurrent_calls 1, fake:slow --parallel 2
+    (network error on GET /v1/admin/settings: ECONNRESET; retrying)
+    ok — one timeout, one busy after 10198 ms (no ai_calls row); max_concurrent_calls back to 50
+
+[15] 06:49:16Z B6#12 and B6E96: add a model that does not exist; a model id with "/../"
+    ok — fake:nope → 422 model-not-found; "fake/../x" → 400 validation-failed on model_id; nothing saved
+
+[16] 06:49:17Z B6#13: delete the model in use (the live config names it)
+    ok — DELETE fake:ok (chosen for generate_cloze) → 409 model-in-use
+
+[17] 06:49:18Z B6#14: save a draft twice with the same expected_version
+    ok — draft 13 created at version 0; first save → version 1 (the seeded examples pass the save rules); second → 409 draft-version-conflict; prompt revisions unchanged (2)
+
+[18] 06:49:18Z B6#15: save a draft with an example of the wrong shape
+    ok — 400 validation-failed with a path to the example: ["examples[0].output: blank-count"]; the draft stayed at version 1, then deleted
+
+[19] 06:49:18Z B6#16: test a draft prompt
+    ok — 1 item(s), each with its output; the live prompt unchanged (revision 12); 1 ai_calls row(s) with purpose test
+
+[20] 06:49:19Z B6#17 and B6E74: three more eval examples, one run of the live config in the worker; the same Idempotency-Key again
+    ok — run 42406962-8a92-41d0-878c-cf015e1faab2 finished (config 12): total 5, valid 5, avg 0 ms, cost 0.00000000; same key → same run_id
+
+[21] 06:49:20Z B6#18: a word of 150 characters
+    ok — permanent_failure/bad-input; no ai_calls row
+
+[22] 06:49:25Z B6#19 and B6#26 are unit tests (adapters with stub fetch, Tasks 8–9): skipped here
+    ok — skipped
+
+[23] 06:49:25Z B6#22: calls of one operation id, then the content expires
+    (network error on GET /v1/admin/ai/calls: ECONNRESET; retrying)
+    ok — content with request and response; after back-dating and maintenance:run the content is gone and the ledger row stays
+
+[24] 06:49:36Z B6#23: a stored result expires
+    ok — row deleted by maintenance:run; the same id again → replayed false and a new ai_calls row
+
+[25] 06:49:54Z B6#24: deleteUserData (ai:fake-call delete-user-data)
+    ok — no ai_operations, no content of the user; the ai_calls row stays with user_id null
+
+[26] 06:50:06Z B6#25: an editor on every route of §12.1
+    (network error on GET /v1/admin/ai/status: ECONNRESET; retrying)
+    ok — 403 forbidden on all 28 routes; nothing changed; PUT /operations/generate_cloze and PUT /prompts/generate_cloze → 404 for the admin
+
+[27] 06:50:06Z B6#27: fake:slow, two calls at once with one operation id
+    ok — one timeout, one in_progress; exactly one ai_calls row
+
+[28] 06:50:32Z Race (Review Focus 1): fake:ok, ten calls at once with one operation id
+    (network error on GET /v1/admin/ai/models: ECONNRESET; retrying)
+    ok — 10 results {"in_progress":9,"succeeded":1}; exactly one ai_calls row
+
+[29] 06:50:39Z B6#28: the daily provider-call cap
+    (network error on GET /v1/admin/settings: ECONNRESET; retrying)
+    (network error on POST /v1/admin/ai/prompts/generate_cloze/test: ECONNRESET; retrying)
+    ok — cap 18 (today 16); two calls succeeded, the third unavailable/daily-call-cap retry_after_seconds 36544; a prompt test still ran; cap back to 3000
+
+[30] 06:50:56Z B6#29: fake:truncated with max_output_tokens 50
+    ok — transient_failure/truncated with max_output_tokens 50; status last_error truncated
+
+[31] 06:51:03Z B6#30: start an eval run while Redis is down, then recover it
+    ok — 202 queued with Redis stopped; still queued after Redis is back; after back-dating 11 minutes and maintenance:run → finished (5 items)
+
+[32] 06:51:16Z B6#20: costs by model match ai_calls
+    ok — 8 model groups; calls and tokens match ai_calls; fake cost 0 (fake/fake:429-then-ok 6, fake/fake:503-then-ok 6, fake/fake:ok 33, fake/fake:quota 3, fake/fake:refuse 3, fake/fake:slow 9, fake/fake:truncated 3, fake/fake:two-blanks 3)
+
+Smoke Bước 6 passed in 249s (32 steps).
+
+--- pnpm smoke:buoc-7 (english_learning_smoke_b7, prefix wordmet-b7-smoke) ---
+
+$ node scripts/smoke-buoc-7.mjs
+
+[1] 06:51:35Z Wait for the API
+    ok — reachable at http://localhost:3100; database english_learning_smoke_b7; children run with AI_FAKE_ENABLED=true, JOB_QUEUE_PREFIX=wordmet-b7-smoke, no key
+
+[2] 06:51:35Z Accounts: admin (CLI grant), editor and a second admin that publishes configs (created by the admin), learners L1, L2, L3 (vi)
+    ok — admin smoke7-admin-6b2c9044@example.com; editor smoke7-editor-6b2c9044@example.com; publisher (admin) smoke7-publisher-6b2c9044@example.com; learners smoke7-l1-6b2c9044@example.com, smoke7-l2-6b2c9044@example.com, smoke7-l3-6b2c9044@example.com (native_language vi)
+
+[3] 06:51:43Z AI setup (design §18, R6): fake provider on; the new operations seeded without a model; fake:ok published for five operations
+    (429 on POST /v1/admin/ai/configs/lookup_word/publish; waiting 13s)
+    ok — five operations were model-not-set; generate_cloze prompt at revision 2; six fake models added; fake:ok published for each, all five ready; ai_prefetch_count 2
+
+[4] 06:52:01Z Content: import 36 verbs (gloss, short definition, example, inflections) in 12 topic/level buckets and publish
+    ok — batch 51456550-37d5-42a0-b27c-0d5d6a14b7ee: 36 created, published by job 911feb70-449d-4d30-a6ad-2fb5e319f374; a learner sees them
+
+[5] 06:52:05Z Entitlements: L1 Pro with 87 AI practice units and 200 sessions a day; L2 stays Free; L3 Pro with 3 units
+    ok — L1 pro, ai_practice 87/87, ai_lookup 100; L2 free (no AI); L3 pro, ai_practice 3
+
+[6] 06:52:05Z Groups: one per bucket (bulk add by topic and level), plus an empty one for a saved AI suggestion
+    ok — L1: G1, G4, G5, G6, G7, GR1, GR2, GR3, GR5, G57, G117, G9; L2: GL2; L3: GL3
+
+[7] 06:52:07Z AC1 (B7E45, B7E7): Pro learner, 87 units, "gõ từ + điền từ AI", 10 questions, prepare after opening and after each question
+    ok — ai_planned 5, marked positions 2,4,6,8,10; every AI question made by prepare before next; 5 cloze (AI) + 5 typing, all right; 82 units left; 5 confirmed use rows
+
+[8] 06:52:20Z AC2 (B7E59, B7E15): the same session again, stopped at question 4 and abandoned; the next session reuses the unseen AI questions at 0 units
+    ok — session 2: 4 AI questions made (2 shown, 2 unseen), 4 units; abandoned by session 3, which marked both unseen words, reused their questions (0 units) and made 3 new ones; 75 units left
+
+[9] 06:52:33Z AC3 (B7E2): L3 has 3 units left; a session that needs 5 is refused, one that needs 3 opens
+    ok — count 5 → 403 ai-quota-insufficient (remaining 3, needed 5, resets_at 2026-11-30T06:52:05.817Z), no usage row; count 3 → opens (ai_planned 3), still 3 units
+
+[10] 06:52:34Z AC4 (B7E49, B7E10, B7E30): AI fails (fake:refuse) twice in a mixed session, no prepare → typing for those words, one ai-fallback notice, no unit
+    ok — positions 2 and 4 fell back to typing on the same word; notices [null,"ai-fallback",null,null]; both requests failed/ai-failed with the unit released; 75 units left
+
+[11] 06:52:43Z AC4 with prepare (B7E113, §6.4, §6.6): prepare fails both AI words; next switches type at once, calls AI no more, shows ai-fallback once
+    ok — prepare: {"prepared":0,"already_ready":0,"failed":2}; both AI words asked as typing at once, no further AI call (2 calls, all from prepare)
+    ok — typing on both words, no further AI call; notices [{"k":1,"marked":false,"notice":null,"ai_reason":null},{"k":2,"marked":true,"notice":"ai-fallback","ai_reason":"ai-failed"},{"k":3,"marked":false,"notice":null,"ai_reason":null},{"k":4,"marked":true,"notice":null,"ai_reason":null}]
+
+[12] 06:52:50Z AC5 (B7E48, B7E31): AI-only session, AI times out (fake:slow) → ai_unavailable; next again → same, no AI call; retry_ai once AI is back (fake:503-then-ok) → AI question
+    ok — timeout after 10251 ms → ai_unavailable/ai-failed (unit released); again → same, no new call; retry_ai with fake:503-then-ok → cloze (calls provider-error,succeeded), 1 unit; cloze wrong → try_again, skip → wrong/skipped
+
+[13] 06:53:23Z AC6 (B7E34, B7E96, B7E97): fake:bad-form → rejected twice (#2), the form is recorded; staff accept it → the next AI question passes
+    ok — first request rejected (reason ai-failed) after 4d344f69-0937-4b3d-bedc-c5b73018d3df and #2; "zqhxrtoement" recorded twice and listed; editor accepted it (again → 409); list hides it; retry → cloze accepted "zqhxrtoement", one call, 1 unit
+
+[14] 06:53:33Z AC7 (B7E50–B7E56, B7E18, B7E124, plan choice 6): the three AI types and cloze from a saved sentence: hints, grading, translation
+    ok — mcq_sentence: hint 1 = definition, hint 2/3 → 409, right option "zqcobeejs", translation; meaning_in_sentence: highlight, 4 meanings, right = meaning, translation; cloze: hints d…/definition/meaning, another word → try_again, "Z…." → correct; saved-sentence cloze: no unit, not reportable, translation null; history shows option and translation; 3 units
+
+[15] 06:53:38Z AC8 (B7E70, B7E73, B7E76, B7E84): L1 reports the AI cloze; the editor confirms; the unit comes back; the admin sees it in refunds
+    ok — 7 reasons for ai, 4 for non_ai; report 22ca607b-39dd-4ef7-9da4-642daa8493aa open with label "Có hơn một đáp án đúng"; staff row has op id, model fake:ok, prompt_revision 8; fixed → 409; confirmed by the editor → refunded, 70 → 71 units, one credit row; again → 409 report-not-open; L1 sees refunded true; admin refunds row (self_resolved false); editor → 403
+
+[16] 06:53:40Z AC9 (B7E19, B7E21, B7E93): AI lookup of an unknown word; the same key again; saved as a private word with 2 examples
+    ok — "rizziluf": suggestion noun / "nghĩa giả", no catalog sense; 1 lookup unit; same key → same body, no call, no unit; 3 examples → 400; saved with 2 examples, draft_source ai_suggestion, ai_suggested true
+
+[17] 06:53:44Z AC10 (B7E91, B7E92): AI lookup of a catalog lemma, then of the word L1 just saved
+    ok — "zqkbthwl" → catalog_senses [0457f3bd-17a0-44c9-91ca-2387ee32ad09]; "rizziluf" → catalog_senses has L1's private sense; 2 units
+
+[18] 06:53:44Z Plan choices 3–4: a lemma-only edit keeps "AI gợi ý"; an examples edit publishes a new revision and drops it
+    ok — lemma edit → ai_suggested true; examples edit → new revision (draft_source user), ai_suggested false, 1 example
+
+[19] 06:53:44Z AC11 (B7E1, B7E22, đợt cải thiện A C3): Free cloze own opens; AI practice and lookup stay gated
+    ok — cloze own opens (đợt cải thiện A C3); cloze ai, meaning_in_sentence, AI lookup → 403 entitlement-required; no AI usage row; typing alone still opens
+
+[20] 06:53:45Z AC12 (B7E71, B7E72, B7E78): the admin adds, edits and turns off a report reason; L1 sees each list
+    ok — "smoke_6b2c9044" added (same code → 409, editor → 403) and listed for ai; no note → 400; renamed + moved to non_ai → lists follow; on an AI question → 400; turned off → gone from both lists, report → 400
+
+[21] 06:53:46Z Review Focus 1 (B7E16, B7E111, B7E112): five next calls at once on one AI slot → one item, one request, one unit
+    ok — 5 parallel replies {"question":1,"preparing":4}, all naming one item; 1 item, 1 request (ready), usage use:confirmed; a later next returns the same item
+
+[22] 06:53:51Z Review Focus 2 (B7E32, B7E114, B7E65): a generation stuck past the stale time is taken over with the same request id and input; one unit
+    ok — request b96a1775-3e4f-4581-923f-468e5cd0160c: stuck generating with a reserved unit; current → item null, preparing true, no call; after back-dating (3 min) the next call took it over with the same id and stored input → cloze in 2770 ms; the first run's late timeout left it ready; 1 item, usage use:confirmed, calls timeout + succeeded
+
+[23] 06:54:16Z Review Focus 3 (B7E115, CR23, B7E23): a private word deleted between prepare and next leaves no question, request or check of it
+    (network error on POST /v1/practice/sessions/2f69ee42-c666-4a44-8956-5cc0f2ad145f/next: ECONNRESET; retrying)
+    ok — prepare made P3's question (word check ok, no unit for the check) and the other word's; DELETE /v1/my-words → P3's question, request, check and items gone (psql); next asks the other word
+
+[24] 06:54:25Z Review Focus 4 (B7E75, B7E118): confirming an AI question that was given for free gives no credit
+    ok — report ccb58702-d908-4b04-99ce-f8e7a99b6123 snapshots ai_charged false; confirmed → refunded false, no credit row, 67 units unchanged
+
+[25] 06:54:26Z Review Focus 5 (B7E79, B7E80, §7.8): staff see a private word in an AI option only as a mask; the asked private word only with consent
+    ok — mcq_sentence option P5 → staff see "[từ riêng của người học]" (also as the chosen answer); meaning_in_sentence option → "[nghĩa của từ riêng]"; P5 asked: no consent → 400, with consent → staff see P5
+
+[26] 06:54:32Z B7E57: a catalog sense revised after its AI question was made ahead → that question is not reused; a new one is made
+    ok — unseen question c993b65c-89d6-4d75-9f6d-26cc01c0c935 made on revision 415666a5-d3b5-4dc9-b35a-9aeabe727639; after quick-publish (live 6411fae1-7b39-4c99-b13a-712f46b60b5b) the next session made a new question (1 unit) and never asked the old one
+
+[27] 06:54:37Z B7E60 and §12.1: the hourly job keeps an unseen AI question from yesterday, deletes one past history_months, and requests older than 7 days
+    ok — back-dated 1 day → kept; back-dated 6 months + 1 day → deleted; request back-dated 8 days → deleted, a recent one kept
+
+[28] 06:54:49Z B7E117: an operation with no model → a session with its type is 503 ai-unavailable model-not-set and nothing is created
+    (network error on GET /v1/admin/ai/configs/generate_meaning_question: ECONNRESET; retrying)
+    ok — 503 ai-unavailable, reason model-not-set, no session row; typing alone opens
+
+[29] 06:54:51Z B7E98, B7E58, B7E23 (fake:not-recognized): an unrecognised private word falls back with notice word-not-recognized, and has no AI type until edited
+    ok — not_recognized → typing with notice word-not-recognized (sense_id), no unit held, verdict stored; cloze only → 409 practice-no-words; after a meaning edit the word is checked again (ok) and gets an AI cloze, 1 unit
+
+[30] 06:54:59Z B7E98 with prepare (§6.5 A, §6.6 last row): the check rejects the word during prepare; next switches type with notice word-not-recognized
+    ok — prepare: {"prepared":0,"already_ready":0,"failed":1}, request failed/word-not-recognized; next asks P10 as typing at once, with notice word-not-recognized and sense_id
+
+Smoke Bước 7 passed in 206s (30 steps).
+
+--- pnpm learner:setup --plan pro, chạy hai lần (english_learning_smoke_ls) ---
+
+$ node scripts/learner-test-setup.mjs "--" "--admin" "smokea-admin@example.com" "--learner" "smokea-learner@example.com" "--plan" "pro"
+
+[1] Check the fake providers are on (env or .env)
+    ok — AI_FAKE_ENABLED=true, BILLING_FAKE_ENABLED=true
+
+[2] Wait for the API
+    ok — reachable at http://localhost:3100
+
+[3] Admin account smokea-admin@example.com
+    ok — registered, verified, admin
+
+[4] Learner account smokea-learner@example.com
+    ok — registered, verified, native_language vi
+
+[5] Topics and level source
+    ok — topics created: travel; level source "Wordmet learner sample" fd43dc09-b482-4e31-beba-a252c3d64c5f
+
+[6] Import learner-sample.csv and publish it
+    batch 5aa7819c-29a2-4ba2-9fbb-6e2bc81a82c1: counters {"created":303,"updated":0,"rejected":0,"processed":303,"unchanged":0,"levels_created":303,"senses_created":303,"entries_created":303,"variants_created":0,"revisions_created":303}
+    ok — batch 5aa7819c-29a2-4ba2-9fbb-6e2bc81a82c1 published by job 5277b073-3e57-46fa-9b95-b814bb039499: 303 senses published
+
+[7] Fake AI model fake:ok, published for every AI operation
+    (429 on POST /v1/admin/ai/eval/examples; waiting 3s)
+    ok — fake:ok on generate_cloze, lookup_word, translate_sentence, generate_meaning_question, generate_sentence_mcq, check_private_word; published now: generate_cloze #3, lookup_word #2, translate_sentence #2, generate_meaning_question #2, generate_sentence_mcq #2, check_private_word #2
+
+[8] Grant Pro for 30 days
+    ok — grant 637211ed-cb25-4796-a0e7-9d9ff5a82129: Pro until 2026-11-30T06:56:02.198Z
+
+[9] Summary
+    admin    smokea-admin@example.com
+    learner  smokea-learner@example.com (plan pro)
+    password <the fixed local test password in scripts/learner-test-setup.mjs>
+    senses   303 published from learner-sample.csv
+    AI       fake:ok for 6 operations
+SECOND
+$ node scripts/learner-test-setup.mjs "--" "--admin" "smokea-admin@example.com" "--learner" "smokea-learner@example.com" "--plan" "pro"
+
+[1] Check the fake providers are on (env or .env)
+    ok — AI_FAKE_ENABLED=true, BILLING_FAKE_ENABLED=true
+
+[2] Wait for the API
+    ok — reachable at http://localhost:3100
+
+[3] Admin account smokea-admin@example.com
+    ok — existed, verified, admin
+
+[4] Learner account smokea-learner@example.com
+    ok — existed, verified, native_language vi
+
+[5] Topics and level source
+    ok — topics created: none (all existed); level source "Wordmet learner sample" fd43dc09-b482-4e31-beba-a252c3d64c5f
+
+[6] Import learner-sample.csv and publish it
+    ok — skipped: batch 5aa7819c-29a2-4ba2-9fbb-6e2bc81a82c1 from an earlier run already published "deploy" (303 senses published)
+
+[7] Fake AI model fake:ok, published for every AI operation
+    ok — fake:ok on generate_cloze, lookup_word, translate_sentence, generate_meaning_question, generate_sentence_mcq, check_private_word; published now: none (all already on fake:ok)
+
+[8] Grant Pro for 30 days
+    ok — skipped: the learner is already Pro
+
+[9] Summary
+    admin    smokea-admin@example.com
+    learner  smokea-learner@example.com (plan pro)
+    password <the fixed local test password in scripts/learner-test-setup.mjs>
+    senses   303 published from learner-sample.csv
+    AI       fake:ok for 6 operations
