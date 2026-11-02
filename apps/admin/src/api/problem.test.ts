@@ -152,6 +152,10 @@ describe('problem mapping', () => {
     }
   });
 
+  it('KNOWN_ERROR_SLUGS knows source-version-locked (a source that has data keeps its version, Q15)', () => {
+    expect(KNOWN_ERROR_SLUGS).toContain('source-version-locked');
+  });
+
   it('KNOWN_ERROR_SLUGS covers every slug of design §4.5', () => {
     for (const slug of [
       'version-conflict', 'lock-rule', 'report-not-open', 'resolve-status-not-allowed', 'report-reason-exists', 'grant-not-allowed',
