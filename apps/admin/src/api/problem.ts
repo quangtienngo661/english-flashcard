@@ -120,6 +120,7 @@ export const KNOWN_ERROR_SLUGS = [
   'source-incomplete',
   'source-not-eligible',
   'source-protected',
+  'source-version-locked',
   'staff-role-rule',
   'stale-revision',
   'too-many-examples',
