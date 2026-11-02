@@ -22,9 +22,13 @@ test.describe('locale at the root', () => {
     expect(new URL(res.headers().location, 'http://x').pathname).toBe('/vi');
   });
 
-  test('LP7 Accept-Language en-US without country redirects to /en', async ({ request }) => {
+  // The root still picks /en for English signals; /en then goes on to /vi until the English landing exists (design landing-redesign L4).
+  test('LP7 Accept-Language en-US without country redirects to /en, which goes on to /vi', async ({ request }) => {
     const res = await root(request, { 'accept-language': 'en-US,en;q=0.9' });
     expect(new URL(res.headers().location, 'http://x').pathname).toBe('/en');
+    const next = await request.get('/en', { maxRedirects: 0 });
+    expect(next.status()).toBe(307);
+    expect(new URL(next.headers().location, 'http://x').pathname).toBe('/vi');
   });
 
   test('LP8 /vi with an English Accept-Language returns 200 Vietnamese', async ({ request }) => {
@@ -47,11 +51,17 @@ test.describe('locale at the root', () => {
     expect(res?.status()).toBe(404);
   });
 
-  test('LP9 clicking EN on /vi lands on /en, and / then redirects to /en', async ({ page }) => {
-    await page.goto('/vi');
-    await page.getByRole('group', { name: 'Ngôn ngữ' }).getByRole('link', { name: 'EN' }).click();
-    await expect(page).toHaveURL(/\/en$/);
-    const res = await page.request.get('/', { headers: { 'x-vercel-ip-country': 'VN' }, maxRedirects: 0 });
-    expect(new URL(res.headers().location, 'http://x').pathname).toBe('/en');
+  test('LP9 a visitor with English signals who opens / ends on the Vietnamese landing', async ({ page }) => {
+    await page.setExtraHTTPHeaders({ 'accept-language': 'en-US,en;q=0.9' });
+    await page.goto('/');
+    await expect(page).toHaveURL(/\/vi$/);
+    await expect(page.getByRole('heading', { level: 1 })).toContainText('Học từ vựng tiếng Anh');
+  });
+
+  test('D2 the English legal pages are not redirected', async ({ request }) => {
+    for (const path of ['/en/privacy', '/en/terms']) {
+      const res = await request.get(path, { maxRedirects: 0 });
+      expect(res.status(), path).toBe(200);
+    }
   });
 });
