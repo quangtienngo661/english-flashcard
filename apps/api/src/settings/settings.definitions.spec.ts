@@ -367,6 +367,18 @@ describe('settings definitions', () => {
     expect(patched.ai.dailyProviderCallsCap).toBeNull();
   });
 
+  it('entitlements.ai_daily_cap accepts null (no cap, owner 02/11/2026) and still 0 and 100000; 100001 and -1 are refused', () => {
+    expect(issues({ entitlements: { ai_daily_cap: null } })).toEqual([]);
+    expect(issues({ entitlements: { ai_daily_cap: 0 } })).toEqual([]);
+    expect(issues({ entitlements: { ai_daily_cap: 100000 } })).toEqual([]);
+    expect(issues({ entitlements: { ai_daily_cap: 100001 } })).toEqual(['entitlements.ai_daily_cap']);
+    expect(issues({ entitlements: { ai_daily_cap: -1 } })).toEqual(['entitlements.ai_daily_cap']);
+    const patched = applyPatch(SETTINGS_DEFAULTS, { entitlements: { ai_daily_cap: null } });
+    expect(patched.entitlements.aiDailyCap).toBeNull();
+    expect(apiValueOf(patched, 'entitlements.ai_daily_cap')).toBeNull();
+    expect(apiValueOf(SETTINGS_DEFAULTS, 'entitlements.ai_daily_cap')).toBe(1000);
+  });
+
   it('accepts 0 for daily_provider_calls_cap and content_retention_days', () => {
     expect(issues({ ai: { daily_provider_calls_cap: 0, content_retention_days: 0 } })).toEqual([]);
     const patched = applyPatch(SETTINGS_DEFAULTS, { ai: { daily_provider_calls_cap: 0, content_retention_days: 0 } });
