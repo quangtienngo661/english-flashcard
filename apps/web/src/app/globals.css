@@ -46,6 +46,7 @@
   --container-practice: 35rem;
   --container-copy: 31.25rem;
   --container-aside: 30rem;
+  --container-landing-hero: 40rem;
 
   /* Sticky header (from md): its min height doubles as the page's scroll padding (UB16, WCAG 2.4.11). */
   --spacing-header: 4.5rem;
@@ -142,7 +143,9 @@
   }
 
   /* Landing-only motion; shared durations and easings come from @wordmet/design-tokens. */
-  --transition-duration-faq: 250ms;
+  --transition-duration-faq: 280ms;
+  /* Stronger ease-out for entrances and the FAQ (design landing-redesign §6; Emil Kowalski). */
+  --ease-out-strong: cubic-bezier(0.23, 1, 0.32, 1);
 
   /* Practice card (design §5.2). Used only through motion-safe:, so reduced motion never declares them. */
   --animate-card-in: card-in var(--transition-duration-slow) var(--ease-spring) both;

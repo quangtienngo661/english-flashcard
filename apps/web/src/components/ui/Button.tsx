@@ -1,7 +1,7 @@
 import type { ComponentProps } from 'react';
 import { cn } from '@/lib/cn';
 
-export type ButtonVariant = 'primary' | 'secondary' | 'accent' | 'ink';
+export type ButtonVariant = 'primary' | 'secondary' | 'accent' | 'ink' | 'sticker' | 'quiet' | 'navy';
 
 // Direction B: chunky buttons on a flat ledge that press down on click (design §6.2, landing §5.5).
 export const buttonVariants = {
@@ -9,6 +9,10 @@ export const buttonVariants = {
   secondary: 'bg-surface text-ink ring-2 ring-inset ring-border-strong hover:bg-canvas',
   accent: 'bg-accent text-ink shadow-ledge hover:bg-accent/85',
   ink: 'bg-ink text-on-primary hover:bg-ink/90',
+  // The learner app's own buttons (app-ui/Button.tsx), for the redesigned landing: sticker = the one yellow action, quiet = secondary.
+  sticker: 'bg-accent text-on-accent shadow-ledge-accent hover:bg-accent/90',
+  quiet: 'bg-surface text-ink ring-2 ring-inset ring-border-strong shadow-button-secondary hover:bg-primary-soft',
+  navy: 'bg-navy-raised text-on-navy hover:bg-navy-raised/80',
 } satisfies Record<ButtonVariant, string>;
 
 export const buttonBase =
