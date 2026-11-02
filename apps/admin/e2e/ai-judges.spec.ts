@@ -134,7 +134,7 @@ test.describe('Judge (nhóm B M3)', () => {
       'GET /v1/admin/ai/eval/runs': () => ({ json: { items: [], next_page_token: null } }),
       'POST /v1/admin/ai/eval/runs': () => (refuse ? problem(409, 'admin-usd-cap') : { status: 202, json: { run_id: EVAL_RUN_ID, status: 'queued', judge_pass_id: 'P1' } }),
     }));
-    await page.goto('/ai/eval');
+    await page.goto('/ai/eval/sets');
     // A React Aria checkbox hides its input: the visible label is what is clicked.
     await page.locator('label', { hasText: vi.ai.eval.run.judge }).click();
     await expect(page.getByRole('checkbox', { name: vi.ai.eval.run.judge })).toBeChecked();

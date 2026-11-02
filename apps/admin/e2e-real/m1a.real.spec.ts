@@ -56,11 +56,12 @@ test('the admin publishes fake:ok for generate_cloze on Cấu hình, and Tình t
 
   await page.goto(`/ai/configs?op=${OP}`);
   await expect(page.getByRole('heading', { level: 1, name: vi.nav.aiConfigs })).toBeVisible();
-  const live = page.getByRole('region', { name: /^Bản đang chạy · cấu hình \d+$/ });
-  await expect(live).toBeVisible();
+  const live = page.getByRole('complementary', { name: vi.ai.workspace.live });
+  await expect(live.getByRole('heading', { name: /^Bản đang chạy · cấu hình \d+$/ })).toBeVisible();
   // A database that an earlier run already set up has this model live: there is nothing to publish then.
-  if ((await live.getByText(`Fake · ${modelId}`).count()) === 0) {
+  if ((await live.getByText(modelId, { exact: true }).count()) === 0) {
     await page.getByRole('button', { name: t.draft.create, exact: true }).click();
+    await page.getByRole('dialog').getByRole('button', { name: t.draft.create, exact: true }).click();
     const draft = page.getByRole('region', { name: /^Nháp · cấu hình \d+ · lần sửa \d+$/ });
     await expect(draft).toBeVisible();
     await draft.getByRole('button', { name: new RegExp(`${vi.ai.operations.row.model}$`) }).click();
@@ -68,11 +69,9 @@ test('the admin publishes fake:ok for generate_cloze on Cấu hình, and Tình t
     await draft.getByRole('button', { name: t.draft.save, exact: true }).click();
     await expect(page.getByText(/^Đã lưu nháp, lần sửa \d+\.$/)).toBeVisible();
 
-    // The run of the saved draft on the newest frozen version opens its result; "Xong" means every example has its result.
-    await page.getByRole('button', { name: t.draft.runSet }).click();
-    await expect(page).toHaveURL(/\/ai\/eval\/runs\/[0-9a-f-]{36}/);
-    await expect(page.getByTestId('detail-panel').getByText(vi.ai.eval.status.finished, { exact: true })).toBeVisible({ timeout: 60_000 });
-    await page.goBack();
+    // The run of the saved draft on the newest frozen version shows its status on the page; "Xong" means every example has its result.
+    await page.getByRole('button', { name: t.draft.runSet, exact: true }).click();
+    await expect(page.getByText(new RegExp(` · ${vi.ai.eval.status.finished} · \\d+/\\d+$`))).toBeVisible({ timeout: 60_000 });
 
     const publish = page.getByRole('region', { name: t.publish.title });
     const submit = publish.getByRole('button', { name: t.publish.submit, exact: true });
@@ -83,7 +82,7 @@ test('the admin publishes fake:ok for generate_cloze on Cấu hình, and Tình t
     if (await acknowledge.isVisible()) await acknowledge.click();
     await submit.click();
     await expect(page.getByText(/^Đã publish cấu hình \d+\. Áp từ lần gọi sau\.$/)).toBeVisible();
-    await expect(live).toContainText(`Fake · ${modelId}`);
+    await expect(live.getByText(modelId, { exact: true })).toBeVisible();
   }
 
   await page.goto('/ai/status');
@@ -98,6 +97,7 @@ test('the admin edits the draft instructions, saves (lần sửa +1), test-runs 
   await signInAsAdmin(page);
   await page.goto(`/ai/configs?op=${OP}`);
   await page.getByRole('button', { name: t.draft.create, exact: true }).click();
+  await page.getByRole('dialog').getByRole('button', { name: t.draft.create, exact: true }).click();
   const draft = page.getByRole('region', { name: /^Nháp · cấu hình \d+ · lần sửa \d+$/ });
   const title = draft.getByRole('heading', { name: /^Nháp · cấu hình \d+ · lần sửa \d+$/ });
   await expect(title).toBeVisible();
