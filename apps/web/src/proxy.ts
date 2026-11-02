@@ -2,6 +2,7 @@ import createMiddleware from 'next-intl/middleware';
 import { NextResponse, type NextRequest } from 'next/server';
 import { pickLocale, readCountry } from './i18n/pick-locale';
 import { LOCALE_COOKIE, routing } from './i18n/routing';
+import { landingLocaleRedirect } from './lib/landing-locale';
 import { LEARNER_APP_ENABLED, learnerAppRedirect } from './lib/learner-app-flag';
 
 const handleI18nRouting = createMiddleware(routing);
@@ -14,6 +15,15 @@ export function proxy(request: NextRequest) {
     const url = request.nextUrl.clone();
     url.pathname = appRedirect;
     url.search = '';
+    const response = NextResponse.redirect(url, 307);
+    response.headers.set('Cache-Control', 'no-store');
+    return response;
+  }
+  // L4: the English landing is not translated yet, so the English home goes to the Vietnamese one (query kept).
+  const landingRedirect = landingLocaleRedirect(request.nextUrl.pathname);
+  if (landingRedirect) {
+    const url = request.nextUrl.clone();
+    url.pathname = landingRedirect;
     const response = NextResponse.redirect(url, 307);
     response.headers.set('Cache-Control', 'no-store');
     return response;
