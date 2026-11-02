@@ -10,7 +10,7 @@ export type ExerciseKindKey = 'mcq' | 'true_false' | 'type_meaning' | 'cloze' | 
 /** The few `App` strings the landing reuses as they are (D4), so the sample UI never drifts from the real one. */
 export type AppCopy = {
   kinds: Record<ExerciseKindKey, string>;
-  review: { card: string; hintWeb: string; stillLearning: string; know: string };
+  review: { card: string; flip: string; hintWeb: string; hintPhone: string; stillLearning: string; know: string };
   addWord: { title: string; word: string; sentence: string; deck: string; save: string; recognized: string; pastKind: string };
 };
 
@@ -36,7 +36,14 @@ export function buildAppCopy(App: typeof vi.App): AppCopy {
       meaning_in_sentence: kind.meaning_in_sentence,
       mcq_sentence: kind.mcq_sentence,
     },
-    review: { card: App.review.card, hintWeb: App.review.hintWeb, stillLearning: App.review.stillLearning, know: App.review.know },
+    review: {
+      card: App.review.card,
+      flip: App.review.flip,
+      hintWeb: App.review.hintWeb,
+      hintPhone: App.review.hintPhone,
+      stillLearning: App.review.stillLearning,
+      know: App.review.know,
+    },
     addWord: {
       title: App.addWord.title,
       word: App.addWord.word,
