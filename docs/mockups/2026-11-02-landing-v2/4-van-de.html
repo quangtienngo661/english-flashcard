@@ -1,0 +1,301 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mockup 4 · Học thẻ xong vẫn quên</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="app.css">
+<script>document.documentElement.classList.add('js'); setTimeout(() => { if (!window.__motion) document.documentElement.classList.add('motion-failsafe'); }, 2500);</script>
+<style>
+/* Mockup 4 (owner 02/11/2026): the page argues from the learner's problem. Learning a word on a flashcard is not enough:
+   it fades in days and the learner cannot use it. Wordmet's answer is using the word in sentences (exercises, AI-written
+   ones on Pro) and reviewing it just before it fades. Same app design system and review fixes as mockup 1. */
+
+.hero { padding-block: clamp(2.5rem, 1rem + 4.5vw, 5.5rem) clamp(4rem, 2rem + 6vw, 8rem); }
+.hero h1 { font-weight: 800; letter-spacing: -0.035em; line-height: 0.98; font-size: clamp(2.2rem, 0.75rem + 5.8vw, 5.5rem); text-wrap: balance; max-width: 20ch; }
+.hero-row { display: grid; gap: 2.5rem; margin-top: clamp(1.75rem, 1rem + 2vw, 3rem); }
+@media (min-width: 62rem) { .hero-row { grid-template-columns: 0.85fr 1.15fr; gap: 4.5rem; align-items: start; } }
+.hero-copy { display: grid; gap: 1.5rem; align-content: start; }
+.hero-actions { display: flex; flex-wrap: wrap; gap: 0.75rem 1.25rem; align-items: center; }
+.note { font-size: 0.8125rem; color: var(--muted); }
+
+/* Hero demo: the flashcard the learner knows, then the sentence that makes them use it. */
+.demo { display: grid; gap: 1rem; }
+.step { display: grid; grid-template-columns: 2rem 1fr; gap: 0.9rem; align-items: start; }
+.step > span { width: 2rem; height: 2rem; border-radius: 999px; background: var(--ink); color: #fff; display: grid; place-items: center; font-weight: 700; font-size: 0.875rem; margin-top: 0.15rem; }
+.step > div { display: grid; gap: 0.6rem; }
+.step-label { font-weight: 600; }
+.flash { perspective: 1200px; }
+.flash button { all: unset; display: block; width: 100%; cursor: pointer; }
+.flash .inner { display: block; position: relative; min-height: 8.5rem; transform-style: preserve-3d; transition: transform 320ms var(--ease-out); }
+.flash[data-flipped] .inner { transform: rotateY(180deg); }
+.flash .face { position: absolute; inset: 0; backface-visibility: hidden; display: grid; place-content: center; text-align: center; gap: 0.35rem; padding: 1rem; }
+.flash .back { transform: rotateY(180deg); }
+.flash .front b { font-size: 2rem; font-weight: 800; letter-spacing: -0.02em; }
+.flash .back b { font-size: 1.1875rem; }
+.flash small { color: var(--muted); font-size: 0.8125rem; }
+.flash button:focus-visible .inner { outline: 2px solid var(--primary); outline-offset: 3px; border-radius: var(--r-card); }
+.then { color: var(--muted); font-size: 0.8125rem; }
+
+/* Why we forget: an illustrative curve, with the reviews at the app's real intervals. */
+.why { display: grid; gap: 3rem; align-items: center; }
+@media (min-width: 58rem) { .why { grid-template-columns: 0.8fr 1.2fr; gap: 5rem; } }
+.copy { display: grid; gap: 1.25rem; align-content: start; }
+.reasons { display: grid; gap: 1.25rem; }
+.reasons b { display: block; font-size: 1.1875rem; margin-bottom: 0.2rem; }
+.reasons p { color: var(--muted); }
+.curve { background: var(--canvas); border-radius: var(--r-card); padding: 1.5rem; display: grid; gap: 0.75rem; }
+.curve svg { width: 100%; height: auto; overflow: visible; }
+.curve .axis { stroke: var(--canvas-deep); stroke-width: 2; }
+.curve .no { fill: none; stroke: var(--danger); stroke-width: 3; stroke-dasharray: 2 7; stroke-linecap: round; }
+.curve .yes { fill: none; stroke: var(--primary); stroke-width: 3.5; stroke-linejoin: round; }
+.curve text { font: 600 13px var(--font); fill: var(--muted); }
+.curve .review { fill: var(--accent); stroke: var(--ink); stroke-width: 2; }
+.legend { display: flex; flex-wrap: wrap; gap: 0.5rem 1.5rem; font-size: 0.8125rem; color: var(--muted); }
+.legend i { display: inline-block; width: 1.6rem; height: 0; border-top: 3px solid var(--primary); vertical-align: middle; margin-right: 0.4rem; }
+.legend i.no { border-top: 3px dotted var(--danger); }
+
+/* Use the word: the kinds of exercise as rows, each on a real sentence, with the plan it belongs to. */
+.use-head { display: grid; gap: 1rem; max-width: 46rem; }
+.kinds { display: grid; margin-top: 3rem; }
+.kind { display: grid; gap: 0.4rem 2rem; padding-block: 1.4rem; }
+.kind + .kind { box-shadow: 0 -1px 0 var(--canvas-deep); }
+@media (min-width: 56rem) { .kind { grid-template-columns: 15rem 1fr 7rem; align-items: baseline; } }
+.kind h3 { font-size: 1.1875rem; font-weight: 700; }
+.kind p { font-size: 1.1875rem; }
+.kind p .gap { display: inline-block; width: 4.5rem; border-bottom: 2px solid var(--ink); }
+.kind .tag { justify-self: start; }
+.kinds .ai h3::after { content: ' · AI'; color: var(--primary); }
+.rule { margin-top: 2rem; display: flex; gap: 0.75rem; align-items: flex-start; max-width: 46rem; font-size: 1.1875rem; font-weight: 600; }
+.rule .ic { color: var(--success); width: 1.5rem; height: 1.5rem; margin-top: 0.15rem; }
+
+/* Review on time + words met outside. */
+.chapter { display: grid; gap: 2.5rem; align-items: center; }
+@media (min-width: 58rem) { .chapter { grid-template-columns: 0.8fr 1.2fr; gap: 5rem; } .chapter.flip { grid-template-columns: 1.2fr 0.8fr; } .chapter.flip > :first-child { order: 2; } }
+.pair { display: grid; gap: 1rem; }
+@media (min-width: 40rem) { .pair { grid-template-columns: 1.3fr 1fr; align-items: start; } }
+.boxes-panel { padding: 1.1rem 1.2rem; display: grid; gap: 0.55rem; font-size: 0.8125rem; }
+.boxes-panel .r { display: grid; grid-template-columns: 3.75rem 1fr 2.5rem; gap: 0.75rem; align-items: center; font-variant-numeric: tabular-nums; }
+.boxes-panel .r span:last-child { text-align: right; font-weight: 700; }
+.weak-card { background: var(--danger-soft); border-radius: var(--r-card); padding: 1.1rem 1.2rem; display: grid; gap: 0.6rem; }
+.weak-card b { display: flex; gap: 0.5rem; align-items: center; font-size: 1.1875rem; }
+.weak-card p { font-size: 0.8125rem; }
+.weak-card .chips { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+.weak-card .chip { background: var(--surface); box-shadow: inset 0 0 0 1.5px var(--ink); }
+.ticks { display: grid; gap: 0.55rem; }
+.ticks li { display: flex; gap: 0.6rem; align-items: flex-start; }
+.ticks .ic { color: var(--success); width: 1.1rem; height: 1.1rem; margin-top: 0.2rem; }
+.on-navy .ticks .ic { color: var(--accent); }
+.flow { display: grid; gap: 1rem; }
+.addword { background: var(--accent-soft); border-radius: var(--r-card); box-shadow: 0 0.3rem 0 var(--accent-deep); padding: 1.25rem; display: grid; gap: 0.75rem; color: var(--ink); }
+.addword b { font-size: 1.1875rem; }
+.addword p { font-size: 0.8125rem; color: var(--muted); }
+.addword .f { display: grid; gap: 0.5rem; }
+.arrow { justify-self: center; color: var(--on-navy-muted); font-size: 0.8125rem; display: flex; gap: 0.5rem; align-items: center; }
+.arrow .ic { width: 1.1rem; height: 1.1rem; }
+.made { padding: 1.1rem 1.2rem; display: grid; gap: 0.5rem; color: var(--ink); }
+.made p { font-size: 1.1875rem; }
+.made p .gap { display: inline-block; width: 4.5rem; border-bottom: 2px solid var(--ink); }
+
+/* Running text in the full ink (taste-skill grey-body); muted stays for notes. */
+.lead, .reasons p { color: var(--ink); } .on-navy .lead { color: var(--on-navy); }
+.final .wrap { display: grid; gap: 1.75rem; justify-items: start; }
+.final h2 { color: #fff; font-size: clamp(2rem, 1rem + 3.4vw, 3.5rem); font-weight: 800; letter-spacing: -0.03em; line-height: 1.05; max-width: 16ch; }
+@media (prefers-reduced-motion: reduce) { .flash .inner { transition: none; } }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="logo" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="#ffd84a"/><path d="M14 40h14M36 40h14" stroke="#0f1a3d" stroke-width="6" stroke-linecap="round"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+  <symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></symbol>
+  <symbol id="i-down" viewBox="0 0 24 24"><path d="M12 5v14M19 12l-7 7-7-7"/></symbol>
+  <symbol id="i-rotate" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></symbol>
+</svg>
+<div class="mock-bar"><span>Mockup 4 · Học thẻ xong vẫn quên (theo vấn đề người học)</span><a href="index.html">Về mục lục</a></div>
+
+<header class="topbar on-navy">
+  <div class="wrap">
+    <a class="logo" href="#"><svg aria-hidden="true"><use href="#logo"/></svg>Wordmet</a>
+    <nav aria-label="Trang"><a class="tab" href="#vi-sao">Vì sao quên</a><a class="tab" href="#dung-tu">Dùng từ</a><a class="tab" href="#on-lai">Ôn lại</a><a class="tab" href="#goi">Gói học</a><a class="tab" href="#hoi-dap">Hỏi đáp</a></nav>
+    <div class="end"><a class="btn btn-navy" href="#">Đăng nhập</a><a class="btn btn-sticker" href="#">Đăng ký</a></div>
+  </div>
+</header>
+
+<main>
+  <section class="hero">
+    <div class="wrap">
+      <h1 class="reveal">Học flashcard xong, <span class="hl">vài hôm lại quên?</span></h1>
+      <div class="hero-row">
+        <div class="hero-copy reveal">
+          <p class="lead">Nhìn thẻ thì nhớ nghĩa, nhưng đến lúc cần dùng lại không ra. Wordmet cho bạn dùng từ ngay trong câu, qua bài trắc nghiệm, gõ từ, điền từ, và nhắc ôn lại đúng lúc sắp quên.</p>
+          <div class="hero-actions">
+            <a class="btn btn-sticker btn-lg" href="#">Đăng ký miễn phí</a>
+            <span class="note">Đã có tài khoản? <a class="link" href="#">Đăng nhập</a></span>
+          </div>
+          <p class="note">Miễn phí, không cần thẻ. Học trên trình duyệt máy tính và điện thoại.</p>
+        </div>
+        <div class="demo">
+          <div class="step reveal"><span>1</span><div>
+            <p class="step-label">Thẻ bạn đã học</p>
+            <div class="flash" id="flash" data-ui>
+              <button type="button" aria-label="Lật thẻ deploy" aria-pressed="false">
+                <span class="inner">
+                  <span class="face front sheet"><b lang="en">deploy</b><small>Chạm để lật</small></span>
+                  <span class="face back sheet"><b>triển khai, phát hành</b><small>động từ · B1</small></span>
+                </span>
+              </button>
+            </div></div></div>
+          <div class="step reveal"><span>2</span><div>
+            <p class="step-label">Giờ dùng nó trong câu</p>
+            <div class="q-card" id="hero-practice" data-ui aria-label="Bài luyện thử"></div></div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section white-band" id="vi-sao">
+    <div class="wrap why">
+      <div class="copy reveal">
+        <h2 class="title"><span class="hl">Vì sao thuộc rồi vẫn quên</span></h2>
+        <div class="reasons">
+          <div><b>Nhận ra nghĩa chưa phải là dùng được</b><p>Lật thẻ thấy nghĩa là đúng, nhưng tự đặt từ vào câu lại là việc khác. Phải tập dùng thì mới nhớ cách dùng.</p></div>
+          <div><b>Không ôn lại thì trí nhớ mờ dần</b><p>Một từ chỉ gặp một lần sẽ phai sau vài ngày. Gặp lại đúng lúc sắp quên thì lần sau nhớ lâu hơn.</p></div>
+        </div>
+      </div>
+      <figure class="curve reveal" aria-label="Minh họa: trí nhớ giảm dần nếu không ôn, và giữ được nếu ôn lại sau 1, 3, 7, 14 và 30 ngày">
+        <svg viewBox="0 0 600 230" role="presentation">
+          <line class="axis" x1="40" y1="192" x2="584" y2="192"/><line class="axis" x1="40" y1="16" x2="40" y2="192"/>
+          <path class="no" id="c-no"/><path class="yes" id="c-yes"/>
+          <g id="c-dots"></g>
+          <text x="40" y="214">Học</text><text x="58" y="214" text-anchor="middle">1</text><text x="94" y="214" text-anchor="middle">3</text><text x="167" y="214" text-anchor="middle">7</text><text x="294" y="214" text-anchor="middle">14</text><text x="584" y="214" text-anchor="end">30 ngày</text>
+          <text x="0" y="22">Nhớ</text>
+        </svg>
+        <figcaption class="legend"><span><i></i>Ôn lại theo lịch của Wordmet</span><span><i class="no"></i>Không ôn lại</span><span>Minh họa, không phải số đo</span></figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section class="section" id="dung-tu">
+    <div class="wrap">
+      <div class="use-head reveal">
+        <h2 class="title"><span class="hl">Dùng từ ngay trong câu</span></h2>
+        <p class="lead">Mỗi lượt luyện trộn nhiều kiểu bài trên những từ bạn đang học. Gói Pro có thêm câu do AI viết quanh đúng từ đó.</p>
+      </div>
+      <div class="kinds reveal">
+        <div class="kind"><h3>Trắc nghiệm nghĩa</h3><p><span lang="en">assume</span> nghĩa là gì? cho rằng · tiếp tục · tiêu thụ · đảm bảo</p><span class="chip chip-green tag">Miễn phí</span></div>
+        <div class="kind"><h3>Đúng hay sai</h3><p><span lang="en">borrow</span> = cho mượn. Đúng hay sai?</p><span class="chip chip-green tag">Miễn phí</span></div>
+        <div class="kind"><h3>Gõ từ theo nghĩa</h3><p>“triển khai, phát hành” → <span class="gap"></span></p><span class="chip chip-green tag">Miễn phí</span></div>
+        <div class="kind"><h3>Điền từ vào câu bạn đã lưu</h3><p lang="en">Can I <span class="gap"></span> your charger for a minute?</p><span class="chip chip-green tag">Miễn phí</span></div>
+        <div class="kind ai"><h3>Câu mới để điền từ</h3><p lang="en">The team will <span class="gap"></span> the fix tonight.</p><span class="chip chip-blue tag">Pro</span></div>
+        <div class="kind ai"><h3>Chọn nghĩa trong câu</h3><p>Trong câu “<span lang="en">Don't assume he knows.</span>”, <span lang="en">assume</span> nghĩa là gì?</p><span class="chip chip-blue tag">Pro</span></div>
+      </div>
+      <p class="rule reveal"><svg class="ic"><use href="#i-check"/></svg>AI chỉ viết câu. Đáp án của bạn luôn chấm bằng quy tắc, nên kết quả rõ ràng và không tốn lượt AI.</p>
+    </div>
+  </section>
+
+  <section class="section white-band" id="on-lai">
+    <div class="wrap chapter">
+      <div class="copy reveal">
+        <h2 class="title"><span class="hl">Ôn lại đúng lúc sắp quên</span></h2>
+        <p class="lead">Mỗi từ nằm trong một ngăn. Nhớ thì lên ngăn sau, lâu hơn mới gặp lại. Từ hay sai được gom riêng để luyện thêm.</p>
+        <ul class="ticks"><li><svg class="ic"><use href="#i-check"/></svg>Sáu ngăn: mới, 1, 3, 7, 14, 30 ngày</li><li><svg class="ic"><use href="#i-check"/></svg>Nhắc ôn qua email khi có thẻ đến hạn</li><li><svg class="ic"><use href="#i-check"/></svg>Ôn thẻ không giới hạn ở gói Miễn phí</li></ul>
+      </div>
+      <div class="pair reveal">
+        <div class="sheet boxes-panel" data-ui aria-label="Số từ theo ngăn trong app">
+          <b style="font-size:1rem">430 từ theo ngăn</b>
+          <div class="r"><span>Mới</span><span class="bar on"></span><span>410</span></div>
+          <div class="r"><span>1 ngày</span><span class="bar on"></span><span>20</span></div>
+          <div class="r"><span>3 ngày</span><span class="bar"></span><span>0</span></div>
+          <div class="r"><span>7 ngày</span><span class="bar"></span><span>0</span></div>
+          <div class="r"><span>14 ngày</span><span class="bar"></span><span>0</span></div>
+          <div class="r"><span>30 ngày</span><span class="bar"></span><span>0</span></div>
+        </div>
+        <div class="weak-card" data-ui aria-label="Thẻ Từ hay sai trong app"><b><svg class="ic"><use href="#i-target"/></svg>Từ hay sai</b><p>Sai 2 lần trong 5 câu gần nhất thì từ vào đây để luyện riêng.</p>
+          <div class="chips"><span class="chip" lang="en">arrive · sai 2/2</span><span class="chip" lang="en">leave · sai 2/2</span></div></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section navy-band on-navy" id="gap-tu">
+    <div class="wrap chapter flip">
+      <div class="copy reveal">
+        <h2 class="title" style="color:#fff">Từ gặp ngoài đời cũng thành bài tập</h2>
+        <p class="lead">Gặp từ lạ trong phim, email hay tin nhắn công việc thì thêm vào Wordmet kèm câu đó. Wordmet nhận ra dạng chia, như went → go, và dùng chính câu ấy để bạn luyện.</p>
+        <ul class="ticks"><li><svg class="ic"><use href="#i-check"/></svg>Có sẵn từ theo trình độ A1–C2 và chủ đề</li><li><svg class="ic"><use href="#i-check"/></svg>Từ chưa có thì tự thêm thành từ của bạn</li></ul>
+      </div>
+      <div class="flow reveal">
+        <div class="addword" data-ui aria-label="Ô Thêm từ vừa gặp trong app"><b>Thêm từ vừa gặp</b><p>Gõ từ bạn vừa gặp. Có câu chứa từ đó thì dán vào luôn.</p>
+          <div class="f"><span class="input" lang="en">borrow</span><span class="input" lang="en">Can I borrow your charger for a minute?</span><span class="btn btn-ink" style="justify-self:start">Thêm</span></div></div>
+        <span class="arrow"><svg class="ic"><use href="#i-down"/></svg>trở thành câu luyện</span>
+        <div class="sheet made" data-ui><span class="chip chip-soft" style="justify-self:start">Câu đã gặp</span><p lang="en">Can I <span class="gap"></span> your charger for a minute?</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section white-band" id="goi">
+    <div class="wrap">
+      <div class="section-head reveal"><h2 class="title"><span class="hl">Học đều mỗi ngày, lên Pro khi cần</span></h2></div>
+      <div class="plans reveal">
+        <div class="sheet plan"><div class="name"><h3>Miễn phí</h3><span class="chip chip-green">Dùng mãi</span></div>
+          <ul><li><svg class="ic"><use href="#i-check"/></svg>Ôn thẻ, lịch ôn, nhắc học qua email</li><li><svg class="ic"><use href="#i-check"/></svg>Tra từ và thêm nhanh</li><li><svg class="ic"><use href="#i-check"/></svg>3 phiên luyện mỗi ngày</li></ul>
+          <a class="btn btn-sticker" href="#" style="justify-self:start">Đăng ký miễn phí</a></div>
+        <div class="sheet plan"><div class="name"><h3>Pro</h3><span class="chip">Chưa mở bán</span></div>
+          <ul><li><svg class="ic"><use href="#i-check"/></svg>Nhiều phiên luyện hơn mỗi ngày</li><li><svg class="ic"><use href="#i-check"/></svg>Câu AI viết quanh từ của bạn, chấm bằng quy tắc</li><li><svg class="ic"><use href="#i-check"/></svg>Tra từ bằng AI</li><li><svg class="ic"><use href="#i-check"/></svg>Không quảng cáo</li></ul>
+          <p class="foot">Khi Pro mở bán: dùng thử 7 ngày, cần thẻ, hủy trước khi hết hạn thì không bị trừ tiền.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="hoi-dap">
+    <div class="wrap">
+      <div class="section-head reveal"><h2 class="title"><span class="hl">Hỏi đáp</span></h2></div>
+      <div class="faq reveal">
+        <details name="faq" open><summary>Wordmet khác học flashcard thường ở đâu?</summary><p>Flashcard chỉ cho bạn xem nghĩa. Wordmet thêm bài tập để bạn tự dùng từ trong câu, và tự xếp lịch ôn lại vào đúng lúc bạn sắp quên.</p></details>
+        <details name="faq"><summary>Wordmet có miễn phí không?</summary><p>Có. Gói Miễn phí gồm ôn thẻ, lịch ôn, nhắc qua email, tra từ và 3 phiên luyện mỗi ngày. Gói Pro thêm câu AI và tra bằng AI, hiện chưa mở bán.</p></details>
+        <details name="faq"><summary>AI có chấm bài của tôi không?</summary><p>Không. AI chỉ viết câu luyện. Đáp án của bạn được chấm bằng quy tắc, nên không tốn lượt AI.</p></details>
+        <details name="faq"><summary>Có app điện thoại không?</summary><p>Wordmet chạy trên trình duyệt, cả máy tính và điện thoại. App điện thoại làm sau.</p></details>
+      </div>
+    </div>
+  </section>
+
+  <section class="section navy-band on-navy final">
+    <div class="wrap">
+      <h2 class="reveal">Đừng chỉ nhìn thẻ, hãy dùng từ</h2>
+      <a class="btn btn-sticker btn-lg reveal" href="#">Đăng ký miễn phí</a>
+    </div>
+  </section>
+</main>
+
+<footer class="footer"><div class="wrap"><div class="cols"><a class="logo" href="#"><svg aria-hidden="true"><use href="#logo"/></svg>Wordmet</a>
+  <nav><a href="#">Gói học</a><a href="#">Hỏi đáp</a><a href="#">Liên hệ</a><a href="#">Điều khoản sử dụng</a><a href="#">Chính sách bảo mật</a><a href="#">English</a></nav></div>
+  <span>© 2026 Wordmet</span></div></footer>
+<script src="practice.js"></script>
+<script src="motion.js"></script>
+<script>
+// Hero: flip the card, then practise the same word first.
+const flash = document.getElementById('flash');
+const flipBtn = flash.querySelector('button');
+flipBtn.addEventListener('click', () => {
+  const on = !flash.hasAttribute('data-flipped');
+  flash.toggleAttribute('data-flipped', on);
+  flipBtn.setAttribute('aria-pressed', String(on));
+});
+mountPractice(document.getElementById('hero-practice'), { items: [ITEMS[2], ITEMS[1], ITEMS[0]] });
+
+// Illustrative curve: memory fades after each meeting; each review at 1, 3, 7, 14, 30 days fades more slowly.
+const X = (d) => 40 + (d / 30) * 544, Y = (m) => 16 + (1 - m) * 176;
+const line = (pts) => 'M' + pts.map(([d, m]) => `${X(d).toFixed(1)},${Y(m).toFixed(1)}`).join(' L');
+const no = []; for (let d = 0; d <= 30; d += 0.5) no.push([d, Math.exp(-d / 2)]);
+const reviews = [1, 3, 7, 14, 30], speed = [1.6, 3.5, 7, 14, 28];
+const yes = []; let from = 0;
+reviews.forEach((r, i) => { for (let k = 0; k <= 12; k++) { const d = from + (r - from) * k / 12; yes.push([d, Math.exp(-(d - from) / speed[i])]); } if (r < 30) yes.push([r, 1]); from = r; });
+document.getElementById('c-no').setAttribute('d', line(no));
+document.getElementById('c-yes').setAttribute('d', line(yes));
+document.getElementById('c-dots').innerHTML = reviews.slice(0, 4).map((r) => `<circle class="review" cx="${X(r)}" cy="${Y(1)}" r="6"/>`).join('');
+</script>
+</body>
+</html>

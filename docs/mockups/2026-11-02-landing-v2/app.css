@@ -1,0 +1,281 @@
+/* The learner app's design system, restated for the landing mockups (02/11/2026). Values come from
+   packages/design-tokens/theme.css, apps/web/src/app/globals.css, app-ui/Button.tsx, app-chrome/TopBar.tsx and PageTitle.tsx. */
+:root {
+  --primary: #2445d6; --primary-deep: #1a32a6; --primary-soft: #eceffe;
+  --accent: #ffd84a; --accent-deep: #c9a21a; --accent-soft: #fff4c7;
+  --ink: #0f1a3d; --muted: #4d5577; --placeholder: #5f6688;
+  --surface: #fff; --canvas: #f1f3fd; --canvas-deep: #dde1f5; --border: #e3e6f4; --border-strong: #7d84a8;
+  --success: #1b7a46; --success-soft: #e3f4ea; --danger: #b8352a; --danger-soft: #fde8e5; --neutral-soft: #eef0f5;
+  --navy: #1b2444; --navy-raised: #2c3760; --navy-card: #121833; --on-navy: #f1f3fd; --on-navy-muted: #b9c1e0;
+  --hero: #eceffe; --shadow-ink: rgb(15 26 61 / 0.35);
+  --font: 'Lexend', ui-sans-serif, system-ui, sans-serif;
+  --r-control: 0.75rem; --r-inner: 0.875rem; --r-panel: 1rem; --r-card: 1.25rem; --r-feature: 1.5rem;
+  --ledge: 0 0.25rem 0 var(--shadow-ink); --ledge-accent: 0 0.25rem 0 var(--accent-deep);
+  --sheet: 0 0.3rem 0 var(--canvas-deep); --btn-quiet: 0 0.18rem 0 var(--border-strong);
+  --wrap: 72rem; --gutter: clamp(1rem, 0.4rem + 2.4vw, 2rem);
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { margin: 0; background: var(--canvas); color: var(--ink); font: 400 1rem/1.5 var(--font); -webkit-font-smoothing: antialiased; }
+h1, h2, h3, p, ul, ol, dl, dd, figure { margin: 0; }
+ul, ol { padding: 0; list-style: none; }
+a { color: inherit; }
+img, svg { display: block; }
+:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; border-radius: 0.5rem; }
+.on-navy :focus-visible { outline-color: var(--accent); }
+::selection { background: var(--accent); color: var(--ink); }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.wrap { width: min(100% - 2 * var(--gutter), var(--wrap)); margin-inline: auto; }
+.mock-bar { background: #000; color: #fff; font-size: 0.8125rem; padding: 0.45rem var(--gutter); display: flex; gap: 1rem; justify-content: space-between; }
+.mock-bar a { color: var(--accent); }
+
+/* Icons: lucide paths, 1.75 stroke. */
+.ic { width: 1.25rem; height: 1.25rem; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+
+/* Logo (Logo.tsx): yellow rounded square with two strokes, then the word. */
+.logo { display: inline-flex; align-items: center; gap: 0.5rem; text-decoration: none; font-weight: 600; font-size: 1.25rem; letter-spacing: -0.01em; }
+.logo svg { width: 2rem; height: 2rem; }
+
+/* Top bar (TopBar.tsx): navy, 64px, tabs with a yellow active pill. */
+.topbar { background: var(--navy); color: var(--on-navy); position: sticky; top: 0; z-index: 20; }
+.topbar .wrap { display: flex; align-items: center; justify-content: space-between; gap: 1rem; height: 4rem; }
+.topbar nav { display: none; gap: 0.375rem; }
+.tab { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.55rem 0.85rem; border-radius: var(--r-control); font-weight: 500; text-decoration: none; color: var(--on-navy); }
+.tab:hover { background: var(--navy-raised); }
+.tab[aria-current] { background: var(--accent); color: var(--ink); font-weight: 600; }
+.topbar .end { display: flex; align-items: center; gap: 0.5rem; }
+@media (min-width: 60rem) { .topbar nav { display: flex; } }
+
+/* Buttons (Button.tsx): sticker = the one yellow main action per screen, quiet = secondary, ink = dark. */
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; min-height: 2.75rem; padding: 0 1.15rem; border: 0; border-radius: var(--r-inner);
+  font: 600 1rem/1 var(--font); white-space: nowrap; cursor: pointer; text-decoration: none; transition: transform 100ms cubic-bezier(0.2, 0, 0, 1), box-shadow 100ms, background-color 100ms; }
+.btn:active { transform: translateY(0.18rem); box-shadow: none; }
+.btn-lg { min-height: 3.25rem; padding: 0 1.5rem; font-size: 1.0625rem; }
+.btn-sticker { background: var(--accent); color: var(--ink); box-shadow: var(--ledge-accent); }
+.btn-sticker:hover { background: #ffdf6b; }
+.btn-quiet { background: var(--surface); color: var(--ink); box-shadow: inset 0 0 0 2px var(--border-strong), var(--btn-quiet); }
+.btn-quiet:hover { background: var(--primary-soft); }
+.btn-ink { background: var(--ink); color: #fff; box-shadow: var(--ledge); }
+.btn-navy { background: var(--navy-raised); color: var(--on-navy); }
+.link { color: var(--primary); font-weight: 600; text-underline-offset: 0.2em; }
+
+/* Page title (PageTitle.tsx): extra bold with the highlighter stroke across its lower half. */
+.title { font-weight: 800; letter-spacing: -0.015em; line-height: 1.18; font-size: clamp(1.75rem, 1.47rem + 1.14vw, 2.5rem); }
+.hl { background: linear-gradient(transparent 55%, var(--accent) 55%, var(--accent) 92%, transparent 92%); padding: 0 0.15em; -webkit-box-decoration-break: clone; box-decoration-break: clone; }
+.display { font-weight: 800; letter-spacing: -0.025em; line-height: 1.06; font-size: clamp(2.4rem, 1.5rem + 3.6vw, 4rem); }
+.lead { font-size: 1.1875rem; line-height: 1.5; color: var(--muted); }
+.on-navy .lead { color: var(--on-navy-muted); }
+
+/* Surfaces (cards, chips). */
+.sheet { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-card); box-shadow: var(--sheet); }
+.hero-card { background: var(--hero); border: 2px solid var(--ink); border-radius: var(--r-card); box-shadow: 0 0.3rem 0 var(--canvas-deep); }
+.chip { display: inline-flex; align-items: center; gap: 0.3rem; padding: 0.15rem 0.6rem; border-radius: 999px; font-size: 0.8125rem; font-weight: 600; background: var(--neutral-soft); color: var(--ink); }
+.chip-sun { background: var(--accent); }
+.chip-soft { background: var(--accent-soft); }
+.chip-blue { background: var(--primary-soft); color: var(--primary); }
+.chip-green { background: var(--success-soft); color: var(--success); }
+.chip-red { background: var(--danger-soft); color: var(--danger); }
+.dot { width: 0.5rem; height: 0.5rem; border-radius: 999px; display: inline-block; }
+
+/* Product fragments, rebuilt from the real screens with sample data. */
+.stat { background: var(--surface); border-radius: var(--r-panel); padding: 0.6rem 0.85rem; min-width: 6.5rem; }
+.stat b { font-size: 1.25rem; font-weight: 800; display: block; }
+.stat span { font-size: 0.8125rem; color: var(--muted); display: inline-flex; align-items: center; gap: 0.35rem; }
+.boxes { display: flex; align-items: center; gap: 0.25rem; }
+.boxes i { display: block; width: 1.25rem; height: 0.4rem; border-radius: 999px; border: 2px solid var(--ink); }
+.boxes i.full { background: var(--ink); }
+.boxes i.tall { width: 0.6rem; height: 1.6rem; background: var(--ink); border-radius: 0.35rem; }
+.group-card { border-radius: var(--r-card); background: var(--surface); border: 1px solid var(--border); box-shadow: var(--sheet); overflow: hidden; display: grid; }
+.group-card .top { padding: 0.9rem 1rem; }
+.group-card .body { padding: 0.9rem 1rem 1rem; display: grid; gap: 0.5rem; }
+.group-card .count { font-size: 0.8125rem; color: var(--muted); }
+.group-card h4 { margin: 0; font-size: 1.125rem; font-weight: 700; }
+.tint-lilac { background: var(--hero); } .tint-sun { background: var(--accent-soft); } .tint-green { background: var(--success-soft); } .tint-pink { background: var(--danger-soft); }
+.input { display: flex; align-items: center; min-height: 2.75rem; padding: 0 0.9rem; border-radius: var(--r-inner); border: 2px solid var(--border-strong); background: var(--surface); color: var(--ink); font: 400 1rem var(--font); width: 100%; }
+.input.placeholder { color: var(--placeholder); }
+.bar { height: 0.5rem; border-radius: 999px; border: 2px solid var(--primary); }
+.bar.on { background: var(--primary); }
+
+/* Phone frame with the app's bottom tab bar. */
+.phone { width: min(100%, 20rem); border-radius: 2.25rem; border: 0.55rem solid var(--ink); background: var(--canvas); overflow: hidden; display: grid; grid-template-rows: auto 1fr auto; aspect-ratio: 9 / 18.5; }
+.phone .p-top { background: var(--navy); color: var(--on-navy); padding: 0.7rem 0.9rem; display: flex; align-items: center; justify-content: space-between; }
+.phone .p-top .logo { font-size: 1rem; } .phone .p-top .logo svg { width: 1.5rem; height: 1.5rem; }
+.phone .p-body { padding: 0.9rem; display: grid; gap: 0.75rem; align-content: start; overflow: hidden; }
+.phone .p-tabs { background: var(--surface); border-top: 1px solid var(--border); display: grid; grid-template-columns: repeat(4, 1fr); padding: 0.4rem 0.25rem 0.6rem; }
+.phone .p-tabs span { display: grid; justify-items: center; gap: 0.15rem; font-size: 0.6875rem; color: var(--muted); }
+.phone .p-tabs span .ic { width: 1.1rem; height: 1.1rem; }
+.phone .p-tabs span.on b { background: var(--accent); border-radius: 999px; padding: 0.15rem 0.8rem; display: grid; }
+.phone .p-tabs span.on { color: var(--ink); font-weight: 600; }
+.phone .title { font-size: 1.4rem; }
+
+/* Practice question card (practice session screen), driven by practice.js. */
+.q-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-card); box-shadow: var(--sheet); padding: 1.25rem; display: grid; gap: 1rem; }
+.q-head { display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; flex-wrap: wrap; font-size: 0.875rem; color: var(--muted); }
+.q-progress { display: flex; gap: 0.3rem; } .q-progress i { width: 1.6rem; height: 0.4rem; border-radius: 999px; background: var(--canvas-deep); } .q-progress i.done { background: var(--success); } .q-progress i.now { background: var(--primary); }
+.q-sentence { font-size: 1.3rem; font-weight: 500; line-height: 1.5; }
+.q-blank { display: inline-block; min-width: 5.5rem; border-bottom: 3px solid var(--ink); text-align: center; font-weight: 700; }
+.q-blank.right { border: 0; background: var(--success-soft); color: var(--success); padding: 0 0.4rem; border-radius: 0.4rem; }
+.q-opts { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; }
+.q-opt { min-height: 2.9rem; border: 0; border-radius: var(--r-inner); background: var(--surface); box-shadow: inset 0 0 0 2px var(--border-strong), var(--btn-quiet); font: 600 1rem var(--font); color: var(--ink); cursor: pointer; display: flex; align-items: center; gap: 0.6rem; padding: 0 0.75rem; text-align: left; }
+.q-opt kbd { font: 600 0.75rem var(--font); min-width: 1.4rem; height: 1.4rem; border-radius: 0.35rem; background: var(--neutral-soft); display: grid; place-items: center; color: var(--muted); }
+.q-opt:hover:not(:disabled) { background: var(--primary-soft); }
+.q-opt.wrong { background: var(--danger-soft); box-shadow: inset 0 0 0 2px var(--danger); color: var(--danger); }
+.q-opt.right { background: var(--success-soft); box-shadow: inset 0 0 0 2px var(--success); color: var(--success); }
+.q-opt:disabled { cursor: default; }
+.q-fb { border-radius: var(--r-panel); padding: 0.85rem 1rem; display: grid; gap: 0.3rem; font-size: 0.9375rem; }
+.q-fb.idle { background: var(--canvas); color: var(--muted); }
+.q-fb.wrong { background: var(--danger-soft); }
+.q-fb.right { background: var(--success-soft); }
+.q-fb b { font-weight: 700; }
+.q-fb.wrong b { color: var(--danger); } .q-fb.right b { color: var(--success); }
+.q-row { display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center; margin-top: 0.35rem; }
+.q-done { display: grid; gap: 0.75rem; justify-items: start; }
+.q-done .score { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+
+/* Sections. */
+.section { padding-block: clamp(3.5rem, 2rem + 5vw, 6rem); }
+.section-head { display: grid; gap: 0.75rem; max-width: 50rem; margin-bottom: 2.25rem; }
+.navy-band { background: var(--navy); color: var(--on-navy); }
+.white-band { background: var(--surface); }
+
+/* FAQ (details, like the app's settings accordions). */
+.faq { display: grid; gap: 0.75rem; }
+.faq details { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-panel); box-shadow: var(--sheet); }
+.faq summary { cursor: pointer; list-style: none; padding: 1rem 1.25rem; font-weight: 600; font-size: 1.0625rem; display: flex; justify-content: space-between; gap: 1rem; align-items: center; }
+.faq summary::-webkit-details-marker { display: none; }
+.faq summary::after { content: "+"; display: inline-block; font-size: 1.5rem; color: var(--muted); line-height: 1; transition: transform 260ms var(--ease-out); }
+.faq details[open] summary::after { transform: rotate(45deg); }
+.faq details p { padding: 0 1.25rem 1.1rem; color: var(--muted); }
+
+/* Plans (like /app/plans). */
+.plans { display: grid; gap: 1.25rem; }
+@media (min-width: 52rem) { .plans { grid-template-columns: 1fr 1fr; } }
+.plan { padding: 1.5rem; display: grid; gap: 1rem; align-content: start; }
+.plan .name { display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+.plan h3 { font-size: 1.5rem; font-weight: 800; }
+.plan li { display: flex; gap: 0.6rem; align-items: flex-start; padding-block: 0.3rem; }
+.plan li .ic { color: var(--success); width: 1.1rem; height: 1.1rem; margin-top: 0.2rem; }
+.plan li.no .ic { color: var(--muted); }
+.plan .foot { font-size: 0.875rem; color: var(--muted); }
+
+/* Footer (AppFooter.tsx look). */
+.footer { background: var(--surface); border-top: 1px solid var(--border); padding-block: 2.5rem 2rem; font-size: 0.875rem; color: var(--muted); }
+.footer .wrap { display: grid; gap: 1.5rem; }
+.footer .cols { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 1.5rem; }
+.footer nav { display: flex; flex-wrap: wrap; gap: 1.25rem; }
+.footer .logo { color: var(--ink); }
+
+/* Phones: the sign-in link stays in the hero, so the bar keeps only the main action. */
+@media (max-width: 36rem) { .topbar .end .btn-navy { display: none; } }
+code { overflow-wrap: anywhere; }
+
+/* ---- Review round 02/11/2026 (taste-skill + Emil Kowalski): polish and the motion layer. ---- */
+:root { --ease-out: cubic-bezier(0.23, 1, 0.32, 1); }
+a, button { -webkit-tap-highlight-color: transparent; }
+h1, h2, h3 { text-wrap: balance; }
+p { text-wrap: pretty; }
+.lead { max-width: 60ch; }
+section[id] { scroll-margin-top: 4.5rem; }
+.stat b, .q-head, .boxes { font-variant-numeric: tabular-nums; }
+.section { padding-block: clamp(4.5rem, 2rem + 7vw, 8.5rem); }
+.footer { border-top: 0; }
+.btn-sm { min-height: 2.25rem; padding: 0 0.85rem; font-size: 0.875rem; }
+
+/* Hover only where a mouse can hover; colour changes ease, presses sink onto their ledge fast. */
+.tab, .btn, .q-opt, .faq summary { transition: background-color 150ms ease, transform 120ms var(--ease-out), box-shadow 120ms var(--ease-out); }
+@media not (hover: hover) { .btn-sticker:hover { background: var(--accent); } .btn-quiet:hover, .q-opt:hover:not(:disabled) { background: var(--surface); } .tab:hover { background: none; } }
+.q-opt:active:not(:disabled) { transform: translateY(0.18rem); box-shadow: inset 0 0 0 2px var(--border-strong); }
+.faq summary:hover { background: var(--canvas); border-radius: var(--r-panel); }
+
+/* Practice feedback: the answer settles into the blank, the verdict slides up a few pixels. */
+.q-fb.right, .q-fb.wrong { animation: fb-in 180ms var(--ease-out); }
+.q-blank.right { animation: blank-in 220ms var(--ease-out); }
+@keyframes fb-in { from { opacity: 0; transform: translateY(4px); } }
+@keyframes blank-in { from { opacity: 0.4; transform: scale(0.94); } }
+
+/* Section entrances: heading, then text, then the app piece, 70 ms apart, once. Content stays visible without script. */
+.js .reveal { opacity: 0; transform: translateY(16px); transition: opacity 520ms var(--ease-out), transform 520ms var(--ease-out); transition-delay: var(--d, 0ms); }
+.js .reveal.in, .motion-failsafe .reveal { opacity: 1; transform: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .js .reveal { transform: none; transition: opacity 200ms ease; }
+  .q-fb.right, .q-fb.wrong, .q-blank.right { animation: none; }
+  .btn:active, .q-opt:active:not(:disabled) { transform: none; }
+  html { scroll-behavior: auto; }
+}
+/* Landing surfaces (not app pieces) are separated by a tone step, not a 1px outline. */
+.plan.sheet { border: 0; box-shadow: none; background: var(--canvas); }
+.faq details { border: 0; box-shadow: none; }
+.faq details p, .plan .foot { max-width: 60ch; }
+
+/* ---- Question card, restated from features/learner/practice/session (QuestionCard, Choices, TypeWordInput, AnswerFeedback). ---- */
+.qc { display: grid; gap: 1.25rem; border-radius: var(--r-feature); border: 2px solid var(--border-strong); background: var(--surface); padding: 1.25rem; box-shadow: var(--ledge); color: var(--ink); }
+@media (min-width: 48rem) { .qc { padding: 1.5rem; } }
+.qc-top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.5rem; }
+.qc-tags { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; min-width: 0; }
+.qc-kind { border-radius: 999px; background: var(--accent); padding: 0.125rem 0.625rem; font-size: 0.8125rem; font-weight: 600; }
+.qc-ai { border-radius: 999px; background: var(--primary-soft); color: var(--primary); padding: 0.125rem 0.625rem; font-size: 0.8125rem; font-weight: 600; }
+.qc-ask { font-size: 0.8125rem; color: var(--muted); }
+.qc-report { display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.8125rem; font-weight: 600; }
+.qc-report .ic { width: 1rem; height: 1rem; }
+.qc-title { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; }
+.qc-title b { font-size: clamp(1.6rem, 1.3rem + 1vw, 2.25rem); font-weight: 800; line-height: 1.15; }
+.qc-label { border-radius: 999px; background: var(--neutral-soft); padding: 0.125rem 0.5rem; font-size: 0.8125rem; font-weight: 600; }
+.qc-sub { font-size: 1.25rem; font-weight: 600; color: var(--muted); }
+.qc-sentence { font-size: 1.25rem; font-weight: 600; line-height: 1.45; }
+.qc-sentence strong { font-weight: 800; }
+.qc-sentence .blank { display: inline-block; min-width: 5.5rem; border-bottom: 3px solid var(--ink); }
+.qc-choices { display: grid; gap: 0.75rem; }
+@media (min-width: 36rem) { .qc-choices { grid-template-columns: 1fr 1fr; } }
+.qc-choice { display: flex; align-items: center; gap: 0.75rem; min-height: 2.75rem; padding: 0.5rem 0.75rem; border-radius: var(--r-inner); border: 2px solid var(--border-strong); background: var(--surface); color: var(--ink); font: 600 1rem var(--font); text-align: left; cursor: pointer; transition: background-color 150ms ease; }
+.qc-choice:hover:not(:disabled) { background: var(--primary-soft); }
+.qc-choice .n { display: grid; place-items: center; width: 1.5rem; height: 1.5rem; flex: none; border-radius: 0.5rem; border: 1px solid var(--border-strong); font-size: 0.8125rem; }
+.qc-choice .t { flex: 1; min-width: 0; }
+.qc-choice .verdict { display: inline-flex; align-items: center; gap: 0.25rem; font-size: 0.8125rem; font-weight: 600; }
+.qc-choice.right { border-color: var(--success); background: var(--success-soft); } .qc-choice.right .verdict { color: var(--success); }
+.qc-choice.chosen { border-color: var(--danger); background: var(--danger-soft); animation: wiggle 300ms var(--ease-out); } .qc-choice.chosen .verdict { color: var(--danger); }
+.qc-choice:disabled { cursor: default; }
+.qc-type { display: flex; flex-direction: column; gap: 0.75rem; }
+@media (min-width: 36rem) { .qc-type { flex-direction: row; } }
+.qc-type .field { position: relative; flex: 1; min-width: 0; }
+.qc-type input { width: 100%; min-height: 2.75rem; border-radius: var(--r-inner); border: 2px solid var(--border-strong); background: var(--surface); padding: 0 4rem 0 0.75rem; font: 600 1rem var(--font); color: var(--ink); outline: none; }
+.qc-type input::placeholder { font-weight: 400; color: var(--placeholder); }
+.qc-type input:focus-visible { border-color: var(--primary); }
+.qc-type input.retry { border-color: var(--danger); background: var(--danger-soft); }
+.qc-type .attempt { position: absolute; right: 0.75rem; top: 50%; transform: translateY(-50%); font-size: 0.8125rem; font-weight: 600; color: var(--danger); }
+.qc-fb { display: flex; gap: 0.75rem; border-radius: var(--r-inner); padding: 1rem; animation: fb-in 180ms var(--ease-out); }
+.qc-fb .ic { width: 1.25rem; height: 1.25rem; margin-top: 0.15rem; }
+.qc-fb.ok { background: var(--success-soft); } .qc-fb.ok .ic, .qc-fb.ok b { color: var(--success); }
+.qc-fb.no { background: var(--danger-soft); } .qc-fb.no .ic, .qc-fb.no b { color: var(--danger); }
+.qc-fb b { display: block; font-size: 1.25rem; }
+.qc-fb span { font-size: 0.875rem; font-weight: 600; }
+.qc-tr { border-radius: var(--r-inner); background: var(--canvas); padding: 0.85rem 1rem; display: grid; gap: 0.25rem; font-size: 0.875rem; }
+.qc-tr p:first-child { display: flex; align-items: center; gap: 0.5rem; font-weight: 600; font-size: 0.8125rem; }
+.qc-actions { display: grid; gap: 0.75rem; }
+@media (min-width: 36rem) { .qc-actions { grid-template-columns: 1fr 1fr; } .qc-actions.three { grid-template-columns: repeat(3, 1fr); } }
+.qc-actions .btn { justify-content: space-between; }
+.qc-actions kbd { font: 600 0.75rem var(--font); border: 1px solid currentColor; border-radius: 0.35rem; padding: 0 0.35rem; opacity: 0.7; }
+.qc-note { font-size: 0.8125rem; color: var(--muted); }
+@keyframes wiggle { 25% { transform: translateX(-3px); } 75% { transform: translateX(3px); } }
+@media (prefers-reduced-motion: reduce) { .qc-choice.chosen, .qc-fb { animation: none; } }
+/* Inputs in app pieces wrap long sentences with room around them (critique B). */
+.input { min-height: 2.75rem; height: auto; padding: 0.55rem 0.9rem; line-height: 1.4; }
+
+/* FAQ open/close (owner 02/11/2026): the answer opens to its own height and fades up; the plus turns into a close mark.
+   ::details-content + interpolate-size animate height in Chromium; elsewhere the answer simply appears. */
+.faq { interpolate-size: allow-keywords; }
+.faq details::details-content { block-size: 0; overflow: hidden; transition: block-size 280ms var(--ease-out), content-visibility 280ms allow-discrete; }
+.faq details[open]::details-content { block-size: auto; }
+.faq details p { opacity: 0; transform: translateY(-4px); transition: opacity 220ms ease 40ms, transform 280ms var(--ease-out); }
+.faq details[open] p { opacity: 1; transform: none; }
+@media (prefers-reduced-motion: reduce) {
+  .faq details::details-content, .faq summary::after { transition: none; }
+  .faq details p { transform: none; transition: opacity 150ms ease; }
+}
+
+/* Typed answers on the landing card: the field itself shows the result (owner 03/11/2026). */
+.qc-type input.right { border-color: var(--success); background: var(--success-soft); color: var(--success); }
+.qc-type input.revealed { border-color: var(--danger); background: var(--danger-soft); }
+.qc-actions .btn:not(:has(kbd)) { justify-content: center; }
+/* As in the app (KBD in QuestionCard.tsx: hidden md:inline), key hints only show from 48rem. */
+@media (max-width: 47.99rem) { .qc-actions kbd, .review-actions kbd { display: none; } .review-actions .btn, .qc-actions .btn { justify-content: center; min-width: 0; } }

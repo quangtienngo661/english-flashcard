@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Landing v2 · ba mockup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="app.css">
+<style>
+main { padding-block: 3rem 5rem; }
+main .wrap { display: grid; gap: 2rem; max-width: 62rem; min-width: 0; } main .wrap > * { min-width: 0; }
+.opt { padding: 1.5rem; display: grid; gap: 0.6rem; }
+.opt h2 { font-size: 1.375rem; font-weight: 800; }
+.opt p { color: var(--muted); }
+.opt .btn { justify-self: start; margin-top: 0.4rem; }
+ul.notes { display: grid; gap: 0.45rem; padding-left: 1.2rem; list-style: disc; }
+</style>
+</head>
+<body>
+<header class="topbar on-navy"><div class="wrap"><span class="logo"><svg viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="14" fill="#ffd84a"/><path d="M14 40h14M36 40h14" stroke="#0f1a3d" stroke-width="6" stroke-linecap="round"/></svg>Wordmet</span></div></header>
+<main><div class="wrap">
+  <div style="display:grid;gap:.75rem">
+    <h1 class="title"><span class="hl">Landing mới: ba bố cục tham khảo</span></h1>
+    <p class="lead">Cả ba dùng đúng design system của app người học: thanh trên xanh than, Lexend, nút vàng có gờ, thẻ trắng, tiêu đề có vệt vàng. Chỉ khác nhau ở bố cục. Mảnh app trong trang dựng lại bằng HTML với dữ liệu mẫu, bấm thử được phần luyện.</p>
+  </div>
+  <div class="sheet opt"><h2>1. Một ngày với Wordmet</h2>
+    <p>Trang đi theo một ngày học: 7:30 ôn thẻ, 12:15 gặp từ và thêm, 21:00 luyện trên câu đã lưu. Màn đầu có dòng thời gian ba mốc; phần luyện bấm được nằm ở mốc tối.</p>
+    <a class="btn btn-sticker" href="1-mot-ngay.html">Mở mockup 1</a></div>
+  <div class="sheet opt"><h2>2. Bốn tab của app</h2>
+    <p>Dưới tiêu đề là một cửa sổ app có bốn tab thật: Hôm nay, Nhóm, Luyện tập, Tra từ. Bấm tab nào thì phần trưng bày đổi theo, kèm lời giải thích bên cạnh.</p>
+    <a class="btn btn-sticker" href="2-bon-tab.html">Mở mockup 2</a></div>
+  <div class="sheet opt"><h2>3. Thử trước, đăng ký sau</h2>
+    <p>Màn đầu là một phiên luyện 3 câu chạy được. Làm xong thì hiện kết quả và nút đăng ký. Phần dưới giải thích từng bước vừa làm, rồi tới màn luyện trên điện thoại.</p>
+    <a class="btn btn-sticker" href="3-thu-truoc.html">Mở mockup 3</a></div>
+  <div class="sheet opt"><h2>4. Học thẻ xong vẫn quên (mới, theo góp ý)</h2>
+    <p>Trang đi theo vấn đề của người học: học flashcard xong vẫn quên, vì sao quên, rồi cách Wordmet giúp nhớ: dùng từ trong bài tập (có câu AI ở gói Pro) và ôn lại đúng lúc sắp quên.</p>
+    <a class="btn btn-sticker" href="4-van-de.html">Mở mockup 4</a></div>
+  <div class="sheet opt"><h2>5. Giới thiệu Wordmet (mới nhất, theo góp ý)</h2>
+    <p>Màn đầu giới thiệu app qua một cửa sổ app có năm phần chính: Ôn thẻ, Nhóm từ, Luyện tập · AI, Tra từ, Thêm từ. Phần dạng bài là thẻ câu hỏi làm thử được, dựng theo đúng giao diện phiên luyện của app.</p>
+    <a class="btn btn-sticker" href="5-gioi-thieu.html">Mở mockup 5</a></div>
+  <div class="sheet opt"><h2>Giống nhau ở cả ba</h2>
+    <ul class="notes">
+      <li>Nút chính "Đăng ký miễn phí" dẫn vào trang đăng ký tài khoản (Q3); nút phụ "Đăng nhập". Không còn waitlist.</li>
+      <li>Gói Pro ghi "Chưa mở bán"; dòng dùng thử theo Q2 (7 ngày, cần thẻ) viết kèm "khi Pro mở bán", phần này chờ bạn chốt.</li>
+      <li>Không có lời khen, số người dùng hay logo đối tác, vì Wordmet chưa có. Thay bằng cho thử sản phẩm ngay trên trang.</li>
+      <li>Bỏ những thứ app không dùng: nhãn nhỏ viết hoa, ba thẻ đánh số, nền xanh phủ cả màn đầu.</li>
+      <li>Chỉ có tiếng Việt và chế độ sáng. Tiếng Anh và chế độ tối làm sau khi chọn bố cục.</li>
+      <li>Research và lý do chọn ba bố cục: <code>docs/preparation/LANDING_RESEARCH_2026-11-02.md</code>.</li>
+    </ul></div>
+</div></main>
+</body>
+</html>
