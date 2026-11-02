@@ -1,5 +1,7 @@
 import type { ReactNode } from 'react';
 import { getLocale, getTranslations } from 'next-intl/server';
+import { ThemeProvider } from '@/app-shell/theme/ThemeProvider';
+import { THEME_SCRIPT } from '@/app-shell/theme/theme-script';
 import { SiteFooter } from '@/components/layout/SiteFooter';
 import { SiteHeader } from '@/components/layout/SiteHeader';
 import { SkipLink } from '@/components/layout/SkipLink';
@@ -14,13 +16,17 @@ export default async function SiteLayout({ children }: { children: ReactNode }) 
 
   return (
     <>
-      <JsonLd locale={locale} description={meta('description')} />
-      <SkipLink label={t('skipToContent')} />
-      <SiteHeader />
-      <main id="main" tabIndex={-1}>
-        {children}
-      </main>
-      <SiteFooter />
+      {/* Sets data-theme on <html> before the landing paints, like the learner app (design landing-redesign §5). */}
+      <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
+      <ThemeProvider>
+        <JsonLd locale={locale} description={meta('description')} />
+        <SkipLink label={t('skipToContent')} />
+        <SiteHeader />
+        <main id="main" tabIndex={-1}>
+          {children}
+        </main>
+        <SiteFooter />
+      </ThemeProvider>
     </>
   );
 }

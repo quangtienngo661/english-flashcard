@@ -11,6 +11,11 @@ import { useTheme } from '@/app-shell/theme/ThemeProvider';
  */
 export function ThemeToggle() {
   const t = useTranslations('App.chrome');
+  return <ThemeToggleButton toLight={t('themeToLight')} toDark={t('themeToDark')} />;
+}
+
+/** The same button with its two labels passed in, so the landing can use it with its own copy (design landing-redesign D1). */
+export function ThemeToggleButton({ toLight, toDark }: { toLight: string; toDark: string }) {
   const { resolved, setChoice } = useTheme();
   // The icon that is leaving, and a counter so each switch replays the animation.
   const [leaving, setLeaving] = useState<'light' | 'dark' | null>(null);
@@ -22,7 +27,7 @@ export function ThemeToggle() {
   return (
     <button
       type="button"
-      aria-label={resolved === 'dark' ? t('themeToLight') : t('themeToDark')}
+      aria-label={resolved === 'dark' ? toLight : toDark}
       onClick={() => {
         setLeaving(resolved);
         setTurn((n) => n + 1);
