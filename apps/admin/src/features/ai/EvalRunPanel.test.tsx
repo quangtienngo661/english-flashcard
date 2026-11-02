@@ -384,7 +384,7 @@ describe('EvalRunPanel stop and delete', () => {
     expect(r.count('DELETE', RUN_PATH)).toBe(0);
   });
 
-  it('confirming DELETEs, toasts, closes the panel (back to /ai/eval with the query string) and reads the list again', async () => {
+  it('confirming DELETEs, toasts, closes the panel (back to the runs page with the query string) and reads the list again', async () => {
     let deleted = false;
     const r = renderApp(`${PATH}?op=generate_cloze`, evalRoutes({
       [URL.run()]: () => Response.json(evalRun()),
@@ -398,7 +398,7 @@ describe('EvalRunPanel stop and delete', () => {
     await userEvent.click(within(dialog).getByRole('button', { name: t.removeRun.confirm }));
     expect(await screen.findByText(t.toast.runDeleted)).toBeInTheDocument();
     expect(r.count('DELETE', RUN_PATH)).toBe(1);
-    await waitFor(() => expect(r.router.state.location.pathname).toBe('/ai/eval'));
+    await waitFor(() => expect(r.router.state.location.pathname).toBe('/ai/eval/runs'));
     expect(r.router.state.location.search).toBe('?op=generate_cloze');
     await waitFor(() => expect(r.count('GET', LIST_PATH)).toBeGreaterThanOrEqual(2));
     await waitFor(() => expect(screen.queryByTestId('detail-panel')).not.toBeInTheDocument());

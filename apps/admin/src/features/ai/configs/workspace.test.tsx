@@ -180,3 +180,35 @@ describe('AI workspace', () => {
     expect(r.calls.some(call => call.path.includes('/drafts'))).toBe(false);
   });
 });
+
+describe('AI workspace: compact draft list (02/11)', () => {
+  const ws = vi.ai.workspace;
+  it('the drafts page is the current tab with its count; [Tạo nháp] sits on the tab row; drafts are rows of a table with a run status', async () => {
+    renderApp('/ai/configs?op=generate_cloze', routes({
+      [`GET ${root}?page_size=20`]: () => Response.json({ items: [draft(), draftView({ id: 'C5', number: 5, name: null, last_run: {
+        id: 'B9', kind: 'eval', status: 'running', model: 'fake:ok', total: 40, config_id: 'C5', config_version: 1,
+        fingerprint: 'a91f3c0d2b7e', source_id: 'R9', provider: 'fake', created_at: '2026-11-01T00:00:00Z', started_at: null, finished_at: null,
+      } })], next_page_token: null }),
+    }));
+    const table = await screen.findByRole('table', { name: ws.drafts }, { timeout: 4000 });
+    const tabs = screen.getByRole('navigation', { name: ws.pages });
+    expect(within(tabs).getByRole('link', { name: `${ws.drafts} 2` })).toHaveAttribute('aria-current', 'page');
+    expect(within(tabs).getByRole('link', { name: ws.history })).not.toHaveAttribute('aria-current');
+    expect(screen.queryByRole('heading', { name: ws.drafts })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Tạo nháp' })).toBeInTheDocument();
+    expect(within(table).getAllByRole('columnheader').map(h => h.textContent)).toEqual([ws.cols.draft, ws.cols.model, ws.cols.lastRun, ws.cols.updated, '']);
+    const [first, second] = within(table).getAllByRole('row').slice(1);
+    expect(within(first).getByRole('link', { name: 'Thử ngữ cảnh' })).toBeInTheDocument();
+    expect(first).toHaveTextContent(ws.notRun);
+    expect(within(second).getByRole('link', { name: ws.unnamed.replace('{number}', '5') })).toBeInTheDocument();
+    expect(second).toHaveTextContent(vi.ai.costs.batches.statuses.running);
+    expect(within(second).getByTitle('a91f3c0d2b7e')).toHaveTextContent(/^a91f3c0d$/);
+  });
+
+  it('the history page has no [Tạo nháp] on the tab row', async () => {
+    renderApp('/ai/configs/history?op=generate_cloze', routes());
+    const tabs = await screen.findByRole('navigation', { name: ws.pages }, { timeout: 4000 });
+    expect(within(tabs).getByRole('link', { name: ws.history })).toHaveAttribute('aria-current', 'page');
+    expect(screen.queryByRole('button', { name: 'Tạo nháp' })).not.toBeInTheDocument();
+  });
+});

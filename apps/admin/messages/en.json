@@ -523,7 +523,8 @@
         "allLevels": "All levels",
         "filterHint": "Word and level filters search dev only. Held-out content stays hidden.",
         "filteredCount": "{count} filtered results",
-        "levelColumn": "Level"
+        "levelColumn": "Level",
+        "range": "Showing {from}–{to} of {total}"
       },
       "split": {
         "dev": "dev",
@@ -829,8 +830,7 @@
       "bulkDelete": {
         "selected": "{count} examples selected",
         "clear": "Clear selection",
-        "selectFiltered": "Select all {count} filtered results",
-        "pageHint": "The table header checkbox selects this page only. Selections persist across pages and filters.",
+        "selectFiltered": "Select all",
         "selectRow": "Select example {summary}",
         "selectHeldOut": "Select held-out example {id}",
         "button": "Delete selected ({count})",
@@ -841,6 +841,17 @@
         "done": "Deleted {deleted} examples; {missing} examples were already missing.",
         "retry": "Retry deleting {count} examples",
         "retryHint": "The result could not be confirmed. Retry the same request to retrieve its saved result."
+      },
+      "tabs": {
+        "label": "Example set pages",
+        "list": "Examples",
+        "sets": "Frozen versions",
+        "runs": "Runs"
+      },
+      "stats": {
+        "label": "Dev and held-out examples",
+        "dev": "{count} dev",
+        "heldOut": "{count} held-out"
       }
     },
     "judges": {
@@ -1204,7 +1215,14 @@
       "gone": "This draft was deleted or published. Return to the list to choose another draft.",
       "clearSelection": "Clear selection",
       "pickDev": "Choose dev examples",
-      "promptHistory": "Prompt history"
+      "promptHistory": "Prompt history",
+      "cols": {
+        "draft": "Draft",
+        "model": "Model",
+        "lastRun": "Last run",
+        "updated": "Updated"
+      },
+      "notRun": "Not run"
     }
   },
   "entitlements": {

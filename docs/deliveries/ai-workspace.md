@@ -42,3 +42,12 @@ Worktree chứa code: `E:/Working/Working project/english-learning-nhomb-m6`, br
 5. Không đánh giá chất lượng model thật. Snapshot chỉ chứng minh nội dung đã chạy, không bảo đảm output tái lập. Lịch sử save trước migration không thể phục hồi nếu dữ liệu không còn.
 
 Hướng dẫn thao tác: `../guides/ai-workspace.md`. Design/decisions mới: `../superpowers/specs/2026-11-01-ai-workspace-design.md`, `../superpowers/decisions/2026-11-01-ai-workspace-decisions.md`.
+
+## Chỉnh bố cục Cấu hình và Bộ ví dụ (02/11/2026)
+
+Theo mockup chủ dự án duyệt: `../mockups/2026-11-02-ai-workspace-refine/index.html` (thêm: sort mặc định Held-out trước, nút "Chọn toàn bộ", hàng tab không có thanh cuộn).
+
+- Component mới `apps/admin/src/ui/PageTabs.tsx`: các trang con là link có gạch chân và số đếm, tự xuống dòng thay vì cuộn.
+- Cấu hình: "Các bản nháp / Lịch sử" thành tab có số nháp; [Tạo nháp] nằm trên hàng tab; danh sách nháp thành bảng Nháp · Model · Lần chạy gần nhất · Cập nhật với chip trạng thái; fingerprint rút 8 ký tự. Trang Lịch sử vẫn không đọc danh sách nháp.
+- Bộ ví dụ: ô số ví dụ bên phải (thanh dev xanh / held-out vàng); 3 trang con `/ai/eval`, `/ai/eval/sets` (bảng phiên bản + box Chạy bộ ví dụ 70/30), `/ai/eval/runs`; thanh chọn một hàng, bỏ dòng giải thích; sort mặc định Held-out trước; chip dev màu primary; xóa một lần chạy quay về `/ai/eval/runs`.
+- Kiểm: admin unit liên quan 19 file / 295 test pass; typecheck, lint (gồm check raw Tailwind) exit 0; e2e mocked `ai-eval`, `ai-configs`, `a11y`, `ui-guidelines` pass (desktop + 390px, axe sạch). Full admin unit chạy một lần giữa chừng: 1321/1322, test hỏng (`EvalRunPanel` quay về `/ai/eval`) đã sửa và chạy lại pass; chưa chạy lại toàn bộ sau sửa. Real-stack chưa chạy.

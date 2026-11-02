@@ -106,6 +106,8 @@ export const appRoutes: RouteObject[] = createRoutesFromElements(
         <Route path="ai/eval" element={<AiEvalPage />}>
           <Route path="new" element={null} />
           <Route path="bulk" element={null} />
+          <Route path="sets" element={null} />
+          <Route path="runs" element={null} />
           <Route path="runs/:id" element={null} />
         </Route>
         <Route path="ai/real-questions" element={<RealQuestionsPage />} />

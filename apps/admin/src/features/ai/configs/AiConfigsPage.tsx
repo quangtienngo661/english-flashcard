@@ -1,16 +1,18 @@
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
-import { Link, NavLink, useLocation, useNavigate, useParams } from 'react-router';
+import { Link, useLocation, useNavigate, useParams } from 'react-router';
 import { useTranslations } from 'use-intl';
 import { ApiError } from '../../../api/problem';
 import { useErrorDetails, type ErrorDetails } from '../../../api/use-error-message';
 import { userLabel } from '../../../api/user-ref';
 import { useApi } from '../../../auth/session-context';
+import { Badge } from '../../../ui/Badge';
 import { Banner } from '../../../ui/Banner';
 import { Button } from '../../../ui/Button';
 import { ConfirmDialog } from '../../../ui/ConfirmDialog';
 import { Dialog } from '../../../ui/Dialog';
 import { ListState } from '../../../ui/ListState';
+import { PageTabs } from '../../../ui/PageTabs';
 import { Select } from '../../../ui/Select';
 import { TextField } from '../../../ui/TextField';
 import { useMediaQuery } from '../../../ui/use-media-query';
@@ -37,6 +39,11 @@ export function AiConfigsPage() {
   const sets = useQuery({ queryKey: aiKeys.sets(op), queryFn: () => listSets(api, op) });
   const newestSet = (sets.data?.items ?? []).reduce<EvalSet | null>((best, set) => best === null || set.version > best.version ? set : best, null);
   const history = pathname.endsWith('/history');
+  // Same key as the list below, so the tab count and the list share one request; a further page makes the count "20+".
+  // History never reads drafts (it shows the count only if the list was read before).
+  const drafts = useInfiniteQuery({ queryKey: workspaceKeys.drafts(op), queryFn: ({ pageParam }) => listDrafts(api, op, pageParam), initialPageParam: undefined as string | undefined, getNextPageParam: last => last.next_page_token ?? undefined, enabled: !history });
+  const draftCount = drafts.data ? `${drafts.data.pages.reduce((sum, page) => sum + page.items.length, 0)}${drafts.hasNextPage ? '+' : ''}` : undefined;
+  const [creating, setCreating] = useState<{ from?: string } | null>(null);
   return <div className="flex min-w-0 flex-col gap-6">
     <p className="text-ui text-muted">{t('ai.workspace.intro')}</p>
     <div className="w-full max-w-sm"><Select label={t('ai.configs.operation')} value={op}
@@ -47,18 +54,39 @@ export function AiConfigsPage() {
       : !configs.data ? <ListState state="loading" />
       : <div key={op} className="config-workspace">
         <div className="min-w-0">
-          <nav aria-label={t('ai.workspace.pages')} className="mb-6 flex gap-2 border-b-2 border-border pb-2">
-            <NavLink end to={workspacePath(op)} className={navClass} aria-current={!history ? 'page' : undefined}>{t('ai.workspace.drafts')}</NavLink>
-            <NavLink to={workspacePath(op, '/history')} className={navClass}>{t('ai.workspace.history')}</NavLink>
-          </nav>
+          <div className="mb-5">
+            <PageTabs label={t('ai.workspace.pages')} items={[
+              { id: 'drafts', to: workspacePath(op), label: t('ai.workspace.drafts'), current: !history, count: draftCount },
+              { id: 'history', to: workspacePath(op, '/history'), label: t('ai.workspace.history'), current: history },
+            ]} aside={!history && !id && <Button onPress={() => setCreating({})}>{t('ai.configs.draft.create')}</Button>} />
+          </div>
           {history ? <WorkspaceHistory op={op} /> : id
             ? models.isError && !models.data ? <ListState state="error" onRetry={() => void models.refetch()} />
               : !models.data ? <ListState state="loading" /> : <WorkspaceEditor key={`${op}:${id}`} op={op} id={id} view={configs.data} models={models.data.items} newestSet={newestSet} />
-            : <WorkspaceDraftList op={op} />}
+            : <WorkspaceDraftList op={op} onClone={from => setCreating({ from })} />}
         </div>
         <LivePanel op={op} view={configs.data} />
       </div>}
+    {creating && <CreateDraftDialog key={`${op}:${creating.from ?? ''}`} op={op} from={creating.from} onClose={() => setCreating(null)} />}
   </div>;
+}
+
+/** [Tạo nháp] (from the tab row, empty) and [Nhân bản] (a copy of a draft): name it, create it, open it. */
+function CreateDraftDialog({ op, from, onClose }: { op: AiOperation; from?: string; onClose: () => void }) {
+  const t = useTranslations();
+  const api = useApi();
+  const client = useQueryClient();
+  const navigate = useNavigate();
+  const errorDetails = useErrorDetails();
+  const [name, setName] = useState('');
+  const [problem, setProblem] = useState<ErrorDetails | null>(null);
+  const create = useMutation({ mutationFn: () => createWorkspaceDraft(api, op, { ...(from ? { from_config_id: from } : {}), ...(name.trim() ? { name: name.trim() } : {}) }),
+    onMutate: () => setProblem(null),
+    onSuccess: row => { onClose(); void client.invalidateQueries({ queryKey: workspaceKeys.drafts(op) }); void navigate(workspacePath(op, `/drafts/${row.id}`)); }, onError: e => setProblem(errorDetails(e)) });
+  return <Dialog isOpen title={t('ai.configs.draft.create')} onOpenChange={open => !open && onClose()} isDismissable={!create.isPending} actions={<><Button variant="secondary" onPress={onClose} isDisabled={create.isPending}>{t('common.cancel')}</Button><Button onPress={() => create.mutate()} isPending={create.isPending}>{t('ai.configs.draft.create')}</Button></>}>
+    <TextField label={t('ai.workspace.name')} value={name} onChange={setName} maxLength={200} isDisabled={create.isPending} />
+    {problem && <Banner variant="error" code={problem.code}>{problem.message}</Banner>}
+  </Dialog>;
 }
 
 function LivePanel({ op, view }: { op: AiOperation; view: ConfigsView }) {
@@ -91,58 +119,63 @@ function LivePanel({ op, view }: { op: AiOperation; view: ConfigsView }) {
   </aside>;
 }
 
-export function WorkspaceDraftList({ op, revisions = false }: { op: AiOperation; revisions?: boolean }) {
+const RUN_TONE = { queued: 'primary', running: 'primary', finished: 'success', failed: 'danger', cancelled: 'neutral' } as const;
+/** Draft · Model · Lần chạy gần nhất · Cập nhật · menu; below 40rem of its own width every row becomes a card. */
+// raw-ok: one column template shared by the header and every row, so the columns line up.
+const draftGrid = 'grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-2 px-4 @list:grid-cols-[minmax(0,2.2fr)_minmax(0,1fr)_minmax(0,1.8fr)_8.5rem_2.5rem]';
+
+export function WorkspaceDraftList({ op, onClone }: { op: AiOperation; onClone: (from: string) => void }) {
   const t = useTranslations();
   const api = useApi();
   const client = useQueryClient();
-  const navigate = useNavigate();
   const errorDetails = useErrorDetails();
   const format = useAiFormat();
-  const [creating, setCreating] = useState<{ from?: string } | null>(null);
-  const [name, setName] = useState('');
   const [deleting, setDeleting] = useState<ConfigView | null>(null);
   const [problem, setProblem] = useState<ErrorDetails | null>(null);
-  const [revisionId, setRevisionId] = useState<string | null>(null);
   const list = useInfiniteQuery({ queryKey: workspaceKeys.drafts(op), queryFn: ({ pageParam }) => listDrafts(api, op, pageParam), initialPageParam: undefined as string | undefined, getNextPageParam: last => last.next_page_token ?? undefined });
-  const create = useMutation({ mutationFn: () => createWorkspaceDraft(api, op, { ...(creating?.from ? { from_config_id: creating.from } : {}), ...(name.trim() ? { name: name.trim() } : {}) }),
-    onSuccess: row => { setCreating(null); void client.invalidateQueries({ queryKey: workspaceKeys.drafts(op) }); void navigate(workspacePath(op, `/drafts/${row.id}`)); }, onError: e => setProblem(errorDetails(e)) });
   const remove = useMutation({ mutationFn: () => deleteDraftById(api, op, deleting!.id), onSuccess: () => { setDeleting(null); void client.invalidateQueries({ queryKey: workspaceKeys.drafts(op) }); }, onError: e => { setDeleting(null); setProblem(errorDetails(e)); } });
   const rows = list.data?.pages.flatMap(page => page.items) ?? [];
-  function newDraft(from?: string) { setName(''); setProblem(null); setCreating({ from }); }
   return <section className="flex min-w-0 flex-col gap-4">
-    <div className="flex flex-wrap items-center justify-between gap-3"><h2 className="text-lg font-bold text-ink">{t(revisions ? 'ai.workspace.revisions' : 'ai.workspace.drafts')}</h2>{!revisions && <Button onPress={() => newDraft()}>{t('ai.configs.draft.create')}</Button>}</div>
     {problem && <Banner variant="error" code={problem.code}>{problem.message}</Banner>}
-    {list.isError ? <ListState state="error" onRetry={() => void list.refetch()} /> : !list.data ? <ListState state="loading" /> : !rows.length ? <p className="py-8 text-ui text-muted">{t('ai.workspace.empty')}</p> : <ul className="divide-y-2 divide-border border-y-2 border-border">{rows.map(row => {
-      const run = row.last_run;
-      return <li key={row.id} className="flex min-w-0 flex-wrap items-start justify-between gap-4 py-5">
-        <div className="min-w-0 flex-1"><Link className={`${navClass} px-0 wrap-anywhere`} to={workspacePath(op, `/drafts/${row.id}`)}>{row.name || t('ai.workspace.unnamed', { number: row.number })}</Link>
-          <p className="text-xs text-muted wrap-anywhere">#{row.number} · {row.model?.model_id ?? t('ai.operations.row.noModel')} · {t('ai.workspace.version', { version: row.version })}</p>
-          {row.note && <p className="text-xs text-muted wrap-anywhere">{row.note}</p>}
-          {run && <div className="mt-2 flex flex-wrap gap-3 text-xs text-muted">
-            <span>{t(`ai.costs.batches.kinds.${run.kind}`)} · {t(`ai.costs.batches.statuses.${run.status}`)} · {run.total}</span>
-            <span>{run.model}</span>
-            {run.fingerprint && <span className="wrap-anywhere">{run.fingerprint}</span>}
-            <Link to={`/ai/costs?batch=${run.id}`}>{t('ai.workspace.batch')}</Link>
-            {run.kind === 'eval' && run.source_id && <Link to={`/ai/eval/runs/${run.source_id}?op=${op}`}>{t('ai.configs.draft.runSet')}</Link>}
-          </div>}
-          {row.updated_at && <p className="text-xs text-muted">{format.dateTime(row.updated_at)}</p>}
+    {list.isError ? <ListState state="error" onRetry={() => void list.refetch()} /> : !list.data ? <ListState state="loading" /> : !rows.length ? <p className="py-8 text-ui text-muted">{t('ai.workspace.empty')}</p>
+      : <div className="@container">
+        <div role="table" aria-label={t('ai.workspace.drafts')} className="overflow-hidden rounded-panel border-2 border-border">
+          <div role="row" className={`${draftGrid} hidden min-h-10 border-b-2 border-border bg-canvas text-xs font-semibold text-muted @list:grid`}>
+            <span role="columnheader">{t('ai.workspace.cols.draft')}</span><span role="columnheader">{t('ai.workspace.cols.model')}</span>
+            <span role="columnheader">{t('ai.workspace.cols.lastRun')}</span><span role="columnheader">{t('ai.workspace.cols.updated')}</span><span role="columnheader" />
+          </div>
+          <div role="rowgroup" className="divide-y-2 divide-border">{rows.map(row => {
+            const run = row.last_run;
+            return <div role="row" key={row.id} className={`${draftGrid} py-3`}>
+              <div role="cell" className="flex min-w-0 flex-col gap-0.5">
+                <Link className="w-fit rounded-sm font-semibold text-primary outline-none wrap-anywhere hover:underline hover:underline-offset-4 focus-visible:ring-2 focus-visible:ring-primary" to={workspacePath(op, `/drafts/${row.id}`)}>{row.name || t('ai.workspace.unnamed', { number: row.number })}</Link>
+                <span className="text-xs text-muted wrap-anywhere">#{row.number} · {t('ai.workspace.version', { version: row.version })}{row.note ? ` · ${row.note}` : ''}</span>
+              </div>
+              <span role="cell" className="hidden text-ui wrap-anywhere @list:block">{row.model?.model_id ?? t('ai.operations.row.noModel')}</span>
+              <div role="cell" className="col-span-2 flex min-w-0 flex-col gap-1 text-xs @list:col-span-1">
+                {run ? <>
+                  <span className="flex flex-wrap items-center gap-2"><Badge tone={RUN_TONE[run.status as keyof typeof RUN_TONE] ?? 'neutral'}>{t(`ai.costs.batches.statuses.${run.status}`)}</Badge>
+                    <span className="text-ink">{t(`ai.costs.batches.kinds.${run.kind}`)} · {run.total}</span><span className="text-muted wrap-anywhere">{run.model}</span></span>
+                  <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                    {run.fingerprint && <span title={run.fingerprint} className="font-mono text-muted">{run.fingerprint.slice(0, 8)}</span>}
+                    <Link className="text-primary hover:underline" to={`/ai/costs?batch=${run.id}`}>{t('ai.workspace.batch')}</Link>
+                    {run.kind === 'eval' && run.source_id && <Link className="text-primary hover:underline" to={`/ai/eval/runs/${run.source_id}?op=${op}`}>{t('ai.configs.draft.runSet')}</Link>}
+                  </span>
+                </> : <Badge>{t('ai.workspace.notRun')}</Badge>}
+              </div>
+              <span role="cell" className="hidden whitespace-nowrap text-xs text-muted tabular-nums @list:block">{row.updated_at ? format.dateTime(row.updated_at) : '—'}</span>
+              <div role="cell" className="col-start-2 row-start-1 justify-self-end @list:col-start-auto @list:row-start-auto"><DraftMenu op={op} row={row} onClone={() => onClone(row.id)} onDelete={() => setDeleting(row)} /></div>
+            </div>;
+          })}</div>
         </div>
-        {revisions ? <Button variant="ghost" onPress={() => setRevisionId(row.id)}>{t('ai.workspace.viewRevisions')}</Button> : <DraftMenu op={op} row={row} onClone={() => newDraft(row.id)} onDelete={() => setDeleting(row)} />}
-      </li>;
-    })}</ul>}
+      </div>}
     {list.hasNextPage && <Button variant="secondary" isPending={list.isFetchingNextPage} onPress={() => void list.fetchNextPage()}>{t('common.loadMore')}</Button>}
-    <Dialog isOpen={creating !== null} title={t('ai.configs.draft.create')} onOpenChange={open => !open && setCreating(null)} isDismissable={!create.isPending} actions={<><Button variant="secondary" onPress={() => setCreating(null)} isDisabled={create.isPending}>{t('common.cancel')}</Button><Button onPress={() => create.mutate()} isPending={create.isPending}>{t('ai.configs.draft.create')}</Button></>}>
-      <TextField label={t('ai.workspace.name')} value={name} onChange={setName} maxLength={200} isDisabled={create.isPending} />
-      {problem && <Banner variant="error" code={problem.code}>{problem.message}</Banner>}
-    </Dialog>
     <ConfirmDialog isOpen={deleting !== null} title={t('ai.configs.draft.deleteConfirm', { number: deleting?.number ?? 0 })} confirmLabel={t('ai.configs.draft.delete')} tone="danger" onConfirm={() => remove.mutate()} onCancel={() => setDeleting(null)} isPending={remove.isPending}>{t('ai.configs.draft.deleteBody')}</ConfirmDialog>
-    {revisionId && <DraftRevisionDialog op={op} id={revisionId} onClose={() => setRevisionId(null)} />}
   </section>;
 }
 
 import { Menu, MenuItem, MenuTrigger, Popover, Button as AriaButton } from 'react-aria-components';
 import { MoreHorizontal } from 'lucide-react';
-import { DraftRevisionDialog } from './WorkspaceHistory';
 function DraftMenu({ op, row, onClone, onDelete }: { op: AiOperation; row: ConfigView; onClone: () => void; onDelete: () => void }) {
   const t = useTranslations();
   const navigate = useNavigate();

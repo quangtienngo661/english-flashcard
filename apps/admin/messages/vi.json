@@ -523,7 +523,8 @@
         "allLevels": "Tất cả trình độ",
         "filterHint": "Bộ lọc từ và trình độ chỉ tìm trong dev. Nội dung held-out luôn được ẩn.",
         "filteredCount": "{count} kết quả đang lọc",
-        "levelColumn": "Trình độ"
+        "levelColumn": "Trình độ",
+        "range": "Hiển thị {from}–{to} / {total}"
       },
       "split": {
         "dev": "dev",
@@ -829,8 +830,7 @@
       "bulkDelete": {
         "selected": "Đã chọn {count} ví dụ",
         "clear": "Bỏ chọn",
-        "selectFiltered": "Chọn toàn bộ {count} kết quả đang lọc",
-        "pageHint": "Checkbox đầu bảng chỉ chọn dòng trên trang này. Lựa chọn được giữ khi chuyển trang hoặc đổi bộ lọc.",
+        "selectFiltered": "Chọn toàn bộ",
         "selectRow": "Chọn ví dụ {summary}",
         "selectHeldOut": "Chọn ví dụ held-out {id}",
         "button": "Xóa đã chọn ({count})",
@@ -841,6 +841,17 @@
         "done": "Đã xóa {deleted} ví dụ; {missing} ví dụ đã không còn tồn tại.",
         "retry": "Thử lại xóa {count} ví dụ",
         "retryHint": "Chưa xác nhận được kết quả. Thử lại cùng yêu cầu để nhận kết quả đã lưu."
+      },
+      "tabs": {
+        "label": "Trang bộ ví dụ",
+        "list": "Danh sách ví dụ",
+        "sets": "Phiên bản đã chốt",
+        "runs": "Lần chạy"
+      },
+      "stats": {
+        "label": "Số ví dụ dev và held-out",
+        "dev": "{count} dev",
+        "heldOut": "{count} held-out"
       }
     },
     "judges": {
@@ -1204,7 +1215,14 @@
       "gone": "Nháp đã bị xóa hoặc publish. Quay lại danh sách để chọn nháp khác.",
       "clearSelection": "Bỏ chọn",
       "pickDev": "Chọn từ dev",
-      "promptHistory": "Lịch sử prompt"
+      "promptHistory": "Lịch sử prompt",
+      "cols": {
+        "draft": "Nháp",
+        "model": "Model",
+        "lastRun": "Lần chạy gần nhất",
+        "updated": "Cập nhật"
+      },
+      "notRun": "Chưa chạy"
     }
   },
   "entitlements": {
