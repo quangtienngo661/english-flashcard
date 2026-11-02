@@ -59,6 +59,7 @@ model SessionChain {
   user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   refreshTokens RefreshToken[]
 
+  @@index([userId])
   @@map("session_chains")
 }
 
@@ -74,6 +75,7 @@ model RefreshToken {
 
   chain SessionChain @relation(fields: [chainId], references: [id], onDelete: Cascade)
 
+  @@index([chainId])
   @@map("refresh_tokens")
 }
 
@@ -90,6 +92,7 @@ model OtpCode {
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([userId, purpose])
   @@map("otp_codes")
 }
 

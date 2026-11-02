@@ -61,6 +61,7 @@ model PracticeQuestion {
   items PracticeSessionItem[]
 
   // Unseen AI questions are found by (user_id, sense_id) WHERE source = 'ai': the partial index lives in the migration.
+  @@index([userId, senseId])
   @@map("practice_questions")
 }
 
@@ -128,6 +129,7 @@ model PracticeReport {
   reasonRef PracticeReportReason @relation(fields: [reason], references: [code], onDelete: Restrict)
 
   @@index([status, createdAt])
+  @@index([userId, createdAt])
   @@map("practice_reports")
 }
 
@@ -149,6 +151,7 @@ model PracticeAiRequest {
   updatedAt  DateTime @default(now()) @map("updated_at") @db.Timestamptz
 
   @@index([sessionId, state])
+  @@index([userId])
   @@map("practice_ai_requests")
 }
 
