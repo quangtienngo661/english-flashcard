@@ -343,6 +343,7 @@ test.describe('LR31 the sections are told apart', () => {
           return 'none';
         };
         const found: Array<[string, Element | null]> = [
+          ['hero', document.querySelector('section[aria-labelledby="hero-title"]')],
           ...['vi-sao', 'bai-tap', 'on-lai', 'gap-tu', 'goi', 'hoi-dap'].map((id): [string, Element | null] => [id, document.getElementById(id)]),
           ['final', document.querySelector('section[aria-labelledby="final-title"]')],
           ['footer', document.querySelector('footer')],
@@ -386,6 +387,8 @@ test.describe('LR32 the controls stay whole on small screens', () => {
 // opening, and the Pro plan made to stand out.
 test.describe('LR34 the first screen: words on the left, the app window on the right', () => {
   const windowOf = (page: Page) => page.getByRole('region', { name: L.showcase.label });
+  // What shows of the window is the box that holds it: the next section covers the rest (LR37).
+  const shownOf = (page: Page) => page.locator('#tinh-nang').locator('xpath=..');
 
   for (const [width, height] of [
     [1440, 900],
@@ -403,8 +406,8 @@ test.describe('LR34 the first screen: words on the left, the app window on the r
       expect(signup!.x + signup!.width, 'the button ends before the window').toBeLessThanOrEqual(frame!.x);
       for (const name of TAB_NAMES) {
         await page.getByRole('tab', { name }).click();
-        const shown = await windowOf(page).boundingBox();
-        expect(shown!.y + shown!.height, `tab ${name}: bottom edge of the window`).toBeLessThanOrEqual(height);
+        const shown = await shownOf(page).boundingBox();
+        expect(shown!.y + shown!.height, `tab ${name}: bottom edge of what shows of the window`).toBeLessThanOrEqual(height);
       }
     });
   }
@@ -419,6 +422,41 @@ test.describe('LR34 the first screen: words on the left, the app window on the r
       expect(frame!.y).toBeGreaterThanOrEqual(heading!.y + heading!.height);
     });
   }
+});
+
+// Owner 03/11/2026: only about three quarters of the window show, as if it sat lower and the next section lay over it.
+test.describe('LR37 the window peeks out from under the next section', () => {
+  test('at 1440 x 900 about three quarters of the window show and the next section lies over the rest', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== 'desktop', 'sets its own viewport size');
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await open(page);
+    await settle(page);
+    const { whole, shown, coveredBySection } = await page.evaluate(() => {
+      const frame = document.getElementById('tinh-nang')!;
+      const box = frame.parentElement!.getBoundingClientRect();
+      const full = frame.getBoundingClientRect();
+      // A point just under what shows, in the middle of the window: the section below must be the thing found there.
+      const hit = document.elementFromPoint(full.left + full.width / 2, box.bottom + 24);
+      return { whole: full.height, shown: box.height, coveredBySection: Boolean(hit?.closest('#vi-sao')) };
+    });
+    expect(shown / whole, `shows ${Math.round(shown)} of ${Math.round(whole)} px`).toBeGreaterThan(0.65);
+    expect(shown / whole).toBeLessThan(0.85);
+    expect(coveredBySection, 'the next section is what lies under the window').toBe(true);
+  });
+});
+
+// Owner 03/11/2026 ("tăng chiều ngang ở chỗ này, giảm kích cỡ của box"): the words get more width, the window less.
+test.describe('LR38 the words get the width, the window stays small', () => {
+  test('at 1440 x 900 the heading takes two lines and the window is at most 560 px wide', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== 'desktop', 'sets its own viewport size');
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await open(page);
+    await settle(page);
+    const heading = await page.getByRole('heading', { level: 1 }).boundingBox();
+    const frame = await page.getByRole('region', { name: L.showcase.label }).boundingBox();
+    expect(heading!.height, 'two lines of the heading are under about 110 px, four are about 190').toBeLessThan(110);
+    expect(frame!.width).toBeLessThanOrEqual(560);
+  });
 });
 
 test.describe('LR35 the first screen moves in when the page opens', () => {
