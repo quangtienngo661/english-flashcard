@@ -263,7 +263,8 @@
     "privacyTitle": "Privacy Policy",
     "termsTitle": "Terms of Use",
     "draftNotice": "This is a draft version. The official text will be published prior to Wordmet's official launch.",
-    "effective": "Effective from {date}"
+    "effective": "Effective from {date}",
+    "contents": "Contents"
   },
   "NotFound": {
     "title": "Page not found",

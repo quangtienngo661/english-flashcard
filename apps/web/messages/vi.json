@@ -263,7 +263,8 @@
     "privacyTitle": "Chính sách bảo mật",
     "termsTitle": "Điều khoản sử dụng",
     "draftNotice": "Đây là bản nháp. Nội dung chính thức sẽ được cập nhật trước khi Wordmet chính thức ra mắt.",
-    "effective": "Có hiệu lực từ {date}"
+    "effective": "Có hiệu lực từ {date}",
+    "contents": "Mục lục"
   },
   "NotFound": {
     "title": "Không tìm thấy trang",

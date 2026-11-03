@@ -34,6 +34,7 @@ export default async function PrivacyPage({ params }: { params: Promise<{ locale
       title={t('privacyTitle')}
       source={pickLanguage(legal.privacy, locale)}
       effective={legal.effective_date ? t('effective', { date: formatDay(legal.effective_date) }) : null}
+      contentsLabel={t('contents')}
     />
   );
 }

@@ -12,7 +12,7 @@ describe('LegalDocument (Markdown of a published legal text)', () => {
     draw('# Chính sách bảo mật\n\n## 1. Dữ liệu\n\n- một\n- **hai**\n\n| Bên | Để làm gì |\n|---|---|\n| Google | Đăng nhập |');
     expect(screen.getByRole('heading', { level: 1, name: TITLE })).toBeInTheDocument();
     expect(screen.getByRole('heading', { level: 2, name: '1. Dữ liệu' })).toBeInTheDocument();
-    expect(screen.getAllByRole('listitem')).toHaveLength(2);
+    expect(within(screen.getByRole('article')).getAllByRole('listitem')).toHaveLength(2);
     expect(within(screen.getByRole('table')).getByRole('cell', { name: 'Google' })).toBeInTheDocument();
   });
 

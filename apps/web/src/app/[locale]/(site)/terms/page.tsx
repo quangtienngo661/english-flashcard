@@ -29,6 +29,7 @@ export default async function TermsPage({ params }: { params: Promise<{ locale: 
       title={t('termsTitle')}
       source={pickLanguage(legal.terms, locale)}
       effective={legal.effective_date ? t('effective', { date: formatDay(legal.effective_date) }) : null}
+      contentsLabel={t('contents')}
     />
   );
 }
