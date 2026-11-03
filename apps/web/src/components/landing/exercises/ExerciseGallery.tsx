@@ -1,6 +1,6 @@
 'use client';
 
-import { CircleCheck, CircleX } from 'lucide-react';
+import { ChevronDown, CircleCheck, CircleX } from 'lucide-react';
 import { useId, useRef, useState, type FormEvent, type KeyboardEvent, type ReactNode } from 'react';
 import { flushSync } from 'react-dom';
 import { Button } from '@/components/ui/Button';
@@ -29,6 +29,7 @@ function Blank({ label, filled }: { label: string; filled?: string }) {
 
 // "Nhiều dạng bài luyện tập": the list of the seven kinds, and one live question card built like the practice session's
 // (features/learner/practice/session: QuestionCard, Choices, TypeWordInput). No API call; everything comes from the messages.
+// Below lg the list is one drop-down whose options name each kind's plan (owner 03/11/2026, mobile pass Q3); from lg the list.
 export function ExerciseGallery({ copy, kinds }: { copy: LandingCopy['exercises']; kinds: AppCopy['kinds'] }) {
   const [current, setCurrent] = useState(0);
   const [state, setState] = useState<State>(FRESH);
@@ -38,6 +39,8 @@ export function ExerciseGallery({ copy, kinds }: { copy: LandingCopy['exercises'
   const nextRef = useRef<HTMLButtonElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
   const pickerRefs = useRef<Array<HTMLButtonElement | null>>([]);
+  const selectRef = useRef<HTMLSelectElement>(null);
+  const selectId = useId();
 
   const ex = EXERCISES[current];
   const items = copy.items;
@@ -93,7 +96,9 @@ export function ExerciseGallery({ copy, kinds }: { copy: LandingCopy['exercises'
   const next = () => {
     const index = (current + 1) % EXERCISES.length;
     show(index);
-    pickerRefs.current[index]?.focus();
+    // The list button when the list shows (from lg), else the drop-down.
+    const button = pickerRefs.current[index];
+    (button && button.checkVisibility?.() !== false ? button : selectRef.current)?.focus();
   };
   const onKeyDown = (event: KeyboardEvent) => {
     if ((event.target as HTMLElement).tagName === 'INPUT') return;
@@ -164,10 +169,29 @@ export function ExerciseGallery({ copy, kinds }: { copy: LandingCopy['exercises'
   const shown = state.phase === 'revealed' && ex.mode === 'typed' ? ex.answer : state.text;
 
   return (
-    <div className="grid gap-8 lg:grid-cols-4 lg:gap-10">
-      <ul aria-label={copy.list} className="flex gap-2 overflow-x-auto pb-1 no-scrollbar lg:col-span-1 lg:flex-col lg:overflow-visible">
+    <div className="grid gap-6 lg:grid-cols-4 lg:gap-10">
+      <div className="relative lg:hidden">
+        <label htmlFor={selectId} className="sr-only">
+          {copy.list}
+        </label>
+        <select
+          ref={selectRef}
+          id={selectId}
+          value={current}
+          onChange={(event) => show(Number(event.target.value))}
+          className="min-h-control-touch w-full cursor-pointer appearance-none rounded-control border-2 border-border-strong bg-surface pr-10 pl-3.5 text-body font-semibold text-ink outline-none focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary"
+        >
+          {EXERCISES.map((item, index) => (
+            <option key={item.id} value={index}>
+              {[kinds[item.kind], item.ai && copy.aiChip, item.plan === 'pro' ? copy.pro : copy.free].filter(Boolean).join(' · ')}
+            </option>
+          ))}
+        </select>
+        <ChevronDown aria-hidden className="pointer-events-none absolute top-1/2 right-3 size-5 -translate-y-1/2 text-ink" />
+      </div>
+      <ul aria-label={copy.list} className="hidden lg:col-span-1 lg:flex lg:flex-col lg:gap-2">
         {EXERCISES.map((item, index) => (
-          <li key={item.id} className="shrink-0 lg:shrink">
+          <li key={item.id}>
             <button
               type="button"
               ref={(node) => {
@@ -176,7 +200,7 @@ export function ExerciseGallery({ copy, kinds }: { copy: LandingCopy['exercises'
               aria-pressed={index === current}
               onClick={() => show(index)}
               className={cn(
-                'flex w-full cursor-pointer items-center justify-between gap-3 rounded-inner px-3.5 py-3 text-left text-label font-semibold text-ink outline-none focus-visible:ring-2 focus-visible:ring-primary',
+                'flex w-full cursor-pointer items-center justify-between gap-3 rounded-inner px-3.5 py-3 text-left text-label font-semibold text-ink outline-none transition-transform duration-fast ease-out-strong focus-visible:ring-2 focus-visible:ring-primary motion-safe:active:scale-97',
                 index === current ? 'bg-surface ring-2 ring-ink' : 'hover:bg-surface',
               )}
             >
@@ -215,7 +239,7 @@ export function ExerciseGallery({ copy, kinds }: { copy: LandingCopy['exercises'
                     disabled={answered}
                     onClick={() => choose(index)}
                     className={cn(
-                      'flex min-h-control-touch min-w-0 cursor-pointer items-center gap-3 rounded-inner border-2 px-3 py-2 text-left text-body font-semibold text-ink outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-default',
+                      'flex min-h-control-touch min-w-0 cursor-pointer items-center gap-3 rounded-inner border-2 px-3 py-2 text-left text-body font-semibold text-ink outline-none transition-transform duration-fast ease-out-strong focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-default motion-safe:enabled:active:scale-97',
                       st === 'right' && 'border-success bg-success-soft',
                       st === 'wrong' && 'border-danger bg-danger-soft motion-safe:animate-wiggle-soft',
                       st === 'idle' && 'border-border-strong bg-surface enabled:hover:bg-primary-soft',
