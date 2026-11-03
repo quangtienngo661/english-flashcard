@@ -517,7 +517,7 @@ test.describe('LR40 the review tab is spaced evenly, the card sits high and the 
     expect(Math.abs(g.gapUnderTitle - g.gapUnderLine), `gaps ${g.gapUnderTitle.toFixed(1)} and ${g.gapUnderLine.toFixed(1)} px`).toBeLessThanOrEqual(1.5);
     expect(Math.abs(g.leftDelta), 'the card starts where the title starts').toBeLessThanOrEqual(1);
     expect(g.cardFromTop, 'the card sits high in the window').toBeLessThanOrEqual(150);
-    expect(g.barHeight, 'the tab bar').toBeLessThanOrEqual(46);
+    expect(g.barHeight, 'the tab bar').toBeLessThanOrEqual(40);
     expect(g.windowTop, 'the window starts lower on the page').toBeGreaterThanOrEqual(140);
     await expect(page.getByText(/Thẻ 4 trên 29/)).toBeHidden();
   });

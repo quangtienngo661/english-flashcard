@@ -96,7 +96,7 @@ export function AppShowcase({ copy, app, logo }: { copy: LandingCopy['showcase']
                     onClick={() => setActive(key)}
                     onKeyDown={(event) => onKeyDown(event, index)}
                     className={cn(
-                      'flex shrink-0 cursor-pointer items-center gap-2 rounded-control py-2.5 pr-2.5 pl-2 text-body whitespace-nowrap outline-none focus-visible:ring-2 focus-visible:ring-accent lg:px-2.5 lg:py-1.5',
+                      'flex shrink-0 cursor-pointer items-center gap-2 rounded-control py-2.5 pr-2.5 pl-2 text-body whitespace-nowrap outline-none focus-visible:ring-2 focus-visible:ring-accent lg:px-2.5 lg:py-1 lg:text-ui',
                       selected ? 'bg-accent font-semibold text-on-accent' : 'font-medium text-on-navy hover:bg-navy-raised',
                     )}
                   >
