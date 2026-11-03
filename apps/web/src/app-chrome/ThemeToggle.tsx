@@ -33,7 +33,7 @@ export function ThemeToggleButton({ toLight, toDark }: { toLight: string; toDark
         setTurn((n) => n + 1);
         setChoice(resolved === 'dark' ? 'light' : 'dark');
       }}
-      className="cursor-pointer rounded-control p-2 text-on-navy outline-none hover:bg-navy-raised focus-visible:ring-2 focus-visible:ring-accent"
+      className="grid size-11 cursor-pointer place-items-center rounded-control text-on-navy outline-none hover:bg-navy-raised focus-visible:ring-2 focus-visible:ring-accent"
     >
       <span className="relative block size-5.5 overflow-hidden">
         {leaving && glyph(leaving, `out-${turn}`, 'absolute inset-0 size-5.5 motion-safe:animate-theme-icon-out motion-reduce:hidden')}
