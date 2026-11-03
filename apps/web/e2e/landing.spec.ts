@@ -357,6 +357,30 @@ test.describe('LR31 the sections are told apart', () => {
   }
 });
 
+// Found in the visual pass of 03/11/2026: at 768 px the window bar cut "Thêm từ mới" off, and at 320 px the header's Đăng ký broke into two lines.
+test.describe('LR32 the controls stay whole on small screens', () => {
+  test('from tablet width up all five tabs fit in the window bar without scrolling it', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== 'desktop', 'sets its own viewport widths');
+    await open(page);
+    await expect(page.getByRole('tab')).toHaveCount(5);
+    for (const width of [768, 820, 1024, 1440]) {
+      await page.setViewportSize({ width, height: 900 });
+      const overflow = await page.getByRole('tablist').evaluate((tablist) => tablist.parentElement!.scrollWidth - tablist.parentElement!.clientWidth);
+      expect(overflow, `${width}px: pixels of the tab bar past its edge`).toBeLessThanOrEqual(0);
+    }
+  });
+
+  test('at 320 px the Đăng ký button in the header stays on one line', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== 'desktop', 'sets its own viewport widths');
+    await page.setViewportSize({ width: 320, height: 700 });
+    await open(page);
+    const box = await page.getByRole('banner').getByRole('link', { name: L.nav.signup, exact: true }).boundingBox();
+    expect(box, 'the header button was found').not.toBeNull();
+    // min-h-control is 44 px; a second line of text makes it about 65.
+    expect(box!.height).toBeLessThan(50);
+  });
+});
+
 test.describe('LR30 no waitlist', () => {
   test('/vi has no email field and sends nothing to a waitlist', async ({ page }) => {
     const sent: string[] = [];
