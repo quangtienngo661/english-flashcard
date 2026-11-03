@@ -28,15 +28,13 @@ export class NoticePlanner {
     });
     for (const sub of trials) rows.push({ kind: 'trial_reminder', id: sub.id, userId: sub.userId, end: sub.trialEndsAt!, days: trialReminderDaysBefore });
 
-    // D29: off while the setting is null.
-    if (renewalNoticeDaysBefore !== null) {
-      const renewals = await this.prisma.subscription.findMany({
-        where: { status: 'active', cancelAtPeriodEnd: false, currentPeriodEnd: { gt: now, lte: addDays(now, renewalNoticeDaysBefore) } },
-        select: { id: true, userId: true, currentPeriodEnd: true },
-      });
-      for (const sub of renewals) {
-        rows.push({ kind: 'renewal_notice', id: sub.id, userId: sub.userId, end: sub.currentPeriodEnd!, days: renewalNoticeDaysBefore });
-      }
+    // Always on since Q8 (owner 02/11/2026; D29 had it off by default).
+    const renewals = await this.prisma.subscription.findMany({
+      where: { status: 'active', cancelAtPeriodEnd: false, currentPeriodEnd: { gt: now, lte: addDays(now, renewalNoticeDaysBefore) } },
+      select: { id: true, userId: true, currentPeriodEnd: true },
+    });
+    for (const sub of renewals) {
+      rows.push({ kind: 'renewal_notice', id: sub.id, userId: sub.userId, end: sub.currentPeriodEnd!, days: renewalNoticeDaysBefore });
     }
     if (rows.length === 0) return 0;
 

@@ -26,9 +26,10 @@ export type AppSettings = {
   entitlements: {
     freePracticeSessionsPerDay: number; proPracticeSessionsPerDay: number;
     proAiPracticePerCycle: number; proAiLookupPerCycle: number; trialAiPracticePerCycle: number; trialAiLookupPerCycle: number;
+    /** `trialReminderDaysBefore`: at least 3 days before the trial ends (owner 02/11/2026, Q8). */
     graceDays: number; trialReminderDaysBefore: number;
-    /** `null` = no renewal notice email. */
-    renewalNoticeDaysBefore: number | null;
+    /** Owner 02/11/2026 (Q8): always sent, at least 7 days before a renewal (was `null` = off, D29). */
+    renewalNoticeDaysBefore: number;
     aiEnabled: boolean;
     /** `null` = no daily cap on AI units for the whole system (owner 02/11/2026, Q10); 0 still switches AI off. */
     aiDailyCap: number | null;
@@ -70,8 +71,8 @@ export const SETTINGS_DEFAULTS: AppSettings = {
   },
   entitlements: {
     freePracticeSessionsPerDay: 3, proPracticeSessionsPerDay: 30, proAiPracticePerCycle: 300, proAiLookupPerCycle: 100,
-    trialAiPracticePerCycle: 300, trialAiLookupPerCycle: 100, graceDays: 7, trialReminderDaysBefore: 2,
-    renewalNoticeDaysBefore: null, aiEnabled: true, aiDailyCap: 1000, aiCapAlertPercent: 75, adsEnabled: false,
+    trialAiPracticePerCycle: 300, trialAiLookupPerCycle: 100, graceDays: 7, trialReminderDaysBefore: 3,
+    renewalNoticeDaysBefore: 7, aiEnabled: true, aiDailyCap: 1000, aiCapAlertPercent: 75, adsEnabled: false,
     adsInterstitialPerDay: 3, adsMinIntervalMinutes: 10, transactionRetentionYears: 10,
   },
   identity: { unverifiedCleanupDays: 7 },
@@ -115,8 +116,8 @@ export const SETTINGS_BOUNDS = {
     trial_ai_practice_per_cycle: { min: 0, max: 5000 },
     trial_ai_lookup_per_cycle: { min: 0, max: 5000 },
     grace_days: { min: 0, max: 16 },
-    trial_reminder_days_before: { min: 1, max: 6 },
-    renewal_notice_days_before: { min: 1, max: 30, nullable: true },
+    trial_reminder_days_before: { min: 3, max: 6 },
+    renewal_notice_days_before: { min: 7, max: 30 },
     ai_daily_cap: { min: 0, max: 100000, nullable: true },
     ai_cap_alert_percent: { min: 50, max: 95, nullable: true },
     ads_interstitial_per_day: { min: 0, max: 20 },
@@ -191,7 +192,7 @@ export const settingsValuesPatchSchema = z.strictObject({
     trial_ai_lookup_per_cycle: intIn(b.entitlements.trial_ai_lookup_per_cycle).optional(),
     grace_days: intIn(b.entitlements.grace_days).optional(),
     trial_reminder_days_before: intIn(b.entitlements.trial_reminder_days_before).optional(),
-    renewal_notice_days_before: intIn(b.entitlements.renewal_notice_days_before).nullable().optional(),
+    renewal_notice_days_before: intIn(b.entitlements.renewal_notice_days_before).optional(),
     ai_enabled: z.boolean().optional(),
     ai_daily_cap: intIn(b.entitlements.ai_daily_cap).nullable().optional(),
     ai_cap_alert_percent: intIn(b.entitlements.ai_cap_alert_percent).nullable().optional(),
@@ -326,16 +327,22 @@ export function changedFields(before: AppSettings, after: AppSettings): Array<{ 
   });
 }
 
+const fieldSchema = (section: Section, apiKey: string): z.ZodType =>
+  (settingsValuesPatchSchema.shape[section].unwrap().shape as Record<string, z.ZodType>)[apiKey];
+
 /**
  * Stored JSON may predate a newly added key: fill it from the defaults. Keys no longer defined (e.g. `weeklyMax`,
- * replaced by `minGapDays` in D44) are dropped.
+ * replaced by `minGapDays` in D44) are dropped. A stored value the current bounds reject (a minimum raised later, as in Q8)
+ * falls back to the default too, so the app never runs on a value the admin page could not save.
  */
 export function withDefaults(stored: unknown): AppSettings {
   const value = (stored ?? {}) as Partial<Record<Section, Record<string, AnyValue | undefined>>>;
   const out = structuredClone(SETTINGS_DEFAULTS);
-  for (const [section, , field] of FIELDS) {
+  for (const [section, apiKey, field] of FIELDS) {
     const storedValue = value[section]?.[field];
-    if (storedValue !== undefined) (out[section] as Record<string, AnyValue>)[field] = storedValue;
+    if (storedValue !== undefined && fieldSchema(section, apiKey).safeParse(storedValue).success) {
+      (out[section] as Record<string, AnyValue>)[field] = storedValue;
+    }
   }
   return out;
 }
