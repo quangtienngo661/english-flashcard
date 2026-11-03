@@ -20,14 +20,14 @@ Nhánh `feat/landing-redesign` (tách từ `docs/landing-redesign`), một PR v�
 
 # Landing làm lại — as-built (03/11/2026)
 
-Task 1–14 xong trên nhánh `feat/landing-redesign`; PR #205 vào `dev` còn là draft, chờ review cuối của một reviewer độc lập (chưa chạy) rồi mới đánh dấu ready.
+Task 1–14 xong trên nhánh `feat/landing-redesign`; PR #205 vào `dev` còn là draft; review cuối của một reviewer độc lập đã chạy (mục "Review cuối" bên dưới).
 Trang `/vi` gồm: thanh trên navy, màn đầu, cửa sổ app 5 tab, "Vì sao quên" (đường cong minh họa), 7 dạng bài làm thử được, ôn đúng lúc, "Từ gặp hằng ngày", gói Free/Pro (không giá), FAQ 4 câu, kêu gọi cuối, chân trang. `/en` chuyển 307 về `/vi` (giữ query); `/en/app`, `/en/privacy`, `/en/terms` không đổi. Waitlist và D1 `wordmet-waitlist` đã bỏ khỏi code.
 Theo yêu cầu của owner ngày 03/11: ba section nền trắng (Vì sao quên, Ôn lại, Hỏi đáp) nay nằm trên nền `canvas` xám nhạt của app, xen với trắng và navy, ở cả hai theme.
 
 ## Kiểm chứng
 
 - Local: unit 736 (76 file), `pnpm lint` (gồm `check-tailwind-raw`), `pnpm typecheck` đều sạch. taste-skill `lint.mjs` 0 FAIL / 0 WARN, `impeccable detect --json` trả `[]`.
-- e2e trên CI (PR #205): lần chạy đầu 289 pass, 10 fail, cả 10 nằm trong `landing.spec.ts`; sau khi sửa, 4/4 check xanh ở `ff497419`. Các commit sau đó (nền xen kẽ, header 320, thanh tab 768, tiêu đề cân dòng) chưa có kết quả CI lúc viết.
+- e2e trên CI (PR #205): lần chạy đầu 289 pass, 10 fail, cả 10 nằm trong `landing.spec.ts`; sau khi sửa, 4/4 check xanh ở `ff497419`. CI cũng xanh 4/4 trên `c3577ca0` (run 41566845075, gồm nền xen kẽ, header 320, thanh tab 768, tiêu đề cân dòng); lượt sửa sau review cuối chưa có kết quả CI lúc viết.
 - e2e cục bộ: Docker chạy lại được, nên `pnpm bootstrap` dựng stack và một proxy TCP 3100 → 3001 cho `playwright.config.ts` dùng lại server đó. `landing`, `a11y`, `chrome`, `locale`, `seo`: 79 pass, 7 skip (test chỉ chạy một project), trên `next start`, **không phải Worker**, nên CSP và OpenNext vẫn chỉ được kiểm trên CI.
 - Ảnh chụp cả trang `/vi` ở 1440, 768, 390 và 320 px, sáng và tối: `docs/deliveries/landing-redesign/vi-<bề rộng>-<light|dark>.jpg`; không có tràn ngang ở bề rộng nào (`scrollWidth` = bề rộng).
 
@@ -51,9 +51,15 @@ Theo yêu cầu của owner ngày 03/11: ba section nền trắng (Vì sao quên
 | `palette-cream` `#fff4c7` | Là token `accent-soft` của app. |
 | `no-footage`, `still-page` | Không có video phù hợp; chuyển động có chủ đích ở tab, thẻ lật, FAQ, vào section, giảm chuyển động được tôn trọng. |
 
+## Review cuối (reviewer độc lập, chỉ đọc, `efea78b9..c3577ca0`)
+
+Báo cáo đầy đủ: `docs/deliveries/landing-redesign/final-review.md`. Kết quả: 0 Critical, 3 Important, 5 Minor; reviewer đồng ý các ruling đã ghi (kể cả LR26 chạy với reduced motion, chính nó chạy lại với motion bật vẫn đúng) và đóng 5 mục Review Focus.
+
+- **Đã sửa (đều có test đỏ trước, `a0e635a0`):** (1) neo header/footer chết trên `/vi/privacy` và `/vi/terms`: giờ là `/vi#goi`…, test LR33; (2) Enter trong ô khóa sau "Xem đáp án" chấm lại chữ sai cũ: `submit` bỏ qua khi đã trả lời; (3) live region im lặng từ lần sai thứ hai: thông báo kèm số lần. Unit 738 pass; e2e cục bộ 84 pass, 8 skip.
+- **Hoãn (Minor):** thẻ ôn mẫu không lật lại được bằng bàn phím (và `aria-pressed` nằm trong vùng `aria-hidden`); mất phủ của `page.spec.ts` cũ (chữ 125 %, focus dưới header dính, forced-colors); vài test pin `data-state` thay vì điều người đọc thấy và không test nào pin rằng từ nổi bật nằm trong câu; chỗ trống trong câu mẫu đọc không nhất quán; `deploy-checklist.md` còn nhắc CAPTCHA của waitlist.
+- **Ngoài nhánh này:** CSP là `'unsafe-inline'` từ 22/10 (D20), nên câu "hash của theme script nằm trong CSP" trong design chỉ đúng trên giấy.
+
 ## Chưa làm và việc cho owner
 
-- Review cuối của reviewer độc lập (Review Focus: bàn phím trong thư viện dạng bài, theme sang app, 320 px, tương phản tối, không JS) và một lượt sửa Critical/Important.
-- Ứng viên cho reviewer: sau khi lật thẻ ôn, mặt trước `inert` nên focus rơi và người dùng bàn phím không lật lại được; `Flashcard` của app có cùng mẫu.
 - Trước khi lên `main`: xem mục "Landing mới" của `docs/deliveries/deploy-checklist.md` (workflow cần `NEXT_PUBLIC_LEARNER_APP=on` và API base URL, xóa D1 `wordmet-waitlist`, viết trang pháp lý thật, landing tiếng Anh sau).
 - Chưa xem trên thiết bị thật.
