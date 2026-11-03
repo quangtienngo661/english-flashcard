@@ -42,6 +42,11 @@ Markdown, ô ngày; nút Đăng khóa khi còn thay đổi chưa lưu và hỏi 
 (`http://api:3000`), vì trong container web `localhost:3000` không tới được API; bản đầu thiếu nó nên bấm thử thấy hai trang vẫn là "bản nháp" (sửa 03/11/2026). Trang vẫn `noindex` riêng cho `/terms`.
 `RequireSession` và `CompleteProfile` xử lý `terms_outdated`.
 
+Bố cục và mục lục (04/11/2026, `lib/legal-outline.ts`, `LegalDocument`): cột chữ rộng 40rem nằm giữa trang; từ `lg` có thêm cột "Mục lục" dính bên phải, tự lập từ các dòng `##`.
+Mọi `##` và `###` có `id` (bỏ dấu, `đ` thành `d`, trùng tên thì thêm `-2`). Danh sách `**Mục lục**` viết tay trong chính văn bản được đổi thành link tới mục cùng tên (bỏ số đứng trước); mục nào
+không khớp tên hoặc có dấu `[` `]` thì giữ là chữ. Dưới 1024px không có cột bên phải, chỉ có danh sách viết tay đó; văn bản không có danh sách đó thì trên điện thoại không có mục lục.
+Khoảng cách cuộn dùng `scroll-padding-top` có sẵn của `globals.css` (từ `md`), chỉ thêm `scroll-mt-4`.
+
 ## Kiểm tra
 
 - API 4063, admin 1341, web 755 test; `tsc`, lint sạch; schema drift rỗng.
