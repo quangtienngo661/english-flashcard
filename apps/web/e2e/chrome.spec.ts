@@ -33,6 +33,6 @@ test('footer has no language link and its anchors point at the page', async ({ p
   await page.goto('/vi');
   const footer = page.getByRole('contentinfo');
   await expect(footer.getByRole('link', { name: /english/i })).toHaveCount(0);
-  await expect(footer.getByRole('link', { name: copy.vi.Landing.footer.plans })).toHaveAttribute('href', '#goi');
-  await expect(footer.getByRole('link', { name: copy.vi.Landing.footer.faq })).toHaveAttribute('href', '#hoi-dap');
+  await expect(footer.getByRole('link', { name: copy.vi.Landing.footer.plans })).toHaveAttribute('href', '/vi#goi');
+  await expect(footer.getByRole('link', { name: copy.vi.Landing.footer.faq })).toHaveAttribute('href', '/vi#hoi-dap');
 });

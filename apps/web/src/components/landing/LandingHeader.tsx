@@ -17,16 +17,16 @@ export function LandingHeader({ copy, locale }: { copy: LandingCopy['nav']; loca
           <Logo />
         </a>
         <nav aria-label={copy.label} className="hidden items-center gap-1.5 lg:flex">
-          <a href="#tinh-nang" className={anchor}>
+          <a href={`/${locale}#tinh-nang`} className={anchor}>
             {copy.features}
           </a>
-          <a href="#bai-tap" className={anchor}>
+          <a href={`/${locale}#bai-tap`} className={anchor}>
             {copy.exercises}
           </a>
-          <a href="#goi" className={anchor}>
+          <a href={`/${locale}#goi`} className={anchor}>
             {copy.plans}
           </a>
-          <a href="#hoi-dap" className={anchor}>
+          <a href={`/${locale}#hoi-dap`} className={anchor}>
             {copy.faq}
           </a>
         </nav>

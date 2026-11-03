@@ -65,9 +65,9 @@ describe('FinalCta', () => {
 
 describe('SiteFooter', () => {
   it('L4 has the anchors and the contact link and no language link', () => {
-    renderLanding(<SiteFooter copy={{ ...landing.footer, contact: 'Liên hệ', copyright: '© 2026 Wordmet' }} />);
-    expect(screen.getByRole('link', { name: landing.footer.plans })).toHaveAttribute('href', '#goi');
-    expect(screen.getByRole('link', { name: landing.footer.faq })).toHaveAttribute('href', '#hoi-dap');
+    renderLanding(<SiteFooter locale="vi" copy={{ ...landing.footer, contact: 'Liên hệ', copyright: '© 2026 Wordmet' }} />);
+    expect(screen.getByRole('link', { name: landing.footer.plans })).toHaveAttribute('href', '/vi#goi');
+    expect(screen.getByRole('link', { name: landing.footer.faq })).toHaveAttribute('href', '/vi#hoi-dap');
     expect(screen.getByRole('link', { name: 'Liên hệ' }).getAttribute('href')).toMatch(/^mailto:/);
     expect(screen.queryByRole('link', { name: /english/i })).toBeNull();
   });

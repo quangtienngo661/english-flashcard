@@ -1,10 +1,11 @@
 import { Logo } from '@/app-chrome/Logo';
 import { Container } from '@/components/ui/Container';
+import type { AppLocale } from '@/i18n/routing';
 import { site } from '@/lib/site';
 
 // Privacy and Terms links stay hidden until launch (owner, 09/10/2026); the pages still exist. No language link while the English landing is
 // out of scope (design landing-redesign L4).
-export function SiteFooter({ copy }: { copy: { plans: string; faq: string; contact: string; copyright: string } }) {
+export function SiteFooter({ copy, locale }: { copy: { plans: string; faq: string; contact: string; copyright: string }; locale: AppLocale }) {
   const link =
     'inline-flex min-h-11 items-center text-small font-medium text-muted underline-offset-4 transition-colors duration-fast hover:text-ink hover:underline';
   return (
@@ -14,12 +15,12 @@ export function SiteFooter({ copy }: { copy: { plans: string; faq: string; conta
           <Logo tone="surface" />
           <ul className="flex flex-wrap gap-x-6">
             <li>
-              <a href="#goi" className={link}>
+              <a href={`/${locale}#goi`} className={link}>
                 {copy.plans}
               </a>
             </li>
             <li>
-              <a href="#hoi-dap" className={link}>
+              <a href={`/${locale}#hoi-dap`} className={link}>
                 {copy.faq}
               </a>
             </li>

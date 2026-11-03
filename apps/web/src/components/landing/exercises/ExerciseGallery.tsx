@@ -67,14 +67,16 @@ export function ExerciseGallery({ copy, kinds }: { copy: LandingCopy['exercises'
   };
   const submit = (event: FormEvent) => {
     event.preventDefault();
-    if (ex.mode !== 'typed' || !state.text.trim()) return;
+    if (answered || ex.mode !== 'typed' || !state.text.trim()) return;
     if (checkTyped(ex.answer, state.text)) {
       flushSync(() => setState({ ...state, phase: 'right' }));
       setMessage(copy.right);
       nextRef.current?.focus();
     } else {
-      flushSync(() => setState({ ...state, phase: 'wrong', tries: state.tries + 1 }));
-      setMessage(copy.wrong);
+      const tries = state.tries + 1;
+      flushSync(() => setState({ ...state, phase: 'wrong', tries }));
+      // The same text twice would change nothing in the live region, so the try number goes in: every wrong try is heard.
+      setMessage(`${copy.wrong}, ${fill(copy.attempt, { n: tries })}`);
       fieldRef.current?.focus();
       fieldRef.current?.select();
     }
