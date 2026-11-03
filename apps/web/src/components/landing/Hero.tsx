@@ -8,9 +8,9 @@ export function Hero({ copy, locale }: { copy: LandingCopy['hero']; locale: AppL
   return (
     <section aria-labelledby="hero-title" className="pt-10 pb-4 md:pt-16">
       <Container className="flex flex-col gap-6 md:gap-8">
-        <h1 id="hero-title" className="text-landing-h1 font-extrabold text-balance text-ink">
-          {copy.line1} <br />
-          {copy.line2}
+        {/* Each line is balanced on its own: with a <br /> the browser balances nothing and 320 px left "dụng" alone on a line. */}
+        <h1 id="hero-title" className="text-landing-h1 font-extrabold text-ink">
+          <span className="block text-balance">{copy.line1}</span> <span className="block text-balance">{copy.line2}</span>
         </h1>
         <div className="flex max-w-landing-hero flex-col gap-5">
           <p className="text-lead text-ink">{copy.lead}</p>
