@@ -543,6 +543,22 @@ test.describe('LR42 the plans table is narrow and on the right', () => {
   });
 });
 
+// Owner 03/11/2026: the sign-in and sign-up pages drop the navy panel on the left; the form sits in the middle of the screen.
+test.describe('LR43 the sign-in pages have the form in the middle', () => {
+  for (const path of ['/vi/app/login', '/vi/app/register']) {
+    test(`at 1440 x 900 ${path} has no side panel and its card is centred`, async ({ page }, testInfo) => {
+      test.skip(testInfo.project.name !== 'desktop', 'sets its own viewport size');
+      await page.setViewportSize({ width: 1440, height: 900 });
+      await page.goto(path);
+      const card = page.getByRole('heading', { level: 1 }).locator('xpath=ancestor::section[1]');
+      await expect(card).toBeVisible();
+      await expect(page.locator('aside')).toHaveCount(0);
+      const box = await card.boundingBox();
+      expect(Math.abs(box!.x + box!.width / 2 - 720), 'distance of the card centre from the page centre').toBeLessThanOrEqual(2);
+    });
+  }
+});
+
 test.describe('LR35 the first screen moves in when the page opens', () => {
   const watch = (page: Page) =>
     page.addInitScript(() => {
