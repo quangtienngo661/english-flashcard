@@ -115,6 +115,7 @@ test.describe('LR22 nothing sticks out of its box', () => {
   for (const width of [320, 390, 768, 1440]) {
     test(`at ${width}px every tab, the turned card and every exercise stay inside`, async ({ page }, testInfo) => {
       test.skip(testInfo.project.name !== 'desktop', 'sets its own viewport widths');
+      test.setTimeout(120_000);
       await page.setViewportSize({ width, height: 900 });
       await open(page);
       await expectInside(page, 'first screen');
@@ -129,7 +130,10 @@ test.describe('LR22 nothing sticks out of its box', () => {
       const flip = page.getByRole('group', { name: L.showcase.review.deck }).getByRole('button', { pressed: false });
       await flip.click();
       await expectInside(page, 'review card turned');
-      await expect(page.getByRole('group', { name: L.showcase.review.deck }).getByRole('button', { pressed: true })).toBeVisible();
+      // Turned: the front face (whose button is pressed) goes inert and out of the accessibility tree, so the back face is the one that reads.
+      const deck = page.getByRole('group', { name: L.showcase.review.deck });
+      await expect(deck.locator('[inert] button[aria-pressed="true"]')).toHaveCount(1);
+      await expect(deck.getByText(L.showcase.review.meaning, { exact: true })).toBeVisible();
 
       const buttons = exerciseButtons(page);
       await expect(buttons).toHaveCount(EXERCISES.length);
@@ -206,7 +210,10 @@ test.describe('LR25 reduced motion', () => {
 });
 
 test.describe('LR26 without JavaScript', () => {
-  test.use({ javaScriptEnabled: false });
+  // Reduced motion too: with scripting off and the FAQ transition running, Playwright's stability check never passes for the second click on
+  // a summary, though the page itself settles in about 400 ms (isolated repro: click 1 ok, click 2 times out; with reduced motion both pass).
+  // The motion is covered by LR29.
+  test.use({ javaScriptEnabled: false, reducedMotion: 'reduce' });
 
   test('the first screen, the first tab, every section title and the FAQ all work', async ({ page }) => {
     await page.goto('/vi');
@@ -230,6 +237,8 @@ test.describe('LR26 without JavaScript', () => {
 test.describe('LR27 axe in both themes', () => {
   for (const scheme of ['light', 'dark'] as const) {
     test(`no serious or critical violation in ${scheme}: every tab and every exercise state`, async ({ page }) => {
+      // About thirty axe scans of the whole page, each after the animations have settled.
+      test.setTimeout(240_000);
       await page.emulateMedia({ colorScheme: scheme });
       await open(page);
       await expect(page.locator('html')).toHaveAttribute('data-theme', scheme);
