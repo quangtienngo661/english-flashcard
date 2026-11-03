@@ -11,6 +11,7 @@ declare global {
   interface Window {
     __cspViolations: string[];
     __themes: string[];
+    __heroMotion: string[];
   }
 }
 
@@ -378,6 +379,97 @@ test.describe('LR32 the controls stay whole on small screens', () => {
     expect(box, 'the header button was found').not.toBeNull();
     // min-h-control is 44 px; a second line of text makes it about 65.
     expect(box!.height).toBeLessThan(50);
+  });
+});
+
+// Owner 03/11/2026: words and sign-up on the left, the app window on the right, small enough to sit in the first screen, a little motion on
+// opening, and the Pro plan made to stand out.
+test.describe('LR34 the first screen: words on the left, the app window on the right', () => {
+  const windowOf = (page: Page) => page.getByRole('region', { name: L.showcase.label });
+
+  for (const [width, height] of [
+    [1440, 900],
+    [1366, 768],
+  ]) {
+    test(`at ${width} x ${height} the heading and the sign-up button sit left of the window, and every tab of it fits in the screen`, async ({ page }, testInfo) => {
+      test.skip(testInfo.project.name !== 'desktop', 'sets its own viewport size');
+      await page.setViewportSize({ width, height });
+      await open(page);
+      const heading = await page.getByRole('heading', { level: 1 }).boundingBox();
+      const signup = await page.getByRole('main').getByRole('link', { name: L.hero.signup, exact: true }).first().boundingBox();
+      const frame = await windowOf(page).boundingBox();
+      expect(heading && signup && frame, 'heading, button and window were found').toBeTruthy();
+      expect(heading!.x + heading!.width, 'the heading ends before the window').toBeLessThanOrEqual(frame!.x);
+      expect(signup!.x + signup!.width, 'the button ends before the window').toBeLessThanOrEqual(frame!.x);
+      for (const name of TAB_NAMES) {
+        await page.getByRole('tab', { name }).click();
+        const shown = await windowOf(page).boundingBox();
+        expect(shown!.y + shown!.height, `tab ${name}: bottom edge of the window`).toBeLessThanOrEqual(height);
+      }
+    });
+  }
+
+  for (const width of [768, 390]) {
+    test(`at ${width} px the window comes under the heading`, async ({ page }, testInfo) => {
+      test.skip(testInfo.project.name !== 'desktop', 'sets its own viewport size');
+      await page.setViewportSize({ width, height: 900 });
+      await open(page);
+      const heading = await page.getByRole('heading', { level: 1 }).boundingBox();
+      const frame = await windowOf(page).boundingBox();
+      expect(frame!.y).toBeGreaterThanOrEqual(heading!.y + heading!.height);
+    });
+  }
+});
+
+test.describe('LR35 the first screen moves in when the page opens', () => {
+  const watch = (page: Page) =>
+    page.addInitScript(() => {
+      window.__heroMotion = [];
+      document.addEventListener('animationstart', (event) => window.__heroMotion.push(`${event.animationName}:${(event.target as Element).tagName.toLowerCase()}`), true);
+    });
+  const started = (page: Page) => page.evaluate(() => window.__heroMotion.filter((entry) => entry.startsWith('hero-')));
+
+  test('the heading, the words under it and the window each start an entrance, and all end in place and visible', async ({ page }) => {
+    await watch(page);
+    await open(page);
+    await page.waitForTimeout(1500);
+    const entrances = await started(page);
+    expect(entrances.length, entrances.join(', ')).toBeGreaterThanOrEqual(5);
+    expect(entrances.some((entry) => entry.startsWith('hero-window-in'))).toBe(true);
+    for (const target of [page.getByRole('heading', { level: 1 }), page.getByRole('region', { name: L.showcase.label })]) {
+      expect(await target.evaluate((el) => [getComputedStyle(el).opacity, getComputedStyle(el).transform])).toEqual(['1', 'none']);
+    }
+  });
+
+  test.describe('with reduced motion', () => {
+    test.use({ reducedMotion: 'reduce' });
+
+    test('nothing starts, and the first screen is all there at once', async ({ page }) => {
+      await watch(page);
+      await open(page);
+      // The control: the recorder ran (it holds an array) and the page was drawn, so an empty list means "nothing moved".
+      expect(await page.evaluate(() => Array.isArray(window.__heroMotion))).toBe(true);
+      await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+      expect(await started(page)).toEqual([]);
+    });
+  });
+});
+
+test.describe('LR36 the Pro plan stands out', () => {
+  test('its card is painted differently from the Free one', async ({ page }) => {
+    await open(page);
+    const paint = (name: string) =>
+      page.getByRole('heading', { level: 3, name, exact: true }).evaluate((heading) => {
+        for (let node: Element | null = heading.parentElement; node; node = node.parentElement) {
+          const colour = getComputedStyle(node).backgroundColor;
+          if (colour !== 'rgba(0, 0, 0, 0)' && colour !== 'transparent') return colour;
+        }
+        return 'none';
+      });
+    const [free, pro] = [await paint(L.plans.free), await paint(L.plans.pro)];
+    expect(free, 'the Free card was found').not.toBe('none');
+    expect(pro, 'the Pro card was found').not.toBe('none');
+    expect(pro).not.toBe(free);
   });
 });
 
