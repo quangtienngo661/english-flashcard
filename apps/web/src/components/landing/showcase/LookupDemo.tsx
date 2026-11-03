@@ -5,9 +5,9 @@ import type { LandingCopy } from '../copy';
 export function LookupDemo({ copy }: { copy: LandingCopy['showcase']['lookup'] }) {
   const at = copy.example.indexOf(copy.exampleWord);
   return (
-    <div data-ui role="group" aria-label={copy.title} className="mx-auto flex w-full max-w-xl min-w-0 flex-col gap-3 rounded-card border border-border bg-surface p-5 shadow-sheet">
+    <div data-ui role="group" aria-label={copy.title} className="mx-auto flex w-full max-w-xl min-w-0 flex-col gap-3 rounded-card border border-border bg-surface p-5 shadow-sheet lg:p-4">
       <div className="flex items-center gap-3">
-        <b className="text-display font-extrabold text-ink" lang="en">
+        <b className="text-display font-extrabold text-ink lg:text-h2" lang="en">
           {copy.word}
         </b>
         <span className="rounded-full bg-primary-soft px-2 py-0.5 text-caption font-semibold text-primary">{copy.level}</span>
@@ -25,7 +25,7 @@ export function LookupDemo({ copy }: { copy: LandingCopy['showcase']['lookup'] }
             </span>
             <b className="text-body text-ink">{copy.meaning}</b>
           </p>
-          <p className="text-ui text-muted" lang="en">
+          <p className="text-ui text-muted lg:hidden" lang="en">
             {copy.definition}
           </p>
           <p className="text-ui text-ink" lang="en">
@@ -33,7 +33,7 @@ export function LookupDemo({ copy }: { copy: LandingCopy['showcase']['lookup'] }
             <b className="font-bold text-primary">{copy.exampleWord}</b>
             {copy.example.slice(at + copy.exampleWord.length)}
           </p>
-          <span className="w-fit rounded-full bg-success-soft px-2.5 py-0.5 text-caption font-semibold text-success">{copy.status}</span>
+          <span className="w-fit rounded-full bg-success-soft px-2.5 py-0.5 text-caption font-semibold text-success lg:hidden">{copy.status}</span>
         </div>
       </div>
     </div>

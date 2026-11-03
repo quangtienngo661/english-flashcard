@@ -7,7 +7,7 @@ import { forgettingCurve } from './forgetting-curve';
 export function WhyForget({ copy }: { copy: LandingCopy['why'] }) {
   const curve = forgettingCurve();
   return (
-    <section id="vi-sao" aria-labelledby="why-title" className="scroll-mt-16 bg-canvas py-14 md:py-24">
+    <section id="vi-sao" aria-labelledby="why-title" className="scroll-mt-16 bg-surface py-14 md:py-24">
       <Container className="grid items-center gap-10 lg:grid-cols-5 lg:gap-16">
         <div className="flex flex-col gap-5 lg:col-span-2">
           <h2 id="why-title" className="text-h2 font-extrabold text-ink">
@@ -22,7 +22,7 @@ export function WhyForget({ copy }: { copy: LandingCopy['why'] }) {
             <p className="text-body text-ink">{copy.r2Body}</p>
           </div>
         </div>
-        <figure aria-label={copy.figureLabel} className="flex flex-col gap-3 rounded-card bg-surface p-5 shadow-sheet md:p-6 lg:col-span-3">
+        <figure aria-label={copy.figureLabel} className="flex flex-col gap-3 rounded-card bg-canvas p-5 md:p-6 lg:col-span-3">
           <svg viewBox="0 0 600 230" role="presentation" className="h-auto w-full overflow-visible">
             <line x1="40" y1="192" x2="584" y2="192" className="stroke-canvas-deep" strokeWidth="2" />
             <line x1="40" y1="16" x2="40" y2="192" className="stroke-canvas-deep" strokeWidth="2" />

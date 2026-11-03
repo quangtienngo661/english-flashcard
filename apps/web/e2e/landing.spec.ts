@@ -447,8 +447,8 @@ test.describe('LR37 the window peeks out from under the next section', () => {
 
 // Owner 03/11/2026, third round: the window grows to the left (the words give up width), its items shrink, and only the main visuals stay: buttons and
 // other side items are left out, so that nothing inside is lain over by the next section.
-test.describe('LR38 the window is wide, the heading at most three lines', () => {
-  test('at 1440 x 900 the window is at least 600 px wide and the heading takes no more than three lines', async ({ page }, testInfo) => {
+test.describe('LR38 the window is wide and the heading still takes two lines', () => {
+  test('at 1440 x 900 the window is at least 600 px wide and the heading takes two lines', async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== 'desktop', 'sets its own viewport size');
     await page.setViewportSize({ width: 1440, height: 900 });
     await open(page);
@@ -456,7 +456,7 @@ test.describe('LR38 the window is wide, the heading at most three lines', () => 
     const heading = await page.getByRole('heading', { level: 1 }).boundingBox();
     const frame = await page.getByRole('region', { name: L.showcase.label }).boundingBox();
     expect(frame!.width).toBeGreaterThanOrEqual(600);
-    expect(heading!.height, 'three lines of the heading are about 140 px, four are about 190').toBeLessThan(150);
+    expect(heading!.height, 'two lines of the heading are about 85 px, three about 130').toBeLessThan(110);
   });
 });
 

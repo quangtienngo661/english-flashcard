@@ -38,7 +38,7 @@ export function GroupsDemo({ copy }: { copy: LandingCopy['showcase']['groups'] }
     <div data-ui role="group" aria-label={copy.title} className="grid min-w-0 gap-4 sm:grid-cols-2">
       <GroupCard tint="bg-hero" filled={1} count={copy.g1Count} name={copy.g1Name} waiting={copy.g1Waiting} />
       <GroupCard tint="bg-accent-soft" filled={2} count={copy.g2Count} name={copy.g2Name} waiting={copy.g2Waiting} />
-      <div className="grid gap-2 rounded-card bg-accent-soft p-4 sm:col-span-2">
+      <div className="grid gap-2 rounded-card bg-accent-soft p-4 sm:col-span-2 lg:hidden">
         <b className="text-body text-ink">{copy.quickTitle}</b>
         <ul className="flex flex-wrap gap-2">
           {words.map(([word, meaning]) => (

@@ -17,8 +17,8 @@ const ICONS = { review: Layers, groups: FolderClosed, practice: Sparkles, lookup
 function Caption({ title, body, points }: { title: string; body: string; points: string[] }) {
   return (
     <div className="flex flex-col gap-3.5">
-      <h2 className="text-title-lg font-extrabold tracking-tight text-ink md:text-h2">{title}</h2>
-      <p className="max-w-prose text-body text-ink">{body}</p>
+      <h2 className="text-title-lg font-extrabold tracking-tight text-ink md:text-h2 lg:text-title">{title}</h2>
+      <p className="max-w-prose text-body text-ink lg:text-ui">{body}</p>
       <ul className="flex flex-col gap-2 text-body text-ink lg:hidden">
         {points.map((point) => (
           <li key={point} className="flex items-start gap-2.5">
@@ -32,8 +32,9 @@ function Caption({ title, body, points }: { title: string; body: string; points:
 }
 
 // The first screen's window onto the app (design landing-redesign §3): the app's own navy bar with its five main parts as tabs, and the
-// part's real screen below with sample data. From lg the window is the right column of the first screen (Hero), so it is kept compact: the point list
-// is left out and every tab has the same height (lg:min-h-139 is the tallest one), which keeps the words on the left from shifting when a tab changes.
+// part's real screen below with sample data. From lg the window is the right column of the first screen (Hero), which shows its top three quarters and
+// lets the next section lie over the rest (its lower quarter is blank), so what is inside is kept small and to the main visuals: the point list,
+// the buttons and the side boxes of each tab are left out from lg.
 // All five panels stay in the DOM; the inactive ones are `hidden`, so the page reads without JS.
 // The app's Logo reads App messages, which the app does not give client components, so the page renders it and passes it in as `logo`.
 export function AppShowcase({ copy, app, logo }: { copy: LandingCopy['showcase']; app: AppCopy; logo: ReactNode }) {
@@ -61,7 +62,7 @@ export function AppShowcase({ copy, app, logo }: { copy: LandingCopy['showcase']
       id={`${base}-panel-${key}`}
       aria-labelledby={`${base}-tab-${key}`}
       hidden={active !== key}
-      className="grid min-h-124 content-start gap-6 p-5 md:p-8 lg:min-h-139 lg:gap-4 lg:p-5"
+      className="grid min-h-124 content-start gap-6 p-5 md:p-8 lg:min-h-128 lg:gap-4 lg:p-5"
     >
       {caption}
       <div className="min-w-0">{demo}</div>
@@ -70,7 +71,7 @@ export function AppShowcase({ copy, app, logo }: { copy: LandingCopy['showcase']
 
   return (
     <section id="tinh-nang" aria-label={copy.label} className="scroll-mt-16">
-      <div className="overflow-hidden rounded-t-feature border-2 border-b-0 border-navy bg-canvas lg:rounded-b-feature lg:border-0 lg:ring-2 lg:ring-navy lg:ring-inset">{/* taste-skill-ignore: the app window frame, a cropped interface fragment */}
+      <div className="overflow-hidden rounded-t-feature border-2 border-b-0 border-navy bg-canvas">
           <div className="flex items-center gap-5 overflow-x-auto bg-navy px-4 py-2.5 text-on-navy no-scrollbar">
             {/* From md the logo makes way, and from lg (the window then sits in the narrow right column) the icons too, so that all five tabs fit without scrolling the bar (LR32). */}
             <span aria-hidden className="shrink-0 md:hidden">

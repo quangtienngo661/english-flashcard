@@ -15,7 +15,7 @@ const TOTAL = BOXES.reduce((sum, box) => sum + box.count, 0);
 
 export function ReviewTiming({ copy }: { copy: LandingCopy['review'] }) {
   return (
-    <section id="on-lai" aria-labelledby="review-title" className="scroll-mt-16 bg-canvas py-14 md:py-24">
+    <section id="on-lai" aria-labelledby="review-title" className="scroll-mt-16 bg-surface py-14 md:py-24">
       <Container className="grid items-center gap-10 lg:grid-cols-5 lg:gap-16">
         <div className="flex flex-col gap-4 lg:col-span-2">
           <h2 id="review-title" className="text-h2 font-extrabold text-ink">

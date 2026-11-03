@@ -10,7 +10,7 @@
   --text-display: clamp(2.25rem, 1.6929rem + 2.2857vw, 3.75rem);
   --text-display--line-height: 1.1;
   --text-display--letter-spacing: -0.02em;
-  --text-landing-h1: clamp(2rem, 1rem + 3.2vw, 3.5rem);
+  --text-landing-h1: clamp(2rem, 1rem + 3.2vw, 2.5rem);
   --text-landing-h1--line-height: 1.05;
   --text-landing-h1--letter-spacing: -0.035em;
   --text-cta: clamp(1.75rem, 1.3786rem + 1.5238vw, 2.75rem);
