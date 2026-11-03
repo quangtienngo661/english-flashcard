@@ -82,6 +82,37 @@ describe('ExerciseGallery', () => {
     expect(field).toHaveAttribute('data-state', 'revealed');
   });
 
+  // Final review 03/11/2026: the locked field still takes focus, and Enter in it used to grade the old wrong try again.
+  it('LR9 a revealed answer stays revealed: Enter in the locked field does not grade the old try again', async () => {
+    const user = userEvent.setup();
+    renderGallery();
+    await pick(user, 2);
+    await user.type(screen.getByRole('textbox'), 'x');
+    await user.click(screen.getByRole('button', { name: landing.exercises.check }));
+    await user.click(screen.getByRole('button', { name: landing.exercises.reveal }));
+    const field = screen.getByRole('textbox');
+    await user.click(field);
+    await user.keyboard('{Enter}');
+    expect(field).toHaveValue('assume');
+    expect(field).toHaveAttribute('data-state', 'revealed');
+    expect(field).not.toHaveAttribute('aria-invalid');
+    expect(screen.queryByText('Lần 2')).toBeNull();
+  });
+
+  // Same review: the same message set twice changes nothing in the DOM, so a screen reader heard only the first wrong try.
+  it('LR7 every wrong try is announced in the live region, not only the first', async () => {
+    const user = userEvent.setup();
+    const { container } = renderGallery();
+    await pick(user, 2);
+    const live = () => container.querySelector('[aria-live="polite"]')?.textContent;
+    await user.type(screen.getByRole('textbox'), 'aaa{Enter}');
+    const first = live();
+    expect(first, 'the first wrong try is announced').toContain(landing.exercises.wrong);
+    await user.keyboard('bbb{Enter}');
+    expect(live()).toContain(landing.exercises.wrong);
+    expect(live()).not.toBe(first);
+  });
+
   it('LRE4 spaces and capitals around the right answer still count as right', async () => {
     const user = userEvent.setup();
     renderGallery();

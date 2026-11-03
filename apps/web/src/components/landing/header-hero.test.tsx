@@ -15,7 +15,7 @@ describe('LandingHeader', () => {
   it('L4 has the page anchors and no language switch', () => {
     renderLanding(<LandingHeader copy={landing.nav} locale="vi" />);
     const nav = within(screen.getByRole('navigation', { name: landing.nav.label }));
-    expect(nav.getAllByRole('link').map((l) => l.getAttribute('href'))).toEqual(['#tinh-nang', '#bai-tap', '#goi', '#hoi-dap']);
+    expect(nav.getAllByRole('link').map((l) => l.getAttribute('href'))).toEqual(['/vi#tinh-nang', '/vi#bai-tap', '/vi#goi', '/vi#hoi-dap']);
     expect(screen.queryByRole('link', { name: /english/i })).toBeNull();
   });
 

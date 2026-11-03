@@ -381,6 +381,26 @@ test.describe('LR32 the controls stay whole on small screens', () => {
   });
 });
 
+// Final review 03/11/2026: the anchors were bare (`#goi`), so on the legal pages, which share this header and footer, they led nowhere.
+test.describe('LR33 the page anchors work from the legal pages', () => {
+  for (const path of ['/vi/privacy', '/vi/terms']) {
+    test(`the footer link Hỏi đáp on ${path} leads to the questions on the home page`, async ({ page }) => {
+      await page.goto(path);
+      await page.getByRole('contentinfo').getByRole('link', { name: L.footer.faq }).click();
+      await expect(page).toHaveURL(/\/vi#hoi-dap$/);
+      await expect(page.locator('#hoi-dap')).toBeVisible();
+    });
+  }
+
+  test('the header link Gói học on a legal page leads to the plans on the home page', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== 'desktop', 'the page anchors are in the header from lg up');
+    await page.goto('/vi/terms');
+    await page.getByRole('banner').getByRole('link', { name: L.nav.plans }).click();
+    await expect(page).toHaveURL(/\/vi#goi$/);
+    await expect(page.locator('#goi')).toBeVisible();
+  });
+});
+
 test.describe('LR30 no waitlist', () => {
   test('/vi has no email field and sends nothing to a waitlist', async ({ page }) => {
     const sent: string[] = [];
