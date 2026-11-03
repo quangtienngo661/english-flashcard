@@ -1992,7 +1992,6 @@
     },
     "emptyMeaning": {
       "noLimit": "no limit",
-      "renewal_notice_days_before": "not sent",
       "ai_cap_alert_percent": "no yellow alert"
     },
     "notes": {

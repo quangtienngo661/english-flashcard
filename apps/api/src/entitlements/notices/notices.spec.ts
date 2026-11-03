@@ -81,7 +81,7 @@ function setup(opts: { subs?: Sub[]; renewalDays?: number | null; budget?: boole
     },
     $transaction: async <T>(fn: (t: typeof tx) => Promise<T>) => fn(tx),
   };
-  const settings = { get: vi.fn(async () => ({ entitlements: { trialReminderDaysBefore: 2, renewalNoticeDaysBefore: opts.renewalDays ?? null } })) };
+  const settings = { get: vi.fn(async () => ({ entitlements: { trialReminderDaysBefore: 2, renewalNoticeDaysBefore: opts.renewalDays ?? 7 } })) };
   const identity = {
     verifiedEmails: vi.fn(async (ids: string[]) => new Map(opts.verified === false ? [] : ids.map((id) => [id, 'lan@example.com']))),
     getProfile: vi.fn(async (id: string) => ({ id, native_language: 'en', timezone: 'Asia/Ho_Chi_Minh' })),
@@ -132,10 +132,11 @@ describe('NoticePlanner.plan (design §14, R9)', () => {
     expect(notices).toEqual([]);
   });
 
-  it('D29: renewal_notice is never planned while the setting is null', async () => {
-    const { planner, notices } = setup({ subs: [active({ currentPeriodEnd: plus(1) })] });
+  it('Q8: renewal_notice is always on; at 7 days a renewal in 6.5 days gets a row, one in 8 days not yet', async () => {
+    const { planner, notices } = setup({ subs: [active({ id: 'near', currentPeriodEnd: plus(6.5) }), active({ id: 'far', currentPeriodEnd: plus(8) })] });
     await planner.plan(NOW);
-    expect(notices).toEqual([]);
+    expect(notices).toHaveLength(1);
+    expect(notices[0]).toMatchObject({ kind: 'renewal_notice', subjectKey: 'near', windowEndsAt: plus(6.5), dueAt: plus(-0.5) });
   });
 
   it('renewal_notice with the setting at 9 → one row 9 days before current_period_end, none for a cancelled subscription', async () => {
