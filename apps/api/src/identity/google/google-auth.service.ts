@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Optional } from '@nestjs/common';
 import { randomBytes, randomUUID } from 'node:crypto';
 import type { Response } from 'express';
 import { Clock } from '../../common/clock/clock.js';
@@ -19,6 +19,7 @@ import { withUserLock } from '../user-lock.js';
 import { GoogleClient, GoogleExchangeError, s256, type GoogleIdentity } from './google-client.js';
 import { parseLocale, safeNext, toLearnerApp, type Locale } from './learner-redirect.js';
 import { openJson, sealJson } from './sealed-cookie.js';
+import { TermsVersion } from '../profile/terms-version.js';
 
 export const OAUTH_COOKIE_TTL_S = 600;
 export const SIGNUP_COOKIE_TTL_S = 900;
@@ -75,6 +76,7 @@ export class GoogleAuthService {
     @Inject(GoogleClient) private readonly google: GoogleClient,
     @Inject(SessionService) private readonly sessions: SessionService,
     @Inject(MailDispatcher) private readonly dispatcher: MailDispatcher,
+    @Optional() @Inject(TermsVersion) private readonly terms?: TermsVersion,
   ) {}
 
   private web(path: string, params: Record<string, string> = {}): string {
@@ -254,6 +256,7 @@ export class GoogleAuthService {
     const picture = typeof ticket.picture === 'string' && ticket.picture.length <= 2048 && /^https?:\/\//i.test(ticket.picture) ? ticket.picture : null;
     const known = await this.prisma.user.findUnique({ where: { email: ticket.email }, select: { id: true } });
     const userId = known?.id ?? randomUUID();
+    const termsVersion = await (this.terms?.current() ?? this.config.termsVersion);
     let session: IssuedSession;
     try {
       session = await this.prisma.$transaction(async (tx) => {
@@ -261,7 +264,7 @@ export class GoogleAuthService {
         const now = this.clock.now();
         const profile = {
           timezone, givenName, familyName, birthDate: dateValue(body.birth_date), termsAcceptedAt: now,
-          termsVersion: this.config.termsVersion, avatarUrl: picture, emailVerifiedAt: now,
+          termsVersion, avatarUrl: picture, emailVerifiedAt: now,
         };
         const existing = await tx.user.findUnique({ where: { email: ticket.email }, select: { id: true, status: true, emailVerifiedAt: true } });
         if (!existing) {

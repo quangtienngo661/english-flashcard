@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Optional } from '@nestjs/common';
 import { Clock } from '../../common/clock/clock.js';
 import { APP_CONFIG, type AppConfig } from '../../common/config/app-config.js';
 import { normalizeEmail } from '../../common/email/normalize-email.js';
@@ -10,6 +10,7 @@ import type { Prisma, PrismaClient } from '../../generated/prisma/client.js';
 import { permissionsFor, type Permission, type StaffRole, type SupportedLanguage } from '../identity.types.js';
 import { isOldEnough, MIN_AGE } from './person.js';
 import type { UpdateProfileBody } from './profile.schemas.js';
+import { TermsVersion } from './terms-version.js';
 import { canonicalTimeZone, normalizeStoredTimeZone } from './timezone.js';
 
 const NORMALIZE_PAGE_SIZE = 500;
@@ -28,11 +29,14 @@ export interface Profile {
   birth_date: string | null;
   /** AD18: null until the user accepts the terms; the learner app asks first (with a missing birth date). */
   terms_accepted_at: string | null;
+  /** The version of the legal documents that was accepted; `null` before any acceptance. */
+  terms_version: string | null;
 }
 
 const profileSelect = {
   id: true, email: true, emailVerifiedAt: true, nativeLanguage: true, timezone: true, staffRole: true,
   mustChangePassword: true, givenName: true, familyName: true, birthDate: true, termsAcceptedAt: true,
+  termsVersion: true,
 } satisfies Prisma.UserSelect;
 type ProfileRow = Prisma.UserGetPayload<{ select: typeof profileSelect }>;
 
@@ -51,6 +55,7 @@ function toProfile(row: ProfileRow): Profile {
     family_name: row.familyName,
     birth_date: row.birthDate === null ? null : dateString(row.birthDate),
     terms_accepted_at: row.termsAcceptedAt?.toISOString() ?? null,
+    terms_version: row.termsVersion,
   };
 }
 
@@ -69,6 +74,7 @@ export class IdentityService {
     @Inject(Clock) private readonly clock: Clock,
     @Inject(AppLogger) private readonly logger: AppLogger,
     @Inject(APP_CONFIG) private readonly config?: AppConfig,
+    @Optional() @Inject(TermsVersion) private readonly terms?: TermsVersion,
   ) {}
 
   /** A caller inside a transaction that holds a lock passes its `tx`, so the read needs no second connection. */
@@ -149,6 +155,8 @@ export class IdentityService {
 
   async updateProfile(userId: string, body: UpdateProfileBody): Promise<Profile | null> {
     const timezone = body.timezone === undefined ? undefined : canonicalTimeZone(body.timezone);
+    // The version the learner accepts is the published one (legal documents), else the environment's.
+    const termsVersion = body.accept_terms ? await (this.terms?.current() ?? this.config!.termsVersion) : undefined;
     if (timezone === null) {
       throw new ProblemDetailsException({ status: 400, title: 'Validation failed', type: 'validation-failed' });
     }
@@ -166,13 +174,13 @@ export class IdentityService {
           ...(body.family_name !== undefined ? { familyName: body.family_name } : {}),
           ...(body.birth_date !== undefined ? { birthDate: dateValue(body.birth_date) } : {}),
           // AD18: accepting records the current terms version, as sign-up does.
-          ...(body.accept_terms ? { termsAcceptedAt: this.clock.now(), termsVersion: this.config!.termsVersion } : {}),
+          ...(body.accept_terms ? { termsAcceptedAt: this.clock.now(), termsVersion } : {}),
         },
         select: profileSelect,
       });
       // The date itself is personal data: the log names the user only.
       if (body.birth_date !== undefined) this.logger.info('profile_birth_date_changed', { user_id: userId });
-      if (body.accept_terms) this.logger.info('terms_accepted', { user_id: userId, terms_version: this.config!.termsVersion });
+      if (body.accept_terms) this.logger.info('terms_accepted', { user_id: userId, terms_version: termsVersion });
       return toProfile(row);
     } catch (error) {
       // Also handles deletion concurrent with PATCH without turning it into a 500.

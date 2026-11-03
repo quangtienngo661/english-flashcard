@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Optional } from '@nestjs/common';
 import { createHmac, randomUUID } from 'node:crypto';
 import type { Response } from 'express';
 import { Clock } from '../../common/clock/clock.js';
@@ -21,6 +21,7 @@ import { OtpService, otpLocked } from './otp.service.js';
 import type { VerifyEmailBody } from './otp.schemas.js';
 import { PasswordHasher } from './password-hasher.service.js';
 import { checkPasswordPolicy, normalizePassword } from './password-policy.js';
+import { TermsVersion } from '../profile/terms-version.js';
 
 const transactionOptions = { timeout: 10_000, maxWait: 5_000 };
 
@@ -36,6 +37,7 @@ export class AuthService {
     @Inject(MailDispatcher) private readonly dispatcher: MailDispatcher,
     @Inject(OtpService) private readonly otp: OtpService,
     @Inject(AppLogger) private readonly logger: AppLogger,
+    @Optional() @Inject(TermsVersion) private readonly terms?: TermsVersion,
   ) {}
 
   async register(body: RegisterBody, res: Response): Promise<{ email: string }> {
@@ -53,6 +55,7 @@ export class AuthService {
     }
     await this.budget.assertAvailable();
     const hash = await this.hasher.hash(body.password);
+    const termsVersion = await (this.terms?.current() ?? this.config.termsVersion);
     // Count every registration before lookup; a new email still gets its first code.
     const mailAllowed = await this.otp.tryLimitEmail(email);
     // A preallocated ID lets even a new account follow the lock-first protocol.
@@ -66,7 +69,7 @@ export class AuthService {
         const now = this.clock.now();
         const data = {
           timezone, givenName: body.given_name, familyName: body.family_name ?? null,
-          birthDate: dateValue(body.birth_date), termsAcceptedAt: now, termsVersion: this.config.termsVersion,
+          birthDate: dateValue(body.birth_date), termsAcceptedAt: now, termsVersion,
           updatedAt: now,
         };
         if (!existing) {

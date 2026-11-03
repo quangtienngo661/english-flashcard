@@ -1,0 +1,21 @@
+// The Privacy Policy and the Terms of Use are one document set: one version, written by an admin, published together (legal documents, 03/11/2026).
+// At most one row is `published` (a partial unique index in the migration); a published row is never edited again.
+model LegalVersion {
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  number        Int       @unique
+  status        String
+  rowVersion    Int       @default(1) @map("row_version")
+  privacyVi     String    @default("") @map("privacy_vi")
+  termsVi       String    @default("") @map("terms_vi")
+  privacyEn     String?   @map("privacy_en")
+  termsEn       String?   @map("terms_en")
+  effectiveDate DateTime? @map("effective_date") @db.Date
+  createdBy     String    @map("created_by") @db.Uuid
+  createdAt     DateTime  @map("created_at") @db.Timestamptz
+  updatedBy     String    @map("updated_by") @db.Uuid
+  updatedAt     DateTime  @map("updated_at") @db.Timestamptz
+  publishedBy   String?   @map("published_by") @db.Uuid
+  publishedAt   DateTime? @map("published_at") @db.Timestamptz
+
+  @@map("legal_versions")
+}
