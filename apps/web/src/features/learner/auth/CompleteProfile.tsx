@@ -29,7 +29,9 @@ export function CompleteProfile({ today }: { today?: string }) {
   const { state, store } = useSession();
   const me = state.status === 'signed-in' ? state.me : null;
   const needsBirth = me?.birth_date === null;
-  const needsTerms = me?.terms_accepted_at === null;
+  // A first consent, or the terms an admin updated since (legal documents).
+  const termsUpdated = me?.terms_outdated === true && me.terms_accepted_at !== null;
+  const needsTerms = me?.terms_accepted_at === null || me?.terms_outdated === true;
   const [birthDate, setBirthDate] = useState<string | null>(null);
   const [consent, setConsent] = useState(false);
   const [tooYoung, setTooYoung] = useState(false);
@@ -66,7 +68,7 @@ export function CompleteProfile({ today }: { today?: string }) {
     };
 
   return (
-    <AuthCard title={t('complete.title')} intro={t('complete.body')}>
+    <AuthCard title={termsUpdated ? t('complete.updatedTitle') : t('complete.title')} intro={termsUpdated ? t('complete.updatedBody') : t('complete.body')}>
       <form onSubmit={onSubmit} noValidate className="flex flex-col gap-4">
         {needsBirth && (
           <DateOfBirthField

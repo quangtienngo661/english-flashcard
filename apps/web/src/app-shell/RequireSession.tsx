@@ -72,7 +72,7 @@ function redirectFor(
   if (!state.me.email_verified) return `/${locale}/app/verify-email`;
   const fixed = prefixFix(here, state.me.native_language);
   if (fixed) return fixed;
-  if ((state.me.birth_date === null || state.me.terms_accepted_at === null) && !PROFILE_PAGE.test(pathname)) {
+  if ((state.me.birth_date === null || state.me.terms_accepted_at === null || state.me.terms_outdated === true) && !PROFILE_PAGE.test(pathname)) {
     return `/${locale}/app/complete-profile?next=${encodeURIComponent(here)}`;
   }
   if (state.me.native_language === null && !NO_LANGUAGE_PAGES.test(pathname)) {

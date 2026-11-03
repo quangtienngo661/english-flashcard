@@ -17,6 +17,9 @@ export type Me = {
   birth_date: string | null;
   /** AD18: null until the user accepts the terms (an account made by an admin, or an older one). */
   terms_accepted_at: string | null;
+  /** Legal documents: the version the account accepted, and whether an admin has published another since (the app asks again). */
+  terms_version?: string | null;
+  terms_outdated?: boolean;
   /** Bước 8: how this session signed in, and every way the account can (password, Google). */
   auth_method?: 'password' | 'google';
   sign_in_methods?: Array<'password' | 'google'>;
