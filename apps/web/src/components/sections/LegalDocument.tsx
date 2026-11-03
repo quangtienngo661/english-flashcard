@@ -28,6 +28,11 @@ const COMPONENTS: Components = {
   },
 };
 
+// raw-ok: from lg the 40rem text column sits beside a 15rem contents column and the pair is centred
+const WITH_CONTENTS = 'lg:grid lg:max-w-none lg:grid-cols-[minmax(0,40rem)_15rem] lg:justify-center lg:gap-14';
+// raw-ok: a contents list longer than the screen scrolls on its own, inside the viewport minus the header and its gap
+const CONTENTS_NAV = 'sticky top-24 max-h-[calc(100vh-8rem)] overflow-y-auto border-l border-border pl-5';
+
 function textOf(node: ReactNode): string {
   if (typeof node === 'string' || typeof node === 'number') return String(node);
   if (Array.isArray(node)) return node.map(textOf).join('');
@@ -52,7 +57,7 @@ export function LegalDocument({ title, source, effective, contentsLabel }: { tit
   };
   return (
     <Container className="py-16 md:py-24">
-      <div className={cn('mx-auto w-full max-w-[40rem]', sections.length > 0 && 'lg:grid lg:max-w-none lg:grid-cols-[minmax(0,40rem)_15rem] lg:justify-center lg:gap-14')}>
+      <div className={cn('mx-auto w-full max-w-prose', sections.length > 0 && WITH_CONTENTS)}>
         <div className="flex min-w-0 flex-col gap-4">
           {!hasTitle && <h1 className="text-h2 font-extrabold text-ink">{title}</h1>}
           {effective && <p className="text-body text-muted">{effective}</p>}
@@ -62,7 +67,7 @@ export function LegalDocument({ title, source, effective, contentsLabel }: { tit
         </div>
         {sections.length > 0 && (
           <aside className="hidden lg:block">
-            <nav aria-label={contentsLabel} className="sticky top-24 max-h-[calc(100vh-8rem)] overflow-y-auto border-l border-border pl-5">
+            <nav aria-label={contentsLabel} className={CONTENTS_NAV}>
               <p className="text-sm font-bold uppercase tracking-wide text-muted">{contentsLabel}</p>
               <ul className="mt-3 flex flex-col gap-2">
                 {sections.map((section) => (
