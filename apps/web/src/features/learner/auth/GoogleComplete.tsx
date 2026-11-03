@@ -106,8 +106,8 @@ export function GoogleComplete({ today }: { today?: string }) {
       <form onSubmit={onSubmit} noValidate className="flex flex-col gap-4">
         {needsName && (
           <div className="grid gap-4 sm:grid-cols-2">
-            <TextField label={t('register.givenName')} placeholder={t('register.givenNamePlaceholder')} value={givenName} onChange={setGivenName} autoComplete="given-name" maxLength={50} />
-            <TextField label={t('register.familyName')} placeholder={t('register.familyNamePlaceholder')} value={familyName} onChange={setFamilyName} autoComplete="family-name" maxLength={50} />
+            <TextField label={t('register.givenName')} value={givenName} onChange={setGivenName} autoComplete="given-name" maxLength={50} />
+            <TextField label={t('register.familyName')} value={familyName} onChange={setFamilyName} autoComplete="family-name" maxLength={50} />
           </div>
         )}
         <DateOfBirthField

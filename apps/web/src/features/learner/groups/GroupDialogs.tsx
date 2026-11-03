@@ -73,7 +73,6 @@ export function CreateGroupDialog({ onClose, onCreated }: { onClose: () => void;
       <form onSubmit={onSubmit} noValidate className="flex flex-col gap-4">
         <TextField
           label={t('groups.nameLabel')}
-          placeholder={t('groups.namePlaceholder')}
           value={name}
           onChange={setName}
           maxLength={GROUP_NAME_MAX}

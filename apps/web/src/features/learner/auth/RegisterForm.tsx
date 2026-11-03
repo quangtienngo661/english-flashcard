@@ -82,7 +82,6 @@ export function RegisterForm({ today }: { today?: string }) {
         <div className="grid gap-4 sm:grid-cols-2">
           <TextField
             label={t('register.givenName')}
-            placeholder={t('register.givenNamePlaceholder')}
             value={givenName}
             onChange={setGivenName}
             autoComplete="given-name"
@@ -91,7 +90,6 @@ export function RegisterForm({ today }: { today?: string }) {
           />
           <TextField
             label={t('register.familyName')}
-            placeholder={t('register.familyNamePlaceholder')}
             value={familyName}
             onChange={setFamilyName}
             autoComplete="family-name"
@@ -113,7 +111,6 @@ export function RegisterForm({ today }: { today?: string }) {
             onChange={setEmail}
             autoComplete="email"
             spellCheck={false}
-            placeholder="lan@example.com"
             error={errors.email}
           />
           {errors.email && (

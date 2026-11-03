@@ -55,6 +55,14 @@ async function fillRegister(birth = '14/5/2008', email = 'lan@example.com') {
 }
 
 describe('RegisterForm (K/01, K/01b)', () => {
+  // Owner 03/11/2026: the forms show no placeholder text; each field already has its label above it.
+  it('no field of the form shows a placeholder', () => {
+    const { container } = renderApp(<RegisterForm today={TODAY} />, { routes: signedOut });
+    const fields = [...container.querySelectorAll('input, textarea')];
+    expect(fields.length).toBeGreaterThan(3);
+    expect(fields.filter((field) => field.getAttribute('placeholder')).map((field) => field.getAttribute('placeholder'))).toEqual([]);
+  });
+
   it('register -> writes the pending email and keeps the password in memory -> client-side navigation to /vi/app/verify-email', async () => {
     const { calls, store } = renderApp(<RegisterForm today={TODAY} />, {
       routes: { ...signedOut, 'POST /v1/auth/register': () => Response.json({ email: 'lan@example.com', verification_required: true }, { status: 201 }) },
