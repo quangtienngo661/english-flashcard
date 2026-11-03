@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
-import { screen, within } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
+import { NextIntlClientProvider } from 'next-intl';
 import userEvent from '@testing-library/user-event';
 import { appCopy, landing, renderLanding } from '../test-utils';
 import { AppShowcase } from './AppShowcase';
@@ -66,5 +67,19 @@ describe('AppShowcase', () => {
     expect(screen.getByText(appCopy.addWord.title, { selector: 'b' })).toBeInTheDocument();
     expect(screen.getByText('Wordmet nhận ra đây là quá khứ của go và đã gắn sẵn.')).toBeInTheDocument();
     expect(screen.getByText('Lưu go')).toBeInTheDocument();
+  });
+
+  // renderLanding gives its provider the App messages, which hides this: the app gives client components none (app/[locale]/layout.tsx,
+  // `messages={null}`), so anything in this client component that reads App messages shows its key and logs MISSING_MESSAGE (seen in CI).
+  it('the window needs no client messages: under the production provider nothing logs MISSING_MESSAGE or shows a message key', () => {
+    const errors = vi.spyOn(console, 'error').mockImplementation(() => {});
+    render(
+      <NextIntlClientProvider locale="vi" messages={null} timeZone="UTC">
+        <AppShowcase copy={landing.showcase} app={appCopy} />
+      </NextIntlClientProvider>,
+    );
+    expect(errors.mock.calls.flat().map(String).filter((line) => line.includes('MISSING_MESSAGE'))).toEqual([]);
+    expect(document.body).not.toHaveTextContent('App.chrome');
+    errors.mockRestore();
   });
 });
