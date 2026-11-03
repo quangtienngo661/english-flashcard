@@ -1,0 +1,276 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mockup C · Nơi bạn gặp từ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* Mockup C (Q1c): a new visual world taken from the product's own idea, "gặp từ ở đâu cũng thêm được". The page is built
+   from the places a learner meets a word: a film subtitle, an email, a work chat. Navy (the learner app's top bar) is the
+   ground, subtitle yellow (the brand accent) is the highlight. Lexend and the logo stay. */
+:root {
+  --navy: #1b2444; --screen: #0b1024; --navy-raised: #2c3760; --on-navy: #f1f3fd; --on-navy-muted: #b9c1e0;
+  --yellow: #ffd84a; --yellow-soft: #fff4c7; --primary: #2445d6; --ink: #0f1a3d; --muted: #4d5577;
+  --paper: #ffffff; --canvas: #f1f3fd; --border: #dde1f5;
+  --success: #1b7a46; --success-soft: #e3f4ea; --danger: #b8352a; --danger-soft: #fde8e5;
+  --font: 'Lexend', system-ui, sans-serif;
+  --wrap: 76rem; --gutter: clamp(1.25rem, 0.5rem + 2.5vw, 2.5rem);
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--navy); color: var(--on-navy); font: 400 1.125rem/1.6 var(--font); -webkit-font-smoothing: antialiased; }
+h1, h2, h3, p, dl, dd { margin: 0; }
+a { color: inherit; text-underline-offset: 0.2em; }
+:focus-visible { outline: 3px solid var(--yellow); outline-offset: 3px; }
+.light :focus-visible { outline-color: var(--primary); }
+::selection { background: var(--yellow); color: var(--ink); }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.wrap { width: min(100% - 2 * var(--gutter), var(--wrap)); margin-inline: auto; }
+.mock-bar { background: #000; color: #fff; font-size: 0.8125rem; padding: 0.5rem var(--gutter); display: flex; gap: 1rem; justify-content: space-between; }
+.mock-bar a { color: var(--yellow); }
+section { padding-block: clamp(4.5rem, 2rem + 8vw, 9rem); }
+h2 { font-size: clamp(2rem, 1.2rem + 3vw, 3.4rem); font-weight: 800; line-height: 1.05; letter-spacing: -0.025em; max-width: 17ch; }
+.lede { font-size: 1.25rem; max-width: 38ch; color: var(--on-navy-muted); }
+.light { background: var(--canvas); color: var(--ink); }
+.light .lede { color: var(--muted); }
+mark { background: var(--yellow); color: var(--ink); padding: 0 0.2em; font-weight: 700; }
+
+.btn { display: inline-flex; align-items: center; justify-content: center; min-height: 3.25rem; padding: 0 1.5rem; border: 0; border-radius: 0.5rem;
+  font: 600 1.0625rem/1 var(--font); cursor: pointer; text-decoration: none; transition: background-color 150ms, transform 150ms; }
+.btn:active { transform: scale(0.97); }
+.btn-yellow { background: var(--yellow); color: var(--ink); } .btn-yellow:hover { background: #ffe27a; }
+
+.header { display: flex; align-items: center; justify-content: space-between; gap: 1rem; min-height: 4.5rem; }
+.logo { display: inline-flex; align-items: center; gap: 0.55rem; font-weight: 800; font-size: 1.25rem; text-decoration: none; }
+.logo i { display: grid; place-items: center; width: 2rem; height: 2rem; border-radius: 0.5rem; background: var(--yellow); color: var(--ink); font-style: normal; font-size: 0.9rem; }
+.nav { display: none; gap: 1.75rem; font-size: 0.9375rem; color: var(--on-navy-muted); }
+.nav a { text-decoration: none; }
+@media (min-width: 64rem) { .nav { display: flex; } }
+
+/* Hero: headline and action above, then the "screen" whose subtitle is the practice. */
+.hero { padding-block: clamp(2rem, 1rem + 4vw, 4.5rem) 0; }
+.hero-top { display: grid; gap: 1.5rem; margin-bottom: clamp(1.5rem, 1rem + 2vw, 2.5rem); }
+.hero h1 { font-size: clamp(2.5rem, 0.9rem + 6vw, 6.25rem); font-weight: 800; line-height: 0.98; letter-spacing: -0.035em; max-width: 21ch; }
+.hero-side { display: grid; gap: 1.5rem; }
+@media (min-width: 64rem) { .hero-side { grid-template-columns: 1fr 1fr; gap: 4rem; align-items: start; } }
+.screen { background: var(--screen); border-radius: 1rem 1rem 0 0; min-height: clamp(18rem, 30vw, 24rem); display: grid; align-content: center; justify-items: center;
+  padding: clamp(1.5rem, 1rem + 3vw, 3.5rem) clamp(1rem, 0.5rem + 3vw, 3rem); position: relative; }
+.screen-label { justify-self: start; margin-bottom: 1.5rem; font-size: 0.875rem; color: var(--on-navy-muted); }
+
+/* Practice card dressed as a subtitle. */
+.screen [data-cloze] { display: grid; justify-items: center; text-align: center; width: min(100%, 52rem); }
+.cz-head { order: 4; display: flex; gap: 1rem; font-size: 0.8125rem; color: var(--on-navy-muted); margin-top: 1.5rem; }
+.cz-sentence { background: rgb(0 0 0 / 0.72); padding: 0.35em 0.7em; font-size: clamp(1.4rem, 1rem + 1.8vw, 2.4rem); font-weight: 600; line-height: 1.4; color: #fff; margin-bottom: 1.5rem; }
+.cz-blank { display: inline-block; min-width: 5.5em; border-bottom: 0.12em solid var(--yellow); color: var(--yellow); }
+.cz-blank.is-right { border-bottom-color: transparent; background: var(--yellow); color: var(--ink); padding: 0 0.2em; }
+.cz-options { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.6rem; }
+.cz-opt { min-height: 3rem; min-width: 7.5rem; padding: 0 1.25rem; border: 2px solid var(--navy-raised); border-radius: 0.5rem; background: transparent; color: var(--on-navy); font: 600 1.125rem var(--font); cursor: pointer; transition: border-color 150ms, background-color 150ms; }
+.cz-opt:hover:not(:disabled) { border-color: var(--yellow); }
+.cz-opt.is-wrong { border-color: #ff8a7d; color: #ff8a7d; text-decoration: line-through; }
+.cz-opt.is-right { background: var(--yellow); border-color: var(--yellow); color: var(--ink); }
+.cz-feedback, .cz-done { margin-top: 1.25rem; display: grid; gap: 0.3rem; justify-items: center; font-size: 1rem; color: var(--on-navy-muted); max-width: 40rem; }
+.cz-feedback.is-right .cz-title { color: var(--yellow); } .cz-feedback.is-wrong .cz-title { color: #ff8a7d; }
+.cz-title { font-weight: 700; color: var(--on-navy); } .cz-translate { color: var(--on-navy); }
+.cz-next { margin-top: 0.6rem; min-height: 2.9rem; padding: 0 1.25rem; border: 0; border-radius: 0.5rem; background: var(--yellow); color: var(--ink); font: 600 1rem var(--font); cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; }
+.cz-done-row { display: flex; gap: 1rem; flex-wrap: wrap; align-items: center; justify-content: center; }
+.cz-again { background: none; border: 0; font: 600 1rem var(--font); color: var(--on-navy); text-decoration: underline; cursor: pointer; }
+
+.wl { display: grid; gap: 0.75rem; max-width: 32rem; }
+.wl-row { display: flex; gap: 0.6rem; flex-wrap: wrap; }
+.wl input[type=email] { flex: 1 1 14rem; min-height: 3.25rem; padding: 0 1rem; border-radius: 0.5rem; border: 2px solid var(--navy-raised); background: var(--screen); color: #fff; font: 400 1.0625rem var(--font); }
+.wl input::placeholder { color: var(--on-navy-muted); }
+.wl label.consent { display: flex; gap: 0.5rem; align-items: center; font-size: 0.9375rem; color: var(--on-navy-muted); }
+.wl input[type=checkbox] { width: 1.15rem; height: 1.15rem; accent-color: var(--yellow); }
+.wl-msg { font-size: 0.9375rem; min-height: 1.3em; } .wl-msg.is-error { color: #ff8a7d; } .wl-msg.is-ok { color: var(--yellow); font-weight: 600; }
+
+/* Where you meet words: three sources in their own form, then the app's real add box. */
+.meet { display: grid; gap: 1.5rem; margin-top: 3.5rem; }
+@media (min-width: 60rem) { .meet { grid-template-columns: 1.3fr 1fr; grid-template-rows: auto auto; gap: 1.5rem 2rem; } .meet .email { grid-row: span 2; } }
+.src { border-radius: 0.75rem; padding: 1.5rem; font-size: 1.0625rem; }
+.src small { display: block; font-size: 0.8125rem; color: var(--muted); margin-bottom: 0.75rem; }
+.email { background: var(--paper); }
+.email .meta { display: grid; gap: 0.25rem; font-size: 0.9375rem; color: var(--muted); padding-bottom: 1rem; margin-bottom: 1rem; border-bottom: 1px solid var(--border); }
+.email .meta b { color: var(--ink); font-weight: 600; }
+.email p + p { margin-top: 0.85rem; }
+.chat { background: var(--paper); display: grid; gap: 0.6rem; }
+.bubble { display: grid; grid-template-columns: 2.25rem 1fr; gap: 0.75rem; }
+.bubble i { width: 2.25rem; height: 2.25rem; border-radius: 0.5rem; background: var(--primary); color: #fff; display: grid; place-items: center; font-style: normal; font-weight: 700; font-size: 0.875rem; }
+.bubble b { font-size: 0.9375rem; } .bubble span { color: var(--muted); font-size: 0.8125rem; font-weight: 400; margin-left: 0.4rem; }
+.sub { background: var(--screen); color: #fff; min-height: 11rem; display: grid; align-content: end; justify-items: center; text-align: center; }
+.sub small { color: var(--on-navy-muted); justify-self: start; }
+.sub p { background: rgb(0 0 0 / 0.72); padding: 0.2em 0.6em; font-weight: 600; font-size: 1.25rem; }
+.arrive { display: grid; gap: 2rem; margin-top: 4rem; align-items: center; }
+@media (min-width: 56rem) { .arrive { grid-template-columns: 1fr 1fr; gap: 4rem; } }
+.crop { position: relative; overflow: hidden; aspect-ratio: var(--cw) / var(--ch); border-radius: 1rem; }
+.crop img { position: absolute; width: calc(var(--w) / var(--cw) * 100%); left: calc(var(--x) / var(--cw) * -100%); top: calc(var(--y) / var(--ch) * -100%); max-width: none; }
+.arrive h3 { font-size: 1.75rem; font-weight: 800; letter-spacing: -0.02em; margin-bottom: 1rem; }
+
+/* Review timing as a strip of frames. */
+.frames { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem; margin-top: 3.5rem; }
+@media (min-width: 48rem) { .frames { grid-template-columns: repeat(6, 1fr); } }
+.frame { background: var(--screen); border-radius: 0.5rem; aspect-ratio: 4 / 3; display: grid; place-content: center; text-align: center; }
+.frame b { font-size: clamp(2rem, 1rem + 3vw, 3.5rem); font-weight: 800; line-height: 1; }
+.frame span { font-size: 0.875rem; color: var(--on-navy-muted); }
+.frame:first-child { background: var(--yellow); color: var(--ink); } .frame:first-child span { color: var(--ink); }
+.review-text { display: grid; gap: 1.5rem; margin-top: 2.5rem; }
+@media (min-width: 56rem) { .review-text { grid-template-columns: 1fr 1fr; gap: 4rem; } }
+
+/* Practice kinds, each shown on one of the sentences above. */
+.kinds { display: grid; gap: 0; margin-top: 3.5rem; }
+.kind { display: grid; gap: 0.5rem; padding-block: 1.5rem; border-top: 1px solid var(--border); }
+@media (min-width: 56rem) { .kind { grid-template-columns: 16rem 1fr 8rem; gap: 2rem; align-items: baseline; } }
+.kind h3 { font-size: 1.25rem; font-weight: 700; }
+.kind p[lang] { font-size: 1.25rem; }
+.kind .plan { font-size: 0.875rem; font-weight: 600; color: var(--muted); }
+.kind .plan.pro { color: var(--primary); }
+.rule { margin-top: 2.5rem; font-size: 1.375rem; font-weight: 600; max-width: 34ch; }
+
+table { width: 100%; border-collapse: collapse; margin-top: 3rem; font-size: 1.0625rem; }
+th, td { text-align: left; padding: 1rem 0.75rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+thead th { font-size: 1.5rem; font-weight: 800; }
+thead th small { display: block; font-size: 0.875rem; font-weight: 600; color: var(--muted); }
+tbody th { font-weight: 500; color: var(--muted); width: 40%; }
+.pending { color: var(--danger); font-size: 0.875rem; font-weight: 600; }
+
+.qa { display: grid; gap: 2.5rem; margin-top: 3rem; }
+.qa .item { display: grid; gap: 0.5rem; }
+@media (min-width: 56rem) { .qa .item { grid-template-columns: 1fr 1.4fr; gap: 3rem; } }
+.qa h3 { font-size: 1.25rem; font-weight: 700; } .qa p { color: var(--muted); }
+
+.final h2 { max-width: 18ch; margin-bottom: 2.5rem; }
+footer { padding-block: 3rem 2rem; background: var(--screen); }
+footer .big { font-size: clamp(3.5rem, 1rem + 12vw, 11rem); font-weight: 800; letter-spacing: -0.05em; line-height: 0.9; color: var(--yellow); }
+footer nav { display: flex; gap: 1.5rem; flex-wrap: wrap; margin-top: 2rem; font-size: 0.9375rem; color: var(--on-navy-muted); }
+</style>
+</head>
+<body>
+<div class="mock-bar"><span>Mockup C (Q1c): thế giới mới, lấy từ "gặp từ ở đâu cũng thêm được"</span><a href="index.html">Về mục lục</a></div>
+
+<div class="wrap header">
+  <a class="logo" href="#"><i>_ _</i>Wordmet</a>
+  <nav class="nav" aria-label="Wordmet"><a href="#gap-tu">Gặp từ</a><a href="#on-tap">Ôn tập</a><a href="#luyen">Luyện tập</a><a href="#goi">Gói</a><a href="#hoi-dap">Hỏi đáp</a></nav>
+  <a class="btn btn-yellow" href="#dang-ky" style="min-height:2.75rem;font-size:.9375rem">Nhận tin ra mắt</a>
+</div>
+
+<main>
+  <section class="hero">
+    <div class="wrap">
+      <div class="hero-top" id="dang-ky">
+        <h1>Nhớ từ bằng chính câu bạn đã gặp</h1>
+        <div class="hero-side">
+          <p class="lede">Gặp từ mới trong phim, email hay tin nhắn công việc? Lưu nó cùng câu đó. Wordmet xếp lịch ôn và cho bạn luyện trên chính câu ấy.</p>
+          <form class="wl" data-waitlist novalidate>
+            <label class="sr-only" for="c-email">Email</label>
+            <div class="wl-row"><input id="c-email" type="email" placeholder="ten@gmail.com" autocomplete="email"><button class="btn btn-yellow" type="submit">Đăng ký nhận tin ra mắt</button></div>
+            <label class="consent"><input type="checkbox"> <span>Tôi đồng ý với <a href="#">Chính sách bảo mật</a>.</span></label>
+            <p class="wl-msg" role="status"></p>
+          </form>
+        </div>
+      </div>
+      <div class="screen">
+        <span class="screen-label">Thử ngay: điền từ vào phụ đề</span>
+        <div data-cloze aria-label="Bài luyện thử"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="light" id="gap-tu">
+    <div class="wrap">
+      <h2>Bạn gặp từ ở đâu, Wordmet giữ cả câu</h2>
+      <div class="meet">
+        <div class="src email"><small>Ví dụ · email công việc</small>
+          <div class="meta"><span><b>Từ:</b> Linh Trần</span><span><b>Chủ đề:</b> Lịch họp thứ Sáu</span></div>
+          <p lang="en">Hi team,</p>
+          <p lang="en">The agenda is in the shared folder. Don't <mark>assume</mark> that everyone has read the email, so please summarise it at the start.</p>
+          <p lang="en">Thanks, Linh</p></div>
+        <div class="src chat"><small>Ví dụ · tin nhắn nhóm dự án</small>
+          <div class="bubble"><i>MH</i><div><b>Minh Hoàng<span>10:42</span></b><p lang="en">We plan to <mark>deploy</mark> the new version on Friday.</p></div></div></div>
+        <div class="src sub"><small>Ví dụ · phụ đề phim</small><p lang="en">Can I <mark>borrow</mark> your charger for a minute?</p></div>
+      </div>
+      <div class="arrive">
+        <div><h3>Gõ từ, dán câu, xong</h3><p class="lede">Wordmet tự nhận ra dạng chia, như went → go. Câu bạn dán đi theo từ vào lịch ôn và thành câu luyện.</p></div>
+        <div class="crop" style="--w:1280;--h:1739;--x:886;--y:143;--cw:366;--ch:192" role="img" aria-label="Ô Thêm từ vừa gặp trong app Wordmet">
+          <img src="img/fb-today-1280.png" alt=""></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="on-tap">
+    <div class="wrap">
+      <h2>Ôn đúng lúc, không ôn thừa</h2>
+      <div class="frames" role="list" aria-label="Sáu ngăn ôn">
+        <div class="frame" role="listitem"><b>Mới</b><span>chưa ôn</span></div>
+        <div class="frame" role="listitem"><b>1</b><span>ngày</span></div>
+        <div class="frame" role="listitem"><b>3</b><span>ngày</span></div>
+        <div class="frame" role="listitem"><b>7</b><span>ngày</span></div>
+        <div class="frame" role="listitem"><b>14</b><span>ngày</span></div>
+        <div class="frame" role="listitem"><b>30</b><span>ngày</span></div>
+      </div>
+      <div class="review-text">
+        <p class="lede">Mỗi từ nằm trong một ngăn. Nhớ thì lên ngăn sau, lâu hơn mới gặp lại.</p>
+        <p class="lede">Sai 2 lần trong 5 câu gần nhất thì từ vào danh sách Từ hay sai để luyện riêng.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="light" id="luyen">
+    <div class="wrap">
+      <h2>Một câu, nhiều cách luyện</h2>
+      <div class="kinds">
+        <div class="kind"><h3>Điền từ vào câu đã lưu</h3><p lang="en">Can I ______ your charger for a minute?</p><span class="plan">Miễn phí</span></div>
+        <div class="kind"><h3>Gõ từ theo nghĩa</h3><p>“cho rằng, khi chưa kiểm chứng” → <span lang="en">a______</span></p><span class="plan">Miễn phí</span></div>
+        <div class="kind"><h3>Trắc nghiệm, đúng hay sai</h3><p><span lang="en">deploy</span> = triển khai, phát hành. Đúng hay sai?</p><span class="plan">Miễn phí</span></div>
+        <div class="kind"><h3>Câu mới do AI viết</h3><p lang="en">The team will ______ the fix tonight.</p><span class="plan pro">Pro</span></div>
+        <div class="kind"><h3>Chọn nghĩa trong câu</h3><p>Trong câu này, <span lang="en">assume</span> nghĩa là gì?</p><span class="plan pro">Pro</span></div>
+      </div>
+      <p class="rule">AI chỉ viết câu. Đáp án của bạn được chấm bằng quy tắc, không tốn lượt AI.</p>
+    </div>
+  </section>
+
+  <section class="light" id="goi" style="padding-top:0">
+    <div class="wrap">
+      <h2>Bắt đầu miễn phí</h2>
+      <table>
+        <thead><tr><td></td><th scope="col">Miễn phí<small>Không giới hạn thời gian</small></th><th scope="col">Pro<small>Chưa mở bán</small></th></tr></thead>
+        <tbody>
+          <tr><th scope="row">Ôn thẻ và lịch ôn</th><td>Không giới hạn</td><td>Không giới hạn</td></tr>
+          <tr><th scope="row">Nhắc ôn qua email</th><td>Có</td><td>Có</td></tr>
+          <tr><th scope="row">Phiên luyện mỗi ngày</th><td>3</td><td>Nhiều hơn</td></tr>
+          <tr><th scope="row">Câu AI và tra bằng AI</th><td>Không</td><td>Có</td></tr>
+          <tr><th scope="row">Quảng cáo</th><td>Có thể có</td><td>Không</td></tr>
+          <tr><th scope="row">Dùng thử</th><td></td><td class="pending">Chờ chốt Q2</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="light" id="hoi-dap" style="padding-top:0">
+    <div class="wrap">
+      <h2>Câu hỏi thường gặp</h2>
+      <div class="qa">
+        <div class="item"><h3>Wordmet có miễn phí không?</h3><p>Có. Gói Miễn phí gồm ôn thẻ, lịch ôn, nhắc qua email, tra từ và 3 phiên luyện mỗi ngày. Gói Pro thêm câu AI và tra bằng AI, hiện chưa mở bán.</p></div>
+        <div class="item"><h3>AI có chấm bài của tôi không?</h3><p>Không. AI chỉ viết câu luyện. Đáp án của bạn được chấm bằng quy tắc, nên không tốn lượt AI.</p></div>
+        <div class="item"><h3>Người khác có thấy từ và câu tôi lưu không?</h3><p>Không. Từ và câu bạn tự thêm chỉ hiện trong tài khoản của bạn.</p></div>
+        <div class="item"><h3>Có app điện thoại không?</h3><p>Wordmet mở trên web trước, dùng được trên trình duyệt điện thoại. App điện thoại làm sau.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="final">
+    <div class="wrap">
+      <h2>Bắt đầu với những từ bạn gặp hôm nay</h2>
+      <form class="wl" data-waitlist novalidate>
+        <label class="sr-only" for="c-email-2">Email</label>
+        <div class="wl-row"><input id="c-email-2" type="email" placeholder="ten@gmail.com" autocomplete="email"><button class="btn btn-yellow" type="submit">Đăng ký nhận tin ra mắt</button></div>
+        <label class="consent"><input type="checkbox"> <span>Tôi đồng ý với <a href="#">Chính sách bảo mật</a>.</span></label>
+        <p class="wl-msg" role="status"></p>
+      </form>
+    </div>
+  </section>
+</main>
+<footer><div class="wrap"><p class="big">Wordmet</p><nav><span>© 2026 Wordmet</span><a href="#">Chính sách bảo mật</a><a href="#">Điều khoản sử dụng</a><a href="#">Liên hệ</a><a href="#">English</a></nav></div></footer>
+<script src="shared.js"></script>
+</body>
+</html>

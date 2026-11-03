@@ -116,6 +116,22 @@ Thông thường site nhỏ không cố chặn hết bot; chỉ bảo vệ chỗ
   làm cùng phần xoá tài khoản của Bước 8. Vì sao: từ đợt này tài khoản chưa xác nhận không vào được app nhưng vẫn nằm trong DB và giữ chỗ email;
   `identity-cleanup.service.ts` chỉ xoá OTP và chuỗi phiên hết hạn.
 
+## Landing mới (`apps/web`, design landing-redesign §9, 03/11/2026)
+
+- [ ] **`deploy-web.yml` phải build với `NEXT_PUBLIC_LEARNER_APP=on` và `NEXT_PUBLIC_API_BASE_URL` (host bắt đầu bằng `api.`) trước khi lên `main`.**
+  Nguồn: design §9, LRE7. Vì sao: hiện workflow chỉ đặt `NEXT_PUBLIC_SITE_URL`, `NEXT_PUBLIC_INDEXABLE`, `NEXT_PUBLIC_CONTACT_EMAIL`. Với app tắt,
+  `proxy.ts` đưa mọi `/{locale}/app/*` về `/vi` (D8, E20), nên nút Đăng ký và Đăng nhập của landing quay về chính trang đó. Cần API thật đang chạy
+  ở host `api.` thì đăng ký mới hoàn tất.
+- [ ] **Xóa database D1 `wordmet-waitlist` trong Cloudflare dashboard.** Nguồn: design L2. Vì sao: binding `DB`, migration và form đã bị bỏ khỏi code,
+  database còn lại chỉ tốn chỗ. Chủ dự án (lúc brainstorm landing, 11/2026) nói chưa có ai đăng ký thật nên không cần xuất dữ liệu.
+- [ ] **Viết nội dung thật cho `/vi/privacy` và `/vi/terms`, rồi mới đưa link trở lại footer.** Nguồn: design L2; nghiên cứu
+  `docs/preparation/LEGAL_AND_PILOT_RESEARCH_2026-11-02.md`. Vì sao: hai trang hiện là bản nháp (`LegalDraft`), link đang ẩn từ 09/10/2026; khi link
+  trở lại, đổi `e2e/privacy.spec.ts` theo ghi chú ở đầu file.
+- [ ] **Sau deploy: mở `/vi`, mở `/en` (phải 307 về `/vi`), bấm Đăng ký (phải tới `/vi/app/register`), xem Console không có lỗi CSP.** Nguồn: design §9.
+  Vì sao: beacon Cloudflare chỉ chèn ở edge, e2e local không thấy.
+- [ ] **Bản tiếng Anh của landing.** Nguồn: design L3, L4. Khi có: thêm `'en'` vào `LANDING_LOCALES` (`src/lib/landing-locale.ts`), dịch `Landing` trong
+  `messages/en.json` (hiện còn là chữ Việt), đưa link ngôn ngữ trở lại header/footer.
+
 ## Bước 8 — đăng nhập Google và xóa tài khoản (design Bước 8 §18, §19; 29/10/2026)
 
 - [ ] **Google Auth Platform: chuyển từ "Testing" sang "In production" và xin xác minh thương hiệu.** Nguồn: design Bước 8 §18. Vì sao: để tên và logo app hiện trên màn đồng ý (Google nói

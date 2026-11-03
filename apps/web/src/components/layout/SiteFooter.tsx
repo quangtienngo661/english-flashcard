@@ -1,31 +1,37 @@
-import { getLocale, getTranslations } from 'next-intl/server';
-import { routing, type AppLocale } from '@/i18n/routing';
+import { Logo } from '@/app-chrome/Logo';
 import { Container } from '@/components/ui/Container';
-import { FooterLanguageLink } from '@/components/layout/FooterLanguageLink';
+import type { AppLocale } from '@/i18n/routing';
 import { site } from '@/lib/site';
 
-export async function SiteFooter() {
-  const locale = (await getLocale()) as AppLocale;
-  const other = routing.locales.find((l) => l !== locale) ?? routing.defaultLocale;
-  const t = await getTranslations('Footer');
-  const item = 'inline-flex min-h-11 items-center text-small font-medium text-muted';
-  const link = `${item} transition-colors duration-fast hover:text-ink`;
-
+// Privacy and Terms links stay hidden until launch (owner, 09/10/2026); the pages still exist. No language link while the English landing is
+// out of scope (design landing-redesign L4).
+export function SiteFooter({ copy, locale }: { copy: { plans: string; faq: string; contact: string; copyright: string }; locale: AppLocale }) {
+  const link =
+    'inline-flex min-h-11 items-center text-small font-medium text-muted underline-offset-4 transition-colors duration-fast hover:text-ink hover:underline';
   return (
-    <footer className="border-t border-border bg-surface">
-      <Container className="flex flex-col gap-4 py-6 md:flex-row-reverse md:items-center md:justify-between md:py-9">
-        <ul className="grid grid-cols-2 gap-x-3 md:flex md:gap-6">
-          {/* Privacy and Terms links hidden until launch (owner, 09/10/2026); the pages still exist. */}
-          <li>
-            <a href={`mailto:${site.contactEmail}`} className={link}>
-              {t('contact')}
-            </a>
-          </li>
-          <li>
-            <FooterLanguageLink locale={other} label={t('switchLanguage')} className={link} />
-          </li>
-        </ul>
-        <p className="text-small text-muted">{t('copyright', { year: new Date().getFullYear() })}</p>
+    <footer className="bg-surface">
+      <Container className="flex flex-col gap-5 py-8 md:py-10">
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <Logo tone="surface" />
+          <ul className="flex flex-wrap gap-x-6">
+            <li>
+              <a href={`/${locale}#goi`} className={link}>
+                {copy.plans}
+              </a>
+            </li>
+            <li>
+              <a href={`/${locale}#hoi-dap`} className={link}>
+                {copy.faq}
+              </a>
+            </li>
+            <li>
+              <a href={`mailto:${site.contactEmail}`} className={link}>
+                {copy.contact}
+              </a>
+            </li>
+          </ul>
+        </div>
+        <p className="text-small text-muted">{copy.copyright}</p>
       </Container>
     </footer>
   );

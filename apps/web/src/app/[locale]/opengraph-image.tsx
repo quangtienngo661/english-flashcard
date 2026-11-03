@@ -20,18 +20,18 @@ export async function generateImageMetadata({ params }: Params) {
   return [{ id: 'default', alt: t('ogAlt'), size, contentType }];
 }
 
-// OG image colours mirror the design tokens (primary, on-primary, on-primary-muted, accent, ink); next/og cannot read CSS variables.
+// OG image colours mirror the design tokens (navy, on-navy, on-navy-muted, accent, ink); next/og cannot read CSS variables.
 export default async function Image({ params }: Params) {
   const { locale: raw } = await params;
   const locale: AppLocale = hasLocale(routing.locales, raw) ? raw : routing.defaultLocale;
-  const hero = await getTranslations({ locale, namespace: 'Hero' });
+  const hero = await getTranslations({ locale, namespace: 'Landing.hero' });
   const regular = fontData(lexendRegular);
   const extraBold = fontData(lexendExtraBold);
-  const titleLines = String(hero.raw('title')).split('<br></br>');
+  const titleLines = [hero('line1'), hero('line2')];
 
   return new ImageResponse(
     (
-      <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', padding: 72, background: '#2445d6', fontFamily: 'Lexend' }}>
+      <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', padding: 72, background: '#1b2444', fontFamily: 'Lexend' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
           <div style={{ display: 'flex', background: '#ffd84a', borderRadius: 12, padding: '6px 14px', fontSize: 32, fontWeight: 800, color: '#0f1a3d' }}>_ _</div>
           <div style={{ display: 'flex', fontSize: 40, fontWeight: 800, color: '#ffffff' }}>Wordmet</div>
@@ -41,7 +41,7 @@ export default async function Image({ params }: Params) {
             <div key={line} style={{ display: 'flex' }}>{line}</div>
           ))}
         </div>
-        <div style={{ display: 'flex', fontSize: 30, color: '#dfe5ff', maxWidth: 960 }}>{hero('chip')}</div>
+        <div style={{ display: 'flex', fontSize: 30, color: '#b9c1e0', maxWidth: 960 }}>{hero('lead')}</div>
       </div>
     ),
     {

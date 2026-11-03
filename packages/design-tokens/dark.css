@@ -1,6 +1,6 @@
 /* Dark values of the shared colours, for the learner app only (design giao-dien-nguoi-hoc §4.4, D3). Values are the
    "Dark" mode of the Figma variables (file 7HcPAKLrWu32C27qYMJUOA, collection "Wordmet B", read 22/10/2026). Only the
-   /app layout sets data-theme on <html>, so the landing and admin never match this selector. Tokens the Figma file
+   /app layout and the landing (from the 03/11/2026 redesign) set data-theme on <html>; admin never matches this selector. Tokens the Figma file
    does not have (canvas-deep, danger-deep, wrong-chip, wrong-chip-deep) get values chosen here. */
 [data-theme='dark'] {
   color-scheme: dark;

@@ -125,36 +125,16 @@ function Fab() {
 }
 
 /**
- * K/01–K/06: navy story panel on the left from 1024 px, the form card on a faint pattern of study objects on the right
- * (copy doc §15, point 1; 12% opacity). Phones show the logo and the card.
+ * K/01–K/06: the form card in the middle of the screen on a faint pattern of study objects (copy doc §15, point 1; 12% opacity), the logo in
+ * the top left corner. The navy story panel that sat on the left from 1024 px was dropped (owner 03/11/2026).
  */
 function AuthFrame({ children }: { children: ReactNode }) {
-  const t = useTranslations('App.auth');
   const locale = useLocale();
   return (
     <div className="flex min-h-dvh">
-      <aside className="relative hidden w-2/5 shrink-0 flex-col justify-between overflow-hidden bg-navy p-12 text-on-navy lg:flex">
-        <Link href={`/${locale}`} className="w-fit rounded-control outline-none focus-visible:ring-2 focus-visible:ring-accent">
-          <Logo />
-        </Link>
-        <div className="flex max-w-lg flex-col gap-4">
-          <p className="text-h2 font-bold">{t('heroTitle')}</p>
-          <p className="text-body text-on-navy-muted">{t('heroBody')}</p>
-        </div>
-        <div aria-hidden className="relative h-56">
-          <div className="absolute bottom-6 left-0 flex h-32 w-44 -rotate-3 flex-col items-center justify-center rounded-card bg-surface text-ink shadow-ledge-card">
-            <span className="text-h3 font-bold">deploy</span>
-            <span className="text-caption text-muted">verb</span>
-          </div>
-          <div className="absolute bottom-16 left-36 flex h-32 w-44 rotate-6 flex-col items-center justify-center rounded-card bg-accent text-on-accent shadow-ledge-accent">
-            <span className="text-h3 font-bold">went</span>
-            <span className="text-caption">quá khứ của go</span>
-          </div>
-        </div>
-      </aside>
       <main id="main" className="relative flex flex-1 flex-col items-center overflow-hidden bg-canvas px-4 py-8 md:justify-center">
         <StudyPattern />
-        <Link href={`/${locale}`} className="relative mb-6 self-start rounded-control outline-none focus-visible:ring-2 focus-visible:ring-primary lg:hidden">
+        <Link href={`/${locale}`} className="relative mb-6 self-start rounded-control outline-none focus-visible:ring-2 focus-visible:ring-primary md:absolute md:top-8 md:left-8 md:mb-0">
           <Logo tone="surface" />
         </Link>
         <div className="relative w-full max-w-md">{children}</div>

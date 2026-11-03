@@ -349,7 +349,7 @@ export function AddWordSheet({ initialWord = '', lockedGroupId, onClose }: { ini
   } else {
     body = (
       <div className="flex flex-col gap-4">
-        <TextField label={t('word')} value={word} onChange={setWord} placeholder={t('wordPlaceholder')} maxLength={LEMMA_MAX} error={fieldError} autoFocus={!initialWord} />
+        <TextField label={t('word')} value={word} onChange={setWord} maxLength={LEMMA_MAX} error={fieldError} autoFocus={!initialWord} />
         {sentenceField}
         {lemma && lookup.isPending && <p className="text-caption text-muted">{t('lookingUp')}</p>}
         {lookup.isSuccess && options.length === 0 && !aiShown && <p className="rounded-inner bg-canvas p-3 text-ui text-ink">{t('noMatch', { word: lemma })}</p>}

@@ -1,23 +1,9 @@
 // @vitest-environment jsdom
 import { render, screen } from '@testing-library/react';
-import { richBreaks } from '@/lib/rich-breaks';
 import { Button } from './Button';
-import { Section } from './Section';
-import { SectionHeading } from './SectionHeading';
+import { ButtonLink } from './ButtonLink';
 
 describe('ui primitives', () => {
-  it('richBreaks renders brMd as a br hidden below md and brSm as a br hidden from md', () => {
-    const { container } = render(
-      <p>
-        a{richBreaks.br()}b{richBreaks.brMd()}c{richBreaks.brSm()}d
-      </p>,
-    );
-    const [always, md, sm] = Array.from(container.querySelectorAll('br'));
-    expect(always.className).toBe('');
-    expect(md).toHaveClass('hidden', 'md:inline');
-    expect(sm).toHaveClass('md:hidden');
-  });
-
   it('Button exposes the four B variants with min height 44', () => {
     render(
       <>
@@ -33,21 +19,16 @@ describe('ui primitives', () => {
     expect(screen.getByRole('button', { name: 'Next' })).toHaveClass('bg-ink', 'text-on-primary', 'min-h-11');
   });
 
-  it('Section maps each tone to its background', () => {
-    const tones = { surface: 'bg-surface', tint: 'bg-primary-soft', primary: 'bg-primary', accent: 'bg-accent' } as const;
-    for (const [tone, bg] of Object.entries(tones)) {
-      const { container, unmount } = render(
-        <Section labelledBy={`${tone}-title`} tone={tone as keyof typeof tones}>
-          <h2 id={`${tone}-title`}>{tone}</h2>
-        </Section>,
-      );
-      expect(container.querySelector('section')).toHaveClass(bg);
-      unmount();
-    }
-  });
-
-  it('SectionHeading renders an h2 with the given id', () => {
-    render(<SectionHeading id="faq-title" eyebrow="FAQ" title="Questions" align="center" />);
-    expect(screen.getByRole('heading', { level: 2, name: 'Questions' })).toHaveAttribute('id', 'faq-title');
+  it('L3 ButtonLink carries the app variants: sticker is yellow on its ledge, quiet is outlined, navy sits on the top bar', () => {
+    render(
+      <>
+        <ButtonLink variant="sticker" href="/vi/app/register">Đăng ký</ButtonLink>
+        <ButtonLink variant="quiet" href="/vi/app/login">Luyện lại</ButtonLink>
+        <ButtonLink variant="navy" href="/vi/app/login">Đăng nhập</ButtonLink>
+      </>,
+    );
+    expect(screen.getByRole('link', { name: 'Đăng ký' })).toHaveClass('bg-accent', 'text-on-accent', 'shadow-ledge-accent');
+    expect(screen.getByRole('link', { name: 'Luyện lại' })).toHaveClass('bg-surface', 'ring-border-strong', 'shadow-button-secondary');
+    expect(screen.getByRole('link', { name: 'Đăng nhập' })).toHaveClass('bg-navy-raised', 'text-on-navy');
   });
 });

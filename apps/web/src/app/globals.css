@@ -10,6 +10,9 @@
   --text-display: clamp(2.25rem, 1.6929rem + 2.2857vw, 3.75rem);
   --text-display--line-height: 1.1;
   --text-display--letter-spacing: -0.02em;
+  --text-landing-h1: clamp(2rem, 1rem + 3.2vw, 2.5rem);
+  --text-landing-h1--line-height: 1.05;
+  --text-landing-h1--letter-spacing: -0.035em;
   --text-cta: clamp(1.75rem, 1.3786rem + 1.5238vw, 2.75rem);
   --text-cta--line-height: 1.15;
   --text-cta--letter-spacing: -0.015em;
@@ -46,6 +49,7 @@
   --container-practice: 35rem;
   --container-copy: 31.25rem;
   --container-aside: 30rem;
+  --container-landing-hero: 40rem;
 
   /* Sticky header (from md): its min height doubles as the page's scroll padding (UB16, WCAG 2.4.11). */
   --spacing-header: 4.5rem;
@@ -142,7 +146,9 @@
   }
 
   /* Landing-only motion; shared durations and easings come from @wordmet/design-tokens. */
-  --transition-duration-faq: 250ms;
+  --transition-duration-faq: 280ms;
+  /* Stronger ease-out for entrances and the FAQ (design landing-redesign §6; Emil Kowalski). */
+  --ease-out-strong: cubic-bezier(0.23, 1, 0.32, 1);
 
   /* Practice card (design §5.2). Used only through motion-safe:, so reduced motion never declares them. */
   --animate-card-in: card-in var(--transition-duration-slow) var(--ease-spring) both;
@@ -193,11 +199,28 @@
   --animate-pop-in: pop-in 180ms var(--ease-spring) both;
   /* End-of-session summary: its blocks rise one after another, 50ms apart (motion audit #6). */
   --animate-summary-in: summary-in 250ms var(--ease-enter) both;
+  /* The landing's first screen when the page opens (owner 03/11/2026): the words rise one after another, the app window settles in. */
+  --animate-hero-in: hero-in 520ms var(--ease-out-strong) both;
+  --animate-hero-window-in: hero-window-in 640ms var(--ease-out-strong) both;
 
   @keyframes summary-in {
     from {
       opacity: 0;
       transform: translateY(0.5rem);
+    }
+  }
+
+  @keyframes hero-in {
+    from {
+      opacity: 0;
+      transform: translateY(1rem);
+    }
+  }
+
+  @keyframes hero-window-in {
+    from {
+      opacity: 0;
+      transform: translateY(1.5rem) scale(0.97);
     }
   }
 
@@ -327,8 +350,8 @@
     overflow: hidden;
     opacity: 0;
     transition:
-      block-size var(--transition-duration-faq) var(--ease-standard),
-      opacity var(--transition-duration-faq) var(--ease-standard),
+      block-size var(--transition-duration-faq) var(--ease-out-strong),
+      opacity var(--transition-duration-faq) var(--ease-out-strong),
       content-visibility var(--transition-duration-faq) allow-discrete;
   }
 

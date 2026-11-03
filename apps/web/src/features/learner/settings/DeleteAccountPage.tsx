@@ -45,7 +45,7 @@ export function DeleteAccountPage() {
             </Link>
           </div>
         ) : (
-          <DeleteForm email={state.me.email} hasPassword={(state.me.sign_in_methods ?? ['password']).includes('password')} />
+          <DeleteForm hasPassword={(state.me.sign_in_methods ?? ['password']).includes('password')} />
         )}
       </div>
     );
@@ -85,7 +85,7 @@ function Lists({ years }: { years: number | undefined }) {
   );
 }
 
-function DeleteForm({ email, hasPassword }: { email: string; hasPassword: boolean }) {
+function DeleteForm({ hasPassword }: { hasPassword: boolean }) {
   const t = useTranslations('App.deleteAccount');
   const locale = useLocale();
   const api = useApi();
@@ -141,7 +141,7 @@ function DeleteForm({ email, hasPassword }: { email: string; hasPassword: boolea
       <Checkbox isSelected={understood} onChange={setUnderstood}>
         {t('understand')}
       </Checkbox>
-      <TextField label={t('typeEmail')} type="email" value={typedEmail} onChange={setTypedEmail} autoComplete="off" spellCheck={false} placeholder={email} />
+      <TextField label={t('typeEmail')} type="email" value={typedEmail} onChange={setTypedEmail} autoComplete="off" spellCheck={false} />
       {hasPassword ? (
         <TextField label={t('password')} type="password" value={password} onChange={setPassword} autoComplete="current-password" />
       ) : (

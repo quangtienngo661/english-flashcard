@@ -1,10 +1,11 @@
 import type { MetadataRoute } from 'next';
-import { routing } from '@/i18n/routing';
+import { LANDING_LOCALES } from '@/lib/landing-locale';
 import { site } from '@/lib/site';
 
+// Only locales with a landing are listed (design landing-redesign L4): /en redirects to /vi until the English copy exists.
 export default function sitemap(): MetadataRoute.Sitemap {
-  const languages = Object.fromEntries(routing.locales.map((l) => [l, new URL(`/${l}`, site.url).toString()]));
-  const pages: MetadataRoute.Sitemap = routing.locales.map((locale) => ({
+  const languages = Object.fromEntries(LANDING_LOCALES.map((l) => [l, new URL(`/${l}`, site.url).toString()]));
+  const pages: MetadataRoute.Sitemap = LANDING_LOCALES.map((locale) => ({
     url: new URL(`/${locale}`, site.url).toString(),
     changeFrequency: 'monthly',
     priority: 1,

@@ -40,8 +40,8 @@ describe('messages', () => {
     expect(empty).toEqual([]);
   });
 
-  it('LP3 every rich tag is known (landing: br, brMd, brSm, link; app: b, hl, terms, privacy) and every tag is closed', () => {
-    const allowed = new Set(['br', 'brMd', 'brSm', 'link', 'b', 'hl', 'terms', 'privacy']);
+  it('LP3 every rich tag is known (landing: br; app: b, hl, terms, privacy) and every tag is closed', () => {
+    const allowed = new Set(['br', 'b', 'hl', 'terms', 'privacy']);
     const problems: string[] = [];
     for (const [key, value] of [...flatVi, ...flatEn]) {
       const opened = [...value.matchAll(/<([a-zA-Z]+)>/g)].map((m) => m[1]);
@@ -58,8 +58,9 @@ describe('messages', () => {
     expect(app.filter(([, v]) => /vui lòng|please|sorry|\.\.\./i.test(v)).map(([k]) => k)).toEqual([]);
   });
 
-  it('LP30 Faq.items has exactly q1..q4 in both locales', () => {
-    expect(Object.keys(vi.Faq.items)).toEqual(['q1', 'q2', 'q3', 'q4']);
-    expect(Object.keys(en.Faq.items)).toEqual(['q1', 'q2', 'q3', 'q4']);
+  it('LP30 Landing.faq has exactly the title and q1..q4 with a1..a4 in both locales', () => {
+    const keys = ['title', 'q1', 'a1', 'q2', 'a2', 'q3', 'a3', 'q4', 'a4'];
+    expect(Object.keys(vi.Landing.faq)).toEqual(keys);
+    expect(Object.keys(en.Landing.faq)).toEqual(keys);
   });
 });
