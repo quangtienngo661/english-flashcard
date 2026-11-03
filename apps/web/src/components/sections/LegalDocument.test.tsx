@@ -5,7 +5,7 @@ import { LegalDocument } from './LegalDocument';
 
 const TITLE = 'Chính sách bảo mật';
 const draw = (source: string, extra: Partial<Parameters<typeof LegalDocument>[0]> = {}) =>
-  render(<LegalDocument title={TITLE} source={source} effective={null} {...extra} />);
+  render(<LegalDocument title={TITLE} source={source} effective={null} contentsLabel="Mục lục" {...extra} />);
 
 describe('LegalDocument (Markdown of a published legal text)', () => {
   it('renders headings, lists, bold text and tables', () => {
@@ -47,5 +47,42 @@ describe('LegalDocument (Markdown of a published legal text)', () => {
   it('shows the effective line when there is one', () => {
     draw('# T', { effective: 'Có hiệu lực từ 10/11/2026' });
     expect(screen.getByText('Có hiệu lực từ 10/11/2026')).toBeInTheDocument();
+  });
+});
+
+describe('LegalDocument contents (jump to a section instead of scrolling)', () => {
+  const SOURCE = '# Chính sách\n\n**Mục lục**\n1. Dữ liệu\n2. Quyền của bạn\n\n## 1. Dữ liệu\n\n### Chi tiết\n\ntext\n\n## 2. Quyền của bạn\n\ntext';
+
+  it('gives every section heading an id', () => {
+    draw(SOURCE);
+    expect(screen.getByRole('heading', { level: 2, name: '1. Dữ liệu' })).toHaveAttribute('id', '1-du-lieu');
+    expect(screen.getByRole('heading', { level: 3, name: 'Chi tiết' })).toHaveAttribute('id', 'chi-tiet');
+    expect(screen.getByRole('heading', { level: 2, name: '2. Quyền của bạn' })).toHaveAttribute('id', '2-quyen-cua-ban');
+  });
+
+  it('lists the ## sections, and only those, in a navigation that links to them', () => {
+    draw(SOURCE);
+    const nav = screen.getByRole('navigation', { name: 'Mục lục' });
+    const links = within(nav).getAllByRole('link');
+    expect(links.map((link) => link.textContent)).toEqual(['1. Dữ liệu', '2. Quyền của bạn']);
+    expect(links.map((link) => link.getAttribute('href'))).toEqual(['#1-du-lieu', '#2-quyen-cua-ban']);
+  });
+
+  it('has no navigation when the text has no ## section', () => {
+    draw('# Chỉ có tiêu đề\n\ntext');
+    expect(screen.queryByRole('navigation')).toBeNull();
+  });
+
+  it('makes the hand-written Mục lục list in the text clickable', () => {
+    draw(SOURCE);
+    const text = within(screen.getByRole('article'));
+    expect(text.getByRole('link', { name: 'Dữ liệu' })).toHaveAttribute('href', '#1-du-lieu');
+    expect(text.getByRole('link', { name: 'Quyền của bạn' })).toHaveAttribute('href', '#2-quyen-cua-ban');
+  });
+
+  it('does not open a #link in a new tab', () => {
+    draw(SOURCE);
+    const link = within(screen.getByRole('article')).getByRole('link', { name: 'Dữ liệu' });
+    expect(link).not.toHaveAttribute('target');
   });
 });

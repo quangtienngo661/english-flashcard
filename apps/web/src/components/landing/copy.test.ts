@@ -43,7 +43,7 @@ describe('Landing copy', () => {
   it('L2 no waitlist is left: its namespace is gone and the legal pages no longer describe it', () => {
     for (const messages of [vi, en]) {
       expect('Waitlist' in messages).toBe(false);
-      expect(Object.keys(messages.Legal)).toEqual(['privacyTitle', 'termsTitle', 'draftNotice', 'effective']);
+      expect(Object.keys(messages.Legal)).toEqual(['privacyTitle', 'termsTitle', 'draftNotice', 'effective', 'contents']);
       expect(JSON.stringify(messages.Legal)).not.toMatch(/waitlist|danh sách chờ|thông báo ra mắt|launch notification/i);
     }
   });
