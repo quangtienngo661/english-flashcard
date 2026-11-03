@@ -517,22 +517,29 @@ test.describe('LR40 the review tab is spaced evenly, the card sits high and the 
     expect(Math.abs(g.gapUnderTitle - g.gapUnderLine), `gaps ${g.gapUnderTitle.toFixed(1)} and ${g.gapUnderLine.toFixed(1)} px`).toBeLessThanOrEqual(1.5);
     expect(Math.abs(g.leftDelta), 'the card starts where the title starts').toBeLessThanOrEqual(1);
     expect(g.cardFromTop, 'the card sits high in the window').toBeLessThanOrEqual(150);
-    expect(g.barHeight, 'the tab bar').toBeLessThanOrEqual(52);
+    expect(g.barHeight, 'the tab bar').toBeLessThanOrEqual(46);
     expect(g.windowTop, 'the window starts lower on the page').toBeGreaterThanOrEqual(140);
     await expect(page.getByText(/Thẻ 4 trên 29/)).toBeHidden();
   });
 });
 
 test.describe('LR42 the plans table is narrow and on the right', () => {
-  test('at 1440 x 900 it is at most 560 px wide, sits in the right half, and "Miễn phí" is one line', async ({ page }, testInfo) => {
+  test('at 1440 x 900 it is 540 to 580 px wide, sits in the right half, and "Miễn phí" fits its column on one line', async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== 'desktop', 'sets its own viewport size');
     await page.setViewportSize({ width: 1440, height: 900 });
     await open(page);
     const table = await page.getByRole('table', { name: L.plans.title }).boundingBox();
     const free = await page.getByRole('columnheader', { name: L.plans.free, exact: true }).boundingBox();
-    expect(table!.width).toBeLessThanOrEqual(560);
-    expect(table!.x, 'the table starts in the right half of the page').toBeGreaterThanOrEqual(720);
-    expect(free!.height, 'one line of the plan name').toBeLessThan(50);
+    expect(table!.width).toBeGreaterThanOrEqual(540);
+    expect(table!.width).toBeLessThanOrEqual(580);
+    const fits = await page.getByRole('columnheader', { name: L.plans.free, exact: true }).evaluate((th) => th.scrollWidth <= th.clientWidth);
+    expect(fits, '"Miễn phí" stays inside its column and clear of the Pro card').toBe(true);
+    expect(table!.x, 'the table starts in the right half of the page').toBeGreaterThanOrEqual(715);
+    // The way in sits right under the heading, not halfway down beside the table.
+    const heading = await page.getByRole('heading', { level: 2, name: L.plans.title }).boundingBox();
+    const signup = await page.locator('#goi').getByRole('link', { name: L.plans.signup, exact: true }).boundingBox();
+    expect(signup!.y - (heading!.y + heading!.height), 'space between the heading and Đăng ký').toBeLessThanOrEqual(48);
+    expect(free!.height, 'one line of the plan name with a slim padding').toBeLessThan(50);
   });
 });
 

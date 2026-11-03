@@ -16,7 +16,7 @@ const ICONS = { review: Layers, groups: FolderClosed, practice: Sparkles, lookup
 
 function Caption({ title, body, points }: { title: string; body: string; points: string[] }) {
   return (
-    <div className="flex flex-col gap-3.5">
+    <div className="flex flex-col gap-3.5 lg:gap-3">
       <h2 className="text-title-lg font-extrabold tracking-tight text-ink md:text-h2 lg:text-title">{title}</h2>
       <p className="max-w-prose text-body text-ink lg:text-ui">{body}</p>
       <ul className="flex flex-col gap-2 text-body text-ink lg:hidden">
@@ -62,7 +62,7 @@ export function AppShowcase({ copy, app, logo }: { copy: LandingCopy['showcase']
       id={`${base}-panel-${key}`}
       aria-labelledby={`${base}-tab-${key}`}
       hidden={active !== key}
-      className="grid min-h-124 content-start gap-6 p-5 md:p-8 lg:min-h-128 lg:gap-4 lg:p-5"
+      className="grid min-h-124 content-start gap-6 p-5 md:p-8 lg:min-h-128 lg:gap-3 lg:p-5"
     >
       {caption}
       <div className="min-w-0">{demo}</div>
@@ -72,7 +72,7 @@ export function AppShowcase({ copy, app, logo }: { copy: LandingCopy['showcase']
   return (
     <section id="tinh-nang" aria-label={copy.label} className="scroll-mt-16">
       <div className="overflow-hidden rounded-t-feature border-2 border-b-0 border-navy bg-canvas">
-          <div className="flex items-center gap-5 overflow-x-auto bg-navy px-4 py-2.5 text-on-navy no-scrollbar">
+          <div className="flex items-center gap-5 overflow-x-auto bg-navy px-4 py-2.5 text-on-navy no-scrollbar lg:px-5 lg:py-1">
             {/* From md the logo makes way, and from lg (the window then sits in the narrow right column) the icons too, so that all five tabs fit without scrolling the bar (LR32). */}
             <span aria-hidden className="shrink-0 md:hidden">
               {logo}
@@ -96,7 +96,7 @@ export function AppShowcase({ copy, app, logo }: { copy: LandingCopy['showcase']
                     onClick={() => setActive(key)}
                     onKeyDown={(event) => onKeyDown(event, index)}
                     className={cn(
-                      'flex shrink-0 cursor-pointer items-center gap-2 rounded-control py-2.5 pr-2.5 pl-2 text-body whitespace-nowrap outline-none focus-visible:ring-2 focus-visible:ring-accent lg:px-2.5',
+                      'flex shrink-0 cursor-pointer items-center gap-2 rounded-control py-2.5 pr-2.5 pl-2 text-body whitespace-nowrap outline-none focus-visible:ring-2 focus-visible:ring-accent lg:px-2.5 lg:py-1.5',
                       selected ? 'bg-accent font-semibold text-on-accent' : 'font-medium text-on-navy hover:bg-navy-raised',
                     )}
                   >

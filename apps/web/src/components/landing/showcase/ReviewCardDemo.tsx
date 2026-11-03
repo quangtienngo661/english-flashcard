@@ -15,8 +15,8 @@ export function ReviewCardDemo({ copy, app }: { copy: LandingCopy['showcase']['r
   const [flipped, setFlipped] = useState(false);
   const at = copy.seen.indexOf(copy.seenWord);
   return (
-    <div data-ui role="group" aria-label={copy.deck} className="mx-auto flex w-full max-w-xl min-w-0 flex-col gap-4 lg:gap-3">
-      <div className="flex min-w-0 flex-wrap items-center justify-between gap-x-3 gap-y-1 text-ui text-ink">
+    <div data-ui role="group" aria-label={copy.deck} className="mx-auto flex w-full max-w-xl min-w-0 flex-col gap-4 lg:max-w-none lg:gap-3">
+      <div className="flex min-w-0 flex-wrap items-center justify-between gap-x-3 gap-y-1 text-ui text-ink lg:hidden">
         <b className="min-w-0 break-words">{copy.deck}</b>
         <span aria-hidden className="h-2 min-w-0 flex-1 basis-16 overflow-hidden rounded-full bg-canvas-deep">
           <span className="block h-full w-1/6 bg-success" />

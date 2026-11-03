@@ -40,7 +40,7 @@ export function Hero({ copy, locale, visual }: { copy: LandingCopy['hero']; loca
           </div>
         </div>
         {visual && (
-          <div className="min-w-0 motion-safe:animate-hero-window-in motion-safe:[animation-delay:120ms] lg:col-span-7 lg:max-h-108 lg:self-end lg:overflow-hidden xl:col-span-1">
+          <div className="min-w-0 motion-safe:animate-hero-window-in motion-safe:[animation-delay:120ms] lg:col-span-7 lg:mt-14 lg:max-h-108 lg:self-end lg:overflow-hidden xl:col-span-1">
             {visual}
           </div>
         )}
