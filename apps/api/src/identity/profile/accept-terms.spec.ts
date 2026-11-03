@@ -4,18 +4,21 @@ import { AppLogger, type LogEntry } from '../../common/logging/app-logger.js';
 import type { PrismaClient } from '../../generated/prisma/client.js';
 import { testConfig } from '../../../test/support/test-config.js';
 import { IdentityService } from './identity.service.js';
+import { TermsVersion } from './terms-version.js';
 
 // AD18: an account without consent (admin-made, or older) accepts the current terms through PATCH /v1/me.
 describe('IdentityService.updateProfile accept_terms (unit, isolated persistence)', () => {
   const clock = new FakeClock(new Date('2026-10-28T05:00:00Z'));
   const row = { id: 'u1', email: 'lan@example.com', emailVerifiedAt: clock.now(), nativeLanguage: null, timezone: 'Asia/Saigon',
-    staffRole: null, mustChangePassword: false, givenName: 'Lan', familyName: null, birthDate: null, termsAcceptedAt: null };
-  const setup = () => {
+    staffRole: null, mustChangePassword: false, givenName: 'Lan', familyName: null, birthDate: null, termsAcceptedAt: null, termsVersion: null };
+  const setup = (published: string | null = null) => {
     const logs: LogEntry[] = [];
+    const terms = new TermsVersion(testConfig());
+    terms.register({ current: async () => published });
     const update = vi.fn(async ({ data }) => ({ ...row, ...data }));
     const findUnique = vi.fn(async () => ({ ...row }));
     const identity = new IdentityService({ user: { update, findUnique } } as unknown as PrismaClient, clock,
-      new AppLogger({ write: (entry) => { logs.push(entry); } }), testConfig());
+      new AppLogger({ write: (entry) => { logs.push(entry); } }), testConfig(), terms);
     return { identity, update, findUnique, logs };
   };
 
@@ -25,6 +28,17 @@ describe('IdentityService.updateProfile accept_terms (unit, isolated persistence
     expect(update.mock.calls[0][0].data).toEqual({ termsAcceptedAt: clock.now(), termsVersion: testConfig().termsVersion });
     expect(profile?.terms_accepted_at).toBe('2026-10-28T05:00:00.000Z');
     expect(logs).toContainEqual(expect.objectContaining({ event: 'terms_accepted', user_id: 'u1' }));
+  });
+  it('records the version the admin published instead of the configured one, and logs it', async () => {
+    const { identity, update, logs } = setup('4');
+    await identity.updateProfile('u1', { accept_terms: true });
+    expect(update.mock.calls[0][0].data).toEqual({ termsAcceptedAt: clock.now(), termsVersion: '4' });
+    expect(logs).toContainEqual(expect.objectContaining({ event: 'terms_accepted', terms_version: '4' }));
+  });
+  it('the profile carries the accepted version', async () => {
+    const { identity } = setup('4');
+    const profile = await identity.updateProfile('u1', { accept_terms: true });
+    expect(profile?.terms_version).toBe('4');
   });
   it('a birth date and the acceptance can come in one request', async () => {
     const { identity, update } = setup();
