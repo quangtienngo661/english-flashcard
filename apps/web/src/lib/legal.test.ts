@@ -6,7 +6,10 @@ const legal: PublicLegal = {
   privacy: { vi: '# Chính sách', en: '# Privacy' }, terms: { vi: '# Điều khoản', en: null },
 };
 
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => {
+  vi.unstubAllGlobals();
+  vi.unstubAllEnvs();
+});
 
 describe('fetchLegal (the published privacy policy and terms, read from the API on the server)', () => {
   it('reads GET /v1/legal/current without caching, with a time limit', async () => {
@@ -17,6 +20,15 @@ describe('fetchLegal (the published privacy policy and terms, read from the API 
     expect(url).toMatch(/\/v1\/legal\/current$/);
     expect(init.cache).toBe('no-store');
     expect(init.signal).toBeInstanceOf(AbortSignal);
+  });
+
+  it('reads the API at its internal address when one is set (a container cannot reach the browser\'s localhost)', async () => {
+    vi.stubEnv('NEXT_PUBLIC_API_BASE_URL', 'http://localhost:3000');
+    vi.stubEnv('API_INTERNAL_BASE_URL', 'http://api:3000');
+    const fetchMock = vi.fn(async () => Response.json(legal));
+    vi.stubGlobal('fetch', fetchMock);
+    await fetchLegal();
+    expect(fetchMock.mock.calls[0]?.[0]).toBe('http://api:3000/v1/legal/current');
   });
 
   it('is null while nothing is published (404), on any other failure, and when the API is unreachable', async () => {
