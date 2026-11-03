@@ -262,7 +262,9 @@
   "Legal": {
     "privacyTitle": "Chính sách bảo mật",
     "termsTitle": "Điều khoản sử dụng",
-    "draftNotice": "Đây là bản nháp. Nội dung chính thức sẽ được cập nhật trước khi Wordmet chính thức ra mắt."
+    "draftNotice": "Đây là bản nháp. Nội dung chính thức sẽ được cập nhật trước khi Wordmet chính thức ra mắt.",
+    "effective": "Có hiệu lực từ {date}",
+    "contents": "Mục lục"
   },
   "NotFound": {
     "title": "Không tìm thấy trang",
@@ -432,7 +434,9 @@
       "complete": {
         "title": "Bổ sung thông tin tài khoản",
         "body": "Trước khi học tiếp, Wordmet cần ngày sinh của bạn và việc bạn đồng ý với điều khoản.",
-        "submit": "Tiếp tục"
+        "submit": "Tiếp tục",
+        "updatedTitle": "Điều khoản đã được cập nhật",
+        "updatedBody": "Wordmet vừa đăng bản mới của Điều khoản sử dụng và Chính sách bảo mật. Hãy đọc và đồng ý để tiếp tục học."
       },
       "welcome": {
         "title": "Bạn đọc nghĩa của từ bằng ngôn ngữ nào?",

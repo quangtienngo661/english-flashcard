@@ -126,7 +126,7 @@ Thông thường site nhỏ không cố chặn hết bot; chỉ bảo vệ chỗ
   database còn lại chỉ tốn chỗ. Chủ dự án (lúc brainstorm landing, 11/2026) nói chưa có ai đăng ký thật nên không cần xuất dữ liệu.
 - [ ] **Viết nội dung thật cho `/vi/privacy` và `/vi/terms`, rồi mới đưa link trở lại footer.** Nguồn: design L2; nghiên cứu
   `docs/preparation/LEGAL_AND_PILOT_RESEARCH_2026-11-02.md`. Vì sao: hai trang hiện là bản nháp (`LegalDraft`), link đang ẩn từ 09/10/2026; khi link
-  trở lại, đổi `e2e/privacy.spec.ts` theo ghi chú ở đầu file.
+  trở lại, đổi `e2e/privacy.spec.ts` theo ghi chú ở đầu file. *(03/11/2026: nội dung nay soạn và đăng trong admin, xem mục "Chính sách bảo mật và Điều khoản" ở cuối file.)*
 - [ ] **Sau deploy: mở `/vi`, mở `/en` (phải 307 về `/vi`), bấm Đăng ký (phải tới `/vi/app/register`), xem Console không có lỗi CSP.** Nguồn: design §9.
   Vì sao: beacon Cloudflare chỉ chèn ở edge, e2e local không thấy.
 - [ ] **Bản tiếng Anh của landing.** Nguồn: design L3, L4. Khi có: thêm `'en'` vào `LANDING_LOCALES` (`src/lib/landing-locale.ts`), dịch `Landing` trong
@@ -166,3 +166,15 @@ Thông thường site nhỏ không cố chặn hết bot; chỉ bảo vệ chỗ
   cho Google Play (D20); gói mua qua store thì "Hủy gói" chuyển người dùng sang trang quản lý gói của store (web đã có thông báo `cancel-in-store`).
 - [ ] **Nhà cung cấp thanh toán thật.** Nguồn: design §18, D12, D31. Hỗ trợ `cancelAtPeriodEnd`; adapter phải trả lời trong hằng `BILLING_ADAPTER_TIMEOUT_MS` (`entitlements.constants.ts`) khi admin xóa người đang gia hạn
   (không kịp → 409 `renewal-not-cancelled`, không xóa gì); xem lại chống dùng thử lại ở phía họ.
+
+## Chính sách bảo mật và Điều khoản soạn trong admin (`docs/deliveries/legal-documents.md`, 03/11/2026)
+
+- [ ] **Đặt `NEXT_PUBLIC_API_BASE_URL` cho bản build web (host `api.`).** Nguồn: as-built legal-documents. Vì sao: `/privacy` và `/terms` đọc `GET /v1/legal/current` ở
+  server mỗi lần mở trang; không có địa chỉ API thì hai trang luôn hiện dòng "bản nháp". Mục này trùng với mục `NEXT_PUBLIC_API_BASE_URL` của phần "Landing mới".
+- [ ] **Dán nội dung vào admin rồi đăng bản đầu tiên.** Nguồn: as-built. Việc: mở `/legal` trong admin, "Tạo bản nháp", dán hai bản nháp (nhánh
+  `docs/web-launch-research`, thư mục `docs/preparation/legal-drafts/`) sau khi điền các ô `[[...]]`, chọn ngày có hiệu lực, Đăng. Vì sao: trước lần đăng đầu, phiên bản
+  vẫn lấy từ `TERMS_VERSION`; lần đăng đầu khiến **mọi** người học đã đồng ý bản đó bị hỏi lại.
+- [ ] **Sau deploy: mở `/vi/privacy`, `/vi/terms`, `/en/privacy` và xem đúng bản đã đăng; tắt API thử thì trang phải về dòng "bản nháp".** Nguồn: as-built. Vì sao:
+  hai trang không còn là trang tĩnh, mỗi lượt mở gọi Worker rồi gọi API (hết 2,5 giây thì dùng dòng "bản nháp"); chưa đo tải.
+- [ ] **Đặt `TERMS_VERSION` vẫn bắt buộc.** Vì sao: API không khởi động nếu thiếu; giá trị này chỉ còn dùng cho tới khi có bản đầu tiên được đăng.
+- [ ] **Email báo trước 07 ngày khi đổi điều khoản.** Chưa làm: cần tính năng gửi thư hàng loạt. Cho tới khi có, người học chỉ biết qua màn đồng ý lại.

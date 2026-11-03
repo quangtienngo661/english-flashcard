@@ -15,6 +15,7 @@ import {
   ListChecks,
   MessageSquareText,
   Receipt,
+  Scale,
   Send,
   Settings,
   ShieldUser,
@@ -53,5 +54,6 @@ export const NAV_ICONS: Record<string, LucideIcon> = {
   '/ai/costs': Receipt,
   '/ai/calls': History,
   '/settings': Settings,
+  '/legal': Scale,
   '/staff': ShieldUser,
 };

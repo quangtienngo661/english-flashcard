@@ -24,6 +24,7 @@ import { OtpService } from './auth/otp.service.js';
 import { IdentityCleanupService } from './maintenance/identity-cleanup.service.js';
 import { IdentityService } from './profile/identity.service.js';
 import { ProfileController } from './profile/profile.controller.js';
+import { TermsVersion } from './profile/terms-version.js';
 import { AccessTokenService } from './sessions/access-token.service.js';
 import { AccountStatusReader, PrismaAccountStatusReader } from './sessions/account-status.reader.js';
 import { AuthGuard } from './sessions/auth.guard.js';
@@ -38,7 +39,7 @@ import { StaffService } from './staff/staff.service.js';
   imports: [MailModule],
   controllers: [SessionsController, OtpController, AuthController, PasswordController, ProfileController, StaffController, AccountDeletionController, GoogleAuthController, FakeGoogleController],
   providers: [
-    PasswordHasher, OtpService, AuthService, PasswordService, IdentityService, AccessTokenService, SessionService, StaffService, PermissionGuard,
+    PasswordHasher, OtpService, TermsVersion, AuthService, PasswordService, IdentityService, AccessTokenService, SessionService, StaffService, PermissionGuard,
     { provide: AccountStatusReader, useClass: PrismaAccountStatusReader }, { provide: APP_GUARD, useClass: AuthGuard },
     { provide: ROLE_PERMISSIONS_TOKEN, useValue: ROLE_PERMISSIONS },
     IdentityCleanupService, AccountDeletionRegistry, AccountDeletionService, AccountDeletionRequests, DeletionJobs, GoogleAuthService,
@@ -46,6 +47,6 @@ import { StaffService } from './staff/staff.service.js';
     { provide: GoogleClient, inject: [APP_CONFIG],
       useFactory: (config: AppConfig) => (config.google.mode === 'fake' ? new FakeGoogleClient(config.google) : new RealGoogleClient(config.google)) },
   ],
-  exports: [IdentityService, ROLE_PERMISSIONS_TOKEN, AccountDeletionRegistry],
+  exports: [IdentityService, ROLE_PERMISSIONS_TOKEN, AccountDeletionRegistry, TermsVersion],
 })
 export class IdentityModule {}

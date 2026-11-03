@@ -111,6 +111,9 @@ services:
         NEXT_PUBLIC_API_BASE_URL: http://localhost:${API_PORT:-3000}
         NEXT_PUBLIC_SITE_URL: http://localhost:${WEB_PORT:-3001}
         NEXT_PUBLIC_LEARNER_APP: 'on'
+    environment:
+      # The browser reaches the API at localhost; this container reaches it by service name (read on the server, e.g. /privacy).
+      API_INTERNAL_BASE_URL: http://api:3000
     depends_on:
       api:
         condition: service_healthy

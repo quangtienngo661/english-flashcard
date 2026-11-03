@@ -98,7 +98,9 @@
     "unsupported-media-type": "The data format is not supported",
     "validation-failed": "The data is not valid",
     "version-conflict": "Someone else just saved the settings. Reload to see the latest version.",
-    "word-form-exists": "This form already exists."
+    "word-form-exists": "This form already exists.",
+    "not-a-draft": "This version is published, so it cannot be edited or deleted.",
+    "legal-busy": "Someone just created a draft. Please try again."
   },
   "notice": {
     "expired": "Your session has expired",
@@ -153,6 +155,7 @@
     "aiCosts": "Costs",
     "aiCalls": "Calls",
     "settings": "System settings",
+    "legal": "Policies & terms",
     "staff": "Roles & staff"
   },
   "session": {
@@ -2556,5 +2559,70 @@
     },
     "byOperation": "View details by operation",
     "showTable": "View as table"
+  },
+  "legal": {
+    "title": "Policies & terms",
+    "intro": "Write the Privacy Policy and the Terms of Use. The two texts share one version: when a new version is published, learners who accepted the old one are asked again.",
+    "current": "Published: version {number}, effective {date}.",
+    "noCurrent": "Nothing is published yet. The Privacy Policy and Terms pages on the web still show the draft notice.",
+    "create": "Create a draft",
+    "empty": "No versions yet",
+    "emptyHint": "Press [Create a draft], write the texts, then publish.",
+    "list": {
+      "number": "Version",
+      "status": "Status",
+      "effective": "Effective from",
+      "updated": "Updated",
+      "publishedBy": "Published by",
+      "english": "English",
+      "yes": "Yes",
+      "no": "Not yet",
+      "open": "Open version {number}"
+    },
+    "status": {
+      "draft": "Draft",
+      "published": "Published",
+      "superseded": "Replaced"
+    },
+    "editor": {
+      "heading": "Version {number}",
+      "back": "Back to the list",
+      "tabs": "Documents",
+      "privacy": "Privacy Policy",
+      "terms": "Terms of Use",
+      "vi": "Vietnamese",
+      "en": "English (optional)",
+      "effective": "Effective from",
+      "effectiveHint": "The date shown on the page, as year-month-day, for example 2026-11-10.",
+      "preview": "Preview",
+      "previewEmpty": "Nothing to preview yet.",
+      "save": "Save",
+      "saved": "Version {number} saved.",
+      "dirty": "Unsaved",
+      "publish": "Publish",
+      "publishFirst": "Save before publishing.",
+      "delete": "Delete draft",
+      "copy": "Create a draft from this version",
+      "readOnly": "This version is published and cannot be edited. To change it, create a draft from it.",
+      "required": "This text is required.",
+      "needDate": "Choose the effective date.",
+      "reload": "Load the new version",
+      "conflict": "The draft was just saved from elsewhere. Load the new version to continue."
+    },
+    "publishDialog": {
+      "title": "Publish version {number}?",
+      "body": "Learners who accepted the previous version must accept again before they continue. The Privacy Policy and Terms pages on the web switch to this version at once.",
+      "confirm": "Publish"
+    },
+    "deleteDialog": {
+      "title": "Delete draft {number}?",
+      "body": "The draft is deleted for good and cannot be restored.",
+      "confirm": "Delete draft"
+    },
+    "toast": {
+      "created": "Draft {number} created.",
+      "published": "Version {number} published.",
+      "deleted": "Draft {number} deleted."
+    }
   }
 }

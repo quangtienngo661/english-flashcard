@@ -98,7 +98,9 @@
     "unsupported-media-type": "Định dạng dữ liệu không được hỗ trợ",
     "validation-failed": "Dữ liệu không hợp lệ",
     "version-conflict": "Có người vừa lưu cài đặt khác. Tải lại để xem bản mới.",
-    "word-form-exists": "Dạng này đã có."
+    "word-form-exists": "Dạng này đã có.",
+    "not-a-draft": "Bản này đã đăng nên không sửa hay xóa được.",
+    "legal-busy": "Có người vừa tạo bản nháp. Hãy thử lại."
   },
   "notice": {
     "expired": "Phiên đăng nhập đã hết hạn",
@@ -153,6 +155,7 @@
     "aiCosts": "Chi phí",
     "aiCalls": "Các lần gọi",
     "settings": "Cài đặt hệ thống",
+    "legal": "Chính sách & điều khoản",
     "staff": "Vai trò & staff"
   },
   "session": {
@@ -2556,5 +2559,70 @@
     },
     "byOperation": "Xem chi tiết theo thao tác",
     "showTable": "Xem dạng bảng"
+  },
+  "legal": {
+    "title": "Chính sách & điều khoản",
+    "intro": "Soạn Chính sách bảo mật và Điều khoản sử dụng. Hai văn bản chung một phiên bản: khi đăng bản mới, người học đã đồng ý bản cũ sẽ được hỏi lại.",
+    "current": "Đang đăng: bản {number}, có hiệu lực từ {date}.",
+    "noCurrent": "Chưa đăng bản nào. Trang Chính sách bảo mật và Điều khoản trên web vẫn hiện thông báo bản nháp.",
+    "create": "Tạo bản nháp",
+    "empty": "Chưa có phiên bản nào",
+    "emptyHint": "Bấm [Tạo bản nháp], soạn nội dung rồi đăng.",
+    "list": {
+      "number": "Bản",
+      "status": "Trạng thái",
+      "effective": "Có hiệu lực từ",
+      "updated": "Cập nhật",
+      "publishedBy": "Đăng bởi",
+      "english": "Tiếng Anh",
+      "yes": "Có",
+      "no": "Chưa",
+      "open": "Mở bản {number}"
+    },
+    "status": {
+      "draft": "Nháp",
+      "published": "Đang đăng",
+      "superseded": "Đã thay"
+    },
+    "editor": {
+      "heading": "Bản {number}",
+      "back": "Về danh sách",
+      "tabs": "Văn bản",
+      "privacy": "Chính sách bảo mật",
+      "terms": "Điều khoản sử dụng",
+      "vi": "Tiếng Việt",
+      "en": "Tiếng Anh (không bắt buộc)",
+      "effective": "Có hiệu lực từ",
+      "effectiveHint": "Ngày hiện trên trang, dạng năm-tháng-ngày, ví dụ 2026-11-10.",
+      "preview": "Xem trước",
+      "previewEmpty": "Chưa có nội dung để xem trước.",
+      "save": "Lưu",
+      "saved": "Đã lưu bản {number}.",
+      "dirty": "Chưa lưu",
+      "publish": "Đăng",
+      "publishFirst": "Lưu trước khi đăng.",
+      "delete": "Xóa nháp",
+      "copy": "Tạo nháp từ bản này",
+      "readOnly": "Bản này đã đăng nên không sửa được. Muốn sửa, hãy tạo nháp từ bản này.",
+      "required": "Cần có nội dung.",
+      "needDate": "Cần chọn ngày có hiệu lực.",
+      "reload": "Tải bản mới",
+      "conflict": "Nháp vừa được lưu từ nơi khác. Tải bản mới để tiếp tục."
+    },
+    "publishDialog": {
+      "title": "Đăng bản {number}?",
+      "body": "Người học đã đồng ý bản trước sẽ phải đồng ý lại trước khi dùng tiếp. Trang Chính sách bảo mật và Điều khoản trên web đổi sang bản này ngay.",
+      "confirm": "Đăng"
+    },
+    "deleteDialog": {
+      "title": "Xóa bản nháp {number}?",
+      "body": "Nháp bị xóa hẳn, không khôi phục được.",
+      "confirm": "Xóa nháp"
+    },
+    "toast": {
+      "created": "Đã tạo bản nháp {number}.",
+      "published": "Đã đăng bản {number}.",
+      "deleted": "Đã xóa bản nháp {number}."
+    }
   }
 }

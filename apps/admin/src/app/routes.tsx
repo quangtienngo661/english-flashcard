@@ -24,6 +24,8 @@ import { PublishJobsPage } from '../features/publish-jobs/PublishJobsPage';
 import { SenseDetail } from '../features/senses/SenseDetail';
 import { SensesPage } from '../features/senses/SensesPage';
 import { SettingsPage } from '../features/settings/SettingsPage';
+import { LegalEditorPage } from '../features/legal/LegalEditorPage';
+import { LegalPage } from '../features/legal/LegalPage';
 import { SourcesPage } from '../features/sources/SourcesPage';
 import { StaffPage } from '../features/staff/StaffPage';
 import { UsersPage } from '../features/users/UsersPage';
@@ -116,6 +118,8 @@ export const appRoutes: RouteObject[] = createRoutesFromElements(
         <Route path="ai/costs" element={<AiCostsPage />} />
         <Route path="ai/calls" element={<AiCallsPage />} />
         <Route path="settings" element={<SettingsPage />} />
+        <Route path="legal" element={<LegalPage />} />
+        <Route path="legal/:id" element={<LegalEditorPage />} />
         <Route path="staff" element={<StaffPage />} />
         {NAV.filter((entry) => !entry.available).map((entry) => (
           <Route key={entry.path} path={entry.path.slice(1)} element={<ComingSoonPage item={entry} />} />

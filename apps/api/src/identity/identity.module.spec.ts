@@ -8,6 +8,7 @@ import { AccountDeletionRegistry } from './deletion/account-eraser.js';
 import { IdentityModule } from './identity.module.js';
 import { ROLE_PERMISSIONS, type Permission, type StaffRole } from './identity.types.js';
 import { IdentityService } from './profile/identity.service.js';
+import { TermsVersion } from './profile/terms-version.js';
 import { ROLE_PERMISSIONS_TOKEN } from './staff/role-permissions.token.js';
 
 @Injectable()
@@ -35,7 +36,7 @@ describe('IdentityModule exports', () => {
       expect(await consumer.identity.getProfile(userId)).toMatchObject({ id: userId, native_language: null });
       expect(await consumer.identity.isEmailVerified(userId)).toBe(false);
       expect(consumer.rolePermissions).toEqual(ROLE_PERMISSIONS);
-      expect(Reflect.getMetadata('exports', IdentityModule)).toEqual([IdentityService, ROLE_PERMISSIONS_TOKEN, AccountDeletionRegistry]);
+      expect(Reflect.getMetadata('exports', IdentityModule)).toEqual([IdentityService, ROLE_PERMISSIONS_TOKEN, AccountDeletionRegistry, TermsVersion]);
     } finally { await moduleRef.close(); }
   });
 });

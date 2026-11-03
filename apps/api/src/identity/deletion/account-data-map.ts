@@ -26,6 +26,10 @@ export const ACCOUNT_DATA_MAP: Record<string, Disposition> = {
   // Settings, pipeline: staff audit
   'app_settings.updated_by': 'keep-id',
   'app_setting_changes.changed_by': 'keep-id',
+  // Legal documents: who wrote and published a version is a staff audit trail
+  'legal_versions.created_by': 'keep-id',
+  'legal_versions.updated_by': 'keep-id',
+  'legal_versions.published_by': 'keep-id',
   'background_jobs.created_by': 'keep-id',
   // Notifications
   'reminder_prefs.user_id': 'erase',

@@ -359,6 +359,10 @@ Các điểm dưới đây phát sinh khi rà quyền của `admin`/`editor` (b�
   web (đăng nhập, trang admin, cấp vai trò) ngay sau Bước 2, trước Bước 3. Xem bảng ở HANDOFF §2. Đã xong 15/10/2026
   (as-built ở `docs/deliveries/buoc-2-5.md`).
 
+## Chính sách bảo mật và Điều khoản (admin) — as-built
+
+`docs/deliveries/legal-documents.md` (03/11/2026; PR vào `dev`). Admin soạn, lưu từng phiên bản và đăng hai văn bản (Markdown) ở `/legal` của `apps/admin`, không cần deploy; web đọc bản đang đăng ở `GET /v1/legal/current`; người học đã đồng ý bản cũ bị hỏi lại (`terms_outdated` ở `/v1/me`). Phiên bản đồng ý là số bản đang đăng; chưa đăng bản nào thì vẫn là `TERMS_VERSION`. Nội dung hai văn bản nằm ở nhánh `docs/web-launch-research` (`docs/preparation/legal-drafts/`), chưa vào DB; việc còn lại ở mục cuối `docs/deliveries/deploy-checklist.md`.
+
 ## Landing (apps/web) - as-built (08-09/10/2026)
 
 - Stack: Next `16.4.3` (App Router), next-intl `4.14.9`, `@opennextjs/cloudflare` `1.20.13`, wrangler `4.153.0` (`apps/web`; `apps/admin` keeps wrangler `4.145.0`).

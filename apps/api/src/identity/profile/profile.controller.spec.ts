@@ -4,17 +4,20 @@ import { PRISMA_CLIENT, PrismaModule } from '../../common/db/prisma.module.js';
 import { ProblemDetailsException } from '../../common/problem-details/problem-details.exception.js';
 import { RateLimiter } from '../../common/rate-limit/rate-limiter.service.js';
 import { createTestApp, type TestApp } from '../../../test/support/create-test-app.js';
+import { testConfig } from '../../../test/support/test-config.js';
 import { AccessTokenService } from '../sessions/access-token.service.js';
+
+const testTermsVersion = testConfig().termsVersion;
 
 describe('profile HTTP routing (unit, isolated persistence)', () => {
   let ctx: TestApp;
   let token: string;
   let row: { id: string; email: string; emailVerifiedAt: Date | null; nativeLanguage: string | null;
     timezone: string; staffRole: string | null; mustChangePassword: boolean; givenName: string | null;
-    familyName: string | null; birthDate: Date | null; termsAcceptedAt: Date | null;
+    familyName: string | null; birthDate: Date | null; termsAcceptedAt: Date | null; termsVersion: string | null;
     passwordCredential: { userId: string } | null; identities: Array<{ provider: string }> } | null;
   let userId: string;
-  const prisma = { user: { findUnique: vi.fn(), update: vi.fn() }, $disconnect: async () => {} };
+  const prisma = { user: { findUnique: vi.fn(), update: vi.fn() }, legalVersion: { findFirst: vi.fn() }, $disconnect: async () => {} };
   const hit = vi.spyOn(RateLimiter.prototype, 'hit');
   const get = () => ctx.http().get('/v1/me').set('Authorization', `Bearer ${token}`);
   const patch = (body: object) => ctx.http().patch('/v1/me').set('Authorization', `Bearer ${token}`).send(body);
@@ -26,8 +29,9 @@ describe('profile HTTP routing (unit, isolated persistence)', () => {
   beforeEach(async () => {
     userId = randomUUID();
     row = { id: userId, email: 'a@example.com', emailVerifiedAt: null, nativeLanguage: null,
-      timezone: 'Asia/Saigon', staffRole: null, mustChangePassword: false, givenName: null, familyName: null, birthDate: null, termsAcceptedAt: null,
+      timezone: 'Asia/Saigon', staffRole: null, mustChangePassword: false, givenName: null, familyName: null, birthDate: null, termsAcceptedAt: null, termsVersion: null,
       passwordCredential: { userId }, identities: [] };
+    prisma.legalVersion.findFirst.mockReset().mockResolvedValue(null);
     prisma.user.findUnique.mockReset().mockImplementation(async () => row && { ...row });
     prisma.user.update.mockReset().mockImplementation(async ({ data }) => {
       if (!row) throw { code: 'P2025' };
@@ -41,12 +45,33 @@ describe('profile HTTP routing (unit, isolated persistence)', () => {
   });
   afterAll(async () => { await ctx?.close(); vi.restoreAllMocks(); });
 
+  it('terms_outdated is true once the admin published a version the learner has not accepted; accepting records it and clears the flag', async () => {
+    row!.termsAcceptedAt = ctx.clock.now();
+    row!.termsVersion = '1';
+    prisma.legalVersion.findFirst.mockResolvedValue({ number: 2 });
+    const res = await get();
+    expect(res.body).toMatchObject({ terms_version: '1', terms_outdated: true });
+    const done = await patch({ accept_terms: true });
+    expect(done.status).toBe(200);
+    expect(done.body).toMatchObject({ terms_version: '2', terms_outdated: false });
+    expect(row!.termsVersion).toBe('2');
+  });
+
+  it('terms_outdated stays false before any consent (the first acceptance is a different prompt) and with no published version', async () => {
+    prisma.legalVersion.findFirst.mockResolvedValue({ number: 2 });
+    expect((await get()).body).toMatchObject({ terms_accepted_at: null, terms_outdated: false });
+    row!.termsAcceptedAt = ctx.clock.now();
+    row!.termsVersion = testTermsVersion;
+    prisma.legalVersion.findFirst.mockResolvedValue(null);
+    expect((await get()).body).toMatchObject({ terms_outdated: false });
+  });
+
   it('B2#67/B1#25: GET returns only the public profile and all four content permissions for stored admin and editor roles', async () => {
     const res = await get();
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ id: userId, email: row!.email, email_verified: false, native_language: null,
       timezone: row!.timezone, staff_role: null, permissions: [], must_change_password: false,
-      given_name: null, family_name: null, birth_date: null, terms_accepted_at: null, auth_method: 'password', sign_in_methods: ['password'] });
+      given_name: null, family_name: null, birth_date: null, terms_accepted_at: null, terms_version: null, terms_outdated: false, auth_method: 'password', sign_in_methods: ['password'] });
     row!.emailVerifiedAt = ctx.clock.now();
     for (const staffRole of ['admin', 'editor']) {
       row!.staffRole = staffRole;
@@ -76,7 +101,7 @@ describe('profile HTTP routing (unit, isolated persistence)', () => {
       expect(res.status).toBe(200);
       expect(res.body).toEqual({ id: userId, email: before.email, email_verified: false, native_language: language,
         timezone: before.timezone, staff_role: null, permissions: [], must_change_password: false,
-        given_name: null, family_name: null, birth_date: null, terms_accepted_at: null, auth_method: 'password', sign_in_methods: ['password'] });
+        given_name: null, family_name: null, birth_date: null, terms_accepted_at: null, terms_version: null, terms_outdated: false, auth_method: 'password', sign_in_methods: ['password'] });
     }
     expect((await patch({ timezone: 'Asia/Saigon' })).status).toBe(200);
     const alias = await patch({ timezone: 'asia/ho_chi_minh' });

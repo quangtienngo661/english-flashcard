@@ -2,6 +2,7 @@
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
+import { Checkbox } from './Checkbox';
 import { DateOfBirthField } from './DateOfBirthField';
 import { Dialog } from './Dialog';
 import { Switch } from './Switch';
@@ -73,5 +74,37 @@ describe('UI kit', () => {
     renderApp(<Harness />);
     await userEvent.type(screen.getByRole('textbox', { name: 'Tên nhóm' }), 'Du lịch Nhật');
     expect(screen.getByText('12/60')).toBeInTheDocument();
+  });
+
+  // jsdom clicks the checkbox for a click on a link inside its label; browsers do not (a link is interactive content), so the click's own
+  // default is cancelled here to leave only what react-aria does with the press.
+  it('Checkbox: a press on a link inside the label does not toggle the box, the text around it still does', async () => {
+    const onChange = vi.fn();
+    const user = userEvent.setup();
+    renderApp(
+      <Checkbox isSelected={false} onChange={onChange}>
+        Tôi đồng ý với <a href="/vi/terms" target="_blank">Điều khoản</a>
+      </Checkbox>,
+    );
+    const link = screen.getByRole('link', { name: 'Điều khoản' });
+    link.addEventListener('click', (event) => event.preventDefault());
+    await user.click(link);
+    expect(onChange).not.toHaveBeenCalled();
+    await user.click(screen.getByText('Tôi đồng ý với', { exact: false }));
+    expect(onChange).toHaveBeenCalledWith(true);
+  });
+
+  it('Checkbox: a click on a link inside the label is not cancelled, so the link opens', async () => {
+    const user = userEvent.setup();
+    const { container } = renderApp(
+      <Checkbox isSelected={false} onChange={vi.fn()}>
+        Tôi đồng ý với <a href="/vi/terms" target="_blank">Điều khoản</a>
+      </Checkbox>,
+    );
+    // On the root React listens at, registered after React's own, so it sees the click as the handlers left it.
+    let defaultPrevented: boolean | null = null;
+    container.addEventListener('click', (event) => { if ((event.target as HTMLElement).tagName === 'A') defaultPrevented = event.defaultPrevented; }, { once: true });
+    await user.click(screen.getByRole('link', { name: 'Điều khoản' }));
+    expect(defaultPrevented).toBe(false);
   });
 });

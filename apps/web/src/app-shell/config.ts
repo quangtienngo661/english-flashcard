@@ -4,6 +4,16 @@ export function apiBaseUrl(): string {
 }
 
 /**
+ * The API origin for requests the web server itself makes. Read at run time (no NEXT_PUBLIC_ prefix, so it is not baked into
+ * the bundle). Set it when the server reaches the API at another address than the browser does: in the Docker stack the browser
+ * uses `localhost:3000` while the web container must use `http://api:3000`. Unset or blank: the public origin.
+ */
+export function serverApiBaseUrl(): string {
+  const internal = process.env.API_INTERNAL_BASE_URL?.trim();
+  return internal ? internal.replace(/\/+$/, '') : apiBaseUrl();
+}
+
+/**
  * Build-time check (next.config.ts, app on): an absolute http(s) URL, and on the production site an `api.` host, so the
  * learner's host-only refresh cookie never mixes with admin's (`admin-api.`).
  */

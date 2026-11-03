@@ -94,6 +94,13 @@ describe('problem mapping', () => {
     }
   });
 
+  it('the legal-document slugs each have a message of their own', () => {
+    for (const slug of ['not-a-draft', 'legal-busy', 'draft-version-conflict', 'publish-stale']) {
+      expect(KNOWN_ERROR_SLUGS).toContain(slug);
+      expect(errorMessageKey(problem({ slug, status: 409 }))).toBe(`errors.${slug}`);
+    }
+  });
+
   it('the judge and cap slugs each have a message of their own', () => {
     for (const slug of ['judge-provider', 'judge-revision-conflict', 'judge-pass-running', 'admin-usd-cap', 'model-price-missing']) {
       expect(KNOWN_ERROR_SLUGS).toContain(slug);

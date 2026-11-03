@@ -10,6 +10,7 @@ import { EntitlementsModule } from './entitlements/entitlements.module.js';
 import { HealthController } from './health/health.controller.js';
 import { IdentityModule } from './identity/identity.module.js';
 import { LearningModule } from './learning/learning.module.js';
+import { LegalModule } from './legal/legal.module.js';
 import { NotificationsModule } from './notifications/notifications.module.js';
 import { PracticePortsModule } from './practice/maintenance/private-senses-cleanup.provider.js';
 import { PracticeModule } from './practice/practice.module.js';
@@ -19,7 +20,7 @@ import { SettingsModule } from './settings/settings.module.js';
 @Module({
   imports: [
     SampleModule, IdentityModule, BatchScopeModule, ContentModule, ContentPipelineModule, SettingsModule, NotificationsModule,
-    LearningModule, EntitlementsModule, PracticeModule, PracticePortsModule, AiModule,
+    LearningModule, LegalModule, EntitlementsModule, PracticeModule, PracticePortsModule, AiModule,
   ],
   controllers: [HealthController],
   providers: [],

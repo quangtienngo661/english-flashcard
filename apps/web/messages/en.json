@@ -262,7 +262,9 @@
   "Legal": {
     "privacyTitle": "Privacy Policy",
     "termsTitle": "Terms of Use",
-    "draftNotice": "This is a draft version. The official text will be published prior to Wordmet's official launch."
+    "draftNotice": "This is a draft version. The official text will be published prior to Wordmet's official launch.",
+    "effective": "Effective from {date}",
+    "contents": "Contents"
   },
   "NotFound": {
     "title": "Page not found",
@@ -432,7 +434,9 @@
       "complete": {
         "title": "Complete your account",
         "body": "Before you go on, Wordmet needs your birth date and your agreement to the terms.",
-        "submit": "Continue"
+        "submit": "Continue",
+        "updatedTitle": "The terms have been updated",
+        "updatedBody": "Wordmet has published a new version of the Terms of Use and the Privacy Policy. Read and accept them to keep learning."
       },
       "welcome": {
         "title": "Which language should meanings be in?",
