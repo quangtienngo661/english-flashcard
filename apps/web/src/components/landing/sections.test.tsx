@@ -82,8 +82,16 @@ describe('FinalCta', () => {
 });
 
 describe('SiteFooter', () => {
+  const footerCopy = { ...landing.footer, contact: 'Liên hệ', terms: 'Điều khoản sử dụng', privacy: 'Chính sách bảo mật', copyright: '© 2026 Wordmet' };
+
+  it('links to the Terms of Use and the Privacy Policy pages', () => {
+    renderLanding(<SiteFooter locale="vi" copy={footerCopy} />);
+    expect(screen.getByRole('link', { name: 'Điều khoản sử dụng' })).toHaveAttribute('href', '/vi/terms');
+    expect(screen.getByRole('link', { name: 'Chính sách bảo mật' })).toHaveAttribute('href', '/vi/privacy');
+  });
+
   it('L4 has the anchors and the contact link and no language link', () => {
-    renderLanding(<SiteFooter locale="vi" copy={{ ...landing.footer, contact: 'Liên hệ', copyright: '© 2026 Wordmet' }} />);
+    renderLanding(<SiteFooter locale="vi" copy={footerCopy} />);
     expect(screen.getByRole('link', { name: landing.footer.plans })).toHaveAttribute('href', '/vi#goi');
     expect(screen.getByRole('link', { name: landing.footer.faq })).toHaveAttribute('href', '/vi#hoi-dap');
     expect(screen.getByRole('link', { name: 'Liên hệ' }).getAttribute('href')).toMatch(/^mailto:/);

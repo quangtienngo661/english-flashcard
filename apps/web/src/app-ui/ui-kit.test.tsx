@@ -2,6 +2,7 @@
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
+import { Checkbox } from './Checkbox';
 import { DateOfBirthField } from './DateOfBirthField';
 import { Dialog } from './Dialog';
 import { Switch } from './Switch';
@@ -73,5 +74,22 @@ describe('UI kit', () => {
     renderApp(<Harness />);
     await userEvent.type(screen.getByRole('textbox', { name: 'Tên nhóm' }), 'Du lịch Nhật');
     expect(screen.getByText('12/60')).toBeInTheDocument();
+  });
+
+  it('Checkbox: a link inside the label opens on click without toggling the box, the text around it still toggles', async () => {
+    const onChange = vi.fn();
+    const user = userEvent.setup();
+    renderApp(
+      <Checkbox isSelected={false} onChange={onChange}>
+        Tôi đồng ý với <a href="/vi/terms" target="_blank">Điều khoản</a>
+      </Checkbox>,
+    );
+    let defaultPrevented: boolean | null = null;
+    document.addEventListener('click', (event) => { if ((event.target as HTMLElement).tagName === 'A') defaultPrevented = event.defaultPrevented; }, { once: true });
+    await user.click(screen.getByRole('link', { name: 'Điều khoản' }));
+    expect(onChange).not.toHaveBeenCalled();
+    expect(defaultPrevented).toBe(false);
+    await user.click(screen.getByText('Tôi đồng ý với', { exact: false }));
+    expect(onChange).toHaveBeenCalledWith(true);
   });
 });
