@@ -47,6 +47,11 @@ Mọi `##` và `###` có `id` (bỏ dấu, `đ` thành `d`, trùng tên thì th�
 không khớp tên hoặc có dấu `[` `]` thì giữ là chữ. Dưới 1024px không có cột bên phải, chỉ có danh sách viết tay đó; văn bản không có danh sách đó thì trên điện thoại không có mục lục.
 Khoảng cách cuộn dùng `scroll-padding-top` có sẵn của `globals.css` (từ `md`), chỉ thêm `scroll-mt-4`.
 
+Hai chỗ chủ dự án bấm thử thấy thiếu (04/11/2026): (1) footer của landing (`SiteFooter`) trước đây giấu link Điều khoản và Chính sách tới ngày ra mắt (quyết định 09/10/2026); nay hiện hai link,
+nhãn lấy từ `Footer.terms` và `Footer.privacy`. (2) Hai link trong câu đồng ý ở màn đăng ký, đăng ký Google và "Điều khoản đã được cập nhật" bấm vào chỉ tick hoặc bỏ tick ô: react-aria gắn
+`onPress` (đổi ô) và `onClick` (huỷ hành vi mặc định) vào nhãn, nên cú nhấp vào link nổi lên nhãn vừa đổi ô vừa chặn link mở. `Checkbox` (`app-ui/Checkbox.tsx`) giờ chặn các sự kiện bấm
+xuất phát từ thẻ `a` ở khung chữ của nhãn; chữ quanh link vẫn tick được ô. Test của `Checkbox` huỷ cú nhấp mặc định của link vì jsdom tự bấm ô khi bấm link trong nhãn, trình duyệt thì không.
+
 ## Kiểm tra
 
 - API 4063, admin 1341, web 755 test; `tsc`, lint sạch; schema drift rỗng.
