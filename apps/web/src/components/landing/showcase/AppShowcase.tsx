@@ -2,7 +2,6 @@
 
 import { Check, FolderClosed, Layers, Plus, Search, Sparkles, type LucideIcon } from 'lucide-react';
 import { useId, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
-import { Logo } from '@/app-chrome/Logo';
 import { Container } from '@/components/ui/Container';
 import { cn } from '@/lib/cn';
 import type { AppCopy, LandingCopy } from '../copy';
@@ -35,7 +34,8 @@ function Caption({ title, body, points }: { title: string; body: string; points:
 
 // The first screen's window onto the app (design landing-redesign §3): the app's own navy bar with its five main parts as tabs, and the
 // part's real screen below with sample data. All five panels stay in the DOM; the inactive ones are `hidden`, so the page reads without JS.
-export function AppShowcase({ copy, app }: { copy: LandingCopy['showcase']; app: AppCopy }) {
+// The app's Logo reads App messages, which the app does not give client components, so the page renders it and passes it in as `logo`.
+export function AppShowcase({ copy, app, logo }: { copy: LandingCopy['showcase']; app: AppCopy; logo: ReactNode }) {
   const [active, setActive] = useState<TabKey>('review');
   const base = useId();
   const refs = useRef<Partial<Record<TabKey, HTMLButtonElement | null>>>({});
@@ -73,7 +73,7 @@ export function AppShowcase({ copy, app }: { copy: LandingCopy['showcase']; app:
         <div className="overflow-hidden rounded-t-feature border-2 border-b-0 border-navy bg-canvas">
           <div className="flex items-center gap-5 overflow-x-auto bg-navy px-4 py-2.5 text-on-navy no-scrollbar">
             <span aria-hidden className="shrink-0">
-              <Logo />
+              {logo}
             </span>
             <div role="tablist" aria-label={copy.label} className="flex gap-1.5">
               {TABS.map((key, index) => {
