@@ -33,6 +33,13 @@ const open = async (page: Page, path = '/vi') => {
 
 const exerciseButtons = (page: Page) => page.getByRole('list', { name: L.exercises.list }).getByRole('button');
 
+/** Opens exercise `index` the way the screen offers it: the drop-down below lg (LR46), the list from lg. */
+const pickExercise = async (page: Page, index: number) => {
+  const select = page.getByRole('combobox', { name: L.exercises.list });
+  if (await select.isVisible()) await select.selectOption({ index });
+  else await exerciseButtons(page).nth(index).click();
+};
+
 /** Answers the open exercise wrongly and returns, so the hint, reveal and field states are on screen. */
 const answerWrong = async (page: Page, index: number) => {
   const ex = EXERCISES[index];
@@ -136,10 +143,8 @@ test.describe('LR22 nothing sticks out of its box', () => {
       await expect(deck.locator('[inert] button[aria-pressed="true"]')).toHaveCount(1);
       await expect(deck.getByText(L.showcase.review.meaning, { exact: true })).toBeVisible();
 
-      const buttons = exerciseButtons(page);
-      await expect(buttons).toHaveCount(EXERCISES.length);
       for (let index = 0; index < EXERCISES.length; index++) {
-        await buttons.nth(index).click();
+        await pickExercise(page, index);
         await expectInside(page, `exercise ${EXERCISES[index].id}`);
         await answerWrong(page, index);
         await expectInside(page, `exercise ${EXERCISES[index].id} answered wrongly`);
@@ -255,10 +260,9 @@ test.describe('LR27 axe in both themes', () => {
       await page.getByRole('group', { name: L.showcase.review.deck }).getByRole('button', { pressed: false }).click();
       found.push(...(await seriousViolations(page)).map((v) => `[review card turned] ${v}`));
 
-      const buttons = exerciseButtons(page);
       for (let index = 0; index < EXERCISES.length; index++) {
         const id = EXERCISES[index].id;
-        await buttons.nth(index).click();
+        await pickExercise(page, index);
         found.push(...(await seriousViolations(page)).map((v) => `[${id} fresh] ${v}`));
         await answerWrong(page, index);
         found.push(...(await seriousViolations(page)).map((v) => `[${id} wrong] ${v}`));
@@ -290,7 +294,7 @@ test.describe('LR28 content security policy', () => {
     await open(page);
     for (let y = 0; y < 12000; y += 500) await page.mouse.wheel(0, 500);
     for (const name of TAB_NAMES) await page.getByRole('tab', { name }).click();
-    await exerciseButtons(page).nth(2).click();
+    await pickExercise(page, 2);
     await answerWrong(page, 2);
     await page.getByRole('button', { name: L.nav.themeToDark }).click();
     await page.getByRole('button', { name: L.nav.themeToLight }).click();
@@ -641,6 +645,206 @@ test.describe('LR33 the page anchors work from the legal pages', () => {
     await page.getByRole('banner').getByRole('link', { name: L.nav.plans }).click();
     await expect(page).toHaveURL(/\/vi#goi$/);
     await expect(page.locator('#goi')).toBeVisible();
+  });
+});
+
+// Owner 03/11/2026, the mobile pass (docs/deliveries/landing-redesign/mobile-survey.md, Q1–Q4): the phone and tablet layouts follow the desktop one.
+const PHONES = [320, 390, 768] as const;
+
+test.describe('LR44 on phones and tablets the window is compact, one height for every tab, and peeks from under the next section', () => {
+  for (const width of PHONES) {
+    test(`at ${width} px`, async ({ page }, testInfo) => {
+      test.skip(testInfo.project.name !== 'desktop', 'sets its own viewport size');
+      await page.setViewportSize({ width, height: 844 });
+      await open(page);
+      await settle(page);
+      const heights: number[] = [];
+      for (const name of TAB_NAMES) {
+        await page.getByRole('tab', { name }).click();
+        await settle(page);
+        const g = await page.evaluate(() => {
+          const frame = document.getElementById('tinh-nang')!;
+          const box = frame.parentElement!.getBoundingClientRect();
+          const full = frame.getBoundingClientRect();
+          const panel = frame.querySelector('[role="tabpanel"]:not([hidden])')!;
+          const below: string[] = [];
+          let checked = 0;
+          for (const el of panel.querySelectorAll('*')) {
+            const r = el.getBoundingClientRect();
+            if (r.width === 0 || r.height === 0) continue;
+            checked++;
+            if (r.bottom > box.bottom + 0.5) below.push(`${el.tagName.toLowerCase()} "${(el.textContent ?? '').trim().slice(0, 24)}" ends ${Math.round(r.bottom - box.bottom)} px below the cut`);
+          }
+          const hit = document.elementFromPoint(full.left + full.width / 2, box.bottom + 24);
+          return { shown: box.height, whole: full.height, checked, below, covered: Boolean(hit?.closest('#vi-sao')) };
+        });
+        heights.push(Math.round(g.shown));
+        expect(g.checked, `tab ${name}`).toBeGreaterThan(5);
+        expect(g.below, `tab ${name}: nothing under the next section`).toEqual([]);
+        expect(g.shown / g.whole, `tab ${name}: shows ${Math.round(g.shown)} of ${Math.round(g.whole)} px`).toBeGreaterThan(0.65);
+        expect(g.shown / g.whole).toBeLessThan(0.85);
+        expect(g.covered, `tab ${name}: the next section lies under the window`).toBe(true);
+      }
+      expect(new Set(heights).size, `heights per tab: ${heights.join(', ')}`).toBe(1);
+      // Compact as on desktop: no point list, no deck line.
+      await page.getByRole('tab', { name: L.showcase.tabs.review }).click();
+      await expect(page.getByText(L.showcase.review.p1, { exact: true })).toBeHidden();
+      await expect(page.getByText(/Thẻ 4 trên 29/)).toBeHidden();
+    });
+  }
+});
+
+test.describe('LR45 on phones the window bar shows all five tabs as icons, the open one with its name', () => {
+  for (const width of [320, 390]) {
+    test(`at ${width} px`, async ({ page }, testInfo) => {
+      test.skip(testInfo.project.name !== 'desktop', 'sets its own viewport size');
+      await page.setViewportSize({ width, height: 844 });
+      await open(page);
+      const overflow = await page.getByRole('tablist').evaluate((tablist) => tablist.parentElement!.scrollWidth - tablist.parentElement!.clientWidth);
+      expect(overflow, 'pixels of the tab bar past its edge').toBeLessThanOrEqual(0);
+      for (const name of TAB_NAMES) {
+        const tab = page.getByRole('tab', { name });
+        await tab.click();
+        const box = await tab.boundingBox();
+        expect(box!.height, `${name}: touch height`).toBeGreaterThanOrEqual(44);
+        expect(box!.width, `${name}: touch width`).toBeGreaterThanOrEqual(44);
+        // The open tab shows its name; the others only their icon (the name stays their accessible name).
+        await expect(tab.getByText(name, { exact: true })).toBeVisible();
+        for (const other of TAB_NAMES.filter((n) => n !== name)) await expect(page.getByRole('tab', { name: other }).getByText(other, { exact: true })).toBeHidden();
+      }
+      await expect(page.locator('#tinh-nang').getByText('Wordmet')).toHaveCount(0);
+    });
+  }
+});
+
+test.describe('LR46 below lg the exercise kinds are one drop-down', () => {
+  test('at 390 px a select chooses the exercise and the list is gone; at 1440 px the list is back', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== 'desktop', 'sets its own viewport size');
+    await page.setViewportSize({ width: 390, height: 844 });
+    await open(page);
+    const select = page.getByRole('combobox', { name: L.exercises.list });
+    await expect(select).toBeVisible();
+    await expect(page.getByRole('list', { name: L.exercises.list })).toBeHidden();
+    await expect(select.locator('option')).toHaveCount(EXERCISES.length);
+    const label = await select.locator('option').nth(2).textContent();
+    await select.selectOption({ index: 2 });
+    await expect(page.locator('#bai-tap').getByRole('textbox', { name: L.exercises.answerLabel })).toBeVisible();
+    expect(label, 'each option names its plan').toMatch(new RegExp(`${L.exercises.free}|${L.exercises.pro}`));
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await expect(page.getByRole('list', { name: L.exercises.list })).toBeVisible();
+    await expect(select).toBeHidden();
+  });
+});
+
+test.describe('LR47 on phones the plans table comes before Đăng ký', () => {
+  for (const width of [320, 390]) {
+    test(`at ${width} px the table, then the button; "Miễn phí" clear of the Pro card`, async ({ page }, testInfo) => {
+      test.skip(testInfo.project.name !== 'desktop', 'sets its own viewport size');
+      await page.setViewportSize({ width, height: 844 });
+      await open(page);
+      const table = await page.getByRole('table', { name: L.plans.title }).boundingBox();
+      const signup = await page.locator('#goi').getByRole('link', { name: L.plans.signup, exact: true }).boundingBox();
+      expect(signup!.y, 'the button starts under the table').toBeGreaterThanOrEqual(table!.y + table!.height);
+      const free = page.getByRole('columnheader', { name: L.plans.free, exact: true });
+      expect(await free.evaluate((th) => th.scrollWidth <= th.clientWidth), '"Miễn phí" stays in its column').toBe(true);
+      const gap = await free.evaluate((th) => {
+        const range = document.createRange();
+        range.selectNodeContents(th);
+        const words = range.getBoundingClientRect();
+        const pro = th.nextElementSibling!.getBoundingClientRect();
+        return pro.left - words.right;
+      });
+      expect(gap, 'space between "Miễn phí" and the Pro card').toBeGreaterThanOrEqual(6);
+    });
+  }
+});
+
+test.describe('LR48 no section heading leaves a short last line', () => {
+  for (const width of [320, 390]) {
+    test(`at ${width} px every heading of the page is balanced`, async ({ page }, testInfo) => {
+      test.skip(testInfo.project.name !== 'desktop', 'sets its own viewport size');
+      await page.setViewportSize({ width, height: 844 });
+      await open(page);
+      const short = await page.evaluate(() => {
+        const out: string[] = [];
+        let multi = 0;
+        for (const h of document.querySelectorAll<HTMLElement>('main h2')) {
+          if (h.getBoundingClientRect().height === 0) continue;
+          const range = document.createRange();
+          range.selectNodeContents(h);
+          // One rect per line fragment; merge fragments of the same line.
+          const lines = new Map<number, number>();
+          for (const r of range.getClientRects()) lines.set(Math.round(r.top), (lines.get(Math.round(r.top)) ?? 0) + r.width);
+          const widths = [...lines.values()];
+          if (widths.length < 2) continue;
+          multi++;
+          const last = widths[widths.length - 1];
+          if (last < 0.5 * Math.max(...widths)) out.push(`"${h.textContent!.trim()}" last line ${Math.round(last)} of ${Math.round(Math.max(...widths))} px`);
+        }
+        return { out, multi };
+      });
+      expect(short.multi, 'headings on more than one line were found').toBeGreaterThan(0);
+      expect(short.out).toEqual([]);
+    });
+  }
+});
+
+test.describe('LR49 small details on phones', () => {
+  test('at 320 px the forgetting chart labels are readable, and at 390 px the two weak-word chips do not touch', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== 'desktop', 'sets its own viewport size');
+    await page.setViewportSize({ width: 320, height: 844 });
+    await open(page);
+    const labels = await page.locator('#vi-sao svg text').evaluateAll((texts) => texts.map((t) => t.getBoundingClientRect().height));
+    expect(labels.length).toBeGreaterThan(3);
+    expect(Math.min(...labels), 'height of the smallest chart label').toBeGreaterThanOrEqual(12);
+    await page.setViewportSize({ width: 390, height: 844 });
+    const chips = page.locator('#on-lai').getByText(new RegExp(`^(${L.review.w1}|${L.review.w2})$`));
+    await expect(chips).toHaveCount(2);
+    const [a, b] = [await chips.nth(0).boundingBox(), await chips.nth(1).boundingBox()];
+    // The chips draw a 2 px ring outside their box.
+    expect(b!.x - (a!.x + a!.width) - 4, 'visible space between the chips').toBeGreaterThanOrEqual(6);
+  });
+});
+
+test.describe('LR50 touch targets on phones', () => {
+  test('at 390 px the theme button, the first screen sign-in link and Quên mật khẩu are at least 44 px high', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== 'desktop', 'sets its own viewport size');
+    await page.setViewportSize({ width: 390, height: 844 });
+    await open(page);
+    const theme = await page.getByRole('banner').getByRole('button', { name: L.nav.themeToDark }).boundingBox();
+    expect(theme!.height).toBeGreaterThanOrEqual(44);
+    expect(theme!.width).toBeGreaterThanOrEqual(44);
+    const login = await page.getByRole('main').getByRole('link', { name: L.hero.login, exact: true }).boundingBox();
+    expect(login!.height, 'Đăng nhập under the first button').toBeGreaterThanOrEqual(44);
+    await page.goto('/vi/app/login');
+    const forgot = await page.getByRole('link', { name: copy.vi.App.auth.login.forgot }).boundingBox();
+    expect(forgot!.height, 'Quên mật khẩu?').toBeGreaterThanOrEqual(44);
+  });
+});
+
+test.describe('LR51 a press answers the finger', () => {
+  test('tabs, exercise kinds, answers and FAQ questions shrink a little while pressed, and a tap draws no grey flash', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== 'desktop', 'sets its own viewport size');
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await open(page);
+    const cdp = await page.context().newCDPSession(page);
+    await cdp.send('DOM.enable');
+    await cdp.send('CSS.enable');
+    const { root } = await cdp.send('DOM.getDocument', { depth: -1 });
+    const pressed = async (selector: string) => {
+      const { nodeId } = await cdp.send('DOM.querySelector', { nodeId: root.nodeId, selector });
+      await cdp.send('CSS.forcePseudoState', { nodeId, forcedPseudoClasses: ['active'] });
+      // Wait out the transition, then read where it ends.
+      await page.waitForTimeout(300);
+      const transform = await page.locator(selector).first().evaluate((el) => getComputedStyle(el).transform);
+      await cdp.send('CSS.forcePseudoState', { nodeId, forcedPseudoClasses: [] });
+      return transform;
+    };
+    for (const selector of ['[role="tab"][aria-selected="false"]', '#bai-tap ul button', 'button[data-option]', '#hoi-dap summary']) {
+      const transform = await pressed(selector);
+      expect(transform, `${selector} while pressed`).toMatch(/^matrix\(0\.9[5-8]/);
+    }
+    expect(await page.evaluate(() => getComputedStyle(document.body).getPropertyValue('-webkit-tap-highlight-color'))).toBe('rgba(0, 0, 0, 0)');
   });
 });
 
