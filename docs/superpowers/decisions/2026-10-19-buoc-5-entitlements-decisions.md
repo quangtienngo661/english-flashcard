@@ -72,6 +72,8 @@ không chọn. Mục cuối ghi những chỗ Claude đề xuất trước khi c
 | D40 | Nâng tháng → năm khi gói đang ân hạn (khi implement, Q-C1) | Gói về `active`, xóa `grace_ends_at`, mốc lượt AI mới tại đầu kỳ năm; tiền (tính theo tỷ lệ, hoàn phần chưa dùng) do nhà cung cấp làm | Chủ dự án (rời ân hạn; chưa trả thì tính mốc mới); mốc tại đầu kỳ năm: đề xuất của Claude, chủ dự án "ok" |
 
 > *Ghi chú 02/11/2026 (Q10):* trần lượt AI chung `ai_daily_cap` (0–100.000, mặc định 1.000) nay cũng được **để trống = không giới hạn**; 0 vẫn tắt AI.
+>
+> *Ghi chú 02/11/2026 (Q8, thay D29):* email báo trước kỳ gia hạn **luôn bật**: `renewal_notice_days_before` 7–30 ngày, mặc định 7, không còn để trống; nhắc trial `trial_reminder_days_before` 3–6 ngày, mặc định 3. Xem ghi chú dưới D29.
 
 ## D1 — Cách làm việc
 
@@ -446,6 +448,24 @@ Chủ dự án: "mô phỏng mình xem" → Claude dựng mô phỏng bấm đư
 |---|---|
 | Bật mặc định 9 ngày (bản viết đầu) | An toàn với cách đọc Điều 42; gói tháng nhận email mỗi tháng |
 | ✅ Làm sẵn, **mặc định tắt**; bật nếu luật sư nói bắt buộc | Giống thói quen của các app; nếu luật bắt buộc thì phải nhớ bật trước khi bán |
+
+**Vòng 2 (02/11/2026, Q8 của research pháp lý `docs/preparation/LEGAL_AND_PILOT_RESEARCH_2026-11-02.md`).** Research đọc (nguồn thứ cấp) Luật 19/2023 Điều 42 khoản 2 điểm đ (báo trước tối thiểu 07 ngày làm việc) và Điều 25 khoản 13 (cấm điều khoản gia hạn không quy định trách nhiệm báo trước); khác Điều 42 khoản 3, hai chỗ này không có câu "trừ trường hợp các bên có thỏa thuận khác".
+
+| Phương án | Trade-off |
+|---|---|
+| (a) Giữ tắt | Như vòng 1; ngược câu chữ Điều 42.2 đ và 25.13 |
+| ✅ (b) Bật cho mọi kỳ | An toàn với câu chữ luật; gói tháng nhận một email mỗi tháng |
+| (c) Chờ luật sư | Không sai, chưa xong |
+
+Chủ dự án trả lời trước: (a) giữ tắt. Claude đề xuất (b) vì rủi ro lệch hẳn về một phía và tính năng đã làm sẵn. Chủ dự án chốt **(b)**: "free trial thì 3 ngày, còn pro thì 7 ngày thông báo", rồi "minimum là 7 ngày với pro, free trial minimum là 3 ngày, không được nhập ở dưới mức đó", sửa cả API và giao diện.
+
+| Số ngày báo trước kỳ gia hạn Pro | Trade-off |
+|---|---|
+| ✅ 7 ngày lịch (chủ dự án) | Đúng con số trong luật nhưng đếm theo ngày lịch; thường chỉ được khoảng 5 ngày làm việc |
+| 10 ngày lịch (đề xuất của Claude) | Đủ 7 ngày làm việc trong tuần có hai cuối tuần; tuần có lễ dài vẫn có thể thiếu |
+| 14 ngày lịch | Đủ cả tuần có Tết; email đến sớm |
+
+As-built: `trial_reminder_days_before` 3–6 (mặc định 3), `renewal_notice_days_before` 7–30 (mặc định 7, bỏ `nullable`); giá trị đã lưu dưới mốc mới đọc ra mặc định. Trial chỉ dài 7 ngày nên không thể báo trước 7 ngày làm việc theo câu chữ; trial có thuộc Điều 42 không là câu hỏi cho luật sư.
 
 Email báo sắp hết hạn của gói "app tự gia hạn" (không tự trừ tiền) giữ, thành cài đặt `expiry_notice_days_before` mặc định 7. **Bỏ theo D35** (19/10, sau review plan: không còn gói "app tự gia hạn").
 
