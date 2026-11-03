@@ -19,12 +19,17 @@ function Mark({ on, yes, no }: { on: boolean; yes: string; no: string }) {
 // The Pro column is one tall card drawn in the app's own sticker style (cream ground, ink edge, a ledge under it), the way the add-word box and the
 // review card are, so it stands out from the plain Free column in both themes without a dark block in a light page (owner 03/11/2026, redesign pass).
 // The cells carry the cream, and a frame laid over the column (no ground of its own) draws the edge and the ledge, so the corners come out round.
-const VALUE_COLUMN = 'w-18 md:w-32';
+const VALUE_COLUMN = 'w-20 md:w-32';
+// From lg the heading takes its own height and the way in sits right under it, while the table spans both rows (a plain auto second row would share
+// the table's height with the heading's row and push Đăng ký halfway down).
+// raw-ok: two rows, the first as tall as the heading
+const ROWS = 'lg:grid-rows-[auto_1fr]';
 const PRO_FRAME = 'pointer-events-none absolute inset-y-0 right-0 rounded-card border-2 border-ink shadow-ledge'; // taste-skill-ignore: the app's sticker edge
 
 // Two plans, no prices (design landing-redesign §3), as a comparison table (owner 03/11/2026, after a pricing-table reference): the plans are columns, the
 // seven lines the app already names are rows. The first three are Free's (Pro has them as well), the last four are Pro's. Beside the table (under it on a
-// phone) go the way in, Đăng ký, and the trial rule, with nothing about when it opens. Rows are told apart by alternate bands, not by lines.
+// phone, so the comparison is read first: owner 03/11/2026, mobile pass Q4) go the way in, Đăng ký, and the trial rule, with nothing about when it opens.
+// Rows are told apart by alternate bands, not by lines.
 export function Plans({ copy, locale }: { copy: LandingCopy['plans']; locale: AppLocale }) {
   const lines: Array<{ label: string; free: boolean }> = [
     { label: copy.freeP1, free: true },
@@ -35,22 +40,14 @@ export function Plans({ copy, locale }: { copy: LandingCopy['plans']; locale: Ap
     { label: copy.proP3, free: false },
     { label: copy.proP4, free: false },
   ];
-  const name = 'px-2 pt-2.5 pb-1.5 text-center text-ui font-extrabold whitespace-nowrap text-ink md:text-title-lg';
+  const name = 'px-1 pt-2.5 pb-1.5 text-center text-ui font-extrabold whitespace-nowrap text-ink md:px-2 md:text-title-lg';
   return (
     <section id="goi" aria-labelledby="plans-title" className="scroll-mt-16 bg-surface py-14 md:py-24">
-      <Container className="grid items-start gap-8 lg:grid-cols-12 lg:gap-x-12">
-        <div className="flex flex-col gap-4 lg:col-span-5 lg:row-start-1">
-          <h2 id="plans-title" className="mb-2 text-h2 font-extrabold text-ink">
-            {copy.title}
-          </h2>
-          <ButtonLink variant="sticker" href={`/${locale}/app/register`} className="min-h-control-touch w-fit px-6">
-            {copy.signup}
-          </ButtonLink>
-          <p className="max-w-prose text-small text-muted">
-            <b className="font-semibold text-ink">{copy.pro}</b> · <span>{copy.trial}</span>
-          </p>
-        </div>
-        <div className="w-full max-w-140 justify-self-end lg:col-span-7 lg:col-start-6 lg:row-start-1">
+      <Container className={cn('grid items-start gap-6 lg:grid-cols-12 lg:gap-x-12', ROWS)}>
+        <h2 id="plans-title" className="text-h2 font-extrabold text-balance text-ink lg:col-span-5 lg:row-start-1">
+          {copy.title}
+        </h2>
+        <div className="w-full max-w-140 justify-self-end lg:col-span-7 lg:col-start-6 lg:row-span-2 lg:row-start-1">
           <div className="relative">
           <table aria-labelledby="plans-title" className="w-full table-fixed border-separate border-spacing-0 text-left">
             <colgroup>
@@ -91,6 +88,14 @@ export function Plans({ copy, locale }: { copy: LandingCopy['plans']; locale: Ap
           </table>
           <span aria-hidden className={cn(PRO_FRAME, VALUE_COLUMN)} />
           </div>
+        </div>
+        <div className="flex flex-col gap-4 lg:col-span-5 lg:row-start-2">
+          <ButtonLink variant="sticker" href={`/${locale}/app/register`} className="min-h-control-touch w-fit px-6">
+            {copy.signup}
+          </ButtonLink>
+          <p className="max-w-prose text-small text-muted">
+            <b className="font-semibold text-ink">{copy.pro}</b> · <span>{copy.trial}</span>
+          </p>
         </div>
       </Container>
     </section>
