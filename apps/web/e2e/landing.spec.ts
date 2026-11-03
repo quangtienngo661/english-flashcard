@@ -326,6 +326,37 @@ test.describe('LR29 the FAQ opens with motion', () => {
   });
 });
 
+// Owner 03/11/2026: the white sections run into each other, so a grey band alternates with them. What the visitor sees is that no two
+// neighbouring bands, from "why" down to the footer, are painted the same, whichever theme they use.
+test.describe('LR31 the sections are told apart', () => {
+  for (const scheme of ['light', 'dark'] as const) {
+    test(`no two neighbouring bands share a background in ${scheme}`, async ({ page }) => {
+      await page.emulateMedia({ colorScheme: scheme });
+      await open(page);
+      const bands = await page.evaluate(() => {
+        const paint = (el: Element) => {
+          for (let node: Element | null = el; node; node = node.parentElement) {
+            const colour = getComputedStyle(node).backgroundColor;
+            if (colour !== 'rgba(0, 0, 0, 0)' && colour !== 'transparent') return colour;
+          }
+          return 'none';
+        };
+        const found: Array<[string, Element | null]> = [
+          ...['vi-sao', 'bai-tap', 'on-lai', 'gap-tu', 'goi', 'hoi-dap'].map((id): [string, Element | null] => [id, document.getElementById(id)]),
+          ['final', document.querySelector('section[aria-labelledby="final-title"]')],
+          ['footer', document.querySelector('footer')],
+        ];
+        return found.map(([id, el]) => ({ id, paint: el ? paint(el) : 'missing' }));
+      });
+      // The control: every band was found, so "different from the neighbour" is about colours and not about absent elements.
+      expect(bands.filter((band) => band.paint === 'missing')).toEqual([]);
+      for (let index = 1; index < bands.length; index++) {
+        expect(bands[index].paint, `${bands[index - 1].id} and ${bands[index].id} share a background`).not.toBe(bands[index - 1].paint);
+      }
+    });
+  }
+});
+
 test.describe('LR30 no waitlist', () => {
   test('/vi has no email field and sends nothing to a waitlist', async ({ page }) => {
     const sent: string[] = [];

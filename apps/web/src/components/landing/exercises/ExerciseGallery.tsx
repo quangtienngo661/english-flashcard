@@ -175,7 +175,7 @@ export function ExerciseGallery({ copy, kinds }: { copy: LandingCopy['exercises'
               onClick={() => show(index)}
               className={cn(
                 'flex w-full cursor-pointer items-center justify-between gap-3 rounded-inner px-3.5 py-3 text-left text-label font-semibold text-ink outline-none focus-visible:ring-2 focus-visible:ring-primary',
-                index === current ? 'bg-surface ring-2 ring-ink' : 'hover:bg-surface',
+                index === current ? 'bg-surface ring-2 ring-ink' : 'hover:bg-canvas',
               )}
             >
               <span className="flex flex-wrap items-center gap-x-2 gap-y-1">

@@ -12,7 +12,7 @@ export function Faq({ copy }: { copy: LandingCopy['faq'] }) {
     [copy.q4, copy.a4],
   ];
   return (
-    <section id="hoi-dap" aria-labelledby="faq-title" className="scroll-mt-16 py-14 md:py-24">
+    <section id="hoi-dap" aria-labelledby="faq-title" className="scroll-mt-16 bg-canvas py-14 md:py-24">
       <Container className="flex flex-col gap-8">
         <h2 id="faq-title" className="text-h2 font-extrabold text-ink">
           {copy.title}
