@@ -228,7 +228,9 @@
       "proP3": "Tra cứu bằng AI",
       "proP4": "Không quảng cáo",
       "trial": "Dùng thử 7 ngày, cần thẻ thanh toán. Hủy trước hạn không mất phí.",
-      "signup": "Đăng ký"
+      "signup": "Đăng ký",
+      "yes": "Có",
+      "no": "Không"
     },
     "faq": {
       "title": "Câu hỏi thường gặp",

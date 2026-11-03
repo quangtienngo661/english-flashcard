@@ -445,17 +445,48 @@ test.describe('LR37 the window peeks out from under the next section', () => {
   });
 });
 
-// Owner 03/11/2026 ("tăng chiều ngang ở chỗ này, giảm kích cỡ của box"): the words get more width, the window less.
-test.describe('LR38 the words get the width, the window stays small', () => {
-  test('at 1440 x 900 the heading takes two lines and the window is at most 560 px wide', async ({ page }, testInfo) => {
+// Owner 03/11/2026, third round: the window grows to the left (the words give up width), its items shrink, and only the main visuals stay: buttons and
+// other side items are left out, so that nothing inside is lain over by the next section.
+test.describe('LR38 the window is wide, the heading at most three lines', () => {
+  test('at 1440 x 900 the window is at least 600 px wide and the heading takes no more than three lines', async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== 'desktop', 'sets its own viewport size');
     await page.setViewportSize({ width: 1440, height: 900 });
     await open(page);
     await settle(page);
     const heading = await page.getByRole('heading', { level: 1 }).boundingBox();
     const frame = await page.getByRole('region', { name: L.showcase.label }).boundingBox();
-    expect(heading!.height, 'two lines of the heading are under about 110 px, four are about 190').toBeLessThan(110);
-    expect(frame!.width).toBeLessThanOrEqual(560);
+    expect(frame!.width).toBeGreaterThanOrEqual(600);
+    expect(heading!.height, 'three lines of the heading are about 140 px, four are about 190').toBeLessThan(150);
+  });
+});
+
+test.describe('LR39 nothing inside the window is under the next section', () => {
+  test('at 1440 x 900 every element of every tab ends above the cut', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== 'desktop', 'sets its own viewport size');
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await open(page);
+    await settle(page);
+    for (const name of TAB_NAMES) {
+      await page.getByRole('tab', { name }).click();
+      await settle(page);
+      const { checked, below } = await page.evaluate(() => {
+        const frame = document.getElementById('tinh-nang')!;
+        const cut = frame.parentElement!.getBoundingClientRect().bottom;
+        const panel = frame.querySelector('[role="tabpanel"]:not([hidden])')!;
+        const below: string[] = [];
+        let checked = 0;
+        for (const el of panel.querySelectorAll('*')) {
+          const box = el.getBoundingClientRect();
+          if (box.width === 0 || box.height === 0) continue;
+          checked++;
+          if (box.bottom > cut + 0.5) below.push(`${el.tagName.toLowerCase()} "${(el.textContent ?? '').trim().slice(0, 24)}" ends ${Math.round(box.bottom - cut)} px below the cut`);
+        }
+        return { checked, below };
+      });
+      // The control: the open panel had elements to look at, so an empty list means "all above the cut", not "nothing found".
+      expect(checked, `tab ${name}`).toBeGreaterThan(5);
+      expect(below, `tab ${name}`).toEqual([]);
+    }
   });
 });
 
@@ -493,20 +524,33 @@ test.describe('LR35 the first screen moves in when the page opens', () => {
   });
 });
 
-test.describe('LR36 the Pro plan stands out', () => {
-  test('its card is painted differently from the Free one', async ({ page }) => {
+test.describe('LR36 the plans are a comparison table and the Pro column stands out', () => {
+  test('each of the seven lines has a Có or a Không under Free and under Pro, and the two columns are painted differently', async ({ page }) => {
     await open(page);
+    const table = page.getByRole('table', { name: L.plans.title });
+    const lines: Array<[string, string, string]> = [
+      [L.plans.freeP1, L.plans.yes, L.plans.yes],
+      [L.plans.freeP2, L.plans.yes, L.plans.yes],
+      [L.plans.freeP3, L.plans.yes, L.plans.yes],
+      [L.plans.proP1, L.plans.no, L.plans.yes],
+      [L.plans.proP2, L.plans.no, L.plans.yes],
+      [L.plans.proP3, L.plans.no, L.plans.yes],
+      [L.plans.proP4, L.plans.no, L.plans.yes],
+    ];
+    for (const [label, free, pro] of lines) {
+      await expect(table.getByRole('row').filter({ has: page.getByRole('rowheader', { name: label }) }).getByRole('cell'), label).toHaveText([free, pro]);
+    }
     const paint = (name: string) =>
-      page.getByRole('heading', { level: 3, name, exact: true }).evaluate((heading) => {
-        for (let node: Element | null = heading.parentElement; node; node = node.parentElement) {
+      table.getByRole('columnheader', { name, exact: true }).evaluate((header) => {
+        for (let node: Element | null = header; node; node = node.parentElement) {
           const colour = getComputedStyle(node).backgroundColor;
           if (colour !== 'rgba(0, 0, 0, 0)' && colour !== 'transparent') return colour;
         }
         return 'none';
       });
     const [free, pro] = [await paint(L.plans.free), await paint(L.plans.pro)];
-    expect(free, 'the Free card was found').not.toBe('none');
-    expect(pro, 'the Pro card was found').not.toBe('none');
+    expect(free, 'the Free column was found').not.toBe('none');
+    expect(pro, 'the Pro column was found').not.toBe('none');
     expect(pro).not.toBe(free);
   });
 });

@@ -9,15 +9,33 @@ import { SiteFooter } from '@/components/layout/SiteFooter';
 import { appCopy, landing, renderLanding } from './test-utils';
 
 describe('Plans', () => {
-  it('the Free card lists three items and none mentions AI; neither card says "Chưa mở bán" nor shows a price', () => {
+  // The seven lines of the two plans, as a table: the first three belong to Free and Pro alike, the last four only to Pro (owner 03/11/2026, a comparison table).
+  const lines: Array<[string, boolean, boolean]> = [
+    [landing.plans.freeP1, true, true],
+    [landing.plans.freeP2, true, true],
+    [landing.plans.freeP3, true, true],
+    [landing.plans.proP1, false, true],
+    [landing.plans.proP2, false, true],
+    [landing.plans.proP3, false, true],
+    [landing.plans.proP4, false, true],
+  ];
+
+  it('P1 is a table with a column for Free and one for Pro and a row for each of the seven lines, each cell a Có or a Không', () => {
+    renderLanding(<Plans copy={landing.plans} locale="vi" />);
+    const table = within(screen.getByRole('table', { name: landing.plans.title }));
+    expect(table.getAllByRole('columnheader').map((header) => header.textContent)).toEqual([landing.plans.free, landing.plans.pro]);
+    for (const [label, free, pro] of lines) {
+      const row = table.getByRole('rowheader', { name: label }).closest('tr')!;
+      expect(within(row).getAllByRole('cell').map((cell) => cell.textContent), label).toEqual([free ? landing.plans.yes : landing.plans.no, pro ? landing.plans.yes : landing.plans.no]);
+    }
+  });
+
+  it('P2 neither plan shows "Chưa mở bán" or a price', () => {
     const { container } = renderLanding(<Plans copy={landing.plans} locale="vi" />);
-    const free = within(screen.getByRole('heading', { name: landing.plans.free }).closest('div')!.parentElement!);
-    expect(free.getAllByRole('listitem')).toHaveLength(3);
-    expect(free.queryByText(/AI/)).toBeNull();
     expect(container).not.toHaveTextContent(/chưa mở bán|₫/i);
   });
 
-  it('C1 the Pro card carries the trial line, and Đăng ký goes to the registration', () => {
+  it('C1 the Pro column carries the trial line, and Đăng ký goes to the registration', () => {
     renderLanding(<Plans copy={landing.plans} locale="vi" />);
     expect(screen.getByText('Dùng thử 7 ngày, cần thẻ thanh toán. Hủy trước hạn không mất phí.')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Đăng ký' })).toHaveAttribute('href', '/vi/app/register');
