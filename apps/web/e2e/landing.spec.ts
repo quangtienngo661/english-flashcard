@@ -490,6 +490,52 @@ test.describe('LR39 nothing inside the window is under the next section', () => 
   });
 });
 
+// Owner 03/11/2026, fourth round: the review tab spaced evenly and without its progress bar, the card higher in the window and the window lower on the
+// page (the card still not lain over), a tab bar with less padding, and a narrower plans table on the right.
+test.describe('LR40 the review tab is spaced evenly, the card sits high and the window lower', () => {
+  test('at 1440 x 900 title, line and card are evenly spaced and share a left edge, there is no progress bar, the bar is slim, the window is lower', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== 'desktop', 'sets its own viewport size');
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await open(page);
+    await settle(page);
+    const g = await page.evaluate(() => {
+      const frame = document.getElementById('tinh-nang')!;
+      const panel = frame.querySelector('[role="tabpanel"]:not([hidden])')!;
+      const title = panel.querySelector('h2')!.getBoundingClientRect();
+      const body = panel.querySelector('h2 + p')!.getBoundingClientRect();
+      const card = panel.querySelector('[role="group"]')!.getBoundingClientRect();
+      const top = frame.getBoundingClientRect().top;
+      return {
+        gapUnderTitle: body.top - title.bottom,
+        gapUnderLine: card.top - body.bottom,
+        leftDelta: card.left - title.left,
+        cardFromTop: card.top - top,
+        barHeight: frame.querySelector('[role="tablist"]')!.parentElement!.getBoundingClientRect().height,
+        windowTop: top,
+      };
+    });
+    expect(Math.abs(g.gapUnderTitle - g.gapUnderLine), `gaps ${g.gapUnderTitle.toFixed(1)} and ${g.gapUnderLine.toFixed(1)} px`).toBeLessThanOrEqual(1.5);
+    expect(Math.abs(g.leftDelta), 'the card starts where the title starts').toBeLessThanOrEqual(1);
+    expect(g.cardFromTop, 'the card sits high in the window').toBeLessThanOrEqual(150);
+    expect(g.barHeight, 'the tab bar').toBeLessThanOrEqual(52);
+    expect(g.windowTop, 'the window starts lower on the page').toBeGreaterThanOrEqual(140);
+    await expect(page.getByText(/Thẻ 4 trên 29/)).toBeHidden();
+  });
+});
+
+test.describe('LR42 the plans table is narrow and on the right', () => {
+  test('at 1440 x 900 it is at most 560 px wide, sits in the right half, and "Miễn phí" is one line', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== 'desktop', 'sets its own viewport size');
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await open(page);
+    const table = await page.getByRole('table', { name: L.plans.title }).boundingBox();
+    const free = await page.getByRole('columnheader', { name: L.plans.free, exact: true }).boundingBox();
+    expect(table!.width).toBeLessThanOrEqual(560);
+    expect(table!.x, 'the table starts in the right half of the page').toBeGreaterThanOrEqual(720);
+    expect(free!.height, 'one line of the plan name').toBeLessThan(50);
+  });
+});
+
 test.describe('LR35 the first screen moves in when the page opens', () => {
   const watch = (page: Page) =>
     page.addInitScript(() => {
