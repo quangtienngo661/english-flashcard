@@ -199,11 +199,28 @@
   --animate-pop-in: pop-in 180ms var(--ease-spring) both;
   /* End-of-session summary: its blocks rise one after another, 50ms apart (motion audit #6). */
   --animate-summary-in: summary-in 250ms var(--ease-enter) both;
+  /* The landing's first screen when the page opens (owner 03/11/2026): the words rise one after another, the app window settles in. */
+  --animate-hero-in: hero-in 520ms var(--ease-out-strong) both;
+  --animate-hero-window-in: hero-window-in 640ms var(--ease-out-strong) both;
 
   @keyframes summary-in {
     from {
       opacity: 0;
       transform: translateY(0.5rem);
+    }
+  }
+
+  @keyframes hero-in {
+    from {
+      opacity: 0;
+      transform: translateY(1rem);
+    }
+  }
+
+  @keyframes hero-window-in {
+    from {
+      opacity: 0;
+      transform: translateY(1.5rem) scale(0.97);
     }
   }
 

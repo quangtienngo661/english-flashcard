@@ -7,7 +7,7 @@ import type { AppCopy, LandingCopy } from '../copy';
 import { fill } from '../fill';
 
 const FACE =
-  'relative col-start-1 row-start-1 flex min-h-72 flex-col overflow-hidden rounded-card border-2 border-ink bg-surface shadow-ledge backface-hidden';
+  'relative col-start-1 row-start-1 flex min-h-72 flex-col overflow-hidden lg:min-h-60 rounded-card border-2 border-ink bg-surface shadow-ledge backface-hidden';
 
 // A copy of the app's review card (features/learner/review/Flashcard.tsx) with sample data. Both faces share one grid cell, so the card
 // is as tall as its taller face and does not overflow when it turns on a phone (design LRE3). The turned-away face is inert and aria-hidden.

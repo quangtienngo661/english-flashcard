@@ -20,8 +20,7 @@ export default async function HomePage() {
 
   return (
     <>
-      <Hero copy={copy.hero} locale={locale} />
-      <AppShowcase copy={copy.showcase} app={app} logo={<Logo />} />
+      <Hero copy={copy.hero} locale={locale} visual={<AppShowcase copy={copy.showcase} app={app} logo={<Logo />} />} />
       <Reveal>
         <WhyForget copy={copy.why} />
       </Reveal>

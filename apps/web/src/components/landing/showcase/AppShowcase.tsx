@@ -2,7 +2,6 @@
 
 import { Check, FolderClosed, Layers, Plus, Search, Sparkles, type LucideIcon } from 'lucide-react';
 import { useId, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
-import { Container } from '@/components/ui/Container';
 import { cn } from '@/lib/cn';
 import type { AppCopy, LandingCopy } from '../copy';
 import { AddWordDemo } from './AddWordDemo';
@@ -17,10 +16,10 @@ const ICONS = { review: Layers, groups: FolderClosed, practice: Sparkles, lookup
 
 function Caption({ title, body, points }: { title: string; body: string; points: string[] }) {
   return (
-    <div className="flex flex-col gap-3.5 lg:col-span-3">
+    <div className="flex flex-col gap-3.5">
       <h2 className="text-title-lg font-extrabold tracking-tight text-ink md:text-h2">{title}</h2>
       <p className="max-w-prose text-body text-ink">{body}</p>
-      <ul className="flex flex-col gap-2 text-body text-ink">
+      <ul className="flex flex-col gap-2 text-body text-ink lg:hidden">
         {points.map((point) => (
           <li key={point} className="flex items-start gap-2.5">
             <Check aria-hidden className="mt-1 size-4 shrink-0 text-success" />
@@ -33,7 +32,9 @@ function Caption({ title, body, points }: { title: string; body: string; points:
 }
 
 // The first screen's window onto the app (design landing-redesign §3): the app's own navy bar with its five main parts as tabs, and the
-// part's real screen below with sample data. All five panels stay in the DOM; the inactive ones are `hidden`, so the page reads without JS.
+// part's real screen below with sample data. From lg the window is the right column of the first screen (Hero), so it is kept compact: the point list
+// is left out and every tab has the same height (lg:min-h-139 is the tallest one), which keeps the words on the left from shifting when a tab changes.
+// All five panels stay in the DOM; the inactive ones are `hidden`, so the page reads without JS.
 // The app's Logo reads App messages, which the app does not give client components, so the page renders it and passes it in as `logo`.
 export function AppShowcase({ copy, app, logo }: { copy: LandingCopy['showcase']; app: AppCopy; logo: ReactNode }) {
   const [active, setActive] = useState<TabKey>('review');
@@ -60,23 +61,22 @@ export function AppShowcase({ copy, app, logo }: { copy: LandingCopy['showcase']
       id={`${base}-panel-${key}`}
       aria-labelledby={`${base}-tab-${key}`}
       hidden={active !== key}
-      className="grid min-h-124 content-start gap-8 p-5 md:p-8 lg:grid-cols-8 lg:items-center lg:gap-14"
+      className="grid min-h-124 content-start gap-6 p-5 md:p-8 lg:min-h-139 lg:gap-4 lg:p-5"
     >
       {caption}
-      <div className="min-w-0 lg:col-span-5">{demo}</div>
+      <div className="min-w-0">{demo}</div>
     </div>
   );
 
   return (
-    <section id="tinh-nang" aria-label={copy.label} className="scroll-mt-16 pt-8 md:pt-12">
-      <Container>
-        <div className="overflow-hidden rounded-t-feature border-2 border-b-0 border-navy bg-canvas">
+    <section id="tinh-nang" aria-label={copy.label} className="scroll-mt-16">
+      <div className="overflow-hidden rounded-t-feature border-2 border-b-0 border-navy bg-canvas lg:rounded-b-feature lg:border-0 lg:ring-2 lg:ring-navy lg:ring-inset">{/* taste-skill-ignore: the app window frame, a cropped interface fragment */}
           <div className="flex items-center gap-5 overflow-x-auto bg-navy px-4 py-2.5 text-on-navy no-scrollbar">
-            {/* Between md and lg the logo makes way so that all five tabs fit without scrolling the bar (LR32). */}
-            <span aria-hidden className="shrink-0 md:max-lg:hidden">
+            {/* From md the logo makes way, and from lg (the window then sits in the narrow right column) the icons too, so that all five tabs fit without scrolling the bar (LR32). */}
+            <span aria-hidden className="shrink-0 md:hidden">
               {logo}
             </span>
-            <div role="tablist" aria-label={copy.label} className="flex gap-1 lg:gap-1.5">
+            <div role="tablist" aria-label={copy.label} className="flex gap-1">
               {TABS.map((key, index) => {
                 const Icon = ICONS[key];
                 const selected = active === key;
@@ -95,11 +95,11 @@ export function AppShowcase({ copy, app, logo }: { copy: LandingCopy['showcase']
                     onClick={() => setActive(key)}
                     onKeyDown={(event) => onKeyDown(event, index)}
                     className={cn(
-                      'flex shrink-0 cursor-pointer items-center gap-2 rounded-control py-2.5 pr-2.5 pl-2 text-body whitespace-nowrap lg:pr-3.5 lg:pl-3 outline-none focus-visible:ring-2 focus-visible:ring-accent',
+                      'flex shrink-0 cursor-pointer items-center gap-2 rounded-control py-2.5 pr-2.5 pl-2 text-body whitespace-nowrap outline-none focus-visible:ring-2 focus-visible:ring-accent lg:px-2.5',
                       selected ? 'bg-accent font-semibold text-on-accent' : 'font-medium text-on-navy hover:bg-navy-raised',
                     )}
                   >
-                    <Icon aria-hidden className="size-5" />
+                    <Icon aria-hidden className="size-5 lg:hidden" />
                     {copy.tabs[key]}
                   </button>
                 );
@@ -111,8 +111,7 @@ export function AppShowcase({ copy, app, logo }: { copy: LandingCopy['showcase']
           {panel('practice', <Caption title={copy.practice.title} body={copy.practice.body} points={[copy.practice.p1, copy.practice.p2]} />, <PracticeDemo copy={copy.practice} app={app} />)}
           {panel('lookup', <Caption title={copy.lookup.title} body={copy.lookup.body} points={[copy.lookup.p1]} />, <LookupDemo copy={copy.lookup} />)}
           {panel('addWord', <Caption title={copy.addWord.title} body={copy.addWord.body} points={[copy.addWord.p1]} />, <AddWordDemo copy={copy.addWord} app={app} />)}
-        </div>
-      </Container>
+      </div>
     </section>
   );
 }
