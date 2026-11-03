@@ -71,6 +71,16 @@ describe('LegalEditorPage (one version)', () => {
     expect(within(preview).getAllByRole('listitem')).toHaveLength(2);
   });
 
+  it('the preview adds no second h1 to the page: a # heading is drawn one level down', async () => {
+    open(draft({ privacy_vi: '# Chính sách bảo mật\n\n## 1. Dữ liệu\n\n### Chi tiết' }));
+    const preview = await screen.findByRole('region', { name: t.editor.preview });
+    expect(within(preview).queryByRole('heading', { level: 1 })).toBeNull();
+    expect(within(preview).getByRole('heading', { level: 2, name: 'Chính sách bảo mật' })).toBeInTheDocument();
+    expect(within(preview).getByRole('heading', { level: 3, name: '1. Dữ liệu' })).toBeInTheDocument();
+    expect(within(preview).getByRole('heading', { level: 4, name: 'Chi tiết' })).toBeInTheDocument();
+    expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1);
+  });
+
   it('the preview never renders raw HTML or a javascript: link', async () => {
     open(draft({ privacy_vi: 'ok <script>window.hacked = 1</script> <img src=x onerror="window.hacked=1">\n\n[bad](javascript:alert(1))' }));
     const preview = await screen.findByRole('region', { name: t.editor.preview });
