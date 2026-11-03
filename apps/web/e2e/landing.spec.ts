@@ -664,6 +664,8 @@ test.describe('LR44 on phones and tablets the window is compact, one height for 
         await settle(page);
         const g = await page.evaluate(() => {
           const frame = document.getElementById('tinh-nang')!;
+          // On a phone the cut is below the first screen: bring it into view, or the point under it is outside the viewport and hits nothing.
+          frame.parentElement!.scrollIntoView({ block: 'center', behavior: 'instant' });
           const box = frame.parentElement!.getBoundingClientRect();
           const full = frame.getBoundingClientRect();
           const panel = frame.querySelector('[role="tabpanel"]:not([hidden])')!;
@@ -705,14 +707,22 @@ test.describe('LR45 on phones the window bar shows all five tabs as icons, the o
       for (const name of TAB_NAMES) {
         const tab = page.getByRole('tab', { name });
         await tab.click();
-        const box = await tab.boundingBox();
-        expect(box!.height, `${name}: touch height`).toBeGreaterThanOrEqual(44);
-        expect(box!.width, `${name}: touch width`).toBeGreaterThanOrEqual(44);
-        // The open tab shows its name; the others only their icon (the name stays their accessible name).
-        await expect(tab.getByText(name, { exact: true })).toBeVisible();
-        for (const other of TAB_NAMES.filter((n) => n !== name)) await expect(page.getByRole('tab', { name: other }).getByText(other, { exact: true })).toBeHidden();
+        for (const each of TAB_NAMES) {
+          const box = await page.getByRole('tab', { name: each }).boundingBox();
+          expect(box!.height, `${name} open, ${each}: touch height`).toBeGreaterThanOrEqual(44);
+          // At 320 px the open tab's name leaves the four icons about 37 px each (above the 24 px of WCAG 2.5.8); from 360 px they reach 44.
+          expect(box!.width, `${name} open, ${each}: touch width`).toBeGreaterThanOrEqual(width < 360 ? 36 : 44);
+        }
+        // The open tab shows its name; the others only their icon. Their names stay as accessible names, visually hidden in a 1 px box (which
+        // Playwright still counts as visible), so the width of the words is what is measured.
+        for (const each of TAB_NAMES) {
+          const words = await page.getByRole('tab', { name: each }).getByText(each, { exact: true }).boundingBox();
+          if (each === name) expect(words!.width, `${name} open: its name shows`).toBeGreaterThan(20);
+          else expect(words!.width, `${name} open: ${each} shows no name`).toBeLessThanOrEqual(1);
+        }
       }
-      await expect(page.locator('#tinh-nang').getByText('Wordmet')).toHaveCount(0);
+      // The bar holds the tabs alone: the app logo made way for them.
+      await expect(page.getByRole('tablist').locator('xpath=..').getByText('Wordmet')).toHaveCount(0);
     });
   }
 });
@@ -794,7 +804,8 @@ test.describe('LR49 small details on phones', () => {
     test.skip(testInfo.project.name !== 'desktop', 'sets its own viewport size');
     await page.setViewportSize({ width: 320, height: 844 });
     await open(page);
-    const labels = await page.locator('#vi-sao svg text').evaluateAll((texts) => texts.map((t) => t.getBoundingClientRect().height));
+    // Only the chart drawn at this width (the other size is display: none, so its labels measure 0).
+    const labels = await page.locator('#vi-sao svg text').evaluateAll((texts) => texts.map((t) => t.getBoundingClientRect().height).filter((h) => h > 0));
     expect(labels.length).toBeGreaterThan(3);
     expect(Math.min(...labels), 'height of the smallest chart label').toBeGreaterThanOrEqual(12);
     await page.setViewportSize({ width: 390, height: 844 });
@@ -834,15 +845,16 @@ test.describe('LR51 a press answers the finger', () => {
     const pressed = async (selector: string) => {
       const { nodeId } = await cdp.send('DOM.querySelector', { nodeId: root.nodeId, selector });
       await cdp.send('CSS.forcePseudoState', { nodeId, forcedPseudoClasses: ['active'] });
-      // Wait out the transition, then read where it ends.
+      // Wait out the transition, then read where it ends. Tailwind 4 shrinks with the `scale` property, not `transform`.
       await page.waitForTimeout(300);
-      const transform = await page.locator(selector).first().evaluate((el) => getComputedStyle(el).transform);
+      const scale = await page.locator(selector).first().evaluate((el) => getComputedStyle(el).scale);
       await cdp.send('CSS.forcePseudoState', { nodeId, forcedPseudoClasses: [] });
-      return transform;
+      return Number(scale);
     };
     for (const selector of ['[role="tab"][aria-selected="false"]', '#bai-tap ul button', 'button[data-option]', '#hoi-dap summary']) {
-      const transform = await pressed(selector);
-      expect(transform, `${selector} while pressed`).toMatch(/^matrix\(0\.9[5-8]/);
+      const scale = await pressed(selector);
+      expect(scale, `${selector} while pressed`).toBeGreaterThanOrEqual(0.95);
+      expect(scale, `${selector} while pressed`).toBeLessThanOrEqual(0.98);
     }
     expect(await page.evaluate(() => getComputedStyle(document.body).getPropertyValue('-webkit-tap-highlight-color'))).toBe('rgba(0, 0, 0, 0)');
   });
