@@ -9,8 +9,9 @@ import type { LandingCopy } from './copy';
 const COLUMNS = 'xl:grid-cols-[29rem_minmax(0,1fr)] xl:gap-6';
 
 // First screen (design landing-redesign §3, owner 03/11/2026): the heading, one promise and the sign-up action on the left from lg, the app window
-// (`visual`) on the right; below lg the window sits under the words. The window is cut off at the bottom of this section, so the next section lies over its last quarter (LR37). Everything moves in once when the page
-// opens (CSS only, so it also works without JS). The grey ground is the window's own, so that the white section below shows where it ends.
+// (`visual`) on the right; below lg the window sits under the words. At every width the window is cut off at the bottom of this section, so the next section
+// lies over its last quarter (LR37, LR44). Everything moves in once when the page opens (CSS only, so it also works without JS). The grey ground is
+// the window's own, so that the white section below shows where it ends.
 export function Hero({ copy, locale, visual }: { copy: LandingCopy['hero']; locale: AppLocale; visual?: ReactNode }) {
   return (
     <section aria-labelledby="hero-title" className="bg-canvas pt-10 md:pt-16 lg:pt-8">
@@ -30,7 +31,7 @@ export function Hero({ copy, locale, visual }: { copy: LandingCopy['hero']; loca
                 </ButtonLink>
                 <p className="text-small text-muted">
                   {copy.haveAccount}{' '}
-                  <a href={`/${locale}/app/login`} className="font-semibold text-primary underline underline-offset-4">
+                  <a href={`/${locale}/app/login`} className="py-3.5 font-semibold text-primary underline underline-offset-4">
                     {copy.login}
                   </a>
                 </p>
@@ -40,7 +41,7 @@ export function Hero({ copy, locale, visual }: { copy: LandingCopy['hero']; loca
           </div>
         </div>
         {visual && (
-          <div className="min-w-0 motion-safe:animate-hero-window-in motion-safe:[animation-delay:120ms] lg:col-span-7 lg:mt-14 lg:max-h-108 lg:self-end lg:overflow-hidden xl:col-span-1">
+          <div className="max-h-132 min-w-0 overflow-hidden motion-safe:animate-hero-window-in motion-safe:[animation-delay:120ms] md:max-h-108 lg:col-span-7 lg:mt-14 lg:self-end xl:col-span-1">
             {visual}
           </div>
         )}

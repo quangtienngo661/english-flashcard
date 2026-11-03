@@ -1,5 +1,4 @@
 import { getLocale } from 'next-intl/server';
-import { Logo } from '@/app-chrome/Logo';
 import { Reveal } from '@/components/interactive/Reveal';
 import { getAppCopy, getLandingCopy } from '@/components/landing/copy';
 import { ExercisesSection } from '@/components/landing/ExercisesSection';
@@ -20,7 +19,7 @@ export default async function HomePage() {
 
   return (
     <>
-      <Hero copy={copy.hero} locale={locale} visual={<AppShowcase copy={copy.showcase} app={app} logo={<Logo />} />} />
+      <Hero copy={copy.hero} locale={locale} visual={<AppShowcase copy={copy.showcase} app={app} />} />
       <Reveal>
         <WhyForget copy={copy.why} />
       </Reveal>

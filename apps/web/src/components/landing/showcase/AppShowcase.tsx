@@ -1,6 +1,6 @@
 'use client';
 
-import { Check, FolderClosed, Layers, Plus, Search, Sparkles, type LucideIcon } from 'lucide-react';
+import { FolderClosed, Layers, Plus, Search, Sparkles, type LucideIcon } from 'lucide-react';
 import { useId, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 import { cn } from '@/lib/cn';
 import type { AppCopy, LandingCopy } from '../copy';
@@ -14,30 +14,22 @@ const TABS = ['review', 'groups', 'practice', 'lookup', 'addWord'] as const;
 type TabKey = (typeof TABS)[number];
 const ICONS = { review: Layers, groups: FolderClosed, practice: Sparkles, lookup: Search, addWord: Plus } satisfies Record<TabKey, LucideIcon>;
 
-function Caption({ title, body, points }: { title: string; body: string; points: string[] }) {
+function Caption({ title, body }: { title: string; body: string }) {
   return (
-    <div className="flex flex-col gap-3.5 lg:gap-3">
-      <h2 className="text-title-lg font-extrabold tracking-tight text-ink md:text-h2 lg:text-title">{title}</h2>
-      <p className="max-w-prose text-body text-ink lg:text-ui">{body}</p>
-      <ul className="flex flex-col gap-2 text-body text-ink lg:hidden">
-        {points.map((point) => (
-          <li key={point} className="flex items-start gap-2.5">
-            <Check aria-hidden className="mt-1 size-4 shrink-0 text-success" />
-            {point}
-          </li>
-        ))}
-      </ul>
+    <div className="flex flex-col gap-3">
+      <h2 className="text-title font-extrabold tracking-tight text-balance text-ink">{title}</h2>
+      <p className="max-w-prose text-ui text-ink">{body}</p>
     </div>
   );
 }
 
 // The first screen's window onto the app (design landing-redesign §3): the app's own navy bar with its five main parts as tabs, and the
-// part's real screen below with sample data. From lg the window is the right column of the first screen (Hero), which shows its top three quarters and
-// lets the next section lie over the rest (its lower quarter is blank), so what is inside is kept small and to the main visuals: the point list,
-// the buttons and the side boxes of each tab are left out from lg.
+// part's real screen below with sample data. The first screen (Hero) shows the window's top three quarters and lets the next section lie over the rest
+// (its lower quarter is blank), so what is inside is kept small and to the main visuals, at every width (owner 03/11/2026, mobile pass Q1).
+// Below md the bar shows the four other tabs as icons sharing the width, and the open one by its name alone (Q2; at 320 px an icon beside the name
+// would leave the others under 36 px); md to lg icons and names; from lg names only.
 // All five panels stay in the DOM; the inactive ones are `hidden`, so the page reads without JS.
-// The app's Logo reads App messages, which the app does not give client components, so the page renders it and passes it in as `logo`.
-export function AppShowcase({ copy, app, logo }: { copy: LandingCopy['showcase']; app: AppCopy; logo: ReactNode }) {
+export function AppShowcase({ copy, app }: { copy: LandingCopy['showcase']; app: AppCopy }) {
   const [active, setActive] = useState<TabKey>('review');
   const base = useId();
   const refs = useRef<Partial<Record<TabKey, HTMLButtonElement | null>>>({});
@@ -62,7 +54,7 @@ export function AppShowcase({ copy, app, logo }: { copy: LandingCopy['showcase']
       id={`${base}-panel-${key}`}
       aria-labelledby={`${base}-tab-${key}`}
       hidden={active !== key}
-      className="grid min-h-124 content-start gap-6 p-5 md:p-8 lg:min-h-128 lg:gap-3 lg:p-5"
+      className="grid min-h-152 content-start gap-3 p-4 md:min-h-128 md:p-6 lg:p-5"
     >
       {caption}
       <div className="min-w-0">{demo}</div>
@@ -72,12 +64,9 @@ export function AppShowcase({ copy, app, logo }: { copy: LandingCopy['showcase']
   return (
     <section id="tinh-nang" aria-label={copy.label} className="scroll-mt-16">
       <div className="overflow-hidden rounded-t-feature border-2 border-b-0 border-navy bg-canvas">
-          <div className="flex items-center gap-5 overflow-x-auto bg-navy px-4 py-2.5 text-on-navy no-scrollbar lg:px-5 lg:py-1">
-            {/* From md the logo makes way, and from lg (the window then sits in the narrow right column) the icons too, so that all five tabs fit without scrolling the bar (LR32). */}
-            <span aria-hidden className="shrink-0 md:hidden">
-              {logo}
-            </span>
-            <div role="tablist" aria-label={copy.label} className="flex gap-1">
+          <div className="flex items-center overflow-x-auto bg-navy p-1 text-on-navy no-scrollbar md:px-4 md:py-2.5 lg:px-5 lg:py-1">
+            {/* From lg (the window then sits in the narrow right column) the icons make way, so that all five tabs fit without scrolling the bar (LR32, LR45). */}
+            <div role="tablist" aria-label={copy.label} className="flex w-full md:w-auto md:gap-1">
               {TABS.map((key, index) => {
                 const Icon = ICONS[key];
                 const selected = active === key;
@@ -96,22 +85,22 @@ export function AppShowcase({ copy, app, logo }: { copy: LandingCopy['showcase']
                     onClick={() => setActive(key)}
                     onKeyDown={(event) => onKeyDown(event, index)}
                     className={cn(
-                      'flex shrink-0 cursor-pointer items-center gap-2 rounded-control py-2.5 pr-2.5 pl-2 text-body whitespace-nowrap outline-none focus-visible:ring-2 focus-visible:ring-accent lg:px-2.5 lg:py-1 lg:text-ui',
-                      selected ? 'bg-accent font-semibold text-on-accent' : 'font-medium text-on-navy hover:bg-navy-raised',
+                      'flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-control px-2.5 text-ui whitespace-nowrap outline-none transition-transform duration-fast ease-out-strong focus-visible:ring-2 focus-visible:ring-accent motion-safe:active:scale-97 md:shrink-0 md:flex-none md:py-2.5 md:pr-2.5 md:pl-2 md:text-body lg:min-h-0 lg:px-2.5 lg:py-1 lg:text-ui',
+                      selected ? 'shrink-0 bg-accent font-semibold text-on-accent' : 'min-w-0 flex-1 font-medium text-on-navy hover:bg-navy-raised',
                     )}
                   >
-                    <Icon aria-hidden className="size-5 lg:hidden" />
-                    {copy.tabs[key]}
+                    <Icon aria-hidden className={cn('size-5 shrink-0 lg:hidden', selected && 'max-md:hidden')} />
+                    <span className={selected ? undefined : 'max-md:sr-only'}>{copy.tabs[key]}</span>
                   </button>
                 );
               })}
             </div>
           </div>
-          {panel('review', <Caption title={copy.review.title} body={copy.review.body} points={[copy.review.p1, copy.review.p2]} />, <ReviewCardDemo copy={copy.review} app={app} />)}
-          {panel('groups', <Caption title={copy.groups.title} body={copy.groups.body} points={[copy.groups.p1]} />, <GroupsDemo copy={copy.groups} />)}
-          {panel('practice', <Caption title={copy.practice.title} body={copy.practice.body} points={[copy.practice.p1, copy.practice.p2]} />, <PracticeDemo copy={copy.practice} app={app} />)}
-          {panel('lookup', <Caption title={copy.lookup.title} body={copy.lookup.body} points={[copy.lookup.p1]} />, <LookupDemo copy={copy.lookup} />)}
-          {panel('addWord', <Caption title={copy.addWord.title} body={copy.addWord.body} points={[copy.addWord.p1]} />, <AddWordDemo copy={copy.addWord} app={app} />)}
+          {panel('review', <Caption title={copy.review.title} body={copy.review.body} />, <ReviewCardDemo copy={copy.review} app={app} />)}
+          {panel('groups', <Caption title={copy.groups.title} body={copy.groups.body} />, <GroupsDemo copy={copy.groups} />)}
+          {panel('practice', <Caption title={copy.practice.title} body={copy.practice.body} />, <PracticeDemo copy={copy.practice} app={app} />)}
+          {panel('lookup', <Caption title={copy.lookup.title} body={copy.lookup.body} />, <LookupDemo copy={copy.lookup} />)}
+          {panel('addWord', <Caption title={copy.addWord.title} body={copy.addWord.body} />, <AddWordDemo copy={copy.addWord} app={app} />)}
       </div>
     </section>
   );
