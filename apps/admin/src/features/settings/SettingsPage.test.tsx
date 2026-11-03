@@ -19,7 +19,9 @@ function values(): Values {
     for (const { key, kind } of SETTINGS_LAYOUT[section]) out[section][key] = kind === 'bool' ? true : kind === 'time' ? '20:00' : kind === 'ratio' ? 0.3 : kind === 'usd' ? 2 : 10;
   }
   out.practice.max_questions_per_session = 20;
-  out.entitlements.renewal_notice_days_before = 5;
+  out.entitlements.trial_reminder_days_before = 4;
+  out.entitlements.renewal_notice_days_before = 10;
+  out.entitlements.ai_cap_alert_percent = 75;
   return out;
 }
 function bounds() {
@@ -33,7 +35,9 @@ function bounds() {
       else if (kind === 'usd') out[section][key] = { min: 0, max: 1000, nullable: true };
     }
   }
-  out.entitlements.renewal_notice_days_before = { min: 1, max: 30, nullable: true };
+  out.entitlements.trial_reminder_days_before = { min: 3, max: 6 };
+  out.entitlements.renewal_notice_days_before = { min: 7, max: 30 };
+  out.entitlements.ai_cap_alert_percent = { min: 50, max: 95, nullable: true };
   out.practice.default_questions_per_session = { min: 1, max: 100 };
   return out;
 }
@@ -196,12 +200,40 @@ describe('SettingsPage (A/70a–A/70f, design §6.7)', () => {
         return Response.json({ version: 4, values: values() });
       },
     });
-    const label = s.fields.entitlements.renewal_notice_days_before;
+    const label = s.fields.entitlements.ai_cap_alert_percent;
     await screen.findByRole('textbox', { name: label });
-    expect(screen.getByText(/renewal_notice_days_before · 1–30 ngày hoặc để trống = không gửi/)).toBeInTheDocument();
+    expect(screen.getByText(/ai_cap_alert_percent · 50–95% hoặc để trống = không tô vàng/)).toBeInTheDocument();
     await setNumber(label, '');
     await userEvent.click(screen.getByRole('button', { name: s.save }));
-    await waitFor(() => expect(body).toEqual({ version: 3, values: { entitlements: { renewal_notice_days_before: null } } }));
+    await waitFor(() => expect(body).toEqual({ version: 3, values: { entitlements: { ai_cap_alert_percent: null } } }));
+  });
+
+  it('Q8: the trial reminder cannot go under 3 days nor the renewal notice under 7, and the renewal notice cannot be emptied', async () => {
+    let body: unknown;
+    renderApp('/settings?tab=entitlements', {
+      [GET]: () => Response.json(VIEW()),
+      [USAGE]: usage(false),
+      [PUT]: (call) => {
+        body = call.body;
+        return Response.json({ version: 4, values: values() });
+      },
+    });
+    const trial = s.fields.entitlements.trial_reminder_days_before;
+    const renewal = s.fields.entitlements.renewal_notice_days_before;
+    await screen.findByRole('textbox', { name: renewal });
+    expect(screen.getByText(/^trial_reminder_days_before · 3–6 ngày · mặc định/)).toBeInTheDocument();
+    expect(screen.getByText(/^renewal_notice_days_before · 7–30 ngày · mặc định/)).toBeInTheDocument();
+    expect(screen.queryByText(/renewal_notice_days_before ·.*để trống/)).toBeNull();
+    await setNumber(trial, '2');
+    expect(screen.getByRole('textbox', { name: trial })).toHaveValue('3');
+    await setNumber(renewal, '5');
+    expect(screen.getByRole('textbox', { name: renewal })).toHaveValue('7');
+    await setNumber(renewal, '');
+    expect(screen.getByRole('textbox', { name: renewal })).toHaveValue('7');
+    await userEvent.click(screen.getByRole('button', { name: s.save }));
+    await waitFor(() => expect(body).toEqual({
+      version: 3, values: { entitlements: { trial_reminder_days_before: 3, renewal_notice_days_before: 7 } },
+    }));
   });
 
   it('A/70d: tab Gói và lượt starts with today\'s AI uses, yellow once the alert is reached', async () => {
