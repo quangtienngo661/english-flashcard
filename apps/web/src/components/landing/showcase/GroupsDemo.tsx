@@ -20,7 +20,7 @@ function GroupCard({ tint, filled, count, name, waiting }: { tint: string; fille
       </div>
       <div className="flex flex-col items-start gap-2 p-4">
         <span className="text-caption text-muted">{count}</span>
-        <h3 className="text-title font-bold text-ink">{name}</h3>
+        <p className="text-title font-bold text-ink">{name}</p>
         <span className="rounded-full bg-accent-soft px-2.5 py-0.5 text-caption font-semibold text-ink">{waiting}</span>
       </div>
     </div>

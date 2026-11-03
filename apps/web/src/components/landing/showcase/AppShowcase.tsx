@@ -72,10 +72,11 @@ export function AppShowcase({ copy, app, logo }: { copy: LandingCopy['showcase']
       <Container>
         <div className="overflow-hidden rounded-t-feature border-2 border-b-0 border-navy bg-canvas">
           <div className="flex items-center gap-5 overflow-x-auto bg-navy px-4 py-2.5 text-on-navy no-scrollbar">
-            <span aria-hidden className="shrink-0">
+            {/* Between md and lg the logo makes way so that all five tabs fit without scrolling the bar (LR32). */}
+            <span aria-hidden className="shrink-0 md:max-lg:hidden">
               {logo}
             </span>
-            <div role="tablist" aria-label={copy.label} className="flex gap-1.5">
+            <div role="tablist" aria-label={copy.label} className="flex gap-1 lg:gap-1.5">
               {TABS.map((key, index) => {
                 const Icon = ICONS[key];
                 const selected = active === key;
@@ -94,7 +95,7 @@ export function AppShowcase({ copy, app, logo }: { copy: LandingCopy['showcase']
                     onClick={() => setActive(key)}
                     onKeyDown={(event) => onKeyDown(event, index)}
                     className={cn(
-                      'flex shrink-0 cursor-pointer items-center gap-2 rounded-control py-2.5 pr-3.5 pl-3 text-body whitespace-nowrap outline-none focus-visible:ring-2 focus-visible:ring-accent',
+                      'flex shrink-0 cursor-pointer items-center gap-2 rounded-control py-2.5 pr-2.5 pl-2 text-body whitespace-nowrap lg:pr-3.5 lg:pl-3 outline-none focus-visible:ring-2 focus-visible:ring-accent',
                       selected ? 'bg-accent font-semibold text-on-accent' : 'font-medium text-on-navy hover:bg-navy-raised',
                     )}
                   >

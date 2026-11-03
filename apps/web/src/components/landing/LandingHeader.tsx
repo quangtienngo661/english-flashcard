@@ -32,10 +32,10 @@ export function LandingHeader({ copy, locale }: { copy: LandingCopy['nav']; loca
         </nav>
         <div className="flex items-center gap-2">
           <ThemeToggleButton toLight={copy.themeToLight} toDark={copy.themeToDark} />
-          <ButtonLink variant="navy" href={`/${locale}/app/login`} className="hidden min-h-control px-4 text-ui sm:inline-flex">
+          <ButtonLink variant="navy" href={`/${locale}/app/login`} className="hidden min-h-control px-4 text-ui whitespace-nowrap sm:inline-flex">
             {copy.login}
           </ButtonLink>
-          <ButtonLink variant="sticker" href={`/${locale}/app/register`} className="min-h-control px-4 text-ui">
+          <ButtonLink variant="sticker" href={`/${locale}/app/register`} className="min-h-control px-4 text-ui whitespace-nowrap">
             {copy.signup}
           </ButtonLink>
         </div>
