@@ -21,7 +21,8 @@ Nhánh `feat/landing-redesign` (tách từ `docs/landing-redesign`), một PR v�
 # Landing làm lại — as-built (03/11/2026)
 
 Task 1–14 xong trên nhánh `feat/landing-redesign`; PR #205 vào `dev` còn là draft; review cuối của một reviewer độc lập đã chạy (mục "Review cuối" bên dưới).
-Trang `/vi` gồm: thanh trên navy, màn đầu, cửa sổ app 5 tab, "Vì sao quên" (đường cong minh họa), 7 dạng bài làm thử được, ôn đúng lúc, "Từ gặp hằng ngày", gói Free/Pro (không giá), FAQ 4 câu, kêu gọi cuối, chân trang. `/en` chuyển 307 về `/vi` (giữ query); `/en/app`, `/en/privacy`, `/en/terms` không đổi. Waitlist và D1 `wordmet-waitlist` đã bỏ khỏi code.
+Trang `/vi` gồm: thanh trên navy, màn đầu kèm cửa sổ app 5 tab, "Vì sao quên" (đường cong minh họa), 7 dạng bài làm thử được, ôn đúng lúc, "Từ gặp hằng ngày", gói Free/Pro (không giá), FAQ 4 câu, kêu gọi cuối, chân trang. `/en` chuyển 307 về `/vi` (giữ query); `/en/app`, `/en/privacy`, `/en/terms` không đổi. Waitlist và D1 `wordmet-waitlist` đã bỏ khỏi code.
+Màn đầu (owner 03/11, sau review cuối): từ 1024 px chữ, nút Đăng ký/Đăng nhập nằm bên trái (5/12 cột) và cửa sổ app nằm bên phải (7/12 cột); dưới 1024 px cửa sổ nằm dưới chữ như cũ. Ở cột hẹp cửa sổ gọn lại: không logo và icon trên thanh tab, không danh sách gạch đầu dòng dưới tiêu đề mỗi tab, thẻ ôn thấp hơn, mọi tab cùng cao 624 px (đáy ở y=720, vừa màn 1366×768 và 1440×900) để chữ bên trái không nhảy khi đổi tab. Lúc mở trang các dòng tiêu đề, câu mô tả và khối nút trồi lên lần lượt (70 ms một bước), cửa sổ trồi lên và phóng nhẹ; chỉ dùng CSS (`motion-safe:`), nên không cần JS và tắt khi giảm chuyển động. Thẻ gói Pro nền navy, dấu tích vàng, viền vàng và bóng vàng. Test: LR34 (bố cục và vừa màn hình), LR35 (chuyển động), LR36 (Pro khác Free).
 Theo yêu cầu của owner ngày 03/11: ba section nền trắng (Vì sao quên, Ôn lại, Hỏi đáp) nay nằm trên nền `canvas` xám nhạt của app, xen với trắng và navy, ở cả hai theme.
 
 ## Kiểm chứng
