@@ -51,6 +51,25 @@ describe('CompleteProfile', () => {
     expect(f.calls.find((c) => c.method === 'PATCH')!.body).toEqual({ accept_terms: true });
   });
 
+  it('legal documents: an outdated consent says the terms were updated, asks only for consent and sends accept_terms', async () => {
+    const f = await setup(makeMe({ terms_version: '1', terms_outdated: true }), () => Response.json({}));
+    expect(screen.getByRole('heading', { name: t.complete.updatedTitle })).toBeInTheDocument();
+    expect(screen.getByText(t.complete.updatedBody)).toBeInTheDocument();
+    expect(screen.queryByText(t.register.birthDate)).not.toBeInTheDocument();
+    const submit = screen.getByRole('button', { name: t.complete.submit });
+    expect(submit).toBeDisabled();
+    await userEvent.click(screen.getByRole('checkbox'));
+    await userEvent.click(submit);
+    await waitFor(() => expect(replace).toHaveBeenCalledWith('/vi/app/settings'));
+    expect(f.calls.find((c) => c.method === 'PATCH')!.body).toEqual({ accept_terms: true });
+  });
+
+  it('the first consent keeps the original title (nothing was updated)', async () => {
+    await setup(makeMe({ terms_accepted_at: null }), () => Response.json({}));
+    expect(screen.getByRole('heading', { name: t.complete.title })).toBeInTheDocument();
+    expect(screen.queryByText(t.complete.updatedBody)).not.toBeInTheDocument();
+  });
+
   it('a birth date under 13 shows the sign-up message and does not leave', async () => {
     await setup(makeMe({ birth_date: null }), () => problem(400, 'age-below-minimum'));
     expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();

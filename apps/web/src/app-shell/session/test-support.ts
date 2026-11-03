@@ -18,6 +18,8 @@ export const makeMe = (over: Partial<Me> = {}): Me => ({
   terms_accepted_at: '2026-10-20T03:00:00.000Z',
   auth_method: 'password',
   sign_in_methods: ['password'],
+  terms_version: '1',
+  terms_outdated: false,
   ...over,
 });
 

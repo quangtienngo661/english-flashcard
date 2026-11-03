@@ -117,6 +117,19 @@ describe('RequireSession', () => {
     await waitFor(() => expect(replace).toHaveBeenCalledWith('/vi/app/complete-profile?next=%2Fvi%2Fapp%2Fsettings'));
   });
 
+  it('legal documents: consent given to an older version (terms_outdated) goes to complete-profile, before the language', async () => {
+    at('/vi/app/settings');
+    setup(signedIn(makeMe({ terms_version: '1', terms_outdated: true, native_language: null })));
+    await waitFor(() => expect(replace).toHaveBeenCalledWith('/vi/app/complete-profile?next=%2Fvi%2Fapp%2Fsettings'));
+  });
+
+  it('legal documents: an up-to-date consent goes straight on', async () => {
+    at('/vi/app/settings');
+    setup(signedIn(makeMe({ terms_version: '2', terms_outdated: false })));
+    expect(await screen.findByText('secret')).toBeInTheDocument();
+    expect(replace).not.toHaveBeenCalled();
+  });
+
   it('AD18: complete-profile opens without a birth date, consent or language', async () => {
     at('/vi/app/complete-profile');
     setup(signedIn(makeMe({ birth_date: null, terms_accepted_at: null, native_language: null })));
