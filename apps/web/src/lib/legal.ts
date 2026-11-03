@@ -1,5 +1,5 @@
 import { cache } from 'react';
-import { apiBaseUrl } from '@/app-shell/config';
+import { serverApiBaseUrl } from '@/app-shell/config';
 
 /** `GET /v1/legal/current`: the Privacy Policy and the Terms of Use an admin published (Markdown). `en` is `null` without an English text. */
 export type PublicLegal = {
@@ -30,7 +30,7 @@ const TIMEOUT_MS = 2500;
  */
 export async function fetchLegal(): Promise<PublicLegal | null> {
   try {
-    const response = await fetch(`${apiBaseUrl()}/v1/legal/current`, { cache: 'no-store', signal: AbortSignal.timeout(TIMEOUT_MS) });
+    const response = await fetch(`${serverApiBaseUrl()}/v1/legal/current`, { cache: 'no-store', signal: AbortSignal.timeout(TIMEOUT_MS) });
     if (!response.ok) return null;
     const body: unknown = await response.json();
     return isPublicLegal(body) ? body : null;

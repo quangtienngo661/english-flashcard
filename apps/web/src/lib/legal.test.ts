@@ -28,7 +28,8 @@ describe('fetchLegal (the published privacy policy and terms, read from the API 
     const fetchMock = vi.fn(async () => Response.json(legal));
     vi.stubGlobal('fetch', fetchMock);
     await fetchLegal();
-    expect(fetchMock.mock.calls[0]?.[0]).toBe('http://api:3000/v1/legal/current');
+    const [url] = fetchMock.mock.calls[0] as unknown as [string];
+    expect(url).toBe('http://api:3000/v1/legal/current');
   });
 
   it('is null while nothing is published (404), on any other failure, and when the API is unreachable', async () => {
