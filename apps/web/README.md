@@ -26,6 +26,7 @@ From the repo root: `pnpm install`. Then from `apps/web`:
 | `NEXT_PUBLIC_CONTACT_EMAIL` | `hello@wordmet.com` | `hello@wordmet.com` | Footer and privacy contact link |
 | `NEXT_PUBLIC_LEARNER_APP` | off | off until Deploy | `on` builds the learner app under `/vi/app`, `/en/app`; otherwise its files are left out of the build and `/…/app/*` redirects (307) to the landing |
 | `NEXT_PUBLIC_API_BASE_URL` | — | `https://api.wordmet.com` | API origin the learner app calls (needed only with the app on) |
+| `API_INTERNAL_BASE_URL` | unset | unset | Server-only, read at run time. API origin for requests the web server makes (`/privacy`, `/terms`) when it reaches the API at another address than the browser; the Docker stack sets `http://api:3000`. Unset: `NEXT_PUBLIC_API_BASE_URL` |
 
 `NEXT_PUBLIC_*` values are baked into the build. Changing them on the Cloudflare dashboard takes effect only after
 the next build and deploy.

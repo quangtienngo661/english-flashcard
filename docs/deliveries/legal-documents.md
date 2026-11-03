@@ -37,7 +37,9 @@ Markdown, ô ngày; nút Đăng khóa khi còn thay đổi chưa lưu và hỏi 
 
 ## Web (`apps/web`)
 
-`/privacy`, `/terms` đọc `GET /v1/legal/current` (`src/lib/legal.ts`, hết 2,5 giây thì bỏ) và vẽ bằng `LegalDocument`. Trang vẫn `noindex` riêng cho `/terms`.
+`/privacy`, `/terms` đọc `GET /v1/legal/current` (`src/lib/legal.ts`, hết 2,5 giây thì bỏ) và vẽ bằng `LegalDocument`. Địa chỉ API phía server là
+`serverApiBaseUrl()` (`app-shell/config.ts`): biến chạy lúc chạy `API_INTERNAL_BASE_URL` nếu có, không thì `NEXT_PUBLIC_API_BASE_URL`. Stack Docker cần biến này
+(`http://api:3000`), vì trong container web `localhost:3000` không tới được API; bản đầu thiếu nó nên bấm thử thấy hai trang vẫn là "bản nháp" (sửa 03/11/2026). Trang vẫn `noindex` riêng cho `/terms`.
 `RequireSession` và `CompleteProfile` xử lý `terms_outdated`.
 
 ## Kiểm tra

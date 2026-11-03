@@ -35,6 +35,8 @@ từng secret. File có sẵn thì **không bao giờ bị ghi đè**; nếu cò
   build production bắt buộc host `admin-api.` (`apps/admin/src/resolve-api-base-url.ts`).
 - **web:** `next build` với `NEXT_PUBLIC_LEARNER_APP=on` rồi `next start`. Form waitlist của trang landing cần Cloudflare D1, `next start`
   không có; phần học `/vi/app`, `/en/app` chỉ gọi API nên chạy bình thường.
+- Trong container web, `localhost:3000` không phải API. Trang `/privacy` và `/terms` đọc API ở phía server, nên `docker-compose.yml` đặt
+  `API_INTERNAL_BASE_URL=http://api:3000` cho service `web` (đọc lúc chạy, không ghi vào bundle). Không có biến này thì hai trang luôn hiện dòng "bản nháp".
 - `NEXT_PUBLIC_*` và `VITE_API_BASE_URL` được ghi vào bundle lúc build: đổi cổng API thì phải build lại (`pnpm bootstrap` tự build lại).
 - Các service app nằm trong profile `app` nên `docker compose up -d` vẫn chỉ bật Postgres, Redis, Mailpit như trước. Tên project cố định
   `english-learning` nên mọi checkout dùng chung container và volume.
