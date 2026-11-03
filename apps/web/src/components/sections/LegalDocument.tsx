@@ -47,8 +47,8 @@ export function LegalDocument({ title, source, effective, contentsLabel }: { tit
   const nextId = headingIds(outline);
   const components: Components = {
     ...COMPONENTS,
-    h2: ({ children }) => <h2 id={nextId(textOf(children))} className="mt-6 scroll-mt-24 text-title-lg font-bold text-ink">{children}</h2>,
-    h3: ({ children }) => <h3 id={nextId(textOf(children))} className="mt-4 scroll-mt-24 text-body font-bold text-ink">{children}</h3>,
+    h2: ({ children }) => <h2 id={nextId(textOf(children))} className="mt-6 scroll-mt-4 text-title-lg font-bold text-ink">{children}</h2>,
+    h3: ({ children }) => <h3 id={nextId(textOf(children))} className="mt-4 scroll-mt-4 text-body font-bold text-ink">{children}</h3>,
   };
   return (
     <Container className="py-16 md:py-24">
