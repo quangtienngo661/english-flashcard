@@ -187,7 +187,19 @@ Object.assign(mocks, {
   'GET /v1/admin/entitlements/ai-usage': () => ({ json: { date: '2026-10-27', used: 812, confirmed: 800, reserved: 12, cap: 1000, alert_percent: 80, alert_reached: false, enabled: true } }),
 });
 
-const pages = ['/uploads', '/uploads/b1', '/uploads/new', '/publish-jobs', `/publish-jobs/${JOB}`, '/sources', '/sources/new', '/export', '/ai/costs', `/ai/costs?batch=${COST_BATCH_ID}`, '/ai/costs?group_by=operation', '/ai/calls', '/ai/calls?operation_id=op-1', '/transactions', '/ai/status', '/ai/models', '/ai/models/new', '/ai/models/m1', '/ai/configs', '/ai/configs/drafts/C4', '/ai/configs/history', '/ai/eval', '/ai/eval/new', '/ai/eval/runs/aaaaaaaa-0000-4000-8000-000000000001', '/ai/real-questions', `/ai/real-questions?pass=${REAL_PASS_ID}`, '/ai/judges', '/ai/judges/label?run=aaaaaaaa-0000-4000-8000-000000000001&judge=J1', '/settings', '/settings?tab=entitlements', '/words', '/senses', `/senses/${SENSE_ID}`, '/topics', '/reports', `/reports/${RID}`, '/report-reasons', '/report-reasons/new', '/refunds', '/unknown-forms', '/users', `/users/${UID}`, '/entitlements', '/entitlements/new'];
+const LEGAL_ID = '00000000-0000-4000-8000-0000000000a1';
+const legalSummary = {
+  id: LEGAL_ID, number: 2, version: '2', status: 'draft', row_version: 1, effective_date: '2026-11-10', has_english: false,
+  updated_at: '2026-11-03T03:00:00.000Z', published_at: null, published_by: null,
+};
+Object.assign(mocks, {
+  'GET /v1/admin/legal/versions': () => ({ json: { items: [legalSummary], next_page_token: null } }),
+  [`GET /v1/admin/legal/versions/${LEGAL_ID}`]: () => ({
+    json: { ...legalSummary, privacy_vi: ['# Chính sách bảo mật', '', '- một', '- hai'].join('\n'), terms_vi: '# Điều khoản', privacy_en: null, terms_en: null },
+  }),
+});
+
+const pages = ['/legal', `/legal/${LEGAL_ID}`, '/uploads', '/uploads/b1', '/uploads/new', '/publish-jobs', `/publish-jobs/${JOB}`, '/sources', '/sources/new', '/export', '/ai/costs', `/ai/costs?batch=${COST_BATCH_ID}`, '/ai/costs?group_by=operation', '/ai/calls', '/ai/calls?operation_id=op-1', '/transactions', '/ai/status', '/ai/models', '/ai/models/new', '/ai/models/m1', '/ai/configs', '/ai/configs/drafts/C4', '/ai/configs/history', '/ai/eval', '/ai/eval/new', '/ai/eval/runs/aaaaaaaa-0000-4000-8000-000000000001', '/ai/real-questions', `/ai/real-questions?pass=${REAL_PASS_ID}`, '/ai/judges', '/ai/judges/label?run=aaaaaaaa-0000-4000-8000-000000000001&judge=J1', '/settings', '/settings?tab=entitlements', '/words', '/senses', `/senses/${SENSE_ID}`, '/topics', '/reports', `/reports/${RID}`, '/report-reasons', '/report-reasons/new', '/refunds', '/unknown-forms', '/users', `/users/${UID}`, '/entitlements', '/entitlements/new'];
 
 for (const [lang, copy] of [['vi', vi], ['en', en]] as const) {
   test.describe(`axe (${lang})`, () => {
@@ -274,5 +286,6 @@ async function waitForContent(page: Page, path: string) {
   else if (path === '/export' || path === '/ai/calls') await expect(page.getByRole('main')).toBeVisible();
   else if (path.startsWith('/senses/')) await expect(page.getByRole('heading', { level: 2, name: 'deploy · verb' })).toBeVisible();
   else if (path.startsWith('/settings')) await expect(page.getByRole('tabpanel').getByRole('heading', { level: 2 })).toBeVisible();
+  else if (path.startsWith('/legal/')) await expect(page.getByRole('main').getByRole('heading', { level: 2 }).first()).toBeVisible();
   else await expect(page.locator('tbody tr, [data-testid="card"]').first()).toBeAttached();
 }

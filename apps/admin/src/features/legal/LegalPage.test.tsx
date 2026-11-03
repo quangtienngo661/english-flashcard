@@ -28,8 +28,9 @@ describe('LegalPage (list of versions)', () => {
     const rows = await screen.findAllByRole('row');
     const text = rows.map((row) => row.textContent ?? '').join('|');
     expect(text.indexOf(t.status.draft)).toBeLessThan(text.indexOf(t.status.published));
-    expect(screen.getByText('admin@wordmet.com')).toBeInTheDocument();
-    expect(screen.getByText('10/11/2026')).toBeInTheDocument();
+    const table = within(screen.getByRole('table'));
+    expect(table.getByText('admin@wordmet.com')).toBeInTheDocument();
+    expect(table.getByText('10/11/2026')).toBeInTheDocument();
   });
 
   it('says which version is published, or that nothing is', async () => {
@@ -49,7 +50,7 @@ describe('LegalPage (list of versions)', () => {
     });
     await userEvent.click(await screen.findByRole('button', { name: t.create }));
     expect(await screen.findByRole('heading', { name: t.editor.heading.replace('{number}', '2') })).toBeInTheDocument();
-    const post = r.calls.find((c) => c.method === 'POST');
+    const post = r.calls.find((c) => c.method === 'POST' && c.path === '/v1/admin/legal/versions');
     expect(post?.body).toEqual({});
     expect(post?.headers['Idempotency-Key']).toBeTruthy();
   });
@@ -112,7 +113,7 @@ describe('LegalEditorPage (one version)', () => {
     expect(screen.getByText(t.editor.publishFirst)).toBeInTheDocument();
     await userEvent.type(privacyVi(), '{Backspace}');
     await userEvent.click(screen.getByRole('button', { name: t.editor.publish }));
-    const dialog = await screen.findByRole('alertdialog', { name: t.publishDialog.title.replace('{number}', '2') });
+    const dialog = await screen.findByRole('dialog', { name: t.publishDialog.title.replace('{number}', '2') });
     expect(within(dialog).getByText(t.publishDialog.body)).toBeInTheDocument();
     await userEvent.click(within(dialog).getByRole('button', { name: t.publishDialog.confirm }));
     await waitFor(() => expect(r.calls.some((c) => c.path.endsWith('/publish'))).toBe(true));
@@ -127,7 +128,7 @@ describe('LegalEditorPage (one version)', () => {
     });
     await screen.findByRole('heading', { name: t.editor.heading.replace('{number}', '2') });
     await userEvent.click(screen.getByRole('button', { name: t.editor.publish }));
-    await userEvent.click(within(await screen.findByRole('alertdialog')).getByRole('button', { name: t.publishDialog.confirm }));
+    await userEvent.click(within(await screen.findByRole('dialog')).getByRole('button', { name: t.publishDialog.confirm }));
     expect(await screen.findByText(t.editor.required)).toBeInTheDocument();
     expect(privacyVi()).toHaveAttribute('aria-invalid', 'true');
     expect(screen.getByText(t.editor.needDate)).toBeInTheDocument();
@@ -161,14 +162,14 @@ describe('LegalEditorPage (one version)', () => {
     expect(screen.queryByRole('button', { name: t.editor.publish })).toBeNull();
     expect(screen.queryByRole('button', { name: t.editor.delete })).toBeNull();
     await userEvent.click(screen.getByRole('button', { name: t.editor.copy }));
-    await waitFor(() => expect(r.calls.find((c) => c.method === 'POST')?.body).toEqual({ copy_from: ID1 }));
+    await waitFor(() => expect(r.calls.find((c) => c.method === 'POST' && c.path === '/v1/admin/legal/versions')?.body).toEqual({ copy_from: ID1 }));
   });
 
   it('[Xóa nháp] asks first, then deletes and returns to the list', async () => {
     const r = open(draft(), { [`DELETE /v1/admin/legal/versions/${ID2}`]: () => new Response(null, { status: 204 }) });
     await screen.findByRole('heading', { name: t.editor.heading.replace('{number}', '2') });
     await userEvent.click(screen.getByRole('button', { name: t.editor.delete }));
-    const dialog = await screen.findByRole('alertdialog', { name: t.deleteDialog.title.replace('{number}', '2') });
+    const dialog = await screen.findByRole('dialog', { name: t.deleteDialog.title.replace('{number}', '2') });
     await userEvent.click(within(dialog).getByRole('button', { name: t.deleteDialog.confirm }));
     await waitFor(() => expect(r.calls.some((c) => c.method === 'DELETE')).toBe(true));
     expect(await screen.findByRole('button', { name: t.create })).toBeInTheDocument();
