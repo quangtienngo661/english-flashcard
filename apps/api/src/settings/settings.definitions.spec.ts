@@ -6,7 +6,7 @@ import {
 const ENTITLEMENT_DEFAULTS_API = {
   free_practice_sessions_per_day: 3, pro_practice_sessions_per_day: 30, pro_ai_practice_per_cycle: 300,
   pro_ai_lookup_per_cycle: 100, trial_ai_practice_per_cycle: 300, trial_ai_lookup_per_cycle: 100, grace_days: 7,
-  trial_reminder_days_before: 2, renewal_notice_days_before: null, ai_enabled: true, ai_daily_cap: 1000,
+  trial_reminder_days_before: 3, renewal_notice_days_before: 7, ai_enabled: true, ai_daily_cap: 1000,
   ai_cap_alert_percent: 75, ads_enabled: false, ads_interstitial_per_day: 3, ads_min_interval_minutes: 10,
   transaction_retention_years: 10,
 };
@@ -72,15 +72,15 @@ describe('settings definitions', () => {
     expect(changedFields(SETTINGS_DEFAULTS, next)).toEqual([{ key: 'identity.unverified_cleanup_days', oldValue: 7, newValue: 3 }]);
   });
 
-  it('D18: defaults are 3, 30, 300, 100, 300, 100, 7, 2, null, true, 1000, 75, false, 3, 10; learning 100/2000; content 10000/20', () => {
+  it('D18: defaults are 3, 30, 300, 100, 300, 100, 7, 3, 7, true, 1000, 75, false, 3, 10; learning 100/2000; content 10000/20', () => {
     const api = toApiValues(SETTINGS_DEFAULTS);
     expect(api.entitlements).toEqual(ENTITLEMENT_DEFAULTS_API);
-    expect(Object.values(api.entitlements)).toEqual([3, 30, 300, 100, 300, 100, 7, 2, null, true, 1000, 75, false, 3, 10, 10]);
+    expect(Object.values(api.entitlements)).toEqual([3, 30, 300, 100, 300, 100, 7, 3, 7, true, 1000, 75, false, 3, 10, 10]);
     expect([api.learning.groups_per_user, api.learning.items_per_group]).toEqual([100, 2000]);
     expect(api.content).toEqual({ private_words_per_user: 10000, sentences_per_sense: 20 });
   });
 
-  it('withDefaults fills the new keys for JSON stored before Bước 5 and keeps a stored null for the two nullable keys', () => {
+  it('withDefaults fills the new keys for JSON stored before Bước 5 and keeps a stored null for a nullable key', () => {
     const before5 = {
       reminders: { minGapDays: 3 }, learning: { newPerGroupPerDay: 30, reviewsPerGroupPerDay: 100, backlogAfterDays: 60 },
       practice: {},
@@ -89,10 +89,30 @@ describe('settings definitions', () => {
     expect(values.entitlements).toEqual(SETTINGS_DEFAULTS.entitlements);
     expect(values.content).toEqual(SETTINGS_DEFAULTS.content);
     expect(values.learning).toEqual({ ...SETTINGS_DEFAULTS.learning, newPerGroupPerDay: 30 });
-    const nulls = withDefaults({ entitlements: { renewalNoticeDaysBefore: null, aiCapAlertPercent: null } }).entitlements;
-    expect(nulls.renewalNoticeDaysBefore).toBeNull();
-    expect(nulls.aiCapAlertPercent).toBeNull();
-    expect(withDefaults({ entitlements: { renewalNoticeDaysBefore: 5 } }).entitlements.renewalNoticeDaysBefore).toBe(5);
+    expect(withDefaults({ entitlements: { aiCapAlertPercent: null } }).entitlements.aiCapAlertPercent).toBeNull();
+    expect(withDefaults({ entitlements: { renewalNoticeDaysBefore: 9 } }).entitlements.renewalNoticeDaysBefore).toBe(9);
+  });
+
+  it('Q8 (02/11/2026): a stored value the current bounds reject falls back to the default, so old JSON cannot go under a raised minimum', () => {
+    // Saved before the minimums rose: trial reminder 2 days, renewal notice off (null) or 5 days.
+    const stored = withDefaults({ entitlements: { trialReminderDaysBefore: 2, renewalNoticeDaysBefore: null, graceDays: 4 } }).entitlements;
+    expect(stored.trialReminderDaysBefore).toBe(3);
+    expect(stored.renewalNoticeDaysBefore).toBe(7);
+    expect(stored.graceDays).toBe(4);
+    expect(withDefaults({ entitlements: { renewalNoticeDaysBefore: 5 } }).entitlements.renewalNoticeDaysBefore).toBe(7);
+    expect(withDefaults({ entitlements: { trialReminderDaysBefore: 6, renewalNoticeDaysBefore: 30 } }).entitlements)
+      .toMatchObject({ trialReminderDaysBefore: 6, renewalNoticeDaysBefore: 30 });
+    // A value of the wrong type falls back too; a valid one beside it is kept.
+    expect(withDefaults({ reminders: { sendTime: 'noon', minGapDays: 3 } }).reminders).toMatchObject({ sendTime: '20:00', minGapDays: 3 });
+  });
+
+  it('Q8 (02/11/2026): the trial reminder is 3–6 days and the renewal notice 7–30 days before, never off', () => {
+    expect(SETTINGS_BOUNDS.entitlements.trial_reminder_days_before).toEqual({ min: 3, max: 6 });
+    expect(SETTINGS_BOUNDS.entitlements.renewal_notice_days_before).toEqual({ min: 7, max: 30 });
+    expect(issues({ entitlements: { trial_reminder_days_before: 2 } })).toEqual(['entitlements.trial_reminder_days_before']);
+    expect(issues({ entitlements: { renewal_notice_days_before: 6 } })).toEqual(['entitlements.renewal_notice_days_before']);
+    expect(issues({ entitlements: { renewal_notice_days_before: null } })).toEqual(['entitlements.renewal_notice_days_before']);
+    expect(issues({ entitlements: { trial_reminder_days_before: 3, renewal_notice_days_before: 7 } })).toEqual([]);
   });
 
   it('toApiValues names every new key in snake_case', () => {
@@ -109,8 +129,8 @@ describe('settings definitions', () => {
       ['entitlements', 'free_practice_sessions_per_day', 1, 50], ['entitlements', 'pro_practice_sessions_per_day', 1, 200],
       ['entitlements', 'pro_ai_practice_per_cycle', 0, 5000], ['entitlements', 'pro_ai_lookup_per_cycle', 0, 5000],
       ['entitlements', 'trial_ai_practice_per_cycle', 0, 5000], ['entitlements', 'trial_ai_lookup_per_cycle', 0, 5000],
-      ['entitlements', 'grace_days', 0, 16], ['entitlements', 'trial_reminder_days_before', 1, 6],
-      ['entitlements', 'renewal_notice_days_before', 1, 30], ['entitlements', 'ai_daily_cap', 0, 100000],
+      ['entitlements', 'grace_days', 0, 16], ['entitlements', 'trial_reminder_days_before', 3, 6],
+      ['entitlements', 'renewal_notice_days_before', 7, 30], ['entitlements', 'ai_daily_cap', 0, 100000],
       ['entitlements', 'ai_cap_alert_percent', 50, 95], ['entitlements', 'ads_interstitial_per_day', 0, 20],
       ['entitlements', 'ads_min_interval_minutes', 1, 240],
       ['learning', 'groups_per_user', 10, 1000], ['learning', 'items_per_group', 100, 10000],
@@ -125,8 +145,8 @@ describe('settings definitions', () => {
     }
   });
 
-  it('patch schema accepts null only for renewal_notice_days_before, ai_daily_cap (Q10) and ai_cap_alert_percent', () => {
-    const nullable = ['renewal_notice_days_before', 'ai_daily_cap', 'ai_cap_alert_percent'];
+  it('patch schema accepts null only for ai_daily_cap (Q10) and ai_cap_alert_percent', () => {
+    const nullable = ['ai_daily_cap', 'ai_cap_alert_percent'];
     for (const key of Object.keys(ENTITLEMENT_DEFAULTS_API)) {
       expect(issues({ entitlements: { [key]: null } }), key).toEqual(nullable.includes(key) ? [] : [`entitlements.${key}`]);
     }
@@ -397,7 +417,7 @@ describe('apiValueOf (M5-T1)', () => {
     expect(apiValueOf(SETTINGS_DEFAULTS, 'entitlements.ai_daily_cap')).toBe(1000);
     expect(apiValueOf(SETTINGS_DEFAULTS, 'reminders.send_time')).toBe('20:00');
     expect(apiValueOf(SETTINGS_DEFAULTS, 'entitlements.ads_enabled')).toBe(false);
-    expect(apiValueOf(SETTINGS_DEFAULTS, 'entitlements.renewal_notice_days_before')).toBeNull();
+    expect(apiValueOf(SETTINGS_DEFAULTS, 'practice.type_word_max_retries')).toBeNull();
     const patched = applyPatch(SETTINGS_DEFAULTS, { entitlements: { ai_daily_cap: 5 } });
     expect(apiValueOf(patched, 'entitlements.ai_daily_cap')).toBe(5);
   });
