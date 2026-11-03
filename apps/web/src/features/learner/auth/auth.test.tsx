@@ -147,6 +147,16 @@ describe('RegisterForm (K/01, K/01b)', () => {
 });
 
 describe('LoginForm (K/02, K/93)', () => {
+  // Owner 03/11/2026: the Google button carries Google's G mark before its words.
+  it('the Google button shows the Google mark, hidden from screen readers', () => {
+    renderApp(<LoginForm />, { routes: signedOut });
+    const button = screen.getByRole('button', { name: /Google/ });
+    const mark = button.querySelector('svg');
+    expect(mark).not.toBeNull();
+    expect(mark).toHaveAttribute('aria-hidden', 'true');
+    expect(mark!.querySelectorAll('path')).toHaveLength(4);
+  });
+
   async function login(email = 'lan@example.com') {
     await userEvent.type(screen.getByRole('textbox', { name: 'Email' }), email);
     await userEvent.type(screen.getByLabelText('Mật khẩu'), 'pw');
