@@ -8,7 +8,7 @@ export const FAKE_TURNSTILE_FAIL_TOKEN = 'fake-turnstile-fail';
  * except `fake-turnstile-fail`.
  */
 export class FakeTurnstileClient extends TurnstileClient {
-  async verify(token: string): Promise<TurnstileVerdict> {
+  async verify(token: string, _remoteIp?: string): Promise<TurnstileVerdict> {
     if (token === FAKE_TURNSTILE_FAIL_TOKEN) return { kind: 'rejected', codes: [FAKE_TURNSTILE_FAIL_TOKEN] };
     return { kind: 'ok', hostname: 'fake' };
   }

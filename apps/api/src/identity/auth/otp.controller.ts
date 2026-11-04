@@ -5,6 +5,7 @@ import { APP_CONFIG, type AppConfig } from '../../common/config/app-config.js';
 import { RateLimit } from '../../common/rate-limit/rate-limit.decorator.js';
 import { Public } from '../sessions/public.decorator.js';
 import { writeSession, type TokenResponse } from '../sessions/session-transport.js';
+import { Turnstile } from '../turnstile/turnstile.decorator.js';
 import { AuthService } from './auth.service.js';
 import { OtpService } from './otp.service.js';
 import { otpRequestSchema, verifyEmailSchema, type OtpRequest, type VerifyEmailBody } from './otp.schemas.js';
@@ -21,7 +22,7 @@ export class OtpController {
   @Post('otp')
   @HttpCode(202)
   @Public()
-  @RateLimit('auth.otp.ip', 'mail.ip.daily')
+  @Turnstile('auth.otp.ip', 'mail.ip.daily')
   async requestOtp(
     @Body({ schema: otpRequestSchema }) body: OtpRequest,
     @Res({ passthrough: true }) res: Response,
