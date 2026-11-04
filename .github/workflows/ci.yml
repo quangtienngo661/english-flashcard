@@ -145,6 +145,8 @@ jobs:
         run: pnpm build
         env:
           VITE_API_BASE_URL: https://admin-api.wordmet.com
+          # Cloudflare's test site key (always passes): the production build refuses to run without one.
+          VITE_TURNSTILE_SITE_KEY: 1x00000000000000000000AA
 
       - name: Install Playwright Chromium
         run: pnpm exec playwright install --with-deps chromium

@@ -27,6 +27,7 @@ export default defineConfig({
     url: `http://localhost:${PORT}`,
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
-    env: { VITE_API_BASE_URL: API_URL },
+    // Blank site key on purpose: the fake widget, accepted by the API under test (TURNSTILE_MODE=fake).
+    env: { VITE_API_BASE_URL: API_URL, VITE_TURNSTILE_SITE_KEY: '' },
   },
 });

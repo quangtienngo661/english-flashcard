@@ -8,6 +8,7 @@ import { checkPasswordPolicy } from '../../auth/password-policy';
 import { Banner } from '../../ui/Banner';
 import { Button } from '../../ui/Button';
 import { TextField } from '../../ui/TextField';
+import { useTurnstile } from '../../ui/use-turnstile';
 import { AuthCard } from './AuthCard';
 import { PasswordRules } from './PasswordRules';
 import { useCountdown } from './useCountdown';
@@ -33,6 +34,7 @@ export function ForgotPasswordPage() {
   const sendWait = useCountdown(); // "Gửi mã" / "Gửi lại mã"
   const lockWait = useCountdown(); // the reset code is locked after too many wrong tries
   const busy = useRef(false);
+  const bot = useTurnstile();
 
   if (state.status === 'signed-in') return <Navigate to="/" replace />;
   if (state.status === 'change-password') return <Navigate to="/change-password" replace />;
@@ -55,17 +57,21 @@ export function ForgotPasswordPage() {
   const sendCode = (resend: boolean) =>
     once(async () => {
       try {
-        await api.post('/v1/auth/otp', { purpose: 'reset_password', email: email.trim() });
+        await api.post('/v1/auth/otp', { purpose: 'reset_password', email: email.trim(), turnstile_token: bot.token });
         setStep('code');
         if (resend) setInfo(t('account.forgot.resent'));
       } catch (e) {
         if (e instanceof ApiError && e.problem.status === 429) sendWait.start(e.retryAfterSeconds ?? FALLBACK_WAIT_SECONDS);
         else setError(errorDetails(e));
+      } finally {
+        // Both steps stay on the page whatever the answer, so the spent token is always replaced.
+        bot.reset();
       }
     });
 
   function submitEmail(event: FormEvent) {
     event.preventDefault();
+    if (bot.token === null) return;
     void sendCode(false);
   }
 
@@ -118,7 +124,8 @@ export function ForgotPasswordPage() {
             value={email}
             onChange={setEmail}
           />
-          <Button type="submit" size="touch" isPending={pending} isDisabled={waiting} className="w-full">
+          {bot.widget}
+          <Button type="submit" size="touch" isPending={pending} isDisabled={waiting || bot.token === null} className="w-full">
             {waiting ? t('account.forgot.wait', { label: t('account.forgot.send'), seconds: sendWait.remaining }) : t('account.forgot.send')}
           </Button>
           {back}
@@ -146,8 +153,9 @@ export function ForgotPasswordPage() {
             error={codeError ?? undefined}
             isDisabled={locked}
           />
+          {bot.widget}
           <div className="flex flex-wrap justify-between gap-x-4 gap-y-1">
-            <Button variant="ghost" onPress={() => void sendCode(true)} isDisabled={resendWaiting || pending}>
+            <Button variant="ghost" onPress={() => void sendCode(true)} isDisabled={resendWaiting || pending || bot.token === null}>
               {resendWaiting ? t('account.forgot.resendWait', { seconds: sendWait.remaining }) : t('account.forgot.resend')}
             </Button>
             {codeError && (

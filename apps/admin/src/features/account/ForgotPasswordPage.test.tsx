@@ -26,7 +26,7 @@ afterEach(() => vitest.useRealTimers());
 describe('ForgotPasswordPage', () => {
   it('forgot password: step 1 → step 2 → success → /login', async () => {
     const { calls } = await toStepTwo();
-    expect(calls.find((c) => c.path === '/v1/auth/otp')!.body).toEqual({ purpose: 'reset_password', email: 'ten@wordmet.com' });
+    expect(calls.find((c) => c.path === '/v1/auth/otp')!.body).toEqual({ purpose: 'reset_password', email: 'ten@wordmet.com', turnstile_token: 'fake-turnstile-token' });
     expect(screen.getByText(/ten@wordmet\.com/)).toBeInTheDocument();
 
     await userEvent.type(screen.getByLabelText(t.code), '482913');
