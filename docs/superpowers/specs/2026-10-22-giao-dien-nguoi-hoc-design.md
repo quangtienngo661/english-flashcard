@@ -77,7 +77,8 @@ bằng tiếng Việt và tiếng Anh, sáng và tối; chủ dự án tự ki�
 - Hiện `src/app/[locale]/layout.tsx` vừa là layout gốc (html, body, font) vừa gắn thanh trên, chân trang của landing. Tách thành: layout gốc giữ html, body,
   font, `NextIntlClientProvider`; landing (`page`, `terms`, `privacy`, trang 404) chuyển vào route group `(site)` có `SiteHeader`, `SiteFooter`; app
   người học ở `src/app/[locale]/app/` với layout riêng. URL của landing không đổi; e2e của landing phải xanh như cũ.
-- **Mọi trang `/app` là trang tĩnh** (prerender lúc build, như `/vi`, `/en` hiện nay), chỉ dựng phần khung; dữ liệu lấy ở trình duyệt. Giá trị thay đổi
+- **Cập nhật 04/11/2026 (đợt chuẩn bị launch B, M4):** các trang `/app` **không còn prerender**: layout `/app` gọi `await connection()` nên mỗi response được dựng theo request, để `proxy.ts` đặt CSP có `nonce` riêng cho từng request (thiết kế launch B §5.4); landing, `/terms`, `/privacy` vẫn tĩnh và giữ CSP cũ. CI kiểm bằng `pnpm assert:render-mode` (thay `assert:static`). Phần còn lại của mục này vẫn đúng: chỉ dựng phần khung, dữ liệu lấy ở trình duyệt, giá trị thay đổi ở query string.
+- **Mọi trang `/app` là trang tĩnh** (prerender lúc build, như `/vi`, `/en` hiện nay — đã đổi như dòng trên), chỉ dựng phần khung; dữ liệu lấy ở trình duyệt. Giá trị thay đổi
   (id nhóm, chữ của từ) nằm ở **query string**, không ở đoạn đường dẫn động (Claude tự quyết, mục 14): không có trang dựng phía server, hợp với "chạy hoàn
   toàn ở trình duyệt" và với CSP kiểu SRI (D9).
 - Tiền tố ngôn ngữ của `/app` đi theo `native_language` của hồ sơ (đề xuất D39 Bước 3, áp trong đợt này): mở sai tiền tố thì app chuyển sang tiền tố

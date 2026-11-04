@@ -31,7 +31,12 @@ const nextConfig: NextConfig = {
   experimental: { sri: { algorithm: 'sha256' } },
   async headers() {
     if (process.env.NODE_ENV !== 'production') return [];
-    return [{ source: '/:path*', headers: [{ key: 'Content-Security-Policy', value: csp }, ...securityHeaders()] }];
+    return [
+      { source: '/:path*', headers: securityHeaders() },
+      // Not /vi/app or /en/app: the proxy gives those a policy of their own with a nonce (launch prep B design §5.4); a second one here would be
+      // applied beside it (the browser takes the intersection) and refuse what the nonce policy allows (spike M0, mode `control`).
+      { source: '/((?!vi/app|en/app).*)', headers: [{ key: 'Content-Security-Policy', value: csp }] },
+    ];
   },
 };
 

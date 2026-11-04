@@ -14,7 +14,7 @@
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "shots": "playwright test --config playwright.shots.config.ts",
-    "assert:static": "node scripts/assert-static.mjs",
+    "assert:render-mode": "node scripts/assert-render-mode.mjs",
     "gen:og-fonts": "node scripts/gen-og-fonts.mjs",
     "cf:build": "opennextjs-cloudflare build",
     "cf:dev": "wrangler dev --port 3100",

@@ -2,6 +2,7 @@ import createMiddleware from 'next-intl/middleware';
 import { NextResponse, type NextRequest } from 'next/server';
 import { pickLocale, readCountry } from './i18n/pick-locale';
 import { LOCALE_COOKIE, routing } from './i18n/routing';
+import { withAppCsp } from './lib/app-csp';
 import { landingLocaleRedirect } from './lib/landing-locale';
 import { LEARNER_APP_ENABLED, learnerAppRedirect } from './lib/learner-app-flag';
 
@@ -28,7 +29,8 @@ export function proxy(request: NextRequest) {
     response.headers.set('Cache-Control', 'no-store');
     return response;
   }
-  if (request.nextUrl.pathname !== '/') return handleI18nRouting(request);
+  // /vi/app and /en/app get a policy with a nonce made for this request (launch prep B design §5.4); every other path is passed on as it is.
+  if (request.nextUrl.pathname !== '/') return withAppCsp(request, handleI18nRouting);
 
   const locale = pickLocale({
     cookie: request.cookies.get(LOCALE_COOKIE)?.value,

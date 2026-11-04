@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { copy } from './copy';
-import { mockApi, problem } from './support/mock-api';
+import { THEME_SCRIPT } from '../src/app-shell/theme/theme-script';
+import { mockApi, problem, signedInAs } from './support/mock-api';
 
 declare global {
   interface Window {
@@ -54,4 +55,64 @@ test('LA1#14: the sign-in page runs the real Turnstile widget and raises no CSP 
   await expect(page.getByRole('button', { name: copy.vi.App.auth.login.submit })).toBeEnabled({ timeout: 45_000 });
   await page.waitForLoadState('networkidle');
   expect(await page.evaluate(() => window.__cspViolations)).toEqual([]);
+});
+
+// Launch prep B design 5.4, M4: /app answers with a policy made for the request (a nonce and 'strict-dynamic'); the landing keeps the static one.
+const nonceOf = (csp: string | undefined) => /'nonce-([^']+)'/.exec(csp ?? '')?.[1];
+
+test('LB3E7: /vi/app and /vi/app/login carry one nonce policy, and every script has the nonce of the header (the theme script is let in by its hash)', async ({ page }) => {
+  for (const path of ['/vi/app', '/vi/app/login']) {
+    const response = await page.goto(path);
+    const csp = response?.headers()['content-security-policy'] ?? '';
+    expect(csp, path).toContain("'strict-dynamic'");
+    // One policy only: a second one (from next.config.ts) would be applied beside it.
+    expect(csp.split('default-src').length - 1, path).toBe(1);
+    const nonce = nonceOf(csp);
+    expect(nonce, path).toBeTruthy();
+    const scripts = await page.evaluate(() => [...document.scripts].map((s) => ({ nonce: s.nonce, src: s.src, text: s.textContent ?? '' })));
+    expect(scripts.length, path).toBeGreaterThan(0);
+    // Without the nonce: the theme script (its hash is in the policy) and, on the sign-in page, the Turnstile script, which a script that has the nonce
+    // adds to the page itself (that is what 'strict-dynamic' lets through).
+    const without = scripts.filter((s) => s.nonce !== nonce);
+    for (const script of without) {
+      const theme = script.src === '' && script.text.trim() === THEME_SCRIPT.trim();
+      const turnstile = script.src.startsWith('https://challenges.cloudflare.com/turnstile/');
+      expect(theme || turnstile, `${path}: ${script.src || script.text.slice(0, 60)}`).toBe(true);
+    }
+    expect(without.filter((s) => s.src === '').length, path).toBeLessThanOrEqual(1);
+  }
+});
+
+test('LB3E7: two loads of /vi/app/groups get two nonces; /vi has no nonce and keeps default-src self', async ({ request }) => {
+  const first = nonceOf((await request.get('/vi/app/groups')).headers()['content-security-policy']);
+  const second = nonceOf((await request.get('/vi/app/groups')).headers()['content-security-policy']);
+  expect(first).toBeTruthy();
+  expect(second).toBeTruthy();
+  expect(first).not.toBe(second);
+  const landing = (await request.get('/vi')).headers()['content-security-policy'];
+  expect(landing).toContain("default-src 'self'");
+  expect(landing).not.toContain("'nonce-");
+});
+
+test('LB3E8: no CSP violation on /vi, /vi/app, /vi/app/login and /vi/app/groups (signed in)', async ({ page }) => {
+  for (const path of ['/vi', '/vi/app/login']) {
+    await mockApi(page, { 'POST /v1/auth/refresh': () => problem(401, 'invalid-token') });
+    await page.goto(path);
+    await page.waitForLoadState('networkidle');
+    expect(await page.evaluate(() => window.__cspViolations), path).toEqual([]);
+  }
+  await signedInAs(page, 'free');
+  for (const path of ['/vi/app', '/vi/app/groups']) {
+    await page.goto(path);
+    await page.waitForLoadState('networkidle');
+    expect(await page.evaluate(() => window.__cspViolations), path).toEqual([]);
+  }
+});
+
+// LB3E6: the CSP is per document, so the way from the landing into the app must be a full page load (a plain link, not next/link).
+test('LB3E6: from the landing, the link into the app loads a whole new page', async ({ page }) => {
+  await page.goto('/vi');
+  await page.evaluate(() => { (window as unknown as { __marker: boolean }).__marker = true; });
+  await Promise.all([page.waitForURL(/\/vi\/app/), page.locator('a[href^="/vi/app"]').first().click()]);
+  expect(await page.evaluate(() => (window as unknown as { __marker?: boolean }).__marker)).toBeUndefined();
 });
