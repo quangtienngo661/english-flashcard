@@ -31,7 +31,7 @@ describe('listRoutes (unit, isolated persistence)', () => {
   });
   afterAll(async () => { await ctx?.close(); vi.restoreAllMocks(); });
 
-  it('B2#66: discovery finds staff routes, permission overrides, route aliases and undeclared admin routes', () => {
+  it('route discovery finds staff routes, permission overrides, route aliases and undeclared admin routes', () => {
     const routes = listRoutes(ctx.app);
     // AD18: list and detail moved to users.read (editors read users).
     expect(routes.filter(({ permissions }) => permissions?.includes('users.read'))).toEqual([
