@@ -87,4 +87,20 @@ describe('/v1/me/orders (HTTP shape, mocked service)', () => {
     expect(service).toHaveBeenCalledWith(userId, id);
     expect((await ctx.http().get('/v1/me/orders/not-a-uuid').set('Authorization', `Bearer ${token}`)).status).toBe(400);
   });
+
+  it('returns the order view, is rate limited per user, and needs no Idempotency-Key (asking twice is harmless)', async () => {
+    const view = { id: 'o1', status: 'paid', period_months: 1, amount: 79000, description: 'WM0XSNJG0', expires_at: '2026-11-05T03:17:00.000Z', period: null };
+    const service = vi.spyOn(ctx.app.get(OrdersService), 'check').mockResolvedValue(view);
+    const id = randomUUID();
+    const res = await ctx.http().post(`/v1/me/orders/${id}/check`).set('Authorization', `Bearer ${token}`);
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual(view);
+    expect(service).toHaveBeenCalledWith(userId, id);
+    expect(hit).toHaveBeenCalledWith('user.write', expect.anything());
+  });
+
+  it('a malformed id → 400, no token → 401', async () => {
+    expect((await ctx.http().post('/v1/me/orders/not-a-uuid/check').set('Authorization', `Bearer ${token}`)).status).toBe(400);
+    expect((await ctx.http().post(`/v1/me/orders/${randomUUID()}/check`)).status).toBe(401);
+  });
 });

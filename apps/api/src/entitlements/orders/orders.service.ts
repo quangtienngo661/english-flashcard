@@ -11,11 +11,14 @@ import { callAdapter } from '../billing/adapter-call.js';
 import { BillingAdapterRegistry } from '../billing/billing-adapter.registry.js';
 import { priceFor } from '../plan-numbers.js';
 import { orderDescription } from './order-codes.js';
+import { OrdersReconcileService } from './orders-reconcile.service.js';
 import { OrdersRepository } from './orders.repository.js';
 import type { createOrderSchema } from './orders.schemas.js';
 
 /** A link lives this long (design §3.1). */
 const ORDER_TTL_MS = 15 * 60_000;
+/** The return page asks payOS about one order at most this often (LB1E46). */
+const CHECK_MIN_GAP_MS = 10_000;
 
 export type OrderViewJson = {
   id: string;
@@ -40,6 +43,7 @@ export class OrdersService {
     @Inject(SettingsService) private readonly settings: SettingsService,
     @Inject(BillingAdapterRegistry) private readonly registry: BillingAdapterRegistry,
     @Inject(OrdersRepository) private readonly orders: OrdersRepository,
+    @Inject(OrdersReconcileService) private readonly reconcile: OrdersReconcileService,
     @Inject(AppLogger) private readonly logger: AppLogger,
   ) {}
 
@@ -84,6 +88,24 @@ export class OrdersService {
       throw unavailable();
     }
     return { order_id: created.id, checkout_url: checkout.value.checkoutUrl };
+  }
+
+  /**
+   * The return page: ask payOS about a pending order of this learner (at most once per 10 seconds per order, so F5 cannot hammer payOS),
+   * then answer with the order as it is. A failure while asking does not fail the page.
+   */
+  async check(userId: string, orderId: string): Promise<OrderViewJson> {
+    const view = await this.get(userId, orderId);
+    if (view.status !== 'pending') return view;
+    const now = this.clock.now();
+    const claimed = await this.orders.claimForCheck(this.prisma, orderId, userId, now, CHECK_MIN_GAP_MS);
+    if (claimed === null) return view;
+    try {
+      await this.reconcile.reconcileOne(claimed, now);
+    } catch (error) {
+      this.logger.error('order_check_failed', error, { order_ref: orderId });
+    }
+    return this.get(userId, orderId);
   }
 
   /** The learner's own order; anyone else's is a 404 like an unknown id. */

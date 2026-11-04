@@ -6,6 +6,7 @@ import { SETTINGS_DEFAULTS } from '../../settings/index.js';
 import { BillingAdapterRegistry } from '../billing/billing-adapter.registry.js';
 import type { BillingAdapter, CheckoutOrder } from '../billing/billing-adapter.js';
 import { orderDescription } from './order-codes.js';
+import type { ReconcileOrder } from './orders-reconcile.service.js';
 import type { NewOrder, OrderView } from './orders.repository.js';
 import { OrdersService } from './orders.service.js';
 
@@ -13,7 +14,7 @@ const NOW = new Date('2026-11-05T03:02:00.000Z');
 const USER = '6f1c2a4e-0b7d-4c1e-9a55-3d2f8e7b6a10';
 const OTHER = '11111111-0b7d-4c1e-9a55-3d2f8e7b6a10';
 
-type Row = NewOrder & { id: string; paymentLinkId: string | null; checkoutUrl: string | null; status: string; period: { startsAt: Date; endsAt: Date } | null };
+type Row = NewOrder & { id: string; paymentLinkId: string | null; checkoutUrl: string | null; status: string; checkedAt: Date | null; createdAt: Date; period: { startsAt: Date; endsAt: Date } | null };
 
 /** The orders table in memory with a call log; the sequence starts where the migration's does. */
 class MemoryOrders {
@@ -23,7 +24,7 @@ class MemoryOrders {
   async nextOrderCode() { this.calls.push('next-code'); return this.code++; }
   async insertPending(_db: unknown, row: NewOrder) {
     this.calls.push('insert-pending');
-    const stored: Row = { ...row, id: `order-${this.rows.length + 1}`, paymentLinkId: null, checkoutUrl: null, status: 'pending', period: null };
+    const stored: Row = { ...row, id: `order-${this.rows.length + 1}`, paymentLinkId: null, checkoutUrl: null, status: 'pending', checkedAt: null, createdAt: NOW, period: null };
     this.rows.push(stored);
     return { id: stored.id };
   }
@@ -40,6 +41,13 @@ class MemoryOrders {
     if (!row) return false;
     row.status = 'failed';
     return true;
+  }
+  async claimForCheck(_db: unknown, id: string, userId: string, now: Date, minGapMs: number): Promise<ReconcileOrder | null> {
+    this.calls.push('claim-check');
+    const row = this.rows.find((r) => r.id === id && r.userId === userId && r.status === 'pending' && (r.checkedAt === null || r.checkedAt.getTime() < now.getTime() - minGapMs));
+    if (!row) return null;
+    row.checkedAt = now;
+    return { id: row.id, userId: row.userId, status: row.status, orderCode: row.orderCode, paymentLinkId: row.paymentLinkId, expiresAt: row.expiresAt, createdAt: row.createdAt };
   }
   async findOwned(_db: unknown, id: string, userId: string): Promise<OrderView | null> {
     const row = this.rows.find((r) => r.id === id && r.userId === userId);
@@ -67,8 +75,9 @@ function setup(opts: { payos?: 'real' | 'fake' | 'off'; adapter?: Partial<Billin
   const prisma = {
     $transaction: vi.fn(async <T>(fn: (client: unknown) => Promise<T>) => { inTx = true; try { return await fn({}); } finally { inTx = false; } }),
   };
-  const service = new OrdersService(prisma as never, clock, config, settings as never, registry, memory as never, logger);
-  return { service, memory, clock, logs, createCheckout, created, settings, prisma, registry };
+  const reconcile = { reconcileOne: vi.fn(async (_order: ReconcileOrder, _now: Date) => {}) };
+  const service = new OrdersService(prisma as never, clock, config, settings as never, registry, memory as never, reconcile as never, logger);
+  return { service, memory, clock, logs, createCheckout, created, settings, prisma, registry, reconcile };
 }
 
 const request = (over: Record<string, unknown> = {}) => ({ period_months: 1 as const, expected_amount: 79000, locale: 'vi' as const, ...over });
@@ -219,5 +228,54 @@ describe('OrdersService.get (design §3.8)', () => {
     memory.rows[0].status = 'needs_review';
     const view = await service.get(USER, order_id);
     expect(Object.keys(view).sort()).toEqual(['amount', 'description', 'expires_at', 'id', 'period', 'period_months', 'status']);
+  });
+});
+
+describe('OrdersService.check (the return page, design §3.6)', () => {
+  it('LB1A3: asks payOS for a pending order of the learner, once, and answers with the order as it is afterwards', async () => {
+    const { service, memory, reconcile } = setup();
+    const { order_id } = await service.create(USER, request());
+    reconcile.reconcileOne.mockImplementationOnce(async () => { memory.rows[0].status = 'paid'; });
+    const view = await service.check(USER, order_id);
+    expect(reconcile.reconcileOne).toHaveBeenCalledTimes(1);
+    expect(reconcile.reconcileOne).toHaveBeenCalledWith(expect.objectContaining({ id: order_id, userId: USER, status: 'pending', orderCode: 1_000_000_000, paymentLinkId: 'link-1000000000' }), NOW);
+    expect(view.status).toBe('paid');
+  });
+
+  it('LB1E46: pressing F5 again within 10 seconds does not ask payOS again; after 10 seconds it does', async () => {
+    const { service, clock, reconcile } = setup();
+    const { order_id } = await service.create(USER, request());
+    await service.check(USER, order_id);
+    await service.check(USER, order_id);
+    clock.advance(9_000);
+    await service.check(USER, order_id);
+    expect(reconcile.reconcileOne).toHaveBeenCalledTimes(1);
+    clock.advance(2_000);
+    await service.check(USER, order_id);
+    expect(reconcile.reconcileOne).toHaveBeenCalledTimes(2);
+  });
+
+  it('an order that is not pending is shown as it is, payOS is not asked', async () => {
+    const { service, memory, reconcile } = setup();
+    const { order_id } = await service.create(USER, request());
+    memory.rows[0].status = 'paid';
+    expect((await service.check(USER, order_id)).status).toBe('paid');
+    expect(reconcile.reconcileOne).not.toHaveBeenCalled();
+    expect(memory.calls).not.toContain('claim-check');
+  });
+
+  it('another learner’s order is a 404 and is never claimed', async () => {
+    const { service, memory, reconcile } = setup();
+    const { order_id } = await service.create(USER, request());
+    await expect(service.check(OTHER, order_id)).rejects.toMatchObject({ status: 404 });
+    expect(reconcile.reconcileOne).not.toHaveBeenCalled();
+    expect(memory.calls).not.toContain('claim-check');
+  });
+
+  it('a failure while asking payOS does not fail the page: the order is shown as it is', async () => {
+    const { service, reconcile } = setup();
+    const { order_id } = await service.create(USER, request());
+    reconcile.reconcileOne.mockRejectedValueOnce(new Error('payos down'));
+    expect((await service.check(USER, order_id)).status).toBe('pending');
   });
 });

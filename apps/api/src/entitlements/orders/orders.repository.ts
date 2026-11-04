@@ -49,6 +49,32 @@ export type OrderUpdate = {
 
 export type PaymentRecord = { id: string; outcome: string };
 
+/** An order the reconcile job or the return page asks payOS about (design §3.6). */
+export type ReconcileOrder = {
+  id: string;
+  userId: string;
+  status: string;
+  orderCode: number;
+  paymentLinkId: string | null;
+  expiresAt: Date;
+  createdAt: Date;
+};
+
+type ReconcileRow = {
+  id: string;
+  user_id: string;
+  status: string;
+  order_code: bigint;
+  payment_link_id: string | null;
+  expires_at: Date;
+  created_at: Date;
+};
+
+const toReconcile = (row: ReconcileRow): ReconcileOrder => ({
+  id: row.id, userId: row.user_id, status: row.status, orderCode: Number(row.order_code), paymentLinkId: row.payment_link_id,
+  expiresAt: row.expires_at, createdAt: row.created_at,
+});
+
 /** A new `pending` order: the order code comes from the sequence, the status and the link are not set yet. */
 export type NewOrder = {
   userId: string;
@@ -139,6 +165,46 @@ export class OrdersRepository {
       id: row.id, status: row.status, periodMonths: row.periodMonths, amount: Number(row.amountMinor), description: row.description,
       expiresAt: row.expiresAt, period: period ? { startsAt: period.startsAt, endsAt: period.endsAt } : null,
     };
+  }
+
+  /**
+   * The orders the hourly job looks at, claimed by writing `checked_at` in the same statement that picks them (`SKIP LOCKED`), so the
+   * API and the worker never ask about the same order: pending with a link, created more than 5 minutes ago and not asked in the last
+   * 10; pending with no link after 2 minutes (the process died between the insert and the link); failed with no link, within 24
+   * hours, never asked. Oldest first, at most `limit` (design §3.6).
+   */
+  async claimForReconcile(db: Db, now: Date, limit: number): Promise<ReconcileOrder[]> {
+    const rows = await db.$queryRaw<ReconcileRow[]>`
+      UPDATE billing_orders SET checked_at = ${now}::timestamptz
+      WHERE id IN (
+        SELECT id FROM billing_orders
+        WHERE (
+          (status = 'pending' AND payment_link_id IS NOT NULL AND created_at < ${now}::timestamptz - interval '5 minutes'
+            AND (checked_at IS NULL OR checked_at < ${now}::timestamptz - interval '10 minutes'))
+          OR (status = 'pending' AND payment_link_id IS NULL AND created_at < ${now}::timestamptz - interval '2 minutes'
+            AND (checked_at IS NULL OR checked_at < ${now}::timestamptz - interval '10 minutes'))
+          OR (status = 'failed' AND payment_link_id IS NULL AND created_at > ${now}::timestamptz - interval '24 hours' AND checked_at IS NULL)
+        )
+        ORDER BY created_at ASC LIMIT ${limit} FOR UPDATE SKIP LOCKED
+      )
+      RETURNING id, user_id, status, order_code, payment_link_id, expires_at, created_at`;
+    return rows.map(toReconcile);
+  }
+
+  /** The return page's claim: this learner's pending order, if it was not asked in the last `minGapMs`; null otherwise. */
+  async claimForCheck(db: Db, id: string, userId: string, now: Date, minGapMs: number): Promise<ReconcileOrder | null> {
+    const rows = await db.$queryRaw<ReconcileRow[]>`
+      UPDATE billing_orders SET checked_at = ${now}::timestamptz
+      WHERE id = ${id}::uuid AND user_id = ${userId}::uuid AND status = 'pending'
+        AND (checked_at IS NULL OR checked_at < ${now}::timestamptz - ${minGapMs}::double precision * interval '1 millisecond')
+      RETURNING id, user_id, status, order_code, payment_link_id, expires_at, created_at`;
+    return rows.length === 0 ? null : toReconcile(rows[0]);
+  }
+
+  /** `UPDATE … WHERE id AND status = from`: false when something else (a webhook, staff) already changed the order. */
+  async transition(db: Db, id: string, from: OrderStatus, data: OrderUpdate): Promise<boolean> {
+    const result = await db.billingOrder.updateMany({ where: { id, status: from }, data });
+    return result.count > 0;
   }
 
   async findById(db: Db, id: string): Promise<OrderRecord | null> {

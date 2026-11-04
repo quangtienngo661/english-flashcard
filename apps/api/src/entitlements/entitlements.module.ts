@@ -23,6 +23,8 @@ import { WebhookController } from './billing/webhook.controller.js';
 import { EntitlementsService } from './entitlements.service.js';
 import { OrderApplier } from './orders/order-applier.service.js';
 import { MeOrdersController } from './orders/me-orders.controller.js';
+import { OrdersReconcileJob } from './orders/orders-reconcile.job.js';
+import { OrdersReconcileService } from './orders/orders-reconcile.service.js';
 import { OrdersRepository } from './orders/orders.repository.js';
 import { OrdersService } from './orders/orders.service.js';
 import { AdminGrantsController } from './grants/admin-grants.controller.js';
@@ -60,6 +62,8 @@ import { UsageQueries } from './usage/usage.queries.js';
     OrderApplier,
     OrdersRepository,
     OrdersService,
+    OrdersReconcileService,
+    OrdersReconcileJob,
     TransactionsRepository,
     BillingJobs,
     NoticePlanner,

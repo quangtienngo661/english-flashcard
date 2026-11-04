@@ -116,3 +116,46 @@ describe('OrdersRepository (query shapes; the data itself is checked by the paym
     expect((await repo.findOwned({ billingOrder: { findFirst: vi.fn(async () => ({ ...ROW, periods: [] })) } } as never, 'o1', 'u1'))?.period).toBeNull();
   });
 });
+
+describe('OrdersRepository — reconcile queries (shapes; the rows are checked by the payments smoke)', () => {
+  const repo = new OrdersRepository();
+  const NOW = new Date('2026-11-05T04:00:00Z');
+  const sqlOf = (call: unknown[]) => (call[0] as TemplateStringsArray).join('?').replace(/\s+/g, ' ');
+
+  it('claimForReconcile writes checked_at on at most N orders chosen with SKIP LOCKED, oldest first, by the three conditions of design §3.6', async () => {
+    const queryRaw = vi.fn(async (..._args: unknown[]) => [{
+      id: 'o1', user_id: 'u1', status: 'pending', order_code: 1_000_000_123n, payment_link_id: 'link-1', expires_at: new Date('2026-11-05T03:17:00Z'), created_at: new Date('2026-11-05T03:02:00Z'),
+    }]);
+    const claimed = await repo.claimForReconcile({ $queryRaw: queryRaw } as never, NOW, 100);
+    expect(claimed).toEqual([{
+      id: 'o1', userId: 'u1', status: 'pending', orderCode: 1_000_000_123, paymentLinkId: 'link-1', expiresAt: new Date('2026-11-05T03:17:00Z'), createdAt: new Date('2026-11-05T03:02:00Z'),
+    }]);
+    const sql = sqlOf(queryRaw.mock.calls[0]);
+    expect(sql).toContain('UPDATE billing_orders SET checked_at = ?');
+    expect(sql).toContain('FOR UPDATE SKIP LOCKED');
+    expect(sql).toContain('ORDER BY created_at ASC LIMIT ?');
+    expect(sql).toContain("status = 'pending' AND payment_link_id IS NOT NULL AND created_at < ?::timestamptz - interval '5 minutes'");
+    expect(sql).toContain("status = 'pending' AND payment_link_id IS NULL AND created_at < ?::timestamptz - interval '2 minutes'");
+    expect(sql).toContain("status = 'failed' AND payment_link_id IS NULL AND created_at > ?::timestamptz - interval '24 hours' AND checked_at IS NULL");
+    expect(sql).toContain('RETURNING');
+    expect(queryRaw.mock.calls[0].slice(1)).toContain(100);
+  });
+
+  it('claimForCheck claims one pending order of the learner when it was not asked in the last gap, and is null otherwise', async () => {
+    const queryRaw = vi.fn(async (..._args: unknown[]) => [{
+      id: 'o1', user_id: 'u1', status: 'pending', order_code: 1_000_000_123n, payment_link_id: 'link-1', expires_at: new Date('2026-11-05T03:17:00Z'), created_at: new Date('2026-11-05T03:02:00Z'),
+    }]);
+    expect((await repo.claimForCheck({ $queryRaw: queryRaw } as never, 'o1', 'u1', NOW, 10_000))?.orderCode).toBe(1_000_000_123);
+    const sql = sqlOf(queryRaw.mock.calls[0]);
+    expect(sql).toContain('UPDATE billing_orders SET checked_at = ?');
+    expect(sql).toContain("WHERE id = ?::uuid AND user_id = ?::uuid AND status = 'pending' AND (checked_at IS NULL OR checked_at < ?");
+    expect(await repo.claimForCheck({ $queryRaw: vi.fn(async () => []) } as never, 'o1', 'u1', NOW, 10_000)).toBeNull();
+  });
+
+  it('transition changes the order only while it still has the status that was read, and says whether it did', async () => {
+    const updateMany = vi.fn(async () => ({ count: 1 }));
+    expect(await repo.transition({ billingOrder: { updateMany } } as never, 'o1', 'pending', { status: 'expired' })).toBe(true);
+    expect(updateMany).toHaveBeenCalledWith({ where: { id: 'o1', status: 'pending' }, data: { status: 'expired' } });
+    expect(await repo.transition({ billingOrder: { updateMany: vi.fn(async () => ({ count: 0 })) } } as never, 'o1', 'pending', { status: 'expired' })).toBe(false);
+  });
+});

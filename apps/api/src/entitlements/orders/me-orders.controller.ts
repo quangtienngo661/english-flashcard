@@ -21,6 +21,14 @@ export class MeOrdersController {
     return this.orders.create(req.user!.userId, body);
   }
 
+  /** The return page's single ask (design §3.6). Not idempotent by key: asking twice is harmless, and it is limited per order. */
+  @Post(':id/check')
+  @HttpCode(200)
+  @RateLimit('user.write')
+  check(@Param({ schema: orderIdParams }) params: z.infer<typeof orderIdParams>, @Req() req: RequestWithUser) {
+    return this.orders.check(req.user!.userId, params.id);
+  }
+
   @Get(':id')
   get(@Param({ schema: orderIdParams }) params: z.infer<typeof orderIdParams>, @Req() req: RequestWithUser) {
     return this.orders.get(req.user!.userId, params.id);
