@@ -148,14 +148,14 @@ const fakeTransactions = (code) => JSON.parse(psql(`SELECT transactions::text FR
 const fakeLink = (code) => psql(`SELECT payment_link_id FROM fake_payos_links WHERE order_code = ${code}`);
 
 /** A signed webhook for one transfer, sent to the real route (what payOS would POST). */
-async function postWebhook(order, transaction, { amount } = {}) {
+async function postWebhook(order, transaction, { amount, success = true } = {}) {
   const data = {
     orderCode: order.code, amount: amount ?? transaction.amount, description: 'WMSMOKE', accountNumber: '0000000000', reference: transaction.reference,
     transactionDateTime: transaction.transactionDateTime, currency: 'VND', paymentLinkId: fakeLink(order.code), code: '00', desc: 'Thành công',
     counterAccountBankId: 'FAKE', counterAccountBankName: 'Fake Bank', counterAccountName: 'NGUYEN VAN FAKE', counterAccountNumber: '0000000001',
     virtualAccountName: '', virtualAccountNumber: '',
   };
-  const body = JSON.stringify({ code: '00', desc: 'success', success: true, data, signature: signPayosData(data, CHECKSUM_KEY) });
+  const body = JSON.stringify({ code: '00', desc: 'success', success, data, signature: signPayosData(data, CHECKSUM_KEY) });
   return read(await send(`${BASE}/v1/billing/webhooks/payos`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body }));
 }
 const eventStatus = (code, reference) => psql(`SELECT status FROM billing_events WHERE dedupe_key = 'payos:sandbox:${code}:${reference}'`);
@@ -300,6 +300,8 @@ async function main() {
     const end = new Date(e1.pro_until);
     check(end.getTime() > Date.now() + 390 * DAY && end.getTime() < Date.now() + 400 * DAY, `pro_until ${e1.pro_until}`);
     // The second transfer of the same amount into the now paid 12-month order (a new reference, its own webhook): T8, a period that follows.
+    // The fake writes the moment in whole seconds, and the same amount at the same second is the same transfer (review I2): wait it out.
+    await new Promise((resolve) => setTimeout(resolve, 1500));
     await page(order, 'paid');
     check(periodsOf(order.id) === 2, `periods of the order: ${periodsOf(order.id)}`);
     const e2 = await entitlements(S.ann);
@@ -398,6 +400,37 @@ async function main() {
     maintenance();
     check(orderRow(id, "status || '|' || coalesce(refund_payer_name, '-') || '|' || coalesce(refund_payer_account, '-') || '|' || coalesce(refund_payer_bank, '-')") === 'needs_review|-|-|-', 'refund fields not cleared');
     ok('payer fields cleared, order still needs_review');
+  });
+
+  await step('Review I2', 'the return page counts the transfer first; the webhook then brings it under another reference (same amount, same moment): one period, one purchase row, the second payment attached, no flag', async () => {
+    const order = await createOrder(S.cuong, 1);
+    await page(order, 'paid', { webhook: false });
+    check((await checkOrder(S.cuong, order.id)).status === 200, 'check');
+    check(orderRow(order.id, "status || '|' || paid_via") === 'paid|reconcile', `order ${orderRow(order.id, 'status, paid_via')}`);
+    const tx = fakeTransactions(order.code)[0];
+    const sent = await postWebhook(order, { ...tx, reference: `${tx.reference}-B` });
+    check(sent.status === 200, `webhook ${brief(sent)}`);
+    await waitFor(async () => paymentsOf(order.id), (count) => count === 2, 'the second payment');
+    check(periodsOf(order.id) === 1, `periods of the order: ${periodsOf(order.id)}`);
+    check(psql(`SELECT count(*) FROM billing_transactions WHERE provider_transaction_id LIKE '${order.code}:%'`) === '1', 'one purchase row');
+    check(psql(`SELECT string_agg(outcome, ',' ORDER BY received_at) FROM billing_order_payments WHERE order_id = '${order.id}'`) === 'opened-period,attached', 'outcomes');
+    check(orderRow(order.id, "status || '|' || coalesce(review_reason, '-')") === 'paid|-', 'no flag on the order');
+    ok('reconcile first, webhook second under another reference: one period, outcomes opened-period,attached');
+  });
+
+  await step('Review I1', 'the webhook for a real transfer is ignored (success false); the job then finds the transfer at payOS: the order goes to needs_review provider-mismatch instead of staying pending with the money taken', async () => {
+    const order = await createOrder(S.cuong, 1);
+    await page(order, 'paid', { webhook: false });
+    const tx = fakeTransactions(order.code)[0];
+    const sent = await postWebhook(order, tx, { success: false });
+    check(sent.status === 200, `webhook ${brief(sent)}`);
+    await waitFor(async () => eventStatus(order.code, tx.reference), (status) => status === 'ignored', 'the webhook row to be ignored');
+    check(orderRow(order.id, 'status') === 'pending', 'still pending after the ignored webhook');
+    psql(`UPDATE billing_orders SET created_at = now() - interval '10 minutes', checked_at = NULL WHERE id = '${order.id}'`);
+    maintenance();
+    check(orderRow(order.id, "status || '|' || coalesce(review_reason, '-')") === 'needs_review|provider-mismatch', `order ${orderRow(order.id, 'status, review_reason')}`);
+    check(periodsOf(order.id) === 0 && paymentsOf(order.id) === 0, 'nothing was counted');
+    ok('ignored webhook row + the job: needs_review provider-mismatch, nothing counted, staff can look');
   });
 
   await step('periods end', 'every period of Lan moved into the past (a year back): Pro ends and Lan is Free again, with no prepaid source and no pro_until', async () => {
