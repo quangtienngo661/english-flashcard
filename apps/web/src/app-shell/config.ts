@@ -4,6 +4,14 @@ export function apiBaseUrl(): string {
 }
 
 /**
+ * Public Turnstile site key, baked at build time (launch prep A, design 4.3). Blank: the forms use the fake widget, which only
+ * an API in `fake` mode accepts. `next.config.ts` refuses a production build of the live site without it.
+ */
+export function turnstileSiteKey(): string {
+  return (process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? '').trim();
+}
+
+/**
  * The API origin for requests the web server itself makes. Read at run time (no NEXT_PUBLIC_ prefix, so it is not baked into
  * the bundle). Set it when the server reaches the API at another address than the browser does: in the Docker stack the browser
  * uses `localhost:3000` while the web container must use `http://api:3000`. Unset or blank: the public origin.

@@ -1022,6 +1022,8 @@
       "idempotency-key-abandoned": "Lần bấm trước bị dừng giữa chừng. Bấm lại.",
       "invalid-credentials": "Email hoặc mật khẩu chưa đúng.",
       "invalid-current-password": "Mật khẩu hiện tại chưa đúng.",
+      "captcha-failed": "Chưa xác minh được bạn không phải máy. Hãy thử lại.",
+      "captcha-unavailable": "Chưa kiểm tra chống bot được lúc này. Hãy thử lại sau ít phút.",
       "cancel-in-store": "Gói này mua qua cửa hàng ứng dụng, hãy hủy trong phần quản lý gói của cửa hàng đó.",
       "confirm-email-mismatch": "Email bạn gõ chưa khớp với email của tài khoản.",
       "google-email-unverified": "Google chưa xác minh email này, nên chưa đăng nhập được. Hãy xác minh email ở Google rồi thử lại.",
