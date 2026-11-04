@@ -20,8 +20,12 @@ function validEnv(): NodeJS.ProcessEnv {
     ADMIN_APP_URL: 'https://admin.example.com',
     LEARNER_APP_URL: 'https://wordmet.example.com',
     TERMS_VERSION: '2026-10-20',
+    TURNSTILE_MODE: 'off',
   };
 }
+
+// A production-grade bot check: BILLING_PRODUCTION=true refuses `fake` and `off` (LA1#10), so the billing and AI tests below use this.
+const turnstileReal = { TURNSTILE_MODE: 'real', TURNSTILE_SECRET_KEY: 's', TURNSTILE_ALLOWED_HOSTNAMES: 'wordmet.com' };
 
 describe('Google sign-in configuration (Bước 8)', () => {
   const key = () => randomBytes(32).toString('base64url');
@@ -234,6 +238,7 @@ describe('loadConfig', () => {
       'entitlements.lookup': { by: 'user', max: 60, windowSeconds: 3600 },
       'auth.google.ip': { by: 'ip', max: 20, windowSeconds: 60 },
       'auth.delete.user': { by: 'user', max: 5, windowSeconds: 3600 },
+      'auth.captcha.ip': { by: 'ip', max: 60, windowSeconds: 60 },
     });
   });
 
@@ -295,9 +300,9 @@ describe('loadConfig', () => {
 
   it('R17 (config): BILLING_PRODUCTION=true with BILLING_FAKE_ENABLED=true fails naming both', () => {
     const secret = randomBytes(32).toString('base64url');
-    const env = { ...validEnv(), BILLING_PRODUCTION: 'true', BILLING_FAKE_ENABLED: 'true', BILLING_FAKE_SECRET: secret };
+    const env = { ...validEnv(), ...turnstileReal, BILLING_PRODUCTION: 'true', BILLING_FAKE_ENABLED: 'true', BILLING_FAKE_SECRET: secret };
     expect(() => loadConfig(env)).toThrow(/BILLING_PRODUCTION, BILLING_FAKE_ENABLED/);
-    expect(loadConfig({ ...validEnv(), BILLING_PRODUCTION: 'true' }).billing).toMatchObject({ production: true, fakeEnabled: false });
+    expect(loadConfig({ ...validEnv(), ...turnstileReal, BILLING_PRODUCTION: 'true' }).billing).toMatchObject({ production: true, fakeEnabled: false });
   });
 
   it('R10 (config): the fake provider enabled without a secret fails naming BILLING_FAKE_SECRET; with one it is bytes', () => {
@@ -317,9 +322,9 @@ describe('loadConfig', () => {
   });
 
   it('B6E45: AI_FAKE_ENABLED=true with BILLING_PRODUCTION=true fails naming both variables', () => {
-    expect(() => loadConfig({ ...validEnv(), BILLING_PRODUCTION: 'true', AI_FAKE_ENABLED: 'true' }))
+    expect(() => loadConfig({ ...validEnv(), ...turnstileReal, BILLING_PRODUCTION: 'true', AI_FAKE_ENABLED: 'true' }))
       .toThrow(/BILLING_PRODUCTION, AI_FAKE_ENABLED/);
-    expect(loadConfig({ ...validEnv(), BILLING_PRODUCTION: 'true', AI_FAKE_ENABLED: 'false' }).ai.fakeEnabled).toBe(false);
+    expect(loadConfig({ ...validEnv(), ...turnstileReal, BILLING_PRODUCTION: 'true', AI_FAKE_ENABLED: 'false' }).ai.fakeEnabled).toBe(false);
     expect(loadConfig({ ...validEnv(), AI_FAKE_ENABLED: 'true' }).ai.fakeEnabled).toBe(true);
     expect(() => loadConfig({ ...validEnv(), AI_FAKE_ENABLED: 'yes' })).toThrow(/AI_FAKE_ENABLED/);
   });
@@ -382,5 +387,52 @@ describe('loadConfig', () => {
     expect(loadConfig(validEnv()).database).toEqual({ poolMax: 20, poolTimeoutMs: 5000 });
     expect(loadConfig({ ...validEnv(), DATABASE_POOL_MAX: '7', DATABASE_POOL_TIMEOUT_MS: '900' }).database)
       .toEqual({ poolMax: 7, poolTimeoutMs: 900 });
+  });
+});
+
+describe('Turnstile configuration (launch prep A, design 4.2)', () => {
+  const envWithout = (name: string) => {
+    const env = { ...validEnv() } as Record<string, string | undefined>;
+    delete env[name];
+    return env;
+  };
+
+  it('LA1#8 refuses to start without TURNSTILE_MODE', () => {
+    expect(() => loadConfig(envWithout('TURNSTILE_MODE'))).toThrow(/TURNSTILE_MODE/);
+  });
+
+  it('TURNSTILE_MODE accepts only real, fake or off', () => {
+    expect(() => loadConfig({ ...validEnv(), TURNSTILE_MODE: 'on' })).toThrow(/TURNSTILE_MODE/);
+    expect(() => loadConfig({ ...validEnv(), TURNSTILE_MODE: '' })).toThrow(/TURNSTILE_MODE/);
+  });
+
+  it('LA1#9 real needs a secret and at least one hostname, and names each missing variable', () => {
+    expect(() => loadConfig({ ...validEnv(), TURNSTILE_MODE: 'real' })).toThrow(/TURNSTILE_SECRET_KEY.*TURNSTILE_ALLOWED_HOSTNAMES|TURNSTILE_ALLOWED_HOSTNAMES.*TURNSTILE_SECRET_KEY/);
+    expect(() => loadConfig({ ...validEnv(), TURNSTILE_MODE: 'real', TURNSTILE_SECRET_KEY: 's' })).toThrow(/TURNSTILE_ALLOWED_HOSTNAMES/);
+    expect(() => loadConfig({ ...validEnv(), TURNSTILE_MODE: 'real', TURNSTILE_ALLOWED_HOSTNAMES: 'wordmet.com' })).toThrow(/TURNSTILE_SECRET_KEY/);
+    expect(() => loadConfig({ ...validEnv(), TURNSTILE_MODE: 'real', TURNSTILE_SECRET_KEY: 's', TURNSTILE_ALLOWED_HOSTNAMES: ' , ' })).toThrow(/TURNSTILE_ALLOWED_HOSTNAMES/);
+  });
+
+  it('parses the hostname list: trims, drops empty entries', () => {
+    const c = loadConfig({ ...validEnv(), TURNSTILE_MODE: 'real', TURNSTILE_SECRET_KEY: 's', TURNSTILE_ALLOWED_HOSTNAMES: 'wordmet.com, www.wordmet.com,admin.wordmet.com,' });
+    expect(c.turnstile).toEqual({ mode: 'real', secretKey: 's', allowedHostnames: ['wordmet.com', 'www.wordmet.com', 'admin.wordmet.com'] });
+  });
+
+  it('fake and off need neither the secret nor the hostnames', () => {
+    expect(loadConfig({ ...validEnv(), TURNSTILE_MODE: 'fake' }).turnstile).toEqual({ mode: 'fake', secretKey: null, allowedHostnames: [] });
+    expect(loadConfig(validEnv()).turnstile).toEqual({ mode: 'off', secretKey: null, allowedHostnames: [] });
+  });
+
+  it.each(['fake', 'off'])('LA1#10 BILLING_PRODUCTION refuses TURNSTILE_MODE=%s, naming both variables', (mode) => {
+    expect(() => loadConfig({ ...validEnv(), BILLING_PRODUCTION: 'true', TURNSTILE_MODE: mode })).toThrow(/BILLING_PRODUCTION, TURNSTILE_MODE/);
+  });
+
+  it('BILLING_PRODUCTION accepts TURNSTILE_MODE=real', () => {
+    const env = { ...validEnv(), ...turnstileReal, BILLING_PRODUCTION: 'true' };
+    expect(loadConfig(env).turnstile.mode).toBe('real');
+  });
+
+  it('adds auth.captcha.ip 60/60s by ip', () => {
+    expect(loadConfig(validEnv()).limits['auth.captcha.ip']).toEqual({ by: 'ip', max: 60, windowSeconds: 60 });
   });
 });

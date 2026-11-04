@@ -49,6 +49,7 @@ export function testConfig(overrides?: Partial<AppConfig>): AppConfig {
     billing: { production: false, fakeEnabled: false, fakeSecret: null, fakeFetchState: true },
     ai: { openaiApiKey: null, anthropicApiKey: null, fakeEnabled: false },
     google: { mode: 'off', clientId: null, clientSecret: null, redirectUri: null, apiOrigin: null, cookieKey: randomBytes(32) },
+    turnstile: { mode: 'off', secretKey: null, allowedHostnames: [] },
     limits,
     ...overrides,
   };
