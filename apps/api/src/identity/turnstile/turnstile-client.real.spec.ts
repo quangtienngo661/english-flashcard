@@ -97,6 +97,19 @@ describe('RealTurnstileClient', () => {
     expect(fetchImpl).toHaveBeenCalledTimes(1);
   });
 
+  // success:false is a verdict about the token, whatever the HTTP status: the login route must never let it through as "Cloudflare is down".
+  it.each([['invalid-input-response', 400], ['bad-request', 400], ['timeout-or-duplicate', 400], ['invalid-input-response', 200]])('%s with HTTP %i and success:false → rejected, no retry', async (code, status) => {
+    const { client, fetchImpl } = setup(async () => json({ success: false, 'error-codes': [code] }, status));
+    await expect(client.verify('t', undefined)).resolves.toEqual({ kind: 'rejected', codes: [code] });
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+  });
+
+  it('a 5xx is unavailable and retried even when its body says success:false', async () => {
+    const { client, fetchImpl } = setup(async () => json({ success: false, 'error-codes': [] }, 502), async () => json({ success: false, 'error-codes': [] }, 502));
+    await expect(client.verify('t', undefined)).resolves.toEqual({ kind: 'unavailable', reason: 'http' });
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
+  });
+
   it('an HTTP 4xx is not retried', async () => {
     const { client, fetchImpl } = setup(async () => json({}, 400));
     await expect(client.verify('t', undefined)).resolves.toEqual({ kind: 'unavailable', reason: 'http' });

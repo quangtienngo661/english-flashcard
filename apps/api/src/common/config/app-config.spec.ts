@@ -432,6 +432,19 @@ describe('Turnstile configuration (launch prep A, design 4.2)', () => {
     expect(loadConfig(env).turnstile.mode).toBe('real');
   });
 
+  // process.loadEnvFile turns a line `KEY=` of apps/api/.env.example into an empty string, not into an unset variable.
+  it('an empty TURNSTILE_SECRET_KEY or TURNSTILE_ALLOWED_HOSTNAMES line counts as unset in fake and off modes', () => {
+    for (const mode of ['fake', 'off']) {
+      const c = loadConfig({ ...validEnv(), TURNSTILE_MODE: mode, TURNSTILE_SECRET_KEY: '', TURNSTILE_ALLOWED_HOSTNAMES: '' });
+      expect(c.turnstile).toEqual({ mode, secretKey: null, allowedHostnames: [] });
+    }
+    expect(loadConfig({ ...validEnv(), TURNSTILE_MODE: 'fake', TURNSTILE_SECRET_KEY: '   ' }).turnstile.secretKey).toBeNull();
+  });
+
+  it('real with an empty secret line still refuses to start, naming the variable', () => {
+    expect(() => loadConfig({ ...validEnv(), TURNSTILE_MODE: 'real', TURNSTILE_SECRET_KEY: '', TURNSTILE_ALLOWED_HOSTNAMES: 'wordmet.com' })).toThrow(/TURNSTILE_SECRET_KEY/);
+  });
+
   it('adds auth.captcha.ip 60/60s by ip', () => {
     expect(loadConfig(validEnv()).limits['auth.captcha.ip']).toEqual({ by: 'ip', max: 60, windowSeconds: 60 });
   });
