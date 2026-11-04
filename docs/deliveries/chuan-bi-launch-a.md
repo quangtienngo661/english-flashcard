@@ -116,7 +116,7 @@ từ riêng của người khác (B2-5); `GET /v1/groups` 289 ms (mục tiêu < 
 
 ## M3 — Lượt AI cho Free, tắt trial (04–05/11/2026)
 
-Nhánh `feat/launch-a-m3-free-ai`, một PR vào `dev` (Task 21–28; Task 29 là commit riêng trên nhánh nghiên cứu, xem dưới).
+Nhánh `feat/launch-a-m3-free-ai`, một PR vào `dev`: [#215](https://github.com/quangtienngo661/english-flashcard/pull/215), merge `d8640df8` (05/11/2026), 4 check xanh ở lần chạy CI thứ hai (lần đầu hỏng 4 test e2e, xem dưới). Task 21–28 nằm trong PR; Task 29 là commit riêng trên nhánh nghiên cứu, xem dưới.
 
 **Đã làm:**
 - **Cửa sổ lượt AI của Free** (Task 21): `rules/ai-cycle.ts` có `calendarMonthCycle(zone, now)` (tháng dương lịch theo múi giờ người học, xử lý DST) và `aiCycle(resolved, zone, now, lastEnd)`: có anchor (Pro, trial,
