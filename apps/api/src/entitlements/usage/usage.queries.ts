@@ -55,6 +55,13 @@ export class UsageQueries {
     });
   }
 
+  /** B5-7: the operation has a confirmed `use` row confirmed inside the cycle (a refund gives back exactly that unit). */
+  async hasConfirmedUseInCycle(db: Db, userId: string, pool: AiPool, operationId: string, cycle: Cycle): Promise<boolean> {
+    return (await db.usageRecord.count({
+      where: { userId, pool, operationId, kind: 'use', status: 'confirmed', confirmedAt: { gte: cycle.start, lt: cycle.end } },
+    })) > 0;
+  }
+
   async creditsInCycle(db: Db, userId: string, pool: AiPool, cycle: Cycle): Promise<number> {
     return db.usageRecord.count({ where: { userId, pool, kind: 'credit', creditedAt: { gte: cycle.start, lt: cycle.end } } });
   }
