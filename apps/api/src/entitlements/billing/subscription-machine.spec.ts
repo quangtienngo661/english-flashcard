@@ -129,7 +129,8 @@ const RENEWED_PERIOD: Partial<SubscriptionState> = {
   currentTransactionId: 'tx-new',
   graceEndsAt: null,
 };
-const RENEWED_NEW_ANCHOR = { ...RENEWED_PERIOD, quotaAnchorAt: renewed.currentPeriodStart };
+// B5-5: the next period starts after the event, so the anchor is the event time (the earlier of the two).
+const RENEWED_NEW_ANCHOR = { ...RENEWED_PERIOD, quotaAnchorAt: OCCURRED };
 const PLAN_CHANGED: Partial<SubscriptionState> = {
   interval: 'year',
   currentPeriodStart: planChanged.currentPeriodStart,
@@ -179,7 +180,7 @@ const MATRIX: Record<EventType, Record<From, Cell>> = {
         graceEndsAt: null,
         cancelAtPeriodEnd: false,
         pendingInterval: null,
-        quotaAnchorAt: renewed.currentPeriodStart,
+        quotaAnchorAt: OCCURRED,
         currentTransactionId: 'tx-new',
       },
     },
