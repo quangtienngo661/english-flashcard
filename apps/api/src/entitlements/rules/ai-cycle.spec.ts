@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { aiCycle, calendarMonthCycle } from './ai-cycle.js';
+import { SETTINGS_DEFAULTS } from '../../settings/index.js';
+import { aiCycle, aiWindow, calendarMonthCycle } from './ai-cycle.js';
 import { cycleAt } from './cycle.js';
-import type { Resolved } from './plan-rules.js';
+import { planNumbers } from '../plan-numbers.js';
+import { resolve, type GrantSource, type Resolved, type SubscriptionSource } from './plan-rules.js';
 
 const at = (iso: string) => new Date(iso);
 const VN = 'Asia/Ho_Chi_Minh';
@@ -88,5 +90,53 @@ describe('aiCycle (design 6.2): one rule for the four places that need the cycle
 
   it('a trial without an anchor is not a calendar month either', () => {
     expect(aiCycle(resolved({ plan: 'trial' }), VN, now, null)).toBeNull();
+  });
+});
+
+describe('aiWindow (design 6.3.4): the sources, the zone and the clock in, the window out', () => {
+  const now = at('2026-11-25T03:00:00Z');
+  const numbers = planNumbers(SETTINGS_DEFAULTS.entitlements);
+  const sub = (over: Partial<SubscriptionSource> = {}): SubscriptionSource => ({
+    id: 'sub-1', provider: 'fake', externalSubscriptionId: 'ext-1', status: 'active', trialDenied: false, cancelAtPeriodEnd: true,
+    trialEndsAt: null, currentPeriodStart: at('2026-10-20T03:00:00Z'), currentPeriodEnd: at('2026-11-20T03:00:00Z'), graceEndsAt: null,
+    quotaAnchorAt: at('2026-10-20T03:00:00Z'), interval: 'month', pendingInterval: null, ...over,
+  });
+  const grant = (over: Partial<GrantSource> = {}): GrantSource => ({
+    id: 'g-1', kind: 'plan', limits: null, startsAt: at('2026-11-01T00:00:00Z'), endsAt: at('2026-11-10T00:00:00Z'), revokedAt: null,
+    createdAt: at('2026-11-01T00:00:00Z'), ...over,
+  });
+  const window = (input: { subscriptions?: SubscriptionSource[]; grants?: GrantSource[]; ended?: { subscriptions: SubscriptionSource[]; grants: GrantSource[] } }) => {
+    const subscriptions = input.subscriptions ?? [];
+    const grants = input.grants ?? [];
+    const resolved = resolve({ subscriptions, grants, numbers, graceDays: 7, now });
+    return aiWindow({ resolved, subscriptions, grants, ended: input.ended ?? { subscriptions: [], grants: [] }, graceDays: 7, zone: VN, now });
+  };
+
+  it('LA3#6: a cancelled Pro that ended 20/11 10:00 (Vietnam) while its row still says active → the window starts at that moment', () => {
+    expect(window({ subscriptions: [sub()] })).toEqual({ start: at('2026-11-20T03:00:00Z'), end: at('2026-11-30T17:00:00Z') });
+  });
+
+  it('LA3E17: two sources ended in the month (a grant on 10/11, a subscription on 20/11) → the later one', () => {
+    expect(window({ subscriptions: [sub()], ended: { subscriptions: [], grants: [grant()] } }))
+      .toEqual({ start: at('2026-11-20T03:00:00Z'), end: at('2026-11-30T17:00:00Z') });
+  });
+
+  it('LA3E18: a source that ended on 25/10 is not in November → the whole month', () => {
+    const october = sub({ currentPeriodEnd: at('2026-10-25T03:00:00Z') });
+    expect(window({ subscriptions: [october] })).toEqual({ start: at('2026-10-31T17:00:00Z'), end: at('2026-11-30T17:00:00Z') });
+  });
+
+  it('LA3#9: a limits grant with AI that ran out on 20/11 opens the Free window from then', () => {
+    const limits = grant({ kind: 'limits', limits: { ai_practice_per_cycle: 50 }, startsAt: at('2026-11-10T00:00:00Z'), endsAt: at('2026-11-20T03:00:00Z') });
+    expect(window({ ended: { subscriptions: [], grants: [limits] } })).toEqual({ start: at('2026-11-20T03:00:00Z'), end: at('2026-11-30T17:00:00Z') });
+  });
+
+  it('a live Pro keeps the cycle from its anchor, whatever ended before', () => {
+    const live = sub({ cancelAtPeriodEnd: false, currentPeriodEnd: at('2026-12-20T03:00:00Z') });
+    expect(window({ subscriptions: [live], ended: { subscriptions: [], grants: [grant()] } })).toEqual(cycleAt(at('2026-10-20T03:00:00Z'), now));
+  });
+
+  it('no source at all → the whole calendar month', () => {
+    expect(window({})).toEqual({ start: at('2026-10-31T17:00:00Z'), end: at('2026-11-30T17:00:00Z') });
   });
 });

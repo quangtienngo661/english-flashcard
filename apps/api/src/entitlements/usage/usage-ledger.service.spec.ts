@@ -31,6 +31,10 @@ type Setup = {
   credit?: boolean;
   /** Whether this operation has a confirmed `use` row inside the cycle (B5-7). Defaults to true so the older refund cases keep their meaning. */
   confirmedUse?: boolean;
+  /** Launch prep A: the learner's timezone (`null` = no profile; Vietnam by default), the sources that already ended, and the Free cap's count. */
+  timezone?: string | null;
+  ended?: { subscriptions: SubscriptionSource[]; grants: GrantSource[] };
+  capUsedFree?: { confirmed: number; reserved: number };
 };
 
 /**
@@ -91,23 +95,30 @@ function setup(input: Setup = {}) {
     }),
   };
   const sources = {
-    load: vi.fn(async (db: unknown) => {
+    load: vi.fn(async (db: unknown, _userId?: string, _now?: Date, _endedSince?: Date) => {
       onTx(db, 'sources.load');
-      return { subscriptions: input.subscriptions ?? [pro], grants: input.grants ?? [] };
+      return { subscriptions: input.subscriptions ?? [pro], grants: input.grants ?? [], ended: input.ended ?? { subscriptions: [], grants: [] } };
+    }),
+  };
+  const identity = {
+    getProfile: vi.fn(async (_userId: string, db?: unknown) => {
+      onTx(db, 'identity.getProfile');
+      return input.timezone === null ? null : { timezone: input.timezone ?? 'Asia/Ho_Chi_Minh' };
     }),
   };
   const usage = {
     aiUsed: vi.fn(async (db: unknown) => (onTx(db, 'aiUsed'), input.aiUsed ?? 0)),
     capUsed: vi.fn(async (db: unknown) => (onTx(db, 'capUsed'), input.capUsed ?? { confirmed: 0, reserved: 0 })),
+    capUsedFree: vi.fn(async (db: unknown) => (onTx(db, 'capUsedFree'), input.capUsedFree ?? { confirmed: 0, reserved: 0 })),
     confirmedInCycle: vi.fn(async (db: unknown) => (onTx(db, 'confirmedInCycle'), input.confirmedInCycle ?? 0)),
     creditsInCycle: vi.fn(async (db: unknown) => (onTx(db, 'creditsInCycle'), input.creditsInCycle ?? 0)),
     hasConfirmedUseInCycle: vi.fn(async (db: unknown) => (onTx(db, 'hasConfirmedUseInCycle'), input.confirmedUse ?? true)),
   };
   const logger = { warn: vi.fn(), info: vi.fn() };
   const service = new UsageLedgerService(
-    prisma as never, new FakeClock(NOW), settings as never, sources as never, usage as never, logger as never,
+    prisma as never, new FakeClock(NOW), settings as never, identity as never, sources as never, usage as never, logger as never,
   );
-  return { service, events, execs, tx, usage, logger, sources, settings };
+  return { service, events, execs, tx, usage, logger, sources, settings, identity };
 }
 
 const POOL_LOCK = `lock:entitlements.pool:${USER}:ai_practice`;
@@ -291,8 +302,8 @@ describe('UsageLedgerService.refund', () => {
     expect(usage.hasConfirmedUseInCycle).toHaveBeenCalledWith(expect.anything(), USER, 'ai_practice', OP, CYCLE);
   });
 
-  it('no anchor (no Pro, trial or AI grant) → refunded false', async () => {
-    const { service } = setup({ subscriptions: [], confirmedInCycle: 5 });
+  it('no window (a Free account whose AI numbers are both 0) → refunded false', async () => {
+    const { service } = setup({ subscriptions: [], confirmedInCycle: 5, entitlements: { freeAiPracticePerCycle: 0, freeAiLookupPerCycle: 0 } });
     expect(await service.refund(USER, 'ai_practice', OP, 'report-1')).toEqual({ refunded: false });
   });
 });
@@ -311,8 +322,148 @@ describe('No second connection inside a locked transaction', () => {
     const { service, sources, settings } = setup();
     sources.load.mockImplementationOnce(async () => {
       await settings.get();
-      return { subscriptions: [pro], grants: [] };
+      return { subscriptions: [pro], grants: [], ended: { subscriptions: [], grants: [] } };
     });
     await expect(service.reserve(USER, 'ai_practice', OP)).rejects.toThrow('SettingsService.get used while a lock is held');
+  });
+});
+
+// ---- Launch prep A, design 6: the Free plan has a calendar-month window and its own daily cap -------------------------------------
+const MONTH = { start: new Date('2026-10-31T17:00:00Z'), end: new Date('2026-11-30T17:00:00Z') }; // November for Lan in Vietnam
+const FREE = { subscriptions: [] as SubscriptionSource[] };
+const wasPro = (endedAt: string): SubscriptionSource => ({ ...pro, status: 'expired', endedAt: new Date(endedAt) });
+const inserts = (tx: ReturnType<typeof setup>['tx']) => tx.$executeRaw.mock.calls.filter(([strings]) => strings.join('?').includes('INSERT INTO usage_records'));
+
+describe('UsageLedgerService for a Free account (launch prep A, design 6.2)', () => {
+  it('LA3#1: Lan (Free) reserves an AI question; her units are counted in the calendar month of her zone, found from the first of the month', async () => {
+    const { service, usage, sources } = setup(FREE);
+    expect(await service.reserve(USER, 'ai_practice', OP)).toMatchObject({ state: 'reserved' });
+    expect(usage.aiUsed).toHaveBeenCalledWith(expect.anything(), USER, 'ai_practice', MONTH, NOW);
+    expect(sources.load).toHaveBeenCalledWith(expect.anything(), USER, NOW, MONTH.start);
+  });
+
+  it('LA3#2: 15 used in the month → quota-exhausted, and resets_at is 00:00 on 01/12 in Vietnam', async () => {
+    const { service } = setup({ ...FREE, aiUsed: 15 });
+    expect(await service.reserve(USER, 'ai_practice', OP)).toEqual({ state: 'refused', reason: 'quota-exhausted', resets_at: '2026-11-30T17:00:00.000Z' });
+  });
+
+  it('LA3#4: the sixth AI lookup of the month is refused, the fifth is not', async () => {
+    expect(await setup({ ...FREE, aiUsed: 4 }).service.reserve(USER, 'ai_lookup', OP)).toMatchObject({ state: 'reserved' });
+    expect(await setup({ ...FREE, aiUsed: 5 }).service.reserve(USER, 'ai_lookup', OP))
+      .toEqual({ state: 'refused', reason: 'quota-exhausted', resets_at: '2026-11-30T17:00:00.000Z' });
+  });
+
+  it('LA3#7 and LA3E5: Pro ended on 08/11 → the Free window starts at that moment, not at the first of the month', async () => {
+    const { service, usage } = setup({ ...FREE, ended: { subscriptions: [wasPro('2026-11-08T03:00:00Z')], grants: [] } });
+    await service.reserve(USER, 'ai_practice', OP);
+    expect(usage.aiUsed).toHaveBeenCalledWith(expect.anything(), USER, 'ai_practice', { start: new Date('2026-11-08T03:00:00Z'), end: MONTH.end }, NOW);
+  });
+
+  it('the zone is the learner\'s: New York gives the New York month; no profile gives UTC', async () => {
+    const newYork = setup({ ...FREE, timezone: 'America/New_York' });
+    await newYork.service.reserve(USER, 'ai_practice', OP);
+    expect(newYork.usage.aiUsed).toHaveBeenCalledWith(expect.anything(), USER, 'ai_practice',
+      { start: new Date('2026-11-01T04:00:00Z'), end: new Date('2026-12-01T05:00:00Z') }, NOW);
+    const utc = setup({ ...FREE, timezone: null });
+    await utc.service.reserve(USER, 'ai_practice', OP);
+    expect(utc.usage.aiUsed).toHaveBeenCalledWith(expect.anything(), USER, 'ai_practice',
+      { start: new Date('2026-11-01T00:00:00Z'), end: new Date('2026-12-01T00:00:00Z') }, NOW);
+    expect(utc.identity.getProfile).toHaveBeenCalledWith(USER, utc.tx);
+  });
+
+  it('LA3#8: a limits grant with 50 AI questions from 10/11 gives the cycle of the grant (10/11 → 10/12) and the limit 50', async () => {
+    const grant: GrantSource = {
+      id: 'g-1', kind: 'limits', limits: { ai_practice_per_cycle: 50 }, startsAt: new Date('2026-11-10T00:00:00Z'),
+      endsAt: new Date('2027-01-01T00:00:00Z'), revokedAt: null, createdAt: new Date('2026-11-10T00:00:00Z'),
+    };
+    const full = setup({ ...FREE, grants: [grant], aiUsed: 50 });
+    expect(await full.service.reserve(USER, 'ai_practice', OP))
+      .toEqual({ state: 'refused', reason: 'quota-exhausted', resets_at: '2026-12-10T00:00:00.000Z' });
+    expect(await setup({ ...FREE, grants: [grant], aiUsed: 49 }).service.reserve(USER, 'ai_practice', OP)).toMatchObject({ state: 'reserved' });
+  });
+
+  it('LA3#11: free_ai_practice_per_cycle 0 → plan-required for the questions only; the lookups keep their 5', async () => {
+    const entitlements = { freeAiPracticePerCycle: 0 };
+    expect(await setup({ ...FREE, entitlements }).service.reserve(USER, 'ai_practice', OP)).toEqual({ state: 'refused', reason: 'plan-required' });
+    expect(await setup({ ...FREE, entitlements }).service.reserve(USER, 'ai_lookup', OP)).toMatchObject({ state: 'reserved' });
+  });
+
+  it('LA3#12: a limits grant with ai_practice_per_cycle 0 → plan-required, however much Free gives', async () => {
+    const grant: GrantSource = {
+      id: 'g-0', kind: 'limits', limits: { ai_practice_per_cycle: 0 }, startsAt: new Date('2026-11-01T00:00:00Z'),
+      endsAt: new Date('2027-01-01T00:00:00Z'), revokedAt: null, createdAt: new Date('2026-11-01T00:00:00Z'),
+    };
+    expect(await setup({ ...FREE, grants: [grant] }).service.reserve(USER, 'ai_practice', OP)).toEqual({ state: 'refused', reason: 'plan-required' });
+  });
+});
+
+describe('UsageLedgerService and the Free daily cap (launch prep A, design 6.4, DA19)', () => {
+  it('the row is written with the plan the learner had at that moment: free for Lan, pro for a Pro learner', async () => {
+    const free = setup(FREE);
+    await free.service.reserve(USER, 'ai_practice', OP);
+    expect(inserts(free.tx).at(-1)?.slice(1)).toContain('free');
+    const paid = setup();
+    await paid.service.reserve(USER, 'ai_practice', OP);
+    expect(inserts(paid.tx).at(-1)?.slice(1)).toContain('pro');
+    expect(inserts(paid.tx).at(-1)?.slice(1)).not.toContain('free');
+  });
+
+  it('LA3#10: the Free accounts together used 500 today → the next Free account gets ai-unavailable with the seconds to Vietnam midnight', async () => {
+    const { service, usage, events } = setup({ ...FREE, capUsedFree: { confirmed: 497, reserved: 3 } });
+    expect(await service.reserve(USER, 'ai_practice', OP)).toEqual({ state: 'refused', reason: 'ai-unavailable', retry_after_seconds: 12 * 3600 });
+    expect(usage.capUsedFree).toHaveBeenCalledWith(expect.anything(), '2026-11-10', NOW);
+    expect(events.some((event) => event.startsWith('INSERT'))).toBe(false);
+  });
+
+  it('LA3#10: one unit under the Free cap still goes through', async () => {
+    const { service } = setup({ ...FREE, capUsedFree: { confirmed: 498, reserved: 1 } });
+    expect(await service.reserve(USER, 'ai_practice', OP)).toMatchObject({ state: 'reserved' });
+  });
+
+  it('LA3#10: a Pro learner is not held by the Free cap, which is not even counted for them', async () => {
+    const { service, usage } = setup({ capUsedFree: { confirmed: 5_000, reserved: 0 } });
+    expect(await service.reserve(USER, 'ai_practice', OP)).toMatchObject({ state: 'reserved' });
+    expect(usage.capUsedFree).not.toHaveBeenCalled();
+  });
+
+  it('LA3#15: the system cap reached → Free gets ai-unavailable like every plan, and the Free count is not needed', async () => {
+    const { service, usage } = setup({ ...FREE, capUsed: { confirmed: 1000, reserved: 0 } });
+    expect(await service.reserve(USER, 'ai_practice', OP)).toMatchObject({ state: 'refused', reason: 'ai-unavailable' });
+    expect(usage.capUsedFree).not.toHaveBeenCalled();
+  });
+
+  it('LA3E20: free_ai_daily_cap 0 → ai-unavailable without seconds for Free, before the daily lock; Pro is untouched', async () => {
+    const free = setup({ ...FREE, entitlements: { freeAiDailyCap: 0 } });
+    expect(await free.service.reserve(USER, 'ai_practice', OP)).toEqual({ state: 'refused', reason: 'ai-unavailable', retry_after_seconds: null });
+    expect(free.events).not.toContain(DAILY_LOCK);
+    expect(await setup({ entitlements: { freeAiDailyCap: 0 } }).service.reserve(USER, 'ai_practice', OP)).toMatchObject({ state: 'reserved' });
+  });
+
+  it('LA3E22: a late confirm does not look at the Free cap (B5-6): the unit is confirmed even when the cap is full', async () => {
+    const { service, events, usage } = setup({
+      ...FREE, aiUsed: 3, capUsedFree: { confirmed: 600, reserved: 0 },
+      rows: [{ id: 'r1', status: 'reserved', release_reason: null, expires_at: EARLIER }],
+    });
+    expect(await service.confirm(USER, 'ai_practice', OP)).toEqual({ state: 'confirmed' });
+    expect(events).toContain('update:r1:confirmed:');
+    expect(usage.capUsedFree).not.toHaveBeenCalled();
+  });
+});
+
+describe('UsageLedgerService.refund for a Free account (launch prep A, design 6.5)', () => {
+  it('LA3#5: a Free account\'s AI error is refunded: the confirmed use is looked for inside the month and one credit is written', async () => {
+    const { service, usage, execs } = setup({ ...FREE, confirmedInCycle: 1 });
+    expect(await service.refund(USER, 'ai_practice', OP, 'report-1')).toEqual({ refunded: true });
+    expect(usage.hasConfirmedUseInCycle).toHaveBeenCalledWith(expect.anything(), USER, 'ai_practice', OP, MONTH);
+    expect(execs.at(-1)).toMatch(/'credit', 'confirmed'/);
+  });
+
+  it('LA3E7: a use confirmed while Pro, reported after Lan is Free again → the window starts after Pro ended, so the use is outside it', async () => {
+    const { service, usage } = setup({
+      ...FREE, ended: { subscriptions: [wasPro('2026-11-08T03:00:00Z')], grants: [] }, confirmedInCycle: 1, confirmedUse: false,
+    });
+    expect(await service.refund(USER, 'ai_practice', OP, 'report-1')).toEqual({ refunded: false });
+    expect(usage.hasConfirmedUseInCycle).toHaveBeenCalledWith(expect.anything(), USER, 'ai_practice', OP,
+      { start: new Date('2026-11-08T03:00:00Z'), end: MONTH.end });
   });
 });

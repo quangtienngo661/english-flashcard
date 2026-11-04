@@ -53,6 +53,29 @@ describe('decideReserve (design §7.1 order)', () => {
   });
 });
 
+describe('decideReserve and the Free daily cap (launch prep A, design 6.4)', () => {
+  const OFF = { action: 'refuse', refusal: { reason: 'ai-unavailable', retry_after_seconds: null } };
+
+  it('LA3E20: free_ai_daily_cap 0 → ai-unavailable without Retry-After for a Free account, like the switch', () => {
+    expect(decideReserve({ ...base, freeCap: 0 })).toEqual(OFF);
+  });
+
+  it('a positive Free cap, or none given (not a Free account), goes on to the cap check', () => {
+    expect(decideReserve({ ...base, freeCap: 500 })).toEqual({ action: 'check-cap' });
+    expect(decideReserve({ ...base, freeCap: null })).toEqual({ action: 'check-cap' });
+    expect(decideReserve({ ...base })).toEqual({ action: 'check-cap' });
+  });
+
+  it('the Free cap of 0 refuses before the limit is looked at, as the system cap of 0 does', () => {
+    expect(decideReserve({ ...base, freeCap: 0, limit: 0 })).toEqual(OFF);
+  });
+
+  it('an operation that already has a confirmed row is still confirmed whatever the Free cap says', () => {
+    expect(decideReserve({ ...base, freeCap: 0, existing: { status: 'confirmed', expiresAt: EARLIER } }))
+      .toEqual({ action: 'return-existing', state: 'confirmed' });
+  });
+});
+
 describe('decideCap (design §7.3)', () => {
   it('B5E12: cap 1000, capUsed 1000 (3 of them reserved) → ai-unavailable with retry_after to Vietnam midnight', () => {
     // 12:00 in Vietnam → 12 hours to 00:00.
