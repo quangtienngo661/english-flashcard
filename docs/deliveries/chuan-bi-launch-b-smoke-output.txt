@@ -1,0 +1,74 @@
+# pnpm smoke:buoc-b-payments — launch prep B, M1 (payments), 2026-11-04T13:18Z
+# commit b663bd28 on feat/launch-b-m1-orders; fresh database english_learning_smoke_lb_pay; API and worker built from this commit, PAYOS_FAKE_ENABLED=true, no real payOS call
+
+$ node scripts/smoke-buoc-b-payments.mjs
+
+[1] 13:18:45Z LB1A1: Lan buys 1 month through the fake page: paid by webhook, one period from now, Pro, a purchase row of 79.000 ₫ "month"
+    ok — paid, period to 2026-12-04T17:00:00.000Z, Pro, one purchase row
+
+[2] 13:18:48Z LB1E1: the same webhook sent again, and a second delivery of it: still one period, one payment
+    ok — one inbox row, one payment, one period
+
+[3] 13:18:52Z LB1E22: a webhook with a wrong signature is 400 and writes nothing; payOS’s own test webhook (orderCode 123) is 200 and ignored as unknown-order
+    ok — forged → 400 nothing stored; sample → 200 and ignored (unknown-order)
+
+[4] 13:18:54Z LB1A3: the transfer is made but the webhook never comes: the return page asks payOS once, the order becomes paid (reconcile), and F5 does not ask again within 10 s
+    ok — check found the money: paid by reconcile, one period
+
+[5] 13:18:56Z LB1E46: F5 on the return page of a pending order asks payOS at most once per 10 seconds
+    ok — one ask per 10 s; another learner’s order is 404
+
+[6] 13:18:58Z LB1A4: neither webhook nor return page: the hourly job finds the money (reconcile), through the real maintenance CLI
+    ok — paid by the job; 3 months is interval quarter
+
+[7] 13:19:03Z Review Focus 1: the webhook and the return page for the SAME transfer at the same time (Promise.all, ×5 orders): always exactly one period
+    ok — 5 races, 5 times one period, one payment, one purchase row
+
+[8] 13:19:21Z LB1E7 + LB1E26: Lan (already Pro) buys 12 months: the new period starts where the running one ends; the second transfer into a paid order is a second period
+    ok — periods follow end to start; pro_until is the end of the chain
+
+[9] 13:19:23Z LB1E33: admin revokes the middle period of a chain: the next one does not move, Lan is Pro until the end of the first period only
+    ok — gap after the revoke; the later period keeps its dates; revoking twice is 409
+
+[10] 13:19:23Z LB1E9: a short payment then the rest: needs_review amount-short, then paid with one period
+    ok — short → needs_review amount-short; rest → paid, one period, two payments
+
+[11] 13:19:27Z LB1E3 + LB1E5 + LB1E6: admin confirms first; the same transfer by webhook is attached (no new period); pressing it twice is 409 order-already-paid
+    ok — confirmed by hand; the webhook attached to it; 409 on the second press; the list finds it
+
+[12] 13:19:29Z LB1E17 + LB1E18: payOS (the fake) fails while the link is made: order failed, 503 provider-unavailable, the key is freed and the next press is a new order; the job cancels the stray link
+    ok — 503, key freed, new order with the next code; the stray link cancelled by the job
+
+[13] 13:19:36Z LB1E28: a price that changed since Lan looked → 409 price-changed; the admin price change after an order leaves the order alone
+    ok — 409 with the current amount; 2 months is 400
+
+[14] 13:19:37Z LB1E36 + LB1E39: the learner deletes the account with an order waiting; the money arrives after: needs_review account-deleted, the payer saved on the order, no period, no purchase row, no payer left in the stored event
+    ok — T1: needs_review, refund info kept, nothing opened, event carries no payer; resolve closes it and clears the info
+
+[15] 13:19:42Z LB1E38: the three payer fields on an order are cleared 90 days after they were saved (the cleanup job), the order stays
+    ok — payer fields cleared, order still needs_review
+
+[16] 13:19:48Z periods end: every period of Lan moved into the past (a year back): Pro ends and Lan is Free again, with no prepaid source and no pro_until
+    ok — Free again, pro_until null
+
+[17] 13:19:50Z privacy: no log line of the API or the worker names an order code, a payer or a reference (checked on the process output the shell kept, if SMOKE_LOGS is set)
+    ok — log files scanned
+
+== payments smoke: 17/17 steps in 67 s ==
+PASS  LB1A1
+PASS  LB1E1
+PASS  LB1E22
+PASS  LB1A3
+PASS  LB1E46
+PASS  LB1A4
+PASS  Review Focus 1
+PASS  LB1E7 + LB1E26
+PASS  LB1E33
+PASS  LB1E9
+PASS  LB1E3 + LB1E5 + LB1E6
+PASS  LB1E17 + LB1E18
+PASS  LB1E28
+PASS  LB1E36 + LB1E39
+PASS  LB1E38
+PASS  periods end
+PASS  privacy
