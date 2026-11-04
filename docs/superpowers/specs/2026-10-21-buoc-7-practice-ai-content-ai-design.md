@@ -1,5 +1,8 @@
 # Bước 7 — Practice AI + Content AI — Design (21/10/2026)
 
+> **Ghi chú 04/11/2026 (đợt sửa sau review, B7-4):** §9.1 và §13 dòng 13 ghi `GET /v1/admin/practice/report-reasons` cần `settings.manage`; **code cho `content.edit`**
+> (`practice/reports/admin-report-reasons.controller.ts`, ruling R18 của Bước 8). Editor đọc được lý do báo lỗi.
+
 > **Trạng thái 21/10/2026:** đã review độc lập (§0b) và chủ dự án duyệt ("ok viết plan luôn đi bạn", sau khi Claude nêu năm câu sau review và cách design tạm viết;
 > chốt D30–D34). Chỉ là tài liệu; chưa có code.
 > **Cập nhật 21/10/2026 (implement xong):** ghi chú as-built và lựa chọn của plan ở cuối §2; PR và số liệu ở `docs/deliveries/buoc-7.md`.

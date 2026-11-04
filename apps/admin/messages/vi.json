@@ -34,6 +34,8 @@
     "invalid-current-password": "Mật khẩu hiện tại không đúng",
     "account-deleted": "Tài khoản của người học đã bị xóa, không mở kỳ được.",
     "account-deleting": "Tài khoản này đang được xóa, chưa sửa được.",
+    "captcha-failed": "Chưa xác minh được bạn không phải máy. Hãy thử lại.",
+    "captcha-unavailable": "Chưa kiểm tra chống bot được lúc này. Hãy thử lại sau ít phút.",
     "confirm-email-mismatch": "Email gõ lại chưa khớp với email của tài khoản.",
     "last-admin": "Đây là admin cuối cùng nên chưa xóa được.",
     "password-login-required": "Cần đăng nhập bằng mật khẩu để vào trang quản trị.",
@@ -2012,6 +2014,8 @@
     "batch": "Lô nhập",
     "all": "Tất cả",
     "download": "Tải CSV",
+    "withoutSenses": "Từ chưa có nghĩa",
+    "withoutSensesHint": "Xuất các từ chưa có nghĩa nào; chỉ Level được dùng để lọc.",
     "archived": "đã lưu trữ",
     "statuses": {
       "unpublishable": "Chưa publish được",

@@ -1039,6 +1039,8 @@
       "idempotency-key-abandoned": "Your last action stopped halfway. Try again.",
       "invalid-credentials": "Wrong email or password.",
       "invalid-current-password": "Your current password is wrong.",
+      "captcha-failed": "We couldn't check that you're not a bot. Try again.",
+      "captcha-unavailable": "The bot check is unavailable right now. Try again in a few minutes.",
       "cancel-in-store": "This plan was bought in an app store: cancel it in that store's subscription settings.",
       "confirm-email-mismatch": "The email you typed does not match this account's email.",
       "google-email-unverified": "Google has not verified this email address yet. Verify it with Google and try again.",

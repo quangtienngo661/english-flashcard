@@ -54,14 +54,12 @@ export class QuickAddService {
   async quickAdd(userId: string, nativeLanguage: 'vi' | 'en', input: QuickAddInput): Promise<QuickAddResult> {
     const profile = await this.identity.getProfile(userId);
     if (!profile) throw notFound();
-    if (input.senseId !== undefined && !(await this.content.visibleSenseIds(userId, [input.senseId])).has(input.senseId)) {
-      await this.groups.assertOwned(this.prisma, userId, input.groupId);
-      throw notFound();
-    }
     return contentProblems(() => this.prisma.$transaction(async (tx) => {
       // Learning's lock first, then Content's owner lock inside createPrivateSense: the same order as deleteMyWord.
       await withLearnerLock(tx, userId);
       await this.groups.assertOwned(tx, userId, input.groupId);
+      // B3-5: the visibility read happens under the lock and on this transaction, not before it.
+      if (input.senseId !== undefined && !(await this.content.visibleSenseIds(userId, [input.senseId], tx)).has(input.senseId)) throw notFound();
       let senseId = input.senseId!;
       const word = input.newWord;
       if (word) {

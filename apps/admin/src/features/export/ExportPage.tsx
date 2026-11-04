@@ -5,7 +5,8 @@ import { useErrorDetails, type ErrorDetails } from '../../api/use-error-message'
 import { useApi } from '../../auth/session-context';
 import { Banner } from '../../ui/Banner';
 import { Button } from '../../ui/Button';
-import { exportSenses } from '../content/content-api';
+import { Checkbox } from '../../ui/Checkbox';
+import { exportEntriesWithoutSenses, exportSenses } from '../content/content-api';
 import { FilterFields, NO_FILTER, toFilter, type FilterValues } from '../content/FilterFields';
 
 /** The file name carries the admin's local date, not UTC (spec §6.3). */
@@ -20,6 +21,7 @@ export function ExportPage() {
   const api = useApi();
   const errorDetails = useErrorDetails();
   const [values, setValues] = useState<FilterValues>(NO_FILTER);
+  const [withoutSenses, setWithoutSenses] = useState(false);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<ErrorDetails | null>(null);
   const busy = useRef(false);
@@ -30,7 +32,11 @@ export function ExportPage() {
     setPending(true);
     setError(null);
     try {
-      saveBlob(await exportSenses(api, toFilter(values, true)), `senses-${localDate(new Date())}.csv`);
+      if (withoutSenses) {
+        saveBlob(await exportEntriesWithoutSenses(api, toFilter(values, true).level), `entries-without-senses-${localDate(new Date())}.csv`);
+      } else {
+        saveBlob(await exportSenses(api, toFilter(values, true)), `senses-${localDate(new Date())}.csv`);
+      }
     } catch (e) {
       setError(errorDetails(e));
     } finally {
@@ -49,6 +55,10 @@ export function ExportPage() {
       className="flex flex-col gap-4 rounded-panel border-2 border-border p-4"
     >
       {error && <Banner variant="error" code={error.code}>{error.message}</Banner>}
+      <Checkbox isSelected={withoutSenses} onChange={setWithoutSenses}>
+        {t('export.withoutSenses')}
+      </Checkbox>
+      {withoutSenses && <p className="text-ui text-muted">{t('export.withoutSensesHint')}</p>}
       <FilterFields values={values} onChange={setValues} withStatus />
       <div className="flex justify-end">
         <Button type="submit" isPending={pending}>

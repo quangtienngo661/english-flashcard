@@ -10,6 +10,7 @@ import { setPendingPassword, writePendingEmail } from '@/app-shell/session/pendi
 import { useSession } from '@/app-shell/session/session-context';
 import { deviceTimezone } from '@/app-shell/timezone-sync';
 import { useSubmitOnce } from '@/app-shell/use-submit-once';
+import { useTurnstile } from '@/app-shell/use-turnstile';
 import { Button } from '@/app-ui/Button';
 import { Checkbox } from '@/app-ui/Checkbox';
 import { DateOfBirthField } from '@/app-ui/DateOfBirthField';
@@ -31,16 +32,26 @@ export function RegisterForm({ today }: { today?: string }) {
   const [consent, setConsent] = useState(false);
   const [errors, setErrors] = useState<{ givenName?: string; email?: string; age?: boolean; password?: PasswordRule[]; form?: string }>({});
 
+  const bot = useTurnstile();
+
   const { submit, busy } = useSubmitOnce(async () => {
-    const registered = await store!.register({
-      given_name: givenName.trim(),
-      ...(familyName.trim() ? { family_name: familyName.trim() } : {}),
-      birth_date: birthDate!,
-      email: email.trim(),
-      password,
-      timezone: deviceTimezone(),
-      accept_terms: true,
-    });
+    let registered: { email: string };
+    try {
+      registered = await store!.register({
+        given_name: givenName.trim(),
+        ...(familyName.trim() ? { family_name: familyName.trim() } : {}),
+        birth_date: birthDate!,
+        email: email.trim(),
+        password,
+        timezone: deviceTimezone(),
+        accept_terms: true,
+        turnstile_token: bot.token!,
+      });
+    } catch (failure) {
+      // The token is spent whatever the answer was (email taken, weak password, ...): a new one for the next press.
+      bot.reset();
+      throw failure;
+    }
     writePendingEmail(registered.email);
     setPendingPassword(password);
     router.replace(`/${locale}/app/verify-email`);
@@ -48,6 +59,7 @@ export function RegisterForm({ today }: { today?: string }) {
 
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
+    if (bot.token === null) return;
     if (!givenName.trim()) {
       setErrors({ givenName: t('register.givenNameRequired') });
       return;
@@ -131,8 +143,9 @@ export function RegisterForm({ today }: { today?: string }) {
         <Checkbox isSelected={consent} onChange={setConsent}>
           {t.rich('register.consent', { terms: link(`/${locale}/terms`), privacy: link(`/${locale}/privacy`) })}
         </Checkbox>
+        {bot.widget}
         <FormError message={errors.form ?? null} />
-        <Button type="submit" variant="sticker" size="lg" isPending={busy} isDisabled={!consent || birthDate === null || !store}>
+        <Button type="submit" variant="sticker" size="lg" isPending={busy} isDisabled={!consent || birthDate === null || !store || bot.token === null}>
           {t('register.submit')}
         </Button>
         <p className="text-center text-caption text-muted">{t('or')}</p>

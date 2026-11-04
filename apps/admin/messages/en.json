@@ -34,6 +34,8 @@
     "invalid-current-password": "The current password is wrong",
     "account-deleted": "The learner's account is deleted, so no period can be opened.",
     "account-deleting": "This account is being deleted and cannot be changed.",
+    "captcha-failed": "We couldn't check that you're not a bot. Please try again.",
+    "captcha-unavailable": "The bot check is unavailable right now. Please try again in a few minutes.",
     "confirm-email-mismatch": "The email you typed does not match the account.",
     "last-admin": "This is the last admin and cannot be deleted.",
     "password-login-required": "Sign in with a password to use the admin site.",
@@ -2012,6 +2014,8 @@
     "batch": "Import batch",
     "all": "All",
     "download": "Download CSV",
+    "withoutSenses": "Words without senses",
+    "withoutSensesHint": "Exports the words that have no sense yet; only Level filters.",
     "archived": "archived",
     "statuses": {
       "unpublishable": "Not publishable yet",

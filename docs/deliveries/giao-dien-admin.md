@@ -609,8 +609,8 @@ plan của từng milestone nằm ở các mục as-built phía trên; mục nà
 
 ## Chưa làm (ngoài đợt này)
 
-- **Dashboard AI còn thiếu hai số:** "Tỉ lệ câu bị luật loại ở lần đầu" và "Người Pro dùng bao nhiêu % lượt".
-- **Nhóm B của việc AI** (golden set, chấm bằng luật và judge, so lần chạy, vòng đời prompt, các màn admin còn lại của nhóm này): chưa có design hay plan.
+- ~~**Dashboard AI còn thiếu hai số:** "Tỉ lệ câu bị luật loại ở lần đầu" và "Người Pro dùng bao nhiêu % lượt".~~ **Đã làm** ở PR #171 (28/10/2026).
+- ~~**Nhóm B của việc AI** (golden set, chấm bằng luật và judge, so lần chạy, vòng đời prompt, các màn admin còn lại của nhóm này): chưa có design hay plan.~~ **Đã làm** ở nhóm B (`docs/deliveries/nhom-b.md`, PR #191–#195, #197, #198).
   Xem `docs/preparation/IMPROVEMENT_PLAN_2026-10-28.md` §4.
 - **Bước 8** (đăng nhập Google, xóa tài khoản người dùng) và **Deploy** (hosting, Postgres và Redis chạy lâu dài, SMTP thật, secrets, backup).
 - **Phần người học và sản phẩm:** app điện thoại (Flutter), cổng thanh toán thật, SDK quảng cáo, người học thật dùng thử (theo dòng "Chưa có" ở §1 của `IMPROVEMENT_PLAN_2026-10-28.md`).

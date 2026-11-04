@@ -13,7 +13,7 @@ private words; quick-add of words encountered elsewhere; word groups, flashcards
 schedule; non-AI definition quizzes; AI-generated fill-in-the-blank practice graded by rule; tier-based
 entitlements and quotas.
 
-**Current phase (29/10/2026): Bước 8 (Google sign-in, account deletion, cancel plan; API, web, admin) is built and merged into `dev` (PR #172–#181, 29/10/2026; real Google not yet tried, see the section "Bước 8" below). Before that (28/10/2026): Bước 0, 1 (Identity core), 2 (Content + Pipeline), 2.5 (admin web, `apps/admin`), 3 (Learning +
+**Current phase (04/11/2026): launch prep rounds A and B are being built** (section "Chuẩn bị launch đợt A và B" below): round A M1 (Turnstile, security headers, PR #211) and the M2 doc PR (#212) are merged into `dev`; round A M2 code and M3 (Free AI allowance, trial off) and round B (payOS, house ad, AdSense) are in progress. Web-only launch: remaining work and open decisions in `docs/preparation/WEB_LAUNCH_DECISIONS_AND_OPEN_ITEMS_2026-11-04.md` (branch `docs/web-launch-research`, local). **Earlier phase (29/10/2026): Bước 8 (Google sign-in, account deletion, cancel plan; API, web, admin) is built and merged into `dev` (PR #172–#181, 29/10/2026; real Google not yet tried, see the section "Bước 8" below). Before that (28/10/2026): Bước 0, 1 (Identity core), 2 (Content + Pipeline), 2.5 (admin web, `apps/admin`), 3 (Learning +
 the Content pieces deferred from Bước 2, system part only), 4 (Practice, API only), 5 (Entitlements, API only), 6 (AI Integration,
 API only) and 7 (Practice AI + Content AI, API only) implemented; the learner web UI for Bước 3–7 (`apps/web` `/vi/app`, `/en/app`) is built
 (section "Giao diện người học" below), blocked on production until Deploy; the admin UI round (24 screens in `apps/admin`) is built (section "Đợt giao diện admin" below).** Real code is
@@ -164,8 +164,7 @@ Goal: experimental versions never reach `main`; `main` only receives work that p
 
 ## Architecture & Key Decisions (accepted, `docs/specs/system-spec.md`)
 
-Bước 0–7 are implemented (Bước 3 system part only, Bước 4–7 API only; see `docs/deliveries/`). Step 8 is still
-decided-but-not-scaffolded:
+Bước 0–8 are implemented (Bước 3 system part and Bước 4–7 were API only at first; their learner and admin UI came in later rounds; see `docs/deliveries/`):
 
 - Backend: **NestJS modular monolith + PostgreSQL**. 7 V1 modules, each owning its own write path:
   Identity & Access, Vocabulary Content, Learning, Content Pipeline, Entitlements & Usage, AI Integration,
@@ -305,11 +304,11 @@ Improvement ideas to weigh **after** the learner UI for Bước 3–7 is done (o
 ## Đợt giao diện admin (apps/admin) — plan & as-built
 
 `docs/deliveries/giao-dien-admin.md` (plan tóm tắt 27/10/2026; as-built per milestone and of the whole round, closed 28/10/2026; PR #144–#156 and #161 for the milestones, then #157, #159, #162–#165,
-#169; CI green on every PR). 24 admin screens, every item of `apps/admin/src/app/nav.ts` (none shows "Sắp có" any more): AI (status, models, operations, prompts, example set, costs, calls),
+#169; CI green on every PR). 24 admin menu items (every item of `apps/admin/src/app/nav.ts`) (none shows "Sắp có" any more): AI (status, models, operations, prompts, example set, costs, calls),
 system settings, reports / report reasons / refunds / unknown forms, users and grants, words / senses / topics. Added after the plan: AI dashboard at `/dashboard` (`ai.view`), bulk import of
 eval examples (limit per operation now 1000), edit and delete for sources, eval runs, publish jobs and unused words (`docs/preparation/ADMIN_CRUD_SURVEY_2026-10-28.md`). Design, decisions (AD1–AD18) and
-plan: `docs/superpowers/{specs,decisions,plans}/2026-10-27-giao-dien-admin*.md`; owner's test flow `docs/deliveries/giao-dien-admin-test-flow.md`. Not done: the dashboard's two missing numbers,
-group B of the AI work (`docs/preparation/IMPROVEMENT_PLAN_2026-10-28.md` §4), Bước 8, Deploy.
+plan: `docs/superpowers/{specs,decisions,plans}/2026-10-27-giao-dien-admin*.md`; owner's test flow `docs/deliveries/giao-dien-admin-test-flow.md`. The dashboard's two missing numbers came with #171 (28/10/2026), group B of the AI work with `docs/deliveries/nhom-b.md`, and Bước 8 is built (below);
+not done: Deploy.
 
 ## Bước 8 — plan & as-built
 
@@ -345,7 +344,7 @@ Các điểm dưới đây phát sinh khi rà quyền của `admin`/`editor` (b�
   `ai.settings` (chỉ `admin`). **Đã rõ ở Bước 5 (19/10/2026, ⚠8 và D6 của design Bước 5):** bỏ quyền `ai.settings`, mọi con số hạn mức,
   tham số trial/Pro, công tắc và trần AI dùng lại `settings.manage` (chỉ `admin`). **Đã rõ ở Bước 6 (20/10/2026):** mọi API AI của admin,
   gồm tình trạng, chi phí và các lần gọi, cần `settings.manage` (chỉ `admin`; design Bước 6 §12.1, B6#25). **Ngoại lệ (chủ dự án 28/10/2026):** dashboard AI (`/v1/admin/ai/dashboard`, `/v1/admin/practice/ai-quality`,
-  `/v1/admin/entitlements/ai-usage/days`) cần quyền `ai.view`, cả `admin` và `editor` đọc được; mọi cài đặt AI, chi phí và các lần gọi vẫn `settings.manage`.
+  `/v1/admin/entitlements/ai-usage/days`) cần quyền `ai.view`, cả `admin` và `editor` đọc được; mọi cài đặt AI và các trang **Chi phí** và **Các lần gọi** vẫn `settings.manage` (dashboard có số tiền theo ngày, model và mục đích, và editor đọc được: chủ ý, `identity.types.ts`, AD19).
 - ~~**Bước 5 — `entitlements.grant` so với D6 ("editor không đụng chi phí AI").**~~ **Đã rõ ở Bước 5 (D6–D8, D33):** `editor` cấp gói Pro
   bình thường (kèm lượt AI cố định của gói) nhưng **không** đặt con số lượt AI tùy ý, chỉ cấp và thu hồi cho người học thường, không thu hồi
   được lần cấp có con số lượt AI; `admin` xem lịch sử cấp của editor và thu hồi. Trần AI toàn hệ thống mỗi ngày là `ai_daily_cap`.
@@ -363,9 +362,9 @@ Các điểm dưới đây phát sinh khi rà quyền của `admin`/`editor` (b�
 
 `docs/deliveries/legal-documents.md` (03/11/2026; PR vào `dev`). Admin soạn, lưu từng phiên bản và đăng hai văn bản (Markdown) ở `/legal` của `apps/admin`, không cần deploy; web đọc bản đang đăng ở `GET /v1/legal/current`; người học đã đồng ý bản cũ bị hỏi lại (`terms_outdated` ở `/v1/me`). Phiên bản đồng ý là số bản đang đăng; chưa đăng bản nào thì vẫn là `TERMS_VERSION`. Nội dung hai văn bản nằm ở nhánh `docs/web-launch-research` (`docs/preparation/legal-drafts/`), chưa vào DB; việc còn lại ở mục cuối `docs/deliveries/deploy-checklist.md`.
 
-## Chuẩn bị launch đợt A và B — plan
+## Chuẩn bị launch đợt A và B — plan & as-built
 
-`docs/deliveries/chuan-bi-launch-a.md` (Turnstile và header, sửa sau review, lượt AI cho Free, tắt trial) và `docs/deliveries/chuan-bi-launch-b.md` (payOS, hộp thoại giới thiệu Pro, AdSense): plan tóm tắt 04/11/2026, chưa có code. Design, decisions, review và plan: `docs/superpowers/{specs,decisions,reviews,plans}/2026-11-04-chuan-bi-launch-{a,b}*`.
+`docs/deliveries/chuan-bi-launch-a.md` (Turnstile và header, sửa sau review, lượt AI cho Free, tắt trial) và `docs/deliveries/chuan-bi-launch-b.md` (payOS, hộp thoại giới thiệu Pro, AdSense): plan tóm tắt 04/11/2026, as-built nối tiếp theo milestone. Tình trạng 04/11/2026: đợt A M1 (PR #211) và PR tài liệu M2 (#212) đã vào `dev`, M2 code và M3 đang làm; đợt B xong M0 (spike CSP `nonce` qua có điều kiện, `docs/deliveries/chuan-bi-launch-b-spike-csp.md`) và M1 trên nhánh `feat/launch-b-m1-orders`, chưa mở PR: M1 của B chỉ merge sau M3 của A. Checklist để chủ dự án tự kiểm: `docs/deliveries/chuan-bi-launch-{a,b}-checklist.md`. Còn mở: Q-B15 (loại tài khoản nối payOS, chủ dự án chưa trả lời) và payOS đòi "tổ chức đã xác thực" trong khi chủ dự án bán với tư cách cá nhân (chưa kiểm cá nhân có xác thực được không). Design, decisions, review và plan: `docs/superpowers/{specs,decisions,reviews,plans}/2026-11-04-chuan-bi-launch-{a,b}*`.
 
 ## Landing (apps/web) - as-built (08-09/10/2026)
 

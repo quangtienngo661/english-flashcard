@@ -49,7 +49,9 @@ WORKDIR /app/apps/admin
 # The URL is written into the bundle. `--mode docker` (not production) lets it be http://localhost:<port>: a production
 # build must use an `admin-api.` host (apps/admin/src/resolve-api-base-url.ts).
 ARG VITE_API_BASE_URL
-ENV VITE_API_BASE_URL=${VITE_API_BASE_URL}
+ARG VITE_TURNSTILE_SITE_KEY=
+ENV VITE_API_BASE_URL=${VITE_API_BASE_URL} \
+    VITE_TURNSTILE_SITE_KEY=${VITE_TURNSTILE_SITE_KEY}
 RUN pnpm exec vite build --mode docker
 
 FROM nginx:1.27-alpine AS admin
@@ -68,9 +70,12 @@ WORKDIR /app/apps/web
 ARG NEXT_PUBLIC_API_BASE_URL
 ARG NEXT_PUBLIC_SITE_URL
 ARG NEXT_PUBLIC_LEARNER_APP=on
+# Blank: the forms use the fake Turnstile widget, which the API accepts in TURNSTILE_MODE=fake (the compose default).
+ARG NEXT_PUBLIC_TURNSTILE_SITE_KEY=
 ENV NEXT_PUBLIC_API_BASE_URL=${NEXT_PUBLIC_API_BASE_URL} \
     NEXT_PUBLIC_SITE_URL=${NEXT_PUBLIC_SITE_URL} \
     NEXT_PUBLIC_LEARNER_APP=${NEXT_PUBLIC_LEARNER_APP} \
+    NEXT_PUBLIC_TURNSTILE_SITE_KEY=${NEXT_PUBLIC_TURNSTILE_SITE_KEY} \
     NEXT_TELEMETRY_DISABLED=1
 RUN pnpm exec next build
 ENV NODE_ENV=production

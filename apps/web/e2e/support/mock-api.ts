@@ -23,6 +23,21 @@ const CORS = {
 
 const seen = new WeakMap<Page, MockRequest[]>();
 
+/**
+ * Stands in for Cloudflare's api.js (launch prep A, design 4.3): `render` and `reset` hand the form a fixed token at once, so
+ * no e2e with a mocked API needs the network. The e2e build has the Cloudflare test site key, so the real widget would load.
+ */
+const TURNSTILE_STUB = `(function () {
+  var widgets = {};
+  var count = 0;
+  function issue(id) { setTimeout(function () { if (widgets[id]) widgets[id].callback('e2e-turnstile-token'); }, 0); }
+  window.turnstile = {
+    render: function (_element, options) { count += 1; var id = 'e2e-widget-' + count; widgets[id] = options; issue(id); return id; },
+    reset: function (id) { issue(id); },
+    remove: function (id) { delete widgets[id]; },
+  };
+})();`;
+
 /** Problem Details body like the API's `ProblemDetailsFilter` (`type` = base + slug). */
 export const problem = (status: number, slug: string, extra: Record<string, unknown> = {}): MockResponse => ({
   status,
@@ -37,11 +52,16 @@ export const tokenBody = (token = 'e2e-token'): MockResponse => ({
 /**
  * Answers every `http://localhost:3000/v1/**` request from `handlers`, keyed `"METHOD /v1/path"` (no query string).
  * Handlers are looked up per request, so a test can change behaviour midway by mutating what its handler reads.
- * An unscripted request gets a 404 problem and is still recorded.
+ * An unscripted request gets a 404 problem and is still recorded. Cloudflare's Turnstile script is answered by a stub unless
+ * `realTurnstile` (only the CSP check wants the real widget).
  */
-export async function mockApi(page: Page, handlers: Record<string, MockHandler>): Promise<void> {
+export async function mockApi(page: Page, handlers: Record<string, MockHandler>, opts: { realTurnstile?: boolean } = {}): Promise<void> {
   const log: MockRequest[] = [];
   seen.set(page, log);
+  if (!opts.realTurnstile) {
+    await page.route(/^https:\/\/challenges\.cloudflare\.com\/turnstile\/v0\/api\.js/, (route) =>
+      route.fulfill({ status: 200, contentType: 'application/javascript', body: TURNSTILE_STUB }));
+  }
   await page.route(`${API}/v1/**`, async (route: Route) => {
     const request = route.request();
     if (request.method() === 'OPTIONS') {
