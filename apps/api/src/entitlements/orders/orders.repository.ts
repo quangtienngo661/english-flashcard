@@ -49,6 +49,30 @@ export type OrderUpdate = {
 
 export type PaymentRecord = { id: string; outcome: string };
 
+/** A new `pending` order: the order code comes from the sequence, the status and the link are not set yet. */
+export type NewOrder = {
+  userId: string;
+  provider: string;
+  environment: BillingEnvironment;
+  orderCode: number;
+  description: string;
+  periodMonths: number;
+  amount: number;
+  currency: string;
+  expiresAt: Date;
+};
+
+/** What a learner sees of their own order (design §3.8): the first period it opened is `period`. */
+export type OrderView = {
+  id: string;
+  status: string;
+  periodMonths: number;
+  amount: number;
+  description: string;
+  expiresAt: Date;
+  period: { startsAt: Date; endsAt: Date } | null;
+};
+
 type OrderRow = NonNullable<Awaited<ReturnType<PrismaClient['billingOrder']['findUnique']>>>;
 
 const toRecord = (row: OrderRow): OrderRecord => ({
@@ -76,6 +100,45 @@ export class OrdersRepository {
   async findByCode(db: Db, provider: string, orderCode: number): Promise<OrderRecord | null> {
     const row = await db.billingOrder.findUnique({ where: { provider_orderCode: { provider, orderCode: BigInt(orderCode) } } });
     return row === null ? null : toRecord(row);
+  }
+
+  /** The next order code: 10^9 and up (the migration's sequence), never reused, also not after a failed order. */
+  async nextOrderCode(db: Db): Promise<number> {
+    const rows = await db.$queryRaw<Array<{ code: bigint }>>`SELECT nextval('billing_order_code_seq') AS code`;
+    return Number(rows[0].code);
+  }
+
+  async insertPending(db: Db, row: NewOrder): Promise<{ id: string }> {
+    return db.billingOrder.create({
+      data: {
+        userId: row.userId, provider: row.provider, environment: row.environment, orderCode: BigInt(row.orderCode), description: row.description,
+        periodMonths: row.periodMonths, amountMinor: BigInt(row.amount), currency: row.currency, status: 'pending', expiresAt: row.expiresAt,
+      },
+      select: { id: true },
+    });
+  }
+
+  /** Keeps payOS's link on the order, only while it is still pending: false when a webhook, the job or staff changed it first. */
+  async setLink(db: Db, id: string, paymentLinkId: string, checkoutUrl: string): Promise<boolean> {
+    const result = await db.billingOrder.updateMany({ where: { id, status: 'pending' }, data: { paymentLinkId, checkoutUrl } });
+    return result.count > 0;
+  }
+
+  /** `pending` → `failed`, only while it is still pending. */
+  async markFailed(db: Db, id: string): Promise<boolean> {
+    const result = await db.billingOrder.updateMany({ where: { id, status: 'pending' }, data: { status: 'failed' } });
+    return result.count > 0;
+  }
+
+  /** The order if it is this learner's, with the first period it opened; null for anyone else's or an unknown id. */
+  async findOwned(db: Db, id: string, userId: string): Promise<OrderView | null> {
+    const row = await db.billingOrder.findFirst({ where: { id, userId }, include: { periods: { orderBy: { startsAt: 'asc' }, take: 1 } } });
+    if (row === null) return null;
+    const period = row.periods[0];
+    return {
+      id: row.id, status: row.status, periodMonths: row.periodMonths, amount: Number(row.amountMinor), description: row.description,
+      expiresAt: row.expiresAt, period: period ? { startsAt: period.startsAt, endsAt: period.endsAt } : null,
+    };
   }
 
   async findById(db: Db, id: string): Promise<OrderRecord | null> {

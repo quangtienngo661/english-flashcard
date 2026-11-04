@@ -22,7 +22,9 @@ import { createPayosClient, PAYOS_CLIENT, PayosAdapter } from './billing/payos/p
 import { WebhookController } from './billing/webhook.controller.js';
 import { EntitlementsService } from './entitlements.service.js';
 import { OrderApplier } from './orders/order-applier.service.js';
+import { MeOrdersController } from './orders/me-orders.controller.js';
 import { OrdersRepository } from './orders/orders.repository.js';
+import { OrdersService } from './orders/orders.service.js';
 import { AdminGrantsController } from './grants/admin-grants.controller.js';
 import { GrantsService } from './grants/grants.service.js';
 import { NoticePlanner } from './notices/notice-planner.service.js';
@@ -39,7 +41,7 @@ import { UsageQueries } from './usage/usage.queries.js';
   imports: [IdentityModule, SettingsModule, MailModule],
   controllers: [
     WebhookController, AdminGrantsController, AdminEntitlementsController, MeEntitlementsController, MeSubscriptionsController, MeTransactionsController,
-    AdminTransactionsController, FakePayosController,
+    AdminTransactionsController, FakePayosController, MeOrdersController,
   ],
   providers: [
     EntitlementsService,
@@ -57,6 +59,7 @@ import { UsageQueries } from './usage/usage.queries.js';
     BillingEventApplier,
     OrderApplier,
     OrdersRepository,
+    OrdersService,
     TransactionsRepository,
     BillingJobs,
     NoticePlanner,

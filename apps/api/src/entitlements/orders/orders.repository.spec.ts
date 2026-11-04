@@ -73,4 +73,46 @@ describe('OrdersRepository (query shapes; the data itself is checked by the paym
     await repo.updateOrder(db as never, 'o1', { status: 'paid', paidVia: 'webhook', reviewReason: null });
     expect(db.billingOrder.update).toHaveBeenCalledWith({ where: { id: 'o1' }, data: { status: 'paid', paidVia: 'webhook', reviewReason: null } });
   });
+
+  it('nextOrderCode reads the sequence and gives a number', async () => {
+    const queryRaw = vi.fn(async (_strings: TemplateStringsArray) => [{ code: 1_000_000_007n }]);
+    expect(await repo.nextOrderCode({ $queryRaw: queryRaw } as never)).toBe(1_000_000_007);
+    expect(queryRaw.mock.calls[0][0].join('?')).toContain("nextval('billing_order_code_seq')");
+  });
+
+  it('insertPending writes a pending order with bigint amount and order code and no link yet', async () => {
+    const create = vi.fn(async () => ({ id: 'o9' }));
+    const expiresAt = new Date('2026-11-05T03:17:00Z');
+    expect(await repo.insertPending({ billingOrder: { create } } as never, {
+      userId: 'u1', provider: 'payos', environment: 'sandbox', orderCode: 1_000_000_000, description: 'WM0XSNJG0', periodMonths: 1, amount: 79000, currency: 'VND', expiresAt,
+    })).toEqual({ id: 'o9' });
+    expect(create).toHaveBeenCalledWith({
+      data: { userId: 'u1', provider: 'payos', environment: 'sandbox', orderCode: 1_000_000_000n, description: 'WM0XSNJG0', periodMonths: 1, amountMinor: 79000n, currency: 'VND', status: 'pending', expiresAt },
+      select: { id: true },
+    });
+  });
+
+  it('setLink and markFailed only touch an order that is still pending, and say whether they did', async () => {
+    const updateMany = vi.fn(async () => ({ count: 1 }));
+    const db = { billingOrder: { updateMany } };
+    expect(await repo.setLink(db as never, 'o1', 'link', 'https://pay.example')).toBe(true);
+    expect(updateMany).toHaveBeenLastCalledWith({ where: { id: 'o1', status: 'pending' }, data: { paymentLinkId: 'link', checkoutUrl: 'https://pay.example' } });
+    expect(await repo.markFailed(db as never, 'o1')).toBe(true);
+    expect(updateMany).toHaveBeenLastCalledWith({ where: { id: 'o1', status: 'pending' }, data: { status: 'failed' } });
+    updateMany.mockResolvedValue({ count: 0 });
+    expect(await repo.setLink(db as never, 'o1', 'l', 'u')).toBe(false);
+    expect(await repo.markFailed(db as never, 'o1')).toBe(false);
+  });
+
+  it('findOwned asks for the order of this learner with its first period, and is null for anyone else’s', async () => {
+    const start = new Date('2026-11-05T03:02:00Z');
+    const end = new Date('2026-12-05T17:00:00Z');
+    const findFirst = vi.fn(async () => ({ ...ROW, periods: [{ startsAt: start, endsAt: end }] }));
+    expect(await repo.findOwned({ billingOrder: { findFirst } } as never, 'o1', 'u1')).toEqual({
+      id: 'o1', status: 'pending', periodMonths: 3, amount: 199000, description: 'WM0XSNJKV', expiresAt: ROW.expiresAt, period: { startsAt: start, endsAt: end },
+    });
+    expect(findFirst).toHaveBeenCalledWith({ where: { id: 'o1', userId: 'u1' }, include: { periods: { orderBy: { startsAt: 'asc' }, take: 1 } } });
+    expect(await repo.findOwned({ billingOrder: { findFirst: vi.fn(async () => null) } } as never, 'o1', 'other')).toBeNull();
+    expect((await repo.findOwned({ billingOrder: { findFirst: vi.fn(async () => ({ ...ROW, periods: [] })) } } as never, 'o1', 'u1'))?.period).toBeNull();
+  });
 });
