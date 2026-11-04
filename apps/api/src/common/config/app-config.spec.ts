@@ -128,7 +128,7 @@ describe('loadConfig', () => {
     expect(config.pipeline).toEqual({
       importMaxRows: 20_000,
       importMaxBytes: 10_485_760,
-      exportMaxRows: 5_000,
+      exportMaxRows: 10_000,
       leaseSeconds: 60,
       heartbeatSeconds: 20,
       reconcileSeconds: 30,
