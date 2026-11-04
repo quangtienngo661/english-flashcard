@@ -57,6 +57,12 @@ export const ACCOUNT_DATA_MAP: Record<string, Disposition> = {
   'billing_events.user_id': 'erase',
   'trial_history.user_id': 'erase',
   'billing_transactions.user_id': 'anonymise',
+  // Prepaid Pro (launch prep B): the order stays anonymised as the money record; the periods go with the account.
+  'billing_orders.user_id': 'anonymise',
+  'billing_orders.resolved_by': 'keep-id',
+  'billing_order_payments.confirmed_by': 'keep-id',
+  'prepaid_periods.user_id': 'erase',
+  'prepaid_periods.revoked_by': 'keep-id',
   'usage_records.user_id': 'anonymise',
   'entitlement_notices.user_id': 'erase',
   'entitlement_notices.recipient_user_id': 'erase',
