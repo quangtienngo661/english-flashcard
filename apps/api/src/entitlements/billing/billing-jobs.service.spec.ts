@@ -308,3 +308,14 @@ describe('BillingJobs writes ended_at (launch prep A, design 6.3.3)', () => {
     expect(subs[0]).toMatchObject({ status: 'active', endedAt: null });
   });
 });
+
+describe('BillingJobs dates ended_at from the row, not from the provider answer (review M3 I1)', () => {
+  it('an overdue active row (not cancelled) that the provider reports expired and cancelled → ended_at is the job\'s now, not the old period end', async () => {
+    // Wordmet still counted Lan as Pro while she was overdue (grace runs to 24/11 12:00), so her uses of 18/11 were made as Pro.
+    const fetched: FetchedState = { status: 'expired', interval: 'month', currentPeriodStart: at('2026-10-17T12:00:00.000Z'),
+      currentPeriodEnd: at('2026-11-17T12:00:00.000Z'), trialEndsAt: null, cancelAtPeriodEnd: true };
+    const { jobs, subs } = setup({ subs: [subRow({ currentPeriodEnd: at('2026-11-17T12:00:00.000Z'), cancelAtPeriodEnd: false })], fetch: async () => fetched });
+    await jobs.timeTransitions(at('2026-11-19T00:00:00.000Z'));
+    expect(subs[0]).toMatchObject({ status: 'expired', endedAt: at('2026-11-19T00:00:00.000Z') });
+  });
+});
