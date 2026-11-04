@@ -1877,6 +1877,8 @@
     "batch": "Lô nhập",
     "all": "Tất cả",
     "download": "Tải CSV",
+    "withoutSenses": "Từ chưa có nghĩa",
+    "withoutSensesHint": "Xuất các từ chưa có nghĩa nào; chỉ Level được dùng để lọc.",
     "archived": "đã lưu trữ",
     "statuses": {
       "unpublishable": "Chưa publish được",
