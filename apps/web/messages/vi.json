@@ -1497,6 +1497,18 @@
         "confirm": "Hủy gia hạn",
         "requested": "Đã gửi yêu cầu hủy gia hạn"
       },
+      "order": {
+        "checking": "Đang kiểm tra đơn của bạn…",
+        "paid": "Đã nhận tiền. Kỳ Pro này dùng tới hết {date}.",
+        "paidNoDate": "Đã nhận tiền. Gói Pro của bạn đã mở.",
+        "start": "Bắt đầu học",
+        "pending": "Đang chờ ngân hàng xác nhận. Bạn có thể đóng trang này; gói sẽ tự mở khi tiền tới.",
+        "needsReview": "Chúng tôi đang kiểm tra khoản chuyển của bạn.",
+        "contact": "Cần hỗ trợ? Viết cho <mail>{email}</mail>.",
+        "ended": "Đơn đã hủy hoặc hết hạn.",
+        "toPlans": "Về trang Gói",
+        "notFound": "Không tìm thấy đơn này."
+      },
       "eyebrow": "Gói học",
       "title": "Học đều mỗi ngày, lên Pro khi cần",
       "titlePro": "Bạn đang dùng gói Pro",
