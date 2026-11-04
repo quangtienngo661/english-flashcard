@@ -1,4 +1,6 @@
 import { randomBytes } from 'node:crypto';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { loadConfig } from './app-config.js';
 
@@ -128,7 +130,7 @@ describe('loadConfig', () => {
     expect(config.pipeline).toEqual({
       importMaxRows: 20_000,
       importMaxBytes: 10_485_760,
-      exportMaxRows: 5_000,
+      exportMaxRows: 10_000,
       leaseSeconds: 60,
       heartbeatSeconds: 20,
       reconcileSeconds: 30,
@@ -447,5 +449,15 @@ describe('Turnstile configuration (launch prep A, design 4.2)', () => {
 
   it('adds auth.captcha.ip 60/60s by ip', () => {
     expect(loadConfig(validEnv()).limits['auth.captcha.ip']).toEqual({ by: 'ip', max: 60, windowSeconds: 60 });
+  });
+});
+
+// The documented default of EXPORT_MAX_ROWS lives in code and in two example env files (apps/api for `pnpm start`, the repo root for
+// `pnpm bootstrap`). A copy that disagrees silently caps the words-without-senses export of the Docker stack (7,799 > 5,000).
+describe('EXPORT_MAX_ROWS in the example env files (B3-7, review of M2)', () => {
+  const valueIn = (file: string) => /^EXPORT_MAX_ROWS=(\d+)\s*$/m.exec(readFileSync(resolve(process.cwd(), file), 'utf8'))?.[1];
+
+  it.each(['.env.example', '../../.env.example'])('%s carries the default of the code', (file) => {
+    expect(Number(valueIn(file))).toBe(loadConfig(validEnv()).pipeline.exportMaxRows);
   });
 });

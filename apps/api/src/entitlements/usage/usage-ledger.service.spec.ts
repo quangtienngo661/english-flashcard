@@ -29,6 +29,8 @@ type Setup = {
   confirmedInCycle?: number;
   creditsInCycle?: number;
   credit?: boolean;
+  /** Whether this operation has a confirmed `use` row inside the cycle (B5-7). Defaults to true so the older refund cases keep their meaning. */
+  confirmedUse?: boolean;
 };
 
 /**
@@ -99,6 +101,7 @@ function setup(input: Setup = {}) {
     capUsed: vi.fn(async (db: unknown) => (onTx(db, 'capUsed'), input.capUsed ?? { confirmed: 0, reserved: 0 })),
     confirmedInCycle: vi.fn(async (db: unknown) => (onTx(db, 'confirmedInCycle'), input.confirmedInCycle ?? 0)),
     creditsInCycle: vi.fn(async (db: unknown) => (onTx(db, 'creditsInCycle'), input.creditsInCycle ?? 0)),
+    hasConfirmedUseInCycle: vi.fn(async (db: unknown) => (onTx(db, 'hasConfirmedUseInCycle'), input.confirmedUse ?? true)),
   };
   const logger = { warn: vi.fn(), info: vi.fn() };
   const service = new UsageLedgerService(
@@ -266,6 +269,26 @@ describe('UsageLedgerService.refund', () => {
     await service.refund(USER, 'ai_practice', OP, 'report-1');
     expect(usage.confirmedInCycle).toHaveBeenCalledWith(expect.anything(), USER, 'ai_practice', CYCLE);
     expect(usage.creditsInCycle).toHaveBeenCalledWith(expect.anything(), USER, 'ai_practice', CYCLE);
+  });
+
+  // B5-7: the unit being refunded must be a confirmed use of this very operation, inside the current cycle.
+  it('LA2#1: the operation has no confirmed use (a released one, or none), although the cycle has confirmed uses → refunded false, no credit row', async () => {
+    const { service, events, execs } = setup({ confirmedInCycle: 3, confirmedUse: false });
+    expect(await service.refund(USER, 'ai_practice', OP, 'report-1')).toEqual({ refunded: false });
+    expect(events.some((event) => event.startsWith('INSERT'))).toBe(false);
+    expect(execs.some((sql) => sql.includes('INSERT'))).toBe(false);
+  });
+
+  it('LA2#2: the confirmed use is looked for inside the current cycle only (a use confirmed in an earlier cycle does not qualify)', async () => {
+    const { service, usage } = setup({ confirmedInCycle: 1, confirmedUse: false });
+    expect(await service.refund(USER, 'ai_practice', OP, 'report-1')).toEqual({ refunded: false });
+    expect(usage.hasConfirmedUseInCycle).toHaveBeenCalledWith(expect.anything(), USER, 'ai_practice', OP, CYCLE);
+  });
+
+  it('a confirmed use of the operation inside the cycle still refunds', async () => {
+    const { service, usage } = setup({ confirmedInCycle: 1, confirmedUse: true });
+    expect(await service.refund(USER, 'ai_practice', OP, 'report-1')).toEqual({ refunded: true });
+    expect(usage.hasConfirmedUseInCycle).toHaveBeenCalledWith(expect.anything(), USER, 'ai_practice', OP, CYCLE);
   });
 
   it('no anchor (no Pro, trial or AI grant) → refunded false', async () => {

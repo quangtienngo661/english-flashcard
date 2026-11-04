@@ -89,3 +89,31 @@ describe('topicLabel', () => {
     expect(topicLabel(old, 'vi', 'archived')).toBe('Cũ (old) · archived');
   });
 });
+
+describe('export of words without senses (B3-7)', () => {
+  it('LA2#10 (B3-7): "Từ chưa có nghĩa" asks for entries/export?has_sense=false and saves entries-without-senses-<date>.csv', async () => {
+    vitest.useFakeTimers({ toFake: ['Date'] });
+    vitest.setSystemTime(new Date(2026, 9, 14, 9, 0));
+    open({ 'GET /v1/admin/content/entries/export?has_sense=false': csv });
+    await userEvent.click(await screen.findByRole('checkbox', { name: t.withoutSenses }));
+    await userEvent.click(screen.getByRole('button', { name: t.download }));
+    await waitFor(() => expect(saveBlob).toHaveBeenCalledTimes(1));
+    expect(saveBlob.mock.calls[0]![1]).toBe('entries-without-senses-2026-10-14.csv');
+  });
+
+  it('LA2#10: with the box ticked only the level goes along (the API takes nothing else), and unticking returns to the sense export', async () => {
+    open({
+      'GET /v1/admin/content/entries/export?has_sense=false&level=B1': csv,
+      'GET /v1/admin/content/senses/export?level=B1': csv,
+    });
+    await choose(t.level, 'B1');
+    await userEvent.click(await screen.findByRole('checkbox', { name: t.withoutSenses }));
+    await userEvent.click(screen.getByRole('button', { name: t.download }));
+    await waitFor(() => expect(saveBlob).toHaveBeenCalledTimes(1));
+    await userEvent.click(screen.getByRole('checkbox', { name: t.withoutSenses }));
+    await userEvent.click(screen.getByRole('button', { name: t.download }));
+    await waitFor(() => expect(saveBlob).toHaveBeenCalledTimes(2));
+    expect(saveBlob.mock.calls[1]![1]).toMatch(/^senses-/);
+  });
+});
+

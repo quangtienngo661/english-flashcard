@@ -541,7 +541,8 @@ describe('BillingEventApplier.apply (design §9.2 step 4, §9.4)', () => {
     const sub = addSub(db, { status: 'expired' });
     const renewal = { ...PERIOD, currentPeriodStart: '2026-12-01T00:00:00.000Z', currentPeriodEnd: '2027-01-01T00:00:00.000Z', transactionId: 'tx-9' };
     expect(await applier.apply(addEvent(db, 'renewed', renewal))).toBe('applied');
-    expect(sub).toMatchObject({ status: 'active', quotaAnchorAt: at('2026-12-01T00:00:00.000Z'), currentTransactionId: 'tx-9' });
+    // B5-5: the period starts on 01/12 but the event happened on 15/11 10:00, the earlier of the two is the anchor.
+    expect(sub).toMatchObject({ status: 'active', quotaAnchorAt: at('2026-11-15T10:00:00.000Z'), currentTransactionId: 'tx-9' });
   });
 
   it('an additive event older than last_event_at applies but last_event_at does not move back', async () => {

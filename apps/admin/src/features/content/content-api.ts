@@ -129,6 +129,13 @@ export function exportSenses(api: ApiClient, filter: SenseFilter): Promise<Blob>
   return api.getBlob(`/v1/admin/content/senses/export${suffix}`);
 }
 
+/** B3-7: the words that have no sense yet (`entries/export?has_sense=false`); the API takes only the level besides. */
+export function exportEntriesWithoutSenses(api: ApiClient, level?: string): Promise<Blob> {
+  const query = new URLSearchParams({ has_sense: 'false' });
+  if (level) query.set('level', level);
+  return api.getBlob(`/v1/admin/content/entries/export?${query}`);
+}
+
 export async function listTopics(api: ApiClient): Promise<TopicView[]> {
   return (await api.get<{ items: TopicView[] }>('/v1/admin/taxonomy/topics')).items;
 }

@@ -58,3 +58,19 @@ describe('UsageQueries.aiUsedMany', () => {
     expect(used.get(B)).toEqual({ ai_practice: 0, ai_lookup: 7 });
   });
 });
+
+describe('UsageQueries.hasConfirmedUseInCycle (B5-7)', () => {
+  const cycle = { start: new Date('2026-11-01T00:00:00.000Z'), end: new Date('2026-12-01T00:00:00.000Z') };
+
+  it('asks for a confirmed use of this operation confirmed inside [start, end), and nothing else', async () => {
+    const count = vi.fn(async () => 1);
+    expect(await new UsageQueries().hasConfirmedUseInCycle({ usageRecord: { count } } as never, A, 'ai_practice', 'op-1', cycle)).toBe(true);
+    expect(count).toHaveBeenCalledWith({
+      where: { userId: A, pool: 'ai_practice', operationId: 'op-1', kind: 'use', status: 'confirmed', confirmedAt: { gte: cycle.start, lt: cycle.end } },
+    });
+  });
+
+  it('no such row → false', async () => {
+    expect(await new UsageQueries().hasConfirmedUseInCycle({ usageRecord: { count: async () => 0 } } as never, A, 'ai_practice', 'op-1', cycle)).toBe(false);
+  });
+});

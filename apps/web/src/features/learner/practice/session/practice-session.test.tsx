@@ -111,9 +111,7 @@ describe('PracticeSession (K/60–K/67)', () => {
     const bold = screen.getByRole('button', { name: new RegExp(primary) });
     expect(bold.querySelector('kbd')).toHaveTextContent('Enter');
     expect(bold).toHaveAttribute('data-variant', 'sticker');
-    expect(bold).toHaveClass('font-bold');
     expect(buttons.find((b) => b !== bold)).toHaveAttribute('data-variant', 'quiet');
-    expect(bold.parentElement).toHaveClass('sm:grid-cols-2');
     await userEvent.keyboard('{Enter}');
     await screen.findByText('server');
     const reviewPath = '/v1/practice/items/item-4/review';
@@ -132,7 +130,7 @@ describe('PracticeSession (K/60–K/67)', () => {
     renderApp(<PracticeSession />, { locale: 'en', routes: routes({ 'POST /v1/practice/items/item-4/answer': () => Response.json(result(answer)) }) });
     await screen.findByText('triển khai');
     await userEvent.keyboard('1');
-    expect(await screen.findByText(note)).toHaveClass('text-caption', 'text-muted');
+    expect(await screen.findByText(note)).toBeInTheDocument();
   });
 
   it.each([

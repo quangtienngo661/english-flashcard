@@ -233,7 +233,7 @@ const envSchema = z.object({
   PUBLISH_MAX_ITEMS: positiveInteger.default(500),
   IMPORT_MAX_ROWS: positiveInteger.default(20_000),
   IMPORT_MAX_BYTES: positiveInteger.default(10_485_760),
-  EXPORT_MAX_ROWS: positiveInteger.default(5_000),
+  EXPORT_MAX_ROWS: positiveInteger.default(10_000),
   IMPORT_LEASE_SECONDS: positiveInteger.default(60),
   IMPORT_HEARTBEAT_SECONDS: positiveInteger.default(20),
   IMPORT_RECONCILE_SECONDS: positiveInteger.default(30),

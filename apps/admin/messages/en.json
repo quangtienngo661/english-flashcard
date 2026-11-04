@@ -1877,6 +1877,8 @@
     "batch": "Import batch",
     "all": "All",
     "download": "Download CSV",
+    "withoutSenses": "Words without senses",
+    "withoutSensesHint": "Exports the words that have no sense yet; only Level filters.",
     "archived": "archived",
     "statuses": {
       "unpublishable": "Not publishable yet",

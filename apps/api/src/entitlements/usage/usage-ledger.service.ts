@@ -148,6 +148,8 @@ export class UsageLedgerService {
       const anchor = await this.anchor(tx, userId, entitlements, now);
       if (!anchor) return { refunded: false };
       const cycle = cycleAt(anchor, now);
+      // B5-7: the unit given back is this operation's own confirmed use of the current cycle; without one nothing is credited.
+      if (!(await this.usage.hasConfirmedUseInCycle(tx, userId, pool, operationId, cycle))) return { refunded: false };
       const confirmed = await this.usage.confirmedInCycle(tx, userId, pool, cycle);
       const credits = await this.usage.creditsInCycle(tx, userId, pool, cycle);
       if (confirmed - credits <= 0) return { refunded: false };

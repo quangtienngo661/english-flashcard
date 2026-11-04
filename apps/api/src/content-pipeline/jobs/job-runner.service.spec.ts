@@ -1,4 +1,4 @@
-import type { Job } from 'bullmq';
+import { UnrecoverableError, type Job } from 'bullmq';
 import { describe, expect, it, vi } from 'vitest';
 import type { AppConfig } from '../../common/config/app-config.js';
 import type { AppLogger } from '../../common/logging/app-logger.js';
@@ -17,7 +17,7 @@ function setup(options: { lease: { epoch: number; attempts: number } | null; run
     finish: vi.fn(async () => true),
     release: vi.fn(async () => true),
   };
-  const config = { pipeline: { heartbeatSeconds: 3600 } } as unknown as AppConfig;
+  const config = { pipeline: { heartbeatSeconds: 3600, jobAttempts: 3 } } as unknown as AppConfig;
   const runner = new JobRunnerService(config, {} as PrismaClient, backgroundJobs as unknown as BackgroundJobsService,
     {} as JobHandlerRegistry, { warn: vi.fn(), info: vi.fn() } as unknown as AppLogger);
   const handler = { queue: 'content-publish', run: vi.fn(options.run ?? (async () => 'succeeded' as const)) } satisfies JobHandler;
@@ -62,5 +62,38 @@ describe('JobRunnerService.process and a cancelled job', () => {
 
     expect(backgroundJobs.finish).toHaveBeenCalledWith(JOB, 4, 'failed', 'Error: boom');
     expect(backgroundJobs.release).not.toHaveBeenCalled();
+  });
+});
+
+// B2-6: BullMQ counts a job's tries in Redis, but the reconciler can put the job back with fresh tries. The count kept in
+// background_jobs.attempts (raised when a run starts) is the ceiling: the third run is the last, whatever Redis says.
+describe('JobRunnerService.process and the stored attempt count (B2-6)', () => {
+  it('LA2#6: the third stored run fails for good although BullMQ still has tries; BullMQ is told not to try again', async () => {
+    const { backgroundJobs, process } = setup({ lease: { epoch: 4, attempts: 3 }, attemptsMade: 1, run: async () => { throw new Error('boom'); } });
+
+    await expect(process()).rejects.toBeInstanceOf(UnrecoverableError);
+
+    expect(backgroundJobs.finish).toHaveBeenCalledWith(JOB, 4, 'failed', 'Error: boom');
+    expect(backgroundJobs.release).not.toHaveBeenCalled();
+  });
+
+  it('control: the first stored run with tries left is given back for another run, and the error goes to BullMQ unchanged', async () => {
+    const { backgroundJobs, process } = setup({ lease: { epoch: 4, attempts: 1 }, attemptsMade: 0, run: async () => { throw new Error('boom'); } });
+
+    const failure = await process().catch((error: unknown) => error);
+
+    expect(failure).toBeInstanceOf(Error);
+    expect(failure).not.toBeInstanceOf(UnrecoverableError);
+    expect(backgroundJobs.release).toHaveBeenCalledWith(JOB, 4);
+    expect(backgroundJobs.finish).not.toHaveBeenCalled();
+  });
+
+  it('the second stored run still has a try left', async () => {
+    const { backgroundJobs, process } = setup({ lease: { epoch: 4, attempts: 2 }, attemptsMade: 1, run: async () => { throw new Error('boom'); } });
+
+    await expect(process()).rejects.toThrow('boom');
+
+    expect(backgroundJobs.release).toHaveBeenCalledWith(JOB, 4);
+    expect(backgroundJobs.finish).not.toHaveBeenCalled();
   });
 });
