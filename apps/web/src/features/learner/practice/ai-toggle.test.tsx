@@ -41,7 +41,7 @@ const entitlements = (plan: 'free' | 'pro') => ({
 const CONFIG = {
   practice: { max_questions_per_session: 20, default_questions_per_session: 12 },
   reminders: { send_time: '20:00' }, learning: { backlog_after_days: 60, groups_per_user: 100 },
-  plans: { free: { practice_sessions_per_day: 3 }, trial: { ai_practice_per_cycle: 100, ai_lookup_per_cycle: 30 }, pro: { practice_sessions_per_day: 30, ai_practice_per_cycle: 300, ai_lookup_per_cycle: 100 } },
+  plans: { free: { practice_sessions_per_day: 3, ai_practice_per_cycle: 15, ai_lookup_per_cycle: 5 }, trial: { ai_practice_per_cycle: 100, ai_lookup_per_cycle: 30 }, pro: { practice_sessions_per_day: 30, ai_practice_per_cycle: 300, ai_lookup_per_cycle: 100 } },
 };
 const problem = (status: number, slug: string, extra: Record<string, unknown> = {}): Route => () =>
   new Response(JSON.stringify({ type: `http://api.test/problems/${slug}`, status, title: slug, ...extra }), {

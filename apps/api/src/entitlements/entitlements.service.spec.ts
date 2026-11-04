@@ -33,6 +33,9 @@ function limitsGrant(limits: GrantSource['limits']): GrantSource {
   };
 }
 
+/** LA3#11: with both Free AI numbers at 0 the Free plan has no AI, which is what these older tests pin (the default is 15 and 5 since launch prep A). */
+const FREE_AI_OFF = { freeAiPracticePerCycle: 0, freeAiLookupPerCycle: 0 };
+
 type Setup = {
   entitlements?: Partial<AppSettings['entitlements']>;
   profile?: Profile | null;
@@ -72,7 +75,7 @@ function setup(input: Setup = {}) {
 
 describe('EntitlementsService.snapshot', () => {
   it('B5#1: a new user\'s snapshot is free, practice 3/day, AI 0, both features plan-required, ads.show false, trial_eligible true when verified', async () => {
-    const { service } = setup();
+    const { service } = setup({ entitlements: FREE_AI_OFF });
     const snapshot = await service.snapshot(USER);
     expect(snapshot).toEqual({
       plan: 'free',
@@ -108,7 +111,7 @@ describe('EntitlementsService.snapshot', () => {
   });
 
   it('B5E41/B5E91: a staff user without grants is free', async () => {
-    const snapshot = await setup({ profile: profile({ staff_role: 'admin' }) }).service.snapshot(USER);
+    const snapshot = await setup({ profile: profile({ staff_role: 'admin' }), entitlements: FREE_AI_OFF }).service.snapshot(USER);
     expect(snapshot?.plan).toBe('free');
     expect(snapshot?.pools.practice_sessions.limit).toBe(3);
     expect(snapshot?.pools.ai_practice.limit).toBe(0);
@@ -193,7 +196,7 @@ describe('EntitlementsService.check', () => {
   });
 
   it('with a transaction, an AI feature reads settings and sources through it (no second connection)', async () => {
-    const { service, settings, sources } = setup();
+    const { service, settings, sources } = setup({ entitlements: FREE_AI_OFF });
     const tx = { name: 'tx' };
     expect(await service.check(USER, 'ai.practice', tx as never)).toEqual({ allowed: false, reason: 'plan-required' });
     expect(settings.get).toHaveBeenCalledWith(tx);
@@ -201,7 +204,7 @@ describe('EntitlementsService.check', () => {
   });
 
   it('B5#20/B5E31: ai.practice limit 0 → plan-required; a Pro user without it is allowed', async () => {
-    expect(await setup().service.check(USER, 'ai.practice')).toEqual({ allowed: false, reason: 'plan-required' });
+    expect(await setup({ entitlements: FREE_AI_OFF }).service.check(USER, 'ai.practice')).toEqual({ allowed: false, reason: 'plan-required' });
     const zeroed = setup({ subscriptions: [proSubscription()], grants: [limitsGrant({ ai_practice_per_cycle: 0 })] });
     expect(await zeroed.service.check(USER, 'ai.practice')).toEqual({ allowed: false, reason: 'plan-required' });
     expect(await zeroed.service.check(USER, 'ai.lookup')).toEqual({ allowed: true });

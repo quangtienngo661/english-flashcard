@@ -25,6 +25,8 @@ export type AppSettings = {
   /** Bước 5 (design §13, D18). */
   entitlements: {
     freePracticeSessionsPerDay: number; proPracticeSessionsPerDay: number;
+    /** Launch prep A (design 6.6): the monthly AI allowance of the Free plan; 0 gives Free no AI, as before. */
+    freeAiPracticePerCycle: number; freeAiLookupPerCycle: number;
     proAiPracticePerCycle: number; proAiLookupPerCycle: number; trialAiPracticePerCycle: number; trialAiLookupPerCycle: number;
     /** `trialReminderDaysBefore`: at least 3 days before the trial ends (owner 02/11/2026, Q8). */
     graceDays: number; trialReminderDaysBefore: number;
@@ -33,6 +35,8 @@ export type AppSettings = {
     aiEnabled: boolean;
     /** `null` = no daily cap on AI units for the whole system (owner 02/11/2026, Q10); 0 still switches AI off. */
     aiDailyCap: number | null;
+    /** Launch prep A (design 6.4, DA19): what all Free accounts together may use of AI in a day, under `aiDailyCap`; 0 = no AI for Free. */
+    freeAiDailyCap: number;
     /** `null` = no alert (D36). */
     aiCapAlertPercent: number | null;
     adsEnabled: boolean; adsInterstitialPerDay: number; adsMinIntervalMinutes: number;
@@ -70,9 +74,10 @@ export const SETTINGS_DEFAULTS: AppSettings = {
     aiPrefetchCount: 2,
   },
   entitlements: {
-    freePracticeSessionsPerDay: 3, proPracticeSessionsPerDay: 30, proAiPracticePerCycle: 300, proAiLookupPerCycle: 100,
+    freePracticeSessionsPerDay: 3, proPracticeSessionsPerDay: 30, freeAiPracticePerCycle: 15, freeAiLookupPerCycle: 5,
+    proAiPracticePerCycle: 300, proAiLookupPerCycle: 100,
     trialAiPracticePerCycle: 300, trialAiLookupPerCycle: 100, graceDays: 7, trialReminderDaysBefore: 3,
-    renewalNoticeDaysBefore: 7, aiEnabled: true, aiDailyCap: 1000, aiCapAlertPercent: 75, adsEnabled: false,
+    renewalNoticeDaysBefore: 7, aiEnabled: true, aiDailyCap: 1000, freeAiDailyCap: 500, aiCapAlertPercent: 75, adsEnabled: false,
     adsInterstitialPerDay: 3, adsMinIntervalMinutes: 10, transactionRetentionYears: 10,
   },
   identity: { unverifiedCleanupDays: 7 },
@@ -111,6 +116,8 @@ export const SETTINGS_BOUNDS = {
   entitlements: {
     free_practice_sessions_per_day: { min: 1, max: 50 },
     pro_practice_sessions_per_day: { min: 1, max: 200, at_least: 'free_practice_sessions_per_day' },
+    free_ai_practice_per_cycle: { min: 0, max: 5000 },
+    free_ai_lookup_per_cycle: { min: 0, max: 5000 },
     pro_ai_practice_per_cycle: { min: 0, max: 5000 },
     pro_ai_lookup_per_cycle: { min: 0, max: 5000 },
     trial_ai_practice_per_cycle: { min: 0, max: 5000 },
@@ -119,6 +126,7 @@ export const SETTINGS_BOUNDS = {
     trial_reminder_days_before: { min: 3, max: 6 },
     renewal_notice_days_before: { min: 7, max: 30 },
     ai_daily_cap: { min: 0, max: 100000, nullable: true },
+    free_ai_daily_cap: { min: 0, max: 100000 },
     ai_cap_alert_percent: { min: 50, max: 95, nullable: true },
     ads_interstitial_per_day: { min: 0, max: 20 },
     ads_min_interval_minutes: { min: 1, max: 240 },
@@ -186,6 +194,8 @@ export const settingsValuesPatchSchema = z.strictObject({
   entitlements: z.strictObject({
     free_practice_sessions_per_day: intIn(b.entitlements.free_practice_sessions_per_day).optional(),
     pro_practice_sessions_per_day: intIn(b.entitlements.pro_practice_sessions_per_day).optional(),
+    free_ai_practice_per_cycle: intIn(b.entitlements.free_ai_practice_per_cycle).optional(),
+    free_ai_lookup_per_cycle: intIn(b.entitlements.free_ai_lookup_per_cycle).optional(),
     pro_ai_practice_per_cycle: intIn(b.entitlements.pro_ai_practice_per_cycle).optional(),
     pro_ai_lookup_per_cycle: intIn(b.entitlements.pro_ai_lookup_per_cycle).optional(),
     trial_ai_practice_per_cycle: intIn(b.entitlements.trial_ai_practice_per_cycle).optional(),
@@ -195,6 +205,7 @@ export const settingsValuesPatchSchema = z.strictObject({
     renewal_notice_days_before: intIn(b.entitlements.renewal_notice_days_before).optional(),
     ai_enabled: z.boolean().optional(),
     ai_daily_cap: intIn(b.entitlements.ai_daily_cap).nullable().optional(),
+    free_ai_daily_cap: intIn(b.entitlements.free_ai_daily_cap).optional(),
     ai_cap_alert_percent: intIn(b.entitlements.ai_cap_alert_percent).nullable().optional(),
     ads_enabled: z.boolean().optional(),
     ads_interstitial_per_day: intIn(b.entitlements.ads_interstitial_per_day).optional(),
@@ -247,6 +258,8 @@ const FIELDS = [
   ['practice', 'ai_prefetch_count', 'aiPrefetchCount'],
   ['entitlements', 'free_practice_sessions_per_day', 'freePracticeSessionsPerDay'],
   ['entitlements', 'pro_practice_sessions_per_day', 'proPracticeSessionsPerDay'],
+  ['entitlements', 'free_ai_practice_per_cycle', 'freeAiPracticePerCycle'],
+  ['entitlements', 'free_ai_lookup_per_cycle', 'freeAiLookupPerCycle'],
   ['entitlements', 'pro_ai_practice_per_cycle', 'proAiPracticePerCycle'],
   ['entitlements', 'pro_ai_lookup_per_cycle', 'proAiLookupPerCycle'],
   ['entitlements', 'trial_ai_practice_per_cycle', 'trialAiPracticePerCycle'],
@@ -256,6 +269,7 @@ const FIELDS = [
   ['entitlements', 'renewal_notice_days_before', 'renewalNoticeDaysBefore'],
   ['entitlements', 'ai_enabled', 'aiEnabled'],
   ['entitlements', 'ai_daily_cap', 'aiDailyCap'],
+  ['entitlements', 'free_ai_daily_cap', 'freeAiDailyCap'],
   ['entitlements', 'ai_cap_alert_percent', 'aiCapAlertPercent'],
   ['entitlements', 'ads_enabled', 'adsEnabled'],
   ['entitlements', 'ads_interstitial_per_day', 'adsInterstitialPerDay'],

@@ -31,7 +31,7 @@ export type Unit = 'days' | 'hours' | 'minutes' | 'months' | 'years' | 'percent'
  */
 export type FieldSpec = { key: string; kind: 'bool' | 'int' | 'time' | 'ratio' | 'usd'; unit?: Unit };
 
-/** The 49 keys per tab, in the order of the copy doc §8.2. */
+/** The 52 keys per tab, in the order of the copy doc §8.2 (the three Free AI keys of launch prep A included). */
 export const SETTINGS_LAYOUT: Record<Section, FieldSpec[]> = {
   reminders: [
     { key: 'enabled', kind: 'bool' },
@@ -62,6 +62,8 @@ export const SETTINGS_LAYOUT: Record<Section, FieldSpec[]> = {
   entitlements: [
     { key: 'free_practice_sessions_per_day', kind: 'int', unit: 'sessions' },
     { key: 'pro_practice_sessions_per_day', kind: 'int', unit: 'sessions' },
+    { key: 'free_ai_practice_per_cycle', kind: 'int', unit: 'uses' },
+    { key: 'free_ai_lookup_per_cycle', kind: 'int', unit: 'uses' },
     { key: 'pro_ai_practice_per_cycle', kind: 'int', unit: 'uses' },
     { key: 'pro_ai_lookup_per_cycle', kind: 'int', unit: 'uses' },
     { key: 'trial_ai_practice_per_cycle', kind: 'int', unit: 'uses' },
@@ -71,6 +73,7 @@ export const SETTINGS_LAYOUT: Record<Section, FieldSpec[]> = {
     { key: 'renewal_notice_days_before', kind: 'int', unit: 'days' },
     { key: 'ai_enabled', kind: 'bool' },
     { key: 'ai_daily_cap', kind: 'int', unit: 'uses' },
+    { key: 'free_ai_daily_cap', kind: 'int', unit: 'uses' },
     { key: 'ai_cap_alert_percent', kind: 'int', unit: 'percent' },
     { key: 'ads_enabled', kind: 'bool' },
     { key: 'ads_interstitial_per_day', kind: 'int', unit: 'times' },

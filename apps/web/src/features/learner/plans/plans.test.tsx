@@ -17,7 +17,7 @@ vi.setConfig({ testTimeout: 20_000 });
 const CONFIG = {
   practice: { max_questions_per_session: 20, default_questions_per_session: 10 },
   reminders: { send_time: '20:00' }, learning: { backlog_after_days: 60, groups_per_user: 90 },
-  plans: { free: { practice_sessions_per_day: 4 }, trial: { ai_practice_per_cycle: 100, ai_lookup_per_cycle: 30 }, pro: { practice_sessions_per_day: 25, ai_practice_per_cycle: 250, ai_lookup_per_cycle: 80 } },
+  plans: { free: { practice_sessions_per_day: 4, ai_practice_per_cycle: 15, ai_lookup_per_cycle: 5 }, trial: { ai_practice_per_cycle: 100, ai_lookup_per_cycle: 30 }, pro: { practice_sessions_per_day: 25, ai_practice_per_cycle: 250, ai_lookup_per_cycle: 80 } },
 };
 const pools = { practice_sessions: { limit: 4, used: 1, remaining: 3, resets_at: null }, ai_practice: { limit: 0, used: 0, remaining: 0, resets_at: null }, ai_lookup: { limit: 0, used: 0, remaining: 0, resets_at: null } };
 const ent = (plan: string, sources: unknown[] = []) => ({

@@ -127,7 +127,7 @@ describe('UsageLedgerService.reserve', () => {
 
   it.each([
     ['the switch is off', { entitlements: { aiEnabled: false } }, { reason: 'ai-unavailable', retry_after_seconds: null }],
-    ['the limit is 0', { subscriptions: [] }, { reason: 'plan-required' }],
+    ['the limit is 0', { subscriptions: [], entitlements: { freeAiPracticePerCycle: 0, freeAiLookupPerCycle: 0 } }, { reason: 'plan-required' }],
     ['no unit is left', { aiUsed: 300 }, { reason: 'quota-exhausted', resets_at: CYCLE.end.toISOString() }],
   ] as const)('a reserve refused for the user (%s) never takes lockAiDaily and writes nothing', async (_name, input, refusal) => {
     const { service, events } = setup(input as Setup);
