@@ -3,14 +3,16 @@ import { Clock } from '../../common/clock/clock.js';
 import { PRISMA_CLIENT } from '../../common/db/prisma.module.js';
 import { AppLogger } from '../../common/logging/app-logger.js';
 import type { Prisma, PrismaClient } from '../../generated/prisma/client.js';
+import { IdentityService } from '../../identity/profile/identity.service.js';
 import { SettingsService, type AppSettings } from '../../settings/index.js';
 import { RESERVATION_TTL_MS } from '../entitlements.constants.js';
 import { lockAiDaily, lockPool } from '../entitlements.locks.js';
 import type { AiPool } from '../entitlements.types.js';
 import { planNumbers } from '../plan-numbers.js';
 import type { Refusal } from '../refusal.js';
-import { aiDay, cycleAt } from '../rules/cycle.js';
-import { resolve } from '../rules/plan-rules.js';
+import { aiWindow, endedSinceOf } from '../rules/ai-cycle.js';
+import { aiDay } from '../rules/cycle.js';
+import { resolve, type Resolved } from '../rules/plan-rules.js';
 import { SourcesRepository } from '../sources/sources.repository.js';
 import { decideCap, decideConfirm, decideReserve, type LatestRow } from './ledger-rules.js';
 import { UsageQueries } from './usage.queries.js';
@@ -21,6 +23,9 @@ type Tx = Prisma.TransactionClient;
 type Row = { id: string; status: LatestRow['status']; release_reason: string | null; expires_at: Date | null };
 
 const transactionOptions = { timeout: 10_000, maxWait: 5_000 };
+
+/** A learner without a profile counts months and days in UTC, as `checkQuota` does. */
+const NO_PROFILE_ZONE = 'UTC';
 
 /**
  * The AI unit ledger (design §7.1–§7.3). Every call reads Settings first, then runs its own short transaction in which
@@ -34,6 +39,7 @@ export class UsageLedgerService {
     @Inject(PRISMA_CLIENT) private readonly prisma: PrismaClient,
     @Inject(Clock) private readonly clock: Clock,
     @Inject(SettingsService) private readonly settings: SettingsService,
+    @Inject(IdentityService) private readonly identity: IdentityService,
     @Inject(SourcesRepository) private readonly sources: SourcesRepository,
     @Inject(UsageQueries) private readonly usage: UsageQueries,
     @Inject(AppLogger) private readonly logger: AppLogger,
@@ -45,8 +51,9 @@ export class UsageLedgerService {
       const now = this.clock.now();
       await lockPool(tx, userId, pool);
       const [latest] = await this.rows(tx, userId, pool, operationId);
-      const { limit, used, cycleEnd } = await this.standing(tx, userId, pool, entitlements, now);
-      const input = { now, aiEnabled: entitlements.aiEnabled, limit, used, cycleEnd, cap: entitlements.aiDailyCap };
+      const { limit, used, cycleEnd, plan } = await this.standing(tx, userId, pool, entitlements, now);
+      const freeCap = plan === 'free' ? entitlements.freeAiDailyCap : null;
+      const input = { now, aiEnabled: entitlements.aiEnabled, limit, used, cycleEnd, cap: entitlements.aiDailyCap, freeCap };
       const live = latest && latest.status !== 'released' ? { status: latest.status, expiresAt: latest.expires_at } : null;
       let decision = decideReserve({ ...input, existing: live });
       if (decision.action === 'release-expired-then-continue') {
@@ -67,12 +74,18 @@ export class UsageLedgerService {
       const cap = await this.usage.capUsed(tx, day, now);
       const capDecision = decideCap({ capUsed: cap.confirmed + cap.reserved, cap: entitlements.aiDailyCap, now });
       if (capDecision.action === 'refuse') return { state: 'refused' as const, ...capDecision.refusal };
+      if (freeCap !== null) {
+        // The Free accounts together keep under their own daily cap, so they cannot use up the system cap that Pro shares (design 6.4).
+        const free = await this.usage.capUsedFree(tx, day, now);
+        const freeDecision = decideCap({ capUsed: free.confirmed + free.reserved, cap: freeCap, now });
+        if (freeDecision.action === 'refuse') return { state: 'refused' as const, ...freeDecision.refusal };
+      }
 
       const expiresAt = new Date(now.getTime() + RESERVATION_TTL_MS);
       // The pool lock and the live-row check make a conflict impossible; DO NOTHING keeps the transaction usable regardless (R14).
       await tx.$executeRaw`
-        INSERT INTO usage_records (user_id, pool, operation_id, kind, status, system_date, reserved_at, expires_at)
-        VALUES (${userId}::uuid, ${pool}, ${operationId}, 'use', 'reserved', ${day}::date, ${now}, ${expiresAt})
+        INSERT INTO usage_records (user_id, pool, operation_id, kind, status, system_date, reserved_at, expires_at, plan)
+        VALUES (${userId}::uuid, ${pool}, ${operationId}, 'use', 'reserved', ${day}::date, ${now}, ${expiresAt}, ${plan})
         ON CONFLICT DO NOTHING`;
       return { state: 'reserved' as const, expires_at: expiresAt.toISOString() };
     }, transactionOptions);
@@ -145,9 +158,8 @@ export class UsageLedgerService {
       if (await tx.usageRecord.findFirst({ where: { userId, pool, operationId, kind: 'credit' }, select: { id: true } })) {
         return { refunded: true };
       }
-      const anchor = await this.anchor(tx, userId, entitlements, now);
-      if (!anchor) return { refunded: false };
-      const cycle = cycleAt(anchor, now);
+      const { cycle } = await this.resolved(tx, userId, entitlements, now);
+      if (!cycle) return { refunded: false };
       // B5-7: the unit given back is this operation's own confirmed use of the current cycle; without one nothing is credited.
       if (!(await this.usage.hasConfirmedUseInCycle(tx, userId, pool, operationId, cycle))) return { refunded: false };
       const confirmed = await this.usage.confirmedInCycle(tx, userId, pool, cycle);
@@ -170,19 +182,25 @@ export class UsageLedgerService {
       FOR UPDATE`;
   }
 
-  private async anchor(tx: Tx, userId: string, settings: AppSettings['entitlements'], now: Date): Promise<Date | null> {
-    const { subscriptions, grants, prepaidPeriods } = await this.sources.load(tx, userId, now);
-    return resolve({ subscriptions, grants, prepaidPeriods, numbers: planNumbers(settings), graceDays: settings.graceDays, now }).anchor;
+  /**
+   * What the learner has now and the window their AI units are counted in (design 6.2): the one place the ledger asks `aiWindow`,
+   * with the learner's zone and the sources that ended since the first of the month, all read through the open transaction.
+   */
+  private async resolved(
+    tx: Tx, userId: string, settings: AppSettings['entitlements'], now: Date,
+  ): Promise<{ resolved: Resolved; cycle: { start: Date; end: Date } | null }> {
+    const zone = (await this.identity.getProfile(userId, tx))?.timezone ?? NO_PROFILE_ZONE;
+    const { subscriptions, grants, prepaidPeriods, ended } = await this.sources.load(tx, userId, now, endedSinceOf(zone, now));
+    const resolved = resolve({ subscriptions, grants, prepaidPeriods, numbers: planNumbers(settings), graceDays: settings.graceDays, now });
+    return { resolved, cycle: aiWindow({ resolved, subscriptions, grants, ended, graceDays: settings.graceDays, zone, now }) };
   }
 
-  /** The pool's limit now, what the current cycle has used (design §7.2) and when that cycle ends. */
+  /** The pool's limit now, what the current cycle has used (design §7.2), when that cycle ends and the plan the learner has. */
   private async standing(
     tx: Tx, userId: string, pool: AiPool, settings: AppSettings['entitlements'], now: Date,
-  ): Promise<{ limit: number; used: number; cycleEnd: Date | null }> {
-    const { subscriptions, grants, prepaidPeriods } = await this.sources.load(tx, userId, now);
-    const resolved = resolve({ subscriptions, grants, prepaidPeriods, numbers: planNumbers(settings), graceDays: settings.graceDays, now });
-    const cycle = resolved.anchor ? cycleAt(resolved.anchor, now) : null;
+  ): Promise<{ limit: number; used: number; cycleEnd: Date | null; plan: Resolved['plan'] }> {
+    const { resolved, cycle } = await this.resolved(tx, userId, settings, now);
     const used = cycle ? await this.usage.aiUsed(tx, userId, pool, cycle, now) : 0;
-    return { limit: resolved.limits[pool], used, cycleEnd: cycle?.end ?? null };
+    return { limit: resolved.limits[pool], used, cycleEnd: cycle?.end ?? null, plan: resolved.plan };
   }
 }

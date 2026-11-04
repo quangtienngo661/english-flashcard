@@ -2140,11 +2140,16 @@
     },
     "notes": {
       "transaction_retention_years": "Accounting law: at least 5–10 years depending on the document",
-      "admin_daily_usd_cap": "Test runs, example-set runs and the judge stop once this much is spent. Empty: no cap. 0: block everything."
+      "admin_daily_usd_cap": "Test runs, example-set runs and the judge stop once this much is spent. Empty: no cap. 0: block everything.",
+      "free_ai_practice_per_cycle": "The landing says 15 and 5; change the number here and the landing text needs the same change",
+      "free_ai_lookup_per_cycle": "The landing says 15 and 5; change the number here and the landing text needs the same change"
     },
     "zeroMeaning": {
       "ai_prefetch_count": "off",
-      "content_retention_days": "not kept"
+      "content_retention_days": "not kept",
+      "free_ai_practice_per_cycle": "the Free plan has no AI questions",
+      "free_ai_lookup_per_cycle": "the Free plan cannot use AI lookup",
+      "free_ai_daily_cap": "Free-plan users cannot use AI"
     },
     "cross": {
       "stop_after_days": "and greater than the field above",
@@ -2194,7 +2199,9 @@
       },
       "entitlements": {
         "free_practice_sessions_per_day": "Practice sessions per day, Free plan",
-        "pro_practice_sessions_per_day": "Practice sessions per day, Pro and Trial",
+        "pro_practice_sessions_per_day": "Practice sessions per day, Pro",
+        "free_ai_practice_per_cycle": "AI questions per month, Free",
+        "free_ai_lookup_per_cycle": "AI lookups per month, Free",
         "pro_ai_practice_per_cycle": "AI questions per month, Pro",
         "pro_ai_lookup_per_cycle": "AI lookups per month, Pro",
         "trial_ai_practice_per_cycle": "AI questions per month, Trial",
@@ -2204,6 +2211,7 @@
         "renewal_notice_days_before": "Remind before renewal",
         "ai_enabled": "AI on for the whole system",
         "ai_daily_cap": "Daily AI cap, whole system",
+        "free_ai_daily_cap": "Daily AI cap, Free plan",
         "ai_cap_alert_percent": "Turn yellow at",
         "ads_enabled": "Ads on",
         "ads_interstitial_per_day": "Full-screen ads per day",

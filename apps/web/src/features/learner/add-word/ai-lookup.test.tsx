@@ -22,8 +22,10 @@ const sickSense = {
   meaning: { text: 'ốm, bệnh', language: 'vi', translation_missing: false }, definition_en: null, examples: [], topics: [], form_of: null, ai_suggested: false,
 };
 const pool = (remaining: number) => ({ limit: 100, used: 100 - remaining, remaining, resets_at: '2030-11-15T00:00:00Z' });
-const entitlements = (plan: 'free' | 'trial' | 'pro', remaining = 96) => ({
-  plan, sources: [], trial_eligible: false, ai_available: { enabled: true, cap_reached: false },
+// 'free' is a Free account whose AI is switched off (the admin set both numbers to 0, LA3#11); 'free-ai' has the monthly allowance.
+type Plan = 'free' | 'free-ai' | 'trial' | 'pro';
+const entitlements = (plan: Plan, remaining = 96) => ({
+  plan: plan === 'free-ai' ? 'free' : plan, sources: [], trial_eligible: false, ai_available: { enabled: true, cap_reached: false },
   pools: { practice_sessions: pool(3), ai_practice: pool(50), ai_lookup: plan === 'free' ? { limit: 0, used: 0, remaining: 0, resets_at: null } : pool(remaining) },
   features: { 'ai.practice': { allowed: plan !== 'free', reason: plan === 'free' ? 'plan-required' : null }, 'ai.lookup': { allowed: plan !== 'free', reason: plan === 'free' ? 'plan-required' : null } },
 });
@@ -31,7 +33,7 @@ const RIZZ = {
   suggestion: { part_of_speech: 'noun', lemma: 'rizz', meaning: { text: 'sức hút, khả năng tán tỉnh', language: 'vi' }, definition_en: 'charm or the ability to attract someone', examples: ["He's got serious rizz."] },
   catalog_senses: [],
 };
-const routes = (plan: 'free' | 'trial' | 'pro', extra = {}) => {
+const routes = (plan: Plan, extra = {}) => {
   let reads = 0;
   return {
     'GET /v1/groups': () => Response.json({ items: [deck(TRAVEL, 'Du lịch')] }),
@@ -61,13 +63,22 @@ describe('AI lookup in the add-word sheet (K/85–K/86)', () => {
     expect(ai).toBeEnabled();
   });
 
-  it('K/85t: Trial shows its own count and the Trial chip', async () => {
+  it('K/85t: a trial account (an old one, trials are off now) shows its count and no "Dùng thử" chip', async () => {
     open('rizz', { routes: routes('trial') });
     expect(await screen.findByText('còn 96 lượt tra AI')).toBeInTheDocument();
-    expect(screen.getByText('Dùng thử')).toBeInTheDocument();
+    expect(screen.queryByText('Dùng thử')).not.toBeInTheDocument();
   });
 
-  it('K/85b: Free sees the Pro label; a press shows the D6 line and sends nothing; manual entry still works', async () => {
+  it('LA3#4: a Free account with the monthly allowance sees the lookups left under [Tra bằng AI], with no Pro label and no chip', async () => {
+    open('rizz', { routes: routes('free-ai') });
+    const ai = await screen.findByRole('button', { name: /Tra bằng AI/ });
+    expect(await screen.findByText('còn 96 lượt tra AI')).toBeInTheDocument();
+    expect(ai).toBeEnabled();
+    expect(within(ai).queryByText('Pro')).not.toBeInTheDocument();
+    expect(screen.queryByText('Dùng thử')).not.toBeInTheDocument();
+  });
+
+  it('K/85b, LA3#11: Free with AI switched off sees the Pro label; a press shows the D6 line and sends nothing; manual entry still works', async () => {
     const { calls } = open('rizz', { routes: routes('free') });
     const ai = await screen.findByRole('button', { name: /Tra bằng AI/ });
     await waitFor(() => expect(within(ai).getByText('Pro')).toBeInTheDocument());

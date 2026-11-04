@@ -4,7 +4,7 @@ import { POOL_OF_LIMIT, type AiPool, type Interval, type LimitKey, type Pool, ty
 
 const DAY_MS = 86_400_000;
 
-/** The numbers of each plan (Settings, design §13). Free AI is always 0. */
+/** The numbers of each plan (Settings, design §13). Free AI is the monthly allowance of launch prep A; 0 in Settings turns it off. */
 export type PlanNumbers = { free: Record<Pool, number>; pro: Record<Pool, number>; trial: Record<AiPool, number> };
 
 export type SubscriptionSource = {
@@ -20,6 +20,8 @@ export type SubscriptionSource = {
   currentPeriodEnd: Date | null;
   graceEndsAt: Date | null;
   quotaAnchorAt: Date | null;
+  /** When the row stopped being Pro or trial (`subscriptions.ended_at`); the rules above do not use it. Absent in older fixtures. */
+  endedAt?: Date | null;
   interval: Interval;
   pendingInterval: Interval | null;
 };

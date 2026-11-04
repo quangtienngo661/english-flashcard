@@ -94,9 +94,6 @@ export function AiLookupPanel({ text, sentence, onManual, onResult, accent = tru
           </Button>
           {allowed && pool && pool.limit > 0 && (
             <p className="flex flex-wrap items-center justify-center gap-1.5 text-center text-caption text-muted">
-              {entitlements?.plan === 'trial' && (
-                <span className="rounded-full bg-accent-soft px-2 py-0.5 font-semibold text-ink">{t('trial')}</span>
-              )}
               <span>{t('left', { count: pool.remaining })}</span>
             </p>
           )}

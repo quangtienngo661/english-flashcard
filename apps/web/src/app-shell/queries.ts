@@ -43,7 +43,7 @@ export type AppConfig = {
   /** Bước 8: how long payment records are kept after an account is deleted. */
   account?: { transaction_retention_years: number };
   plans: {
-    free: { practice_sessions_per_day: number };
+    free: { practice_sessions_per_day: number; ai_practice_per_cycle: number; ai_lookup_per_cycle: number };
     trial: { ai_practice_per_cycle: number; ai_lookup_per_cycle: number };
     pro: {
       practice_sessions_per_day: number; ai_practice_per_cycle: number; ai_lookup_per_cycle: number;

@@ -101,3 +101,92 @@ describe('SourcesRepository.load — prepaid periods', () => {
     expect(loaded.prepaidPeriods).toEqual([{ id: 'p1', startsAt: NOW, endsAt: new Date(NOW.getTime() + 86_400_000), revokedAt: null }]);
   });
 });
+
+describe('SourcesRepository.load and the sources that already ended (launch prep A, design 6.3.4; launch prep B, design 3.13)', () => {
+  const since = new Date('2026-10-31T17:00:00.000Z');
+  const NOW_LATER = new Date('2026-11-25T00:00:00.000Z');
+  const rows = {
+    live: { ...subRow('s-live', A), status: 'active' },
+    expiredIn: { ...subRow('s-exp', A), status: 'expired', endedAt: new Date('2026-11-12T09:00:00.000Z') },
+    grantLive: { ...grantRow('g-live', A), startsAt: new Date('2026-11-01T00:00:00.000Z'), endsAt: new Date('2026-12-31T00:00:00.000Z') },
+    grantRevoked: { ...grantRow('g-rev', A), revokedAt: new Date('2026-11-12T09:00:00.000Z'), endsAt: new Date('2026-12-31T00:00:00.000Z') },
+    grantRanOut: { ...grantRow('g-out', A), revokedAt: null, endsAt: new Date('2026-11-20T03:00:00.000Z') },
+    periodLive: periodRow('p-live', A, new Date('2026-11-20T00:00:00.000Z'), new Date('2026-12-20T00:00:00.000Z')),
+    periodFuture: periodRow('p-future', A, new Date('2026-12-20T00:00:00.000Z'), new Date('2027-01-20T00:00:00.000Z')),
+    periodRanOut: periodRow('p-out', A, new Date('2026-10-20T00:00:00.000Z'), new Date('2026-11-20T03:00:00.000Z')),
+    periodRevoked: { ...periodRow('p-rev', A, new Date('2026-11-01T00:00:00.000Z'), new Date('2026-12-31T00:00:00.000Z')), revokedAt: new Date('2026-11-12T09:00:00.000Z') },
+  };
+  const noPeriods = { findMany: vi.fn(async () => []) };
+
+  it('without endedSince the queries and the result are exactly what they were, and `ended` is empty', async () => {
+    const db = {
+      subscription: { findMany: vi.fn(async () => [rows.live]) },
+      entitlementGrant: { findMany: vi.fn(async () => [rows.grantLive]) },
+      prepaidPeriod: { findMany: vi.fn(async () => [rows.periodLive]) },
+    };
+    const loaded = await new SourcesRepository().load(db as never, A, NOW_LATER);
+    expect(db.subscription.findMany).toHaveBeenCalledWith({ where: { userId: A, status: { notIn: ['expired', 'revoked'] } }, orderBy: { createdAt: 'asc' } });
+    expect(db.entitlementGrant.findMany).toHaveBeenCalledWith({ where: { userId: A, revokedAt: null, endsAt: { gt: NOW_LATER } }, orderBy: { createdAt: 'asc' } });
+    expect(loaded.ended).toEqual({ subscriptions: [], grants: [], prepaidPeriods: [] });
+    expect(loaded.subscriptions.map((s) => s.id)).toEqual(['s-live']);
+    expect(loaded.grants.map((g) => g.id)).toEqual(['g-live']);
+    expect(loaded.prepaidPeriods.map((p) => p.id)).toEqual(['p-live']);
+  });
+
+  it('with endedSince the same queries are widened to sources that ended since then', async () => {
+    const db = {
+      subscription: { findMany: vi.fn(async () => [rows.live, rows.expiredIn]) },
+      entitlementGrant: { findMany: vi.fn(async () => [rows.grantLive, rows.grantRevoked, rows.grantRanOut]) },
+      prepaidPeriod: noPeriods,
+    };
+    await new SourcesRepository().load(db as never, A, NOW_LATER, since);
+    expect(db.subscription.findMany).toHaveBeenCalledWith({
+      where: { userId: A, OR: [{ status: { notIn: ['expired', 'revoked'] } }, { status: { in: ['expired', 'revoked'] }, endedAt: { gte: since } }] },
+      orderBy: { createdAt: 'asc' },
+    });
+    expect(db.entitlementGrant.findMany).toHaveBeenCalledWith({
+      where: { userId: A, OR: [
+        { revokedAt: null, endsAt: { gt: NOW_LATER } },
+        { revokedAt: { gte: since } },
+        { revokedAt: null, endsAt: { gte: since, lte: NOW_LATER } },
+      ] },
+      orderBy: { createdAt: 'asc' },
+    });
+  });
+
+  it('LA3E19: the ended ones come back in `ended` only; `subscriptions` and `grants` stay what they were (the snapshot lists grants from them)', async () => {
+    const db = {
+      subscription: { findMany: vi.fn(async () => [rows.live, rows.expiredIn]) },
+      entitlementGrant: { findMany: vi.fn(async () => [rows.grantLive, rows.grantRevoked, rows.grantRanOut]) },
+      prepaidPeriod: noPeriods,
+    };
+    const loaded = await new SourcesRepository().load(db as never, A, NOW_LATER, since);
+    expect(loaded.subscriptions.map((s) => s.id)).toEqual(['s-live']);
+    expect(loaded.grants.map((g) => g.id)).toEqual(['g-live']);
+    expect(loaded.ended.subscriptions.map((s) => [s.id, s.endedAt])).toEqual([['s-exp', new Date('2026-11-12T09:00:00.000Z')]]);
+    expect(loaded.ended.grants.map((g) => g.id)).toEqual(['g-rev', 'g-out']);
+  });
+
+  it('LB1A8: with endedSince the prepaid query is widened the way the grants are; the periods that ended come back in `ended` only', async () => {
+    const db = {
+      subscription: { findMany: vi.fn(async () => []) },
+      entitlementGrant: { findMany: vi.fn(async () => []) },
+      prepaidPeriod: { findMany: vi.fn(async () => [rows.periodLive, rows.periodFuture, rows.periodRanOut, rows.periodRevoked]) },
+    };
+    const loaded = await new SourcesRepository().load(db as never, A, NOW_LATER, since);
+    expect(db.prepaidPeriod.findMany).toHaveBeenCalledWith({
+      where: { userId: A, OR: [
+        { revokedAt: null, endsAt: { gt: NOW_LATER } },
+        { revokedAt: { gte: since } },
+        { revokedAt: null, endsAt: { gte: since, lte: NOW_LATER } },
+      ] },
+      orderBy: { startsAt: 'asc' },
+    });
+    // The running and the future period are the live ones, exactly as without endedSince (the snapshot lists them as upcoming).
+    expect(loaded.prepaidPeriods.map((p) => p.id)).toEqual(['p-live', 'p-future']);
+    expect(loaded.ended.prepaidPeriods.map((p) => [p.id, p.endsAt, p.revokedAt])).toEqual([
+      ['p-out', new Date('2026-11-20T03:00:00.000Z'), null],
+      ['p-rev', new Date('2026-12-31T00:00:00.000Z'), new Date('2026-11-12T09:00:00.000Z')],
+    ]);
+  });
+});

@@ -45,13 +45,13 @@ nối tiếp bên dưới khi làm xong. M1 bắt đầu sau khi M3 của đợt
 
 # Chuẩn bị launch đợt B — as-built M1 (04/11/2026)
 
-M1 (API: đơn hàng và payOS) làm xong trên nhánh `feat/launch-b-m1-orders` (Task 2–14), **chưa mở PR**: nhánh chờ M3 của đợt A vào `dev` (Task 8–10 sửa đúng các file đợt A đang sửa).
+M1 (API: đơn hàng và payOS) làm xong trên nhánh `feat/launch-b-m1-orders` (Task 2–14). Sau khi M3 của đợt A vào `dev` (05/11/2026, PR #215) nhánh hợp nhất `origin/dev`, làm nốt phần Task 9 phụ thuộc đợt A và mở PR #218 (base `dev`).
 Các quyết định lệch plan (`Ruling`) được liệt kê trong báo cáo cuối của session thực thi.
 
 ## Đã có
 
 - **Dữ liệu:** migration `20261110100000_billing_orders` (`billing_orders`, `billing_order_payments`, `prepaid_periods`, `fake_payos_links`, sequence `billing_order_code_seq` từ 10^9, CHECK đủ; `interval` giao dịch thêm `quarter`; loại email `expiry_notice`, `payment_receipt` cho M2).
-- **Giá:** ba setting `pro_price_1m_vnd` / `3m` / `12m` (79.000 / 199.000 / 599.000, 1.000–10.000.000), `GET /v1/me/app-config` có `plans.pro.prices`, ba ô ở trang cài đặt admin (52 key).
+- **Giá:** ba setting `pro_price_1m_vnd` / `3m` / `12m` (79.000 / 199.000 / 599.000, 1.000–10.000.000), `GET /v1/me/app-config` có `plans.pro.prices`, ba ô ở trang cài đặt admin (55 key sau khi hợp nhất đợt A: 52 + ba giá).
 - **payOS:** cấu hình `real | fake | off`; chữ ký webhook tự viết (`timingSafeEqual`) và được đối chiếu với `webhooks.verify` của SDK `@payos/node` 2.0.5 trên mọi kiểu giá trị; adapter thật (`createCheckout`, `getCheckout`, `cancelCheckout`; SDK `timeout 4000, maxRetries 0`); bản giả + trang `/v1/dev/payos/checkout` (404 khi không ở chế độ giả); `pnpm payos:confirm-webhook <url>`.
 - **Luật đơn:** `OrderApplier` theo bảng T1–T14 (hàm thuần `order-rules.ts` + dữ liệu), kỳ trả trước là nguồn Pro thứ ba trong `resolve()`, snapshot có `kind: 'prepaid'`, `upcoming_periods`, `pro_until`.
 - **API:** `POST /v1/me/orders`, `GET /v1/me/orders/:id`, `POST /v1/me/orders/:id/check` (tối đa một lần hỏi payOS mỗi 10 giây mỗi đơn), job `billing.orders-reconcile` hằng giờ; admin (chỉ `admin`): danh sách, chi tiết, "Đã nhận tiền", hủy đơn, "Đã xử lý", thu hồi kỳ.
@@ -96,8 +96,8 @@ Báo cáo đầy đủ: `.superpowers/sdd/2026-11-04-chuan-bi-launch-b/m1-review
 
 ## Tình trạng cuối đợt (Task 24)
 
-- **Mã:** M1–M4 xong trên bốn nhánh xếp chồng `feat/launch-b-m1-orders` → `feat/launch-b-m2-purchase` → `feat/launch-b-m3-house-ad` → `feat/launch-b-m4-adsense` (đã push, CI chưa chạy vì **chưa mở PR nào**: chủ dự án dặn chỉ mở sau khi M3 của đợt A vào `dev`, rồi hợp nhất `origin/dev` vào từng nhánh, chạy lại test và smoke). Nhánh M4 đã hợp nhất `origin/dev` một lần (đợt A M1 và tài liệu; một xung đột ở `app-config.ts`, giữ cả hai bên). Văn bản pháp lý: nhánh local `docs/launch-b-legal-drafts`.
-- **Smoke:** `smoke:buoc-b-payments` 20/20 (`chuan-bi-launch-b-smoke-output.txt`). `smoke:buoc-5`, `7`, `8` chưa chạy sau đợt B: chạy một lần trên mã đã hợp nhất với M3 của đợt A (sẽ nối output vào file smoke).
+- **Mã:** M1–M4 xong trên bốn nhánh xếp chồng `feat/launch-b-m1-orders` → `feat/launch-b-m2-purchase` → `feat/launch-b-m3-house-ad` → `feat/launch-b-m4-adsense`. Sau khi M3 của đợt A vào `dev` (05/11/2026), `origin/dev` được hợp nhất vào M1 (không rebase) rồi M1 → M2 → M3 → M4; PR đã mở: #218 (M1, base `dev`), #219 (M2, base nhánh M1), #220 (M3, base nhánh M2) và PR của M4 (base nhánh M3). **Chưa merge cái nào:** chỉ khi chủ dự án yêu cầu, theo thứ tự M1 → M4, mỗi PR đổi base về `dev` khi PR cha đã merge. Văn bản pháp lý: nhánh local `docs/launch-b-legal-drafts`.
+- **Smoke:** `smoke:buoc-b-payments` 21/21 trên đầu M2 và M3 (20 bước của M1, trong đó LB1A8 mới, cộng bước email biên nhận của Task 15), `smoke:buoc-5` (hai chế độ fetchState), `7` và `8` chạy lại một lần trên đầu M1 sau khi hợp nhất với M3 của đợt A, đều qua; output ở `chuan-bi-launch-b-smoke-output.txt`.
 - **Quyết định tự chốt:** `chuan-bi-launch-b-m1-rulings.md` (M1 và review) và các dòng `Ruling:` của Task 15–23 ở sổ ghi chép của phiên làm (`.superpowers/sdd/…`, không vào git).
 - **Việc của chủ dự án:** Bước 2 (một lần mua thật nhỏ với payOS thật, ghi bảng §3.14 P1–P12 vào đây) và Bước 3 (sau khi Google duyệt: `NEXT_PUBLIC_ADSENSE_CLIENT`, `ads.txt`, cài đặt AdSense §5.2, một tuần `Content-Security-Policy-Report-Only`, bảng §5.7); checklist: `chuan-bi-launch-b-checklist.md`, `deploy-checklist.md`.
 
@@ -105,7 +105,7 @@ Báo cáo đầy đủ: `.superpowers/sdd/2026-11-04-chuan-bi-launch-b/m1-review
 
 - **Chưa gọi payOS thật.** Mọi hành vi của payOS thật là `ASSUMPTION` P1–P11 của design §3.14, cộng **P12**: adapter coi chỉ HTTP 404 (`NotFoundError` của SDK) là "payOS không có link này"; nếu payOS trả 200 kèm mã lỗi, đơn được coi là lỗi hỏi thăm và để nguyên. Kiểm ở lần mua thật đầu tiên.
 - **P7 vẫn chưa kiểm** (webhook và danh sách giao dịch của payOS cùng `reference` cho một lần chuyển). Sau review, quy tắc "cùng số tiền và cùng thời điểm = cùng lần chuyển" chặn việc mở kỳ thứ hai nếu P7 sai, nhưng chỉ khi hai bên cùng ghi `transactionDateTime` giống nhau (định dạng và múi giờ cũng là ASSUMPTION P9). Kiểm cả hai ở lần mua thật đầu tiên: so `reference` và `transactionDateTime` của webhook với của `getCheckout`.
-- **Task 9 làm dở có chủ ý:** phần dùng loader `ended` của đợt A (`aiSourceEnds`, `EndedSources`, `load(…, endedSince)`, LB1A8: lượt AI dùng lúc còn Pro không trừ vào Free) chưa làm vì M3 của đợt A chưa vào `dev`. Phải làm khi hợp nhất: thêm `prepaidPeriods` vào `EndedSources` và `aiSourceEnds` (`endedAt = ends_at`, hoặc `revoked_at` khi thu hồi giữa chừng) kèm test LB1A8. Nếu đợt A merge mà thiếu phần này, lượt AI dùng lúc còn Pro trả trước bị trừ vào Free.
+- **Task 9, phần phụ thuộc đợt A: xong sau khi `origin/dev` có M3 của đợt A (05/11/2026, PR #215).** `EndedSources` có thêm `prepaidPeriods`; `SourcesRepository.load(…, endedSince)` trả kỳ trả trước đã hết hoặc đã thu hồi từ đầu tháng trong `ended` (`subscriptions`, `grants`, `prepaidPeriods` của `load` giữ nguyên); `aiSourceEnds` có nhánh `kind: 'prepaid_period'` với `endedAt` = `ends_at`, hoặc `revoked_at` khi thu hồi giữa chừng, và kỳ thu hồi trước khi bắt đầu (hoặc đúng lúc bắt đầu) không phải nguồn (LB1A8, test đỏ trước). `aiCycle` và `lastAiSourceEnd` của A không đổi.
 - **Trên trình duyệt thật:** các màn M2–M3 (trang Gói, trang về, "Đơn hàng", hộp thoại giới thiệu Pro) mới có test đơn vị với API giả; e2e Playwright của admin và của các màn M2–M3 chưa chạy (CI chạy; bộ e2e web đã chạy một lần ở Task 22, trước các sửa của M2–M3 trong `e2e/app`).
-- **Smoke 5, 7, 8** sau đợt B (xem trên).
+- **Smoke 5, 7, 8** chỉ chạy lại một lần, trên đầu M1 sau khi hợp nhất `origin/dev` có M3 của đợt A (05/11/2026, cả bốn đều qua; `chuan-bi-launch-b-smoke-output.txt`); không chạy lại trên M2–M4, nơi chỉ `smoke:buoc-b-payments` (21/21) được chạy lại.
 - **Cloudflare đã deploy:** #1302, CPU Worker, beacon tự chèn; AdSense thật (bảng §5.7 A1, A2, A8).

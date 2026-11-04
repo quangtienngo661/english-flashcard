@@ -2140,11 +2140,16 @@
     },
     "notes": {
       "transaction_retention_years": "Luật Kế toán: tối thiểu 5–10 năm tùy loại chứng từ",
-      "admin_daily_usd_cap": "Chạy thử, bộ ví dụ và judge dừng khi đã tiêu tới trần. Để trống: không trần. 0: chặn hết."
+      "admin_daily_usd_cap": "Chạy thử, bộ ví dụ và judge dừng khi đã tiêu tới trần. Để trống: không trần. 0: chặn hết.",
+      "free_ai_practice_per_cycle": "Landing ghi 15 và 5; đổi số ở đây thì sửa chữ landing",
+      "free_ai_lookup_per_cycle": "Landing ghi 15 và 5; đổi số ở đây thì sửa chữ landing"
     },
     "zeroMeaning": {
       "ai_prefetch_count": "tắt",
-      "content_retention_days": "không lưu"
+      "content_retention_days": "không lưu",
+      "free_ai_practice_per_cycle": "gói Miễn phí không có câu AI",
+      "free_ai_lookup_per_cycle": "gói Miễn phí không tra AI được",
+      "free_ai_daily_cap": "người dùng gói Miễn phí không dùng được AI"
     },
     "cross": {
       "stop_after_days": "và lớn hơn ô trên",
@@ -2194,7 +2199,9 @@
       },
       "entitlements": {
         "free_practice_sessions_per_day": "Phiên luyện mỗi ngày, gói Miễn phí",
-        "pro_practice_sessions_per_day": "Phiên luyện mỗi ngày, gói Pro và Dùng thử",
+        "pro_practice_sessions_per_day": "Phiên luyện mỗi ngày, gói Pro",
+        "free_ai_practice_per_cycle": "Lượt câu AI mỗi tháng, Miễn phí",
+        "free_ai_lookup_per_cycle": "Lượt tra AI mỗi tháng, Miễn phí",
         "pro_ai_practice_per_cycle": "Lượt câu AI mỗi tháng, Pro",
         "pro_ai_lookup_per_cycle": "Lượt tra AI mỗi tháng, Pro",
         "trial_ai_practice_per_cycle": "Lượt câu AI mỗi tháng, Dùng thử",
@@ -2204,6 +2211,7 @@
         "renewal_notice_days_before": "Nhắc trước khi gia hạn",
         "ai_enabled": "Bật AI toàn hệ thống",
         "ai_daily_cap": "Trần lượt AI mỗi ngày, toàn hệ thống",
+        "free_ai_daily_cap": "Trần lượt AI mỗi ngày, gói Miễn phí",
         "ai_cap_alert_percent": "Tô vàng khi dùng tới",
         "ads_enabled": "Bật quảng cáo",
         "ads_interstitial_per_day": "Quảng cáo toàn màn mỗi ngày",

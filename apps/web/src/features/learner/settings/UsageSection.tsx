@@ -45,7 +45,7 @@ function AiRow({ label, pool, refill }: { label: string; pool: Pool; refill: 'ai
   const t = useTranslations('App.settings');
   const format = useFormat();
   const zone = useZone();
-  // Free has no AI pool at all: a limit of 0 means the plan does not include it (D6).
+  // A limit of 0 means this account has no AI of this kind: a Free account whose allowance the admin set to 0, or a limits grant of 0 (D6).
   if (pool.limit === 0) {
     return (
       <li className="flex items-center justify-between gap-3 py-3">

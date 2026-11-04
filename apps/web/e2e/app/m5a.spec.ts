@@ -118,8 +118,19 @@ test.describe('M5a flows (mocked API)', () => {
     await expect(page.getByText(vi.session.ai.fallback)).toHaveCount(0);
   });
 
-  test('Free: the switch is locked and says why', async ({ page }) => {
+  test('Free with the monthly allowance: the switch works, shows the AI types and no lock line (LA3#1)', async ({ page }) => {
     await signedInAs(page, 'free', aiApi({ nexts: [], plan: 'free' }));
+    const dialog = await openCustomize(page);
+    await dialog.getByText(new RegExp(`^${vi.customize.aiToggle}`)).first().click();
+    await expect(dialog.getByRole('checkbox', { name: vi.types.cloze, exact: true })).toBeVisible();
+    await expect(dialog.getByText(copy.vi.App.ui.lockedLine)).toHaveCount(0);
+  });
+
+  test('Free with AI switched off (both allowances 0, LA3#11): the switch is locked and says why', async ({ page }) => {
+    await signedInAs(page, 'free', {
+      ...aiApi({ nexts: [], plan: 'free' }),
+      'GET /v1/me/entitlements': () => ({ json: entitlementsBody('free', { freeAi: false }) }),
+    });
     const dialog = await openCustomize(page);
     // aria-disabled (D6: pressable, says why) counts as disabled for Playwright's click; a learner presses it, here with the keyboard.
     await dialog.getByRole('switch', { name: /Kiểu câu có AI/ }).focus();

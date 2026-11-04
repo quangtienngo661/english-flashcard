@@ -46,6 +46,16 @@ secret, backup) nằm ở design Bước 2.5 §14; những thứ chỉ kiểm đ
   (`apps/api/src/common/config/app-config.ts`, `superRefine`), nhưng chỉ khi chính biến `BILLING_PRODUCTION` được đặt; thiếu nó thì mọi đồ giả chạy được.
   Kiểm: trên môi trường production thật, thử bật từng đồ giả một và thấy API cùng worker dừng với tên hai biến trong thông báo, rồi bỏ đồ giả đó đi.
 
+## Lượt AI cho Free và trial đã tắt (đợt A M3, 05/11/2026)
+
+- [ ] **DB production tạo mới bằng `prisma migrate deploy`.** Migration `20261105100000_free_ai_cycle` thêm `subscriptions.ended_at` và `usage_records.plan` (cả hai `NULL`, không backfill).
+  Vì sao: một DB đã có người dùng Pro cũ thì dòng cũ không có `ended_at`, nên lượt Pro cũ của họ có thể bị tính vào lượt Free tháng này (sai về phía chặt, không cho thêm lượt).
+- [ ] **Ba setting mới trong Cài đặt → Gói và lượt: `free_ai_practice_per_cycle` (15), `free_ai_lookup_per_cycle` (5), `free_ai_daily_cap` (500).** Landing ghi cứng "15/tháng" và "5/tháng"
+  (`Landing.plans.freeAiPractice`, `freeAiLookup`): đổi số ở Cài đặt thì sửa chữ landing trước khi đăng. `free_ai_daily_cap` là số ước; xem lại sau tuần đầu có người dùng thật.
+- [ ] **Chữ hứa dùng thử không còn ở web, landing và bản nháp pháp lý; `trial_eligible` luôn `false`.** Mục 5 "Dùng thử" của Điều khoản còn trong bản nháp: đợt B viết lại các mục 5–8.
+  Code trial giữ nguyên cho một nhà cung cấp tự gia hạn về sau; các test e2e/smoke dựng trial bằng provider giả vẫn chạy.
+- [ ] **Cửa sổ Free theo tháng dương lịch của múi giờ người học.** Đổi múi giờ cuối tháng có thể cho thêm tối đa một lượt Free đầy đủ (LA3E3, LA3E4); chấp nhận.
+
 ## AI và riêng tư (Bước 6–7)
 
 Nguồn chung: [B6-1](../superpowers/reviews/buoc-1-8/buoc-6-and-7.md#b6-1); chi tiết ở design Bước 6 §18–§19 và Bước 7 §19–§20.
