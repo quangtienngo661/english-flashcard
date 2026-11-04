@@ -90,6 +90,13 @@ describe('RealTurnstileClient', () => {
     expect(fetchImpl).toHaveBeenCalledTimes(1);
   });
 
+  // Checked against the live service on 04/11/2026: a wrong secret is answered HTTP 400 with {"error-codes":["invalid-input-secret"],"success":false}.
+  it.each(['invalid-input-secret', 'missing-input-secret'])('HTTP 400 carrying %s in its JSON body → unavailable (misconfigured), no retry', async (code) => {
+    const { client, fetchImpl } = setup(async () => json({ 'error-codes': [code], success: false, messages: [] }, 400));
+    await expect(client.verify('t', undefined)).resolves.toEqual({ kind: 'unavailable', reason: 'misconfigured' });
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+  });
+
   it('an HTTP 4xx is not retried', async () => {
     const { client, fetchImpl } = setup(async () => json({}, 400));
     await expect(client.verify('t', undefined)).resolves.toEqual({ kind: 'unavailable', reason: 'http' });
