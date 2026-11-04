@@ -20,6 +20,8 @@ export type SubscriptionSource = {
   currentPeriodEnd: Date | null;
   graceEndsAt: Date | null;
   quotaAnchorAt: Date | null;
+  /** When the row stopped being Pro or trial (`subscriptions.ended_at`); the rules above do not use it. Absent in older fixtures. */
+  endedAt?: Date | null;
   interval: Interval;
   pendingInterval: Interval | null;
 };
