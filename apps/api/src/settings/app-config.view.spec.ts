@@ -10,7 +10,7 @@ describe('appConfigView (design §8.7)', () => {
       learning: { backlog_after_days: 60, groups_per_user: 100 },
       account: { transaction_retention_years: 10 },
       plans: {
-        free: { practice_sessions_per_day: 3 },
+        free: { practice_sessions_per_day: 3, ai_practice_per_cycle: 15, ai_lookup_per_cycle: 5 },
         trial: { ai_practice_per_cycle: 300, ai_lookup_per_cycle: 100 },
         pro: { practice_sessions_per_day: 30, ai_practice_per_cycle: 300, ai_lookup_per_cycle: 100 },
       },
@@ -20,5 +20,12 @@ describe('appConfigView (design §8.7)', () => {
   it('returns no other setting (design §14.20)', () => {
     const json = JSON.stringify(appConfigView(SETTINGS_DEFAULTS));
     for (const hidden of ['ai_daily_cap', 'aiDailyCap', 'usd', 'grace', 'ads', 'call_timeout']) expect(json).not.toContain(hidden);
+  });
+
+  it('LA3#16: the Free numbers follow the setting, so the landing (which pins 15 and 5) and the setting cannot drift unseen', () => {
+    const settings = structuredClone(SETTINGS_DEFAULTS);
+    settings.entitlements.freeAiPracticePerCycle = 0;
+    settings.entitlements.freeAiLookupPerCycle = 8;
+    expect(appConfigView(settings).plans.free).toEqual({ practice_sessions_per_day: 3, ai_practice_per_cycle: 0, ai_lookup_per_cycle: 8 });
   });
 });

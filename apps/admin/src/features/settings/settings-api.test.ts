@@ -12,10 +12,10 @@ const values = (): Values => ({
 });
 
 describe('settings-api', () => {
-  it('the layout has the 49 keys (41 of the copy doc, two of Bước 8, six of nhóm B), each once', () => {
-    expect(FIELD_ORDER).toHaveLength(49);
-    expect(new Set(FIELD_ORDER).size).toBe(49);
-    expect(SECTIONS.map((s) => SETTINGS_LAYOUT[s].length)).toEqual([5, 6, 9, 16, 2, 10, 1]);
+  it('the layout has the 52 keys (41 of the copy doc, two of Bước 8, six of nhóm B, three of launch prep A), each once', () => {
+    expect(FIELD_ORDER).toHaveLength(52);
+    expect(new Set(FIELD_ORDER).size).toBe(52);
+    expect(SECTIONS.map((s) => SETTINGS_LAYOUT[s].length)).toEqual([5, 6, 9, 19, 2, 10, 1]);
     // The window of "đang học" (D39) is the last field of the learning tab, in days.
     expect(SETTINGS_LAYOUT.learning.at(-1)).toEqual({ key: 'active_window_days', kind: 'int', unit: 'days' });
     expect(SETTINGS_LAYOUT.ai.slice(-5)).toEqual([
@@ -25,6 +25,16 @@ describe('settings-api', () => {
       { key: 'judge_agreement_min', kind: 'ratio' },
       { key: 'real_judge_limit', kind: 'int' },
     ]);
+  });
+
+  it('LA3#14: the two Free monthly AI keys come before the Pro ones; the Free daily cap sits right after the system-wide one', () => {
+    const keys = SETTINGS_LAYOUT.entitlements.map((f) => f.key);
+    expect(SETTINGS_LAYOUT.entitlements.find((f) => f.key === 'free_ai_practice_per_cycle')).toEqual({ key: 'free_ai_practice_per_cycle', kind: 'int', unit: 'uses' });
+    expect(SETTINGS_LAYOUT.entitlements.find((f) => f.key === 'free_ai_lookup_per_cycle')).toEqual({ key: 'free_ai_lookup_per_cycle', kind: 'int', unit: 'uses' });
+    expect(SETTINGS_LAYOUT.entitlements.find((f) => f.key === 'free_ai_daily_cap')).toEqual({ key: 'free_ai_daily_cap', kind: 'int', unit: 'uses' });
+    expect(keys.indexOf('free_ai_practice_per_cycle')).toBeLessThan(keys.indexOf('pro_ai_practice_per_cycle'));
+    expect(keys.indexOf('free_ai_lookup_per_cycle')).toBe(keys.indexOf('free_ai_practice_per_cycle') + 1);
+    expect(keys.indexOf('free_ai_daily_cap')).toBe(keys.indexOf('ai_daily_cap') + 1);
   });
 
   it('changedValues keeps only changed keys; a value set back to the server value is not a change', () => {

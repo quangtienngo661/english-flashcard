@@ -387,3 +387,34 @@ describe('nhóm B settings (design §5.1)', () => {
     expect(screen.getByRole('textbox', { name: s.fields.ai.eval_held_out_ratio })).toHaveAttribute('aria-invalid', 'true');
   });
 });
+
+describe('launch prep A settings (design 6.6)', () => {
+  it('LA3#14: the plans tab has the three Free AI fields, each with its range, what 0 means and its default', async () => {
+    renderApp('/settings?tab=entitlements', { [GET]: () => Response.json(VIEW()), [USAGE]: usage(false) });
+    expect(await screen.findByRole('textbox', { name: s.fields.entitlements.free_ai_practice_per_cycle })).toHaveValue('10');
+    expect(screen.getByRole('textbox', { name: s.fields.entitlements.free_ai_lookup_per_cycle })).toBeInTheDocument();
+    expect(screen.getByRole('textbox', { name: s.fields.entitlements.free_ai_daily_cap })).toBeInTheDocument();
+    expect(screen.getByText(/^free_ai_practice_per_cycle · 1–1\.000 lượt, 0 = gói Miễn phí không có câu AI · Landing ghi 15 và 5; đổi số ở đây thì sửa chữ landing · mặc định 10$/)).toBeInTheDocument();
+    expect(screen.getByText(/^free_ai_lookup_per_cycle · 1–1\.000 lượt, 0 = gói Miễn phí không tra AI được · Landing ghi 15 và 5; đổi số ở đây thì sửa chữ landing · mặc định 10$/)).toBeInTheDocument();
+    expect(screen.getByText(/^free_ai_daily_cap · 1–1\.000 lượt, 0 = người dùng gói Miễn phí không dùng được AI · mặc định 10$/)).toBeInTheDocument();
+  });
+
+  it('the Free daily cap is edited like any number: 400 is sent as 400', async () => {
+    const calls: Call[] = [];
+    renderApp('/settings?tab=entitlements', {
+      [GET]: () => Response.json(VIEW()), [USAGE]: usage(false),
+      [PUT]: (c) => { calls.push(c); return Response.json(VIEW(4)); },
+    });
+    await screen.findByRole('textbox', { name: s.fields.entitlements.free_ai_daily_cap });
+    await setNumber(s.fields.entitlements.free_ai_daily_cap, '400');
+    await userEvent.click(screen.getByRole('button', { name: s.save }));
+    await waitFor(() => expect(calls).toHaveLength(1));
+    expect(calls[0].body).toMatchObject({ values: { entitlements: { free_ai_daily_cap: 400 } } });
+  });
+
+  it('the label of the practice sessions of Pro no longer says "Dùng thử" (trial is off), the trial AI keys keep it', () => {
+    expect(s.fields.entitlements.pro_practice_sessions_per_day).toBe('Phiên luyện mỗi ngày, gói Pro');
+    expect(s.fields.entitlements.trial_ai_practice_per_cycle).toContain('Dùng thử');
+    expect(s.fields.entitlements.free_ai_daily_cap).toBe('Trần lượt AI mỗi ngày, gói Miễn phí');
+  });
+});
