@@ -2,7 +2,7 @@
 
 > **Trạng thái 04/11/2026:** các câu ở §9.1 đã chốt (chủ dự án: "theo rec của bạn", tức theo đề xuất của Claude). **Đã sửa theo review độc lập 04/11/2026**
 > ([`../reviews/2026-11-04-chuan-bi-launch-b-design-review.md`](../reviews/2026-11-04-chuan-bi-launch-b-design-review.md); chủ dự án: "sửa theo review"); **chờ chủ dự án đọc lại.**
-> Hai câu mới còn mở cho chủ dự án ở §9.2. Mỗi finding đổi gì: mục cuối "Thay đổi sau review".
+> Sau review: Q-B16 đã chốt (cách a, một bản), Q-B15 để tới lúc đăng ký payOS (không chặn plan); xem §9.2. Mỗi finding đổi gì: mục cuối "Thay đổi sau review".
 > Chưa có code, chưa có plan. Decision record: [`../decisions/2026-11-04-chuan-bi-launch-b-decisions.md`](../decisions/2026-11-04-chuan-bi-launch-b-decisions.md)
 > (DB28–DB42 và các vòng mới của DB13, DB16, DB17, DB21 là phần sửa theo review).
 > **Nguồn quyết định:** chủ dự án chốt trong chat 02–04/11/2026, tổng hợp ở `docs/preparation/WEB_LAUNCH_DECISIONS_AND_OPEN_ITEMS_2026-11-04.md`
@@ -353,7 +353,7 @@ Một người có nhiều đơn `pending` cùng lúc: cho phép (mỗi lần b�
 - **Câu khóa tính năng** (đợt A để lại cho B): "Dành cho gói Pro. Gói Pro chưa mở bán." (`apps/web/messages/vi.json:341` `ui.lockedLine`, `:1017` lỗi `entitlement-required`;
   `en.json` cùng dòng) đổi lúc mở bán thành "Dành cho gói Pro." / "Part of the Pro plan." và "Dành cho gói Pro. Mở Gói học để mua." / "Part of the Pro plan. Open Plans to buy it."
 - **Landing:** câu trial đã bỏ ở đợt A; không hiện giá (Q-B9).
-- **Điều khoản** mục 5–8 viết lại theo cách bán này; **Chính sách bảo mật** thêm mục payOS (§3.12). Cả hai là việc tài liệu của M2; thời điểm đăng là Q-B16.
+- **Điều khoản** mục 5–8 viết lại theo cách bán này; **Chính sách bảo mật** thêm mục payOS (§3.12). Cả hai là việc tài liệu của M2. Theo Q-B16 (cách a), bản đăng lúc launch có luôn phần quảng cáo (viết là "có thể" hiển thị), nên M4 không cần bản mới.
 
 ### 3.9 Admin
 
@@ -642,7 +642,7 @@ Spike không qua: B3 chờ OpenNext phát hành bản sửa; B2 vẫn chạy.
 ### 5.6 Văn bản
 
 - Chính sách bảo mật bản nháp đang hứa "không dùng dữ liệu cho quảng cáo", "không dùng cookie quảng cáo" (mục 3, 5, 10): phải sửa trước khi bật quảng cáo
-  (quảng cáo Google không cá nhân hóa cho người Free từ 16 tuổi ở Nhóm và Tra từ, cookie giới hạn tần suất; không áp cho người dưới 16 tuổi, Pro và staff). Thời điểm đăng: Q-B16.
+  (quảng cáo Google không cá nhân hóa cho người Free từ 16 tuổi ở Nhóm và Tra từ, cookie giới hạn tần suất; không áp cho người dưới 16 tuổi, Pro và staff). Theo Q-B16 (cách a): phần này viết sẵn trong bản đăng lúc launch (M2), dạng "gói Free có thể hiển thị…".
 - Trang gói đã ghi Pro "Không quảng cáo": nay đúng.
 
 ### 5.7 Chưa kiểm được trước khi có tài khoản AdSense, và luật dự phòng
@@ -682,7 +682,7 @@ Spike không qua: B3 chờ OpenNext phát hành bản sửa; B2 vẫn chạy.
 | M1 | Dữ liệu (`billing_orders`, `billing_order_payments`, `prepaid_periods`, `fake_payos_links`, sequence, `quarter`), ba method mới của `BillingAdapter`, adapter payOS (chữ ký tự viết) và bản giả, `OrderApplier`, nhánh `payment_succeeded` trong applier, job đối soát, `POST /v1/me/orders`, `GET /v1/me/orders/:id`, `POST …/check`, API admin đơn hàng và thu hồi kỳ, `resolve()` và snapshot (`prepaid`, `upcoming_periods`, `pro_until`), cắm kỳ trả trước vào loader của đợt A, bộ xóa tài khoản, `ACCOUNT_DATA_MAP`, ba setting giá và `app-config`, `pnpm payos:confirm-webhook` | Đợt A M3 (tắt trial, cùng file `plan-rules`) và phần loader của đợt A (§3.13) xong trước |
 | M2 | Web mua và trang về; đổi câu "Gói Pro chưa mở bán"; lịch sử giao dịch ("3 tháng"); admin "Đơn hàng", "Đã nhận tiền", "Hủy đơn", "Đã xử lý", thu hồi kỳ; email `expiry_notice` và `payment_receipt`; viết lại Điều khoản mục 5–8 và thêm mục payOS vào Chính sách bảo mật; thêm vào `deploy-checklist.md`: cho `/v1/billing/webhooks/payos` qua WAF và Bot Fight Mode, chạy `payos:confirm-webhook` sau mỗi lần đổi domain, ba biến `PAYOS_*`, bảng §3.14 | M1 |
 | M3 | `ads.show` mới (Free, không staff, từ 16 tuổi) và `IdentityService.isAtLeast`, kiểu web `ads`, hộp thoại giới thiệu Pro | M2 |
-| M4 | CSP `nonce` cho `/app` theo kết quả M0, `assert:render-mode`, e2e CSP; component nạp AdSense và luật rời trang; chân trang dùng `<a>`; `ads.txt`; cài đặt AdSense; sửa Chính sách bảo mật phần quảng cáo (nếu chưa đăng ở Q-B16); sửa design người học §4.1 | M0 qua; phần CSP làm được trước khi Google duyệt; bật AdSense sau khi deploy và Google duyệt |
+| M4 | CSP `nonce` cho `/app` theo kết quả M0, `assert:render-mode`, e2e CSP; component nạp AdSense và luật rời trang; chân trang dùng `<a>`; `ads.txt`; cài đặt AdSense; kiểm lại phần quảng cáo đã có trong Chính sách bảo mật (Q-B16 cách a); chỉ đăng bản mới nếu sự thật khác điều đã viết; sửa design người học §4.1 | M0 qua; phần CSP làm được trước khi Google duyệt; bật AdSense sau khi deploy và Google duyệt |
 
 Thử với payOS thật (tiền thật, số nhỏ, vì không có sandbox) là việc của chủ dự án sau khi deploy M1–M2, theo bảng §3.14.
 
@@ -732,18 +732,20 @@ Chủ dự án (04/11/2026): "theo rec của bạn", tức chọn theo đề xu�
 | Q-B13 | Staff không có gói thấy quảng cáo? | **Không** |
 | Q-B14 | Khi có vignette, hộp thoại giới thiệu Pro? | **Tắt hẳn** |
 
-### 9.2 Còn mở cho chủ dự án (sau review)
+### 9.2 Hai câu sau review
 
-Không chặn plan: design chạy được với mọi câu trả lời; câu trả lời đổi rủi ro hoặc thời điểm đăng văn bản.
+Không chặn plan: design chạy được với mọi câu trả lời.
 
-- **Q-B15 — Tài khoản ngân hàng nào nối với payOS?** Bối cảnh: trang API của payOS ghi giới hạn `description` 9 ký tự "với tài khoản ngân hàng không phải liên kết qua payOS"; FAQ
+- **Q-B15 — Tài khoản ngân hàng nào nối với payOS?** **Để tới lúc đăng ký payOS** (chủ dự án 04/11 đã nghe: VietQR Pro tốn khoảng dưới 1.500 ₫/giao dịch theo trang
+  giới thiệu, không phải xử lý tay; tài khoản thường thì admin xử lý tay các lần chuyển sai). Bối cảnh: trang API của payOS ghi giới hạn `description` 9 ký tự "với tài khoản ngân hàng không phải liên kết qua payOS"; FAQ
   câu 7 (đọc 04/11/2026) nói với liên kết VietQR Pro, chuyển sai số tiền bị ngân hàng từ chối ngay, đã chuyển thì ngân hàng hoàn lại. Design dùng mã 9 ký tự nên chạy với cả hai
   loại. Loại tài khoản quyết định trả sai tiền, trả muộn, trả hai lần là hiếm hay thường, tức admin sẽ gặp `needs_review` nhiều hay ít (§10).
 - **Q-B16 — Đăng bản văn bản pháp lý mới lúc nào?** Bối cảnh: mỗi lần admin đăng một phiên bản mới (Chính sách bảo mật và Điều khoản đi chung một số phiên bản), mọi học viên đã
   đồng ý bản cũ bị giữ ở `complete-profile` tới khi đồng ý lại (`terms-version.ts:29-31`, `RequireSession.tsx:75`). Hai văn bản chưa có trong DB; bản đầu tiên sẽ đăng trước
   launch. Đợt B cần sửa văn bản hai lần: phần payOS (M2, trước khi bán) và phần quảng cáo (M4, sau khi Google duyệt, tức sau launch). Các cách: (a) bản đăng lúc launch đã có cả
   phần payOS và phần quảng cáo (viết là "khi bật"), M4 không cần bản mới trừ khi sự thật đổi; (b) bản lúc launch chỉ có phần payOS, đăng bản mới khi bật AdSense và mọi học viên
-  đồng ý lại một lần.
+  đồng ý lại một lần. **Chốt: (a) một bản** (chủ dự án 04/11/2026). Bản lúc launch viết phần quảng cáo dạng "gói Free có thể hiển thị quảng cáo
+  không cá nhân hóa của Google"; từ launch tới khi bật AdSense, app chưa tải script nên Google chưa nhận dữ liệu.
 
 ## 10. Rủi ro và chỗ chưa kiểm
 

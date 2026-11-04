@@ -59,6 +59,8 @@ là bản design trước review và các phương án review nêu; không thêm
 | DB40 | `ASSUMPTION` payOS, `expiredAt`, chữ ký (RB-14) | Bảng kiểm ở lần mua thật; giây + tự hủy link; tự viết chữ ký | Theo đề xuất của review |
 | DB41 | Dữ liệu người chuyển (RB-15) | Không giữ trường người chuyển sau khi apply (trừ DB21 vòng 2); không `buyer*`; mục payOS ở M2 | Theo đề xuất của review |
 | DB42 | Kỳ chưa bắt đầu trong snapshot (RB-19) | Trường riêng `upcoming_periods` | Theo đề xuất của review (Claude chọn trong hai cách review nêu) |
+| DB43 | Đăng văn bản pháp lý mới (Q-B16) | Một bản lúc launch, có cả payOS và quảng cáo | Chủ dự án |
+| DB44 | Loại tài khoản nối payOS (Q-B15) | Để tới lúc đăng ký payOS | Chủ dự án |
 
 ## DB1 — Cách thu tiền lúc đầu
 
@@ -526,6 +528,24 @@ Bối cảnh: đưa kỳ tương lai vào `sources[]` làm sai các chỗ web l�
 | ✅ Trường riêng `upcoming_periods` (và `pro_until` cho "Pro tới hết") | Chỗ đọc `sources` hiện có không đổi hành vi |
 
 Ai chốt: Theo đề xuất của review (chủ dự án: "sửa theo review", 04/11/2026); review nêu hai cách, Claude chọn trường riêng vì không đổi các chỗ đang đọc `sources`.
+
+
+## DB43 — Đăng văn bản pháp lý mới (Q-B16)
+
+Bối cảnh: mỗi lần đăng phiên bản mới, học viên đã đồng ý bản cũ bị hỏi lại. Đợt B cần thêm phần payOS (trước khi bán) và phần quảng cáo (sau khi Google duyệt).
+
+| Phương án | Trade-off |
+|---|---|
+| ✅ (a) Một bản lúc launch có cả payOS và quảng cáo ("gói Free có thể hiển thị…") | Học viên đồng ý một lần; từ launch tới khi bật quảng cáo, văn bản rộng hơn những gì app làm |
+| (b) Bản lúc launch chỉ có payOS, bản mới khi bật AdSense | Văn bản luôn khớp app; mọi học viên đồng ý thêm một lần |
+
+## DB44 — Loại tài khoản nối payOS (Q-B15)
+
+| Phương án | Trade-off |
+|---|---|
+| Tài khoản VietQR Pro (tài khoản ảo theo từng đơn) | Ngân hàng chặn chuyển sai số tiền, không phải xử lý tay; phí khoảng dưới 1.500 ₫/giao dịch theo trang giới thiệu payOS (chưa có bảng giá đầy đủ) |
+| Tài khoản thường | Có thể không có phí đó; admin xử lý tay các lần chuyển sai (`needs_review`) |
+| ✅ Để tới lúc đăng ký payOS | Design chạy được với cả hai; chọn khi thấy màn liên kết ngân hàng và giá thật |
 
 ## Đề xuất kỹ thuật trong design (chờ duyệt cùng bản viết)
 
