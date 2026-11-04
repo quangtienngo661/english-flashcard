@@ -94,9 +94,10 @@ export class OrderApplier {
     const seen = await this.orders.findPaymentByKey(tx, key);
     if (seen !== null) return { outcome: seen.outcome as PaymentOutcome, userId: account === 'active' ? order.userId : null };
 
-    const totals = await this.orders.payosTotals(tx, order.id);
+    const totals = { ...(await this.orders.payosTotals(tx, order.id)), transfers: await this.orders.payosTransfers(tx, order.id) };
     const decision = decideOrderPayment(
-      this.stateOf(order, account, totals), { source: input.source, amount: input.amount, at: parsePayosTime(input.providerTime, now) },
+      this.stateOf(order, account, totals),
+      { source: input.source, amount: input.amount, at: parsePayosTime(input.providerTime, now), providerTime: input.providerTime },
     );
 
     const payment = await this.orders.insertPayment(tx, {
@@ -130,7 +131,7 @@ export class OrderApplier {
       const order = await this.orders.lock(tx, found.id);
       if (order === null) throw new ProblemDetailsException({ status: 404, title: 'Not found', type: 'not-found' });
       const account = await this.accountOf(tx, order.userId);
-      const decision = decideManualConfirm(this.stateOf(order, account, { total: 0, count: 0 }));
+      const decision = decideManualConfirm(this.stateOf(order, account, { total: 0, count: 0, transfers: [] }));
       if (decision.error !== undefined) {
         throw new ProblemDetailsException({ status: 409, title: REFUSAL_TITLE[decision.error], type: decision.error.slice(4) });
       }
@@ -152,10 +153,10 @@ export class OrderApplier {
     return status === null ? 'deleted' : status === 'deleting' ? 'deleting' : 'active';
   }
 
-  private stateOf(order: OrderRecord, account: OrderState['account'], totals: { total: number; count: number }): OrderState {
+  private stateOf(order: OrderRecord, account: OrderState['account'], totals: { total: number; count: number; transfers: OrderState['payosTransfers'] }): OrderState {
     return {
       status: order.status, reviewReason: order.reviewReason, paidVia: order.paidVia, amount: order.amount, expiresAt: order.expiresAt,
-      payosTotal: totals.total, payosCount: totals.count, account,
+      payosTotal: totals.total, payosCount: totals.count, payosTransfers: totals.transfers, account,
     };
   }
 

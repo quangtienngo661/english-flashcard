@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import type { Prisma, PrismaClient } from '../../generated/prisma/client.js';
+import { BILLING_MAX_ATTEMPTS } from '../entitlements.constants.js';
 import type { BillingEnvironment } from '../entitlements.types.js';
 import type { OrderStatus, PaidVia, PaymentOutcome, ReviewReason } from './order-rules.js';
 
@@ -324,6 +325,26 @@ export class OrdersRepository {
       where: { orderId, source: { in: ['webhook', 'reconcile'] } }, _sum: { amountMinor: true }, _count: { _all: true },
     });
     return { total: Number(sum._sum.amountMinor ?? 0n), count: sum._count._all };
+  }
+
+  /**
+   * Review I1. True when none of these payOS transfers was ever counted and every one of their inbox rows is final without having been applied
+   * (`ignored`, or `failed` for good): money no automatic path will pick up. A payment key is also the inbox `dedupe_key`, so one list serves both.
+   */
+  async neverApplied(db: Db, keys: string[]): Promise<boolean> {
+    if (keys.length === 0) return false;
+    if (await db.billingOrderPayment.count({ where: { paymentKey: { in: keys } } }) > 0) return false;
+    const events = await db.billingEvent.findMany({ where: { dedupeKey: { in: keys } }, select: { status: true, attempts: true } });
+    return events.length === keys.length
+      && events.every((event) => event.status === 'ignored' || (event.status === 'failed' && event.attempts >= BILLING_MAX_ATTEMPTS));
+  }
+
+  /** The same payments, one by one: what the rules compare an arriving payment with (the amount and payOS's moment). */
+  async payosTransfers(db: Db, orderId: string): Promise<Array<{ amount: number; providerTime: string | null }>> {
+    const rows = await db.billingOrderPayment.findMany({
+      where: { orderId, source: { in: ['webhook', 'reconcile'] } }, select: { amountMinor: true, providerTime: true },
+    });
+    return rows.map((row) => ({ amount: Number(row.amountMinor), providerTime: row.providerTime }));
   }
 
   async insertPayment(db: Db, row: NewPayment): Promise<{ id: string }> {

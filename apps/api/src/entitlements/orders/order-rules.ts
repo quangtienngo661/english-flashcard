@@ -22,6 +22,8 @@ export type OrderState = {
   /** The payments through payOS already counted for the order (not staff confirmations), their sum S and their number. */
   payosTotal: number;
   payosCount: number;
+  /** Each of those payments: its amount and the moment payOS gave for it (null when it gave none). */
+  payosTransfers: Array<{ amount: number; providerTime: string | null }>;
   /** `deleted`: the order's user is not in `users` any more (the order was anonymised). */
   account: 'active' | 'deleting' | 'deleted';
 };
@@ -31,6 +33,8 @@ export type IncomingPayment = {
   amount: number;
   /** When the transfer happened: payOS's own time, or the time of receipt when it could not be read. */
   at: Date;
+  /** The moment as payOS wrote it, or null: with the amount, what tells one transfer from another when the references differ. */
+  providerTime: string | null;
 };
 
 export type Decision = {
@@ -72,6 +76,10 @@ export function decideOrderPayment(state: OrderState, payment: IncomingPayment):
   if (hasPeriod(state)) {
     // T7: staff confirmed first, and this is the same transfer arriving through payOS. Attach it; no second period.
     if (state.paidVia === 'manual' && state.payosCount === 0 && payment.amount === state.amount) return { ...keep, outcome: 'attached' };
+    // Review I2: the same transfer under another reference (payOS gave the webhook and the job two): same amount, same moment. Already counted.
+    if (payment.providerTime !== null && state.payosTransfers.some((t) => t.amount === payment.amount && t.providerTime === payment.providerTime)) {
+      return { ...keep, outcome: 'attached' };
+    }
     // T9: not the amount of the order, so not a second purchase: a flag for staff.
     if (payment.amount !== state.amount) return { ...keep, reviewReason: 'extra-payment', outcome: 'flagged' };
     // T8: a second transfer of the exact amount, by webhook, is a new purchase: a period that follows the last.

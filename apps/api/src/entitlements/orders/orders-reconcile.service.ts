@@ -10,6 +10,7 @@ import { BillingAdapterRegistry } from '../billing/billing-adapter.registry.js';
 import { BILLING_APPLY_PORT, BillingInbox, type BillingApplyPort } from '../billing/billing-inbox.service.js';
 import type { OrderPaymentPayload } from '../billing/billing.types.js';
 import { lockUser } from '../entitlements.locks.js';
+import { paymentKeyPayos } from './order-codes.js';
 import type { OrderStatus } from './order-rules.js';
 import { OrdersRepository, type OrderUpdate, type ReconcileOrder } from './orders.repository.js';
 
@@ -127,6 +128,13 @@ export class OrdersReconcileService {
     });
     const ids = await this.inbox.store('payos', events);
     if (ids.length > 0) await this.applier.applyMany(ids);
+    // Review I1: a key the webhook already stored gives no new row, so a webhook the applier ignored (or gave up on) leaves this money with
+    // no path that applies it. Nothing counted and every row final → staff have to look; the order is not left pending without a word.
+    const keys = link.transactions.map((transaction) => paymentKeyPayos(environment, order.orderCode, transaction.reference));
+    if (await this.orders.neverApplied(this.prisma, keys)) {
+      this.logger.warn('order_money_unapplied', { order_ref: order.id });
+      await this.move(order, order.status as OrderStatus, { status: 'needs_review', reviewReason: 'provider-mismatch' });
+    }
   }
 
   /** The order's change of state: user lock, order lock, then `UPDATE … WHERE status = <what was read>`. False when nothing changed. */
