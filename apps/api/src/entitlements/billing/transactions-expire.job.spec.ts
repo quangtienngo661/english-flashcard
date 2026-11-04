@@ -8,13 +8,14 @@ function setup(years = 10) {
   const values = structuredClone(SETTINGS_DEFAULTS);
   values.entitlements.transactionRetentionYears = years;
   const deleteMany = vi.fn(async (_a: unknown) => ({ count: 3 }));
+  const deleteOrders = vi.fn(async (_a: unknown) => ({ count: 2 }));
   const registered: string[] = [];
   const job = new TransactionsExpireJob(
-    { billingTransaction: { deleteMany } } as unknown as PrismaClient,
+    { billingTransaction: { deleteMany }, billingOrder: { deleteMany: deleteOrders } } as unknown as PrismaClient,
     { register: (name: string) => registered.push(name) } as unknown as MaintenanceScheduler,
     { get: async () => values } as unknown as SettingsService,
   );
-  return { job, deleteMany, registered };
+  return { job, deleteMany, deleteOrders, registered };
 }
 
 describe('TransactionsExpireJob (D15)', () => {
@@ -35,5 +36,27 @@ describe('TransactionsExpireJob (D15)', () => {
     const s = setup(5);
     await s.job.run(new Date('2026-12-31T17:30:00Z'));
     expect(s.deleteMany).toHaveBeenCalledWith({ where: { occurredAt: { lt: new Date('2021-12-31T17:00:00.000Z') } } });
+  });
+});
+
+describe('TransactionsExpireJob — orders (launch prep B design §3.2 "Giữ hồ sơ")', () => {
+  it('deletes the orders in a final state created before the same cut, with their payments and periods (the foreign keys cascade)', async () => {
+    const s = setup(10);
+    await s.job.run(new Date('2026-10-29T12:00:00Z'));
+    expect(s.deleteOrders).toHaveBeenCalledWith({
+      where: { status: { in: ['paid', 'expired', 'cancelled', 'failed', 'closed'] }, createdAt: { lt: new Date('2015-12-31T17:00:00.000Z') } },
+    });
+  });
+
+  it('never deletes an order that is waiting (pending) or waiting for staff (needs_review)', async () => {
+    const s = setup(10);
+    await s.job.run(new Date('2026-10-29T12:00:00Z'));
+    const statuses = (s.deleteOrders.mock.calls[0][0] as { where: { status: { in: string[] } } }).where.status.in;
+    expect(statuses).not.toContain('pending');
+    expect(statuses).not.toContain('needs_review');
+  });
+
+  it('still returns the number of transactions it removed', async () => {
+    expect(await setup(10).job.run(new Date('2026-10-29T12:00:00Z'))).toBe(3);
   });
 });

@@ -28,6 +28,10 @@ export class TransactionsExpireJob implements OnModuleInit {
     const year = new Date(now.getTime() + HO_CHI_MINH_OFFSET_MS).getUTCFullYear();
     const cut = new Date(Date.UTC(year - transactionRetentionYears, 0, 1) - HO_CHI_MINH_OFFSET_MS);
     const { count } = await this.prisma.billingTransaction.deleteMany({ where: { occurredAt: { lt: cut } } });
+    // Orders that are over (a waiting or a needs_review order is never cut) go with their payments and periods, by the foreign keys.
+    await this.prisma.billingOrder.deleteMany({
+      where: { status: { in: ['paid', 'expired', 'cancelled', 'failed', 'closed'] }, createdAt: { lt: cut } },
+    });
     return count;
   }
 }

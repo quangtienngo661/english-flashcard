@@ -269,6 +269,33 @@ describe('BillingJobs.cleanupRawPayloads (R23)', () => {
     expect(cutoff).toEqual(new Date(NOW.getTime() - RAW_PAYLOAD_RETENTION_DAYS * DAY));
     expect(RAW_PAYLOAD_RETENTION_DAYS).toBe(90);
   });
+
+  it('LB1E48: a one-time payment event that stayed in the inbox 90 days loses its payer together with its raw payload (design §3.12)', async () => {
+    const { jobs, prisma } = setup();
+    await jobs.cleanupRawPayloads(NOW);
+    const sql = prisma.$executeRaw.mock.calls.map(([strings]) => strings.join('?').replace(/\s+/g, ' '));
+    const statement = sql.find((text) => text.includes("payload - 'payer'"));
+    expect(statement).toBeDefined();
+    expect(statement).toContain("SET payload = payload - 'payer'");
+    expect(statement).toContain("type = 'payment_succeeded'");
+    expect(statement).toContain("jsonb_exists(payload, 'payer')");
+    expect(statement).toContain('received_at < ?');
+    const call = prisma.$executeRaw.mock.calls.find(([strings]) => strings.join('?').includes("payload - 'payer'"))!;
+    expect(call[1]).toEqual(new Date(NOW.getTime() - RAW_PAYLOAD_RETENTION_DAYS * DAY));
+  });
+
+  it('LB1E38: the three payer fields kept on an order for a refund are cleared 90 days after they were saved; the order itself and its status stay', async () => {
+    const { jobs, prisma } = setup();
+    await jobs.cleanupRawPayloads(NOW);
+    const call = prisma.$executeRaw.mock.calls.find(([strings]) => strings.join('?').includes('refund_payer_name'))!;
+    expect(call).toBeDefined();
+    const sql = call[0].join('?').replace(/\s+/g, ' ');
+    expect(sql).toContain('UPDATE billing_orders SET refund_payer_name = NULL, refund_payer_account = NULL, refund_payer_bank = NULL');
+    expect(sql).toContain('refund_saved_at < ?');
+    expect(sql).toContain('refund_payer_name IS NOT NULL OR refund_payer_account IS NOT NULL OR refund_payer_bank IS NOT NULL');
+    expect(sql).not.toContain('status');
+    expect(call[1]).toEqual(new Date(NOW.getTime() - RAW_PAYLOAD_RETENTION_DAYS * DAY));
+  });
 });
 
 describe('BillingJobs registration', () => {
