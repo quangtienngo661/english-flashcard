@@ -12,10 +12,9 @@ pnpm lint
 pnpm exec tsc --noEmit -p tsconfig.json
 pnpm build
 pnpm test
-pnpm test:e2e
 ```
 
-Kỳ vọng: 575 unit + 457 e2e, tất cả xanh. `test/pipeline/real-files.e2e-spec.ts` tự import file CEFR-J/Octanove
+Kỳ vọng (lúc làm, 13/10/2026): 575 unit + 457 e2e, tất cả xanh. **Từ Bước 4 (D38) `apps/api` không còn e2e backend và không có script `pnpm test:e2e`**; chỉ `pnpm test` chạy được, và bằng chứng e2e của lúc đó không chạy lại được. `test/pipeline/real-files.e2e-spec.ts` tự import file CEFR-J/Octanove
 thật và so khớp từng số liệu (B2#70); các test còn lại dùng Postgres/Redis/Mailpit thật qua Testcontainers,
 không mock. Chi tiết số đo B2#71 và các bug thật tìm được trong lúc làm: `docs/deliveries/buoc-2.md`.
 

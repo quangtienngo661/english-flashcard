@@ -28,7 +28,7 @@ ledger nằm ở [`giao-dien-nguoi-hoc-ledger.md`](giao-dien-nguoi-hoc-ledger.md
 - **M5a merged** (PR #128). **M5b** (Task 46–48: Tra bằng AI trong tấm Thêm từ, Sửa trước khi lưu, trang từ riêng có [Sửa] [Xóa từ]) trên
   `feat/giao-dien-nguoi-hoc-m5b`, là PR cuối của đợt. Cả 48 task của plan đã làm. As-built mọi mốc và phần đóng đợt: cuối `giao-dien-nguoi-hoc.md`.
 - Việc tiếp theo không thuộc plan này: chủ dự án tự kiểm theo `giao-dien-nguoi-hoc-test-flow.md` (D4), lỗi báo sửa bằng PR `fix/`; danh sách cải thiện
-  C1–C10; các màn admin "Sắp có" cần design + plan riêng.
+  C1–C10; các màn admin đã làm ở đợt giao diện admin (27–28/10/2026, `giao-dien-admin.md`; không còn mục "Sắp có").
 
 ## 0a. Cập nhật (23/10/2026, hết M5a)
 

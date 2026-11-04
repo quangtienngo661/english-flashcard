@@ -1,5 +1,9 @@
 # Design — Bước 0: nền backend
 
+> **Ghi chú 04/11/2026 (đợt sửa sau review, B1-7): các chỗ dưới đây đã được thay, nội dung gốc giữ nguyên.**
+> - B0#2 ("the handler runs inside this same transaction") và B0E8 (`Promise.race`) **đã thay bởi** đợt sửa thiếu sót Bước 0–3, C1: giữ chỗ khóa → handler chạy ngoài
+>   transaction → ghi kết quả, không cắt handler (`idempotency.service.ts`). Khe "chết sau khi handler commit, trước khi ghi `succeeded`" là chấp nhận có chủ ý (D12 của design sửa thiếu sót §6.1).
+
 Ngày: 05/10/2026. Phạm vi: HANDOFF §4–5 (`../../HANDOFF_2026-10-05_BUOC_0.md`). Brainstorm qua skill
 `superpowers:brainstorming`, 4 câu hỏi hỏi từng câu một trong chat, chủ dự án đã chốt cả 4. File này gộp lại
 thành một design doc để tự soát và để bạn duyệt trước `writing-plans`.
