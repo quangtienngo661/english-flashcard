@@ -76,6 +76,8 @@ CREATE TABLE "fake_payos_links" (
     "amount" INTEGER NOT NULL,
     "status" TEXT NOT NULL,
     "expires_at" TIMESTAMPTZ NOT NULL,
+    "return_url" TEXT NOT NULL,
+    "cancel_url" TEXT NOT NULL,
     "transactions" JSONB NOT NULL DEFAULT '[]',
     "created_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
 

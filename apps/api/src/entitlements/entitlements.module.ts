@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { APP_CONFIG, type AppConfig } from '../common/config/app-config.js';
 import { IdempotencyInterceptor } from '../common/idempotency/idempotency.interceptor.js';
 import { MailModule } from '../common/mail/mail.module.js';
 import { IdentityModule } from '../identity/identity.module.js';
@@ -15,6 +16,9 @@ import { TransactionsExpireJob } from './billing/transactions-expire.job.js';
 import { BillingEventApplier } from './billing/event-applier.service.js';
 import { TransactionsRepository } from './billing/transactions.repository.js';
 import { FakeBillingAdapter } from './billing/fake/fake-billing.adapter.js';
+import { FakePayosAdapter } from './billing/payos/fake-payos.adapter.js';
+import { FakePayosController } from './billing/payos/fake-payos.controller.js';
+import { createPayosClient, PAYOS_CLIENT, PayosAdapter } from './billing/payos/payos.adapter.js';
 import { WebhookController } from './billing/webhook.controller.js';
 import { EntitlementsService } from './entitlements.service.js';
 import { AdminGrantsController } from './grants/admin-grants.controller.js';
@@ -33,7 +37,7 @@ import { UsageQueries } from './usage/usage.queries.js';
   imports: [IdentityModule, SettingsModule, MailModule],
   controllers: [
     WebhookController, AdminGrantsController, AdminEntitlementsController, MeEntitlementsController, MeSubscriptionsController, MeTransactionsController,
-    AdminTransactionsController,
+    AdminTransactionsController, FakePayosController,
   ],
   providers: [
     EntitlementsService,
@@ -43,6 +47,10 @@ import { UsageQueries } from './usage/usage.queries.js';
     UsageExpireJob,
     BillingAdapterRegistry,
     FakeBillingAdapter,
+    // payOS: the real adapter in `real` mode, the fake in `fake` mode; each registers itself as "payos" only then.
+    { provide: PAYOS_CLIENT, inject: [APP_CONFIG], useFactory: (config: AppConfig) => (config.payos.mode === 'real' ? createPayosClient(config.payos) : null) },
+    PayosAdapter,
+    FakePayosAdapter,
     BillingInbox,
     BillingEventApplier,
     TransactionsRepository,

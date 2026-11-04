@@ -27,6 +27,29 @@ export type ParsedEvent = {
   raw: unknown;
 };
 
+/** Who sent the money, as the bank tells payOS (design §3.12). Personal data: never logged, kept only as long as a refund needs it. */
+export type Payer = { counterAccountName: string | null; counterAccountNumber: string | null; counterAccountBankName: string | null };
+
+/** What a provider needs to open a one-time payment link (launch prep B design §3.3). */
+export type CheckoutOrder = {
+  orderCode: number;
+  amount: number;
+  description: string;
+  returnUrl: string;
+  cancelUrl: string;
+  expiresAt: Date;
+};
+
+export const CHECKOUT_STATUSES = ['PENDING', 'CANCELLED', 'UNDERPAID', 'PAID', 'EXPIRED', 'PROCESSING', 'FAILED'] as const;
+
+/** The provider's own view of a payment link: the SDK's `PaymentLink` without what Wordmet does not use. */
+export type CheckoutState = {
+  status: (typeof CHECKOUT_STATUSES)[number];
+  amount: number;
+  amountPaid: number;
+  transactions: Array<{ reference: string; amount: number; transactionDateTime: string; payer: Payer | null }>;
+};
+
 /**
  * One provider (design §9.1). `verify` returns `ok: false` only for a wrong signature; a signed entry of a type Wordmet does
  * not use is counted in `skipped` and still acked, since providers resend anything that gets a 4xx. The three optional
@@ -39,6 +62,11 @@ export abstract class BillingAdapter {
   fetchState?(externalSubscriptionId: string): Promise<FetchedState | null>;
   endTrialNow?(externalSubscriptionId: string): Promise<void>;
   cancelAtPeriodEnd?(externalSubscriptionId: string): Promise<void>;
+  // One-time payments (payOS). MoMo would use `createCheckout` to open the first charge link and `verify` for the charges after it.
+  createCheckout?(order: CheckoutOrder): Promise<{ paymentLinkId: string; checkoutUrl: string }>;
+  /** Null when the provider has no such link. */
+  getCheckout?(orderCode: number): Promise<CheckoutState | null>;
+  cancelCheckout?(orderCode: number): Promise<void>;
 }
 
 /** `billing_events.dedupe_key` (design §9.2 step 2). */

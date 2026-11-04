@@ -27,5 +27,11 @@ export const GRANT_REASON_MAX = 300;
 /** Every adapter call is bounded by this; a timeout counts as "not supported" / "fetch failed" (R6). */
 export const BILLING_ADAPTER_TIMEOUT_MS = 5_000;
 
+/**
+ * payOS SDK request timeout (launch prep B design §3.3). Under `BILLING_ADAPTER_TIMEOUT_MS`: the SDK aborts the real HTTP call,
+ * while `callAdapter` only stops waiting for it.
+ */
+export const PAYOS_SDK_TIMEOUT_MS = 4_000;
+
 /** D39: a subscription revoked by a refund is asked again (fetchState) by the hourly job for this many days (ASSUMPTION). */
 export const REFUND_REFETCH_DAYS = 3;

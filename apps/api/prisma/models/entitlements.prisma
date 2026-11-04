@@ -337,6 +337,9 @@ model FakePayosLink {
   amount        Int
   status        String
   expiresAt     DateTime @map("expires_at") @db.Timestamptz
+  // What the order sent payOS, so the fake page can send the browser back like payOS does after a payment or a cancel.
+  returnUrl     String   @map("return_url")
+  cancelUrl     String   @map("cancel_url")
   // [{ reference, amount, transactionDateTime, payer }] as payOS lists them.
   transactions  Json     @default("[]")
   createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz
