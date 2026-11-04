@@ -85,7 +85,7 @@ export class BillingJobs implements OnModuleInit {
         const state = useFetched ? applyFetched(toState(row), fetched) : toState(row);
         const { status } = effectiveStatus(toSource(row, state), now, graceDays);
         if (!useFetched && status === row.status) return;
-        const endedAt = nextEndedAt(endedAtFields(row, state), status, now, graceDays);
+        const endedAt = nextEndedAt(endedAtFields(row), status, now, graceDays);
         await tx.subscription.update({ where: { id: row.id }, data: { ...state, status, endedAt, updatedAt: now } });
       });
     }
@@ -120,7 +120,7 @@ export class BillingJobs implements OnModuleInit {
         const row = await tx.subscription.findUnique({ where: { id: candidate.id } });
         if (row === null || row.updatedAt.getTime() !== candidate.updatedAt.getTime()) return;
         const next = applyFetched(toState(row), fetched);
-        const endedAt = nextEndedAt(endedAtFields(row, next), next.status, now, graceDays);
+        const endedAt = nextEndedAt(endedAtFields(row), next.status, now, graceDays);
         await tx.subscription.update({ where: { id: row.id }, data: { ...next, endedAt, updatedAt: now } });
         this.logger.info('billing_state_refetched', { subscription_id: row.id });
       });

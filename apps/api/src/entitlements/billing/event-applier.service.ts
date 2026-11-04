@@ -242,7 +242,7 @@ export class BillingEventApplier implements BillingApplyPort {
       const now = this.clock.now();
       const next = applyFetched(toState(row), state);
       await tx.subscription.update({
-        where: { id: row.id }, data: { ...next, endedAt: nextEndedAt(endedAtFields(row, next), next.status, now, graceDays), updatedAt: now },
+        where: { id: row.id }, data: { ...next, endedAt: nextEndedAt(endedAtFields(row), next.status, now, graceDays), updatedAt: now },
       });
       return true;
     });
@@ -260,11 +260,14 @@ export class BillingEventApplier implements BillingApplyPort {
   }
 }
 
-/** The fields of a stored row `nextEndedAt` needs; `state` carries the dates when they are newer than the row (a fetched state). */
-export function endedAtFields(row: SubscriptionRow, state: SubscriptionState = toState(row)): EndedAtFields {
+/**
+ * The fields of a stored row `nextEndedAt` needs. Always the row's own dates and flags, never a provider's newer answer: the moment a
+ * source stopped being Pro is told by the time rules Wordmet applied to the row it had (design 6.3.3, review M3 I1).
+ */
+export function endedAtFields(row: SubscriptionRow): EndedAtFields {
   return {
-    status: row.status as SubscriptionStatus, endedAt: row.endedAt, trialEndsAt: state.trialEndsAt,
-    currentPeriodEnd: state.currentPeriodEnd, graceEndsAt: state.graceEndsAt, cancelAtPeriodEnd: state.cancelAtPeriodEnd,
+    status: row.status as SubscriptionStatus, endedAt: row.endedAt, trialEndsAt: row.trialEndsAt,
+    currentPeriodEnd: row.currentPeriodEnd, graceEndsAt: row.graceEndsAt, cancelAtPeriodEnd: row.cancelAtPeriodEnd,
   };
 }
 
