@@ -338,7 +338,7 @@
     },
     "ui": {
       "proBadge": "Pro",
-      "lockedLine": "Part of the Pro plan. Pro is not on sale yet.",
+      "lockedLine": "Part of the Pro plan.",
       "seePlans": "See plans",
       "dob": {
         "placeholder": "dd/mm/yyyy",
@@ -516,6 +516,7 @@
         "usage": "Quota you used, without your name",
         "totals": "Totals that do not identify you"
       },
+      "proLost": "The rest of your Pro time will be lost, with no refund.",
       "blocked": "You have a plan that renews. Cancel it before deleting your account.",
       "blockedLink": "Go to Plans",
       "understand": "I understand my data will be lost and cannot be restored",
@@ -559,7 +560,13 @@
       },
       "intervals": {
         "month": "monthly",
+        "quarter": "quarterly",
         "year": "yearly"
+      },
+      "prepaidIntervals": {
+        "month": "1 month",
+        "quarter": "3 months",
+        "year": "12 months"
       },
       "planInterval": "{plan} · {interval}",
       "used": "Active {period}",
@@ -1014,7 +1021,7 @@
       "csrf-header-required": "Something went wrong. Reload the page and try again.",
       "email-already-verified": "This email is already verified.",
       "email-taken": "This email already has an account. If it's yours, use Forgot password.",
-      "entitlement-required": "Part of the Pro plan. Pro is not on sale yet.",
+      "entitlement-required": "Part of the Pro plan. Open Plans to buy it.",
       "forbidden": "You can’t do this.",
       "group-full": "This deck is full.",
       "group-limit-reached": "You’ve reached the deck limit. Delete a deck to create a new one.",
@@ -1500,19 +1507,26 @@
       "trialUntil": "Trial through {date}.",
       "close": "Close",
       "period": "Billing period",
-      "year": "Yearly",
-      "month": "Monthly",
+      "periods": {
+        "1": "1 month",
+        "3": "3 months",
+        "12": "12 months"
+      },
       "yours": "Current plan",
       "yoursGift": "Current plan",
-      "notOnSale": "Not on sale yet",
       "free": "Free",
       "pro": "Pro",
       "usingThis": "You're on this plan",
       "backToFree": "When Pro ends, your account goes back to Free",
-      "priceYear": "XXX,000 ₫",
-      "priceMonth": "XX,000 ₫",
-      "perYear": "/ year",
-      "perMonth": "/ month",
+      "oneTime": "One payment for {period}.",
+      "extend": "Buy more: the new period follows the current one.",
+      "noRefund": "No refunds. The plan does not renew by itself; when it ends you buy a new period.",
+      "termsLink": "Terms of Use",
+      "buy": "Buy",
+      "priceChanged": "The price just changed, check it before you buy",
+      "buyUnavailable": "Could not create the order. Try again in a few minutes.",
+      "nextPeriod": "Next period: {from} – {to}",
+      "thenPeriod": "Then: {from} – {to}",
       "proLine": "More practice sessions, plus AI questions and AI lookup.",
       "until": "Through {date}",
       "afterEnd": "When it ends, your account goes back to Free; your words and review schedule stay.",

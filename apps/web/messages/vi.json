@@ -338,7 +338,7 @@
     },
     "ui": {
       "proBadge": "Pro",
-      "lockedLine": "Dành cho gói Pro. Gói Pro chưa mở bán.",
+      "lockedLine": "Dành cho gói Pro.",
       "seePlans": "Xem Gói học",
       "dob": {
         "placeholder": "dd/mm/yyyy",
@@ -516,6 +516,7 @@
         "usage": "Số lượt đã dùng, không kèm tên bạn",
         "totals": "Số liệu tổng hợp, không nhận ra bạn"
       },
+      "proLost": "Thời gian Pro còn lại sẽ mất, không hoàn tiền.",
       "blocked": "Bạn đang có gói tự gia hạn. Hủy gói trước khi xóa tài khoản.",
       "blockedLink": "Đến trang Gói",
       "understand": "Tôi hiểu dữ liệu sẽ mất và không khôi phục được",
@@ -559,7 +560,13 @@
       },
       "intervals": {
         "month": "theo tháng",
+        "quarter": "theo quý",
         "year": "theo năm"
+      },
+      "prepaidIntervals": {
+        "month": "1 tháng",
+        "quarter": "3 tháng",
+        "year": "12 tháng"
       },
       "planInterval": "{plan} · {interval}",
       "used": "Dùng {period}",
@@ -1014,7 +1021,7 @@
       "csrf-header-required": "Có lỗi xảy ra. Tải lại trang rồi thử lại.",
       "email-already-verified": "Email này đã được xác minh.",
       "email-taken": "Email này đã có tài khoản. Nếu là email của bạn, dùng Quên mật khẩu.",
-      "entitlement-required": "Dành cho gói Pro. Gói Pro chưa mở bán.",
+      "entitlement-required": "Dành cho gói Pro. Mở Gói học để mua.",
       "forbidden": "Bạn không làm được thao tác này.",
       "group-full": "Nhóm này đã đủ số từ tối đa.",
       "group-limit-reached": "Bạn đã có đủ số nhóm tối đa. Xóa bớt một nhóm để tạo nhóm mới.",
@@ -1500,19 +1507,26 @@
       "trialUntil": "Dùng thử tới hết {date}.",
       "close": "Đóng",
       "period": "Kỳ hạn",
-      "year": "Theo năm",
-      "month": "Theo tháng",
+      "periods": {
+        "1": "1 tháng",
+        "3": "3 tháng",
+        "12": "12 tháng"
+      },
       "yours": "Gói hiện tại",
       "yoursGift": "Gói hiện tại",
-      "notOnSale": "Chưa mở bán",
       "free": "Miễn phí",
       "pro": "Pro",
       "usingThis": "Bạn đang dùng gói này",
       "backToFree": "Hết hạn Pro thì tài khoản tự về gói Miễn phí",
-      "priceYear": "XXX.000 ₫",
-      "priceMonth": "XX.000 ₫",
-      "perYear": "/ năm",
-      "perMonth": "/ tháng",
+      "oneTime": "Trả một lần, dùng {period}.",
+      "extend": "Mua thêm: kỳ mới nối tiếp sau kỳ hiện tại.",
+      "noRefund": "Không hoàn tiền. Gói không tự gia hạn; hết hạn bạn mua kỳ mới.",
+      "termsLink": "Điều khoản sử dụng",
+      "buy": "Mua",
+      "priceChanged": "Giá vừa đổi, xem lại trước khi mua",
+      "buyUnavailable": "Chưa tạo được đơn. Thử lại sau ít phút.",
+      "nextPeriod": "Kỳ tiếp theo: {from} – {to}",
+      "thenPeriod": "Sau đó: {from} – {to}",
       "proLine": "Nhiều phiên luyện hơn, có câu AI và tra bằng AI.",
       "until": "Tới hết {date}",
       "afterEnd": "Hết hạn thì tài khoản về gói Miễn phí; từ và lịch ôn giữ nguyên.",

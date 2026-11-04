@@ -19,12 +19,14 @@ export function StatusChip({ status }: { status: TransactionStatus }) {
   return <span className={cn('w-fit shrink-0 rounded-full px-2 py-0.5 text-caption font-semibold text-ink', STATUS_CHIP[status])}>{t(status)}</span>;
 }
 
-/** "Pro · theo tháng", or the plan alone for a grant. */
+/** "Pro · theo tháng", "Pro · 3 tháng" for a prepaid purchase (no renewal to speak of), or the plan alone for a grant. */
 export function usePlanText() {
   const t = useTranslations('App');
   return (item: Transaction) => {
     const plan = item.plan === 'pro' ? t('chrome.plan.pro') : item.plan;
-    return item.interval ? t('transactions.planInterval', { plan, interval: t(`transactions.intervals.${item.interval}`) }) : plan;
+    if (item.interval === null) return plan;
+    const interval = item.provider === 'payos' ? t(`transactions.prepaidIntervals.${item.interval}`) : t(`transactions.intervals.${item.interval}`);
+    return t('transactions.planInterval', { plan, interval });
   };
 }
 

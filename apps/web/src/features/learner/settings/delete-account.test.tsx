@@ -56,6 +56,18 @@ describe('DeleteAccountPage (design §9.4)', () => {
     expect(screen.queryByText('Gói và lượt dùng của bạn')).not.toBeInTheDocument();
   });
 
+  it('LB1E40: with Pro time left (pro_until) it says the rest is lost with no refund, and does not block; without it, nothing is said', async () => {
+    const withPro = renderApp(<DeleteAccountPage />, {
+      routes: { 'GET /v1/me/entitlements': () => Response.json({ ...ent(), plan: 'pro', pro_until: '2026-12-31T17:00:00.000Z' }), 'GET /v1/me/app-config': () => Response.json(CONFIG) },
+    });
+    expect(await screen.findByText('Thời gian Pro còn lại sẽ mất, không hoàn tiền.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Xóa vĩnh viễn' })).toBeInTheDocument();
+    withPro.unmount();
+    renderApp(<DeleteAccountPage />, { routes: routes() });
+    expect(await screen.findByRole('button', { name: 'Xóa vĩnh viễn' })).toBeInTheDocument();
+    expect(screen.queryByText('Thời gian Pro còn lại sẽ mất, không hoàn tiền.')).not.toBeInTheDocument();
+  });
+
   it.each(['active', 'grace', 'on_hold', 'trialing'])('a %s auto-renewing plan blocks the form and links to the plans page', async (status) => {
     renderApp(<DeleteAccountPage />, { routes: routes([{ ...SUB, status }]) });
     expect(await screen.findByText('Bạn đang có gói tự gia hạn. Hủy gói trước khi xóa tài khoản.')).toBeInTheDocument();

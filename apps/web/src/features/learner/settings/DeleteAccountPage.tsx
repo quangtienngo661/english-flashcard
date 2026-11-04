@@ -37,6 +37,7 @@ export function DeleteAccountPage() {
     body = (
       <div className="mx-auto flex max-w-2xl flex-col gap-6">
         <Lists years={years} />
+        {entitlements.data.pro_until && <p className="text-ui text-ink">{t('proLost')}</p>}
         {renewing ? (
           <div role="alert" className="flex flex-col gap-3 rounded-card border border-danger bg-danger-soft p-5">
             <p className="text-body font-semibold text-ink">{t('blocked')}</p>
