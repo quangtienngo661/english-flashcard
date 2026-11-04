@@ -147,6 +147,11 @@ function psql(sql) {
     '-v', 'ON_ERROR_STOP=1', '-tA', '-c', sql], { encoding: 'utf8' }).trim();
 }
 const count = (sql) => Number(psql(sql));
+/** 00:00 on the first of next month in the smoke learners' zone (Vietnam has no DST, so a fixed +7 h is exact). */
+function nextMonthStartIso() {
+  const [year, month] = new Intl.DateTimeFormat('en-CA', { timeZone: TIMEZONE }).format(new Date()).split('-').map(Number);
+  return new Date(Date.UTC(year, month, 1) - 7 * 3_600_000).toISOString();
+}
 const rows = (sql) => psql(sql).split('\n').filter(Boolean).map((line) => line.split('|'));
 
 function built(file) {
@@ -437,7 +442,7 @@ async function main() {
     ok(`batch ${accepted.batch_id}: ${words.length} created, published by job ${job.job_id}; a learner sees them`);
   }, { fatal: true });
 
-  await step(`Entitlements: L1 Pro with ${AI_UNITS} AI practice units and 200 sessions a day; L2 stays Free; L3 Pro with 3 units`, async () => {
+  await step(`Entitlements: L1 Pro with ${AI_UNITS} AI practice units and 200 sessions a day; L2 stays Free (15 and 5 a month); L3 Pro with 3 units`, async () => {
     const ends = new Date(Date.now() + 30 * 24 * 3_600_000).toISOString();
     const grant = (body) => want(api('POST', '/v1/admin/entitlements/grants', { as: admin, idem: true, body: { ends_at: ends, ...body } }), 201,
       `grant ${j(body)}`);
@@ -449,10 +454,11 @@ async function main() {
     check(one.plan === 'pro' && one.pools.ai_practice.limit === AI_UNITS && one.pools.ai_practice.remaining === AI_UNITS
       && one.features['ai.practice'].allowed === true && one.features['ai.lookup'].allowed === true, `L1 ${j(one)}`);
     const two = await entitlements(L2);
-    check(two.plan === 'free' && two.features['ai.practice'].allowed === false && two.features['ai.lookup'].allowed === false, `L2 ${j(two)}`);
+    check(two.plan === 'free' && two.features['ai.practice'].allowed === true && two.features['ai.lookup'].allowed === true
+      && two.pools.ai_practice.limit === 15 && two.pools.ai_lookup.limit === 5 && two.pools.ai_practice.resets_at === nextMonthStartIso(), `L2 ${j(two)}`);
     const three = await entitlements(L3);
     check(three.plan === 'pro' && three.pools.ai_practice.remaining === 3, `L3 ${j(three.pools.ai_practice)}`);
-    ok(`L1 pro, ai_practice ${one.pools.ai_practice.remaining}/${one.pools.ai_practice.limit}, ai_lookup ${one.pools.ai_lookup.remaining}; L2 free (no AI); L3 pro, ai_practice 3`);
+    ok(`L1 pro, ai_practice ${one.pools.ai_practice.remaining}/${one.pools.ai_practice.limit}, ai_lookup ${one.pools.ai_lookup.remaining}; L2 free with 15 questions and 5 lookups a month; L3 pro, ai_practice 3`);
   }, { fatal: true });
 
   await step('Groups: one per bucket (bulk add by topic and level), plus an empty one for a saved AI suggestion', async () => {
@@ -872,19 +878,33 @@ async function main() {
     ok('lemma edit → ai_suggested true; examples edit → new revision (draft_source user), ai_suggested false, 1 example');
   });
 
-  await step('AC11 (B7E1, B7E22, đợt cải thiện A C3): Free cloze own opens; AI practice and lookup stay gated', async () => {
+  await step('AC11 (B7E1, B7E22, đợt cải thiện A C3, launch prep A LA3#1–#4): Free has 15 AI questions and 5 AI lookups a month; the lookups run out at the sixth, no question is left after 15', async () => {
     const group = { source: 'group', group_id: groups.GL2 };
+    const monthEnd = nextMonthStartIso();
     const own = await start(L2, { ...group, types: ['type_word', 'cloze'], cloze_source: 'own' });
     check(own.ai_planned === 0 && own.cloze_source === 'own', `Free own session ${j(own)}`);
     // No final answer: opening and finishing spends none of Free's 3 daily sessions.
     await finish(L2, own.id);
-    await wantProblem(startSession(L2, { ...group, types: ['cloze'] }), 403, 'entitlement-required', 'Free, cloze ai');
-    await wantProblem(startSession(L2, { ...group, types: ['meaning_in_sentence'] }), 403, 'entitlement-required', 'Free, meaning_in_sentence');
-    await wantProblem(lookupAi(L2, { text: 'rizz' }), 403, 'entitlement-required', 'Free, lookup');
-    check(count(`SELECT count(*) FROM usage_records WHERE user_id = '${L2.id}' AND pool <> 'practice_sessions'`) === 0, 'a Free refusal held a unit');
+    // The AI cloze opens for Free now (the 2 words of GL2 make 2 planned questions); opening and abandoning spends no unit.
+    const ai = await start(L2, { ...group, types: ['cloze'], count: 2 });
+    check(ai.ai_planned === 2 && ai.cloze_source === 'ai', `Free AI session ${j(ai)}`);
+    await finish(L2, ai.id);
+    check(await aiLeft(L2) === 15, 'opening a Free AI session spent units');
+    // Five real lookups, then the sixth is refused with the first of next month (Vietnam).
+    for (let i = 1; i <= 5; i += 1) await want(lookupAi(L2, { text: letters(7) }), 200, `Free lookup ${i}`);
+    check(await lookupLeft(L2) === 0, `after 5 lookups ${await lookupLeft(L2)} left`);
+    const sixth = await wantProblem(lookupAi(L2, { text: letters(7) }), 403, 'quota-exhausted', 'Free, sixth lookup');
+    check(sixth.resets_at === monthEnd, `sixth lookup ${j(sixth)}, expected resets_at ${monthEnd}`);
+    // 15 questions used (rows as confirm writes them; the ledger path itself is smoke:buoc-5): the next session is refused.
+    psql(`INSERT INTO usage_records (user_id, pool, operation_id, kind, status, system_date, reserved_at, confirmed_at, plan)
+      SELECT '${L2.id}', 'ai_practice', 'smoke7-free-${run}-' || n, 'use', 'confirmed', (now() AT TIME ZONE 'Asia/Ho_Chi_Minh')::date, now(), now(), 'free'
+      FROM generate_series(1, 15) AS n`);
+    check(await aiLeft(L2) === 0, `after 15 uses ${await aiLeft(L2)} left`);
+    const refused = await wantProblem(startSession(L2, { ...group, types: ['cloze'], count: 1 }), 403, 'ai-quota-insufficient', 'Free, the 16th question');
+    check(refused.remaining === 0 && refused.needed === 1 && refused.resets_at === monthEnd, `16th question ${j(refused)}`);
     const plain = await start(L2, { ...group, types: ['type_word'] });
     await finish(L2, plain.id);
-    ok('cloze own opens (đợt cải thiện A C3); cloze ai, meaning_in_sentence, AI lookup → 403 entitlement-required; no AI usage row; typing alone still opens');
+    ok(`cloze own opens; AI cloze opens (ai_planned 2, no unit spent); 5 lookups then the 6th → 403 quota-exhausted (resets_at ${monthEnd}); after 15 questions the next AI session → 403 ai-quota-insufficient (remaining 0); typing alone still opens`);
   });
 
   await step('AC12 (B7E71, B7E72, B7E78): the admin adds, edits and turns off a report reason; L1 sees each list', async () => {

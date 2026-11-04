@@ -598,9 +598,9 @@ async function main() {
     const code = (await (await send(`${MAILPIT}/api/v1/message/${mails[0].ID}`)).json()).Text.match(/(\d{6})/)[1];
     const verified = await want(api('POST', '/v1/auth/verify-email', { body: { email, code, password: PASSWORD, client: 'web' } }), 200, 'verify');
     await want(api('PATCH', '/v1/me', { token: verified.access_token, body: { native_language: 'vi' } }), 200, 'native language');
-    // Trial is off (launch prep A, design 6.9): `trial_eligible` is false for everyone, so the table is what shows the history is gone.
-    check(psql(`SELECT count(*) FROM trial_history th JOIN users u ON u.id = th.user_id WHERE u.email = '${email}'`) === '0', 'the new account has a trial_history row');
-    ok('trial_history gone with the account; the same email registers again with no trial history');
+    // Trial is off (launch prep A, design 6.9), so `trial_eligible` no longer says anything; the assertion that the history went with the
+    // account is the count of trial_history rows for the deleted user, above.
+    ok('trial_history gone with the account (0 rows for the deleted user); the same email registers and verifies again');
   });
 
   await step('B8E49', 'a big learner (50 000 log rows, 2 000 private words) is deleted in under 120 s', async () => {
