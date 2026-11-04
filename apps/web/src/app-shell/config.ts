@@ -12,6 +12,16 @@ export function turnstileSiteKey(): string {
 }
 
 /**
+ * Build-time check (next.config.ts): the live site with the learner app on must have a Turnstile site key, or its forms would
+ * ship with the fake widget (which the real API refuses, LA1E18) and nobody could sign in. Local and e2e builds may leave it blank.
+ */
+export function assertTurnstileSiteKey({ learnerApp, siteUrl, siteKey }: { learnerApp: boolean; siteUrl: string; siteKey: string }): void {
+  if (learnerApp && siteUrl.startsWith('https://wordmet.com') && siteKey.trim() === '') {
+    throw new Error(`NEXT_PUBLIC_TURNSTILE_SITE_KEY must be set when the learner app is on at ${siteUrl}`);
+  }
+}
+
+/**
  * The API origin for requests the web server itself makes. Read at run time (no NEXT_PUBLIC_ prefix, so it is not baked into
  * the bundle). Set it when the server reaches the API at another address than the browser does: in the Docker stack the browser
  * uses `localhost:3000` while the web container must use `http://api:3000`. Unset or blank: the public origin.

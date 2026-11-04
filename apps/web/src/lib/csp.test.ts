@@ -34,6 +34,14 @@ describe('buildCsp (design §4.6, D9, D20, D22)', () => {
     expect(directives(buildCsp({ ...BASE, inline: true })).get('script-src')).not.toContain("'sha256-abc='");
   });
 
+  it('LA1#14 prerequisite: Turnstile scripts and its iframe come from challenges.cloudflare.com only', () => {
+    const d = directives(buildCsp(BASE));
+    expect(d.get('script-src')).toContain('https://challenges.cloudflare.com');
+    expect(d.get('frame-src')).toEqual(['https://challenges.cloudflare.com']);
+    // The inline fallback must not drop it either.
+    expect(directives(buildCsp({ ...BASE, inline: true })).get('script-src')).toContain('https://challenges.cloudflare.com');
+  });
+
   it('connects to self, the API origin and Cloudflare Web Analytics', () => {
     expect(directives(buildCsp(BASE)).get('connect-src')).toEqual(
       expect.arrayContaining(["'self'", 'https://api.wordmet.com', 'https://cloudflareinsights.com']),
