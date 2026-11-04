@@ -67,6 +67,56 @@ describe('Google sign-in configuration (Bước 8)', () => {
   });
 });
 
+describe('payOS configuration (launch prep B, design §3.3)', () => {
+  const secret = () => randomBytes(32).toString('base64url');
+  const NAMES = ['PAYOS_CLIENT_ID', 'PAYOS_API_KEY', 'PAYOS_CHECKSUM_KEY'] as const;
+  const real = (): NodeJS.ProcessEnv => ({ ...validEnv(), PAYOS_CLIENT_ID: 'client-id', PAYOS_API_KEY: 'api-key', PAYOS_CHECKSUM_KEY: 'checksum-key' });
+  const fake = (): NodeJS.ProcessEnv => ({ ...validEnv(), PAYOS_FAKE_ENABLED: 'true', BILLING_FAKE_SECRET: secret() });
+
+  it('is off by default and needs none of the variables', () => {
+    expect(loadConfig(validEnv()).payos).toEqual({ mode: 'off', clientId: null, apiKey: null, checksumKey: null });
+  });
+
+  it('all three variables make it real, in production too', () => {
+    expect(loadConfig(real()).payos).toEqual({ mode: 'real', clientId: 'client-id', apiKey: 'api-key', checksumKey: 'checksum-key' });
+    expect(loadConfig({ ...real(), BILLING_PRODUCTION: 'true' }).payos.mode).toBe('real');
+  });
+
+  it('LB1E42: one or two of the three set refuses to start and names the missing ones, not the set ones', () => {
+    for (let mask = 1; mask < 7; mask++) {
+      const set = NAMES.filter((_, i) => mask & (1 << i));
+      const missing = NAMES.filter((name) => !set.includes(name));
+      const env = validEnv();
+      for (const name of set) env[name] = 'value';
+      let message = '';
+      try {
+        loadConfig(env);
+      } catch (error) {
+        message = (error as Error).message;
+      }
+      for (const name of missing) expect(message, `set ${set.join('+')}`).toContain(name);
+      for (const name of set) expect(message, `set ${set.join('+')}`).not.toContain(name);
+    }
+  });
+
+  it('a blank variable counts as unset (an empty line in .env)', () => {
+    expect(loadConfig({ ...validEnv(), PAYOS_CLIENT_ID: '', PAYOS_API_KEY: '  ', PAYOS_CHECKSUM_KEY: '' }).payos.mode).toBe('off');
+    expect(() => loadConfig({ ...real(), PAYOS_API_KEY: '  ' })).toThrow(/PAYOS_API_KEY/);
+  });
+
+  it('the fake needs no payOS variable but BILLING_FAKE_SECRET, which signs its webhooks; it wins over real values', () => {
+    expect(loadConfig(fake()).payos).toEqual({ mode: 'fake', clientId: null, apiKey: null, checksumKey: null });
+    expect(loadConfig({ ...fake(), PAYOS_CLIENT_ID: 'id' }).payos.mode).toBe('fake');
+    const noSecret = fake() as Record<string, string | undefined>;
+    delete noSecret.BILLING_FAKE_SECRET;
+    expect(() => loadConfig(noSecret)).toThrow(/BILLING_FAKE_SECRET/);
+  });
+
+  it('LB1E41: the fake together with BILLING_PRODUCTION=true refuses to start', () => {
+    expect(() => loadConfig({ ...fake(), BILLING_PRODUCTION: 'true' })).toThrow(/PAYOS_FAKE_ENABLED/);
+  });
+});
+
 describe('loadConfig', () => {
   it('TERMS_VERSION is required and kept verbatim', () => {
     expect(loadConfig(validEnv()).termsVersion).toBe('2026-10-20');
