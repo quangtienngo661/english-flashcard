@@ -5,7 +5,7 @@ import type { Profile } from '../identity/profile/identity.service.js';
 import { SETTINGS_DEFAULTS, type AppSettings } from '../settings/index.js';
 import { EntitlementsService } from './entitlements.service.js';
 import { refusalProblem } from './refusal.js';
-import type { GrantSource, SubscriptionSource } from './rules/plan-rules.js';
+import type { GrantSource, PrepaidSource, SubscriptionSource } from './rules/plan-rules.js';
 
 const USER = '00000000-0000-4000-8000-000000000001';
 const NOW = new Date('2026-11-10T05:00:00Z'); // 12:00 in Vietnam
@@ -38,6 +38,7 @@ type Setup = {
   profile?: Profile | null;
   subscriptions?: SubscriptionSource[];
   grants?: GrantSource[];
+  prepaidPeriods?: PrepaidSource[];
   practiceUsed?: number;
   aiUsed?: number;
   capUsed?: { confirmed: number; reserved: number };
@@ -52,7 +53,7 @@ function setup(input: Setup = {}) {
   };
   const identity = { getProfile: vi.fn(async () => (input.profile === undefined ? profile() : input.profile)) };
   const sources = {
-    load: vi.fn(async () => ({ subscriptions: input.subscriptions ?? [], grants: input.grants ?? [] })),
+    load: vi.fn(async () => ({ subscriptions: input.subscriptions ?? [], grants: input.grants ?? [], prepaidPeriods: input.prepaidPeriods ?? [] })),
     trialUsed: vi.fn(async () => input.trialUsed ?? false),
   };
   const usage = {
@@ -86,6 +87,8 @@ describe('EntitlementsService.snapshot', () => {
       ai_available: { enabled: true, cap_reached: false },
       ads: { show: false, interstitial_per_day: 3, min_interval_minutes: 10 },
       trial_eligible: true,
+      upcoming_periods: [],
+      pro_until: null,
     });
   });
 
@@ -338,5 +341,67 @@ describe('refusalProblem', () => {
 
     const off = refusalProblem({ reason: 'ai-unavailable', retry_after_seconds: null });
     expect([off.getStatus(), off.problemType, off.retryAfterSeconds]).toEqual([503, 'ai-unavailable', undefined]);
+  });
+});
+
+describe('EntitlementsService.snapshot — prepaid periods (launch prep B design §3.2, §3.7, DB42)', () => {
+  const period = (over: Partial<PrepaidSource> = {}): PrepaidSource => ({
+    id: 'period-1', startsAt: new Date('2026-11-05T03:02:00Z'), endsAt: new Date('2026-12-05T17:00:00Z'), revokedAt: null, ...over,
+  });
+
+  it('a running period: Pro, one source of kind prepaid with its dates, nothing renews, pro_until is its end, the AI cycle starts at its start', async () => {
+    const snapshot = await setup({ prepaidPeriods: [period()], aiUsed: 4 }).service.snapshot(USER);
+    expect(snapshot?.plan).toBe('pro');
+    expect(snapshot?.sources).toEqual([{
+      kind: 'prepaid', id: 'period-1', status: null, starts_at: '2026-11-05T03:02:00.000Z', ends_at: '2026-12-05T17:00:00.000Z',
+      renews_at: null, cancel_at_period_end: null, pending_interval: null, limits: null,
+    }]);
+    expect(snapshot?.pro_until).toBe('2026-12-05T17:00:00.000Z');
+    expect(snapshot?.upcoming_periods).toEqual([]);
+    expect(snapshot?.pools.ai_practice).toEqual({ limit: 300, used: 4, remaining: 296, resets_at: '2026-12-05T03:02:00.000Z' });
+  });
+
+  it('a period that has not started is not a source: Free today, listed in upcoming_periods, pro_until null', async () => {
+    const future = period({ startsAt: new Date('2026-12-01T00:00:00Z'), endsAt: new Date('2027-01-01T00:00:00Z') });
+    const snapshot = await setup({ prepaidPeriods: [future] }).service.snapshot(USER);
+    expect(snapshot).toMatchObject({
+      plan: 'free', sources: [], pro_until: null,
+      upcoming_periods: [{ id: 'period-1', starts_at: '2026-12-01T00:00:00.000Z', ends_at: '2027-01-01T00:00:00.000Z' }],
+    });
+  });
+
+  it('a running period and the next one: only the running one is a source, the next is upcoming, pro_until is the end of the chain', async () => {
+    const next = period({ id: 'period-2', startsAt: new Date('2026-12-05T17:00:00Z'), endsAt: new Date('2027-12-05T17:00:00Z') });
+    const snapshot = await setup({ prepaidPeriods: [period(), next] }).service.snapshot(USER);
+    expect(snapshot?.sources.map((s) => s.id)).toEqual(['period-1']);
+    expect(snapshot?.upcoming_periods).toEqual([{ id: 'period-2', starts_at: '2026-12-05T17:00:00.000Z', ends_at: '2027-12-05T17:00:00.000Z' }]);
+    expect(snapshot?.pro_until).toBe('2027-12-05T17:00:00.000Z');
+  });
+
+  it('LB1E32: a plan grant that starts while a period runs adds a source and leaves the period as it was', async () => {
+    const grant: GrantSource = {
+      id: 'grant-9', kind: 'plan', limits: null, startsAt: new Date('2026-11-09T00:00:00Z'), endsAt: new Date('2026-11-30T00:00:00Z'),
+      revokedAt: null, createdAt: new Date('2026-11-09T00:00:00Z'),
+    };
+    const snapshot = await setup({ prepaidPeriods: [period()], grants: [grant] }).service.snapshot(USER);
+    expect(snapshot?.sources.map((s) => [s.kind, s.id, s.starts_at, s.ends_at])).toEqual([
+      ['grant_plan', 'grant-9', '2026-11-09T00:00:00.000Z', '2026-11-30T00:00:00.000Z'],
+      ['prepaid', 'period-1', '2026-11-05T03:02:00.000Z', '2026-12-05T17:00:00.000Z'],
+    ]);
+    expect(snapshot?.pro_until).toBe('2026-12-05T17:00:00.000Z');
+  });
+
+  it('a plan grant that begins exactly where the running period ends lengthens pro_until (a grant that starts later still counts)', async () => {
+    const grant: GrantSource = {
+      id: 'grant-9', kind: 'plan', limits: null, startsAt: new Date('2026-12-05T17:00:00Z'), endsAt: new Date('2026-12-20T00:00:00Z'),
+      revokedAt: null, createdAt: new Date('2026-11-09T00:00:00Z'),
+    };
+    const snapshot = await setup({ prepaidPeriods: [period()], grants: [grant] }).service.snapshot(USER);
+    expect(snapshot?.pro_until).toBe('2026-12-20T00:00:00.000Z');
+    expect(snapshot?.sources.map((s) => s.id)).toEqual(['period-1']);
+  });
+
+  it('a user with a running period has no ads (ads.show needs the Free plan)', async () => {
+    expect((await setup({ entitlements: { adsEnabled: true }, prepaidPeriods: [period()] }).service.snapshot(USER))?.ads.show).toBe(false);
   });
 });

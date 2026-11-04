@@ -11,15 +11,19 @@ const subRow = (id: string, userId: string) => ({
   trialEndsAt: null, currentPeriodStart: null, currentPeriodEnd: null, graceEndsAt: null, quotaAnchorAt: null, interval: 'month',
   pendingInterval: null,
 });
+const periodRow = (id: string, userId: string, startsAt = NOW, endsAt = NOW) => ({
+  id, userId, orderId: `o-${id}`, paymentId: `pay-${id}`, startsAt, endsAt, revokedAt: null, revokedBy: null, revokeReason: null, createdAt: NOW,
+});
 const grantRow = (id: string, userId: string, limits: unknown = null) => ({
   id, userId, kind: limits === null ? 'plan' : 'limits', limits, startsAt: NOW, endsAt: NOW, revokedAt: null, createdAt: NOW,
 });
 
 describe('SourcesRepository.loadMany', () => {
-  it('reads every user in two queries, with the filters of load, and groups the rows by user in the order they came', async () => {
+  it('reads every user in three queries, with the filters of load, and groups the rows by user in the order they came', async () => {
     const db = {
       subscription: { findMany: vi.fn(async () => [subRow('s1', A), subRow('s2', B), subRow('s3', A)]) },
       entitlementGrant: { findMany: vi.fn(async () => [grantRow('g1', B), grantRow('g2', B, { ai_practice_per_cycle: 20, junk: 1 })]) },
+      prepaidPeriod: { findMany: vi.fn(async () => [periodRow('p1', C), periodRow('p2', A)]) },
     };
     const loaded = await new SourcesRepository().loadMany(db as never, [A, B, C], NOW);
     expect(db.subscription.findMany).toHaveBeenCalledWith({
@@ -28,17 +32,23 @@ describe('SourcesRepository.loadMany', () => {
     expect(db.entitlementGrant.findMany).toHaveBeenCalledWith({
       where: { userId: { in: [A, B, C] }, revokedAt: null, endsAt: { gt: NOW } }, orderBy: { createdAt: 'asc' },
     });
+    expect(db.prepaidPeriod.findMany).toHaveBeenCalledWith({
+      where: { userId: { in: [A, B, C] }, revokedAt: null, endsAt: { gt: NOW } }, orderBy: { startsAt: 'asc' },
+    });
     expect(loaded.get(A)?.subscriptions.map((s) => s.id)).toEqual(['s1', 's3']);
     expect(loaded.get(A)?.grants).toEqual([]);
+    expect(loaded.get(A)?.prepaidPeriods).toEqual([{ id: 'p2', startsAt: NOW, endsAt: NOW, revokedAt: null }]);
+    expect(loaded.get(C)?.prepaidPeriods.map((p) => p.id)).toEqual(['p1']);
     expect(loaded.get(B)?.subscriptions.map((s) => s.id)).toEqual(['s2']);
     expect(loaded.get(B)?.grants.map((g) => [g.id, g.limits])).toEqual([['g1', null], ['g2', { ai_practice_per_cycle: 20 }]]);
-    expect(loaded.get(C)).toEqual({ subscriptions: [], grants: [] });
+    expect(loaded.get(B)?.prepaidPeriods).toEqual([]);
   });
 
   it('no user: nothing is read', async () => {
-    const db = { subscription: { findMany: vi.fn() }, entitlementGrant: { findMany: vi.fn() } };
+    const db = { subscription: { findMany: vi.fn() }, entitlementGrant: { findMany: vi.fn() }, prepaidPeriod: { findMany: vi.fn() } };
     expect((await new SourcesRepository().loadMany(db as never, [], NOW)).size).toBe(0);
     expect(db.subscription.findMany).not.toHaveBeenCalled();
+    expect(db.prepaidPeriod.findMany).not.toHaveBeenCalled();
   });
 });
 
@@ -55,8 +65,9 @@ describe('SourcesRepository.proCandidates', () => {
     expect(calls).toHaveLength(1);
     expect(calls[0].sql).toContain("FROM subscriptions WHERE status IN ('active', 'grace')");
     expect(calls[0].sql).toContain("FROM entitlement_grants WHERE kind = 'plan' AND revoked_at IS NULL AND starts_at <= ? AND ends_at > ?");
+    expect(calls[0].sql).toContain('FROM prepaid_periods WHERE revoked_at IS NULL AND starts_at <= ? AND ends_at > ?');
     expect(calls[0].sql).toContain('ORDER BY user_id LIMIT ?');
-    expect(calls[0].values).toEqual([NOW, NOW, 5001]);
+    expect(calls[0].values).toEqual([NOW, NOW, NOW, NOW, 5001]);
   });
 });
 
@@ -75,5 +86,18 @@ describe('grantLimits', () => {
     expect(grantLimits(null)).toBeNull();
     expect(grantLimits([1, 2])).toBeNull();
     expect(grantLimits(7)).toBeNull();
+  });
+});
+
+describe('SourcesRepository.load — prepaid periods', () => {
+  it('returns the periods not revoked and not ended at now, the future ones too, oldest start first', async () => {
+    const db = {
+      subscription: { findMany: vi.fn(async () => []) },
+      entitlementGrant: { findMany: vi.fn(async () => []) },
+      prepaidPeriod: { findMany: vi.fn(async () => [periodRow('p1', A, NOW, new Date(NOW.getTime() + 86_400_000))]) },
+    };
+    const loaded = await new SourcesRepository().load(db as never, A, NOW);
+    expect(db.prepaidPeriod.findMany).toHaveBeenCalledWith({ where: { userId: A, revokedAt: null, endsAt: { gt: NOW } }, orderBy: { startsAt: 'asc' } });
+    expect(loaded.prepaidPeriods).toEqual([{ id: 'p1', startsAt: NOW, endsAt: new Date(NOW.getTime() + 86_400_000), revokedAt: null }]);
   });
 });

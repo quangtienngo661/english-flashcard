@@ -169,16 +169,16 @@ export class UsageLedgerService {
   }
 
   private async anchor(tx: Tx, userId: string, settings: AppSettings['entitlements'], now: Date): Promise<Date | null> {
-    const { subscriptions, grants } = await this.sources.load(tx, userId, now);
-    return resolve({ subscriptions, grants, numbers: planNumbers(settings), graceDays: settings.graceDays, now }).anchor;
+    const { subscriptions, grants, prepaidPeriods } = await this.sources.load(tx, userId, now);
+    return resolve({ subscriptions, grants, prepaidPeriods, numbers: planNumbers(settings), graceDays: settings.graceDays, now }).anchor;
   }
 
   /** The pool's limit now, what the current cycle has used (design §7.2) and when that cycle ends. */
   private async standing(
     tx: Tx, userId: string, pool: AiPool, settings: AppSettings['entitlements'], now: Date,
   ): Promise<{ limit: number; used: number; cycleEnd: Date | null }> {
-    const { subscriptions, grants } = await this.sources.load(tx, userId, now);
-    const resolved = resolve({ subscriptions, grants, numbers: planNumbers(settings), graceDays: settings.graceDays, now });
+    const { subscriptions, grants, prepaidPeriods } = await this.sources.load(tx, userId, now);
+    const resolved = resolve({ subscriptions, grants, prepaidPeriods, numbers: planNumbers(settings), graceDays: settings.graceDays, now });
     const cycle = resolved.anchor ? cycleAt(resolved.anchor, now) : null;
     const used = cycle ? await this.usage.aiUsed(tx, userId, pool, cycle, now) : 0;
     return { limit: resolved.limits[pool], used, cycleEnd: cycle?.end ?? null };

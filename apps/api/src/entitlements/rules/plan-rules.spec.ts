@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { effectiveStatus, resolve, type GrantSource, type PlanNumbers, type SubscriptionSource } from './plan-rules.js';
+import { effectiveStatus, resolve, type GrantSource, type PlanNumbers, type PrepaidSource, type SubscriptionSource } from './plan-rules.js';
 
 const at = (iso: string) => new Date(iso);
 const DAY = 86_400_000;
@@ -353,5 +353,67 @@ describe('resolve (design §5.4, §5.5)', () => {
       expect(run([paid], [grant], '2026-11-29T23:59:59Z').plan).toBe('pro');
       expect(run([paid], [grant], '2026-11-30T00:00:00Z').plan).toBe('free');
     });
+  });
+});
+
+describe('resolve — prepaid periods (launch prep B design §3.2, §3.7)', () => {
+  const period = (over: Partial<PrepaidSource> = {}): PrepaidSource => ({
+    id: 'p-1', startsAt: at('2026-11-05T03:02:00Z'), endsAt: at('2026-12-05T17:00:00Z'), revokedAt: null, ...over,
+  });
+  const run2 = (periods: PrepaidSource[], now: string, grants: GrantSource[] = []) =>
+    resolve({ subscriptions: [], grants, prepaidPeriods: periods, numbers: NUMBERS, graceDays: GRACE_DAYS, now: at(now) });
+
+  it('a running period is Pro with the Pro numbers; its start is the anchor of the AI cycle and it is a Pro source', () => {
+    const resolved = run2([period()], '2026-11-20T00:00:00Z');
+    expect(resolved.plan).toBe('pro');
+    expect(resolved.limits).toEqual(NUMBERS.pro);
+    expect(resolved.anchor).toEqual(at('2026-11-05T03:02:00Z'));
+    expect(resolved.proSources).toEqual([{ kind: 'prepaid', id: 'p-1', anchor: at('2026-11-05T03:02:00Z') }]);
+  });
+
+  it('a period is Pro from its start (inclusive) to its end (exclusive)', () => {
+    expect(run2([period()], '2026-11-05T03:01:59.999Z').plan).toBe('free');
+    expect(run2([period()], '2026-11-05T03:02:00Z').plan).toBe('pro');
+    expect(run2([period()], '2026-12-05T16:59:59.999Z').plan).toBe('pro');
+    expect(run2([period()], '2026-12-05T17:00:00Z').plan).toBe('free');
+  });
+
+  it('a period that has not started is not a source, and gives no anchor', () => {
+    const resolved = run2([period({ startsAt: at('2026-12-01T00:00:00Z'), endsAt: at('2027-01-01T00:00:00Z') })], '2026-11-20T00:00:00Z');
+    expect(resolved).toMatchObject({ plan: 'free', anchor: null, proSources: [] });
+  });
+
+  it('a revoked period is no source, also one revoked before it started', () => {
+    expect(run2([period({ revokedAt: at('2026-11-10T00:00:00Z') })], '2026-11-20T00:00:00Z').plan).toBe('free');
+    expect(run2([period({ startsAt: at('2026-12-01T00:00:00Z'), endsAt: at('2027-01-01T00:00:00Z'), revokedAt: at('2026-11-10T00:00:00Z') })],
+      '2026-12-10T00:00:00Z').plan).toBe('free');
+  });
+
+  it('two periods back to back: the AI cycle follows the one that runs now', () => {
+    const first = period({ id: 'p-1', startsAt: at('2026-11-05T03:02:00Z'), endsAt: at('2026-12-05T17:00:00Z') });
+    const second = period({ id: 'p-2', startsAt: at('2026-12-05T17:00:00Z'), endsAt: at('2027-12-05T17:00:00Z') });
+    expect(run2([first, second], '2026-11-20T00:00:00Z').anchor).toEqual(at('2026-11-05T03:02:00Z'));
+    const later = run2([first, second], '2026-12-06T00:00:00Z');
+    expect(later.anchor).toEqual(at('2026-12-05T17:00:00Z'));
+    expect(later.proSources.map((s) => s.id)).toEqual(['p-2']);
+  });
+
+  it('LB1E32: a plan grant that starts while a period runs adds a second source; the latest start is the anchor', () => {
+    const grant = planGrant({ startsAt: at('2026-11-12T00:00:00Z'), endsAt: at('2026-11-30T00:00:00Z') });
+    const resolved = run2([period()], '2026-11-20T00:00:00Z', [grant]);
+    expect(resolved.plan).toBe('pro');
+    expect(resolved.proSources.map((s) => [s.kind, s.id])).toEqual([['grant', 'grant-plan'], ['prepaid', 'p-1']]);
+    expect(resolved.anchor).toEqual(at('2026-11-12T00:00:00Z'));
+  });
+
+  it('a limits grant beside a running period still sets the numbers it carries', () => {
+    const resolved = run2([period()], '2026-11-20T00:00:00Z', [limitsGrant({ ai_practice_per_cycle: 900 })]);
+    expect(resolved.plan).toBe('pro');
+    expect(resolved.limits.ai_practice).toBe(900);
+    expect(resolved.limits.ai_lookup).toBe(NUMBERS.pro.ai_lookup);
+  });
+
+  it('without the prepaidPeriods key nothing changes (callers that do not load them)', () => {
+    expect(resolve({ subscriptions: [], grants: [], numbers: NUMBERS, graceDays: GRACE_DAYS, now: at('2026-11-20T00:00:00Z') }).plan).toBe('free');
   });
 });

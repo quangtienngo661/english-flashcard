@@ -34,12 +34,20 @@ export type GrantSource = {
   createdAt: Date;
 };
 
+/** One prepaid Pro period (launch prep B design §3.2): bought once, may start in the future, never renews. */
+export type PrepaidSource = {
+  id: string;
+  startsAt: Date;
+  endsAt: Date;
+  revokedAt: Date | null;
+};
+
 export type Resolved = {
   plan: 'free' | 'trial' | 'pro';
   anchor: Date | null;
   limits: Record<Pool, number>;
   limitFrom: Record<Pool, { kind: 'plan' } | { kind: 'grant'; grantId: string }>;
-  proSources: Array<{ kind: 'subscription' | 'grant'; id: string; anchor: Date }>;
+  proSources: Array<{ kind: 'subscription' | 'grant' | 'prepaid'; id: string; anchor: Date }>;
 };
 
 /**
@@ -70,6 +78,10 @@ function grantActive(grant: GrantSource, now: Date): boolean {
   return grant.revokedAt === null && grant.startsAt <= now && now < grant.endsAt;
 }
 
+function prepaidActive(period: PrepaidSource, now: Date): boolean {
+  return period.revokedAt === null && period.startsAt <= now && now < period.endsAt;
+}
+
 function hasAiLimit(grant: GrantSource): boolean {
   return (grant.limits?.ai_practice_per_cycle ?? 0) > 0 || (grant.limits?.ai_lookup_per_cycle ?? 0) > 0;
 }
@@ -77,6 +89,8 @@ function hasAiLimit(grant: GrantSource): boolean {
 export function resolve(input: {
   subscriptions: SubscriptionSource[];
   grants: GrantSource[];
+  /** Prepaid periods (launch prep B); optional so a caller that does not load them still resolves. */
+  prepaidPeriods?: PrepaidSource[];
   numbers: PlanNumbers;
   graceDays: number;
   now: Date;
@@ -104,6 +118,13 @@ export function resolve(input: {
     pro = true;
     anchors.push(grant.startsAt);
     proSources.push({ kind: 'grant', id: grant.id, anchor: grant.startsAt });
+  }
+
+  // A running prepaid period is Pro like a plan grant: its start anchors the AI cycle, and the latest anchor wins (design §3.2).
+  for (const period of (input.prepaidPeriods ?? []).filter((p) => prepaidActive(p, now))) {
+    pro = true;
+    anchors.push(period.startsAt);
+    proSources.push({ kind: 'prepaid', id: period.id, anchor: period.startsAt });
   }
 
   const limitsGrants = active
