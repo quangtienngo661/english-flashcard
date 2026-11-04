@@ -21,7 +21,7 @@ export function MetOutside({ copy, app }: { copy: LandingCopy['metOutside']; app
     <section id="gap-tu" aria-labelledby="met-title" className="scroll-mt-16 bg-navy py-14 text-on-navy md:py-24">
       <Container className="grid items-center gap-10 lg:grid-cols-5 lg:gap-16">
         <div className="flex flex-col gap-4 lg:order-2 lg:col-span-2">
-          <h2 id="met-title" className="text-h2 font-extrabold text-on-navy">
+          <h2 id="met-title" className="text-h2 font-extrabold text-balance text-on-navy">
             {copy.title}
           </h2>
           <p className="text-body-lg text-on-navy">{copy.lead}</p>

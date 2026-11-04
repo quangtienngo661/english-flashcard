@@ -18,7 +18,7 @@ export function ReviewTiming({ copy }: { copy: LandingCopy['review'] }) {
     <section id="on-lai" aria-labelledby="review-title" className="scroll-mt-16 bg-surface py-14 md:py-24">
       <Container className="grid items-center gap-10 lg:grid-cols-5 lg:gap-16">
         <div className="flex flex-col gap-4 lg:col-span-2">
-          <h2 id="review-title" className="text-h2 font-extrabold text-ink">
+          <h2 id="review-title" className="text-h2 font-extrabold text-balance text-ink">
             {copy.title}
           </h2>
           <p className="text-body-lg text-ink">{copy.lead}</p>
@@ -59,7 +59,7 @@ export function ReviewTiming({ copy }: { copy: LandingCopy['review'] }) {
               {copy.weakTitle}
             </b>
             <p className="text-small text-ink">{copy.weakBody}</p>
-            <div className="flex flex-wrap gap-1.5" lang="en">
+            <div className="flex flex-wrap gap-2.5" lang="en">
               {[copy.w1, copy.w2].map((chip) => (
                 <span key={chip} className="rounded-full bg-surface px-2.5 py-0.5 text-caption font-semibold text-ink ring-2 ring-ink">
                   {chip}

@@ -103,7 +103,7 @@ export function LoginForm() {
       <form onSubmit={onSubmit} noValidate className="flex flex-col gap-4">
         <TextField label={t('email')} type="email" value={email} onChange={setEmail} autoComplete="email" spellCheck={false} />
         <TextField label={t('password')} type="password" value={password} onChange={setPassword} autoComplete="current-password" />
-        <Link href={`/${locale}/app/forgot-password`} className="-mt-2 w-fit text-caption font-semibold text-primary underline underline-offset-2">
+        <Link href={`/${locale}/app/forgot-password`} className="-mt-5.5 -mb-3.5 w-fit py-3.5 text-caption font-semibold text-primary underline underline-offset-2">
           {t('login.forgot')}
         </Link>
         <FormError message={error ?? (GOOGLE_ERRORS.find((slug) => slug === returned) ? tErrors(returned as (typeof GOOGLE_ERRORS)[number]) : null)} />

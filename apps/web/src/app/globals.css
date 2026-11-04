@@ -386,6 +386,8 @@
     color: var(--color-ink);
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
+    /* Every control draws its own focus ring and press state, so the grey flash a tap paints on mobile browsers is turned off. */
+    -webkit-tap-highlight-color: transparent;
   }
 
   summary::-webkit-details-marker {

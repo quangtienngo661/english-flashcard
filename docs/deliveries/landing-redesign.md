@@ -22,7 +22,7 @@ Nhánh `feat/landing-redesign` (tách từ `docs/landing-redesign`), một PR v�
 
 Task 1–14 xong trên nhánh `feat/landing-redesign`; PR #205 vào `dev` còn là draft; review cuối của một reviewer độc lập đã chạy (mục "Review cuối" bên dưới).
 Trang `/vi` gồm: thanh trên navy, màn đầu kèm cửa sổ app 5 tab, "Vì sao quên" (đường cong minh họa), 7 dạng bài làm thử được, ôn đúng lúc, "Từ gặp hằng ngày", gói Free/Pro (không giá), FAQ 4 câu, kêu gọi cuối, chân trang. `/en` chuyển 307 về `/vi` (giữ query); `/en/app`, `/en/privacy`, `/en/terms` không đổi. Waitlist và D1 `wordmet-waitlist` đã bỏ khỏi code.
-Màn đầu (owner 03/11, sau review cuối): từ 1024 px chữ, nút Đăng ký/Đăng nhập nằm bên trái (5/12 cột) và cửa sổ app nằm bên phải (7/12 cột); dưới 1024 px cửa sổ nằm dưới chữ như cũ. Ở cột hẹp cửa sổ gọn lại: không logo và icon trên thanh tab, không danh sách gạch đầu dòng dưới tiêu đề mỗi tab, thẻ ôn thấp hơn, mọi tab cùng cao 624 px (đáy ở y=720, vừa màn 1366×768 và 1440×900) để chữ bên trái không nhảy khi đổi tab. Lúc mở trang các dòng tiêu đề, câu mô tả và khối nút trồi lên lần lượt (70 ms một bước), cửa sổ trồi lên và phóng nhẹ; chỉ dùng CSS (`motion-safe:`), nên không cần JS và tắt khi giảm chuyển động. Thẻ gói Pro nền navy, dấu tích vàng, viền vàng và bóng vàng. Test: LR34 (bố cục và vừa màn hình), LR35 (chuyển động), LR36 (Pro khác Free).
+Màn đầu (owner 03/11, sau review cuối; phần cửa sổ và thẻ Pro của đoạn này đã được thay bởi mục "Các vòng chỉnh sau" bên dưới): từ 1024 px chữ, nút Đăng ký/Đăng nhập nằm bên trái (5/12 cột) và cửa sổ app nằm bên phải (7/12 cột); dưới 1024 px cửa sổ nằm dưới chữ như cũ. Ở cột hẹp cửa sổ gọn lại: không logo và icon trên thanh tab, không danh sách gạch đầu dòng dưới tiêu đề mỗi tab, thẻ ôn thấp hơn, mọi tab cùng cao 624 px (đáy ở y=720, vừa màn 1366×768 và 1440×900) để chữ bên trái không nhảy khi đổi tab. Lúc mở trang các dòng tiêu đề, câu mô tả và khối nút trồi lên lần lượt (70 ms một bước), cửa sổ trồi lên và phóng nhẹ; chỉ dùng CSS (`motion-safe:`), nên không cần JS và tắt khi giảm chuyển động. Thẻ gói Pro nền navy, dấu tích vàng, viền vàng và bóng vàng. Test: LR34 (bố cục và vừa màn hình), LR35 (chuyển động), LR36 (Pro khác Free).
 Theo yêu cầu của owner ngày 03/11: ba section nền trắng (Vì sao quên, Ôn lại, Hỏi đáp) nay nằm trên nền `canvas` xám nhạt của app, xen với trắng và navy, ở cả hai theme.
 
 ## Kiểm chứng
@@ -48,7 +48,7 @@ Theo yêu cầu của owner ngày 03/11: ba section nền trắng (Vì sao quên
 | `headline-lines` ở 390 và 320 | H1 là câu owner đã chốt; tiếng Việt dài hơn nên 3–4 dòng ở màn hẹp. Chỉ cân dòng cho khỏi lẻ chữ. |
 | `ui-wrapper` ở 320 | Do bộ đo: nó dùng viewport cao 200 px cho bề rộng 320 (không có sẵn cỡ), nên mọi mẫu cao hơn 320 px bị coi là "bọc cả trang". Không còn `data-ui` nào chứa heading. |
 | `size-count` (11 cỡ chữ) | Là thang chữ token của app, dùng chung với app. |
-| `side-scroll` ở 768 trở xuống | Hàng chip "Các dạng bài" cuộn ngang tới `lg`, kiểu thường gặp, chip bị cắt ở mép gợi cuộn. Thanh tab trong cửa sổ đã vừa 5 tab từ 768 px. |
+| `side-scroll` ở 768 trở xuống | (Đã hết từ vòng mobile 04/11: dưới `lg` các dạng bài là một ô chọn, thanh tab vừa 5 tab ở mọi bề rộng.) |
 | `palette-cream` `#fff4c7` | Là token `accent-soft` của app. |
 | `no-footage`, `still-page` | Không có video phù hợp; chuyển động có chủ đích ở tab, thẻ lật, FAQ, vào section, giảm chuyển động được tôn trọng. |
 
@@ -59,6 +59,22 @@ Báo cáo đầy đủ: `docs/deliveries/landing-redesign/final-review.md`. Kế
 - **Đã sửa (đều có test đỏ trước, `a0e635a0`):** (1) neo header/footer chết trên `/vi/privacy` và `/vi/terms`: giờ là `/vi#goi`…, test LR33; (2) Enter trong ô khóa sau "Xem đáp án" chấm lại chữ sai cũ: `submit` bỏ qua khi đã trả lời; (3) live region im lặng từ lần sai thứ hai: thông báo kèm số lần. Unit 738 pass; e2e cục bộ 84 pass, 8 skip.
 - **Hoãn (Minor):** thẻ ôn mẫu không lật lại được bằng bàn phím (và `aria-pressed` nằm trong vùng `aria-hidden`); mất phủ của `page.spec.ts` cũ (chữ 125 %, focus dưới header dính, forced-colors); vài test pin `data-state` thay vì điều người đọc thấy và không test nào pin rằng từ nổi bật nằm trong câu; chỗ trống trong câu mẫu đọc không nhất quán; `deploy-checklist.md` còn nhắc CAPTCHA của waitlist.
 - **Ngoài nhánh này:** CSP là `'unsafe-inline'` từ 22/10 (D20), nên câu "hash của theme script nằm trong CSP" trong design chỉ đúng trên giấy.
+
+## Các vòng chỉnh sau (owner, 03–04/11/2026)
+
+Mỗi vòng có test đỏ trước rồi mới sửa; tiêu chí LR37–LR51 trong `apps/web/e2e/landing.spec.ts`.
+
+- **Màn đầu, desktop (LR37–LR40):** cửa sổ app rộng ra bên trái (cột chữ 29rem từ `xl`), chỉ hiện ~3/4, section sau nằm đè lên phần còn lại; bên trong chỉ giữ hình chính (bỏ gạch đầu dòng, thanh tiến độ, nút, ô phụ); thanh tab mỏng; thẻ ôn nằm cao, khoảng cách đều.
+- **Gói học (LR36, LR42):** bảng so sánh Miễn phí / Pro thật sự là `<table>` (7 dòng, Có/Không cho trình đọc màn hình), cột Pro nền kem viền mực kiểu sticker của app; bảng hẹp, nằm bên phải; Đăng ký và dòng dùng thử nằm ngay dưới tiêu đề bên trái.
+- **Trang đăng nhập / đăng ký (LR43):** bỏ khung navy bên trái, form ở giữa; ô có nhãn không còn placeholder; nút Google có chữ G bốn màu (ẩn với trình đọc màn hình).
+- **Vòng mobile (04/11; survey, ảnh và các quyết định Q1–Q4: `docs/deliveries/landing-redesign/mobile-survey.md`):**
+  - Q1 a: cửa sổ gọn như desktop ở mọi bề rộng; dưới `md` cắt ở 528 px (cửa sổ cao 662), `md` trở lên ở 432; mọi tab cùng cao nên trang không còn nhảy khi đổi tab (LR44).
+  - Q2 a: dưới `md` thanh tab bỏ logo; tab đang mở chỉ hiện tên, bốn tab kia là icon chia đều phần còn lại, cao 44 px; ở 320 px icon rộng ~37 px (dưới 44 nhưng trên 24 px của WCAG 2.5.8), từ 360 px đủ 44 (LR45).
+  - Q3 c: dưới `lg` các dạng bài là một ô chọn có sẵn của trình duyệt, mỗi lựa chọn ghi gói (Miễn phí / Pro) và "Câu AI"; từ `lg` vẫn là danh sách (LR46). Claude đề xuất b (chip xuống dòng); owner giữ c.
+  - Q4 a: trên điện thoại bảng gói đứng trước nút Đăng ký, cả trong thứ tự code nên trình đọc màn hình cũng đọc bảng trước (LR47).
+  - Sửa thêm: mọi tiêu đề section cân dòng (LR48); biểu đồ quên có bản vẽ riêng cho điện thoại để chữ trục cao ≥ 12 px (LR49); hai chip "Từ hay sai" cách nhau ≥ 6 px (LR49); nút đổi giao diện 44×44, link "Đăng nhập" ở màn đầu và "Quên mật khẩu?" có vùng bấm 44 px (LR50); tab, dạng bài, đáp án và câu hỏi FAQ co còn 0,97 khi nhấn (150 ms, tắt khi giảm chuyển động), bỏ vệt xám khi chạm trên mobile (LR51).
+- **Kiểm chứng vòng mobile:** unit 741, lint, typecheck sạch; taste `lint.mjs` 0 FAIL ở `src/components/landing` (1 FAIL gradient của `highlighter` trong `globals.css` có từ trước, của app); impeccable `[]`; e2e cục bộ `landing`, `a11y`, `chrome`, `locale`, `seo`: 114 pass, 32 skip. Ảnh `vi-<bề rộng>-<light|dark>.jpg` chụp lại từ bản dựng của commit `6f5f0b8e`.
+- **Lưu ý khi chạy e2e cục bộ:** một session khác (worktree `.claude/worktrees/legal-docs`) dựng cùng tên project Docker `english-learning`, nên container `english-learning-web-1` có thể bị thay bằng mã của nhánh khác giữa chừng. Ảnh ở trên chụp từ một container riêng (`docker compose -p el-landing … build web`, chạy ở cổng 3011). Docker trên máy này còn có lúc dựng web mà không chép mã mới; `build --no-cache web` thì chép đúng.
 
 ## Chưa làm và việc cho owner
 

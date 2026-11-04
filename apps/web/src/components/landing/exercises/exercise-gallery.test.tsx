@@ -22,6 +22,20 @@ describe('ExerciseGallery', () => {
     expect(list.filter((b) => b.textContent?.includes(landing.exercises.pro))).toHaveLength(3);
   });
 
+  it('LR46 offers the same seven kinds as one drop-down, each naming its plan, and choosing one opens it', async () => {
+    const user = userEvent.setup();
+    renderGallery();
+    const select = screen.getByRole('combobox', { name: landing.exercises.list });
+    const options = within(select).getAllByRole('option');
+    expect(options).toHaveLength(7);
+    expect(options[0]).toHaveTextContent(appCopy.kinds.mcq);
+    expect(options[0]).toHaveTextContent(landing.exercises.free);
+    expect(options.filter((o) => o.textContent?.includes(landing.exercises.pro))).toHaveLength(3);
+    await user.selectOptions(select, options[2]);
+    expect(screen.getByRole('textbox', { name: landing.exercises.answerLabel })).toBeInTheDocument();
+    expect(pickers()[2]).toHaveAttribute('aria-pressed', 'true');
+  });
+
   it('LR6 a wrong choice marks it wrong and the right one right, locks the options and focuses the next button', async () => {
     const user = userEvent.setup();
     renderGallery();
