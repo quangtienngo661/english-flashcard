@@ -9,7 +9,7 @@ import { SettingsService, type AppSettings } from '../settings/index.js';
 import {
   AI_USAGE_DEFAULT_DAYS, AI_USAGE_PRO_LEARNER_CAP, alertReached, type AiUsageDaysView, type AiUsageProView, type AiUsageView,
 } from './api/ai-usage.js';
-import { AI_DAY_ZONE } from './entitlements.constants.js';
+import { ADS_MIN_AGE, AI_DAY_ZONE } from './entitlements.constants.js';
 import type { AiPool, LimitKey, Pool, SubscriptionStatus } from './entitlements.types.js';
 import type { Refusal } from './refusal.js';
 import { aiDay, cycleAt } from './rules/cycle.js';
@@ -190,7 +190,8 @@ export class EntitlementsService {
       features: { 'ai.practice': feature('ai_practice'), 'ai.lookup': feature('ai_lookup') },
       ai_available: { enabled: entitlements.aiEnabled, cap_reached: entitlements.aiDailyCap !== null && cap.confirmed + cap.reserved >= entitlements.aiDailyCap },
       ads: {
-        show: entitlements.adsEnabled && resolved.plan === 'free',
+        // Free learners aged 16 or more, never staff (launch prep B design §5.1); Pro, trial and under 16 see none.
+        show: entitlements.adsEnabled && resolved.plan === 'free' && profile.staff_role === null && this.identity.isAtLeast(profile, ADS_MIN_AGE, now),
         interstitial_per_day: entitlements.adsInterstitialPerDay, min_interval_minutes: entitlements.adsMinIntervalMinutes,
       },
       trial_eligible: profile.email_verified && !(await this.sources.trialUsed(this.prisma, userId)),
