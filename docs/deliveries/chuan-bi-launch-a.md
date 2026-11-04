@@ -65,7 +65,7 @@ Nhánh `feat/launch-a-m1-turnstile`, một PR vào `dev` (mang theo 9 commit tà
 **Kiểm chứng:**
 - API: toàn bộ unit test (305 file, 4130 test) xanh trước Task 6, `tsc` sạch; sau đó thêm hai test cho lỗi ở dưới.
 - Web: typecheck, lint, 82 file / 803 test xanh. Admin: lint, typecheck, 104 file / 1364 test xanh; `pnpm build` có site key thành công và `dist/_headers` giống `public/_headers`; build thiếu site key fail và nêu tên `VITE_TURNSTILE_SITE_KEY`.
-- e2e web trong container Linux (`pnpm cf:docker`): `csp.spec.ts` 8/8 pass (E23 hai lần, LA1#13 ba header, LA1#14 widget thật với khóa test chạy dưới CSP, 0 vi phạm). LA1#14 chứng minh bằng việc nút đăng nhập bật lên sau khi Cloudflare trả token, vì Turnstile vẽ iframe trong shadow root đóng nên không hỏi được iframe.
+- e2e web trong container Linux (`pnpm cf:docker`, toàn bộ): 345 pass, 0 lỗi (7,6 phút). Riêng `csp.spec.ts` 8/8 pass (E23 hai lần, LA1#13 ba header, LA1#14 widget thật với khóa test chạy dưới CSP, 0 vi phạm). LA1#14 chứng minh bằng việc nút đăng nhập bật lên sau khi Cloudflare trả token, vì Turnstile vẽ iframe trong shadow root đóng nên không hỏi được iframe.
 - `smoke:buoc-4` trên DB mới với API `TURNSTILE_MODE=fake`: ALL CHECKS PASSED. Các smoke còn lại chạy ở Task 30.
 - Chạy tay API ở chế độ `real` với khóa test của Cloudflare (`curl`, 04/11/2026):
   - không token → 400 `validation-failed`;
@@ -77,6 +77,8 @@ Nhánh `feat/launch-a-m1-turnstile`, một PR vào `dev` (mang theo 9 commit tà
 **Phát hiện khi chạy với Cloudflare thật (hai chỗ design và plan nghĩ sai):**
 1. Với khóa test, siteverify trả `hostname: "example.com"`, **không phải** `localhost` như `ASSUMPTION` của design §9. Muốn chạy tay `real` với khóa test thì `TURNSTILE_ALLOWED_HOSTNAMES` phải có `example.com`. Hostname của token lấy trong trình duyệt ở `localhost` với khóa test chưa thử.
 2. Secret sai được Cloudflare trả **HTTP 400** kèm JSON `{"error-codes":["invalid-input-secret"]}`, không phải HTTP 200. Client ban đầu chỉ phân loại theo mã HTTP nên coi là `http`, và login bypass ghi sai lý do. Đã sửa (hai commit: test đỏ, rồi fix): client đọc body trước, nên `invalid-input-secret` hoặc `missing-input-secret` luôn thành `misconfigured`, không thử lại.
+
+**Review độc lập cuối M1** (một reviewer mới, đọc diff): 0 Critical, 2 Important, 5 Minor. Hai Important đã sửa theo quy trình test đỏ trước, fix sau: (I1) dòng `TURNSTILE_SECRET_KEY=` để trống trong `.env.example` thành chuỗi rỗng khi nạp file nên API không khởi động dù ở `fake`; nay trống nghĩa là chưa đặt. (I2) phản hồi HTTP 4xx có `success:false` bị coi là "Cloudflare không trả lời" nên đăng nhập lọt; nay là `rejected`. Năm Minor để lại: script Cloudflare lỗi khi không có widget nào đang mở thì thẻ script hỏng ở lại và widget sau chờ mãi; không thử lại khi script tải lỗi; guard build web chỉ khớp đúng `https://wordmet.com` (không khớp `www.` hay URL xem trước) và guard admin chỉ khớp mode `production`; widget hiện cả trang xác minh email dù chỉ "Gửi lại mã" dùng; hai script bằng chứng cũ trong `docs/tasks/2026-10-15-refresh-fast-reload/evidence/` vẫn đăng ký không token.
 
 **Chưa làm / chưa kiểm được:**
 - Chưa chạy tay trên trình duyệt thật các form web (đăng ký, đăng nhập, quên mật khẩu, gửi lại mã, LA1#6) và admin (đăng nhập, quên mật khẩu) với API `real`; chỉ kiểm bằng unit test, e2e có widget giả và `curl` ở trên. Cần chủ dự án hoặc một lượt có trình duyệt và mạng.
