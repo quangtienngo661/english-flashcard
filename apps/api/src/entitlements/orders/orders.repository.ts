@@ -36,8 +36,53 @@ export type NewPayment = {
 
 export type NewPeriod = { userId: string; orderId: string; paymentId: string; startsAt: Date; endsAt: Date };
 
+/** An order as the staff screens read it (design §3.9). */
+export type AdminOrderRow = {
+  id: string;
+  userId: string;
+  status: OrderStatus;
+  reviewReason: ReviewReason | null;
+  paidVia: PaidVia | null;
+  orderCode: number;
+  periodMonths: number;
+  amount: number;
+  description: string;
+  paymentLinkId: string | null;
+  createdAt: Date;
+  expiresAt: Date;
+  resolvedAt: Date | null;
+  resolutionNote: string | null;
+  refundPayerName: string | null;
+  refundPayerAccount: string | null;
+  refundPayerBank: string | null;
+  refundSavedAt: Date | null;
+};
+
+export type AdminOrderDetailRow = AdminOrderRow & {
+  payments: Array<{
+    id: string; source: string; reference: string; amount: number; providerTime: string | null; outcome: string; periodId: string | null;
+    confirmedBy: string | null; reason: string | null; receivedAt: Date;
+  }>;
+  periods: Array<{ id: string; startsAt: Date; endsAt: Date; revokedAt: Date | null; revokeReason: string | null }>;
+};
+
+export type AdminOrderFilter = {
+  status?: OrderStatus;
+  needsAttention?: boolean;
+  userId?: string;
+  from?: Date;
+  to?: Date;
+  /** Upper case, part of the transfer note. */
+  q?: string;
+  cursor?: { createdAt: Date; id: string };
+  take: number;
+};
+
 /** `undefined` leaves a column alone, `null` clears it. */
 export type OrderUpdate = {
+  resolvedAt?: Date | null;
+  resolvedBy?: string | null;
+  resolutionNote?: string | null;
   status?: OrderStatus;
   reviewReason?: ReviewReason | null;
   paidVia?: PaidVia | null;
@@ -100,6 +145,14 @@ export type OrderView = {
 };
 
 type OrderRow = NonNullable<Awaited<ReturnType<PrismaClient['billingOrder']['findUnique']>>>;
+
+const toAdminRow = (row: OrderRow): AdminOrderRow => ({
+  id: row.id, userId: row.userId, status: row.status as OrderStatus, reviewReason: row.reviewReason as ReviewReason | null,
+  paidVia: row.paidVia as PaidVia | null, orderCode: Number(row.orderCode), periodMonths: row.periodMonths, amount: Number(row.amountMinor),
+  description: row.description, paymentLinkId: row.paymentLinkId, createdAt: row.createdAt, expiresAt: row.expiresAt, resolvedAt: row.resolvedAt,
+  resolutionNote: row.resolutionNote, refundPayerName: row.refundPayerName, refundPayerAccount: row.refundPayerAccount,
+  refundPayerBank: row.refundPayerBank, refundSavedAt: row.refundSavedAt,
+});
 
 const toRecord = (row: OrderRow): OrderRecord => ({
   id: row.id,
@@ -204,6 +257,49 @@ export class OrdersRepository {
   /** `UPDATE … WHERE id AND status = from`: false when something else (a webhook, staff) already changed the order. */
   async transition(db: Db, id: string, from: OrderStatus, data: OrderUpdate): Promise<boolean> {
     const result = await db.billingOrder.updateMany({ where: { id, status: from }, data });
+    return result.count > 0;
+  }
+
+  /** Newest first by (created_at, id); `take` is the page size plus one, so the caller knows whether there is another page. */
+  async listAdmin(db: Db, filter: AdminOrderFilter): Promise<AdminOrderRow[]> {
+    const where: Prisma.BillingOrderWhereInput = {
+      ...(filter.status ? { status: filter.status } : {}),
+      ...(filter.userId ? { userId: filter.userId } : {}),
+      ...(filter.q ? { description: { contains: filter.q } } : {}),
+      ...(filter.from || filter.to ? { createdAt: { ...(filter.from ? { gte: filter.from } : {}), ...(filter.to ? { lt: filter.to } : {}) } } : {}),
+      AND: [
+        ...(filter.needsAttention ? [{ OR: [{ status: 'needs_review' }, { reviewReason: { not: null } }] }] : []),
+        ...(filter.cursor ? [{ OR: [{ createdAt: { lt: filter.cursor.createdAt } }, { createdAt: filter.cursor.createdAt, id: { lt: filter.cursor.id } }] }] : []),
+      ],
+    };
+    const rows = await db.billingOrder.findMany({ where, orderBy: [{ createdAt: 'desc' }, { id: 'desc' }], take: filter.take });
+    return rows.map(toAdminRow);
+  }
+
+  /** The order with its payments (oldest first) and periods (earliest start first). */
+  async adminDetail(db: Db, id: string): Promise<AdminOrderDetailRow | null> {
+    const row = await db.billingOrder.findUnique({
+      where: { id },
+      include: { payments: { orderBy: [{ receivedAt: 'asc' }, { id: 'asc' }] }, periods: { orderBy: { startsAt: 'asc' } } },
+    });
+    if (row === null) return null;
+    return {
+      ...toAdminRow(row),
+      payments: row.payments.map((p) => ({
+        id: p.id, source: p.source, reference: p.reference, amount: Number(p.amountMinor), providerTime: p.providerTime, outcome: p.outcome,
+        periodId: p.periodId, confirmedBy: p.confirmedBy, reason: p.reason, receivedAt: p.receivedAt,
+      })),
+      periods: row.periods.map((p) => ({ id: p.id, startsAt: p.startsAt, endsAt: p.endsAt, revokedAt: p.revokedAt, revokeReason: p.revokeReason })),
+    };
+  }
+
+  async findPeriod(db: Db, id: string): Promise<{ id: string; userId: string; revokedAt: Date | null } | null> {
+    return db.prepaidPeriod.findUnique({ where: { id }, select: { id: true, userId: true, revokedAt: true } });
+  }
+
+  /** Revokes a period that is not revoked yet; false when it already was. Nothing else is touched: later periods keep their dates. */
+  async revokePeriod(db: Db, id: string, revokedBy: string, reason: string, now: Date): Promise<boolean> {
+    const result = await db.prepaidPeriod.updateMany({ where: { id, revokedAt: null }, data: { revokedAt: now, revokedBy, revokeReason: reason } });
     return result.count > 0;
   }
 

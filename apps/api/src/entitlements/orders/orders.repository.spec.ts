@@ -159,3 +159,68 @@ describe('OrdersRepository — reconcile queries (shapes; the rows are checked b
     expect(await repo.transition({ billingOrder: { updateMany: vi.fn(async () => ({ count: 0 })) } } as never, 'o1', 'pending', { status: 'expired' })).toBe(false);
   });
 });
+
+describe('OrdersRepository — staff queries (shapes; the rows are checked by the payments smoke)', () => {
+  const repo = new OrdersRepository();
+  const FULL = {
+    id: 'o1', userId: 'u1', provider: 'payos', environment: 'production', orderCode: 1_000_000_123n, description: 'WM0XSNJKV', periodMonths: 1, amountMinor: 79000n,
+    currency: 'VND', status: 'needs_review', reviewReason: 'amount-short', paidVia: null, paymentLinkId: 'link-1', checkoutUrl: 'https://x',
+    expiresAt: new Date('2026-11-05T03:17:00Z'), checkedAt: null, refundPayerName: null, refundPayerAccount: null, refundPayerBank: null, refundSavedAt: null,
+    resolvedAt: null, resolvedBy: null, resolutionNote: null, createdAt: new Date('2026-11-05T03:02:00Z'), updatedAt: new Date('2026-11-05T03:02:00Z'),
+  };
+
+  it('listAdmin reads newest first by (created_at, id) with the filters of the screen, and numbers instead of bigints', async () => {
+    const findMany = vi.fn(async () => [FULL]);
+    const cursor = { createdAt: new Date('2026-11-05T03:00:00Z'), id: 'o0' };
+    const rows = await repo.listAdmin({ billingOrder: { findMany } } as never, {
+      status: 'needs_review', needsAttention: true, userId: 'u1', from: new Date('2026-11-01T00:00:00Z'), to: new Date('2026-12-01T00:00:00Z'), q: 'WM0X', cursor, take: 21,
+    });
+    expect(rows[0]).toMatchObject({ id: 'o1', orderCode: 1_000_000_123, amount: 79000, status: 'needs_review', reviewReason: 'amount-short' });
+    expect(findMany).toHaveBeenCalledWith({
+      where: {
+        status: 'needs_review', userId: 'u1', description: { contains: 'WM0X' },
+        createdAt: { gte: new Date('2026-11-01T00:00:00Z'), lt: new Date('2026-12-01T00:00:00Z') },
+        AND: [
+          { OR: [{ status: 'needs_review' }, { reviewReason: { not: null } }] },
+          { OR: [{ createdAt: { lt: cursor.createdAt } }, { createdAt: cursor.createdAt, id: { lt: 'o0' } }] },
+        ],
+      },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }], take: 21,
+    });
+  });
+
+  it('listAdmin with no filter asks for nothing but the page', async () => {
+    const findMany = vi.fn(async () => []);
+    await repo.listAdmin({ billingOrder: { findMany } } as never, { take: 21 });
+    expect(findMany).toHaveBeenCalledWith({ where: { AND: [] }, orderBy: [{ createdAt: 'desc' }, { id: 'desc' }], take: 21 });
+  });
+
+  it('adminDetail reads the payments oldest first and the periods by start, and is null for an unknown order', async () => {
+    const findUnique = vi.fn(async () => ({
+      ...FULL,
+      payments: [{ id: 'p1', source: 'webhook', reference: 'FT1', amountMinor: 79000n, providerTime: '2026-11-05 10:02:00', outcome: 'counted', periodId: null, confirmedBy: null, reason: null, receivedAt: new Date('2026-11-05T03:02:05Z') }],
+      periods: [{ id: 'per1', startsAt: new Date('2026-11-05T03:02:00Z'), endsAt: new Date('2026-12-05T17:00:00Z'), revokedAt: null, revokeReason: null }],
+    }));
+    const detail = await repo.adminDetail({ billingOrder: { findUnique } } as never, 'o1');
+    expect(detail?.payments).toEqual([expect.objectContaining({ id: 'p1', amount: 79000, outcome: 'counted' })]);
+    expect(detail?.periods).toEqual([{ id: 'per1', startsAt: new Date('2026-11-05T03:02:00Z'), endsAt: new Date('2026-12-05T17:00:00Z'), revokedAt: null, revokeReason: null }]);
+    expect(findUnique).toHaveBeenCalledWith({
+      where: { id: 'o1' }, include: { payments: { orderBy: [{ receivedAt: 'asc' }, { id: 'asc' }] }, periods: { orderBy: { startsAt: 'asc' } } },
+    });
+    expect(await repo.adminDetail({ billingOrder: { findUnique: vi.fn(async () => null) } } as never, 'x')).toBeNull();
+  });
+
+  it('revokePeriod only revokes a period that is not revoked, and writes who, when and why', async () => {
+    const updateMany = vi.fn(async () => ({ count: 1 }));
+    const now = new Date('2026-11-05T04:00:00Z');
+    expect(await repo.revokePeriod({ prepaidPeriod: { updateMany } } as never, 'per1', 'admin-1', 'wrong learner', now)).toBe(true);
+    expect(updateMany).toHaveBeenCalledWith({ where: { id: 'per1', revokedAt: null }, data: { revokedAt: now, revokedBy: 'admin-1', revokeReason: 'wrong learner' } });
+    expect(await repo.revokePeriod({ prepaidPeriod: { updateMany: vi.fn(async () => ({ count: 0 })) } } as never, 'per1', 'a', 'r', now)).toBe(false);
+  });
+
+  it('findPeriod asks for the id, the learner and whether it is revoked', async () => {
+    const findUnique = vi.fn(async () => ({ id: 'per1', userId: 'u1', revokedAt: null }));
+    expect(await repo.findPeriod({ prepaidPeriod: { findUnique } } as never, 'per1')).toEqual({ id: 'per1', userId: 'u1', revokedAt: null });
+    expect(findUnique).toHaveBeenCalledWith({ where: { id: 'per1' }, select: { id: true, userId: true, revokedAt: true } });
+  });
+});

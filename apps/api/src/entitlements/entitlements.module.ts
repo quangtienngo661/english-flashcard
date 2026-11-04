@@ -22,6 +22,8 @@ import { createPayosClient, PAYOS_CLIENT, PayosAdapter } from './billing/payos/p
 import { WebhookController } from './billing/webhook.controller.js';
 import { EntitlementsService } from './entitlements.service.js';
 import { OrderApplier } from './orders/order-applier.service.js';
+import { AdminOrdersController } from './orders/admin-orders.controller.js';
+import { AdminOrdersService } from './orders/admin-orders.service.js';
 import { MeOrdersController } from './orders/me-orders.controller.js';
 import { OrdersReconcileJob } from './orders/orders-reconcile.job.js';
 import { OrdersReconcileService } from './orders/orders-reconcile.service.js';
@@ -43,7 +45,7 @@ import { UsageQueries } from './usage/usage.queries.js';
   imports: [IdentityModule, SettingsModule, MailModule],
   controllers: [
     WebhookController, AdminGrantsController, AdminEntitlementsController, MeEntitlementsController, MeSubscriptionsController, MeTransactionsController,
-    AdminTransactionsController, FakePayosController, MeOrdersController,
+    AdminTransactionsController, FakePayosController, MeOrdersController, AdminOrdersController,
   ],
   providers: [
     EntitlementsService,
@@ -62,6 +64,7 @@ import { UsageQueries } from './usage/usage.queries.js';
     OrderApplier,
     OrdersRepository,
     OrdersService,
+    AdminOrdersService,
     OrdersReconcileService,
     OrdersReconcileJob,
     TransactionsRepository,
