@@ -11,7 +11,6 @@ import { OrdersReconcileService, type ReconcileOrder } from './orders-reconcile.
 const NOW = new Date('2026-11-05T04:00:00.000Z');
 const USER = '6f1c2a4e-0b7d-4c1e-9a55-3d2f8e7b6a10';
 const CODE = 1_000_000_123;
-const at = (iso: string) => new Date(iso);
 const minutes = (n: number) => n * 60_000;
 
 const order = (over: Partial<ReconcileOrder> = {}): ReconcileOrder => ({
