@@ -10,7 +10,7 @@ import { IdentityService } from '../../identity/profile/identity.service.js';
 import { GroupsService } from '../groups/groups.service.js';
 import { SettingsService } from '../../settings/index.js';
 import { recordActivityIn } from '../activity/record-activity.js';
-import { withLearnerLock } from '../learning-lock.js';
+import { lockItems, withLearnerLock } from '../learning-lock.js';
 import { newItem, sectionOf, type Section } from '../schedule/schedule.js';
 
 const transactionOptions = { timeout: 30_000, maxWait: 5_000 };
@@ -58,13 +58,11 @@ export class ItemsService {
   /** B3#1: a sense the learner can see joins the group; the first time it also starts its schedule. */
   async add(userId: string, groupId: string, senseId: string): Promise<AddResult> {
     const today = await this.today(userId);
-    if (!(await this.content.visibleSenseIds(userId, [senseId])).has(senseId)) {
-      await this.groups.assertOwned(this.prisma, userId, groupId);
-      throw notFound();
-    }
     return this.prisma.$transaction(async (tx) => {
       await withLearnerLock(tx, userId);
       await this.groups.assertOwned(tx, userId, groupId);
+      // B3-5: under the learner's lock and on the same connection as the writes below, so the answer cannot go stale in between.
+      if (!(await this.content.visibleSenseIds(userId, [senseId], tx)).has(senseId)) throw notFound();
       return this.linkInTx(tx, userId, groupId, senseId, today);
     }, transactionOptions);
   }
@@ -252,6 +250,8 @@ export class ItemsService {
   }
 
   private async deleteItem(tx: Prisma.TransactionClient, userId: string, itemId: string, groupId: string | null, timeZone: string) {
+    // B3-5 (L4): a review locks only its item row, so a write that reads and then deletes the item takes that lock first.
+    await lockItems(tx, userId, [itemId]);
     const item = await tx.learningItem.delete({ where: { id: itemId } });
     const at = this.clock.now();
     const day = localDate(timeZone, at);
