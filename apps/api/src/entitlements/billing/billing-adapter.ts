@@ -1,5 +1,5 @@
 import type { BillingEnvironment } from '../entitlements.types.js';
-import type { EventType, FetchedState, NormalizedEvent } from './billing.types.js';
+import type { EventType, FetchedState, NormalizedEvent, OrderEventType, OrderPaymentPayload } from './billing.types.js';
 
 /** What a webhook route hands an adapter: the exact bytes received, before any JSON parsing (R16). */
 export type BillingRequest = {
@@ -11,17 +11,18 @@ export type BillingRequest = {
 
 /**
  * One signed provider event. `event` is null when a §9.3 field is missing (`missing` names them); `appUserId` is null unless
- * the value is a lower-case uuid, so a garbage id ends as "unknown user", never as a database error.
+ * the value is a lower-case uuid, so a garbage id ends as "unknown user", never as a database error. A one-time payment
+ * (`OrderEventType`) has no subscription and no user in the message: the applier finds the order and the learner under lock.
  */
 export type ParsedEvent = {
   externalEventId: string;
-  type: EventType;
+  type: EventType | OrderEventType;
   environment: BillingEnvironment;
-  externalSubscriptionId: string;
+  externalSubscriptionId: string | null;
   appUserId: string | null;
   occurredAt: Date;
   transactionId: string | null;
-  event: NormalizedEvent | null;
+  event: NormalizedEvent | OrderPaymentPayload | null;
   missing: string[];
   raw: unknown;
 };

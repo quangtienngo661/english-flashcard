@@ -1,6 +1,6 @@
 import type { BillingEnvironment, Interval, SubscriptionStatus } from '../entitlements.types.js';
 
-/** The normalized provider events (design §9.3). D35: no `payment_succeeded`. */
+/** The normalized events of an auto-renewing subscription (design §9.3). D35: none of them is a one-time payment; those are `ORDER_EVENT_TYPES`. */
 export const EVENT_TYPES = [
   'subscription_started',
   'renewed',
@@ -18,11 +18,37 @@ export const EVENT_TYPES = [
 ] as const;
 export type EventType = (typeof EVENT_TYPES)[number];
 
-/** Additive events always apply and are deduplicated by transaction id; the others are ordered by `occurred_at` (R1). */
-export const ADDITIVE_TYPES = ['renewed', 'refunded'] as const;
+/**
+ * One-time payments (launch prep B design §3.3): outside `EVENT_TYPES`, so the 13 types, the 91-cell transition matrix and the
+ * fake provider's parser stay as they were. The applier hands these to `OrderApplier`, never to the subscription machine.
+ */
+export const ORDER_EVENT_TYPES = ['payment_succeeded'] as const;
+export type OrderEventType = (typeof ORDER_EVENT_TYPES)[number];
 
-export function eventKind(type: EventType): 'state' | 'additive' {
-  return (ADDITIVE_TYPES as readonly EventType[]).includes(type) ? 'additive' : 'state';
+/**
+ * `billing_events.payload` of a `payment_succeeded` (design §3.12). `payer` is there only until the applier has used it:
+ * it copies the three fields to the order only for money that arrives after the account was deleted, and clears them
+ * from the event in the same transaction.
+ */
+export type OrderPaymentPayload = {
+  orderCode: number;
+  paymentLinkId: string;
+  amount: number;
+  reference: string;
+  /** As payOS wrote it, no time zone (ASSUMPTION P9: Vietnam time); null when absent. */
+  transactionDateTime: string | null;
+  source: 'webhook' | 'reconcile';
+  /** What payOS said; the applier refuses `success !== true` or `code !== '00'` (design §3.4). */
+  success: boolean;
+  code: string;
+  payer: { counterAccountName: string | null; counterAccountNumber: string | null; counterAccountBankName: string | null };
+};
+
+/** Additive events always apply and are deduplicated by transaction id; the others are ordered by `occurred_at` (R1). */
+export const ADDITIVE_TYPES = ['renewed', 'refunded', 'payment_succeeded'] as const;
+
+export function eventKind(type: EventType | OrderEventType): 'state' | 'additive' {
+  return (ADDITIVE_TYPES as readonly string[]).includes(type) ? 'additive' : 'state';
 }
 
 type EventBase = {
