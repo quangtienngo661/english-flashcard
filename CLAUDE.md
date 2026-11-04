@@ -367,7 +367,7 @@ Các điểm dưới đây phát sinh khi rà quyền của `admin`/`editor` (b�
 
 - Stack: Next `16.4.3` (App Router), next-intl `4.14.9`, `@opennextjs/cloudflare` `1.20.13`, wrangler `4.153.0` (`apps/web`; `apps/admin` keeps wrangler `4.145.0`).
 - Cloudflare Workers (`wordmet-web`). The waitlist and its D1 database were removed in the 03/11/2026 redesign; the redesigned landing
-  (branch `feat/landing-redesign`, PR #205 into `dev`) is recorded in `docs/deliveries/landing-redesign.md`, its pre-launch items in the section "Landing mới" of `docs/deliveries/deploy-checklist.md`.
+  (branch `feat/landing-redesign`; PR #205 and, for the phone and tablet layouts, PR #208, both merged into `dev` 03–04/11/2026) is recorded in `docs/deliveries/landing-redesign.md`, its pre-launch items in the section "Landing mới" of `docs/deliveries/deploy-checklist.md`.
 - Windows Worker build/e2e/static checks: `pnpm cf:docker` in a `node:24.11.0-bookworm` Linux container; WSL planned later.
 - Next and `eslint-config-next` were held at `16.3.8` because OpenNext 1.20.7–1.20.9 broke Next `16.4` on the Worker; raised to `16.4.3`
   on 29/10/2026 (OpenNext `1.20.12`+ accepts Next `>=16.4.1`) to fix GHSA-2464-fhr4-w9xw, GHSA-673q-mjm6-r5xr (critical) and GHSA-p3m5-59mp-jv5r.
