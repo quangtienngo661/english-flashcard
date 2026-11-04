@@ -18,6 +18,10 @@ import { existsSync, readFileSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 import { parseEnv } from 'node:util';
 import argon2 from 'argon2';
+import { SMOKE_TURNSTILE_TOKEN, requireFakeTurnstile } from './smoke-turnstile.mjs';
+
+// Launch prep A: login needs a Turnstile token; the API under test runs with TURNSTILE_MODE=fake.
+requireFakeTurnstile();
 
 const BASE = process.env.SMOKE_BASE_URL ?? 'http://localhost:3000';
 const CONTINUE = process.env.SMOKE_CONTINUE === '1';
@@ -118,7 +122,7 @@ async function sqlUsers(labels, { staffRole = null } = {}) {
   return labels.map((label) => users.find((u) => u.email === `smokelb-${label}-${run}@example.com`));
 }
 async function signIn(user) {
-  const body = await want(api('POST', '/v1/auth/login', { body: { email: user.email, password: PASSWORD, client: 'web' } }), 200, `login ${user.email}`);
+  const body = await want(api('POST', '/v1/auth/login', { body: { email: user.email, password: PASSWORD, client: 'web', turnstile_token: SMOKE_TURNSTILE_TOKEN } }), 200, `login ${user.email}`);
   return { ...user, token: body.access_token };
 }
 
@@ -179,10 +183,10 @@ async function step(code, name, body) {
 
 async function main() {
   const started = Date.now();
-  const [admin, lan, ann, bao, cuong, dung] = await sqlUsers(['admin', 'lan', 'ann', 'bao', 'cuong', 'dung'], {});
+  const [admin, lan, ann, bao, cuong, dung, eva] = await sqlUsers(['admin', 'lan', 'ann', 'bao', 'cuong', 'dung', 'eva'], {});
   psql(`UPDATE users SET staff_role = 'admin' WHERE id = '${admin.id}'`);
   const S = { admin: await signIn(admin) };
-  for (const [label, user] of Object.entries({ lan, ann, bao, cuong, dung })) S[label] = await signIn(user);
+  for (const [label, user] of Object.entries({ lan, ann, bao, cuong, dung, eva })) S[label] = await signIn(user);
   const config = await want(api('GET', '/v1/me/app-config', { token: S.lan.token }), 200, 'app-config');
   PRICES = config.plans.pro.prices;
   check(PRICES && PRICES['1'] === 79000 && PRICES['3'] === 199000 && PRICES['12'] === 599000, `prices ${JSON.stringify(PRICES)}`);
@@ -439,6 +443,26 @@ async function main() {
     const e = await entitlements(S.lan);
     check(e.plan === 'free' && e.pro_until === null && !e.sources.some((s) => s.kind === 'prepaid'), `after the periods ended: ${JSON.stringify({ plan: e.plan, pro_until: e.pro_until })}`);
     ok('Free again, pro_until null');
+  });
+
+  await step('LB1A8', 'Eva was Pro on a prepaid period that ran out earlier this month: the AI unit she used while Pro is not charged to the Free allowance, the one used after the end is (launch prep A, design 6.3.4)', async () => {
+    const order = await createOrder(S.eva, 1);
+    await page(order, 'paid');
+    const done = await view(S.eva, order.id);
+    check(done.status === 'paid' && done.period !== null, `order ${JSON.stringify(done)}`);
+    // The period ran out an hour ago, kept inside this calendar month of her zone (the Free window starts at its end, never before the 1st).
+    const ended = psql(`SELECT to_char(greatest(now() - interval '1 hour', (date_trunc('month', now() AT TIME ZONE '${TIMEZONE}') AT TIME ZONE '${TIMEZONE}') + interval '1 second') AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"')`);
+    check(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/.test(ended), `end ${ended}`);
+    psql(`UPDATE prepaid_periods SET starts_at = '${ended}'::timestamptz - interval '30 days', ends_at = '${ended}'::timestamptz WHERE order_id = '${order.id}'`);
+    const use = (id, offsetSeconds, plan) => `('${S.eva.id}', 'ai_practice', '${id}', 'use', 'confirmed', current_date,
+      '${ended}'::timestamptz + interval '${offsetSeconds} seconds', '${ended}'::timestamptz + interval '${offsetSeconds} seconds', '${plan}')`;
+    psql(`INSERT INTO usage_records (user_id, pool, operation_id, kind, status, system_date, reserved_at, confirmed_at, plan)
+      VALUES ${use('smoke-lb1a8-while-pro', -2, 'pro')}, ${use('smoke-lb1a8-after', 1, 'free')}`);
+    const e = await entitlements(S.eva);
+    check(e.plan === 'free' && !e.sources.some((s) => s.kind === 'prepaid') && e.pro_until === null, `Eva is Free again: ${JSON.stringify({ plan: e.plan, pro_until: e.pro_until })}`);
+    check(e.pools.ai_practice.limit === 15, `the Free allowance is 15: ${JSON.stringify(e.pools.ai_practice)}`);
+    check(e.pools.ai_practice.used === 1, `2 uses in the month, 1 of them while Pro: Free counts only the one after the end, not ${e.pools.ai_practice.used}`);
+    ok(`Free window starts at ${ended}: used 1 of 15 (the Pro one is outside it)`);
   });
 
   await step('privacy', 'no log line of the API or the worker names an order code, a payer or a reference (checked on the process output the shell kept, if SMOKE_LOGS is set)', async () => {
