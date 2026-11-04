@@ -1,6 +1,7 @@
 import { localDate, zonedMidnight } from '../../common/time/local-date.js';
 import { cycleAt } from './cycle.js';
-import type { Resolved } from './plan-rules.js';
+import type { GrantSource, Resolved, SubscriptionSource } from './plan-rules.js';
+import { aiSourceEnds, lastAiSourceEnd, type EndedSources } from './source-ends.js';
 
 // The window in which AI uses are counted (launch prep A, design 6.2). Pro, trial and a limits grant with AI keep the cycle that
 // starts at their anchor (D13). A Free account has no anchor: its window is the calendar month in the learner's own zone, and it
@@ -33,4 +34,20 @@ export function aiCycle(resolved: Resolved, zone: string, now: Date, lastEnd: Da
   if (resolved.plan !== 'free' || (resolved.limits.ai_practice <= 0 && resolved.limits.ai_lookup <= 0)) return null;
   const month = calendarMonthCycle(zone, now);
   return { start: lastEnd !== null && lastEnd > month.start ? lastEnd : month.start, end: month.end };
+}
+
+/** The oldest end the loader must bring back for a caller of `aiWindow` (design 6.3.4): the start of the learner's calendar month. */
+export const endedSinceOf = (zone: string, now: Date): Date => calendarMonthCycle(zone, now).start;
+
+/**
+ * `aiCycle` for a caller that holds the learner's sources: finds the last end of an AI source inside this calendar month and
+ * hands it over. The one function snapshot, reserve / confirm and refund call (design 6.2), so they cannot disagree.
+ */
+export function aiWindow(input: {
+  resolved: Resolved; subscriptions: SubscriptionSource[]; grants: GrantSource[]; ended: EndedSources; graceDays: number;
+  zone: string; now: Date;
+}): Cycle | null {
+  const { resolved, subscriptions, grants, ended, graceDays, zone, now } = input;
+  const ends = aiSourceEnds({ subscriptions, grants, ended, graceDays, now });
+  return aiCycle(resolved, zone, now, lastAiSourceEnd(ends, endedSinceOf(zone, now), now));
 }
