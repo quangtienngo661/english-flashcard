@@ -109,6 +109,8 @@ function writing(at = '2026-10-19T17:01:00Z') {
   const row = (senseId: string) => ({ id: `i-${senseId}`, userId: 'u1', senseId, level: 0, dueDate: new Date('2026-10-20T00:00:00Z') });
   const tx = {
     $executeRaw: vi.fn(async () => 0),
+    // lockItems (B3-5) selects the item row FOR UPDATE before a delete.
+    $queryRaw: vi.fn(async () => []),
     learningItem: {
       findUnique: vi.fn(async () => null),
       findFirst: vi.fn(async () => ({ id: 'i-a' })),

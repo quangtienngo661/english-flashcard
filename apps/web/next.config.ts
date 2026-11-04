@@ -2,13 +2,17 @@ import { initOpenNextCloudflareForDev } from '@opennextjs/cloudflare';
 import type { NextConfig } from 'next';
 import createNextIntlPlugin from 'next-intl/plugin';
 import { buildCsp, CSP_INLINE_FALLBACK } from './src/lib/csp';
-import { assertApiBaseUrl } from './src/app-shell/config';
+import { assertApiBaseUrl, assertTurnstileSiteKey, turnstileSiteKey } from './src/app-shell/config';
 import { THEME_SCRIPT_HASH } from './src/app-shell/theme/theme-script';
 import { appPageExtensions, LEARNER_APP_ENABLED } from './src/lib/learner-app-flag';
+import { securityHeaders } from './src/lib/security-headers';
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
 // Design §4.2: with the app on, the build fails unless the API URL is absolute (and an api. host on wordmet.com).
 const apiOrigin = LEARNER_APP_ENABLED ? new URL(assertApiBaseUrl(siteUrl, process.env.NEXT_PUBLIC_API_BASE_URL)).origin : null;
+
+// Launch prep A, design 4.3: the same kind of check for the Turnstile site key.
+assertTurnstileSiteKey({ learnerApp: LEARNER_APP_ENABLED, siteUrl, siteKey: turnstileSiteKey() });
 
 const csp = buildCsp({
   apiOrigin,
@@ -27,7 +31,7 @@ const nextConfig: NextConfig = {
   experimental: { sri: { algorithm: 'sha256' } },
   async headers() {
     if (process.env.NODE_ENV !== 'production') return [];
-    return [{ source: '/:path*', headers: [{ key: 'Content-Security-Policy', value: csp }] }];
+    return [{ source: '/:path*', headers: [{ key: 'Content-Security-Policy', value: csp }, ...securityHeaders()] }];
   },
 };
 

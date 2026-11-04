@@ -55,6 +55,13 @@ export class UsageQueries {
     });
   }
 
+  /** B5-7: the operation has a confirmed `use` row confirmed inside the cycle (a refund gives back exactly that unit). */
+  async hasConfirmedUseInCycle(db: Db, userId: string, pool: AiPool, operationId: string, cycle: Cycle): Promise<boolean> {
+    return (await db.usageRecord.count({
+      where: { userId, pool, operationId, kind: 'use', status: 'confirmed', confirmedAt: { gte: cycle.start, lt: cycle.end } },
+    })) > 0;
+  }
+
   async creditsInCycle(db: Db, userId: string, pool: AiPool, cycle: Cycle): Promise<number> {
     return db.usageRecord.count({ where: { userId, pool, kind: 'credit', creditedAt: { gte: cycle.start, lt: cycle.end } } });
   }
@@ -98,6 +105,18 @@ export class UsageQueries {
     });
     const reserved = await db.usageRecord.count({
       where: { pool: { in: AI_POOLS }, kind: 'use', status: 'reserved', systemDate, expiresAt: { gt: now } },
+    });
+    return { confirmed, reserved };
+  }
+
+  /** `capUsed` for the Free plan only: the rows `reserve` wrote with `plan = 'free'` (launch prep A, design 6.4). */
+  async capUsedFree(db: Db, day: string, now: Date): Promise<{ confirmed: number; reserved: number }> {
+    const systemDate = dateValue(day);
+    const confirmed = await db.usageRecord.count({
+      where: { pool: { in: AI_POOLS }, kind: 'use', status: 'confirmed', systemDate, plan: 'free' },
+    });
+    const reserved = await db.usageRecord.count({
+      where: { pool: { in: AI_POOLS }, kind: 'use', status: 'reserved', systemDate, expiresAt: { gt: now }, plan: 'free' },
     });
     return { confirmed, reserved };
   }

@@ -8,6 +8,7 @@ import type { RequestUser } from '../../common/request-user/request-user.js';
 import type { Prisma, PrismaClient } from '../../generated/prisma/client.js';
 import { RequirePermission } from '../../identity/staff/require-permission.decorator.js';
 import { normalizeLemma, normalizeText } from '../catalog/normalize.js';
+import { writeCatalogEntry } from '../catalog/write-entry.js';
 import { VALID_POS } from '../content.constants.js';
 import { ContentService } from '../content.service.js';
 import { generateInflections } from '../inflections/inflect.js';
@@ -36,16 +37,9 @@ async function problemDetails<T>(write: () => Promise<T>): Promise<T> {
   }
 }
 
-async function writeEntry<T>(
+const writeEntry = <T>(
   prisma: PrismaClient, content: ContentService, entryId: string, write: (tx: Prisma.TransactionClient) => Promise<T>,
-): Promise<T> {
-  const entry = await prisma.entry.findFirst({ where: { id: entryId, scope: 'catalog' }, select: { lemma: true, pos: true } });
-  if (!entry) throw new ContentRuleError('not-found');
-  return prisma.$transaction(async (tx) => {
-    await content.lockEntryKey(tx, entry.lemma, entry.pos);
-    return write(tx);
-  }, transactionOptions);
-}
+): Promise<T> => writeCatalogEntry(prisma, content, entryId, write, () => new ContentRuleError('not-found'));
 
 async function writeSense<T>(
   prisma: PrismaClient, content: ContentService, senseId: string, write: (tx: Prisma.TransactionClient) => Promise<T>,

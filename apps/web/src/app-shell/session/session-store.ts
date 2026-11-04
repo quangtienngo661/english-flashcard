@@ -33,6 +33,7 @@ export type RegisterBody = {
   birth_date: string;
   timezone: string;
   accept_terms: true;
+  turnstile_token?: string;
 };
 
 /** `expired`: E3 "Bạn cần đăng nhập lại."; `rate-limited`: E4 (unlike admin, the login screen says so). */
@@ -129,8 +130,8 @@ export class SessionStore {
     return this.bootstrapping;
   }
 
-  async login(email: string, password: string): Promise<void> {
-    await this.startSession('/v1/auth/login', { email, password, ...DEVICE });
+  async login(email: string, password: string, turnstileToken?: string): Promise<void> {
+    await this.startSession('/v1/auth/login', { email, password, ...(turnstileToken === undefined ? {} : { turnstile_token: turnstileToken }), ...DEVICE });
   }
 
   /** The API opened a session outside the login routes (Google sign-up completion): adopt its access token like a sign-in. */

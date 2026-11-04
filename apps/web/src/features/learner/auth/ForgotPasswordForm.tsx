@@ -9,6 +9,7 @@ import { hardReplace } from '@/app-shell/navigate';
 import { writePendingEmail } from '@/app-shell/session/pending-email';
 import { useSession } from '@/app-shell/session/session-context';
 import { useSubmitOnce } from '@/app-shell/use-submit-once';
+import { useTurnstile } from '@/app-shell/use-turnstile';
 import { Button } from '@/app-ui/Button';
 import { TextField } from '@/app-ui/TextField';
 import { AuthCard, FormError } from './AuthCard';
@@ -22,9 +23,15 @@ export function ForgotPasswordForm() {
   const { store } = useSession();
   const [email, setEmail] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const bot = useTurnstile();
 
   const { submit, busy } = useSubmitOnce(async () => {
-    await createApiClient({ send: store!.send }).post('/v1/auth/otp', { purpose: 'reset_password', email: email.trim() });
+    try {
+      await createApiClient({ send: store!.send }).post('/v1/auth/otp', { purpose: 'reset_password', email: email.trim(), turnstile_token: bot.token });
+    } catch (failure) {
+      bot.reset();
+      throw failure;
+    }
     // Session storage, not the URL: the address would sit in the browser history and in request logs (UW-1).
     writePendingEmail(email.trim());
     hardReplace(`/${locale}/app/reset-password`);
@@ -32,6 +39,7 @@ export function ForgotPasswordForm() {
 
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
+    if (bot.token === null) return;
     setError(null);
     try {
       await submit();
@@ -47,8 +55,9 @@ export function ForgotPasswordForm() {
     <AuthCard title={t('forgot.title')} intro={intro} onBack={() => hardReplace(`/${locale}/app/login`)}>
       <form onSubmit={onSubmit} noValidate className="flex flex-col gap-4">
         <TextField label={t('email')} type="email" value={email} onChange={setEmail} autoComplete="email" spellCheck={false} />
+        {bot.widget}
         <FormError message={error} />
-        <Button type="submit" variant="sticker" size="lg" isPending={busy} isDisabled={!store || !email.trim()}>
+        <Button type="submit" variant="sticker" size="lg" isPending={busy} isDisabled={!store || !email.trim() || bot.token === null}>
           {t('forgot.submit')}
         </Button>
       </form>

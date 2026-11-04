@@ -12,7 +12,8 @@ import {
 import { AI_DAY_ZONE } from './entitlements.constants.js';
 import type { AiPool, LimitKey, Pool, SubscriptionStatus } from './entitlements.types.js';
 import type { Refusal } from './refusal.js';
-import { aiDay, cycleAt } from './rules/cycle.js';
+import { aiCycle, aiWindow, endedSinceOf } from './rules/ai-cycle.js';
+import { aiDay } from './rules/cycle.js';
 import { continuousProUntil } from './orders/period-window.js';
 import { planNumbers } from './plan-numbers.js';
 import { effectiveStatus, resolve, type Resolved } from './rules/plan-rules.js';
@@ -132,12 +133,12 @@ export class EntitlementsService {
     if (!profile) return null;
     const { entitlements } = await this.settings.get();
     const now = this.clock.now();
-    const { subscriptions, grants, prepaidPeriods } = await this.sources.load(this.prisma, userId, now);
+    const { subscriptions, grants, prepaidPeriods, ended } = await this.sources.load(this.prisma, userId, now, endedSinceOf(profile.timezone, now));
     const resolved = resolve({
       subscriptions, grants, prepaidPeriods, numbers: planNumbers(entitlements), graceDays: entitlements.graceDays, now,
     });
 
-    const cycle = resolved.anchor ? cycleAt(resolved.anchor, now) : null;
+    const cycle = aiWindow({ resolved, subscriptions, grants, ended, graceDays: entitlements.graceDays, zone: profile.timezone, now });
     const pool = (limit: number, used: number, resetsAt: Date | null) => ({
       limit, used, remaining: Math.max(0, limit - used), resets_at: resetsAt?.toISOString() ?? null,
     });
@@ -153,6 +154,8 @@ export class EntitlementsService {
     const feature = (name: AiPool) => resolved.limits[name] > 0
       ? { allowed: true, reason: null } : { allowed: false, reason: 'plan-required' as const };
     const cap = await this.usage.capUsed(this.prisma, aiDay(now), now);
+    // A Free account is also held by the Free accounts' own cap of the day (design 6.4); 0 holds it whatever was used.
+    const freeCapReached = resolved.plan === 'free' && (await this.freeCapReached(entitlements.freeAiDailyCap, now));
 
     const sourceViews: EntitlementsSnapshot['sources'] = [];
     for (const sub of subscriptions) {
@@ -188,12 +191,17 @@ export class EntitlementsService {
       sources: sourceViews,
       pools,
       features: { 'ai.practice': feature('ai_practice'), 'ai.lookup': feature('ai_lookup') },
-      ai_available: { enabled: entitlements.aiEnabled, cap_reached: entitlements.aiDailyCap !== null && cap.confirmed + cap.reserved >= entitlements.aiDailyCap },
+      ai_available: {
+        enabled: entitlements.aiEnabled,
+        cap_reached: (entitlements.aiDailyCap !== null && cap.confirmed + cap.reserved >= entitlements.aiDailyCap) || freeCapReached,
+      },
       ads: {
         show: entitlements.adsEnabled && resolved.plan === 'free',
         interstitial_per_day: entitlements.adsInterstitialPerDay, min_interval_minutes: entitlements.adsMinIntervalMinutes,
       },
-      trial_eligible: profile.email_verified && !(await this.sources.trialUsed(this.prisma, userId)),
+      // No new trial (launch prep A, design 6.9): the only provider that starts one is the fake one. The trial code and
+      // `sources.trialUsed` stay for a self-renewing provider; the field stays so clients keep reading it.
+      trial_eligible: false,
       upcoming_periods: prepaidPeriods.filter((period) => period.startsAt > now)
         .map((period) => ({ id: period.id, starts_at: period.startsAt.toISOString(), ends_at: period.endsAt.toISOString() })),
       pro_until: proUntil?.toISOString() ?? null,
@@ -260,7 +268,8 @@ export class EntitlementsService {
       if (resolved.plan !== 'pro') continue;
       pro.push({
         userId, limits: { ai_practice: resolved.limits.ai_practice, ai_lookup: resolved.limits.ai_lookup },
-        cycle: resolved.anchor ? cycleAt(resolved.anchor, now) : null,
+        // Only Pro accounts are counted here, and a Pro account has an anchor or no window: no zone and no ended sources needed.
+        cycle: aiCycle(resolved, 'UTC', now, null),
       });
     }
     // No cycle (a Pro source without an anchor) means nothing was counted, as in `snapshot`.
@@ -271,6 +280,12 @@ export class EntitlementsService {
       ...proUsageSpread(pro.map(({ userId, limits }) => ({ limits, used: used.get(userId) ?? none }))),
       truncated: candidates.length > AI_USAGE_PRO_LEARNER_CAP,
     };
+  }
+
+  private async freeCapReached(cap: number, now: Date): Promise<boolean> {
+    if (cap === 0) return true;
+    const free = await this.usage.capUsedFree(this.prisma, aiDay(now), now);
+    return free.confirmed + free.reserved >= cap;
   }
 
   private async resolve(db: Db, userId: string, settings: AppSettings['entitlements'], now: Date): Promise<Resolved> {

@@ -1,8 +1,8 @@
-import { screen, waitFor, within } from '@testing-library/react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import vi from '../../../messages/vi.json';
-import { makeMe, problem, type Call } from '../../auth/test-support';
+import { makeMe, problem, rateLimited, type Call } from '../../auth/test-support';
 import { ME_ADMIN, renderApp } from '../staff/test-utils';
 
 const t = vi.users;
@@ -121,6 +121,28 @@ describe('user detail', { timeout: 20_000 }, () => {
     renderApp(`/users/${LAN_ID}`, { [LIST]: () => json(page([])), [ONE]: () => json(detail()) }, { ...ME_ADMIN, id: LAN_ID });
     expect(await screen.findByText('14/5/2008')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: t.detail.lock })).not.toBeInTheDocument();
+  });
+
+  it('LA2#8 (A6): a NUL typed or pasted into the search box is dropped; the URL and the request carry no NUL and the API is not asked for a 400', async () => {
+    const r = renderApp('/users', {
+      [LIST]: () => json(page([user()])),
+      'GET /v1/admin/users?q=ab&page_size=20': () => json(page([user()])),
+    });
+    await screen.findAllByText('lan@example.com');
+    fireEvent.change(screen.getByLabelText(t.search), { target: { value: 'a\u0000b' } });
+    await waitFor(() => expect(r.count('GET', '/v1/admin/users?q=ab&page_size=20')).toBe(1));
+    expect(r.router.state.location.search).toBe('?q=ab');
+    expect(r.calls.some((c) => c.path.includes('%00') || c.path.includes('\u0000'))).toBe(false);
+  });
+
+  it('LA2#9 (A6): when locking is rate limited the dialog counts down the Retry-After seconds and the button waits', async () => {
+    open({ [ONE]: () => json(detail()), [LOCK]: () => rateLimited(30) });
+    await userEvent.click(await screen.findByRole('button', { name: t.detail.lock }));
+    const dialog = await screen.findByRole('dialog');
+    await userEvent.type(within(dialog).getByLabelText(t.lock.reason), 'spam');
+    await userEvent.click(within(dialog).getByRole('button', { name: t.lock.confirm }));
+    const waiting = await within(dialog).findByRole('button', { name: vi.errors.retryIn.replace('{seconds}', '30') });
+    expect(waiting).toBeDisabled();
   });
 
   it('§6.10: the lock dialog has a one-line reason (1–500), sends it and shows the new lock line', async () => {

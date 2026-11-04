@@ -6,6 +6,7 @@ import { SETTINGS_DEFAULTS, type AppSettings } from '../settings/index.js';
 import { EntitlementsService } from './entitlements.service.js';
 import { refusalProblem } from './refusal.js';
 import type { GrantSource, PrepaidSource, SubscriptionSource } from './rules/plan-rules.js';
+import type { EndedSources } from './rules/source-ends.js';
 
 const USER = '00000000-0000-4000-8000-000000000001';
 const NOW = new Date('2026-11-10T05:00:00Z'); // 12:00 in Vietnam
@@ -33,6 +34,9 @@ function limitsGrant(limits: GrantSource['limits']): GrantSource {
   };
 }
 
+/** LA3#11: with both Free AI numbers at 0 the Free plan has no AI, which is what these older tests pin (the default is 15 and 5 since launch prep A). */
+const FREE_AI_OFF = { freeAiPracticePerCycle: 0, freeAiLookupPerCycle: 0 };
+
 type Setup = {
   entitlements?: Partial<AppSettings['entitlements']>;
   profile?: Profile | null;
@@ -42,6 +46,9 @@ type Setup = {
   practiceUsed?: number;
   aiUsed?: number;
   capUsed?: { confirmed: number; reserved: number };
+  /** Launch prep A: the Free accounts' count of the day and the sources that already ended. */
+  capUsedFree?: { confirmed: number; reserved: number };
+  ended?: Partial<EndedSources>;
   trialUsed?: boolean;
 };
 
@@ -53,13 +60,17 @@ function setup(input: Setup = {}) {
   };
   const identity = { getProfile: vi.fn(async () => (input.profile === undefined ? profile() : input.profile)) };
   const sources = {
-    load: vi.fn(async () => ({ subscriptions: input.subscriptions ?? [], grants: input.grants ?? [], prepaidPeriods: input.prepaidPeriods ?? [] })),
+    load: vi.fn(async (_db?: unknown, _userId?: string, _now?: Date, _endedSince?: Date) => ({
+      subscriptions: input.subscriptions ?? [], grants: input.grants ?? [], prepaidPeriods: input.prepaidPeriods ?? [],
+      ended: { subscriptions: [], grants: [], prepaidPeriods: [], ...input.ended },
+    })),
     trialUsed: vi.fn(async () => input.trialUsed ?? false),
   };
   const usage = {
     practiceUsed: vi.fn(async () => input.practiceUsed ?? 0),
     aiUsed: vi.fn(async () => input.aiUsed ?? 0),
     capUsed: vi.fn(async () => input.capUsed ?? { confirmed: 0, reserved: 0 }),
+    capUsedFree: vi.fn(async () => input.capUsedFree ?? { confirmed: 0, reserved: 0 }),
   };
   const ledger = {
     reserve: vi.fn(async () => ({ state: 'confirmed' })), confirm: vi.fn(async () => ({ state: 'confirmed' })),
@@ -72,8 +83,8 @@ function setup(input: Setup = {}) {
 }
 
 describe('EntitlementsService.snapshot', () => {
-  it('B5#1: a new user\'s snapshot is free, practice 3/day, AI 0, both features plan-required, ads.show false, trial_eligible true when verified', async () => {
-    const { service } = setup();
+  it('B5#1: a new user\'s snapshot is free, practice 3/day, AI 0 (Free AI switched off), both features plan-required, ads.show false, trial_eligible false (trial is off)', async () => {
+    const { service } = setup({ entitlements: FREE_AI_OFF });
     const snapshot = await service.snapshot(USER);
     expect(snapshot).toEqual({
       plan: 'free',
@@ -86,13 +97,14 @@ describe('EntitlementsService.snapshot', () => {
       features: { 'ai.practice': { allowed: false, reason: 'plan-required' }, 'ai.lookup': { allowed: false, reason: 'plan-required' } },
       ai_available: { enabled: true, cap_reached: false },
       ads: { show: false, interstitial_per_day: 3, min_interval_minutes: 10 },
-      trial_eligible: true,
+      trial_eligible: false,
       upcoming_periods: [],
       pro_until: null,
     });
   });
 
-  it('trial_eligible is false for an unverified email or a user who already had a trial', async () => {
+  it('LA3#13, design 6.9: trial_eligible is false for everyone (no provider gives a trial now): a verified new learner, an unverified one, one who had a trial', async () => {
+    expect((await setup().service.snapshot(USER))?.trial_eligible).toBe(false);
     expect((await setup({ profile: profile({ email_verified: false }) }).service.snapshot(USER))?.trial_eligible).toBe(false);
     expect((await setup({ trialUsed: true }).service.snapshot(USER))?.trial_eligible).toBe(false);
   });
@@ -111,7 +123,7 @@ describe('EntitlementsService.snapshot', () => {
   });
 
   it('B5E41/B5E91: a staff user without grants is free', async () => {
-    const snapshot = await setup({ profile: profile({ staff_role: 'admin' }) }).service.snapshot(USER);
+    const snapshot = await setup({ profile: profile({ staff_role: 'admin' }), entitlements: FREE_AI_OFF }).service.snapshot(USER);
     expect(snapshot?.plan).toBe('free');
     expect(snapshot?.pools.practice_sessions.limit).toBe(3);
     expect(snapshot?.pools.ai_practice.limit).toBe(0);
@@ -196,7 +208,7 @@ describe('EntitlementsService.check', () => {
   });
 
   it('with a transaction, an AI feature reads settings and sources through it (no second connection)', async () => {
-    const { service, settings, sources } = setup();
+    const { service, settings, sources } = setup({ entitlements: FREE_AI_OFF });
     const tx = { name: 'tx' };
     expect(await service.check(USER, 'ai.practice', tx as never)).toEqual({ allowed: false, reason: 'plan-required' });
     expect(settings.get).toHaveBeenCalledWith(tx);
@@ -204,7 +216,7 @@ describe('EntitlementsService.check', () => {
   });
 
   it('B5#20/B5E31: ai.practice limit 0 → plan-required; a Pro user without it is allowed', async () => {
-    expect(await setup().service.check(USER, 'ai.practice')).toEqual({ allowed: false, reason: 'plan-required' });
+    expect(await setup({ entitlements: FREE_AI_OFF }).service.check(USER, 'ai.practice')).toEqual({ allowed: false, reason: 'plan-required' });
     const zeroed = setup({ subscriptions: [proSubscription()], grants: [limitsGrant({ ai_practice_per_cycle: 0 })] });
     expect(await zeroed.service.check(USER, 'ai.practice')).toEqual({ allowed: false, reason: 'plan-required' });
     expect(await zeroed.service.check(USER, 'ai.lookup')).toEqual({ allowed: true });
@@ -403,5 +415,79 @@ describe('EntitlementsService.snapshot — prepaid periods (launch prep B design
 
   it('a user with a running period has no ads (ads.show needs the Free plan)', async () => {
     expect((await setup({ entitlements: { adsEnabled: true }, prepaidPeriods: [period()] }).service.snapshot(USER))?.ads.show).toBe(false);
+  });
+});
+
+// ---- Launch prep A, design 6: the snapshot of a Free account --------------------------------------------------------------------
+const MONTH = { start: new Date('2026-10-31T17:00:00Z'), end: new Date('2026-11-30T17:00:00Z') }; // November for Lan in Vietnam
+const wasPro = (endedAt: string): SubscriptionSource => ({ ...proSubscription(), status: 'expired', endedAt: new Date(endedAt) });
+
+describe('EntitlementsService.snapshot for a Free account (launch prep A, design 6.2, 6.4)', () => {
+  it('LA3#13: a new learner has AI pools of 15 and 5 that reset at the first of next month in her zone, and both AI features open', async () => {
+    const { service } = setup();
+    const snapshot = await service.snapshot(USER);
+    expect(snapshot?.plan).toBe('free');
+    expect(snapshot?.pools.ai_practice).toEqual({ limit: 15, used: 0, remaining: 15, resets_at: '2026-11-30T17:00:00.000Z' });
+    expect(snapshot?.pools.ai_lookup).toEqual({ limit: 5, used: 0, remaining: 5, resets_at: '2026-11-30T17:00:00.000Z' });
+    expect(snapshot?.features).toEqual({ 'ai.practice': { allowed: true, reason: null }, 'ai.lookup': { allowed: true, reason: null } });
+  });
+
+  it('the units are counted in the calendar month, and the sources that ended since the first of the month are asked for', async () => {
+    const { service, usage, sources, prisma } = setup({ aiUsed: 4 });
+    expect((await service.snapshot(USER))?.pools.ai_practice).toMatchObject({ used: 4, remaining: 11 });
+    expect(usage.aiUsed).toHaveBeenCalledWith(prisma, USER, 'ai_practice', MONTH, NOW);
+    expect(sources.load).toHaveBeenCalledWith(prisma, USER, NOW, MONTH.start);
+  });
+
+  it('LA3#3: at 00:00 on 01/12 in Vietnam she has a new window and the count starts again', async () => {
+    const { service, usage, clock } = setup();
+    clock.set(new Date('2026-11-30T17:00:00Z'));
+    expect((await service.snapshot(USER))?.pools.ai_practice.resets_at).toBe('2026-12-31T17:00:00.000Z');
+    expect(usage.aiUsed).toHaveBeenCalledWith(expect.anything(), USER, 'ai_practice',
+      { start: new Date('2026-11-30T17:00:00Z'), end: new Date('2026-12-31T17:00:00Z') }, new Date('2026-11-30T17:00:00Z'));
+  });
+
+  it('LA3#6: after a Pro that ended on 08/11 her window starts then, and resets_at stays the first of next month', async () => {
+    const { service, usage, prisma } = setup({ ended: { subscriptions: [wasPro('2026-11-08T03:00:00Z')], grants: [] } });
+    expect((await service.snapshot(USER))?.pools.ai_practice.resets_at).toBe('2026-11-30T17:00:00.000Z');
+    expect(usage.aiUsed).toHaveBeenCalledWith(prisma, USER, 'ai_practice', { start: new Date('2026-11-08T03:00:00Z'), end: MONTH.end }, NOW);
+  });
+
+  it('LA3E19: a grant that already ended is not in the list of sources', async () => {
+    const ended: GrantSource = { ...limitsGrant({ ai_practice_per_cycle: 50 }), endsAt: new Date('2026-11-09T00:00:00Z') };
+    const snapshot = await setup({ ended: { subscriptions: [], grants: [ended] } }).service.snapshot(USER);
+    expect(snapshot?.sources).toEqual([]);
+  });
+
+  it('LA3E6: a Pro account has its own cycle from its anchor, and nothing about a calendar month', async () => {
+    const { service, usage, prisma } = setup({ subscriptions: [proSubscription()] });
+    expect((await service.snapshot(USER))?.pools.ai_practice).toMatchObject({ limit: 300, resets_at: '2026-12-01T00:00:00.000Z' });
+    expect(usage.aiUsed).toHaveBeenCalledWith(prisma, USER, 'ai_practice',
+      { start: new Date('2026-11-01T00:00:00Z'), end: new Date('2026-12-01T00:00:00Z') }, NOW);
+  });
+
+  it('LA3#10: the Free accounts together reached free_ai_daily_cap → cap_reached for a Free account, not for a Pro one', async () => {
+    const free = setup({ capUsedFree: { confirmed: 497, reserved: 3 } });
+    expect((await free.service.snapshot(USER))?.ai_available).toEqual({ enabled: true, cap_reached: true });
+    expect(free.usage.capUsedFree).toHaveBeenCalledWith(free.prisma, '2026-11-10', NOW);
+    const paid = setup({ subscriptions: [proSubscription()], capUsedFree: { confirmed: 5_000, reserved: 0 } });
+    expect((await paid.service.snapshot(USER))?.ai_available).toEqual({ enabled: true, cap_reached: false });
+    expect(paid.usage.capUsedFree).not.toHaveBeenCalled();
+  });
+
+  it('LA3E20: free_ai_daily_cap 0 → cap_reached for a Free account', async () => {
+    expect((await setup({ entitlements: { freeAiDailyCap: 0 } }).service.snapshot(USER))?.ai_available).toEqual({ enabled: true, cap_reached: true });
+  });
+
+  it('LA3#15: the system cap reached → cap_reached for a Free account as for everyone', async () => {
+    const reached = setup({ entitlements: { aiDailyCap: 10 }, capUsed: { confirmed: 10, reserved: 0 } });
+    expect((await reached.service.snapshot(USER))?.ai_available.cap_reached).toBe(true);
+  });
+
+  it('LA3#11: free_ai_practice_per_cycle 0 → the pool is 0 (it still shows the window, the lookups use it), and the feature is plan-required, as before', async () => {
+    const snapshot = await setup({ entitlements: { freeAiPracticePerCycle: 0 } }).service.snapshot(USER);
+    expect(snapshot?.pools.ai_practice).toEqual({ limit: 0, used: 0, remaining: 0, resets_at: '2026-11-30T17:00:00.000Z' });
+    expect(snapshot?.features['ai.practice']).toEqual({ allowed: false, reason: 'plan-required' });
+    expect(snapshot?.features['ai.lookup']).toEqual({ allowed: true, reason: null });
   });
 });

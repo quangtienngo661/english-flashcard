@@ -12,6 +12,7 @@ import { clearPendingEmail, clearPendingPassword, readPendingEmail, readPendingP
 import { useSession } from '@/app-shell/session/session-context';
 import type { Me } from '@/app-shell/session/session-store';
 import { useSubmitOnce } from '@/app-shell/use-submit-once';
+import { useTurnstile } from '@/app-shell/use-turnstile';
 import { Button } from '@/app-ui/Button';
 import { showToast } from '@/app-ui/Toast';
 import { TextField } from '@/app-ui/TextField';
@@ -107,8 +108,14 @@ export function VerifyEmailForm() {
   }
 
   // One request per press: the API refuses a second code within 60 s.
+  const bot = useTurnstile();
   const resendPress = useSubmitOnce(async () => {
-    await createApiClient({ send: store!.send }).post('/v1/auth/otp', { purpose: 'verify_email', email });
+    try {
+      await createApiClient({ send: store!.send }).post('/v1/auth/otp', { purpose: 'verify_email', email, turnstile_token: bot.token });
+    } finally {
+      // This form stays on the page whatever the answer, so the spent token is always replaced.
+      bot.reset();
+    }
     setResendAt(Date.now() + RESEND_AFTER_S * 1000);
     setNow(Date.now());
     showToast(t('verify.resent'), 'success');
@@ -179,13 +186,14 @@ export function VerifyEmailForm() {
         ) : (
           <button
             type="button"
-            disabled={resendPress.busy || !email}
+            disabled={resendPress.busy || !email || bot.token === null}
             onClick={() => void resend()}
             className="w-fit text-caption font-semibold text-primary underline underline-offset-2 disabled:text-muted disabled:no-underline"
           >
             {t('verify.resend')}
           </button>
         )}
+        {bot.widget}
         <FormError message={error} />
         <Button type="submit" variant="sticker" size="lg" isPending={busy} isDisabled={!complete || !store || !email || !password}>
           {t('verify.submit')}

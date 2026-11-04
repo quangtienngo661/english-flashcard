@@ -66,23 +66,13 @@ type Props = {
   usage: { needed: number; remaining: number } | null;
 };
 
-/** K/70, K/70b: the "Kiểu câu có AI" switch with the Pro label; on shows the three AI types and the credit line (D10). */
+/** K/70, K/70b: the "Kiểu câu có AI" switch (locked with the Pro label only when the account has no AI); on shows the three AI types and the credit line (D10). */
 export function AiTypesToggle({ allowed, on, ownOn, onChange, chosen, onChoose, usage }: Props) {
   const t = useTranslations('App.practice.customize');
-  const tUi = useTranslations('App.ui');
   return (
     <div className="flex flex-col gap-2">
       <Switch
-        label={
-          allowed ? (
-            <span className="flex items-center gap-2">
-              {t('aiToggle')}
-              <span className="rounded-full bg-primary-soft px-2 py-0.5 text-caption font-semibold text-primary">{tUi('proBadge')}</span>
-            </span>
-          ) : (
-            t('aiToggle')
-          )
-        }
+        label={t('aiToggle')}
         isSelected={allowed && on}
         onChange={onChange}
         locked={!allowed}
