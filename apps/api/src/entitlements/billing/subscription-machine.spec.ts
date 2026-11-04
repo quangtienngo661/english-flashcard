@@ -644,3 +644,42 @@ describe('eventKind', () => {
     },
   );
 });
+
+// B5-5: the cycle of the AI quota starts at the earlier of the period start and the moment of the event, so a store that
+// announces the next period before it begins does not make the learner's uses of the last 24 hours vanish from the count.
+describe('applyEvent — quota anchor is min(currentPeriodStart, occurredAt) (B5-5, LA2#3)', () => {
+  const TOMORROW = at('2026-11-16T10:00:00Z'); // OCCURRED is 2026-11-15T10:00Z
+  const renewedTomorrow = event('renewed', {
+    transactionId: 'tx-new', interval: 'month', currentPeriodStart: TOMORROW, currentPeriodEnd: at('2026-12-16T10:00:00Z'),
+  });
+
+  it.each([['trialing'], ['expired']] as const)('renewed on a %s row (a new anchor): the anchor is the event time', (from) => {
+    const result = applyEvent(ROWS[from], renewedTomorrow, ctx);
+    expect(result.anchorReset).toBe(true);
+    expect(result.next?.quotaAnchorAt).toEqual(OCCURRED);
+  });
+
+  it('renewed with no row yet (billing_started_missing): the new row is anchored at the event time', () => {
+    const result = applyEvent(null, renewedTomorrow, ctx);
+    expect(result.outcome).toBe('changed');
+    expect(result.next?.quotaAnchorAt).toEqual(OCCURRED);
+  });
+
+  it('plan_changed paid while in grace: the anchor is the event time', () => {
+    const changed = event('plan_changed', {
+      interval: 'year', currentPeriodStart: TOMORROW, currentPeriodEnd: at('2027-11-16T10:00:00Z'), transactionId: 'tx-year',
+    });
+    const result = applyEvent(ROWS.grace, changed, ctx);
+    expect(result.anchorReset).toBe(true);
+    expect(result.next?.quotaAnchorAt).toEqual(OCCURRED);
+  });
+
+  it('a period that started before the event keeps its own start as the anchor (all three places)', () => {
+    const early = at('2026-11-01T00:00:00Z');
+    const renewedEarly = event('renewed', { transactionId: 'tx-new', interval: 'month', currentPeriodStart: early, currentPeriodEnd: at('2026-12-01T00:00:00Z') });
+    expect(applyEvent(ROWS.expired, renewedEarly, ctx).next?.quotaAnchorAt).toEqual(early);
+    expect(applyEvent(null, renewedEarly, ctx).next?.quotaAnchorAt).toEqual(early);
+    const changedEarly = event('plan_changed', { interval: 'year', currentPeriodStart: early, currentPeriodEnd: at('2027-11-01T00:00:00Z'), transactionId: 'tx-year' });
+    expect(applyEvent(ROWS.grace, changedEarly, ctx).next?.quotaAnchorAt).toEqual(early);
+  });
+});
