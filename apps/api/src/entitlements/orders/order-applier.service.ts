@@ -175,6 +175,8 @@ export class OrderApplier {
       amountMinor: BigInt(order.amount), currency: order.currency, periodMonths: order.periodMonths,
       occurredAt: now, periodStart: startsAt, periodEnd: endsAt,
     });
+    // One receipt for every payment that opens a period: the first, a second transfer (T8) and a staff confirmation (T11) alike.
+    await this.orders.insertReceiptNotice(tx, { userId: order.userId, paymentId, startsAt, now });
     return period.id;
   }
 }

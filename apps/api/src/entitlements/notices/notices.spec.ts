@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { FakeClock } from '../../common/clock/clock.js';
 import { AppLogger, type LogEntry } from '../../common/logging/app-logger.js';
 import { PAYMENT_MAIL_SHARE } from '../../common/mail/mail-budget.service.js';
+import type { GrantSource, PrepaidSource } from '../rules/plan-rules.js';
 import { NoticePlanner } from './notice-planner.service.js';
 import { NoticeSender } from './notice-sender.service.js';
 
@@ -20,8 +21,16 @@ function inRange(value: Date | null, range: { gt: Date; lte: Date }): boolean {
   return value !== null && value > range.gt && value <= range.lte;
 }
 
-function setup(opts: { subs?: Sub[]; renewalDays?: number | null; budget?: boolean; verified?: boolean; send?: (to: string) => Promise<void> } = {}) {
+type Period = { id: string; userId: string; startsAt: Date; endsAt: Date; revokedAt: Date | null };
+type Receipt = { reference: string; order: { periodMonths: number; amountMinor: bigint; description: string }; period: { startsAt: Date; endsAt: Date } | null };
+
+function setup(opts: {
+  subs?: Sub[]; renewalDays?: number | null; budget?: boolean; verified?: boolean; send?: (to: string) => Promise<void>;
+  periods?: Period[]; grants?: Array<{ userId: string; startsAt: Date; endsAt: Date }>; receipts?: Record<string, Receipt>;
+} = {}) {
   const subs = opts.subs ?? [];
+  const periods = opts.periods ?? [];
+  const grants = opts.grants ?? [];
   const notices: Notice[] = [];
   const lockedByOther = new Set<string>();
   const calls: string[] = [];
@@ -46,6 +55,9 @@ function setup(opts: { subs?: Sub[]; renewalDays?: number | null; budget?: boole
     subscription: {
       findUnique: async ({ where }: { where: { id: string } }) => subs.find((s) => s.id === where.id) ?? null,
     },
+    prepaidPeriod: {
+      findUnique: async ({ where }: { where: { id: string } }) => periods.find((p) => p.id === where.id) ?? null,
+    },
   };
   const prisma = {
     subscription: {
@@ -57,6 +69,14 @@ function setup(opts: { subs?: Sub[]; renewalDays?: number | null; budget?: boole
         if (where.currentPeriodEnd && !inRange(s.currentPeriodEnd, where.currentPeriodEnd as { gt: Date; lte: Date })) return false;
         return true;
       }),
+    },
+    prepaidPeriod: {
+      findMany: async ({ where }: { where: { revokedAt: null; endsAt: { gt: Date; lte: Date } } }) => periods
+        .filter((p) => p.revokedAt === null && inRange(p.endsAt, where.endsAt))
+        .map((p) => ({ id: p.id, userId: p.userId, endsAt: p.endsAt })),
+    },
+    billingOrderPayment: {
+      findUnique: async ({ where }: { where: { id: string } }) => opts.receipts?.[where.id] ?? null,
     },
     entitlementNotice: {
       createMany: async ({ data, skipDuplicates }: { data: Array<Omit<Notice, 'id' | 'attempts' | 'lastErrorAt' | 'sentAt'>>; skipDuplicates: boolean }) => {
@@ -98,11 +118,23 @@ function setup(opts: { subs?: Sub[]; renewalDays?: number | null; budget?: boole
   const logs: LogEntry[] = [];
   const logger = new AppLogger({ write: (entry) => logs.push(entry) });
   const clock = new FakeClock(NOW);
-  const planner = new NoticePlanner(prisma as never, settings as never);
+  // The sources the Pro run is read from: the learner's grants and live prepaid periods (the real repository's shape).
+  const sourcesOf = (userId: string, now: Date) => ({
+    subscriptions: [],
+    grants: grants.filter((g) => g.userId === userId && g.endsAt > now).map((g) => ({ kind: 'plan', startsAt: g.startsAt, endsAt: g.endsAt, revokedAt: null }) as unknown as GrantSource),
+    prepaidPeriods: periods.filter((p) => p.userId === userId && p.revokedAt === null && p.endsAt > now)
+      .map((p) => ({ id: p.id, startsAt: p.startsAt, endsAt: p.endsAt, revokedAt: p.revokedAt }) as unknown as PrepaidSource),
+  });
+  const sources = {
+    load: vi.fn(async (_db: unknown, userId: string, now: Date) => sourcesOf(userId, now)),
+    loadMany: vi.fn(async (_db: unknown, userIds: string[], now: Date) => new Map(userIds.map((id) => [id, sourcesOf(id, now)]))),
+  };
+  const config = { learnerAppUrl: 'https://app.wordmet.com/' };
+  const planner = new NoticePlanner(prisma as never, settings as never, sources as never);
   const scheduler = { register: vi.fn() };
   const sender = new NoticeSender(prisma as never, clock, planner, identity as never, budget as never, mailer as never,
-    scheduler as never, logger);
-  return { planner, sender, notices, subs, sent, logs, budget, mailer, calls, lockedByOther, scheduler };
+    scheduler as never, logger, sources as never, config as never);
+  return { planner, sender, notices, subs, periods, grants, sent, logs, budget, mailer, calls, lockedByOther, scheduler, sources };
 }
 
 const trialing = (fields: Partial<Sub> = {}): Sub => ({
@@ -247,5 +279,175 @@ describe('NoticeSender.send (design §14, R9, R18)', () => {
     expect(logs).toContainEqual(expect.objectContaining({ event: 'entitlement_notice_sent', notice_id: ok.notices[0].id, kind: 'trial_reminder' }));
     expect(logs).toContainEqual(expect.objectContaining({ event: 'entitlement_notice_failed', error_kind: 'transient' }));
     expect(JSON.stringify(logs)).not.toContain('lan@example.com');
+  });
+});
+
+// Review of design §3.10: the email for the last prepaid period of a learner, and the receipt of every payment that opens one.
+const END = new Date('2026-11-26T17:00:00.000Z'); // 27/11 00:00 in Vietnam, 6.6 days after NOW: the last covered day is 26/11
+const period = (fields: Partial<Period> = {}): Period => ({
+  id: 'per-1', userId: USER, startsAt: new Date('2026-10-27T17:00:00.000Z'), endsAt: END, revokedAt: null, ...fields,
+});
+
+describe('NoticePlanner.plan: expiry_notice (design §3.10)', () => {
+  it('LB1A7: the last period of Lan ends within 7 days → one row (subject = the period, period_key = ends_at, window ends at ends_at); a second run adds none', async () => {
+    const { planner, notices } = setup({ periods: [period()] });
+    await planner.plan(NOW);
+    await planner.plan(NOW);
+    expect(notices).toHaveLength(1);
+    expect(notices[0]).toMatchObject({
+      kind: 'expiry_notice', subjectKey: 'per-1', periodKey: END.toISOString(), state: 'pending', recipientUserId: USER, userId: USER,
+      windowEndsAt: END, dueAt: new Date(END.getTime() - 7 * DAY),
+    });
+  });
+
+  it('a period ending in 8 days gets no row yet; neither does a revoked one, nor one already over', async () => {
+    const { planner, notices } = setup({ periods: [
+      period({ id: 'far', endsAt: plus(8) }), period({ id: 'revoked', revokedAt: plus(-1) }), period({ id: 'over', endsAt: plus(-1) }),
+    ] });
+    await planner.plan(NOW);
+    expect(notices).toEqual([]);
+  });
+
+  it('the setting renewal_notice_days_before is shared: at 9 days a period ending in 8 days gets its row', async () => {
+    const { planner, notices } = setup({ renewalDays: 9, periods: [period({ endsAt: plus(8) })] });
+    await planner.plan(NOW);
+    expect(notices).toHaveLength(1);
+    expect(notices[0]).toMatchObject({ dueAt: plus(-1), windowEndsAt: plus(8) });
+  });
+
+  it('LB1A2: a following period that starts where this one ends covers it → no row (and the follower, ending later, is not due yet)', async () => {
+    const { planner, notices } = setup({ periods: [period(), period({ id: 'per-2', startsAt: END, endsAt: plus(37) })] });
+    await planner.plan(NOW);
+    expect(notices).toEqual([]);
+  });
+
+  it('LB1E43: a Pro grant that starts where the period ends covers it too → no row; a grant with a gap does not', async () => {
+    const covered = setup({ periods: [period()], grants: [{ userId: USER, startsAt: END, endsAt: plus(30) }] });
+    await covered.planner.plan(NOW);
+    expect(covered.notices).toEqual([]);
+    const gap = setup({ periods: [period()], grants: [{ userId: USER, startsAt: new Date(END.getTime() + DAY), endsAt: plus(30) }] });
+    await gap.planner.plan(NOW);
+    expect(gap.notices).toHaveLength(1);
+  });
+
+  it('two learners each get their own row', async () => {
+    const { planner, notices } = setup({ periods: [period(), period({ id: 'per-b', userId: 'u-2' })] });
+    await planner.plan(NOW);
+    expect(notices.map((n) => n.recipientUserId).sort()).toEqual(['u-2', USER].sort());
+  });
+});
+
+describe('NoticeSender.send: expiry_notice and payment_receipt (design §3.10)', () => {
+  it('LB1A7: a due expiry_notice goes out in the learner language with the last covered day and the plans link, within the 95% ceiling', async () => {
+    const { planner, sender, notices, sent, budget } = setup({ periods: [period()] });
+    await planner.plan(new Date(END.getTime() - 7 * DAY));
+    await sender.send(NOW);
+    expect(budget.tryConsume).toHaveBeenCalledWith({ ceiling: PAYMENT_MAIL_SHARE });
+    expect(notices[0]).toMatchObject({ state: 'sent', sentAt: NOW });
+    expect(sent).toHaveLength(1);
+    expect(sent[0]).toMatchObject({ to: 'lan@example.com', subject: 'Your Wordmet Pro plan ends soon' });
+    expect(sent[0].text).toContain('November 26, 2026');
+    expect(sent[0].text).toContain('https://app.wordmet.com/en/app/plans');
+    expect(sent[0].text).not.toMatch(/App Store|Google Play|auto-renew|renews/i);
+  });
+
+  it('LB1E43: a period that follows was bought after planning → skipped (covered) at send time, nothing sent', async () => {
+    const ctx = setup({ periods: [period()] });
+    await ctx.planner.plan(NOW);
+    ctx.periods.push(period({ id: 'per-2', startsAt: END, endsAt: plus(37) }));
+    await ctx.sender.send(NOW);
+    expect(ctx.notices[0].state).toBe('skipped');
+    expect(ctx.sent).toEqual([]);
+    expect(ctx.budget.tryConsume).not.toHaveBeenCalled();
+    expect(ctx.logs).toContainEqual(expect.objectContaining({ event: 'entitlement_notice_skipped', reason: 'covered' }));
+  });
+
+  it('a period revoked or gone since planning → skipped, nothing sent', async () => {
+    for (const change of [(ctx: ReturnType<typeof setup>) => { ctx.periods[0].revokedAt = NOW; }, (ctx: ReturnType<typeof setup>) => { ctx.periods.length = 0; }]) {
+      const ctx = setup({ periods: [period()] });
+      await ctx.planner.plan(NOW);
+      change(ctx);
+      await ctx.sender.send(NOW);
+      expect(ctx.notices[0].state).toBe('skipped');
+      expect(ctx.sent).toEqual([]);
+      expect(ctx.logs).toContainEqual(expect.objectContaining({ event: 'entitlement_notice_skipped', reason: 'period-gone' }));
+    }
+  });
+
+  it('the claim does not mistake the new kinds for a trial email: no subscription with that id exists and the email still goes out', async () => {
+    const ctx = setup({ periods: [period()] });
+    await ctx.planner.plan(NOW);
+    await ctx.sender.send(NOW);
+    expect(ctx.logs).not.toContainEqual(expect.objectContaining({ reason: 'trial-denied' }));
+    expect(ctx.notices[0].state).toBe('sent');
+  });
+
+  it('LB1E44: the budget refused → failed, attempts + 1, retried the next run', async () => {
+    const ctx = setup({ periods: [period()], budget: false });
+    await ctx.planner.plan(NOW);
+    await ctx.sender.send(NOW);
+    expect(ctx.notices[0]).toMatchObject({ state: 'failed', attempts: 1, lastErrorAt: NOW });
+    ctx.budget.tryConsume.mockResolvedValue(true);
+    await ctx.sender.send(new Date(NOW.getTime() + 3_600_000));
+    expect(ctx.notices[0].state).toBe('sent');
+  });
+
+  const receiptRow = (over: Partial<Notice> = {}): Notice => ({
+    id: 'r-1', userId: USER, recipientUserId: USER, kind: 'payment_receipt', subjectKey: 'pay-1', periodKey: '2026-11-20T03:00:00.000Z', state: 'pending',
+    dueAt: NOW, windowEndsAt: plus(7), attempts: 0, lastErrorAt: null, sentAt: null, ...over,
+  });
+  const RECEIPTS = {
+    'pay-1': {
+      reference: 'FT26309ABC', order: { periodMonths: 3, amountMinor: 199000n, description: 'WM0XSNJGK' },
+      period: { startsAt: new Date('2026-11-20T03:00:00.000Z'), endsAt: END },
+    },
+  };
+
+  it('a payment_receipt names the period, the amount, the transfer note, the reference and both days, in the learner language', async () => {
+    const ctx = setup({ receipts: RECEIPTS });
+    ctx.notices.push(receiptRow());
+    await ctx.sender.send(NOW);
+    expect(ctx.notices[0]).toMatchObject({ state: 'sent', sentAt: NOW });
+    expect(ctx.sent).toHaveLength(1);
+    expect(ctx.sent[0].subject).toBe('Your Wordmet Pro receipt');
+    for (const part of ['3 months', '199,000', 'WM0XSNJGK', 'FT26309ABC', 'November 20, 2026', 'November 26, 2026', 'No refunds', 'https://app.wordmet.com/en/app/plans']) {
+      expect(ctx.sent[0].text, part).toContain(part);
+    }
+    expect(ctx.sent[0].text).not.toMatch(/App Store|Google Play|auto-renew|renews/i);
+    expect(ctx.budget.tryConsume).toHaveBeenCalledWith({ ceiling: PAYMENT_MAIL_SHARE });
+  });
+
+  it('a receipt whose payment (or period) is gone → skipped, nothing sent; one past its 7-day window → skipped', async () => {
+    const gone = setup({ receipts: {} });
+    gone.notices.push(receiptRow());
+    await gone.sender.send(NOW);
+    expect(gone.notices[0].state).toBe('skipped');
+    expect(gone.sent).toEqual([]);
+    expect(gone.logs).toContainEqual(expect.objectContaining({ event: 'entitlement_notice_skipped', reason: 'payment-gone' }));
+    const noPeriod = setup({ receipts: { 'pay-1': { ...RECEIPTS['pay-1'], period: null } } });
+    noPeriod.notices.push(receiptRow());
+    await noPeriod.sender.send(NOW);
+    expect(noPeriod.notices[0].state).toBe('skipped');
+    const late = setup({ receipts: RECEIPTS });
+    late.notices.push(receiptRow());
+    await late.sender.send(plus(8));
+    expect(late.notices[0].state).toBe('skipped');
+    expect(late.logs).toContainEqual(expect.objectContaining({ event: 'entitlement_notice_skipped', reason: 'window-passed' }));
+  });
+
+  it('a receipt is not an expiry notice: it is not skipped because Pro goes on after the period (a later period exists)', async () => {
+    const ctx = setup({ receipts: RECEIPTS, periods: [period(), period({ id: 'per-2', startsAt: END, endsAt: plus(37) })] });
+    ctx.notices.push(receiptRow());
+    await ctx.sender.send(NOW);
+    expect(ctx.notices[0].state).toBe('sent');
+  });
+
+  it('logs of the new kinds carry the notice id and kind, never the address, the reference or the transfer note', async () => {
+    const ctx = setup({ receipts: RECEIPTS });
+    ctx.notices.push(receiptRow());
+    await ctx.sender.send(NOW);
+    const text = JSON.stringify(ctx.logs);
+    expect(text).toContain('payment_receipt');
+    for (const secret of ['lan@example.com', 'FT26309ABC', 'WM0XSNJGK']) expect(text).not.toContain(secret);
   });
 });

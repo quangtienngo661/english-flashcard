@@ -25,6 +25,15 @@ export function continuousProUntil(spans: ProSpan[], now: Date): Date | null {
   return t === now ? null : t;
 }
 
+/**
+ * True when the unbroken Pro that covers `now` goes on past `endsAt`: a later period or a grant joined it. The expiry email is for the end of
+ * the run, not for every period in it (design §3.10).
+ */
+export function coveredBeyond(spans: ProSpan[], endsAt: Date, now: Date): boolean {
+  const until = continuousProUntil(spans, now);
+  return until !== null && until > endsAt;
+}
+
 function daysInMonth(year: number, monthIndex: number): number {
   return new Date(Date.UTC(year, monthIndex + 1, 0)).getUTCDate();
 }

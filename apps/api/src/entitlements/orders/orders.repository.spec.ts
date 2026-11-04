@@ -85,6 +85,20 @@ describe('OrdersRepository (query shapes; the data itself is checked by the paym
     });
   });
 
+  it('insertReceiptNotice writes one pending payment_receipt for the payment: due now, open for 7 days, keyed by the period start; a repeat adds none', async () => {
+    const createMany = vi.fn(async () => ({ count: 1 }));
+    const now = new Date('2026-11-05T03:02:00.000Z');
+    const startsAt = new Date('2026-11-05T03:02:00.000Z');
+    await repo.insertReceiptNotice({ entitlementNotice: { createMany } } as never, { userId: 'u1', paymentId: 'pay-1', startsAt, now });
+    expect(createMany).toHaveBeenCalledWith({
+      data: [{
+        userId: 'u1', recipientUserId: 'u1', kind: 'payment_receipt', subjectKey: 'pay-1', periodKey: '2026-11-05T03:02:00.000Z', state: 'pending',
+        dueAt: now, windowEndsAt: new Date('2026-11-12T03:02:00.000Z'),
+      }],
+      skipDuplicates: true,
+    });
+  });
+
   it('insertPayment writes the amount as bigint and fills the optional columns with null', async () => {
     const create = vi.fn(async () => ({ id: 'p1' }));
     const result = await repo.insertPayment({ billingOrderPayment: { create } } as never, {
