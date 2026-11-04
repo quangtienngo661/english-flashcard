@@ -8,10 +8,11 @@ import {
   BILLING_MAX_ATTEMPTS, BILLING_PENDING_RETRY_MS, RAW_PAYLOAD_RETENTION_DAYS, REFUND_REFETCH_DAYS,
 } from '../entitlements.constants.js';
 import { effectiveStatus, type SubscriptionSource } from '../rules/plan-rules.js';
+import { nextEndedAt } from '../rules/source-ends.js';
 import { callAdapter } from './adapter-call.js';
 import { BillingAdapterRegistry } from './billing-adapter.registry.js';
 import type { FetchedState, SubscriptionState } from './billing.types.js';
-import { BillingEventApplier, toState } from './event-applier.service.js';
+import { BillingEventApplier, endedAtFields, toState } from './event-applier.service.js';
 import { applyFetched } from './subscription-machine.js';
 
 type SubscriptionRow = NonNullable<Awaited<ReturnType<PrismaClient['subscription']['findUnique']>>>;
@@ -84,7 +85,8 @@ export class BillingJobs implements OnModuleInit {
         const state = useFetched ? applyFetched(toState(row), fetched) : toState(row);
         const { status } = effectiveStatus(toSource(row, state), now, graceDays);
         if (!useFetched && status === row.status) return;
-        await tx.subscription.update({ where: { id: row.id }, data: { ...state, status, updatedAt: now } });
+        const endedAt = nextEndedAt(endedAtFields(row, state), status, now, graceDays);
+        await tx.subscription.update({ where: { id: row.id }, data: { ...state, status, endedAt, updatedAt: now } });
       });
     }
   }
@@ -95,6 +97,7 @@ export class BillingJobs implements OnModuleInit {
    * and the window does not slide.
    */
   async refetchRevoked(now: Date): Promise<void> {
+    const { graceDays } = (await this.settings.get()).entitlements;
     const candidates = await this.prisma.subscription.findMany({
       where: { status: 'revoked', updatedAt: { gte: new Date(now.getTime() - REFUND_REFETCH_DAYS * DAY_MS) } },
       orderBy: { updatedAt: 'asc' },
@@ -116,7 +119,9 @@ export class BillingJobs implements OnModuleInit {
         if (locked.length === 0) return;
         const row = await tx.subscription.findUnique({ where: { id: candidate.id } });
         if (row === null || row.updatedAt.getTime() !== candidate.updatedAt.getTime()) return;
-        await tx.subscription.update({ where: { id: row.id }, data: { ...applyFetched(toState(row), fetched), updatedAt: now } });
+        const next = applyFetched(toState(row), fetched);
+        const endedAt = nextEndedAt(endedAtFields(row, next), next.status, now, graceDays);
+        await tx.subscription.update({ where: { id: row.id }, data: { ...next, endedAt, updatedAt: now } });
         this.logger.info('billing_state_refetched', { subscription_id: row.id });
       });
     }
