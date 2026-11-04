@@ -1,5 +1,11 @@
 # Design — Sửa thiếu sót Bước 0–3 (tài khoản, nội dung, nền, admin web; chỉ API + lớp phiên của admin)
 
+> **Ghi chú 04/11/2026 (đợt sửa sau review, B1-7): các chỗ dưới đây đã được thay, nội dung gốc giữ nguyên.**
+> - §4.3 và FE8 ("không sửa được `birth_date` qua API") **đã thay bởi** "Design §8.1" (comment trong code, commit `5a2bf53`): `birth_date` sửa được khi người học từ 13 tuổi; as-built
+>   `buoc-0-3-fixes.md` còn câu "sửa ngày sinh → 400" là của lúc đó.
+> - §4.5 ("người bị khóa vẫn gọi được route học tối đa 15 phút") **đã thay bởi** Bước 8 (D24, D29): guard đọc trạng thái mỗi request.
+> - Ghi chú về giữ chỗ idempotency "handler không chạy trong transaction" trong comment của `admin-ai-models.controller.ts` và `admin-ai-prompts.controller.ts` cũng đã đổi theo C1.
+
 > **Trạng thái 20/10/2026: đã duyệt** ("ok duyệt", 20/10, sau khi đọc bản viết; gồm cả bốn đề xuất thêm khi viết ở §12). Mọi quyết định sản phẩm đã
 > hỏi trong chat theo luật "chủ dự án trả lời trước, Claude đề xuất sau". Năm phần trình bày trong chat (tài khoản; nội dung; nền; admin web; thứ tự, test,
 > "Xong khi") chủ dự án đã duyệt từng phần ("ok phần 1 được" … "ok phần 5 được, viết design đi"). Bước tiếp: plan (`superpowers:writing-plans`).

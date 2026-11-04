@@ -115,7 +115,7 @@ Việc cần làm trước ra mắt: mục "Bước 8" của [`deploy-checklist.
 | `smoke:buoc-6` | qua, 32 bước (API chạy không có khóa AI; smoke 6 và 7 từ chối chạy khi file môi trường cục bộ của API có `OPENAI_API_KEY`, nên file đó được tạm đổi tên lúc chạy và trả lại ngay sau) |
 | `smoke:buoc-7` | qua, 30 bước, sau khi sửa một khẳng định cũ (R18) |
 
-Smoke Bước 8 chứng minh trên Postgres thật (unit chỉ có Prisma giả): xóa bằng mật khẩu và bằng Google xóa sạch **53 cột** `user_id`/`*_user_id`/`*_by` của mọi bảng (đếm trước/sau), hàng sổ lượt và giao dịch còn lại dưới
+Smoke Bước 8 chứng minh trên Postgres thật (unit chỉ có Prisma giả): xóa bằng mật khẩu và bằng Google xóa các cột `user_id`/`*_user_id`/`*_by`: smoke đếm 53 cột, nhưng chỉ **8** cột có dữ liệu trước khi xóa (6 cột gieo qua API, hai là bảng Identity), nên phần Practice, câu tự viết, grant, notice và `ai_call_contents` chưa chạy lần nào trên Postgres thật (review B8-1), hàng sổ lượt và giao dịch còn lại dưới
 mã ẩn danh, báo lỗi bỏ ghi chú và câu trả lời của người học, hàng ghi muộn bị quét, webhook tới muộn không giữ id, xóa lại sau "khôi phục" (kể cả hàng `users` và gói đang gia hạn được dựng lại), hai admin xóa nhau cùng lúc chỉ
 một người thành công, dọn tài khoản chưa xác nhận đúng đối tượng, đăng ký lại cùng email được dùng thử lại, và một người học lớn (50 000 dòng log, 2 000 từ riêng) xóa trong 0,3 s (lần 1) và 0,5 s (lần 2), xa dưới giới hạn 120 s. Dữ liệu thử này chỉ là bảng log và từ riêng; chưa phải một người học thật nhiều dữ liệu ở mọi module.
 
