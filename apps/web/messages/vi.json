@@ -537,9 +537,9 @@
     "houseAd": {
       "title": "Học nhiều hơn với Pro",
       "close": "Đóng",
-      "lead": "Gói Pro mở thêm phiên luyện, câu luyện tập và tra từ bằng AI, và không có quảng cáo.",
+      "lead": "Gói Pro có nhiều phiên luyện và nhiều lượt AI hơn mỗi tháng, và không có quảng cáo.",
       "sessions": "{count, number} phiên luyện mỗi ngày",
-      "ai": "Câu luyện tập và tra từ bằng AI",
+      "ai": "Nhiều câu luyện tập và lượt tra từ bằng AI hơn",
       "noAds": "Không quảng cáo",
       "from": "Từ {price} cho 1 tháng",
       "cta": "Xem gói Pro"
