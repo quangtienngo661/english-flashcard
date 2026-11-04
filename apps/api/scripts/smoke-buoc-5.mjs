@@ -14,6 +14,8 @@ import { randomInt, randomUUID } from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
 import { parseEnv } from 'node:util';
 import { sendFakeEvent } from './billing-fake-event.mjs';
+import { SMOKE_TURNSTILE_TOKEN, requireFakeTurnstile } from './smoke-turnstile.mjs';
+requireFakeTurnstile();
 
 const BASE = process.env.SMOKE_BASE_URL ?? 'http://localhost:3000';
 const MAILPIT = process.env.SMOKE_MAILPIT_URL ?? 'http://localhost:8025';
@@ -173,14 +175,14 @@ async function otpCodeFor(email, atLeast) {
 async function registerVerified(email) {
   const before = (await mailsTo(email)).length;
   await want(api('POST', '/v1/auth/register', {
-    body: { email, password: PASSWORD, timezone: TIMEZONE, given_name: 'Smoke', birth_date: '2000-01-01', accept_terms: true, client: 'web' } }), 201, `register ${email}`);
+    body: { turnstile_token: SMOKE_TURNSTILE_TOKEN, email, password: PASSWORD, timezone: TIMEZONE, given_name: 'Smoke', birth_date: '2000-01-01', accept_terms: true, client: 'web' } }), 201, `register ${email}`);
   const code = await otpCodeFor(email, before + 1);
   const verified = await want(api('POST', '/v1/auth/verify-email', { body: { email, code, password: PASSWORD, client: 'web' } }), 200, `verify ${email}`);
   return verified.access_token;
 }
 
 const login = async (email) => (await want(api('POST', '/v1/auth/login', {
-  body: { email, password: PASSWORD, client: 'web' } }), 200, `login ${email}`)).access_token;
+  body: { email, password: PASSWORD, client: 'web', turnstile_token: SMOKE_TURNSTILE_TOKEN } }), 200, `login ${email}`)).access_token;
 
 /** A learner who never signs in: a verified `users` row, Vietnam time. */
 function sqlUser(label) {
