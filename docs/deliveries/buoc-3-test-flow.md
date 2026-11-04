@@ -10,8 +10,8 @@ Chạy **khi phiên điều phối cho lượt chạy toàn bộ trên máy** (m
 
 | Ở đâu | Lệnh (PowerShell) |
 |---|---|
-| `apps/api` | `pnpm lint; pnpm exec tsc --noEmit -p tsconfig.json; pnpm build; pnpm test; pnpm test:e2e` |
-| `apps/api` (riêng) | `pnpm test:e2e:scale` (Review Focus 5: 100 nhóm × 2.000 từ, `GET /v1/groups` < 500 ms — ngưỡng `ASSUMPTION`) |
+| `apps/api` | `pnpm lint; pnpm exec tsc --noEmit -p tsconfig.json; pnpm build; pnpm test` (không còn `pnpm test:e2e`: D38) |
+| `apps/api` (riêng) | `pnpm test:scale` (Review Focus 5: 100 nhóm × 2.000 từ, `GET /v1/groups` < 500 ms — ngưỡng `ASSUMPTION`) |
 | `apps/admin` | `pnpm test; pnpm build:e2e; pnpm test:e2e; pnpm test:e2e:real` |
 
 So số test với cuối Bước 2.5 (API 578 unit + 475 e2e; admin 219 unit + 67 mocked e2e + 7 real-stack e2e — `buoc-2-5.md`).

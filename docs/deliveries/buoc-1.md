@@ -15,7 +15,7 @@ plan `docs/superpowers/plans/2026-10-07-buoc-1-identity-core.md` (14 tasks), rev
   staff roles `admin`/`editor` with `@RequirePermission`, `pnpm admin:grant <email>` (needs `pnpm build`).
   Every security write runs under a per-user advisory lock and commits before the HTTP error (design §4b);
   mail is sent after commit and after the response closes.
-- Tests: 339 unit + 182 e2e (real Postgres + Mailpit via Testcontainers); suites that depend on global state
+- Tests: 339 unit + 182 e2e (real Postgres + Mailpit via Testcontainers; **the 182 e2e were removed at D38 (Bước 4) and can no longer be re-run**, so this 07/10/2026 evidence is not reproducible today); suites that depend on global state
   use `createIsolatedDatabase()`. A manual run against the built API (register → OTP from Mailpit → verify
   → refresh → password change → logout → admin:grant → admin endpoint) passed on 07/10.
 - Execution: Codex `gpt-6.1-sol` implemented, `gpt-6-astra` (medium effort) reviewed each task; Tasks 13–14

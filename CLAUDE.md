@@ -164,8 +164,7 @@ Goal: experimental versions never reach `main`; `main` only receives work that p
 
 ## Architecture & Key Decisions (accepted, `docs/specs/system-spec.md`)
 
-Bước 0–7 are implemented (Bước 3 system part only, Bước 4–7 API only; see `docs/deliveries/`). Step 8 is still
-decided-but-not-scaffolded:
+Bước 0–8 are implemented (Bước 3 system part and Bước 4–7 were API only at first; their learner and admin UI came in later rounds; see `docs/deliveries/`):
 
 - Backend: **NestJS modular monolith + PostgreSQL**. 7 V1 modules, each owning its own write path:
   Identity & Access, Vocabulary Content, Learning, Content Pipeline, Entitlements & Usage, AI Integration,
@@ -305,11 +304,11 @@ Improvement ideas to weigh **after** the learner UI for Bước 3–7 is done (o
 ## Đợt giao diện admin (apps/admin) — plan & as-built
 
 `docs/deliveries/giao-dien-admin.md` (plan tóm tắt 27/10/2026; as-built per milestone and of the whole round, closed 28/10/2026; PR #144–#156 and #161 for the milestones, then #157, #159, #162–#165,
-#169; CI green on every PR). 24 admin screens, every item of `apps/admin/src/app/nav.ts` (none shows "Sắp có" any more): AI (status, models, operations, prompts, example set, costs, calls),
+#169; CI green on every PR). 24 admin menu items (every item of `apps/admin/src/app/nav.ts`) (none shows "Sắp có" any more): AI (status, models, operations, prompts, example set, costs, calls),
 system settings, reports / report reasons / refunds / unknown forms, users and grants, words / senses / topics. Added after the plan: AI dashboard at `/dashboard` (`ai.view`), bulk import of
 eval examples (limit per operation now 1000), edit and delete for sources, eval runs, publish jobs and unused words (`docs/preparation/ADMIN_CRUD_SURVEY_2026-10-28.md`). Design, decisions (AD1–AD18) and
-plan: `docs/superpowers/{specs,decisions,plans}/2026-10-27-giao-dien-admin*.md`; owner's test flow `docs/deliveries/giao-dien-admin-test-flow.md`. Not done: the dashboard's two missing numbers,
-group B of the AI work (`docs/preparation/IMPROVEMENT_PLAN_2026-10-28.md` §4), Bước 8, Deploy.
+plan: `docs/superpowers/{specs,decisions,plans}/2026-10-27-giao-dien-admin*.md`; owner's test flow `docs/deliveries/giao-dien-admin-test-flow.md`. The dashboard's two missing numbers came with #171 (28/10/2026), group B of the AI work with `docs/deliveries/nhom-b.md`, and Bước 8 is built (below);
+not done: Deploy.
 
 ## Bước 8 — plan & as-built
 
@@ -345,7 +344,7 @@ Các điểm dưới đây phát sinh khi rà quyền của `admin`/`editor` (b�
   `ai.settings` (chỉ `admin`). **Đã rõ ở Bước 5 (19/10/2026, ⚠8 và D6 của design Bước 5):** bỏ quyền `ai.settings`, mọi con số hạn mức,
   tham số trial/Pro, công tắc và trần AI dùng lại `settings.manage` (chỉ `admin`). **Đã rõ ở Bước 6 (20/10/2026):** mọi API AI của admin,
   gồm tình trạng, chi phí và các lần gọi, cần `settings.manage` (chỉ `admin`; design Bước 6 §12.1, B6#25). **Ngoại lệ (chủ dự án 28/10/2026):** dashboard AI (`/v1/admin/ai/dashboard`, `/v1/admin/practice/ai-quality`,
-  `/v1/admin/entitlements/ai-usage/days`) cần quyền `ai.view`, cả `admin` và `editor` đọc được; mọi cài đặt AI, chi phí và các lần gọi vẫn `settings.manage`.
+  `/v1/admin/entitlements/ai-usage/days`) cần quyền `ai.view`, cả `admin` và `editor` đọc được; mọi cài đặt AI và các trang **Chi phí** và **Các lần gọi** vẫn `settings.manage` (dashboard có số tiền theo ngày, model và mục đích, và editor đọc được: chủ ý, `identity.types.ts`, AD19).
 - ~~**Bước 5 — `entitlements.grant` so với D6 ("editor không đụng chi phí AI").**~~ **Đã rõ ở Bước 5 (D6–D8, D33):** `editor` cấp gói Pro
   bình thường (kèm lượt AI cố định của gói) nhưng **không** đặt con số lượt AI tùy ý, chỉ cấp và thu hồi cho người học thường, không thu hồi
   được lần cấp có con số lượt AI; `admin` xem lịch sử cấp của editor và thu hồi. Trần AI toàn hệ thống mỗi ngày là `ai_daily_cap`.

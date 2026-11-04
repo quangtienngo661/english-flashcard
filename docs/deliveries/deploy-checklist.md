@@ -38,11 +38,40 @@ secret, backup) nằm ở design Bước 2.5 §14; những thứ chỉ kiểm đ
 - [ ] **Luật sư xem lại mốc 13 tuổi không hỏi cha mẹ; trang Điều khoản ghi "dưới 16 tuổi cần cha mẹ đồng ý".** Nguồn: design §11.2 (D4).
   Vì sao: Luật BVDLCN 2025 Điều 24 khoản 2 nói về người đại diện của trẻ dưới 16 tuổi.
 
+## Chặn đồ giả ở production (đợt A, R3)
+
+- [ ] **Đặt `BILLING_PRODUCTION=true`; KHÔNG đặt `BILLING_FAKE_ENABLED`, `AI_FAKE_ENABLED`, `GOOGLE_FAKE_ENABLED`; đặt `TURNSTILE_MODE=real`; rồi kiểm API từ chối khởi động khi bật một đồ giả.**
+  Nguồn: [X-3](../superpowers/reviews/2026-10-29-buoc-1-8-review.md#x-3), [B5-2](../superpowers/reviews/buoc-1-8/buoc-5.md#b5-2), Q13 (giữ cơ chế, chỉ thêm mục checklist).
+  Vì sao: `BILLING_PRODUCTION=true` cùng một đồ giả (thanh toán, AI, Google, hoặc `TURNSTILE_MODE` là `fake`/`off`) làm API và worker dừng ngay khi khởi động
+  (`apps/api/src/common/config/app-config.ts`, `superRefine`), nhưng chỉ khi chính biến `BILLING_PRODUCTION` được đặt; thiếu nó thì mọi đồ giả chạy được.
+  Kiểm: trên môi trường production thật, thử bật từng đồ giả một và thấy API cùng worker dừng với tên hai biến trong thông báo, rồi bỏ đồ giả đó đi.
+
+## AI và riêng tư (Bước 6–7)
+
+Nguồn chung: [B6-1](../superpowers/reviews/buoc-1-8/buoc-6-and-7.md#b6-1); chi tiết ở design Bước 6 §18–§19 và Bước 7 §19–§20.
+
+- [ ] **Chính sách bảo mật nêu việc gửi từ riêng và câu ngữ cảnh của người học cho OpenAI/Anthropic (bên nhận ở Mỹ), và việc `ai_call_contents` giữ nội dung 7 ngày, admin đọc được**
+  (`apps/api/src/ai/reports/reports.service.ts:218-235`). Nguồn: B6 §18, F29, SR15. Vì sao: trang chính sách hiện chưa nhắc AI; bản nháp đã ở nhánh `docs/web-launch-research`.
+- [ ] **Điều khoản xử lý dữ liệu của từng provider (F30); OpenAI cho người dưới 18 tuổi và ZDR so với mốc 13 tuổi của app; không dùng model có giữ dữ liệu 30 ngày.**
+  Nguồn: B6-1. Vì sao: app nhận người học từ 13 tuổi và gửi nội dung người học cho provider.
+- [ ] **`max_concurrent_calls` (50) đếm theo từng tiến trình, không theo cả hệ thống: đặt theo tier của provider khi chạy nhiều instance.** Nguồn: B6 §18 "Deploy".
+  Vì sao: hai instance API cộng worker là hơn 50 lượt song song; tier Anthropic thấp hơn thế thì 429 hàng loạt.
+- [ ] **Ba điểm riêng tư của Bước 7 (B7 §20) và chữ "300 câu AI" của gói Pro (B7 §19).** Vì sao: chữ trên trang gói, landing và chính sách phải khớp số thật trong Cài đặt (`pro_ai_practice_per_cycle`).
+
+## Trước khi bán thật (Bước 5)
+
+- [ ] **D24/Điều 42 và email báo trước khi gia hạn; bộ nối thanh toán thật gửi `transaction_id` (D37) và có `fetchState` (D39); đo khóa trần AI dưới tải.**
+  Nguồn: [B5-9](../superpowers/reviews/buoc-1-8/buoc-5.md#b5-9), design Bước 5 §18–§19. Vì sao: hiện chỉ có nhà cung cấp giả nên chưa ai gặp; `B5-2`/R17 ở mục "Chặn đồ giả" trên.
+
 ## Đo tải trước launch
 
 - [ ] **Chạy `pnpm test:scale` (300.000 từ riêng của người học khác) trên máy giống bản deploy.** Nguồn: design §6.4 (T5), M3 gate
   (21/10; xem as-built). Vì sao: số đo T5 có từ Task 6 (trước M3); sau M3, tra từ (`/v1/lookup`) vẫn đọc toàn bộ index lemma của
   catalog (1,3 ms ở 5.000 từ), thời gian tăng theo cỡ catalog (mục tiêu 8.812 từ). Cần thấy con số thật trước khi có người dùng.
+- [ ] **Đo lại "Ôn tất cả" (D39).** Nguồn: [B4-1](../superpowers/reviews/buoc-1-8/buoc-3-and-4.md#b4-1). Vì sao: số đo hiện có là của lúc chưa có D39.
+- [ ] **Đo search/browse của người học khi bảng có từ riêng (B2-5) và đo mở phiên có 50 từ dạng AI, mỗi từ một query (B7-5).** Nguồn:
+  [B2-5](../superpowers/reviews/buoc-1-8/buoc-2-and-2-5.md#b2-5) (`apps/api/test/content/lookup.scale.e2e-spec.ts`, `pnpm test:scale`),
+  [B7-5](../superpowers/reviews/buoc-1-8/buoc-6-and-7.md#b7-5) (`question-builder.service.ts:94-103`). Vì sao: hai chỗ này là `ASSUMPTION` chưa đo.
 
 ## Admin web
 
@@ -135,9 +164,15 @@ Thông thường site nhỏ không cố chặn hết bot; chỉ bảo vệ chỗ
   chạy trên mọi trang, kể cả `/app`.
 - [ ] **Bản build production bật app phải có `NEXT_PUBLIC_API_BASE_URL` với host bắt đầu bằng `api.`.** Nguồn: design §4.2. Vì sao: cookie
   `refresh_token` host-only của `admin-api.` và `api.` không được đè nhau; `next.config.ts` dừng build khi sai.
-- [ ] **Dọn tài khoản chưa từng xác nhận email sau N ngày.** Nguồn: A5 đợt cải thiện nhóm A (design `../superpowers/specs/2026-10-26-dot-cai-thien-a-design.md` §4),
+- [x] **Dọn tài khoản chưa từng xác nhận email sau N ngày (đã có job `identity.unverified-cleanup`, `deletion-jobs.service.ts:36`; [B8-6](../superpowers/reviews/buoc-1-8/buoc-8.md#b8-6)).** Nguồn: A5 đợt cải thiện nhóm A (design `../superpowers/specs/2026-10-26-dot-cai-thien-a-design.md` §4),
   làm cùng phần xoá tài khoản của Bước 8. Vì sao: từ đợt này tài khoản chưa xác nhận không vào được app nhưng vẫn nằm trong DB và giữ chỗ email;
   `identity-cleanup.service.ts` chỉ xoá OTP và chuỗi phiên hết hạn.
+
+- [ ] **Xem lại CSP (nonce hoặc hash thay `'unsafe-inline'`) trước khi bật `/app`.** Nguồn: [UW-4](../superpowers/reviews/buoc-1-8/giao-dien-nguoi-hoc-and-admin.md#uw-4). Vì sao: D20 đang để
+  `'unsafe-inline'` vì Next chèn script RSC inline; script Turnstile (đợt A) phải còn nạp được sau khi đổi.
+- [ ] **Build và kiểm bản cờ app tắt (cấu hình production hiện tại, `NEXT_PUBLIC_LEARNER_APP` không đặt).** Nguồn: [UW-3](../superpowers/reviews/buoc-1-8/giao-dien-nguoi-hoc-and-admin.md#uw-3).
+  Vì sao: CI và e2e chỉ build với app bật; bản app tắt (`/…/app/*` chuyển về landing) chưa được thử trong CI.
+- [ ] **Chạy tay hai worker gửi nhắc học cùng lúc (G1-10).** Nguồn: [B3-1](../superpowers/reviews/buoc-1-8/buoc-3-and-4.md#b3-1); checklist dev (`docs/audit/2026-11-04-dev-test-checklist.md`, mục D) đã có bước này.
 
 ## Landing mới (`apps/web`, design landing-redesign §9, 03/11/2026)
 
@@ -189,6 +224,12 @@ Thông thường site nhỏ không cố chặn hết bot; chỉ bảo vệ chỗ
   cho Google Play (D20); gói mua qua store thì "Hủy gói" chuyển người dùng sang trang quản lý gói của store (web đã có thông báo `cancel-in-store`).
 - [ ] **Nhà cung cấp thanh toán thật.** Nguồn: design §18, D12, D31. Hỗ trợ `cancelAtPeriodEnd`; adapter phải trả lời trong hằng `BILLING_ADAPTER_TIMEOUT_MS` (`entitlements.constants.ts`) khi admin xóa người đang gia hạn
   (không kịp → 409 `renewal-not-cancelled`, không xóa gì); xem lại chống dùng thử lại ở phía họ.
+
+- [ ] **DB production phải tạo mới; không mang sang tài khoản chưa xác minh tạo trước 26/10/2026.** Nguồn: [B8-5](../superpowers/reviews/buoc-1-8/buoc-8.md#b8-5). Vì sao: đăng ký Google vào email của
+  một tài khoản chưa xác minh dùng lại id của tài khoản đó (`google-auth.service.ts:266-286`, design Bước 8 §5.5), với giả định nó không có dữ liệu học; giả định này chỉ đúng từ khi đăng nhập bị
+  chặn lúc chưa xác minh (26/10/2026). Trên DB có dữ liệu cũ hơn, người đăng ký Google sẽ thấy dữ liệu của tài khoản kia.
+- [ ] **Email nằm trong URL bộ lọc của admin: xét lại khi chọn hosting (log truy cập).** Nguồn: [UA-7](../superpowers/reviews/buoc-1-8/giao-dien-nguoi-hoc-and-admin.md#ua-7). Vì sao: URL của trang
+  Người dùng có thể mang email người học vào log truy cập của hosting; ghi nhận, chưa phải lỗi.
 
 ## Chính sách bảo mật và Điều khoản soạn trong admin (`docs/deliveries/legal-documents.md`, 03/11/2026)
 

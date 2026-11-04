@@ -397,7 +397,7 @@ reserve ──► reserved ──confirm──► confirmed        (AI trả k�
 
 - **Công tắc** `entitlements.ai_enabled` (mặc định bật): tắt thì mọi `reserve` của kho AI → `ai-unavailable`; lượt không bị trừ; bài không AI chạy bình thường.
 - **Trần** `entitlements.ai_daily_cap` (mặc định 1.000 lượt): đếm mọi dòng `use` của hai kho AI có `system_date` = hôm nay (giờ `Asia/Ho_Chi_Minh`, `ASSUMPTION`
-  cố định trong code), tính cả `reserved` chưa quá hạn. Đếm dưới khóa chung `entitlements.ai_daily`, nên chính xác tuyệt đối; mọi lần giữ lượt AI của mọi người xếp
+  cố định trong code), tính cả `reserved` chưa quá hạn. Đếm dưới khóa chung `entitlements.ai_daily`, nên chính xác lúc giữ chỗ; xác nhận muộn có thể vượt trần, tối đa bằng số lần xác nhận muộn (đã sửa chữ 04/11/2026, B5-6); mọi lần giữ lượt AI của mọi người xếp
   hàng qua khóa này (chấp nhận được vì số lời gọi AI cùng lúc vốn bị giới hạn 5, AR11).
 - **Cảnh báo (D36):** khi đã dùng trong ngày (đã xác nhận + đang giữ chưa quá hạn) chạm `ceil(ai_daily_cap × ai_cap_alert_percent / 100)` (mặc định 75; để trống =
   không cảnh báo; trần = 0 thì không cảnh báo), API lượt AI của admin (mục 12.2, API 6) trả `alert_reached = true` để màn admin tô vàng (đợt giao diện). **Không gửi
