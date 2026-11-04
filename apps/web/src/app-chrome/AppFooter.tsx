@@ -25,9 +25,10 @@ export function AppFooter() {
           </div>
           <div className="grid grid-cols-2 gap-8 sm:grid-cols-3 md:gap-16">
             <Column title={t('colWordmet')}>
-              <Link href={`/${locale}`} className={LINK}>
+              {/* Plain anchors for what leaves the app: each document has its own CSP, and AdSense must not stay in a page that left Nhóm or Tra từ (design §5.1). */}
+              <a href={`/${locale}`} className={LINK}>
                 {t('about')}
-              </Link>
+              </a>
               <Link href={`/${locale}/app/plans`} className={LINK}>
                 {t('plans')}
               </Link>
@@ -43,12 +44,12 @@ export function AppFooter() {
               ))}
             </Column>
             <Column title={t('colLegal')}>
-              <Link href={`/${locale}/terms`} className={LINK}>
+              <a href={`/${locale}/terms`} className={LINK}>
                 {t('terms')}
-              </Link>
-              <Link href={`/${locale}/privacy`} className={LINK}>
+              </a>
+              <a href={`/${locale}/privacy`} className={LINK}>
                 {t('privacy')}
-              </Link>
+              </a>
             </Column>
           </div>
         </div>
