@@ -118,6 +118,11 @@ function psql(sql) {
 }
 
 const vnToday = () => new Intl.DateTimeFormat('en-CA', { timeZone: TIMEZONE }).format(new Date());
+/** 00:00 on the first of next month in the smoke learners' zone (Vietnam has no DST, so a fixed +7 h is exact). */
+function nextMonthStartIso() {
+  const [year, month] = vnToday().split('-').map(Number);
+  return new Date(Date.UTC(year, month, 1) - 7 * 3_600_000).toISOString();
+}
 
 async function waitFor(readValue, done, what, timeoutMs = 15_000) {
   const deadline = Date.now() + timeoutMs;
@@ -235,11 +240,16 @@ async function main() {
   step('B5#1: a new learner reads GET /v1/me/entitlements');
   const fresh = await me();
   check(fresh.plan === 'free', `plan ${fresh.plan}`);
-  check(fresh.pools.practice_sessions.limit === 3 && fresh.pools.ai_practice.limit === 0 && fresh.pools.ai_lookup.limit === 0,
-    `pools ${JSON.stringify(fresh.pools)}`);
-  check(!fresh.features['ai.practice'].allowed && !fresh.features['ai.lookup'].allowed, `features ${JSON.stringify(fresh.features)}`);
-  check(fresh.ads.show === false && fresh.trial_eligible === true, `ads ${JSON.stringify(fresh.ads)}, trial_eligible ${fresh.trial_eligible}`);
-  ok('plan free; practice 3/day; AI pools 0; ai.practice and ai.lookup not allowed; ads.show false; trial_eligible true');
+  // Launch prep A (LA3#13): Free has 15 AI questions and 5 AI lookups a month, in the calendar month of the learner's zone.
+  const monthEnd = nextMonthStartIso();
+  check(fresh.pools.practice_sessions.limit === 3, `pools ${JSON.stringify(fresh.pools)}`);
+  check(fresh.pools.ai_practice.limit === 15 && fresh.pools.ai_practice.used === 0 && fresh.pools.ai_practice.resets_at === monthEnd,
+    `ai_practice ${JSON.stringify(fresh.pools.ai_practice)}, expected resets_at ${monthEnd}`);
+  check(fresh.pools.ai_lookup.limit === 5 && fresh.pools.ai_lookup.used === 0 && fresh.pools.ai_lookup.resets_at === monthEnd,
+    `ai_lookup ${JSON.stringify(fresh.pools.ai_lookup)}`);
+  check(fresh.features['ai.practice'].allowed && fresh.features['ai.lookup'].allowed, `features ${JSON.stringify(fresh.features)}`);
+  check(fresh.ads.show === false && fresh.trial_eligible === false, `ads ${JSON.stringify(fresh.ads)}, trial_eligible ${fresh.trial_eligible}`);
+  ok(`plan free; practice 3/day; AI pools 15 and 5 a month, resetting at ${monthEnd}; both AI features allowed; ads.show false; trial_eligible false (trial is off, launch prep A)`);
 
   // ------------------------------------------------------------------------------------------------------------------
   step('Practice material for P: a group with two private words');
@@ -535,6 +545,89 @@ async function main() {
   const afterSecond = (await view(L3.id)).pools.ai_practice.remaining;
   check(afterRefund === before + 1 && afterSecond === afterRefund, `remaining ${before} → ${afterRefund} → ${afterSecond}`);
   ok(`remaining ${before} → ${afterRefund} after the refund → ${afterSecond} after a second one`);
+
+  // ------------------------------------------------------------------------------------------------------------------
+  // Launch prep A (design 6.2, 6.3): the Free window starts after the last time a Pro-like source ended inside the month.
+  // The calls of one user take the same pool lock one after another, so a big burst only waits on it; batches of at most 8 keep a slow
+  // moment of the machine (a 5 s stall is enough to time out a queued transaction) from looking like a ledger fault.
+  const usesAs = (action, user, op, count) => {
+    const lines = [];
+    for (let done = 0, batch = 0; done < count; batch += 1) {
+      const size = Math.min(8, count - done);
+      lines.push(...fakeAi([action, '--user', user, '--pool', 'ai_practice', '--op', `${op}-${batch}`, '--parallel', String(size)]));
+      done += size;
+    }
+    return lines;
+  };
+  const proUses = (user, label) => {
+    const reserved = usesAs('reserve', user, `${label}-${run}`, 16);
+    check(reserved.length === 16 && reserved.every((line) => line.result.state === 'reserved'), `Pro reserves ${JSON.stringify(reserved.map((l) => l.result))}`);
+    const confirmed = usesAs('confirm', user, `${label}-${run}`, 16);
+    check(confirmed.length === 16 && confirmed.every((line) => line.result.state === 'confirmed'), `Pro confirms ${JSON.stringify(confirmed.map((l) => l.result))}`);
+  };
+
+  step('LA3#7: a Pro learner uses 16 AI questions, the plan grant is revoked → Free has all 15 again (the Pro uses are not charged to Free)');
+  const F1 = sqlUser('profree1');
+  const gF1 = await want(grant({ user_id: F1.id, kind: 'plan', plan: 'pro', ends_at: iso(30 * DAY), reason: 'smoke:la3#7' }), 201, 'grant Pro');
+  proUses(F1.id, 'prouse1');
+  const asPro = (await view(F1.id)).pools.ai_practice;
+  check(asPro.limit === 300 && asPro.used === 16, `as Pro ${JSON.stringify(asPro)}`);
+  await want(api('POST', `/v1/admin/entitlements/grants/${gF1.id}/revoke`, { token: admin, body: { reason: 'smoke la3#7' } }), 200, 'revoke');
+  const backToFree = await view(F1.id);
+  check(backToFree.plan === 'free' && backToFree.pools.ai_practice.limit === 15 && backToFree.pools.ai_practice.used === 0
+    && backToFree.pools.ai_practice.remaining === 15, `after the revoke ${JSON.stringify(backToFree.pools.ai_practice)}`);
+  check(backToFree.pools.ai_practice.resets_at === nextMonthStartIso(), `resets_at ${backToFree.pools.ai_practice.resets_at}`);
+  check(reserve(F1.id, `free-after-${run}`).state === 'reserved', 'a reserve right after the revoke');
+  ok('Pro 16/300 → revoked → Free 0/15 (not 16/15), resets_at the first of next month; a reserve goes through');
+
+  step('LA3#6: a cancelled subscription expires (event) → Free has all 15 again; a Free window of 15 is used up and refused');
+  const F2 = sqlUser('profree2');
+  const sF2 = subOf('profree2');
+  await fake('subscription_started', sF2, F2.id, { ...month, transaction_id: `${sF2}-tx` });
+  await fake('cancel_scheduled', sF2, F2.id);
+  check(await plan(F2.id) === 'pro', 'not Pro while cancelled at the period end');
+  proUses(F2.id, 'prouse2');
+  await sleep(1_000);
+  await fake('expired', sF2, F2.id);
+  const endedAt = subRow(sF2, 'ended_at');
+  check(subRow(sF2, 'status') === 'expired' && endedAt !== '', `status ${subRow(sF2, 'status')}, ended_at '${endedAt}'`);
+  const afterExpired = (await view(F2.id)).pools.ai_practice;
+  check(await plan(F2.id) === 'free' && afterExpired.limit === 15 && afterExpired.used === 0, `after expired ${JSON.stringify(afterExpired)}`);
+  const freeRun = usesAs('reserve', F2.id, `free-use-${run}`, 15);
+  check(freeRun.every((line) => line.result.state === 'reserved'), `15 Free reserves ${JSON.stringify(freeRun.map((l) => l.result))}`);
+  usesAs('confirm', F2.id, `free-use-${run}`, 15);
+  const sixteenth = reserve(F2.id, `free-16-${run}`);
+  check(sixteenth.state === 'refused' && sixteenth.reason === 'quota-exhausted' && sixteenth.resets_at === nextMonthStartIso(),
+    `the 16th → ${JSON.stringify(sixteenth)}`);
+  ok(`ended_at ${endedAt} written by the expired event; Free 0/15 after Pro 16; the 16th Free question is quota-exhausted until ${sixteenth.resets_at}`);
+
+  step('LA3#3: the month rolls over (the uses are moved 40 days back with SQL) → the 15 are back');
+  psql(`UPDATE usage_records SET confirmed_at = confirmed_at - interval '40 days', reserved_at = reserved_at - interval '40 days'
+    WHERE user_id = '${F2.id}' AND operation_id LIKE 'free-use-${run}%'`);
+  const nextMonth = (await view(F2.id)).pools.ai_practice;
+  check(nextMonth.used === 0 && nextMonth.remaining === 15, `after the shift ${JSON.stringify(nextMonth)}`);
+  check(reserve(F2.id, `free-new-${run}`).state === 'reserved', 'a reserve in the new month');
+  ok('used 15 → 0 once the rows are older than the calendar month; a reserve is accepted again');
+
+  step('LA3#10: free_ai_daily_cap = 2 → the third Free learner gets ai-unavailable; a Pro learner still reserves; the snapshot says cap_reached');
+  // Units of the earlier steps are moved to yesterday so "today" starts at 0 for the Free count.
+  psql(`UPDATE usage_records SET system_date = system_date - 1 WHERE pool <> 'practice_sessions' AND system_date = '${vnToday()}'`);
+  await settings('entitlements', { free_ai_daily_cap: 2 });
+  const freeCap = [0, 1, 2].map((i) => sqlUser(`freecap${i}`));
+  const freeResults = freeCap.map((user, i) => reserve(user.id, `fcap-${run}-${i}`));
+  check(freeResults[0].state === 'reserved' && freeResults[1].state === 'reserved'
+    && freeResults[2].state === 'refused' && freeResults[2].reason === 'ai-unavailable' && typeof freeResults[2].retry_after_seconds === 'number',
+  `free cap results ${JSON.stringify(freeResults)}`);
+  check((await view(freeCap[2].id)).ai_available.cap_reached === true, 'the Free snapshot does not say cap_reached');
+  const proCap = sqlUser('procap');
+  await want(grant({ user_id: proCap.id, kind: 'plan', plan: 'pro', ends_at: iso(30 * DAY), reason: 'smoke:la3#10' }), 201, 'grant Pro');
+  check(reserve(proCap.id, `pcap-${run}`).state === 'reserved', 'a Pro learner is held by the Free cap');
+  check((await view(proCap.id)).ai_available.cap_reached === false, 'the Pro snapshot says cap_reached');
+  await settings('entitlements', { free_ai_daily_cap: 0 });
+  const freeOff = reserve(freeCap[0].id, `fcap0-${run}`);
+  check(freeOff.state === 'refused' && freeOff.reason === 'ai-unavailable' && freeOff.retry_after_seconds === null, `free_ai_daily_cap 0 → ${JSON.stringify(freeOff)}`);
+  await settings('entitlements', { free_ai_daily_cap: 500 });
+  ok(`reserved, reserved, ai-unavailable (retry after ${freeResults[2].retry_after_seconds}s); Pro reserved; cap 0 → ai-unavailable without Retry-After; cap back to 500`);
 
   step('B5E11: ten learners, one unit left in the system cap, ten parallel reserves → exactly one reserved');
   const ten = [];

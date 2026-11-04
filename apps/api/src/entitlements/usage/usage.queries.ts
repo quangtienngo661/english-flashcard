@@ -108,4 +108,16 @@ export class UsageQueries {
     });
     return { confirmed, reserved };
   }
+
+  /** `capUsed` for the Free plan only: the rows `reserve` wrote with `plan = 'free'` (launch prep A, design 6.4). */
+  async capUsedFree(db: Db, day: string, now: Date): Promise<{ confirmed: number; reserved: number }> {
+    const systemDate = dateValue(day);
+    const confirmed = await db.usageRecord.count({
+      where: { pool: { in: AI_POOLS }, kind: 'use', status: 'confirmed', systemDate, plan: 'free' },
+    });
+    const reserved = await db.usageRecord.count({
+      where: { pool: { in: AI_POOLS }, kind: 'use', status: 'reserved', systemDate, expiresAt: { gt: now }, plan: 'free' },
+    });
+    return { confirmed, reserved };
+  }
 }

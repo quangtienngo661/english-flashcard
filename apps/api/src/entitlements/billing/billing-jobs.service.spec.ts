@@ -280,3 +280,42 @@ describe('BillingJobs registration', () => {
     );
   });
 });
+
+describe('BillingJobs writes ended_at (launch prep A, design 6.3.3)', () => {
+  it('LA3E9: a cancelled period over → expired, with ended_at at the period end (not at the moment the job ran)', async () => {
+    const { jobs, subs } = setup({ subs: [subRow({ cancelAtPeriodEnd: true, currentPeriodEnd: at('2026-11-20T03:00:00.000Z') })] });
+    await jobs.timeTransitions(at('2026-11-20T03:07:00.000Z'));
+    expect(subs[0]).toMatchObject({ status: 'expired', endedAt: at('2026-11-20T03:00:00.000Z') });
+  });
+
+  it('LA3E12: overdue and not cancelled → on_hold at period end + grace days; ended_at is that moment, not the later run', async () => {
+    const { jobs, subs } = setup({ subs: [subRow({ currentPeriodEnd: at('2026-11-17T12:00:00.000Z') })] });
+    await jobs.timeTransitions(at('2026-11-25T00:00:00.000Z'));
+    expect(subs[0]).toMatchObject({ status: 'on_hold', endedAt: at('2026-11-24T12:00:00.000Z') });
+  });
+
+  it('a row that stays Pro keeps ended_at null', async () => {
+    const { jobs, subs } = setup({ subs: [subRow({ currentPeriodEnd: at('2026-11-30T12:00:00.000Z'), trialEndsAt: at('2026-11-20T11:00:00.000Z'), status: 'trialing' })] });
+    await jobs.timeTransitions(NOW);
+    expect(subs[0].endedAt ?? null).toBeNull();
+  });
+
+  it('a revoked row the provider says is active again → ended_at cleared', async () => {
+    const state: FetchedState = { status: 'active', interval: 'year', currentPeriodStart: at('2026-11-10T00:00:00.000Z'),
+      currentPeriodEnd: at('2027-11-10T00:00:00.000Z'), trialEndsAt: null, cancelAtPeriodEnd: false };
+    const { jobs, subs } = setup({ subs: [subRow({ status: 'revoked', endedAt: at('2026-11-15T10:00:00.000Z'), updatedAt: at('2026-11-19T12:00:00.000Z') })], fetch: async () => state });
+    await jobs.refetchRevoked(NOW);
+    expect(subs[0]).toMatchObject({ status: 'active', endedAt: null });
+  });
+});
+
+describe('BillingJobs dates ended_at from the row, not from the provider answer (review M3 I1)', () => {
+  it('an overdue active row (not cancelled) that the provider reports expired and cancelled → ended_at is the job\'s now, not the old period end', async () => {
+    // Wordmet still counted Lan as Pro while she was overdue (grace runs to 24/11 12:00), so her uses of 18/11 were made as Pro.
+    const fetched: FetchedState = { status: 'expired', interval: 'month', currentPeriodStart: at('2026-10-17T12:00:00.000Z'),
+      currentPeriodEnd: at('2026-11-17T12:00:00.000Z'), trialEndsAt: null, cancelAtPeriodEnd: true };
+    const { jobs, subs } = setup({ subs: [subRow({ currentPeriodEnd: at('2026-11-17T12:00:00.000Z'), cancelAtPeriodEnd: false })], fetch: async () => fetched });
+    await jobs.timeTransitions(at('2026-11-19T00:00:00.000Z'));
+    expect(subs[0]).toMatchObject({ status: 'expired', endedAt: at('2026-11-19T00:00:00.000Z') });
+  });
+});

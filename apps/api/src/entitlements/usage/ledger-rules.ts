@@ -13,9 +13,12 @@ const unexpired = (expiresAt: Date | null, now: Date) => expiresAt !== null && e
 /**
  * Step one of a reservation, under the pool lock only: the live row of the operation, the switch (and a cap of 0, which
  * refuses like the switch, B5E65), the limit, what is left. `check-cap` sends the service to the global lock.
+ * `freeCap` is `free_ai_daily_cap` for a Free account and left out (or `null`) for any other plan: 0 refuses like the switch (LA3E20),
+ * a positive one is counted by the service under the global lock (design 6.4).
  */
 export function decideReserve(input: {
   existing: LiveRow | null; now: Date; aiEnabled: boolean; limit: number; used: number; cycleEnd: Date | null; cap: number | null;
+  freeCap?: number | null;
 }):
   | { action: 'return-existing'; state: 'reserved' | 'confirmed' }
   | { action: 'release-expired-then-continue' }
@@ -28,7 +31,7 @@ export function decideReserve(input: {
       ? { action: 'return-existing', state: 'reserved' }
       : { action: 'release-expired-then-continue' };
   }
-  if (!input.aiEnabled || input.cap === 0) return { action: 'refuse', refusal: OFF };
+  if (!input.aiEnabled || input.cap === 0 || input.freeCap === 0) return { action: 'refuse', refusal: OFF };
   if (input.limit === 0) return { action: 'refuse', refusal: { reason: 'plan-required' } };
   if (input.used >= input.limit) {
     return { action: 'refuse', refusal: { reason: 'quota-exhausted', resets_at: input.cycleEnd?.toISOString() ?? null } };

@@ -77,3 +77,60 @@ describe('grantLimits', () => {
     expect(grantLimits(7)).toBeNull();
   });
 });
+
+describe('SourcesRepository.load and the sources that already ended (launch prep A, design 6.3.4)', () => {
+  const since = new Date('2026-10-31T17:00:00.000Z');
+  const rows = {
+    live: { ...subRow('s-live', A), status: 'active' },
+    expiredIn: { ...subRow('s-exp', A), status: 'expired', endedAt: new Date('2026-11-12T09:00:00.000Z') },
+    grantLive: { ...grantRow('g-live', A), startsAt: new Date('2026-11-01T00:00:00.000Z'), endsAt: new Date('2026-12-31T00:00:00.000Z') },
+    grantRevoked: { ...grantRow('g-rev', A), revokedAt: new Date('2026-11-12T09:00:00.000Z'), endsAt: new Date('2026-12-31T00:00:00.000Z') },
+    grantRanOut: { ...grantRow('g-out', A), revokedAt: null, endsAt: new Date('2026-11-20T03:00:00.000Z') },
+  };
+  const NOW_LATER = new Date('2026-11-25T00:00:00.000Z');
+
+  it('without endedSince the queries and the result are exactly what they were, and `ended` is empty', async () => {
+    const db = {
+      subscription: { findMany: vi.fn(async () => [rows.live]) },
+      entitlementGrant: { findMany: vi.fn(async () => [rows.grantLive]) },
+    };
+    const loaded = await new SourcesRepository().load(db as never, A, NOW_LATER);
+    expect(db.subscription.findMany).toHaveBeenCalledWith({ where: { userId: A, status: { notIn: ['expired', 'revoked'] } }, orderBy: { createdAt: 'asc' } });
+    expect(db.entitlementGrant.findMany).toHaveBeenCalledWith({ where: { userId: A, revokedAt: null, endsAt: { gt: NOW_LATER } }, orderBy: { createdAt: 'asc' } });
+    expect(loaded.ended).toEqual({ subscriptions: [], grants: [] });
+    expect(loaded.subscriptions.map((s) => s.id)).toEqual(['s-live']);
+    expect(loaded.grants.map((g) => g.id)).toEqual(['g-live']);
+  });
+
+  it('with endedSince the same two queries are widened to sources that ended since then', async () => {
+    const db = {
+      subscription: { findMany: vi.fn(async () => [rows.live, rows.expiredIn]) },
+      entitlementGrant: { findMany: vi.fn(async () => [rows.grantLive, rows.grantRevoked, rows.grantRanOut]) },
+    };
+    await new SourcesRepository().load(db as never, A, NOW_LATER, since);
+    expect(db.subscription.findMany).toHaveBeenCalledWith({
+      where: { userId: A, OR: [{ status: { notIn: ['expired', 'revoked'] } }, { status: { in: ['expired', 'revoked'] }, endedAt: { gte: since } }] },
+      orderBy: { createdAt: 'asc' },
+    });
+    expect(db.entitlementGrant.findMany).toHaveBeenCalledWith({
+      where: { userId: A, OR: [
+        { revokedAt: null, endsAt: { gt: NOW_LATER } },
+        { revokedAt: { gte: since } },
+        { revokedAt: null, endsAt: { gte: since, lte: NOW_LATER } },
+      ] },
+      orderBy: { createdAt: 'asc' },
+    });
+  });
+
+  it('LA3E19: the ended ones come back in `ended` only; `subscriptions` and `grants` stay what they were (the snapshot lists grants from them)', async () => {
+    const db = {
+      subscription: { findMany: vi.fn(async () => [rows.live, rows.expiredIn]) },
+      entitlementGrant: { findMany: vi.fn(async () => [rows.grantLive, rows.grantRevoked, rows.grantRanOut]) },
+    };
+    const loaded = await new SourcesRepository().load(db as never, A, NOW_LATER, since);
+    expect(loaded.subscriptions.map((s) => s.id)).toEqual(['s-live']);
+    expect(loaded.grants.map((g) => g.id)).toEqual(['g-live']);
+    expect(loaded.ended.subscriptions.map((s) => [s.id, s.endedAt])).toEqual([['s-exp', new Date('2026-11-12T09:00:00.000Z')]]);
+    expect(loaded.ended.grants.map((g) => g.id)).toEqual(['g-rev', 'g-out']);
+  });
+});

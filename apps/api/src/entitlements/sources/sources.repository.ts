@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { Prisma, type EntitlementGrant, type PrismaClient, type Subscription } from '../../generated/prisma/client.js';
 import { POOL_OF_LIMIT, type Interval, type LimitKey, type SubscriptionStatus } from '../entitlements.types.js';
 import type { GrantSource, SubscriptionSource } from '../rules/plan-rules.js';
+import type { EndedSources } from '../rules/source-ends.js';
 
 type Db = PrismaClient | Prisma.TransactionClient;
 
@@ -20,7 +21,7 @@ const toSubscription = (row: Subscription): SubscriptionSource => ({
   id: row.id, provider: row.provider, externalSubscriptionId: row.externalSubscriptionId,
   status: row.status as SubscriptionStatus, trialDenied: row.trialDenied, cancelAtPeriodEnd: row.cancelAtPeriodEnd,
   trialEndsAt: row.trialEndsAt, currentPeriodStart: row.currentPeriodStart, currentPeriodEnd: row.currentPeriodEnd, graceEndsAt: row.graceEndsAt,
-  quotaAnchorAt: row.quotaAnchorAt, interval: row.interval as Interval, pendingInterval: row.pendingInterval as Interval | null,
+  quotaAnchorAt: row.quotaAnchorAt, endedAt: row.endedAt, interval: row.interval as Interval, pendingInterval: row.pendingInterval as Interval | null,
 });
 
 const toGrant = (row: EntitlementGrant): GrantSource => ({
@@ -34,15 +35,38 @@ export class SourcesRepository {
   /**
    * Subscriptions whose stored status is not final (`effectiveStatus` applies the time transitions), and grants not revoked
    * and not ended at `now` (a grant starting later is returned; `resolve` leaves it out until it starts).
+   *
+   * With `endedSince` the same two queries also return the sources that ended since then (expired or revoked subscriptions with
+   * `ended_at` ≥ it, grants revoked since then or run out between then and `now`), in `ended` only: `subscriptions` and `grants`
+   * stay exactly what they were, because the snapshot and `resolve` read them (launch prep A, design 6.3.4).
    */
-  async load(db: Db, userId: string, now: Date): Promise<{ subscriptions: SubscriptionSource[]; grants: GrantSource[] }> {
+  async load(
+    db: Db, userId: string, now: Date, endedSince?: Date,
+  ): Promise<{ subscriptions: SubscriptionSource[]; grants: GrantSource[]; ended: EndedSources }> {
+    const live: Prisma.SubscriptionWhereInput = { status: { notIn: ['expired', 'revoked'] } };
+    const liveGrant: Prisma.EntitlementGrantWhereInput = { revokedAt: null, endsAt: { gt: now } };
     const subscriptions = await db.subscription.findMany({
-      where: { userId, status: { notIn: ['expired', 'revoked'] } }, orderBy: { createdAt: 'asc' },
+      where: endedSince === undefined
+        ? { userId, ...live }
+        : { userId, OR: [live, { status: { in: ['expired', 'revoked'] }, endedAt: { gte: endedSince } }] },
+      orderBy: { createdAt: 'asc' },
     });
     const grants = await db.entitlementGrant.findMany({
-      where: { userId, revokedAt: null, endsAt: { gt: now } }, orderBy: { createdAt: 'asc' },
+      where: endedSince === undefined
+        ? { userId, ...liveGrant }
+        : { userId, OR: [liveGrant, { revokedAt: { gte: endedSince } }, { revokedAt: null, endsAt: { gte: endedSince, lte: now } }] },
+      orderBy: { createdAt: 'asc' },
     });
-    return { subscriptions: subscriptions.map(toSubscription), grants: grants.map(toGrant) };
+    const isLiveSub = (row: Subscription) => row.status !== 'expired' && row.status !== 'revoked';
+    const isLiveGrant = (row: EntitlementGrant) => row.revokedAt === null && row.endsAt > now;
+    return {
+      subscriptions: subscriptions.filter(isLiveSub).map(toSubscription),
+      grants: grants.filter(isLiveGrant).map(toGrant),
+      ended: {
+        subscriptions: subscriptions.filter((row) => !isLiveSub(row)).map(toSubscription),
+        grants: grants.filter((row) => !isLiveGrant(row)).map(toGrant),
+      },
+    };
   }
 
   /** `load` for many users in two queries (the AI dashboard); every asked user has an entry, empty when they have no source. */

@@ -9,6 +9,7 @@ import { SettingsService } from '../../settings/index.js';
 import { BILLING_MAX_ATTEMPTS } from '../entitlements.constants.js';
 import { lockUser } from '../entitlements.locks.js';
 import type { Interval, SubscriptionStatus } from '../entitlements.types.js';
+import { nextEndedAt, type EndedAtFields } from '../rules/source-ends.js';
 import { callAdapter } from './adapter-call.js';
 import type { BillingAdapter } from './billing-adapter.js';
 import { BillingAdapterRegistry } from './billing-adapter.registry.js';
@@ -71,7 +72,7 @@ export class BillingEventApplier implements BillingApplyPort {
     }
 
     // After commit: adapter calls, no lock held.
-    if (first.refetch !== null && adapter?.fetchState) await this.refetch(adapter, first.refetch, row.id);
+    if (first.refetch !== null && adapter?.fetchState) await this.refetch(adapter, first.refetch, row.id, graceDays);
     if (first.endTrial !== null && adapter?.endTrialNow) {
       const ended = await callAdapter(() => adapter.endTrialNow!(first.endTrial!));
       if (!ended.ok) this.logger.warn('billing_end_trial_failed', { event_id: row.id, provider: row.provider });
@@ -174,8 +175,10 @@ export class BillingEventApplier implements BillingApplyPort {
       return { ...none, outcome: 'applied' };
     }
 
+    // `ended_at` is written with every status write (launch prep A, design 6.3.3). A row that did not exist yet counts as just live.
     const columns = {
       ...result.next,
+      endedAt: nextEndedAt(sub === null ? NEW_ROW : endedAtFields(sub), result.next.status, row.occurredAt, graceDays),
       lastEventAt: nextLastEventAt(sub?.lastEventAt ?? null, row.occurredAt),
       updatedAt: now,
     };
@@ -219,7 +222,9 @@ export class BillingEventApplier implements BillingApplyPort {
   }
 
   /** design §9.2 "fetchState": a failure falls back to the event order (the event keeps its status, never `failed`). */
-  private async refetch(adapter: BillingAdapter, target: NonNullable<FirstPass['refetch']>, eventId: string): Promise<void> {
+  private async refetch(
+    adapter: BillingAdapter, target: NonNullable<FirstPass['refetch']>, eventId: string, graceDays: number,
+  ): Promise<void> {
     const fetched = await callAdapter(() => adapter.fetchState!(target.externalSubscriptionId));
     if (!fetched.ok || fetched.value === null) {
       this.logger.warn('billing_state_refetch_failed', { event_id: eventId, subscription_id: target.subscriptionId });
@@ -234,7 +239,11 @@ export class BillingEventApplier implements BillingApplyPort {
       const row = rows.length === 0 ? null : await tx.subscription.findUnique({ where: { id: target.subscriptionId } });
       // A newer event already wrote this row: its view wins over this fetch.
       if (row === null || row.updatedAt.getTime() !== target.updatedAt.getTime()) return false;
-      await tx.subscription.update({ where: { id: row.id }, data: { ...applyFetched(toState(row), state), updatedAt: this.clock.now() } });
+      const now = this.clock.now();
+      const next = applyFetched(toState(row), state);
+      await tx.subscription.update({
+        where: { id: row.id }, data: { ...next, endedAt: nextEndedAt(endedAtFields(row), next.status, now, graceDays), updatedAt: now },
+      });
       return true;
     });
     if (written) this.logger.info('billing_state_refetched', { event_id: eventId, subscription_id: target.subscriptionId });
@@ -250,6 +259,21 @@ export class BillingEventApplier implements BillingApplyPort {
     if (updated.attempts >= BILLING_MAX_ATTEMPTS) this.logger.error('billing_event_stuck', err, { event_id: row.id });
   }
 }
+
+/**
+ * The fields of a stored row `nextEndedAt` needs. Always the row's own dates and flags, never a provider's newer answer: the moment a
+ * source stopped being Pro is told by the time rules Wordmet applied to the row it had (design 6.3.3, review M3 I1).
+ */
+export function endedAtFields(row: SubscriptionRow): EndedAtFields {
+  return {
+    status: row.status as SubscriptionStatus, endedAt: row.endedAt, trialEndsAt: row.trialEndsAt,
+    currentPeriodEnd: row.currentPeriodEnd, graceEndsAt: row.graceEndsAt, cancelAtPeriodEnd: row.cancelAtPeriodEnd,
+  };
+}
+
+const NEW_ROW: EndedAtFields = {
+  status: 'active', endedAt: null, trialEndsAt: null, currentPeriodEnd: null, graceEndsAt: null, cancelAtPeriodEnd: false,
+};
 
 export function toState(row: SubscriptionRow): SubscriptionState {
   return {

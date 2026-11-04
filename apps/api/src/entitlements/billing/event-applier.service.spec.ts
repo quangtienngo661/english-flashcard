@@ -716,3 +716,41 @@ describe('BillingEventApplier.apply (design §9.2 step 4, §9.4)', () => {
     expect(text).not.toContain('2026-11-22T10:00:00.000Z');
   });
 });
+
+describe('BillingEventApplier writes ended_at with every status change (launch prep A, design 6.3.3)', () => {
+  it('LA3E11: an expired event dated 02/12 for a cancelled period that ended 30/11 → ended_at is 30/11, not the event date', async () => {
+    const { db, applier } = setup();
+    const sub = addSub(db, { status: 'active', cancelAtPeriodEnd: true, currentPeriodEnd: at('2026-11-30T00:00:00.000Z') });
+    expect(await applier.apply(addEvent(db, 'expired', { occurredAt: '2026-12-02T10:00:00.000Z' }))).toBe('applied');
+    expect(sub).toMatchObject({ status: 'expired', endedAt: at('2026-11-30T00:00:00.000Z') });
+  });
+
+  it('LA3E10: a revoked event dated 15/11 for a period that runs to 30/11 → ended_at is the event time', async () => {
+    const { db, applier } = setup();
+    const sub = addSub(db, { status: 'active', currentPeriodEnd: at('2026-11-30T00:00:00.000Z') });
+    expect(await applier.apply(addEvent(db, 'revoked', { occurredAt: '2026-11-15T10:00:00.000Z' }))).toBe('applied');
+    expect(sub).toMatchObject({ status: 'revoked', endedAt: at('2026-11-15T10:00:00.000Z') });
+  });
+
+  it('LA3E14: a renewed event on an expired row makes it Pro again → ended_at is cleared', async () => {
+    const { db, applier } = setup();
+    const sub = addSub(db, { status: 'expired', endedAt: at('2026-11-12T09:00:00.000Z') });
+    const renewal = { currentPeriodStart: '2026-12-01T00:00:00.000Z', currentPeriodEnd: '2027-01-01T00:00:00.000Z', interval: 'month', transactionId: 'tx-9' };
+    expect(await applier.apply(addEvent(db, 'renewed', renewal))).toBe('applied');
+    expect(sub).toMatchObject({ status: 'active', endedAt: null });
+  });
+
+  it('LA3E13: on_hold then expired keeps the moment it stopped being Pro', async () => {
+    const { db, applier } = setup();
+    const sub = addSub(db, { status: 'on_hold', endedAt: at('2026-11-27T03:00:00.000Z') });
+    await applier.apply(addEvent(db, 'expired', { occurredAt: '2026-12-20T10:00:00.000Z' }));
+    expect(sub).toMatchObject({ status: 'expired', endedAt: at('2026-11-27T03:00:00.000Z') });
+  });
+
+  it('a row created by a started event has ended_at null', async () => {
+    const { db, applier } = setup();
+    const started = { interval: 'month', currentPeriodStart: '2026-11-15T10:00:00.000Z', currentPeriodEnd: '2026-12-15T10:00:00.000Z', trialEndsAt: null, paymentFingerprint: 'fp-1', transactionId: 'tx-1' };
+    expect(await applier.apply(addEvent(db, 'subscription_started', started))).toBe('applied');
+    expect(db.subs[0]).toMatchObject({ status: 'active', endedAt: null });
+  });
+});

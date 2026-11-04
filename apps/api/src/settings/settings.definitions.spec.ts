@@ -4,9 +4,9 @@ import {
 } from './settings.definitions.js';
 
 const ENTITLEMENT_DEFAULTS_API = {
-  free_practice_sessions_per_day: 3, pro_practice_sessions_per_day: 30, pro_ai_practice_per_cycle: 300,
-  pro_ai_lookup_per_cycle: 100, trial_ai_practice_per_cycle: 300, trial_ai_lookup_per_cycle: 100, grace_days: 7,
-  trial_reminder_days_before: 3, renewal_notice_days_before: 7, ai_enabled: true, ai_daily_cap: 1000,
+  free_practice_sessions_per_day: 3, pro_practice_sessions_per_day: 30, free_ai_practice_per_cycle: 15, free_ai_lookup_per_cycle: 5,
+  pro_ai_practice_per_cycle: 300, pro_ai_lookup_per_cycle: 100, trial_ai_practice_per_cycle: 300, trial_ai_lookup_per_cycle: 100, grace_days: 7,
+  trial_reminder_days_before: 3, renewal_notice_days_before: 7, ai_enabled: true, ai_daily_cap: 1000, free_ai_daily_cap: 500,
   ai_cap_alert_percent: 75, ads_enabled: false, ads_interstitial_per_day: 3, ads_min_interval_minutes: 10,
   transaction_retention_years: 10,
 };
@@ -72,10 +72,10 @@ describe('settings definitions', () => {
     expect(changedFields(SETTINGS_DEFAULTS, next)).toEqual([{ key: 'identity.unverified_cleanup_days', oldValue: 7, newValue: 3 }]);
   });
 
-  it('D18: defaults are 3, 30, 300, 100, 300, 100, 7, 3, 7, true, 1000, 75, false, 3, 10; learning 100/2000; content 10000/20', () => {
+  it('D18, LA3#14: defaults are 3, 30, 15, 5, 300, 100, 300, 100, 7, 3, 7, true, 1000, 500, 75, false, 3, 10, 10; learning 100/2000; content 10000/20', () => {
     const api = toApiValues(SETTINGS_DEFAULTS);
     expect(api.entitlements).toEqual(ENTITLEMENT_DEFAULTS_API);
-    expect(Object.values(api.entitlements)).toEqual([3, 30, 300, 100, 300, 100, 7, 3, 7, true, 1000, 75, false, 3, 10, 10]);
+    expect(Object.values(api.entitlements)).toEqual([3, 30, 15, 5, 300, 100, 300, 100, 7, 3, 7, true, 1000, 500, 75, false, 3, 10, 10]);
     expect([api.learning.groups_per_user, api.learning.items_per_group]).toEqual([100, 2000]);
     expect(api.content).toEqual({ private_words_per_user: 10000, sentences_per_sense: 20 });
   });
@@ -127,6 +127,8 @@ describe('settings definitions', () => {
   it('patch schema rejects min − 1 and max + 1 for every new numeric key and accepts both edges', () => {
     const edges: Array<[string, string, number, number]> = [
       ['entitlements', 'free_practice_sessions_per_day', 1, 50], ['entitlements', 'pro_practice_sessions_per_day', 1, 200],
+      ['entitlements', 'free_ai_practice_per_cycle', 0, 5000], ['entitlements', 'free_ai_lookup_per_cycle', 0, 5000],
+      ['entitlements', 'free_ai_daily_cap', 0, 100000],
       ['entitlements', 'pro_ai_practice_per_cycle', 0, 5000], ['entitlements', 'pro_ai_lookup_per_cycle', 0, 5000],
       ['entitlements', 'trial_ai_practice_per_cycle', 0, 5000], ['entitlements', 'trial_ai_lookup_per_cycle', 0, 5000],
       ['entitlements', 'grace_days', 0, 16], ['entitlements', 'trial_reminder_days_before', 3, 6],
@@ -429,5 +431,29 @@ describe('apiValueOf (M5-T1)', () => {
     for (const key of ['entitlements.nope', 'nope.ai_daily_cap', 'entitlements', 'constructor', '__proto__', 'entitlements.constructor', '']) {
       expect(apiValueOf(SETTINGS_DEFAULTS, key), key).toBeUndefined();
     }
+  });
+
+  it('LA3#14: the three Free AI keys exist with the defaults 15, 5, 500; 5001 is refused; free_ai_daily_cap does not take null', () => {
+    const api = toApiValues(SETTINGS_DEFAULTS).entitlements;
+    expect([api.free_ai_practice_per_cycle, api.free_ai_lookup_per_cycle, api.free_ai_daily_cap]).toEqual([15, 5, 500]);
+    expect(issues({ entitlements: { free_ai_practice_per_cycle: 5001 } })).toEqual(['entitlements.free_ai_practice_per_cycle']);
+    expect(issues({ entitlements: { free_ai_lookup_per_cycle: 5001 } })).toEqual(['entitlements.free_ai_lookup_per_cycle']);
+    expect(issues({ entitlements: { free_ai_daily_cap: 100001 } })).toEqual(['entitlements.free_ai_daily_cap']);
+    expect(issues({ entitlements: { free_ai_daily_cap: null } })).toEqual(['entitlements.free_ai_daily_cap']);
+    expect(SETTINGS_DEFAULTS.entitlements).toMatchObject({ freeAiPracticePerCycle: 15, freeAiLookupPerCycle: 5, freeAiDailyCap: 500 });
+  });
+
+  it('RA-16: no cross rule ties Free AI to Pro AI (Pro can be set below Free, and Free to 0 while Pro stays)', () => {
+    expect(crossFieldViolations(applyPatch(SETTINGS_DEFAULTS, { entitlements: { pro_ai_practice_per_cycle: 0, pro_ai_lookup_per_cycle: 0 } }))).toEqual([]);
+    expect(crossFieldViolations(applyPatch(SETTINGS_DEFAULTS, { entitlements: { free_ai_practice_per_cycle: 0, free_ai_lookup_per_cycle: 0 } }))).toEqual([]);
+  });
+
+  it('JSON stored before launch prep A has no Free AI keys: they fill from the defaults and a bad stored value falls back too', () => {
+    expect(withDefaults({ entitlements: { proAiPracticePerCycle: 12 } }).entitlements)
+      .toMatchObject({ proAiPracticePerCycle: 12, freeAiPracticePerCycle: 15, freeAiLookupPerCycle: 5, freeAiDailyCap: 500 });
+    expect(withDefaults({ entitlements: { freeAiPracticePerCycle: 9999, freeAiDailyCap: null } }).entitlements)
+      .toMatchObject({ freeAiPracticePerCycle: 15, freeAiDailyCap: 500 });
+    expect(withDefaults({ entitlements: { freeAiPracticePerCycle: 0, freeAiLookupPerCycle: 0 } }).entitlements)
+      .toMatchObject({ freeAiPracticePerCycle: 0, freeAiLookupPerCycle: 0 });
   });
 });

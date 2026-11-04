@@ -74,7 +74,7 @@
       },
       "practice": {
         "title": "Luyện tập với AI",
-        "body": "Nhiều dạng bài trong mỗi phiên. Gói Pro có thêm câu do AI biên soạn.",
+        "body": "Nhiều dạng bài trong mỗi phiên, kể cả câu do AI biên soạn.",
         "p1": "Chấm điểm theo quy tắc",
         "p2": "Luyện riêng từ hay sai",
         "sentenceBefore": "Both sides agreed to",
@@ -87,7 +87,7 @@
       "lookup": {
         "title": "Tra cứu từ vựng",
         "body": "Nghĩa, câu mẫu, phát âm và dạng chia trên một trang.",
-        "p1": "Pro: tra cứu bằng AI",
+        "p1": "Tra cứu bằng AI",
         "word": "profit",
         "level": "B1",
         "forms": "Dạng chia: profit · profits",
@@ -227,7 +227,8 @@
       "proP2": "Câu luyện tập AI",
       "proP3": "Tra cứu bằng AI",
       "proP4": "Không quảng cáo",
-      "trial": "Dùng thử 7 ngày, cần thẻ thanh toán. Hủy trước hạn không mất phí.",
+      "freeAiPractice": "15/tháng",
+      "freeAiLookup": "5/tháng",
       "signup": "Đăng ký",
       "yes": "Có",
       "no": "Không"
@@ -237,7 +238,7 @@
       "q1": "Wordmet khác flashcard ở điểm nào?",
       "a1": "Ngoài thẻ, Wordmet có bài tập vận dụng và lịch ôn tự động cho từng từ.",
       "q2": "Wordmet có miễn phí không?",
-      "a2": "Có. Gói Miễn phí gồm ôn thẻ, tra cứu và 3 phiên luyện tập mỗi ngày.",
+      "a2": "Có. Gói Miễn phí gồm ôn thẻ, tra cứu, 3 phiên luyện tập mỗi ngày và một số lượt AI mỗi tháng.",
       "q3": "AI có chấm điểm không?",
       "a3": "Không. AI chỉ biên soạn câu hỏi; đáp án chấm theo quy tắc.",
       "q4": "Nên bắt đầu thế nào?",
@@ -594,7 +595,7 @@
         "fake": "Giả (thử)"
       },
       "emptyTitle": "Chưa có giao dịch nào.",
-      "emptyBody": "Khi bạn dùng thử, mua gói Pro hoặc được đội Wordmet cấp gói, giao dịch sẽ hiện ở đây.",
+      "emptyBody": "Khi bạn mua gói Pro hoặc được đội Wordmet cấp gói, giao dịch sẽ hiện ở đây.",
       "errorTitle": "Không tải được lịch sử giao dịch.",
       "errorBody": "Kiểm tra mạng rồi thử lại.",
       "retry": "Thử lại"
@@ -955,7 +956,6 @@
         "button": "Tra bằng AI",
         "manual": "Tự nhập nghĩa",
         "left": "còn {count, number} lượt tra AI",
-        "trial": "Dùng thử",
         "sendSentence": "Gửi kèm câu đã gặp cho AI",
         "looking": "Đang tra…",
         "failed": "Hệ thống đang gặp lỗi.",
@@ -1515,14 +1515,15 @@
       "priceMonth": "XX.000 ₫",
       "perYear": "/ năm",
       "perMonth": "/ tháng",
-      "proLine": "Nhiều phiên luyện hơn, có câu AI và tra bằng AI.",
+      "proLine": "Nhiều phiên luyện hơn và nhiều lượt AI hơn mỗi tháng.",
       "until": "Tới hết {date}",
       "afterEnd": "Hết hạn thì tài khoản về gói Miễn phí; từ và lịch ôn giữ nguyên.",
       "freeList": {
         "review": "Ôn thẻ, lịch ôn, nhắc học qua email",
         "lookup": "Tra từ, thêm nhanh, tối đa {groups, number} nhóm",
         "sessions": "{count, number} phiên luyện mỗi ngày",
-        "ai": "Câu AI và tra bằng AI: cần gói Pro"
+        "ai": "{practice, number} câu AI và {lookup, number} lượt tra AI mỗi tháng",
+        "aiOff": "Câu AI và tra bằng AI: cần gói Pro"
       },
       "proList": {
         "sessions": "{count, number} phiên luyện mỗi ngày",

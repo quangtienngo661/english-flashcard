@@ -41,7 +41,7 @@ const appConfig = {
   reminders: { send_time: '20:00' },
   learning: { backlog_after_days: 60, groups_per_user: 100 },
   plans: {
-    free: { practice_sessions_per_day: 3 },
+    free: { practice_sessions_per_day: 3, ai_practice_per_cycle: 15, ai_lookup_per_cycle: 5 },
     trial: { ai_practice_per_cycle: 300, ai_lookup_per_cycle: 100 },
     pro: { practice_sessions_per_day: 30, ai_practice_per_cycle: 300, ai_lookup_per_cycle: 100 },
   },
@@ -71,7 +71,19 @@ describe('SettingsPage (K/50)', () => {
     expect(screen.getByText('Còn 2 phiên, mở lại lúc 0:00.')).toBeInTheDocument();
   });
 
-  it('Free: both AI rows say "Cần gói Pro" and show no refill line', async () => {
+  it('LA3#13: Free with the monthly allowance: both AI rows show what is left and the first of next month (1/12), and no "Cần gói Pro"', async () => {
+    const free = entitlements('free', { pools: {
+      practice_sessions: pool(3, 1, MIDNIGHT), ai_practice: pool(15, 3, '2026-11-30T17:00:00.000Z'), ai_lookup: pool(5, 0, '2026-11-30T17:00:00.000Z'),
+    } });
+    renderApp(<SettingsPage />, { routes: routes('free', { 'GET /v1/me/entitlements': () => Response.json(free) }) });
+    expect(await screen.findByText('còn 12/15')).toBeInTheDocument();
+    expect(screen.getByText('Lượt câu AI mới vào 1/12.')).toBeInTheDocument();
+    expect(screen.getByText('còn 5/5')).toBeInTheDocument();
+    expect(screen.getByText('Lượt tra AI mới vào 1/12.')).toBeInTheDocument();
+    expect(screen.queryByText('Cần gói Pro')).not.toBeInTheDocument();
+  });
+
+  it('Free with AI switched off (LA3#11): both AI rows say "Cần gói Pro" and show no refill line', async () => {
     renderApp(<SettingsPage />, { routes: routes('free') });
     await screen.findByText('đã dùng 1/3');
     expect(screen.getAllByText('Cần gói Pro')).toHaveLength(2);

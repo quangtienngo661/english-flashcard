@@ -350,8 +350,6 @@ async function main() {
     const before = await entitlements();
     if (before.plan === 'trial') {
       ok('skipped: the learner is already on a trial');
-    } else if (!before.trial_eligible) {
-      ok(`skipped: the learner has used a trial before (plan stays ${before.plan})`);
     } else {
       const sub = `learner-setup-trial-${learner.profile.id}`;
       const res = await sendFakeEvent({ baseUrl: BASE, secret, events: [{
@@ -359,8 +357,10 @@ async function main() {
         occurred_at: iso(0), interval: 'month', current_period_start: iso(0), current_period_end: iso(7 * DAY), trial_ends_at: iso(7 * DAY),
         payment_fingerprint: `fp-${sub}` }] });
       check(res.status === 200, `webhook subscription_started: ${res.status} ${JSON.stringify(res.body)}`);
-      await waitFor(entitlements, (view) => view.plan === 'trial', 'trial start');
-      ok(`subscription ${sub}: trial until ${iso(7 * DAY)}`);
+      // `trial_eligible` is false for everyone now (launch prep A, design 6.9), so the event is sent whatever it says, and the rules decide.
+      const started = await waitFor(entitlements, (view) => view.plan === 'trial', 'trial start', 8_000).catch(() => null);
+      if (started === null) ok(`trial refused: the account has used a trial before (D30), or the event was not applied (plan stays ${(await entitlements()).plan})`);
+      else ok(`subscription ${sub}: trial until ${iso(7 * DAY)}`);
     }
   }
 
