@@ -45,6 +45,9 @@ class MemoryOrders {
     const rows = this.payments.filter((p) => p.orderId === orderId && p.source !== 'manual');
     return { total: rows.reduce((sum, p) => sum + p.amount, 0), count: rows.length };
   }
+  async payosTransfers(_db: unknown, orderId: string) {
+    return this.payments.filter((p) => p.orderId === orderId && p.source !== 'manual').map((p) => ({ amount: p.amount, providerTime: p.providerTime }));
+  }
   async insertPayment(_db: unknown, row: NewPayment) {
     this.calls.push('insert-payment');
     const id = `pay-${++this.seq}`;
@@ -142,6 +145,24 @@ describe('OrderApplier.applyPayment — the rules T1–T14 against the data (des
     expect(purchases).toHaveLength(1);
   });
 
+  it('review I2: the job counted the transfer first, then the webhook brings it under another reference: one period, one purchase row, the second payment attached', async () => {
+    const { applier, memory, purchases, tx } = setup();
+    await applier.applyPayment(tx as never, input({ source: 'reconcile', reference: 'REF-A' }));
+    const again = await applier.applyPayment(tx as never, input({ source: 'webhook', reference: 'REF-B' }));
+    expect(again).toMatchObject({ outcome: 'attached' });
+    expect(memory.periods).toHaveLength(1);
+    expect(purchases).toHaveLength(1);
+    expect(memory.payments.map((p) => [p.reference, p.outcome])).toEqual([['REF-A', 'opened-period'], ['REF-B', 'attached']]);
+    expect(memory.orders.get(ORDER)).toMatchObject({ status: 'paid', paidVia: 'reconcile', reviewReason: null });
+  });
+
+  it('review I2: a second transfer of the same amount at another moment still opens a second period', async () => {
+    const { applier, memory, tx } = setup();
+    await applier.applyPayment(tx as never, input({ source: 'webhook', reference: 'REF-A' }));
+    expect(await applier.applyPayment(tx as never, input({ source: 'webhook', reference: 'REF-B', providerTime: '2026-11-05 10:40:00' }))).toMatchObject({ outcome: 'opened-period' });
+    expect(memory.periods).toHaveLength(2);
+  });
+
   it('LB1E9: 100.000 then 99.000 for a 199.000 order → needs_review amount-short, then paid with one period', async () => {
     const { applier, memory, tx } = setup({ orders: [baseOrder({ amount: 199000, periodMonths: 3 })] });
     expect(await applier.applyPayment(tx as never, input({ amount: 100000, reference: 'R1' }))).toMatchObject({ outcome: 'counted' });
@@ -174,7 +195,8 @@ describe('OrderApplier.applyPayment — the rules T1–T14 against the data (des
   it('LB1E7: a second transfer of the exact amount into a paid order is a second period that follows the first, with its own purchase row', async () => {
     const { applier, memory, purchases, tx } = setup();
     await applier.applyPayment(tx as never, input());
-    const second = await applier.applyPayment(tx as never, input({ reference: 'FT-SECOND' }));
+    // Another moment than the first (the same moment would be the same transfer, review I2).
+    const second = await applier.applyPayment(tx as never, input({ reference: 'FT-SECOND', providerTime: '2026-11-05 10:30:00' }));
     expect(second).toMatchObject({ outcome: 'opened-period' });
     expect(memory.periods).toHaveLength(2);
     expect(memory.periods[1].startsAt).toEqual(memory.periods[0].endsAt);
@@ -192,10 +214,10 @@ describe('OrderApplier.applyPayment — the rules T1–T14 against the data (des
     expect(memory.payments.at(-1)).toMatchObject({ outcome: 'flagged', amount: 50000 });
   });
 
-  it('LB1E14: the reconcile job brings a payment whose key the webhook did not use → flagged reconcile-mismatch, one period only', async () => {
+  it('LB1E14: the reconcile job brings a payment whose key the webhook did not use, at another moment → flagged reconcile-mismatch, one period only', async () => {
     const { applier, memory, tx } = setup();
     await applier.applyPayment(tx as never, input());
-    expect(await applier.applyPayment(tx as never, input({ source: 'reconcile', reference: 'OTHER-KEY' }))).toMatchObject({ outcome: 'flagged' });
+    expect(await applier.applyPayment(tx as never, input({ source: 'reconcile', reference: 'OTHER-KEY', providerTime: '2026-11-05 10:41:00' }))).toMatchObject({ outcome: 'flagged' });
     expect(memory.orders.get(ORDER)).toMatchObject({ status: 'paid', reviewReason: 'reconcile-mismatch' });
     expect(memory.periods).toHaveLength(1);
   });

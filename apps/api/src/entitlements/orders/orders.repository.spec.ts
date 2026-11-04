@@ -44,6 +44,47 @@ describe('OrdersRepository (query shapes; the data itself is checked by the paym
       .toEqual({ total: 0, count: 0 });
   });
 
+  it('payosTransfers gives each webhook or reconcile payment of the order as an amount (a number) and the moment payOS gave', async () => {
+    const findMany = vi.fn(async () => [{ amountMinor: 79000n, providerTime: '2026-11-05 10:02:00' }, { amountMinor: 40000n, providerTime: null }]);
+    expect(await repo.payosTransfers({ billingOrderPayment: { findMany } } as never, 'o1')).toEqual([
+      { amount: 79000, providerTime: '2026-11-05 10:02:00' }, { amount: 40000, providerTime: null },
+    ]);
+    expect(findMany).toHaveBeenCalledWith({ where: { orderId: 'o1', source: { in: ['webhook', 'reconcile'] } }, select: { amountMinor: true, providerTime: true } });
+  });
+
+  describe('neverApplied (review I1): no payment counted, and every inbox row final without being applied', () => {
+    const KEYS = ['payos:production:1000000123:FT1', 'payos:production:1000000123:FT2'];
+    const db = (counted: number, events: Array<{ status: string; attempts: number }>) => ({
+      billingOrderPayment: { count: vi.fn(async () => counted) }, billingEvent: { findMany: vi.fn(async () => events) },
+    });
+    const ask = (counted: number, events: Array<{ status: string; attempts: number }>, keys = KEYS) => repo.neverApplied(db(counted, events) as never, keys);
+
+    it('ignored rows, or rows that failed 5 times → true; the query reads both tables by the keys', async () => {
+      expect(await ask(0, [{ status: 'ignored', attempts: 0 }, { status: 'failed', attempts: 5 }])).toBe(true);
+      const probe = db(0, [{ status: 'ignored', attempts: 0 }, { status: 'ignored', attempts: 0 }]);
+      await repo.neverApplied(probe as never, KEYS);
+      expect(probe.billingOrderPayment.count).toHaveBeenCalledWith({ where: { paymentKey: { in: KEYS } } });
+      expect(probe.billingEvent.findMany).toHaveBeenCalledWith({ where: { dedupeKey: { in: KEYS } }, select: { status: true, attempts: true } });
+    });
+
+    it('any payment counted → false, and the inbox is not read', async () => {
+      const probe = db(1, [{ status: 'ignored', attempts: 0 }, { status: 'ignored', attempts: 0 }]);
+      expect(await repo.neverApplied(probe as never, KEYS)).toBe(false);
+      expect(probe.billingEvent.findMany).not.toHaveBeenCalled();
+    });
+
+    it('a row still on its way is false: pending, applied, or failed fewer than 5 times (the hourly job retries it)', async () => {
+      for (const row of [{ status: 'pending', attempts: 0 }, { status: 'applied', attempts: 0 }, { status: 'failed', attempts: 4 }, { status: 'stale', attempts: 0 }]) {
+        expect(await ask(0, [{ status: 'ignored', attempts: 0 }, row]), row.status).toBe(false);
+      }
+    });
+
+    it('a transfer with no inbox row at all, or an empty list of transfers → false', async () => {
+      expect(await ask(0, [{ status: 'ignored', attempts: 0 }])).toBe(false);
+      expect(await ask(0, [], [])).toBe(false);
+    });
+  });
+
   it('insertPayment writes the amount as bigint and fills the optional columns with null', async () => {
     const create = vi.fn(async () => ({ id: 'p1' }));
     const result = await repo.insertPayment({ billingOrderPayment: { create } } as never, {

@@ -8,9 +8,9 @@ const EXPIRES = at('2026-11-05T03:17:00.000Z');
 const A = 199000;
 
 const order = (over: Partial<OrderState> = {}): OrderState => ({
-  status: 'pending', reviewReason: null, paidVia: null, amount: A, expiresAt: EXPIRES, payosTotal: 0, payosCount: 0, account: 'active', ...over,
+  status: 'pending', reviewReason: null, paidVia: null, amount: A, expiresAt: EXPIRES, payosTotal: 0, payosCount: 0, payosTransfers: [], account: 'active', ...over,
 });
-const pay = (over: Partial<IncomingPayment> = {}): IncomingPayment => ({ source: 'webhook', amount: A, at: at('2026-11-05T03:02:00.000Z'), ...over });
+const pay = (over: Partial<IncomingPayment> = {}): IncomingPayment => ({ source: 'webhook', amount: A, at: at('2026-11-05T03:02:00.000Z'), providerTime: null, ...over });
 /** A paid order: the first period is open, so `paid_via` is set. */
 const paid = (over: Partial<OrderState> = {}) => order({ status: 'paid', paidVia: 'webhook', payosTotal: A, payosCount: 1, ...over });
 
@@ -149,6 +149,30 @@ describe('decideOrderPayment — design §3.4, one row of the table at a time', 
       expect(decideOrderPayment(paid(), pay({ source: 'reconcile' }))).toMatchObject({
         orderStatus: 'paid', reviewReason: 'reconcile-mismatch', openPeriod: false, outcome: 'flagged',
       });
+    });
+
+    // Review I2: payOS gave the return-page check and the webhook two different references for one transfer. The key then differs, so only the
+    // amount and the moment tell the two apart from a second purchase.
+    const TIME = '2026-11-05 10:02:00';
+    it('I2: paid by the job, the webhook brings the same transfer (same amount, same time) under another reference → attached, no second period, no flag', () => {
+      const state = paid({ paidVia: 'reconcile', payosTransfers: [{ amount: A, providerTime: TIME }] });
+      expect(decideOrderPayment(state, pay({ source: 'webhook', providerTime: TIME }))).toMatchObject({
+        orderStatus: 'paid', reviewReason: null, openPeriod: false, outcome: 'attached',
+      });
+    });
+
+    it('I2 the other way round: paid by the webhook, the job lists the same transfer under another reference → attached, not a reconcile-mismatch flag', () => {
+      const state = paid({ payosTransfers: [{ amount: A, providerTime: TIME }] });
+      expect(decideOrderPayment(state, pay({ source: 'reconcile', providerTime: TIME }))).toMatchObject({
+        reviewReason: null, openPeriod: false, outcome: 'attached',
+      });
+    });
+
+    it('I2: a transfer of the same amount at another moment is still a second purchase (T8); so is one with no time on either side', () => {
+      const state = paid({ payosTransfers: [{ amount: A, providerTime: TIME }] });
+      expect(decideOrderPayment(state, pay({ providerTime: '2026-11-05 11:30:00' }))).toMatchObject({ openPeriod: true, outcome: 'opened-period' });
+      expect(decideOrderPayment(state, pay({ providerTime: null }))).toMatchObject({ openPeriod: true, outcome: 'opened-period' });
+      expect(decideOrderPayment(paid({ payosTransfers: [{ amount: A, providerTime: null }] }), pay({ providerTime: null }))).toMatchObject({ openPeriod: true });
     });
 
     it('a flag set before is not cleared by a payment that adds nothing (attached keeps the reason it had)', () => {

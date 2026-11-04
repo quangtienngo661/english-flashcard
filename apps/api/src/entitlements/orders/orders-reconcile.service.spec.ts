@@ -24,13 +24,14 @@ const tx = (reference: string, amount = 79000) => ({
 });
 
 /** The order table in memory, and `transition` like the repository's conditional UPDATE. */
-function setup(opts: { account?: 'production' | 'sandbox'; stored?: Partial<ReconcileOrder>; getCheckout?: () => Promise<CheckoutState | null>; withAdapter?: boolean } = {}) {
+function setup(opts: { account?: 'production' | 'sandbox'; stored?: Partial<ReconcileOrder>; getCheckout?: () => Promise<CheckoutState | null>; withAdapter?: boolean; neverApplied?: boolean } = {}) {
   const stored = order(opts.stored);
   const row = { ...stored };
   const calls: string[] = [];
   let inTx = false;
   const transitions: Array<{ id: string; from: string; to: Record<string, unknown> }> = [];
   const orders = {
+    neverApplied: vi.fn(async (_db: unknown, _keys: string[]) => opts.neverApplied ?? false),
     lock: vi.fn(async (_db: unknown, id: string) => { calls.push(`lock-order:${id}`); return { ...row, orderCode: row.orderCode } as never; }),
     transition: vi.fn(async (_db: unknown, id: string, from: string, data: Record<string, unknown>) => {
       calls.push(`transition:${from}->${String(data.status)}`);
@@ -108,6 +109,30 @@ describe('OrdersReconcileService.reconcileOne — payOS answered with money (des
     ctx.inbox.store.mockResolvedValue([]);
     await ctx.service.reconcileOne(order(), NOW);
     expect(ctx.applier.applyMany).not.toHaveBeenCalled();
+  });
+
+  it('review I1: money payOS lists whose inbox rows are all final without being applied (the webhook was ignored) → needs_review provider-mismatch, with a warning, so staff see it', async () => {
+    const ctx = setup({ getCheckout: async () => state({ status: 'PAID', transactions: [tx('FT1'), tx('FT2', 40000)] }), neverApplied: true });
+    ctx.inbox.store.mockResolvedValue([]);
+    await ctx.service.reconcileOne(order(), NOW);
+    expect(ctx.orders.neverApplied).toHaveBeenCalledWith(expect.anything(), [`payos:production:${CODE}:FT1`, `payos:production:${CODE}:FT2`]);
+    expect(ctx.row).toMatchObject({ status: 'needs_review', reviewReason: 'provider-mismatch' });
+    expect(ctx.logs.some((l) => l.level === 'warn')).toBe(true);
+  });
+
+  it('review I1: the same, asked after the new rows were applied, and keyed by the sandbox environment under the fake payOS', async () => {
+    const ctx = setup({ account: 'sandbox', getCheckout: async () => state({ status: 'PAID', transactions: [tx('FT1')] }), neverApplied: true });
+    await ctx.service.reconcileOne(order(), NOW);
+    expect(ctx.applier.applyMany).toHaveBeenCalledWith(['evt-1-0']);
+    expect(ctx.orders.neverApplied).toHaveBeenCalledWith(expect.anything(), [`payos:sandbox:${CODE}:FT1`]);
+    expect(ctx.applier.applyMany.mock.invocationCallOrder[0]).toBeLessThan(ctx.orders.neverApplied.mock.invocationCallOrder[0]);
+  });
+
+  it('review I1: an order whose money is on its way (some inbox row still pending, applied or being retried) is left alone', async () => {
+    const ctx = setup({ getCheckout: async () => state({ status: 'PAID', transactions: [tx('FT1')] }), neverApplied: false });
+    await ctx.service.reconcileOne(order(), NOW);
+    expect(ctx.row.status).toBe('pending');
+    expect(ctx.transitions).toEqual([]);
   });
 
   it('the sandbox environment follows the fake payOS', async () => {
