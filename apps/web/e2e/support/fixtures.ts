@@ -8,19 +8,24 @@ export function nextHcmMidnight(now = new Date()): string {
   return new Date(Date.UTC(hcm.getUTCFullYear(), hcm.getUTCMonth(), hcm.getUTCDate() + 1) - 7 * 3_600_000).toISOString();
 }
 
-export function entitlementsBody(plan: Plan) {
+/**
+ * A Free account has the monthly AI allowance since launch prep A (15 questions and 5 lookups, 3 and 0 used); `freeAi: false` is a Free
+ * account whose AI the admin switched off (both numbers 0): the pools are empty and both AI features say plan-required.
+ */
+export function entitlementsBody(plan: Plan, { freeAi = true }: { freeAi?: boolean } = {}) {
   const later = new Date(Date.now() + 23 * 86_400_000).toISOString();
+  const noAi = plan === 'free' && !freeAi;
   return {
     plan,
     sources: [],
     pools: {
       practice_sessions: pool(plan === 'free' ? 3 : 30, 1, nextHcmMidnight()),
-      ai_practice: plan === 'free' ? pool(0, 0, null) : pool(300, 13, later),
-      ai_lookup: plan === 'free' ? pool(0, 0, null) : pool(100, 4, later),
+      ai_practice: noAi ? pool(0, 0, null) : plan === 'free' ? pool(15, 3, later) : pool(300, 13, later),
+      ai_lookup: noAi ? pool(0, 0, null) : plan === 'free' ? pool(5, 0, later) : pool(100, 4, later),
     },
     features: {
-      'ai.practice': { allowed: plan !== 'free', reason: plan === 'free' ? 'plan-required' : null },
-      'ai.lookup': { allowed: plan !== 'free', reason: plan === 'free' ? 'plan-required' : null },
+      'ai.practice': { allowed: !noAi, reason: noAi ? 'plan-required' : null },
+      'ai.lookup': { allowed: !noAi, reason: noAi ? 'plan-required' : null },
     },
     ai_available: { enabled: true, cap_reached: false },
     trial_eligible: false,

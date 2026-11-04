@@ -74,7 +74,7 @@
       },
       "practice": {
         "title": "Luyện tập với AI",
-        "body": "Nhiều dạng bài trong mỗi phiên. Gói Pro có thêm câu do AI biên soạn.",
+        "body": "Nhiều dạng bài trong mỗi phiên, kể cả câu do AI biên soạn.",
         "p1": "Chấm điểm theo quy tắc",
         "p2": "Luyện riêng từ hay sai",
         "sentenceBefore": "Both sides agreed to",
@@ -87,7 +87,7 @@
       "lookup": {
         "title": "Tra cứu từ vựng",
         "body": "Nghĩa, câu mẫu, phát âm và dạng chia trên một trang.",
-        "p1": "Pro: tra cứu bằng AI",
+        "p1": "Tra cứu bằng AI",
         "word": "profit",
         "level": "B1",
         "forms": "Dạng chia: profit · profits",
@@ -227,7 +227,8 @@
       "proP2": "Câu luyện tập AI",
       "proP3": "Tra cứu bằng AI",
       "proP4": "Không quảng cáo",
-      "trial": "Dùng thử 7 ngày, cần thẻ thanh toán. Hủy trước hạn không mất phí.",
+      "freeAiPractice": "15/tháng",
+      "freeAiLookup": "5/tháng",
       "signup": "Đăng ký",
       "yes": "Có",
       "no": "Không"
@@ -237,7 +238,7 @@
       "q1": "Wordmet khác flashcard ở điểm nào?",
       "a1": "Ngoài thẻ, Wordmet có bài tập vận dụng và lịch ôn tự động cho từng từ.",
       "q2": "Wordmet có miễn phí không?",
-      "a2": "Có. Gói Miễn phí gồm ôn thẻ, tra cứu và 3 phiên luyện tập mỗi ngày.",
+      "a2": "Có. Gói Miễn phí gồm ôn thẻ, tra cứu, 3 phiên luyện tập mỗi ngày và một số lượt AI mỗi tháng.",
       "q3": "AI có chấm điểm không?",
       "a3": "Không. AI chỉ biên soạn câu hỏi; đáp án chấm theo quy tắc.",
       "q4": "Nên bắt đầu thế nào?",
@@ -955,7 +956,6 @@
         "button": "Look up with AI",
         "manual": "Enter a meaning",
         "left": "{count, number} AI credits for lookups left",
-        "trial": "Trial",
         "sendSentence": "Send the sentence to AI",
         "looking": "Looking up…",
         "failed": "We ran into a problem.",
@@ -1522,7 +1522,8 @@
         "review": "Card reviews, review schedule, email reminders",
         "lookup": "Look up and quick add, up to {groups, number} decks",
         "sessions": "{count, number} practice sessions a day",
-        "ai": "AI questions and AI lookup: Pro only"
+        "ai": "{practice, number} AI questions and {lookup, number} AI lookups a month",
+        "aiOff": "AI questions and AI lookup: Pro only"
       },
       "proList": {
         "sessions": "{count, number} practice sessions a day",

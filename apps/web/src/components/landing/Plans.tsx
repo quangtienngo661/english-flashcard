@@ -6,7 +6,9 @@ import { cn } from '@/lib/cn';
 import type { LandingCopy } from './copy';
 
 // A tick or a cross in a disc; the words Có / Không are there for a screen reader, which cannot see the symbol.
-function Mark({ on, yes, no }: { on: boolean; yes: string; no: string }) {
+function Mark({ on, yes, no }: { on: boolean | string; yes: string; no: string }) {
+  // A limit ("15/tháng") is told in words, since neither a tick nor a cross is true of it.
+  if (typeof on === 'string') return <span className="text-ui font-semibold text-ink md:text-body">{on}</span>;
   const Icon = on ? Check : X;
   return (
     <span className={cn('inline-grid size-6 place-items-center rounded-full', on ? 'bg-success text-surface' : 'bg-canvas-deep text-muted')}>
@@ -27,17 +29,18 @@ const ROWS = 'lg:grid-rows-[auto_1fr]';
 const PRO_FRAME = 'pointer-events-none absolute inset-y-0 right-0 rounded-card border-2 border-ink shadow-ledge'; // taste-skill-ignore: the app's sticker edge
 
 // Two plans, no prices (design landing-redesign §3), as a comparison table (owner 03/11/2026, after a pricing-table reference): the plans are columns, the
-// seven lines the app already names are rows. The first three are Free's (Pro has them as well), the last four are Pro's. Beside the table (under it on a
-// phone, so the comparison is read first: owner 03/11/2026, mobile pass Q4) go the way in, Đăng ký, and the trial rule, with nothing about when it opens.
+// seven lines the app already names are rows. The first three are Free's (Pro has them as well), the last four are Pro's, except the two AI lines, where Free
+// has a monthly allowance (a limit in words instead of a tick, launch prep A). Beside the table (under it on a phone, so the comparison is read first: owner
+// 03/11/2026, mobile pass Q4) goes the way in, Đăng ký. There is no trial line: trials are off.
 // Rows are told apart by alternate bands, not by lines.
 export function Plans({ copy, locale }: { copy: LandingCopy['plans']; locale: AppLocale }) {
-  const lines: Array<{ label: string; free: boolean }> = [
+  const lines: Array<{ label: string; free: boolean | string }> = [
     { label: copy.freeP1, free: true },
     { label: copy.freeP2, free: true },
     { label: copy.freeP3, free: true },
     { label: copy.proP1, free: false },
-    { label: copy.proP2, free: false },
-    { label: copy.proP3, free: false },
+    { label: copy.proP2, free: copy.freeAiPractice },
+    { label: copy.proP3, free: copy.freeAiLookup },
     { label: copy.proP4, free: false },
   ];
   const name = 'px-1 pt-2.5 pb-1.5 text-center text-ui font-extrabold whitespace-nowrap text-ink md:px-2 md:text-title-lg';
@@ -93,9 +96,6 @@ export function Plans({ copy, locale }: { copy: LandingCopy['plans']; locale: Ap
           <ButtonLink variant="sticker" href={`/${locale}/app/register`} className="min-h-control-touch w-fit px-6">
             {copy.signup}
           </ButtonLink>
-          <p className="max-w-prose text-small text-muted">
-            <b className="font-semibold text-ink">{copy.pro}</b> · <span>{copy.trial}</span>
-          </p>
         </div>
       </Container>
     </section>

@@ -1,8 +1,8 @@
 import { expect, test, type Page } from '@playwright/test';
 import { copy } from '../copy';
 import { seriousViolations } from '../support/axe';
-import { LONG } from '../support/fixtures';
-import { problem, requests, signedInAs, type MockHandler, type Plan } from '../support/mock-api';
+import { entitlementsBody, LONG } from '../support/fixtures';
+import { problem, requests, signedInAs, type MockHandler } from '../support/mock-api';
 
 const vi = copy.vi.App;
 const uuid = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`;
@@ -77,20 +77,21 @@ test.describe('M5b flows (mocked API)', () => {
     });
   });
 
-  test('Trial shows its own count; Free sees the Pro label and the D6 line, and sends nothing', async ({ page }) => {
-    for (const plan of ['trial', 'free'] as Plan[]) {
-      await signedInAs(page, plan, m5bApi());
-      const sheet = await openSheet(page);
-      if (plan === 'trial') {
-        await expect(sheet.getByText(vi.addWord.ai.trial, { exact: true })).toBeVisible();
-        await expect(sheet.getByText('còn 96 lượt tra AI')).toBeVisible();
-      } else {
-        await sheet.getByRole('button', { name: new RegExp(vi.addWord.ai.button) }).click();
-        await expect(sheet.getByText(vi.ui.lockedLine)).toBeVisible();
-        expect(requests(page, 'POST', '/v1/lookup/ai')).toHaveLength(0);
-      }
-      await page.unrouteAll({ behavior: 'ignoreErrors' });
-    }
+  test('LA3#4: Free has its monthly lookups, shown under the button, with no Pro label and no chip', async ({ page }) => {
+    await signedInAs(page, 'free', m5bApi());
+    const sheet = await openSheet(page);
+    await expect(sheet.getByText('còn 5 lượt tra AI')).toBeVisible();
+    await expect(sheet.getByRole('button', { name: vi.addWord.ai.button })).toBeEnabled();
+    await expect(sheet.getByText(vi.ui.proBadge, { exact: true })).toHaveCount(0);
+    await expect(sheet.getByText('Dùng thử', { exact: true })).toHaveCount(0);
+  });
+
+  test('LA3#11: a Free account whose AI is switched off sees the Pro label and the D6 line, and sends nothing', async ({ page }) => {
+    await signedInAs(page, 'free', { ...m5bApi(), 'GET /v1/me/entitlements': () => ({ json: entitlementsBody('free', { freeAi: false }) }) });
+    const sheet = await openSheet(page);
+    await sheet.getByRole('button', { name: new RegExp(vi.addWord.ai.button) }).click();
+    await expect(sheet.getByText(vi.ui.lockedLine)).toBeVisible();
+    expect(requests(page, 'POST', '/v1/lookup/ai')).toHaveLength(0);
   });
 
   test('E38: "Đang tra…" while the API answers 409 ai-in-progress; the retry carries the same key', async ({ page }) => {

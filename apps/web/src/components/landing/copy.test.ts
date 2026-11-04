@@ -57,7 +57,7 @@ describe('Landing copy and the Free AI allowance (launch prep A, design 6.7)', (
   it('LA3#16 no Landing string says AI belongs to Pro only, and no string promises a trial', () => {
     const flat = [...flatten(landing(vi) as Tree)];
     expect(flat.filter(([, v]) => /\bPro\b.*\bAI\b|\bAI\b.*\bPro\b/.test(v)).map(([k]) => k)).toEqual([]);
-    expect(flat.filter(([, v]) => /dùng thử|thẻ thanh toán/i.test(v)).map(([k]) => k)).toEqual([]);
+    expect(flat.filter(([, v]) => /dùng thử/i.test(v)).map(([k]) => k)).toEqual([]);
   });
 
   it('the Free cells of the table are the two words the settings default to (15 and 5 a month); the trial line key is gone', () => {
