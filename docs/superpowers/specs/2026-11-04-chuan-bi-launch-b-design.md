@@ -1,6 +1,7 @@
 # Chuẩn bị launch, đợt B: thanh toán VietQR qua payOS, quảng cáo — Design (04/11/2026)
 
-> **Trạng thái 04/11/2026:** bản nháp, **chờ chủ dự án đọc và trả lời các câu ở §9**. Chưa có code, chưa có plan, chưa có decision record.
+> **Trạng thái 04/11/2026:** các câu ở §9 đã chốt (chủ dự án: "theo rec của bạn", tức theo đề xuất của Claude). **Chờ chủ dự án đọc lại bản viết.**
+> Chưa có code, chưa có plan. Decision record: [`../decisions/2026-11-04-chuan-bi-launch-b-decisions.md`](../decisions/2026-11-04-chuan-bi-launch-b-decisions.md).
 > **Nguồn quyết định:** chủ dự án chốt trong chat 02–04/11/2026, tổng hợp ở `docs/preparation/WEB_LAUNCH_DECISIONS_AND_OPEN_ITEMS_2026-11-04.md`
 > (nhánh local `docs/web-launch-research`). Mã quyết định (P1, Q7…) dẫn theo file đó.
 > **Code đọc trên:** `origin/dev` @ `a6b2bd15`. Mọi `path:line` và tài liệu ngoài (payOS, AdSense, Next.js, OpenNext, đọc 04/11/2026) ở hai file code facts:
@@ -35,7 +36,7 @@ Ví dụ xuyên suốt: **Lan**, học viên gói Free, giờ Việt Nam.
 | P11 | Trả khi gói còn hạn: kỳ mới **nối tiếp từ ngày hết hạn**; chuyển khoản hai lần thì kỳ thứ hai cũng xếp nối tiếp |
 | L6 | Không hoàn tiền; ghi rõ trước khi trả tiền |
 | A4 | Không dùng Claude Sonnet cho câu AI của Pro |
-| Q1–Q2, Q7–Q8 | Có quảng cáo, chấp nhận rủi ro; khách chỉ thấy landing; vignette ở Hôm nay, Nhóm, Tra từ trong app và màn tổng kết phiên luyện, không hiện lúc đang làm câu |
+| Q1–Q2, Q7–Q8 | Có quảng cáo, chấp nhận rủi ro; khách chỉ thấy landing; vignette ở Hôm nay, Nhóm, Tra từ trong app, không hiện lúc đang làm câu (màn tổng kết bỏ theo Q-B10) |
 | Q3, Q4 | Trong lúc chờ Google duyệt: hộp thoại tự làm giới thiệu Pro; không bao giờ đặt quảng cáo Google vào hộp thoại tự làm |
 | Q5, Q6 | CSP `nonce` chỉ cho `/app`; cờ tuổi cho người dưới 16; hỏi đồng ý trước khi cá nhân hóa (Luật 91/2025); không video, tần suất thấp |
 
@@ -54,7 +55,7 @@ Web chuyển cả trang sang checkout_url của payOS (không nhúng, nên CSP w
    │ Lan quét QR, chuyển khoản trong app ngân hàng
    ▼
 payOS ──► POST /v1/billing/webhooks/payos (ký HMAC) ──► inbox ──► applier:
-   order `paid` → tạo kỳ trả trước → ghi giao dịch → (email biên nhận, Q-B4)
+   order `paid` → tạo kỳ trả trước → ghi giao dịch → email biên nhận (Q-B4)
    │
 payOS chuyển Lan về returnUrl = /app/plans/order?id=… ── web hỏi GET /v1/me/orders/:id tới khi `paid`
    ▼
@@ -106,8 +107,9 @@ Phải sửa theo: `resolve()` (nguồn Pro mới, anchor chu kỳ AI = `starts_
 **`billing_transactions`:** thêm `quarter` vào CHECK `interval` (kỳ 3 tháng); kiểu web và chữ `intervals.quarter` ("3 tháng"). Mỗi đơn `paid` ghi một
 dòng `purchase`, `provider_transaction_id` = `provider_reference`.
 
-**Thứ tự nối kỳ (P11):** `starts_at = max(now, ends_at lớn nhất trong các prepaid_periods chưa thu hồi của Lan)`. Kỳ của grant hay subscription có
-nối theo không: câu Q-B3.
+**Thứ tự nối kỳ (P11, Q-B3):** `starts_at = max(now, ends_at lớn nhất trong các prepaid_periods chưa thu hồi, ends_at của grant gói Pro đang chạy)`,
+chốt một lần lúc đơn thành `paid`. Nếu sau đó admin thu hồi grant sớm thì kỳ đã trả không dời lên; Lan có thể là Free trong khoảng trống đó (admin
+thấy khoảng trống ở màn Đơn hàng và có thể cấp bù). Subscription tự gia hạn chưa có nhà cung cấp thật nên không xét.
 
 ### 3.3 Adapter chung
 
@@ -147,7 +149,9 @@ abstract class PaymentProvider {
 ### 3.4 Giá
 
 - Bảng giá phía server, gửi web qua `GET /v1/me/app-config` (`plans.pro.prices`). Đơn chốt số tiền lúc tạo; đổi giá không ảnh hưởng đơn đang chờ.
-- Giá sửa được trong admin hay cố định trong code: câu Q-B8.
+- **Giá sửa trong admin** (Q-B8): ba setting mới nhóm `entitlements`: `pro_price_1m_vnd` (79.000), `pro_price_3m_vnd` (199.000), `pro_price_12m_vnd`
+  (599.000), bound `1.000–10.000.000`, có trong lịch sử setting như các key khác.
+- **Landing không hiện giá** (Q-B9): landing dựng sẵn lúc build nên sẽ lệch khi admin đổi giá; giá chỉ hiện ở `/app/plans`.
 - `description` gửi payOS tối đa 9 ký tự với tài khoản không liên kết qua payOS: dùng mã ngắn như `WM7KQ2PB` (chữ hoa và số, không dấu).
 
 ### 3.5 Vòng đời đơn
@@ -156,10 +160,10 @@ abstract class PaymentProvider {
 |---|---|---|
 | `pending` | Tạo đơn, payOS trả link | Webhook trả đủ → `paid`; quá `expires_at` → `expired` (job); Lan bấm hủy trên trang payOS → `cancelled` |
 | `paid` | Webhook đúng số tiền, hoặc admin bấm "Đã nhận tiền" | — (không hoàn tiền) |
-| `needs_review` | Webhook số tiền khác số đơn (Q-B2); hoặc tiền tới khi đơn đã `expired`/`cancelled` | Admin xử lý |
+| `needs_review` | Webhook số tiền khác số đơn (Q-B2: không tự mở kỳ, chờ admin); tiền tới khi đơn đã `expired`/`cancelled`; tiền tới khi tài khoản đã xóa (Q-B7) | Admin xử lý |
 | `expired`, `cancelled` | — | Tiền vẫn tới thì `needs_review` |
 
-- Thời hạn của link: câu Q-B1.
+- **Thời hạn của link: 15 phút** (Q-B1), `expiredAt = now + 15 phút`. Quá hạn mà Lan chưa trả thì bấm Mua lại.
 - **Job đối soát** (hằng giờ, chạy được song song ở API và worker như các job billing khác): đơn `pending` quá vài phút thì gọi `getCheckout`; payOS báo
   đã trả mà chưa có webhook thì tạo sự kiện như webhook.
 - Một người có nhiều đơn `pending` cùng lúc: cho phép (mỗi lần bấm Mua là một đơn; `Idempotency-Key` chặn bấm đúp).
@@ -173,12 +177,13 @@ abstract class PaymentProvider {
   vẫn `pending` → "Đang chờ ngân hàng xác nhận. Bạn có thể đóng trang này; gói sẽ tự mở khi tiền tới" kèm email hỗ trợ; `cancelled` → quay lại trang gói.
 - **Lịch sử giao dịch:** dòng `purchase` có số tiền, kỳ (thêm chữ "3 tháng"), mã tham chiếu.
 - Hàng "Hủy gói" (`SubscriptionRows`) không hiện cho kỳ trả trước (không có gì để hủy).
-- **Landing:** câu trial đã bỏ ở đợt A; có hiện giá trên landing không: câu Q-B9.
+- **Landing:** câu trial đã bỏ ở đợt A; không hiện giá (Q-B9).
 - **Điều khoản** mục 5–8 viết lại theo cách bán này (việc tài liệu, cùng đợt).
 
 ### 3.7 Admin
 
-- Màn mới **"Đơn hàng"** trong nhóm tiền (quyền theo Q-B6): danh sách lọc theo trạng thái, email, ngày; chi tiết đơn có số tiền, mã, sự kiện đã nhận.
+- Màn mới **"Đơn hàng"** trong nhóm tiền, **chỉ admin** (`settings.manage`, Q-B6), như màn Giao dịch: danh sách lọc theo trạng thái, email, ngày; chi tiết
+  đơn có số tiền, mã, sự kiện đã nhận.
 - **"Đã nhận tiền"** (đơn `pending`, `expired`, `needs_review`): nhập mã tham chiếu ngân hàng và số tiền đã nhận, ghi `confirmed_by`, đi đúng đường của
   `payment_succeeded` (cùng `OrderApplier`), nên kỳ, giao dịch và email giống hệt khi webhook tới. Bấm hai lần cùng đơn không tạo hai kỳ.
 - **"Hủy đơn"** cho đơn `pending` (gọi `cancelCheckout`).
@@ -186,17 +191,20 @@ abstract class PaymentProvider {
 
 ### 3.8 Email
 
-- **Sắp hết hạn** (P9): kind mới `expiry_notice` cho kỳ trả trước cuối cùng của Lan (không còn kỳ nối tiếp). Gửi trước bao nhiêu ngày: câu Q-B5. Nội dung:
+- **Sắp hết hạn** (P9): kind mới `expiry_notice` cho kỳ trả trước cuối cùng của Lan (không còn kỳ nối tiếp). Gửi trước **7 ngày**, dùng chung setting
+  `renewal_notice_days_before` (Q-B5). Nội dung:
   ngày hết hạn, link `/app/plans`, không có câu "tự gia hạn và trừ tiền" hay "hủy ở App Store, Google Play". Sửa đủ sáu chỗ (kiểu `NoticeKind`, CHECK của
   bảng, bản chữ, chọn ngày, planner, nhánh kiểm của `NoticeSender.claim` đang đòi `subject_key` là subscription).
 - Lan mua thêm kỳ sau khi email đã lập nhưng chưa gửi: lúc gửi kiểm lại, còn kỳ nối tiếp thì bỏ (`skipped`).
-- **Biên nhận khi nhận tiền:** câu Q-B4.
+- **Biên nhận khi nhận tiền** (Q-B4): kind mới `payment_receipt`, gửi một lần khi đơn thành `paid` (kể cả admin xác nhận): kỳ, số tiền, mã tham chiếu,
+  ngày bắt đầu và kết thúc, câu "không hoàn tiền". `subject_key` = id đơn. Dùng trần 95% ngân sách mail như email thanh toán khác.
 
 ### 3.9 Xóa tài khoản
 
 - Kỳ trả trước **không** chặn tự xóa tài khoản (không tự gia hạn). Màn xóa nhắc "thời gian Pro còn lại sẽ mất, không hoàn tiền".
 - Khi xóa: xóa `prepaid_periods`; ẩn danh `billing_orders` như `billing_transactions` (giữ hồ sơ tiền); đơn `pending` gọi `cancelCheckout`.
-- Tiền tới sau khi Lan đã xóa: câu Q-B7.
+- **Tiền tới sau khi Lan đã xóa** (Q-B7): đơn thành `needs_review` (đã ẩn danh), log cảnh báo; admin hoàn tiền tay ngoài hệ thống (ngoại lệ duy nhất của
+  "không hoàn tiền", vì không còn tài khoản để mở kỳ).
 
 ### 3.10 When → Then
 
@@ -209,7 +217,7 @@ abstract class PaymentProvider {
 | Webhook không tới trong 30 phút | Job đối soát hỏi payOS; đã trả thì apply như webhook |
 | Webhook chữ ký sai | 400, không ghi inbox (như provider hiện có) |
 | Webhook cho `orderCode` không có | 2xx, sự kiện `ignored` |
-| Số tiền webhook khác số đơn | Theo Q-B2 |
+| Số tiền webhook khác số đơn | `needs_review`, không mở kỳ; admin xem và bấm "Đã nhận tiền" (mở kỳ) hoặc hoàn tay (Q-B2) |
 | Đơn đã `expired` mà tiền vẫn tới | `needs_review`, admin xử lý (không tự mở kỳ) |
 | Admin bấm "Đã nhận tiền" rồi webhook cùng giao dịch tới | Cùng `reference` thì webhook là "đã nhận"; khác `reference` thì `needs_review` |
 | Lan bấm Mua hai lần nhanh | Cùng `Idempotency-Key` trả cùng đơn; khác key thì hai đơn `pending` (chỉ đơn được trả mới thành kỳ) |
@@ -226,7 +234,8 @@ abstract class PaymentProvider {
 - **Giao diện:** dùng `Dialog` có sẵn của `app-ui` (làm tối nền, tắt bằng × hoặc Esc, sheet dưới trên điện thoại). Nội dung: lợi ích Pro, giá từ 79.000 ₫, nút
   "Xem gói Pro" tới `/app/plans`. Không chứa mã của Google.
 - **Phụ thuộc:** bật sau B1 (Pro phải mua được). Web thêm trường `ads` vào kiểu `Entitlements`.
-- **Khi có AdSense (B3):** hộp thoại này tắt ở trang mà vignette chạy, để người Free không gặp hai thứ cùng lúc. Có giữ nó song song không: §9 Q-B14.
+- **Khi có AdSense (B3):** hộp thoại này **tắt hẳn** (Q-B14), để người Free không gặp hai thứ. Web chọn theo việc có cấu hình AdSense hay không
+  (`NEXT_PUBLIC_ADSENSE_CLIENT`): có thì vignette, không thì hộp thoại.
 
 ## 5. B3 — Quảng cáo vignette của AdSense
 
@@ -245,7 +254,8 @@ Chỉ làm sau khi deploy và Google duyệt site (Q7: duyệt dựa trên landi
 
 Màn tổng kết không có địa chỉ riêng: nó là một trạng thái bên trong `/app/practice/session`, cùng địa chỉ với lúc đang làm câu. Loại trừ trang của AdSense
 chỉ lọc theo địa chỉ, nên **không thể** cho quảng cáo ở màn tổng kết mà vẫn chặn trong lúc làm câu. Ngoài ra chính sách của Google cấm quảng cáo ở màn
-kiểu "Thank You, Exit"; màn tổng kết có số đúng sai và danh sách từ nên có thể được tính là có nội dung (`ASSUMPTION`). Câu Q-B10.
+kiểu "Thank You, Exit". **Chốt (Q-B10): bỏ màn tổng kết khỏi chỗ có quảng cáo**; cả nhánh `/app/practice` bị loại trừ. Vignette chỉ ở Hôm nay, Nhóm,
+Tra từ (thay Q8 ở phần màn tổng kết).
 
 ### 5.3 CSP `nonce` cho `/app`
 
@@ -264,17 +274,19 @@ AdSense chỉ hỗ trợ CSP chặt bằng `nonce` trên mọi thẻ script. Hi�
 - `'strict-dynamic'` bỏ qua danh sách host, nên beacon Cloudflare Web Analytics chỉ chạy nếu mang `nonce` (`ASSUMPTION`); spike kiểm luôn.
 - Spike không qua: chờ OpenNext phát hành bản sửa; B3 dừng lại, B2 vẫn chạy.
 
-### 5.4 Tuổi và đồng ý
+### 5.4 Ai thấy quảng cáo, đồng ý
 
-- **Dưới 16 tuổi** (web biết `birth_date`; cần hàm mới vì `isOldEnough` của web cố định 13): tài liệu chỉ có cờ tuổi `data-tag-for-age-treatment` trên thẻ
-  `<ins>`, mà Auto ads không có thẻ đó (`ASSUMPTION` A7). Câu Q-B11.
-- **Đồng ý cá nhân hóa:** công cụ thông báo của Google không có loại cho Việt Nam, nên phải tự làm. Quảng cáo không cá nhân hóa (`requestNonPersonalizedAds=1`)
-  vẫn dùng cookie để giới hạn tần suất (`ASSUMPTION` A13 về việc cookie đó có cần đồng ý không). Câu Q-B12.
-- **Tài khoản staff** không có gói đang được tính là Free nên cũng có `ads.show = true`. Câu Q-B13.
+- `ads.show` tính ở API (nơi đã biết gói, vai trò và ngày sinh): `ads_enabled` **và** gói Free **và** không phải staff (Q-B13) **và** đủ 16 tuổi theo
+  `birth_date` và timezone của người học (Q-B11). Người dưới 16 tuổi không tải script quảng cáo, nên không cần cờ tuổi của Google (vốn chưa có cách gắn
+  cho vignette, `ASSUMPTION` A7). Hộp thoại giới thiệu Pro (B2) dùng cùng `ads.show`.
+- **Luôn dùng quảng cáo không cá nhân hóa** (Q-B12): đặt `requestNonPersonalizedAds=1` trước khi tải quảng cáo; không làm hộp thoại xin đồng ý cá nhân hóa.
+  Quảng cáo không cá nhân hóa vẫn dùng cookie để giới hạn tần suất và báo cáo gộp (`ASSUMPTION` A13 về việc cookie đó có cần đồng ý); Chính sách bảo mật
+  nói rõ điều này.
 
 ### 5.5 Văn bản
 
-- Chính sách bảo mật bản nháp đang hứa "không dùng dữ liệu cho quảng cáo", "không dùng cookie quảng cáo" (mục 3, 5, 10): phải sửa trước khi bật quảng cáo.
+- Chính sách bảo mật bản nháp đang hứa "không dùng dữ liệu cho quảng cáo", "không dùng cookie quảng cáo" (mục 3, 5, 10): phải sửa trước khi bật quảng cáo
+  (quảng cáo Google không cá nhân hóa cho người Free từ 16 tuổi, cookie giới hạn tần suất; không áp cho người dưới 16 tuổi, Pro và staff).
 - Trang gói đã ghi Pro "Không quảng cáo": nay đúng.
 
 ### 5.6 Chưa kiểm được trước khi có tài khoản AdSense
@@ -295,7 +307,7 @@ Thử với payOS thật (tiền thật, số nhỏ, vì không có sandbox) là
 
 ## 7. Kiểm thử
 
-- **API unit:** chữ ký webhook payOS (đúng, sai, key xáo thứ tự, giá trị null); ánh xạ webhook → sự kiện; `OrderApplier` (nối kỳ, trùng, số tiền lệch, đơn hết
+- **API unit:** `ads.show` (Free, Pro, staff, 15 tuổi và 16 tuổi đúng ngày sinh nhật theo timezone); chữ ký webhook payOS (đúng, sai, key xáo thứ tự, giá trị null); ánh xạ webhook → sự kiện; `OrderApplier` (nối kỳ, trùng, số tiền lệch, đơn hết
   hạn, người đã xóa); `resolve()` với kỳ trả trước đang chạy và kỳ tương lai; job đối soát; giá theo kỳ; config payOS và chặn ở production; `ACCOUNT_DATA_MAP`.
 - **Web:** trang gói (ba kỳ, câu không hoàn tiền, nút Mua), trang về (paid, pending lâu, cancelled), hộp thoại giới thiệu Pro (đếm theo ngày, khoảng cách, không
   hiện ở trang loại trừ, không hiện cho Pro).
@@ -309,26 +321,26 @@ Thử với payOS thật (tiền thật, số nhỏ, vì không có sandbox) là
 - Chủ dự án mua thành công một kỳ bằng payOS thật và thấy Pro, giao dịch, email đúng.
 - (M4) Google duyệt site; vignette hiện cho người Free ở ba trang đã chọn, không hiện trong phiên luyện và cho Pro; Console không lỗi CSP.
 
-## 9. Câu hỏi còn mở
+## 9. Câu hỏi đã chốt
 
-Chủ dự án trả lời trước; đề xuất của Claude đưa sau.
+Chủ dự án (04/11/2026): "theo rec của bạn", tức chọn theo đề xuất của Claude cho cả mười bốn câu. Lý do và các phương án: decision record.
 
-| # | Câu hỏi | Bối cảnh |
+| # | Câu hỏi | Chốt |
 |---|---|---|
-| Q-B1 | Đơn chưa trả **hết hạn sau bao lâu**? | Là `expiredAt` của link payOS. Ngắn thì Lan phải bấm Mua lại nếu chậm; dài thì nhiều đơn treo |
-| Q-B2 | Lan chuyển **thiếu hoặc thừa** tiền (nếu ngân hàng không chặn): mở kỳ, chờ admin, hay cách khác? | Tài liệu payOS nói VietQR Pro chặn sai số tiền ngay ở ngân hàng, còn tài khoản không liên kết thì chưa rõ |
-| Q-B3 | Lan đang có Pro **do đội Wordmet cấp** tới 31/12 mà mua 1 tháng ngày 05/11: kỳ mua bắt đầu ngay hay sau 31/12? | P11 nói về kỳ đã trả; grant của staff chưa có luật |
-| Q-B4 | Có gửi **email biên nhận** khi nhận tiền không? | Hiện chỉ có lịch sử giao dịch trong app |
-| Q-B5 | Email sắp hết hạn gửi **trước mấy ngày**? Dùng chung số của email báo gia hạn (mặc định 7) hay số riêng? | |
-| Q-B6 | Ai được bấm **"Đã nhận tiền"** và xem màn Đơn hàng: chỉ admin, hay cả editor? | Màn tiền hiện chỉ admin (`settings.manage`); cấp gói thì editor cũng làm được |
-| Q-B7 | Tiền tới **sau khi Lan đã xóa tài khoản**: xử lý thế nào? | Hệ thống không hoàn tiền; tài khoản không còn để mở kỳ |
-| Q-B8 | **Giá** sửa được trong admin, hay cố định trong code (đổi giá phải deploy)? | |
-| Q-B9 | **Landing** có hiện giá không? | Landing hiện không có giá |
-| Q-B10 | Màn tổng kết phiên luyện: **tách ra địa chỉ riêng** để có quảng cáo, hay **bỏ** màn tổng kết khỏi chỗ có quảng cáo? | §5.2. Tách ra thì phải đổi cách lưu kết quả phiên (hiện chỉ nằm trong bộ nhớ, tải lại là mất) |
-| Q-B11 | Người **dưới 16 tuổi**: không tải quảng cáo, hay tải quảng cáo không cá nhân hóa? | §5.4, chưa có cách gắn cờ tuổi cho vignette |
-| Q-B12 | **Đồng ý**: hỏi người Free có muốn quảng cáo cá nhân hóa không, hay luôn dùng quảng cáo không cá nhân hóa (không hỏi)? | §5.4 |
-| Q-B13 | Tài khoản **staff** (admin, editor) không có gói: có thấy quảng cáo và hộp thoại giới thiệu Pro không? | |
-| Q-B14 | Khi đã có vignette: **giữ** hộp thoại giới thiệu Pro song song (ở trang khác, ít lần hơn) hay **tắt** hẳn? | §4 |
+| Q-B1 | Đơn chưa trả hết hạn sau bao lâu? | **15 phút** |
+| Q-B2 | Chuyển thiếu hoặc thừa tiền? | **`needs_review`, không tự mở kỳ**; admin mở kỳ bằng "Đã nhận tiền" hoặc hoàn tay |
+| Q-B3 | Đang có Pro do đội Wordmet cấp mà mua? | **Nối sau** kỳ được cấp, chốt lúc đơn `paid` |
+| Q-B4 | Email biên nhận? | **Có** (`payment_receipt`) |
+| Q-B5 | Email sắp hết hạn trước mấy ngày? | **7 ngày**, dùng chung `renewal_notice_days_before` |
+| Q-B6 | Ai bấm "Đã nhận tiền", xem Đơn hàng? | **Chỉ admin** (`settings.manage`) |
+| Q-B7 | Tiền tới sau khi xóa tài khoản? | **`needs_review`**, admin hoàn tay ngoài hệ thống |
+| Q-B8 | Giá sửa ở đâu? | **Trong admin** (ba setting giá) |
+| Q-B9 | Landing hiện giá? | **Không** |
+| Q-B10 | Màn tổng kết có quảng cáo? | **Không**; loại trừ cả `/app/practice` |
+| Q-B11 | Người dưới 16 tuổi? | **Không tải quảng cáo** (cả hộp thoại giới thiệu Pro) |
+| Q-B12 | Đồng ý cá nhân hóa? | **Luôn không cá nhân hóa**, không hỏi |
+| Q-B13 | Staff không có gói thấy quảng cáo? | **Không** |
+| Q-B14 | Khi có vignette, hộp thoại giới thiệu Pro? | **Tắt hẳn** |
 
 ## 10. Rủi ro và chỗ chưa kiểm
 

@@ -1,6 +1,7 @@
 # Chuẩn bị launch, đợt A: Turnstile, security header, sửa sau review, lượt AI cho Free — Design (04/11/2026)
 
-> **Trạng thái 04/11/2026:** bản nháp, **chờ chủ dự án đọc và trả lời các câu ở §10**. Chưa có code, chưa có plan, chưa có decision record.
+> **Trạng thái 04/11/2026:** các câu ở §10 đã chốt (chủ dự án: "theo rec của bạn", tức theo đề xuất của Claude). **Chờ chủ dự án đọc lại bản viết.**
+> Chưa có code, chưa có plan. Decision record: [`../decisions/2026-11-04-chuan-bi-launch-a-decisions.md`](../decisions/2026-11-04-chuan-bi-launch-a-decisions.md).
 > **Nguồn quyết định:** chủ dự án chốt trong chat 02–04/11/2026, tổng hợp ở `docs/preparation/WEB_LAUNCH_DECISIONS_AND_OPEN_ITEMS_2026-11-04.md`
 > (nhánh local `docs/web-launch-research`). Mã quyết định (A1, R-Q14, Q13…) dẫn theo file đó.
 > **Code đọc trên:** `origin/dev` @ `a6b2bd15`. Mọi `path:line` ở hai file code facts:
@@ -61,9 +62,9 @@ API: TurnstileGuard ──► POST siteverify (secret, token, remoteip)
         └─ success: false ──► 400 `captcha-failed`, không gửi mail
 ```
 
-Route phải chặn (theo code facts §A1): `POST /v1/auth/register`; `POST /v1/auth/otp` (cả `verify_email` và `reset_password`). Thêm
-`POST /v1/auth/login` khi tài khoản chưa xác minh hay không: câu Q-A1. Không chặn: `verify-email`, `password/reset` (không gửi mail), Google
-(phải qua Google trước).
+Route phải chặn (theo code facts §A1): `POST /v1/auth/register`; `POST /v1/auth/otp` (cả `verify_email` và `reset_password`). **Không** chặn
+`POST /v1/auth/login` (Q-A1): muốn gửi mail qua login thì phải có tài khoản và đúng mật khẩu, mà tài khoản chỉ tạo được qua đăng ký đã có Turnstile;
+mỗi email vẫn bị giới hạn 1 mail/60 s và 5 mail/giờ. Không chặn: `verify-email`, `password/reset` (không gửi mail), Google (phải qua Google trước).
 
 ### 4.2 Turnstile: API
 
@@ -79,9 +80,9 @@ Route phải chặn (theo code facts §A1): `POST /v1/auth/register`; `POST /v1/
   - `fake`: không gọi mạng; token nào khác rỗng cũng qua, trừ một giá trị cố định để test trượt. Dùng cho smoke, `admin-e2e-real`, local.
   - `off`: không kiểm, token không bắt buộc. Chỉ để local khi cần.
   - `BILLING_PRODUCTION=true` cùng `fake` hoặc `off` thì API từ chối khởi động (cùng cơ chế Q13).
-- **Lỗi mới:** `captcha-failed` (400, problem+json). Token hết hạn hoặc đã dùng (`timeout-or-duplicate`) cũng ra lỗi này; web tự làm mới widget.
-- **Khi không gọi được Cloudflare** (timeout, 5xx): câu Q-A4.
-- **Client `mobile`** (schema có, app chưa có): câu Q-A3.
+- **Lỗi mới:** `captcha-failed` (400) và `captcha-unavailable` (503), problem+json. Token hết hạn hoặc đã dùng (`timeout-or-duplicate`) cũng ra lỗi này; web tự làm mới widget.
+- **Khi không gọi được Cloudflare** (timeout, 5xx): **từ chối** (Q-A4), 503 `captcha-unavailable` kèm câu "thử lại sau ít phút"; không gửi mail.
+- **Client `mobile`** (schema có, app chưa có): token **bắt buộc như web** (Q-A3); khi có app Flutter thì design riêng cách lấy token trên app.
 - **IP:** `remoteip` chỉ đúng khi `TRUST_PROXY` đặt đúng với proxy thật (đã có mục trong `deploy-checklist.md`).
 
 ### 4.3 Turnstile: web và admin
@@ -89,12 +90,13 @@ Route phải chặn (theo code facts §A1): `POST /v1/auth/register`; `POST /v1/
 - **Web:** một component `TurnstileWidget` tải script `https://challenges.cloudflare.com/turnstile/v0/api.js` ở chế độ render tường minh,
   trả token qua callback, có hàm làm mới. Gắn vào `RegisterForm`, `ForgotPasswordForm`, nút gửi lại mã của `VerifyEmailForm`. Nút gửi bị tắt
   tới khi có token. Lỗi `captcha-failed` có câu riêng vi/en (thêm slug vào `KNOWN_ERROR_SLUGS`; `problem.test.ts` đòi đủ hai ngôn ngữ).
-- **Site key:** `NEXT_PUBLIC_TURNSTILE_SITE_KEY` (web, đóng vào bundle lúc build) và `VITE_TURNSTILE_SITE_KEY` (admin, nếu Q-A2 chọn có widget).
+- **Site key:** `NEXT_PUBLIC_TURNSTILE_SITE_KEY` (web, đóng vào bundle lúc build) và `VITE_TURNSTILE_SITE_KEY` (admin).
   Local và CI dùng khóa test của Cloudflare: sitekey `1x00000000000000000000AA` (luôn qua) với API ở `fake`.
 - **CSP của web:** thêm `https://challenges.cloudflare.com` vào `script-src` và thêm `frame-src https://challenges.cloudflare.com`
   (hiện không có `frame-src`, nên `default-src 'self'` chặn iframe). Sửa `csp.test.ts`; e2e E23 vẫn đòi 0 vi phạm.
 - **e2e mock của web:** chặn request tới `challenges.cloudflare.com` và giả widget trả token, để e2e không cần mạng.
-- **Admin:** trang quên mật khẩu gọi cùng `POST /v1/auth/otp` và cùng tiến trình API. Câu Q-A2.
+- **Admin:** trang quên mật khẩu gọi cùng `POST /v1/auth/otp` và cùng tiến trình API, nên **có widget như web** (Q-A2); API không phân biệt host.
+  e2e mock của admin giả widget như web.
 - Trang quên mật khẩu mở cả khi đã đăng nhập (B8-2), nên widget cũng hiện cho người đã đăng nhập. Chấp nhận.
 
 ### 4.4 Security header
@@ -103,7 +105,7 @@ Route phải chặn (theo code facts §A1): `POST /v1/auth/register`; `POST /v1/
 
 | Header | Giá trị đề xuất | Ghi chú |
 |---|---|---|
-| `Content-Security-Policy` | `default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src 'self' https://admin-api.wordmet.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'`, cộng `img-src` theo Q-A5 | React Aria tự chèn thẻ `<style>` lúc chạy, nên cần `'unsafe-inline'` cho style (hoặc hash, `ASSUMPTION`). Có Turnstile thì thêm `challenges.cloudflare.com` vào `script-src`, `frame-src` |
+| `Content-Security-Policy` | `default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src 'self' https://admin-api.wordmet.com; img-src 'self' data: blob:; script-src` và `frame-src` thêm `https://challenges.cloudflare.com` (Turnstile); `frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'` | React Aria tự chèn thẻ `<style>` lúc chạy, nên cần `'unsafe-inline'` cho style (hoặc hash, `ASSUMPTION`). Ảnh chỉ từ chính site (Q-A5): ảnh ngoài trong Markdown pháp lý sẽ không hiện ở bản xem trước |
 | `X-Content-Type-Options` | `nosniff` | |
 | `Referrer-Policy` | `strict-origin-when-cross-origin` | |
 | `Permissions-Policy` | `camera=(), microphone=(), geolocation=()` | |
@@ -128,7 +130,7 @@ CORS, cookie refresh và webhook billing (raw body).
 | Lan để form quá 5 phút rồi mới bấm | `timeout-or-duplicate` → 400 `captcha-failed`; web làm mới widget, Lan bấm lại |
 | Lan bấm gửi hai lần nhanh với cùng token | `useSubmitOnce` chặn lần hai ở web; nếu vẫn tới API thì lần hai `captcha-failed` |
 | Token qua nhưng `hostname` không phải host của web | 400 `captcha-failed` (token lấy từ site khác) |
-| Cloudflare không trả lời trong thời gian chờ | Theo Q-A4 |
+| Cloudflare không trả lời trong thời gian chờ | 503 `captcha-unavailable`, không gửi mail; Lan thử lại sau (Q-A4) |
 | API chạy `fake` hoặc `off` cùng `BILLING_PRODUCTION=true` | API từ chối khởi động, báo tên biến |
 | Smoke chạy với API `fake` | Smoke gửi một token bất kỳ khác rỗng; chạy như trước |
 
@@ -158,16 +160,19 @@ Danh sách đủ ở code facts §C, §D. Chia ba nhóm.
 - B2-7: đổi nhãn `B2#66` trong `list-routes.spec.ts`.
 - B2-8 (phần nợ): gộp `writeEntry` bị chép ở hai controller.
 - A6 (admin): chặn ký tự NUL trong ô tìm kiếm Người dùng; đếm ngược khi khóa tài khoản bị rate limit; ô ngày theo locale.
+- B3-7 = B25-2 (Q-A9): lựa chọn "Từ chưa có nghĩa" ở trang Xuất của admin; `EXPORT_MAX_ROWS` mặc định 10.000.
+- B8-4 (Q-A6): e2e mock web cho "Đặt mật khẩu" của tài khoản chỉ có Google.
 
 **Nhóm 3, chạy tay và đo (ghi output vào `docs/deliveries/`):**
 - R2: merge checklist dev (nhánh `docs/dev-test-checklist`), chạy một lượt, lưu output.
-- R8: thử trên trình duyệt "Đặt mật khẩu" của tài khoản chỉ có Google.
+- R8: thử trên trình duyệt "Đặt mật khẩu" của tài khoản chỉ có Google, và thêm một e2e mock cho đúng luồng này (B8-4, Q-A6; phần code ở nhóm 2).
 - R13: nối output smoke hồi quy; lượt trình duyệt Bước 8; mục "Thêm sau plan" cho test flow admin; as-built lần gọi AI thật 28/10 (cần dữ liệu của chủ dự án).
 - B5-8: chứng minh test chạy đua có răng (bỏ khóa trên nhánh nháp, smoke phải đỏ).
 - B2-5, B7-5: đo bằng `test:scale` (cần Docker).
 
-**Cần chủ dự án quyết trước khi làm** (Q-A9): B2-3 (Content chạy SQL trên bảng Pipeline, DB12), B3-7 = B25-2 (trang Xuất thiếu "Từ chưa có nghĩa",
-7.799 > `EXPORT_MAX_ROWS` 5.000), B4-4 (PX3, PX5, PX6), UA-6 (44 chỗ `getByTestId('detail-panel')`, cỡ M).
+**Đã chốt theo Q-A9:** B3-7 = B25-2 **làm trong đợt này** (nhóm 2: trang Xuất của admin thêm lựa chọn "Từ chưa có nghĩa" và nâng `EXPORT_MAX_ROWS` lên
+10.000 để xuất được cả 7.799 từ). **Để sau:** B2-3 (Content chạy SQL trên bảng Pipeline, DB12), B4-4 (PX3, PX5, PX6, cần migration và câu 27 còn treo),
+UA-6 (44 chỗ `getByTestId('detail-panel')`); ghi dòng theo dõi trong `IMPROVEMENT_PLAN`.
 
 ## 6. A3 — Lượt AI cho Free, tắt trial
 
@@ -193,7 +198,9 @@ Hiện cycle AI là cửa sổ một tháng tính theo UTC từ một anchor (ng
 - Không cần migration: lượt đếm theo thời điểm `[start, end)` trên `confirmed_at` và `credited_at`.
 - Refund câu AI lỗi của Free hoạt động như Pro (hiện trả `refunded: false` vì thiếu anchor).
 - Snapshot trả `resets_at` = đầu tháng sau theo zone, nên web hiện dòng "Lượt câu AI mới vào 01/12".
-- Hai chỗ chưa có luật: Pro về Free giữa tháng (Q-A7); Free có limits grant có AI (Q-A8).
+- **Pro hoặc trial về Free giữa tháng (Q-A7):** lượt dùng lúc còn Pro **không** tính vào lượt Free. Cửa sổ Free của tháng bắt đầu từ
+  `max(đầu tháng theo zone, lúc kết thúc nguồn Pro/trial gần nhất)`; `resolve()` trả thêm mốc kết thúc này.
+- **Free có limits grant có AI (Q-A8):** giữ như hiện nay, chu kỳ neo vào ngày bắt đầu grant (B5E32); không theo tháng dương lịch.
 
 ### 6.3 Settings
 
@@ -243,8 +250,8 @@ VietQR (đợt B) không có trial. Đề xuất cách nhỏ nhất:
 | Lan có limits grant `ai_practice_per_cycle: 0` | Limit 0 → `plan-required` như hiện nay |
 | Admin đặt `free_ai_practice_per_cycle = 0` | Free về như hiện nay: `plan-required`, web hiện khóa |
 | Trần chung `ai_daily_cap` đã chạm | Lan nhận `ai-unavailable` như mọi gói |
-| Lan (Pro) hết hạn ngày 20/11, về Free | Theo Q-A7 |
-| Lan (Free) có limits grant có AI | Theo Q-A8 |
+| Lan (Pro) dùng 200 câu AI, hết hạn 20/11 10:00, về Free | Cửa sổ Free tháng 11 = 20/11 10:00 → 01/12; Lan có đủ 15 câu Free (Q-A7) |
+| Lan (Free) được cấp limits grant 50 câu AI từ 10/11 | Chu kỳ theo grant: 10/11 → 10/12, 50 câu (Q-A8) |
 
 ## 7. Chỗ đổi luật cũ
 
@@ -272,22 +279,22 @@ VietQR (đợt B) không có trial. Đề xuất cách nhỏ nhất:
   15 câu AI, bị chặn, đổi giờ máy sang tháng sau (hoặc đặt dữ liệu) thì có lại lượt.
 - `IMPROVEMENT_PLAN` cập nhật trạng thái R2–R4, R8, R11–R14.
 
-## 10. Câu hỏi còn mở
+## 10. Câu hỏi đã chốt
 
-Chủ dự án trả lời trước; đề xuất của Claude đưa sau.
+Chủ dự án (04/11/2026): "theo rec của bạn", tức chọn theo đề xuất của Claude cho cả mười câu. Lý do và các phương án: decision record.
 
-| # | Câu hỏi | Bối cảnh |
+| # | Câu hỏi | Chốt |
 |---|---|---|
-| Q-A1 | Có chặn Turnstile ở **đăng nhập của tài khoản chưa xác minh** không? | Login gửi lại mã khi mật khẩu đúng. Không chặn thì bot đã đăng ký vẫn gửi thêm mail qua login, tối đa 1 mail/60 s và 5 mail/giờ cho mỗi email |
-| Q-A2 | Trang quên mật khẩu của **admin** có widget không, hay API miễn kiểm cho admin? | Admin và học viên gọi cùng `POST /v1/auth/otp`, cùng tiến trình API. Miễn kiểm thì phải phân biệt theo host/Origin |
-| Q-A3 | Request đăng ký hay xin mã từ client **`mobile`** (chưa có app) xử lý thế nào? | Schema đã có `client: 'mobile'`. App Flutter chưa có; khi có, Turnstile trên app khác trên web |
-| Q-A4 | Khi **không gọi được Cloudflare** (mạng lỗi, quá thời gian chờ): từ chối hay cho qua? | Từ chối thì người thật không đăng ký được lúc Cloudflare lỗi; cho qua thì bot lợi dụng được lúc đó. Rate limit vẫn còn ở cả hai cách |
-| Q-A5 | Ảnh trong bản xem trước Markdown văn bản pháp lý của admin: cho tải ảnh từ mọi địa chỉ `https:` hay chỉ ảnh của chính site? | Ảnh hưởng `img-src` của CSP admin |
-| Q-A6 | Có làm **e2e mock** cho luồng "Đặt mật khẩu" của tài khoản chỉ có Google (B8-4) không, hay chỉ thử tay (R8)? | |
-| Q-A7 | Lan (Pro) dùng 200 câu AI, hết hạn ngày 20/11 về Free: lượt dùng lúc còn Pro **có bị tính** vào 15 lượt Free của tháng 11 không? | Cách đếm hiện tại sẽ tính, tức Lan hết lượt Free tới 01/12 |
-| Q-A8 | Lan (Free) được admin cấp limits grant có số AI (vd 50 câu): chu kỳ tính theo **ngày bắt đầu grant** (như hiện nay) hay theo **tháng dương lịch**? | Hiện grant như vậy neo chu kỳ vào ngày bắt đầu của nó (B5E32) |
-| Q-A9 | Các mục review cần quyết trước khi sửa: B2-3, B3-7, B4-4, UA-6. Làm trong đợt này, để sau, hay bỏ từng mục? | Chi tiết ở code facts §C |
-| Q-A10 | Kết quả thử **Google đăng nhập thật**: ngày, lần 1 và lần 2, hai `ASSUMPTION` của design Bước 8 §19 đúng hay sai? | Cần để sửa `CLAUDE.md`, `buoc-8.md`, `deploy-checklist.md` |
+| Q-A1 | Chặn Turnstile ở đăng nhập của tài khoản chưa xác minh? | **Không.** Gửi mail qua login cần tài khoản và đúng mật khẩu; tài khoản chỉ tạo được qua đăng ký đã có Turnstile; giới hạn theo email vẫn còn |
+| Q-A2 | Quên mật khẩu của admin có widget không? | **Có**, như web; API không phân biệt host |
+| Q-A3 | Client `mobile` không có token? | **Token bắt buộc như web**; app Flutter có design riêng khi làm |
+| Q-A4 | Không gọi được Cloudflare? | **Từ chối**: 503 `captcha-unavailable`, không gửi mail |
+| Q-A5 | Ảnh trong bản xem trước Markdown của admin? | **Chỉ ảnh của chính site** (`img-src 'self' data: blob:`) |
+| Q-A6 | e2e mock cho "Đặt mật khẩu" của tài khoản chỉ có Google? | **Có**, cộng một lượt thử tay |
+| Q-A7 | Pro về Free giữa tháng: lượt lúc Pro có tính vào lượt Free? | **Không.** Cửa sổ Free bắt đầu từ `max(đầu tháng, lúc kết thúc nguồn Pro/trial)` |
+| Q-A8 | Free có limits grant có AI: chu kỳ theo grant hay tháng dương lịch? | **Theo grant** như hiện nay (B5E32) |
+| Q-A9 | B2-3, B3-7, B4-4, UA-6? | **B3-7 làm** (thêm lựa chọn xuất, `EXPORT_MAX_ROWS` 10.000); **B2-3, B4-4, UA-6 để sau** |
+| Q-A10 | Kết quả thử Google thật? | Cần dữ liệu của chủ dự án; tới lúc có, tài liệu ghi "chủ dự án báo đã thử, chưa có ghi chép" thay cho "chưa thử" |
 
 ## 11. Rủi ro và chỗ chưa kiểm
 
