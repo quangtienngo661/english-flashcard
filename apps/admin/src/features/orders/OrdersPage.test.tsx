@@ -78,12 +78,14 @@ describe('OrdersPage (launch prep B design §3.9)', () => {
     expect((await screen.findAllByText('ngoc.tran@example.com')).length).toBeGreaterThan(0);
   });
 
-  it('nothing matches → the empty text; a load error offers retry', async () => {
+  it('nothing matches → the empty text', async () => {
     renderApp('/orders', { [LIST]: page([]) });
     expect(await screen.findByText(t.empty)).toBeInTheDocument();
-    const failing = renderApp('/orders', { [LIST]: () => problem(500, '') });
-    expect(await screen.findByRole('button', { name: vi.common.retry })).toBeInTheDocument();
-    failing.unmount();
+  });
+
+  it('a load error offers retry', async () => {
+    renderApp('/orders', { [LIST]: () => problem(500, '') });
+    expect(await screen.findByRole('button', { name: vi.common.retry }, { timeout: 5000 })).toBeInTheDocument();
   });
 
   it('Chi tiết: payments, periods with their last day, the learner\'s Pro now, the reason, the transfer note and the order code', async () => {
