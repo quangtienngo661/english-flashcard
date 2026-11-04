@@ -450,6 +450,20 @@ describe('UsageLedgerService and the Free daily cap (launch prep A, design 6.4, 
   });
 });
 
+describe('UsageLedgerService keeps the plan a row was reserved under (LA3E21)', () => {
+  it('LA3E21: confirm and late confirm change the status columns only, never `plan`, so a unit reserved as Free and confirmed after Lan is Pro still counts as Free that day', async () => {
+    const confirmed = setup({ rows: [{ id: 'r1', status: 'reserved', release_reason: null, expires_at: LATER }] });
+    await confirmed.service.confirm(USER, 'ai_practice', OP);
+    const late = setup({ aiUsed: 3, rows: [{ id: 'r1', status: 'reserved', release_reason: null, expires_at: EARLIER }] });
+    await late.service.confirm(USER, 'ai_practice', OP);
+    for (const { tx } of [confirmed, late]) {
+      const updates = tx.usageRecord.update.mock.calls.map(([args]) => Object.keys(args.data));
+      expect(updates.length).toBe(1);
+      expect(updates[0]).not.toContain('plan');
+    }
+  });
+});
+
 describe('UsageLedgerService.refund for a Free account (launch prep A, design 6.5)', () => {
   it('LA3#5: a Free account\'s AI error is refunded: the confirmed use is looked for inside the month and one credit is written', async () => {
     const { service, usage, execs } = setup({ ...FREE, confirmedInCycle: 1 });

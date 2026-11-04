@@ -417,7 +417,7 @@ describe('EntitlementsService.snapshot for a Free account (launch prep A, design
     expect((await reached.service.snapshot(USER))?.ai_available.cap_reached).toBe(true);
   });
 
-  it('LA3#11: free_ai_practice_per_cycle 0 → the pool is 0 with no reset, and the feature is plan-required, as before', async () => {
+  it('LA3#11: free_ai_practice_per_cycle 0 → the pool is 0 (it still shows the window, the lookups use it), and the feature is plan-required, as before', async () => {
     const snapshot = await setup({ entitlements: { freeAiPracticePerCycle: 0 } }).service.snapshot(USER);
     expect(snapshot?.pools.ai_practice).toEqual({ limit: 0, used: 0, remaining: 0, resets_at: '2026-11-30T17:00:00.000Z' });
     expect(snapshot?.features['ai.practice']).toEqual({ allowed: false, reason: 'plan-required' });

@@ -1,13 +1,13 @@
 import { useTranslations } from 'next-intl';
 import type { AppConfig } from '@/app-shell/queries';
 
-/** A Free allowance of 0 is no AI at all: a dash, as before launch prep A. */
-const allowance = (count: number) => (count > 0 ? String(count) : '—');
-
 /** "So sánh chi tiết các gói": the same numbers as the cards, side by side. */
 export function CompareTable({ plans, groups }: { plans: AppConfig['plans']; groups: number }) {
   const t = useTranslations('App.plans');
   const c = useTranslations('App.plans.compareTable');
+  // Both Free allowances at 0 is no AI at all: a dash, as before launch prep A. One of them at 0 shows its 0, like the card.
+  const noFreeAi = plans.free.ai_practice_per_cycle + plans.free.ai_lookup_per_cycle === 0;
+  const allowance = (count: number) => (noFreeAi ? '—' : String(count));
   const rows: Array<[string, string, string]> = [
     [c('review'), c('yes'), c('yes')],
     [c('reminders'), c('yes'), c('yes')],

@@ -595,7 +595,7 @@
         "fake": "Fake (test)"
       },
       "emptyTitle": "No transactions yet.",
-      "emptyBody": "When you start a trial, buy Pro or get a plan from the Wordmet team, it shows up here.",
+      "emptyBody": "When you buy Pro or get a plan from the Wordmet team, it shows up here.",
       "errorTitle": "We couldn’t load your transaction history.",
       "errorBody": "Check your connection and try again.",
       "retry": "Try again"

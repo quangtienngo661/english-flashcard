@@ -105,13 +105,13 @@ describe('PlansPage (K/52, K/53)', () => {
     expect(within(within(table).getByRole('row', { name: /Lượt tra AI mỗi tháng/ })).getAllByRole('cell').map((c) => c.textContent)).toEqual(['—', '80']);
   });
 
-  it('LA3#13: only one of the two Free numbers is 0 → the card still names both, the table shows a dash for the 0', async () => {
+  it('LA3#13: only one of the two Free numbers is 0 → the card names both and the table shows the same 0 (a dash means no AI at all)', async () => {
     renderApp(<PlansPage />, { routes: routes(ent('free'), withFree(15, 0)) });
     const free = await screen.findByRole('region', { name: 'Miễn phí' });
     expect(within(free).getByText('15 câu AI và 0 lượt tra AI mỗi tháng')).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'So sánh chi tiết các gói' }));
     const row = within(screen.getByRole('table')).getByRole('row', { name: /Lượt tra AI mỗi tháng/ });
-    expect(within(row).getAllByRole('cell').map((c) => c.textContent)).toEqual(['—', '80']);
+    expect(within(row).getAllByRole('cell').map((c) => c.textContent)).toEqual(['0', '80']);
   });
 
   it('a close button back to Today', async () => {

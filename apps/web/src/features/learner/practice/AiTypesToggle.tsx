@@ -66,7 +66,7 @@ type Props = {
   usage: { needed: number; remaining: number } | null;
 };
 
-/** K/70, K/70b: the "Kiểu câu có AI" switch with the Pro label; on shows the three AI types and the credit line (D10). */
+/** K/70, K/70b: the "Kiểu câu có AI" switch (locked with the Pro label only when the account has no AI); on shows the three AI types and the credit line (D10). */
 export function AiTypesToggle({ allowed, on, ownOn, onChange, chosen, onChoose, usage }: Props) {
   const t = useTranslations('App.practice.customize');
   return (
