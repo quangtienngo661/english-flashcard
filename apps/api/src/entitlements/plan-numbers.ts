@@ -12,3 +12,8 @@ export function planNumbers(settings: AppSettings['entitlements']): PlanNumbers 
     trial: { ai_practice: settings.trialAiPracticePerCycle, ai_lookup: settings.trialAiLookupPerCycle },
   };
 }
+
+/** The price in dong of a prepaid Pro period (launch prep B §3.5); the order stores this number when it is created. */
+export function priceFor(settings: AppSettings['entitlements'], months: 1 | 3 | 12): number {
+  return months === 1 ? settings.proPrice1mVnd : months === 3 ? settings.proPrice3mVnd : settings.proPrice12mVnd;
+}

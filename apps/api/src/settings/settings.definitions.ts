@@ -38,6 +38,8 @@ export type AppSettings = {
     adsEnabled: boolean; adsInterstitialPerDay: number; adsMinIntervalMinutes: number;
     /** Bước 8 (D15): years a payment record is kept after the account is deleted. */
     transactionRetentionYears: number;
+    /** Launch prep B (Q-B8, design §3.5): the price in dong of a prepaid Pro period of 1, 3 and 12 months. */
+    proPrice1mVnd: number; proPrice3mVnd: number; proPrice12mVnd: number;
   };
   /** Bước 8 (D19): days before an account that never verified its email is deleted. */
   identity: { unverifiedCleanupDays: number };
@@ -74,6 +76,7 @@ export const SETTINGS_DEFAULTS: AppSettings = {
     trialAiPracticePerCycle: 300, trialAiLookupPerCycle: 100, graceDays: 7, trialReminderDaysBefore: 3,
     renewalNoticeDaysBefore: 7, aiEnabled: true, aiDailyCap: 1000, aiCapAlertPercent: 75, adsEnabled: false,
     adsInterstitialPerDay: 3, adsMinIntervalMinutes: 10, transactionRetentionYears: 10,
+    proPrice1mVnd: 79000, proPrice3mVnd: 199000, proPrice12mVnd: 599000,
   },
   identity: { unverifiedCleanupDays: 7 },
   content: { privateWordsPerUser: 10000, sentencesPerSense: 20 },
@@ -123,6 +126,9 @@ export const SETTINGS_BOUNDS = {
     ads_interstitial_per_day: { min: 0, max: 20 },
     ads_min_interval_minutes: { min: 1, max: 240 },
     transaction_retention_years: { min: 5, max: 30 },
+    pro_price_1m_vnd: { min: 1000, max: 10000000 },
+    pro_price_3m_vnd: { min: 1000, max: 10000000 },
+    pro_price_12m_vnd: { min: 1000, max: 10000000 },
   },
   identity: {
     unverified_cleanup_days: { min: 1, max: 365 },
@@ -200,6 +206,9 @@ export const settingsValuesPatchSchema = z.strictObject({
     ads_interstitial_per_day: intIn(b.entitlements.ads_interstitial_per_day).optional(),
     ads_min_interval_minutes: intIn(b.entitlements.ads_min_interval_minutes).optional(),
     transaction_retention_years: intIn(b.entitlements.transaction_retention_years).optional(),
+    pro_price_1m_vnd: intIn(b.entitlements.pro_price_1m_vnd).optional(),
+    pro_price_3m_vnd: intIn(b.entitlements.pro_price_3m_vnd).optional(),
+    pro_price_12m_vnd: intIn(b.entitlements.pro_price_12m_vnd).optional(),
   }).optional(),
   identity: z.strictObject({
     unverified_cleanup_days: intIn(b.identity.unverified_cleanup_days).optional(),
@@ -261,6 +270,9 @@ const FIELDS = [
   ['entitlements', 'ads_interstitial_per_day', 'adsInterstitialPerDay'],
   ['entitlements', 'ads_min_interval_minutes', 'adsMinIntervalMinutes'],
   ['entitlements', 'transaction_retention_years', 'transactionRetentionYears'],
+  ['entitlements', 'pro_price_1m_vnd', 'proPrice1mVnd'],
+  ['entitlements', 'pro_price_3m_vnd', 'proPrice3mVnd'],
+  ['entitlements', 'pro_price_12m_vnd', 'proPrice12mVnd'],
   ['identity', 'unverified_cleanup_days', 'unverifiedCleanupDays'],
   ['content', 'private_words_per_user', 'privateWordsPerUser'],
   ['content', 'sentences_per_sense', 'sentencesPerSense'],

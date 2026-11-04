@@ -2021,7 +2021,8 @@
       "sessions": "phiên",
       "uses": "lượt",
       "years": "năm",
-      "times": "lần"
+      "times": "lần",
+      "vnd": "đồng"
     },
     "fields": {
       "reminders": {
@@ -2066,7 +2067,10 @@
         "ads_enabled": "Bật quảng cáo",
         "ads_interstitial_per_day": "Quảng cáo toàn màn mỗi ngày",
         "ads_min_interval_minutes": "Khoảng cách giữa hai quảng cáo",
-        "transaction_retention_years": "Giữ hồ sơ thanh toán sau khi xóa tài khoản"
+        "transaction_retention_years": "Giữ hồ sơ thanh toán sau khi xóa tài khoản",
+        "pro_price_1m_vnd": "Giá Pro 1 tháng",
+        "pro_price_3m_vnd": "Giá Pro 3 tháng",
+        "pro_price_12m_vnd": "Giá Pro 12 tháng"
       },
       "content": {
         "private_words_per_user": "Số từ riêng mỗi người",

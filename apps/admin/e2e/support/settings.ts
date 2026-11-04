@@ -15,7 +15,7 @@ const DEFAULTS = {
     free_practice_sessions_per_day: 3, pro_practice_sessions_per_day: 30, pro_ai_practice_per_cycle: 300, pro_ai_lookup_per_cycle: 100,
     trial_ai_practice_per_cycle: 300, trial_ai_lookup_per_cycle: 100, grace_days: 7, trial_reminder_days_before: 3,
     renewal_notice_days_before: 7, ai_enabled: true, ai_daily_cap: 1000, ai_cap_alert_percent: 75, ads_enabled: false,
-    ads_interstitial_per_day: 3, ads_min_interval_minutes: 10,
+    ads_interstitial_per_day: 3, ads_min_interval_minutes: 10, pro_price_1m_vnd: 79000, pro_price_3m_vnd: 199000, pro_price_12m_vnd: 599000,
   },
   content: { private_words_per_user: 10000, sentences_per_sense: 20 },
   ai: { call_timeout_seconds: 10, max_concurrent_calls: 50, daily_provider_calls_cap: 3000, content_retention_days: 7, usd_vnd_rate: 26100, eval_held_out_ratio: 0.3,
@@ -45,6 +45,7 @@ const BOUNDS = {
     trial_reminder_days_before: { min: 3, max: 6 }, renewal_notice_days_before: { min: 7, max: 30 },
     ai_daily_cap: { min: 0, max: 100000 }, ai_cap_alert_percent: { min: 50, max: 95, nullable: true },
     ads_interstitial_per_day: { min: 0, max: 20 }, ads_min_interval_minutes: { min: 1, max: 240 },
+    pro_price_1m_vnd: { min: 1000, max: 10000000 }, pro_price_3m_vnd: { min: 1000, max: 10000000 }, pro_price_12m_vnd: { min: 1000, max: 10000000 },
   },
   content: { private_words_per_user: { min: 1000, max: 100000 }, sentences_per_sense: { min: 5, max: 100 } },
   ai: {

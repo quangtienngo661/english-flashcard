@@ -10,7 +10,11 @@ export type AppConfigView = {
   plans: {
     free: { practice_sessions_per_day: number };
     trial: { ai_practice_per_cycle: number; ai_lookup_per_cycle: number };
-    pro: { practice_sessions_per_day: number; ai_practice_per_cycle: number; ai_lookup_per_cycle: number };
+    /** `prices`: dong per prepaid period of 1, 3 and 12 months (launch prep B §3.5); the learner sees what they pay. */
+    pro: {
+      practice_sessions_per_day: number; ai_practice_per_cycle: number; ai_lookup_per_cycle: number;
+      prices: { '1': number; '3': number; '12': number };
+    };
   };
 };
 
@@ -31,6 +35,7 @@ export function appConfigView(s: AppSettings): AppConfigView {
         practice_sessions_per_day: e.proPracticeSessionsPerDay,
         ai_practice_per_cycle: e.proAiPracticePerCycle,
         ai_lookup_per_cycle: e.proAiLookupPerCycle,
+        prices: { '1': e.proPrice1mVnd, '3': e.proPrice3mVnd, '12': e.proPrice12mVnd },
       },
     },
   };

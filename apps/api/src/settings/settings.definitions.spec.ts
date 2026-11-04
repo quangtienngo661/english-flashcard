@@ -8,7 +8,7 @@ const ENTITLEMENT_DEFAULTS_API = {
   pro_ai_lookup_per_cycle: 100, trial_ai_practice_per_cycle: 300, trial_ai_lookup_per_cycle: 100, grace_days: 7,
   trial_reminder_days_before: 3, renewal_notice_days_before: 7, ai_enabled: true, ai_daily_cap: 1000,
   ai_cap_alert_percent: 75, ads_enabled: false, ads_interstitial_per_day: 3, ads_min_interval_minutes: 10,
-  transaction_retention_years: 10,
+  transaction_retention_years: 10, pro_price_1m_vnd: 79000, pro_price_3m_vnd: 199000, pro_price_12m_vnd: 599000,
 };
 
 const AI_DEFAULTS_API = {
@@ -67,6 +67,22 @@ describe('settings definitions', () => {
     expect(changedFields(SETTINGS_DEFAULTS, next)).toEqual([{ key: 'learning.active_window_days', oldValue: 7, newValue: 14 }]);
   });
 
+  it('launch prep B (Q-B8): the three Pro prices default to 79.000, 199.000, 599.000 and take 1.000–10.000.000, whole dong', () => {
+    const keys = ['pro_price_1m_vnd', 'pro_price_3m_vnd', 'pro_price_12m_vnd'] as const;
+    expect(keys.map((key) => toApiValues(SETTINGS_DEFAULTS).entitlements[key])).toEqual([79000, 199000, 599000]);
+    for (const key of keys) {
+      expect(SETTINGS_BOUNDS.entitlements[key]).toEqual({ min: 1000, max: 10000000 });
+      expect(issues({ entitlements: { [key]: 1000 } }), `${key}=1000`).toEqual([]);
+      expect(issues({ entitlements: { [key]: 10000000 } }), `${key}=10000000`).toEqual([]);
+      for (const bad of [999, 10000001, 79000.5, null]) expect(issues({ entitlements: { [key]: bad } }), `${key}=${bad}`).toEqual([`entitlements.${key}`]);
+    }
+    // JSON stored before the prices existed gets the defaults; a stored price is kept; a change is in the history diff.
+    expect(withDefaults({ entitlements: { graceDays: 4 } }).entitlements).toMatchObject({ proPrice1mVnd: 79000, proPrice3mVnd: 199000, proPrice12mVnd: 599000 });
+    expect(withDefaults({ entitlements: { proPrice3mVnd: 189000 } }).entitlements.proPrice3mVnd).toBe(189000);
+    const next = applyPatch(SETTINGS_DEFAULTS, { entitlements: { pro_price_3m_vnd: 189000 } });
+    expect(changedFields(SETTINGS_DEFAULTS, next)).toEqual([{ key: 'entitlements.pro_price_3m_vnd', oldValue: 199000, newValue: 189000 }]);
+  });
+
   it('Bước 8: a change to the identity group is recorded in the history diff', () => {
     const next = applyPatch(SETTINGS_DEFAULTS, { identity: { unverified_cleanup_days: 3 } });
     expect(changedFields(SETTINGS_DEFAULTS, next)).toEqual([{ key: 'identity.unverified_cleanup_days', oldValue: 7, newValue: 3 }]);
@@ -75,7 +91,7 @@ describe('settings definitions', () => {
   it('D18: defaults are 3, 30, 300, 100, 300, 100, 7, 3, 7, true, 1000, 75, false, 3, 10; learning 100/2000; content 10000/20', () => {
     const api = toApiValues(SETTINGS_DEFAULTS);
     expect(api.entitlements).toEqual(ENTITLEMENT_DEFAULTS_API);
-    expect(Object.values(api.entitlements)).toEqual([3, 30, 300, 100, 300, 100, 7, 3, 7, true, 1000, 75, false, 3, 10, 10]);
+    expect(Object.values(api.entitlements)).toEqual([3, 30, 300, 100, 300, 100, 7, 3, 7, true, 1000, 75, false, 3, 10, 10, 79000, 199000, 599000]);
     expect([api.learning.groups_per_user, api.learning.items_per_group]).toEqual([100, 2000]);
     expect(api.content).toEqual({ private_words_per_user: 10000, sentences_per_sense: 20 });
   });
@@ -120,7 +136,7 @@ describe('settings definitions', () => {
     expect(Object.keys(api)).toEqual(['reminders', 'learning', 'practice', 'entitlements', 'content', 'ai', 'identity']);
     expect(Object.keys(api.entitlements)).toEqual(Object.keys(ENTITLEMENT_DEFAULTS_API));
     for (const section of Object.values(api)) {
-      for (const key of Object.keys(section)) expect(key).toMatch(/^[a-z]+(_[a-z]+)*$/);
+      for (const key of Object.keys(section)) expect(key).toMatch(/^[a-z]+(_[a-z0-9]+)*$/);
     }
   });
 
