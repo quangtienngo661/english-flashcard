@@ -5,6 +5,26 @@ import { toMinorUnits } from './transaction-amount.js';
 
 type Tx = Prisma.TransactionClient;
 
+/** The interval of a transaction: a prepaid period of 3 months is a `quarter`; subscriptions keep `month | year` (launch prep B §3.2). */
+export type TransactionInterval = 'month' | 'quarter' | 'year';
+
+/** What a prepaid purchase writes (one row per period opened, design §3.2). */
+export type PrepaidPurchase = {
+  userId: string;
+  provider: string;
+  environment: string;
+  /** `<orderCode>:<reference>` for payOS money, `manual:<order_id>` for a staff confirmation: unique, so two orders with one reference never collide. */
+  providerTransactionId: string;
+  amountMinor: bigint;
+  currency: string;
+  periodMonths: number;
+  occurredAt: Date;
+  periodStart: Date;
+  periodEnd: Date;
+};
+
+const INTERVAL_OF_MONTHS: Record<number, TransactionInterval> = { 1: 'month', 3: 'quarter', 12: 'year' };
+
 export type TransactionKind = 'purchase' | 'renewal' | 'plan_change' | 'refund' | 'trial';
 export type TransactionStatus = 'succeeded' | 'refunded' | 'pending' | 'reversed';
 
@@ -94,6 +114,16 @@ export class TransactionsRepository {
       default:
         return;
     }
+  }
+
+  /** The `purchase` row of one prepaid period. A repeat of the same payment writes nothing (the unique skips it). */
+  async recordPrepaidPurchase(tx: Tx, purchase: PrepaidPurchase): Promise<void> {
+    await this.insert(tx, {
+      userId: purchase.userId, subscriptionId: null, kind: 'purchase', plan: PLAN, interval: INTERVAL_OF_MONTHS[purchase.periodMonths] ?? null,
+      amountMinor: purchase.amountMinor, currency: purchase.currency, occurredAt: purchase.occurredAt, periodStart: purchase.periodStart,
+      periodEnd: purchase.periodEnd, status: 'succeeded', provider: purchase.provider, environment: purchase.environment,
+      providerTransactionId: purchase.providerTransactionId,
+    });
   }
 
   private async insert(tx: Tx, row: TransactionRow): Promise<void> {
