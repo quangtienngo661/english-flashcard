@@ -584,7 +584,7 @@ async function main() {
     ok('the report stays under an anon id, note null, learner.answer null, result and refunded unchanged');
   });
 
-  await step('B8E28', 'a person who deleted and registers again with the same email gets a trial again (trial history is not kept)', async () => {
+  await step('B8E28', 'a person who deleted and registers again with the same email has no trial history (it is not kept)', async () => {
     const email = emailOf('retrial');
     const [t] = await sqlUsers(['retrial']);
     const sub = `sub-trial-${run}`;
@@ -598,9 +598,9 @@ async function main() {
     const code = (await (await send(`${MAILPIT}/api/v1/message/${mails[0].ID}`)).json()).Text.match(/(\d{6})/)[1];
     const verified = await want(api('POST', '/v1/auth/verify-email', { body: { email, code, password: PASSWORD, client: 'web' } }), 200, 'verify');
     await want(api('PATCH', '/v1/me', { token: verified.access_token, body: { native_language: 'vi' } }), 200, 'native language');
-    const view = await want(api('GET', '/v1/me/entitlements', { token: verified.access_token }), 200, 'entitlements');
-    check(view.trial_eligible === true, `trial_eligible ${view.trial_eligible}`);
-    ok('trial_history gone with the account; the same email registers again and is trial-eligible');
+    // Trial is off (launch prep A, design 6.9): `trial_eligible` is false for everyone, so the table is what shows the history is gone.
+    check(psql(`SELECT count(*) FROM trial_history th JOIN users u ON u.id = th.user_id WHERE u.email = '${email}'`) === '0', 'the new account has a trial_history row');
+    ok('trial_history gone with the account; the same email registers again with no trial history');
   });
 
   await step('B8E49', 'a big learner (50 000 log rows, 2 000 private words) is deleted in under 120 s', async () => {

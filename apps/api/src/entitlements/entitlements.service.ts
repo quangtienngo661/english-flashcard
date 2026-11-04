@@ -184,7 +184,9 @@ export class EntitlementsService {
         show: entitlements.adsEnabled && resolved.plan === 'free',
         interstitial_per_day: entitlements.adsInterstitialPerDay, min_interval_minutes: entitlements.adsMinIntervalMinutes,
       },
-      trial_eligible: profile.email_verified && !(await this.sources.trialUsed(this.prisma, userId)),
+      // No new trial (launch prep A, design 6.9): the only provider that starts one is the fake one. The trial code and
+      // `sources.trialUsed` stay for a self-renewing provider; the field stays so clients keep reading it.
+      trial_eligible: false,
     };
   }
 

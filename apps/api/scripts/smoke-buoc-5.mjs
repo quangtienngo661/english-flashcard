@@ -238,8 +238,8 @@ async function main() {
   check(fresh.pools.practice_sessions.limit === 3 && fresh.pools.ai_practice.limit === 0 && fresh.pools.ai_lookup.limit === 0,
     `pools ${JSON.stringify(fresh.pools)}`);
   check(!fresh.features['ai.practice'].allowed && !fresh.features['ai.lookup'].allowed, `features ${JSON.stringify(fresh.features)}`);
-  check(fresh.ads.show === false && fresh.trial_eligible === true, `ads ${JSON.stringify(fresh.ads)}, trial_eligible ${fresh.trial_eligible}`);
-  ok('plan free; practice 3/day; AI pools 0; ai.practice and ai.lookup not allowed; ads.show false; trial_eligible true');
+  check(fresh.ads.show === false && fresh.trial_eligible === false, `ads ${JSON.stringify(fresh.ads)}, trial_eligible ${fresh.trial_eligible}`);
+  ok('plan free; practice 3/day; AI pools 0; ai.practice and ai.lookup not allowed; ads.show false; trial_eligible false (trial is off, launch prep A)');
 
   // ------------------------------------------------------------------------------------------------------------------
   step('Practice material for P: a group with two private words');
