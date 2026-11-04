@@ -32,6 +32,7 @@
     "idempotency-key-abandoned": "Yêu cầu trước đã bị bỏ dở, hãy bấm gửi lại",
     "invalid-credentials": "Email hoặc mật khẩu không đúng",
     "invalid-current-password": "Mật khẩu hiện tại không đúng",
+    "account-deleted": "Tài khoản của người học đã bị xóa, không mở kỳ được.",
     "account-deleting": "Tài khoản này đang được xóa, chưa sửa được.",
     "confirm-email-mismatch": "Email gõ lại chưa khớp với email của tài khoản.",
     "last-admin": "Đây là admin cuối cùng nên chưa xóa được.",
@@ -58,6 +59,12 @@
     "not-found": "Không tìm thấy",
     "nothing-to-judge": "Không có câu nào để chấm theo bộ lọc này.",
     "nothing-to-publish": "Không có mục nào đủ điều kiện publish",
+    "order-already-paid": "Đơn đã có kỳ.",
+    "order-changed": "Đơn vừa thay đổi. Đóng cửa sổ này, xem lại đơn rồi thử lại.",
+    "order-closed": "Đơn đã đóng, không nhận tiền được nữa.",
+    "order-not-pending": "Đơn không còn ở trạng thái chờ, không hủy được.",
+    "order-not-resolvable": "Đơn này không có gì để xử lý.",
+    "period-already-revoked": "Kỳ này đã được thu hồi rồi.",
     "operation-settings-conflict": "Có người vừa đổi thao tác này. Tải lại để xem bản mới.",
     "password-change-required": "Bạn phải đổi mật khẩu trước khi tiếp tục",
     "payload-too-large": "Dữ liệu gửi lên quá lớn",
@@ -145,6 +152,7 @@
     "refunds": "Trả lượt",
     "users": "Người dùng",
     "entitlements": "Cấp gói và lượt",
+    "orders": "Đơn hàng",
     "transactions": "Giao dịch",
     "aiStatus": "Tình trạng",
     "aiModels": "Model",
@@ -1360,6 +1368,135 @@
       "target-is-staff": "Editor không cấp được cho tài khoản staff.",
       "ai-limits-admin-only": "Con số lượt AI chỉ admin đặt được.",
       "target-has-paid-subscription": "Người này đang trả tiền cho gói Pro và đang tự gia hạn."
+    }
+  },
+  "orders": {
+    "intro": "Mỗi lần người học bấm Mua là một đơn. Xem tiền đã tới chưa; khi thấy tiền trong app ngân hàng mà hệ thống chưa biết, bấm Đã nhận tiền; hủy đơn đang chờ, đóng đơn đã xử lý xong, thu hồi một kỳ. Chỉ admin.",
+    "filters": {
+      "email": "Email người học",
+      "emailPlaceholder": "Tìm theo email",
+      "status": "Trạng thái",
+      "allStatuses": "Mọi trạng thái",
+      "needsAttention": "Cần xem",
+      "code": "Nội dung chuyển khoản",
+      "codePlaceholder": "WM…",
+      "from": "Từ ngày",
+      "to": "Tới ngày",
+      "apply": "Lọc"
+    },
+    "cols": {
+      "user": "Người học",
+      "plan": "Kỳ · Số tiền",
+      "code": "Nội dung CK",
+      "at": "Tạo lúc",
+      "status": "Trạng thái"
+    },
+    "months": "{count} tháng",
+    "statuses": {
+      "pending": "Đang chờ",
+      "paid": "Đã trả",
+      "expired": "Hết hạn",
+      "cancelled": "Đã hủy",
+      "failed": "Không tạo được link",
+      "needs_review": "Cần xem",
+      "closed": "Đã đóng"
+    },
+    "reasons": {
+      "amount-short": "Trả thiếu",
+      "amount-over": "Trả dư",
+      "late-payment": "Trả muộn",
+      "account-deleted": "Tài khoản đã xóa",
+      "extra-payment": "Có khoản trả thêm",
+      "reconcile-mismatch": "Đối soát lệch khóa",
+      "provider-mismatch": "payOS báo có tiền nhưng không liệt kê giao dịch"
+    },
+    "sources": {
+      "webhook": "Webhook",
+      "reconcile": "Đối soát",
+      "manual": "Nhân viên"
+    },
+    "outcomes": {
+      "opened-period": "Mở kỳ",
+      "attached": "Gắn vào lần trả trước",
+      "counted": "Đã tính",
+      "flagged": "Cần xem",
+      "refund-needed": "Cần hoàn tiền"
+    },
+    "proSources": {
+      "prepaid": "Kỳ trả trước",
+      "grant": "Đội cấp Pro"
+    },
+    "periods": {
+      "revoked": "Đã thu hồi {date}"
+    },
+    "detailLink": "Chi tiết",
+    "detailFor": "Chi tiết đơn của {email}",
+    "footer": "{count} đơn · mới nhất trước · ngày giờ theo múi giờ Asia/Ho_Chi_Minh",
+    "empty": "Không có đơn nào khớp bộ lọc. Đổi email, trạng thái hoặc khoảng ngày rồi xem lại.",
+    "detail": {
+      "title": "Chi tiết đơn",
+      "user": "Người học",
+      "userId": "Mã người học",
+      "description": "Nội dung chuyển khoản",
+      "code": "Mã đơn (orderCode)",
+      "plan": "Kỳ · Số tiền",
+      "status": "Trạng thái",
+      "reason": "Cần xem vì",
+      "via": "Tiền được ghi nhận qua",
+      "createdAt": "Tạo lúc",
+      "expiresAt": "Link hết hạn lúc",
+      "paymentsTitle": "Các lần trả",
+      "noPayments": "Chưa có lần trả nào.",
+      "providerTime": "payOS ghi {time}",
+      "periodsTitle": "Các kỳ đã mở",
+      "noPeriods": "Đơn chưa mở kỳ nào.",
+      "proTitle": "Pro của người học bây giờ",
+      "proUntil": "Pro tới hết {date}",
+      "proNone": "Người học hiện không ở Pro.",
+      "refundTitle": "Thông tin để hoàn tiền",
+      "refundName": "Tên người chuyển",
+      "refundAccount": "Số tài khoản",
+      "refundBank": "Ngân hàng",
+      "refundNote": "Chỉ lưu khi tiền tới sau khi tài khoản đã bị xóa; tự xóa sau 90 ngày hoặc khi bấm Đã xử lý.",
+      "resolutionTitle": "Đã xử lý",
+      "close": "Đóng"
+    },
+    "actions": {
+      "confirm": "Đã nhận tiền",
+      "cancel": "Hủy đơn",
+      "resolve": "Đã xử lý",
+      "revoke": "Thu hồi kỳ"
+    },
+    "confirm": {
+      "title": "Đã nhận tiền",
+      "body": "Bạn đã thấy {amount} cho nội dung {code} trong app ngân hàng, mà hệ thống chưa biết. Người học sẽ có kỳ Pro ngay.",
+      "reference": "Mã tham chiếu của ngân hàng",
+      "amount": "Số tiền đã nhận (₫)",
+      "reason": "Lý do",
+      "invalid": "Nhập mã tham chiếu, số tiền là số nguyên dương và lý do (tối đa 300 ký tự).",
+      "submit": "Xác nhận đã nhận"
+    },
+    "cancel": {
+      "title": "Hủy đơn",
+      "body": "Hủy đơn {code}? Link thanh toán sẽ bị hủy ở payOS, người học không trả được nữa.",
+      "keep": "Giữ đơn",
+      "confirm": "Hủy đơn"
+    },
+    "resolve": {
+      "title": "Đã xử lý",
+      "body": "Ghi lại việc đã làm. Đơn cần xem sẽ đóng; đơn đã trả có cờ sẽ được tắt cờ. Thông tin hoàn tiền của đơn bị xóa.",
+      "note": "Ghi chú",
+      "placeholder": "Đã hoàn 199.000 ₫ qua ngân hàng ngày 06/11",
+      "invalid": "Nhập ghi chú (tối đa 300 ký tự).",
+      "submit": "Đánh dấu đã xử lý"
+    },
+    "revoke": {
+      "title": "Thu hồi kỳ",
+      "body": "Kỳ này thôi được tính từ bây giờ. Kỳ sau không dời chỗ; dòng giao dịch giữ nguyên, hoàn tiền (nếu có) làm ở ngân hàng.",
+      "reason": "Lý do",
+      "invalid": "Nhập lý do (tối đa 300 ký tự).",
+      "keep": "Giữ kỳ",
+      "submit": "Thu hồi"
     }
   },
   "transactions": {

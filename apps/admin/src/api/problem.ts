@@ -39,6 +39,7 @@ export class NetworkError extends Error {
  * body-parser mappings in `problem-details.filter.ts`), checked 14/10/2026, extended 27/10/2026 for the admin UI round (design §4.5) , 28/10/2026 with `run-active` / `run-not-active` (stopping and deleting an eval run) and 30/10/2026 with the config lifecycle slugs of nhóm B M2. Each has a vi and en message.
  */
 export const KNOWN_ERROR_SLUGS = [
+  'account-deleted',
   'account-deleting',
   'admin-usd-cap',
   'baseline-required',
@@ -92,9 +93,15 @@ export const KNOWN_ERROR_SLUGS = [
   'nothing-to-judge',
   'nothing-to-publish',
   'operation-settings-conflict',
+  'order-already-paid',
+  'order-changed',
+  'order-closed',
+  'order-not-pending',
+  'order-not-resolvable',
   'password-change-required',
   'password-login-required',
   'payload-too-large',
+  'period-already-revoked',
   'profile-incomplete',
   'prompt-revision-conflict',
   'provider-not-configured',
