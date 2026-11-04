@@ -19,7 +19,7 @@ const config = (prices: Record<string, number> = PRICES) => ({
   practice: { max_questions_per_session: 20, default_questions_per_session: 10 },
   reminders: { send_time: '20:00' }, learning: { backlog_after_days: 60, groups_per_user: 90 },
   plans: {
-    free: { practice_sessions_per_day: 4 }, trial: { ai_practice_per_cycle: 100, ai_lookup_per_cycle: 30 },
+    free: { practice_sessions_per_day: 4, ai_practice_per_cycle: 12, ai_lookup_per_cycle: 4 }, trial: { ai_practice_per_cycle: 100, ai_lookup_per_cycle: 30 },
     pro: { practice_sessions_per_day: 25, ai_practice_per_cycle: 250, ai_lookup_per_cycle: 80, prices },
   },
 });
@@ -38,8 +38,11 @@ const PREPAID = {
   renews_at: null, cancel_at_period_end: null, pending_interval: null,
 };
 const CREATED = () => Response.json({ order_id: 'o-1', checkout_url: 'https://pay.example/checkout?order=1' }, { status: 201 });
-const routes = (entitlements: unknown, extra: Record<string, () => Response> = {}) => ({
-  'GET /v1/me/app-config': () => Response.json(CONFIG),
+const withFree = (ai_practice_per_cycle: number, ai_lookup_per_cycle: number) => ({
+  ...CONFIG, plans: { ...CONFIG.plans, free: { ...CONFIG.plans.free, ai_practice_per_cycle, ai_lookup_per_cycle } },
+});
+const routes = (entitlements: unknown, extra: Record<string, () => Response> = {}, appConfig: unknown = CONFIG) => ({
+  'GET /v1/me/app-config': () => Response.json(appConfig),
   'GET /v1/me/entitlements': () => Response.json(entitlements),
   ...extra,
 });
@@ -61,6 +64,9 @@ describe('PlansPage (K/52, K/53; launch prep B design §3.8)', () => {
     expect(within(free).getByText('Bạn đang dùng gói này')).toBeInTheDocument();
     expect(within(free).getByText('4 phiên luyện mỗi ngày')).toBeInTheDocument();
     expect(within(free).getByText('Tra từ, thêm nhanh, tối đa 90 nhóm')).toBeInTheDocument();
+    // LA3#1: the Free card names the monthly AI allowance, with the numbers of the config, and no longer says AI needs Pro.
+    expect(within(free).getByText('12 câu AI và 4 lượt tra AI mỗi tháng')).toBeInTheDocument();
+    expect(within(free).queryByText('Câu AI và tra bằng AI: cần gói Pro')).not.toBeInTheDocument();
     expect(screen.queryByText(/Không cần thẻ ngân hàng/)).not.toBeInTheDocument();
     const pro = screen.getByRole('region', { name: 'Pro' });
     expect(within(pro).queryByText('Chưa mở bán')).not.toBeInTheDocument();
@@ -200,6 +206,29 @@ describe('PlansPage (K/52, K/53; launch prep B design §3.8)', () => {
     const table = screen.getByRole('table');
     const sessions = within(table).getByRole('row', { name: /Phiên luyện mỗi ngày/ });
     expect(within(sessions).getAllByRole('cell').map((c) => c.textContent)).toEqual(['4', '25']);
+    // The AI rows: Free has its numbers too, not a dash.
+    expect(within(within(table).getByRole('row', { name: /Câu AI mới mỗi tháng/ })).getAllByRole('cell').map((c) => c.textContent)).toEqual(['12', '250']);
+    expect(within(within(table).getByRole('row', { name: /Lượt tra AI mỗi tháng/ })).getAllByRole('cell').map((c) => c.textContent)).toEqual(['4', '80']);
+  });
+
+  it('LA3#11: when the config gives Free no AI (both numbers 0) the card and the table say so, as before', async () => {
+    renderApp(<PlansPage />, { routes: routes(ent('free'), {}, withFree(0, 0)) });
+    const free = await screen.findByRole('region', { name: 'Miễn phí' });
+    expect(within(free).getByText('Câu AI và tra bằng AI: cần gói Pro')).toBeInTheDocument();
+    expect(within(free).queryByText(/câu AI và \d+ lượt tra AI mỗi tháng/)).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'So sánh chi tiết các gói' }));
+    const table = screen.getByRole('table');
+    expect(within(within(table).getByRole('row', { name: /Câu AI mới mỗi tháng/ })).getAllByRole('cell').map((c) => c.textContent)).toEqual(['—', '250']);
+    expect(within(within(table).getByRole('row', { name: /Lượt tra AI mỗi tháng/ })).getAllByRole('cell').map((c) => c.textContent)).toEqual(['—', '80']);
+  });
+
+  it('LA3#13: only one of the two Free numbers is 0 → the card names both and the table shows the same 0 (a dash means no AI at all)', async () => {
+    renderApp(<PlansPage />, { routes: routes(ent('free'), {}, withFree(15, 0)) });
+    const free = await screen.findByRole('region', { name: 'Miễn phí' });
+    expect(within(free).getByText('15 câu AI và 0 lượt tra AI mỗi tháng')).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'So sánh chi tiết các gói' }));
+    const row = within(screen.getByRole('table')).getByRole('row', { name: /Lượt tra AI mỗi tháng/ });
+    expect(within(row).getAllByRole('cell').map((c) => c.textContent)).toEqual(['0', '80']);
   });
 
   it('a close button back to Today', async () => {
@@ -218,6 +247,7 @@ describe('PlansPage (K/52, K/53; launch prep B design §3.8)', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Buy' }));
     await waitFor(() => expect(assign).toHaveBeenCalledTimes(1));
     expect(view.calls.find((c) => c.method === 'POST' && c.path === '/v1/me/orders')?.body).toEqual({ period_months: 12, expected_amount: 610000, locale: 'en' });
+    expect(screen.getByText('12 AI questions and 4 AI lookups a month')).toBeInTheDocument();
   });
 });
 

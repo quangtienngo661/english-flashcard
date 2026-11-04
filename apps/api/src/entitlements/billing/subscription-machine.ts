@@ -66,6 +66,13 @@ function started(state: SubscriptionState | null, event: Event<'subscription_sta
 }
 
 /**
+ * B5-5: the cycle of the AI quota starts at the earlier of the period start and the moment of the event. A store that announces
+ * a period before it begins would otherwise make the learner's uses since the event vanish from the count.
+ */
+const anchorOf = (event: { currentPeriodStart: Date; occurredAt: Date }): Date =>
+  event.occurredAt.getTime() < event.currentPeriodStart.getTime() ? event.occurredAt : event.currentPeriodStart;
+
+/**
  * `renewed` is additive: never stale, `current_period_end = max(old, event)`. A renewal of a period that ends before the
  * stored one is a late copy of the past, so it is recorded and changes nothing: it must not give Pro back after a refund
  * of the current period (D34), clear a grace the provider started, or take the current transaction back.
@@ -85,7 +92,7 @@ const renewal =
       currentPeriodStart: event.currentPeriodStart,
       currentPeriodEnd: event.currentPeriodEnd,
       currentTransactionId: event.transactionId,
-      ...(newAnchor && { quotaAnchorAt: event.currentPeriodStart }),
+      ...(newAnchor && { quotaAnchorAt: anchorOf(event) }),
     };
     return changed(next, newAnchor);
   };
@@ -127,7 +134,7 @@ const MATRIX: { [T in EventType]: Row<Event<T>> } = {
           graceEndsAt: null,
           cancelAtPeriodEnd: false,
           pendingInterval: null,
-          quotaAnchorAt: event.currentPeriodStart,
+          quotaAnchorAt: anchorOf(event),
           currentTransactionId: event.transactionId,
         },
         true,
@@ -245,7 +252,7 @@ const MATRIX: { [T in EventType]: Row<Event<T>> } = {
           currentPeriodStart: event.currentPeriodStart,
           currentPeriodEnd: event.currentPeriodEnd,
           currentTransactionId: event.transactionId,
-          quotaAnchorAt: event.currentPeriodStart,
+          quotaAnchorAt: anchorOf(event),
         },
         true,
       ),

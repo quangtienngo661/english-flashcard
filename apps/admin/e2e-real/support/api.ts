@@ -33,10 +33,13 @@ export async function waitForHealth(timeoutMs = 60_000): Promise<void> {
   }
 }
 
+/** The API under test runs with TURNSTILE_MODE=fake (ci.yml, docker-compose): any well-formed token passes. */
+export const E2E_TURNSTILE_TOKEN = 'smoke-token';
+
 /** Register, then verify the email with the OTP that registration mails (read from Mailpit). */
 export async function registerVerified(email: string, password: string): Promise<void> {
   const before = (await mailsTo(email)).length;
-  await expectStatus(await post('/v1/auth/register', { email, password, timezone: 'Asia/Ho_Chi_Minh', given_name: 'Smoke', birth_date: '2000-01-01', accept_terms: true, client: 'web' }), 201, `register ${email}`);
+  await expectStatus(await post('/v1/auth/register', { email, password, timezone: 'Asia/Ho_Chi_Minh', given_name: 'Smoke', birth_date: '2000-01-01', accept_terms: true, client: 'web', turnstile_token: E2E_TURNSTILE_TOKEN }), 201, `register ${email}`);
   // Registration already mails one code; asking for another would invalidate it and race the mail delivery.
   const code = await otpCodeFor(email, before + 1);
   await expectStatus(await post('/v1/auth/verify-email', { email, code, password, client: 'web' }), 200, 'verify email');
@@ -51,7 +54,7 @@ export function grantAdmin(email: string): void {
 export const retryAfterSeconds = (header: string | null | undefined): number => Number(header ?? '') || 60;
 
 export async function loginToken(email: string, password: string): Promise<string> {
-  const body = { email, password, client: 'web', device_label: 'e2e-real' };
+  const body = { email, password, client: 'web', device_label: 'e2e-real', turnstile_token: E2E_TURNSTILE_TOKEN };
   let res = await post('/v1/auth/login', body);
   if (res.status === 429) {
     await new Promise((resolve) => setTimeout(resolve, (retryAfterSeconds(res.headers.get('retry-after')) + 1) * 1000));

@@ -83,6 +83,7 @@ describe('RegisterForm (K/01, K/01b)', () => {
     expect(calls.find((c) => c.path === '/v1/auth/register')!.body).toEqual({
       given_name: 'Lan', family_name: 'Nguyễn', birth_date: '2008-05-14', email: 'Lan@Example.COM', password: 'Aa1!aaaa',
       timezone: 'Asia/Ho_Chi_Minh', accept_terms: true, client: 'web', device_label: 'Wordmet Web',
+      turnstile_token: 'fake-turnstile-token',
     });
   });
 
@@ -249,7 +250,7 @@ describe('VerifyEmailForm (K/03)', () => {
     await userEvent.type(screen.getByRole('textbox', { name: 'Email' }), 'new@example.com');
     expect(screen.getByRole('button', { name: 'Gửi lại mã' })).toBeEnabled();
     await userEvent.click(screen.getByRole('button', { name: 'Gửi lại mã' }));
-    await waitFor(() => expect(calls.find((c) => c.path === '/v1/auth/otp')!.body).toEqual({ purpose: 'verify_email', email: 'new@example.com' }));
+    await waitFor(() => expect(calls.find((c) => c.path === '/v1/auth/otp')!.body).toEqual({ purpose: 'verify_email', email: 'new@example.com', turnstile_token: 'fake-turnstile-token' }));
     await userEvent.type(screen.getByLabelText('Mật khẩu'), 'typed-password');
     await typeCode('481205');
     await userEvent.click(screen.getByRole('button', { name: 'Xác minh' }));
@@ -320,7 +321,7 @@ describe('VerifyEmailForm (K/03)', () => {
     expect(hardReplace).not.toHaveBeenCalled();
   });
 
-  it('resend posts the email without a token, once, and restarts the 60 s countdown; no auto-send on open', async () => {
+  it('resend posts the email with a token, once, and restarts the 60 s countdown; no auto-send on open', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
     let release!: () => void;
     const { count, calls, store } = setup({ routes: {
@@ -333,7 +334,7 @@ describe('VerifyEmailForm (K/03)', () => {
     await userEvent.dblClick(await screen.findByRole('button', { name: 'Gửi lại mã' }));
     expect(count('POST', '/v1/auth/otp')).toBe(1);
     const otp = calls.find((c) => c.path === '/v1/auth/otp')!;
-    expect(otp.body).toEqual({ purpose: 'verify_email', email: 'lan@example.com' });
+    expect(otp.body).toEqual({ purpose: 'verify_email', email: 'lan@example.com', turnstile_token: 'fake-turnstile-token' });
     expect(otp.headers.Authorization).toBeUndefined();
     await act(async () => release());
     expect(screen.getByText('Gửi lại mã sau 60 giây')).toBeInTheDocument();
@@ -427,7 +428,7 @@ describe('Forgot and reset password (K/04, K/05)', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Gửi mã' }));
     await waitFor(() => expect(hardReplace).toHaveBeenCalledWith('/vi/app/reset-password'));
     expect(readPendingEmail()).toBe('lan@example.com');
-    expect(calls.find((c) => c.path === '/v1/auth/otp')!.body).toEqual({ purpose: 'reset_password', email: 'lan@example.com' });
+    expect(calls.find((c) => c.path === '/v1/auth/otp')!.body).toEqual({ purpose: 'reset_password', email: 'lan@example.com', turnstile_token: 'fake-turnstile-token' });
   });
 
   it('UW-1: sets the new password for the pending email, then sends the learner to sign in and forgets the email', async () => {

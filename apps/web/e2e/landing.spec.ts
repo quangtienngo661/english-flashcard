@@ -598,16 +598,17 @@ test.describe('LR35 the first screen moves in when the page opens', () => {
 });
 
 test.describe('LR36 the plans are a comparison table and the Pro column stands out', () => {
-  test('each of the seven lines has a Có or a Không under Free and under Pro, and the two columns are painted differently', async ({ page }) => {
+  test('each of the seven lines has a Có or a Không (or a monthly limit under Free for the two AI lines) and the two columns are painted differently', async ({ page }) => {
     await open(page);
     const table = page.getByRole('table', { name: L.plans.title });
+    // Free has a monthly AI allowance (launch prep A): its two AI cells hold the limit in words instead of a Có or a Không.
     const lines: Array<[string, string, string]> = [
       [L.plans.freeP1, L.plans.yes, L.plans.yes],
       [L.plans.freeP2, L.plans.yes, L.plans.yes],
       [L.plans.freeP3, L.plans.yes, L.plans.yes],
       [L.plans.proP1, L.plans.no, L.plans.yes],
-      [L.plans.proP2, L.plans.no, L.plans.yes],
-      [L.plans.proP3, L.plans.no, L.plans.yes],
+      [L.plans.proP2, L.plans.freeAiPractice, L.plans.yes],
+      [L.plans.proP3, L.plans.freeAiLookup, L.plans.yes],
       [L.plans.proP4, L.plans.no, L.plans.yes],
     ];
     for (const [label, free, pro] of lines) {

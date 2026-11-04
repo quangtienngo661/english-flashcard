@@ -94,6 +94,13 @@ describe('problem mapping', () => {
     }
   });
 
+  it('the Turnstile slugs (launch prep A) each have a message of their own', () => {
+    for (const [slug, status] of [['captcha-failed', 400], ['captcha-unavailable', 503]] as const) {
+      expect(KNOWN_ERROR_SLUGS).toContain(slug);
+      expect(errorMessageKey(problem({ slug, status }))).toBe(`errors.${slug}`);
+    }
+  });
+
   it('the legal-document slugs each have a message of their own', () => {
     for (const slug of ['not-a-draft', 'legal-busy', 'draft-version-conflict', 'publish-stale']) {
       expect(KNOWN_ERROR_SLUGS).toContain(slug);

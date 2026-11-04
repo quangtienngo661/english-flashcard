@@ -270,3 +270,10 @@ Trước đợt này admin chỉ tạo được tài khoản nhân sự (`admin`
 tới email cũ; quyền mới `users.read` cho danh sách và chi tiết (admin và editor), mọi thao tác ghi vẫn `roles.manage`; `PATCH /v1/me` nhận `accept_terms: true`;
 `GET /v1/me` trả thêm `terms_accepted_at`; chi tiết người dùng của admin trả thêm `timezone`; màn người học `/app/complete-profile` chỉ nằm ở app người học
 (nhân sự vào app admin không bị hỏi). Bị bỏ: route riêng cho người học (thêm route mà dữ liệu và luật giống hệt); admin nhập ngày sinh hộ (không biết thật).
+
+## AD19 — Dashboard AI ở `/dashboard` với quyền `ai.view` (28/10/2026, thêm sau M4; ghi bổ sung 04/11/2026)
+
+Thay AD6 ("Dashboard ngoài đợt, giữ Sắp có"). Chủ dự án yêu cầu ngày 28/10/2026 (PR #163, chữ viết lại ở #164, hai số còn thiếu ở #171). Quyền mới `ai.view` cho cả `admin` và `editor`
+(`identity.types.ts`); ba endpoint đọc `GET /v1/admin/ai/dashboard`, `GET /v1/admin/practice/ai-quality`, `GET /v1/admin/entitlements/ai-usage/days`. Dashboard có số tiền theo ngày, model và mục đích,
+và editor đọc được: chủ ý. Mọi cài đặt AI và các trang Chi phí và Các lần gọi vẫn `settings.manage` (chỉ `admin`). Bản này là ghi chú bổ sung của đợt sửa sau review (UA-2, B7-4); các phương án đã đưa ra
+lúc đó nằm ở lịch sử PR #163.

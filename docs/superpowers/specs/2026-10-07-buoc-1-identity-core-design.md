@@ -1,5 +1,11 @@
 # Design — Bước 1: Identity core
 
+> **Ghi chú 04/11/2026 (đợt sửa sau review, B1-7): các chỗ dưới đây đã được thay, nội dung gốc giữ nguyên.**
+> - §4 (guard "không đọc DB") và B1E13 (token của phiên bị thu hồi còn dùng 15 phút) **đã thay bởi** Bước 8 (D24, D29): guard đọc chain và trạng thái tài khoản mỗi request và từ chối ngay (`auth.guard.ts`).
+> - B1#1 / D8 (đăng ký trả token) và §5 (`verify-email` cần đăng nhập) **đã thay bởi** đợt cải thiện A: đăng ký trả `{ email, verification_required }`; `verify-email` là route công khai nhận mật khẩu;
+>   refresh của người chưa xác minh bị thu hồi.
+> - Bảng quyền D6 (`questions.moderate`, `ai.settings`) **đã thay bởi** Bước 5 và AD18: các quyền hiện có là `settings.manage`, `users.read`, `ai.view` (`identity.types.ts`).
+
 > **Trạng thái 07/10/2026:** đã triển khai và merge vào `main` (PR #4, #5). Mục 11 (chỗ lệch spec) đã áp vào
 > `docs/specs/`. Review tổng kết: `../reviews/2026-10-07-buoc-1-final-review.md`.
 

@@ -1,5 +1,5 @@
 import { Inject, Injectable, type OnApplicationBootstrap, type OnModuleDestroy } from '@nestjs/common';
-import { type Job, Worker } from 'bullmq';
+import { type Job, UnrecoverableError, Worker } from 'bullmq';
 import { Redis } from 'ioredis';
 import { randomUUID } from 'node:crypto';
 import { APP_CONFIG, type AppConfig } from '../../common/config/app-config.js';
@@ -75,12 +75,19 @@ export class JobRunnerService implements OnApplicationBootstrap, OnModuleDestroy
         try {
           // BullMQ job.d.ts: attemptsMade counts failed attempts, opts.attempts is the total.
           // job.js shouldRetryJob() checks this same +1 BEFORE moveToFailed increments it.
-          if (job.attemptsMade + 1 < (job.opts.attempts ?? 1)) {
+          const bullHasTries = job.attemptsMade + 1 < (job.opts.attempts ?? 1);
+          // B2-6: `lease.attempts` (background_jobs.attempts, raised when a run starts) is the ceiling. The reconciler can put a job
+          // back with fresh BullMQ tries, so Redis alone would let it run more often than `jobAttempts`.
+          const storedHasTries = lease.attempts < this.config.pipeline.jobAttempts;
+          if (bullHasTries && storedHasTries) {
             await this.backgroundJobs.release(jobId, lease.epoch);
           } else {
             await this.backgroundJobs.finish(jobId, lease.epoch, 'failed', errorSummary(error));
+            // BullMQ would try again; the stored count says this was the last run, so tell it to stop.
+            if (bullHasTries) throw new UnrecoverableError(errorSummary(error));
           }
         } catch (stateError) {
+          if (stateError instanceof UnrecoverableError) throw stateError;
           this.logger.warn('job_state_update_failed', { job_id: jobId, error: stateError });
         }
         throw error;

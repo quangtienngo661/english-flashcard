@@ -134,7 +134,7 @@ describe('TransactionsPage (K/95–K/95d, M/95–M/95c)', () => {
   it('K/95c: no transactions yet', async () => {
     renderApp(<TransactionsPage />, { routes: routes({ 'GET /v1/me/transactions?page_size=20': list([]) }) });
     expect(await screen.findByText('Chưa có giao dịch nào.')).toBeInTheDocument();
-    expect(screen.getByText('Khi bạn dùng thử, mua gói Pro hoặc được đội Wordmet cấp gói, giao dịch sẽ hiện ở đây.')).toBeInTheDocument();
+    expect(screen.getByText('Khi bạn mua gói Pro hoặc được đội Wordmet cấp gói, giao dịch sẽ hiện ở đây.')).toBeInTheDocument();
   });
 
   it('K/95d: a load error says so and Thử lại reads again', async () => {

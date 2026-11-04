@@ -14,6 +14,8 @@ import { existsSync, readFileSync } from 'node:fs';
 import { parseEnv } from 'node:util';
 import { publishModel } from './ai-config-publish.mjs';
 import { sendFakeEvent } from './billing-fake-event.mjs';
+import { SMOKE_TURNSTILE_TOKEN, requireFakeTurnstile } from './smoke-turnstile.mjs';
+requireFakeTurnstile();
 
 const BASE = process.env.API_BASE_URL ?? 'http://localhost:3000';
 const MAILPIT = process.env.MAILPIT_URL ?? 'http://localhost:8025';
@@ -119,7 +121,7 @@ async function waitFor(read, done, what, timeoutMs = 20_000) {
 async function loginToken(email) {
   const before = (await mailsTo(email)).length;
   const started = Date.now();
-  const res = await api('POST', '/v1/auth/login', { body: { email, password: PASSWORD, client: 'web' } });
+  const res = await api('POST', '/v1/auth/login', { body: { email, password: PASSWORD, client: 'web', turnstile_token: SMOKE_TURNSTILE_TOKEN } });
   if (res.status === 401) {
     throw new Error(`Login refused for ${email}: the account exists with another password. This script only uses its own test password.`);
   }
@@ -166,7 +168,7 @@ async function verifyCode(email, code) {
 
 async function requestAndVerify(email) {
   const before = (await mailsTo(email)).length;
-  await want(api('POST', '/v1/auth/otp', { body: { purpose: 'verify_email', email } }), 202, 'request OTP');
+  await want(api('POST', '/v1/auth/otp', { body: { purpose: 'verify_email', email, turnstile_token: SMOKE_TURNSTILE_TOKEN } }), 202, 'request OTP');
   return verifyCode(email, await newestCode(email, before + 1));
 }
 
@@ -175,7 +177,7 @@ async function ensureAccount(email) {
   const actor = { email, token: null, created: false };
   const before = (await mailsTo(email)).length;
   const registered = await api('POST', '/v1/auth/register', { body: {
-    email, password: PASSWORD, timezone: TIMEZONE, given_name: 'Test', birth_date: '2000-01-01', accept_terms: true, client: 'web' } });
+    turnstile_token: SMOKE_TURNSTILE_TOKEN, email, password: PASSWORD, timezone: TIMEZONE, given_name: 'Test', birth_date: '2000-01-01', accept_terms: true, client: 'web' } });
   if (registered.status === 201) {
     actor.created = true;
     // Re-registration in the cooldown may keep the earlier code; resend if no new mail arrives or the code is refused.
@@ -348,8 +350,6 @@ async function main() {
     const before = await entitlements();
     if (before.plan === 'trial') {
       ok('skipped: the learner is already on a trial');
-    } else if (!before.trial_eligible) {
-      ok(`skipped: the learner has used a trial before (plan stays ${before.plan})`);
     } else {
       const sub = `learner-setup-trial-${learner.profile.id}`;
       const res = await sendFakeEvent({ baseUrl: BASE, secret, events: [{
@@ -357,8 +357,10 @@ async function main() {
         occurred_at: iso(0), interval: 'month', current_period_start: iso(0), current_period_end: iso(7 * DAY), trial_ends_at: iso(7 * DAY),
         payment_fingerprint: `fp-${sub}` }] });
       check(res.status === 200, `webhook subscription_started: ${res.status} ${JSON.stringify(res.body)}`);
-      await waitFor(entitlements, (view) => view.plan === 'trial', 'trial start');
-      ok(`subscription ${sub}: trial until ${iso(7 * DAY)}`);
+      // `trial_eligible` is false for everyone now (launch prep A, design 6.9), so the event is sent whatever it says, and the rules decide.
+      const started = await waitFor(entitlements, (view) => view.plan === 'trial', 'trial start', 8_000).catch(() => null);
+      if (started === null) ok(`trial refused: the account has used a trial before (D30), or the event was not applied (plan stays ${(await entitlements()).plan})`);
+      else ok(`subscription ${sub}: trial until ${iso(7 * DAY)}`);
     }
   }
 

@@ -11,6 +11,8 @@
 import { execFileSync } from 'node:child_process';
 import { randomInt, randomUUID } from 'node:crypto';
 import { existsSync } from 'node:fs';
+import { SMOKE_TURNSTILE_TOKEN, requireFakeTurnstile } from './smoke-turnstile.mjs';
+requireFakeTurnstile();
 
 const BASE = process.env.SMOKE_BASE_URL ?? 'http://localhost:3000';
 const MAILPIT = process.env.SMOKE_MAILPIT_URL ?? 'http://localhost:8025';
@@ -108,12 +110,12 @@ async function registerAdmin() {
   const email = `smoke4-admin-${run}@example.com`;
   const before = (await mailsTo(email)).length;
   await want(api('POST', '/v1/auth/register', {
-    body: { email, password: PASSWORD, timezone: TIMEZONE, given_name: 'Smoke', birth_date: '2000-01-01', accept_terms: true, client: 'web' } }), 201, 'register admin');
+    body: { turnstile_token: SMOKE_TURNSTILE_TOKEN, email, password: PASSWORD, timezone: TIMEZONE, given_name: 'Smoke', birth_date: '2000-01-01', accept_terms: true, client: 'web' } }), 201, 'register admin');
   const code = await otpCodeFor(email, before + 1);
   await want(api('POST', '/v1/auth/verify-email', { body: { email, code, password: PASSWORD, client: 'web' } }), 200, 'verify admin email');
   if (!existsSync('dist/cli/admin-grant.js')) throw new Error('Missing dist/cli/admin-grant.js; run `pnpm build` first.');
   execFileSync(process.execPath, ['dist/cli/admin-grant.js', email], { stdio: 'pipe' });
-  const login = await want(api('POST', '/v1/auth/login', { body: { email, password: PASSWORD, client: 'web' } }), 200, 'admin login');
+  const login = await want(api('POST', '/v1/auth/login', { body: { email, password: PASSWORD, client: 'web', turnstile_token: SMOKE_TURNSTILE_TOKEN } }), 200, 'admin login');
   ok(`admin ${email} registered, verified, granted, logged in`);
   return login.access_token;
 }
@@ -122,7 +124,7 @@ async function registerLearner() {
   const email = `smoke4-learner-${run}@example.com`;
   const before = (await mailsTo(email)).length;
   await want(api('POST', '/v1/auth/register', {
-    body: { email, password: PASSWORD, timezone: TIMEZONE, given_name: 'Smoke', birth_date: '2000-01-01', accept_terms: true, client: 'web' } }), 201, 'register learner');
+    body: { turnstile_token: SMOKE_TURNSTILE_TOKEN, email, password: PASSWORD, timezone: TIMEZONE, given_name: 'Smoke', birth_date: '2000-01-01', accept_terms: true, client: 'web' } }), 201, 'register learner');
   const code = await otpCodeFor(email, before + 1);
   const verified = await want(api('POST', '/v1/auth/verify-email', { body: { email, code, password: PASSWORD, client: 'web' } }), 200, 'verify learner email');
   await want(api('PATCH', '/v1/me', { token: verified.access_token, body: { native_language: 'vi' } }), 200, 'set native_language');

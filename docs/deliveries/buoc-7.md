@@ -153,4 +153,4 @@ runner lấy cấu hình không bí mật từ `.env.example`, sinh secret trong
   thật thì chưa.
 - **Review Focus 2 là giả lập**, không tắt tiến trình thật; cuộc đua khác ngoài Review Focus 1 và 3 chỉ có unit test.
 - **Khoảng hở refund đã đóng:** từ lúc F1 merge tới lúc G1 merge, `refund` lỗi chưa có job thử lại; G1 đã vào.
-- Chưa có giao diện (D2); `dev` → `main` chỉ mở khi chủ dự án yêu cầu.
+- Giao diện: lúc làm Bước 7 chưa có (D2); đã có ở đợt giao diện người học và đợt giao diện admin (xem `CLAUDE.md`). `dev` → `main` chỉ mở khi chủ dự án yêu cầu.

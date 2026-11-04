@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 import vi from '../messages/vi.json' with { type: 'json' };
 import type { RealState } from './global-setup';
 import { STATE_FILE } from './global-setup';
-import { API, loginToken, retryAfterSeconds } from './support/api';
+import { API, E2E_TURNSTILE_TOKEN, loginToken, retryAfterSeconds } from './support/api';
 import { signIn } from './support/sign-in';
 
 /**
@@ -81,7 +81,7 @@ test('the admin finds Khoa by email, locks him with a reason (he cannot log in),
     fetch(`${API}/v1/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-CSRF-Protection': '1' },
-      body: JSON.stringify({ email: state.khoa.email, password: state.khoa.password, client: 'web', device_label: 'e2e-real' }),
+      body: JSON.stringify({ email: state.khoa.email, password: state.khoa.password, client: 'web', device_label: 'e2e-real', turnstile_token: E2E_TURNSTILE_TOKEN }),
     });
   let refused = await tryLogin();
   if (refused.status === 429) {

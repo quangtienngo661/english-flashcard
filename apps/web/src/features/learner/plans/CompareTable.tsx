@@ -5,13 +5,16 @@ import type { AppConfig } from '@/app-shell/queries';
 export function CompareTable({ plans, groups }: { plans: AppConfig['plans']; groups: number }) {
   const t = useTranslations('App.plans');
   const c = useTranslations('App.plans.compareTable');
+  // Both Free allowances at 0 is no AI at all: a dash, as before launch prep A. One of them at 0 shows its 0, like the card.
+  const noFreeAi = plans.free.ai_practice_per_cycle + plans.free.ai_lookup_per_cycle === 0;
+  const allowance = (count: number) => (noFreeAi ? '—' : String(count));
   const rows: Array<[string, string, string]> = [
     [c('review'), c('yes'), c('yes')],
     [c('reminders'), c('yes'), c('yes')],
     [c('groups'), c('groupsValue', { count: groups }), c('groupsValue', { count: groups })],
     [c('sessions'), String(plans.free.practice_sessions_per_day), String(plans.pro.practice_sessions_per_day)],
-    [c('ai'), '—', String(plans.pro.ai_practice_per_cycle)],
-    [c('lookup'), '—', String(plans.pro.ai_lookup_per_cycle)],
+    [c('ai'), allowance(plans.free.ai_practice_per_cycle), String(plans.pro.ai_practice_per_cycle)],
+    [c('lookup'), allowance(plans.free.ai_lookup_per_cycle), String(plans.pro.ai_lookup_per_cycle)],
     [c('ads'), c('yes'), c('no')],
   ];
   return (

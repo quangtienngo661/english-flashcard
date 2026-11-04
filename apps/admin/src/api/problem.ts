@@ -45,6 +45,8 @@ export const KNOWN_ERROR_SLUGS = [
   'baseline-required',
   'batch-filter-unavailable',
   'batch-not-revertable',
+  'captcha-failed',
+  'captcha-unavailable',
   'confirm-email-mismatch',
   'csrf-header-required',
   'draft-busy',

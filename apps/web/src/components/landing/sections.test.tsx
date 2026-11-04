@@ -10,13 +10,14 @@ import { appCopy, landing, renderLanding } from './test-utils';
 
 describe('Plans', () => {
   // The seven lines of the two plans, as a table: the first three belong to Free and Pro alike, the last four only to Pro (owner 03/11/2026, a comparison table).
-  const lines: Array<[string, boolean, boolean]> = [
+  // A string in the Free column is a limit ("15/tháng") instead of a tick.
+  const lines: Array<[string, boolean | string, boolean]> = [
     [landing.plans.freeP1, true, true],
     [landing.plans.freeP2, true, true],
     [landing.plans.freeP3, true, true],
     [landing.plans.proP1, false, true],
-    [landing.plans.proP2, false, true],
-    [landing.plans.proP3, false, true],
+    [landing.plans.proP2, landing.plans.freeAiPractice, true],
+    [landing.plans.proP3, landing.plans.freeAiLookup, true],
     [landing.plans.proP4, false, true],
   ];
 
@@ -26,7 +27,7 @@ describe('Plans', () => {
     expect(table.getAllByRole('columnheader').map((header) => header.textContent)).toEqual([landing.plans.free, landing.plans.pro]);
     for (const [label, free, pro] of lines) {
       const row = table.getByRole('rowheader', { name: label }).closest('tr')!;
-      expect(within(row).getAllByRole('cell').map((cell) => cell.textContent), label).toEqual([free ? landing.plans.yes : landing.plans.no, pro ? landing.plans.yes : landing.plans.no]);
+      expect(within(row).getAllByRole('cell').map((cell) => cell.textContent), label).toEqual([typeof free === 'string' ? free : free ? landing.plans.yes : landing.plans.no, pro ? landing.plans.yes : landing.plans.no]);
     }
   });
 
@@ -35,9 +36,18 @@ describe('Plans', () => {
     expect(container).not.toHaveTextContent(/chưa mở bán|₫/i);
   });
 
-  it('C1 the Pro column carries the trial line, and Đăng ký goes to the registration', () => {
+  // LA3#16 (the other half is the default of the setting, pinned in settings.definitions.spec.ts and app-config.view.spec.ts).
+  it('LA3#16 the Free cells of the two AI lines say 15/tháng and 5/tháng, as the defaults of the Free settings', () => {
+    expect([landing.plans.freeAiPractice, landing.plans.freeAiLookup]).toEqual(['15/tháng', '5/tháng']);
     renderLanding(<Plans copy={landing.plans} locale="vi" />);
-    expect(screen.getByText('Dùng thử 7 ngày, cần thẻ thanh toán. Hủy trước hạn không mất phí.')).toBeInTheDocument();
+    const table = within(screen.getByRole('table', { name: landing.plans.title }));
+    expect(within(table.getByRole('rowheader', { name: landing.plans.proP2 }).closest('tr')!).getAllByRole('cell')[0]).toHaveTextContent('15/tháng');
+    expect(within(table.getByRole('rowheader', { name: landing.plans.proP3 }).closest('tr')!).getAllByRole('cell')[0]).toHaveTextContent('5/tháng');
+  });
+
+  it('C1 Đăng ký goes to the registration, and no line promises a trial (trials are off)', () => {
+    const { container } = renderLanding(<Plans copy={landing.plans} locale="vi" />);
+    expect(container).not.toHaveTextContent(/dùng thử|thẻ thanh toán/i);
     expect(screen.getByRole('link', { name: 'Đăng ký' })).toHaveAttribute('href', '/vi/app/register');
   });
 });
@@ -50,6 +60,11 @@ describe('Faq', () => {
     expect(new Set(details.map((d) => d.getAttribute('name'))).size).toBe(1);
     expect(details.map((d) => d.open)).toEqual([true, false, false, false]);
     expect(details.map((d) => d.querySelector('summary')!.textContent)).toEqual([landing.faq.q1, landing.faq.q2, landing.faq.q3, landing.faq.q4]);
+  });
+
+  it('LA3#16 the answer to "is it free" mentions the AI a Free account has and never says it has none', () => {
+    expect(landing.faq.a2).toMatch(/AI/);
+    expect(landing.faq.a2).not.toMatch(/không (có|dùng được) AI|chỉ có ở (gói )?Pro/i);
   });
 });
 

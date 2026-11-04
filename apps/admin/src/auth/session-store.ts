@@ -120,8 +120,8 @@ export class SessionStore {
     return this.bootstrapping;
   }
 
-  async login(email: string, password: string): Promise<void> {
-    const res = await this.raw('/v1/auth/login', json('POST', { email, password, ...DEVICE }), null);
+  async login(email: string, password: string, turnstileToken?: string): Promise<void> {
+    const res = await this.raw('/v1/auth/login', json('POST', { email, password, ...(turnstileToken === undefined ? {} : { turnstile_token: turnstileToken }), ...DEVICE }), null);
     if (!res.ok) throw await toApiError(res);
     this.token = ((await res.json()) as TokenBody).access_token;
     await this.recheck();
