@@ -46,11 +46,22 @@ secret, backup) nằm ở design Bước 2.5 §14; những thứ chỉ kiểm đ
 
 ## Admin web
 
-- [ ] **Thêm security header cho admin tĩnh (CSP, `frame-ancestors`, `X-Content-Type-Options: nosniff`, `Referrer-Policy`).** Nguồn: AD12
-  (kiểm kê [`inventory-admin-practice.md`](../superpowers/reviews/2026-10-20-buoc-0-3-review-evidence/inventory-admin-practice.md); design §3 "Không làm"). Vì sao: bản deploy admin hiện chỉ phục vụ file tĩnh, không có header nào;
-  thêm `apps/admin/public/_headers` (kiểm Workers Static Assets có đọc file này không) và thử CSP với style inline của React Aria.
-- [ ] **Quyết định security header cho API (helmet, ẩn `x-powered-by`).** Nguồn: FD-dj (kiểm kê [`inventory-foundation-db.md`](../superpowers/reviews/2026-10-20-buoc-0-3-review-evidence/inventory-foundation-db.md), đi cặp với AD12).
-  Vì sao: API chưa đặt header nào; chủ dự án quyết lúc Deploy.
+- [x] **Security header cho admin tĩnh: phần code đã làm (đợt A, M1, 04/11/2026).** Nguồn: AD12 (kiểm kê
+  [`inventory-admin-practice.md`](../superpowers/reviews/2026-10-20-buoc-0-3-review-evidence/inventory-admin-practice.md)). `apps/admin/public/_headers` có một rule `/*`
+  với CSP (chấp nhận `'unsafe-inline'` cho `style-src` vì React Aria tự chèn thẻ `<style>`), `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy`;
+  `apps/admin/src/headers.test.ts` ghim nội dung. `vite` và `vite preview` không đọc `_headers`, nên local không có header này.
+- [ ] **Sau khi deploy admin: kiểm header thật bằng `curl -I`.** Vì sao: hai `ASSUMPTION` của design đợt A (§4.4) chưa kiểm được ở local: Workers Static
+  Assets áp `_headers` cho cả trang trả về từ fallback SPA, và Vite copy `public/` vào `dist/`. Làm: `curl -I https://admin.wordmet.com/` và một đường dẫn sâu
+  (vd `/uploads`) phải có bốn header trên; `dist/_headers` giống `public/_headers` sau `pnpm build`.
+- [x] **Security header cho API: phần code đã làm (đợt A, M1).** Nguồn: FD-dj. API dùng `helmet` với năm header của một API JSON: không `X-Powered-By`;
+  `X-Content-Type-Options: nosniff`; `Referrer-Policy: no-referrer`; `Content-Security-Policy: default-src 'none';frame-ancestors 'none'` (helmet viết
+  không có dấu cách sau `;`); `Cross-Origin-Resource-Policy: same-site`. Không đặt HSTS ở API (`app.setup.headers.spec.ts` ghim).
+- [ ] **Sau khi deploy API: kiểm HSTS và header.** `curl -I https://api.wordmet.com/v1/health` có năm header trên. HSTS: `ASSUMPTION` Cloudflare đặt ở
+  tầng edge, chỉ đúng khi API đứng sau proxy Cloudflare; nếu hosting của API không đứng sau proxy thì bật `strictTransportSecurity` trong `helmet`
+  (`apps/api/src/app.setup.ts`).
+- [ ] **Sau khi deploy web: kiểm header của web.** `curl -I https://wordmet.com/vi` có `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy` và CSP;
+  `curl -I` một file `/_next/static/…`. `ASSUMPTION`: `headers()` của `next.config.ts` có thể không áp cho file tĩnh mà Workers Static Assets trả thẳng
+  (`.open-next/assets`). E23 trong CI chỉ kiểm phần Worker trả lời.
 
 ## Từ kiểm kê 20/10, mức Thấp, đã gắn nhãn "deploy-checklist" (chưa làm, D11)
 
@@ -80,10 +91,22 @@ Thông thường site nhỏ không cố chặn hết bot; chỉ bảo vệ chỗ
 - [ ] **Cân nhắc Bot Fight Mode — chỉ sau khi tính tới API và app mobile.** Nguồn: tài liệu Cloudflare Bot Fight Mode (đọc 26/10). Vì sao:
   miễn phí, nhưng áp cho cả domain, **không tạo ngoại lệ được** bằng WAF rule, có thể thách thức nhầm traffic API/mobile, và tự chèn JS
   detection cần CSP cho phép (CSP hiện ở chế độ D20). `ASSUMPTION`: CSP hiện tại có chặn JS này hay không — chưa thử.
-- [ ] **Gắn CAPTCHA (Cloudflare Turnstile) vào đăng ký, quên mật khẩu, waitlist; API kiểm token phía server.** Nguồn: trao đổi 26/10; tìm
-  `turnstile|captcha` trong `apps/api/src`, `apps/web/src`, `apps/admin/src` không thấy. Vì sao: bot đăng ký bằng email người khác khiến SMTP
-  Gmail gửi hàng loạt OTP → bị coi là spam và khoá tài khoản gửi; rate limit theo IP không đủ khi bot đổi IP. **Cần sửa code** và thêm
-  domain Turnstile vào CSP (`ASSUMPTION`: tên domain chính xác, kiểm lúc làm).
+- [x] **CAPTCHA (Cloudflare Turnstile): phần code đã làm (đợt A, M1, 04/11/2026).** Nguồn: trao đổi 26/10; design
+  [`2026-11-04-chuan-bi-launch-a-design.md`](../superpowers/specs/2026-11-04-chuan-bi-launch-a-design.md) §4. Phạm vi thật: đăng ký, đăng nhập, xin mã OTP
+  (đặt lại mật khẩu và gửi lại mã xác minh) của web; đăng nhập và quên mật khẩu của admin. Waitlist đã bị bỏ từ 03/11. API kiểm token phía server
+  (`TurnstileGuard`), domain Turnstile là `challenges.cloudflare.com` (đã có trong CSP của web và admin).
+- [ ] **Turnstile: việc cần làm lúc deploy.** Làm theo thứ tự:
+  1. Tạo **một** widget Turnstile trong Cloudflare, đăng ký đủ ba hostname `wordmet.com`, `www.wordmet.com`, `admin.wordmet.com`. Một widget thì
+     web và admin dùng chung một site key và API chỉ có một secret.
+  2. API: đặt `TURNSTILE_MODE=real`, `TURNSTILE_SECRET_KEY`, `TURNSTILE_ALLOWED_HOSTNAMES=wordmet.com,www.wordmet.com,admin.wordmet.com`. Thiếu
+     `TURNSTILE_MODE` hoặc dùng `fake`/`off` cùng `BILLING_PRODUCTION=true` thì API và worker từ chối khởi động.
+  3. Đặt site key: `NEXT_PUBLIC_TURNSTILE_SITE_KEY` trong `deploy-web.yml` lúc bật app (build web của `https://wordmet.com` với app bật mà thiếu thì
+     fail), và `VITE_TURNSTILE_SITE_KEY` khi build admin (`pnpm build` fail nếu thiếu).
+  4. **Deploy API trước, rồi web và admin.** Web bản mới gửi `turnstile_token` tới API bản cũ sẽ nhận 400 (schema strict).
+  5. Sau deploy: `curl -i -X POST https://api.wordmet.com/v1/auth/register -H 'content-type: application/json' -d '{}'` phải trả 400 (thiếu token);
+     log của API không có `turnstile_misconfigured`; đăng ký và đăng nhập thật trên web, đăng nhập trên admin chạy được.
+  6. Cloudflare lỗi thì đăng ký và xin mã trả 503 `captcha-unavailable`, đăng nhập cho qua và log `turnstile_bypassed`: nhớ xem log này nếu thấy nhiều.
+  7. `TRUST_PROXY` phải đúng với proxy thật (mục riêng ở trên), vì `remoteip` gửi cho Cloudflare và bộ đếm `auth.captcha.ip` dựa vào IP.
 - [ ] **Giới hạn chi phí AI trước khi gắn key thật.** Nguồn: trao đổi 26/10; Bước 5–6 đã có `ai_daily_cap`, trần lần gọi provider mỗi ngày,
   công tắc AI. Vì sao: tài khoản Trial tạo hàng loạt có thể đốt tiền AI. Việc: đặt trần thấp lúc ra mắt, rồi bật **giới hạn chi tiêu và
   cảnh báo** ngay trên tài khoản OpenAI/Anthropic (lớp chặn cuối nếu app có lỗi).
