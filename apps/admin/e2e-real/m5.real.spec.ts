@@ -32,7 +32,8 @@ test('Minh edits the level of a new word from its row menu', async ({ page }) =>
   await dialog.getByRole('button', { name: vi.words.save }).click();
   await expect(dialog).toBeHidden();
   const row = page.locator('tbody tr', { hasText: lemma });
-  await expect(row.getByText('B2')).toBeVisible();
+  // Exact: the lemma carries a random hex run id, which can itself contain 'b2' (seen in CI on aaam5x0b23981c).
+  await expect(row.getByText('B2', { exact: true })).toBeVisible();
 });
 
 test('Minh saves a draft of its sense, then publishes it from the list', async ({ page }) => {
