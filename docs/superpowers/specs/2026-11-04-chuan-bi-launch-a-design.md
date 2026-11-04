@@ -17,7 +17,7 @@ Ba việc nhỏ và vừa phải xong trước launch web, không phụ thuộc 
 
 | Phần | Việc | Chạm |
 |---|---|---|
-| A1 | Turnstile (CAPTCHA của Cloudflare) cho các route gửi mail OTP khi chưa đăng nhập | API Identity, web, có thể admin |
+| A1 | Turnstile (CAPTCHA của Cloudflare) cho đăng ký, đăng nhập, quên mật khẩu, gửi lại mã | API Identity, web, admin |
 | A1 | Security header cho admin tĩnh, API và web | admin (`_headers`), API, web (`next.config.ts`) |
 | A2 | Đợt sửa các mục review còn mở (R-Q14 = một đợt riêng) | chủ yếu tài liệu, một ít code nhỏ |
 | A3 | Gói Free có 15 câu AI + 5 lượt tra AI mỗi tháng dương lịch (A1–A2 của tổng hợp); tắt trial (P3) | API Entitlements, settings, admin, web, landing |
@@ -62,15 +62,16 @@ API: TurnstileGuard ──► POST siteverify (secret, token, remoteip)
         └─ success: false ──► 400 `captcha-failed`, không gửi mail
 ```
 
-Route phải chặn (theo code facts §A1): `POST /v1/auth/register`; `POST /v1/auth/otp` (cả `verify_email` và `reset_password`). **Không** chặn
-`POST /v1/auth/login` (Q-A1): muốn gửi mail qua login thì phải có tài khoản và đúng mật khẩu, mà tài khoản chỉ tạo được qua đăng ký đã có Turnstile;
-mỗi email vẫn bị giới hạn 1 mail/60 s và 5 mail/giờ. Không chặn: `verify-email`, `password/reset` (không gửi mail), Google (phải qua Google trước).
+Route phải chặn (theo code facts §A1): `POST /v1/auth/register`; `POST /v1/auth/otp` (cả `verify_email` và `reset_password`); **`POST /v1/auth/login`**
+(Q-A1 vòng 2). Login chặn không chỉ vì nó gửi lại mã cho tài khoản chưa xác minh, mà chủ yếu để chặn bot dò mật khẩu bằng danh sách email và mật khẩu bị lộ:
+giới hạn 20 lần/phút/IP không chặn được bot đổi IP, còn khóa tài khoản sau 10 lần sai lại cho bot cố tình khóa tài khoản của người thật.
+Không chặn: `verify-email`, `password/reset` (không gửi mail, cần mã đúng), `refresh`, Google (Google có lớp chống bot riêng).
 
 ### 4.2 Turnstile: API
 
 - **Guard** `TurnstileGuard` (Identity), đặt **trước** `RateLimitGuard` trên các route ở §4.1, để token giả không ăn vào bộ đếm của người thật.
   Đọc `turnstile_token` trong body (body đã parse trước guard, giống `RateLimitGuard`). Gửi trong body thì không phải đổi CORS.
-- **Schema:** thêm `turnstile_token: z.string().min(1).max(2048)` vào `registerSchema` và hai nhánh của `otpRequestSchema` (đều `strictObject`).
+- **Schema:** thêm `turnstile_token: z.string().min(1).max(2048)` vào `registerSchema`, `loginSchema` và hai nhánh của `otpRequestSchema` (đều `strictObject`).
   Bắt buộc hay không tùy chế độ (dưới). Test "field lạ → 400" vẫn giữ.
 - **Client siteverify** theo mẫu `RealGoogleClient`: `fetch` global truyền vào được để test, `POST` form-urlencoded tới
   `https://challenges.cloudflare.com/turnstile/v0/siteverify` với `secret`, `response`, `remoteip` (= `request.ip`), timeout ngắn. Kiểm thêm
@@ -88,14 +89,15 @@ mỗi email vẫn bị giới hạn 1 mail/60 s và 5 mail/giờ. Không chặn:
 ### 4.3 Turnstile: web và admin
 
 - **Web:** một component `TurnstileWidget` tải script `https://challenges.cloudflare.com/turnstile/v0/api.js` ở chế độ render tường minh,
-  trả token qua callback, có hàm làm mới. Gắn vào `RegisterForm`, `ForgotPasswordForm`, nút gửi lại mã của `VerifyEmailForm`. Nút gửi bị tắt
+  trả token qua callback, có hàm làm mới. Gắn vào `RegisterForm`, form đăng nhập, `ForgotPasswordForm`, nút gửi lại mã của `VerifyEmailForm`. Nút gửi bị tắt
   tới khi có token. Lỗi `captcha-failed` có câu riêng vi/en (thêm slug vào `KNOWN_ERROR_SLUGS`; `problem.test.ts` đòi đủ hai ngôn ngữ).
 - **Site key:** `NEXT_PUBLIC_TURNSTILE_SITE_KEY` (web, đóng vào bundle lúc build) và `VITE_TURNSTILE_SITE_KEY` (admin).
   Local và CI dùng khóa test của Cloudflare: sitekey `1x00000000000000000000AA` (luôn qua) với API ở `fake`.
 - **CSP của web:** thêm `https://challenges.cloudflare.com` vào `script-src` và thêm `frame-src https://challenges.cloudflare.com`
   (hiện không có `frame-src`, nên `default-src 'self'` chặn iframe). Sửa `csp.test.ts`; e2e E23 vẫn đòi 0 vi phạm.
 - **e2e mock của web:** chặn request tới `challenges.cloudflare.com` và giả widget trả token, để e2e không cần mạng.
-- **Admin:** trang quên mật khẩu gọi cùng `POST /v1/auth/otp` và cùng tiến trình API, nên **có widget như web** (Q-A2); API không phân biệt host.
+- **Admin:** trang đăng nhập và trang quên mật khẩu gọi cùng `POST /v1/auth/login`, `POST /v1/auth/otp` và cùng tiến trình API, nên **có widget như web**
+  (Q-A1, Q-A2); API không phân biệt host. Sau deploy admin còn được che thêm bằng Cloudflare Access.
   e2e mock của admin giả widget như web.
 - Trang quên mật khẩu mở cả khi đã đăng nhập (B8-2), nên widget cũng hiện cho người đã đăng nhập. Chấp nhận.
 
@@ -132,7 +134,9 @@ CORS, cookie refresh và webhook billing (raw body).
 | Token qua nhưng `hostname` không phải host của web | 400 `captcha-failed` (token lấy từ site khác) |
 | Cloudflare không trả lời trong thời gian chờ | 503 `captcha-unavailable`, không gửi mail; Lan thử lại sau (Q-A4) |
 | API chạy `fake` hoặc `off` cùng `BILLING_PRODUCTION=true` | API từ chối khởi động, báo tên biến |
-| Smoke chạy với API `fake` | Smoke gửi một token bất kỳ khác rỗng; chạy như trước |
+| Bot thử 1.000 cặp email và mật khẩu bị lộ từ nhiều IP | Mỗi lần thử cần một token Turnstile mới; không có token thì 400 trước khi kiểm mật khẩu, nên không khóa được tài khoản của Lan |
+| Lan đăng nhập, để trang quá 5 phút rồi mới bấm | `captcha-failed`; web làm mới widget, Lan bấm lại |
+| Smoke chạy với API `fake` | Smoke gửi một token bất kỳ khác rỗng ở đăng ký, đăng nhập và xin mã; chạy như trước |
 
 ## 5. A2 — Đợt sửa sau review
 
@@ -285,7 +289,7 @@ Chủ dự án (04/11/2026): "theo rec của bạn", tức chọn theo đề xu�
 
 | # | Câu hỏi | Chốt |
 |---|---|---|
-| Q-A1 | Chặn Turnstile ở đăng nhập của tài khoản chưa xác minh? | **Không.** Gửi mail qua login cần tài khoản và đúng mật khẩu; tài khoản chỉ tạo được qua đăng ký đã có Turnstile; giới hạn theo email vẫn còn |
+| Q-A1 | Chặn Turnstile ở đăng nhập? | **Có**, ở đăng nhập của web và admin (vòng 2, chủ dự án 04/11): chặn bot dò mật khẩu và bot cố tình khóa tài khoản. Vòng 1 chọn "không" vì chỉ xét việc gửi mail |
 | Q-A2 | Quên mật khẩu của admin có widget không? | **Có**, như web; API không phân biệt host |
 | Q-A3 | Client `mobile` không có token? | **Token bắt buộc như web**; app Flutter có design riêng khi làm |
 | Q-A4 | Không gọi được Cloudflare? | **Từ chối**: 503 `captcha-unavailable`, không gửi mail |

@@ -19,7 +19,7 @@ cho câu hỏi đó (04/11/2026), tức chọn đúng đề xuất của Claude;
 | DA6 | Trial | Tạm tắt | Chủ dự án |
 | DA7 | Đường đi của các việc sửa sau review (Q14) | Một đợt riêng có design và plan | Chủ dự án |
 | DA8 | Checklist test tay cho dev (Q11) | Viết, đặt ở `docs/audit/` | Chủ dự án |
-| DA9 | Turnstile ở đăng nhập tài khoản chưa xác minh (Q-A1) | Không | Theo đề xuất của Claude |
+| DA9 | Turnstile ở đăng nhập (Q-A1) | Có, cả web và admin | Chủ dự án (vòng 2) |
 | DA10 | Quên mật khẩu của admin (Q-A2) | Có widget như web | Theo đề xuất của Claude |
 | DA11 | Client `mobile` (Q-A3) | Token bắt buộc như web | Theo đề xuất của Claude |
 | DA12 | Không gọi được Cloudflare (Q-A4) | Từ chối (503) | Theo đề xuất của Claude |
@@ -93,14 +93,23 @@ Bối cảnh: trước đó (02–03/11) "muốn không dùng AI thì dùng gói
 Q11 (02/11) đã chốt không chạy e2e backend, dev test tay theo checklist. Ngày 04/11 chủ dự án yêu cầu viết và đặt ở `docs/audit/`: đã viết
 `docs/audit/2026-11-04-dev-test-checklist.md` (nhánh `docs/dev-test-checklist`).
 
-## DA9 — Turnstile ở đăng nhập của tài khoản chưa xác minh (Q-A1)
+## DA9 — Turnstile ở đăng nhập (Q-A1)
 
-Bối cảnh: login gửi lại mã khi mật khẩu đúng; giới hạn mỗi email 1 mail/60 s, 5 mail/giờ.
+Vòng 1 (câu hỏi gốc: đăng nhập của tài khoản chưa xác minh, vì login gửi lại mã khi mật khẩu đúng; giới hạn mỗi email 1 mail/60 s, 5 mail/giờ):
 
 | Phương án | Trade-off |
 |---|---|
-| Chặn | Mọi người phải qua widget ở form đăng nhập (không biết trước tài khoản chưa xác minh) |
-| ✅ Không chặn | Gửi mail qua login cần tài khoản và đúng mật khẩu; tài khoản chỉ tạo được qua đăng ký đã có Turnstile, nên lượng mail bot gửi được rất nhỏ |
+| Chặn | Mọi người phải qua widget ở form đăng nhập |
+| ✅ Không chặn (theo đề xuất của Claude) | Gửi mail qua login cần tài khoản và đúng mật khẩu; tài khoản chỉ tạo được qua đăng ký đã có Turnstile |
+
+Vòng 2 (04/11): chủ dự án hỏi "sao lại không để ở đăng nhập, thường trang đăng nhập cũng để". Claude nhận vòng 1 chỉ xét việc gửi mail, bỏ sót việc bot dò mật
+khẩu bằng danh sách bị lộ: giới hạn 20 lần/phút/IP không chặn được bot đổi IP, còn khóa tài khoản sau 10 lần sai lại cho bot cố tình khóa tài khoản người thật.
+
+| Phương án | Trade-off |
+|---|---|
+| Không chặn (vòng 1) | Không thêm bước ở đăng nhập; còn lỗ dò mật khẩu và khóa tài khoản |
+| Chỉ web | Admin dựa vào Cloudflare Access sau deploy; hai luật khác nhau cho cùng một API |
+| ✅ Chặn ở đăng nhập của web và admin | Ai đăng nhập cũng chờ widget 1–2 giây; một luật cho mọi route nhạy cảm. Google sign-in không đổi |
 
 ## DA10 — Quên mật khẩu của admin (Q-A2)
 
