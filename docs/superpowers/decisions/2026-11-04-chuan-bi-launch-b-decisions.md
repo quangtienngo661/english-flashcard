@@ -24,7 +24,7 @@ Gom các quyết định chốt trong chat 02–04/11/2026 cho đợt B (thanh t
 | DB10 | Có quảng cáo không | Có, chấp nhận rủi ro | Chủ dự án |
 | DB11 | Khung quảng cáo | Vignette của Google; hộp thoại tự làm chỉ giới thiệu Pro | Chủ dự án (đồng ý đề xuất) |
 | DB12 | Trang cho khách | Chỉ landing, không làm thêm trang công khai | Chủ dự án |
-| DB13 | Trang có vignette | Hôm nay, Nhóm, Tra từ | Chủ dự án (màn tổng kết bỏ ở DB23) |
+| DB13 | Trang có vignette | Nhóm, Tra từ | Chủ dự án (hai vòng; màn tổng kết bỏ ở DB23) |
 | DB14 | Video, tần suất | Không video; tần suất thấp | Chủ dự án |
 | DB15 | Hạn của đơn chưa trả (Q-B1) | 15 phút | Theo đề xuất của Claude |
 | DB16 | Chuyển thiếu hoặc thừa (Q-B2) | `needs_review`, chờ admin | Theo đề xuất của Claude |
@@ -139,8 +139,12 @@ Chủ dự án muốn: khi chuyển trang hiện hộp thoại quảng cáo làm
 
 ## DB13 — Trang có vignette
 
-Chủ dự án chọn Hôm nay, Nhóm, Tra từ và Luyện tập; Claude nêu Luyện tập chỉ nên là màn tổng kết. Sau đó DB23 bỏ màn tổng kết (cùng địa chỉ với lúc làm câu).
-Kết quả: ✅ Hôm nay, Nhóm, Tra từ.
+Vòng 1: chủ dự án chọn Hôm nay, Nhóm, Tra từ và Luyện tập; Claude nêu Luyện tập chỉ nên là màn tổng kết. Sau đó DB23 bỏ màn tổng kết (cùng địa chỉ với lúc
+làm câu).
+
+Vòng 2 (04/11, khi đọc lại các lựa chọn đã chốt): chủ dự án bỏ Hôm nay. Hộp thoại giới thiệu Pro dùng cùng bộ trang.
+
+Kết quả: ✅ Nhóm, Tra từ.
 
 ## DB14 — Video, tần suất
 

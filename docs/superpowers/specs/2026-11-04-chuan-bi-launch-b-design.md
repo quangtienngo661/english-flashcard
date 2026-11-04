@@ -36,7 +36,7 @@ Ví dụ xuyên suốt: **Lan**, học viên gói Free, giờ Việt Nam.
 | P11 | Trả khi gói còn hạn: kỳ mới **nối tiếp từ ngày hết hạn**; chuyển khoản hai lần thì kỳ thứ hai cũng xếp nối tiếp |
 | L6 | Không hoàn tiền; ghi rõ trước khi trả tiền |
 | A4 | Không dùng Claude Sonnet cho câu AI của Pro |
-| Q1–Q2, Q7–Q8 | Có quảng cáo, chấp nhận rủi ro; khách chỉ thấy landing; vignette ở Hôm nay, Nhóm, Tra từ trong app, không hiện lúc đang làm câu (màn tổng kết bỏ theo Q-B10) |
+| Q1–Q2, Q7–Q8 | Có quảng cáo, chấp nhận rủi ro; khách chỉ thấy landing; vignette ở Nhóm, Tra từ trong app, không hiện lúc đang làm câu (màn tổng kết bỏ theo Q-B10; Hôm nay bỏ theo chủ dự án 04/11) |
 | Q3, Q4 | Trong lúc chờ Google duyệt: hộp thoại tự làm giới thiệu Pro; không bao giờ đặt quảng cáo Google vào hộp thoại tự làm |
 | Q5, Q6 | CSP `nonce` chỉ cho `/app`; cờ tuổi cho người dưới 16; hỏi đồng ý trước khi cá nhân hóa (Luật 91/2025); không video, tần suất thấp |
 
@@ -226,7 +226,7 @@ abstract class PaymentProvider {
 
 ## 4. B2 — Hộp thoại giới thiệu Pro (house ad)
 
-- **Khi nào:** người Free (`ads.show = true`) chuyển trang bằng link trong app (soft navigation) **tới** Hôm nay, Nhóm hoặc Tra từ. Không bao giờ ở phiên luyện,
+- **Khi nào:** người Free (`ads.show = true`) chuyển trang bằng link trong app (soft navigation) **tới** Nhóm hoặc Tra từ (cùng bộ trang với vignette; Hôm nay không có). Không bao giờ ở Hôm nay, phiên luyện,
   ôn thẻ, trang gói, cài đặt, hoàn tất hồ sơ.
 - **Tần suất:** theo `ads_interstitial_per_day` (mặc định 3) và `ads_min_interval_minutes` (mặc định 10). Server không biết hộp thoại đã hiện (D21 Bước 5),
   nên web tự đếm trong `localStorage` theo từng user (`wordmet-web.house-ad.<user_id>`: ngày theo timezone của Lan, số lần, lần cuối), đọc/ghi bọc `try/catch`.
@@ -245,7 +245,7 @@ Chỉ làm sau khi deploy và Google duyệt site (Q7: duyệt dựa trên landi
 
 - Chỉ người Free trong `/app` mới tải `adsbygoogle.js` (vd qua `next/script` có `nonce`). Pro, trial và khách không tải script, nên không bao giờ thấy quảng cáo.
 - Cài đặt trong AdSense: chỉ bật Vignette; tần suất 10 phút trở lên; bỏ ô "Allow additional triggers" (tránh bật quảng cáo khi ngồi yên 30 giây hay khi quay
-  lại tab); loại trừ các nhánh `/vi/app/practice`, `/vi/app/review`, `/vi/app/plans`, `/vi/app/settings`, `/vi/app/complete-profile`, `/vi/app/welcome` và bản
+  lại tab); loại trừ trang Hôm nay `/vi/app` và `/en/app` ("This page only", vì là gốc của mọi trang app) và các nhánh `/vi/app/practice`, `/vi/app/review`, `/vi/app/plans`, `/vi/app/settings`, `/vi/app/complete-profile`, `/vi/app/welcome` và bản
   `/en`. Link bắt đầu luyện gắn `data-google-vignette="false"`.
 - `ads.txt` đặt ở gốc tên miền (`apps/web/public/ads.txt`, thư mục `public/` chưa có), chép đúng dòng AdSense đưa.
 - Tắt nhanh không cần deploy: tắt `ads_enabled` trong admin.
@@ -254,8 +254,8 @@ Chỉ làm sau khi deploy và Google duyệt site (Q7: duyệt dựa trên landi
 
 Màn tổng kết không có địa chỉ riêng: nó là một trạng thái bên trong `/app/practice/session`, cùng địa chỉ với lúc đang làm câu. Loại trừ trang của AdSense
 chỉ lọc theo địa chỉ, nên **không thể** cho quảng cáo ở màn tổng kết mà vẫn chặn trong lúc làm câu. Ngoài ra chính sách của Google cấm quảng cáo ở màn
-kiểu "Thank You, Exit". **Chốt (Q-B10): bỏ màn tổng kết khỏi chỗ có quảng cáo**; cả nhánh `/app/practice` bị loại trừ. Vignette chỉ ở Hôm nay, Nhóm,
-Tra từ (thay Q8 ở phần màn tổng kết).
+kiểu "Thank You, Exit". **Chốt (Q-B10): bỏ màn tổng kết khỏi chỗ có quảng cáo**; cả nhánh `/app/practice` bị loại trừ. Vignette chỉ ở Nhóm và Tra từ
+(thay Q8 ở phần màn tổng kết; Hôm nay cũng bỏ, chủ dự án 04/11).
 
 ### 5.3 CSP `nonce` cho `/app`
 
@@ -319,7 +319,7 @@ Thử với payOS thật (tiền thật, số nhỏ, vì không có sandbox) là
 
 - CI xanh trên mọi PR; smoke mới và smoke 5, 8 chạy qua trên DB mới, output lưu ở `docs/deliveries/`.
 - Chủ dự án mua thành công một kỳ bằng payOS thật và thấy Pro, giao dịch, email đúng.
-- (M4) Google duyệt site; vignette hiện cho người Free ở ba trang đã chọn, không hiện trong phiên luyện và cho Pro; Console không lỗi CSP.
+- (M4) Google duyệt site; vignette hiện cho người Free ở Nhóm và Tra từ, không hiện ở Hôm nay, không hiện trong phiên luyện và cho Pro; Console không lỗi CSP.
 
 ## 9. Câu hỏi đã chốt
 
