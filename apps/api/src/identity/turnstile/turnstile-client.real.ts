@@ -58,10 +58,13 @@ export class RealTurnstileClient extends TurnstileClient {
     const codes = Array.isArray(answer?.['error-codes']) ? answer['error-codes'].filter((code): code is string => typeof code === 'string') : [];
     // Our own secret is wrong: asking again cannot help, and the operator must hear about it.
     if (codes.includes('missing-input-secret') || codes.includes('invalid-input-secret')) return unavailable('misconfigured', false);
-    if (!response.ok) return unavailable('http', response.status >= 500);
-    if (answer === null) return unavailable('http', true);
-    if (answer.success === true) return { retry: false, verdict: { kind: 'ok', hostname: typeof answer.hostname === 'string' ? answer.hostname : '' } };
     if (codes.includes('internal-error')) return unavailable('internal-error', true);
-    return { retry: false, verdict: { kind: 'rejected', codes } };
+    if (response.status >= 500) return unavailable('http', true);
+    // A body that is not JSON: something answered that is not Cloudflare's JSON. A 2xx is worth one more try; a 4xx is final.
+    if (answer === null) return unavailable('http', response.ok);
+    if (response.ok && answer.success === true) return { retry: false, verdict: { kind: 'ok', hostname: typeof answer.hostname === 'string' ? answer.hostname : '' } };
+    // success:false is a verdict about the token whatever the HTTP status (a login must never pass it as "Cloudflare is down").
+    if (answer.success === false) return { retry: false, verdict: { kind: 'rejected', codes } };
+    return unavailable('http', false);
   }
 }

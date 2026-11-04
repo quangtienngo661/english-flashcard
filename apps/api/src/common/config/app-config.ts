@@ -264,7 +264,8 @@ const envSchema = z.object({
   // No default: a production that forgets the variable must not start without a bot check (design 4.2).
   TURNSTILE_MODE: z.enum(['real', 'fake', 'off']),
   // Not `secretSchema`: a Turnstile secret is not base64url.
-  TURNSTILE_SECRET_KEY: nonEmpty.optional(),
+  // A line `TURNSTILE_SECRET_KEY=` of .env.example loads as an empty string: blank counts as unset, as OPENAI_API_KEY does.
+  TURNSTILE_SECRET_KEY: z.string().optional().transform((value) => value?.trim() || undefined),
   TURNSTILE_ALLOWED_HOSTNAMES: z.string().optional()
     .transform((value) => (value ?? '').split(',').map((host) => host.trim()).filter((host) => host !== '')),
 }).superRefine((values, ctx) => {
