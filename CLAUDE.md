@@ -363,6 +363,10 @@ Các điểm dưới đây phát sinh khi rà quyền của `admin`/`editor` (b�
 
 `docs/deliveries/legal-documents.md` (03/11/2026; PR vào `dev`). Admin soạn, lưu từng phiên bản và đăng hai văn bản (Markdown) ở `/legal` của `apps/admin`, không cần deploy; web đọc bản đang đăng ở `GET /v1/legal/current`; người học đã đồng ý bản cũ bị hỏi lại (`terms_outdated` ở `/v1/me`). Phiên bản đồng ý là số bản đang đăng; chưa đăng bản nào thì vẫn là `TERMS_VERSION`. Nội dung hai văn bản nằm ở nhánh `docs/web-launch-research` (`docs/preparation/legal-drafts/`), chưa vào DB; việc còn lại ở mục cuối `docs/deliveries/deploy-checklist.md`.
 
+## Chuẩn bị launch đợt A và B — plan
+
+`docs/deliveries/chuan-bi-launch-a.md` (Turnstile và header, sửa sau review, lượt AI cho Free, tắt trial) và `docs/deliveries/chuan-bi-launch-b.md` (payOS, hộp thoại giới thiệu Pro, AdSense): plan tóm tắt 04/11/2026, chưa có code. Design, decisions, review và plan: `docs/superpowers/{specs,decisions,reviews,plans}/2026-11-04-chuan-bi-launch-{a,b}*`.
+
 ## Landing (apps/web) - as-built (08-09/10/2026)
 
 - Stack: Next `16.4.3` (App Router), next-intl `4.14.9`, `@opennextjs/cloudflare` `1.20.13`, wrangler `4.153.0` (`apps/web`; `apps/admin` keeps wrangler `4.145.0`).

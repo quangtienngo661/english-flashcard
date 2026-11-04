@@ -21,6 +21,7 @@ export default defineConfig({
     url: `http://localhost:${port}`,
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
-    env: { VITE_API_BASE_URL: 'http://localhost:3000' },
+    // Blank site key on purpose: the fake widget needs no network (a developer's own .env must not turn the real one on).
+    env: { VITE_API_BASE_URL: 'http://localhost:3000', VITE_TURNSTILE_SITE_KEY: '' },
   },
 });

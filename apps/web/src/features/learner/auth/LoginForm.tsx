@@ -13,6 +13,7 @@ import { setPendingPassword, writePendingEmail } from '@/app-shell/session/pendi
 import { useSession } from '@/app-shell/session/session-context';
 import type { Notice } from '@/app-shell/session/session-store';
 import { useSubmitOnce } from '@/app-shell/use-submit-once';
+import { useTurnstile } from '@/app-shell/use-turnstile';
 import { Button } from '@/app-ui/Button';
 import { TextField } from '@/app-ui/TextField';
 import type { AppLocale } from '@/i18n/routing';
@@ -42,13 +43,22 @@ export function LoginForm() {
   const [locked, setLocked] = useState(returned === 'account-locked');
   const [error, setError] = useState<string | null>(null);
 
+  const bot = useTurnstile();
+
   const { submit, busy } = useSubmitOnce(async () => {
-    await store!.login(email.trim(), password);
+    try {
+      await store!.login(email.trim(), password, bot.token!);
+    } catch (failure) {
+      // The token is spent whatever the answer was (wrong password, 429, ...): a new one for the next press.
+      bot.reset();
+      throw failure;
+    }
     hardReplace(safeNext(params.get('next'), locale));
   });
 
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
+    if (bot.token === null) return;
     setError(null);
     setLocked(false);
     try {
@@ -106,8 +116,9 @@ export function LoginForm() {
         <Link href={`/${locale}/app/forgot-password`} className="-mt-5.5 -mb-3.5 w-fit py-3.5 text-caption font-semibold text-primary underline underline-offset-2">
           {t('login.forgot')}
         </Link>
+        {bot.widget}
         <FormError message={error ?? (GOOGLE_ERRORS.find((slug) => slug === returned) ? tErrors(returned as (typeof GOOGLE_ERRORS)[number]) : null)} />
-        <Button type="submit" variant="sticker" size="lg" isPending={busy} isDisabled={!store}>
+        <Button type="submit" variant="sticker" size="lg" isPending={busy} isDisabled={!store || bot.token === null}>
           {t('login.submit')}
         </Button>
         <GoogleButton next={safeNext(params.get('next'), locale)} />

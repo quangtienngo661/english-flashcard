@@ -60,6 +60,8 @@ services:
       SMTP_PORT: '1025'
       # Required since the Bước 0-3 fixes; an older .env may lack it, so fall back instead of refusing to start.
       TERMS_VERSION: ${TERMS_VERSION:-2026-10-20}
+      # Required since launch prep A; the fake mode needs no key, so an older .env still starts.
+      TURNSTILE_MODE: ${TURNSTILE_MODE:-fake}
       # What the browser sees: the apps on this machine's ports.
       JWT_ISSUER: http://localhost:${API_PORT:-3000}
       PROBLEM_TYPE_BASE: http://localhost:${API_PORT:-3000}/problems/
@@ -91,6 +93,8 @@ services:
       target: admin
       args:
         VITE_API_BASE_URL: http://localhost:${API_PORT:-3000}
+        # Blank = the fake widget, which the API accepts in TURNSTILE_MODE=fake (its compose default).
+        VITE_TURNSTILE_SITE_KEY: ${TURNSTILE_SITE_KEY:-}
     depends_on:
       api:
         condition: service_healthy
@@ -111,6 +115,8 @@ services:
         NEXT_PUBLIC_API_BASE_URL: http://localhost:${API_PORT:-3000}
         NEXT_PUBLIC_SITE_URL: http://localhost:${WEB_PORT:-3001}
         NEXT_PUBLIC_LEARNER_APP: 'on'
+        # Blank = the fake widget, which the API accepts in TURNSTILE_MODE=fake (its compose default).
+        NEXT_PUBLIC_TURNSTILE_SITE_KEY: ${TURNSTILE_SITE_KEY:-}
     environment:
       # The browser reaches the API at localhost; this container reaches it by service name (read on the server, e.g. /privacy).
       API_INTERNAL_BASE_URL: http://api:3000

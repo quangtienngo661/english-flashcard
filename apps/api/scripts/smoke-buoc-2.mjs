@@ -10,6 +10,8 @@
 import { execFileSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import { existsSync } from 'node:fs';
+import { SMOKE_TURNSTILE_TOKEN, requireFakeTurnstile } from './smoke-turnstile.mjs';
+requireFakeTurnstile();
 
 const BASE = process.env.SMOKE_BASE_URL ?? 'http://localhost:3000';
 const MAILPIT = process.env.SMOKE_MAILPIT_URL ?? 'http://localhost:8025';
@@ -67,7 +69,7 @@ async function registerAdmin() {
   await expect(
     await fetch(`${BASE}/v1/auth/register`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password, timezone: 'Asia/Ho_Chi_Minh', given_name: 'Smoke', birth_date: '2000-01-01', accept_terms: true, client: 'web' }),
+      body: JSON.stringify({ email, password, timezone: 'Asia/Ho_Chi_Minh', given_name: 'Smoke', birth_date: '2000-01-01', accept_terms: true, client: 'web', turnstile_token: SMOKE_TURNSTILE_TOKEN }),
     }), 201, 'register admin',
   ).then((r) => r.json());
   const code = await otpCodeFor(email, before + 1);
@@ -82,7 +84,7 @@ async function registerAdmin() {
   const login = await expect(
     await fetch(`${BASE}/v1/auth/login`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password, client: 'web' }),
+      body: JSON.stringify({ email, password, client: 'web', turnstile_token: SMOKE_TURNSTILE_TOKEN }),
     }), 200, 'login as admin',
   ).then((r) => r.json());
   ok(`admin ${email} registered, verified, granted, logged in`);
@@ -96,7 +98,7 @@ async function registerLearner() {
   await expect(
     await fetch(`${BASE}/v1/auth/register`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password, timezone: 'Asia/Ho_Chi_Minh', given_name: 'Smoke', birth_date: '2000-01-01', accept_terms: true, client: 'web' }),
+      body: JSON.stringify({ email, password, timezone: 'Asia/Ho_Chi_Minh', given_name: 'Smoke', birth_date: '2000-01-01', accept_terms: true, client: 'web', turnstile_token: SMOKE_TURNSTILE_TOKEN }),
     }), 201, 'register learner',
   ).then((r) => r.json());
   const code = await otpCodeFor(email, before + 1);

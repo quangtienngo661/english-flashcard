@@ -11,6 +11,10 @@ import { FakeGoogleClient } from './google/google-client.fake.js';
 import { RealGoogleClient } from './google/google-client.real.js';
 import { GoogleAuthController } from './google/google-auth.controller.js';
 import { GoogleAuthService } from './google/google-auth.service.js';
+import { TurnstileClient } from './turnstile/turnstile-client.js';
+import { FakeTurnstileClient } from './turnstile/turnstile-client.fake.js';
+import { RealTurnstileClient } from './turnstile/turnstile-client.real.js';
+import { TurnstileGuard } from './turnstile/turnstile.guard.js';
 import { APP_CONFIG, type AppConfig } from '../common/config/app-config.js';
 import { MailModule } from '../common/mail/mail.module.js';
 import { ROLE_PERMISSIONS } from './identity.types.js';
@@ -46,6 +50,10 @@ import { StaffService } from './staff/staff.service.js';
     // The fake only when GOOGLE_FAKE_ENABLED (mode 'fake'); in mode 'off' the real client is never called.
     { provide: GoogleClient, inject: [APP_CONFIG],
       useFactory: (config: AppConfig) => (config.google.mode === 'fake' ? new FakeGoogleClient(config.google) : new RealGoogleClient(config.google)) },
+    // The real client only in mode 'real' (the config guarantees the secret then); 'fake' and 'off' never reach Cloudflare.
+    TurnstileGuard,
+    { provide: TurnstileClient, inject: [APP_CONFIG],
+      useFactory: (config: AppConfig) => (config.turnstile.mode === 'real' ? new RealTurnstileClient(config.turnstile.secretKey ?? '') : new FakeTurnstileClient()) },
   ],
   exports: [IdentityService, ROLE_PERMISSIONS_TOKEN, AccountDeletionRegistry, TermsVersion],
 })

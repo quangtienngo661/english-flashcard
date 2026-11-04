@@ -18,6 +18,8 @@ import { existsSync, readFileSync } from 'node:fs';
 import { parseEnv } from 'node:util';
 import argon2 from 'argon2';
 import { sendFakeEvent } from './billing-fake-event.mjs';
+import { SMOKE_TURNSTILE_TOKEN, requireFakeTurnstile } from './smoke-turnstile.mjs';
+requireFakeTurnstile();
 
 const BASE = process.env.SMOKE_BASE_URL ?? 'http://localhost:3000';
 const LEARNER = process.env.SMOKE_LEARNER_URL ?? 'http://localhost:3001';
@@ -136,7 +138,7 @@ async function sqlUsers(labels, { staffRole = null, verified = true, status = 'a
   return labels.map((label) => users.find((u) => u.email === `smokeb8-${label}-${run}@example.com`));
 }
 const emailOf = (label) => `smokeb8-${label}-${run}@example.com`;
-const loginRes = (email) => api('POST', '/v1/auth/login', { body: { email, password: PASSWORD, client: 'web' } });
+const loginRes = (email) => api('POST', '/v1/auth/login', { body: { email, password: PASSWORD, client: 'web', turnstile_token: SMOKE_TURNSTILE_TOKEN } });
 async function signIn(user) {
   const body = await want(loginRes(user.email), 200, `login ${user.email}`);
   return { ...user, token: body.access_token };
@@ -591,7 +593,7 @@ async function main() {
     await want(api('POST', `/v1/admin/users/${t.id}/delete`, { token: S.op.token, body: { confirm_email: email } }), 204, 'admin delete');
     check(psql(`SELECT count(*) FROM trial_history WHERE user_id = '${t.id}'`) === '0', 'trial_history remains');
     const before = (await mailsTo(email)).length;
-    await want(api('POST', '/v1/auth/register', { body: { email, password: PASSWORD, timezone: TIMEZONE, client: 'web', given_name: 'Lan', birth_date: '2000-05-17', accept_terms: true } }), 201, 'register again');
+    await want(api('POST', '/v1/auth/register', { body: { turnstile_token: SMOKE_TURNSTILE_TOKEN, email, password: PASSWORD, timezone: TIMEZONE, client: 'web', given_name: 'Lan', birth_date: '2000-05-17', accept_terms: true } }), 201, 'register again');
     const mails = await waitFor(() => mailsTo(email), (list) => list.length > before, 'the OTP mail');
     const code = (await (await send(`${MAILPIT}/api/v1/message/${mails[0].ID}`)).json()).Text.match(/(\d{6})/)[1];
     const verified = await want(api('POST', '/v1/auth/verify-email', { body: { email, code, password: PASSWORD, client: 'web' } }), 200, 'verify');

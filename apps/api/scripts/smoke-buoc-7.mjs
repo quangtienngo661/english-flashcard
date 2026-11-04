@@ -17,6 +17,8 @@ import { createHash, randomInt, randomUUID } from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
 import { parseEnv } from 'node:util';
 import { publishModel, rollbackConfig, turnOff } from './ai-config-publish.mjs';
+import { SMOKE_TURNSTILE_TOKEN, requireFakeTurnstile } from './smoke-turnstile.mjs';
+requireFakeTurnstile();
 
 const BASE = process.env.SMOKE_BASE_URL ?? 'http://localhost:3000';
 const MAILPIT = process.env.SMOKE_MAILPIT_URL ?? 'http://localhost:8025';
@@ -135,7 +137,7 @@ async function wantProblem(promise, status, type, context) {
 }
 
 async function loginToken(email) {
-  return (await want(api('POST', '/v1/auth/login', { body: { email, password: PASSWORD, client: 'web' } }), 200, `login ${email}`)).access_token;
+  return (await want(api('POST', '/v1/auth/login', { body: { email, password: PASSWORD, client: 'web', turnstile_token: SMOKE_TURNSTILE_TOKEN } }), 200, `login ${email}`)).access_token;
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -188,7 +190,7 @@ async function newestCode(email, atLeast) {
 }
 
 const registerBody = (email) => ({
-  email, password: PASSWORD, timezone: TIMEZONE, given_name: 'Smoke', birth_date: '2000-01-01', accept_terms: true, client: 'web',
+  turnstile_token: SMOKE_TURNSTILE_TOKEN, email, password: PASSWORD, timezone: TIMEZONE, given_name: 'Smoke', birth_date: '2000-01-01', accept_terms: true, client: 'web',
 });
 
 /** Register sends one verification mail; its code is valid until another is issued. If it is refused, ask for a second one. */
@@ -198,7 +200,7 @@ async function registerVerified(email) {
   let verified = await api('POST', '/v1/auth/verify-email', { body: { email, code: await newestCode(email, before + 1), password: PASSWORD, client: 'web' } });
   if (verified.status !== 200) {
     const beforeResend = (await mailsTo(email)).length;
-    await want(api('POST', '/v1/auth/otp', { body: { purpose: 'verify_email', email } }), 202, 'request OTP');
+    await want(api('POST', '/v1/auth/otp', { body: { purpose: 'verify_email', email, turnstile_token: SMOKE_TURNSTILE_TOKEN } }), 202, 'request OTP');
     verified = await api('POST', '/v1/auth/verify-email', { body: { email, code: await newestCode(email, beforeResend + 1), password: PASSWORD, client: 'web' } });
   }
   check(verified.status === 200, `verify ${email}: ${verified.status} ${verified.text}`);

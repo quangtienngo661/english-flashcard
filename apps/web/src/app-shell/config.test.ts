@@ -1,5 +1,5 @@
 import { afterEach, vi } from 'vitest';
-import { assertApiBaseUrl, serverApiBaseUrl } from './config';
+import { assertApiBaseUrl, assertTurnstileSiteKey, serverApiBaseUrl, turnstileSiteKey } from './config';
 
 afterEach(() => vi.unstubAllEnvs());
 
@@ -37,5 +37,33 @@ describe('serverApiBaseUrl (where the server reads the API, which may differ fro
     vi.stubEnv('NEXT_PUBLIC_API_BASE_URL', 'http://localhost:3000');
     vi.stubEnv('API_INTERNAL_BASE_URL', 'http://api:3000/');
     expect(serverApiBaseUrl()).toBe('http://api:3000');
+  });
+});
+
+describe('assertTurnstileSiteKey (LA1#15, design 4.3)', () => {
+  const live = { learnerApp: true, siteUrl: 'https://wordmet.com' };
+
+  it('the live site with the app on needs a site key, and the error names the variable', () => {
+    expect(() => assertTurnstileSiteKey({ ...live, siteKey: '' })).toThrow(/NEXT_PUBLIC_TURNSTILE_SITE_KEY/);
+    expect(() => assertTurnstileSiteKey({ ...live, siteKey: '   ' })).toThrow(/NEXT_PUBLIC_TURNSTILE_SITE_KEY/);
+    expect(() => assertTurnstileSiteKey({ ...live, siteKey: '1x00000000000000000000AA' })).not.toThrow();
+  });
+
+  it('local and e2e builds may leave it blank (the fake widget is used)', () => {
+    expect(() => assertTurnstileSiteKey({ learnerApp: true, siteUrl: 'http://localhost:3001', siteKey: '' })).not.toThrow();
+    expect(() => assertTurnstileSiteKey({ learnerApp: true, siteUrl: 'http://localhost:3100', siteKey: '' })).not.toThrow();
+  });
+
+  it('with the app off there is no form, so no key is needed', () => {
+    expect(() => assertTurnstileSiteKey({ learnerApp: false, siteUrl: 'https://wordmet.com', siteKey: '' })).not.toThrow();
+  });
+});
+
+describe('turnstileSiteKey', () => {
+  it('reads and trims the public variable; blank when unset', () => {
+    vi.stubEnv('NEXT_PUBLIC_TURNSTILE_SITE_KEY', '  abc  ');
+    expect(turnstileSiteKey()).toBe('abc');
+    vi.stubEnv('NEXT_PUBLIC_TURNSTILE_SITE_KEY', undefined);
+    expect(turnstileSiteKey()).toBe('');
   });
 });
