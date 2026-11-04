@@ -6,6 +6,7 @@ import { AppLogger } from '../../common/logging/app-logger.js';
 import { Prisma, type PrismaClient } from '../../generated/prisma/client.js';
 import { IdentityService } from '../../identity/profile/identity.service.js';
 import { SettingsService } from '../../settings/index.js';
+import { OrderApplier } from '../orders/order-applier.service.js';
 import { BILLING_MAX_ATTEMPTS } from '../entitlements.constants.js';
 import { lockUser } from '../entitlements.locks.js';
 import type { Interval, SubscriptionStatus } from '../entitlements.types.js';
@@ -13,7 +14,7 @@ import { callAdapter } from './adapter-call.js';
 import type { BillingAdapter } from './billing-adapter.js';
 import { BillingAdapterRegistry } from './billing-adapter.registry.js';
 import type { BillingApplyPort } from './billing-inbox.service.js';
-import { eventFromJson, type SubscriptionState } from './billing.types.js';
+import { eventFromJson, ORDER_EVENT_TYPES, type OrderPaymentPayload, type SubscriptionState } from './billing.types.js';
 import { nextLastEventAt, orderDecision } from './event-order.js';
 import { applyEvent, applyFetched, startsTrial } from './subscription-machine.js';
 import { TransactionsRepository } from './transactions.repository.js';
@@ -48,6 +49,7 @@ export class BillingEventApplier implements BillingApplyPort {
     @Inject(SettingsService) private readonly settings: SettingsService,
     @Inject(AppLogger) private readonly logger: AppLogger,
     @Inject(TransactionsRepository) private readonly transactions: TransactionsRepository,
+    @Inject(OrderApplier) private readonly orders: OrderApplier,
   ) {}
 
   async applyMany(ids: string[]): Promise<void> {
@@ -99,6 +101,8 @@ export class BillingEventApplier implements BillingApplyPort {
       this.logger.warn('billing_event_ignored', { event_id: row.id, reason: 'sandbox-in-production' });
       return { ...none, outcome: 'ignored' };
     }
+    // A one-time payment names no user (the order does), so it must be routed before the unknown-user branch below (design §3.3).
+    if ((ORDER_EVENT_TYPES as readonly string[]).includes(row.type)) return this.applyOrderPayment(tx, row, finish, none);
     if (row.appUserId === null || !known) {
       // A user who is gone (account deleted, B8E25): keep no id, payload or raw payload that could name them.
       const scrub = row.appUserId === null ? {} : { appUserId: null, userId: null, payload: {}, rawPayload: Prisma.DbNull };
@@ -207,6 +211,35 @@ export class BillingEventApplier implements BillingApplyPort {
         : null,
       endTrial: trialStarted && !trialAllowed ? written.externalSubscriptionId : null,
     };
+  }
+
+  /**
+   * `payment_succeeded` → `OrderApplier`, in this transaction (inbox claim → order rules). The payer leaves the stored payload
+   * whatever the result: the order applier has copied it to the order only where a refund needs it (design §3.12).
+   */
+  private async applyOrderPayment(
+    tx: Tx, row: EventRow,
+    finish: (status: 'applied' | 'stale' | 'ignored', data?: { error?: string; userId?: string | null; payload?: object }) => Promise<void>,
+    none: FirstPass,
+  ): Promise<FirstPass> {
+    if (row.payload === null) {
+      await finish('ignored', { error: 'missing-fields' });
+      this.logger.warn('billing_event_incomplete', { event_id: row.id, type: row.type });
+      return { ...none, outcome: 'ignored' };
+    }
+    const { payer, ...stored } = row.payload as OrderPaymentPayload;
+    const result = await this.orders.applyPayment(tx, {
+      source: stored.source, env: row.environment as 'sandbox' | 'production', orderCode: stored.orderCode, paymentLinkId: stored.paymentLinkId,
+      reference: stored.reference, amount: stored.amount, providerTime: stored.transactionDateTime, success: stored.success, code: stored.code,
+      payer, eventId: row.id,
+    });
+    if (result.outcome === 'ignored') {
+      await finish('ignored', { error: result.reason, payload: stored });
+      this.logger.warn('billing_event_ignored', { event_id: row.id, reason: result.reason ?? 'ignored' });
+      return { ...none, outcome: 'ignored' };
+    }
+    await finish('applied', { payload: stored, ...(result.userId ? { userId: result.userId } : {}) });
+    return { ...none, outcome: 'applied' };
   }
 
   private async lockSubscription(tx: Tx, row: EventRow): Promise<SubscriptionRow | null> {

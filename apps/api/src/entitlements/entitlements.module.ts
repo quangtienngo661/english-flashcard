@@ -21,6 +21,7 @@ import { FakePayosController } from './billing/payos/fake-payos.controller.js';
 import { createPayosClient, PAYOS_CLIENT, PayosAdapter } from './billing/payos/payos.adapter.js';
 import { WebhookController } from './billing/webhook.controller.js';
 import { EntitlementsService } from './entitlements.service.js';
+import { OrderApplier } from './orders/order-applier.service.js';
 import { AdminGrantsController } from './grants/admin-grants.controller.js';
 import { GrantsService } from './grants/grants.service.js';
 import { NoticePlanner } from './notices/notice-planner.service.js';
@@ -53,6 +54,7 @@ import { UsageQueries } from './usage/usage.queries.js';
     FakePayosAdapter,
     BillingInbox,
     BillingEventApplier,
+    OrderApplier,
     TransactionsRepository,
     BillingJobs,
     NoticePlanner,
