@@ -533,6 +533,16 @@
       "pendingBody": "Việc xóa đang hoàn tất, có thể mất tới một giờ. Bạn không cần làm gì thêm.",
       "toLogin": "Về trang đăng nhập"
     },
+    "houseAd": {
+      "title": "Học nhiều hơn với Pro",
+      "close": "Đóng",
+      "lead": "Gói Pro mở thêm phiên luyện, câu luyện tập và tra từ bằng AI, và không có quảng cáo.",
+      "sessions": "{count, number} phiên luyện mỗi ngày",
+      "ai": "Câu luyện tập và tra từ bằng AI",
+      "noAds": "Không quảng cáo",
+      "from": "Từ {price} cho 1 tháng",
+      "cta": "Xem gói Pro"
+    },
     "transactions": {
       "title": "Lịch sử giao dịch",
       "back": "Cài đặt",

@@ -533,6 +533,16 @@
       "pendingBody": "The deletion is being finished and can take up to an hour. You do not need to do anything.",
       "toLogin": "Back to sign in"
     },
+    "houseAd": {
+      "title": "Get more with Pro",
+      "close": "Close",
+      "lead": "The Pro plan opens more practice sessions, AI practice questions and AI look-up, and has no ads.",
+      "sessions": "{count, number} practice sessions a day",
+      "ai": "AI practice questions and AI look-up",
+      "noAds": "No ads",
+      "from": "From {price} for 1 month",
+      "cta": "See Pro"
+    },
     "transactions": {
       "title": "Transaction history",
       "back": "Settings",
