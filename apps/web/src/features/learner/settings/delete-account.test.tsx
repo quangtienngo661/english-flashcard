@@ -25,7 +25,7 @@ const SUB = { kind: 'subscription', id: 'sub-1', status: 'active', starts_at: nu
 const CONFIG = {
   practice: { max_questions_per_session: 20, default_questions_per_session: 10 }, reminders: { send_time: '20:00' },
   learning: { backlog_after_days: 60, groups_per_user: 100 }, account: { transaction_retention_years: 10 },
-  plans: { free: { practice_sessions_per_day: 3 }, trial: { ai_practice_per_cycle: 300, ai_lookup_per_cycle: 100 }, pro: { practice_sessions_per_day: 30, ai_practice_per_cycle: 300, ai_lookup_per_cycle: 100 } },
+  plans: { free: { practice_sessions_per_day: 3, ai_practice_per_cycle: 15, ai_lookup_per_cycle: 5 }, trial: { ai_practice_per_cycle: 300, ai_lookup_per_cycle: 100 }, pro: { practice_sessions_per_day: 30, ai_practice_per_cycle: 300, ai_lookup_per_cycle: 100 } },
 };
 const routes = (sources: unknown[] = [], extra: Record<string, () => Response> = {}) => ({
   'GET /v1/me/entitlements': () => Response.json(ent(sources)), 'GET /v1/me/app-config': () => Response.json(CONFIG), ...extra,

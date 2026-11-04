@@ -14,7 +14,7 @@ Chạy local trên Windows, Docker Desktop bật, `docker compose up -d` ở rep
 | `apps/api` | `pnpm exec tsc --noEmit -p tsconfig.json` | xanh |
 | `apps/api` | `pnpm build` | xanh |
 | `apps/api` | `pnpm test` | 50 file, **578/578** |
-| `apps/api` | `pnpm test:e2e` (Testcontainers) | 46 file, **475/475**, 9,5 phút |
+| `apps/api` | `pnpm test:e2e` (Testcontainers) | 46 file, **475/475**, 9,5 phút (lúc làm; từ Bước 4, D38, suite này và script `test:e2e` của `apps/api` không còn) |
 | `apps/admin` | `pnpm lint` | xanh |
 | `apps/admin` | `pnpm typecheck` | xanh |
 | `apps/admin` | `pnpm test` | 31 file, **217/217** |

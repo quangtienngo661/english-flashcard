@@ -8,6 +8,7 @@ import { useSession } from '../../auth/session-context';
 import { Banner } from '../../ui/Banner';
 import { Button } from '../../ui/Button';
 import { TextField } from '../../ui/TextField';
+import { useTurnstile } from '../../ui/use-turnstile';
 import { AuthCard } from './AuthCard';
 import { useCountdown } from './useCountdown';
 
@@ -26,6 +27,7 @@ export function LoginPage() {
   const busy = useRef(false);
   const [retrying, setRetrying] = useState(false);
   const wait = useCountdown();
+  const bot = useTurnstile();
 
   if (state.status === 'signed-in') return <Navigate to={from ?? '/'} replace />;
   if (state.status === 'change-password') return <Navigate to="/change-password" replace />;
@@ -35,13 +37,15 @@ export function LoginPage() {
 
   async function submit(event: FormEvent) {
     event.preventDefault();
-    if (busy.current) return;
+    if (busy.current || bot.token === null) return;
     busy.current = true;
     setPending(true);
     setError(null);
     try {
-      await store.login(email.trim(), password);
+      await store.login(email.trim(), password, bot.token);
     } catch (e) {
+      // The token is spent whatever the answer was (wrong password, 429, ...): a new one for the next press.
+      bot.reset();
       if (e instanceof ApiError && e.problem.status === 429) wait.start(e.retryAfterSeconds ?? RATE_LIMIT_FALLBACK_SECONDS);
       else setError(errorDetails(e));
     } finally {
@@ -96,12 +100,13 @@ export function LoginPage() {
           value={password}
           onChange={setPassword}
         />
+        {bot.widget}
         <div className="flex justify-end">
           <Link to="/forgot-password" className="text-ui font-medium text-primary underline-offset-2 hover:underline">
             {t('account.login.forgot')}
           </Link>
         </div>
-        <Button type="submit" size="touch" isPending={pending} isDisabled={wait.remaining > 0} className="w-full">
+        <Button type="submit" size="touch" isPending={pending} isDisabled={wait.remaining > 0 || bot.token === null} className="w-full">
           {wait.remaining > 0 ? t('errors.retryIn', { seconds: wait.remaining }) : t('account.login.submit')}
         </Button>
       </form>

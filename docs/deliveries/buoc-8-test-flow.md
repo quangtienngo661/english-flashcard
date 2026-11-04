@@ -82,6 +82,7 @@ của §19 (mã dùng một lần 60 giây) vào M3 trước khi dựa vào nút
 
 1. Bấm **Tiếp tục với Google** ở `/vi/app/login` bằng Gmail test; hoàn tất đăng ký nếu là lần đầu.
 2. Cài đặt: dòng **Đăng nhập bằng: Google**.
+   - Thêm 04/11/2026 (B8A8, review B8-8): bấm **Đăng xuất**, rồi **Tiếp tục với Google** lại với cùng Gmail: vào lại app, không bị coi là đang đăng xuất dở (cờ `logout-pending` được xóa khi quay về với `?signed_in=google`).
 3. Xóa tài khoản: **Xác nhận bằng Google** (chọn đúng Gmail) → xóa → trang **Đã xóa** → Mailpit có thư.
 4. Thử lại nút Google cho cùng Gmail: ra màn hoàn tất đăng ký (tài khoản đã xóa hẳn, tạo mới được).
 

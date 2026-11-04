@@ -12,6 +12,8 @@ import { randomInt, randomUUID } from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
 import { parseEnv } from 'node:util';
 import argon2 from 'argon2';
+import { SMOKE_TURNSTILE_TOKEN, requireFakeTurnstile } from './smoke-turnstile.mjs';
+requireFakeTurnstile();
 
 const BASE = process.env.SMOKE_BASE_URL ?? 'http://localhost:3000';
 const MAILPIT = process.env.SMOKE_MAILPIT_URL ?? 'http://localhost:8025';
@@ -151,7 +153,7 @@ async function sqlUsers(labels, { staffRole = null } = {}) {
   return labels.map((label) => users.find((u) => u.email === `smokefx-${label}-${run}@example.com`));
 }
 
-const loginRes = (email, client = 'web') => api('POST', '/v1/auth/login', { body: { email, password: PASSWORD, client } });
+const loginRes = (email, client = 'web') => api('POST', '/v1/auth/login', { body: { email, password: PASSWORD, client, turnstile_token: SMOKE_TURNSTILE_TOKEN } });
 async function signIn(user) {
   const body = await want(loginRes(user.email), 200, `login ${user.email}`);
   return { ...user, token: body.access_token };
@@ -215,7 +217,7 @@ async function main() {
   // ------------------------------------------------------------------------------------------------------------------------
   await step('M2', 'FE1 age, FE5 terms, register Lan with names, PATCH /v1/me birth_date', async () => {
     const twelve = new Date(); twelve.setFullYear(twelve.getFullYear() - 12);
-    const reg = (email, extra) => api('POST', '/v1/auth/register', { body: { email, password: PASSWORD, timezone: TIMEZONE, client: 'web',
+    const reg = (email, extra) => api('POST', '/v1/auth/register', { body: { turnstile_token: SMOKE_TURNSTILE_TOKEN, email, password: PASSWORD, timezone: TIMEZONE, client: 'web',
       given_name: 'Lan', family_name: 'Nguyen', birth_date: '2000-05-17', accept_terms: true, ...extra } });
     const kid = `smokefx-kid-${run}@example.com`;
     await wantProblem(reg(kid, { birth_date: twelve.toISOString().slice(0, 10) }), 400, 'age-below-minimum', 'FE1 12-year-old');

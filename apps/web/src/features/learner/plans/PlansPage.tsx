@@ -72,7 +72,10 @@ export function PlansPage() {
               { text: t('freeList.review'), included: true },
               { text: t('freeList.lookup', { groups }), included: true },
               { text: t('freeList.sessions', { count: plans.free.practice_sessions_per_day }), included: true },
-              { text: t('freeList.ai'), included: false },
+              // The monthly allowance, from the config; both numbers 0 means the admin switched Free AI off (LA3#11).
+              plans.free.ai_practice_per_cycle + plans.free.ai_lookup_per_cycle > 0
+                ? { text: t('freeList.ai', { practice: plans.free.ai_practice_per_cycle, lookup: plans.free.ai_lookup_per_cycle }), included: true }
+                : { text: t('freeList.aiOff'), included: false },
             ]}
           >
             {plan === 'free' ? (

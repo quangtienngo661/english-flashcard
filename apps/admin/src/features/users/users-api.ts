@@ -46,7 +46,8 @@ export const MAX_SEARCH = 100;
 export const UUID = /^[0-9a-f]{8}[-][0-9a-f]{4}[-][0-9a-f]{4}[-][0-9a-f]{4}[-][0-9a-f]{12}$/i;
 
 export const codePoints = (text: string) => [...text].length;
-export const normalizeSearch = (text: string) => text.normalize('NFC').trim();
+// A NUL (U+0000) cannot be stored by Postgres and the API answers it with a 400: drop it here, before it reaches the URL (A6).
+export const normalizeSearch = (text: string) => text.replaceAll('\u0000', '').normalize('NFC').trim();
 
 export function usersQuery(filters: UserFilters, pageToken?: string): string {
   const query = new URLSearchParams();

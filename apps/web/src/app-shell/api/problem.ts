@@ -40,6 +40,8 @@ export const KNOWN_ERROR_SLUGS = [
   'ai-quota-insufficient',
   'ai-unavailable',
   'cancel-in-store',
+  'captcha-failed',
+  'captcha-unavailable',
   'confirm-email-mismatch',
   'csrf-header-required',
   'email-already-verified',

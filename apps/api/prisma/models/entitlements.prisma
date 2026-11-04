@@ -68,6 +68,8 @@ model Subscription {
   cancelAtPeriodEnd      Boolean   @default(false) @map("cancel_at_period_end")
   pendingInterval        String?   @map("pending_interval")
   quotaAnchorAt          DateTime? @map("quota_anchor_at") @db.Timestamptz
+  // When the row stopped being Pro or trial (null while it is, or is again, one). Written with every status change (nextEndedAt).
+  endedAt                DateTime? @map("ended_at") @db.Timestamptz
   // The transaction that paid the current period (plan choice 3; D34 "refund of the current period", D37).
   currentTransactionId   String?   @map("current_transaction_id")
   lastEventAt            DateTime? @map("last_event_at") @db.Timestamptz
@@ -179,6 +181,8 @@ model UsageRecord {
   creditedAt    DateTime? @map("credited_at") @db.Timestamptz
   // The report id behind a refund.
   note          String?
+  // free | trial | pro: the plan the learner had when the unit was reserved (the Free daily cap counts these). Null on older rows and practice_sessions.
+  plan          String?
   createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz
 
   @@index([userId, pool, confirmedAt])

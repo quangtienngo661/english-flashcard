@@ -1,5 +1,10 @@
 # Bước 8 — Identity còn lại: đăng nhập Google và xóa tài khoản — Design (28/10/2026)
 
+> **Ghi chú 04/11/2026 (đợt sửa sau review, B8-8): lệch giữa design và as-built, nội dung gốc giữ nguyên.**
+> - §9.1: nút Google "xóa cờ `logout-pending`" trước khi chuyển trang; code xóa cờ **khi quay về** với `?signed_in=google` (`apps/web/src/app-shell/session/session-store.ts`, "plan review P21").
+> - §17 (e2e mock): plan chỉ làm unit. Đợt A bổ sung một e2e mock cho "Đặt mật khẩu" của tài khoản chỉ có Google (B8-4); các màn khác của Bước 8 chưa có e2e mock.
+> - B8A8 ("đăng xuất rồi đăng nhập lại được"): test flow `buoc-8-test-flow.md` B3 có thêm bước này từ 04/11/2026.
+
 > **Trạng thái 29/10/2026:** đã review độc lập và sửa theo review (§0b); mọi câu đã chốt (D1–D30; câu 26 để sau); **chủ dự án duyệt design** ("Duyệt, viết plan"). Plan:
 > [`../plans/2026-10-29-buoc-8-identity-remainder.md`](../plans/2026-10-29-buoc-8-identity-remainder.md). Chỉ là tài liệu; chưa có code.
 > **Nhánh:** `docs/buoc-8-brainstorm` (cắt từ `dev` @ `9e35eb5`).

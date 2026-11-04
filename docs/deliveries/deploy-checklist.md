@@ -38,19 +38,69 @@ secret, backup) nằm ở design Bước 2.5 §14; những thứ chỉ kiểm đ
 - [ ] **Luật sư xem lại mốc 13 tuổi không hỏi cha mẹ; trang Điều khoản ghi "dưới 16 tuổi cần cha mẹ đồng ý".** Nguồn: design §11.2 (D4).
   Vì sao: Luật BVDLCN 2025 Điều 24 khoản 2 nói về người đại diện của trẻ dưới 16 tuổi.
 
+## Chặn đồ giả ở production (đợt A, R3)
+
+- [ ] **Đặt `BILLING_PRODUCTION=true`; KHÔNG đặt `BILLING_FAKE_ENABLED`, `AI_FAKE_ENABLED`, `GOOGLE_FAKE_ENABLED`; đặt `TURNSTILE_MODE=real`; rồi kiểm API từ chối khởi động khi bật một đồ giả.**
+  Nguồn: [X-3](../superpowers/reviews/2026-10-29-buoc-1-8-review.md#x-3), [B5-2](../superpowers/reviews/buoc-1-8/buoc-5.md#b5-2), Q13 (giữ cơ chế, chỉ thêm mục checklist).
+  Vì sao: `BILLING_PRODUCTION=true` cùng một đồ giả (thanh toán, AI, Google, hoặc `TURNSTILE_MODE` là `fake`/`off`) làm API và worker dừng ngay khi khởi động
+  (`apps/api/src/common/config/app-config.ts`, `superRefine`), nhưng chỉ khi chính biến `BILLING_PRODUCTION` được đặt; thiếu nó thì mọi đồ giả chạy được.
+  Kiểm: trên môi trường production thật, thử bật từng đồ giả một và thấy API cùng worker dừng với tên hai biến trong thông báo, rồi bỏ đồ giả đó đi.
+
+## Lượt AI cho Free và trial đã tắt (đợt A M3, 05/11/2026)
+
+- [ ] **DB production tạo mới bằng `prisma migrate deploy`.** Migration `20261105100000_free_ai_cycle` thêm `subscriptions.ended_at` và `usage_records.plan` (cả hai `NULL`, không backfill).
+  Vì sao: một DB đã có người dùng Pro cũ thì dòng cũ không có `ended_at`, nên lượt Pro cũ của họ có thể bị tính vào lượt Free tháng này (sai về phía chặt, không cho thêm lượt).
+- [ ] **Ba setting mới trong Cài đặt → Gói và lượt: `free_ai_practice_per_cycle` (15), `free_ai_lookup_per_cycle` (5), `free_ai_daily_cap` (500).** Landing ghi cứng "15/tháng" và "5/tháng"
+  (`Landing.plans.freeAiPractice`, `freeAiLookup`): đổi số ở Cài đặt thì sửa chữ landing trước khi đăng. `free_ai_daily_cap` là số ước; xem lại sau tuần đầu có người dùng thật.
+- [ ] **Chữ hứa dùng thử không còn ở web, landing và bản nháp pháp lý; `trial_eligible` luôn `false`.** Mục 5 "Dùng thử" của Điều khoản còn trong bản nháp: đợt B viết lại các mục 5–8.
+  Code trial giữ nguyên cho một nhà cung cấp tự gia hạn về sau; các test e2e/smoke dựng trial bằng provider giả vẫn chạy.
+- [ ] **Cửa sổ Free theo tháng dương lịch của múi giờ người học.** Đổi múi giờ cuối tháng có thể cho thêm tối đa một lượt Free đầy đủ (LA3E3, LA3E4); chấp nhận.
+
+## AI và riêng tư (Bước 6–7)
+
+Nguồn chung: [B6-1](../superpowers/reviews/buoc-1-8/buoc-6-and-7.md#b6-1); chi tiết ở design Bước 6 §18–§19 và Bước 7 §19–§20.
+
+- [ ] **Chính sách bảo mật nêu việc gửi từ riêng và câu ngữ cảnh của người học cho OpenAI/Anthropic (bên nhận ở Mỹ), và việc `ai_call_contents` giữ nội dung 7 ngày, admin đọc được**
+  (`apps/api/src/ai/reports/reports.service.ts:218-235`). Nguồn: B6 §18, F29, SR15. Vì sao: trang chính sách hiện chưa nhắc AI; bản nháp đã ở nhánh `docs/web-launch-research`.
+- [ ] **Điều khoản xử lý dữ liệu của từng provider (F30); OpenAI cho người dưới 18 tuổi và ZDR so với mốc 13 tuổi của app; không dùng model có giữ dữ liệu 30 ngày.**
+  Nguồn: B6-1. Vì sao: app nhận người học từ 13 tuổi và gửi nội dung người học cho provider.
+- [ ] **`max_concurrent_calls` (50) đếm theo từng tiến trình, không theo cả hệ thống: đặt theo tier của provider khi chạy nhiều instance.** Nguồn: B6 §18 "Deploy".
+  Vì sao: hai instance API cộng worker là hơn 50 lượt song song; tier Anthropic thấp hơn thế thì 429 hàng loạt.
+- [ ] **Ba điểm riêng tư của Bước 7 (B7 §20) và chữ "300 câu AI" của gói Pro (B7 §19).** Vì sao: chữ trên trang gói, landing và chính sách phải khớp số thật trong Cài đặt (`pro_ai_practice_per_cycle`).
+
+## Trước khi bán thật (Bước 5)
+
+- [ ] **D24/Điều 42 và email báo trước khi gia hạn; bộ nối thanh toán thật gửi `transaction_id` (D37) và có `fetchState` (D39); đo khóa trần AI dưới tải.**
+  Nguồn: [B5-9](../superpowers/reviews/buoc-1-8/buoc-5.md#b5-9), design Bước 5 §18–§19. Vì sao: hiện chỉ có nhà cung cấp giả nên chưa ai gặp; `B5-2`/R17 ở mục "Chặn đồ giả" trên.
+
 ## Đo tải trước launch
 
 - [ ] **Chạy `pnpm test:scale` (300.000 từ riêng của người học khác) trên máy giống bản deploy.** Nguồn: design §6.4 (T5), M3 gate
   (21/10; xem as-built). Vì sao: số đo T5 có từ Task 6 (trước M3); sau M3, tra từ (`/v1/lookup`) vẫn đọc toàn bộ index lemma của
   catalog (1,3 ms ở 5.000 từ), thời gian tăng theo cỡ catalog (mục tiêu 8.812 từ). Cần thấy con số thật trước khi có người dùng.
+- [ ] **Đo lại "Ôn tất cả" (D39).** Nguồn: [B4-1](../superpowers/reviews/buoc-1-8/buoc-3-and-4.md#b4-1). Vì sao: số đo hiện có là của lúc chưa có D39.
+- [ ] **Đo search/browse của người học khi bảng có từ riêng (B2-5) và đo mở phiên có 50 từ dạng AI, mỗi từ một query (B7-5).** Nguồn:
+  [B2-5](../superpowers/reviews/buoc-1-8/buoc-2-and-2-5.md#b2-5) (`apps/api/test/content/lookup.scale.e2e-spec.ts`, `pnpm test:scale`),
+  [B7-5](../superpowers/reviews/buoc-1-8/buoc-6-and-7.md#b7-5) (`question-builder.service.ts:94-103`). Vì sao: hai chỗ này là `ASSUMPTION` chưa đo.
 
 ## Admin web
 
-- [ ] **Thêm security header cho admin tĩnh (CSP, `frame-ancestors`, `X-Content-Type-Options: nosniff`, `Referrer-Policy`).** Nguồn: AD12
-  (kiểm kê [`inventory-admin-practice.md`](../superpowers/reviews/2026-10-20-buoc-0-3-review-evidence/inventory-admin-practice.md); design §3 "Không làm"). Vì sao: bản deploy admin hiện chỉ phục vụ file tĩnh, không có header nào;
-  thêm `apps/admin/public/_headers` (kiểm Workers Static Assets có đọc file này không) và thử CSP với style inline của React Aria.
-- [ ] **Quyết định security header cho API (helmet, ẩn `x-powered-by`).** Nguồn: FD-dj (kiểm kê [`inventory-foundation-db.md`](../superpowers/reviews/2026-10-20-buoc-0-3-review-evidence/inventory-foundation-db.md), đi cặp với AD12).
-  Vì sao: API chưa đặt header nào; chủ dự án quyết lúc Deploy.
+- [x] **Security header cho admin tĩnh: phần code đã làm (đợt A, M1, 04/11/2026).** Nguồn: AD12 (kiểm kê
+  [`inventory-admin-practice.md`](../superpowers/reviews/2026-10-20-buoc-0-3-review-evidence/inventory-admin-practice.md)). `apps/admin/public/_headers` có một rule `/*`
+  với CSP (chấp nhận `'unsafe-inline'` cho `style-src` vì React Aria tự chèn thẻ `<style>`), `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy`;
+  `apps/admin/src/headers.test.ts` ghim nội dung. `vite` và `vite preview` không đọc `_headers`, nên local không có header này.
+- [ ] **Sau khi deploy admin: kiểm header thật bằng `curl -I`.** Vì sao: hai `ASSUMPTION` của design đợt A (§4.4) chưa kiểm được ở local: Workers Static
+  Assets áp `_headers` cho cả trang trả về từ fallback SPA, và Vite copy `public/` vào `dist/`. Làm: `curl -I https://admin.wordmet.com/` và một đường dẫn sâu
+  (vd `/uploads`) phải có bốn header trên; `dist/_headers` giống `public/_headers` sau `pnpm build`.
+- [x] **Security header cho API: phần code đã làm (đợt A, M1).** Nguồn: FD-dj. API dùng `helmet` với năm header của một API JSON: không `X-Powered-By`;
+  `X-Content-Type-Options: nosniff`; `Referrer-Policy: no-referrer`; `Content-Security-Policy: default-src 'none';frame-ancestors 'none'` (helmet viết
+  không có dấu cách sau `;`); `Cross-Origin-Resource-Policy: same-site`. Không đặt HSTS ở API (`app.setup.headers.spec.ts` ghim).
+- [ ] **Sau khi deploy API: kiểm HSTS và header.** `curl -I https://api.wordmet.com/v1/health` có năm header trên. HSTS: `ASSUMPTION` Cloudflare đặt ở
+  tầng edge, chỉ đúng khi API đứng sau proxy Cloudflare; nếu hosting của API không đứng sau proxy thì bật `strictTransportSecurity` trong `helmet`
+  (`apps/api/src/app.setup.ts`).
+- [ ] **Sau khi deploy web: kiểm header của web.** `curl -I https://wordmet.com/vi` có `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy` và CSP;
+  `curl -I` một file `/_next/static/…`. `ASSUMPTION`: `headers()` của `next.config.ts` có thể không áp cho file tĩnh mà Workers Static Assets trả thẳng
+  (`.open-next/assets`). E23 trong CI chỉ kiểm phần Worker trả lời.
 
 ## Từ kiểm kê 20/10, mức Thấp, đã gắn nhãn "deploy-checklist" (chưa làm, D11)
 
@@ -80,10 +130,22 @@ Thông thường site nhỏ không cố chặn hết bot; chỉ bảo vệ chỗ
 - [ ] **Cân nhắc Bot Fight Mode — chỉ sau khi tính tới API và app mobile.** Nguồn: tài liệu Cloudflare Bot Fight Mode (đọc 26/10). Vì sao:
   miễn phí, nhưng áp cho cả domain, **không tạo ngoại lệ được** bằng WAF rule, có thể thách thức nhầm traffic API/mobile, và tự chèn JS
   detection cần CSP cho phép (CSP hiện ở chế độ D20). `ASSUMPTION`: CSP hiện tại có chặn JS này hay không — chưa thử.
-- [ ] **Gắn CAPTCHA (Cloudflare Turnstile) vào đăng ký, quên mật khẩu, waitlist; API kiểm token phía server.** Nguồn: trao đổi 26/10; tìm
-  `turnstile|captcha` trong `apps/api/src`, `apps/web/src`, `apps/admin/src` không thấy. Vì sao: bot đăng ký bằng email người khác khiến SMTP
-  Gmail gửi hàng loạt OTP → bị coi là spam và khoá tài khoản gửi; rate limit theo IP không đủ khi bot đổi IP. **Cần sửa code** và thêm
-  domain Turnstile vào CSP (`ASSUMPTION`: tên domain chính xác, kiểm lúc làm).
+- [x] **CAPTCHA (Cloudflare Turnstile): phần code đã làm (đợt A, M1, 04/11/2026).** Nguồn: trao đổi 26/10; design
+  [`2026-11-04-chuan-bi-launch-a-design.md`](../superpowers/specs/2026-11-04-chuan-bi-launch-a-design.md) §4. Phạm vi thật: đăng ký, đăng nhập, xin mã OTP
+  (đặt lại mật khẩu và gửi lại mã xác minh) của web; đăng nhập và quên mật khẩu của admin. Waitlist đã bị bỏ từ 03/11. API kiểm token phía server
+  (`TurnstileGuard`), domain Turnstile là `challenges.cloudflare.com` (đã có trong CSP của web và admin).
+- [ ] **Turnstile: việc cần làm lúc deploy.** Làm theo thứ tự:
+  1. Tạo **một** widget Turnstile trong Cloudflare, đăng ký đủ ba hostname `wordmet.com`, `www.wordmet.com`, `admin.wordmet.com`. Một widget thì
+     web và admin dùng chung một site key và API chỉ có một secret.
+  2. API: đặt `TURNSTILE_MODE=real`, `TURNSTILE_SECRET_KEY`, `TURNSTILE_ALLOWED_HOSTNAMES=wordmet.com,www.wordmet.com,admin.wordmet.com`. Thiếu
+     `TURNSTILE_MODE` hoặc dùng `fake`/`off` cùng `BILLING_PRODUCTION=true` thì API và worker từ chối khởi động.
+  3. Đặt site key: `NEXT_PUBLIC_TURNSTILE_SITE_KEY` trong `deploy-web.yml` lúc bật app (build web của `https://wordmet.com` với app bật mà thiếu thì
+     fail), và `VITE_TURNSTILE_SITE_KEY` khi build admin (`pnpm build` fail nếu thiếu).
+  4. **Deploy API trước, rồi web và admin.** Web bản mới gửi `turnstile_token` tới API bản cũ sẽ nhận 400 (schema strict).
+  5. Sau deploy: `curl -i -X POST https://api.wordmet.com/v1/auth/register -H 'content-type: application/json' -d '{}'` phải trả 400 (thiếu token);
+     log của API không có `turnstile_misconfigured`; đăng ký và đăng nhập thật trên web, đăng nhập trên admin chạy được.
+  6. Cloudflare lỗi thì đăng ký và xin mã trả 503 `captcha-unavailable`, đăng nhập cho qua và log `turnstile_bypassed`: nhớ xem log này nếu thấy nhiều.
+  7. `TRUST_PROXY` phải đúng với proxy thật (mục riêng ở trên), vì `remoteip` gửi cho Cloudflare và bộ đếm `auth.captcha.ip` dựa vào IP.
 - [ ] **Giới hạn chi phí AI trước khi gắn key thật.** Nguồn: trao đổi 26/10; Bước 5–6 đã có `ai_daily_cap`, trần lần gọi provider mỗi ngày,
   công tắc AI. Vì sao: tài khoản Trial tạo hàng loạt có thể đốt tiền AI. Việc: đặt trần thấp lúc ra mắt, rồi bật **giới hạn chi tiêu và
   cảnh báo** ngay trên tài khoản OpenAI/Anthropic (lớp chặn cuối nếu app có lỗi).
@@ -112,9 +174,15 @@ Thông thường site nhỏ không cố chặn hết bot; chỉ bảo vệ chỗ
   chạy trên mọi trang, kể cả `/app`.
 - [ ] **Bản build production bật app phải có `NEXT_PUBLIC_API_BASE_URL` với host bắt đầu bằng `api.`.** Nguồn: design §4.2. Vì sao: cookie
   `refresh_token` host-only của `admin-api.` và `api.` không được đè nhau; `next.config.ts` dừng build khi sai.
-- [ ] **Dọn tài khoản chưa từng xác nhận email sau N ngày.** Nguồn: A5 đợt cải thiện nhóm A (design `../superpowers/specs/2026-10-26-dot-cai-thien-a-design.md` §4),
+- [x] **Dọn tài khoản chưa từng xác nhận email sau N ngày (đã có job `identity.unverified-cleanup`, `deletion-jobs.service.ts:36`; [B8-6](../superpowers/reviews/buoc-1-8/buoc-8.md#b8-6)).** Nguồn: A5 đợt cải thiện nhóm A (design `../superpowers/specs/2026-10-26-dot-cai-thien-a-design.md` §4),
   làm cùng phần xoá tài khoản của Bước 8. Vì sao: từ đợt này tài khoản chưa xác nhận không vào được app nhưng vẫn nằm trong DB và giữ chỗ email;
   `identity-cleanup.service.ts` chỉ xoá OTP và chuỗi phiên hết hạn.
+
+- [ ] **Xem lại CSP (nonce hoặc hash thay `'unsafe-inline'`) trước khi bật `/app`.** Nguồn: [UW-4](../superpowers/reviews/buoc-1-8/giao-dien-nguoi-hoc-and-admin.md#uw-4). Vì sao: D20 đang để
+  `'unsafe-inline'` vì Next chèn script RSC inline; script Turnstile (đợt A) phải còn nạp được sau khi đổi.
+- [ ] **Build và kiểm bản cờ app tắt (cấu hình production hiện tại, `NEXT_PUBLIC_LEARNER_APP` không đặt).** Nguồn: [UW-3](../superpowers/reviews/buoc-1-8/giao-dien-nguoi-hoc-and-admin.md#uw-3).
+  Vì sao: CI và e2e chỉ build với app bật; bản app tắt (`/…/app/*` chuyển về landing) chưa được thử trong CI.
+- [ ] **Chạy tay hai worker gửi nhắc học cùng lúc (G1-10).** Nguồn: [B3-1](../superpowers/reviews/buoc-1-8/buoc-3-and-4.md#b3-1); checklist dev (`docs/audit/2026-11-04-dev-test-checklist.md`, mục D) đã có bước này.
 
 ## Landing mới (`apps/web`, design landing-redesign §9, 03/11/2026)
 
@@ -166,6 +234,12 @@ Thông thường site nhỏ không cố chặn hết bot; chỉ bảo vệ chỗ
   cho Google Play (D20); gói mua qua store thì "Hủy gói" chuyển người dùng sang trang quản lý gói của store (web đã có thông báo `cancel-in-store`).
 - [ ] **Nhà cung cấp thanh toán thật.** Nguồn: design §18, D12, D31. Hỗ trợ `cancelAtPeriodEnd`; adapter phải trả lời trong hằng `BILLING_ADAPTER_TIMEOUT_MS` (`entitlements.constants.ts`) khi admin xóa người đang gia hạn
   (không kịp → 409 `renewal-not-cancelled`, không xóa gì); xem lại chống dùng thử lại ở phía họ.
+
+- [ ] **DB production phải tạo mới; không mang sang tài khoản chưa xác minh tạo trước 26/10/2026.** Nguồn: [B8-5](../superpowers/reviews/buoc-1-8/buoc-8.md#b8-5). Vì sao: đăng ký Google vào email của
+  một tài khoản chưa xác minh dùng lại id của tài khoản đó (`google-auth.service.ts:266-286`, design Bước 8 §5.5), với giả định nó không có dữ liệu học; giả định này chỉ đúng từ khi đăng nhập bị
+  chặn lúc chưa xác minh (26/10/2026). Trên DB có dữ liệu cũ hơn, người đăng ký Google sẽ thấy dữ liệu của tài khoản kia.
+- [ ] **Email nằm trong URL bộ lọc của admin: xét lại khi chọn hosting (log truy cập).** Nguồn: [UA-7](../superpowers/reviews/buoc-1-8/giao-dien-nguoi-hoc-and-admin.md#ua-7). Vì sao: URL của trang
+  Người dùng có thể mang email người học vào log truy cập của hosting; ghi nhận, chưa phải lỗi.
 
 ## Chính sách bảo mật và Điều khoản soạn trong admin (`docs/deliveries/legal-documents.md`, 03/11/2026)
 

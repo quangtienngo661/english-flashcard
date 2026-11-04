@@ -50,6 +50,7 @@ export function testConfig(overrides?: Partial<AppConfig>): AppConfig {
     ai: { openaiApiKey: null, anthropicApiKey: null, fakeEnabled: false },
     payos: { mode: 'off', clientId: null, apiKey: null, checksumKey: null },
     google: { mode: 'off', clientId: null, clientSecret: null, redirectUri: null, apiOrigin: null, cookieKey: randomBytes(32) },
+    turnstile: { mode: 'off', secretKey: null, allowedHostnames: [] },
     limits,
     ...overrides,
   };

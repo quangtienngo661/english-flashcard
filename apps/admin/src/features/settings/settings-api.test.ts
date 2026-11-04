@@ -12,10 +12,10 @@ const values = (): Values => ({
 });
 
 describe('settings-api', () => {
-  it('the layout has the 52 keys (41 of the copy doc, two of Bước 8, six of nhóm B, three Pro prices of launch prep B), each once', () => {
-    expect(FIELD_ORDER).toHaveLength(52);
-    expect(new Set(FIELD_ORDER).size).toBe(52);
-    expect(SECTIONS.map((s) => SETTINGS_LAYOUT[s].length)).toEqual([5, 6, 9, 19, 2, 10, 1]);
+  it('the layout has the 55 keys (41 of the copy doc, two of Bước 8, six of nhóm B, three of launch prep A, three Pro prices of launch prep B), each once', () => {
+    expect(FIELD_ORDER).toHaveLength(55);
+    expect(new Set(FIELD_ORDER).size).toBe(55);
+    expect(SECTIONS.map((s) => SETTINGS_LAYOUT[s].length)).toEqual([5, 6, 9, 22, 2, 10, 1]);
     // The three prices close the entitlements tab, in dong.
     expect(SETTINGS_LAYOUT.entitlements.slice(-3)).toEqual([
       { key: 'pro_price_1m_vnd', kind: 'int', unit: 'vnd' },
@@ -31,6 +31,16 @@ describe('settings-api', () => {
       { key: 'judge_agreement_min', kind: 'ratio' },
       { key: 'real_judge_limit', kind: 'int' },
     ]);
+  });
+
+  it('LA3#14: the two Free monthly AI keys come before the Pro ones; the Free daily cap sits right after the system-wide one', () => {
+    const keys = SETTINGS_LAYOUT.entitlements.map((f) => f.key);
+    expect(SETTINGS_LAYOUT.entitlements.find((f) => f.key === 'free_ai_practice_per_cycle')).toEqual({ key: 'free_ai_practice_per_cycle', kind: 'int', unit: 'uses' });
+    expect(SETTINGS_LAYOUT.entitlements.find((f) => f.key === 'free_ai_lookup_per_cycle')).toEqual({ key: 'free_ai_lookup_per_cycle', kind: 'int', unit: 'uses' });
+    expect(SETTINGS_LAYOUT.entitlements.find((f) => f.key === 'free_ai_daily_cap')).toEqual({ key: 'free_ai_daily_cap', kind: 'int', unit: 'uses' });
+    expect(keys.indexOf('free_ai_practice_per_cycle')).toBeLessThan(keys.indexOf('pro_ai_practice_per_cycle'));
+    expect(keys.indexOf('free_ai_lookup_per_cycle')).toBe(keys.indexOf('free_ai_practice_per_cycle') + 1);
+    expect(keys.indexOf('free_ai_daily_cap')).toBe(keys.indexOf('ai_daily_cap') + 1);
   });
 
   it('changedValues keeps only changed keys; a value set back to the server value is not a change', () => {

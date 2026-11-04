@@ -22,7 +22,8 @@ export type RateLimitRuleName =
   | 'ai.test'
   | 'entitlements.lookup'
   | 'auth.google.ip'
-  | 'auth.delete.user';
+  | 'auth.delete.user'
+  | 'auth.captcha.ip';
 
 export interface RateLimitRuleConfig {
   by: 'user' | 'ip' | 'email' | 'chain';
@@ -126,6 +127,13 @@ export interface AppConfig {
     /** Seals the short-lived Google cookies (AES-256-GCM, 32 bytes). */
     cookieKey: Buffer | null;
   };
+  /** Cloudflare Turnstile on register, login and OTP requests (launch prep A, design 4.2). `fake` and `off` never run in production. */
+  turnstile: {
+    mode: 'real' | 'fake' | 'off';
+    secretKey: string | null;
+    /** Hostnames siteverify may report for a passed token (apex, www and the admin host). */
+    allowedHostnames: string[];
+  };
   limits: Record<RateLimitRuleName, RateLimitRuleConfig>;
 }
 
@@ -155,6 +163,8 @@ export const DEFAULT_LIMITS: Record<RateLimitRuleName, RateLimitRuleConfig> = {
   // Bước 8: Google start, callback and complete (design §5), and the account deletion check against password guessing (design §7.2).
   'auth.google.ip': { by: 'ip', max: 20, windowSeconds: 60 },
   'auth.delete.user': { by: 'user', max: 5, windowSeconds: 3600 },
+  // Calls to Cloudflare siteverify per IP, counted only in `real` mode before the call (launch prep A, design 4.2).
+  'auth.captcha.ip': { by: 'ip', max: 60, windowSeconds: 60 },
 };
 
 const nonEmpty = z.string().trim().min(1);
@@ -233,7 +243,7 @@ const envSchema = z.object({
   PUBLISH_MAX_ITEMS: positiveInteger.default(500),
   IMPORT_MAX_ROWS: positiveInteger.default(20_000),
   IMPORT_MAX_BYTES: positiveInteger.default(10_485_760),
-  EXPORT_MAX_ROWS: positiveInteger.default(5_000),
+  EXPORT_MAX_ROWS: positiveInteger.default(10_000),
   IMPORT_LEASE_SECONDS: positiveInteger.default(60),
   IMPORT_HEARTBEAT_SECONDS: positiveInteger.default(20),
   IMPORT_RECONCILE_SECONDS: positiveInteger.default(30),
@@ -265,6 +275,13 @@ const envSchema = z.object({
   PAYOS_API_KEY: z.string().optional().transform((value) => value?.trim() || null),
   PAYOS_CHECKSUM_KEY: z.string().optional().transform((value) => value?.trim() || null),
   PAYOS_FAKE_ENABLED: booleanString.default(false),
+  // No default: a production that forgets the variable must not start without a bot check (design 4.2).
+  TURNSTILE_MODE: z.enum(['real', 'fake', 'off']),
+  // Not `secretSchema`: a Turnstile secret is not base64url.
+  // A line `TURNSTILE_SECRET_KEY=` of .env.example loads as an empty string: blank counts as unset, as OPENAI_API_KEY does.
+  TURNSTILE_SECRET_KEY: z.string().optional().transform((value) => value?.trim() || undefined),
+  TURNSTILE_ALLOWED_HOSTNAMES: z.string().optional()
+    .transform((value) => (value ?? '').split(',').map((host) => host.trim()).filter((host) => host !== '')),
 }).superRefine((values, ctx) => {
   // Empty or blank counts as unset, as the SDKs' own readEnv does.
   for (const name of ['OPENAI_CUSTOM_HEADERS', 'ANTHROPIC_CUSTOM_HEADERS'] as const) {
@@ -301,6 +318,15 @@ const envSchema = z.object({
   }
   if (values.PAYOS_FAKE_ENABLED && values.BILLING_FAKE_SECRET === undefined) {
     ctx.addIssue({ code: 'custom', path: ['BILLING_FAKE_SECRET'], message: 'Required when PAYOS_FAKE_ENABLED=true' });
+  }
+  if (values.BILLING_PRODUCTION && values.TURNSTILE_MODE !== 'real') {
+    const message = 'The fake or disabled bot check is not allowed in production';
+    ctx.addIssue({ code: 'custom', path: ['BILLING_PRODUCTION'], message });
+    ctx.addIssue({ code: 'custom', path: ['TURNSTILE_MODE'], message });
+  }
+  if (values.TURNSTILE_MODE === 'real') {
+    if (values.TURNSTILE_SECRET_KEY === undefined) ctx.addIssue({ code: 'custom', path: ['TURNSTILE_SECRET_KEY'], message: 'Required when TURNSTILE_MODE=real' });
+    if (values.TURNSTILE_ALLOWED_HOSTNAMES.length === 0) ctx.addIssue({ code: 'custom', path: ['TURNSTILE_ALLOWED_HOSTNAMES'], message: 'Required when TURNSTILE_MODE=real' });
   }
   if (values.GOOGLE_FAKE_ENABLED || values.GOOGLE_CLIENT_ID !== null) {
     const required = values.GOOGLE_FAKE_ENABLED ? ['GOOGLE_REDIRECT_URI', 'OAUTH_COOKIE_KEY'] : ['GOOGLE_CLIENT_SECRET', 'GOOGLE_REDIRECT_URI', 'OAUTH_COOKIE_KEY'];
@@ -391,6 +417,11 @@ export function loadConfig(env: NodeJS.ProcessEnv): AppConfig {
       redirectUri: values.GOOGLE_REDIRECT_URI,
       apiOrigin: values.GOOGLE_REDIRECT_URI === null ? null : new URL(values.GOOGLE_REDIRECT_URI).origin,
       cookieKey: values.OAUTH_COOKIE_KEY ?? null,
+    },
+    turnstile: {
+      mode: values.TURNSTILE_MODE,
+      secretKey: values.TURNSTILE_SECRET_KEY ?? null,
+      allowedHostnames: values.TURNSTILE_ALLOWED_HOSTNAMES,
     },
     limits: structuredClone(DEFAULT_LIMITS),
   };

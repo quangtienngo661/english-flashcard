@@ -26,29 +26,31 @@ const GROUPS = [{ id: TECH, name: 'Công nghệ', version: 1, total: 18, today: 
 const RESETS = '2026-10-23T17:00:00.000Z';
 const LATER = '2026-11-14T17:00:00.000Z'; // 0:00 on 15/11 in Asia/Ho_Chi_Minh
 const pool = (limit: number, used: number, resets_at: string | null) => ({ limit, used, remaining: Math.max(0, limit - used), resets_at });
-const entitlements = (plan: 'free' | 'pro') => ({
-  plan, sources: [], trial_eligible: false, ai_available: { enabled: true, cap_reached: false },
+// 'free' is a Free account whose AI is switched off (the admin set both numbers to 0, LA3#11); 'free-ai' has the monthly allowance (15 and 5).
+type Plan = 'free' | 'free-ai' | 'pro';
+const entitlements = (plan: Plan) => ({
+  plan: plan === 'pro' ? 'pro' : 'free', sources: [], trial_eligible: false, ai_available: { enabled: true, cap_reached: false },
   features: {
     'ai.practice': plan === 'free' ? { allowed: false, reason: 'plan-required' } : { allowed: true, reason: null },
     'ai.lookup': plan === 'free' ? { allowed: false, reason: 'plan-required' } : { allowed: true, reason: null },
   },
   pools: {
-    practice_sessions: pool(plan === 'free' ? 3 : 30, 1, RESETS),
-    ai_practice: plan === 'free' ? pool(0, 0, null) : pool(300, 13, LATER),
-    ai_lookup: plan === 'free' ? pool(0, 0, null) : pool(100, 4, LATER),
+    practice_sessions: pool(plan === 'pro' ? 30 : 3, 1, RESETS),
+    ai_practice: plan === 'free' ? pool(0, 0, null) : plan === 'free-ai' ? pool(15, 3, LATER) : pool(300, 13, LATER),
+    ai_lookup: plan === 'free' ? pool(0, 0, null) : plan === 'free-ai' ? pool(5, 1, LATER) : pool(100, 4, LATER),
   },
 });
 const CONFIG = {
   practice: { max_questions_per_session: 20, default_questions_per_session: 12 },
   reminders: { send_time: '20:00' }, learning: { backlog_after_days: 60, groups_per_user: 100 },
-  plans: { free: { practice_sessions_per_day: 3 }, trial: { ai_practice_per_cycle: 100, ai_lookup_per_cycle: 30 }, pro: { practice_sessions_per_day: 30, ai_practice_per_cycle: 300, ai_lookup_per_cycle: 100 } },
+  plans: { free: { practice_sessions_per_day: 3, ai_practice_per_cycle: 15, ai_lookup_per_cycle: 5 }, trial: { ai_practice_per_cycle: 100, ai_lookup_per_cycle: 30 }, pro: { practice_sessions_per_day: 30, ai_practice_per_cycle: 300, ai_lookup_per_cycle: 100 } },
 };
 const problem = (status: number, slug: string, extra: Record<string, unknown> = {}): Route => () =>
   new Response(JSON.stringify({ type: `http://api.test/problems/${slug}`, status, title: slug, ...extra }), {
     status, headers: { 'content-type': 'application/problem+json' },
   });
 const noSession: Route = () => Response.json({ type: 'http://x/problems/not-found', status: 404, title: 'n' }, { status: 404 });
-const routes = (plan: 'free' | 'pro', over: Record<string, Route> = {}): Record<string, Route> => ({
+const routes = (plan: Plan, over: Record<string, Route> = {}): Record<string, Route> => ({
   'GET /v1/groups': () => Response.json({ items: GROUPS }),
   'GET /v1/me/app-config': () => Response.json(CONFIG),
   'GET /v1/me/entitlements': () => Response.json(entitlements(plan)),
@@ -63,7 +65,7 @@ const starts = (calls: Array<{ method: string; path: string; body: unknown }>) =
   calls.filter((c) => c.method === 'POST' && c.path === '/v1/practice/sessions');
 const AI = ['Điền từ vào câu', 'Chọn nghĩa trong câu', 'Trắc nghiệm theo câu'];
 
-async function open(plan: 'free' | 'pro', over: Record<string, Route> = {}) {
+async function open(plan: Plan, over: Record<string, Route> = {}) {
   const view = renderApp(<PracticePage />, { routes: routes(plan, over) });
   const list = await screen.findByRole('list', { name: 'Luyện theo nguồn khác' });
   await userEvent.click(within(list).getByRole('button', { name: 'Tùy chỉnh: Luyện tất cả' }));
@@ -74,7 +76,7 @@ const aiSwitch = (dialog: HTMLElement) => within(dialog).getByRole('switch', { n
 const ownSwitch = (dialog: HTMLElement) => within(dialog).getByRole('switch', { name: 'Điền từ vào câu bạn đã lưu' });
 
 describe('Kiểu câu có AI in Tùy chỉnh phiên (K/70, K/70b, K/71, K/72; D10)', () => {
-  it('K/70b Free: the switch is shown dimmed with the Pro label; pressing it tells why and never shows the AI types', async () => {
+  it('K/70b, LA3#11 Free with AI switched off: the switch is shown dimmed with the Pro label; pressing it tells why and never shows the AI types', async () => {
     const { dialog } = await open('free');
     await waitFor(() => expect(aiSwitch(dialog)).toHaveAttribute('aria-disabled', 'true'));
     expect(within(dialog).getByText('Pro')).toBeInTheDocument();
@@ -86,6 +88,8 @@ describe('Kiểu câu có AI in Tùy chỉnh phiên (K/70, K/70b, K/71, K/72; D1
   it('K/70 Pro: AI on shows ticked types and usage; with own off, start sends AI types without cloze_source', async () => {
     const { view, dialog } = await open('pro');
     await waitFor(() => expect(aiSwitch(dialog)).not.toBeChecked());
+    // A usable switch carries no "Pro" chip: AI is not only for Pro any more (launch prep A, design 6.7).
+    expect(within(dialog).queryByText('Pro')).not.toBeInTheDocument();
     for (const name of AI) expect(within(dialog).queryByRole('checkbox', { name })).toBeNull();
     await userEvent.click(aiSwitch(dialog));
     for (const name of AI) expect(within(dialog).getByRole('checkbox', { name })).toBeChecked();
@@ -266,5 +270,28 @@ describe('Saved sentences in Tùy chỉnh phiên (A3, C3)', () => {
     } finally {
       spy.mockRestore();
     }
+  });
+});
+
+describe('Kiểu câu có AI for a Free account with the monthly allowance (launch prep A, design 6.7)', () => {
+  it('LA3#1: the switch is usable, has no "Pro" chip, shows the AI types and what is left of the 15 this month', async () => {
+    const { dialog } = await open('free-ai');
+    await waitFor(() => expect(aiSwitch(dialog)).not.toHaveAttribute('aria-disabled', 'true'));
+    expect(within(dialog).queryByText('Pro')).not.toBeInTheDocument();
+    expect(within(dialog).queryByText('Dành cho gói Pro. Gói Pro chưa mở bán.')).not.toBeInTheDocument();
+    await userEvent.click(aiSwitch(dialog));
+    for (const name of AI) expect(within(dialog).getByRole('checkbox', { name })).toBeChecked();
+    // ceil(12 × 3 AI types ÷ 6 types) = 6 units for this session; 15 − 3 = 12 left.
+    expect(within(dialog).getByText('Phiên này dùng tối đa 6 lượt câu AI · còn 12')).toBeInTheDocument();
+  });
+
+  it('LA3#2: all 15 used → the API answers ai-quota-insufficient and the dialog tells when the allowance comes back (1/12)', async () => {
+    localStorage.setItem(KEY, 'on');
+    const { dialog } = await open('free-ai', {
+      'POST /v1/practice/sessions': problem(403, 'ai-quota-insufficient', { remaining: 0, needed: 6, resets_at: '2026-11-30T17:00:00.000Z' }),
+    });
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Bắt đầu 12 câu' }));
+    const box = await within(dialog).findByRole('alert');
+    expect(within(box).getByText('Phiên này cần 6 lượt câu AI, bạn còn 0. Lượt câu AI mới vào 1/12.')).toBeInTheDocument();
   });
 });
