@@ -166,7 +166,7 @@ M4 (trang giao dịch trống nhắc dùng thử), M5 (comment cũ), M8 (LA3E21 
 
 **Chưa làm / chưa kiểm được (M3):**
 - **Việc có từ trước, không thuộc đợt này:** `smoke:nhom-b` bước M2.9 hỏng vì smoke giữ khóa 8 giây còn giao dịch publish chỉ chờ 5 giây (bảng ở trên). Cách sửa: cho giao dịch publish một `timeout` lớn hơn thời gian giữ khóa của smoke, hoặc rút thời gian giữ khóa dưới 5 giây.
-- **Chưa chạy** e2e web (`pnpm cf:docker`) cho fixture mới của Free và `m5b.spec.ts` ở bước này; chỉ typecheck và unit test.
+- e2e web: máy cục bộ không chạy toàn bộ bộ e2e trước khi mở PR; CI của PR chạy và bắt được 4 test hỏng vì fixture Free đổi (`m5a.spec.ts` "Free: the switch is locked" và `landing.spec.ts` LR36, mỗi test ở desktop và mobile). Đã sửa (Free có hạn mức thì công tắc dùng được; "Free với AI tắt" dùng `entitlementsBody('free', { freeAi: false })`; hai ô AI của Free ở landing là "15/tháng" và "5/tháng"). Chạy lại ba file `landing`, `m5a`, `m5b` trong container Linux (`pnpm cf:docker`): 111 pass, 1 flaky (axe/overflow của `m5a`, pass ở lần thử lại), exit 0. Hai test axe của `m5b` trên mobile cũng flaky trong CI (Worker dev server báo "Aborted", pass ở lần thử lại).
 - **Chưa dùng AI thật** trong đợt này: mọi lượt AI trong smoke là provider giả (D3); chất lượng câu AI và tỷ lệ bị rule loại vẫn chưa đo. Bước 2 của Task 30 (lượt AI chạy tay) làm bằng các bước SQL của smoke, không qua giao diện web.
 - Chưa thử trên trình duyệt thật: thẻ Free, bảng so sánh, công tắc AI, landing.
 - Minor chưa sửa: (M1) trial bị từ chối rồi đã trả tiền và kết thúc trước `trial_ends_at` không được tính là nguồn Pro (trial đang tắt); (M6) một lượt giữ chỗ của người Free chạy bốn câu `count` dưới `lockAiDaily`.
