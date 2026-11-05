@@ -4,11 +4,14 @@ import { cn } from '@/lib/cn';
 
 export type Perk = { text: string; included: boolean };
 
-/** One plan of K/52, K/53: an optional strip on top (yellow for Pro), the name, what it says, and its perks. */
-export function PlanCard({ name, crown, strip, chip, children, perks, footnote, highlight }: {
+/**
+ * One plan of K/52, K/53: the name, an optional badge beside it (yellow on Pro, "Gói hiện tại"), what it says, and its perks. Both cards
+ * sit on the soft shadow (owner 05/11/2026); Pro keeps its yellow border.
+ */
+export function PlanCard({ name, crown, badge, chip, children, perks, footnote, highlight }: {
   name: string;
   crown?: boolean;
-  strip?: string;
+  badge?: string;
   chip?: string;
   children?: ReactNode;
   perks: Perk[];
@@ -20,17 +23,19 @@ export function PlanCard({ name, crown, strip, chip, children, perks, footnote, 
     <section
       aria-labelledby={id}
       className={cn(
-        'flex min-w-0 flex-col overflow-hidden rounded-feature bg-surface',
-        highlight ? 'border-2 border-accent shadow-ledge-accent' : 'border border-border shadow-ledge-card',
+        'flex min-w-0 flex-col rounded-feature bg-surface shadow-soft-card',
+        highlight ? 'border-2 border-accent' : 'border border-border',
       )}
     >
-      {strip && <p className="bg-accent px-4 py-1.5 text-center text-caption font-semibold text-on-accent">{strip}</p>}
       <div className="flex flex-col gap-3 p-5 md:p-6">
         {chip && <span className="w-fit rounded-full bg-primary-soft px-2 py-0.5 text-caption font-semibold text-ink">{chip}</span>}
-        <h2 id={id} className="flex items-center gap-2 text-h2 font-extrabold text-ink">
-          {crown && <Crown aria-hidden className="size-6 text-accent-deep" />}
-          {name}
-        </h2>
+        <div className="flex items-center justify-between gap-3">
+          <h2 id={id} className="flex items-center gap-2 text-h2 font-extrabold text-ink">
+            {crown && <Crown aria-hidden className="size-6 text-accent-deep" />}
+            {name}
+          </h2>
+          {badge && <p className="shrink-0 rounded-inner bg-accent-soft px-2.5 py-1 text-caption font-semibold text-warning">{badge}</p>}
+        </div>
         {children}
         <ul className="flex flex-col gap-2 border-t border-border pt-3">
           {perks.map((perk) => (

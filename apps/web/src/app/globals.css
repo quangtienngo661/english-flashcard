@@ -67,6 +67,10 @@
   --shadow-dialog: 0 0.5rem 0 var(--color-shadow-ink);
   --shadow-menu: 0 0 0 0.0625rem var(--color-border), 0 0.35rem 0 var(--color-shadow-ink);
   --shadow-toast: 0 0.3rem 0 var(--color-shadow-ink);
+  /* The plan cards and the order return card (owner 05/11/2026): a soft shadow tinted with primary-deep instead of B's flat
+     ledge, only on these two screens. */
+  --shadow-soft-card: 0 0.0625rem 0.125rem color-mix(in srgb, var(--color-primary-deep) 6%, transparent),
+    0 1rem 2.5rem -0.75rem color-mix(in srgb, var(--color-primary-deep) 22%, transparent);
   --motion-overlay: 200ms;
   --animate-overlay-in: fade-in var(--motion-overlay) var(--ease-standard) both;
   --animate-overlay-out: fade-out var(--transition-duration-fast) var(--ease-exit) both;

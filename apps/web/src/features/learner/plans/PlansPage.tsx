@@ -16,6 +16,7 @@ import { Button } from '@/app-ui/Button';
 import { Segmented } from '@/app-ui/Segmented';
 import { ErrorState, FullScreenSpinner } from '@/app-ui/States';
 import { cn } from '@/lib/cn';
+import { site } from '@/lib/site';
 import { CompareTable } from './CompareTable';
 import { PlanCard } from './PlanCard';
 import { SubscriptionRows } from './SubscriptionRows';
@@ -25,6 +26,18 @@ type Months = '1' | '3' | '12';
 const MONTHS: Months[] = ['1', '3', '12'];
 /** "tới hết 31/12/2026": an end at the first instant of 1/1 is the last day before it. */
 const lastDay = (endsAt: string) => new Date(Date.parse(endsAt) - 1);
+const DAY_MS = 86_400_000;
+
+/**
+ * How long the running prepaid period is: 1, 3 or 12 months (launch prep B: a period is bought for one of these and runs from its start
+ * to the end of the same day N months later), read back from its dates, since a month is 28 to 31 days and the gaps between the three
+ * lengths are wide. Null for any other source (a plan grant has no length) or a length that is none of the three.
+ */
+export function prepaidMonths(source: { kind: string; starts_at: string | null; ends_at: string | null } | undefined): number | null {
+  if (source?.kind !== 'prepaid' || !source.starts_at || !source.ends_at) return null;
+  const months = Math.round((Date.parse(source.ends_at) - Date.parse(source.starts_at)) / DAY_MS / 30.44);
+  return months === 1 || months === 3 || months === 12 ? months : null;
+}
 
 /**
  * K/52, K/53 `/app/plans`, full screen: Free and Pro, numbers from `plans` (design §8.7); no usage here (copy doc §12). Pro is bought here
@@ -100,7 +113,7 @@ export function PlansPage() {
             name={t('pro')}
             crown
             highlight
-            strip={gift ? t('yoursGift') : onPro ? t('yours') : undefined}
+            badge={gift ? t('yoursGift') : onPro ? t('yours') : undefined}
             perks={[
               { text: t('proList.sessions', { count: plans.pro.practice_sessions_per_day }), included: true },
               { text: t('proList.ai', { count: plans.pro.ai_practice_per_cycle }), included: true },
@@ -126,7 +139,7 @@ export function PlansPage() {
                 <p className="text-caption text-muted">{t('afterEnd')}</p>
               </>
             )}
-            {prices ? <BuyBlock months={months} price={prices[months]} extend={onPro} /> : <p className="text-caption text-muted">{t('proLine')}</p>}
+            {prices ? <BuyBlock months={months} price={prices[months]} startsAt={onPro ? endsAt : null} runningMonths={onPro ? prepaidMonths(source) : null} /> : <p className="text-caption text-muted">{t('proLine')}</p>}
           </PlanCard>
         </div>
         <SubscriptionRows sources={entitlements.data.sources} />
@@ -174,7 +187,14 @@ export function PlansPage() {
  * the learner saw: if it changed meanwhile the server answers 409 `price-changed`, the prices are read again and nothing is charged. A
  * created order sends the browser to the payOS page (a full page load: the next stop is another site).
  */
-function BuyBlock({ months, price, extend }: { months: Months; price: number; extend: boolean }) {
+function BuyBlock({ months, price, startsAt, runningMonths }: {
+  months: Months;
+  price: number;
+  /** When a learner on Pro buys, the new period starts where the unbroken Pro ends (`pro_until`); null on Free. */
+  startsAt: string | null;
+  /** The length of the running prepaid period: the same length is locked, a longer one is an upgrade (owner 05/11/2026). */
+  runningMonths: number | null;
+}) {
   const t = useTranslations('App.plans');
   const locale = useLocale();
   const format = useFormat();
@@ -183,6 +203,9 @@ function BuyBlock({ months, price, extend }: { months: Months; price: number; ex
   const errorText = useErrorMessage();
   const [error, setError] = useState<string | null>(null);
   const [leaving, setLeaving] = useState(false);
+  const chosen = Number(months);
+  const locked = runningMonths !== null && chosen === runningMonths;
+  const upgrade = runningMonths !== null && chosen > runningMonths;
 
   // One Idempotency-Key per press (useSubmitOnce): a retry after a network error is the same order, a press with other content a new one.
   const create = useSubmitOnce((key) =>
@@ -215,13 +238,22 @@ function BuyBlock({ months, price, extend }: { months: Months; price: number; ex
         <span className="text-h2 font-extrabold text-ink">{format.money(price, 'VND')}</span>
         <span className="text-ui text-muted">{t('oneTime', { period: t(`periods.${months}`) })}</span>
       </p>
-      {extend && <p className="text-caption text-muted">{t('extend')}</p>}
-      <p className="text-caption text-muted">{t('noRefund')}</p>
+      {startsAt && !locked && <p className="text-caption text-muted">{t('startsOn', { date: format.date(startsAt, 'full') })}</p>}
+      <p className="text-caption text-muted">
+        {t.rich('noRefund', {
+          email: site.contactEmail,
+          mail: (chunks) => (
+            <a href={`mailto:${site.contactEmail}`} className="font-semibold text-primary underline underline-offset-2">
+              {chunks}
+            </a>
+          ),
+        })}
+      </p>
       <Link href={`/${locale}/terms`} className="w-fit text-caption font-semibold text-primary underline underline-offset-2">
         {t('termsLink')}
       </Link>
-      <Button variant="sticker" size="lg" onPress={() => void buy()} isPending={create.busy || leaving}>
-        {t('buy')}
+      <Button variant={locked ? 'quiet' : 'sticker'} size="lg" isDisabled={locked} onPress={() => void buy()} isPending={create.busy || leaving}>
+        {locked ? t('currentPeriod') : upgrade ? t('upgrade', { period: t(`periods.${months}`) }) : t('buy')}
       </Button>
       {error && (
         <p role="alert" className="text-ui text-danger">

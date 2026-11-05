@@ -92,10 +92,12 @@ describe('PlansPage (K/52, K/53; launch prep B design §3.8)', () => {
     expect(within(pro).getByText(dong(81000))).toBeInTheDocument();
   });
 
-  it('right above the Buy button: "Không hoàn tiền. Gói không tự gia hạn; hết hạn bạn mua kỳ mới." and a link to the Terms', async () => {
+  it('right above the Buy button: no automatic renewal or refund, the support email, and a link to the Terms (owner 05/11/2026)', async () => {
     renderApp(<PlansPage />, { routes: routes(ent('free')) });
     const pro = await screen.findByRole('region', { name: 'Pro' });
-    const sentence = within(pro).getByText('Không hoàn tiền. Gói không tự gia hạn; hết hạn bạn mua kỳ mới.');
+    const sentence = within(pro).getByText(/^Gói không tự gia hạn\. Không hoàn tiền tự động; cần hỗ trợ, liên hệ/);
+    expect(within(pro).getByRole('link', { name: 'hello@wordmet.com' })).toHaveAttribute('href', 'mailto:hello@wordmet.com');
+    expect(within(pro).queryByText(/Kỳ mới bắt đầu từ/)).not.toBeInTheDocument();
     const buy = within(pro).getByRole('button', { name: 'Mua' });
     expect(sentence.compareDocumentPosition(buy) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(within(pro).getByRole('link', { name: 'Điều khoản sử dụng' })).toHaveAttribute('href', '/vi/terms');
@@ -179,9 +181,55 @@ describe('PlansPage (K/52, K/53; launch prep B design §3.8)', () => {
     expect(within(pro).getByText('Gói hiện tại')).toBeInTheDocument();
     expect(within(pro).getByText('Tới hết 5/12/2027')).toBeInTheDocument();
     expect(within(pro).getByText('Kỳ tiếp theo: 6/12/2026 – 5/12/2027')).toBeInTheDocument();
-    expect(within(pro).getByRole('button', { name: 'Mua' })).toBeInTheDocument();
+    // The running period is 1 month and 12 is chosen: a longer period is an upgrade, which starts where the chain ends.
+    expect(within(pro).getByRole('button', { name: 'Nâng cấp lên 12 tháng' })).toBeEnabled();
+    expect(within(pro).getByText('Kỳ mới bắt đầu từ 6/12/2027, khi kỳ hiện tại kết thúc.')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Hủy gói' })).not.toBeInTheDocument();
     expect(screen.queryByText('Gói đang đăng ký')).not.toBeInTheDocument();
+  });
+
+  describe('the button follows the running prepaid period (owner 05/11/2026)', () => {
+    const THREE = { ...PREPAID, id: 'pp3m', starts_at: '2026-11-05T03:00:00.000Z', ends_at: '2027-02-05T17:00:00.000Z' };
+    const onPeriod = (source: unknown, pro_until: string) => routes(ent('pro', [source], { pro_until, upcoming_periods: [] }));
+
+    it('the same length as the running period: the button is locked and says so; nothing can be ordered', async () => {
+      const view = renderApp(<PlansPage />, { routes: onPeriod(PREPAID, PREPAID.ends_at) });
+      await userEvent.click(await screen.findByRole('radio', { name: '1 tháng' }));
+      const pro = screen.getByRole('region', { name: 'Pro' });
+      expect(within(pro).getByRole('button', { name: 'Đang dùng kỳ này' })).toBeDisabled();
+      expect(within(pro).queryByRole('button', { name: 'Mua' })).not.toBeInTheDocument();
+      expect(within(pro).queryByText(/Kỳ mới bắt đầu từ/)).not.toBeInTheDocument();
+      await userEvent.click(within(pro).getByRole('button', { name: 'Đang dùng kỳ này' }));
+      expect(view.calls.filter((c) => c.path === '/v1/me/orders')).toEqual([]);
+    });
+
+    it('a longer period: "Nâng cấp lên 3 tháng", and the new period starts when the running one ends', async () => {
+      renderApp(<PlansPage />, { routes: onPeriod(PREPAID, PREPAID.ends_at) });
+      await userEvent.click(await screen.findByRole('radio', { name: '3 tháng' }));
+      const pro = screen.getByRole('region', { name: 'Pro' });
+      expect(within(pro).getByRole('button', { name: 'Nâng cấp lên 3 tháng' })).toBeEnabled();
+      expect(within(pro).getByText('Kỳ mới bắt đầu từ 6/12/2026, khi kỳ hiện tại kết thúc.')).toBeInTheDocument();
+    });
+
+    it('a shorter period than the running 3 months: plain "Mua", with the same start line', async () => {
+      renderApp(<PlansPage />, { routes: onPeriod(THREE, THREE.ends_at) });
+      await userEvent.click(await screen.findByRole('radio', { name: '1 tháng' }));
+      const pro = screen.getByRole('region', { name: 'Pro' });
+      expect(within(pro).getByRole('button', { name: 'Mua' })).toBeEnabled();
+      expect(within(pro).getByText('Kỳ mới bắt đầu từ 6/2/2027, khi kỳ hiện tại kết thúc.')).toBeInTheDocument();
+      await userEvent.click(screen.getByRole('radio', { name: '3 tháng' }));
+      expect(within(pro).getByRole('button', { name: 'Đang dùng kỳ này' })).toBeDisabled();
+    });
+
+    it('Pro given by the team has no period length: every period is "Mua", starting where the grant ends', async () => {
+      renderApp(<PlansPage />, { routes: onPeriod(GRANT, GRANT.ends_at) });
+      const pro = await screen.findByRole('region', { name: 'Pro' });
+      for (const name of ['1 tháng', '3 tháng', '12 tháng']) {
+        await userEvent.click(screen.getByRole('radio', { name }));
+        expect(within(pro).getByRole('button', { name: 'Mua' })).toBeEnabled();
+      }
+      expect(within(pro).getByText('Kỳ mới bắt đầu từ 1/1/2027, khi kỳ hiện tại kết thúc.')).toBeInTheDocument();
+    });
   });
 
   it('a second and third upcoming period are listed after the first', async () => {
@@ -242,7 +290,7 @@ describe('PlansPage (K/52, K/53; launch prep B design §3.8)', () => {
     expect(screen.getByText('4 practice sessions a day')).toBeInTheDocument();
     expect(screen.getByRole('radio', { name: '1 month' })).toBeInTheDocument();
     expect(screen.getByRole('radio', { name: '12 months' })).toBeChecked();
-    expect(screen.getByText('No refunds. The plan does not renew by itself; when it ends you buy a new period.')).toBeInTheDocument();
+    expect(screen.getByText(/^The plan does not renew by itself\. No automatic refunds; for help, write to/)).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Terms of Use' })).toHaveAttribute('href', '/en/terms');
     await userEvent.click(screen.getByRole('button', { name: 'Buy' }));
     await waitFor(() => expect(assign).toHaveBeenCalledTimes(1));
