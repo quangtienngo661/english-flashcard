@@ -253,6 +253,14 @@ Thông thường site nhỏ không cố chặn hết bot; chỉ bảo vệ chỗ
 - [ ] **Đặt `TERMS_VERSION` vẫn bắt buộc.** Vì sao: API không khởi động nếu thiếu; giá trị này chỉ còn dùng cho tới khi có bản đầu tiên được đăng.
 - [ ] **Email báo trước 07 ngày khi đổi điều khoản.** Chưa làm: cần tính năng gửi thư hàng loạt. Cho tới khi có, người học chỉ biết qua màn đồng ý lại.
 
+## Trang Nguồn dữ liệu (`docs/deliveries/nguon-du-lieu.md`, 05/11/2026)
+
+- [ ] **Điền đủ `attribution`, `license`, `url` của CEFR-J, Octanove C1/C2 (và các nguồn thật khác) ở màn Nguồn dữ liệu trong admin trước launch.** Nguồn: as-built nguon-du-lieu.
+  Vì sao: trang `/vi/sources` chỉ hiện đúng những gì admin đã nhập; giấy phép CEFR-J và Octanove bắt ghi nguồn, nên câu ghi công trống là thiếu nghĩa vụ giấy phép.
+- [ ] **Sau deploy: mở `/vi/sources` và `/en/sources`, thấy CEFR-J, Octanove, AGID với câu ghi công đầy đủ; link "Nguồn dữ liệu" có ở footer landing và footer app.** Nguồn: as-built.
+  Vì sao: trang đọc `GET /v1/sources` ở server mỗi lần mở (cùng điều kiện `NEXT_PUBLIC_API_BASE_URL` như `/privacy`); thiếu địa chỉ API hoặc API lỗi thì trang chỉ hiện câu "chưa có nguồn nào", không báo lỗi.
+- [ ] **Chủ dự án thêm câu trỏ từ Điều khoản sang trang nguồn.** Việc này nằm ở bản nháp `docs/preparation/legal-drafts/` (nhánh `docs/web-launch-research`), không nằm trong PR này.
+
 ## Chuẩn bị launch B: mua gói Pro một lần bằng payOS (`docs/deliveries/chuan-bi-launch-b.md`, 04/11/2026)
 
 - [ ] **Ba biến payOS cho API và worker.** Nguồn: design launch B §3.3, `apps/api/.env.example`. Việc: đặt `PAYOS_CLIENT_ID`, `PAYOS_API_KEY`, `PAYOS_CHECKSUM_KEY` (ba cái cùng lúc; đặt dở dang thì API từ chối chạy và nói thiếu biến nào). Vì sao: thiếu cả ba thì `payos.mode = off` và `POST /v1/me/orders` trả 503. **Không** đặt `PAYOS_FAKE_ENABLED=true` ở production: kết hợp với `BILLING_PRODUCTION=true` thì API không khởi động. Ba khóa là bí mật: không dán vào chat hay commit.

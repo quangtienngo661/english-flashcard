@@ -9,7 +9,7 @@ export function SiteFooter({
   copy,
   locale,
 }: {
-  copy: { plans: string; faq: string; contact: string; terms: string; privacy: string; copyright: string };
+  copy: { plans: string; faq: string; contact: string; terms: string; privacy: string; sources: string; copyright: string };
   locale: AppLocale;
 }) {
   const link =
@@ -38,6 +38,11 @@ export function SiteFooter({
             <li>
               <a href={`/${locale}/privacy`} className={link}>
                 {copy.privacy}
+              </a>
+            </li>
+            <li>
+              <a href={`/${locale}/sources`} className={link}>
+                {copy.sources}
               </a>
             </li>
             <li>

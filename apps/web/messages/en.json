@@ -257,6 +257,7 @@
   "Footer": {
     "privacy": "Privacy Policy",
     "terms": "Terms of Use",
+    "sources": "Data sources",
     "contact": "Contact",
     "copyright": "© {year} Wordmet"
   },
@@ -266,6 +267,14 @@
     "draftNotice": "This is a draft version. The official text will be published prior to Wordmet's official launch.",
     "effective": "Effective from {date}",
     "contents": "Contents"
+  },
+  "Sources": {
+    "title": "Data sources",
+    "intro": "Wordmet uses the openly licensed data sets below. Thank you to the people who made and shared them.",
+    "empty": "There are no data sources to show yet.",
+    "license": "License",
+    "version": "Version",
+    "link": "Original site"
   },
   "NotFound": {
     "title": "Page not found",
@@ -327,6 +336,7 @@
         "colLegal": "Legal",
         "terms": "Terms of use",
         "privacy": "Privacy policy",
+        "sources": "Data sources",
         "copyright": "© {year} Wordmet"
       },
       "search": {

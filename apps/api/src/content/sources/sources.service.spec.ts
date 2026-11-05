@@ -255,9 +255,80 @@ describe('the built-in AGID source (its licence notice is required on the public
 
   it('the view flags it, and the owner source, as protected; a third-party source is not', async () => {
     const { prisma, service } = setup();
-    const owner = { ...row, id: OWNER_SOURCE_ID, kind: 'owner' };
-    prisma.dataSource.findMany.mockResolvedValue([owner, { ...row, id: AGID_SOURCE_ID }, row]);
+    const raw = { id: ID, kind: 'third_party', name: 'CEFR-J', version: '1.5', url: null, license: 'x', attribution: '', display_priority: 10, shown_to_learners: false };
+    prisma.$queryRaw.mockResolvedValue([{ ...raw, id: OWNER_SOURCE_ID, kind: 'owner' }, { ...raw, id: AGID_SOURCE_ID }, raw]);
     const { items } = await service.list();
     expect(items.map((item) => item.protected)).toEqual([true, true, false]);
+  });
+});
+
+describe('SourcesService.listShown / list: which sources are shown to learners (owner 05/11/2026)', () => {
+  const sqlOf = (call: unknown[]) => {
+    const query = call[0] as Prisma.Sql;
+    return { text: query.text.replace(/\s+/g, ' ').trim(), values: query.values };
+  };
+  const dbRow = (over: Record<string, unknown> = {}) => ({
+    id: ID, kind: 'third_party', name: 'CEFR-J', version: '1.5', url: null, license: 'CC BY-SA 4.0', attribution: 'cite me',
+    display_priority: 10, shown_to_learners: true, ...over,
+  });
+
+  it('listShown returns the rows the query gives, in that order, as source views', async () => {
+    const { prisma, service } = setup();
+    prisma.$queryRaw.mockResolvedValue([dbRow({ name: 'A' }), dbRow({ id: AGID_SOURCE_ID, name: 'AGID', display_priority: 20 })]);
+    const shown = await service.listShown();
+    expect(shown.map((s) => s.name)).toEqual(['A', 'AGID']);
+    expect(shown[1]).toEqual({
+      id: AGID_SOURCE_ID, kind: 'third_party', name: 'AGID', version: '1.5', url: null, license: 'CC BY-SA 4.0', attribution: 'cite me',
+      display_priority: 20, protected: true,
+    });
+    expect(shown[0]).not.toHaveProperty('shown_to_learners');
+  });
+
+  it('listShown filters in SQL: third_party only, a visible catalog sense, AGID through library inflections, priority order', async () => {
+    const { prisma, service } = setup();
+    prisma.$queryRaw.mockResolvedValue([]);
+    await service.listShown();
+    expect(prisma.$queryRaw).toHaveBeenCalledOnce();
+    const { text, values } = sqlOf(prisma.$queryRaw.mock.calls[0]!);
+    expect(text).toContain("ds.kind = 'third_party'");
+    expect(text).toContain('FROM entry_levels el JOIN entries e ON e.id = el.entry_id');
+    expect(text).toContain('el.source_id = ds.id');
+    expect(text).toContain("e.scope = 'catalog'");
+    expect(text).toContain("s.state = 'open' AND s.live_revision_id IS NOT NULL");
+    expect(text).toContain('FROM entry_inflections ei JOIN entries e ON e.id = ei.entry_id');
+    expect(text).toContain("ei.source = 'library'");
+    expect(text).toMatch(/ds\.id = \$1::uuid AND EXISTS/);
+    expect(text).toMatch(/ORDER BY ds\.display_priority, ds\.id$/);
+    expect(values).toEqual([AGID_SOURCE_ID]);
+  });
+
+  it('listShown on a database with nothing shown is an empty list', async () => {
+    const { prisma, service } = setup();
+    prisma.$queryRaw.mockResolvedValue([]);
+    expect(await service.listShown()).toEqual([]);
+  });
+
+  it('list (admin) returns every source with the shown_to_learners flag, computed by the same expression, with the owner row last by priority', async () => {
+    const { prisma, service } = setup();
+    prisma.$queryRaw.mockResolvedValue([dbRow(), dbRow({ id: OWNER_SOURCE_ID, kind: 'owner', name: 'Wordmet', shown_to_learners: false })]);
+    const { items } = await service.list();
+    expect(items.map((s) => [s.name, s.shown_to_learners])).toEqual([['CEFR-J', true], ['Wordmet', false]]);
+    expect(items[1]).toMatchObject({ protected: true, kind: 'owner' });
+    const { text } = sqlOf(prisma.$queryRaw.mock.calls[0]!);
+    expect(text).toContain('AS shown_to_learners');
+    expect(text).not.toContain('WHERE ds.kind');
+    expect(prisma.dataSource.findMany).not.toHaveBeenCalled();
+  });
+
+  it('the shown condition and the flag are the same SQL fragment (they cannot drift)', async () => {
+    const { prisma, service } = setup();
+    prisma.$queryRaw.mockResolvedValue([]);
+    await service.list();
+    await service.listShown();
+    const flagQuery = sqlOf(prisma.$queryRaw.mock.calls[0]!).text;
+    const filterQuery = sqlOf(prisma.$queryRaw.mock.calls[1]!).text;
+    const condition = filterQuery.slice(filterQuery.indexOf('WHERE ') + 'WHERE '.length, filterQuery.indexOf(' ORDER BY'));
+    expect(condition).toContain("ds.kind = 'third_party'");
+    expect(flagQuery).toContain(`${condition} AS shown_to_learners`);
   });
 });

@@ -28,7 +28,7 @@ export default async function SiteLayout({ children }: { children: ReactNode }) 
         <main id="main" tabIndex={-1}>
           {children}
         </main>
-        <SiteFooter locale={locale} copy={{ ...copy.footer, contact: footer('contact'), terms: footer('terms'), privacy: footer('privacy'), copyright: footer('copyright', { year: new Date().getFullYear() }) }} />
+        <SiteFooter locale={locale} copy={{ ...copy.footer, contact: footer('contact'), terms: footer('terms'), privacy: footer('privacy'), sources: footer('sources'), copyright: footer('copyright', { year: new Date().getFullYear() }) }} />
       </ThemeProvider>
     </>
   );

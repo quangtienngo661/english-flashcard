@@ -10,8 +10,8 @@ const t = vi.sources;
 // The table and the cards are both in the page; the one that does not fit the viewport is hidden.
 const shown = (page: Page, text: string) => page.getByText(text, { exact: true }).filter({ visible: true }).first();
 const SOURCES = '/v1/admin/content/sources';
-const OWNER = { id: 'o1', kind: 'owner', name: 'owner', version: '', url: null, license: '', attribution: '', display_priority: 0 };
-const SRC = { id: 's1', kind: 'third_party', name: 'CEFR-J Vocabulary Profile', version: '1.5', url: null, license: 'CC BY 4.0', attribution: '', display_priority: 10 };
+const OWNER = { id: 'o1', kind: 'owner', name: 'owner', version: '', url: null, license: '', attribution: '', display_priority: 0, shown_to_learners: false };
+const SRC = { id: 's1', kind: 'third_party', name: 'CEFR-J Vocabulary Profile', version: '1.5', url: null, license: 'CC BY 4.0', attribution: '', display_priority: 10, shown_to_learners: true };
 
 test('edit: the dialog has no serious axe violations, sends only what changed, and the list shows the new name; the owner row has no buttons', async ({ page }) => {
   let items = [OWNER, SRC];
@@ -24,6 +24,7 @@ test('edit: the dialog has no serious axe violations, sends only what changed, a
   });
   await page.goto('/sources');
   await expect(shown(page, SRC.name)).toBeVisible();
+  await expect(shown(page, t.list.shownYes)).toBeVisible();
   await expect(page.getByRole('button', { name: t.editFor.replace('{name}', OWNER.name) })).toHaveCount(0);
   await expect(page.getByRole('button', { name: t.deleteFor.replace('{name}', OWNER.name) })).toHaveCount(0);
   expect(await seriousViolations(page)).toEqual([]);

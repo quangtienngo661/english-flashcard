@@ -1921,8 +1921,12 @@
       "version": "Version",
       "license": "License",
       "priority": "Priority",
+      "shown": "Shown to learners",
+      "shownYes": "Yes",
+      "shownNo": "No",
       "actions": "Actions"
     },
+    "shownNote": "A source appears on the Data sources page when at least one of its senses is published.",
     "edit": "Edit",
     "editFor": "Edit source {name}",
     "editTitle": "Edit source “{name}”",

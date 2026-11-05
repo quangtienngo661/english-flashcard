@@ -15,7 +15,7 @@ import { Dialog } from '../../ui/Dialog';
 import { TextField } from '../../ui/TextField';
 import { showToast } from '../../ui/Toast';
 import { useCountdown } from '../account/useCountdown';
-import { createSource, deleteSource, listSources, type SourceView } from '../content/content-api';
+import { createSource, deleteSource, listSources, type AdminSourceView, type SourceView } from '../content/content-api';
 import { SourceEditDialog } from './SourceEditDialog';
 
 export function SourcesPage() {
@@ -48,12 +48,13 @@ export function SourcesPage() {
     },
   });
 
-  const columns: Column<SourceView>[] = [
+  const columns: Column<AdminSourceView>[] = [
     // Shares, not fixed widths, so a wide screen spreads the columns out instead of piling them on the right (owner, Checkpoint A).
-    { key: 'name', header: t('sources.list.name'), className: 'w-1/3', cell: (s) => s.name },
-    { key: 'version', header: t('sources.list.version'), className: 'w-1/6', cell: (s) => s.version || '—' },
+    { key: 'name', header: t('sources.list.name'), className: 'w-1/4', cell: (s) => s.name },
+    { key: 'version', header: t('sources.list.version'), className: 'w-1/12', cell: (s) => s.version || '—' },
     { key: 'license', header: t('sources.list.license'), className: 'w-1/4', cell: (s) => s.license || '—' },
     { key: 'priority', header: t('sources.list.priority'), className: 'w-1/12 tabular-nums', cell: (s) => s.display_priority },
+    { key: 'shown', header: t('sources.list.shown'), className: 'w-1/6', cell: (s) => (s.shown_to_learners ? t('sources.list.shownYes') : t('sources.list.shownNo')) },
     {
       key: 'actions',
       header: t('sources.list.actions'),
@@ -81,6 +82,7 @@ export function SourcesPage() {
         <Button onPress={() => void navigate('/sources/new')}>{t('sources.register')}</Button>
       </PageActions>
       {problem && <Banner variant="error" code={problem.code}>{problem.message}</Banner>}
+      <p className="text-sm text-muted">{t('sources.shownNote')}</p>
       <DataList
         rows={rows}
         rowKey={(s) => s.id}

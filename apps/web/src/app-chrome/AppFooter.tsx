@@ -50,6 +50,9 @@ export function AppFooter() {
               <a href={`/${locale}/privacy`} className={LINK}>
                 {t('privacy')}
               </a>
+              <a href={`/${locale}/sources`} className={LINK}>
+                {t('sources')}
+              </a>
             </Column>
           </div>
         </div>

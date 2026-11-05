@@ -1,7 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { PRISMA_CLIENT } from '../../common/db/prisma.module.js';
 import { ProblemDetailsException } from '../../common/problem-details/problem-details.exception.js';
-import type { Prisma, PrismaClient } from '../../generated/prisma/client.js';
+import { Prisma, type PrismaClient } from '../../generated/prisma/client.js';
 import { AGID_SOURCE_ID } from '../content.constants.js';
 import type { CreateSourceBody, UpdateSourceBody } from './sources.schemas.js';
 
@@ -30,6 +30,42 @@ function toView(row: SourceRow): SourceView {
     url: row.url, license: row.license, attribution: row.attribution, display_priority: row.displayPriority,
     protected: row.kind === 'owner' || row.id === AGID_SOURCE_ID,
   };
+}
+
+/** A row of the admin list: the source plus whether learners see it on the public sources page. */
+export type AdminSourceView = SourceView & { shown_to_learners: boolean };
+
+type RawSourceRow = {
+  id: string; kind: string; name: string; version: string; url: string | null; license: string; attribution: string;
+  display_priority: number; shown_to_learners: boolean;
+};
+
+const rawColumns = Prisma.sql`ds.id, ds.kind, ds.name, ds.version, ds.url, ds.license, ds.attribution, ds.display_priority`;
+
+function rawToView(row: RawSourceRow): SourceView {
+  return toView({
+    id: row.id, kind: row.kind, name: row.name, version: row.version, url: row.url, license: row.license,
+    attribution: row.attribution, displayPriority: row.display_priority,
+  });
+}
+
+/** "A learner can see an entry": a catalog entry with an open sense that has a live revision (the rule of `visible-senses.ts`). */
+const catalogEntryWithVisibleSense = Prisma.sql`e.scope = 'catalog' AND EXISTS (
+  SELECT 1 FROM senses s WHERE s.entry_id = e.id AND s.state = 'open' AND s.live_revision_id IS NOT NULL)`;
+
+/**
+ * The one definition of "this source is shown on the public sources page" (owner, 05/11/2026): a third-party source that is
+ * in use for content learners can see. A normal source is in use through a level it gave to such an entry. AGID gives no
+ * level: its licence notice is owed because the entry has library inflections, which come from it. Both the public list
+ * and the admin flag use this fragment, so they cannot disagree. Uses the alias `ds` for `data_sources`.
+ */
+function sourceShownCondition(): Prisma.Sql {
+  return Prisma.sql`ds.kind = 'third_party' AND (
+    EXISTS (SELECT 1 FROM entry_levels el JOIN entries e ON e.id = el.entry_id
+            WHERE el.source_id = ds.id AND ${catalogEntryWithVisibleSense})
+    OR (ds.id = ${AGID_SOURCE_ID}::uuid AND EXISTS (
+          SELECT 1 FROM entry_inflections ei JOIN entries e ON e.id = ei.entry_id
+          WHERE ei.source = 'library' AND ${catalogEntryWithVisibleSense})))`;
 }
 
 /** What the public licence page shows (design §9, CR18): no internal ids, kinds or priorities. */
@@ -71,11 +107,23 @@ export class SourcesService {
     return row ? toView(row) : null;
   }
 
-  async list(): Promise<{ items: SourceView[] }> {
-    const rows = await this.prisma.dataSource.findMany({
-      orderBy: [{ displayPriority: 'asc' }, { id: 'asc' }], select: sourceSelect,
-    });
-    return { items: rows.map(toView) };
+  /** Every source for the admin screen, each with whether learners see it on the public sources page. */
+  async list(): Promise<{ items: AdminSourceView[] }> {
+    const rows = await this.prisma.$queryRaw<RawSourceRow[]>(Prisma.sql`
+      SELECT ${rawColumns}, ${sourceShownCondition()} AS shown_to_learners
+      FROM data_sources ds
+      ORDER BY ds.display_priority, ds.id`);
+    return { items: rows.map((row) => ({ ...rawToView(row), shown_to_learners: row.shown_to_learners })) };
+  }
+
+  /** What the public sources page lists: only the sources in use for content learners can see. */
+  async listShown(): Promise<SourceView[]> {
+    const rows = await this.prisma.$queryRaw<RawSourceRow[]>(Prisma.sql`
+      SELECT ${rawColumns}
+      FROM data_sources ds
+      WHERE ${sourceShownCondition()}
+      ORDER BY ds.display_priority, ds.id`);
+    return rows.map(rawToView);
   }
 
   async create(body: CreateSourceBody): Promise<SourceView> {

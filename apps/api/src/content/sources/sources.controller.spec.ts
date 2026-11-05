@@ -6,7 +6,7 @@ import { PRISMA_CLIENT, PrismaModule } from '../../common/db/prisma.module.js';
 import { ProblemDetailsException } from '../../common/problem-details/problem-details.exception.js';
 import { RateLimiter } from '../../common/rate-limit/rate-limiter.service.js';
 import { AccessTokenService } from '../../identity/sessions/access-token.service.js';
-import { SourcesService, type SourceView } from './sources.service.js';
+import { SourcesService, type AdminSourceView, type SourceView } from './sources.service.js';
 
 const PROBLEM = 'https://api.example.com/problems/';
 
@@ -14,7 +14,7 @@ describe('admin sources HTTP (unit, mocked service)', () => {
   let ctx: TestApp; let token: string; let actorId: string; let role: 'admin' | 'editor' | null;
   const prisma = { sessionChain: { findUnique: vi.fn() }, $disconnect: async () => {} };
   const hit = vi.spyOn(RateLimiter.prototype, 'hit');
-  let service: Record<'list' | 'create' | 'update' | 'remove', ReturnType<typeof vi.spyOn>>;
+  let service: Record<'list' | 'listShown' | 'create' | 'update' | 'remove', ReturnType<typeof vi.spyOn>>;
   const auth = () => ({ Authorization: `Bearer ${token}` });
   const id = randomUUID();
   const http = () => ctx.http();
@@ -22,6 +22,7 @@ describe('admin sources HTTP (unit, mocked service)', () => {
     id, kind: 'third_party', name: 'CEFR-J', version: '2', url: null, license: 'MIT', attribution: 'by me', display_priority: 7,
     protected: false,
   };
+  const adminView: AdminSourceView = { ...view, shown_to_learners: true };
 
   beforeAll(async () => {
     vi.spyOn(PrismaModule, 'forRoot').mockReturnValue({ module: PrismaModule, global: true,
@@ -29,7 +30,7 @@ describe('admin sources HTTP (unit, mocked service)', () => {
     ctx = await createTestApp({ databaseUrl: 'unused' });
     const sources = ctx.app.get(SourcesService);
     service = {
-      list: vi.spyOn(sources, 'list'), create: vi.spyOn(sources, 'create'),
+      list: vi.spyOn(sources, 'list'), listShown: vi.spyOn(sources, 'listShown'), create: vi.spyOn(sources, 'create'),
       update: vi.spyOn(sources, 'update'), remove: vi.spyOn(sources, 'remove'),
     };
   });
@@ -37,7 +38,7 @@ describe('admin sources HTTP (unit, mocked service)', () => {
     actorId = randomUUID(); role = 'admin';
     token = await ctx.app.get(AccessTokenService).sign({ userId: actorId, sessionChainId: randomUUID() });
     prisma.sessionChain.findUnique.mockReset().mockImplementation(async () => ({ userId: actorId, revokedAt: null, user: { staffRole: role } }));
-    service.list.mockReset().mockResolvedValue({ items: [view] }); service.create.mockReset().mockResolvedValue(view);
+    service.list.mockReset().mockResolvedValue({ items: [adminView] }); service.listShown.mockReset().mockResolvedValue([view]); service.create.mockReset().mockResolvedValue(view);
     service.update.mockReset().mockResolvedValue(view); service.remove.mockReset().mockResolvedValue(undefined);
     hit.mockReset().mockResolvedValue(undefined);
   });
@@ -132,9 +133,17 @@ describe('admin sources HTTP (unit, mocked service)', () => {
     expect((await http().delete(`/v1/admin/content/sources/${id}`).set(auth())).status).toBe(204);
   });
 
+  it('the admin list carries shown_to_learners for each source', async () => {
+    const res = await http().get('/v1/admin/content/sources').set(auth());
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ items: [adminView] });
+  });
+
   it('the public licence page lists what the service returns (edited values), without id, kind or priority, and needs no token', async () => {
     const res = await http().get('/v1/sources');
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ items: [{ name: 'CEFR-J', version: '2', url: null, license: 'MIT', attribution: 'by me' }] });
+    expect(service.listShown).toHaveBeenCalledOnce();
+    expect(service.list).not.toHaveBeenCalled();
   });
 });
