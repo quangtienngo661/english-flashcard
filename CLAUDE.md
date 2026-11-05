@@ -449,7 +449,8 @@ for a concrete example of the loop catching real bugs each round.
   `docs/deliveries/buoc-6.md` + `docs/deliveries/buoc-6-smoke-output.txt` (Bước 6, AI Integration API),
   `docs/deliveries/buoc-7.md` + `docs/deliveries/buoc-7-smoke-output.txt` (Bước 7, Practice AI + Content AI API),
   `docs/deliveries/buoc-0-3-fixes.md` + `docs/deliveries/buoc-0-3-fixes-smoke-output.txt` (Bước 0–3 fixes),
-  `docs/deliveries/deploy-checklist.md` (what to do before launch).
+  `docs/deliveries/deploy-checklist.md` (what to do before launch),
+  `docs/deliveries/nguon-du-lieu.md` (public data sources page `/{vi,en}/sources`, 05/11/2026).
 - Bước 2 test flow (automated gate, `pnpm smoke:buoc-2`, manual steps): `docs/deliveries/buoc-2-test-flow.md`.
 - Spec index and status: `docs/specs/README.md`.
 - Spec/design-doc writing convention (edge cases must be derived per-doc, not just cited): `docs/specs/SPEC_WRITING_CONVENTIONS.md`.
