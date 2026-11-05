@@ -140,7 +140,26 @@ Cần: một tài khoản người học gói Miễn phí có **ngày sinh từ 
 
 ## M4. AdSense vignette
 
-(Thêm khi M4 được merge.)
+### CSP có `nonce` cho `/app`
+
+- [ ] **[local] Chính sách của `/app` đúng bảng §5.4, trên bản build Worker.** Kiểm: ở `apps/web`, `pnpm cf:docker e2e/csp.spec.ts --project=desktop` (Docker chạy; cài, build OpenNext và chạy Chromium trong container Linux, vài phút). Đúng là: 8 test qua; chúng kiểm `/vi/app` và `/vi/app/login` có đúng một chính sách với `'nonce-…'` và `'strict-dynamic'`, mọi script mang đúng nonce (trừ script chống nháy màu có hash và script Turnstile do script có nonce tự thêm), hai lần gọi `/vi/app/groups` ra hai nonce khác nhau, `/vi` không nonce, widget Turnstile thật chạy không vi phạm, vào app từ landing là tải lại cả trang, 0 vi phạm ở `/vi`, `/vi/app`, `/vi/app/login`, `/vi/app/groups`.
+- [ ] **[local] Landing vẫn tĩnh, app dựng theo request.** Kiểm: `pnpm cf:docker --build` rồi `pnpm assert:render-mode` (hoặc cả bộ `pnpm cf:docker --project=desktop`, 194 test, cuối cùng chạy `assert:render-mode`). Đúng là: dòng "Render mode: the landing is static; no page under /app is prerendered".
+- [ ] **[deploy] Trên Cloudflare đã deploy:** `/vi/app` trả đúng một chính sách có nonce, nonce đổi mỗi lần gọi, trang đăng nhập có widget Turnstile chạy. Vì sao: spike chỉ chạy trên workerd cục bộ; issue OpenNext #1302 (mất nonce) có thể chỉ hiện ở đây. Nếu hỏng `/app` mất mọi script: cách lùi ở `deploy-checklist.md`.
+- [ ] **[deploy] CPU Worker một trang `/app` dựng theo request; beacon Cloudflare Web Analytics.** Xem `deploy-checklist.md`, mục "CSP có `nonce` cho `/app`".
+
+### Nạp AdSense và chân trang
+
+- [ ] **[local] Link ra ngoài app ở chân trang tải lại cả trang.** Kiểm: ở `/vi/app`, bấm "Điều khoản sử dụng" ở chân trang; (dev tools, tab Network) trang `/vi/terms` được tải bằng một request document mới, không phải lần chuyển mềm; cùng với "Chính sách bảo mật" và liên kết về landing. "Gói học" ở chân trang vẫn chuyển mềm.
+- [ ] **[local] Nạp script bằng một mã client giả.** Kiểm: `NEXT_PUBLIC_ADSENSE_CLIENT=ca-pub-0000000000000000 pnpm dev:app`, đăng nhập Lan (Miễn phí, từ 16 tuổi, `ads_enabled` bật). Đúng là: ở Hôm nay không có thẻ `<script src="…adsbygoogle.js…">` trong `<head>`; bấm sang Nhóm hoặc Tra từ thì thẻ xuất hiện (yêu cầu tới Google có thể bị chặn hoặc lỗi: im lặng, không báo gì cho Lan); chuyển sang Nhóm rồi Tra từ không thêm thẻ thứ hai; bấm vào một nhóm (trang nhóm), Ôn thẻ hay Luyện tập thì **cả trang tải lại** và không còn thẻ script; hộp thoại giới thiệu Pro không hiện lần nào. Ở chế độ dev CSP không áp, nên chỉ kiểm được việc thêm và gỡ script, không kiểm CSP.
+- [ ] **[local] Lan mua Pro khi script đang ở trang.** Kiểm: như trên, mở Nhóm (script có), mở tab khác mua Pro, quay lại tab Nhóm chờ tải lại dữ liệu (hoặc F5 một tab khác rồi bấm sang tab này). Đúng là: khi gói được đọc lại và `ads.show` thành `false`, trang tải lại và không còn script.
+- [ ] **[local] Admin tắt quảng cáo.** Kiểm: `ads_enabled` tắt ở "Cài đặt hệ thống". Đúng là: ở lần đọc gói tiếp theo của Lan, trang tải lại, không còn script; tắt luôn cả hộp thoại giới thiệu Pro.
+- [ ] **[local] Người dưới 16 tuổi, staff, Pro, người chưa có ngày sinh.** Đúng là: không có script và không có hộp thoại (xem M3).
+
+### Sau khi Google duyệt (việc của chủ dự án)
+
+- [ ] **[deploy] Đặt `NEXT_PUBLIC_ADSENSE_CLIENT` (build mới), `apps/web/public/ads.txt` đúng dòng AdSense đưa, cài đặt AdSense §5.2** (chỉ bật Vignette, tần suất từ 10 phút, bỏ "Allow additional triggers", trang loại trừ `/vi/app/practice`, `/en/app/practice`, `/vi/app/review`, `/en/app/review`). Đúng là: `https://<host>/ads.txt` trả đúng nội dung.
+- [ ] **[deploy] Một tuần `Content-Security-Policy-Report-Only`** song song chính sách đang áp, với đúng chuỗi §5.4 phần có AdSense, đọc Console ở Nhóm và Tra từ; vi phạm nào thì thêm đúng nguồn đó và sửa test.
+- [ ] **[deploy] Bảng §5.7:** A1 (vignette có hiện khi bấm link giữa các trang trong app không), A2, A8 (tắt được video không), và LB3A1, LB3A2. Nếu A1 sai (LB3E10) hoặc Google từ chối (LB3E13): bỏ `NEXT_PUBLIC_ADSENSE_CLIENT`, hộp thoại giới thiệu Pro quay lại, đợt B xong với M1–M3.
 
 ## Chưa kiểm được (và vì sao)
 
@@ -149,12 +168,13 @@ Cần: một tài khoản người học gói Miễn phí có **ngày sinh từ 
 - **Chuyển lần hai vào link đã trả sinh webhook riêng (P8)**: không thử bằng tiền; theo dõi khi xảy ra. **[deploy]**
 - **Phần của Task 9 phụ thuộc đợt A** (lượt AI dùng lúc còn Pro trả trước không trừ vào Free sau khi kỳ hết, LB1A8): chưa làm, chờ `origin/dev` có M3 của đợt A. Chưa kiểm được cho tới lúc đó.
 - **Các màn M2 trên trình duyệt thật và e2e Playwright** (trang Gói, trang về, "Đơn hàng" của admin): mới có test đơn vị với API giả; chưa ai bấm; e2e chạy ở CI.
-- **Hộp thoại giới thiệu Pro và AdSense**: thuộc M3 và M4; AdSense chỉ bật được sau khi Google duyệt. **[deploy]**
+- **AdSense thật** (bảng §5.7 A1, A2, A8; một tuần Report-Only): chỉ sau khi Google duyệt site. **[deploy]**
+- **Cloudflare đã deploy** (nonce có còn khi chạy thật, CPU Worker, beacon): xem nhóm M4. **[deploy]**
 - **Spike CSP `nonce` với Turnstile thật**: chạy lại sau khi mã Turnstile của đợt A vào `dev` (đã vào ngày 04/11/2026, chưa chạy lại); xem `chuan-bi-launch-b-spike-csp.md`.
 - **Smoke 5 và 7** chạy lại ở Task 24, sau khi hợp nhất với đợt A (M1 đổi `resolve()` và snapshot quyền lợi).
 
 ## Liên kết
 
 - PR M1: **chưa mở**, nhánh `feat/launch-b-m1-orders`; chờ M3 của đợt A vào `dev` rồi hợp nhất `origin/dev` và chạy lại test, smoke.
-- PR M2, M3, M4: chưa có.
+- PR M2, M3, M4: chưa có (cũng chờ M3 của đợt A). Nhánh: `feat/launch-b-m1-orders`, `feat/launch-b-m2-purchase`, `feat/launch-b-m3-house-ad`, `feat/launch-b-m4-adsense` (xếp chồng).
 - Đợt A (cùng đợt chuẩn bị launch): [`chuan-bi-launch-a.md`](chuan-bi-launch-a.md), PR [#211](https://github.com/quangtienngo661/english-flashcard/pull/211) (Turnstile) và [#212](https://github.com/quangtienngo661/english-flashcard/pull/212) (tài liệu).

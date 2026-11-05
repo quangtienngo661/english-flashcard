@@ -45,7 +45,7 @@ nối tiếp bên dưới khi làm xong. M1 bắt đầu sau khi M3 của đợt
 
 # Chuẩn bị launch đợt B — as-built M1 (04/11/2026)
 
-M1 (API: đơn hàng và payOS) làm xong trên nhánh `feat/launch-b-m1-orders` (Task 2–14), **chưa mở PR**: nhánh chờ M3 của đợt A vào `dev` (Task 8–10 sửa đúng các file đợt A đang sửa).
+M1 (API: đơn hàng và payOS) làm xong trên nhánh `feat/launch-b-m1-orders` (Task 2–14). Sau khi M3 của đợt A vào `dev` (05/11/2026, PR #215) nhánh hợp nhất `origin/dev`, làm nốt phần Task 9 phụ thuộc đợt A và mở PR #218 (base `dev`).
 Các quyết định lệch plan (`Ruling`) được liệt kê trong báo cáo cuối của session thực thi.
 
 ## Đã có
@@ -87,11 +87,25 @@ Báo cáo đầy đủ: `.superpowers/sdd/2026-11-04-chuan-bi-launch-b/m1-review
 - **Đã kiểm:** API `src/identity` và `src/entitlements` xanh (54 file / 1045 test sau Task 20); web 82 file / 826 test, `eslint` và `tsc` sạch; test của hộp thoại phủ LB2A1, LB2A2, LB2E7–LB2E16 (đỏ trước; phá thử bằng tay khoảng cách tối thiểu làm đỏ hai test).
 - **Chưa kiểm:** chưa bấm trên trình duyệt thật; LB2E13 (chuyển tới `/app/group`, `/app/topic`, … bằng link thật của Next) chỉ có test với `usePathname` giả.
 
+## M4 — as-built (04/11/2026, nhánh `feat/launch-b-m4-adsense`, xếp chồng sau M3, đã hợp nhất `origin/dev`)
+
+- **CSP có `nonce` cho `/app` (Task 22):** `proxy.ts` đặt một chính sách riêng cho từng request của `/vi/app*` và `/en/app*` (`withAppCsp`, `buildAppCsp`: `'nonce-…' 'strict-dynamic'`, hash của script chống nháy màu, không có danh sách host; phần của AdSense chỉ thêm khi `NEXT_PUBLIC_ADSENSE_CLIENT` có giá trị); `next.config.ts` không đặt CSP cho `/app` nữa (chỉ giữ header nosniff, referrer, permissions); layout `/app` gọi `await connection()` nên mọi trang `/app` dựng theo request; landing, `/terms`, `/privacy` vẫn tĩnh và giữ CSP cũ. `pnpm assert:render-mode` thay `assert:static` (CI, `cf-docker.mjs`, README). Design người học §4.1 có ghi chú.
+- **Nạp AdSense (Task 23):** `AdsenseLoader` (trong layout `(member)`) chỉ thêm script Google khi có client lúc build, `ads.show` và trang là Nhóm hoặc Tra từ, với `requestNonPersonalizedAds = 1` đặt trước, `nonce`, `async`, `crossorigin`; script đã nạp mà người học rời hai trang đó hoặc `ads.show` thành `false` thì tải lại cả trang; lỗi tải (trình chặn quảng cáo) im lặng. Link ở chân trang ra landing, `/terms`, `/privacy` là `<a>` thường; hai link ôn thẻ ở thẻ nhóm có `data-google-vignette="false"`.
+- **Đã kiểm:** trên bản build Worker trong container Linux (`pnpm cf:docker`): `e2e/csp.spec.ts` 8/8 (gồm widget Turnstile thật của đợt A dưới chính sách mới, mỗi `/app` đúng một chính sách, nonce khác nhau mỗi lần, landing không nonce, vào app từ landing là tải lại cả trang, 0 vi phạm ở bốn trang), rồi **cả bộ e2e desktop 194/194** và `assert:render-mode` (dựng sẵn chỉ có `/en`, `/vi` và tệp tĩnh); web 82 file / 826 test + test mới của Task 22–23 xanh, `eslint` và `tsc` sạch. Kết quả chạy lại mục Turnstile của spike: `chuan-bi-launch-b-spike-csp.md`.
+- **Chưa kiểm:** Cloudflare đã deploy (issue OpenNext #1302: mất nonce), CPU Worker thật, beacon tự chèn ở edge; loader với script Google thật (chưa có tài khoản AdSense; Task 24 Bước 3 là việc của chủ dự án); bộ e2e đầy đủ chạy lại sau các sửa của Task 23 (CI chạy).
+
+## Tình trạng cuối đợt (Task 24)
+
+- **Mã:** M1–M4 xong trên bốn nhánh xếp chồng `feat/launch-b-m1-orders` → `feat/launch-b-m2-purchase` → `feat/launch-b-m3-house-ad` → `feat/launch-b-m4-adsense`. Sau khi M3 của đợt A vào `dev` (05/11/2026), `origin/dev` được hợp nhất vào M1 (không rebase) rồi M1 → M2 → M3 → M4; PR đã mở: #218 (M1, base `dev`), #219 (M2, base nhánh M1), #220 (M3, base nhánh M2) và #221 (M4, base nhánh M3). **Chưa merge cái nào:** chỉ khi chủ dự án yêu cầu, theo thứ tự M1 → M4, mỗi PR đổi base về `dev` khi PR cha đã merge. Văn bản pháp lý: nhánh local `docs/launch-b-legal-drafts`.
+- **Smoke:** `smoke:buoc-b-payments` 21/21 trên đầu M2, M3 và M4 (20 bước của M1, trong đó LB1A8 mới, cộng bước email biên nhận của Task 15), `smoke:buoc-5` (hai chế độ fetchState), `7` và `8` chạy lại một lần trên đầu M1 sau khi hợp nhất với M3 của đợt A, đều qua; output ở `chuan-bi-launch-b-smoke-output.txt`.
+- **Quyết định tự chốt:** `chuan-bi-launch-b-m1-rulings.md` (M1 và review) và các dòng `Ruling:` của Task 15–23 ở sổ ghi chép của phiên làm (`.superpowers/sdd/…`, không vào git).
+- **Việc của chủ dự án:** Bước 2 (một lần mua thật nhỏ với payOS thật, ghi bảng §3.14 P1–P12 vào đây) và Bước 3 (sau khi Google duyệt: `NEXT_PUBLIC_ADSENSE_CLIENT`, `ads.txt`, cài đặt AdSense §5.2, một tuần `Content-Security-Policy-Report-Only`, bảng §5.7); checklist: `chuan-bi-launch-b-checklist.md`, `deploy-checklist.md`.
+
 ## Chưa làm hoặc chưa kiểm
 
-- **Chưa gọi payOS thật.** Mọi hành vi của payOS thật là `ASSUMPTION` P1–P11 của design §3.14, cộng một mục mới **P12**: adapter coi chỉ HTTP 404 (`NotFoundError` của SDK) là "payOS không có link này"; nếu payOS trả 200 kèm mã lỗi, đơn được coi là lỗi hỏi thăm và để nguyên. Kiểm ở lần mua thật đầu tiên.
+- **Chưa gọi payOS thật.** Mọi hành vi của payOS thật là `ASSUMPTION` P1–P11 của design §3.14, cộng **P12**: adapter coi chỉ HTTP 404 (`NotFoundError` của SDK) là "payOS không có link này"; nếu payOS trả 200 kèm mã lỗi, đơn được coi là lỗi hỏi thăm và để nguyên. Kiểm ở lần mua thật đầu tiên.
 - **P7 vẫn chưa kiểm** (webhook và danh sách giao dịch của payOS cùng `reference` cho một lần chuyển). Sau review, quy tắc "cùng số tiền và cùng thời điểm = cùng lần chuyển" chặn việc mở kỳ thứ hai nếu P7 sai, nhưng chỉ khi hai bên cùng ghi `transactionDateTime` giống nhau (định dạng và múi giờ cũng là ASSUMPTION P9). Kiểm cả hai ở lần mua thật đầu tiên: so `reference` và `transactionDateTime` của webhook với của `getCheckout`.
 - **Task 9, phần phụ thuộc đợt A: xong sau khi `origin/dev` có M3 của đợt A (05/11/2026, PR #215).** `EndedSources` có thêm `prepaidPeriods`; `SourcesRepository.load(…, endedSince)` trả kỳ trả trước đã hết hoặc đã thu hồi từ đầu tháng trong `ended` (`subscriptions`, `grants`, `prepaidPeriods` của `load` giữ nguyên); `aiSourceEnds` có nhánh `kind: 'prepaid_period'` với `endedAt` = `ends_at`, hoặc `revoked_at` khi thu hồi giữa chừng, và kỳ thu hồi trước khi bắt đầu (hoặc đúng lúc bắt đầu) không phải nguồn (LB1A8, test đỏ trước). `aiCycle` và `lastAiSourceEnd` của A không đổi.
-- **Email biên nhận và "sắp hết hạn"** (Task 15) chưa có: `OrderApplier` mở kỳ và ghi dòng `purchase` nhưng chưa ghi `payment_receipt`.
-- Web, admin UI, văn bản pháp lý (M2) và quảng cáo (M3, M4) chưa làm. `plans.pro.prices`, `upcoming_periods`, `pro_until` ở kiểu web để `optional` cho tới khi trang gói đọc chúng.
-- Chưa chạy `pnpm smoke:buoc-5` và `smoke:buoc-7` sau M1 (đổi `resolve()` và snapshot): chạy ở Task 24, sau khi hợp nhất với đợt A.
+- **Trên trình duyệt thật:** các màn M2–M3 (trang Gói, trang về, "Đơn hàng", hộp thoại giới thiệu Pro) mới có test đơn vị với API giả và e2e của CI; chưa ai mở chúng bằng tay. Bộ e2e web desktop trên bản build Worker (`pnpm cf:docker --project=desktop`, container Linux) chạy lại trên đầu M4 sau khi hợp nhất: 196 qua, `assert:render-mode` đạt. CI của #219 bắt một lỗi e2e admin (`shell.spec.ts` còn đếm 26 mục menu, nay là 27 vì "Đơn hàng"); đã sửa ở M2 và hợp nhất lên M3 và M4.
+- **Smoke 5, 7, 8** chỉ chạy lại một lần, trên đầu M1 sau khi hợp nhất `origin/dev` có M3 của đợt A (05/11/2026, cả bốn đều qua; `chuan-bi-launch-b-smoke-output.txt`); không chạy lại trên M2–M4, nơi chỉ `smoke:buoc-b-payments` (21/21) được chạy lại.
+- **Cloudflare đã deploy:** #1302, CPU Worker, beacon tự chèn; AdSense thật (bảng §5.7 A1, A2, A8).
