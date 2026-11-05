@@ -60,7 +60,10 @@ Lần chạy thật bắt được một lỗi bố cục mà test không bắt:
 - `apps/api`: `pnpm exec tsc --noEmit` sạch; `pnpm lint` chỉ còn hai warning có sẵn (`mail-dispatcher.service.ts`, `account-deletion.service.ts`), không thuộc thay đổi này; `pnpm test`: 331 file, 4673 test pass.
 - `apps/admin`: `pnpm lint`, `pnpm typecheck` sạch; `pnpm test`: 1389 pass, 2 fail (`ReportsPage.test.tsx`, `AiConfigsPage.test.tsx`) lúc máy đang bận build Docker; chạy riêng hai file đó: 61/61 pass (lỗi do tải, không liên quan thay đổi).
 - `apps/web`: `pnpm lint`, `pnpm typecheck` sạch; `pnpm test`: 90 file, 905 test pass (trước sửa bố cục); sau sửa chạy lại `src/components/sections` và `src/lib/sources.test.ts`: 23 pass. E2E trong container `pnpm cf:docker`: 365 pass, 33 skipped, 0 fail (có a11y `/vi/sources` sáng/tối, footer → trang nguồn vi/en không API, `/en/sources` trả 200 không redirect).
-- Chưa chạy: e2e admin (`pnpm test:e2e`, mock API) và `admin-e2e-real`; chỉ đổi mock và thêm một assertion ở `e2e/sources.spec.ts`, để CI chạy.
+- CI lần đầu trên PR #224 đỏ hai chỗ, đều do thay đổi này, đã sửa (commit `fix(admin)` và `test(web)`):
+  - admin `ui-guidelines.spec.ts` "Checkpoint A: Sources columns": test giữ tỉ lệ cột (1/3, 1/6, 1/4, 1/12, 1/6); thêm cột "Hiện cho người học" làm cột Hành động bị bóp. Đổi tỉ lệ thành 1/4, 1/12, 1/4, 1/12, 1/6 và cột Hành động giữ phần còn lại (1/6); test cập nhật theo.
+  - web `privacy.spec.ts`: `getByRole('alert')` đếm 1, vì route announcer của Next có `role="alert"` (đã đọc `next/dist/client/route-announcer.js`). Bỏ assertion này; test component đã khẳng định trang không render alert.
+  - Lỗi admin chỉ lộ ở CI vì chạy local `playwright test` dùng lại server trên cổng 5173 (container admin của stack khác, bản build cũ): phải đặt `ADMIN_E2E_PORT` sang cổng trống rồi mới chạy e2e admin local. Sau sửa, chạy local `ui-guidelines`, `sources`, `a11y`, `uploads`: 65 pass, 29 skipped.
 
 ## Không làm (theo plan)
 
