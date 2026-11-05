@@ -5,7 +5,7 @@ import { copy } from './copy';
 // The English landing is out of scope for now (design landing-redesign L4): /en redirects to /vi. The deep scan (every tab and every
 // exercise state) is LR27 in landing.spec.ts; this one covers the home as it loads and the legal drafts, in both themes.
 for (const scheme of ['light', 'dark'] as const) {
-  for (const path of ['/vi', '/vi/privacy', '/vi/terms']) {
+  for (const path of ['/vi', '/vi/privacy', '/vi/terms', '/vi/sources']) {
     test(`LP25 axe has no serious or critical violations on ${path} in ${scheme}`, async ({ page }) => {
       await page.emulateMedia({ colorScheme: scheme });
       await page.goto(path);

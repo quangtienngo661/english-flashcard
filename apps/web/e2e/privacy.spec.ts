@@ -24,3 +24,20 @@ test('privacy page follows the site robots setting and names the contact address
   await page.goto('/vi/privacy');
   await expect(page.getByRole('main')).toContainText('hello@wordmet.com');
 });
+
+// Owner 05/11/2026: the licences of CEFR-J, Octanove and AGID ask for credit where learners can see it, so the footer links to the
+// public data sources page. The e2e build has no API behind it, so the page shows its "nothing to show" sentence and no error.
+test('the footer links to the data sources page, which opens in Vietnamese and in English without an API', async ({ page }) => {
+  await page.goto('/vi');
+  const footer = page.getByRole('contentinfo');
+  await expect(footer.getByRole('link', { name: 'Nguồn dữ liệu' })).toHaveAttribute('href', '/vi/sources');
+  await footer.getByRole('link', { name: 'Nguồn dữ liệu' }).click();
+  await expect(page).toHaveURL(/\/vi\/sources$/);
+  await expect(page.getByRole('heading', { level: 1, name: 'Nguồn dữ liệu' })).toBeVisible();
+  await expect(page.getByRole('main')).toContainText('Hiện chưa có nguồn dữ liệu nào để hiển thị.');
+  await expect(page.getByRole('alert')).toHaveCount(0);
+
+  await page.goto('/en/sources');
+  await expect(page.getByRole('heading', { level: 1, name: 'Data sources' })).toBeVisible();
+  await expect(page.getByRole('main')).toContainText('There are no data sources to show yet.');
+});

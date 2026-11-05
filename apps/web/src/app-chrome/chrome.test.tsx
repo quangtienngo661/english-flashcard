@@ -76,7 +76,7 @@ describe('app chrome', () => {
   it('LB3E5: the footer links that leave the app (the landing, the Terms, the Privacy Policy) are plain anchors, so leaving the app is a full page load; Gói học stays a router link', () => {
     renderApp(<AppFooter />);
     const byHref = (href: string) => screen.getAllByRole('link').filter((link) => link.getAttribute('href') === href);
-    for (const href of ['/vi', '/vi/terms', '/vi/privacy']) {
+    for (const href of ['/vi', '/vi/terms', '/vi/privacy', '/vi/sources']) {
       expect(byHref(href), href).toHaveLength(1);
       expect(byHref(href)[0], href).not.toHaveAttribute('data-router-link');
     }
@@ -94,6 +94,7 @@ describe('app chrome', () => {
     }
     expect(screen.getByRole('link', { name: 'Điều khoản sử dụng' })).toHaveAttribute('href', '/vi/terms');
     expect(screen.getByRole('link', { name: 'Chính sách bảo mật' })).toHaveAttribute('href', '/vi/privacy');
+    expect(screen.getByRole('link', { name: 'Nguồn dữ liệu' })).toHaveAttribute('href', '/vi/sources');
     expect(screen.queryByText('English')).not.toBeInTheDocument();
   });
 

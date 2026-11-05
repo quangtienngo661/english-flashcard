@@ -59,7 +59,7 @@ test.describe('locale at the root', () => {
   });
 
   test('D2 the English legal pages are not redirected', async ({ request }) => {
-    for (const path of ['/en/privacy', '/en/terms']) {
+    for (const path of ['/en/privacy', '/en/terms', '/en/sources']) {
       const res = await request.get(path, { maxRedirects: 0 });
       expect(res.status(), path).toBe(200);
     }

@@ -257,6 +257,7 @@
   "Footer": {
     "privacy": "Chính sách bảo mật",
     "terms": "Điều khoản sử dụng",
+    "sources": "Nguồn dữ liệu",
     "contact": "Liên hệ",
     "copyright": "© {year} Wordmet"
   },
@@ -266,6 +267,14 @@
     "draftNotice": "Đây là bản nháp. Nội dung chính thức sẽ được cập nhật trước khi Wordmet chính thức ra mắt.",
     "effective": "Có hiệu lực từ {date}",
     "contents": "Mục lục"
+  },
+  "Sources": {
+    "title": "Nguồn dữ liệu",
+    "intro": "Wordmet dùng các bộ dữ liệu có giấy phép mở sau đây. Cảm ơn những người đã làm ra và chia sẻ chúng.",
+    "empty": "Hiện chưa có nguồn dữ liệu nào để hiển thị.",
+    "license": "Giấy phép",
+    "version": "Phiên bản",
+    "link": "Trang gốc"
   },
   "NotFound": {
     "title": "Không tìm thấy trang",
@@ -327,6 +336,7 @@
         "colLegal": "Pháp lý",
         "terms": "Điều khoản sử dụng",
         "privacy": "Chính sách bảo mật",
+        "sources": "Nguồn dữ liệu",
         "copyright": "© {year} Wordmet"
       },
       "search": {
