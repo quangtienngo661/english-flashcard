@@ -3,7 +3,8 @@ import { SETTINGS_DEFAULTS } from '../../settings/index.js';
 import { aiCycle, aiWindow, calendarMonthCycle } from './ai-cycle.js';
 import { cycleAt } from './cycle.js';
 import { planNumbers } from '../plan-numbers.js';
-import { resolve, type GrantSource, type Resolved, type SubscriptionSource } from './plan-rules.js';
+import { resolve, type GrantSource, type PrepaidSource, type Resolved, type SubscriptionSource } from './plan-rules.js';
+import type { EndedSources } from './source-ends.js';
 
 const at = (iso: string) => new Date(iso);
 const VN = 'Asia/Ho_Chi_Minh';
@@ -105,11 +106,19 @@ describe('aiWindow (design 6.3.4): the sources, the zone and the clock in, the w
     id: 'g-1', kind: 'plan', limits: null, startsAt: at('2026-11-01T00:00:00Z'), endsAt: at('2026-11-10T00:00:00Z'), revokedAt: null,
     createdAt: at('2026-11-01T00:00:00Z'), ...over,
   });
-  const window = (input: { subscriptions?: SubscriptionSource[]; grants?: GrantSource[]; ended?: { subscriptions: SubscriptionSource[]; grants: GrantSource[] } }) => {
+  const period = (over: Partial<PrepaidSource> = {}): PrepaidSource => ({
+    id: 'p-1', startsAt: at('2026-10-20T03:00:00Z'), endsAt: at('2026-11-20T03:00:00Z'), revokedAt: null, ...over,
+  });
+  const window = (input: {
+    subscriptions?: SubscriptionSource[]; grants?: GrantSource[]; prepaidPeriods?: PrepaidSource[]; ended?: Partial<EndedSources>;
+  }) => {
     const subscriptions = input.subscriptions ?? [];
     const grants = input.grants ?? [];
-    const resolved = resolve({ subscriptions, grants, numbers, graceDays: 7, now });
-    return aiWindow({ resolved, subscriptions, grants, ended: input.ended ?? { subscriptions: [], grants: [] }, graceDays: 7, zone: VN, now });
+    const prepaidPeriods = input.prepaidPeriods ?? [];
+    const resolved = resolve({ subscriptions, grants, prepaidPeriods, numbers, graceDays: 7, now });
+    return aiWindow({
+      resolved, subscriptions, grants, ended: { subscriptions: [], grants: [], prepaidPeriods: [], ...input.ended }, graceDays: 7, zone: VN, now,
+    });
   };
 
   it('LA3#6: a cancelled Pro that ended 20/11 10:00 (Vietnam) while its row still says active → the window starts at that moment', () => {
@@ -134,6 +143,15 @@ describe('aiWindow (design 6.3.4): the sources, the zone and the clock in, the w
   it('a live Pro keeps the cycle from its anchor, whatever ended before', () => {
     const live = sub({ cancelAtPeriodEnd: false, currentPeriodEnd: at('2026-12-20T03:00:00Z') });
     expect(window({ subscriptions: [live], ended: { subscriptions: [], grants: [grant()] } })).toEqual(cycleAt(at('2026-10-20T03:00:00Z'), now));
+  });
+
+  it('LB1A8: the last prepaid period ran out on 20/11 10:00 (Vietnam) → the Free window starts at that moment, so the uses made while Pro are not charged to it', () => {
+    expect(window({ ended: { prepaidPeriods: [period()] } })).toEqual({ start: at('2026-11-20T03:00:00Z'), end: at('2026-11-30T17:00:00Z') });
+  });
+
+  it('a prepaid period that is running (the loader keeps it in `prepaidPeriods`) keeps the cycle from its start', () => {
+    const running = period({ endsAt: at('2026-12-20T03:00:00Z') });
+    expect(window({ prepaidPeriods: [running] })).toEqual(cycleAt(at('2026-10-20T03:00:00Z'), now));
   });
 
   it('no source at all → the whole calendar month', () => {

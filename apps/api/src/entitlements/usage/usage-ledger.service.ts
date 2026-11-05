@@ -190,8 +190,8 @@ export class UsageLedgerService {
     tx: Tx, userId: string, settings: AppSettings['entitlements'], now: Date,
   ): Promise<{ resolved: Resolved; cycle: { start: Date; end: Date } | null }> {
     const zone = (await this.identity.getProfile(userId, tx))?.timezone ?? NO_PROFILE_ZONE;
-    const { subscriptions, grants, ended } = await this.sources.load(tx, userId, now, endedSinceOf(zone, now));
-    const resolved = resolve({ subscriptions, grants, numbers: planNumbers(settings), graceDays: settings.graceDays, now });
+    const { subscriptions, grants, prepaidPeriods, ended } = await this.sources.load(tx, userId, now, endedSinceOf(zone, now));
+    const resolved = resolve({ subscriptions, grants, prepaidPeriods, numbers: planNumbers(settings), graceDays: settings.graceDays, now });
     return { resolved, cycle: aiWindow({ resolved, subscriptions, grants, ended, graceDays: settings.graceDays, zone, now }) };
   }
 

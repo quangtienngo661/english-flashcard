@@ -24,14 +24,14 @@ export type SettingsView = {
   bounds: Record<Section, Record<string, Bound>>;
 };
 
-export type Unit = 'days' | 'hours' | 'minutes' | 'months' | 'years' | 'percent' | 'chars' | 'seconds' | 'sessions' | 'uses' | 'times';
+export type Unit = 'days' | 'hours' | 'minutes' | 'months' | 'years' | 'percent' | 'chars' | 'seconds' | 'sessions' | 'uses' | 'times' | 'vnd';
 /**
  * `ratio`: a number between 0 and 1 with up to two decimals, shown as a percent in its hint. `usd`: dollars with up to two decimals; an empty
  * field is `null` where the bound is nullable.
  */
 export type FieldSpec = { key: string; kind: 'bool' | 'int' | 'time' | 'ratio' | 'usd'; unit?: Unit };
 
-/** The 52 keys per tab, in the order of the copy doc §8.2 (the three Free AI keys of launch prep A included). */
+/** The 55 keys per tab, in the order of the copy doc §8.2 (the three Free AI keys of launch prep A and the three Pro prices of launch prep B included). */
 export const SETTINGS_LAYOUT: Record<Section, FieldSpec[]> = {
   reminders: [
     { key: 'enabled', kind: 'bool' },
@@ -79,6 +79,9 @@ export const SETTINGS_LAYOUT: Record<Section, FieldSpec[]> = {
     { key: 'ads_interstitial_per_day', kind: 'int', unit: 'times' },
     { key: 'ads_min_interval_minutes', kind: 'int', unit: 'minutes' },
     { key: 'transaction_retention_years', kind: 'int', unit: 'years' },
+    { key: 'pro_price_1m_vnd', kind: 'int', unit: 'vnd' },
+    { key: 'pro_price_3m_vnd', kind: 'int', unit: 'vnd' },
+    { key: 'pro_price_12m_vnd', kind: 'int', unit: 'vnd' },
   ],
   content: [
     { key: 'private_words_per_user', kind: 'int' },

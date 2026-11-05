@@ -127,11 +127,23 @@ export class BillingJobs implements OnModuleInit {
     }
   }
 
-  /** R23: the raw provider body may hold the buyer's email; it is kept 90 days for debugging only. */
+  /**
+   * R23: the raw provider body may hold the buyer's email; it is kept 90 days for debugging only. A one-time payment event also
+   * loses the payer from its normalised payload by then (it stays only while an event is stuck unapplied, LB1E48), and an order
+   * loses the payer fields kept for a refund 90 days after they were saved (LB1E38; design §3.12). Returns the raw payloads cleared.
+   */
   async cleanupRawPayloads(now: Date): Promise<number> {
     const cutoff = new Date(now.getTime() - RAW_PAYLOAD_RETENTION_DAYS * DAY_MS);
-    return this.prisma.$executeRaw`
+    const cleared = await this.prisma.$executeRaw`
       UPDATE billing_events SET raw_payload = NULL WHERE raw_payload IS NOT NULL AND received_at < ${cutoff}`;
+    await this.prisma.$executeRaw`
+      UPDATE billing_events SET payload = payload - 'payer'
+      WHERE type = 'payment_succeeded' AND payload IS NOT NULL AND jsonb_exists(payload, 'payer') AND received_at < ${cutoff}`;
+    await this.prisma.$executeRaw`
+      UPDATE billing_orders SET refund_payer_name = NULL, refund_payer_account = NULL, refund_payer_bank = NULL
+      WHERE refund_saved_at < ${cutoff}
+        AND (refund_payer_name IS NOT NULL OR refund_payer_account IS NOT NULL OR refund_payer_bank IS NOT NULL)`;
+    return cleared;
   }
 
   private async fetchIfOverdue(row: SubscriptionRow, now: Date, graceDays: number): Promise<FetchedState | null> {

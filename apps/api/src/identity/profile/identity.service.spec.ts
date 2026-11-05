@@ -62,6 +62,19 @@ describe('IdentityService (unit, isolated persistence)', () => {
     });
     expect(prisma.user.findUnique.mock.calls[0][0].where).toEqual({ id: row.id });
   });
+  it('accountStatus reads through the transaction it is given, and returns null for an id nobody has', async () => {
+    const tx = { user: { findUnique: vi.fn().mockResolvedValueOnce({ status: 'deleting' }).mockResolvedValueOnce(null) } };
+    expect(await identity.accountStatus('user', tx as never)).toBe('deleting');
+    expect(await identity.accountStatus('gone', tx as never)).toBeNull();
+    expect(tx.user.findUnique).toHaveBeenCalledWith({ where: { id: 'user' }, select: { status: true } });
+    expect(prisma.user.findUnique).not.toHaveBeenCalled();
+  });
+
+  it('accountStatus without a transaction uses the shared client', async () => {
+    prisma.user.findUnique.mockResolvedValueOnce({ status: 'active' });
+    expect(await identity.accountStatus('user')).toBe('active');
+  });
+
   it('getProfile with a transaction reads through it, not the shared client (no second connection under the caller lock)', async () => {
     const tx = { user: { findUnique: vi.fn().mockResolvedValue({ ...row, staffRole: 'editor' }) } };
     expect(await identity.getProfile(row.id, tx as never)).toMatchObject({ id: row.id, staff_role: 'editor' });

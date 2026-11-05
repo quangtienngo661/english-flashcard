@@ -14,9 +14,11 @@ import type { AiPool, LimitKey, Pool, SubscriptionStatus } from './entitlements.
 import type { Refusal } from './refusal.js';
 import { aiCycle, aiWindow, endedSinceOf } from './rules/ai-cycle.js';
 import { aiDay } from './rules/cycle.js';
+import { continuousProUntil } from './orders/period-window.js';
 import { planNumbers } from './plan-numbers.js';
 import { effectiveStatus, resolve, type Resolved } from './rules/plan-rules.js';
 import { proUsageSpread } from './rules/pro-usage.js';
+import { proSpans } from './rules/pro-spans.js';
 import { SourcesRepository } from './sources/sources.repository.js';
 import { UsageLedgerService, type ReserveResult } from './usage/usage-ledger.service.js';
 import { UsageQueries } from './usage/usage.queries.js';
@@ -31,7 +33,7 @@ type Decision = { allowed: true } | ({ allowed: false } & Refusal);
 export type EntitlementsSnapshot = {
   plan: 'free' | 'trial' | 'pro';
   sources: Array<{
-    kind: 'subscription' | 'grant_plan' | 'grant_limits'; id: string; status: SubscriptionStatus | null;
+    kind: 'subscription' | 'grant_plan' | 'grant_limits' | 'prepaid'; id: string; status: SubscriptionStatus | null;
     /** Design §8.7 (GG3): a grant's start, a subscription's current period start. */
     starts_at: string | null; ends_at: string | null;
     renews_at: string | null; cancel_at_period_end: boolean | null; pending_interval: 'month' | 'year' | null;
@@ -42,6 +44,10 @@ export type EntitlementsSnapshot = {
   ai_available: { enabled: boolean; cap_reached: boolean };
   ads: { show: boolean; interstitial_per_day: number; min_interval_minutes: number };
   trial_eligible: boolean;
+  /** Prepaid periods that have not started (launch prep B DB42): not sources yet, but the learner has paid for them. */
+  upcoming_periods: Array<{ id: string; starts_at: string; ends_at: string }>;
+  /** Where the unbroken Pro that covers now ends (design §3.7); null when the learner is not Pro through a grant or a prepaid period. */
+  pro_until: string | null;
 };
 
 /** A user with no profile counts days in UTC (design §12.1). */
@@ -127,9 +133,9 @@ export class EntitlementsService {
     if (!profile) return null;
     const { entitlements } = await this.settings.get();
     const now = this.clock.now();
-    const { subscriptions, grants, ended } = await this.sources.load(this.prisma, userId, now, endedSinceOf(profile.timezone, now));
+    const { subscriptions, grants, prepaidPeriods, ended } = await this.sources.load(this.prisma, userId, now, endedSinceOf(profile.timezone, now));
     const resolved = resolve({
-      subscriptions, grants, numbers: planNumbers(entitlements), graceDays: entitlements.graceDays, now,
+      subscriptions, grants, prepaidPeriods, numbers: planNumbers(entitlements), graceDays: entitlements.graceDays, now,
     });
 
     const cycle = aiWindow({ resolved, subscriptions, grants, ended, graceDays: entitlements.graceDays, zone: profile.timezone, now });
@@ -171,6 +177,15 @@ export class EntitlementsService {
       });
     }
 
+    for (const period of prepaidPeriods) {
+      if (period.startsAt > now) continue;
+      sourceViews.push({
+        kind: 'prepaid', id: period.id, status: null, starts_at: period.startsAt.toISOString(), ends_at: period.endsAt.toISOString(),
+        renews_at: null, cancel_at_period_end: null, pending_interval: null, limits: null,
+      });
+    }
+    const proUntil = continuousProUntil(proSpans(grants, prepaidPeriods), now);
+
     return {
       plan: resolved.plan,
       sources: sourceViews,
@@ -187,6 +202,9 @@ export class EntitlementsService {
       // No new trial (launch prep A, design 6.9): the only provider that starts one is the fake one. The trial code and
       // `sources.trialUsed` stay for a self-renewing provider; the field stays so clients keep reading it.
       trial_eligible: false,
+      upcoming_periods: prepaidPeriods.filter((period) => period.startsAt > now)
+        .map((period) => ({ id: period.id, starts_at: period.startsAt.toISOString(), ends_at: period.endsAt.toISOString() })),
+      pro_until: proUntil?.toISOString() ?? null,
     };
   }
 
@@ -245,8 +263,8 @@ export class EntitlementsService {
 
     const pro: Array<{ userId: string; limits: Record<AiPool, number>; cycle: { start: Date; end: Date } | null }> = [];
     for (const userId of ids) {
-      const { subscriptions, grants } = sources.get(userId) ?? { subscriptions: [], grants: [] };
-      const resolved = resolve({ subscriptions, grants, numbers, graceDays: entitlements.graceDays, now });
+      const { subscriptions, grants, prepaidPeriods } = sources.get(userId) ?? { subscriptions: [], grants: [], prepaidPeriods: [] };
+      const resolved = resolve({ subscriptions, grants, prepaidPeriods, numbers, graceDays: entitlements.graceDays, now });
       if (resolved.plan !== 'pro') continue;
       pro.push({
         userId, limits: { ai_practice: resolved.limits.ai_practice, ai_lookup: resolved.limits.ai_lookup },
@@ -271,7 +289,7 @@ export class EntitlementsService {
   }
 
   private async resolve(db: Db, userId: string, settings: AppSettings['entitlements'], now: Date): Promise<Resolved> {
-    const { subscriptions, grants } = await this.sources.load(db, userId, now);
-    return resolve({ subscriptions, grants, numbers: planNumbers(settings), graceDays: settings.graceDays, now });
+    const { subscriptions, grants, prepaidPeriods } = await this.sources.load(db, userId, now);
+    return resolve({ subscriptions, grants, prepaidPeriods, numbers: planNumbers(settings), graceDays: settings.graceDays, now });
   }
 }

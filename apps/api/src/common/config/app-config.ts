@@ -105,6 +105,16 @@ export interface AppConfig {
     /** The fake provider (models `fake:*`) never runs in production (B6E45). */
     fakeEnabled: boolean;
   };
+  /**
+   * payOS, the one-time VietQR payment (launch prep B, design §3.3). `fake` wins over `real`; the fake never runs in production (LB1E41)
+   * and signs its webhooks with `billing.fakeSecret`. The three keys are secrets: never logged.
+   */
+  payos: {
+    mode: 'real' | 'fake' | 'off';
+    clientId: string | null;
+    apiKey: string | null;
+    checksumKey: string | null;
+  };
   /** Google sign-in (Bước 8, design §5.2). `fake` wins over `real`; the fake never runs in production (B8E38). */
   google: {
     mode: 'off' | 'real' | 'fake';
@@ -261,6 +271,10 @@ const envSchema = z.object({
     .refine((value) => value === null || (URL.canParse(value) && ['http:', 'https:'].includes(new URL(value).protocol))),
   OAUTH_COOKIE_KEY: secretSchema(32).optional(),
   GOOGLE_FAKE_ENABLED: booleanString.default(false),
+  PAYOS_CLIENT_ID: z.string().optional().transform((value) => value?.trim() || null),
+  PAYOS_API_KEY: z.string().optional().transform((value) => value?.trim() || null),
+  PAYOS_CHECKSUM_KEY: z.string().optional().transform((value) => value?.trim() || null),
+  PAYOS_FAKE_ENABLED: booleanString.default(false),
   // No default: a production that forgets the variable must not start without a bot check (design 4.2).
   TURNSTILE_MODE: z.enum(['real', 'fake', 'off']),
   // Not `secretSchema`: a Turnstile secret is not base64url.
@@ -289,6 +303,21 @@ const envSchema = z.object({
     const message = 'The fake Google page is not allowed in production';
     ctx.addIssue({ code: 'custom', path: ['BILLING_PRODUCTION'], message });
     ctx.addIssue({ code: 'custom', path: ['GOOGLE_FAKE_ENABLED'], message });
+  }
+  if (values.BILLING_PRODUCTION && values.PAYOS_FAKE_ENABLED) {
+    const message = 'The fake payOS is not allowed in production';
+    ctx.addIssue({ code: 'custom', path: ['BILLING_PRODUCTION'], message });
+    ctx.addIssue({ code: 'custom', path: ['PAYOS_FAKE_ENABLED'], message });
+  }
+  // The real payOS needs all three keys together; the fake wins, so stray real values beside it are not checked (LB1E42).
+  const payosKeys = ['PAYOS_CLIENT_ID', 'PAYOS_API_KEY', 'PAYOS_CHECKSUM_KEY'] as const;
+  if (!values.PAYOS_FAKE_ENABLED && payosKeys.some((name) => values[name] !== null)) {
+    for (const name of payosKeys) {
+      if (values[name] === null) ctx.addIssue({ code: 'custom', path: [name], message: 'Required when any PAYOS_* key is set' });
+    }
+  }
+  if (values.PAYOS_FAKE_ENABLED && values.BILLING_FAKE_SECRET === undefined) {
+    ctx.addIssue({ code: 'custom', path: ['BILLING_FAKE_SECRET'], message: 'Required when PAYOS_FAKE_ENABLED=true' });
   }
   if (values.BILLING_PRODUCTION && values.TURNSTILE_MODE !== 'real') {
     const message = 'The fake or disabled bot check is not allowed in production';
@@ -374,6 +403,12 @@ export function loadConfig(env: NodeJS.ProcessEnv): AppConfig {
       openaiApiKey: values.OPENAI_API_KEY,
       anthropicApiKey: values.ANTHROPIC_API_KEY,
       fakeEnabled: values.AI_FAKE_ENABLED,
+    },
+    payos: {
+      mode: values.PAYOS_FAKE_ENABLED ? 'fake' : values.PAYOS_CLIENT_ID !== null ? 'real' : 'off',
+      clientId: values.PAYOS_CLIENT_ID,
+      apiKey: values.PAYOS_API_KEY,
+      checksumKey: values.PAYOS_CHECKSUM_KEY,
     },
     google: {
       mode: values.GOOGLE_FAKE_ENABLED ? 'fake' : values.GOOGLE_CLIENT_ID !== null ? 'real' : 'off',

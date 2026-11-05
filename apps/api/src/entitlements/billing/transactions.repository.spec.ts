@@ -175,3 +175,42 @@ describe('TransactionsRepository.recordFromEvent (design §8.9)', () => {
     expect(sql).not.toMatch(/INSERT INTO/i);
   });
 });
+
+describe('TransactionsRepository.recordPrepaidPurchase (launch prep B design §3.2)', () => {
+  const purchase = (over: Record<string, unknown> = {}) => ({
+    userId: USER, provider: 'payos', environment: 'production', providerTransactionId: '1000000123:FT1', amountMinor: 79000n, currency: 'VND',
+    periodMonths: 1, occurredAt: at('2026-11-05T03:02:00Z'), periodStart: at('2026-11-05T03:02:00Z'), periodEnd: at('2026-12-05T17:00:00Z'), ...over,
+  });
+
+  it('writes one succeeded purchase row of the Pro plan with no subscription, in dong, for the period', async () => {
+    const tx = new FakeTx();
+    await new TransactionsRepository().recordPrepaidPurchase(tx as never, purchase());
+    expect(tx.rows).toEqual([{
+      userId: USER, subscriptionId: null, kind: 'purchase', plan: 'pro', interval: 'month', amountMinor: 79000n, currency: 'VND',
+      occurredAt: at('2026-11-05T03:02:00Z'), periodStart: at('2026-11-05T03:02:00Z'), periodEnd: at('2026-12-05T17:00:00Z'), status: 'succeeded',
+      provider: 'payos', environment: 'production', providerTransactionId: '1000000123:FT1',
+    }]);
+  });
+
+  it('1, 3 and 12 months are a month, a quarter and a year', async () => {
+    const tx = new FakeTx();
+    const repo = new TransactionsRepository();
+    for (const [months, id] of [[1, 'a'], [3, 'b'], [12, 'c']] as const) await repo.recordPrepaidPurchase(tx as never, purchase({ periodMonths: months, providerTransactionId: id }));
+    expect(tx.rows.map((r) => r.interval)).toEqual(['month', 'quarter', 'year']);
+  });
+
+  it('the same payment twice writes one row; two orders with the same bank reference write two (the order code is in the id)', async () => {
+    const tx = new FakeTx();
+    const repo = new TransactionsRepository();
+    await repo.recordPrepaidPurchase(tx as never, purchase());
+    await repo.recordPrepaidPurchase(tx as never, purchase());
+    await repo.recordPrepaidPurchase(tx as never, purchase({ providerTransactionId: '1000000124:FT1' }));
+    expect(tx.rows.map((r) => r.providerTransactionId)).toEqual(['1000000123:FT1', '1000000124:FT1']);
+  });
+
+  it('the migration allows the interval it writes (month | quarter | year)', () => {
+    const sql = readdirSync(join(__dirname, '../../../prisma/migrations')).filter((dir) => /^\d{14}_/.test(dir)).sort()
+      .map((dir) => readFileSync(join(__dirname, '../../../prisma/migrations', dir, 'migration.sql'), 'utf8')).join('\n');
+    expect(sql).toContain(`ADD CONSTRAINT "billing_transactions_interval_check" CHECK ("interval" IN ('month', 'quarter', 'year'))`);
+  });
+});

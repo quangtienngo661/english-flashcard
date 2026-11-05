@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { SubscriptionStatus } from '../entitlements.types.js';
-import type { GrantSource, SubscriptionSource } from './plan-rules.js';
+import type { GrantSource, PrepaidSource, SubscriptionSource } from './plan-rules.js';
 import { aiSourceEnds, lastAiSourceEnd, nextEndedAt } from './source-ends.js';
 
 const at = (iso: string) => new Date(iso);
@@ -21,10 +21,20 @@ function grant(over: Partial<GrantSource> = {}): GrantSource {
   };
 }
 
-function ends(input: { subscriptions?: SubscriptionSource[]; grants?: GrantSource[]; ended?: { subscriptions?: SubscriptionSource[]; grants?: GrantSource[] }; now: string }) {
+function period(over: Partial<PrepaidSource> = {}): PrepaidSource {
+  return { id: 'period-1', startsAt: at('2026-11-01T00:00:00Z'), endsAt: at('2026-12-01T00:00:00Z'), revokedAt: null, ...over };
+}
+
+function ends(input: {
+  subscriptions?: SubscriptionSource[]; grants?: GrantSource[];
+  ended?: { subscriptions?: SubscriptionSource[]; grants?: GrantSource[]; prepaidPeriods?: PrepaidSource[] }; now: string;
+}) {
   return aiSourceEnds({
     subscriptions: input.subscriptions ?? [], grants: input.grants ?? [],
-    ended: { subscriptions: input.ended?.subscriptions ?? [], grants: input.ended?.grants ?? [] }, graceDays: GRACE_DAYS, now: at(input.now),
+    ended: {
+      subscriptions: input.ended?.subscriptions ?? [], grants: input.ended?.grants ?? [], prepaidPeriods: input.ended?.prepaidPeriods ?? [],
+    },
+    graceDays: GRACE_DAYS, now: at(input.now),
   });
 }
 
@@ -108,6 +118,51 @@ describe('aiSourceEnds — grants', () => {
     expect(ends({ ended: { grants: [withAi, lookupOnly, sessionsOnly, zero] }, now: '2026-11-25T00:00:00Z' })).toEqual([
       { kind: 'grant_limits', id: 'g-ai', endedAt: at('2026-11-20T03:00:00Z') },
       { kind: 'grant_limits', id: 'g-lookup', endedAt: at('2026-11-21T03:00:00Z') },
+    ]);
+  });
+});
+
+describe('aiSourceEnds — prepaid periods (launch prep B design 3.13, LB1A8)', () => {
+  it('LB1A8: the last period ran out at 06/12 00:00 → one end of kind prepaid_period at that moment, so the uses of 01 to 06/12 are not Free uses', () => {
+    const last = period({ startsAt: at('2026-11-06T00:00:00Z'), endsAt: at('2026-12-06T00:00:00Z') });
+    expect(ends({ ended: { prepaidPeriods: [last] }, now: '2026-12-10T00:00:00Z' }))
+      .toEqual([{ kind: 'prepaid_period', id: 'period-1', endedAt: at('2026-12-06T00:00:00Z') }]);
+  });
+
+  it('a period revoked in the middle (a refund) ended at revoked_at, not at ends_at', () => {
+    const refunded = period({ revokedAt: at('2026-11-12T09:00:00Z') });
+    expect(ends({ ended: { prepaidPeriods: [refunded] }, now: '2026-11-25T00:00:00Z' }))
+      .toEqual([{ kind: 'prepaid_period', id: 'period-1', endedAt: at('2026-11-12T09:00:00Z') }]);
+  });
+
+  it('a period revoked before it started never gave Pro: no end', () => {
+    const never = period({ startsAt: at('2026-11-20T00:00:00Z'), revokedAt: at('2026-11-10T00:00:00Z') });
+    expect(ends({ ended: { prepaidPeriods: [never] }, now: '2026-11-25T00:00:00Z' })).toEqual([]);
+  });
+
+  it('a period revoked at the very moment it would have started never gave Pro either', () => {
+    const never = period({ startsAt: at('2026-11-20T00:00:00Z'), revokedAt: at('2026-11-20T00:00:00Z') });
+    expect(ends({ ended: { prepaidPeriods: [never] }, now: '2026-11-25T00:00:00Z' })).toEqual([]);
+  });
+
+  it('a period revoked after it had run out ended at ends_at (the earlier of the two)', () => {
+    const late = period({ endsAt: at('2026-11-20T03:00:00Z'), revokedAt: at('2026-11-22T00:00:00Z') });
+    expect(ends({ ended: { prepaidPeriods: [late] }, now: '2026-11-25T00:00:00Z' }))
+      .toEqual([{ kind: 'prepaid_period', id: 'period-1', endedAt: at('2026-11-20T03:00:00Z') }]);
+  });
+
+  it('with no ended period there is no end: a running period and one that starts later stay in `prepaidPeriods` of the loader, not in `ended`', () => {
+    expect(ends({ now: '2026-11-25T00:00:00Z' })).toEqual([]);
+  });
+
+  it('two periods that ran out give two ends, after the ends of the grants and subscriptions', () => {
+    const first = period({ id: 'p1', startsAt: at('2026-10-01T00:00:00Z'), endsAt: at('2026-11-01T00:00:00Z') });
+    const second = period({ id: 'p2', startsAt: at('2026-11-01T00:00:00Z'), endsAt: at('2026-11-20T03:00:00Z') });
+    const over = grant({ id: 'g1', endsAt: at('2026-11-10T00:00:00Z') });
+    expect(ends({ ended: { prepaidPeriods: [first, second], grants: [over] }, now: '2026-11-25T00:00:00Z' })).toEqual([
+      { kind: 'grant_plan', id: 'g1', endedAt: at('2026-11-10T00:00:00Z') },
+      { kind: 'prepaid_period', id: 'p1', endedAt: at('2026-11-01T00:00:00Z') },
+      { kind: 'prepaid_period', id: 'p2', endedAt: at('2026-11-20T03:00:00Z') },
     ]);
   });
 });

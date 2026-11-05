@@ -1,0 +1,245 @@
+# pnpm smoke:buoc-b-payments — launch prep B, M1 (payments), 2026-11-04T14:19Z, run with SMOKE_LOGS (privacy step scans the API and worker output)
+# API and worker built from commit 8309df25 on feat/launch-b-m1-orders (the review fixes I1, I2); the script is the one committed together with this file; fresh database english_learning_smoke_lb_pay; PAYOS_FAKE_ENABLED=true, no real payOS call
+
+$ node scripts/smoke-buoc-b-payments.mjs
+
+[1] 14:19:29Z LB1A1: Lan buys 1 month through the fake page: paid by webhook, one period from now, Pro, a purchase row of 79.000 ₫ "month"
+    ok — paid, period to 2026-12-04T17:00:00.000Z, Pro, one purchase row
+
+[2] 14:19:33Z LB1E1: the same webhook sent again, and a second delivery of it: still one period, one payment
+    ok — one inbox row, one payment, one period
+
+[3] 14:19:36Z LB1E22: a webhook with a wrong signature is 400 and writes nothing; payOS’s own test webhook (orderCode 123) is 200 and ignored as unknown-order
+    ok — forged → 400 nothing stored; sample → 200 and ignored (unknown-order)
+
+[4] 14:19:39Z LB1A3: the transfer is made but the webhook never comes: the return page asks payOS once, the order becomes paid (reconcile), and F5 does not ask again within 10 s
+    ok — check found the money: paid by reconcile, one period
+
+[5] 14:19:41Z LB1E46: F5 on the return page of a pending order asks payOS at most once per 10 seconds
+    ok — one ask per 10 s; another learner’s order is 404
+
+[6] 14:19:43Z LB1A4: neither webhook nor return page: the hourly job finds the money (reconcile), through the real maintenance CLI
+    ok — paid by the job; 3 months is interval quarter
+
+[7] 14:19:52Z Review Focus 1: the webhook and the return page for the SAME transfer at the same time (Promise.all, ×5 orders): always exactly one period
+    ok — 5 races, 5 times one period, one payment, one purchase row
+
+[8] 14:20:18Z LB1E7 + LB1E26: Lan (already Pro) buys 12 months: the new period starts where the running one ends; the second transfer into a paid order is a second period
+    ok — periods follow end to start; pro_until is the end of the chain
+
+[9] 14:20:23Z LB1E33: admin revokes the middle period of a chain: the next one does not move, Lan is Pro until the end of the first period only
+    ok — gap after the revoke; the later period keeps its dates; revoking twice is 409
+
+[10] 14:20:25Z LB1E9: a short payment then the rest: needs_review amount-short, then paid with one period
+    ok — short → needs_review amount-short; rest → paid, one period, two payments
+
+[11] 14:20:30Z LB1E3 + LB1E5 + LB1E6: admin confirms first; the same transfer by webhook is attached (no new period); pressing it twice is 409 order-already-paid
+    ok — confirmed by hand; the webhook attached to it; 409 on the second press; the list finds it
+
+[12] 14:20:33Z LB1E17 + LB1E18: payOS (the fake) fails while the link is made: order failed, 503 provider-unavailable, the key is freed and the next press is a new order; the job cancels the stray link
+    ok — 503, key freed, new order with the next code; the stray link cancelled by the job
+
+[13] 14:20:45Z LB1E28: a price that changed since Lan looked → 409 price-changed; the admin price change after an order leaves the order alone
+    ok — 409 with the current amount; 2 months is 400
+
+[14] 14:20:47Z LB1E36 + LB1E39: the learner deletes the account with an order waiting; the money arrives after: needs_review account-deleted, the payer saved on the order, no period, no purchase row, no payer left in the stored event
+    ok — T1: needs_review, refund info kept, nothing opened, event carries no payer; resolve closes it and clears the info
+
+[15] 14:20:54Z LB1E38: the three payer fields on an order are cleared 90 days after they were saved (the cleanup job), the order stays
+    ok — payer fields cleared, order still needs_review
+
+[16] 14:21:04Z Review I2: the return page counts the transfer first; the webhook then brings it under another reference (same amount, same moment): one period, one purchase row, the second payment attached, no flag
+    ok — reconcile first, webhook second under another reference: one period, outcomes opened-period,attached
+
+[17] 14:21:10Z Review I1: the webhook for a real transfer is ignored (success false); the job then finds the transfer at payOS: the order goes to needs_review provider-mismatch instead of staying pending with the money taken
+    ok — ignored webhook row + the job: needs_review provider-mismatch, nothing counted, staff can look
+
+[18] 14:21:28Z periods end: every period of Lan moved into the past (a year back): Pro ends and Lan is Free again, with no prepaid source and no pro_until
+    ok — Free again, pro_until null
+
+[19] 14:21:32Z privacy: no log line of the API or the worker names an order code, a payer or a reference (checked on the process output the shell kept, if SMOKE_LOGS is set)
+    ok — log files scanned
+
+== payments smoke: 19/19 steps in 126 s ==
+PASS  LB1A1
+PASS  LB1E1
+PASS  LB1E22
+PASS  LB1A3
+PASS  LB1E46
+PASS  LB1A4
+PASS  Review Focus 1
+PASS  LB1E7 + LB1E26
+PASS  LB1E33
+PASS  LB1E9
+PASS  LB1E3 + LB1E5 + LB1E6
+PASS  LB1E17 + LB1E18
+PASS  LB1E28
+PASS  LB1E36 + LB1E39
+PASS  LB1E38
+PASS  Review I2
+PASS  Review I1
+PASS  periods end
+PASS  privacy
+
+
+======================================================================================================================
+== After merging launch prep A M3 (PR #215) into the M1 branch, 05/11/2026 (all times UTC)
+======================================================================================================================
+Code: feat/launch-b-m1-orders after the merge of origin/dev (d8640df8) and the Task 9 part that needed A (aiSourceEnds branch prepaid_period, loader ended).
+Every run: API and worker built with `pnpm build`, started from exported variables only (no apps/api/.env), TURNSTILE_MODE=fake, AI_FAKE_ENABLED=true,
+BILLING_FAKE_ENABLED=true, a queue prefix and a fresh database of its own. smoke-buoc-b-payments got a Turnstile token for login and a new step LB1A8 (real Postgres:
+an AI unit used while on a prepaid period that ran out earlier this month is outside the Free window, a unit used after the end is inside it).
+
+Results (exit code of each script; 0 only when every step matched):
+  smoke:buoc-b-payments .............. 0  (20/20 steps, includes LB1A8)
+  smoke:buoc-b-payments, LB1A8 teeth . 1  (with the prepaid_period loop of dist/.../source-ends.js emptied by hand: only LB1A8 failed, "Free counts only the one after the end, not 2")
+  smoke:buoc-5 fetchState ON ......... 0  (ALL CHECKS PASSED)
+  smoke:buoc-5 fetchState OFF ........ 0  (ALL CHECKS PASSED)
+  smoke:buoc-7 ....................... 0  (passed, 30 steps)
+  smoke:buoc-8 ....................... 0  (20/20 steps)
+
+== smoke:buoc-b-payments (20/20)
+$ node scripts/smoke-buoc-b-payments.mjs
+
+[1] 18:56:23Z LB1A1: Lan buys 1 month through the fake page: paid by webhook, one period from now, Pro, a purchase row of 79.000 ₫ "month"
+    ok — paid, period to 2026-12-05T17:00:00.000Z, Pro, one purchase row
+
+[2] 18:56:26Z LB1E1: the same webhook sent again, and a second delivery of it: still one period, one payment
+    ok — one inbox row, one payment, one period
+
+[3] 18:56:30Z LB1E22: a webhook with a wrong signature is 400 and writes nothing; payOS’s own test webhook (orderCode 123) is 200 and ignored as unknown-order
+    ok — forged → 400 nothing stored; sample → 200 and ignored (unknown-order)
+
+[4] 18:56:32Z LB1A3: the transfer is made but the webhook never comes: the return page asks payOS once, the order becomes paid (reconcile), and F5 does not ask again within 10 s
+    ok — check found the money: paid by reconcile, one period
+
+[5] 18:56:34Z LB1E46: F5 on the return page of a pending order asks payOS at most once per 10 seconds
+    ok — one ask per 10 s; another learner’s order is 404
+
+[6] 18:56:36Z LB1A4: neither webhook nor return page: the hourly job finds the money (reconcile), through the real maintenance CLI
+    ok — paid by the job; 3 months is interval quarter
+
+[7] 18:56:43Z Review Focus 1: the webhook and the return page for the SAME transfer at the same time (Promise.all, ×5 orders): always exactly one period
+    ok — 5 races, 5 times one period, one payment, one purchase row
+
+[8] 18:57:04Z LB1E7 + LB1E26: Lan (already Pro) buys 12 months: the new period starts where the running one ends; the second transfer into a paid order is a second period
+    ok — periods follow end to start; pro_until is the end of the chain
+
+[9] 18:57:07Z LB1E33: admin revokes the middle period of a chain: the next one does not move, Lan is Pro until the end of the first period only
+    ok — gap after the revoke; the later period keeps its dates; revoking twice is 409
+
+[10] 18:57:07Z LB1E9: a short payment then the rest: needs_review amount-short, then paid with one period
+    ok — short → needs_review amount-short; rest → paid, one period, two payments
+
+[11] 18:57:11Z LB1E3 + LB1E5 + LB1E6: admin confirms first; the same transfer by webhook is attached (no new period); pressing it twice is 409 order-already-paid
+    ok — confirmed by hand; the webhook attached to it; 409 on the second press; the list finds it
+
+[12] 18:57:14Z LB1E17 + LB1E18: payOS (the fake) fails while the link is made: order failed, 503 provider-unavailable, the key is freed and the next press is a new order; the job cancels the stray link
+    ok — 503, key freed, new order with the next code; the stray link cancelled by the job
+
+[13] 18:57:21Z LB1E28: a price that changed since Lan looked → 409 price-changed; the admin price change after an order leaves the order alone
+    ok — 409 with the current amount; 2 months is 400
+
+[14] 18:57:21Z LB1E36 + LB1E39: the learner deletes the account with an order waiting; the money arrives after: needs_review account-deleted, the payer saved on the order, no period, no purchase row, no payer left in the stored event
+    ok — T1: needs_review, refund info kept, nothing opened, event carries no payer; resolve closes it and clears the info
+
+[15] 18:57:27Z LB1E38: the three payer fields on an order are cleared 90 days after they were saved (the cleanup job), the order stays
+    ok — payer fields cleared, order still needs_review
+
+[16] 18:57:33Z Review I2: the return page counts the transfer first; the webhook then brings it under another reference (same amount, same moment): one period, one purchase row, the second payment attached, no flag
+    ok — reconcile first, webhook second under another reference: one period, outcomes opened-period,attached
+
+[17] 18:57:39Z Review I1: the webhook for a real transfer is ignored (success false); the job then finds the transfer at payOS: the order goes to needs_review provider-mismatch instead of staying pending with the money taken
+    ok — ignored webhook row + the job: needs_review provider-mismatch, nothing counted, staff can look
+
+[18] 18:57:49Z periods end: every period of Lan moved into the past (a year back): Pro ends and Lan is Free again, with no prepaid source and no pro_until
+    ok — Free again, pro_until null
+
+[19] 18:57:51Z LB1A8: Eva was Pro on a prepaid period that ran out earlier this month: the AI unit she used while Pro is not charged to the Free allowance, the one used after the end is (launch prep A, design 6.3.4)
+    ok — Free window starts at 2026-11-04T17:57:51Z: used 1 of 15 (the Pro one is outside it)
+
+[20] 18:57:53Z privacy: no log line of the API or the worker names an order code, a payer or a reference (checked on the process output the shell kept, if SMOKE_LOGS is set)
+    ok — no log files given (set SMOKE_LOGS=a.log,b.log)
+
+== payments smoke: 20/20 steps in 91 s ==
+PASS  LB1A1
+PASS  LB1E1
+PASS  LB1E22
+PASS  LB1A3
+PASS  LB1E46
+PASS  LB1A4
+PASS  Review Focus 1
+PASS  LB1E7 + LB1E26
+PASS  LB1E33
+PASS  LB1E9
+PASS  LB1E3 + LB1E5 + LB1E6
+PASS  LB1E17 + LB1E18
+PASS  LB1E28
+PASS  LB1E36 + LB1E39
+PASS  LB1E38
+PASS  Review I2
+PASS  Review I1
+PASS  periods end
+PASS  LB1A8
+PASS  privacy
+
+== smoke:buoc-b-payments, LB1A8 teeth (the failing line only)
+57:[19] 18:59:40Z LB1A8: Eva was Pro on a prepaid period that ran out earlier this month: the AI unit she used while Pro is not charged to the Free allowance, the one used after the end is (launch prep A, design 6.3.4)
+63:== payments smoke: 19/20 steps in 90 s ==
+82:FAIL  LB1A8 — 2 uses in the month, 1 of them while Pro: Free counts only the one after the end, not 2
+
+== smoke b5-on (tail)
+
+[41] 19:07:12Z B5#25: ads_enabled on → Free shows ads with the frequency; Pro and trial do not
+    ok — Free: show, 3 a day, 10 minutes apart; Pro: no; trial: no; switch back off
+
+[42] 19:07:15Z B5#26: webhook with a wrong signature → 400, no event row
+    ok — 400; 0 rows for that event id
+
+[43] 19:07:15Z B5#27: an editor reads GET /v1/admin/entitlements/ai-usage → 403 forbidden
+    ok — 403 forbidden
+
+ALL CHECKS PASSED in 387601ms (run id 8933b2d7; fetchState ON)
+# exit code 0 for smoke:buoc-5 (english_learning_smoke_lb_f5t) at 2026-11-04T19:07:16Z
+
+== smoke b5-off (tail)
+
+[41] 19:13:26Z B5#25: ads_enabled on → Free shows ads with the frequency; Pro and trial do not
+    ok — Free: show, 3 a day, 10 minutes apart; Pro: no; trial: no; switch back off
+
+[42] 19:13:29Z B5#26: webhook with a wrong signature → 400, no event row
+    ok — 400; 0 rows for that event id
+
+[43] 19:13:29Z B5#27: an editor reads GET /v1/admin/entitlements/ai-usage → 403 forbidden
+    ok — 403 forbidden
+
+ALL CHECKS PASSED in 359690ms (run id e98dc10f; fetchState OFF)
+# exit code 0 for smoke:buoc-5 (english_learning_smoke_lb_f5f) at 2026-11-04T19:13:30Z
+
+== smoke b7 (tail)
+[28] 19:16:31Z B7E117: an operation with no model → a session with its type is 503 ai-unavailable model-not-set and nothing is created
+    (network error on GET /v1/admin/ai/configs/generate_meaning_question/drafts: ECONNRESET; retrying)
+    ok — 503 ai-unavailable, reason model-not-set, no session row; typing alone opens
+
+[29] 19:16:32Z B7E98, B7E58, B7E23 (fake:not-recognized): an unrecognised private word falls back with notice word-not-recognized, and has no AI type until edited
+    ok — not_recognized → typing with notice word-not-recognized (sense_id), no unit held, verdict stored; cloze only → 409 practice-no-words; after a meaning edit the word is checked again (ok) and gets an AI cloze, 1 unit
+
+[30] 19:16:40Z B7E98 with prepare (§6.5 A, §6.6 last row): the check rejects the word during prepare; next switches type with notice word-not-recognized
+    ok — prepare: {"prepared":0,"already_ready":0,"failed":1}, request failed/word-not-recognized; next asks P10 as typing at once, with notice word-not-recognized and sense_id
+
+Smoke Bước 7 passed in 177s (30 steps).
+# exit code 0 for smoke:buoc-7 (english_learning_smoke_b7) at 2026-11-04T19:16:43Z
+
+== smoke b8 (tail)
+PASS  B8A3 B8A4 D31 B8E31 B8E47
+PASS  B8E40
+PASS  B8E22 M14
+PASS  B8E52
+PASS  P4 B8E24 B8E32 D19
+PASS  B8E53 P2 D21
+PASS  M1 R1 B8E25
+PASS  B8E27 D14 D27
+PASS  B8E28
+PASS  B8E49
+PASS  final review M4 M8
+# exit code 0 for smoke:buoc-8 (english_learning_smoke_b8) at 2026-11-04T19:21:28Z

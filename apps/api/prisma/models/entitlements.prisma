@@ -234,3 +234,119 @@ model FakeBillingSubscription {
 
   @@map("fake_billing_subscriptions")
 }
+
+// One time a learner pressed "Buy" for a prepaid Pro period (launch prep B design §3.2). Not a subscription: nothing renews.
+// CHECKs (environment, period_months, status, review_reason, paid_via, order_code range) are in the migration.
+model BillingOrder {
+  id                 String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  // anonymised on account deletion, like billing_transactions.
+  userId             String    @map("user_id") @db.Uuid
+  provider           String
+  // production with the real payOS, sandbox with the fake.
+  environment        String
+  // From billing_order_code_seq; unique with provider.
+  orderCode          BigInt    @map("order_code")
+  // 'WM' + 7 base32 characters of order_code: what the payer types into the bank transfer.
+  description        String
+  periodMonths       Int       @map("period_months")
+  amountMinor        BigInt    @map("amount_minor")
+  currency           String
+  // pending | paid | expired | cancelled | failed | needs_review | closed.
+  status             String
+  // amount-short | amount-over | late-payment | account-deleted | extra-payment | reconcile-mismatch | provider-mismatch | null.
+  reviewReason       String?   @map("review_reason")
+  // webhook | reconcile | manual; null until the first period.
+  paidVia            String?   @map("paid_via")
+  paymentLinkId      String?   @map("payment_link_id")
+  checkoutUrl        String?   @map("checkout_url")
+  expiresAt          DateTime  @map("expires_at") @db.Timestamptz
+  checkedAt          DateTime? @map("checked_at") @db.Timestamptz
+  // Only when money arrived after the account was deleted (§3.11); cleared when staff close the order or after 90 days.
+  refundPayerName    String?   @map("refund_payer_name")
+  refundPayerAccount String?   @map("refund_payer_account")
+  refundPayerBank    String?   @map("refund_payer_bank")
+  refundSavedAt      DateTime? @map("refund_saved_at") @db.Timestamptz
+  resolvedAt         DateTime? @map("resolved_at") @db.Timestamptz
+  resolvedBy         String?   @map("resolved_by") @db.Uuid
+  resolutionNote     String?   @map("resolution_note")
+  createdAt          DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt          DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  payments BillingOrderPayment[]
+  periods  PrepaidPeriod[]
+
+  @@unique([provider, orderCode])
+  @@index([status, createdAt])
+  @@index([userId])
+  @@map("billing_orders")
+}
+
+// One transfer (or one staff confirmation) counted for an order. payment_key is the identity of the payment (design §3.4):
+// payos:<environment>:<orderCode>:<reference> or manual:<order_id>.
+model BillingOrderPayment {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  orderId      String   @map("order_id") @db.Uuid
+  paymentKey   String   @unique @map("payment_key")
+  // webhook | reconcile | manual.
+  source       String
+  reference    String
+  amountMinor  BigInt   @map("amount_minor")
+  // payOS transactionDateTime as sent (no time zone); null for staff.
+  providerTime String?  @map("provider_time")
+  // opened-period | attached | counted | flagged | refund-needed.
+  outcome      String
+  periodId     String?  @map("period_id") @db.Uuid
+  confirmedBy  String?  @map("confirmed_by") @db.Uuid
+  reason       String?
+  receivedAt   DateTime @default(now()) @map("received_at") @db.Timestamptz
+
+  order  BillingOrder    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  // A period deleted with an account leaves the money record behind (ON DELETE SET NULL).
+  period PrepaidPeriod?  @relation("PeriodOpenedByPayment", fields: [periodId], references: [id], onDelete: SetNull)
+  opened PrepaidPeriod[] @relation("PeriodPayment")
+
+  @@index([orderId])
+  @@index([periodId])
+  @@map("billing_order_payments")
+}
+
+// One paid Pro period; may start in the future. starts_at and ends_at are fixed once, when the period opens (§3.7).
+model PrepaidPeriod {
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId       String    @map("user_id") @db.Uuid
+  orderId      String    @map("order_id") @db.Uuid
+  paymentId    String    @map("payment_id") @db.Uuid
+  startsAt     DateTime  @map("starts_at") @db.Timestamptz
+  endsAt       DateTime  @map("ends_at") @db.Timestamptz
+  revokedAt    DateTime? @map("revoked_at") @db.Timestamptz
+  revokedBy    String?   @map("revoked_by") @db.Uuid
+  revokeReason String?   @map("revoke_reason")
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz
+
+  order    BillingOrder          @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  payment  BillingOrderPayment   @relation("PeriodPayment", fields: [paymentId], references: [id], onDelete: Cascade)
+  payments BillingOrderPayment[] @relation("PeriodOpenedByPayment")
+
+  @@index([userId, endsAt])
+  @@index([orderId])
+  @@index([paymentId])
+  @@map("prepaid_periods")
+}
+
+// The fake payOS's own state, so getCheckout answers in the worker too (launch prep B design §3.3). No column points at a user.
+// CHECK on status (the seven payOS values) is in the migration.
+model FakePayosLink {
+  orderCode     BigInt   @id @map("order_code")
+  paymentLinkId String   @map("payment_link_id")
+  amount        Int
+  status        String
+  expiresAt     DateTime @map("expires_at") @db.Timestamptz
+  // What the order sent payOS, so the fake page can send the browser back like payOS does after a payment or a cancel.
+  returnUrl     String   @map("return_url")
+  cancelUrl     String   @map("cancel_url")
+  // [{ reference, amount, transactionDateTime, payer }] as payOS lists them.
+  transactions  Json     @default("[]")
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  @@map("fake_payos_links")
+}

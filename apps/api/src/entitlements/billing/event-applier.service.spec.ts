@@ -190,9 +190,15 @@ function setup(opts: { fetch?: boolean; endTrial?: boolean; production?: boolean
       recorded.push({ type: event.type, ctx, inTx: db.inTx });
     }),
   };
+  const orderApplier = {
+    applyPayment: vi.fn(async (_tx: unknown, _input: unknown): Promise<Record<string, unknown>> => {
+      db.calls.push(`order-applier(inTx=${db.inTx})`);
+      return { outcome: 'opened-period', userId: USER };
+    }),
+  };
   const applier = new BillingEventApplier(db.client as never, new FakeClock(NOW), config, registry, identity as never,
-    settings as never, logger, transactions as never);
-  return { db, applier, adapter, logs, identity, recorded };
+    settings as never, logger, transactions as never, orderApplier as never);
+  return { db, applier, adapter, logs, identity, recorded, orderApplier };
 }
 
 let seq = 0;
@@ -648,7 +654,7 @@ describe('BillingEventApplier.apply (design §9.2 step 4, §9.4)', () => {
       fake.onModuleInit();
       const applier = new BillingEventApplier(db.client as never, new FakeClock(NOW), config, registry,
         { getProfile: async (id: string) => ({ id }) } as never, { get: async () => ({ entitlements: { graceDays: 7 } }) } as never,
-        new AppLogger({ write: () => {} }), { recordFromEvent: async () => {} } as never);
+        new AppLogger({ write: () => {} }), { recordFromEvent: async () => {} } as never, { applyPayment: async () => ({ outcome: 'ignored' }) } as never);
 
       // What the provider sends, and what the inbox stores for the applier (same ids, same order).
       const wire = (id: string, type: string, occurredAt: string, fields: Record<string, unknown>) => ({
@@ -714,6 +720,113 @@ describe('BillingEventApplier.apply (design §9.2 step 4, §9.4)', () => {
     expect(text).not.toContain('@example.com');
     expect(text).not.toContain('"payload"');
     expect(text).not.toContain('2026-11-22T10:00:00.000Z');
+  });
+});
+
+describe('BillingEventApplier — one-time payments (launch prep B design §3.3, §3.4, Task 8)', () => {
+  const ORDER_CODE = 1_000_000_123;
+  const payment = (over: Record<string, unknown> = {}) => ({
+    orderCode: ORDER_CODE, paymentLinkId: 'link-1', amount: 199000, reference: 'FT26309ABC', transactionDateTime: '2026-11-05 10:02:00',
+    source: 'webhook', success: true, code: '00',
+    payer: { counterAccountName: 'NGUYEN THI LAN', counterAccountNumber: '0123456789', counterAccountBankName: 'MB Bank' }, ...over,
+  });
+  function addPayment(db: FakeDb, over: Partial<EventRow> = {}, payload: Record<string, unknown> | null = payment()): string {
+    const id = `pay-${++seq}`;
+    db.events.set(id, {
+      id, provider: 'payos', environment: 'production', type: 'payment_succeeded', kind: 'additive', transactionId: `${ORDER_CODE}:FT26309ABC`,
+      occurredAt: at('2026-11-15T10:00:00.000Z'), appUserId: null, externalSubscriptionId: null, payload, status: 'pending', attempts: 0,
+      error: null, userId: null, subscriptionId: null, processedAt: null, ...over,
+    });
+    return id;
+  }
+
+  it('a payment_succeeded (it names no user) goes to the order applier inside the transaction, not to unknown-user', async () => {
+    const { db, applier, orderApplier, logs } = setup();
+    const id = addPayment(db);
+    expect(await applier.apply(id)).toBe('applied');
+    expect(orderApplier.applyPayment).toHaveBeenCalledTimes(1);
+    expect(orderApplier.applyPayment).toHaveBeenCalledWith(expect.anything(), {
+      source: 'webhook', env: 'production', orderCode: ORDER_CODE, paymentLinkId: 'link-1', reference: 'FT26309ABC', amount: 199000,
+      providerTime: '2026-11-05 10:02:00', success: true, code: '00',
+      payer: { counterAccountName: 'NGUYEN THI LAN', counterAccountNumber: '0123456789', counterAccountBankName: 'MB Bank' }, eventId: id,
+    });
+    expect(db.calls).toContain('order-applier(inTx=true)');
+    expect(db.calls.indexOf('claim')).toBeLessThan(db.calls.indexOf('order-applier(inTx=true)'));
+    expect(db.events.get(id)).toMatchObject({ status: 'applied', error: null, userId: USER, processedAt: NOW });
+    expect(logs.some((entry) => entry.event === 'billing_event_unknown_user')).toBe(false);
+  });
+
+  it('the payer is gone from the stored payload once the payment is applied, whatever the result (design §3.12)', async () => {
+    for (const result of [{ outcome: 'counted' }, { outcome: 'refund-needed' }, { outcome: 'ignored', reason: 'unknown-order' }]) {
+      const { db, applier, orderApplier } = setup();
+      orderApplier.applyPayment.mockResolvedValue(result);
+      const id = addPayment(db);
+      await applier.apply(id);
+      const stored = db.events.get(id)!.payload as Record<string, unknown>;
+      expect(stored, result.outcome).not.toHaveProperty('payer');
+      expect(stored).toMatchObject({ orderCode: ORDER_CODE, reference: 'FT26309ABC', amount: 199000 });
+      expect(JSON.stringify(db.events.get(id))).not.toContain('NGUYEN THI LAN');
+    }
+  });
+
+  it('an ignored payment is marked ignored with the reason the order applier gave', async () => {
+    const { db, applier, orderApplier } = setup();
+    orderApplier.applyPayment.mockResolvedValue({ outcome: 'ignored', reason: 'unknown-order' });
+    const id = addPayment(db);
+    expect(await applier.apply(id)).toBe('ignored');
+    expect(db.events.get(id)).toMatchObject({ status: 'ignored', error: 'unknown-order' });
+  });
+
+  it('a payload that is null (amount or link id missing) is ignored as missing-fields without asking the order applier', async () => {
+    const { db, applier, orderApplier } = setup();
+    const id = addPayment(db, {}, null);
+    expect(await applier.apply(id)).toBe('ignored');
+    expect(db.events.get(id)).toMatchObject({ status: 'ignored', error: 'missing-fields' });
+    expect(orderApplier.applyPayment).not.toHaveBeenCalled();
+  });
+
+  it('R17: a sandbox payment in production is still dropped as before', async () => {
+    const { db, applier, orderApplier } = setup({ production: true });
+    const id = addPayment(db, { environment: 'sandbox' });
+    expect(await applier.apply(id)).toBe('ignored');
+    expect(db.events.get(id)).toMatchObject({ status: 'ignored', error: 'sandbox-in-production' });
+    expect(orderApplier.applyPayment).not.toHaveBeenCalled();
+  });
+
+  it('a row another run holds (SKIP LOCKED) is skipped, so the order applier never runs twice at once', async () => {
+    const { db, applier, orderApplier } = setup();
+    const id = addPayment(db);
+    db.lockedByOther.add(id);
+    expect(await applier.apply(id)).toBe('skipped');
+    expect(orderApplier.applyPayment).not.toHaveBeenCalled();
+  });
+
+  it('LB1E25: a payment that failed once is applied by the retry, and the order applier is asked again (the claim takes failed rows too)', async () => {
+    const { db, applier, orderApplier } = setup();
+    orderApplier.applyPayment.mockRejectedValueOnce(new Error('db hiccup'));
+    const id = addPayment(db);
+    expect(await applier.apply(id)).toBe('failed');
+    expect(db.events.get(id)).toMatchObject({ status: 'failed', attempts: 1 });
+    expect(await applier.apply(id)).toBe('applied');
+    expect(db.events.get(id)).toMatchObject({ status: 'applied' });
+    expect(orderApplier.applyPayment).toHaveBeenCalledTimes(2);
+  });
+
+  it('an event of the subscription kind never reaches the order applier', async () => {
+    const { db, applier, orderApplier } = setup();
+    await applier.apply(addEvent(db, 'subscription_started', paidStart));
+    expect(orderApplier.applyPayment).not.toHaveBeenCalled();
+  });
+
+  it('no log entry names the order code, the payer or the reference (design §3.12)', async () => {
+    const { db, applier, orderApplier, logs } = setup();
+    orderApplier.applyPayment.mockResolvedValue({ outcome: 'ignored', reason: 'unknown-order' });
+    await applier.apply(addPayment(db));
+    orderApplier.applyPayment.mockRejectedValueOnce(new Error('boom'));
+    await applier.apply(addPayment(db));
+    const text = JSON.stringify(logs);
+    expect(logs.length).toBeGreaterThan(0);
+    for (const secret of ['NGUYEN THI LAN', '0123456789', 'MB Bank', 'FT26309ABC', String(ORDER_CODE)]) expect(text).not.toContain(secret);
   });
 });
 

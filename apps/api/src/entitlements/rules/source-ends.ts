@@ -1,5 +1,5 @@
 import type { SubscriptionStatus } from '../entitlements.types.js';
-import { effectiveStatus, type GrantSource, type SubscriptionSource } from './plan-rules.js';
+import { effectiveStatus, type GrantSource, type PrepaidSource, type SubscriptionSource } from './plan-rules.js';
 
 // When did a source that gave the learner their own AI cycle stop doing so (launch prep A, design 6.3). A Free account's window
 // starts after the latest such end inside the calendar month, so uses made while Pro are not charged to the Free allowance.
@@ -9,8 +9,11 @@ const DAY_MS = 86_400_000;
 
 export type AiSourceEnd = { kind: 'subscription' | 'grant_plan' | 'grant_limits' | 'prepaid_period'; id: string; endedAt: Date };
 
-/** The sources of the learner that are no longer live (expired or revoked subscriptions, revoked or ended grants) and were loaded for this. */
-export type EndedSources = { subscriptions: SubscriptionSource[]; grants: GrantSource[] };
+/**
+ * The sources of the learner that are no longer live (expired or revoked subscriptions, revoked or ended grants, prepaid periods
+ * that ran out or were revoked) and were loaded for this. A live prepaid period is in the loader's `prepaidPeriods` instead.
+ */
+export type EndedSources = { subscriptions: SubscriptionSource[]; grants: GrantSource[]; prepaidPeriods: PrepaidSource[] };
 
 /** The fields of a stored subscription `nextEndedAt` needs. */
 export type EndedAtFields = {
@@ -76,6 +79,16 @@ function grantEnd(grant: GrantSource): Date | null {
   return grant.startsAt < endedAt ? endedAt : null;
 }
 
+/**
+ * When a prepaid period stopped giving Pro (launch prep B design 3.13): its `ends_at`, or `revoked_at` when a refund or an admin ended it
+ * sooner. Never read from a provider's answer, only from the row's own dates. Revoked before it started (or at that very moment): it
+ * never gave Pro, so it never gave an AI cycle either, as for a grant (LA3E16).
+ */
+function periodEnd(period: PrepaidSource): Date | null {
+  const endedAt = period.revokedAt === null ? period.endsAt : earlier(period.endsAt, period.revokedAt);
+  return period.startsAt < endedAt ? endedAt : null;
+}
+
 /** Every AI source of the learner that has ended by `now`, with the moment it ended. */
 export function aiSourceEnds(input: {
   subscriptions: SubscriptionSource[]; grants: GrantSource[]; ended: EndedSources; graceDays: number; now: Date;
@@ -90,6 +103,11 @@ export function aiSourceEnds(input: {
     if (grant.kind === 'limits' && !hasAiLimit(grant)) continue;
     const endedAt = grantEnd(grant);
     if (endedAt !== null && endedAt <= now) result.push({ kind: grant.kind === 'plan' ? 'grant_plan' : 'grant_limits', id: grant.id, endedAt });
+  }
+  // Only the ended ones: a period the loader keeps in `prepaidPeriods` is not revoked and ends after `now`, so it has no end yet.
+  for (const period of input.ended.prepaidPeriods) {
+    const endedAt = periodEnd(period);
+    if (endedAt !== null && endedAt <= now) result.push({ kind: 'prepaid_period', id: period.id, endedAt });
   }
   return result;
 }

@@ -2030,7 +2030,8 @@
       "sessions": "sessions",
       "uses": "uses",
       "years": "years",
-      "times": "times"
+      "times": "times",
+      "vnd": "VND"
     },
     "fields": {
       "reminders": {
@@ -2078,7 +2079,10 @@
         "ads_enabled": "Ads on",
         "ads_interstitial_per_day": "Full-screen ads per day",
         "ads_min_interval_minutes": "Gap between two ads",
-        "transaction_retention_years": "Keep payment records after an account is deleted"
+        "transaction_retention_years": "Keep payment records after an account is deleted",
+        "pro_price_1m_vnd": "Pro price, 1 month",
+        "pro_price_3m_vnd": "Pro price, 3 months",
+        "pro_price_12m_vnd": "Pro price, 12 months"
       },
       "content": {
         "private_words_per_user": "Private words per person",

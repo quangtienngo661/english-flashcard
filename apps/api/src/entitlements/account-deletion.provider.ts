@@ -99,5 +99,10 @@ export class EntitlementsAccountDeletion implements AccountDataEraser, AccountDe
     // The ledger and the money records stay with a random id (D15, D16); (pool, operation_id) stays unique for it.
     await tx.usageRecord.updateMany({ where: { userId }, data: { userId: anonId } });
     await tx.billingTransaction.updateMany({ where: { userId }, data: { userId: anonId } });
+    // Prepaid Pro (launch prep B design §3.11): the periods go with the account; the orders stay as the money record with a random id,
+    // and their payments keep their rows (the foreign key sets period_id to NULL). payOS is not called: a pending order is expired
+    // or its link cancelled by the reconcile job (LB1E35).
+    await tx.prepaidPeriod.deleteMany({ where: { userId } });
+    await tx.billingOrder.updateMany({ where: { userId }, data: { userId: anonId } });
   }
 }

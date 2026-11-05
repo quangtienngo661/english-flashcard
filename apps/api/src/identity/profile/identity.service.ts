@@ -93,9 +93,12 @@ export class IdentityService {
     return [...(row.passwordCredential ? ['password' as const] : []), ...(row.identities.length > 0 ? ['google' as const] : [])];
   }
 
-  /** Current account status, or null for an unknown id (Entitlements refuses to change a deleting account's grants). */
-  async accountStatus(userId: string): Promise<'active' | 'locked' | 'deleting' | null> {
-    const row = await this.prisma.user.findUnique({ where: { id: userId }, select: { status: true } });
+  /**
+   * Current account status, or null for an unknown id (Entitlements refuses to change a deleting account's grants). A caller inside a
+   * transaction that holds a lock passes its `tx`, as for `getProfile`.
+   */
+  async accountStatus(userId: string, db: Prisma.TransactionClient = this.prisma): Promise<'active' | 'locked' | 'deleting' | null> {
+    const row = await db.user.findUnique({ where: { id: userId }, select: { status: true } });
     return row ? (row.status as 'active' | 'locked' | 'deleting') : null;
   }
 

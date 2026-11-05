@@ -12,9 +12,17 @@ describe('appConfigView (design §8.7)', () => {
       plans: {
         free: { practice_sessions_per_day: 3, ai_practice_per_cycle: 15, ai_lookup_per_cycle: 5 },
         trial: { ai_practice_per_cycle: 300, ai_lookup_per_cycle: 100 },
-        pro: { practice_sessions_per_day: 30, ai_practice_per_cycle: 300, ai_lookup_per_cycle: 100 },
+        pro: {
+          practice_sessions_per_day: 30, ai_practice_per_cycle: 300, ai_lookup_per_cycle: 100,
+          prices: { '1': 79000, '3': 199000, '12': 599000 },
+        },
       },
     });
+  });
+
+  it('launch prep B §3.5: the prices follow the settings, one number per 1, 3 and 12 months', () => {
+    const settings = { ...SETTINGS_DEFAULTS, entitlements: { ...SETTINGS_DEFAULTS.entitlements, proPrice1mVnd: 89000, proPrice3mVnd: 229000, proPrice12mVnd: 699000 } };
+    expect(appConfigView(settings).plans.pro.prices).toEqual({ '1': 89000, '3': 229000, '12': 699000 });
   });
 
   it('returns no other setting (design §14.20)', () => {

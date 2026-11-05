@@ -36,6 +36,7 @@ function setup(input: { subs?: SubscriptionSource[]; adapter?: { cancelAtPeriodE
     },
     billingEvent: del('events'), entitlementGrant: del('grants'), trialHistory: del('trial'), entitlementNotice: del('notices'),
     fakeBillingSubscription: del('fake'), usageRecord: upd('usage'), billingTransaction: upd('transactions'),
+    prepaidPeriod: del('periods'), billingOrder: upd('orders'),
   };
   const prisma = { $transaction: vi.fn(async (fn: (t: unknown) => unknown) => fn(tx)) };
   const sources = { load: vi.fn(async () => ({ subscriptions: input.subs ?? [], grants: [] })) };
@@ -47,7 +48,7 @@ function setup(input: { subs?: SubscriptionSource[]; adapter?: { cancelAtPeriodE
     registry, prisma as unknown as PrismaClient, new FakeClock(NOW), sources as unknown as SourcesRepository,
     settings as unknown as SettingsService, adapters as unknown as BillingAdapterRegistry, new AppLogger({ write: (e) => logs.push(e) }),
   );
-  return { service, tx, events, logs, adapter, prisma, sources, registry, client: tx as unknown as Prisma.TransactionClient };
+  return { service, tx, events, logs, adapter, adapters, prisma, sources, registry, client: tx as unknown as Prisma.TransactionClient };
 }
 
 afterEach(() => { vi.useRealTimers(); });
@@ -80,6 +81,7 @@ describe('EntitlementsAccountDeletion.erase (unit: statements; cascades, uniquen
     expect(events).toEqual([
       'lock:entitlements.user:u1', 'lock:entitlements.pool:u1:practice_sessions', 'lock:entitlements.pool:u1:ai_practice',
       'lock:entitlements.pool:u1:ai_lookup', 'events', 'grants', 'subscriptions', 'trial', 'notices', 'fake', 'usage', 'transactions',
+      'periods', 'orders',
     ]);
     expect(tx.billingEvent.deleteMany).toHaveBeenCalledWith({
       where: { OR: [{ userId: 'u1' }, { appUserId: 'u1' }, { subscriptionId: { in: ['sub-1'] } }] },
@@ -87,6 +89,16 @@ describe('EntitlementsAccountDeletion.erase (unit: statements; cascades, uniquen
     expect(tx.entitlementNotice.deleteMany).toHaveBeenCalledWith({ where: { OR: [{ userId: 'u1' }, { recipientUserId: 'u1' }] } });
     expect(tx.usageRecord.updateMany).toHaveBeenCalledWith({ where: { userId: 'u1' }, data: { userId: 'anon-1' } });
     expect(tx.billingTransaction.updateMany).toHaveBeenCalledWith({ where: { userId: 'u1' }, data: { userId: 'anon-1' } });
+  });
+
+  it('LB1A9, LB1E35: the periods are deleted and the orders keep only a random id; payOS is not called, and the payments of a deleted period keep the money record', async () => {
+    const { service, tx, client, adapters } = setup({ subs: [] });
+    await service.erase(client, 'u1', 'anon-1', { checks: 'normal' });
+    expect(tx.prepaidPeriod.deleteMany).toHaveBeenCalledWith({ where: { userId: 'u1' } });
+    expect(tx.billingOrder.updateMany).toHaveBeenCalledWith({ where: { userId: 'u1' }, data: { userId: 'anon-1' } });
+    expect(adapters.get).not.toHaveBeenCalled();
+    // The orders are not deleted and their payments are not touched: the money records stay (period_id goes to NULL by the foreign key).
+    expect(Object.keys(tx.billingOrder)).toEqual(['updateMany']);
   });
 
   it('B8E52: a subscription still renewing makes the normal run throw and delete nothing', async () => {

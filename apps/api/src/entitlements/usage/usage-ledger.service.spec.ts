@@ -1,7 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
 import { FakeClock } from '../../common/clock/clock.js';
 import { SETTINGS_DEFAULTS, type AppSettings } from '../../settings/index.js';
-import type { GrantSource, SubscriptionSource } from '../rules/plan-rules.js';
+import type { GrantSource, PrepaidSource, SubscriptionSource } from '../rules/plan-rules.js';
+import type { EndedSources } from '../rules/source-ends.js';
 import { UsageLedgerService } from './usage-ledger.service.js';
 
 const USER = '00000000-0000-4000-8000-000000000001';
@@ -23,6 +24,7 @@ type Setup = {
   entitlements?: Partial<AppSettings['entitlements']>;
   subscriptions?: SubscriptionSource[];
   grants?: GrantSource[];
+  prepaidPeriods?: PrepaidSource[];
   rows?: Row[];
   aiUsed?: number;
   capUsed?: { confirmed: number; reserved: number };
@@ -33,7 +35,7 @@ type Setup = {
   confirmedUse?: boolean;
   /** Launch prep A: the learner's timezone (`null` = no profile; Vietnam by default), the sources that already ended, and the Free cap's count. */
   timezone?: string | null;
-  ended?: { subscriptions: SubscriptionSource[]; grants: GrantSource[] };
+  ended?: Partial<EndedSources>;
   capUsedFree?: { confirmed: number; reserved: number };
 };
 
@@ -97,7 +99,10 @@ function setup(input: Setup = {}) {
   const sources = {
     load: vi.fn(async (db: unknown, _userId?: string, _now?: Date, _endedSince?: Date) => {
       onTx(db, 'sources.load');
-      return { subscriptions: input.subscriptions ?? [pro], grants: input.grants ?? [], ended: input.ended ?? { subscriptions: [], grants: [] } };
+      return {
+        subscriptions: input.subscriptions ?? [pro], grants: input.grants ?? [], prepaidPeriods: input.prepaidPeriods ?? [],
+        ended: { subscriptions: [], grants: [], prepaidPeriods: [], ...input.ended },
+      };
     }),
   };
   const identity = {
@@ -165,6 +170,21 @@ describe('UsageLedgerService.reserve', () => {
     const { service, usage } = setup();
     await service.reserve(USER, 'ai_practice', OP);
     expect(usage.aiUsed).toHaveBeenCalledWith(expect.anything(), USER, 'ai_practice', CYCLE, NOW);
+  });
+
+  it('launch prep B: a learner whose Pro is a prepaid period reserves against the Pro limit, in the cycle that starts with the period', async () => {
+    const period: PrepaidSource = { id: 'p-1', startsAt: new Date('2026-11-01T00:00:00Z'), endsAt: new Date('2026-12-05T17:00:00Z'), revokedAt: null };
+    const { service, usage } = setup({ subscriptions: [], prepaidPeriods: [period], aiUsed: 299 });
+    expect((await service.reserve(USER, 'ai_practice', OP)).state).toBe('reserved');
+    expect(usage.aiUsed).toHaveBeenCalledWith(expect.anything(), USER, 'ai_practice', CYCLE, NOW);
+  });
+
+  it('launch prep B: a prepaid period that has not started gives no Pro AI: the learner is Free, held to the Free allowance of 15 and not the 300 of Pro', async () => {
+    const later: PrepaidSource = { id: 'p-2', startsAt: new Date('2026-12-01T00:00:00Z'), endsAt: new Date('2027-01-01T00:00:00Z'), revokedAt: null };
+    const { service } = setup({ subscriptions: [], prepaidPeriods: [later], aiUsed: 15 });
+    expect((await service.reserve(USER, 'ai_practice', OP)).state).toBe('refused');
+    const { service: fresh } = setup({ subscriptions: [], prepaidPeriods: [later], aiUsed: 14 });
+    expect((await fresh.reserve(USER, 'ai_practice', OP)).state).toBe('reserved');
   });
 
   it('B5E2: a live reserved row is returned and nothing is written', async () => {
@@ -269,6 +289,13 @@ describe('UsageLedgerService.refund', () => {
     expect(execs.at(-1)).toMatch(/ON CONFLICT DO NOTHING/);
   });
 
+  it('launch prep B: a unit used under a prepaid period is refunded in the cycle that period starts', async () => {
+    const period: PrepaidSource = { id: 'p-1', startsAt: new Date('2026-11-01T00:00:00Z'), endsAt: new Date('2026-12-05T17:00:00Z'), revokedAt: null };
+    const { service, execs } = setup({ subscriptions: [], prepaidPeriods: [period], confirmedInCycle: 1 });
+    expect(await service.refund(USER, 'ai_practice', OP, 'report-1')).toEqual({ refunded: true });
+    expect(execs.filter((sql) => sql.includes('INSERT INTO usage_records'))).toHaveLength(1);
+  });
+
   it('B5E19/B5#22: second refund → true, no insert attempted', async () => {
     const { service, execs } = setup({ credit: true, confirmedInCycle: 0 });
     expect(await service.refund(USER, 'ai_practice', OP, 'report-1')).toEqual({ refunded: true });
@@ -322,7 +349,7 @@ describe('No second connection inside a locked transaction', () => {
     const { service, sources, settings } = setup();
     sources.load.mockImplementationOnce(async () => {
       await settings.get();
-      return { subscriptions: [pro], grants: [], ended: { subscriptions: [], grants: [] } };
+      return { subscriptions: [pro], grants: [], prepaidPeriods: [], ended: { subscriptions: [], grants: [], prepaidPeriods: [] } };
     });
     await expect(service.reserve(USER, 'ai_practice', OP)).rejects.toThrow('SettingsService.get used while a lock is held');
   });

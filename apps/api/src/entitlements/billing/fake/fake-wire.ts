@@ -6,6 +6,9 @@ import { EVENT_TYPES, type EventType, type NormalizedEvent } from '../billing.ty
 
 export const FAKE_SIGNATURE_HEADER = 'x-fake-signature';
 
+/** What the fake's parser yields: a subscription event, never a one-time payment (`ORDER_EVENT_TYPES`). */
+export type FakeParsedEvent = ParsedEvent & { type: EventType; event: NormalizedEvent | null };
+
 const LOWER_UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
 export function fakeSign(secret: Buffer, body: Buffer): string {
@@ -34,7 +37,7 @@ export function fakeReadRequest(req: BillingRequest): { body: Buffer; signature:
  * `{ "events": [ … ] }` → parsed events. Null only when the body is not that shape. An entry of an unknown type, or without
  * the id, environment, subscription id or occurred_at that storing it needs, is skipped and counted.
  */
-export function fakeParse(body: Buffer): { events: ParsedEvent[]; skipped: number } | null {
+export function fakeParse(body: Buffer): { events: FakeParsedEvent[]; skipped: number } | null {
   let json: unknown;
   try {
     json = JSON.parse(body.toString('utf8'));
@@ -42,7 +45,7 @@ export function fakeParse(body: Buffer): { events: ParsedEvent[]; skipped: numbe
     return null;
   }
   if (!isRecord(json) || !Array.isArray(json.events)) return null;
-  const events: ParsedEvent[] = [];
+  const events: FakeParsedEvent[] = [];
   let skipped = 0;
   for (const entry of json.events) {
     const parsed = parseEntry(entry);
@@ -52,7 +55,7 @@ export function fakeParse(body: Buffer): { events: ParsedEvent[]; skipped: numbe
   return { events, skipped };
 }
 
-function parseEntry(entry: unknown): ParsedEvent | null {
+function parseEntry(entry: unknown): FakeParsedEvent | null {
   if (!isRecord(entry) || !isEventType(entry.type)) return null;
   const type = entry.type;
   const externalEventId = text(entry.id);
