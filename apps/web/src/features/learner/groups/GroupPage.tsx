@@ -1,6 +1,6 @@
 'use client';
 
-import { MoreHorizontal, Plus } from 'lucide-react';
+import { MoreHorizontal, Plus, Search } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
@@ -88,6 +88,8 @@ function GroupBody({ detail }: { detail: GroupDetail }) {
   const words = useDeckWords(detail.id, filter);
   const shown = words.data?.pages.flatMap((page) => page.items) ?? [];
   const total = summary?.total ?? detail.item_count;
+  // Owner 06/11/2026: a deck with no words leads with [Thêm từ]; no study button for 0 words and no counts that are all 0.
+  const empty = total === 0;
   const count = summary ? waiting(summary) : 0;
   const review = `/${locale}/app/review?group=${detail.id}`;
   const created = format.date(detail.created_at, 'full');
@@ -106,7 +108,7 @@ function GroupBody({ detail }: { detail: GroupDetail }) {
           <h1 className="wrap-anywhere text-h2 font-extrabold text-ink">{detail.name}</h1>
           <p className="text-caption text-muted">{t('meta', { count: detail.item_count, date: created })}</p>
         </div>
-        {summary && (
+        {summary && !empty && (
           <div className="flex flex-wrap gap-2 text-caption font-semibold">
             <span className="rounded-full bg-accent px-2 py-0.5 text-on-accent">{t('chipPriority', { count: summary.today.priority })}</span>
             <span className="rounded-full bg-primary px-2 py-0.5 text-on-primary">{t('chipDue', { count: summary.today.due })}</span>
@@ -114,7 +116,12 @@ function GroupBody({ detail }: { detail: GroupDetail }) {
           </div>
         )}
         <div className="flex gap-2">
-          {count > 0 ? (
+          {empty ? (
+            <Button variant="sticker" size="lg" className="flex-1" onPress={() => addWord.open(undefined, { groupId: detail.id })}>
+              <Plus aria-hidden className="size-5 shrink-0" />
+              {t('addWord')}
+            </Button>
+          ) : count > 0 ? (
             <Link href={review} className="flex min-h-control-touch flex-1 items-center justify-center rounded-inner bg-accent px-4 text-body font-semibold text-on-accent shadow-ledge-accent">
               {t('review', { count })}
             </Link>
@@ -130,11 +137,13 @@ function GroupBody({ detail }: { detail: GroupDetail }) {
             onDelete={() => open({ kind: 'delete', group: detail, leaveTo: 'groups' })}
           />
         </div>
-        <Button variant="quiet" size="lg" onPress={() => addWord.open(undefined, { groupId: detail.id })}>
-          <Plus aria-hidden className="size-5 shrink-0" />
-          {t('addWord')}
-        </Button>
-        {summary && <StageChart summary={summary} />}
+        {!empty && (
+          <Button variant="quiet" size="lg" onPress={() => addWord.open(undefined, { groupId: detail.id })}>
+            <Plus aria-hidden className="size-5 shrink-0" />
+            {t('addWord')}
+          </Button>
+        )}
+        {summary && !empty && <StageChart summary={summary} />}
         {summary && summary.backlog > 0 && (
           <Link href={`/${locale}/app/group/backlog?id=${detail.id}`} className="flex items-center justify-between rounded-inner bg-danger-soft px-3 py-2 text-ui font-semibold text-danger">
             {t('backlog', { count: summary.backlog })}
@@ -144,44 +153,50 @@ function GroupBody({ detail }: { detail: GroupDetail }) {
       </section>
 
       <div className="flex min-w-0 flex-col gap-6 lg:col-span-2">
-        {shown.length > 0 && <CardPreview cards={shown} />}
-        <section className="flex flex-col gap-3">
-          <h2 id="all-words" className="text-title font-semibold text-ink">
-            {t('allWords', { count: total })}
-          </h2>
-          <div className="w-full sm:w-72">
-            <Select
-              label={t('filterLabel')}
-              hideLabel
-              value={filter}
-              onChange={(next) => setFilter(next as WordFilter)}
-              items={filters.map((f) => {
-                const count = filterCount(summary, f.id, detail.item_count);
-                return count === null ? f : { ...f, suffix: t('filterCount', { count }) };
-              })}
-            />
-          </div>
-          {words.isPending ? (
-            <FullScreenSpinner />
-          ) : words.isError ? (
-            <GroupError error={words.error} onRetry={() => void words.refetch()} />
-          ) : shown.length === 0 ? (
-            <p className="text-body text-muted">{filter === 'all' ? t('empty') : t('emptyFilter')}</p>
-          ) : (
-            <>
-              <ul aria-label={t('allWords', { count: total })} className="divide-y divide-border rounded-card border border-border bg-surface">
-                {shown.map((word) => (
-                  <WordRow key={word.item_id} card={word} groupId={detail.id} />
-                ))}
-              </ul>
-              {words.hasNextPage && (
-                <Button variant="quiet" onPress={() => void words.fetchNextPage()} isPending={words.isFetchingNextPage}>
-                  {t('loadMore')}
-                </Button>
+        {empty ? (
+          <EmptyDeck />
+        ) : (
+          <>
+            {shown.length > 0 && <CardPreview cards={shown} />}
+            <section className="flex flex-col gap-3">
+              <h2 id="all-words" className="text-title font-semibold text-ink">
+                {t('allWords', { count: total })}
+              </h2>
+              <div className="w-full sm:w-72">
+                <Select
+                  label={t('filterLabel')}
+                  hideLabel
+                  value={filter}
+                  onChange={(next) => setFilter(next as WordFilter)}
+                  items={filters.map((f) => {
+                    const count = filterCount(summary, f.id, detail.item_count);
+                    return count === null ? f : { ...f, suffix: t('filterCount', { count }) };
+                  })}
+                />
+              </div>
+              {words.isPending ? (
+                <FullScreenSpinner />
+              ) : words.isError ? (
+                <GroupError error={words.error} onRetry={() => void words.refetch()} />
+              ) : shown.length === 0 ? (
+                <p className="text-body text-muted">{filter === 'all' ? t('empty') : t('emptyFilter')}</p>
+              ) : (
+                <>
+                  <ul aria-label={t('allWords', { count: total })} className="divide-y divide-border rounded-card border border-border bg-surface">
+                    {shown.map((word) => (
+                      <WordRow key={word.item_id} card={word} groupId={detail.id} />
+                    ))}
+                  </ul>
+                  {words.hasNextPage && (
+                    <Button variant="quiet" onPress={() => void words.fetchNextPage()} isPending={words.isFetchingNextPage}>
+                      {t('loadMore')}
+                    </Button>
+                  )}
+                </>
               )}
-            </>
-          )}
-        </section>
+            </section>
+          </>
+        )}
       </div>
       {dialogs}
     </div>
@@ -203,15 +218,50 @@ function DeckMenu({ studyAll, total, onRename, onDelete }: { studyAll: string; t
           <MenuItem className={MENU_ITEM} onAction={onRename}>
             {t('groups.rename')}
           </MenuItem>
-          <MenuItem className={MENU_ITEM} href={studyAll}>
-            {t('groups.studyAll', { count: total })}
-          </MenuItem>
+          {total > 0 && (
+            <MenuItem className={MENU_ITEM} href={studyAll}>
+              {t('groups.studyAll', { count: total })}
+            </MenuItem>
+          )}
           <MenuItem className={`${MENU_ITEM} text-danger`} onAction={onDelete}>
             {t('groups.delete')}
           </MenuItem>
         </Menu>
       </Popover>
     </MenuTrigger>
+  );
+}
+
+/**
+ * A deck with no words (owner 06/11/2026), in place of the preview and the word list: two blank cards, what to do, and the way to
+ * pick a batch by topic. [Thêm từ] itself stays at the top of the deck panel, where [Ôn N thẻ] sits once the deck has words.
+ */
+function EmptyDeck() {
+  const t = useTranslations('App.group');
+  const locale = useLocale();
+  return (
+    <section aria-labelledby="empty-deck" className="flex flex-col items-start gap-5 rounded-card border-2 border-dashed border-border-strong p-6 md:p-8">
+      <div aria-hidden className="relative h-20 w-28">
+        <span className="absolute left-4 top-0 h-16 w-24 -rotate-6 rounded-inner border-2 border-border-strong bg-primary-soft" />
+        <span className="absolute left-0 top-3 flex h-16 w-24 rotate-3 flex-col justify-center gap-1.5 rounded-inner border-2 border-ink bg-surface px-3 shadow-ledge-soft">
+          <span className="h-2 w-12 rounded-full bg-ink" />
+          <span className="h-1.5 w-16 rounded-full bg-border-strong" />
+        </span>
+      </div>
+      <div className="flex max-w-prose flex-col gap-1.5">
+        <h2 id="empty-deck" className="text-balance text-h3 font-bold text-ink">
+          {t('emptyTitle')}
+        </h2>
+        <p className="text-pretty text-body text-muted">{t('emptyBody')}</p>
+      </div>
+      <Link
+        href={`/${locale}/app/lookup`}
+        className="flex min-h-control items-center gap-2 rounded-inner border-2 border-border-strong bg-surface px-4 text-ui font-semibold text-ink shadow-button-secondary outline-none hover:bg-primary-soft focus-visible:ring-2 focus-visible:ring-primary"
+      >
+        <Search aria-hidden className="size-4 shrink-0" />
+        {t('emptyLookup')}
+      </Link>
+    </section>
   );
 }
 

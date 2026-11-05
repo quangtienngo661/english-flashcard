@@ -1,9 +1,10 @@
 'use client';
 
-import { MoreHorizontal } from 'lucide-react';
+import { MoreHorizontal, Plus } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { Button, Menu, MenuItem, MenuTrigger, Popover } from 'react-aria-components';
+import { useAddWord } from '@/features/learner/add-word/add-word-context';
 import { cn } from '@/lib/cn';
 import type { GroupSummary } from './groups-api';
 
@@ -42,11 +43,19 @@ export function StageBars({ cells, className }: { cells: GroupSummary['cells']; 
 
 type Actions = { onRename: (g: GroupSummary) => void; onDelete: (g: GroupSummary) => void };
 
-/** One deck (K/10, K/16): stage bars, size, name, cards waiting, the review button and the ⋯ menu (K/10b). */
+const ACTION =
+  'relative z-10 mt-auto flex min-h-control items-center justify-center gap-2 rounded-inner border-2 border-border-strong bg-surface px-4 text-ui font-semibold text-ink shadow-button-secondary hover:bg-primary-soft';
+
+/**
+ * One deck (K/10, K/16): stage bars, size, name, cards waiting, the review button and the ⋯ menu (K/10b). Owner 06/11/2026: a deck
+ * with no words says "Chưa có từ" and offers [Thêm từ] (locked to it), never "Xong hôm nay" or a study button for 0 words.
+ */
 export function GroupCard({ group, index, actions }: { group: GroupSummary; index: number; actions: Actions }) {
   const t = useTranslations('App.groups');
   const locale = useLocale();
+  const addWord = useAddWord();
   const count = waiting(group);
+  const empty = group.total === 0;
   const review = `/${locale}/app/review?group=${group.id}`;
 
   return (
@@ -70,18 +79,21 @@ export function GroupCard({ group, index, actions }: { group: GroupSummary; inde
         <span
           className={cn(
             'w-fit rounded-full px-2 py-0.5 text-caption font-semibold',
-            count > 0 ? 'bg-accent-soft text-ink' : 'bg-success-soft text-success',
+            empty ? 'border border-border-strong text-muted' : count > 0 ? 'bg-accent-soft text-ink' : 'bg-success-soft text-success',
           )}
         >
-          {count > 0 ? t('waitingChip', { count }) : t('doneChip')}
+          {empty ? t('emptyChip') : count > 0 ? t('waitingChip', { count }) : t('doneChip')}
         </span>
-        <Link
-          href={count > 0 ? review : `${review}&mode=all`}
-          data-google-vignette="false"
-          className="relative z-10 mt-auto flex min-h-control items-center justify-center rounded-inner border-2 border-border-strong bg-surface px-4 text-ui font-semibold text-ink shadow-button-secondary hover:bg-primary-soft"
-        >
-          {count > 0 ? t('review', { count }) : t('studyAgain')}
-        </Link>
+        {empty ? (
+          <button type="button" onClick={() => addWord.open(undefined, { groupId: group.id })} className={ACTION}>
+            <Plus aria-hidden className="size-4 shrink-0" />
+            {t('addWord')}
+          </button>
+        ) : (
+          <Link href={count > 0 ? review : `${review}&mode=all`} data-google-vignette="false" className={ACTION}>
+            {count > 0 ? t('review', { count }) : t('studyAgain')}
+          </Link>
+        )}
       </div>
     </li>
   );
@@ -105,9 +117,11 @@ function GroupMenu({ group, actions }: { group: GroupSummary; actions: Actions }
           <MenuItem className={ITEM} onAction={() => actions.onRename(group)}>
             {t('rename')}
           </MenuItem>
-          <MenuItem className={ITEM} href={`/${locale}/app/review?group=${group.id}&mode=all`} data-google-vignette="false">
-            {t('studyAll', { count: group.total })}
-          </MenuItem>
+          {group.total > 0 && (
+            <MenuItem className={ITEM} href={`/${locale}/app/review?group=${group.id}&mode=all`} data-google-vignette="false">
+              {t('studyAll', { count: group.total })}
+            </MenuItem>
+          )}
           <MenuItem className={`${ITEM} text-danger`} onAction={() => actions.onDelete(group)}>
             {t('delete')}
           </MenuItem>

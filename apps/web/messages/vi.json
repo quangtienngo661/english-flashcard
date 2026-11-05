@@ -679,6 +679,8 @@
       "backlogShort": "{count, number} từ lâu chưa ôn",
       "waitingChip": "{count, number} thẻ chờ",
       "doneChip": "Xong hôm nay",
+      "emptyChip": "Chưa có từ",
+      "addWord": "Thêm từ",
       "review": "Ôn {count, number} thẻ",
       "studyAgain": "Học lại cả nhóm",
       "menu": "Tùy chọn nhóm {name}",
@@ -757,7 +759,10 @@
       "toList": "Về Danh sách nhóm",
       "emptyFilter": "Không có từ nào ở mục này.",
       "loadMore": "Xem thêm từ",
-      "empty": "Nhóm chưa có từ nào."
+      "empty": "Nhóm chưa có từ nào.",
+      "emptyTitle": "Nhóm này chưa có từ nào",
+      "emptyBody": "Thêm từ bạn gặp khi đọc hay xem phim, hoặc chọn cả loạt từ theo chủ đề trong Tra từ. Có từ rồi thì nhóm mới có thẻ để ôn.",
+      "emptyLookup": "Chọn từ theo chủ đề"
     },
     "backlog": {
       "back": "Nhóm {name}",
