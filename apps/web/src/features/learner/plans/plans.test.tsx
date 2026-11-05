@@ -94,14 +94,16 @@ describe('PlansPage (K/52, K/53; launch prep B design §3.8)', () => {
     expect(within(pro).getByText(dong(81000))).toBeInTheDocument();
   });
 
-  it('right above the Buy button: no automatic renewal or refund, the support email, and a link to the Terms (owner 05/11/2026)', async () => {
+  it('at the bottom of the Pro card, after the Buy button and the perks: no automatic renewal or refund, the support email, and a link to the Terms (owner 05/11/2026)', async () => {
     renderApp(<PlansPage />, { routes: routes(ent('free')) });
     const pro = await screen.findByRole('region', { name: 'Pro' });
     const sentence = within(pro).getByText(/^Gói không tự gia hạn\. Không hoàn tiền tự động; cần hỗ trợ, liên hệ/);
     expect(within(pro).getByRole('link', { name: 'support@wordmet.com' })).toHaveAttribute('href', 'mailto:support@wordmet.com');
     expect(within(pro).queryByText(/Kỳ mới bắt đầu từ/)).not.toBeInTheDocument();
     const buy = within(pro).getByRole('button', { name: 'Mua' });
-    expect(sentence.compareDocumentPosition(buy) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(buy.compareDocumentPosition(sentence) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    const lastPerk = within(pro).getByText('Không quảng cáo');
+    expect(lastPerk.compareDocumentPosition(sentence) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(within(pro).getByRole('link', { name: 'Điều khoản sử dụng' })).toHaveAttribute('href', '/vi/terms');
   });
 
@@ -168,6 +170,8 @@ describe('PlansPage (K/52, K/53; launch prep B design §3.8)', () => {
     const pro = screen.getByRole('region', { name: 'Pro' });
     expect(within(pro).getByText('Gói hiện tại')).toBeInTheDocument();
     expect(within(pro).getByText('Tới hết 31/12/2026')).toBeInTheDocument();
+    // The Pro card no longer repeats what happens when Pro ends; the Free card says it (owner 05/11/2026).
+    expect(within(pro).queryByText(/từ và lịch ôn giữ nguyên/)).not.toBeInTheDocument();
     expect(within(pro).queryByText('Chưa mở bán')).not.toBeInTheDocument();
     expect(within(screen.getByRole('region', { name: 'Miễn phí' })).getByText('Tự động về Free khi Pro hết hạn')).toBeInTheDocument();
   });

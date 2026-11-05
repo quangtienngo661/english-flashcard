@@ -1574,7 +1574,6 @@
       "thenPeriod": "Then: {from} – {to}",
       "proLine": "More practice sessions and more AI uses each month.",
       "until": "Through {date}",
-      "afterEnd": "When it ends, your account goes back to Free; your words and review schedule stay.",
       "freeList": {
         "review": "Card reviews, review schedule, email reminders",
         "lookup": "Look up and quick add, up to {groups, number} decks",

@@ -1574,7 +1574,6 @@
       "thenPeriod": "Sau đó: {from} – {to}",
       "proLine": "Nhiều phiên luyện hơn và nhiều lượt AI hơn mỗi tháng.",
       "until": "Tới hết {date}",
-      "afterEnd": "Hết hạn thì tài khoản về gói Miễn phí; từ và lịch ôn giữ nguyên.",
       "freeList": {
         "review": "Ôn thẻ, lịch ôn, nhắc học qua email",
         "lookup": "Tra từ, thêm nhanh, tối đa {groups, number} nhóm",
