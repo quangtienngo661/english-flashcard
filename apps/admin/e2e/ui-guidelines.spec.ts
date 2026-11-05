@@ -127,8 +127,8 @@ test('Checkpoint A: on a 1920 screen the Sources columns share the width instead
   const width = (await table.boundingBox())!.width;
   const shares = await table.locator('thead th').evaluateAll((ths, total) => ths.map((th) => th.getBoundingClientRect().width / (total as number)), width);
   expect(shares[0]).toBeLessThanOrEqual(0.41);
-  // Name, version, license and priority keep their planned shares; the Sửa / Xóa column takes what is left.
-  const planned = [1 / 3, 1 / 6, 1 / 4, 1 / 12, 1 / 6];
+  // Name, version, license, priority and "shown to learners" keep their planned shares; the Sửa / Xóa column takes what is left (1/6).
+  const planned = [1 / 4, 1 / 12, 1 / 4, 1 / 12, 1 / 6, 1 / 6];
   expect(shares.map((share, i) => Math.abs(share - planned[i]) <= 0.03)).toEqual(planned.map(() => true));
 });
 

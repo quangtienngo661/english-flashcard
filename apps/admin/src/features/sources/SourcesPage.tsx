@@ -50,8 +50,8 @@ export function SourcesPage() {
 
   const columns: Column<AdminSourceView>[] = [
     // Shares, not fixed widths, so a wide screen spreads the columns out instead of piling them on the right (owner, Checkpoint A).
-    { key: 'name', header: t('sources.list.name'), className: 'w-1/3', cell: (s) => s.name },
-    { key: 'version', header: t('sources.list.version'), className: 'w-1/6', cell: (s) => s.version || '—' },
+    { key: 'name', header: t('sources.list.name'), className: 'w-1/4', cell: (s) => s.name },
+    { key: 'version', header: t('sources.list.version'), className: 'w-1/12', cell: (s) => s.version || '—' },
     { key: 'license', header: t('sources.list.license'), className: 'w-1/4', cell: (s) => s.license || '—' },
     { key: 'priority', header: t('sources.list.priority'), className: 'w-1/12 tabular-nums', cell: (s) => s.display_priority },
     { key: 'shown', header: t('sources.list.shown'), className: 'w-1/6', cell: (s) => (s.shown_to_learners ? t('sources.list.shownYes') : t('sources.list.shownNo')) },
