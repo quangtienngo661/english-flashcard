@@ -60,7 +60,7 @@ là bản design trước review và các phương án review nêu; không thêm
 | DB41 | Dữ liệu người chuyển (RB-15) | Không giữ trường người chuyển sau khi apply (trừ DB21 vòng 2); không `buyer*`; mục payOS ở M2 | Theo đề xuất của review |
 | DB42 | Kỳ chưa bắt đầu trong snapshot (RB-19) | Trường riêng `upcoming_periods` | Theo đề xuất của review (Claude chọn trong hai cách review nêu) |
 | DB43 | Đăng văn bản pháp lý mới (Q-B16) | Một bản lúc launch, có cả payOS và quảng cáo | Chủ dự án |
-| DB44 | Loại tài khoản nối payOS (Q-B15) | Chưa chọn; quyết lúc đăng ký payOS | Chưa chốt: chủ dự án chưa trả lời (sửa 04/11/2026) |
+| DB44 | Loại tài khoản nối payOS (Q-B15) | VietQR Pro | Chủ dự án (05/11/2026) |
 
 ## DB1 — Cách thu tiền lúc đầu
 
@@ -543,11 +543,13 @@ Bối cảnh: mỗi lần đăng phiên bản mới, học viên đã đồng ý
 
 | Phương án | Trade-off |
 |---|---|
-| Tài khoản VietQR Pro (tài khoản ảo theo từng đơn) | Ngân hàng chặn chuyển sai số tiền, không phải xử lý tay; phí khoảng dưới 1.500 ₫/giao dịch theo trang giới thiệu payOS (chưa có bảng giá đầy đủ) |
+| ✅ Tài khoản VietQR Pro (tài khoản ảo theo từng đơn) | Ngân hàng chặn chuyển sai số tiền, không phải xử lý tay; phí khoảng dưới 1.500 ₫/giao dịch theo trang giới thiệu payOS (chưa có bảng giá đầy đủ) |
 | Tài khoản thường | Có thể không có phí đó; admin xử lý tay các lần chuyển sai (`needs_review`) |
 | Để tới lúc đăng ký payOS | Design chạy được với cả hai; chọn khi thấy màn liên kết ngân hàng và giá thật |
 
 **Sửa 04/11/2026:** bản trước ghi chủ dự án chốt "để tới lúc đăng ký payOS". Thật ra chủ dự án chỉ trả lời Q-B16 ("cách 1"); Q-B15 chưa có câu trả lời, Claude ghi "để sau". Đọc lại tài liệu payOS 04/11: VietQR Pro là thuộc tính của tài khoản ngân hàng liên kết, lời gọi tạo link giống hệt nên code không cần biết loại tài khoản; tài liệu không nói tài khoản thường có gửi webhook cho khoản chuyển sai số tiền không. Tạo kênh thanh toán cần "Tổ chức của bạn đã được xác thực", tài khoản ngân hàng trùng tên tổ chức.
+
+**Chốt 05/11/2026 (chủ dự án):** VietQR Pro. Chủ dự án đã tạo tài khoản payOS và chọn loại này. Code không đổi: trạng thái `needs_review` và màn xử lý tay của admin vẫn giữ làm lưới an toàn cho khoản sai lọt qua ngân hàng. Chưa kiểm: phí thật mỗi giao dịch, `virtualAccountNumber` trong webhook thật, và việc tổ chức của chủ dự án đã được payOS xác thực hay chưa; cả ba xem ở lần mua thật đầu tiên sau deploy.
 
 ## Đề xuất kỹ thuật trong design (chờ duyệt cùng bản viết)
 
