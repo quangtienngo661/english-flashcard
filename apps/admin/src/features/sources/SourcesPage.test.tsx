@@ -18,6 +18,21 @@ describe('sources list', () => {
     expect(screen.getAllByText('CC BY 4.0').length).toBeGreaterThan(0);
   });
 
+  it('says per source whether learners see it on the sources page: "Có" for a shown source, "Không" for one that is not', async () => {
+    const hidden = { ...SRC, id: 's2', name: 'Octanove trial', shown_to_learners: false };
+    renderApp('/sources', { [LIST]: () => Response.json({ items: [{ ...SRC, shown_to_learners: true }, hidden] }) });
+    await screen.findAllByText('CEFR-J Vocabulary Profile');
+    const rowOf = (name: string) => screen.getAllByRole('row').find((row) => within(row).queryByText(name))!;
+    expect(within(rowOf('CEFR-J Vocabulary Profile')).getByText(t.list.shownYes)).toBeInTheDocument();
+    expect(within(rowOf('Octanove trial')).getByText(t.list.shownNo)).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: t.list.shown })).toBeInTheDocument();
+  });
+
+  it('explains the rule above the table', async () => {
+    renderApp('/sources', { [LIST]: () => Response.json({ items: [SRC] }) });
+    expect(await screen.findByText(t.shownNote)).toBeInTheDocument();
+  });
+
   it('empty: says so and offers the first registration', async () => {
     renderApp('/sources', { [LIST]: () => Response.json({ items: [] }) });
     expect(await screen.findByText(t.empty)).toBeInTheDocument();

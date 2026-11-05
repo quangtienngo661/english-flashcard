@@ -22,6 +22,8 @@ export type SourceView = {
   /** The owner's source and the built-in AGID one: neither can be edited or deleted (set by the API). */
   protected?: boolean;
 };
+/** A row of the admin list: also says whether learners see the source on the public sources page (set by the API). */
+export type AdminSourceView = SourceView & { shown_to_learners: boolean };
 export type NewSource = Omit<SourceView, 'id' | 'kind' | 'protected'>;
 
 export type UploadListItem = { id: string; status: JobStatus; file_name: string; row_count: number; created_at: string };
@@ -81,8 +83,8 @@ function pageQuery(pageToken?: string): string {
   return `?${query}`;
 }
 
-export async function listSources(api: ApiClient): Promise<SourceView[]> {
-  return (await api.get<{ items: SourceView[] }>(SOURCES)).items;
+export async function listSources(api: ApiClient): Promise<AdminSourceView[]> {
+  return (await api.get<{ items: AdminSourceView[] }>(SOURCES)).items;
 }
 
 export function createSource(api: ApiClient, body: NewSource): Promise<SourceView> {

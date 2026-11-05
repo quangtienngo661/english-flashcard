@@ -115,7 +115,7 @@ test('the table header stays at the top while a 40-row list scrolls', async ({ p
 
 test('Checkpoint A: on a 1920 screen the Sources columns share the width instead of piling up on the right', async ({ page }) => {
   await page.setViewportSize({ width: 1920, height: 900 });
-  const source = (id: string, name: string, version: string, license: string) => ({ id, kind: 'third_party', name, version, url: null, license, attribution: '', display_priority: 100 });
+  const source = (id: string, name: string, version: string, license: string) => ({ id, kind: 'third_party', name, version, url: null, license, attribution: '', display_priority: 100, shown_to_learners: true });
   await signedInAs(page, 'editor', {
     'GET /v1/admin/content/sources': () => ({
       json: { items: [source('s1', 'CEFR-J Vocabulary Profile', '1.5', 'CEFR-J terms of use (research/education)'), source('s2', 'Oxford 3000', '2025', 'CC BY 4.0')] },

@@ -1921,8 +1921,12 @@
       "version": "Phiên bản",
       "license": "License",
       "priority": "Ưu tiên",
+      "shown": "Hiện cho người học",
+      "shownYes": "Có",
+      "shownNo": "Không",
       "actions": "Hành động"
     },
+    "shownNote": "Nguồn hiện trên trang Nguồn dữ liệu khi có ít nhất một nghĩa đã publish.",
     "edit": "Sửa",
     "editFor": "Sửa nguồn {name}",
     "editTitle": "Sửa nguồn “{name}”",
