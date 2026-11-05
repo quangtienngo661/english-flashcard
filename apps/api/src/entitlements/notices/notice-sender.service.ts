@@ -1,5 +1,6 @@
 import { Inject, Injectable, type OnModuleInit } from '@nestjs/common';
 import { Clock } from '../../common/clock/clock.js';
+import { APP_CONFIG, type AppConfig } from '../../common/config/app-config.js';
 import { PRISMA_CLIENT } from '../../common/db/prisma.module.js';
 import { AppLogger } from '../../common/logging/app-logger.js';
 import { MailBudget, PAYMENT_MAIL_SHARE } from '../../common/mail/mail-budget.service.js';
@@ -9,7 +10,10 @@ import { MaintenanceScheduler } from '../../common/maintenance/maintenance.sched
 import type { PrismaClient } from '../../generated/prisma/client.js';
 import { IdentityService } from '../../identity/profile/identity.service.js';
 import type { NoticeKind } from '../entitlements.types.js';
-import { entitlementMail } from './entitlement-mail.js';
+import { coveredBeyond } from '../orders/period-window.js';
+import { proSpans } from '../rules/pro-spans.js';
+import { SourcesRepository } from '../sources/sources.repository.js';
+import { entitlementMail, type ReceiptData } from './entitlement-mail.js';
 import { NoticePlanner } from './notice-planner.service.js';
 
 const SEND_BATCH = 50;
@@ -40,6 +44,8 @@ export class NoticeSender implements OnModuleInit {
     @Inject(Mailer) private readonly mailer: Mailer,
     @Inject(MaintenanceScheduler) private readonly scheduler: MaintenanceScheduler,
     @Inject(AppLogger) private readonly logger: AppLogger,
+    @Inject(SourcesRepository) private readonly sources: SourcesRepository,
+    @Inject(APP_CONFIG) private readonly config: AppConfig,
   ) {}
 
   /** One job, so one `pnpm maintenance:run` both plans and sends a due email. */
@@ -58,7 +64,10 @@ export class NoticeSender implements OnModuleInit {
     }
   }
 
-  /** Claims the next due row; a row past its window or a trial email on a denied trial is closed as `skipped` here. */
+  /**
+   * Claims the next due row; a row past its window, a trial email on a denied trial, or an expiry email for a period that was revoked or that
+   * Pro now goes on after (launch prep B design §3.10) is closed as `skipped` here. A receipt has no condition of its own beyond its window.
+   */
   private async claim(now: Date): Promise<Claimed | 'skipped' | null> {
     return this.prisma.$transaction(async (tx) => {
       // A row failed in this run has last_error_at = now: it waits for the next run.
@@ -75,9 +84,14 @@ export class NoticeSender implements OnModuleInit {
         return 'skipped' as const;
       };
       if (now >= notice.window_ends_at) return skip('window-passed');
-      if (notice.kind !== 'renewal_notice') {
+      if (notice.kind === 'trial_started' || notice.kind === 'trial_reminder') {
         const sub = await tx.subscription.findUnique({ where: { id: notice.subject_key }, select: { trialDenied: true } });
         if (sub === null || sub.trialDenied) return skip('trial-denied');
+      } else if (notice.kind === 'expiry_notice') {
+        const period = await tx.prepaidPeriod.findUnique({ where: { id: notice.subject_key }, select: { endsAt: true, revokedAt: true } });
+        if (period === null || period.revokedAt !== null) return skip('period-gone');
+        const loaded = await this.sources.load(tx, notice.recipient_user_id, now);
+        if (coveredBeyond(proSpans(loaded.grants, loaded.prepaidPeriods), period.endsAt, now)) return skip('covered');
       }
       await tx.entitlementNotice.update({ where: { id: notice.id }, data: { state: 'sending' } });
       return notice;
@@ -93,15 +107,24 @@ export class NoticeSender implements OnModuleInit {
       this.logger.info('entitlement_notice_skipped', { notice_id: notice.id, kind: notice.kind, reason: 'no-verified-email' });
       return;
     }
+    // A receipt is written from the payment it names, read now: a payment or period that is gone (the account was erased) is no email.
+    const receipt = notice.kind === 'payment_receipt' ? await this.receiptOf(notice.subject_key) : null;
+    if (notice.kind === 'payment_receipt' && receipt === null) {
+      await set({ state: 'skipped' });
+      this.logger.info('entitlement_notice_skipped', { notice_id: notice.id, kind: notice.kind, reason: 'payment-gone' });
+      return;
+    }
     if (!(await this.budget.tryConsume({ ceiling: PAYMENT_MAIL_SHARE }))) {
       await set({ state: 'failed', attempts: { increment: 1 }, lastErrorAt: now });
       this.logger.warn('entitlement_notice_failed', { notice_id: notice.id, kind: notice.kind, error_kind: 'budget' });
       return;
     }
     const profile = await this.identity.getProfile(notice.recipient_user_id);
+    const language = profile?.native_language ?? 'vi';
     const date = new Date(notice.period_key);
-    const mail = entitlementMail(notice.kind, profile?.native_language ?? 'vi', {
-      trialEndsAt: date, periodEnd: date, timeZone: profile?.timezone,
+    const plansUrl = `${this.config.learnerAppUrl.replace(/\/+$/, '')}/${language}/app/plans`;
+    const mail = entitlementMail(notice.kind, language, {
+      trialEndsAt: date, periodEnd: date, timeZone: profile?.timezone, plansUrl, ...(receipt === null ? {} : { receipt }),
     });
     try {
       await this.mailer.send({ to: address, ...mail });
@@ -121,5 +144,22 @@ export class NoticeSender implements OnModuleInit {
     }
     await set({ state: 'sent', sentAt: this.clock.now() });
     this.logger.info('entitlement_notice_sent', { notice_id: notice.id, kind: notice.kind });
+  }
+
+  /** What the receipt says: the payment that opened a period, its order and the period; null when any is gone. */
+  private async receiptOf(paymentId: string): Promise<ReceiptData | null> {
+    const payment = await this.prisma.billingOrderPayment.findUnique({
+      where: { id: paymentId },
+      select: {
+        reference: true,
+        order: { select: { periodMonths: true, amountMinor: true, description: true } },
+        period: { select: { startsAt: true, endsAt: true } },
+      },
+    });
+    if (payment === null || payment.period === null) return null;
+    return {
+      months: payment.order.periodMonths as 1 | 3 | 12, amountMinor: Number(payment.order.amountMinor), description: payment.order.description,
+      reference: payment.reference, startsAt: payment.period.startsAt, endsAt: payment.period.endsAt,
+    };
   }
 }

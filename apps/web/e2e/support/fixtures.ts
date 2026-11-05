@@ -39,7 +39,7 @@ export const APP_CONFIG = {
   plans: {
     free: { practice_sessions_per_day: 3, ai_practice_per_cycle: 15, ai_lookup_per_cycle: 5 },
     trial: { ai_practice_per_cycle: 300, ai_lookup_per_cycle: 100 },
-    pro: { practice_sessions_per_day: 30, ai_practice_per_cycle: 300, ai_lookup_per_cycle: 100 },
+    pro: { practice_sessions_per_day: 30, ai_practice_per_cycle: 300, ai_lookup_per_cycle: 100, prices: { '1': 79000, '3': 199000, '12': 599000 } },
   },
 };
 

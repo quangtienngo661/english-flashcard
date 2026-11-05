@@ -19,4 +19,4 @@ export type Interval = 'month' | 'year';
 
 export type BillingEnvironment = 'sandbox' | 'production';
 
-export type NoticeKind = 'trial_started' | 'trial_reminder' | 'renewal_notice';
+export type NoticeKind = 'trial_started' | 'trial_reminder' | 'renewal_notice' | 'expiry_notice' | 'payment_receipt';

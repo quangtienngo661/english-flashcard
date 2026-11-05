@@ -86,7 +86,42 @@ SQL dùng ở dưới (một dòng một lệnh): `docker compose exec -T postgr
 
 ## M2. Mua trên web, admin, email, văn bản
 
-(Thêm khi M2 được merge: trang gói và trang về, "Đơn hàng" ở admin, email biên nhận và sắp hết hạn, Điều khoản và Chính sách bảo mật mục payOS.)
+Cần thêm ở phần chuẩn bị: app người học chạy (`pnpm dev:app` ở `apps/web`, http://localhost:3001; trên Windows nó chạy trong container Linux), admin chạy (`pnpm dev` ở `apps/admin`, http://localhost:5173, với `VITE_API_BASE_URL=http://localhost:3000`), file môi trường của API có `CORS_ORIGINS` và `ADMIN_APP_URL` cho admin và `LEARNER_APP_URL=http://localhost:3001` (đường dẫn trang về và link trong email dựng từ đó). Worker chạy (`pnpm run:dev` chạy cả API và worker) hoặc gõ `pnpm maintenance:run` ở `apps/api` khi cần email. Mailpit: http://localhost:8025.
+
+### Trang Gói và mua (`/vi/app/plans`)
+
+- [ ] **[local] Lan (gói Miễn phí) thấy ba kỳ có giá.** Kiểm: mở `/vi/app/plans`. Đúng là: ô chọn "1 tháng / 3 tháng / 12 tháng" (12 tháng được chọn sẵn); giá ở thẻ Pro đúng với admin "Cài đặt hệ thống" (79.000 / 199.000 / 599.000 ₫ nếu chưa đổi) và đổi theo ô chọn; không còn "Chưa mở bán" hay "XXX.000 ₫"; thẻ Miễn phí ghi "Gói hiện tại".
+- [ ] **[local] Câu trên nút Mua.** Đúng là: "Không hoàn tiền. Gói không tự gia hạn; hết hạn bạn mua kỳ mới." nằm trên nút **Mua**, kèm link "Điều khoản sử dụng" mở `/vi/terms`.
+- [ ] **[local] Lan mua 1 tháng, trọn đường.** Kiểm: chọn "1 tháng", bấm **Mua**. Đúng là: trình duyệt sang trang payOS giả ("Fake payOS", số tiền 79.000 ₫, nội dung `WM…`); bấm **Đã trả** thì về `/vi/app/plans/order?order=…` và hiện "Đã nhận tiền. Kỳ Pro này dùng tới hết {ngày}."; bấm "Bắt đầu học" về trang chủ; trang Gói giờ ghi "Bạn đang dùng gói Pro" và "Tới hết {ngày}", không có nút "Hủy gói".
+- [ ] **[local] Trang về khi tiền chưa tới.** Kiểm: bấm **Mua**; ở trang payOS giả lấy `order_id` từ dòng `Returns to:` rồi mở `http://localhost:3001/vi/app/plans/order?order=<order_id>` ở tab khác trước khi bấm Đã trả. Đúng là: "Đang chờ ngân hàng xác nhận. Bạn có thể đóng trang này; gói sẽ tự mở khi tiền tới." kèm email hỗ trợ; bấm **Đã trả** ở tab payOS giả thì trong vài giây tab kia đổi sang "Đã nhận tiền…".
+- [ ] **[local] Lan hủy ở trang payOS giả.** Kiểm: bấm **Mua**, bấm **Hủy**. Đúng là: về trang về với "Đơn đã hủy hoặc hết hạn." và link "Về trang Gói".
+- [ ] **[local] Trả thiếu.** Kiểm: bấm **Mua** 3 tháng, bấm **Trả thiếu**, mở lại trang về. Đúng là: "Chúng tôi đang kiểm tra khoản chuyển của bạn." kèm email hỗ trợ (đơn ở "Cần xem" bên admin, lý do "Trả thiếu").
+- [ ] **[local] Giá đổi giữa lúc Lan đang xem.** Kiểm: mở trang Gói ở một tab; ở admin "Cài đặt hệ thống" đổi giá 12 tháng; ở tab đầu bấm **Mua**. Đúng là: "Giá vừa đổi, xem lại trước khi mua", giá mới hiện ở thẻ Pro, không có đơn mới (admin "Đơn hàng" không thêm dòng); bấm **Mua** lần nữa mới sang payOS với giá mới.
+- [ ] **[local] Lan đang Pro mua thêm.** Kiểm: khi đang Pro, chọn một kỳ, bấm **Mua**, **Đã trả**. Đúng là: thẻ Pro ghi "Tới hết {ngày cuối chuỗi}" và "Kỳ tiếp theo: {từ} – {đến}"; câu "Mua thêm: kỳ mới nối tiếp sau kỳ hiện tại." trên nút Mua.
+- [ ] **[local] Lịch sử giao dịch.** Kiểm: `/vi/app/settings/transactions`. Đúng là: dòng "Mua · Pro · 3 tháng · 199.000 ₫" cho đơn 3 tháng (và "1 tháng", "12 tháng" cho hai kỳ kia), không có chữ "theo tháng/năm".
+- [ ] **[local] Màn xóa tài khoản.** Kiểm: khi đang Pro mở `/vi/app/settings/delete-account`. Đúng là: dòng "Thời gian Pro còn lại sẽ mất, không hoàn tiền." và vẫn xóa được (không có gói tự gia hạn nào chặn).
+- [ ] **[local] Câu khóa tính năng.** Kiểm: ở gói Miễn phí bấm bật "Kiểu câu có AI" trong Tùy chỉnh phiên luyện. Đúng là: "Dành cho gói Pro." kèm link "Xem Gói học", không còn "Gói Pro chưa mở bán".
+- [ ] **[local] Tiếng Anh.** Kiểm: các dòng trên ở `/en/app/plans`. Đúng là: "1 month / 3 months / 12 months", "Buy", "No refunds. The plan does not renew by itself; when it ends you buy a new period."
+
+### Email biên nhận và email nhắc hết hạn
+
+- [ ] **[local][smoke bước 18] Biên nhận.** Kiểm: sau một lần mua, `pnpm maintenance:run`, mở Mailpit. Đúng là: một thư "Biên nhận mua Wordmet Pro" tới email của Lan, có "3 tháng", "199.000 ₫", nội dung `WM…`, mã tham chiếu, ngày bắt đầu và "tới hết", "Không hoàn tiền sau khi đã thanh toán", link `/vi/app/plans`; không có "App Store", "Google Play", "tự gia hạn". Chạy `maintenance:run` lần nữa: không thêm thư.
+- [ ] **[local][smoke bước 18] Nhắc hết hạn.** Kiểm: `UPDATE prepaid_periods SET starts_at = now() - interval '84 days', ends_at = now() + interval '6 days' WHERE user_id = '<id Lan>'`, rồi `pnpm maintenance:run`. Đúng là: một thư "Gói Wordmet Pro sắp hết hạn" ghi ngày cuối còn dùng được và link mua kỳ mới. Nếu Lan đã mua kỳ nối tiếp (kỳ sau bắt đầu đúng lúc kỳ này hết) thì không thư nào gửi.
+
+### Admin "Đơn hàng" (`http://localhost:5173/orders`)
+
+- [ ] **[local] Menu.** Đúng là: đăng nhập admin thấy "Đơn hàng" trong nhóm Người học; editor không thấy và `/orders` báo không có quyền.
+- [ ] **[local] Danh sách và bộ lọc.** Đúng là: mỗi dòng có người học, "3 tháng · 199.000 ₫", nội dung `WM…`, giờ tạo (giờ Việt Nam), trạng thái; đơn cần xem có thêm lý do ("Trả thiếu"…). Lọc theo trạng thái, hộp "Cần xem", email, ngày, và nội dung chuyển khoản (gõ `wm` hoa thường đều được).
+- [ ] **[local] Chi tiết.** Đúng là: các lần trả (số tiền, nguồn, kết quả, mã tham chiếu), các kỳ đã mở với ngày cuối, "Pro tới hết {ngày}" của người học, lý do cần xem, và với đơn của tài khoản đã xóa: tên, số tài khoản, ngân hàng người chuyển.
+- [ ] **[local][smoke bước 11] Đã nhận tiền.** Kiểm: tạo một đơn, không trả; mở chi tiết, bấm **Đã nhận tiền**, nhập mã tham chiếu, số tiền, lý do. Đúng là: để trống một ô thì không gửi gì và có câu báo; đủ ba ô thì đơn thành "Đã trả" và Lan có kỳ Pro; bấm lại: "Đơn đã có kỳ."
+- [ ] **[local] Hủy đơn.** Kiểm: một đơn đang chờ, **Hủy đơn**. Đúng là: đơn thành "Đã hủy"; trang payOS giả của đơn đó ghi `CANCELLED`.
+- [ ] **[local][smoke bước 14] Đã xử lý.** Kiểm: một đơn "Cần xem" (ví dụ trả thiếu), **Đã xử lý**, ghi chú. Đúng là: để trống ghi chú thì không gửi; có ghi chú thì đơn thành "Đã đóng" và thông tin hoàn tiền (nếu có) biến mất.
+- [ ] **[local][smoke bước 9] Thu hồi kỳ.** Kiểm: Lan có hai kỳ nối nhau, thu hồi kỳ đầu với lý do. Đúng là: kỳ đó ghi "Đã thu hồi {ngày}" và hết nút; kỳ sau không dời; ô "Pro tới hết" đổi theo.
+
+### Văn bản
+
+- [ ] **[local] Bản nháp Điều khoản và Chính sách.** Kiểm: `git switch docs/launch-b-legal-drafts` (nhánh local, chưa push) và đọc `docs/preparation/legal-drafts/`: Điều khoản mục 5–8, Chính sách mục 2, 5, 8, 10. Đúng là: nói mua một lần, không tự gia hạn, kỳ nối tiếp, không hoàn tiền, payOS, quảng cáo "có thể hiển thị"; không còn "dùng thử" hay "tự gia hạn" ngoài câu phủ định.
+- [ ] **[deploy] Đăng hai bản vào admin `/legal`** và mở `/vi/terms`, `/vi/privacy` xem đúng bản đã đăng (xem `deploy-checklist.md`).
 
 ## M3. Ai thấy quảng cáo, hộp thoại giới thiệu Pro
 
@@ -102,7 +137,7 @@ SQL dùng ở dưới (một dòng một lệnh): `docker compose exec -T postgr
 - **Webhook thật qua WAF và Bot Fight Mode của Cloudflare**, và `pnpm payos:confirm-webhook <url>` đăng ký URL với payOS thật (cần ba khóa thật và địa chỉ công khai). **[deploy]**
 - **Chuyển lần hai vào link đã trả sinh webhook riêng (P8)**: không thử bằng tiền; theo dõi khi xảy ra. **[deploy]**
 - **Phần của Task 9 phụ thuộc đợt A** (lượt AI dùng lúc còn Pro trả trước không trừ vào Free sau khi kỳ hết, LB1A8): chưa làm, chờ `origin/dev` có M3 của đợt A. Chưa kiểm được cho tới lúc đó.
-- **Email biên nhận và "sắp hết hạn" (Task 15)**, trang mua, trang về và màn admin "Đơn hàng": thuộc M2.
+- **Các màn M2 trên trình duyệt thật và e2e Playwright** (trang Gói, trang về, "Đơn hàng" của admin): mới có test đơn vị với API giả; chưa ai bấm; e2e chạy ở CI.
 - **Hộp thoại giới thiệu Pro và AdSense**: thuộc M3 và M4; AdSense chỉ bật được sau khi Google duyệt. **[deploy]**
 - **Spike CSP `nonce` với Turnstile thật**: chạy lại sau khi mã Turnstile của đợt A vào `dev` (đã vào ngày 04/11/2026, chưa chạy lại); xem `chuan-bi-launch-b-spike-csp.md`.
 - **Smoke 5 và 7** chạy lại ở Task 24, sau khi hợp nhất với đợt A (M1 đổi `resolve()` và snapshot quyền lợi).

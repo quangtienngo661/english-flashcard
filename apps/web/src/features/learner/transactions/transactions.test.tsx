@@ -51,6 +51,28 @@ const rowButton = async (name: RegExp) => screen.findByRole('button', { name });
 // Intl puts a no-break space before "₫".
 const nameOf = (el: HTMLElement) => el.getAttribute('aria-label')!.replace(/\u00a0/g, ' ');
 
+describe('prepaid purchases in the history (launch prep B design §3.8)', () => {
+  const PAYOS = (id: string, interval: string, amount: number) => row(id, {
+    kind: 'purchase', interval, amount_minor: amount, provider: 'payos', provider_transaction_id: '1000000123:FT26309ABC',
+    occurred_at: '2026-11-05T03:02:00.000Z', period_start: '2026-11-05T03:02:00.000Z', period_end: '2027-02-04T17:00:00.000Z',
+  });
+
+  it('a payOS purchase names its period in months ("Pro · 3 tháng"), not as a subscription ("theo quý")', async () => {
+    renderApp(<TransactionsPage />, { routes: routes({
+      'GET /v1/me/transactions?page_size=20': list([PAYOS('p1', 'quarter', 199000), PAYOS('p2', 'month', 79000), PAYOS('p3', 'year', 599000)]),
+    }) });
+    expect(nameOf(await rowButton(/Pro · 3 tháng/))).toContain('Pro · 3 tháng, 199.000 ₫');
+    expect(nameOf(await rowButton(/Pro · 1 tháng/))).toContain('Pro · 1 tháng, 79.000 ₫');
+    expect(nameOf(await rowButton(/Pro · 12 tháng/))).toContain('Pro · 12 tháng, 599.000 ₫');
+    expect(screen.queryByRole('button', { name: /theo tháng|theo năm|theo quý/ })).not.toBeInTheDocument();
+  });
+
+  it('English', async () => {
+    renderApp(<TransactionsPage />, { locale: 'en', routes: routes({ 'GET /v1/me/transactions?page_size=20': list([PAYOS('p1', 'quarter', 199000)]) }) });
+    expect(nameOf(await rowButton(/Pro · 3 months/))).toContain('Pro · 3 months');
+  });
+});
+
 describe('TransactionsPage (K/95–K/95d, M/95–M/95c)', () => {
   it('each row names its kind, plan and period, amount and status in the learner\'s zone; no money for a grant or a trial', async () => {
     renderApp(<TransactionsPage />, { routes: routes() });

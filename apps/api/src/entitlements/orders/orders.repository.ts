@@ -1,6 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import type { Prisma, PrismaClient } from '../../generated/prisma/client.js';
 import { BILLING_MAX_ATTEMPTS } from '../entitlements.constants.js';
+
+const RECEIPT_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
 import type { BillingEnvironment } from '../entitlements.types.js';
 import type { OrderStatus, PaidVia, PaymentOutcome, ReviewReason } from './order-rules.js';
 
@@ -345,6 +347,20 @@ export class OrdersRepository {
       where: { orderId, source: { in: ['webhook', 'reconcile'] } }, select: { amountMinor: true, providerTime: true },
     });
     return rows.map((row) => ({ amount: Number(row.amountMinor), providerTime: row.providerTime }));
+  }
+
+  /**
+   * The receipt of a payment that opened a period (design §3.10): one `payment_receipt` notice, due now and open for 7 days; the unique
+   * (kind, subject, period, recipient) makes a repeat add nothing.
+   */
+  async insertReceiptNotice(db: Db, row: { userId: string; paymentId: string; startsAt: Date; now: Date }): Promise<void> {
+    await db.entitlementNotice.createMany({
+      data: [{
+        userId: row.userId, recipientUserId: row.userId, kind: 'payment_receipt', subjectKey: row.paymentId, periodKey: row.startsAt.toISOString(),
+        state: 'pending', dueAt: row.now, windowEndsAt: new Date(row.now.getTime() + RECEIPT_WINDOW_MS),
+      }],
+      skipDuplicates: true,
+    });
   }
 
   async insertPayment(db: Db, row: NewPayment): Promise<{ id: string }> {

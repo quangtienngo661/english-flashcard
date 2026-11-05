@@ -1,13 +1,18 @@
 'use client';
 
+import { useQueryClient } from '@tanstack/react-query';
 import { ChevronDown, X } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { useState } from 'react';
 import { Logo } from '@/app-chrome/Logo';
+import { ApiError } from '@/app-shell/api/problem';
 import { useErrorMessage } from '@/app-shell/api/use-error-message';
 import { useFormat } from '@/app-shell/format';
-import { useAppConfig, useEntitlements, type Entitlements } from '@/app-shell/queries';
+import { APP_CONFIG_KEY, useAppConfig, useEntitlements, type Entitlements } from '@/app-shell/queries';
+import { useApi } from '@/app-shell/session/session-context';
+import { useSubmitOnce } from '@/app-shell/use-submit-once';
+import { Button } from '@/app-ui/Button';
 import { Segmented } from '@/app-ui/Segmented';
 import { ErrorState, FullScreenSpinner } from '@/app-ui/States';
 import { cn } from '@/lib/cn';
@@ -16,10 +21,16 @@ import { PlanCard } from './PlanCard';
 import { SubscriptionRows } from './SubscriptionRows';
 
 type Source = Entitlements['sources'][number];
+type Months = '1' | '3' | '12';
+const MONTHS: Months[] = ['1', '3', '12'];
 /** "tới hết 31/12/2026": an end at the first instant of 1/1 is the last day before it. */
 const lastDay = (endsAt: string) => new Date(Date.parse(endsAt) - 1);
 
-/** K/52, K/53 `/app/plans`, full screen: Free and Pro, numbers from `plans` (design §8.7); no usage here (copy doc §12). */
+/**
+ * K/52, K/53 `/app/plans`, full screen: Free and Pro, numbers from `plans` (design §8.7); no usage here (copy doc §12). Pro is bought here
+ * for 1, 3 or 12 months, paid once through payOS and not renewed (launch prep B design §3.8); a learner who is Pro can buy another period,
+ * which follows the one running.
+ */
 export function PlansPage() {
   const t = useTranslations('App.plans');
   const locale = useLocale();
@@ -27,7 +38,7 @@ export function PlansPage() {
   const errorText = useErrorMessage();
   const config = useAppConfig();
   const entitlements = useEntitlements();
-  const [period, setPeriod] = useState<'year' | 'month'>('year');
+  const [months, setMonths] = useState<Months>('12');
   const [compare, setCompare] = useState(false);
 
   let body;
@@ -39,10 +50,14 @@ export function PlansPage() {
     const plans = config.data.plans;
     const groups = config.data.learning.groups_per_user;
     const plan = entitlements.data.plan;
-    const source: Source | undefined = entitlements.data.sources.find((s) => s.kind === 'grant_plan' || s.kind === 'subscription');
+    const source: Source | undefined = entitlements.data.sources.find((s) => s.kind === 'grant_plan' || s.kind === 'subscription' || s.kind === 'prepaid');
     const onPro = plan === 'pro';
     const gift = onPro && source?.kind === 'grant_plan';
-    const end = source?.ends_at ? format.date(lastDay(source.ends_at), 'full') : null;
+    // Where the unbroken Pro ends (a plan grant or the last prepaid period of a chain); a subscription or a trial still shows its own end.
+    const endsAt = entitlements.data.pro_until ?? source?.ends_at ?? null;
+    const end = endsAt ? format.date(lastDay(endsAt), 'full') : null;
+    const upcoming = entitlements.data.upcoming_periods ?? [];
+    const prices = plans.pro.prices;
     // Owner 27/10/2026: no line under "Bạn đang dùng gói Pro"; the Pro card already says until when.
     const subtitle = plan === 'trial' && end ? t('trialUntil', { date: end }) : null;
 
@@ -52,15 +67,12 @@ export function PlansPage() {
           <p className="text-caption font-semibold text-muted">{t('eyebrow')}</p>
           <h1 className="text-display font-extrabold text-ink">{onPro ? t('titlePro') : plan === 'trial' ? t('titleTrial') : t('title')}</h1>
           {subtitle && <p className="text-caption text-muted">{subtitle}</p>}
-          {!onPro && (
+          {prices && (
             <Segmented
               label={t('period')}
-              value={period}
-              onChange={setPeriod}
-              options={[
-                { id: 'year', label: t('year') },
-                { id: 'month', label: t('month') },
-              ]}
+              value={months}
+              onChange={setMonths}
+              options={MONTHS.map((id) => ({ id, label: t(`periods.${id}`) }))}
             />
           )}
         </div>
@@ -88,7 +100,7 @@ export function PlansPage() {
             name={t('pro')}
             crown
             highlight
-            strip={gift ? t('yoursGift') : onPro ? t('yours') : t('notOnSale')}
+            strip={gift ? t('yoursGift') : onPro ? t('yours') : undefined}
             perks={[
               { text: t('proList.sessions', { count: plans.pro.practice_sessions_per_day }), included: true },
               { text: t('proList.ai', { count: plans.pro.ai_practice_per_cycle }), included: true },
@@ -97,20 +109,24 @@ export function PlansPage() {
             ]}
             footnote={t('footnote')}
           >
-            {onPro ? (
+            {onPro && (
               <>
                 {end && <p className="text-ui text-ink">{t('until', { date: end })}</p>}
+                {upcoming.length > 0 && (
+                  <ul className="flex flex-col gap-0.5 text-caption text-muted">
+                    {upcoming.map((period, index) => (
+                      <li key={period.id}>
+                        {t(index === 0 ? 'nextPeriod' : 'thenPeriod', {
+                          from: format.date(period.starts_at, 'full'), to: format.date(lastDay(period.ends_at), 'full'),
+                        })}
+                      </li>
+                    ))}
+                  </ul>
+                )}
                 <p className="text-caption text-muted">{t('afterEnd')}</p>
               </>
-            ) : (
-              <>
-                <p className="flex items-baseline gap-2">
-                  <span className="text-h2 font-extrabold text-ink">{period === 'year' ? t('priceYear') : t('priceMonth')}</span>
-                  <span className="text-ui text-muted">{period === 'year' ? t('perYear') : t('perMonth')}</span>
-                </p>
-                <p className="text-caption text-muted">{t('proLine')}</p>
-              </>
             )}
+            {prices ? <BuyBlock months={months} price={prices[months]} extend={onPro} /> : <p className="text-caption text-muted">{t('proLine')}</p>}
           </PlanCard>
         </div>
         <SubscriptionRows sources={entitlements.data.sources} />
@@ -149,6 +165,69 @@ export function PlansPage() {
       <main id="main" className="mx-auto max-w-6xl px-4 pb-12 md:px-8">
         {body}
       </main>
+    </div>
+  );
+}
+
+/**
+ * The price of the chosen period, the sentence that says what is bought, and [Mua] (design §3.8). A press creates the order with the price
+ * the learner saw: if it changed meanwhile the server answers 409 `price-changed`, the prices are read again and nothing is charged. A
+ * created order sends the browser to the payOS page (a full page load: the next stop is another site).
+ */
+function BuyBlock({ months, price, extend }: { months: Months; price: number; extend: boolean }) {
+  const t = useTranslations('App.plans');
+  const locale = useLocale();
+  const format = useFormat();
+  const api = useApi();
+  const queryClient = useQueryClient();
+  const errorText = useErrorMessage();
+  const [error, setError] = useState<string | null>(null);
+  const [leaving, setLeaving] = useState(false);
+
+  // One Idempotency-Key per press (useSubmitOnce): a retry after a network error is the same order, a press with other content a new one.
+  const create = useSubmitOnce((key) =>
+    api.post<{ order_id: string; checkout_url: string }>(
+      '/v1/me/orders', { period_months: Number(months), expected_amount: price, locale }, { idempotencyKey: key },
+    ));
+
+  async function buy() {
+    setError(null);
+    try {
+      const created = await create.submit(`${months}:${price}`);
+      if (created === undefined) return;
+      setLeaving(true);
+      window.location.assign(created.checkout_url);
+    } catch (failure) {
+      if (failure instanceof ApiError && failure.problem.slug === 'price-changed') {
+        void queryClient.invalidateQueries({ queryKey: APP_CONFIG_KEY });
+        setError(t('priceChanged'));
+      } else if (failure instanceof ApiError && (failure.problem.status === 503 || failure.problem.slug === 'provider-unavailable')) {
+        setError(t('buyUnavailable'));
+      } else {
+        setError(errorText(failure));
+      }
+    }
+  }
+
+  return (
+    <div className="flex flex-col gap-3">
+      <p className="flex flex-wrap items-baseline gap-x-2">
+        <span className="text-h2 font-extrabold text-ink">{format.money(price, 'VND')}</span>
+        <span className="text-ui text-muted">{t('oneTime', { period: t(`periods.${months}`) })}</span>
+      </p>
+      {extend && <p className="text-caption text-muted">{t('extend')}</p>}
+      <p className="text-caption text-muted">{t('noRefund')}</p>
+      <Link href={`/${locale}/terms`} className="w-fit text-caption font-semibold text-primary underline underline-offset-2">
+        {t('termsLink')}
+      </Link>
+      <Button variant="sticker" size="lg" onPress={() => void buy()} isPending={create.busy || leaving}>
+        {t('buy')}
+      </Button>
+      {error && (
+        <p role="alert" className="text-ui text-danger">
+          {error}
+        </p>
+      )}
     </div>
   );
 }

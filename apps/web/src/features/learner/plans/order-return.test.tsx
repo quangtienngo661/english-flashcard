@@ -1,0 +1,130 @@
+// @vitest-environment jsdom
+import { act, screen, waitFor } from '@testing-library/react';
+import { problem } from '@/app-shell/session/test-support';
+import { ENTITLEMENTS_KEY } from '@/app-shell/queries';
+import { renderApp } from '@/app-ui/test-utils';
+import { OrderReturnPage } from './OrderReturnPage';
+
+let search = '';
+vi.mock('next/navigation', () => ({
+  usePathname: () => '/vi/app/plans/order',
+  useRouter: () => ({ replace: vi.fn(), push: vi.fn() }),
+  useSearchParams: () => new URLSearchParams(search),
+}));
+vi.setConfig({ testTimeout: 30_000 });
+
+const ID = '10480ac9-5340-4677-a0af-536b11614277';
+const CHECK = `POST /v1/me/orders/${ID}/check`;
+const READ = `GET /v1/me/orders/${ID}`;
+const view = (status: string) => ({
+  id: ID, status, period_months: 3, amount: 199000, description: 'WM0XSNJGK', expires_at: '2026-11-05T03:17:00.000Z',
+  period: status === 'paid' ? { starts_at: '2026-11-05T03:02:00.000Z', ends_at: '2026-12-05T17:00:00.000Z' } : null,
+});
+const answer = (status: string) => () => Response.json(view(status));
+const count = (calls: Array<{ method: string; path: string }>, method: string, path: string) => calls.filter((c) => c.method === method && c.path === path).length;
+
+beforeEach(() => {
+  search = new URLSearchParams({ order: ID }).toString();
+});
+afterEach(() => {
+  vi.useRealTimers();
+});
+
+describe('OrderReturnPage (launch prep B design §3.8, DB32)', () => {
+  it('LB1A3: asks payOS through check once, reads the order, and says it was paid with the last day of the period (vi, the learner\'s zone)', async () => {
+    const view$ = renderApp(<OrderReturnPage />, { routes: { [CHECK]: answer('pending'), [READ]: answer('paid') } });
+    expect(await screen.findByText('Đã nhận tiền. Kỳ Pro này dùng tới hết 5/12/2026.')).toBeInTheDocument();
+    expect(count(view$.calls, 'POST', `/v1/me/orders/${ID}/check`)).toBe(1);
+    expect(screen.getByRole('link', { name: 'Bắt đầu học' })).toHaveAttribute('href', '/vi/app');
+  });
+
+  it('a paid order makes the learner\'s plan read again (the entitlements are invalidated)', async () => {
+    const view$ = renderApp(<OrderReturnPage />, { routes: { [CHECK]: answer('pending'), [READ]: answer('paid') } });
+    view$.client.setQueryData(ENTITLEMENTS_KEY, { plan: 'free' });
+    await screen.findByText(/^Đã nhận tiền/);
+    await waitFor(() => expect(view$.client.getQueryState(ENTITLEMENTS_KEY)?.isInvalidated).toBe(true));
+  });
+
+  it('LB1E45: only ?order= is read; code, id, cancel, status and orderCode that payOS adds are ignored (cancel=true on a paid order changes nothing)', async () => {
+    search = new URLSearchParams({ order: ID, code: '00', id: 'abc', cancel: 'true', status: 'CANCELLED', orderCode: '1000000123' }).toString();
+    const view$ = renderApp(<OrderReturnPage />, { routes: { [CHECK]: answer('pending'), [READ]: answer('paid') } });
+    expect(await screen.findByText(/^Đã nhận tiền/)).toBeInTheDocument();
+    expect(view$.calls.filter((c) => c.path.startsWith('/v1/me/orders')).map((c) => c.path).sort()).toEqual([`/v1/me/orders/${ID}`, `/v1/me/orders/${ID}/check`]);
+  });
+
+  it('pending: the waiting sentence and the support email at once; the order is read every 3 s and the page stops asking after 2 minutes', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    const view$ = renderApp(<OrderReturnPage />, { routes: { [CHECK]: answer('pending'), [READ]: answer('pending') } });
+    expect(await screen.findByText('Đang chờ ngân hàng xác nhận. Bạn có thể đóng trang này; gói sẽ tự mở khi tiền tới.')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'hello@wordmet.com' })).toHaveAttribute('href', 'mailto:hello@wordmet.com');
+    await act(() => vi.advanceTimersByTimeAsync(9_500));
+    const early = count(view$.calls, 'GET', `/v1/me/orders/${ID}`);
+    expect(early).toBeGreaterThanOrEqual(3);
+    expect(early).toBeLessThanOrEqual(5);
+    await act(() => vi.advanceTimersByTimeAsync(125_000));
+    const stopped = count(view$.calls, 'GET', `/v1/me/orders/${ID}`);
+    expect(stopped).toBeGreaterThanOrEqual(39);
+    expect(stopped).toBeLessThanOrEqual(45);
+    await act(() => vi.advanceTimersByTimeAsync(30_000));
+    expect(count(view$.calls, 'GET', `/v1/me/orders/${ID}`)).toBe(stopped);
+    expect(count(view$.calls, 'POST', `/v1/me/orders/${ID}/check`)).toBe(1);
+    expect(screen.getByText('Đang chờ ngân hàng xác nhận. Bạn có thể đóng trang này; gói sẽ tự mở khi tiền tới.')).toBeInTheDocument();
+  });
+
+  it('pending turns into paid on a later read: the success line replaces the waiting one and the reading stops', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    let reads = 0;
+    const view$ = renderApp(<OrderReturnPage />, {
+      routes: { [CHECK]: answer('pending'), [READ]: () => { reads += 1; return Response.json(view(reads >= 3 ? 'paid' : 'pending')); } },
+    });
+    await screen.findByText(/^Đang chờ ngân hàng/);
+    await act(() => vi.advanceTimersByTimeAsync(10_000));
+    expect(await screen.findByText(/^Đã nhận tiền/)).toBeInTheDocument();
+    expect(screen.queryByText(/^Đang chờ ngân hàng/)).not.toBeInTheDocument();
+    const after = count(view$.calls, 'GET', `/v1/me/orders/${ID}`);
+    await act(() => vi.advanceTimersByTimeAsync(20_000));
+    expect(count(view$.calls, 'GET', `/v1/me/orders/${ID}`)).toBe(after);
+  });
+
+  it('needs_review (and closed): "Chúng tôi đang kiểm tra khoản chuyển của bạn." with the support email, not the waiting line', async () => {
+    renderApp(<OrderReturnPage />, { routes: { [CHECK]: answer('needs_review'), [READ]: answer('needs_review') } });
+    expect(await screen.findByText('Chúng tôi đang kiểm tra khoản chuyển của bạn.')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'hello@wordmet.com' })).toBeInTheDocument();
+    expect(screen.queryByText(/^Đang chờ ngân hàng/)).not.toBeInTheDocument();
+  });
+
+  it.each(['cancelled', 'expired', 'failed'])('LB1A6: a %s order says "Đơn đã hủy hoặc hết hạn." and has the button back to the plans page', async (status) => {
+    renderApp(<OrderReturnPage />, { routes: { [CHECK]: answer(status), [READ]: answer(status) } });
+    expect(await screen.findByText('Đơn đã hủy hoặc hết hạn.')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Về trang Gói' })).toHaveAttribute('href', '/vi/app/plans');
+    expect(screen.queryByText(/^Đang chờ ngân hàng/)).not.toBeInTheDocument();
+  });
+
+  it('a check that fails (429, 404) does not stop the page from reading the order', async () => {
+    renderApp(<OrderReturnPage />, { routes: { [CHECK]: () => problem(429, 'rate-limited'), [READ]: answer('paid') } });
+    expect(await screen.findByText(/^Đã nhận tiền/)).toBeInTheDocument();
+  });
+
+  it('no ?order= (or one that is not an id): "Không tìm thấy đơn này." and the way to the plans page; the API is not asked', async () => {
+    for (const query of ['', 'order=not-an-id']) {
+      search = query;
+      const view$ = renderApp(<OrderReturnPage />, { routes: {} });
+      expect(await screen.findByText('Không tìm thấy đơn này.')).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: 'Về trang Gói' })).toHaveAttribute('href', '/vi/app/plans');
+      expect(view$.calls.filter((c) => c.path.startsWith('/v1/me/orders'))).toEqual([]);
+      view$.unmount();
+    }
+  });
+
+  it('an order that is not this learner\'s (404) says it cannot be found, with the way to the plans page', async () => {
+    renderApp(<OrderReturnPage />, { routes: { [CHECK]: () => problem(404, 'not-found'), [READ]: () => problem(404, 'not-found') } });
+    expect(await screen.findByText('Không tìm thấy đơn này.')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Về trang Gói' })).toBeInTheDocument();
+  });
+
+  it('English', async () => {
+    renderApp(<OrderReturnPage />, { locale: 'en', routes: { [CHECK]: answer('pending'), [READ]: answer('paid') } });
+    expect(await screen.findByText('Payment received. This Pro period runs through Dec 5, 2026.')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Start learning' })).toHaveAttribute('href', '/en/app');
+  });
+});

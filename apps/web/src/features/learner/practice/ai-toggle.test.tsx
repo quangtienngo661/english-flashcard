@@ -81,7 +81,8 @@ describe('Kiểu câu có AI in Tùy chỉnh phiên (K/70, K/70b, K/71, K/72; D1
     await waitFor(() => expect(aiSwitch(dialog)).toHaveAttribute('aria-disabled', 'true'));
     expect(within(dialog).getByText('Pro')).toBeInTheDocument();
     await userEvent.click(aiSwitch(dialog));
-    expect(within(dialog).getByText('Dành cho gói Pro. Gói Pro chưa mở bán.')).toBeInTheDocument();
+    expect(within(dialog).getByText('Dành cho gói Pro.')).toBeInTheDocument();
+    expect(within(dialog).queryByText(/chưa mở bán/)).not.toBeInTheDocument();
     for (const name of AI) expect(within(dialog).queryByRole('checkbox', { name })).toBeNull();
   });
 
@@ -159,7 +160,7 @@ describe('Kiểu câu có AI in Tùy chỉnh phiên (K/70, K/70b, K/71, K/72; D1
     await waitFor(() => expect(aiSwitch(dialog)).toBeChecked());
     const before = view.count('GET', '/v1/me/entitlements');
     await userEvent.click(within(dialog).getByRole('button', { name: 'Bắt đầu 12 câu' }));
-    expect(await within(dialog).findByText('Dành cho gói Pro. Gói Pro chưa mở bán.')).toBeInTheDocument();
+    expect(await within(dialog).findByText('Dành cho gói Pro.')).toBeInTheDocument();
     await waitFor(() => expect(view.count('GET', '/v1/me/entitlements')).toBeGreaterThan(before));
     await waitFor(() => expect(aiSwitch(dialog)).toHaveAttribute('aria-disabled', 'true'));
     for (const name of AI) expect(within(dialog).queryByRole('checkbox', { name })).toBeNull();

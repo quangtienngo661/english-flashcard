@@ -12,7 +12,7 @@ export type Transaction = {
   id: string;
   kind: TransactionKind;
   plan: string;
-  interval: 'month' | 'year' | null;
+  interval: 'month' | 'quarter' | 'year' | null;
   amount_minor: number | null;
   currency: string | null;
   occurred_at: string;

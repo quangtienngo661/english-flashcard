@@ -45,6 +45,11 @@ class MemoryOrders {
     const rows = this.payments.filter((p) => p.orderId === orderId && p.source !== 'manual');
     return { total: rows.reduce((sum, p) => sum + p.amount, 0), count: rows.length };
   }
+  receipts: Array<{ userId: string; paymentId: string; startsAt: Date; now: Date }> = [];
+  async insertReceiptNotice(_db: unknown, row: { userId: string; paymentId: string; startsAt: Date; now: Date }) {
+    this.calls.push('insert-receipt');
+    this.receipts.push(row);
+  }
   async payosTransfers(_db: unknown, orderId: string) {
     return this.payments.filter((p) => p.orderId === orderId && p.source !== 'manual').map((p) => ({ amount: p.amount, providerTime: p.providerTime }));
   }
@@ -161,6 +166,35 @@ describe('OrderApplier.applyPayment — the rules T1–T14 against the data (des
     await applier.applyPayment(tx as never, input({ source: 'webhook', reference: 'REF-A' }));
     expect(await applier.applyPayment(tx as never, input({ source: 'webhook', reference: 'REF-B', providerTime: '2026-11-05 10:40:00' }))).toMatchObject({ outcome: 'opened-period' });
     expect(memory.periods).toHaveLength(2);
+  });
+
+  it('Q-B4: every payment that opens a period writes one receipt for itself (the payment id, the period start, now); the first period and the T8 second one alike', async () => {
+    const { applier, memory, tx } = setup();
+    await applier.applyPayment(tx as never, input({ reference: 'FT-ONE' }));
+    expect(memory.receipts).toEqual([{ userId: USER, paymentId: memory.payments[0].id, startsAt: NOW, now: NOW }]);
+    await applier.applyPayment(tx as never, input({ reference: 'FT-TWO', providerTime: '2026-11-05 10:30:00' }));
+    expect(memory.receipts).toHaveLength(2);
+    expect(memory.receipts[1]).toMatchObject({ paymentId: memory.payments[1].id, startsAt: memory.periods[1].startsAt });
+  });
+
+  it('no receipt where no period opens: a short payment, an attached or a flagged one, the same payment seen again, a deleted account', async () => {
+    const { applier, memory, tx, accountState } = setup({ orders: [baseOrder({ amount: 199000, periodMonths: 3 })] });
+    await applier.applyPayment(tx as never, input({ amount: 100000, reference: 'R1' }));
+    await applier.applyPayment(tx as never, input({ amount: 100000, reference: 'R1', source: 'reconcile' }));
+    expect(memory.receipts).toEqual([]);
+    await applier.applyPayment(tx as never, input({ amount: 99000, reference: 'R2' }));
+    expect(memory.receipts).toHaveLength(1);
+    await applier.applyPayment(tx as never, input({ amount: 50000, reference: 'R3' }));
+    expect(memory.receipts).toHaveLength(1);
+    accountState.value = null;
+    await applier.applyPayment(tx as never, input({ amount: 199000, reference: 'R4' }));
+    expect(memory.receipts).toHaveLength(1);
+  });
+
+  it('T11: staff confirming a payment writes the receipt for that confirmation too', async () => {
+    const { applier, memory } = setup();
+    await applier.confirmManual({ orderId: ORDER, adminId: ADMIN, reference: 'FT2611-BANK', amount: 79000, reason: 'saw it in the bank app' });
+    expect(memory.receipts).toEqual([{ userId: USER, paymentId: memory.payments[0].id, startsAt: NOW, now: NOW }]);
   });
 
   it('LB1E9: 100.000 then 99.000 for a 199.000 order → needs_review amount-short, then paid with one period', async () => {
