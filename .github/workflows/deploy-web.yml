@@ -28,7 +28,8 @@ jobs:
       # Baked into the build (README "Environment"). wordmet.com is attached by `routes` in apps/web/wrangler.jsonc.
       NEXT_PUBLIC_SITE_URL: https://wordmet.com
       NEXT_PUBLIC_INDEXABLE: 'true'
-      NEXT_PUBLIC_CONTACT_EMAIL: hello@wordmet.com
+      NEXT_PUBLIC_CONTACT_EMAIL: contact@wordmet.com
+      NEXT_PUBLIC_SUPPORT_EMAIL: support@wordmet.com
     steps:
       - uses: actions/checkout@v4
 

@@ -120,7 +120,6 @@ export function PlansPage() {
               { text: t('proList.lookup', { count: plans.pro.ai_lookup_per_cycle }), included: true },
               { text: t('proList.ads'), included: true },
             ]}
-            footnote={t('footnote')}
           >
             {onPro && (
               <>
@@ -241,9 +240,9 @@ function BuyBlock({ months, price, startsAt, runningMonths }: {
       {startsAt && !locked && <p className="text-caption text-muted">{t('startsOn', { date: format.date(startsAt, 'full') })}</p>}
       <p className="text-caption text-muted">
         {t.rich('noRefund', {
-          email: site.contactEmail,
+          email: site.supportEmail,
           mail: (chunks) => (
-            <a href={`mailto:${site.contactEmail}`} className="font-semibold text-primary underline underline-offset-2">
+            <a href={`mailto:${site.supportEmail}`} className="font-semibold text-primary underline underline-offset-2">
               {chunks}
             </a>
           ),

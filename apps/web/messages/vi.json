@@ -1560,7 +1560,7 @@
       "free": "Miễn phí",
       "pro": "Pro",
       "usingThis": "Bạn đang dùng gói này",
-      "backToFree": "Hết hạn Pro thì tài khoản tự về gói Miễn phí",
+      "backToFree": "Tự động về Free khi Pro hết hạn",
       "oneTime": "Trả một lần, dùng {period}.",
       "startsOn": "Kỳ mới bắt đầu từ {date}, khi kỳ hiện tại kết thúc.",
       "noRefund": "Gói không tự gia hạn. Không hoàn tiền tự động; cần hỗ trợ, liên hệ <mail>{email}</mail>.",
@@ -1584,22 +1584,20 @@
       },
       "proList": {
         "sessions": "{count, number} phiên luyện mỗi ngày",
-        "ai": "Tối đa {count, number} câu AI mới mỗi tháng*",
+        "ai": "Tối đa {count, number} câu AI mới mỗi tháng",
         "lookup": "{count, number} lượt tra AI mỗi tháng",
         "ads": "Không quảng cáo"
       },
-      "footnote": "*Câu AI có khi AI đang mở. Mỗi ngày cả hệ thống có một giới hạn chung; chạm giới hạn thì AI tạm dừng tới hôm sau.",
       "compare": "So sánh chi tiết các gói",
       "compareTable": {
         "feature": "Tính năng",
         "review": "Ôn thẻ và lịch ôn",
         "reminders": "Nhắc học qua email",
         "groups": "Số nhóm",
-        "groupsValue": "tối đa {count, number}",
         "sessions": "Phiên luyện mỗi ngày",
         "ai": "Câu AI mới mỗi tháng",
         "lookup": "Lượt tra AI mỗi tháng",
-        "ads": "Quảng cáo",
+        "noAds": "Không quảng cáo",
         "yes": "Có",
         "no": "Không"
       }

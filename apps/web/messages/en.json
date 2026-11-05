@@ -1560,7 +1560,7 @@
       "free": "Free",
       "pro": "Pro",
       "usingThis": "You're on this plan",
-      "backToFree": "When Pro ends, your account goes back to Free",
+      "backToFree": "Back to Free automatically when Pro ends",
       "oneTime": "One payment for {period}.",
       "startsOn": "The new period starts on {date}, when the current one ends.",
       "noRefund": "The plan does not renew by itself. No automatic refunds; for help, write to <mail>{email}</mail>.",
@@ -1584,22 +1584,20 @@
       },
       "proList": {
         "sessions": "{count, number} practice sessions a day",
-        "ai": "Up to {count, number} new AI questions a month*",
+        "ai": "Up to {count, number} new AI questions a month",
         "lookup": "{count, number} AI lookups a month",
         "ads": "No ads"
       },
-      "footnote": "*AI questions are available while AI is on. The whole system has a daily limit; once reached, AI pauses until the next day.",
       "compare": "Compare plans in detail",
       "compareTable": {
         "feature": "Feature",
         "review": "Card reviews and schedule",
         "reminders": "Email reminders",
         "groups": "Decks",
-        "groupsValue": "up to {count, number}",
         "sessions": "Practice sessions a day",
         "ai": "New AI questions a month",
         "lookup": "AI lookups a month",
-        "ads": "Ads",
+        "noAds": "No ads",
         "yes": "Yes",
         "no": "No"
       }

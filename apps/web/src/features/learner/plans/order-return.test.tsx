@@ -62,7 +62,7 @@ describe('OrderReturnPage (launch prep B design §3.8, DB32)', () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
     const view$ = renderApp(<OrderReturnPage />, { routes: { [CHECK]: answer('pending'), [READ]: answer('pending') } });
     expect(await screen.findByText('Gói Pro sẽ tự kích hoạt khi nhận được tiền. Bạn có thể đóng trang này.')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'hello@wordmet.com' })).toHaveAttribute('href', 'mailto:hello@wordmet.com');
+    expect(screen.getByRole('link', { name: 'support@wordmet.com' })).toHaveAttribute('href', 'mailto:support@wordmet.com');
     await act(() => vi.advanceTimersByTimeAsync(9_500));
     const early = count(view$.calls, 'GET', `/v1/me/orders/${ID}`);
     expect(early).toBeGreaterThanOrEqual(3);
@@ -95,7 +95,7 @@ describe('OrderReturnPage (launch prep B design §3.8, DB32)', () => {
   it('needs_review (and closed): "Giao dịch đang được kiểm tra" with the support email, not the waiting line', async () => {
     renderApp(<OrderReturnPage />, { routes: { [CHECK]: answer('needs_review'), [READ]: answer('needs_review') } });
     expect(await screen.findByText('Giao dịch đang được kiểm tra')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'hello@wordmet.com' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'support@wordmet.com' })).toBeInTheDocument();
     expect(screen.queryByText(/^Đang chờ xác nhận thanh toán$/)).not.toBeInTheDocument();
   });
 

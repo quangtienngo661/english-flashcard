@@ -87,9 +87,9 @@ export function OrderReturnPage() {
   const contact = (
     <p className="text-caption text-muted">
       {t.rich('contact', {
-        email: site.contactEmail,
+        email: site.supportEmail,
         mail: (chunks) => (
-          <a href={`mailto:${site.contactEmail}`} className="font-semibold text-primary underline underline-offset-2">
+          <a href={`mailto:${site.supportEmail}`} className="font-semibold text-primary underline underline-offset-2">
             {chunks}
           </a>
         ),

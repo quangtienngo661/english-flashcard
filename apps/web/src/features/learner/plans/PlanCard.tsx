@@ -8,14 +8,13 @@ export type Perk = { text: string; included: boolean };
  * One plan of K/52, K/53: the name, an optional badge beside it (yellow on Pro, "Gói hiện tại"), what it says, and its perks. Both cards
  * sit on the soft shadow (owner 05/11/2026); Pro keeps its yellow border.
  */
-export function PlanCard({ name, crown, badge, chip, children, perks, footnote, highlight }: {
+export function PlanCard({ name, crown, badge, chip, children, perks, highlight }: {
   name: string;
   crown?: boolean;
   badge?: string;
   chip?: string;
   children?: ReactNode;
   perks: Perk[];
-  footnote?: string;
   highlight?: boolean;
 }) {
   const id = useId();
@@ -45,7 +44,6 @@ export function PlanCard({ name, crown, badge, chip, children, perks, footnote, 
             </li>
           ))}
         </ul>
-        {footnote && <p className="text-caption text-muted">{footnote}</p>}
       </div>
     </section>
   );

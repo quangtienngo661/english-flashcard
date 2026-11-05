@@ -22,7 +22,7 @@ test('privacy page follows the site robots setting and names the contact address
   };
   expect(await robotsOf('/vi/privacy')).toBe(await robotsOf('/vi'));
   await page.goto('/vi/privacy');
-  await expect(page.getByRole('main')).toContainText('hello@wordmet.com');
+  await expect(page.getByRole('main')).toContainText('contact@wordmet.com');
 });
 
 // Owner 05/11/2026: the licences of CEFR-J, Octanove and AGID ask for credit where learners can see it, so the footer links to the
