@@ -48,6 +48,6 @@ export class PublicSourcesController {
   @Get()
   @Public()
   async list(): Promise<{ items: PublicSourceView[] }> {
-    return { items: (await this.sources.list()).items.map(toPublicView) };
+    return { items: (await this.sources.listShown()).map(toPublicView) };
   }
 }
