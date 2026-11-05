@@ -120,7 +120,7 @@ export function PlansPage() {
               { text: t('proList.lookup', { count: plans.pro.ai_lookup_per_cycle }), included: true },
               { text: t('proList.ads'), included: true },
             ]}
-            footnote={t('footnote')}
+            footer={prices ? <BuyNotes startsAt={onPro && periodState(months, prepaidMonths(source)) !== 'locked' ? endsAt : null} /> : undefined}
           >
             {onPro && (
               <>
@@ -136,10 +136,9 @@ export function PlansPage() {
                     ))}
                   </ul>
                 )}
-                <p className="text-caption text-muted">{t('afterEnd')}</p>
               </>
             )}
-            {prices ? <BuyBlock months={months} price={prices[months]} startsAt={onPro ? endsAt : null} runningMonths={onPro ? prepaidMonths(source) : null} /> : <p className="text-caption text-muted">{t('proLine')}</p>}
+            {prices ? <BuyBlock months={months} price={prices[months]} runningMonths={onPro ? prepaidMonths(source) : null} /> : <p className="text-caption text-muted">{t('proLine')}</p>}
           </PlanCard>
         </div>
         <SubscriptionRows sources={entitlements.data.sources} />
@@ -182,16 +181,49 @@ export function PlansPage() {
   );
 }
 
+/** The chosen length against the running prepaid period: the same is locked, a longer one is an upgrade (owner 05/11/2026). */
+function periodState(months: Months, runningMonths: number | null): 'buy' | 'locked' | 'upgrade' {
+  if (runningMonths === null) return 'buy';
+  const chosen = Number(months);
+  return chosen === runningMonths ? 'locked' : chosen > runningMonths ? 'upgrade' : 'buy';
+}
+
+/**
+ * The small print at the bottom of the Pro card (owner 05/11/2026): when the new period starts (on Pro, unless the button is locked), no
+ * automatic renewal or refund with the support email, and the Terms.
+ */
+function BuyNotes({ startsAt }: { startsAt: string | null }) {
+  const t = useTranslations('App.plans');
+  const locale = useLocale();
+  const format = useFormat();
+  return (
+    <div className="flex flex-col gap-2 border-t border-border pt-3">
+      {startsAt && <p className="text-caption text-muted">{t('startsOn', { date: format.date(startsAt, 'full') })}</p>}
+      <p className="text-caption text-muted">
+        {t.rich('noRefund', {
+          email: site.supportEmail,
+          mail: (chunks) => (
+            <a href={`mailto:${site.supportEmail}`} className="font-semibold text-primary underline underline-offset-2">
+              {chunks}
+            </a>
+          ),
+        })}
+      </p>
+      <Link href={`/${locale}/terms`} className="w-fit text-caption font-semibold text-primary underline underline-offset-2">
+        {t('termsLink')}
+      </Link>
+    </div>
+  );
+}
+
 /**
  * The price of the chosen period, the sentence that says what is bought, and [Mua] (design §3.8). A press creates the order with the price
  * the learner saw: if it changed meanwhile the server answers 409 `price-changed`, the prices are read again and nothing is charged. A
  * created order sends the browser to the payOS page (a full page load: the next stop is another site).
  */
-function BuyBlock({ months, price, startsAt, runningMonths }: {
+function BuyBlock({ months, price, runningMonths }: {
   months: Months;
   price: number;
-  /** When a learner on Pro buys, the new period starts where the unbroken Pro ends (`pro_until`); null on Free. */
-  startsAt: string | null;
   /** The length of the running prepaid period: the same length is locked, a longer one is an upgrade (owner 05/11/2026). */
   runningMonths: number | null;
 }) {
@@ -203,9 +235,9 @@ function BuyBlock({ months, price, startsAt, runningMonths }: {
   const errorText = useErrorMessage();
   const [error, setError] = useState<string | null>(null);
   const [leaving, setLeaving] = useState(false);
-  const chosen = Number(months);
-  const locked = runningMonths !== null && chosen === runningMonths;
-  const upgrade = runningMonths !== null && chosen > runningMonths;
+  const state = periodState(months, runningMonths);
+  const locked = state === 'locked';
+  const upgrade = state === 'upgrade';
 
   // One Idempotency-Key per press (useSubmitOnce): a retry after a network error is the same order, a press with other content a new one.
   const create = useSubmitOnce((key) =>
@@ -238,20 +270,6 @@ function BuyBlock({ months, price, startsAt, runningMonths }: {
         <span className="text-h2 font-extrabold text-ink">{format.money(price, 'VND')}</span>
         <span className="text-ui text-muted">{t('oneTime', { period: t(`periods.${months}`) })}</span>
       </p>
-      {startsAt && !locked && <p className="text-caption text-muted">{t('startsOn', { date: format.date(startsAt, 'full') })}</p>}
-      <p className="text-caption text-muted">
-        {t.rich('noRefund', {
-          email: site.contactEmail,
-          mail: (chunks) => (
-            <a href={`mailto:${site.contactEmail}`} className="font-semibold text-primary underline underline-offset-2">
-              {chunks}
-            </a>
-          ),
-        })}
-      </p>
-      <Link href={`/${locale}/terms`} className="w-fit text-caption font-semibold text-primary underline underline-offset-2">
-        {t('termsLink')}
-      </Link>
       <Button variant={locked ? 'quiet' : 'sticker'} size="lg" isDisabled={locked} onPress={() => void buy()} isPending={create.busy || leaving}>
         {locked ? t('currentPeriod') : upgrade ? t('upgrade', { period: t(`periods.${months}`) }) : t('buy')}
       </Button>

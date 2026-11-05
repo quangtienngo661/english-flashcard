@@ -2,9 +2,10 @@
 
 import { useLocale, useTranslations } from 'next-intl';
 import Link from 'next/link';
+import { site } from '@/lib/site';
 import { Logo } from './Logo';
 
-const contactEmail = process.env.NEXT_PUBLIC_CONTACT_EMAIL ?? 'hello@wordmet.com';
+const contactEmail = site.contactEmail;
 const LINK = 'text-caption text-muted hover:text-ink hover:underline underline-offset-2';
 
 /**

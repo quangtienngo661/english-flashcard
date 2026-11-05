@@ -23,7 +23,8 @@ From the repo root: `pnpm install`. Then from `apps/web`:
 |---|---|---|---|
 | `NEXT_PUBLIC_SITE_URL` | `http://localhost:3000` | `https://wordmet.com` | Absolute URLs in metadata, sitemap and JSON-LD |
 | `NEXT_PUBLIC_INDEXABLE` | off | `true` | Set to `true` at launch; until then robots.txt disallows everything and pages are `noindex` |
-| `NEXT_PUBLIC_CONTACT_EMAIL` | `hello@wordmet.com` | `hello@wordmet.com` | Footer and privacy contact link |
+| `NEXT_PUBLIC_CONTACT_EMAIL` | `contact@wordmet.com` | `contact@wordmet.com` | General contact: the footer link and the legal pages' draft notice (the Terms and Privacy Policy name it for general questions) |
+| `NEXT_PUBLIC_SUPPORT_EMAIL` | `support@wordmet.com` | `support@wordmet.com` | Help with an order, data or a complaint: the support line on Plans and on the order return page |
 | `NEXT_PUBLIC_LEARNER_APP` | off | off until Deploy | `on` builds the learner app under `/vi/app`, `/en/app`; otherwise its files are left out of the build and `/…/app/*` redirects (307) to the landing |
 | `NEXT_PUBLIC_ADSENSE_CLIENT` | blank | the `ca-pub-…` id Google gives once it approves the site | Blank: the Pro introduction dialog is shown to Free learners aged 16 or more on Nhóm and Tra từ. Set: the AdSense script is added only on those two pages, the dialog never shows, and the CSP of `/app` gains the sources Google asks for (launch prep B design §5). Also put `public/ads.txt` with the line AdSense gives. Build-time value: changing it needs a new build |
 | `NEXT_PUBLIC_API_BASE_URL` | — | `https://api.wordmet.com` | API origin the learner app calls (needed only with the app on) |
