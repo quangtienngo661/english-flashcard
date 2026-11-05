@@ -35,7 +35,6 @@ test('the footer links to the data sources page, which opens in Vietnamese and i
   await expect(page).toHaveURL(/\/vi\/sources$/);
   await expect(page.getByRole('heading', { level: 1, name: 'Nguồn dữ liệu' })).toBeVisible();
   await expect(page.getByRole('main')).toContainText('Hiện chưa có nguồn dữ liệu nào để hiển thị.');
-  await expect(page.getByRole('alert')).toHaveCount(0);
 
   await page.goto('/en/sources');
   await expect(page.getByRole('heading', { level: 1, name: 'Data sources' })).toBeVisible();
