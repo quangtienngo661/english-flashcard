@@ -25,17 +25,16 @@ export function SourcesList({ sources, labels }: { sources: PublicSource[] | nul
             <li key={`${source.name}|${source.version}`} className="flex flex-col gap-2 border-t border-border pt-6">
               <h2 className="text-h3 font-bold text-ink">{source.name}</h2>
               {(source.version !== '' || source.license !== '') && (
-                <dl className="flex flex-wrap gap-x-6 gap-y-1 text-small text-muted">
+                // A licence can be a whole notice (AGID's is a paragraph), so each line reads as running text: label, then value, wrapping under the label.
+                <dl className="flex flex-col gap-1 text-small">
                   {source.version !== '' && (
-                    <div className="flex gap-1">
-                      <dt>{labels.version}</dt>
-                      <dd className="text-ink">{source.version}</dd>
+                    <div>
+                      <dt className="inline text-muted">{labels.version}</dt> <dd className="inline text-ink">{source.version}</dd>
                     </div>
                   )}
                   {source.license !== '' && (
-                    <div className="flex gap-1">
-                      <dt>{labels.license}</dt>
-                      <dd className="text-ink">{source.license}</dd>
+                    <div>
+                      <dt className="inline text-muted">{labels.license}</dt> <dd className="inline text-ink">{source.license}</dd>
                     </div>
                   )}
                 </dl>
