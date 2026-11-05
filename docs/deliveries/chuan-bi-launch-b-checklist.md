@@ -125,7 +125,18 @@ Cần thêm ở phần chuẩn bị: app người học chạy (`pnpm dev:app` �
 
 ## M3. Ai thấy quảng cáo, hộp thoại giới thiệu Pro
 
-(Thêm khi M3 được merge.)
+Cần: một tài khoản người học gói Miễn phí có **ngày sinh từ 16 tuổi trở lên** (`pnpm learner:setup` tạo ngày sinh 1999-01-01), admin "Cài đặt hệ thống" bật `ads_enabled` (mặc định tắt) và để `NEXT_PUBLIC_ADSENSE_CLIENT` trống khi chạy `pnpm dev:app` (chưa có AdSense).
+
+- [ ] **[local] `ads.show` theo người.** Kiểm: `Call $lan Get '/v1/me/entitlements'` (xem mục 0), đọc `ads.show`. Đúng là: `true` cho Lan (Miễn phí, từ 16 tuổi, `ads_enabled` bật); `false` khi `ads_enabled` tắt, khi Lan là Pro (mua một kỳ), khi tài khoản là staff (`admin` hoặc `editor`), khi Lan chưa có ngày sinh hoặc dưới 16 tuổi (đổi ngày sinh bằng SQL: `UPDATE users SET birth_date = '2012-01-01' WHERE id = '<id Lan>'`). Ngày sinh nhật 16 tuổi tính theo múi giờ của Lan.
+- [ ] **[local] Hộp thoại giới thiệu Pro hiện khi chuyển trang.** Kiểm: đăng nhập Lan ở `http://localhost:3001/vi/app`, bấm tab Nhóm. Đúng là: hộp thoại "Học nhiều hơn với Pro" với số phiên luyện mỗi ngày, "Nhiều câu luyện tập và lượt tra từ bằng AI hơn" (Free đã có lượt AI từ đợt A, nên chữ nói "nhiều hơn"), "Không quảng cáo", "Từ 79.000 ₫ cho 1 tháng" (giá 1 tháng đọc từ cài đặt) và nút **Xem gói Pro** tới `/vi/app/plans`; tắt được bằng nút Đóng hoặc Esc.
+- [ ] **[local] Chỉ ở Nhóm và Tra từ.** Kiểm: lần lượt bấm Hôm nay, một nhóm, chủ đề, Ôn thẻ, một từ, Gói học, Cài đặt (và bắt đầu một phiên luyện). Đúng là: không hộp thoại nào hiện; Tra từ thì hiện (nếu đủ điều kiện tần suất dưới đây).
+- [ ] **[local] Tải lại cả trang không tính.** Kiểm: đang ở `/vi/app/groups`, bấm F5. Đúng là: không hộp thoại. Ở Tra từ, gõ một từ (đổi `?q=`): không hộp thoại.
+- [ ] **[local] Tần suất.** Kiểm: đóng hộp thoại, bấm sang Hôm nay rồi lại Nhóm ngay. Đúng là: không hiện lại (cách nhau ít nhất 10 phút); sau 10 phút hiện lại; tối đa 3 lần một ngày (`ads_interstitial_per_day`), sang ngày mới theo giờ của Lan thì đếm lại. Đổi hai số ở "Cài đặt hệ thống" (`ads_interstitial_per_day`, `ads_min_interval_minutes`): `0` mỗi ngày thì không bao giờ hiện. Đếm lưu trong trình duyệt theo người dùng (`localStorage` khóa `wordmet-web.house-ad.<id>`): xóa khóa đó để đếm lại.
+- [ ] **[local] Người khác trên cùng máy.** Kiểm: đăng xuất Lan, đăng nhập Minh (cũng Miễn phí, từ 16 tuổi). Đúng là: Minh có bộ đếm riêng, thấy hộp thoại lần đầu của mình.
+- [ ] **[local] Mua Pro thì hết hộp thoại.** Kiểm: bấm **Xem gói Pro**, mua một kỳ bằng payOS giả (mục M2). Đúng là: về trang về báo đã nhận tiền; bấm Nhóm: không còn hộp thoại; `ads.show` là `false`.
+- [ ] **[local] Đổi giá thì hộp thoại đổi theo.** Kiểm: admin đổi giá 1 tháng thành 89.000 ₫, ở tab Lan tải lại trang rồi chuyển sang Nhóm. Đúng là: "Từ 89.000 ₫ cho 1 tháng".
+- [ ] **[local] Trình duyệt không cho ghi dữ liệu.** Kiểm: cửa sổ ẩn danh có chặn dữ liệu trang web, hoặc `localStorage.setItem = () => { throw 1 }` trong Console. Đúng là: không hộp thoại (thà mất một lần giới thiệu còn hơn hiện mỗi lần chuyển trang).
+- [ ] **[local] Khi có AdSense thì hộp thoại tắt hẳn.** Kiểm: chạy `pnpm dev:app` với `NEXT_PUBLIC_ADSENSE_CLIENT=ca-pub-0000000000000000` (giá trị giả). Đúng là: không hộp thoại nào hiện (vignette thay chỗ, xem M4).
 
 ## M4. AdSense vignette
 

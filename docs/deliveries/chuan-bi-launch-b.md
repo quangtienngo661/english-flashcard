@@ -80,6 +80,13 @@ Báo cáo đầy đủ: `.superpowers/sdd/2026-11-04-chuan-bi-launch-b/m1-review
 - **Đã kiểm:** API `src/entitlements` 53 file / 1009 test xanh; web 79 file / 789 test, `eslint` sạch, `tsc` sạch; admin 101 file / 1358 test, `eslint` và `tsc` sạch (ba test của các file không động tới quá hạn 5 giây khi máy tải và qua khi chạy riêng); smoke thật `smoke:buoc-b-payments` 20/20 (thêm bước Task 15). Mọi test mới đỏ trước.
 - **Chưa kiểm:** e2e Playwright của web và admin chưa chạy (cần Worker build và stack; sửa `e2e/app/m4.spec.ts` và `fixtures.ts` cho trang Gói mới chạy ở CI); trang mua và trang về chưa bấm bằng payOS giả trong trình duyệt thật (chỉ có test đơn vị với API giả); `smoke:buoc-5`, `7`, `8` chạy ở Task 24, một lần trên mã đã hợp nhất với đợt A.
 
+## M3 — as-built (04/11/2026, nhánh `feat/launch-b-m3-house-ad`, xếp chồng sau M2)
+
+- **`ads.show` (Task 20):** `IdentityService.isAtLeast(profile, years, now)` ("hôm nay" theo múi giờ của người học; `birth_date` null thì `false`; 29/02 tính là 01/03 năm không nhuận) và `ads.show = ads_enabled ∧ gói Miễn phí ∧ không phải staff ∧ từ 16 tuổi`. Kiểu web `Entitlements` có `ads`.
+- **Hộp thoại giới thiệu Pro (Task 21):** hiện khi chuyển trang (soft navigation) tới Nhóm hoặc Tra từ, tối đa `ads_interstitial_per_day` lần mỗi ngày và cách nhau `ads_min_interval_minutes` phút, đếm trong `localStorage` theo người dùng và theo múi giờ của họ; tải cả trang, trang khác, đổi `?q=`, trình duyệt không cho đọc hay ghi, hoặc `NEXT_PUBLIC_ADSENSE_CLIENT` có giá trị thì không hiện; giá "từ" đọc từ `plans.pro.prices['1']`; mua Pro xong (`ads.show` thành `false`) thì hộp thoại biến mất. Gắn trong layout `(member)` (trong `RequireSession`).
+- **Đã kiểm:** API `src/identity` và `src/entitlements` xanh (54 file / 1045 test sau Task 20); web 82 file / 826 test, `eslint` và `tsc` sạch; test của hộp thoại phủ LB2A1, LB2A2, LB2E7–LB2E16 (đỏ trước; phá thử bằng tay khoảng cách tối thiểu làm đỏ hai test).
+- **Chưa kiểm:** chưa bấm trên trình duyệt thật; LB2E13 (chuyển tới `/app/group`, `/app/topic`, … bằng link thật của Next) chỉ có test với `usePathname` giả.
+
 ## Chưa làm hoặc chưa kiểm
 
 - **Chưa gọi payOS thật.** Mọi hành vi của payOS thật là `ASSUMPTION` P1–P11 của design §3.14, cộng một mục mới **P12**: adapter coi chỉ HTTP 404 (`NotFoundError` của SDK) là "payOS không có link này"; nếu payOS trả 200 kèm mã lỗi, đơn được coi là lỗi hỏi thăm và để nguyên. Kiểm ở lần mua thật đầu tiên.

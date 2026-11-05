@@ -28,6 +28,11 @@ export type Entitlements = {
   upcoming_periods?: Array<{ id: string; starts_at: string; ends_at: string }>;
   /** Where the unbroken Pro that covers now ends; null when the learner is not Pro through a grant or a prepaid period. */
   pro_until?: string | null;
+  /**
+   * Launch prep B design §5.1: `show` is true only for a Free learner aged 16 or more (never staff) while the admin switch is on; the two
+   * numbers are how many times a day and how far apart (minutes) the house ad dialog may appear. Optional like `account`.
+   */
+  ads?: { show: boolean; interstitial_per_day: number; min_interval_minutes: number };
 };
 
 /** `GET /v1/me/app-config` (design §8.7, Task 7): the admin-editable numbers the screens show. */

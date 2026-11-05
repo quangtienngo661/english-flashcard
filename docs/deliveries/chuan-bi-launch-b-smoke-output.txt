@@ -280,3 +280,39 @@ PASS  periods end
 PASS  LB1A8
 PASS  privacy
 # exit code 0 for smoke:buoc-b-payments (english_learning_smoke_lb_pay) at 2026-11-04T19:46:22Z
+
+
+======================================================================================================================
+== M3 head after merging the M2 branch, 05/11/2026
+======================================================================================================================
+Branch feat/launch-b-m3-house-ad. Unit suites: API 331 files / 4667 tests, web 85 / 861, admin 105 / 1389 (tsc and lint clean). smoke:buoc-b-payments on a fresh database: 21/21.
+
+[20] 20:00:38Z LB1A8: Eva was Pro on a prepaid period that ran out earlier this month: the AI unit she used while Pro is not charged to the Free allowance, the one used after the end is (launch prep A, design 6.3.4)
+    ok — Free window starts at 2026-11-04T19:00:39Z: used 1 of 15 (the Pro one is outside it)
+
+[21] 20:00:41Z privacy: no log line of the API or the worker names an order code, a payer or a reference (checked on the process output the shell kept, if SMOKE_LOGS is set)
+    ok — log files scanned
+
+== payments smoke: 21/21 steps in 119 s ==
+PASS  LB1A1
+PASS  LB1E1
+PASS  LB1E22
+PASS  LB1A3
+PASS  LB1E46
+PASS  LB1A4
+PASS  Review Focus 1
+PASS  LB1E7 + LB1E26
+PASS  LB1E33
+PASS  LB1E9
+PASS  LB1E3 + LB1E5 + LB1E6
+PASS  LB1E17 + LB1E18
+PASS  LB1E28
+PASS  LB1E36 + LB1E39
+PASS  LB1E38
+PASS  Review I2
+PASS  Review I1
+PASS  Task 15
+PASS  periods end
+PASS  LB1A8
+PASS  privacy
+# exit code 0 for smoke:buoc-b-payments (english_learning_smoke_lb_pay) at 2026-11-04T20:00:41Z

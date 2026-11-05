@@ -1,7 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
 import { FakeClock } from '../common/clock/clock.js';
 import { ProblemDetailsException } from '../common/problem-details/problem-details.exception.js';
-import type { Profile } from '../identity/profile/identity.service.js';
+import { AppLogger } from '../common/logging/app-logger.js';
+import { IdentityService, type Profile } from '../identity/profile/identity.service.js';
 import { SETTINGS_DEFAULTS, type AppSettings } from '../settings/index.js';
 import { EntitlementsService } from './entitlements.service.js';
 import { refusalProblem } from './refusal.js';
@@ -58,7 +59,12 @@ function setup(input: Setup = {}) {
   const settings = {
     get: vi.fn(async () => ({ ...SETTINGS_DEFAULTS, entitlements: { ...SETTINGS_DEFAULTS.entitlements, ...input.entitlements } })),
   };
-  const identity = { getProfile: vi.fn(async () => (input.profile === undefined ? profile() : input.profile)) };
+  // The real rule for the age: ads.show asks the identity service, so the test does too.
+  const rule = new IdentityService({} as never, clock, new AppLogger({ write: () => {} }));
+  const identity = {
+    getProfile: vi.fn(async () => (input.profile === undefined ? profile() : input.profile)),
+    isAtLeast: (p: Pick<Profile, 'birth_date' | 'timezone'>, years: number, now: Date) => rule.isAtLeast(p, years, now),
+  };
   const sources = {
     load: vi.fn(async (_db?: unknown, _userId?: string, _now?: Date, _endedSince?: Date) => ({
       subscriptions: input.subscriptions ?? [], grants: input.grants ?? [], prepaidPeriods: input.prepaidPeriods ?? [],
@@ -113,13 +119,42 @@ describe('EntitlementsService.snapshot', () => {
     expect(await setup({ profile: null }).service.snapshot(USER)).toBeNull();
   });
 
-  it('B5#25: ads.show is true only for free when ads_enabled', async () => {
-    expect((await setup({ entitlements: { adsEnabled: true } }).service.snapshot(USER))?.ads.show).toBe(true);
-    expect((await setup({ entitlements: { adsEnabled: true }, subscriptions: [proSubscription()] }).service.snapshot(USER))?.ads.show)
-      .toBe(false);
-    expect((await setup({ entitlements: { adsEnabled: false } }).service.snapshot(USER))?.ads.show).toBe(false);
-    expect((await setup({ entitlements: { adsEnabled: true }, grants: [limitsGrant({ ai_practice_per_cycle: 500 })] })
-      .service.snapshot(USER))?.ads.show).toBe(true);
+  describe('ads.show (launch prep B design §5.1, LB2E1–LB2E6)', () => {
+    const ADULT = { birth_date: '2000-05-12' };
+    const on = { adsEnabled: true };
+    const show = async (input: Setup) => (await setup(input).service.snapshot(USER))?.ads.show;
+
+    it('B5#25: ads.show is true for a Free learner aged 16 or more when ads_enabled; a limits grant does not make Pro', async () => {
+      expect(await show({ entitlements: on, profile: profile(ADULT) })).toBe(true);
+      expect(await show({ entitlements: on, profile: profile(ADULT), grants: [limitsGrant({ ai_practice_per_cycle: 500 })] })).toBe(true);
+    });
+
+    it('LB2E1: no birth date → false', async () => {
+      expect(await show({ entitlements: on, profile: profile({ birth_date: null }) })).toBe(false);
+    });
+
+    it('LB2E2: the 16th birthday is today in the learner\'s zone → true; a day short → false', async () => {
+      // NOW is 12:00 on 10/11/2026 in Vietnam.
+      expect(await show({ entitlements: on, profile: profile({ birth_date: '2010-11-10' }) })).toBe(true);
+      expect(await show({ entitlements: on, profile: profile({ birth_date: '2010-11-11' }) })).toBe(false);
+    });
+
+    it('LB2E4: staff never see ads, with or without Pro', async () => {
+      for (const staff_role of ['admin', 'editor'] as const) {
+        expect(await show({ entitlements: on, profile: profile({ ...ADULT, staff_role }) }), staff_role).toBe(false);
+        expect(await show({ entitlements: on, profile: profile({ ...ADULT, staff_role }), subscriptions: [proSubscription()] }), `${staff_role} with Pro`).toBe(false);
+      }
+    });
+
+    it('LB2E5: Pro through a subscription, a grant or a prepaid period, and a trial → false', async () => {
+      expect(await show({ entitlements: on, profile: profile(ADULT), subscriptions: [proSubscription()] })).toBe(false);
+      expect(await show({ entitlements: on, profile: profile(ADULT), subscriptions: [proSubscription({ status: 'trialing', trialEndsAt: new Date('2026-11-20T00:00:00Z') })] })).toBe(false);
+      expect(await show({ entitlements: on, profile: profile(ADULT), prepaidPeriods: [{ id: 'pp', startsAt: new Date('2026-11-01T00:00:00Z'), endsAt: new Date('2026-12-01T00:00:00Z'), revokedAt: null }] })).toBe(false);
+    });
+
+    it('LB2E6: ads_enabled off → false', async () => {
+      expect(await show({ entitlements: { adsEnabled: false }, profile: profile(ADULT) })).toBe(false);
+    });
   });
 
   it('B5E41/B5E91: a staff user without grants is free', async () => {
@@ -414,7 +449,7 @@ describe('EntitlementsService.snapshot — prepaid periods (launch prep B design
   });
 
   it('a user with a running period has no ads (ads.show needs the Free plan)', async () => {
-    expect((await setup({ entitlements: { adsEnabled: true }, prepaidPeriods: [period()] }).service.snapshot(USER))?.ads.show).toBe(false);
+    expect((await setup({ entitlements: { adsEnabled: true }, profile: profile({ birth_date: '2000-05-12' }), prepaidPeriods: [period()] }).service.snapshot(USER))?.ads.show).toBe(false);
   });
 });
 
