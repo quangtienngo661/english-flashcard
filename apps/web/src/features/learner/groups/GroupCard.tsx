@@ -77,6 +77,7 @@ export function GroupCard({ group, index, actions }: { group: GroupSummary; inde
         </span>
         <Link
           href={count > 0 ? review : `${review}&mode=all`}
+          data-google-vignette="false"
           className="relative z-10 mt-auto flex min-h-control items-center justify-center rounded-inner border-2 border-border-strong bg-surface px-4 text-ui font-semibold text-ink shadow-button-secondary hover:bg-primary-soft"
         >
           {count > 0 ? t('review', { count }) : t('studyAgain')}
@@ -104,7 +105,7 @@ function GroupMenu({ group, actions }: { group: GroupSummary; actions: Actions }
           <MenuItem className={ITEM} onAction={() => actions.onRename(group)}>
             {t('rename')}
           </MenuItem>
-          <MenuItem className={ITEM} href={`/${locale}/app/review?group=${group.id}&mode=all`}>
+          <MenuItem className={ITEM} href={`/${locale}/app/review?group=${group.id}&mode=all`} data-google-vignette="false">
             {t('studyAll', { count: group.total })}
           </MenuItem>
           <MenuItem className={`${ITEM} text-danger`} onAction={() => actions.onDelete(group)}>

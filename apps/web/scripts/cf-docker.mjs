@@ -69,7 +69,7 @@ CI=1 pnpm install --frozen-lockfile
 cd apps/web
 if [ "$MODE" != test ]; then
   pnpm cf:build
-  pnpm assert:static
+  pnpm assert:render-mode
   cp .next/prerender-manifest.json /out/prerender-manifest.json
   # D21: report the Worker size (wrangler prints "Total Upload … / gzip: …") so each milestone can record it.
   pnpm exec wrangler deploy --dry-run --outdir /tmp/worker-size | grep -i 'total upload' || true
@@ -80,7 +80,7 @@ fi
 pnpm exec playwright install --with-deps chromium
 status=0
 CI=1 pnpm test:e2e ${playwrightArgs} || status=$?
-if [ "$status" -eq 0 ]; then NEXT_PUBLIC_LEARNER_APP=on pnpm assert:static || status=$?; fi
+if [ "$status" -eq 0 ]; then NEXT_PUBLIC_LEARNER_APP=on pnpm assert:render-mode || status=$?; fi
 rm -rf /out/playwright-report /out/test-results
 cp -r playwright-report test-results /out/ 2>/dev/null || true
 exit $status

@@ -62,7 +62,8 @@ describe('UI kit', () => {
     renderApp(<Switch label="Kiểu câu có AI" isSelected={false} onChange={onChange} locked />);
     await userEvent.click(screen.getByRole('switch', { name: /Kiểu câu có AI/ }));
     expect(onChange).not.toHaveBeenCalled();
-    expect(screen.getByText('Dành cho gói Pro. Gói Pro chưa mở bán.')).toBeInTheDocument();
+    expect(screen.getByText('Dành cho gói Pro.')).toBeInTheDocument();
+    expect(screen.queryByText(/chưa mở bán/)).not.toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Xem Gói học' })).toHaveAttribute('href', '/vi/app/plans');
   });
 

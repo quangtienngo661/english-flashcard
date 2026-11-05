@@ -35,3 +35,6 @@ export const PAYOS_SDK_TIMEOUT_MS = 4_000;
 
 /** D39: a subscription revoked by a refund is asked again (fetchState) by the hourly job for this many days (ASSUMPTION). */
 export const REFUND_REFETCH_DAYS = 3;
+
+/** Launch prep B design §5.1: ads are shown only to learners of this age or more (the people under it see none). */
+export const ADS_MIN_AGE = 16;

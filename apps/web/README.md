@@ -15,7 +15,7 @@ From the repo root: `pnpm install`. Then from `apps/web`:
 | `pnpm typecheck` | `tsc --noEmit` |
 | `pnpm test` | Vitest unit and component tests |
 | `pnpm test:e2e` | Playwright on the Worker (builds and starts on port 3100; desktop 1440 and mobile 390, with axe) |
-| `pnpm assert:static` | After a build: fails unless `/vi` and `/en` (and `/vi/app`, `/en/app` with `NEXT_PUBLIC_LEARNER_APP=on`) are prerendered |
+| `pnpm assert:render-mode` | After a build: fails unless `/vi` and `/en` are prerendered and, with `NEXT_PUBLIC_LEARNER_APP=on`, no page under `/vi/app` or `/en/app` is (the app is rendered per request so each response has its own CSP nonce) |
 
 ## Environment
 
@@ -25,6 +25,7 @@ From the repo root: `pnpm install`. Then from `apps/web`:
 | `NEXT_PUBLIC_INDEXABLE` | off | `true` | Set to `true` at launch; until then robots.txt disallows everything and pages are `noindex` |
 | `NEXT_PUBLIC_CONTACT_EMAIL` | `hello@wordmet.com` | `hello@wordmet.com` | Footer and privacy contact link |
 | `NEXT_PUBLIC_LEARNER_APP` | off | off until Deploy | `on` builds the learner app under `/vi/app`, `/en/app`; otherwise its files are left out of the build and `/…/app/*` redirects (307) to the landing |
+| `NEXT_PUBLIC_ADSENSE_CLIENT` | blank | the `ca-pub-…` id Google gives once it approves the site | Blank: the Pro introduction dialog is shown to Free learners aged 16 or more on Nhóm and Tra từ. Set: the AdSense script is added only on those two pages, the dialog never shows, and the CSP of `/app` gains the sources Google asks for (launch prep B design §5). Also put `public/ads.txt` with the line AdSense gives. Build-time value: changing it needs a new build |
 | `NEXT_PUBLIC_API_BASE_URL` | — | `https://api.wordmet.com` | API origin the learner app calls (needed only with the app on) |
 | `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | blank (fake widget) | the key of the Turnstile widget (wordmet.com, www and admin hosts) | Cloudflare Turnstile on the sign-up, sign-in and reset forms. Blank uses a fake widget that only an API with `TURNSTILE_MODE=fake` accepts; a build of `https://wordmet.com` with the app on and no key fails |
 | `API_INTERNAL_BASE_URL` | unset | unset | Server-only, read at run time. API origin for requests the web server makes (`/privacy`, `/terms`) when it reaches the API at another address than the browser; the Docker stack sets `http://api:3000`. Unset: `NEXT_PUBLIC_API_BASE_URL` |

@@ -30,6 +30,7 @@ import { SourcesPage } from '../features/sources/SourcesPage';
 import { StaffPage } from '../features/staff/StaffPage';
 import { UsersPage } from '../features/users/UsersPage';
 import { TopicsPage } from '../features/topics/TopicsPage';
+import { OrdersPage } from '../features/orders/OrdersPage';
 import { TransactionsPage } from '../features/transactions/TransactionsPage';
 import { UnknownFormsPage } from '../features/unknown-forms/UnknownFormsPage';
 import { WordsPage } from '../features/words/WordsPage';
@@ -91,6 +92,7 @@ export const appRoutes: RouteObject[] = createRoutesFromElements(
         <Route path="entitlements" element={<GrantsPage />}>
           <Route path="new" element={null} />
         </Route>
+        <Route path="orders" element={<OrdersPage />} />
         <Route path="transactions" element={<TransactionsPage />} />
         <Route path="dashboard" element={<DashboardPage />} />
         <Route path="ai/status" element={<AiStatusPage />} />

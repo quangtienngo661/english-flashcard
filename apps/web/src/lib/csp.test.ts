@@ -1,4 +1,4 @@
-import { buildCsp } from './csp';
+import { buildAppCsp, buildCsp } from './csp';
 
 const BASE = { apiOrigin: 'https://api.wordmet.com', dev: false, inline: false, scriptHashes: ["'sha256-abc='"] };
 
@@ -73,5 +73,54 @@ describe('buildCsp (design §4.6, D9, D20, D22)', () => {
   it("allows 'unsafe-eval' in dev only (React dev tooling)", () => {
     expect(directives(buildCsp(BASE)).get('script-src')).not.toContain("'unsafe-eval'");
     expect(directives(buildCsp({ ...BASE, dev: true })).get('script-src')).toContain("'unsafe-eval'");
+  });
+});
+
+describe('buildAppCsp (launch prep B design §5.4, DB39): the /app policy with a per-request nonce', () => {
+  const OPTIONS = { adsense: false, apiOrigin: 'https://api.wordmet.com', dev: false, themeHash: "'sha256-theme='" };
+  const NONCE = 'bm9uY2UtMQ==';
+
+  it('is exactly the table of §5.4 before AdSense: nonce and strict-dynamic, the theme hash, no eval, https: or http:', () => {
+    expect(buildAppCsp(NONCE, OPTIONS)).toBe([
+      "default-src 'self'",
+      "script-src 'nonce-bm9uY2UtMQ==' 'strict-dynamic' 'sha256-theme=' 'unsafe-inline'",
+      "style-src 'self' 'unsafe-inline'",
+      "img-src 'self' data: blob:",
+      "font-src 'self'",
+      "connect-src 'self' https://api.wordmet.com https://cloudflareinsights.com",
+      'frame-src https://challenges.cloudflare.com',
+      "object-src 'none'",
+      "base-uri 'none'",
+      "form-action 'self'",
+      "frame-ancestors 'none'",
+      'upgrade-insecure-requests',
+    ].join('; '));
+  });
+
+  it("with AdSense, only the bold parts of §5.4 are added: 'unsafe-eval', https: and http: in script-src, https: in img-src, connect-src and frame-src", () => {
+    const d = directives(buildAppCsp(NONCE, { ...OPTIONS, adsense: true }));
+    expect(d.get('script-src')).toEqual(["'nonce-bm9uY2UtMQ=='", "'strict-dynamic'", "'sha256-theme='", "'unsafe-inline'", "'unsafe-eval'", 'https:', 'http:']);
+    expect(d.get('img-src')).toEqual(["'self'", 'data:', 'blob:', 'https:']);
+    expect(d.get('connect-src')).toEqual(["'self'", 'https://api.wordmet.com', 'https://cloudflareinsights.com', 'https:']);
+    expect(d.get('frame-src')).toEqual(['https://challenges.cloudflare.com', 'https:']);
+    // Everything else is as without AdSense.
+    expect(d.get('default-src')).toEqual(["'self'"]);
+    expect(d.get('base-uri')).toEqual(["'none'"]);
+    expect(d.get('frame-ancestors')).toEqual(["'none'"]);
+  });
+
+  it('the nonce is in the policy once and is the one given; another nonce gives another policy', () => {
+    expect(buildAppCsp(NONCE, OPTIONS).split(NONCE)).toHaveLength(2);
+    expect(buildAppCsp('b3RoZXI=', OPTIONS)).not.toBe(buildAppCsp(NONCE, OPTIONS));
+  });
+
+  it('a build served over plain http (the local e2e) does not upgrade its own requests; no API origin leaves connect-src without it', () => {
+    expect(directives(buildAppCsp(NONCE, { ...OPTIONS, dev: true })).has('upgrade-insecure-requests')).toBe(false);
+    expect(directives(buildAppCsp(NONCE, { ...OPTIONS, apiOrigin: null })).get('connect-src')).toEqual(["'self'", 'https://cloudflareinsights.com']);
+  });
+
+  it('there is no host list for scripts to lean on: strict-dynamic ignores it, so Turnstile and the beacon are loaded by a script that has the nonce', () => {
+    expect(buildAppCsp(NONCE, OPTIONS)).not.toContain('challenges.cloudflare.com/turnstile');
+    expect(directives(buildAppCsp(NONCE, OPTIONS)).get('script-src')).not.toContain('https://static.cloudflareinsights.com');
   });
 });

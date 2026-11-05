@@ -164,6 +164,19 @@ async function postWebhook(order, transaction, { amount, success = true } = {}) 
 }
 const eventStatus = (code, reference) => psql(`SELECT status FROM billing_events WHERE dedupe_key = 'payos:sandbox:${code}:${reference}'`);
 
+const MAILPIT = process.env.MAILPIT_URL ?? 'http://localhost:8025';
+/** What Mailpit holds for one address: subject and text of every message. */
+async function mailTo(address) {
+  const found = await (await send(`${MAILPIT}/api/v1/search?query=${encodeURIComponent(`to:${address}`)}`)).json();
+  const out = [];
+  for (const message of found.messages ?? []) {
+    const full = await (await send(`${MAILPIT}/api/v1/message/${message.ID}`)).json();
+    out.push({ subject: full.Subject, text: full.Text });
+  }
+  return out;
+}
+const noticeState = (userId, kind) => psql(`SELECT coalesce(string_agg(state, ','), '-') FROM entitlement_notices WHERE recipient_user_id = '${userId}' AND kind = '${kind}'`);
+
 // --- the run -------------------------------------------------------------------------------------------------------------------
 const results = [];
 let stepNo = 0;
@@ -435,6 +448,50 @@ async function main() {
     check(orderRow(order.id, "status || '|' || coalesce(review_reason, '-')") === 'needs_review|provider-mismatch', `order ${orderRow(order.id, 'status, review_reason')}`);
     check(periodsOf(order.id) === 0 && paymentsOf(order.id) === 0, 'nothing was counted');
     ok('ignored webhook row + the job: needs_review provider-mismatch, nothing counted, staff can look');
+  });
+
+  await step('Task 15', 'the first purchase sends one receipt (Mailpit gets it); the last period ending in 6 days sends one expiry email; a period that a later one covers sends none', async () => {
+    const [eve, fay] = await sqlUsers(['eve', 'fay']);
+    const E = await signIn(eve);
+    const order = await createOrder(E, 3);
+    await page(order, 'paid');
+    maintenance();
+    check(noticeState(eve.id, 'payment_receipt') === 'sent', `receipt state ${noticeState(eve.id, 'payment_receipt')}`);
+    const description = psql(`SELECT description FROM billing_orders WHERE id = '${order.id}'`);
+    const reference = fakeTransactions(order.code)[0].reference;
+    const receipts = (await mailTo(eve.email)).filter((m) => m.subject === 'Biên nhận mua Wordmet Pro');
+    check(receipts.length === 1, `receipts in Mailpit: ${receipts.length}`);
+    for (const part of ['3 tháng', '199.000 ₫', description, reference, 'Không hoàn tiền']) check(receipts[0].text.includes(part), `the receipt lacks "${part}"`);
+    check(!/App Store|Google Play|tự gia hạn/.test(receipts[0].text), 'the receipt talks of stores or auto-renewal');
+    maintenance();
+    check((await mailTo(eve.email)).filter((m) => m.subject === 'Biên nhận mua Wordmet Pro').length === 1, 'a second run sent the receipt again');
+
+    // The period ends in 6 days: one expiry email, naming the last covered day and linking the plans page.
+    psql(`UPDATE prepaid_periods SET starts_at = now() - interval '84 days', ends_at = now() + interval '6 days' WHERE user_id = '${eve.id}'`);
+    maintenance();
+    check(noticeState(eve.id, 'expiry_notice') === 'sent', `expiry state ${noticeState(eve.id, 'expiry_notice')}`);
+    const expiry = (await mailTo(eve.email)).filter((m) => m.subject === 'Gói Wordmet Pro sắp hết hạn');
+    check(expiry.length === 1 && /\/vi\/app\/plans/.test(expiry[0].text) && /\d{2}\/\d{2}\/\d{4}/.test(expiry[0].text), `expiry mail: ${JSON.stringify(expiry)}`);
+    check(!/App Store|Google Play|tự gia hạn/.test(expiry[0].text), 'the expiry email talks of stores or auto-renewal');
+    maintenance();
+    check((await mailTo(eve.email)).filter((m) => m.subject === 'Gói Wordmet Pro sắp hết hạn').length === 1, 'a second run sent the expiry email again');
+
+    // Fay buys, then the row was planned before she bought the next period: the sender skips it, nothing goes out.
+    const F = await signIn(fay);
+    const first = await createOrder(F, 1);
+    await page(first, 'paid');
+    psql(`UPDATE prepaid_periods SET starts_at = now() - interval '24 days', ends_at = now() + interval '6 days' WHERE user_id = '${fay.id}'`);
+    const periodId = psql(`SELECT id FROM prepaid_periods WHERE user_id = '${fay.id}'`);
+    const endsAt = psql(`SELECT to_char(ends_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') FROM prepaid_periods WHERE id = '${periodId}'`);
+    psql(`INSERT INTO entitlement_notices (user_id, recipient_user_id, kind, subject_key, period_key, state, due_at, window_ends_at)
+      VALUES ('${fay.id}', '${fay.id}', 'expiry_notice', '${periodId}', '${endsAt}', 'pending', now() - interval '1 hour', (SELECT ends_at FROM prepaid_periods WHERE id = '${periodId}'))`);
+    const next = await createOrder(F, 1);
+    await page(next, 'paid');
+    check(periodsOf(next.id) === 1 && Number(psql(`SELECT count(*) FROM prepaid_periods WHERE user_id = '${fay.id}'`)) === 2, 'the next period');
+    maintenance();
+    check(noticeState(fay.id, 'expiry_notice') === 'skipped', `covered row state ${noticeState(fay.id, 'expiry_notice')}`);
+    check((await mailTo(fay.email)).filter((m) => m.subject === 'Gói Wordmet Pro sắp hết hạn').length === 0, 'an expiry email went to a learner whose period is covered');
+    ok('receipt sent once with its parts; expiry email sent once; a covered period is skipped and nothing goes out');
   });
 
   await step('periods end', 'every period of Lan moved into the past (a year back): Pro ends and Lan is Free again, with no prepaid source and no pro_until', async () => {

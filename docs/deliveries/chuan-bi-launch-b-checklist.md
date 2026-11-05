@@ -86,15 +86,80 @@ SQL dùng ở dưới (một dòng một lệnh): `docker compose exec -T postgr
 
 ## M2. Mua trên web, admin, email, văn bản
 
-(Thêm khi M2 được merge: trang gói và trang về, "Đơn hàng" ở admin, email biên nhận và sắp hết hạn, Điều khoản và Chính sách bảo mật mục payOS.)
+Cần thêm ở phần chuẩn bị: app người học chạy (`pnpm dev:app` ở `apps/web`, http://localhost:3001; trên Windows nó chạy trong container Linux), admin chạy (`pnpm dev` ở `apps/admin`, http://localhost:5173, với `VITE_API_BASE_URL=http://localhost:3000`), file môi trường của API có `CORS_ORIGINS` và `ADMIN_APP_URL` cho admin và `LEARNER_APP_URL=http://localhost:3001` (đường dẫn trang về và link trong email dựng từ đó). Worker chạy (`pnpm run:dev` chạy cả API và worker) hoặc gõ `pnpm maintenance:run` ở `apps/api` khi cần email. Mailpit: http://localhost:8025.
+
+### Trang Gói và mua (`/vi/app/plans`)
+
+- [ ] **[local] Lan (gói Miễn phí) thấy ba kỳ có giá.** Kiểm: mở `/vi/app/plans`. Đúng là: ô chọn "1 tháng / 3 tháng / 12 tháng" (12 tháng được chọn sẵn); giá ở thẻ Pro đúng với admin "Cài đặt hệ thống" (79.000 / 199.000 / 599.000 ₫ nếu chưa đổi) và đổi theo ô chọn; không còn "Chưa mở bán" hay "XXX.000 ₫"; thẻ Miễn phí ghi "Gói hiện tại".
+- [ ] **[local] Câu trên nút Mua.** Đúng là: "Không hoàn tiền. Gói không tự gia hạn; hết hạn bạn mua kỳ mới." nằm trên nút **Mua**, kèm link "Điều khoản sử dụng" mở `/vi/terms`.
+- [ ] **[local] Lan mua 1 tháng, trọn đường.** Kiểm: chọn "1 tháng", bấm **Mua**. Đúng là: trình duyệt sang trang payOS giả ("Fake payOS", số tiền 79.000 ₫, nội dung `WM…`); bấm **Đã trả** thì về `/vi/app/plans/order?order=…` và hiện "Đã nhận tiền. Kỳ Pro này dùng tới hết {ngày}."; bấm "Bắt đầu học" về trang chủ; trang Gói giờ ghi "Bạn đang dùng gói Pro" và "Tới hết {ngày}", không có nút "Hủy gói".
+- [ ] **[local] Trang về khi tiền chưa tới.** Kiểm: bấm **Mua**; ở trang payOS giả lấy `order_id` từ dòng `Returns to:` rồi mở `http://localhost:3001/vi/app/plans/order?order=<order_id>` ở tab khác trước khi bấm Đã trả. Đúng là: "Đang chờ ngân hàng xác nhận. Bạn có thể đóng trang này; gói sẽ tự mở khi tiền tới." kèm email hỗ trợ; bấm **Đã trả** ở tab payOS giả thì trong vài giây tab kia đổi sang "Đã nhận tiền…".
+- [ ] **[local] Lan hủy ở trang payOS giả.** Kiểm: bấm **Mua**, bấm **Hủy**. Đúng là: về trang về với "Đơn đã hủy hoặc hết hạn." và link "Về trang Gói".
+- [ ] **[local] Trả thiếu.** Kiểm: bấm **Mua** 3 tháng, bấm **Trả thiếu**, mở lại trang về. Đúng là: "Chúng tôi đang kiểm tra khoản chuyển của bạn." kèm email hỗ trợ (đơn ở "Cần xem" bên admin, lý do "Trả thiếu").
+- [ ] **[local] Giá đổi giữa lúc Lan đang xem.** Kiểm: mở trang Gói ở một tab; ở admin "Cài đặt hệ thống" đổi giá 12 tháng; ở tab đầu bấm **Mua**. Đúng là: "Giá vừa đổi, xem lại trước khi mua", giá mới hiện ở thẻ Pro, không có đơn mới (admin "Đơn hàng" không thêm dòng); bấm **Mua** lần nữa mới sang payOS với giá mới.
+- [ ] **[local] Lan đang Pro mua thêm.** Kiểm: khi đang Pro, chọn một kỳ, bấm **Mua**, **Đã trả**. Đúng là: thẻ Pro ghi "Tới hết {ngày cuối chuỗi}" và "Kỳ tiếp theo: {từ} – {đến}"; câu "Mua thêm: kỳ mới nối tiếp sau kỳ hiện tại." trên nút Mua.
+- [ ] **[local] Lịch sử giao dịch.** Kiểm: `/vi/app/settings/transactions`. Đúng là: dòng "Mua · Pro · 3 tháng · 199.000 ₫" cho đơn 3 tháng (và "1 tháng", "12 tháng" cho hai kỳ kia), không có chữ "theo tháng/năm".
+- [ ] **[local] Màn xóa tài khoản.** Kiểm: khi đang Pro mở `/vi/app/settings/delete-account`. Đúng là: dòng "Thời gian Pro còn lại sẽ mất, không hoàn tiền." và vẫn xóa được (không có gói tự gia hạn nào chặn).
+- [ ] **[local] Câu khóa tính năng.** Kiểm: ở gói Miễn phí bấm bật "Kiểu câu có AI" trong Tùy chỉnh phiên luyện. Đúng là: "Dành cho gói Pro." kèm link "Xem Gói học", không còn "Gói Pro chưa mở bán".
+- [ ] **[local] Tiếng Anh.** Kiểm: các dòng trên ở `/en/app/plans`. Đúng là: "1 month / 3 months / 12 months", "Buy", "No refunds. The plan does not renew by itself; when it ends you buy a new period."
+
+### Email biên nhận và email nhắc hết hạn
+
+- [ ] **[local][smoke bước 18] Biên nhận.** Kiểm: sau một lần mua, `pnpm maintenance:run`, mở Mailpit. Đúng là: một thư "Biên nhận mua Wordmet Pro" tới email của Lan, có "3 tháng", "199.000 ₫", nội dung `WM…`, mã tham chiếu, ngày bắt đầu và "tới hết", "Không hoàn tiền sau khi đã thanh toán", link `/vi/app/plans`; không có "App Store", "Google Play", "tự gia hạn". Chạy `maintenance:run` lần nữa: không thêm thư.
+- [ ] **[local][smoke bước 18] Nhắc hết hạn.** Kiểm: `UPDATE prepaid_periods SET starts_at = now() - interval '84 days', ends_at = now() + interval '6 days' WHERE user_id = '<id Lan>'`, rồi `pnpm maintenance:run`. Đúng là: một thư "Gói Wordmet Pro sắp hết hạn" ghi ngày cuối còn dùng được và link mua kỳ mới. Nếu Lan đã mua kỳ nối tiếp (kỳ sau bắt đầu đúng lúc kỳ này hết) thì không thư nào gửi.
+
+### Admin "Đơn hàng" (`http://localhost:5173/orders`)
+
+- [ ] **[local] Menu.** Đúng là: đăng nhập admin thấy "Đơn hàng" trong nhóm Người học; editor không thấy và `/orders` báo không có quyền.
+- [ ] **[local] Danh sách và bộ lọc.** Đúng là: mỗi dòng có người học, "3 tháng · 199.000 ₫", nội dung `WM…`, giờ tạo (giờ Việt Nam), trạng thái; đơn cần xem có thêm lý do ("Trả thiếu"…). Lọc theo trạng thái, hộp "Cần xem", email, ngày, và nội dung chuyển khoản (gõ `wm` hoa thường đều được).
+- [ ] **[local] Chi tiết.** Đúng là: các lần trả (số tiền, nguồn, kết quả, mã tham chiếu), các kỳ đã mở với ngày cuối, "Pro tới hết {ngày}" của người học, lý do cần xem, và với đơn của tài khoản đã xóa: tên, số tài khoản, ngân hàng người chuyển.
+- [ ] **[local][smoke bước 11] Đã nhận tiền.** Kiểm: tạo một đơn, không trả; mở chi tiết, bấm **Đã nhận tiền**, nhập mã tham chiếu, số tiền, lý do. Đúng là: để trống một ô thì không gửi gì và có câu báo; đủ ba ô thì đơn thành "Đã trả" và Lan có kỳ Pro; bấm lại: "Đơn đã có kỳ."
+- [ ] **[local] Hủy đơn.** Kiểm: một đơn đang chờ, **Hủy đơn**. Đúng là: đơn thành "Đã hủy"; trang payOS giả của đơn đó ghi `CANCELLED`.
+- [ ] **[local][smoke bước 14] Đã xử lý.** Kiểm: một đơn "Cần xem" (ví dụ trả thiếu), **Đã xử lý**, ghi chú. Đúng là: để trống ghi chú thì không gửi; có ghi chú thì đơn thành "Đã đóng" và thông tin hoàn tiền (nếu có) biến mất.
+- [ ] **[local][smoke bước 9] Thu hồi kỳ.** Kiểm: Lan có hai kỳ nối nhau, thu hồi kỳ đầu với lý do. Đúng là: kỳ đó ghi "Đã thu hồi {ngày}" và hết nút; kỳ sau không dời; ô "Pro tới hết" đổi theo.
+
+### Văn bản
+
+- [ ] **[local] Bản nháp Điều khoản và Chính sách.** Kiểm: `git switch docs/launch-b-legal-drafts` (nhánh local, chưa push) và đọc `docs/preparation/legal-drafts/`: Điều khoản mục 5–8, Chính sách mục 2, 5, 8, 10. Đúng là: nói mua một lần, không tự gia hạn, kỳ nối tiếp, không hoàn tiền, payOS, quảng cáo "có thể hiển thị"; không còn "dùng thử" hay "tự gia hạn" ngoài câu phủ định.
+- [ ] **[deploy] Đăng hai bản vào admin `/legal`** và mở `/vi/terms`, `/vi/privacy` xem đúng bản đã đăng (xem `deploy-checklist.md`).
 
 ## M3. Ai thấy quảng cáo, hộp thoại giới thiệu Pro
 
-(Thêm khi M3 được merge.)
+Cần: một tài khoản người học gói Miễn phí có **ngày sinh từ 16 tuổi trở lên** (`pnpm learner:setup` tạo ngày sinh 1999-01-01), admin "Cài đặt hệ thống" bật `ads_enabled` (mặc định tắt) và để `NEXT_PUBLIC_ADSENSE_CLIENT` trống khi chạy `pnpm dev:app` (chưa có AdSense).
+
+- [ ] **[local] `ads.show` theo người.** Kiểm: `Call $lan Get '/v1/me/entitlements'` (xem mục 0), đọc `ads.show`. Đúng là: `true` cho Lan (Miễn phí, từ 16 tuổi, `ads_enabled` bật); `false` khi `ads_enabled` tắt, khi Lan là Pro (mua một kỳ), khi tài khoản là staff (`admin` hoặc `editor`), khi Lan chưa có ngày sinh hoặc dưới 16 tuổi (đổi ngày sinh bằng SQL: `UPDATE users SET birth_date = '2012-01-01' WHERE id = '<id Lan>'`). Ngày sinh nhật 16 tuổi tính theo múi giờ của Lan.
+- [ ] **[local] Hộp thoại giới thiệu Pro hiện khi chuyển trang.** Kiểm: đăng nhập Lan ở `http://localhost:3001/vi/app`, bấm tab Nhóm. Đúng là: hộp thoại "Học nhiều hơn với Pro" với số phiên luyện mỗi ngày, "Nhiều câu luyện tập và lượt tra từ bằng AI hơn" (Free đã có lượt AI từ đợt A, nên chữ nói "nhiều hơn"), "Không quảng cáo", "Từ 79.000 ₫ cho 1 tháng" (giá 1 tháng đọc từ cài đặt) và nút **Xem gói Pro** tới `/vi/app/plans`; tắt được bằng nút Đóng hoặc Esc.
+- [ ] **[local] Chỉ ở Nhóm và Tra từ.** Kiểm: lần lượt bấm Hôm nay, một nhóm, chủ đề, Ôn thẻ, một từ, Gói học, Cài đặt (và bắt đầu một phiên luyện). Đúng là: không hộp thoại nào hiện; Tra từ thì hiện (nếu đủ điều kiện tần suất dưới đây).
+- [ ] **[local] Tải lại cả trang không tính.** Kiểm: đang ở `/vi/app/groups`, bấm F5. Đúng là: không hộp thoại. Ở Tra từ, gõ một từ (đổi `?q=`): không hộp thoại.
+- [ ] **[local] Tần suất.** Kiểm: đóng hộp thoại, bấm sang Hôm nay rồi lại Nhóm ngay. Đúng là: không hiện lại (cách nhau ít nhất 10 phút); sau 10 phút hiện lại; tối đa 3 lần một ngày (`ads_interstitial_per_day`), sang ngày mới theo giờ của Lan thì đếm lại. Đổi hai số ở "Cài đặt hệ thống" (`ads_interstitial_per_day`, `ads_min_interval_minutes`): `0` mỗi ngày thì không bao giờ hiện. Đếm lưu trong trình duyệt theo người dùng (`localStorage` khóa `wordmet-web.house-ad.<id>`): xóa khóa đó để đếm lại.
+- [ ] **[local] Người khác trên cùng máy.** Kiểm: đăng xuất Lan, đăng nhập Minh (cũng Miễn phí, từ 16 tuổi). Đúng là: Minh có bộ đếm riêng, thấy hộp thoại lần đầu của mình.
+- [ ] **[local] Mua Pro thì hết hộp thoại.** Kiểm: bấm **Xem gói Pro**, mua một kỳ bằng payOS giả (mục M2). Đúng là: về trang về báo đã nhận tiền; bấm Nhóm: không còn hộp thoại; `ads.show` là `false`.
+- [ ] **[local] Đổi giá thì hộp thoại đổi theo.** Kiểm: admin đổi giá 1 tháng thành 89.000 ₫, ở tab Lan tải lại trang rồi chuyển sang Nhóm. Đúng là: "Từ 89.000 ₫ cho 1 tháng".
+- [ ] **[local] Trình duyệt không cho ghi dữ liệu.** Kiểm: cửa sổ ẩn danh có chặn dữ liệu trang web, hoặc `localStorage.setItem = () => { throw 1 }` trong Console. Đúng là: không hộp thoại (thà mất một lần giới thiệu còn hơn hiện mỗi lần chuyển trang).
+- [ ] **[local] Khi có AdSense thì hộp thoại tắt hẳn.** Kiểm: chạy `pnpm dev:app` với `NEXT_PUBLIC_ADSENSE_CLIENT=ca-pub-0000000000000000` (giá trị giả). Đúng là: không hộp thoại nào hiện (vignette thay chỗ, xem M4).
 
 ## M4. AdSense vignette
 
-(Thêm khi M4 được merge.)
+### CSP có `nonce` cho `/app`
+
+- [ ] **[local] Chính sách của `/app` đúng bảng §5.4, trên bản build Worker.** Kiểm: ở `apps/web`, `pnpm cf:docker e2e/csp.spec.ts --project=desktop` (Docker chạy; cài, build OpenNext và chạy Chromium trong container Linux, vài phút). Đúng là: 8 test qua; chúng kiểm `/vi/app` và `/vi/app/login` có đúng một chính sách với `'nonce-…'` và `'strict-dynamic'`, mọi script mang đúng nonce (trừ script chống nháy màu có hash và script Turnstile do script có nonce tự thêm), hai lần gọi `/vi/app/groups` ra hai nonce khác nhau, `/vi` không nonce, widget Turnstile thật chạy không vi phạm, vào app từ landing là tải lại cả trang, 0 vi phạm ở `/vi`, `/vi/app`, `/vi/app/login`, `/vi/app/groups`.
+- [ ] **[local] Landing vẫn tĩnh, app dựng theo request.** Kiểm: `pnpm cf:docker --build` rồi `pnpm assert:render-mode` (hoặc cả bộ `pnpm cf:docker --project=desktop`, 194 test, cuối cùng chạy `assert:render-mode`). Đúng là: dòng "Render mode: the landing is static; no page under /app is prerendered".
+- [ ] **[deploy] Trên Cloudflare đã deploy:** `/vi/app` trả đúng một chính sách có nonce, nonce đổi mỗi lần gọi, trang đăng nhập có widget Turnstile chạy. Vì sao: spike chỉ chạy trên workerd cục bộ; issue OpenNext #1302 (mất nonce) có thể chỉ hiện ở đây. Nếu hỏng `/app` mất mọi script: cách lùi ở `deploy-checklist.md`.
+- [ ] **[deploy] CPU Worker một trang `/app` dựng theo request; beacon Cloudflare Web Analytics.** Xem `deploy-checklist.md`, mục "CSP có `nonce` cho `/app`".
+
+### Nạp AdSense và chân trang
+
+- [ ] **[local] Link ra ngoài app ở chân trang tải lại cả trang.** Kiểm: ở `/vi/app`, bấm "Điều khoản sử dụng" ở chân trang; (dev tools, tab Network) trang `/vi/terms` được tải bằng một request document mới, không phải lần chuyển mềm; cùng với "Chính sách bảo mật" và liên kết về landing. "Gói học" ở chân trang vẫn chuyển mềm.
+- [ ] **[local] Nạp script bằng một mã client giả.** Kiểm: `NEXT_PUBLIC_ADSENSE_CLIENT=ca-pub-0000000000000000 pnpm dev:app`, đăng nhập Lan (Miễn phí, từ 16 tuổi, `ads_enabled` bật). Đúng là: ở Hôm nay không có thẻ `<script src="…adsbygoogle.js…">` trong `<head>`; bấm sang Nhóm hoặc Tra từ thì thẻ xuất hiện (yêu cầu tới Google có thể bị chặn hoặc lỗi: im lặng, không báo gì cho Lan); chuyển sang Nhóm rồi Tra từ không thêm thẻ thứ hai; bấm vào một nhóm (trang nhóm), Ôn thẻ hay Luyện tập thì **cả trang tải lại** và không còn thẻ script; hộp thoại giới thiệu Pro không hiện lần nào. Ở chế độ dev CSP không áp, nên chỉ kiểm được việc thêm và gỡ script, không kiểm CSP.
+- [ ] **[local] Lan mua Pro khi script đang ở trang.** Kiểm: như trên, mở Nhóm (script có), mở tab khác mua Pro, quay lại tab Nhóm chờ tải lại dữ liệu (hoặc F5 một tab khác rồi bấm sang tab này). Đúng là: khi gói được đọc lại và `ads.show` thành `false`, trang tải lại và không còn script.
+- [ ] **[local] Admin tắt quảng cáo.** Kiểm: `ads_enabled` tắt ở "Cài đặt hệ thống". Đúng là: ở lần đọc gói tiếp theo của Lan, trang tải lại, không còn script; tắt luôn cả hộp thoại giới thiệu Pro.
+- [ ] **[local] Người dưới 16 tuổi, staff, Pro, người chưa có ngày sinh.** Đúng là: không có script và không có hộp thoại (xem M3).
+
+### Sau khi Google duyệt (việc của chủ dự án)
+
+- [ ] **[deploy] Đặt `NEXT_PUBLIC_ADSENSE_CLIENT` (build mới), `apps/web/public/ads.txt` đúng dòng AdSense đưa, cài đặt AdSense §5.2** (chỉ bật Vignette, tần suất từ 10 phút, bỏ "Allow additional triggers", trang loại trừ `/vi/app/practice`, `/en/app/practice`, `/vi/app/review`, `/en/app/review`). Đúng là: `https://<host>/ads.txt` trả đúng nội dung.
+- [ ] **[deploy] Một tuần `Content-Security-Policy-Report-Only`** song song chính sách đang áp, với đúng chuỗi §5.4 phần có AdSense, đọc Console ở Nhóm và Tra từ; vi phạm nào thì thêm đúng nguồn đó và sửa test.
+- [ ] **[deploy] Bảng §5.7:** A1 (vignette có hiện khi bấm link giữa các trang trong app không), A2, A8 (tắt được video không), và LB3A1, LB3A2. Nếu A1 sai (LB3E10) hoặc Google từ chối (LB3E13): bỏ `NEXT_PUBLIC_ADSENSE_CLIENT`, hộp thoại giới thiệu Pro quay lại, đợt B xong với M1–M3.
 
 ## Chưa kiểm được (và vì sao)
 
@@ -102,13 +167,14 @@ SQL dùng ở dưới (một dòng một lệnh): `docker compose exec -T postgr
 - **Webhook thật qua WAF và Bot Fight Mode của Cloudflare**, và `pnpm payos:confirm-webhook <url>` đăng ký URL với payOS thật (cần ba khóa thật và địa chỉ công khai). **[deploy]**
 - **Chuyển lần hai vào link đã trả sinh webhook riêng (P8)**: không thử bằng tiền; theo dõi khi xảy ra. **[deploy]**
 - **Phần của Task 9 phụ thuộc đợt A** (lượt AI dùng lúc còn Pro trả trước không trừ vào Free sau khi kỳ hết, LB1A8): chưa làm, chờ `origin/dev` có M3 của đợt A. Chưa kiểm được cho tới lúc đó.
-- **Email biên nhận và "sắp hết hạn" (Task 15)**, trang mua, trang về và màn admin "Đơn hàng": thuộc M2.
-- **Hộp thoại giới thiệu Pro và AdSense**: thuộc M3 và M4; AdSense chỉ bật được sau khi Google duyệt. **[deploy]**
+- **Các màn M2 trên trình duyệt thật và e2e Playwright** (trang Gói, trang về, "Đơn hàng" của admin): mới có test đơn vị với API giả; chưa ai bấm; e2e chạy ở CI.
+- **AdSense thật** (bảng §5.7 A1, A2, A8; một tuần Report-Only): chỉ sau khi Google duyệt site. **[deploy]**
+- **Cloudflare đã deploy** (nonce có còn khi chạy thật, CPU Worker, beacon): xem nhóm M4. **[deploy]**
 - **Spike CSP `nonce` với Turnstile thật**: chạy lại sau khi mã Turnstile của đợt A vào `dev` (đã vào ngày 04/11/2026, chưa chạy lại); xem `chuan-bi-launch-b-spike-csp.md`.
 - **Smoke 5 và 7** chạy lại ở Task 24, sau khi hợp nhất với đợt A (M1 đổi `resolve()` và snapshot quyền lợi).
 
 ## Liên kết
 
 - PR M1: **chưa mở**, nhánh `feat/launch-b-m1-orders`; chờ M3 của đợt A vào `dev` rồi hợp nhất `origin/dev` và chạy lại test, smoke.
-- PR M2, M3, M4: chưa có.
+- PR M2, M3, M4: chưa có (cũng chờ M3 của đợt A). Nhánh: `feat/launch-b-m1-orders`, `feat/launch-b-m2-purchase`, `feat/launch-b-m3-house-ad`, `feat/launch-b-m4-adsense` (xếp chồng).
 - Đợt A (cùng đợt chuẩn bị launch): [`chuan-bi-launch-a.md`](chuan-bi-launch-a.md), PR [#211](https://github.com/quangtienngo661/english-flashcard/pull/211) (Turnstile) và [#212](https://github.com/quangtienngo661/english-flashcard/pull/212) (tài liệu).

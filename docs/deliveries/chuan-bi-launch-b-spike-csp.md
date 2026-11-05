@@ -69,6 +69,18 @@ Dòng Turnstile trong bảng trên còn mở. Lúc kiểm: `feat/launch-a-m1-tur
 chạy lại đúng mục này: mở `/vi/app/login`, `/register`, `/forgot-password` với chế độ `spike`, kiểm widget chạy và 0 vi phạm. Cách chạy: `node scripts/spike-docker.mjs spike` trên nhánh spike, với
 `SPIKE_GREP="turnstile"`; hoặc viết lại thành test của Task 22 (e2e `csp.spec.ts`, LB3E8).
 
+## Kết quả chạy lại mục Turnstile với code thật của đợt A (04/11/2026, Task 22)
+
+Mã Turnstile của đợt A M1 đã vào `dev` (PR #211) và được hợp nhất vào nhánh M4. Chính sách `/app` thật (không phải bản thử cơ chế) do `buildAppCsp` làm trong `src/lib/app-csp.ts`, đặt ở `proxy.ts`; chạy trong container
+`node:24.11.0-bookworm` bằng `pnpm cf:docker e2e/csp.spec.ts --project=desktop` (OpenNext build rồi `wrangler dev`, Chromium headless): **8/8 test qua**, trong đó:
+
+- `LA1#14` (widget Turnstile **thật** của đợt A, sitekey thử của Cloudflare, tải từ Cloudflare): nút đăng nhập chỉ bật khi Cloudflare đưa token, và 0 vi phạm CSP, dưới `'nonce-…' 'strict-dynamic'`. Dòng Turnstile của bảng trên: **Đạt**.
+- `LB3E7`: `/vi/app` và `/vi/app/login` mỗi nơi đúng **một** chính sách (một `default-src`), mọi `<script>` mang đúng nonce của header, trừ hai loại có chủ ý: script chống nháy màu (cho qua bằng hash) và script `api.js` của Turnstile do script có nonce tự thêm vào trang (cái `'strict-dynamic'` cho phép; ở trang đăng nhập có thêm đúng một thẻ như vậy).
+- Hai lần gọi `/vi/app/groups` ra hai nonce khác nhau; `/vi` không có nonce và giữ `default-src 'self'`; `LB3E6` (từ landing vào app là tải lại cả trang) và `LB3E8` (0 vi phạm ở `/vi`, `/vi/app`, `/vi/app/login`, `/vi/app/groups`).
+- `pnpm assert:render-mode` sau build: các route dựng sẵn là `/en`, `/vi` và các tệp tĩnh; không có trang nào dưới `/vi/app` hay `/en/app`.
+
+Vẫn chưa kiểm: bản deploy thật trên Cloudflare (issue #1302), CPU Worker thật, beacon tự chèn ở edge; ba mục này nằm ở `deploy-checklist.md` (mục "CSP có nonce cho `/app`").
+
 ## Công thức cho Task 22 (đã chạy được trong spike)
 
 ```ts

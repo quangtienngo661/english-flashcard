@@ -62,6 +62,13 @@ describe('problem mapping', () => {
     );
   });
 
+  it('launch prep B: the Pro lock lines no longer say Pro is not on sale; the error line points to Plans', () => {
+    expect(vi.App.ui.lockedLine).toBe('Dành cho gói Pro.');
+    expect(en.App.ui.lockedLine).toBe('Part of the Pro plan.');
+    expect(vi.App.errors['entitlement-required']).toBe('Dành cho gói Pro. Mở Gói học để mua.');
+    expect(en.App.errors['entitlement-required']).toBe('Part of the Pro plan. Open Plans to buy it.');
+  });
+
   it('messages: every KNOWN_ERROR_SLUGS key has a vi and an en text under App.errors', () => {
     const keys = [...KNOWN_ERROR_SLUGS, 'generic', 'inProgress'];
     for (const [name, messages] of [['vi', vi.App.errors], ['en', en.App.errors]] as const) {

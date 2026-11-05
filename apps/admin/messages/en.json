@@ -32,6 +32,7 @@
     "idempotency-key-abandoned": "The previous request was abandoned, please submit again",
     "invalid-credentials": "Wrong email or password",
     "invalid-current-password": "The current password is wrong",
+    "account-deleted": "The learner's account is deleted, so no period can be opened.",
     "account-deleting": "This account is being deleted and cannot be changed.",
     "captcha-failed": "We couldn't check that you're not a bot. Please try again.",
     "captcha-unavailable": "The bot check is unavailable right now. Please try again in a few minutes.",
@@ -60,6 +61,12 @@
     "not-found": "Not found",
     "nothing-to-judge": "There is no question to judge with these filters.",
     "nothing-to-publish": "Nothing is eligible to publish",
+    "order-already-paid": "The order already has a period.",
+    "order-changed": "The order just changed. Close this window, look at the order again and retry.",
+    "order-closed": "The order is closed and takes no more money.",
+    "order-not-pending": "The order is no longer waiting, so it cannot be cancelled.",
+    "order-not-resolvable": "There is nothing to deal with on this order.",
+    "period-already-revoked": "This period is already revoked.",
     "operation-settings-conflict": "Someone just changed this operation. Reload to see the latest version.",
     "password-change-required": "You must change your password before continuing",
     "payload-too-large": "The request is too large",
@@ -147,6 +154,7 @@
     "refunds": "Refunds",
     "users": "Users",
     "entitlements": "Grant plans and uses",
+    "orders": "Orders",
     "transactions": "Transactions",
     "aiStatus": "Status",
     "aiModels": "Models",
@@ -1362,6 +1370,135 @@
       "target-is-staff": "An editor cannot grant to a staff account.",
       "ai-limits-admin-only": "Only an admin can set AI use numbers.",
       "target-has-paid-subscription": "This person pays for Pro and renews automatically."
+    }
+  },
+  "orders": {
+    "intro": "Every time a learner presses Buy there is an order. See whether the money arrived; when you see it in the bank app and the system does not, press Money received; cancel a waiting order, close one that is dealt with, revoke a period. Admins only.",
+    "filters": {
+      "email": "Learner email",
+      "emailPlaceholder": "Search by email",
+      "status": "Status",
+      "allStatuses": "Every status",
+      "needsAttention": "Needs a look",
+      "code": "Transfer note",
+      "codePlaceholder": "WM…",
+      "from": "From date",
+      "to": "To date",
+      "apply": "Filter"
+    },
+    "cols": {
+      "user": "Learner",
+      "plan": "Period · Amount",
+      "code": "Transfer note",
+      "at": "Created",
+      "status": "Status"
+    },
+    "months": "{count, plural, one {# month} other {# months}}",
+    "statuses": {
+      "pending": "Waiting",
+      "paid": "Paid",
+      "expired": "Expired",
+      "cancelled": "Cancelled",
+      "failed": "Link not created",
+      "needs_review": "Needs a look",
+      "closed": "Closed"
+    },
+    "reasons": {
+      "amount-short": "Paid too little",
+      "amount-over": "Paid too much",
+      "late-payment": "Paid late",
+      "account-deleted": "Account deleted",
+      "extra-payment": "An extra payment came",
+      "reconcile-mismatch": "Reconciliation key mismatch",
+      "provider-mismatch": "payOS says money came but lists no transfer"
+    },
+    "sources": {
+      "webhook": "Webhook",
+      "reconcile": "Reconciliation",
+      "manual": "Staff"
+    },
+    "outcomes": {
+      "opened-period": "Opened a period",
+      "attached": "Attached to an earlier payment",
+      "counted": "Counted",
+      "flagged": "Needs a look",
+      "refund-needed": "Needs a refund"
+    },
+    "proSources": {
+      "prepaid": "Prepaid period",
+      "grant": "Pro granted by the team"
+    },
+    "periods": {
+      "revoked": "Revoked {date}"
+    },
+    "detailLink": "Details",
+    "detailFor": "Details of the order of {email}",
+    "footer": "{count, plural, one {# order} other {# orders}} · newest first · dates and times in the Asia/Ho_Chi_Minh zone",
+    "empty": "No order matches the filters. Change the email, status or dates and look again.",
+    "detail": {
+      "title": "Order details",
+      "user": "Learner",
+      "userId": "Learner id",
+      "description": "Transfer note",
+      "code": "Order code (orderCode)",
+      "plan": "Period · Amount",
+      "status": "Status",
+      "reason": "Needs a look because",
+      "via": "Money recorded through",
+      "createdAt": "Created",
+      "expiresAt": "Link expires",
+      "paymentsTitle": "Payments",
+      "noPayments": "No payment yet.",
+      "providerTime": "payOS wrote {time}",
+      "periodsTitle": "Periods opened",
+      "noPeriods": "The order has opened no period.",
+      "proTitle": "The learner's Pro now",
+      "proUntil": "Pro through {date}",
+      "proNone": "The learner is not on Pro now.",
+      "refundTitle": "Information for a refund",
+      "refundName": "Payer's name",
+      "refundAccount": "Account number",
+      "refundBank": "Bank",
+      "refundNote": "Kept only when money arrives after the account was deleted; removed after 90 days or when you press Dealt with.",
+      "resolutionTitle": "Dealt with",
+      "close": "Close"
+    },
+    "actions": {
+      "confirm": "Money received",
+      "cancel": "Cancel order",
+      "resolve": "Dealt with",
+      "revoke": "Revoke period"
+    },
+    "confirm": {
+      "title": "Money received",
+      "body": "You saw {amount} with the note {code} in the bank app, and the system does not know it. The learner gets the Pro period at once.",
+      "reference": "The bank's reference",
+      "amount": "Amount received (₫)",
+      "reason": "Reason",
+      "invalid": "Enter the reference, the amount as a positive whole number and a reason (up to 300 characters).",
+      "submit": "Confirm received"
+    },
+    "cancel": {
+      "title": "Cancel order",
+      "body": "Cancel order {code}? The payment link is cancelled at payOS and the learner cannot pay it any more.",
+      "keep": "Keep the order",
+      "confirm": "Cancel order"
+    },
+    "resolve": {
+      "title": "Dealt with",
+      "body": "Write down what was done. An order that needed a look is closed; a paid order with a flag loses the flag. The order's refund information is deleted.",
+      "note": "Note",
+      "placeholder": "Refunded 199,000 ₫ through the bank on 06/11",
+      "invalid": "Enter a note (up to 300 characters).",
+      "submit": "Mark as dealt with"
+    },
+    "revoke": {
+      "title": "Revoke period",
+      "body": "This period stops counting from now. Later periods do not move; the transaction row stays, and a refund (if any) is made at the bank.",
+      "reason": "Reason",
+      "invalid": "Enter a reason (up to 300 characters).",
+      "keep": "Keep the period",
+      "submit": "Revoke"
     }
   },
   "transactions": {

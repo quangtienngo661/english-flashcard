@@ -9,6 +9,15 @@ import { MobileTabBar } from './MobileTabBar';
 import { PlanChip } from './PlanChip';
 import { TopBar } from './TopBar';
 
+// A marker on router links, so a test can tell them from plain anchors (the footer links that leave the app must be plain anchors, LB3E5).
+vi.mock('next/link', () => ({
+  default: ({ href, children, ...rest }: { href: string; children: React.ReactNode } & Record<string, unknown>) => (
+    <a href={href} data-router-link="" {...rest}>
+      {children}
+    </a>
+  ),
+}));
+
 let pathname = '/vi/app';
 vi.mock('next/navigation', () => ({ usePathname: () => pathname, useRouter: () => ({ replace: vi.fn(), push: vi.fn() }) }));
 
@@ -62,6 +71,16 @@ describe('app chrome', () => {
     await userEvent.click(await screen.findByRole('button', { name: 'Tài khoản của bạn' }));
     await userEvent.click(await screen.findByRole('menuitem', { name: 'Đăng xuất' }));
     await waitFor(() => expect(count('POST', '/v1/auth/logout')).toBe(1));
+  });
+
+  it('LB3E5: the footer links that leave the app (the landing, the Terms, the Privacy Policy) are plain anchors, so leaving the app is a full page load; Gói học stays a router link', () => {
+    renderApp(<AppFooter />);
+    const byHref = (href: string) => screen.getAllByRole('link').filter((link) => link.getAttribute('href') === href);
+    for (const href of ['/vi', '/vi/terms', '/vi/privacy']) {
+      expect(byHref(href), href).toHaveLength(1);
+      expect(byHref(href)[0], href).not.toHaveAttribute('data-router-link');
+    }
+    expect(byHref('/vi/app/plans')[0]).toHaveAttribute('data-router-link');
   });
 
   it('AppFooter (D7): Liên hệ is mailto; the three pages that do not exist yet are muted text, not links', () => {

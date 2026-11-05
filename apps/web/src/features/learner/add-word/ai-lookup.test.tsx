@@ -83,7 +83,8 @@ describe('AI lookup in the add-word sheet (K/85–K/86)', () => {
     const ai = await screen.findByRole('button', { name: /Tra bằng AI/ });
     await waitFor(() => expect(within(ai).getByText('Pro')).toBeInTheDocument());
     await userEvent.click(ai);
-    expect(await screen.findByText('Dành cho gói Pro. Gói Pro chưa mở bán.')).toBeInTheDocument();
+    expect(await screen.findByText('Dành cho gói Pro.')).toBeInTheDocument();
+    expect(screen.queryByText(/chưa mở bán/)).not.toBeInTheDocument();
     expect(aiCalls(calls)).toHaveLength(0);
     await userEvent.click(screen.getByRole('button', { name: 'Tự nhập nghĩa' }));
     expect(await screen.findByRole('textbox', { name: 'Nghĩa' })).toBeInTheDocument();
@@ -180,7 +181,7 @@ describe('AI lookup in the add-word sheet (K/85–K/86)', () => {
   it('E24: 403 entitlement-required → the D6 line', async () => {
     open('rizz', { routes: routes('pro', { 'POST /v1/lookup/ai': () => problem(403, 'entitlement-required') }) });
     await userEvent.click(await screen.findByRole('button', { name: 'Tra bằng AI' }));
-    expect(await screen.findByText('Dành cho gói Pro. Gói Pro chưa mở bán.')).toBeInTheDocument();
+    expect(await screen.findByText('Dành cho gói Pro.')).toBeInTheDocument();
   });
 
   it('Review Focus 1: a second press while the lookup runs sends nothing', async () => {

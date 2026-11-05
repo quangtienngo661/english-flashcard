@@ -260,12 +260,13 @@ test.describe('M4 flows (mocked API)', () => {
     await expect(page.getByRole('tab', { name: vi.history.tabs.reports, selected: true })).toBeVisible();
   });
 
-  test('plans: numbers from the config, Pro not on sale', async ({ page }) => {
+  test('plans: numbers from the config, Pro for sale in three periods', async ({ page }) => {
     await signedInAs(page, 'free');
     await page.goto('/vi/app/plans');
     await expect(page.getByRole('heading', { level: 1, name: copy.vi.App.plans.title })).toBeVisible();
     await expect(page.getByText(`${APP_CONFIG.plans.pro.practice_sessions_per_day} phiên luyện mỗi ngày`)).toBeVisible();
-    await expect(page.getByText(copy.vi.App.plans.notOnSale)).toBeVisible();
+    await expect(page.getByRole('button', { name: copy.vi.App.plans.buy })).toBeVisible();
+    await expect(page.getByRole('radio', { name: copy.vi.App.plans.periods['12'] })).toBeChecked();
   });
 });
 

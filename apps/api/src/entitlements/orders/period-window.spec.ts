@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { continuousProUntil, lastCoveredDay, periodEnd, type ProSpan } from './period-window.js';
+import { continuousProUntil, coveredBeyond, lastCoveredDay, periodEnd, type ProSpan } from './period-window.js';
 
 const VN = 'Asia/Ho_Chi_Minh';
 const at = (iso: string) => new Date(iso);
@@ -99,5 +99,31 @@ describe('continuousProUntil (design §3.7)', () => {
   it('overlapping spans take the latest end', () => {
     const spans = [span('2026-11-01T00:00:00Z', '2026-12-01T00:00:00Z'), span('2026-11-02T00:00:00Z', '2026-11-10T00:00:00Z')];
     expect(continuousProUntil(spans, now)?.toISOString()).toBe('2026-12-01T00:00:00.000Z');
+  });
+});
+
+describe('coveredBeyond: the Pro that runs through a period goes on after its end (design §3.10, LB1A2, LB1E43)', () => {
+  const now = new Date('2026-11-05T03:02:00Z');
+  const end = new Date('2026-11-10T00:00:00Z');
+  const span = (from: string, to: string, revoked: string | null = null): ProSpan => ({
+    startsAt: new Date(from), endsAt: new Date(to), revokedAt: revoked === null ? null : new Date(revoked),
+  });
+  const own = span('2026-10-10T00:00:00Z', '2026-11-10T00:00:00Z');
+
+  it('the last span of the run → false', () => {
+    expect(coveredBeyond([own], end, now)).toBe(false);
+  });
+
+  it('a span (a period or a grant) that starts exactly where it ends → true', () => {
+    expect(coveredBeyond([own, span('2026-11-10T00:00:00Z', '2026-12-10T00:00:00Z')], end, now)).toBe(true);
+  });
+
+  it('a span that starts a moment later leaves a gap → false; a revoked follower → false', () => {
+    expect(coveredBeyond([own, span('2026-11-10T00:00:01Z', '2026-12-10T00:00:00Z')], end, now)).toBe(false);
+    expect(coveredBeyond([own, span('2026-11-10T00:00:00Z', '2026-12-10T00:00:00Z', '2026-11-06T00:00:00Z')], end, now)).toBe(false);
+  });
+
+  it('no Pro covers now → false', () => {
+    expect(coveredBeyond([], end, now)).toBe(false);
   });
 });

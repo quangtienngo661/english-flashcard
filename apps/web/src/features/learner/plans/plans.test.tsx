@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { screen, within } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { problem } from '@/app-shell/session/test-support';
 import { renderApp } from '@/app-ui/test-utils';
@@ -14,30 +14,49 @@ vi.mock('next/navigation', () => ({
 vi.setConfig({ testTimeout: 20_000 });
 
 // Not the seeded numbers, so the test proves they come from GET /me/app-config (not hard-coded).
-const CONFIG = {
+const PRICES = { '1': 81000, '3': 205000, '12': 610000 };
+const config = (prices: Record<string, number> = PRICES) => ({
   practice: { max_questions_per_session: 20, default_questions_per_session: 10 },
   reminders: { send_time: '20:00' }, learning: { backlog_after_days: 60, groups_per_user: 90 },
-  plans: { free: { practice_sessions_per_day: 4, ai_practice_per_cycle: 12, ai_lookup_per_cycle: 4 }, trial: { ai_practice_per_cycle: 100, ai_lookup_per_cycle: 30 }, pro: { practice_sessions_per_day: 25, ai_practice_per_cycle: 250, ai_lookup_per_cycle: 80 } },
-};
+  plans: {
+    free: { practice_sessions_per_day: 4, ai_practice_per_cycle: 12, ai_lookup_per_cycle: 4 }, trial: { ai_practice_per_cycle: 100, ai_lookup_per_cycle: 30 },
+    pro: { practice_sessions_per_day: 25, ai_practice_per_cycle: 250, ai_lookup_per_cycle: 80, prices },
+  },
+});
+const CONFIG = config();
 const pools = { practice_sessions: { limit: 4, used: 1, remaining: 3, resets_at: null }, ai_practice: { limit: 0, used: 0, remaining: 0, resets_at: null }, ai_lookup: { limit: 0, used: 0, remaining: 0, resets_at: null } };
-const ent = (plan: string, sources: unknown[] = []) => ({
+const ent = (plan: string, sources: unknown[] = [], extra: Record<string, unknown> = {}) => ({
   plan, sources, pools, trial_eligible: false, ai_available: { enabled: true, cap_reached: false },
-  features: { 'ai.practice': { allowed: plan !== 'free', reason: null }, 'ai.lookup': { allowed: plan !== 'free', reason: null } },
+  features: { 'ai.practice': { allowed: plan !== 'free', reason: null }, 'ai.lookup': { allowed: plan !== 'free', reason: null } }, ...extra,
 });
 const GRANT = {
   kind: 'grant_plan', id: 'g1', status: null, starts_at: '2026-10-15T03:00:00.000Z', ends_at: '2026-12-31T17:00:00.000Z',
   renews_at: null, cancel_at_period_end: null, pending_interval: null,
 };
+const PREPAID = {
+  kind: 'prepaid', id: 'pp1', status: null, starts_at: '2026-11-05T03:00:00.000Z', ends_at: '2026-12-05T17:00:00.000Z',
+  renews_at: null, cancel_at_period_end: null, pending_interval: null,
+};
+const CREATED = () => Response.json({ order_id: 'o-1', checkout_url: 'https://pay.example/checkout?order=1' }, { status: 201 });
 const withFree = (ai_practice_per_cycle: number, ai_lookup_per_cycle: number) => ({
   ...CONFIG, plans: { ...CONFIG.plans, free: { ...CONFIG.plans.free, ai_practice_per_cycle, ai_lookup_per_cycle } },
 });
-const routes = (entitlements: unknown, config: unknown = CONFIG) => ({
-  'GET /v1/me/app-config': () => Response.json(config),
+const routes = (entitlements: unknown, extra: Record<string, () => Response> = {}, appConfig: unknown = CONFIG) => ({
+  'GET /v1/me/app-config': () => Response.json(appConfig),
   'GET /v1/me/entitlements': () => Response.json(entitlements),
+  ...extra,
+});
+// Intl puts a no-break space before "₫".
+const dong = (amount: number) => new RegExp(`^${amount.toLocaleString('vi-VN')}\\s₫$`);
+
+let assign: ReturnType<typeof vi.fn>;
+beforeEach(() => {
+  assign = vi.fn();
+  Object.defineProperty(window, 'location', { configurable: true, value: { ...window.location, assign } });
 });
 
-describe('PlansPage (K/52, K/53)', () => {
-  it('Free: its card is "Gói hiện tại", no "Không cần thẻ ngân hàng"; numbers from plans; Pro not on sale, placeholder price', async () => {
+describe('PlansPage (K/52, K/53; launch prep B design §3.8)', () => {
+  it('Free: its card is "Gói hiện tại", no "Không cần thẻ ngân hàng"; numbers from plans; Pro has three periods and a Buy button, no "Chưa mở bán", no placeholder price', async () => {
     renderApp(<PlansPage />, { routes: routes(ent('free')) });
     expect(await screen.findByRole('heading', { level: 1, name: 'Học đều mỗi ngày, lên Pro khi cần' })).toBeInTheDocument();
     const free = screen.getByRole('region', { name: 'Miễn phí' });
@@ -50,36 +69,134 @@ describe('PlansPage (K/52, K/53)', () => {
     expect(within(free).queryByText('Câu AI và tra bằng AI: cần gói Pro')).not.toBeInTheDocument();
     expect(screen.queryByText(/Không cần thẻ ngân hàng/)).not.toBeInTheDocument();
     const pro = screen.getByRole('region', { name: 'Pro' });
-    expect(within(pro).getByText('Chưa mở bán')).toBeInTheDocument();
-    expect(within(pro).getByText('XXX.000 ₫')).toBeInTheDocument();
-    expect(within(pro).getByText('/ năm')).toBeInTheDocument();
+    expect(within(pro).queryByText('Chưa mở bán')).not.toBeInTheDocument();
+    expect(screen.queryByText(/XX\.000/)).not.toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: '1 tháng' })).toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: '3 tháng' })).toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: '12 tháng' })).toBeChecked();
+    expect(within(pro).getByText(dong(610000))).toBeInTheDocument();
+    expect(within(pro).getByRole('button', { name: 'Mua' })).toBeInTheDocument();
     expect(within(pro).getByText('25 phiên luyện mỗi ngày')).toBeInTheDocument();
     expect(within(pro).getByText('Tối đa 250 câu AI mới mỗi tháng*')).toBeInTheDocument();
     expect(within(pro).getByText('80 lượt tra AI mỗi tháng')).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /Mua|Đăng ký|Nâng cấp/ })).not.toBeInTheDocument();
-    expect(screen.queryByText(/thanh toán/)).not.toBeInTheDocument();
     expect(screen.queryByText('Phiên luyện hôm nay')).not.toBeInTheDocument();
   });
 
-  it('the month/year switch changes the placeholder price', async () => {
+  it('the price follows the chosen period, from plans.pro.prices', async () => {
     renderApp(<PlansPage />, { routes: routes(ent('free')) });
     await screen.findByRole('heading', { level: 1 });
-    await userEvent.click(screen.getByRole('radio', { name: 'Theo tháng' }));
     const pro = screen.getByRole('region', { name: 'Pro' });
-    expect(within(pro).getByText('XX.000 ₫')).toBeInTheDocument();
-    expect(within(pro).getByText('/ tháng')).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('radio', { name: '3 tháng' }));
+    expect(within(pro).getByText(dong(205000))).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('radio', { name: '1 tháng' }));
+    expect(within(pro).getByText(dong(81000))).toBeInTheDocument();
   });
 
-  it('GG3: Pro given by the team: card says "Gói hiện tại" and until when; no line under the title (owner 27/10/2026)', async () => {
-    renderApp(<PlansPage />, { routes: routes(ent('pro', [GRANT])) });
+  it('right above the Buy button: "Không hoàn tiền. Gói không tự gia hạn; hết hạn bạn mua kỳ mới." and a link to the Terms', async () => {
+    renderApp(<PlansPage />, { routes: routes(ent('free')) });
+    const pro = await screen.findByRole('region', { name: 'Pro' });
+    const sentence = within(pro).getByText('Không hoàn tiền. Gói không tự gia hạn; hết hạn bạn mua kỳ mới.');
+    const buy = within(pro).getByRole('button', { name: 'Mua' });
+    expect(sentence.compareDocumentPosition(buy) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(within(pro).getByRole('link', { name: 'Điều khoản sử dụng' })).toHaveAttribute('href', '/vi/terms');
+  });
+
+  it('Buy posts the period and the price the learner saw with an Idempotency-Key, then goes to the payment page (window.location.assign)', async () => {
+    const view = renderApp(<PlansPage />, { routes: routes(ent('free'), { 'POST /v1/me/orders': CREATED }) });
+    await userEvent.click(await screen.findByRole('button', { name: 'Mua' }));
+    await waitFor(() => expect(assign).toHaveBeenCalledWith('https://pay.example/checkout?order=1'));
+    const posts = view.calls.filter((c) => c.method === 'POST' && c.path === '/v1/me/orders');
+    expect(posts).toHaveLength(1);
+    expect(posts[0].body).toEqual({ period_months: 12, expected_amount: 610000, locale: 'vi' });
+    expect(posts[0].headers['Idempotency-Key']).toMatch(/^[0-9a-f-]{36}$/);
+  });
+
+  it('another period → that period and its price; a double press is one order', async () => {
+    const view = renderApp(<PlansPage />, { routes: routes(ent('free'), { 'POST /v1/me/orders': CREATED }) });
+    await userEvent.click(await screen.findByRole('radio', { name: '3 tháng' }));
+    await userEvent.dblClick(screen.getByRole('button', { name: 'Mua' }));
+    await waitFor(() => expect(assign).toHaveBeenCalledTimes(1));
+    const posts = view.calls.filter((c) => c.method === 'POST' && c.path === '/v1/me/orders');
+    expect(posts).toHaveLength(1);
+    expect(posts[0].body).toEqual({ period_months: 3, expected_amount: 205000, locale: 'vi' });
+  });
+
+  it('LB1E28: 409 price-changed → the prices are read again, "Giá vừa đổi, xem lại trước khi mua", nothing opens, and the next press uses the new price', async () => {
+    let prices = PRICES;
+    const view = renderApp(<PlansPage />, {
+      routes: {
+        'GET /v1/me/app-config': () => Response.json(config(prices)),
+        'GET /v1/me/entitlements': () => Response.json(ent('free')),
+        'POST /v1/me/orders': () => {
+          if (prices === PRICES) {
+            prices = { ...PRICES, '12': 620000 };
+            return problem(409, 'price-changed', { current_amount: 620000 });
+          }
+          return CREATED();
+        },
+      },
+    });
+    await userEvent.click(await screen.findByRole('button', { name: 'Mua' }));
+    expect(await screen.findByText('Giá vừa đổi, xem lại trước khi mua')).toBeInTheDocument();
+    expect(assign).not.toHaveBeenCalled();
+    const pro = screen.getByRole('region', { name: 'Pro' });
+    expect(await within(pro).findByText(dong(620000))).toBeInTheDocument();
+    await userEvent.click(within(pro).getByRole('button', { name: 'Mua' }));
+    await waitFor(() => expect(assign).toHaveBeenCalledTimes(1));
+    const bodies = view.calls.filter((c) => c.method === 'POST' && c.path === '/v1/me/orders').map((c) => c.body);
+    expect(bodies).toEqual([
+      { period_months: 12, expected_amount: 610000, locale: 'vi' }, { period_months: 12, expected_amount: 620000, locale: 'vi' },
+    ]);
+  });
+
+  it('503 → "Chưa tạo được đơn. Thử lại sau ít phút." and the button works again', async () => {
+    renderApp(<PlansPage />, { routes: routes(ent('free'), { 'POST /v1/me/orders': () => problem(503, 'provider-unavailable') }) });
+    await userEvent.click(await screen.findByRole('button', { name: 'Mua' }));
+    expect(await screen.findByText('Chưa tạo được đơn. Thử lại sau ít phút.')).toBeInTheDocument();
+    expect(assign).not.toHaveBeenCalled();
+    expect(screen.getByRole('button', { name: 'Mua' })).toBeEnabled();
+  });
+
+  it('GG3: Pro given by the team: card says "Gói hiện tại" and until when (pro_until); no line under the title (owner 27/10/2026)', async () => {
+    renderApp(<PlansPage />, { routes: routes(ent('pro', [GRANT], { pro_until: GRANT.ends_at })) });
     expect(await screen.findByRole('heading', { level: 1, name: 'Bạn đang dùng gói Pro' })).toBeInTheDocument();
     expect(screen.queryByText(/Đội Wordmet cấp từ/)).not.toBeInTheDocument();
     const pro = screen.getByRole('region', { name: 'Pro' });
     expect(within(pro).getByText('Gói hiện tại')).toBeInTheDocument();
     expect(within(pro).getByText('Tới hết 31/12/2026')).toBeInTheDocument();
     expect(within(pro).queryByText('Chưa mở bán')).not.toBeInTheDocument();
-    expect(screen.queryByRole('radio', { name: 'Theo tháng' })).not.toBeInTheDocument();
     expect(within(screen.getByRole('region', { name: 'Miễn phí' })).getByText('Hết hạn Pro thì tài khoản tự về gói Miễn phí')).toBeInTheDocument();
+  });
+
+  it('LB1A5: Pro through prepaid periods: "Tới hết" is pro_until (the end of the chain), the next periods are listed, Buy is still there (a following period), no Hủy gói', async () => {
+    renderApp(<PlansPage />, {
+      routes: routes(ent('pro', [PREPAID], {
+        pro_until: '2027-12-05T17:00:00.000Z',
+        upcoming_periods: [{ id: 'pp2', starts_at: '2026-12-05T17:00:00.000Z', ends_at: '2027-12-05T17:00:00.000Z' }],
+      })),
+    });
+    const pro = await screen.findByRole('region', { name: 'Pro' });
+    expect(within(pro).getByText('Gói hiện tại')).toBeInTheDocument();
+    expect(within(pro).getByText('Tới hết 5/12/2027')).toBeInTheDocument();
+    expect(within(pro).getByText('Kỳ tiếp theo: 6/12/2026 – 5/12/2027')).toBeInTheDocument();
+    expect(within(pro).getByRole('button', { name: 'Mua' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Hủy gói' })).not.toBeInTheDocument();
+    expect(screen.queryByText('Gói đang đăng ký')).not.toBeInTheDocument();
+  });
+
+  it('a second and third upcoming period are listed after the first', async () => {
+    renderApp(<PlansPage />, {
+      routes: routes(ent('pro', [PREPAID], {
+        pro_until: '2028-03-05T17:00:00.000Z',
+        upcoming_periods: [
+          { id: 'pp2', starts_at: '2026-12-05T17:00:00.000Z', ends_at: '2027-12-05T17:00:00.000Z' },
+          { id: 'pp3', starts_at: '2027-12-05T17:00:00.000Z', ends_at: '2028-03-05T17:00:00.000Z' },
+        ],
+      })),
+    });
+    const pro = await screen.findByRole('region', { name: 'Pro' });
+    expect(within(pro).getByText('Kỳ tiếp theo: 6/12/2026 – 5/12/2027')).toBeInTheDocument();
+    expect(within(pro).getByText('Sau đó: 6/12/2027 – 5/3/2028')).toBeInTheDocument();
   });
 
   it('[So sánh chi tiết các gói] opens a table with the same numbers', async () => {
@@ -95,7 +212,7 @@ describe('PlansPage (K/52, K/53)', () => {
   });
 
   it('LA3#11: when the config gives Free no AI (both numbers 0) the card and the table say so, as before', async () => {
-    renderApp(<PlansPage />, { routes: routes(ent('free'), withFree(0, 0)) });
+    renderApp(<PlansPage />, { routes: routes(ent('free'), {}, withFree(0, 0)) });
     const free = await screen.findByRole('region', { name: 'Miễn phí' });
     expect(within(free).getByText('Câu AI và tra bằng AI: cần gói Pro')).toBeInTheDocument();
     expect(within(free).queryByText(/câu AI và \d+ lượt tra AI mỗi tháng/)).not.toBeInTheDocument();
@@ -106,7 +223,7 @@ describe('PlansPage (K/52, K/53)', () => {
   });
 
   it('LA3#13: only one of the two Free numbers is 0 → the card names both and the table shows the same 0 (a dash means no AI at all)', async () => {
-    renderApp(<PlansPage />, { routes: routes(ent('free'), withFree(15, 0)) });
+    renderApp(<PlansPage />, { routes: routes(ent('free'), {}, withFree(15, 0)) });
     const free = await screen.findByRole('region', { name: 'Miễn phí' });
     expect(within(free).getByText('15 câu AI và 0 lượt tra AI mỗi tháng')).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'So sánh chi tiết các gói' }));
@@ -120,10 +237,16 @@ describe('PlansPage (K/52, K/53)', () => {
   });
 
   it('English', async () => {
-    renderApp(<PlansPage />, { locale: 'en', routes: routes(ent('free')) });
+    const view = renderApp(<PlansPage />, { locale: 'en', routes: routes(ent('free'), { 'POST /v1/me/orders': CREATED }) });
     expect(await screen.findByRole('heading', { level: 1, name: 'Learn a little every day, go Pro when you need it' })).toBeInTheDocument();
-    expect(screen.getByText('Not on sale yet')).toBeInTheDocument();
     expect(screen.getByText('4 practice sessions a day')).toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: '1 month' })).toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: '12 months' })).toBeChecked();
+    expect(screen.getByText('No refunds. The plan does not renew by itself; when it ends you buy a new period.')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Terms of Use' })).toHaveAttribute('href', '/en/terms');
+    await userEvent.click(screen.getByRole('button', { name: 'Buy' }));
+    await waitFor(() => expect(assign).toHaveBeenCalledTimes(1));
+    expect(view.calls.find((c) => c.method === 'POST' && c.path === '/v1/me/orders')?.body).toEqual({ period_months: 12, expected_amount: 610000, locale: 'en' });
     expect(screen.getByText('12 AI questions and 4 AI lookups a month')).toBeInTheDocument();
   });
 });

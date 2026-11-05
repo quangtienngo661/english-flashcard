@@ -77,6 +77,14 @@ export class IdentityService {
     @Optional() @Inject(TermsVersion) private readonly terms?: TermsVersion,
   ) {}
 
+  /**
+   * Whether the person has reached `years` today, in their own time zone (launch prep B design §5.1: ads only from 16). A missing birth date is
+   * "no": nothing is shown to someone whose age is not known. Pure on the profile, so a caller may use the profile it already has.
+   */
+  isAtLeast(profile: Pick<Profile, 'birth_date' | 'timezone'>, years: number, now: Date): boolean {
+    return profile.birth_date !== null && isOldEnough(profile.birth_date, localDate(profile.timezone, now), years);
+  }
+
   /** A caller inside a transaction that holds a lock passes its `tx`, so the read needs no second connection. */
   async getProfile(userId: string, db: Prisma.TransactionClient = this.prisma): Promise<Profile | null> {
     const row = await db.user.findUnique({ where: { id: userId }, select: profileSelect });

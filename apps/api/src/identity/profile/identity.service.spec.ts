@@ -288,3 +288,32 @@ describe('IdentityService.registrations (nhóm B M6, contract §4: the people th
     expect(await make([]).service.registrations(from, to)).toEqual([]);
   });
 });
+
+describe('IdentityService.isAtLeast (launch prep B design §5.1, LB2E1–LB2E3)', () => {
+  const identity = new IdentityService({} as unknown as PrismaClient, new FakeClock(), silentLogger);
+  const NOON = '2026-11-10T05:00:00.000Z'; // 12:00 on 10/11 in Vietnam
+  const age = (birth: string | null, now: string, years = 16, timezone = 'Asia/Ho_Chi_Minh') =>
+    identity.isAtLeast({ birth_date: birth, timezone }, years, new Date(now));
+
+  it('LB2E1: no birth date → false', () => {
+    expect(age(null, NOON)).toBe(false);
+  });
+
+  it('LB2E2: today is the 16th birthday → true; one day short → false; a year over → true', () => {
+    expect(age('2010-11-10', NOON)).toBe(true);
+    expect(age('2010-11-11', NOON)).toBe(false);
+    expect(age('2009-11-11', NOON)).toBe(true);
+  });
+
+  it('the day is the learner\'s own: 03:00 on 10/11 in Vietnam is 20:00 on 09/11 in UTC, so a 2010-11-10 birthday is today in Vietnam and not yet in UTC', () => {
+    const instant = '2026-11-09T20:00:00.000Z';
+    expect(age('2010-11-10', instant, 16, 'Asia/Ho_Chi_Minh')).toBe(true);
+    expect(age('2010-11-10', instant, 16, 'UTC')).toBe(false);
+  });
+
+  it('LB2E3: born on 29 February, the age year is not a leap year: 28/02 → false, 01/03 → true (2012-02-29 turns 17 in 2029)', () => {
+    expect(age('2012-02-29', '2029-02-28T05:00:00.000Z', 17)).toBe(false);
+    expect(age('2012-02-29', '2029-03-01T05:00:00.000Z', 17)).toBe(true);
+    expect(age('2012-02-29', '2028-02-29T05:00:00.000Z', 16)).toBe(true);
+  });
+});
