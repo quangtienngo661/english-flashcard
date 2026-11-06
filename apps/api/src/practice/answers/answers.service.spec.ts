@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { FakeClock } from '../../common/clock/clock.js';
+import { ProblemDetailsException } from '../../common/problem-details/problem-details.exception.js';
 import type { ContentService, PracticeSense } from '../../content/index.js';
 import type { EntitlementsService } from '../../entitlements/index.js';
 import type { Prisma, PrismaClient } from '../../generated/prisma/client.js';
@@ -100,7 +101,7 @@ const mcqItem = (overrides: Record<string, unknown> = {}) => ({
 /** The route as the controller calls it, with every Learning / Identity read recorded by the client it was given. */
 /** `session`: the senses of the session's words (`practiceSenses` returns them) and, when fewer, the ids that are still usable. */
 function route(found: ItemWithQuestion, nativeLanguage: 'vi' | 'en' = 'vi',
-  session: { senses: PracticeSense[]; usable?: string[]; due?: Record<string, boolean> } = { senses: [] }) {
+  session: { senses: PracticeSense[]; usable?: string[]; due?: Record<string, boolean>; gone?: boolean } = { senses: [] }) {
   const reads: Array<{ read: string; db: unknown }> = [];
   const tx = {
     $queryRaw: vi.fn(async () => []),
@@ -124,7 +125,11 @@ function route(found: ItemWithQuestion, nativeLanguage: 'vi' | 'en' = 'vi',
   const sessions = {
     closeIfIdle: vi.fn(async () => undefined),
     lockOpen: vi.fn(async () => ({ id: 'sess-1', senseIds: session.senses.map((s) => s.sense_id) })),
-    sessionWordIds: vi.fn(async () => session.usable ?? session.senses.map((s) => s.sense_id)),
+    sessionWordIds: vi.fn(async () => {
+      // The session's group was deleted in another tab: reading its items is a 404.
+      if (session.gone) throw new ProblemDetailsException({ status: 404, title: 'Not found', type: 'not-found' });
+      return session.usable ?? session.senses.map((s) => s.sense_id);
+    }),
   };
   const content = {
     practiceSenses: vi.fn(async (_user: string, ids: string[]) => new Map(session.senses.filter((s) => ids.includes(s.sense_id)).map((s) => [s.sense_id, s]))),
@@ -350,6 +355,23 @@ describe('AnswersService — session words and alternative answers', () => {
       expect(rejected.extensions.result.alternative.typed).toBe('Crucial.');
       expect(rejected.extensions.result.alternative.rows).toHaveLength(2);
     });
+  });
+
+  it('a group deleted in another tab: a wrong typed answer is today\'s try-again or final wrong, never a 404', async () => {
+    const t = route(aiItem(vitalQuestion()), 'vi', { senses: [crucial, habit], gone: true });
+    await expect(t.service.answer(userId, 'it-1', { text: 'habit' })).resolves.toEqual({ result: 'try_again', tries: 1, reason: null });
+    expect(t.tx.practiceSessionItem.update).toHaveBeenCalledExactlyOnceWith({ where: { id: 'it-1' }, data: { answersTried: ['habit'], tries: 1 } });
+    const capped = route(aiItem(vitalQuestion(), { maxRetries: 1, tries: 1, answersTried: ['a'] }), 'vi', { senses: [crucial, habit], gone: true });
+    await capped.service.answer(userId, 'it-1', { text: 'habit' });
+    expect(finalData(capped).data).toMatchObject({ result: 'wrong', tries: 2 });
+    // The right answer never reads the group at all.
+    await expect(route(aiItem(vitalQuestion()), 'vi', { senses: [], gone: true }).service.answer(userId, 'it-1', { text: 'vital' })).resolves.toMatchObject({ result: 'correct' });
+  });
+
+  it('only a missing group is forgiven: any other failure of reading the session words still fails the answer', async () => {
+    const t = route(aiItem(vitalQuestion()), 'vi', words);
+    t.sessions.sessionWordIds.mockRejectedValueOnce(new Error('database down'));
+    await expect(t.service.answer(userId, 'it-1', { text: 'habit' })).rejects.toThrow('database down');
   });
 
   it('a choice question reads no session words', async () => {
