@@ -14,6 +14,7 @@ import { useGroups } from '../../groups/groups-api';
 import { useSourceLabel } from '../CurrentSessionCard';
 import type { PracticeSessionView } from '../practice-api';
 import { AiUnavailableState } from './AiUnavailableState';
+import { AlternativeFeedback } from './AlternativeFeedback';
 import { AnswerFeedback, feedbackCase } from './AnswerFeedback';
 import { HintPanel, hintLevels } from './HintPanel';
 import { Choices, chosenChoice } from './McqQuestion';
@@ -80,6 +81,8 @@ export function PracticeSession() {
       if (phase?.kind !== 'question') return;
       const { item, outcome } = phase;
       if (outcome?.kind === 'final') {
+        // An alternative answer has two rows, each with its own buttons: no shortcut acts on a word the learner did not choose (§3.2).
+        if (outcome.result.alternative) return;
         if (e.repeat && (e.key === 'Enter' || e.key === '1' || e.key === '2')) return;
         const kind = feedbackCase(outcome.result);
         if (e.key === '1' && kind !== null) void state.review('needs_review');
@@ -245,7 +248,7 @@ function Question({ state, item, onReport }: { state: PracticeSessionState; item
 
   // One live region from the start of the question, so screen readers hear the result (audit 26/10/2026 #8).
   const announce = final
-    ? `${final.result.result === 'correct' ? t('right') : t('wrong')}. ${t('revealLine', { lemma: final.result.correct.lemma, meaning: final.result.meaning })}`
+    ? `${final.result.alternative ? t('alternativeLabel') : final.result.result === 'correct' ? t('right') : t('wrong')}. ${t('revealLine', { lemma: final.result.correct.lemma, meaning: final.result.meaning })}`
     : outcome?.kind === 'try_again' ? (outcome.reason === 'session_word' ? `${t('wrong')}. ${t('sessionWordBody')}` : t('wrong')) : '';
 
   return (
@@ -264,7 +267,15 @@ function Question({ state, item, onReport }: { state: PracticeSessionState; item
           {state.error instanceof NetworkError ? t('failed') : errorText(state.error)}
         </p>
       )}
-      {final ? (
+      {final?.result.alternative ? (
+        <AlternativeFeedback
+          result={final.result}
+          sentence={prompt.kind === 'cloze' ? prompt.sentence : ''}
+          onReviewWord={(senseId, action) => void state.reviewWord(senseId, action)}
+          onNext={() => void state.next()}
+          busy={state.busy}
+        />
+      ) : final ? (
         <AnswerFeedback result={final.result} onReview={(action) => void state.review(action)} onNext={() => void state.next()} busy={state.busy} focusPrimary={!typed} />
       ) : outcome?.kind === 'try_again' ? (
         <>
