@@ -99,7 +99,8 @@ const mcqItem = (overrides: Record<string, unknown> = {}) => ({
 
 /** The route as the controller calls it, with every Learning / Identity read recorded by the client it was given. */
 /** `session`: the senses of the session's words (`practiceSenses` returns them) and, when fewer, the ids that are still usable. */
-function route(found: ItemWithQuestion, nativeLanguage: 'vi' | 'en' = 'vi', session: { senses: PracticeSense[]; usable?: string[] } = { senses: [] }) {
+function route(found: ItemWithQuestion, nativeLanguage: 'vi' | 'en' = 'vi',
+  session: { senses: PracticeSense[]; usable?: string[]; due?: Record<string, boolean> } = { senses: [] }) {
   const reads: Array<{ read: string; db: unknown }> = [];
   const tx = {
     $queryRaw: vi.fn(async () => []),
@@ -114,9 +115,9 @@ function route(found: ItemWithQuestion, nativeLanguage: 'vi' | 'en' = 'vi', sess
   };
   const identity = { getProfile: vi.fn(async (_id: string, db?: unknown) => { reads.push({ read: 'getProfile', db }); return { timezone: 'UTC', native_language: nativeLanguage }; }) };
   const learning = {
-    practiceCheck: vi.fn(async (_u: string, _s: string, _g: null, db?: unknown) => {
+    practiceCheck: vi.fn(async (_u: string, senseId: string, _g: null, db?: unknown) => {
       reads.push({ read: 'practiceCheck', db });
-      return { item: { due_now: true } };
+      return { item: { due_now: session.due?.[senseId] ?? true } };
     }),
     recordActivity: vi.fn(async () => undefined),
   };
@@ -271,6 +272,84 @@ describe('AnswersService — session words and alternative answers', () => {
     const t = route(aiItem(vitalQuestion([{ form: 'found', private: false }])), 'vi', { senses: [find, found] });
     await t.service.answer(userId, 'it-1', { text: 'found' });
     expect(finalData(t).data).toMatchObject({ result: 'correct', alternative: true, alternativeSenseId: null });
+  });
+
+  describe('the reply of an alternative answer (design §3.2, §4.1)', () => {
+    const typedCrucial = { ...crucial, meaning: { text: 'quan trọng', language: 'vi' as const, translation_missing: false } };
+    const answered = (over: Record<string, unknown> = {}) => aiItem(vitalQuestion(), {
+      result: 'correct', tries: 1, alternative: true, alternativeSenseId: 'sense-crucial', answerRaw: 'Crucial.', answerNormalized: 'crucial',
+      reviewAction: null, alternativeReviewAction: null, ...over,
+    });
+    const context = { senses: [typedCrucial, habit], due: { 'sense-crucial': true, 'sense-1': false } };
+
+    it('CS2: rows typed then asked, each with its own show_known and action; the card-level buttons stay off', async () => {
+      const found = answered({ alternativeReviewAction: 'known' });
+      const t = route(found, 'vi', context);
+      const result = await t.service.resultOf(userId, found, t.tx as never);
+      expect(result).toMatchObject({
+        result: 'correct', show_known: false, highlight_needs_review: false, correct: { lemma: 'vital', text: 'vital' }, meaning: 'thiết yếu',
+        alternative: {
+          typed: 'Crucial.',
+          rows: [
+            { sense_id: 'sense-crucial', lemma: 'crucial', meaning: 'quan trọng', role: 'typed', show_known: true, action: 'known' },
+            { sense_id: 'sense-1', lemma: 'vital', meaning: 'thiết yếu', role: 'asked', show_known: false, action: null },
+          ],
+        },
+      });
+    });
+
+    it('the asked row reports its own review action', async () => {
+      const found = answered({ reviewAction: 'needs_review' });
+      const t = route(found, 'vi', context);
+      const result = await t.service.resultOf(userId, found, t.tx as never) as { alternative: { rows: Array<{ role: string; action: string | null }> } };
+      expect(result.alternative.rows.map((row) => [row.role, row.action])).toEqual([['typed', null], ['asked', 'needs_review']]);
+    });
+
+    it('CSE3: no credited word → only the asked row', async () => {
+      const found = answered({ alternativeSenseId: null });
+      const t = route(found, 'vi', context);
+      const result = await t.service.resultOf(userId, found, t.tx as never) as { alternative: { typed: string; rows: Array<{ role: string }> } };
+      expect(result.alternative.rows.map((row) => row.role)).toEqual(['asked']);
+      expect(result.alternative.typed).toBe('Crucial.');
+    });
+
+    it('CSE10: after a hint neither row shows Know', async () => {
+      const found = answered({ hintLevel: 1 });
+      const t = route(found, 'vi', { senses: [typedCrucial], due: { 'sense-crucial': true, 'sense-1': true } });
+      const result = await t.service.resultOf(userId, found, t.tx as never) as { alternative: { rows: Array<{ show_known: boolean }> } };
+      expect(result.alternative.rows.map((row) => row.show_known)).toEqual([false, false]);
+    });
+
+    it('a word that is not in learning has no Know either', async () => {
+      const found = answered();
+      const t = route(found, 'vi', context);
+      t.learning.practiceCheck.mockImplementation(async (_u: string, senseId: string) => ({ item: senseId === 'sense-crucial' ? null : { due_now: true } } as never));
+      const result = await t.service.resultOf(userId, found, t.tx as never) as { alternative: { rows: Array<{ show_known: boolean }> } };
+      expect(result.alternative.rows.map((row) => row.show_known)).toEqual([false, true]);
+    });
+
+    it('a typed word that is no longer visible leaves only the asked row', async () => {
+      const found = answered();
+      const t = route(found, 'vi', { senses: [], due: {} });
+      const result = await t.service.resultOf(userId, found, t.tx as never) as { alternative: { rows: Array<{ role: string }> } };
+      expect(result.alternative.rows.map((row) => row.role)).toEqual(['asked']);
+    });
+
+    it('a plain reply has alternative: null', async () => {
+      const t = route(aiItem(vitalQuestion()), 'vi', context);
+      await expect(t.service.answer(userId, 'it-1', { text: 'vital' })).resolves.toMatchObject({ result: 'correct', alternative: null });
+      await expect(route(mcqItem(), 'vi', context).service.answer(userId, 'it-1', { choice: 0 })).resolves.toMatchObject({ alternative: null });
+    });
+
+    it('already-answered carries the same alternative', async () => {
+      const t = route(answered(), 'vi', context);
+      const rejected = await t.service.answer(userId, 'it-1', { text: 'Crucial.' }).catch((error: unknown) => error) as {
+        status: number; extensions: { result: { alternative: { typed: string; rows: unknown[] } } };
+      };
+      expect(rejected.status).toBe(409);
+      expect(rejected.extensions.result.alternative.typed).toBe('Crucial.');
+      expect(rejected.extensions.result.alternative.rows).toHaveLength(2);
+    });
   });
 
   it('a choice question reads no session words', async () => {

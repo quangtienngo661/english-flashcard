@@ -11,6 +11,7 @@ import { LearningService } from '../../learning/index.js';
 import { matchesAnswer, normalizeAnswer } from '../grading/normalize.js';
 import type { AnswerKey, Hints, Prompt } from '../practice.types.js';
 import type { ItemWithQuestion } from '../sessions/session-views.js';
+import type { ReviewAction } from '../reviews/practice-reviews.service.js';
 import { SessionsService } from '../sessions/sessions.service.js';
 import { matchTyped, sessionWordForms, type SessionWordForms, type TypeWordKey } from './typed-match.js';
 
@@ -23,6 +24,12 @@ export type AnswerResult = {
   meaning: string; definition_en: string | null; show_known: boolean; highlight_needs_review: boolean;
   /** Bước 7 (PRC22): the Vietnamese translation of an AI sentence, for a `vi` learner only; else null. */
   translation: string | null;
+  /** Session synonyms: set for an AI fill-in answered with a declared session word; null for every other result. */
+  alternative: { typed: string; rows: AlternativeRow[] } | null;
+};
+/** One word of an alternative answer: the word typed (credited) or the word asked, each with its own review state. */
+export type AlternativeRow = {
+  sense_id: string; lemma: string; meaning: string; role: 'typed' | 'asked'; show_known: boolean; action: ReviewAction | null;
 };
 /** `reason: 'session_word'`: the typed word is another word of the session (it does not use up a try); null for any other wrong word. */
 export type TryAgainReply = { result: 'try_again'; tries: number; reason: 'session_word' | null };
@@ -180,13 +187,49 @@ export class AnswersService {
     const correct = item.result === 'correct';
     const translation = key.translation_vi
       ? ((await this.identity.getProfile(userId, db))?.native_language === 'vi' ? key.translation_vi : null) : null;
+    const alternative = item.alternative ? await this.alternativeOf(userId, item, key, learningItem?.due_now ?? null, db) : null;
     return {
       result: correct ? 'correct' : 'wrong', skipped: item.skipped, tries: item.tries, hint_level: item.hintLevel,
       correct: correctOf(key, prompt),
       meaning: key.reveal.meaning, definition_en: key.reveal.definition_en,
-      show_known: learningItem !== null && correct && item.hintLevel === 0 && learningItem.due_now,
-      highlight_needs_review: learningItem !== null && !correct, translation,
+      // On an alternative card the buttons belong to the two rows; an older web build shows today's card and must not review the asked word.
+      show_known: alternative === null && learningItem !== null && correct && item.hintLevel === 0 && learningItem.due_now,
+      highlight_needs_review: alternative === null && learningItem !== null && !correct, translation, alternative,
     };
+  }
+
+  /**
+   * The two rows of an alternative answer, typed word first (design §3.2). Each row's Know follows today's rule for that word on its own:
+   * a right answer, no hint, and the word in learning and due now.
+   */
+  private async alternativeOf(userId: string, item: ItemWithQuestion, key: AnswerKey, askedDue: boolean | null,
+    db?: Prisma.TransactionClient | PrismaClient): Promise<NonNullable<AnswerResult['alternative']>> {
+    const knowable = (due: boolean | null) => due === true && item.result === 'correct' && item.hintLevel === 0;
+    const rows: AlternativeRow[] = [];
+    if (item.alternativeSenseId !== null) {
+      const typed = (await this.typedWords(userId, [item.alternativeSenseId], db)).get(item.alternativeSenseId);
+      if (typed) {
+        const { item: learningItem } = await this.learning.practiceCheck(userId, item.alternativeSenseId, null, db);
+        rows.push({
+          sense_id: item.alternativeSenseId, lemma: typed.lemma, meaning: typed.meaning, role: 'typed',
+          show_known: knowable(learningItem?.due_now ?? null), action: item.alternativeReviewAction as ReviewAction | null,
+        });
+      }
+    }
+    rows.push({
+      sense_id: item.senseId, lemma: key.reveal.lemma, meaning: key.reveal.meaning, role: 'asked',
+      show_known: knowable(askedDue), action: item.reviewAction as ReviewAction | null,
+    });
+    return { typed: item.answerRaw ?? '', rows };
+  }
+
+  /** The lemma and the meaning (in the learner's language) of words the learner typed; a word that is not visible any more is left out. */
+  async typedWords(userId: string, senseIds: string[], db?: Prisma.TransactionClient | PrismaClient):
+    Promise<Map<string, { lemma: string; meaning: string }>> {
+    if (senseIds.length === 0) return new Map();
+    const language = (await this.identity.getProfile(userId, db))?.native_language === 'en' ? 'en' : 'vi';
+    const senses = await this.content.practiceSenses(userId, senseIds, language, db);
+    return new Map([...senses].map(([id, sense]) => [id, { lemma: sense.lemma, meaning: sense.meaning.text }]));
   }
 
   /**
