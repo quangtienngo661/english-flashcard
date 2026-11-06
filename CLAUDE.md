@@ -368,7 +368,7 @@ Các điểm dưới đây phát sinh khi rà quyền của `admin`/`editor` (b�
 
 ## Từ đồng nghĩa trong phiên (câu AI điền từ) — plan & as-built
 
-`docs/deliveries/session-synonyms.md` (plan tóm tắt 07/11/2026; chưa làm). Design, decisions, review: `docs/superpowers/{specs,decisions,reviews}/2026-11-06-cloze-session-synonyms*`; plan `docs/superpowers/plans/2026-11-07-session-synonyms.md`; code facts `docs/preparation/SESSION_SYNONYMS_PLAN_CODE_FACTS_2026-11-07-{api,ai,web}.md`.
+`docs/deliveries/session-synonyms.md` (plan tóm tắt và as-built 07/11/2026; API, web; PR #228–#231 và PR tài liệu vào `dev`; smoke cuối ở `docs/deliveries/session-synonyms-smoke-output.txt`). **Việc của chủ dự án còn lại** (prompt viết câu điền từ và câu chọn, judge mới, nhập bộ câu thử ở `docs/preparation/eval-sets/`, chạy eval): mục "The owner's steps" cuối file đó; chưa gọi AI thật. Design, decisions, review: `docs/superpowers/{specs,decisions,reviews}/2026-11-06-cloze-session-synonyms*`; plan `docs/superpowers/plans/2026-11-07-session-synonyms.md`; code facts `docs/preparation/SESSION_SYNONYMS_PLAN_CODE_FACTS_2026-11-07-{api,ai,web}.md`.
 
 ## Landing (apps/web) - as-built (08-09/10/2026)
 
